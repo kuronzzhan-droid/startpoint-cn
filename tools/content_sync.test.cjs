@@ -403,6 +403,7 @@ test("default release builder closes all registry tables and runs each CDN conve
         reward: 0,
         quest: 0,
         rewardCampaign: 0,
+        customJson: 0,
     }
     let bundledImports = 0
     const bundledRoots = new Set()
@@ -447,6 +448,10 @@ test("default release builder closes all registry tables and runs each CDN conve
             converterCalls.skillEffects++
             return converterOutput("skill-effects")
         },
+        convertCustomJson: async () => {
+            converterCalls.customJson++
+            return converterOutput("custom-json")
+        },
         convertRewards: async () => {
             converterCalls.reward++
             return converterOutput("reward")
@@ -486,6 +491,7 @@ test("default release builder closes all registry tables and runs each CDN conve
         reward: 1,
         quest: 1,
         rewardCampaign: 1,
+        customJson: 1,
     })
     assert.equal(
         bundledImports,
@@ -527,6 +533,7 @@ test("default release builder fails explicitly for a missing dynamic gacha refer
         convertGachas: async () => converterOutput("gacha"),
         convertShops: async () => converterOutput("shop"),
         convertSkillEffects: async () => converterOutput("skill-effects"),
+        convertCustomJson: async () => converterOutput("custom-json"),
         importBundledTable: async (_root, tableName) => ({ imported: tableName }),
     })
 
@@ -570,6 +577,7 @@ test("default release builder rejects an incomplete converter output", async () 
         convertGachas: async () => converterOutput("gacha"),
         convertShops: async () => converterOutput("shop"),
         convertSkillEffects: async () => converterOutput("skill-effects"),
+        convertCustomJson: async () => converterOutput("custom-json"),
         importBundledTable: async (_root, tableName) => ({ imported: tableName }),
     })
 
@@ -622,6 +630,7 @@ test("default release builder bounds parallel reads and imports while preserving
         convertGachas: async () => converterOutput("gacha"),
         convertShops: async () => converterOutput("shop"),
         convertSkillEffects: async () => converterOutput("skill-effects"),
+        convertCustomJson: async () => converterOutput("custom-json"),
         importBundledTable: async (_root, tableName) => {
             activeImports++
             maxImports = Math.max(maxImports, activeImports)
