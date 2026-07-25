@@ -18,19 +18,31 @@ EntityLists/线性版本图)、经与本仓同语义的离线校验器审计。�
 
 ## 改动地图(按 commit 顺序)
 
-| # | 块 | 内容 | 可独立成 PR |
+| # | commit | 内容 | 可独立成 PR |
 |---|---|---|---|
-| 1 | docs | 本文档 | — |
-| 2 | content: id 派生表转换 | `item_ids.json`/`equipment_ids.json` 从 CDN 派生
-    (投影 item/equipment 主表键集),邮件白名单读法迁移到 ContentRepository
-    (消除 mail.ts 静态 import 的"新内容须重启"缺陷) | ✅ mod 中立 |
-| 3 | content: rush quest 表转换 | `rush_event_quest.json`/`rush_event_quest_folder.json`
-    从 CDN 转换,`lib/assets.ts` 读法迁移到 snapshot | ✅ mod 中立 |
-| 4 | modes: 基座激活入口 | `src/modes/`:loader(modes.d/*.mjs + allowlist 哈希核对)
-    + registry + quest 结算/进本两处 dispatch 调用点;`MODES_ENABLED` 总开关;
-    无模式包时行为与基线逐字节一致 | 设计可议(编译期注册变体见文末) |
-| 5 | modes: rogue 玩法包源码 | `modes-src/rogue/`(不参与基座构建),构建产物为
-    独立 `rogue.mjs` 改造包;激活由 CDN 内容键控(激活表) | fork 私有 |
+| 1 | `63ea564` docs | 本文档 | — |
+| 2 | `af678ec` feat(content) | `item_ids`/`equipment_ids` 从 CDN 主表键集派生;
+    邮件白名单读法迁移到 ContentRepository(消除 mail.ts 静态 import 的
+    "新内容须重启"缺陷) | ✅ mod 中立 |
+| 3 | `598f91a` feat(content) | rush 三表(quest/folder/ranking)从嵌套 orderedmap
+    转换,`lib/assets.ts`+rushEvent api 读法迁移到 snapshot;
+    **官方 1.4.54 基线逐字节复刻通过** | ✅ mod 中立 |
+| 4 | `d800be9` feat(modes) | `src/modes/`:loader(modes.d/*.mjs + allowlist 哈希
+    双确认)+ registry + 结算/进本两处 dispatch;`MODES_ENABLED` 总开关;
+    无模块时逐字节等同基线 | 设计可议(编译期注册变体见文末) |
+| 5 | `7584040` feat(modes) | rogue 玩法包(`modes-src/rogue/`,不参与基座构建)+
+    `custom-json` converter(模式配置表走 CDN)+ `equipment_max_level` 派生 | 前半 fork 私有,
+    后半 mod 中立 |
+| 6 | `a1ff46f` test(content) | registry 派生测试的期望更新 + 两张新表的 bundled 兜底 | 随 2/3/5 |
+
+## 验证状态
+
+- `npm run test:quick`:**失败集合与未改动的 6ae68e4 基线逐文件一致**(双方
+  39 passed / 8 failed;剩余失败为 Windows 符号链接权限的既存环境问题);
+- `tsc --noEmit` 干净;新增测试 18 项全通过(ids 6 / rush 3 / modes seam 4 / rogue 5);
+- 真实第三方链 `content:sync` 端到端:1.4.200 Release 构建激活,cdn scope 覆盖
+  item_ids 1300(官方 1284+自制)、equipment_ids 451、rush quest 131(官方 110+自制 21)、
+  equipment_max_level 451(与既有手维护表零偏差)。
 
 ## 三产物分发模型
 
