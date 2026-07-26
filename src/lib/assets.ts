@@ -870,12 +870,45 @@ export function getShopItemSync(
     }
 }
 
+// Folder ids repeat across rush events with different lengths (700007
+// folder 1 is 2 rounds, other events run longer), so a flat folder-id map
+// cannot express the real caps: it ends a folder early and wipes the played
+// party list mid-run. Derived per event from the quest table instead; the
+// content snapshot is frozen for the process, so caching is safe.
+const rushFolderMaxRoundsCache: Record<number, Record<number, number>> = {};
+
+/**
+ * Gets the max round per folder for a rush event, derived from the
+ * rush_event_quest table (endless rounds are 0 and never count).
+ *
+ * @param eventId The ID of the rush event.
+ * @returns folderId -> max round map (empty for unknown events).
+ */
+export function getRushEventFolderMaxRounds(eventId: number): Record<number, number> {
+    let map = rushFolderMaxRoundsCache[eventId];
+    if (!map) {
+        map = {};
+        const quests = getContentSnapshot().repository
+            .table<Record<string, { rushEventId?: number, rushEventFolderId?: number, rushEventRound?: number }>>(
+                "rush_event_quest.json",
+            );
+        for (const quest of Object.values(quests)) {
+            if (Number(quest?.rushEventId) !== eventId) continue;
+            const folder = Number(quest.rushEventFolderId);
+            const round = Number(quest.rushEventRound);
+            if (Number.isInteger(folder) && round > (map[folder] ?? 0)) map[folder] = round;
+        }
+        rushFolderMaxRoundsCache[eventId] = map;
+    }
+    return map;
+}
+
 /**
  * Gets the rewards that should be given when clearing a given folder.
- * 
+ *
  * @param rushEventId The ID of the rush event.
  * @param folderId The ID of the folder.
- * @returns 
+ * @returns
  */
 export function getRushEventFolderClearRewards(
     rushEventId: number,
