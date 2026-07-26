@@ -62,3 +62,27 @@ EntityLists/线性版本图)、经与本仓同语义的离线校验器审计。�
 - 转换器均按阶段 A 方法论:官方 1.4.54 dump 复刻,与 bundled JSON 基线一致为验收;
   同步器不判断内容语义(与 content-sync.md 的责任分工一致)。
 - 无热载:一切变更(内容/改造包)均经 sync+重启生效,不引入运行时可变性。
+
+## 部署与验证(F5)
+
+安装模式包:
+
+```
+cp modes-src/rogue/rogue.mjs modes.d/rogue.mjs
+# 把 mode-manifest.json 的 sha256 登记进 modes.d/modes-allowlist.json
+CDN_DIR=<cdn父目录> npm run content:sync && node --env-file=.env out/cn-server.js
+```
+
+启动日志应出现 `[modes] loaded rogue-rush (rogue-settlement@1) sha256=…`;
+未安装模块或激活表缺失/disabled 时无此行,且行为与基线一致。
+
+2026-07-26 服务端级验证(激活表经 CDN 1.4.201 边下发,配置由 custom-json 转换器
+编译进 Release):
+
+- 结算:700007 folder1 终轮 → 按 28 项池抽 2 发(首发保底武器),授予
+  equipment 5020031 + item 5010057(同 id 的魂),reward list 正确回传;
+- 防跳关:同一事件非终轮 → 返回 null,不进 rush_battle_reward_list;
+- 惰性:未配置事件 id → 完全无副作用;
+- CDN 下发:`res_ver 1.4.200` 的 get_path 正确返回 1.4.200→1.4.201 三层归档。
+
+客户端真机验收(进本/掉落到账/轮次锁)仍需在实际客户端完成。
