@@ -11,14 +11,20 @@ const MANIFEST_PATH = path.resolve(__dirname, "../modes-src/rogue/mode-manifest.
 
 async function loadRogue() {
     const imported = await import(require("node:url").pathToFileURL(MODULE_PATH).href)
-    return imported.register
+    return { register: imported.register, modeManifest: imported.modeManifest }
 }
 
+// Mirrors the upstream ModeTransactionHost shape: table() serves only
+// base-registered tables (rogue_event.json via the custom-json converter,
+// equipment_max_level.json via the ids converter), server has exactly the
+// three primitives ModeHostServerApi exposes — no getEquipmentMaxLevel.
 function makeHost({ config, maxLevel = 5 } = {}) {
     const calls = { equipmentUpdates: [], expGrants: [] }
     return {
         host: {
+            apiVersion: 1,
             table(name) {
+                if (name === "equipment_max_level.json") return { 100001: maxLevel }
                 if (name !== "rogue_event.json") throw new Error(`unexpected table: ${name}`)
                 if (config === undefined) throw new Error("table missing")
                 return config
@@ -26,7 +32,6 @@ function makeHost({ config, maxLevel = 5 } = {}) {
             log() {},
             server: {
                 getCharacterElement: id => (id === 1 ? 0 : 1),
-                getEquipmentMaxLevel: () => maxLevel,
                 updatePlayerEquipment: (playerId, equipmentId, patch) => {
                     calls.equipmentUpdates.push({ playerId, equipmentId, patch })
                 },
@@ -56,24 +61,39 @@ function baseParams(overrides = {}) {
     }
 }
 
+test("rogue module declares an upstream-compatible static manifest", async () => {
+    const { register, modeManifest } = await loadRogue()
+    // The loader version-gates on this export before any code gets a host.
+    assert.deepEqual(modeManifest, {
+        apiVersion: 1,
+        name: "rogue-rush",
+        capability: "rogue-settlement@1",
+    })
+    // register() returns hooks only; identity lives in the manifest, so the
+    // loader's { ...manifest, ...hooks } spread cannot be overridden.
+    const hooks = register()
+    assert.deepEqual(
+        Object.keys(hooks).sort(),
+        ["onRushFinish", "onRushPartiesSerialized"],
+    )
+})
+
 test("rogue module stays inert without an activation table", async () => {
-    const register = await loadRogue()
+    const { register } = await loadRogue()
     const { host } = makeHost({ config: undefined })
-    const mode = register(host)
-    assert.equal(mode.capability, "rogue-settlement@1")
-    assert.equal(mode.onRushFinish(baseParams(), host), null)
+    assert.equal(register().onRushFinish(baseParams(), host), null)
 })
 
 test("rogue module stays inert when the table is disabled or lacks the event", async () => {
-    const register = await loadRogue()
+    const { register } = await loadRogue()
     for (const config of [{ enabled: false, events: {} }, { enabled: true, events: {} }]) {
         const { host } = makeHost({ config })
-        assert.equal(register(host).onRushFinish(baseParams(), host), null)
+        assert.equal(register().onRushFinish(baseParams(), host), null)
     }
 })
 
 test("rogue module grants drops, clamps evolution level and reports rewards", async () => {
-    const register = await loadRogue()
+    const { register } = await loadRogue()
     const { host, calls } = makeHost({
         maxLevel: 3,
         config: {
@@ -87,7 +107,7 @@ test("rogue module grants drops, clamps evolution level and reports rewards", as
             },
         },
     })
-    const result = register(host).onRushFinish(baseParams(), host)
+    const result = register().onRushFinish(baseParams(), host)
     assert.deepEqual(result, {
         rush_battle_reward_list: [{ kind: 6, kind_id: 100001, number: 1 }],
     })
@@ -98,7 +118,7 @@ test("rogue module grants drops, clamps evolution level and reports rewards", as
 })
 
 test("rogue module hides rewards on non-final folder rounds", async () => {
-    const register = await loadRogue()
+    const { register } = await loadRogue()
     const { host } = makeHost({
         config: {
             enabled: true,
@@ -109,11 +129,11 @@ test("rogue module hides rewards on non-final folder rounds", async () => {
         questData: { rushEventId: 700099, rushEventFolderId: 1, rushEventRound: 1 },
         folderMaxRounds: { 1: 2 },
     })
-    assert.equal(register(host).onRushFinish(params, host), null)
+    assert.equal(register().onRushFinish(params, host), null)
 })
 
 test("rogue module releases the character lock when configured", async () => {
-    const register = await loadRogue()
+    const { register } = await loadRogue()
     const { host } = makeHost({
         config: { enabled: true, events: { "700099": { unlock_played_parties: true } } },
     })
@@ -129,7 +149,7 @@ test("rogue module releases the character lock when configured", async () => {
         playerId: 7, eventId: 700099,
         folderParties: { 1: party }, endlessParties: {},
     }
-    register(host).onRushPartiesSerialized(context, host)
+    register().onRushPartiesSerialized(context, host)
     for (const field of Object.keys(party)) {
         if (field === "round") continue
         assert.equal(party[field], null, `${field} must be cleared`)
@@ -140,14 +160,14 @@ test("rogue module releases the character lock when configured", async () => {
 })
 
 test("rogue module leaves parties untouched without the unlock flag", async () => {
-    const register = await loadRogue()
+    const { register } = await loadRogue()
     for (const config of [
         { enabled: true, events: { "700099": {} } },
         { enabled: false, events: { "700099": { unlock_played_parties: true } } },
     ]) {
         const { host } = makeHost({ config })
         const party = { character_id_1: 111 }
-        register(host).onRushPartiesSerialized(
+        register().onRushPartiesSerialized(
             { playerId: 7, eventId: 700099, folderParties: { 1: party }, endlessParties: {} },
             host,
         )
@@ -155,11 +175,15 @@ test("rogue module leaves parties untouched without the unlock flag", async () =
     }
 })
 
-test("mode manifest hash matches the module file", () => {
+test("mode manifest hash matches the module file", async () => {
     const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"))
     const digest = crypto.createHash("sha256")
         .update(fs.readFileSync(MODULE_PATH))
         .digest("hex")
     assert.equal(manifest.sha256, digest)
-    assert.equal(manifest.capability, "rogue-settlement@1")
+    // 分发清单与模块静态导出必须说同一件事,否则装包指引会骗人
+    const { modeManifest } = await loadRogue()
+    assert.equal(manifest.name, modeManifest.name)
+    assert.equal(manifest.capability, modeManifest.capability)
+    assert.equal(manifest.apiVersion, modeManifest.apiVersion)
 })

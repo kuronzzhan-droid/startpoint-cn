@@ -1,5 +1,5 @@
 /**
- * Roguelike rush mode — installable mode module (fork/dev-base seam).
+ * Roguelike rush mode — installable mode module (upstream mode seam, API v1).
  *
  * Grants configured per-round loot (weapons / souls / characters / items)
  * after every cleared rush round. Everything is gated by the CDN table
@@ -7,15 +7,30 @@
  * master/custom/rogue_event.orderedmap): absent or `enabled:false` means the
  * module does nothing at all, so installing it without the content is inert.
  *
+ * Protocol: the loader version-gates on the static `modeManifest` export,
+ * then calls `register()` which returns hooks only. Hooks use the host they
+ * are dispatched with — onRushFinish receives the transaction host, so its
+ * writes join the settlement transaction; the host captured at register
+ * time is read-only and is deliberately not retained.
+ *
  * Install: copy this file to modes.d/, register its sha256 in
  * modes.d/modes-allowlist.json, restart. See mode-manifest.json.
  */
+
+export const modeManifest = Object.freeze({
+    apiVersion: 1,
+    name: "rogue-rush",
+    capability: "rogue-settlement@1",
+})
 
 // Client-side kind values accepted by RushEventLogic.rewardListToGeneralRewardKinds
 // (anything else throws ClientError 3446): 1=Item, 5=Character, 6=Equipment.
 const REWARD_LIST_KIND = { item: 1, character: 5, equipment: 6 }
 // server RewardType enum values
 const REWARD_TYPE = { item: 1, character: 5, equipment: 6 }
+// Settlement params carry the active-quest row's category, which stores the
+// client-side numbering (18 = rush event) — not the server QuestCategory
+// enum, where RUSH_EVENT is 24. Device-verified on the fork.
 const RUSH_EVENT_CATEGORY = 18
 
 function readConfig(host, rushEventId) {
@@ -28,6 +43,18 @@ function readConfig(host, rushEventId) {
     if (!table || table.enabled !== true) return null
     const config = table.events?.[String(rushEventId)]
     return config ?? null
+}
+
+// equipment_max_level.json is registered by the ids converter that ships in
+// the same fork series. `?? 1` mirrors the old host primitive for unknown
+// ids; the catch arm is unreachable wherever rogue_event.json resolves.
+function readEquipmentMaxLevel(host, equipmentId) {
+    try {
+        const table = host.table("equipment_max_level.json")
+        return table[String(equipmentId)] ?? 1
+    } catch {
+        return 1
+    }
 }
 
 function pickWeighted(entries) {
@@ -90,13 +117,10 @@ const PARTY_MEMBER_FIELDS = [
     "unison_evolution_img_level_3",
 ]
 
-export function register(host) {
+export function register() {
     const elementTable = {}
     return {
-        name: "rogue-rush",
-        capability: "rogue-settlement@1",
-
-        onRushPartiesSerialized({ eventId, folderParties, endlessParties }) {
+        onRushPartiesSerialized({ eventId, folderParties, endlessParties }, host) {
             const config = readConfig(host, eventId)
             if (config === null || config.unlock_played_parties !== true) return
             for (const record of [folderParties, endlessParties]) {
@@ -106,7 +130,7 @@ export function register(host) {
             }
         },
 
-        onRushFinish(params) {
+        onRushFinish(params, host) {
             const {
                 questCategory, questAccomplished, playerId, questData,
                 folderMaxRounds, party, giveRewards, transaction,
@@ -149,7 +173,7 @@ export function register(host) {
             if (equipLevel > 0) {
                 for (const entry of rewardResult.equipment_list ?? []) {
                     const equipmentId = Number(entry.equipment_id)
-                    const target = Math.min(equipLevel, host.server.getEquipmentMaxLevel(equipmentId))
+                    const target = Math.min(equipLevel, readEquipmentMaxLevel(host, equipmentId))
                     if (Number(entry.level) < target) {
                         entry.level = target
                         host.server.updatePlayerEquipment(playerId, equipmentId, { level: target })
