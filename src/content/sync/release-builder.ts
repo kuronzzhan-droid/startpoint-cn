@@ -49,6 +49,11 @@ import {
     type SkillEffectConversionInput,
     type SkillEffectConversionOutput,
 } from "../converters/skill-effects"
+import {
+    convertCustomJson,
+    type CustomJsonConversionOutput,
+    type CustomJsonSourceReader,
+} from "../converters/custom-json"
 import { parseCsvLine } from "../converters/csv"
 import { convertOrderedMapJson } from "../converters/ordered-map-json"
 import {
@@ -101,6 +106,7 @@ const SUPPORTED_CONVERTER_IDS = new Set([
     "reward",
     "reward-campaign",
     "quest",
+    "custom-json",
     "bundled-json",
     "server-json",
 ])
@@ -147,6 +153,9 @@ export interface DefaultContentTableBuilderDependencies {
         reader: QuestSourceReader,
         compatibility: QuestConversionCompatibility,
     ) => QuestConversionOutput | Promise<QuestConversionOutput>
+    readonly convertCustomJson?: (
+        reader: CustomJsonSourceReader,
+    ) => CustomJsonConversionOutput | Promise<CustomJsonConversionOutput>
     readonly importBundledTable?: typeof importBundledTable
 }
 
@@ -417,6 +426,7 @@ export function createDefaultContentTableBuilder(
     const rewardConverter = dependencies.convertRewards ?? convertRewards
     const rewardCampaignConverter = dependencies.convertRewardCampaigns ?? convertRewardCampaigns
     const questConverter = dependencies.convertQuests ?? convertQuests
+    const customJsonConverter = dependencies.convertCustomJson ?? convertCustomJson
     const bundledImporter = dependencies.importBundledTable ?? importBundledTable
 
     return Object.freeze({
@@ -442,6 +452,7 @@ export function createDefaultContentTableBuilder(
                     || definition.converterId === "reward"
                     || definition.converterId === "reward-campaign"
                     || definition.converterId === "quest"
+                    || definition.converterId === "custom-json"
                     || directOrderedMapDepth(definition.converterId) !== null
                     ? definition.sourceOrderedMaps
                     : []
@@ -559,6 +570,9 @@ export function createDefaultContentTableBuilder(
                     throw new Error(`content table was produced twice: ${tableName}`)
                 }
                 values.set(tableName, value)
+            }
+            if (converterIds.has("custom-json")) {
+                addConverterOutput(values, "custom-json", await customJsonConverter(reader))
             }
 
             const importedDefinitions = context.definitions.filter(definition => (

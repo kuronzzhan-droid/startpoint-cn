@@ -301,6 +301,14 @@ const definitionInputs: TableSourceInput[] = [
         outputShapeVersion: 1,
     },
     {
+        tableName: "rogue_event.json",
+        scope: "cdn",
+        sourceOrderedMaps: ["master/custom/rogue_event.orderedmap"],
+        converterId: "custom-json",
+        converterVersion: 1,
+        outputShapeVersion: 1,
+    },
+    {
         tableName: "character.json",
         scope: "cdn",
         sourceOrderedMaps: ["master/character/character.orderedmap"],

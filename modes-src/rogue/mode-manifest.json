@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "name": "rogue-rush",
+  "version": "1.0.0",
+  "capability": "rogue-settlement@1",
+  "file": "rogue.mjs",
+  "sha256": "ce74646d01446a8a8607d7583add4db369b0fdec89cecbeac5724dd3b14547e0",
+  "requiresBase": "fork/dev-base@6ae68e4+",
+  "activationTable": "rogue_event.json",
+  "activationLogicalPath": "master/custom/rogue_event.orderedmap",
+  "install": [
+    "cp rogue.mjs <server>/modes.d/rogue.mjs",
+    "register {\"rogue.mjs\": \"ce74646d01446a8a8607d7583add4db369b0fdec89cecbeac5724dd3b14547e0\"} in <server>/modes.d/modes-allowlist.json",
+    "restart the server (no hot reload)"
+  ],
+  "notes": "Inert without the activation table; installing the module alone changes nothing."
+}
