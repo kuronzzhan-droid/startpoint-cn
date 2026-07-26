@@ -18,6 +18,10 @@ const tableNames = [
     "star_grain_shop.json",
     "treasure_shop.json",
     "equipment_enhancement_shop.json",
+    // fork: rush quest tables are snapshot-sourced (rush converter), and
+    // the rush shop route resolves its event through them.
+    "rush_event_quest.json",
+    "rush_event_quest_folder.json",
 ]
 
 function installBundledShopSnapshot({ additionalTableNames = [] } = {}) {
