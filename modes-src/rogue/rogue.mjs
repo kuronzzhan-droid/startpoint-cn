@@ -79,11 +79,32 @@ function rollDrops(config, host, partyCharacterIds, elementTable) {
     return drops
 }
 
+// Party member fields the client derives character locking from. Nulling them
+// releases the lock while the entry itself stays, so folder round progression
+// (client getRushBattleRound() = list size + 1) is unaffected.
+const PARTY_MEMBER_FIELDS = [
+    "character_id_1", "character_id_2", "character_id_3",
+    "unison_character_id_1", "unison_character_id_2", "unison_character_id_3",
+    "evolution_img_level_1", "evolution_img_level_2", "evolution_img_level_3",
+    "unison_evolution_img_level_1", "unison_evolution_img_level_2",
+    "unison_evolution_img_level_3",
+]
+
 export function register(host) {
     const elementTable = {}
     return {
         name: "rogue-rush",
         capability: "rogue-settlement@1",
+
+        onRushPartiesSerialized({ eventId, folderParties, endlessParties }) {
+            const config = readConfig(host, eventId)
+            if (config === null || config.unlock_played_parties !== true) return
+            for (const record of [folderParties, endlessParties]) {
+                for (const party of Object.values(record ?? {})) {
+                    for (const field of PARTY_MEMBER_FIELDS) party[field] = null
+                }
+            }
+        },
 
         onRushFinish(params) {
             const {

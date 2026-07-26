@@ -112,6 +112,49 @@ test("rogue module hides rewards on non-final folder rounds", async () => {
     assert.equal(register(host).onRushFinish(params, host), null)
 })
 
+test("rogue module releases the character lock when configured", async () => {
+    const register = await loadRogue()
+    const { host } = makeHost({
+        config: { enabled: true, events: { "700099": { unlock_played_parties: true } } },
+    })
+    const party = {
+        character_id_1: 111, character_id_2: 222, character_id_3: 333,
+        unison_character_id_1: 444, unison_character_id_2: null, unison_character_id_3: null,
+        evolution_img_level_1: 5, evolution_img_level_2: null, evolution_img_level_3: null,
+        unison_evolution_img_level_1: 3, unison_evolution_img_level_2: null,
+        unison_evolution_img_level_3: null,
+        round: 1,
+    }
+    const context = {
+        playerId: 7, eventId: 700099,
+        folderParties: { 1: party }, endlessParties: {},
+    }
+    register(host).onRushPartiesSerialized(context, host)
+    for (const field of Object.keys(party)) {
+        if (field === "round") continue
+        assert.equal(party[field], null, `${field} must be cleared`)
+    }
+    // 条目本身保留:客户端轮次进度 = 列表长度 + 1
+    assert.deepEqual(Object.keys(context.folderParties), ["1"])
+    assert.equal(party.round, 1)
+})
+
+test("rogue module leaves parties untouched without the unlock flag", async () => {
+    const register = await loadRogue()
+    for (const config of [
+        { enabled: true, events: { "700099": {} } },
+        { enabled: false, events: { "700099": { unlock_played_parties: true } } },
+    ]) {
+        const { host } = makeHost({ config })
+        const party = { character_id_1: 111 }
+        register(host).onRushPartiesSerialized(
+            { playerId: 7, eventId: 700099, folderParties: { 1: party }, endlessParties: {} },
+            host,
+        )
+        assert.equal(party.character_id_1, 111)
+    }
+})
+
 test("mode manifest hash matches the module file", () => {
     const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"))
     const digest = crypto.createHash("sha256")
