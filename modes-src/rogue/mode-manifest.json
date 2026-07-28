@@ -5,13 +5,13 @@
   "version": "2.0.0",
   "capability": "rogue-settlement@1",
   "file": "rogue.mjs",
-  "sha256": "747ac3a137b26bbbfd83808b4a8f8eb0e3ca41af6485e12a9b836542a1682843",
+  "sha256": "57a08fde1a2f4cf5ed71df18600eedba8f1624469ca5ef7e6e9c1f725a440a1e",
   "requiresBase": "startpoint-cn dev@df3ad91+ (mode seam API v1)",
   "activationTable": "rogue_event.json",
   "activationLogicalPath": "master/custom/rogue_event.orderedmap",
   "install": [
     "cp rogue.mjs <server>/modes.d/rogue.mjs",
-    "register {\"rogue.mjs\": \"747ac3a137b26bbbfd83808b4a8f8eb0e3ca41af6485e12a9b836542a1682843\"} in <server>/modes.d/modes-allowlist.json",
+    "register {\"rogue.mjs\": \"57a08fde1a2f4cf5ed71df18600eedba8f1624469ca5ef7e6e9c1f725a440a1e\"} in <server>/modes.d/modes-allowlist.json",
     "restart the server (no hot reload)"
   ],
   "notes": "Inert without the activation table; installing the module alone changes nothing."

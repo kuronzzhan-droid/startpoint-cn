@@ -45,13 +45,15 @@ function readConfig(host, rushEventId) {
     return config ?? null
 }
 
-// equipment_max_level.json is registered by the ids converter that ships in
-// the same fork series. `?? 1` mirrors the old host primitive for unknown
-// ids; the catch arm is unreachable wherever rogue_event.json resolves.
+// equipment_dissolve.json rows (upstream item-equipment converter) carry the
+// evolution cap in max_level. Falling back to 1 mirrors the old host
+// primitive for unknown ids; the catch arm is unreachable wherever
+// rogue_event.json resolves.
 function readEquipmentMaxLevel(host, equipmentId) {
     try {
-        const table = host.table("equipment_max_level.json")
-        return table[String(equipmentId)] ?? 1
+        const table = host.table("equipment_dissolve.json")
+        const level = Number(table[String(equipmentId)]?.max_level)
+        return Number.isFinite(level) && level > 0 ? level : 1
     } catch {
         return 1
     }

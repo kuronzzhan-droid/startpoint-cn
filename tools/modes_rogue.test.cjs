@@ -16,7 +16,7 @@ async function loadRogue() {
 
 // Mirrors the upstream ModeTransactionHost shape: table() serves only
 // base-registered tables (rogue_event.json via the custom-json converter,
-// equipment_max_level.json via the ids converter), server has exactly the
+// equipment_dissolve.json via the item-equipment converter), server has exactly the
 // three primitives ModeHostServerApi exposes — no getEquipmentMaxLevel.
 function makeHost({ config, maxLevel = 5 } = {}) {
     const calls = { equipmentUpdates: [], expGrants: [] }
@@ -24,7 +24,7 @@ function makeHost({ config, maxLevel = 5 } = {}) {
         host: {
             apiVersion: 1,
             table(name) {
-                if (name === "equipment_max_level.json") return { 100001: maxLevel }
+                if (name === "equipment_dissolve.json") return { 100001: { max_level: maxLevel } }
                 if (name !== "rogue_event.json") throw new Error(`unexpected table: ${name}`)
                 if (config === undefined) throw new Error("table missing")
                 return config
