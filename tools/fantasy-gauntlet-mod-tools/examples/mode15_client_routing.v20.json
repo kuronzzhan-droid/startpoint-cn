@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "name": "mode15-fantasy-rush-client-routing",
+  "final_revision": "v20",
+  "embedded_swf_path": "assets/worldflipper_android_release.swf",
+  "scope": {
+    "rush_event_id": 700098,
+    "multi_event_id": 300098,
+    "legacy_multi_event_id": 100098,
+    "deep_abyss_event_id_preserved": 700099
+  },
+  "quest_mapping": [
+    { "rush_quest_id": 700098005, "multi_quest_id": 300098001 },
+    { "rush_quest_id": 700098010, "multi_quest_id": 300098002 },
+    { "rush_quest_id": 700098015, "multi_quest_id": 300098003 }
+  ],
+  "retained_revisions": ["v10", "v11", "v12", "v13", "v14", "v17", "v18", "v19", "v20"],
+  "excluded_revisions": [
+    {
+      "revision": "v15-v16",
+      "reason": "QuestResultScene redirect races the multiplayer room return route"
+    }
+  ],
+  "classes": [
+    {
+      "name": "pinball.scene.bossBattle.modeSelect.BossBattleModeSelectScene",
+      "methods": ["isFantasyRushBossQuest", "startFantasyRushMultiBattle"],
+      "required_markers": ["startMultiBattle(false);", "300098001", "300098003"]
+    },
+    {
+      "name": "pinball.common.data.quest.event.advent.AdventEventQuestLogic",
+      "methods": ["visibility host-clear guard"],
+      "required_markers": ["id >= 300098001", "id <= 300098003", "isHostCleared(param1)"]
+    },
+    {
+      "name": "pinball.scene.event.rush.questSelect.RushEventQuestSelectScene",
+      "methods": ["quest click routing"],
+      "required_markers": ["case 700098005:", "case 700098010:", "case 700098015:", "eventId == 700099", "abyssViewableQuests"],
+      "forbidden_markers": ["return CloseBehavior.CloseThen(new BindImpl2_0(selectQuest,_loc4_,param1).execute);"]
+    },
+    {
+      "name": "pinball.scene.ui.SingleQuestStartFlow",
+      "methods": ["start"],
+      "required_markers": ["case 700098005:", "case 700098010:", "case 700098015:", "SceneKind.BossBattleModeSelect"]
+    },
+    {
+      "name": "pinball.scene.partySelect.PartySelectScene",
+      "methods": ["run"],
+      "required_markers": ["RushEventQuestLogic", "MultiQuestIdKindTools", "ChangeSceneBackKind.NotChange"]
+    },
+    {
+      "name": "pinball.dialog.rushEvent.clearReward.RushEventClearRewardDialog",
+      "methods": ["isFantasyRushMultiBoundary", "completeAnimation", "button click handler"],
+      "required_markers": ["if(eventId != 700098)", "case 5:", "case 10:", "case 15:", "buttonGroup.get(16777216).visible = false;"]
+    },
+    {
+      "name": "pinball.scene.ui.MultiBattleRoomPrepareFlow",
+      "methods": ["room preparation", "failure return"],
+      "required_markers": ["SceneKind.RushEventTop(700098)", "SceneKind.RushEventLoading(SceneKind.RushEventQuestSelect(700098,1))"],
+      "required_marker_counts": {
+        "SceneKind.RushEventLoading(SceneKind.RushEventQuestSelect(700098,1))": 2
+      }
+    },
+    {
+      "name": "pinball.scene.bossBattle.room.MultiBattleRoomScene",
+      "methods": ["releaseOpenMultiRoom", "BackChangeSceneHandler"],
+      "required_markers": ["MultiQuestIdKindTools.toInt(config.questId) >= 300098001", "MultiQuestIdKindTools.toInt(config.questId) <= 300098003"],
+      "required_marker_counts": {
+        "MultiQuestIdKindTools.toInt(config.questId) >= 300098001": 2,
+        "MultiQuestIdKindTools.toInt(config.questId) <= 300098003": 2
+      }
+    },
+    {
+      "name": "pinball.context.socket.room.CooperationRoomSocketContact",
+      "methods": ["disband", "applyDisbanded"],
+      "required_markers": ["public var mode15FantasyDisband:Boolean;", "questId.index == 1", "SceneKind.RushEventTop(700098)"]
+    },
+    {
+      "name": "pinball.scene.questResult.QuestResultScene",
+      "methods": [],
+      "required_markers": [],
+      "forbidden_markers": ["isFantasyRushMultiQuestResult"]
+    }
+  ],
+  "network_contract": {
+    "new_mode15_specific_http_routes": [],
+    "reused_prefixes": [
+      "/api/index.php/event/rush",
+      "/api/index.php/single_battle_quest",
+      "/api/index.php/multi_battle_quest"
+    ],
+    "server_address_repointing_required": false
+  },
+  "provenance": {
+    "reference_final_apk_sha256": "13b544663a3007d6a19a220ddb45a9f90e95e578377f00f57228fee9f9dfec53",
+    "reference_signer_certificate_sha256": "569d19a3578d4cba16e3d6e7ad8ccab4fa667efc758deef6c9be3adb99919894",
+    "binary_committed": false
+  }
+}
