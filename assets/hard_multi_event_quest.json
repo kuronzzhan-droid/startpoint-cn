@@ -36,6 +36,7 @@
     "poolExpReward": 2900
   },
   "1001001": {
+    "scoreRewardGroupId": 7000010,
     "name": "红机兵海茵莱特 ::quest_rank::",
     "clearRewardId": 1061004,
     "bRankTime": 738000,
@@ -48,6 +49,7 @@
     "poolExpReward": 2900
   },
   "1002001": {
+    "scoreRewardGroupId": 7000011,
     "name": "苍机兵维尔努斯 ::quest_rank::",
     "clearRewardId": 1062004,
     "bRankTime": 738000,
@@ -60,6 +62,7 @@
     "poolExpReward": 2900
   },
   "1003001": {
+    "scoreRewardGroupId": 7000012,
     "name": "橙机兵吉布西兹 ::quest_rank::",
     "clearRewardId": 1063004,
     "bRankTime": 738000,
@@ -72,6 +75,7 @@
     "poolExpReward": 2900
   },
   "1004001": {
+    "scoreRewardGroupId": 7000013,
     "name": "碧机兵克拉格 ::quest_rank::",
     "clearRewardId": 1064004,
     "bRankTime": 738000,
@@ -84,6 +88,7 @@
     "poolExpReward": 2900
   },
   "1005001": {
+    "scoreRewardGroupId": 7000014,
     "name": "闪机兵艾赞 ::quest_rank::",
     "clearRewardId": 1065004,
     "bRankTime": 738000,
@@ -96,6 +101,7 @@
     "poolExpReward": 2900
   },
   "1006001": {
+    "scoreRewardGroupId": 7000015,
     "name": "暗机兵德古兰 ::quest_rank::",
     "clearRewardId": 1066004,
     "bRankTime": 738000,
@@ -108,6 +114,7 @@
     "poolExpReward": 2900
   },
   "100000001": {
+    "scoreRewardGroupId": 7000014,
     "name": "闪机兵艾赞 ::quest_rank::",
     "clearRewardId": 200053004,
     "bRankTime": 792000,
@@ -120,6 +127,7 @@
     "poolExpReward": 2900
   },
   "100001001": {
+    "scoreRewardGroupId": 7000012,
     "name": "橙机兵吉布西兹 ::quest_rank::",
     "clearRewardId": 200064004,
     "bRankTime": 792000,
@@ -132,8 +140,9 @@
     "poolExpReward": 2900
   },
   "100002001": {
+    "scoreRewardGroupId": 7000015,
     "name": "暗机兵德古兰 ::quest_rank::",
-    "clearRewardId": 200077004,
+    "clearRewardId": 31,
     "bRankTime": 792000,
     "aRankTime": 702000,
     "sRankTime": 612000,

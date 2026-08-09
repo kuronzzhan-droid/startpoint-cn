@@ -13,6 +13,7 @@ import { calculateDissolveRewards } from "../../lib/equipment-dissolve";
 import { asAccountId, asPlayerId, AccountId, PlayerId } from "../../lib/types";
 import { resolvePlayerIdSync } from "../../data/activeAccount";
 import { getConfigSync } from "../../lib/assets";
+import { gameVerboseLog } from "../../lib/game-logging";
 
 interface SellEquipmentListItem {
     equipment_id: number
@@ -226,7 +227,7 @@ const routes = async (fastify: FastifyInstance) => {
             for (const [soulId, count] of Object.entries(rewards.abilitySouls)) {
                 totalAbilitySouls[parseInt(soulId)] = (totalAbilitySouls[parseInt(soulId)] ?? 0) + count
             }
-            console.log(`[BULK_SELL] account=${accountId} player=${playerId}  -> eid=${equipmentId} stack=${stack} rarity=${Math.floor(equipmentId/1000000)} craft=${rewards.craftPoints} star=${rewards.starGrains} souls=${JSON.stringify(rewards.abilitySouls)}`)
+            gameVerboseLog(() => `[BULK_SELL] account=${accountId} player=${playerId}  -> eid=${equipmentId} stack=${stack} rarity=${Math.floor(equipmentId/1000000)} craft=${rewards.craftPoints} star=${rewards.starGrains} souls=${JSON.stringify(rewards.abilitySouls)}`)
             toSell.push(equipmentId)
         }
 
@@ -260,7 +261,7 @@ const routes = async (fastify: FastifyInstance) => {
         const starLog = totalStarGrains > 0 ? `star +${totalStarGrains} ` : ""
         const soulTypes = Object.keys(totalAbilitySouls).length
         const soulDetail = Object.entries(totalAbilitySouls).map(([id, c]) => `${id}×${c}`).join(' ')
-        console.log(`[BULK_SELL] account=${accountId} player=${playerId}: ${toSell.length} equipment dissolved (${toSell.join(',')}), ${craftLog}${starLog}ability souls: ${soulTypes} types [${soulDetail}]`)
+        gameVerboseLog(() => `[BULK_SELL] account=${accountId} player=${playerId}: ${toSell.length} equipment dissolved (${toSell.join(',')}), ${craftLog}${starLog}ability souls: ${soulTypes} types [${soulDetail}]`)
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({

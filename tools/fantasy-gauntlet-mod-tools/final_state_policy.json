@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "base_version": "1.4.55",
+  "high_risk_tables": [
+    "master/ability/ability.orderedmap",
+    "master/ability/leader_ability.orderedmap",
+    "master/ability/ability_soul.orderedmap",
+    "master/skill/action_skill.orderedmap",
+    "master/skill/switched_action_skill.orderedmap",
+    "master/skill/power_flip_action.orderedmap",
+    "master/character/character.orderedmap",
+    "master/character/character_status.orderedmap",
+    "master/character/character_text.orderedmap",
+    "master/character/character_speech.orderedmap",
+    "master/character/character_awake_status.orderedmap",
+    "master/character/character_gacha_sound.orderedmap",
+    "master/character/full_shot_image_attribute.orderedmap",
+    "master/character/unique_condition.orderedmap",
+    "master/generated/character_image.orderedmap",
+    "master/string/custom_ability_string.orderedmap",
+    "master/item/item.orderedmap",
+    "master/item/equipment.orderedmap",
+    "master/item/equipment_status.orderedmap",
+    "master/equipment_enhancement/equipment_enhancement.orderedmap",
+    "master/equipment_enhancement/equipment_enhancement_ability.orderedmap",
+    "master/shop/general_shop.orderedmap",
+    "master/shop/event_item_shop.orderedmap",
+    "master/shop/boss_coin_shop.orderedmap",
+    "master/shop/boss_coin_shop_category.orderedmap"
+  ],
+  "protected_prefixes": {
+    "master/ability/ability.orderedmap": [
+      "151015", "151021", "151027", "151045", "251017", "251053",
+      "129999", "139999", "149998", "149999", "169998"
+    ],
+    "master/ability/leader_ability.orderedmap": [
+      "151015", "151021", "151027", "151045", "251017", "251053",
+      "129999", "139999", "149998", "149999", "169998"
+    ],
+    "master/skill/action_skill.orderedmap": [
+      "129999", "139999", "149998", "149999", "169998"
+    ],
+    "master/character/character.orderedmap": [
+      "129999", "139999", "149998", "149999", "169998"
+    ],
+    "master/character/character_status.orderedmap": [
+      "129999", "139999", "149998", "149999", "169998"
+    ],
+    "master/character/character_text.orderedmap": [
+      "129999", "139999", "149998", "149999", "169998"
+    ]
+  },
+  "intentional_historical_removals": {
+    "master/quest/event/event_list.orderedmap": ["700099"],
+    "master/shop/event_item_shop.orderedmap": [
+      "700099", "9700101", "9700102", "9700103", "9700104",
+      "9700105", "9700106", "9700107", "9700108", "9700109",
+      "9700110", "9700111", "9700112", "9700113", "9700114",
+      "9700115"
+    ]
+  }
+}

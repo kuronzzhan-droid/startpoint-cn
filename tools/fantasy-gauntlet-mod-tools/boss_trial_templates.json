@@ -1,0 +1,477 @@
+{
+  "schema_version": 1,
+  "templates": {
+    "fantasy-stage3-generic-trials": {
+      "description": "\u5e7b\u60f3\u8fde\u6218\u7b2c\u4e09\u5173\uff1a75%/50% \u4e09\u9636\u6bb5\u3001\u76f4\u51fb\u4e0e\u5f3a\u5316\u5f39\u5c04\u547d\u4e2d\u8bd5\u70bc\u3001\u4e0d\u53ef\u9a71\u6563\u6297\u6027",
+      "target": {
+        "rush_event_id": 700098,
+        "round": 3
+      },
+      "source_boss": "spirit_beast_fire",
+      "source_phase": "1",
+      "entry_state": "neutral1_1",
+      "ids": {
+        "boss": "mod_mode15_trial_stage3",
+        "field": "mod_mode15_trial_stage3_field",
+        "zone": "mod_mode15_trial_stage3_zone",
+        "routine": "mod_mode15_trial_stage3"
+      },
+      "actions": {
+        "guard": "battle/action/enemy/action/mod_mode15_trial/mod_mode15_trial_stage3$guard_phase1",
+        "legacy": [
+          {
+            "logical": "battle/action/enemy/action/mod_mode15_trial/mod_mode15_trial_stage3$clear_phase1",
+            "mode": "empty"
+          },
+          {
+            "logical": "battle/action/enemy/action/mod_mode15_trial/mod_mode15_trial_stage3$guard_phase2",
+            "mode": "phase",
+            "phase": 2
+          },
+          {
+            "logical": "battle/action/enemy/action/mod_mode15_trial/mod_mode15_trial_stage3$guard_clear",
+            "mode": "empty"
+          }
+        ]
+      },
+      "condition_duration_frames": 99999999,
+      "resistance_strength": 0.99,
+      "common_trial_buffs": {
+        "debuff_immunity": 1.0
+      },
+      "post_trial_suffix": "__mod_after_trial",
+      "retry": {
+        "interval_frames": 30,
+        "count": 3600
+      },
+      "phases": [
+        {
+          "hp_threshold": 0.75,
+          "phase_kind": 0,
+          "trial": {
+            "kind": "direct_attack",
+            "target": 80,
+            "countdown": false,
+            "success_state": "mod_trial_clear1",
+            "clear_carrier": {
+              "templates": [
+                "shot_start1_1",
+                "shot_charge1_1",
+                "shot_fire_start1_1",
+                "shot_fire_loop1_1",
+                "shot_end1_1"
+              ],
+              "names": [
+                "mod_trial_clear1",
+                "mod_trial_clear1_charge",
+                "mod_trial_clear1_fire_start",
+                "mod_trial_clear1_fire_loop",
+                "mod_trial_clear1_end"
+              ]
+            }
+          },
+          "resistances": [
+            "ability",
+            "power_flip",
+            "skill"
+          ]
+        },
+        {
+          "hp_threshold": 0.5,
+          "phase_kind": 0,
+          "entry_carrier": {
+            "templates": [
+              "skill_start2_1",
+              "skill_charge2_1",
+              "skill_fire_start2_1",
+              "skill_fire_loop2_1",
+              "skill_end2_1"
+            ],
+            "names": [
+              "mod_phase2_guard",
+              "mod_phase2_guard_charge",
+              "mod_phase2_guard_fire_start",
+              "mod_phase2_guard_fire_loop",
+              "mod_phase2_guard_end"
+            ]
+          },
+          "trial": {
+            "kind": "power_flip",
+            "target": 40,
+            "countdown": false,
+            "success_state": "mod_trial_clear2",
+            "clear_carrier": {
+              "templates": [
+                "skill_start4_1",
+                "skill_charge4_1",
+                "skill_fire_start4_1",
+                "skill_fire_loop4_1",
+                "skill_end4_1"
+              ],
+              "names": [
+                "mod_trial_clear2",
+                "mod_trial_clear2_charge",
+                "mod_trial_clear2_fire_start",
+                "mod_trial_clear2_fire_loop",
+                "mod_trial_clear2_end"
+              ]
+            }
+          },
+          "resistances": [
+            "ability",
+            "direct_attack",
+            "skill"
+          ]
+        },
+        {
+          "trial": null,
+          "resistances": []
+        }
+      ]
+    },
+    "fantasy-stage5-fire-three-trials": {
+      "description": "幻想连战第5关：火精灵兽奥尔塔尼亚，70%/40%三阶段，直击150、强化弹射100、技能连携6",
+      "target": {
+        "advent_event_id": 300098,
+        "quest_no": 1
+      },
+      "source_boss": "spirit_beast_fire",
+      "source_phase": "1",
+      "entry_state": "neutral1_1",
+      "ids": {
+        "boss": "mod_mode15_trial_stage5_fire",
+        "field": "mod_mode15_trial_stage5_fire_field",
+        "zone": "mod_mode15_trial_stage5_fire_zone",
+        "routine": "mod_mode15_trial_stage5_fire"
+      },
+      "actions": {
+        "guard": "battle/action/enemy/action/mod_mode15_trial/mod_mode15_trial_stage5_fire$guard",
+        "phase_reentry": "battle/action/enemy/action/mod_mode15_trial/mod_mode15_trial_stage5_fire$phase_reentry_guard",
+        "legacy": []
+      },
+      "phase_reentry_action_slots": [
+        124,
+        123
+      ],
+      "condition_duration_frames": 99999999,
+      "resistance_strength": 100.0,
+      "resistance_layers": 99,
+      "common_trial_buffs": {
+        "debuff_immunity": 1.0
+      },
+      "post_trial_suffix": "__mod_after_trial",
+      "retry": {
+        "interval_frames": 30,
+        "count": 3600
+      },
+      "phases": [
+        {
+          "hp_threshold": 0.7,
+          "phase_kind": 1,
+          "transition_invincible_end_state": "mod_stage5_phase2_handoff__wait3",
+          "transition_handoff": {
+            "name": "mod_stage5_phase2_handoff",
+            "frames": 180,
+            "segment_frames": 60
+          },
+          "entry_carrier": {
+            "templates": [
+              "skill_start2_1",
+              "skill_charge2_1",
+              "skill_fire_start2_1",
+              "skill_fire_loop2_1",
+              "skill_end2_1"
+            ],
+            "names": [
+              "mod_stage5_phase1_guard",
+              "mod_stage5_phase1_guard_charge",
+              "mod_stage5_phase1_guard_fire_start",
+              "mod_stage5_phase1_guard_fire_loop",
+              "mod_stage5_phase1_guard_end"
+            ]
+          },
+          "trial": {
+            "kind": "direct_attack",
+            "target": 200,
+            "countdown": false,
+            "success_state": "mod_stage5_trial_clear1",
+            "clear_carrier": {
+              "templates": [
+                "shot_start1_1",
+                "shot_charge1_1",
+                "shot_fire_start1_1",
+                "shot_fire_loop1_1",
+                "shot_end1_1"
+              ],
+              "names": [
+                "mod_stage5_trial_clear1",
+                "mod_stage5_trial_clear1_charge",
+                "mod_stage5_trial_clear1_fire_start",
+                "mod_stage5_trial_clear1_fire_loop",
+                "mod_stage5_trial_clear1_end"
+              ]
+            }
+          },
+          "resistances": [
+            "ability",
+            "direct_attack",
+            "power_flip",
+            "skill"
+          ]
+        },
+        {
+          "hp_threshold": 0.4,
+          "phase_kind": 1,
+          "transition_invincible_end_state": "mod_stage5_phase3_handoff__wait3",
+          "transition_handoff": {
+            "name": "mod_stage5_phase3_handoff",
+            "frames": 180,
+            "segment_frames": 60
+          },
+          "entry_carrier": {
+            "deterministic": true,
+            "templates": [
+              "skill_start2_1",
+              "skill_charge2_1",
+              "skill_fire_start2_1",
+              "skill_fire_loop2_1",
+              "skill_end2_1"
+            ],
+            "names": [
+              "mod_stage5_phase2_guard",
+              "mod_stage5_phase2_guard_charge",
+              "mod_stage5_phase2_guard_fire_start",
+              "mod_stage5_phase2_guard_fire_loop",
+              "mod_stage5_phase2_guard_end"
+            ]
+          },
+          "trial": {
+            "kind": "skill",
+            "target": 40,
+            "countdown": false,
+            "success_state": "mod_stage5_trial_clear2",
+            "clear_carrier": {
+              "templates": [
+                "skill_start4_1",
+                "skill_charge4_1",
+                "skill_fire_start4_1",
+                "skill_fire_loop4_1",
+                "skill_end4_1"
+              ],
+              "names": [
+                "mod_stage5_trial_clear2",
+                "mod_stage5_trial_clear2_charge",
+                "mod_stage5_trial_clear2_fire_start",
+                "mod_stage5_trial_clear2_fire_loop",
+                "mod_stage5_trial_clear2_end"
+              ]
+            }
+          },
+          "resistances": [
+            "ability",
+            "direct_attack",
+            "power_flip",
+            "skill"
+          ]
+        },
+        {
+          "entry_carrier": {
+            "deterministic": true,
+            "templates": [
+              "skill_start3_1",
+              "skill_charge3_1",
+              "skill_fire_start3_1",
+              "skill_fire_loop3_1",
+              "skill_end3_1"
+            ],
+            "names": [
+              "mod_stage5_phase3_guard",
+              "mod_stage5_phase3_guard_charge",
+              "mod_stage5_phase3_guard_fire_start",
+              "mod_stage5_phase3_guard_fire_loop",
+              "mod_stage5_phase3_guard_end"
+            ]
+          },
+          "trial": {
+            "kind": "skill_chain",
+            "target": 6,
+            "countdown": false,
+            "success_state": "mod_stage5_trial_clear3",
+            "clear_carrier": {
+              "templates": [
+                "shot_start3_1",
+                "shot_charge3_1",
+                "shot_fire_start3_1",
+                "shot_fire_loop3_1",
+                "shot_end3_1"
+              ],
+              "names": [
+                "mod_stage5_trial_clear3",
+                "mod_stage5_trial_clear3_charge",
+                "mod_stage5_trial_clear3_fire_start",
+                "mod_stage5_trial_clear3_fire_loop",
+                "mod_stage5_trial_clear3_end"
+              ]
+            }
+          },
+          "resistances": [
+            "ability",
+            "direct_attack",
+            "power_flip",
+            "skill"
+          ]
+        }
+      ]
+    },
+    "fantasy-stage15-eye-native-four-phase-trials": {
+      "description": "幻想连战第15关：保留始龙之眼原生四阶段，在前三阶段依次挂载强化弹射50、直击200、技能连携7，第四阶段保留原生终局",
+      "target": {
+        "advent_event_id": 300098,
+        "quest_no": 3
+      },
+      "source_boss": "eye_dragon_multibattle_boss",
+      "source_phase": "1",
+      "entry_state": "start",
+      "ids": {
+        "boss": "mod_mode15_trial_stage15_eye",
+        "field": "mod_mode15_trial_stage15_eye_field",
+        "zone": "mod_mode15_trial_stage15_eye_zone",
+        "routine": "mod_mode15_trial_stage15_eye"
+      },
+      "actions": {
+        "guard": "battle/action/enemy/action/mod_mode15_trial/mod_mode15_trial_stage15_eye$guard",
+        "legacy": []
+      },
+      "condition_duration_frames": 99999999,
+      "resistance_strength": 100.0,
+      "resistance_layers": 99,
+      "common_trial_buffs": {
+        "debuff_immunity": 1.0
+      },
+      "post_trial_suffix": "__mod_after_trial",
+      "retry": {
+        "interval_frames": 30,
+        "count": 3600
+      },
+      "preserve_native_phases": true,
+      "phases": [
+        {
+          "native_phase": "1",
+          "native_entry_state": "start",
+          "phase_kind": 1,
+          "transition_invincible_end_state": "mod_stage15_phase2_handoff__wait3",
+          "transition_handoff": {
+            "name": "mod_stage15_phase2_handoff",
+            "frames": 180,
+            "segment_frames": 60
+          },
+          "hp_threshold": 0.7,
+          "trial": {
+            "kind": "power_flip",
+            "target": 50,
+            "countdown": false,
+            "success_state": "neutral3"
+          },
+          "native_state_partition": {
+            "pre_states": [
+              "start",
+              "Shields1",
+              "BUFF1",
+              "neutral2",
+              "funnel_start1",
+              "funnel_charge1",
+              "funnel_fire_start1",
+              "funnel_fire_loop1",
+              "funnel_end1"
+            ],
+            "pre_loop_state": "neutral2",
+            "post_entry_state": "neutral3"
+          },
+          "resistances": [
+            "ability",
+            "direct_attack",
+            "power_flip",
+            "skill"
+          ]
+        },
+        {
+          "native_phase": "2",
+          "native_entry_state": "down_neutral_start",
+          "phase_kind": 1,
+          "transition_invincible_end_state": "mod_stage15_phase3_handoff__wait3",
+          "transition_handoff": {
+            "name": "mod_stage15_phase3_handoff",
+            "frames": 180,
+            "segment_frames": 60
+          },
+          "hp_threshold": 0.45,
+          "trial": {
+            "kind": "direct_attack",
+            "target": 200,
+            "countdown": false,
+            "success_state": "neutral51"
+          },
+          "native_state_partition": {
+            "pre_states": [
+              "down_neutral_start",
+              "neutral50",
+              "thunder_origin_start1",
+              "thunder_origin_charge1",
+              "thunder_origin_attack_start1",
+              "thunder_origin_attack_fire_start1",
+              "thunder_origin_attack_fire_loop1",
+              "thunder_origin_end1"
+            ],
+            "pre_loop_state": "neutral50",
+            "post_entry_state": "neutral51"
+          },
+          "resistances": [
+            "ability",
+            "direct_attack",
+            "power_flip",
+            "skill"
+          ]
+        },
+        {
+          "native_phase": "3",
+          "native_entry_state": "down_neutral_end",
+          "phase_kind": 1,
+          "transition_invincible_end_state": "mod_stage15_phase4_handoff__wait3",
+          "transition_handoff": {
+            "name": "mod_stage15_phase4_handoff",
+            "frames": 180,
+            "segment_frames": 60
+          },
+            "trial": {
+            "kind": "skill_chain",
+            "target": 7,
+            "countdown": false,
+            "success_state": "BUFF32"
+          },
+          "native_state_partition": {
+            "pre_states": [
+              "down_neutral_end",
+              "down_neutral_end2",
+              "Big_Shields1",
+              "BUFF31",
+              "wind_origin_start1",
+              "wind_origin_charge1",
+              "wind_origin_cutin1",
+              "wind_origin_attack1",
+              "wind_origin_attack_loop1",
+              "wind_origin_end1"
+            ],
+            "pre_loop_state": "BUFF31",
+            "post_entry_state": "BUFF32"
+          },
+          "resistances": [
+            "ability",
+            "direct_attack",
+            "power_flip",
+            "skill"
+          ]
+        }
+      ]
+    }
+  }
+}

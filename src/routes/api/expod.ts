@@ -4,7 +4,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { getAccountPlayers } from "../../data/domains/account"
 import { getPlayerCharacterSync, getPlayerCharactersSync, updatePlayerCharacterSync } from "../../data/domains/character"
 import { getPlayerItemsSync, givePlayerItemSync } from "../../data/domains/item"
-import { getPlayerSync, updatePlayerSync } from "../../data/domains/player"
+import { adjustPlayerExpPoolSync, getPlayerSync, updatePlayerSync } from "../../data/domains/player"
 import { getSession } from "../../data/domains/session"
 import { characterMaxOverLimits } from "./character";
 import { givePlayerCharactersExpSync } from "../../lib/character";
@@ -12,6 +12,10 @@ import { generateDataHeaders, getServerTime } from "../../utils";
 import { getCharacterDataSync } from "../../lib/assets";
 import { clientSerializeDate } from "../../data/utils";
 import { resolvePlayerIdSync } from "../../data/activeAccount";
+import { getDb } from "../../data/db";
+import { incrementActiveMissionInjectedExpCountSync } from "../../data/domains/active_mission_counters"
+import { validateCharacterStackConversion } from "../../lib/character-stack";
+import { settleDegreeMissionResponse } from "../../lib/mission";
 
 interface InjectExpBody {
     character_id: number,
@@ -56,7 +60,7 @@ const routes = async (fastify: FastifyInstance) => {
         const viewerId = body.viewer_id
         const characterId = body.character_id
         const convertCount = body.number
-        if (isNaN(viewerId) || isNaN(characterId) || isNaN(convertCount)) return reply.status(400).send({
+        if (isNaN(viewerId) || isNaN(characterId)) return reply.status(400).send({
             "error": "Bad Request",
             "message": "Invalid request body."
         })
@@ -90,27 +94,32 @@ const routes = async (fastify: FastifyInstance) => {
             "message": "Player does not own character."
         })
         
-        const afterStack = character.stack - convertCount
-        if (0 > afterStack) return reply.status(400).send({
+        const validationError = validateCharacterStackConversion(
+            character.stack,
+            convertCount,
+            character.protection,
+        )
+        if (validationError) return reply.status(400).send({
             "error": "Bad Request",
-            "message": "Not enough stack."
+            "message": validationError
         })
+
+        const afterStack = character.stack - convertCount
 
         // get amounts to add
         const rarity = characterAssetData.rarity
         const increaseExp = rarityStackConvertExp[rarity] * convertCount
         const increaseItemCount = rarityStackConvertItemCount[rarity] * convertCount
 
-        const afterExp = player.expPool + increaseExp
-
-        // update player
-        updatePlayerSync({
-            id: playerId,
-            expPool: afterExp
-        })
-
-        // add item
-        const afterItemCount = givePlayerItemSync(playerId, rewardItemId, increaseItemCount)
+        let afterExp = player.expPool
+        let afterItemCount = getPlayerItemsSync(playerId)[String(rewardItemId)] ?? 0
+        getDb().transaction(() => {
+            updatePlayerCharacterSync(playerId, characterId, { stack: afterStack })
+            const adjustedExp = adjustPlayerExpPoolSync(playerId, increaseExp, 'stack_to_exp')
+            if (adjustedExp === null) throw new Error(`Failed to update EXP pool for player ${playerId}`)
+            afterExp = adjustedExp
+            afterItemCount = givePlayerItemSync(playerId, rewardItemId, increaseItemCount)
+        })()
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
@@ -130,7 +139,7 @@ const routes = async (fastify: FastifyInstance) => {
                         "exp": character.exp,
                         "exp_total": character.exp,
                         "create_time": clientSerializeDate(character.joinTime),
-                        "update_time": clientSerializeDate(character.updateTime),
+                        "update_time": clientSerializeDate(new Date()),
                         "join_time": clientSerializeDate(character.joinTime)
                     }
                 ],
@@ -172,10 +181,11 @@ const routes = async (fastify: FastifyInstance) => {
         let totalExp = 0
         let totalStarGrains = 0
         let processedCount = 0
+        const conversions: { characterId: number, stack: number }[] = []
 
         for (const [characterIdStr, character] of Object.entries(allCharacters)) {
             const characterId = parseInt(characterIdStr)
-            if (character.stack <= 0) continue
+            if (character.stack <= 0 || character.protection) continue
 
             const charAsset = getCharacterDataSync(characterId)
             if (!charAsset) continue
@@ -191,8 +201,7 @@ const routes = async (fastify: FastifyInstance) => {
             totalExp += addExp
             totalStarGrains += addStarGrain
 
-            updatePlayerCharacterSync(playerId, characterId, { stack: 0 })
-            character.stack = 0
+            conversions.push({ characterId, stack })
 
             modifiedCharacters.push({
                 "viewer_id": viewerId,
@@ -225,13 +234,19 @@ const routes = async (fastify: FastifyInstance) => {
             })
         }
 
-        const newExpPool = player.expPool + totalExp
-        updatePlayerSync({ id: playerId, expPool: newExpPool })
-
+        let newExpPool = player.expPool
         let newStarGrainTotal = 0
-        if (totalStarGrains > 0) {
-            newStarGrainTotal = givePlayerItemSync(playerId, rewardItemId, totalStarGrains)
-        }
+        getDb().transaction(() => {
+            for (const conversion of conversions) {
+                updatePlayerCharacterSync(playerId, conversion.characterId, { stack: 0 })
+            }
+            const adjustedExp = adjustPlayerExpPoolSync(playerId, totalExp, 'bulk_stack_to_exp')
+            if (adjustedExp === null) throw new Error(`Failed to update EXP pool for player ${playerId}`)
+            newExpPool = adjustedExp
+            if (totalStarGrains > 0) {
+                newStarGrainTotal = givePlayerItemSync(playerId, rewardItemId, totalStarGrains)
+            }
+        })()
 
         const items = getPlayerItemsSync(playerId)
         if (totalStarGrains > 0) {
@@ -298,28 +313,33 @@ const routes = async (fastify: FastifyInstance) => {
         
         const playerAfterExpPool = player.expPool - addExp
 
-        // decrease player exp
-        updatePlayerSync({
-            id: playerId,
-            expPool: playerAfterExpPool
-        })
+        const rewardResult = getDb().transaction(() => {
+            // 经验池扣除、角色经验写入和首次注入动作计数必须原子提交。
+            updatePlayerSync({
+                id: playerId,
+                expPool: playerAfterExpPool,
+            })
+            const result = givePlayerCharactersExpSync(playerId, [characterId], addExp, false)
+            incrementActiveMissionInjectedExpCountSync(playerId)
+            return result
+        })()
 
-        // add exp to the character
-        const rewardResult = givePlayerCharactersExpSync(playerId, [characterId], addExp, false)
+        const responseData: Record<string, any> = {
+            "add_exp_list": rewardResult.add_exp_list,
+            "character_list": rewardResult.character_list,
+            "user_info": {
+                "exp_pool": rewardResult.exp_pool,
+                "exp_pooled_time": getServerTime(player.expPooledTime)
+            },
+        }
+        settleDegreeMissionResponse(playerId, viewerId, responseData, undefined, [5, 44], [characterId])
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
             "data_headers": generateDataHeaders({
                 viewer_id: viewerId
             }),
-            "data": {
-                "add_exp_list": rewardResult.add_exp_list,
-                "character_list": rewardResult.character_list,
-                "user_info": {
-                    "exp_pool": rewardResult.exp_pool,
-                    "exp_pooled_time": getServerTime(player.expPooledTime)
-                },
-            }
+            "data": responseData
         })
     })
 }

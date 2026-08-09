@@ -3,31 +3,28 @@
 
 ## Signup 空账号 ✅ 已修复 (2026-06-27)
 
-**症状**: 部分客户端每次访问生成 6 个空账号（account 有记录、player 为空），重新登录再生成 6 个。
+## 任务系统仍未完成的分类
 
-**根因**: `insertPlayerSync` 中 INSERT 列顺序与 VALUES 数组不匹配，`total_stamina_used`/`total_powerflips`/`total_dashes` 与 `account_id`/`tutorial_*` 之间 4 列错位。客户端 `RETRY_LIMIT=5` 放大为 6 次失败 signup。
+任务模块当前仍只能标记为“部分完成”：
 
-**修复**:
-- `insertPlayerSync` 改为命名绑定（`@column`），列名与值在同一处，消除顺序错位风险
-- `insertDefaultPlayerSync` 加事务包裹（原子性）
-- `getDefaultPlayerData` 补 `timeOffset: null`
-- `tool.ts` signup 关键区改为同步调用（防御性）
+1. category 3 的复杂活动谓词仍未全部实现；QuestRange、评级、房主/成员、救援来源和客户端检查必须逐项对齐。
+2. Collect-item 已使用累计获得量并按 event ID 隔离；Degree 已覆盖 507 条有权威事实的任务，其余 781 条继续持久化 fallback。
+3. category 1、2、10 的普通、每日、每周自动结算已有服务端测试，但奖励提示、跨日/跨周重置和重启持久化尚未通过 CN 客户端验收。
+4. 角色觉醒已知配对、种族、指定关卡和空羁绊错误已经修正，但 144 条任务条件仍不能标记为全部正确。
 
 详见 `docs/status/changelog.md` 第十六节。
 
-## C8601 / C2262 / 日期弹框 ✅ 已修复
+## Pass 剩余边界
 
-**历史问题链：**
-1. **C8601 key=10** — bundle stub 缺少 character key → 服务端改用 k_id=2（code=10）默认角色 + CDN 全量表加载 → 修复
-2. **C2262 角色ID10未拥有** — 默认队伍引用 code=10 但角色不存在 → 默认队伍与角色一致 → 修复
-3. **"日期变了"弹框循环** — `stubMsgpackReply` 硬编码 `Date.now()` 返回系统时间，与 `getServerTime()` 模拟时间不一致 → 改用 `getServerTime()` → 修复
+PassDaily、PassWeek、PassEvent 主数据、核心进度、点数、6 条 type 23 活动任务和等级奖励已经接入。周常 type 20 救援、type 85 战斗表情和购买流程仍未实现，且尚未通过 CN 客户端全流程验收。详见[修行之道](../systems/pass-card.md)。
 
 **最终方案：**
 - `servertime` = 模拟时间（所有端点统一）
 - 弹框仅在时间变更时出现一次（正常行为）
 - 之后不再弹框
 
-## 标题画面 logo 缺失（8100）
+`/load`、邮件、任务、Active Mission 及单人/多人结算端点会按当前存档未领取邮件数动态计算 `mail_arrived`，
+但装备、抽卡、商店和部分养成响应仍硬编码 `false`。因此通知语义尚未在全部业务响应中统一。
 
 **症状**: 首次启动（未下载 CDN）时标题画面报 `ERR:C8100|未找到素材 scene/title_bundled/logo/logo.movie.amf3.deflate`。
 

@@ -143,9 +143,10 @@ export interface RawPlayerCharacterManaNode {
 export enum PartyCategory {
     EMPTY,
     NORMAL,
-    EMPTY2,
-    EMPTY3,
-    EVENT
+    CARNIVAL,
+    RAID,
+    RUSH,
+    EVENT = RUSH
 }
 
 export interface RawPlayerPartyOptions {
@@ -222,22 +223,26 @@ export interface RawPlayerQuestProgress {
     section: number
     quest_id: number
     finished: number
+    host_finished?: number
     unlocked: number
     high_score?: number
     clear_rank?: number
     best_elapsed_time_ms?: number
     leader_character_id?: number
     multi_clear_count?: number
+    s_plus_reward_received?: number
 }
 
 export interface PlayerQuestProgress {
     questId: number
     finished: boolean
+    hostFinished?: boolean
     highScore?: number
     clearRank?: number
     bestElapsedTimeMs?: number
     leaderCharacterId?: number
     multiClearCount?: number
+    sPlusRewardReceived?: boolean
     unlocked?: boolean
 }
 
@@ -637,6 +642,7 @@ export interface UserEquipment {
 export interface UserQuestProgress {
     quest_id: number
     finished: boolean
+    host_finished?: boolean
     unlocked?: boolean
     high_score?: number
     best_elapsed_time_ms?: number
@@ -714,7 +720,7 @@ export interface ClientPlayerData {
     mail_arrived: boolean
     user_periodic_reward_point_list: PlayerPeriodicRewardPoint[]
     all_active_mission_list: Record<string, PlayerActiveMission>
-    cleared_collect_item_event_mission_list: unknown[]
+    cleared_collect_item_event_mission_list: Record<string, number>
     box_gacha_list: Record<string, UserBoxGacha[]>
     gacha_campaign_list: UserGachaCampaign[]
     purchased_times_list: Object
@@ -746,6 +752,7 @@ export interface MergedPlayerData {
     drawnQuestList: PlayerDrawnQuest[],
     periodicRewardPointList: PlayerPeriodicRewardPoint[],
     allActiveMissionList: Record<string, PlayerActiveMission>,
+    categoryMissionList?: Record<string, Record<string, PlayerActiveMission>>,
     boxGachaList: Record<string, PlayerBoxGacha[]>,
     purchasedTimesList: Record<string, number>,
     startDashExchangeCampaignList: PlayerStartDashExchangeCampaign[],
@@ -774,6 +781,11 @@ export interface PlayerCarnivalEventRecord {
     previousScore: number | null
     previousCharacterIds: (number | null)[] | null
     previousUnisonCharacterIds: (number | null)[] | null
+}
+
+export interface PlayerCarnivalRewardClaim {
+    eventId: number
+    rewardId: number
 }
 
 // Active quest (unfinished battle recovery)

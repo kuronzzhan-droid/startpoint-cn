@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "description": "Keys that must survive in the final packed tables before any newer client patch is published.",
+  "tables": {
+    "master/shop/general_shop.orderedmap": {
+      "required_keys": [
+        "9100001",
+        "9100002",
+        "9100003",
+        "9100004",
+        "9100005",
+        "9100006",
+        "9100007",
+        "9100008",
+        "9100009",
+        "9100010",
+        "9100011"
+      ]
+    },
+    "master/shop/event_item_shop.orderedmap": {
+      "required_keys": [
+        "5017",
+        "9700301",
+        "9700302",
+        "9700303",
+        "9700304",
+        "9700305",
+        "9700306",
+        "9700307",
+        "9700308",
+        "9700309",
+        "9700310",
+        "9700311"
+      ]
+    }
+  }
+}

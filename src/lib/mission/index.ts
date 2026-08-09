@@ -7,67 +7,60 @@ export type { MissionComputer, CategoryContext, ComputerRegistry, PlayerQuestPro
 export { getComputer } from "./registry"
 
 // Stages
-export { getMissionIdsByCategory, getCurrentStage, getCompletedStageNumbers, getMissionStageIds } from "./stages"
+export { getMissionIdsByCategory, getCurrentStage, getCompletedStageNumbers, getMissionStageIds, getMissionFinalTargetProgress, isMissionProgressComplete } from "./stages"
 
 // Rewards
-export type { ActiveMissionReward, MissionRewardStageDefinition } from "./rewards"
-export {
-    getActiveMissionRewards,
-    getAwakeMissionRewards,
-    getCollectMissionRewards,
-    getDailyMissionRewards,
-    getDegreeMissionRewards,
-    getEventMissionRewards,
-    getMissionRewardStageDefinition,
-    getRegularMissionRewards,
-    getWeeklyMissionRewards,
-} from "./rewards"
+export type { ActiveMissionReward, AwakeMissionRewardStageDefinition, AwakeMissionSpecialReward, MissionRewardStageDefinition } from "./rewards"
+export { getActiveMissionRewards, getAwakeMissionRewards, getAwakeMissionRewardStageDefinition, getCollectMissionRewards, getDailyMissionRewards, getDegreeMissionRewards, getEventMissionRewards, getMissionRewardStageDefinition, getRegularMissionRewards, getWeeklyMissionRewards } from "./rewards"
+export type { MissionSettlementInfo, MissionSettlementResult, MissionSettlementScope } from "./settlement"
+export { settleMissionCategories, settleMissionCategoriesAsync } from "./settlement"
+export { mergeMissionSettlementResponse } from "./response"
+export { settleDegreeMissionResponse } from "./degree-response"
+export { getDegreeMissionIdsForConditionTypes } from "./computer-degree"
 
 // Patterns (for update_mission_progress)
 export type { PatternMatch } from "./patterns"
 export { getMissionsByPattern, getMissionDefinition, getMissionPattern, isComputablePattern, isMissionEnabledAt } from "./patterns"
 
-// Evaluator
-export type { MissionEvaluationInput, MissionEvaluationResult } from "./evaluator"
-export { evaluateMissionCounterProgress } from "./evaluator"
+export type { MissionRewardClaimContext, MissionRewardClaimValidation, ValidatedMissionRewardClaim } from "./claims"
+export { validateMissionRewardClaims } from "./claims"
+
+export type {
+    ActiveMissionAvailabilityContext,
+    ActiveMissionProgressSettlement,
+    ActiveMissionProgressSettlementOptions,
+    ActiveMissionProgressState,
+    ParsedActiveMissionDefinition,
+    ParsedActiveMissionEventDefinition,
+} from "./active-core"
+export {
+    getActiveMissionEventReleasePhase,
+    isActiveMissionAvailable,
+    isActiveMissionClaimable,
+    parseActiveMissionDefinition,
+    parseActiveMissionEventDefinition,
+    parseCnMasterDateTime,
+    parseJstDateTime,
+    settleActiveMissionProgress,
+} from "./active-core"
+export type { ActiveMissionEventEligibilityContext, ReconcileActiveMissionFactsInput } from "./active-reconciliation"
+export { reconcileActiveMissionFacts, resolveActiveMissionQuestIds } from "./active-reconciliation"
 
 // Character queries
 export { getCharacterStoryQuestIds, getCharacterIdFromMission } from "./character-queries"
 
 // Awake summary (for /load response)
 export { computeAwakeSummary } from "./compute-awake-summary"
+export type { AwakeMissionComputedProgress, AwakeMissionInfo, AwakeMissionSettlementResult } from "./awake-settlement"
+export { getAwakeBattleMissionIds, settleAwakeMissionCandidates, settleAwakeMissionRewards } from "./awake-settlement"
+export type { AwakeUnlockProgress, AwakeUnlockReconciliationResult } from "./awake-unlock"
+export { reconcileAwakeUnlocks, reconcileAwakeUnlocksFromProgress } from "./awake-unlock"
+export { reconcileAwakeUnlockCharacterList } from "./awake-unlock-response"
+export { collectPartyCharacterIds, summarizeBattleStatistics } from "./events"
+export { recordBattleMissionDimensionsSafe } from "./battle-dimensions"
 
 // Degree helpers
 export { getTargetDegree } from "./computer-degree"
 
 // Filter (active mission ID filtering, C8601 prevention)
 export { isActiveMissionId, filterToActiveMissions } from "./filter"
-
-// Mission counters
-export type {
-    MissionCounterPeriod,
-    MissionCounterQualifierValue,
-    MissionCounterQuery,
-    MissionCounterRow,
-    MissionCounterScopeType,
-} from "./counters"
-export {
-    addMissionCounterSync,
-    getMissionCounterDeltaSync,
-    getMissionCounterSnapshotValueSync,
-    getMissionCounterValueSync,
-    makeMissionCounterKey,
-    normalizeMissionCounterQualifier,
-    serializeMissionCounterQualifier,
-    setMissionCounterMaxSync,
-    snapshotAllMissionCountersSync,
-} from "./counters"
-
-// Mission events and battle dimension writer
-export type { BattleFinishMissionEvent, BattleStatisticsSummary, MissionProgressEvent } from "./events"
-export { collectPartyCharacterIds, summarizeBattleStatistics } from "./events"
-export { recordBattleMissionDimensions, recordBattleMissionDimensionsSafe } from "./battle-dimensions"
-
-// Active mission reward claims
-export type { MissionRewardClaimValidation, ValidatedMissionRewardClaim } from "./claims"
-export { validateMissionRewardClaims } from "./claims"

@@ -31,11 +31,17 @@ function handleBattleNotify(socket: net.Socket, data: unknown): void {
             }
             break
         }
-        case 1: { // Finalize
+        case 1: { // LevelNext (CN dual-boss battle)
+            if (client) {
+                sessionManager.beginBattleLevelNext(client.connectionId, client.roomNumber)
+            }
+            break
+        }
+        case 2: { // Finalize
             if (client) sessionManager.sendJson(client.socket, [1, [2]])
             break
         }
-        case 2: { // Measurement
+        case 3: { // Measurement
             if (client) {
                 const params = data[1]
                 const frame = params?.[0] ?? 0
@@ -44,7 +50,9 @@ function handleBattleNotify(socket: net.Socket, data: unknown): void {
             }
             break
         }
-        case 4: // Heartbeat
+        case 4: // LineSpeedWarning
+            break
+        case 5: // Heartbeat
             if (client) sessionManager.sendJson(client.socket, [1, [3, 0, 0, Date.now()]])
             break
         default:
@@ -55,6 +63,8 @@ function handleBattleNotify(socket: net.Socket, data: unknown): void {
 export function handleBattleMessage(socket: net.Socket, data: unknown): void {
     if (!Array.isArray(data)) return
     const tag = data[0] as number
+    const activityClient = findBattleClientBySocket(socket)
+    if (activityClient) sessionManager.noteBattleActivity(activityClient.connectionId)
 
     switch (tag) {
         case 0: // Notify

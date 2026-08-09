@@ -4,17 +4,10 @@ import { BattleQuest, QuestCategory } from "../../types"
 import type { PlayerActiveQuest } from "../../../data/types"
 import type { ActiveQuest } from "../../../routes/api/singleBattleQuest"
 
-/**
- * Where the ActiveQuest backing a finish/continue request came from.
- *
- * `/single_battle_quest/start` is what normally registers it, but three deployments break
- * that assumption and used to end in `400 No active quest to finish.`: a server restart
- * mid-battle (the in-memory table is lost), a multi-process deployment (start and finish
- * land on different workers), and patched clients that call finish without calling start.
- */
+/** Where the active quest backing a finish/continue request came from. */
 export type ActiveQuestSource = "memory" | "database" | "rebuilt"
 
-/** The request-body fields a rebuild needs when no registration survives. */
+/** Request fields needed to rebuild a missing active-quest registration. */
 export interface ActiveQuestHint {
     quest_id: number
     category: number
@@ -31,24 +24,20 @@ export interface ResolveActiveQuestOptions {
     playerId: number
     hint: ActiveQuestHint
     memory: Record<number, ActiveQuest>
-    /** Defaults to the inverse of {@link isStrictFinishMode}. */
+    /** Defaults to the inverse of isStrictFinishMode. */
     allowRebuild?: boolean
     readPersisted?: (playerId: number) => PlayerActiveQuest | null
     findQuest?: (category: QuestCategory, questId: number) => BattleQuest | null
 }
 
-/**
- * Rush and raid battles start on their own endpoints, which register the server-side
- * QuestCategory (RUSH_EVENT 24 / RAID_EVENT 23). The client numbers those categories
- * differently, so a rebuild that only trusted `body.category` would look the quest up in
- * the wrong table — client 18 resolves to WORLD_STORY_EVENT here.
- */
+// Rush/raid clients can report a client-side category number that differs from
+// the server category. Try the reported category first, then the safe fallbacks.
 const REBUILD_FALLBACK_CATEGORIES: QuestCategory[] = [
     QuestCategory.RUSH_EVENT,
     QuestCategory.RAID_EVENT,
 ]
 
-/** `QUEST_FINISH_STRICT` restores the pre-compat behaviour: no rebuild from the body. */
+/** Set QUEST_FINISH_STRICT=1 to disable request-body rebuilding. */
 export function isStrictFinishMode(): boolean {
     const raw = (process.env.QUEST_FINISH_STRICT ?? "").trim().toLowerCase()
     return raw === "1" || raw === "true" || raw === "yes"
@@ -58,11 +47,6 @@ function isBattleQuest(quest: BattleQuest | null): quest is BattleQuest {
     return quest !== null && "rankPointReward" in quest
 }
 
-/**
- * Picks the server-side category a client-reported category/quest pair refers to. The
- * client's own number wins when it resolves, so quests that exist in both numbering
- * schemes keep behaving the way `/start` registered them.
- */
 export function resolveRebuildCategory(
     clientCategory: number,
     questId: number,
@@ -104,8 +88,7 @@ function rebuildFromHint(
     return {
         questId: hint.quest_id,
         category: resolved.category,
-        // Nothing was reserved at start, so a rebuild must not spend a boost point or
-        // report an entry item back to the client.
+        // A rebuilt entry did not reserve boost points or entry items at start.
         useBossBoostPoint: false,
         useBoostPoint: false,
         isAutoStartMode: false,
@@ -117,17 +100,14 @@ function rebuildFromHint(
 }
 
 /**
- * Resolves the quest a finish/continue request refers to: the in-memory table first (an
- * untouched hit keeps the existing start→finish and rush paths byte-for-byte), then the
- * persisted row, then a minimal quest rebuilt from the request body.
- *
- * Returns null only when strict mode is on, or when the body names no quest that exists.
+ * Resolve from memory, then the persisted row, then (unless strict mode is
+ * enabled) rebuild a minimal active quest from the request body.
  */
 export function resolveActiveQuest(options: ResolveActiveQuestOptions): ResolvedActiveQuest | null {
     const { playerId, hint, memory } = options
     const readPersisted = options.readPersisted ?? getPlayerActiveQuestSync
-    const findQuest = options.findQuest ??
-        ((category, questId) => getQuestFromCategorySync(category, questId) as BattleQuest | null)
+    const findQuest = options.findQuest
+        ?? ((category, questId) => getQuestFromCategorySync(category, questId) as BattleQuest | null)
     const allowRebuild = options.allowRebuild ?? !isStrictFinishMode()
 
     const cached = memory[playerId]
@@ -142,7 +122,6 @@ export function resolveActiveQuest(options: ResolveActiveQuestOptions): Resolved
     const persisted = readPersisted(playerId)
     if (persisted !== null) {
         if (persisted.questId === hint.quest_id || !allowRebuild) return usePersisted(persisted)
-        // A row for a different quest is a leftover the client already moved on from.
         const rebuilt = rebuildFromHint(hint, findQuest)
         if (rebuilt === null) return usePersisted(persisted)
         console.warn(`[QUEST-RESOLVE] player ${playerId} persisted quest ${persisted.questId} != requested ${hint.quest_id}, rebuilding from request`)

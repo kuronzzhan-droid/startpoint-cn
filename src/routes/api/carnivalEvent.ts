@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { getPlayerCarnivalEventRecordsSync } from "../../data/domains/carnivalEvent"
-import { getPlayerPartyGroupListSync, insertPlayerPartyGroupListSync } from "../../data/domains/party"
+import { getPlayerCarnivalEventRecordsSync, migrateCarnivalEventFolderRecordsSync } from "../../data/domains/carnivalEvent"
+import { getPlayerPartyGroupListSync, insertPlayerPartyGroupListSync, updatePlayerPartySync } from "../../data/domains/party"
 import { getPlayerSync } from "../../data/domains/player"
 import { getSession } from "../../data/domains/session"
 import { resolvePlayerIdSync } from "../../data/activeAccount";
@@ -15,29 +15,57 @@ interface IndexBody {
     api_count: number
 }
 
-function buildCarnivalPartyGroupList(playerId: number): any[] {
-    // 1. Try to get saved EVENT party groups
-    let groups = getPlayerPartyGroupListSync(playerId, PartyCategory.EVENT)
+// The Carnival party selector is a fixed-width three-tab view.  Returning the
+// generic twelve party groups compresses the labels until the tab decoration
+// overlaps "SET" and makes groups 10-12 wrap onto two lines.
+const CARNIVAL_PARTY_GROUP_COUNT = 3
 
-    // 2. First time - create empty EVENT defaults (independent from NORMAL pool)
-    if (Object.keys(groups).length === 0) {
-        groups = getDefaultPlayerPartyGroupsSync(PartyCategory.EVENT)
-        insertPlayerPartyGroupListSync(playerId, groups)
+function buildCarnivalPartyGroupList(playerId: number): any[] {
+    // The client saves Haniwa Carnival parties with category 2.  Reading the
+    // generic event category (4) returned a different default pool on every
+    // visit, even though /party/edit had correctly persisted the changes.
+    const carnivalCategory = PartyCategory.CARNIVAL
+    let groups = getPlayerPartyGroupListSync(playerId, carnivalCategory)
+
+    // /party/edit creates only the slots a player has touched.  Complete the
+    // official 3x10 Carnival pool without overwriting saved compositions.
+    // Extra groups from the earlier twelve-group bug remain in the database;
+    // they are deliberately ignored here instead of being deleted.
+    const defaults = getDefaultPlayerPartyGroupsSync(carnivalCategory)
+    const missingGroups: typeof defaults = {}
+    let insertedMissingSlots = false
+    for (const [groupId, defaultGroup] of Object.entries(defaults)) {
+        if (Number(groupId) > CARNIVAL_PARTY_GROUP_COUNT) continue
+        const existingGroup = groups[groupId]
+        if (!existingGroup) {
+            missingGroups[groupId] = defaultGroup
+            continue
+        }
+        for (const [slot, defaultParty] of Object.entries(defaultGroup.list)) {
+            if (existingGroup.list[slot]) continue
+            updatePlayerPartySync(playerId, Number(slot), defaultParty, Number(groupId))
+            insertedMissingSlots = true
+        }
+    }
+    if (Object.keys(missingGroups).length > 0) {
+        insertPlayerPartyGroupListSync(playerId, missingGroups)
+    }
+    if (insertedMissingSlots || Object.keys(missingGroups).length > 0) {
+        groups = getPlayerPartyGroupListSync(playerId, carnivalCategory)
     }
 
     const serialized = serializePartyGroupList(groups);
     // Convert to array format the client expects
     const result: any[] = [];
     for (const [groupId, group] of Object.entries(serialized)) {
+        const parsedGroupId = Number(groupId)
+        if (parsedGroupId < 1 || parsedGroupId > CARNIVAL_PARTY_GROUP_COUNT) continue
         const partyList: any[] = [];
         const list = (group as any).list || {};
         for (const [partyId, party] of Object.entries(list)) {
             const p = party as any;
             partyList.push({
-                // global PartyId ((group-1)*10+slot): client stores all groups'
-                // parties in one flat map keyed by party_id — per-slot ids
-                // collide across groups (same bug as rush /party)
-                "party_id": (parseInt(groupId) - 1) * 10 + parseInt(partyId),
+                "party_id": parseInt(partyId),
                 "party_name": p.name || "Party",
                 "party_edited": p.edited || false,
                 "character_ids": p.character_ids || [null, null, null],
@@ -48,7 +76,7 @@ function buildCarnivalPartyGroupList(playerId: number): any[] {
             });
         }
         result.push({
-            "party_group_id": parseInt(groupId),
+            "party_group_id": parsedGroupId,
             "party_group_color_id": (group as any).color_id || 0,
             "party_list": partyList
         });
@@ -82,11 +110,17 @@ const routes = async (fastify: FastifyInstance) => {
 
         // Build records from DB
         const eventId = body.event_id
+        // Normalize historical 1..9 difficulty rows into the three displayed
+        // folders for every elemental Haniwa Carnival, not only event 250606.
+        migrateCarnivalEventFolderRecordsSync(eventId)
         const dbRecords = getPlayerCarnivalEventRecordsSync(playerId, eventId)
         const records = dbRecords.map(r => ({
             folder_id: r.folderId,
             best_score: r.bestScore,
-            previous_score: r.previousScore,
+            // This screen represents the retained per-folder record.  Sending
+            // the most recent lower attempt here makes the graph look as if a
+            // high score was overwritten.
+            previous_score: r.bestScore,
             previous_character_ids: r.previousCharacterIds ?? [null, null, null],
             previous_unison_character_ids: r.previousUnisonCharacterIds ?? [null, null, null],
         }))

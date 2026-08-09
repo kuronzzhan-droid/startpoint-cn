@@ -2,17 +2,6 @@
 
 世界弹射物语(World Flipper)CN(雷霆 Leiting)版本的服务端模拟器。
 
-> 🎮 **本分支(`release/modes-20260714`)是自制内容发布分支**,在上游服务端基础上加入:
-> 「深渊连战」roguelike 活动(Rush 700099) · 15 把深渊武器 · 八位自制/改造角色；当前增量链尾为 1.4.312。
-
-## 我该下载什么?
-
-| 你是谁 | 需要什么 |
-|---|---|
-| **想进别人的服玩** | 不用下载本仓库。只向服主要他**按本服地址重签的完整五合一 APK**和账号说明；不要混用旧 APK。角色/模式资源由所连接服务器下发到 1.4.312 |
-| **想自己开服**(玩全部内容,含八位自制/改造角色) | **三步**:① 下载 [deploy.ps1](deploy.ps1) 运行(自动装 Git/Node → clone → 构建 → 起服 → 自检)→ ② 自备基础 CDN ~11GB 放入 `.cdn\cn\`(唯一手工环节,脚本会指引)→ ③ 按 [保姆级部署攻略](docs/部署攻略.md) 下载并校验[完整五合一基座 APK](https://github.com/kuronzzhan-droid/startpoint-cn/releases/download/client-base-v2.0/WorldFlipper-abyss-v2.apk),只改成自己的服务器地址后重签。技术参考/存量服升级/救援见 [docs/self-host-modes.md](docs/self-host-modes.md);mod 增量内容(1.4.54→**1.4.312** 现役态)已随仓库自带,clone 即得 |
-| **想改数据 / 做自己的 mod** | 数据修改工具链:[mod-tools/](mod-tools/)(独立仓 [startpoint-cn-mod-tools](https://github.com/kuronzzhan-droid/startpoint-cn-mod-tools),带全套文档与《新角色制作心得》) |
-
 ## 功能状态
 
 已实现(部分端点沿用国际服设计,对 CN 的通用性尚未验证):
@@ -111,16 +100,10 @@ bash scripts/start-cn.sh
 - `CDN_BASE_URL` — `http://<你的LAN_IP>:<端口>/patch/cn`。
 - `CN_RES_VERSION` — 须与客户端 resourceVersion 一致(当前 1.4.54)。
 - `DROP_MULTIPLIER` / `NPC_*` — 测试与联机调参。
-- `QUEST_FINISH_STRICT` — 结算严格模式，默认关闭。关闭时缺少开战登记也能结算（重启/多进程/客户端没调 `/start`），开启则恢复旧的 400 行为。
 
-## 客户端改造
+## 客户端改造(最小功能)
 
-> **要玩完整自制内容,只做“免登录 + 重定向”不够。** 深渊武器门控、赛瑞斯双形态和
-> 通用像素缩放都是必需客户端补丁；漏掉像素 P-code 会让杰拉德、基诺维等像素小人异常放大。
-
-新手请直接走 [保姆级攻略的完整五合一基座路线](docs/部署攻略.md#2-把完整客户端基座指向你自己的服务器):
-核对固定 SHA256,用 `repoint_build.py` 只换成自己的 `IPv4:端口`并重签。以下只记录官方
-APK 的最小连接改造,**不能作为完整内容发行包**。详见 [`client-patch/`](./client-patch/README.md):
+连接本服务需对官方 APK 打两处改动(免登录 + 重定向到本服),详见 [`client-patch/`](./client-patch/README.md):
 
 - **免登录** — `pinball/config/core/DevConfig.as`:`sdkDummy = false` → `true`
 - **重定向到本服** — `pinball/config/gbits/DevConfig_gf_android.as`:域名 → 你的服务器,`"https"` → `"http"`

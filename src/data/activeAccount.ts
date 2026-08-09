@@ -7,7 +7,10 @@ import * as path from "path";
 import { setServerTimeOffset } from "../utils";
 import { getAccountPlayersSync } from "./domains/account";
 
-const STATE_FILE = path.join(__dirname, "..", "..", ".database", "active_account.json");
+const STATE_DIRECTORY = process.env.DATA_DIR
+    ? path.resolve(process.env.DATA_DIR)
+    : path.join(__dirname, "..", "..", ".database");
+const STATE_FILE = path.join(STATE_DIRECTORY, "active_account.json");
 
 interface WebState {
     activePlayerId: number | null;
@@ -111,6 +114,31 @@ export function getAccountDefaultPlayer(accountId: number): number | null {
 export function saveAccountDefaultPlayer(accountId: number, playerId: number): void {
     const state = readState();
     state.defaultPlayers[accountId] = playerId;
+    writeState(state);
+}
+
+/**
+ * Removes all persisted management-panel references to a deleted account.
+ */
+export function removeDeletedAccountFromState(accountId: number, playerIds: number[]): void {
+    removeDeletedAccountsFromState([{ accountId, playerIds }]);
+}
+
+/**
+ * Removes persisted references for a cleanup batch using one atomic state write.
+ */
+export function removeDeletedAccountsFromState(
+    entries: { accountId: number; playerIds: number[] }[]
+): void {
+    if (entries.length === 0) return;
+    const state = readState();
+    for (const { accountId, playerIds } of entries) {
+        delete state.defaultPlayers[accountId];
+        if (state.selectedAccountId === accountId) state.selectedAccountId = null;
+        if (state.activePlayerId !== null && playerIds.includes(state.activePlayerId)) {
+            state.activePlayerId = null;
+        }
+    }
     writeState(state);
 }
 

@@ -6,8 +6,8 @@ import type { MissionComputer, CategoryContext } from "./types"
 function buildMinimal(playerId: number, category: number): CategoryContext {
     const player = getPlayerSync(playerId)!
     return {
-        playerId,
         category,
+        playerId,
         player,
         questProgress: {},
         totalQuestClears: 0,

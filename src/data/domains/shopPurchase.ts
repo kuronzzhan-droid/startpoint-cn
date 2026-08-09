@@ -33,11 +33,23 @@ export function getPlayerShopPurchaseCountSync(playerId: number, shopItemId: num
 }
 
 export function addPlayerShopPurchaseSync(playerId: number, shopItemId: number): number {
+    return addPlayerShopPurchaseCountSync(playerId, shopItemId, 1)
+}
+
+export function addPlayerShopPurchaseCountSync(
+    playerId: number,
+    shopItemId: number,
+    count: number
+): number {
+    if (!Number.isSafeInteger(count) || count <= 0) {
+        throw new RangeError(`Shop purchase count must be a positive safe integer: ${count}`)
+    }
+
     getDb().prepare(`
         INSERT INTO players_shop_purchases (player_id, shop_item_id, count)
-        VALUES (?, ?, 1)
-        ON CONFLICT(player_id, shop_item_id) DO UPDATE SET count = count + 1
-    `).run(playerId, shopItemId)
+        VALUES (?, ?, ?)
+        ON CONFLICT(player_id, shop_item_id) DO UPDATE SET count = count + excluded.count
+    `).run(playerId, shopItemId, count)
 
     return getPlayerShopPurchaseCountSync(playerId, shopItemId)
 }

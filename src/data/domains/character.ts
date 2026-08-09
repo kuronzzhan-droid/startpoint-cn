@@ -108,6 +108,7 @@ export function getPlayerCharacterSync(
     SELECT mana_board_index, status, character_id
     FROM players_characters_bond_tokens
     WHERE player_id = ? AND character_id = ?
+    ORDER BY mana_board_index
     `).all(playerId, characterId) as RawPlayerCharacterBondToken[]
 
     return buildPlayerCharacter(
@@ -139,6 +140,7 @@ export function getPlayerCharactersSync(
     SELECT mana_board_index, status, character_id
     FROM players_characters_bond_tokens
     WHERE player_id = ?
+    ORDER BY character_id, mana_board_index
     `).all(playerId) as RawPlayerCharacterBondToken[]
 
     const bondBuckets: Record<string, PlayerCharacterBondToken[]> = {}

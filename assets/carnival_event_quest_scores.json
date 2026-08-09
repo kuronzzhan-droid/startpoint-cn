@@ -332,49 +332,49 @@
   "250606002": {
     "difficulty_score": 55,
     "time_limit_ms": 72000,
-    "folder_id": 2,
+    "folder_id": 1,
     "event_id": 250606
   },
   "250606003": {
     "difficulty_score": 80,
     "time_limit_ms": 54000,
-    "folder_id": 3,
+    "folder_id": 1,
     "event_id": 250606
   },
   "250606004": {
     "difficulty_score": 20,
     "time_limit_ms": 108000,
-    "folder_id": 4,
+    "folder_id": 2,
     "event_id": 250606
   },
   "250606005": {
     "difficulty_score": 55,
     "time_limit_ms": 72000,
-    "folder_id": 5,
+    "folder_id": 2,
     "event_id": 250606
   },
   "250606006": {
     "difficulty_score": 80,
     "time_limit_ms": 54000,
-    "folder_id": 6,
+    "folder_id": 2,
     "event_id": 250606
   },
   "250606007": {
     "difficulty_score": 20,
     "time_limit_ms": 108000,
-    "folder_id": 7,
+    "folder_id": 3,
     "event_id": 250606
   },
   "250606008": {
     "difficulty_score": 55,
     "time_limit_ms": 72000,
-    "folder_id": 8,
+    "folder_id": 3,
     "event_id": 250606
   },
   "250606009": {
     "difficulty_score": 80,
     "time_limit_ms": 54000,
-    "folder_id": 9,
+    "folder_id": 3,
     "event_id": 250606
   },
   "100004001": {

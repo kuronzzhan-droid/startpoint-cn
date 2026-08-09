@@ -1,6 +1,9 @@
 import * as os from "os"
 import { MultiRoom } from "../types"
 import { sessionManager } from "../state/SessionManager"
+import { getPlayerSync } from "../../data/domains/player"
+import { getPlayerCharacterSync } from "../../data/domains/character"
+import { getFollowRelationSync } from "../../data/domains/follow"
 
 export function getDisplayHost(): string {
     const publicHost = (process.env.SESSION_PUBLIC_HOST || process.env.CN_PUBLIC_HOST || "").trim()
@@ -60,8 +63,13 @@ export interface SerializedRoomConnection {
     is_pickup: boolean | null;
 }
 
-export function serializeRoom(room: MultiRoom): SerializedRoom {
+export function serializeRoom(room: MultiRoom, viewerPlayerId?: number): SerializedRoom {
     const charId = Number(room.host_main_character_id) || 1;
+    const host = getPlayerSync(room.host_player_id)
+    const hostCharacter = getPlayerCharacterSync(room.host_player_id, charId)
+    const followState = viewerPlayerId === undefined
+        ? 0
+        : getFollowRelationSync(viewerPlayerId, room.host_player_id).state
     return {
         access_token: room.access_token,
         category_id: room.category,
@@ -79,9 +87,9 @@ export function serializeRoom(room: MultiRoom): SerializedRoom {
         room_member_count: room.mates.length,
         // Required by client parser (see SerializedRoom).
         establisher_character: charId,
-        establisher_character_evolution_img_level: 0,
-        establisher_follow: 1,
-        establisher_name: `Player${room.host_viewer_id}`,
+        establisher_character_evolution_img_level: hostCharacter?.evolutionLevel ?? 0,
+        establisher_follow: followState,
+        establisher_name: host?.name || `Player${room.host_viewer_id}`,
         is_pickup: false,
         mates: room.mates.length,
     };

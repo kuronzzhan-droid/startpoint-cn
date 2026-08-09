@@ -1,16 +1,13 @@
-// Character race lookup — loaded once from CDN character.json at module init
+// Character race lookup — loaded from the server-bundled CDN master at startup.
 // CDN character.json: row[4] = comma-separated race names (e.g., "Human,Beast")
 
-const fs = require("fs")
-const path = require("path")
+import characterMaster from "../../../../assets/cdndata/character.json"
 
-const CDN_CHAR_PATH = path.resolve(__dirname, "..", "..", "..", "..", "..", "wf-assets-cn", "orderedmap", "character", "character.json")
 const charRaceMap: Record<string, string[]> = {}
 
 function init() {
-    if (!fs.existsSync(CDN_CHAR_PATH)) return
-    const charData = JSON.parse(fs.readFileSync(CDN_CHAR_PATH, "utf8")) as Record<string, any[]>
-    for (const [charId, rows] of Object.entries(charData)) {
+    for (const [charId, rows] of Object.entries(characterMaster as Record<string, unknown>)) {
+        if (!Array.isArray(rows)) continue
         const r = rows[0]
         if (!r || !Array.isArray(r)) continue
         const raceStr = String(r[4] || "")

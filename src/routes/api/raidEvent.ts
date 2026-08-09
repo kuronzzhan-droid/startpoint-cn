@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { deletePlayerRushEventPlayedPartiesUntilSync, deletePlayerRushEventPlayedPartyListSync, deletePlayerRushEventPlayedPartySync, getDefaultPlayerRushEventSync, getPlayerRushEventClearedFoldersSync, getPlayerRushEventSync, insertPlayerRushEventSync, updatePlayerRushEventSync } from "../../data/domains/rushEvent"
 import { getDefaultPlayerPartyGroupsSync } from "../../data/domains/player"
 import { getPlayerCharactersSync } from "../../data/domains/character"
-import { getPlayerPartyGroupListSync, insertPlayerPartyGroupListSync } from "../../data/domains/party"
+import { ensurePlayerPartyGroupListSync, getPlayerPartyGroupListSync } from "../../data/domains/party"
 import { getSession } from "../../data/domains/session"
 import { resolvePlayerIdSync } from "../../data/activeAccount";
 import { generateDataHeaders, getServerDate } from "../../utils";
@@ -10,6 +10,14 @@ import { PartyCategory, RushEventBattleType } from "../../data/types";
 import { clientSerializeDate } from "../../data/utils";
 import { getSerializedPlayerRushEventPlayedPartiesSync, getPlayerRushEventEndlessBattleRankingSync } from "../../lib/rush";
 import { insertActiveQuest } from "./singleBattleQuest";
+import {
+    claimRaidEventOverallRewardsSync,
+    getRaidEventGlobalBossSync,
+    getRaidEventQuestKillCountsSync,
+} from "../../lib/raidEventGlobal";
+import { ensureSpecialEventPartyGroupsSync, resolvePartyGroupColorId } from "../../lib/special-event-parties";
+import { gameVerboseLog } from "../../lib/game-logging";
+import { getMode15ExclusivePartyItemsSync } from "../../lib/mode15-optional";
 
 const raidEventIds: Record<number, number> = {}
 
@@ -78,7 +86,12 @@ const routes = async (fastify: FastifyInstance) => {
         }
         const clearedFolderIdList = getPlayerRushEventClearedFoldersSync(playerId, eventId)
         const serializedPlayedParties = getSerializedPlayerRushEventPlayedPartiesSync(playerId, eventId)
-        console.log(`[RAID] summary: folderParties=${Object.keys(serializedPlayedParties.folderParties ?? {}).length} endlessParties=${Object.keys(serializedPlayedParties.endlessParties ?? {}).length}`)
+        const raidBoss = getRaidEventGlobalBossSync(eventId)
+        const totalKillCount = raidBoss.totalKillCount
+        const rewardClaim = claimRaidEventOverallRewardsSync(playerId, eventId, totalKillCount)
+        const questKillCounts = getRaidEventQuestKillCountsSync(eventId)
+        raidEventIds[playerId] = eventId
+        gameVerboseLog(() => `[RAID] summary: folderParties=${Object.keys(serializedPlayedParties.folderParties ?? {}).length} endlessParties=${Object.keys(serializedPlayedParties.endlessParties ?? {}).length}`)
 
         reply.header("content-type", "application/x-msgpack");
         return reply.status(200).send({
@@ -86,9 +99,15 @@ const routes = async (fastify: FastifyInstance) => {
             "data": {
                 "aggregated_time": clientSerializeDate(getServerDate()),
                 "auto_start_point": 0,
-                "kill_count_reward_data": { "received_up_to": 0, "reward_list": [] },
-                "quest_list": {},
-                "raid_boss": { "hp_percentage": 100, "total_kill_count": 0 },
+                "kill_count_reward_data": {
+                    "received_up_to": rewardClaim.receivedUpTo,
+                    "reward_list": rewardClaim.rewardList,
+                },
+                "quest_list": questKillCounts,
+                "raid_boss": {
+                    "hp_percentage": raidBoss.hpPercentage,
+                    "total_kill_count": totalKillCount,
+                },
                 "endless_battle_next_round": rushEventData.endlessBattleNextRound,
                 "active_rush_battle_folder_id": rushEventData.activeRushBattleFolderId,
                 "endless_battle_played_max_round": rushEventData.endlessBattleNextRound,
@@ -104,17 +123,19 @@ const routes = async (fastify: FastifyInstance) => {
     fastify.post("/get_boss", async (request: FastifyRequest, reply: FastifyReply) => {
         const body = request.body as EventIdBody;
         const viewerId = body.viewer_id;
+        const eventId = body.event_id;
         if (!viewerId || isNaN(viewerId)) return reply.status(400).send({
             "error": "Bad Request", "message": "Invalid request body."
         });
 
+        const raidBoss = getRaidEventGlobalBossSync(eventId)
         reply.header("content-type", "application/x-msgpack");
         return reply.status(200).send({
             "data_headers": generateDataHeaders({ viewer_id: viewerId }),
             "data": {
                 "raid_boss": {
-                    "hp_percentage": 100,
-                    "total_kill_count": 0
+                    "hp_percentage": raidBoss.hpPercentage,
+                    "total_kill_count": raidBoss.totalKillCount
                 }
             }
         });
@@ -156,19 +177,18 @@ const routes = async (fastify: FastifyInstance) => {
             "error": "Internal Server Error", "message": "No player bound to account."
         })
 
-        // Read from EVENT (dedicated party set), first time copy from NORMAL
-        let playerPartyGroups = getPlayerPartyGroupListSync(playerId, PartyCategory.EVENT)
-        if (Object.keys(playerPartyGroups).length === 0) {
-            console.log(`[RAID] party: no EVENT groups, copying from NORMAL`)
-            playerPartyGroups = getPlayerPartyGroupListSync(playerId, PartyCategory.NORMAL)
-            for (const group of Object.values(playerPartyGroups)) {
-                for (const party of Object.values(group.list)) {
-                    party.category = PartyCategory.EVENT
-                }
-                group.category = PartyCategory.EVENT
-            }
-            insertPlayerPartyGroupListSync(playerId, playerPartyGroups)
-        }
+        // Category 4 used to be shared by Raid and Rush. Copy it only as a
+        // one-time fallback; existing category 3 Raid parties always win.
+        const playerPartyGroups = ensureSpecialEventPartyGroupsSync(
+            playerId,
+            PartyCategory.RAID,
+            PartyCategory.RUSH,
+            {
+                getGroups: getPlayerPartyGroupListSync,
+                getDefaults: getDefaultPlayerPartyGroupsSync,
+                ensureGroups: ensurePlayerPartyGroupListSync,
+            },
+        )
         const group1 = playerPartyGroups['1']
         const partyList: RushParty[] = []
 
@@ -210,7 +230,7 @@ const routes = async (fastify: FastifyInstance) => {
         }
 
         const userPartyGroupList: RushPartyGroup[] = [{
-            "party_group_color_id": 15,
+            "party_group_color_id": resolvePartyGroupColorId(group1),
             "party_group_id": 1,
             "party_list": partyList
         }]
@@ -219,7 +239,7 @@ const routes = async (fastify: FastifyInstance) => {
             gid: g.party_group_id,
             parties: g.party_list.map(p => ({ pid: p.party_id, chars: p.character_ids, unisons: p.unison_character_ids }))
         }))
-        console.log(`[RAID] party: response=${JSON.stringify(partyDump)}`)
+        gameVerboseLog(() => `[RAID] party: response=${JSON.stringify(partyDump)}`)
 
         reply.header("content-type", "application/x-msgpack");
         return reply.status(200).send({
@@ -281,7 +301,7 @@ const routes = async (fastify: FastifyInstance) => {
             viewer_id: number, api_count: number
         };
         const viewerId = body.viewer_id;
-        console.log(`[RAID] battle/start body: questId=${body.quest_id} eventId=${body.event_id} partyGroup=${body.party_group_id}`)
+        gameVerboseLog(() => `[RAID] battle/start body: questId=${body.quest_id} eventId=${body.event_id} partyGroup=${body.party_group_id}`)
         if (!viewerId || isNaN(viewerId)) return reply.status(400).send({
             "error": "Bad Request", "message": "Invalid request body."
         });
@@ -295,6 +315,18 @@ const routes = async (fastify: FastifyInstance) => {
         if (playerId === null) return reply.status(500).send({
             "error": "Internal Server Error", "message": "No player bound to account."
         })
+
+        const restricted = getMode15ExclusivePartyItemsSync(
+            playerId, PartyCategory.RAID, body.party_group_id,
+        )
+        if (restricted.length > 0) {
+            console.log(`[MODE15] exclusive equipment denied in raid: player=${playerId} items=${restricted.join(",")}`)
+            reply.header("content-type", "application/x-msgpack")
+            return reply.status(200).send({
+                data_headers: generateDataHeaders({ viewer_id: viewerId, result_code: 4050 }),
+                data: {},
+            })
+        }
 
         // Register active quest for /single_battle_quest/finish
         const raidEventId = raidEventIds[playerId] ?? Math.floor(body.quest_id / 1000)
@@ -346,7 +378,7 @@ const routes = async (fastify: FastifyInstance) => {
         const questType = body.quest_type;
         const resetTargetId = body.reset_target_id;
         const isResetAfterTargetRound = body.is_reset_after_target_round;
-        console.log(`[RAID] reset: eventId=${eventId} questType=${questType}`)
+        gameVerboseLog(() => `[RAID] reset: eventId=${eventId} questType=${questType}`)
         if (!viewerId || isNaN(viewerId)) return reply.status(400).send({
             "error": "Bad Request", "message": "Invalid request body."
         });

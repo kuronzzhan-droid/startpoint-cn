@@ -1,52 +1,199 @@
-import { useState } from "react"
-import { Card, Form, Select, InputNumber, Input, Button, message, Alert, Typography, Radio, Modal, Descriptions, Table, Tag } from "antd"
+import { ReactNode, useMemo, useState } from "react"
+import { Card, Form, Select, InputNumber, Input, Button, message, Alert, Typography, Radio, Modal, Descriptions, Table, Tag, Space } from "antd"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { apiGet, apiPost } from "../api/client"
+import { AdminPage } from "../components/AdminPage"
+import { getMailAttachmentRule } from "../lib/mailRules"
 
 const { TextArea } = Input
 const { Text } = Typography
 
-// 附件类型对应旧 mail.html 下拉；needsId=需 type_id，singleOnly=每封仅 1 个
+// 私服管理保留全部已实现的附件类型；高风险类型仍会经过预览确认。
 const MAIL_TYPES = [
-    { value: 1, label: "道具 (Item)", needsId: true },
-    { value: 3, label: "付费星导石 (Paid Vmoney)" },
-    { value: 4, label: "免费星导石 (Free Vmoney)" },
-    { value: 5, label: "角色 (Character)", needsId: true, singleOnly: true },
-    { value: 6, label: "装备 (Equipment)", needsId: true, singleOnly: true },
-    { value: 7, label: "星之碎片 (Star Crumb)" },
-    { value: 8, label: "法力 (Mana)" },
-    { value: 9, label: "经验池 (Exp Pool)" },
-    { value: 10, label: "羁绊之证 (Bond Token)" },
+    { value: 1, label: "道具", needsId: true },
+    { value: 3, label: "付费星导石" },
+    { value: 4, label: "免费星导石" },
+    { value: 5, label: "角色", needsId: true, singleOnly: true },
+    { value: 6, label: "装备", needsId: true, singleOnly: true },
+    { value: 7, label: "星之碎片" },
+    { value: 8, label: "玛纳" },
+    { value: 9, label: "经验池" },
+    { value: 10, label: "羁绊之证" },
     { value: 11, label: "Boss Boost 点" },
     { value: 12, label: "Boost 点" },
+    { value: 13, label: "称号", needsId: true },
     { value: 15, label: "Rank 点" },
 ]
 
-const MAX_INT = 2147483647
 const TYPE_LABEL: Record<number, string> = Object.fromEntries(MAIL_TYPES.map(t => [t.value, t.label]))
 
 type TargetMode = "all" | "account" | "player"
 
 interface SendResult { ok: boolean; sent: number }
-interface AccountRow { id: number; saveCount: number; defaultPlayerId: number | null; defaultPlayerName: string | null; playerIds: number[] }
-interface PlayerBrief { id: number; name: string; lastLoginTime: string; degreeId: number }
+interface AccountRow {
+    id: number
+    viewerId: string | null
+    bindings: Array<{ deviceId: number; note: string | null }>
+    saveCount: number
+    defaultPlayerId: number | null
+    defaultPlayerName: string | null
+    players: PlayerBrief[]
+    playerIds: number[]
+}
+interface PlayerBrief { id: number; accountId: number; name: string; comment: string; degreeId: number }
 interface MailRecord { time: string; type: number; typeId: number | null; number: number; subject: string | null; target: string; sent: number }
+interface CharacterLookupRow { name: string; title: string; rarity: string; element: string }
+interface EquipmentLookupRow { name: string; rarity: string; category: string }
+type ItemLookup = Record<string, string>
+type CharacterLookup = Record<string, CharacterLookupRow>
+type EquipmentLookup = Record<string, EquipmentLookupRow>
+type AttachmentLookup = ItemLookup | CharacterLookup | EquipmentLookup
+interface AttachmentOption {
+    value: number
+    label: ReactNode
+    searchText: string
+    titleText: string
+}
+
+function norm(value: unknown): string {
+    return String(value ?? "").normalize("NFKC").trim().toLowerCase()
+}
+
+function lookupEndpoint(type: number | undefined): string | null {
+    if (type === 1) return "/api/lookup/items"
+    if (type === 5) return "/api/lookup/characters"
+    if (type === 6) return "/api/lookup/equipment"
+    return null
+}
+
+function attachmentTitle(type: number | undefined, id: number | null | undefined, lookup: AttachmentLookup | undefined): string {
+    if (id == null || !lookup) return id == null ? "" : `#${id}`
+    const row = lookup[String(id)]
+    if (!row) return `#${id}`
+    if (type === 1 && typeof row === "string") return `${row} #${id}`
+    if (type === 5 && typeof row !== "string") {
+        const character = row as CharacterLookupRow
+        return `${character.name}${character.title ? ` · ${character.title}` : ""} #${id}`
+    }
+    if (type === 6 && typeof row !== "string") return `${(row as EquipmentLookupRow).name} #${id}`
+    return `#${id}`
+}
+
+function buildAttachmentOptions(type: number | undefined, lookup: AttachmentLookup | undefined): AttachmentOption[] {
+    if (!type || !lookup) return []
+    return Object.entries(lookup)
+        .map(([rawId, row]): AttachmentOption | null => {
+            const id = Number(rawId)
+            if (type === 1 && typeof row === "string") {
+                const titleText = `${row} #${id}`
+                return {
+                    value: id,
+                    titleText,
+                    searchText: norm(`${id} ${row}`),
+                    label: (
+                        <Space direction="vertical" size={0}>
+                            <Text>{row}</Text>
+                            <Text type="secondary">#{id}</Text>
+                        </Space>
+                    ),
+                }
+            }
+            if (type === 5 && typeof row !== "string") {
+                const character = row as CharacterLookupRow
+                const titleText = `${character.name}${character.title ? ` · ${character.title}` : ""} #${id}`
+                return {
+                    value: id,
+                    titleText,
+                    searchText: norm(`${id} ${character.name} ${character.title} ${character.rarity} ${character.element}`),
+                    label: (
+                        <Space direction="vertical" size={0}>
+                            <Text>{character.name}</Text>
+                            <Text type="secondary">#{id} · {character.title || "无称号"} · {character.rarity} · {character.element}</Text>
+                        </Space>
+                    ),
+                }
+            }
+            if (type === 6 && typeof row !== "string") {
+                const equipment = row as EquipmentLookupRow
+                const titleText = `${equipment.name} #${id}`
+                return {
+                    value: id,
+                    titleText,
+                    searchText: norm(`${id} ${equipment.name} ${equipment.rarity} ${equipment.category}`),
+                    label: (
+                        <Space direction="vertical" size={0}>
+                            <Text>{equipment.name}</Text>
+                            <Text type="secondary">#{id} · {equipment.rarity} · {equipment.category}</Text>
+                        </Space>
+                    ),
+                }
+            }
+            return null
+        })
+        .filter((option): option is AttachmentOption => option !== null)
+        .sort((a, b) => a.value - b.value)
+}
+
+function filterAttachmentOption(input: string, option?: AttachmentOption): boolean {
+    if (!option) return false
+    const query = norm(input)
+    if (!query) return true
+    if (/^[0-9]+$/.test(query)) return String(option.value) === query
+    return option.searchText.includes(query)
+}
 
 export default function Mail() {
     const qc = useQueryClient()
     const [form] = Form.useForm()
     const type = Form.useWatch("type", form)
+    const typeId = Form.useWatch("type_id", form)
     const targetMode: TargetMode = Form.useWatch("targetMode", form) ?? "all"
     const meta = MAIL_TYPES.find(t => t.value === type)
     const needsId = !!meta?.needsId
-    const singleOnly = !!meta?.singleOnly
+    const attachmentEndpoint = lookupEndpoint(type)
+    const quantityRule = getMailAttachmentRule(type, typeId)
 
     // 预览确认：暂存待发送的表单值 + 计算好的对象描述/角色数
-    const [confirm, setConfirm] = useState<null | { values: any; count: number; targetText: string }>(null)
+    const [confirm, setConfirm] = useState<null | { values: any; count: number; targetText: string; attachmentText: string }>(null)
 
     const { data: accounts = [] } = useQuery({ queryKey: ["accounts"], queryFn: () => apiGet<AccountRow[]>("/api/server/accounts") })
-    const { data: players = [] } = useQuery({ queryKey: ["players"], queryFn: () => apiGet<PlayerBrief[]>("/api/player") })
+    const players = useMemo(
+        () => accounts.flatMap(account => account.players).sort((a, b) => a.id - b.id),
+        [accounts],
+    )
+    const playerOptions = useMemo(
+        () => accounts.flatMap(account => {
+            const accountLabel = account.viewerId ?? `内部 #${account.id}`
+            const note = account.bindings.map(binding => binding.note).filter(Boolean).join(" / ")
+            return account.players.map(player => ({
+                value: player.id,
+                label: `${player.name}（存档 #${player.id}） · 账号 ${accountLabel}${note ? ` · ${note}` : ""}`,
+            }))
+        }).sort((a, b) => a.value - b.value),
+        [accounts],
+    )
+    const accountOptions = useMemo(
+        () => accounts.map(account => {
+            const accountLabel = account.viewerId ?? "未生成 viewer_id"
+            const note = account.bindings.map(binding => binding.note).filter(Boolean).join(" / ")
+            return {
+                value: account.id,
+                label: `账号 ${accountLabel}（内部 #${account.id}，${account.saveCount} 个存档${account.defaultPlayerName ? `，生效：${account.defaultPlayerName}` : ""}）${note ? ` · ${note}` : ""}`,
+            }
+        }),
+        [accounts],
+    )
     const { data: history = [] } = useQuery({ queryKey: ["mailHistory"], queryFn: () => apiGet<MailRecord[]>("/api/mail/history") })
+    const { data: attachmentLookup, isLoading: attachmentLoading, isError: attachmentError } = useQuery({
+        queryKey: ["mailAttachmentLookup", type],
+        queryFn: () => apiGet<AttachmentLookup>(attachmentEndpoint!),
+        enabled: needsId && !!attachmentEndpoint,
+        staleTime: Infinity,
+    })
+    const attachmentOptions = useMemo(
+        () => buildAttachmentOptions(type, attachmentLookup),
+        [type, attachmentLookup],
+    )
 
     const totalSaves = accounts.reduce((n, a) => n + a.saveCount, 0)
 
@@ -81,17 +228,28 @@ export default function Mail() {
         } else if (v.targetMode === "account") {
             const a = accounts.find(aa => aa.id === v.accountId)
             count = a?.saveCount ?? 0
-            targetText = `账号 #${v.accountId}${a ? `（${a.saveCount} 个存档）` : ""}`
+            targetText = a
+                ? `账号 ${a.viewerId ?? `内部 #${a.id}`}（${a.saveCount} 个存档）`
+                : `内部账号 #${v.accountId}`
         } else {
             count = totalSaves
             targetText = `全体（${accounts.length} 个账号 / ${totalSaves} 个存档）`
         }
-        setConfirm({ values: v, count, targetText })
+        const attachmentName = attachmentTitle(v.type, v.type_id, attachmentLookup)
+        const attachmentText = attachmentName
+            ? `${TYPE_LABEL[v.type] ?? v.type} · ${attachmentName}`
+            : `${TYPE_LABEL[v.type] ?? v.type}`
+        setConfirm({ values: v, count, targetText, attachmentText })
     }
 
     return (
-        <div style={{ maxWidth: 640 }}>
-            <Card title="邮件群发">
+        <AdminPage
+            eyebrow="MAIL"
+            title="邮件"
+            description="按全体、账号或单个存档发送附件邮件。高风险发送动作会先展示目标和附件摘要。"
+        >
+        <Space direction="vertical" size="large" className="admin-stack">
+            <Card title="发送邮件" className="admin-form-panel">
                 <Alert type={targetMode === "all" ? "warning" : "info"} showIcon style={{ marginBottom: 16 }}
                     message={
                         targetMode === "all" ? `将向全体 ${totalSaves} 个存档发送同一封邮件`
@@ -100,7 +258,7 @@ export default function Mail() {
                     } />
                 <Form form={form} layout="vertical" onFinish={openConfirm} initialValues={{ number: 1, targetMode: "all" }}>
                     <Form.Item name="targetMode" label="发送对象">
-                        <Radio.Group>
+                        <Radio.Group optionType="button" buttonStyle="solid">
                             <Radio.Button value="all">全体存档</Radio.Button>
                             <Radio.Button value="account">指定账号</Radio.Button>
                             <Radio.Button value="player">指定存档</Radio.Button>
@@ -111,12 +269,9 @@ export default function Mail() {
                         <Form.Item name="accountId" label="选择账号" rules={[{ required: true, message: "请选择账号" }]}>
                             <Select
                                 showSearch
-                                placeholder="选择账号"
+                                placeholder="按原始账号 ID、内部 ID 或备注搜索"
                                 optionFilterProp="label"
-                                options={accounts.map(a => ({
-                                    value: a.id,
-                                    label: `账号 #${a.id}（${a.saveCount} 个存档${a.defaultPlayerName ? `，生效：${a.defaultPlayerName}` : ""}）`,
-                                }))}
+                                options={accountOptions}
                                 notFoundContent="暂无账号"
                             />
                         </Form.Item>
@@ -126,41 +281,98 @@ export default function Mail() {
                         <Form.Item name="playerId" label="选择存档" rules={[{ required: true, message: "请选择存档" }]}>
                             <Select
                                 showSearch
-                                placeholder="选择存档"
+                                placeholder="按存档、账号 ID 或备注搜索"
                                 optionFilterProp="label"
-                                options={players.map(p => ({ value: p.id, label: `${p.name}（#${p.id}）` }))}
+                                options={playerOptions}
                                 notFoundContent="暂无存档"
                             />
                         </Form.Item>
                     )}
 
                     <Form.Item name="type" label="附件类型" rules={[{ required: true, message: "请选择附件类型" }]}>
-                        <Select
-                            placeholder="-- 请选择附件类型 --"
-                            options={MAIL_TYPES.map(t => ({ value: t.value, label: t.label }))}
-                            onChange={() => {
-                                const m = MAIL_TYPES.find(t => t.value === form.getFieldValue("type"))
-                                if (m?.singleOnly) form.setFieldValue("number", 1)
-                                form.validateFields(["type_id"]).catch(() => {})
+                        <Radio.Group
+                            className="admin-mail-type-group"
+                            optionType="button"
+                            buttonStyle="solid"
+                            onChange={(event) => {
+                                const nextRule = getMailAttachmentRule(event.target.value, null)
+                                form.setFieldsValue({
+                                    type_id: undefined,
+                                    number: nextRule.max === 0 ? 0 : 1,
+                                })
+                                form.validateFields(["type_id", "number"]).catch(() => {})
                             }}
-                        />
+                        >
+                            {MAIL_TYPES.map(t => (
+                                <Radio.Button key={t.value} value={t.value} className="admin-mail-type-option">
+                                    {t.label}
+                                </Radio.Button>
+                            ))}
+                        </Radio.Group>
                     </Form.Item>
+
+                    {needsId && (
+                        <Form.Item
+                            name="type_id"
+                            label="附件"
+                            rules={[
+                                {
+                                    validator: async (_, value) => {
+                                        if (attachmentError) throw new Error("附件索引加载失败，无法发送")
+                                        if (value == null) throw new Error("请选择附件")
+                                    },
+                                },
+                            ]}
+                            extra={attachmentEndpoint
+                                ? "输入完整 ID 或中文名称搜索；数字查询按完整 ID 精确匹配，避免误选相近编号。"
+                                : "输入国服称号 ID；服务端会在称号数据中校验。"}
+                        >
+                            {attachmentEndpoint ? (
+                                <Select
+                                    showSearch
+                                    allowClear
+                                    placeholder="输入 ID 或名称搜索附件"
+                                    loading={attachmentLoading}
+                                    disabled={attachmentError}
+                                    options={attachmentOptions}
+                                    filterOption={filterAttachmentOption}
+                                    optionLabelProp="titleText"
+                                    notFoundContent={attachmentLoading ? "正在加载附件索引" : "没有匹配附件"}
+                                    onChange={(nextTypeId) => {
+                                        const nextRule = getMailAttachmentRule(type, nextTypeId)
+                                        const currentNumber = form.getFieldValue("number") ?? 1
+                                        form.setFieldValue("number", Math.min(currentNumber, nextRule.max))
+                                        form.validateFields(["number"]).catch(() => {})
+                                    }}
+                                />
+                            ) : (
+                                <InputNumber min={1} precision={0} style={{ width: "100%" }} placeholder="称号 ID" />
+                            )}
+                        </Form.Item>
+                    )}
 
                     <Form.Item
-                        name="type_id"
-                        label="附件 ID (type_id)"
-                        rules={needsId ? [{ required: true, message: "此类型需填写附件 ID" }] : []}
-                        extra={needsId
-                            ? "道具=道具ID / 角色=6位 business code / 装备=7位 ID，发送前会校验 CDN 数据"
-                            : "此附件类型无需填写附件 ID"}
+                        name="number"
+                        label="数量"
+                        rules={[
+                            { required: true, message: "请输入数量" },
+                            {
+                                validator: async (_, value) => {
+                                    if (value == null) throw new Error("请输入数量")
+                                    if (value < quantityRule.min || value > quantityRule.max) {
+                                        throw new Error(`数量需在 ${quantityRule.min}-${quantityRule.max} 之间`)
+                                    }
+                                },
+                            },
+                        ]}
+                        extra={`${quantityRule.label}：${quantityRule.min}-${quantityRule.max}。${quantityRule.reason}`}
                     >
-                        <InputNumber style={{ width: "100%" }} min={1} max={MAX_INT} disabled={!needsId}
-                            placeholder="道具 ID / 角色 code / 装备 ID" />
-                    </Form.Item>
-
-                    <Form.Item name="number" label="数量" rules={[{ required: true, message: "请输入数量" }]}
-                        extra={singleOnly ? "角色 / 装备每封邮件仅可发送 1 个" : undefined}>
-                        <InputNumber style={{ width: "100%" }} min={1} max={MAX_INT} disabled={singleOnly} />
+                        <InputNumber
+                            style={{ width: "100%" }}
+                            min={quantityRule.min}
+                            max={quantityRule.max}
+                            disabled={quantityRule.max <= 1}
+                        />
                     </Form.Item>
 
                     <Form.Item name="subject" label="标题（可选）">
@@ -172,19 +384,22 @@ export default function Mail() {
                     </Form.Item>
 
                     <Form.Item>
-                        <Button type="primary" htmlType="submit">发送</Button>
-                        <Text type="secondary" style={{ marginLeft: 12 }}>发送后无法撤回，请确认附件 ID</Text>
+                        <Space wrap>
+                            <Button type="primary" htmlType="submit">发送</Button>
+                            <Text type="secondary">发送后无法撤回，请确认附件 ID</Text>
+                        </Space>
                     </Form.Item>
                 </Form>
             </Card>
 
-            <Card title="最近群发记录" size="small" style={{ marginTop: 16 }}>
+            <Card title="最近群发记录" size="small" className="admin-table-card">
                 <Table<MailRecord & { key: number }>
                     rowKey="key"
                     size="small"
                     pagination={false}
                     dataSource={history.map((h, i) => ({ ...h, key: i }))}
                     locale={{ emptyText: "暂无记录" }}
+                    scroll={{ x: "max-content" }}
                     columns={[
                         { title: "时间", dataIndex: "time", width: 160 },
                         { title: "对象", dataIndex: "target" },
@@ -196,6 +411,7 @@ export default function Mail() {
                     ]}
                 />
             </Card>
+        </Space>
 
             <Modal
                 open={!!confirm}
@@ -212,7 +428,7 @@ export default function Mail() {
                         <Descriptions column={1} size="small" bordered>
                             <Descriptions.Item label="发送对象">{confirm.targetText}</Descriptions.Item>
                             <Descriptions.Item label="角色数量">{confirm.count} 个</Descriptions.Item>
-                            <Descriptions.Item label="附件类型">{TYPE_LABEL[confirm.values.type] ?? confirm.values.type}</Descriptions.Item>
+                            <Descriptions.Item label="附件">{confirm.attachmentText}</Descriptions.Item>
                             {confirm.values.type_id != null && (
                                 <Descriptions.Item label="附件 ID">{confirm.values.type_id}</Descriptions.Item>
                             )}
@@ -226,6 +442,6 @@ export default function Mail() {
                     </>
                 )}
             </Modal>
-        </div>
+        </AdminPage>
     )
 }

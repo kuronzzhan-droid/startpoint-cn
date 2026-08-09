@@ -1,58 +1,99 @@
-// Regular & Daily mission computer (categories 1, 2)
-
-import { getPlayerQuestProgressSync } from "../../data/domains/quest"
+import { getMissionBattleCountersSync } from "../../data/domains/mission_battle_facts"
+import { countFinishedPlayerQuestsSync } from "../../data/domains/quest"
 import { getPlayerSync } from "../../data/domains/player"
-import { getPlayerActiveMissionsSync } from "../../data/domains/mission"
-import { evaluateMissionCounterProgress, isFilteredMissionUnsupported } from "./evaluator"
-import { isComputablePattern, getMissionDefinition, getMissionPattern } from "./patterns"
+import { getRankDegree } from "../stamina"
+import { getMissionCounterValueSync } from "./counters"
+import { getMissionPattern } from "./patterns"
 import { getSnapshot } from "./snapshot"
-import { getCompletedStageNumbers } from "./stages"
 import type { MissionComputer, CategoryContext } from "./types"
 
 function buildStats(playerId: number, category: number): CategoryContext {
     const player = getPlayerSync(playerId)!
-    const questProgressRaw = getPlayerQuestProgressSync(playerId)
-    const activeMissions = getPlayerActiveMissionsSync(playerId)
-    const activeMissionProgress: Record<string, number> = {}
-    for (const [missionId, mission] of Object.entries(activeMissions)) {
-        activeMissionProgress[missionId] = mission.progress
-    }
+    // Regular/daily/weekly/pass computers only consume player totals, battle
+    // counters and periodic snapshots. Loading every quest row here made one
+    // battle finish deserialize the same quest history up to five times.
+    const totalQuestClears = category === 7
+        ? countFinishedPlayerQuestsSync(playerId)
+        : 0
 
-    let totalQuestClears = 0, ssClears = 0, sClears = 0, aClears = 0, bClears = 0, totalStories = 0
-    const questProgress: CategoryContext["questProgress"] = {}
-
-    for (const [section, quests] of Object.entries(questProgressRaw)) {
-        const list: CategoryContext["questProgress"][string] = []
-        for (const qp of quests) {
-            list.push({ questId: qp.questId, finished: qp.finished, clearRank: qp.clearRank, bestElapsedTimeMs: qp.bestElapsedTimeMs, leaderCharacterId: qp.leaderCharacterId, multiClearCount: qp.multiClearCount })
-            if (qp.finished) {
-                totalQuestClears++
-                if (section === '3') totalStories++
-                if (qp.clearRank === 6) ssClears++
-                else if (qp.clearRank === 5) sClears++
-                else if (qp.clearRank === 4) aClears++
-                else if (qp.clearRank === 3) bClears++
-            }
-        }
-        questProgress[section] = list
-    }
-
-    // Load periodic snapshot for daily/weekly categories
-    let snapshot = null
-    if (category === 2) snapshot = getSnapshot(playerId, 'daily')
-    if (category === 10) snapshot = getSnapshot(playerId, 'weekly')
+    const snapshot = category === 2 || category === 6
+        ? getSnapshot(playerId, "daily")
+        : category === 7 || category === 10
+            ? getSnapshot(playerId, "weekly")
+            : null
 
     return {
-        playerId,
         category,
+        playerId,
         player,
-        questProgress,
+        questProgress: {},
         totalQuestClears,
-        totalStories,
-        rankCounts: { rank_ss: ssClears, rank_s: sClears, rank_a: aClears, rank_b: bClears },
-        activeMissionProgress,
+        totalStories: 0,
+        rankCounts: {},
+        battleCounters: getMissionBattleCountersSync(playerId),
         snapshot,
     }
+}
+
+function periodValue(current: number, baseline: number | undefined): number {
+    return Math.max(0, current - (baseline ?? 0))
+}
+
+function computeLifetime(pattern: string, ctx: CategoryContext, dbProgress: number): number {
+    const counters = ctx.battleCounters!
+    if (pattern === "max_combo") return Math.max(dbProgress, ctx.player.maxComboAchieved ?? 0)
+    if (pattern === "rank_ss") return Math.max(dbProgress, counters.rankSsCount)
+    if (pattern === "use_dash") return Math.max(dbProgress, ctx.player.totalDashes ?? 0)
+    if (pattern === "single_battle_play") return Math.max(dbProgress, counters.singleClearCount)
+    if (pattern === "use_power_flip") return Math.max(dbProgress, ctx.player.totalPowerflips ?? 0)
+    if (pattern === "user_rank") return Math.max(dbProgress, getRankDegree(ctx.player.rankPoint))
+    if (pattern === "total_login") return Math.max(dbProgress, ctx.player.totalLoginDays ?? 0)
+    if (pattern === "multi_battle_play") return Math.max(dbProgress, counters.multiClearCount)
+    if (pattern === "multi_play_host") return Math.max(dbProgress, counters.multiHostClearCount)
+    if (pattern === "multi_play_guest") return Math.max(dbProgress, counters.multiGuestClearCount)
+    const rescueRankMatch = pattern.match(/^boss_battle_attention_rank([1-5])$/)
+    if (rescueRankMatch) {
+        return Math.max(
+            dbProgress,
+            getMissionCounterValueSync(ctx.playerId, {
+                dimension: "battle.multi_rescue_clear",
+                scopeType: "lifetime",
+                scopeKey: "all",
+                qualifier: { questRank: Number(rescueRankMatch[1]) },
+            }),
+        )
+    }
+    return dbProgress
+}
+
+function computeDaily(pattern: string, ctx: CategoryContext, dbProgress: number): number {
+    const snapshot = ctx.snapshot
+    const counters = ctx.battleCounters!
+    if (/^single_battle_play(?:_[23])?$/.test(pattern)) {
+        return Math.max(dbProgress, periodValue(counters.singleClearCount, snapshot?.singleClearCount))
+    }
+    if (/^multi_battle_play(?:_[23])?$/.test(pattern)) {
+        return Math.max(dbProgress, periodValue(counters.multiClearCount, snapshot?.multiClearCount))
+    }
+    if (/^use_dash(?:_[23])?$/.test(pattern)) {
+        return Math.max(dbProgress, periodValue(ctx.player.totalDashes ?? 0, snapshot?.dashCount))
+    }
+    if (pattern === "daily_quest_stamina_use_2024_02") {
+        return Math.max(dbProgress, periodValue(ctx.player.totalStaminaUsed ?? 0, snapshot?.staminaUsed))
+    }
+    return dbProgress
+}
+
+function computeWeekly(pattern: string, ctx: CategoryContext, dbProgress: number): number {
+    const snapshot = ctx.snapshot
+    const counters = ctx.battleCounters!
+    if (pattern === "weekly_mission_1") {
+        return Math.max(dbProgress, periodValue(ctx.player.totalLoginDays ?? 0, snapshot?.loginDays))
+    }
+    if (pattern === "weekly_mission_2") {
+        return Math.max(dbProgress, periodValue(counters.multiClearCount, snapshot?.multiClearCount))
+    }
+    return dbProgress
 }
 
 export const RegularComputer: MissionComputer = {
@@ -63,69 +104,10 @@ export const RegularComputer: MissionComputer = {
     },
 
     compute(missionId: number, ctx: CategoryContext, dbProgress: number): number {
-        return computeProgress(missionId, ctx, dbProgress, new Set<number>())
+        const pattern = getMissionPattern(ctx.category, missionId)
+        if (ctx.category === 1) return computeLifetime(pattern, ctx, dbProgress)
+        if (ctx.category === 2) return computeDaily(pattern, ctx, dbProgress)
+        if (ctx.category === 10) return computeWeekly(pattern, ctx, dbProgress)
+        return dbProgress
     },
-}
-
-function computeProgress(missionId: number, ctx: CategoryContext, dbProgress: number, seen: Set<number>): number {
-    if (seen.has(missionId)) return dbProgress
-    seen.add(missionId)
-
-    const { snapshot } = ctx
-    const baseClears = snapshot ? (ctx.totalQuestClears - snapshot.questClears) : ctx.totalQuestClears
-    const baseStamina = snapshot ? ((ctx.player.totalStaminaUsed ?? 0) - snapshot.staminaUsed) : ctx.player.totalStaminaUsed ?? 0
-
-    const category = ctx.category
-    const pattern = getMissionPattern(category, missionId)
-    const definition = getMissionDefinition(category, missionId)
-
-    if (category === 2 && String(definition?.[2]) === "13") {
-        const deps = String(definition?.[17] || "")
-            .split(",")
-            .map(v => parseInt(v.trim()))
-            .filter(v => !Number.isNaN(v) && v !== missionId)
-        if (deps.length === 0) return dbProgress
-        let completedDeps = 0
-        for (const depId of deps) {
-            const depDbProgress = ctx.activeMissionProgress?.[String(depId)] ?? 0
-            const depProgress = computeProgress(depId, ctx, depDbProgress, new Set(seen))
-            if (getCompletedStageNumbers(2, depId, depProgress).length > 0) completedDeps++
-        }
-        return completedDeps
-    }
-
-    if (category === 2) {
-        const evaluated = evaluateMissionCounterProgress({
-            playerId: ctx.playerId,
-            category,
-            missionId,
-            pattern,
-            definition,
-            period: "daily",
-        })
-        if (evaluated.supported) return Math.max(evaluated.progress, dbProgress)
-        if (isFilteredMissionUnsupported(evaluated)) return dbProgress
-    }
-
-    if (pattern && isComputablePattern(pattern)) {
-        if (pattern.startsWith('single_battle_play') || pattern.startsWith('single_battle_clear_count'))
-            return baseClears
-        if (pattern.includes('stamina_use'))
-            return baseStamina
-        if (ctx.rankCounts[pattern] !== undefined) {
-            const baseRank = snapshot
-                ? (ctx.rankCounts[pattern] - ((snapshot as any)[rankToSnapshotKey(pattern)] ?? 0))
-                : ctx.rankCounts[pattern]
-            return baseRank
-        }
-    }
-    return dbProgress
-}
-
-function rankToSnapshotKey(pattern: string): string {
-    if (pattern.includes('rank_ss')) return 'rankSs'
-    if (pattern.includes('rank_s')) return 'rankS'
-    if (pattern.includes('rank_a')) return 'rankA'
-    if (pattern.includes('rank_b')) return 'rankB'
-    return ''
 }

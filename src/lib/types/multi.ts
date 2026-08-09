@@ -54,6 +54,10 @@ export interface MultiRoom {
     share_room_options: number
     is_npc_mode: boolean
     npc_count: number  // fixed NPC count per battle: 0=unrecruited, 1/2=fixed count
+    expected_real_viewer_ids: number[]
+    lobby_generation: number
+    rematch_wait_started_at: number | null
+    settlement_return_pending: boolean
 }
 
 
@@ -66,4 +70,3 @@ export interface NpcMateTemplate {
     rank: number
     degree_id: number
 }
-

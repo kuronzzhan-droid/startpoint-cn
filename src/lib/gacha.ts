@@ -12,19 +12,12 @@ import { givePlayerRewardsSync } from "./quest";
 import { getCharacterDataSync } from "./assets";
 import { BoxGachaBox, BoxGachaDrawResult, BoxGachaIdReward, BoxGachaRewardTier, BoxGachaRewardType, CharacterGacha, CharacterReward, CurrencyReward, EquipmentItemReward, Gacha, GachaCharacterDraw, GachaDrawResult, GachaDraws, GachaMovieSeeds, GachaMovieType, GachaType, PlayerRewardResult, Reward, RewardPlayerGachaDrawResult, RewardType } from "./types";
 import { computeEquipmentGachaMovieEffectsForGacha, EquipmentMovieDrawInput } from "./gacha-equipment-movie";
+import { loadMovieSeeds } from "./gacha-movie-seeds";
 
-import { readFileSync, existsSync } from "fs";
-import { join } from "path";
+const GACHA_VERBOSE_LOGS = /^(1|true|yes)$/i.test(process.env.GACHA_VERBOSE_LOGS ?? "");
 
-const ASSETS_DIR = join(__dirname, "..", "..", "assets");
-
-/** Load movie-specific seed pool, fall back to default pool. */
-function loadMovieSeeds(movieId: string): any {
-    const specific = join(ASSETS_DIR, `gacha_movie_seeds_${movieId}.json`);
-    if (existsSync(specific)) return JSON.parse(readFileSync(specific, "utf-8"));
-    const fallback = join(ASSETS_DIR, "gacha_movie_seeds.json");
-    if (existsSync(fallback)) return JSON.parse(readFileSync(fallback, "utf-8"));
-    return {};
+function logGachaDetail(message: string): void {
+    if (GACHA_VERBOSE_LOGS) console.log(message);
 }
 
 const characterGachaRankRates = {
@@ -226,7 +219,7 @@ export function rewardPlayerGachaDrawResultSync(
                     }
                     draws.push(draw)
                     characters.set(characterId, giveResult.character)
-                    console.log(`[GACHA] rarity=${rarity}★ seed=${characterId * 1000} movie=${movieId} charId=${characterId} [SKIP]`)
+                    logGachaDetail(`[GACHA-DETAIL] rarity=${rarity}★ seed=${characterId * 1000} movie=${movieId} charId=${characterId} [SKIP]`)
                     continue
                 }
 
@@ -236,10 +229,7 @@ export function rewardPlayerGachaDrawResultSync(
                 const movieSeeds = loadMovieSeeds(movieId)
                 const seedPool: number[] = (movieSeeds as any)[seedKey]?.[String(movieType)] || []
                 const fallbackPool: number[] = (movieSeeds as any)[seedKey]?.["0"] || []
-                const basePool = seedPool.length > 0 ? seedPool : fallbackPool
-                // Inject cross-pool purified seeds (SIM may classify seed in wrong pool)
-                    const playSeeds = seedValidator.getPlayForRarity(movieId, rarity)
-                    const pool = Array.from(new Set([...playSeeds, ...basePool]))
+                const pool = seedPool.length > 0 ? seedPool : fallbackPool
                 // Use seed validator with pool mode support
                 const seed = pool.length > 0
                     ? seedValidator.getSeed(movieId, rarity, pool, characterId, drawIndex)
@@ -250,7 +240,7 @@ export function rewardPlayerGachaDrawResultSync(
                 // Mark seed as TESTING (pending verification)
                 seedValidator.markSent(movieId, seed, rarity)
 
-                console.log(`[GACHA] rarity=${rarity}★ seed=${seed} movie=${movieId} charId=${characterId}`)
+                logGachaDetail(`[GACHA-DETAIL] rarity=${rarity}★ seed=${seed} movie=${movieId} charId=${characterId}`)
 
                 const draw: GachaCharacterDraw = {
                     "character_id": characterId,

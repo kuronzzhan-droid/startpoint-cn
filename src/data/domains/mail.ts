@@ -90,13 +90,7 @@ export function getPlayerMailsSync(
     return getDb().prepare(query).all(playerId, perPage, offset) as RawPlayerMail[]
 }
 
-/**
- * Looks up a single mail by ID, scoped to the owning player.
- *
- * Claim endpoints must use this instead of paging through the mail list: a
- * mailbox with more pending mail than one page holds would otherwise leave the
- * older mail unclaimable.
- */
+/** Looks up one mail, always scoped to its owning player. */
 export function getPlayerMailByIdSync(
     playerId: number,
     mailId: number,
@@ -109,10 +103,7 @@ export function getPlayerMailByIdSync(
     return (getDb().prepare(query).get(mailId, playerId) as RawPlayerMail | undefined) ?? null
 }
 
-/**
- * Looks up mails by ID, scoped to the owning player. IDs are queried in chunks
- * so a large batch stays under SQLite's bound-parameter limit.
- */
+/** Looks up a possibly large set of player-owned mails without exceeding SQLite's parameter limit. */
 export function getPlayerMailsByIdsSync(
     playerId: number,
     mailIds: number[],
@@ -151,11 +142,7 @@ export function getPlayerMailCountSync(
 
 /**
  * Marks a mail as received and returns its attachment data.
- * Does NOT apply the reward — the caller must do that, inside the same
- * transaction (see `claimMailSync`).
- *
- * The mark is a conditional update, so it doubles as the claim guard: a null
- * return means the mail was already received and its reward already paid out.
+ * Does NOT apply the reward — caller must do that.
  */
 export function receiveMailSync(
     playerId: number,
@@ -181,6 +168,25 @@ export function receiveMailSync(
         type_id: mail.type_id,
         number: mail.number,
     }
+}
+
+/**
+ * Batch receive mails. Returns list of successfully claimed mail IDs.
+ */
+export function receiveAllMailsSync(
+    playerId: number,
+    mailIds: number[]
+): number[] {
+    const claimed: number[] = []
+    getDb().transaction(() => {
+        for (const mailId of mailIds) {
+            const result = receiveMailSync(playerId, mailId)
+            if (result !== null) {
+                claimed.push(mailId)
+            }
+        }
+    })()
+    return claimed
 }
 
 /**

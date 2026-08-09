@@ -3255,7 +3255,7 @@
     ],
     "availableFrom": "2025-06-26 12:00:00",
     "availableUntil": null,
-    "stock": 1
+    "stock": 999
   },
   "300181": {
     "costs": [
@@ -5889,5 +5889,202 @@
     "availableFrom": "2023-02-01 05:00:00",
     "availableUntil": null,
     "stock": 10
+  },
+  "9100001": {
+    "costs": [
+      {
+        "id": 49002,
+        "amount": 200
+      }
+    ],
+    "rewards": [
+      {
+        "type": 0,
+        "id": 5010005,
+        "count": 1
+      }
+    ],
+    "availableFrom": "2015-12-31 23:59:59",
+    "availableUntil": null,
+    "stock": 1
+  },
+  "9100002": {
+    "costs": [
+      {
+        "id": 49002,
+        "amount": 200
+      }
+    ],
+    "rewards": [
+      {
+        "type": 0,
+        "id": 5030005,
+        "count": 1
+      }
+    ],
+    "availableFrom": "2015-12-31 23:59:59",
+    "availableUntil": null,
+    "stock": 1
+  },
+  "9100003": {
+    "costs": [
+      {
+        "id": 49002,
+        "amount": 200
+      }
+    ],
+    "rewards": [
+      {
+        "type": 0,
+        "id": 5040022,
+        "count": 1
+      }
+    ],
+    "availableFrom": "2015-12-31 23:59:59",
+    "availableUntil": null,
+    "stock": 1
+  },
+  "9100004": {
+    "costs": [
+      {
+        "id": 49002,
+        "amount": 200
+      }
+    ],
+    "rewards": [
+      {
+        "type": 0,
+        "id": 5020024,
+        "count": 1
+      }
+    ],
+    "availableFrom": "2015-12-31 23:59:59",
+    "availableUntil": null,
+    "stock": 1
+  },
+  "9100005": {
+    "costs": [
+      {
+        "id": 49002,
+        "amount": 200
+      }
+    ],
+    "rewards": [
+      {
+        "type": 0,
+        "id": 5070027,
+        "count": 1
+      }
+    ],
+    "availableFrom": "2015-12-31 23:59:59",
+    "availableUntil": null,
+    "stock": 1
+  },
+  "9100006": {
+    "costs": [
+      {
+        "id": 49002,
+        "amount": 200
+      }
+    ],
+    "rewards": [
+      {
+        "type": 0,
+        "id": 5050026,
+        "count": 1
+      }
+    ],
+    "availableFrom": "2015-12-31 23:59:59",
+    "availableUntil": null,
+    "stock": 1
+  },
+  "9100007": {
+    "costs": [
+      {
+        "id": 49002,
+        "amount": 200
+      }
+    ],
+    "rewards": [
+      {
+        "type": 0,
+        "id": 5020041,
+        "count": 1
+      }
+    ],
+    "availableFrom": "2015-12-31 23:59:59",
+    "availableUntil": null,
+    "stock": 1
+  },
+  "9100008": {
+    "costs": [
+      {
+        "id": 49002,
+        "amount": 200
+      }
+    ],
+    "rewards": [
+      {
+        "type": 0,
+        "id": 5060044,
+        "count": 1
+      }
+    ],
+    "availableFrom": "2015-12-31 23:59:59",
+    "availableUntil": null,
+    "stock": 1
+  },
+  "9100009": {
+    "costs": [
+      {
+        "id": 49001,
+        "amount": 100
+      }
+    ],
+    "rewards": [
+      {
+        "type": 0,
+        "id": 49002,
+        "count": 100
+      }
+    ],
+    "availableFrom": "2015-12-31 23:59:59",
+    "availableUntil": null,
+    "stock": 999
+  },
+  "9100010": {
+    "costs": [
+      {
+        "id": 49000,
+        "amount": 100
+      }
+    ],
+    "rewards": [
+      {
+        "type": 0,
+        "id": 49002,
+        "count": 100
+      }
+    ],
+    "availableFrom": "2015-12-31 23:59:59",
+    "availableUntil": null,
+    "stock": 999
+  },
+  "9100011": {
+    "costs": [
+      {
+        "id": 100000,
+        "amount": 5000
+      }
+    ],
+    "rewards": [
+      {
+        "type": 1,
+        "count": 5000
+      }
+    ],
+    "availableFrom": "2015-12-31 23:59:59",
+    "availableUntil": null,
+    "stock": 9999
   }
 }

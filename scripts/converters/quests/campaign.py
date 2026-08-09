@@ -48,8 +48,7 @@ def convert_score_attack_event_quest(obj):
                         }
                         if len(quest) > 70 and quest[70] != '' and quest[70] != '(None)':
                             converted[qid]["scoreRewardGroupId"] = int(quest[70])
-                            converted[qid]["folderId"] = int(quest[70])
+                        converted[qid]["folderId"] = int(folder_id)
                         converted[qid]["eventId"] = int(event_id)
     return converted
-
 

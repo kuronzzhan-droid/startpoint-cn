@@ -4,16 +4,22 @@ import { MissionComputer, ComputerRegistry } from "./types"
 import { RegularComputer } from "./computer-regular"
 import { DegreeComputer } from "./computer-degree"
 import { AwakeComputer } from "./computer-awake"
-import { EventComputer } from "./computer-event"
+import { CollectComputer } from "./collect-progress"
 import { FallbackComputer } from "./computer-fallback"
+import { PassComputer } from "./pass"
+import { EventSafeComputer } from "./computer-event-safe"
 
 const REGISTRY: ComputerRegistry = new Map([
     [1, RegularComputer],
     [2, RegularComputer],
-    [3, EventComputer],
+    [10, RegularComputer],
+    [3, EventSafeComputer],
+    [4, CollectComputer],
     [5, DegreeComputer],
+    [6, PassComputer],
+    [7, PassComputer],
+    [8, PassComputer],
     [9, AwakeComputer],
-    // Category 4,10 → Fallback (DB-stored progress)
 ])
 
 export function getComputer(category: number): MissionComputer {

@@ -1,6 +1,6 @@
 # 角色觉醒任务覆盖文档
 
-> 状态: 基本完成   最后更新: 2026-06-28
+> 状态：部分完成。核心解锁与领奖时序已经通过客户端验收，已确认的配对、种族、指定关卡和空信赖证错误已经修复；144 条任务条件仍未逐条完成客户端验收。
 
 ## 概览
 
@@ -14,8 +14,8 @@
 |-----------|------|---------|
 | 1 | 阅读个人剧情 / 队伍中编有X通关 | 故事计数 或 `clears.clear_count`（fallback） |
 | 2 | 累计阅读故事（Alk）/ 累计玛纳（拉芙）/ 队长或队伍通关 | Alk=`totalStories`，拉芙=`totalManaObtained`，其他=`clears.clear_count` |
-| 3 | 强化弹射（Alk）/ 信赖证 / 共斗/限时 | Alk=`totalPowerflips`，信赖证=`bondTokenList.every(status>=2)`，其他=`clears.clear_count` |
-| 4 | 完成全部觉醒任务 | 检查 slot 1+2+3 是否全部 ≥1 |
+| 3 | 强化弹射（Alk）/ 信赖证 / 共斗/限时 | Alk=`totalPowerflips`，信赖证要求列表非空且 `every(status>=2)`，其他=`clears.clear_count` |
+| 4 | 完成全部觉醒任务 | 按各槽位 CDN `target_progress` 统计已完成任务数 |
 
 ### 统计
 
@@ -29,7 +29,9 @@
 
 最后 1 个 ❌（1210013 连击）通过 `max_combo_achieved` 追踪解决。
 
-### 后续完善路径
+下文记录已经接入的数据源和实现路径，不等于每条任务条件都已逐项完成客户端验证。配对计数排序、
+`2310012` 种族组合、`3310032/3310033` 指定关卡同场条件、空信赖证列表和失败战斗写入等已知错误
+已经由自动测试固定；其他任务仍需按条件矩阵验收。
 
 | 顺序 | 功能 | 工作量 | 影响 |
 |------|------|--------|------|
@@ -73,7 +75,7 @@
 
 ### 特定关卡通关（2026-06-28）✅
 
-5 个任务通过 `ctx.questProgress[category]` 检测 quest 完成状态：
+普通指定关卡任务通过 `ctx.questProgress[category]` 检测关卡完成状态：
 
 | mission_id | 角色 | 关卡 | quest_id | category |
 |------------|------|------|----------|:---:|
@@ -87,12 +89,31 @@
 映射常量 `QUEST_CLEAR_MISSIONS` 在 `mission.ts` 中定义，
 `computeProgress` 在 lastDigit 分支之前优先检测。
 
+`3310032` 与 `3310033` 还要求指定角色组合和指定关卡在同一场成功战斗中同时成立，不能把不同场次的
+配对累计与关卡进度拼接：
+
+| mission_id | 角色组合 | category | quest_id | 联机限制 |
+|---:|---|---:|---:|---|
+| 3310032 | 泰加、阿尔克 | 15 | 5 | 单人 |
+| 3310033 | 泰加、白 | 2 | 1010004 | 单人 |
+
+成功结算通过 `awake-battle-rules.ts` 匹配后直接增加对应 category 9 持久进度；失败战斗、错误关卡、
+缺少角色或联机结算均不写入。计算器读取该持久事实，不再从跨场累计配对推测完成状态。
+
+### 配对与种族组合（2026-07-24）✅
+
+- 配对写入前按角色数值 ID 排序，`2110012` 不再受队伍位置影响。
+- 读取旧存档时把 `a,b` 与 `b,a` 归一为同一个键并累加，兼容历史反序记录。
+- `2310012` 使用 CN 主数据的 `Human`、`Dragon`、`Devil`，不再把“魔”映射为 `Beast`；同时要求拉姆斯位于队长位。队长与三种族必须在同一场成功战斗中成立，才增加 category 9 持久进度。
+- 信赖证任务要求 `bondTokenList` 至少有一项且全部达到已领取状态，空列表不会完成任务。
+
 ### 队长追踪（2026-06-28）✅
 
 `players_character_quest_clears` 新增 `leader_clear_count` 列，`/finish` 中 `characters[0]` 传 `isLeader=true`。
 
-- `LEADER_REQUIRED_IDS` 集合：`{1510062, 1610022, 1610023, 2310012, 2610072}`
-- leader-required 任务使用 `leader_clear_count`（纯队长出场），非 leader 任务使用 `clear_count`（任意位置）
+- `LEADER_REQUIRED_IDS` 集合：`{1510062, 1610022, 1610023, 2610072}`
+- 需要指定队长的任务使用 `leader_clear_count`（纯队长出场），其他任务使用 `clear_count`（任意位置）
+- `2310012` 不使用通用 `leader_clear_count`；它由战斗事实规则同时校验拉姆斯队长和 Human、Dragon、Devil 组合。
 - 1610023（威隆队长通关）⚠️→✅
 
 ### 时间追踪（2026-06-28）✅
@@ -171,4 +192,22 @@ lib/mission/
 - `getAwakeMissionRewards()` 使用 `base=9`（1 个道具/阶段）
 
 
-(End of file - total 85 lines)
+第二页解锁与第一页领奖使用独立的持久状态：前者保存在
+`players_character_awake_unlocks`，后者保存在
+`players_category_mission_stages.status`。
+
+- 任务未全部完成时，客户端进入第一页；`get_mission_progress` 自动结算当前已完成且未领取的奖励，
+  第二页继续锁定。
+- 最终条件由权威端点写入后，服务端立即校准并幂等保存持久解锁，通过
+  `character_list.mana_board_awake` 发布，但不领取 category 9 奖励，也不改变物品。
+- 全部完成的角色首次进入场景时直接显示第二页。玩家手动切回第一页后，
+  `tabChanged(1)` 才请求 `get_mission_progress`，一次领取全部未领奖励并显示对应 `mission_info`。
+- 因持久解锁已经存在，正常领奖不会再次返回解锁角色条目；重复请求不会重复发奖或重复通知。
+- 旧/异常存档若缺少持久解锁，且最终 `AwakeManaBoard` 特殊阶段仍未领奖，该阶段首次结算会幂等补写。
+  只有 UPSERT 本次确实改变状态时，`character_list` 才发布一次解锁；第二次结算不再发布。
+- 如果最终特殊阶段已经存在领奖状态但解锁行丢失，结算逻辑不会重放该阶段；恢复由 `/load` 校准或
+  数据库升级回填负责，客户端需要重新执行 `/load`（通常为重新登录）。
+- 同一次结算收到重复 `mission_id` 时，会先按任务取最大进度，再统一持久化与领奖，避免低值覆盖高值。
+- 真实 MsgPack+Base64 Fastify 回归从普通单人 `/finish` 开始：最后一次成功通关会立即在战斗响应的
+  `character_list` 发布 `mana_board_awake`，但不领取第一页奖励；随后手动进入第一页一次返回四条
+  `mission_info` 和奖励，重复请求不再发奖，也不会重复返回角色解锁。

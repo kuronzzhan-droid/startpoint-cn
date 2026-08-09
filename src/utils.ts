@@ -105,10 +105,14 @@ export function generateIdpAlias(
 /**
  * Generates a random viewer ID using the crypto library.
  * 
- * @returns A number between 100,000,000 and 999,999,999
+ * @returns A number between 100,000,000 and 899,999,999.
+ *
+ * Values from 900,000,000 onward are reserved by the multiplayer protocol
+ * for COM/AI participants. Assigning a real account one of those values makes
+ * older clients treat that player as an AI and omit them from co-op results.
  */
 export function generateViewerId(): number {
-    return randomInt(100000000, 999999999)
+    return randomInt(100000000, 900000000)
 }
 
 export interface DataHeaders {

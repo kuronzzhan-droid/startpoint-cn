@@ -14,12 +14,14 @@ function buildPlayerQuestProgress(
     return {
         questId: raw.quest_id,
         finished: deserializeBoolean(raw.finished),
+        hostFinished: deserializeBoolean(raw.host_finished ?? 0),
         unlocked: deserializeBoolean(raw.unlocked),
         highScore: raw.high_score,
         clearRank: raw.clear_rank,
         bestElapsedTimeMs: raw.best_elapsed_time_ms,
         leaderCharacterId: raw.leader_character_id,
-        multiClearCount: raw.multi_clear_count
+        multiClearCount: raw.multi_clear_count,
+        sPlusRewardReceived: deserializeBoolean(raw.s_plus_reward_received ?? 0)
     }
 }
 
@@ -34,7 +36,7 @@ export function getPlayerQuestProgressSync(
 ): Record<string, PlayerQuestProgress[]> {
 
     const rawProgress = getDb().prepare(`
-    SELECT section, quest_id, finished, unlocked, high_score, clear_rank, best_elapsed_time_ms, leader_character_id, multi_clear_count
+    SELECT section, quest_id, finished, host_finished, unlocked, high_score, clear_rank, best_elapsed_time_ms, leader_character_id, multi_clear_count, s_plus_reward_received
     FROM players_quest_progress
     WHERE player_id = ?
     `).all(playerId) as RawPlayerQuestProgress[]
@@ -54,6 +56,29 @@ export function getPlayerQuestProgressSync(
     return mapped
 }
 
+export function countFinishedPlayerQuestsByCategorySync(
+    playerId: number,
+    category: number,
+): number {
+    const row = getDb().prepare(`
+    SELECT COUNT(*) AS count
+    FROM players_quest_progress
+    WHERE player_id = ? AND section = ? AND finished = 1
+    `).get(playerId, category) as { count?: unknown } | undefined
+    const count = Number(row?.count)
+    return Number.isSafeInteger(count) && count >= 0 ? count : 0
+}
+
+export function countFinishedPlayerQuestsSync(playerId: number): number {
+    const row = getDb().prepare(`
+    SELECT COUNT(*) AS count
+    FROM players_quest_progress
+    WHERE player_id = ? AND finished = 1
+    `).get(playerId) as { count?: unknown } | undefined
+    const count = Number(row?.count)
+    return Number.isSafeInteger(count) && count >= 0 ? count : 0
+}
+
 /**
  * Gets the progress of a singular quest for a player..
  * 
@@ -69,7 +94,7 @@ export function getPlayerSingleQuestProgressSync(
 ): PlayerQuestProgress | null {
 
     const rawProgress = getDb().prepare(`
-    SELECT section, quest_id, finished, unlocked, high_score, clear_rank, best_elapsed_time_ms, leader_character_id, multi_clear_count
+    SELECT section, quest_id, finished, host_finished, unlocked, high_score, clear_rank, best_elapsed_time_ms, leader_character_id, multi_clear_count, s_plus_reward_received
     FROM players_quest_progress
     WHERE player_id = ? AND section = ? AND quest_id = ?
     `).get(playerId, Number(section), Number(questId)) as RawPlayerQuestProgress
@@ -92,17 +117,19 @@ export function insertPlayerQuestProgressSync(
     data: PlayerQuestProgress
 ) {
     getDb().prepare(`
-    INSERT INTO players_quest_progress (section, quest_id, finished, unlocked, high_score, clear_rank, best_elapsed_time_ms, leader_character_id, player_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO players_quest_progress (section, quest_id, finished, host_finished, unlocked, high_score, clear_rank, best_elapsed_time_ms, leader_character_id, s_plus_reward_received, player_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
         Number(section),
         data.questId,
         serializeBoolean(data.finished),
+        serializeBoolean(data.hostFinished ?? false),
         serializeBoolean(data.unlocked ?? false),
         data.highScore ?? null,
         data.clearRank ?? null,
         data.bestElapsedTimeMs ?? null,
         data.leaderCharacterId ?? null,
+        serializeBoolean(data.sPlusRewardReceived ?? false),
         playerId
     )
 }
@@ -140,11 +167,13 @@ export function updatePlayerQuestProgressSync(
 ) {
     const fieldMap: Record<string, string> = {
         'finished': 'finished',
+        'hostFinished': 'host_finished',
         'unlocked': 'unlocked',
         'highScore': 'high_score',
         'clearRank': 'clear_rank',
         'bestElapsedTimeMs': 'best_elapsed_time_ms',
-        'leaderCharacterId': 'leader_character_id'
+        'leaderCharacterId': 'leader_character_id',
+        'sPlusRewardReceived': 's_plus_reward_received'
     }
 
     const sets: string[] = []
@@ -167,6 +196,18 @@ export function updatePlayerQuestProgressSync(
         SET ${sets.join(', ')}
         WHERE section = ? AND quest_id = ? AND player_id = ?
         `).run([...values, Number(section), data.questId, playerId]);
+}
+
+export function incrementPlayerQuestMultiClearSync(
+    playerId: number,
+    section: number | string,
+    questId: number | string,
+): void {
+    getDb().prepare(`
+    UPDATE players_quest_progress
+    SET multi_clear_count = multi_clear_count + 1
+    WHERE player_id = ? AND section = ? AND quest_id = ?
+    `).run(playerId, Number(section), Number(questId))
 }
 
 /**

@@ -1,6 +1,6 @@
 import { clientSerializeDate } from "../data/utils";
 import { getPlayerCharacterSync, insertPlayerCharacterSync, updatePlayerCharacterSync } from "../data/domains/character"
-import { getPlayerSync, updatePlayerSync } from "../data/domains/player"
+import { adjustPlayerExpPoolSync, getPlayerSync } from "../data/domains/player"
 import { givePlayerItemSync } from "../data/domains/item"
 import { getCharacterDataSync } from "./assets";
 import { AddExpList, AddExpListItem, ClientReturnBondTokenStatus, ClientReturnBondTokenStatusList, ClientReturnCharacter, Element, GivePlayerCharacterResult, RewardPlayerCharacterExpResult } from "./types";
@@ -234,7 +234,7 @@ export function givePlayerCharactersExpSync(
 
             addExpList.push({
                 character_id: characterId,
-                add_exp: overflowExp > 0 ? overflowExp - expAmount : expAmount,
+                add_exp: expAmount - overflowExp,
                 after_exp: afterExp,
                 add_exp_pool: overflowExp
             })
@@ -283,14 +283,11 @@ export function givePlayerCharactersExpSync(
     // get player data
     const playerData = getPlayerSync(playerId)
     const currentExpPool = playerData ? playerData.expPool : null
-    const afterExpPool = currentExpPool === null ? null : currentExpPool + addToExpPool
-    
-    if (afterExpPool !== null && addToExpPool > 0) {
-        updatePlayerSync({
-            id: playerId,
-            expPool: afterExpPool
-        })
-    }
+    const afterExpPool = currentExpPool === null
+        ? null
+        : addToExpPool > 0
+            ? adjustPlayerExpPoolSync(playerId, addToExpPool, 'character_exp_overflow')
+            : currentExpPool
 
     return {
         add_exp_list: addExpList,

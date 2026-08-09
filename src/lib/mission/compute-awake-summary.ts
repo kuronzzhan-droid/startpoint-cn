@@ -1,12 +1,14 @@
 // Compute awake mission summary for /load response
 // Returns active_mission_list (Array format for data.active_mission_list)
 
-import { getPlayerActiveMissionsSync } from "../../data/domains/mission"
+import { getPlayerCategoryMissionsSync } from "../../data/domains/mission"
 import { getPlayerCharactersSync } from "../../data/domains/character"
+import { getPlayerCharacterAwakeUnlocksSync } from "../../data/domains/character_awake"
 import { getComputer } from "./registry"
-import { getMissionIdsByCategory, getCompletedStageNumbers, getMissionStageIds } from "./stages"
+import { getMissionIdsByCategory, getMissionStageIds } from "./stages"
 import { getCharacterIdFromMission } from "./character-queries"
 import type { CategoryContext } from "./types"
+import { getServerDate } from "../../utils"
 
 export interface AwakeMissionEntry {
     mission_id: number
@@ -20,7 +22,7 @@ export interface AwakeSummary {
 }
 
 export function computeAwakeSummary(playerId: number): AwakeSummary {
-    const activeMissions = getPlayerActiveMissionsSync(playerId)
+    const activeMissions = getPlayerCategoryMissionsSync(playerId, 9)
     const playerChars = getPlayerCharactersSync(playerId)
     const awakeMissionIds = getMissionIdsByCategory(9)
 
@@ -32,25 +34,23 @@ export function computeAwakeSummary(playerId: number): AwakeSummary {
     }
 
     const computer = getComputer(9)
-    const ctx = computer.buildContext(playerId, 9) as CategoryContext
+    const ctx = computer.buildContext(playerId, 9, getServerDate()) as CategoryContext
 
     const activeMissionList: AwakeMissionEntry[] = []
-    const manaBoardAwakeMap = new Map<string, Record<number, number>>()
+    const manaBoardAwakeMap = getPlayerCharacterAwakeUnlocksSync(playerId)
 
     for (const [charKId, missionIds] of charMissionMap) {
         if (!playerChars[charKId]) continue
 
-        let allComplete = true
-
         for (const missionId of missionIds) {
             const dbProgress = activeMissions[String(missionId)]?.progress ?? 0
             const progress = computer.compute(missionId, ctx, dbProgress)
-            const completedStages = getCompletedStageNumbers(9, missionId, progress)
             const allStageIds = getMissionStageIds(9, missionId)
+            const persistedStages = activeMissions[String(missionId)]?.stages
 
             const stages = allStageIds.map(sid => ({
                 stage: sid,
-                received: completedStages.includes(sid),
+                received: !Array.isArray(persistedStages) && persistedStages?.[String(sid)] === true,
             }))
 
             activeMissionList.push({
@@ -58,14 +58,6 @@ export function computeAwakeSummary(playerId: number): AwakeSummary {
                 progress_value: progress,
                 stages,
             })
-
-            if (!allStageIds.every(sid => completedStages.includes(sid))) {
-                allComplete = false
-            }
-        }
-
-        if (allComplete) {
-            manaBoardAwakeMap.set(charKId, { 1: 1 })
         }
     }
 

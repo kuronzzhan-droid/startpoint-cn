@@ -8,6 +8,26 @@ function add(playerId: number, query: MissionCounterQuery, amount: number = 1): 
     addMissionCounterSync(playerId, query, amount)
 }
 
+function addBattleStat(
+    event: BattleFinishMissionEvent,
+    kind: string,
+    amount: number,
+): void {
+    if (amount <= 0) return
+    add(event.playerId, {
+        dimension: "battle.stat",
+        scopeType: "lifetime",
+        scopeKey: "all",
+        qualifier: { kind, mode: "any" },
+    }, amount)
+    add(event.playerId, {
+        dimension: "battle.stat",
+        scopeType: "lifetime",
+        scopeKey: "all",
+        qualifier: { kind, mode: event.mode },
+    }, amount)
+}
+
 function recordCharacterCounters(event: BattleFinishMissionEvent): void {
     const allCharacters = [...new Set([...event.partyCharacterIds, ...event.unisonCharacterIds])]
     for (const characterId of allCharacters) {
@@ -97,29 +117,26 @@ function recordBattleMissionDimensionWrites(event: BattleFinishMissionEvent): vo
     }
 
     if (event.statistics.dashCount > 0) {
-        add(event.playerId, {
-            dimension: "battle.stat",
-            scopeType: "lifetime",
-            scopeKey: "all",
-            qualifier: { kind: "dash" },
-        }, event.statistics.dashCount)
+        addBattleStat(event, "dash", event.statistics.dashCount)
     }
     if (event.statistics.powerFlipCount > 0) {
-        add(event.playerId, {
-            dimension: "battle.stat",
-            scopeType: "lifetime",
-            scopeKey: "all",
-            qualifier: { kind: "power_flip" },
-        }, event.statistics.powerFlipCount)
+        addBattleStat(event, "power_flip", event.statistics.powerFlipCount)
     }
     if (event.statistics.skillCount > 0) {
-        add(event.playerId, {
-            dimension: "battle.stat",
-            scopeType: "lifetime",
-            scopeKey: "all",
-            qualifier: { kind: "skill" },
-        }, event.statistics.skillCount)
+        addBattleStat(event, "skill", event.statistics.skillCount)
     }
+    addBattleStat(event, "power_flip_lv3", event.statistics.powerFlipLv3Count)
+    addBattleStat(event, "fever", event.statistics.feverCount)
+    addBattleStat(event, "fever_time_ms", event.statistics.feverTimeMs)
+    addBattleStat(event, "debuff_enemy", event.statistics.weakenEnemyCount)
+    addBattleStat(event, "clear_buff_enemy", event.statistics.clearEnemyBuffCount)
+    addBattleStat(event, "clear_debuff_self", event.statistics.clearSelfDebuffCount)
+    addBattleStat(event, "buff_companion", event.statistics.buffCompanionCount)
+    addBattleStat(event, "heal_companion", event.statistics.healCompanionCount)
+    addBattleStat(event, "emotion", event.statistics.emotionCount)
+    addBattleStat(event, "enemy_kill", event.statistics.enemyKillCount)
+    addBattleStat(event, "weak_point", event.statistics.weakPointDestroyCount)
+    addBattleStat(event, "coffin_reduce", event.statistics.coffinReduceCount)
     if (event.statistics.maxComboCount > 0) {
         setMissionCounterMaxSync(event.playerId, {
             dimension: "battle.max_combo",
@@ -127,6 +144,57 @@ function recordBattleMissionDimensionWrites(event: BattleFinishMissionEvent): vo
             scopeKey: "all",
             qualifier: {},
         }, event.statistics.maxComboCount)
+    }
+    if (event.statistics.maxSkillChainCount > 0) {
+        setMissionCounterMaxSync(event.playerId, {
+            dimension: "battle.max_skill_chain",
+            scopeType: "lifetime",
+            scopeKey: "all",
+            qualifier: {},
+        }, event.statistics.maxSkillChainCount)
+    }
+    if (event.mode === "multi" && event.role) {
+        add(event.playerId, {
+            dimension: "battle.multi_role_clear",
+            scopeType: "lifetime",
+            scopeKey: "all",
+            qualifier: { role: event.role },
+        })
+    }
+    if (event.mode === "multi" && event.isRescue) {
+        add(event.playerId, {
+            dimension: "battle.multi_rescue_clear",
+            scopeType: "lifetime",
+            scopeKey: "all",
+            qualifier: {},
+        })
+        if (event.questCategory === 2) {
+            const questRank = Math.abs(Math.trunc(event.questId)) % 10
+            if (questRank >= 1 && questRank <= 5) {
+                add(event.playerId, {
+                    dimension: "battle.multi_rescue_clear",
+                    scopeType: "lifetime",
+                    scopeKey: "all",
+                    qualifier: { questRank },
+                })
+            }
+        }
+    }
+    if (event.mode === "multi" && event.isNewbieRescue) {
+        add(event.playerId, {
+            dimension: "battle.multi_newbie_rescue_clear",
+            scopeType: "lifetime",
+            scopeKey: "all",
+            qualifier: {},
+        })
+    }
+    if (event.mode === "multi" && event.isMvp) {
+        add(event.playerId, {
+            dimension: "battle.multi_mvp",
+            scopeType: "lifetime",
+            scopeKey: "all",
+            qualifier: {},
+        })
     }
 
     recordCharacterCounters(event)

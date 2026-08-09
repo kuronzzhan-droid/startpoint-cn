@@ -1,14 +1,17 @@
 // Active mission reward claiming endpoint
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { getPlayerActiveMissionsSync, updatePlayerActiveMissionStageSync } from "../../data/domains/mission"
-import { getPlayerSync, updatePlayerSync } from "../../data/domains/player"
+import { getPlayerSync } from "../../data/domains/player"
 import { getSession } from "../../data/domains/session"
-import { givePlayerItemSync } from "../../data/domains/item"
-import { insertDefaultPlayerCharacterSync } from "../../data/domains/character"
 import { getDb } from "../../data/db"
+import { getPlayerMailCountSync } from "../../data/domains/mail"
+import { getPlayerQuestProgressSync } from "../../data/domains/quest"
 import { generateDataHeaders, getServerTime } from "../../utils";
 import { resolvePlayerIdSync } from "../../data/activeAccount";
-import { validateMissionRewardClaims } from "../../lib/mission/index";
+import { reconcileAwakeUnlockCharacterList, validateMissionRewardClaims } from "../../lib/mission/index";
+import { MissionRewardGranter } from "../../lib/mission/grants";
+import { getContentSnapshot } from "../../content/runtime/content-snapshot";
+import { gameVerboseLog } from "../../lib/game-logging";
 
 const routes = async (fastify: FastifyInstance) => {
     fastify.post("/receive", async (request: FastifyRequest, reply: FastifyReply) => {
@@ -43,27 +46,26 @@ const routes = async (fastify: FastifyInstance) => {
         })
 
         const activeMissions = getPlayerActiveMissionsSync(playerId)
-        const itemRewards: Record<number, number> = {}
-        let freeVmoney = player.freeVmoney
-        let freeMana = player.freeMana
-        let expPool = player.expPool
-        let totalManaGained = 0
-
         const requestList = body.active_mission_list || []
-        const validation = validateMissionRewardClaims(activeMissions, requestList)
-        if (!validation.ok) {
-            return reply.status(400).send({ error: "Bad Request", message: validation.message })
-        }
-        const claims = validation.claims
+        const validation = validateMissionRewardClaims(activeMissions, requestList, {
+            repository: getContentSnapshot().repository,
+            now: getServerTime() * 1000,
+            questProgress: getPlayerQuestProgressSync(playerId),
+        })
+        if (!validation.ok) return reply.status(400).send({
+            "error": "Bad Request",
+            "message": validation.message
+        })
 
+        const granter = new MissionRewardGranter(playerId, player)
         const resultByMission = new Map<number, {
-            mission_id: number
-            progress_value: number
-            stages: { stage: number; received: boolean }[]
+            mission_id: number,
+            progress_value: number,
+            stages: { stage: number, received: boolean }[]
         }>()
 
-        getDb().transaction(() => {
-            for (const claim of claims) {
+        const characterList = getDb().transaction(() => {
+            for (const claim of validation.claims) {
                 updatePlayerActiveMissionStageSync(playerId, claim.stage, claim.missionId, true)
                 let result = resultByMission.get(claim.missionId)
                 if (!result) {
@@ -71,53 +73,17 @@ const routes = async (fastify: FastifyInstance) => {
                     resultByMission.set(claim.missionId, result)
                 }
                 result.stages.push({ stage: claim.stage, received: true })
-
-                const rewards = claim.rewards
-                for (const r of rewards) {
-                    switch (r.kind) {
-                        case 0: // Stone
-                            freeVmoney += r.amount
-                            break
-                        case 1: // Item
-                            if (r.itemId) {
-                                const newTotal = givePlayerItemSync(playerId, r.itemId, r.amount)
-                                itemRewards[r.itemId] = newTotal
-                            }
-                            break
-                        case 2: // Equipment
-                            if (r.equipmentId) {
-                                const newTotal = givePlayerItemSync(playerId, r.equipmentId, r.amount)
-                                itemRewards[r.equipmentId] = newTotal
-                            }
-                            break
-                        case 3: // Mana
-                            freeMana += r.amount
-                            totalManaGained += r.amount
-                            break
-                        case 4: // Character
-                            if (r.characterId && r.amount > 0) {
-                                try {
-                                    insertDefaultPlayerCharacterSync(playerId, r.characterId)
-                                } catch (_) {
-                                    // Character may already exist — ignore duplicate
-                                }
-                            }
-                            break
-                        case 5: // Exp pool
-                            expPool += r.amount
-                            break
-                    }
-                }
+                granter.grant(claim.rewards)
             }
-
-            if (freeVmoney !== player.freeVmoney || freeMana !== player.freeMana || expPool !== player.expPool) {
-                updatePlayerSync({ id: playerId, freeVmoney, freeMana, expPool, totalManaObtained: (player.totalManaObtained ?? 0) + totalManaGained })
-            }
+            granter.persistPlayer()
+            const existingCharacterList = granter.characterList as unknown as Record<string, unknown>[]
+            return validation.claims.length > 0
+                ? reconcileAwakeUnlockCharacterList(playerId, existingCharacterList)
+                : existingCharacterList
         })()
 
         const resultList = [...resultByMission.values()]
-
-        console.log(`[ACTIVE_MISSION] receive viewer=${viewerId} missions=${requestList.length} items=${Object.keys(itemRewards).length}`)
+        gameVerboseLog(() => `[ACTIVE_MISSION] receive viewer=${viewerId} missions=${requestList.length} items=${Object.keys(granter.itemList).length}`)
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
@@ -125,13 +91,14 @@ const routes = async (fastify: FastifyInstance) => {
             "data": {
                 "active_mission_list": resultList,
                 "user_info": {
-                    "free_vmoney": freeVmoney,
-                    "free_mana": freeMana,
-                    "exp_pool": expPool,
+                    ...granter.getUserInfo(),
                     "exp_pooled_time": getServerTime(player.expPooledTime)
                 },
-                "item_list": itemRewards,
-                "mail_arrived": false
+                "character_list": characterList,
+                "equipment_list": granter.equipmentList,
+                "item_list": granter.itemList,
+                "degree_list": granter.degreeList.map(degreeId => ({ viewer_id: viewerId, degree_id: degreeId })),
+                "mail_arrived": getPlayerMailCountSync(playerId, true) > 0
             }
         })
     })

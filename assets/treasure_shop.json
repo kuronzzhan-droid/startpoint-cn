@@ -3,1944 +3,1935 @@
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200001,
+        "type": 0,
+        "id": 1,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 300
+    },
+    "dailyStock": 10
   },
   "200002": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200002,
+        "type": 0,
+        "id": 2,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 1000
+    },
+    "dailyStock": 5
   },
   "200003": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200003,
+        "type": 0,
+        "id": 3,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 2500
+    },
+    "dailyStock": 1
   },
   "200004": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200004,
+        "type": 0,
+        "id": 4,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 15000
+    },
+    "dailyStock": 1
   },
   "200005": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200005,
+        "type": 0,
+        "id": 5,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 300
+    },
+    "dailyStock": 10
   },
   "200006": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200006,
+        "type": 0,
+        "id": 6,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 1000
+    },
+    "dailyStock": 5
   },
   "200007": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200007,
+        "type": 0,
+        "id": 7,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 2500
+    },
+    "dailyStock": 1
   },
   "200008": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200008,
+        "type": 0,
+        "id": 8,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 15000
+    },
+    "dailyStock": 1
   },
   "200009": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200009,
+        "type": 0,
+        "id": 9,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 300
+    },
+    "dailyStock": 10
   },
   "200010": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200010,
+        "type": 0,
+        "id": 10,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 1000
+    },
+    "dailyStock": 5
   },
   "200011": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200011,
+        "type": 0,
+        "id": 11,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 2500
+    },
+    "dailyStock": 1
   },
   "200012": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200012,
+        "type": 0,
+        "id": 12,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 15000
+    },
+    "dailyStock": 1
   },
   "200013": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200013,
+        "type": 0,
+        "id": 13,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 300
+    },
+    "dailyStock": 10
   },
   "200014": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200014,
+        "type": 0,
+        "id": 14,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 1000
+    },
+    "dailyStock": 5
   },
   "200015": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200015,
+        "type": 0,
+        "id": 15,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 2500
+    },
+    "dailyStock": 1
   },
   "200016": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200016,
+        "type": 0,
+        "id": 16,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 15000
+    },
+    "dailyStock": 1
   },
   "200017": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200017,
+        "type": 0,
+        "id": 42,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 300
+    },
+    "dailyStock": 10
   },
   "200018": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200018,
+        "type": 0,
+        "id": 43,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 1000
+    },
+    "dailyStock": 5
   },
   "200019": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200019,
+        "type": 0,
+        "id": 44,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 2500
+    },
+    "dailyStock": 1
   },
   "200020": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200020,
+        "type": 0,
+        "id": 45,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 15000
+    },
+    "dailyStock": 1
   },
   "200021": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200021,
+        "type": 0,
+        "id": 46,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 300
+    },
+    "dailyStock": 10
   },
   "200022": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200022,
+        "type": 0,
+        "id": 47,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 1000
+    },
+    "dailyStock": 5
   },
   "200023": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200023,
+        "type": 0,
+        "id": 48,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 2500
+    },
+    "dailyStock": 1
   },
   "200024": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200024,
+        "type": 0,
+        "id": 49,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 15000
+    },
+    "dailyStock": 1
   },
   "200025": {
     "costs": [],
     "rewards": [
       {
         "type": 1,
-        "id": 200025,
-        "count": 1
+        "count": 500
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 2500
+    },
+    "dailyStock": 1
   },
   "200026": {
     "costs": [],
     "rewards": [
       {
         "type": 1,
-        "id": 200026,
-        "count": 1
+        "count": 1000
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 5000
+    },
+    "dailyStock": 1
   },
   "200027": {
     "costs": [],
     "rewards": [
       {
         "type": 1,
-        "id": 200027,
-        "count": 1
+        "count": 1500
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 7500
+    },
+    "dailyStock": 1
   },
   "200028": {
     "costs": [],
     "rewards": [
       {
         "type": 1,
-        "id": 200028,
-        "count": 1
+        "count": 2000
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 10000
+    },
+    "dailyStock": 1
   },
   "200029": {
     "costs": [],
     "rewards": [
       {
         "type": 1,
-        "id": 200029,
-        "count": 1
+        "count": 3000
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 15000
+    },
+    "dailyStock": 1
   },
   "200030": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200030,
+        "type": 0,
+        "id": 10001,
         "count": 1
       }
     ],
     "availableFrom": "2015-03-01 15:00:00",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2020-03-17 04:59:58",
+    "stock": 1,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 30000
+    },
+    "dailyStock": 1
   },
   "200031": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200031,
+        "type": 0,
+        "id": 2,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 30,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 200
+    },
+    "dailyStock": 30
   },
   "200032": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200032,
+        "type": 0,
+        "id": 3,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 500
+    },
+    "dailyStock": 10
   },
   "200033": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200033,
+        "type": 0,
+        "id": 4,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 3000
+    },
+    "dailyStock": 5
   },
   "200034": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200034,
+        "type": 0,
+        "id": 6,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 30,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 200
+    },
+    "dailyStock": 30
   },
   "200035": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200035,
+        "type": 0,
+        "id": 7,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 500
+    },
+    "dailyStock": 10
   },
   "200036": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200036,
+        "type": 0,
+        "id": 8,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 3000
+    },
+    "dailyStock": 5
   },
   "200037": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200037,
+        "type": 0,
+        "id": 10,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 30,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 200
+    },
+    "dailyStock": 30
   },
   "200038": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200038,
+        "type": 0,
+        "id": 11,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 500
+    },
+    "dailyStock": 10
   },
   "200039": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200039,
+        "type": 0,
+        "id": 12,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 3000
+    },
+    "dailyStock": 5
   },
   "200040": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200040,
+        "type": 0,
+        "id": 14,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 30,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 200
+    },
+    "dailyStock": 30
   },
   "200041": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200041,
+        "type": 0,
+        "id": 15,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 500
+    },
+    "dailyStock": 10
   },
   "200042": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200042,
+        "type": 0,
+        "id": 16,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 3000
+    },
+    "dailyStock": 5
   },
   "200043": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200043,
+        "type": 0,
+        "id": 43,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 30,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 200
+    },
+    "dailyStock": 30
   },
   "200044": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200044,
+        "type": 0,
+        "id": 44,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 500
+    },
+    "dailyStock": 10
   },
   "200045": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200045,
+        "type": 0,
+        "id": 45,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 3000
+    },
+    "dailyStock": 5
   },
   "200046": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200046,
+        "type": 0,
+        "id": 47,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 30,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 200
+    },
+    "dailyStock": 30
   },
   "200047": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200047,
+        "type": 0,
+        "id": 48,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 500
+    },
+    "dailyStock": 10
   },
   "200048": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200048,
+        "type": 0,
+        "id": 49,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 3000
+    },
+    "dailyStock": 5
   },
   "200049": {
     "costs": [],
     "rewards": [
       {
         "type": 1,
-        "id": 200049,
-        "count": 1
+        "count": 2000
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 30,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 2000
+    },
+    "dailyStock": 30
   },
   "200050": {
     "costs": [],
     "rewards": [
       {
         "type": 1,
-        "id": 200050,
-        "count": 1
+        "count": 3000
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 3000
+    },
+    "dailyStock": 10
   },
   "200051": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200051,
+        "type": 0,
+        "id": 10001,
         "count": 1
       }
     ],
     "availableFrom": "2020-03-17 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2025-03-06 04:59:59",
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 20000
+    },
+    "dailyStock": 5
   },
   "200052": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200052,
+        "type": 0,
+        "id": 50,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 10000
+    },
+    "dailyStock": 10
   },
   "200053": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200053,
+        "type": 0,
+        "id": 51,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 20000
+    },
+    "dailyStock": 5
   },
   "200054": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200054,
+        "type": 0,
+        "id": 52,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 3,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 50000
+    },
+    "dailyStock": 3
   },
   "200055": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200055,
+        "type": 0,
+        "id": 53,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 10000
+    },
+    "dailyStock": 10
   },
   "200056": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200056,
+        "type": 0,
+        "id": 54,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 20000
+    },
+    "dailyStock": 5
   },
   "200057": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200057,
+        "type": 0,
+        "id": 55,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 3,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 50000
+    },
+    "dailyStock": 3
   },
   "200058": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200058,
+        "type": 0,
+        "id": 56,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 10000
+    },
+    "dailyStock": 10
   },
   "200059": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200059,
+        "type": 0,
+        "id": 57,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 20000
+    },
+    "dailyStock": 5
   },
   "200060": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200060,
+        "type": 0,
+        "id": 58,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 3,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 50000
+    },
+    "dailyStock": 3
   },
   "200061": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200061,
+        "type": 0,
+        "id": 59,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 10000
+    },
+    "dailyStock": 10
   },
   "200062": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200062,
+        "type": 0,
+        "id": 60,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 20000
+    },
+    "dailyStock": 5
   },
   "200063": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200063,
+        "type": 0,
+        "id": 61,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 3,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 50000
+    },
+    "dailyStock": 3
   },
   "200064": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200064,
+        "type": 0,
+        "id": 62,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 10000
+    },
+    "dailyStock": 10
   },
   "200065": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200065,
+        "type": 0,
+        "id": 63,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 20000
+    },
+    "dailyStock": 5
   },
   "200066": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200066,
+        "type": 0,
+        "id": 64,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 3,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 50000
+    },
+    "dailyStock": 3
   },
   "200067": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200067,
+        "type": 0,
+        "id": 65,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 10000
+    },
+    "dailyStock": 10
   },
   "200068": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200068,
+        "type": 0,
+        "id": 66,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 20000
+    },
+    "dailyStock": 5
   },
   "200069": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200069,
+        "type": 0,
+        "id": 67,
         "count": 1
       }
     ],
     "availableFrom": "2022-08-09 04:59:59",
-    "availableUntil": null,
-    "stock": 99,
+    "availableUntil": "2022-08-15 04:59:58",
+    "stock": 3,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 50000
+    },
+    "dailyStock": 3
   },
   "200070": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200070,
+        "type": 0,
+        "id": 2,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 30,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 100
+    },
+    "dailyStock": 30
   },
   "200071": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200071,
+        "type": 0,
+        "id": 3,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 250
+    },
+    "dailyStock": 10
   },
   "200072": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200072,
+        "type": 0,
+        "id": 4,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 1500
+    },
+    "dailyStock": 5
   },
   "200073": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200073,
+        "type": 0,
+        "id": 6,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 30,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 100
+    },
+    "dailyStock": 30
   },
   "200074": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200074,
+        "type": 0,
+        "id": 7,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 250
+    },
+    "dailyStock": 10
   },
   "200075": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200075,
+        "type": 0,
+        "id": 8,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 1500
+    },
+    "dailyStock": 5
   },
   "200076": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200076,
+        "type": 0,
+        "id": 10,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 30,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 100
+    },
+    "dailyStock": 30
   },
   "200077": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200077,
+        "type": 0,
+        "id": 11,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 250
+    },
+    "dailyStock": 10
   },
   "200078": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200078,
+        "type": 0,
+        "id": 12,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 1500
+    },
+    "dailyStock": 5
   },
   "200079": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200079,
+        "type": 0,
+        "id": 14,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 30,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 100
+    },
+    "dailyStock": 30
   },
   "200080": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200080,
+        "type": 0,
+        "id": 15,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 250
+    },
+    "dailyStock": 10
   },
   "200081": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200081,
+        "type": 0,
+        "id": 16,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 1500
+    },
+    "dailyStock": 5
   },
   "200082": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200082,
+        "type": 0,
+        "id": 43,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 30,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 100
+    },
+    "dailyStock": 30
   },
   "200083": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200083,
+        "type": 0,
+        "id": 44,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 250
+    },
+    "dailyStock": 10
   },
   "200084": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200084,
+        "type": 0,
+        "id": 45,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 1500
+    },
+    "dailyStock": 5
   },
   "200085": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200085,
+        "type": 0,
+        "id": 47,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 30,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 100
+    },
+    "dailyStock": 30
   },
   "200086": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200086,
+        "type": 0,
+        "id": 48,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 250
+    },
+    "dailyStock": 10
   },
   "200087": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200087,
+        "type": 0,
+        "id": 49,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 1500
+    },
+    "dailyStock": 5
   },
   "200088": {
     "costs": [],
     "rewards": [
       {
         "type": 1,
-        "id": 200088,
-        "count": 1
+        "count": 2000
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 30,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 1000
+    },
+    "dailyStock": 30
   },
   "200089": {
     "costs": [],
     "rewards": [
       {
         "type": 1,
-        "id": 200089,
-        "count": 1
+        "count": 3000
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 10,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 1500
+    },
+    "dailyStock": 10
   },
   "200090": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200090,
+        "type": 0,
+        "id": 10001,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 10000
+    },
+    "dailyStock": 5
   },
   "200091": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200091,
+        "type": 0,
+        "id": 50,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 2000
+    },
+    "dailyStock": 5
   },
   "200092": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200092,
+        "type": 0,
+        "id": 51,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 4,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 3000
+    },
+    "dailyStock": 4
   },
   "200093": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200093,
+        "type": 0,
+        "id": 52,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 3,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 5000
+    },
+    "dailyStock": 3
   },
   "200094": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200094,
+        "type": 0,
+        "id": 53,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 2000
+    },
+    "dailyStock": 5
   },
   "200095": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200095,
+        "type": 0,
+        "id": 54,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 4,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 3000
+    },
+    "dailyStock": 4
   },
   "200096": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200096,
+        "type": 0,
+        "id": 55,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 3,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 5000
+    },
+    "dailyStock": 3
   },
   "200097": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200097,
+        "type": 0,
+        "id": 56,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 2000
+    },
+    "dailyStock": 5
   },
   "200098": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200098,
+        "type": 0,
+        "id": 57,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 4,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 3000
+    },
+    "dailyStock": 4
   },
   "200099": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200099,
+        "type": 0,
+        "id": 58,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 3,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 5000
+    },
+    "dailyStock": 3
   },
   "200100": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200100,
+        "type": 0,
+        "id": 59,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 2000
+    },
+    "dailyStock": 5
   },
   "200101": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200101,
+        "type": 0,
+        "id": 60,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 4,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 3000
+    },
+    "dailyStock": 4
   },
   "200102": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200102,
+        "type": 0,
+        "id": 61,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 3,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 5000
+    },
+    "dailyStock": 3
   },
   "200103": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200103,
+        "type": 0,
+        "id": 62,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 2000
+    },
+    "dailyStock": 5
   },
   "200104": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200104,
+        "type": 0,
+        "id": 63,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 4,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 3000
+    },
+    "dailyStock": 4
   },
   "200105": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200105,
+        "type": 0,
+        "id": 64,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 3,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 5000
+    },
+    "dailyStock": 3
   },
   "200106": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200106,
+        "type": 0,
+        "id": 65,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 5,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 2000
+    },
+    "dailyStock": 5
   },
   "200107": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200107,
+        "type": 0,
+        "id": 66,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 4,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 3000
+    },
+    "dailyStock": 4
   },
   "200108": {
     "costs": [],
     "rewards": [
       {
-        "type": 1,
-        "id": 200108,
+        "type": 0,
+        "id": 67,
         "count": 1
       }
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 99,
+    "stock": 3,
     "userCost": {
       "type": 1,
-      "id": 1,
-      "amount": 1
-    }
+      "amount": 5000
+    },
+    "dailyStock": 3
   }
 }

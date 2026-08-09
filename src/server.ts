@@ -3,8 +3,6 @@ import { ContentTypeParserDoneFunction } from "fastify/types/content-type-parser
 import fastifyStatic from "@fastify/static";
 import { pack, unpack } from "msgpackr";
 import path from "path";
-import { existsSync, readFileSync } from "fs";
-import { installAdminGuard, loadAdminAuthConfig } from "./lib/admin-auth";
 // api routes
 import apiPlugin from "./routes/api";
 import assetApiPlugin from "./routes/api/asset";
@@ -17,6 +15,7 @@ import expodApiPlugin from "./routes/api/expod"
 import storyQuestApiPlugin from "./routes/api/storyQuest"
 import optionApiPlugin from "./routes/api/option"
 import singleBattleQuestApiPlugin from "./routes/api/singleBattleQuest"
+import questApiPlugin from "./routes/api/quest"
 import { multiBattleRoutes } from "./multi"
 import attentionApiPlugin from "./routes/api/attention"
 import characterApiPlugin from "./routes/api/character"
@@ -33,6 +32,7 @@ import paymentApiPlugin from "./routes/api/payment"
 import newsApiPlugin from "./routes/api/news"
 import raidEventApiPlugin from "./routes/api/raidEvent"
 import rushEventApiPlugin from "./routes/api/rushEvent"
+import howToGetApiPlugin from "./routes/api/howToGet"
 // web routes
 import indexWebPlugin from "./routes/web"
 // web api routes
@@ -49,10 +49,6 @@ import infodeskPlugin from "./routes/infodesk";
 const fastify = Fastify({
     logger: false
 })
-
-const configuredListenHost = process.env.LISTEN_HOST ?? "localhost";
-const adminAuthConfig = loadAdminAuthConfig(process.env, configuredListenHost);
-installAdminGuard(fastify, adminAuthConfig);
 
 // serializers
 fastify.addHook('onSend', (_, reply, payload, done) => {
@@ -111,6 +107,7 @@ fastify.register(expodApiPlugin, { prefix: `${apiPrefix}/expod` })
 fastify.register(storyQuestApiPlugin, { prefix: `${apiPrefix}/story_quest` })
 fastify.register(optionApiPlugin, { prefix: `${apiPrefix}/option` })
 fastify.register(singleBattleQuestApiPlugin, { prefix: `${apiPrefix}/single_battle_quest` })
+fastify.register(questApiPlugin, { prefix: `${apiPrefix}/quest` })
 fastify.register(multiBattleRoutes, { prefix: `${apiPrefix}/multi_battle_quest` })
 fastify.register(attentionApiPlugin, { prefix: `${apiPrefix}/attention` })
 fastify.register(characterApiPlugin, { prefix: `${apiPrefix}/character` })
@@ -127,6 +124,7 @@ fastify.register(paymentApiPlugin, { prefix: `${apiPrefix}/payment` })
 fastify.register(newsApiPlugin, { prefix: `${apiPrefix}/news` })
 fastify.register(raidEventApiPlugin, { prefix: `${apiPrefix}/event/raid` })
 fastify.register(rushEventApiPlugin, { prefix: `${apiPrefix}/event/rush` })
+fastify.register(howToGetApiPlugin, { prefix: `${apiPrefix}/how_to_get` })
 
 // openapi
 fastify.register(openapiPlugin, { prefix: "/openapi/service" })
@@ -138,7 +136,7 @@ fastify.register(infodeskPlugin, { prefix: "/infodesk" })
 fastify.register(indexWebPlugin, { prefix: "/" })
 
 // web api routes
-fastify.register(indexWebApiPlugin, { prefix: "/api", adminAuthConfig })
+fastify.register(indexWebApiPlugin, { prefix: "/api" })
 
 // web static
 fastify.register(fastifyStatic, {
@@ -155,31 +153,8 @@ fastify.register(fastifyStatic, {
     decorateReply: false
 })
 
-// Share the authenticated React admin with the international entry as well.
-const adminDistDir = path.join(__dirname, "..", "web", "dist")
-const adminSpaAvailable = existsSync(path.join(adminDistDir, "index.html"))
-if (adminSpaAvailable) {
-    fastify.register(fastifyStatic, {
-        root: adminDistDir,
-        prefix: "/admin/",
-        decorateReply: false
-    })
-    fastify.get("/admin", (_request, reply) => reply.redirect("/admin/"))
-} else {
-    console.log("[admin] web/dist not found — admin SPA disabled (run: npm run build:admin)")
-}
-
-fastify.setNotFoundHandler((request, reply) => {
-    if (adminSpaAvailable && request.method === "GET" && request.url.startsWith("/admin/")) {
-        reply.header("content-type", "text/html; charset=utf-8")
-        reply.send(readFileSync(path.join(adminDistDir, "index.html")))
-        return
-    }
-    reply.status(404).send({ error: "Not Found" })
-})
-
 // listen
-const listenHost = configuredListenHost
+const listenHost = process.env.LISTEN_HOST ?? "localhost"
 
 const envListenPort = process.env.LISTEN_PORT === undefined ? 8000 : Number.parseInt(process.env.LISTEN_PORT)
 const listenPort = isNaN(envListenPort) ? 8000 : envListenPort
@@ -190,5 +165,4 @@ fastify.listen({ port: listenPort, host: listenHost }, (err, address) => {
         process.exit(1)
     }
     console.log(`StarPoint is listening on http://${listenHost}:${listenPort}`)
-    console.log(`[admin-auth] mode=${adminAuthConfig.mode}; secure_cookie=${adminAuthConfig.cookieSecure}`)
 })

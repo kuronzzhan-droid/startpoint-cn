@@ -3,6 +3,7 @@ import { getReceiveHistorySync } from "../../data/domains/mail"
 import { getSession } from "../../data/domains/session"
 import { resolvePlayerIdSync } from "../../data/activeAccount";
 import { generateDataHeaders } from "../../utils";
+import { serializeRealTimeForVirtualClient } from "../../lib/client-display-time";
 
 const routes = async (fastify: FastifyInstance) => {
     fastify.post("/receive", async (request: FastifyRequest, reply: FastifyReply) => {
@@ -27,7 +28,7 @@ const routes = async (fastify: FastifyInstance) => {
 
         const records = getReceiveHistorySync(playerId, 7, 500)
         const history = records.map(r => ({
-            create_time: r.create_time,
+            create_time: serializeRealTimeForVirtualClient(r.create_time),
             description: null,
             number: r.number,
             reason_id: r.reason_id,

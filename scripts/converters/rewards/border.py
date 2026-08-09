@@ -1,7 +1,7 @@
 def convert_score_attack_border_reward(obj):
-    """Maps (event_id, folder_id) → [{score, reward_item_id, reward_count, coin_item_id, coin_count}] sorted by score ascending."""
+    """Maps (event_id, folder_id) to score borders and their first item reward."""
     lookup = {}
-    for _, entries in obj.items():
+    for reward_id, entries in obj.items():
         if not isinstance(entries, list) or not entries:
             continue
         row = entries[0]
@@ -11,13 +11,14 @@ def convert_score_attack_border_reward(obj):
             score = int(float(str(row[4])))
         except:
             score = 0
-        reward_item_id = int(row[5]) if row[5] else 0
-        coin_item_id = int(row[7]) if row[7] and row[7] != '(None)' else 0
-        coin_count = int(row[8]) if row[8] and row[8] != '(None)' else 0
+        # row[5] is reason_id, not an item ID. The first reward tuple is
+        # (kind, kind_id, number) at rows 6..8.
+        reward_kind = row[6] if len(row) > 6 else '(None)'
+        coin_item_id = int(row[7]) if reward_kind == '0' and row[7] not in ('', '(None)') else 0
+        coin_count = int(row[8]) if reward_kind == '0' and row[8] not in ('', '(None)') else 0
         tier = {
+            'rewardId': int(reward_id),
             'score': score,
-            'rewardItemId': reward_item_id,
-            'rewardCount': 1,
             'coinItemId': coin_item_id,
             'coinCount': coin_count
         }
@@ -29,5 +30,4 @@ def convert_score_attack_border_reward(obj):
     for key in lookup:
         lookup[key].sort(key=lambda t: t['score'])
     return lookup
-
 

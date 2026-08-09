@@ -16,6 +16,7 @@ import { getPlayerTriggeredTutorialsSync } from "../../data/domains/tutorial"
 import { getSession } from "../../data/domains/session"
 import { resolvePlayerIdSync } from "../../data/activeAccount";
 import { generateDataHeaders } from "../../utils";
+import { runPermanentValidators } from "../../lib/validate";
 
 interface LoadBody {
     app_secret: string,
@@ -68,6 +69,9 @@ const routes = async (fastify: FastifyInstance) => {
 
         // collect the player's pooled exp
         collectPlayerDataPooledExpSync(player)
+
+        // Repair legacy save inconsistencies before serializing client data.
+        runPermanentValidators(playerId)
 
         const clientData = getClientSerializedData(playerId, { viewerId: viewerId })
         if (clientData === null) return reply.status(500).send({

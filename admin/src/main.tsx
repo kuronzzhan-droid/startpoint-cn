@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ConfigProvider, theme as antdTheme } from "antd"
 import zhCN from "antd/locale/zh_CN"
 import App from "./App"
+import "./styles.css"
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -12,31 +13,51 @@ const queryClient = new QueryClient({
     }
 })
 
-const prefersDark = () =>
-    typeof window !== "undefined" && !!window.matchMedia?.("(prefers-color-scheme: dark)").matches
-
 function Root() {
-    // 自动跟随系统深浅色；用户可在顶栏手动覆盖（覆盖后系统再变化仍会跟随）
-    const [dark, setDark] = useState(prefersDark)
+    const [dark, setDark] = useState(true)
 
     useEffect(() => {
-        const mq = window.matchMedia("(prefers-color-scheme: dark)")
-        const handler = (e: MediaQueryListEvent) => setDark(e.matches)
-        mq.addEventListener("change", handler)
-        return () => mq.removeEventListener("change", handler)
-    }, [])
-
-    useEffect(() => {
+        document.documentElement.dataset.adminTheme = dark ? "dark" : "light"
         document.documentElement.style.colorScheme = dark ? "dark" : "light"
-        document.body.style.background = dark ? "#141414" : "#f5f5f5"
-        document.body.style.margin = "0"
     }, [dark])
 
     return (
         <QueryClientProvider client={queryClient}>
             <ConfigProvider
                 locale={zhCN}
-                theme={{ algorithm: dark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm }}
+                theme={{
+                    algorithm: dark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+                    token: {
+                        colorPrimary: dark ? "#39d9e6" : "#087f83",
+                        colorInfo: dark ? "#6ba9ff" : "#1f63b8",
+                        colorSuccess: dark ? "#65eca7" : "#1f7a4f",
+                        colorWarning: dark ? "#ffc15d" : "#9a5b00",
+                        colorError: dark ? "#ff6c9d" : "#c72e5a",
+                        colorBgLayout: "transparent",
+                        colorBgContainer: dark ? "#10182a" : "#ffffff",
+                        colorBgElevated: dark ? "#16223a" : "#ffffff",
+                        colorBorder: dark ? "#263a5b" : "#c7d3e3",
+                        colorText: dark ? "#f7fbff" : "#172033",
+                        colorTextSecondary: dark ? "#aebbd2" : "#58677c",
+                        borderRadius: 6,
+                        borderRadiusLG: 8,
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                    },
+                    components: {
+                        Button: {
+                            borderRadius: 6,
+                            controlHeight: 34,
+                        },
+                        Card: {
+                            borderRadiusLG: 8,
+                            headerFontSize: 15,
+                        },
+                        Table: {
+                            borderColor: dark ? "#263a5b" : "#c7d3e3",
+                            headerBg: dark ? "#16223a" : "#f3f7fb",
+                        },
+                    },
+                }}
             >
                 <BrowserRouter basename="/admin">
                     <App dark={dark} onToggleDark={() => setDark(d => !d)} />

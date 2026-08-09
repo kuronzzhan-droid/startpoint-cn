@@ -4,9 +4,15 @@ import { getSession } from "../../data/domains/session"
 import { playerOwnsCharacterSync } from "../../data/domains/character"
 import { playerOwnsEquipmentSync } from "../../data/domains/equipment"
 import { updatePlayerPartySync } from "../../data/domains/party"
+import { getDb } from "../../data/db"
+import { incrementActiveMissionPartyActionCountsSync } from "../../data/domains/active_mission_counters"
 import { generateDataHeaders } from "../../utils";
 import { PartyCategory } from "../../data/types";
 import { resolvePlayerIdSync } from "../../data/activeAccount";
+import { hasValidPartyCategory, parseGlobalPartyId } from "../../lib/special-event-parties";
+import { getPublishedPartySync, publishPartySync } from "../../data/domains/publishedParty";
+import { gameVerboseLog } from "../../lib/game-logging";
+import { PROFILE_FAVORITE_PARTY_CATEGORY } from "../../lib/profileFavorite";
 
 interface PartyInfoListItem {
     party_edited: boolean
@@ -31,6 +37,19 @@ interface EditBody {
     ignore_ngword: boolean,
     api_count: number,
     party_info_list: PartyInfoListItem[]
+}
+
+function hasEditablePartyCategory(
+    value: unknown,
+): value is { party_category: PartyCategory } {
+    if (value !== null
+        && typeof value === "object"
+        && "party_category" in value
+        && (value as { party_category: unknown }).party_category
+            === PROFILE_FAVORITE_PARTY_CATEGORY) {
+        return true
+    }
+    return hasValidPartyCategory(value)
 }
 
 /*
@@ -368,46 +387,214 @@ interface EditBody {
 */
 interface PublishBody {
     party_name: string,
-    battle_party: {
-
-    },
+    battle_party: unknown,
     viewer_id: number
+}
+
+interface ReferBody {
+    party_code: string,
+    viewer_id: number
+}
+
+interface PublishedCharacter {
+    id: number
+    mana_node_ids: number[] | null
+    evolution_level: number
+    exp: number
+    over_limit_step: number
+    illustration_settings: number[] | null
+    ex_boost: {
+        ability_id_list: number[]
+        status_id: number
+    } | null
+}
+
+interface PublishedEquipment {
+    equipment_id: number
+    level: number
+}
+
+interface PublishedBattleParty {
+    characters: (PublishedCharacter | null)[]
+    unison_characters: (PublishedCharacter | null)[]
+    equipments: (PublishedEquipment | null)[]
+    ability_soul_ids: (number | null)[]
+}
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+    typeof value === "object" && value !== null && !Array.isArray(value)
+
+const asInteger = (value: unknown): number | null =>
+    typeof value === "number" && Number.isSafeInteger(value) ? value : null
+
+function sanitizeIntegerArray(value: unknown, maxLength: number): number[] | null {
+    if (!Array.isArray(value) || value.length > maxLength) return null
+    const result: number[] = []
+    for (const entry of value) {
+        const integer = asInteger(entry)
+        if (integer === null) return null
+        result.push(integer)
+    }
+    return result
+}
+
+function sanitizeCharacter(value: unknown): PublishedCharacter | null | undefined {
+    if (value === null) return null
+    if (!isObject(value)) return undefined
+
+    const id = asInteger(value.id)
+    const evolutionLevel = asInteger(value.evolution_level)
+    const exp = asInteger(value.exp)
+    const overLimitStep = asInteger(value.over_limit_step)
+    if (id === null || evolutionLevel === null || exp === null || overLimitStep === null) return undefined
+
+    let manaNodeIds: number[] | null = null
+    if (value.mana_node_ids !== null && value.mana_node_ids !== undefined) {
+        manaNodeIds = sanitizeIntegerArray(value.mana_node_ids, 256)
+        if (manaNodeIds === null) return undefined
+    }
+
+    let illustrationSettings: number[] | null = null
+    if (value.illustration_settings !== null && value.illustration_settings !== undefined) {
+        illustrationSettings = sanitizeIntegerArray(value.illustration_settings, 32)
+        if (illustrationSettings === null) return undefined
+    }
+
+    let exBoost: PublishedCharacter["ex_boost"] = null
+    if (value.ex_boost !== null && value.ex_boost !== undefined) {
+        if (!isObject(value.ex_boost)) return undefined
+        const statusId = asInteger(value.ex_boost.status_id)
+        const abilityIdList = sanitizeIntegerArray(value.ex_boost.ability_id_list, 32)
+        if (statusId === null || abilityIdList === null) return undefined
+        exBoost = { status_id: statusId, ability_id_list: abilityIdList }
+    }
+
+    return {
+        id,
+        mana_node_ids: manaNodeIds,
+        evolution_level: evolutionLevel,
+        exp,
+        over_limit_step: overLimitStep,
+        illustration_settings: illustrationSettings,
+        ex_boost: exBoost,
+    }
+}
+
+function sanitizeCharacterArray(value: unknown): (PublishedCharacter | null)[] | null {
+    if (!Array.isArray(value) || value.length !== 3) return null
+    const result: (PublishedCharacter | null)[] = []
+    for (const entry of value) {
+        const character = sanitizeCharacter(entry)
+        if (character === undefined) return null
+        result.push(character)
+    }
+    return result
+}
+
+function sanitizeEquipmentArray(value: unknown): (PublishedEquipment | null)[] | null {
+    if (!Array.isArray(value) || value.length !== 3) return null
+    const result: (PublishedEquipment | null)[] = []
+    for (const entry of value) {
+        if (entry === null) {
+            result.push(null)
+            continue
+        }
+        if (!isObject(entry)) return null
+        const equipmentId = asInteger(entry.equipment_id)
+        const level = asInteger(entry.level)
+        if (equipmentId === null || level === null) return null
+        result.push({ equipment_id: equipmentId, level })
+    }
+    return result
+}
+
+function sanitizeAbilitySoulArray(value: unknown): (number | null)[] | null {
+    if (!Array.isArray(value) || value.length !== 3) return null
+    const result: (number | null)[] = []
+    for (const entry of value) {
+        if (entry === null) {
+            result.push(null)
+            continue
+        }
+        const id = asInteger(entry)
+        if (id === null) return null
+        result.push(id)
+    }
+    return result
+}
+
+function sanitizeBattleParty(value: unknown): PublishedBattleParty | null {
+    if (!isObject(value)) return null
+    const characters = sanitizeCharacterArray(value.characters)
+    const unisonCharacters = sanitizeCharacterArray(value.unison_characters)
+    const equipments = sanitizeEquipmentArray(value.equipments)
+    const abilitySoulIds = sanitizeAbilitySoulArray(value.ability_soul_ids)
+    if (!characters || !unisonCharacters || !equipments || !abilitySoulIds) return null
+    return {
+        characters,
+        unison_characters: unisonCharacters,
+        equipments,
+        ability_soul_ids: abilitySoulIds,
+    }
+}
+
+async function resolvePartyPlayer(body: { viewer_id?: unknown }) {
+    const viewerId = Number(body?.viewer_id)
+    if (!Number.isFinite(viewerId)) return null
+    const session = await getSession(String(viewerId))
+    if (!session) return null
+    const playerId = resolvePlayerIdSync(session.accountId)
+    return playerId === null ? null : { viewerId, playerId }
+}
+
+function sendPartyResponse(reply: FastifyReply, viewerId: number, data: unknown, resultCode = 1) {
+    reply.header("content-type", "application/x-msgpack")
+    return reply.status(200).send({
+        data_headers: generateDataHeaders({ viewer_id: viewerId, result_code: resultCode }),
+        data,
+    })
 }
 
 const routes = async (fastify: FastifyInstance) => {
     fastify.post("/publish", async (request: FastifyRequest, reply: FastifyReply) => {
         const body = request.body as PublishBody
+        const context = await resolvePartyPlayer(body)
+        if (!context) return reply.status(400).send({ error: "Bad Request", message: "Invalid viewer id." })
+        if (typeof body.party_name !== "string" || body.party_name.length > 100) {
+            return reply.status(400).send({ error: "Bad Request", message: "Invalid party name." })
+        }
+        const battleParty = sanitizeBattleParty(body.battle_party)
+        if (!battleParty || JSON.stringify(battleParty).length > 65536) {
+            return reply.status(400).send({ error: "Bad Request", message: "Invalid battle party." })
+        }
 
-        const viewerId = body.viewer_id
-        if (!viewerId || isNaN(viewerId)) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "Invalid request body."
+        const partyCode = publishPartySync(context.playerId, body.party_name, battleParty)
+        console.log(`[PARTY CODE] publish player=${context.playerId} code=${partyCode}`)
+        return sendPartyResponse(reply, context.viewerId, { party_code: partyCode })
+    })
+
+    fastify.post("/refer", async (request: FastifyRequest, reply: FastifyReply) => {
+        const body = request.body as ReferBody
+        const context = await resolvePartyPlayer(body)
+        if (!context) return reply.status(400).send({ error: "Bad Request", message: "Invalid viewer id." })
+
+        const partyCode = typeof body.party_code === "string" ? body.party_code.trim().toUpperCase() : ""
+        if (!/^[2-9A-HJ-NP-Z]{10}$/.test(partyCode)) {
+            return sendPartyResponse(reply, context.viewerId, {}, 3404)
+        }
+
+        const publishedParty = getPublishedPartySync(partyCode)
+        if (!publishedParty) return sendPartyResponse(reply, context.viewerId, {}, 3404)
+        if (publishedParty.schemaVersion !== 1) return sendPartyResponse(reply, context.viewerId, {}, 3403)
+
+        const battleParty = sanitizeBattleParty(publishedParty.battleParty)
+        if (!battleParty) return sendPartyResponse(reply, context.viewerId, {}, 3403)
+
+        console.log(`[PARTY CODE] refer player=${context.playerId} code=${partyCode}`)
+        return sendPartyResponse(reply, context.viewerId, {
+            party_name: publishedParty.partyName,
+            battle_party: battleParty,
         })
-
-        const viewerIdSession = await getSession(viewerId.toString())
-        if (!viewerIdSession) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "Invalid viewer id."
-        })
-
-        // get player
-        const playerId = resolvePlayerIdSync(viewerIdSession.accountId)!
-
-        if (playerId === null) return reply.status(500).send({
-            "error": "Internal Server Error",
-            "message": "No players bound to account."
-        })
-
-        reply.header("content-type", "application/x-msgpack")
-        return reply.status(200).send({
-            "data_headers": generateDataHeaders({
-                viewer_id: viewerId
-            }),
-            "data": {
-                "party_code": "https://www.howLongCanThisBe?=+-.comhttps://www.howLongCanThisBe?=+-.comhttps://www.howLongCanThisBe?=+-.com"
-            }
-        })
-
     })
 
     fastify.post("/edit", async (request: FastifyRequest, reply: FastifyReply) => {
@@ -418,6 +605,14 @@ const routes = async (fastify: FastifyInstance) => {
             "error": "Bad Request",
             "message": "Invalid request body."
         })
+        if (!Array.isArray(body.party_info_list)
+            || body.party_info_list.some(info => !hasEditablePartyCategory(info)
+                || parseGlobalPartyId(info.party_id) === null)) {
+            return reply.status(400).send({
+                "error": "Bad Request",
+                "message": "Invalid party category or party ID."
+            })
+        }
 
         const viewerIdSession = await getSession(viewerId.toString())
         if (!viewerIdSession) return reply.status(400).send({
@@ -434,21 +629,6 @@ const routes = async (fastify: FastifyInstance) => {
             "message": "No players bound to account."
         })
 
-        // parse global PartyId: (groupIndex * 10 + slot), groupIndex 0-based
-        const parsePartyId = (partyId: number) => {
-            const gIdx = Math.floor((partyId - 1) / 10)
-            const s = ((partyId - 1) % 10) + 1
-            return { groupIndex: gIdx, groupId: gIdx + 1, slot: s }
-        }
-
-        // store full global PartyId so /load returns the correct group+slot combo
-        if (player.partySlot !== body.main_party_id) {
-            updatePlayerSync({
-                id: playerId,
-                partySlot: body.main_party_id
-            })
-        }
-
         // update each slot
         const characterOwnedMap: Record<number, boolean> = {}
         const equipmentOwnedMap: Record<number, boolean> = {}
@@ -456,7 +636,7 @@ const routes = async (fastify: FastifyInstance) => {
         for (const updateInfo of body.party_info_list) {
             editCategories.push(updateInfo.party_category)
         }
-        console.log(`[PARTY] edit: viewer=${viewerId} parties=${body.party_info_list.length} categories=${JSON.stringify(editCategories)} mainPartyId=${body.main_party_id}`)
+        gameVerboseLog(() => `[PARTY] edit: viewer=${viewerId} parties=${body.party_info_list.length} categories=${JSON.stringify(editCategories)} mainPartyId=${body.main_party_id}`)
 
         const mapOwnedCharacters = (characterId: number | null): number | null => {
             let isOwned = characterId === null ? false : characterOwnedMap[characterId]
@@ -478,13 +658,12 @@ const routes = async (fastify: FastifyInstance) => {
             return isOwned ? equipmentId : null
         }
 
-        for (const updateInfo of body.party_info_list) {
-                const parsed = parsePartyId(updateInfo.party_id)
-            console.log(`[PARTY] edit: player=${playerId} id=${updateInfo.party_id} -> group=${parsed.groupId} slot=${parsed.slot} name="${updateInfo.party_name}" chars=${updateInfo.character_ids?.filter(Boolean).length || 0}`)
-            updatePlayerPartySync(
-                playerId,
-                parsed.slot,
-                {
+        const mappedParties = body.party_info_list.map(updateInfo => {
+            const parsed = parseGlobalPartyId(updateInfo.party_id)!
+            gameVerboseLog(() => `[PARTY] edit: player=${playerId} id=${updateInfo.party_id} -> group=${parsed.groupId} slot=${parsed.slot} name="${updateInfo.party_name}" chars=${updateInfo.character_ids?.filter(Boolean).length || 0}`)
+            return {
+                parsed,
+                party: {
                     name: updateInfo.party_name,
                     unisonCharacterIds: updateInfo.unison_character_ids.map(mapOwnedCharacters),
                     characterIds: updateInfo.character_ids.map(mapOwnedCharacters),
@@ -492,13 +671,38 @@ const routes = async (fastify: FastifyInstance) => {
                     abilitySoulIds: updateInfo.ability_soul_ids,
                     options: { allowOtherPlayersToHealMe: updateInfo.options.allow_other_players_to_heal_me },
                     edited: updateInfo.party_edited,
-                    category: updateInfo.party_category === 3 ? 4 : updateInfo.party_category,
+                    category: updateInfo.party_category as PartyCategory,
                     currentBattlePower: updateInfo.current_battle_power ?? 0,
-                    beforeBattlePower: updateInfo.before_battle_power ?? 0
+                    beforeBattlePower: updateInfo.before_battle_power ?? 0,
                 },
-                parsed.groupId
+            }
+        })
+
+        getDb().transaction(() => {
+            const battleParties = mappedParties.filter(
+                ({ party }) => party.category !== PROFILE_FAVORITE_PARTY_CATEGORY,
             )
-        }
+            // store full global PartyId so /load returns the correct group+slot combo
+            // Editing profile favorites is independent from the battle SET selected
+            // by the player. Empty edits are still used by the client to switch SETs.
+            if ((mappedParties.length === 0 || battleParties.length > 0)
+                && player.partySlot !== body.main_party_id) {
+                updatePlayerSync({
+                    id: playerId,
+                    partySlot: body.main_party_id,
+                })
+            }
+            for (const { parsed, party } of mappedParties) {
+                updatePlayerPartySync(playerId, parsed.slot, party, parsed.groupId)
+            }
+            if (battleParties.length > 0) {
+                incrementActiveMissionPartyActionCountsSync(playerId, {
+                    equipmentEquipCount: battleParties.some(({ party }) => party.equipmentIds.some(id => id !== null)) ? 1 : 0,
+                    unisonSetCount: battleParties.some(({ party }) => party.unisonCharacterIds.some(id => id !== null)) ? 1 : 0,
+                    partyCharacterSetCount: battleParties.some(({ party }) => party.characterIds.some(id => id !== null)) ? 1 : 0,
+                })
+            }
+        })()
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({

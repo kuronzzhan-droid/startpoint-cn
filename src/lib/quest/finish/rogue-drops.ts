@@ -19,6 +19,19 @@ const REWARD_TYPE: Record<string, RewardType> = {
     equipment: RewardType.EQUIPMENT,
 }
 
+// Added to master/reward/event/additional_reward.orderedmap by the matching
+// client asset patch. This uses the ordinary result-screen reward channel;
+// rush_battle_reward_list must stay empty on non-final rounds because the
+// legacy client interprets it as a full-folder clear.
+export const ABYSS_TOKEN_ITEM_ID = 2370099
+export const ABYSS_TOKEN_ADDITIONAL_REWARD_GROUP_ID = 237009900
+
+export interface RogueAdditionalReward {
+    group_id: number
+    index: number
+    number: number
+}
+
 export interface RogueDropOutcome {
     rewardResult: PlayerRewardResult
     // exp pumped into freshly dropped characters (empty unless drop_character_exp > 0)
@@ -28,6 +41,7 @@ export interface RogueDropOutcome {
     // absolute exp pool after the exp grant, or null when no exp grant ran
     expPoolAbsolute: number | null
     rewardListEntries: { kind: number, kind_id: number, number: number }[]
+    additionalRewardEntries: RogueAdditionalReward[]
     // whether the caller may surface rewardListEntries in rush_battle_reward_list.
     // Never true for non-final folder rounds: the client treats a stored
     // non-empty clear reward as the folder-clear celebration and replaces the
@@ -115,6 +129,7 @@ export function handleRoguePerRoundDrops(params: RogueDropParams): RogueDropOutc
 
     const rewards: Reward[] = []
     const rewardListEntries: RogueDropOutcome["rewardListEntries"] = []
+    const additionalRewardEntries: RogueDropOutcome["additionalRewardEntries"] = []
     for (const drop of dropsConfig) {
         const type = REWARD_TYPE[drop?.type]
         const id = Number(drop?.id)
@@ -122,6 +137,13 @@ export function handleRoguePerRoundDrops(params: RogueDropParams): RogueDropOutc
         const count = Math.max(1, Number(drop?.count) || 1)
         rewards.push({ type, id, count } as Reward)
         rewardListEntries.push({ kind: REWARD_LIST_KIND[drop.type], kind_id: id, number: count })
+        if (type === RewardType.ITEM && id === ABYSS_TOKEN_ITEM_ID) {
+            additionalRewardEntries.push({
+                group_id: ABYSS_TOKEN_ADDITIONAL_REWARD_GROUP_ID,
+                index: 1,
+                number: count,
+            })
+        }
     }
     if (rewards.length === 0) return null
 
@@ -180,6 +202,10 @@ export function handleRoguePerRoundDrops(params: RogueDropParams): RogueDropOutc
         bondTokenStatusList,
         expPoolAbsolute,
         rewardListEntries,
+        // Final/endless clears already have the native Rush reward panel.
+        // Sending both channels there would display the same token twice
+        // even though inventory is granted only once.
+        additionalRewardEntries: showInRewardList ? [] : additionalRewardEntries,
         showInRewardList,
     }
 }

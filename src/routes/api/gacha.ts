@@ -15,6 +15,13 @@ import { givePlayerCharacterSync } from "../../lib/character";
 import { givePlayerEquipmentSync } from "../../lib/equipment";
 import { buildGachaExecPlan } from "../../lib/gacha-exec-plan";
 import { getExchangeableGachaItem } from "../../lib/gacha-rules";
+import { getDb } from "../../data/db";
+import { reconcileAwakeUnlockCharacterList, settleDegreeMissionResponse } from "../../lib/mission";
+import {
+    incrementActiveMissionGachaCampaignCountSync,
+    incrementActiveMissionGachaCharacterCountSync,
+} from "../../data/domains/active_mission_counters";
+import { gameVerboseLog } from "../../lib/game-logging";
 
 interface ExecBody {
     api_count: number,
@@ -208,30 +215,37 @@ const routes = async (fastify: FastifyInstance) => {
             gachaId: gachaId,
             gachaExchangePoint: newExchangePoints
         })
+        const existingCharacterList: Record<string, unknown>[] = giveResult.character
+            ? [giveResult.character as Record<string, unknown>]
+            : []
+        const characterList = existingCharacterList.length > 0
+            ? reconcileAwakeUnlockCharacterList(playerId, existingCharacterList)
+            : existingCharacterList
+
+        const responseData: Record<string, any> = {
+            "character_list": characterList,
+            "item_list": giveResult.item !== undefined ? {
+                [giveResult.item.id]: giveResult.item.count
+            } : [],
+            "gacha_info_list": [
+                {
+                    "gacha_id": gachaId,
+                    "is_account_first": gachaInfo.isAccountFirst,
+                    "is_daily_first": gachaInfo.isDailyFirst,
+                    "gacha_exchange_point": newExchangePoints
+                }
+            ],
+            "encyclopedia_info": [],
+            "mail_arrived": false
+        }
+        settleDegreeMissionResponse(playerId, viewerId, responseData, undefined, [4])
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
             "data_headers": generateDataHeaders({
                 viewer_id: viewerId
             }),
-            "data": {
-                "character_list": [
-                    giveResult?.character
-                ],
-                "item_list": giveResult.item !== undefined ? {
-                    [giveResult.item.id]: giveResult.item.count
-                } : [],
-                "gacha_info_list": [
-                    {
-                        "gacha_id": gachaId,
-                        "is_account_first": gachaInfo.isAccountFirst,
-                        "is_daily_first": gachaInfo.isDailyFirst,
-                        "gacha_exchange_point": newExchangePoints
-                    }
-                ],
-                "encyclopedia_info": [],
-                "mail_arrived": false
-            }
+            "data": responseData
         })
 
     })
@@ -333,117 +347,157 @@ const routes = async (fastify: FastifyInstance) => {
         const playerPaidVmoney = execPlan.paidVmoney
         const playerFreeVmoney = execPlan.freeVmoney
 
-        if (execPlan.ticket) {
-            items[execPlan.ticket.itemId] = execPlan.ticket.afterCount
-            updatePlayerItemSync(playerId, execPlan.ticket.itemId, execPlan.ticket.afterCount)
-        }
-
-        if (execPlan.campaign) {
-            const campaignData = plannedCampaign ?? {
-                gachaId,
-                campaignId: execPlan.campaign.campaignId,
-                count: execPlan.campaign.count,
-            }
-            campaignData.count = execPlan.campaign.count
-
-            if (execPlan.campaign.insert) {
-                insertPlayerGachaCampaignSync(playerId, campaignData)
-            } else {
-                updatePlayerGachaCampaignSync(playerId, gachaId, execPlan.campaign.campaignId, execPlan.campaign.count)
-            }
-
-            gachaCampaigns.push(serializeGachaCampaign(campaignData))
-        }
-
         const drawMetadata = drawGachaWithMetadataSync(gachaData, pullCount)
         const drawResult = drawMetadata.map((draw) => draw.id)
-        const rewardResult = rewardPlayerGachaDrawResultSync(playerId, gachaData, drawResult, drawMetadata)
 
-        // Log each drawn item in history
-        const historyType = isCharacterGacha ? MailType.CHARACTER : MailType.EQUIPMENT
-        for (const itemId of drawResult) {
-            insertReceiveHistorySync(playerId, { type: historyType, type_id: itemId, number: 1 })
-        }
+        const transactionResult = getDb().transaction(() => {
+            if (execPlan.ticket) {
+                items[execPlan.ticket.itemId] = execPlan.ticket.afterCount
+                updatePlayerItemSync(playerId, execPlan.ticket.itemId, execPlan.ticket.afterCount)
+            }
 
-        const newGachaExchangePoint = (playerGachaData.gachaExchangePoint ?? 0) + pullCount
-        if (insertPlayerGachaData) {
-            playerGachaData.isAccountFirst = false
-            playerGachaData.isDailyFirst = false
-            playerGachaData.gachaExchangePoint = newGachaExchangePoint
-            insertPlayerGachaInfoSync(playerId, playerGachaData)
-        } else {
-            updatePlayerGachaInfoSync(playerId, {
-                gachaId: gachaId,
-                isDailyFirst: false,
-                isAccountFirst: false,
-                gachaExchangePoint: newGachaExchangePoint
+            if (execPlan.campaign) {
+                const campaignData = plannedCampaign ?? {
+                    gachaId,
+                    campaignId: execPlan.campaign.campaignId,
+                    count: execPlan.campaign.count,
+                }
+                campaignData.count = execPlan.campaign.count
+
+                if (execPlan.campaign.insert) {
+                    insertPlayerGachaCampaignSync(playerId, campaignData)
+                } else {
+                    updatePlayerGachaCampaignSync(playerId, gachaId, execPlan.campaign.campaignId, execPlan.campaign.count)
+                }
+
+                gachaCampaigns.push(serializeGachaCampaign(campaignData))
+            }
+
+            const rewardResult = rewardPlayerGachaDrawResultSync(playerId, gachaData, drawResult, drawMetadata)
+
+            // Log each drawn item in history
+            const historyType = isCharacterGacha ? MailType.CHARACTER : MailType.EQUIPMENT
+            for (const itemId of drawResult) {
+                insertReceiveHistorySync(playerId, { type: historyType, type_id: itemId, number: 1 })
+            }
+
+            const newGachaExchangePoint = (playerGachaData.gachaExchangePoint ?? 0) + pullCount
+            if (insertPlayerGachaData) {
+                playerGachaData.isAccountFirst = false
+                playerGachaData.isDailyFirst = false
+                playerGachaData.gachaExchangePoint = newGachaExchangePoint
+                insertPlayerGachaInfoSync(playerId, playerGachaData)
+            } else {
+                updatePlayerGachaInfoSync(playerId, {
+                    gachaId: gachaId,
+                    isDailyFirst: false,
+                    isAccountFirst: false,
+                    gachaExchangePoint: newGachaExchangePoint
+                })
+            }
+
+            updatePlayerSync({
+                id: playerId,
+                vmoney: playerPaidVmoney,
+                freeVmoney: playerFreeVmoney
             })
-        }
+            if (isCharacterGacha) {
+                incrementActiveMissionGachaCharacterCountSync(playerId, drawResult.length)
+            }
+            if (execPlan.campaign) {
+                incrementActiveMissionGachaCampaignCountSync(playerId)
+            }
 
-        updatePlayerSync({
-            id: playerId,
-            vmoney: playerPaidVmoney,
-            freeVmoney: playerFreeVmoney
-        })
+            return { rewardResult, newGachaExchangePoint }
+        })()
+        const { rewardResult, newGachaExchangePoint } = transactionResult
+
+        const rarityCounts = new Map<number, number>()
+        for (const draw of drawMetadata) {
+            rarityCounts.set(draw.rank, (rarityCounts.get(draw.rank) ?? 0) + 1)
+        }
+        const raritySummary = Array.from(rarityCounts.entries())
+            .sort(([left], [right]) => left - right)
+            .map(([rank, count]) => `${rank}:${count}`)
+            .join(",")
+        gameVerboseLog(() =>
+            `[GACHA] gacha=${gachaId} type=${isCharacterGacha ? "character" : "equipment"} `
+            + `pulls=${pullCount} rarity=${raritySummary}`
+        )
 
         reply.header("content-type", "application/x-msgpack")
         if (isCharacterGacha) {
+            const existingCharacterList = rewardResult.characters.filter(
+                (character): character is Record<string, unknown> =>
+                    character !== undefined
+                    && character !== null
+                    && typeof character === "object"
+                    && !Array.isArray(character)
+            )
+            const characterList = existingCharacterList.length > 0
+                ? reconcileAwakeUnlockCharacterList(playerId, existingCharacterList)
+                : existingCharacterList
+
+            const responseData: Record<string, any> = {
+                "user_info": {
+                    "free_vmoney": playerFreeVmoney,
+                    "vmoney": playerPaidVmoney
+                },
+                "draw": rewardResult.draw,
+                "character_list": characterList,
+                "item_list": {
+                    ...items,
+                    ...rewardResult.items
+                },
+                "gacha_campaign_list": gachaCampaigns,
+                "gacha_info_list": [
+                    {
+                        "gacha_id": gachaId,
+                        "is_account_first": false,
+                        "is_daily_first": false,
+                        "gacha_exchange_point": newGachaExchangePoint
+                    }
+                ],
+                "encyclopedia_info": [],
+                "mail_arrived": false
+            }
+            settleDegreeMissionResponse(playerId, viewerId, responseData, undefined, [4])
             return reply.status(200).send({
                 "data_headers": generateDataHeaders({
                     viewer_id: viewerId
                 }),
-                "data": {
-                    "user_info": {
-                        "free_vmoney": playerFreeVmoney,
-                        "vmoney": playerPaidVmoney
-                    },
-                    "draw": rewardResult.draw,
-                    "character_list": rewardResult.characters,
-                    "item_list": {
-                        ...items,
-                        ...rewardResult.items
-                    },
-                    "gacha_campaign_list": gachaCampaigns,
-                    "gacha_info_list": [
-                        {
-                            "gacha_id": gachaId,
-                            "is_account_first": false,
-                            "is_daily_first": false,
-                            "gacha_exchange_point": newGachaExchangePoint
-                        }
-                    ],
-                    "encyclopedia_info": [],
-                    "mail_arrived": false
-                }
+                "data": responseData
             })
         } else {
+            const responseData: Record<string, any> = {
+                "user_info": {
+                    "free_vmoney": playerFreeVmoney,
+                    "vmoney": playerPaidVmoney
+                },
+                "is_erupt": rewardResult.isErupt ?? false,
+                "draw_equipment": rewardResult.draw,
+                "item_list": {
+                    ...items,
+                    ...rewardResult.items
+                },
+                "equipment_list": rewardResult.equipment,
+                "gacha_info_list": [
+                    {
+                        "gacha_id": gachaId,
+                        "is_account_first": false,
+                        "is_daily_first": false,
+                        "gacha_exchange_point": newGachaExchangePoint
+                    }
+                ],
+                "encyclopedia_info": [],
+                "mail_arrived": false
+            }
+            // Equipment draws do not alter equipment awakening/Lv5 counts.
             return reply.status(200).send({
                 "data_headers": generateDataHeaders({
                     viewer_id: viewerId
                 }),
-                "data": {
-                    "user_info": {
-                        "free_vmoney": playerFreeVmoney,
-                        "vmoney": playerPaidVmoney
-                    },
-                    "is_erupt": rewardResult.isErupt ?? false,
-                    "draw_equipment": rewardResult.draw,
-                    "item_list": {
-                        ...items,
-                        ...rewardResult.items
-                    },
-                    "equipment_list": rewardResult.equipment,
-                    "gacha_info_list": [
-                        {
-                            "gacha_id": gachaId,
-                            "is_account_first": false,
-                            "is_daily_first": false,
-                            "gacha_exchange_point": newGachaExchangePoint
-                        }
-                    ],
-                    "encyclopedia_info": [],
-                    "mail_arrived": false
-                }
+                "data": responseData
             })
         }
         

@@ -150,6 +150,9 @@ export interface RestoreRoomBody {
 export interface ShareRoomBody {
     viewer_id: number
     room_number: string
+    category?: number
+    quest_id?: number
+    share_type_list?: number[]
     api_count: number
 }
 

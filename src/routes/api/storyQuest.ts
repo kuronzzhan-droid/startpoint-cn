@@ -5,9 +5,9 @@ import { getSession } from "../../data/domains/session"
 import { resolvePlayerIdSync } from "../../data/activeAccount";
 import { getQuestFromCategorySync } from "../../lib/assets";
 import { givePlayerRewardSync } from "../../lib/quest";
-import { canStartQuestByPrerequisites, hasClearedQuestPrerequisiteForCategory } from "../../lib/quest/start-handler";
 import { generateDataHeaders } from "../../utils";
 import { QuestCategory } from "../../lib/types";
+import { reconcileAwakeUnlockCharacterList } from "../../lib/mission";
 
 interface FinishBody {
     party_id: number,
@@ -39,48 +39,38 @@ function processStoryQuestFinish(playerId: number, viewerId: number, questSectio
         return null
     }
 
-    const prerequisiteCheck = canStartQuestByPrerequisites(questData, (requiredQuestId) =>
-        hasClearedQuestPrerequisiteForCategory(questSection, requiredQuestId, (section, id) =>
-            getPlayerSingleQuestProgressSync(playerId, section, id)
-        )
-    )
-    if (!prerequisiteCheck.ok) {
-        console.log(`[STORY] prerequisite rejected: category=${questSection} questId=${questId} message=${prerequisiteCheck.message}`)
-        return null
-    }
-
     const questProgress = getPlayerSingleQuestProgressSync(playerId, questSection, questId);
     const finished = questProgress !== null ? questProgress.finished : false
     const rewardResult = !finished && questData.clearReward !== undefined ? givePlayerRewardSync(playerId, questData.clearReward) : null
 
-    if (!finished) {
-        if (questProgress === null) {
-            insertPlayerQuestProgressSync(playerId, questSection, {
-                questId: questId,
-                finished: true,
-                clearRank: 5
-            })
-        } else {
-            updatePlayerQuestProgressSync(playerId, questSection, {
-                questId: questId,
-                finished: true,
-                clearRank: 5
-            })
-        }
+    if (finished) return { data: [] }
+
+    if (questProgress === null) {
+        insertPlayerQuestProgressSync(playerId, questSection, {
+            questId: questId,
+            finished: true,
+            clearRank: 5
+        })
+    } else {
+        updatePlayerQuestProgressSync(playerId, questSection, {
+            questId: questId,
+            finished: true,
+            clearRank: 5
+        })
     }
 
     return {
-        data: !finished ? {
+        data: {
             "user_info": {
                 "free_vmoney": playerData.freeVmoney + (rewardResult?.user_info.free_vmoney || 0),
                 "free_mana": playerData.freeMana + (rewardResult?.user_info.free_mana || 0)
             },
-            "character_list": rewardResult?.character_list || [],
+            "character_list": reconcileAwakeUnlockCharacterList(playerId, rewardResult?.character_list || []),
             "joined_character_id_list": rewardResult?.joined_character_id_list || [],
             "equipment_list": rewardResult?.equipment_list || [],
             "items": rewardResult?.items || {},
             "presigned_quest_category": []
-        } : []
+        }
     }
 }
 

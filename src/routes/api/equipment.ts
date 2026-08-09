@@ -3,18 +3,21 @@
 
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
-    getPlayerEquipmentSync, playerOwnsEquipmentSync, updatePlayerEquipmentSync,
+    getPlayerEquipmentListSync, getPlayerEquipmentSync, playerOwnsEquipmentSync, updatePlayerEquipmentSync,
 } from "../../data/domains/equipment";
 import {
     getPlayerItemSync, givePlayerItemSync, updatePlayerItemSync,
 } from "../../data/domains/item";
 import { getPlayerSync } from "../../data/domains/player";
 import { getSession } from "../../data/domains/session";
-import { generateDataHeaders } from "../../utils";
+import { generateDataHeaders, getServerTime } from "../../utils";
 import { clientSerializeEquipment, buildFullEquipmentList } from "../../lib/equipment";
 import { getEquipmentDissolveSync, getConfigSync, getEquipmentCraftSync } from "../../lib/assets";
 import { AccountId, PlayerId } from "../../lib/types";
 import { resolvePlayerIdSync } from "../../data/activeAccount";
+import { addMissionCounterSync, setMissionCounterMaxSync } from "../../lib/mission/counters";
+import { getDegreeMissionIdsForConditionTypes, mergeMissionSettlementResponse, settleMissionCategories } from "../../lib/mission";
+import { gameVerboseLog } from "../../lib/game-logging";
 
 interface SetProtectionBody {
     protection: boolean
@@ -42,6 +45,39 @@ const wrightpieceItemId = () => getConfigSync().craft_point_item_id || 100000
 
 // wrightpiece cost for each rank of weapon (awakening) — from CDN
 const getUpgradeCost = (rarity: number): number => getEquipmentCraftSync(rarity)?.awakening_craft ?? 25
+
+function recordEquipmentAwakeningProgress(playerId: number, upgradeCount: number): void {
+    addMissionCounterSync(playerId, {
+        dimension: "equipment.awakening",
+        scopeType: "lifetime",
+        scopeKey: "all",
+        qualifier: {},
+    }, upgradeCount)
+    const levelFiveCount = Object.values(getPlayerEquipmentListSync(playerId))
+        .filter(equipment => equipment.level >= 5)
+        .length
+    setMissionCounterMaxSync(playerId, {
+        dimension: "equipment.lv5_count",
+        scopeType: "lifetime",
+        scopeKey: "all",
+        qualifier: {},
+    }, levelFiveCount)
+}
+
+function mergeEquipmentDegreeSettlement(
+    responseData: Record<string, unknown>,
+    playerId: number,
+    viewerId: number,
+): void {
+    mergeMissionSettlementResponse(
+        responseData,
+        settleMissionCategories(playerId, [{
+            category: 5,
+            missionIds: getDegreeMissionIdsForConditionTypes([34, 36]),
+        }], new Date(getServerTime() * 1000)),
+        viewerId,
+    )
+}
 
 const routes = async (fastify: FastifyInstance) => {
 
@@ -99,6 +135,7 @@ const routes = async (fastify: FastifyInstance) => {
         equipment.level = newLevel
         equipment.stack = newStack
         updatePlayerEquipmentSync(playerId, equipmentId, { stack: newStack, level: newLevel })
+        recordEquipmentAwakeningProgress(playerId, upgradeCount)
 
         // give ability cores (CDN check: only if generate_ability_soul)
         const dissolveInfo = getEquipmentDissolveSync(equipmentId)
@@ -108,16 +145,18 @@ const routes = async (fastify: FastifyInstance) => {
 
         const returnEquipmentList = buildFullEquipmentList(playerId)
 
-        console.log(`[UPGRADE] account=${accountId} player=${playerId}: eid=${equipmentId} rarity=${equipmentRarity} level ${equipment.level-upgradeCount}->${equipment.level} stack ${equipment.stack+upgradeCount}->${equipment.stack} craft -${upgradeCost*upgradeCount}`)
+        gameVerboseLog(() => `[UPGRADE] account=${accountId} player=${playerId}: eid=${equipmentId} rarity=${equipmentRarity} level ${equipment.level-upgradeCount}->${equipment.level} stack ${equipment.stack+upgradeCount}->${equipment.stack} craft -${upgradeCost*upgradeCount}`)
 
         reply.header("content-type", "application/x-msgpack")
+        const responseData: Record<string, unknown> = {
+            "equipment_list": returnEquipmentList,
+            "item_list": returnItemList,
+            "mail_arrived": false
+        }
+        mergeEquipmentDegreeSettlement(responseData, playerId, viewerId)
         return reply.status(200).send({
             "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-            "data": {
-                "equipment_list": returnEquipmentList,
-                "item_list": returnItemList,
-                "mail_arrived": false
-            }
+            "data": responseData
         })
     })
 
@@ -185,19 +224,29 @@ const routes = async (fastify: FastifyInstance) => {
                 returnItemList[dissolveInfo.ability_soul_id] = givePlayerItemSync(playerId, dissolveInfo.ability_soul_id, upgradeCount)
             }
         }
+        recordEquipmentAwakeningProgress(
+            playerId,
+            upgrades.reduce((total, upgrade) => total + upgrade.upgradeCount, 0),
+        )
 
         const newCraftPoints = currentCraftPoints - totalCraftPointCost
         updatePlayerItemSync(playerId, wrightpieceItemId(), newCraftPoints)
         returnItemList[wrightpieceItemId()] = newCraftPoints
 
-        console.log(`[BULK_UPGRADE] account=${accountId} player=${playerId}: ${upgrades.length} equipment upgraded, craft points ${currentCraftPoints} -> ${newCraftPoints}`)
+        gameVerboseLog(() => `[BULK_UPGRADE] account=${accountId} player=${playerId}: ${upgrades.length} equipment upgraded, craft points ${currentCraftPoints} -> ${newCraftPoints}`)
 
         const returnEquipmentList = buildFullEquipmentList(playerId)
 
         reply.header("content-type", "application/x-msgpack")
+        const responseData: Record<string, unknown> = {
+            "equipment_list": returnEquipmentList,
+            "item_list": returnItemList,
+            "mail_arrived": false,
+        }
+        mergeEquipmentDegreeSettlement(responseData, playerId, viewerId)
         return reply.status(200).send({
             "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-            "data": { "equipment_list": returnEquipmentList, "item_list": returnItemList, "mail_arrived": false }
+            "data": responseData
         })
     })
 

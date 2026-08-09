@@ -3,11 +3,12 @@ import { ContentTypeParserDoneFunction } from "fastify/types/content-type-parser
 import { pack, unpack } from "msgpackr";
 import fastifyStatic from "@fastify/static";
 import path from "path";
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { getServerTime, getServerTimeForPlayer } from "./utils";
 import { restoreTimeOffset } from "./data/activeAccount";
-import { installAdminGuard, loadAdminAuthConfig } from "./lib/admin-auth";
-import { getCnReleaseGraphSnapshot } from "./lib/cn-asset-graph";
+import { migrateUnsafeViewerIdsSync } from "./data/domains/session";
+import { installManagementAuth } from "./lib/management-auth";
+import { installRoutePerformanceMonitor } from "./lib/route-performance";
 
 import versionCheckPlugin from "./routes/cn/versionCheck";
 import leitingAuthPlugin from "./routes/cn/leitingAuth";
@@ -27,6 +28,7 @@ import expodApiPlugin from "./routes/api/expod";
 import storyQuestApiPlugin from "./routes/api/storyQuest";
 import optionApiPlugin from "./routes/api/option";
 import singleBattleQuestApiPlugin from "./routes/api/singleBattleQuest";
+import questApiPlugin from "./routes/api/quest";
 import { multiBattleRoutes } from "./multi";
 import attentionApiPlugin from "./routes/api/attention";
 import characterApiPlugin from "./routes/api/character";
@@ -44,33 +46,53 @@ import mailApiPlugin from "./routes/api/mail";
 import rankingEventApiPlugin from "./routes/api/rankingEvent";
 import missionApiPlugin from "./routes/api/mission";
 import activeMissionApiPlugin from "./routes/api/activeMission";
+import passCardApiPlugin from "./routes/api/passCard";
 import paymentApiPlugin from "./routes/api/payment";
 import newsApiPlugin from "./routes/api/news";
 import raidEventApiPlugin from "./routes/api/raidEvent";
 import rushEventApiPlugin from "./routes/api/rushEvent";
 import carnivalEventApiPlugin from "./routes/api/carnivalEvent";
+import howToGetApiPlugin from "./routes/api/howToGet";
 import contentsGuideApiPlugin from "./routes/api/contentsGuide";
 import profileApiPlugin from "./routes/api/profile";
+import followApiPlugin from "./routes/api/follow";
+import snsApiPlugin from "./routes/api/sns";
 import historyApiPlugin from "./routes/api/history";
+import playerHistoryApiPlugin from "./routes/api/playerHistory";
 import comicApiPlugin from "./routes/api/comic";
 import questUnlockApiPlugin from "./routes/api/questUnlock";
 import itemApiPlugin from "./routes/api/item";
-import { patchFileRoutes } from "./routes/cn/patch-files";
 import { startSessionServer } from "./multi";
+import {
+    startQuestNpcPartyPoolWorker,
+    stopQuestNpcPartyPoolWorker,
+} from "./multi/npc/player-party-pool";
 
 const fastify = Fastify({
     logger: {
-        level: "info"
+        // Default remains compatible with the existing development behavior.
+        // Startup BAT files may set LOG_LEVEL=warn to suppress per-request
+        // Fastify access logs during normal low-overhead operation.
+        level: process.env.LOG_LEVEL || "info"
     },
     bodyLimit: 262144  // 256KB — covers /single_battle_quest/finish large battle stats
 });
 
-const configuredListenHost = process.env.CN_LISTEN_HOST ?? "127.0.0.1";
-const adminAuthConfig = loadAdminAuthConfig(process.env, configuredListenHost);
-installAdminGuard(fastify, adminAuthConfig);
+installRoutePerformanceMonitor(fastify);
+
+// Viewer IDs >= 900,000,000 are interpreted as COM/AI members by the
+// multiplayer protocol. Repair legacy human sessions before rooms can open.
+const migratedUnsafeViewerIds = migrateUnsafeViewerIdsSync();
+if (migratedUnsafeViewerIds > 0) {
+    console.log(`[MULTI] migrated ${migratedUnsafeViewerIds} legacy viewer ID(s) out of the COM range`);
+}
 
 // Restore saved time offset from active player on startup
 restoreTimeOffset();
+
+// Game endpoints remain public; only the legacy management pages and their
+// management APIs are protected by the password session below.
+installManagementAuth(fastify);
 
 // Simple in-memory rate limiter for /crash endpoint only.
 // /debug is excluded — game client sends heavy beacon traffic during normal startup.
@@ -316,14 +338,15 @@ function stubMsgpackReply(reply: any, data: any, playerId?: number) {
     });
 }
 
-fastify.post(`${apiPrefix}/assetintitle/version_info_in_title`, async (_request, reply) => {
-    const { CDN_TOTAL_SIZE, ENTITY_LISTS_DIR } = require("./routes/cn/asset");
-    stubMsgpackReply(reply, {
-        base_url: `${CDN_BASE_URL}/${ENTITY_LISTS_DIR}/`,
-        files_list: `${CDN_BASE_URL}/${ENTITY_LISTS_DIR}/10939-android_medium.csv`,
-        total_size: CDN_TOTAL_SIZE,
-        delayed_assets_size: 0
-    });
+fastify.post(`${apiPrefix}/assetintitle/version_info_in_title`, async (request, reply) => {
+    const { getAssetDownloadSize, getVersionInfo } = require("./routes/cn/asset");
+    const resVer = request.headers['res_ver'] as string | undefined;
+    const device = request.headers.device as string | undefined;
+    stubMsgpackReply(reply, getVersionInfo(
+        CDN_BASE_URL,
+        getAssetDownloadSize(resVer, device),
+        device,
+    ));
 });
 
 fastify.post(`${apiPrefix}/tool/check_social_link_enable`, async (_request, reply) => {
@@ -353,16 +376,6 @@ fastify.post(`${apiPrefix}/channels/channel_leiting_pay/query_purcharge`, async 
 
 fastify.post(`${apiPrefix}/channels/channel_leiting_pay/set_unfinish_order_status`, async (_request, reply) => {
     stubMsgpackReply(reply, {});
-});
-
-// PassCard (修行之道): get current pass card data
-fastify.post(`${apiPrefix}/Pass_card/get_pass_card`, async (_request, reply) => {
-    stubMsgpackReply(reply, { point: 0, is_buy: false, all_received_record: [] });
-});
-
-// PassCard: claim all available rewards
-fastify.post(`${apiPrefix}/Pass_card/receive_all`, async (_request, reply) => {
-    stubMsgpackReply(reply, { all_received_record: [] });
 });
 
 // Episode trial reading: finish stub (character story trial)
@@ -483,6 +496,7 @@ fastify.register(expodApiPlugin, { prefix: `${apiPrefix}/expod` });
 fastify.register(storyQuestApiPlugin, { prefix: `${apiPrefix}/story_quest` });
 fastify.register(optionApiPlugin, { prefix: `${apiPrefix}/option` });
 fastify.register(singleBattleQuestApiPlugin, { prefix: `${apiPrefix}/single_battle_quest` });
+fastify.register(questApiPlugin, { prefix: `${apiPrefix}/quest` });
 fastify.register(multiBattleRoutes, { prefix: `${apiPrefix}/multi_battle_quest` });
 fastify.register(attentionApiPlugin, { prefix: `${apiPrefix}/attention` });
 fastify.register(characterApiPlugin, { prefix: `${apiPrefix}/character` });
@@ -500,6 +514,7 @@ fastify.register(mailApiPlugin, { prefix: `${apiPrefix}/mail` });
 fastify.register(rankingEventApiPlugin, { prefix: `${apiPrefix}/ranking_event` });
 fastify.register(missionApiPlugin, { prefix: `${apiPrefix}/mission` });
 fastify.register(activeMissionApiPlugin, { prefix: `${apiPrefix}/active_mission` });
+fastify.register(passCardApiPlugin, { prefix: `${apiPrefix}/Pass_card` });
 fastify.register(paymentApiPlugin, { prefix: `${apiPrefix}/payment` });
 fastify.register(newsApiPlugin, { prefix: `${apiPrefix}/news` });
 fastify.register(raidEventApiPlugin, { prefix: `${apiPrefix}/event/raid` });
@@ -507,24 +522,20 @@ fastify.register(rushEventApiPlugin, { prefix: `${apiPrefix}/event/rush` });
 fastify.register(carnivalEventApiPlugin, { prefix: `${apiPrefix}/carnival_event` });
 fastify.register(contentsGuideApiPlugin, { prefix: `${apiPrefix}/contents_guide` });
 fastify.register(profileApiPlugin, { prefix: `${apiPrefix}/profile` });
+fastify.register(followApiPlugin, { prefix: `${apiPrefix}/follow` });
+fastify.register(snsApiPlugin, { prefix: `${apiPrefix}/sns` });
 fastify.register(historyApiPlugin, { prefix: `${apiPrefix}/history` });
+fastify.register(playerHistoryApiPlugin, { prefix: `${apiPrefix}/player_history` });
 fastify.register(comicApiPlugin, { prefix: `${apiPrefix}/comic` });
 fastify.register(questUnlockApiPlugin, { prefix: `${apiPrefix}/quest` });
 fastify.register(itemApiPlugin, { prefix: `${apiPrefix}/item` });
+fastify.register(howToGetApiPlugin, { prefix: `${apiPrefix}/how_to_get` });
 
 // Web management panel
 fastify.register(indexWebPlugin);
-fastify.register(indexWebApiPlugin, { prefix: "/api", adminAuthConfig });
+fastify.register(indexWebApiPlugin, { prefix: "/api" });
 fastify.register(seedsWebApiPlugin, { prefix: "/api/seeds" });
 fastify.register(modAdminApiPlugin, { prefix: "/api/mod-admin" });
-
-// 404 audit log: console scrollback dies with the window, this file doesn't.
-// Every client-visible H404 (asset per-file miss / unknown endpoint) lands here.
-const HTTP404_LOG = path.join(__dirname, "..", "logs", "http404.log");
-try { mkdirSync(path.dirname(HTTP404_LOG), { recursive: true }); } catch { /* best effort */ }
-function log404(kind: string, detail: string): void {
-    try { appendFileSync(HTTP404_LOG, `${new Date().toISOString()} [${kind}] ${detail}\n`); } catch { /* best effort */ }
-}
 
 const cdnHost = process.env.CN_LISTEN_HOST || "localhost";
 const cdnPort = process.env.CN_LISTEN_PORT || "8001";
@@ -532,12 +543,28 @@ const cdnDisplayHost = cdnHost === "0.0.0.0" ? "localhost" : cdnHost;
 const CDN_BASE_URL = process.env.CDN_BASE_URL || `http://${cdnDisplayHost}:${cdnPort}/patch/cn`;
 const cdnDir = process.env.CDN_DIR || ".cdn";
 
-// Serve only fixed-format patch leaves from explicitly allowed roots.
-// Registered BEFORE fastifyStatic to intercept matching requests.
-fastify.register(patchFileRoutes, {
-    productionRoot: path.join(__dirname, "..", "assets", "asset-patch", "production", "upload"),
-    activeRoot: path.join(__dirname, "..", "assets", "asset-patch", "active"),
-    onMiss: log404,
+// Serve patched orderedmap files for missing CDN resources
+// Registered BEFORE fastifyStatic to intercept matching requests
+fastify.get("/patch/cn/dummy/download/production/upload/:prefix/:hash", async (request, reply) => {
+    const { prefix, hash } = request.params as { prefix: string; hash: string };
+    const relPath = `${prefix}/${hash}`;
+    const patchFile = path.join(__dirname, "..", "assets", "asset-patch", "production", "upload", prefix, hash);
+    if (existsSync(patchFile)) {
+        console.log("[PATCH-SERVE]", relPath);
+        return reply.type("application/octet-stream").send(readFileSync(patchFile));
+    }
+    console.log("[PATCH-MISS]", relPath);
+    return reply.status(404).send("Not Found");
+});
+
+// Serve patch archive files for asset update
+fastify.get("/patch/cn/asset-patch/active/:file", async (request, reply) => {
+    const { file } = request.params as { file: string };
+    const patchFile = path.join(__dirname, "..", "assets", "asset-patch", "active", file);
+    if (existsSync(patchFile)) {
+        return reply.type("application/zip").send(readFileSync(patchFile));
+    }
+    return reply.status(404).send("Not Found");
 });
 
 fastify.register(fastifyStatic, {
@@ -577,12 +604,16 @@ fastify.setNotFoundHandler((request, reply) => {
         return;
     }
     console.log(`[UNKNOWN] ${request.method} ${request.url}`);
-    log404("UNKNOWN", `${request.method} ${request.url}`);
     reply.status(404).send({ error: "Not Found" });
 });
 
 const host = process.env.CN_LISTEN_HOST ?? "127.0.0.1";
 const port = parseInt(process.env.CN_LISTEN_PORT ?? "8001");
+
+fastify.addHook("onClose", async () => {
+    await stopQuestNpcPartyPoolWorker();
+});
+startQuestNpcPartyPoolWorker();
 
 fastify.listen({ port, host }, (err, address) => {
     if (err) {
@@ -590,19 +621,6 @@ fastify.listen({ port, host }, (err, address) => {
         process.exit(1);
     }
     console.log(`CN StarPoint listening on http://${host}:${port}`);
-    console.log(`[admin-auth] mode=${adminAuthConfig.mode}; secure_cookie=${adminAuthConfig.cookieSecure}`);
-
-    // 启动即构建 release graph:issues 非空时 getCnReleaseGraphSnapshot 会显著告警,
-    // 不再等到第一个客户端请求才暴露(2026-07-18 链重锚事故毫无告警面)
-    try {
-        const releaseGraph = getCnReleaseGraphSnapshot();
-        console.log(
-            `[RELEASE-GRAPH] tail=${releaseGraph.tailVersion} `
-            + `edges=${releaseGraph.edges.length} issues=${releaseGraph.issues.length}`
-        );
-    } catch (error) {
-        console.error("[RELEASE-GRAPH] failed to build release graph snapshot at startup:", error);
-    }
 
     // Start multi battle TCP session server
     startSessionServer();

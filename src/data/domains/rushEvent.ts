@@ -185,10 +185,6 @@ export function insertPlayerRushEventSync(
 ) {
     getDb().prepare(`
     INSERT INTO players_rush_events
-    (player_id, event_id, active_rush_battle_folder_id,
-     endless_battle_max_round, endless_battle_max_round_time,
-     endless_battle_max_round_character_id_1, endless_battle_max_round_character_id_2, endless_battle_max_round_character_id_3,
-     endless_battle_max_round_character_evolution_img_lvl_1, endless_battle_max_round_character_evolution_img_lvl_2, endless_battle_max_round_character_evolution_img_lvl_3)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
         playerId,
@@ -407,24 +403,26 @@ export function serializePlayerRushEventPlayedParty(
     deserialized: PlayerRushEventPlayedParty
 ): UserRushEventPlayedParty {
     return {
-        character_id_1: deserialized.characterIds[0],
-        character_id_2: deserialized.characterIds[1],
-        character_id_3: deserialized.characterIds[2],
-        unison_character_id_1: deserialized.unisonCharacterIds[0],
-        unison_character_id_2: deserialized.unisonCharacterIds[1],
-        unison_character_id_3: deserialized.unisonCharacterIds[2],
-        equipment_id_1: deserialized.equipmentIds[0],
-        equipment_id_2: deserialized.equipmentIds[1],
-        equipment_id_3: deserialized.equipmentIds[2],
-        ability_soul_id_1: deserialized.abilitySoulIds[0],
-        ability_soul_id_2: deserialized.abilitySoulIds[1],
-        ability_soul_id_3: deserialized.abilitySoulIds[2],
-        evolution_img_level_1: deserialized.evolutionImgLevels[0],
-        evolution_img_level_2: deserialized.evolutionImgLevels[1],
-        evolution_img_level_3: deserialized.evolutionImgLevels[2],
-        unison_evolution_img_level_1: deserialized.unisonEvolutionImgLevels[0],
-        unison_evolution_img_level_2: deserialized.unisonEvolutionImgLevels[1],
-        unison_evolution_img_level_3: deserialized.unisonEvolutionImgLevels[2],
+        // The legacy client cannot decode MessagePack's undefined extension
+        // (fixext1, 0xD4). Optional saved party slots must be explicit nulls.
+        character_id_1: deserialized.characterIds[0] ?? null,
+        character_id_2: deserialized.characterIds[1] ?? null,
+        character_id_3: deserialized.characterIds[2] ?? null,
+        unison_character_id_1: deserialized.unisonCharacterIds[0] ?? null,
+        unison_character_id_2: deserialized.unisonCharacterIds[1] ?? null,
+        unison_character_id_3: deserialized.unisonCharacterIds[2] ?? null,
+        equipment_id_1: deserialized.equipmentIds[0] ?? null,
+        equipment_id_2: deserialized.equipmentIds[1] ?? null,
+        equipment_id_3: deserialized.equipmentIds[2] ?? null,
+        ability_soul_id_1: deserialized.abilitySoulIds[0] ?? null,
+        ability_soul_id_2: deserialized.abilitySoulIds[1] ?? null,
+        ability_soul_id_3: deserialized.abilitySoulIds[2] ?? null,
+        evolution_img_level_1: deserialized.evolutionImgLevels[0] ?? null,
+        evolution_img_level_2: deserialized.evolutionImgLevels[1] ?? null,
+        evolution_img_level_3: deserialized.evolutionImgLevels[2] ?? null,
+        unison_evolution_img_level_1: deserialized.unisonEvolutionImgLevels[0] ?? null,
+        unison_evolution_img_level_2: deserialized.unisonEvolutionImgLevels[1] ?? null,
+        unison_evolution_img_level_3: deserialized.unisonEvolutionImgLevels[2] ?? null,
     }
 }
 
@@ -499,6 +497,7 @@ export function getPlayerRushEventNextEndlessBattleRoundSync(
     SELECT round
     FROM players_rush_events_played_parties
     WHERE player_id = ? AND event_id = ? AND battle_type = ?
+    ORDER BY round ASC
     `).all(
         playerId,
         eventId,

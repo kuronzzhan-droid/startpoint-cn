@@ -2,10 +2,15 @@
 // When 3+ specific characters must be in the same party, this tracks their co-appearances
 
 import { getDb } from "../../../data/db"
+import { incrementPlayerCategoryMissionSync } from "../../../data/domains/mission"
+import {
+    getMatchedAwakeDirectBattleMissionIds,
+    normalizeCharacterPair,
+} from "../../mission/awake-battle-rules"
 import { getCharacterRaces, getRaceKeyString } from "./race-utils"
 import type { FinishContext } from "./types"
 
-export function trackPartyCoClears(ctx: FinishContext): void {
+export function trackPartyCoClears(ctx: FinishContext): number[] {
     const ids: number[] = []
     const allRaces: string[] = []
     for (const c of ctx.party.characters) {
@@ -22,7 +27,7 @@ export function trackPartyCoClears(ctx: FinishContext): void {
     }
 
     // Co-clears (pairwise character IDs)
-    const unique = [...new Set(ids)]
+    const unique = [...new Set(ids)].sort((a, b) => a - b)
     if (unique.length >= 2) {
         const db = getDb()
         const insert = db.prepare(`
@@ -34,7 +39,8 @@ export function trackPartyCoClears(ctx: FinishContext): void {
         const tx = db.transaction(() => {
             for (let i = 0; i < unique.length - 1; i++) {
                 for (let j = i + 1; j < unique.length; j++) {
-                    insert.run(ctx.playerId, unique[i], unique[j])
+                    const [charIdA, charIdB] = normalizeCharacterPair(unique[i], unique[j])
+                    insert.run(ctx.playerId, charIdA, charIdB)
                 }
             }
         })
@@ -51,4 +57,10 @@ export function trackPartyCoClears(ctx: FinishContext): void {
             clear_count = clear_count + 1
         `).run(ctx.playerId, raceKey)
     }
+
+    const matchedMissionIds = getMatchedAwakeDirectBattleMissionIds(ctx, raceKey)
+    for (const missionId of matchedMissionIds) {
+        incrementPlayerCategoryMissionSync(ctx.playerId, 9, missionId, 1)
+    }
+    return matchedMissionIds
 }

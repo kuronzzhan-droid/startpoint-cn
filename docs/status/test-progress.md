@@ -117,7 +117,15 @@
 
 ## C3212 修复详解
 
-### 因果链
+| 优先级 | 模块 | 客户端验收步骤 |
+|---:|---|---|
+| 1 | 狂热激战 | 检查常驻批次列表；保存配队；首次与重复通关；商店购买；奖励、库存和 load 持久化。当前 `eventId - 10` 为推测回退 |
+| 2 | 无限演武 | 验证 10 体力、分数评级、跨多个档位奖励、动画提示、最高分和 load 持久化 |
+| 3 | 战阵 | 按本地三队 Raid 入口验证配队、`event/raid/battle/start`、战斗、基础结算；事件级分数奖励尚未实现 |
+| 4 | 歼灭者门票 | 最高难度 start 预扣 1 个歼灭心核；正常 finish 不返还；abort 只返还一次；重启后 active 状态可恢复 |
+| 5 | 任务系统 | 普通、每日、每周、收集、首批称号、活动协力首批规则及 Pass 主链已有服务端结算：验证 Pass 日/周/活动进度、点数提示、等级奖励、重置和重启持久化；复杂活动谓词与其余称号完成后再做全分类回归 |
+| 6 | 邮件 | 覆盖全部支持附件类型、单领、全领、重复领取、未读提示和普通业务响应后的刷新 |
+| 7 | NPC 完整回归 | 基础 NPC 房主流程已有实际使用；继续验证重赛、贡献昵称显示和 TCP 会话中断后的完整行为 |
 
 ```
 getQuestSync 统一 BattleQuest → 纯剧情关有了 rankPointReward 字段
@@ -134,7 +142,13 @@ getQuestSync 统一 BattleQuest → 纯剧情关有了 rankPointReward 字段
 | 2 | `singleBattleQuest.ts` `multiBattleQuest.ts` | DB INSERT `clearRank: clearRank ?? 5` |
 | 3 | `singleBattleQuest.ts` `multiBattleQuest.ts` | 响应 `"clear_rank": clearRank ?? 5`（不发 null 给客户端） |
 
-## C2274 详解
+| 模块 | 状态 | 原因 |
+|---|---|---|
+| 歼灭者成员不解锁 | 低优先级 | 服务端身份测试已覆盖，但当前缺少双客户端成员测试条件 |
+| 真人随机匹配 | 未实现 | attention 匹配队列与 NPC 招募入口区分尚未完成 |
+| 超级猫头鹰多场景联机 | 未实现 | `LevelNext`、第二场景 SceneReady 和恢复链尚未完成 |
+| Pass category 6/7/8 | 待测 | 主数据、核心进度、点数、type 23 和等级奖励已实现；救援、表情、购买流程仍未完成 |
+| 礼包码兑换 | 未实现 | 只有入口兼容，没有兑换业务 |
 
 ### 错误信息
 

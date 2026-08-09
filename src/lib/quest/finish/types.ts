@@ -12,7 +12,11 @@ export interface QuestStatistics {
         unison_characters: (PartyCharacter | null)[]
         characters: PartyCharacter[]
     }
-    zones?: { use_power_flip_count?: number; use_dash_count?: number }[]
+    zones?: {
+        use_power_flip_count?: number
+        use_dash_count?: number
+        encoffin_count?: number
+    }[]
     max_combo_count?: number
     [key: string]: any
 }
@@ -26,8 +30,10 @@ export interface FinishContext {
     clearRank: number | null
     party: QuestStatistics['party']
     statistics: QuestStatistics
+    equipmentElements?: readonly number[]
     player: Player
     questPreviouslyCompleted: boolean
     questProgress: { bestElapsedTimeMs?: number | null; highScore?: number; clearRank?: number } | null
     isMulti?: boolean
+    isMultiHost?: boolean
 }

@@ -7,19 +7,25 @@ import degreeRewards from "../../../assets/mission_degree_reward.json"
 import collectItemRewards from "../../../assets/mission_collect_item_reward.json"
 import weeklyRewards from "../../../assets/mission_weekly_reward.json"
 import charAwakeRewards from "../../../assets/mission_char_awake_reward.json"
+import passDailyRewards from "../../../assets/mission_pass_daily_reward.json"
+import passWeekRewards from "../../../assets/mission_pass_week_reward.json"
+import passEventRewards from "../../../assets/mission_pass_event_reward.json"
 
 interface MissionStage {
     stage: number
     targetProgress: number
 }
 
-function buildLookup(rewardTable: Record<string, Record<string, any>>, targetProgressColumn: number): Record<string, MissionStage[]> {
+function buildLookup(
+    rewardTable: Record<string, Record<string, any>>,
+    targetProgressIndex: number
+): Record<string, MissionStage[]> {
     const result: Record<string, MissionStage[]> = {}
     for (const [missionId, stages] of Object.entries(rewardTable)) {
         const list: MissionStage[] = []
         for (const [stageStr, rows] of Object.entries(stages)) {
             const row = (rows as any[])[0]
-            const targetProgress = parseInt(row[targetProgressColumn] || "0")
+            const targetProgress = parseInt(row[targetProgressIndex] || "0")
             const stage = parseInt(stageStr)
             list.push({ stage, targetProgress })
         }
@@ -35,6 +41,9 @@ const missionStageLookup: Record<number, Record<string, MissionStage[]>> = {
     3: buildLookup(eventRewards as any, 1),
     4: buildLookup(collectItemRewards as any, 2),
     5: buildLookup(degreeRewards as any, 1),
+    6: buildLookup(passDailyRewards as any, 1),
+    7: buildLookup(passWeekRewards as any, 1),
+    8: buildLookup(passEventRewards as any, 1),
     9: buildLookup(charAwakeRewards as any, 5),
     10: buildLookup(weeklyRewards as any, 1),
 }
@@ -64,8 +73,29 @@ export function getCompletedStageNumbers(category: number, missionId: number, pr
     return stages.filter(s => progress >= s.targetProgress).map(s => s.stage)
 }
 
+export function isMissionProgressComplete(category: number, missionId: number, progress: number): boolean {
+    const stages = missionStageLookup[category]?.[String(missionId)]
+    return !!stages?.length && stages.every(stage => progress >= stage.targetProgress)
+}
+
 export function getMissionStageIds(category: number, missionId: number): number[] {
     const stages = missionStageLookup[category]?.[String(missionId)]
     if (!stages) return []
     return stages.map(s => s.stage)
+}
+
+/**
+ * Returns the largest progress value the client ever needs for a mission.
+ *
+ * Several degree conditions are backed by lifetime counters or score values
+ * that can grow far beyond the final reward threshold. Persisting and
+ * returning the raw value is unnecessary and can overflow older clients.
+ */
+export function getMissionFinalTargetProgress(
+    category: number,
+    missionId: number,
+): number | undefined {
+    const stages = missionStageLookup[category]?.[String(missionId)]
+    if (!stages || stages.length === 0) return undefined
+    return Math.max(...stages.map(stage => stage.targetProgress))
 }

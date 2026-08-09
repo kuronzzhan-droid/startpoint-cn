@@ -559,11 +559,11 @@
   ],
   "3002": [
     {
-      "name": "",
+      "name": "phenomena_hell_fusion_core",
       "type": 0,
       "rarity": 1.0,
-      "id": 40210,
-      "count": 20
+      "id": 10000096,
+      "count": 1
     }
   ],
   "3003": [
@@ -12671,58 +12671,22 @@
     }
   ],
   "700010": [
-    {
-      "name": "",
-      "type": 0,
-      "rarity": 1.0,
-      "id": 2370005,
-      "count": 50
-    }
+    { "name": "", "type": 0, "rarity": 1.0, "id": 40408, "count": 1 }
   ],
   "700011": [
-    {
-      "name": "",
-      "type": 0,
-      "rarity": 1.0,
-      "id": 2370005,
-      "count": 100
-    }
+    { "name": "", "type": 0, "rarity": 1.0, "id": 40409, "count": 1 }
   ],
   "700012": [
-    {
-      "name": "",
-      "type": 0,
-      "rarity": 1.0,
-      "id": 2370005,
-      "count": 200
-    }
+    { "name": "", "type": 0, "rarity": 1.0, "id": 40410, "count": 1 }
   ],
   "700013": [
-    {
-      "name": "",
-      "type": 0,
-      "rarity": 1.0,
-      "id": 2370006,
-      "count": 50
-    }
+    { "name": "", "type": 0, "rarity": 1.0, "id": 40407, "count": 1 }
   ],
   "700014": [
-    {
-      "name": "",
-      "type": 0,
-      "rarity": 1.0,
-      "id": 2370006,
-      "count": 100
-    }
+    { "name": "", "type": 0, "rarity": 1.0, "id": 40412, "count": 1 }
   ],
   "700015": [
-    {
-      "name": "",
-      "type": 0,
-      "rarity": 1.0,
-      "id": 2370006,
-      "count": 200
-    }
+    { "name": "", "type": 0, "rarity": 1.0, "id": 40411, "count": 1 }
   ],
   "700016": [
     {

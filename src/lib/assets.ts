@@ -1,8 +1,8 @@
 import adventEventQuests from "../../assets/advent_event_quest.json";
-import adventEventQuestFull from "../../assets/advent_event_quest_full.json";
 import bossBattleQuests from "../../assets/boss_battle_quest.json";
 import boxGacha from "../../assets/box_gacha.json";
 import boxReward from "../../assets/box_reward.json";
+import characters from "../../assets/character.json";
 import characterQuests from "../../assets/character_quest.json";
 import clearRewards from "../../assets/clear_reward.json";
 import dailyExpManaEventQuests from "../../assets/daily_exp_mana_event_quest.json";
@@ -33,8 +33,14 @@ import manaBoard from "../../assets/mana_board.json";
 import rareScoreRewards from "../../assets/rare_score_reward.json";
 import scoreRewards from "../../assets/score_reward.json";
 import gachaCampaigns from "../../assets/gacha_campaign.json";
-import { readFileSync } from "fs";
-import { join as joinPath } from "path";
+import bossCoinShopItems from "../../assets/boss_coin_shop.json";
+import bossCoinShopItemCategoryMap from "../../assets/boss_coin_shop_item_category_map.json";
+import eventItemShopItems from "../../assets/event_item_shop.json";
+import eventItemShopIdMap from "../../assets/event_item_shop_id_map.json";
+import generalShopItems from "../../assets/general_shop.json";
+import starGrainShopItems from "../../assets/star_grain_shop.json";
+import treasureShopItems from "../../assets/treasure_shop.json";
+import equipmentEnhancementShopItems from "../../assets/equipment_enhancement_shop.json";
 import rushEventQuestFolders from "../../assets/rush_event_quest_folder.json"
 import configData from "../../assets/config.json"
 import equipmentDissolveData from "../../assets/equipment_dissolve.json"
@@ -42,138 +48,21 @@ import itemSaleData from "../../assets/item_sale.json"
 import equipmentCraftData from "../../assets/equipment_craft.json"
 import equipmentMaxLevels from "../../assets/equipment_max_level.json"
 import equipmentElements from "../../assets/equipment_element.json"
-import { AssetCharacter, BattleQuest, BossCoinShopItems, BoxGacha, ClearRewards, ConfigValues, EquipmentCraftEntry, EquipmentDissolveEntry, EventItemShopIdMapItem, EventShopItems, ExAbilities, ExBoostItem, ExBoostItems, ExStatus, Gacha, Gachas, ItemSaleEntry, ManaNode, ManaNodes, QuestCategory, RareScoreReward, RareScoreRewardGroups, RawAssetCharacters, RawBoxGachas, RawBoxRewards, RawQuests, Reward, EquipmentItemReward, RushEventFolders, ScoreReward, ScoreRewardGroups, ShopItem, ShopItems, ShopType, StoryQuest } from "./types";
+import { readFileSync } from "fs"
+import { join as joinPath } from "path"
+import { AssetCharacter, BattleQuest, BossCoinShopItems, BoxGacha, ClearRewards, ConfigValues, EquipmentCraftEntry, EquipmentDissolveEntry, EquipmentItemReward, EventItemShopIdMapItem, EventShopItems, ExAbilities, ExBoostItem, ExBoostItems, ExStatus, Gacha, Gachas, ItemSaleEntry, ManaNode, ManaNodes, QuestCategory, RareScoreReward, RareScoreRewardGroups, RawAssetCharacters, RawBoxGachas, RawBoxRewards, RawQuests, Reward, RushEventFolders, ScoreReward, ScoreRewardGroups, ShopItem, ShopItems, ShopType, StoryQuest } from "./types";
 
-// ---------------------------------------------------------------------------
-// Mod-editable assets (hot-reloadable).
-//
-// These JSON files can be modified at runtime by external tooling (the
-// mod-tools GUI edits shops / character metadata directly on disk). They are
-// loaded with readFileSync instead of static imports so that
-// POST /api/mod-admin/reload_assets can re-read them without restarting the
-// server. Everything else keeps using static imports (loaded once at boot).
-// ---------------------------------------------------------------------------
+const MOD_ASSETS_DIR = joinPath(__dirname, "..", "..", "assets")
+let rogueEventData: any = null
 
-const MOD_ASSETS_DIR = joinPath(__dirname, "..", "..", "assets");
-
-function loadModAsset(name: string): any {
-    return JSON.parse(readFileSync(joinPath(MOD_ASSETS_DIR, name), "utf-8"));
+export function reloadRogueEventConfig(): string[] {
+    rogueEventData = JSON.parse(
+        readFileSync(joinPath(MOD_ASSETS_DIR, "rogue_event.json"), "utf-8"),
+    )
+    return ["rogue_event.json"]
 }
 
-const MOD_ASSET_FILES = [
-    "character.json",
-    "boss_coin_shop.json",
-    "boss_coin_shop_item_category_map.json",
-    "event_item_shop.json",
-    "event_item_shop_id_map.json",
-    "general_shop.json",
-    "star_grain_shop.json",
-    "treasure_shop.json",
-    "equipment_enhancement_shop.json",
-    "rogue_event.json",
-    "rush_event_quest_folder.json",
-] as const;
-
-let characters: any;
-let bossCoinShopItems: any;
-let bossCoinShopItemCategoryMap: any;
-let eventItemShopItems: any;
-let eventItemShopIdMap: any;
-let generalShopItems: any;
-let starGrainShopItems: any;
-let treasureShopItems: any;
-let equipmentEnhancementShopItems: any;
-let rogueEventConfig: any;
-// rush 通关奖励:静态 import 只作首帧兜底,热重载后以 modRushEventQuestFolders 为准
-// (2026-07-28 起 700099 奖励由用户定制,改完 POST /api/mod-admin/reload_assets 即生效)
-let modRushEventQuestFolders: any;
-
-/**
- * (Re)loads the mod-editable asset files from disk.
- *
- * @returns The list of file names that were (re)loaded.
- */
-export function reloadModAssets(): string[] {
-    characters = loadModAsset("character.json");
-    bossCoinShopItems = loadModAsset("boss_coin_shop.json");
-    bossCoinShopItemCategoryMap = loadModAsset("boss_coin_shop_item_category_map.json");
-    eventItemShopItems = loadModAsset("event_item_shop.json");
-    eventItemShopIdMap = loadModAsset("event_item_shop_id_map.json");
-    generalShopItems = loadModAsset("general_shop.json");
-    starGrainShopItems = loadModAsset("star_grain_shop.json");
-    treasureShopItems = loadModAsset("treasure_shop.json");
-    equipmentEnhancementShopItems = loadModAsset("equipment_enhancement_shop.json");
-    rogueEventConfig = loadModAsset("rogue_event.json");
-    modRushEventQuestFolders = loadModAsset("rush_event_quest_folder.json");
-    return [...MOD_ASSET_FILES];
-}
-
-/**
- * Gets the roguelike rush-event mod config for an event, or null when the
- * feature is disabled or the event has no entry. Hot-reloadable via
- * POST /api/mod-admin/reload_assets (assets/rogue_event.json).
- *
- * @param eventId The ID of the rush event.
- * @returns The per-event config object, or null.
- */
-export function getRogueEventConfig(eventId: number): any | null {
-    if (!rogueEventConfig || rogueEventConfig.enabled !== true) return null;
-    return rogueEventConfig.events?.[String(eventId)] ?? null;
-}
-
-/**
- * Gets an equipment's max evolution level (equipment master col8, mirrored in
- * assets/equipment_max_level.json — 385 items cap at 5, 51 at 1). The client
- * hard-throws C2284 when players_equipment.level exceeds this.
- *
- * @param equipmentId The ID of the equipment.
- * @returns The max level, defaulting to 1 for unknown ids.
- */
-export function getEquipmentMaxLevel(equipmentId: number): number {
-    return (equipmentMaxLevels as Record<string, number>)[String(equipmentId)] ?? 1;
-}
-
-/**
- * Gets an equipment's element, mirrored in assets/equipment_element.json
- * (detected from element tokens in its enhancement/soul ability rows, same
- * rule as the mod GUI). 0-based 火0 水1 雷2 风3 光4 暗5; -1 = universal.
- * Souls share ids with their weapons, so this covers both.
- *
- * @param equipmentId The ID of the equipment (or its same-id soul item).
- * @returns The element index, or -1 for universal/unknown.
- */
-export function getEquipmentElement(equipmentId: number): number {
-    return (equipmentElements as Record<string, number>)[String(equipmentId)] ?? -1;
-}
-
-// derived per-event rush folder max rounds; folder ids repeat across events
-// (700007 folder 1 = 2 rounds, 700099 folder 1 = 10 rounds), so a flat
-// folder-id map like the old hardcoded rushEventFolderMaxRounds is ambiguous
-const rushFolderMaxRoundsCache: Record<number, Record<number, number>> = {};
-
-/**
- * Gets the max round per folder for a rush event, derived from
- * assets/rush_event_quest.json (endless rounds are 0 and never count).
- *
- * @param eventId The ID of the rush event.
- * @returns folderId -> max round map (empty for unknown events).
- */
-export function getRushEventFolderMaxRounds(eventId: number): Record<number, number> {
-    let map = rushFolderMaxRoundsCache[eventId];
-    if (!map) {
-        map = {};
-        for (const quest of Object.values(rushEventQuests as Record<string, any>)) {
-            if (Number(quest?.rushEventId) !== eventId) continue;
-            const folder = Number(quest.rushEventFolderId);
-            const round = Number(quest.rushEventRound);
-            if (round > (map[folder] ?? 0)) map[folder] = round;
-        }
-        rushFolderMaxRoundsCache[eventId] = map;
-    }
-    return map;
-}
-
-reloadModAssets();
+reloadRogueEventConfig()
 
 /**
  * Gets a clear reward from its ID.
@@ -244,6 +133,12 @@ function getQuestSync(
         aRankTime: quest.aRankTime ?? 0,
         sRankTime: quest.sRankTime ?? 0,
         sPlusRankTime: quest.sPlusRankTime ?? 0,
+        scoreAttackQuestId: quest.scoreAttackQuestId,
+        bRankScore: quest.bRankScore,
+        aRankScore: quest.aRankScore,
+        sRankScore: quest.sRankScore,
+        ssRankScore: quest.ssRankScore,
+        timeLimitMs: quest.timeLimitMs,
         rankPointReward: quest.rankPointReward ?? 0,
         characterExpReward: quest.characterExpReward ?? 0,
         manaReward: quest.manaReward ?? 0,
@@ -348,58 +243,6 @@ export function getWorldStoryEventBossBattleQuestSync(
 export function getAdventEventQuest(
     questId: string | number
 ): BattleQuest | null {
-    const fullQuest = (adventEventQuestFull as Record<string, any>)[String(questId)]
-    if (fullQuest) {
-        if (fullQuest.kind === "story") {
-            return {
-                name: fullQuest.name,
-                clearReward: fullQuest.firstTimeClearRewardId === undefined || fullQuest.firstTimeClearRewardId === null
-                    ? undefined
-                    : getClearRewardSync(fullQuest.firstTimeClearRewardId),
-                eventId: fullQuest.eventId,
-                viewableNeedQuest: fullQuest.viewableNeedQuest ?? null,
-                viewableNeedQuests: fullQuest.viewableNeedQuests ?? [],
-                selectableNeedQuest: fullQuest.selectableNeedQuest ?? null,
-                selectableNeedQuests: fullQuest.selectableNeedQuests ?? [],
-            } as any
-        }
-
-        const battle = fullQuest.battle
-        return {
-            name: fullQuest.name,
-            clearReward: fullQuest.firstTimeClearRewardId === undefined || fullQuest.firstTimeClearRewardId === null
-                ? undefined
-                : getClearRewardSync(fullQuest.firstTimeClearRewardId),
-            sPlusReward: battle.rankSsRewardId === undefined || battle.rankSsRewardId === null
-                ? undefined
-                : getClearRewardSync(battle.rankSsRewardId),
-            scoreRewardGroupId: battle.scoreRewardGroupId ?? undefined,
-            scoreRewardGroup: battle.scoreRewardGroupId != null ? getScoreRewardGroup(battle.scoreRewardGroupId) : undefined,
-            element: battle.recommendedElement ?? undefined,
-            eventId: fullQuest.eventId,
-            bRankTime: battle.rankTimesMs?.b ?? 0,
-            aRankTime: battle.rankTimesMs?.a ?? 0,
-            sRankTime: battle.rankTimesMs?.s ?? 0,
-            sPlusRankTime: battle.rankTimesMs?.ss ?? 0,
-            rankPointReward: battle.rewards?.rankPoint ?? 0,
-            characterExpReward: battle.rewards?.characterExp ?? 0,
-            manaReward: battle.rewards?.mana ?? 0,
-            poolExpReward: battle.rewards?.poolExp ?? 0,
-            fixedParty: battle.fixedParty ?? undefined,
-            staminaCost: battle.staminaCost ?? undefined,
-            availablePlayKind: battle.availablePlayKind ?? null,
-            startableUseItemMode: battle.startableUseItemMode ?? null,
-            startableItemIds: battle.startableItemIds ?? [],
-            startableItemCounts: battle.startableItemCounts ?? [],
-            maxContinueCount: battle.maxContinueCount ?? null,
-            rankItemCounts: battle.rankItemCounts,
-            viewableNeedQuest: fullQuest.viewableNeedQuest ?? null,
-            viewableNeedQuests: fullQuest.viewableNeedQuests ?? [],
-            selectableNeedQuest: fullQuest.selectableNeedQuest ?? null,
-            selectableNeedQuests: fullQuest.selectableNeedQuests ?? []
-        } as BattleQuest
-    }
-
     return getQuestSync((adventEventQuests as RawQuests), questId)
 }
 
@@ -457,7 +300,17 @@ export function getQuestFromCategorySync(
         case QuestCategory.TOWER_DUNGEON_EVENT:
             return getQuestSync((towerDungeonEventQuests as RawQuests), questId)
         case QuestCategory.EXPERT_SINGLE_EVENT:
-            return getQuestSync((expertSingleEventQuests as RawQuests), questId)
+            {
+                const quest = getQuestSync((expertSingleEventQuests as RawQuests), questId)
+                if (quest?.sPlusReward !== undefined) {
+                    // CN Recollection Trial SS rewards are always three Starry
+                    // Memory Crystals. The extracted clear_reward mapping points
+                    // at free beads instead, which makes the client show the SS
+                    // badge while the intended inventory item never arrives.
+                    quest.sPlusReward = { type: 0, id: 14040, count: 3 } as EquipmentItemReward
+                }
+                return quest
+            }
         case QuestCategory.CARNIVAL_EVENT:
             return getQuestSync((carnivalEventQuests as RawQuests), questId)
         case QuestCategory.RAID_EVENT:
@@ -830,99 +683,87 @@ export function getRushEventFolderClearRewards(
     rushEventId: number,
     folderId: number
 ): Reward[] | null {
-    // mod: roguelike 追加奖励(rogue_event.json)。客户端结算面板只有 10 个道具槽位,
-    // 货币类(星导石 type=3)不占槽 —— 固定表尽量精简,变化交给下面两条随机规则。
     const rogueCfg = getRogueEventConfig(rushEventId) as any
-    const chanceExtras: Reward[] = []
-
-    // ① folder_clear_chance:每条独立掷骰(十连券等)
-    const rogueChance = rogueCfg?.folder_clear_chance
-    if (Array.isArray(rogueChance)) {
-        for (const entry of rogueChance) {
-            const p = Number(entry?.chance)
-            if (Number.isFinite(p) && Math.random() < p) {
-                chanceExtras.push({
-                    type: Number(entry.type ?? 0),
-                    id: Number(entry.id),
-                    count: Number(entry.count ?? 1),
-                } as Reward)
-            }
+    const extras: Reward[] = []
+    const add = (type: number, id: number, count: number) => {
+        if (Number.isFinite(id) && count > 0) {
+            extras.push({ type: type as Reward["type"], id, count } as EquipmentItemReward)
         }
     }
-
-    // ② folder_clear_random:每条从 pool 随机挑 pick 种,每种数量在 count 区间内随机
-    const rogueRandom = rogueCfg?.folder_clear_random
-    if (Array.isArray(rogueRandom)) {
-        const randInt = (lo: number, hi: number): number =>
-            lo + Math.floor(Math.random() * (Math.max(lo, hi) - lo + 1))
-        const asRange = (v: unknown, fallbackLo: number, fallbackHi: number): [number, number] =>
-            Array.isArray(v) && v.length >= 2
-                ? [Number(v[0]), Number(v[1])]
-                : (Number.isFinite(Number(v)) ? [Number(v), Number(v)] : [fallbackLo, fallbackHi])
-
-        for (const entry of rogueRandom) {
-            const pool = (Array.isArray(entry?.pool) ? entry.pool : [])
-                .map(Number).filter(Number.isFinite)
-            if (pool.length === 0) continue
-            const [pickLo, pickHi] = asRange(entry?.pick, pool.length, pool.length)
-            const take = Math.max(0, Math.min(pool.length, randInt(pickLo, pickHi)))
-            const shuffled = [...pool]
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-            }
-            const [countLo, countHi] = asRange(entry?.count, 1, 1)
-            for (const id of shuffled.slice(0, take)) {
-                const amount = randInt(countLo, countHi)
-                if (amount > 0) {
-                    chanceExtras.push({
-                        type: Number(entry?.type ?? 0), id, count: amount,
-                    } as Reward)
-                }
-            }
+    for (const entry of Array.isArray(rogueCfg?.folder_clear_chance) ? rogueCfg.folder_clear_chance : []) {
+        const chance = Number(entry?.chance)
+        if (Number.isFinite(chance) && Math.random() < chance) {
+            add(Number(entry?.type ?? 0), Number(entry?.id), Math.max(1, Number(entry?.count ?? 1)))
         }
     }
-
-    // 同 type+id 的条目合并计数(固定表 + 概率/随机追加可能命中同一道具,
-    // 不合并会在结算面板占两格显示 ×1 ×1)
-    const mergeRewards = (list: Reward[]): Reward[] => {
-        const merged: Reward[] = []
+    const randomInt = (lo: number, hi: number) => lo + Math.floor(Math.random() * (Math.max(lo, hi) - lo + 1))
+    const range = (value: unknown, fallback: number): [number, number] => {
+        if (Array.isArray(value) && value.length >= 2) return [Number(value[0]), Number(value[1])]
+        const n = Number(value)
+        return Number.isFinite(n) ? [n, n] : [fallback, fallback]
+    }
+    for (const entry of Array.isArray(rogueCfg?.folder_clear_random) ? rogueCfg.folder_clear_random : []) {
+        const pool = (Array.isArray(entry?.pool) ? entry.pool : []).map(Number).filter(Number.isFinite)
+        if (pool.length === 0) continue
+        const [pickLo, pickHi] = range(entry?.pick, pool.length)
+        const shuffled = [...pool]
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1))
+            ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+        }
+        const [countLo, countHi] = range(entry?.count, 1)
+        for (const id of shuffled.slice(0, Math.max(0, Math.min(pool.length, randomInt(pickLo, pickHi))))) {
+            add(Number(entry?.type ?? 0), id, randomInt(countLo, countHi))
+        }
+    }
+    const merge = (rewards: Reward[]): Reward[] => {
+        const result: Reward[] = []
         const index = new Map<string, number>()
-        for (const reward of list) {
-            const item = reward as EquipmentItemReward
-            const key = `${reward.type}:${item.id ?? ""}`
+        for (const reward of rewards) {
+            const key = `${reward.type}:${(reward as EquipmentItemReward).id ?? ""}`
             const at = index.get(key)
             if (at === undefined) {
-                index.set(key, merged.length)
-                merged.push({ ...reward } as Reward)
+                index.set(key, result.length)
+                result.push({ ...reward } as Reward)
             } else {
-                (merged[at] as EquipmentItemReward).count += item.count
+                ;(result[at] as EquipmentItemReward).count += (reward as EquipmentItemReward).count
             }
         }
-        return merged
+        return result
     }
-
-    const folderSource = (modRushEventQuestFolders ?? rushEventQuestFolders) as RushEventFolders
-    const folders = folderSource[rushEventId]
+    const folders = (rushEventQuestFolders as RushEventFolders)[rushEventId]
     if (folders !== undefined) {
         const rewards = folders[folderId]
         if (rewards !== undefined && Array.isArray(rewards) && rewards.length > 0) {
-            return chanceExtras.length > 0 ? mergeRewards([...rewards, ...chanceExtras]) : rewards
+            return extras.length > 0 ? merge([...rewards, ...extras]) : rewards
         }
     }
-    if (chanceExtras.length > 0) {
-        return mergeRewards(chanceExtras)
-    }
+    if (extras.length > 0) return merge(extras)
 
     // Fallback: for rush event reruns (700011-700017), try primary event (ID - 10)
     if (rushEventId >= 700010 && rushEventId <= 700019) {
-        const primaryFolders = folderSource[rushEventId - 10]
+        const primaryFolders = (rushEventQuestFolders as RushEventFolders)[rushEventId - 10]
         if (primaryFolders !== undefined) {
             return primaryFolders[folderId] ?? null
         }
     }
 
     return null
+}
+
+/** Deep Abyss roguelike configuration, independent from Fantasy Gauntlet. */
+export function getRogueEventConfig(eventId: number): any | null {
+    const config = rogueEventData
+    if (config?.enabled !== true) return null
+    return config.events?.[String(eventId)] ?? null
+}
+
+export function getEquipmentMaxLevel(equipmentId: number): number {
+    return (equipmentMaxLevels as Record<string, number>)[String(equipmentId)] ?? 1
+}
+
+export function getEquipmentElement(equipmentId: number): number {
+    return (equipmentElements as Record<string, number>)[String(equipmentId)] ?? -1
 }
 
 // TODO: 待从CDN二进制 config.orderedmap 提取真实数据
@@ -976,8 +817,8 @@ const FALLBACK_CONFIG: ConfigValues = {
     monthly_bonus_payment_total_requirement: 0,
     crazygacha_ten_times_character_ticket_id: 0,
     reward_multiplier_by_newbie: 1.0,
-    newbie_rank: 50,
-    newbie_days: 7,
+    newbie_rank: 250,
+    newbie_days: 365,
 }
 
 /**

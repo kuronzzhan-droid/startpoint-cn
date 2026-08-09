@@ -6,13 +6,52 @@ import { wantsJson } from "./http"
 import characterData from "../../../assets/character.json"
 import itemIds from "../../../assets/item_ids.json"
 import equipmentIds from "../../../assets/equipment_ids.json"
+import degreeRewards from "../../../assets/mission_degree_reward.json"
+import carnivalRewards from "../../../assets/carnival_event_total_score_rewards.json"
+import degreeData from "../../../assets/degree.json"
+import {
+    ADMIN_MAIL_MAX_INT,
+    parseAdminMailInteger,
+    validateMailAttachment,
+} from "../../lib/admin-mail-rules"
 
 // Pre-built CDN validation sets
 const CDN_CHAR_IDS: Set<number> = new Set(Object.keys(characterData).map(Number))
 const CDN_ITEM_IDS: Set<number> = new Set(itemIds as number[])
 const CDN_EQUIP_IDS: Set<number> = new Set(equipmentIds as number[])
-const VALID_MAIL_TYPES: Set<number> = new Set([1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15])
-const MAX_INT = 2147483647
+const VALID_MAIL_TYPES: Set<number> = new Set([1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15])
+
+function buildKnownDegreeIds(): Set<number> {
+    const result = new Set<number>(
+        Object.keys(degreeData as Record<string, unknown>)
+            .map(Number)
+            .filter(id => Number.isInteger(id) && id > 0),
+    )
+    for (const stages of Object.values(degreeRewards as Record<string, Record<string, any[][]>>)) {
+        for (const rows of Object.values(stages)) {
+            for (const row of rows) {
+                for (let base = 5; base < row.length; base += 6) {
+                    if (Number(row[base]) !== 6) continue
+                    const degreeId = Number(row[base + 5])
+                    if (Number.isInteger(degreeId) && degreeId > 0) result.add(degreeId)
+                }
+            }
+        }
+    }
+    for (const tiers of Object.values(carnivalRewards as Record<string, any[][]>)) {
+        for (const tier of tiers) {
+            const rewards = Array.isArray(tier[2]) ? tier[2] : []
+            for (const reward of rewards) {
+                if (Number(reward[0]) !== 7) continue
+                const degreeId = Number(reward[1])
+                if (Number.isInteger(degreeId) && degreeId > 0) result.add(degreeId)
+            }
+        }
+    }
+    return result
+}
+
+const KNOWN_DEGREE_IDS = buildKnownDegreeIds()
 
 interface SendMailBody {
     type: string
@@ -47,16 +86,24 @@ const routes = async (fastify: FastifyInstance) => {
             ? reply.status(400).send({ error: msg })
             : reply.redirect("/mail?error=" + encodeURIComponent(msg))
 
-        const mailType = parseInt(body.type || "0")
+        const parsedMailType = parseAdminMailInteger(body.type, "附件类型", { min: 1, max: ADMIN_MAIL_MAX_INT })
+        if (!parsedMailType.ok || parsedMailType.value === null) {
+            return fail(parsedMailType.ok ? "附件类型无效" : parsedMailType.error)
+        }
+        const mailType = parsedMailType.value
         if (!VALID_MAIL_TYPES.has(mailType)) {
             return fail(`无效的附件类型：${mailType}`)
         }
-        const typeId = body.type_id ? parseInt(body.type_id) : null
 
-        // Validate type_id fits in 32-bit signed integer (client Int limit)
-        if (typeId !== null && (isNaN(typeId) || typeId > 2147483647 || typeId < 1)) {
-            return fail("附件 ID 无效（需为 1-2147483647 之间的整数）")
+        const parsedTypeId = parseAdminMailInteger(body.type_id, "附件 ID", {
+            min: 1,
+            max: ADMIN_MAIL_MAX_INT,
+            allowNull: true,
+        })
+        if (!parsedTypeId.ok) {
+            return fail(parsedTypeId.error)
         }
+        const typeId = parsedTypeId.value
 
         // Validate type_id against CDN data
         if (typeId !== null) {
@@ -66,28 +113,27 @@ const routes = async (fastify: FastifyInstance) => {
             if (mailType === 1 && !CDN_ITEM_IDS.has(typeId)) {
                 return fail(`道具 ID ${typeId} 不存在于 CDN 数据中`)
             }
+            if (mailType === 13 && !KNOWN_DEGREE_IDS.has(typeId)) {
+                return fail(`称号 ID ${typeId} 不存在于国服称号数据中`)
+            }
             if (mailType === 6 && !CDN_EQUIP_IDS.has(typeId)) {
                 return fail(`装备 ID ${typeId} 不存在于 CDN 数据中`)
             }
         }
-        const count = parseInt(body.number || "1")
+        const parsedCount = parseAdminMailInteger(body.number || (mailType === 13 ? "0" : "1"), "数量", {
+            min: mailType === 13 ? 0 : 1,
+            max: ADMIN_MAIL_MAX_INT,
+        })
+        if (!parsedCount.ok || parsedCount.value === null) {
+            return fail(parsedCount.ok ? "数量无效" : parsedCount.error)
+        }
+        const count = parsedCount.value
         const subject = body.subject && body.subject.trim() ? body.subject.trim() : null
         const desc = body.description && body.description.trim() ? body.description.trim() : null
 
-        // types that require type_id: Item(1), Character(5), Equipment(6)
-        if ((mailType === 1 || mailType === 5 || mailType === 6) && (typeId === null || isNaN(typeId))) {
-            return fail("此附件类型需要填写附件 ID")
-        }
-
-        if (isNaN(count) || count < 1) {
-            return fail("数量必须大于 0")
-        }
-        if (count > MAX_INT) {
-            return fail(`数量超出范围（需 ≤ ${MAX_INT}）`)
-        }
-        // 角色 / 装备每封邮件仅可发送 1 个
-        if ((mailType === 5 || mailType === 6) && count !== 1) {
-            return fail("角色 / 装备每封邮件仅可发送 1 个")
+        const attachmentValidation = validateMailAttachment({ mailType, typeId, count })
+        if (!attachmentValidation.ok) {
+            return fail(attachmentValidation.error)
         }
         if (subject !== null && subject.length > 64) {
             return fail("标题过长（最多 64 字符）")

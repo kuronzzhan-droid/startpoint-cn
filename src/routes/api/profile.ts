@@ -10,6 +10,17 @@ import { getSession } from "../../data/domains/session"
 import { resolvePlayerIdSync } from "../../data/activeAccount";
 // removed getAccountPlayers "../../data/wdfpData";
 import { generateDataHeaders } from "../../utils";
+import { getPlayerIdByViewerIdSync } from "../../data/domains/follow";
+import { buildTargetProfileSync } from "../../lib/follow";
+import { getFavoritePartyGroupListSync } from "../../lib/profileFavorite";
+import {
+    ensurePlayerLegacyDegreesSync,
+    ensurePlayerSoloTimeAttackDegreesSync,
+    getPlayerDegreeIdsSync,
+    hasPlayerDegreeSync,
+} from "../../data/domains/degree";
+import { ensurePlayerClaimedCarnivalDegreesSync } from "../../lib/quest/finish/carnival-reward-handler";
+import { gameVerboseLog } from "../../lib/game-logging";
 
 const routes = async (fastify: FastifyInstance) => {
     fastify.post("/get_my_profile", async (request: FastifyRequest, reply: FastifyReply) => {
@@ -38,52 +49,10 @@ const routes = async (fastify: FastifyInstance) => {
         const characters = getPlayerCharactersSync(playerId)
         const charCount = Object.keys(characters).length
 
-        // Build party group list (map from DB format to client format)
-        const partyGroups = getPlayerPartyGroupListSync(playerId)
-        const partyGroupList: any[] = []
-
-        for (const [groupId, group] of Object.entries(partyGroups)) {
-            const parties = group.list || {}
-            const partyList: any[] = []
-
-            for (const [slot, party] of Object.entries(parties)) {
-                const p = party as any
-                partyList.push({
-                    ability_soul_ids: (p.abilitySoulIds || []).map((id: number | null) => id),
-                    character_ids: (p.characterIds || []).map((id: number | null) => id),
-                    equipment_ids: (p.equipmentIds || []).map((id: number | null) => id),
-                    options: { allow_other_players_to_heal_me: p.options?.allowOtherPlayersToHealMe ?? true },
-                    party_edited: p.edited ?? false,
-                    party_id: (parseInt(groupId) - 1) * 10 + parseInt(slot),
-                    party_name: p.name || "",
-                    unison_character_ids: (p.unisonCharacterIds || []).map((id: number | null) => id),
-                })
-            }
-
-            partyGroupList.push({
-                party_group_color_id: group.colorId || 15,
-                party_group_id: parseInt(groupId),
-                party_list: partyList,
-            })
-        }
-
-        // Ensure at least one party exists for favorite character display
-        if (partyGroupList.length === 0) {
-            partyGroupList.push({
-                party_group_color_id: 15,
-                party_group_id: 1,
-                party_list: [{
-                    ability_soul_ids: [null, null, null],
-                    character_ids: [player.leaderCharacterId || 1, null, null],
-                    equipment_ids: [null, null, null],
-                    options: { allow_other_players_to_heal_me: true },
-                    party_edited: false,
-                    party_id: 1,
-                    party_name: "Party A",
-                    unison_character_ids: [null, null, null],
-                }]
-            })
-        }
+        const partyGroupList = getFavoritePartyGroupListSync(
+            playerId,
+            player.leaderCharacterId,
+        )
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
@@ -104,6 +73,43 @@ const routes = async (fastify: FastifyInstance) => {
                 },
                 user_party_group_list: partyGroupList,
             }
+        })
+    })
+
+    // Public profile opened from the follow/follower list.
+    fastify.post("/get_profile", async (request: FastifyRequest, reply: FastifyReply) => {
+        const body = request.body as any
+        const viewerId = Number(body.viewer_id)
+        const targetViewerId = Number(body.target_viewer_id)
+        if (!Number.isFinite(viewerId) || !Number.isFinite(targetViewerId)) {
+            return reply.status(400).send({ error: "Bad Request", message: "Invalid request body." })
+        }
+
+        const session = await getSession(String(viewerId))
+        if (!session) return reply.status(400).send({ error: "Bad Request", message: "Invalid viewer id." })
+        const playerId = resolvePlayerIdSync(session.accountId)
+        const targetPlayerId = getPlayerIdByViewerIdSync(targetViewerId)
+        if (!playerId || targetPlayerId === null) {
+            reply.header("content-type", "application/x-msgpack")
+            return reply.status(200).send({
+                data_headers: generateDataHeaders({ viewer_id: viewerId, result_code: 1457 }),
+                data: {},
+            })
+        }
+
+        const profile = buildTargetProfileSync(playerId, targetPlayerId)
+        if (!profile) {
+            reply.header("content-type", "application/x-msgpack")
+            return reply.status(200).send({
+                data_headers: generateDataHeaders({ viewer_id: viewerId, result_code: 1457 }),
+                data: {},
+            })
+        }
+
+        reply.header("content-type", "application/x-msgpack")
+        return reply.status(200).send({
+            data_headers: generateDataHeaders({ viewer_id: viewerId }),
+            data: profile,
         })
     })
 
@@ -148,13 +154,21 @@ const routes = async (fastify: FastifyInstance) => {
 
         const playerId = resolvePlayerIdSync(session.accountId)!
         const player = playerId !== null ? getPlayerSync(playerId) : null
-        const degreeId = player?.degreeId || 1
+        if (playerId === null || !player) return reply.status(500).send({
+            error: "Internal Server Error",
+            message: "No player bound to account."
+        })
+
+        ensurePlayerLegacyDegreesSync(playerId, player.degreeId || 1)
+        ensurePlayerSoloTimeAttackDegreesSync(playerId)
+        ensurePlayerClaimedCarnivalDegreesSync(playerId)
+        const degreeIds = getPlayerDegreeIdsSync(playerId)
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
             data_headers: generateDataHeaders({ viewer_id: viewerId }),
             data: {
-                degree_ids: [1, degreeId],  // default title + current
+                degree_ids: degreeIds,
             }
         })
     })
@@ -189,9 +203,18 @@ const routes = async (fastify: FastifyInstance) => {
             message: "Player not found."
         })
 
+        ensurePlayerLegacyDegreesSync(playerId, player.degreeId || 1)
+        ensurePlayerClaimedCarnivalDegreesSync(playerId)
+        if (!hasPlayerDegreeSync(playerId, Number(degreeId))) {
+            return reply.status(400).send({
+                error: "Bad Request",
+                message: "Degree is not owned."
+            })
+        }
+
         updatePlayerSync({ id: playerId, degreeId: Number(degreeId) })
 
-        console.log(`[PROFILE] update_degree viewer=${viewerId} degree=${degreeId}`)
+        gameVerboseLog(() => `[PROFILE] update_degree viewer=${viewerId} degree=${degreeId}`)
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({

@@ -26,20 +26,47 @@ function uint32LE(value) {
 /**
  * Serialize entries array to orderedmap binary buffer.
  * @param {Array<{key: string, row: string}>} entries
+ * @param {{ sort?: "numeric" | "lexicographic" }} [options]
  * @returns {Buffer}
  */
-function serializeOrderedMap(entries) {
-    // Sort entries by key (numeric for gacha IDs)
-    entries.sort((a, b) => {
-        const na = parseInt(a.key, 10);
-        const nb = parseInt(b.key, 10);
-        if (!isNaN(na) && !isNaN(nb)) return na - nb;
-        return a.key.localeCompare(b.key);
-    });
+function serializeOrderedMap(entries, options = {}) {
+    // MasterBinaryMap searches general master-table keys lexicographically.
+    // Keep numeric sorting as the default for existing gacha patch builders,
+    // whose keys have uniform widths and historically used numeric ordering.
+    if (options.sort === "lexicographic") {
+        entries.sort((a, b) => a.key.localeCompare(b.key));
+    } else {
+        entries.sort((a, b) => {
+            const na = parseInt(a.key, 10);
+            const nb = parseInt(b.key, 10);
+            if (!isNaN(na) && !isNaN(nb)) return na - nb;
+            return a.key.localeCompare(b.key);
+        });
+    }
+
+    const rowBlocks = entries.map(e => zlib.deflateSync(Buffer.from(e.row, "utf8")));
+    return serializeOrderedMapBlocks(
+        entries.map((entry, index) => ({ key: entry.key, rowBlock: rowBlocks[index] })),
+        { sort: "preserve" },
+    );
+}
+
+/**
+ * Serialize entries whose row blocks are already encoded. This is required for
+ * nested master tables, where each outer row is itself an orderedmap binary.
+ * @param {Array<{key: string, rowBlock: Buffer}>} entries
+ * @param {{ sort?: "numeric" | "lexicographic" | "preserve" }} [options]
+ * @returns {Buffer}
+ */
+function serializeOrderedMapBlocks(entries, options = {}) {
+    if (options.sort === "lexicographic") {
+        entries.sort((a, b) => a.key.localeCompare(b.key));
+    } else if (options.sort === "numeric") {
+        entries.sort((a, b) => Number(a.key) - Number(b.key));
+    }
 
     const keyBuffers = entries.map(e => Buffer.from(e.key, "utf8"));
-    const rowTextBuffers = entries.map(e => Buffer.from(e.row, "utf8"));
-    const rowBlocks = rowTextBuffers.map(r => zlib.deflateSync(r));
+    const rowBlocks = entries.map(e => e.rowBlock);
 
     // Build index payload
     let keyPos = 0;
@@ -100,6 +127,7 @@ function hashResourcePath(resourcePath, salt = "K6R9T9Hz22OpeIGEWB0ui6c6PYFQnJGy
 
 module.exports = {
     serializeOrderedMap,
+    serializeOrderedMapBlocks,
     writeOrderedMap,
     hashResourcePath,
     uint32LE,

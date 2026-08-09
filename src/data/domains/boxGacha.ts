@@ -165,6 +165,41 @@ export function updatePlayerBoxGachaSync(
 }
 
 /**
+ * Resets one of a player's box-gacha boxes and clears its draw history.
+ * Both changes are committed atomically so the box cannot be reopened with
+ * stale drawn-reward rows still reducing its available stock.
+ */
+export function resetPlayerBoxGachaSync(
+    playerId: number,
+    gachaId: number,
+    boxId: number,
+    remainingNumber: number
+): boolean {
+    return getDb().transaction(() => {
+        getDb().prepare(`
+        DELETE FROM players_box_gacha_drawn_rewards
+        WHERE player_id = ? AND gacha_id = ? AND box_id = ?
+        `).run(playerId, gachaId, boxId)
+
+        const result = getDb().prepare(`
+        UPDATE players_box_gacha
+        SET reset_times = reset_times + 1,
+            remaining_number = ?,
+            is_closed = ?
+        WHERE player_id = ? AND id = ? AND box_id = ?
+        `).run(
+            remainingNumber,
+            serializeBoolean(false),
+            playerId,
+            gachaId,
+            boxId
+        )
+
+        return result.changes === 1
+    })()
+}
+
+/**
  * Gets all of the drawn rewards for a specific box gacha & box for a player.
  * 
  * @param playerId The ID of the player.

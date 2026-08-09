@@ -4,34 +4,24 @@
   "description": "世界弹射物语(World Flipper)CN(雷霆)版本服务端模拟器",
   "main": "server.ts",
   "scripts": {
-    "build": "npm run build:server && npm run css",
-    "build:server": "tsc && node scripts/write-build-stamp.mjs",
+    "build": "npx tsc && npm run css",
     "typecheck": "tsc --noEmit",
-    "test:node": "npm run build:server && node scripts/run-node-tests.mjs",
-    "test:python": "python -m unittest discover -s mod-tools/tests -p \"test_*.py\"",
-    "verify:local-release": "python -X utf8 mod-tools/wf_local_release_verify.py",
     "css": "npx tailwindcss -i ./src/input.css -o ./web/public/tailwind.css",
     "css:watch": "npx tailwindcss -i ./src/input.css -o ./web/public/tailwind.css --watch --poll",
     "dev": "npm run build && node --env-file=.env out/server.js",
-    "cdn": "npm run build:server && node --env-file=.env out/validate_cdn.js",
-    "unzip": "npm run build:server && node --env-file=.env out/unzip_cdn.js",
-    "debug": "npm run css && npm run debug:ts-only",
+    "cdn": "npx tsc & node --env-file=.env out/validate_cdn.js",
+    "unzip": "npx tsc & node --env-file=.env out/unzip_cdn.js",
+    "debug": "npm run css && npm run css:watch & npm run debug:ts-only",
     "debug:ts-only": "tsnd --inspect -- src/server.ts",
     "dev:cn": "npm run build && node --env-file=.env out/cn-server.js",
     "debug:cn": "tsnd --env-file=.env -- src/cn-server.ts",
-    "build:admin": "npm --prefix admin run build",
-    "typecheck:admin": "npm --prefix admin run typecheck",
-    "dev:admin": "npm --prefix admin run dev",
-    "test:hygiene": "node scripts/run-bash.mjs scripts/tests/test-hygiene.sh",
-    "check:hygiene": "node scripts/run-bash.mjs scripts/check-hygiene.sh --all",
-    "test:launcher:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/tests/test-start-cn.ps1",
-    "test:launcher:linux": "node scripts/run-bash.mjs scripts/tests/test-start-cn-sh.sh",
-    "test:launcher": "node scripts/run-launcher-tests.mjs",
-    "verify": "npm run typecheck && npm run test:node && npm run typecheck:admin && npm run build:admin && npm run test:python && npm run verify:local-release"
+    "build:admin": "cd admin && npm install && npm run build",
+    "dev:admin": "cd admin && npm run dev"
   },
   "author": "",
   "license": "GPL-3.0-or-later",
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
     "@types/better-sqlite3": "^7.6.10",
     "@types/cli-progress": "^3.11.6",
     "@types/node": "^20.14.2",
@@ -41,18 +31,18 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@fastify/multipart": "10.1.0",
-    "@fastify/static": "10.1.2",
+    "@fastify/multipart": "^9.0.0",
+    "@fastify/static": "^8.0.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^11.3.0",
     "cli-progress": "^3.12.0",
-    "fastify": "5.10.0",
+    "fastify": "^5.0.0",
     "msgpackr": "^1.11.0",
     "readline-sync": "^1.4.10",
     "tailwindcss": "^3.2.0",
     "unzipper": "^0.12.3"
   },
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=20.0.0"
   }
 }

@@ -18,6 +18,7 @@ interface ReturnRushEvent {
 
 interface RushHandlerParams {
     questCategory: number
+    questAccomplished: boolean
     questData: {
         rushEventId?: number
         rushEventFolderId?: RushEventFolder
@@ -33,7 +34,7 @@ interface RushHandlerParams {
     playerId: number
     questId: number
     getEvoLevels: (playerId: number, charIds: (number | null)[]) => (number | null)[]
-    folderMaxRounds: Record<number, number | undefined>
+    getFolderMaxRounds: (eventId: number, folderId: number) => number
     getRushEvent: (playerId: number, eventId: number) => any | null
     updateRushEvent: (playerId: number, data: any) => void
     insertParty: (playerId: number, eventId: number, data: any) => void
@@ -48,8 +49,8 @@ export function handleRushEventFinish(params: RushHandlerParams): {
     rushEventData: ReturnRushEvent | null
     rushEventRewardsResult: PlayerRewardResult | null
 } {
-    const { questCategory, questData, clearTime, party, playerId, questId,
-        getEvoLevels, folderMaxRounds, getRushEvent, updateRushEvent,
+    const { questCategory, questAccomplished, questData, clearTime, party, playerId, questId,
+        getEvoLevels, getFolderMaxRounds, getRushEvent, updateRushEvent,
         insertParty, insertClearedFolder, deletePartyList,
         getSerializedParties, getFolderRewards, giveRewards } = params
 
@@ -57,6 +58,13 @@ export function handleRushEventFinish(params: RushHandlerParams): {
     let rushEventRewardsResult: PlayerRewardResult | null = null
 
     if (questCategory !== QuestCategory.RUSH_EVENT) {
+        return { rushEventData, rushEventRewardsResult }
+    }
+
+    // A failed Rush battle must never advance the played-party round or grant
+    // a folder reward.  Custom mode reset handling runs in the route after the
+    // ordinary settlement has finished.
+    if (!questAccomplished) {
         return { rushEventData, rushEventRewardsResult }
     }
 
@@ -117,7 +125,7 @@ export function handleRushEventFinish(params: RushHandlerParams): {
             battleType: rushEventBattleType, round
         })
     } else if (rushEventBattleType === RushEventBattleType.FOLDER) {
-        const isFolderFinal = rushEventRound >= (folderMaxRounds[rushEventFolderId] ?? 0)
+        const isFolderFinal = rushEventRound >= getFolderMaxRounds(rushEventId, rushEventFolderId)
         if (isFolderFinal) {
             insertClearedFolder(playerId, rushEventId, rushEventFolderId)
             updateRushEvent(playerId, { eventId: rushEventId, activeRushBattleFolderId: null })
@@ -148,12 +156,12 @@ export function handleRushEventFinish(params: RushHandlerParams): {
         "old_best_elapsed_time_ms": isEndless ? oldBestElapsedTimeMs : null
     }
 
-    if (rushEventBattleType === RushEventBattleType.FOLDER && rushEventRound >= (folderMaxRounds[rushEventFolderId] ?? 0)) {
+    if (rushEventBattleType === RushEventBattleType.FOLDER && rushEventRound >= getFolderMaxRounds(rushEventId, rushEventFolderId)) {
         const rewards = getFolderRewards(rushEventId, rushEventFolderId) ?? []
         rushEventRewardsResult = giveRewards(playerId, rewards)
-        // 货币类奖励(BEADS/MANA/EXP)没有 id,读出来是 undefined —— msgpack 会把它
-        // 编成 0xD4,客户端结算时 DecodeError R1(2026-07-28 星导石奖励实锤)。
-        // 它们已由 giveRewards 走 user_info 下发,这里只列出有 id 的道具/装备/角色。
+        // Currency rewards (beads/mana/exp) do not carry an item id. They are
+        // already granted through user_info, and serializing an undefined
+        // kind_id crashes the legacy result panel.
         rushEventData.rush_battle_reward_list = rewards.flatMap(reward => {
             const itemReward = reward as EquipmentItemReward
             if (itemReward.id === undefined || itemReward.id === null) return []

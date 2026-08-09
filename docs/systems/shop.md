@@ -1,7 +1,7 @@
 # 商店系统修复文档
 > 状态: 已修复   关键文件: src/data/domains/*, assets/general_shop.json   相关端点: /shop/buy, /shop/get_sales_list
 
-本次修复解决了三个独立但相关的商店问题。
+本文记录四个独立但相关的商店问题及其维护方式。
 
 ---
 
@@ -29,7 +29,13 @@
 
 **原理**：解析 CDN 二进制文件（orderedmap 格式），提取其中已有的 270 个 GeneralShop 商品 ID，在 `/get_sales_list` 响应中过滤掉不在名单内的商品。
 
-**文件变更**：
+1. 读取最新玩家状态与购买次数；
+2. 对活动商店执行开放期校验；
+3. 校验 Mana、星导石、羁绊证或道具成本；
+4. 扣除货币和道具；
+5. 按购买数量展开并发放全部奖励；
+6. 累加 `players_shop_purchases`；若支付类型为玛纳，同时累计 Active Mission 的实际玛纳消费量；
+7. 返回最终玩家、物品、角色与装备状态。
 
 | 文件 | 变更 |
 |------|------|
@@ -55,10 +61,35 @@ Header 解压后（zlib.inflateSync）：
 │ [剩余字节] 无分隔符的 key 字符串拼接（UTF-8）      │
 └──────────────────────────────────────────────────┘
 
-Key 解析（getIntMap）：
-  - key_end_pos 是累积偏移（差值编码）
-  - key 为数字的 UTF-8 字符串（如 "100001"）
-  - 通过 Std.parseInt() 转为整数
+- 商品描述目标装备、阶段与 `enhancementMaxLevel`；
+- `planEquipmentEnhancementPurchase()` 根据当前强化等级计算目标等级；
+- 材料、货币、装备等级与购买记录在同一事务中更新；
+- 商品存在玛纳价格时，同一事务还会累计 Active Mission 的实际玛纳消费量；当前 1.4.54 官方表没有这类价格，逻辑用于保持动态 Content 表兼容；
+- 响应返回 `equipment_list` 的最终强化等级；
+- 该流程不会套用普通装备强化的逐级素材模型。
+
+客户端展示的“阶段”与数据库中的 `enhancementLevel` 是同一条状态链的不同表现，不能把商店阶段号直接当作最终装备等级。
+
+## 星之粒组合奖励
+
+星之粒培育素材箱商品是购买时立即展开的多奖励商品，不是进入背包后再开启的箱子。`assets/star_grain_shop.json` 的 `rewards` 可以包含多项；通用购买事务会一次发放所有奖励，并且不会把商品 ID 自身作为背包道具。
+
+重建工具 `tools/rebuild_star_grain_shop.ts` 从 CN 主数据的六组奖励槽生成运行资产。非法或部分填写的槽位会使生成失败，不静默丢弃奖励。生成器属于数据维护工具，普通服务启动不会自动执行它。
+
+## Boss 币与活动商店
+
+Boss 币列表严格按客户端传入的 category ID 查询 `boss_coin_shop.json`。分类不存在时返回空集合，不猜测相邻分类，也不把其他活动商品混入。
+
+活动商店的开放期使用统一服务器时间。列表过滤开放期，购买时再次校验，避免客户端持有旧列表后购买已经关闭的商品。狂热激战部分活动在官方 CN 数据中缺少完整商品与代币定义，当前兼容来源和推测性边界单独记录在[狂热激战](./rush-event.md)。
+
+## 玩家序列化边界
+
+商店购买可能同时改变玩家货币、物品、角色和装备。响应字段使用各领域的统一客户端序列化器；商店文档不定义 Mana Node 的 `/load` 结构。
+
+当前 Mana Node 元素契约由 `src/data/types.ts` 和 `src/data/utils/serialize-player.ts` 维护，元素为：
+
+```text
+{ multiplied_id, awake_level }
 ```
 
 **过滤效果**：
@@ -229,6 +260,41 @@ value = [[
 
 ---
 
+## 四、星之粒属性培育素材箱奖励缺失
+
+### 错误现象与语义
+
+星之粒兑换所商品 `100017～100022` 购买后只发放第一项 `10001×1`，对应属性的五项培育素材没有到账。
+
+这些商品不是购买后进入背包、再通过道具接口开启的箱子，而是购买时立即展开的组合奖励。服务端继续使用现有 `/shop/buy` 多奖励发放链路，不创建 ID 为 `100017～100022` 的背包道具，也不接入 `/item/use_item`。
+
+### 主数据来源与生成规则
+
+重建工具 `tools/rebuild_star_grain_shop.ts` 以 `wf-assets-cn/orderedmap/shop/star_grain_shop.json` 为奖励的唯一来源。每个商品按以下六组固定字段解析 `type/id/count`：
+
+```
+25～27、28～30、31～33、34～36、37～39、40～42
+```
+
+- 完整空槽会被跳过。
+- 非空槽的 `type`、`id`、`count` 必须是合法整数，其中 `type` 只能是 `ShopItemRewardType` 的 `0～4`、`id > 0`、`count > 0`。
+- 非法槽位会终止重建，错误同时标明商品 ID 与槽位起点，避免生成部分或静默降级的奖励。
+- 旧资产不再保留或覆盖组合奖励；现有 `availableFrom`、`availableUntil` 人工日期覆盖语义保持不变。
+- 不存在有效 CN 来源的旧商品会从重建结果中删除，不保留 orphan 商品及其旧奖励。
+
+重建后 `100017～100022` 均为六项奖励。`100017` 的完整内容为 `10001×1、1×175、2×140、3×75、4×25、99×25`，其余五种属性按 CN 主数据映射对应素材 ID。`100038～100051` 等已有组合奖励同样从六槽主数据生成，专项测试负责防止回归。
+
+### 验证与维护
+
+```bash
+npx ts-node tools/rebuild_star_grain_shop.ts
+node tools/star_grain_material_pack.test.cjs
+```
+
+专项测试先逐项比较当前资产中的 CN 六槽与服务端 `rewards`，并确认素材箱商品 ID 不会作为自身奖励进入背包；通过这些断言后才连续运行两次生成器，比较完整标准输出、资产字节和 SHA-256，避免测试先修复陈旧资产再误判通过。
+
+---
+
 ## 相关文件索引
 
 | 文件 | 用途 |
@@ -238,7 +304,10 @@ value = [[
 | `assets/boss_coin_shop.json` | Boss 币商店商品数据（50 类别，6132 条） |
 | `assets/boss_coin_shop_item_category_map.json` | Boss 币商品 → 类别映射 |
 | `assets/general_shop.json` | 通用商店商品数据 |
+| `assets/star_grain_shop.json` | 星之粒兑换所商品与组合奖励数据 |
 | `src/data/utils.ts` | 玩家数据序列化（含 mana_node 格式修复） |
 | `src/data/types.ts` | 数据类型定义 |
 | `tools/rebuild_boss_coin_shop.ts` | Boss 币商店数据重建工具 |
+| `tools/rebuild_star_grain_shop.ts` | 从 CN 主数据重建星之粒兑换所资产 |
+| `tools/star_grain_material_pack.test.cjs` | 素材箱及既有组合奖励一致性测试 |
 | `docs/shop_fixes.md` | 本文档 |

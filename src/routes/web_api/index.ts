@@ -1,22 +1,10 @@
-import { FastifyPluginAsync } from "fastify";
+import { FastifyInstance } from "fastify";
+import playerApiPlugin from "./player"
+import serverApiPlugin from "./server"
+import mailApiPlugin from "./mail"
+import lookupApiPlugin from "./lookup"
 
-import { AdminAuthConfig } from "../../lib/admin-auth";
-import adminAuthApiPlugin from "./admin-auth";
-import playerApiPlugin from "./player";
-import serverApiPlugin from "./server";
-import mailApiPlugin from "./mail";
-import lookupApiPlugin from "./lookup";
-
-
-interface WebApiRouteOptions {
-    adminAuthConfig: AdminAuthConfig;
-}
-
-const routes: FastifyPluginAsync<WebApiRouteOptions> = async (fastify, options) => {
-    fastify.register(adminAuthApiPlugin, {
-        prefix: "/admin-auth",
-        config: options.adminAuthConfig,
-    });
+const routes = async (fastify: FastifyInstance) => {
     fastify.register(require('@fastify/multipart'), {
         limits: {
             fieldNameSize: 100, // Max field name size in bytes
@@ -27,12 +15,12 @@ const routes: FastifyPluginAsync<WebApiRouteOptions> = async (fastify, options) 
             headerPairs: 2000,  // Max number of header key=>value pairs
             parts: 1000         // For multipart forms, the max number of parts (fields + files)
         }
-    });
+    })
 
-    fastify.register(playerApiPlugin, { prefix: "/player" });
-    fastify.register(serverApiPlugin, { prefix: "/server" });
-    fastify.register(mailApiPlugin, { prefix: "/mail" });
-    fastify.register(lookupApiPlugin, { prefix: "/lookup" });
-};
+    fastify.register(playerApiPlugin, { prefix: "/player" })
+    fastify.register(serverApiPlugin, { prefix: "/server" })
+    fastify.register(mailApiPlugin, { prefix: "/mail" })
+    fastify.register(lookupApiPlugin, { prefix: "/lookup" })
+}
 
 export default routes;

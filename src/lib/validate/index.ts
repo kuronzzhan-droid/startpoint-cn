@@ -4,10 +4,12 @@
 import { SaveValidator, TemporalFilter } from "./types"
 import { MaxLevelValidator } from "./max-level"
 import { PartySlotValidator } from "./party-slot"
+import { UnisonUnlockValidator } from "./unison-unlock"
 
 const PERMANENT_VALIDATORS: SaveValidator[] = [
     MaxLevelValidator,
     PartySlotValidator,
+    UnisonUnlockValidator,
 ]
 
 const TEMPORAL_FILTERS: TemporalFilter[] = [

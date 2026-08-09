@@ -1,8 +1,21 @@
 export interface BattleStatisticsSummary {
     dashCount: number
     powerFlipCount: number
+    powerFlipLv3Count: number
     skillCount: number
     maxComboCount: number
+    maxSkillChainCount: number
+    feverCount: number
+    feverTimeMs: number
+    weakenEnemyCount: number
+    clearEnemyBuffCount: number
+    clearSelfDebuffCount: number
+    buffCompanionCount: number
+    healCompanionCount: number
+    emotionCount: number
+    enemyKillCount: number
+    weakPointDestroyCount: number
+    coffinReduceCount: number
     clearPhase?: number
 }
 
@@ -14,6 +27,9 @@ export interface BattleFinishMissionEvent {
     accomplished: boolean
     mode: "single" | "multi"
     role?: "host" | "guest"
+    isRescue?: boolean
+    isNewbieRescue?: boolean
+    isMvp?: boolean
     clearRank?: number | null
     clearTimeMs: number
     partyCharacterIds: number[]
@@ -40,25 +56,46 @@ function parsePositiveId(value: any): number | undefined {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
 }
 
-export function summarizeBattleStatistics(raw: any): BattleStatisticsSummary {
-    const zones = Array.isArray(raw?.zones) ? raw.zones : []
-    let dashCount = 0
-    let powerFlipCount = 0
-    let zoneSkillCount = 0
-    let hasZoneSkillCount = false
-    for (const zone of zones) {
-        dashCount += parseNonNegativeStat(zone?.use_dash_count)
-        powerFlipCount += parseNonNegativeStat(zone?.use_power_flip_count)
-        if (zone?.use_skill_count !== undefined && zone?.use_skill_count !== null) {
-            zoneSkillCount += parseNonNegativeStat(zone.use_skill_count)
-            hasZoneSkillCount = true
+function firstPresentStat(records: readonly any[], names: readonly string[]): number | undefined {
+    for (const record of records) {
+        for (const name of names) {
+            if (record?.[name] === undefined || record?.[name] === null) continue
+            return parseNonNegativeStat(record[name])
         }
     }
+    return undefined
+}
+
+function sumZoneStat(zones: readonly any[], names: readonly string[]): number {
+    return zones.reduce((total, zone) => (
+        total + (firstPresentStat([zone], names) ?? 0)
+    ), 0)
+}
+
+function rootOrZoneStat(raw: any, zones: readonly any[], names: readonly string[]): number {
+    return firstPresentStat([raw], names) ?? sumZoneStat(zones, names)
+}
+
+export function summarizeBattleStatistics(raw: any): BattleStatisticsSummary {
+    const zones = Array.isArray(raw?.zones) ? raw.zones : []
     return {
-        dashCount,
-        powerFlipCount,
-        skillCount: hasZoneSkillCount ? zoneSkillCount : parseNonNegativeStat(raw?.use_skill_count ?? raw?.skill_count),
+        dashCount: rootOrZoneStat(raw, zones, ["use_dash_count"]),
+        powerFlipCount: rootOrZoneStat(raw, zones, ["use_power_flip_count"]),
+        powerFlipLv3Count: rootOrZoneStat(raw, zones, ["use_power_flip_lv3_count"]),
+        skillCount: rootOrZoneStat(raw, zones, ["use_skill_count", "skill_count"]),
         maxComboCount: parseNonNegativeStat(raw?.max_combo_count),
+        maxSkillChainCount: rootOrZoneStat(raw, zones, ["max_skill_chain_count"]),
+        feverCount: rootOrZoneStat(raw, zones, ["fever_count"]),
+        feverTimeMs: rootOrZoneStat(raw, zones, ["fever_ms"]),
+        weakenEnemyCount: rootOrZoneStat(raw, zones, ["use_debuff_to_enemy_count"]),
+        clearEnemyBuffCount: rootOrZoneStat(raw, zones, ["clear_buff_of_enemy_count"]),
+        clearSelfDebuffCount: rootOrZoneStat(raw, zones, ["clear_debuff_of_self_count"]),
+        buffCompanionCount: rootOrZoneStat(raw, zones, ["use_buff_to_all_party_members"]),
+        healCompanionCount: rootOrZoneStat(raw, zones, ["use_heal_to_all_party_members"]),
+        emotionCount: rootOrZoneStat(raw, zones, ["use_emotion_count", "send_emotion_count"]),
+        enemyKillCount: rootOrZoneStat(raw, zones, ["enemy_kill_count"]),
+        weakPointDestroyCount: rootOrZoneStat(raw, zones, ["weak_point_attack_count"]),
+        coffinReduceCount: rootOrZoneStat(raw, zones, ["coffin_count_reduced_count"]),
         clearPhase: parseOptionalNonNegativeStat(raw?.clear_phase),
     }
 }

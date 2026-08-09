@@ -2,7 +2,7 @@ import { serializePlayerData, SerializePlayerDataOptions } from "./serialize-pla
 import { getDateFromServerTime, getServerTime, getServerDate, realToVirtual } from "../../utils"
 import { ClientPlayerData, DailyChallengePointListEntry, MergedPlayerData, PartyCategory, Player, PlayerBoxGacha, PlayerCharacter, PlayerCharacterBondToken, PlayerDrawnQuest, PlayerEquipment, PlayerGachaCampaign, PlayerGachaInfo, PlayerMultiSpecialExchangeCampaign, PlayerParty, PlayerPartyGroup, PlayerQuestProgress, PlayerRushEvent, PlayerRushEventPlayedParty, PlayerStartDashExchangeCampaign, RushEventBattleType, UserBoxGacha, UserCharacter, UserCharacterBondTokenStatus, UserEquipment, UserGachaCampaign, UserPartyGroup, UserPartyGroupTeam, UserQuestProgress, UserRushEvent, UserRushEventPlayedParty, UserRushEventPlayedPartyList, UserTutorial } from "../types"
 import { deserializePlayerRushEventPlayedParty, deserializeRushEvent, getPlayerRushEventListClearedFoldersSync, getPlayerRushEventListPlayedPartiesSync, getPlayerRushEventListSync, serializePlayerRushEventPlayedParty } from "../domains/rushEvent"
-import { getPlayerActiveMissionsSync, getPlayerClearedRegularMissionListSync } from "../domains/mission"
+import { getPlayerActiveMissionsSync, getPlayerCategoryMissionListSync, getPlayerClearedRegularMissionListSync } from "../domains/mission"
 import { getPlayerBoxGachasSync } from "../domains/boxGacha"
 import { getPlayerCharactersManaNodesSync, getPlayerCharactersSync, getPlayerCharactersManaNodeAwakeLevelsSync } from "../domains/character"
 import { getPlayerDailyChallengePointListSync, getPlayerSync, updatePlayerSync } from "../domains/player"
@@ -15,9 +15,16 @@ import { getPlayerMultiSpecialExchangeCampaignsSync, getPlayerPeriodicRewardPoin
 import { getPlayerOptionsSync } from "../domains/option"
 import { getPlayerPartyGroupListSync } from "../domains/party"
 import { getPlayerTriggeredTutorialsSync } from "../domains/tutorial"
-import { filterToActiveMissions } from "../../lib/mission/index"
-import { computeAwakeSummary } from "../../lib/mission/index"
-import { computeManaBoardAwakeFromNodes } from "../../lib/character-helpers"
+import { computeAwakeSummary, filterToActiveMissions, reconcileAwakeUnlocksFromProgress } from "../../lib/mission/index"
+import {
+    computeManaBoardAwakeFromNodes,
+    filterCharacterManaBoardAwakeLevels,
+    mergeManaBoardAwakeMaps,
+    reconcilePlayerManaBoardCompletionSync,
+} from "../../lib/character-helpers"
+import { getDb } from "../db"
+import { getCarnivalSaveStateSync } from "../../lib/carnival-save-state"
+import { getContentSnapshot } from "../../content/runtime/content-snapshot"
 
 /**
  * Generates default player data.
@@ -56,13 +63,14 @@ export function getDefaultPlayerData(): Omit<Player, 'id'> {
         totalDashes: 0,
         totalManaObtained: 0,
         maxComboAchieved: 0,
-        totalLoginDays: 0,
+        totalLoginDays: 1,
         tutorialStep: 0,
         tutorialSkipFlag: null,
         tutorialGachaCharacterId: null,
         timeOffset: null
     }
 }
+
 
 
 /**
@@ -77,6 +85,10 @@ export function getClientSerializedData(
     options: SerializePlayerDataOptions
 ): ClientPlayerData | null {
 
+    // Old/imported saves can lack the bond-token row that marks a completed
+    // base board as receivable. Repair it before loading the response snapshot.
+    reconcilePlayerManaBoardCompletionSync(playerId)
+
     const playerData = getPlayerSync(playerId)
     if (playerData === null) return null
 
@@ -84,12 +96,31 @@ export function getClientSerializedData(
 
     // Compute awake mission summary for /load injection
     const awakeSummary = computeAwakeSummary(playerId)
+    awakeSummary.manaBoardAwakeMap = reconcileAwakeUnlocksFromProgress(
+        playerId,
+        awakeSummary.activeMissionList.map(mission => ({
+            missionId: mission.mission_id,
+            progress: mission.progress_value,
+        }))
+    ).all
 
-    // Fetch awake levels once, reuse for both node list and mana_board_awake.
-    // mana_board_awake is actual post-awakening board state; mission completion is
-    // returned separately through active_mission_list.
+    // The client uses mana_board_awake both to unlock the Awake tab and as the
+    // target node-awake level. Keep mission unlocks and persisted node state.
     const nodeAwakeLevels = getPlayerCharactersManaNodeAwakeLevelsSync(playerId)
-    const manaBoardAwakeMap = computeManaBoardAwakeFromNodes(nodeAwakeLevels)
+    const learnedManaNodes = getPlayerCharactersManaNodesSync(playerId)
+    const missionAwakeMap = new Map<string, Record<number, number>>()
+    for (const [characterId, levels] of awakeSummary.manaBoardAwakeMap) {
+        const visible = filterCharacterManaBoardAwakeLevels(
+            Number(characterId),
+            levels,
+            learnedManaNodes[characterId] ?? [],
+        )
+        if (Object.keys(visible).length > 0) missionAwakeMap.set(characterId, visible)
+    }
+    const manaBoardAwakeMap = mergeManaBoardAwakeMaps(
+        missionAwakeMap,
+        computeManaBoardAwakeFromNodes(nodeAwakeLevels)
+    )
 
     return serializePlayerData({
         player: playerData,
@@ -97,7 +128,7 @@ export function getClientSerializedData(
         triggeredTutorial: getPlayerTriggeredTutorialsSync(playerId),
         clearedRegularMissionList: getPlayerClearedRegularMissionListSync(playerId),
         characterList: getPlayerCharactersSync(playerId),
-        characterManaNodeList: getPlayerCharactersManaNodesSync(playerId),
+        characterManaNodeList: learnedManaNodes,
         characterManaNodeAwakeLevels: nodeAwakeLevels,
         manaBoardAwakeMap,
         partyGroupList: getPlayerPartyGroupListSync(playerId),
@@ -108,7 +139,10 @@ export function getClientSerializedData(
         gachaCampaignList: getPlayerGachaCampaignListSync(playerId),
         drawnQuestList: getPlayerDrawnQuestsSync(playerId),
         periodicRewardPointList: getPlayerPeriodicRewardPointsSync(playerId),
-        allActiveMissionList: filterToActiveMissions(getPlayerActiveMissionsSync(playerId)),
+        allActiveMissionList: filterToActiveMissions(
+            getPlayerActiveMissionsSync(playerId),
+            getContentSnapshot().repository,
+        ),
         boxGachaList: getPlayerBoxGachasSync(playerId),
         purchasedTimesList: {},
         startDashExchangeCampaignList: getPlayerStartDashExchangeCampaignsSync(playerId),
@@ -151,6 +185,7 @@ export function getMergedPlayerDataSync(
         drawnQuestList: getPlayerDrawnQuestsSync(playerId),
         periodicRewardPointList: getPlayerPeriodicRewardPointsSync(playerId),
         allActiveMissionList: getPlayerActiveMissionsSync(playerId),
+        categoryMissionList: getPlayerCategoryMissionListSync(playerId),
         boxGachaList: getPlayerBoxGachasSync(playerId),
         purchasedTimesList: {},
         startDashExchangeCampaignList: getPlayerStartDashExchangeCampaignsSync(playerId),
@@ -158,6 +193,7 @@ export function getMergedPlayerDataSync(
         userOption: getPlayerOptionsSync(playerId),
         rushEventList: getPlayerRushEventListSync(playerId),
         rushEventClearedFolderList: getPlayerRushEventListClearedFoldersSync(playerId),
-        rushEventPlayedPartyList: getPlayerRushEventListPlayedPartiesSync(playerId)
+        rushEventPlayedPartyList: getPlayerRushEventListPlayedPartiesSync(playerId),
+        ...getCarnivalSaveStateSync(getDb(), playerId),
     }
 }

@@ -30,27 +30,44 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
-const WF_ASSETS_CN = path.resolve(__dirname, "../../assets/cdndata/boss_coin_shop.json");
+const WF_ASSETS_CN = path.resolve(__dirname, "../assets/cdndata/boss_coin_shop.json");
 const OUTPUT_SHOP = path.resolve(__dirname, "../assets/boss_coin_shop.json");
 const OUTPUT_CATMAP = path.resolve(__dirname, "../assets/boss_coin_shop_item_category_map.json");
 const EXISTING = path.resolve(__dirname, "../assets/boss_coin_shop_existing.json");
 // Parse wf-assets-cn flat array format
 function parseWfBossCoinItem(raw) {
-    const catId = raw[0];
-    const itemId = raw[7]; // Actually the primary key is the outer key
-    const costItemId = parseInt(raw[17], 10);
-    const costAmount = parseInt(raw[18], 10);
+    const costs = [];
+    for (let offset = 17; offset <= 23; offset += 2) {
+        const id = parseInt(raw[offset], 10);
+        const amount = parseInt(raw[offset + 1], 10);
+        if (!isNaN(id) && !isNaN(amount))
+            costs.push({ id, amount });
+    }
+    const rewards = [];
+    for (let offset = 32; offset <= 47; offset += 3) {
+        const type = parseInt(raw[offset], 10);
+        if (isNaN(type))
+            continue;
+        const id = parseInt(raw[offset + 1], 10);
+        const parsedCount = parseInt(raw[offset + 2], 10);
+        const reward = {
+            type,
+            count: isNaN(parsedCount) ? 1 : parsedCount,
+        };
+        // EXP and mana rewards intentionally have no item id.
+        if (!isNaN(id))
+            reward.id = id;
+        rewards.push(reward);
+    }
     const availableFrom = raw[25];
     const availableUntil = raw[26];
-    const stock = parseInt(raw[27], 10) || 1;
-    const rewardType = parseInt(raw[32], 10);
-    const rewardId = parseInt(raw[33], 10);
-    const rewardCount = parseInt(raw[34], 10) || 1;
-    if (isNaN(costItemId) || isNaN(rewardId))
+    const parsedStock = parseInt(raw[28], 10);
+    const stock = isNaN(parsedStock) ? 1 : parsedStock;
+    if (costs.length === 0 || rewards.length === 0)
         return null;
     return {
-        costs: [{ id: costItemId, amount: costAmount }],
-        rewards: [{ type: rewardType, id: rewardId, count: rewardCount }],
+        costs,
+        rewards,
         availableFrom,
         availableUntil: availableUntil === "(None)" || availableUntil === "" ? null : availableUntil,
         stock,
@@ -84,11 +101,21 @@ function main() {
         const item = parseWfBossCoinItem(raw);
         if (!item)
             continue;
-        // Prefer existing item (preserves modified dates from starpoint-cn)
+        // Preserve manual changes, but repair the exact signature produced by
+        // the old off-by-one parser (raw[27] was used instead of raw[28]).
         const existingItem = (_a = existingData[catId]) === null || _a === void 0 ? void 0 : _a[itemId];
+        let outputItem = existingItem || item;
+        if (existingItem) {
+            const legacyWrongStock = parseInt(raw[27], 10);
+            if (!isNaN(legacyWrongStock)
+                && existingItem.stock === legacyWrongStock
+                && existingItem.stock !== item.stock) {
+                outputItem = { ...existingItem, stock: item.stock };
+            }
+        }
         if (!newData[catId])
             newData[catId] = {};
-        newData[catId][itemId] = existingItem || item;
+        newData[catId][itemId] = outputItem;
         newCatMap[itemId] = parseInt(catId, 10);
     }
     // Count stats

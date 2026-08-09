@@ -1,16 +1,16 @@
 // Handles mail.
 
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { PartyCategory, PlayerPartyGroup, RushEventBattleType, UserRushEventPlayedParty } from "../../data/types";
+import { spawn } from "child_process";
+import path from "path";
+import { PartyCategory, RushEventBattleType, UserRushEventPlayedParty } from "../../data/types";
 import { deletePlayerRushEventPlayedPartiesUntilSync, deletePlayerRushEventPlayedPartyListSync, deletePlayerRushEventPlayedPartySync, getDefaultPlayerRushEventSync, getPlayerRushEventClearedFoldersSync, getPlayerRushEventNextEndlessBattleRoundSync, getPlayerRushEventPlayedPartiesSync, getPlayerRushEventSync, getRushEventEndlessRankingListSync, insertPlayerRushEventClearedFolderSync, insertPlayerRushEventPlayedPartySync, insertPlayerRushEventSync, serializePlayerRushEventPlayedParty, updatePlayerRushEventSync } from "../../data/domains/rushEvent"
 import { getAccountPlayers } from "../../data/domains/account"
 import { getDefaultPlayerPartyGroupsSync } from "../../data/domains/player"
 import { getPlayerCharacterSync } from "../../data/domains/character"
-import { getPlayerPartyGroupListSync, insertPlayerPartyGroupListSync } from "../../data/domains/party"
+import { ensurePlayerPartyGroupListSync, getPlayerPartyGroupListSync } from "../../data/domains/party"
 import { getSession } from "../../data/domains/session"
 import { getQuestFromCategorySync, getRogueEventConfig } from "../../lib/assets";
-import { spawn } from "child_process";
-import path from "path";
 import { BattleQuest, QuestCategory, RushEventFolder } from "../../lib/types";
 import { generateDataHeaders, getServerDate, getServerTime } from "../../utils";
 import { FinishBody, insertActiveQuest } from "./singleBattleQuest";
@@ -18,6 +18,15 @@ import { getPlayerRushEventEndlessBattleRankingSync, getRushEventEndlessBattleRa
 import { clientSerializeDate } from "../../data/utils";
 import { resolvePlayerIdSync } from "../../data/activeAccount";
 import rushEventRankingRewards from "../../../assets/rush_event_ranking_reward.json";
+import { ensureSpecialEventPartyGroupsSync, getGlobalPartyId } from "../../lib/special-event-parties";
+import {
+    canStartMode15QuestSync,
+    getMode15ExclusiveGlobalPartyItemsSync,
+    isMode15RuntimeLoaded,
+    MODE15_PRACTICE_QUEST_ID,
+    MODE15_RUSH_EVENT_ID,
+    resetMode15RunSync,
+} from "../../lib/mode15-optional";
 
 interface SummaryBody {
     event_id: number,
@@ -101,41 +110,7 @@ interface RushPartyGroup {
     party_list: RushParty[]
 }
 
-export function serializeRushPartyGroups(
-    playerPartyGroups: Record<string, PlayerPartyGroup>
-): RushPartyGroup[] {
-    const userPartyGroupList: RushPartyGroup[] = []
-
-    for (const [idString, group] of Object.entries(playerPartyGroups)) {
-        const groupId = Number(idString)
-        const partyList: RushParty[] = []
-
-        for (const [slotString, party] of Object.entries(group.list)) {
-            const localSlot = Number(slotString)
-            partyList.push({
-                ability_soul_ids: party.abilitySoulIds,
-                character_ids: party.characterIds,
-                equipment_ids: party.equipmentIds,
-                unison_character_ids: party.unisonCharacterIds,
-                options: {
-                    allow_other_players_to_heal_me: party.options.allowOtherPlayersToHealMe
-                },
-                party_edited: party.edited,
-                party_id: (groupId - 1) * 10 + localSlot,
-                party_name: party.name
-            })
-        }
-
-        userPartyGroupList.push({
-            party_group_color_id: group.colorId,
-            party_group_id: groupId,
-            party_list: partyList
-        })
-    }
-
-    return userPartyGroupList
-}
-
+const MODE15_VISIBLE_PARTY_SET_COUNT = 3
 export const rushEventFolderMaxRounds: { [key in RushEventFolder]?: number } = {
     [RushEventFolder.INTERMEDIATE]: 2,
     [RushEventFolder.ADVANCED]: 2,
@@ -144,51 +119,65 @@ export const rushEventFolderMaxRounds: { [key in RushEventFolder]?: number } = {
 
 let lastRogueRerollMs = 0
 
-/**
- * mod: 「游戏内重置 → 自动重摇塔」的开关。
- *
- * 这个钩子会在**服务端所在的机器上** spawn `wf_rogue_reroll.py --apply`:
- * 重建整座塔、写进那台机器的 .cdn 并推版本号、清掉该服所有存档的爬塔进度。
- * 对作者本机是「一键重开」的便利,对拿这个仓库自建服的人则是一次预料之外的
- * 内容改写(而且他们多半没装 mod-tools/python,只会静默失败)。
- *
- * 所以 `assets/rogue_event.json` 里的 `reset_rerolls_tower` 保持 null 发布,
- * 想开的人用环境变量单独开——.env 不进版本库,不会波及别人的服。
- *
- *   WF_ROGUE_REROLL_ON_RESET=1                                  # 用默认(30 层)
- *   WF_ROGUE_REROLL_ON_RESET={"rounds":30,"difficulty":"hell","mix":true}
- *
- * 环境变量优先于 rogue_event.json;两者都没有就不触发。
- */
-function rogueRerollOverride(): { rounds?: number, difficulty?: string, mix?: boolean } | null {
-    const raw = (process.env.WF_ROGUE_REROLL_ON_RESET ?? "").trim()
-    if (raw === "" || raw === "0" || raw.toLowerCase() === "false") return null
-    if (!raw.startsWith("{")) return {}
-    try {
-        const parsed = JSON.parse(raw)
-        return parsed !== null && typeof parsed === "object" ? parsed : {}
-    } catch {
-        console.error("[RUSH] WF_ROGUE_REROLL_ON_RESET is not valid JSON; using defaults")
-        return {}
-    }
-}
-
-function triggerRogueTowerReroll(cfg: { rounds?: number, difficulty?: string, mix?: boolean }): void {
+function triggerRogueTowerReroll(
+    cfg: { rounds?: number, difficulty?: string, mix?: boolean },
+): void {
     const now = Date.now()
     if (now - lastRogueRerollMs < 120_000) {
-        console.log("[RUSH] tower reroll skipped (120s cooldown)")
+        console.log("[RUSH] abyss reroll skipped (120s cooldown)")
         return
     }
     lastRogueRerollMs = now
-    const repoRoot = path.resolve(__dirname, "..", "..", "..")
-    const args = ["-X", "utf8", "mod-tools/wf_rogue_reroll.py",
-        "--rounds", String(cfg.rounds ?? 30), "--apply", "--no-restart"]
+
+    const projectRoot = path.resolve(__dirname, "..", "..", "..", "..")
+    const modToolsRoot = path.join(projectRoot, "mod-tools")
+    const script = path.join(modToolsRoot, "wf_rogue_reroll.py")
+    const args = [
+        "-X",
+        "utf8",
+        script,
+        "--rounds",
+        String(cfg.rounds ?? 30),
+        "--apply",
+        "--no-restart",
+    ]
     if (cfg.difficulty) args.push("--difficulty", String(cfg.difficulty))
     if (cfg.mix) args.push("--mix")
-    console.log("[RUSH] spawning tower reroll:", args.join(" "))
-    const child = spawn(process.env.WF_PYTHON ?? "python", args,
-        { cwd: repoRoot, detached: true, stdio: "ignore" })
+
+    const python = process.env.WF_PYTHON
+        ?? "C:\\Users\\ASUS\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe"
+    console.log(`[RUSH] spawning abyss reroll: ${python} ${args.join(" ")}`)
+    const child = spawn(python, args, {
+        cwd: modToolsRoot,
+        detached: true,
+        stdio: "ignore",
+    })
+    child.on("error", error => {
+        console.error("[RUSH] abyss reroll spawn failed:", error)
+    })
     child.unref()
+}
+
+export function getRushEventFolderMaxRounds(eventId: number, folderId: number): number {
+    // Deep Abyss is a data-driven 30-floor tower.  The legacy fallback map
+    // only knows the three official two-round folders, so keep its finite
+    // folder open for the configured roguelike run.
+    if (eventId === 700099 && folderId === RushEventFolder.INTERMEDIATE) {
+        const configured = Number((getRogueEventConfig(eventId) as any)?.rounds)
+        return Number.isInteger(configured) && configured > 0 ? configured : 30
+    }
+    if (
+        isMode15RuntimeLoaded()
+        && eventId === MODE15_RUSH_EVENT_ID
+        && folderId === RushEventFolder.INTERMEDIATE
+    ) {
+        // Mode15 exposes all fifteen rounds in the Rush folder.  The three
+        // boss rows are placeholders completed by AdventEvent settlement.
+        // Keep one sentinel round beyond stage 15 so native Rush completion
+        // never closes the folder before stage-15 settlement resets the run.
+        return 16;
+    }
+    return rushEventFolderMaxRounds[folderId as RushEventFolder] ?? 0;
 }
 
 const routes = async (fastify: FastifyInstance) => {
@@ -216,11 +205,33 @@ const routes = async (fastify: FastifyInstance) => {
             "message": "No player bound to account."
         })
 
+        // The client entry is hidden by a forward asset patch.  Keep this
+        // server-side guard for clients that still have the old event table
+        // cached or retain a stale navigation stack.
         // get rush event data
         let rushEventData = getPlayerRushEventSync(playerId, eventId)
         if (rushEventData === null) {
             rushEventData = getDefaultPlayerRushEventSync(eventId)
             insertPlayerRushEventSync(playerId, rushEventData)
+        }
+
+        // Older reset builds left the active folder null, while the Fantasy
+        // client now returns straight to folder 1 without calling
+        // /select_folder. Repair those existing saves during summary loading
+        // so the next-round cursor and the visible quest stay in sync.
+        if (
+            eventId === MODE15_RUSH_EVENT_ID
+            && rushEventData.activeRushBattleFolderId === null
+        ) {
+            updatePlayerRushEventSync(playerId, {
+                eventId,
+                activeRushBattleFolderId: 1,
+            })
+            rushEventData = {
+                ...rushEventData,
+                activeRushBattleFolderId: 1,
+            }
+            console.log(`[MODE15] repaired active Rush folder: player=${playerId} folder=1`)
         }
 
         // get cleared folder id list
@@ -447,16 +458,50 @@ const routes = async (fastify: FastifyInstance) => {
             "message": "No player bound to account."
         })
 
-        // get parties
-        let playerPartyGroups = getPlayerPartyGroupListSync(playerId, PartyCategory.EVENT)
-        console.log(`[RUSH] party: EVENT groups=${Object.keys(playerPartyGroups).length}`)
-        if (0 >= Object.keys(playerPartyGroups).length) {
-            console.log(`[RUSH] party: creating default EVENT parties`)
-            playerPartyGroups = getDefaultPlayerPartyGroupsSync(PartyCategory.EVENT)
-            insertPlayerPartyGroupListSync(playerId, playerPartyGroups)
-        }
+        const playerPartyGroups = ensureSpecialEventPartyGroupsSync(
+            playerId,
+            PartyCategory.RUSH,
+            undefined,
+            {
+                getGroups: getPlayerPartyGroupListSync,
+                getDefaults: getDefaultPlayerPartyGroupsSync,
+                ensureGroups: ensurePlayerPartyGroupListSync,
+            },
+        )
 
-        const userPartyGroupList = serializeRushPartyGroups(playerPartyGroups)
+        // convert to proper format
+        const userPartyGroupList: RushPartyGroup[] = []
+
+        for (const [idString, group] of Object.entries(playerPartyGroups)) {
+            const groupId = Number(idString)
+            if (
+                isMode15RuntimeLoaded()
+                && (groupId < 1 || groupId > MODE15_VISIBLE_PARTY_SET_COUNT)
+            ) continue
+            const partyList: RushParty[] = []
+
+            // convert parties
+            for (const [partyIdString, party] of Object.entries(group.list)) {
+                partyList.push({
+                    ability_soul_ids: party.abilitySoulIds,
+                    character_ids: party.characterIds,
+                    equipment_ids: party.equipmentIds,
+                    unison_character_ids: party.unisonCharacterIds,
+                    options: {
+                        allow_other_players_to_heal_me: party.options.allowOtherPlayersToHealMe
+                    },
+                    party_edited: party.edited,
+                    party_id: getGlobalPartyId(groupId, Number(partyIdString)),
+                    party_name: party.name
+                })
+            }
+
+            userPartyGroupList.push({
+                "party_group_color_id": group.colorId,
+                "party_group_id": groupId,
+                "party_list": partyList
+            })
+        }
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
@@ -502,6 +547,45 @@ const routes = async (fastify: FastifyInstance) => {
             "message": "Quest doesn't exist."
         })
 
+        if (
+            isMode15RuntimeLoaded()
+            && questData.rushEventId === MODE15_RUSH_EVENT_ID
+            && questId !== MODE15_PRACTICE_QUEST_ID
+        ) {
+            const gate = canStartMode15QuestSync(playerId, QuestCategory.RUSH_EVENT, questId);
+            if (!gate.allowed) {
+                // After a failed Fantasy Rush battle the legacy client may
+                // replay the stale pre-reset round once while unwinding the
+                // result screen.  Keep rejecting it, but use the client's
+                // native non-fatal quest-unavailable response instead of an
+                // HTTP 409 that is surfaced as H409.
+                console.log(`[MODE15] stale/order-invalid Rush start rejected: player=${playerId} requested=${gate.stage} expected=${gate.expectedStage}`);
+                reply.header("content-type", "application/x-msgpack");
+                return reply.status(200).send({
+                    data_headers: generateDataHeaders({ viewer_id: viewerId, result_code: 4050 }),
+                    data: {},
+                });
+            }
+        }
+
+        if (questData.rushEventId !== MODE15_RUSH_EVENT_ID) {
+            const restricted = getMode15ExclusiveGlobalPartyItemsSync(
+                playerId, PartyCategory.RUSH, partyId,
+            );
+            if (restricted.length > 0) {
+                console.log(`[MODE15] exclusive equipment denied in Rush: player=${playerId} quest=${questId} rushEvent=${questData.rushEventId} partyCategory=${PartyCategory.RUSH} party=${partyId} items=${restricted.join(",")}`);
+                reply.header("content-type", "application/x-msgpack");
+                return reply.status(200).send({
+                    // Rush battle start has no native handling for 4507 and
+                    // treats it as a fatal API error.  4050 is the standard
+                    // non-fatal quest availability rejection used by battle
+                    // start screens.
+                    data_headers: generateDataHeaders({ viewer_id: viewerId, result_code: 4050 }),
+                    data: {},
+                });
+            }
+        }
+
         // insert active quest for '/single_battle_quest/finish' endpoint
         insertActiveQuest(playerId, {
             questId: questId,
@@ -541,18 +625,6 @@ const routes = async (fastify: FastifyInstance) => {
         const resetTargetId: number | undefined = body.reset_target_id
         const isResetAfterTargetRound: boolean | undefined = body.is_reset_after_target_round
         console.log(`[RUSH] reset: viewer=${viewerId} eventId=${eventId} questType=${questType} resetTargetId=${resetTargetId} isResetAfterTarget=${isResetAfterTargetRound}`)
-
-        // mod: roguelike 塔重摇钩子——整段 folder 重置时按配置拉起重摇
-        // (rogue_event.json reset_rerolls_tower;冷却 120s;完成后玩家重启游戏拉新塔)
-        try {
-            const rerollCfg = rogueRerollOverride()
-                ?? (getRogueEventConfig(eventId) as any)?.reset_rerolls_tower
-            if (rerollCfg && questType === ResetQuestType.FOLDER && resetTargetId === undefined) {
-                triggerRogueTowerReroll(rerollCfg)
-            }
-        } catch (err) {
-            console.error("[RUSH] reroll hook failed:", err)
-        }
         if (isNaN(viewerId) || isNaN(eventId) || isNaN(questType)) return reply.status(400).send({
             "error": "Bad Request",
             "message": "Invalid request body."
@@ -570,6 +642,28 @@ const routes = async (fastify: FastifyInstance) => {
             "error": "Internal Server Error",
             "message": "No player bound to account."
         })
+
+        if (isMode15RuntimeLoaded() && eventId === MODE15_RUSH_EVENT_ID) {
+            resetMode15RunSync(playerId);
+            reply.header("content-type", "application/x-msgpack");
+            return reply.status(200).send({
+                "data_headers": generateDataHeaders({ viewer_id: viewerId }),
+                "data": [],
+            });
+        }
+
+        try {
+            const rerollConfig = (getRogueEventConfig(eventId) as any)?.reset_rerolls_tower
+            if (
+                rerollConfig
+                && questType === ResetQuestType.FOLDER
+                && resetTargetId === undefined
+            ) {
+                triggerRogueTowerReroll(rerollConfig)
+            }
+        } catch (error) {
+            console.error("[RUSH] abyss reroll hook failed:", error)
+        }
 
         if (questType === ResetQuestType.FOLDER) {
 
