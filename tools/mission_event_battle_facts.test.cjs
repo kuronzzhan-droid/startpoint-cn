@@ -17,8 +17,6 @@ const rulesAssetPath = require.resolve("../assets/mission_event_battle_rules.jso
 const bossAssetPath = require.resolve("../assets/boss_battle_quest.json")
 const adventAssetPath = require.resolve("../assets/advent_event_quest.json")
 const worldAssetPath = require.resolve("../assets/world_story_event_boss_battle_quest.json")
-const touchedCachePaths = [collectorPath, masterDataPath, domainPath, categoryDomainPath, dbPath,
-    eventAssetPath, rulesAssetPath, bossAssetPath, adventAssetPath, worldAssetPath]
 const fixtureGraphRoots = [collectorPath, masterDataPath, eventAssetPath, rulesAssetPath,
     bossAssetPath, adventAssetPath, worldAssetPath]
 const missionDirectory = path.resolve(__dirname, "../src/lib/mission") + path.sep
@@ -326,6 +324,12 @@ try {
         [master => { master["1625"][0][25] = "2020-08-22 00:00:00" }, RangeError]]) {
         const invalidMaster = clone(realEvent); mutate(invalidMaster)
         expectAssetFailure([[eventAssetPath, invalidMaster]], ErrorConstructor)
+    }
+    // Rule 1625 expects selector key [6] from master row[8]="6". Every value below is normalised by
+    // Number() to that same 6, so only the canonical-decimal regex in masterValues() can reject them.
+    for (const noncanonical of ["06", " 6", "6.0", "+6", "6e0"]) {
+        const bad = clone(realEvent); bad["1625"][0][8] = noncanonical
+        expectAssetFailure([[eventAssetPath, bad]], RangeError)
     }
     const targetKey = String(firstRule.missionId)
     for (const route of [[targetKey], [targetKey, "0"], [targetKey, "0", "2"], [targetKey, "0", "25"]]) {

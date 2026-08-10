@@ -14,15 +14,14 @@ const dbPath = path.resolve(__dirname, "../src/data/db.ts")
 const dailyAssetPath = require.resolve("../assets/mission_daily.json")
 const adventAssetPath = require.resolve("../assets/advent_event_quest.json")
 const scoreAssetPath = require.resolve("../assets/score_attack_event_quest.json")
-const touchedCachePaths = [collectorPath, masterDataPath, domainPath, categoryDomainPath, dbPath,
-    dailyAssetPath, adventAssetPath, scoreAssetPath]
 const fixtureGraphRoots = [collectorPath, masterDataPath, dailyAssetPath, adventAssetPath, scoreAssetPath]
 const missionDirectory = path.resolve(__dirname, "../src/lib/mission") + path.sep
 const assetsDirectory = path.resolve(__dirname, "../assets") + path.sep
 const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "wave2a-13-daily-"))
 const previousDatabaseDirectory = process.env.WF_DATABASE_DIR
-const worktreeDatabase = path.resolve(__dirname, "..", ".database")
+const worktreeRoot = path.resolve(__dirname, "..")
 let database
+let closedArtifacts = []
 let capturedError
 let cacheSnapshot
 
@@ -189,7 +188,19 @@ try {
     const realScore = require(scoreAssetPath)
     assert.equal(Object.keys(realAdvent).length, 459)
     assert.equal(Object.keys(realScore).length, 123)
-    const importFails = (overrides, ErrorConstructor) => expectCtor(() => freshCollector(overrides), ErrorConstructor)
+    let incrementCalls = 0
+    let getDbCalls = 0
+    const fakeDomain = { incrementPlayerCategoryMissionSync() { incrementCalls++ } }
+    const fakeDb = { getDb() { getDbCalls++; return { transaction() { throw new Error("unexpected transaction") } } } }
+    // Asset-failure fixtures fake the domain/db seam the way the event lane does. It keeps the real
+    // category_mission graph (which reaches the mission barrel, and that eagerly indexes
+    // mission_daily.json) out of the fixture load, and proves no malformed asset reaches getDb().
+    const importFails = (overrides, ErrorConstructor) => {
+        expectCtor(() => freshCollector(new Map([...overrides, [domainPath, fakeDomain],
+            [categoryDomainPath, fakeDomain], [dbPath, fakeDb]])), ErrorConstructor)
+        assert.equal(incrementCalls, 0)
+        assert.equal(getDbCalls, 0)
+    }
     for (const [mutate, ErrorConstructor] of [
         [table => { delete table["800115"] }, Error],
         [table => { table["0800115"] = clone(table["800115"]) }, RangeError],
@@ -199,6 +210,10 @@ try {
         [table => { table["800115"][0][25] = "2024-02-30 12:00:00" }, RangeError],
         [table => { table["800115"][0][25] = "2023-02-29 12:00:00" }, RangeError],
         [table => { table["800115"][0][25] = "2024-08-17 00:00:00" }, RangeError],
+        // Both times below stay strictly formatted, real calendar dates and keep start < end, so only
+        // the per-target value comparison against TARGET_SPECS can reject them.
+        [table => { table["800115"][0][25] = "2024-08-02 12:00:00" }, RangeError],
+        [table => { table["800115"][0][26] = "2024-08-15 23:59:59" }, RangeError],
     ]) {
         const bad = clone(realDaily); mutate(bad)
         importFails(new Map([[dailyAssetPath, bad]]), ErrorConstructor)
@@ -218,6 +233,14 @@ try {
     importFails(new Map([[scoreAssetPath, accessorScore]]), TypeError)
     assert.equal(scoreGetterReads, 0)
     assert.deepEqual(rawRows(3), [])
+    // Whole-projection counts. Every fixture keeps all remaining keys canonical and all eight targets
+    // intact, so the 656 / 459 / 123 count guards are the only thing left that can reject them.
+    for (const [assetPath, real, mutate] of [
+        [dailyAssetPath, realDaily, table => { delete table["1"] }],
+        [dailyAssetPath, realDaily, table => { table["999999"] = clone(table["1"]) }],
+        [adventAssetPath, realAdvent, table => { delete table[Object.keys(table).pop()] }],
+        [scoreAssetPath, realScore, table => { delete table[Object.keys(table).pop()] }],
+    ]) { const bad = clone(real); mutate(bad); importFails(new Map([[assetPath, bad]]), RangeError) }
     assert.equal(typeof freshCollector(new Map([[scoreAssetPath, Object.freeze(clone(realScore))]]))
         .recordDailyMissionBattleFacts, "function")
 
@@ -251,20 +274,27 @@ try {
     const differentIdentity = clone(realDaily)
     assert.equal(typeof freshCollector(new Map([[dailyAssetPath, differentIdentity]])).recordDailyMissionBattleFacts, "function")
 
-    let incrementCalls = 0
-    let getDbCalls = 0
-    const fakeDomain = { incrementPlayerCategoryMissionSync() { incrementCalls++ } }
-    const fakeDb = { getDb() { getDbCalls++; return { transaction() { throw new Error("unexpected transaction") } } } }
     const isolated = freshCollector(new Map([[domainPath, fakeDomain], [categoryDomainPath, fakeDomain], [dbPath, fakeDb]]))
-    assert.deepEqual(isolated.recordDailyMissionBattleFacts({ ...valid, questAccomplished: false }, new Date("2024-08-14T03:00:00Z")), [])
-    assert.deepEqual(isolated.recordDailyMissionBattleFacts({ ...valid, questCategory: 1, questId: 999 }, new Date("2024-08-14T03:00:00Z")), [])
-    assert.equal(incrementCalls, 0)
-    assert.equal(getDbCalls, 0)
-    assert.deepEqual(rawRows(3), [])
-    expectCtor(() => isolated.recordDailyMissionBattleFacts({ ...valid, playerId: 0 }, new Date("2024-08-14T03:00:00Z")), RangeError)
-    assert.equal(incrementCalls, 0)
-    assert.equal(getDbCalls, 0)
-    assert.deepEqual(rawRows(3), [])
+    const adventTime = new Date("2024-08-14T03:00:00Z")
+    // Each no-op candidate is re-run with one bad public field at a time, every other field left legal.
+    // The field guards must run before the early return, or a malformed player/flag/Date is swallowed.
+    for (const [name, candidate, time] of [
+        ["failed", { ...valid, questAccomplished: false }, adventTime],
+        ["single", { ...valid, isMulti: false }, adventTime],
+        ["unmatched category", { ...valid, questCategory: 1, questId: 999 }, adventTime],
+        ["unmatched quest", { ...valid, questId: 200016001 }, adventTime],
+        ["inactive time", { ...valid }, new Date("2020-01-01T00:00:00Z")],
+    ]) {
+        assert.deepEqual(isolated.recordDailyMissionBattleFacts(candidate, time), [], `${name} must be a no-op`)
+        for (const [field, invalid, ErrorConstructor] of [["playerId", 0, RangeError],
+            ["questAccomplished", 1, TypeError], ["isMultiHost", null, TypeError], ["isMultiHost", 1, TypeError]]) {
+            expectCtor(() => isolated.recordDailyMissionBattleFacts({ ...candidate, [field]: invalid }, time), ErrorConstructor)
+        }
+        expectCtor(() => isolated.recordDailyMissionBattleFacts(candidate, new Date("invalid")), TypeError)
+        assert.equal(incrementCalls, 0, `${name}: writer must not be called`)
+        assert.equal(getDbCalls, 0, `${name}: getDb must not be called`)
+        assert.deepEqual(rawRows(3), [], `${name}: no row may be written`)
+    }
     assert.deepEqual(freshCollector().recordDailyMissionBattleFacts(context(1, 2, 1014001),
         new Date("2024-08-14T03:00:00Z")), [800124, 800125, 800126])
 } catch (error) {
@@ -274,14 +304,13 @@ try {
     if (cacheSnapshot) restoreCache(cacheSnapshot)
     if (previousDatabaseDirectory === undefined) delete process.env.WF_DATABASE_DIR
     else process.env.WF_DATABASE_DIR = previousDatabaseDirectory
+    if (fs.existsSync(temporaryRoot)) closedArtifacts = fs.readdirSync(temporaryRoot)
     fs.rmSync(temporaryRoot, { recursive: true, force: true })
 }
 
 assert.equal(fs.existsSync(temporaryRoot), false)
-assert.equal(fs.existsSync(`${temporaryRoot}-wal`), false)
-assert.equal(fs.existsSync(`${temporaryRoot}-shm`), false)
-assert.equal(fs.existsSync(`${temporaryRoot}.version`), false)
-assert.equal(fs.existsSync(worktreeDatabase), false)
+assert.deepEqual(closedArtifacts.sort(), ["wdfp_data.db", "wdfp_data.db.version"])
+assert.deepEqual(fs.readdirSync(worktreeRoot).filter(name => name.startsWith(".database")), [])
 if (capturedError !== undefined) throw capturedError
 
 console.log("daily mission battle facts tests passed")

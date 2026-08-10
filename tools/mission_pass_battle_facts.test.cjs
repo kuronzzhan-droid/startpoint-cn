@@ -12,14 +12,14 @@ const domainPath = path.resolve(__dirname, "../src/data/domains/mission.ts")
 const categoryDomainPath = path.resolve(__dirname, "../src/data/domains/category_mission.ts")
 const dbPath = path.resolve(__dirname, "../src/data/db.ts")
 const passAssetPath = require.resolve("../assets/mission_pass_event.json")
-const touchedCachePaths = [collectorPath, masterDataPath, domainPath, categoryDomainPath, dbPath, passAssetPath]
 const fixtureGraphRoots = [collectorPath, masterDataPath, passAssetPath]
 const missionDirectory = path.resolve(__dirname, "../src/lib/mission") + path.sep
 const assetsDirectory = path.resolve(__dirname, "../assets") + path.sep
 const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "wave2a-13-pass-"))
 const previousDatabaseDirectory = process.env.WF_DATABASE_DIR
-const worktreeDatabase = path.resolve(__dirname, "..", ".database")
+const worktreeRoot = path.resolve(__dirname, "..")
 let database
+let closedArtifacts = []
 let capturedError
 let cacheSnapshot
 
@@ -434,14 +434,13 @@ try {
     if (cacheSnapshot) restoreCache(cacheSnapshot)
     if (previousDatabaseDirectory === undefined) delete process.env.WF_DATABASE_DIR
     else process.env.WF_DATABASE_DIR = previousDatabaseDirectory
+    if (fs.existsSync(temporaryRoot)) closedArtifacts = fs.readdirSync(temporaryRoot)
     fs.rmSync(temporaryRoot, { recursive: true, force: true })
 }
 
 assert.equal(fs.existsSync(temporaryRoot), false)
-assert.equal(fs.existsSync(`${temporaryRoot}-wal`), false)
-assert.equal(fs.existsSync(`${temporaryRoot}-shm`), false)
-assert.equal(fs.existsSync(`${temporaryRoot}.version`), false)
-assert.equal(fs.existsSync(worktreeDatabase), false)
+assert.deepEqual(closedArtifacts.sort(), ["wdfp_data.db", "wdfp_data.db.version"])
+assert.deepEqual(fs.readdirSync(worktreeRoot).filter(name => name.startsWith(".database")), [])
 if (capturedError !== undefined) throw capturedError
 
 console.log("pass mission battle facts tests passed")

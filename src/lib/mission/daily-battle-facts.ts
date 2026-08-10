@@ -2,6 +2,7 @@ import adventQuests from "../../../assets/advent_event_quest.json"
 import dailyMissions from "../../../assets/mission_daily.json"
 import scoreAttackQuests from "../../../assets/score_attack_event_quest.json"
 import { getDb } from "../../data/db"
+import { incrementPlayerCategoryMissionSync } from "../../data/domains/category_mission"
 import type { FinishContext } from "../quest/finish/types"
 
 const CATEGORY = 2
@@ -240,7 +241,6 @@ export function recordDailyMissionBattleFacts(context: FinishContext, evaluation
     })
     if (matched.length === 0) return []
     const result = matched.map(target => target.id)
-    const { incrementPlayerCategoryMissionSync } = require("../../data/domains/category_mission") as typeof import("../../data/domains/category_mission")
     getDb().transaction(() => {
         for (const missionId of result) incrementPlayerCategoryMissionSync(playerId, CATEGORY, missionId, DELTA)
     })()
