@@ -166,7 +166,7 @@ function directCounter(value: unknown, field: string): number {
 }
 
 function optionalPositiveSelector(value: unknown, field: string): void {
-    if (value === undefined || value === null || value === "" || value === "(None)") return
+    if (value === undefined || value === null || value === "(None)") return
     positiveSafe(parseCanonicalNonNegativeInteger(value, field), field)
 }
 

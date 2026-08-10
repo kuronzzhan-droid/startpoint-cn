@@ -4,6 +4,9 @@ const assert = require("node:assert/strict")
 const {
     computeActiveMissionFactProgress,
 } = require("../src/lib/mission/active-reconciliation/fact-progress")
+const {
+    matchesActiveMissionQuestRange,
+} = require("../src/lib/mission/active-reconciliation/quest-range")
 
 function makeState(overrides = {}) {
     return {
@@ -83,11 +86,19 @@ assert.equal(computeActiveMissionFactProgress(23, factRow({
     third: "3,4",
 }), state), 7)
 assert.equal(computeActiveMissionFactProgress(23, factRow({ battleKind: 3 }), state), 9)
+assert.equal(matchesActiveMissionQuestRange(factRow({ rangeKind: 99, first: "01" }), 14, 1002), false)
+assert.equal(computeActiveMissionFactProgress(23, factRow({
+    battleKind: 1,
+    rangeKind: 99,
+    first: "01",
+}), state), 0)
 
 assert.equal(computeActiveMissionFactProgress(26, factRow({ battleKind: 1 }), state), 2)
 assert.equal(computeActiveMissionFactProgress(26, factRow({ battleKind: 2 }), state), 3)
 assert.equal(computeActiveMissionFactProgress(26, factRow({ battleKind: 3 }), state), 5)
 assert.equal(computeActiveMissionFactProgress(26, factRow({ battleKind: 3, rangeKind: 2 }), state), null)
+assert.equal(computeActiveMissionFactProgress(26, factRow({ battleKind: 3, rangeKind: 99, first: "01" }), state), null)
+assert.throws(() => matchesActiveMissionQuestRange(factRow({ rangeKind: "099" }), 14, 1002), TypeError)
 
 for (const badCounter of [-1, 1.5, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1]) {
     assert.throws(() => computeActiveMissionFactProgress(14, [], makeState({

@@ -55,12 +55,16 @@ const chapterState = {
 assert.deepEqual(resolveActiveMissionQuestIds(rangeRow("0", "1,2", "8", "4,4")), [1008004, 2008004])
 assert.deepEqual(resolveActiveMissionQuestIds(rangeRow("1", "1", "8", "1")), [11008001])
 assert.deepEqual(resolveActiveMissionQuestIds(rangeRow("9", "500005", "", "1,2")), [500005001, 500005002])
+assert.deepEqual(resolveActiveMissionQuestIds(rangeRow("0", "1", "8", "4")), [1008004])
+assert.deepEqual(resolveActiveMissionQuestIds(rangeRow("9", "500005", "", "1")), [500005001])
 assert.equal(matchesActiveMissionQuestRange(rangeRow("(None)"), 99, 1), true)
 assert.equal(matchesActiveMissionQuestRange(rangeRow(null), 99, 1), true)
 assert.equal(matchesActiveMissionQuestRange(rangeRow(""), 1, 1001001), false)
 assert.equal(matchesActiveMissionQuestRange(rangeRow("12"), 14, 1001), true)
 assert.equal(matchesActiveMissionQuestRange(rangeRow("12"), 20, 1001), true)
 assert.equal(matchesActiveMissionQuestRange(rangeRow("12"), 21, 1001), false)
+assert.equal(matchesActiveMissionQuestRange(rangeRow("99", "01", "01", "01"), 1, 1001001), false)
+assert.throws(() => matchesActiveMissionQuestRange(rangeRow("099"), 1, 1001001), TypeError)
 assert.equal(matchesActiveMissionQuestRange(rangeRow("1", "1", "1", "1"), 4, 1001001), true)
 assert.equal(matchesActiveMissionQuestRange(rangeRow("1", "1", "1", "1"), 4, 11001001), true)
 
@@ -69,6 +73,7 @@ for (const malformed of ["01", "+1", " 1", "1 ", "1,,2", "-1", "1.5", true]) {
 }
 assert.throws(() => resolveActiveMissionQuestIds(rangeRow("0", "9007199254", "999", "999")), RangeError)
 assert.throws(() => resolveActiveMissionQuestIds(rangeRow("2", "1", "1", "1")), TypeError)
+assert.throws(() => resolveActiveMissionQuestIds(rangeRow("99", "01", "01", "01")), TypeError)
 assert.throws(() => resolveActiveMissionQuestIds(rangeRow("0", "", "1", "1")), TypeError)
 
 const {

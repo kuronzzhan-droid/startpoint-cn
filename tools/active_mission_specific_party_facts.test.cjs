@@ -72,6 +72,11 @@ assert.equal(computeActiveMissionFactProgress(70, row({
     first: "1",
     third: "3",
 }), state), null)
+assert.equal(computeActiveMissionFactProgress(70, row({
+    battleKind: 1,
+    rangeKind: 99,
+    first: "01",
+}), state), 0)
 assert.equal(computeActiveMissionFactProgress(70, row(), makeState({ leaderClearCounts: {} })), 0)
 
 assert.equal(computeActiveMissionFactProgress(65, (() => {

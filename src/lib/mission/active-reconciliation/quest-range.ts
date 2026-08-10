@@ -80,9 +80,7 @@ export function validateActiveMissionQuestRange(row: readonly unknown[]): void {
     const rawKind = row[34]
     if (rawKind === undefined || rawKind === null || rawKind === "(None)" || rawKind === "") return
     const kind = parseCanonicalNonNegativeInteger(rawKind, "quest range kind")
-    if (categoriesForRangeKind(kind) === undefined) {
-        throw new TypeError(`Unsupported Active Mission quest range kind ${kind}.`)
-    }
+    if (categoriesForRangeKind(kind) === undefined) return
     if (kind <= 2) {
         parseOptionalSelector(row[35], "quest range first")
         parseOptionalSelector(row[36], "quest range second")

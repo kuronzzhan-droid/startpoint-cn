@@ -35,6 +35,7 @@ function missionRow({
     row[36] = String(second)
     row[37] = String(third)
     row[43] = String(characterId)
+    row[46] = String(characterId)
     row[55] = String(targets)
     row[56] = "(None)"
     row[57] = ""
@@ -110,6 +111,16 @@ function makeRepository(overrides = {}) {
     }
 }
 
+function makeMissionRepository(missions, extraTables = {}) {
+    return makeRepository({
+        "mission_active.json": Object.fromEntries(missions.map(({ id, row }) => [id, [row]])),
+        "mission_active_reward.json": Object.fromEntries(missions.map(({ id, target = 1 }) => (
+            [id, { 1: [rewardRow(target)] }]
+        ))),
+        ...extraTables,
+    })
+}
+
 function insertPlayer(playerId, { login = 3, stamina = 10 } = {}) {
     database.prepare(`INSERT INTO accounts (
         id, app_id, first_login_time, idp_alias, idp_code, idp_id,
@@ -144,6 +155,15 @@ function stageRows(playerId, missionId) {
         WHERE player_id = ? AND mission_id = ? ORDER BY id`).all(playerId, missionId)
 }
 
+function assertRejectedWithoutWrites(reconcile, playerId, repository, expected, input = {}) {
+    assert.throws(() => reconcile({ playerId, repository, now: NOW, ...input }), expected)
+    assert.deepEqual(activeRows(playerId), [])
+}
+
+function preciseReadCase(playerId, missionId, row, tables, expected) {
+    return { playerId, missionId, row, tables, expected }
+}
+
 try {
     process.env.WF_DATABASE_DIR = temporaryRoot
     const facade = require("../src/lib/mission/active-reconciliation")
@@ -154,16 +174,12 @@ try {
         "reconcileActiveMissionFacts",
         "resolveActiveMissionQuestIds",
     ])
-    const { reconcileActiveMissionFacts, resolveActiveMissionQuestIds } = facade
+    const { reconcileActiveMissionFacts } = facade
     const { getDb } = require("../src/data/db")
     database = getDb()
     const mainDatabase = database.pragma("database_list").find(entry => entry.name === "main")
     assert.equal(path.dirname(path.resolve(mainDatabase.file)), path.resolve(temporaryRoot))
     assert.equal(database.pragma("foreign_keys", { simple: true }), 1)
-
-    assert.deepEqual(resolveActiveMissionQuestIds(missionRow({ questKind: 0, first: 1, second: 8, third: 4 })), [1008004])
-    assert.deepEqual(resolveActiveMissionQuestIds(missionRow({ questKind: 1, first: 1, second: 8, third: 1 })), [11008001])
-    assert.deepEqual(resolveActiveMissionQuestIds(missionRow({ questKind: 9, first: 500005, third: 1 })), [500005001])
 
     insertPlayer(1)
     addFinishedQuest(1)
@@ -187,7 +203,6 @@ try {
     assert.equal(first.find(delta => delta.mission_id === 90003).progress_value, 2)
     assert.deepEqual(callbackEvents, [{ playerId: 1, eventId: 904, eventStringId: "come_back_mission_test", eventKind: 1 }])
     assert.deepEqual(reconcileActiveMissionFacts({ playerId: 1, repository: primary.repository, now: new Date(NOW) }), [])
-
     insertPlayer(7)
     const eligible = reconcileActiveMissionFacts({
         playerId: 7,
@@ -198,15 +213,10 @@ try {
     })
     assert.equal(eligible.some(delta => delta.mission_id === 90006), true)
     insertPlayer(8)
-    assert.throws(() => reconcileActiveMissionFacts({
-        playerId: 8,
-        repository: primary.repository,
-        now: NOW,
+    assertRejectedWithoutWrites(reconcileActiveMissionFacts, 8, primary.repository, /eligibility failed/, {
         patterns: [0],
         isEventEligible: () => { throw new Error("eligibility failed") },
-    }), /eligibility failed/)
-    assert.deepEqual(activeRows(8), [])
-
+    })
     database.prepare("UPDATE players SET total_login_days = 1, total_stamina_used = 1 WHERE id = 1").run()
     assert.deepEqual(reconcileActiveMissionFacts({ playerId: 1, repository: primary.repository, now: NOW }), [])
     assert.equal(activeRows(1).find(row => row.id === 90001).progress, 3)
@@ -216,12 +226,10 @@ try {
     const preserved = reconcileActiveMissionFacts({ playerId: 1, repository: primary.repository, now: NOW, patterns: [0, 0] })
     assert.equal(preserved.find(delta => delta.mission_id === 90001).progress_value, 4)
     assert.deepEqual(stageRows(1, 90001), [{ id: 1, status: 1 }, { id: 2, status: 0 }])
-
     insertPlayer(2, { login: 2 })
     database.prepare("INSERT INTO players_active_missions (id, progress, player_id) VALUES (90001, 2, 2)").run()
     const stageOnly = reconcileActiveMissionFacts({ playerId: 2, repository: primary.repository, now: NOW, patterns: [0] })
     assert.deepEqual(stageOnly[0].stages, [{ stage: 1, received: false }])
-
     insertPlayer(3)
     assert.throws(() => reconcileActiveMissionFacts({ playerId: 3, repository: primary.repository, now: 0 / 0 }), TypeError)
     assert.throws(
@@ -236,75 +244,65 @@ try {
         assert.throws(() => reconcileActiveMissionFacts({ playerId: 3, repository: primary.repository, now: NOW, patterns }), TypeError)
     }
     assert.deepEqual(reconcileActiveMissionFacts({ playerId: 3, repository: primary.repository, now: NOW, patterns: [] }), [])
-
-    const filtered = makeRepository({
-        "mission_active.json": {
-            91001: [missionRow({ pattern: 0 })],
-            91002: [missionRow({ pattern: 4 })],
-        },
-        "mission_active_reward.json": { 91001: { 1: [rewardRow(1)] }, 91002: { 1: [rewardRow(1)] } },
-    })
+    const filtered = makeMissionRepository([
+        { id: 91001, row: missionRow({ pattern: 0 }) },
+        { id: 91002, row: missionRow({ pattern: 4 }) },
+    ])
     reconcileActiveMissionFacts({ playerId: 3, repository: filtered.repository, now: NOW, patterns: [0] })
     assert.equal(filtered.calls.includes("character.json"), false)
-
     insertPlayer(4)
-    const missingCharacter = makeRepository({
-        "mission_active.json": { 92001: [missionRow({ pattern: 4 })] },
-        "mission_active_reward.json": { 92001: { 1: [rewardRow(1)] } },
-    })
-    assert.throws(() => reconcileActiveMissionFacts({ playerId: 4, repository: missingCharacter.repository, now: NOW }), /character\.json/)
-    assert.deepEqual(activeRows(4), [])
+    const missingCharacter = makeMissionRepository([{ id: 92001, row: missionRow({ pattern: 4 }) }])
+    assertRejectedWithoutWrites(reconcileActiveMissionFacts, 4, missingCharacter.repository, /character\.json/)
     insertPlayer(9)
-    const zeroCharacter = makeRepository({
-        "mission_active.json": { 92003: [missionRow({ pattern: 4 })] },
-        "mission_active_reward.json": { 92003: { 1: [rewardRow(1)] } },
-        "character.json": {},
-    })
+    const zeroCharacter = makeMissionRepository(
+        [{ id: 92003, row: missionRow({ pattern: 4 }) }],
+        { "character.json": {} },
+    )
     assert.deepEqual(reconcileActiveMissionFacts({ playerId: 9, repository: zeroCharacter.repository, now: NOW }), [])
     assert.deepEqual(activeRows(9), [])
     insertPlayer(10)
-    const malformedMaster = makeRepository({
-        "mission_active.json": { "092004": [missionRow({ pattern: 0 })] },
-        "mission_active_reward.json": { "092004": { 1: [rewardRow(1)] } },
-    })
-    assert.throws(() => reconcileActiveMissionFacts({ playerId: 10, repository: malformedMaster.repository, now: NOW }), TypeError)
-    assert.deepEqual(activeRows(10), [])
-
+    const malformedMaster = makeMissionRepository([{ id: "092004", row: missionRow({ pattern: 0 }) }])
+    assertRejectedWithoutWrites(reconcileActiveMissionFacts, 10, malformedMaster.repository, TypeError)
     for (const [playerId, invalidMissionId, validMissionId] of [
         [11, 94001, 94002],
         [12, 94004, 94003],
     ]) {
         insertPlayer(playerId)
-        const invalidPatternMaster = makeRepository({
-            "mission_active.json": {
-                [invalidMissionId]: [missionRow({
+        const invalidPatternMaster = makeMissionRepository([
+            {
+                id: invalidMissionId,
+                row: missionRow({
                     eventId: 904,
                     pattern: 23,
                     battleKind: 1,
                     questKind: 4,
                     first: "01",
                     third: 1,
-                })],
-                [validMissionId]: [missionRow({ pattern: 0 })],
+                }),
             },
-            "mission_active_reward.json": {
-                [invalidMissionId]: { 1: [rewardRow(1)] },
-                [validMissionId]: { 1: [rewardRow(1)] },
-            },
-        })
-        assert.throws(() => reconcileActiveMissionFacts({
-            playerId,
-            repository: invalidPatternMaster.repository,
-            now: NOW,
+            { id: validMissionId, row: missionRow({ pattern: 0 }) },
+        ])
+        assertRejectedWithoutWrites(reconcileActiveMissionFacts, playerId, invalidPatternMaster.repository, TypeError, {
             isEventEligible: () => false,
-        }), TypeError)
-        assert.deepEqual(activeRows(playerId), [])
+        })
+    }
+    const emptyTargetMaster = makeMissionRepository([
+        { id: 96001, row: missionRow({ eventId: 904, pattern: 4, characterId: "" }) },
+        { id: 96002, row: missionRow({ pattern: 0 }) },
+    ], { "character.json": {} })
+    for (const [playerId, eligible] of [[17, false], [18, true]]) {
+        insertPlayer(playerId)
+        let callbackCount = 0
+        assertRejectedWithoutWrites(reconcileActiveMissionFacts, playerId, emptyTargetMaster.repository, TypeError, {
+            isEventEligible: () => { callbackCount += 1; return eligible },
+        })
+        assert.equal(callbackCount, 0)
     }
     insertPlayer(13)
-    const availabilityReadFailure = makeRepository({
-        "mission_active.json": { 94501: [missionRow({ pattern: 0 })], 94502: [missionRow({ phase: 2, pattern: 0 })] },
-        "mission_active_reward.json": { 94501: { 1: [rewardRow(1)] }, 94502: { 1: [rewardRow(1)] } },
-    })
+    const availabilityReadFailure = makeMissionRepository([
+        { id: 94501, row: missionRow({ pattern: 0 }) },
+        { id: 94502, row: missionRow({ phase: 2, pattern: 0 }) },
+    ])
     let rewardTableReads = 0
     const failingAvailabilityRepository = {
         info: availabilityReadFailure.repository.info,
@@ -315,12 +313,9 @@ try {
             return availabilityReadFailure.repository.table(tableName)
         },
     }
-    assert.throws(() => reconcileActiveMissionFacts({
-        playerId: 13,
-        repository: failingAvailabilityRepository,
-        now: NOW,
-    }), /required repository read failed/)
-    assert.deepEqual(activeRows(13), [])
+    assertRejectedWithoutWrites(
+        reconcileActiveMissionFacts, 13, failingAvailabilityRepository, /required repository read failed/,
+    )
     const auxiliaryTables = new Set([
         "treasure_shop.json",
         "boss_coin_shop_item_category_map.json",
@@ -330,35 +325,17 @@ try {
         "mana_node.json",
     ])
     const preciseReads = [
-        {
-            playerId: 14,
-            missionId: 95001,
-            row: missionRow({ pattern: 45 }),
-            tables: { "treasure_shop.json": {} },
-            expected: ["treasure_shop.json"],
-        },
-        {
-            playerId: 15,
-            missionId: 95002,
-            row: missionRow({ pattern: 66, questKind: 0, first: 1, second: 1, third: 1 }),
-            tables: { "main_quest.json": { 1001001: { rankPointReward: 1 } } },
-            expected: ["main_quest.json"],
-        },
-        {
-            playerId: 16,
-            missionId: 95003,
-            row: missionRow({ pattern: 7 }),
-            tables: {},
-            expected: [],
-        },
+        preciseReadCase(14, 95001, missionRow({ pattern: 45 }),
+            { "treasure_shop.json": {} }, ["treasure_shop.json"]),
+        preciseReadCase(15, 95002, missionRow({ pattern: 66, questKind: 0, first: 1, second: 1, third: 1 }),
+            { "main_quest.json": { 1001001: { rankPointReward: 1 } } }, ["main_quest.json"]),
+        preciseReadCase(16, 95003, missionRow({ pattern: 7 }), {}, []),
     ]
     for (const testCase of preciseReads) {
         insertPlayer(testCase.playerId)
-        const preciseRepository = makeRepository({
-            "mission_active.json": { [testCase.missionId]: [testCase.row] },
-            "mission_active_reward.json": { [testCase.missionId]: { 1: [rewardRow(1)] } },
-            ...testCase.tables,
-        })
+        const preciseRepository = makeMissionRepository(
+            [{ id: testCase.missionId, row: testCase.row }], testCase.tables,
+        )
         assert.deepEqual(reconcileActiveMissionFacts({
             playerId: testCase.playerId,
             repository: preciseRepository.repository,
@@ -366,29 +343,20 @@ try {
         }), [])
         assert.deepEqual(preciseRepository.calls.filter(name => auxiliaryTables.has(name)), testCase.expected)
     }
-    const requiredManaMaster = makeRepository({
-        "mission_active.json": { 95004: [missionRow({ pattern: 62 })] },
-        "mission_active_reward.json": { 95004: { 1: [rewardRow(1)] } },
-    })
+    const requiredManaMaster = makeMissionRepository([{ id: 95004, row: missionRow({ pattern: 62 }) }])
     assert.throws(() => reconcileActiveMissionFacts({
         playerId: 16,
         repository: requiredManaMaster.repository,
         now: NOW,
     }), /mana_node\.json/)
 
-    const malformedCharacter = makeRepository({
-        "mission_active.json": { 92002: [missionRow({ pattern: 4 })] },
-        "mission_active_reward.json": { 92002: { 1: [rewardRow(1)] } },
-        "character.json": [],
-    })
-    assert.throws(() => reconcileActiveMissionFacts({ playerId: 4, repository: malformedCharacter.repository, now: NOW }), TypeError)
-    assert.deepEqual(activeRows(4), [])
+    const malformedCharacter = makeMissionRepository(
+        [{ id: 92002, row: missionRow({ pattern: 4 }) }], { "character.json": [] },
+    )
+    assertRejectedWithoutWrites(reconcileActiveMissionFacts, 4, malformedCharacter.repository, TypeError)
 
     insertPlayer(5)
-    const battleRepository = makeRepository({
-        "mission_active.json": { 93001: [missionRow({ pattern: 14 })] },
-        "mission_active_reward.json": { 93001: { 1: [rewardRow(1)] } },
-    })
+    const battleRepository = makeMissionRepository([{ id: 93001, row: missionRow({ pattern: 14 }) }])
     assert.throws(() => reconcileActiveMissionFacts({ playerId: 5, repository: battleRepository.repository, now: NOW }), /no such table/)
     assert.deepEqual(activeRows(5), [])
     const { missionFactsMigration } = require("../src/data/migrations/wdfp/mission-facts")
@@ -396,6 +364,18 @@ try {
     database.prepare("INSERT INTO players_mission_battle_counters (player_id, single_clear_count) VALUES (5, 2)").run()
     assert.equal(reconcileActiveMissionFacts({ playerId: 5, repository: battleRepository.repository, now: NOW })[0].progress_value, 2)
     assert.deepEqual(reconcileActiveMissionFacts({ playerId: 5, repository: battleRepository.repository, now: NOW }), [])
+
+    insertPlayer(19)
+    const unsupportedRangeMaster = makeMissionRepository([23, 26, 70].map((pattern, index) => ({
+        id: 97001 + index,
+        row: missionRow({ pattern, battleKind: 1, questKind: 99, first: "01", characterId: 121033 }),
+    })))
+    assert.deepEqual(reconcileActiveMissionFacts({ playerId: 19, repository: unsupportedRangeMaster.repository, now: NOW }), [])
+    assert.deepEqual(activeRows(19), [])
+    const unsupportedChapterMaster = makeMissionRepository([
+        { id: 97004, row: missionRow({ pattern: 66, questKind: 99, first: "01" }) },
+    ])
+    assertRejectedWithoutWrites(reconcileActiveMissionFacts, 19, unsupportedChapterMaster.repository, TypeError)
 
     insertPlayer(6, { login: 2 })
     addFinishedQuest(6)
