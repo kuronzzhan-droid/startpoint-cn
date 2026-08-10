@@ -89,7 +89,7 @@ Claude 写给 Codex 的任何任务书、规格、评审，**必须逐条标注�
 |---|---|---|
 | `work/codex_out/` | Codex | Claude **只读** |
 | `docs/superpowers/specs/` | 设计规格（双方可写，格式见第 6 节） | — |
-| `docs/superpowers/plans/` | 实施计划（双方可写，格式见第 6 节） | — |
+| `work/plans/` | 实施计划（双方可写，**不入库**，见第 6 节） | — |
 | `mod-tools/docs/` | 长期知识、字段手册、调查报告 | 双方可写 |
 | `CLAUDE.md` / `AGENTS.md` | **两份必须同步改**，否则 CI 红 | — |
 | 本文档 | 改动需作者同意 | — |
@@ -100,10 +100,20 @@ Claude 写给 Codex 的任何任务书、规格、评审，**必须逐条标注�
 
 ## 6. 文档格式：沿用现有 spec + plan 惯例
 
-**【事实】** 本仓已有 25 份文档采用 superpowers 的 spec/plan 配对格式
-（`docs/superpowers/specs/*-design.md` + `docs/superpowers/plans/*.md`，2026-07-05 起，共 15 plans + 10 specs）。
-plan 文档头部带 `REQUIRED SUB-SKILL: superpowers:subagent-driven-development / executing-plans`，
+**【事实】** 本仓曾有 48 份文档采用 superpowers 的 spec/plan 配对格式
+（2026-07-05 ~ 08-06，**28 plans + 20 specs**）。plan 文档头部带
+`REQUIRED SUB-SKILL: superpowers:subagent-driven-development / executing-plans`，
 正文用 `- [ ]` checkbox 跟踪。
+
+**【事实】** 2026-08-11 作者精简了 Codex 侧的 superpowers（`~/.codex/config.toml`），
+**禁用 8 项**：`using-superpowers`、`brainstorming`、`writing-plans`、`executing-plans`、
+`subagent-driven-development`、`using-git-worktrees`、`finishing-a-development-branch`、`writing-skills`；
+**保留 6 项**：`systematic-debugging`、`test-driven-development`、`verification-before-completion`、
+`receiving-code-review`、`requesting-code-review`、`dispatching-parallel-agents`。
+
+⇒ **plan/spec 流程不再由 superpowers 驱动**，那 28 份计划书头部引用的技能已全部禁用，
+它们是历史产物。保留的 6 项集中在**调试、测试、复核**——即"怎么把活干对"，
+不含"怎么规划"。规划由人和对话完成。
 
 **【决定】格式沿用，但入库范围按作者规则收窄**（作者 2026-08-11 明确）：
 
@@ -112,14 +122,18 @@ plan 文档头部带 `REQUIRED SUB-SKILL: superpowers:subagent-driven-developmen
 | 产物 | 格式 | 入不入库 |
 |---|---|---|
 | **设计 / 架构** | `*-design.md`，沿用 specs 惯例 | ✅ 入库 → `docs/superpowers/specs/` |
-| **实施计划 / 执行步骤** | 沿用 plan 惯例（Goal / Architecture / Tech Stack / Global Constraints / `- [ ]` checkbox） | ❌ **不入库** → 落 `work/`（已 gitignore） |
-| 调查报告、评审意见、交接记录 | 自由 | ❌ 不进 specs/plans（避免长期规格与过程记录混放，见 8.③） |
+| **实施计划 / 执行步骤** | 沿用 plan 惯例（Goal / Architecture / Tech Stack / Global Constraints / `- [ ]` checkbox），但**不再声明 REQUIRED SUB-SKILL**（相关技能已禁用） | ❌ **不入库** → 落 `work/plans/`（已 gitignore） |
+| 调查报告、评审意见、交接记录 | 自由 | ❌ 不进 specs/plans（避免长期规格与过程记录混放） |
 
-**理由**：格式沿用是因为存量 25 份 + Codex 已按此工作一个月，换格式成本高。
-入库范围收窄是因为计划书是过程产物，寿命短，入库只会稀释长期知识。
+**理由**：格式沿用是因为它本身够用（Goal / 约束 / 逐步 checkbox 是好结构），
+与哪个技能驱动无关。入库范围收窄是因为计划书是过程产物、寿命短，入库只会稀释长期知识。
 
-> **⚠ 存量不一致（待处理，见 8.④）**：`docs/superpowers/plans/` 现有 **15 份计划书已入库**，
-> 与上述规则不符。**不得自行删除**——是清理、迁到 `work/`、还是承认为历史例外，由作者决定。
+> **【已处理】2026-08-11**：原 `docs/superpowers/plans/` 下 **28 份**计划书已迁至
+> `work/plans/`（逐字节校验通过后 `git rm`，内容仍在 git 历史中可查）。
+> `docs/superpowers/specs/` 的 20 份设计文档**保留入库**。
+> 连带移除 `scripts/check-hygiene.sh` 中随之失效的 IP 白名单项——白名单必须随内容收缩。
+>
+> ⚠️ 此前本文档与一条 commit message 记作「15 份」，系用 `ls | head` 观察被截断所致，已订正为 28。
 
 ---
 
@@ -223,12 +237,10 @@ Claude 侧有确凿的误判历史，以下为强制自检——**Codex 发现�
 
 ---
 
-### ④ 已入库的 15 份计划书怎么处理
+### ④ ~~已入库的计划书怎么处理~~ → **已决（作者 2026-08-11：迁到 `work/`）**
 
-`docs/superpowers/plans/` 下 15 份计划书（2026-07-05 ~ 07-31）与 7.0 第 2 条不符。
-
-选项：清理 / 迁到 `work/` / 承认为历史例外（新增的按新规矩）。
-**任一方不得自行删除。**
+`docs/superpowers/plans/` 下 **28 份**计划书已迁至 `work/plans/`，详见第 6 节。
+specs 的 20 份设计文档保留入库。
 
 ### ⑤ worktree 里冻结的旧规则书
 
@@ -260,3 +272,4 @@ diff <(tail -n +2 AGENTS.md) <(tail -n +2 /path/to/worktree/AGENTS.md)
 | 2026-08-11 | v1 建立。起因：CLAUDE.md/AGENTS.md 分裂一个月被发现 |
 | 2026-08-11 | v1.1 收录作者六条通用工程纪律（7.0）；据其第 2 条收窄计划书入库范围（第 6 节）；新增待决 ④⑤ |
 | 2026-08-11 | v1.2 待决 ⑤ 已处理（17 个 worktree 规则书 + 本文档同步完成）；待决 ② 作者决定延后至目录整理后 |
+| 2026-08-11 | v1.3 待决 ④ 已决：28 份计划书迁往 `work/plans/`，specs 保留。同步记录 Codex 侧 superpowers 精简（禁 8 留 6），第 6 节据此重写。订正此前误记的「15 份」（实为 28） |
