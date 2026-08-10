@@ -8,6 +8,7 @@ import degreeRewards from "../../../assets/mission_degree_reward.json"
 import collectRewards from "../../../assets/mission_collect_item_reward.json"
 import weeklyRewards from "../../../assets/mission_weekly_reward.json"
 import charAwakeRewards from "../../../assets/mission_char_awake_reward.json"
+import type { ReadonlyContentRepository } from "../../content/runtime/content-snapshot"
 
 export interface ActiveMissionReward {
     kind: number
@@ -30,6 +31,14 @@ function getRewardRow(
     stage: number
 ): any[] | undefined {
     return table[String(missionId)]?.[String(stage)]?.[0]
+}
+
+function getActiveRewardTable(
+    repository?: ReadonlyContentRepository,
+): Record<string, Record<string, any[]>> {
+    return repository !== undefined
+        ? repository.table<Record<string, Record<string, any[]>>>("mission_active_reward.json")
+        : activeRewards as Record<string, Record<string, any[]>>
 }
 
 function parseOptionalInteger(value: unknown): number | undefined {
@@ -66,8 +75,12 @@ function parseMissionRewardSlots(row: any[], firstKindIndex: number, slotCount: 
     return result
 }
 
-export function getActiveMissionRewards(missionId: number, stage: number): ActiveMissionReward[] {
-    const mission = (activeRewards as Record<string, Record<string, any[]>>)[String(missionId)]
+export function getActiveMissionRewards(
+    missionId: number,
+    stage: number,
+    repository?: ReadonlyContentRepository,
+): ActiveMissionReward[] {
+    const mission = getActiveRewardTable(repository)[String(missionId)]
     if (!mission) return []
     const stageData = mission[String(stage)]
     if (!stageData || !stageData[0]) return []
@@ -78,21 +91,28 @@ export function getActiveMissionRewards(missionId: number, stage: number): Activ
 
 export function getMissionRewardStageDefinition(
     missionId: number,
-    stage: number
+    stage: number,
+    repository?: ReadonlyContentRepository,
 ): MissionRewardStageDefinition | null {
-    const awakeRow = getRewardRow(charAwakeRewards as Record<string, Record<string, any[]>>, missionId, stage)
-    if (awakeRow) {
-        const targetProgress = parseFloat(String(awakeRow[5]))
-        if (!Number.isFinite(targetProgress)) return null
-        return {
-            source: "awake",
-            targetProgress,
-            targetClearSeconds: parseOptionalInteger(awakeRow[6]),
-            rewards: parseMissionRewardSlots(awakeRow, 9, 4),
+    if (repository === undefined) {
+        const awakeRow = getRewardRow(
+            charAwakeRewards as Record<string, Record<string, any[]>>,
+            missionId,
+            stage,
+        )
+        if (awakeRow) {
+            const targetProgress = parseFloat(String(awakeRow[5]))
+            if (!Number.isFinite(targetProgress)) return null
+            return {
+                source: "awake",
+                targetProgress,
+                targetClearSeconds: parseOptionalInteger(awakeRow[6]),
+                rewards: parseMissionRewardSlots(awakeRow, 9, 4),
+            }
         }
     }
 
-    const activeRow = getRewardRow(activeRewards as Record<string, Record<string, any[]>>, missionId, stage)
+    const activeRow = getRewardRow(getActiveRewardTable(repository), missionId, stage)
     if (!activeRow) return null
     const targetProgress = parseFloat(String(activeRow[3]))
     if (!Number.isFinite(targetProgress)) return null

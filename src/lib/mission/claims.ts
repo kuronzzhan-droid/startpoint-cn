@@ -1,5 +1,11 @@
 import { getMissionRewardStageDefinition } from "./rewards"
 import type { ActiveMissionReward } from "./rewards"
+import {
+    isActiveMissionClaimable,
+    type ActiveMissionAvailabilityContext,
+    type ActiveMissionProgressState,
+} from "./active-core"
+import { getActiveMissionMasterDefinition } from "./active-master-data"
 
 interface MissionClaimState {
     progress: number
@@ -17,14 +23,27 @@ export type MissionRewardClaimValidation =
     | { ok: true; claims: ValidatedMissionRewardClaim[] }
     | { ok: false; message: string }
 
+export type MissionRewardClaimContext = Omit<ActiveMissionAvailabilityContext, "activeMissions">
+
 export function validateMissionRewardClaims(
     activeMissions: Record<string, MissionClaimState>,
-    requestList: unknown
+    requestList: unknown,
+    context?: MissionRewardClaimContext,
 ): MissionRewardClaimValidation {
     if (!Array.isArray(requestList)) return { ok: false, message: "Invalid active mission claim." }
 
     const claims: ValidatedMissionRewardClaim[] = []
     const seenClaims = new Set<string>()
+    const availabilityMissions: Readonly<Record<string, ActiveMissionProgressState>> | undefined =
+        context === undefined
+            ? undefined
+            : Object.fromEntries(Object.entries(activeMissions).map(([missionId, state]) => [
+                missionId,
+                {
+                    progress: state.progress,
+                    stages: state.stages && !Array.isArray(state.stages) ? state.stages : {},
+                },
+            ]))
 
     for (const rawEntry of requestList) {
         if (!rawEntry || typeof rawEntry !== "object") {
@@ -35,6 +54,18 @@ export function validateMissionRewardClaims(
         const missionId = Number(entry.mission_id)
         if (!Number.isInteger(missionId) || missionId <= 0 || !Array.isArray(entry.stages)) {
             return { ok: false, message: "Invalid active mission claim." }
+        }
+
+        if (context !== undefined) {
+            if (!getActiveMissionMasterDefinition(missionId, context.repository)) {
+                return { ok: false, message: "Unknown active mission." }
+            }
+            if (!isActiveMissionClaimable(missionId, {
+                ...context,
+                activeMissions: availabilityMissions!,
+            })) {
+                return { ok: false, message: "Active mission is not available." }
+            }
         }
 
         const currentMission = activeMissions[String(missionId)]
@@ -57,7 +88,7 @@ export function validateMissionRewardClaims(
             const stageState = existingStages[String(stage)]
             if (stageState === true) continue
 
-            const definition = getMissionRewardStageDefinition(missionId, stage)
+            const definition = getMissionRewardStageDefinition(missionId, stage, context?.repository)
             if (!definition) return { ok: false, message: "Unknown mission reward stage." }
 
             const explicitlyClaimable = stageState === false
