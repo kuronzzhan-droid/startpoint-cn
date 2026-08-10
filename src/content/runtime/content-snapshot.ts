@@ -18,6 +18,7 @@ export interface ReadonlyContentRepository {
     table<T>(tableName: string): T
 }
 
+const bundledAssetsRoot = path.resolve(process.cwd(), "assets")
 const tableCache = new Map<string, unknown>()
 
 const bundledRepository: ReadonlyContentRepository = Object.freeze({
@@ -34,7 +35,7 @@ const bundledRepository: ReadonlyContentRepository = Object.freeze({
             throw new TypeError(`Bundled content table '${tableName}' is not registered.`)
         }
         if (!tableCache.has(tableName)) {
-            const filePath = path.join(process.cwd(), "assets", tableName)
+            const filePath = path.join(bundledAssetsRoot, tableName)
             tableCache.set(tableName, JSON.parse(fs.readFileSync(filePath, "utf8")))
         }
         return tableCache.get(tableName) as T

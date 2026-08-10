@@ -2,6 +2,7 @@ require("ts-node/register/transpile-only")
 
 const assert = require("node:assert/strict")
 const fs = require("node:fs")
+const os = require("node:os")
 const path = require("node:path")
 
 const { BUNDLED_CDN_CATALOG_VERSION } = require("../src/content/constants")
@@ -33,6 +34,40 @@ async function withInjectedSnapshot(snapshot, callback) {
         await callback()
     } finally {
         productionContentSnapshotProvider.snapshot = original
+    }
+}
+
+function assertBundledRootPinnedAtModuleLoad() {
+    const originalCwd = process.cwd()
+    const modulePath = require.resolve("../src/content/runtime/content-snapshot")
+    const originalModule = require.cache[modulePath]
+    const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "wf-content-root-"))
+    const rootA = path.join(temporaryRoot, "a")
+    const rootB = path.join(temporaryRoot, "b")
+    let freshModule
+    let originalProviderSnapshot
+
+    for (const root of [rootA, rootB]) fs.mkdirSync(path.join(root, "assets"), { recursive: true })
+    for (const [root, marker] of [[rootA, "A"], [rootB, "B"]]) {
+        fs.writeFileSync(path.join(root, "assets", "main_quest.json"), JSON.stringify({ marker }))
+        fs.writeFileSync(path.join(root, "assets", "ex_quest.json"), JSON.stringify({ marker }))
+    }
+
+    try {
+        delete require.cache[modulePath]
+        process.chdir(rootA)
+        freshModule = require(modulePath)
+        originalProviderSnapshot = freshModule.productionContentSnapshotProvider.snapshot
+        const freshRepository = freshModule.getContentSnapshot().repository
+        assert.equal(freshRepository.table("main_quest.json").marker, "A")
+        process.chdir(rootB)
+        assert.equal(freshRepository.table("ex_quest.json").marker, "A")
+    } finally {
+        if (freshModule) freshModule.productionContentSnapshotProvider.snapshot = originalProviderSnapshot
+        process.chdir(originalCwd)
+        delete require.cache[modulePath]
+        if (originalModule) require.cache[modulePath] = originalModule
+        fs.rmSync(temporaryRoot, { recursive: true, force: true })
     }
 }
 
@@ -80,6 +115,8 @@ try {
 } finally {
     ;[fs.writeFileSync, fs.mkdirSync, fs.rmSync] = originalWrites
 }
+
+assertBundledRootPinnedAtModuleLoad()
 
 const originalSnapshot = getContentSnapshot()
 const injected = { repository: { info: () => ({ source: "fixture" }) } }
