@@ -158,4 +158,10 @@ repo=$(new_repo agentdocs_missing_claude)
 write_pair "$repo" '' 'shared body\n'
 expect_fail "$repo" 'CLAUDE.md missing while AGENTS.md exists is rejected' 'CLAUDE.md 缺失'
 
+# 只看「盘上有没有」会留后门：删一份报错，删两份反而放行。判据必须是 git 是否跟踪。
+repo=$(new_repo agentdocs_both_deleted)
+write_pair "$repo" 'shared body\n' 'shared body\n'
+(cd "$repo" && git commit -qm 'add agent docs' && rm -f CLAUDE.md AGENTS.md)
+expect_fail "$repo" 'both tracked agent docs deleted from worktree is rejected' '均被跟踪但都不在工作区'
+
 printf '[OK] %d hygiene cases passed\n' "$passed"

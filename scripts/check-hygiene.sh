@@ -103,11 +103,20 @@ scan_simple_matches() {
 # 停在 07-04，Claude 因此一个月不知道「新角色整包必须走 wf_character_flow.py」。
 # 首行标题允许不同，其余必须逐字相同。
 check_agent_docs_in_sync() {
-    local has_claude=0 has_agents=0
+    local has_claude=0 has_agents=0 tracked=0
     [[ -f CLAUDE.md ]] && has_claude=1
     [[ -f AGENTS.md ]] && has_agents=1
-    # 两份都不存在是合法基线：以上游 main 为基的 worktree 本就没有这两个文件。
-    (( has_claude || has_agents )) || return 0
+    # 判据是「git 认不认为它们该在」，不是「盘上有没有」。
+    # 只看盘上会留后门：删一份报错，删两份反而放行——绕过成本只是从 1 个文件抬到 2 个。
+    git ls-files --error-unmatch CLAUDE.md >/dev/null 2>&1 && tracked=1
+    git ls-files --error-unmatch AGENTS.md >/dev/null 2>&1 && tracked=1
+    # 既未被跟踪、盘上也没有 = 合法基线（以上游 main 为基的 worktree 本就没有这两个文件）。
+    (( tracked || has_claude || has_agents )) || return 0
+    # 该在却整体消失 = 有人把两份一起删了。
+    if (( tracked && !has_claude && !has_agents )); then
+        note 'CLAUDE.md 与 AGENTS.md 均被跟踪但都不在工作区——两份必须同时存在且内容一致'
+        return 0
+    fi
     # 只剩一份 = 另一份被删或未同步。初版在这里直接放行，等于「删掉 CLAUDE.md 就能骗过门禁」——
     # 由 Codex 静态复核发现（2026-08-11），且当时没有任何回归测试打得中这条分支。
     if (( has_claude != has_agents )); then
