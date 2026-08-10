@@ -66,6 +66,11 @@ function recordValue(value: unknown, field: string): Record<string, unknown> {
     }
     const prototype = Object.getPrototypeOf(value)
     if (prototype !== Object.prototype && prototype !== null) throw new TypeError(`Invalid Active Mission ${field}.`)
+    for (const descriptor of Object.values(Object.getOwnPropertyDescriptors(value))) {
+        if (descriptor.get !== undefined || descriptor.set !== undefined) {
+            throw new TypeError(`Invalid Active Mission ${field}.`)
+        }
+    }
     return value as Record<string, unknown>
 }
 

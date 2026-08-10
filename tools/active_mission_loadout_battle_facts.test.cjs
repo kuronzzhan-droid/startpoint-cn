@@ -210,6 +210,79 @@ try {
     const bundledMissions = require("../assets/mission_active.json")
     const bundledCharacters = require("../assets/character.json")
     const trackedMissions = Object.fromEntries([20011, 20012, 20013, 20014].map(id => [id, bundledMissions[id]]))
+
+    let missionGetterReads = 0
+    const accessorMissionRoot = {}
+    Object.defineProperty(accessorMissionRoot, "20011", {
+        enumerable: true,
+        get: () => { missionGetterReads += 1; throw new Error("mission getter invoked") },
+    })
+    Object.defineProperty(provider, "snapshot", {
+        configurable: true,
+        value: { repository: repository(accessorMissionRoot, bundledCharacters) },
+        writable: true,
+    })
+    let missionAccessorError
+    try {
+        loadout.recordActiveMissionLoadoutBattleFactsSync(finishContext(4))
+    } catch (error) {
+        missionAccessorError = error
+    }
+    assert.deepEqual({
+        getterReads: missionGetterReads,
+        errorName: missionAccessorError?.constructor.name,
+        storedFacts: facts(4),
+    }, {
+        getterReads: 0,
+        errorName: "TypeError",
+        storedFacts: [],
+    })
+
+    let missionSetterWrites = 0
+    const setterMissionRoot = {}
+    Object.defineProperty(setterMissionRoot, "20011", {
+        enumerable: true,
+        set: () => { missionSetterWrites += 1 },
+    })
+    Object.defineProperty(provider, "snapshot", {
+        configurable: true,
+        value: { repository: repository(setterMissionRoot, bundledCharacters) },
+        writable: true,
+    })
+    assert.throws(() => loadout.recordActiveMissionLoadoutBattleFactsSync(finishContext(4)), TypeError)
+    assert.equal(missionSetterWrites, 0)
+    assert.deepEqual(facts(4), [])
+
+    let characterGetterReads = 0
+    const accessorCharacter = {}
+    Object.defineProperty(accessorCharacter, "element", {
+        enumerable: true,
+        get: () => { characterGetterReads += 1; throw new Error("character getter invoked") },
+    })
+    let characterAccessorError
+    try {
+        loadout.collectActiveMissionLoadoutBattleFacts([definition(1)], context({ partyCharacterIds: [1] }), { "1": accessorCharacter })
+    } catch (error) {
+        characterAccessorError = error
+    }
+    assert.deepEqual({ getterReads: characterGetterReads, errorName: characterAccessorError?.constructor.name }, {
+        getterReads: 0,
+        errorName: "TypeError",
+    })
+
+    const nullPrototypeMissionRoot = Object.create(null)
+    nullPrototypeMissionRoot[20011] = [row()]
+    Object.freeze(nullPrototypeMissionRoot)
+    Object.defineProperty(provider, "snapshot", {
+        configurable: true,
+        value: { repository: repository(nullPrototypeMissionRoot, bundledCharacters) },
+        writable: true,
+    })
+    assert.doesNotThrow(() => loadout.recordActiveMissionLoadoutBattleFactsSync(finishContext(4, {
+        party: { characters: [{ id: 999001 }], unison_characters: [] },
+    })))
+    assert.deepEqual(facts(4), [])
+
     const primary = repository(trackedMissions, bundledCharacters)
     Object.defineProperty(provider, "snapshot", {
         configurable: true,
