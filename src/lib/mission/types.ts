@@ -1,6 +1,7 @@
 // Mission computer core types
 
 import type { Player, PlayerCharacter, RawPlayerQuestProgress } from "../../data/types"
+import type { MissionBattleCounters } from "../../data/domains/mission_battle_facts"
 import type { SnapshotData } from "./snapshot"
 
 export interface PlayerQuestProgressEntry {
@@ -22,7 +23,24 @@ export interface CategoryContext {
     totalStories: number
     rankCounts: Record<string, number>
     activeMissionProgress?: Record<string, number>
+    collectedItemTotals?: Record<string, number>
+    degreeStats?: {
+        companionCount: number
+        maxCharacterLevel: number
+        overLimitCount: number
+        manaBoardCount: number
+        secondManaBoardCompleteCount: number
+        bondTokenCount: number
+        singleSsCount: number
+        multiClearCount: number
+        multiHostClearCount: number
+        episodeClearCount: number
+        level100BondedCharacterIds: ReadonlySet<number>
+        completedSecondManaBoardCharacterIds: ReadonlySet<number>
+    }
+    battleCounters?: MissionBattleCounters
     snapshot?: SnapshotData | null
+    passEventLoginProgress?: Record<number, number>
 }
 
 /** A mission computer handles one or more categories */
@@ -33,7 +51,12 @@ export interface MissionComputer {
      * Build pre-cached context for this category.
      * Prefer loading shared category data here so repeated mission evaluation stays cheap.
      */
-    buildContext(playerId: number, category: number): CategoryContext
+    buildContext(
+        playerId: number,
+        category: number,
+        evaluationTime?: Date,
+        missionIds?: readonly number[],
+    ): CategoryContext
 
     /**
      * Compute progress for a single mission.
