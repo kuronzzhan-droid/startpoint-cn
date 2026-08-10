@@ -1,9 +1,9 @@
 # Claude / Codex 协作对齐
 
-> **状态**：v1.8（2026-08-11），Claude 侧已收口，待 Codex 复核补全。
+> **状态**：v1.9（2026-08-11），Claude / Codex 双侧复核补全。
 > **适用**：本仓所有 AI 执行者。开工前必读。
-> **未决项集中在第 8 节——未决项不得由任一执行者自行决定。**
-> 目前 **8.①④⑤ 已决**，**8.②③ 由作者决定延后至本地目录整理之后**，无开放项。
+> **已决与冻结待拍板项集中在第 8 节——既定状态不得由任一执行者自行改变。**
+> 目前 **8.①④⑤ 已决**，**8.②③ 由作者决定延后至本地目录整理之后**；当前没有可执行开放项。
 >
 > **核心前提（2026-08-11 作者确立）**：Claude 与 Codex **同级同位**，
 > 都写生产代码、都做设计与验收。**两者都可能限额吃紧，一方限额另一方顶上**——
@@ -29,7 +29,10 @@
 - 同期 Claude 在评审目录整理方案时，把一条**早已存在于 AGENTS.md 的既有规约**当作新建议提出。
 
 **已修复**：两份文件现已合并为除首行标题外逐字相同，并由
-`scripts/check-hygiene.sh` 加了门禁（分裂即 CI 红）。
+`scripts/check-hygiene.sh` 加了内容比较门禁。**但当前门禁仅在两份文件都存在时比较；
+任一文件缺失会直接放行，且尚无对应 hygiene 回归测试**
+（`scripts/check-hygiene.sh:105-113`、`scripts/tests/test-hygiene.sh`，Codex 静态复核，2026-08-11 06:04）。
+因此准确表述是：**两份都存在时，内容分裂会 CI 红；文件缺失仍需人工或后续门禁补强。**
 
 **结论**：两个执行者共用同一份规则书是硬要求，不是建议。
 
@@ -64,6 +67,14 @@
 - **例外**：数据表、文档、配置这类作者随时在动的东西，两边都**先查 `mod-tools/work/sync_pending.json`**
   （非空即只读，见 7.1），并且**不许整表覆盖**
 - 拿不准对方是否在改某个文件 → **停下来问作者**，不要赌
+
+**Codex 子代理隔离规则**：会话提供的并发槽、工具和上下文继承方式会变化，具体值只写入
+`work/agent-coordination/codex-to-claude.md`，不固化在本协议。除非当前运行时明确提供了独立 worktree，
+否则必须假定 root / child 共享 cwd 与文件系统，**创建子代理本身不等于创建隔离**。
+
+- 独立只读调查或明确不重叠的文件可并行；任何共享文件写入必须串行，并先在实时状态里登记 owner；
+- 派发前把当前并发上限、可用工具、上下文继承方式和禁止项写进 brief / 实时状态；
+- 完成、中断或阻塞后必须把终态写进状态文件；侧栏累计时长不能代替运行状态证据。
 
 ### 1.3 相对强项（派活参考，不是职责边界）
 
@@ -117,6 +128,8 @@
 - 下一步准备做什么
 - 我正在占用哪些文件（文件所有权，防对方并发改）
 - 已知阻塞 / 待作者拍板项
+- 接管所需时，补充**当前会话实际**的 Skill / plugin / tool / 权限轮廓（只记名称、版本、
+  启停和作用域，绝不记录 secret 或环境值）
 ```
 
 #### 接管方的动作
@@ -175,6 +188,10 @@
 > 因此：**Claude 写的【事实】必须给出仓内可查的出处**（文件路径 / 命令 / 提交哈希）。
 > 若只写结论不给出处，**Codex 应直接要求补出处，不要默认它有据可查**。
 > 反向同理——Codex 若有只存在于其侧配置或会话历史的依据，也须落到仓内可查处。
+>
+> **Codex 侧也可能有独立持久记忆**，Claude 不可假定能读取；
+> 记忆内容可能过期，也不是本文档的替代权威。Codex 若使用记忆中的事实，必须标明来源并重新
+> 核对易漂移项；需要跨执行者接管的结论仍须落到仓内文件、命令或 commit 证据。
 
 ---
 
@@ -225,16 +242,19 @@ Codex 侧同理适用）。而接手方倾向于忠实执行给定前提，不�
 
 ## 6. 文档格式：沿用现有 spec + plan 惯例
 
-**【事实】** 本仓曾有 48 份文档采用 superpowers 的 spec/plan 配对格式
-（2026-07-05 ~ 08-06，**28 plans + 20 specs**）。plan 文档头部带
-`REQUIRED SUB-SKILL: superpowers:subagent-driven-development / executing-plans`，
-正文用 `- [ ]` checkbox 跟踪。
+**【事实】** 本仓曾有 **28 plans + 20 specs**（2026-07-05 ~ 08-06），整体沿用
+superpowers 的 spec/plan 惯例；并非每份 plan 格式完全相同：22/28 含
+`REQUIRED SUB-SKILL`，23/28 含正文 `- [ ]` checkbox
+（Codex 对迁移前 Git blob 统计，2026-08-11 06:04）。因此下文沿用的是**多数文档的结构惯例**，
+不是声称 48 份逐项同构。
 
-**【事实】** 2026-08-11 作者精简了 Codex 侧的 superpowers（`~/.codex/config.toml`），
-**禁用 8 项**：`using-superpowers`、`brainstorming`、`writing-plans`、`executing-plans`、
+**【事实】磁盘配置层**：2026-08-11 作者精简了 Codex 侧的 superpowers；
+`~/.codex/config.toml` 对以下 **8 项显式设置 `enabled=false`**：
+`using-superpowers`、`brainstorming`、`writing-plans`、`executing-plans`、
 `subagent-driven-development`、`using-git-worktrees`、`finishing-a-development-branch`、`writing-skills`；
-**保留 6 项**：`systematic-debugging`、`test-driven-development`、`verification-before-completion`、
-`receiving-code-review`、`requesting-code-review`、`dispatching-parallel-agents`。
+其余 6 项并非显式 `enabled=true`，而是**未列入禁用表**：`systematic-debugging`、
+`test-driven-development`、`verification-before-completion`、`receiving-code-review`、
+`requesting-code-review`、`dispatching-parallel-agents`。
 
 ⇒ **plan/spec 流程不再由 superpowers 驱动**，那 28 份计划书头部引用的技能已全部禁用，
 它们是历史产物。保留的 6 项集中在**调试、测试、复核**——即"怎么把活干对"，
@@ -244,20 +264,22 @@ Codex 侧同理适用）。而接手方倾向于忠实执行给定前提，不�
 
 | 改动对象 | TDD 适用？ | 验收方式 |
 |---|---|---|
-| `src/`、`admin/`、`mod-tools/` 的**代码** | ✅ 适用 | 单元测试（仓内已有 88 个 Python 测试 + node 测试） |
+| `src/`、`admin/`、`mod-tools/` 的**代码**（含发布器、校验器、接收器的行为） | ✅ 适用 | 对应单元/契约/集成测试；测试数量会漂移，不在协议中硬编码 |
 | `assets/*.json` 等**游戏数据表** | ❌ **不适用** | **真机跑一把**。给"某角色伤害倍率 +10%"写单元测试没有意义 |
-| 发布链、CDN、store | ❌ 不适用 | 引用完整性门禁 + 真机确认生效 |
+| 一次具体的发布、CDN/store 内容写入或产物安装 | ❌ 不用 TDD 模拟授权 | 发布前完整性门禁 + 写后回读；需要时再做服务/真机确认。**这不豁免发布工具代码的 TDD** |
 
 **判据**：改的是**行为**（代码怎么算）→ TDD；改的是**数值或内容**（算什么）→ 真机。
 另注意 superpowers 的 TDD 原文要求「测试之前写的代码一律删掉重来」，
 **该要求只对生产代码成立**，不得套用到数据改动或一次性调查脚本上。
 
-### 6.1 优先级：项目规则 > 通用技能
+### 6.1 授权与规则优先级
 
 superpowers 是面向通用软件项目写的，它的绝对措辞（"no exceptions"、"delete means delete"）
 **没有考虑本项目的数据/发布/真机验收特性**。
 
-**冲突时以本文档和 `CLAUDE.md`/`AGENTS.md` 为准。**
+**优先级必须写完整**：平台/系统强制约束与作者当前明确请求（含授权范围）
+→ 本文档和 `CLAUDE.md`/`AGENTS.md` → 通用或项目 Skill。
+Skill 只能规定**已获授权工作怎么做**，不能自行授权发布、删除、push、外部消息或 live 写入。
 技能文件本身**保持原样不修改**——修改会破坏与 Codex 的字节一致，
 使"是否对齐"不可验证。**约束写在项目文档里，不写进技能文件里。**
 
@@ -267,7 +289,7 @@ superpowers 是面向通用软件项目写的，它的绝对措辞（"no excepti
 **字节直接取自 Codex 实际运行的 `~/.codex/plugins/cache/openai-curated-remote/superpowers/6.2.0/skills/`**，
 逐个 SHA-256 比对通过：
 
-| 技能 | Codex | Claude | SKILL.md sha256(前16) |
+| 技能 | Codex 配置目标 | Claude | SKILL.md sha256(前16) |
 |---|---|---|---|
 | `systematic-debugging` | ✅ | ✅ | `808fc5717aa88ad6` |
 | `test-driven-development` | ✅ | ✅ | `bf1b8216e523851a` |
@@ -275,11 +297,20 @@ superpowers 是面向通用软件项目写的，它的绝对措辞（"no excepti
 | `receiving-code-review` | ✅ | ✅ | `091df1629510af1b` |
 | `requesting-code-review` | ✅ | ✅ | `d71cc01ba56d2325` |
 | `dispatching-parallel-agents` | ✅ | ❌ **未装** | — |
-| 其余 8 项 | ❌ 禁用 | ❌ 未装 | — |
+| 其余 8 项 | ❌ 配置为禁用 | ❌ 未装 | — |
 
 **唯一偏离及其理由**：`dispatching-parallel-agents` 未在 Claude 侧安装——
 Claude 有一条更高优先级的会话约束「非用户明确要求不得调用子代理工具」，
 装了会与之冲突且不会生效。**这是登记在册的偏离，不是遗漏。**
+
+**Codex 配置状态不等于会话暴露状态**：root 与 child 甚至可能看到不同的 Skill 清单，
+具体清单属于实时状态，不写入长期权威文档。因此上表的 Codex 列只是**配置目标**，
+不是任何既有会话的充分运行时证明。
+
+**执行规则**：每次接管若 Skill 状态会影响方案，必须在实时状态中记录当前会话实际的
+Skill / tool 暴露清单；磁盘 cache、`config.toml` 文本或 `codex plugin list` 任一项都不能单独
+代替运行时证据。
+已经打开的任务若仍看到被禁用项，不主动依赖它们；要验证精简是否生效，重启桌面进程后新建任务复验。
 
 **安装方式**：直接复制到 `~/.claude/skills/<name>/`，**不装 superpowers 插件本体**。
 装插件会引入 SessionStart 钩子和 `using-superpowers` 调度器，
@@ -295,9 +326,49 @@ for s in systematic-debugging test-driven-development verification-before-comple
 done
 ```
 
+当前 Codex 是 Windows 主机；在本轮 PowerShell 会话中直接解析到的 `bash.exe` 是 WSL 启动器，
+且没有可用 `/bin/bash`，所以上述命令直接执行会报 `execvpe(/bin/bash) failed`。
+仓库的 `scripts/run-bash.mjs` 可用 `node scripts/run-bash.mjs -lc '<command>'` 显式调用 Git Bash；
+本轮为避免跨 shell 引号差异，采用更直接的 PowerShell 等价复验：
+
+```powershell
+$src = "$env:USERPROFILE\.codex\plugins\cache\openai-curated-remote\superpowers\6.2.0\skills"
+$dst = "$env:USERPROFILE\.claude\skills"
+$skills = @(
+  'systematic-debugging', 'test-driven-development', 'verification-before-completion',
+  'receiving-code-review', 'requesting-code-review'
+)
+foreach ($skill in $skills) {
+  $codex = (Get-FileHash -Algorithm SHA256 -LiteralPath "$src\$skill\SKILL.md").Hash
+  $claude = (Get-FileHash -Algorithm SHA256 -LiteralPath "$dst\$skill\SKILL.md").Hash
+  if ($codex -cne $claude) { throw "DRIFT: $skill" }
+  "MATCH: $skill $($codex.Substring(0, 16).ToLowerInvariant())"
+}
+```
+
+**【事实】本轮 Codex 复验结果（2026-08-11 06:11）**：当前 PATH 直接调用 Bash 因无 WSL 发行版无法启动；
+PowerShell 对上述 5 项逐字节比较为 5/5 MATCH，前 16 位与表中一致。
+
 > **注意**：`obra/superpowers` 的 `main` 分支会持续变动，而 Claude 插件市场把 superpowers
 > 钉在更旧的 `d884ae04`。**两者都不是基准**——基准是 Codex 实际运行的 6.2.0 那份字节。
 > 我曾先按市场钉版比对并误判"5 个全不一致"，实际是拿错了基准。
+
+### 6.3 Codex 侧运行时包络
+
+- **权限不是授权**：approval / sandbox / tool 能力属于动态会话状态，精确值只写实时状态。
+  Codex 不能把“命令能执行”当成作者授权；若当前请求尚未明确授权，必须在破坏性动作、外部写入
+  或任务范围扩张**之前**停下询问作者。
+- **审查 / 解释 / 状态 / 诊断默认只读**；“诊断”不自动包含修复。只有作者明确要求 change/build，
+  才进入实施。
+- **项目配置含本机凭据边界**：仓内 `.codex/config.toml` 被 `.gitignore` 排除，并含本机环境注入项。
+  审计时只报告配置键、启停、版本和作用域，绝不回显值，也不得复制入任务书、日志或 commit。
+- **项目 Skill 自动作用域**：本任务项目级只有 `.agents/skills/wf-mod`；其他全局/插件 Skill
+  出现在目录里，不代表适用于 WF，也不扩大授权。
+- **`wf-mod` 已知冲突**：其“自动生成 `.bak-wfmod-*`”与 7.1“不新增 `.bak-*`”冲突；
+  其“改完务必发布”也不能替代作者的发布授权。按 6.1，项目规则和本次明确授权优先；
+  Skill 文件保持原字节，冲突登记在本文档，不在 Skill 内打补丁。
+- **保护未知 WIP**：禁止用 `git reset --hard`、`git checkout --`、宽泛递归删除/移动处理未知改动；
+  递归操作前必须解析并核对精确绝对目标。当前 8.②③ 冻结期内，目录移动与代码卫生清理一律不做。
 
 **【决定】格式沿用，但入库范围按作者规则收窄**（作者 2026-08-11 明确）：
 
@@ -383,9 +454,10 @@ Claude 一直不知道。2026-08-11 作者确认对双方同等适用，故收�
 
 ---
 
-## 8. 待拍板（未决，任一方不得自行决定）
+## 8. 已决与延后项（任一方不得自行改变）
 
-以下三项 Claude 已提出但作者**尚未拍板**。在拍板前，遇到相关情形**一律停下来问**。
+当前没有**可执行开放项**：①④⑤已决；②③仍是**冻结的待拍板项**，只是处理时点已决定延后。
+延后不等于授权实施——作者重新打开 ②③ 前，遇到相关情形仍须停下来问。
 
 ### ① ~~Claude 直接改代码的边界在哪~~ → **已决（作者 2026-08-11：无边界，两者同级）**
 
@@ -396,25 +468,32 @@ Claude 与 Codex 同级同位，**都写生产代码**。详见第 1 节。
 
 ### ② mod-tools 最终归属
 
-`D:\WF\startpoint-cn\mod-tools/`（**被 git 跟踪，278 个文件**，只在 `release/modes-20260714`）
-与独立仓 `D:\WF\wf-mod-tools` 的关系未定：留 / 删 / 折中。
-
-**这是本轮重构的地基决策**——目录整理方案（计划书步骤 8）依赖它。未定之前不得移动任何目录。
+`D:\WF\startpoint-cn\mod-tools/` 在当前 `release/modes-20260714` 被 git 跟踪（278 个文件），
+与独立仓 `D:\WF\wf-mod-tools` 的关系未定：留 / 删 / 折中。准确的 ref 边界是：
+`origin/main`、`origin/dev`、`fork/main` 不含该目录；但本地/remote 其他历史与功能 ref 中仍有副本，
+不能字面写成“只在当前分支”（Codex 扫描 63 refs，其中 28 refs 含 `mod-tools`，2026-08-11 06:04）。
 
 > **【决定】延后（作者 2026-08-11）**：mod-tools 归属及其相关项（含 8.③ 代码级卫生）
 > **等项目重构与本地目录整理完成后再定**。在此之前：不移动任何目录、不清理化石脚本、
 > 不拆 `wf_gui.py`。遇到相关情形一律停下来问。
+>
+> 为避免形成“目录整理依赖归属、归属又等目录整理”的循环，本阶段不再把 ② 当作整个目录整理的
+> 前置：可以继续只读盘点、分类与制定不涉及 `mod-tools` 归属的方案，但任何涉及两套工具树的移动、
+> 删除、合并或权威切换仍冻结，等作者重新打开本项后先拍板再实施。
 
 ### ③ 代码级卫生是否纳入本轮重构
 
-现状**已查明但方案未定**：
+部分现状已知；精确盘点与方案均按作者决定延后：
 
-- 20 个脚本把具体版本号写死（最老的认 `1.4.106`，线上已 `1.4.323`）——工具要分享给服主，他们会直接踩
+- 多个脚本把具体 `1.4.x` 版本写死。早期记录的“20 个 / 最老 `1.4.106` / 线上 `1.4.323`”
+  没有留下可复现搜索面，**不得继续当作当前精确事实**；Codex 直接扫非测试脚本也会混入示例、
+  协议版本和历史值，不能据此替代运行默认值审计。精确口径随本项一起延后，不在冻结期清理
 - `wf_gui.py` 8842 行单文件，已出过两次事故
 - 58 份文档里交接记录与长期知识混放
 - 探索产物无固定临时区，仓库根散落 29 个一次性文件
 
-**要么纳入，要么在计划书「明确不做」里点名排除。最差的是不提**——不提等于默认会被顺手做掉，而实际不会。
+> **【决定】延后（作者 2026-08-11）**：本项不纳入当前重构，也不得被顺手实施。
+> 等本地目录整理完成后再重新审计、定义口径并拍板；当前只保留事实记录。
 
 ---
 
@@ -425,16 +504,16 @@ specs 的 20 份设计文档保留入库。
 
 ### ⑤ worktree 里冻结的旧规则书
 
-**【事实】** `.worktrees/`（11 份）+ `.claude/worktrees/`（6 份）共 **17 份 AGENTS.md 是旧版**，
-均含已修正的 mod-tools 错误描述——**包括正在跑合并任务的 `.worktrees/ku1o-integrate`**。
+**【v1.2 历史记录】** 当时登记 `.worktrees/`（11 份）+ `.claude/worktrees/`（6 份）共
+**17 份 AGENTS.md 是旧版**，均含已修正的 mod-tools 错误描述，包括
+`.worktrees/ku1o-integrate`。这是同步时记录，不把它冒充为当前 branch tip 的可复现实测。
 
 **【事实】** `check_agent_docs_in_sync()` **抓不到这种情况**：它比较同一棵树内的两份文件，
 worktree 里两份都旧且彼此一致，故通过。这是门禁的设计限制。
 
-> **【已处理】2026-08-11**：17 个 worktree 的 `CLAUDE.md` + `AGENTS.md` 已全部同步到新版并逐一验证。
-> 同步前确认过无人正在改这两个文件；只覆盖已存在的文件，**未在缺失处凭空创建**
-> （另有 6 个 worktree 基线是上游 main，本就没有这两个文件，保持原样）。
-> 同步后这两份在各 worktree 内显示为已修改，由各自负责人决定是否随本线工作提交。
+> **【v1.2 历史处理记录】2026-08-11**：当时登记 17 个 worktree 的规则书工作副本已同步并验证，
+> 另有 6 个 worktree 保持原样。当前复核只能确认 17 个现存工作副本内容与主规则一致；
+> branch tip 中 14 个仍是旧规则、3 个缺 `AGENTS.md`，因此历史动作不是持久同步证明。
 
 > **⚠️ 复发（2026-08-11，同日）**：上面那次同步**把本文档当时的 v1.1 一并复制进了 17 个
 > worktree**。随后主工作区改到 v1.7，那 17 份副本**全部停在 v1.1**，
@@ -443,13 +522,25 @@ worktree 里两份都旧且彼此一致，故通过。这是门禁的设计限�
 >
 > **根因**：本文档是**活文档**，会持续修订。**复制活文档 = 制造 N 个必然过期的副本。**
 >
-> **已改为指针**：17 份副本已替换为指向权威路径
+> **旧分支工作副本已改为指针**：17 份原有副本已替换为指向权威路径
 > `D:/WF/startpoint-cn/docs/协作对齐-Claude-Codex.md` 的存根，不再承载内容。
-> **今后任何活文档都不许复制进 worktree，只放指针。**
+> **今后不得手工复制活文档形成无人维护的全文副本。**
 >
-> `CLAUDE.md`/`AGENTS.md` 是另一种情况——它们是**受 git 跟踪的**，
-> worktree 里的副本会随分支合并/变基自然更新，且门禁保证同树内两份一致。
+> **【事实】当前指针仍是本机工作副本机制，不是 branch 持久机制**（Codex 复核，
+> 2026-08-11 06:04）：17 个存根均为相同的 774-byte 未跟踪文件，`git status` 会显示 `??`；
+> 0 个对应 branch tip 含存根，也没有自动创建/检查脚本。worktree 被重建或存根被清除后指针会消失。
+> 这些 `??` 不得随业务 commit 带入，也不得据此声称新 worktree 自动拥有指针。
+>
+> **Git 语义限定**：若目标 branch 不跟踪本文档，可创建同样的未跟踪指针；若目标 branch 已跟踪
+> 本文档，Git 会检出该 branch 的全文快照，此时**不得把 tracked 文件覆盖成指针**（会制造 `M`）。
+> 两种情况下开工都必须读取主工作区权威路径并核对版本；权威路径打不开就停下来问作者。
+>
+> `CLAUDE.md`/`AGENTS.md` 是另一种情况——当前主分支两份均受 git 跟踪；旧 branch 可能只跟踪
+> 旧版，或缺其中一份。只有 branch 实际接收相应 commit 后，tracked 副本才会随 merge/rebase 更新；
+> 当前工作副本中的 `M` / `??` 不具备这种持久性。
 > 但**若在主工作区再次修订规则书，各 worktree 仍需重新同步**（门禁抓不到，见下）。
+> 当前 17 个工作副本虽已与主规则一致，但都是本地修改；对应 branch tip 中 14 个仍是旧规则，
+> 另 3 个缺 `AGENTS.md`。这说明“当前磁盘已同步”不等于“分支已持久同步”。
 
 **门禁的设计限制仍然存在**：`check_agent_docs_in_sync()` 只比较同一棵树内的两份文件，
 无法发现「整棵树都是旧版」。**新开 worktree 或长期未同步的 worktree，
@@ -457,6 +548,14 @@ worktree 里两份都旧且彼此一致，故通过。这是门禁的设计限�
 
 ```bash
 diff <(tail -n +2 AGENTS.md) <(tail -n +2 /path/to/worktree/AGENTS.md)
+```
+
+Windows PowerShell 等价检查（在目标 worktree 内运行）：
+
+```powershell
+$authoritative = (Get-Content -Encoding UTF8 'D:\WF\startpoint-cn\AGENTS.md' | Select-Object -Skip 1) -join "`n"
+$local = (Get-Content -Encoding UTF8 '.\AGENTS.md' | Select-Object -Skip 1) -join "`n"
+if ($authoritative -cne $local) { throw 'WORKTREE RULES DRIFT' }
 ```
 
 ---
@@ -469,8 +568,9 @@ diff <(tail -n +2 AGENTS.md) <(tail -n +2 /path/to/worktree/AGENTS.md)
 | 2026-08-11 | v1.1 收录作者六条通用工程纪律（7.0）；据其第 2 条收窄计划书入库范围（第 6 节）；新增待决 ④⑤ |
 | 2026-08-11 | v1.2 待决 ⑤ 已处理（17 个 worktree 规则书 + 本文档同步完成）；待决 ② 作者决定延后至目录整理后 |
 | 2026-08-11 | v1.3 待决 ④ 已决：28 份计划书迁往 `work/plans/`，specs 保留。同步记录 Codex 侧 superpowers 精简（禁 8 留 6），第 6 节据此重写。订正此前误记的「15 份」（实为 28）。补 TDD 适用边界表；加给 Codex 的交接说明 |
-| 2026-08-11 | **v1.8 活文档不再复制**：发现 8.⑤ 的同步动作把本文档 v1.1 复制进 17 个 worktree，主工作区改到 v1.7 后那些副本全部停在 v1.1 并保留已废弃的旧分工描述——**修复失效模式的动作本身制造了同一失效**。17 份副本已改为指向权威路径的存根；定为通则：活文档不许复制进 worktree，只放指针 |
-| 2026-08-11 | **v1.7 交接就绪**：`work/agent-coordination/claude-to-codex.md` 按 1.4 新协议写入首份实时状态（旧夜班任务板归档），此前只有规矩没有实体；登记知识不对称（Claude 有 Codex 看不到的记忆库 ⇒【事实】必须给仓内出处，否则应被要求补）；明确本文档双方均可补充修正、仅【决定】类改动需作者同意 |
-| 2026-08-11 | **v1.6 技能对齐**：Claude 侧按 Codex 保留集安装 5 项 superpowers 技能，字节取自 Codex 实际运行的 6.2.0 并逐个 SHA-256 校验；登记唯一偏离（`dispatching-parallel-agents` 因 Claude 侧子代理约束未装）；新增 6.1 优先级「项目规则 > 通用技能，技能文件保持原样不改」与 6.2 对齐记录+复验命令 |
-| 2026-08-11 | **v1.5 接管模型**：作者明确两者都可能限额吃紧、一方限额另一方顶上。新增 1.4 接管（failover）——限额耗尽无预警故必须边做边更新状态、复用既有 `work/agent-coordination/` 双向通道并改为对称协议、归拢「风格对齐」十项清单。**推翻早期判断「风格差异不是冲突」**，第 4 节改判为必须对齐 |
 | 2026-08-11 | **v1.4 定位纠正**：作者确立两者**同级同位，都写生产代码**，取代 2026-08-02 的「Claude 只做设计」旧分工（旧理由是 token 成本，属调度考量非职责边界）。第 1 节重写为按任务切分 + worktree 互斥；第 2/3/7.2 节改为双向对称生效；待决 ① 随之关闭。**至此无开放项，Claude 侧收口** |
+| 2026-08-11 | **v1.5 接管模型**：作者明确两者都可能限额吃紧、一方限额另一方顶上。新增 1.4 接管（failover）——限额耗尽无预警故必须边做边更新状态、复用既有 `work/agent-coordination/` 双向通道并改为对称协议、归拢「风格对齐」十项清单。**推翻早期判断「风格差异不是冲突」**，第 4 节改判为必须对齐 |
+| 2026-08-11 | **v1.6 技能对齐**：Claude 侧按 Codex 保留集安装 5 项 superpowers 技能，字节取自 Codex 实际运行的 6.2.0 并逐个 SHA-256 校验；登记唯一偏离（`dispatching-parallel-agents` 因 Claude 侧子代理约束未装）；新增 6.1 优先级「项目规则 > 通用技能，技能文件保持原样不改」与 6.2 对齐记录+复验命令 |
+| 2026-08-11 | **v1.7 交接就绪**：`work/agent-coordination/claude-to-codex.md` 按 1.4 新协议写入首份实时状态（旧夜班任务板归档），此前只有规矩没有实体；登记知识不对称（Claude 有 Codex 看不到的记忆库 ⇒【事实】必须给仓内出处，否则应被要求补）；明确本文档双方均可补充修正、仅【决定】类改动需作者同意 |
+| 2026-08-11 | **v1.8 活文档不再复制**：发现 8.⑤ 的同步动作把本文档 v1.1 复制进 17 个 worktree，主工作区改到 v1.7 后那些副本全部停在 v1.1 并保留已废弃的旧分工描述——**修复失效模式的动作本身制造了同一失效**。17 份副本已改为指向权威路径的存根；定为通则：活文档不许复制进 worktree，只放指针 |
+| 2026-08-11 | **v1.9 Codex 侧复核补全**：明确 Skill/tool 清单是每任务、甚至每 agent 的动态状态，只进实时交接；补 Windows 字节复验、Codex 多代理隔离/授权/记忆/Skill 边界；修正 hygiene 缺文件放行、历史 plan 格式、Python 测试数、mod-tools ref 范围与第 8 节状态；补足 tracked / untracked 两类 worktree 指针语义及重建风险 |
