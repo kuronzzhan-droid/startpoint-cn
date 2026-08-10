@@ -9,6 +9,7 @@ assert.equal(fs.existsSync(corePath), true, "Active Mission 纯逻辑核心模�
 
 const {
     getActiveMissionEventReleasePhase,
+    getActiveMissionRewardStageIds,
     isActiveMissionAvailable,
     isActiveMissionClaimable,
     parseActiveMissionDefinition,
@@ -54,6 +55,18 @@ function stageRow(targetProgress, targetClearSeconds) {
     row[8] = "7"
     row[9] = "101"
     return row
+}
+
+function createRepository(tables, digest = "active-core-test") {
+    return {
+        info: () => ({
+            source: "release",
+            assetVersion: "test",
+            generatorVersion: 1,
+            releaseDigest: digest,
+        }),
+        table: tableName => tables[tableName],
+    }
 }
 
 const releaseTables = {
@@ -110,15 +123,7 @@ const releaseTables = {
         9301: { 1: [stageRow(1)] },
     },
 }
-const repository = {
-    info: () => ({
-        source: "release",
-        assetVersion: "test",
-        generatorVersion: 1,
-        releaseDigest: "active-core-test",
-    }),
-    table: tableName => releaseTables[tableName],
-}
+const repository = createRepository(releaseTables)
 
 assert.equal(parseCnMasterDateTime("2024-08-14 21:00:00"), Date.parse("2024-08-14T13:00:00.000Z"))
 assert.throws(() => parseCnMasterDateTime("2024-02-30 00:00:00"), /CN master/i)
@@ -130,6 +135,37 @@ assert.equal(parsedMission.stringId, "phase_one")
 const parsedEvent = parseActiveMissionEventDefinition(90, releaseTables["mission_active_event.json"][90][0])
 assert.equal(parsedEvent.kind, 0)
 assert.equal(parsedEvent.maxPhase, 3)
+
+for (const invalidPhase of ["0", "-1", "1.5", "01", "1e0"]) {
+    const invalidPhaseTables = structuredClone(releaseTables)
+    invalidPhaseTables["mission_active.json"][9001][0][1] = invalidPhase
+    const invalidPhaseRepository = createRepository(invalidPhaseTables, `invalid-phase-${invalidPhase}`)
+    assert.throws(
+        () => parseActiveMissionDefinition(9001, invalidPhaseTables["mission_active.json"][9001][0]),
+        /phase/i,
+    )
+    assert.equal(isActiveMissionAvailable(9001, {
+        repository: invalidPhaseRepository,
+        now: Date.parse("2024-08-14T12:00:00.000Z"),
+        activeMissions: {},
+        questProgress: {},
+    }), false, `phase ${invalidPhase} 不得绕过 availability`)
+}
+for (const invalidMaxPhase of ["0", "-1", "1.5", "01", "1e0"]) {
+    const invalidEventTables = structuredClone(releaseTables)
+    invalidEventTables["mission_active_event.json"][90][0][3] = invalidMaxPhase
+    const invalidEventRepository = createRepository(invalidEventTables, `invalid-max-phase-${invalidMaxPhase}`)
+    assert.throws(
+        () => parseActiveMissionEventDefinition(90, invalidEventTables["mission_active_event.json"][90][0]),
+        /max phase/i,
+    )
+    assert.equal(isActiveMissionAvailable(9001, {
+        repository: invalidEventRepository,
+        now: Date.parse("2024-08-14T12:00:00.000Z"),
+        activeMissions: {},
+        questProgress: {},
+    }), false)
+}
 
 const start = Date.parse("2024-08-14T12:00:00.000Z")
 const end = Date.parse("2024-08-14T13:00:00.000Z")
@@ -202,6 +238,48 @@ for (const progress of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_IN
         `污染 current progress ${String(progress)} 必须 fail closed`,
     )
 }
+
+assert.deepEqual(getActiveMissionRewardStageIds(9201, repository), [1, 2])
+for (const invalidStageTable of [
+    { "1": [stageRow(1)], "01": [stageRow(1)] },
+    { "1": [stageRow(1)], "1e0": [stageRow(1)] },
+    { "1": [stageRow(1)], "3": [stageRow(3)] },
+]) {
+    const invalidStageTables = structuredClone(releaseTables)
+    invalidStageTables["mission_active_reward.json"][9001] = invalidStageTable
+    const invalidStageRepository = createRepository(invalidStageTables, "invalid-stage-schema")
+    assert.throws(
+        () => getActiveMissionRewardStageIds(9001, invalidStageRepository),
+        /reward stage/i,
+    )
+    assert.equal(
+        getMissionRewardStageDefinition(9001, 1, invalidStageRepository),
+        null,
+        "别名/不连续 stage 表不得产生 reward definition",
+    )
+}
+for (const invalidThresholdRow of [
+    stageRow(-1),
+    stageRow(1.5),
+    stageRow(Number.MAX_SAFE_INTEGER + 1),
+    stageRow(1, -1),
+    stageRow(1, 1.5),
+]) {
+    const invalidThresholdTables = structuredClone(releaseTables)
+    invalidThresholdTables["mission_active_reward.json"][9001] = { 1: [invalidThresholdRow] }
+    const invalidThresholdRepository = createRepository(invalidThresholdTables, "invalid-threshold")
+    assert.equal(
+        getMissionRewardStageDefinition(9001, 1, invalidThresholdRepository),
+        null,
+        "显式 repository 的进度/限时阈值必须是非负 safe integer",
+    )
+    assert.deepEqual(
+        settleActiveMissionProgress(9001, { progress: 0, stages: {} }, 0, {
+            repository: invalidThresholdRepository,
+        }),
+        { state: { progress: 0, stages: {} }, delta: null },
+    )
+}
 for (const progress of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, -1]) {
     assert.throws(
         () => settleActiveMissionProgress(9001, { progress: 0, stages: {} }, progress, { repository }),
@@ -263,6 +341,42 @@ assert.equal(
     true,
     "显式 context 应使用 repository 的 master/availability/reward",
 )
+for (const invalidProgress of [
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+    -1,
+    1.5,
+    Number.MAX_SAFE_INTEGER + 1,
+]) {
+    assert.deepEqual(
+        validateMissionRewardClaims(
+            { 9001: { progress: invalidProgress, stages: { 1: false } } },
+            [{ mission_id: 9001, stages: [1] }],
+            { repository, now: end, questProgress: {} },
+        ),
+        { ok: false, message: "Active mission is not available." },
+        `显式 context 必须拒绝污染 progress ${String(invalidProgress)}`,
+    )
+}
+assert.deepEqual(
+    validateMissionRewardClaims(
+        { 9001: { progress: 10, stages: { 1: false } } },
+        [{ mission_id: 9001, stages: [1] }],
+        { now: end, questProgress: {} },
+    ),
+    { ok: false, message: "Active mission is not available." },
+    "缺 repository 的显式 context 必须 fail closed",
+)
+assert.deepEqual(
+    validateMissionRewardClaims(
+        { 9001: { progress: 10, stages: { 1: false } } },
+        [{ mission_id: 9001, stages: [1] }],
+        { repository, now: end },
+    ),
+    { ok: false, message: "Active mission is not available." },
+    "缺 questProgress 的显式 context 必须 fail closed",
+)
 assert.deepEqual(
     validateMissionRewardClaims(
         { 9999: { progress: 10, stages: { 1: false } } },
@@ -297,6 +411,38 @@ assert.equal(isActiveMissionAvailable(20001, {
     questProgress: { 1: [{ questId: 1008004, finished: true }] },
 }), true)
 
+const contentsGuideClaimState = { 20001: { progress: 1, stages: { 1: false } } }
+assert.deepEqual(
+    validateMissionRewardClaims(
+        contentsGuideClaimState,
+        [{ mission_id: 20001, stages: [1] }],
+        { repository: bundledRepository, now: serverNow, questProgress: {} },
+    ),
+    { ok: false, message: "Active mission is not available." },
+    "前置关卡未完成时显式 context 领奖必须拒绝",
+)
+assert.equal(
+    validateMissionRewardClaims(
+        contentsGuideClaimState,
+        [{ mission_id: 20001, stages: [1] }],
+        {
+            repository: bundledRepository,
+            now: serverNow,
+            questProgress: { 1: [{ questId: 1008004, finished: true }] },
+        },
+    ).ok,
+    true,
+)
+assert.deepEqual(
+    validateMissionRewardClaims(
+        { 21010: { progress: 1, stages: { 1: false } } },
+        [{ mission_id: 21010, stages: [1] }],
+        { repository: bundledRepository, now: serverNow, questProgress: {} },
+    ),
+    { ok: false, message: "Active mission is not available." },
+    "event 过期时显式 context 领奖必须拒绝",
+)
+
 const realIncentiveClaimTime = Date.parse("2022-12-20T00:00:00.000Z")
 assert.equal(isActiveMissionAvailable(21010, {
     ...bundledContext,
@@ -310,6 +456,19 @@ assert.equal(isActiveMissionClaimable(21010, {
     ...bundledContext,
     now: Date.parse("2023-01-06T00:00:00.000Z"),
 }), false)
+assert.deepEqual(
+    validateMissionRewardClaims(
+        { 21010: { progress: 1, stages: { 1: false } } },
+        [{ mission_id: 21010, stages: [1] }],
+        {
+            repository: bundledRepository,
+            now: Date.parse("2023-01-06T00:00:00.000Z"),
+            questProgress: {},
+        },
+    ),
+    { ok: false, message: "Active mission is not available." },
+    "show/领奖期结束后必须拒绝",
+)
 for (const eventId of [1, 150]) {
     const definition = require("../src/lib/mission/active-master-data")
         .getActiveMissionEventMasterDefinition(eventId, bundledRepository)

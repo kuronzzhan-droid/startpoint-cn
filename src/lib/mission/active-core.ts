@@ -83,6 +83,15 @@ function parseOptionalInteger(value: unknown, field: string): number | undefined
     return NONE_VALUES.has(value) ? undefined : parseRequiredInteger(value, field)
 }
 
+function parseOptionalCanonicalPositiveInteger(value: unknown, field: string): number | undefined {
+    if (NONE_VALUES.has(value)) return undefined
+    const parsed = parseRequiredInteger(value, field)
+    if (parsed <= 0 || String(parsed) !== String(value)) {
+        throw new TypeError(`Invalid Active Mission ${field}.`)
+    }
+    return parsed
+}
+
 function parseStageReference(
     missionIdValue: unknown,
     stageValue: unknown,
@@ -139,7 +148,7 @@ export function parseActiveMissionDefinition(
     row: readonly unknown[],
 ): ParsedActiveMissionDefinition {
     const eventId = parseRequiredInteger(row[0], "event id")
-    const phase = parseOptionalInteger(row[1], "phase")
+    const phase = parseOptionalCanonicalPositiveInteger(row[1], "phase")
     const stringId = row[3]
     if (typeof stringId !== "string" || stringId.length === 0) {
         throw new TypeError("Invalid Active Mission string id.")
@@ -168,7 +177,7 @@ export function parseActiveMissionEventDefinition(
     eventId: number,
     row: readonly unknown[],
 ): ParsedActiveMissionEventDefinition {
-    const maxPhase = parseOptionalInteger(row[3], "event max phase")
+    const maxPhase = parseOptionalCanonicalPositiveInteger(row[3], "event max phase")
     const startTime = parseOptionalCnMasterDateTime(row[14], "event start time")
     if (startTime === undefined) throw new TypeError("Invalid Active Mission event start time.")
     const endTime = parseOptionalCnMasterDateTime(row[15], "event end time")
@@ -190,10 +199,22 @@ export function getActiveMissionRewardStageIds(
     const table = repository.table<Record<string, Record<string, unknown>>>("mission_active_reward.json")
     const stageTable = table[String(missionId)]
     if (!stageTable) return []
-    return Object.keys(stageTable)
-        .map(Number)
-        .filter(stage => Number.isSafeInteger(stage) && stage > 0)
-        .sort((left, right) => left - right)
+    if (typeof stageTable !== "object" || Array.isArray(stageTable)) {
+        throw new TypeError(`Invalid Active Mission reward stage table for mission ${missionId}.`)
+    }
+    const stageIds = Object.keys(stageTable).map(rawStageId => {
+        const stageId = Number(rawStageId)
+        if (!Number.isSafeInteger(stageId)
+            || stageId <= 0
+            || String(stageId) !== rawStageId) {
+            throw new TypeError(`Invalid Active Mission reward stage id: ${rawStageId}.`)
+        }
+        return stageId
+    }).sort((left, right) => left - right)
+    if (stageIds.some((stageId, index) => stageId !== index + 1)) {
+        throw new TypeError(`Invalid Active Mission reward stage sequence for mission ${missionId}.`)
+    }
+    return stageIds
 }
 
 function isMissionCurrentStageComplete(

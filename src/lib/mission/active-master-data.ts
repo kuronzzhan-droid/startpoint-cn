@@ -1,5 +1,6 @@
 import activeMissions from "../../../assets/mission_active.json"
 import activeMissionEvents from "../../../assets/mission_active_event.json"
+import { deepFreeze } from "../../content/deep-freeze"
 import type { ReadonlyContentRepository } from "../../content/runtime/content-snapshot"
 
 export interface ActiveMissionMasterDefinition {
@@ -16,15 +17,17 @@ function buildDefinitions<T extends { readonly row: readonly unknown[] }>(
     table: Record<string, unknown>,
     create: (id: number, row: readonly unknown[]) => T,
 ): readonly T[] {
-    return Object.entries(table).flatMap(([rawId, rawRows]) => {
+    const definitions = Object.entries(table).flatMap(([rawId, rawRows]) => {
         const id = Number(rawId)
         if (!Number.isSafeInteger(id)
             || id <= 0
             || String(id) !== rawId
             || !Array.isArray(rawRows)
             || !Array.isArray(rawRows[0])) return []
-        return [create(id, rawRows[0])]
+        const row = deepFreeze(structuredClone(rawRows[0]) as readonly unknown[])
+        return [deepFreeze(create(id, row))]
     })
+    return deepFreeze(definitions)
 }
 
 function getMissionTable(repository?: ReadonlyContentRepository): Record<string, unknown> {

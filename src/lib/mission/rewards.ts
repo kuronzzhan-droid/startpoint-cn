@@ -41,6 +41,52 @@ function getActiveRewardTable(
         : activeRewards as Record<string, Record<string, any[]>>
 }
 
+function hasCanonicalContinuousStageIds(stageTable: Record<string, any[]>): boolean {
+    const stageIds = Object.keys(stageTable).map(rawStageId => {
+        const stageId = Number(rawStageId)
+        if (!Number.isSafeInteger(stageId)
+            || stageId <= 0
+            || String(stageId) !== rawStageId) return null
+        return stageId
+    })
+    if (stageIds.some(stageId => stageId === null)) return false
+    return (stageIds as number[])
+        .sort((left, right) => left - right)
+        .every((stageId, index) => stageId === index + 1)
+}
+
+function getActiveMissionStageTable(
+    missionId: number,
+    repository?: ReadonlyContentRepository,
+): Record<string, any[]> | undefined {
+    const rewardTable = getActiveRewardTable(repository) as unknown
+    if (!rewardTable || typeof rewardTable !== "object" || Array.isArray(rewardTable)) return undefined
+    const stageTable = (rewardTable as Record<string, unknown>)[String(missionId)]
+    if (stageTable === undefined) return undefined
+    if (!stageTable || typeof stageTable !== "object" || Array.isArray(stageTable)) return undefined
+    if (repository !== undefined
+        && !hasCanonicalContinuousStageIds(stageTable as Record<string, any[]>)) return undefined
+    return stageTable as Record<string, any[]>
+}
+
+function parseRepositoryNonNegativeSafeInteger(value: unknown): number | null {
+    const parsed = Number(value)
+    if (!Number.isSafeInteger(parsed)
+        || parsed < 0
+        || String(parsed) !== String(value)) return null
+    return parsed
+}
+
+function parseRepositoryOptionalNonNegativeSafeInteger(
+    value: unknown,
+): { readonly valid: true, readonly value?: number } | { readonly valid: false } {
+    if (value === undefined || value === null || value === "" || value === "(None)") {
+        return { valid: true }
+    }
+    const parsed = parseRepositoryNonNegativeSafeInteger(value)
+    return parsed === null ? { valid: false } : { valid: true, value: parsed }
+}
+
 function parseOptionalInteger(value: unknown): number | undefined {
     if (value === undefined || value === null || value === "" || value === "(None)") return undefined
     const parsed = parseInt(String(value))
@@ -80,7 +126,7 @@ export function getActiveMissionRewards(
     stage: number,
     repository?: ReadonlyContentRepository,
 ): ActiveMissionReward[] {
-    const mission = getActiveRewardTable(repository)[String(missionId)]
+    const mission = getActiveMissionStageTable(missionId, repository)
     if (!mission) return []
     const stageData = mission[String(stage)]
     if (!stageData || !stageData[0]) return []
@@ -112,14 +158,22 @@ export function getMissionRewardStageDefinition(
         }
     }
 
-    const activeRow = getRewardRow(getActiveRewardTable(repository), missionId, stage)
+    const activeRow = getActiveMissionStageTable(missionId, repository)?.[String(stage)]?.[0]
     if (!activeRow) return null
-    const targetProgress = parseFloat(String(activeRow[3]))
-    if (!Number.isFinite(targetProgress)) return null
+    const targetProgress = repository === undefined
+        ? parseFloat(String(activeRow[3]))
+        : parseRepositoryNonNegativeSafeInteger(activeRow[3])
+    if (targetProgress === null || !Number.isFinite(targetProgress)) return null
+    const repositoryClearSeconds = repository === undefined
+        ? undefined
+        : parseRepositoryOptionalNonNegativeSafeInteger(activeRow[4])
+    if (repositoryClearSeconds?.valid === false) return null
     return {
         source: "active",
         targetProgress,
-        targetClearSeconds: parseOptionalInteger(activeRow[4]),
+        targetClearSeconds: repository === undefined
+            ? parseOptionalInteger(activeRow[4])
+            : repositoryClearSeconds?.value,
         rewards: parseMissionRewardSlots(activeRow, 7, 4),
     }
 }
