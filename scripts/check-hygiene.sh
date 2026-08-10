@@ -97,6 +97,21 @@ scan_simple_matches() {
     done
 }
 
+# CLAUDE.md 与 AGENTS.md 分别被 Claude / Codex 读取。两份内容一旦分裂，两个执行者
+# 就会依据不同规则施工——实际发生过：AGENTS.md 在 2026-07-15 加了工程基线，CLAUDE.md
+# 停在 07-04，Claude 因此一个月不知道「新角色整包必须走 wf_character_flow.py」。
+# 首行标题允许不同，其余必须逐字相同。
+check_agent_docs_in_sync() {
+    [[ -f CLAUDE.md && -f AGENTS.md ]] || return 0
+    if ! diff -q <(tail -n +2 CLAUDE.md) <(tail -n +2 AGENTS.md) >/dev/null 2>&1; then
+        note 'CLAUDE.md 与 AGENTS.md 内容分裂（除首行标题外必须逐字相同）'
+        printf '%s\n' '      差异预览：'
+        diff <(tail -n +2 CLAUDE.md) <(tail -n +2 AGENTS.md) 2>/dev/null | sed -n '1,10{s/^/        /;p;}'
+    fi
+}
+
+check_agent_docs_in_sync
+
 if [[ "$MODE" == '--all' ]]; then
     scan_paths < <(git ls-files -z)
 else
@@ -112,7 +127,8 @@ if [[ -s "$paths_file" ]]; then
 fi
 
 if (( fail != 0 )); then
-    printf '\n提交卫生检查失败：请清除上述个人 IP、家目录、个人邮箱、.env 或无授权大二进制后再提交。\n'
+    printf '\n提交卫生检查失败：请清除上述个人 IP、家目录、个人邮箱、.env、无授权大二进制，\n'
+    printf '%s\n' '或修复 CLAUDE.md / AGENTS.md 的内容分裂后再提交。'
     printf '%s\n' '（host/port 用 env 或 request.headers.host；路径用相对路径；确为占位示例时仅加窄白名单。）'
     exit 1
 fi
