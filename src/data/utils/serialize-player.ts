@@ -19,11 +19,24 @@ import { getPlayerPartyGroupListSync } from "../domains/party"
 import { getPlayerTriggeredTutorialsSync } from "../domains/tutorial"
 import { kIdToBusinessCode, businessCodeToKId } from "../codeMap"
 import { computeRealTimeStamina } from "../../lib/stamina"
+import {
+    shouldUnlockMode15MultiplayerPlayedParty,
+    shouldUnlockMode15PlayedParties,
+} from "../../lib/mode15-optional"
 
 export interface SerializePlayerDataOptions {
     viewerId?: number
     serializeRushEventData?: boolean // should rush event data be serialized?
     activeMissionList?: { mission_id: number; progress_value: number; stages: { stage: number; received: boolean }[] }[]
+}
+
+function clearSerializedPlayedPartyMembers(
+    party: UserRushEventPlayedParty,
+): void {
+    party.character_id_1 = party.character_id_2 = party.character_id_3 = null
+    party.unison_character_id_1 = party.unison_character_id_2 = party.unison_character_id_3 = null
+    party.evolution_img_level_1 = party.evolution_img_level_2 = party.evolution_img_level_3 = null
+    party.unison_evolution_img_level_1 = party.unison_evolution_img_level_2 = party.unison_evolution_img_level_3 = null
 }
 
 
@@ -319,6 +332,7 @@ export function serializePlayerData(
             const userRushEventPlayedPartyList: UserRushEventPlayedPartyList = {}
 
             for (const [eventId, parties] of Object.entries(toSerialize.rushEventPlayedPartyList)) {
+                const numericEventId = Number(eventId)
                 const battleTypeBuckets: Record<RushEventBattleType, Record<string, UserRushEventPlayedParty> | undefined> = {
                     // Keep both buckets as empty maps. Leaving an unused
                     // bucket undefined emits MessagePack fixext1 (0xD4),
@@ -332,7 +346,14 @@ export function serializePlayerData(
                         bucket = {}
                         battleTypeBuckets[party.battleType] = bucket
                     }
-                    bucket[party.round] = serializePlayerRushEventPlayedParty(party)
+                    const serializedParty = serializePlayerRushEventPlayedParty(party)
+                    if (
+                        shouldUnlockMode15PlayedParties(numericEventId)
+                        || shouldUnlockMode15MultiplayerPlayedParty(numericEventId, party.round)
+                    ) {
+                        clearSerializedPlayedPartyMembers(serializedParty)
+                    }
+                    bucket[party.round] = serializedParty
                 }
                 userRushEventPlayedPartyList[eventId] = battleTypeBuckets as Record<RushEventBattleType, Record<string, UserRushEventPlayedParty>>
             }

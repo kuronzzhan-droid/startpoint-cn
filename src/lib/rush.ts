@@ -1,11 +1,24 @@
-import { PartyCategory, Player, PlayerRushEvent, PlayerRushEventPlayedParty, RushEventBattleType, UserRushEventEndlessBattleMyRankingPartyMemberListItem, UserRushEventEndlessBattleRanking, UserRushEventPlayedPartyList } from "../data/types";
+import { PartyCategory, Player, PlayerRushEvent, PlayerRushEventPlayedParty, RushEventBattleType, UserRushEventEndlessBattleMyRankingPartyMemberListItem, UserRushEventEndlessBattleRanking, UserRushEventPlayedParty } from "../data/types";
 import { getPlayerIdFromRushEventEndlessRankSync, getPlayerRushEventPlayedPartiesSync, getPlayerRushEventSync, serializePlayerRushEventPlayedParty } from "../data/domains/rushEvent"
 import { getPlayerPartyGroupListSync } from "../data/domains/party";
 import { getPlayerSync } from "../data/domains/player"
 import { getCharactersEvolutionImgLevels } from "./character";
 import { SerializedPlayerRushEventPlayedPartyList, SerializedPlayerRushEventPlayedParties } from "./types";
-import { MODE15_RUSH_EVENT_ID } from "./mode15-optional";
+import {
+    MODE15_RUSH_EVENT_ID,
+    shouldUnlockMode15PlayedParties,
+    shouldUnlockMode15MultiplayerPlayedParty,
+} from "./mode15-optional";
 import { getRogueEventConfig } from "./assets";
+
+function clearSerializedPlayedPartyMembers(
+    party: UserRushEventPlayedParty,
+): void {
+    party.character_id_1 = party.character_id_2 = party.character_id_3 = null
+    party.unison_character_id_1 = party.unison_character_id_2 = party.unison_character_id_3 = null
+    party.evolution_img_level_1 = party.evolution_img_level_2 = party.evolution_img_level_3 = null
+    party.unison_evolution_img_level_1 = party.unison_evolution_img_level_2 = party.unison_evolution_img_level_3 = null
+}
 
 function getMode15LegacyPartyFallbackSync(
     playerId: number,
@@ -63,7 +76,14 @@ export function getSerializedPlayerRushEventPlayedPartiesSync(
             party = { ...party, ...mode15LegacyFallback };
         }
         const record = party.battleType === RushEventBattleType.FOLDER ? rushBattlePlayedPartyList : endlessBattlePlayedPartyList;
-        record[party.round] = serializePlayerRushEventPlayedParty(party)
+        const serializedParty = serializePlayerRushEventPlayedParty(party)
+        if (
+            shouldUnlockMode15PlayedParties(eventId)
+            || shouldUnlockMode15MultiplayerPlayedParty(eventId, party.round)
+        ) {
+            clearSerializedPlayedPartyMembers(serializedParty)
+        }
+        record[party.round] = serializedParty
     }
 
     // Deep Abyss keeps the round markers (so the next floor advances) but
@@ -72,10 +92,7 @@ export function getSerializedPlayerRushEventPlayedPartiesSync(
     if (getRogueEventConfig(eventId)?.unlock_played_parties === true) {
         for (const record of [rushBattlePlayedPartyList, endlessBattlePlayedPartyList]) {
             for (const party of Object.values(record)) {
-                party.character_id_1 = party.character_id_2 = party.character_id_3 = null
-                party.unison_character_id_1 = party.unison_character_id_2 = party.unison_character_id_3 = null
-                party.evolution_img_level_1 = party.evolution_img_level_2 = party.evolution_img_level_3 = null
-                party.unison_evolution_img_level_1 = party.unison_evolution_img_level_2 = party.unison_evolution_img_level_3 = null
+                clearSerializedPlayedPartyMembers(party)
             }
         }
     }

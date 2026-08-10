@@ -33,12 +33,14 @@ test("bulk buy tolerates flattened GET input and skips unavailable entries", () 
     assert.match(block, /getDb\(\)\.transaction/)
 })
 
-test("mode15 recovery persists host ownership and never emits empty markers", () => {
+test("mode15 recovery keeps safe markers but unlocks only multiplayer boundary parties", () => {
     const schema = source("src/data/schema.ts")
     const battle = source("src/multi/http/battle.ts")
     const mode15 = source("src/lib/mode15.ts")
+    const optional = source("src/lib/mode15-optional.ts")
     const rush = source("src/lib/rush.ts")
     const load = source("src/routes/cn/load.ts")
+    const playerSerializer = source("src/data/utils/serialize-player.ts")
 
     assert.match(schema, /is_multi_host/)
     assert.match(battle, /isMultiHost:\s*room\.host_player_id\s*===\s*ctx\.playerId/)
@@ -46,5 +48,17 @@ test("mode15 recovery persists host ownership and never emits empty markers", ()
     assert.doesNotMatch(mode15, /\/\/ boundary marker[\s\S]{0,500}unison_character_id:\s*null/)
     assert.match(rush, /getMode15LegacyPartyFallbackSync/)
     assert.match(rush, /!party\.characterIds\.some\(id => id !== null\)/)
+    assert.match(optional, /stage === 5 \|\| stage === 10 \|\| stage === 15/)
+    assert.match(optional, /eventId !== MODE15_RUSH_EVENT_ID/)
+    assert.doesNotMatch(
+        optional,
+        /shouldUnlockMode15MultiplayerPlayedParty[\s\S]{0,500}shouldUnlockMode15PlayedParties/,
+    )
+    assert.match(rush, /shouldUnlockMode15PlayedParties\(eventId\)/)
+    assert.match(rush, /shouldUnlockMode15MultiplayerPlayedParty\(eventId, party\.round\)/)
+    assert.match(rush, /clearSerializedPlayedPartyMembers\(serializedParty\)/)
+    assert.match(playerSerializer, /shouldUnlockMode15PlayedParties\(numericEventId\)/)
+    assert.match(playerSerializer, /shouldUnlockMode15MultiplayerPlayedParty\(numericEventId, party\.round\)/)
+    assert.match(playerSerializer, /clearSerializedPlayedPartyMembers\(serializedParty\)/)
     assert.match(load, /shouldResetMode15RunForStaleActiveQuest/)
 })

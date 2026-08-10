@@ -213,3 +213,19 @@ export function shouldUnlockMode15PlayedParties(eventId: number): boolean {
         && eventId === MODE15_RUSH_EVENT_ID
         && process.env.MODE15_ALLOW_CHARACTER_REUSE === "true";
 }
+
+/**
+ * Multiplayer boundary stages advance the Fantasy Gauntlet run without
+ * consuming characters regardless of the local all-stage reuse switch.  The
+ * stored party row is still required as a safe completion marker, so callers
+ * should only hide its member ids when sending it to the client.
+ */
+export function shouldUnlockMode15MultiplayerPlayedParty(
+    eventId: number,
+    round: number,
+): boolean {
+    if (runtime === null || eventId !== MODE15_RUSH_EVENT_ID) return false;
+
+    const stage = Math.abs(Math.trunc(round)) % 1000;
+    return stage === 5 || stage === 10 || stage === 15;
+}

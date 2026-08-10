@@ -26,6 +26,9 @@ console.log(JSON.stringify({
   loaded: mode.isMode15RuntimeLoaded(),
   recognized: mode.isMode15Quest(9, 700098001),
   gate: mode.canStartMode15QuestSync(1, 9, 700098001),
+  allStageReuse: mode.shouldUnlockMode15PlayedParties(700098),
+  multiplayerStage4Reuse: mode.shouldUnlockMode15MultiplayerPlayedParty(700098, 700098004),
+  multiplayerStage5Reuse: mode.shouldUnlockMode15MultiplayerPlayedParty(700098, 700098005),
 }))
 `
     const result = spawnSync(process.execPath, ["-e", script], {
@@ -63,6 +66,9 @@ test("explicit disable leaves the generic server gate open", () => {
         stage: null,
         expectedStage: 1,
     })
+    assert.equal(result.allStageReuse, false)
+    assert.equal(result.multiplayerStage4Reuse, false)
+    assert.equal(result.multiplayerStage5Reuse, false)
 })
 
 test("a missing optional module does not prevent startup", () => {
@@ -72,4 +78,26 @@ test("a missing optional module does not prevent startup", () => {
     })
     assert.equal(result.loaded, false)
     assert.equal(result.recognized, false)
+})
+
+test("all-stage reuse switch never controls multiplayer boundary reuse", () => {
+    const disabled = probe({
+        MODE15_ENABLED: "1",
+        MODE15_MODULE_PATH: "",
+        MODE15_ALLOW_CHARACTER_REUSE: "false",
+    })
+    assert.equal(disabled.loaded, true)
+    assert.equal(disabled.allStageReuse, false)
+    assert.equal(disabled.multiplayerStage4Reuse, false)
+    assert.equal(disabled.multiplayerStage5Reuse, true)
+
+    const enabled = probe({
+        MODE15_ENABLED: "1",
+        MODE15_MODULE_PATH: "",
+        MODE15_ALLOW_CHARACTER_REUSE: "true",
+    })
+    assert.equal(enabled.loaded, true)
+    assert.equal(enabled.allStageReuse, true)
+    assert.equal(enabled.multiplayerStage4Reuse, false)
+    assert.equal(enabled.multiplayerStage5Reuse, true)
 })
