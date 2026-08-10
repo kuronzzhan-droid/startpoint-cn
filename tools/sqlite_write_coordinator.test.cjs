@@ -1,7 +1,9 @@
 require("ts-node/register/transpile-only")
 
 const assert = require("node:assert/strict")
+const { spawnSync } = require("node:child_process")
 const fs = require("node:fs")
+const os = require("node:os")
 const path = require("node:path")
 
 const coordinatorPath = path.resolve(__dirname, "../src/lib/sqlite-write-coordinator.ts")
@@ -12,12 +14,13 @@ assert.equal(
     "SQLite 写协调器模块必须存在",
 )
 
-function createFakeDatabase() {
+function createFakeDatabase(onExec) {
     const commands = []
     const database = {
         inTransaction: false,
         exec(command) {
             commands.push(command)
+            if (onExec) onExec(command, database, commands)
             if (command === "BEGIN IMMEDIATE") this.inTransaction = true
             if (command === "COMMIT" || command === "ROLLBACK") this.inTransaction = false
         },
@@ -39,27 +42,68 @@ function deferred() {
     return { promise, reject, resolve }
 }
 
-let currentDatabase = createFakeDatabase().database
 const dataDbPath = path.resolve(__dirname, "../src/data/db.ts")
 const resolvedDataDbPath = require.resolve(dataDbPath)
-const previousDataDbModule = require.cache[resolvedDataDbPath]
-const fakeDataDbModule = {
-    exports: { getDb: () => currentDatabase },
-    filename: resolvedDataDbPath,
-    id: resolvedDataDbPath,
-    loaded: true,
+const resolvedCoordinatorPath = require.resolve(coordinatorPath)
+
+async function withIsolatedCoordinator(callback) {
+    const previousDataDbModule = require.cache[resolvedDataDbPath]
+    const previousCoordinatorModule = require.cache[resolvedCoordinatorPath]
+    let currentDatabase = createFakeDatabase().database
+    require.cache[resolvedDataDbPath] = {
+        exports: { getDb: () => currentDatabase },
+        filename: resolvedDataDbPath,
+        id: resolvedDataDbPath,
+        loaded: true,
+    }
+    delete require.cache[resolvedCoordinatorPath]
+    try {
+        const coordinator = require(coordinatorPath)
+        await callback(coordinator, database => { currentDatabase = database })
+    } finally {
+        if (previousCoordinatorModule) require.cache[resolvedCoordinatorPath] = previousCoordinatorModule
+        else delete require.cache[resolvedCoordinatorPath]
+        if (previousDataDbModule) require.cache[resolvedDataDbPath] = previousDataDbModule
+        else delete require.cache[resolvedDataDbPath]
+    }
 }
 
-require.cache[resolvedDataDbPath] = fakeDataDbModule
-const {
-    isSqliteBusyError,
-    runImmediateTransactionWithRetry,
-    withPlayerWriteQueue,
-} = require(coordinatorPath)
-if (previousDataDbModule) require.cache[resolvedDataDbPath] = previousDataDbModule
-else delete require.cache[resolvedDataDbPath]
+function assertSynchronousCallbackTypeContract() {
+    const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "wf-sqlite-types-"))
+    const fixturePath = path.join(temporaryRoot, "contract.ts")
+    const modulePath = coordinatorPath.replace(/\\/g, "/").replace(/\.ts$/, "")
+    fs.writeFileSync(fixturePath, [
+        `import { runImmediateTransactionWithRetry } from ${JSON.stringify(modulePath)}`,
+        "runImmediateTransactionWithRetry(() => 1)",
+        "// @ts-expect-error transaction callbacks must be synchronous",
+        "runImmediateTransactionWithRetry(async () => 1)",
+        "",
+    ].join("\n"))
+    try {
+        const tscPath = require.resolve("typescript/bin/tsc")
+        const result = spawnSync(process.execPath, [
+            tscPath,
+            "--noEmit",
+            "--strict",
+            "--skipLibCheck",
+            "--target", "ES2021",
+            "--module", "commonjs",
+            "--moduleResolution", "node",
+            "--esModuleInterop",
+            fixturePath,
+        ], { encoding: "utf8" })
+        assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`)
+    } finally {
+        fs.rmSync(temporaryRoot, { recursive: true, force: true })
+    }
+}
 
-async function main() {
+async function runBehaviorTests(coordinator, setCurrentDatabase) {
+    const {
+        isSqliteBusyError,
+        runImmediateTransactionWithRetry,
+        withPlayerWriteQueue,
+    } = coordinator
     for (const code of ["SQLITE_BUSY", "SQLITE_BUSY_SNAPSHOT", "SQLITE_BUSY_RECOVERY"]) {
         assert.equal(isSqliteBusyError(sqliteError(code)), true, `${code} 必须识别为可重试忙错误`)
     }
@@ -122,12 +166,12 @@ async function main() {
     }
 
     let fake = createFakeDatabase()
-    currentDatabase = fake.database
+    setCurrentDatabase(fake.database)
     assert.equal(await runImmediateTransactionWithRetry(() => "committed"), "committed")
     assert.deepEqual(fake.commands, ["BEGIN IMMEDIATE", "COMMIT"])
 
     fake = createFakeDatabase()
-    currentDatabase = fake.database
+    setCurrentDatabase(fake.database)
     const operationFailure = new Error("operation failed")
     await assert.rejects(
         runImmediateTransactionWithRetry(() => { throw operationFailure }),
@@ -136,7 +180,7 @@ async function main() {
     assert.deepEqual(fake.commands, ["BEGIN IMMEDIATE", "ROLLBACK"])
 
     fake = createFakeDatabase()
-    currentDatabase = fake.database
+    setCurrentDatabase(fake.database)
     let retryAttempts = 0
     assert.equal(
         await runImmediateTransactionWithRetry(() => {
@@ -154,7 +198,7 @@ async function main() {
     ])
 
     fake = createFakeDatabase()
-    currentDatabase = fake.database
+    setCurrentDatabase(fake.database)
     const finalBusy = sqliteError("SQLITE_BUSY")
     let exhaustedAttempts = 0
     await assert.rejects(
@@ -168,7 +212,7 @@ async function main() {
     assert.deepEqual(fake.commands, ["BEGIN IMMEDIATE", "ROLLBACK", "BEGIN IMMEDIATE", "ROLLBACK"])
 
     fake = createFakeDatabase()
-    currentDatabase = fake.database
+    setCurrentDatabase(fake.database)
     const nonBusy = sqliteError("SQLITE_LOCKED")
     let nonBusyAttempts = 0
     await assert.rejects(
@@ -181,9 +225,68 @@ async function main() {
     assert.equal(nonBusyAttempts, 1, "非 SQLITE_BUSY* 错误不得重试")
     assert.deepEqual(fake.commands, ["BEGIN IMMEDIATE", "ROLLBACK"])
 
+    const beginFailure = sqliteError("SQLITE_IOERR")
+    let beginOperationCalls = 0
+    fake = createFakeDatabase(command => {
+        if (command === "BEGIN IMMEDIATE") throw beginFailure
+    })
+    setCurrentDatabase(fake.database)
+    await assert.rejects(
+        runImmediateTransactionWithRetry(() => { beginOperationCalls += 1 }),
+        error => error === beginFailure,
+    )
+    assert.equal(beginOperationCalls, 0)
+    assert.deepEqual(fake.commands, ["BEGIN IMMEDIATE"], "BEGIN 失败时事务尚未建立，不得 ROLLBACK")
+
+    const commitFailure = sqliteError("SQLITE_IOERR")
+    fake = createFakeDatabase(command => {
+        if (command === "COMMIT") throw commitFailure
+    })
+    setCurrentDatabase(fake.database)
+    await assert.rejects(
+        runImmediateTransactionWithRetry(() => "not committed"),
+        error => error === commitFailure,
+    )
+    assert.deepEqual(fake.commands, ["BEGIN IMMEDIATE", "COMMIT", "ROLLBACK"])
+    assert.equal(fake.database.inTransaction, false)
+
+    const originalBusy = sqliteError("SQLITE_BUSY")
+    const rollbackFailure = sqliteError("SQLITE_IOERR_ROLLBACK")
+    fake = createFakeDatabase(command => {
+        if (command === "ROLLBACK") throw rollbackFailure
+    })
+    setCurrentDatabase(fake.database)
+    let rollbackFailureAttempts = 0
+    await assert.rejects(
+        runImmediateTransactionWithRetry(() => {
+            rollbackFailureAttempts += 1
+            throw originalBusy
+        }, 3),
+        error => {
+            assert.equal(error.name, "SqliteRollbackError")
+            assert.match(error.message, /transaction failed and rollback failed/i)
+            assert.strictEqual(error.cause, originalBusy)
+            assert.strictEqual(error.rollbackCause, rollbackFailure)
+            return true
+        },
+    )
+    assert.equal(rollbackFailureAttempts, 1, "ROLLBACK 失败后连接状态不可信，不得继续重试")
+    assert.equal(fake.database.inTransaction, true, "协调器不得伪装 ROLLBACK 已清理事务")
+    assert.deepEqual(fake.commands, ["BEGIN IMMEDIATE", "ROLLBACK"])
+
+    for (const asyncResult of [Promise.resolve("late"), { then() {} }]) {
+        fake = createFakeDatabase()
+        setCurrentDatabase(fake.database)
+        await assert.rejects(
+            runImmediateTransactionWithRetry(() => asyncResult),
+            error => error instanceof TypeError && /synchronous|Promise|thenable/i.test(error.message),
+        )
+        assert.deepEqual(fake.commands, ["BEGIN IMMEDIATE", "ROLLBACK"], "异步结果必须在 COMMIT 前拒绝并回滚")
+    }
+
     for (const maxAttempts of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
         fake = createFakeDatabase()
-        currentDatabase = fake.database
+        setCurrentDatabase(fake.database)
         await assert.rejects(
             runImmediateTransactionWithRetry(() => "unreachable", maxAttempts),
             error => error instanceof RangeError && /maxAttempts/i.test(error.message),
@@ -191,6 +294,14 @@ async function main() {
         )
         assert.deepEqual(fake.commands, [], "非法 maxAttempts 不得开启事务")
     }
+}
+
+async function main() {
+    const source = fs.readFileSync(coordinatorPath, "utf8")
+    assert.match(source, /same player[^\n]*not reentrant/i)
+    assert.match(source, /must not await[^\n]*withPlayerWriteQueue/i)
+    assertSynchronousCallbackTypeContract()
+    await withIsolatedCoordinator(runBehaviorTests)
 }
 
 main().then(
