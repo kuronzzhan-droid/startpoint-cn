@@ -329,17 +329,29 @@ function assertFinalSchema(database: Database): void {
         if (!hasShape(database, spec, spec.columns)) {
             throw new Error(`${MIGRATION_ID}: ${spec.name} failed canonical schema validation`)
         }
-        const violations = database.prepare(`PRAGMA foreign_key_check("${spec.name}")`).all()
+    }
+}
+
+function assertTouchedForeignKeys(database: Database): void {
+    const tableNames = [
+        "players_periodic_snapshots",
+        "players_quest_progress",
+        ...tableSpecs.map(spec => spec.name),
+    ]
+    for (const tableName of tableNames) {
+        if (!tableExists(database, tableName)) continue
+        const violations = database.prepare(`PRAGMA foreign_key_check("${tableName}")`).all()
         if (violations.length > 0) {
-            throw new Error(`${MIGRATION_ID}: ${spec.name} failed foreign key validation`)
+            throw new Error(`${MIGRATION_ID}: ${tableName} failed foreign key validation`)
         }
     }
 }
 
 function applyMissionFactsMigration(database: Database): void {
-    assertParentTables(database)
-    preflightTargetTables(database)
     database.transaction(() => {
+        assertParentTables(database)
+        preflightTargetTables(database)
+        assertTouchedForeignKeys(database)
         for (const spec of tableSpecs) {
             if (!tableExists(database, spec.name)) database.prepare(spec.createSql).run()
         }
@@ -348,6 +360,7 @@ function applyMissionFactsMigration(database: Database): void {
         for (const key of periodicColumns) ensureSchemaColumn(database, key)
         ensureSchemaColumn(database, "players_quest_progress.host_finished")
         assertFinalSchema(database)
+        assertTouchedForeignKeys(database)
     })()
 }
 

@@ -288,6 +288,31 @@ try {
         assertNoForeignKeyViolations(database)
     }
 
+    for (const [name, tableName, insertSql] of [
+        ["periodic-orphan", "players_periodic_snapshots", `
+            INSERT INTO players_periodic_snapshots (
+                player_id, period_type, quest_clears, stamina_used,
+                rank_ss, rank_s, rank_a, rank_b, updated_at
+            ) VALUES (999, 'daily', 1, 2, 3, 4, 5, 6, 'orphan')
+        `],
+        ["quest-orphan", "players_quest_progress", `
+            INSERT INTO players_quest_progress (
+                section, quest_id, finished, unlocked, player_id
+            ) VALUES (1, 100, 1, 1, 999)
+        `],
+    ]) {
+        const database = openDatabase(name)
+        prepareBase(database)
+        database.pragma("foreign_keys = OFF")
+        database.exec(insertSql)
+        database.pragma("foreign_keys = ON")
+        const beforeColumns = Object.keys(columnMap(database, tableName))
+        assert.throws(() => missionFactsMigration.apply(database), /foreign key/)
+        assert.deepEqual(Object.keys(columnMap(database, tableName)), beforeColumns)
+        assert.equal(database.prepare(`SELECT COUNT(*) AS count FROM ${tableName}`).get().count, 1)
+        assert.equal(tableNames(database).has("players_mission_battle_counters"), false)
+    }
+
     {
         const database = openDatabase("wrong-column")
         prepareBase(database)

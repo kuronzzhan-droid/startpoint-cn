@@ -29,6 +29,22 @@ interface RawForeignKeyInfo {
     on_delete: string
 }
 
+interface RawIndexListInfo {
+    name: string
+    unique: number
+    origin: string
+    partial: number
+}
+
+interface RawIndexXInfo {
+    seqno: number
+    cid: number
+    name: string | null
+    desc: number
+    coll: string | null
+    key: number
+}
+
 interface TableSpec {
     name: string
     columns: readonly ColumnShape[]
@@ -220,15 +236,27 @@ function assertDegreeIndex(database: Database, required: boolean): void {
         if (required) throw new Error(`${AWAKE_DEGREE_MIGRATION_ID}: degree index is missing`)
         return
     }
-    const columns = database.prepare(`PRAGMA index_info("idx_players_degrees_player")`).all() as Array<{ name: string }>
-    const indexList = database.prepare(`PRAGMA index_list("players_degrees")`).all() as Array<{
-        name: string
-        unique: number
-    }>
+    const indexList = database.prepare(`PRAGMA index_list("players_degrees")`).all() as RawIndexListInfo[]
     const entry = indexList.find(row => row.name === "idx_players_degrees_player")
+    const actual = database.prepare(`
+        PRAGMA index_xinfo("idx_players_degrees_player")
+    `).all() as RawIndexXInfo[]
+    const expected: RawIndexXInfo[] = [
+        { seqno: 0, cid: 0, name: "player_id", desc: 0, coll: "BINARY", key: 1 },
+        { seqno: 1, cid: 2, name: "acquired_at", desc: 0, coll: "BINARY", key: 1 },
+        { seqno: 2, cid: 1, name: "degree_id", desc: 0, coll: "BINARY", key: 1 },
+        { seqno: 3, cid: -1, name: null, desc: 0, coll: "BINARY", key: 0 },
+    ]
+    const shapeMatches = actual.length === expected.length && expected.every((wanted, position) => {
+        const row = actual[position]
+        return row.seqno === wanted.seqno && row.cid === wanted.cid && row.name === wanted.name
+            && row.desc === wanted.desc && row.coll === wanted.coll && row.key === wanted.key
+    })
     if (index.type !== "index" || index.tbl_name !== DEGREE_TABLE
         || entry?.unique !== 0
-        || columns.map(row => row.name).join(",") !== "player_id,acquired_at,degree_id") {
+        || entry.origin !== "c"
+        || entry.partial !== 0
+        || !shapeMatches) {
         throw new Error(`${AWAKE_DEGREE_MIGRATION_ID}: degree index is non-canonical`)
     }
 }

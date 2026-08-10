@@ -33,7 +33,6 @@ interface AwakeMasterPlan {
 
 interface MissionRow {
     id: number
-    progress: number
     player_id: number
 }
 
@@ -52,7 +51,7 @@ interface PlayerDegreeRow {
 interface DataPlan {
     sourceMissions: MissionRow[]
     sourceStages: StageRow[]
-    destinationMissions: Map<string, MissionRow>
+    destinationMissions: Set<string>
     destinationStages: Map<string, StageRow>
     players: PlayerDegreeRow[]
 }
@@ -139,12 +138,6 @@ function isPositiveSafeInteger(value: unknown): value is number {
     return typeof value === "number" && Number.isSafeInteger(value) && value > 0
 }
 
-function assertProgress(value: unknown): asserts value is number {
-    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
-        throw new Error(`${AWAKE_DEGREE_MIGRATION_ID}: mission progress is not finite and non-negative`)
-    }
-}
-
 function missionKey(row: Pick<MissionRow, "id" | "player_id">): string {
     return `${row.id}:${row.player_id}`
 }
@@ -156,7 +149,7 @@ function stageKey(row: Pick<StageRow, "id" | "mission_id" | "player_id">): strin
 function buildDataPlan(database: Database, master: AwakeMasterPlan): DataPlan {
     const placeholders = master.missionIds.map(() => "?").join(",")
     const sourceMissions = database.prepare(`
-        SELECT id, progress, player_id FROM players_active_missions
+        SELECT id, player_id FROM players_active_missions
         WHERE id IN (${placeholders})
     `).all(...master.missionIds) as MissionRow[]
     const sourceStages = database.prepare(`
@@ -164,7 +157,7 @@ function buildDataPlan(database: Database, master: AwakeMasterPlan): DataPlan {
         WHERE mission_id IN (${placeholders})
     `).all(...master.missionIds) as StageRow[]
     const destinationMissionRows = database.prepare(`
-        SELECT id, progress, player_id FROM players_category_missions
+        SELECT id, player_id FROM players_category_missions
         WHERE category = 9 AND id IN (${placeholders})
     `).all(...master.missionIds) as MissionRow[]
     const destinationStageRows = database.prepare(`
@@ -177,7 +170,6 @@ function buildDataPlan(database: Database, master: AwakeMasterPlan): DataPlan {
         if (!isPositiveSafeInteger(row.id) || !isPositiveSafeInteger(row.player_id)) {
             throw new Error(`${AWAKE_DEGREE_MIGRATION_ID}: mission id or player id is non-canonical`)
         }
-        assertProgress(row.progress)
     }
     for (const row of [...sourceStages, ...destinationStageRows]) {
         if (!isPositiveSafeInteger(row.id) || !isPositiveSafeInteger(row.mission_id)
@@ -194,15 +186,40 @@ function buildDataPlan(database: Database, master: AwakeMasterPlan): DataPlan {
         }
     }
 
-    const sourceMissionMap = new Map(sourceMissions.map(row => [missionKey(row), row]))
-    const destinationMissions = new Map(destinationMissionRows.map(row => [missionKey(row), row]))
-    const destinationStages = new Map(destinationStageRows.map(row => [stageKey(row), row]))
-    for (const row of sourceMissions) {
-        const destination = destinationMissions.get(missionKey(row))
-        if (destination !== undefined && destination.progress !== row.progress) {
-            throw new Error(`${AWAKE_DEGREE_MIGRATION_ID}: category-9 mission progress conflict`)
-        }
+    const invalidProgress = database.prepare(`
+        SELECT 1 FROM players_active_missions
+        WHERE id IN (${placeholders}) AND (
+            typeof(progress) NOT IN ('integer', 'real')
+            OR progress < 0 OR progress > 1.7976931348623157e308
+        )
+        UNION ALL
+        SELECT 1 FROM players_category_missions
+        WHERE category = 9 AND id IN (${placeholders}) AND (
+            typeof(progress) NOT IN ('integer', 'real')
+            OR progress < 0 OR progress > 1.7976931348623157e308
+        )
+        LIMIT 1
+    `).get(...master.missionIds, ...master.missionIds)
+    if (invalidProgress !== undefined) {
+        throw new Error(`${AWAKE_DEGREE_MIGRATION_ID}: mission progress is not finite and non-negative`)
     }
+    const progressConflict = database.prepare(`
+        SELECT 1
+        FROM players_active_missions AS source
+        JOIN players_category_missions AS destination
+          ON destination.category = 9 AND destination.id = source.id
+         AND destination.player_id = source.player_id
+        WHERE source.id IN (${placeholders})
+          AND source.progress <> destination.progress
+        LIMIT 1
+    `).get(...master.missionIds)
+    if (progressConflict !== undefined) {
+        throw new Error(`${AWAKE_DEGREE_MIGRATION_ID}: category-9 mission progress conflict`)
+    }
+
+    const sourceMissionMap = new Set(sourceMissions.map(missionKey))
+    const destinationMissions = new Set(destinationMissionRows.map(missionKey))
+    const destinationStages = new Map(destinationStageRows.map(row => [stageKey(row), row]))
     for (const row of sourceStages) {
         if (!sourceMissionMap.has(`${row.mission_id}:${row.player_id}`)
             && !destinationMissions.has(`${row.mission_id}:${row.player_id}`)) {
@@ -250,16 +267,19 @@ function assertExistingTargetRows(database: Database): void {
     }
 }
 
-function insertCategoryRows(database: Database, plan: DataPlan): void {
-    const insertMission = database.prepare(`
+function insertCategoryRows(database: Database, plan: DataPlan, master: AwakeMasterPlan): void {
+    const placeholders = master.missionIds.map(() => "?").join(",")
+    database.prepare(`
         INSERT INTO players_category_missions (category, id, progress, player_id)
-        VALUES (9, ?, ?, ?)
-    `)
-    for (const row of plan.sourceMissions) {
-        if (!plan.destinationMissions.has(missionKey(row))) {
-            insertMission.run(row.id, row.progress, row.player_id)
-        }
-    }
+        SELECT 9, source.id, source.progress, source.player_id
+        FROM players_active_missions AS source
+        WHERE source.id IN (${placeholders})
+          AND NOT EXISTS (
+              SELECT 1 FROM players_category_missions AS destination
+              WHERE destination.category = 9 AND destination.id = source.id
+                AND destination.player_id = source.player_id
+          )
+    `).run(...master.missionIds)
     const insertStage = database.prepare(`
         INSERT INTO players_category_mission_stages (category, id, status, player_id, mission_id)
         VALUES (9, ?, ?, ?, ?)
@@ -271,16 +291,22 @@ function insertCategoryRows(database: Database, plan: DataPlan): void {
     }
 }
 
-function verifyCopiedRows(database: Database, plan: DataPlan): void {
-    const readMission = database.prepare(`
-        SELECT progress FROM players_category_missions
-        WHERE category = 9 AND id = ? AND player_id = ?
-    `)
-    for (const row of plan.sourceMissions) {
-        const copied = readMission.get(row.id, row.player_id) as { progress: number } | undefined
-        if (copied === undefined || copied.progress !== row.progress) {
-            throw new Error(`${AWAKE_DEGREE_MIGRATION_ID}: category-9 mission readback failed`)
-        }
+function verifyCopiedRows(database: Database, plan: DataPlan, master: AwakeMasterPlan): void {
+    const placeholders = master.missionIds.map(() => "?").join(",")
+    const missionMismatch = database.prepare(`
+        SELECT 1
+        FROM players_active_missions AS source
+        WHERE source.id IN (${placeholders})
+          AND NOT EXISTS (
+              SELECT 1 FROM players_category_missions AS destination
+              WHERE destination.category = 9 AND destination.id = source.id
+                AND destination.player_id = source.player_id
+                AND destination.progress = source.progress
+          )
+        LIMIT 1
+    `).get(...master.missionIds)
+    if (missionMismatch !== undefined) {
+        throw new Error(`${AWAKE_DEGREE_MIGRATION_ID}: category-9 mission readback failed`)
     }
     const readStage = database.prepare(`
         SELECT status FROM players_category_mission_stages
@@ -417,8 +443,8 @@ function applyAwakeDegreeMigration(database: Database): void {
         assertExistingTargetRows(database)
         const plan = buildDataPlan(database, master)
         createAwakeDegreeTablesAndIndex(database)
-        insertCategoryRows(database, plan)
-        verifyCopiedRows(database, plan)
+        insertCategoryRows(database, plan, master)
+        verifyCopiedRows(database, plan, master)
         deleteSourceRows(database, plan)
         backfillUnlocks(database, master)
         verifyUnlockBackfill(database, master)

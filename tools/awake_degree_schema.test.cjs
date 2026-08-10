@@ -60,10 +60,26 @@ function insertActiveReceipt(database, playerId, missionId, progress, stageId = 
     `).run(stageId, status, playerId, missionId)
 }
 
+function insertExactIntegerActiveReceipt(database, playerId, missionId, progressText) {
+    database.prepare(`
+        INSERT INTO players_active_missions (id, progress, player_id)
+        VALUES (?, CAST(? AS INTEGER), ?)
+    `).run(missionId, progressText, playerId)
+    database.prepare(`
+        INSERT INTO players_active_missions_stages (id, status, player_id, mission_id)
+        VALUES (1, 1, ?, ?)
+    `).run(playerId, missionId)
+}
+
 function tableExists(database, tableName) {
     return database.prepare(`
         SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?
     `).get(tableName) !== undefined
+}
+
+function scalar(database, sql, ...parameters) {
+    const row = database.prepare(sql).get(...parameters)
+    return row === undefined ? undefined : Object.values(row)[0]
 }
 
 function indexColumns(database, indexName) {
@@ -166,10 +182,8 @@ try {
             { category: 9, id: 1, status: 1, player_id: 1, mission_id: 3410054 },
             { category: 9, id: 1, status: 1, player_id: 3, mission_id: 1110014 },
         ])
-        assert.equal(database.prepare(`
-            SELECT COUNT(*) AS count FROM players_active_missions
-            WHERE id IN (3410054, 1110014)
-        `).get().count, 0)
+        assert.equal(scalar(database,
+            "SELECT COUNT(*) FROM players_active_missions WHERE id IN (3410054, 1110014)"), 0)
         assert.deepEqual(database.prepare(`
             SELECT id, progress, player_id FROM players_active_missions WHERE id = 999999
         `).get(), { id: 999999, progress: 7, player_id: 1 })
@@ -213,14 +227,14 @@ try {
         assert.deepEqual(indexColumns(database, "idx_players_degrees_player"), [
             "player_id", "acquired_at", "degree_id",
         ])
-        assert.equal(database.prepare(`
+        assert.equal(scalar(database, `
             SELECT "unique" FROM pragma_index_list('players_degrees')
             WHERE name = 'idx_players_degrees_player'
-        `).get().unique, 0)
-        assert.equal(database.prepare(`
-            SELECT COUNT(*) AS count FROM sqlite_master
+        `), 0)
+        assert.equal(scalar(database, `
+            SELECT COUNT(*) FROM sqlite_master
             WHERE type = 'trigger' AND name = 'trg_players_default_degrees'
-        `).get().count, 1)
+        `), 1)
 
         insertPlayer(database, 4, 4000)
         assert.deepEqual(database.prepare(`
@@ -240,23 +254,19 @@ try {
             WHERE player_id = 1 AND degree_id = 2000
         `).run()
         awakeDegreeMigration.apply(database)
-        assert.equal(database.prepare(`
+        assert.equal(scalar(database, `
             SELECT awake_level FROM players_character_awake_unlocks
             WHERE player_id = 1 AND character_id = 341005 AND board_index = 1
-        `).get().awake_level, 2)
-        assert.equal(database.prepare(`
-            SELECT acquired_at FROM players_degrees WHERE player_id = 1 AND degree_id = 2000
-        `).get().acquired_at, 123)
+        `), 2)
+        assert.equal(scalar(database,
+            "SELECT acquired_at FROM players_degrees WHERE player_id = 1 AND degree_id = 2000"), 123)
         assertNoForeignKeyViolations(database)
 
         database.prepare("DELETE FROM players_characters WHERE id = 341005 AND player_id = 1").run()
-        assert.equal(database.prepare(`
-            SELECT COUNT(*) AS count FROM players_character_awake_unlocks WHERE player_id = 1
-        `).get().count, 0)
+        assert.equal(scalar(database,
+            "SELECT COUNT(*) FROM players_character_awake_unlocks WHERE player_id = 1"), 0)
         database.prepare("DELETE FROM players WHERE id = 4").run()
-        assert.equal(database.prepare(`
-            SELECT COUNT(*) AS count FROM players_degrees WHERE player_id = 4
-        `).get().count, 0)
+        assert.equal(scalar(database, "SELECT COUNT(*) FROM players_degrees WHERE player_id = 4"), 0)
         assertNoForeignKeyViolations(database)
     }
 
@@ -265,14 +275,52 @@ try {
         prepareBase(database, [[1, 1]])
         insertActiveReceipt(database, 1, 3410054, 4)
         awakeDegreeMigration.apply(database)
-        assert.equal(database.prepare(`
+        assert.equal(scalar(database, `
             SELECT progress FROM players_category_missions
             WHERE category = 9 AND id = 3410054 AND player_id = 1
-        `).get().progress, 4)
-        assert.equal(database.prepare(`
-            SELECT COUNT(*) AS count FROM players_character_awake_unlocks
-        `).get().count, 0)
+        `), 4)
+        assert.equal(scalar(database, "SELECT COUNT(*) FROM players_character_awake_unlocks"), 0)
         assertNoForeignKeyViolations(database)
+    }
+
+    {
+        const database = openDatabase("adjacent-large-integer-conflict")
+        prepareBase(database, [[1, 1]])
+        insertExactIntegerActiveReceipt(database, 1, 3410054, "9007199254740992")
+        database.prepare(`
+            INSERT INTO players_category_missions (category, id, progress, player_id)
+            VALUES (9, 3410054, CAST(? AS INTEGER), 1)
+        `).run("9007199254740993")
+        database.prepare(`
+            INSERT INTO players_category_mission_stages
+                (category, id, status, player_id, mission_id)
+            VALUES (9, 1, 1, 1, 3410054)
+        `).run()
+        assert.throws(() => awakeDegreeMigration.apply(database), /progress conflict/)
+        assert.deepEqual(database.prepare(`
+            SELECT 'source' AS side, CAST(progress AS TEXT) AS progress
+            FROM players_active_missions WHERE id = 3410054
+            UNION ALL
+            SELECT 'destination', CAST(progress AS TEXT)
+            FROM players_category_missions WHERE category = 9 AND id = 3410054
+            ORDER BY side
+        `).all(), [
+            { side: "destination", progress: "9007199254740993" },
+            { side: "source", progress: "9007199254740992" },
+        ])
+    }
+
+    {
+        const database = openDatabase("exact-large-integer-copy")
+        prepareBase(database, [[1, 1]])
+        insertExactIntegerActiveReceipt(database, 1, 3410054, "9007199254740993")
+        awakeDegreeMigration.apply(database)
+        assert.equal(scalar(database,
+            "SELECT COUNT(*) FROM players_active_missions WHERE id = 3410054"), 0)
+        assert.deepEqual(database.prepare(`
+            SELECT typeof(progress) AS storage, CAST(progress AS TEXT) AS progress
+            FROM players_category_missions WHERE category = 9 AND id = 3410054
+        `).get(), { storage: "integer", progress: "9007199254740993" })
     }
 
     {
@@ -290,13 +338,12 @@ try {
             VALUES (9, 1, 1, 1, 3410054)
         `).run()
         awakeDegreeMigration.apply(database)
-        assert.equal(database.prepare(`
-            SELECT COUNT(*) AS count FROM players_active_missions WHERE id = 3410054
-        `).get().count, 0)
-        assert.equal(database.prepare(`
-            SELECT COUNT(*) AS count FROM players_category_missions
+        assert.equal(scalar(database,
+            "SELECT COUNT(*) FROM players_active_missions WHERE id = 3410054"), 0)
+        assert.equal(scalar(database, `
+            SELECT COUNT(*) FROM players_category_missions
             WHERE category = 9 AND id = 3410054 AND player_id = 1
-        `).get().count, 1)
+        `), 1)
     }
 
     for (const [name, destinationProgress, destinationStatus] of [
@@ -317,9 +364,8 @@ try {
             VALUES (9, 1, ?, 1, 3410054)
         `).run(destinationStatus)
         assert.throws(() => awakeDegreeMigration.apply(database), /conflict/)
-        assert.equal(database.prepare(`
-            SELECT COUNT(*) AS count FROM players_active_missions WHERE id = 3410054
-        `).get().count, 1)
+        assert.equal(scalar(database,
+            "SELECT COUNT(*) FROM players_active_missions WHERE id = 3410054"), 1)
         assert.equal(tableExists(database, "players_character_awake_unlocks"), false)
         assert.equal(tableExists(database, "players_degrees"), false)
     }
@@ -333,9 +379,8 @@ try {
         insertCharacter(database, 1, 341005)
         insertActiveReceipt(database, 1, 3410054, 2, stageId, status)
         assert.throws(() => awakeDegreeMigration.apply(database), /stage/)
-        assert.equal(database.prepare(`
-            SELECT COUNT(*) AS count FROM players_active_missions WHERE id = 3410054
-        `).get().count, 1)
+        assert.equal(scalar(database,
+            "SELECT COUNT(*) FROM players_active_missions WHERE id = 3410054"), 1)
     }
 
     {
@@ -397,18 +442,26 @@ try {
             END
         `)
         assert.throws(() => awakeDegreeMigration.apply(database), /synthetic category insert failure/)
-        assert.equal(database.prepare(`
-            SELECT COUNT(*) AS count FROM players_active_missions WHERE id = 3410054
-        `).get().count, 1)
-        assert.equal(database.prepare(`
-            SELECT COUNT(*) AS count FROM players_category_missions WHERE category = 9
-        `).get().count, 0)
+        assert.equal(scalar(database,
+            "SELECT COUNT(*) FROM players_active_missions WHERE id = 3410054"), 1)
+        assert.equal(scalar(database,
+            "SELECT COUNT(*) FROM players_category_missions WHERE category = 9"), 0)
         assert.equal(tableExists(database, "players_character_awake_unlocks"), false)
         assert.equal(tableExists(database, "players_degrees"), false)
     }
 
-    for (const objectKind of ["index", "trigger"]) {
-        const database = openDatabase(`wrong-${objectKind}`)
+    for (const [name, objectKind, objectSql] of [
+        ["wrong-index-columns", "index", "CREATE INDEX idx_players_degrees_player ON players_degrees (degree_id)"],
+        ["partial-index", "index", "CREATE INDEX idx_players_degrees_player ON players_degrees (player_id, acquired_at, degree_id) WHERE degree_id > 1"],
+        ["descending-index", "index", "CREATE INDEX idx_players_degrees_player ON players_degrees (player_id DESC, acquired_at, degree_id)"],
+        ["collated-index", "index", "CREATE INDEX idx_players_degrees_player ON players_degrees (player_id COLLATE NOCASE, acquired_at, degree_id)"],
+        ["expression-index", "index", "CREATE INDEX idx_players_degrees_player ON players_degrees ((player_id + 0), acquired_at, degree_id)"],
+        ["extra-key-index", "index", "CREATE INDEX idx_players_degrees_player ON players_degrees (player_id, acquired_at, degree_id, degree_id)"],
+        ["unique-index", "index", "CREATE UNIQUE INDEX idx_players_degrees_player ON players_degrees (player_id, acquired_at, degree_id)"],
+        ["wrong-trigger", "trigger", `CREATE INDEX idx_players_degrees_player ON players_degrees (player_id, acquired_at, degree_id);
+            CREATE TRIGGER trg_players_default_degrees AFTER INSERT ON players BEGIN SELECT 1; END`],
+    ]) {
+        const database = openDatabase(name)
         prepareBase(database, [[1, 2000]])
         insertActiveReceipt(database, 1, 3410054, 2)
         database.exec(`
@@ -420,20 +473,10 @@ try {
                 FOREIGN KEY (player_id) REFERENCES players (id) ON DELETE CASCADE
             )
         `)
-        if (objectKind === "index") {
-            database.exec(`CREATE INDEX idx_players_degrees_player ON players_degrees (degree_id)`)
-        } else {
-            database.exec(`
-                CREATE INDEX idx_players_degrees_player
-                ON players_degrees (player_id, acquired_at, degree_id);
-                CREATE TRIGGER trg_players_default_degrees AFTER INSERT ON players
-                BEGIN SELECT 1; END;
-            `)
-        }
-        assert.throws(() => awakeDegreeMigration.apply(database), new RegExp(objectKind))
-        assert.equal(database.prepare(`
-            SELECT COUNT(*) AS count FROM players_active_missions WHERE id = 3410054
-        `).get().count, 1)
+        database.exec(objectSql)
+        assert.throws(() => awakeDegreeMigration.apply(database), new RegExp(objectKind), name)
+        assert.equal(scalar(database,
+            "SELECT COUNT(*) FROM players_active_missions WHERE id = 3410054"), 1)
         assert.equal(tableExists(database, "players_character_awake_unlocks"), false)
     }
 
