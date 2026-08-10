@@ -84,7 +84,6 @@ import {
     isMode15Quest,
     MODE15_RUSH_EVENT_ID,
     settleMode15BattleSync,
-    shouldUnlockMode15PlayedParties,
 } from "../../lib/mode15-optional";
 
 interface StartBody {
@@ -131,12 +130,15 @@ export interface FinishBody {
 }
 
 interface PlayContinueBody {
-    api_count: number,
-    payment_type: number,
-    quest_id: number,
-    viewer_id: number,
-    paly_id: string,
-    category: number
+    api_count: number | string,
+    payment_type: number | string,
+    quest_id: number | string,
+    viewer_id: number | string,
+    // The production client has shipped both spellings. Keep the legacy typo
+    // while accepting the correctly-spelled field as well.
+    paly_id?: string,
+    play_id?: string,
+    category: number | string
 }
 
 interface AbortBody {
@@ -173,6 +175,7 @@ export interface ActiveQuest {
     useBoostPoint: boolean,
     isAutoStartMode: boolean,
     isMulti: boolean,
+    isMultiHost?: boolean,
     roomNumber?: string,
     matePlayerIds?: number[],
     mateComIds?: number[],
@@ -200,6 +203,7 @@ export function insertActiveQuest(playerId: number, quest: ActiveQuest) {
         useBoostPoint: quest.useBoostPoint,
         isAutoStartMode: quest.isAutoStartMode,
         isMulti: quest.isMulti,
+        isMultiHost: quest.isMultiHost ?? false,
         roomNumber: quest.roomNumber ?? null,
         entryItemId: quest.entryItemId ?? null,
         eventId: quest.eventId ?? null,
@@ -542,28 +546,11 @@ const routes = async (fastify: FastifyInstance) => {
             getFolderMaxRounds: getRushEventFolderMaxRounds,
             getRushEvent: (pid, eid) => getPlayerRushEventSync(pid, eid),
             updateRushEvent: (pid, data) => updatePlayerRushEventSync(pid, data),
-            insertParty: (pid, eid, p) => {
-                if (
-                    shouldUnlockMode15PlayedParties(eid)
-                ) {
-                    // A Rush played-party row advances the finite-folder cursor
-                    // and also locks its characters. During Mode15 testing, keep
-                    // the round marker but omit the party contents so the same
-                    // three sets remain reusable.
-                    insertPlayerRushEventPlayedPartySync(pid, eid, {
-                        ...p,
-                        characterIds: [null, null, null],
-                        unisonCharacterIds: [null, null, null],
-                        equipmentIds: [null, null, null],
-                        abilitySoulIds: [null, null, null],
-                        evolutionImgLevels: [null, null, null],
-                        unisonEvolutionImgLevels: [null, null, null],
-                    })
-                    console.log(`[MODE15] testing rule: saved empty played-party marker for player=${pid} round=${p.round}`)
-                    return
-                }
-                insertPlayerRushEventPlayedPartySync(pid, eid, p)
-            },
+            // Never save a content-less marker. The legacy result/quest UI
+            // dereferences the first character of every recorded party; a row
+            // made entirely of NULL values becomes character id 0 and crashes
+            // immediately after boundary floors such as stage 5.
+            insertParty: (pid, eid, p) => insertPlayerRushEventPlayedPartySync(pid, eid, p),
             insertClearedFolder: (pid, eid, fid) => insertPlayerRushEventClearedFolderSync(pid, eid, fid),
             deletePartyList: (pid, eid, bt) => deletePlayerRushEventPlayedPartyListSync(pid, eid, bt),
             getSerializedParties: (pid, eid) => getSerializedPlayerRushEventPlayedPartiesSync(pid, eid),
@@ -986,6 +973,7 @@ const routes = async (fastify: FastifyInstance) => {
                 useBoostPoint: activeQuest.useBoostPoint,
                 isAutoStartMode: activeQuest.isAutoStartMode,
                 isMulti: activeQuest.isMulti,
+                isMultiHost: activeQuest.isMultiHost ?? false,
                 roomNumber: activeQuest.roomNumber ?? null,
                 entryItemId: null,
                 eventId: activeQuest.eventId ?? null,
@@ -1027,11 +1015,21 @@ const routes = async (fastify: FastifyInstance) => {
         })
     })
 
-    fastify.post("/play_continue", async (request: FastifyRequest, reply: FastifyReply) => {
-        const body = request.body as PlayContinueBody
-
-        const viewerId = body.viewer_id
-        if (isNaN(viewerId)) return reply.status(400).send({
+    fastify.route({
+        method: ["GET", "POST"],
+        url: "/play_continue",
+        handler: async (request: FastifyRequest, reply: FastifyReply) => {
+        const raw = ((request.method === "GET" ? request.query : request.body) ?? {}) as Partial<PlayContinueBody>
+        const viewerId = Number(raw.viewer_id)
+        const questId = Number(raw.quest_id)
+        const category = Number(raw.category)
+        const playId = raw.play_id ?? raw.paly_id
+        if (
+            !Number.isSafeInteger(viewerId) || viewerId <= 0 ||
+            !Number.isSafeInteger(questId) || questId <= 0 ||
+            !Number.isSafeInteger(category) || category < 0 ||
+            typeof playId !== "string" || playId.length === 0
+        ) return reply.status(400).send({
             "error": "Bad Request", "message": "Invalid request body."
         })
 
@@ -1046,9 +1044,9 @@ const routes = async (fastify: FastifyInstance) => {
         const resolvedContinueQuest = resolveActiveQuest({
             playerId,
             hint: {
-                quest_id: body.quest_id,
-                category: body.category,
-                play_id: body.paly_id,
+                quest_id: questId,
+                category,
+                play_id: playId,
             },
             memory: activeQuests,
             allowRebuild: false,
@@ -1060,19 +1058,21 @@ const routes = async (fastify: FastifyInstance) => {
         })
 
         const freeVmoney = player.freeVmoney
-        const newFreeVmoney = freeVmoney - continueVmoneyCost
         const vmoney = player.vmoney
-        const newVmoney = 0 > newFreeVmoney ? vmoney - continueVmoneyCost : vmoney
-        if (0 > newFreeVmoney && 0 > newVmoney) return reply.status(400).send({
+        const freeVmoneyCost = Math.min(freeVmoney, continueVmoneyCost)
+        const paidVmoneyCost = continueVmoneyCost - freeVmoneyCost
+        if (vmoney < paidVmoneyCost) return reply.status(400).send({
             "error": "Bad Request",
             "message": "Not enough vmoney to continue"
         })
 
+        const newFreeVmoney = freeVmoney - freeVmoneyCost
+        const newVmoney = vmoney - paidVmoneyCost
+
         // update the player's vmoney balances
-        const setNewFreeVmoney = 0 > newFreeVmoney ? freeVmoney : newFreeVmoney
         updatePlayerSync({
             id: playerId,
-            freeVmoney: setNewFreeVmoney,
+            freeVmoney: newFreeVmoney,
             vmoney: newVmoney
         })
 
@@ -1087,13 +1087,14 @@ const routes = async (fastify: FastifyInstance) => {
             }),
             "data": {
                 "user_info": {
-                    "free_vmoney": setNewFreeVmoney,
+                    "free_vmoney": newFreeVmoney,
                     "vmoney": newVmoney
                 },
                 "mail_arrived": false
             }
         })
 
+        },
     })
 }
 

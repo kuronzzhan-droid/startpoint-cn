@@ -13,6 +13,7 @@ import { runPermanentValidators } from "../../lib/validate";
 import { activeQuests } from "../api/singleBattleQuest";
 import { getFavoritePartyGroupListSync } from "../../lib/profileFavorite";
 import { gameVerboseLog } from "../../lib/game-logging";
+import { shouldResetMode15RunForStaleActiveQuest } from "../../lib/mode15-active-quest-recovery";
 import {
     cleanupLegacyMode15RescueProgressSync,
     isMode15RuntimeLoaded,
@@ -197,8 +198,17 @@ const routes = async (fastify: FastifyInstance) => {
                 && activeRoom.expected_real_viewer_ids.length > 0
                 && !activeRoom.expected_real_viewer_ids.includes(accountId);
             if (!roomExists || completedMultiRoom || noLongerInCurrentBattle) {
-                gameVerboseLog(() => `[CN-LOAD] stale active quest cleared: room=${activeQuest.roomNumber} exists=${roomExists} state=${activeRoom?.raising_state ?? "missing"}`);
-                if (isMode15Quest(activeQuest.category, activeQuest.questId)) {
+                const mode15Quest = isMode15Quest(activeQuest.category, activeQuest.questId);
+                // Multiplayer rescue guests never own the Mode15 run represented
+                // by this room. Loading-stage disconnects may remove them from the
+                // room before /cn/load recovers their stale active quest, so only
+                // a persisted host marker is authoritative once the room is gone.
+                const shouldResetMode15Run = shouldResetMode15RunForStaleActiveQuest(
+                    mode15Quest,
+                    activeQuest,
+                );
+                gameVerboseLog(() => `[CN-LOAD] stale active quest cleared: room=${activeQuest.roomNumber} exists=${roomExists} state=${activeRoom?.raising_state ?? "missing"} mode15=${mode15Quest} multiHost=${activeQuest.isMultiHost} reset=${shouldResetMode15Run}`);
+                if (shouldResetMode15Run) {
                     resetMode15RunSync(playerId);
                 }
                 deletePlayerActiveQuestSync(playerId);

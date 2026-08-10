@@ -1,4 +1,6 @@
 import { getDb } from "../data/db";
+import type { PlayerRushEventPlayedParty } from "../data/types";
+import { RushEventBattleType } from "../data/types";
 import { givePlayerRewardsSync } from "./quest";
 import { PlayerRewardResult, QuestCategory, RewardType } from "./types";
 
@@ -322,7 +324,11 @@ export function resetMode15RunSync(playerId: number): void {
  * quest progress. Solo settlements create these rows naturally; a completed
  * multiplayer boss must add the equivalent folder marker.
  */
-function recordMode15BossRushRoundSync(playerId: number, stage: number): void {
+function recordMode15BossRushRoundSync(
+    playerId: number,
+    stage: number,
+    playedParty: Omit<PlayerRushEventPlayedParty, "round" | "battleType">,
+): void {
     getDb().prepare(`
         INSERT OR REPLACE INTO players_rush_events_played_parties (
             character_id_1, character_id_2, character_id_3,
@@ -332,13 +338,19 @@ function recordMode15BossRushRoundSync(playerId: number, stage: number): void {
             evolution_img_level_1, evolution_img_level_2, evolution_img_level_3,
             unison_evolution_img_level_1, unison_evolution_img_level_2, unison_evolution_img_level_3,
             player_id, event_id, round, battle_type
-        ) VALUES (
-            NULL, NULL, NULL, NULL, NULL, NULL,
-            NULL, NULL, NULL, NULL, NULL, NULL,
-            NULL, NULL, NULL, NULL, NULL, NULL,
-            ?, ?, ?, 0
-        )
-    `).run(playerId, MODE15_RUSH_EVENT_ID, MODE15_RUSH_EVENT_ID * 1000 + stage);
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+        ...playedParty.characterIds,
+        ...playedParty.unisonCharacterIds,
+        ...playedParty.equipmentIds,
+        ...playedParty.abilitySoulIds,
+        ...playedParty.evolutionImgLevels,
+        ...playedParty.unisonEvolutionImgLevels,
+        playerId,
+        MODE15_RUSH_EVENT_ID,
+        MODE15_RUSH_EVENT_ID * 1000 + stage,
+        RushEventBattleType.FOLDER,
+    );
 }
 
 /**
@@ -351,7 +363,10 @@ export function settleMode15BattleSync(
     category: number,
     questId: number,
     accomplished: boolean,
-    options: { rescue?: boolean } = {},
+    options: {
+        rescue?: boolean;
+        playedParty?: Omit<PlayerRushEventPlayedParty, "round" | "battleType">;
+    } = {},
 ): Mode15SettlementResult | null {
     const ref = getMode15QuestRef(category, questId);
     if (ref === null) return null;
@@ -439,7 +454,15 @@ export function settleMode15BattleSync(
             MODE15_RUSH_EVENT_ID * 1000 + ref.stage,
             playerId,
         );
-        recordMode15BossRushRoundSync(playerId, ref.stage);
+        // The client needs a real member thumbnail for every folder marker.
+        // Only record the boss boundary when the finish payload contains an
+        // actual party; silently writing an empty row is worse than leaving the
+        // marker absent because it makes the Rush page crash with C8601.
+        if (options.playedParty?.characterIds.some(id => id !== null)) {
+            recordMode15BossRushRoundSync(playerId, ref.stage, options.playedParty);
+        } else {
+            console.warn(`[MODE15] skipped empty boss party marker: player=${playerId} stage=${ref.stage}`);
+        }
     }
 
     if (fullClear) {

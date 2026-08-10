@@ -1,9 +1,33 @@
-import { Player, PlayerRushEvent, RushEventBattleType, UserRushEventEndlessBattleMyRankingPartyMemberListItem, UserRushEventEndlessBattleRanking, UserRushEventPlayedPartyList } from "../data/types";
+import { PartyCategory, Player, PlayerRushEvent, PlayerRushEventPlayedParty, RushEventBattleType, UserRushEventEndlessBattleMyRankingPartyMemberListItem, UserRushEventEndlessBattleRanking, UserRushEventPlayedPartyList } from "../data/types";
 import { getPlayerIdFromRushEventEndlessRankSync, getPlayerRushEventPlayedPartiesSync, getPlayerRushEventSync, serializePlayerRushEventPlayedParty } from "../data/domains/rushEvent"
+import { getPlayerPartyGroupListSync } from "../data/domains/party";
 import { getPlayerSync } from "../data/domains/player"
+import { getCharactersEvolutionImgLevels } from "./character";
 import { SerializedPlayerRushEventPlayedPartyList, SerializedPlayerRushEventPlayedParties } from "./types";
-import { shouldUnlockMode15PlayedParties } from "./mode15-optional";
+import { MODE15_RUSH_EVENT_ID } from "./mode15-optional";
 import { getRogueEventConfig } from "./assets";
+
+function getMode15LegacyPartyFallbackSync(
+    playerId: number,
+): Omit<PlayerRushEventPlayedParty, "round" | "battleType"> | null {
+    for (const category of [PartyCategory.RUSH, PartyCategory.NORMAL]) {
+        const groups = getPlayerPartyGroupListSync(playerId, category);
+        for (const group of Object.values(groups)) {
+            for (const party of Object.values(group.list)) {
+                if (!party.characterIds.some(id => id !== null)) continue;
+                return {
+                    characterIds: [...party.characterIds],
+                    unisonCharacterIds: [...party.unisonCharacterIds],
+                    equipmentIds: [...party.equipmentIds],
+                    abilitySoulIds: [...party.abilitySoulIds],
+                    evolutionImgLevels: getCharactersEvolutionImgLevels(playerId, party.characterIds),
+                    unisonEvolutionImgLevels: getCharactersEvolutionImgLevels(playerId, party.unisonCharacterIds),
+                };
+            }
+        }
+    }
+    return null;
+}
 
 /**
  * Gets all of a player's played parties, serializes them into client formant, and organizes them by their RushEventBattleType.
@@ -23,22 +47,23 @@ export function getSerializedPlayerRushEventPlayedPartiesSync(
     const rushBattlePlayedPartyList: SerializedPlayerRushEventPlayedPartyList = {}
     const endlessBattlePlayedPartyList: SerializedPlayerRushEventPlayedPartyList = {}
 
-    for (const party of playedParties) {
+    let mode15LegacyFallback: ReturnType<typeof getMode15LegacyPartyFallbackSync> | undefined;
+    for (const storedParty of playedParties) {
+        let party = storedParty;
+        if (
+            eventId === MODE15_RUSH_EVENT_ID
+            && !party.characterIds.some(id => id !== null)
+        ) {
+            mode15LegacyFallback ??= getMode15LegacyPartyFallbackSync(playerId);
+            if (mode15LegacyFallback === null) {
+                // Omitting an invalid legacy marker lets the user replay the
+                // boundary floor. Sending character id 0 crashes the client.
+                continue;
+            }
+            party = { ...party, ...mode15LegacyFallback };
+        }
         const record = party.battleType === RushEventBattleType.FOLDER ? rushBattlePlayedPartyList : endlessBattlePlayedPartyList;
         record[party.round] = serializePlayerRushEventPlayedParty(party)
-    }
-
-    // Preserve round markers for the legacy client's next-floor calculation,
-    // while the temporary Mode15 test rule allows character reuse.
-    if (shouldUnlockMode15PlayedParties(eventId)) {
-        for (const record of [rushBattlePlayedPartyList, endlessBattlePlayedPartyList]) {
-            for (const party of Object.values(record)) {
-                party.character_id_1 = party.character_id_2 = party.character_id_3 = null
-                party.unison_character_id_1 = party.unison_character_id_2 = party.unison_character_id_3 = null
-                party.evolution_img_level_1 = party.evolution_img_level_2 = party.evolution_img_level_3 = null
-                party.unison_evolution_img_level_1 = party.unison_evolution_img_level_2 = party.unison_evolution_img_level_3 = null
-            }
-        }
     }
 
     // Deep Abyss keeps the round markers (so the next floor advances) but

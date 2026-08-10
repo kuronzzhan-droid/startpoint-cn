@@ -38,7 +38,17 @@ interface Mode15Runtime {
         category: number,
         questId: number,
         accomplished: boolean,
-        options?: { rescue?: boolean },
+        options?: {
+            rescue?: boolean;
+            playedParty?: {
+                characterIds: (number | null)[];
+                unisonCharacterIds: (number | null)[];
+                equipmentIds: (number | null)[];
+                abilitySoulIds: (number | null)[];
+                evolutionImgLevels: (number | null)[];
+                unisonEvolutionImgLevels: (number | null)[];
+            };
+        },
     ) => Mode15SettlementResult | null;
     getMode15ExclusivePartyItemsSync?: (
         playerId: number,
@@ -156,7 +166,17 @@ export function settleMode15BattleSync(
     category: number,
     questId: number,
     accomplished: boolean,
-    options: { rescue?: boolean } = {},
+    options: {
+        rescue?: boolean;
+        playedParty?: {
+            characterIds: (number | null)[];
+            unisonCharacterIds: (number | null)[];
+            equipmentIds: (number | null)[];
+            abilitySoulIds: (number | null)[];
+            evolutionImgLevels: (number | null)[];
+            unisonEvolutionImgLevels: (number | null)[];
+        };
+    } = {},
 ): Mode15SettlementResult | null {
     return runtime?.settleMode15BattleSync?.(
         playerId,

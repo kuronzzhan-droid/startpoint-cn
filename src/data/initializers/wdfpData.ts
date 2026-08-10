@@ -985,10 +985,12 @@ export default function init(
         use_boost_point INTEGER NOT NULL DEFAULT 0,
         is_auto_start_mode INTEGER NOT NULL DEFAULT 0,
         is_multi INTEGER NOT NULL DEFAULT 0,
+        is_multi_host INTEGER NOT NULL DEFAULT 0,
         room_number TEXT,
         entry_item_id INTEGER,
         event_id INTEGER,
         continue_count INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (player_id) REFERENCES players (id) ON DELETE CASCADE
     )`).run()
+    ensureSchemaColumn(database, "players_active_quests.is_multi_host")
 }

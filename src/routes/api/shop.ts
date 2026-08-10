@@ -261,10 +261,10 @@ interface BuyBody {
 }
 
 interface BulkBuyBody {
-    shop_type: number,
-    api_count: number,
-    buy_item_list: Record<string, number>,
-    viewer_id: number
+    shop_type: number | string,
+    api_count: number | string,
+    buy_item_list: Record<string, number | string> | string,
+    viewer_id: number | string
 }
 
 interface BulkPurchaseEntry {
@@ -863,30 +863,53 @@ const routes = async (fastify: FastifyInstance) => {
         })
     })
 
-    // Buy multiple shop products as one atomic operation. The clean client sends
-    // buy_item_list as an object whose keys are shop item IDs and values are counts.
-    fastify.post("/bulk_buy", async (request: FastifyRequest, reply: FastifyReply) => {
-        const body = request.body as BulkBuyBody | undefined
-        const viewerId = body?.viewer_id
-        const shopType = body?.shop_type
-        const buyItemList = body?.buy_item_list
+    // Buy multiple shop products as one atomic operation. Different client builds
+    // use either POST or GET, and GET query parsing may leave buy_item_list as JSON
+    // or as flattened buy_item_list[ID] keys.
+    fastify.route({
+        method: ["GET", "POST"],
+        url: "/bulk_buy",
+        handler: async (request: FastifyRequest, reply: FastifyReply) => {
+        const rawRequest = (
+            request.method === "GET"
+                ? { ...(request.query as Record<string, unknown>), ...(request.body as Record<string, unknown> | undefined) }
+                : request.body
+        ) as Partial<BulkBuyBody> & Record<string, unknown> | undefined
+        const viewerId = Number(rawRequest?.viewer_id)
+        const shopType = Number(rawRequest?.shop_type)
 
-        if (
-            !Number.isSafeInteger(viewerId) ||
-            !Number.isSafeInteger(shopType) ||
-            buyItemList === null ||
-            typeof buyItemList !== "object" ||
-            Array.isArray(buyItemList)
-        ) return reply.status(400).send({
+        let buyItemList: Record<string, number | string> | null = null
+        const rawBuyItemList = rawRequest?.buy_item_list
+        if (rawBuyItemList !== null && typeof rawBuyItemList === "object" && !Array.isArray(rawBuyItemList)) {
+            buyItemList = rawBuyItemList as Record<string, number | string>
+        } else if (typeof rawBuyItemList === "string") {
+            try {
+                const parsed = JSON.parse(rawBuyItemList) as unknown
+                if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+                    buyItemList = parsed as Record<string, number | string>
+                }
+            } catch {
+                // Some clients use flattened query keys; handled below.
+            }
+        }
+        if (buyItemList === null && rawRequest !== undefined) {
+            const flattened: Record<string, number | string> = {}
+            for (const [key, value] of Object.entries(rawRequest)) {
+                const match = /^buy_item_list\[(\d+)\]$/.exec(key)
+                if (match !== null && (typeof value === "number" || typeof value === "string")) {
+                    flattened[match[1]] = value
+                }
+            }
+            if (Object.keys(flattened).length > 0) buyItemList = flattened
+        }
+
+        if (!Number.isSafeInteger(viewerId) || !Number.isSafeInteger(shopType)) return reply.status(400).send({
             "error": "Bad Request", "message": "Invalid request body."
         })
 
-        const rawEntries = Object.entries(buyItemList)
-        if (rawEntries.length === 0 || rawEntries.length > 500) return reply.status(400).send({
-            "error": "Bad Request", "message": "No shop items specified or batch is too large."
-        })
+        const rawEntries = buyItemList === null ? [] : Object.entries(buyItemList).slice(0, 500)
 
-        const viewerIdSession = await getSession(viewerId!.toString())
+        const viewerIdSession = await getSession(viewerId.toString())
         if (!viewerIdSession) return reply.status(400).send({
             "error": "Bad Request",
             "message": "Invalid viewer id."
@@ -910,71 +933,141 @@ const routes = async (fastify: FastifyInstance) => {
         let manaCost = 0
         let vmoneyCost = 0
         let bondTokenCost = 0
+        let availableMana = player.freeMana
+        let availableVmoney = player.freeVmoney
+        let availableBondToken = player.bondToken
+        const availableItems = new Map<number, number>()
+        let skippedEntries = Math.max(0, (buyItemList === null ? 0 : Object.keys(buyItemList).length) - rawEntries.length)
 
         for (const [rawShopItemId, rawPurchaseAmount] of rawEntries) {
             const shopItemId = Number(rawShopItemId)
-            const purchaseAmount = Number(rawPurchaseAmount)
+            const requestedAmount = Number(rawPurchaseAmount)
             if (
                 !Number.isSafeInteger(shopItemId) ||
-                !Number.isSafeInteger(purchaseAmount) ||
-                purchaseAmount <= 0
-            ) return reply.status(400).send({
-                "error": "Bad Request",
-                "message": "Invalid shop item ID or purchase amount."
-            })
+                !Number.isSafeInteger(requestedAmount) ||
+                requestedAmount <= 0
+            ) {
+                skippedEntries++
+                continue
+            }
 
-            const shopItem = getShopItemSync(shopType!, shopItemId)
-            if (shopItem === null) return reply.status(400).send({
-                "error": "Bad Request",
-                "message": `Shop item with specified id ${shopItemId} does not exist.`
-            })
+            const shopItem = getShopItemSync(shopType, shopItemId)
+            if (shopItem === null) {
+                skippedEntries++
+                continue
+            }
+
+            // Keep unlimited/free products bounded even if a malformed client sends
+            // an extreme amount. Stock-limited products are capped again below.
+            let purchaseAmount = Math.min(requestedAmount, 10_000)
 
             if (shopItem.stock !== undefined && shopItem.stock > 0) {
-                const purchased = getEffectiveShopPurchaseCountSync(playerId, shopType!, shopItemId)
-                if (purchased + purchaseAmount > shopItem.stock) {
-                    return reply.status(400).send({
-                        "error": "Bad Request",
-                        "message": `Shop item ${shopItemId} purchase limit reached.`
-                    })
+                const purchased = getEffectiveShopPurchaseCountSync(playerId, shopType, shopItemId)
+                purchaseAmount = Math.min(purchaseAmount, Math.max(0, shopItem.stock - purchased))
+                if (purchaseAmount <= 0) {
+                    skippedEntries++
+                    continue
                 }
             }
 
             const userCost = shopItem.userCost
+            let userCostBudget: number | null = null
             if (userCost !== undefined) {
-                const total = userCost.amount * purchaseAmount
-                if (!Number.isSafeInteger(total) || total < 0) return reply.status(400).send({
-                    "error": "Bad Request",
-                    "message": `Invalid user cost for shop item ${shopItemId}.`
-                })
-
+                if (!Number.isSafeInteger(userCost.amount) || userCost.amount < 0) {
+                    skippedEntries++
+                    continue
+                }
                 switch (userCost.type) {
                     case ShopItemUserCostType.MANA:
-                        manaCost += total
+                        userCostBudget = availableMana
                         break
                     case ShopItemUserCostType.BEADS:
-                        vmoneyCost += total
+                        userCostBudget = availableVmoney
                         break
                     case ShopItemUserCostType.AMITY_SCROLL:
-                        bondTokenCost += total
+                        userCostBudget = availableBondToken
                         break
                     default:
-                        return reply.status(400).send({
-                            "error": "Bad Request",
-                            "message": `Unsupported user cost type for shop item ${shopItemId}.`
-                        })
+                        skippedEntries++
+                        continue
+                }
+                if (userCost.amount > 0) {
+                    purchaseAmount = Math.min(purchaseAmount, Math.floor(userCostBudget / userCost.amount))
                 }
             }
 
+            const perPurchaseItemCosts = new Map<number, number>()
+            let invalidCost = false
             for (const cost of shopItem.costs) {
-                const total = cost.amount * purchaseAmount
-                const existing = itemCostTotals.get(cost.id) ?? 0
-                if (!Number.isSafeInteger(total) || total < 0 || !Number.isSafeInteger(existing + total)) {
-                    return reply.status(400).send({
-                        "error": "Bad Request",
-                        "message": `Invalid item cost for shop item ${shopItemId}.`
-                    })
+                if (!Number.isSafeInteger(cost.id) || !Number.isSafeInteger(cost.amount) || cost.amount < 0) {
+                    invalidCost = true
+                    break
                 }
-                itemCostTotals.set(cost.id, existing + total)
+                const perPurchase = (perPurchaseItemCosts.get(cost.id) ?? 0) + cost.amount
+                if (!Number.isSafeInteger(perPurchase)) {
+                    invalidCost = true
+                    break
+                }
+                perPurchaseItemCosts.set(cost.id, perPurchase)
+            }
+            if (invalidCost) {
+                skippedEntries++
+                continue
+            }
+
+            for (const [itemId, perPurchase] of perPurchaseItemCosts) {
+                let available = availableItems.get(itemId)
+                if (available === undefined) {
+                    available = getPlayerItemSync(playerId, itemId) ?? 0
+                    availableItems.set(itemId, available)
+                }
+                if (perPurchase > 0) {
+                    purchaseAmount = Math.min(purchaseAmount, Math.floor(available / perPurchase))
+                }
+            }
+            if (purchaseAmount <= 0) {
+                skippedEntries++
+                continue
+            }
+
+            if (userCost !== undefined) {
+                const total = userCost.amount * purchaseAmount
+                if (!Number.isSafeInteger(total)) {
+                    skippedEntries++
+                    continue
+                }
+                switch (userCost.type) {
+                    case ShopItemUserCostType.MANA:
+                        manaCost += total
+                        availableMana -= total
+                        break
+                    case ShopItemUserCostType.BEADS:
+                        vmoneyCost += total
+                        availableVmoney -= total
+                        break
+                    case ShopItemUserCostType.AMITY_SCROLL:
+                        bondTokenCost += total
+                        availableBondToken -= total
+                        break
+                }
+            }
+
+            for (const [itemId, perPurchase] of perPurchaseItemCosts) {
+                const total = perPurchase * purchaseAmount
+                const existing = itemCostTotals.get(itemId) ?? 0
+                const available = availableItems.get(itemId) ?? 0
+                if (!Number.isSafeInteger(total) || !Number.isSafeInteger(existing + total)) {
+                    invalidCost = true
+                    break
+                }
+                itemCostTotals.set(itemId, existing + total)
+                availableItems.set(itemId, available - total)
+            }
+            if (invalidCost) {
+                // This can only be reached for corrupt master data; previous checks
+                // make it unreachable for normal client input.
+                skippedEntries++
+                continue
             }
 
             appendShopItemRewards(rewards, shopItem, purchaseAmount)
@@ -990,26 +1083,9 @@ const routes = async (fastify: FastifyInstance) => {
             "message": "Bulk purchase cost is too large."
         })
 
-        if (player.freeMana < manaCost) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "Not enough mana to purchase selected shop items."
-        })
-        if (player.freeVmoney < vmoneyCost) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "Not enough beads to purchase selected shop items."
-        })
-        if (player.bondToken < bondTokenCost) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "Not enough amity scrolls to purchase selected shop items."
-        })
-
         const costItemList: Record<string, number> = {}
         for (const [itemId, amount] of itemCostTotals) {
             const currentAmount = getPlayerItemSync(playerId, itemId) ?? 0
-            if (currentAmount < amount) return reply.status(400).send({
-                "error": "Bad Request",
-                "message": `Not enough of item with id ${itemId} to purchase selected shop items.`
-            })
             costItemList[itemId] = currentAmount - amount
         }
 
@@ -1029,6 +1105,7 @@ const routes = async (fastify: FastifyInstance) => {
         gameVerboseLog(() =>
             `[shop:bulk_buy] player=${playerId} shopType=${shopType} ` +
             `items=${JSON.stringify(Object.fromEntries(purchases.map(v => [v.shopItemId, v.purchaseAmount])))} ` +
+            `skipped=${skippedEntries} ` +
             `manaCost=${manaCost} vmoneyCost=${vmoneyCost} bondTokenCost=${bondTokenCost} ` +
             `itemCosts=${JSON.stringify(Object.fromEntries(itemCostTotals))}`
         )
@@ -1056,14 +1133,14 @@ const routes = async (fastify: FastifyInstance) => {
                 for (const purchase of purchases) {
                     addEffectiveShopPurchaseCountSync(
                         playerId,
-                        shopType!,
+                        shopType,
                         purchase.shopItemId,
                         purchase.purchaseAmount
                     )
                 }
                 recordTreasureShopProgress(
                     playerId,
-                    shopType!,
+                    shopType,
                     purchases.reduce((total, purchase) => total + purchase.purchaseAmount, 0),
                     manaCost,
                 )
@@ -1110,11 +1187,12 @@ const routes = async (fastify: FastifyInstance) => {
             },
             "mail_arrived": false
         }
-        mergeShopDegreeSettlement(responseData, playerId, viewerId!)
+        mergeShopDegreeSettlement(responseData, playerId, viewerId)
         return reply.status(200).send({
-            "data_headers": generateDataHeaders({ viewer_id: viewerId! }),
+            "data_headers": generateDataHeaders({ viewer_id: viewerId }),
             "data": responseData
         })
+        },
     })
 
     // get_campaign_lineup_id — stub

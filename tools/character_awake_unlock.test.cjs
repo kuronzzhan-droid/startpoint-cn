@@ -59,11 +59,18 @@ function countOccurrences(source, value) {
 }
 
 function getRouteBlock(source, route, nextRoute) {
-    const start = source.indexOf(`fastify.post("${route}"`)
+    const findRouteStart = (value, from = 0) => {
+        const candidates = [
+            source.indexOf(`fastify.post("${value}"`, from),
+            source.indexOf(`url: "${value}"`, from),
+        ].filter(index => index >= 0)
+        return candidates.length === 0 ? -1 : Math.min(...candidates)
+    }
+    const start = findRouteStart(route)
     assert.notEqual(start, -1, `missing route ${route}`)
     const end = nextRoute === undefined
         ? source.length
-        : source.indexOf(`fastify.post("${nextRoute}"`, start)
+        : findRouteStart(nextRoute, start + 1)
     assert.notEqual(end, -1, `missing route ${nextRoute}`)
     return source.slice(start, end)
 }
@@ -312,10 +319,8 @@ function testAuthoritativeMutationRoutesPublishAwakeUnlocks() {
     )
     const shopSalesBlock = shopSource.split('fastify.post("/get_sales_list"')[1]
         .split('fastify.post("/recover_stamina"')[0]
-    const shopRecoverBlock = shopSource.split('fastify.post("/recover_stamina"')[1]
-        .split('fastify.post("/bulk_buy"')[0]
-    const shopBulkBuyBlock = shopSource.split('fastify.post("/bulk_buy"')[1]
-        .split('fastify.post("/get_campaign_lineup_id"')[0]
+    const shopRecoverBlock = getRouteBlock(shopSource, "/recover_stamina", "/bulk_buy")
+    const shopBulkBuyBlock = getRouteBlock(shopSource, "/bulk_buy", "/get_campaign_lineup_id")
     const shopCampaignBlock = shopSource.split('fastify.post("/get_campaign_lineup_id"')[1]
     assert.equal(countOccurrences(shopSource, "reconcileAwakeUnlockCharacterList("), 2)
     assert.equal(enhancementBlock.includes("reconcileAwakeUnlockCharacterList("), false)

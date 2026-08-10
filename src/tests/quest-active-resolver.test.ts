@@ -39,6 +39,7 @@ function persistedRow(overrides: Partial<PlayerActiveQuest> = {}): PlayerActiveQ
         useBoostPoint: false,
         isAutoStartMode: true,
         isMulti: false,
+        isMultiHost: false,
         roomNumber: null,
         entryItemId: 7,
         eventId: null,

@@ -181,6 +181,7 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             useBossBoostPoint: use_boss_boost_point,
             isAutoStartMode: is_auto_start_mode,
             isMulti: true,
+            isMultiHost: room.host_player_id === ctx.playerId,
             roomNumber: room_number,
             matePlayerIds: mate_player_ids,
             mateComIds,
@@ -504,7 +505,23 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             questCategory,
             questId,
             questAccomplished,
-            { rescue: !finishedAsHost },
+            {
+                rescue: !finishedAsHost,
+                playedParty: {
+                    characterIds: (bodyPartyStatistics.characters || []).map((value: any) => value?.id ?? null),
+                    unisonCharacterIds: (bodyPartyStatistics.unison_characters || []).map((value: any) => value?.id ?? null),
+                    equipmentIds: (bodyPartyStatistics.equipments || []).map((value: any) => value?.id ?? null),
+                    abilitySoulIds: [...(bodyPartyStatistics.ability_soul_ids || [])],
+                    evolutionImgLevels: getCharactersEvolutionImgLevels(
+                        playerId,
+                        (bodyPartyStatistics.characters || []).map((value: any) => value?.id ?? null),
+                    ),
+                    unisonEvolutionImgLevels: getCharactersEvolutionImgLevels(
+                        playerId,
+                        (bodyPartyStatistics.unison_characters || []).map((value: any) => value?.id ?? null),
+                    ),
+                },
+            },
         );
 
         const dataHeaders = generateDataHeaders({ viewer_id: viewerId });

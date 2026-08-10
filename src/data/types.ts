@@ -798,6 +798,7 @@ export interface RawPlayerActiveQuest {
     use_boost_point: number
     is_auto_start_mode: number
     is_multi: number
+    is_multi_host: number
     room_number: string | null
     entry_item_id: number | null
     event_id: number | null
@@ -813,6 +814,7 @@ export interface PlayerActiveQuest {
     useBoostPoint: boolean
     isAutoStartMode: boolean
     isMulti: boolean
+    isMultiHost: boolean
     roomNumber: string | null
     entryItemId: number | null
     eventId: number | null

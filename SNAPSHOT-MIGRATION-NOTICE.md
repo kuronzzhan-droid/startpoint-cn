@@ -24,3 +24,22 @@ Intentionally excluded:
 The target repository's own workflows, agent instructions, client-patch tools,
 asset-patch history, and top-level `mod-tools` tree are preserved unchanged to keep
 the review diff focused and non-destructive.
+
+## Continuation: 2026-08-10
+
+This continuation selectively ports the following locally deployed fixes without
+replacing the target repository's existing mode-15 implementation:
+
+- persist multiplayer host ownership for active quests so stale fantasy-gauntlet
+  recovery only resets the host or a true single-player battle;
+- retain the actual played party in mode-15 boundary records and repair legacy
+  all-null records with the current valid party;
+- accept both legacy and current continue-request methods and `play_id` spellings,
+  while charging free beads before paid beads;
+- make bulk shop purchase compatible with JSON and flattened query payloads, skip
+  invalid or unavailable products, cap purchases by stock and currency, and settle
+  the feasible purchase atomically.
+
+The locally published 1.4.71 to 1.4.72 binary client resource bundle is intentionally
+not copied into this branch. It belongs to a separate local release chain and would
+otherwise overwrite the target repository's client asset publication workflow.
