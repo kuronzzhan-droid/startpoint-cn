@@ -7,7 +7,7 @@ import {
 } from "../active-master-data"
 import {
     getActiveMissionRewardStageIds,
-    isActiveMissionAvailable,
+    getActiveMissionEventReleasePhase,
     parseActiveMissionDefinition,
     parseActiveMissionEventDefinition,
     settleActiveMissionProgress,
@@ -15,7 +15,7 @@ import {
     type ActiveMissionProgressState,
 } from "../active-core"
 import { getMissionRewardStageDefinition } from "../rewards"
-import { computeActiveMissionFactProgress } from "./fact-progress"
+import { computeActiveMissionFactProgress, validateActiveMissionFactDefinition } from "./fact-progress"
 import {
     parseCanonicalIntegerList,
     parseCanonicalNonNegativeInteger,
@@ -64,6 +64,11 @@ function normalizedNow(value: number | Date): number {
 function requestedPatterns(patterns: readonly number[] | undefined): ReadonlySet<number> | undefined {
     if (patterns === undefined) return undefined
     if (!Array.isArray(patterns)) throw new TypeError("Invalid Active Mission pattern filter.")
+    for (let index = 0; index < patterns.length; index += 1) {
+        if (!Object.prototype.hasOwnProperty.call(patterns, index)) {
+            throw new TypeError("Invalid Active Mission sparse pattern filter.")
+        }
+    }
     return new Set(patterns.map(pattern => nonNegativeSafe(pattern, "pattern filter")))
 }
 
@@ -140,7 +145,8 @@ function validateRepository(repository: ReadonlyContentRepository): readonly Rec
         const showMissionId = optionalCanonical(row[58], "show mission id", { positive: true })
         if (showMissionId !== undefined) optionalCanonical(row[59], "show stage", { positive: true })
         const mission = parseActiveMissionDefinition(missionId, row)
-        parseCanonicalNonNegativeInteger(row[29], "mission pattern")
+        const pattern = parseCanonicalNonNegativeInteger(row[29], "mission pattern")
+        validateActiveMissionFactDefinition(pattern, row)
         if (!eventIds.has(mission.eventId)) throw new TypeError(`Missing Active Mission event ${mission.eventId}.`)
         if (!(rawMissionId in rewards)) throw new TypeError(`Missing Active Mission rewards ${missionId}.`)
         return Object.freeze({ missionId, row })
@@ -286,6 +292,57 @@ function eventEligible(
     return eligible
 }
 
+function questFinished(
+    questProgress: Readonly<Record<string, readonly { readonly questId: number, readonly finished: boolean }[]>>,
+    questId: number | undefined,
+): boolean {
+    if (questId === undefined) return true
+    return Object.entries(questProgress).some(([rawCategory, progressList]) => progressList.some(progress => {
+        const category = canonicalPositiveId(rawCategory, "quest category")
+        const normalized = category === 4 && progress.questId < 10_000_000
+            ? progress.questId + 10_000_000
+            : progress.questId
+        return positiveSafe(normalized, "quest id") === questId && progress.finished === true
+    }))
+}
+
+function stageReceivedAndComplete(
+    activeMissions: Readonly<Record<string, ActiveMissionProgressState>>,
+    reference: { readonly missionId: number, readonly stage: number } | undefined,
+    repository: ReadonlyContentRepository,
+): boolean {
+    if (!reference) return true
+    const reward = getMissionRewardStageDefinition(reference.missionId, reference.stage, repository)
+    if (!reward) throw new TypeError(`Missing Active Mission reward ${reference.missionId}:${reference.stage}.`)
+    const state = activeMissions[String(reference.missionId)]
+    return state?.stages?.[String(reference.stage)] === true && state.progress >= reward.targetProgress
+}
+
+function activeMissionAvailable(
+    definition: ReconciliationDefinition,
+    input: ReconcileActiveMissionFactsInput,
+    now: number,
+    activeMissions: Readonly<Record<string, ActiveMissionProgressState>>,
+    questProgress: Readonly<Record<string, readonly { readonly questId: number, readonly finished: boolean }[]>>,
+): boolean {
+    const mission = parseActiveMissionDefinition(definition.missionId, definition.row)
+    const eventMaster = getActiveMissionEventMasterDefinition(mission.eventId, input.repository)
+    if (!eventMaster) throw new TypeError(`Missing Active Mission event ${mission.eventId}.`)
+    const event = parseActiveMissionEventDefinition(mission.eventId, eventMaster.row)
+    if (now < event.startTime
+        || (event.endTime !== undefined && now > event.endTime)
+        || !questFinished(questProgress, event.needQuestMultipliedId)
+        || (mission.enableStartTime !== undefined && now < mission.enableStartTime)
+        || (mission.enableEndTime !== undefined && now > mission.enableEndTime)) return false
+    if (mission.phase !== undefined && mission.phase > getActiveMissionEventReleasePhase(
+        mission.eventId,
+        activeMissions,
+        input.repository,
+    )) return false
+    return stageReceivedAndComplete(activeMissions, mission.need, input.repository)
+        && stageReceivedAndComplete(activeMissions, mission.show, input.repository)
+}
+
 function checkForeignKeys(): void {
     const violations = getDb().pragma("foreign_key_check") as unknown[]
     if (violations.length > 0) throw new Error("Active Mission foreign key check failed.")
@@ -352,12 +409,7 @@ export function reconcileActiveMissionFacts(input: ReconcileActiveMissionFactsIn
             for (const definition of definitions) {
                 const mission = parseActiveMissionDefinition(definition.missionId, definition.row)
                 if (!eventEligible(input, mission.eventId, eventEligibility)) continue
-                if (!isActiveMissionAvailable(definition.missionId, {
-                    repository: input.repository,
-                    now,
-                    activeMissions,
-                    questProgress: quest.raw,
-                })) continue
+                if (!activeMissionAvailable(definition, input, now, activeMissions, quest.raw)) continue
                 const progress = authoritativeProgress(definition, activeMissions, quest.finishedIds, input.repository, state)
                 if (progress === null) continue
                 if (activeMissions[String(definition.missionId)] === undefined && progress === 0) continue

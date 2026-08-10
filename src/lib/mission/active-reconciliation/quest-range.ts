@@ -76,6 +76,23 @@ function categoriesForRangeKind(kind: number): readonly number[] | undefined {
     return Array.isArray(raw) ? raw : [raw]
 }
 
+export function validateActiveMissionQuestRange(row: readonly unknown[]): void {
+    const rawKind = row[34]
+    if (rawKind === undefined || rawKind === null || rawKind === "(None)" || rawKind === "") return
+    const kind = parseCanonicalNonNegativeInteger(rawKind, "quest range kind")
+    if (categoriesForRangeKind(kind) === undefined) {
+        throw new TypeError(`Unsupported Active Mission quest range kind ${kind}.`)
+    }
+    if (kind <= 2) {
+        parseOptionalSelector(row[35], "quest range first")
+        parseOptionalSelector(row[36], "quest range second")
+        parseOptionalSelector(row[37], "quest range third")
+    } else if (kind !== 12) {
+        parseOptionalSelector(row[35], "quest event id")
+        parseOptionalSelector(row[37], "quest numbers")
+    }
+}
+
 function matchesStructuredQuest(
     kind: number,
     row: readonly unknown[],

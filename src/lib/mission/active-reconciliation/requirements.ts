@@ -6,11 +6,15 @@ export interface ActiveMissionFactRequirements {
     readonly characterStories: boolean
     readonly equipment: boolean
     readonly manaNodes: boolean
-    readonly purchases: boolean
+    readonly manaDefinitions: boolean
+    readonly treasurePurchases: boolean
+    readonly bossCoinPurchases: boolean
+    readonly bossCoinEquipmentPurchases: boolean
     readonly party: boolean
     readonly counters: boolean
     readonly battleCounters: boolean
-    readonly chapterQuests: boolean
+    readonly mainChapterQuests: boolean
+    readonly exChapterQuests: boolean
     readonly practiceCounter: boolean
     readonly leaderClears: boolean
     readonly conditionalBattleFacts: boolean
@@ -37,11 +41,21 @@ export function buildActiveMissionFactRequirements(
         characterStories: patterns.has(21),
         equipment: hasAny(patterns, [34, 36]),
         manaNodes: hasAny(patterns, [7, 48, 62]),
-        purchases: hasAny(patterns, [45, 64, 84]),
+        manaDefinitions: hasAny(patterns, [48, 62]),
+        treasurePurchases: patterns.has(45),
+        bossCoinPurchases: patterns.has(84),
+        bossCoinEquipmentPurchases: patterns.has(64),
         party: patterns.has(35),
         counters: hasAny(patterns, [46, 58, 59, 60, 63, 78, 83]),
         battleCounters: hasAny(patterns, [14, 16, 17, 26]),
-        chapterQuests: patterns.has(66),
+        mainChapterQuests: definitions.some(definition => (
+            parseCanonicalNonNegativeInteger(definition.row[29], "mission pattern") === 66
+                && parseCanonicalNonNegativeInteger(definition.row[34], "quest range kind") === 0
+        )),
+        exChapterQuests: definitions.some(definition => (
+            parseCanonicalNonNegativeInteger(definition.row[29], "mission pattern") === 66
+                && parseCanonicalNonNegativeInteger(definition.row[34], "quest range kind") === 1
+        )),
         practiceCounter: patterns.has(65),
         leaderClears: patterns.has(70),
         conditionalBattleFacts: hasAny(patterns, [71, 72, 73]),

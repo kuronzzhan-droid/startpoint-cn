@@ -5,7 +5,10 @@ import type {
 } from "./types"
 import {
     matchesActiveMissionQuestRange,
+    parseCanonicalIntegerList,
     parseCanonicalNonNegativeInteger,
+    resolveActiveMissionQuestIds,
+    validateActiveMissionQuestRange,
 } from "./quest-range"
 
 const CHARACTER_EXP_CAPS: Readonly<Record<number, readonly number[]>> = Object.freeze({
@@ -160,6 +163,64 @@ function sumCharacters(
 
 function directCounter(value: unknown, field: string): number {
     return nonNegativeSafe(value, field)
+}
+
+function optionalPositiveSelector(value: unknown, field: string): void {
+    if (value === undefined || value === null || value === "" || value === "(None)") return
+    positiveSafe(parseCanonicalNonNegativeInteger(value, field), field)
+}
+
+export function validateActiveMissionFactDefinition(
+    pattern: number,
+    row: readonly unknown[],
+): void {
+    const validPattern = nonNegativeSafe(pattern, "pattern")
+    switch (validPattern) {
+        case 4:
+            optionalPositiveSelector(row[43], "target character id")
+            return
+        case 13:
+            parseCanonicalIntegerList(row[55], "target mission ids")
+                .forEach(id => positiveSafe(id, "target mission id"))
+            return
+        case 23:
+        case 26:
+            battleKind(row)
+            validateActiveMissionQuestRange(row)
+            return
+        case 57:
+            resolveActiveMissionQuestIds(row)
+            return
+        case 65:
+            if (row[34] !== undefined && row[34] !== null && row[34] !== "(None)" && row[34] !== "") {
+                parseCanonicalNonNegativeInteger(row[34], "practice quest range kind")
+            }
+            return
+        case 66: {
+            const kind = parseCanonicalNonNegativeInteger(row[34], "quest range kind")
+            if (kind !== 0 && kind !== 1) throw new TypeError(`Unsupported Active Mission chapter range kind ${kind}.`)
+            validateActiveMissionQuestRange(row)
+            return
+        }
+        case 70:
+            battleKind(row)
+            positiveSafe(
+                parseCanonicalNonNegativeInteger(row[46], "specific leader character id"),
+                "specific leader character id",
+            )
+            validateActiveMissionQuestRange(row)
+            return
+        case 71:
+        case 72:
+        case 73:
+            positiveSafe(
+                parseCanonicalNonNegativeInteger(row[43], "conditional battle character id"),
+                "conditional battle character id",
+            )
+            return
+        default:
+            return
+    }
 }
 
 export function computeActiveMissionFactProgress(

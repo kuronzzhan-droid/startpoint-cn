@@ -33,7 +33,8 @@ const EMPTY_BATTLE_COUNTERS = Object.freeze({
     rankSsCount: 0,
 })
 
-const chapterQuestCache = new WeakMap<ReadonlyContentRepository, Readonly<Record<string, readonly number[]>>>()
+const mainChapterQuestCache = new WeakMap<ReadonlyContentRepository, readonly number[]>()
+const exChapterQuestCache = new WeakMap<ReadonlyContentRepository, readonly number[]>()
 
 function record(value: unknown, field: string): Record<string, unknown> {
     if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -95,26 +96,39 @@ function validateEquipmentTable(table: Record<string, unknown>): void {
     }
 }
 
-function chapterQuestIds(repository: ReadonlyContentRepository): Readonly<Record<string, readonly number[]>> {
-    const cached = chapterQuestCache.get(repository)
+function chapterQuestIdsForTable(
+    repository: ReadonlyContentRepository,
+    tableName: string,
+    offset: number,
+    cache: WeakMap<ReadonlyContentRepository, readonly number[]>,
+): readonly number[] {
+    const cached = cache.get(repository)
     if (cached) return cached
-    const read = (tableName: string, offset: number): readonly number[] => {
-        const table = readRequiredRepositoryRecord(repository, tableName)
-        validateCanonicalKeys(table, `${tableName} quest id`)
-        return Object.entries(table).flatMap(([rawId, rawQuest]) => {
-            const quest = record(rawQuest, `${tableName} quest ${rawId}`)
-            if (!("rankPointReward" in quest)) return []
-            const id = canonicalPositiveId(rawId, `${tableName} quest id`) + offset
-            if (!Number.isSafeInteger(id)) throw new RangeError(`Unsafe Active Mission ${tableName} quest id.`)
-            return [id]
-        })
-    }
-    const result = Object.freeze({
-        "1": Object.freeze([...read("main_quest.json", 0)]),
-        "4": Object.freeze([...read("ex_quest.json", 10_000_000)]),
-    })
-    chapterQuestCache.set(repository, result)
+    const table = readRequiredRepositoryRecord(repository, tableName)
+    validateCanonicalKeys(table, `${tableName} quest id`)
+    const result = Object.freeze(Object.entries(table).flatMap(([rawId, rawQuest]) => {
+        const quest = record(rawQuest, `${tableName} quest ${rawId}`)
+        if (!("rankPointReward" in quest)) return []
+        const id = canonicalPositiveId(rawId, `${tableName} quest id`) + offset
+        if (!Number.isSafeInteger(id)) throw new RangeError(`Unsafe Active Mission ${tableName} quest id.`)
+        return [id]
+    }))
+    cache.set(repository, result)
     return result
+}
+
+function chapterQuestIds(
+    repository: ReadonlyContentRepository,
+    requirements: ActiveMissionFactRequirements,
+): Readonly<Record<string, readonly number[]>> {
+    return Object.freeze({
+        ...(requirements.mainChapterQuests ? {
+            "1": chapterQuestIdsForTable(repository, "main_quest.json", 0, mainChapterQuestCache),
+        } : {}),
+        ...(requirements.exChapterQuests ? {
+            "4": chapterQuestIdsForTable(repository, "ex_quest.json", 10_000_000, exChapterQuestCache),
+        } : {}),
+    })
 }
 
 function characterStoryIds(repository: ReadonlyContentRepository, characterIds: readonly string[]): Record<string, readonly number[]> {
@@ -169,16 +183,20 @@ function manaDefinitions(repository: ReadonlyContentRepository, characterIds: re
     return { boards, slots }
 }
 
-function purchaseItemIds(repository: ReadonlyContentRepository): {
-    readonly treasure: ReadonlySet<string>
-    readonly boss: ReadonlySet<string>
-    readonly bossEquipment: ReadonlySet<string>
-} {
+function treasurePurchaseItemIds(repository: ReadonlyContentRepository): ReadonlySet<string> {
     const treasure = readRequiredRepositoryRecord(repository, "treasure_shop.json")
-    const categories = readRequiredRepositoryRecord(repository, "boss_coin_shop_item_category_map.json")
-    const shops = readRequiredRepositoryRecord(repository, "boss_coin_shop.json")
     validateCanonicalKeys(treasure, "treasure shop item id")
+    return new Set(Object.keys(treasure))
+}
+
+function bossCoinPurchaseItemIds(repository: ReadonlyContentRepository): ReadonlySet<string> {
+    const categories = readRequiredRepositoryRecord(repository, "boss_coin_shop_item_category_map.json")
     validateCanonicalKeys(categories, "boss coin shop item id")
+    return new Set(Object.keys(categories))
+}
+
+function bossCoinEquipmentPurchaseItemIds(repository: ReadonlyContentRepository): ReadonlySet<string> {
+    const shops = readRequiredRepositoryRecord(repository, "boss_coin_shop.json")
     const bossEquipment = new Set<string>()
     for (const [categoryId, rawItems] of Object.entries(shops)) {
         canonicalPositiveId(categoryId, "boss coin shop category id")
@@ -193,7 +211,7 @@ function purchaseItemIds(repository: ReadonlyContentRepository): {
             }
         }
     }
-    return { treasure: new Set(Object.keys(treasure)), boss: new Set(Object.keys(categories)), bossEquipment }
+    return bossEquipment
 }
 
 function countPurchases(purchases: Record<number, number>, ids: ReadonlySet<string>, field: string): number {
@@ -213,7 +231,7 @@ export function buildActiveMissionFactState(
     requirements: ActiveMissionFactRequirements,
 ): ActiveMissionFactState {
     const validPlayerId = positive(playerId, "player id")
-    const needsCharacterRows = requirements.characters || requirements.manaNodes
+    const needsCharacterRows = requirements.characters || requirements.manaDefinitions
     const storedCharacters = needsCharacterRows ? getPlayerCharactersSync(validPlayerId) : {}
     const characterIds = Object.keys(storedCharacters)
     characterIds.forEach(id => canonicalPositiveId(id, "stored character id"))
@@ -240,7 +258,7 @@ export function buildActiveMissionFactState(
         if (!Array.isArray(nodes)) throw new TypeError(`Invalid Active Mission stored mana nodes ${characterId}.`)
         return [characterId, Object.freeze(nodes.map(nodeId => positive(nodeId, "stored mana node id")))]
     }))
-    const mana = requirements.manaNodes ? manaDefinitions(repository, characterIds) : { boards: {}, slots: {} }
+    const mana = requirements.manaDefinitions ? manaDefinitions(repository, characterIds) : { boards: {}, slots: {} }
     const equipmentMaster = requirements.equipment ? readRequiredRepositoryRecord(repository, "equipment_dissolve.json") : {}
     if (requirements.equipment) validateEquipmentTable(equipmentMaster)
     const equipment = Object.entries(requirements.equipment ? getPlayerEquipmentListSync(validPlayerId) : {}).map(([id, item]) => {
@@ -248,8 +266,15 @@ export function buildActiveMissionFactState(
         const master = record(equipmentMaster[id], `equipment ${id}`)
         return Object.freeze({ level: positive(item.level, "equipment level"), maxLevel: positive(master.max_level, "equipment max level"), enhancementLevel: nonNegative(item.enhancementLevel, "equipment enhancement level") })
     })
-    const purchases = requirements.purchases ? getPlayerShopPurchasesMapSync(validPlayerId) : {}
-    const purchaseIds = requirements.purchases ? purchaseItemIds(repository) : { treasure: new Set<string>(), boss: new Set<string>(), bossEquipment: new Set<string>() }
+    const needsPurchases = requirements.treasurePurchases
+        || requirements.bossCoinPurchases
+        || requirements.bossCoinEquipmentPurchases
+    const purchases = needsPurchases ? getPlayerShopPurchasesMapSync(validPlayerId) : {}
+    const treasurePurchaseIds = requirements.treasurePurchases ? treasurePurchaseItemIds(repository) : new Set<string>()
+    const bossCoinPurchaseIds = requirements.bossCoinPurchases ? bossCoinPurchaseItemIds(repository) : new Set<string>()
+    const bossCoinEquipmentPurchaseIds = requirements.bossCoinEquipmentPurchases
+        ? bossCoinEquipmentPurchaseItemIds(repository)
+        : new Set<string>()
     const counters = requirements.counters ? getActiveMissionCountersSync(validPlayerId) : EMPTY_COUNTERS
     const clears = requirements.leaderClears ? getPlayerCharacterClearsSync(validPlayerId) : {}
     const leaderClearCounts = Object.fromEntries(Object.entries(clears).map(([id, value]) => [id, Object.freeze({ all: nonNegative(value.leader_clear_count, "leader clear count"), multi: nonNegative(value.leader_multi_count, "leader multi count") })]))
@@ -267,7 +292,9 @@ export function buildActiveMissionFactState(
         battleCounters: requirements.battleCounters ? getMissionBattleCountersSync(validPlayerId) : EMPTY_BATTLE_COUNTERS,
         finishedQuestIds,
         questProgress,
-        chapterQuestIds: requirements.chapterQuests ? chapterQuestIds(repository) : {},
+        chapterQuestIds: requirements.mainChapterQuests || requirements.exChapterQuests
+            ? chapterQuestIds(repository, requirements)
+            : {},
         practiceQuestChallengeCount: requirements.practiceCounter ? getActiveMissionPracticeQuestChallengeCountSync(validPlayerId) : 0,
         leaderClearCounts,
         conditionalBattleFacts: requirements.conditionalBattleFacts ? getActiveMissionConditionalBattleFactsSync(validPlayerId) : {},
@@ -279,9 +306,15 @@ export function buildActiveMissionFactState(
         manaBoardNodes: mana.boards,
         manaNodeSlots: mana.slots,
         partyAbilitySoulCount,
-        treasureShopPurchaseCount: countPurchases(purchases, purchaseIds.treasure, "treasure purchases"),
-        bossCoinShopPurchaseCount: countPurchases(purchases, purchaseIds.boss, "boss coin purchases"),
-        bossCoinEquipmentShopPurchaseCount: countPurchases(purchases, purchaseIds.bossEquipment, "boss coin equipment purchases"),
+        treasureShopPurchaseCount: requirements.treasurePurchases
+            ? countPurchases(purchases, treasurePurchaseIds, "treasure purchases")
+            : 0,
+        bossCoinShopPurchaseCount: requirements.bossCoinPurchases
+            ? countPurchases(purchases, bossCoinPurchaseIds, "boss coin purchases")
+            : 0,
+        bossCoinEquipmentShopPurchaseCount: requirements.bossCoinEquipmentPurchases
+            ? countPurchases(purchases, bossCoinEquipmentPurchaseIds, "boss coin equipment purchases")
+            : 0,
         ...counters,
     })
 }
