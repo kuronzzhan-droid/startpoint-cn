@@ -1,6 +1,6 @@
 # Claude / Codex 协作对齐
 
-> **状态**：v1.5（2026-08-11），Claude 侧已收口，待 Codex 复核补全。
+> **状态**：v1.6（2026-08-11），Claude 侧已收口，待 Codex 复核补全。
 > **适用**：本仓所有 AI 执行者。开工前必读。
 > **未决项集中在第 8 节——未决项不得由任一执行者自行决定。**
 > 目前 **8.①④⑤ 已决**，**8.②③ 由作者决定延后至本地目录整理之后**，无开放项。
@@ -243,6 +243,53 @@ Codex 侧同理适用）。而接手方倾向于忠实执行给定前提，不�
 另注意 superpowers 的 TDD 原文要求「测试之前写的代码一律删掉重来」，
 **该要求只对生产代码成立**，不得套用到数据改动或一次性调查脚本上。
 
+### 6.1 优先级：项目规则 > 通用技能
+
+superpowers 是面向通用软件项目写的，它的绝对措辞（"no exceptions"、"delete means delete"）
+**没有考虑本项目的数据/发布/真机验收特性**。
+
+**冲突时以本文档和 `CLAUDE.md`/`AGENTS.md` 为准。**
+技能文件本身**保持原样不修改**——修改会破坏与 Codex 的字节一致，
+使"是否对齐"不可验证。**约束写在项目文档里，不写进技能文件里。**
+
+### 6.2 Claude 侧的技能启用集（对齐记录）
+
+**【事实】2026-08-11**：Claude 侧原先零配置。现按 Codex 的保留集安装，
+**字节直接取自 Codex 实际运行的 `~/.codex/plugins/cache/openai-curated-remote/superpowers/6.2.0/skills/`**，
+逐个 SHA-256 比对通过：
+
+| 技能 | Codex | Claude | SKILL.md sha256(前16) |
+|---|---|---|---|
+| `systematic-debugging` | ✅ | ✅ | `808fc5717aa88ad6` |
+| `test-driven-development` | ✅ | ✅ | `bf1b8216e523851a` |
+| `verification-before-completion` | ✅ | ✅ | `2befe7fc55bcadaa` |
+| `receiving-code-review` | ✅ | ✅ | `091df1629510af1b` |
+| `requesting-code-review` | ✅ | ✅ | `d71cc01ba56d2325` |
+| `dispatching-parallel-agents` | ✅ | ❌ **未装** | — |
+| 其余 8 项 | ❌ 禁用 | ❌ 未装 | — |
+
+**唯一偏离及其理由**：`dispatching-parallel-agents` 未在 Claude 侧安装——
+Claude 有一条更高优先级的会话约束「非用户明确要求不得调用子代理工具」，
+装了会与之冲突且不会生效。**这是登记在册的偏离，不是遗漏。**
+
+**安装方式**：直接复制到 `~/.claude/skills/<name>/`，**不装 superpowers 插件本体**。
+装插件会引入 SessionStart 钩子和 `using-superpowers` 调度器，
+而后者已在 Codex 侧禁用——装了就等于绕过你的精简。
+
+**复验对齐的命令**（任一方改动技能后应重跑）：
+
+```bash
+SRC=~/.codex/plugins/cache/openai-curated-remote/superpowers/6.2.0/skills
+for s in systematic-debugging test-driven-development verification-before-completion \
+         receiving-code-review requesting-code-review; do
+  diff -q "$SRC/$s/SKILL.md" ~/.claude/skills/$s/SKILL.md || echo "DRIFT: $s"
+done
+```
+
+> **注意**：`obra/superpowers` 的 `main` 分支会持续变动，而 Claude 插件市场把 superpowers
+> 钉在更旧的 `d884ae04`。**两者都不是基准**——基准是 Codex 实际运行的 6.2.0 那份字节。
+> 我曾先按市场钉版比对并误判"5 个全不一致"，实际是拿错了基准。
+
 **【决定】格式沿用，但入库范围按作者规则收窄**（作者 2026-08-11 明确）：
 
 > 计划书、执行步骤大概文档**不需要上传仓库**；架构等设计**可以**。
@@ -398,5 +445,6 @@ diff <(tail -n +2 AGENTS.md) <(tail -n +2 /path/to/worktree/AGENTS.md)
 | 2026-08-11 | v1.1 收录作者六条通用工程纪律（7.0）；据其第 2 条收窄计划书入库范围（第 6 节）；新增待决 ④⑤ |
 | 2026-08-11 | v1.2 待决 ⑤ 已处理（17 个 worktree 规则书 + 本文档同步完成）；待决 ② 作者决定延后至目录整理后 |
 | 2026-08-11 | v1.3 待决 ④ 已决：28 份计划书迁往 `work/plans/`，specs 保留。同步记录 Codex 侧 superpowers 精简（禁 8 留 6），第 6 节据此重写。订正此前误记的「15 份」（实为 28）。补 TDD 适用边界表；加给 Codex 的交接说明 |
+| 2026-08-11 | **v1.6 技能对齐**：Claude 侧按 Codex 保留集安装 5 项 superpowers 技能，字节取自 Codex 实际运行的 6.2.0 并逐个 SHA-256 校验；登记唯一偏离（`dispatching-parallel-agents` 因 Claude 侧子代理约束未装）；新增 6.1 优先级「项目规则 > 通用技能，技能文件保持原样不改」与 6.2 对齐记录+复验命令 |
 | 2026-08-11 | **v1.5 接管模型**：作者明确两者都可能限额吃紧、一方限额另一方顶上。新增 1.4 接管（failover）——限额耗尽无预警故必须边做边更新状态、复用既有 `work/agent-coordination/` 双向通道并改为对称协议、归拢「风格对齐」十项清单。**推翻早期判断「风格差异不是冲突」**，第 4 节改判为必须对齐 |
 | 2026-08-11 | **v1.4 定位纠正**：作者确立两者**同级同位，都写生产代码**，取代 2026-08-02 的「Claude 只做设计」旧分工（旧理由是 token 成本，属调度考量非职责边界）。第 1 节重写为按任务切分 + worktree 互斥；第 2/3/7.2 节改为双向对称生效；待决 ① 随之关闭。**至此无开放项，Claude 侧收口** |
