@@ -77,6 +77,11 @@ function parseRepositoryNonNegativeSafeInteger(value: unknown): number | null {
     return parsed
 }
 
+function parseRepositoryNonNegativeFiniteNumber(value: unknown): number | null {
+    const parsed = parseFloat(String(value))
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
+}
+
 function parseRepositoryOptionalNonNegativeSafeInteger(
     value: unknown,
 ): { readonly valid: true, readonly value?: number } | { readonly valid: false } {
@@ -162,7 +167,7 @@ export function getMissionRewardStageDefinition(
     if (!activeRow) return null
     const targetProgress = repository === undefined
         ? parseFloat(String(activeRow[3]))
-        : parseRepositoryNonNegativeSafeInteger(activeRow[3])
+        : parseRepositoryNonNegativeFiniteNumber(activeRow[3])
     if (targetProgress === null || !Number.isFinite(targetProgress)) return null
     const repositoryClearSeconds = repository === undefined
         ? undefined

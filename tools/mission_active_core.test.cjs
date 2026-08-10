@@ -260,8 +260,9 @@ for (const invalidStageTable of [
 }
 for (const invalidThresholdRow of [
     stageRow(-1),
-    stageRow(1.5),
-    stageRow(Number.MAX_SAFE_INTEGER + 1),
+    stageRow(Number.NaN),
+    stageRow(Number.POSITIVE_INFINITY),
+    stageRow(Number.NEGATIVE_INFINITY),
     stageRow(1, -1),
     stageRow(1, 1.5),
 ]) {
@@ -271,7 +272,7 @@ for (const invalidThresholdRow of [
     assert.equal(
         getMissionRewardStageDefinition(9001, 1, invalidThresholdRepository),
         null,
-        "显式 repository 的进度/限时阈值必须是非负 safe integer",
+        "显式 repository 的 targetProgress 必须 finite/non-negative，限时阈值保持非负整数",
     )
     assert.deepEqual(
         settleActiveMissionProgress(9001, { progress: 0, stages: {} }, 0, {
@@ -280,6 +281,53 @@ for (const invalidThresholdRow of [
         { state: { progress: 0, stages: {} }, delta: null },
     )
 }
+const fractionalProgressTables = structuredClone(releaseTables)
+fractionalProgressTables["mission_active_reward.json"][9001] = { 1: [stageRow(1.5)] }
+const fractionalProgressRepository = createRepository(fractionalProgressTables, "fractional-progress")
+assert.equal(
+    getMissionRewardStageDefinition(9001, 1, fractionalProgressRepository).targetProgress,
+    1.5,
+    "repository targetProgress=1.5 必须按 finite/non-negative number 解析",
+)
+const fractionalSettlement = settleActiveMissionProgress(
+    9001,
+    { progress: 0, stages: {} },
+    1.5,
+    { repository: fractionalProgressRepository },
+)
+assert.deepEqual(fractionalSettlement.state, { progress: 1.5, stages: { 1: false } })
+const fractionalClaim = validateMissionRewardClaims(
+    { 9001: fractionalSettlement.state },
+    [{ mission_id: 9001, stages: [1] }],
+    { repository: fractionalProgressRepository, now: end, questProgress: {} },
+)
+assert.equal(fractionalClaim.ok, true, "settlement 输出的 fractional progress 必须可被 context claim 消费")
+assert.equal(fractionalClaim.claims[0].progress, 1.5)
+
+const nonSafeSettlement = settleActiveMissionProgress(
+    9001,
+    { progress: 0, stages: {} },
+    Number.MAX_SAFE_INTEGER + 1,
+    { repository },
+)
+const nonSafeClaim = validateMissionRewardClaims(
+    { 9001: nonSafeSettlement.state },
+    [{ mission_id: 9001, stages: [1] }],
+    { repository, now: end, questProgress: {} },
+)
+assert.equal(nonSafeClaim.ok, true, "finite/non-negative progress 不得被 safe-integer 规则误拒绝")
+assert.equal(nonSafeClaim.claims[0].progress, Number.MAX_SAFE_INTEGER + 1)
+
+const nonSafeProgressTables = structuredClone(releaseTables)
+nonSafeProgressTables["mission_active_reward.json"][9001] = {
+    1: [stageRow(Number.MAX_SAFE_INTEGER + 1)],
+}
+const nonSafeProgressRepository = createRepository(nonSafeProgressTables, "non-safe-progress")
+assert.equal(
+    getMissionRewardStageDefinition(9001, 1, nonSafeProgressRepository).targetProgress,
+    Number.MAX_SAFE_INTEGER + 1,
+    "finite/non-negative targetProgress 不得被 safe-integer 规则误拒绝",
+)
 for (const progress of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, -1]) {
     assert.throws(
         () => settleActiveMissionProgress(9001, { progress: 0, stages: {} }, progress, { repository }),
@@ -346,8 +394,6 @@ for (const invalidProgress of [
     Number.POSITIVE_INFINITY,
     Number.NEGATIVE_INFINITY,
     -1,
-    1.5,
-    Number.MAX_SAFE_INTEGER + 1,
 ]) {
     assert.deepEqual(
         validateMissionRewardClaims(

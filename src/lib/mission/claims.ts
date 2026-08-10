@@ -53,7 +53,7 @@ function buildAvailabilityMissions(
     if (entries.some(([, state]) =>
         !state
         || typeof state !== "object"
-        || !Number.isSafeInteger(state.progress)
+        || !Number.isFinite(state.progress)
         || state.progress < 0)) return undefined
 
     return Object.fromEntries(entries.map(([missionId, state]) => [
