@@ -4,6 +4,7 @@ const assert = require("node:assert/strict")
 
 const {
     getMissionMasterDefinition,
+    getMissionMasterDefinitions,
     isMissionDefinitionEnabledAt,
 } = require("../src/lib/mission/master-data")
 const {
@@ -59,6 +60,37 @@ assert.equal(
 assert.equal(getMissionMasterDefinition(6, 1).eventId, 1)
 assert.equal(getMissionMasterDefinition(7, 1).eventId, 1)
 assert.equal(getMissionMasterDefinition(8, 1).eventId, 1)
+
+assert.equal(getMissionMasterDefinitions(6).length, 76)
+assert.equal(getMissionMasterDefinitions(7).length, 76)
+assert.equal(getMissionMasterDefinitions(8).length, 115)
+
+const passDaily = getMissionMasterDefinition(6, 1)
+assert.equal(passDaily.pattern, "battle_pass_single_battle_daily_01")
+assert.equal(passDaily.patternType, 14)
+assert.equal(passDaily.enableStart, "2024-06-01 05:00:00")
+assert.equal(passDaily.enableEnd, "2024-07-01 04:59:59")
+
+const passWeek = getMissionMasterDefinition(7, 1)
+assert.equal(passWeek.pattern, "battle_pass_stamina_week_01")
+assert.equal(passWeek.patternType, 39)
+
+const passEvent = getMissionMasterDefinition(8, 1)
+assert.equal(passEvent.pattern, "battle_pass_login_event_01")
+assert.equal(passEvent.patternType, 0)
+
+assert.equal(
+    isMissionDefinitionEnabledAt(passDaily, new Date("2024-05-31T20:59:59.999Z")),
+    false,
+)
+assert.equal(
+    isMissionDefinitionEnabledAt(passDaily, new Date("2024-05-31T21:00:00.000Z")),
+    true,
+)
+assert.equal(
+    isMissionDefinitionEnabledAt(passDaily, new Date("2024-07-31T20:00:00.000Z")),
+    false,
+)
 
 const syntheticEvaluationTime = new Date("2024-08-14T12:00:00.000Z")
 const syntheticDefinitions = [
