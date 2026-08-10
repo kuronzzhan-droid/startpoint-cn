@@ -230,6 +230,17 @@ export function updatePlayerActiveMissionSync(
     `).run(Number(missionId), progress, playerId)
 }
 
+export {
+    getPlayerCategoryMissionsSync,
+    getPlayerCategoryMissionListSync,
+    getPlayerClearedCollectItemEventMissionListSync,
+    insertPlayerCategoryMissionListSync,
+    updatePlayerCategoryMissionSync,
+    incrementPlayerCategoryMissionSync,
+    updatePlayerCategoryMissionStageSync,
+    deletePlayerCategoryMissionsSync,
+} from "./category_mission"
+
 /**
  * Updates the status of a single active mission stage (claimed/unclaimed).
  */

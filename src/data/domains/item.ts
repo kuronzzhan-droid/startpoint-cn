@@ -46,6 +46,66 @@ export function getPlayerItemsSync(
     return output
 }
 
+function collectedItemPositiveSafe(value: unknown, name: string): number {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+        throw new TypeError(`${name} must be a finite number`)
+    }
+    if (!Number.isSafeInteger(value) || value <= 0) {
+        throw new RangeError(`${name} must be a positive safe integer`)
+    }
+    return value
+}
+
+function collectedItemId(value: number | string): number {
+    if (typeof value === "number") return collectedItemPositiveSafe(value, "itemId")
+    if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) {
+        throw new TypeError("itemId must be a canonical positive decimal integer")
+    }
+    const parsed = Number(value)
+    if (!Number.isSafeInteger(parsed)) throw new RangeError("itemId must be a positive safe integer")
+    return parsed
+}
+
+function collectedItemTotal(value: unknown): number {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+        throw new TypeError("stored collected item total must be a finite number")
+    }
+    if (!Number.isSafeInteger(value) || value < 0) {
+        throw new RangeError("stored collected item total must be a non-negative safe integer")
+    }
+    return value
+}
+
+export function getPlayerCollectedItemTotalSync(
+    playerId: number,
+    itemId: number | string
+): number {
+    const row = getDb().prepare(`
+    SELECT total_obtained FROM players_collected_items
+    WHERE player_id = ? AND item_id = ?
+    `).get(
+        collectedItemPositiveSafe(playerId, "playerId"),
+        collectedItemId(itemId),
+    ) as { total_obtained: unknown } | undefined
+    return row === undefined ? 0 : collectedItemTotal(row.total_obtained)
+}
+
+export function getPlayerCollectedItemTotalsSync(
+    playerId: number
+): Record<string, number> {
+    const rows = getDb().prepare(`
+    SELECT item_id, total_obtained FROM players_collected_items
+    WHERE player_id = ? ORDER BY item_id
+    `).all(collectedItemPositiveSafe(playerId, "playerId")) as Array<{
+        item_id: unknown
+        total_obtained: unknown
+    }>
+    return Object.fromEntries(rows.map(row => [
+        String(collectedItemPositiveSafe(row.item_id, "stored itemId")),
+        collectedItemTotal(row.total_obtained),
+    ]))
+}
+
 /**
  * Inserts a singular item into the player's inventory.
  * 

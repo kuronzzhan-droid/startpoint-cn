@@ -54,6 +54,58 @@ export function getPlayerQuestProgressSync(
     return mapped
 }
 
+function questPositiveSafe(value: unknown, name: string): number {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+        throw new TypeError(`${name} must be a finite number`)
+    }
+    if (!Number.isSafeInteger(value) || value <= 0) {
+        throw new RangeError(`${name} must be a positive safe integer`)
+    }
+    return value
+}
+
+function questCanonicalId(value: number | string, name: string): number {
+    if (typeof value === "number") return questPositiveSafe(value, name)
+    if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) {
+        throw new TypeError(`${name} must be a canonical positive decimal integer`)
+    }
+    const parsed = Number(value)
+    if (!Number.isSafeInteger(parsed)) throw new RangeError(`${name} must be a positive safe integer`)
+    return parsed
+}
+
+function questCount(value: unknown): number {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+        throw new TypeError("quest count must be a finite number")
+    }
+    if (!Number.isSafeInteger(value) || value < 0) {
+        throw new RangeError("quest count must be a non-negative safe integer")
+    }
+    return value
+}
+
+export function countFinishedPlayerQuestsByCategorySync(
+    playerId: number,
+    category: number,
+): number {
+    const row = getDb().prepare(`
+    SELECT COUNT(*) AS count FROM players_quest_progress
+    WHERE player_id = ? AND section = ? AND finished = 1
+    `).get(
+        questPositiveSafe(playerId, "playerId"),
+        questPositiveSafe(category, "category"),
+    ) as { count: unknown }
+    return questCount(row.count)
+}
+
+export function countFinishedPlayerQuestsSync(playerId: number): number {
+    const row = getDb().prepare(`
+    SELECT COUNT(*) AS count FROM players_quest_progress
+    WHERE player_id = ? AND finished = 1
+    `).get(questPositiveSafe(playerId, "playerId")) as { count: unknown }
+    return questCount(row.count)
+}
+
 /**
  * Gets the progress of a singular quest for a player..
  * 
@@ -167,6 +219,28 @@ export function updatePlayerQuestProgressSync(
         SET ${sets.join(', ')}
         WHERE section = ? AND quest_id = ? AND player_id = ?
         `).run([...values, Number(section), data.questId, playerId]);
+}
+
+export function incrementPlayerQuestMultiClearSync(
+    playerId: number,
+    section: number | string,
+    questId: number | string,
+): void {
+    const result = getDb().prepare(`
+    UPDATE players_quest_progress
+    SET multi_clear_count = multi_clear_count + 1
+    WHERE player_id = ? AND section = ? AND quest_id = ?
+      AND typeof(multi_clear_count) = 'integer'
+      AND multi_clear_count BETWEEN 0 AND ?
+    `).run(
+        questPositiveSafe(playerId, "playerId"),
+        questCanonicalId(section, "section"),
+        questCanonicalId(questId, "questId"),
+        Number.MAX_SAFE_INTEGER - 1,
+    )
+    if (result.changes !== 1) {
+        throw new RangeError("quest multi-clear row is missing or cannot be incremented safely")
+    }
 }
 
 /**

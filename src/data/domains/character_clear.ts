@@ -8,6 +8,50 @@ export function getPlayerCharacterClearSync(playerId: number, characterId: numbe
     return row || { clear_count: 0, multi_count: 0, leader_clear_count: 0, leader_multi_count: 0, leader_power_flip_count: 0 };
 }
 
+function characterClearPositiveSafe(value: unknown, name: string): number {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+        throw new TypeError(`${name} must be a finite number`)
+    }
+    if (!Number.isSafeInteger(value) || value <= 0) {
+        throw new RangeError(`${name} must be a positive safe integer`)
+    }
+    return value
+}
+
+function characterClearCounter(value: unknown, name: string): number {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+        throw new TypeError(`${name} must be a finite number`)
+    }
+    if (!Number.isSafeInteger(value) || value < 0) {
+        throw new RangeError(`${name} must be a non-negative safe integer`)
+    }
+    return value
+}
+
+export function getPlayerCharacterClearsSync(playerId: number) {
+    const rows = getDb().prepare(`
+    SELECT character_id, clear_count, multi_count,
+           leader_clear_count, leader_multi_count, leader_power_flip_count
+    FROM players_character_quest_clears
+    WHERE player_id = ?
+    ORDER BY character_id
+    `).all(characterClearPositiveSafe(playerId, "playerId")) as Array<Record<string, unknown>>
+
+    return Object.fromEntries(rows.map(row => [
+        String(characterClearPositiveSafe(row.character_id, "stored characterId")),
+        {
+            clear_count: characterClearCounter(row.clear_count, "stored clearCount"),
+            multi_count: characterClearCounter(row.multi_count, "stored multiCount"),
+            leader_clear_count: characterClearCounter(row.leader_clear_count, "stored leaderClearCount"),
+            leader_multi_count: characterClearCounter(row.leader_multi_count, "stored leaderMultiCount"),
+            leader_power_flip_count: characterClearCounter(
+                row.leader_power_flip_count,
+                "stored leaderPowerFlipCount",
+            ),
+        },
+    ]))
+}
+
 export function incrementPlayerCharacterClearSync(playerId: number, characterId: number, isMulti: boolean, isLeader = false) {
     const db = getDb();
     db.prepare(`
