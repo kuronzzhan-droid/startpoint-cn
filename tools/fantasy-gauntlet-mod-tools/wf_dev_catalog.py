@@ -40,17 +40,35 @@ import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-CDN_ROOT = (
-    Path(os.environ["WF_CDN_DIR"])
-    if os.environ.get("WF_CDN_DIR")
-    else ROOT / ".cdn" / "cn"
-)
-# asset-patch 是 main 时代的服务端仓内机制;独立布局下按 WF_SERVER_DIR 定位
-_SERVER_DIR = (
-    Path(os.environ["WF_SERVER_DIR"]) if os.environ.get("WF_SERVER_DIR") else ROOT
-)
-ASSET_PATCH_ACTIVE = _SERVER_DIR / "assets" / "asset-patch" / "active"
+TOOL_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(TOOL_DIR))
+import wf_mod_tool as core  # noqa: E402
+
+
+def _explicit_cli_cdn_root(argv: list[str]) -> Path | None:
+    if __name__ != "__main__":
+        return None
+    for index, argument in enumerate(argv):
+        if argument == "--cdn-root" and index + 1 < len(argv):
+            return Path(argv[index + 1])
+        if argument.startswith("--cdn-root="):
+            return Path(argument.split("=", 1)[1])
+    return None
+
+
+_CLI_CDN_ROOT = _explicit_cli_cdn_root(sys.argv[1:])
+if _CLI_CDN_ROOT is not None:
+    SERVER_ROOT = None
+    CDN_ROOT = _CLI_CDN_ROOT
+    ASSET_PATCH_ACTIVE = None
+else:
+    SERVER_ROOT = core.resolve_server_dir()
+    CDN_ROOT = (
+        Path(os.environ["WF_CDN_DIR"])
+        if os.environ.get("WF_CDN_DIR")
+        else core.resolve_cdn_root_lax()
+    )
+    ASSET_PATCH_ACTIVE = SERVER_ROOT / "assets" / "asset-patch" / "active"
 
 OFFICIAL_TARGET = "1.4.54"
 BASELINE_LABEL = "cn-1.4.54"
@@ -935,7 +953,7 @@ def canonicalize_archives(
 def backfill_entity_rows(
     archives: list[ArchiveInput],
     cdn_root: Path,
-    repo_root: Path = ROOT,
+    repo_root: Path = SERVER_ROOT,
 ) -> tuple[dict[str, tuple[str, str, int, str, str]], list[Issue]]:
     """从超出官方目标(1.4.54)的 diff 包读出内部文件行:path→(path,ver,size,hash,tag)。"""
     issues: list[Issue] = []

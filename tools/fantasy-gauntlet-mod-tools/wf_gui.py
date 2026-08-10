@@ -5621,14 +5621,14 @@ def save_char_image_pos(cid: str, level: str, fs: dict | None, attr: dict | None
 
 
 def _resolve_server_url() -> str:
-    return wf_server_auth.resolve_server_url(ROOT)
+    return wf_server_auth.resolve_server_url(SERVER_ROOT)
 
 
 SERVER_URL = _resolve_server_url()
 
 
 def _server_call(path: str, post: bool = False) -> dict:
-    headers = wf_server_auth.admin_bearer_headers(ROOT)
+    headers = wf_server_auth.admin_bearer_headers(SERVER_ROOT)
     if post:
         headers["Content-Type"] = "application/json"
     req = urllib.request.Request(
@@ -7030,7 +7030,7 @@ def _rogue_reload_server() -> None:
     import urllib.request
     token = ""
     try:
-        with open(os.path.join(ROOT, ".env"), encoding="utf-8") as fh:
+        with open(os.path.join(SERVER_ROOT, ".env"), encoding="utf-8") as fh:
             for line in fh:
                 if line.startswith("CN_ADMIN_TOKEN"):
                     token = line.split("=", 1)[1].strip().strip(chr(34))

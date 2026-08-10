@@ -6,19 +6,15 @@ import unittest
 from pathlib import Path
 
 
-WORK_DIR = Path(__file__).resolve().parent
-TOOLS_DIR = Path(r"F:\startpoint-cn-mode15\mod-tools")
+TOOLS_DIR = Path(__file__).resolve().parents[1]
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
-# Validate the staged module, while resolving its shared dependencies from the
-# installed tool directory.
-sys.path.insert(0, str(WORK_DIR))
 
 import wf_boss_trial as boss_trial  # noqa: E402
 import wf_field_catalog as field_catalog  # noqa: E402
 
 
-CONFIG = WORK_DIR / "boss_trial_templates.json"
+CONFIG = TOOLS_DIR / "boss_trial_templates.json"
 NAME = "fantasy-stage3-generic-trials"
 
 

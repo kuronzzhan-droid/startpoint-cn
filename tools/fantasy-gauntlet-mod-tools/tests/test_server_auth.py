@@ -96,15 +96,79 @@ class ServerAuthTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
-            (root / ".env").write_text("CN_ADMIN_TOKEN=gui-token\n", encoding="utf-8")
+            tool_root = root / "tools"
+            server_root = root / "server"
+            tool_root.mkdir()
+            server_root.mkdir()
+            (tool_root / ".env").write_text("CN_ADMIN_TOKEN=wrong-tool-token\n", encoding="utf-8")
+            (server_root / ".env").write_text("CN_ADMIN_TOKEN=gui-token\n", encoding="utf-8")
             with (
-                mock.patch.object(gui, "ROOT", root),
+                mock.patch.object(gui, "ROOT", tool_root),
+                mock.patch.object(gui, "SERVER_ROOT", server_root),
                 mock.patch.object(gui, "SERVER_URL", "http://127.0.0.1:8001"),
                 mock.patch.object(gui.urllib.request, "urlopen", side_effect=fake_urlopen),
                 mock.patch.dict(gui.os.environ, {}, clear=True),
             ):
                 self.assertEqual({"ok": True}, gui._server_call("/api/mod-admin/ping"))
         self.assertEqual("Bearer gui-token", captured[0][0].get_header("Authorization"))
+
+    def test_wf_gui_resolves_server_url_from_server_root(self) -> None:
+        with tempfile.TemporaryDirectory() as store_dir:
+            with mock.patch.dict(os.environ, {"WF_TARGET_STORE": store_dir}):
+                gui = import_module("wf_gui")
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            tool_root = root / "tools"
+            server_root = root / "server"
+            tool_root.mkdir()
+            server_root.mkdir()
+            (tool_root / ".env").write_text(
+                "CN_LISTEN_HOST=192.0.2.10\nCN_LISTEN_PORT=9000\n",
+                encoding="utf-8",
+            )
+            (server_root / ".env").write_text(
+                "CN_LISTEN_HOST=127.0.0.1\nCN_LISTEN_PORT=8123\n",
+                encoding="utf-8",
+            )
+            with (
+                mock.patch.object(gui, "ROOT", tool_root),
+                mock.patch.object(gui, "SERVER_ROOT", server_root),
+                mock.patch.dict(gui.os.environ, {}, clear=True),
+            ):
+                self.assertEqual("http://127.0.0.1:8123", gui._resolve_server_url())
+
+    def test_wf_gui_rogue_reload_reads_token_from_server_root(self) -> None:
+        with tempfile.TemporaryDirectory() as store_dir:
+            with mock.patch.dict(os.environ, {"WF_TARGET_STORE": store_dir}):
+                gui = import_module("wf_gui")
+        captured = []
+
+        class Response:
+            def read(self) -> bytes:
+                return b'{}'
+
+        def fake_urlopen(request, timeout):
+            captured.append((request, timeout))
+            return Response()
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            tool_root = root / "tools"
+            server_root = root / "server"
+            tool_root.mkdir()
+            server_root.mkdir()
+            (tool_root / ".env").write_text("CN_ADMIN_TOKEN=wrong-tool-token\n", encoding="utf-8")
+            (server_root / ".env").write_text("CN_ADMIN_TOKEN=reload-token\n", encoding="utf-8")
+            with (
+                mock.patch.object(gui, "ROOT", tool_root),
+                mock.patch.object(gui, "SERVER_ROOT", server_root),
+                mock.patch.object(gui.urllib.request, "urlopen", side_effect=fake_urlopen),
+                mock.patch("socket.gethostbyname_ex", return_value=("host", [], ["127.0.0.1"])),
+                mock.patch.dict(gui.os.environ, {}, clear=True),
+            ):
+                gui._rogue_reload_server()
+        self.assertEqual("Bearer reload-token", captured[0][0].get_header("Authorization"))
 
     def test_rogue_save_sends_bearer_to_management_api(self) -> None:
         rogue = import_module("wf_rogue_save")
@@ -128,7 +192,7 @@ class ServerAuthTests(unittest.TestCase):
             root = Path(td)
             (root / ".env").write_text("CN_ADMIN_TOKEN=rogue-token\n", encoding="utf-8")
             with (
-                mock.patch.object(rogue, "ROOT", str(root)),
+                mock.patch.object(rogue.core, "resolve_server_dir", return_value=root),
                 mock.patch.object(rogue.urllib.request, "urlopen", side_effect=fake_urlopen),
                 mock.patch.dict(rogue.os.environ, {}, clear=True),
             ):

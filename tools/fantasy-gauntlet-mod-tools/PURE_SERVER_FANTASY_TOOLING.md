@@ -1,19 +1,17 @@
 # 幻想连战纯净端构建工具
 
-安装位置：`F:\startpoint-cn-main\tools\fantasy-gauntlet-mod-tools`
+示例安装位置：`<server-root>\tools\fantasy-gauntlet-mod-tools`
 
 ## 仅校验（不写入）
 
 ```powershell
-& 'C:\Users\ASUS\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' `
-  .\wf_mode15_build.py --server-root 'F:\startpoint-cn-main'
+python .\wf_mode15_build.py --server-root '<server-root>'
 ```
 
 ## 写入纯净端当前资源（不发布增量）
 
 ```powershell
-& 'C:\Users\ASUS\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' `
-  .\wf_mode15_build.py --server-root 'F:\startpoint-cn-main' --write
+python .\wf_mode15_build.py --server-root '<server-root>' --write
 ```
 
 除非明确准备发布，否则不要追加 `--publish`，也不要手工修改

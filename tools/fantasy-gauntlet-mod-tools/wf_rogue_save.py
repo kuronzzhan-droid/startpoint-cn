@@ -36,15 +36,22 @@ import sys
 import urllib.request
 from pathlib import Path
 
+import wf_mod_tool as core
 import wf_server_auth
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SERVER_ROOT = os.path.join(ROOT, "server")
-DB_PATH = os.path.join(SERVER_ROOT, ".database", "wdfp_data.db")
+TOOL_DIR = Path(__file__).resolve().parent
 MUMU = r"D:\WF\MuMuPlayer\nx_main\MuMuManager.exe"
 WF_PACKAGE = "com.leiting.wf"
 WF_ACTIVITY = "com.leiting.wf/com.leiting.sdk.activity.PrivacyActivity"
 RUSH_QUEST_LOGICAL = "master/quest/event/rush_event_quest.orderedmap"
+
+
+def server_root() -> Path:
+    return core.resolve_server_dir(os.environ.get("WF_PROFILE"))
+
+
+def database_path() -> Path:
+    return server_root() / ".database" / "wdfp_data.db"
 
 
 def api_post(server: str, path: str, query: str = "", body: dict | None = None) -> dict:
@@ -53,7 +60,7 @@ def api_post(server: str, path: str, query: str = "", body: dict | None = None) 
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        **wf_server_auth.admin_bearer_headers(Path(SERVER_ROOT)),
+        **wf_server_auth.admin_bearer_headers(server_root()),
     }
     req = urllib.request.Request(url, data=data, method="POST", headers=headers)
     with urllib.request.urlopen(req, timeout=15) as resp:
@@ -61,9 +68,9 @@ def api_post(server: str, path: str, query: str = "", body: dict | None = None) 
 
 
 def load_soul_ids() -> list[int]:
-    soul_json = os.path.join(SERVER_ROOT, "assets", "soul_item_ids.json")
+    soul_json = server_root() / "assets" / "soul_item_ids.json"
     try:
-        with open(soul_json, encoding="utf-8") as fh:
+        with soul_json.open(encoding="utf-8") as fh:
             return [int(x) for x in json.load(fh)]
     except OSError:
         print(f"[WARN] {soul_json} 不存在,跳过魂珠清理(魂珠会全解锁!)")
@@ -81,7 +88,7 @@ def reroll_endless_field(event: str, quest_no: str, apply: bool) -> None:
     (field_data+BGM 三元组实战验证)。每局重置时重摇 = "每局随机 boss"。
     改的是 ② 层主数据,须发布 + 重启游戏生效(重置流程本来就要重启)。
     """
-    sys.path.insert(0, os.path.join(ROOT, "mod-tools"))
+    sys.path.insert(0, str(TOOL_DIR))
     import wf_quest_lib as q
     import wf_chain_build as cb
 
@@ -104,8 +111,10 @@ def reroll_endless_field(event: str, quest_no: str, apply: bool) -> None:
     tree[event][quest_no] = buf.getvalue().encode("utf-8") if was_bytes else buf.getvalue()
     out = q.save_table(RUSH_QUEST_LOGICAL, tree)
     print(f"[OK] 已写入 {out}")
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "mod-tools", "wf_publish.py"),
-                        "--tables", "rush_event_quest"], cwd=ROOT)
+    r = subprocess.run(
+        [sys.executable, str(TOOL_DIR / "wf_publish.py"), "--tables", "rush_event_quest"],
+        cwd=TOOL_DIR,
+    )
     print(f"[PUBLISH] wf_publish 退出码 {r.returncode}")
 
 
@@ -152,7 +161,7 @@ def main() -> int:
     ap.add_argument("--event", default="700007", help="rush 活动 id(--random-boss 用)")
     ap.add_argument("--quest-no", default="8", help="无尽 quest 在活动内的序号键(--random-boss 用)")
     ap.add_argument("--name", default="肉鸽空武器", help="新存档名")
-    ap.add_argument("--server", default=wf_server_auth.resolve_server_url(Path(ROOT)))
+    ap.add_argument("--server", default=wf_server_auth.resolve_server_url(server_root()))
     ap.add_argument("--apply", action="store_true", help="真执行(默认 dry-run)")
     ap.add_argument("--keep-active", action="store_true", help="默认存档留在新档")
     args = ap.parse_args()
@@ -161,7 +170,7 @@ def main() -> int:
         if args.restart_game and args.apply:
             print("[GAME] force-stop …")
             mumu_sh(f"am force-stop {WF_PACKAGE}")
-        db = sqlite3.connect(DB_PATH, timeout=15)
+        db = sqlite3.connect(database_path(), timeout=15)
         db.execute("PRAGMA busy_timeout=15000")
         try:
             code = reset_run(db, args.reset, args.apply)
@@ -177,7 +186,7 @@ def main() -> int:
     if args.source is None:
         ap.error("--source 或 --reset 必须给一个")
 
-    db = sqlite3.connect(DB_PATH, timeout=15)
+    db = sqlite3.connect(database_path(), timeout=15)
     db.execute("PRAGMA busy_timeout=15000")
     try:
         row = db.execute(

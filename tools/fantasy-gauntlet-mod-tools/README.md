@@ -1,5 +1,9 @@
 # WF-CN Mod Tools · 世界弹射物语(国服)数据修改工具链
 
+> **reference-only 快照边界**：本目录是随 Ku1o 快照嵌入的审阅参考，不是当前项目的受支持发布入口。
+> 已知 `publish` / `store` 契约测试仍有源内红项；在契约完成裁决和全量验证前，**禁止**用本目录执行
+> 真实 publish、store materialize、CDN 写入、APK 安装或 device 操作。只读审计和临时目录单测不代表运行时认证。
+
 面向 [startpoint-cn](https://github.com/DontBeAlarmed/startpoint-cn) 私服的离线数据修改工具:
 可视化 / 命令行修改角色词条、基础数值(HP/ATK)、觉醒加成、能力魂、队长技、技能能量、
 角色资料,并经服务端 CDN 增量下发到客户端生效。

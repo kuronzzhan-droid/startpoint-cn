@@ -18,15 +18,10 @@ from pathlib import Path
 
 
 MODULE_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = MODULE_DIR.parent if MODULE_DIR.name == "mod-tools" else MODULE_DIR
-TOOLS_DIR = PROJECT_ROOT / "mod-tools"
-SERVER_ASSETS = PROJECT_ROOT / "server" / "assets"
-sys.path.insert(0, str(PROJECT_ROOT))
-sys.path.insert(0, str(TOOLS_DIR))
+sys.path.insert(0, str(MODULE_DIR))
 
 import wf_mod_tool as core  # type: ignore  # noqa: E402
 import wf_quest_lib as q  # type: ignore  # noqa: E402
-import wf_gui as gui  # type: ignore  # noqa: E402
 from build_fantasy_weapon_candidates import WEAPONS  # noqa: E402
 
 
@@ -256,9 +251,10 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--write", action="store_true")
     args = parser.parse_args()
+    server_assets = core.resolve_server_dir() / "assets"
     client_before = q.load_table(SHOP_LOGICAL)
-    shop_path = SERVER_ASSETS / "event_item_shop.json"
-    map_path = SERVER_ASSETS / "event_item_shop_id_map.json"
+    shop_path = server_assets / "event_item_shop.json"
+    map_path = server_assets / "event_item_shop_id_map.json"
     shop_before = _load_json(shop_path)
     map_before = _load_json(map_path)
     client_after = build_client_shop(client_before)
@@ -269,6 +265,8 @@ def main() -> int:
     if not args.write:
         print("[DRY-RUN] no files written")
         return 0
+
+    import wf_gui as gui  # type: ignore  # noqa: E402
 
     targets = (Path(q.store_path(SHOP_LOGICAL)), shop_path, map_path)
     before = {path: (path.exists(), path.read_bytes() if path.exists() else None) for path in targets}

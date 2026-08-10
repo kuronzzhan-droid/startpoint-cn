@@ -26,11 +26,10 @@ from pathlib import Path
 
 MOD_DIR = Path(__file__).resolve().parent
 TOOLS_DIR = MOD_DIR
-DEFAULT_SERVER_ROOT = MOD_DIR.parent / "server"
 sys.path.insert(0, str(TOOLS_DIR))
 
+import wf_mod_tool as core  # noqa: E402
 import wf_quest_lib as q  # noqa: E402
-import wf_gui as gui  # noqa: E402
 import wf_rogue_build as abyss  # noqa: E402
 import wf_fantasy_shop as fantasy_shop  # noqa: E402
 import wf_field_catalog as field_catalog  # noqa: E402
@@ -3460,13 +3459,28 @@ def validate(
             raise ValueError(f"server AdventEvent stage {stage} mana reward is wrong")
 
 
+def resolve_server_root(explicit: Path | None) -> Path:
+    if explicit is None:
+        return core.resolve_server_dir()
+    resolved = explicit.expanduser().resolve()
+    if not core.looks_like_server_root(resolved):
+        raise ValueError(
+            "--server-root 不是可验证的 startpoint-cn 服务端仓根"
+            f"（缺 package.json 或 src/cn-server.ts）: {resolved}"
+        )
+    return resolved
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--server-root", type=Path, default=DEFAULT_SERVER_ROOT)
+    parser.add_argument("--server-root", type=Path)
     parser.add_argument("--write", action="store_true")
     parser.add_argument("--publish", action="store_true")
     args = parser.parse_args()
-    server_root = args.server_root.resolve()
+    try:
+        server_root = resolve_server_root(args.server_root)
+    except ValueError as exc:
+        parser.error(str(exc))
 
     try:
         client_tables = load_and_build_client_tables()
@@ -3497,6 +3511,10 @@ def main() -> int:
     if not args.write:
         print("[DRY-RUN] all client tables and server assets built and validated in memory")
         return 0
+
+    if args.server_root is not None:
+        os.environ["WF_SERVER_DIR"] = str(server_root)
+    import wf_gui as gui  # noqa: E402
 
     try:
         for logical, table in client_tables.items():

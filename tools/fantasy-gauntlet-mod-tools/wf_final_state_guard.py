@@ -15,7 +15,7 @@ from typing import Iterable
 import wf_mod_tool as core
 
 TOOL_DIR = Path(__file__).resolve().parent
-SERVER_ROOT = TOOL_DIR.parent.parent
+SERVER_ROOT = core.resolve_server_dir()
 ACTIVE = SERVER_ROOT / "assets" / "asset-patch" / "active"
 MANIFEST = SERVER_ROOT / "assets" / "asset-patch" / "manifest.json"
 STORE_ROOT = SERVER_ROOT / "assets" / "asset-patch" / "production" / "upload"

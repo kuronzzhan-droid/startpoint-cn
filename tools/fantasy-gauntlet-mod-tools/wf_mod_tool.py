@@ -338,8 +338,21 @@ class VersionProfile:
 
 
 def project_root() -> Path:
-    """mod-tools/ 的上一级 = startpoint-cn 仓库根;profiles.json 里的相对路径以此为基准。"""
-    return Path(__file__).resolve().parent.parent
+    """返回当前布局的项目根，供 profiles.json 的相对路径解析。
+
+    支持三种受支持布局：
+    - ``<server>/mod-tools/wf_mod_tool.py``（旧嵌套布局）；
+    - ``<server>/tools/<bundle>/wf_mod_tool.py``（当前嵌入快照）；
+    - ``<standalone-tools>/wf_mod_tool.py``（平铺独立工具仓）。
+    """
+    tool_dir = Path(__file__).resolve().parent
+    legacy_root = tool_dir.parent
+    if tool_dir.name == "mod-tools" and looks_like_server_root(legacy_root):
+        return legacy_root
+    embedded_root = tool_dir.parent.parent
+    if tool_dir.parent.name == "tools" and looks_like_server_root(embedded_root):
+        return embedded_root
+    return tool_dir
 
 
 def profiles_file() -> Path:
@@ -362,7 +375,7 @@ def resolve_profile(profile_id: str | None = None) -> VersionProfile | None:
     """读取 profiles.json 的激活档案。无文件 / 无匹配时返回 None,调用方回退旧逻辑。"""
     data = load_profiles()
     profiles = data.get("profiles") or {}
-    pid = profile_id or data.get("active")
+    pid = profile_id or os.environ.get("WF_PROFILE") or data.get("active")
     if not pid or pid not in profiles:
         return None
     entry = profiles[pid]
@@ -460,9 +473,8 @@ def resolve_active_store(
 #   3. 自动识别:WF_SERVER_DIR env / profile.server_dir → 复读服务端自身配置
 #      (dev:服务端 .env 的 CDN_DIR 指向含 cn/ 的父目录 → CDN_DIR/cn;
 #       缺省与 main 同为 <server>/.cdn/cn)
-#   4. 嵌套遗留兜底:project_root()/.cdn/cn(工具仍住在服务端仓内时)
-# 显式配置(1/2)不合法=硬报错(配置错误不该被兜底掩盖);派生候选(3/4)不合法则
-# 顺延下一级;全部落空报出完整尝试清单。
+#   4. 当前工具布局推导出的、通过签名校验的服务端仓根。
+# 显式配置不合法=硬报错；无法验证服务端仓根时 fail closed。
 # ---------------------------------------------------------------------------
 
 
@@ -497,6 +509,35 @@ def _read_server_cdn_dir(server_dir: Path) -> Path | None:
     return None
 
 
+def looks_like_server_root(path: Path) -> bool:
+    """最小服务端仓签名：CN 入口与 Node 包元数据同时存在。"""
+    return (
+        path.is_dir()
+        and (path / "package.json").is_file()
+        and (path / "src" / "cn-server.ts").is_file()
+    )
+
+
+def _validated_server_root(path: Path, source: str) -> Path:
+    resolved = path.expanduser().resolve()
+    if not looks_like_server_root(resolved):
+        raise ValueError(
+            f"{source} 不是可验证的 startpoint-cn 服务端仓根"
+            f"（缺 package.json 或 src/cn-server.ts）: {resolved}"
+        )
+    return resolved
+
+
+def _layout_server_root() -> Path:
+    candidate = project_root()
+    if looks_like_server_root(candidate):
+        return candidate.resolve()
+    raise ValueError(
+        "无法从当前工具布局验证服务端仓根；独立工具仓必须设置 "
+        "WF_SERVER_DIR 或 profile.server_dir"
+    )
+
+
 def resolve_cdn_root(profile_id: str | None = None) -> Path:
     """按四级解析链返回 CDN 根;全部落空抛 ValueError(含尝试清单)。"""
     tried: list[str] = []
@@ -519,24 +560,15 @@ def resolve_cdn_root(profile_id: str | None = None) -> Path:
             f"profile[{profile.id}].cdn_dir 不是 CDN 根: {profile.cdn_dir}"
         )
 
-    server_env = os.environ.get("WF_SERVER_DIR")
-    server_dir = Path(server_env) if server_env else (
-        profile.server_dir if profile else None
-    )
-    if server_dir is not None:
-        declared = _read_server_cdn_dir(server_dir)
-        for candidate in (
-            *((declared / "cn",) if declared else ()),
-            server_dir / ".cdn" / "cn",
-        ):
-            if looks_like_cdn_root(candidate):
-                return candidate
-            tried.append(f"服务端识别: {candidate}")
-
-    legacy = project_root() / ".cdn" / "cn"
-    if looks_like_cdn_root(legacy):
-        return legacy
-    tried.append(f"嵌套遗留: {legacy}")
+    server_dir = resolve_server_dir(profile_id)
+    declared = _read_server_cdn_dir(server_dir)
+    for candidate in (
+        *((declared / "cn",) if declared else ()),
+        server_dir / ".cdn" / "cn",
+    ):
+        if looks_like_cdn_root(candidate):
+            return candidate
+        tried.append(f"服务端识别: {candidate}")
 
     raise ValueError(
         "无法定位 CDN 根;请设 WF_CDN_DIR / profile.cdn_dir / WF_SERVER_DIR。已尝试: "
@@ -545,29 +577,39 @@ def resolve_cdn_root(profile_id: str | None = None) -> Path:
 
 
 def resolve_cdn_root_lax(profile_id: str | None = None) -> Path:
-    """解析失败时退回嵌套遗留默认路径(供模块级常量等不可抛错场景)。"""
-    try:
+    """允许已验证服务端缺 CDN 目录，但绝不猜测服务端仓根。"""
+    if os.environ.get("WF_CDN_DIR"):
         return resolve_cdn_root(profile_id)
-    except ValueError:
-        return project_root() / ".cdn" / "cn"
-
-
-def resolve_server_dir(profile_id: str | None = None) -> Path:
-    """服务端仓根:WF_SERVER_DIR > profile.server_dir > 嵌套遗留(project_root)。
-
-    用于 asset-patch manifest、client-patch 等"贴着服务端仓"的路径推导;
-    lax 语义,始终有返回值(独立仓布局下未配置时按嵌套遗留猜,调用方自然报错)。
-    """
-    env = os.environ.get("WF_SERVER_DIR")
-    if env:
-        return Path(env)
     try:
         profile = resolve_profile(profile_id)
     except (OSError, ValueError):
         profile = None
+    if profile and profile.cdn_dir:
+        return resolve_cdn_root(profile_id)
+    try:
+        return resolve_cdn_root(profile_id)
+    except ValueError:
+        return resolve_server_dir(profile_id) / ".cdn" / "cn"
+
+
+def resolve_server_dir(profile_id: str | None = None) -> Path:
+    """服务端仓根：WF_SERVER_DIR > profile.server_dir > 已验证仓库布局。"""
+    env = os.environ.get("WF_SERVER_DIR")
+    if env:
+        return _validated_server_root(Path(env), "WF_SERVER_DIR")
+    requested_profile = profile_id or os.environ.get("WF_PROFILE")
+    try:
+        profile = resolve_profile(requested_profile)
+    except (OSError, ValueError) as exc:
+        label = f"显式 profile[{requested_profile}]" if requested_profile else "profile 配置"
+        raise ValueError(f"无法加载{label}: {exc}") from exc
+    if requested_profile and profile is None:
+        raise ValueError(f"显式 profile[{requested_profile}] 不存在")
     if profile and profile.server_dir:
-        return profile.server_dir
-    return project_root()
+        return _validated_server_root(
+            profile.server_dir, f"profile[{profile.id}].server_dir"
+        )
+    return _layout_server_root()
 
 
 def parse_index(raw: bytes) -> tuple[list[str], list[tuple[int, int]], int]:

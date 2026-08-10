@@ -13,6 +13,7 @@ import argparse
 import hashlib
 import io
 import json
+import os
 import shutil
 import sys
 import time
@@ -1057,22 +1058,40 @@ def write_batch(gui, core, describe, quest_lib, wf_assets, sources: dict[str, Pa
     return after
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--tools",
         type=Path,
-        default=Path(r"F:\codex\mode15-work\isolated-mod-tools"),
+        default=Path(os.environ["WF_MOD_TOOLS_DIR"])
+        if os.environ.get("WF_MOD_TOOLS_DIR")
+        else Path(__file__).resolve().parent,
+        help="工具目录（默认 WF_MOD_TOOLS_DIR 或当前脚本目录）",
     )
     parser.add_argument(
         "--asset-dir",
         type=Path,
         help="override the canonical 11-icon source directory",
     )
+    parser.add_argument(
+        "--target-store",
+        type=Path,
+        default=Path(os.environ["WF_TARGET_STORE"])
+        if os.environ.get("WF_TARGET_STORE")
+        else None,
+        help="明确的 production/upload 目录（写入时必填，或设置 WF_TARGET_STORE）",
+    )
     parser.add_argument("--write", action="store_true")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    if args.write and args.target_store is None:
+        parser.error("--write 必须提供 --target-store 或 WF_TARGET_STORE")
+    if args.target_store is not None:
+        target_store = args.target_store.expanduser().resolve()
+        if not target_store.is_dir():
+            parser.error(f"--target-store 不存在或不是目录: {target_store}")
+        os.environ["WF_TARGET_STORE"] = str(target_store)
     tools = args.tools.resolve()
     gui, core, describe, quest_lib, wf_assets = load_modules(tools)
     asset_dir = (
