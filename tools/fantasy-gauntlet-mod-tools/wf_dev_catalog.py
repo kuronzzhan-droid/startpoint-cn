@@ -45,30 +45,64 @@ sys.path.insert(0, str(TOOL_DIR))
 import wf_mod_tool as core  # noqa: E402
 
 
-def _explicit_cli_cdn_root(argv: list[str]) -> Path | None:
-    if __name__ != "__main__":
-        return None
-    for index, argument in enumerate(argv):
-        if argument == "--cdn-root" and index + 1 < len(argv):
-            return Path(argv[index + 1])
-        if argument.startswith("--cdn-root="):
-            return Path(argument.split("=", 1)[1])
-    return None
+SERVER_ROOT: Path | None = None
+CDN_ROOT: Path | None = None
+ASSET_PATCH_ACTIVE: Path | None = None
 
 
-_CLI_CDN_ROOT = _explicit_cli_cdn_root(sys.argv[1:])
-if _CLI_CDN_ROOT is not None:
-    SERVER_ROOT = None
-    CDN_ROOT = _CLI_CDN_ROOT
-    ASSET_PATCH_ACTIVE = None
-else:
-    SERVER_ROOT = core.resolve_server_dir()
-    CDN_ROOT = (
-        Path(os.environ["WF_CDN_DIR"])
+def _is_server_cdn_root(cdn_root: Path, server_root: Path) -> bool:
+    """仅以服务端自身配置/标准布局证明 CDN 归属，不猜测外部目录。"""
+    candidates = [server_root / ".cdn" / "cn"]
+    declared = core._read_server_cdn_dir(server_root)
+    if declared is not None:
+        candidates.insert(0, declared / "cn")
+    try:
+        resolved = cdn_root.expanduser().resolve()
+        return any(
+            resolved == candidate.expanduser().resolve()
+            for candidate in candidates
+        )
+    except OSError:
+        return False
+
+
+def _resolve_server_binding(cdn_root: Path) -> tuple[Path | None, Path | None]:
+    try:
+        server_root = core.resolve_server_dir()
+    except (OSError, ValueError):
+        return None, None
+    asset_patch_active = (
+        server_root / "assets" / "asset-patch" / "active"
+        if _is_server_cdn_root(cdn_root, server_root)
+        else None
+    )
+    return server_root, asset_patch_active
+
+
+def _resolve_runtime_roots(
+    explicit_cdn_root: str | None,
+) -> tuple[Path | None, Path, Path | None]:
+    if explicit_cdn_root is None:
+        cdn_root = core.resolve_cdn_root()
+    else:
+        cdn_root = Path(explicit_cdn_root).expanduser().resolve()
+    server_root, asset_patch_active = _resolve_server_binding(cdn_root)
+    return server_root, cdn_root, asset_patch_active
+
+
+def _resolve_import_roots() -> tuple[Path | None, Path, Path | None]:
+    cdn_root = (
+        Path(os.environ["WF_CDN_DIR"]).expanduser().resolve()
         if os.environ.get("WF_CDN_DIR")
         else core.resolve_cdn_root_lax()
     )
-    ASSET_PATCH_ACTIVE = SERVER_ROOT / "assets" / "asset-patch" / "active"
+    server_root, asset_patch_active = _resolve_server_binding(cdn_root)
+    return server_root, cdn_root, asset_patch_active
+
+
+if __name__ != "__main__":
+    SERVER_ROOT, CDN_ROOT, ASSET_PATCH_ACTIVE = _resolve_import_roots()
+
 
 OFFICIAL_TARGET = "1.4.54"
 BASELINE_LABEL = "cn-1.4.54"
@@ -338,6 +372,8 @@ def asset_patch_for(cdn_root: Path) -> Path | None:
     对物化视图/外部部署等非默认根,canonical 集里已含(或不该含)覆盖层,
     再混入真实仓 asset-patch 只会制造 外根/旧名/序重复 噪声。
     """
+    if CDN_ROOT is None or ASSET_PATCH_ACTIVE is None:
+        return None
     try:
         if Path(cdn_root).resolve() == CDN_ROOT.resolve():
             return ASSET_PATCH_ACTIVE
@@ -1058,7 +1094,7 @@ def emit_dev_catalog(
     canonical_stats: dict = {}
     if canonicalize:
         archives, canonical_stats = canonicalize_archives(archives)
-    mod_rows, row_issues = backfill_entity_rows(archives, cdn_root)
+    mod_rows, row_issues = backfill_entity_rows(archives, cdn_root, SERVER_ROOT)
     merged_rows = merge_entity_rows(scan.entity_rows, mod_rows)
     installed_bytes = entity_rows_installed_bytes(merged_rows)
     catalog, catalog_issues = build_catalog(
@@ -1358,7 +1394,7 @@ def materialize_dev_view(
 
     scan = scan_chain(cdn_root, asset_patch_active, digest_mode=digest_mode)
     archives, canonical_stats = canonicalize_archives(scan.archives)
-    mod_rows, row_issues = backfill_entity_rows(archives, cdn_root)
+    mod_rows, row_issues = backfill_entity_rows(archives, cdn_root, SERVER_ROOT)
     merged_rows = merge_entity_rows(scan.entity_rows, mod_rows)
     issues = scan.issues + row_issues
 
@@ -1721,7 +1757,9 @@ def cmd_emit(args: argparse.Namespace) -> int:
 
 
 def cmd_heal_layers(args: argparse.Namespace) -> int:
-    planned = heal_missing_layers(Path(args.cdn_root), apply=args.apply)
+    planned = heal_missing_layers(
+        Path(args.cdn_root), asset_patch_for(Path(args.cdn_root)), apply=args.apply,
+    )
     if not planned:
         print("所有 diff 边三层齐全,无需补占位包。")
         return 0
@@ -1734,7 +1772,7 @@ def cmd_heal_layers(args: argparse.Namespace) -> int:
 
 def cmd_relocate_foreign(args: argparse.Namespace) -> int:
     actions, issues = relocate_foreign_archives(
-        Path(args.cdn_root), ASSET_PATCH_ACTIVE, apply=args.apply,
+        Path(args.cdn_root), asset_patch_for(Path(args.cdn_root)), apply=args.apply,
     )
     _print_issue_groups(issues)
     if not actions:
@@ -1824,6 +1862,8 @@ def cmd_verify_baseline(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    global SERVER_ROOT, CDN_ROOT, ASSET_PATCH_ACTIVE
+
     parser = argparse.ArgumentParser(description="dev 分支 CDN Catalog 适配器")
     parser.add_argument(
         "--cdn-root", default=None,
@@ -1882,13 +1922,14 @@ def main(argv: list[str] | None = None) -> int:
     verify.set_defaults(func=cmd_verify_baseline)
 
     args = parser.parse_args(argv)
-    if args.cdn_root is None:
-        import wf_mod_tool as core
-        try:
-            args.cdn_root = str(core.resolve_cdn_root())
-        except ValueError as exc:
-            print(f"[ERR] {exc}", file=sys.stderr)
-            return 2
+    try:
+        SERVER_ROOT, CDN_ROOT, ASSET_PATCH_ACTIVE = _resolve_runtime_roots(
+            args.cdn_root,
+        )
+    except (OSError, ValueError) as exc:
+        print(f"[ERR] {exc}", file=sys.stderr)
+        return 2
+    args.cdn_root = str(CDN_ROOT)
     return args.func(args)
 
 

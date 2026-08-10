@@ -372,12 +372,18 @@ def load_profiles() -> dict[str, Any]:
 
 
 def resolve_profile(profile_id: str | None = None) -> VersionProfile | None:
-    """读取 profiles.json 的激活档案。无文件 / 无匹配时返回 None,调用方回退旧逻辑。"""
+    """读取 profiles.json 档案；未指定档案时才允许无配置回退。"""
     data = load_profiles()
     profiles = data.get("profiles") or {}
-    pid = profile_id or os.environ.get("WF_PROFILE") or data.get("active")
-    if not pid or pid not in profiles:
+    requested_profile = profile_id or os.environ.get("WF_PROFILE")
+    active_profile = data.get("active")
+    pid = requested_profile or active_profile
+    if not pid:
         return None
+    if pid not in profiles:
+        if requested_profile:
+            return None
+        raise ValueError(f"profiles.json active profile[{active_profile}] 不存在")
     entry = profiles[pid]
     return VersionProfile(
         id=pid,

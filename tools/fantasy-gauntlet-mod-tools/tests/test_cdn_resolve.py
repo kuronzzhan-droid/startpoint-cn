@@ -218,6 +218,18 @@ class ResolveServerDirTest(_ResolveBase):
         with self.assertRaisesRegex(ValueError, "profile"):
             core.resolve_server_dir()
 
+    def test_missing_active_profile_fails_closed_in_verified_layout(self) -> None:
+        with mock.patch.object(
+            core,
+            "load_profiles",
+            return_value={
+                "active": "missing",
+                "profiles": {"other": {"store": "."}},
+            },
+        ):
+            with self.assertRaisesRegex(ValueError, r"active.*missing"):
+                core.resolve_server_dir()
+
 
 class ProjectRootLayoutTest(unittest.TestCase):
     def setUp(self) -> None:
@@ -256,6 +268,23 @@ class ProjectRootLayoutTest(unittest.TestCase):
         with self._module_at(module):
             self.assertEqual(tools, core.project_root())
             with self.assertRaisesRegex(ValueError, "WF_SERVER_DIR"):
+                core.resolve_server_dir()
+
+    def test_missing_active_profile_fails_closed_in_flat_layout(self) -> None:
+        tools = self.root / "standalone-tools"
+        module = tools / "wf_mod_tool.py"
+        with (
+            self._module_at(module),
+            mock.patch.object(
+                core,
+                "load_profiles",
+                return_value={
+                    "active": "missing",
+                    "profiles": {"other": {"store": "."}},
+                },
+            ),
+        ):
+            with self.assertRaisesRegex(ValueError, r"active.*missing"):
                 core.resolve_server_dir()
 
     def test_flat_standalone_named_mod_tools_is_not_mistaken_for_legacy_layout(self) -> None:

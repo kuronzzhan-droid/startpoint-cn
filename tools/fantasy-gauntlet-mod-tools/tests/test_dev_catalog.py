@@ -9,11 +9,14 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import os
+import subprocess
 import sys
 import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -336,6 +339,165 @@ class ScanAndEmitTest(unittest.TestCase):
                 scan.archives, scan.installed_bytes, scan.entity_lists_relative_path,
             )
             self.assertNotIn("MISSING_ARCHIVE_LAYER", codes(issues))
+
+
+class CliRootBindingTest(unittest.TestCase):
+    def _make_server(self, root: Path) -> tuple[Path, Path, Path, str]:
+        server = root / "server"
+        (server / "src").mkdir(parents=True)
+        (server / "src" / "cn-server.ts").write_text("// test\n", encoding="utf-8")
+        (server / "package.json").write_text("{}\n", encoding="utf-8")
+        cdn = server / ".cdn" / "cn"
+        (cdn / "archive-common-diff").mkdir(parents=True)
+        patch = server / "assets" / "asset-patch" / "active"
+        patch.mkdir(parents=True)
+        archive_name = "pinball-1.4.54-1.4.55-1-abcd1234.zip"
+        with zipfile.ZipFile(patch / archive_name, "w") as bundle:
+            bundle.writestr(".empty", b"\n")
+        return server, cdn, patch, archive_name
+
+    def _run_audit(self, cdn: Path | None = None) -> int:
+        argv = ["audit", "--digest", "skip"]
+        if cdn is not None:
+            argv[0:0] = ["--cdn-root", str(cdn)]
+        with mock.patch("builtins.print"):
+            return devcat.main(argv)
+
+    def _import_roots(self, server: Path, cdn: Path) -> tuple[str, str | None]:
+        env = os.environ.copy()
+        env["WF_SERVER_DIR"] = str(server)
+        env["WF_CDN_DIR"] = str(cdn)
+        env["PYTHONPATH"] = str(Path(__file__).resolve().parent.parent)
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-B",
+                "-X",
+                "utf8",
+                "-c",
+                (
+                    "import json, wf_dev_catalog as module; "
+                    "print(json.dumps([str(module.CDN_ROOT), "
+                    "str(module.ASSET_PATCH_ACTIVE) "
+                    "if module.ASSET_PATCH_ACTIVE else None]))"
+                ),
+            ],
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        cdn_root, asset_patch_active = json.loads(completed.stdout)
+        return cdn_root, asset_patch_active
+
+    def test_explicit_server_cdn_includes_same_server_active_patch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            server, cdn, patch, archive_name = self._make_server(Path(tmp))
+            with (
+                mock.patch.dict(
+                    os.environ,
+                    {"WF_SERVER_DIR": str(server)},
+                    clear=False,
+                ),
+                mock.patch.object(devcat, "SERVER_ROOT", devcat.SERVER_ROOT),
+                mock.patch.object(devcat, "CDN_ROOT", devcat.CDN_ROOT),
+                mock.patch.object(
+                    devcat, "ASSET_PATCH_ACTIVE", devcat.ASSET_PATCH_ACTIVE,
+                ),
+            ):
+                self._run_audit(cdn)
+                self.assertEqual(patch, devcat.asset_patch_for(cdn))
+                scan = devcat.scan_chain(
+                    cdn, devcat.asset_patch_for(cdn), digest_mode="skip",
+                )
+                self.assertTrue(any(
+                    item.foreign_root and Path(item.relative_path).name == archive_name
+                    for item in scan.archives
+                ))
+
+    def test_explicit_external_cdn_does_not_guess_active_patch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            server, _cdn, _patch, archive_name = self._make_server(Path(tmp))
+            external = Path(tmp) / "external-cdn"
+            (external / "archive-common-diff").mkdir(parents=True)
+            with (
+                mock.patch.dict(
+                    os.environ,
+                    {"WF_SERVER_DIR": str(server)},
+                    clear=False,
+                ),
+                mock.patch.object(devcat, "SERVER_ROOT", devcat.SERVER_ROOT),
+                mock.patch.object(devcat, "CDN_ROOT", devcat.CDN_ROOT),
+                mock.patch.object(
+                    devcat, "ASSET_PATCH_ACTIVE", devcat.ASSET_PATCH_ACTIVE,
+                ),
+            ):
+                self._run_audit(external)
+                self.assertIsNone(devcat.asset_patch_for(external))
+                scan = devcat.scan_chain(external, None, digest_mode="skip")
+                self.assertFalse(any(
+                    Path(item.relative_path).name == archive_name
+                    for item in scan.archives
+                ))
+
+    def test_env_server_cdn_includes_same_server_active_patch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            server, cdn, patch, _archive_name = self._make_server(Path(tmp))
+            with (
+                mock.patch.dict(
+                    os.environ,
+                    {"WF_SERVER_DIR": str(server), "WF_CDN_DIR": str(cdn)},
+                    clear=False,
+                ),
+                mock.patch.object(devcat, "SERVER_ROOT", devcat.SERVER_ROOT),
+                mock.patch.object(devcat, "CDN_ROOT", devcat.CDN_ROOT),
+                mock.patch.object(
+                    devcat, "ASSET_PATCH_ACTIVE", devcat.ASSET_PATCH_ACTIVE,
+                ),
+            ):
+                self._run_audit()
+                self.assertEqual(patch, devcat.asset_patch_for(cdn))
+
+    def test_env_external_cdn_does_not_guess_active_patch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            server, _cdn, _patch, _archive_name = self._make_server(Path(tmp))
+            external = Path(tmp) / "external-cdn"
+            (external / "archive-common-diff").mkdir(parents=True)
+            with (
+                mock.patch.dict(
+                    os.environ,
+                    {
+                        "WF_SERVER_DIR": str(server),
+                        "WF_CDN_DIR": str(external),
+                    },
+                    clear=False,
+                ),
+                mock.patch.object(devcat, "SERVER_ROOT", devcat.SERVER_ROOT),
+                mock.patch.object(devcat, "CDN_ROOT", devcat.CDN_ROOT),
+                mock.patch.object(
+                    devcat, "ASSET_PATCH_ACTIVE", devcat.ASSET_PATCH_ACTIVE,
+                ),
+            ):
+                self._run_audit()
+                self.assertEqual(external.resolve(), devcat.CDN_ROOT)
+                self.assertIsNone(devcat.asset_patch_for(external))
+
+    def test_import_external_cdn_does_not_guess_active_patch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            server, _cdn, _patch, _archive_name = self._make_server(Path(tmp))
+            external = Path(tmp) / "external-cdn"
+            (external / "archive-common-diff").mkdir(parents=True)
+            cdn_root, asset_patch_active = self._import_roots(server, external)
+            self.assertEqual(str(external.resolve()), cdn_root)
+            self.assertIsNone(asset_patch_active)
+
+    def test_import_server_cdn_includes_same_server_active_patch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            server, cdn, patch, _archive_name = self._make_server(Path(tmp))
+            cdn_root, asset_patch_active = self._import_roots(server, cdn)
+            self.assertEqual(str(cdn.resolve()), cdn_root)
+            self.assertEqual(str(patch), asset_patch_active)
 
 
 class CanonicalizeTest(unittest.TestCase):
