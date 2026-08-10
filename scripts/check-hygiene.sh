@@ -103,7 +103,21 @@ scan_simple_matches() {
 # 停在 07-04，Claude 因此一个月不知道「新角色整包必须走 wf_character_flow.py」。
 # 首行标题允许不同，其余必须逐字相同。
 check_agent_docs_in_sync() {
-    [[ -f CLAUDE.md && -f AGENTS.md ]] || return 0
+    local has_claude=0 has_agents=0
+    [[ -f CLAUDE.md ]] && has_claude=1
+    [[ -f AGENTS.md ]] && has_agents=1
+    # 两份都不存在是合法基线：以上游 main 为基的 worktree 本就没有这两个文件。
+    (( has_claude || has_agents )) || return 0
+    # 只剩一份 = 另一份被删或未同步。初版在这里直接放行，等于「删掉 CLAUDE.md 就能骗过门禁」——
+    # 由 Codex 静态复核发现（2026-08-11），且当时没有任何回归测试打得中这条分支。
+    if (( has_claude != has_agents )); then
+        if (( has_claude )); then
+            note 'AGENTS.md 缺失（CLAUDE.md 存在）——两份必须同时存在且内容一致'
+        else
+            note 'CLAUDE.md 缺失（AGENTS.md 存在）——两份必须同时存在且内容一致'
+        fi
+        return 0
+    fi
     if ! diff -q <(tail -n +2 CLAUDE.md) <(tail -n +2 AGENTS.md) >/dev/null 2>&1; then
         note 'CLAUDE.md 与 AGENTS.md 内容分裂（除首行标题外必须逐字相同）'
         printf '%s\n' '      差异预览：'
