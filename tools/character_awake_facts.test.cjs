@@ -239,6 +239,38 @@ assert.deepEqual(directIds({
     statistics: { zones: "malformed", quest_statistics: { zones: [{ encoffin_count: 0 }] } },
 }), [])
 
+for (const statistics of [
+    { quest_statistics: { zones: [{ encoffin_count: 0 }] } },
+    { quest_statistics: {}, battle: { zones: [{ encoffin_count: 0 }] } },
+    { battle: {}, zone_statistics: [{ encoffin_count: 0 }] },
+]) {
+    assert.deepEqual(directIds({ main: [161002], statistics }), [1610022])
+}
+
+const explicitUndefinedZoneSources = [
+    { zones: undefined, quest_statistics: { zones: [{ encoffin_count: 0 }] } },
+    { quest_statistics: { zones: undefined }, battle: { zones: [{ encoffin_count: 0 }] } },
+    { battle: { zones: undefined }, zone_statistics: [{ encoffin_count: 0 }] },
+    { zone_statistics: undefined },
+]
+assert.deepEqual(
+    explicitUndefinedZoneSources.map(statistics => directIds({ main: [161002], statistics })),
+    [[], [], [], []],
+)
+
+for (const statistics of [
+    { zones: null, quest_statistics: { zones: [{ encoffin_count: 0 }] } },
+    { zones: {}, quest_statistics: { zones: [{ encoffin_count: 0 }] } },
+    { quest_statistics: { zones: null }, battle: { zones: [{ encoffin_count: 0 }] } },
+    { quest_statistics: { zones: "malformed" }, battle: { zones: [{ encoffin_count: 0 }] } },
+    { battle: { zones: null }, zone_statistics: [{ encoffin_count: 0 }] },
+    { battle: { zones: {} }, zone_statistics: [{ encoffin_count: 0 }] },
+    { zone_statistics: null },
+    { zone_statistics: "malformed" },
+]) {
+    assert.deepEqual(directIds({ main: [161002], statistics }), [])
+}
+
 const successfulShapes = [
     { main: [null, 231001], leader: 231001 },
     { main: [null, 231001], leader: 231001, leaderCharacterId: 231001, leaderId: 231001 },

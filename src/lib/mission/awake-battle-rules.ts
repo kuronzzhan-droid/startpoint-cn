@@ -140,6 +140,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return value !== null && typeof value === "object" && !Array.isArray(value)
 }
 
+function hasOwn(record: Record<string, unknown>, key: string): boolean {
+    return Object.prototype.hasOwnProperty.call(record, key)
+}
+
 export function normalizeCharacterPair(a: number, b: number): readonly [number, number] {
     assertPositiveSafeId(a, "character ID")
     assertPositiveSafeId(b, "character ID")
@@ -287,16 +291,16 @@ function matchRaceRule(ctx: ParsedBattleContext, raceKey: unknown): number[] {
 
 function firstZoneCandidate(statistics: unknown): unknown {
     if (!isRecord(statistics)) return undefined
-    if (statistics.zones !== undefined) return statistics.zones
+    if (hasOwn(statistics, "zones")) return statistics.zones
     if (statistics.quest_statistics !== undefined) {
         if (!isRecord(statistics.quest_statistics)) return null
-        if (statistics.quest_statistics.zones !== undefined) return statistics.quest_statistics.zones
+        if (hasOwn(statistics.quest_statistics, "zones")) return statistics.quest_statistics.zones
     }
     if (statistics.battle !== undefined) {
         if (!isRecord(statistics.battle)) return null
-        if (statistics.battle.zones !== undefined) return statistics.battle.zones
+        if (hasOwn(statistics.battle, "zones")) return statistics.battle.zones
     }
-    if (statistics.zone_statistics !== undefined) return statistics.zone_statistics
+    if (hasOwn(statistics, "zone_statistics")) return statistics.zone_statistics
     return undefined
 }
 
