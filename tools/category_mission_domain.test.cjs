@@ -161,9 +161,30 @@ try {
     )
     assert.equal(database.prepare("SELECT COUNT(*) AS count FROM players_category_mission_stages WHERE player_id = 3").get().count, 0)
 
-    mission.updatePlayerCategoryMissionSync(3, 11, 1, Number.MAX_VALUE)
-    assert.throws(() => mission.incrementPlayerCategoryMissionSync(3, 11, 1, Number.MAX_VALUE), RangeError)
-    assert.equal(mission.getPlayerCategoryMissionsSync(3, 11)["1"].progress, Number.MAX_VALUE)
+    const saturatedProgressCases = [
+        { category: 11, progress: Number.MAX_VALUE, delta: 1 },
+        { category: 14, progress: 2 ** 53, delta: 1 },
+        { category: 15, progress: 2 ** 54, delta: 1 },
+        { category: 16, progress: 1e20, delta: 1 },
+    ]
+    for (const { category, progress, delta } of saturatedProgressCases) {
+        mission.updatePlayerCategoryMissionSync(3, category, 1, progress)
+        assert.equal(progress + delta, progress, "fixture delta must be below the stored value's ULP")
+        assert.throws(
+            () => mission.incrementPlayerCategoryMissionSync(3, category, 1, delta),
+            RangeError,
+            `${progress} + ${delta} must reject a non-growing update`,
+        )
+        assert.equal(mission.getPlayerCategoryMissionsSync(3, category)["1"].progress, progress)
+    }
+
+    mission.updatePlayerCategoryMissionSync(3, 17, 1, 2 ** 53)
+    mission.incrementPlayerCategoryMissionSync(3, 17, 1, 2)
+    assert.equal(mission.getPlayerCategoryMissionsSync(3, 17)["1"].progress, (2 ** 53) + 2)
+
+    mission.updatePlayerCategoryMissionSync(3, 18, 1, Number.MAX_VALUE)
+    assert.throws(() => mission.incrementPlayerCategoryMissionSync(3, 18, 1, Number.MAX_VALUE), RangeError)
+    assert.equal(mission.getPlayerCategoryMissionsSync(3, 18)["1"].progress, Number.MAX_VALUE)
 
     assert.throws(() => database.transaction(() => {
         mission.updatePlayerCategoryMissionSync(3, 12, 1, 1)

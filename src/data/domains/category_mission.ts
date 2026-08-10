@@ -198,13 +198,17 @@ export function incrementPlayerCategoryMissionSync(
     INSERT INTO players_category_missions (category, id, progress, player_id)
     VALUES (?, ?, ?, ?)
     ON CONFLICT(category, id, player_id) DO UPDATE SET progress = progress + excluded.progress
-    WHERE typeof(progress) IN ('integer', 'real') AND progress >= 0 AND progress <= ?
+    WHERE typeof(progress) IN ('integer', 'real')
+      AND progress >= 0
+      AND progress + excluded.progress > progress
+      AND CAST(progress + excluded.progress AS REAL) > CAST(progress AS REAL)
+      AND progress + excluded.progress <= ?
     `).run(
         categoryPositiveId(category, "category"),
         categoryPositiveId(missionId, "missionId"),
         validDelta,
         categoryPositiveId(playerId, "playerId"),
-        Number.MAX_VALUE - validDelta
+        Number.MAX_VALUE
     )
     if (result.changes !== 1) throw new RangeError("category progress cannot be incremented safely")
 }
