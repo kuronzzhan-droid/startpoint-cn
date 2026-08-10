@@ -98,6 +98,54 @@ function assertSynchronousCallbackTypeContract() {
     }
 }
 
+function assertRejectedCallbackIsConsumed() {
+    const script = `
+require("ts-node/register/transpile-only")
+const dataDbPath = require.resolve(${JSON.stringify(dataDbPath)})
+const coordinatorPath = require.resolve(${JSON.stringify(coordinatorPath)})
+const commands = []
+const database = {
+    inTransaction: false,
+    exec(command) {
+        commands.push(command)
+        if (command === "BEGIN IMMEDIATE") this.inTransaction = true
+        if (command === "COMMIT" || command === "ROLLBACK") this.inTransaction = false
+    },
+}
+require.cache[dataDbPath] = {
+    exports: { getDb: () => database },
+    filename: dataDbPath,
+    id: dataDbPath,
+    loaded: true,
+}
+const { runImmediateTransactionWithRetry } = require(coordinatorPath)
+;(async () => {
+    let caught
+    try {
+        await runImmediateTransactionWithRetry(() => Promise.reject(new Error("rejected callback sentinel")))
+    } catch (error) {
+        caught = error
+    }
+    if (!(caught instanceof TypeError)) throw new Error("expected synchronous callback TypeError")
+    if (commands.join(",") !== "BEGIN IMMEDIATE,ROLLBACK") throw new Error("unexpected transaction commands")
+    await new Promise(resolve => setImmediate(resolve))
+})()
+`
+    const result = spawnSync(process.execPath, [
+        "--unhandled-rejections=strict",
+        "-e",
+        script,
+    ], {
+        cwd: path.resolve(__dirname, ".."),
+        encoding: "utf8",
+    })
+    assert.equal(
+        result.status,
+        0,
+        `rejected callback leaked as an unhandled rejection\n${result.stdout}\n${result.stderr}`,
+    )
+}
+
 async function runBehaviorTests(coordinator, setCurrentDatabase) {
     const {
         isSqliteBusyError,
@@ -301,6 +349,7 @@ async function main() {
     assert.match(source, /same player[^\n]*not reentrant/i)
     assert.match(source, /must not await[^\n]*withPlayerWriteQueue/i)
     assertSynchronousCallbackTypeContract()
+    assertRejectedCallbackIsConsumed()
     await withIsolatedCoordinator(runBehaviorTests)
 }
 

@@ -12,6 +12,10 @@ function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
     return typeof (value as { then?: unknown }).then === "function"
 }
 
+function consumePromiseLikeRejection(value: PromiseLike<unknown>): void {
+    void Promise.resolve(value).catch(() => undefined)
+}
+
 function assertSafePlayerId(playerId: number): void {
     if (!Number.isSafeInteger(playerId) || playerId < 0) {
         throw new RangeError("playerId must be a non-negative safe integer")
@@ -83,6 +87,7 @@ export async function runImmediateTransactionWithRetry<T>(
             began = true
             const result = operation()
             if (isPromiseLike(result)) {
+                consumePromiseLikeRejection(result)
                 throw new TypeError("SQLite transaction operation must be synchronous and return no Promise or thenable")
             }
             db.exec("COMMIT")
