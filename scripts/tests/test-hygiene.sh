@@ -125,4 +125,37 @@ printf 'TOKEN=secret\n' > "$repo/.env"
 (cd "$repo" && git add -f -- .env)
 expect_fail "$repo" '.env is rejected' '.env 不得提交'
 
+# --- CLAUDE.md / AGENTS.md 同步门禁 ---
+# 这五个用例覆盖 check_agent_docs_in_sync 的全部分支。加它们的直接原因：
+# 初版门禁写成「两份都存在才比较，任一缺失直接放行」，删掉 CLAUDE.md 就能骗过 CI；
+# 而上面 9 个既有用例的测试仓里两份文件都不存在，全部走「合法基线」分支，
+# 一次都没真正执行过被测逻辑——守卫存在但测试打不中。
+# 验收判据：把 check_agent_docs_in_sync 的任一 note 行删掉，对应用例必须变红。
+
+write_pair() {
+    local repo="$1" claude_body="$2" agents_body="$3"
+    [[ -n "$claude_body" ]] && printf '# CLAUDE.md\n%s' "$claude_body" > "$repo/CLAUDE.md"
+    [[ -n "$agents_body" ]] && printf '# AGENTS.md\n%s' "$agents_body" > "$repo/AGENTS.md"
+    (cd "$repo" && git add -A -- CLAUDE.md AGENTS.md 2>/dev/null || true)
+}
+
+repo=$(new_repo agentdocs_absent)
+expect_pass "$repo" 'neither CLAUDE.md nor AGENTS.md present is a legal baseline'
+
+repo=$(new_repo agentdocs_identical)
+write_pair "$repo" 'shared body\n' 'shared body\n'
+expect_pass "$repo" 'CLAUDE.md and AGENTS.md identical below the title passes'
+
+repo=$(new_repo agentdocs_diverged)
+write_pair "$repo" 'shared body\n' 'shared body\nextra line\n'
+expect_fail "$repo" 'CLAUDE.md and AGENTS.md content divergence is rejected' '内容分裂'
+
+repo=$(new_repo agentdocs_missing_agents)
+write_pair "$repo" 'shared body\n' ''
+expect_fail "$repo" 'AGENTS.md missing while CLAUDE.md exists is rejected' 'AGENTS.md 缺失'
+
+repo=$(new_repo agentdocs_missing_claude)
+write_pair "$repo" '' 'shared body\n'
+expect_fail "$repo" 'CLAUDE.md missing while AGENTS.md exists is rejected' 'CLAUDE.md 缺失'
+
 printf '[OK] %d hygiene cases passed\n' "$passed"
