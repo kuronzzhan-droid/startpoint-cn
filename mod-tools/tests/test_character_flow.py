@@ -415,7 +415,14 @@ class TestReleaseQaContract(unittest.TestCase):
             )
             expected = SimpleNamespace(output_dir=base / "out")
             with patch.object(
-                wf_release, "_repo_paths", return_value=(base, roots, base / "cdn")
+                wf_release,
+                "_resolve_repo_paths",
+                return_value=wf_release._RepoPaths(
+                    tool_root=base,
+                    server_root=base,
+                    live_roots=roots,
+                    cdn_root=base / "cdn",
+                ),
             ), patch.object(
                 wf_release, "_current_git_head", return_value="a" * 40
             ), patch.object(
