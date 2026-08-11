@@ -1036,7 +1036,7 @@ def canonicalize_archives(
 def backfill_entity_rows(
     archives: list[ArchiveInput],
     cdn_root: Path,
-    repo_root: Path = ROOT,
+    asset_patch_active: Path | None = ASSET_PATCH_ACTIVE,
 ) -> tuple[dict[str, tuple[str, str, int, str, str]], list[Issue]]:
     """从超出官方目标(1.4.54)的 diff 包读出内部文件行:path→(path,ver,size,hash,tag)。"""
     issues: list[Issue] = []
@@ -1052,11 +1052,14 @@ def backfill_entity_rows(
         ),
     )
     for archive in mod_archives:
-        absolute = (
-            repo_root / "assets" / "asset-patch" / "active" / Path(archive.relative_path).name
-            if archive.foreign_root
-            else cdn_root / archive.relative_path
-        )
+        absolute = archive_source_path(archive, cdn_root, asset_patch_active)
+        if absolute is None:
+            issues.append(Issue(
+                "DEV_ENTITY_ROW_SKIPPED",
+                "foreign archive source root is unavailable",
+                "scanner", relative_path=archive.relative_path,
+            ))
+            continue
         try:
             with zipfile.ZipFile(absolute) as bundle:
                 for info in bundle.infolist():
@@ -1141,7 +1144,9 @@ def emit_dev_catalog(
     canonical_stats: dict = {}
     if canonicalize:
         archives, canonical_stats = canonicalize_archives(archives)
-    mod_rows, row_issues = backfill_entity_rows(archives, cdn_root)
+    mod_rows, row_issues = backfill_entity_rows(
+        archives, cdn_root, asset_patch_active
+    )
     merged_rows = merge_entity_rows(scan.entity_rows, mod_rows)
     installed_bytes = entity_rows_installed_bytes(merged_rows)
     catalog, catalog_issues = build_catalog(
@@ -1441,7 +1446,9 @@ def materialize_dev_view(
 
     scan = scan_chain(cdn_root, asset_patch_active, digest_mode=digest_mode)
     archives, canonical_stats = canonicalize_archives(scan.archives)
-    mod_rows, row_issues = backfill_entity_rows(archives, cdn_root)
+    mod_rows, row_issues = backfill_entity_rows(
+        archives, cdn_root, asset_patch_active
+    )
     merged_rows = merge_entity_rows(scan.entity_rows, mod_rows)
     issues = scan.issues + row_issues
 

@@ -59,8 +59,9 @@ ROOT = TOOL_DIR.parent
 sys.path.insert(0, str(TOOL_DIR))
 import wf_mod_tool as core  # noqa: E402
 
-CDN_COMMON_DIFF = ROOT / ".cdn" / "cn" / "archive-common-diff"
-CDN_COMMON_FULL = ROOT / ".cdn" / "cn" / "archive-common-full"
+CDN_ROOT = core.resolve_cdn_root_lax()
+CDN_COMMON_DIFF = CDN_ROOT / "archive-common-diff"
+CDN_COMMON_FULL = CDN_ROOT / "archive-common-full"
 PACKS = ROOT / "work" / "character_packs"
 
 _EDGE = re.compile(r"^pinball-(\d+\.\d+\.\d+)-(\d+\.\d+\.\d+)-(\d+)-")

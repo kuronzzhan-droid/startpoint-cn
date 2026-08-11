@@ -7,7 +7,9 @@ import shutil
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
+from unittest import mock
 
 
 MOD_TOOLS = Path(__file__).resolve().parent.parent
@@ -36,6 +38,28 @@ def load_copied_module(source_name: str, module_name: str, tool_dir: Path):
 
 
 class ToolWorkPathCase(unittest.TestCase):
+    def test_publish_guard_indexes_the_shared_resolver_cdn(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            tool_dir = root / "independent-tool"
+            cdn = root / "external-cdn" / "cn"
+            diff = cdn / "archive-common-diff"
+            (cdn / "archive-common-full").mkdir(parents=True)
+            diff.mkdir(parents=True)
+            archive_path = diff / "pinball-1.4.54-1.4.55-1-test.zip"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.writestr("production/upload/aa/bb", b"payload")
+
+            with mock.patch.object(
+                wf_mod_tool, "resolve_cdn_root_lax", return_value=cdn
+            ) as resolver:
+                guard = load_copied_module(
+                    "wf_publish_guard.py", "isolated_publish_guard_cdn", tool_dir
+                )
+
+            self.assertIn("aa/bb", guard.chain_latest_index())
+            resolver.assert_called_once_with()
+
     def test_publish_guard_reads_pending_from_its_own_tool_directory(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             tool_dir = Path(td) / "independent-tool"
