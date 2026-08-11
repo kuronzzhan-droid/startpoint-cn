@@ -73,6 +73,50 @@ class ToolWorkPathCase(unittest.TestCase):
             )
             self.assertEqual(["aa/bb"], guard._pending_relatives())
 
+    def test_publish_guard_reads_character_claims_from_its_own_tool_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            tool_dir = root / "independent-tool"
+            manifest = (
+                tool_dir
+                / "work"
+                / "character_packs"
+                / "169998"
+                / "package"
+                / "manifest.json"
+            )
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "tables": [
+                            {
+                                "logical_path": "master/character.orderedmap",
+                                "outer_keys": ["169998"],
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            cdn = root / "cdn" / "cn"
+            cdn.mkdir(parents=True)
+
+            with mock.patch.object(
+                wf_mod_tool, "resolve_cdn_root_lax", return_value=cdn
+            ), mock.patch.object(
+                wf_mod_tool, "project_root", return_value=tool_dir
+            ) as project_root:
+                guard = load_copied_module(
+                    "wf_publish_guard.py", "isolated_publish_guard_claims", tool_dir
+                )
+
+            self.assertEqual(
+                {"master/character.orderedmap": {"169998"}},
+                guard.protected_keys(),
+            )
+            project_root.assert_called_once_with()
+
     def test_rogue_banner_writes_pending_in_its_own_tool_directory(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             tool_dir = Path(td) / "independent-tool"
