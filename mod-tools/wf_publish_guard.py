@@ -54,8 +54,9 @@ import zipfile
 import zlib
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "mod-tools"))
+TOOL_DIR = Path(__file__).resolve().parent
+ROOT = TOOL_DIR.parent
+sys.path.insert(0, str(TOOL_DIR))
 import wf_mod_tool as core  # noqa: E402
 
 CDN_COMMON_DIFF = ROOT / ".cdn" / "cn" / "archive-common-diff"
@@ -297,7 +298,7 @@ def check(entries: list[tuple[str, bytes]], *, verbose: bool = True) -> list[str
 
 
 def _pending_relatives() -> list[str]:
-    pending = ROOT / "mod-tools" / "work" / "sync_pending.json"
+    pending = TOOL_DIR / "work" / "sync_pending.json"
     if not pending.is_file():
         return []
     return [str(x) for x in json.loads(pending.read_text(encoding="utf-8"))
