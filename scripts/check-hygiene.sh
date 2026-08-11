@@ -102,35 +102,82 @@ scan_simple_matches() {
 # 就会依据不同规则施工——实际发生过：AGENTS.md 在 2026-07-15 加了工程基线，CLAUDE.md
 # 停在 07-04，Claude 因此一个月不知道「新角色整包必须走 wf_character_flow.py」。
 # 首行标题允许不同，其余必须逐字相同。
+#
+# 判据分三层，前两层决定「该不该有」，第三层才比内容：
+#
+#   ① 血缘：AGENTS.md 是否在 HEAD 血缘中出现过。
+#      不能用 CLAUDE.md —— 上游 main 在 199f37a8(2026-07-23) 主动删过它，
+#      拿它当信号会把上游基线误判成 fork。AGENTS.md 在上游历史里从未出现。
+#   ② index 跟踪状态：CLAUDE.md 与 AGENTS.md 必须**分别**校验。
+#      聚合成单一 tracked 位时，「一份 tracked、另一份 untracked」会被放行。
+#   ③ 内容：staged 模式比 index blob（即将提交的内容），--all 模式比工作树。
+#      拿工作树内容冒充 staged 内容，会让「index 分裂但工作树一致」蒙混过关。
+#
+# 前两版都栽在同一处：初版看「盘上有没有」（删一份报错、删两份放行），
+# v1.11 看「index 有没有」（git rm 双删并提交后 index 已空，被误判成合法基线）。
+# 两者都不是「该不该有」。
+#
+# 浅克隆无父提交时 git 把树内文件全当新增，rev-list 查不到 AGENTS.md，
+# 血缘不可判 —— 必须 fail closed，否则 `--depth=1` 就是现成的绕过路径。
+# 代价是：以上游为基线的浅克隆也会被拒。若上游将来引入 AGENTS.md，
+# 本判据失效，rebase 前必须换成显式标记（已记入 docs/协作对齐-Claude-Codex.md）。
 check_agent_docs_in_sync() {
-    local has_claude=0 has_agents=0 tracked=0
-    [[ -f CLAUDE.md ]] && has_claude=1
-    [[ -f AGENTS.md ]] && has_agents=1
-    # 判据是「git 认不认为它们该在」，不是「盘上有没有」。
-    # 只看盘上会留后门：删一份报错，删两份反而放行——绕过成本只是从 1 个文件抬到 2 个。
-    git ls-files --error-unmatch CLAUDE.md >/dev/null 2>&1 && tracked=1
-    git ls-files --error-unmatch AGENTS.md >/dev/null 2>&1 && tracked=1
-    # 既未被跟踪、盘上也没有 = 合法基线（以上游 main 为基的 worktree 本就没有这两个文件）。
-    (( tracked || has_claude || has_agents )) || return 0
-    # 该在却整体消失 = 有人把两份一起删了。
-    if (( tracked && !has_claude && !has_agents )); then
-        note 'CLAUDE.md 与 AGENTS.md 均被跟踪但都不在工作区——两份必须同时存在且内容一致'
-        return 0
+    local tracked_claude=0 tracked_agents=0 missing='' shallow lineage
+    git ls-files --error-unmatch CLAUDE.md >/dev/null 2>&1 && tracked_claude=1
+    git ls-files --error-unmatch AGENTS.md >/dev/null 2>&1 && tracked_agents=1
+
+    shallow=$(git rev-parse --is-shallow-repository 2>/dev/null || printf 'false')
+    if [[ "$shallow" == 'true' ]]; then
+        if (( !tracked_claude || !tracked_agents )); then
+            note '浅克隆无法判定仓库血缘——保守要求 CLAUDE.md 与 AGENTS.md 都被 git 跟踪且存在'
+            return 0
+        fi
+    else
+        lineage=$(git rev-list --max-count=1 HEAD -- AGENTS.md 2>/dev/null || printf '')
+        # AGENTS.md 从未进过血缘，且当前两份都不被跟踪 = 以上游为基线的合法树。
+        if [[ -z "$lineage" ]] && (( !tracked_claude && !tracked_agents )); then
+            return 0
+        fi
+        if (( !tracked_claude || !tracked_agents )); then
+            (( tracked_claude )) || missing='CLAUDE.md'
+            (( tracked_agents )) || missing="${missing:+$missing 与 }AGENTS.md"
+            note "本仓血缘要求两份规则书都被 git 跟踪，但 ${missing} 不在 index 中"
+            return 0
+        fi
     fi
-    # 只剩一份 = 另一份被删或未同步。初版在这里直接放行，等于「删掉 CLAUDE.md 就能骗过门禁」——
-    # 由 Codex 静态复核发现（2026-08-11），且当时没有任何回归测试打得中这条分支。
-    if (( has_claude != has_agents )); then
-        if (( has_claude )); then
-            note 'AGENTS.md 缺失（CLAUDE.md 存在）——两份必须同时存在且内容一致'
-        else
-            note 'CLAUDE.md 缺失（AGENTS.md 存在）——两份必须同时存在且内容一致'
+
+    if [[ "$MODE" == '--all' ]]; then
+        local has_claude=0 has_agents=0
+        [[ -f CLAUDE.md ]] && has_claude=1
+        [[ -f AGENTS.md ]] && has_agents=1
+        if (( !has_claude && !has_agents )); then
+            note 'CLAUDE.md 与 AGENTS.md 均被跟踪但都不在工作区——两份必须同时存在且内容一致'
+            return 0
+        fi
+        if (( has_claude != has_agents )); then
+            if (( has_claude )); then
+                note 'AGENTS.md 缺失（CLAUDE.md 存在）——两份必须同时存在且内容一致'
+            else
+                note 'CLAUDE.md 缺失（AGENTS.md 存在）——两份必须同时存在且内容一致'
+            fi
+            return 0
+        fi
+        if ! diff -q <(tail -n +2 CLAUDE.md) <(tail -n +2 AGENTS.md) >/dev/null 2>&1; then
+            note 'CLAUDE.md 与 AGENTS.md 内容分裂（除首行标题外必须逐字相同）'
+            printf '%s\n' '      差异预览：'
+            diff <(tail -n +2 CLAUDE.md) <(tail -n +2 AGENTS.md) 2>/dev/null | sed -n '1,10{s/^/        /;p;}'
         fi
         return 0
     fi
-    if ! diff -q <(tail -n +2 CLAUDE.md) <(tail -n +2 AGENTS.md) >/dev/null 2>&1; then
-        note 'CLAUDE.md 与 AGENTS.md 内容分裂（除首行标题外必须逐字相同）'
+
+    # staged：比即将提交的 index blob，不看工作树。
+    if ! diff -q <(git show :CLAUDE.md 2>/dev/null | tail -n +2) \
+                 <(git show :AGENTS.md 2>/dev/null | tail -n +2) >/dev/null 2>&1; then
+        note 'CLAUDE.md 与 AGENTS.md 内容分裂（除首行标题外必须逐字相同；staged 模式比对 index）'
         printf '%s\n' '      差异预览：'
-        diff <(tail -n +2 CLAUDE.md) <(tail -n +2 AGENTS.md) 2>/dev/null | sed -n '1,10{s/^/        /;p;}'
+        diff <(git show :CLAUDE.md 2>/dev/null | tail -n +2) \
+             <(git show :AGENTS.md 2>/dev/null | tail -n +2) 2>/dev/null \
+            | sed -n '1,10{s/^/        /;p;}'
     fi
 }
 

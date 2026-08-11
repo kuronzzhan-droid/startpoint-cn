@@ -1,8 +1,8 @@
 # Claude / Codex 协作对齐
 
-> **状态**：v1.12（2026-08-11）。
+> **状态**：v1.13（2026-08-11）。
 > **⚠ 双侧复核基线是 v1.9**（Codex 复核提交 `41201ad1`）。
-> **v1.10 ~ v1.12 为 Claude 单方面修订，Codex 尚未复核**——连同代码提交
+> **v1.10 ~ v1.13 为 Claude 单方面修订，Codex 尚未复核**——连同代码提交
 > `266a2f5c`、`f0d64f99` 一并待复核，检查点见 `work/agent-coordination/claude-to-codex.md`。
 >
 > **本行的教训**：v1.10/v1.11 曾机械沿用 v1.9 的「双侧复核补全」字样，
@@ -35,28 +35,53 @@
   「资产整理必须 scan→plan→preflight→quarantine→verify→restore drill」、启动器与端口纪律。
 - 同期 Claude 在评审目录整理方案时，把一条**早已存在于 AGENTS.md 的既有规约**当作新建议提出。
 
-**已修复**：两份文件现已合并为除首行标题外逐字相同，并由
-`scripts/check-hygiene.sh` 的 `check_agent_docs_in_sync()` 把关。
+两份文件现已合并为除首行标题外逐字相同，并由 `scripts/check-hygiene.sh` 的
+`check_agent_docs_in_sync()` 把关。**该门禁前两版都被独立复核判定不合格，第三版尚待复核。**
 
-> **【事实】Codex 静态复核（2026-08-11 06:04）指出初版门禁有洞**：仅在两份文件都存在时比较，
-> **任一文件缺失直接放行**——删掉 `CLAUDE.md` 就能骗过 CI；且**没有任何 hygiene 回归测试
-> 打得中这段逻辑**（既有 9 个用例的测试仓里两份文件都不存在，全部走"合法基线"分支）。
+> **【事实】三版演进（前两版均已被推翻，不要引用其结论）**
 >
-> **【已修复】Claude，2026-08-11**：判据改为**「git 是否跟踪」而非「盘上有没有」**——
-> 只看盘上会留后门：删一份报错，**删两份反而放行**，绕过成本只是从 1 个文件抬到 2 个。
-> 现行逻辑：既未被跟踪也不在盘上 = 合法基线；被跟踪却整体消失 = 失败；
-> 只剩一份 = 失败；两份都在 = 比较内容。
-> 补 6 个回归用例覆盖全部分支（`scripts/tests/test-hygiene.sh`，9 → 15）。
+> | 版本 | 判据 | 被谁推翻 | 洞 |
+> |---|---|---|---|
+> | 初版 `266a2f5c` | 「盘上有没有」 | Codex 静态复核 2026-08-11 06:04 | 任一文件缺失直接放行；且**无任何回归测试打得中**（既有 9 用例的测试仓两份都不存在，全走合法基线分支） |
+> | v1.11 `f0d64f99` | 「index 有没有」 | Codex 复核 REJECT（1 Blocker + 2 Important） | `git rm` 双删并提交后 index 已空，被误判成合法基线；staged 模式比工作树而非 index blob；聚合成单一 `tracked` 位 |
+> | **本版** | **「该不该有」= 血缘 + 分别校验 index + 分模式比内容** | 待独立复核 | — |
 >
-> ⚠️ 第二个后门是 Claude 在「要不要请 Codex 再复核」时自查发现的，**不在 Codex v1.9 的清单里**
-> ——第一版修复只把绕过成本抬高了一档，没堵死。
+> **【事实】本版判据（三层）**
+> 1. **血缘**：`AGENTS.md` 是否在 `HEAD` 血缘中出现过。
+>    **不能用 `CLAUDE.md`** —— 上游 main 在 `199f37a8`(2026-07-23) **主动删除过它**，
+>    拿它当信号会把上游基线误判成 fork。`AGENTS.md` 在上游历史里从未出现。
+> 2. **index 跟踪状态**：`CLAUDE.md` 与 `AGENTS.md` **分别**校验，不得聚合成一个位
+>    （聚合时「一份 tracked、另一份 untracked」会被放行）。
+> 3. **内容**：`staged` 比 **index blob**（即将提交的内容），`--all` 比**工作树**。
+>    拿工作树内容冒充 staged 内容，会让「index 分裂但工作树一致」蒙混过关。
 >
-> **变异验证**（本项目判据：删掉判定必须变红）：
-> 还原成初版的「缺失即放行」→ `AGENTS.md missing…` 变红；
-> 单独删掉「内容分裂」那句 `note` → `content divergence` 变红；
-> 把判据退回「只看盘上有没有」→ `both tracked agent docs deleted…` 变红。**测试确实打得中。**
+> **【事实】浅克隆 fail closed**：浅克隆无父提交时 git 把树内文件全当新增，
+> `rev-list` 查不到 `AGENTS.md`，血缘不可判 ⇒ 保守要求两份存在且被跟踪。
+> 否则 `--depth=1` 就是现成的绕过路径。**代价：以上游为基线的浅克隆也会被拒。**
+>
+> 🔴 **【判断，中置信度】本判据的已知脆弱点（必须在 rebase 前复查）**：
+> 它依赖「**上游永不引入 `AGENTS.md`**」。若上游将来引入该文件，血缘信号即失效，
+> **rebase 前必须换成显式标记方案**（例如仓内显式声明「本仓要求两份规则书并存」的标记文件）。
+>
+> **【事实】回归矩阵 15 → 33 例**，两种模式分别断言。新增覆盖：
+> 上游基线（CLAUDE.md 曾有 / AGENTS.md 从未有）、工作树分裂 vs index 分裂、
+> 单份缺失的工作树层与 index 层两种形态、普通 `rm` 双删、`git rm` 双删（未提交 / 已提交）、
+> fresh clone、一份 tracked 另一份 untracked（同内容 / 不同内容）、浅克隆双删。
+>
+> **【事实】变异验证 5 项，全部按预期变红**（本项目判据：注掉判定必须真实变红）
+>
+> | 变异 | 期望红 | 实际首败 |
+> |---|---|---|
+> | M1 血缘信号换成 `CLAUDE.md` | upstream baseline | `upstream baseline (CLAUDE.md once existed, AGENTS.md never) passes staged` |
+> | M2 删掉浅克隆 fail-closed | shallow clone | `shallow clone with both deleted is rejected (fail closed)` |
+> | M3 `tracked` 位聚合成一个 | tracked/untracked split | `tracked/untracked split with same content is rejected by staged` |
+> | M4 staged 改比工作树 | index divergence (staged) | `worktree divergence with clean index passes staged`（同一判定，文件顺序更早） |
+> | M5 删掉「血缘存在但 index 缺文件」判定 | git rm 双删 | `staged git rm of both is rejected by staged` |
 
-因此当前准确表述是：**两份都存在但内容分裂、或只存在其中一份，都会 CI 红。**
+因此当前准确表述是：**血缘存在时，两份必须同时被跟踪且内容一致；
+`staged` 判 index、`--all` 判工作树；浅克隆一律 fail closed。
+上游基线（`AGENTS.md` 从未出现且两份均未跟踪）放行。**
+**本版仅由 Claude 自测，未经独立复核——复核通过前不得表述为「已修复」。**
 
 **结论**：两个执行者共用同一份规则书是硬要求，不是建议。
 
@@ -601,3 +626,4 @@ if ($authoritative -cne $local) { throw 'WORKTREE RULES DRIFT' }
 | 2026-08-11 | **v1.10 补掉 Codex 查出的门禁洞**：`check_agent_docs_in_sync()` 初版「任一文件缺失直接放行」已修为三分支（都缺=合法基线／只剩一份=失败／都在=比较）；补 5 个回归用例（9→14）并做变异验证，还原旧行为或删掉 note 后对应用例确实变红。此洞与「守卫无测试」均由 Codex v1.9 静态复核指出 |
 | 2026-08-11 | **v1.11 堵掉第二个后门**：v1.10 的修复只看「盘上有没有」，删一份红、**删两份反而绿**。判据改为「git 是否跟踪」，被跟踪却整体消失同样失败；用例 14→15，三次变异验证全部按预期变红。该洞不在 Codex v1.9 清单内，系 Claude 自查发现——**第一版修复只抬高了绕过成本，没堵死** |
 | 2026-08-11 | **v1.12 订正复核状态**：v1.10/v1.11 曾机械沿用 v1.9 的「双侧复核补全」字样，把 Codex 的复核背书带到它没看过的版本上。状态行改为显式区分**复核基线 v1.9**（`41201ad1`）与**当前版本 v1.11**（Claude 单方面，待复核）|
+| 2026-08-11 | **v1.13 门禁第三版（A1）**：判据改为「该不该有」三层——血缘（`AGENTS.md` 是否进过 HEAD 血缘，**不用 `CLAUDE.md`**，上游曾主动删它）＋ index 跟踪状态**分别**校验 ＋ 内容按模式比（staged 比 index blob、`--all` 比工作树）；浅克隆 fail closed。回归矩阵 15→33 例双模式断言，5 项变异验证全部按预期变红。**登记已知脆弱点：依赖「上游永不引入 AGENTS.md」，rebase 前须复查。**前两版（`266a2f5c` 初版、`f0d64f99` v1.11）结论已全部撤回。**本版未经独立复核，不得表述为「已修复」** |

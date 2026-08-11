@@ -126,42 +126,142 @@ printf 'TOKEN=secret\n' > "$repo/.env"
 expect_fail "$repo" '.env is rejected' '.env 不得提交'
 
 # --- CLAUDE.md / AGENTS.md 同步门禁 ---
-# 这五个用例覆盖 check_agent_docs_in_sync 的全部分支。加它们的直接原因：
-# 初版门禁写成「两份都存在才比较，任一缺失直接放行」，删掉 CLAUDE.md 就能骗过 CI；
-# 而上面 9 个既有用例的测试仓里两份文件都不存在，全部走「合法基线」分支，
-# 一次都没真正执行过被测逻辑——守卫存在但测试打不中。
-# 验收判据：把 check_agent_docs_in_sync 的任一 note 行删掉，对应用例必须变红。
+# 血缘判据：AGENTS.md 是否在 HEAD 血缘中出现过。
+#   上游 main 曾主动删除 CLAUDE.md（199f37a8），所以「CLAUDE.md 曾存在」不能当 fork 信号；
+#   AGENTS.md 在上游历史里从未出现，是当前唯一可用的区分信号。
+# 浅克隆无法可靠判血缘（无父提交时 git 视树内文件为全新增），必须 fail closed。
+# staged 模式判 index blob（即将提交的内容），--all 模式判工作树内容，
+#   但两种模式都必须分别校验 CLAUDE.md 与 AGENTS.md 的 index tracked 状态，不得聚合成一个位。
+# 验收判据：注掉或反转任一判定后，对应用例必须真实变红。
 
-write_pair() {
-    local repo="$1" claude_body="$2" agents_body="$3"
-    [[ -n "$claude_body" ]] && printf '# CLAUDE.md\n%s' "$claude_body" > "$repo/CLAUDE.md"
-    [[ -n "$agents_body" ]] && printf '# AGENTS.md\n%s' "$agents_body" > "$repo/AGENTS.md"
-    (cd "$repo" && git add -A -- CLAUDE.md AGENTS.md 2>/dev/null || true)
+# 同时断言两种模式；mode 为空串表示默认 staged 模式。
+expect_mode() {
+    local repo="$1" mode="$2" want="$3" label="$4" needle="${5:-}" output rc
+    if output=$(cd "$repo" && bash scripts/check-hygiene.sh ${mode:+"$mode"} 2>&1); then rc=0; else rc=$?; fi
+    if [[ "$want" == 'pass' ]]; then
+        if (( rc == 0 )); then
+            passed=$((passed + 1)); printf '[PASS] %s\n' "$label"; return 0
+        fi
+        printf '[FAIL] %s (expected pass, rc=%d)\n%s\n' "$label" "$rc" "$output" >&2
+        return 1
+    fi
+    if (( rc == 0 )); then
+        printf '[FAIL] %s (expected fail, scanner passed)\n' "$label" >&2
+        return 1
+    fi
+    if [[ -n "$needle" && "$output" != *"$needle"* ]]; then
+        printf '[FAIL] %s (missing %q)\n%s\n' "$label" "$needle" "$output" >&2
+        return 1
+    fi
+    passed=$((passed + 1)); printf '[PASS] %s\n' "$label"
 }
 
-repo=$(new_repo agentdocs_absent)
-expect_pass "$repo" 'neither CLAUDE.md nor AGENTS.md present is a legal baseline'
+# fork 血缘仓：两份规则书都进过历史（AGENTS.md 出现在 HEAD 血缘中）。
+fork_repo() {
+    local repo
+    repo=$(new_repo "$1")
+    printf '# CLAUDE.md\nshared body\n' > "$repo/CLAUDE.md"
+    printf '# AGENTS.md\nshared body\n' > "$repo/AGENTS.md"
+    (cd "$repo" && git add -- CLAUDE.md AGENTS.md && git commit -qm 'add agent docs')
+    printf '%s' "$repo"
+}
 
-repo=$(new_repo agentdocs_identical)
-write_pair "$repo" 'shared body\n' 'shared body\n'
-expect_pass "$repo" 'CLAUDE.md and AGENTS.md identical below the title passes'
+# 1) 合法上游基线：CLAUDE.md 曾在历史里、AGENTS.md 从未有、当前两份都缺 → 放行。
+#    这条钉死「不得拿 CLAUDE.md 当血缘信号」。
+repo=$(new_repo upstream_baseline)
+printf '# CLAUDE.md\nbody\n' > "$repo/CLAUDE.md"
+(cd "$repo" && git add -- CLAUDE.md && git commit -qm 'add claude md' \
+    && git rm -q CLAUDE.md && git commit -qm 'drop claude md')
+expect_mode "$repo" '' pass 'upstream baseline (CLAUDE.md once existed, AGENTS.md never) passes staged'
+expect_mode "$repo" '--all' pass 'upstream baseline passes --all'
 
-repo=$(new_repo agentdocs_diverged)
-write_pair "$repo" 'shared body\n' 'shared body\nextra line\n'
-expect_fail "$repo" 'CLAUDE.md and AGENTS.md content divergence is rejected' '内容分裂'
+# 2) fork 血缘且两份一致 → 两种模式都放行。
+repo=$(fork_repo fork_consistent)
+expect_mode "$repo" '' pass 'fork lineage with identical docs passes staged'
+expect_mode "$repo" '--all' pass 'fork lineage with identical docs passes --all'
 
-repo=$(new_repo agentdocs_missing_agents)
-write_pair "$repo" 'shared body\n' ''
-expect_fail "$repo" 'AGENTS.md missing while CLAUDE.md exists is rejected' 'AGENTS.md 缺失'
+# 3) 工作树分裂而 index 一致 → staged 按 index 放行，--all 按工作树拒绝。
+repo=$(fork_repo worktree_diverged)
+printf '# AGENTS.md\nshared body\nworktree drift\n' > "$repo/AGENTS.md"
+expect_mode "$repo" '' pass 'worktree divergence with clean index passes staged'
+expect_mode "$repo" '--all' fail 'worktree divergence is rejected by --all' '内容分裂'
 
-repo=$(new_repo agentdocs_missing_claude)
-write_pair "$repo" '' 'shared body\n'
-expect_fail "$repo" 'CLAUDE.md missing while AGENTS.md exists is rejected' 'CLAUDE.md 缺失'
+# 4) index 分裂而工作树一致 → staged 拒绝（不得拿工作树内容冒充 staged 内容）。
+repo=$(fork_repo index_diverged)
+printf '# AGENTS.md\nshared body\nstaged drift\n' > "$repo/AGENTS.md"
+(cd "$repo" && git add -- AGENTS.md)
+printf '# AGENTS.md\nshared body\n' > "$repo/AGENTS.md"
+expect_mode "$repo" '' fail 'index divergence with clean worktree is rejected by staged' '内容分裂'
+expect_mode "$repo" '--all' pass 'index divergence with clean worktree passes --all'
 
-# 只看「盘上有没有」会留后门：删一份报错，删两份反而放行。判据必须是 git 是否跟踪。
-repo=$(new_repo agentdocs_both_deleted)
-write_pair "$repo" 'shared body\n' 'shared body\n'
-(cd "$repo" && git commit -qm 'add agent docs' && rm -f CLAUDE.md AGENTS.md)
-expect_fail "$repo" 'both tracked agent docs deleted from worktree is rejected' '均被跟踪但都不在工作区'
+# 5) 只剩一份（工作树层）→ --all 拒绝并点名缺哪份。
+repo=$(fork_repo only_claude_worktree)
+rm -f "$repo/AGENTS.md"
+expect_mode "$repo" '--all' fail 'AGENTS.md missing from worktree is rejected by --all' 'AGENTS.md 缺失'
+
+repo=$(fork_repo only_agents_worktree)
+rm -f "$repo/CLAUDE.md"
+expect_mode "$repo" '--all' fail 'CLAUDE.md missing from worktree is rejected by --all' 'CLAUDE.md 缺失'
+
+# 6) 只剩一份（index 层，git rm 单删）→ staged 拒绝。
+repo=$(fork_repo only_claude_index)
+(cd "$repo" && git rm -q AGENTS.md)
+expect_mode "$repo" '' fail 'AGENTS.md removed from index is rejected by staged' 'AGENTS.md'
+
+repo=$(fork_repo only_agents_index)
+(cd "$repo" && git rm -q CLAUDE.md)
+expect_mode "$repo" '' fail 'CLAUDE.md removed from index is rejected by staged' 'CLAUDE.md'
+
+# 7) 普通未暂存 rm 双删 → staged 放行（index 未动），--all 拒绝（工作树没了）。
+repo=$(fork_repo plain_rm_both)
+rm -f "$repo/CLAUDE.md" "$repo/AGENTS.md"
+expect_mode "$repo" '' pass 'plain unstaged rm of both passes staged'
+expect_mode "$repo" '--all' fail 'plain unstaged rm of both is rejected by --all' '不在工作区'
+
+# 8) git rm 双删但未提交 → 两种模式都拒绝（index 已空，血缘仍在）。
+repo=$(fork_repo gitrm_uncommitted)
+(cd "$repo" && git rm -q CLAUDE.md AGENTS.md)
+expect_mode "$repo" '' fail 'staged git rm of both is rejected by staged' '血缘'
+expect_mode "$repo" '--all' fail 'staged git rm of both is rejected by --all' '血缘'
+
+# 9) 双删并提交后 → 两种模式都拒绝。这是初版与 v1.11 都放行的 Blocker。
+repo=$(fork_repo gitrm_committed)
+(cd "$repo" && git rm -q CLAUDE.md AGENTS.md && git commit -qm 'delete both')
+expect_mode "$repo" '' fail 'committed deletion of both is rejected by staged' '血缘'
+expect_mode "$repo" '--all' fail 'committed deletion of both is rejected by --all' '血缘'
+
+# 10) 双删提交后的 fresh clone（CI checkout 形态）→ --all 拒绝。
+src=$(fork_repo clone_source)
+(cd "$src" && git rm -q CLAUDE.md AGENTS.md && git commit -qm 'delete both')
+clone="$tmp/clone_fresh"
+git clone -q "$src" "$clone"
+expect_mode "$clone" '--all' fail 'fresh clone of a both-deleted repo is rejected by --all' '血缘'
+
+# 11) 一份 tracked、另一份 untracked（内容相同）→ 两种模式都拒绝。
+#     聚合成单一 tracked 位时这条会放行。
+repo=$(fork_repo one_untracked_same)
+(cd "$repo" && git rm -q --cached AGENTS.md && git commit -qm 'untrack agents')
+expect_mode "$repo" '' fail 'tracked/untracked split with same content is rejected by staged' '跟踪'
+expect_mode "$repo" '--all' fail 'tracked/untracked split with same content is rejected by --all' '跟踪'
+
+# 12) 一份 tracked、另一份 untracked（内容不同）→ 两种模式都拒绝。
+repo=$(fork_repo one_untracked_diff)
+(cd "$repo" && git rm -q --cached AGENTS.md && git commit -qm 'untrack agents')
+printf '# AGENTS.md\nshared body\ndifferent\n' > "$repo/AGENTS.md"
+expect_mode "$repo" '' fail 'tracked/untracked split with different content is rejected by staged' '跟踪'
+expect_mode "$repo" '--all' fail 'tracked/untracked split with different content is rejected by --all' '跟踪'
+
+# 13) 浅克隆双删 → 血缘不可判，保守拒绝。
+#     浅克隆无父提交时 git 视树内文件为全新增，rev-list 查不到 AGENTS.md，
+#     没有这条 fail-closed 就会误放行。
+src=$(fork_repo shallow_source)
+(cd "$src" && git rm -q CLAUDE.md AGENTS.md && git commit -qm 'delete both')
+shallow="$tmp/clone_shallow"
+if git clone -q --depth=1 "file://$(cd "$src" && pwd)" "$shallow" 2>/dev/null \
+    && [[ "$(cd "$shallow" && git rev-parse --is-shallow-repository)" == 'true' ]]; then
+    expect_mode "$shallow" '--all' fail 'shallow clone with both deleted is rejected (fail closed)' '浅克隆'
+else
+    printf '[SKIP] shallow clone unsupported in this environment\n' >&2
+fi
 
 printf '[OK] %d hygiene cases passed\n' "$passed"
