@@ -351,6 +351,18 @@ def _resolve_profile_path(value: str) -> Path:
     return p if p.is_absolute() else (project_root() / p).resolve()
 
 
+def _optional_profile_path(
+    entry: dict[str, Any], profile_id: str, key: str
+) -> Path | None:
+    """Resolve an optional path, rejecting an explicitly present empty value."""
+    if key not in entry:
+        return None
+    value = entry[key]
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"profile {key} must be a non-empty path: {profile_id}")
+    return _resolve_profile_path(value)
+
+
 def load_profiles() -> dict[str, Any]:
     pf = profiles_file()
     if not pf.exists():
@@ -376,8 +388,8 @@ def resolve_profile(profile_id: str | None = None) -> VersionProfile | None:
         cdndata=_resolve_profile_path(entry["cdndata"]) if entry.get("cdndata") else None,
         res_version=entry.get("res_version", ""),
         fallback=_resolve_profile_path(entry["fallback"]) if entry.get("fallback") else None,
-        cdn_dir=_resolve_profile_path(entry["cdn_dir"]) if entry.get("cdn_dir") else None,
-        server_dir=_resolve_profile_path(entry["server_dir"]) if entry.get("server_dir") else None,
+        cdn_dir=_optional_profile_path(entry, pid, "cdn_dir"),
+        server_dir=_optional_profile_path(entry, pid, "server_dir"),
     )
 
 
@@ -408,17 +420,19 @@ TARGET_STORE_HINT = (
 _UNSET_PROFILE = object()
 
 
-def _require_store_directory(value: str | os.PathLike[str], *, label: str) -> Path:
+def _require_existing_directory(
+    value: str | os.PathLike[str], *, label: str
+) -> Path:
     raw = os.fspath(value)
     if not raw.strip():
         raise ValueError(f"{label} must be a non-empty path")
-    store = Path(raw).expanduser()
-    if not store.is_absolute():
+    directory = Path(raw).expanduser()
+    if not directory.is_absolute():
         raise ValueError(f"{label} must be an absolute path: {raw}")
-    store = store.resolve()
-    if not store.is_dir():
-        raise ValueError(f"{label} is not an existing directory: {store}")
-    return store
+    directory = directory.resolve()
+    if not directory.is_dir():
+        raise ValueError(f"{label} is not an existing directory: {directory}")
+    return directory
 
 
 def env_target_store() -> Path | None:
@@ -426,7 +440,7 @@ def env_target_store() -> Path | None:
     if "WF_TARGET_STORE" not in os.environ:
         return None
     try:
-        return _require_store_directory(
+        return _require_existing_directory(
             os.environ["WF_TARGET_STORE"], label="WF_TARGET_STORE"
         )
     except ValueError as error:
@@ -453,7 +467,7 @@ def resolve_active_store(
     if profile is _UNSET_PROFILE:
         profile = resolve_profile(profile_id or os.environ.get("WF_PROFILE"))
     if profile is not None and getattr(profile, "store", None):
-        return _require_store_directory(profile.store, label="profile store")
+        return _require_existing_directory(profile.store, label="profile store")
     seen: list[Path] = []
     for base in (root, project_root(), Path.cwd()):
         if base is None:
@@ -491,6 +505,10 @@ def looks_like_cdn_root(path: Path) -> bool:
     )
 
 
+class _CdnRootNotFoundError(ValueError):
+    """No CDN seam was configured and no legacy CDN root was discoverable."""
+
+
 def _read_server_cdn_dir(server_dir: Path) -> Path | None:
     """复读服务端 .env 的 CDN_DIR(容忍引号/空白/注释行),相对路径按服务端根解析。"""
     env_file = server_dir / ".env"
@@ -518,28 +536,35 @@ def resolve_cdn_root(profile_id: str | None = None) -> Path:
     """按四级解析链返回 CDN 根;全部落空抛 ValueError(含尝试清单)。"""
     tried: list[str] = []
 
-    env_value = os.environ.get("WF_CDN_DIR")
-    if env_value:
-        path = Path(env_value)
+    if "WF_CDN_DIR" in os.environ:
+        path = _require_existing_directory(
+            os.environ["WF_CDN_DIR"], label="WF_CDN_DIR"
+        )
         if looks_like_cdn_root(path):
             return path
         raise ValueError(f"WF_CDN_DIR 指向的目录不是 CDN 根(缺 archive-common-*): {path}")
 
-    try:
-        profile = resolve_profile(profile_id)
-    except (OSError, ValueError):
-        profile = None
+    profile = resolve_profile(profile_id)
     if profile and profile.cdn_dir:
-        if looks_like_cdn_root(profile.cdn_dir):
-            return profile.cdn_dir
+        profile_cdn = _require_existing_directory(
+            profile.cdn_dir, label="profile cdn_dir"
+        )
+        if looks_like_cdn_root(profile_cdn):
+            return profile_cdn
         raise ValueError(
-            f"profile[{profile.id}].cdn_dir 不是 CDN 根: {profile.cdn_dir}"
+            f"profile[{profile.id}].cdn_dir 不是 CDN 根: {profile_cdn}"
         )
 
-    server_env = os.environ.get("WF_SERVER_DIR")
-    server_dir = Path(server_env) if server_env else (
-        profile.server_dir if profile else None
-    )
+    if "WF_SERVER_DIR" in os.environ:
+        server_dir = _require_existing_directory(
+            os.environ["WF_SERVER_DIR"], label="WF_SERVER_DIR"
+        )
+    elif profile and profile.server_dir:
+        server_dir = _require_existing_directory(
+            profile.server_dir, label="profile server_dir"
+        )
+    else:
+        server_dir = None
     if server_dir is not None:
         declared = _read_server_cdn_dir(server_dir)
         for candidate in (
@@ -555,17 +580,17 @@ def resolve_cdn_root(profile_id: str | None = None) -> Path:
         return legacy
     tried.append(f"嵌套遗留: {legacy}")
 
-    raise ValueError(
+    raise _CdnRootNotFoundError(
         "无法定位 CDN 根;请设 WF_CDN_DIR / profile.cdn_dir / WF_SERVER_DIR。已尝试: "
         + "; ".join(tried)
     )
 
 
 def resolve_cdn_root_lax(profile_id: str | None = None) -> Path:
-    """解析失败时退回嵌套遗留默认路径(供模块级常量等不可抛错场景)。"""
+    """无配置且无法识别时返回遗留路径;显式坏配置仍失败关闭。"""
     try:
         return resolve_cdn_root(profile_id)
-    except ValueError:
+    except _CdnRootNotFoundError:
         return project_root() / ".cdn" / "cn"
 
 
@@ -573,17 +598,17 @@ def resolve_server_dir(profile_id: str | None = None) -> Path:
     """服务端仓根:WF_SERVER_DIR > profile.server_dir > 嵌套遗留(project_root)。
 
     用于 asset-patch manifest、client-patch 等"贴着服务端仓"的路径推导;
-    lax 语义,始终有返回值(独立仓布局下未配置时按嵌套遗留猜,调用方自然报错)。
+    完全未配置时保留嵌套遗留;显式坏配置失败关闭。
     """
-    env = os.environ.get("WF_SERVER_DIR")
-    if env:
-        return Path(env)
-    try:
-        profile = resolve_profile(profile_id)
-    except (OSError, ValueError):
-        profile = None
+    if "WF_SERVER_DIR" in os.environ:
+        return _require_existing_directory(
+            os.environ["WF_SERVER_DIR"], label="WF_SERVER_DIR"
+        )
+    profile = resolve_profile(profile_id)
     if profile and profile.server_dir:
-        return profile.server_dir
+        return _require_existing_directory(
+            profile.server_dir, label="profile server_dir"
+        )
     return project_root()
 
 

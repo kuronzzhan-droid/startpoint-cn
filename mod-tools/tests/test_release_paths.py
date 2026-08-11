@@ -78,12 +78,10 @@ class ReleasePathResolutionCase(unittest.TestCase):
         profile = self._profile(server_dir=self.server, cdn_dir=self.cdn)
         with (
             mock.patch.object(self.core, "resolve_profile", return_value=profile),
-            mock.patch.dict(
-                self.release.os.environ,
-                {"WF_SERVER_DIR": "", "WF_CDN_DIR": ""},
-                clear=False,
-            ),
+            mock.patch.dict(self.release.os.environ, {}, clear=False),
         ):
+            self.release.os.environ.pop("WF_SERVER_DIR", None)
+            self.release.os.environ.pop("WF_CDN_DIR", None)
             paths = self.release._resolve_repo_paths("cn")
 
         self.assertEqual(self.server.resolve(), paths.server_root)

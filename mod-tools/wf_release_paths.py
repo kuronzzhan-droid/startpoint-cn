@@ -36,7 +36,12 @@ def resolve_release_paths(profile_id: str, *, module_file: Path) -> ReleasePaths
         raise ReleasePathError("active CN profile/store is unavailable")
     store = Path(profile.store).resolve()
 
-    server_root = Path(core.resolve_server_dir("cn")).resolve()
+    try:
+        server_root = Path(core.resolve_server_dir("cn")).resolve()
+    except (OSError, ValueError) as exc:
+        raise ReleasePathError(
+            f"configured server root is unavailable: {exc}"
+        ) from exc
     if not server_root.is_dir() or not (server_root / "assets").is_dir():
         raise ReleasePathError(f"configured server root is unavailable: {server_root}")
     try:
