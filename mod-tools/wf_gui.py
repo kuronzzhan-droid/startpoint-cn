@@ -61,7 +61,10 @@ import wf_database_paths  # noqa: E402  独立部署时的存档数据库路径
 import wf_apk_paths  # noqa: E402  独立部署时的 APK/bundle 资产来源
 
 ROOT = Path(__file__).resolve().parent.parent
-_PROFILE = core.resolve_profile(os.environ.get("WF_PROFILE"))
+try:
+    _PROFILE = core.resolve_profile(os.environ.get("WF_PROFILE"))
+except ValueError as error:
+    raise SystemExit(str(error)) from None
 # ①层 cdndata:独立部署时用 WF_CDNDATA 指向服务端 assets/cdndata
 _ENV_CDNDATA = os.environ.get("WF_CDNDATA")
 CDNDATA = (Path(_ENV_CDNDATA) if _ENV_CDNDATA
@@ -86,15 +89,10 @@ ELEMENTS_DISPLAY = {**ELEMENTS, "6": "通用"}
 
 
 def resolve_store() -> Path:
-    env = os.environ.get("WF_TARGET_STORE")
-    if env:
-        p = Path(env)
-        if p.exists():
-            return p
-        raise SystemExit(f"WF_TARGET_STORE 不存在: {env}")
-    if _PROFILE:
-        return _PROFILE.store
-    store = core.find_world_upload(ROOT)
+    try:
+        store = core.resolve_active_store(ROOT, profile=_PROFILE)
+    except ValueError as error:
+        raise SystemExit(str(error)) from None
     if store:
         return store
     raise SystemExit("未找到 WorldFlipper/dummy/.../upload,请设置 WF_TARGET_STORE 或配置 mod-tools/profiles.json")

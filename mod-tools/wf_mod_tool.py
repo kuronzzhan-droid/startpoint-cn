@@ -366,10 +366,13 @@ def resolve_profile(profile_id: str | None = None) -> VersionProfile | None:
     if not pid or pid not in profiles:
         return None
     entry = profiles[pid]
+    raw_store = entry.get("store")
+    if not isinstance(raw_store, str) or not raw_store.strip():
+        raise ValueError(f"profile store must be a non-empty path: {pid}")
     return VersionProfile(
         id=pid,
         label=entry.get("label", pid),
-        store=_resolve_profile_path(entry["store"]),
+        store=_resolve_profile_path(raw_store),
         cdndata=_resolve_profile_path(entry["cdndata"]) if entry.get("cdndata") else None,
         res_version=entry.get("res_version", ""),
         fallback=_resolve_profile_path(entry["fallback"]) if entry.get("fallback") else None,
@@ -405,15 +408,29 @@ TARGET_STORE_HINT = (
 _UNSET_PROFILE = object()
 
 
+def _require_store_directory(value: str | os.PathLike[str], *, label: str) -> Path:
+    raw = os.fspath(value)
+    if not raw.strip():
+        raise ValueError(f"{label} must be a non-empty path")
+    store = Path(raw).expanduser()
+    if not store.is_absolute():
+        raise ValueError(f"{label} must be an absolute path: {raw}")
+    store = store.resolve()
+    if not store.is_dir():
+        raise ValueError(f"{label} is not an existing directory: {store}")
+    return store
+
+
 def env_target_store() -> Path | None:
-    """WF_TARGET_STORE 的解析:未设返回 None;设了但目录不存在 → ValueError(配置错误不兜底)。"""
-    env = os.environ.get("WF_TARGET_STORE")
-    if not env:
+    """Return a validated explicit store, or None only when the key is absent."""
+    if "WF_TARGET_STORE" not in os.environ:
         return None
-    store = Path(env)
-    if store.exists():
-        return store
-    raise ValueError(f"WF_TARGET_STORE 不存在: {env}\n{TARGET_STORE_HINT}")
+    try:
+        return _require_store_directory(
+            os.environ["WF_TARGET_STORE"], label="WF_TARGET_STORE"
+        )
+    except ValueError as error:
+        raise ValueError(f"{error}\n{TARGET_STORE_HINT}") from None
 
 
 def resolve_active_store(
@@ -436,7 +453,7 @@ def resolve_active_store(
     if profile is _UNSET_PROFILE:
         profile = resolve_profile(profile_id or os.environ.get("WF_PROFILE"))
     if profile is not None and getattr(profile, "store", None):
-        return Path(profile.store)
+        return _require_store_directory(profile.store, label="profile store")
     seen: list[Path] = []
     for base in (root, project_root(), Path.cwd()):
         if base is None:

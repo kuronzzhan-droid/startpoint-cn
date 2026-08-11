@@ -12,6 +12,11 @@ from unittest import mock
 
 MOD_TOOLS = Path(__file__).resolve().parents[1]
 GUI_PATH = MOD_TOOLS / "wf_gui.py"
+sys.path.insert(0, str(MOD_TOOLS))
+try:
+    import wf_mod_tool as core
+finally:
+    sys.path.remove(str(MOD_TOOLS))
 
 
 def _load_gui() -> object:
@@ -31,6 +36,35 @@ def _load_gui() -> object:
 
 
 class GuiDatabasePathTests(unittest.TestCase):
+    def test_invalid_profile_store_is_reported_without_a_value_error_traceback(self) -> None:
+        with mock.patch.object(
+            core,
+            "resolve_profile",
+            side_effect=ValueError("profile store validation sentinel"),
+        ), self.assertRaisesRegex(SystemExit, "profile store validation sentinel"):
+            _load_gui()
+
+    def test_store_resolution_uses_the_shared_core_chain(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            target_store = root / "store"
+            database_dir = root / "database"
+            target_store.mkdir()
+            database_dir.mkdir()
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "WF_TARGET_STORE": str(target_store),
+                    "WF_DATABASE_DIR": str(database_dir),
+                },
+                clear=False,
+            ), mock.patch.object(
+                core,
+                "resolve_active_store",
+                side_effect=ValueError("WF_TARGET_STORE shared resolver sentinel"),
+            ), self.assertRaisesRegex(SystemExit, "shared resolver sentinel"):
+                _load_gui()
+
     def test_explicit_database_directory_does_not_require_the_server_checkout(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
