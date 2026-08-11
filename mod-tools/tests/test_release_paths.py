@@ -88,6 +88,26 @@ class ReleasePathResolutionCase(unittest.TestCase):
         self.assertEqual(self.cdn.resolve(), paths.cdn_root)
         self.assertEqual(self.server.resolve() / "assets", paths.live_roots.server)
 
+    def test_target_store_environment_wins_over_profile_store(self) -> None:
+        env_store = self.root / "env-store" / "production" / "upload"
+        env_store.mkdir(parents=True)
+        profile = self._profile(server_dir=self.server, cdn_dir=self.cdn)
+        with (
+            mock.patch.object(self.core, "resolve_profile", return_value=profile),
+            mock.patch.dict(
+                self.release.os.environ,
+                {
+                    "WF_TARGET_STORE": str(env_store),
+                    "WF_SERVER_DIR": str(self.server),
+                    "WF_CDN_DIR": str(self.cdn),
+                },
+                clear=False,
+            ),
+        ):
+            paths = self.release._resolve_repo_paths("cn")
+
+        self.assertEqual(env_store.resolve(), paths.live_roots.common)
+
     def test_invalid_explicit_server_root_fails_closed(self) -> None:
         missing_server = self.root / "missing-server"
         with (

@@ -688,6 +688,27 @@ class TestSourceAssets(unittest.TestCase):
 
 
 class TestCnProfilePreflight(unittest.TestCase):
+    def test_target_store_environment_wins_without_splitting_profile_and_quest_io(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            env_store = root / "env-store"
+            profile_store = root / "profile-store"
+            env_store.mkdir()
+            profile_store.mkdir()
+            profile = core.VersionProfile(
+                id="cn", label="CN", store=profile_store, fallback=None
+            )
+            with mock.patch.object(
+                rewards.core, "resolve_profile", return_value=profile
+            ), mock.patch.dict(
+                rewards.os.environ,
+                {"WF_TARGET_STORE": str(env_store)},
+                clear=False,
+            ):
+                resolved = rewards.require_cn_profile()
+
+        self.assertEqual(env_store.resolve(), resolved.store)
+
     def test_active_global_fails_before_any_read_write_or_publish(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

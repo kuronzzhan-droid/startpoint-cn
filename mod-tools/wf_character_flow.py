@@ -168,10 +168,9 @@ def emit_dev_catalog_after_publish(result: Any) -> str | None:
 
 def _master_gate_stores(profile_id: str) -> tuple[Path, ...]:
     profile = core.resolve_profile(profile_id)
-    if profile is None:
-        return ()
-    candidates = [profile.store]
-    if profile.fallback is not None:
+    primary = core.resolve_active_store(profile=profile, profile_id=profile_id)
+    candidates = [primary] if primary is not None else []
+    if profile is not None and profile.fallback is not None:
         candidates.append(profile.fallback)
     return tuple(path for path in candidates if path.is_dir())
 

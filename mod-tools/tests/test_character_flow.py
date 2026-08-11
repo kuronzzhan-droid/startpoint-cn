@@ -100,6 +100,26 @@ class CdnReleaseModule(FakeReleaseModule):
 
 
 class TestCharacterFlow(unittest.TestCase):
+    def test_master_gate_uses_target_store_before_profile_store(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            env_store = root / "env-store"
+            profile_store = root / "profile-store"
+            fallback = root / "fallback"
+            for directory in (env_store, profile_store, fallback):
+                directory.mkdir()
+            profile = flow.core.VersionProfile(
+                id="cn", label="CN", store=profile_store, fallback=fallback
+            )
+            with patch.object(
+                flow.core, "resolve_profile", return_value=profile
+            ), patch.dict(
+                os.environ, {"WF_TARGET_STORE": str(env_store)}, clear=False
+            ):
+                stores = flow._master_gate_stores("cn")
+
+        self.assertEqual((env_store.resolve(), fallback), stores)
+
     def test_explicit_apk_wins_over_the_legacy_embedded_bundle(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

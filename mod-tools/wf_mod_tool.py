@@ -486,6 +486,21 @@ def resolve_active_store(
     return None
 
 
+def require_active_store(
+    root: Path | None = None,
+    *,
+    profile: Any = _UNSET_PROFILE,
+    profile_id: str | None = None,
+) -> Path:
+    """Resolve the authoritative store or fail with the shared setup hint."""
+    store = resolve_active_store(
+        root, profile=profile, profile_id=profile_id
+    )
+    if store is None:
+        raise FileNotFoundError(TARGET_STORE_HINT)
+    return store
+
+
 # ---------------------------------------------------------------------------
 # CDN 根解析链(T2 两仓独立):CDN 位置以服务端为准,工具只读发现、永不搬移。
 #   1. WF_CDN_DIR env(显式,最高优先)   2. profile.cdn_dir(持久化显式)

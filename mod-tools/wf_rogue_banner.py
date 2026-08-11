@@ -81,7 +81,7 @@ def main() -> int:
     ap.add_argument("--publish", action="store_true")
     args = ap.parse_args()
 
-    store = core.resolve_profile(None).store
+    store = core.require_active_store()
 
     for src in [args.main] + ([args.boss] if args.boss else []):
         if not os.path.exists(src):

@@ -83,6 +83,29 @@ class ToolWorkPathCase(unittest.TestCase):
             pending = tool_dir / "work" / "sync_pending.json"
             self.assertEqual(["aa/bb"], json.loads(pending.read_text(encoding="utf-8")))
 
+    def test_rogue_banner_accepts_target_store_without_a_profile(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            tool_dir = root / "independent-tool"
+            store = root / "store"
+            store.mkdir()
+            banner = load_copied_module(
+                "wf_rogue_banner.py", "isolated_rogue_banner_store", tool_dir
+            )
+            with mock.patch.object(
+                banner.core, "resolve_active_store", return_value=store
+            ) as resolver, mock.patch.object(
+                banner.core,
+                "resolve_profile",
+                side_effect=AssertionError("profile bypass"),
+            ), mock.patch.object(
+                banner.sys, "argv", ["wf_rogue_banner.py", "--main", "missing.png"]
+            ):
+                result = banner.main()
+
+            self.assertEqual(1, result)
+            resolver.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -32,9 +32,14 @@ def resolve_release_paths(profile_id: str, *, module_file: Path) -> ReleasePaths
         raise ReleasePathError("character release is CN-only")
 
     profile = core.resolve_profile("cn")
-    if profile is None or profile.id != "cn" or not Path(profile.store).is_dir():
+    if profile is not None and profile.id != "cn":
         raise ReleasePathError("active CN profile/store is unavailable")
-    store = Path(profile.store).resolve()
+    try:
+        store = core.require_active_store(profile=profile, profile_id="cn")
+    except (OSError, ValueError) as exc:
+        raise ReleasePathError(
+            f"active CN profile/store is unavailable: {exc}"
+        ) from exc
 
     try:
         server_root = Path(core.resolve_server_dir("cn")).resolve()
