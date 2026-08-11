@@ -56,6 +56,7 @@ import wf_dsl  # noqa: E402       技能 ActionDsl 数值编辑
 import wf_atf  # noqa: E402       skill_cutin ATF(ETC1)纹理重编码(战斗真机只读 ATF 不读 PNG)
 import wf_boss  # noqa: E402      Boss 数值 + 副本列表(Boss·副本页)
 import wf_server_auth  # noqa: E402  服务端管理 API 地址与 Bearer 认证
+import wf_database_paths  # noqa: E402  独立部署时的存档数据库路径
 
 ROOT = Path(__file__).resolve().parent.parent
 _PROFILE = core.resolve_profile(os.environ.get("WF_PROFILE"))
@@ -2322,7 +2323,18 @@ def _char_json_paths() -> tuple[Path, Path]:
 # 已拥有角色的 突破段/exp 超出新星级上限 → 客户端查看角色即 C2275 崩溃
 # (CharacterLevelLogic.as:94 校验)。上限镜像自 src/routes/api/character.ts
 # (characterMaxOverLimits) + src/lib/character.ts(characterExpCaps,index=突破段)。
-SAVE_DB = ROOT / ".database" / "wdfp_data.db"
+
+
+def _resolve_save_database() -> Path:
+    if "WF_DATABASE_DIR" in os.environ:
+        return wf_database_paths.resolve_database_path(os.environ, server_root=ROOT)
+    return wf_database_paths.resolve_database_path(
+        os.environ,
+        server_root=core.resolve_server_dir(),
+    )
+
+
+SAVE_DB = _resolve_save_database()
 MAX_OVER_LIMITS = {1: 12, 2: 10, 3: 8, 4: 6, 5: 4}
 CHARACTER_EXP_CAPS = {
     1: [11416, 15820, 21477, 28538, 37241, 49481, 66600, 91180, 125223, 170928, 216633, 262338, 308043],
@@ -2363,7 +2375,7 @@ def _clamp_save_for_rarity(cid: str, rarity: int, apply: bool) -> str:
         finally:
             con.close()
     except Exception as exc:
-        return f"⚠ 存档校正失败(可手动查 .database/wdfp_data.db): {exc}"
+        return f"⚠ 存档校正失败(可手动查 {SAVE_DB}): {exc}"
 
 
 def get_char_fields(cid: str) -> dict:

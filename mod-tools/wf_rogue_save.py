@@ -39,6 +39,7 @@ from collections.abc import Mapping
 from pathlib import Path
 
 import wf_server_auth
+import wf_database_paths
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _LEGACY_MUMU_MANAGER = Path(r"D:\WF\MuMuPlayer\nx_main\MuMuManager.exe")
@@ -59,13 +60,10 @@ def _explicit_path(environment: Mapping[str, str], key: str) -> Path | None:
 def resolve_database_path(
         environment: Mapping[str, str] = os.environ,
         *, server_root: Path | str = ROOT) -> Path:
-    """Resolve the save DB without requiring the tools to live beside the server."""
-    configured = _explicit_path(environment, "WF_DATABASE_DIR")
-    if configured is None:
-        return Path(server_root).resolve() / ".database" / "wdfp_data.db"
-    if not configured.is_dir():
-        raise ValueError(f"WF_DATABASE_DIR is not an existing directory: {configured}")
-    return configured / "wdfp_data.db"
+    return wf_database_paths.resolve_database_path(
+        environment,
+        server_root=server_root,
+    )
 
 
 def resolve_mumu_manager(
