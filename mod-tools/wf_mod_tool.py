@@ -338,8 +338,9 @@ class VersionProfile:
 
 
 def project_root() -> Path:
-    """mod-tools/ 的上一级 = startpoint-cn 仓库根;profiles.json 里的相对路径以此为基准。"""
-    return Path(__file__).resolve().parent.parent
+    """Return the checkout root for embedded and flat tool layouts."""
+    tool_dir = Path(__file__).resolve().parent
+    return tool_dir.parent if tool_dir.name.casefold() == "mod-tools" else tool_dir
 
 
 def profiles_file() -> Path:
@@ -578,6 +579,14 @@ def resolve_cdn_root(
             if looks_like_cdn_root(candidate):
                 return candidate
             tried.append(f"服务端识别: {candidate}")
+        configured_by = (
+            "WF_SERVER_DIR"
+            if "WF_SERVER_DIR" in os.environ
+            else f"profile[{profile.id}].server_dir"
+        )
+        raise ValueError(
+            f"{configured_by} 无法导出有效 CDN 根: " + "; ".join(tried)
+        )
 
     legacy = (
         Path(legacy_root).resolve()

@@ -142,6 +142,22 @@ class QuestLibTableIoTests(EnvIsolatedCase):
 
 
 class CoreResolveTargetStoreTests(EnvIsolatedCase):
+    def test_flat_tool_checkout_anchors_relative_profile_paths_locally(self):
+        tool_dir = self.root / "wf-mod-tools"
+        store = tool_dir / "store"
+        store.mkdir(parents=True)
+        profiles = {
+            "active": "cn",
+            "profiles": {"cn": {"store": "store"}},
+        }
+        with mock.patch.object(
+            core, "__file__", str(tool_dir / "wf_mod_tool.py")
+        ), mock.patch.object(core, "load_profiles", return_value=profiles):
+            profile = core.resolve_profile()
+
+        self.assertIsNotNone(profile)
+        self.assertEqual(store.resolve(), profile.store)
+
     def test_explicit_environment_store_requires_an_absolute_existing_directory(self):
         file_path = self.root / "not-a-directory"
         file_path.write_bytes(b"")

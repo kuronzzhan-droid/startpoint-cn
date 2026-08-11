@@ -114,6 +114,15 @@ class ResolveCdnRootTest(_ResolveBase):
         os.environ["WF_SERVER_DIR"] = str(server)
         self.assertEqual(server / ".cdn" / "cn", core.resolve_cdn_root())
 
+    def test_explicit_server_without_cdn_does_not_fall_back_to_legacy(self) -> None:
+        server = self.root / "configured-server"
+        server.mkdir()
+        legacy = make_cdn(self.root / "legacy" / "cn")
+        os.environ["WF_SERVER_DIR"] = str(server)
+
+        with self.assertRaisesRegex(ValueError, "WF_SERVER_DIR.*CDN"):
+            core.resolve_cdn_root(legacy_root=legacy)
+
     def test_server_env_relative_cdn_dir(self) -> None:
         server = self.root / "server3"
         make_cdn(server / "data" / "cdn" / "cn")
