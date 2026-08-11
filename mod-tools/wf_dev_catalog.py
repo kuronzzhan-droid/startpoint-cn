@@ -43,16 +43,13 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import wf_mod_tool as core  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
-CDN_ROOT = (
-    Path(os.environ["WF_CDN_DIR"])
-    if os.environ.get("WF_CDN_DIR")
-    else ROOT / ".cdn" / "cn"
-)
+CDN_ROOT = core.resolve_cdn_root_lax()
 # asset-patch 是 main 时代的服务端仓内机制;独立布局下按 WF_SERVER_DIR 定位
-_SERVER_DIR = (
-    Path(os.environ["WF_SERVER_DIR"]) if os.environ.get("WF_SERVER_DIR") else ROOT
-)
+_SERVER_DIR = core.resolve_server_dir()
 ASSET_PATCH_ACTIVE = _SERVER_DIR / "assets" / "asset-patch" / "active"
 
 OFFICIAL_TARGET = "1.4.54"
