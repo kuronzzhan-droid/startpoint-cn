@@ -532,7 +532,11 @@ def _read_server_cdn_dir(server_dir: Path) -> Path | None:
     return None
 
 
-def resolve_cdn_root(profile_id: str | None = None) -> Path:
+def resolve_cdn_root(
+    profile_id: str | None = None,
+    *,
+    legacy_root: Path | None = None,
+) -> Path:
     """按四级解析链返回 CDN 根;全部落空抛 ValueError(含尝试清单)。"""
     tried: list[str] = []
 
@@ -575,7 +579,11 @@ def resolve_cdn_root(profile_id: str | None = None) -> Path:
                 return candidate
             tried.append(f"服务端识别: {candidate}")
 
-    legacy = project_root() / ".cdn" / "cn"
+    legacy = (
+        Path(legacy_root).resolve()
+        if legacy_root is not None
+        else project_root() / ".cdn" / "cn"
+    )
     if looks_like_cdn_root(legacy):
         return legacy
     tried.append(f"嵌套遗留: {legacy}")
@@ -586,12 +594,20 @@ def resolve_cdn_root(profile_id: str | None = None) -> Path:
     )
 
 
-def resolve_cdn_root_lax(profile_id: str | None = None) -> Path:
+def resolve_cdn_root_lax(
+    profile_id: str | None = None,
+    *,
+    legacy_root: Path | None = None,
+) -> Path:
     """无配置且无法识别时返回遗留路径;显式坏配置仍失败关闭。"""
     try:
-        return resolve_cdn_root(profile_id)
+        return resolve_cdn_root(profile_id, legacy_root=legacy_root)
     except _CdnRootNotFoundError:
-        return project_root() / ".cdn" / "cn"
+        return (
+            Path(legacy_root).resolve()
+            if legacy_root is not None
+            else project_root() / ".cdn" / "cn"
+        )
 
 
 def resolve_server_dir(profile_id: str | None = None) -> Path:

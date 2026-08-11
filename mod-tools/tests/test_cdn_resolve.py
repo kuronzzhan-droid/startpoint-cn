@@ -170,6 +170,11 @@ class ResolveCdnRootTest(_ResolveBase):
         resolved = core.resolve_cdn_root_lax()
         self.assertEqual(self.fake_project / ".cdn" / "cn", resolved)
 
+    def test_lax_accepts_a_caller_owned_legacy_path(self) -> None:
+        caller_legacy = self.root / "other-repo" / ".cdn" / "cn"
+        resolved = core.resolve_cdn_root_lax(legacy_root=caller_legacy)
+        self.assertEqual(caller_legacy, resolved)
+
     def test_lax_does_not_hide_invalid_explicit_configuration(self) -> None:
         os.environ["WF_CDN_DIR"] = ""
         with self.assertRaisesRegex(ValueError, r"WF_CDN_DIR.*non-empty"):
