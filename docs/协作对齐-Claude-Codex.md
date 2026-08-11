@@ -78,6 +78,48 @@
 > | M4 staged 改比工作树 | index divergence (staged) | `worktree divergence with clean index passes staged`（同一判定，文件顺序更早） |
 > | M5 删掉「血缘存在但 index 缺文件」判定 | git rm 双删 | `staged git rm of both is rejected by staged` |
 
+> ---
+>
+> **【事实】Round 1 独立复核：REJECT**（Codex，2026-08-11）——1 Blocker + 3 Important。
+> 四条反例 Claude 已在临时仓逐条实测复现，**无异议**：
+>
+> | 编号 | 缺陷 | 实测证据 |
+> |---|---|---|
+> | **Blocker** | `rev-list -- AGENTS.md` 受 **merge path-history simplification** 影响。普通双父 merge 中规则书只在第二父、merge 最终树又删掉两份时，默认查询返回空 ⇒ staged/`--all`/fresh clone 全放行 | 构造仓实测：默认 `rev-list` 返回**空**，`--full-history` 返回 `750248b0` |
+> | **Imp 1** | 无 `AGENTS.md` 血缘时，单个 untracked `CLAUDE.md`、或两份分裂的 untracked 规则书，都被错误放行 | 合法基线只允许「两份均未跟踪**且磁盘也均不存在**」 |
+> | **Imp 2** | `git ls-files --error-unmatch` 把 **intent-to-add** 当 tracked；`120000` symlink 条目剥掉唯一首行后两边都为空会比成一致 | 实测 `git add -N` 的条目：`100644 e69de29… 0`、`--error-unmatch` rc=0、`flags: 20004000`；两个 symlink 的 `tail -n +2` 都是 0 字节 |
+> | **Imp 3** | `rev-list … \|\| printf ''` 把**查询失败**与「确实无血缘」混为一谈 | 非浅仓删掉祖先对象后 `rev-list` **rc=128**，旧实现吞成「无血缘」→ 放行 |
+>
+> **【事实】Round 2 实现（本次）**
+>
+> 1. 血缘改用 **`--full-history`**，堵掉 merge simplification。
+> 2. 合法基线收紧为**四条同时成立**：血缘可判定、且为「无」、且两份都不在 index、且两份都不在磁盘。
+> 3. index 条目必须是**正常规则书**：`stage 0` + `mode 100644` + **非 intent-to-add**（`ls-files --debug` 的 `flags & 0x20000000`）。
+> 4. **git 查询失败不再吞**：`rev-list` 非零退出 ⇒ 血缘不可判定 ⇒ fail closed。
+>    **unborn HEAD 单独判定**为「确定无历史」，可判定且血缘为无。
+> 5. 脚本启动即 **`cd $(git rev-parse --show-toplevel)`**，从子目录运行与根目录结果一致。
+> 6. 内容形状校验：**0 字节 / 首行标题不符 / 只有标题没有正文** 一律拒绝；
+>    `staged` 比 index blob，`--all` 比工作树。
+>
+> **【事实】回归矩阵 33 → 53 例**，原 33 例与 Round 1 的三条原始反例**零回归**。
+>
+> **【事实】Round 2 变异验证 7 项，全部按预期变红**
+>
+> | 变异 | 实际首败 |
+> |---|---|
+> | N1 去掉 `--full-history` | `lineage hidden by merge simplification is rejected by staged` |
+> | N2 基线不再要求磁盘也没有 | `single untracked CLAUDE.md without lineage is rejected by staged` |
+> | N3a 删 intent-to-add flags 校验 | `intent-to-add entries are rejected by staged` |
+> | N3b 删 `mode=100644` 校验 | `symlink index entries are rejected by staged` |
+> | N4 把 `rev-list` 失败吞成无血缘 | `undeterminable lineage fails closed in staged` |
+> | N5 删 git top-level 锚定 | `subdirectory run must also reject divergence` |
+> | N6 删正文非空校验 | `title-only rule books are rejected by staged` |
+>
+> ⚠️ **变异运行器踩过一个坑并已修正**：初版用 Python `subprocess` 调 `bash`，
+> 在本机解析到的是 **WSL 启动器**，命令没真跑、输出为空，七条变异全部显示「存活」——
+> 差点得出「测试打不中」的错误结论。改为纯 bash 运行后全部正常变红。
+> **这正是 Codex 在 A2 记录过的同一个环境坑。**
+
 因此当前准确表述是：**血缘存在时，两份必须同时被跟踪且内容一致；
 `staged` 判 index、`--all` 判工作树；浅克隆一律 fail closed。
 上游基线（`AGENTS.md` 从未出现且两份均未跟踪）放行。**

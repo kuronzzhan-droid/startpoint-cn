@@ -264,4 +264,140 @@ else
     printf '[SKIP] shallow clone unsupported in this environment\n' >&2
 fi
 
+
+# --- Round 2：Codex round-1 复核指出的 1 Blocker + 3 Important ---
+
+# R2-1 Blocker：普通双父 merge，规则书只在第二父，merge 最终树两份都没有。
+#   默认 rev-list 受 path-history simplification 影响返回空 → 血缘漏判 → 全模式放行。
+#   本用例同时证明「默认为空、完整历史非空」这个前提本身成立。
+merge_repo() {
+    local repo main
+    repo=$(new_repo "$1")
+    (
+        cd "$repo"
+        main=$(git rev-parse --abbrev-ref HEAD)
+        git checkout -qb side
+        printf '# CLAUDE.md\nshared body\n' > CLAUDE.md
+        printf '# AGENTS.md\nshared body\n' > AGENTS.md
+        git add -- CLAUDE.md AGENTS.md && git commit -qm 'side adds agent docs'
+        git checkout -q "$main"
+        printf 'main moves on\n' > main.txt
+        git add -- main.txt && git commit -qm 'main moves on'
+        git merge -q --no-ff side -m 'merge side' >/dev/null 2>&1
+        git rm -q --cached CLAUDE.md AGENTS.md >/dev/null 2>&1
+        rm -f CLAUDE.md AGENTS.md
+        git commit -q --amend --no-edit
+    )
+    printf '%s' "$repo"
+}
+
+repo=$(merge_repo merge_second_parent)
+default_lineage=$(cd "$repo" && git rev-list --max-count=1 HEAD -- AGENTS.md)
+full_lineage=$(cd "$repo" && git rev-list --full-history --max-count=1 HEAD -- AGENTS.md)
+if [[ -z "$default_lineage" && -n "$full_lineage" ]]; then
+    passed=$((passed + 1))
+    printf '[PASS] merge simplification premise holds (default empty, --full-history non-empty)\n'
+else
+    printf '[FAIL] merge simplification premise (default=%q full=%q)\n' "$default_lineage" "$full_lineage" >&2
+    exit 1
+fi
+expect_mode "$repo" '' fail 'lineage hidden by merge simplification is rejected by staged' '血缘'
+expect_mode "$repo" '--all' fail 'lineage hidden by merge simplification is rejected by --all' '血缘'
+merge_clone="$tmp/clone_merge"
+git clone -q "$repo" "$merge_clone"
+expect_mode "$merge_clone" '--all' fail 'fresh clone of merge-hidden lineage is rejected by --all' '血缘'
+
+# R2-2 Important 1：无 AGENTS 血缘时，untracked 规则书不构成合法基线。
+#   合法基线只允许「两份均未跟踪且磁盘也均不存在」。
+repo=$(new_repo untracked_single)
+printf '# CLAUDE.md\nshared body\n' > "$repo/CLAUDE.md"
+expect_mode "$repo" '' fail 'single untracked CLAUDE.md without lineage is rejected by staged' '跟踪'
+expect_mode "$repo" '--all' fail 'single untracked CLAUDE.md without lineage is rejected by --all' '跟踪'
+
+repo=$(new_repo untracked_divergent)
+printf '# CLAUDE.md\nshared body\n' > "$repo/CLAUDE.md"
+printf '# AGENTS.md\nshared body\ndrift\n' > "$repo/AGENTS.md"
+expect_mode "$repo" '' fail 'two divergent untracked docs without lineage is rejected by staged' '跟踪'
+expect_mode "$repo" '--all' fail 'two divergent untracked docs without lineage is rejected by --all' '跟踪'
+
+# R2-3 Important 2a：intent-to-add 是空 blob，stage 0 / mode 100644 都骗得过。
+repo=$(fork_repo intent_to_add)
+(
+    cd "$repo"
+    git rm -q CLAUDE.md AGENTS.md && git commit -qm 'delete both'
+    printf '# CLAUDE.md\nshared body\n' > CLAUDE.md
+    printf '# AGENTS.md\nshared body\n' > AGENTS.md
+    git add -N -- CLAUDE.md AGENTS.md
+)
+expect_mode "$repo" '' fail 'intent-to-add entries are rejected by staged' '跟踪'
+expect_mode "$repo" '--all' fail 'intent-to-add entries are rejected by --all' '跟踪'
+
+# R2-4 Important 2b：两个 mode=120000 且目标不同的 index entry。
+#   剥掉唯一首行后两者都为空，内容比对会误判为一致，必须靠 mode 校验拦下。
+repo=$(new_repo symlink_entries)
+(
+    cd "$repo"
+    git update-index --add --cacheinfo "120000,$(printf 'target-one' | git hash-object -w --stdin),CLAUDE.md"
+    git update-index --add --cacheinfo "120000,$(printf 'target-two' | git hash-object -w --stdin),AGENTS.md"
+)
+expect_mode "$repo" '' fail 'symlink index entries are rejected by staged' '跟踪'
+
+# R2-5 Important 3：非浅仓缺祖先对象 → rev-list rc=128，不得吞成「无血缘」。
+repo=$(fork_repo broken_ancestor)
+(
+    cd "$repo"
+    git rm -q CLAUDE.md AGENTS.md && git commit -qm 'delete both'
+    parent=$(git rev-parse 'HEAD~1')
+    rm -f ".git/objects/${parent:0:2}/${parent:2}"
+)
+if [[ "$(cd "$repo" && git rev-parse --is-shallow-repository)" == 'false' ]] \
+    && ! (cd "$repo" && git rev-list --full-history --max-count=1 HEAD -- AGENTS.md >/dev/null 2>&1); then
+    passed=$((passed + 1))
+    printf '[PASS] broken-ancestor premise holds (non-shallow, rev-list fails)\n'
+else
+    printf '[FAIL] broken-ancestor premise did not hold\n' >&2
+    exit 1
+fi
+expect_mode "$repo" '' fail 'undeterminable lineage fails closed in staged' '血缘不可判定'
+expect_mode "$repo" '--all' fail 'undeterminable lineage fails closed in --all' '血缘不可判定'
+
+# R2-6a 从仓库子目录运行，结果必须与根目录一致。
+repo=$(fork_repo subdir_consistency)
+mkdir -p "$repo/nested/deep"
+expect_mode "$repo" '' pass 'consistent docs pass from repo root'
+if output=$(cd "$repo/nested/deep" && bash ../../scripts/check-hygiene.sh --all 2>&1); then
+    passed=$((passed + 1)); printf '[PASS] running from a subdirectory matches the root result\n'
+else
+    printf '[FAIL] running from a subdirectory matches the root result\n%s\n' "$output" >&2
+    exit 1
+fi
+
+repo=$(fork_repo subdir_reject)
+printf '# AGENTS.md\nshared body\nsubdir drift\n' > "$repo/AGENTS.md"
+mkdir -p "$repo/nested"
+if output=$(cd "$repo/nested" && bash ../scripts/check-hygiene.sh --all 2>&1); then
+    printf '[FAIL] subdirectory run must also reject divergence\n' >&2
+    exit 1
+else
+    passed=$((passed + 1)); printf '[PASS] subdirectory run also rejects divergence\n'
+fi
+
+# R2-6b 0 字节 / 错标题 / 仅标题无正文，全部拒绝。
+repo=$(fork_repo zero_byte)
+(cd "$repo" && : > CLAUDE.md && git add -- CLAUDE.md)
+expect_mode "$repo" '' fail 'zero-byte rule book is rejected by staged' '合法规则书'
+
+repo=$(fork_repo wrong_title)
+(cd "$repo" && printf '# WRONG.md\nshared body\n' > CLAUDE.md && git add -- CLAUDE.md)
+expect_mode "$repo" '' fail 'wrong first-line title is rejected by staged' '合法规则书'
+
+repo=$(fork_repo title_only)
+(
+    cd "$repo"
+    printf '# CLAUDE.md\n' > CLAUDE.md
+    printf '# AGENTS.md\n' > AGENTS.md
+    git add -- CLAUDE.md AGENTS.md
+)
+expect_mode "$repo" '' fail 'title-only rule books are rejected by staged' '合法规则书'
+
 printf '[OK] %d hygiene cases passed\n' "$passed"

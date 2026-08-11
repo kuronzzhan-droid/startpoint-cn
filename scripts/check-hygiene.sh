@@ -9,6 +9,14 @@ MODE="${1:-staged}"
 fail=0
 note() { printf '  [x] %s\n' "$*"; fail=1; }
 
+# 先锚定 git 顶层再干活：本脚本全程用相对路径（git ls-files 的输出、[[ -f ]] 判定、
+# 规则书路径都是相对 toplevel 的），从子目录直接运行会得到与根目录不一致的结果。
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    printf '  [x] 无法解析 git 仓库根目录——本脚本必须在 git 工作区内运行\n' >&2
+    exit 1
+}
+cd "$repo_root" || exit 1
+
 IP_RE='192\.168\.[0-9]+\.[0-9]+'
 HOME_RE='(/Users/[A-Za-z0-9._-]+|[A-Za-z]:\\Users\\[A-Za-z0-9._-]+)'
 EMAIL_RE='[A-Za-z0-9._%+-]+@(qq|gmail|163|126|outlook|hotmail|foxmail|yahoo)\.com'
@@ -121,35 +129,94 @@ scan_simple_matches() {
 # 血缘不可判 —— 必须 fail closed，否则 `--depth=1` 就是现成的绕过路径。
 # 代价是：以上游为基线的浅克隆也会被拒。若上游将来引入 AGENTS.md，
 # 本判据失效，rebase 前必须换成显式标记（已记入 docs/协作对齐-Claude-Codex.md）。
-check_agent_docs_in_sync() {
-    local tracked_claude=0 tracked_agents=0 missing='' shallow lineage
-    git ls-files --error-unmatch CLAUDE.md >/dev/null 2>&1 && tracked_claude=1
-    git ls-files --error-unmatch AGENTS.md >/dev/null 2>&1 && tracked_agents=1
+# index 条目是否是一份「正常的规则书」：stage 0、mode 100644、非 intent-to-add。
+# 三项缺一不可 —— `git ls-files --error-unmatch` 对下面两种都返回 0：
+#   · intent-to-add（`git add -N`）：stage 0 / mode 100644，但 blob 是空的（flags 带 0x20000000）
+#   · symlink（mode 120000）：blob 只有一行目标路径，剥掉首行后两边都为空会比成「一致」
+agent_doc_index_ok() {
+    local path="$1" line mode stage flags
+    line=$(git ls-files --stage -- "$path" 2>/dev/null) || return 1
+    [[ -n "$line" ]] || return 1
+    mode=${line%% *}
+    stage=$(printf '%s' "$line" | awk '{print $3; exit}')
+    [[ "$mode" == '100644' ]] || return 1
+    [[ "$stage" == '0' ]] || return 1
+    flags=$(git ls-files --debug -- "$path" 2>/dev/null | awk '/flags:/ {print $NF; exit}')
+    if [[ "$flags" =~ ^[0-9a-fA-F]+$ ]]; then
+        (( (0x$flags & 0x20000000) == 0 )) || return 1
+    fi
+    return 0
+}
 
-    shallow=$(git rev-parse --is-shallow-repository 2>/dev/null || printf 'false')
-    if [[ "$shallow" == 'true' ]]; then
-        if (( !tracked_claude || !tracked_agents )); then
-            note '浅克隆无法判定仓库血缘——保守要求 CLAUDE.md 与 AGENTS.md 都被 git 跟踪且存在'
-            return 0
-        fi
+# 取出规则书正文并校验形状。source=index 取即将提交的 blob，source=worktree 取工作树文件。
+# 拒绝：读不到、0 字节、首行标题不符、只有标题没有正文。
+agent_doc_body() {
+    local path="$1" source="$2" out="$3" first
+    if [[ "$source" == 'index' ]]; then
+        git show ":$path" > "$out" 2>/dev/null || return 1
     else
-        lineage=$(git rev-list --max-count=1 HEAD -- AGENTS.md 2>/dev/null || printf '')
-        # AGENTS.md 从未进过血缘，且当前两份都不被跟踪 = 以上游为基线的合法树。
-        if [[ -z "$lineage" ]] && (( !tracked_claude && !tracked_agents )); then
-            return 0
-        fi
-        if (( !tracked_claude || !tracked_agents )); then
-            (( tracked_claude )) || missing='CLAUDE.md'
-            (( tracked_agents )) || missing="${missing:+$missing 与 }AGENTS.md"
-            note "本仓血缘要求两份规则书都被 git 跟踪，但 ${missing} 不在 index 中"
-            return 0
+        [[ -f "$path" && ! -L "$path" ]] || return 1
+        cat -- "$path" > "$out" 2>/dev/null || return 1
+    fi
+    [[ -s "$out" ]] || return 1
+    first=$(head -n 1 -- "$out")
+    [[ "$first" == "# $path" ]] || return 1
+    tail -n +2 -- "$out" | grep -q '[^[:space:]]' || return 1
+    return 0
+}
+
+check_agent_docs_in_sync() {
+    local in_index_claude=0 in_index_agents=0 ok_claude=0 ok_agents=0
+    local has_claude=0 has_agents=0 shallow lineage
+    local lineage_known=0 has_lineage=0 ctx bad='' source label
+    local body_claude body_agents
+
+    git ls-files --error-unmatch CLAUDE.md >/dev/null 2>&1 && in_index_claude=1
+    git ls-files --error-unmatch AGENTS.md >/dev/null 2>&1 && in_index_agents=1
+    agent_doc_index_ok CLAUDE.md && ok_claude=1
+    agent_doc_index_ok AGENTS.md && ok_agents=1
+    [[ -e CLAUDE.md || -L CLAUDE.md ]] && has_claude=1
+    [[ -e AGENTS.md || -L AGENTS.md ]] && has_agents=1
+
+    # 血缘判定。三条硬要求：
+    #   ① 用 --full-history —— 默认 rev-list 会做 merge path-history simplification：
+    #      普通双父 merge 中规则书只存在于第二父、merge 最终树又删掉两份时，默认查询返回空，
+    #      血缘被漏判，staged/--all/fresh clone 全部放行。
+    #   ② 不把 git 查询失败吞成「无血缘」—— 缺祖先对象的非浅仓里 rev-list rc=128。
+    #   ③ unborn HEAD 单独判定：确定没有任何历史，血缘可判定为「无」。
+    if ! git rev-parse --verify --quiet HEAD >/dev/null 2>&1; then
+        lineage_known=1
+        has_lineage=0
+    else
+        shallow=$(git rev-parse --is-shallow-repository 2>/dev/null || printf 'unknown')
+        if [[ "$shallow" == 'false' ]]; then
+            if lineage=$(git rev-list --full-history --max-count=1 HEAD -- AGENTS.md 2>/dev/null); then
+                lineage_known=1
+                [[ -n "$lineage" ]] && has_lineage=1
+            fi
         fi
     fi
 
+    # 合法上游基线只有一种形态：血缘可判定且为「无」，且两份既不在 index 也不在磁盘。
+    # 少一个条件都不算 —— 单个 untracked 规则书、或两份分裂的 untracked 规则书，都必须拒绝。
+    if (( lineage_known && !has_lineage )) \
+        && (( !in_index_claude && !in_index_agents && !has_claude && !has_agents )); then
+        return 0
+    fi
+
+    ctx='本仓血缘要求'
+    (( lineage_known )) || ctx='血缘不可判定（浅克隆或历史对象缺失），保守要求'
+
+    if (( !ok_claude || !ok_agents )); then
+        (( ok_claude )) || bad='CLAUDE.md'
+        (( ok_agents )) || bad="${bad:+$bad 与 }AGENTS.md"
+        note "${ctx}两份规则书都作为普通文件被 git 跟踪，但 ${bad} 不满足（需 stage 0、mode 100644、非 intent-to-add）"
+        return 0
+    fi
+
     if [[ "$MODE" == '--all' ]]; then
-        local has_claude=0 has_agents=0
-        [[ -f CLAUDE.md ]] && has_claude=1
-        [[ -f AGENTS.md ]] && has_agents=1
+        source='worktree'
+        label='工作树'
         if (( !has_claude && !has_agents )); then
             note 'CLAUDE.md 与 AGENTS.md 均被跟踪但都不在工作区——两份必须同时存在且内容一致'
             return 0
@@ -162,23 +229,30 @@ check_agent_docs_in_sync() {
             fi
             return 0
         fi
-        if ! diff -q <(tail -n +2 CLAUDE.md) <(tail -n +2 AGENTS.md) >/dev/null 2>&1; then
-            note 'CLAUDE.md 与 AGENTS.md 内容分裂（除首行标题外必须逐字相同）'
-            printf '%s\n' '      差异预览：'
-            diff <(tail -n +2 CLAUDE.md) <(tail -n +2 AGENTS.md) 2>/dev/null | sed -n '1,10{s/^/        /;p;}'
-        fi
-        return 0
+    else
+        source='index'
+        label='index'
     fi
 
-    # staged：比即将提交的 index blob，不看工作树。
-    if ! diff -q <(git show :CLAUDE.md 2>/dev/null | tail -n +2) \
-                 <(git show :AGENTS.md 2>/dev/null | tail -n +2) >/dev/null 2>&1; then
-        note 'CLAUDE.md 与 AGENTS.md 内容分裂（除首行标题外必须逐字相同；staged 模式比对 index）'
+    body_claude=$(mktemp)
+    body_agents=$(mktemp)
+    if ! agent_doc_body CLAUDE.md "$source" "$body_claude"; then
+        note "CLAUDE.md 在${label}里不是合法规则书（0 字节、首行标题不是 '# CLAUDE.md'、或只有标题没有正文）"
+        rm -f -- "$body_claude" "$body_agents"
+        return 0
+    fi
+    if ! agent_doc_body AGENTS.md "$source" "$body_agents"; then
+        note "AGENTS.md 在${label}里不是合法规则书（0 字节、首行标题不是 '# AGENTS.md'、或只有标题没有正文）"
+        rm -f -- "$body_claude" "$body_agents"
+        return 0
+    fi
+    if ! diff -q <(tail -n +2 -- "$body_claude") <(tail -n +2 -- "$body_agents") >/dev/null 2>&1; then
+        note "CLAUDE.md 与 AGENTS.md 内容分裂（除首行标题外必须逐字相同；${MODE} 模式比对${label}）"
         printf '%s\n' '      差异预览：'
-        diff <(git show :CLAUDE.md 2>/dev/null | tail -n +2) \
-             <(git show :AGENTS.md 2>/dev/null | tail -n +2) 2>/dev/null \
+        diff <(tail -n +2 -- "$body_claude") <(tail -n +2 -- "$body_agents") 2>/dev/null \
             | sed -n '1,10{s/^/        /;p;}'
     fi
+    rm -f -- "$body_claude" "$body_agents"
 }
 
 check_agent_docs_in_sync
