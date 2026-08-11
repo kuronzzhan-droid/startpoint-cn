@@ -20,6 +20,7 @@ from typing import Any
 import wf_character_pack as character_pack
 import wf_character_requirements as requirements
 import wf_character_workspace as workspace_module
+import wf_apk_paths
 import wf_dsl
 import wf_mod_tool as core
 import wf_release
@@ -186,16 +187,15 @@ _BUNDLE_INDEX_CACHE: dict[str, frozenset[str]] = {}
 
 def _bundle_asset_tails() -> frozenset[str]:
     """APK 内置 bundle 里的 `<xx>/<hash>` 集合;读不到时返回空集(=退回原行为)。"""
-    key = "cn"
+    repo_root = Path(__file__).resolve().parent.parent
+    explicit_apk = wf_apk_paths.resolve_explicit_apk(os.environ)
+    source = explicit_apk or repo_root / "弹国服" / "bundle.zip"
+    key = str(source.resolve())
     cached = _BUNDLE_INDEX_CACHE.get(key)
     if cached is not None:
         return cached
     tails: set[str] = set()
-    repo_root = Path(__file__).resolve().parent.parent
-    candidates = [repo_root / "弹国服" / "bundle.zip"]
-    env_apk = os.environ.get("WF_APK")
-    if env_apk:
-        candidates.append(Path(env_apk))
+    candidates = [source]
     for source in candidates:
         if not source.is_file():
             continue

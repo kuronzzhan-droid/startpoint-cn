@@ -17,6 +17,7 @@ WF 单机版 · 本地网页修改器 (GUI)
   WF_TARGET_STORE  目标 upload 目录(默认按 profiles.json / 项目根目录查找)
   WF_CDNDATA       服务端 assets/cdndata 目录(①层;独立部署必配,默认取仓库根布局)
   WF_CDN_DIR       服务端 .cdn/cn 目录(发布目标;独立部署必配,默认取仓库根布局)
+  WF_APK           内置 base 资产来源 APK 或 bundle.zip 的绝对路径
   WF_ADB           adb.exe 完整路径
   WF_ADB_PORT      模拟器 adb 端口(默认 16384 = MuMu 12)
   WF_PKG           游戏包名(默认 com.leiting.wf,雷霆国服)
@@ -57,6 +58,7 @@ import wf_atf  # noqa: E402       skill_cutin ATF(ETC1)纹理重编码(战斗真
 import wf_boss  # noqa: E402      Boss 数值 + 副本列表(Boss·副本页)
 import wf_server_auth  # noqa: E402  服务端管理 API 地址与 Bearer 认证
 import wf_database_paths  # noqa: E402  独立部署时的存档数据库路径
+import wf_apk_paths  # noqa: E402  独立部署时的 APK/bundle 资产来源
 
 ROOT = Path(__file__).resolve().parent.parent
 _PROFILE = core.resolve_profile(os.environ.get("WF_PROFILE"))
@@ -3550,9 +3552,9 @@ def _dsl_store_path(pp: str) -> Path:
 
 def _find_apk() -> Path | None:
     """内置 base 资产来源 APK:WF_APK 环境变量 > 仓库 弹国服/*.apk 取最新。"""
-    envp = os.environ.get("WF_APK")
-    if envp and Path(envp).exists():
-        return Path(envp)
+    configured = wf_apk_paths.resolve_explicit_apk(os.environ)
+    if configured is not None:
+        return configured
     cands = sorted((ROOT / "弹国服").glob("*.apk"),
                    key=lambda p: p.stat().st_mtime, reverse=True)
     return cands[0] if cands else None

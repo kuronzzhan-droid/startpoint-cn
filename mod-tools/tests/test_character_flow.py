@@ -6,10 +6,12 @@ import contextlib
 import hashlib
 import io
 import json
+import os
 import shutil
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -98,6 +100,38 @@ class CdnReleaseModule(FakeReleaseModule):
 
 
 class TestCharacterFlow(unittest.TestCase):
+    def test_explicit_apk_wins_over_the_legacy_embedded_bundle(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            tool_dir = root / "mod-tools"
+            legacy_dir = root / "弹国服"
+            tool_dir.mkdir()
+            legacy_dir.mkdir()
+            legacy_bundle = legacy_dir / "bundle.zip"
+            explicit_apk = root / "configured.apk"
+            with zipfile.ZipFile(legacy_bundle, "w") as archive:
+                archive.writestr("legacy/aa/old", b"old")
+            with zipfile.ZipFile(explicit_apk, "w") as archive:
+                archive.writestr("configured/bb/new", b"new")
+
+            flow._BUNDLE_INDEX_CACHE.clear()
+            try:
+                with patch.object(
+                    flow, "__file__", str(tool_dir / "wf_character_flow.py")
+                ), patch.dict(os.environ, {}, clear=False):
+                    os.environ.pop("WF_APK", None)
+                    self.assertEqual(
+                        frozenset({"aa/old"}),
+                        flow._bundle_asset_tails(),
+                    )
+                    os.environ["WF_APK"] = str(explicit_apk)
+                    tails = flow._bundle_asset_tails()
+            finally:
+                flow._BUNDLE_INDEX_CACHE.clear()
+
+            self.assertIn("bb/new", tails)
+            self.assertNotIn("aa/old", tails)
+
     def test_preflight_auto_seals_complete_production_workspace(self):
         with tempfile.TemporaryDirectory() as tmp:
             workspace = workspace_module.init_workspace(
