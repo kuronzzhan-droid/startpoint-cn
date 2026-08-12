@@ -4,8 +4,10 @@ import { getPlayerCharacterClearSync } from "../../data/domains/character_clear"
 import { getPlayerCharacterSync, getPlayerCharactersSync } from "../../data/domains/character"
 import { getPlayerQuestProgressSync } from "../../data/domains/quest"
 import { getPlayerSync } from "../../data/domains/player"
+import { getPlayerActiveMissionsSync, getPlayerCategoryMissionsSync } from "../../data/domains/mission"
 import { getDb } from "../../data/db"
 import { getCharacterStoryQuestIds, getCharacterIdFromMission } from "./character-queries"
+import { getMissionIdsByCategory, isMissionProgressComplete } from "./stages"
 import type { MissionComputer, CategoryContext } from "./types"
 import type { PlayerCharacter } from "../../data/types"
 import charAwakeDefs from "../../../assets/mission_char_awake.json"
@@ -82,6 +84,14 @@ function buildAwakeContext(playerId: number, category: number): AwakeContext {
     const player = getPlayerSync(playerId)!
     const questProgressRaw = getPlayerQuestProgressSync(playerId)
     const allChars = getPlayerCharactersSync(playerId)
+    const categoryMissions = getPlayerCategoryMissionsSync(playerId, 9)
+    const legacyMissions = getPlayerActiveMissionsSync(playerId)
+    const activeMissionProgress: Record<string, number> = {}
+    for (const missionId of getMissionIdsByCategory(9)) {
+        activeMissionProgress[String(missionId)] = categoryMissions[String(missionId)]?.progress
+            ?? legacyMissions[String(missionId)]?.progress
+            ?? 0
+    }
 
     let totalQuestClears = 0, ssClears = 0, sClears = 0, aClears = 0, bClears = 0, totalStories = 0
     const questProgress: CategoryContext["questProgress"] = {}
@@ -146,6 +156,7 @@ function buildAwakeContext(playerId: number, category: number): AwakeContext {
         playerId, category, player, questProgress,
         totalQuestClears, totalStories,
         rankCounts: { rank_ss: ssClears, rank_s: sClears, rank_a: aClears, rank_b: bClears },
+        activeMissionProgress,
         charClears, leaderClears, multiClears, leaderMultiClears,
         leaderPowerflips, coClears, raceClears, charData,
     }
@@ -231,10 +242,15 @@ export const AwakeComputer: MissionComputer = {
                     : actx.charClears.get(charId) ?? 0
 
             case AwakeType.ALL_COMPLETE: {
-                const s1 = AwakeComputer.compute(missionId - 3, ctx, dbProgress)
-                const s2 = AwakeComputer.compute(missionId - 2, ctx, dbProgress)
-                const s3 = AwakeComputer.compute(missionId - 1, ctx, dbProgress)
-                return (s1 >= 1 ? 1 : 0) + (s2 >= 1 ? 1 : 0) + (s3 >= 1 ? 1 : 0)
+                const childIds = [missionId - 3, missionId - 2, missionId - 1]
+                return childIds.filter(childMissionId => isMissionProgressComplete(
+                    9,
+                    childMissionId,
+                    Math.max(
+                        ctx.activeMissionProgress?.[String(childMissionId)] ?? 0,
+                        AwakeComputer.compute(childMissionId, ctx, 0),
+                    ),
+                )).length
             }
         }
 

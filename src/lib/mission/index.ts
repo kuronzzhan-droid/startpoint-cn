@@ -44,6 +44,7 @@ export { getTargetDegree } from "./computer-degree"
 export type { MissionSettlementInfo, MissionSettlementResult, MissionSettlementScope } from "./settlement"
 export { settleMissionCategories, settleMissionCategoriesAsync } from "./settlement"
 export { mergeMissionSettlementResponse } from "./response"
+export { settleAwakeMissionCandidatesAsync } from "./awake-settlement"
 
 // Filter (active mission ID filtering, C8601 prevention)
 export { isActiveMissionId, filterToActiveMissions } from "./filter"

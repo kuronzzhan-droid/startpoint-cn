@@ -39,8 +39,13 @@ async function main() {
     const {
         getPlayerActiveMissionsSync,
         getPlayerCategoryMissionsSync,
+        updatePlayerCategoryMissionStageSync,
+        updatePlayerCategoryMissionSync,
+        updatePlayerActiveMissionStageSync,
+        updatePlayerActiveMissionSync,
     } = require("../src/data/domains/mission")
     const { recordMissionBattleResultSync } = require("../src/data/domains/mission_battle_facts")
+    const { getPlayerCharacterAwakeUnlocksSync } = require("../src/data/domains/character_awake")
     const { getPlayerSync, insertDefaultPlayerSync, updatePlayerSync } = require("../src/data/domains/player")
     const missionRoutes = require("../src/routes/api/mission").default
     const { getTimeOffset, setServerTimeOffset } = require("../src/utils")
@@ -66,6 +71,7 @@ async function main() {
         totalStaminaUsed: 100,
         totalDashes: 100,
         totalLoginDays: 4,
+        totalPowerflips: 100,
     })
     for (let index = 0; index < 20; index += 1) {
         recordMissionBattleResultSync(playerId, {
@@ -74,6 +80,8 @@ async function main() {
             clearRank: 5,
         })
     }
+    updatePlayerActiveMissionSync(playerId, 11, 1)
+    updatePlayerActiveMissionStageSync(playerId, 1, 11, true)
     for (let index = 0; index < 20; index += 1) {
         recordMissionBattleResultSync(playerId, {
             isMulti: true,
@@ -116,16 +124,18 @@ async function main() {
         assert.equal(firstData.mission_progress_list.some(entry => entry.mission_category === 10), true)
         assert.equal(firstData.mission_info.some(entry => entry.mission_category_id === 2), true)
         assert.equal(firstData.mission_info.some(entry => entry.mission_category_id === 10), true)
+        assert.equal(
+            firstData.mission_info.some(entry => entry.mission_category_id === 2 && entry.mission_id === 11),
+            false,
+            "a legacy received stage must not be granted again",
+        )
 
         const daily = getPlayerCategoryMissionsSync(playerId, 2)
         const weekly = getPlayerCategoryMissionsSync(playerId, 10)
         assert.equal((daily["11"]?.progress ?? 0) > 0, true)
         assert.equal((weekly["1"]?.progress ?? 0) > 0, true)
-        assert.deepEqual(
-            getPlayerActiveMissionsSync(playerId),
-            {},
-            "the migrated route must not create legacy active-mission rows",
-        )
+        assert.equal(daily["11"].stages["1"], true, "legacy receipt state must be imported per category")
+        assert.deepEqual(Object.keys(getPlayerActiveMissionsSync(playerId)), ["11"])
 
         const playerAfterFirst = getPlayerSync(playerId)
         const second = await app.inject({
@@ -142,6 +152,78 @@ async function main() {
         const secondData = decode(second).data
         assert.deepEqual(secondData.mission_info, [], "settlement must be idempotent")
         assert.equal(getPlayerSync(playerId).freeVmoney, playerAfterFirst.freeVmoney)
+
+        const awake = await app.inject({
+            method: "POST",
+            url: "/api/index.php/mission/get_mission_progress",
+            headers: { "content-type": "application/x-www-form-urlencoded" },
+            payload: encode({
+                viewer_id: viewerId,
+                api_count: 3,
+                category_list: [{ category: 9, character_id: 1 }],
+            }),
+        })
+        assert.equal(awake.statusCode, 200, awake.body)
+        const awakeData = decode(awake).data
+        assert.equal(awakeData.mission_info.some(entry => entry.mission_id === 13), true)
+        assert.equal(
+            awakeData.mission_info.some(entry => entry.mission_id === 14),
+            false,
+            "an all-complete awake mission must not unlock after only one child completes",
+        )
+        assert.equal((getPlayerCategoryMissionsSync(playerId, 9)["13"]?.progress ?? 0) >= 97, true)
+        assert.equal(getPlayerCategoryMissionsSync(playerId, 9)["14"]?.progress ?? 0, 1)
+        assert.deepEqual(
+            Object.keys(getPlayerActiveMissionsSync(playerId)),
+            ["11"],
+            "awake settlement must not add to the legacy tables",
+        )
+
+        updatePlayerCategoryMissionSync(playerId, 9, 11, 3)
+        updatePlayerCategoryMissionStageSync(playerId, 9, 1, 11, true)
+        updatePlayerCategoryMissionSync(playerId, 9, 12, 100)
+        updatePlayerCategoryMissionStageSync(playerId, 9, 1, 12, true)
+        assert.deepEqual(getPlayerCategoryMissionsSync(playerId, 9)["14"]?.stages ?? [], [])
+        database.exec(`
+            CREATE TRIGGER fail_awake_all_complete
+            BEFORE INSERT ON players_category_mission_stages
+            WHEN NEW.category = 9 AND NEW.mission_id = 14
+            BEGIN SELECT RAISE(ABORT, 'awake stage failure'); END
+        `)
+        const failedAwake = await app.inject({
+            method: "POST",
+            url: "/api/index.php/mission/get_mission_progress",
+            headers: { "content-type": "application/x-www-form-urlencoded" },
+            payload: encode({
+                viewer_id: viewerId,
+                api_count: 4,
+                category_list: [{ category: 9, character_id: 1 }],
+            }),
+        })
+        assert.equal(failedAwake.statusCode, 500)
+        assert.equal(getPlayerCategoryMissionsSync(playerId, 9)["14"]?.progress ?? 0, 1)
+        assert.equal(getPlayerCategoryMissionsSync(playerId, 9)["14"].stages["1"], undefined)
+        assert.equal(getPlayerCharacterAwakeUnlocksSync(playerId).has("1"), false)
+        database.exec("DROP TRIGGER fail_awake_all_complete")
+
+        const completedResponse = await app.inject({
+            method: "POST",
+            url: "/api/index.php/mission/get_mission_progress",
+            headers: { "content-type": "application/x-www-form-urlencoded" },
+            payload: encode({
+                viewer_id: viewerId,
+                api_count: 5,
+                category_list: [{ category: 9, character_id: 1 }],
+            }),
+        })
+        assert.equal(completedResponse.statusCode, 200, completedResponse.body)
+        const completedAwake = decode(completedResponse).data
+        assert.equal(
+            completedAwake.mission_info.some(entry => entry.mission_id === 14),
+            true,
+            JSON.stringify({ completedAwake, stored: getPlayerCategoryMissionsSync(playerId, 9) }),
+        )
+        assert.deepEqual(completedAwake.character_list[0].mana_board_awake, { 1: 1 })
     } finally {
         await app.close()
         cleanup()

@@ -28,6 +28,16 @@ export interface CategoryMissionRewardStageDefinition {
     rewards: ActiveMissionReward[]
 }
 
+export interface AwakeMissionSpecialReward {
+    characterId: number
+    boardIndex: number
+    awakeLevel: number
+}
+
+export interface AwakeMissionRewardStageDefinition extends CategoryMissionRewardStageDefinition {
+    specialReward?: AwakeMissionSpecialReward
+}
+
 export interface MissionRewardStageDefinition {
     source: "active" | "awake"
     targetProgress: number
@@ -214,11 +224,43 @@ export function getDailyMissionRewards(missionId: number, stage: number): Active
 }
 
 export function getAwakeMissionRewards(missionId: number, stage: number): ActiveMissionReward[] {
-    const mission = (charAwakeRewards as Record<string, Record<string, any[]>>)[String(missionId)]
-    if (!mission) return []
-    const stageData = mission[String(stage)]
-    if (!stageData || !stageData[0]) return []
-    return parseMissionRewardSlots(stageData[0], 9, 4)
+    return getAwakeMissionRewardStageDefinition(missionId, stage)?.rewards ?? []
+}
+
+export function getAwakeMissionRewardStageDefinition(
+    missionId: number,
+    stage: number,
+): AwakeMissionRewardStageDefinition | null {
+    const row = getRewardRow(
+        charAwakeRewards as Record<string, Record<string, any[]>>,
+        missionId,
+        stage,
+    )
+    if (!row) return null
+    const missionRewardId = parseOptionalInteger(row[0])
+    const targetProgress = Number.parseFloat(String(row[5]))
+    if (missionRewardId === undefined
+        || !Number.isSafeInteger(missionRewardId)
+        || missionRewardId <= 0
+        || !Number.isFinite(targetProgress)
+        || targetProgress < 0) return null
+
+    let specialReward: AwakeMissionSpecialReward | undefined
+    if (parseOptionalInteger(row[1]) === 0) {
+        const characterId = parseOptionalInteger(row[2])
+        const boardIndex = parseOptionalInteger(row[3])
+        const awakeLevel = parseOptionalInteger(row[4])
+        if (![characterId, boardIndex, awakeLevel].every(value =>
+            Number.isSafeInteger(value) && value! > 0
+        )) return null
+        specialReward = { characterId: characterId!, boardIndex: boardIndex!, awakeLevel: awakeLevel! }
+    }
+    return {
+        missionRewardId,
+        targetProgress,
+        rewards: parseMissionRewardSlots(row, 9, 4),
+        ...(specialReward ? { specialReward } : {}),
+    }
 }
 
 export function getEventMissionRewards(missionId: number, stage: number): ActiveMissionReward[] {

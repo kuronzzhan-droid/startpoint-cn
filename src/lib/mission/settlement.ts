@@ -1,4 +1,5 @@
 import {
+    getPlayerActiveMissionsSync,
     getPlayerCategoryMissionsSync,
     updatePlayerCategoryMissionStageSync,
     updatePlayerCategoryMissionSync,
@@ -17,6 +18,7 @@ import {
     getCompletedStageNumbers,
     getMissionFinalTargetProgress,
     getMissionIdsByCategory,
+    getMissionStageIds,
     isMissionProgressComplete,
 } from "./stages"
 
@@ -49,6 +51,7 @@ interface EvaluatedMission {
     progress: number
     receivedStages: Record<string, boolean> | unknown[]
     dbProgress: number
+    importLegacyState: boolean
 }
 
 function positiveSafeInteger(value: unknown, name: string): number {
@@ -144,6 +147,7 @@ function evaluateMissionCategories(
 
     const evaluatedMissions: EvaluatedMission[] = []
     const evaluatedMissionKeys = new Set<string>()
+    const legacyMissions = getPlayerActiveMissionsSync(playerId)
     for (const scope of normalizedScopes(categories)) {
         const candidateMissionIds = scope.missionIds ?? getMissionIdsByCategory(scope.category)
         if (candidateMissionIds.length === 0) continue
@@ -156,7 +160,9 @@ function evaluateMissionCategories(
             const missionKey = `${scope.category}:${missionId}`
             if (evaluatedMissionKeys.has(missionKey)) continue
             evaluatedMissionKeys.add(missionKey)
-            const current = persisted[String(missionId)]
+            const persistedMission = persisted[String(missionId)]
+            const legacyMission = legacyMissions[String(missionId)]
+            const current = persistedMission ?? legacyMission
             const dbProgress = finiteProgress(current?.progress ?? 0, "stored mission progress")
             const computed = finiteProgress(
                 computer.compute(missionId, context, dbProgress),
@@ -176,6 +182,7 @@ function evaluateMissionCategories(
                         : Math.min(monotonicProgress, finalTarget),
                 receivedStages: current?.stages ?? [],
                 dbProgress,
+                importLegacyState: persistedMission === undefined && legacyMission !== undefined,
             })
         }
     }
@@ -190,8 +197,28 @@ function persistMissionEvaluation(
     const granter = new MissionRewardGranter(playerId, evaluation.player)
     const missionInfo: MissionSettlementInfo[] = []
     for (const mission of evaluation.evaluatedMissions) {
-        if (mission.progress !== mission.dbProgress) {
+        if (mission.importLegacyState || mission.progress !== mission.dbProgress) {
             updatePlayerCategoryMissionSync(playerId, mission.category, mission.missionId, mission.progress)
+        }
+        if (mission.importLegacyState && !Array.isArray(mission.receivedStages)) {
+            const allowedStages = new Set(getMissionStageIds(mission.category, mission.missionId))
+            for (const [stage, received] of Object.entries(mission.receivedStages)) {
+                if (!received) continue
+                const stageId = Number(stage)
+                if (!Number.isSafeInteger(stageId) || stageId <= 0 || String(stageId) !== stage) {
+                    throw new Error(`Legacy mission stage ${mission.missionId}:${stage} is not canonical.`)
+                }
+                if (!allowedStages.has(stageId)) {
+                    throw new Error(`Legacy mission stage ${mission.category}:${mission.missionId}:${stage} is unknown.`)
+                }
+                updatePlayerCategoryMissionStageSync(
+                    playerId,
+                    mission.category,
+                    stageId,
+                    mission.missionId,
+                    true,
+                )
+            }
         }
     }
 
