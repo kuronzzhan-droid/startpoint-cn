@@ -4,8 +4,15 @@ import { MissionComputer } from "./types"
 import { RegularComputer } from "./computer-regular"
 import { DegreeComputer } from "./computer-degree"
 import { AwakeComputer } from "./computer-awake"
-import { EventComputer } from "./computer-event"
 import { FallbackComputer } from "./computer-fallback"
+
+function getEventSafeComputer(): MissionComputer {
+    return (require("./computer-event-safe") as typeof import("./computer-event-safe")).EventSafeComputer
+}
+
+function getCollectComputer(): MissionComputer {
+    return (require("./collect-progress") as typeof import("./collect-progress")).CollectComputer
+}
 
 export function getComputer(category: number): MissionComputer {
     // Read imported bindings at call time. Capturing them in a module-load Map turns a
@@ -15,7 +22,9 @@ export function getComputer(category: number): MissionComputer {
         case 2:
             return RegularComputer
         case 3:
-            return EventComputer
+            return getEventSafeComputer()
+        case 4:
+            return getCollectComputer()
         case 5:
             return DegreeComputer
         case 9:
