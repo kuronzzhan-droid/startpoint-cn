@@ -357,10 +357,7 @@ try {
 
     insertPlayer(5)
     const battleRepository = makeMissionRepository([{ id: 93001, row: missionRow({ pattern: 14 }) }])
-    assert.throws(() => reconcileActiveMissionFacts({ playerId: 5, repository: battleRepository.repository, now: NOW }), /no such table/)
     assert.deepEqual(activeRows(5), [])
-    const { missionFactsMigration } = require("../src/data/migrations/wdfp/mission-facts")
-    missionFactsMigration.apply(database)
     database.prepare("INSERT INTO players_mission_battle_counters (player_id, single_clear_count) VALUES (5, 2)").run()
     assert.equal(reconcileActiveMissionFacts({ playerId: 5, repository: battleRepository.repository, now: NOW })[0].progress_value, 2)
     assert.deepEqual(reconcileActiveMissionFacts({ playerId: 5, repository: battleRepository.repository, now: NOW }), [])

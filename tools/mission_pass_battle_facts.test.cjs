@@ -117,13 +117,6 @@ try {
 
     const { recordPassMissionBattleFacts } = freshCollector()
     const advent = context(1, 7, 200015001, true)
-    assert.throws(
-        () => recordPassMissionBattleFacts(advent, new Date("2024-08-14T03:00:00Z")),
-        /no such table: players_category_missions/,
-    )
-
-    const { categoryMissionMigration } = require("../src/data/migrations/wdfp/category-mission")
-    categoryMissionMigration.apply(database)
     assert.deepEqual(recordPassMissionBattleFacts(advent, new Date("2024-08-14T03:00:00Z")), [15])
     assert.deepEqual(recordPassMissionBattleFacts(context(1, 2, 1025001, true), new Date("2024-08-14T03:00:00Z")), [16])
     // Mission 16 is row[9]="1" / row[10]="25,26,27,28,29,30" / row[11]="(None)". Each segment below is

@@ -199,9 +199,6 @@ try {
     assert.deepEqual(first, [{ missionId: 2 }, { missionId: 10 }])
     assert.notEqual(first, loadout.collectActiveMissionLoadoutBattleFacts(frozenDefinitions, frozenContext, frozenCharacters))
 
-    assert.throws(() => facts(1), /no such table/)
-    const { missionFactsMigration } = require("../src/data/migrations/wdfp/mission-facts")
-    missionFactsMigration.apply(database)
     assert.deepEqual(facts(1), [])
 
     ;({ productionContentSnapshotProvider: provider } = require("../src/content/runtime/content-snapshot"))

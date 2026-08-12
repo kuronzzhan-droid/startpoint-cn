@@ -47,16 +47,7 @@ try {
     insertPlayer(3)
     insertPlayer(4)
 
-    assert.throws(
-        () => database.prepare("SELECT * FROM players_pass_cards").get(),
-        /no such table: players_pass_cards/,
-    )
-
     const passCard = require("../src/data/domains/pass-card")
-    assert.throws(() => passCard.getPlayerPassCardStateSync(1, 10), /no such table/)
-    const { passCardMigration } = require("../src/data/migrations/wdfp/pass-card")
-    passCardMigration.apply(database)
-
     assert.deepEqual(passCard.getPlayerPassCardStateSync(1, 10), {
         eventId: 10,
         point: 0,

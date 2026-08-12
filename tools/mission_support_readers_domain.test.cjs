@@ -45,11 +45,6 @@ try {
     insertPlayer(1)
     insertPlayer(2)
 
-    assert.throws(
-        () => database.prepare("SELECT * FROM players_collected_items").get(),
-        /no such table: players_collected_items/,
-    )
-
     const characterClear = require("../src/data/domains/character_clear")
     const quest = require("../src/data/domains/quest")
     const item = require("../src/data/domains/item")
@@ -59,8 +54,6 @@ try {
     assert.equal(typeof quest.incrementPlayerQuestMultiClearSync, "function")
     assert.equal(typeof item.getPlayerCollectedItemTotalSync, "function")
     assert.equal(typeof item.getPlayerCollectedItemTotalsSync, "function")
-    assert.throws(() => item.getPlayerCollectedItemTotalSync(1, 1), /no such table/)
-
     assert.deepEqual(characterClear.getPlayerCharacterClearsSync(1), {})
     database.prepare(`
         INSERT INTO players_character_quest_clears (
@@ -127,8 +120,6 @@ try {
 
     database.prepare("INSERT INTO players_items (id, amount, player_id) VALUES (50, 9, 1)").run()
     const inventoryBeforeReaders = database.prepare("SELECT * FROM players_items WHERE player_id = 1 ORDER BY id").all()
-    const { missionFactsMigration } = require("../src/data/migrations/wdfp/mission-facts")
-    missionFactsMigration.apply(database)
 
     assert.equal(item.getPlayerCollectedItemTotalSync(1, 100), 0)
     assert.deepEqual(item.getPlayerCollectedItemTotalsSync(1), {})

@@ -112,14 +112,6 @@ try {
 
     const { recordDailyMissionBattleFacts } = freshCollector()
     const advent = context(1, 7, 200015001)
-    assert.throws(
-        () => recordDailyMissionBattleFacts(advent, new Date("2024-08-14T03:00:00Z")),
-        /no such table: players_category_missions/,
-    )
-
-    const { categoryMissionMigration } = require("../src/data/migrations/wdfp/category-mission")
-    categoryMissionMigration.apply(database)
-
     assert.deepEqual(recordDailyMissionBattleFacts(context(1, 27, 1001, false), new Date("2026-07-25T03:00:00Z")), [10075, 800392])
     assert.deepEqual(recordDailyMissionBattleFacts(context(1, 27, 2001, false), new Date("2026-07-25T03:00:00Z")), [800392])
     assert.deepEqual(recordDailyMissionBattleFacts(advent, new Date("2024-08-14T03:00:00Z")), [800115, 800116, 800117])

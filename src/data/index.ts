@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import path from "path";
 import { updateBeforeInit as updateWdfpDataBefore, updateAfterInit as updateWdfpDataAfter} from "./updaters/wdfpData";
 import initWdfpData from "./initializers/wdfpData";
+import { applyWdfpMigrations } from "./migrations/wdfp";
 
 // Tests may opt into an isolated database root before importing this module.
 // Production keeps the existing __dirname-relative .database location.
@@ -38,7 +39,7 @@ const databasesMetadata: {[key in Database]: DatabaseMetadata} = {
         init: initWdfpData,
         updateBefore: updateWdfpDataBefore,
         updateAfter: updateWdfpDataAfter,
-        latestVersion: 2
+        latestVersion: 3
     }
 }
 
@@ -65,9 +66,19 @@ export default function getDatabase(
     let currentVersion: number = 0
     const versionFilePath = path.join(dataDir, `${relativeDatabasePath}${versionFileExtension}`)
     if (dbExists && existsSync(versionFilePath)) {
-        const fileContents = readFileSync(versionFilePath).toString('utf-8')
-        const versionNumber = Number(fileContents)
-        currentVersion = isNaN(versionNumber) ? currentVersion : versionNumber
+        const fileContents = readFileSync(versionFilePath, 'utf-8').trim()
+        if (!/^(0|[1-9]\d*)$/.test(fileContents)) {
+            throw new Error(`invalid database version for ${metadata.path}: ${JSON.stringify(fileContents)}`)
+        }
+        currentVersion = Number(fileContents)
+        if (!Number.isSafeInteger(currentVersion)) {
+            throw new Error(`invalid database version for ${metadata.path}: ${JSON.stringify(fileContents)}`)
+        }
+        if (currentVersion > metadata.latestVersion) {
+            throw new Error(
+                `database ${metadata.path} version ${currentVersion} is newer than supported version ${metadata.latestVersion}`,
+            )
+        }
     }
 
     // create new db
@@ -103,11 +114,18 @@ export default function getDatabase(
                 console.log("Successfully updated wdfp_data.db")
             }
 
-            // write version file
+            // Reviewed Wave2a migrations are deliberately separate from the
+            // legacy initializer. Run and validate them on fresh and existing
+            // databases; the ordered bundle is idempotent and transactional.
+            applyWdfpMigrations(db)
+
+            // write version file only after every schema check has passed
             writeFileSync(versionFilePath, latestVersion.toString(), { encoding: 'utf-8' })
         } catch (error) {
             console.log(error)
             console.log(`Initalization failed for module ${metadata.path}. Error: ${error}`)
+            db.close()
+            throw error
         }
     }
 

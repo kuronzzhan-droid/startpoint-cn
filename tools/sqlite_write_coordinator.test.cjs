@@ -90,6 +90,7 @@ function assertSynchronousCallbackTypeContract() {
             "--module", "commonjs",
             "--moduleResolution", "node",
             "--esModuleInterop",
+            "--resolveJsonModule",
             fixturePath,
         ], { encoding: "utf8" })
         assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`)

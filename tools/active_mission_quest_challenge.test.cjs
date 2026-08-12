@@ -40,9 +40,6 @@ try {
     assert.equal(database.pragma("foreign_keys", { simple: true }), 1)
     for (let playerId = 1; playerId <= 6; playerId += 1) insertPlayer(playerId)
 
-    assert.throws(() => counters.getActiveMissionPracticeQuestChallengeCountSync(1), /no such table/)
-    const { missionFactsMigration } = require("../src/data/migrations/wdfp/mission-facts")
-    missionFactsMigration.apply(database)
     assert.equal(counters.getActiveMissionPracticeQuestChallengeCountSync(1), 0)
 
     for (const category of [0, 1, 14, 16, 99]) {

@@ -62,11 +62,6 @@ try {
     insertPlayer(2)
     insertPlayer(3)
 
-    assert.throws(
-        () => database.prepare("SELECT * FROM players_category_missions").get(),
-        /no such table: players_category_missions/,
-    )
-
     const mission = require("../src/data/domains/mission")
     for (const exportName of [
         "getPlayerCategoryMissionsSync",
@@ -80,11 +75,6 @@ try {
     ]) {
         assert.equal(typeof mission[exportName], "function", `${exportName} must be exported`)
     }
-    assert.throws(() => mission.getPlayerCategoryMissionsSync(1, 1), /no such table/)
-
-    const { categoryMissionMigration } = require("../src/data/migrations/wdfp/category-mission")
-    categoryMissionMigration.apply(database)
-
     assert.deepEqual(mission.getPlayerCategoryMissionsSync(1, 1), {})
     assert.deepEqual(mission.getPlayerCategoryMissionListSync(1), {})
     mission.updatePlayerCategoryMissionSync(1, 1, "10", 1.5)

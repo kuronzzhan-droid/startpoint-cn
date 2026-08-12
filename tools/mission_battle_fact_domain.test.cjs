@@ -54,15 +54,7 @@ try {
     assert.equal(database.pragma("foreign_keys", { simple: true }), 1)
     for (let playerId = 1; playerId <= 9; playerId += 1) insertPlayer(playerId)
 
-    assert.throws(
-        () => database.prepare("SELECT * FROM players_mission_battle_counters").get(),
-        /no such table: players_mission_battle_counters/,
-    )
-
     const battleFacts = require("../src/data/domains/mission_battle_facts")
-    assert.throws(() => battleFacts.getMissionBattleCountersSync(1), /no such table/)
-    const { missionFactsMigration } = require("../src/data/migrations/wdfp/mission-facts")
-    missionFactsMigration.apply(database)
     assert.deepEqual(battleFacts.getMissionBattleCountersSync(1), EMPTY)
 
     const cases = [

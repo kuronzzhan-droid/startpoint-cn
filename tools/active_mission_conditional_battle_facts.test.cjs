@@ -170,9 +170,6 @@ try {
         definition(2, { pattern: 72, battleKind: 1, characterId: 0 }),
     ]) assert.throws(() => conditional.collectActiveMissionConditionalBattleFacts([definition(1, { pattern: 72 }), malformed], context(), characters()), error => error instanceof TypeError || error instanceof RangeError)
 
-    assert.throws(() => facts(1), /no such table/)
-    const { missionFactsMigration } = require("../src/data/migrations/wdfp/mission-facts")
-    missionFactsMigration.apply(database)
     assert.deepEqual(facts(1), [])
 
     ;({ productionContentSnapshotProvider } = require("../src/content/runtime/content-snapshot"))

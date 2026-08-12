@@ -52,20 +52,9 @@ try {
     insertPlayer(3)
     insertPlayer(4)
 
-    assert.throws(
-        () => database.prepare("SELECT * FROM players_active_mission_counters").get(),
-        /no such table: players_active_mission_counters/,
-    )
-
     const conditional = require("../src/data/domains/active_mission_battle_condition_facts")
     const battle = require("../src/data/domains/active_mission_battle_facts")
     const counters = require("../src/data/domains/active_mission_counters")
-    assert.throws(() => conditional.getActiveMissionConditionalBattleFactsSync(1), /no such table/)
-    assert.throws(() => battle.getActiveMissionBattleFactsSync(1), /no such table/)
-    assert.throws(() => counters.getActiveMissionCountersSync(1), /no such table/)
-
-    const { missionFactsMigration } = require("../src/data/migrations/wdfp/mission-facts")
-    missionFactsMigration.apply(database)
 
     assert.deepEqual(conditional.getActiveMissionConditionalBattleFactsSync(1), {})
     assert.deepEqual(battle.getActiveMissionBattleFactsSync(1), {})

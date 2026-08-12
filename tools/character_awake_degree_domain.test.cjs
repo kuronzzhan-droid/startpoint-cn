@@ -58,20 +58,8 @@ try {
     insertCharacter(1, 100)
     insertCharacter(12, 1200)
 
-    assert.throws(
-        () => database.prepare("SELECT * FROM players_character_awake_unlocks").get(),
-        /no such table: players_character_awake_unlocks/,
-    )
-
     const awake = require("../src/data/domains/character_awake")
     const degree = require("../src/data/domains/degree")
-    assert.throws(() => awake.getPlayerCharacterAwakeUnlocksSync(1), /no such table/)
-    assert.throws(() => degree.hasPlayerDegreeSync(1, 1), /no such table/)
-
-    const { categoryMissionMigration } = require("../src/data/migrations/wdfp/category-mission")
-    const { awakeDegreeMigration } = require("../src/data/migrations/wdfp/awake-degree")
-    categoryMissionMigration.apply(database)
-    awakeDegreeMigration.apply(database)
 
     assert.deepEqual([...awake.getPlayerCharacterAwakeUnlocksSync(1)], [])
     assert.equal(awake.upsertPlayerCharacterAwakeUnlockSync(1, 100, 1, 1), true)

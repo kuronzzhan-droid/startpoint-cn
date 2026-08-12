@@ -1,6 +1,6 @@
 require("ts-node/register/transpile-only")
 
-// Focused schema test for the dormant degree covering index.
+// Focused schema test for the degree covering index migration.
 //
 // House convention keeps every migration matrix in its own file (mission_facts_schema,
 // awake_degree_schema, category_mission_schema_repair, pass_card_schema). This file owns the
@@ -107,6 +107,11 @@ try {
     const main = database.pragma("database_list").find(entry => entry.name === "main")
     assert.equal(path.dirname(path.resolve(main.file)), path.resolve(temporaryRoot))
     assert.equal(database.pragma("foreign_keys", { simple: true }), 1)
+    // Production now applies the reviewed migration bundle during initialization. Remove only
+    // this index so the focused test can still prove the migration's create/rollback behavior
+    // from its pre-apply state; the production activation contract is covered by
+    // wdfp_migration_runner.test.cjs.
+    database.prepare(`DROP INDEX ${INDEX_NAME}`).run()
     insertPlayer(1)
     const { missionFactsMigration } = require("../src/data/migrations/wdfp/mission-facts")
     missionFactsMigration.apply(database)

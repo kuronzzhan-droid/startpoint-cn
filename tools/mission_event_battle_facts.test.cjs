@@ -148,13 +148,6 @@ try {
         getExactEventBattleRuleCoverage,
     } = freshCollector()
     const host = context(1, 3002, true)
-    assert.throws(
-        () => recordEventMissionBattleFacts(host, new Date("2020-04-01T03:00:00Z")),
-        /no such table: players_category_missions/,
-    )
-
-    const { categoryMissionMigration } = require("../src/data/migrations/wdfp/category-mission")
-    categoryMissionMigration.apply(database)
     expectCoverage(getExactEventBattleRuleCoverage)
     const pollutedCoverage = getExactEventBattleRuleCoverage()
     pollutedCoverage.roles.any = -1
