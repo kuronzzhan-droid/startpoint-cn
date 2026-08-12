@@ -8,6 +8,9 @@ import degreeRewards from "../../../assets/mission_degree_reward.json"
 import collectRewards from "../../../assets/mission_collect_item_reward.json"
 import weeklyRewards from "../../../assets/mission_weekly_reward.json"
 import charAwakeRewards from "../../../assets/mission_char_awake_reward.json"
+import passDailyRewards from "../../../assets/mission_pass_daily_reward.json"
+import passWeekRewards from "../../../assets/mission_pass_week_reward.json"
+import passEventRewards from "../../../assets/mission_pass_event_reward.json"
 import type { ReadonlyContentRepository } from "../../content/runtime/content-snapshot"
 
 export interface ActiveMissionReward {
@@ -16,6 +19,13 @@ export interface ActiveMissionReward {
     itemId?: number
     characterId?: number
     equipmentId?: number
+    degreeId?: number
+}
+
+export interface CategoryMissionRewardStageDefinition {
+    missionRewardId: number
+    targetProgress: number
+    rewards: ActiveMissionReward[]
 }
 
 export interface MissionRewardStageDefinition {
@@ -113,14 +123,18 @@ function parseMissionRewardSlots(row: any[], firstKindIndex: number, slotCount: 
         const itemId = row[base + 2] ? parseInt(row[base + 2]) : undefined
         const charId = row[base + 3] ? parseInt(row[base + 3]) : undefined
         const equipId = row[base + 4] ? parseInt(row[base + 4]) : undefined
+        const degreeId = row[base + 5] ? parseInt(row[base + 5]) : undefined
 
         if (kind === 1 && !itemId) continue
         if (kind === 2 && !equipId) continue
+        if (kind === 4 && !charId) continue
+        if (kind === 6 && !degreeId) continue
 
         const reward: ActiveMissionReward = { kind, amount }
         if (itemId) reward.itemId = itemId
         if (charId) reward.characterId = charId
         if (equipId) reward.equipmentId = equipId
+        if (degreeId) reward.degreeId = degreeId
         result.push(reward)
     }
     return result
@@ -239,4 +253,44 @@ export function getWeeklyMissionRewards(missionId: number, stage: number): Activ
     const stageData = mission[String(stage)]
     if (!stageData || !stageData[0]) return []
     return parseMissionRewardSlots(stageData[0], 5, 4)
+}
+
+const categoryRewardTables: Readonly<Record<number, {
+    table: Record<string, Record<string, any[]>>
+    targetProgressIndex: number
+    firstKindIndex: number
+}>> = {
+    1: { table: regularRewards as Record<string, Record<string, any[]>>, targetProgressIndex: 1, firstKindIndex: 5 },
+    2: { table: dailyRewards as Record<string, Record<string, any[]>>, targetProgressIndex: 1, firstKindIndex: 5 },
+    3: { table: eventRewards as Record<string, Record<string, any[]>>, targetProgressIndex: 1, firstKindIndex: 5 },
+    4: { table: collectRewards as Record<string, Record<string, any[]>>, targetProgressIndex: 2, firstKindIndex: 6 },
+    5: { table: degreeRewards as Record<string, Record<string, any[]>>, targetProgressIndex: 1, firstKindIndex: 5 },
+    6: { table: passDailyRewards as Record<string, Record<string, any[]>>, targetProgressIndex: 1, firstKindIndex: 5 },
+    7: { table: passWeekRewards as Record<string, Record<string, any[]>>, targetProgressIndex: 1, firstKindIndex: 5 },
+    8: { table: passEventRewards as Record<string, Record<string, any[]>>, targetProgressIndex: 1, firstKindIndex: 5 },
+    10: { table: weeklyRewards as Record<string, Record<string, any[]>>, targetProgressIndex: 1, firstKindIndex: 5 },
+}
+
+export function getCategoryMissionRewardStageDefinition(
+    category: number,
+    missionId: number,
+    stage: number,
+): CategoryMissionRewardStageDefinition | null {
+    const layout = categoryRewardTables[category]
+    if (!layout) return null
+    const row = getRewardRow(layout.table, missionId, stage)
+    if (!row) return null
+
+    const missionRewardId = parseOptionalInteger(row[0])
+    const targetProgress = Number.parseFloat(String(row[layout.targetProgressIndex]))
+    if (missionRewardId === undefined
+        || !Number.isSafeInteger(missionRewardId)
+        || missionRewardId <= 0
+        || !Number.isFinite(targetProgress)
+        || targetProgress < 0) return null
+    return {
+        missionRewardId,
+        targetProgress,
+        rewards: parseMissionRewardSlots(row, layout.firstKindIndex, 4),
+    }
 }
