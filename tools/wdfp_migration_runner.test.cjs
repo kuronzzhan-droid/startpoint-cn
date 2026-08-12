@@ -57,6 +57,7 @@ try {
         "wdfp/mission-facts/v1",
         "wdfp/awake-degree/v1",
         "wdfp/degree-query-index/v1",
+        "wdfp/active-quest-host/v1",
     ])
     assert.equal(Object.isFrozen(WDFP_MIGRATION_IDS), true)
 
@@ -113,10 +114,29 @@ try {
     const production = loadProductionDatabase(productionRoot)
     assert.equal(
         fs.readFileSync(path.join(productionRoot, "wdfp_data.db.version"), "utf8"),
-        "3",
+        "4",
     )
     assert.equal(tableNames(production).includes("players_pass_cards"), true)
     closeDatabase(production)
+
+    const versionThreeRoot = path.join(temporaryRoot, "production-v3")
+    fs.mkdirSync(versionThreeRoot)
+    const versionThree = new SqliteDatabase(path.join(versionThreeRoot, "wdfp_data.db"))
+    require("../src/data/initializers/wdfpData").default(versionThree, false)
+    for (const migration of [
+        require("../src/data/migrations/wdfp/category-mission").categoryMissionMigration,
+        require("../src/data/migrations/wdfp/pass-card").passCardMigration,
+        require("../src/data/migrations/wdfp/mission-facts").missionFactsMigration,
+        require("../src/data/migrations/wdfp/awake-degree").awakeDegreeMigration,
+        require("../src/data/migrations/wdfp/degree-query-index").degreeQueryIndexMigration,
+    ]) migration.apply(versionThree)
+    versionThree.close()
+    fs.writeFileSync(path.join(versionThreeRoot, "wdfp_data.db.version"), "3", "utf8")
+    const upgradedFromThree = loadProductionDatabase(versionThreeRoot)
+    assert.notEqual(upgradedFromThree.prepare(`PRAGMA table_info(players_active_quests)`).all()
+        .find(column => column.name === "is_multi_host"), undefined)
+    assert.equal(fs.readFileSync(path.join(versionThreeRoot, "wdfp_data.db.version"), "utf8"), "4")
+    closeDatabase(upgradedFromThree)
 
     const brokenRoot = path.join(temporaryRoot, "production-broken")
     fs.mkdirSync(brokenRoot)
@@ -141,7 +161,7 @@ try {
     brokenReadback.close()
 
     for (const [name, version, pattern] of [
-        ["future", "4", /newer than supported version 3/],
+        ["future", "5", /newer than supported version 4/],
         ["fractional", "2.5", /invalid database version/],
         ["garbage", "not-a-version", /invalid database version/],
     ]) {

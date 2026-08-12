@@ -1,4 +1,5 @@
 import type { Database } from "better-sqlite3"
+import { activeQuestHostMigration } from "./active-quest-host"
 import { awakeDegreeMigration } from "./awake-degree"
 import { categoryMissionMigration } from "./category-mission"
 import type { DormantWdfpMigration } from "./contract"
@@ -12,6 +13,7 @@ const migrations: readonly DormantWdfpMigration[] = Object.freeze([
     missionFactsMigration,
     awakeDegreeMigration,
     degreeQueryIndexMigration,
+    activeQuestHostMigration,
 ])
 
 export const WDFP_MIGRATION_IDS: readonly string[] = Object.freeze(
