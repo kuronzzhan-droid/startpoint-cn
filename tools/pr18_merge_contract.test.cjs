@@ -85,3 +85,51 @@ test("multiplayer battle enforces Advent prerequisites and records mission dimen
         "multiplayer score rewards must receive rank-specific item counts",
     );
 });
+
+test("single and multiplayer finish activate the atomic mission fact facade once", () => {
+    for (const [label, source] of [["single", routeSource], ["multi", multiRouteSource]]) {
+        assert.equal(
+            (source.match(/recordMissionBattleFacts\s*\(/g) || []).length,
+            1,
+            `${label} finish must call the aggregate exactly once`,
+        );
+        for (const directTracker of [
+            "trackCharacterClears",
+            "trackLeaderPowerflip",
+            "trackPartyCoClears",
+            "trackPowerflip",
+        ]) {
+            assert.equal(source.includes(`${directTracker}(`), false,
+                `${label} route must not duplicate ${directTracker}`);
+        }
+        assert.ok(
+            source.indexOf("recordMissionBattleFacts(") < source.indexOf("delete activeQuests["),
+            `${label} finish must not consume the active quest before fact recording succeeds`,
+        );
+    }
+    assert.doesNotMatch(
+        multiRouteSource,
+        /UPDATE\s+players_quest_progress\s+SET\s+multi_clear_count/i,
+        "the aggregate owns multi-clear increments",
+    );
+});
+
+test("multiplayer host identity is captured at start and reused after restart", () => {
+    assert.match(
+        multiRouteSource,
+        /insertActiveQuest\s*\([\s\S]{0,500}?isMultiHost:\s*room\.host_player_id\s*===\s*ctx\.playerId/,
+    );
+    assert.match(
+        multiRouteSource,
+        /const\s+finishCtx:\s*FinishContext\s*=\s*\{[\s\S]{0,500}?isMultiHost:\s*activeQuestData\.isMultiHost/,
+    );
+    assert.match(
+        multiRouteSource,
+        /resolveActiveQuest\s*\(\s*\{[\s\S]{0,300}?allowRebuild:\s*false/,
+        "multiplayer finish must recover the persisted quest without minting one from the request body",
+    );
+    assert.match(
+        routeSource,
+        /insertPlayerActiveQuestSync\s*\([\s\S]{0,400}?isMultiHost:\s*quest\.isMultiHost/,
+    );
+});

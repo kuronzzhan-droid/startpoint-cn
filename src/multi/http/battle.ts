@@ -25,14 +25,11 @@ import { givePlayerRewardsSync, givePlayerRewardSync, givePlayerScoreRewardsSync
 import { computeRealTimeStamina, getRankDegree, getMaxStamina } from "../../lib/stamina";
 import { resolvePlayerIdSync } from "../../data/activeAccount";
 import { BattleQuest, EquipmentItemReward, PlayerRewardResult, QuestCategory } from "../../lib/types";
-import { getDb } from "../../data/db";
 import type { Player } from "../../data/types";
-import { trackCharacterClears } from "../../lib/quest/finish/character-clear-tracker";
-import { trackPowerflip } from "../../lib/quest/finish/powerflip-tracker";
-import { trackLeaderPowerflip } from "../../lib/quest/finish/leader-powerflip-tracker";
-import { trackPartyCoClears } from "../../lib/quest/finish/party-co-clear-tracker";
 import { collectPartyCharacterIds, recordBattleMissionDimensionsSafe, summarizeBattleStatistics } from "../../lib/mission";
+import { recordMissionBattleFacts } from "../../lib/mission/battle-facts";
 import type { FinishContext } from "../../lib/quest/finish/types";
+import { resolveActiveQuest } from "../../lib/quest/finish/active-quest-resolver";
 import { canStartQuestByPrerequisites, hasClearedQuestPrerequisiteForCategory } from "../../lib/quest/start-handler";
 
 interface PlayerContext { playerId: number; player: Player }
@@ -142,6 +139,7 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             useBossBoostPoint: use_boss_boost_point,
             isAutoStartMode: is_auto_start_mode,
             isMulti: true,
+            isMultiHost: room.host_player_id === ctx.playerId,
             roomNumber: room_number,
             matePlayerIds: mate_player_ids,
             mateComIds,
@@ -184,7 +182,13 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
 
         const { playerId, player } = ctx;
 
-        const activeQuestData = activeQuests[playerId];
+        const resolved = resolveActiveQuest({
+            playerId,
+            hint: { quest_id: body.quest_id, category: body.category, play_id: body.play_id },
+            memory: activeQuests,
+            allowRebuild: false,
+        });
+        const activeQuestData = resolved?.quest;
         if (activeQuestData === undefined) {
             return reply.status(400).send({
                 "error": "Bad Request", "message": "No active quest to finish."
@@ -198,21 +202,6 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             return reply.status(400).send({
                 "error": "Bad Request", "message": "Quest doesn't exist."
             });
-        }
-
-        delete activeQuests[playerId];
-        deletePlayerActiveQuestSync(playerId);
-
-        if (activeQuestData.roomNumber) {
-            sessionManager.clearBattleExpectedCount(activeQuestData.roomNumber);
-        }
-
-        if (activeQuestData.roomNumber) {
-            const room = getRoom(activeQuestData.roomNumber);
-            if (room && room.host_player_id === playerId) {
-                updateRoomState(room.room_number, 1);
-                console.log(`[MULTI] finish: room ${activeQuestData.roomNumber} reset to raising_state=1`);
-            }
         }
 
         // calculate clear rank
@@ -273,11 +262,6 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
         const newDegreeId = getRankDegree(newRankPoint);
         const didLevelUp = newDegreeId > oldRkDegree;
 
-        // Increment multi clear count for event mission tracking
-        getDb().prepare(`
-        UPDATE players_quest_progress SET multi_clear_count = multi_clear_count + 1
-        WHERE player_id = ? AND section = ? AND quest_id = ?
-        `).run(playerId, Number(questCategory), Number(questId))
         updatePlayerSync({
             id: playerId,
             freeMana: newMana,
@@ -317,11 +301,9 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             questPreviouslyCompleted,
             questProgress,
             isMulti: true,
+            isMultiHost: activeQuestData.isMultiHost,
         }
-        trackCharacterClears(finishCtx)
-        trackLeaderPowerflip(finishCtx)
-        trackPartyCoClears(finishCtx)
-        trackPowerflip(finishCtx)
+        recordMissionBattleFacts(finishCtx, new Date(getServerTime() * 1000))
         const multiBattleParty = collectPartyCharacterIds(finishCtx.party)
         recordBattleMissionDimensionsSafe({
             type: "battle_finish",
@@ -330,7 +312,7 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             questId,
             accomplished: questAccomplished,
             mode: "multi",
-            role: activeQuestData.roomNumber ? "host" : undefined,
+            role: activeQuestData.isMultiHost === true ? "host" : undefined,
             clearRank,
             clearTimeMs: clearTime,
             ...multiBattleParty,
@@ -345,6 +327,17 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
         const dataHeaders = generateDataHeaders({ viewer_id: viewerId });
         const matePlayerResult = ((body as any).mate_player_result || []) as Array<{ viewer_id?: number }>;
         const followInfo = await buildFinishFollowInfo(viewerId, matePlayerResult, activeQuestData.matePlayerIds || []);
+
+        delete activeQuests[playerId];
+        deletePlayerActiveQuestSync(playerId);
+        if (activeQuestData.roomNumber) {
+            sessionManager.clearBattleExpectedCount(activeQuestData.roomNumber);
+            const room = getRoom(activeQuestData.roomNumber);
+            if (room && room.host_player_id === playerId) {
+                updateRoomState(room.room_number, 1);
+                console.log(`[MULTI] finish: room ${activeQuestData.roomNumber} reset to raising_state=1`);
+            }
+        }
 
         reply.header("content-type", "application/x-msgpack");
         return reply.status(200).send({

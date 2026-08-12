@@ -25,12 +25,9 @@ import { calculateClearRank } from "../../lib/quest/finish/quest-calc";
 import { validateSessionAndPlayer } from "../../lib/quest/finish/session-validator";
 import { resolveActiveQuest } from "../../lib/quest/finish/active-quest-resolver";
 import { handleDailyChallengePoint } from "../../lib/quest/finish/challenge-point";
-import { trackCharacterClears } from "../../lib/quest/finish/character-clear-tracker";
-import { trackPowerflip } from "../../lib/quest/finish/powerflip-tracker";
-import { trackLeaderPowerflip } from "../../lib/quest/finish/leader-powerflip-tracker";
-import { trackPartyCoClears } from "../../lib/quest/finish/party-co-clear-tracker";
 import { canContinueBattle, canStartQuestByPrerequisites, hasClearedQuestPrerequisiteForCategory, resolveBattleStartEntryCost, resolveBattleStartStaminaCost } from "../../lib/quest/start-handler";
 import { collectPartyCharacterIds, recordBattleMissionDimensionsSafe, summarizeBattleStatistics } from "../../lib/mission"
+import { recordMissionBattleFacts } from "../../lib/mission/battle-facts";
 import type { FinishContext } from "../../lib/quest/finish/types";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
@@ -160,6 +157,7 @@ export function insertActiveQuest(playerId: number, quest: ActiveQuest) {
         useBoostPoint: quest.useBoostPoint,
         isAutoStartMode: quest.isAutoStartMode,
         isMulti: quest.isMulti,
+        isMultiHost: quest.isMultiHost,
         roomNumber: quest.roomNumber ?? null,
         entryItemId: quest.entryItemId ?? null,
         eventId: quest.eventId ?? null,
@@ -206,10 +204,6 @@ const routes = async (fastify: FastifyInstance) => {
                 "message": "Quest doesn't exist."
             })
         }
-
-        // delete the active quest data from global record
-        delete activeQuests[playerId]
-        deletePlayerActiveQuestSync(playerId)
 
         // calculate clear rank
         const clearTime = body.elapsed_time_ms
@@ -363,13 +357,10 @@ const routes = async (fastify: FastifyInstance) => {
             player: playerData,
             questPreviouslyCompleted,
             questProgress,
+            isMulti: false,
         }
 
-        // Track mission progress (decoupled from core quest mechanics)
-        trackCharacterClears(finishCtx)
-        trackLeaderPowerflip(finishCtx)
-        trackPartyCoClears(finishCtx)
-        trackPowerflip(finishCtx)
+        recordMissionBattleFacts(finishCtx, new Date(getServerTime() * 1000))
         const singleBattleParty = collectPartyCharacterIds(finishCtx.party)
         recordBattleMissionDimensionsSafe({
             type: "battle_finish",
@@ -469,6 +460,8 @@ const routes = async (fastify: FastifyInstance) => {
             ...(rushEventRewardsResult?.items ?? {}),
             ...(rogueDrops?.rewardResult.items ?? {})
         }
+        delete activeQuests[playerId]
+        deletePlayerActiveQuestSync(playerId)
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
             "data_headers": dataHeaders,
