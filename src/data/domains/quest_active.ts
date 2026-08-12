@@ -1,6 +1,13 @@
 import { getDb } from "../db";
 import { PlayerActiveQuest, RawPlayerActiveQuest } from "../types";
 
+function deserializeOptionalBoolean(value: number | null): boolean | undefined {
+    if (value === null) return undefined
+    if (value === 0) return false
+    if (value === 1) return true
+    throw new RangeError("invalid persisted is_multi_host value")
+}
+
 function buildActiveQuest(raw: RawPlayerActiveQuest): PlayerActiveQuest {
     return {
         playerId: raw.player_id,
@@ -11,6 +18,7 @@ function buildActiveQuest(raw: RawPlayerActiveQuest): PlayerActiveQuest {
         useBoostPoint: raw.use_boost_point === 1,
         isAutoStartMode: raw.is_auto_start_mode === 1,
         isMulti: raw.is_multi === 1,
+        isMultiHost: deserializeOptionalBoolean(raw.is_multi_host),
         roomNumber: raw.room_number,
         entryItemId: raw.entry_item_id,
         eventId: raw.event_id,
@@ -29,13 +37,14 @@ export function insertPlayerActiveQuestSync(playerId: number, quest: PlayerActiv
     getDb().prepare(`
         INSERT OR REPLACE INTO players_active_quests
             (player_id, play_id, quest_id, category, use_boss_boost_point,
-             use_boost_point, is_auto_start_mode, is_multi, room_number,
+             use_boost_point, is_auto_start_mode, is_multi, is_multi_host, room_number,
              entry_item_id, event_id, continue_count)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
         playerId, quest.playId, quest.questId, quest.category,
         quest.useBossBoostPoint ? 1 : 0, quest.useBoostPoint ? 1 : 0,
         quest.isAutoStartMode ? 1 : 0, quest.isMulti ? 1 : 0,
+        quest.isMultiHost === undefined ? null : quest.isMultiHost ? 1 : 0,
         quest.roomNumber ?? null, quest.entryItemId ?? null,
         quest.eventId ?? null, quest.continueCount
     )

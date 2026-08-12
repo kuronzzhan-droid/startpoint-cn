@@ -39,6 +39,7 @@ function persistedRow(overrides: Partial<PlayerActiveQuest> = {}): PlayerActiveQ
         useBoostPoint: false,
         isAutoStartMode: true,
         isMulti: false,
+        isMultiHost: true,
         roomNumber: null,
         entryItemId: 7,
         eventId: null,
@@ -93,6 +94,7 @@ test("a restart falls back to the persisted row and rehydrates memory", () => {
     assert.equal(resolved?.quest.entryItemId, 7);
     assert.equal(resolved?.quest.playId, "play-db");
     assert.equal(resolved?.quest.continueCount, 2);
+    assert.equal(resolved?.quest.isMultiHost, true);
     // Nulls from the row become undefined so optional ActiveQuest fields stay absent.
     assert.equal(resolved?.quest.roomNumber, undefined);
     assert.equal(resolved?.quest.eventId, undefined);

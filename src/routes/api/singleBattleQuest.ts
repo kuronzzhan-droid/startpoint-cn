@@ -134,6 +134,7 @@ export interface ActiveQuest {
     useBoostPoint: boolean,
     isAutoStartMode: boolean,
     isMulti: boolean,
+    isMultiHost?: boolean,
     roomNumber?: string,
     matePlayerIds?: number[],
     mateComIds?: number[],

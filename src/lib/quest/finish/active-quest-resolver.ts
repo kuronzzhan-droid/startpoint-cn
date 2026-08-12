@@ -86,6 +86,7 @@ function fromPersisted(row: PlayerActiveQuest): ActiveQuest {
         useBoostPoint: row.useBoostPoint,
         isAutoStartMode: row.isAutoStartMode,
         isMulti: row.isMulti,
+        isMultiHost: row.isMultiHost,
         roomNumber: row.roomNumber ?? undefined,
         entryItemId: row.entryItemId ?? undefined,
         eventId: row.eventId ?? undefined,
