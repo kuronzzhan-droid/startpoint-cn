@@ -13,7 +13,7 @@ import { getPlayerQuestProgressSync, getPlayerDrawnQuestsSync } from "../../data
 import { insertPlayerPartyGroupListSync } from "../../data/domains/party"
 import { PartyCategory } from "../../data/types";
 import { snapshotAllMissionCountersSync } from "../../lib/mission"
-import { takeSnapshot } from "../../lib/mission/snapshot";
+import { forcePlayerPeriodicMissionReset } from "../../lib/mission/periodic";
 import { getServerDate } from "../../utils";
 import dailyChallengePointLookup from "../../../assets/daily_challenge_point_lookup.json";
 
@@ -459,22 +459,13 @@ const routes = async (fastify: FastifyInstance) => {
         if (!player) return reply.status(404).send({ error: "Player not found" })
         try {
             const questProgress = getPlayerQuestProgressSync(playerId)
-            let totalClears = 0, ss = 0, s = 0, a = 0, b = 0
+            let totalClears = 0
             for (const [, quests] of Object.entries(questProgress)) {
                 for (const qp of quests) {
-                    if (qp.finished) {
-                        totalClears++
-                        if (qp.clearRank === 6) ss++
-                        else if (qp.clearRank === 5) s++
-                        else if (qp.clearRank === 4) a++
-                        else if (qp.clearRank === 3) b++
-                    }
+                    if (qp.finished) totalClears++
                 }
             }
-            takeSnapshot(playerId, 'daily', {
-                questClears: totalClears, staminaUsed: player.totalStaminaUsed,
-                rankSs: ss, rankS: s, rankA: a, rankB: b,
-            })
+            forcePlayerPeriodicMissionReset(playerId, player, totalClears, "daily")
             const missionCounterSnapshots = snapshotAllMissionCountersSync(playerId, "daily")
             console.log(`[MISSION] daily counter snapshot player=${playerId} counters=${missionCounterSnapshots}`)
             getDb().prepare(`DELETE FROM players_active_missions WHERE player_id = ?`).run(playerId)
@@ -491,22 +482,13 @@ const routes = async (fastify: FastifyInstance) => {
         if (!player) return reply.status(404).send({ error: "Player not found" })
         try {
             const questProgress = getPlayerQuestProgressSync(playerId)
-            let totalClears = 0, ss = 0, s = 0, a = 0, b = 0
+            let totalClears = 0
             for (const [, quests] of Object.entries(questProgress)) {
                 for (const qp of quests) {
-                    if (qp.finished) {
-                        totalClears++
-                        if (qp.clearRank === 6) ss++
-                        else if (qp.clearRank === 5) s++
-                        else if (qp.clearRank === 4) a++
-                        else if (qp.clearRank === 3) b++
-                    }
+                    if (qp.finished) totalClears++
                 }
             }
-            takeSnapshot(playerId, 'weekly', {
-                questClears: totalClears, staminaUsed: player.totalStaminaUsed,
-                rankSs: ss, rankS: s, rankA: a, rankB: b,
-            })
+            forcePlayerPeriodicMissionReset(playerId, player, totalClears, "weekly")
             const missionCounterSnapshots = snapshotAllMissionCountersSync(playerId, "weekly")
             console.log(`[MISSION] weekly counter snapshot player=${playerId} counters=${missionCounterSnapshots}`)
             getDb().prepare(`DELETE FROM players_active_missions WHERE player_id = ?`).run(playerId)

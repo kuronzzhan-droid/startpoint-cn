@@ -64,7 +64,7 @@ test("actual inventory includes every top-level tools test", () => {
     const actual = collectStandaloneToolTests(repositoryRoot)
         .map(path => path.slice(join(repositoryRoot, "tools").length + 1))
 
-    assert.equal(expected.length, 56)
+    assert.equal(expected.length, 57)
     assert.deepEqual(actual, expected)
 })
 

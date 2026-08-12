@@ -5,8 +5,11 @@ import { getDefaultPlayerData, deserializeBoolean, serializeBoolean } from "../u
 import { getAccountSync } from "./account";
 import { getPlayerQuestProgressSync } from "./quest";
 import { isNewDay, isNewWeek } from "../../lib/time-utils";
-import { takeSnapshot } from "../../lib/mission/snapshot";
 import { snapshotAllMissionCountersSync } from "../../lib/mission/counters";
+import {
+    initializePlayerPeriodicMissionState,
+    resetPlayerPeriodicMissionState,
+} from "../../lib/mission/periodic";
 import dailyChallengePointLookup from "../../../assets/daily_challenge_point_lookup.json";
 
 type DailyChallengePointLookup = Record<string, { maxPoint: number, isRecovery: boolean, name: string }>
@@ -1072,6 +1075,8 @@ export function insertDefaultPlayerSync(
         }
     ])
 
+        initializePlayerPeriodicMissionState(playerId, player, getServerDate(), 0, true)
+
         return playerId
     })
 
@@ -1298,12 +1303,14 @@ export function dailyResetPlayerDataSync(
     const crossedWeek = isNewWeek(loginDate, lastLoginTime)
 
     if (crossedDay) {
+        return getDb().transaction(() => {
+        const nextLoginDays = (player.totalLoginDays ?? 0) + 1
         updatePlayerSync({
             id: playerId,
             lastLoginTime: loginDate,
             bossBoostPoint: 3,
             boostPoint: 3,
-            totalLoginDays: (player.totalLoginDays ?? 0) + 1
+            totalLoginDays: nextLoginDays
         })
 
         // Reset daily challenge points — sync with CDN and rebuild if missing
@@ -1343,32 +1350,23 @@ export function dailyResetPlayerDataSync(
 
         // Daily mission reset: take snapshot + wipe cache
         const questProgress = getPlayerQuestProgressSync(playerId)
-        let totalClears = 0, ss = 0, s = 0, a = 0, b = 0
-        for (const [section, quests] of Object.entries(questProgress)) {
+        let totalClears = 0
+        for (const quests of Object.values(questProgress)) {
             for (const qp of quests) {
-                if (qp.finished) {
-                    totalClears++
-                    if (qp.clearRank === 6) ss++
-                    else if (qp.clearRank === 5) s++
-                    else if (qp.clearRank === 4) a++
-                    else if (qp.clearRank === 3) b++
-                }
+                if (qp.finished) totalClears++
             }
         }
-        takeSnapshot(playerId, 'daily', {
-            questClears: totalClears,
-            staminaUsed: player.totalStaminaUsed,
-            rankSs: ss, rankS: s, rankA: a, rankB: b,
-        })
+        resetPlayerPeriodicMissionState(
+            playerId,
+            { ...player, totalLoginDays: nextLoginDays },
+            loginDate,
+            totalClears,
+            crossedWeek,
+        )
         snapshotAllMissionCountersSync(playerId, 'daily')
 
         // weekly reset
         if (crossedWeek) {
-            takeSnapshot(playerId, 'weekly', {
-                questClears: totalClears,
-                staminaUsed: player.totalStaminaUsed,
-                rankSs: ss, rankS: s, rankA: a, rankB: b,
-            })
             snapshotAllMissionCountersSync(playerId, 'weekly')
         }
 
@@ -1376,6 +1374,7 @@ export function dailyResetPlayerDataSync(
         getDb().prepare(`DELETE FROM players_active_missions WHERE player_id = ?`).run(playerId)
 
         return true
+        })()
     } else {
         updatePlayerSync({
             id: playerId,
