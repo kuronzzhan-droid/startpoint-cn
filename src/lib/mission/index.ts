@@ -40,6 +40,11 @@ export { computeAwakeSummary } from "./compute-awake-summary"
 // Degree helpers
 export { getTargetDegree } from "./computer-degree"
 
+// Transactional category settlement and response publication
+export type { MissionSettlementInfo, MissionSettlementResult, MissionSettlementScope } from "./settlement"
+export { settleMissionCategories, settleMissionCategoriesAsync } from "./settlement"
+export { mergeMissionSettlementResponse } from "./response"
+
 // Filter (active mission ID filtering, C8601 prevention)
 export { isActiveMissionId, filterToActiveMissions } from "./filter"
 

@@ -2,29 +2,33 @@
 // Uses lib/mission/ computer registry for compute dispatch
 
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { getPlayerActiveMissionsSync, updatePlayerActiveMissionStageSync, updatePlayerActiveMissionSync } from "../../data/domains/mission"
+import {
+    getPlayerActiveMissionsSync,
+    getPlayerCategoryMissionsSync,
+    updatePlayerActiveMissionStageSync,
+    updatePlayerActiveMissionSync,
+} from "../../data/domains/mission"
 import { getSession } from "../../data/domains/session"
 import { givePlayerItemSync } from "../../data/domains/item"
 import { insertDefaultPlayerCharacterSync } from "../../data/domains/character"
 import { getPlayerSync, updatePlayerSync } from "../../data/domains/player"
+import { getPlayerMailCountSync } from "../../data/domains/mail"
 import { generateDataHeaders, getServerTime, getServerTimeForPlayer } from "../../utils";
 import {
-    getActiveMissionRewards,
     getAwakeMissionRewards,
-    getCollectMissionRewards,
     getCompletedStageNumbers,
     getComputer,
     getCurrentStage,
-    getDailyMissionRewards,
-    getDegreeMissionRewards,
-    getEventMissionRewards,
     getMissionIdsByCategory,
     getMissionsByPattern,
-    getRegularMissionRewards,
-    getWeeklyMissionRewards,
     getCharacterIdFromMission,
-    isMissionEnabledAt,
+    mergeMissionSettlementResponse,
+    settleMissionCategoriesAsync,
 } from "../../lib/mission/index";
+import {
+    getMissionMasterDefinition,
+    isMissionDefinitionEnabledAt,
+} from "../../lib/mission/master-data"
 import { resolvePlayerIdSync } from "../../data/activeAccount";
 import type { ActiveMissionReward, CategoryContext } from "../../lib/mission/index";
 
@@ -69,31 +73,26 @@ const routes = async (fastify: FastifyInstance) => {
             "message": "No players bound to account."
         })
 
-        // Cache computer+context per category to avoid redundant builds
-        const computerCache = new Map<number, { ctx: CategoryContext }>()
-
-        function getCtx(category: number): CategoryContext {
-            let entry = computerCache.get(category)
-            if (!entry) {
-                const computer = getComputer(category)
-                const ctx = computer.buildContext(playerId, category) as CategoryContext
-                entry = { ctx }
-                computerCache.set(category, entry)
-            }
-            return entry.ctx
-        }
-
         const requestList = body.category_list || [{ category: 1 }]
         const requestCategories = requestList.map(c => c.category)
-        const activeMissions = getPlayerActiveMissionsSync(playerId)
+        const missionEvaluationTime = new Date(getServerTimeForPlayer(playerId) * 1000)
+        const automaticScopes = requestList
+            .filter(entry => [1, 2, 3, 4, 5, 6, 7, 8, 10].includes(entry.category))
+            .map(entry => ({ category: entry.category, eventId: entry.event_id }))
+        const automaticSettlement = automaticScopes.length === 0
+            ? null
+            : await settleMissionCategoriesAsync(playerId, automaticScopes, missionEvaluationTime)
+
         const player = getPlayerSync(playerId)
         if (!player) return reply.status(500).send({
             "error": "Internal Server Error",
             "message": "Player not found."
         })
-        const missionEvaluationTime = new Date(getServerTimeForPlayer(playerId) * 1000)
 
         const missionProgressList: any[] = []
+        const categoryMissionCache = new Map<number, ReturnType<typeof getPlayerCategoryMissionsSync>>()
+        const awakeContextCache = new Map<string, CategoryContext>()
+        const activeMissions = getPlayerActiveMissionsSync(playerId)
         const receivedStageKeys = new Set<string>()
         const itemRewards: Record<number, number> = {}
         let freeVmoney = player.freeVmoney
@@ -109,18 +108,7 @@ const routes = async (fastify: FastifyInstance) => {
             }
         }
 
-        function getRewards(category: number, missionId: number, stage: number): ActiveMissionReward[] {
-            if (category === 1) return getRegularMissionRewards(missionId, stage)
-            if (category === 2) return getDailyMissionRewards(missionId, stage)
-            if (category === 9) return getAwakeMissionRewards(missionId, stage)
-            if (category === 3) return getEventMissionRewards(missionId, stage)
-            if (category === 4) return getCollectMissionRewards(missionId, stage)
-            if (category === 5) return getDegreeMissionRewards(missionId, stage)
-            if (category === 10) return getWeeklyMissionRewards(missionId, stage)
-            return getActiveMissionRewards(missionId, stage)
-        }
-
-        function applyRewards(rewards: ActiveMissionReward[]) {
+        function applyAwakeRewards(rewards: ActiveMissionReward[]) {
             for (const r of rewards) {
                 switch (r.kind) {
                     case 0:
@@ -156,37 +144,60 @@ const routes = async (fastify: FastifyInstance) => {
 
         for (const requestEntry of requestList) {
             const category = requestEntry.category
-            const computer = getComputer(category)
-            const ctx = getCtx(category)
-            const allIds = getMissionIdsByCategory(category).filter(missionId =>
-                isMissionEnabledAt(category, missionId, missionEvaluationTime, requestEntry.event_id)
-            )
+            const allIds = getMissionIdsByCategory(category).filter(missionId => {
+                const definition = getMissionMasterDefinition(category, missionId)
+                if (!definition) throw new Error(`Mission master definition ${category}:${missionId} is missing.`)
+                return isMissionDefinitionEnabledAt(
+                    definition,
+                    missionEvaluationTime,
+                    requestEntry.event_id,
+                )
+            })
             const charId = requestEntry.character_id === undefined
                 ? undefined
                 : String(requestEntry.character_id)
+            const requestedIds = charId && category === 9
+                ? allIds.filter(missionId => getCharacterIdFromMission(missionId) === charId)
+                : allIds
 
-            for (const missionId of allIds) {
-                // Character-awake: filter by character_id
-                if (charId && category === 9) {
-                    if (getCharacterIdFromMission(missionId) !== charId) continue
+            if (category !== 9) {
+                let categoryMissions = categoryMissionCache.get(category)
+                if (!categoryMissions) {
+                    categoryMissions = getPlayerCategoryMissionsSync(playerId, category)
+                    categoryMissionCache.set(category, categoryMissions)
                 }
+                for (const missionId of requestedIds) {
+                    const progress = categoryMissions[String(missionId)]?.progress ?? 0
+                    missionProgressList.push({
+                        mission_category: category,
+                        mission_id: missionId,
+                        progress_value: Number(progress),
+                        stage: getCurrentStage(category, missionId, progress),
+                    })
+                }
+                continue
+            }
 
+            const contextKey = requestedIds.join(",")
+            let ctx = awakeContextCache.get(contextKey)
+            if (!ctx) {
+                ctx = getComputer(9).buildContext(playerId, 9, missionEvaluationTime, requestedIds)
+                awakeContextCache.set(contextKey, ctx)
+            }
+
+            for (const missionId of requestedIds) {
                 const dbProgress = activeMissions[String(missionId)]?.progress ?? 0
-                const progress = computer.compute(missionId, ctx, dbProgress)
+                const progress = getComputer(9).compute(missionId, ctx, dbProgress)
                 const stage = getCurrentStage(category, missionId, progress)
 
-                // Auto-grant rewards for newly completed stages.
                 const completedStages = getCompletedStageNumbers(category, missionId, progress)
-                // Degree and weekly rewards require side effects not handled by this endpoint yet.
-                const skipAutoGrant = category === 5 || category === 10
-
-                if (!skipAutoGrant) for (const s of completedStages) {
+                for (const s of completedStages) {
                     const stageKey = `${missionId}:${s}`
                     if (receivedStageKeys.has(stageKey)) continue
                     updatePlayerActiveMissionSync(playerId, missionId, progress)
                     updatePlayerActiveMissionStageSync(playerId, s, missionId, true)
                     receivedStageKeys.add(stageKey)
-                    applyRewards(getRewards(category, missionId, s))
+                    applyAwakeRewards(getAwakeMissionRewards(missionId, s))
                 }
 
                 missionProgressList.push({
@@ -212,7 +223,12 @@ const routes = async (fastify: FastifyInstance) => {
         console.log(`[MISSION] get_progress viewer=${viewerId} categories=${requestCategories} missions=${missionProgressList.length}`)
 
         const responseData: Record<string, any> = {
-            "mission_progress_list": missionProgressList
+            mission_progress_list: missionProgressList,
+            mission_info: [],
+            item_list: itemRewards,
+            character_list: [],
+            equipment_list: [],
+            degree_list: [],
         }
         if (playerChanged) {
             responseData["user_info"] = {
@@ -222,9 +238,8 @@ const routes = async (fastify: FastifyInstance) => {
                 "exp_pooled_time": getServerTime(player.expPooledTime)
             }
         }
-        if (Object.keys(itemRewards).length > 0) {
-            responseData["item_list"] = itemRewards
-        }
+        if (automaticSettlement) mergeMissionSettlementResponse(responseData, automaticSettlement, viewerId)
+        responseData.mail_arrived = getPlayerMailCountSync(playerId, true) > 0
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
