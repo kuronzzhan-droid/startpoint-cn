@@ -24,6 +24,15 @@ test("single battle enforces Advent start, entry, stamina, and continue rules", 
     );
 });
 
+test("single battle start records mission challenge facts inside the entry transaction", () => {
+    assert.match(routeSource, /runStartEntryTransaction\s*\(/);
+    assert.match(
+        routeSource,
+        /afterPersist:\s*\(\)\s*=>\s*\{[\s\S]{0,300}?recordActiveMissionQuestChallengeFactSync\s*\(\s*playerId\s*,\s*category\s*\)[\s\S]{0,300}?settleMissionCategories\s*\(\s*playerId\s*,\s*\[1,\s*2,\s*10\]/,
+    );
+    assert.match(routeSource, /mergeMissionSettlementResponse\s*\(\s*responseData\s*,\s*missionSettlement/);
+});
+
 test("single battle keeps dynamic Rush rounds and all Rogue response integrations", () => {
     assert.ok(
         /const\s+derivedFolderMaxRounds\s*=\s*getRushEventFolderMaxRounds\s*\(\s*questData\.rushEventId\s*\?\?\s*0\s*\)/.test(routeSource)

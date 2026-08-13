@@ -46,10 +46,15 @@ async function main() {
     } = require("../src/data/domains/mission")
     const { recordMissionBattleResultSync } = require("../src/data/domains/mission_battle_facts")
     const { insertPlayerQuestProgressSync } = require("../src/data/domains/quest")
+    const {
+        getPlayerActiveQuestSync,
+        insertPlayerActiveQuestSync,
+    } = require("../src/data/domains/quest_active")
     const { getPlayerCharacterAwakeUnlocksSync } = require("../src/data/domains/character_awake")
     const { getPlayerSync, insertDefaultPlayerSync, updatePlayerSync } = require("../src/data/domains/player")
     const missionRoutes = require("../src/routes/api/mission").default
     const { settleBattleMissionRuntime } = require("../src/lib/mission/runtime-settlement")
+    const { runStartEntryTransaction } = require("../src/lib/quest/start-entry")
     const { getTimeOffset, setServerTimeOffset } = require("../src/utils")
 
     const previousTimeOffset = getTimeOffset()
@@ -262,6 +267,44 @@ async function main() {
         const runtime = settleBattleMissionRuntime(runtimePlayerId, new Date("2024-08-14T12:00:00.000Z"))
         assert.equal(runtime.activeMissionList.some(entry => entry.mission_id === 11010), true)
         assert.equal(getPlayerActiveMissionsSync(runtimePlayerId)[11010].progress, 1)
+
+        const beforeFailedStart = getPlayerSync(runtimePlayerId)
+        let published = false
+        assert.throws(() => runStartEntryTransaction({
+            playerId: runtimePlayerId,
+            staminaCost: 1,
+            partyId: 1,
+            updatePartySlot: false,
+            activeQuest: { questId: 1 },
+            now: new Date("2024-08-14T12:00:00.000Z"),
+        }, {
+            transaction: operation => database.transaction(operation)(),
+            getActiveQuest: getPlayerActiveQuestSync,
+            getPlayer: getPlayerSync,
+            computeStamina: player => player.stamina,
+            getItemCount: () => null,
+            updateItemCount: () => {},
+            updatePlayer: updatePlayerSync,
+            persistActiveQuest: (id, quest) => insertPlayerActiveQuestSync(id, {
+                playerId: id,
+                playId: "failed-start",
+                questId: quest.questId,
+                category: 1,
+                useBossBoostPoint: false,
+                useBoostPoint: false,
+                isAutoStartMode: false,
+                isMulti: false,
+                roomNumber: null,
+                entryItemId: null,
+                eventId: null,
+                continueCount: 0,
+            }),
+            afterPersist: () => { throw new Error("forced challenge rollback") },
+            publishActiveQuest: () => { published = true },
+        }), /forced challenge rollback/)
+        assert.equal(getPlayerSync(runtimePlayerId).stamina, beforeFailedStart.stamina)
+        assert.equal(getPlayerActiveQuestSync(runtimePlayerId), null)
+        assert.equal(published, false)
     } finally {
         await app.close()
         cleanup()

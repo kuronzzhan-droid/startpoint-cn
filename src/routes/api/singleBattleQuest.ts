@@ -1,4 +1,5 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { getDb } from "../../data/db";
 import { deletePlayerActiveQuestSync, getPlayerActiveQuestSync, insertPlayerActiveQuestSync, updatePlayerActiveQuestContinueCountSync } from "../../data/domains/quest_active"
 import { deletePlayerRushEventPlayedPartyListSync, getPlayerRushEventPlayedPartiesSync, getPlayerRushEventSync, insertPlayerRushEventClearedFolderSync, insertPlayerRushEventPlayedPartySync, updatePlayerRushEventSync } from "../../data/domains/rushEvent"
 import { getPlayerDailyChallengePointListSync, getPlayerSync, updatePlayerDailyChallengePointSync, updatePlayerSync } from "../../data/domains/player"
@@ -32,9 +33,19 @@ import {
     recordBattleMissionDimensionsSafe,
     settleBattleMissionRuntime,
     summarizeBattleStatistics,
+    settleMissionCategories,
 } from "../../lib/mission"
 import { recordMissionBattleFacts } from "../../lib/mission/battle-facts";
 import type { FinishContext } from "../../lib/quest/finish/types";
+import {
+    ActiveQuestAlreadyExistsError,
+    buildStartEntryItemList,
+    InsufficientEntryItemError,
+    InsufficientStaminaError,
+    runStartEntryTransaction,
+} from "../../lib/quest/start-entry";
+import { recordActiveMissionQuestChallengeFactSync } from "../../lib/mission/active-entry-facts";
+import type { MissionSettlementResult } from "../../lib/mission/settlement";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
 import questEntryCosts from "../../../assets/quest_entry_costs.json";
@@ -151,9 +162,7 @@ const continueVmoneyCost = 50;
 
 export const activeQuests: Record<number, ActiveQuest> = {}
 
-export function insertActiveQuest(playerId: number, quest: ActiveQuest) {
-    activeQuests[playerId] = quest
-    // Persist to DB for battle recovery across server restarts
+function persistActiveQuest(playerId: number, quest: ActiveQuest) {
     insertPlayerActiveQuestSync(playerId, {
         playerId,
         playId: quest.playId,
@@ -169,6 +178,11 @@ export function insertActiveQuest(playerId: number, quest: ActiveQuest) {
         eventId: quest.eventId ?? null,
         continueCount: quest.continueCount
     })
+}
+
+export function insertActiveQuest(playerId: number, quest: ActiveQuest) {
+    persistActiveQuest(playerId, quest)
+    activeQuests[playerId] = quest
 }
 
 const routes = async (fastify: FastifyInstance) => {
@@ -629,47 +643,8 @@ const routes = async (fastify: FastifyInstance) => {
         const staminaInfo = getStaminaCost(questKey)
         const entryCost = resolveBattleStartEntryCost(questData, configuredEntryCost)
         console.log(`[BATTLE] start entry: questId=${questId} questKey=${questKey} entryCost=${JSON.stringify(entryCost)} discountRate=${staminaInfo.rate} baseStamina=${staminaInfo.baseCost}→${staminaInfo.cost}`)
-        if (entryCost && entryCost.itemId > 0) {
-            const playerItemCount = getPlayerItemSync(playerId, entryCost.itemId) ?? 0
-            console.log(`[BATTLE] start deduct: itemId=${entryCost.itemId} playerHas=${playerItemCount} need=${entryCost.itemCount}`)
-            if (playerItemCount < entryCost.itemCount) {
-                return reply.status(400).send({
-                    "error": "Bad Request",
-                    "message": `Not enough entry items (need ${entryCost.itemCount} of ${entryCost.itemId}, have ${playerItemCount}).`
-                })
-            }
-            updatePlayerItemSync(playerId, entryCost.itemId, playerItemCount - entryCost.itemCount)
-        }
-
-        // Deduct stamina cost
         const staminaCost = resolveBattleStartStaminaCost(questData, staminaInfo)
-        let afterStamina = 0
-        if (staminaCost > 0) {
-            const currentStamina = computeRealTimeStamina(player)
-            if (currentStamina < staminaCost) {
-                console.warn(`[BATTLE-START] player ${playerId} stamina insufficient: ${currentStamina} < ${staminaCost}`)
-                return reply.status(400).send({
-                    "error": "Bad Request",
-                    "message": "Insufficient stamina."
-                })
-            }
-            const newStamina = Math.max(0, currentStamina - staminaCost)
-            updatePlayerSync({
-                id: playerId,
-                stamina: newStamina,
-                staminaHealTime: new Date(),
-                totalStaminaUsed: (player.totalStaminaUsed ?? 0) + staminaCost
-            })
-            afterStamina = newStamina
-            console.log(`[BATTLE-START] stamina: ${currentStamina} -> ${newStamina} (cost: ${staminaCost}, rate: ${staminaInfo.rate})`)
-        } else {
-            // No stamina deduction, read current stamina for response
-            const player = getPlayerSync(playerId)
-            afterStamina = player?.stamina ?? 0
-        }
-
-        // add to active quests table (persisted, so finish survives a restart)
-        insertActiveQuest(playerId, {
+        const activeQuest: ActiveQuest = {
             questId: questId,
             category: category,
             useBoostPoint: useBoostPoint,
@@ -679,14 +654,44 @@ const routes = async (fastify: FastifyInstance) => {
             entryItemId: entryCost?.itemId,
             playId: body.play_id,
             continueCount: 0
-        })
-
-        // update player last party slot
-        if (questData.fixedParty === undefined) {
-            updatePlayerSync({
-                id: playerId,
-                partySlot: partyId
+        }
+        let startResult
+        let missionSettlement: MissionSettlementResult | undefined
+        try {
+            startResult = runStartEntryTransaction({
+                playerId,
+                entryCost: entryCost ?? undefined,
+                staminaCost,
+                partyId,
+                updatePartySlot: questData.fixedParty === undefined,
+                activeQuest,
+                now: new Date(),
+            }, {
+                transaction: operation => getDb().transaction(operation)(),
+                getActiveQuest: getPlayerActiveQuestSync,
+                getPlayer: getPlayerSync,
+                computeStamina: computeRealTimeStamina,
+                getItemCount: getPlayerItemSync,
+                updateItemCount: updatePlayerItemSync,
+                updatePlayer: updatePlayerSync,
+                persistActiveQuest,
+                afterPersist: () => {
+                    recordActiveMissionQuestChallengeFactSync(playerId, category)
+                    missionSettlement = settleMissionCategories(
+                        playerId,
+                        [1, 2, 10],
+                        new Date(getServerTime() * 1000),
+                    )
+                },
+                publishActiveQuest: (id, quest) => { activeQuests[id] = quest },
             })
+        } catch (error) {
+            if (error instanceof ActiveQuestAlreadyExistsError
+                || error instanceof InsufficientEntryItemError
+                || error instanceof InsufficientStaminaError) {
+                return reply.status(400).send({ error: "Bad Request", message: error.message })
+            }
+            throw error
         }
 
         const dataHeaders = generateDataHeaders({
@@ -694,19 +699,22 @@ const routes = async (fastify: FastifyInstance) => {
         })
 
         reply.header("content-type", "application/x-msgpack")
-        return reply.status(200).send({
-            "data_headers": dataHeaders,
-            "data": {
+        const responseData: Record<string, any> = {
                 "user_info": {
                     "last_main_quest_id": body.quest_id,
-                    "stamina": afterStamina,
+                    "stamina": startResult.afterStamina,
                     "stamina_heal_time": realToVirtual(new Date())
                 },
+                "item_list": buildStartEntryItemList(startResult),
                 "category_id": body.category,
                 "is_multi": "single",
                 "start_time": dataHeaders['servertime'],
                 "quest_name": ""
-            }
+        }
+        if (missionSettlement) mergeMissionSettlementResponse(responseData, missionSettlement, viewerId)
+        return reply.status(200).send({
+            "data_headers": dataHeaders,
+            "data": responseData,
         })
     })
 
