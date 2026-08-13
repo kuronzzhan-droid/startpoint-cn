@@ -44,6 +44,7 @@ export { getTargetDegree } from "./computer-degree"
 export type { MissionSettlementInfo, MissionSettlementResult, MissionSettlementScope } from "./settlement"
 export { settleMissionCategories, settleMissionCategoriesAsync } from "./settlement"
 export { mergeMissionSettlementResponse } from "./response"
+export { settleBattleMissionRuntime } from "./runtime-settlement"
 export { settleAwakeMissionCandidatesAsync } from "./awake-settlement"
 export { settleClientProgressAsync } from "./client-progress-settlement"
 

@@ -26,7 +26,13 @@ import { computeRealTimeStamina, getRankDegree, getMaxStamina } from "../../lib/
 import { resolvePlayerIdSync } from "../../data/activeAccount";
 import { BattleQuest, EquipmentItemReward, PlayerRewardResult, QuestCategory } from "../../lib/types";
 import type { Player } from "../../data/types";
-import { collectPartyCharacterIds, recordBattleMissionDimensionsSafe, summarizeBattleStatistics } from "../../lib/mission";
+import {
+    collectPartyCharacterIds,
+    mergeMissionSettlementResponse,
+    recordBattleMissionDimensionsSafe,
+    settleBattleMissionRuntime,
+    summarizeBattleStatistics,
+} from "../../lib/mission";
 import { recordMissionBattleFacts } from "../../lib/mission/battle-facts";
 import type { FinishContext } from "../../lib/quest/finish/types";
 import { resolveActiveQuest } from "../../lib/quest/finish/active-quest-resolver";
@@ -303,7 +309,8 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             isMulti: true,
             isMultiHost: activeQuestData.isMultiHost,
         }
-        recordMissionBattleFacts(finishCtx, new Date(getServerTime() * 1000))
+        const missionEvaluationTime = new Date(getServerTime() * 1000)
+        recordMissionBattleFacts(finishCtx, missionEvaluationTime)
         const multiBattleParty = collectPartyCharacterIds(finishCtx.party)
         recordBattleMissionDimensionsSafe({
             type: "battle_finish",
@@ -327,6 +334,7 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
         const dataHeaders = generateDataHeaders({ viewer_id: viewerId });
         const matePlayerResult = ((body as any).mate_player_result || []) as Array<{ viewer_id?: number }>;
         const followInfo = await buildFinishFollowInfo(viewerId, matePlayerResult, activeQuestData.matePlayerIds || []);
+        const missionRuntime = settleBattleMissionRuntime(playerId, missionEvaluationTime)
 
         delete activeQuests[playerId];
         deletePlayerActiveQuestSync(playerId);
@@ -340,9 +348,7 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
         }
 
         reply.header("content-type", "application/x-msgpack");
-        return reply.status(200).send({
-            "data_headers": dataHeaders,
-            "data": {
+        const responseData: Record<string, any> = {
                 "user_info": {
                     "free_mana": newMana + (clearReward?.user_info.free_mana || 0) + (sPlusClearReward?.user_info.free_mana || 0) + scoreRewardsResult.user_info.free_mana,
                     "exp_pool": rewardCharacterExpResult.exp_pool + (clearReward?.user_info.exp_pool || 0) + scoreRewardsResult.user_info.exp_pool,
@@ -398,7 +404,12 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
                 "contribution_score": (body as any).contribution_score ?? 0,
                 "host_finished": true,
                 "aborted_play_id": null,
-            }
+        }
+        responseData.active_mission_list = missionRuntime.activeMissionList
+        mergeMissionSettlementResponse(responseData, missionRuntime.missionSettlement, viewerId)
+        return reply.status(200).send({
+            "data_headers": dataHeaders,
+            "data": responseData,
         });
     });
 

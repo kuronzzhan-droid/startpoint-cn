@@ -114,6 +114,22 @@ test("single and multiplayer finish activate the atomic mission fact facade once
     );
 });
 
+test("single and multiplayer finish settle category and active missions before consuming the quest", () => {
+    for (const [label, source] of [["single", routeSource], ["multi", multiRouteSource]]) {
+        assert.equal(
+            (source.match(/settleBattleMissionRuntime\s*\(/g) || []).length,
+            1,
+            `${label} finish must settle the mission runtime exactly once`,
+        );
+        assert.ok(
+            source.indexOf("settleBattleMissionRuntime(") < source.indexOf("delete activeQuests["),
+            `${label} finish must settle missions before consuming the active quest`,
+        );
+        assert.match(source, /active_mission_list\s*=\s*missionRuntime\.activeMissionList/);
+        assert.match(source, /mergeMissionSettlementResponse\s*\([^,]+,\s*missionRuntime\.missionSettlement/);
+    }
+});
+
 test("multiplayer host identity is captured at start and reused after restart", () => {
     assert.match(
         multiRouteSource,

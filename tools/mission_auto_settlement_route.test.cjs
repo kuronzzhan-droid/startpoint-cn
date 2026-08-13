@@ -45,9 +45,11 @@ async function main() {
         updatePlayerActiveMissionSync,
     } = require("../src/data/domains/mission")
     const { recordMissionBattleResultSync } = require("../src/data/domains/mission_battle_facts")
+    const { insertPlayerQuestProgressSync } = require("../src/data/domains/quest")
     const { getPlayerCharacterAwakeUnlocksSync } = require("../src/data/domains/character_awake")
     const { getPlayerSync, insertDefaultPlayerSync, updatePlayerSync } = require("../src/data/domains/player")
     const missionRoutes = require("../src/routes/api/mission").default
+    const { settleBattleMissionRuntime } = require("../src/lib/mission/runtime-settlement")
     const { getTimeOffset, setServerTimeOffset } = require("../src/utils")
 
     const previousTimeOffset = getTimeOffset()
@@ -243,6 +245,23 @@ async function main() {
             JSON.stringify({ completedAwake, stored: getPlayerCategoryMissionsSync(playerId, 9) }),
         )
         assert.deepEqual(completedAwake.character_list[0].mana_board_awake, { 1: 1 })
+
+        const runtimeAccount = insertAccountSync({
+            appId: "wf_cn",
+            idpAlias: "",
+            idpCode: "test",
+            idpId: `battle-runtime-${randomUUID()}`,
+            status: "normal",
+        })
+        const runtimePlayerId = insertDefaultPlayerSync(runtimeAccount.id).id
+        insertPlayerQuestProgressSync(runtimePlayerId, 3, {
+            questId: 101,
+            finished: true,
+            clearRank: 5,
+        })
+        const runtime = settleBattleMissionRuntime(runtimePlayerId, new Date("2024-08-14T12:00:00.000Z"))
+        assert.equal(runtime.activeMissionList.some(entry => entry.mission_id === 11010), true)
+        assert.equal(getPlayerActiveMissionsSync(runtimePlayerId)[11010].progress, 1)
     } finally {
         await app.close()
         cleanup()

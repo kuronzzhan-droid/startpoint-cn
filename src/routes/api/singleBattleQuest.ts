@@ -26,7 +26,13 @@ import { validateSessionAndPlayer } from "../../lib/quest/finish/session-validat
 import { resolveActiveQuest } from "../../lib/quest/finish/active-quest-resolver";
 import { handleDailyChallengePoint } from "../../lib/quest/finish/challenge-point";
 import { canContinueBattle, canStartQuestByPrerequisites, hasClearedQuestPrerequisiteForCategory, resolveBattleStartEntryCost, resolveBattleStartStaminaCost } from "../../lib/quest/start-handler";
-import { collectPartyCharacterIds, recordBattleMissionDimensionsSafe, summarizeBattleStatistics } from "../../lib/mission"
+import {
+    collectPartyCharacterIds,
+    mergeMissionSettlementResponse,
+    recordBattleMissionDimensionsSafe,
+    settleBattleMissionRuntime,
+    summarizeBattleStatistics,
+} from "../../lib/mission"
 import { recordMissionBattleFacts } from "../../lib/mission/battle-facts";
 import type { FinishContext } from "../../lib/quest/finish/types";
 import { readFileSync, existsSync } from "fs";
@@ -360,7 +366,8 @@ const routes = async (fastify: FastifyInstance) => {
             isMulti: false,
         }
 
-        recordMissionBattleFacts(finishCtx, new Date(getServerTime() * 1000))
+        const missionEvaluationTime = new Date(getServerTime() * 1000)
+        recordMissionBattleFacts(finishCtx, missionEvaluationTime)
         const singleBattleParty = collectPartyCharacterIds(finishCtx.party)
         recordBattleMissionDimensionsSafe({
             type: "battle_finish",
@@ -453,6 +460,7 @@ const routes = async (fastify: FastifyInstance) => {
             carnivalLookup: carnivalScoreLookup,
             upsertFn: (pid, eid, fid, score, chars, unisons) => upsertPlayerCarnivalEventRecordSync(pid, eid, fid, score, chars, unisons),
         })
+        const missionRuntime = settleBattleMissionRuntime(playerId, missionEvaluationTime)
 
         const itemList = {
             ...(activeQuestData.entryItemId ? { [activeQuestData.entryItemId]: getPlayerItemSync(playerId, activeQuestData.entryItemId) ?? 0 } : {}),
@@ -463,9 +471,7 @@ const routes = async (fastify: FastifyInstance) => {
         delete activeQuests[playerId]
         deletePlayerActiveQuestSync(playerId)
         reply.header("content-type", "application/x-msgpack")
-        return reply.status(200).send({
-            "data_headers": dataHeaders,
-            "data": {
+        const responseData: Record<string, any> = {
                 "user_info": {
                     "free_mana": newMana + (clearReward?.user_info.free_mana || 0) + (sPlusClearReward?.user_info.free_mana || 0) + scoreRewardsResult.user_info.free_mana,
                     "exp_pool": (rogueDrops?.expPoolAbsolute ?? rewardCharacterExpResult.exp_pool) + (clearReward?.user_info.exp_pool || 0) + scoreRewardsResult.user_info.exp_pool,
@@ -533,7 +539,12 @@ const routes = async (fastify: FastifyInstance) => {
                 "carnival_event": carnivalEventData,
                 "user_daily_challenge_point_list": dailyChallengePointList ?? [],
                 "presigned_quest_category": []
-            }
+        }
+        responseData.active_mission_list = missionRuntime.activeMissionList
+        mergeMissionSettlementResponse(responseData, missionRuntime.missionSettlement, viewerId)
+        return reply.status(200).send({
+            "data_headers": dataHeaders,
+            "data": responseData,
         })
 
     })
