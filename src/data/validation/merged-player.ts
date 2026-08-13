@@ -299,6 +299,33 @@ export function assertMergedPlayerData(
         const mission = requireRecord(rawMission, `data.allActiveMissionList.${missionId}`);
         if (!Array.isArray(mission.stages)) numericRecord(mission.stages, `data.allActiveMissionList.${missionId}.stages`);
     }
+    if (root.categoryMissionList !== undefined) {
+        const categories = numericRecord(root.categoryMissionList, "data.categoryMissionList");
+        for (const [categoryId, rawMissions] of Object.entries(categories)) {
+            if (Number(categoryId) < 1) invalid(`data.categoryMissionList.${categoryId}`, "category must be positive");
+            const missions = numericRecord(rawMissions, `data.categoryMissionList.${categoryId}`);
+            for (const [missionId, rawMission] of Object.entries(missions)) {
+                if (Number(missionId) < 1) {
+                    invalid(`data.categoryMissionList.${categoryId}.${missionId}`, "mission must be positive");
+                }
+                const path = `data.categoryMissionList.${categoryId}.${missionId}`;
+                const mission = requireRecord(rawMission, path);
+                if (typeof mission.progress !== "number" || !Number.isFinite(mission.progress) || mission.progress < 0) {
+                    invalid(`${path}.progress`, "must be a finite non-negative number");
+                }
+                if (Array.isArray(mission.stages)) {
+                    if (mission.stages.length !== 0) invalid(`${path}.stages`, "stage array must be empty");
+                } else {
+                    const stages = numericRecord(mission.stages, `${path}.stages`);
+                    for (const [stageId, status] of Object.entries(stages)) {
+                        if (Number(stageId) < 1 || typeof status !== "boolean") {
+                            invalid(`${path}.stages.${stageId}`, "stage must be positive with boolean status");
+                        }
+                    }
+                }
+            }
+        }
+    }
     const boxGacha = numericRecord(root.boxGachaList, "data.boxGachaList");
     for (const [gachaId, boxes] of Object.entries(boxGacha)) {
         uniqueObjects(requireArray(boxes, `data.boxGachaList.${gachaId}`), `data.boxGachaList.${gachaId}`, ["boxId"]);
@@ -374,6 +401,24 @@ export function mergedPlayerCollectionCounts(data: MergedPlayerData): Record<str
         drawnQuests: data.drawnQuestList.length,
         periodicRewards: data.periodicRewardPointList.length,
         activeMissions: countRecord(data.allActiveMissionList),
+        categoryMissionCategories: countRecord(data.categoryMissionList),
+        categoryMissions: data.categoryMissionList === undefined
+            ? 0
+            : Object.values(data.categoryMissionList).reduce(
+                (sum, missions) => sum + Object.keys(missions).length,
+                0,
+            ),
+        categoryMissionStages: data.categoryMissionList === undefined
+            ? 0
+            : Object.values(data.categoryMissionList).reduce(
+                (sum, missions) => sum + Object.values(missions).reduce(
+                    (missionSum, mission) => missionSum + (Array.isArray(mission.stages)
+                        ? mission.stages.length
+                        : Object.keys(mission.stages).length),
+                    0,
+                ),
+                0,
+            ),
         boxGachaGroups: countRecord(data.boxGachaList),
         boxGachas: countNestedArrays(data.boxGachaList),
         startDashCampaigns: data.startDashExchangeCampaignList.length,

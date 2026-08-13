@@ -43,7 +43,11 @@ import { insertPlayerDrawnQuestsSync, insertPlayerQuestProgressListSync } from "
 import { insertPlayerGachaInfoListSync, insertPlayerGachaCampaignListSync , getPlayerGachaInfoListSync, updatePlayerGachaInfoSync, getPlayerGachaCampaignListSync, updatePlayerGachaCampaignSync } from "./gacha";
 import { insertPlayerBoxGachasSync } from "./boxGacha";
 import { insertPlayerRushEventListSync, insertPlayerRushEventClearedFolderListSync, insertPlayerRushEventPlayedPartyListSync } from "./rushEvent";
-import { insertPlayerClearedRegularMissionListSync, insertPlayerActiveMissionsSync } from "./mission";
+import {
+    insertPlayerActiveMissionsSync,
+    insertPlayerCategoryMissionListSync,
+    insertPlayerClearedRegularMissionListSync,
+} from "./mission";
 import { insertPlayerPeriodicRewardPointsListSync, insertPlayerStartDashExchangeCampaignsSync, insertPlayerMultiSpecialExchangeCampaignsSync } from "./campaign";
 import { assertMergedPlayerData, mergedPlayerCollectionCounts } from "../validation/merged-player";
 
@@ -530,6 +534,7 @@ export function insertMergedPlayerDataSync(
     hooks.beforePhase?.("campaigns_options")
     insertPlayerPeriodicRewardPointsListSync(playerId, toInsert.periodicRewardPointList)
     insertPlayerActiveMissionsSync(playerId, toInsert.allActiveMissionList)
+    insertPlayerCategoryMissionListSync(playerId, toInsert.categoryMissionList ?? {})
     insertPlayerBoxGachasSync(playerId, toInsert.boxGachaList)
     insertPlayerStartDashExchangeCampaignsSync(playerId, toInsert.startDashExchangeCampaignList)
     insertPlayerMultiSpecialExchangeCampaignsSync(playerId, toInsert.multiSpecialExchangeCampaignList)

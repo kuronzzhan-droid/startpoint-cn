@@ -14,6 +14,7 @@ process.env.WF_DATABASE_DIR = databaseDir;
 const playerDomain = require("../data/domains/player") as typeof import("../data/domains/player");
 const accountDomain = require("../data/domains/account") as typeof import("../data/domains/account");
 const characterDomain = require("../data/domains/character") as typeof import("../data/domains/character");
+const missionDomain = require("../data/domains/mission") as typeof import("../data/domains/mission");
 const dataUtils = require("../data/utils") as typeof import("../data/utils");
 const { getDb } = require("../data/db") as typeof import("../data/db");
 
@@ -209,6 +210,20 @@ test("runtime validation rejects identity, shape, duplicates, numbers and dangli
             mutate(value) { value.player.partySlot = 99999999; },
             pattern: /partySlot/,
         },
+        {
+            name: "negative category mission progress",
+            mutate(value) {
+                value.categoryMissionList = { 5: { 47000: { progress: -1, stages: [] } } };
+            },
+            pattern: /categoryMissionList.*progress/,
+        },
+        {
+            name: "non-boolean category mission receipt",
+            mutate(value) {
+                value.categoryMissionList = { 5: { 47000: { progress: 1, stages: { 1: 1 } } } };
+            },
+            pattern: /categoryMissionList.*stages/,
+        },
     ];
 
     for (const item of cases) {
@@ -234,6 +249,28 @@ test("client clone round-trip retains mana-node awake levels", () => {
         canonical(deserialized.characterManaNodeAwakeLevels),
         canonical(original.characterManaNodeAwakeLevels),
     );
+});
+
+
+test("server save replacement retains category mission progress and receipts", () => {
+    try {
+        missionDomain.updatePlayerCategoryMissionSync(playerId, 5, 47000, 7);
+        missionDomain.updatePlayerCategoryMissionStageSync(playerId, 5, 1, 47000, true);
+        const snapshot = read() as MergedPlayerData & {
+            categoryMissionList?: Record<string, Record<string, { progress: number, stages: Record<string, boolean> }>>,
+        };
+        assert.equal(snapshot.categoryMissionList?.["5"]?.["47000"]?.progress, 7);
+        assert.equal(snapshot.categoryMissionList?.["5"]?.["47000"]?.stages["1"], true);
+
+        playerDomain.replacePlayerDataSync(snapshot);
+
+        const restored = missionDomain.getPlayerCategoryMissionsSync(playerId, 5);
+        assert.equal(restored["47000"]?.progress, 7);
+        const restoredStages = restored["47000"]?.stages;
+        assert.equal(Array.isArray(restoredStages) ? undefined : restoredStages?.["1"], true);
+    } finally {
+        missionDomain.deletePlayerCategoryMissionsSync(playerId, 5);
+    }
 });
 
 
