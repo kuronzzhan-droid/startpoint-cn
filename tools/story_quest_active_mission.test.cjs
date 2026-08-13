@@ -68,7 +68,10 @@ async function finish(app, viewerId) {
 async function main() {
     const { getDb } = require("../src/data/db")
     const { getPlayerActiveMissionsSync } = require("../src/data/domains/mission")
-    const { getPlayerSingleQuestProgressSync } = require("../src/data/domains/quest")
+    const {
+        getPlayerSingleQuestProgressSync,
+        insertPlayerQuestProgressSync,
+    } = require("../src/data/domains/quest")
     const storyRoutes = require("../src/routes/api/storyQuest").default
     database = getDb()
 
@@ -110,6 +113,29 @@ async function main() {
         assert.equal(getPlayerSingleQuestProgressSync(rollback.playerId, 3, 101), null)
         assert.equal(getPlayerActiveMissionsSync(rollback.playerId)[11010], undefined)
         database.exec("DROP TRIGGER reject_story_active_mission")
+
+        const loadPlayer = await createPlayer(3)
+        insertPlayerQuestProgressSync(loadPlayer.playerId, 3, {
+            questId: 101,
+            finished: true,
+            clearRank: 5,
+        })
+        assert.equal(getPlayerActiveMissionsSync(loadPlayer.playerId)[11010], undefined)
+        const { getContentSnapshot } = require("../src/content/runtime/content-snapshot")
+        const { reconcileActiveMissionFacts } = require("../src/lib/mission/active-reconciliation")
+        const loadDelta = reconcileActiveMissionFacts({
+            playerId: loadPlayer.playerId,
+            repository: getContentSnapshot().repository,
+            now: Date.now(),
+        })
+        assert.equal(loadDelta.some(entry => entry.mission_id === 11010), true)
+        assert.equal(getPlayerActiveMissionsSync(loadPlayer.playerId)[11010].progress, 1)
+        const loadSource = fs.readFileSync(path.join(__dirname, "../src/routes/cn/load.ts"), "utf8")
+        assert.ok(
+            loadSource.indexOf("reconcileActiveMissionFacts({")
+                < loadSource.indexOf("getClientSerializedData(playerId"),
+            "load must reconcile active missions before serializing the player snapshot",
+        )
     } finally {
         await app.close()
         cleanup()

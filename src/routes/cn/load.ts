@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { generateDataHeaders, getServerTime, getServerDate } from "../../utils";
+import { getContentSnapshot } from "../../content/runtime/content-snapshot";
 import { collectPlayerDataPooledExpSync, dailyResetPlayerDataSync, getPlayerSync, updatePlayerSync } from "../../data/domains/player"
 import { deletePlayerActiveQuestSync, getPlayerActiveQuestSync } from "../../data/domains/quest_active"
 import { getSession } from "../../data/domains/session"
@@ -11,6 +12,7 @@ import { runPermanentValidators } from "../../lib/validate";
 import { getCnReleaseGraphSnapshot } from "../../lib/cn-asset-graph";
 import type { ReleaseGraphSnapshot } from "../../lib/cn-asset-graph";
 import { computeAssetTarget } from "../../lib/version";
+import { reconcileActiveMissionFacts } from "../../lib/mission/active-reconciliation";
 
 interface CnLoadBody {
     device_id: number;
@@ -132,6 +134,12 @@ const routes = async (fastify: FastifyInstance) => {
 
         // Run save validators (permanent fixes: max_level, etc.)
         runPermanentValidators(playerId);
+
+        reconcileActiveMissionFacts({
+            playerId,
+            repository: getContentSnapshot().repository,
+            now: now.getTime(),
+        });
 
         // 若自定义时间与 lastLogin 不同步，强制对齐（防止客户端弹"日期变了"）
         if (now.toDateString() !== player.lastLoginTime.toDateString()) {
