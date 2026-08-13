@@ -4,7 +4,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
     getPlayerCategoryMissionsSync,
-    updatePlayerActiveMissionSync,
 } from "../../data/domains/mission"
 import { getSession } from "../../data/domains/session"
 import { getPlayerMailCountSync } from "../../data/domains/mail"
@@ -12,10 +11,10 @@ import { generateDataHeaders, getServerTimeForPlayer } from "../../utils";
 import {
     getCurrentStage,
     getMissionIdsByCategory,
-    getMissionsByPattern,
     getCharacterIdFromMission,
     mergeMissionSettlementResponse,
     settleAwakeMissionCandidatesAsync,
+    settleClientProgressAsync,
     settleMissionCategoriesAsync,
 } from "../../lib/mission/index";
 import {
@@ -166,27 +165,22 @@ const routes = async (fastify: FastifyInstance) => {
             "message": "No players bound to account."
         })
 
-        // Update mission progress counters in DB (fire-and-forget from client)
         const missionParams = body.mission_param_list || []
-        let updatedCount = 0
+        const evaluationTime = new Date(getServerTimeForPlayer(playerId) * 1000)
+        const result = await settleClientProgressAsync(playerId, missionParams, evaluationTime)
 
-        for (const param of missionParams) {
-            const matches = getMissionsByPattern(param.mission_pattern)
-            for (const m of matches) {
-                updatePlayerActiveMissionSync(playerId, m.missionId, param.progress_value)
-                updatedCount++
-            }
+        console.log(`[MISSION] update_progress viewer=${viewerId} params=${missionParams.length} db_updates=${result.updatedCount}`)
+
+        const responseData: Record<string, unknown> = {
+            mission_info: [],
+            degree_list: [],
+            mail_arrived: getPlayerMailCountSync(playerId, true) > 0,
         }
-
-        console.log(`[MISSION] update_progress viewer=${viewerId} params=${missionParams.length} db_updates=${updatedCount}`)
-
+        mergeMissionSettlementResponse(responseData, result.settlement, viewerId)
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
             "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-            "data": {
-                "mission_info": [],
-                "degree_list": []
-            }
+            "data": responseData,
         })
     })
 }

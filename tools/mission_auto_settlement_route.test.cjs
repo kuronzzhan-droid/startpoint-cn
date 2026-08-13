@@ -108,6 +108,25 @@ async function main() {
     await app.ready()
 
     try {
+        updatePlayerActiveMissionSync(playerId, 107, 1)
+        const disabledLegacy = await app.inject({
+            method: "POST",
+            url: "/api/index.php/mission/get_mission_progress",
+            headers: { "content-type": "application/x-www-form-urlencoded" },
+            payload: encode({
+                viewer_id: viewerId,
+                api_count: 0,
+                category_list: [{ category: 1 }],
+            }),
+        })
+        assert.equal(disabledLegacy.statusCode, 200, disabledLegacy.body)
+        assert.equal(
+            getPlayerCategoryMissionsSync(playerId, 1)["107"],
+            undefined,
+            "disabled legacy missions must not be imported before their active window",
+        )
+        database.prepare("DELETE FROM players_active_missions WHERE player_id = ? AND id = 107").run(playerId)
+
         const first = await app.inject({
             method: "POST",
             url: "/api/index.php/mission/get_mission_progress",

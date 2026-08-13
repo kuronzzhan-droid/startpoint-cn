@@ -45,6 +45,7 @@ export type { MissionSettlementInfo, MissionSettlementResult, MissionSettlementS
 export { settleMissionCategories, settleMissionCategoriesAsync } from "./settlement"
 export { mergeMissionSettlementResponse } from "./response"
 export { settleAwakeMissionCandidatesAsync } from "./awake-settlement"
+export { settleClientProgressAsync } from "./client-progress-settlement"
 
 // Filter (active mission ID filtering, C8601 prevention)
 export { isActiveMissionId, filterToActiveMissions } from "./filter"

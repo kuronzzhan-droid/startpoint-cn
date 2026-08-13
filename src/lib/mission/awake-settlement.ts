@@ -1,8 +1,6 @@
 import { getPlayerCharacterSync } from "../../data/domains/character"
 import { upsertPlayerCharacterAwakeUnlockSync } from "../../data/domains/character_awake"
 import {
-    getPlayerActiveMissionsSync,
-    getPlayerCategoryMissionsSync,
     updatePlayerCategoryMissionStageSync,
     updatePlayerCategoryMissionSync,
 } from "../../data/domains/mission"
@@ -12,9 +10,10 @@ import { runImmediateTransactionWithRetry, withPlayerWriteQueue } from "../sqlit
 import { MissionRewardGranter } from "./grants"
 import { getMissionMasterDefinition, isMissionDefinitionEnabledAt } from "./master-data"
 import { getComputer } from "./registry"
+import { getPlayerCategoryMissionsWithLegacyImportSync } from "./legacy-bridge"
 import { getAwakeMissionRewardStageDefinition } from "./rewards"
 import type { MissionSettlementResult } from "./settlement"
-import { getCompletedStageNumbers, getMissionFinalTargetProgress, getMissionStageIds } from "./stages"
+import { getCompletedStageNumbers, getMissionFinalTargetProgress } from "./stages"
 
 function positiveSafeInteger(value: unknown, name: string): number {
     if (typeof value !== "number" || !Number.isFinite(value)) throw new TypeError(`${name} must be finite`)
@@ -38,22 +37,6 @@ function canonicalMissionIds(values: readonly number[]): number[] {
     return [...new Set(result)]
 }
 
-function importLegacyStages(
-    playerId: number,
-    missionId: number,
-    stages: Record<string, boolean> | unknown[],
-): void {
-    if (Array.isArray(stages)) return
-    const allowedStages = new Set(getMissionStageIds(9, missionId))
-    for (const [stage, received] of Object.entries(stages)) {
-        if (!received) continue
-        const stageId = positiveSafeInteger(Number(stage), "legacy awake stage")
-        if (String(stageId) !== stage) throw new Error(`Legacy awake stage ${missionId}:${stage} is not canonical.`)
-        if (!allowedStages.has(stageId)) throw new Error(`Legacy awake stage ${missionId}:${stage} is unknown.`)
-        updatePlayerCategoryMissionStageSync(playerId, 9, stageId, missionId, true)
-    }
-}
-
 function settleAwakeMissionCandidates(
     playerId: number,
     rawMissionIds: readonly number[],
@@ -68,8 +51,11 @@ function settleAwakeMissionCandidates(
     if (missionIds.length === 0) return empty
     const player = getPlayerSync(playerId)
     if (!player) throw new Error(`Player ${playerId} not found during awake settlement.`)
-    const persisted = getPlayerCategoryMissionsSync(playerId, 9)
-    const legacy = getPlayerActiveMissionsSync(playerId)
+    const enabledMissionIds = missionIds.filter(missionId => {
+        const definition = getMissionMasterDefinition(9, missionId)
+        return definition !== undefined && isMissionDefinitionEnabledAt(definition, evaluationTime)
+    })
+    const persisted = getPlayerCategoryMissionsWithLegacyImportSync(playerId, 9, enabledMissionIds)
     const computer = getComputer(9)
     const context = computer.buildContext(playerId, 9, evaluationTime, missionIds)
     const granter = new MissionRewardGranter(playerId, player)
@@ -92,7 +78,7 @@ function settleAwakeMissionCandidates(
         const definition = getMissionMasterDefinition(9, missionId)
         if (!definition || !isMissionDefinitionEnabledAt(definition, evaluationTime)) continue
         const categoryMission = persisted[String(missionId)]
-        const current = categoryMission ?? legacy[String(missionId)]
+        const current = categoryMission
         const dbProgress = finiteProgress(current?.progress ?? 0, "stored awake progress")
         const computed = finiteProgress(computer.compute(missionId, context, dbProgress), "computed awake progress")
         const finalTarget = getMissionFinalTargetProgress(9, missionId)
@@ -100,10 +86,9 @@ function settleAwakeMissionCandidates(
             ? Math.max(dbProgress, computed)
             : Math.min(Math.max(dbProgress, computed), finalTarget)
         if (context.activeMissionProgress) context.activeMissionProgress[String(missionId)] = progress
-        if (!categoryMission || progress !== dbProgress) {
+        if (progress !== dbProgress) {
             updatePlayerCategoryMissionSync(playerId, 9, missionId, progress)
         }
-        if (!categoryMission && current) importLegacyStages(playerId, missionId, current.stages)
 
         for (const stage of getCompletedStageNumbers(9, missionId, progress)) {
             const reward = getAwakeMissionRewardStageDefinition(missionId, stage)
