@@ -5,7 +5,10 @@ const fs = require("node:fs")
 const os = require("node:os")
 const path = require("node:path")
 
-const { BUNDLED_CDN_CATALOG_VERSION } = require("../src/content/constants")
+const {
+    BUNDLED_CDN_CATALOG_VERSION,
+    BUNDLED_CONTENT_TABLE_NAMES,
+} = require("../src/content/constants")
 const { deepFreeze } = require("../src/content/deep-freeze")
 const {
     getContentSnapshot,
@@ -73,6 +76,21 @@ function assertBundledRootPinnedAtModuleLoad() {
 
 const repository = getContentSnapshot().repository
 assert.equal(repository.info().assetVersion, BUNDLED_CDN_CATALOG_VERSION)
+const expectedBundledTables = [
+    "boss_coin_shop.json",
+    "boss_coin_shop_item_category_map.json",
+    "character.json",
+    "character_quest_lookup.json",
+    "equipment_dissolve.json",
+    "ex_quest.json",
+    "main_quest.json",
+    "mana_node.json",
+    "mission_active.json",
+    "mission_active_event.json",
+    "mission_active_reward.json",
+    "treasure_shop.json",
+]
+assert.deepEqual([...BUNDLED_CONTENT_TABLE_NAMES].sort(), expectedBundledTables)
 const snapshotSource = fs.readFileSync(
     path.join(__dirname, "../src/content/runtime/content-snapshot.ts"),
     "utf8",
@@ -85,6 +103,13 @@ withReadSpy((getCalls) => {
     assert.strictEqual(second, first)
     assert.equal(getCalls(), 1)
 })
+
+for (const tableName of expectedBundledTables) {
+    const table = repository.table(tableName)
+    assert.equal(typeof table, "object")
+    assert.notEqual(table, null)
+    assert.ok(Object.isFrozen(table))
+}
 
 for (const tableName of [
     "not_registered.json",

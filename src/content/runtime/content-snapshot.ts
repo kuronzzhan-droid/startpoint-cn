@@ -5,6 +5,7 @@ import {
     BUNDLED_CDN_CATALOG_VERSION,
     BUNDLED_CONTENT_TABLE_NAMES,
 } from "../constants"
+import { deepFreeze } from "../deep-freeze"
 
 export interface ContentRepositoryInfo {
     readonly source: "bundled"
@@ -36,7 +37,7 @@ const bundledRepository: ReadonlyContentRepository = Object.freeze({
         }
         if (!tableCache.has(tableName)) {
             const filePath = path.join(bundledAssetsRoot, tableName)
-            tableCache.set(tableName, JSON.parse(fs.readFileSync(filePath, "utf8")))
+            tableCache.set(tableName, deepFreeze(JSON.parse(fs.readFileSync(filePath, "utf8"))))
         }
         return tableCache.get(tableName) as T
     },
