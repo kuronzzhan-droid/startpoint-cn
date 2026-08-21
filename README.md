@@ -3,29 +3,41 @@
 世界弹射物语(World Flipper)CN(雷霆 Leiting)版本的服务端模拟器。
 
 > 🎮 **本分支(`release/modes-20260714`)是自制内容发布分支**,在上游服务端基础上加入:
-> 「深渊连战」roguelike 活动(Rush 700099) · 15 把深渊武器 · 八位自制/改造角色；当前增量链尾为 1.4.312。
+> 「深渊连战」roguelike 活动(Rush 700099) · 15 把深渊武器 · 十三位自制/改造角色；当前增量链尾为 1.4.407。
 
-> ⚠️ **本分支 `custom/characters-1.4.407` 尚不可直接合并 / 部署**
+> 📦 **本分支 `custom/characters-1.4.407` 内容已自洽**
 >
-> 它只补齐了**服务端侧**数据:自制/改造角色累计 13 名(新增 129997 克劳斯、139997 莉莉丝、
-> 139998 拉姆斯、149997 墨斯伊克、179999 罗尔夫)、深渊限定池 990001、两条兑换条目、
-> CN 客户端券抽 execType 3/4。
+> 服务端数据与客户端资源都在本仓,clone 即得,不需要另外装 overlay:
 >
-> **对应的客户端资源不在本仓**。本仓自带的增量链 `assets/asset-patch/active/` 停在 **1.4.323**,
-> 不含上述 5 名角色的美术/技能/语音资源。完整客户端内容(链尾 **1.4.407**)只发布在工具仓的
-> [Patch Overlay](https://github.com/kuronzzhan-droid/startpoint-cn-mod-tools/releases/tag/overlay-1.4.407),
-> 而 overlay 是给**上游 dev 架构**的 Content Sync 用的,本仓服务端没有那条装载路径,装不了。
+> - **服务端侧**:自制/改造角色累计 13 名(本轮新增 129997 克劳斯、139997 莉莉丝、
+>   139998 拉姆斯、149997 墨斯伊克、179999 罗尔夫)、深渊限定池 990001、两条兑换条目、
+>   CN 客户端券抽 execType 3/4
+> - **客户端侧**:`assets/asset-patch/active/` 增量链已从 1.4.323 补到 **1.4.407**
+>   (一条边 16 个包,619 个成员;逐成员比对旧链新增 577 / 更新 43 / **删除 0**)
 >
-> 后果:直接部署本分支会出现「服务端有角色行、客户端没有资源」——抽到这 5 名角色会
-> 数据不足 / 崩溃。要么先把 1.4.323→1.4.407 回灌进 `assets/asset-patch/active/`,
-> 要么等本仓接上 Content Sync。**两件事都还没做**,所以本分支只作为服务端数据的存档与评审用。
+> **和工具仓 overlay 的关系**:两条路载的是同一批内容,但装法完全不同,别混用 ——
+>
+> | | 本仓(fork) | 工具仓 overlay |
+> |---|---|---|
+> | 给谁 | 部署**本仓**服务端的人 | 已经在跑**上游 `dev`**、不想 fork 的人 |
+> | 载体 | `assets/asset-patch/active/` zip 增量链 | Release 单跳 Patch Overlay |
+> | 装法 | clone 即得,服务端自动下发 | 解压到 `CDN_DIR/patches/1.4.407/`,启动期 Content Sync 激活 |
+> | 链尾 | 1.4.407 | 1.4.407 |
+>
+> 本仓服务端**没有** Content Sync 那条装载路径,overlay 在这里装不了;反过来 dev 架构
+> 也不读 `asset-patch/`。按你的服务端选一条,不要两条都装。
+>
+> ⚠️ **体积是单向棘轮**:`asset-patch/active/` 现在 275 MiB / 93 包,`.git` 约 763 MiB。
+> zip 已压缩,git 再压收益为零(实测压缩率 100%),所以每次回灌都是永久占用。
+> 本轮 84 个版本 = +65 MiB。**触发阈值:再来两轮同规模(约 900 MiB)就必须换方案**
+> —— 迁 Git LFS,或改成像工具仓那样走 Release 附件,别等撞上 GitHub 的 1 GiB 建议线。
 
 ## 我该下载什么?
 
 | 你是谁 | 需要什么 |
 |---|---|
-| **想进别人的服玩** | 不用下载本仓库。只向服主要他**按本服地址重签的完整五合一 APK**和账号说明；不要混用旧 APK。角色/模式资源由所连接服务器下发到 1.4.312 |
-| **想自己开服**(玩全部内容,含八位自制/改造角色) | **三步**:① 下载 [deploy.ps1](deploy.ps1) 运行(自动装 Git/Node → clone → 构建 → 起服 → 自检)→ ② 自备基础 CDN ~11GB 放入 `.cdn\cn\`(唯一手工环节,脚本会指引)→ ③ 按 [保姆级部署攻略](docs/部署攻略.md) 下载并校验[完整五合一基座 APK](https://github.com/kuronzzhan-droid/startpoint-cn/releases/download/client-base-v2.0/WorldFlipper-abyss-v2.apk),只改成自己的服务器地址后重签。技术参考/存量服升级/救援见 [docs/self-host-modes.md](docs/self-host-modes.md);mod 增量内容(1.4.54→**1.4.312** 现役态)已随仓库自带,clone 即得 |
+| **想进别人的服玩** | 不用下载本仓库。只向服主要他**按本服地址重签的完整五合一 APK**和账号说明；不要混用旧 APK。角色/模式资源由所连接服务器下发到 1.4.407 |
+| **想自己开服**(玩全部内容,含十三位自制/改造角色) | **三步**:① 下载 [deploy.ps1](deploy.ps1) 运行(自动装 Git/Node → clone → 构建 → 起服 → 自检)→ ② 自备基础 CDN ~11GB 放入 `.cdn\cn\`(唯一手工环节,脚本会指引)→ ③ 按 [保姆级部署攻略](docs/部署攻略.md) 下载并校验[完整五合一基座 APK](https://github.com/kuronzzhan-droid/startpoint-cn/releases/download/client-base-v2.0/WorldFlipper-abyss-v2.apk),只改成自己的服务器地址后重签。技术参考/存量服升级/救援见 [docs/self-host-modes.md](docs/self-host-modes.md);mod 增量内容(1.4.54→**1.4.407** 现役态)已随仓库自带,clone 即得 |
 | **想改数据 / 做自己的 mod** | 数据修改工具链:[mod-tools/](mod-tools/)(独立仓 [startpoint-cn-mod-tools](https://github.com/kuronzzhan-droid/startpoint-cn-mod-tools),带全套文档与《新角色制作心得》) |
 
 ## 功能状态
