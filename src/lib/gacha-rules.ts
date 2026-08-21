@@ -10,6 +10,10 @@ export const GACHA_PAYMENT_TYPES = {
 export const GACHA_EXEC_TYPES = {
     VMONEY_SINGLE: 1,
     VMONEY_MULTI: 2,
+    // CN 客户端(雷霆)券抽走 3/4,与国际服的 10/9 并存(2026-08-17 真机实证:
+    // 深渊限定池 990001 券抽被拒 H400,客户端请求 paymentType=3 type=3/4)。
+    CN_SINGLE_TICKET: 3,
+    CN_MULTI_TICKET: 4,
     DAILY_SINGLE: 5,
     CAMPAIGN_SINGLE: 7,
     CAMPAIGN_MULTI: 8,
@@ -36,9 +40,11 @@ export type TicketDrawKind = "single" | "multi";
 export function getTicketDrawKind(type: number): TicketDrawKind | null {
     switch (type) {
         case GACHA_EXEC_TYPES.SINGLE_TICKET:
+        case GACHA_EXEC_TYPES.CN_SINGLE_TICKET:
         case GACHA_EXEC_TYPES.SINGLE_WEAPON_TICKET:
             return "single";
         case GACHA_EXEC_TYPES.MULTI_TICKET:
+        case GACHA_EXEC_TYPES.CN_MULTI_TICKET:
         case GACHA_EXEC_TYPES.MULTI_WEAPON_TICKET:
             return "multi";
         default:
@@ -52,7 +58,9 @@ export function ticketExecMatchesGachaType(type: number, gacha: Pick<Gacha, "typ
             type === GACHA_EXEC_TYPES.MULTI_WEAPON_TICKET;
     }
     return type === GACHA_EXEC_TYPES.SINGLE_TICKET ||
-        type === GACHA_EXEC_TYPES.MULTI_TICKET;
+        type === GACHA_EXEC_TYPES.CN_SINGLE_TICKET ||
+        type === GACHA_EXEC_TYPES.MULTI_TICKET ||
+        type === GACHA_EXEC_TYPES.CN_MULTI_TICKET;
 }
 
 function ticketAllowedByPageKind(pageKind: number | undefined, drawKind: TicketDrawKind): boolean {

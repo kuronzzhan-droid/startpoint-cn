@@ -19,8 +19,10 @@ function getFallbackTicketItemId(gacha: Gacha | undefined, type: number): number
 
     switch (type) {
         case GACHA_EXEC_TYPES.MULTI_TICKET:
+        case GACHA_EXEC_TYPES.CN_MULTI_TICKET:
             return GACHA_TICKET_ITEM_IDS.characterMulti;
         case GACHA_EXEC_TYPES.SINGLE_TICKET:
+        case GACHA_EXEC_TYPES.CN_SINGLE_TICKET:
             return GACHA_TICKET_ITEM_IDS.characterSingle;
         case GACHA_EXEC_TYPES.SINGLE_WEAPON_TICKET:
             return GACHA_TICKET_ITEM_IDS.equipmentSingle;
@@ -49,6 +51,7 @@ export function getGachaTicketCost(type: number, numberOfExec: number, gacha?: G
 
     switch (type) {
         case GACHA_EXEC_TYPES.MULTI_TICKET:
+        case GACHA_EXEC_TYPES.CN_MULTI_TICKET:
         case GACHA_EXEC_TYPES.MULTI_WEAPON_TICKET:
             return {
                 itemId,
@@ -56,6 +59,7 @@ export function getGachaTicketCost(type: number, numberOfExec: number, gacha?: G
                 pullCount: useTicketCount * 10,
             };
         case GACHA_EXEC_TYPES.SINGLE_TICKET:
+        case GACHA_EXEC_TYPES.CN_SINGLE_TICKET:
         case GACHA_EXEC_TYPES.SINGLE_WEAPON_TICKET:
             return {
                 itemId,
