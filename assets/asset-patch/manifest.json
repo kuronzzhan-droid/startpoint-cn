@@ -356,6 +356,116 @@
     }
    ],
    "created_at": "2026-08-07"
+  },
+  {
+   "id": "backfill-to-live-20260821",
+   "type": "patch",
+   "name": "1.4.323→1.4.407 客户端资源回灌(五名自制角色 + 老角色调整)",
+   "description": "把本地链 1.4.324~1.4.407 共 84 条边合成一条公开边，补上 fork 侧缺失的客户端资源。内容口径 = overlay-1.4.407 的终态成员，减去装完本仓 active/ 后已经一致的成员，逐成员比 sha256 得到：新增 577、更新 43、零删除（原有 879 个成员一个不少）。主项:五名自制角色的全套客户端资源 —— 克劳斯 129997、莉莉丝 139997、拉姆斯 139998、墨斯伊克 149997、罗尔夫 179999(像素三件套/立绘/UI 图标/语音/特效/强化弹射)，外加老角色的词条与技能调整、深渊连战塔修正、弹板皮肤图集。刻意剔除 dev 专用激活表 master/custom/rogue_event.orderedmap ——fork 架构走 rush_event_quest 那套，服务端不读它;以后比对 overlay 与 fork 差集时别把它当漏件补回来。seq 跨层连续编号(common 1-4 / medium 5-15 / android 16):active/ 是扁平单目录，三层同名会相撞，2026-08-02 就因此丢过 45 个文件。",
+   "version": "1.4.407",
+   "depends_on": "1.4.323",
+   "enabled": true,
+   "chain": [
+    "pinball-1.4.323-1.4.407-1-backfill0821.zip",
+    "pinball-1.4.323-1.4.407-2-backfill0821.zip",
+    "pinball-1.4.323-1.4.407-3-backfill0821.zip",
+    "pinball-1.4.323-1.4.407-4-backfill0821.zip",
+    "pinball-1.4.323-1.4.407-5-backfill0821.zip",
+    "pinball-1.4.323-1.4.407-6-backfill0821.zip",
+    "pinball-1.4.323-1.4.407-7-backfill0821.zip",
+    "pinball-1.4.323-1.4.407-8-backfill0821.zip",
+    "pinball-1.4.323-1.4.407-9-backfill0821.zip",
+    "pinball-1.4.323-1.4.407-10-backfill0821.zip",
+    "pinball-1.4.323-1.4.407-11-backfill0821.zip",
+    "pinball-1.4.323-1.4.407-12-backfill0821.zip",
+    "pinball-1.4.323-1.4.407-13-backfill0821.zip",
+    "pinball-1.4.323-1.4.407-14-backfill0821.zip",
+    "pinball-1.4.323-1.4.407-15-backfill0821.zip",
+    "pinball-1.4.323-1.4.407-16-backfill0821.zip"
+   ],
+   "archive_integrity": [
+    {
+     "name": "pinball-1.4.323-1.4.407-1-backfill0821.zip",
+     "size": 5173309,
+     "sha256": "5f18cd8333b265a8c3774378a387c62d60e0906b2ee4ed93b289c600532e16d7"
+    },
+    {
+     "name": "pinball-1.4.323-1.4.407-2-backfill0821.zip",
+     "size": 5176307,
+     "sha256": "35cd00dc2f1049d870a47a99e7872cb0c14e44c68e020839ebc21c5ee6ba15f3"
+    },
+    {
+     "name": "pinball-1.4.323-1.4.407-3-backfill0821.zip",
+     "size": 5132586,
+     "sha256": "f6b4c68cdbf88a19257983ae5c7fe4c60e62ba4cb32f8c20fefde6e4c6ecb131"
+    },
+    {
+     "name": "pinball-1.4.323-1.4.407-4-backfill0821.zip",
+     "size": 4603895,
+     "sha256": "eb8e287d5f7a6c2d7532d5ffe1a74887c09a9f1243ac7c11fad125315acef93b"
+    },
+    {
+     "name": "pinball-1.4.323-1.4.407-5-backfill0821.zip",
+     "size": 5197156,
+     "sha256": "d436389ff58d57ab629d6ed64ee8846cade81df89cabc324784d1c71cdb8e111"
+    },
+    {
+     "name": "pinball-1.4.323-1.4.407-6-backfill0821.zip",
+     "size": 4676954,
+     "sha256": "1c563a2b232fe8725115abe8ef885c91f3787b0220b9c71cfd070498456c806e"
+    },
+    {
+     "name": "pinball-1.4.323-1.4.407-7-backfill0821.zip",
+     "size": 3054907,
+     "sha256": "67c699ba67f18c103634db3fb4c284442b61723f4d62107eb02a6125ca4ab2f3"
+    },
+    {
+     "name": "pinball-1.4.323-1.4.407-8-backfill0821.zip",
+     "size": 4386909,
+     "sha256": "5bfec44b0ee6b78a1f3bd9500fa19f62110eeb1b61696466879e1cd330110ce3"
+    },
+    {
+     "name": "pinball-1.4.323-1.4.407-9-backfill0821.zip",
+     "size": 3478605,
+     "sha256": "266d97f3ccd8a5bd0822ff4f0a30ed13b53fd0b79c6a70ed108826ecf51327da"
+    },
+    {
+     "name": "pinball-1.4.323-1.4.407-10-backfill0821.zip",
+     "size": 5185781,
+     "sha256": "8ba6652daa73b932b4f627d687b1cf5d895b4ded12853c70e3cdb90b0e85e410"
+    },
+    {
+     "name": "pinball-1.4.323-1.4.407-11-backfill0821.zip",
+     "size": 1724410,
+     "sha256": "13fe4fa13bfe2ab449853d4ab3059668d15d25e1bb6ec1836e52752d70fa6e8d"
+    },
+    {
+     "name": "pinball-1.4.323-1.4.407-12-backfill0821.zip",
+     "size": 4863324,
+     "sha256": "fc81977ab98c462a5a989aaf51a5e0f83f1e792ea6eaf29e7671e8f16c4c972c"
+    },
+    {
+     "name": "pinball-1.4.323-1.4.407-13-backfill0821.zip",
+     "size": 5020699,
+     "sha256": "2469f0a71d3402fee8a87aab9ed3ac24f0b4a7870b4600ea719a91c1508f3b38"
+    },
+    {
+     "name": "pinball-1.4.323-1.4.407-14-backfill0821.zip",
+     "size": 5163342,
+     "sha256": "d84e45dd422d16065e4db22a2f286f9a7044472d54578f0285dcfe418236021b"
+    },
+    {
+     "name": "pinball-1.4.323-1.4.407-15-backfill0821.zip",
+     "size": 3600643,
+     "sha256": "2d318060e6fb7507e530efc38e0675d749f36d6d7912f03e2e8c0c31d50b7629"
+    },
+    {
+     "name": "pinball-1.4.323-1.4.407-16-backfill0821.zip",
+     "size": 2169151,
+     "sha256": "16e6375fd198151373ecb61d395e78dfebabdedeeb00c0c888d1ec32eb65fb58"
+    }
+   ],
+   "created_at": "2026-08-21"
   }
  ]
 }
