@@ -204,6 +204,12 @@ EXPECTED_DURATION_OVERRIDES = {
     ("8000112", 3): ("60000000", "60000000"),
 }
 
+EXPECTED_BY_EACH_TRIGGER_PULLER = {
+    ("8000105", 2): "false",
+    ("8000111", 3): "false",
+    ("8000112", 3): "false",
+}
+
 # 8000112 slot 4 must keep the donor's HpHigh + skill-trigger shape while changing
 # the donor kind 32 into the audited self-damage kind 209.
 EXPECTED_5050022_OUTPUT_COLUMNS = {
@@ -242,6 +248,9 @@ EXPECTED_CONQUEROR_SURVIVAL_COLUMNS = (
 
 DONOR_KIND_OVERRIDES = {("5050022", 1): "32"}
 DONOR_RUNTIME_COLUMNS = {
+    ("5030021", 1): {69: "false"},
+    ("5090024", 2): {69: "false"},
+    ("5010047", 0): {69: "false"},
     ("300001", 5): {
         56: "100000", 57: "100000",
         64: "1", 69: "false", 71: "1",
@@ -1476,6 +1485,11 @@ class TestSoulGeneration(unittest.TestCase):
                     self.assertEqual(expected_group, row[46])
                     self.assertEqual(uplift, row[48])
                     self.assertEqual(row[48], row[49])
+                    expected_bool = EXPECTED_BY_EACH_TRIGGER_PULLER.get(
+                        (spec.id, slot)
+                    )
+                    if expected_bool is not None:
+                        self.assertEqual(expected_bool, row[69])
                 if spec.id == "8000112":
                     self.assertEqual(
                         EXPECTED_5050022_OUTPUT_COLUMNS,

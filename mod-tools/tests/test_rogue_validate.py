@@ -51,21 +51,34 @@ def _ability_template(kinds_by_line: dict[int, str], template_id: str) -> str:
     """按 donor_line 补齐模板行:3e5ae0d 起 build_soul_leaf 逐行取捐赠行,
     同一模板键可被多个 effect 以不同 donor_line 引用,只造一行会越界。"""
     return _leaf([
-        _ability_template_row(kinds_by_line.get(line, "999"), template_id)
+        _ability_template_row(
+            kinds_by_line.get(line, "999"), template_id, donor_line=line,
+        )
         for line in range(max(kinds_by_line) + 1)
     ])
 
 
-def _ability_template_row(effect_kind: str, template_id: str) -> list[str]:
+def _ability_template_row(
+    effect_kind: str, template_id: str, *, donor_line: int,
+) -> list[str]:
     row = [""] * 123
     row[0], row[1], row[2] = "9", "9", "9"
-    row[3] = template_id
     # 3e5ae0d 起 build_soul_leaf 会跑 _assert_soul_row_legal:枚举列留空 = 客户端
     # 打开角色页即 C7050/C7101,故这些列必须给数字/哨兵(同 test_rogue_rewards.template_row)。
-    row[10], row[17] = "0", "0"
+    row[3], row[10], row[17] = "0", "0", "0"
     row[24], row[36], row[43] = "0", "(None)", "0"
     row[44], row[45], row[46] = effect_kind, "1", "Donor"
     row[48], row[49] = "100", "200"
+    content_case = wf_describe.enum_map()["cases"]["instant_content"].get(
+        effect_kind
+    )
+    if content_case is not None \
+            and "by_each_trigger_puller" in content_case["fields"]:
+        row[69] = "false"
+    if (template_id, donor_line) == ("5050022", 1):
+        row[3], row[4], row[6], row[7] = "8", "0", "50000", "50000"
+        row[24], row[25] = "23", "0"
+        row[27], row[28], row[31], row[32] = "100000", "100000", "1", "0"
     return row
 
 
