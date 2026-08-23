@@ -28,6 +28,7 @@ if os.name == "nt":
 
 import wf_mod_tool as core
 import wf_assets
+import wf_client_legality
 
 RootName = Literal["common", "medium", "android", "server"]
 TableKey = tuple[RootName, str]
@@ -68,6 +69,16 @@ ARCHIVE_PREFIXES = {
     "android": "production/android_upload/",
 }
 UNIQUE_CONDITION_TABLE = "master/character/unique_condition.orderedmap"
+CLIENT_LEGALITY_TABLES: dict[TableKey, str] = {
+    ("common", "master/ability/ability.orderedmap"): "ability",
+    ("common", "master/ability/leader_ability.orderedmap"): "leader_ability",
+    ("common", "master/ability/ability_soul.orderedmap"): "ability_soul",
+    (
+        "common",
+        "master/equipment_enhancement/equipment_enhancement_ability.orderedmap",
+    ): "equipment_enhancement_ability",
+    ("common", "master/ex_boost/ex_ability.orderedmap"): "ex_ability",
+}
 TRANSACTION_MARKER = ".character-pack-transaction.json"
 SNAPSHOT_MARKER = ".character-pack-snapshot.json"
 # 回滚增量在 active 链上的 package_id 后缀（见 wf_character_rollback）；
@@ -1102,6 +1113,72 @@ def _dict_rows(image: TableImage) -> tuple[
     return outer, inner, semantics
 
 
+def _client_legality_conflicts(
+    candidate_claims: Mapping[TableKey, TableClaim],
+    candidate_images: Mapping[TableKey, TableImage],
+) -> list[dict[str, str]]:
+    conflicts: list[dict[str, str]] = []
+    for table_key, kind in CLIENT_LEGALITY_TABLES.items():
+        claim = candidate_claims.get(table_key)
+        image = candidate_images.get(table_key)
+        if claim is None:
+            continue
+        if image is None:
+            raise PackPreflightError(
+                f"client legality has no candidate image for {claim.logical_path}"
+            )
+        outer_rows = dict(image.outer_rows)
+        for outer_key in sorted(claim.outer_keys):
+            raw = outer_rows.get(outer_key)
+            if raw is None:
+                raise PackPreflightError(
+                    f"client legality has no claimed row "
+                    f"{claim.logical_path}:{outer_key}"
+                )
+            try:
+                rows = core.read_csv_lines(raw.decode("utf-8"))
+            except Exception as exc:
+                raise PackPreflightError(
+                    f"client legality cannot decode "
+                    f"{claim.logical_path}:{outer_key}: {exc}"
+                ) from exc
+            if not rows:
+                conflicts.append({
+                    "kind": "client_legality",
+                    "claim": f"{claim.logical_path}:{outer_key}:row1",
+                    "reason": "claimed client ability key contains no CSV row",
+                })
+                continue
+            for row_index, row in enumerate(rows, 1):
+                try:
+                    problems = wf_client_legality.client_legality_problems(kind, row)
+                except Exception as exc:
+                    raise PackPreflightError(
+                        f"client legality cannot inspect "
+                        f"{claim.logical_path}:{outer_key}:row{row_index}: {exc}"
+                    ) from exc
+                conflicts.extend({
+                    "kind": "client_legality",
+                    "claim": (
+                        f"{claim.logical_path}:{outer_key}:row{row_index}"
+                    ),
+                    "reason": problem,
+                } for problem in problems)
+    return conflicts
+
+
+def _validate_client_legality_codecs(
+    claims: Mapping[TableKey, TableClaim], *, label: str,
+) -> None:
+    for table_key in CLIENT_LEGALITY_TABLES:
+        claim = claims.get(table_key)
+        if claim is not None and claim.codec_id != "flat":
+            raise PackPreflightError(
+                f"{label} known client ability table "
+                f"{claim.root}:{claim.logical_path} must use flat codec"
+            )
+
+
 def _merge_inspection_claims(
     candidate: TableClaim, installed: TableClaim | None
 ) -> TableClaim:
@@ -2078,6 +2155,7 @@ class PackTransaction:
         if errors:
             raise PackPreflightError("candidate manifest invalid: " + "; ".join(errors))
         candidate_claims = _parse_transaction_claims(self.manifest)
+        _validate_client_legality_codecs(candidate_claims, label="candidate")
         _validate_character_speech_claim(candidate_claims, label="candidate")
         installed_claims: dict[TableKey, TableClaim] = {}
         if self.installed_manifest is not None:
@@ -2093,6 +2171,7 @@ class PackTransaction:
                     "installed manifest invalid: " + "; ".join(installed_errors)
                 )
             installed_claims = _parse_transaction_claims(self.installed_manifest)
+            _validate_client_legality_codecs(installed_claims, label="installed")
 
         def validate_server_contract(
             manifest: dict, claims: dict[TableKey, TableClaim], label: str,
@@ -2406,6 +2485,9 @@ class PackTransaction:
         candidate_images, live_images, conflicts, table_changes = self._inspect_tables(
             candidate_claims, installed_claims
         )
+        conflicts.extend(_client_legality_conflicts(
+            candidate_claims, candidate_images
+        ))
         file_changes, totals = self._file_changes(set(candidate_claims))
         installed_entries = (
             self._entries(self.installed_manifest)

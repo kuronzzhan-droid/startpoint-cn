@@ -23,6 +23,13 @@ def client_legality_problems(kind: str, row: list[str]) -> list[str]:
     during_accumulation_trigger 哨兵 '(None)';even_if_owner_dead 必须 true/false。"""
     lay = wf_describe.layout(kind)
     B = {k: int(v) for k, v in lay["blocks"].items()}
+    enum_map = wf_describe.enum_map()
+    cases = enum_map["cases"]
+    enums = enum_map["enums"]
+    block_offsets = {
+        block: {field: int(offset) for offset, field, _label in fields}
+        for block, fields in enum_map["block_fields"].items()
+    }
     tcol = B["precondition1"] - 1
 
     def cell(i):
@@ -39,6 +46,11 @@ def client_legality_problems(kind: str, row: list[str]) -> list[str]:
         v = cell(B[p])
         if not is_num(v):
             probs.append(f"c{B[p]} {p}.kind={v!r} 须为数字(无条件填 0;空串=客户端C7050)")
+        elif v not in enums["AbilityPreconditionMasterValue"]:
+            probs.append(
+                f"c{B[p]} {p}.kind={v!r} "
+                "不属于 AbilityPreconditionMasterValue 枚举域"
+            )
     if tmode == "0":
         for name, label in (("instant_trigger", "瞬发触发kind"),
                             ("instant_delay", "延迟"), ("instant_content", "瞬发效果kind")):
@@ -48,21 +60,74 @@ def client_legality_problems(kind: str, row: list[str]) -> list[str]:
         v = cell(B["instant_precontent"])
         if v != "(None)" and not is_num(v):
             probs.append(f"c{B['instant_precontent']} instant_precontent={v!r} 须为 '(None)' 或数字")
+        elif v != "(None)" \
+                and v not in enums["InstantAbilityPrecontentMasterValue"]:
+            probs.append(
+                f"c{B['instant_precontent']} instant_precontent={v!r} "
+                "不属于 InstantAbilityPrecontentMasterValue 枚举域"
+            )
+        trigger_kind = cell(B["instant_trigger"])
+        if is_num(trigger_kind) \
+                and trigger_kind not in enums["InstantAbilityTriggerMasterValue"]:
+            probs.append(
+                f"c{B['instant_trigger']} 瞬发触发kind={trigger_kind!r} "
+                "不属于 InstantAbilityTriggerMasterValue 枚举域"
+            )
+        content_kind = cell(B["instant_content"])
+        if is_num(content_kind) and content_kind not in cases["instant_content"]:
+            probs.append(
+                f"c{B['instant_content']} 瞬发效果kind={content_kind!r} "
+                "不属于 InstantAbilityContentMasterValue 枚举域"
+            )
+        content_case = cases["instant_content"].get(content_kind)
+        if content_case is not None \
+                and "by_each_trigger_puller" in content_case["fields"]:
+            bool_col = (
+                B["instant_content"]
+                + block_offsets["instant_content"]["by_each_trigger_puller"]
+            )
+            bool_value = cell(bool_col)
+            if bool_value.lower() not in ("true", "false"):
+                probs.append(
+                    f"c{bool_col} by_each_trigger_puller={bool_value!r} "
+                    "须为 true/false(否则C7101)"
+                )
     elif tmode == "1":
         v = cell(B["during_accumulation_trigger"])
         if v != "(None)" and not is_num(v):
             probs.append(f"c{B['during_accumulation_trigger']} 累积触发={v!r} 须为 '(None)' 或数字")
+        elif v != "(None)" \
+                and v not in enums["InstantAbilityTriggerMasterValue"]:
+            probs.append(
+                f"c{B['during_accumulation_trigger']} 累积触发={v!r} "
+                "不属于 InstantAbilityTriggerMasterValue 枚举域"
+            )
         v = cell(B["during_trigger"])
         if not is_num(v):
             probs.append(f"c{B['during_trigger']} 持续触发kind={v!r} 须为数字")
+        elif v not in enums["DuringAbilityTriggerMasterValue"]:
+            probs.append(
+                f"c{B['during_trigger']} 持续触发kind={v!r} "
+                "不属于 DuringAbilityTriggerMasterValue 枚举域"
+            )
         v = cell(B["even_if_owner_dead"])
         if v.lower() not in ("true", "false"):
             probs.append(f"c{B['even_if_owner_dead']} even_if_owner_dead={v!r} 须为 true/false(否则C7101)")
         v = cell(B["during_content"])
         if not is_num(v):
             probs.append(f"c{B['during_content']} 持续效果kind={v!r} 须为数字")
+        elif v not in cases["during_content"]:
+            probs.append(
+                f"c{B['during_content']} 持续效果kind={v!r} "
+                "不属于 CommonAbilityContentMasterValue 枚举域"
+            )
     else:
         v = cell(B["opening"])
         if not is_num(v):
             probs.append(f"c{B['opening']} 开幕kind={v!r} 须为数字")
+        elif v not in enums["OpeningAbilityMasterValue"]:
+            probs.append(
+                f"c{B['opening']} 开幕kind={v!r} "
+                "不属于 OpeningAbilityMasterValue 枚举域"
+            )
     return probs

@@ -965,6 +965,272 @@ class _TransactionFixtureMixin:
 
 
 class TestPackPreflight(_TransactionFixtureMixin, unittest.TestCase):
+    @staticmethod
+    def _client_ability_row(kind: str, trigger_mode: str) -> list[str]:
+        import wf_describe
+
+        layout = wf_describe.layout(kind)
+        blocks = {name: int(index) for name, index in layout["blocks"].items()}
+        row = [""] * int(layout["ncols"])
+        row[blocks["precondition1"] - 1] = trigger_mode
+        for name in ("precondition1", "precondition2", "precondition3"):
+            row[blocks[name]] = "0"
+        if trigger_mode == "0":
+            row[blocks["instant_trigger"]] = "0"
+            row[blocks["instant_precontent"]] = "(None)"
+            row[blocks["instant_delay"]] = "0"
+            row[blocks["instant_content"]] = "0"
+        elif trigger_mode == "1":
+            row[blocks["during_accumulation_trigger"]] = "(None)"
+            row[blocks["during_trigger"]] = "0"
+            row[blocks["even_if_owner_dead"]] = "false"
+            row[blocks["during_content"]] = "0"
+        else:
+            row[blocks["opening"]] = "0"
+        return row
+
+    def _add_client_ability_table(
+        self, kind: str, outer_key: str, rows: list[list[str]],
+    ) -> str:
+        import wf_mod_tool as core
+
+        logical_path = {
+            "ability": "master/ability/ability.orderedmap",
+            "leader_ability": "master/ability/leader_ability.orderedmap",
+            "ability_soul": "master/ability/ability_soul.orderedmap",
+            "equipment_enhancement_ability": (
+                "master/equipment_enhancement/"
+                "equipment_enhancement_ability.orderedmap"
+            ),
+            "ex_ability": "master/ex_boost/ex_ability.orderedmap",
+        }[kind]
+        row_text = core.write_csv_lines(rows).encode("utf-8")
+        raw = core.build_orderedmap(core.OrderedMap(
+            logical_path, [outer_key], [row_text], Path("<memory>"),
+        ))
+        add_file(self.package_dir, self.manifest, "common", logical_path, raw)
+        self.manifest["tables"].append({
+            "root": "common",
+            "logical_path": logical_path,
+            "codec_id": "flat",
+            "outer_keys": [outer_key],
+            "inner_keys": [],
+            "semantic_claims": [],
+        })
+        return logical_path
+
+    def test_preflight_rejects_client_illegal_claimed_ability_row(self):
+        self._finish_setup()
+        legal = self._client_ability_row("ability", "1")
+        illegal = self._client_ability_row("ability", "1")
+        illegal[109] = "723"
+        logical_path = self._add_client_ability_table(
+            "ability", "1499953", [legal, legal, legal, illegal],
+        )
+
+        report = self._tx().preflight()
+
+        legality_conflicts = [
+            item for item in report.conflicts
+            if item["kind"] == "client_legality"
+        ]
+        self.assertEqual(
+            [{
+                "kind": "client_legality",
+                "claim": f"{logical_path}:1499953:row4",
+                "reason": (
+                    "c109 持续效果kind='723' 不属于 "
+                    "CommonAbilityContentMasterValue 枚举域"
+                ),
+            }],
+            legality_conflicts,
+        )
+        self.assertFalse(report.can_prepare)
+
+    def test_preflight_scans_all_supported_client_ability_tables(self):
+        import wf_describe
+
+        self._finish_setup()
+        claimed = {
+            "ability_soul": "8000105",
+            "equipment_enhancement_ability": "9000001",
+            "ex_ability": "9000002",
+        }
+        expected_claims = set()
+        for kind, outer_key in claimed.items():
+            row = self._client_ability_row(kind, "1")
+            block = int(wf_describe.layout(kind)["blocks"]["during_content"])
+            row[block] = "723"
+            logical_path = self._add_client_ability_table(
+                kind, outer_key, [row],
+            )
+            expected_claims.add(f"{logical_path}:{outer_key}:row1")
+
+        report = self._tx().preflight()
+
+        legality_conflicts = [
+            item for item in report.conflicts
+            if item["kind"] == "client_legality"
+        ]
+        self.assertEqual(
+            expected_claims,
+            {item["claim"] for item in legality_conflicts},
+        )
+        self.assertEqual(3, len(legality_conflicts))
+        self.assertTrue(all(
+            "不属于 CommonAbilityContentMasterValue 枚举域"
+            in item["reason"]
+            for item in legality_conflicts
+        ))
+        self.assertFalse(report.can_prepare)
+
+    def test_preflight_accepts_legal_rows_for_all_supported_ability_tables(self):
+        self._finish_setup()
+        for index, kind in enumerate((
+            "ability",
+            "leader_ability",
+            "ability_soul",
+            "equipment_enhancement_ability",
+            "ex_ability",
+        ), 1):
+            self._add_client_ability_table(
+                kind, str(9100000 + index),
+                [self._client_ability_row(kind, "1")],
+            )
+
+        report = self._tx().preflight()
+
+        self.assertFalse(any(
+            item["kind"] == "client_legality" for item in report.conflicts
+        ), report.conflicts)
+        self.assertTrue(report.can_prepare)
+
+    def test_preflight_rejects_numeric_but_unknown_trigger_constructor(self):
+        import wf_describe
+
+        self._finish_setup()
+        row = self._client_ability_row("ability", "0")
+        blocks = {
+            name: int(index)
+            for name, index in wf_describe.layout("ability")["blocks"].items()
+        }
+        row[blocks["instant_trigger"]] = "9999"
+        row[blocks["instant_content"]] = "100"
+        logical_path = self._add_client_ability_table(
+            "ability", "1499953", [row],
+        )
+
+        report = self._tx().preflight()
+
+        self.assertIn(
+            {
+                "kind": "client_legality",
+                "claim": f"{logical_path}:1499953:row1",
+                "reason": (
+                    "c27 瞬发触发kind='9999' 不属于 "
+                    "InstantAbilityTriggerMasterValue 枚举域"
+                ),
+            },
+            report.conflicts,
+        )
+        self.assertFalse(report.can_prepare)
+
+    def test_preflight_rejects_unknown_during_accumulation_constructor(self):
+        import wf_describe
+
+        self._finish_setup()
+        row = self._client_ability_row("ability", "1")
+        blocks = {
+            name: int(index)
+            for name, index in wf_describe.layout("ability")["blocks"].items()
+        }
+        row[blocks["during_accumulation_trigger"]] = "9999"
+        logical_path = self._add_client_ability_table(
+            "ability", "1499953", [row],
+        )
+
+        report = self._tx().preflight()
+
+        self.assertIn(
+            {
+                "kind": "client_legality",
+                "claim": f"{logical_path}:1499953:row1",
+                "reason": (
+                    f"c{blocks['during_accumulation_trigger']} "
+                    "累积触发='9999' 不属于 "
+                    "InstantAbilityTriggerMasterValue 枚举域"
+                ),
+            },
+            report.conflicts,
+        )
+        self.assertFalse(report.can_prepare)
+
+    def test_preflight_rejects_raw_outer_codec_for_known_ability_table(self):
+        import wf_mod_tool as core
+
+        self._finish_setup()
+        logical_path = "master/ability/ability.orderedmap"
+        outer_key = "1499953"
+        row = self._client_ability_row("ability", "1")
+        row_bytes = core.write_csv_lines([row]).encode("utf-8")
+        raw = core.build_orderedmap_raw_rows(core.OrderedMap(
+            logical_path, [outer_key], [row_bytes], Path("<memory>"),
+        ))
+        add_file(self.package_dir, self.manifest, "common", logical_path, raw)
+        self.manifest["tables"].append({
+            "root": "common",
+            "logical_path": logical_path,
+            "codec_id": "raw_outer",
+            "outer_keys": [outer_key],
+            "inner_keys": [],
+            "semantic_claims": [],
+        })
+
+        with self.assertRaisesRegex(
+            self.pack.PackPreflightError,
+            "candidate known client ability table .* must use flat codec",
+        ):
+            self._tx().preflight()
+
+    def test_preflight_rejects_client_illegal_claimed_leader_boolean(self):
+        self._finish_setup()
+        row = self._client_ability_row("leader_ability", "0")
+        row[45] = "486"
+        row[70] = ""
+        logical_path = self._add_client_ability_table(
+            "leader_ability", "169997", [row],
+        )
+
+        report = self._tx().preflight()
+
+        legality_conflicts = [
+            item for item in report.conflicts
+            if item["kind"] == "client_legality"
+        ]
+        self.assertEqual(
+            [{
+                "kind": "client_legality",
+                "claim": f"{logical_path}:169997:row1",
+                "reason": "c70 by_each_trigger_puller='' 须为 true/false(否则C7101)",
+            }],
+            legality_conflicts,
+        )
+        self.assertFalse(report.can_prepare)
+
+    def test_preflight_accepts_client_legal_claimed_leader_boolean_false(self):
+        self._finish_setup()
+        row = self._client_ability_row("leader_ability", "0")
+        row[45] = "486"
+        row[70] = "false"
+        self._add_client_ability_table("leader_ability", "169997", [row])
+
+        report = self._tx().preflight()
+
+        self.assertFalse(any(
+            item["kind"] == "client_legality" for item in report.conflicts
+        ), report.conflicts)
+        self.assertTrue(report.can_prepare)
+
     def test_canonical_character_claim_requires_matching_speech_claim(self):
         self._finish_setup()
         logical_path = "master/character/character.orderedmap"
