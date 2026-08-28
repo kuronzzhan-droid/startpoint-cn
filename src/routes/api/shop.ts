@@ -1,20 +1,23 @@
 // Handles the insertion of mana into characters.
 
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { getDb } from "../../data/db";
-import { addPlayerShopPurchaseSync, getPlayerShopPurchaseCountSync, getPlayerShopPurchasesMapSync } from "../../data/domains/shopPurchase"
+import { getPlayerShopPurchasesMapSync } from "../../data/domains/shopPurchase"
 import { getAccountPlayers } from "../../data/domains/account"
-import { getPlayerEquipmentSync, playerOwnsEquipmentSync, updatePlayerEquipmentSync } from "../../data/domains/equipment"
-import { getPlayerItemSync, updatePlayerItemSync } from "../../data/domains/item"
+import { getPlayerEquipmentSync, playerOwnsEquipmentSync } from "../../data/domains/equipment"
 import { getPlayerSync, updatePlayerSync } from "../../data/domains/player"
 import { getSession } from "../../data/domains/session"
 import { resolvePlayerIdSync } from "../../data/activeAccount";
 import { getBossCoinShopItemsSync, getConfigSync, getEventShopItemsSync, getGenericShopItemsSync, getShopItemSync } from "../../lib/assets";
-import { CharacterReward, CharacterShopItemReward, CurrencyReward, CurrencyShopItemReward, EquipmentItemReward, EquipmentItemShopItemReward, Reward, RewardType, ShopItem, ShopItemRewardType, ShopItems, ShopItemUserCostType, ShopType } from "../../lib/types";
+import { ShopItem, ShopItems, ShopType } from "../../lib/types";
 import { generateDataHeaders, getServerDate, getServerTime, realToVirtual } from "../../utils";
-import { givePlayerRewardsSync } from "../../lib/quest";
 import { computeRealTimeStamina } from "../../lib/stamina";
-import { clientSerializeEquipment } from "../../lib/equipment";
+import { getPlayerDegreeIdsSync } from "../../data/domains/degree";
+import {
+    executeShopPurchasesSync,
+    getShopItemStockQuantity,
+    isShopItemAvailable,
+    ShopPurchaseValidationError,
+} from "../../lib/shop-purchase";
 import CDN_GENERAL_SHOP_WHITELIST from "../../../assets/cdn_general_shop_whitelist.json";
 
 const GENERAL_SHOP_CDN_KEYS: Set<number> = new Set(CDN_GENERAL_SHOP_WHITELIST);
@@ -131,302 +134,78 @@ interface BulkBuyBody {
     viewer_id: number
 }
 
-class BulkBuyValidationError extends Error {}
-
-function consolidateBulkRewards(rewards: Reward[]): Reward[] {
-    const consolidated: Reward[] = []
-    const rewardIndexes = new Map<string, number>()
-
-    for (const reward of rewards) {
-        let key: string | null = null
-        let count: number | null = null
-
-        switch (reward.type) {
-            case RewardType.ITEM:
-            case RewardType.EQUIPMENT: {
-                const itemReward = reward as EquipmentItemReward
-                key = `${reward.type}:${itemReward.id}`
-                count = itemReward.count
-                break
-            }
-            case RewardType.BEADS:
-            case RewardType.MANA:
-            case RewardType.EXP:
-                key = `${reward.type}`
-                count = (reward as CurrencyReward).count
-                break
-        }
-
-        if (key === null || count === null) {
-            consolidated.push(reward)
-            continue
-        }
-
-        const existingIndex = rewardIndexes.get(key)
-        if (existingIndex === undefined) {
-            rewardIndexes.set(key, consolidated.length)
-            consolidated.push({ ...reward })
-            continue
-        }
-
-        const existing = consolidated[existingIndex] as EquipmentItemReward | CurrencyReward
-        const combinedCount = existing.count + count
-        if (!Number.isSafeInteger(combinedCount)) {
-            throw new BulkBuyValidationError("Bulk purchase reward count is invalid.")
-        }
-        existing.count = combinedCount
-    }
-
-    return consolidated
-}
-
 const routes = async (fastify: FastifyInstance) => {
     fastify.post("/buy", async (request: FastifyRequest, reply: FastifyReply) => {
-        const body = request.body as BuyBody
+        const body = (request.body ?? {}) as Partial<BuyBody>
 
         const viewerId = body.viewer_id
         const shopType = body.shop_type
         const rawPurchaseAmount = body.number
         const shopItemId = body.shop_item_id
-        if (isNaN(viewerId) || isNaN(shopType) || isNaN(rawPurchaseAmount) || isNaN(shopItemId)) return reply.status(400).send({
+        if (!Number.isSafeInteger(viewerId) || viewerId! <= 0
+            || !Number.isSafeInteger(shopType)
+            || !Number.isSafeInteger(rawPurchaseAmount) || rawPurchaseAmount! <= 0
+            || !Number.isSafeInteger(shopItemId) || shopItemId! <= 0) return reply.status(400).send({
             "error": "Bad Request",
             "message": "Invalid request body."
         })
 
-        const purchaseAmount = Math.max(1, rawPurchaseAmount)
+        const purchaseAmount = rawPurchaseAmount!
 
-        const viewerIdSession = await getSession(viewerId.toString())
+        const viewerIdSession = await getSession(viewerId!.toString())
         if (!viewerIdSession) return reply.status(400).send({
             "error": "Bad Request",
             "message": "Invalid viewer id."
         })
 
         // get player
-        const playerId = resolvePlayerIdSync(viewerIdSession.accountId)!
-        const player = playerId !== null ? getPlayerSync(playerId) : null
+        const playerId = resolvePlayerIdSync(viewerIdSession.accountId)
 
-        if (player === null) return reply.status(500).send({
+        if (playerId === null) return reply.status(500).send({
             "error": "Internal Server Error",
             "message": "No players bound to account."
         })
 
-        // get the shop item's data
-        const shopItemData = getShopItemSync(shopType, shopItemId)
-        if (shopItemData === null) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "Shop item with specified id does not exist."
-        })
-
-        // validate stock limit
-        if (shopItemData.stock !== undefined && shopItemData.stock > 0) {
-            const purchased = getPlayerShopPurchaseCountSync(playerId, shopItemId)
-            if (purchased + purchaseAmount > shopItemData.stock) {
+        let atomicResult
+        try {
+            atomicResult = executeShopPurchasesSync({
+                playerId,
+                shopType: shopType!,
+                purchases: [{ shopItemId: shopItemId!, count: purchaseAmount }],
+                resolveShopItem: getShopItemSync,
+                now: getServerDate(),
+            })
+        } catch (error) {
+            if (error instanceof ShopPurchaseValidationError) {
                 return reply.status(400).send({
                     "error": "Bad Request",
-                    "message": "Shop item purchase limit reached."
+                    "message": error.message,
                 })
             }
-        }
-
-        console.log(`[shop:buy] player=${playerId} shopType=${shopType} item=${shopItemId} x${purchaseAmount} before freeMana=${player.freeMana} freeVmoney=${player.freeVmoney}`)
-
-        // keep track of various stats
-        const itemList: Record<string, number> = {}
-        let freeVmoney = player.freeVmoney
-        let freeMana = player.freeMana
-        let bondTokens = player.bondToken
-
-        // verify user costs
-        const userCost = shopItemData.userCost
-        if (userCost !== undefined) {
-            switch (userCost.type) {
-                case ShopItemUserCostType.MANA:
-                    freeMana -= (userCost.amount * purchaseAmount)
-                    break;
-                case ShopItemUserCostType.BEADS:
-                    freeVmoney -= (userCost.amount * purchaseAmount)
-                    break;
-                case ShopItemUserCostType.AMITY_SCROLL:
-                    bondTokens -= (userCost.amount * purchaseAmount)
-            }
-
-            if (0 > freeVmoney) return reply.status(400).send({
-                "error": "Bad Request",
-                "message": `Not enough beads to purchase shop item.`
-            })
-            if (0 > freeMana) return reply.status(400).send({
-                "error": "Bad Request",
-                "message": `Not enough mana to purchase shop item.`
-            })
-            if (0 > bondTokens) return reply.status(400).send({
-                "error": "Bad Request",
-                "message": `Not enough amity scrolls to purchase shop item.`
+            request.log.error(error, "atomic shop purchase failed")
+            return reply.status(500).send({
+                "error": "Internal Server Error",
+                "message": "Shop purchase failed.",
             })
         }
-
-        // verify cost items
-        {
-            for (const cost of shopItemData.costs) {
-                const itemId = cost.id
-                const itemAmount = getPlayerItemSync(playerId, itemId) ?? 0
-                const newItemAmount = itemAmount - (cost.amount * purchaseAmount)
-                if (0 > newItemAmount) return reply.status(400).send({
-                    "error": "Bad Request",
-                    "message": `Not enough of item with id ${itemId} to purchase shop item.`
-                })
-
-                itemList[itemId] = newItemAmount
-            }
-
-            // deduct cost item
-            for (const [itemId, newAmount] of Object.entries(itemList)) {
-                updatePlayerItemSync(playerId, itemId, newAmount)
-            }
-        }
-
-        // update player
-        updatePlayerSync({
-            id: playerId,
-            freeMana: freeMana,
-            freeVmoney: freeVmoney,
-            bondToken: bondTokens
-        })
-
-        // Equipment enhancement shop: update equipment enhancement level
-        if (shopType === ShopType.TREASURE_EQUIPMENT) {
-            const equipmentId = shopItemData.equipmentId
-            const targetLevel = shopItemData.enhancementMaxLevel
-            if (equipmentId === undefined || targetLevel === undefined) return reply.status(400).send({
-                "error": "Bad Request",
-                "message": "Enhancement item missing equipment_id or target level."
-            })
-
-            const currentEquipment = getPlayerEquipmentSync(playerId, equipmentId)
-            if (currentEquipment === null) return reply.status(400).send({
-                "error": "Bad Request",
-                "message": "Player does not own the target equipment."
-            })
-
-            // Update to target enhancement level
-            const newLevel = Math.max(currentEquipment.enhancementLevel, targetLevel)
-            updatePlayerEquipmentSync(playerId, equipmentId, { enhancementLevel: newLevel })
-            currentEquipment.enhancementLevel = newLevel
-
-            // Record purchase
-            for (let i = 0; i < purchaseAmount; i++) {
-                addPlayerShopPurchaseSync(playerId, shopItemId)
-            }
-
-            reply.header("content-type", "application/x-msgpack")
-            return reply.status(200).send({
-                "data_headers": generateDataHeaders({
-                    viewer_id: viewerId
-                }),
-                "data": {
-                    "user_info": {
-                        "free_vmoney": freeVmoney,
-                        "free_mana": freeMana,
-                        "bond_token": bondTokens
-                    },
-                    "character_list": [],
-                    "equipment_list": [clientSerializeEquipment(equipmentId, currentEquipment)],
-                    "item_list": itemList,
-                    "mail_arrived": false
-                }
-            })
-        }
-
-        // build rewards array
-        const rewards: Reward[] = []
-        for (const reward of shopItemData.rewards) {
-            switch (reward.type) {
-                case ShopItemRewardType.ITEM: {
-                    const shopReward = reward as EquipmentItemShopItemReward
-                    rewards.push({
-                        name: "",
-                        type: RewardType.ITEM,
-                        id: shopReward.id,
-                        count: shopReward.count * purchaseAmount
-                    } as EquipmentItemReward)
-                    break;
-                }
-                case ShopItemRewardType.EXP: {
-                    const shopReward = reward as CurrencyShopItemReward
-                    rewards.push({
-                        name: "",
-                        type: RewardType.EXP,
-                        count: shopReward.count * purchaseAmount
-                    } as CurrencyReward)
-                    break;
-                }
-                case ShopItemRewardType.MANA:{
-                    const shopReward = reward as CurrencyShopItemReward
-                    rewards.push({
-                        name: "",
-                        type: RewardType.MANA,
-                        count: shopReward.count * purchaseAmount
-                    } as CurrencyReward)
-                    break;
-                }
-                case ShopItemRewardType.CHARACTER: {
-                    const shopReward = reward as CharacterShopItemReward
-                    for (let i = 0; i < purchaseAmount; i++) {
-                        rewards.push({
-                            name: "",
-                            type: RewardType.CHARACTER,
-                            id: shopReward.id
-                        } as CharacterReward)
-                    }
-                    break;
-                }
-                case ShopItemRewardType.EQUIPMENT: {
-                    const shopReward = reward as EquipmentItemShopItemReward
-                    rewards.push({
-                        name: "",
-                        type: RewardType.EQUIPMENT,
-                        id: shopReward.id,
-                        count: shopReward.count * purchaseAmount
-                    } as EquipmentItemReward)
-                    break;
-                }
-
-            }
-        }
-        // give rewards
-        const rewardResult = givePlayerRewardsSync(playerId, rewards)
-
-        // record purchase for stock tracking
-        for (let i = 0; i < purchaseAmount; i++) {
-            addPlayerShopPurchaseSync(playerId, shopItemId)
-        }
-
-        // verify DB write
-        const afterPlayer = getPlayerSync(playerId)!
-        console.log(`[shop:buy] after DB freeMana=${afterPlayer.freeMana} freeVmoney=${afterPlayer.freeVmoney} rewardItems=${JSON.stringify(rewardResult?.items ?? {})}`)
-
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
-            "data_headers": generateDataHeaders({
-                viewer_id: viewerId
-            }),
+                    "data_headers": generateDataHeaders({ viewer_id: viewerId! }),
             "data": {
                 "user_info": {
-                    "free_vmoney": freeVmoney + (rewardResult?.user_info.free_vmoney ?? 0),
-                    "free_mana": freeMana + (rewardResult?.user_info.free_mana ?? 0),
-                    "bond_token": bondTokens,
-                    "exp_pool": player.expPool + (rewardResult?.user_info.exp_pool ?? 0),
+                    "free_vmoney": atomicResult.freeVmoney,
+                    "free_mana": atomicResult.freeMana,
+                    "bond_token": atomicResult.bondTokens,
+                    "exp_pool": atomicResult.expPool,
                 },
-                "character_list": rewardResult?.character_list ?? [],
-                "equipment_list": rewardResult?.equipment_list ?? [],
-                "item_list": {
-                    ...itemList,
-                    ...(rewardResult?.items ?? {})
-                },
-                "mail_arrived": false
+                "character_list": atomicResult.characterList,
+                "equipment_list": atomicResult.equipmentList,
+                "item_list": atomicResult.itemList,
+                "mail_arrived": false,
             }
         })
-    })
 
+    })
     fastify.post("/get_sales_list", async (request: FastifyRequest, reply: FastifyReply) => {
         const body = request.body as GetSalesListBody
 
@@ -487,6 +266,7 @@ const routes = async (fastify: FastifyInstance) => {
 
         // Load purchase history for stock tracking
         const purchasedMap = getPlayerShopPurchasesMapSync(playerId)
+        const ownedDegrees = new Set(getPlayerDegreeIdsSync(playerId))
         const totalPurchased = Object.values(purchasedMap).reduce((a, b) => a + b, 0)
         console.log(`[shop:get_sales] player=${playerId} purchasedKeys=${Object.keys(purchasedMap).length} totalPurchased=${totalPurchased}`)
 
@@ -513,15 +293,7 @@ const routes = async (fastify: FastifyInstance) => {
 
                 // Date filtering: only show items active at current server time
                 {
-                    const now = getServerDate()
-                    if (item.availableFrom) {
-                        const fromStr = item.availableFrom.replace(' ', 'T') + 'Z'
-                        if (new Date(fromStr) > now) continue
-                    }
-                    if (item.availableUntil) {
-                        const untilStr = item.availableUntil.replace(' ', 'T') + 'Z'
-                        if (new Date(untilStr) < now) continue
-                    }
+                    if (!isShopItemAvailable(item, getServerDate())) continue
                 }
 
                 if (shopTypeNum === ShopType.TREASURE_EQUIPMENT) {
@@ -531,8 +303,7 @@ const routes = async (fastify: FastifyInstance) => {
                 }
 
                 const purchased = purchasedMap[Number(itemId)] ?? 0
-                const stock = item.stock
-                const stockQuantity = stock !== undefined ? Math.max(0, stock - purchased) : -1
+                const stockQuantity = getShopItemStockQuantity(item, purchased, ownedDegrees)
                 salesList.push({
                     "shop_item_id": Number(itemId),
                     "stock_quantity": stockQuantity,
@@ -706,164 +477,14 @@ const routes = async (fastify: FastifyInstance) => {
             "error": "Internal Server Error", "message": "No players bound to account."
         })
 
-        const player = getPlayerSync(playerId)
-        if (player === null) return reply.status(500).send({
-            "error": "Internal Server Error", "message": "Player not found."
-        })
-
         try {
-            const result = getDb().transaction(() => {
-                let freeVmoney = player.freeVmoney
-                let freeMana = player.freeMana
-                let bondTokens = player.bondToken
-                const itemList = new Map<number, number>()
-                const rewards: Reward[] = []
-                const now = getServerDate()
-
-                for (const { shopItemId, count } of purchases) {
-                    const shopItemData = getShopItemSync(shopType, shopItemId)
-                    if (shopItemData === null) {
-                        throw new BulkBuyValidationError(`Shop item with id ${shopItemId} does not exist.`)
-                    }
-
-                    if (shopItemData.availableFrom) {
-                        const availableFrom = new Date(shopItemData.availableFrom.replace(" ", "T") + "Z")
-                        if (availableFrom > now) {
-                            throw new BulkBuyValidationError(`Shop item with id ${shopItemId} is not currently available.`)
-                        }
-                    }
-                    if (shopItemData.availableUntil) {
-                        const availableUntil = new Date(shopItemData.availableUntil.replace(" ", "T") + "Z")
-                        if (availableUntil < now) {
-                            throw new BulkBuyValidationError(`Shop item with id ${shopItemId} is not currently available.`)
-                        }
-                    }
-
-                    if (shopItemData.stock !== undefined && shopItemData.stock >= 0) {
-                        const purchased = getPlayerShopPurchaseCountSync(playerId, shopItemId)
-                        if (purchased + count > shopItemData.stock) {
-                            throw new BulkBuyValidationError(`Shop item with id ${shopItemId} purchase limit reached.`)
-                        }
-                    }
-
-                    const userCost = shopItemData.userCost
-                    if (userCost !== undefined) {
-                        const totalCost = userCost.amount * count
-                        if (!Number.isSafeInteger(totalCost)) {
-                            throw new BulkBuyValidationError(`Invalid user cost for shop item ${shopItemId}.`)
-                        }
-                        switch (userCost.type) {
-                            case ShopItemUserCostType.MANA:
-                                freeMana -= totalCost
-                                if (freeMana < 0) throw new BulkBuyValidationError("Not enough mana to purchase shop items.")
-                                break
-                            case ShopItemUserCostType.BEADS:
-                                freeVmoney -= totalCost
-                                if (freeVmoney < 0) throw new BulkBuyValidationError("Not enough beads to purchase shop items.")
-                                break
-                            case ShopItemUserCostType.AMITY_SCROLL:
-                                bondTokens -= totalCost
-                                if (bondTokens < 0) throw new BulkBuyValidationError("Not enough amity scrolls to purchase shop items.")
-                                break
-                        }
-                    }
-
-                    for (const cost of shopItemData.costs) {
-                        const totalCost = cost.amount * count
-                        if (!Number.isSafeInteger(totalCost)) {
-                            throw new BulkBuyValidationError(`Invalid item cost for shop item ${shopItemId}.`)
-                        }
-                        const currentAmount = itemList.has(cost.id)
-                            ? itemList.get(cost.id)!
-                            : (getPlayerItemSync(playerId, cost.id) ?? 0)
-                        const newAmount = currentAmount - totalCost
-                        if (newAmount < 0) {
-                            throw new BulkBuyValidationError(`Not enough of item with id ${cost.id} to purchase shop items.`)
-                        }
-                        itemList.set(cost.id, newAmount)
-                    }
-
-                    for (const reward of shopItemData.rewards) {
-                        switch (reward.type) {
-                            case ShopItemRewardType.ITEM: {
-                                const shopReward = reward as EquipmentItemShopItemReward
-                                rewards.push({
-                                    name: "",
-                                    type: RewardType.ITEM,
-                                    id: shopReward.id,
-                                    count: shopReward.count * count
-                                } as EquipmentItemReward)
-                                break
-                            }
-                            case ShopItemRewardType.EXP: {
-                                const shopReward = reward as CurrencyShopItemReward
-                                rewards.push({
-                                    name: "",
-                                    type: RewardType.EXP,
-                                    count: shopReward.count * count
-                                } as CurrencyReward)
-                                break
-                            }
-                            case ShopItemRewardType.MANA: {
-                                const shopReward = reward as CurrencyShopItemReward
-                                rewards.push({
-                                    name: "",
-                                    type: RewardType.MANA,
-                                    count: shopReward.count * count
-                                } as CurrencyReward)
-                                break
-                            }
-                            case ShopItemRewardType.CHARACTER: {
-                                const shopReward = reward as CharacterShopItemReward
-                                for (let i = 0; i < count; i++) {
-                                    rewards.push({
-                                        name: "",
-                                        type: RewardType.CHARACTER,
-                                        id: shopReward.id
-                                    } as CharacterReward)
-                                }
-                                break
-                            }
-                            case ShopItemRewardType.EQUIPMENT: {
-                                const shopReward = reward as EquipmentItemShopItemReward
-                                rewards.push({
-                                    name: "",
-                                    type: RewardType.EQUIPMENT,
-                                    id: shopReward.id,
-                                    count: shopReward.count * count
-                                } as EquipmentItemReward)
-                                break
-                            }
-                        }
-                    }
-                }
-
-                for (const [itemId, amount] of itemList) {
-                    updatePlayerItemSync(playerId, itemId, amount)
-                }
-                updatePlayerSync({
-                    id: playerId,
-                    freeMana,
-                    freeVmoney,
-                    bondToken: bondTokens
-                })
-
-                const rewardResult = givePlayerRewardsSync(playerId, consolidateBulkRewards(rewards))
-                for (const { shopItemId, count } of purchases) {
-                    for (let i = 0; i < count; i++) {
-                        addPlayerShopPurchaseSync(playerId, shopItemId)
-                    }
-                }
-
-                return {
-                    freeMana,
-                    freeVmoney,
-                    bondTokens,
-                    itemList: Object.fromEntries(itemList),
-                    rewardResult
-                }
-            })()
-
+            const atomicResult = executeShopPurchasesSync({
+                playerId,
+                shopType,
+                purchases,
+                resolveShopItem: getShopItemSync,
+                now: getServerDate(),
+            })
             const totalPurchaseCount = purchases.reduce((sum, purchase) => sum + purchase.count, 0)
             console.log(`[shop:bulk_buy] player=${playerId} shopType=${shopType} itemKinds=${purchases.length} units=${totalPurchaseCount}`)
 
@@ -872,27 +493,25 @@ const routes = async (fastify: FastifyInstance) => {
                 "data_headers": generateDataHeaders({ viewer_id: viewerId }),
                 "data": {
                     "user_info": {
-                        "free_vmoney": result.freeVmoney + (result.rewardResult?.user_info.free_vmoney ?? 0),
-                        "free_mana": result.freeMana + (result.rewardResult?.user_info.free_mana ?? 0),
-                        "bond_token": result.bondTokens,
-                        "exp_pool": player.expPool + (result.rewardResult?.user_info.exp_pool ?? 0)
+                        "free_vmoney": atomicResult.freeVmoney,
+                        "free_mana": atomicResult.freeMana,
+                        "bond_token": atomicResult.bondTokens,
+                        "exp_pool": atomicResult.expPool,
                     },
-                    "character_list": result.rewardResult?.character_list ?? [],
-                    "equipment_list": result.rewardResult?.equipment_list ?? [],
-                    "item_list": {
-                        ...result.itemList,
-                        ...(result.rewardResult?.items ?? {})
-                    },
-                    "mail_arrived": false
-                }
+                    "character_list": atomicResult.characterList,
+                    "equipment_list": atomicResult.equipmentList,
+                    "item_list": atomicResult.itemList,
+                    "mail_arrived": false,
+                },
             })
+
         } catch (error) {
-            if (error instanceof BulkBuyValidationError) {
+            if (error instanceof ShopPurchaseValidationError) {
                 return reply.status(400).send({
                     "error": "Bad Request", "message": error.message
                 })
             }
-            console.error("[shop:bulk_buy] transaction failed", error)
+            request.log.error(error, "atomic bulk shop purchase failed")
             return reply.status(500).send({
                 "error": "Internal Server Error", "message": "Bulk purchase failed."
             })

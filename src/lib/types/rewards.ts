@@ -21,7 +21,8 @@ export enum ShopItemRewardType {
     EXP,
     MANA,
     CHARACTER,
-    EQUIPMENT
+    EQUIPMENT,
+    DEGREE
 }
 
 
@@ -116,6 +117,13 @@ export interface CurrencyShopItemReward extends ShopItemReward {
 }
 
 
+export interface DegreeShopItemReward extends ShopItemReward {
+    type: ShopItemRewardType.DEGREE
+    id: number
+    count: 1
+}
+
+
 export interface PlayerRewardResult {
     user_info: {
         free_mana: number
@@ -140,4 +148,3 @@ export interface GivePlayerScoreRewardsResult extends PlayerRewardResult {
     drop_score_reward_ids: DropScoreRewardId[]
     drop_rare_reward_ids: DropScoreRewardId[]
 }
-
