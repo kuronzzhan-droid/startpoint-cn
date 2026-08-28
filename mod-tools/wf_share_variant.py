@@ -3,7 +3,7 @@
 """对外分享包变体构建器:同一批内容产出 full / content-only 两个变体。
 
 - **full**:我们自服的完整终态(含平衡总包、白虎重做、敌人血量上调等个人增强)。
-- **content-only**:同样的三自制角色 + 15 把深渊武器 + 700099 随机塔模式,
+- **content-only**:同样的 Rank P5b 四 boss + 15 把深渊武器 + 700099 随机塔模式,
   但所有官方行回滚为官方原值,被改写的官方资产文件不下发。
   规则与实现见 wf_enhancement_policy.py。
 
@@ -46,6 +46,9 @@ from wf_enhancement_policy import (  # noqa: E402
     CLIENT_ROOTS, EXPECTED_CONTENT_ROWS, BaselineUnavailable, EntrySource,
     OfficialBaseline, Policy, bump_version, chain_sources, member_name,
     plan_content_only, sha256, verify_content_only, vkey,
+)
+from wf_pending_overlay import (  # noqa: E402
+    PendingOverlay, PendingOverlayError, load_pending_overlay, merge_pending_overlay,
 )
 
 VARIANTS = ("full", "content-only")
@@ -96,13 +99,15 @@ full 与 content-only 是同一批内容的两个版本,**二选一**。两者 z
 
 VARIANT_DESC = {
     "full": (
-        "我们自服的完整终态: 三自制角色(129999/139999/149999)、15 把深渊武器\n"
+        "我们自服的完整终态: Rank P5b 四 boss(169994/169980/179981/169995)、\n"
+        "历史自制内容与 15 把深渊武器\n"
         "(8000101-8000115)、700099 随机塔模式,**外加**我们自服的个人增强——\n"
         "全角色平衡总包(ability/leader_ability/character_status/ability_soul)、\n"
         "白虎(角色 10)专项重做、官方 boss 血量上调等。想要原汁原味官方数值的,\n"
         "请改用 content-only 变体。"),
     "content-only": (
-        "纯内容变体: 三自制角色(129999/139999/149999)、15 把深渊武器\n"
+        "纯内容变体: Rank P5b 四 boss(169994/169980/179981/169995)、\n"
+        "历史自制内容与 15 把深渊武器\n"
         "(8000101-8000115)、700099 随机塔模式。**不含任何个人增强**——所有官方\n"
         "行都已按官方 CDN 原值重建(含白虎/平衡总包/敌人血量),被我们改过的官方\n"
         "资产文件不下发,你的官方数值不会被动。"),
@@ -133,6 +138,27 @@ class PlannedPart:
 
 class VariantError(RuntimeError):
     """构建前置条件不满足(锚定冲突/输出目录违规等)。"""
+
+
+def _load_pending_overlay(
+    manifest_path: Path,
+    *,
+    source_chain_tail: str,
+    store_root: Path | None = None,
+    pending_path: Path | None = None,
+) -> PendingOverlay:
+    try:
+        return load_pending_overlay(
+            manifest_path, source_chain_tail=source_chain_tail,
+            store_root=store_root, pending_path=pending_path)
+    except PendingOverlayError as exc:
+        raise VariantError(str(exc)) from exc
+
+
+def _merge_pending_overlay(
+    chain: Sequence[EntrySource], overlay: PendingOverlay,
+) -> list[EntrySource]:
+    return merge_pending_overlay(chain, overlay)
 
 
 # ------------------------------------------------------------------ 计划
@@ -261,6 +287,7 @@ def build_requires(
     outputs: list[dict], restart: tuple[bool, list[str]], *,
     min_server: str | None, server_features: Sequence[str],
     client_patches: Sequence[str], official_tail: str,
+    pending_overlay: dict | None = None,
 ) -> dict:
     content_only = variant == "content-only"
     requires = {
@@ -303,6 +330,12 @@ def build_requires(
         requires["requires"]["serverDataNote"] = (
             "角色类内容的服务端派生表(assets/character.json 等)不在本包内;"
             "收方服务端需同步拉新(重启)或用 mod-admin 热载")
+    if pending_overlay is not None:
+        requires.update({
+            "sourceChainTail": chain_meta["tail"],
+            "unpublishedOverlay": True,
+            "pendingOverlay": pending_overlay,
+        })
     return requires
 
 
@@ -319,6 +352,11 @@ def render_readme(variant: str, chain_meta: dict, anchor: tuple[str, str],
         lines.append(f"- 需要的服务端功能: {', '.join(block['serverFeatures'])}")
     if block["clientPatches"]:
         lines.append(f"- 需要的客户端补丁: {', '.join(block['clientPatches'])}")
+    if requires.get("unpublishedOverlay"):
+        lines.append(
+            "- 数据来源含冻结未发布 overlay；清单已校验，但这不是发布回执，"
+            "也不表示发包方 CDN 已发布这些字节；以后这些内容形成正式发布边时，"
+            "不得再叠加或重复应用同内容边")
     if len(lines) == 1 and not block["serverRestart"]:
         lines.append("- 纯 CDN 内容包,无额外依赖")
     detail = requires["enhancementDetail"]
@@ -355,8 +393,19 @@ def render_readme(variant: str, chain_meta: dict, anchor: tuple[str, str],
 
 # ------------------------------------------------------------------ 主流程
 
-def _check_out_dir(out_dir: Path, cdn_root: Path, repo_root: Path) -> None:
+def _check_out_dir(
+    out_dir: Path,
+    cdn_root: Path,
+    repo_root: Path,
+    *,
+    protected_inputs: Sequence[Path] = (),
+) -> None:
     resolved = out_dir.resolve()
+    forbidden_parts = {part.lower() for part in resolved.parts}
+    if any(part == ".database" or part.startswith(".env")
+           for part in forbidden_parts):
+        raise VariantError(
+            f"拒绝把变体产物写进 .database/.env 禁入路径: {resolved}")
     for forbidden, label in ((cdn_root.resolve(), "CDN 根"),
                              ((repo_root / "assets" / "asset-patch").resolve(),
                               "assets/asset-patch")):
@@ -364,6 +413,13 @@ def _check_out_dir(out_dir: Path, cdn_root: Path, repo_root: Path) -> None:
             raise VariantError(
                 f"拒绝把变体产物写进{label}({resolved});变体只给收方,"
                 "我方自己的链必须零改动")
+    for input_path in protected_inputs:
+        protected = Path(input_path).resolve()
+        if (resolved == protected or resolved in protected.parents
+                or protected in resolved.parents):
+            raise VariantError(
+                f"拒绝让输出目录与 frozen overlay 输入路径重叠: "
+                f"out={resolved}, 输入路径={protected}")
 
 
 def _check_anchor(cdn_root: Path, repo_root: Path, anchor: tuple[str, str],
@@ -410,6 +466,9 @@ def build(
     official_tail: str = policy_mod.OFFICIAL_TAIL,
     foreign_lineage: bool = False,
     expect_content_rows: dict[str, Sequence[str]] | None = EXPECTED_CONTENT_ROWS,
+    pending_overlay_manifest: Path | None = None,
+    pending_overlay_store: Path | None = None,
+    pending_overlay_pending: Path | None = None,
     dry_run: bool = False,
     force: bool = False,
 ) -> dict:
@@ -418,8 +477,22 @@ def build(
     unknown = [name for name in variants if name not in VARIANTS]
     if unknown:
         raise VariantError(f"未知变体: {unknown}")
+    if pending_overlay_manifest is None and (
+        pending_overlay_store is not None or pending_overlay_pending is not None
+    ):
+        raise VariantError(
+            "--pending-overlay-store/--pending-overlay-file 不能绕过 "
+            "--pending-overlay-manifest；本工具不会直接吞当前 pending")
 
     sources, chain_meta = chain_sources(cdn_root, repo_root, since=since)
+    pending_overlay = None
+    if pending_overlay_manifest is not None:
+        pending_overlay = _load_pending_overlay(
+            pending_overlay_manifest,
+            source_chain_tail=chain_meta["tail"],
+            store_root=pending_overlay_store,
+            pending_path=pending_overlay_pending)
+        sources = _merge_pending_overlay(sources, pending_overlay)
     anchor = (anchor_from or chain_meta["since"],
               anchor_to or bump_version(anchor_from or chain_meta["since"]))
     if anchor_from is None and anchor_to is None:
@@ -428,18 +501,28 @@ def build(
                                     foreign_lineage=foreign_lineage)
 
     out_dir = Path(out_dir) if out_dir else WORK_DIR / tag
-    _check_out_dir(out_dir, cdn_root, repo_root)
+    _check_out_dir(
+        out_dir, cdn_root, repo_root,
+        protected_inputs=(pending_overlay.protected_paths
+                          if pending_overlay is not None else ()))
 
     tags = {name: tag + VARIANT_TAG_SUFFIX[name] for name in VARIANTS}
     baseline = None
     if "content-only" in variants:
-        baseline = OfficialBaseline(cdn_root, official_tail=official_tail)
+        baseline = OfficialBaseline(
+            cdn_root, official_tail=official_tail, write_cache=not dry_run)
     policy = Policy()
     max_bytes = (max_zip_mib << 20) if max_zip_mib and max_zip_mib > 0 else (1 << 60)
 
     report = {"tag": tag, "chain": chain_meta, "anchor": {"from": anchor[0], "to": anchor[1]},
               "out_dir": str(out_dir), "dry_run": dry_run, "variants": {},
               "warnings": list(anchor_warnings)}
+    if pending_overlay is not None:
+        report.update({
+            "sourceChainTail": chain_meta["tail"],
+            "unpublishedOverlay": True,
+            "pendingOverlay": pending_overlay.report,
+        })
     for conflict in chain_meta.get("conflicts", ())[:5]:
         report["warnings"].append(f"边内冲突(按后写覆盖先写解决): {conflict}")
 
@@ -461,6 +544,12 @@ def build(
                 for part in parts
             ],
         }
+        if pending_overlay is not None:
+            variant_report.update({
+                "sourceChainTail": chain_meta["tail"],
+                "unpublishedOverlay": True,
+                "pendingOverlay": pending_overlay.report,
+            })
         if dry_run:
             report["variants"][variant] = variant_report
             continue
@@ -498,7 +587,9 @@ def build(
             requires = build_requires(
                 variant, chain_meta, anchor, summary, outputs, restart,
                 min_server=min_server, server_features=server_features,
-                client_patches=client_patches, official_tail=official_tail)
+                client_patches=client_patches, official_tail=official_tail,
+                pending_overlay=(pending_overlay.report
+                                 if pending_overlay is not None else None))
             (staging / "requires.json").write_text(
                 json.dumps(requires, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             (staging / "说明.txt").write_text(
@@ -600,10 +691,17 @@ def main(argv: list[str] | None = None) -> int:
                         help="声明依赖的服务端功能(可重复)")
     parser.add_argument("--client-patch", action="append", default=[],
                         help="声明需要的客户端补丁(可重复)")
+    parser.add_argument("--pending-overlay-manifest", type=Path,
+                        help="冻结未发布 pending 的显式 manifest(只读，不直接吞当前 pending)")
+    parser.add_argument("--pending-overlay-store", type=Path,
+                        help="显式覆盖 manifest 的只读 store 根(测试/离线 staging 用)")
+    parser.add_argument("--pending-overlay-file", type=Path,
+                        help="显式覆盖 manifest 的只读 pending 文件(测试/离线 staging 用)")
     parser.add_argument("--foreign-lineage", action="store_true",
                         help="收方是外血统(版本号空间与我方无关):允许锚定边与我方同名边重名")
     parser.add_argument("--no-content-expectations", action="store_true",
-                        help="不校验「三角色/15 武器/700099 模式行齐全」"
+                        help="不校验「Rank P5b 四 boss/990002/五称号/资深商店/"
+                             "15 武器/700099 模式行齐全」"
                              "(只在故意发局部内容包时用)")
     parser.add_argument("--cdn", help="CDN 根(默认 WF_CDN_DIR 或 <repo>/.cdn/cn)")
     parser.add_argument("--repo-root", help="仓库根(默认按脚本位置)")
@@ -626,6 +724,9 @@ def main(argv: list[str] | None = None) -> int:
             foreign_lineage=args.foreign_lineage,
             expect_content_rows=(None if args.no_content_expectations
                                  else EXPECTED_CONTENT_ROWS),
+            pending_overlay_manifest=args.pending_overlay_manifest,
+            pending_overlay_store=args.pending_overlay_store,
+            pending_overlay_pending=args.pending_overlay_file,
             dry_run=(args.command == "plan"), force=args.force)
     except (VariantError, BaselineUnavailable, ValueError) as exc:
         print(f"[ERR] {exc}", file=sys.stderr)
