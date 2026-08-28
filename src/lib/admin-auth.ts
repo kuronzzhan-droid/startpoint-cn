@@ -12,6 +12,7 @@ const MANAGEMENT_PREFIXES = [
     "/api/lookup",
     "/api/seeds",
     "/api/mod-admin",
+    "/api/rush-leaderboard",
 ] as const;
 const LEGACY_MUTATING_GETS = new Set(["/api/server/resetTime", "/api/server/time"]);
 

@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Card, Statistic, Space, Alert, DatePicker, Button, message, Typography, Row, Col, Divider, Upload, Tag, Popconfirm } from "antd"
-import { TeamOutlined, MailOutlined, ExperimentOutlined, ReloadOutlined, UploadOutlined, DeleteOutlined } from "@ant-design/icons"
+import { TeamOutlined, MailOutlined, ExperimentOutlined, ReloadOutlined, UploadOutlined, DeleteOutlined, TrophyOutlined } from "@ant-design/icons"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
 import type { Dayjs } from "dayjs"
@@ -135,6 +135,7 @@ export default function Dashboard() {
                     <Button icon={<TeamOutlined />} onClick={() => navigate("/accounts")}>账号 / 存档</Button>
                     <Button icon={<MailOutlined />} onClick={() => navigate("/mail")}>邮件群发</Button>
                     <Button icon={<ExperimentOutlined />} onClick={() => navigate("/seeds")}>种子管理</Button>
+                    <Button icon={<TrophyOutlined />} onClick={() => navigate("/rush-leaderboard")}>连战排行榜</Button>
                 </Space>
             </Card>
             <Card title="默认存档" style={{ maxWidth: 720 }}>

@@ -9,6 +9,7 @@ import {
     MenuOutlined,
     BulbOutlined,
     BulbFilled,
+    TrophyOutlined,
 } from "@ant-design/icons"
 import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom"
 import Login from "./pages/Login"
@@ -19,6 +20,7 @@ const Accounts = lazy(() => import("./pages/Accounts"))
 const PlayerDetail = lazy(() => import("./pages/PlayerDetail"))
 const Mail = lazy(() => import("./pages/Mail"))
 const Seeds = lazy(() => import("./pages/Seeds"))
+const RushLeaderboard = lazy(() => import("./pages/RushLeaderboard"))
 
 const { Sider, Content, Header } = Layout
 const { useBreakpoint } = Grid
@@ -27,7 +29,8 @@ const menuItems = [
     { key: "/", icon: <DashboardOutlined />, label: "首页" },
     { key: "/accounts", icon: <TeamOutlined />, label: "账号 / 存档" },
     { key: "/mail", icon: <MailOutlined />, label: "邮件群发" },
-    { key: "/seeds", icon: <ExperimentOutlined />, label: "种子管理" }
+    { key: "/seeds", icon: <ExperimentOutlined />, label: "种子管理" },
+    { key: "/rush-leaderboard", icon: <TrophyOutlined />, label: "连战排行榜" }
 ]
 
 interface AppProps {
@@ -147,6 +150,7 @@ export default function App({ dark, onToggleDark }: AppProps) {
                             <Route path="/players/:playerId" element={<PlayerDetail />} />
                             <Route path="/mail" element={<Mail />} />
                             <Route path="/seeds" element={<Seeds />} />
+                            <Route path="/rush-leaderboard" element={<RushLeaderboard />} />
                             <Route path="*" element={<Navigate to="/" replace />} />
                         </Routes>
                     </Suspense>

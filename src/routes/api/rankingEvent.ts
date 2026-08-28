@@ -8,6 +8,7 @@ import { generateDataHeaders } from "../../utils";
 import { QuestCategory } from "../../lib/types";
 import { PlayerQuestProgress } from "../../data/types";
 import { resolvePlayerIdSync } from "../../data/activeAccount";
+import { buildRushBoardRankingSummary, getRushBoardBinding } from "../../lib/rush-leaderboard-ranking-event";
 
 interface ReceiveRewardBody {
     api_count: number,
@@ -50,6 +51,18 @@ function getRankingSummary(
     playerId: number,
     eventId: number
 ): Object | null {
+    // mod(深渊连战排行榜): 这个活动 id 被绑到了自制的连战竞速榜,就用榜的数据
+    // 填这张摘要 —— 客户端的秒表 UI 原样复用,不改 APK。
+    // 详见 src/lib/rush-leaderboard-ranking-event.ts 顶部的逆向说明。
+    const boardBinding = getRushBoardBinding(eventId)
+    if (boardBinding !== null) {
+        const summary = buildRushBoardRankingSummary(boardBinding, playerId)
+        console.log(`[RUSH-LB] ranking_event summary: event=${eventId} board=${boardBinding.board} `
+            + `player=${playerId} best=${summary.best_record.elapsed_time_ms}ms `
+            + `top=${summary.rank_border_top?.elapsed_time_ms ?? "-"}ms`)
+        return summary
+    }
+
     // get quest
     const questId = rankingEventIdQuestMap[eventId]
     if (questId === undefined) return null;

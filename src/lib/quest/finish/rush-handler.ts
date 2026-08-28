@@ -42,6 +42,7 @@ interface RushHandlerParams {
     getSerializedParties: (playerId: number, eventId: number) => any
     getFolderRewards: (eventId: number, folderId: number) => any[] | null
     giveRewards: (playerId: number, rewards: any[]) => any | null
+    getClearedFolders: (playerId: number, eventId: number) => number[]
 }
 
 export function handleRushEventFinish(params: RushHandlerParams): {
@@ -51,10 +52,12 @@ export function handleRushEventFinish(params: RushHandlerParams): {
     const { questCategory, questData, clearTime, party, playerId, questId,
         getEvoLevels, folderMaxRounds, getRushEvent, updateRushEvent,
         insertParty, insertClearedFolder, deletePartyList,
-        getSerializedParties, getFolderRewards, giveRewards } = params
+        getSerializedParties, getFolderRewards, giveRewards,
+        getClearedFolders } = params
 
     let rushEventData: ReturnRushEvent | null = null
     let rushEventRewardsResult: PlayerRewardResult | null = null
+    let folderAlreadyCleared = false
 
     if (questCategory !== QuestCategory.RUSH_EVENT) {
         return { rushEventData, rushEventRewardsResult }
@@ -119,6 +122,8 @@ export function handleRushEventFinish(params: RushHandlerParams): {
     } else if (rushEventBattleType === RushEventBattleType.FOLDER) {
         const isFolderFinal = rushEventRound >= (folderMaxRounds[rushEventFolderId] ?? 0)
         if (isFolderFinal) {
+            // mod: 通关奖励一次性——插旗前先记录本 folder 是否已通关过
+            folderAlreadyCleared = getClearedFolders(playerId, rushEventId).includes(rushEventFolderId)
             insertClearedFolder(playerId, rushEventId, rushEventFolderId)
             updateRushEvent(playerId, { eventId: rushEventId, activeRushBattleFolderId: null })
             deletePartyList(playerId, rushEventId, rushEventBattleType)
@@ -148,7 +153,9 @@ export function handleRushEventFinish(params: RushHandlerParams): {
         "old_best_elapsed_time_ms": isEndless ? oldBestElapsedTimeMs : null
     }
 
-    if (rushEventBattleType === RushEventBattleType.FOLDER && rushEventRound >= (folderMaxRounds[rushEventFolderId] ?? 0)) {
+    if (rushEventBattleType === RushEventBattleType.FOLDER && rushEventRound >= (folderMaxRounds[rushEventFolderId] ?? 0)
+            && !folderAlreadyCleared) {
+        // mod: 已通关过的 folder 不再发放通关奖励(2026-08-25 防重置刷奖)。
         const rewards = getFolderRewards(rushEventId, rushEventFolderId) ?? []
         rushEventRewardsResult = giveRewards(playerId, rewards)
         // 货币类奖励(BEADS/MANA/EXP)没有 id,读出来是 undefined —— msgpack 会把它

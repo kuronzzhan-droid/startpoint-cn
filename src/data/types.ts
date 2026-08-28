@@ -434,17 +434,34 @@ export interface PlayerRushEventPlayedParty {
 
 export type PlayerRushEventPlayedParties = PlayerRushEventPlayedParty[]
 
+/**
+ * One slot of the three-character party shown on a rush ranking row.
+ *
+ * Both fields are nullable on purpose: the official client keeps the list at a
+ * fixed length of 3 and expects empty slots to be sent as `{character_id: null,
+ * evolution_img_level: null}` (see `party_member_list` below).
+ */
 export interface UserRushEventEndlessBattleMyRankingPartyMemberListItem {
-    character_id: number
-    evolution_img_level: number
+    character_id: number | null
+    evolution_img_level: number | null
 }
 
 export interface UserRushEventEndlessBattleRanking {
-    rank_number: number
+    /**
+     * Rank, 1-based. `null` = rank unknown (client blanks the rank text and
+     * hides the rank flag); `0` = explicitly "out of ranking".
+     */
+    rank_number: number | null
     best_round: number
     elapsed_time_ms: number
     name: string,
+    /**
+     * Always exactly 3 elements. The client sizes its thumbnail array from this
+     * list and only calls `show()` on the first N, so a shorter list leaves the
+     * previous row's avatars visible in the recycled cell.
+     */
     party_member_list: UserRushEventEndlessBattleMyRankingPartyMemberListItem[],
+    /** The player's account level (`RANK169` on the official screen). */
     user_rank: number
 }
 

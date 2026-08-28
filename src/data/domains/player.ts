@@ -381,6 +381,41 @@ export function getPlayerSync(
     return buildPlayer(raw)
 }
 
+/**
+ * 一批存档的 `rank_point`(**批查询**,给按行渲染的榜单用)。
+ *
+ * 存在的理由是排行榜:公告版/富文本榜每一行都要一个「RANK N」,而
+ * {@link getPlayerSync} 一行一次查询、还把三十来列全取回来。500 行的榜
+ * (`BOARD_FETCH_CAP`)照那样查就是 500 次同步 better-sqlite3 调用跑在 async
+ * handler 里,全程占住事件循环。这里一次(或几次分片)就取完,与行数无关。
+ *
+ * 只取 `rank_point` 一列:调用方要的就是 {@link getRankDegree} 的入参。
+ * 要更多列请另写批查询,别把这个函数扩成「批量 getPlayerSync」——
+ * 那会把 `buildPlayer` 的反序列化成本重新加回来。
+ *
+ * @param playerIds 存档 ID(可含重复/非法值,内部会去重并过滤)。
+ * @returns `playerId → rank_point`;查不到的存档**不在**结果里(调用方自己兜底)。
+ */
+export function getPlayersRankPointsSync(
+    playerIds: readonly number[]
+): Map<number, number> {
+    const out = new Map<number, number>()
+    const ids = [...new Set(playerIds)].filter(id => Number.isFinite(id) && id > 0)
+    if (ids.length === 0) return out
+
+    // SQLite 的变量上限是 32766;分片留着是为了「有人把榜的上限调到几千」的那天。
+    const CHUNK = 500
+    const db = getDb()
+    for (let i = 0; i < ids.length; i += CHUNK) {
+        const chunk = ids.slice(i, i + CHUNK)
+        const rows = db.prepare(`
+        SELECT id, rank_point FROM players WHERE id IN (${new Array(chunk.length).fill("?").join(",")})
+        `).all(chunk) as { id: number, rank_point: number | null }[]
+        for (const row of rows) out.set(row.id, Number(row.rank_point ?? 0) || 0)
+    }
+    return out
+}
+
 export function getAllPlayersSync(
     offset: number = 0,
     limit: number = 25

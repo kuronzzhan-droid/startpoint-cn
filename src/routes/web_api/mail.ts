@@ -11,7 +11,7 @@ import equipmentIds from "../../../assets/equipment_ids.json"
 const CDN_CHAR_IDS: Set<number> = new Set(Object.keys(characterData).map(Number))
 const CDN_ITEM_IDS: Set<number> = new Set(itemIds as number[])
 const CDN_EQUIP_IDS: Set<number> = new Set(equipmentIds as number[])
-const VALID_MAIL_TYPES: Set<number> = new Set([1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15])
+const VALID_MAIL_TYPES: Set<number> = new Set([1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15])
 const MAX_INT = 2147483647
 
 interface SendMailBody {
@@ -74,9 +74,13 @@ const routes = async (fastify: FastifyInstance) => {
         const subject = body.subject && body.subject.trim() ? body.subject.trim() : null
         const desc = body.description && body.description.trim() ? body.description.trim() : null
 
-        // types that require type_id: Item(1), Character(5), Equipment(6)
-        if ((mailType === 1 || mailType === 5 || mailType === 6) && (typeId === null || isNaN(typeId))) {
+        // types that require type_id: Item(1), Character(5), Equipment(6), Degree(13)
+        if ((mailType === 1 || mailType === 5 || mailType === 6 || mailType === 13) && (typeId === null || isNaN(typeId))) {
             return fail("此附件类型需要填写附件 ID")
+        }
+        // 称号每封邮件仅可发送 1 个
+        if (mailType === 13 && count !== 1) {
+            return fail("称号每封邮件仅可发送 1 个")
         }
 
         if (isNaN(count) || count < 1) {

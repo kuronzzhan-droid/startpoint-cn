@@ -1,5 +1,6 @@
 import { getDb } from "../data/db"
 import { MailType, RawPlayerMail, getPlayerMailByIdSync, getPlayerMailsByIdsSync, insertReceiveHistorySync, receiveMailSync } from "../data/domains/mail"
+import { grantPlayerDegreeSync } from "../data/domains/degree"
 import { getPlayerItemSync, givePlayerItemSync } from "../data/domains/item"
 import { getPlayerSync, updatePlayerSync } from "../data/domains/player"
 import { givePlayerCharacterSync } from "./character"
@@ -131,6 +132,11 @@ function applyMailReward(playerId: number, mail: RawPlayerMail, rewards: MailRew
             const newRank = player.rankPoint + mail.number
             updatePlayerSync({ id: playerId, rankPoint: newRank })
             userInfo['rank_point'] = newRank
+            break
+        }
+        case MailType.DEGREE: {
+            if (mail.type_id === null) break
+            grantPlayerDegreeSync(playerId, mail.type_id)
             break
         }
     }

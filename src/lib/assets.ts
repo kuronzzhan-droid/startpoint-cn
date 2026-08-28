@@ -173,6 +173,46 @@ export function getRushEventFolderMaxRounds(eventId: number): Record<number, num
     return map;
 }
 
+let rushEventIdsCache: number[] | null = null;
+
+/**
+ * Gets every rush event ID present in assets/rush_event_quest.json.
+ *
+ * @returns An ascending array of rush event IDs.
+ */
+export function getRushEventIds(): number[] {
+    if (rushEventIdsCache === null) {
+        const ids = new Set<number>();
+        for (const quest of Object.values(rushEventQuests as Record<string, any>)) {
+            const eventId = Number(quest?.rushEventId);
+            if (Number.isFinite(eventId)) ids.add(eventId);
+        }
+        rushEventIdsCache = [...ids].sort((left, right) => left - right);
+    }
+    return rushEventIdsCache;
+}
+
+/**
+ * 连战关卡 ID -> 该关是这座塔里的第几战(`rushEventRound`)。
+ *
+ * 全仓的「已出战队伍」表用 **quest id** 当 round 存(`rush-handler.ts` 里
+ * `let round: number = questId`),而客户端排行榜的编队子页把这个键直接渲染成
+ * `rush_event_ranking_party_list_round_number` =「在第::value::回战使用的队伍」。
+ * 不换算的话玩家看到的是「在第700099001回战使用的队伍」。
+ *
+ * 换算的权威来源是这张表自己的 `rushEventRound` 列(700099001 -> 1、
+ * 700099030 -> 30;无尽模式的关卡恒为 0)。
+ *
+ * @param questId 连战关卡 ID。
+ * @returns 第几战;查不到 / 不是连战关卡时返回 null。
+ */
+export function getRushEventQuestRound(questId: string | number): number | null {
+    const quest = (rushEventQuests as Record<string, any>)[String(questId)];
+    if (quest === undefined) return null;
+    const round = Number(quest.rushEventRound);
+    return Number.isFinite(round) ? round : null;
+}
+
 reloadModAssets();
 
 /**

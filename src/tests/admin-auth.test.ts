@@ -27,6 +27,8 @@ async function guardedApp(): Promise<FastifyInstance> {
         child.get("/api/lookup/characters", async () => ({ ok: true }));
         child.get("/api/seeds/stats", async () => ({ ok: true }));
         child.get("/api/mod-admin/ping", async () => ({ ok: true }));
+        child.get("/api/rush-leaderboard/events", async () => ({ ok: true }));
+        child.post("/api/rush-leaderboard/700099/season/rollover", async () => ({ ok: true }));
         child.get("/api/index.php/game/ping", async () => ({ game: true }));
         child.get("/", async () => "legacy-admin");
     });
@@ -82,10 +84,16 @@ test("management routes require auth while game routes remain outside the guard"
             "/api/lookup/characters",
             "/api/seeds/stats",
             "/api/mod-admin/ping",
+            "/api/rush-leaderboard/events",
         ]) {
             assert.equal((await app.inject({ method: "GET", url })).statusCode, 401, url);
         }
         assert.equal((await app.inject({ method: "GET", url: "/" })).statusCode, 401);
+        assert.equal(
+            (await app.inject({ method: "POST", url: "/api/rush-leaderboard/700099/season/rollover" })).statusCode,
+            401,
+            "排行榜换期是写操作,未授权必须挡住",
+        );
         assert.equal(
             (await app.inject({ method: "GET", url: "/api/index.php/game/ping" })).statusCode,
             200,

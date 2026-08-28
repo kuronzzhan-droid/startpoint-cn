@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { deletePlayerActiveQuestSync, getPlayerActiveQuestSync, insertPlayerActiveQuestSync, updatePlayerActiveQuestContinueCountSync } from "../../data/domains/quest_active"
-import { deletePlayerRushEventPlayedPartyListSync, getPlayerRushEventPlayedPartiesSync, getPlayerRushEventSync, insertPlayerRushEventClearedFolderSync, insertPlayerRushEventPlayedPartySync, updatePlayerRushEventSync } from "../../data/domains/rushEvent"
+import { deletePlayerRushEventPlayedPartyListSync, getPlayerRushEventClearedFoldersSync, getPlayerRushEventPlayedPartiesSync, getPlayerRushEventSync, insertPlayerRushEventClearedFolderSync, insertPlayerRushEventPlayedPartySync, updatePlayerRushEventSync } from "../../data/domains/rushEvent"
 import { getPlayerDailyChallengePointListSync, getPlayerSync, updatePlayerDailyChallengePointSync, updatePlayerSync } from "../../data/domains/player"
 import { getPlayerItemSync, givePlayerItemSync, updatePlayerItemSync } from "../../data/domains/item"
 import { getPlayerSingleQuestProgressSync, insertPlayerQuestProgressSync, updatePlayerQuestProgressSync } from "../../data/domains/quest"
@@ -19,6 +19,9 @@ import { computeRealTimeStamina, getRankDegree, getMaxStamina } from "../../lib/
 import { getStaminaCost } from "../../lib/stamina-cost";
 import { handleCarnivalEventFinish } from "../../lib/quest/finish/carnival-handler";
 import { handleRushEventFinish } from "../../lib/quest/finish/rush-handler";
+import { noteRushRoundFinish } from "../../lib/rush-leaderboard-service";
+import { isRushBoardRankingQuest } from "../../lib/rush-leaderboard-ranking-event";
+import { buildRushEndlessCardFields } from "../../lib/rush-endless-card";
 import { handleRoguePerRoundDrops } from "../../lib/quest/finish/rogue-drops";
 import { handleRaidEventFinish } from "../../lib/quest/finish/raid-handler";
 import { calculateClearRank } from "../../lib/quest/finish/quest-calc";
@@ -421,7 +424,58 @@ const routes = async (fastify: FastifyInstance) => {
             getSerializedParties: (pid, eid) => getSerializedPlayerRushEventPlayedPartiesSync(pid, eid),
             getFolderRewards: (eid, fid) => getRushEventFolderClearRewards(eid, fid),
             giveRewards: (pid, r) => givePlayerRewardsSync(pid, r),
+            getClearedFolders: (pid, eid) => getPlayerRushEventClearedFoldersSync(pid, eid),
         })
+
+        // 排行榜:累计这一关的净战斗时间;打完最终关就收榜(见 lib/rush-leaderboard)
+        if (questCategory === QuestCategory.RUSH_EVENT
+            && questData.rushEventId !== undefined
+            && questData.rushEventFolderId !== undefined
+            && questData.rushEventRound !== undefined) {
+            noteRushRoundFinish({
+                playerId,
+                eventId: questData.rushEventId,
+                folderId: questData.rushEventFolderId,
+                round: questData.rushEventRound,
+                accomplished: questAccomplished,
+                elapsedMs: clearTime,
+                characterIds: bodyPartyStatistics.characters.map(val => val?.id ?? null),
+                unisonCharacterIds: bodyPartyStatistics.unison_characters.map(val => val?.id ?? null)
+            })
+        }
+
+        // mod: folder 1 的 master quest_kind 已改成 2,客户端会走原生「无尽战斗」记录卡
+        // 分支去读 high_score / best_elapsed_time_ms 等字段;而服务端仍按 rushEventRound
+        // 判定为 FOLDER 战斗、把这些字段填 null。这里用排行榜的数据补上,让记录卡有内容。
+        // 必须排在 noteRushRoundFinish 之后 —— 记录卡的「本次用时」直接读
+        // active.battleMs(2026-08-28 口径),写在前面就是稳定少算一整关。
+        // 旧口径下这里读的是 Date.now()-startedAtMs,顺序错了误差很小,现在是硬依赖。
+        if (rushEventData !== null
+            && questCategory === QuestCategory.RUSH_EVENT
+            && questData.rushEventId !== undefined
+            && questData.rushEventFolderId !== undefined
+            && questData.rushEventRound !== undefined) {
+            const endlessCard = buildRushEndlessCardFields({
+                playerId,
+                eventId: questData.rushEventId,
+                folderId: questData.rushEventFolderId,
+                round: questData.rushEventRound,
+                totalRounds: derivedFolderMaxRounds[questData.rushEventFolderId] ?? 0,
+                accomplished: questAccomplished
+            })
+            if (endlessCard !== null) {
+                rushEventData.high_score = endlessCard.high_score
+                rushEventData.best_elapsed_time_ms = endlessCard.best_elapsed_time_ms
+                rushEventData.old_best_elapsed_time_ms = endlessCard.old_best_elapsed_time_ms
+                rushEventData.endless_battle_max_round = endlessCard.endless_battle_max_round
+                rushEventData.old_endless_battle_max_round = endlessCard.old_endless_battle_max_round
+                rushEventData.endless_battle_next_round = endlessCard.endless_battle_next_round
+                console.log(`[RUSH-LB] endless card: round=${questData.rushEventRound}`
+                    + ` maxRound=${endlessCard.endless_battle_max_round}`
+                    + ` high=${endlessCard.high_score}ms best=${endlessCard.best_elapsed_time_ms}ms`
+                    + ` oldBest=${endlessCard.old_best_elapsed_time_ms}ms`)
+            }
+        }
 
         // roguelike rush mod: per-round loot drops (assets/rogue_event.json)
         const rogueDrops = handleRoguePerRoundDrops({
@@ -603,6 +657,17 @@ const routes = async (fastify: FastifyInstance) => {
             return reply.status(400).send({
                 "error": "Bad Request",
                 "message": "Quest doesn't exist."
+            })
+        }
+
+        // mod(深渊连战排行榜): 被征用成「榜」的排名活动只能看,不能打 —— 它没有真关卡,
+        // 真开起来是一场没有数据的空战斗。客户端侧关卡行自己的时间窗早过期(2022),
+        // 这里再兜一道,确保就算点进去也只是一句错误提示,不会掉进坏战斗。
+        if (isRushBoardRankingQuest(category, questId)) {
+            console.log(`[RUSH-LB] blocked start of board-only ranking quest: questId=${questId}`)
+            return reply.status(400).send({
+                "error": "Bad Request",
+                "message": "This ranking event is a leaderboard view only."
             })
         }
 

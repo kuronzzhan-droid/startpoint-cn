@@ -6,6 +6,7 @@ import playerApiPlugin from "./player";
 import serverApiPlugin from "./server";
 import mailApiPlugin from "./mail";
 import lookupApiPlugin from "./lookup";
+import rushLeaderboardApiPlugin from "./rushLeaderboard";
 
 
 interface WebApiRouteOptions {
@@ -33,6 +34,7 @@ const routes: FastifyPluginAsync<WebApiRouteOptions> = async (fastify, options) 
     fastify.register(serverApiPlugin, { prefix: "/server" });
     fastify.register(mailApiPlugin, { prefix: "/mail" });
     fastify.register(lookupApiPlugin, { prefix: "/lookup" });
+    fastify.register(rushLeaderboardApiPlugin, { prefix: "/rush-leaderboard" });
 };
 
 export default routes;

@@ -22,6 +22,7 @@
     "build:admin": "npm --prefix admin run build",
     "typecheck:admin": "npm --prefix admin run typecheck",
     "dev:admin": "npm --prefix admin run dev",
+    "rush:settle": "npm run build:server && node scripts/rush-settle.mjs",
     "test:hygiene": "node scripts/run-bash.mjs scripts/tests/test-hygiene.sh",
     "check:hygiene": "node scripts/run-bash.mjs scripts/check-hygiene.sh --all",
     "test:launcher:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/tests/test-start-cn.ps1",

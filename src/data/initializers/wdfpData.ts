@@ -1,5 +1,24 @@
 import { Database } from "better-sqlite3";
 
+/**
+ * 这张表上有没有这一列。
+ *
+ * 加列的**唯一**正确姿势:`CREATE TABLE IF NOT EXISTS` 见到已存在的表会整段跳过,
+ * 所以往 DDL 里加一列只对**全新库**生效;老库(作者本机那一份)必须另走
+ * `ALTER TABLE … ADD COLUMN`。本文件早年的迁移用的是 try/catch 吞
+ * `duplicate column name`,能跑但每次启动都白抛一次异常、也吞掉了真正的错误。
+ * 新增迁移一律先查 pragma。
+ *
+ * @param database 数据库句柄。
+ * @param table 表名(调用方写死字面量,不接受外部输入)。
+ * @param column 列名。
+ * @returns 列已存在则 true。
+ */
+function hasColumn(database: Database, table: string, column: string): boolean {
+    const columns = database.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]
+    return columns.some(entry => entry.name === column)
+}
+
 
 export default function init(
     database: Database,
@@ -525,6 +544,144 @@ export default function init(
         battle_type INTEGER NOT NULL,
         PRIMARY KEY (player_id, event_id, round, battle_type),
         FOREIGN KEY (player_id) REFERENCES players (id) ON DELETE CASCADE
+    )`).run()
+
+    // mod(排行榜): 深渊连战「战斗用时榜 / 当轮首通榜」的记录表。
+    //
+    // 刻意不挂 players 的外键级联:
+    //   1. 存档导入(replacePlayerDataSync)会先 DELETE FROM players 再重插同 id,
+    //      挂了级联就会连带抹掉这个存档的全部历史成绩,与「历史成绩都记」相悖;
+    //   2. wf_rogue_reroll.py 重摇塔时按表名清 players_rush_events* 三张进度表,
+    //      本表不在它的 PROGRESS_TABLES 里,所以重摇不会毁榜。
+    // 代价是删存档会留下孤儿行 —— 因此这里快照一份 player_name,查询时
+    // LEFT JOIN players 取实时名,取不到就回落到快照名。
+    database.prepare(`CREATE TABLE IF NOT EXISTS players_rush_event_runs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        player_id INTEGER NOT NULL,
+        player_name TEXT,
+        event_id INTEGER NOT NULL,
+        folder_id INTEGER NOT NULL,
+        season INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        started_at_ms INTEGER NOT NULL,
+        finished_at_ms INTEGER,
+        ended_at_ms INTEGER,
+        duration_ms INTEGER,
+        battle_ms INTEGER NOT NULL DEFAULT 0,
+        rounds_cleared INTEGER NOT NULL DEFAULT 0,
+        total_rounds INTEGER NOT NULL,
+        tracked_from_round INTEGER NOT NULL DEFAULT 1,
+        character_id_1 INTEGER,
+        character_id_2 INTEGER,
+        character_id_3 INTEGER,
+        unison_character_id_1 INTEGER,
+        unison_character_id_2 INTEGER,
+        unison_character_id_3 INTEGER
+    )`).run()
+
+    database.prepare(`CREATE INDEX IF NOT EXISTS idx_rush_runs_board
+        ON players_rush_event_runs (event_id, folder_id, status, duration_ms)`).run()
+    // 榜的排序键 2026-08-28 从 duration_ms 换成 battle_ms。同名索引不能就地改列:
+    // CREATE INDEX IF NOT EXISTS 见到旧索引就跳过,老库上永远留着 duration_ms 版
+    // (实测 .database/wdfp_data.db 的 sqlite_master 就是旧定义)。所以新建一条新名字的,
+    // 旧的留给后台「全部记录」页按墙钟排查。
+    database.prepare(`CREATE INDEX IF NOT EXISTS idx_rush_runs_board_battle
+        ON players_rush_event_runs (event_id, folder_id, status, battle_ms)`).run()
+    database.prepare(`CREATE INDEX IF NOT EXISTS idx_rush_runs_season
+        ON players_rush_event_runs (event_id, folder_id, season, finished_at_ms)`).run()
+    database.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_rush_runs_active
+        ON players_rush_event_runs (player_id, event_id, folder_id)
+        WHERE status = 'active'`).run()
+
+    // mod(排行榜结算): 每个 (事件, folder) 一条结算配置。
+    // reward_tiers 是 JSON 数组 [{fromRank,toRank,itemId,count,degreeId}]。
+    // itemId 与 degreeId 同时为 null 才是「奖励未配」；只配 degreeId 是合法称号奖。
+    // 未配档仍照常冻结名次和换期，但不发奖，避免误发错道具。
+    database.prepare(`CREATE TABLE IF NOT EXISTS rush_settlement_config (
+        event_id INTEGER NOT NULL,
+        folder_id INTEGER NOT NULL,
+        auto_enabled INTEGER NOT NULL DEFAULT 0,
+        settle_at_ms INTEGER,
+        repeat_interval_ms INTEGER,
+        reward_board TEXT NOT NULL DEFAULT 'full-run',
+        reward_rank_limit INTEGER NOT NULL DEFAULT 10,
+        reward_tiers TEXT NOT NULL,
+        mail_subject TEXT NOT NULL,
+        mail_body TEXT NOT NULL,
+        updated_at_ms INTEGER NOT NULL,
+        exclude_bots INTEGER NOT NULL DEFAULT 1,
+        PRIMARY KEY (event_id, folder_id)
+    )`).run()
+
+    // migration(2026-08-28): 机器人发不发奖的开关。
+    // `CREATE TABLE IF NOT EXISTS` 见到老表就整段跳过 —— 已经跑过一次的库
+    // (作者本机的 .database/wdfp_data.db 就是)永远拿不到新列,所以必须补一条
+    // ALTER。用 pragma 先查而不是 try/catch:列已存在时不该产生一次异常。
+    if (!hasColumn(database, "rush_settlement_config", "exclude_bots")) {
+        database.prepare(
+            `ALTER TABLE rush_settlement_config ADD COLUMN exclude_bots INTEGER NOT NULL DEFAULT 1`
+        ).run()
+    }
+
+    // 结算台账: 一期结算一行。唯一索引保证同一期不会被结算两次。
+    database.prepare(`CREATE TABLE IF NOT EXISTS rush_season_settlements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id INTEGER NOT NULL,
+        folder_id INTEGER NOT NULL,
+        season INTEGER NOT NULL,
+        settled_at_ms INTEGER NOT NULL,
+        source TEXT NOT NULL,
+        next_season INTEGER NOT NULL,
+        full_run_rows INTEGER NOT NULL DEFAULT 0,
+        season_first_rows INTEGER NOT NULL DEFAULT 0,
+        rewarded_count INTEGER NOT NULL DEFAULT 0,
+        mail_count INTEGER NOT NULL DEFAULT 0,
+        note TEXT
+    )`).run()
+
+    database.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_rush_settlement_once
+        ON rush_season_settlements (event_id, folder_id, season)`).run()
+
+    // 冻结的名次快照: 结算那一刻两张榜的完整排名,连同发了什么奖、邮件是哪封。
+    database.prepare(`CREATE TABLE IF NOT EXISTS rush_season_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        settlement_id INTEGER NOT NULL,
+        event_id INTEGER NOT NULL,
+        folder_id INTEGER NOT NULL,
+        season INTEGER NOT NULL,
+        board TEXT NOT NULL,
+        rank INTEGER NOT NULL,
+        player_id INTEGER NOT NULL,
+        player_name TEXT,
+        run_id INTEGER,
+        duration_ms INTEGER,
+        battle_ms INTEGER,
+        rounds_cleared INTEGER,
+        finished_at_ms INTEGER,
+        reward_item_id INTEGER,
+        reward_count INTEGER,
+        mail_id INTEGER,
+        skip_reason TEXT
+    )`).run()
+
+    // migration(2026-08-28): 这一行为什么占了名次却没收到奖励。
+    // 现在有两种「占名次不发奖」:'bot'(机器人,被结算配置的开关排除)与
+    // 'deleted'(存档已删,players 外键插不进邮件)。null = 正常。
+    // 没有这一列的话,快照上「rank 3 没有 mail_id」是个无从解释的空格。
+    if (!hasColumn(database, "rush_season_results", "skip_reason")) {
+        database.prepare(`ALTER TABLE rush_season_results ADD COLUMN skip_reason TEXT`).run()
+    }
+
+    database.prepare(`CREATE INDEX IF NOT EXISTS idx_rush_season_results_lookup
+        ON rush_season_results (event_id, folder_id, season, board, rank)`).run()
+
+    // 轮次(期)台账: 每个 rush event 当前是第几期,以及这期是怎么开始的。
+    database.prepare(`CREATE TABLE IF NOT EXISTS rush_event_seasons (
+        event_id INTEGER PRIMARY KEY,
+        season INTEGER NOT NULL,
+        started_at_ms INTEGER NOT NULL,
+        fingerprint TEXT NOT NULL,
+        source TEXT NOT NULL
     )`).run()
 
     database.prepare(`CREATE TABLE IF NOT EXISTS players_carnival_event_records (

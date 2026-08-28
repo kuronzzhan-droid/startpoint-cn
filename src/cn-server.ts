@@ -17,6 +17,9 @@ import cnAssetPlugin from "./routes/cn/asset";
 import indexWebPlugin from "./routes/web";
 import indexWebApiPlugin from "./routes/web_api";
 import seedsWebApiPlugin from "./routes/web_api/seeds";
+import followApiPlugin, { snsRoutes as snsApiPlugin } from "./routes/api/follow";
+import { startRushSettlementScheduler } from "./lib/rush-settlement-service";
+import { warnOnStaleRogueReroll } from "./lib/rogue-reroll-inflight";
 import modAdminApiPlugin from "./routes/api/modAdmin";
 import seedValidator from "./lib/seed-validator";
 import reproduceApiPlugin from "./routes/api/reproduce";
@@ -504,6 +507,9 @@ fastify.register(paymentApiPlugin, { prefix: `${apiPrefix}/payment` });
 fastify.register(newsApiPlugin, { prefix: `${apiPrefix}/news` });
 fastify.register(raidEventApiPlugin, { prefix: `${apiPrefix}/event/raid` });
 fastify.register(rushEventApiPlugin, { prefix: `${apiPrefix}/event/rush` });
+// 好友页被征用成游戏内深渊连战排行榜(见 routes/api/follow.ts)
+fastify.register(followApiPlugin, { prefix: `${apiPrefix}/follow` });
+fastify.register(snsApiPlugin, { prefix: `${apiPrefix}/sns` });
 fastify.register(carnivalEventApiPlugin, { prefix: `${apiPrefix}/carnival_event` });
 fastify.register(contentsGuideApiPlugin, { prefix: `${apiPrefix}/contents_guide` });
 fastify.register(profileApiPlugin, { prefix: `${apiPrefix}/profile` });
@@ -591,6 +597,14 @@ fastify.listen({ port, host }, (err, address) => {
     }
     console.log(`CN StarPoint listening on http://${host}:${port}`);
     console.log(`[admin-auth] mode=${adminAuthConfig.mode}; secure_cookie=${adminAuthConfig.cookieSecure}`);
+
+    // 排行榜赛季结算的到点自动触发(真实墙钟;显式启动,不在模块加载时自启)
+    startRushSettlementScheduler();
+
+    // 上一次塔重摇的「结算 + 换期」做完了吗?没做完(服务端在重摇窗口里退出过)
+    // 就在这里显著告警 —— 那种漂移指纹兜底看不见,不喊就永远静默。
+    // 刻意不自动补做:启动那一刻无从判断塔到底换没换,而换期不可逆。
+    warnOnStaleRogueReroll();
 
     // 启动即构建 release graph:issues 非空时 getCnReleaseGraphSnapshot 会显著告警,
     // 不再等到第一个客户端请求才暴露(2026-07-18 链重锚事故毫无告警面)

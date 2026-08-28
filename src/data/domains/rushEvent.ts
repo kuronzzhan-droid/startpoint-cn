@@ -96,10 +96,35 @@ export function getPlayerRushEventListSync(
 }
 
 /**
+ * Rows that can actually produce a ranking entry.
+ *
+ * `getPlayerRushEventEndlessBattleRankingSync` returns null whenever the best
+ * round / time / clearing party is missing, so any row failing this predicate is
+ * silently dropped from the list. The same predicate has to gate the row count
+ * and the rank->player lookup, otherwise the three disagree:
+ *   - `COUNT(*) OVER()` over unfiltered rows inflates `page_max` and the client
+ *     can page into empty pages;
+ *   - `OFFSET rank - 1` over unfiltered rows resolves a rank to a *different*
+ *     player than the one the list shows at that rank.
+ */
+const ENDLESS_RANKED_PREDICATE = `endless_battle_max_round IS NOT NULL
+        AND endless_battle_max_round_time IS NOT NULL
+        AND endless_battle_max_round_character_id_1 IS NOT NULL`
+
+const ENDLESS_RANKED_ORDER = `endless_battle_max_round DESC,
+        endless_battle_max_round_time ASC,
+        player_id ASC`
+
+/**
  * Gets rush event endless battle rankings for a specific rush event.
+ *
+ * NOTE: this is the legacy *endless battle* leaderboard path. It currently has no
+ * callers - `event/rush/ranking` was rewired to the custom run leaderboards in
+ * `lib/rush-leaderboard-ranking.ts`. Kept (and corrected) because the endless
+ * battle board is a separate feature that may be wired back up.
  * 
  * @param eventId The rush event's ID.
- * @param page The current page.
+ * @param page The current page (0-based).
  * @param pageSize The size of each page.
  * @returns The ranking list result.
  */
@@ -108,15 +133,15 @@ export function getRushEventEndlessRankingListSync(
     page: number,
     pageSize: number = 100
 ): GetRushEventEndlessRankingListResult {
-    const offset = page * pageSize
+    const offset = Math.max(0, page) * pageSize
 
     const results = getDb().prepare(`
     SELECT *,
         COUNT(*) OVER() as total_count
     FROM players_rush_events
     WHERE event_id = ?
-    ORDER BY endless_battle_max_round DESC,
-        endless_battle_max_round_time ASC
+        AND ${ENDLESS_RANKED_PREDICATE}
+    ORDER BY ${ENDLESS_RANKED_ORDER}
     LIMIT ?
     OFFSET ?
     `).all(
@@ -141,7 +166,9 @@ export function getRushEventEndlessRankingListSync(
     }
     
     return {
-        pageMax: Math.ceil(totalCount / pageSize),
+        // page_max is never allowed to be 0: the client turns it into
+        // `maxPage = page_max - 1` and its None branch throws outright.
+        pageMax: Math.max(1, Math.ceil(totalCount / pageSize)),
         list: mappedResults
     }
 }
@@ -157,17 +184,21 @@ export function getPlayerIdFromRushEventEndlessRankSync(
     rank: number,
     eventId: number
 ): number | null {
+    if (!Number.isFinite(rank) || rank < 1) return null
+
+    // Same filter and same ORDER BY as getRushEventEndlessRankingListSync, so
+    // rank N here is the same player the list shows at rank N.
     const result = getDb().prepare(`
     SELECT player_id
     FROM players_rush_events
     WHERE event_id = ?
-    ORDER BY endless_battle_max_round DESC,
-        endless_battle_max_round_time ASC
+        AND ${ENDLESS_RANKED_PREDICATE}
+    ORDER BY ${ENDLESS_RANKED_ORDER}
     LIMIT 1
     OFFSET ?
     `).get(
         eventId,
-        rank - 1
+        Math.trunc(rank) - 1
     ) as { player_id: number } | undefined
 
     return result?.player_id ?? null
