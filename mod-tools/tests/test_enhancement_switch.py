@@ -314,9 +314,14 @@ class SnapshotTest(unittest.TestCase):
         sw.STATE_PATH = sw.WORK_DIR / "state.json"
         sw.WORK_DIR.mkdir(parents=True)
         self.addCleanup(self._restore_dirs)
-        for logical, payload in ((ABILITY, table({"1": line()})),
-                                 (sw.CHARACTER, table({"129999": "a", "139999": "b",
-                                                       "149999": "c"}))):
+        ability_rows = {key: line()
+                        for key in pol.EXPECTED_CONTENT_ROWS.get(ABILITY, ())}
+        ability_rows["1"] = line()
+        character_rows = {key: f"custom-{key}"
+                          for key in pol.EXPECTED_CONTENT_ROWS.get(sw.CHARACTER, ())}
+        self.ability_payload = table(ability_rows)
+        for logical, payload in ((ABILITY, self.ability_payload),
+                                 (sw.CHARACTER, table(character_rows))):
             path = self.store / quest.hashed_rel(logical)
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(payload)
@@ -345,7 +350,7 @@ class SnapshotTest(unittest.TestCase):
 
     def test_snapshot_round_trips_bytes(self):
         snap = sw.snapshot_freeze(self.ctx(), tag="ok")
-        self.assertEqual(table({"1": line()}), snap.get(ABILITY))
+        self.assertEqual(self.ability_payload, snap.get(ABILITY))
         self.assertEqual(snap.name, sw.load_snapshot().name)
 
     def test_bad_tag_is_rejected(self):
