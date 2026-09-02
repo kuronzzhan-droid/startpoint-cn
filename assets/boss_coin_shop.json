@@ -110474,5 +110474,29 @@
       "availableUntil": null,
       "stock": 1
     }
+  },
+  "99": {
+    "990099001": {
+      "costs": [
+        {
+          "id": 10000144,
+          "amount": 8
+        },
+        {
+          "id": 10000145,
+          "amount": 20
+        }
+      ],
+      "rewards": [
+        {
+          "type": 4,
+          "id": 5900101,
+          "count": 1
+        }
+      ],
+      "availableFrom": "2000-01-01 00:00:00",
+      "availableUntil": "2099-12-31 23:59:59",
+      "stock": 5
+    }
   }
 }

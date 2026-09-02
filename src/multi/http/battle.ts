@@ -34,6 +34,19 @@ import { trackPartyCoClears } from "../../lib/quest/finish/party-co-clear-tracke
 import { collectPartyCharacterIds, recordBattleMissionDimensionsSafe, summarizeBattleStatistics } from "../../lib/mission";
 import type { FinishContext } from "../../lib/quest/finish/types";
 import { canStartQuestByPrerequisites, hasClearedQuestPrerequisiteForCategory } from "../../lib/quest/start-handler";
+import {
+    handleFiveBossAbort,
+    handleFiveBossFinish,
+    handleFiveBossStart,
+    isFiveBossBattleRequestError,
+    shouldHandleFiveBossMemberRequest,
+    shouldHandleFiveBossStart,
+} from "./five-boss-battle";
+import {
+    settleFantasyMultiFinish,
+    shouldSettleFantasyMultiFinish,
+} from "./fantasy-battle";
+import { isFantasyRoomClosed } from "../fantasy-room-gate";
 
 interface PlayerContext { playerId: number; player: Player }
 
@@ -107,6 +120,17 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             });
         }
 
+        if (shouldHandleFiveBossStart(body)) {
+            try {
+                return handleFiveBossStart(body, ctx.playerId, reply);
+            } catch (error) {
+                if (!isFiveBossBattleRequestError(error)) throw error;
+                return reply.status(400).send({
+                    "error": "Bad Request", "message": (error as Error).message
+                });
+            }
+        }
+
         const questData = getQuestFromCategorySync(category, quest_id) as BattleQuest | null;
         if (questData === null || !('rankPointReward' in questData)) {
             return reply.status(400).send({
@@ -129,6 +153,19 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
         if (!room) {
             return reply.status(400).send({
                 "error": "Bad Request", "message": "Room doesn't exist."
+            });
+        }
+
+        // 幻想连战房间门(fail-closed):房主第一次成功结算就当场推进了整轮进度,
+        // 旧客户端可能仍拿着这间房再发一次开战请求。对不上就不给开。
+        // 只对 300098 的三个 boss 关生效,别的房(含五重决战、深渊无关)不经过。
+        if (isFantasyRoomClosed(room)) {
+            console.log(`[FANTASY] multi start denied: completed host room=${room_number}`
+                + ` host=${room.host_player_id}`);
+            reply.header("content-type", "application/x-msgpack");
+            return reply.status(200).send({
+                "data_headers": generateDataHeaders({ viewer_id, result_code: 4507 }),
+                "data": {}
             });
         }
 
@@ -183,6 +220,17 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
         }
 
         const { playerId, player } = ctx;
+
+        if (shouldHandleFiveBossMemberRequest(body, playerId)) {
+            try {
+                return await handleFiveBossFinish(body, playerId, reply, buildFinishFollowInfo);
+            } catch (error) {
+                if (!isFiveBossBattleRequestError(error)) throw error;
+                return reply.status(400).send({
+                    "error": "Bad Request", "message": (error as Error).message
+                });
+            }
+        }
 
         const activeQuestData = activeQuests[playerId];
         if (activeQuestData === undefined) {
@@ -342,6 +390,22 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             questData.fixedParty !== undefined
         );
 
+        // 幻想连战多人段的结算。房主与救援客人共用一个入口,rescue 标志决定
+        // 要不要推进这一轮(见 multi/http/fantasy-battle.ts)。
+        // `host_finished` 只在幻想关上改成实算值:其余多人关保持原来的硬写 true,
+        // 免得动到既有的普通联机结算。
+        const fantasyMultiFinish = shouldSettleFantasyMultiFinish(questCategory, questId)
+            ? settleFantasyMultiFinish({
+                playerId,
+                questCategory,
+                questId,
+                accomplished: questAccomplished,
+                party: bodyPartyStatistics,
+                roomNumber: activeQuestData.roomNumber ?? body.room_number ?? null,
+            })
+            : null;
+        const fantasySettlement = fantasyMultiFinish?.settlement ?? null;
+
         const dataHeaders = generateDataHeaders({ viewer_id: viewerId });
         const matePlayerResult = ((body as any).mate_player_result || []) as Array<{ viewer_id?: number }>;
         const followInfo = await buildFinishFollowInfo(viewerId, matePlayerResult, activeQuestData.matePlayerIds || []);
@@ -367,7 +431,8 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
                     ...rewardCharacterExpResult.character_list,
                     ...(clearReward?.character_list || []),
                     ...(sPlusClearReward?.character_list || []),
-                    ...scoreRewardsResult.character_list
+                    ...scoreRewardsResult.character_list,
+                    ...(fantasySettlement?.character_list || [])
                 ],
                 "bond_token_status_list": rewardCharacterExpResult.bond_token_status_list,
                 "rewards": {
@@ -381,29 +446,38 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
                 "joined_character_id_list": [
                     ...(clearReward?.joined_character_id_list || []),
                     ...(sPlusClearReward?.joined_character_id_list || []),
-                    ...scoreRewardsResult.joined_character_id_list
+                    ...scoreRewardsResult.joined_character_id_list,
+                    ...(fantasySettlement?.joined_character_id_list || [])
                 ],
                 "before_rank_point": beforeRankPoint,
                 "clear_rank": clearRank ?? 5,
                 "drop_score_reward_ids": scoreRewardsResult.drop_score_reward_ids,
                 "drop_rare_reward_ids": scoreRewardsResult.drop_rare_reward_ids,
-                "drop_additional_reward_ids": [],
+                "drop_additional_reward_ids": [
+                    ...(fantasySettlement?.fantasy_additional_reward_ids ?? [])
+                ],
                 "drop_periodic_reward_ids": [],
                 "equipment_list": [
                     ...scoreRewardsResult.equipment_list,
                     ...(clearReward?.equipment_list || []),
-                    ...(sPlusClearReward?.equipment_list || [])
+                    ...(sPlusClearReward?.equipment_list || []),
+                    ...(fantasySettlement?.equipment_list || [])
                 ],
                 "category_id": questCategory,
                 "start_time": dataHeaders['servertime'],
                 "is_multi": "multi",
                 "quest_name": "",
-                "item_list": scoreRewardsResult.items,
+                "item_list": {
+                    ...scoreRewardsResult.items,
+                    ...(fantasySettlement?.items ?? {})
+                },
                 "presigned_quest_category": [],
                 "mate_player_result": matePlayerResult,
                 "follow_info": followInfo,
                 "contribution_score": (body as any).contribution_score ?? 0,
-                "host_finished": true,
+                "host_finished": fantasyMultiFinish === null
+                    ? true
+                    : fantasyMultiFinish.finishedAsHost,
                 "aborted_play_id": null,
             }
         });
@@ -429,6 +503,18 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
         }
 
         const { playerId, player } = ctx;
+
+        if (shouldHandleFiveBossMemberRequest(body, playerId)) {
+            try {
+                return handleFiveBossAbort(body, playerId, reply);
+            } catch (error) {
+                if (!isFiveBossBattleRequestError(error)) throw error;
+                return reply.status(400).send({
+                    "error": "Bad Request", "message": (error as Error).message
+                });
+            }
+        }
+
         const activeQuestData = activeQuests[playerId];
 
         if (activeQuestData) {

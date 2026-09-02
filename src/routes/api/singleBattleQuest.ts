@@ -40,6 +40,19 @@ import path from "path";
 import questEntryCosts from "../../../assets/quest_entry_costs.json";
 import scoreAttackBorderRewards from "../../../assets/score_attack_border_reward.json";
 import eventChallengePointMap from "../../../assets/event_challenge_point_map.json";
+import { dispatchModeQuestStart, dispatchModeRushFinish } from "../../modes/registry";
+import { createModeHost, createModeTransactionHost } from "../../modes/host";
+import {
+    isFantasyGauntletEnabled,
+    isFantasyMultiQuest,
+    settleFantasyBattleSync,
+    withFantasyFolderSentinel,
+} from "../../lib/fantasy-gauntlet";
+
+// Read-only host for entry checks; writable host for settlement extensions.
+// Both are inert when the loader has not registered any mode.
+const singleBattleModeHost = createModeHost(message => console.log(message));
+const settlementModeHost = createModeTransactionHost(message => console.log(message));
 
 // Load carnival quest score data
 let carnivalScoreLookup: Record<string, { difficulty_score: number, time_limit_ms: number, folder_id: number, event_id: number }> = {}
@@ -406,8 +419,15 @@ const routes = async (fastify: FastifyInstance) => {
         // folder max rounds derived per event: folder ids repeat across events,
         // the flat hardcoded map capped every folder at 2 rounds (700007 超级
         // is actually 3, custom events can be longer)
-        const derivedFolderMaxRounds = getRushEventFolderMaxRounds(questData.rushEventId ?? 0)
-        const { rushEventData, rushEventRewardsResult } = handleRushEventFinish({
+        // 幻想连战(700098)的 folder 1 上限被顶到 16(> 第 15 关):原生 folder
+        // 通关路径只发一次奖励并把 folder 关掉,而这套 15 关设计成可反复刷。
+        // 全通奖励改由 settleFantasyBattleSync 每轮发一份 —— 这就是「二选一」,
+        // 两条路不会同时触发。其余事件(含深渊 700099)原样返回派生结果。
+        const derivedFolderMaxRounds = withFantasyFolderSentinel(
+            questData.rushEventId ?? 0,
+            getRushEventFolderMaxRounds(questData.rushEventId ?? 0),
+        )
+        const rushFinishParams: Parameters<typeof handleRushEventFinish>[0] = {
             questCategory,
             questData,
             clearTime,
@@ -425,7 +445,14 @@ const routes = async (fastify: FastifyInstance) => {
             getFolderRewards: (eid, fid) => getRushEventFolderClearRewards(eid, fid),
             giveRewards: (pid, r) => givePlayerRewardsSync(pid, r),
             getClearedFolders: (pid, eid) => getPlayerRushEventClearedFoldersSync(pid, eid),
-        })
+        }
+        const { rushEventData, rushEventRewardsResult } = handleRushEventFinish(rushFinishParams)
+        const modeRushExtension = dispatchModeRushFinish(rushFinishParams, settlementModeHost)
+        if (modeRushExtension?.rush_battle_reward_list?.length && rushEventData) {
+            rushEventData.rush_battle_reward_list.push(
+                ...modeRushExtension.rush_battle_reward_list,
+            )
+        }
 
         // 排行榜:累计这一关的净战斗时间;打完最终关就收榜(见 lib/rush-leaderboard)
         if (questCategory === QuestCategory.RUSH_EVENT
@@ -516,11 +543,22 @@ const routes = async (fastify: FastifyInstance) => {
             upsertFn: (pid, eid, fid, score, chars, unisons) => upsertPlayerCarnivalEventRecordSync(pid, eid, fid, score, chars, unisons),
         })
 
+        // 幻想连战的跨事件结算。放在这里的理由:必须排在普通关卡结算写完通关
+        // 记录、rush-handler 写完 played-party 标记之后 —— 顺序门与全通判定都
+        // 读那两张表。不是 700098 的关一律返回 null,深渊 700099 不受影响。
+        const fantasySettlement = settleFantasyBattleSync(
+            playerId,
+            questCategory,
+            questId,
+            questAccomplished,
+        )
+
         const itemList = {
             ...(activeQuestData.entryItemId ? { [activeQuestData.entryItemId]: getPlayerItemSync(playerId, activeQuestData.entryItemId) ?? 0 } : {}),
             ...scoreRewardsResult.items,
             ...(rushEventRewardsResult?.items ?? {}),
-            ...(rogueDrops?.rewardResult.items ?? {})
+            ...(rogueDrops?.rewardResult.items ?? {}),
+            ...(fantasySettlement?.items ?? {})
         }
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
@@ -552,7 +590,8 @@ const routes = async (fastify: FastifyInstance) => {
                     // the exp-updated entry so the client registers the new
                     // character before skipping already-owned entries
                     ...(rogueDrops?.rewardResult.character_list || []),
-                    ...(rogueDrops?.expCharacterList || [])
+                    ...(rogueDrops?.expCharacterList || []),
+                    ...(fantasySettlement?.character_list || [])
                 ],
                 "bond_token_status_list": {
                     ...rewardCharacterExpResult.bond_token_status_list,
@@ -569,20 +608,24 @@ const routes = async (fastify: FastifyInstance) => {
                 "joined_character_id_list": [
                     ...(clearReward?.joined_character_id_list || []),
                     ...(sPlusClearReward?.joined_character_id_list || []),
-                    ...scoreRewardsResult.joined_character_id_list
+                    ...scoreRewardsResult.joined_character_id_list,
+                    ...(fantasySettlement?.joined_character_id_list || [])
                 ],
                 "before_rank_point": beforeRankPoint,
                 "clear_rank": clearRank ?? 5,
                 "drop_score_reward_ids": scoreRewardsResult.drop_score_reward_ids,
                 "drop_rare_reward_ids": scoreRewardsResult.drop_rare_reward_ids,
-                "drop_additional_reward_ids": [],
+                "drop_additional_reward_ids": [
+                    ...(fantasySettlement?.fantasy_additional_reward_ids ?? [])
+                ],
                 "drop_periodic_reward_ids": [],
                 "equipment_list": [
                     ...scoreRewardsResult.equipment_list,
                     ...(clearReward?.equipment_list || []),
                     ...(sPlusClearReward?.equipment_list || []),
                     ...(rushEventRewardsResult?.equipment_list || []),
-                    ...(rogueDrops?.rewardResult.equipment_list || [])
+                    ...(rogueDrops?.rewardResult.equipment_list || []),
+                    ...(fantasySettlement?.equipment_list || [])
                 ],
                 "category_id": body.category,
                 "start_time": dataHeaders['servertime'],
@@ -657,6 +700,32 @@ const routes = async (fastify: FastifyInstance) => {
             return reply.status(400).send({
                 "error": "Bad Request",
                 "message": "Quest doesn't exist."
+            })
+        }
+
+        // Loaded modes may veto entry before any ticket, stamina, or active
+        // quest state is changed. No loaded modes means a strict no-op.
+        try {
+            dispatchModeQuestStart(
+                { playerId, questId, questCategory: category },
+                singleBattleModeHost,
+            )
+        } catch (error) {
+            return reply.status(400).send({
+                "error": "Bad Request",
+                "message": (error as Error).message,
+            })
+        }
+
+        // 幻想连战的第 5/10/15 关是三人联机关。从单人入口开起来只会进一场没有队友
+        // 的空战斗,还会占掉 active quest。modes.d 的 fantasy-gauntlet 模块也会
+        // 否决这一步(文案可配),这里是**即使那个模块被停用也仍然生效**的硬底线。
+        // 只认 300098 的三个 quest id,别的关一律不经过。
+        if (isFantasyGauntletEnabled() && isFantasyMultiQuest(category, questId)) {
+            console.log(`[FANTASY] solo entry rejected: player=${playerId} quest=${questId}`)
+            return reply.status(400).send({
+                "error": "Bad Request",
+                "message": "幻想连战的第5/10/15关为联机关卡，请从联机房间进入。"
             })
         }
 

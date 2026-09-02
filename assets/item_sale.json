@@ -3719,6 +3719,36 @@
     "sale_price": 100,
     "sellable": false
   },
+  "999013": {
+    "category": 4,
+    "sale_price": 100,
+    "sellable": false
+  },
+  "999014": {
+    "category": 4,
+    "sale_price": 100,
+    "sellable": false
+  },
+  "999015": {
+    "category": 4,
+    "sale_price": 100,
+    "sellable": false
+  },
+  "999016": {
+    "category": 4,
+    "sale_price": 100,
+    "sellable": false
+  },
+  "999017": {
+    "category": 4,
+    "sale_price": 100,
+    "sellable": false
+  },
+  "999018": {
+    "category": 4,
+    "sale_price": 100,
+    "sellable": false
+  },
   "999100": {
     "category": 0,
     "sale_price": 100,
@@ -3890,6 +3920,21 @@
     "sellable": true
   },
   "2370007": {
+    "category": 3,
+    "sale_price": 1,
+    "sellable": true
+  },
+  "2370099": {
+    "category": 3,
+    "sale_price": 1,
+    "sellable": true
+  },
+  "2370100": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "2370101": {
     "category": 3,
     "sale_price": 1,
     "sellable": true
@@ -5929,6 +5974,86 @@
     "sale_price": 500,
     "sellable": true
   },
+  "5900101": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000101": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000102": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000103": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000104": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000105": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000106": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000107": {
+    "category": 5,
+    "sale_price": 100,
+    "sellable": true
+  },
+  "8000108": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000109": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000110": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000111": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000112": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000113": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000114": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000115": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
   "10000003": {
     "category": 0,
     "sale_price": 1,
@@ -6414,9 +6539,99 @@
     "sale_price": 30,
     "sellable": true
   },
+  "10000143": {
+    "category": 0,
+    "sale_price": 100,
+    "sellable": false
+  },
+  "10000144": {
+    "category": 6,
+    "sale_price": 3,
+    "sellable": true
+  },
+  "10000145": {
+    "category": 9,
+    "sale_price": 300,
+    "sellable": true
+  },
+  "10000146": {
+    "category": 6,
+    "sale_price": 3,
+    "sellable": true
+  },
+  "10000147": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
   "10020066": {
     "category": 4,
     "sale_price": 100,
     "sellable": false
+  },
+  "100013": {
+    "category": 5,
+    "sale_price": 100,
+    "sellable": true
+  },
+  "100014": {
+    "category": 5,
+    "sale_price": 100,
+    "sellable": true
+  },
+  "100015": {
+    "category": 5,
+    "sale_price": 100,
+    "sellable": true
+  },
+  "100016": {
+    "category": 5,
+    "sale_price": 100,
+    "sellable": true
+  },
+  "100017": {
+    "category": 5,
+    "sale_price": 100,
+    "sellable": true
+  },
+  "100018": {
+    "category": 5,
+    "sale_price": 100,
+    "sellable": true
+  },
+  "100019": {
+    "category": 5,
+    "sale_price": 100,
+    "sellable": true
+  },
+  "100020": {
+    "category": 5,
+    "sale_price": 100,
+    "sellable": true
+  },
+  "100021": {
+    "category": 5,
+    "sale_price": 100,
+    "sellable": true
+  },
+  "100022": {
+    "category": 5,
+    "sale_price": 100,
+    "sellable": true
+  },
+  "100023": {
+    "category": 5,
+    "sale_price": 100,
+    "sellable": true
+  },
+  "2370097": {
+    "category": 2,
+    "sale_price": 1,
+    "sellable": true
+  },
+  "2370098": {
+    "category": 3,
+    "sale_price": 1,
+    "sellable": true
   }
 }

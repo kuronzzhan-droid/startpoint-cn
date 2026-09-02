@@ -704,6 +704,93 @@ export default function init(
         FOREIGN KEY (player_id) REFERENCES players (id) ON DELETE CASCADE
     )`).run()
 
+    // The first unpublished gauntlet ledger keyed runs by host/play. That cannot represent
+    // the independent play_id issued to each co-op client. Empty development copies may be
+    // replaced automatically; non-empty copies stop here rather than silently losing tickets.
+    const legacyGauntletColumns = database.prepare("PRAGMA table_info(five_boss_gauntlet_runs)")
+        .all() as Array<{ name: string }>
+    if (
+        legacyGauntletColumns.length > 0
+        && !legacyGauntletColumns.some(column => column.name === "run_id")
+    ) {
+        const legacyTables = [
+            "five_boss_gauntlet_runs",
+            "five_boss_gauntlet_members",
+            "five_boss_gauntlet_receipts",
+        ]
+        const hasRows = legacyTables.some(table => (
+            database.prepare(`SELECT 1 FROM ${table} LIMIT 1`).get() !== undefined
+        ))
+        if (hasRows) {
+            throw new Error(
+                "Legacy five-boss gauntlet ledger contains rows; migrate it before enabling the v2 server-run schema",
+            )
+        }
+        database.prepare("DROP TABLE IF EXISTS five_boss_gauntlet_receipts").run()
+        database.prepare("DROP TABLE IF EXISTS five_boss_gauntlet_members").run()
+        database.prepare("DROP TABLE IF EXISTS five_boss_gauntlet_runs").run()
+    }
+
+    database.prepare(`CREATE TABLE IF NOT EXISTS five_boss_gauntlet_runs (
+        run_id TEXT PRIMARY KEY,
+        host_player_id INTEGER NOT NULL,
+        route_id TEXT NOT NULL,
+        room_number TEXT NOT NULL,
+        ticket_item_id INTEGER NOT NULL,
+        expected_member_count INTEGER NOT NULL CHECK (expected_member_count BETWEEN 1 AND 3),
+        status TEXT NOT NULL CHECK (status IN ('active', 'settled', 'aborted')),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (host_player_id) REFERENCES players (id) ON DELETE CASCADE
+    )`).run()
+
+    database.prepare(`CREATE TABLE IF NOT EXISTS five_boss_gauntlet_members (
+        run_id TEXT NOT NULL,
+        player_id INTEGER NOT NULL,
+        client_play_id TEXT,
+        is_auto_mode INTEGER CHECK (is_auto_mode IS NULL OR is_auto_mode IN (0, 1)),
+        started_at TEXT,
+        aborted_at TEXT,
+        level_next_at TEXT,
+        finalized_at TEXT,
+        PRIMARY KEY (run_id, player_id),
+        FOREIGN KEY (run_id) REFERENCES five_boss_gauntlet_runs (run_id) ON DELETE CASCADE,
+        FOREIGN KEY (player_id) REFERENCES players (id) ON DELETE CASCADE,
+        CHECK (
+            (client_play_id IS NULL AND is_auto_mode IS NULL AND started_at IS NULL)
+            OR (client_play_id IS NOT NULL AND is_auto_mode IS NOT NULL AND started_at IS NOT NULL)
+        )
+    )`).run()
+
+    const gauntletMemberColumns = database.prepare("PRAGMA table_info(five_boss_gauntlet_members)")
+        .all() as Array<{ name: string }>
+    if (!gauntletMemberColumns.some(column => column.name === "level_next_at")) {
+        database.prepare(
+            "ALTER TABLE five_boss_gauntlet_members ADD COLUMN level_next_at TEXT",
+        ).run()
+    }
+    if (!gauntletMemberColumns.some(column => column.name === "finalized_at")) {
+        database.prepare(
+            "ALTER TABLE five_boss_gauntlet_members ADD COLUMN finalized_at TEXT",
+        ).run()
+    }
+
+    database.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS five_boss_gauntlet_member_client_play_unique
+        ON five_boss_gauntlet_members (player_id, client_play_id)
+        WHERE client_play_id IS NOT NULL
+    `).run()
+
+    database.prepare(`CREATE TABLE IF NOT EXISTS five_boss_gauntlet_receipts (
+        run_id TEXT NOT NULL,
+        player_id INTEGER NOT NULL,
+        reward_multiplier INTEGER NOT NULL CHECK (reward_multiplier IN (1, 2)),
+        reward_json TEXT NOT NULL,
+        settled_at TEXT NOT NULL,
+        PRIMARY KEY (run_id, player_id),
+        FOREIGN KEY (run_id, player_id)
+            REFERENCES five_boss_gauntlet_members (run_id, player_id) ON DELETE CASCADE
+    )`).run()
+
     database.prepare(`CREATE TABLE IF NOT EXISTS players_active_quests (
         player_id INTEGER PRIMARY KEY,
         play_id TEXT NOT NULL,

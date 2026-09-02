@@ -27,6 +27,8 @@ import { PartyCategory, PlayerParty } from "../../data/types"
 import { sessionManager } from "../state/SessionManager"
 import type { SessionClient } from "../state/SessionManager"
 import { ClientState } from "../types"
+import { getRoom } from "../room/manager"
+import { isFiveBossLobbyRoom } from "../five-boss/lobby-runtime"
 
 const playerRankTable = require("../../../assets/cdndata/player_rank.json")
 
@@ -164,9 +166,48 @@ export async function handleHandshake(socket: net.Socket, data: any): Promise<vo
             return
         }
 
-        const battleClient = sessionManager.createClient(socket, 0, String(roomNumber), String(connectionId), null)
+        const lobbyClient = sessionManager.getRoomClientByConnectionId(
+            String(roomNumber),
+            String(connectionId),
+        )
+        const room = getRoom(String(roomNumber))
+        const frozenIdentity = room && isFiveBossLobbyRoom(room)
+            ? room.five_boss_runtime?.battleIdentityByConnectionId[String(connectionId)]
+            : undefined
+        if (room && isFiveBossLobbyRoom(room)) {
+            const remoteAddress = socket.remoteAddress ?? null
+            if (
+                room.raising_state !== 4
+                || !frozenIdentity
+                || !room.five_boss_runtime?.expectedRealPlayerIds.includes(frozenIdentity.playerId)
+                || (lobbyClient?.playerId !== undefined
+                    && lobbyClient.playerId !== null
+                    && lobbyClient.playerId !== frozenIdentity.playerId)
+                || (frozenIdentity.remoteAddress !== null
+                    && frozenIdentity.remoteAddress !== remoteAddress)
+            ) {
+                sessionManager.sendJson(socket, [3, "HANDSHAKE_DENIED"])
+                socket.end()
+                return
+            }
+        }
+        const battleClient = sessionManager.createClient(
+            socket,
+            frozenIdentity?.viewerId ?? lobbyClient?.viewerId ?? 0,
+            String(roomNumber),
+            String(connectionId),
+            frozenIdentity?.playerId ?? lobbyClient?.playerId ?? null,
+        )
         battleClient.isBattle = true
-        sessionManager.addBattleClient(String(connectionId), battleClient)
+        if (!sessionManager.addBattleClient(
+            String(connectionId),
+            battleClient,
+            frozenIdentity !== undefined,
+        )) {
+            sessionManager.sendJson(socket, [3, "HANDSHAKE_DENIED"])
+            socket.end()
+            return
+        }
         sessionManager.sendJson(socket, [0, roomNumber, ""])
         return
     }

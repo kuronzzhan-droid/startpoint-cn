@@ -10,6 +10,7 @@ import { generateDataHeaders } from "../../utils"
 import { createRoom, getRoom, getRoomByToken, getRooms } from "../room/manager"
 import { serializeRoom, serializeRoomConnection } from "../room/serializer"
 import { sessionManager } from "../state/SessionManager"
+import { isFantasyRoomClosed } from "../fantasy-room-gate"
 
 async function getViewerIdAndPlayer(viewerId: number): Promise<{ playerId: number; player: any } | null> {
     const sid = await getSession(viewerId.toString())
@@ -34,8 +35,11 @@ export function registerLobbyRoutes(fastify: FastifyInstance): void {
             "error": "Bad Request", "message": "Invalid viewer id."
         })
 
+        // 幻想连战:房主已经打完的房不再出现在大厅列表里(fail-closed 的第一道)。
+        // 只对 300098 的 boss 房生效,其余房间的可见性一点没变。
         const rooms = getRooms(body.category_id, body.event_id)
             .filter(r => sessionManager.hasRoomClients(r.room_number))
+            .filter(r => !isFantasyRoomClosed(r))
             .map(serializeRoom)
 
         reply.header("content-type", "application/x-msgpack")
@@ -129,7 +133,15 @@ export function registerLobbyRoutes(fastify: FastifyInstance): void {
         })
 
         const room = body.room_number ? getRoom(body.room_number) : getRoomByToken(body.access_token || "")
-        if (!room) {
+        // 幻想连战:房主的进度已经越过这一关的房间当作「不存在」处理。
+        // raising_state=9 是客户端原生的「房间没了」提示,比放人进去再在开战时
+        // 被拒要干净得多。
+        const fantasyRoomClosed = !!room && isFantasyRoomClosed(room)
+        if (room && fantasyRoomClosed) {
+            console.log(`[FANTASY] select_room denied: completed host room=${room.room_number}`
+                + ` viewer=${viewerId}`)
+        }
+        if (!room || fantasyRoomClosed) {
             reply.header("content-type", "application/x-msgpack")
             return reply.status(200).send({
                 "data_headers": generateDataHeaders({ viewer_id: viewerId }),

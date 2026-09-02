@@ -44,7 +44,8 @@ function cleanExpiredRooms() {
     }
     if (cleaned > 0) console.log(`[MULTI] expired rooms cleaned: ${cleaned}`);
 }
-setInterval(cleanExpiredRooms, CLEAN_INTERVAL_MS);
+const cleanupInterval = setInterval(cleanExpiredRooms, CLEAN_INTERVAL_MS);
+cleanupInterval.unref();
 
 export const STATIC_ACCESS_TOKEN = "multi_battle_quest_access_token";
 

@@ -17,6 +17,7 @@ import { getPlayerMultiSpecialExchangeCampaignsSync, getPlayerPeriodicRewardPoin
 import { getPlayerOptionsSync } from "../domains/option"
 import { getPlayerPartyGroupListSync } from "../domains/party"
 import { getPlayerTriggeredTutorialsSync } from "../domains/tutorial"
+import { hideFantasyBossPlayedPartyMembers } from "../../lib/fantasy-gauntlet/played-party"
 import { kIdToBusinessCode, businessCodeToKId } from "../codeMap"
 import { computeRealTimeStamina } from "../../lib/stamina"
 
@@ -329,6 +330,13 @@ export function serializePlayerData(
                         battleTypeBuckets[party.battleType] = bucket
                     }
                     bucket[party.round] = serializePlayerRushEventPlayedParty(party)
+                }
+                // 幻想连战(700098)的 5/10/15 是多人 boss 的补写标记,不该占用
+                // 角色。/load 与 rush summary 走的是两条独立的序列化路径,必须
+                // 施加同一条规则,否则进游戏时锁着、打开连战页又不锁。
+                // 只按事件号命中;深渊连战 700099 完全不经过这里。
+                for (const bucket of Object.values(battleTypeBuckets)) {
+                    if (bucket !== undefined) hideFantasyBossPlayedPartyMembers(Number(eventId), bucket)
                 }
                 userRushEventPlayedPartyList[eventId] = battleTypeBuckets as Record<RushEventBattleType, Record<string, UserRushEventPlayedParty>>
             }

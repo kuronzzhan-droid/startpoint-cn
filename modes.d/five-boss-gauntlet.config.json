@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "enabled": true,
+  "route_id": "five_boss_coop_v1",
+  "quest_category": 2,
+  "guarded_quest_ids": [1099001, 1099002, 1099003],
+  "solo_entry": "reject",
+  "reject_message": "五重决战为三人联机路线，请从联机房间进入。"
+}

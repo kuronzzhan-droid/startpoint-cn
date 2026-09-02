@@ -109,8 +109,6 @@ export interface MultiFinishBody {
     quest_id: number
     category: number
     room_number: string
-    clear_phase: number
-    quest_statistics: QuestStatistics
     play_id: string
     battle_time: number
     battle_ended_at: number
@@ -121,6 +119,16 @@ export interface MultiFinishBody {
     combat_power: number
     use_boss_boost_point: boolean
     use_boost_point: boolean
+    is_accomplished?: boolean
+    elapsed_time_ms?: number
+    score?: number
+    contribution_score?: number
+    mate_player_result?: Array<{ viewer_id?: number }>
+    /** Official finish payload shape. Default multiplayer score calculators report 0. */
+    statistics: QuestStatistics
+    /** Legacy captures accepted by the existing compatibility path. */
+    clear_phase?: number
+    quest_statistics?: QuestStatistics
 }
 
 export interface MultiAbortBody {

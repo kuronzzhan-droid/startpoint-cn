@@ -4,6 +4,19 @@ import { getPlayerSync } from "../data/domains/player"
 import { getRogueEventConfig, getRushEventQuestRound } from "./assets"
 import { getRankDegree } from "./stamina"
 import { SerializedPlayerRushEventPlayedPartyList, SerializedPlayerRushEventPlayedParties } from "./types";
+import { dispatchModeRushParties, type ModeHost } from "../modes/registry";
+import { hideFantasyBossPlayedPartyMembers } from "./fantasy-gauntlet/played-party";
+import { createModeHost } from "../modes/host";
+
+// Lazy construction avoids closing the existing import cycle through assets.
+let rushModeHost: ModeHost | null = null
+
+function modeHost(): ModeHost {
+    if (rushModeHost === null) {
+        rushModeHost = createModeHost(message => console.log(message))
+    }
+    return rushModeHost
+}
 
 /**
  * How many party slots a rush ranking row carries.
@@ -78,6 +91,22 @@ export function getSerializedPlayerRushEventPlayedPartiesSync(
             }
         }
     }
+
+    // 幻想连战(700098)的 5/10/15 是多人 boss,通关标记由服务端补写。
+    // 那三条标记只是「这一轮过了」的占位,不该占用角色 —— 多人段用的是另一套
+    // 队伍。抹掉成员 id 后角色锁解开,而记录条数(= 下一轮号)一格不动。
+    // 只按事件号命中,深渊连战 700099 走上面那条 rogue 分支,与这里无关。
+    hideFantasyBossPlayedPartyMembers(eventId, rushBattlePlayedPartyList)
+
+    // Installed modes may adjust the records the client uses for character
+    // locking. Dispatch after the built-in rogue rewrite so modes see the
+    // final baseline representation. No loaded modes means a strict no-op.
+    dispatchModeRushParties({
+        playerId,
+        eventId,
+        folderParties: rushBattlePlayedPartyList as unknown as Record<number, Record<string, unknown>>,
+        endlessParties: endlessBattlePlayedPartyList as unknown as Record<number, Record<string, unknown>>,
+    }, modeHost())
 
     // return parties
     return {

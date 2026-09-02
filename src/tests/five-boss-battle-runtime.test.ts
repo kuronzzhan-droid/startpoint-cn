@@ -1,0 +1,442 @@
+import assert from "node:assert/strict"
+import { after, test } from "node:test"
+import { mkdtempSync, rmSync } from "node:fs"
+import { tmpdir } from "node:os"
+import path from "node:path"
+
+import type { MultiRoom } from "../lib/types/multi"
+
+
+const databaseDir = mkdtempSync(path.join(tmpdir(), "wf-five-boss-battle-runtime-"))
+process.env.WF_DATABASE_DIR = databaseDir
+
+const accountDomain = require("../data/domains/account") as typeof import("../data/domains/account")
+const playerDomain = require("../data/domains/player") as typeof import("../data/domains/player")
+const itemDomain = require("../data/domains/item") as typeof import("../data/domains/item")
+const questDomain = require("../data/domains/quest") as typeof import("../data/domains/quest")
+const activeQuestDomain = require("../data/domains/quest_active") as typeof import("../data/domains/quest_active")
+const runDomain = require("../data/domains/fiveBossGauntletRun") as typeof import("../data/domains/fiveBossGauntletRun")
+const { getDb } = require("../data/db") as typeof import("../data/db")
+const runtimeModule = require("../multi/five-boss/battle-runtime") as typeof import("../multi/five-boss/battle-runtime")
+const contractModule = require("../multi/five-boss/contract") as typeof import("../multi/five-boss/contract")
+const rewardModule = require("../multi/five-boss/rewards") as typeof import("../multi/five-boss/rewards")
+
+const { FIVE_BOSS_GAUNTLET } = contractModule
+const { FIVE_BOSS_GAUNTLET_REWARD_IDS } = rewardModule
+let identity = 0
+
+
+function createPlayer(ticketAmount = 0): number {
+    identity += 1
+    const account = accountDomain.insertAccountSync({
+        appId: `five-boss-runtime-test-${identity}`,
+        idpAlias: "test",
+        idpCode: "test",
+        idpId: `five-boss-runtime-test-${identity}`,
+        status: "active",
+    })
+    const playerId = playerDomain.insertDefaultPlayerSync(account.id).id
+    itemDomain.setPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET.ticketItemId, ticketAmount)
+    return playerId
+}
+
+
+function roomFor(
+    runId: string,
+    hostPlayerId: number,
+    playerIds: readonly number[],
+    autoByPlayerId: Readonly<Record<number, boolean>>,
+): MultiRoom {
+    const autoplayModeByPlayerId: Record<string, boolean> = {}
+    for (const playerId of playerIds) {
+        const mode = autoByPlayerId[playerId]
+        if (typeof mode === "boolean") autoplayModeByPlayerId[String(playerId)] = mode
+    }
+    return {
+        room_number: `room-${runId}`,
+        access_token: "test",
+        category: FIVE_BOSS_GAUNTLET.category,
+        quest_id: FIVE_BOSS_GAUNTLET.visibleQuestId,
+        host_viewer_id: hostPlayerId + 100_000,
+        host_player_id: hostPlayerId,
+        host_party_id: 1,
+        host_main_character_id: 1,
+        accepted_type: 0,
+        created_at: Date.now(),
+        raising_state: 4,
+        room_sequence: identity,
+        host_entry_time: 0,
+        mates: [],
+        share_room_options: 0,
+        is_npc_mode: false,
+        npc_count: 0,
+        five_boss_runtime: {
+            runId,
+            expectedRealPlayerIds: [...playerIds],
+            autoplayModeByPlayerId,
+            battleIdentityByConnectionId: {},
+        },
+    }
+}
+
+
+function startInput(
+    room: MultiRoom,
+    playerId: number,
+    clientPlayId: string,
+    overrides: Partial<import("../multi/five-boss/battle-runtime").StartFiveBossBattleInput> = {},
+) {
+    return {
+        playerId,
+        clientPlayId,
+        room,
+        requestRoomNumber: room.room_number,
+        requestCategory: room.category,
+        requestQuestId: room.quest_id,
+        useBoostPoint: false,
+        useBossBoostPoint: false,
+        httpIsAutoStartMode: false,
+        matePlayerIds: [],
+        mateComIds: [],
+        ...overrides,
+    }
+}
+
+
+function finishInput(
+    room: MultiRoom,
+    playerId: number,
+    clientPlayId: string,
+    overrides: Partial<import("../multi/five-boss/battle-runtime").FinishFiveBossBattleInput> = {},
+) {
+    return {
+        playerId,
+        clientPlayId,
+        requestRoomNumber: room.room_number,
+        requestCategory: room.category,
+        requestQuestId: room.quest_id,
+        accomplished: true,
+        elapsedTimeMs: 12_345,
+        highScore: 777,
+        leaderCharacterId: 1,
+        randomFloat: () => 0.99,
+        ...overrides,
+    }
+}
+
+
+function completeBattleProof(room: MultiRoom, playerId: number): void {
+    const runId = room.five_boss_runtime!.runId
+    runDomain.recordMemberBattleSignalSync({
+        runId,
+        playerId,
+        roomNumber: room.room_number,
+        signal: "level_next",
+    })
+    runDomain.recordMemberBattleSignalSync({
+        runId,
+        playerId,
+        roomNumber: room.room_number,
+        signal: "finalize",
+    })
+}
+
+
+function assertRuntimeError(code: string, action: () => unknown): void {
+    assert.throws(action, (error: unknown) => (
+        error instanceof runtimeModule.FiveBossBattleRuntimeError
+        && error.code === code
+    ))
+}
+
+
+function runStatus(runId: string): string | null {
+    const row = getDb().prepare(`
+        SELECT status
+        FROM five_boss_gauntlet_runs
+        WHERE run_id = ?
+    `).get(runId) as { status: string } | undefined
+    return row?.status ?? null
+}
+
+
+function receiptCount(runId: string): number {
+    return (getDb().prepare(`
+        SELECT COUNT(*) AS count
+        FROM five_boss_gauntlet_receipts
+        WHERE run_id = ?
+    `).get(runId) as { count: number }).count
+}
+
+
+after(() => {
+    getDb().close()
+    delete process.env.WF_DATABASE_DIR
+    const resolved = path.resolve(databaseDir)
+    const safeBase = path.resolve(tmpdir())
+    assert.ok(resolved.startsWith(`${safeBase}${path.sep}`))
+    assert.ok(path.basename(resolved).startsWith("wf-five-boss-battle-runtime-"))
+    rmSync(resolved, { recursive: true, force: true })
+})
+
+
+test("guest-first start charges only the host and trusts frozen lobby Auto, not HTTP Auto", () => {
+    const host = createPlayer(2)
+    const guest = createPlayer()
+    const room = roomFor("runtime-guest-first", host, [host, guest], {
+        [host]: false,
+        [guest]: true,
+    })
+
+    const guestStart = runtimeModule.startFiveBossBattle(startInput(room, guest, "guest-play", {
+        httpIsAutoStartMode: false,
+    }))
+    const hostStart = runtimeModule.startFiveBossBattle(startInput(room, host, "host-play", {
+        httpIsAutoStartMode: true,
+    }))
+
+    assert.equal(guestStart.activeQuest.isAutoStartMode, true)
+    assert.equal(hostStart.activeQuest.isAutoStartMode, false)
+    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET.ticketItemId), 1)
+    assert.equal(activeQuestDomain.getPlayerActiveQuestSync(guest)?.playId, "guest-play")
+    assert.equal(activeQuestDomain.getPlayerActiveQuestSync(host)?.playId, "host-play")
+})
+
+
+test("start rejects non-exact rooms, boosts, outsiders, and missing frozen Auto without spending a ticket", () => {
+    const host = createPlayer(3)
+    const guest = createPlayer()
+    const outsider = createPlayer()
+    const room = roomFor("runtime-start-gates", host, [host, guest], {
+        [host]: false,
+        [guest]: false,
+    })
+
+    assertRuntimeError("room_not_in_battle", () => runtimeModule.startFiveBossBattle(
+        startInput({ ...room, raising_state: 2 }, guest, "not-battle"),
+    ))
+    assertRuntimeError("request_identity_mismatch", () => runtimeModule.startFiveBossBattle(
+        startInput(room, guest, "wrong-quest", { requestQuestId: room.quest_id + 1 }),
+    ))
+    assertRuntimeError("boost_not_allowed", () => runtimeModule.startFiveBossBattle(
+        startInput(room, guest, "boost", { useBoostPoint: true }),
+    ))
+    assertRuntimeError("participant_not_frozen", () => runtimeModule.startFiveBossBattle(
+        startInput(room, outsider, "outsider"),
+    ))
+    const missingAutoRoom = roomFor("runtime-missing-auto", host, [host, guest], {
+        [host]: false,
+    })
+    assertRuntimeError("missing_frozen_autoplay", () => runtimeModule.startFiveBossBattle(
+        startInput(missingAutoRoom, guest, "missing-auto"),
+    ))
+
+    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET.ticketItemId), 3)
+})
+
+
+test("start rolls back its new run and host ticket when a different persistent active quest exists", () => {
+    const host = createPlayer(1)
+    const guest = createPlayer()
+    const room = roomFor("runtime-start-active-conflict", host, [host, guest], {
+        [host]: false,
+        [guest]: false,
+    })
+    activeQuestDomain.insertPlayerActiveQuestSync(guest, {
+        playerId: guest,
+        playId: "different-play",
+        questId: 1,
+        category: 1,
+        useBossBoostPoint: false,
+        useBoostPoint: false,
+        isAutoStartMode: false,
+        isMulti: false,
+        roomNumber: null,
+        entryItemId: null,
+        eventId: null,
+        continueCount: 0,
+    })
+
+    assertRuntimeError("active_quest_mismatch", () => runtimeModule.startFiveBossBattle(
+        startInput(room, guest, "conflicting-start"),
+    ))
+
+    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET.ticketItemId), 1)
+    assert.equal(runStatus(room.five_boss_runtime!.runId), null)
+    assert.equal(activeQuestDomain.getPlayerActiveQuestSync(guest)?.playId, "different-play")
+})
+
+
+test("manual rewards are 2x, auto rewards are 1x, and only the last real receipt settles the run", () => {
+    const host = createPlayer(1)
+    const autoGuest = createPlayer()
+    const manualGuest = createPlayer()
+    const players = [host, autoGuest, manualGuest]
+    const room = roomFor("runtime-three-finish", host, players, {
+        [host]: false,
+        [autoGuest]: true,
+        [manualGuest]: false,
+    })
+    runtimeModule.startFiveBossBattle(startInput(room, autoGuest, "auto-play"))
+    runtimeModule.startFiveBossBattle(startInput(room, host, "host-play"))
+    runtimeModule.startFiveBossBattle(startInput(room, manualGuest, "manual-play"))
+    for (const playerId of players) completeBattleProof(room, playerId)
+
+    const hostFinish = runtimeModule.finishFiveBossBattle(finishInput(room, host, "host-play"))
+    const autoFinish = runtimeModule.finishFiveBossBattle(finishInput(room, autoGuest, "auto-play"))
+    assert.equal(hostFinish.kind, "success")
+    assert.equal(autoFinish.kind, "success")
+    assert.equal(hostFinish.runStatus, "active")
+    assert.equal(autoFinish.runStatus, "active")
+    assert.equal(hostFinish.rewardMultiplier, 2)
+    assert.equal(autoFinish.rewardMultiplier, 1)
+    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 10)
+    assert.equal(itemDomain.getPlayerItemSync(autoGuest, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 5)
+
+    const final = runtimeModule.finishFiveBossBattle(finishInput(room, manualGuest, "manual-play"))
+    assert.equal(final.kind, "success")
+    assert.equal(final.runStatus, "settled")
+    assert.equal(final.rewardMultiplier, 2)
+    assert.equal(runStatus(room.five_boss_runtime!.runId), "settled")
+
+    const totalBeforeReplay = itemDomain.getPlayerItemSync(manualGuest, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)
+    const replay = runtimeModule.finishFiveBossBattle(finishInput(room, manualGuest, "manual-play", {
+        randomFloat: () => 0,
+    }))
+    assert.equal(replay.kind, "success")
+    if (replay.kind !== "success") throw new Error("expected successful receipt replay")
+    assert.equal(replay.receiptStatus, "already_settled")
+    assert.equal(replay.runStatus, "settled")
+    assert.equal(itemDomain.getPlayerItemSync(manualGuest, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), totalBeforeReplay)
+    assert.equal(receiptCount(room.five_boss_runtime!.runId), 3)
+
+    for (const playerId of players) {
+        const progress = questDomain.getPlayerSingleQuestProgressSync(
+            playerId,
+            FIVE_BOSS_GAUNTLET.category,
+            FIVE_BOSS_GAUNTLET.visibleQuestId,
+        )
+        assert.equal(progress?.finished, true)
+        assert.equal(progress?.multiClearCount, 1)
+        assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.firstClearEmblem), 1)
+        assert.equal(activeQuestDomain.getPlayerActiveQuestSync(playerId), null)
+    }
+})
+
+
+test("reward multiplier stays bound to battle-start Auto after later lobby or client changes", () => {
+    const host = createPlayer(1)
+    const autoGuest = createPlayer()
+    const room = roomFor("runtime-auto-snapshot-immutable", host, [host, autoGuest], {
+        [host]: false,
+        [autoGuest]: true,
+    })
+
+    runtimeModule.startFiveBossBattle(startInput(room, host, "snapshot-manual"))
+    runtimeModule.startFiveBossBattle(startInput(room, autoGuest, "snapshot-auto"))
+
+    // 这里只模拟进场后客户端/UI 状态改变。结算权威必须仍是已写入运行记录的开战快照。
+    room.five_boss_runtime!.autoplayModeByPlayerId[String(host)] = true
+    room.five_boss_runtime!.autoplayModeByPlayerId[String(autoGuest)] = false
+    for (const playerId of [host, autoGuest]) completeBattleProof(room, playerId)
+
+    const manualFinish = runtimeModule.finishFiveBossBattle(
+        finishInput(room, host, "snapshot-manual"),
+    )
+    const autoFinish = runtimeModule.finishFiveBossBattle(
+        finishInput(room, autoGuest, "snapshot-auto"),
+    )
+
+    assert.equal(manualFinish.kind, "success")
+    assert.equal(autoFinish.kind, "success")
+    assert.equal(manualFinish.rewardMultiplier, 2)
+    assert.equal(autoFinish.rewardMultiplier, 1)
+})
+
+
+test("reward callback failure rolls back items, progress, active deletion, and receipt", () => {
+    const host = createPlayer(1)
+    const room = roomFor("runtime-callback-rollback", host, [host], { [host]: false })
+    runtimeModule.startFiveBossBattle(startInput(room, host, "rollback-play"))
+    completeBattleProof(room, host)
+    const failingRuntime = runtimeModule.createFiveBossBattleRuntime({
+        givePlayerItemSync(playerId, itemId, amount) {
+            itemDomain.givePlayerItemSync(playerId, itemId, amount)
+            throw new Error("injected reward writer failure")
+        },
+    })
+
+    assert.throws(
+        () => failingRuntime.finish(finishInput(room, host, "rollback-play")),
+        /injected reward writer failure/,
+    )
+
+    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET_REWARD_IDS.blueprintFragment), null)
+    assert.equal(questDomain.getPlayerSingleQuestProgressSync(
+        host,
+        FIVE_BOSS_GAUNTLET.category,
+        FIVE_BOSS_GAUNTLET.visibleQuestId,
+    ), null)
+    assert.equal(activeQuestDomain.getPlayerActiveQuestSync(host)?.playId, "rollback-play")
+    assert.equal(receiptCount(room.five_boss_runtime!.runId), 0)
+    assert.equal(runStatus(room.five_boss_runtime!.runId), "active")
+})
+
+
+test("failed finish and explicit abort grant nothing, delete only exact active state, and never refund", () => {
+    const host = createPlayer(2)
+    const guest = createPlayer()
+    const room = roomFor("runtime-failed-finish", host, [host, guest], {
+        [host]: false,
+        [guest]: false,
+    })
+    runtimeModule.startFiveBossBattle(startInput(room, guest, "failed-guest"))
+    runtimeModule.startFiveBossBattle(startInput(room, host, "aborted-host"))
+
+    const failed = runtimeModule.finishFiveBossBattle(finishInput(room, guest, "failed-guest", {
+        accomplished: false,
+    }))
+    assert.equal(failed.kind, "failed")
+    assert.equal(failed.abortStatus, "member_aborted")
+    assert.equal(failed.runStatus, "active")
+    assert.equal(activeQuestDomain.getPlayerActiveQuestSync(guest), null)
+    assert.equal(itemDomain.getPlayerItemSync(guest, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), null)
+
+    const aborted = runtimeModule.abortFiveBossBattle({
+        playerId: host,
+        clientPlayId: "aborted-host",
+        requestRoomNumber: room.room_number,
+        requestCategory: room.category,
+        requestQuestId: room.quest_id,
+    })
+    assert.equal(aborted.abortStatus, "run_aborted")
+    assert.equal(aborted.runStatus, "aborted")
+    assert.equal(activeQuestDomain.getPlayerActiveQuestSync(host), null)
+    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET.ticketItemId), 1)
+    assert.equal(receiptCount(room.five_boss_runtime!.runId), 0)
+})
+
+
+test("finish fails closed on request or persistent-active identity mismatch", () => {
+    const host = createPlayer(2)
+    const room = roomFor("runtime-identity-mismatch", host, [host], { [host]: false })
+    runtimeModule.startFiveBossBattle(startInput(room, host, "identity-play"))
+    completeBattleProof(room, host)
+
+    assertRuntimeError("run_identity_mismatch", () => runtimeModule.finishFiveBossBattle(
+        finishInput(room, host, "identity-play", { requestRoomNumber: `${room.room_number}-wrong` }),
+    ))
+    getDb().prepare(`
+        UPDATE players_active_quests
+        SET room_number = ?
+        WHERE player_id = ?
+    `).run("wrong-persistent-room", host)
+    assertRuntimeError("active_quest_mismatch", () => runtimeModule.finishFiveBossBattle(
+        finishInput(room, host, "identity-play"),
+    ))
+
+    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), null)
+    assert.equal(receiptCount(room.five_boss_runtime!.runId), 0)
+    assert.equal(runStatus(room.five_boss_runtime!.runId), "active")
+    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET.ticketItemId), 1)
+})

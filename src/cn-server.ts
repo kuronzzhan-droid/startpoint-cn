@@ -8,6 +8,7 @@ import { getServerTime, getServerTimeForPlayer } from "./utils";
 import { restoreTimeOffset } from "./data/activeAccount";
 import { installAdminGuard, loadAdminAuthConfig } from "./lib/admin-auth";
 import { getCnReleaseGraphSnapshot } from "./lib/cn-asset-graph";
+import { loadModesBeforeListen } from "./modes/boot";
 
 import versionCheckPlugin from "./routes/cn/versionCheck";
 import leitingAuthPlugin from "./routes/cn/leitingAuth";
@@ -590,11 +591,11 @@ fastify.setNotFoundHandler((request, reply) => {
 const host = process.env.CN_LISTEN_HOST ?? "127.0.0.1";
 const port = parseInt(process.env.CN_LISTEN_PORT ?? "8001");
 
-fastify.listen({ port, host }, (err, address) => {
-    if (err) {
-        console.error(err);
-        process.exit(1);
-    }
+async function startCnServer(): Promise<void> {
+    await loadModesBeforeListen({
+        projectRoot: path.join(__dirname, ".."),
+        listen: async () => { await fastify.listen({ port, host }); },
+    });
     console.log(`CN StarPoint listening on http://${host}:${port}`);
     console.log(`[admin-auth] mode=${adminAuthConfig.mode}; secure_cookie=${adminAuthConfig.cookieSecure}`);
 
@@ -620,4 +621,11 @@ fastify.listen({ port, host }, (err, address) => {
 
     // Start multi battle TCP session server
     startSessionServer();
+}
+
+void startCnServer().catch(error => {
+    // Required mode failures are deliberately fatal before either listener is
+    // opened; a half-registered gameplay runtime must never accept traffic.
+    console.error("[START] CN server failed before listeners became ready:", error);
+    process.exitCode = 1;
 });

@@ -11,6 +11,12 @@ import { runPermanentValidators } from "../../lib/validate";
 import { getCnReleaseGraphSnapshot } from "../../lib/cn-asset-graph";
 import type { ReleaseGraphSnapshot } from "../../lib/cn-asset-graph";
 import { computeAssetTarget } from "../../lib/version";
+import {
+    isFantasyGauntletEnabled,
+    isFantasyQuest,
+    resetFantasyRunSync,
+    shouldResetFantasyRunForStaleActiveQuest,
+} from "../../lib/fantasy-gauntlet";
 
 interface CnLoadBody {
     device_id: number;
@@ -155,6 +161,20 @@ const routes = async (fastify: FastifyInstance) => {
             const roomExists = activeQuest.roomNumber ? getRoom(activeQuest.roomNumber) : true;
             if (!roomExists) {
                 console.log(`[CN-LOAD] active quest room ${activeQuest.roomNumber} not found, clearing`);
+                // 幻想连战:一场没结算完的战斗 = 这一轮作废(与 settle 的失败分支同口径)。
+                // 多人段刻意**不**重置 —— 救援客人在读条阶段掉线会留下一模一样的
+                // 残留,而我方没有持久化的房主标记,无从分辨谁才是这一轮的主人。
+                // 只认 700098/300098,深渊 700099 不经过这里。
+                const fantasyStale = isFantasyGauntletEnabled()
+                    && isFantasyQuest(activeQuest.category, activeQuest.questId);
+                if (shouldResetFantasyRunForStaleActiveQuest(fantasyStale, {
+                    isMulti: activeQuest.isMulti,
+                    isMultiHost: false,
+                })) {
+                    console.log(`[FANTASY] stale active quest reset: player=${playerId}`
+                        + ` quest=${activeQuest.questId}`);
+                    resetFantasyRunSync(playerId);
+                }
                 deletePlayerActiveQuestSync(playerId);
                 clientData.unfinished_quest_list = [];
                 clientData.unfinished_multi_quest_list = [];

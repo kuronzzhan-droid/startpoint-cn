@@ -3478,5 +3478,50 @@
         "manaReward": 1560,
         "poolExpReward": 1620,
         "element": 1
+    },
+    "1099001": {
+        "aRankTime": 967500,
+        "bRankTime": 1255000,
+        "characterExpReward": 1620,
+        "clearRewardId": 1,
+        "element": 0,
+        "manaReward": 1560,
+        "name": "",
+        "poolExpReward": 1620,
+        "rankPointReward": 468,
+        "sPlusRankTime": 450000,
+        "sPlusRewardId": 1,
+        "sRankTime": 680000,
+        "scoreRewardGroupId": 10054
+    },
+    "1099002": {
+        "aRankTime": 967500,
+        "bRankTime": 1255000,
+        "characterExpReward": 1620,
+        "clearRewardId": 1,
+        "element": 0,
+        "manaReward": 1560,
+        "name": "",
+        "poolExpReward": 1620,
+        "rankPointReward": 468,
+        "sPlusRankTime": 450000,
+        "sPlusRewardId": 1,
+        "sRankTime": 680000,
+        "scoreRewardGroupId": 10055
+    },
+    "1099003": {
+        "aRankTime": 967500,
+        "bRankTime": 1255000,
+        "characterExpReward": 1620,
+        "clearRewardId": 1,
+        "element": 0,
+        "manaReward": 1560,
+        "name": "",
+        "poolExpReward": 1620,
+        "rankPointReward": 468,
+        "sPlusRankTime": 450000,
+        "sPlusRewardId": 1,
+        "sRankTime": 680000,
+        "scoreRewardGroupId": 10055
     }
 }

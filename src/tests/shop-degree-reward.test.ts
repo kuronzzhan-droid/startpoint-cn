@@ -523,11 +523,18 @@ test("sales list keeps the active 9700101..9700118 order and gives the degree st
         });
         assert.equal(response.statusCode, 200, response.body);
         const sales = JSON.parse(response.body).data.sales_list;
+        const ids = sales.map(
+            (entry: { shop_item_id: number }) => entry.shop_item_id
+        );
         assert.deepEqual(
-            sales.map((entry: { shop_item_id: number }) => entry.shop_item_id),
+            ids.slice(0, 18),
             Array.from({ length: 18 }, (_, index) => 9_700_101 + index),
         );
-        assert.equal(sales.at(-1).stock_quantity, 1);
+        const degreeProduct = sales.find(
+            (entry: { shop_item_id: number }) => entry.shop_item_id === SHOP_ITEM_ID
+        );
+        assert.notEqual(degreeProduct, undefined);
+        assert.equal(degreeProduct.stock_quantity, 1);
     } finally {
         await app.close();
     }

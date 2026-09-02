@@ -28,6 +28,16 @@ import { noteRushRoundStart, noteRushRunAbandoned } from "../../lib/rush-leaderb
 import { settleThenRolloverRushSeason } from "../../lib/rush-settlement-service";
 import { clearRogueRerollInFlight, markRogueRerollInFlight } from "../../lib/rogue-reroll-inflight";
 import rushEventRankingRewards from "../../../assets/rush_event_ranking_reward.json";
+import {
+    canStartFantasyQuestSync,
+    FANTASY_EQUIPMENT_EXEMPT_RUSH_EVENT_IDS,
+    FANTASY_GAUNTLET,
+    FANTASY_RUSH_PARTY_CATEGORY,
+    getFantasyExclusiveGlobalPartyItemsSync,
+    isFantasyGauntletEnabled,
+    isFantasyPracticeQuest,
+    resetFantasyRunSync,
+} from "../../lib/fantasy-gauntlet";
 
 interface SummaryBody {
     event_id: number,
@@ -654,6 +664,51 @@ const routes = async (fastify: FastifyInstance) => {
             "message": "Quest doesn't exist."
         })
 
+        // ── 幻想连战(700098)的顺序门 ────────────────────────────────
+        // 只对 700098 生效;深渊连战 700099 与其余连战一条分支都不经过这里。
+        //  · 15 关必须按顺序打,乱序/过期的重放一律拒绝;
+        //  · 5/10/15 是多人 boss,Rush 侧的同号行只是客户端占位,直接开打也拒绝
+        //    (canStartFantasyQuestSync 对这三个 questId 解析不出关卡引用);
+        //  · 练习关(folder 2)豁免。
+        // 拒绝一律走 HTTP 200 + result_code 4050 —— 那是客户端原生的「关卡当前
+        // 不可进入」提示;返回 4xx 会被当成致命 API 错误(H409/F1034 那一类)。
+        if (isFantasyGauntletEnabled()
+            && questData.rushEventId === FANTASY_GAUNTLET.rushEventId
+            && !isFantasyPracticeQuest(QuestCategory.RUSH_EVENT, questId)) {
+            const gate = canStartFantasyQuestSync(playerId, QuestCategory.RUSH_EVENT, questId)
+            if (!gate.allowed) {
+                console.log(`[FANTASY] rush start rejected: player=${playerId}`
+                    + ` quest=${questId} requested=${gate.stage} expected=${gate.expectedStage}`)
+                reply.header("content-type", "application/x-msgpack")
+                return reply.status(200).send({
+                    "data_headers": generateDataHeaders({ viewer_id: viewerId, result_code: 4050 }),
+                    "data": {}
+                })
+            }
+        }
+
+        // 幻想连战专属装备只能在幻想连战里用。
+        // **刻意排除深渊连战 700099**:作者 2026-09-02 裁定「深渊的任何逻辑分支
+        // 都不许动」,而这道拒绝会落在 700099 的开战路径上。要不要把深渊也纳入
+        // 限制,由作者拍板后从 FANTASY_EQUIPMENT_EXEMPT_RUSH_EVENT_IDS 里删掉它。
+        if (isFantasyGauntletEnabled()
+            && questData.rushEventId !== undefined
+            && !FANTASY_EQUIPMENT_EXEMPT_RUSH_EVENT_IDS.has(questData.rushEventId)) {
+            const restricted = getFantasyExclusiveGlobalPartyItemsSync(
+                playerId, FANTASY_RUSH_PARTY_CATEGORY, partyId,
+            )
+            if (restricted.length > 0) {
+                console.log(`[FANTASY] exclusive equipment denied in rush: player=${playerId}`
+                    + ` quest=${questId} event=${questData.rushEventId} party=${partyId}`
+                    + ` items=${restricted.join(",")}`)
+                reply.header("content-type", "application/x-msgpack")
+                return reply.status(200).send({
+                    "data_headers": generateDataHeaders({ viewer_id: viewerId, result_code: 4050 }),
+                    "data": {}
+                })
+            }
+        }
+
         // 排行榜:第 1 关开一条 run 并记下起跑时刻,后续关沿用(见 lib/rush-leaderboard)
         if (questData.rushEventFolderId !== undefined && questData.rushEventRound !== undefined) {
             noteRushRoundStart({
@@ -755,6 +810,20 @@ const routes = async (fastify: FastifyInstance) => {
             "error": "Internal Server Error",
             "message": "No player bound to account."
         })
+
+        // 幻想连战的整段重置走自己的一套(它的进度分布在 Rush 与 AdventEvent
+        // 两张表上),与深渊塔的重摇钩子互不相干:上面那个钩子只认
+        // rogueTowerEventId()(=700099)或按事件配的 reset_rerolls_tower,
+        // 而 rogue_event.json 里没有 700098 这一项。
+        if (isFantasyGauntletEnabled() && eventId === FANTASY_GAUNTLET.rushEventId) {
+            resetFantasyRunSync(playerId)
+            console.log(`[FANTASY] run reset: player=${playerId} questType=${questType}`)
+            reply.header("content-type", "application/x-msgpack")
+            return reply.status(200).send({
+                "data_headers": generateDataHeaders({ viewer_id: viewerId }),
+                "data": []
+            })
+        }
 
         if (questType === ResetQuestType.FOLDER) {
 

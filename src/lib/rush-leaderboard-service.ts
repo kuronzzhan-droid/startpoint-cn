@@ -210,9 +210,21 @@ function settleStaleRushSeasonBeforeStart(
  *
  * @param input 关卡上下文(round 为 folder 内轮号,无尽模式的 0 会被忽略)。
  */
+/**
+ * 幻想连战 700098 不进排行榜(第 5/10/15 关走
+ * 多人 AdventEvent 结算,`src/multi/http/battle.ts` 没有榜钩子,期次开了永远收不了榜)
+ * 不进台账。2026-09-02 作者裁决"幻想系列不能覆盖深渊"的排行榜口径;其余 rush 事件行为不变。
+ */
+const RUSH_LEADERBOARD_EXCLUDED_EVENT_IDS: ReadonlySet<number> = new Set([700098])
+
+export function isRushLeaderboardTrackedEvent(eventId: number): boolean {
+    return !RUSH_LEADERBOARD_EXCLUDED_EVENT_IDS.has(Number(eventId))
+}
+
 export function noteRushRoundStart(input: RushRoundStartInput): void {
     try {
         const { playerId, eventId, folderId, round } = input
+        if (!isRushLeaderboardTrackedEvent(eventId)) return
         // 无尽模式(round 0)有它自己的官方排行榜,不进这个榜。
         if (round <= 0) return
 
@@ -276,6 +288,7 @@ export interface RushRoundFinishInput {
 export function noteRushRoundFinish(input: RushRoundFinishInput): void {
     try {
         const { playerId, eventId, folderId, round } = input
+        if (!isRushLeaderboardTrackedEvent(eventId)) return
         if (round <= 0) return
 
         const totalRounds = getRushFolderTotalRoundsSync(eventId, folderId)
@@ -313,6 +326,7 @@ export function noteRushRoundFinish(input: RushRoundFinishInput): void {
  */
 export function noteRushRunAbandoned(playerId: number, eventId: number, folderId?: number): void {
     try {
+        if (!isRushLeaderboardTrackedEvent(eventId)) return
         const targets = folderId === undefined
             ? Object.keys(getRushEventFolderMaxRounds(eventId)).map(Number)
             : [folderId]

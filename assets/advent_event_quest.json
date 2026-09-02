@@ -5805,5 +5805,41 @@
         "poolExpReward": 2435,
         "element": 5852,
         "sPlusRewardId": 1
+    },
+    "300098001": {
+        "name": "幻想连战·首战",
+        "bRankTime": 807000,
+        "aRankTime": 604500,
+        "sRankTime": 402000,
+        "sPlusRankTime": 240000,
+        "rankPointReward": 1,
+        "characterExpReward": 100,
+        "manaReward": 140000,
+        "poolExpReward": 100,
+        "element": 2869
+    },
+    "300098002": {
+        "name": "幻想连战·间战",
+        "bRankTime": 921000,
+        "aRankTime": 688500,
+        "sRankTime": 456000,
+        "sPlusRankTime": 270000,
+        "rankPointReward": 1,
+        "characterExpReward": 100,
+        "manaReward": 190000,
+        "poolExpReward": 100,
+        "element": 2870
+    },
+    "300098003": {
+        "name": "幻想连战·最终战",
+        "bRankTime": 1210000,
+        "aRankTime": 885000,
+        "sRankTime": 560000,
+        "sPlusRankTime": 300000,
+        "rankPointReward": 1,
+        "characterExpReward": 100,
+        "manaReward": 240000,
+        "poolExpReward": 100,
+        "element": 2871
     }
 }

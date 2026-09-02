@@ -5,6 +5,8 @@ import { getRoom, getRoomByToken, updateHostEntryTime, disbandRoom } from "../ro
 import { serializeRoomConnection } from "../room/serializer";
 import { sessionManager } from "../state/SessionManager";
 import { buildNpcMates } from "../npc/builder";
+import { cancelFiveBossLobbyFill } from "../tcp/lobby";
+import { isFantasyRoomClosed } from "../fantasy-room-gate";
 
 export function registerRoomRoutes(fastify: FastifyInstance): void {
 
@@ -24,7 +26,8 @@ export function registerRoomRoutes(fastify: FastifyInstance): void {
             ? getRoom(body.room_number)
             : getRoomByToken(body.access_token || "");
 
-        if (!room) {
+        // 幻想连战:房主已经打完的房不再让人进入准备阶段(与 select_room 同口径)。
+        if (!room || isFantasyRoomClosed(room)) {
             reply.header("content-type", "application/x-msgpack");
             return reply.status(200).send({
                 "data_headers": generateDataHeaders({ viewer_id: viewerId }),
@@ -104,7 +107,8 @@ export function registerRoomRoutes(fastify: FastifyInstance): void {
         }
 
         const room = getRoom(body.room_number);
-        if (!room) {
+        // 幻想连战:房主已经打完的房不再恢复 —— 恢复进去只会在开战时被房间门拒绝。
+        if (!room || isFantasyRoomClosed(room)) {
             reply.header("content-type", "application/x-msgpack");
             return reply.status(200).send({
                 "data_headers": generateDataHeaders({ viewer_id: viewerId }),
@@ -172,6 +176,7 @@ export function registerRoomRoutes(fastify: FastifyInstance): void {
         }
 
         if (body.room_number) {
+            cancelFiveBossLobbyFill(body.room_number);
             sessionManager.broadcastToRoom(body.room_number, [1, [6, "multibattle_room_dismissed"]]);
             disbandRoom(body.room_number);
             console.log(`[MULTI] room ${body.room_number} disbanded by viewer ${viewerId}`);

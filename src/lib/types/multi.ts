@@ -36,6 +36,18 @@ export interface MultiMate {
 }
 
 
+export interface FiveBossLobbyRuntimeSnapshot {
+    runId: string
+    expectedRealPlayerIds: number[]
+    autoplayModeByPlayerId: Record<string, boolean>
+    battleIdentityByConnectionId: Record<string, {
+        viewerId: number
+        playerId: number
+        remoteAddress: string | null
+    }>
+}
+
+
 export interface MultiRoom {
     room_number: string
     access_token: string
@@ -54,6 +66,7 @@ export interface MultiRoom {
     share_room_options: number
     is_npc_mode: boolean
     npc_count: number  // fixed NPC count per battle: 0=unrecruited, 1/2=fixed count
+    five_boss_runtime?: FiveBossLobbyRuntimeSnapshot
 }
 
 
@@ -66,4 +79,3 @@ export interface NpcMateTemplate {
     rank: number
     degree_id: number
 }
-
