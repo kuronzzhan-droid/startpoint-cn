@@ -148,6 +148,10 @@ class TestManifestContract(unittest.TestCase):
             "character/seris/Expression/asset.bin",
             "character/seris/expressions/asset.bin",
             "character/seris/EXPRESSIONS/asset.bin",
+            # hashed store rels (<2hex>/<38hex>) — publishing would hash them a
+            # second time and mint a dead address (seofon 1.4.441-459 regression)
+            "1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+            "ab/0123456789abcdef0123456789abcdef012345",
         )
         with tempfile.TemporaryDirectory() as td:
             package_dir = Path(td)
@@ -175,6 +179,10 @@ class TestManifestContract(unittest.TestCase):
                 "metadata/wordsmith/asset.bin",
                 "metadata/login_bonus/asset.bin",
                 "metadata/expressionist/asset.bin",
+                # near-misses of the store-shard shape stay legal
+                "1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001x",
+                "1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c400",
+                "1e/664c/asset.bin",
             )
             for logical_path in allowed_paths:
                 self.assertIsNotNone(
@@ -626,6 +634,235 @@ class TestManifestContract(unittest.TestCase):
         self.assertEqual(manifest, before)
 
 
+PIXELART_TIMELINE_PATH = (
+    "character/seris_dragon_king/pixelart/pixelart.timeline.amf3.deflate"
+)
+ACTION_DSL_PATH = (
+    "battle/action/skill/action/rare5/"
+    "seris_dragon_king$seris_dragon_king_1.action.dsl.amf3.deflate"
+)
+_TIMELINE_SEQUENCES = (
+    ("neutral", "loop", 1, 2), ("walk_back", "loop", 3, 26),
+    ("walk_front", "loop", 27, 50), ("skill_ready", "once", 51, 110),
+    ("kachidoki", "loop", 111, 158), ("into_coffin", "pass", 159, 200),
+    ("ghost_raise", "pass", 201, 225), ("ghost_neutral", "loop", 226, 386),
+    ("revive", "once", 387, 428),
+)
+
+
+def _deflate_amf3(tree) -> bytes:
+    import zlib
+
+    import wf_dsl
+    payload = wf_dsl.encode_amf3(tree)
+    compressor = zlib.compressobj(9, zlib.DEFLATED, -15)
+    return compressor.compress(payload) + compressor.flush()
+
+
+def _timeline_payload(*, kachidoki_kind: str = "loop") -> bytes:
+    ground = ("neutral", "walk_back", "walk_front")
+    seqs = [{"name": n, "kind": kachidoki_kind if n == "kachidoki" else k,
+             "begin": b, "end": e} for n, k, b, e in _TIMELINE_SEQUENCES]
+    return _deflate_amf3({
+        "sequences": seqs,
+        "sounds": [],
+        "points": [{"path": "hp_gauge",
+                    "frames": [{"begin": 1, "data": [{"x": 0, "y": -10}]}]}],
+        "circles": [{"path": "unit_body", "frames": [
+            {"begin": s["begin"] + 1,
+             "data": [{"x": 0, "y": 0, "r": 8.3}] if s["name"] in ground else []}
+            for s in seqs]}],
+        "rectangles": [],
+        "matrices": [],
+    })
+
+
+def _dsl_payload(element: int) -> bytes:
+    return _deflate_amf3(["ActionDsl", 1, ["Block", [
+        ["Command", ["CreateNormalAttack", 12, element, [], [], 0,
+                     [{"min": 2.0, "max": 2.0}], [{"min": 0.0, "max": 0.0}],
+                     False, False, False, False, False,
+                     [{"min": 0.0, "max": 0.0}], [{"min": 0.0, "max": 0.0}],
+                     ["Fine"], True]],
+    ]]])
+
+
+def _production_qa() -> dict:
+    return {
+        "delivery_mode": "production",
+        "release_ready": True,
+        "required_assets_total": 37,
+        "required_assets_present": 37,
+    }
+
+
+def _character_table(element: str = "5") -> bytes:
+    import wf_mod_tool as core
+    # c2(稀有度)刻意写 4,与 c3(元素)不同 —— 读错列会被单测抓住。
+    row = ("seris_dragon_king,1,4," + element
+           + ",Dragon,,4,Female,seris_dragon_king,(None),,")
+    return core.build_orderedmap(core.OrderedMap(
+        "master/character/character.orderedmap",
+        ["129999"], [row.encode("utf-8")], Path("<memory>"),
+    ))
+
+
+class TestClientAssetShapeGate(unittest.TestCase):
+    """`validate_manifest` 里的 pixelart.timeline / action DSL 形状门禁。
+
+    两条规则的正向对照见 wf_client_legality 顶部注释:官方 1011 个玩家侧
+    action DSL + 500 份可玩角色 pixelart.timeline 零误报。
+    """
+
+    def _module(self):
+        import wf_character_pack
+        return wf_character_pack
+
+    def _package(self, package_dir: Path, *, element_code: int,
+                 kachidoki_kind: str = "loop", production: bool = True,
+                 with_character_table: bool = True,
+                 dsl_payload: bytes | None = None) -> dict:
+        manifest = base_manifest()
+        if production:
+            manifest["qa"] = _production_qa()
+        if with_character_table:
+            add_file(package_dir, manifest, "common",
+                     "master/character/character.orderedmap", _character_table())
+        add_file(package_dir, manifest, "common", PIXELART_TIMELINE_PATH,
+                 _timeline_payload(kachidoki_kind=kachidoki_kind))
+        add_file(package_dir, manifest, "common", ACTION_DSL_PATH,
+                 dsl_payload if dsl_payload is not None
+                 else _dsl_payload(element_code))
+        return manifest
+
+    def test_official_shape_passes(self):
+        pack = self._module()
+        with tempfile.TemporaryDirectory() as td:
+            package_dir = Path(td)
+            manifest = self._package(package_dir, element_code=6)
+            self.assertEqual(
+                pack.validate_manifest(manifest, package_dir,
+                                       require_referenced_assets=True),
+                [],
+            )
+
+    def test_off_by_one_element_code_is_flagged(self):
+        pack = self._module()
+        with tempfile.TemporaryDirectory() as td:
+            package_dir = Path(td)
+            manifest = self._package(package_dir, element_code=5)
+            errors = pack.validate_manifest(manifest, package_dir,
+                                            require_referenced_assets=True)
+            self.assertTrue(
+                any(ACTION_DSL_PATH in e and "1-based" in e for e in errors),
+                errors,
+            )
+
+    def test_pixelart_timeline_shape_is_flagged(self):
+        pack = self._module()
+        with tempfile.TemporaryDirectory() as td:
+            package_dir = Path(td)
+            manifest = self._package(package_dir, element_code=6,
+                                     kachidoki_kind="once")
+            errors = pack.validate_manifest(manifest, package_dir,
+                                            require_referenced_assets=True)
+            self.assertTrue(
+                any(PIXELART_TIMELINE_PATH in e and "kachidoki" in e
+                    for e in errors),
+                errors,
+            )
+
+    def test_installed_legacy_packages_stay_usable_as_repair_input(self):
+        """非 production / 不要求引用资产时不判 —— 复原已发布包时必须能读回来。"""
+        pack = self._module()
+        with tempfile.TemporaryDirectory() as td:
+            package_dir = Path(td)
+            manifest = self._package(package_dir, element_code=5,
+                                     kachidoki_kind="once")
+            self.assertEqual(
+                pack.validate_manifest(manifest, package_dir), [])
+        with tempfile.TemporaryDirectory() as td:
+            package_dir = Path(td)
+            manifest = self._package(package_dir, element_code=5,
+                                     kachidoki_kind="once", production=False)
+            self.assertEqual(
+                pack.validate_manifest(manifest, package_dir,
+                                       require_referenced_assets=True),
+                [],
+            )
+
+    def test_without_character_row_only_the_range_check_survives(self):
+        pack = self._module()
+        with tempfile.TemporaryDirectory() as td:
+            package_dir = Path(td)
+            manifest = self._package(package_dir, element_code=5,
+                                     with_character_table=False)
+            self.assertEqual(
+                pack.validate_manifest(manifest, package_dir,
+                                       require_referenced_assets=True),
+                [],
+                "取不到 c3 时差一签名必须退让,不能凭空报错",
+            )
+        with tempfile.TemporaryDirectory() as td:
+            package_dir = Path(td)
+            manifest = self._package(package_dir, element_code=9,
+                                     with_character_table=False)
+            errors = pack.validate_manifest(manifest, package_dir,
+                                            require_referenced_assets=True)
+            self.assertTrue(any("越界" in e for e in errors), errors)
+
+    def test_undecodable_payload_is_reported_not_swallowed(self):
+        pack = self._module()
+        with tempfile.TemporaryDirectory() as td:
+            package_dir = Path(td)
+            manifest = self._package(package_dir, element_code=6,
+                                     dsl_payload=b"not-a-deflate-stream")
+            errors = pack.validate_manifest(manifest, package_dir,
+                                            require_referenced_assets=True)
+            self.assertTrue(
+                any("cannot decode AMF3 payload" in e for e in errors), errors)
+
+    def test_wrong_element_column_is_pinned(self):
+        """c3 是元素;读成 c2(稀有度=4)会把 5 当成合法值放过去。"""
+        pack = self._module()
+        with tempfile.TemporaryDirectory() as td:
+            package_dir = Path(td)
+            manifest = self._package(package_dir, element_code=5)
+            errors = pack.validate_manifest(manifest, package_dir,
+                                            require_referenced_assets=True)
+            self.assertTrue(any("角色内部元素 5" in e for e in errors), errors)
+        with tempfile.TemporaryDirectory() as td:
+            package_dir = Path(td)
+            manifest = self._package(package_dir, element_code=4)
+            self.assertEqual(
+                pack.validate_manifest(manifest, package_dir,
+                                       require_referenced_assets=True),
+                [],
+                "4 是稀有度不是元素;读错列会在这里变红",
+            )
+
+    def test_server_root_and_unrelated_paths_are_exempt(self):
+        """server 根不是客户端资产;非 battle/action 的 .amf3.deflate 也不判。"""
+        pack = self._module()
+        with tempfile.TemporaryDirectory() as td:
+            package_dir = Path(td)
+            manifest = base_manifest()
+            manifest["qa"] = _production_qa()
+            add_file(package_dir, manifest, "common",
+                     "master/character/character.orderedmap", _character_table())
+            # 同一条逻辑路径,只是落在 server 根上 —— 必须被豁免。
+            add_file(package_dir, manifest, "server", ACTION_DSL_PATH,
+                     _dsl_payload(5))
+            add_file(package_dir, manifest, "common",
+                     "battle/effect/skill_unique/seris/vfx.timeline.amf3.deflate",
+                     b"unrelated")
+            self.assertEqual(
+                pack.validate_manifest(manifest, package_dir,
+                                       require_referenced_assets=True),
+                [],
+            )
+
+
 class _FakeReleaseBaseProvider:
     def __init__(self, state):
         self.state = state
@@ -964,6 +1201,72 @@ class _TransactionFixtureMixin:
         return installed, installed_dir
 
 
+# 「声明即必填」通用律要求:kind 在 enum_map()['cases'] 里声明的块字段,入口列不许留空
+# (无空串分支的 parseAt:trigger_puller/target/multiply_trigger 直接 C7050,其余
+# Std.parseInt('')=NaN)。基准 fixture 行必须本身合法,违规由各用例自己注入。
+# 取值逐字抄官方行(ability 键 84 记录0,CN store 1.4.559)。
+_BASELINE_BLOCK_FIELD_VALUES = {
+    "trigger_puller": "0",
+    "threshold": "100000",
+    "threshold2": "100000",
+    "start_threshold": "100000",
+    "trigger_limit": "(None)",
+    "cooltime": "0",
+    "unique_condition_id": "0",
+    "multiball_group_id": "0",
+    "target": "0",
+    "strength": "10000",
+    "strength2": "10000",
+    "frame": "90000000",
+    "number": "100000",
+    "max_accumulation": "(None)",
+    "flip_limit": "(None)",
+    "power_flip_limit": "(None)",
+    "end_power_flip_limit": "(None)",
+    "end_power_flip_accepted_levels": "(None)",
+    "cancelable": "0",
+    "time": "0",
+    "element": "0",
+    "initial_multiply": "1",
+    "multiply_trigger": "0",
+    "by_each_trigger_puller": "false",
+}
+
+_BASELINE_BLOCK_FIELD_TABLE = {
+    "precondition1": "precondition",
+    "precondition2": "precondition",
+    "precondition3": "precondition",
+    "instant_trigger": "instant_trigger",
+    "during_accumulation_trigger": "during_accumulation_trigger",
+    "during_trigger": "during_trigger",
+    "instant_content": "instant_content",
+    "during_content": "during_content",
+}
+
+
+def _fill_baseline_block_fields(kind: str, row: list[str]) -> None:
+    import wf_describe
+
+    blocks = {
+        name: int(index)
+        for name, index in wf_describe.layout(kind)["blocks"].items()
+    }
+    block_fields = wf_describe.enum_map()["block_fields"]
+    for block, fields_key in _BASELINE_BLOCK_FIELD_TABLE.items():
+        base = blocks[block]
+        for name, value in _BASELINE_BLOCK_FIELD_VALUES.items():
+            offsets = [
+                int(offset)
+                for offset, field, _label in block_fields[fields_key]
+                if field == name or field.startswith(name + ".")
+            ]
+            if not offsets:
+                continue
+            col = base + min(offsets)
+            if not row[col]:
+                row[col] = value
+
+
 class TestPackPreflight(_TransactionFixtureMixin, unittest.TestCase):
     @staticmethod
     def _client_ability_row(kind: str, trigger_mode: str) -> list[str]:
@@ -972,6 +1275,7 @@ class TestPackPreflight(_TransactionFixtureMixin, unittest.TestCase):
         layout = wf_describe.layout(kind)
         blocks = {name: int(index) for name, index in layout["blocks"].items()}
         row = [""] * int(layout["ncols"])
+        _fill_baseline_block_fields(kind, row)
         row[blocks["precondition1"] - 1] = trigger_mode
         for name in ("precondition1", "precondition2", "precondition3"):
             row[blocks[name]] = "0"
@@ -980,9 +1284,27 @@ class TestPackPreflight(_TransactionFixtureMixin, unittest.TestCase):
             row[blocks["instant_precontent"]] = "(None)"
             row[blocks["instant_delay"]] = "0"
             row[blocks["instant_content"]] = "0"
+            # instant_content kind 0 走 parseAt<mt> 读 multiply_trigger(41 个 kind
+            # 都读),空串不在 InstantAbilityMultiplyTriggerMasterValue 的 0..3 枚举域,
+            # 基准行必须合法,违规由各用例自己注入。
+            content_offsets = {
+                field: int(offset)
+                for offset, field, _label
+                in wf_describe.enum_map()["block_fields"]["instant_content"]
+            }
+            row[blocks["instant_content"] + content_offsets["multiply_trigger"]] = "0"
         elif trigger_mode == "1":
             row[blocks["during_accumulation_trigger"]] = "(None)"
             row[blocks["during_trigger"]] = "0"
+            # during_trigger kind 0 走 parseAt98 读 trigger_puller(230 个 kind 里
+            # 147 个都读),空串不在 DuringAbilityTriggerPullerMasterValue 的 0..10
+            # 枚举域内,留空的基准行本身就会 C7050。基准行必须合法,违规由各用例自己注入。
+            offsets = {
+                field: int(offset)
+                for offset, field, _label
+                in wf_describe.enum_map()["block_fields"]["during_trigger"]
+            }
+            row[blocks["during_trigger"] + offsets["trigger_puller"]] = "0"
             row[blocks["even_if_owner_dead"]] = "false"
             row[blocks["during_content"]] = "0"
         else:

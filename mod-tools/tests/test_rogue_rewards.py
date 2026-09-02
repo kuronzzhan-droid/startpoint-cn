@@ -19,6 +19,7 @@ from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import wf_assets  # noqa: E402
+import wf_describe  # noqa: E402
 import wf_mod_tool as core  # noqa: E402
 import wf_publish  # noqa: E402
 import wf_rogue_build as rogue_build  # noqa: E402
@@ -267,6 +268,48 @@ def donor_duration_sentinel(template_id: str, donor_line: int, column: int) -> s
     return f"{column}{int(template_id):07d}{donor_line:02d}"
 
 
+# 捐赠行的 instant_content 块默认值(空列才填)。build_soul_leaf 会把 c44 换成
+# 发射 kind,而新 kind 往往比捐赠 kind 多声明几列;官方 ability_soul 451 键 1001 行
+# 里这些列**一行都没留空**,留空即 Std.parseInt('')=NaN(部分列直接 C7050)。
+# 真实 store 捐赠行本来就是填满的 —— 15 个武器规格跑 build_soul_leaf 全过 ——
+# 所以这里补的是 fixture 与官方形状的差距,不是放宽门禁。
+_CONTENT_FIELD_DEFAULTS = {
+    "target": "1",
+    "strength": "100",
+    "strength2": "0",
+    "frame": "90000000",
+    "number": "100000",
+    "max_accumulation": "(None)",
+    "flip_limit": "(None)",
+    "power_flip_limit": "(None)",
+    "end_power_flip_limit": "(None)",
+    "end_power_flip_accepted_levels": "(None)",
+    "cancelable": "0",
+    "unique_condition_id": "0",
+    "time": "0",
+    "element": "0",
+    "initial_multiply": "1",
+    "multiply_trigger": "0",
+    "by_each_trigger_puller": "false",
+}
+
+
+def _fill_instant_content_defaults(row: list[str]) -> None:
+    base = int(wf_describe.layout("ability_soul")["blocks"]["instant_content"])
+    fields = wf_describe.enum_map()["block_fields"]["instant_content"]
+    for name, value in _CONTENT_FIELD_DEFAULTS.items():
+        offsets = [
+            int(offset)
+            for offset, field, _label in fields
+            if field == name or field.startswith(name + ".")
+        ]
+        if not offsets:
+            continue
+        col = base + min(offsets)
+        if not row[col]:
+            row[col] = value
+
+
 def template_row(
     effect_kind: str, *, template_id: str = "9999999", donor_line: int = 0,
 ) -> list[str]:
@@ -278,6 +321,12 @@ def template_row(
     row[24], row[36], row[43] = "0", "(None)", "0"
     row[44], row[45], row[46] = effect_kind, "1", ""
     row[48], row[49] = "100", "200"
+    _fill_instant_content_defaults(row)
+    content_case = wf_describe.enum_map()["cases"]["instant_content"].get(effect_kind)
+    if content_case is not None and "multiply_trigger" in content_case["fields"]:
+        # 官方 ability_soul 里凡是声明 multiply_trigger 的瞬发行都带 c71/c72
+        # (live 8000111 槽3 kind 28 就是 '1'/'0');留空 = parseAt72 C7050。
+        row[71], row[72] = "1", "0"
     row[54] = donor_duration_sentinel(template_id, donor_line, 54)
     row[55] = donor_duration_sentinel(template_id, donor_line, 55)
     row[122] = f"{template_id}#{donor_line}"

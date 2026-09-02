@@ -105,6 +105,9 @@ TABLE_ALIASES = {
     "boss_coin_shop": "master/shop/boss_coin_shop.orderedmap",
     "boss_coin_shop_category": "master/shop/boss_coin_shop_category.orderedmap",
     "trimmed_image": "master/generated/trimmed_image.orderedmap",
+    # --- 称号/铭牌(见 mod-tools/wf_degree.py) ---
+    "degree": "master/degree/degree.orderedmap",
+    "degree_category": "master/degree/degree_category.orderedmap",
     # --- boss 战 / 副本 / 连战(roguelike boss rush 方案用,见 docs/boss连战roguelike方案.md) ---
     "general_boss": "master/battle/boss/general_boss.orderedmap",
     "general_boss_state": "master/battle/boss/general_boss_state.orderedmap",
@@ -183,8 +186,7 @@ def collect_files(args) -> list[str]:
         for t in args.tables.split(","):
             t = t.strip()
             logical = TABLE_ALIASES.get(t, t)
-            digest = core.sha1_path(logical)
-            rels.append(f"{digest[:2]}/{digest[2:]}")
+            rels.append(_relative_for_logical(logical))
     else:
         try:
             rels = json.loads(PENDING.read_text(encoding="utf-8"))
@@ -212,8 +214,21 @@ def _explicit_logicals(tables: str) -> list[str]:
 
 
 def _relative_for_logical(logical: str) -> str:
-    digest = core.sha1_path(logical)
-    return f"{digest[:2]}/{digest[2:]}"
+    """逻辑路径 -> 'xx/hash',保留 medium:/android: 层前缀。
+
+    层前缀必须在做 sha1 **之前**摘掉:哈希只针对逻辑路径本身,前缀是投递层的
+    标记,由 `_prepare_files` 解读。旧实现连前缀一起哈希,算出一个不存在的地址,
+    又因为结果里没有前缀而被当成 upload 层去找,报
+    "missing explicit publish entry" —— `--tables` 这条路上层前缀等于没实现。
+    (2026-09-01 发 medium 层立绘时踩到;pending 那条路存的本来就是带前缀的 rel,
+    所以一直没暴露。)
+    """
+    prefix = next(
+        (value for value in ("medium:", "android:") if logical.startswith(value)),
+        "",
+    )
+    digest = core.sha1_path(logical[len(prefix):])
+    return f"{prefix}{digest[:2]}/{digest[2:]}"
 
 
 def _load_snapshot(

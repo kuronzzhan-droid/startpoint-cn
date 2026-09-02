@@ -564,6 +564,51 @@ def _safe_relative(value: str) -> bool:
     return not path.is_absolute() and all(part not in {"", ".", ".."} for part in path.parts)
 
 
+def _extended_length_path(path: Path | str) -> str:
+    """Windows 上返回 `\\\\?\\` 扩展长度形式,其它平台原样返回绝对路径。
+
+    ``rebase_runtime_package`` 把 ``package``(7 字符)顶替成
+    ``.rebased-package.live-rebase-<8hex>``(37 字符),包里每条路径 +30。
+    注册表 ``HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem\\LongPathsEnabled=0``
+    时(本机即是),无前缀的 Win32 API 有两条硬边界:建文件 259 字符、建目录 247
+    字符,越线直接 ``FileNotFoundError``。这是**确定性**故障而不是并发瞬时故障,
+    重试多少次都一样失败,只有扩展长度前缀能绕开 MAX_PATH。
+
+    与 ``wf_character_flow._extended_length_path`` 同源同语义;两个模块各留一份
+    是为了不让 ``wf_release``(被 flow import)反向依赖 flow。
+    """
+    raw = str(path)
+    if os.name != "nt":
+        return os.path.abspath(raw)
+    if raw.startswith("\\\\?\\"):
+        return raw
+    absolute = os.path.abspath(raw)
+    if absolute.startswith("\\\\?\\"):
+        return absolute
+    if absolute.startswith("\\\\"):          # UNC: \\host\share -> \\?\UNC\host\share
+        return "\\\\?\\UNC\\" + absolute[2:]
+    return "\\\\?\\" + absolute
+
+
+def _discard_tree(path: Path | str, *, label: str) -> None:
+    """尽力删掉一棵已经作废的目录树。
+
+    只在异常回卷路径上调用:此时已经有一个真实错误在上抛,清理失败必须让位给它,
+    否则原始死因就被掩盖了。所以这里**报警但不再抛**——同时也绝不 ``ignore_errors``
+    式地静默吞掉:残骸留在盘上必须有人看得见,不能当作"清干净了"。
+    """
+    target = _extended_length_path(path)
+    try:
+        shutil.rmtree(target)
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        print(
+            f"warning: {label} cleanup failed, residue left on disk: {target}: {exc}",
+            file=sys.stderr,
+        )
+
+
 def _fsync_directory(path: Path) -> None:
     if os.name == "nt":
         return
@@ -683,7 +728,10 @@ def rebase_runtime_package(
     errors = validate(package_dir)
     if errors:
         raise ReleaseError("package is invalid before rebase:\n- " + "\n- ".join(errors))
-    if output_dir.exists():
+    # 输出目录名比 `package` 长,里面的深层文件可能已经越过 MAX_PATH;凡是要看见
+    # 树里每一个文件的操作都必须走扩展长度形式,否则越线文件在无前缀 API 下"不存在"。
+    long_output = Path(_extended_length_path(output_dir))
+    if long_output.exists():
         raise ReleaseError("runtime rebase output already exists")
     source_resolved = package_dir.resolve()
     output_parent = output_dir.parent.resolve()
@@ -698,9 +746,12 @@ def rebase_runtime_package(
     source_manifest_raw = manifest_path.read_bytes()
     claims = character_pack._parse_transaction_claims(manifest)  # type: ignore[attr-defined]
     source_files = release_pack._scan_files(package_dir)  # type: ignore[attr-defined]
-    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    os.makedirs(_extended_length_path(output_dir.parent), exist_ok=True)
+    # 暂存目录名 `.<output>.live-rebase-<8hex>` 比 `package` 长 30 字符;`dir=` 带上
+    # 扩展长度前缀,mkdtemp 返回的路径以及它派生出的每一条子路径都自动继承前缀。
     staging = Path(tempfile.mkdtemp(
-        prefix=f".{output_dir.name}.live-rebase-", dir=output_dir.parent
+        prefix=f".{output_dir.name}.live-rebase-",
+        dir=_extended_length_path(output_dir.parent),
     ))
     try:
         for relative in sorted(source_files - {"manifest.json"}):
@@ -770,13 +821,15 @@ def rebase_runtime_package(
                 "rebased package validation failed:\n- "
                 + "\n- ".join(staged_errors)
             )
-        os.replace(staging, output_dir)
-        final_errors = validate(output_dir)
+        os.replace(staging, long_output)
+        final_errors = validate(long_output)
         if final_errors:
             raise ReleaseError(
                 "renamed rebased package validation failed:\n- "
                 + "\n- ".join(final_errors)
             )
+        # 返回值必须是 plain 形式:wf_character_flow._activate_rebased_package 会断言
+        # output.parent == workspace.root,带 `\\?\` 前缀的路径过不了那道门。
         return RuntimeRebaseResult(
             output_dir=output_dir,
             source_manifest_sha256=_sha256(source_manifest_raw),
@@ -784,10 +837,8 @@ def rebase_runtime_package(
             table_count=len(rebase_facts),
         )
     except Exception:
-        if staging.exists():
-            shutil.rmtree(staging, ignore_errors=True)
-        if output_dir.exists():
-            shutil.rmtree(output_dir, ignore_errors=True)
+        _discard_tree(staging, label="runtime rebase staging")
+        _discard_tree(long_output, label="runtime rebase output")
         raise
 
 

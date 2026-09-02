@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "route_id": "five_boss_coop_v1",
+  "ticket_item_id": "10000143",
+  "ai_fill_timeout_seconds": 120,
+  "scenes": [
+    {
+      "source_fields": [
+        "expert_white_tiger_100",
+        "discarded_dragon_water_re_lv80_kc",
+        "hero_big_boss_kc"
+      ]
+    },
+    {
+      "source_fields": [
+        "desert_bonds_big_boss_single_ex_hell",
+        "raid_yokai_emaki_middle_boss"
+      ]
+    }
+  ]
+}

@@ -55,13 +55,34 @@ FORBIDDEN_ASSET_SEGMENTS = frozenset({
     "story", "words", "login", "expression", "expressions",
 })
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+# store 分片布局(<2hex>/<38hex>)= hashed_rel 的输出。logical_path 一旦写成这种
+# 形状,发布时会被再哈希一次,在链里铸出客户端永远不请求的死地址(1.4.441-459
+# 的 seofon ability.orderedmap 副本就是这么来的)。真逻辑路径不可能长这样。
+STORE_SHARD_RE = re.compile(r"^[0-9a-f]{2}/[0-9a-f]{38}$")
 FILESYSTEM_ERRORS = (OSError, RuntimeError, ValueError)
-SERVER_LOGICAL_PATHS = (
+REQUIRED_SERVER_LOGICAL_PATHS = (
     "cdndata/character.json",
     "cdndata/character_text.json",
     "character.json",
     "mana_node.json",
 )
+# 服务端镜像里的**派生**表:内容可以从包自带的客户端表算出来,所以它是可选的。
+# 2026-09-02 之前发布的 119 份 manifest 一律不带 mana_board.json —— 要求"恰好
+# 五项"会让所有老包在 preflight 当场变红(installed manifest 也走同一条断言),
+# 而 manifest 又和 active 链上的 ownership 哈希绑死,不能为了补一行就重建包
+# (见 [[wf-package-manifest-binding]])。因此:必需四项照旧,可选项只放行不强制。
+OPTIONAL_SERVER_LOGICAL_PATHS = (
+    "mana_board.json",
+)
+ALLOWED_SERVER_LOGICAL_PATHS = (
+    *REQUIRED_SERVER_LOGICAL_PATHS,
+    *OPTIONAL_SERVER_LOGICAL_PATHS,
+)
+# 兼容别名:wf_seris_release_pack.SERVER_PATHS 直接引用它来生成 runtime-test 包,
+# 语义必须保持"必需的那四项"。
+SERVER_LOGICAL_PATHS = REQUIRED_SERVER_LOGICAL_PATHS
+SERVER_MANA_BOARD_LOGICAL = "mana_board.json"
+CLIENT_MANA_BOARD_LOGICAL = "master/generated/mana_board.orderedmap"
 CLIENT_ROOTS: tuple[RootName, ...] = ("common", "medium", "android")
 ARCHIVE_PREFIXES = {
     "common": "production/upload/",
@@ -424,6 +445,137 @@ def _reject_duplicate_object_keys(pairs: list[tuple[str, object]]) -> dict:
     return result
 
 
+ServerManaBoard = dict[str, dict[str, dict[str, list[list[str]]]]]
+
+
+def _mana_board_layer(
+    raw: bytes, label: str, *, compressed_rows: bool
+) -> tuple[list[str], list[bytes]]:
+    try:
+        return core._strict_orderedmap_rows(  # type: ignore[attr-defined]
+            raw, label=label, compressed_rows=compressed_rows
+        )
+    except Exception as exc:
+        raise PackPreflightError(
+            f"client mana board layer is unreadable ({label}): {exc}"
+        ) from exc
+
+
+def derive_server_mana_board(
+    raw: bytes, character_ids: Iterable[str | int] | None = None
+) -> ServerManaBoard:
+    """客户端 `master/generated/mana_board.orderedmap` → 服务端镜像行。
+
+    客户端表是三层 orderedmap:外层键=角色 ID(行原样)、中层键=板号(行原样)、
+    内层键=槽位(行 zlib CSV)。服务端 `assets/mana_board.json` 的形状是
+    ``mb[cid][board][slot] = [[nodeId, x, y, shape, pedestal, parent]]`` ——
+    叶子就是 CSV 行**原样**,没有任何字段改写。
+
+    该规则在本机对 CN live store 的全部 557 个角色键与仓库现有镜像逐键相等
+    (见 tests/test_character_pack_mana_board.DerivationMatchesRepoMirrorTest)。
+
+    `character_ids` 为 None 时导出整表;给了就只导出这些角色,且缺任何一个都
+    抛错(缺行 = 服务端 `getManaNodeAwakeCost` 返回 null,必须失败关闭)。
+    """
+    wanted: set[str] | None = (
+        None if character_ids is None else {str(item) for item in character_ids}
+    )
+    outer_keys, outer_rows = _mana_board_layer(
+        raw, CLIENT_MANA_BOARD_LOGICAL, compressed_rows=False
+    )
+    derived: ServerManaBoard = {}
+    for character_id, character_raw in zip(outer_keys, outer_rows):
+        if wanted is not None and character_id not in wanted:
+            continue
+        boards: dict[str, dict[str, list[list[str]]]] = {}
+        board_keys, board_rows = _mana_board_layer(
+            character_raw, f"{CLIENT_MANA_BOARD_LOGICAL}#{character_id}",
+            compressed_rows=False,
+        )
+        for board_key, board_raw in zip(board_keys, board_rows):
+            label = f"{CLIENT_MANA_BOARD_LOGICAL}#{character_id}/{board_key}"
+            slot_keys, slot_rows = _mana_board_layer(
+                board_raw, label, compressed_rows=True
+            )
+            slots: dict[str, list[list[str]]] = {}
+            for slot_key, slot_raw in zip(slot_keys, slot_rows):
+                try:
+                    text = slot_raw.decode("utf-8")
+                except UnicodeDecodeError as exc:
+                    raise PackPreflightError(
+                        f"client mana board slot is not UTF-8 ({label}/{slot_key})"
+                    ) from exc
+                slots[slot_key] = core.read_csv_lines(text)
+            boards[board_key] = slots
+        derived[character_id] = boards
+    if wanted is not None:
+        missing = sorted(wanted - set(derived))
+        if missing:
+            raise PackPreflightError(
+                "client mana board table lacks character rows: "
+                + ", ".join(missing)
+            )
+    return derived
+
+
+def load_server_json_mirror(
+    raw: bytes | None, label: str = "server JSON mirror"
+) -> dict:
+    """严格读一张服务端镜像表(拒重复键/非 JSON 常量);`None` = 文件不存在。"""
+    return {} if raw is None else _strict_server_json_object(raw, label)
+
+
+def _strict_server_json_object(raw: bytes, label: str) -> dict:
+    try:
+        value = json.loads(
+            raw.decode("utf-8"),
+            parse_constant=_reject_json_constant,
+            object_pairs_hook=_reject_duplicate_object_keys,
+        )
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise PackPreflightError(f"{label} is not a valid JSON object: {exc}") from exc
+    if not isinstance(value, dict):
+        raise PackPreflightError(f"{label} must be a JSON object")
+    return value
+
+
+def merge_server_json_object(
+    live_raw: bytes | None, rows: Mapping[str, Any]
+) -> bytes:
+    """键级合并:只新增/覆盖 `rows` 里的键,其余键与顺序原样保留。
+
+    输出与 `wf_release._ordered_json` / 仓库现有 `assets/*.json` 同一字节口径:
+    UTF-8 原文、紧凑分隔符 `(",", ":")`、不排序、无尾换行。
+    """
+    live = load_server_json_mirror(live_raw)
+    merged = dict(live)
+    for key, value in rows.items():
+        merged[str(key)] = value
+    return json.dumps(
+        merged, ensure_ascii=False, sort_keys=False, separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+
+
+def package_server_mana_board_rows(
+    package_dir: Path, character_id: str | int
+) -> ServerManaBoard | None:
+    """包内客户端玛纳板表 → 本角色的服务端行;包没带该表时返回 None。"""
+    path = (
+        Path(package_dir) / "roots" / "common"
+        / Path(*CLIENT_MANA_BOARD_LOGICAL.split("/"))
+    )
+    if not path.is_file():
+        return None
+    try:
+        raw = path.read_bytes()
+    except OSError as exc:
+        raise PackPreflightError(
+            f"cannot read package mana board table: {exc}"
+        ) from exc
+    return derive_server_mana_board(raw, [character_id])
+
+
 def load_manifest(path: Path) -> dict:
     """Load a UTF-8 JSON manifest without touching any package or live root."""
     manifest = json.loads(
@@ -458,6 +610,8 @@ def _path_problem(logical_path: str) -> str | None:
         return "must not contain '..' segments"
     if any(segment in ("", ".") for segment in segments):
         return "must not contain empty or '.' segments"
+    if STORE_SHARD_RE.fullmatch(logical_path):
+        return "must not be a hashed store rel (<2hex>/<38hex>); use the pre-hash logical path"
     return None
 
 
@@ -607,6 +761,97 @@ def _unique_condition_asset_errors(
     return errors
 
 
+# ---------------------------------------------------------------------------
+# 客户端资产形状门禁(2026-08-28 接入)
+#
+# 两条规则都在 wf_client_legality 里(纯函数、带单测),这里只负责把包里的
+# raw-deflate + AMF3 解出来喂进去:
+#   * character/<code>/pixelart/pixelart.timeline.amf3.deflate
+#       → pixelart_timeline_problems(序列齐全/连续/终止码/kachidoki loop/
+#         hp_gauge 与 unit_body 形状)
+#   * battle/action/**/*.action.dsl.amf3.deflate
+#       → action_dsl_element_problems(元素码 1-based;配角色 c3 时抓差一签名)
+#
+# 全量正向对照(2026-08-28,CN store 1.4.55x):官方 1011 个玩家侧 action DSL +
+# 500 份可玩角色 pixelart.timeline **0 误报**。
+#
+# 为什么值得接进 preflight:白虎 1.4.560 的「闪电技能没伤害」与歼灭者 1.4.562 的
+# 118 处元素码差一,都是发布之后靠真机反馈才发现的;这两条规则在发布前就能拦住。
+# ---------------------------------------------------------------------------
+
+PIXELART_TIMELINE_SUFFIX = "/pixelart/pixelart.timeline.amf3.deflate"
+ACTION_DSL_SUFFIX = ".action.dsl.amf3.deflate"
+
+
+def _package_character_element(package_dir: Path, character_id: object) -> int | None:
+    """从包自带的 master/character 表里取角色的 0-based 内部元素(c3)。
+
+    取不到就返回 None —— 门禁退化成纯范围校验,不会因此产生误报。
+    """
+    if not isinstance(character_id, int):
+        return None
+    table = package_dir / "roots" / "common" / Path(
+        *"master/character/character.orderedmap".split("/")
+    )
+    try:
+        keys, rows = core._strict_orderedmap_rows(  # type: ignore[attr-defined]
+            table.read_bytes(), label="character", compressed_rows=True,
+        )
+        raw = dict(zip(keys, rows)).get(str(character_id))
+        if raw is None:
+            return None
+        cells = core.read_csv_lines(raw.decode("utf-8"))[0]
+    except Exception:
+        return None
+    if len(cells) > 3 and cells[3].isdigit():
+        return int(cells[3])
+    return None
+
+
+def _client_asset_shape_errors(
+    manifest: dict,
+    package_dir: Path,
+    declared: list[tuple[str, str, Path]],
+) -> list[str]:
+    """`declared` = [(root, logical_path, 磁盘路径)],只收 CLIENT_ROOTS 的条目。"""
+    import zlib
+
+    import wf_dsl
+
+    errors: list[str] = []
+    element = _package_character_element(
+        package_dir, manifest.get("character_id")
+    )
+    for root, logical_path, candidate in declared:
+        if logical_path.endswith(PIXELART_TIMELINE_SUFFIX):
+            checker = wf_client_legality.pixelart_timeline_problems
+        elif (logical_path.endswith(ACTION_DSL_SUFFIX)
+              and logical_path.startswith("battle/action/")):
+            checker = None
+        else:
+            continue
+        try:
+            tree = wf_dsl.parse_dsl(
+                zlib.decompress(candidate.read_bytes(), -15)
+            )["tree"]
+        except Exception as exc:
+            errors.append(
+                f"roots.{root}: {logical_path}: cannot decode AMF3 payload "
+                f"({type(exc).__name__})"
+            )
+            continue
+        if checker is not None:
+            problems = checker(tree)
+        else:
+            problems = wf_client_legality.action_dsl_element_problems(
+                tree, element
+            )
+        errors.extend(
+            f"roots.{root}: {logical_path}: {problem}" for problem in problems
+        )
+    return errors
+
+
 def validate_manifest(
     manifest: dict,
     package_dir: Path,
@@ -678,6 +923,7 @@ def validate_manifest(
 
     seen_paths: dict[str, str] = {}
     declared_common_paths: set[str] = set()
+    client_shape_targets: list[tuple[str, str, Path]] = []
     qa = manifest.get("qa")
     production_package = (
         isinstance(qa, dict) and qa.get("delivery_mode") == "production"
@@ -796,6 +1042,14 @@ def validate_manifest(
                 production_package
                 and require_referenced_assets
                 and root in CLIENT_ROOTS
+                and (logical_path.endswith(PIXELART_TIMELINE_SUFFIX)
+                     or logical_path.endswith(ACTION_DSL_SUFFIX))
+            ):
+                client_shape_targets.append((root, logical_path, candidate))
+            if (
+                production_package
+                and require_referenced_assets
+                and root in CLIENT_ROOTS
                 and logical_path.endswith(".png")
             ):
                 try:
@@ -824,6 +1078,11 @@ def validate_manifest(
             manifest,
             package_anchor,
             declared_common_paths,
+        ))
+        errors.extend(_client_asset_shape_errors(
+            manifest,
+            package_anchor,
+            client_shape_targets,
         ))
     if not errors:
         try:
@@ -2179,19 +2438,28 @@ class PackTransaction:
             server_paths = tuple(
                 entry["logical_path"] for entry in manifest["roots"]["server"]
             )
-            expected = set(SERVER_LOGICAL_PATHS)
-            if set(server_paths) != expected or len(server_paths) != len(expected):
+            present = set(server_paths)
+            required = set(REQUIRED_SERVER_LOGICAL_PATHS)
+            allowed = set(ALLOWED_SERVER_LOGICAL_PATHS)
+            # 必需四项一个不能少,可选派生表(mana_board.json)带不带都行,
+            # 其余路径一律拒绝 —— 老包(只有四项)与新包(四项+可选)同时合法。
+            if (
+                len(server_paths) != len(present)
+                or not required <= present
+                or not present <= allowed
+            ):
                 raise PackPreflightError(
                     f"{label} server root must contain exactly "
-                    + ", ".join(SERVER_LOGICAL_PATHS)
+                    + ", ".join(REQUIRED_SERVER_LOGICAL_PATHS)
+                    + " (optional: " + ", ".join(OPTIONAL_SERVER_LOGICAL_PATHS) + ")"
                 )
             server_claims = {
                 logical_path for root, logical_path in claims if root == "server"
             }
-            if server_claims != expected:
+            if server_claims != present:
                 raise PackPreflightError(
                     f"{label} server tables must claim exactly "
-                    + ", ".join(SERVER_LOGICAL_PATHS)
+                    + ", ".join(sorted(present))
                 )
 
         validate_server_contract(self.manifest, candidate_claims, "candidate")

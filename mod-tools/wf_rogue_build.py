@@ -7135,7 +7135,7 @@ def main() -> int:
             log(f"[curse] round={r} field-underfill="
                 f"{curse['field_applied']}/{curse['field_requested']} reason={why}")
             # 非破坏性策略下这不再是致命错误。法阵载体必须是 general 系 boss
-            # (见「深渊连战-随机方案-当前.md」第九节:抽到 standard/专用表 boss
+            # (见「深渊连战-随机方案-快照1.4.247-20260729.md」第九节:抽到 standard/专用表 boss
             # 时法阵**静默落不上,不是崩溃**)。既然我们不再为了凑载体把策展
             # 锚位换掉,就得允许这些层欠配——[领域/时限] 行会如实报「欠配 N 层」。
             print(f"[WARN] 第{r}战领域保底欠配:"

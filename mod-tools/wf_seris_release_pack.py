@@ -44,6 +44,48 @@ class RuntimeTestPackageResult:
     payload_count: int
 
 
+def _extended_length_path(path: Path | str) -> str:
+    """Windows 上返回 `\\\\?\\` 扩展长度形式,其它平台原样返回绝对路径。
+
+    ``assemble_runtime_test_package`` 的暂存目录名 ``.{output}.runtime-test-<8hex>``
+    比最终目录名长 22 字符,包里每条路径同幅变长。LongPathsEnabled=0 时无前缀
+    Win32 API 的硬边界是"建文件 259 / 建目录 247",越线直接 ``FileNotFoundError``,
+    是确定性故障,重试无用。仓库里最深的包余量只剩个位数字符。
+
+    与 ``wf_release._extended_length_path`` / ``wf_character_flow`` 的同名函数同源
+    同语义;各留一份是为了不让这个底层打包模块反向依赖发布编排模块。
+    """
+    raw = str(path)
+    if os.name != "nt":
+        return os.path.abspath(raw)
+    if raw.startswith("\\\\?\\"):
+        return raw
+    absolute = os.path.abspath(raw)
+    if absolute.startswith("\\\\?\\"):
+        return absolute
+    if absolute.startswith("\\\\"):          # UNC: \\host\share -> \\?\UNC\host\share
+        return "\\\\?\\UNC\\" + absolute[2:]
+    return "\\\\?\\" + absolute
+
+
+def _discard_tree(path: Path | str, *, label: str) -> None:
+    """尽力删掉一棵已经作废的目录树:报警但不再抛,也绝不静默吞掉。
+
+    只在异常回卷路径上调用——此时已经有一个真实错误在上抛,清理失败必须让位给它;
+    但残骸留在盘上必须有人看得见,不能当作"清干净了"。
+    """
+    target = _extended_length_path(path)
+    try:
+        shutil.rmtree(target)
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        print(
+            f"warning: {label} cleanup failed, residue left on disk: {target}: {exc}",
+            file=sys.stderr,
+        )
+
+
 def _canonical(value: object) -> bytes:
     return json.dumps(
         value,
@@ -347,7 +389,10 @@ def assemble_runtime_test_package(
         raise ReleasePackError("git_head must be a 40-64 lowercase hex commit/hash")
     offline_package = Path(offline_package)
     output_dir = Path(output_dir)
-    if output_dir.exists():
+    # 暂存名比最终名长,树里的深层文件可能已越过 MAX_PATH;凡是要看见每一个文件的
+    # 操作都必须走扩展长度形式,否则越线文件在无前缀 API 下等同于"不存在"。
+    long_output = Path(_extended_length_path(output_dir))
+    if long_output.exists():
         raise ReleasePackError("runtime-test output already exists")
     if offline_validator is None:
         import wf_seris_offline_handoff as offline_handoff
@@ -370,9 +415,11 @@ def assemble_runtime_test_package(
     ):
         raise ReleasePackError("offline handoff identity mismatch")
     source_roots = _declared_root_files(offline_manifest)
-    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    os.makedirs(_extended_length_path(output_dir.parent), exist_ok=True)
+    # `dir=` 带上扩展长度前缀,mkdtemp 返回的路径及其派生的每条子路径都继承前缀。
     staging = Path(tempfile.mkdtemp(
-        prefix=f".{output_dir.name}.runtime-test-", dir=output_dir.parent
+        prefix=f".{output_dir.name}.runtime-test-",
+        dir=_extended_length_path(output_dir.parent),
     ))
     try:
         formal_roots: dict[str, list[dict]] = {root: [] for root in ROOT_NAMES}
@@ -478,13 +525,14 @@ def assemble_runtime_test_package(
                 "formal runtime-test package validation failed:\n- "
                 + "\n- ".join(errors)
             )
-        os.replace(staging, output_dir)
-        final_errors = validate_runtime_test_package(output_dir)
+        os.replace(staging, long_output)
+        final_errors = validate_runtime_test_package(long_output)
         if final_errors:
             raise ReleasePackError(
                 "renamed runtime-test package validation failed:\n- "
                 + "\n- ".join(final_errors)
             )
+        # 返回值保持 plain 形式:调用方拿它跟自己给的 output_dir 比对/再拼路径。
         return RuntimeTestPackageResult(
             output_dir=output_dir,
             manifest_sha256=_sha256(manifest_raw),
@@ -492,10 +540,8 @@ def assemble_runtime_test_package(
             payload_count=sum(len(formal_roots[root]) for root in ROOT_NAMES),
         )
     except Exception:
-        if staging.exists():
-            shutil.rmtree(staging, ignore_errors=True)
-        if output_dir.exists():
-            shutil.rmtree(output_dir, ignore_errors=True)
+        _discard_tree(staging, label="runtime-test staging")
+        _discard_tree(long_output, label="runtime-test output")
         raise
 
 

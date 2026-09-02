@@ -8,7 +8,7 @@
     "logicalPath": {
       "type": "string",
       "minLength": 1,
-      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*//)(?!.*(?:^|/)(?:\\.|\\.\\.)(?:/|$))(?!.*(?:^|/)(?:[sS][tT][oO][rR][yY]|[wW][oO][rR][dD][sS]|[lL][oO][gG][iI][nN]|[eE][xX][pP][rR][eE][sS][sS][iI][oO][nN][sS]?)(?:/|$))[^/]+(?:/[^/]+)*$"
+      "pattern": "^(?![0-9a-f]{2}/[0-9a-f]{38}$)(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*//)(?!.*(?:^|/)(?:\\.|\\.\\.)(?:/|$))(?!.*(?:^|/)(?:[sS][tT][oO][rR][yY]|[wW][oO][rR][dD][sS]|[lL][oO][gG][iI][nN]|[eE][xX][pP][rR][eE][sS][sS][iI][oO][nN][sS]?)(?:/|$))[^/]+(?:/[^/]+)*$"
     },
     "fileEntry": {
       "type": "object",

@@ -58,6 +58,46 @@ def _ability_template(kinds_by_line: dict[int, str], template_id: str) -> str:
     ])
 
 
+# build_soul_leaf 会把 c44 换成发射 kind,而新 kind 往往比捐赠 kind 多声明几列;
+# 「声明即必填」通用律要求这些入口列非空(官方 ability_soul 451 键 1001 行零留空,
+# 真实 store 捐赠行本来就是填满的)。空列才填,已设的列不动。
+_CONTENT_FIELD_DEFAULTS = {
+    "target": "1",
+    "strength": "100",
+    "strength2": "0",
+    "frame": "90000000",
+    "number": "100000",
+    "max_accumulation": "(None)",
+    "flip_limit": "(None)",
+    "power_flip_limit": "(None)",
+    "end_power_flip_limit": "(None)",
+    "end_power_flip_accepted_levels": "(None)",
+    "cancelable": "0",
+    "unique_condition_id": "0",
+    "time": "0",
+    "element": "0",
+    "initial_multiply": "1",
+    "multiply_trigger": "0",
+    "by_each_trigger_puller": "false",
+}
+
+
+def _fill_instant_content_defaults(row: list[str]) -> None:
+    base = int(wf_describe.layout("ability_soul")["blocks"]["instant_content"])
+    fields = wf_describe.enum_map()["block_fields"]["instant_content"]
+    for name, value in _CONTENT_FIELD_DEFAULTS.items():
+        offsets = [
+            int(offset)
+            for offset, field, _label in fields
+            if field == name or field.startswith(name + ".")
+        ]
+        if not offsets:
+            continue
+        col = base + min(offsets)
+        if not row[col]:
+            row[col] = value
+
+
 def _ability_template_row(
     effect_kind: str, template_id: str, *, donor_line: int,
 ) -> list[str]:
@@ -69,12 +109,17 @@ def _ability_template_row(
     row[24], row[36], row[43] = "0", "(None)", "0"
     row[44], row[45], row[46] = effect_kind, "1", "Donor"
     row[48], row[49] = "100", "200"
+    _fill_instant_content_defaults(row)
     content_case = wf_describe.enum_map()["cases"]["instant_content"].get(
         effect_kind
     )
     if content_case is not None \
             and "by_each_trigger_puller" in content_case["fields"]:
         row[69] = "false"
+    if content_case is not None and "multiply_trigger" in content_case["fields"]:
+        # 官方 ability_soul 声明 multiply_trigger 的瞬发行都带 c71/c72;
+        # 留空 = parseAt72 C7050(同 test_rogue_rewards.template_row)。
+        row[71], row[72] = "1", "0"
     if (template_id, donor_line) == ("5050022", 1):
         row[3], row[4], row[6], row[7] = "8", "0", "50000", "50000"
         row[24], row[25] = "23", "0"
