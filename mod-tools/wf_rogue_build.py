@@ -2236,7 +2236,7 @@ def build_native_bundle_catalog(
         reference_gate=reference_gate,
         zako_codes=set(gz),
         portability_gate=portability_gate,
-        official_field=lambda field_id: not field_id.startswith("mod_rogue_"),
+        official_field=lambda field_id: not str(field_id).startswith("mod_"),
         metadata_of=metadata_provider,
         c8016_prefixes=C8016_BLOCKED_BOSS_PREFIXES,
     )

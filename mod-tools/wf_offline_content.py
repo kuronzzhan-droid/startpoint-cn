@@ -167,47 +167,103 @@ WORKSPACE_ACTION_PROGRAMS = {
         "battle/action/skill/action/rare5/white_wolf_gerald$white_wolf_gerald_1",
         "battle/action/skill/action/rare5/white_wolf_gerald$white_wolf_gerald_2",
     ),
+    (129992, "unicorn_lancer_rose"): (
+        "battle/action/skill/action/rare5/unicorn_lancer_rose$unicorn_lancer_rose_1",
+        "battle/action/skill/action/rare5/unicorn_lancer_rose$unicorn_lancer_rose_2",
+    ),
+    (139995, "fox_oracle_autumn"): (
+        "battle/action/skill/action/rare5/fox_oracle_autumn$fox_oracle_autumn_1",
+        "battle/action/skill/action/rare5/fox_oracle_autumn$fox_oracle_autumn_2",
+    ),
 }
 WORKSPACE_ABILITY_PROGRAMS = {
     (139999, "stella_summer_goddess"): (),
     (149999, "white_wolf_gerald"): (
         "battle/action/skill/action/ability_skill/"
         "ability_skill_white_wolf_moon_fang$ability_skill_white_wolf_moon_fang",
+        "battle/action/skill/action/ability_skill/"
+        "ability_skill_gerald_time_rift$ability_skill_gerald_time_rift",
+        "battle/action/skill/action/ability_skill/"
+        "ability_skill_gerald_dash_lock$ability_skill_gerald_dash_lock",
+    ),
+    (129992, "unicorn_lancer_rose"): (),
+    (139995, "fox_oracle_autumn"): (
+        "battle/action/skill/action/ability_skill/"
+        "ability_skill_fox_oracle_autumn_fever_pf$"
+        "ability_skill_fox_oracle_autumn_fever_pf",
     ),
 }
 WORKSPACE_ABILITY_ROW_COUNTS = {
     (139999, "stella_summer_goddess"): (2, 2, 5, 1, 1, 1),
-    (149999, "white_wolf_gerald"): (4, 2, 2, 1, 2, 2),
+    (149999, "white_wolf_gerald"): (3, 2, 8, 2, 6, 1),
+    (129992, "unicorn_lancer_rose"): (2, 2, 5, 2, 1, 1),
+    (139995, "fox_oracle_autumn"): (3, 1, 7, 2, 2, 1),
 }
 WORKSPACE_LEADER_ROW_COUNTS = {
     (139999, "stella_summer_goddess"): 5,
-    (149999, "white_wolf_gerald"): 7,
+    (149999, "white_wolf_gerald"): 10,
+    (129992, "unicorn_lancer_rose"): 8,
+    (139995, "fox_oracle_autumn"): 8,
 }
 WORKSPACE_ABILITY_PROGRAM_LOCATIONS = {
     (139999, "stella_summer_goddess"): (),
     (149999, "white_wolf_gerald"): (
-        ("1499995", 0, 71, WORKSPACE_ABILITY_PROGRAMS[
+        ("1499992", 0, 71, WORKSPACE_ABILITY_PROGRAMS[
             (149999, "white_wolf_gerald")
+        ][1]),
+        ("1499992", 1, 71, WORKSPACE_ABILITY_PROGRAMS[
+            (149999, "white_wolf_gerald")
+        ][2]),
+        ("1499993", 6, 71, WORKSPACE_ABILITY_PROGRAMS[
+            (149999, "white_wolf_gerald")
+        ][0]),
+    ),
+    (129992, "unicorn_lancer_rose"): (),
+    (139995, "fox_oracle_autumn"): (
+        ("1399953", 0, 71, WORKSPACE_ABILITY_PROGRAMS[
+            (139995, "fox_oracle_autumn")
         ][0]),
     ),
 }
 STELLA_EFFECT = "battle/effect/skill_unique/stella_ballot23/stella_ballot23"
-GERALD_SKILL_EFFECTS = frozenset({
-    "battle/effect/skill_unique/white_wolf_gerald/time_stop",
-    "battle/effect/skill_unique/white_wolf_gerald/clock_field",
-    "battle/effect/skill_unique/white_wolf_gerald/crystal_burst",
-    "battle/effect/skill_unique/white_wolf_gerald/dash_trail",
-    "battle/effect/skill_unique/white_wolf_gerald/moon_cross",
+GERALD_SKILL1_EFFECTS = frozenset({
+        "battle/effect/skill_unique/white_wolf_gerald/clock_field",
+        "battle/effect/skill_unique/white_wolf_gerald/crystal_burst",
+        "battle/effect/skill_unique/white_wolf_gerald/moon_cross_single",
+        "battle/effect/skill_unique/white_wolf_gerald/time_aura/time_aura",
+        "battle/effect/skill_unique/white_wolf_gerald/time_stop",
+    })
+GERALD_SKILL2_EFFECTS = frozenset({
+        "battle/effect/skill_unique/white_wolf_gerald/clock_field",
+        "battle/effect/skill_unique/white_wolf_gerald/crystal_burst",
+        "battle/effect/skill_unique/white_wolf_gerald/dash_trail",
+        "battle/effect/skill_unique/white_wolf_gerald/moon_cross",
+        "battle/effect/skill_unique/white_wolf_gerald/time_aura/time_aura",
+    })
+GERALD_MOON_FANG_EFFECTS = frozenset({
+        "battle/effect/skill_unique/white_wolf_gerald/moon_cross",
+        "battle/effect/skill_unique/white_wolf_gerald/rainbow_burst/rainbow_burst",
+    })
+GERALD_TIME_RIFT_EFFECTS = frozenset({
+        "battle/effect/skill_unique/white_wolf_gerald/time_rift",
+    })
+UNICORN_LANCER_ROSE_SKILL_EFFECTS = frozenset({
+    "battle/effect/skill_unique/unicorn_lancer_rose/lance/lance",
+    "battle/effect/skill_unique/unicorn_lancer_rose/lance/lance_end",
+    "battle/effect/skill_unique/unicorn_lancer_rose/unicorn_lancer_rose",
+    "battle/effect/skill_unique/unicorn_lancer_rose/unicorn_lancer_rose_end",
 })
+FOX_AUTUMN_ALL_EFFECT = "battle/effect/skill_unique/fox_oracle_autumn/fox_oracle_autumn_all"
+FOX_AUTUMN_HIT_EFFECT = "battle/effect/skill_unique/fox_oracle_autumn/fox_oracle_autumn_hit"
+FOX_AUTUMN_SKILL_EFFECTS = frozenset({FOX_AUTUMN_ALL_EFFECT, FOX_AUTUMN_HIT_EFFECT})
 WORKSPACE_PROGRAM_EFFECTS = {
     WORKSPACE_ACTION_PROGRAMS[(139999, "stella_summer_goddess")][0]: frozenset({STELLA_EFFECT}),
     WORKSPACE_ACTION_PROGRAMS[(139999, "stella_summer_goddess")][1]: frozenset({STELLA_EFFECT}),
-    WORKSPACE_ACTION_PROGRAMS[(149999, "white_wolf_gerald")][0]: GERALD_SKILL_EFFECTS,
-    WORKSPACE_ACTION_PROGRAMS[(149999, "white_wolf_gerald")][1]: GERALD_SKILL_EFFECTS,
-    WORKSPACE_ABILITY_PROGRAMS[(149999, "white_wolf_gerald")][0]: frozenset({
-        "battle/effect/skill_unique/white_wolf_gerald/dash_trail",
-        "battle/effect/skill_unique/white_wolf_gerald/moon_cross",
-    }),
+    WORKSPACE_ACTION_PROGRAMS[(149999, "white_wolf_gerald")][0]: GERALD_SKILL1_EFFECTS,
+    WORKSPACE_ACTION_PROGRAMS[(149999, "white_wolf_gerald")][1]: GERALD_SKILL2_EFFECTS,
+    WORKSPACE_ABILITY_PROGRAMS[(149999, "white_wolf_gerald")][0]: GERALD_MOON_FANG_EFFECTS,
+    WORKSPACE_ABILITY_PROGRAMS[(149999, "white_wolf_gerald")][1]: GERALD_TIME_RIFT_EFFECTS,
+    WORKSPACE_ABILITY_PROGRAMS[(149999, "white_wolf_gerald")][2]: frozenset(),
     **{
         program: frozenset({
             "battle/effect/powerflip/white_wolf_gerald_powerflip/"
@@ -215,6 +271,14 @@ WORKSPACE_PROGRAM_EFFECTS = {
         })
         for level, program in enumerate(GERALD_POWER_FLIP_PROGRAMS, 1)
     },
+    WORKSPACE_ACTION_PROGRAMS[(129992, "unicorn_lancer_rose")][0]:
+        UNICORN_LANCER_ROSE_SKILL_EFFECTS,
+    WORKSPACE_ACTION_PROGRAMS[(129992, "unicorn_lancer_rose")][1]:
+        UNICORN_LANCER_ROSE_SKILL_EFFECTS,
+    WORKSPACE_ACTION_PROGRAMS[(139995, "fox_oracle_autumn")][0]: FOX_AUTUMN_SKILL_EFFECTS,
+    WORKSPACE_ACTION_PROGRAMS[(139995, "fox_oracle_autumn")][1]: FOX_AUTUMN_SKILL_EFFECTS,
+    WORKSPACE_ABILITY_PROGRAMS[(139995, "fox_oracle_autumn")][0]:
+        frozenset({FOX_AUTUMN_HIT_EFFECT}),
 }
 SERVER_CHARACTER_LOGICALS = (
     "character.json",
@@ -222,7 +286,9 @@ SERVER_CHARACTER_LOGICALS = (
     "cdndata/character_text.json",
     "mana_node.json",
 )
-EXPECTED_SERVER_SKILL_COUNTS = {129999: 6, 139999: 3, 149999: 6}
+EXPECTED_SERVER_SKILL_COUNTS = {
+    129999: 6, 139999: 3, 149999: 6, 129992: 6, 139995: 6,
+}
 
 
 class ContentGateError(RuntimeError):
@@ -264,6 +330,8 @@ CHARACTERS = (
     CharacterReleaseSpec(129999, "seris_dragon_king"),
     CharacterReleaseSpec(139999, "stella_summer_goddess"),
     CharacterReleaseSpec(149999, "white_wolf_gerald"),
+    CharacterReleaseSpec(129992, "unicorn_lancer_rose"),
+    CharacterReleaseSpec(139995, "fox_oracle_autumn"),
 )
 
 
@@ -343,6 +411,49 @@ def _workspace_master_contracts(spec: CharacterReleaseSpec) -> tuple[_WorkspaceM
                 CUSTOM_ABILITY_STRING_MASTER_LOGICAL,
                 "flat",
                 ("ability_skill_white_wolf_moon_fang",),
+            ),
+        )
+    if spec.character_id == 129992 and spec.code_name == "unicorn_lancer_rose":
+        trimmed = tuple(
+            f"character/{spec.code_name}/ui/{name}"
+            for name in (
+                "full_shot_1440_1920_0", "full_shot_1440_1920_1",
+                "skill_cutin_0", "skill_cutin_1",
+            )
+        )
+        return (*core_contracts,
+            _WorkspaceMasterContract(CHARACTER_AWAKE_STATUS_MASTER_LOGICAL, "flat", (character_id,)),
+            _WorkspaceMasterContract(CHARACTER_GACHA_SOUND_MASTER_LOGICAL, "raw_outer", (character_id,)),
+            _WorkspaceMasterContract(SKILL_PREVIEW_CHARACTER_MASTER_LOGICAL, "flat", (character_id,)),
+            _WorkspaceMasterContract(UPSKILL_MASTER_LOGICAL, "flat", (character_id,)),
+            _WorkspaceMasterContract(CHARACTER_STANCE_DETAIL_MASTER_LOGICAL, "flat", (character_id,)),
+            _WorkspaceMasterContract(TRIMMED_IMAGE_MASTER_LOGICAL, "flat", trimmed),
+            _WorkspaceMasterContract(UNIQUE_CONDITION_MASTER_LOGICAL, "flat", (character_id,)),
+            _WorkspaceMasterContract(
+                CUSTOM_ABILITY_STRING_MASTER_LOGICAL,
+                "flat",
+                ("change_skill_unicorn_lancer_rose",),
+            ),
+        )
+    if spec.character_id == 139995 and spec.code_name == "fox_oracle_autumn":
+        trimmed = tuple(
+            f"character/{spec.code_name}/ui/{name}"
+            for name in (
+                "full_shot_1440_1920_0", "full_shot_1440_1920_1",
+                "skill_cutin_0", "skill_cutin_1",
+            )
+        )
+        return (*core_contracts,
+            _WorkspaceMasterContract(CHARACTER_AWAKE_STATUS_MASTER_LOGICAL, "flat", (character_id,)),
+            _WorkspaceMasterContract(CHARACTER_GACHA_SOUND_MASTER_LOGICAL, "raw_outer", (character_id,)),
+            _WorkspaceMasterContract(SKILL_PREVIEW_CHARACTER_MASTER_LOGICAL, "flat", (character_id,)),
+            _WorkspaceMasterContract(UPSKILL_MASTER_LOGICAL, "flat", (character_id,)),
+            _WorkspaceMasterContract(CHARACTER_STANCE_DETAIL_MASTER_LOGICAL, "flat", (character_id,)),
+            _WorkspaceMasterContract(TRIMMED_IMAGE_MASTER_LOGICAL, "flat", trimmed),
+            _WorkspaceMasterContract(
+                CUSTOM_ABILITY_STRING_MASTER_LOGICAL,
+                "flat",
+                ("ability_skill_fox_oracle_autumn_fever_pf",),
             ),
         )
     raise ContentGateError(
@@ -2946,7 +3057,7 @@ def validate_offline_content(
         sources: dict[str, Path] = {}
     else:
         if not isinstance(workspace_sources, Mapping):
-            raise ContentGateError("workspace source keys must be exactly the three release characters")
+            raise ContentGateError("workspace source keys must be exactly the release characters")
         expected_keys = {spec.code_name for spec in CHARACTERS}
         actual_keys = set(workspace_sources)
         if (

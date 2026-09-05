@@ -343,6 +343,17 @@ class OfflineContentTests(unittest.TestCase):
         )
         self.add_file(self.roots.common, logical, core.build_orderedmap_raw_rows(ordered))
 
+    #: Every non-Stella release claims master/string/custom_ability_string.
+    #: These keys are a hard contract mirrored by
+    #: ``wf_offline_content._workspace_master_contracts``.
+    CUSTOM_ABILITY_STRING_KEYS = {
+        (149999, "white_wolf_gerald"): ("ability_skill_white_wolf_moon_fang",),
+        (129992, "unicorn_lancer_rose"): ("change_skill_unicorn_lancer_rose",),
+        (139995, "fox_oracle_autumn"): (
+            "ability_skill_fox_oracle_autumn_fever_pf",
+        ),
+    }
+
     def install_published_character_snapshot(
         self, spec: object,
     ) -> None:
@@ -380,8 +391,11 @@ class OfflineContentTests(unittest.TestCase):
             self.module.WORKSPACE_ABILITY_ROW_COUNTS[identity], 1
         ):
             rows = [[f"ability-{index}", *([""] * 125)] for _ in range(row_count)]
-            if identity == (149999, "white_wolf_gerald") and index == 5:
-                rows[0][71] = self.module.WORKSPACE_ABILITY_PROGRAMS[identity][0]
+            for key, row_index, column, program in (
+                self.module.WORKSPACE_ABILITY_PROGRAM_LOCATIONS[identity]
+            ):
+                if key == f"{spec.character_id}{index}":
+                    rows[row_index][column] = program
             ability_values[f"{spec.character_id}{index}"] = core.write_csv_lines(rows)
         self.add_ordered(self.module.ABILITY_MASTER_LOGICAL, ability_values)
         leader_rows = [
@@ -479,10 +493,22 @@ class OfflineContentTests(unittest.TestCase):
                 },
                 self.module.TRIMMED_IMAGE_MASTER_LOGICAL: trimmed,
                 self.module.CUSTOM_ABILITY_STRING_MASTER_LOGICAL: {
-                    "ability_skill_white_wolf_moon_fang": "Moon Fang"
+                    key: f"string:{key}"
+                    for key in self.CUSTOM_ABILITY_STRING_KEYS[identity]
                 },
             })
             raw_outer_logicals.add(self.module.CHARACTER_GACHA_SOUND_MASTER_LOGICAL)
+        if identity in (
+            (129992, "unicorn_lancer_rose"), (139995, "fox_oracle_autumn")
+        ):
+            flat_values[self.module.CHARACTER_AWAKE_STATUS_MASTER_LOGICAL] = {
+                character_key: "awake"
+            }
+        if identity == (129992, "unicorn_lancer_rose"):
+            flat_values[self.module.UNIQUE_CONDITION_MASTER_LOGICAL] = {
+                character_key: "condition"
+            }
+        if identity == (149999, "white_wolf_gerald"):
             self.add_ordered(
                 self.module.POWER_FLIP_ACTION_MASTER_LOGICAL,
                 {
@@ -562,6 +588,114 @@ class OfflineContentTests(unittest.TestCase):
         self.assertEqual((37, 37), (report.required_present, report.required_total))
         self.assertTrue(report.three_layer_consistent)
         self.assertEqual(report.seal_sha256, self.module.sha256_canonical_report(report))
+
+    def test_workspace_closure_tables_cover_every_registered_identity(self) -> None:
+        """Registering a character means registering all of its hard contracts."""
+        module = self.module
+        for spec in module.CHARACTERS:
+            self.assertIn(spec.character_id, module.EXPECTED_SERVER_SKILL_COUNTS)
+        identities = sorted(
+            (spec.character_id, spec.code_name)
+            for spec in module.CHARACTERS
+            if (spec.character_id, spec.code_name) != (129999, "seris_dragon_king")
+        )
+        for identity in identities:
+            with self.subTest(identity=identity):
+                code_name = identity[1]
+                action_programs = module.WORKSPACE_ACTION_PROGRAMS[identity]
+                ability_programs = module.WORKSPACE_ABILITY_PROGRAMS[identity]
+                self.assertEqual(2, len(action_programs))
+                self.assertEqual(
+                    6, len(module.WORKSPACE_ABILITY_ROW_COUNTS[identity])
+                )
+                self.assertGreater(
+                    module.WORKSPACE_LEADER_ROW_COUNTS[identity], 0
+                )
+                locations = module.WORKSPACE_ABILITY_PROGRAM_LOCATIONS[identity]
+                self.assertEqual(
+                    set(ability_programs),
+                    {program for _key, _row, _column, program in locations},
+                )
+                prefix = "battle/effect/skill_unique/"
+                families = set()
+                for program in (*action_programs, *ability_programs):
+                    for effect in module.WORKSPACE_PROGRAM_EFFECTS[program]:
+                        self.assertTrue(
+                            effect.startswith(prefix),
+                            f"{program} leaves skill_unique: {effect}",
+                        )
+                        families.add(effect[len(prefix):].split("/")[0])
+                # A skill effect must sit under the owning code name, or the
+                # client reports "data missing" in battle.  Stella is the one
+                # sanctioned exception: she reuses an official family.
+                self.assertEqual(1, len(families), sorted(families))
+                self.assertEqual(
+                    "stella_ballot23"
+                    if identity == (139999, "stella_summer_goddess")
+                    else code_name,
+                    families.pop(),
+                )
+
+    def test_unicorn_lancer_rose_published_snapshot_is_release_ready(self) -> None:
+        spec = self.module.CharacterReleaseSpec(129992, "unicorn_lancer_rose")
+        self.install_published_character_snapshot(spec)
+        result = self.validate_one_published_character(spec)
+        self.assertTrue(result.ready)
+        self.assertEqual(1, len(result.characters))
+        report = result.characters[0]
+        self.assertEqual("published-snapshot", report.evidence_mode)
+        self.assertEqual((37, 37), (report.required_present, report.required_total))
+        self.assertTrue(report.three_layer_consistent)
+        self.assertEqual(report.seal_sha256, self.module.sha256_canonical_report(report))
+
+    def test_fox_oracle_autumn_published_snapshot_is_release_ready(self) -> None:
+        spec = self.module.CharacterReleaseSpec(139995, "fox_oracle_autumn")
+        self.install_published_character_snapshot(spec)
+        result = self.validate_one_published_character(spec)
+        self.assertTrue(result.ready)
+        self.assertEqual(1, len(result.characters))
+        report = result.characters[0]
+        self.assertEqual("published-snapshot", report.evidence_mode)
+        self.assertEqual((37, 37), (report.required_present, report.required_total))
+        self.assertTrue(report.three_layer_consistent)
+        self.assertEqual(report.seal_sha256, self.module.sha256_canonical_report(report))
+
+    def test_fox_oracle_autumn_fever_program_must_stay_in_ability_slot_3(self) -> None:
+        """The 629 row lives in ability key 1399953, never in the leader table."""
+        spec = self.module.CharacterReleaseSpec(139995, "fox_oracle_autumn")
+        identity = (spec.character_id, spec.code_name)
+        self.install_published_character_snapshot(spec)
+        program = self.module.WORKSPACE_ABILITY_PROGRAMS[identity][0]
+        self.assertEqual(
+            (("1399953", 0, 71, program),),
+            self.module.WORKSPACE_ABILITY_PROGRAM_LOCATIONS[identity],
+        )
+        ability_values = {}
+        for index, row_count in enumerate(
+            self.module.WORKSPACE_ABILITY_ROW_COUNTS[identity], 1
+        ):
+            rows = [
+                [f"ability-{index}", *([""] * 125)] for _ in range(row_count)
+            ]
+            ability_values[f"{spec.character_id}{index}"] = core.write_csv_lines(rows)
+        self.add_ordered(self.module.ABILITY_MASTER_LOGICAL, ability_values)
+        leader_rows = [
+            [f"leader-{index}", *([""] * 123)]
+            for index in range(self.module.WORKSPACE_LEADER_ROW_COUNTS[identity])
+        ]
+        leader_rows[7][69] = program
+        self.add_ordered(
+            self.module.LEADER_ABILITY_MASTER_LOGICAL,
+            {str(spec.character_id): core.write_csv_lines(leader_rows)},
+        )
+        with self.assertRaisesRegex(
+            self.module.ContentGateError,
+            "ability action program location mismatch",
+        ):
+            self.module.verify_character_release(
+                spec, self.roots, workspace_source=None,
+                phase4_asset_logicals=self.phase4,
+            )
 
     def test_gerald_leader_power_flip_key_requires_exact_row_6_column_80(self) -> None:
         spec = self.module.CharacterReleaseSpec(149999, "white_wolf_gerald")
@@ -2253,9 +2387,20 @@ class OfflineContentTests(unittest.TestCase):
         module.verify_player_1000_equipment_snapshot = lambda *_args: None
         module._load_current_server_assets = lambda *_args: object()
         module._bind_current_server_character = lambda _spec, report, *_args, **_kwargs: report
+        release_sources = {
+            spec.code_name: Path(spec.code_name) for spec in module.CHARACTERS
+        }
+        identity_by_name = {
+            spec.code_name: (spec.character_id, spec.code_name)
+            for spec in module.CHARACTERS
+        }
+
+        def true_identity(path):
+            return identity_by_name[Path(path).name]
+
         module._workspace_identity_hint = lambda path: (
             (139999, "stella_summer_goddess") if "seris" in str(path) or "stella" in str(path)
-            else (149999, "white_wolf_gerald")
+            else true_identity(path)
         )
         module.inspect_workspace = lambda path: {
             "identity": {"character_id": 139999 if "seris" in str(path) else 139999, "code_name": "stella_summer_goddess"},
@@ -2268,17 +2413,17 @@ class OfflineContentTests(unittest.TestCase):
         module.build_published_snapshot_evidence = lambda spec, *_args, **_kwargs: evidence(spec, "published-snapshot")
         result = module.validate_offline_content(
             self.roots,
-            workspace_sources={"seris_dragon_king": Path("seris"), "stella_summer_goddess": Path("stella"), "white_wolf_gerald": Path("gerald")},
+            workspace_sources=release_sources,
             phase4_asset_logicals=self.phase4, assets_dir=Path(self.temp.name),
         )
-        self.assertEqual(3, len(result.characters))
+        self.assertEqual(len(module.CHARACTERS), len(result.characters))
         self.assertIsNone(result.client_gate_ready)
         self.assertTrue(result.ready)
         report = Path(self.temp.name) / "false-client.json"
         report.write_text(json.dumps(self.valid_client_report(verified=False)), encoding="utf-8")
         result = module.validate_offline_content(
             self.roots,
-            workspace_sources={"seris_dragon_king": Path("seris"), "stella_summer_goddess": Path("stella"), "white_wolf_gerald": Path("gerald")},
+            workspace_sources=release_sources,
             phase4_asset_logicals=self.phase4, assets_dir=Path(self.temp.name), client_report=report,
         )
         self.assertFalse(result.ready)
@@ -2287,14 +2432,11 @@ class OfflineContentTests(unittest.TestCase):
                 raise module.ContentGateError("workspace manifest seal drift")
             return evidence(spec)
         module.verify_character_workspace_report = seal_broken
-        module._workspace_identity_hint = lambda path: (
-            (129999, "seris_dragon_king") if "seris" in str(path)
-            else ((139999, "stella_summer_goddess") if "stella" in str(path) else (149999, "white_wolf_gerald"))
-        )
+        module._workspace_identity_hint = true_identity
         with self.assertRaisesRegex(module.ContentGateError, "seal drift"):
             module.validate_offline_content(
                 self.roots,
-                workspace_sources={"seris_dragon_king": Path("seris"), "stella_summer_goddess": Path("stella"), "white_wolf_gerald": Path("gerald")},
+                workspace_sources=release_sources,
                 phase4_asset_logicals=self.phase4, assets_dir=Path(self.temp.name),
             )
 
