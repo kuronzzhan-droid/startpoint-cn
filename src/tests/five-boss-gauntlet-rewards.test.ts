@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+    FIVE_BOSS_BLUEPRINT_DROP_RATE,
     FIVE_BOSS_GAUNTLET_REWARD_IDS,
     FIVE_BOSS_GAUNTLET_WEAPON,
     buildFiveBossGauntletRewardPlan,
@@ -46,9 +47,19 @@ test("later clears do not repeat the first-clear emblem", () => {
     })
 
     assert.equal(amountOf(plan, FIVE_BOSS_GAUNTLET_REWARD_IDS.firstClearEmblem), 0)
-    assert.equal(amountOf(plan, FIVE_BOSS_GAUNTLET_REWARD_IDS.blueprintFragment), 1)
+    assert.equal(amountOf(plan, FIVE_BOSS_GAUNTLET_REWARD_IDS.blueprintFragment), 0)
     assert.equal(amountOf(plan, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 5)
     assert.equal(amountOf(plan, FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore), 0)
+})
+
+
+test("the blueprint drops on a 50% roll and never doubles", () => {
+    assert.equal(FIVE_BOSS_BLUEPRINT_DROP_RATE, 0.5)
+    const hit = buildFiveBossGauntletRewardPlan({ firstClear: false, rewardMultiplier: 2, randomFloat: () => 0.49 })
+    const miss = buildFiveBossGauntletRewardPlan({ firstClear: false, rewardMultiplier: 2, randomFloat: () => 0.5 })
+    assert.equal(amountOf(hit, FIVE_BOSS_GAUNTLET_REWARD_IDS.blueprintFragment), 1)
+    assert.equal(amountOf(miss, FIVE_BOSS_GAUNTLET_REWARD_IDS.blueprintFragment), 0)
+    assert.equal(amountOf(miss, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 10)
 })
 
 

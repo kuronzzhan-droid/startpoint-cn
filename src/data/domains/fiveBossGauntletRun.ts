@@ -488,6 +488,36 @@ export function recordMemberBattleSignalSync(
 }
 
 
+export interface BackfillFinalizeResult {
+    backfilled: boolean;
+    runId?: string;
+    roomNumber?: string;
+}
+
+/**
+ * 真机 2026-09-05:CN 客户端在打完第 5 只 boss 后有时只把 LevelNext 送到了 TCP 战斗通道,
+ * Finalize 没到(通道早已被客户端合上),随后的 HTTP finish 被 battle_proof_missing 拒成 H400,
+ * 玩家白打一局。finish 请求本身带会话鉴权,且 level_next 已证明第二场景确实进入过,
+ * 所以对「有 level_next、缺 finalize、成员未放弃、run 仍 active」这一种情况把 finalize
+ * 记成 finish 到达时刻;其余情况原样 fail-closed。
+ */
+export function backfillMissingFinalizeSync(input: MemberClientKey): BackfillFinalizeResult {
+    const key = validateClientKey(input);
+    const rawMember = selectMemberByClient(key.playerId, key.clientPlayId);
+    if (!rawMember || rawMember.aborted_at !== null) return { backfilled: false };
+    if (rawMember.level_next_at === null || rawMember.finalized_at !== null) return { backfilled: false };
+    const rawRun = selectRun(rawMember.run_id);
+    if (!rawRun || rawRun.status !== "active") return { backfilled: false };
+    recordMemberBattleSignalSync({
+        runId: rawRun.run_id,
+        playerId: key.playerId,
+        roomNumber: rawRun.room_number,
+        signal: "finalize",
+    });
+    return { backfilled: true, runId: rawRun.run_id, roomNumber: rawRun.room_number };
+}
+
+
 /** Grants one frozen member's rewards and records the replayable receipt atomically. */
 export function settleMemberSync<T>(
     input: MemberClientKey,

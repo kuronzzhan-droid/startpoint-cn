@@ -3,13 +3,16 @@ import type { Player } from "../../data/types"
 import type { MultiRoom } from "../../lib/types/multi"
 import type { MultiAbortBody, MultiFinishBody, MultiStartBody } from "../types"
 import { getPlayerActiveQuestSync } from "../../data/domains/quest_active"
-import { FiveBossGauntletRunError } from "../../data/domains/fiveBossGauntletRun"
+import { FiveBossGauntletRunError, backfillMissingFinalizeSync } from "../../data/domains/fiveBossGauntletRun"
 import { getPlayerItemSync } from "../../data/domains/item"
 import { getPlayerSync, updatePlayerSync } from "../../data/domains/player"
+import { getQuestFromCategorySync } from "../../lib/assets"
+import { givePlayerCharactersExpSync } from "../../lib/character"
+import type { RewardPlayerCharacterExpResult } from "../../lib/types/character"
 import { getRankDegree } from "../../lib/stamina"
 import { generateDataHeaders, getServerTime, realToVirtual } from "../../utils"
 import { activeQuests } from "../../routes/api/singleBattleQuest"
-import { getRoom, disbandRoom, updateRoomState } from "../room/manager"
+import { getRoom, disbandRoom } from "../room/manager"
 import { sessionManager } from "../state/SessionManager"
 import {
     abortFiveBossBattle,
@@ -19,6 +22,7 @@ import {
     type FinishFiveBossBattleResult,
 } from "../five-boss/battle-runtime"
 import { isFiveBossGauntletQuest } from "../five-boss/contract"
+import { buildFiveBossAdditionalRewardDrops } from "../five-boss/rewards"
 
 
 type FollowInfoBuilder = (
@@ -83,10 +87,76 @@ function terminalRoomTransition(
     sessionManager.clearBattleExpectedCount(roomNumber)
     if (runStatus === "settled") {
         delete room.five_boss_runtime
-        updateRoomState(roomNumber, 1)
+        // 结算后不再把房间退回 raising_state=1 复用,而是直接解散:
+        // V7 客户端补丁 five-boss-random-map 的选图种子 = 房间号,同一房间再战
+        // 会抽到同一套变体;解散逼房主重建房间 = 新房号 = 新一轮随机。
+        // 代价是结算页点「再战」会提示房间已解散,回到关卡页重建(作者接受随机性优先)。
+        console.log(`[MULTI] five-boss settled: disbanding room ${roomNumber} so the next run rerolls its map seed`)
+        disbandRoom(roomNumber)
         return
     }
     disbandRoom(roomNumber)
+}
+
+
+/**
+ * CN 客户端的 multi finish / abort 请求体**不带 room_number**(官方
+ * BattleQuestFinishRealRemote / QuestAbortRealRemote 都没有这个字段),原生多人路径
+ * 一直是靠服务端 activeQuests 记住房号。五重 runtime 的冻结契约要求 requestRoomNumber
+ * 非空,真机首战(2026-09-04)就因此在结算时连吃 6 个 H400。这里按
+ * 请求体 → 内存 activeQuests → 持久化 players_active_quests 的顺序补房号;
+ * 全都没有才让 runtime 用原来的 invalid_argument 拒绝。
+ */
+function resolveFiveBossRoomNumber(bodyRoomNumber: unknown, playerId: number): string {
+    if (typeof bodyRoomNumber === "string" && bodyRoomNumber.length > 0) return bodyRoomNumber
+    const memory = activeQuests[playerId]
+    if (memory && isFiveBossGauntletQuest(memory.category, memory.questId) && memory.roomNumber) {
+        return memory.roomNumber
+    }
+    const persistent = getPlayerActiveQuestSync(playerId)
+    if (
+        persistent
+        && isFiveBossGauntletQuest(persistent.category, persistent.questId)
+        && persistent.roomNumber
+    ) {
+        return persistent.roomNumber
+    }
+    return ""
+}
+
+
+/**
+ * 上一局没结算干净(客户端半路报错退出、房间早已解散)时,玩家身上还挂着旧的
+ * 五重持久化 active quest,新一局 start 会被 runtime 以 active_quest_mismatch 拒绝,
+ * 玩家从此进不了五重。开新局前把这条"房间已不存在"的旧局按 abort 收掉。
+ * 只处理旧 play_id 与本次不同、且房号与本次不同的情况;收不掉就原样交给 runtime 报错。
+ */
+function abandonStaleFiveBossRun(body: MultiStartBody, playerId: number): void {
+    const stale = getPlayerActiveQuestSync(playerId)
+    if (
+        !stale
+        || !isFiveBossGauntletQuest(stale.category, stale.questId)
+        || stale.playId === body.play_id
+        || stale.roomNumber === body.room_number
+    ) {
+        return
+    }
+    try {
+        const aborted = abortFiveBossBattle({
+            playerId,
+            clientPlayId: stale.playId,
+            requestRoomNumber: stale.roomNumber ?? "",
+            requestCategory: stale.category,
+            requestQuestId: stale.questId,
+        })
+        clearMatchingMemoryActive(playerId, stale.playId)
+        console.log(`[MULTI] five-boss start: abandoned stale run for player ${playerId}`
+            + ` room=${stale.roomNumber} play=${stale.playId}`
+            + ` status=${aborted.abortStatus}/${aborted.runStatus}`)
+    } catch (error) {
+        console.warn(`[MULTI] five-boss start: could not abandon stale run for player ${playerId}`
+            + ` room=${stale.roomNumber}: ${(error as Error).message}`)
+    }
 }
 
 
@@ -110,6 +180,31 @@ function finishItemList(
 }
 
 
+/**
+ * 结算页的经验卡(ExperienceCardPartyCharacter)会对**队伍里每个角色**调
+ * QuestClearResult.getExperienceVariation(id),add_exp_list 里没有这个 id 就抛 C2620
+ * 「キャラの経験値不明」(真机 2026-09-04,第二场景打完即崩)。所以哪怕五重的奖励走
+ * 自己的账本,角色经验/羁绊状态也必须像普通多人一样按队伍逐个回填——
+ * 官方 helper 对未持有的 id 也会补占位条目,这里直接复用。
+ */
+function rewardFiveBossPartyExp(
+    playerId: number,
+    party: { characters?: Array<{ id?: unknown } | null>, unison_characters?: Array<{ id?: unknown } | null> } | undefined,
+    body: MultiFinishBody,
+    accomplished: boolean,
+): RewardPlayerCharacterExpResult | null {
+    const ids: number[] = []
+    for (const entry of [...(party?.characters ?? []), ...(party?.unison_characters ?? [])]) {
+        const id = Number(entry?.id)
+        if (Number.isSafeInteger(id) && id > 0 && !ids.includes(id)) ids.push(id)
+    }
+    if (ids.length === 0) return null
+    const questRow = getQuestFromCategorySync(body.category, body.quest_id) as { characterExpReward?: number } | null
+    const expReward = accomplished ? (questRow?.characterExpReward ?? 0) : 0
+    return givePlayerCharactersExpSync(playerId, ids, expReward, false)
+}
+
+
 function buildFinishData(
     player: Player,
     body: MultiFinishBody,
@@ -117,6 +212,7 @@ function buildFinishData(
     dataHeaders: ReturnType<typeof generateDataHeaders>,
     matePlayerResult: Array<{ viewer_id?: number }>,
     followInfo: unknown[],
+    exp: RewardPlayerCharacterExpResult | null,
 ) {
     return {
         user_info: {
@@ -125,15 +221,18 @@ function buildFinishData(
             exp_pooled_time: getServerTime(player.expPooledTime),
             free_vmoney: player.freeVmoney,
             rank_point: player.rankPoint,
-            degree_id: getRankDegree(player.rankPoint),
+            // getRankDegree 算出来的是玩家 **rank**(高 rank 号如 250),不是称号表 degree 的键;
+            // 结算页 MVP 卡会拿 user_info.degree_id 去查 master/degree/degree,查不到就 C8601
+            // 「指定的Key不存在 key=250」(真机 2026-09-04)。普通多人/关注列表都用玩家持久化的 degreeId。
+            degree_id: player.degreeId || 1,
             stamina: player.stamina,
             stamina_heal_time: realToVirtual(player.staminaHealTime),
             boost_point: player.boostPoint,
             boss_boost_point: player.bossBoostPoint,
         },
-        add_exp_list: [],
-        character_list: [],
-        bond_token_status_list: [],
+        add_exp_list: exp?.add_exp_list ?? [],
+        character_list: exp?.character_list ?? [],
+        bond_token_status_list: exp?.bond_token_status_list ?? [],
         rewards: {
             overflow_pool_exp: 0,
             converted_pool_exp: 0,
@@ -147,7 +246,9 @@ function buildFinishData(
         clear_rank: result.kind === "success" ? 5 : 0,
         drop_score_reward_ids: [],
         drop_rare_reward_ids: [],
-        drop_additional_reward_ids: [],
+        drop_additional_reward_ids: result.kind === "success"
+            ? buildFiveBossAdditionalRewardDrops(result.reward.grantedItems)
+            : [],
         drop_periodic_reward_ids: [],
         equipment_list: [],
         category_id: body.category,
@@ -178,6 +279,17 @@ export function handleFiveBossStart(
         })
     }
 
+    // 五重决战不消耗、不结算任何强化点:客户端在"降临讨伐"页签建房时会按官方 boss 战
+    // 习惯默认勾上领主强化点(use_boss_boost_point=true),真机实测直接被 runtime 的
+    // boost_not_allowed 拒成 H400 进不了战斗(2026-09-04)。这里把两个开关一律当 false
+    // 交给 runtime(冻结契约不变:runtime 仍只接受 false),只留一行日志说明被忽略。
+    if (body.use_boost_point === true || body.use_boss_boost_point === true) {
+        console.log(`[MULTI] five-boss start: ignoring client boost flags`
+            + ` viewer=${body.viewer_id} room=${body.room_number}`
+            + ` boost=${body.use_boost_point}/${body.use_boss_boost_point}`)
+    }
+    abandonStaleFiveBossRun(body, playerId)
+
     const result = startFiveBossBattle({
         playerId,
         clientPlayId: body.play_id,
@@ -185,8 +297,8 @@ export function handleFiveBossStart(
         requestRoomNumber: body.room_number,
         requestCategory: body.category,
         requestQuestId: body.quest_id,
-        useBoostPoint: body.use_boost_point,
-        useBossBoostPoint: body.use_boss_boost_point,
+        useBoostPoint: false,
+        useBossBoostPoint: false,
         httpIsAutoStartMode: body.is_auto_start_mode,
         matePlayerIds: body.mate_player_ids,
         mateComIds: room.mates.map(mate => mate.com_id),
@@ -212,11 +324,19 @@ export async function handleFiveBossFinish(
     buildFollowInfo: FollowInfoBuilder,
 ) {
     const memoryBeforeFinish = activeQuests[playerId]
+    const roomNumber = resolveFiveBossRoomNumber(body.room_number, playerId)
     const party = body.statistics?.party ?? body.quest_statistics?.party
+    if (body.is_accomplished === true && typeof body.play_id === "string" && body.play_id.length > 0) {
+        const backfill = backfillMissingFinalizeSync({ playerId, clientPlayId: body.play_id })
+        if (backfill.backfilled) {
+            console.warn(`[MULTI] five-boss finish: finalize signal never reached the battle channel;`
+                + ` backfilled from HTTP finish player=${playerId} run=${backfill.runId} room=${backfill.roomNumber}`)
+        }
+    }
     const result = finishFiveBossBattle({
         playerId,
         clientPlayId: body.play_id,
-        requestRoomNumber: body.room_number,
+        requestRoomNumber: roomNumber,
         requestCategory: body.category,
         requestQuestId: body.quest_id,
         accomplished: body.is_accomplished as boolean,
@@ -225,7 +345,7 @@ export async function handleFiveBossFinish(
         leaderCharacterId: party?.characters?.[0]?.id ?? null,
     })
     clearMatchingMemoryActive(playerId, body.play_id)
-    terminalRoomTransition(body.room_number, result.runId, result.runStatus)
+    terminalRoomTransition(roomNumber, result.runId, result.runStatus)
 
     const matePlayerResult = body.mate_player_result ?? []
     const followInfo = await buildFollowInfo(
@@ -234,6 +354,7 @@ export async function handleFiveBossFinish(
         memoryBeforeFinish?.matePlayerIds ?? body.mate_player_ids ?? [],
     )
     const dataHeaders = generateDataHeaders({ viewer_id: body.viewer_id })
+    const exp = rewardFiveBossPartyExp(playerId, party, body, result.kind === "success")
     const player = requirePlayer(playerId)
     reply.header("content-type", "application/x-msgpack")
     return reply.status(200).send({
@@ -245,6 +366,7 @@ export async function handleFiveBossFinish(
             dataHeaders,
             matePlayerResult,
             followInfo,
+            exp,
         ),
     })
 }
@@ -255,15 +377,16 @@ export function handleFiveBossAbort(
     playerId: number,
     reply: FastifyReply,
 ) {
+    const roomNumber = resolveFiveBossRoomNumber(body.room_number, playerId)
     const result = abortFiveBossBattle({
         playerId,
         clientPlayId: body.play_id,
-        requestRoomNumber: body.room_number,
+        requestRoomNumber: roomNumber,
         requestCategory: body.category,
         requestQuestId: body.quest_id,
     })
     clearMatchingMemoryActive(playerId, body.play_id)
-    terminalRoomTransition(body.room_number, result.runId, result.runStatus)
+    terminalRoomTransition(roomNumber, result.runId, result.runStatus)
 
     const headers = generateDataHeaders({ viewer_id: body.viewer_id })
     reply.header("content-type", "application/x-msgpack")

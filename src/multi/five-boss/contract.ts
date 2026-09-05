@@ -12,7 +12,7 @@ export const FIVE_BOSS_GAUNTLET = Object.freeze({
     hiddenQuestIds: [1099002, 1099003] as const,
     ticketItemId: 10000143,
     roomMemberLimit: 3,
-    sceneBossCounts: [3, 2] as const,
+    sceneBossCounts: [3, 4] as const,
     aiFillTimeoutMs: 120_000,
 })
 

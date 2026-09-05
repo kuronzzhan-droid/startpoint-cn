@@ -16,7 +16,7 @@ const sessionDomain = require("../data/domains/session") as typeof import("../da
 const questDomain = require("../data/domains/quest") as typeof import("../data/domains/quest")
 const runDomain = require("../data/domains/fiveBossGauntletRun") as typeof import("../data/domains/fiveBossGauntletRun")
 const { getDb } = require("../data/db") as typeof import("../data/db")
-const { createRoom, disbandRoom } = require("../multi/room/manager") as typeof import("../multi/room/manager")
+const { createRoom, disbandRoom, getRoom } = require("../multi/room/manager") as typeof import("../multi/room/manager")
 const { registerBattleRoutes } = require("../multi/http/battle") as typeof import("../multi/http/battle")
 const { activeQuests } = require("../routes/api/singleBattleQuest") as typeof import("../routes/api/singleBattleQuest")
 const { FIVE_BOSS_GAUNTLET } = require("../multi/five-boss/contract") as typeof import("../multi/five-boss/contract")
@@ -193,8 +193,8 @@ test("HTTP start and finish use the custom ledger without a donor quest row", as
     assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 10)
     assert.equal(data.drop_score_reward_ids.length, 0)
     assert.equal(data.drop_rare_reward_ids.length, 0)
-    assert.equal(run.room.raising_state, 1)
-    assert.equal(run.room.five_boss_runtime, undefined)
+    // 结算后房间直接解散(随机选图种子=房号,复用房间会抽到同一套变体)。
+    assert.equal(getRoom(run.room.room_number), undefined)
     assert.equal(activeQuests[run.playerId], undefined)
     assert.equal(questDomain.getPlayerSingleQuestProgressSync(
         run.playerId,
@@ -303,8 +303,145 @@ test("HTTP keeps a three-player room in battle until the last frozen real receip
 
     const final = await app.inject({ method: "POST", url: "/finish", payload: finishPayload(runs[2]) })
     assert.equal(final.statusCode, 200, final.body)
-    assert.equal(room.raising_state, 1)
+    // 最后一份结算后房间直接解散(terminalRoomTransition:随机选图种子=房号,复用会重复)。
     assert.equal(room.five_boss_runtime, undefined)
-    disbandRoom(room.room_number)
+    assert.equal(getRoom(room.room_number), undefined)
 })
 
+
+
+test("HTTP start ignores client boost flags instead of rejecting the run (2026-09-04 H400 regression)", async () => {
+    const run = await createSoloRun()
+    const payload = { ...startPayload(run), use_boss_boost_point: true, use_boost_point: true }
+    const start = await app.inject({ method: "POST", url: "/start", payload })
+    assert.equal(start.statusCode, 200, start.body)
+    assert.equal(itemDomain.getPlayerItemSync(
+        run.playerId,
+        FIVE_BOSS_GAUNTLET.ticketItemId,
+    ), 0)
+    assert.equal(activeQuests[run.playerId]?.playId, run.playId)
+    assert.equal(activeQuests[run.playerId]?.useBossBoostPoint, false)
+    assert.equal(activeQuests[run.playerId]?.useBoostPoint, false)
+    assert.equal(run.room.raising_state, 4)
+})
+
+
+test("HTTP finish resolves the room from the active quest when the client omits room_number (CN client never sends it)", async () => {
+    const run = await createSoloRun()
+    const start = await app.inject({ method: "POST", url: "/start", payload: startPayload(run) })
+    assert.equal(start.statusCode, 200, start.body)
+    completeBattleProof(run)
+
+    // 高 rank 玩家:rank 号(250 档)不是 degree 表的键,结算响应必须回玩家持久化的 degreeId。
+    playerDomain.updatePlayerSync({ id: run.playerId, rankPoint: 90_012_553 })
+
+    const { room_number: _omitted, ...payloadWithoutRoom } = finishPayload(run)
+    const finish = await app.inject({ method: "POST", url: "/finish", payload: payloadWithoutRoom })
+    assert.equal(finish.statusCode, 200, finish.body)
+    const data = JSON.parse(finish.body).data
+    assert.equal(data.user_info.degree_id, playerDomain.getPlayerSync(run.playerId)?.degreeId ?? 1)
+    assert.notEqual(data.user_info.degree_id, 250)
+    // 结算页展示走 additional_reward 组 590010000:图纸(1)与深界结晶(2)必在,顺序与账本一致。
+    const drops = data.drop_additional_reward_ids as Array<{ group_id: number, index: number, number: number }>
+    assert.ok(drops.length >= 2, JSON.stringify(drops))
+    assert.ok(drops.every(d => d.group_id === 590010000 && d.number > 0))
+    // 夹具冻结的是 Auto=false ⇒ 2 倍结算,深界结晶 5×2。
+    assert.deepEqual(drops.slice(0, 2).map(d => [d.index, d.number]), [[1, 1], [2, 10]])
+    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 10)
+    // 结算页经验卡按队伍逐角色查 add_exp_list,缺条目就 C2620(真机 2026-09-04)。
+    assert.equal(data.add_exp_list.length, 1)
+    assert.equal(data.add_exp_list[0].character_id, 1)
+    assert.ok(Object.prototype.hasOwnProperty.call(data.bond_token_status_list, "1"))
+    // 结算后房间直接解散(随机选图种子=房号,复用房间会抽到同一套变体)。
+    assert.equal(getRoom(run.room.room_number), undefined)
+    assert.equal(activeQuests[run.playerId], undefined)
+})
+
+
+test("HTTP start abandons a stale five-boss run left by an unsettled previous room", async () => {
+    const run = await createSoloRun(2)
+    const first = await app.inject({ method: "POST", url: "/start", payload: startPayload(run) })
+    assert.equal(first.statusCode, 200, first.body)
+    // 客户端半路崩了:没有 finish/abort,房间随之解散,持久化 active quest 留在玩家身上。
+    disbandRoom(run.room.room_number)
+
+    const nextRoom = createRoom(
+        run.viewerId,
+        run.playerId,
+        1,
+        FIVE_BOSS_GAUNTLET.category,
+        FIVE_BOSS_GAUNTLET.visibleQuestId,
+        0,
+        1,
+    )
+    nextRoom.raising_state = 4
+    nextRoom.mates = [{ viewer_id: run.viewerId, com_id: 0, player_id: run.playerId }]
+    nextRoom.five_boss_runtime = {
+        runId: `http-run-stale-${identity}`,
+        expectedRealPlayerIds: [run.playerId],
+        autoplayModeByPlayerId: { [String(run.playerId)]: false },
+        battleIdentityByConnectionId: {},
+    }
+    const nextPlayId = `${run.playId}-next`
+    const second = await app.inject({
+        method: "POST",
+        url: "/start",
+        payload: { ...startPayload(run), room_number: nextRoom.room_number, play_id: nextPlayId },
+    })
+    assert.equal(second.statusCode, 200, second.body)
+    assert.equal(activeQuests[run.playerId]?.playId, nextPlayId)
+    assert.equal(itemDomain.getPlayerItemSync(run.playerId, FIVE_BOSS_GAUNTLET.ticketItemId), 0)
+})
+
+
+test("HTTP finish backfills a missing finalize signal when level_next was recorded (battle channel dropped)", async () => {
+    const run = await createSoloRun()
+    const start = await app.inject({ method: "POST", url: "/start", payload: startPayload(run) })
+    assert.equal(start.statusCode, 200, start.body)
+    // 只有转场信号到了,Finalize 丢在已关闭的 TCP 战斗通道上(真机 2026-09-05 run 943026)。
+    runDomain.recordMemberBattleSignalSync({
+        runId: run.room.five_boss_runtime!.runId,
+        playerId: run.playerId,
+        roomNumber: run.room.room_number,
+        signal: "level_next",
+    })
+    const finish = await app.inject({ method: "POST", url: "/finish", payload: finishPayload(run) })
+    assert.equal(finish.statusCode, 200, finish.body)
+    const data = JSON.parse(finish.body).data
+    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 10)
+    assert.equal(activeQuests[run.playerId], undefined)
+})
+
+
+test("HTTP finish still rejects a run that never reached the second scene", async () => {
+    const run = await createSoloRun()
+    const start = await app.inject({ method: "POST", url: "/start", payload: startPayload(run) })
+    assert.equal(start.statusCode, 200, start.body)
+    const finish = await app.inject({ method: "POST", url: "/finish", payload: finishPayload(run) })
+    assert.equal(finish.statusCode, 400, finish.body)
+    assert.equal(activeQuests[run.playerId]?.playId, run.playId)
+})
+
+
+test("play_continue survives a server restart (memory table empty, persisted row present)", async () => {
+    const run = await createSoloRun()
+    const start = await app.inject({ method: "POST", url: "/start", payload: startPayload(run) })
+    assert.equal(start.statusCode, 200)
+    delete activeQuests[run.playerId]   // simulate a restart between start and the star-stone continue
+    const cont = await app.inject({
+        method: "POST",
+        url: "/play_continue",
+        payload: {
+            viewer_id: run.viewerId,
+            quest_id: FIVE_BOSS_GAUNTLET.visibleQuestId,
+            category: FIVE_BOSS_GAUNTLET.category,
+            room_number: run.room.room_number,
+            play_id: startPayload(run).play_id,
+            api_count: 1,
+        },
+    })
+    assert.equal(cont.statusCode, 200, cont.body)
+    assert.equal(JSON.parse(cont.body).data.continue_count, 1)
+    assert.ok(activeQuests[run.playerId], "memory entry rebuilt from the persisted active quest")
+    disbandRoom(run.room.room_number)
+})

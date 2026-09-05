@@ -4,6 +4,7 @@ import { generateDataHeaders, getServerTime, realToVirtual } from "../../utils";
 import { getRoom, setRoomBattle, disbandRoom, updateRoomState } from "../room/manager";
 import { sessionManager } from "../state/SessionManager";
 import { insertActiveQuest, activeQuests } from "../../routes/api/singleBattleQuest";
+import { resolveActiveQuest } from "../../lib/quest/finish/active-quest-resolver";
 import {
     deletePlayerActiveQuestSync,
     updatePlayerActiveQuestContinueCountSync,
@@ -125,6 +126,9 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
                 return handleFiveBossStart(body, ctx.playerId, reply);
             } catch (error) {
                 if (!isFiveBossBattleRequestError(error)) throw error;
+                console.warn(`[MULTI] five-boss start rejected: viewer=${viewer_id} room=${room_number}`
+                    + ` code=${(error as { code?: string }).code ?? "?"} message=${(error as Error).message}`
+                    + ` boost=${use_boost_point}/${use_boss_boost_point} auto=${is_auto_start_mode}`);
                 return reply.status(400).send({
                     "error": "Bad Request", "message": (error as Error).message
                 });
@@ -226,6 +230,8 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
                 return await handleFiveBossFinish(body, playerId, reply, buildFinishFollowInfo);
             } catch (error) {
                 if (!isFiveBossBattleRequestError(error)) throw error;
+                console.warn(`[MULTI] five-boss finish rejected: player=${playerId} room=${body.room_number}`
+                    + ` code=${(error as { code?: string }).code ?? "?"} message=${(error as Error).message}`);
                 return reply.status(400).send({
                     "error": "Bad Request", "message": (error as Error).message
                 });
@@ -509,6 +515,8 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
                 return handleFiveBossAbort(body, playerId, reply);
             } catch (error) {
                 if (!isFiveBossBattleRequestError(error)) throw error;
+                console.warn(`[MULTI] five-boss abort rejected: player=${playerId}`
+                    + ` code=${(error as { code?: string }).code ?? "?"} message=${(error as Error).message}`);
                 return reply.status(400).send({
                     "error": "Bad Request", "message": (error as Error).message
                 });
@@ -572,13 +580,24 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
 
         const { playerId } = ctx;
 
-        if (activeQuests[playerId] === undefined) {
+        // 内存表在服务端重启后是空的:五重决战/协力战跑到一半重启过一次,续战就会
+        // 400 "No active quest"(2026-09-05 真机)。与 single 的 play_continue 同一条
+        // 解析链:内存 → players_active_quests 持久行 → 按请求体重建。
+        const resolvedContinue = resolveActiveQuest({
+            playerId,
+            hint: { quest_id: body.quest_id, category: body.category, play_id: body.play_id },
+            memory: activeQuests,
+        });
+        if (resolvedContinue === null) {
             return reply.status(400).send({
                 "error": "Bad Request", "message": "No active quest to continue."
             });
         }
-
-        const activeData = activeQuests[playerId];
+        const activeData = resolvedContinue.quest;
+        if (resolvedContinue.source !== "memory") {
+            console.log(`[MULTI] play_continue: active quest rebuilt from ${resolvedContinue.source} for player ${playerId}`);
+            activeQuests[playerId] = activeData;
+        }
         activeData.continueCount++;
         updatePlayerActiveQuestContinueCountSync(playerId, activeData.continueCount);
 

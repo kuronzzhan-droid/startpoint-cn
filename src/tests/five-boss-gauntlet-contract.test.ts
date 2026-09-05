@@ -41,7 +41,7 @@ test("only the visible BossBattle quest activates the special runtime", () => {
 
 
 test("the route contract is fixed to two full scenes and three room members", () => {
-    assert.deepEqual(FIVE_BOSS_GAUNTLET.sceneBossCounts, [3, 2])
+    assert.deepEqual(FIVE_BOSS_GAUNTLET.sceneBossCounts, [3, 4])
     assert.equal(FIVE_BOSS_GAUNTLET.roomMemberLimit, 3)
     assert.equal(FIVE_BOSS_GAUNTLET.hiddenQuestIds.length, 2)
 });

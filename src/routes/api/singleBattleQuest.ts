@@ -24,6 +24,8 @@ import { isRushBoardRankingQuest } from "../../lib/rush-leaderboard-ranking-even
 import { buildRushEndlessCardFields } from "../../lib/rush-endless-card";
 import { handleRoguePerRoundDrops } from "../../lib/quest/finish/rogue-drops";
 import { handleRaidEventFinish } from "../../lib/quest/finish/raid-handler";
+import { isFiveBossGauntletQuest } from "../../multi/five-boss/contract";
+import { grantFiveBossSoloRewardsSync } from "../../multi/five-boss/solo-rewards";
 import { calculateClearRank } from "../../lib/quest/finish/quest-calc";
 import { validateSessionAndPlayer } from "../../lib/quest/finish/session-validator";
 import { resolveActiveQuest } from "../../lib/quest/finish/active-quest-resolver";
@@ -259,6 +261,11 @@ const routes = async (fastify: FastifyInstance) => {
             }
         }
 
+        // 五重决战单人通关:模式材料(图纸/结晶/证/心核)不走 five-boss runtime,在这里按同一张
+        // reward plan 发(倍率 1)。多人房的 finish 早在 multi_battle_quest 那条路上被拦走,这里只会是单人。
+        const fiveBossSolo = questAccomplished && !activeQuestData.isMulti && isFiveBossGauntletQuest(questCategory, questId)
+            ? grantFiveBossSoloRewardsSync({ playerId, firstClear: !questPreviouslyCompleted })
+            : null
         const clearReward = !questPreviouslyCompleted && questData.clearReward !== undefined ? givePlayerRewardSync(playerId, questData.clearReward) : null
         const sPlusClearReward = (clearRank === 5) && (questProgress?.clearRank !== 5) && (questData.sPlusReward !== undefined) ? givePlayerRewardSync(playerId, questData.sPlusReward) : null
         const leaderId = body.statistics.party.characters[0]?.id
@@ -558,7 +565,8 @@ const routes = async (fastify: FastifyInstance) => {
             ...scoreRewardsResult.items,
             ...(rushEventRewardsResult?.items ?? {}),
             ...(rogueDrops?.rewardResult.items ?? {}),
-            ...(fantasySettlement?.items ?? {})
+            ...(fantasySettlement?.items ?? {}),
+            ...(fiveBossSolo?.items ?? {})
         }
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
@@ -616,7 +624,8 @@ const routes = async (fastify: FastifyInstance) => {
                 "drop_score_reward_ids": scoreRewardsResult.drop_score_reward_ids,
                 "drop_rare_reward_ids": scoreRewardsResult.drop_rare_reward_ids,
                 "drop_additional_reward_ids": [
-                    ...(fantasySettlement?.fantasy_additional_reward_ids ?? [])
+                    ...(fantasySettlement?.fantasy_additional_reward_ids ?? []),
+                    ...(fiveBossSolo?.dropAdditionalRewardIds ?? [])
                 ],
                 "drop_periodic_reward_ids": [],
                 "equipment_list": [
