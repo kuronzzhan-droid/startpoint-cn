@@ -26,6 +26,25 @@
 3. 用 FFDec 把改后的 AS3 导回 SWF,替换进 APK,`zipalign` + `apksigner` 重签名。
 4. 安装到设备。
 
+## 补丁一览
+
+| 补丁目录 | 作用面(类) | 说明 | 互斥 |
+|---|---|---|---|
+| `abyss-mode-equipment/` | `BattleCharacterLogic` | 深渊连战 15 把武器/能力魂的战斗生效门控 | — |
+| `dual-form-v1/` | P-code(赛瑞斯相关) | 赛瑞斯 129999 双形态演出与战斗效果 | — |
+| `render-scale-v1/` | `PixelArtCharacterView`、`MemberView`、`CharacterCellView` | 自制大帧像素件的渲染缩放 | — |
+| `rank-button-p1/`、`rank-scene-p2/`、`rank-p4-native/` | `RushEventRanking*`、`RushEventTop*`、`ToolAgreementRealRemote`、`TermsOfServiceLoadingTask` | 排行榜场景复活 | — |
+| `five-boss-auto-lock/` | `BattleScene`、`BattlePauseMenu` | 五重决战:开战前关掉 Auto 后战斗内锁定 | — |
+| `five-boss-random-map/` | `BothBossTool` | 五重决战:`both_boss_map` 多行候选随机选图(多人按房号、单人按时间播种) | — |
+| `five-boss-multi-only/` | `BossBattleQuestLogic` | 五重决战 `1099001..1099003` 返回 `available_play_kind = 2`(只能组队,单人按钮置灰) | ⚠ 与 `five-boss-single-allowed` **二选一** |
+| `five-boss-single-allowed/` | `BossBattleQuestLogic` | 把上面那条还原成官方的 `return 1`(单人 + 组队,单人按钮可点) | ⚠ 与 `five-boss-multi-only` **二选一** |
+
+`five-boss-multi-only` 与 `five-boss-single-allowed` 改的是**同一个方法**
+(`BossBattleQuestLogic.get_availablePlayKind()`),构建链上只能选一个;
+其余补丁互不重叠,可以叠加。两者的验证器互相排斥
+(装了单人版就通不过多人版的 `verify_quest_logic`,反之亦然),
+所以打错了会在回读校验阶段报错,不会静默出货。
+
 ## 可选补丁
 
 - **abyss-mode-equipment**(`abyss-mode-equipment/`):深渊连战 15 把武器/能力魂(`8000101`–`8000115`)的战斗生效门控——只在 Rush `700099` / 挑战 `2001` / 练习 `1`–`97` 内生效。**服务端启用深渊连战模式时必须打**,否则武器装上不生效。用法见 `abyss-mode-equipment/README.md`,自建服完整流程见 [`docs/self-host-modes.md`](../docs/self-host-modes.md)。
