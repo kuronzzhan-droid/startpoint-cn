@@ -737,7 +737,9 @@ class OfflineContentTests(unittest.TestCase):
             with self.subTest(character=code_name):
                 spec = self.module.CharacterReleaseSpec(character_id, code_name)
                 self.install_published_character_snapshot(spec)
-                rows = [[""] * 124 for _ in range(9)]
+                rows = [[""] * 124 for _ in range(
+                    self.module.WORKSPACE_LEADER_ROW_COUNTS[(character_id, code_name)]
+                )]
                 rows[8][45] = "629"
                 rows[8][80] = self.module.DUAL_PF_KEYS[(character_id, code_name)]
                 self.add_ordered(self.module.LEADER_ABILITY_MASTER_LOGICAL, {

@@ -202,7 +202,7 @@ WORKSPACE_LEADER_ROW_COUNTS = {
     (139999, "stella_summer_goddess"): 5,
     (149999, "white_wolf_gerald"): 10,
     (129992, "unicorn_lancer_rose"): 9,
-    (139995, "fox_oracle_autumn"): 9,
+    (139995, "fox_oracle_autumn"): 10,
 }
 WORKSPACE_ABILITY_PROGRAM_LOCATIONS = {
     (139999, "stella_summer_goddess"): (),
