@@ -54,4 +54,25 @@ python -m unittest discover -s client-patch/kyubi-pf-damage/tests -v
 测试中的完整 V8 源不入库。通过 `KYUBI_PF_V8_SOURCE` 指定导出目录；
 测试确认三类完整身份、补丁完全可逆、独立主/副路径、合法档位、其他攻击分支不变及未知源拒绝。
 这些是源码门禁，不是 SWF 编译、真机、伤害数值或协力兼容验收。
-构建方必须依次替换三个类，重新导出核对完整变更，并验证 V8 既有补丁仍保留。
+构建方必须替换 `MemberImpl`、`ActionEvaluator` 两类，重新导出核对完整变更，
+并验证 V8 既有补丁仍保留。
+
+### `SquadManagerImpl` 必须用单方法 P-code
+
+V8 的 `invokeActionSkill` 已有 Seris 双形态语音补丁，FFDec 导出的源包含
+`§§goto/§§push/§§pop`，实际整类回编失败。不得尝试根据不完整反编译结果改写该分支。
+`patch.py` 生成的这个类仅供源码差异审阅，不用于 SWF 替换。
+
+`patch_squad_pcode.py` 直接修改既有 `invokeActionSkill` 字节码导出：
+在两次创建技能 context 的 `newobject 12` 前各追加两对属性，然后改成 `newobject 14`。
+两次路径判断用 `equals/equals/bitor/convert_b`，没有新分支；`maxstack` 从 29 调到 33。
+原有 Seris 语音及其他指令、分支逐行保持。原 V8 方法体 SHA-256 锁为
+`1e5cfb972f60505ab7dac6284584dcf387e0f5b64bcb0e9813a016b567afd739`。
+
+```powershell
+python client-patch/kyubi-pf-damage/patch_squad_pcode.py --pcode <V8类.pcode> --swf <待打补丁.swf> --out <单方法.pcode>
+# 用工具返回的 body_index 做 FFDec -replace；之后重导该类为 P-code。
+python client-patch/kyubi-pf-damage/patch_squad_pcode.py --pcode <V8类.pcode> --verify <重导类.pcode>
+```
+
+二次校验会规范化 FFDec 重命名的 `ofs` 偏移标签，并要求除此之外仅有这两块注入。
