@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import wf_mod_tool as core
 import wf_inaho_fever_growth_data as data
 import wf_inaho_fever_growth as tool
+import wf_inaho_growth_detail_data as detail_fix
 from wf_client_legality import client_legality_problems
 from wf_inaho_fever_drain import make_row
 
@@ -89,10 +90,20 @@ class GrowthTest(unittest.TestCase):
                 for values in phase["alv_1_to_6"].values():
                     self.assertTrue(all(-0.041 <= e <= 0 for e in values["relative_error"]))
 
-    def test_native_client_legality_for_every_row(self):
+    def test_historical_description_is_rejected_and_hotfix_is_legal(self):
+        failures = []
         for key, rows in self.rows.items():
             alias = "leader_ability" if key == "139995" else "ability"
-            for row in rows:
+            for index, row in enumerate(rows):
+                errors = client_legality_problems(alias, row)
+                if errors:
+                    failures.append((key, index, errors))
+        self.assertEqual([(key, index) for key, index, _ in failures], [("1399951", 4)])
+        self.assertEqual(len(failures[0][2]), 1)
+        self.assertIn("C10010", failures[0][2][0])
+        for key, text in detail_fix.transform(self.new).items():
+            alias = "leader_ability" if key == "139995" else "ability"
+            for row in core.read_csv_lines(text):
                 self.assertEqual(client_legality_problems(alias, row), [])
 
     def test_wrong_workspace_rejected_without_writes(self):
