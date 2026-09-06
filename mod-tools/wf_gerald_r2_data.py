@@ -24,7 +24,9 @@ TREE_HASHES = {
     "1": "af0ddb8235cfa87972bd382c91b06f5913246392ea5b1217d8f25d2c1ea65c50",
     "2": "7be0561c7ce9db14a0c2c49297fa85a57c340a5e344e43769d16d56127b23160",
 }
-FLYING = ["Command", ["CreateCondition", -18,
+# -17 is the casting Member; -18 is its movement Ball, whose condition-owner
+# probe throws. Member's condition slot forwards Flying to the squad slot.
+FLYING = ["Command", ["CreateCondition", -17,
     [["ACFlying", [{"min": 1200, "max": 1200}]]], [{"min": 1, "max": 1}],
     ["GenericConditionHitEffect"], True, False, "", None, False, 3,
     [{"min": 1, "max": 1}], False]]
@@ -103,8 +105,13 @@ def revise_tree(source, level: str):
     if len(gates) != 1 or gates[0][1] != 1:
         raise ValueError("missing ability-3 cast-time change-skill gate")
     commands = gates[0][2][1]
-    if FLYING in commands:
-        commands.remove(FLYING)
+    legacy_flying = deepcopy(FLYING)
+    legacy_flying[1][1] = -18
+    known_flying = [entry for entry in commands if entry in (FLYING, legacy_flying)]
+    if len(known_flying) > 1:
+        raise ValueError("duplicate self-Flying command")
+    if known_flying:
+        commands.remove(known_flying[0])
     canonical = json.dumps(tree, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     guard_text(canonical, TREE_HASHES[level])
     # Native enablesComboBonus matches the official wind Siltie skill path.

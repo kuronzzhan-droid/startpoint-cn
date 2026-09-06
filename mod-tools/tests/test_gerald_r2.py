@@ -86,7 +86,7 @@ class GeraldR2Tests(unittest.TestCase):
             flying = [node for node in wf_dsl.iter_dsl_commands(tree, "CreateCondition")
                       if node[2][0][0] == "ACFlying"]
             self.assertEqual(len(flying), 1)
-            self.assertEqual(flying[0][1:3], [-18, [["ACFlying", [{"min": 1200, "max": 1200}]]]])
+            self.assertEqual(flying[0][1:3], [-17, [["ACFlying", [{"min": 1200, "max": 1200}]]]])
             # The self buff lives only inside the existing ability-3 change flag.
             gates = list(wf_dsl.iter_dsl_commands(tree, "ConditionalsChangeSkillFlag"))
             self.assertTrue(any(flying[0] in list(wf_dsl.iter_dsl_commands(g[2], "CreateCondition"))
