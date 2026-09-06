@@ -38,6 +38,9 @@ from wf_offline_store import ManifestEntry, StoreRoots
 from wf_quest_lib import hashed_rel
 import wf_dsl
 import wf_mod_tool as core
+from wf_dual_pf_contract import (
+    DUAL_PF_EFFECTS, DUAL_PF_KEYS, DUAL_PF_PROGRAMS, bind_native_programs,
+)
 from wf_rogue_validate import (
     RogueDataReport,
     RogueValidationError,
@@ -187,23 +190,19 @@ WORKSPACE_ABILITY_PROGRAMS = {
         "ability_skill_gerald_dash_lock$ability_skill_gerald_dash_lock",
     ),
     (129992, "unicorn_lancer_rose"): (),
-    (139995, "fox_oracle_autumn"): (
-        "battle/action/skill/action/ability_skill/"
-        "ability_skill_fox_oracle_autumn_fever_pf$"
-        "ability_skill_fox_oracle_autumn_fever_pf",
-    ),
+    (139995, "fox_oracle_autumn"): (),
 }
 WORKSPACE_ABILITY_ROW_COUNTS = {
     (139999, "stella_summer_goddess"): (2, 2, 5, 1, 1, 1),
     (149999, "white_wolf_gerald"): (3, 2, 8, 2, 6, 1),
-    (129992, "unicorn_lancer_rose"): (2, 2, 5, 2, 2, 2),
-    (139995, "fox_oracle_autumn"): (3, 1, 7, 2, 3, 2),
+    (129992, "unicorn_lancer_rose"): (2, 3, 5, 2, 2, 2),
+    (139995, "fox_oracle_autumn"): (3, 2, 6, 2, 3, 2),
 }
 WORKSPACE_LEADER_ROW_COUNTS = {
     (139999, "stella_summer_goddess"): 5,
     (149999, "white_wolf_gerald"): 10,
-    (129992, "unicorn_lancer_rose"): 8,
-    (139995, "fox_oracle_autumn"): 8,
+    (129992, "unicorn_lancer_rose"): 9,
+    (139995, "fox_oracle_autumn"): 9,
 }
 WORKSPACE_ABILITY_PROGRAM_LOCATIONS = {
     (139999, "stella_summer_goddess"): (),
@@ -219,11 +218,7 @@ WORKSPACE_ABILITY_PROGRAM_LOCATIONS = {
         ][0]),
     ),
     (129992, "unicorn_lancer_rose"): (),
-    (139995, "fox_oracle_autumn"): (
-        ("1399953", 0, 71, WORKSPACE_ABILITY_PROGRAMS[
-            (139995, "fox_oracle_autumn")
-        ][0]),
-    ),
+    (139995, "fox_oracle_autumn"): (),
 }
 STELLA_EFFECT = "battle/effect/skill_unique/stella_ballot23/stella_ballot23"
 GERALD_SKILL1_EFFECTS = frozenset({
@@ -261,6 +256,7 @@ FOX_AUTUMN_SKILL_EFFECTS = frozenset({
     FOX_AUTUMN_ALL_EFFECT, FOX_AUTUMN_HIT_EFFECT, FOX_AUTUMN_API_EFFECT,
 })
 WORKSPACE_PROGRAM_EFFECTS = {
+    **DUAL_PF_EFFECTS,
     WORKSPACE_ACTION_PROGRAMS[(139999, "stella_summer_goddess")][0]: frozenset({STELLA_EFFECT}),
     WORKSPACE_ACTION_PROGRAMS[(139999, "stella_summer_goddess")][1]: frozenset({STELLA_EFFECT}),
     WORKSPACE_ACTION_PROGRAMS[(149999, "white_wolf_gerald")][0]: GERALD_SKILL1_EFFECTS,
@@ -281,8 +277,6 @@ WORKSPACE_PROGRAM_EFFECTS = {
         UNICORN_LANCER_ROSE_SKILL_EFFECTS,
     WORKSPACE_ACTION_PROGRAMS[(139995, "fox_oracle_autumn")][0]: FOX_AUTUMN_SKILL_EFFECTS,
     WORKSPACE_ACTION_PROGRAMS[(139995, "fox_oracle_autumn")][1]: FOX_AUTUMN_SKILL_EFFECTS,
-    WORKSPACE_ABILITY_PROGRAMS[(139995, "fox_oracle_autumn")][0]:
-        frozenset({FOX_AUTUMN_HIT_EFFECT, FOX_AUTUMN_API_EFFECT}),
 }
 SERVER_CHARACTER_LOGICALS = (
     "character.json",
@@ -426,6 +420,7 @@ def _workspace_master_contracts(spec: CharacterReleaseSpec) -> tuple[_WorkspaceM
             )
         )
         return (*core_contracts,
+            _WorkspaceMasterContract(POWER_FLIP_ACTION_MASTER_LOGICAL, "flat", (DUAL_PF_KEYS[(spec.character_id, spec.code_name)],)),
             _WorkspaceMasterContract(CHARACTER_AWAKE_STATUS_MASTER_LOGICAL, "flat", (character_id,)),
             _WorkspaceMasterContract(CHARACTER_GACHA_SOUND_MASTER_LOGICAL, "raw_outer", (character_id,)),
             _WorkspaceMasterContract(SKILL_PREVIEW_CHARACTER_MASTER_LOGICAL, "flat", (character_id,)),
@@ -436,7 +431,7 @@ def _workspace_master_contracts(spec: CharacterReleaseSpec) -> tuple[_WorkspaceM
             _WorkspaceMasterContract(
                 CUSTOM_ABILITY_STRING_MASTER_LOGICAL,
                 "flat",
-                ("change_skill_unicorn_lancer_rose",),
+                ("change_skill_unicorn_lancer_rose", "override_string_unicorn_lancer_rose_dual_pf"),
             ),
         )
     if spec.character_id == 139995 and spec.code_name == "fox_oracle_autumn":
@@ -448,6 +443,7 @@ def _workspace_master_contracts(spec: CharacterReleaseSpec) -> tuple[_WorkspaceM
             )
         )
         return (*core_contracts,
+            _WorkspaceMasterContract(POWER_FLIP_ACTION_MASTER_LOGICAL, "flat", (DUAL_PF_KEYS[(spec.character_id, spec.code_name)],)),
             _WorkspaceMasterContract(CHARACTER_AWAKE_STATUS_MASTER_LOGICAL, "flat", (character_id,)),
             _WorkspaceMasterContract(CHARACTER_GACHA_SOUND_MASTER_LOGICAL, "raw_outer", (character_id,)),
             _WorkspaceMasterContract(SKILL_PREVIEW_CHARACTER_MASTER_LOGICAL, "flat", (character_id,)),
@@ -458,7 +454,7 @@ def _workspace_master_contracts(spec: CharacterReleaseSpec) -> tuple[_WorkspaceM
             _WorkspaceMasterContract(
                 CUSTOM_ABILITY_STRING_MASTER_LOGICAL,
                 "flat",
-                ("ability_skill_fox_oracle_autumn_fever_pf",),
+                ("ability_skill_fox_oracle_autumn_fever_pf", "override_string_fox_oracle_autumn_dual_pf"),
             ),
         )
     raise ContentGateError(
@@ -1505,6 +1501,13 @@ def _bind_workspace_master_reference_closure(
             "skill_program", value,
             f"{ABILITY_MASTER_LOGICAL}:{ability_id} "
             f"row {row_index + 1} column {column}",
+        ))
+
+    for program in bind_native_programs(
+        identity, decoded_leader_rows, evidence, bind_common, ContentGateError
+    ):
+        base_references.append(MasterAssetReference(
+            "skill_program", program, f"{POWER_FLIP_ACTION_MASTER_LOGICAL}:native dual-PF"
         ))
 
     program_references: dict[str, MasterAssetReference] = {}

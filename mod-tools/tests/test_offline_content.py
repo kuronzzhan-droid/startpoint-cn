@@ -348,9 +348,12 @@ class OfflineContentTests(unittest.TestCase):
     #: ``wf_offline_content._workspace_master_contracts``.
     CUSTOM_ABILITY_STRING_KEYS = {
         (149999, "white_wolf_gerald"): ("ability_skill_white_wolf_moon_fang",),
-        (129992, "unicorn_lancer_rose"): ("change_skill_unicorn_lancer_rose",),
+        (129992, "unicorn_lancer_rose"): (
+            "change_skill_unicorn_lancer_rose", "override_string_unicorn_lancer_rose_dual_pf",
+        ),
         (139995, "fox_oracle_autumn"): (
             "ability_skill_fox_oracle_autumn_fever_pf",
+            "override_string_fox_oracle_autumn_dual_pf",
         ),
     }
 
@@ -388,8 +391,8 @@ class OfflineContentTests(unittest.TestCase):
 
         ability_values: dict[str, str] = {}
         revised_counts = {
-            (129992, "unicorn_lancer_rose"): (2, 2, 5, 2, 2, 2),
-            (139995, "fox_oracle_autumn"): (3, 1, 7, 2, 3, 2),
+            (129992, "unicorn_lancer_rose"): (2, 3, 5, 2, 2, 2),
+            (139995, "fox_oracle_autumn"): (3, 2, 6, 2, 3, 2),
         }
         for index, row_count in enumerate(
             revised_counts.get(identity, self.module.WORKSPACE_ABILITY_ROW_COUNTS[identity]), 1
@@ -408,6 +411,9 @@ class OfflineContentTests(unittest.TestCase):
         ]
         if identity == (149999, "white_wolf_gerald"):
             leader_rows[6][80] = self.module.GERALD_UNCLAIMED_POWER_FLIP_KEY
+        if identity in self.module.DUAL_PF_KEYS:
+            leader_rows[8][45] = "722"
+            leader_rows[8][80] = self.module.DUAL_PF_KEYS[identity]
         self.add_ordered(
             self.module.LEADER_ABILITY_MASTER_LOGICAL,
             {str(spec.character_id): core.write_csv_lines(leader_rows)},
@@ -430,7 +436,8 @@ class OfflineContentTests(unittest.TestCase):
         def install_program(program: str) -> None:
             effects = set(self.module.WORKSPACE_PROGRAM_EFFECTS[program])
             marker = []
-            if identity in revised_counts:
+            if (identity in revised_counts
+                    and program in self.module.WORKSPACE_ACTION_PROGRAMS[identity]):
                 effects.add(f"battle/effect/skill_unique/{spec.code_name}_api/{spec.code_name}_api")
                 if (identity == (139995, "fox_oracle_autumn")
                         and program in self.module.WORKSPACE_ACTION_PROGRAMS[identity]):
@@ -456,6 +463,14 @@ class OfflineContentTests(unittest.TestCase):
             *self.module.WORKSPACE_ABILITY_PROGRAMS[identity],
         ):
             install_program(program)
+
+        if identity in self.module.DUAL_PF_KEYS:
+            programs = self.module.DUAL_PF_PROGRAMS[identity]
+            self.add_ordered(self.module.POWER_FLIP_ACTION_MASTER_LOGICAL, {
+                self.module.DUAL_PF_KEYS[identity]: core.write_csv_lines([list(programs)])
+            })
+            for program in programs:
+                install_program(program)
 
         character_key = str(spec.character_id)
         flat_values = {
@@ -676,14 +691,16 @@ class OfflineContentTests(unittest.TestCase):
         self.assertTrue(report.three_layer_consistent)
         self.assertEqual(report.seal_sha256, self.module.sha256_canonical_report(report))
 
-    def test_fox_oracle_autumn_fever_program_must_stay_in_ability_slot_3(self) -> None:
-        """The 629 row lives in ability key 1399953, never in the leader table."""
+    def test_fox_oracle_autumn_rejects_old_629_ability_program(self) -> None:
+        """A native PF must not regress to a skill-kind 629 action."""
         spec = self.module.CharacterReleaseSpec(139995, "fox_oracle_autumn")
         identity = (spec.character_id, spec.code_name)
         self.install_published_character_snapshot(spec)
-        program = self.module.WORKSPACE_ABILITY_PROGRAMS[identity][0]
+        program = ("battle/action/skill/action/ability_skill/"
+                   "ability_skill_fox_oracle_autumn_fever_pf$"
+                   "ability_skill_fox_oracle_autumn_fever_pf")
         self.assertEqual(
-            (("1399953", 0, 71, program),),
+            (),
             self.module.WORKSPACE_ABILITY_PROGRAM_LOCATIONS[identity],
         )
         ability_values = {}
@@ -699,6 +716,8 @@ class OfflineContentTests(unittest.TestCase):
             [f"leader-{index}", *([""] * 123)]
             for index in range(self.module.WORKSPACE_LEADER_ROW_COUNTS[identity])
         ]
+        leader_rows[8][45] = "722"
+        leader_rows[8][80] = self.module.DUAL_PF_KEYS[identity]
         leader_rows[7][69] = program
         self.add_ordered(
             self.module.LEADER_ABILITY_MASTER_LOGICAL,
@@ -712,6 +731,32 @@ class OfflineContentTests(unittest.TestCase):
                 spec, self.roots, workspace_source=None,
                 phase4_asset_logicals=self.phase4,
             )
+
+    def test_native_dual_pf_requires_leader_override_and_all_three_programs(self) -> None:
+        for character_id, code_name in self.module.DUAL_PF_KEYS:
+            with self.subTest(character=code_name):
+                spec = self.module.CharacterReleaseSpec(character_id, code_name)
+                self.install_published_character_snapshot(spec)
+                rows = [[""] * 124 for _ in range(9)]
+                rows[8][45] = "629"
+                rows[8][80] = self.module.DUAL_PF_KEYS[(character_id, code_name)]
+                self.add_ordered(self.module.LEADER_ABILITY_MASTER_LOGICAL, {
+                    str(character_id): core.write_csv_lines(rows),
+                })
+                with self.assertRaisesRegex(self.module.ContentGateError,
+                                            "native dual-PF leader override mismatch"):
+                    self.validate_one_published_character(spec)
+
+                self.install_published_character_snapshot(spec)
+                programs = list(self.module.DUAL_PF_PROGRAMS[(character_id, code_name)])
+                programs[-1] = programs[0]
+                self.add_ordered(self.module.POWER_FLIP_ACTION_MASTER_LOGICAL, {
+                    self.module.DUAL_PF_KEYS[(character_id, code_name)]:
+                        core.write_csv_lines([programs]),
+                })
+                with self.assertRaisesRegex(self.module.ContentGateError,
+                                            "three-level program closure mismatch"):
+                    self.validate_one_published_character(spec)
 
     def test_gerald_leader_power_flip_key_requires_exact_row_6_column_80(self) -> None:
         spec = self.module.CharacterReleaseSpec(149999, "white_wolf_gerald")
