@@ -10,7 +10,6 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
-from scipy import ndimage
 
 import wf_assets
 import wf_atf
@@ -56,6 +55,29 @@ def read_png(path: Path) -> Image.Image:
     return Image.open(io.BytesIO(wf_assets.png_decode(path.read_bytes()))).convert("RGBA")
 
 
+def matte_regions(rgb: np.ndarray) -> np.ndarray:
+    """Select large 4-connected near-black regions without optional SciPy."""
+    black = np.pad(rgb.max(axis=2) <= 20, 1)
+    width = black.shape[1]
+    remaining = black.ravel().copy()
+    selected = np.zeros_like(remaining)
+    for seed in np.flatnonzero(remaining):
+        if not remaining[seed]:
+            continue
+        stack, region = [int(seed)], []
+        remaining[seed] = False
+        while stack:
+            index = stack.pop()
+            region.append(index)
+            for neighbor in (index - 1, index + 1, index - width, index + width):
+                if remaining[neighbor]:
+                    remaining[neighbor] = False
+                    stack.append(neighbor)
+        if len(region) > 900:
+            selected[region] = True
+    return selected.reshape(black.shape)[1:-1, 1:-1]
+
+
 def load_master(path: Path, level: int) -> tuple[Image.Image, dict]:
     raw = path.read_bytes()
     if sha(raw) != SOURCE_HASHES[level]:
@@ -66,10 +88,7 @@ def load_master(path: Path, level: int) -> tuple[Image.Image, dict]:
     if level == 1:
         # This supplied PNG has an opaque near-black matte. Remove only the large
         # connected matte regions; preserve small dark outlines/helmet details.
-        labels, _ = ndimage.label(array[:, :, :3].max(axis=2) <= 20)
-        areas = np.bincount(labels.ravel())
-        regions = np.flatnonzero(areas > 900)
-        background = np.isin(labels, regions[regions != 0])
+        background = matte_regions(array[:, :, :3])
         array[background, 3] = 0
         removed = int(background.sum())
     if not np.array_equal(array[:, :, :3], np.asarray(source)[:, :, :3]):
