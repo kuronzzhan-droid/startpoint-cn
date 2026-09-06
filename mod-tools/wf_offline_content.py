@@ -196,8 +196,8 @@ WORKSPACE_ABILITY_PROGRAMS = {
 WORKSPACE_ABILITY_ROW_COUNTS = {
     (139999, "stella_summer_goddess"): (2, 2, 5, 1, 1, 1),
     (149999, "white_wolf_gerald"): (3, 2, 8, 2, 6, 1),
-    (129992, "unicorn_lancer_rose"): (2, 2, 5, 2, 1, 1),
-    (139995, "fox_oracle_autumn"): (3, 1, 7, 2, 2, 1),
+    (129992, "unicorn_lancer_rose"): (2, 2, 5, 2, 2, 2),
+    (139995, "fox_oracle_autumn"): (3, 1, 7, 2, 3, 2),
 }
 WORKSPACE_LEADER_ROW_COUNTS = {
     (139999, "stella_summer_goddess"): 5,
@@ -252,10 +252,14 @@ UNICORN_LANCER_ROSE_SKILL_EFFECTS = frozenset({
     "battle/effect/skill_unique/unicorn_lancer_rose/lance/lance_end",
     "battle/effect/skill_unique/unicorn_lancer_rose/unicorn_lancer_rose",
     "battle/effect/skill_unique/unicorn_lancer_rose/unicorn_lancer_rose_end",
+    "battle/effect/skill_unique/unicorn_lancer_rose_api/unicorn_lancer_rose_api",
 })
 FOX_AUTUMN_ALL_EFFECT = "battle/effect/skill_unique/fox_oracle_autumn/fox_oracle_autumn_all"
 FOX_AUTUMN_HIT_EFFECT = "battle/effect/skill_unique/fox_oracle_autumn/fox_oracle_autumn_hit"
-FOX_AUTUMN_SKILL_EFFECTS = frozenset({FOX_AUTUMN_ALL_EFFECT, FOX_AUTUMN_HIT_EFFECT})
+FOX_AUTUMN_API_EFFECT = "battle/effect/skill_unique/fox_oracle_autumn_api/fox_oracle_autumn_api"
+FOX_AUTUMN_SKILL_EFFECTS = frozenset({
+    FOX_AUTUMN_ALL_EFFECT, FOX_AUTUMN_HIT_EFFECT, FOX_AUTUMN_API_EFFECT,
+})
 WORKSPACE_PROGRAM_EFFECTS = {
     WORKSPACE_ACTION_PROGRAMS[(139999, "stella_summer_goddess")][0]: frozenset({STELLA_EFFECT}),
     WORKSPACE_ACTION_PROGRAMS[(139999, "stella_summer_goddess")][1]: frozenset({STELLA_EFFECT}),
@@ -278,7 +282,7 @@ WORKSPACE_PROGRAM_EFFECTS = {
     WORKSPACE_ACTION_PROGRAMS[(139995, "fox_oracle_autumn")][0]: FOX_AUTUMN_SKILL_EFFECTS,
     WORKSPACE_ACTION_PROGRAMS[(139995, "fox_oracle_autumn")][1]: FOX_AUTUMN_SKILL_EFFECTS,
     WORKSPACE_ABILITY_PROGRAMS[(139995, "fox_oracle_autumn")][0]:
-        frozenset({FOX_AUTUMN_HIT_EFFECT}),
+        frozenset({FOX_AUTUMN_HIT_EFFECT, FOX_AUTUMN_API_EFFECT}),
 }
 SERVER_CHARACTER_LOGICALS = (
     "character.json",
@@ -450,6 +454,7 @@ def _workspace_master_contracts(spec: CharacterReleaseSpec) -> tuple[_WorkspaceM
             _WorkspaceMasterContract(UPSKILL_MASTER_LOGICAL, "flat", (character_id,)),
             _WorkspaceMasterContract(CHARACTER_STANCE_DETAIL_MASTER_LOGICAL, "flat", (character_id,)),
             _WorkspaceMasterContract(TRIMMED_IMAGE_MASTER_LOGICAL, "flat", trimmed),
+            _WorkspaceMasterContract(UNIQUE_CONDITION_MASTER_LOGICAL, "flat", ("139995", "1399951")),
             _WorkspaceMasterContract(
                 CUSTOM_ABILITY_STRING_MASTER_LOGICAL,
                 "flat",

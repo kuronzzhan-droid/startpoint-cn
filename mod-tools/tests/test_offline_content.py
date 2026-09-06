@@ -387,8 +387,12 @@ class OfflineContentTests(unittest.TestCase):
         )
 
         ability_values: dict[str, str] = {}
+        revised_counts = {
+            (129992, "unicorn_lancer_rose"): (2, 2, 5, 2, 2, 2),
+            (139995, "fox_oracle_autumn"): (3, 1, 7, 2, 3, 2),
+        }
         for index, row_count in enumerate(
-            self.module.WORKSPACE_ABILITY_ROW_COUNTS[identity], 1
+            revised_counts.get(identity, self.module.WORKSPACE_ABILITY_ROW_COUNTS[identity]), 1
         ):
             rows = [[f"ability-{index}", *([""] * 125)] for _ in range(row_count)]
             for key, row_index, column, program in (
@@ -424,8 +428,15 @@ class OfflineContentTests(unittest.TestCase):
         )
 
         def install_program(program: str) -> None:
-            effects = self.module.WORKSPACE_PROGRAM_EFFECTS[program]
-            dsl_raw = wf_dsl.encode_amf3(sorted(effects))
+            effects = set(self.module.WORKSPACE_PROGRAM_EFFECTS[program])
+            marker = []
+            if identity in revised_counts:
+                effects.add(f"battle/effect/skill_unique/{spec.code_name}_api/{spec.code_name}_api")
+                if (identity == (139995, "fox_oracle_autumn")
+                        and program in self.module.WORKSPACE_ACTION_PROGRAMS[identity]):
+                    level = self.module.WORKSPACE_ACTION_PROGRAMS[identity].index(program)
+                    marker = [["ACUnique", (139995, 1399951)[level], [{"min": 1, "max": 1}]]]
+            dsl_raw = wf_dsl.encode_amf3([*sorted(effects), *marker])
             compressor = zlib.compressobj(9, zlib.DEFLATED, -15)
             self.add_file(
                 self.roots.common,
@@ -508,6 +519,13 @@ class OfflineContentTests(unittest.TestCase):
             flat_values[self.module.UNIQUE_CONDITION_MASTER_LOGICAL] = {
                 character_key: "condition"
             }
+        if identity == (139995, "fox_oracle_autumn"):
+            icon = "battle/common/unique_condition/unique_fox_oracle_autumn_foxfire"
+            flat_values[self.module.UNIQUE_CONDITION_MASTER_LOGICAL] = {
+                key: f"foxfire_{key},foxfire,{icon},{duration},1,(None),(None),(None),(None),true,true,0,1,true,(None)"
+                for key, duration in (("139995", 720), ("1399951", 900))
+            }
+            self.add_file(self.roots.common, f"{icon}.png", b"foxfire-icon")
         if identity == (149999, "white_wolf_gerald"):
             self.add_ordered(
                 self.module.POWER_FLIP_ACTION_MASTER_LOGICAL,
@@ -625,16 +643,14 @@ class OfflineContentTests(unittest.TestCase):
                             f"{program} leaves skill_unique: {effect}",
                         )
                         families.add(effect[len(prefix):].split("/")[0])
-                # A skill effect must sit under the owning code name, or the
-                # client reports "data missing" in battle.  Stella is the one
-                # sanctioned exception: she reuses an official family.
-                self.assertEqual(1, len(families), sorted(families))
-                self.assertEqual(
-                    "stella_ballot23"
-                    if identity == (139999, "stella_summer_goddess")
-                    else code_name,
-                    families.pop(),
-                )
+                # The two revised characters also own a generated API family;
+                # Stella continues to reuse her sanctioned official family.
+                expected_families = {code_name}
+                if identity == (139999, "stella_summer_goddess"):
+                    expected_families = {"stella_ballot23"}
+                elif identity in ((129992, "unicorn_lancer_rose"), (139995, "fox_oracle_autumn")):
+                    expected_families.add(f"{code_name}_api")
+                self.assertEqual(expected_families, families)
 
     def test_unicorn_lancer_rose_published_snapshot_is_release_ready(self) -> None:
         spec = self.module.CharacterReleaseSpec(129992, "unicorn_lancer_rose")
