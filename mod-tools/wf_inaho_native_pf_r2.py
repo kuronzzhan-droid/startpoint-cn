@@ -20,9 +20,11 @@ from wf_native_pf_r2_dsl import SOURCE_HASHES, compose, private_path, private_re
 PF_ID = "override_fox_oracle_autumn_dual_pf"
 STRING_ID = "override_string_fox_oracle_autumn_dual_pf"
 CAPABILITY = "kyubi-pf-initial-combo-v1"
-DESCRIPTION = ("强化弹射时，同时发动射击型与特殊型强化弹射；特殊型强化弹射在撞击敌人后"
-               "产生球形范围攻击／FEVER模式中，雷属性共鸣且本次弹射前连击达到35以上时，"
-               "特殊型强化弹射的攻击次数增加")
+PREVIOUS_DESCRIPTION = ("强化弹射时，同时发动射击型与特殊型强化弹射；特殊型强化弹射在撞击敌人后"
+                        "产生球形范围攻击／FEVER模式中，雷属性共鸣且本次弹射前连击达到35以上时，"
+                        "特殊型强化弹射的攻击次数增加")
+DESCRIPTION = ("射击型＋特殊型强化弹射同时生效。Fever中，雷属性共鸣且弹射前达到35连击时，"
+               "特殊型攻击次数增加。")
 SUFFIX = ".action.dsl.amf3.deflate"
 PROGRAMS = tuple(f"battle/action/power_flip/action/override/{PF_ID}${PF_ID}_lv{lv}"
                  for lv in (1, 2, 3))
@@ -218,7 +220,9 @@ def revise(workspace, store, apk, *, dry_run):
         else:
             key, text = ((STRING_ID, DESCRIPTION) if logical == STRINGS else
                          (PF_ID, core.write_csv_lines([list(PROGRAMS)])))
-            if key in table.text_rows() and table.text_rows()[key] != text:
+            existing = table.text_rows().get(key)
+            previous_text = logical == STRINGS and existing == PREVIOUS_DESCRIPTION
+            if existing is not None and existing != text and not previous_text:
                 raise ValueError(f"existing private table key differs: {logical}/{key}")
             table.set_text_rows({key: text})
         output[target] = core.build_orderedmap(table)

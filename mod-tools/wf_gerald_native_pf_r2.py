@@ -18,7 +18,8 @@ STRINGS = "master/string/custom_ability_string.orderedmap"
 PF_TABLE = "master/skill/power_flip_action.orderedmap"
 PF_KEY = "override_unicorn_lancer_rose_dual_pf"
 STRING_KEY = "override_string_unicorn_lancer_rose_dual_pf"
-DESCRIPTION = "剑士型强化弹射与辅助型强化弹射同时生效"
+PREVIOUS_DESCRIPTION = "剑士型强化弹射与辅助型强化弹射同时生效"
+DESCRIPTION = "剑士型＋辅助型强化弹射同时生效。"
 PROGRAMS = tuple(f"battle/action/power_flip/action/override/{PF_KEY}${PF_KEY}_lv{n}"
                  for n in (1, 2, 3))
 LEADER_R2_HASH = "cc747217c7e26d30726c4ec31d9f13dadd57ed68f5cd7670d570bea23478cd88"
@@ -124,7 +125,8 @@ def revise(workspace: Path, sources: Path, *, dry_run: bool = True) -> dict:
                                 (PF_TABLE, PF_KEY, core.write_csv_lines([list(PROGRAMS)]))):
         current = table(logical)
         existing = current.text_rows().get(key)
-        if existing is not None and existing != value:
+        previous_text = logical == STRINGS and existing == PREVIOUS_DESCRIPTION
+        if existing is not None and existing != value and not previous_text:
             raise ValueError(f"private PF key already has unexpected content: {key}")
         current.set_text_rows({key: value})
         output[logical] = core.build_orderedmap(current)

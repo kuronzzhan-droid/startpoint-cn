@@ -15,8 +15,10 @@ DESCRIPTIONS = {
     "2": "举起碧海之矛向距离最近的敌人突进，原地释放连续突刺，对命中的敌人造成合计90倍水属性技能伤害，随连击数提升威力。",
 }
 OLD_ABILITY3 = "为『碧海圣矛·连突』追加「赋予己方贯穿效果 ＆ 队伍技能伤害提升效果 ＆ 赋予命中的敌人对决效果」"
-ABILITY3 = ("为『碧海圣矛·连突』追加「赋予己方贯穿效果 ＆ 队伍技能伤害提升效果 ＆ "
+PREVIOUS_ABILITY3 = ("为『碧海圣矛·连突』追加「赋予己方贯穿效果 ＆ 队伍技能伤害提升效果 ＆ "
             "强制赋予命中的敌人无法消除的『对决』效果 ＆ 赋予自身浮游效果20秒」")
+ABILITY3 = ("技能追加：己方贯穿、队伍技能伤害提升、自身浮游20秒；"
+            "命中时强制赋予敌人不可消除的「对决」。")
 LEADER_HASH = "0f2859871aacaf12dfe28b68ab88506fa383002baaac7fba50afdbe6c826f76c"
 ABILITY2_HASH = "21784829c9fc249088e4df055fd233de22475a86d5abde5c2ed8034d477fcc29"
 TEXT_HASH = "28f62354378d40a833046294046524efb8b8a356abd61eaf2c66cfc6379b7ca3"
@@ -86,7 +88,7 @@ def character_text(value: str) -> str:
 
 
 def ability3(value: str) -> str:
-    if value not in (OLD_ABILITY3, ABILITY3):
+    if value not in (OLD_ABILITY3, PREVIOUS_ABILITY3, ABILITY3):
         raise ValueError("unknown Gerald ability 3 string")
     return ABILITY3
 
