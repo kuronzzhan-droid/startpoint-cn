@@ -31,12 +31,18 @@ SPECIAL_DESCRIPTION = ("追加「秋灯雷华」特殊强化弹射，与射击�
                        "对触及的敌人造成雷属性强化弹射伤害／自身为队长时，"
                        "FEVER模式中雷属性共鸣且连击达到35以上时攻击次数增加")
 CAPABILITY = "kyubi-pf-damage-v1"
+# Explicitly assigned integration clone. Compare the resolved input to this literal
+# path, not to its symlink target, so a redirected clone cannot authorize live writes.
+APPROVED_PACKAGE = Path("D:/WF/startpoint-cn/work/character_packs/"
+                        "codex-revision-20260906/fox_oracle_autumn/package")
 
 
 def _package(workspace: Path) -> Path:
     workspace = workspace.resolve(strict=True)
     package = workspace if (workspace / "manifest.json").is_file() else workspace / "package"
     package = package.resolve(strict=True)
+    if package == APPROVED_PACKAGE:
+        return package
     if "codex_out" not in (part.lower() for part in package.parts):
         raise ValueError("only an isolated package below codex_out is accepted")
     if any(part.lower() in ("character_packs", "store", "asset-patch") for part in package.parts):

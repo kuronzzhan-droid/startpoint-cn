@@ -8,6 +8,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 import zlib
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
@@ -41,6 +42,16 @@ class KyubiRevisionTests(unittest.TestCase):
         self.assertEqual(before, {p: p.read_bytes() for p in self.package.rglob("*") if p.is_file()})
         with self.assertRaises(ValueError):
             self.mod.revise(SOURCE, dry_run=True)
+
+    def test_explicit_integration_clone_is_allowed_but_author_package_is_not(self):
+        approved = (Path(self.temp.name) / "work/character_packs/codex-revision-20260906"
+                    / "fox_oracle_autumn/package")
+        approved.mkdir(parents=True)
+        (approved / "manifest.json").write_text("{}", encoding="utf-8")
+        with patch.object(self.mod, "APPROVED_PACKAGE", approved):
+            self.assertEqual(self.mod._package(approved.parent), approved.resolve())
+            with self.assertRaises(ValueError):
+                self.mod._package(SOURCE)
 
     def test_no_foreign_rows_fever_or_456_change(self):
         path = self.package / "roots/common/master/ability/ability.orderedmap"
