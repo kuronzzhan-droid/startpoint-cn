@@ -392,7 +392,7 @@ class OfflineContentTests(unittest.TestCase):
         ability_values: dict[str, str] = {}
         revised_counts = {
             (129992, "unicorn_lancer_rose"): (2, 3, 5, 2, 2, 2),
-            (139995, "fox_oracle_autumn"): (3, 2, 6, 2, 3, 2),
+            (139995, "fox_oracle_autumn"): (2, 2, 7, 2, 2, 2),
         }
         for index, row_count in enumerate(
             revised_counts.get(identity, self.module.WORKSPACE_ABILITY_ROW_COUNTS[identity]), 1
