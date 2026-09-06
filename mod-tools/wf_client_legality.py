@@ -15,6 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wf_describe  # noqa: E402  行级中文描述器(逆向布局+枚举直译)
+from wf_client_description_legality import description_compatibility_problems  # noqa: E402
 
 
 # master/ability/ability_statue_group.orderedmap 的全部键(25 个,实测取自 store)。
@@ -176,7 +177,7 @@ def character_stance_problems(row: list[str]) -> list[str]:
     return []
 
 def client_legality_problems(kind: str, row: list[str]) -> list[str]:
-    """客户端 AbilityValues.parseAt* 硬规则(违者 C7050/7101 打开角色页即崩,2026-07-13 实锤):
+    """客户端字段与说明组合硬规则(C7050/7101/C10010 打开角色页即崩):
     枚举列无空串分支,前置1-3/触发/内容 kind 必须数字;instant_precontent 哨兵 '(None)';
     during_accumulation_trigger 哨兵 '(None)';even_if_owner_dead 必须 true/false;
     瞬发内容 kind 声明 multiply_trigger 时该列必须是 '(None)' 或 0/1/2/3(2026-08-28 实锤)。"""
@@ -343,6 +344,7 @@ def client_legality_problems(kind: str, row: list[str]) -> list[str]:
     # 「声明即必填」通用律。上面的 PRECONDITION_KINDS_NEED_NEXT_COL 与
     # multiply_trigger 两条专项规则是它的特例,保留是因为它们的报错文案更具体。
     probs.extend(declared_block_field_problems(kind, row))
+    probs.extend(description_compatibility_problems(kind, row))
     probs.extend(ability_element_column_problems(kind, row))
     return probs
 
