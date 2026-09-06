@@ -26,6 +26,26 @@ SOURCE_HASHES = {
     ("ranged", 2): "0e41175b937b4a3c98974f088b98687bd3948ec0b65bf04800bc0b3d332bcafc",
     ("ranged", 3): "3311340a58b4c92e3ba9793e3f23aa1edfd74716d366756d715b313e3e37db2a",
 }
+SHARED_FX_PREFIX = "battle/effect/powerflip/"
+PRIVATE_FX_PREFIX = SHARED_FX_PREFIX + "fox_oracle_autumn_native/"
+
+
+def private_path(path):
+    for family in ("effect_powerflip_attack_special", "effect_powerflip_attack_beam"):
+        if path.startswith(SHARED_FX_PREFIX + family + "/"):
+            return PRIVATE_FX_PREFIX + path[len(SHARED_FX_PREFIX):]
+    return path
+
+
+def private_references(value):
+    """Rewrite only the two stock texture namespaces, preserving every number."""
+    if isinstance(value, str):
+        return private_path(value)
+    if isinstance(value, list):
+        return [private_references(item) for item in value]
+    if isinstance(value, dict):
+        return {key: private_references(item) for key, item in value.items()}
+    return value
 
 
 def digest(tree):

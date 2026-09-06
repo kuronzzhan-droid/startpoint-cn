@@ -35,10 +35,11 @@ for level, (word, program) in enumerate(zip(
     beam_suffixes = ("",) if level == 1 else ("_small", "_medium")
     if level == 3:
         beam_suffixes += ("_large",)
+    private_effect = _EFFECT + "fox_oracle_autumn_native/"
     DUAL_PF_EFFECTS[program] = frozenset({
-        f"{_EFFECT}effect_powerflip_attack_special/powerflip_attack_special_{word}",
-        f"{_EFFECT}effect_powerflip_attack_special/powerflip_attack_special_player_{word}",
-        *(f"{_EFFECT}effect_powerflip_attack_beam/powerflip_attack_beam_{word}{suffix}"
+        f"{private_effect}effect_powerflip_attack_special/powerflip_attack_special_{word}",
+        f"{private_effect}effect_powerflip_attack_special/powerflip_attack_special_player_{word}",
+        *(f"{private_effect}effect_powerflip_attack_beam/powerflip_attack_beam_{word}{suffix}"
           for suffix in beam_suffixes),
     })
 

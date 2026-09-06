@@ -186,6 +186,55 @@ class NativePfTests(unittest.TestCase):
             self.mod.revise(package, STORE, APK, dry_run=False)
         self.assertEqual(before, {p: p.read_bytes() for p in package.rglob("*") if p.is_file()})
 
+    def test_stock_effects_are_private_with_identical_pixels_and_motion(self):
+        import zlib
+        package = self.fixture_package()
+        report = self.mod.revise(package, STORE, APK, dry_run=False)
+        manifest = json.loads((package / "manifest.json").read_bytes())
+        claimed = {entry["logical_path"] for entry in manifest["roots"]["common"]}
+        private_prefix = "battle/effect/powerflip/fox_oracle_autumn_native/"
+        for logical in report["effect_assets"]:
+            self.assertTrue(logical.startswith(private_prefix), logical)
+            original = logical.replace(private_prefix, "battle/effect/powerflip/", 1)
+            self.assertNotIn(original, claimed)
+            self.assertFalse((package / "roots/common" / original).exists())
+            digest = core.sha1_path(original)
+            original_raw = (STORE / digest[:2] / digest[2:]).read_bytes()
+            private_raw = (package / "roots/common" / logical).read_bytes()
+            if logical.endswith((".png", ".timeline.amf3.deflate")):
+                self.assertEqual(private_raw, original_raw)
+            else:
+                original_tree = wf_dsl.parse_dsl(zlib.decompress(original_raw, -15))["tree"]
+                private_tree = wf_dsl.parse_dsl(zlib.decompress(private_raw, -15))["tree"]
+                restored = json.loads(json.dumps(private_tree).replace(private_prefix, "battle/effect/powerflip/"))
+                self.assertEqual(restored, original_tree)
+
+    def test_only_exact_previously_added_shared_copies_are_removed(self):
+        package = self.fixture_package()
+        report = self.mod.revise(package, STORE, APK, dry_run=False)
+        manifest_path = package / "manifest.json"
+        manifest = json.loads(manifest_path.read_bytes())
+        for original in report["effect_path_mapping"]:
+            digest = core.sha1_path(original)
+            raw = (STORE / digest[:2] / digest[2:]).read_bytes()
+            target = package / "roots/common" / original
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(raw)
+            manifest["roots"]["common"].append({"logical_path": original,
+                "size": len(raw), "sha256": self.mod.sha(raw)})
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        last_target, original_raw = target, raw
+        last_target.write_bytes(b"unknown artist changes")
+        before = {p: p.read_bytes() for p in package.rglob("*") if p.is_file()}
+        with self.assertRaises(ValueError):
+            self.mod.revise(package, STORE, APK, dry_run=False)
+        self.assertEqual(before, {p: p.read_bytes() for p in package.rglob("*") if p.is_file()})
+        last_target.write_bytes(original_raw)
+        migrated = self.mod.revise(package, STORE, APK, dry_run=False)
+        self.assertEqual(len(migrated["removed"]), 28)
+        for original in report["effect_path_mapping"]:
+            self.assertFalse((package / "roots/common" / original).exists())
+
 
 if __name__ == "__main__":
     unittest.main()

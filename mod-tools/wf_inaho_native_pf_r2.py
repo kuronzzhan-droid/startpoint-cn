@@ -15,7 +15,7 @@ import zlib
 import wf_dsl
 import wf_mod_tool as core
 from wf_client_legality import client_legality_problems
-from wf_native_pf_r2_dsl import SOURCE_HASHES, compose
+from wf_native_pf_r2_dsl import SOURCE_HASHES, compose, private_path, private_references
 
 PF_ID = "override_fox_oracle_autumn_dual_pf"
 STRING_ID = "override_string_fox_oracle_autumn_dual_pf"
@@ -153,6 +153,20 @@ def _atomic(path, payload):
         temporary.unlink(missing_ok=True)
 
 
+def _encode(tree):
+    encoder = zlib.compressobj(level=9, wbits=-15)
+    return encoder.compress(wf_dsl.encode_amf3(tree)) + encoder.flush()
+
+
+def _private_asset(logical, raw):
+    if logical.endswith(".png"):
+        return raw
+    tree = wf_dsl.parse_dsl(zlib.decompress(raw, -15))["tree"]
+    converted = private_references(tree)
+    # Timelines contain only the unchanged official sound/timing data.
+    return raw if converted == tree else _encode(converted)
+
+
 def revise(workspace, store, apk, *, dry_run):
     package = _safe_package(workspace)
     manifest_path = (package / "manifest.json").resolve(strict=True)
@@ -166,19 +180,30 @@ def revise(workspace, store, apk, *, dry_run):
     effects = set()
     for level, program in enumerate(PROGRAMS, 1):
         tree = compose(sources["special", level], sources["ranged", level], level)
-        encoder = zlib.compressobj(level=9, wbits=-15)
-        raw = encoder.compress(wf_dsl.encode_amf3(tree)) + encoder.flush()
+        legacy_raw = _encode(tree)
+        raw = _encode(private_references(tree))
         target = _path(package, program + SUFFIX)
-        if target.exists() and target.read_bytes() != raw:
+        if target.exists() and target.read_bytes() not in (legacy_raw, raw):
             raise ValueError(f"existing private PF differs from expected result: {program}")
         output[target] = raw
         effects.update(e[2][1] for e in wf_dsl.iter_dsl_commands(tree, "ShowEffect"))
     effect_assets = load_effects(effects, store, apk)
+    removed = []
     for logical, raw in effect_assets.items():
-        target = _path(package, logical)
-        if target.exists() and target.read_bytes() != raw:
-            raise ValueError(f"existing stock effect asset differs: {logical}")
-        output[target] = raw
+        shared = _path(package, logical)
+        claims = [e for e in manifest["roots"]["common"] if e["logical_path"] == logical]
+        if shared.exists() or claims:
+            if (len(claims) != 1 or not shared.exists() or shared.read_bytes() != raw
+                    or (claims[0]["sha256"], claims[0]["size"]) != (sha(raw), len(raw))):
+                raise ValueError(f"unknown shared FX copy cannot be migrated: {logical}")
+            removed.append(shared)
+        target = _path(package, private_path(logical))
+        converted = _private_asset(logical, raw)
+        if target.exists() and target.read_bytes() != converted:
+            raise ValueError(f"existing private effect asset differs: {logical}")
+        output[target] = converted
+    manifest["roots"]["common"] = [e for e in manifest["roots"]["common"]
+                                    if e["logical_path"] not in effect_assets]
     for logical in (LEADER, ABILITY, STRINGS, PF_TABLE):
         target = _path(package, logical)
         source = target
@@ -217,6 +242,7 @@ def revise(workspace, store, apk, *, dry_run):
         if key not in entries[0]["outer_keys"]:
             entries[0]["outer_keys"].append(key)
     manifest["qa"]["release_ready"] = False
+    manifest["qa"].pop("workspace_input_sha256", None)
     if CAPABILITY not in manifest.setdefault("required_capabilities", []):
         manifest["required_capabilities"].append(CAPABILITY)
     manifest.setdefault("snapshot", {})["inaho_native_pf_r2"] = {
@@ -224,16 +250,22 @@ def revise(workspace, store, apk, *, dry_run):
         "special_radius": [320, 400, 560], "special_radius_scale": 1.6,
         "fever_yellow6_preflip_combo35_extra_hits": 2,
         "client_capability": CAPABILITY, "removed_ability3_kind": 629,
+        "effects_namespace": "battle/effect/powerflip/fox_oracle_autumn_native/",
     }
     output[manifest_path] = (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode()
     changed = {p: raw for p, raw in output.items() if not p.exists() or p.read_bytes() != raw}
     if not dry_run:
         for path, raw in changed.items():
             _atomic(path, raw)
+        for path in removed:
+            # Exact verified files under the approved package; no recursive delete.
+            path.unlink()
     return {"package": str(package), "dry_run": dry_run,
             "changed": [str(p.relative_to(package)) for p in changed],
-            "requires_client_capability": CAPABILITY, "effects": sorted(effects),
-            "effect_assets": sorted(effect_assets),
+            "removed": [str(p.relative_to(package)) for p in removed],
+            "requires_client_capability": CAPABILITY, "effects": sorted(map(private_path, effects)),
+            "effect_assets": sorted(map(private_path, effect_assets)),
+            "effect_path_mapping": {path: private_path(path) for path in sorted(effect_assets)},
             "native_pf_key": PF_ID, "programs": list(PROGRAMS)}
 
 
