@@ -19,10 +19,11 @@ class PixelartVfxTests(unittest.TestCase):
         self.assertIsNotNone(pixel, "pixelart VFX implementation is missing")
 
     def test_restore_rotated_crop_and_negative_trim_offsets(self):
-        upright = Image.new("RGBA", (2, 3))
-        upright.putpixel((0, 0), (255, 0, 0, 255))
-        upright.putpixel((1, 2), (0, 255, 0, 128))
-        stored = upright.transpose(Image.Transpose.ROTATE_90)
+        # Independent Starling UV oracle: local TL samples stored TR, while
+        # local BR samples stored BL (u,v -> 1-v,u). No inverse helper here.
+        stored = Image.new("RGBA", (3, 2))
+        stored.putpixel((2, 0), (255, 0, 0, 255))
+        stored.putpixel((0, 1), (0, 255, 0, 128))
         entry = dict(n="p0001", x=0, y=0, w=3, h=2, r=True,
                      fx=-2, fy=-1, fw=8, fh=8)
         restored = pixel.restore_frame(stored, entry)
@@ -37,13 +38,30 @@ class PixelartVfxTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 pixel.restore_frame(sheet, entry)
 
-    def test_sparse_holds_previous_and_clamps_leading_gap(self):
+    def test_sparse_suffix_is_inclusive_endpoint_like_flatomo(self):
         entries = [dict(n="p0002", value="a"), dict(n="p0005",value="b")]
         index = pixel.frame_index(entries, "p")
-        self.assertEqual([pixel.entry_for_frame(index, f)["value"] for f in range(1,7)],
-                         ["a", "a", "a", "a", "b", "b"])
+        # FrameAnimationSource.as: while (filled < suffix) imageFrames[filled++]=i.
+        oracle = []
+        for entry in entries:
+            endpoint = int(entry["n"][1:])
+            while len(oracle) < endpoint:
+                oracle.append(entry["value"])
+        self.assertEqual([pixel.entry_for_frame(index, f)["value"] for f in range(1,6)],
+                         oracle)
+        self.assertEqual(oracle,["a", "a", "b", "b", "b"])
+        for frame in (0,6):
+            with self.assertRaises(ValueError):
+                pixel.entry_for_frame(index,frame)
         with self.assertRaises(ValueError):
             pixel.frame_index(entries + [entries[0]], "p")
+
+    def test_nonrotated_crop_preserves_pixels_and_trim(self):
+        sheet = Image.new("RGBA",(3,2))
+        sheet.putdata([(i,i*2,i*3,100+i) for i in range(6)])
+        entry = dict(x=0,y=0,w=3,h=2,fx=-1,fy=-2,fw=6,fh=6)
+        restored = pixel.restore_frame(sheet,entry)
+        self.assertEqual(restored.crop((1,2,4,4)).tobytes(),sheet.tobytes())
 
     def test_background_overlay_keeps_every_nontransparent_body_pixel(self):
         body = Image.new("RGBA", (8,8))
@@ -88,7 +106,7 @@ class PixelartVfxTests(unittest.TestCase):
             sheet.save(source/"sprite_sheet.png")
             stored=source/"sprite_sheet.png"
             stored.write_bytes(b"\x89png\r\n\x1a\n"+stored.read_bytes()[8:])
-            atlas=[dict(n="p0001",x=0,y=0,w=2,h=2,fx=-3,fy=-3,fw=8,fh=8)]
+            atlas=[dict(n="p0005",x=0,y=0,w=2,h=2,fx=-3,fy=-3,fw=8,fh=8)]
             frame=dict(name="p",x=-4,y=-4,scale=6,smoothing=False)
             timeline={"sequences":[dict(name="neutral",begin=1,end=1,kind="loop"),
                                     dict(name="skill_ready",begin=2,end=5,kind="once")]}

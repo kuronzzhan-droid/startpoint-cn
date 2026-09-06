@@ -26,7 +26,9 @@ def restore_frame(sheet, entry):
         raise ValueError("atlas crop outside source sheet")
     tile = sheet.convert("RGBA").crop((x,y,x+w,y+h))
     if entry.get("r", False):
-        tile = tile.transpose(Image.Transpose.ROTATE_270)
+        # Starling SubTexture maps local UV (u,v) to stored (1-v,u):
+        # atlas pixels are clockwise, so Pillow must undo them anticlockwise.
+        tile = tile.transpose(Image.Transpose.ROTATE_90)
     fw, fh = int(entry.get("fw",tile.width)), int(entry.get("fh",tile.height))
     dx, dy = -int(entry.get("fx",0)), -int(entry.get("fy",0))
     if min(fw,fh) <= 0 or max(fw,fh) > 4096 or min(dx,dy) < 0:
@@ -56,9 +58,12 @@ def frame_index(entries, prefix):
 
 def entry_for_frame(index, frame):
     keys, entries = index
-    # A few source atlases start at 0002 while their sequence starts at 1.
-    # The leading gap clamps the first image; later gaps hold the last image.
-    pos = max(0,bisect.bisect_right(keys,frame)-1)
+    # flatomo FrameAnimationSource fills up to each suffix, inclusively.
+    # The suffix is the END frame of a held image, not its starting keyframe.
+    # Taking the preceding image leaks walk_back into the next walk_front loop.
+    if not isinstance(frame, int) or not 1 <= frame <= keys[-1]:
+        raise ValueError("frame outside atlas endpoint range")
+    pos = bisect.bisect_left(keys,frame)
     return entries[keys[pos]]
 
 
