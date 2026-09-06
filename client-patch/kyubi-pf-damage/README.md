@@ -2,7 +2,7 @@
 
 本补丁只重分类 `fox_oracle_autumn` 的两档主技能、常态特殊 PF 与能力 2 专属追击。
 杰拉尔及合击搭档的技能通过各自的 `program_path` 独立判断，不按主位角色名一刀切。
-基础 APK 必须是 2026-09-05 的 V8；从它增量替换三个类，保留已有 APK 补丁。
+基础 APK 必须是 2026-09-05 的 V8；从它增量修改四个类，保留已有 APK 补丁。
 
 ## 必须同时交付的数据与客户端改动
 
@@ -11,31 +11,37 @@
 因此纯资源修改不能完成本次要求。
 
 本补丁在 `SquadManagerImpl` 的主技及合击技入口分别比较精确程序路径；
-在 `MemberImpl.applyInstantAbility` 的 629 入口比较两条专属程序路径。
+在 `MemberImpl.applyInstantAbility` 的 629 入口比较特殊 PF 专属程序路径。
 识别成功后仅在 `ActionEvaluator` 的 `CreateNormalAttack` 产物上设置：
 
 - `createdByPowerFlipAction = true`，主技/合击技来源标记为 `false`。
 - 普通主动技能使用有效的 Lv1 作为 PF 伤害档位；不凭空获得 Lv2/Lv3 专属收益。
-- 两条 629 在创建时从队长读取最近一次真实 PF 档位，固定为本次动作快照。
+- 特殊 PF 的 629 在创建时从队长读取最近一次真实 PF 档位，固定为本次动作快照。
   每个实际 PF 执行者记录档位；缺少有效历史时回退 Lv1。普通角色只多记录一个数值，伤害不变。
 - 保留原 `ActionKind`、技能槽、施放事件、连锁和演出控制流程。
 
-能力 2 的 20 倍近敌伤害必须从 I354 改为专属 I629。
-它的 `CreateNormalAttack` 末参 `incrementCombo` 必须为 `false`，
-这样仍按 PF 增伤、独立乘区及敌方 PF 抗性计算，但不再次触发 PF 命中计数。
-其余主技和特殊 PF 保留原有连击行为。保留能力 2 原触发与 45 帧冷却。
+能力 2 保留 I354 原行、主/副位、20 倍近敌伤害、原触发与 45 帧冷却。
+`MemberImpl.kyubiIsPfAbilityDamage` 在 `abilitySlot.instantAbilities` 内找到同一地址对象，
+同时验证 `source.origin` 为 2000（主位能力 2 第 0 行）或 1002000（副位能力 2 第 0 行），
+再核对对应主/副角色的能力 2 ID 必须恰为 1399952。
+`AbilityDamageShot` 仅对识别成功的伤害置 PF 标记、清除能力伤害标记，并快照真实 PF 档位；
+将该追击的 `incrementCombo` 置 `false`，避免它再次触发 PF 命中并无限追击。
+其余角色的 I354、九尾的武器/能力魂、其他主副位能力及全部数值不变。
 
 ## 来源与安全门
 
-直接核对的客户端源码：
+直接核对的客户端源码（行号为研究用反编译版本，V8 导出存在轻微偏移）：
 
 - `ActionEvaluationResolver` 构造器：DSL `params[9]` 是 `buffTargetAs`。
 - `NormalAttackCalculator`：PF 普通桶约 422 行，PF 独立桶 451 行，
   技能独立桶 499 行，PF 抗性 593 行，技伤抗性 609 行。
 - `EnemyImpl.onNormalAttack`：约 5644–5665 行，只有 `incrementCombo` 为真才递增 PF 命中计数。
 - `ActionKind`：`AbilitySkill` 的索引为 4，`PowerFlip` 为 5。
+- `GeneralCharacterLogic` 约 1207–1224 行：能力 2 编号为 2/1002。
+  `BattleCharacterLogic` 约 2375 行：来源号 = 能力编号 × 1000 + 行号。
+  `AbilitySlotImpl` 约 1905–1926 行：地址与来源保存于同一个 `InstantAbility` 实例。
 
-`patch.py` 只接受以下基线的完整三类导出哈希，并对每处替换检查唯一形状。
+`patch.py` 只接受以下基线的完整四类导出哈希，并对每处替换检查唯一形状。
 已生成源可幂等重跑；未知源、部分补丁、被改动的已生成源一律拒绝。
 
 | 基线 | SHA-256 |
@@ -52,9 +58,9 @@ python -m unittest discover -s client-patch/kyubi-pf-damage/tests -v
 ```
 
 测试中的完整 V8 源不入库。通过 `KYUBI_PF_V8_SOURCE` 指定导出目录；
-测试确认三类完整身份、补丁完全可逆、独立主/副路径、合法档位、其他攻击分支不变及未知源拒绝。
+测试确认四类完整身份、补丁完全可逆、独立主/副路径、合法档位、其他攻击分支不变及未知源拒绝。
 这些是源码门禁，不是 SWF 编译、真机、伤害数值或协力兼容验收。
-构建方必须替换 `MemberImpl`、`ActionEvaluator` 两类，重新导出核对完整变更，
+构建方必须替换 `MemberImpl`、`ActionEvaluator`、`AbilityDamageShot` 三类，重新导出核对完整变更，
 并验证 V8 既有补丁仍保留。
 
 ### `SquadManagerImpl` 必须用单方法 P-code

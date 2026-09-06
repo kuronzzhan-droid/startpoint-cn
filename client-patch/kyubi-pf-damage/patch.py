@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a strictly V8-based, four-program PF damage patch. Does not build/install APKs."""
+"""Generate a V8-based PF patch for Kyubi's three programs and ability 2. No APK writes."""
 from __future__ import annotations
 
 import argparse
@@ -13,18 +13,18 @@ MAIN_1 = "battle/action/skill/action/rare5/fox_oracle_autumn$fox_oracle_autumn_1
 MAIN_2 = "battle/action/skill/action/rare5/fox_oracle_autumn$fox_oracle_autumn_2"
 SPECIAL = ("battle/action/skill/action/ability_skill/"
            "ability_skill_fox_oracle_autumn_fever_pf$ability_skill_fox_oracle_autumn_fever_pf")
-PURSUIT = ("battle/action/skill/action/ability_skill/"
-           "ability_skill_fox_oracle_autumn_pf_pursuit$ability_skill_fox_oracle_autumn_pf_pursuit")
 CLASS_PATHS = {
     "ActionEvaluator": "pinball/scene/battle/battle/action/ActionEvaluator.as",
     "SquadManagerImpl": "pinball/scene/battle/battle/squad/SquadManagerImpl.as",
     "MemberImpl": "pinball/scene/battle/battle/squad/member/MemberImpl.as",
+    "AbilityDamageShot": "pinball/scene/battle/battle/ability/AbilityDamageShot.as",
 }
 # Exported directly with FFDec 24.0.1 from V8 SWF c1c0782b...; newline-normalized.
 V8_SHA256 = {
     "ActionEvaluator": "dfa9715e08d23f519fe1b64265572e4b8b4bb78ff3062db425b572c569cede48",
     "SquadManagerImpl": "07cf6f7cdb08041406adc4ba9f7fffbc660259e4a174545aaac97a8d5a93ab20",
     "MemberImpl": "45062a18201685c159aaa2c6327b998accdcb732f67564f0f6ad573217d4ab41",
+    "AbilityDamageShot": "517c8812e6211ef531af81ab5bc24790946abeffabe5024526ae42ddfc0ca197",
 }
 
 
@@ -61,7 +61,43 @@ def _rules(name: str) -> list[tuple[str, str]]:
     if name == "MemberImpl":
         field = "      public var source:SquadMemberSource;"
         signature = "      public function startPowerFlip(param1:PowerFlipLogic, param2:int, param3:Option) : void"
-        helper = """      public function kyubiGetPowerFlipChargeLv() : int
+        helper = """      public function kyubiIsPfAbilityDamage(param1:InstantAbilityAddress) : Boolean
+      {
+         var _loc1_:CalculatedBattleCharacterLogic = source as CalculatedBattleCharacterLogic;
+         var _loc2_:int = 0;
+         var _loc3_:Object;
+         var _loc4_:Option;
+         if(_loc1_ == null)
+         {
+            return false;
+         }
+         while(_loc2_ < int(abilitySlot.instantAbilities.length))
+         {
+            _loc3_ = abilitySlot.instantAbilities[_loc2_];
+            _loc2_++;
+            if(_loc3_.address === param1)
+            {
+               if(_loc3_.source.origin == 2000)
+               {
+                  _loc4_ = _loc1_.logic.getAbilityIdAt(2);
+                  return _loc4_.index == 0 && _loc4_.params[0] == 1399952;
+               }
+               if(_loc3_.source.origin == 1002000)
+               {
+                  _loc4_ = _loc1_.getUnisonCharacter();
+                  if(_loc4_.index == 0)
+                  {
+                     _loc4_ = _loc4_.params[0].getAbilityIdAt(2);
+                     return _loc4_.index == 0 && _loc4_.params[0] == 1399952;
+                  }
+               }
+               return false;
+            }
+         }
+         return false;
+      }
+      
+      public function kyubiGetPowerFlipChargeLv() : int
       {
          var _loc1_:Option = squad.getLeader();
          if(_loc1_.index == 0)
@@ -75,13 +111,37 @@ def _rules(name: str) -> list[tuple[str, str]]:
         start = ("         if(isLeader())\n         {\n"
                  "            _loc4_ = battle.abilityTotalizer.getPowerFlipOverrides(param2);")
         ability = '                  "kind":ActionKind.AbilitySkill(param2),'
-        extra = (f'\n                  "kyubiPfDamage":{_check("param3.params[1]", (SPECIAL, PURSUIT))},'
+        extra = (f'\n                  "kyubiPfDamage":{_check("param3.params[1]", (SPECIAL,))},'
                  '\n                  "kyubiPfChargeLv":kyubiGetPowerFlipChargeLv(),')
         return [
+            ("   import flash.Boot;", "   import flash.Boot;\n   import pinball.common.data.character.CalculatedBattleCharacterLogic;"),
             (field, field + "\n      \n      public var kyubiLastPowerFlipChargeLv:int = 1;"),
             (signature, helper + signature),
             (start, "         kyubiLastPowerFlipChargeLv = param2;\n" + start),
             (ability, ability + extra),
+        ]
+    if name == "AbilityDamageShot":
+        imported = "   import flash.Boot;"
+        field = "      public var zoneManager:ZoneManager;"
+        assignment = "         incrementCombo = param11;"
+        extra = """
+         if(param4 is MemberImpl)
+         {
+            kyubiPfDamage = (param4 as MemberImpl).kyubiIsPfAbilityDamage(param6);
+            if(kyubiPfDamage)
+            {
+               kyubiPfChargeLv = (param4 as MemberImpl).kyubiGetPowerFlipChargeLv();
+            }
+         }"""
+        return [
+            (imported, imported + "\n   import pinball.scene.battle.battle.squad.member.MemberImpl;"),
+            (field, field + "\n      public var kyubiPfDamage:Boolean = false;\n      public var kyubiPfChargeLv:int = 1;"),
+            (assignment, assignment + extra),
+            ('"createdByPowerFlipAction":false', '"createdByPowerFlipAction":kyubiPfDamage'),
+            ('"createdByAbility":true', '"createdByAbility":!kyubiPfDamage'),
+            ('"createdByUnisonAbility":_loc10_', '"createdByUnisonAbility":!kyubiPfDamage && _loc10_'),
+            ('"powerFlipChargeLv":0', '"powerFlipChargeLv":kyubiPfDamage ? kyubiPfChargeLv : 0'),
+            ('"incrementCombo":_loc23_', '"incrementCombo":!kyubiPfDamage && _loc23_'),
         ]
     if name == "ActionEvaluator":
         anchor = "               _loc63_ = _loc62_.index == 5;"

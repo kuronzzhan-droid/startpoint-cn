@@ -81,7 +81,7 @@ class RealV8Tests(unittest.TestCase):
     def test_ability_paths_and_charge_snapshot_are_precise(self):
         out = self.patch.patch_source("MemberImpl", self.source("MemberImpl"))
         self.assertIn('param3.params[1] == "' + self.patch.SPECIAL + '"', out)
-        self.assertIn('param3.params[1] == "' + self.patch.PURSUIT + '"', out)
+        self.assertNotIn("ability_skill_fox_oracle_autumn_pf_pursuit", out)
         self.assertIn("kyubiLastPowerFlipChargeLv = param2;", out)
         self.assertIn('"kyubiPfChargeLv":kyubiGetPowerFlipChargeLv()', out)
         self.assertIn("_loc1_.params[0].kyubiLastPowerFlipChargeLv", out)
@@ -91,6 +91,23 @@ class RealV8Tests(unittest.TestCase):
                                                            '"createdByDirectAttack":true', 1)
         with self.assertRaises(self.patch.PatchError):
             self.patch.patch_source("ActionEvaluator", source)
+
+    def test_ability2_retains_unison_and_exact_identity(self):
+        out = self.patch.patch_source("MemberImpl", self.source("MemberImpl"))
+        self.assertIn("kyubiIsPfAbilityDamage", out)
+        self.assertIn("_loc3_.source.origin == 2000", out)
+        self.assertIn("_loc3_.source.origin == 1002000", out)
+        self.assertIn("_loc4_.params[0] == 1399952", out)
+        self.assertIn("_loc3_.address === param1", out)
+
+    def test_ability_damage_shot_changes_only_kyubi_marked_shots(self):
+        self.assertIn("AbilityDamageShot", self.patch.CLASS_PATHS)
+        out = self.patch.patch_source("AbilityDamageShot", self.source("AbilityDamageShot"))
+        self.assertIn('"createdByPowerFlipAction":kyubiPfDamage', out)
+        self.assertIn('"createdByAbility":!kyubiPfDamage', out)
+        self.assertIn('"createdByUnisonAbility":!kyubiPfDamage && _loc10_', out)
+        self.assertIn('"incrementCombo":!kyubiPfDamage && _loc23_', out)
+        self.assertIn("kyubiPfChargeLv = (param4 as MemberImpl).kyubiGetPowerFlipChargeLv()", out)
 
 
 if __name__ == "__main__":
