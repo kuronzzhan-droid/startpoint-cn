@@ -354,6 +354,7 @@ class OfflineContentTests(unittest.TestCase):
         (139995, "fox_oracle_autumn"): (
             "ability_skill_fox_oracle_autumn_fever_pf",
             "override_string_fox_oracle_autumn_dual_pf",
+            "ability_fox_oracle_autumn_drain",
         ),
     }
 
@@ -392,7 +393,7 @@ class OfflineContentTests(unittest.TestCase):
         ability_values: dict[str, str] = {}
         revised_counts = {
             (129992, "unicorn_lancer_rose"): (2, 3, 5, 2, 2, 2),
-            (139995, "fox_oracle_autumn"): (3, 2, 8, 2, 2, 2),
+            (139995, "fox_oracle_autumn"): (7, 2, 8, 2, 2, 3),
         }
         for index, row_count in enumerate(
             revised_counts.get(identity, self.module.WORKSPACE_ABILITY_ROW_COUNTS[identity]), 1
@@ -538,7 +539,7 @@ class OfflineContentTests(unittest.TestCase):
             icon = "battle/common/unique_condition/unique_fox_oracle_autumn_foxfire"
             flat_values[self.module.UNIQUE_CONDITION_MASTER_LOGICAL] = {
                 key: f"foxfire_{key},foxfire,{icon},{duration},1,(None),(None),(None),(None),true,true,0,1,true,(None)"
-                for key, duration in (("139995", 720), ("1399951", 900))
+                for key, duration in (("139995", 720), ("1399951", 900), ("1399952", 99999999))
             }
             self.add_file(self.roots.common, f"{icon}.png", b"foxfire-icon")
         if identity == (149999, "white_wolf_gerald"):
@@ -699,19 +700,7 @@ class OfflineContentTests(unittest.TestCase):
         program = ("battle/action/skill/action/ability_skill/"
                    "ability_skill_fox_oracle_autumn_fever_pf$"
                    "ability_skill_fox_oracle_autumn_fever_pf")
-        self.assertEqual(
-            (),
-            self.module.WORKSPACE_ABILITY_PROGRAM_LOCATIONS[identity],
-        )
-        ability_values = {}
-        for index, row_count in enumerate(
-            self.module.WORKSPACE_ABILITY_ROW_COUNTS[identity], 1
-        ):
-            rows = [
-                [f"ability-{index}", *([""] * 125)] for _ in range(row_count)
-            ]
-            ability_values[f"{spec.character_id}{index}"] = core.write_csv_lines(rows)
-        self.add_ordered(self.module.ABILITY_MASTER_LOGICAL, ability_values)
+        self.assertNotIn(program, self.module.WORKSPACE_ABILITY_PROGRAMS[identity])
         leader_rows = [
             [f"leader-{index}", *([""] * 123)]
             for index in range(self.module.WORKSPACE_LEADER_ROW_COUNTS[identity])

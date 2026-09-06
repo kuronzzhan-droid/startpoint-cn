@@ -190,19 +190,22 @@ WORKSPACE_ABILITY_PROGRAMS = {
         "ability_skill_gerald_dash_lock$ability_skill_gerald_dash_lock",
     ),
     (129992, "unicorn_lancer_rose"): (),
-    (139995, "fox_oracle_autumn"): (),
+    (139995, "fox_oracle_autumn"): (
+        "battle/action/skill/action/ability_skill/"
+        "ability_fox_oracle_autumn_drain$ability_fox_oracle_autumn_drain",
+    ),
 }
 WORKSPACE_ABILITY_ROW_COUNTS = {
     (139999, "stella_summer_goddess"): (2, 2, 5, 1, 1, 1),
     (149999, "white_wolf_gerald"): (3, 2, 8, 2, 6, 1),
     (129992, "unicorn_lancer_rose"): (2, 3, 5, 2, 2, 2),
-    (139995, "fox_oracle_autumn"): (3, 2, 8, 2, 2, 2),
+    (139995, "fox_oracle_autumn"): (7, 2, 8, 2, 2, 3),
 }
 WORKSPACE_LEADER_ROW_COUNTS = {
     (139999, "stella_summer_goddess"): 5,
     (149999, "white_wolf_gerald"): 10,
     (129992, "unicorn_lancer_rose"): 9,
-    (139995, "fox_oracle_autumn"): 10,
+    (139995, "fox_oracle_autumn"): 11,
 }
 WORKSPACE_ABILITY_PROGRAM_LOCATIONS = {
     (139999, "stella_summer_goddess"): (),
@@ -218,7 +221,11 @@ WORKSPACE_ABILITY_PROGRAM_LOCATIONS = {
         ][0]),
     ),
     (129992, "unicorn_lancer_rose"): (),
-    (139995, "fox_oracle_autumn"): (),
+    (139995, "fox_oracle_autumn"): (
+        ("1399951", 6, 71, WORKSPACE_ABILITY_PROGRAMS[
+            (139995, "fox_oracle_autumn")
+        ][0]),
+    ),
 }
 STELLA_EFFECT = "battle/effect/skill_unique/stella_ballot23/stella_ballot23"
 GERALD_SKILL1_EFFECTS = frozenset({
@@ -277,6 +284,7 @@ WORKSPACE_PROGRAM_EFFECTS = {
         UNICORN_LANCER_ROSE_SKILL_EFFECTS,
     WORKSPACE_ACTION_PROGRAMS[(139995, "fox_oracle_autumn")][0]: FOX_AUTUMN_SKILL_EFFECTS,
     WORKSPACE_ACTION_PROGRAMS[(139995, "fox_oracle_autumn")][1]: FOX_AUTUMN_SKILL_EFFECTS,
+    WORKSPACE_ABILITY_PROGRAMS[(139995, "fox_oracle_autumn")][0]: frozenset(),
 }
 SERVER_CHARACTER_LOGICALS = (
     "character.json",
@@ -450,11 +458,12 @@ def _workspace_master_contracts(spec: CharacterReleaseSpec) -> tuple[_WorkspaceM
             _WorkspaceMasterContract(UPSKILL_MASTER_LOGICAL, "flat", (character_id,)),
             _WorkspaceMasterContract(CHARACTER_STANCE_DETAIL_MASTER_LOGICAL, "flat", (character_id,)),
             _WorkspaceMasterContract(TRIMMED_IMAGE_MASTER_LOGICAL, "flat", trimmed),
-            _WorkspaceMasterContract(UNIQUE_CONDITION_MASTER_LOGICAL, "flat", ("139995", "1399951")),
+            _WorkspaceMasterContract(UNIQUE_CONDITION_MASTER_LOGICAL, "flat", ("139995", "1399951", "1399952")),
             _WorkspaceMasterContract(
                 CUSTOM_ABILITY_STRING_MASTER_LOGICAL,
                 "flat",
-                ("ability_skill_fox_oracle_autumn_fever_pf", "override_string_fox_oracle_autumn_dual_pf"),
+                ("ability_skill_fox_oracle_autumn_fever_pf", "override_string_fox_oracle_autumn_dual_pf",
+                 "ability_fox_oracle_autumn_drain"),
             ),
         )
     raise ContentGateError(
