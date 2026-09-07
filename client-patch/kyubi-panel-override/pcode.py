@@ -4,6 +4,10 @@
 No AS3 is recompiled. Each target block is SHA-256 locked against the V10 export,
 each splice is idempotent and exactly reversible, and every multiname the new code
 uses is already present in the V10 constant pool (asserted by verify.py).
+
+The locked block hashes describe the **input** (the untouched V10 export), so they
+stay valid across guard changes; what the splice writes is re-derived from
+`patch.STRING_ID_PREFIX` on every run and re-checked by verify.py.
 """
 from __future__ import annotations
 
@@ -45,10 +49,17 @@ def _set(index: int) -> str:
 def probe(base: int) -> list[str]:
     """values[0].string_id -> desc_override_<id> -> CustomAbilityStringTable row.
 
-    Every step fails open: a null field, an empty values array, a string_id
-    outside the guarded prefix or a missing table row jumps to SKIP and the
-    untouched original body runs. Only a guarded string_id ever reaches
-    getMasterTable, so no other character can raise ClientError 8013 here.
+    Every step fails open: a null field, an empty values array, a string_id outside
+    the guarded prefix, an unloaded master table or a missing table row jumps to SKIP
+    and the untouched original body runs.
+
+    V14 probes every non-null string_id, so the table lookup can no longer hide
+    behind a character prefix.  It therefore goes through `getMasterTableMaybe`,
+    which `LogicAssetContainer` (the container the running game uses) answers with
+    null instead of `throw new ClientError(8013)` when the table is not in the
+    current scene's asset caches.  The official precedent for exactly this shape is
+    `TrimmedImageRepository`'s constructor.  `row` holds the table first and the row
+    second, so no extra local is needed and localcount is unchanged.
     """
     values, key, row, text = base, base + 1, base + 2, base + 3
     return [
@@ -65,7 +76,10 @@ def probe(base: int) -> list[str]:
         "callproperty " + AS3 % "indexOf" + ", 1", "pushbyte 0", "ifne " + SKIP,
         "getlocal0", "getproperty " + PUBLIC % "logicAssets",
         "getlex " + GENERATED % "CustomAbilityStringTable",
-        "callproperty " + CONTAINER % "getMasterTable" + ", 1",
+        "callproperty " + CONTAINER % "getMasterTableMaybe" + ", 1",
+        _set(row),
+        _get(row), "pushnull", "ifeq " + SKIP,
+        _get(row),
         "callproperty " + PUBLIC % "get_data" + ", 0",
         _get(key),
         "callproperty " + PUBLIC % "getMaybe" + ", 1",

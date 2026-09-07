@@ -20,6 +20,11 @@ V12 往两个内容块各塞了一个**非官方**枚举值:
   4. `词条条件代码全表.md` 的对应小节 —— 人读的那一份。
 
 删掉这里任何一条断言都必须变红:这是唯一一处说「这两个 kind 不是官方的」的地方。
+
+本文件末尾另有一组用例管 `custom_ability_string` 的 `desc_override_*` 行:那条门禁
+与上面三条不同 —— **缺补丁不崩,只是不生效**(行是惰性的)。它要回答的是「这行要
+在真机上显示出来,需要哪一版 APK」:V11 的守卫只认 `fox_oracle_autumn`,V14 泛化
+成任意 `string_id`。
 """
 from __future__ import annotations
 
@@ -30,7 +35,9 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import wf_describe  # noqa: E402
 from wf_client_legality import (  # noqa: E402
-    CLIENT_PATCH_CONTENT_KINDS, required_client_capabilities,
+    CLIENT_PATCH_CONTENT_KINDS, CUSTOM_ABILITY_STRING_KIND,
+    PANEL_OVERRIDE_KEY_PREFIX, PANEL_OVERRIDE_V1, PANEL_OVERRIDE_V1_STRING_ID_PREFIX,
+    PANEL_OVERRIDE_V2, panel_override_capability, required_client_capabilities,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -158,6 +165,64 @@ class ClientPatchKindTests(unittest.TestCase):
         row[blocks["during_content"] + 4] = "-30000"   # strength SLv1
         row[blocks["during_content"] + 5] = "-30000"   # strength 满级
         self.assertEqual([], declared_block_field_problems("ability", row))
+
+
+class PanelDescriptionOverrideGateTests(unittest.TestCase):
+    """`custom_ability_string` 的 `desc_override_*` 行需要哪版面板覆盖补丁。
+
+    与 724/422 不同,这里缺补丁**不会 C7050**:没打补丁的客户端根本不查这张键,
+    行是惰性的,面板照旧走官方生成器。所以这组断言的意义是「别把已经发了数据、
+    但真机上根本不生效的行当成已完成」—— ginovi 的 7 条覆盖行就是这么惰性了一轮。
+    """
+
+    def test_the_two_capability_names(self):
+        self.assertEqual("desc_override_", PANEL_OVERRIDE_KEY_PREFIX)
+        self.assertEqual("fox_oracle_autumn", PANEL_OVERRIDE_V1_STRING_ID_PREFIX)
+        self.assertEqual("kyubi-panel-description-override-v1", PANEL_OVERRIDE_V1)
+        self.assertEqual("panel-description-override-v2", PANEL_OVERRIDE_V2)
+        self.assertEqual("custom_ability_string", CUSTOM_ABILITY_STRING_KIND)
+
+    def test_fox_rows_still_report_v1(self):
+        """V11 就能显示的行只要求 v1;V14 同时提供 v1/v2,所以两版都满足。"""
+        for key in ("desc_override_fox_oracle_autumn",
+                    "desc_override_fox_oracle_autumn_1",
+                    "desc_override_fox_oracle_autumn_2",
+                    "desc_override_fox_oracle_autumn_6"):
+            self.assertEqual([PANEL_OVERRIDE_V1], required_client_capabilities(
+                CUSTOM_ABILITY_STRING_KIND, [key, "文案"]), key)
+
+    def test_every_other_override_row_needs_the_generalized_patch(self):
+        """基诺维的 7 条(以及以后任何自制角色的)只有 V14 认。"""
+        keys = ["desc_override_ginovi"] + [f"desc_override_ginovi_{n}" for n in range(1, 7)]
+        self.assertEqual(7, len(keys))
+        for key in keys + ["desc_override_gerald_1", "desc_override_seris_dragon_king",
+                           "desc_override_null", "desc_override_"]:
+            self.assertEqual([PANEL_OVERRIDE_V2], required_client_capabilities(
+                CUSTOM_ABILITY_STRING_KIND, [key, "文案"]), key)
+
+    def test_non_override_keys_need_nothing(self):
+        """同一张表里的 629 描述键、PF 覆盖文案键不属于这条门禁。"""
+        for key in ("ability_skill_fox_oracle_autumn_fever_pf",
+                    "override_string_fox_oracle_autumn_dual_pf",
+                    "override_string_ginovi_pf", "change_skill_ginovi",
+                    "desc_overrid", "", "adesc_override_ginovi"):
+            self.assertEqual([], required_client_capabilities(
+                CUSTOM_ABILITY_STRING_KIND, [key, "文案"]), key)
+        self.assertEqual([], required_client_capabilities(CUSTOM_ABILITY_STRING_KIND, []))
+
+    def test_the_helper_and_the_gate_agree(self):
+        for key in ("desc_override_fox_oracle_autumn_2", "desc_override_ginovi_3",
+                    "override_string_ginovi_pf"):
+            capability = panel_override_capability(key)
+            self.assertEqual([capability] if capability else [],
+                             required_client_capabilities(CUSTOM_ABILITY_STRING_KIND, [key]))
+
+    def test_the_ability_gate_is_untouched_by_the_string_table_branch(self):
+        """反向:词条行的判据不许因为多了这条分支而改变。"""
+        row = _row("ability", "0", "instant_content", "724")
+        self.assertEqual(["kyubi-fever-ratio-v1"], required_client_capabilities("ability", row))
+        row = _row("ability", "0", "instant_content", "213")
+        self.assertEqual([], required_client_capabilities("ability", row))
 
 
 if __name__ == "__main__":

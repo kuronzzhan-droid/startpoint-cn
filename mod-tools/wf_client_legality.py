@@ -70,13 +70,51 @@ CLIENT_PATCH_CONTENT_KINDS = {
     "during_content": {"422": "dash-parameter-v1"},
 }
 
+# ────────── 面板文案覆盖行(master/string/custom_ability_string)的补丁门禁 ──────────
+#
+# `client-patch/kyubi-panel-override` 在 AbilityLogic / LeaderAbilityLogic 的四个
+# 描述方法前置一次查表:键 = "desc_override_" + 该词条/队长技第 0 行的 string_id。
+# 没打补丁的客户端读不到这些行 —— 它们是**惰性**的,不崩,只是面板仍走官方生成器。
+# 所以这里报出的 capability 是「这行要生效需要哪个 APK」,不是「不装就崩」。
+#
+#   V11(kyubi-panel-description-override-v1)守卫写死 STRING_ID_PREFIX =
+#     "fox_oracle_autumn",只有九尾狐的行会被探测。
+#   V14(panel-description-override-v2)把守卫改成空前缀 —— 任何 string_id 都探测,
+#     并改走 ILogicAssetContainer.getMasterTableMaybe(表没加载返回 null,而不是
+#     getMasterTable 的 ClientError 8013)。V14 APK 同时提供两个 capability。
+#
+# 判据只看键:string_id 落在 V11 守卫内的行报 v1(V11 与 V14 都能显示),
+# 其余 desc_override_* 行报 v2(只有 V14 起作用)。
+CUSTOM_ABILITY_STRING_KIND = "custom_ability_string"
+PANEL_OVERRIDE_KEY_PREFIX = "desc_override_"
+PANEL_OVERRIDE_V1_STRING_ID_PREFIX = "fox_oracle_autumn"
+PANEL_OVERRIDE_V1 = "kyubi-panel-description-override-v1"
+PANEL_OVERRIDE_V2 = "panel-description-override-v2"
+
+
+def panel_override_capability(key: str) -> str | None:
+    """custom_ability_string 的这个键需要哪个面板覆盖 capability(不是覆盖行则 None)。"""
+    key = (key or "").strip()
+    if not key.startswith(PANEL_OVERRIDE_KEY_PREFIX):
+        return None
+    string_id = key[len(PANEL_OVERRIDE_KEY_PREFIX):]
+    if string_id.startswith(PANEL_OVERRIDE_V1_STRING_ID_PREFIX):
+        return PANEL_OVERRIDE_V1
+    return PANEL_OVERRIDE_V2
+
 
 def required_client_capabilities(kind: str, row: list[str]) -> list[str]:
     """这一行需要哪些客户端补丁 capability 才不会 C7050(官方 APK 上为空)。
 
     只看**该触发模式下客户端真的会解析**的那个内容块 —— 瞬发行不读 during_content、
     持续行不读 instant_content,否则从别的模式克隆行时留下的残值会被判成需要补丁。
+
+    `kind == "custom_ability_string"` 走另一条判据:row[0] 是外层键,报出让
+    `desc_override_*` 行真正生效所需的面板覆盖 capability(缺补丁不崩,只是不生效)。
     """
+    if kind == CUSTOM_ABILITY_STRING_KIND:
+        capability = panel_override_capability(row[0] if row else "")
+        return [capability] if capability else []
     blocks = wf_describe.layout(kind)["blocks"]
     mode_col = int(blocks["precondition1"]) - 1
     mode = (row[mode_col] if mode_col < len(row) else "").strip()

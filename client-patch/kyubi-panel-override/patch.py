@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-"""Generate the exact V10 source edits for the Kyubi ability-panel text override.
+"""Generate the exact V10 source edits for the ability-panel text override.
 
 The binary patch is produced by pcode.py; this module carries the locked input
 hashes and renders the same edit as readable ActionScript so the intent can be
 reviewed against the FFDec export. The generated AS3 is never recompiled.
+
+V11 served one character (`fox_oracle_autumn`). V14 drops the character prefix so
+any `desc_override_<string_id>` row works, and reaches the master table through
+`getMasterTableMaybe` so an unloaded table falls through instead of raising
+ClientError 8013 on every character's panel.
 """
 from __future__ import annotations
 
@@ -12,17 +17,37 @@ import hashlib
 import json
 from pathlib import Path
 
+# V11 shipped one capability, scoped to the fox.  V14 keeps that name (a package
+# that only needs the fox rows still declares it) and adds a second name for the
+# generalized probe, so a manifest can say which contract it actually relies on.
 CAPABILITY = "kyubi-panel-description-override-v1"
+CAPABILITY_ALL_CHARACTERS = "panel-description-override-v2"
+CAPABILITIES = (CAPABILITY, CAPABILITY_ALL_CHARACTERS)
 
-# The override is scoped to one character for V11: only ability/leader rows whose
-# column-0 string_id starts with this prefix ever reach the master-table probe.
-STRING_ID_PREFIX = "fox_oracle_autumn"
+# V11 scoped the override to one character: only ability/leader rows whose column-0
+# string_id started with this prefix ever reached the master-table probe.  V14 sets
+# it empty, so the guard degenerates to the key prefix itself and every non-null
+# string_id is probed.  A null string_id still builds "desc_override_null", which no
+# table row is ever keyed by, so it falls through exactly as before.  Putting a
+# character prefix back here is the only edit needed to re-narrow the patch.
+STRING_ID_PREFIX = ""
 KEY_PREFIX = "desc_override_"
 GUARD_PREFIX = KEY_PREFIX + STRING_ID_PREFIX
 
 # Locked V10 inputs (base for V11).
 V10_APK_SHA256 = "ea5d8413003f1d13c3fcd6ca734e54555264b86a348c48691c8980e0868837c9"
 V10_SWF_SHA256 = "c5c349a4b114f922d46dc4db1b55405c3e4ddb9aabb96bb968baaa4092f5214d"
+
+# V13a/V14 rebuild the whole chain from the V8 baseline instead of unpacking the
+# V10 APK, so their step-2 SWF is a different file. The four target method bodies
+# and their FFDec P-code blocks are byte-identical on both chains (proven by the
+# block hashes below matching either export), so only the container SWF hash and
+# the two preserved V9/V10 body indices differ.
+V8_CHAIN_V10_SWF_SHA256 = "f3c5b58a2e09f3ad70532d7720f417a9d56c9f22cff8e4c8ac47536a95dc83a4"
+V8_CHAIN_PRESERVED_BODIES = {
+    52322: "ActionEvaluationResolver/ActionEvaluationResolver",
+    60035: "BallImpl/resolveCollisionForPrimaryOrSummons",
+}
 
 CLASS_PATHS = {
     "AbilityLogic": "pinball/common/data/ability/AbilityLogic.as",
@@ -75,7 +100,11 @@ _PROBE = """         var _loc{v}_:* = values;
                _loc{k}_ = "{key_prefix}" + String(_loc{k}_.string_id);
                if(_loc{k}_.indexOf("{guard}") == 0)
                {{
-                  _loc{r}_ = logicAssets.getMasterTable(CustomAbilityStringTable).get_data().getMaybe(_loc{k}_);
+                  _loc{r}_ = logicAssets.getMasterTableMaybe(CustomAbilityStringTable);
+                  if(_loc{r}_ != null)
+                  {{
+                     _loc{r}_ = _loc{r}_.get_data().getMaybe(_loc{k}_);
+                  }}
                   if(_loc{r}_ != null)
                   {{
                      _loc{t}_ = _loc{r}_.string;

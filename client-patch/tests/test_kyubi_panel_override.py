@@ -1,15 +1,21 @@
-"""九尾狐「详情面板文案覆盖」客户端补丁(V11)的回归测试。
+"""「详情面板文案覆盖」客户端补丁(V11 → V14)的回归测试。
 
 补丁只改 ``pinball.common.data.ability`` 的四个描述方法:
 ``AbilityLogic`` / ``LeaderAbilityLogic`` 的 ``getDescriptions`` 与
-``getDescriptionWithSimplify``。命中条件是词条/队长技第 0 行的 ``string_id``
-以 ``fox_oracle_autumn`` 开头,且 CDN 表 ``custom_ability_string`` 里存在
-``desc_override_<string_id>`` 这一行;否则原样走官方生成器。
+``getDescriptionWithSimplify``。命中条件是 CDN 表 ``custom_ability_string`` 里
+存在 ``desc_override_<string_id>`` 这一行;否则原样走官方生成器。
+
+V11 的守卫写死 ``fox_oracle_autumn``,只服务九尾狐。**V14 把守卫泛化**:
+``STRING_ID_PREFIX = ""``,任何非 null 的 ``string_id`` 都探测(null 会拼成
+``desc_override_null``,表里永远没有这行,照样落空)。作为交换,查表改走
+``ILogicAssetContainer.getMasterTableMaybe`` —— 表没加载时它返回 null,而不是
+``getMasterTable`` 的 ``ClientError 8013``。守卫放开之后每个角色都会走这一步,
+所以这条不是优化而是安全前提,本文件把它写成断言。
 
 战斗逻辑(``pinball.scene.battle.*``)一个字节都不动——本文件把这条约束
 写成断言,而不是写成注释。
 
-本机没有 V10/V11 二进制证据时,依赖二进制的用例明确 skip;纯逻辑用例始终运行。
+本机没有构建二进制证据时,依赖二进制的用例明确 skip;纯逻辑用例始终运行。
 """
 from __future__ import annotations
 
@@ -21,11 +27,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 MODULE_DIR = ROOT / "client-patch" / "kyubi-panel-override"
-BUILD = Path("D:/WF/out/newchars-panel-v11-20260906")
-V10_EXPORT = BUILD / "v10-export/scripts"
-V10_PCODE = BUILD / "v10-pcode/scripts/pinball/common/data/ability"
-BASE_SWF = BUILD / "base-v10.swf"
-FINAL_SWF = BUILD / "v11-minimal.swf"
+# V14 rebuilds the chain from the V8 baseline; its step2 SWF is the patch input and
+# its step3 SWF the output. The immutable V10 AS3 export still lives in the V11
+# build directory (patch.py only renders intent from it; it is never recompiled).
+BUILD = Path("D:/WF/out/newchars-v14-20260908")
+BUILD_V11 = Path("D:/WF/out/newchars-panel-v11-20260906")
+V10_EXPORT = BUILD_V11 / "v10-export/scripts"
+V10_PCODE = BUILD / "v11-pcode/scripts/pinball/common/data/ability"
+BASE_SWF = BUILD / "step2-v10.swf"
+FINAL_SWF = BUILD / "step3-v11.swf"
 
 
 def _load_module_set():
@@ -72,13 +82,26 @@ class ContractTests(unittest.TestCase):
     """覆盖键的契约与作用域,不需要任何本地二进制。"""
 
     def test_override_key_is_the_prefixed_string_id(self):
+        """V14: 守卫 = 键前缀,任何 string_id 都进探测(null 走 desc_override_null)。"""
         self.assertEqual("desc_override_", patch.KEY_PREFIX)
-        self.assertEqual("fox_oracle_autumn", patch.STRING_ID_PREFIX)
+        self.assertEqual("", patch.STRING_ID_PREFIX)
+        self.assertEqual(patch.KEY_PREFIX, patch.GUARD_PREFIX)
         self.assertEqual(patch.KEY_PREFIX + patch.STRING_ID_PREFIX, patch.GUARD_PREFIX)
-        for string_id in ("fox_oracle_autumn", "fox_oracle_autumn_1", "fox_oracle_autumn_6"):
-            self.assertTrue((patch.KEY_PREFIX + string_id).startswith(patch.GUARD_PREFIX))
-        for foreign in ("seris_dragon_king_1", "gerald_1", "", "fox_oracle"):
-            self.assertFalse((patch.KEY_PREFIX + foreign).startswith(patch.GUARD_PREFIX))
+        for string_id in ("fox_oracle_autumn", "fox_oracle_autumn_6",
+                          "ginovi", "ginovi_4", "seris_dragon_king_1", "gerald_1", ""):
+            self.assertTrue((patch.KEY_PREFIX + string_id).startswith(patch.GUARD_PREFIX),
+                            string_id)
+        # 与表里的键同构:官方行的 string_id 拼出来的键必须仍然是 desc_override_ 开头,
+        # 命不命中完全由表决定 —— 补丁不再自己筛角色。
+        self.assertTrue(("desc_override_" + str(None)).startswith(patch.GUARD_PREFIX))
+        self.assertEqual("desc_override_null", "desc_override_" + "null")
+
+    def test_v14_declares_both_capabilities(self):
+        """V11 的能力标识不许改名;全角色探测另起一个,两者 V14 同时提供。"""
+        self.assertEqual("kyubi-panel-description-override-v1", patch.CAPABILITY)
+        self.assertEqual("panel-description-override-v2", patch.CAPABILITY_ALL_CHARACTERS)
+        self.assertEqual((patch.CAPABILITY, patch.CAPABILITY_ALL_CHARACTERS),
+                         patch.CAPABILITIES)
 
     def test_exactly_four_targets_and_no_battle_code(self):
         self.assertEqual(4, len(pcode.TARGETS))
@@ -102,13 +125,43 @@ class ContractTests(unittest.TestCase):
             self.assertNotIn('callproperty QName(PackageNamespace(""),"get"), 1', joined)
             self.assertNotIn('"getUiStringWithContext"', joined)
 
+    def test_the_custom_string_table_is_fetched_with_the_non_throwing_accessor(self):
+        """红线:守卫放开后每个角色都查这张表,只能走 getMasterTableMaybe。
+
+        ``LogicAssetContainer.getMasterTable`` 表没加载就 ``ClientError 8013``
+        (LogicAssetContainer.as:448-457);``getMasterTableMaybe`` 同一路径返回
+        null(:473-484)。官方同形先例是 ``TrimmedImageRepository`` 构造函数。
+        改回 getMasterTable 必须让这条变红。
+        """
+        maybe = ('callproperty QName(Namespace("pinball.asset.logic:ILogicAssetContainer")'
+                 ',"getMasterTableMaybe"), 1')
+        throwing = ('callproperty QName(Namespace("pinball.asset.logic:ILogicAssetContainer")'
+                    ',"getMasterTable"), 1')
+        for target in pcode.TARGETS:
+            code = target.code
+            self.assertEqual(1, code.count(maybe), target.method)
+            # 唯一允许的 getMasterTable 是 simple 模式那张 SkillReplaceStringTable,
+            # 它在守卫之后、且只在命中覆盖行之后才执行。
+            self.assertEqual(1, code.count(throwing), target.method)
+            custom = code.index(
+                'getlex QName(PackageNamespace("pinball.master.generated")'
+                ',"CustomAbilityStringTable")')
+            skill = code.index(
+                'getlex QName(PackageNamespace("pinball.master.generated")'
+                ',"SkillReplaceStringTable")')
+            self.assertEqual(maybe, code[custom + 1], target.method)
+            self.assertEqual(throwing, code[skill + 1], target.method)
+            self.assertLess(custom, skill, target.method)
+
     def test_every_guard_falls_through_to_the_original_body(self):
         """任何一步不满足都必须跳到 SKIP,并且插入段只有一个 returnvalue 出口。"""
         for target in pcode.TARGETS:
             branches = [s for s in target.code
                         if s.split(" ")[0] in ("ifeq", "ifne", "ifle", "iflt", "iffalse", "jump")]
             to_skip = [s for s in branches if s.endswith(" " + pcode.SKIP)]
-            self.assertEqual(6, len(to_skip), target.method)
+            # V11 有 6 道闸(values/长度/values[0]/前缀/表行/文本);
+            # V14 多一道:主表本身没加载(getMasterTableMaybe 返回 null)。
+            self.assertEqual(7, len(to_skip), target.method)
             self.assertEqual(1, target.code.count("returnvalue"), target.method)
             self.assertEqual(target.code[-1], pcode.SKIP + ":")
 
@@ -245,12 +298,17 @@ class PcodeSpliceTests(unittest.TestCase):
                 pcode.unpatch_block(patched.replace(patch.GUARD_PREFIX, "wrong", 1), target)
 
     def test_a_changed_guard_prefix_is_a_different_patch(self):
-        """红线用例:改了守卫常量,锁住的块哈希就必须对不上。"""
+        """红线用例:改了守卫常量,锁住的块哈希就必须对不上。
+
+        V14 的守卫与键前缀是同一个字符串,所以这里往回收窄(塞入 V11 的
+        ``desc_override_fox_oracle_autumn``)来制造漂移。
+        """
         target = pcode.TARGETS[0]
         original = self.block(target)
         patched = pcode.patch_block(original, target)
         tampered = patched.replace('pushstring "%s"' % patch.GUARD_PREFIX,
-                                   'pushstring "desc_override_"', 1)
+                                   'pushstring "desc_override_fox_oracle_autumn"', 1)
+        self.assertNotEqual(patched, tampered)
         with self.assertRaises(pcode.PatchError):
             pcode.unpatch_block(tampered, target)
 
@@ -262,18 +320,26 @@ class BinaryTests(unittest.TestCase):
         if not (BASE_SWF.is_file() and FINAL_SWF.is_file()):
             self.skipTest("V10/V11 SWF fixtures are unavailable")
 
-    def test_base_swf_is_the_locked_v10_input(self):
-        self.assertEqual(patch.V10_SWF_SHA256,
+    def report(self):
+        return verify.verify(BASE_SWF, FINAL_SWF,
+                             base_swf_sha256=patch.V8_CHAIN_V10_SWF_SHA256,
+                             preserved_bodies=patch.V8_CHAIN_PRESERVED_BODIES)
+
+    def test_base_swf_is_the_locked_v8_chain_input(self):
+        self.assertEqual(patch.V8_CHAIN_V10_SWF_SHA256,
                          hashlib.sha256(BASE_SWF.read_bytes()).hexdigest())
 
     def test_only_four_method_bodies_change(self):
-        report = verify.verify(BASE_SWF, FINAL_SWF)
+        report = self.report()
         self.assertEqual("verified", report["status"])
         self.assertEqual([347], report["changed_tags"])
         self.assertEqual([7435, 7436, 7772, 7773], report["changed_method_bodies"])
         self.assertEqual(0, report["added_multinames"])
         self.assertEqual(0, report["added_instance_traits"])
-        self.assertEqual([patch.KEY_PREFIX, patch.GUARD_PREFIX], report["added_pool_strings"])
+        # 守卫 == 键前缀 ⇒ 只新增一个字符串。
+        self.assertEqual([patch.KEY_PREFIX], report["added_pool_strings"])
+        self.assertEqual(list(patch.CAPABILITIES), report["capabilities"])
+        self.assertEqual("", report["string_id_prefix"])
         for entry in report["proof"].values():
             self.assertEqual([], entry["stack"]["errors"])
             self.assertEqual(0, entry["stack"]["unreachable"])
@@ -282,16 +348,27 @@ class BinaryTests(unittest.TestCase):
 
     def test_new_classes_already_had_a_getlex_precedent(self):
         """getlex 一个构建里没有的类会硬崩;这两个类必须早就被 getlex 过。"""
-        report = verify.verify(BASE_SWF, FINAL_SWF)
+        report = self.report()
         for name in verify.REQUIRED_CLASSES:
             precedent = report["getlex_precedent"][name]
             self.assertGreaterEqual(len(precedent["existing_getlex_bodies"]), 2, name)
 
+    def test_both_container_accessors_already_had_a_call_precedent(self):
+        """getMasterTableMaybe 不是新造的调用形状 —— 官方自己就在用。"""
+        report = self.report()
+        for name in verify.REQUIRED_CONTAINER_METHODS:
+            precedent = report["container_call_precedent"][name]
+            self.assertGreaterEqual(precedent["existing_call_bodies"], 1, name)
+
     def test_verifier_rejects_an_unpatched_and_a_wrong_base(self):
         with self.assertRaises(verify.PatchError):
-            verify.verify(BASE_SWF, BASE_SWF)
+            verify.verify(BASE_SWF, BASE_SWF,
+                          base_swf_sha256=patch.V8_CHAIN_V10_SWF_SHA256,
+                          preserved_bodies=patch.V8_CHAIN_PRESERVED_BODIES)
         with self.assertRaises(verify.PatchError):
-            verify.verify(FINAL_SWF, FINAL_SWF)
+            verify.verify(FINAL_SWF, FINAL_SWF,
+                          base_swf_sha256=patch.V8_CHAIN_V10_SWF_SHA256,
+                          preserved_bodies=patch.V8_CHAIN_PRESERVED_BODIES)
 
 
 if __name__ == "__main__":
