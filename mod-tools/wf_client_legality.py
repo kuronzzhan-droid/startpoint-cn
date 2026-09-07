@@ -657,20 +657,30 @@ def degree_row_problems(
     return probs
 
 
+INVOKE_SKILL_STRING_OFFSET = 23   # 文案键列 = instant_content 基址 + 23(ability 47→70,leader_ability 45→68)
+
+
 def invoke_skill_string_problems(row: list[str],
-                                 custom_string_keys: frozenset[str] | set[str]) -> list[str]:
-    """kind 629(InvokeSkill)行的 c70 文案键必须存在于 custom_ability_string,
-    否则角色详情页渲染描述时 MasterStringMap.get 抛 C8601(2026-08-26 魔王冲刺行实锤:
-    发布 rebase 按 manifest tables[] outer_keys 合并,漏认领的键会被静默回滚)。"""
+                                 custom_string_keys: frozenset[str] | set[str],
+                                 kind: str = "ability") -> list[str]:
+    """kind 629(InvokeSkill)行的文案键(ability c70 / leader_ability c68)必须存在于
+    custom_ability_string,否则角色详情页渲染描述时 MasterStringMap.get 抛 C8601
+    (2026-08-26 魔王冲刺行实锤:发布 rebase 按 manifest tables[] outer_keys 合并,
+    漏认领的键会被静默回滚)。列号按 `kind` 的布局表取:两表列位差 2,写死 47/70 会让
+    队长表里的 629 行(基诺维冲刺、深渊之兽觉醒)整条漏检(2026-09-08 复核工作流抓出)。"""
+    blocks = wf_describe.layout(kind)["blocks"]
+    kind_col = int(blocks["instant_content"])
+    sid_col = kind_col + INVOKE_SKILL_STRING_OFFSET
+
     def cell(i):
         return (row[i] if i < len(row) else "").strip()
-    if cell(47) != "629":
+    if cell(kind_col) != "629":
         return []
-    sid = cell(70)
+    sid = cell(sid_col)
     if not sid:
-        return ["c70 InvokeSkill string_id 为空(渲染描述 C8601)"]
+        return [f"c{sid_col} InvokeSkill string_id 为空(渲染描述 C8601)"]
     if sid not in custom_string_keys:
-        return [f"c70 string_id={sid!r} 不在 custom_ability_string 中(C8601,"
+        return [f"c{sid_col} string_id={sid!r} 不在 custom_ability_string 中(C8601,"
                 "并检查 manifest tables[] outer_keys 是否认领)"]
     return []
 

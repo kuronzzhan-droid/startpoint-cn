@@ -681,6 +681,22 @@ class InvokeSkillStringTest(unittest.TestCase):
         self.assertEqual(
             wf_client_legality.invoke_skill_string_problems(row, frozenset()), [])
 
+    def test_leader_layout_reads_c45_and_c68(self) -> None:
+        """队长表 629 行(基诺维冲刺 / 深渊之兽觉醒)的列位比词条表左移 2;
+        写死 47/70 会让整条漏检(2026-09-08 复核工作流实锤)。"""
+        row = [""] * 124
+        row[45] = "629"
+        row[68] = "ability_skill_abyss_beast_awaken"
+        probs = wf_client_legality.invoke_skill_string_problems(
+            row, frozenset({"something_else"}), kind="leader_ability")
+        self.assertEqual(len(probs), 1)
+        self.assertIn("c68", probs[0])
+        self.assertEqual(wf_client_legality.invoke_skill_string_problems(
+            row, frozenset({"ability_skill_abyss_beast_awaken"}), kind="leader_ability"), [])
+        # 同一行按 ability 布局读不到 629 ⇒ 静默通过,正是旧实现的漏洞形状
+        self.assertEqual(
+            wf_client_legality.invoke_skill_string_problems(row, frozenset()), [])
+
 
 def _element_column(kind: str, block: str) -> int:
     """element 列号:测试自己按布局表算一遍,不调用被测模块的 helper。"""
