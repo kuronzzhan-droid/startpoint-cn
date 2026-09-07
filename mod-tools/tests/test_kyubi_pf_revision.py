@@ -1,6 +1,14 @@
-"""Offline Kyubi revision must preserve unrelated rows, Fever time and ability 4-6."""
+"""Offline Kyubi revision must preserve unrelated rows, Fever time and ability 4-6.
+
+The fixture is the author's live package (1.1.1, identical to the store since 1.4.765,
+2026-09-06 13:42).  It is already revised: every DSL, orderedmap and text step of the
+revision is a byte-for-byte no-op on it, and the special PF carries one extra PF art
+node that the revision never produced.  The layout is pinned below so any further
+drift of the live tree turns this file red instead of being unpacked past.
+"""
 from __future__ import annotations
 
+from copy import deepcopy
 import importlib
 import json
 from pathlib import Path
@@ -16,6 +24,11 @@ import wf_dsl
 import wf_mod_tool as core
 
 SOURCE = Path("D:/WF/startpoint-cn/work/character_packs/fox_oracle_autumn/package")
+# tree_hash of the live special PF (author package 1.1.1 == store, 1.4.765..1.4.783).
+LIVE_SPECIAL_SHA256 = "fe63ae87585a23dd2606fd768e606d264434ab0c5f899ce748c1c77fb319c97f"
+# tree_hash of revise_tree(SPECIAL_BASE): the live tree minus its PF art node
+# (work/codex_out/newchars-revision-20260906/pf-agent-package, 2026-09-06 13:28).
+REVISION_OUTPUT_SHA256 = "f67189dd9767a486a99b7ea40340a101ed9c430f5fa9d3b32b1f77c4b54a80e9"
 
 
 class KyubiRevisionTests(unittest.TestCase):
@@ -38,7 +51,10 @@ class KyubiRevisionTests(unittest.TestCase):
     def test_dry_run_writes_nothing_and_original_path_is_refused(self):
         before = {p: p.read_bytes() for p in self.package.rglob("*") if p.is_file()}
         report = self.mod.revise(self.package, dry_run=True)
-        self.assertGreater(len(report["changed"]), 5)
+        # Live 1.1.1 is already revised: only the manifest claim and the server
+        # mirror's JSON formatting move.  Anything else here is fixture drift.
+        self.assertEqual(sorted(report["changed"]),
+                         ["manifest.json", "roots/server/cdndata/character_text.json"])
         self.assertEqual(before, {p: p.read_bytes() for p in self.package.rglob("*") if p.is_file()})
         with self.assertRaises(ValueError):
             self.mod.revise(SOURCE, dry_run=True)
@@ -84,12 +100,18 @@ class KyubiRevisionTests(unittest.TestCase):
         self.assertEqual(radii, {320, 480})
 
     def test_capability_claim_and_idempotence(self):
+        def string_claim(manifest):
+            return next(x for x in manifest["tables"]
+                        if "custom_ability_string" in x["logical_path"])["outer_keys"]
+        before = string_claim(json.loads((self.package / "manifest.json").read_text(encoding="utf-8")))
         self.mod.revise(self.package, dry_run=False)
         manifest = json.loads((self.package / "manifest.json").read_text(encoding="utf-8"))
         self.assertIn("kyubi-pf-damage-v1", manifest["required_capabilities"])
         self.assertFalse(manifest["qa"]["release_ready"])
-        strings = next(x for x in manifest["tables"] if "custom_ability_string" in x["logical_path"])
-        self.assertEqual(strings["outer_keys"], [self.mod.SPECIAL_KEY])
+        # The claim carries other features' keys (dual-PF override, panel override);
+        # the revision may neither add nor drop any of them.
+        self.assertIn(self.mod.SPECIAL_KEY, before)
+        self.assertEqual(string_claim(manifest), before)
         first = {p: p.read_bytes() for p in self.package.rglob("*") if p.is_file()}
         self.mod.revise(self.package, dry_run=False)
         self.assertEqual(first, {p: p.read_bytes() for p in self.package.rglob("*") if p.is_file()})
@@ -100,9 +122,11 @@ class KyubiRevisionTests(unittest.TestCase):
         tree = wf_dsl.parse_dsl(zlib.decompress(path.read_bytes(), -15))["tree"]
         art = ["Command", ["HideEffect", "test_art_marker"]]
         tree[11][1].append(art)
+        snapshot = deepcopy(tree)
         result = revise_tree(tree, self.mod.MAIN[0])
         self.assertIn(art, result[11][1])
-        self.assertEqual(tree[10], 0, "input tree must not be mutated")
+        self.assertEqual(result[10], 3)
+        self.assertEqual(tree, snapshot, "input tree must not be mutated")
         next(wf_dsl.iter_dsl_commands(tree, "CreateNormalAttack"))[6][0]["max"] = 999
         with self.assertRaises(ValueError):
             revise_tree(tree, self.mod.MAIN[0])
@@ -122,6 +146,45 @@ class KyubiRevisionTests(unittest.TestCase):
                              {k: v for k, v in after.items() if k != own})
             self.assertIn("强化弹射伤害", after[own])
             self.assertNotIn("范围扩大", after[own])
+
+    def test_live_special_layout_is_pinned_and_revision_is_a_no_op(self):
+        from wf_kyubi_pf_dsl import NATIVE_PF_ART, revise_tree, tree_hash
+        for program in self.mod.MAIN:
+            path = self.package / "roots/common" / (program + self.mod.SUFFIX)
+            tree = wf_dsl.parse_dsl(zlib.decompress(path.read_bytes(), -15))["tree"]
+            self.assertEqual(tree[10], 3, "live main skills are already revised")
+        path = self.package / "roots/common" / (self.mod.SPECIAL + self.mod.SUFFIX)
+        tree = wf_dsl.parse_dsl(zlib.decompress(path.read_bytes(), -15))["tree"]
+        self.assertEqual(tree[10], 3)
+        self.assertEqual([node[1][0] for node in tree[11][1]],
+                         ["ShowEffect", "ShowEffect", "ConditionalsFeverMode"])
+        self.assertEqual(tree[11][1][0][1][1], "雷华缠球", "hoisted baseline effect first")
+        self.assertEqual(tree[11][1][1], NATIVE_PF_ART)
+        self.assertEqual(tree_hash(tree), LIVE_SPECIAL_SHA256)
+        self.assertEqual(revise_tree(tree, self.mod.SPECIAL), tree)
+        # Minus the art node it is exactly the revision's own output, still accepted.
+        stripped = deepcopy(tree)
+        del stripped[11][1][1]
+        self.assertEqual(tree_hash(stripped), REVISION_OUTPUT_SHA256)
+        self.assertEqual(revise_tree(stripped, self.mod.SPECIAL), stripped)
+        # Every other count, order or node content is refused, never unpacked past.
+        drifted_art = deepcopy(NATIVE_PF_ART)
+        drifted_art[1][12] = ["None"]
+        for label, mutate in (
+            ("fourth node", lambda t: t[11][1].insert(1, deepcopy(NATIVE_PF_ART))),
+            ("art node before the effect", lambda t: t[11][1].insert(0, t[11][1].pop(1))),
+            ("art node after Fever", lambda t: t[11][1].append(t[11][1].pop(1))),
+            ("different node in the art slot",
+             lambda t: t[11][1].__setitem__(1, ["Command", ["HideEffect", "fox_oracle_autumn_api_pf"]])),
+            ("art lifetime drift", lambda t: t[11][1].__setitem__(1, drifted_art)),
+            ("foreign node in a two-node body",
+             lambda t: (t[11][1].pop(1), t[11][1].__setitem__(0, drifted_art))),
+        ):
+            mutated = deepcopy(tree)
+            mutate(mutated)
+            with self.subTest(label):
+                with self.assertRaises(ValueError):
+                    revise_tree(mutated, self.mod.SPECIAL)
 
     def test_unknown_special_fails_before_any_package_writes(self):
         path = self.package / "roots/common" / (self.mod.SPECIAL + self.mod.SUFFIX)

@@ -21,6 +21,17 @@ MAIN_DAMAGE_HASHES = dict(zip(MAIN, (
     "f3a967b3a01a5fd559731e6848c0c78ffb8f7483d582a664a0f2ac250d21b99b",
 )))
 SPECIAL_BASE = "3bea9174d78046ba414750bd2c4cb30bd01258a05abd03b585dedc4a21627388"
+# The PF art integration (commit 5e9a0c2a, 2026-09-06 13:37) inserted exactly this node
+# between the hoisted 雷华缠球 effect and the Fever branch of the revised special PF.
+# Live since 1.4.765; author package 1.1.1 and the store carry the same tree. It is
+# matched whole, so a different node, order or count is still an unknown shape.
+NATIVE_PF_ART = ["Command", [
+    "ShowEffect", "fox_oracle_autumn_api_pf",
+    ["SpecifyEffectDirectly",
+     "battle/effect/skill_unique/fox_oracle_autumn_api/fox_oracle_autumn_api"],
+    -18, ["BacksideOfCharacter"], ["PlayOnlyFirstSequence"], ["AB"], 0, 0, 0, True, True,
+    ["Some", [{"min": 4.0, "max": 4.0}]],
+]]
 
 
 def tree_hash(value) -> str:
@@ -42,11 +53,32 @@ def _normal_branch(leader):
     return normal
 
 
+def _revised_body(previous):
+    """Return the hoisted effect and Fever wrapper of a revised tree.
+
+    Two layouts are known, both pinned whole: the revision's own output
+    ``[effect, fever]`` and the live layout ``[effect, NATIVE_PF_ART, fever]``.
+    The art node is removed so the caller can reverse the rest to SPECIAL_BASE.
+    """
+    body = previous[11][1]
+    if len(body) == 3:
+        if body[1] != NATIVE_PF_ART:
+            raise ValueError("unknown revised special-PF shape: the node between the "
+                             "hoisted effect and Fever is not the pinned PF art")
+        del body[1]
+    if len(body) != 2:
+        raise ValueError(f"unknown revised special-PF shape: {len(body)} top-level nodes")
+    effect, wrapper = body
+    if wrapper[0] != "Command":
+        raise ValueError("unknown revised special-PF shape: Fever is not a Command")
+    return effect, wrapper
+
+
 def _special(tree):
     if tree[10] == 3:
         # Prove an already revised tree reverses exactly to the known baseline.
         previous = deepcopy(tree)
-        effect, wrapper = previous[11][1]
+        effect, wrapper = _revised_body(previous)
         fever = wrapper[1]
         leader = fever[1][1][0][1]
         if fever[0] != "ConditionalsFeverMode" or fever[2] != _normal_branch(leader):
