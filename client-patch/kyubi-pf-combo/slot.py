@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Append one int slot to V9 BallImpl without recompiling any method."""
+"""Append one int slot to the V8/V9 BallImpl without recompiling any method."""
 from __future__ import annotations
 
 import argparse
@@ -10,6 +10,16 @@ import struct
 import zlib
 
 from patch import PatchError, V9_SWF_SHA256
+
+# V13 起链首改从 V8 开始（V9 的整类 AS3 回编被 ReferenceError #1069 判死），
+# 所以这两个基线都接受。两者的 BallImpl 逐字节相同：
+# `kyubi-pf-combo/pcode.py` 锁的 BALL_BLOCK_SHA256
+# (0701345d6f668a57f0af9bc10f8801ef32ea5ca89d4a0a8b78a8bd53284ce7fb)
+# 在两个基线的 FFDec 导出上都命中 —— 这是「V9 没碰过 BallImpl」的机器证明，
+# 不是假设。追加 slot 的逻辑本身与基线无关（按名字定位 BallImpl 与
+# suppressSkillFrame，再往 trait 表末尾追加一个自动分配 id 的 int）。
+V8_SWF_SHA256 = "c1c0782bed5bbcaaf097855c041e3b05100a46387d7cccc2ef9372d7b57744ed"
+ACCEPTED_BASE_SWF_SHA256 = (V9_SWF_SHA256, V8_SWF_SHA256)
 
 HERE = Path(__file__).resolve().parent
 ABC_DIR = HERE.parent / "rank-button-p1/abc"
@@ -60,9 +70,11 @@ def add_slot(abc_bytes: bytes):
 
 def apply(source: Path, output: Path):
     if source.resolve() == output.resolve():
-        raise PatchError("V9 input must remain immutable")
-    if hashlib.sha256(source.read_bytes()).hexdigest() != V9_SWF_SHA256:
-        raise PatchError("only the approved V9 SWF is accepted")
+        raise PatchError("the base SWF must remain immutable")
+    actual = hashlib.sha256(source.read_bytes()).hexdigest()
+    if actual not in ACCEPTED_BASE_SWF_SHA256:
+        raise PatchError("only the approved V8/V9 base SWFs are accepted, got %s"
+                         % actual)
     swf = _load("swftags")
     signature, version, _, body = swf.load_swf(str(source))
     found = []

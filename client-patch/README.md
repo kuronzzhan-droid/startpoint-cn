@@ -38,6 +38,11 @@
 | `five-boss-random-map/` | `BothBossTool` | 五重决战:`both_boss_map` 多行候选随机选图(多人按房号、单人按时间播种) | — |
 | `five-boss-multi-only/` | `BossBattleQuestLogic` | 五重决战 `1099001..1099003` 返回 `available_play_kind = 2`(只能组队,单人按钮置灰) | ⚠ 与 `five-boss-single-allowed` **二选一** |
 | `five-boss-single-allowed/` | `BossBattleQuestLogic` | 把上面那条还原成官方的 `return 1`(单人 + 组队,单人按钮可点) | ⚠ 与 `five-boss-multi-only` **二选一** |
+| `kyubi-fever-ratio/` | `AbilityValues`、`InstantAbilitySource`、`InstantAbilityContentTools`、`InstantAbilityDescriptionGenerator`、`AbilitySlotImpl`、`FeverPointGaugeImpl` | 新 kind `instant_content 724 AddFeverPointRatio`(按 Fever 槽上限比例增减) | — |
+| `dash-parameter/` | `AbilityValues`、`DuringAbilitySource`、`CommonAbilityContentTools`、`AbilityDescriptionGenerator`、`BattleAbilityTotalizerImpl`、`BallImpl` | 新 kind `during_content 422 DashParameter`(7 个可调冲刺参数) | — |
+| `kyubi-pf-combo/` | `BallImpl`、`ActionEvaluationResolver` | 九尾狐原生 PF 的弹射前连击快照（追加 1 个 int 槽 + 2 个方法体 P-code 拼接） | — |
+| `kyubi-pf-damage/` | `MemberImpl`、`ActionEvaluator`、`AbilityDamageShot`、`SquadManagerImpl` | 九尾狐两档主技 / 常态特殊 PF / 能力 2 追击按**强化弹射**结算。⚠ 目录里的 `patch.py`（整类 AS3 回编）**已废弃**——它产出的包在战斗中抛 `ReferenceError #1069`；现在的入口是 `abcpatch.py`（指令级插入）+ `patch_squad_pcode.py` | — |
+| `abcasm/` | (不是补丁) | V12 / V13 补丁共用的 AVM2 汇编器 / 拼接器 / 重定位器 / 方法体按名字定位（`bodies.py`） | — |
 
 `five-boss-multi-only` 与 `five-boss-single-allowed` 改的是**同一个方法**
 (`BossBattleQuestLogic.get_availablePlayKind()`),构建链上只能选一个;
