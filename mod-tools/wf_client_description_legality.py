@@ -8,6 +8,12 @@ import wf_describe
 # InstantAbilitySource.as:3837/4191/4545/4557 均构造 ConditionChangeContent.Unique。
 # ConditionChangeContent.as:209 将 Unique 定为 index 31；说明器 :148-149 将其
 # multiply-strength 定为 None。仅拦这四种已追到同一 throw 的内容，不泛禁前置效果。
+#
+# 2026-09-07:instant_content 724 AddFeverPointRatio(客户端补丁 kyubi-fever-ratio-v1)
+# **不属于**这一族 —— 它构造的不是 ConditionChangeContent.Unique,强度走普通
+# Decimal 通道,说明器分支与 213 AddFeverPoint 同构,没有 Some(max)+None 的组合。
+# 它的风险不在说明器而在解析器:未打补丁的客户端读到 724 直接 C7050,登记在
+# wf_client_legality.CLIENT_PATCH_CONTENT_KINDS,不在本模块判。
 UNIQUE_CONTENT_KINDS = frozenset({"413", "436", "459", "461"})
 
 

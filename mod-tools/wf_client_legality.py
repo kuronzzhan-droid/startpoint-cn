@@ -48,6 +48,50 @@ PRECONDITION_KINDS_NEED_NEXT_COL = frozenset({
     "8", "9", "87", "144", "187", "188", "200", "205",
 })
 
+# ─────────────────── 客户端补丁才存在的枚举值(2026-09-07) ───────────────────
+#
+# ability_enum_map.json 的枚举域 = **打了补丁的**客户端能构造的全集。官方 APK 的
+# InstantAbilityContentMasterValue 只到 723;补丁新增的值落到官方 AbilityValues 的
+# else 分支就是 `throw new ClientError(7050,"不存在的构造函数。")` —— 打开角色详情
+# 页即崩。所以枚举域校验通过 ≠ 任意客户端可用:凡是这里登记的 kind,发布前必须先
+# 确认对应 capability 已经装进真机。
+#
+#   724 AddFeverPointRatio —— 稻穗 139995 V12:按 Fever 槽上限的比例增减当前 Fever
+#     槽。强度沿用 Decimal(×100000)且允许负号,-10000 = 上限的 -10%。
+#   422 DashParameter —— V12 的可调冲刺参数族。during_content 的 unique_condition_id
+#     列(ability c118,parseAt118 -> int)在这条 kind 上装的是 **param_id**
+#     (0 冷却 / 1 弹射速度 / 2 锁定距离上限 / 3 蓄力帧 / 4 回拉距离 / 5 惯性 /
+#     6 可冲刺高度),strength(c113/c114,Decimal ×100000,允许负号)是调整量;
+#     除 param_id 2 是绝对像素上限外,其余六个都是官方常量的倍率
+#     (生效值 = 官方常量 × (1 + strength/100000))。官方 CommonAbilityContentMasterValue
+#     只到 421,没打补丁读到 422 同样是 C7050。
+CLIENT_PATCH_CONTENT_KINDS = {
+    "instant_content": {"724": "kyubi-fever-ratio-v1"},
+    "during_content": {"422": "dash-parameter-v1"},
+}
+
+
+def required_client_capabilities(kind: str, row: list[str]) -> list[str]:
+    """这一行需要哪些客户端补丁 capability 才不会 C7050(官方 APK 上为空)。
+
+    只看**该触发模式下客户端真的会解析**的那个内容块 —— 瞬发行不读 during_content、
+    持续行不读 instant_content,否则从别的模式克隆行时留下的残值会被判成需要补丁。
+    """
+    blocks = wf_describe.layout(kind)["blocks"]
+    mode_col = int(blocks["precondition1"]) - 1
+    mode = (row[mode_col] if mode_col < len(row) else "").strip()
+    parsed = set(TRIGGER_MODE_BLOCKS.get(mode, ()))
+    needed: list[str] = []
+    for block, gated in CLIENT_PATCH_CONTENT_KINDS.items():
+        if block not in parsed:
+            continue
+        base = int(blocks[block])
+        value = (row[base] if base < len(row) else "").strip()
+        capability = gated.get(value)
+        if capability is not None and capability not in needed:
+            needed.append(capability)
+    return needed
+
 # ─────────────────── 「声明即必填」通用律(2026-08-28 第二轮收口) ───────────────────
 #
 # 上面那条 PRECONDITION_KINDS_NEED_NEXT_COL 白名单、以及 instant_content 的

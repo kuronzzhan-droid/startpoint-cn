@@ -190,24 +190,21 @@ WORKSPACE_ABILITY_PROGRAMS = {
         "ability_skill_gerald_dash_lock$ability_skill_gerald_dash_lock",
     ),
     (129992, "unicorn_lancer_rose"): (),
-    (139995, "fox_oracle_autumn"): (
-        "battle/action/skill/action/ability_skill/"
-        "ability_fox_oracle_autumn_drain$ability_fox_oracle_autumn_drain",
-        "battle/action/skill/action/ability_skill/"
-        "ability_fox_oracle_autumn_fever_growth$ability_fox_oracle_autumn_fever_growth",
-    ),
+    # V12(包 1.0.9):Fever 成长改回原生 134/461 层数计数,两条 I629 词条行与它们
+    # 的 ability_skill DSL 一并下线,稻穗不再拥有任何词条动作程序。
+    (139995, "fox_oracle_autumn"): (),
 }
 WORKSPACE_ABILITY_ROW_COUNTS = {
     (139999, "stella_summer_goddess"): (2, 2, 5, 1, 1, 1),
     (149999, "white_wolf_gerald"): (3, 2, 8, 2, 6, 1),
     (129992, "unicorn_lancer_rose"): (2, 3, 5, 2, 2, 2),
-    (139995, "fox_oracle_autumn"): (7, 2, 8, 2, 2, 3),
+    (139995, "fox_oracle_autumn"): (6, 3, 8, 2, 2, 1),
 }
 WORKSPACE_LEADER_ROW_COUNTS = {
     (139999, "stella_summer_goddess"): 5,
     (149999, "white_wolf_gerald"): 10,
     (129992, "unicorn_lancer_rose"): 9,
-    (139995, "fox_oracle_autumn"): 11,
+    (139995, "fox_oracle_autumn"): 10,
 }
 WORKSPACE_ABILITY_PROGRAM_LOCATIONS = {
     (139999, "stella_summer_goddess"): (),
@@ -223,14 +220,7 @@ WORKSPACE_ABILITY_PROGRAM_LOCATIONS = {
         ][0]),
     ),
     (129992, "unicorn_lancer_rose"): (),
-    (139995, "fox_oracle_autumn"): (
-        ("1399951", 4, 71, WORKSPACE_ABILITY_PROGRAMS[
-            (139995, "fox_oracle_autumn")
-        ][1]),
-        ("1399951", 6, 71, WORKSPACE_ABILITY_PROGRAMS[
-            (139995, "fox_oracle_autumn")
-        ][0]),
-    ),
+    (139995, "fox_oracle_autumn"): (),
 }
 STELLA_EFFECT = "battle/effect/skill_unique/stella_ballot23/stella_ballot23"
 GERALD_SKILL1_EFFECTS = frozenset({
@@ -289,8 +279,6 @@ WORKSPACE_PROGRAM_EFFECTS = {
         UNICORN_LANCER_ROSE_SKILL_EFFECTS,
     WORKSPACE_ACTION_PROGRAMS[(139995, "fox_oracle_autumn")][0]: FOX_AUTUMN_SKILL_EFFECTS,
     WORKSPACE_ACTION_PROGRAMS[(139995, "fox_oracle_autumn")][1]: FOX_AUTUMN_SKILL_EFFECTS,
-    WORKSPACE_ABILITY_PROGRAMS[(139995, "fox_oracle_autumn")][0]: frozenset(),
-    WORKSPACE_ABILITY_PROGRAMS[(139995, "fox_oracle_autumn")][1]: frozenset(),
 }
 SERVER_CHARACTER_LOGICALS = (
     "character.json",
@@ -468,8 +456,11 @@ def _workspace_master_contracts(spec: CharacterReleaseSpec) -> tuple[_WorkspaceM
             _WorkspaceMasterContract(
                 CUSTOM_ABILITY_STRING_MASTER_LOGICAL,
                 "flat",
-                ("ability_skill_fox_oracle_autumn_fever_pf", "override_string_fox_oracle_autumn_dual_pf",
-                 "ability_fox_oracle_autumn_drain", "ability_fox_oracle_autumn_fever_growth"),
+                ("ability_skill_fox_oracle_autumn_fever_pf",
+                 "override_string_fox_oracle_autumn_dual_pf",
+                 # 1.1.1: V11 panel override for ability 2 (「Fever模式中，无法获得Fever」 is a
+                 # -2000% FeverPoint during row natively; the author wants the plain wording).
+                 "desc_override_fox_oracle_autumn_2"),
             ),
         )
     raise ContentGateError(

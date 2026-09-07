@@ -354,8 +354,7 @@ class OfflineContentTests(unittest.TestCase):
         (139995, "fox_oracle_autumn"): (
             "ability_skill_fox_oracle_autumn_fever_pf",
             "override_string_fox_oracle_autumn_dual_pf",
-            "ability_fox_oracle_autumn_drain",
-            "ability_fox_oracle_autumn_fever_growth",
+            "desc_override_fox_oracle_autumn_2",
         ),
     }
 
@@ -394,7 +393,7 @@ class OfflineContentTests(unittest.TestCase):
         ability_values: dict[str, str] = {}
         revised_counts = {
             (129992, "unicorn_lancer_rose"): (2, 3, 5, 2, 2, 2),
-            (139995, "fox_oracle_autumn"): (7, 2, 8, 2, 2, 3),
+            (139995, "fox_oracle_autumn"): (6, 3, 8, 2, 2, 1),
         }
         for index, row_count in enumerate(
             revised_counts.get(identity, self.module.WORKSPACE_ABILITY_ROW_COUNTS[identity]), 1
