@@ -355,6 +355,7 @@ class OfflineContentTests(unittest.TestCase):
             "ability_skill_fox_oracle_autumn_fever_pf",
             "override_string_fox_oracle_autumn_dual_pf",
             "desc_override_fox_oracle_autumn_2",
+            "desc_override_fox_oracle_autumn",
         ),
     }
 

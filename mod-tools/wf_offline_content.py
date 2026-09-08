@@ -204,7 +204,7 @@ WORKSPACE_LEADER_ROW_COUNTS = {
     (139999, "stella_summer_goddess"): 5,
     (149999, "white_wolf_gerald"): 10,
     (129992, "unicorn_lancer_rose"): 9,
-    (139995, "fox_oracle_autumn"): 10,
+    (139995, "fox_oracle_autumn"): 11,
 }
 WORKSPACE_ABILITY_PROGRAM_LOCATIONS = {
     (139999, "stella_summer_goddess"): (),
@@ -460,7 +460,8 @@ def _workspace_master_contracts(spec: CharacterReleaseSpec) -> tuple[_WorkspaceM
                  "override_string_fox_oracle_autumn_dual_pf",
                  # 1.1.1: V11 panel override for ability 2 (「Fever模式中，无法获得Fever」 is a
                  # -2000% FeverPoint during row natively; the author wants the plain wording).
-                 "desc_override_fox_oracle_autumn_2"),
+                 "desc_override_fox_oracle_autumn_2",
+                 "desc_override_fox_oracle_autumn"),
             ),
         )
     raise ContentGateError(
