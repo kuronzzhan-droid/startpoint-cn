@@ -70,6 +70,48 @@ class GeneratedVfxTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     vfx.check_output(output, sources)
 
+    def test_dedup_shares_one_rectangle_but_keeps_per_record_trim(self):
+        # Same 1x1 red tile trimmed out of two different canvas positions, plus a
+        # green one.  Official sheets store the held image once (fox_oracle: 157
+        # records over 45 rectangles) and vary only fx/fy.
+        images = []
+        for xy, colour in [((1, 1), (255, 0, 0, 255)), ((2, 2), (255, 0, 0, 255)),
+                           ((0, 0), (0, 255, 0, 255))]:
+            image = Image.new("RGBA", (4, 4))
+            image.putpixel(xy, colour)
+            images.append(image)
+        names = ["a", "b", "c"]
+        sheet, entries = vfx.pack_images(images, names, trim=True, dedup=True)
+        rect = lambda e: (e["x"], e["y"], e["w"], e["h"])
+        self.assertEqual(rect(entries[0]), rect(entries[1]))
+        self.assertNotEqual(rect(entries[2]), rect(entries[0]))
+        self.assertEqual(len({rect(e) for e in entries}), 2)
+        self.assertEqual([(e["fx"], e["fy"]) for e in entries],
+                         [(-1, -1), (-2, -2), (0, 0)])
+        self.assertEqual([(e["fw"], e["fh"]) for e in entries], [(4, 4)] * 3)
+        for entry, image in zip(entries, images):
+            tile = sheet.crop(rect(entry)[:2] + (entry["x"]+entry["w"], entry["y"]+entry["h"]))
+            restored = Image.new("RGBA", (entry["fw"], entry["fh"]))
+            restored.paste(tile, (-entry["fx"], -entry["fy"]))
+            self.assertEqual(restored.tobytes(), image.tobytes())
+        # The default stays lossless-but-wasteful so existing callers are unchanged.
+        _, plain = vfx.pack_images(images, names, trim=True)
+        self.assertEqual(len({rect(e) for e in plain}), 3)
+
+    def test_auto_width_search_beats_the_fixed_default_shelf(self):
+        images = [Image.new("RGBA", (40, 40)) for _ in range(30)]
+        names = [f"n{i}" for i in range(30)]
+        wide, _ = vfx.pack_images(images, names, max_width=1024)
+        auto, _ = vfx.pack_images(images, names, max_width=None)
+        self.assertEqual(wide.width, 1024)
+        self.assertLess(auto.width * auto.height, wide.width * wide.height)
+        # No shelf width in the search range may beat what the search picked.
+        for width in range(*vfx.WIDTH_SEARCH):
+            fixed, _ = vfx.pack_images(images, names, max_width=width)
+            self.assertLessEqual(auto.width * auto.height, fixed.width * fixed.height)
+        with self.assertRaises(ValueError):
+            vfx.pack_images(images, names, max_width=8)
+
     def test_gif_duration_tracks_sixty_hz_instead_of_forcing_twenty_ms(self):
         with tempfile.TemporaryDirectory() as td:
             images = [Image.new("RGBA", (4,4), color) for color in ("red","green","blue")]

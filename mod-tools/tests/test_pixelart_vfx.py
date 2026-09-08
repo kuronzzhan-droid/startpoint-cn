@@ -95,6 +95,76 @@ class PixelartVfxTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             pixel.animate_overlays([image],[image],timeline,{"pose"},16,0.5)
 
+    def _endpoint_source(self, root):
+        """Sparse source: p0002/p0007 hold tile A, p0005 holds tile B."""
+        from wf_generated_vfx import write_tree
+        source = root/"source"
+        source.mkdir()
+        sheet = Image.new("RGBA",(4,2))
+        sheet.putpixel((0,0),(255,0,0,255))   # tile A at x=0
+        sheet.putpixel((2,1),(0,0,255,255))   # tile B at x=2
+        sheet.save(source/"sprite_sheet.png")
+        atlas = [dict(n="p0002",x=0,y=0,w=2,h=2,fx=-3,fy=-3,fw=8,fh=8),
+                 dict(n="p0005",x=2,y=0,w=2,h=2,fx=-1,fy=-4,fw=8,fh=8),
+                 dict(n="p0007",x=0,y=0,w=2,h=2,fx=-5,fy=-2,fw=8,fh=8)]
+        frame = dict(name="p",x=-4,y=-4,scale=6,smoothing=False)
+        timeline = {"sequences":[dict(name="neutral",begin=1,end=2,kind="loop"),
+                                  dict(name="walk_front",begin=3,end=7,kind="loop")]}
+        for name,tree in [("sprite_sheet.atlas",atlas),("pixelart.frame",frame),
+                          ("pixelart.timeline",timeline)]:
+            write_tree(source/(name+".amf3.deflate"),tree)
+        effect = Image.new("RGBA",(4,4))
+        effect.putpixel((0,0),(0,255,0,255))
+        effect.save(root/"effect.png")
+        return source, atlas, frame, timeline
+
+    def test_atlas_keeps_source_endpoints_and_dedups_held_images(self):
+        from wf_generated_vfx import read_image, read_tree
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            source, atlas, frame, timeline = self._endpoint_source(root)
+            # No action selected: every tick is the untouched source image, so the
+            # pre-patch "one record per tick" expansion is an exact oracle here.
+            report = pixel.assemble_pixelart(source,root/"effect.png",1,(4,4),root/"out",
+                                             actions=[],vfx_size=4)
+            new = read_tree(root/"out/sprite_sheet.atlas.amf3.deflate")
+            self.assertEqual([e["n"] for e in new],["p0002","p0005","p0007"])
+            self.assertEqual(report["source_atlas_entries"],3)
+            self.assertEqual(report["output_atlas_entries"],3)
+            # p0002 and p0007 hold the same tile from different canvas positions.
+            self.assertEqual(report["output_atlas_rectangles"],2)
+            rect = lambda e: (e["x"],e["y"],e["w"],e["h"])
+            self.assertEqual(rect(new[0]),rect(new[2]))
+            self.assertNotEqual(rect(new[0]),rect(new[1]))
+            self.assertNotEqual((new[0]["fx"],new[0]["fy"]),(new[2]["fx"],new[2]["fy"]))
+            self.assertEqual([(e["fw"],e["fh"]) for e in new],[(8,8)]*3)
+            # Every tick 1..7 still resolves to the exact source pixels.
+            old_index = pixel.frame_index(atlas,frame["name"])
+            new_index = pixel.frame_index(new,frame["name"])
+            old_sheet = read_image(source/"sprite_sheet.png")
+            new_sheet = read_image(root/"out/sprite_sheet.png")
+            total = max(s["end"] for s in timeline["sequences"])
+            for tick in range(1,total+1):
+                expanded = pixel.restore_frame(old_sheet,pixel.entry_for_frame(old_index,tick))
+                packed = pixel.restore_frame(new_sheet,pixel.entry_for_frame(new_index,tick))
+                self.assertEqual(packed.tobytes(),expanded.tobytes(),f"tick {tick}")
+
+    def test_endpoints_are_clamped_to_the_timeline_and_frame_documents_untouched(self):
+        from wf_generated_vfx import read_tree, write_tree
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            source, _, _, timeline = self._endpoint_source(root)
+            # The timeline stops at 6 while the source atlas still holds a p0007
+            # record: the last record must be renumbered, never left dangling.
+            timeline["sequences"][1]["end"] = 6
+            write_tree(source/"pixelart.timeline.amf3.deflate",timeline)
+            pixel.assemble_pixelart(source,root/"effect.png",1,(4,4),root/"out",
+                                    actions=[],vfx_size=4)
+            new = read_tree(root/"out/sprite_sheet.atlas.amf3.deflate")
+            self.assertEqual([e["n"] for e in new],["p0002","p0005","p0006"])
+            self.assertEqual((source/"pixelart.timeline.amf3.deflate").read_bytes(),
+                             (root/"out/pixelart.timeline.amf3.deflate").read_bytes())
+
     def test_assembly_preserves_documents_and_restored_body_after_repacking(self):
         from wf_generated_vfx import read_tree, write_tree
         with tempfile.TemporaryDirectory() as td:

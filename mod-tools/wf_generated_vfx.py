@@ -74,9 +74,48 @@ def split_frames(sheet: Image.Image, count: int, frame_size: tuple[int, int]):
     return frames
 
 
+# Shelf width candidates for pack_images(max_width=None): 224 is the narrowest
+# useful sheet for 256 px character frames, 1024 the historic fixed default.
+WIDTH_SEARCH = (224, 1025, 16)
+
+
+def _shelf_layout(tiles, rectangles, max_width):
+    """Place the given tile indices on 1 px gap shelves; return (w, h, coords).
+
+    Shelf packing is only efficient when tiles arrive tallest-first; feeding it
+    authoring order wastes ~half the sheet (measured 52% fill vs 81% on the same
+    ginovi batch).  Callers hand entries back in their own order afterwards so
+    existing name/index lookups keep working.
+    """
+    order = sorted(rectangles, key=lambda i: (-tiles[i][3].height,
+                                              -tiles[i][3].width, i))
+    x = y = row_h = 0
+    width = 1
+    coords = {}
+    for i in order:
+        tile = tiles[i][3]
+        if x + tile.width > max_width:
+            x, y, row_h = 0, y + row_h + 1, 0
+        coords[i] = (x, y)
+        width = max(width, x + tile.width)
+        x += tile.width + 1
+        row_h = max(row_h, tile.height)
+    return width, y + row_h, coords
+
+
 def pack_images(images: list[Image.Image], names: list[str], *, trim=False,
-                max_width=1024):
-    """Shelf atlas; Starling trim positions use negative fx/fy."""
+                max_width=1024, dedup=False):
+    """Shelf atlas; Starling trim positions use negative fx/fy.
+
+    ``dedup`` lets records whose trimmed tile is pixel identical share a single
+    rectangle while every record keeps its own fx/fy/fw/fh.  That is how the
+    official flatomo sheets are packed (fox_oracle: 157 records over 45
+    rectangles); without it a held image is stored once per record.
+
+    ``max_width=None`` searches WIDTH_SEARCH for the smallest resulting canvas
+    instead of filling one 1024 wide shelf, because a near-square sheet wastes
+    far less of the battle atlas (fox_oracle_autumn: 1015x250 -> 270x768).
+    """
     if not images or len(images) != len(names) or len(set(names)) != len(names):
         raise ValueError("one unique atlas name required per image")
     tiles = []
@@ -84,26 +123,35 @@ def pack_images(images: list[Image.Image], names: list[str], *, trim=False,
         box = image.getchannel("A").getbbox() if trim else (0, 0, *image.size)
         box = box or (0, 0, 1, 1)
         tile = image.crop(box)
-        if tile.width > max_width:
+        if max_width is not None and tile.width > max_width:
             raise ValueError("atlas tile exceeds maximum width")
         tiles.append((name, image.size, box, tile))
-    x = y = row_h = 0
-    entries, positioned = [], []
-    width = 1
-    for name, size, box, tile in tiles:
-        if x + tile.width > max_width:
-            x, y, row_h = 0, y + row_h + 1, 0
+    owners = list(range(len(tiles)))
+    if dedup:
+        first = {}
+        for i, (_, _, _, tile) in enumerate(tiles):
+            key = (tile.mode, tile.size, hashlib.sha256(tile.tobytes()).digest())
+            owners[i] = first.setdefault(key, i)
+    rectangles = sorted(set(owners))
+    if max_width is None:
+        widest = max(tiles[i][3].width for i in rectangles)
+        widths = [w for w in range(*WIDTH_SEARCH) if w >= widest]
+        if not widths:
+            raise ValueError("atlas tile exceeds maximum width")
+    else:
+        widths = [max_width]
+    width, height, coords = min((_shelf_layout(tiles, rectangles, w) for w in widths),
+                                key=lambda r: (r[0] * r[1], abs(r[0] - r[1]), r[0]))
+    entries = []
+    for i, (name, size, box, tile) in enumerate(tiles):
+        x, y = coords[owners[i]]
         entry = dict(n=name, x=x, y=y, w=tile.width, h=tile.height)
         if trim:
             entry.update(fx=-box[0], fy=-box[1], fw=size[0], fh=size[1])
         entries.append(entry)
-        positioned.append((tile, (x, y)))
-        width = max(width, x + tile.width)
-        x += tile.width + 1
-        row_h = max(row_h, tile.height)
-    sheet = Image.new("RGBA", (width, y + row_h))
-    for tile, xy in positioned:
-        sheet.paste(tile, xy)
+    sheet = Image.new("RGBA", (width, height))
+    for i in rectangles:
+        sheet.paste(tiles[i][3], coords[i])
     return sheet, entries
 
 

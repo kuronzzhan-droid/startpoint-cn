@@ -165,10 +165,18 @@ def assemble_pixelart(source, vfx_sheet, count, frame_size, output, *, kind="pix
         {"skill_ready","kachidoki","special_pose"} & {s["name"] for s in timeline["sequences"]})
     rendered, report = animate_overlays(originals,effects,timeline,actions,vfx_size,opacity,
         anchor=(-frame.get("x",0),-frame.get("y",0)),hold=hold)
-    names = [f"{frame['name']}{n:04d}" for n in range(1,total+1)]
-    sheet, entries = pack_images(rendered,names,trim=True)
+    # Keep the source's sparse endpoint numbering: record N is the image held for
+    # frames prev+1..N, so one record per source endpoint reproduces the official
+    # cadence exactly.  Emitting one record per tick instead grew
+    # fox_oracle_autumn from 157 records / 0.18 Mpx to 550 records / 1.04 Mpx.
+    endpoints = [n for n in index[0] if n < total] + [total]
+    names = [f"{frame['name']}{n:04d}" for n in endpoints]
+    sheet, entries = pack_images([rendered[n-1] for n in endpoints],names,trim=True,
+                                 dedup=True,max_width=None)
     report.update(source_hashes=before,frame=frame,kind=kind,source_atlas_entries=len(index[0]),
-                  output_atlas_entries=len(entries),sequences=timeline["sequences"])
+                  output_atlas_entries=len(entries),
+                  output_atlas_rectangles=len({(e["x"],e["y"],e["w"],e["h"]) for e in entries}),
+                  sheet_size=list(sheet.size),sequences=timeline["sequences"])
     output.parent.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".pixelart-vfx-",dir=output.parent) as tmp:
         target = Path(tmp)/"result"
