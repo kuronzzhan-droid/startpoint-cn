@@ -43,7 +43,12 @@ test("990002 exchange endpoint accepts every non-boss row and rejects the blocke
     const bosses = tagBossIds();
     assert.equal(exchangeable.length + blocked.length, rows.length);
     for (const id of RANK_P5B_BOSS_IDS) assert.ok(blockedIds.has(id), `Rank P5b boss ${id} must stay non-exchangeable`);
-    for (const id of blockedIds) assert.ok(bosses.has(id), `blocked row ${id} is not a tag_boss character`);
+    // 不可兑换只允许两种来源:tag_boss 角色,或权重 0 的挂名行(登记在池但永不被抽出,如未完工的自制角色)
+    const zeroWeightIds = new Set(rows.filter(row => Number(row.odds) === 0).map(row => row.id));
+    for (const id of blockedIds) {
+        assert.ok(bosses.has(id) || zeroWeightIds.has(id),
+            `blocked row ${id} is neither a tag_boss character nor a zero-weight listing`);
+    }
 
     for (const row of blocked) {
         assert.equal(getExchangeableGachaItem(gacha, row.id), null);
