@@ -34,7 +34,7 @@ UNIQUE = "master/character/unique_condition.orderedmap"
 STRINGS = "master/string/custom_ability_string.orderedmap"
 
 STATE = "1399952"
-LAYER_CAP = "20"
+LAYER_CAP = "99"   # 2026-09-09 作者:余辉无上限成长(99 = 客户端显示上限)
 FEVER_RATIO_CAPABILITY = "kyubi-fever-ratio-v1"
 
 # custom_ability_string keys the V12 build removed: two dead I629 描述键 plus the three
@@ -43,8 +43,12 @@ FEVER_RATIO_CAPABILITY = "kyubi-fever-ratio-v1"
 REMOVED_STRING_KEYS = (
     "ability_fox_oracle_autumn_drain",
     "ability_fox_oracle_autumn_fever_growth",
-    "desc_override_fox_oracle_autumn",
     "desc_override_fox_oracle_autumn_1",
+)
+# 2026-09-09/10 回来的固定文案(队长技 + 词条6),内容由作者口径决定,这里只钉存在。
+PRESENT_STRING_KEYS = (
+    "desc_override_fox_oracle_autumn",
+    "desc_override_fox_oracle_autumn_2",
     "desc_override_fox_oracle_autumn_6",
 )
 REMOVED_DSLS = (
@@ -115,24 +119,30 @@ class InahoV12PackageTest(unittest.TestCase):
 
     def test_ability_6_has_no_skill_fever_gain_row(self):
         # 1.1.0 (author, 2026-09-07): "去掉雷属性角色放技能获得fever的词条" -- the 213
-        # Fever+350-on-skill record is gone; only the Fever PF-damage during row stays.
+        # Fever+350-on-skill record is gone; the Fever PF-damage during row stays, and
+        # 2026-09-10 added the leader-gated 「余辉≥10 且非Fever,PF 时 FEVER 槽+15%」(724) row.
         rows = _records(ABILITY, "1399956")
-        self.assertEqual(len(rows), 1)
+        self.assertEqual(len(rows), 2)
         for row in rows:
             self.assertNotEqual(row[47], "213")
-            self.assertNotIn(STATE, row)
+        self.assertNotIn(STATE, rows[0])
+        gate = rows[1]
+        self.assertEqual((gate[6], gate[13], gate[14], gate[16], gate[19], gate[20]),
+                         ("186", "144", "0", "1000000", STATE, "42"))
+        self.assertEqual((gate[27], gate[47], gate[51], gate[52]), ("2", "724", "15000", "15000"))
 
     def test_leader_scales_the_fever_rate_per_layer_and_keeps_the_i722_slot(self):
         rows = _records(LEADER, "139995")
-        self.assertEqual(len(rows), 10)
+        self.assertEqual(len(rows), 12)   # 2026-09-09 +during 413 每层;2026-09-10 +Fever→461 余辉+1
         growth = rows[2]
         self.assertEqual(growth[3], "1")                       # During
         self.assertEqual(growth[83], "(None)")                 # accumulation trigger
         self.assertEqual((growth[95], growth[96]), ("134", "0"))
         self.assertEqual((growth[98], growth[99]), ("100000", "100000"))
-        self.assertEqual((growth[100], growth[102]), (LAYER_CAP, STATE))
-        self.assertEqual((growth[106], growth[107], growth[108]), ("false", "18", "0"))
-        self.assertEqual((growth[111], growth[112]), ("25000", "50000"))
+        self.assertEqual((growth[100], growth[102]), ("(None)", STATE))   # 层数不封顶
+        # 2026-09-10: target 自身→雷属性全队(引擎乘区只放大攻击者本人的 Fever 点),两列拉平 40%
+        self.assertEqual((growth[106], growth[107], growth[108], growth[109]), ("false", "18", "5", "Yellow"))
+        self.assertEqual((growth[111], growth[112]), ("40000", "40000"))
         # wf_dual_pf_contract.bind_native_programs pins the I722 override to row index 8.
         self.assertEqual(rows[8][45], "722")
         self.assertEqual(rows[8][80], "override_fox_oracle_autumn_dual_pf")
@@ -154,15 +164,18 @@ class InahoV12PackageTest(unittest.TestCase):
             self.assertEqual(description_compatibility_problems("leader_ability", row), [])
             gated += [(f"139995#{index}", cap)
                       for cap in required_client_capabilities("leader_ability", row)]
-        self.assertEqual(gated, [("1399951#4", FEVER_RATIO_CAPABILITY)])
+        self.assertEqual(gated, [("1399951#4", FEVER_RATIO_CAPABILITY),
+                                 ("1399956#1", FEVER_RATIO_CAPABILITY)])
 
     def test_skill_dsls_are_plain_add_fever_point_again(self):
         for level, (logical, points) in SKILL_DSLS.items():
             with self.subTest(level=level):
                 raw = (PACKAGE / "roots/common" / logical).read_bytes()
                 tree = wf_dsl.parse_dsl(zlib.decompress(raw, -15))["tree"]
+                # 2026-09-10: AddFeverPoint 只在非 Fever 执行(ConditionalsFeverMode 第一分支=Fever中)。
                 self.assertEqual(tree[11][1][3],
-                                 ["Command", ["AddFeverPoint", [points]]])
+                                 ["Command", ["ConditionalsFeverMode", ["Block", []],
+                                              ["Block", [["Command", ["AddFeverPoint", [points]]]]]]])
                 self.assertNotIn(STATE, json.dumps(tree))
 
     def test_dead_strings_and_dsls_left_the_package_and_the_manifest(self):
@@ -177,6 +190,9 @@ class InahoV12PackageTest(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertNotIn(key, self.strings)
                 self.assertNotIn(key, claim["outer_keys"])
+        for key in PRESENT_STRING_KEYS:
+            with self.subTest(key=key):
+                self.assertIn(key, self.strings)
         self.assertEqual(claim["outer_keys"], [
             "ability_skill_fox_oracle_autumn_fever_pf",
             "override_string_fox_oracle_autumn_dual_pf",
