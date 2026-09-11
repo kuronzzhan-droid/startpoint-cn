@@ -9,6 +9,7 @@ from pathlib import Path
 
 import wf_bianca_dragon_abilities as abilities
 import wf_bianca_dragon_bridge as bridge
+import wf_bianca_dragon_icons as icons
 import wf_bianca_dragon_pixels as pixels
 import wf_bianca_dragon_skill as skill
 import wf_campus_bianca_data as old
@@ -16,9 +17,9 @@ import wf_mod_tool as core
 from wf_bianca_dragon_package import Candidate, CID, CODE, encode_tree
 
 DESCRIPTION = (
-    "小龙未在场时：召唤1只小龙协力球，赋予全场敌人攻击力降低20%效果（15秒）。"
-    "小龙在场时：使小龙飞离战场并向下吐息，对全场敌人造成50倍火属性能力伤害，"
-    "赋予火属性抗性降低25%效果（15秒），FEVER槽+250。"
+    "小龙未在场时：召唤幼龙协力球，并降低全场敌人的攻击力。"
+    "小龙在场时：令幼龙飞至上空向下吐息，对全场敌人造成火属性能力伤害，"
+    "降低火属性抗性并增加FEVER槽。"
 )
 FEVER_NAME = "焰域研修"
 
@@ -62,15 +63,14 @@ def assemble(repo: Path, candidate_root: Path, *, apply=False):
     stack[13] = "true"
     unique[stack_id] = [stack]
     candidate.splice(bridge.UNIQUE_TABLE, unique)
-    icons = bridge.icon_reuse_paths()
-    icons[stack[2] + ".png"] = bridge.ICON_SOURCE
-    for target, donor in icons.items():
-        candidate.emit("common", target, candidate.official(donor))
+    icon_assets = icons.build_icon_assets()
+    for target, raw in icon_assets.items():
+        candidate.emit("common", target, raw)
     strings = {key: nested_blob(bridge.POWER_UP_TABLE, levels)
                for key, levels in bridge.power_up_string_rows().items()}
     candidate.splice(bridge.POWER_UP_TABLE, strings, codec="raw_outer")
     candidate.manifest["unique_condition"] = {
-        "ids": [int(key) for key in unique], "icons": sorted(icons),
+        "ids": [int(key) for key in unique], "icons": sorted(icon_assets),
     }
 
     for logical, values in skill.build_multiball_tables(
@@ -125,6 +125,7 @@ def assemble(repo: Path, candidate_root: Path, *, apply=False):
         "owner_isolation": "own+ID selection, commanded dragon marker, caster TriggerPuller",
         "client_version_authorized": "user confirmed V12 or newer",
         "existing_art_voice_preserved": True,
+        "status_icons": "three original generated 48px RGBA icons; native condition paths preserved",
     }
     return candidate.finish(metadata, apply=apply)
 
