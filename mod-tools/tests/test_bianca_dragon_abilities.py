@@ -52,15 +52,19 @@ class BiancaDragonAbilitiesTest(unittest.TestCase):
             self.assertEqual({"false" if slot.endswith("3") else "true"}, {r[1] for r in rows})
         self.assertEqual("75000", self.abilities["1199891"][0][51])
 
-    def test_resonance_and_fire_resonance_are_not_mixed(self):
-        for row in self.leader[:2]:
-            self.assertEqual(("208", "600000", "600000", ""),
-                             (row[4], row[7], row[8], row[9]))
-        for row in self.leader[2:5]:
+    def test_leader_and_ability_two_require_fire_resonance(self):
+        for row in self.leader[:5]:
             self.assertEqual(("2", "600000", "600000", "Red"),
                              (row[4], row[7], row[8], row[9]))
+        for row in self.abilities["1199892"]:
+            self.assertEqual(("2", "600000", "600000", "Red"),
+                             (row[6], row[9], row[10], row[11]))
         self.assertEqual(("200000", "400000", "200000"),
                          (self.leader[0][49], self.leader[1][49], self.leader[2][111]))
+        self.assertEqual("0", self.leader[-1][4], "other trigger gates stay unchanged")
+        for rows, offsets in ((self.leader, (4, 11, 18)),
+                              (sum(self.abilities.values(), []), (6, 13, 20))):
+            self.assertNotIn("208", [row[offset] for row in rows for offset in offsets])
 
     def test_summon_rewards_require_own_unique_marker_and_are_not_opening_charge(self):
         rows = kit.leader_rows(self.source, self.leader_source, summon_unique_id=123456)
@@ -120,6 +124,8 @@ class BiancaDragonAbilitiesTest(unittest.TestCase):
 
     def test_runtime_limits_and_pending_bridge_are_explicit(self):
         metadata = kit.metadata()
+        self.assertEqual("all resonance gates use fire pre2 Member(Red,6)",
+                         metadata["resonance"])
         self.assertTrue(metadata["fever_stack"]["removed_on_fever_end"])
         self.assertIsNone(metadata["fever_stack"]["balance_cap"])
         self.assertIn("fractional period carries", metadata["fever_stack"]["timer"])

@@ -13,6 +13,19 @@ import wf_campus_bianca as campus
 AS3 = Path("D:/WF/outputs/re-workspace/decompile/scripts/pinball")
 
 
+class BiancaDragonDescriptionTests(unittest.TestCase):
+    def test_skill_enhancement_text_keeps_effects_without_numbers(self):
+        flat = bridge.flat_string_rows()[bridge.CHANGE_SKILL_STRING_ID][0][0]
+        power = bridge.power_up_string_rows()[bridge.CHANGE_SKILL_STRING_ID]["1"][0][0]
+        for description in (flat, power):
+            self.assertIn("幼龙吐息", description)
+            self.assertIn("全场敌人", description)
+            self.assertIn("能力伤害抗性", description)
+            self.assertNotRegex(description, r"[0-9%％]")
+        self.assertIn("恢复自身技能槽", power)
+        self.assertIn("队长攻击力", power)
+
+
 class BiancaDragonBridgeTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

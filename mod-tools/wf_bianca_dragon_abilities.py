@@ -1,7 +1,7 @@
 """校园碧安卡龙协力球重做：只组装原生表行，不读写 store。
 
-百分比均是用户指定满级值，各级固定；火共鸣与普通共鸣分别为
-Member(Red, 6) 和 SameElementMember(6)。A1 的强化桥由装配方追加。
+百分比均是用户指定满级值，各级固定；共鸣条件统一使用火属性
+Member(Red, 6)。A1 的强化桥由装配方追加。
 """
 from __future__ import annotations
 
@@ -26,11 +26,10 @@ def _set(row, values):
 
 def _pre(row, kind="fire", *, offset=6):
     row[offset:offset + 7] = ["0", "", "", "", "", "", ""]
-    if kind in ("fire", "resonance"):
-        row[offset] = "2" if kind == "fire" else "208"
+    if kind == "fire":
+        row[offset] = "2"
         row[offset + 3:offset + 5] = ["600000", "600000"]
-        if kind == "fire":
-            row[offset + 5] = "Red"
+        row[offset + 5] = "Red"
     elif kind == "fever":
         row[offset] = "12"
     elif kind is not None:
@@ -91,7 +90,7 @@ def _skill(source, content, strength, **kwargs):
                     group="Red", **kwargs)
 
 
-def _attack_buff(source, strength, frames, *, pre="resonance"):
+def _attack_buff(source, strength, frames, *, pre="fire"):
     row = _skill(source, 0, strength, target=2, pre=pre)
     # Timed ConditionAttackPoint fields follow official Christmas Bianca A1.
     return _set(row, {57: frames * SCALE, 58: frames * SCALE,
@@ -139,7 +138,7 @@ def ability_rows(source, *, fever_stack_unique_id=FEVER_STACK_UNIQUE_ID):
     """返回 1199891…1199896；不修改输入，不包含另模块的 A1 强化桥。"""
     opening = [_instant(source, 211, 75_000, target=0)]
     nearest = _skill(source, 352, 1_000_000, target=0,
-                     pre="resonance", cooldown=60)
+                     pre="fire", cooldown=60)
     nearest[69] = "(None)"
     a2 = [nearest, _attack_buff(source, 100_000, 480)]
     a3 = fever_rows(source, fever_stack_unique_id=fever_stack_unique_id)
@@ -163,9 +162,9 @@ def leader_rows(ability_source, leader_source, *, summon_unique_id=SUMMON_UNIQUE
     if len(leader_source["151001"][0]) != 124:
         raise ValueError("official leader rows must have 124 columns")
     base_atk = _instant(ability_source, 32, 200_000, target=5,
-                        target_group="Red", pre="resonance")
+                        target_group="Red", pre="fire")
     base_damage = _instant(ability_source, 388, 400_000, target=5,
-                           target_group="Red", pre="resonance")
+                           target_group="Red", pre="fire")
     fever_atk = _during(ability_source, 0, 200_000, pre="fire")
     summon = _instant(ability_source, 213, 50_000_000, trigger=185,
                       puller=0, pre="fire")
@@ -184,7 +183,7 @@ def metadata(*, summon_unique_id=SUMMON_UNIQUE_ID,
              fever_stack_unique_id=FEVER_STACK_UNIQUE_ID):
     return {
         "required_client_capabilities": ["kyubi-fever-ratio-v1"],
-        "resonance": "pre208 SameElementMember(6); fire resonance pre2 Member(Red,6)",
+        "resonance": "all resonance gates use fire pre2 Member(Red,6)",
         "summon_event": {"unique_id": summon_unique_id, "trigger": 185, "puller": 0,
                          "contract": "owner marker granted only after successful own-dragon summon"},
         "a1_enhancement_bridge": "supplied by wf_bianca_dragon_bridge",
