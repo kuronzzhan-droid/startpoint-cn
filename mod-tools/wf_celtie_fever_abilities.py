@@ -6,6 +6,7 @@ from copy import deepcopy
 from wf_celtie_fever_stock import (
     ABILITY_STOCK_ACTION_PATH,
     ABILITY_STOCK_STRING_ID,
+    GAIN_UID,
     STOCK_UID,
 )
 
@@ -67,6 +68,22 @@ def _fever_status(source, content, strength=None):
     return row
 
 
+def _stock_gain_bonus(source):
+    # Official 1610633 counts Unique layers through native During D134.
+    row = deepcopy(source["1610633"][0])
+    if len(row) != 126:
+        raise ValueError("official ability rows must have 126 columns")
+    row[0:6] = [CODE, "false", "special", "0", "", "1"]
+    _pre(row, "wind")
+    _pre(row, "fever", offset=13)
+    _pre(row, offset=20)
+    for column, value in {97: 134, 98: 0, 100: SCALE, 101: SCALE,
+                          102: "(None)", 104: GAIN_UID, 109: 154, 110: 5,
+                          111: "Green", 113: 25_000, 114: 25_000}.items():
+        row[column] = str(value)
+    return row
+
+
 def ability_rows(source: dict) -> dict:
     """返回 1499891..6；source 是只读的官方 ability 表解码结果。"""
     opening = _instant(source, 211, 50_000, target=0)
@@ -101,7 +118,8 @@ def ability_rows(source: dict) -> dict:
     slots = [
         [opening, enhance],
         [triple, ability_damage],
-        [all_enemy, fever_charge, attack, charge, stock, consume],
+        [all_enemy, fever_charge, attack, charge, stock, consume,
+         _stock_gain_bonus(source)],
         [_fever_status(source, 26)],
         [_fever_status(source, 27)],
         [_fever_status(source, 688, SCALE)],
@@ -168,6 +186,16 @@ def metadata() -> dict:
             "with_leader_max_cost_per_flip": 2,
             "with_leader_max_combo_per_flip": 14,
             "empty_stock_grants_no_combo": True,
+        },
+        "stock_gain_bonus": {
+            "gain_unique_id": GAIN_UID,
+            "per_layer_percent": 25,
+            "target": "wind party",
+            "only_fever": True,
+            "retain_after_fever": True,
+            "stock_consume_preserves_bonus": True,
+            "bonus_uses_cumulative_gained_layers": True,
+            "during_trigger_limit": None,
         },
         "fever_ratio": "add 5% of maximum to current gauge; does not raise maximum",
         "periodic_status": {

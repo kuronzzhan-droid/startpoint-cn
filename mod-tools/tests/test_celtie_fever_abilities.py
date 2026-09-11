@@ -14,7 +14,8 @@ import wf_client_legality as legality
 
 def official_sources():
     row = "wind_spgirl_4anv_1,false,action_skill,0,,0,0,,,,,,,0,,,,,,,0,,,,,,,0,,,,,,,,,,,,(None),,,,,,,0,211,0,,,50000,100000,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,"
-    return {"1412011": [row.split(",")]}
+    during = "blindness_gunner_1halfanv_3,false,attack_black,0,,1,0,,,,,,,0,,,,,,,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,(None),,,,,,,,,,,,134,0,,100000,100000,4,,6,,,,false,0,5,Black,,10000,20000,,,,,,,,,,,"
+    return {"1412011": [row.split(",")], "1610633": [during.split(",")]}
 
 
 class CeltieFeverAbilitiesTest(unittest.TestCase):
@@ -92,7 +93,7 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
         self.assertEqual(("211", "7000", "(None)"), (charge[47], charge[51], charge[34]))
 
     def test_a3_stock_grant_and_consume_are_main_only_wind_fever_and_unlimited(self):
-        grant, consume = self.rows["1499893"][4:]
+        grant, consume = self.rows["1499893"][4:6]
         for row in (grant, consume):
             self.assertEqual(("false", "2", "600000", "600000", "Green", "12"),
                              (row[1], row[6], row[9], row[10], row[11], row[13]))
@@ -117,6 +118,29 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
             "with_leader_per_wind_skill", "with_leader_max_cost_per_flip",
             "with_leader_max_combo_per_flip")))
         self.assertTrue(info["empty_stock_grants_no_combo"])
+
+    def test_a3_bonus_counts_all_earned_layers_only_in_wind_fever_without_a_cap(self):
+        row = self.rows["1499893"][6]
+        self.assertEqual(("false", "1", "2", "Green", "12"),
+                         (row[1], row[5], row[6], row[11], row[13]))
+        self.assertEqual(("134", "0", "100000", "100000", "(None)", "14998902"),
+                         (row[97], row[98], row[100], row[101], row[102], row[104]))
+        self.assertEqual(("154", "5", "Green", "25000", "25000"),
+                         (row[109], row[110], row[111], row[113], row[114]))
+        self.assertEqual(("", "", "", ""), (row[27], row[47], row[57], row[58]))
+        # Consumption addresses spendable stock; no instant ability can clear
+        # or consume the separate lifetime-earned counter.
+        consume = self.rows["1499893"][5]
+        self.assertEqual("14998901", consume[45])
+        self.assertNotEqual(consume[45], row[104])
+        self.assertFalse(any(r[47] == "528" for rows in self.rows.values() for r in rows))
+        info = kit.metadata()["stock_gain_bonus"]
+        self.assertEqual(25, info["per_layer_percent"])
+        self.assertEqual(14998902, info["gain_unique_id"])
+        for key in ("only_fever", "retain_after_fever", "stock_consume_preserves_bonus",
+                    "bonus_uses_cumulative_gained_layers"):
+            self.assertTrue(info[key])
+        self.assertIsNone(info["during_trigger_limit"])
 
     def test_periodic_party_states_use_180_fever_frames_and_90_frame_duration(self):
         for slot, content in ((4, "26"), (5, "27"), (6, "688")):

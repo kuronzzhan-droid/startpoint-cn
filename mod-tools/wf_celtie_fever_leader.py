@@ -9,7 +9,8 @@ from wf_campus_bianca_data import validate_row
 from wf_celtie_fever_icons import stock_icon_bytes
 from wf_celtie_fever_skill import ability_damage_reference
 from wf_celtie_fever_stock import (
-    ABILITY_STOCK_ACTION_PATH, STOCK_ACTION_PATH, STOCK_ICON, STOCK_NAME,
+    ABILITY_STOCK_ACTION_PATH, GAIN_NAME, GAIN_STRING_ID, GAIN_UID,
+    STOCK_ACTION_PATH, STOCK_ICON, STOCK_NAME,
     STOCK_STRING_ID, STOCK_UID, stock_action_tree,
 )
 
@@ -83,9 +84,11 @@ def leader_rows(ability_source, leader_source):
 
 def unique_rows():
     # 本场库存含倒下期间保留；Fever门只控制取得/消费，不给状态自动弹射过期。
-    return {str(STOCK_UID): [[STOCK_STRING_ID, STOCK_NAME, STOCK_ICON,
+    return {str(uid): [[string_id, name, STOCK_ICON,
         "99999999", "2147483647", "(None)", "(None)", "(None)", "(None)",
-        "false", "true", "0", "0", "false", "(None)"]]}
+        "false", "true", "0", "0", "false", "(None)"]]
+        for uid, string_id, name in ((STOCK_UID, STOCK_STRING_ID, STOCK_NAME),
+                                     (GAIN_UID, GAIN_STRING_ID, GAIN_NAME))}
 
 
 def flat_string_rows():

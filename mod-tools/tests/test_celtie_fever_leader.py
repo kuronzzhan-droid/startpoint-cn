@@ -80,7 +80,8 @@ class CeltieFeverLeaderTest(unittest.TestCase):
         action, = list(commands(tree))
         self.assertEqual("CreateCondition", action[0])
         self.assertEqual(-17, action[1])
-        self.assertEqual([["ACUnique", leader.STOCK_UID, [{"min": 1, "max": 1}]]], action[2])
+        self.assertEqual([["ACUnique", uid, [{"min": 1, "max": 1}]]
+                          for uid in (leader.STOCK_UID, leader.GAIN_UID)], action[2])
         self.assertEqual([{"min": 2, "max": 2}], action[11])
         self.assertTrue(action[12])
         self.assertNotIn(leader.STOCK_ACTION_PATH, leader.PF_PROGRAM_PATHS)
@@ -89,6 +90,10 @@ class CeltieFeverLeaderTest(unittest.TestCase):
         self.assertEqual([{"min": 1, "max": 1}], ability_action[11])
         ability_action[11] = action[11]
         self.assertEqual(tree, ability_tree, "only granted layer count may differ")
+        earned = leader.unique_rows()[str(leader.GAIN_UID)][0]
+        available = leader.unique_rows()[str(leader.STOCK_UID)][0]
+        self.assertEqual(available[2:], earned[2:], "earned layers persist without auto-consumption")
+        self.assertNotEqual(leader.GAIN_UID, leader.STOCK_UID)
 
     def test_every_custom_description_reference_has_nonempty_flat_text(self):
         flat = leader.flat_string_rows()

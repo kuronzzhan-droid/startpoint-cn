@@ -87,7 +87,7 @@ def assemble(repo: Path, workspace: Path, *, apply=False):
     candidate.manifest["skills"]["programs"] = programs + sorted(
         logical for tier, logical in files if logical.endswith(".action.dsl.amf3.deflate"))
     candidate.manifest["unique_condition"] = {
-        "ids": [leader.STOCK_UID], "icons": [leader.STOCK_ICON + ".png"],
+        "ids": [leader.STOCK_UID, leader.GAIN_UID], "icons": [leader.STOCK_ICON + ".png"],
     }
     candidate.manifest["required_capabilities"] = required_capabilities(
         candidate.manifest.get("required_capabilities", []))
