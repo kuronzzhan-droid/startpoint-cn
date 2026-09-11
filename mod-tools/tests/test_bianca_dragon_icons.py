@@ -32,7 +32,8 @@ class StatusIconContractTest(unittest.TestCase):
 
     def test_skill_description_keeps_mechanics_without_numbers(self):
         self.assertNotRegex(assembly.DESCRIPTION, r"\d|[%％]")
-        for phrase in ("协力球", "向下吐息", "能力伤害", "火属性抗性", "FEVER槽"):
+        for phrase in ("协力球", "向下吐息", "能力伤害", "火属性抗性", "FEVER槽",
+                       "自身获得「幼龙回应」", "自身获得「幼龙吐息」"):
             self.assertIn(phrase, assembly.DESCRIPTION)
 
 

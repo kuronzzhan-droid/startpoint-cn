@@ -17,9 +17,9 @@ import wf_mod_tool as core
 from wf_bianca_dragon_package import Candidate, CID, CODE, encode_tree
 
 DESCRIPTION = (
-    "小龙未在场时：召唤幼龙协力球，并降低全场敌人的攻击力。"
+    "小龙未在场时：召唤幼龙协力球，降低全场敌人的攻击力，并使自身获得「幼龙回应」。"
     "小龙在场时：令幼龙飞至上空向下吐息，对全场敌人造成火属性能力伤害，"
-    "降低火属性抗性并增加FEVER槽。"
+    "降低火属性抗性、增加FEVER槽，并使自身获得「幼龙吐息」。"
 )
 FEVER_NAME = "焰域研修"
 
