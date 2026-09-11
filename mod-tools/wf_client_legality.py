@@ -1043,7 +1043,8 @@ DSL_SUBJECT_BINDERS: dict[str, tuple[tuple[tuple[int, ...], int], ...]] = {
     "CreateHitArea": (((19,), 20), ((21, 22), 23)),
     "FindAllSubjects": (((1,), 9),),
     "FindNearSubjects": (((5,), 6),),
-    "FindMultiballSubjects": (((1,), 5), ((1,), 6)),
+    # ActionEvaluator case100: absent branch has no bindings; present binds ball/member.
+    "FindMultiballSubjects": (((), 5), ((1, 2), 6)),
     "CreateReferencePoint": (((10,), 11),),
     "CreateReferencePointAtSpecifiedPosition": (((3, 4), 5),),
     "CreatePointsDistanceDetector": (((5,), 6),),
@@ -1054,7 +1055,8 @@ DSL_SUBJECT_BINDERS: dict[str, tuple[tuple[tuple[int, ...], int], ...]] = {
     "CollisionOfBallAndEnemy": (((4,), 5),),
     "CollisionOfBallAndSpecificEnemy": (((5,), 6), ((5,), 7)),
     "CollisionOfSpecificBallAndSpecificEnemy": (((6,), 7), ((6,), 8)),
-    "ActivatedMultiballOfExecutorSelf": (((3,), 4),),
+    # ListeningEvent case5 binds the activated squad's ball and member separately.
+    "ActivatedMultiballOfExecutorSelf": (((2, 3), 4),),
 }
 
 # 语句级绑定:对所在 Block 的**后续兄弟**生效(官方 flame_blessgirl 的写法)
