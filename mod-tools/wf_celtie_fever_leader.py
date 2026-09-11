@@ -6,6 +6,7 @@ import zlib
 
 import wf_dsl
 from wf_campus_bianca_data import validate_row
+from wf_celtie_fever_icons import stock_icon_bytes
 from wf_celtie_fever_skill import ability_damage_reference
 
 CID = "149989"
@@ -15,7 +16,6 @@ STOCK_NAME = "星风快门"
 STOCK_STRING_ID = CODE + "_flip_stock"
 STOCK_ACTION_PATH = "battle/action/skill/action/ability_skill/" + CODE + "$" + STOCK_STRING_ID
 STOCK_ICON = "battle/common/unique_condition/" + STOCK_STRING_ID
-ICON_SOURCE = "battle/common/unique_condition/unique_zeta.png"
 PF_ID = CODE + "_fever"
 PF_STRING_ID = PF_ID + "_powerflip"
 PF_PROGRAM_PATHS = tuple(
@@ -136,7 +136,7 @@ def action_assets(official_bytes_loader):
     """复制官方三档几何/时序与像素；仅将伤害主加成选择为能力。"""
     files = {("common", STOCK_ACTION_PATH + ".action.dsl.amf3.deflate"):
              _encoded(stock_action_tree()),
-             ("common", STOCK_ICON + ".png"): official_bytes_loader(ICON_SOURCE)}
+             ("common", STOCK_ICON + ".png"): stock_icon_bytes()}
     for source, target in zip(PF_SOURCE_PATHS, PF_PROGRAM_PATHS):
         tree = _remap(_decoded(official_bytes_loader(source + ".action.dsl.amf3.deflate")))
         tree = ability_damage_reference(tree)

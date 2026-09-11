@@ -119,6 +119,15 @@ class CeltieFeverLeaderTest(unittest.TestCase):
         builder = campus.Builder()
         assets = leader.action_assets(builder.official)
         self.assertEqual(37, len(assets))
+        from io import BytesIO
+        from PIL import Image
+        from wf_assets import png_decode
+        icon_bytes = assets["common", leader.STOCK_ICON + ".png"]
+        self.assertNotEqual(builder.official("battle/common/unique_condition/unique_zeta.png"),
+                            icon_bytes, "Starwind Shutter must use its own artwork")
+        with Image.open(BytesIO(png_decode(icon_bytes))) as icon:
+            self.assertEqual(((48, 48), "RGBA", (0, 255)),
+                             (icon.size, icon.mode, icon.getextrema()[3]))
         for original, target in zip(leader.PF_SOURCE_PATHS, leader.PF_PROGRAM_PATHS):
             native = leader._decoded(builder.official(original + ".action.dsl.amf3.deflate"))
             actual = leader._decoded(assets["common", target + ".action.dsl.amf3.deflate"])

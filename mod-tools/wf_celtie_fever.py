@@ -101,6 +101,7 @@ def assemble(repo: Path, workspace: Path, *, apply=False):
         "requires_matching_client_patch": False, "requires_new_apk": False,
         "runtime_acceptance": "pending in-game observation on existing client with Fever percentage support",
         "presentation_preserved": True,
+        "unique_condition_icon_updated": leader.STOCK_ICON + ".png",
     }
     candidate.manifest["snapshot"]["campus_celtie"].update(
         skill_damage="wind damage using native ability-damage main bonuses",
