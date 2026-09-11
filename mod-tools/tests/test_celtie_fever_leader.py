@@ -60,13 +60,13 @@ class CeltieFeverLeaderTest(unittest.TestCase):
         self.assertEqual(("2", "254", "0", "1000000", "(None)"),
                          (row[25], row[45], row[46], row[49], row[67]))
 
-    def test_stock_consumption_is_one_layer_and_fixed_six_combo(self):
+    def test_stock_consumption_is_one_layer_and_fixed_seven_combo(self):
         acquire, consume = self.rows[4:]
         self.assertEqual(("23", "7", "Green", "629", leader.STOCK_STRING_ID,
                           leader.STOCK_ACTION_PATH),
                          (acquire[25], acquire[26], acquire[27], acquire[45], acquire[68], acquire[69]))
         self.assertEqual(("26", "2", "0", "100000", "100000", str(leader.STOCK_UID),
-                          "226", "600000", "(None)"),
+                          "226", "700000", "(None)"),
                          (consume[25], consume[37], consume[38], consume[40], consume[41],
                           consume[43], consume[45], consume[49], consume[32]))
         stock = leader.unique_rows()[str(leader.STOCK_UID)][0]
@@ -84,6 +84,11 @@ class CeltieFeverLeaderTest(unittest.TestCase):
         self.assertEqual([{"min": 2, "max": 2}], action[11])
         self.assertTrue(action[12])
         self.assertNotIn(leader.STOCK_ACTION_PATH, leader.PF_PROGRAM_PATHS)
+        ability_tree = leader.stock_action_tree(1)
+        ability_action, = list(commands(ability_tree))
+        self.assertEqual([{"min": 1, "max": 1}], ability_action[11])
+        ability_action[11] = action[11]
+        self.assertEqual(tree, ability_tree, "only granted layer count may differ")
 
     def test_every_custom_description_reference_has_nonempty_flat_text(self):
         flat = leader.flat_string_rows()
@@ -118,7 +123,9 @@ class CeltieFeverLeaderTest(unittest.TestCase):
             self.skipTest("official CDN fixture unavailable")
         builder = campus.Builder()
         assets = leader.action_assets(builder.official)
-        self.assertEqual(37, len(assets))
+        self.assertEqual(38, len(assets))
+        one_layer = assets["common", leader.ABILITY_STOCK_ACTION_PATH + ".action.dsl.amf3.deflate"]
+        self.assertEqual(leader.stock_action_tree(1), leader._decoded(one_layer))
         from io import BytesIO
         from PIL import Image
         from wf_assets import png_decode

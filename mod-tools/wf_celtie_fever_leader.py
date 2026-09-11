@@ -8,14 +8,13 @@ import wf_dsl
 from wf_campus_bianca_data import validate_row
 from wf_celtie_fever_icons import stock_icon_bytes
 from wf_celtie_fever_skill import ability_damage_reference
+from wf_celtie_fever_stock import (
+    ABILITY_STOCK_ACTION_PATH, STOCK_ACTION_PATH, STOCK_ICON, STOCK_NAME,
+    STOCK_STRING_ID, STOCK_UID, stock_action_tree,
+)
 
 CID = "149989"
 CODE = "wind_spgirl_campus"
-STOCK_UID = 14998901
-STOCK_NAME = "星风快门"
-STOCK_STRING_ID = CODE + "_flip_stock"
-STOCK_ACTION_PATH = "battle/action/skill/action/ability_skill/" + CODE + "$" + STOCK_STRING_ID
-STOCK_ICON = "battle/common/unique_condition/" + STOCK_STRING_ID
 PF_ID = CODE + "_fever"
 PF_STRING_ID = PF_ID + "_powerflip"
 PF_PROGRAM_PATHS = tuple(
@@ -61,7 +60,7 @@ def _trigger(row, trigger, *, wind=False):
 
 
 def leader_rows(ability_source, leader_source):
-    """库存加2；主球发射时同步消费1，倍率固定1，因此连击始终+6。"""
+    """库存加2；主球发射时同步消费1，倍率固定1，因此连击始终+7。"""
     attack = _set(_base(ability_source, 32, 200000), {46: 5, 47: "Green"})
     damage = _set(_base(ability_source, 388, 400000), {46: 5, 47: "Green"})
     overrides = [r for r in leader_source["141201"] if r[45] == "722"]
@@ -74,7 +73,7 @@ def leader_rows(ability_source, leader_source):
     _set(pf_hit, {46: 0, 67: "(None)"})
     acquire = _trigger(_resonance(_base(ability_source, 629), True), 23, wind=True)
     _set(acquire, {68: STOCK_STRING_ID, 69: STOCK_ACTION_PATH})
-    consume = _trigger(_resonance(_base(ability_source, 226, 600000), True), 26)
+    consume = _trigger(_resonance(_base(ability_source, 226, 700000), True), 26)
     _set(consume, {37: 2, 38: 0, 40: 100000, 41: 100000, 43: STOCK_UID})
     result = [attack, damage, special_pf, pf_hit, acquire, consume]
     for row in result:
@@ -91,7 +90,7 @@ def unique_rows():
 
 def flat_string_rows():
     return {
-        STOCK_STRING_ID: [["获得2次「星风快门」（次数可累积；每次弹射消耗1次并增加6连击；非共鸣或非Fever期间保留剩余次数）"]],
+        STOCK_STRING_ID: [["获得2次「星风快门」（次数可累积；每次弹射消耗1次并增加7连击；非共鸣或非Fever期间保留剩余次数）"]],
         PF_STRING_ID: [["将强化弹射变为星之剑圣的特殊剑士型强化弹射，"
                        "造成风属性伤害（伤害量以能力伤害加成判定）"]],
     }
@@ -123,19 +122,12 @@ def _remap(value):
     return value
 
 
-def stock_action_tree():
-    one, two = [{"min": 1, "max": 1}], [{"min": 2, "max": 2}]
-    grant = ["Command", ["CreateCondition", -17, [["ACUnique", STOCK_UID, one]], one,
-                         ["GenericConditionHitEffect"], False, False, "", None,
-                         False, 3, two, True]]
-    return ["ActionDsl", 1, ["None"], False, False, False, False, False, False,
-            False, 0, ["Block", [grant]]]
-
-
 def action_assets(official_bytes_loader):
     """复制官方三档几何/时序与像素；仅将伤害主加成选择为能力。"""
     files = {("common", STOCK_ACTION_PATH + ".action.dsl.amf3.deflate"):
              _encoded(stock_action_tree()),
+             ("common", ABILITY_STOCK_ACTION_PATH + ".action.dsl.amf3.deflate"):
+             _encoded(stock_action_tree(1)),
              ("common", STOCK_ICON + ".png"): stock_icon_bytes()}
     for source, target in zip(PF_SOURCE_PATHS, PF_PROGRAM_PATHS):
         tree = _remap(_decoded(official_bytes_loader(source + ".action.dsl.amf3.deflate")))
@@ -164,5 +156,5 @@ def metadata():
             "buff_target_as": 2, "requires_new_apk": False,
             "native_limits": "PowerFlip resistance and independent terms remain; ability-only terms do not apply",
             "stock_unique_id": STOCK_UID, "stock_per_skill": 2, "stock_cost_per_flip": 1,
-            "combo_per_flip": 6, "stock_pauses_outside_fever_or_resonance": True,
+            "combo_per_flip": 7, "stock_pauses_outside_fever_or_resonance": True,
             "stock_retained_until_battle_end": True, "stock_trigger": "T26 MySelfFlip"}

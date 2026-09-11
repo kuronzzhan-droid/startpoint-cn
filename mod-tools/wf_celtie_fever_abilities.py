@@ -3,6 +3,12 @@ from __future__ import annotations
 
 from copy import deepcopy
 
+from wf_celtie_fever_stock import (
+    ABILITY_STOCK_ACTION_PATH,
+    ABILITY_STOCK_STRING_ID,
+    STOCK_UID,
+)
+
 CID = "149989"
 CODE = "wind_spgirl_campus"
 CHANGE_SKILL_STRING_ID = "change_skill_wind_spgirl_campus_fever"
@@ -82,11 +88,20 @@ def ability_rows(source: dict) -> dict:
                       trigger=12, threshold=70, target=5, limit=10)
     charge = _instant(source, 211, 7_000, pre="wind", fever="fever",
                       trigger=12, threshold=70, target=5)
+    stock = _instant(source, 629, pre="wind", fever="fever",
+                     trigger=23, wind_counter=True)
+    stock[70:72] = [ABILITY_STOCK_STRING_ID, ABILITY_STOCK_ACTION_PATH]
+    consume = _instant(source, 226, 7 * SCALE, pre="wind", fever="fever",
+                       trigger=26)
+    # Native precontent consumes one layer first; no remaining layer means
+    # no AddCombo. A leader consumer is a separate, intentional second call.
+    for column, value in {39: 2, 40: 0, 42: SCALE, 43: SCALE, 45: STOCK_UID}.items():
+        consume[column] = str(value)
 
     slots = [
         [opening, enhance],
         [triple, ability_damage],
-        [all_enemy, fever_charge, attack, charge],
+        [all_enemy, fever_charge, attack, charge, stock, consume],
         [_fever_status(source, 26)],
         [_fever_status(source, 27)],
         [_fever_status(source, 688, SCALE)],
@@ -106,6 +121,9 @@ def flat_string_rows() -> dict:
         "技能强化：额外赋予全队贯穿效果（15秒）、"
         "风属性角色能力伤害提升100%效果（15秒），"
         "并赋予命中敌人风属性抗性降低25%效果（15秒）"
+    ]], ABILITY_STOCK_STRING_ID: [[
+        "获得1次「星风快门」（次数可累积；每次自身弹射消耗1次并增加7连击；"
+        "非风属性共鸣或非Fever期间保留剩余次数）"
     ]]}
 
 
@@ -137,6 +155,19 @@ def metadata() -> dict:
             "attack_persists_after_fever": True,
             "skill_gauge_gain_percent": 7,
             "skill_gauge_trigger_limit": None,
+        },
+        "a3_stock": {
+            "main_only": True,
+            "requires_wind_resonance_and_fever": True,
+            "unique_id": STOCK_UID,
+            "per_wind_skill": 1,
+            "per_own_flip_cost": 1,
+            "per_own_flip_combo": 7,
+            "independent_of_leader_consumer": True,
+            "with_leader_per_wind_skill": 3,
+            "with_leader_max_cost_per_flip": 2,
+            "with_leader_max_combo_per_flip": 14,
+            "empty_stock_grants_no_combo": True,
         },
         "fever_ratio": "add 5% of maximum to current gauge; does not raise maximum",
         "periodic_status": {

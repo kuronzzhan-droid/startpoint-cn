@@ -50,7 +50,7 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
     def test_change_skill_flag_has_a_flat_text_entry_required_by_native_client(self):
         flag = self.rows["1499891"][1]
         strings = kit.flat_string_rows()
-        self.assertEqual({flag[70]}, set(strings))
+        self.assertEqual({flag[70], kit.ABILITY_STOCK_STRING_ID}, set(strings))
         self.assertEqual(1, len(strings[flag[70]]))
         text = strings[flag[70]][0][0]
         for term in ("贯穿", "15秒", "风属性角色能力伤害提升100%", "风属性抗性降低25%"):
@@ -82,7 +82,7 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
                          legality.required_client_capabilities("ability", gauge))
 
     def test_combo_attack_caps_independently_while_team_gauge_remains_unlimited(self):
-        attack, charge = self.rows["1499893"][2:]
+        attack, charge = self.rows["1499893"][2:4]
         for row in (attack, charge):
             self.assertEqual(("2", "Green", "12", "12", "7000000", "5", "Green"),
                              (row[6], row[11], row[13], row[27], row[30], row[48], row[49]))
@@ -90,6 +90,33 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
         self.assertEqual(("32", "70000", "10"), (attack[47], attack[51], attack[34]))
         self.assertEqual(700_000, int(attack[51]) * int(attack[34]))
         self.assertEqual(("211", "7000", "(None)"), (charge[47], charge[51], charge[34]))
+
+    def test_a3_stock_grant_and_consume_are_main_only_wind_fever_and_unlimited(self):
+        grant, consume = self.rows["1499893"][4:]
+        for row in (grant, consume):
+            self.assertEqual(("false", "2", "600000", "600000", "Green", "12"),
+                             (row[1], row[6], row[9], row[10], row[11], row[13]))
+            self.assertEqual(("100000", "100000", "(None)", "0"),
+                             (row[30], row[31], row[34], row[35]))
+        self.assertEqual(("23", "7", "Green", "629", kit.ABILITY_STOCK_STRING_ID,
+                          kit.ABILITY_STOCK_ACTION_PATH),
+                         (grant[27], grant[28], grant[29], grant[47], grant[70], grant[71]))
+        self.assertEqual(("26", "", "", "226", "700000", "700000"),
+                         (consume[27], consume[28], consume[29], consume[47], consume[51], consume[52]))
+        self.assertEqual(("2", "0", "100000", "100000", "14998901"),
+                         (consume[39], consume[40], consume[42], consume[43], consume[45]))
+        text = kit.flat_string_rows()[grant[70]][0][0]
+        self.assertIn("获得1次", text)
+        self.assertIn("增加7连击", text)
+
+    def test_a3_stock_and_leader_explicitly_allow_two_separate_consumers(self):
+        info = kit.metadata()["a3_stock"]
+        self.assertTrue(info["independent_of_leader_consumer"])
+        self.assertEqual((1, 1, 7, 3, 2, 14), tuple(info[key] for key in (
+            "per_wind_skill", "per_own_flip_cost", "per_own_flip_combo",
+            "with_leader_per_wind_skill", "with_leader_max_cost_per_flip",
+            "with_leader_max_combo_per_flip")))
+        self.assertTrue(info["empty_stock_grants_no_combo"])
 
     def test_periodic_party_states_use_180_fever_frames_and_90_frame_duration(self):
         for slot, content in ((4, "26"), (5, "27"), (6, "688")):
