@@ -11,11 +11,10 @@ SCALE = 100_000
 
 def _pre(row, kind=None, *, offset=6):
     row[offset:offset + 7] = ["0", "", "", "", "", "", ""]
-    if kind in ("wind", "resonance"):
-        row[offset] = "2" if kind == "wind" else "208"
+    if kind == "wind":
+        row[offset] = "2"
         row[offset + 3:offset + 5] = ["600000", "600000"]
-        if kind == "wind":
-            row[offset + 5] = "Green"
+        row[offset + 5] = "Green"
     elif kind in ("fever", "not_fever"):
         row[offset] = "12" if kind == "fever" else "186"
     elif kind is not None:
@@ -68,9 +67,9 @@ def ability_rows(source: dict) -> dict:
     enhance = _instant(source, 536, pre="wind")
     enhance[70] = CHANGE_SKILL_STRING_ID
     # 原版 1412012[2]：DirectAttack3 强度 0，三段分伤而非总伤害三倍。
-    triple = _instant(source, 202, 0, pre="resonance", target=5)
+    triple = _instant(source, 202, 0, pre="wind", target=5)
     ability_damage = _instant(source, 388, 200_000,
-                              pre="resonance", target=5)
+                              pre="wind", target=5)
 
     all_enemy = _instant(source, 254, 25 * SCALE, pre="wind", fever="fever",
                          trigger=20, threshold=35, wind_counter=True, target=0)

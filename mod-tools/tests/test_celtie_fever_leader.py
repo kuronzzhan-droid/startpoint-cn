@@ -44,14 +44,14 @@ class CeltieFeverLeaderTest(unittest.TestCase):
             self.assertEqual([], legality.declared_block_field_problems("leader_ability", row))
             self.assertEqual([], legality.ability_element_column_problems("leader_ability", row, 3))
 
-    def test_wind_base_stats_are_unconditional_and_special_rows_use_generic_resonance(self):
+    def test_wind_base_stats_are_unconditional_and_special_rows_require_six_wind_members(self):
         attack, damage, special, hit, acquire, consume = self.rows
         self.assertEqual(("32", "200000", "5", "Green", "0"),
                          (attack[45], attack[49], attack[46], attack[47], attack[4]))
         self.assertEqual(("388", "400000", "5", "Green", "0"),
                          (damage[45], damage[49], damage[46], damage[47], damage[4]))
         for row in (special, hit, acquire, consume):
-            self.assertEqual(["208", "", "", "600000", "600000", "", ""], row[4:11])
+            self.assertEqual(["2", "", "", "600000", "600000", "Green", ""], row[4:11])
         self.assertEqual("0", special[11])
         self.assertEqual(["12"] * 3, [r[11] for r in (hit, acquire, consume)])
 

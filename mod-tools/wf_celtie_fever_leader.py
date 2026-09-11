@@ -47,7 +47,7 @@ def _base(source, content, strength=None):
 
 
 def _resonance(row, fever=False):
-    row[4:11] = ["208", "", "", "600000", "600000", "", ""]
+    row[4:11] = ["2", "", "", "600000", "600000", "Green", ""]
     if fever:
         row[11:18] = ["12", "", "", "", "", "", ""]
     return row

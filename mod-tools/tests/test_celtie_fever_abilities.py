@@ -59,10 +59,10 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
         self.assertNotIn("全场敌人", text)
         self.assertTrue(kit.metadata()["a1_enhancement"]["requires_skill_dsl_change_skill_flag_branch"])
 
-    def test_a2_uses_native_three_split_hits_and_ordinary_resonance(self):
+    def test_a2_uses_native_three_split_hits_and_requires_six_wind_members(self):
         triple, damage = self.rows["1499892"]
         for row in (triple, damage):
-            self.assertEqual(("208", "600000", "600000", "", "5", "Green"),
+            self.assertEqual(("2", "600000", "600000", "Green", "5", "Green"),
                              (row[6], row[9], row[10], row[11], row[48], row[49]))
         self.assertEqual(("202", "0", "0"), (triple[47], triple[51], triple[52]))
         self.assertEqual(("388", "200000", "200000"),
