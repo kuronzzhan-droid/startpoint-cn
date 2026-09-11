@@ -1,4 +1,4 @@
-"""装配校园希尔媞十字能力伤害修订；只写隔离候选，客户端需配套。"""
+"""装配校园希尔媞原生能力加成修订；只写隔离候选，无需新 APK。"""
 from __future__ import annotations
 
 import argparse
@@ -13,12 +13,18 @@ import wf_mod_tool as core
 from wf_celtie_fever_package import Candidate, CID, CODE, encode_tree
 
 DESCRIPTION = (
-    "向最近的敌人突进，释放十字双空牙，对命中的敌人造成合计70倍风属性能力伤害。"
+    "向最近的敌人突进，释放十字双空牙，对命中的敌人造成风属性伤害"
+    "（伤害量以能力伤害加成判定）。"
     "两条剑气的交叉处不会重复计算同一段伤害。"
 )
 SKILL_NAME = "风中快门·十字双空牙"
 FLAT_STRINGS = "master/string/custom_ability_string.orderedmap"
-CAPABILITY = "celtie-ability-actions-v1"
+
+
+def required_capabilities(existing=()):
+    """迁移旧候选时移除已退用的来源补丁，保留 V12 Fever 及其他依赖。"""
+    return sorted((set(existing) | set(abilities.metadata()["required_client_capabilities"]))
+                  - {"celtie-ability-actions-v1"})
 
 
 def validate_descriptions(ability_rows, leader_rows, flat_rows):
@@ -83,22 +89,22 @@ def assemble(repo: Path, workspace: Path, *, apply=False):
     candidate.manifest["unique_condition"] = {
         "ids": [leader.STOCK_UID], "icons": [leader.STOCK_ICON + ".png"],
     }
-    candidate.manifest["required_capabilities"] = sorted(set(
-        candidate.manifest.get("required_capabilities", [])
-        + abilities.metadata()["required_client_capabilities"] + [CAPABILITY]))
+    candidate.manifest["required_capabilities"] = required_capabilities(
+        candidate.manifest.get("required_capabilities", []))
     metadata = {
         "abilities": abilities.metadata(), "leader": leader.metadata(),
         "active_description": DESCRIPTION, "active_multiplier": 70,
         "active_segments": [25, 45], "cross_overlap_hits_per_segment": 1,
-        "damage_program_allowlist": list(skill.PROGRAM_PATHS) + list(leader.PF_PROGRAM_PATHS),
-        "client_capability": CAPABILITY,
-        "requires_matching_client_patch": True,
-        "runtime_acceptance": "pending client installation and in-game observation",
+        "damage_programs": list(skill.PROGRAM_PATHS) + list(leader.PF_PROGRAM_PATHS),
+        "damage_calculation": "native buffTargetAs=2; ability-damage main bonuses",
+        "native_limits": "Skill/PowerFlip source flags, resistance and independent terms remain; ability-only terms do not apply",
+        "requires_matching_client_patch": False, "requires_new_apk": False,
+        "runtime_acceptance": "pending in-game observation on existing client with Fever percentage support",
         "presentation_preserved": True,
     }
     candidate.manifest["snapshot"]["campus_celtie"].update(
-        skill_damage="native ability through exact-program client capability",
-        additional_damage="native wind ability I254", gameplay_revision="fever-cross-20260912",
+        skill_damage="wind damage using native ability-damage main bonuses",
+        additional_damage="native wind ability I254", gameplay_revision="fever-cross-native-20260912",
     )
     return candidate.finish(metadata, apply=apply)
 

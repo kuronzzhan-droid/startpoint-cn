@@ -1,5 +1,7 @@
 """真实官方供体上的十字几何、时序、来源边界与资产回归。"""
 import math
+import hashlib
+from copy import deepcopy
 import os
 import sys
 import tempfile
@@ -35,11 +37,11 @@ def point_damage(area, point):
 
 
 class CeltieSkillMetadataTests(unittest.TestCase):
-    def test_requires_client_source_patch_and_exact_programs(self):
+    def test_uses_existing_native_client_and_exact_programs(self):
         self.assertEqual(len(skill.PROGRAM_PATHS), 2)
         self.assertTrue(all(p.endswith(f"wind_spgirl_campus_{lv}")
                             for p, lv in zip(skill.PROGRAM_PATHS, (1, 2))))
-        self.assertEqual(skill.REQUIRED_CAPABILITIES, ("celtie-ability-actions-v1",))
+        self.assertEqual(skill.REQUIRED_CAPABILITIES, ())
         with self.assertRaises(ValueError):
             skill.build_skill(3, lambda _: self.fail("invalid level must not read assets"))
 
@@ -69,9 +71,26 @@ class CeltieOfficialSkillTests(unittest.TestCase):
         for lv, tree in self.trees.items():
             skill.validate(tree)
             self.assertEqual(skill.parse(skill.encode(tree)), tree)
-            self.assertEqual(tree[10], 0)
+            self.assertEqual(tree[10], 2)
             self.assertEqual(skill.build_skill(lv, self.read), tree)
         self.assertEqual(before, self.cache)
+
+    def test_only_bonus_selectors_differ_from_frozen_cross_skill(self):
+        # 859088dd 的两档动作相同。还原选择器后须逐字节回到原动作，
+        # 防止此次迁移悄悄改动技能倍率、命中、状态、时序或任何演出参数。
+        original_sha = "c29e81396fd4f30542a0d01ec36ca08513313ff23e78ae284bdc397a23a26dad"
+        for tree in self.trees.values():
+            normalized = deepcopy(tree)
+            normalized[10] = 0
+            areas = skill.nodes(normalized, "CreateHitArea")
+            self.assertEqual(4, len(areas))
+            for area in areas:
+                self.assertEqual(2, area[24])
+                area[24] = 0
+            self.assertEqual(original_sha, hashlib.sha256(skill.encode(normalized)).hexdigest())
+            untouched = deepcopy(normalized)
+            self.assertEqual(tree, skill.ability_damage_reference(normalized))
+            self.assertEqual(untouched, normalized)
 
     def test_dash_collision_and_timeout_have_same_safe_landing(self):
         tree = self.trees[2]
@@ -104,6 +123,7 @@ class CeltieOfficialSkillTests(unittest.TestCase):
                     self.assertEqual(sum(point_damage(a, point) for a in areas), expected)
                 for a in areas:
                     self.assertEqual(a[1], "*")
+                    self.assertEqual(a[24], 2)
                     self.assertEqual(a[13:16], [["SpecifyHitAreaLifetimeDirectly", 30],
                         ["CalculatedUsingMaxNumOfHits", 1], ["Some", skill.value(1)]])
                     attack = skill.one(a, "CreateNormalAttack")

@@ -1,7 +1,7 @@
 """校园希尔媞冲刺十字剑风；纯构建，不写包或live。
 
-伤害来源依赖精确program白名单的客户端补丁。DSL本身仍是原生攻击命令，
-不能把未安装补丁的运行结果称为能力伤害。
+采用官方异类技能的原生加成选择：伤害量按能力伤害加成判定。
+技能/PF 来源标记、对应抗性与独立乘区仍遵循原生规则，不需要新 APK。
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ import wf_client_legality as legality
 
 CODE = "wind_spgirl_campus"
 PROGRAM_PATHS = tuple(f"battle/action/skill/action/rare5/{CODE}${CODE}_{lv}" for lv in (1, 2))
-REQUIRED_CAPABILITIES = ("celtie-ability-actions-v1",)
+REQUIRED_CAPABILITIES = ()
 SUFFIX = ".action.dsl.amf3.deflate"
 EFFECT_RENAMES = {"wind_spgirl_1anv": "campus_celtie_cross",
                   "wind_spgirl_4anv": "campus_celtie_dash"}
@@ -50,6 +50,16 @@ def one(tree, kind):
     if len(found) != 1:
         raise ValueError(f"official donor must contain one {kind}; got {len(found)}")
     return found[0]
+
+
+def ability_damage_reference(tree):
+    """只修改加成选择字段；保留原生攻击、命中、倍率和演出。"""
+    result = deepcopy(tree)
+    result[10] = 2
+    for area in nodes(result, "CreateHitArea"):
+        if nodes(area[23], "CreateNormalAttack"):
+            area[24] = 2
+    return result
 
 
 def parse(raw):
@@ -119,7 +129,7 @@ def _landing(slash_donor):
         attack[2] = 4  # 原生元素编号4=风，非角色表元素编号3。
         attack[5:8] = [0, value(multiplier), value(0)]
         attack[8:13] = [False] * 5
-        # 先施加命中减抗，命中的这次攻击即可受益；补丁只改变伤害来源。
+        # 先施加命中减抗，命中的这次攻击即可受益。
         area[23][1].insert(0, enhanced(condition(area[22],
             ["ACToleranceOfElement", value(900), 4, value(-.25), value(1)])))
     # 不继承原1anv的神速剑技标记或加速；仅保留蓄势与两拍主体。
@@ -132,7 +142,7 @@ def _landing(slash_donor):
 
 
 def build_skill(level, official_bytes_loader):
-    """返回两档原生DSL；必须与REQUIRED_CAPABILITIES所列补丁配套。"""
+    """返回两档原生 DSL；按能力主加成计算，保留技能来源规则。"""
     if level not in (1, 2):
         raise ValueError("skill evolution must be 1 or 2")
     def donor(code):
@@ -153,9 +163,8 @@ def build_skill(level, official_bytes_loader):
         allies(41, 33, [4], condition(41,
             ["ACAbilityDamage", value(900), value(1), value(1)])))
     result = deepcopy(dash)
-    result[10] = 0  # 根据最终来源自动取桶；不以换桶伪装真能力伤害。
     result[11] = block(buffs, ["Command", near])
-    result = remap(result)
+    result = ability_damage_reference(remap(result))
     validate(result)
     return result
 

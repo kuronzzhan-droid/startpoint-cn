@@ -94,7 +94,10 @@ class CeltieFeverLeaderTest(unittest.TestCase):
             self.assertTrue(flat[key][0][0].strip())
         self.assertNotIn("2147483647", str(flat))
         self.assertEqual([list(leader.PF_PROGRAM_PATHS)], leader.power_flip_rows()[leader.PF_ID])
-        self.assertEqual(["celtie-ability-actions-v1"], leader.metadata()["required_client_capabilities"])
+        self.assertEqual([], leader.metadata()["required_client_capabilities"])
+        self.assertFalse(leader.metadata()["requires_new_apk"])
+        self.assertIn("伤害量以能力伤害加成判定", flat[leader.PF_STRING_ID][0][0])
+        self.assertNotRegex(flat[leader.PF_STRING_ID][0][0], r"[0-9%％]")
 
     @unittest.skipUnless(AS3.is_dir(), "native decompile fixture unavailable")
     def test_native_consume_precontent_and_main_member_flip_contract(self):
@@ -119,8 +122,19 @@ class CeltieFeverLeaderTest(unittest.TestCase):
         for original, target in zip(leader.PF_SOURCE_PATHS, leader.PF_PROGRAM_PATHS):
             native = leader._decoded(builder.official(original + ".action.dsl.amf3.deflate"))
             actual = leader._decoded(assets["common", target + ".action.dsl.amf3.deflate"])
-            self.assertEqual(native, _restore_effect_names(actual))
-            self.assertEqual(0, actual[10], "true ability source requires the exact client capability")
+            normalized = _restore_effect_names(actual)
+            self.assertEqual(2, normalized[10])
+            normalized[10] = native[10]
+            expected_areas = [c for c in commands(native) if c[0] == "CreateHitArea"]
+            actual_areas = [c for c in commands(normalized) if c[0] == "CreateHitArea"]
+            self.assertEqual(len(expected_areas), len(actual_areas))
+            for before, after in zip(expected_areas, actual_areas):
+                if any(c[0] == "CreateNormalAttack" for c in commands(before[23])):
+                    self.assertEqual(2, after[24])
+                    after[24] = before[24]
+            self.assertEqual(native, normalized, "only native bonus selectors may differ")
+            self.assertEqual([], legality.action_dsl_subject_binding_problems(actual))
+            self.assertEqual([], legality.action_dsl_hit_area_target_problems(actual))
         for (tier, path), raw in assets.items():
             self.assertNotIn(leader.PF_SOURCE_EFFECT, path)
             if path.endswith(".amf3.deflate"):

@@ -6,6 +6,7 @@ import zlib
 
 import wf_dsl
 from wf_campus_bianca_data import validate_row
+from wf_celtie_fever_skill import ability_damage_reference
 
 CID = "149989"
 CODE = "wind_spgirl_campus"
@@ -23,7 +24,6 @@ PF_PROGRAM_PATHS = tuple(
 PF_SOURCE_PATHS = tuple(
     "battle/action/power_flip/action/override/override_wind_spgirl_4anv$override_wind_spgirl_4anv_lv" + str(level)
     for level in (1, 2, 3))
-REQUIRED_CAPABILITY = "celtie-ability-actions-v1"
 PF_SOURCE_EFFECT = "wind_spgirl_4anv"
 PF_EFFECT = "campus_celtie_fever"
 
@@ -92,7 +92,8 @@ def unique_rows():
 def flat_string_rows():
     return {
         STOCK_STRING_ID: [["获得2次「星风快门」（次数可累积；每次弹射消耗1次并增加6连击；非共鸣或非Fever期间保留剩余次数）"]],
-        PF_STRING_ID: [["将强化弹射变为星之剑圣的特殊剑士型强化弹射，并以风属性能力伤害结算"]],
+        PF_STRING_ID: [["将强化弹射变为星之剑圣的特殊剑士型强化弹射，"
+                       "造成风属性伤害（伤害量以能力伤害加成判定）"]],
     }
 
 
@@ -132,14 +133,13 @@ def stock_action_tree():
 
 
 def action_assets(official_bytes_loader):
-    """复制三档官方几何/时序与像素到私有路径；真实能力来源由客户端能力保障。"""
+    """复制官方三档几何/时序与像素；仅将伤害主加成选择为能力。"""
     files = {("common", STOCK_ACTION_PATH + ".action.dsl.amf3.deflate"):
              _encoded(stock_action_tree()),
              ("common", STOCK_ICON + ".png"): official_bytes_loader(ICON_SOURCE)}
     for source, target in zip(PF_SOURCE_PATHS, PF_PROGRAM_PATHS):
         tree = _remap(_decoded(official_bytes_loader(source + ".action.dsl.amf3.deflate")))
-        # 保持原生0；精确白名单补丁把createdByAbility=true，交公式选择能力桶。
-        tree[10] = 0
+        tree = ability_damage_reference(tree)
         files["common", target + ".action.dsl.amf3.deflate"] = _encoded(tree)
     prefix = "battle/effect/powerflip/" + PF_SOURCE_EFFECT + "/"
     paths = [prefix + PF_SOURCE_EFFECT + suffix for suffix in (".png", ".atlas.amf3.deflate")]
@@ -157,10 +157,12 @@ def action_assets(official_bytes_loader):
 
 
 def metadata():
-    return {"required_client_capabilities": [REQUIRED_CAPABILITY],
+    return {"required_client_capabilities": [],
             "power_flip_programs": list(PF_PROGRAM_PATHS),
             "power_flip_geometry_source": "141201 override_wind_spgirl_4anv",
-            "power_flip_damage_source": "requires exact program-path client capability",
+            "power_flip_damage_source": "native PowerFlip with ability-damage main bonuses",
+            "buff_target_as": 2, "requires_new_apk": False,
+            "native_limits": "PowerFlip resistance and independent terms remain; ability-only terms do not apply",
             "stock_unique_id": STOCK_UID, "stock_per_skill": 2, "stock_cost_per_flip": 1,
             "combo_per_flip": 6, "stock_pauses_outside_fever_or_resonance": True,
             "stock_retained_until_battle_end": True, "stock_trigger": "T26 MySelfFlip"}
