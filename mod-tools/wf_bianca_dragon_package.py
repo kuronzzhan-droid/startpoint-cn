@@ -110,13 +110,14 @@ class Candidate:
                       if item["root"] == "common" and item["logical_path"] == logical), None)
         owned = set(claim["outer_keys"]) if claim else set()
         for key, value in replacements.items():
-            if key not in owned and not (key.startswith(CID) or key.startswith(CODE)):
+            if key not in owned and not (key.startswith(CID) or key.startswith(CODE)
+                                        or key.startswith("change_skill_" + CODE)):
                 raise ValueError(f"new key is outside the Bianca namespace: {key}")
             if key in old_rows and key not in owned:
                 raise ValueError(f"unowned existing key: {logical}:{key}")
             if codec == "flat":
                 value = zlib.compress(core.write_csv_lines(value).rstrip("\n").encode("utf-8"))
-            elif codec != "raw_outer":
+            elif codec not in {"raw_outer", "action_nested"}:
                 raise ValueError("unsupported candidate codec")
             if key in table.keys:
                 table.rows[table.keys.index(key)] = value
