@@ -47,7 +47,9 @@ def assemble(repo: Path, candidate_root: Path, *, apply=False):
         old.validate_row(row, "leader_ability")
     candidate.splice(ability_path, rows)
     candidate.splice(leader_path, {CID: leaders})
-    candidate.splice("master/string/custom_ability_string.orderedmap", abilities.fever_tick_string_rows())
+    candidate.splice("master/string/custom_ability_string.orderedmap", {
+        **abilities.fever_tick_string_rows(), **bridge.flat_string_rows(),
+    })
     for (tier, logical), raw in abilities.fever_tick_assets().items():
         candidate.emit(tier, logical, raw)
 

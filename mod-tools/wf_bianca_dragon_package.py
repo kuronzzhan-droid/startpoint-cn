@@ -158,7 +158,7 @@ class Candidate:
                 entry = dict(logical_path=key[1])
                 self.manifest["roots"][key[0]].append(entry)
             entry.update(sha256=digest(raw), size=len(raw))
-        self.manifest["package_version"] = "0.2.0"
+        self.manifest["package_version"] = "0.2.1"
         self.manifest["snapshot"]["campus_bianca_dragon"] = metadata
         self.manifest["qa"].update(release_ready=False, workspace_input_sha256="")
         for entries in self.manifest["roots"].values():

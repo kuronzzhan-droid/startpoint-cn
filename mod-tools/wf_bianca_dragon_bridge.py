@@ -80,3 +80,11 @@ def power_up_string_rows():
         "强化幼龙吐息：降低全场敌人的能力伤害抗性20%，持续15秒；"
         "恢复自身技能槽50%，赋予队长攻击力提升200%效果，持续15秒。"
     ]]}}
+
+
+def flat_string_rows():
+    # ChangeSkillFlag always resolves this flat key, including at level 1.
+    # The power-up table is an additional lookup, not a replacement.
+    return {CHANGE_SKILL_STRING_ID: [[
+        "强化小龙吐息：额外赋予全场敌人能力伤害抗性降低20%效果（15秒）"
+    ]]}
