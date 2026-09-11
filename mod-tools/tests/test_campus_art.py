@@ -1,0 +1,81 @@
+"""立绘装配保护地面、拒绝假透明源、只更新自有定位键。"""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+import sys
+import tempfile
+import unittest
+
+import numpy as np
+from PIL import Image, ImageDraw
+
+sys.path.insert(0, str(Path(__file__).parents[1]))
+import wf_campus_art as art
+import wf_campus_art_images as images
+import wf_mod_tool as core
+import wf_quest_lib as tables
+
+
+class CampusArtTests(unittest.TestCase):
+    def test_fullshot_keeps_bottom_scene_and_stays_in_native_canvas(self):
+        source = Image.new("RGBA", (1000, 1500))
+        draw = ImageDraw.Draw(source)
+        draw.rectangle((200, 50, 750, 1400), fill="white")
+        draw.rectangle((25, 1350, 950, 1490), fill="red")
+        full, geometry = images.full_shot(source, (500, 180))
+        self.assertEqual(geometry["source_alpha_bbox"], [25, 50, 951, 1491])
+        self.assertTrue(geometry["crop_removes_only_fully_transparent_pixels"])
+        self.assertLessEqual(geometry["x"] + full.width, 2000)
+        self.assertLessEqual(geometry["y"] + full.height, 2000)
+        # 红色底座在最终PNG最底行仍完整可见，不能为放大头部切掉地面。
+        bottom = np.asarray(full)[-1]
+        self.assertGreater(((bottom[:, 0] > 200) & (bottom[:, 1] < 20) & (bottom[:, 3] > 200)).mean(), .95)
+
+    def test_rejects_rgb_or_opaque_grid_even_if_extension_png(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "source.png"
+            mark = dict(face=[5, 5], eyes=[5, 4])
+            for mode in ("RGB", "RGBA"):
+                Image.new(mode, (10, 10), "white").save(path)
+                with self.assertRaises(ValueError):
+                    images.load_master(path, mark)
+
+    def test_hash_bound_source_landmarks(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "source.png"
+            source = Image.new("RGBA", (100, 100))
+            ImageDraw.Draw(source).rectangle((20, 20, 80, 99), fill="white")
+            source.save(path)
+            with self.assertRaises(ValueError):
+                images.load_master(path, dict(face=[50, 40], eyes=[50, 35], sha256="0" * 64))
+            _, report = images.load_master(path, dict(face=[50, 40], eyes=[50, 35]))
+            self.assertEqual(report["sha256"], images.sha(path.read_bytes()))
+
+    def test_geometry_patch_preserves_all_foreign_raw_rows(self):
+        cid, code = art.CHARACTERS["bianca"]
+        ui = f"character/{code}/ui/"
+        geometry = [dict(x=250, y=300, width=1200, height=1600)] * 2
+        with tempfile.TemporaryDirectory() as folder:
+            package = Path(folder)
+            for logical, source in (
+                ("master/generated/character_image.orderedmap", {"1": {"0": "1,2,3,4"}, cid: {"0": "0,0,1,1", "1": "0,0,1,1"}}),
+                ("master/character/full_shot_image_attribute.orderedmap", {"1": {"0": "1,2,3,4,5"}, cid: {"0": "0,0,1,0,0", "1": "0,0,1,0,0"}}),
+                ("master/generated/trimmed_image.orderedmap", {"foreign": "1,2,3,4", **{
+                    ui + f"{name}_{n}": "0,0,1,1" for name in ("full_shot_1440_1920", "skill_cutin") for n in (0, 1)}}),
+            ):
+                path = package / "roots/common" / logical
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(tables.build_node(source))
+            result = art.patch_tables(package, cid, ui, geometry)
+            for relative, raw in result.items():
+                logical = relative.split("/", 1)[1]
+                before = core.read_orderedmap_file_raw_rows(package / "roots" / relative, logical)
+                after = core.read_orderedmap_raw_rows_from_bytes(raw, logical)
+                changed = {k for k, a, b in zip(before.keys, before.rows, after.rows) if a != b}
+                self.assertTrue(changed)
+                self.assertTrue(all(k == cid or k.startswith(ui) for k in changed))
+
+
+if __name__ == "__main__":
+    unittest.main()
