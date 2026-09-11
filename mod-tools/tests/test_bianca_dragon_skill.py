@@ -2,6 +2,7 @@
 import io
 import math
 import sys
+import tempfile
 import unittest
 import zlib
 from pathlib import Path
@@ -14,6 +15,8 @@ import wf_assets
 import wf_dsl
 import wf_bianca_dragon_skill as skill
 import wf_bianca_dragon_pixels as pixels
+import wf_character_pack as character_pack
+import wf_client_legality as client_legality
 from wf_campus_bianca_data import validate_skill, walk_commands
 from wf_dsl_sig import COMMANDS
 from wf_pixelart_vfx import entry_for_frame, frame_index, restore_frame
@@ -102,13 +105,13 @@ class DragonSkillTests(unittest.TestCase):
 
     def test_pixel_frames_preserve_native_texels_and_have_collision(self):
         keys = sorted({k for seq in pixels.SEQUENCES.values() for k in seq})
-        source = Image.new("RGBA", (len(keys)*6, 6))
+        source = Image.new("RGBA", (len(keys)*12, 12))
         atlas = []
         originals = {}
         for index, key in enumerate(keys):
-            tile = Image.new("RGBA", (4, 4), (index*17, 21, 127, 255))
-            source.paste(tile, (index*6, 0)); originals[key] = tile
-            atlas.append(dict(n="source/"+key, x=index*6, y=0, w=4, h=4))
+            tile = Image.new("RGBA", (10, 10), (index*17, 21, 127, 255))
+            source.paste(tile, (index*12, 0)); originals[key] = tile
+            atlas.append(dict(n="source/"+key, x=index*12, y=0, w=10, h=10))
         buf = io.BytesIO(); source.save(buf, format="PNG")
         fixture = {pixels.SOURCE+".png": wf_assets.png_encode(buf.getvalue()),
                    pixels.SOURCE+".atlas.amf3.deflate": skill.amf_bytes(atlas)}
@@ -122,7 +125,27 @@ class DragonSkillTests(unittest.TestCase):
             frame = restore_frame(sheet, entry_for_frame(idx, item["end"]))
             tile = frame.crop(frame.getchannel("A").getbbox())
             self.assertEqual(tile.tobytes(), originals[item["source"].rsplit("/", 1)[-1]].tobytes())
-        self.assertEqual(read("pixelart.timeline")["circles"][0]["path"], "unit_body")
+        timeline = read("pixelart.timeline")
+        self.assertEqual(client_legality.pixelart_timeline_problems(timeline), [])
+        self.assertEqual(report["ticks"], 216)
+        self.assertEqual(len(timeline["sequences"]), 9)
+        alpha_pixels = {tick: sum(alpha > 127 for alpha in
+            restore_frame(sheet, entry_for_frame(idx, tick)).getchannel("A").get_flattened_data())
+            for tick in range(1, report["ticks"]+1)}
+        self.assertEqual(client_legality.pixelart_visibility_problems(timeline, alpha_pixels), [])
+        # 调用生产preflight所用的实际package形状校验，避免仅检查本模块自建约束。
+        with tempfile.TemporaryDirectory() as directory:
+            package = Path(directory)
+            logical = prefix + "pixelart.timeline.amf3.deflate"
+            destination = package / "roots" / "common" / logical
+            destination.parent.mkdir(parents=True)
+            destination.write_bytes(files["common", logical])
+            declared = [("common", logical, destination)]
+            self.assertEqual(character_pack._client_asset_shape_errors({}, package, declared), [])
+            # 旧的五段时间轴必须被同一个生产入口拒绝。
+            broken = dict(timeline, sequences=timeline["sequences"][:5])
+            destination.write_bytes(skill.amf_bytes(broken))
+            self.assertTrue(character_pack._client_asset_shape_errors({}, package, declared))
         self.assertFalse(report["pixel_content_changed"])
         # 每个演出图层都必须命中本包原龙atlas，不能隐含借入海盗等外观。
         fx_atlas_path = skill.CALL_EFFECT + "campus_bianca_dragon_call.atlas.amf3.deflate"

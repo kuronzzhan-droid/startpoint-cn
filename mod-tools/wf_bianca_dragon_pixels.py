@@ -19,7 +19,13 @@ SEQUENCES = {
     "walk_front": ("as", "aq", "as", "ab"),
     "skill_ready": ("l", "m", "u", "m"),
     "kachidoki": ("as", "aq", "as", "ab"),
+    "into_coffin": ("as", "aq", "ab", "g"),
+    "ghost_raise": ("a", "f", "g", "f"),
+    "ghost_neutral": ("as", "aq", "as", "ab"),
+    "revive": ("g", "ab", "aq", "as"),
 }
+SEQUENCE_KINDS = {"skill_ready": "once", "into_coffin": "pass",
+                  "ghost_raise": "pass", "revive": "once"}
 
 
 def build_dragon_assets(read):
@@ -46,13 +52,15 @@ def build_dragon_assets(read):
             tick += 6
             names.append(f"{frame_name}{tick:04d}")
             provenance.append(dict(sequence=sequence, source=entries[key]["n"], end=tick))
-        sequences.append(dict(name=sequence, kind="once" if sequence == "skill_ready" else "loop",
+        sequences.append(dict(name=sequence, kind=SEQUENCE_KINDS.get(sequence, "loop"),
                               begin=begin, end=tick))
     sheet, packed = pack_images(pictures, names, trim=True, dedup=True, max_width=None)
     buf = io.BytesIO(); sheet.save(buf, format="PNG")
     timeline = dict(sequences=sequences,
-        circles=[dict(path="unit_body", frames=[dict(begin=1, data=[dict(x=0, y=0, r=6.5)])])],
-        points=[dict(path="hp_gauge", frames=[dict(begin=1, data=[dict(x=0, y=-12)])])], sounds=[])
+        circles=[dict(path="unit_body", frames=[dict(begin=s["begin"]+1,
+            data=[dict(x=0, y=0, r=8.3)] if s["name"] in
+            ("neutral", "walk_back", "walk_front") else []) for s in sequences])],
+        points=[dict(path="hp_gauge", frames=[dict(begin=1, data=[dict(x=0, y=-10)])])], sounds=[])
     frame = dict(name=frame_name, x=-16, y=-16, scale=6, smoothing=False)
     files = {
         ("common", prefix + "sprite_sheet.png"): wf_assets.png_encode(buf.getvalue()),
