@@ -31,6 +31,8 @@ class DragonSkillTests(unittest.TestCase):
         absent, present = selector[5:7]
         self.assertEqual(sum(c[0] == "CreateSummonsMultiball" for c in commands(absent)), 1)
         self.assertFalse(any(c[0] == "CreateSummonsMultiball" for c in commands(present)))
+        self.assertFalse(any(c[0] == "CreateCondition" and c[2][0][0] == "ACInvincible"
+                             for c in commands(absent)))
         remove = next(c for c in commands(present) if c[0] == "RemoveMultiball")
         self.assertEqual(remove, ["RemoveMultiball", True, [1199891]])
 
@@ -66,7 +68,8 @@ class DragonSkillTests(unittest.TestCase):
         invincible = next(c for c in effects if c[2][0][0] == "ACInvincible")
         self.assertEqual(invincible[1], 11)
         self.assertEqual(invincible[2], [["ACInvincible", skill.value(60)]])
-        self.assertTrue(invincible[5])
+        self.assertTrue(invincible[-1])
+        self.assertEqual(sum(c[-1] is True for c in effects), 1)
         ascent = next(c for c in cs if c[0] == "MoveHitArea")
         self.assertEqual(ascent[1:5], [12, ["AB"], 0, 120])
         self.assertFalse(any(c[0] == "MoveBall" for c in cs))

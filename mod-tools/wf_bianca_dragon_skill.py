@@ -34,10 +34,10 @@ def wait(frames, label, *expressions):
     return ["Event", ["Wait", frames, label, block(*expressions)]]
 
 
-def condition(subject, content, *, label=""):
+def condition(subject, content, *, label="", force_apply=False):
     return command("CreateCondition", subject, [content], value(1),
                    ["GenericConditionHitEffect"], True, False, label, None,
-                   False, 3, value(1), False)
+                   False, 3, value(1), force_apply)
 
 
 def mark(subject, marker):
@@ -89,7 +89,7 @@ def build_skill(level, *, summon_marker=SUMMON_MARKER, breath_marker=BREATH_MARK
                       ["ForesideOfCharacter"], ["PlayOnlyFirstSequence"], ["AB"],
                       0, 0, 0, True, False, ["None"]),
               command("MoveHitArea", 12, ["AB"], 0, 120, ["None"])))
-    present = block(condition(11, ["ACInvincible", value(60)]),
+    present = block(condition(11, ["ACInvincible", value(60)], force_apply=True),
         flight, command("HideCharacter", 11, 30),
         command("StopBall", 10, 30, ["Stop"], ["AB"], 0),
         wait(24, "campus_dragon_breath_begin",
