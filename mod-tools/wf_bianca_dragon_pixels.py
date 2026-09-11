@@ -1,0 +1,92 @@
+"""把碧安卡四星技能里的原始幼龙像素裁片装成独立协力球；不重绘。"""
+from __future__ import annotations
+
+import io
+import zlib
+
+from PIL import Image
+
+import wf_assets
+import wf_dsl
+from wf_bianca_dragon_skill import CALL_EFFECT, DRAGON_CODE, amf_bytes
+from wf_generated_vfx import build_parts, pack_images
+from wf_pixelart_vfx import restore_frame
+
+SOURCE = "battle/effect/skill_unique/lady_summoner/lady_summoner"
+SEQUENCES = {
+    "neutral": ("as", "aq", "as", "ab"),
+    "walk_back": ("a", "f", "g", "f"),
+    "walk_front": ("as", "aq", "as", "ab"),
+    "skill_ready": ("l", "m", "u", "m"),
+    "kachidoki": ("as", "aq", "as", "ab"),
+}
+
+
+def build_dragon_assets(read):
+    """返回四件套、六种龙召回/放飞效果与逐帧source证据；没有其他角色像素。"""
+    image = Image.open(io.BytesIO(wf_assets.png_decode(read(SOURCE + ".png")))).convert("RGBA")
+    atlas = wf_dsl.parse_dsl(zlib.decompress(read(SOURCE + ".atlas.amf3.deflate"), -15))["tree"]
+    entries = {e["n"].rsplit("/", 1)[-1]: e for e in atlas}
+    prefix = f"character/{DRAGON_CODE}/pixelart/"
+    frame_name = prefix + "pixelart"
+    pictures, names, sequences, provenance = [], [], [], []
+    tiles = {}
+    for key in {k for sequence in SEQUENCES.values() for k in sequence}:
+        original = restore_frame(image, entries[key])
+        tile = original.crop(original.getchannel("A").getbbox())
+        canvas = Image.new("RGBA", (32, 32))
+        canvas.paste(tile, ((32-tile.width)//2, (32-tile.height)//2))
+        tiles[key] = canvas
+    tick = 0
+    for sequence, keys in SEQUENCES.items():
+        begin = tick + 1
+        for key in keys:
+            # 原像素内容居中，无缩放、无染色，黑色轮廓与紫色翼膜完全保留。
+            pictures.append(tiles[key])
+            tick += 6
+            names.append(f"{frame_name}{tick:04d}")
+            provenance.append(dict(sequence=sequence, source=entries[key]["n"], end=tick))
+        sequences.append(dict(name=sequence, kind="once" if sequence == "skill_ready" else "loop",
+                              begin=begin, end=tick))
+    sheet, packed = pack_images(pictures, names, trim=True, dedup=True, max_width=None)
+    buf = io.BytesIO(); sheet.save(buf, format="PNG")
+    timeline = dict(sequences=sequences,
+        circles=[dict(path="unit_body", frames=[dict(begin=1, data=[dict(x=0, y=0, r=6.5)])])],
+        points=[dict(path="hp_gauge", frames=[dict(begin=1, data=[dict(x=0, y=-12)])])], sounds=[])
+    frame = dict(name=frame_name, x=-16, y=-16, scale=6, smoothing=False)
+    files = {
+        ("common", prefix + "sprite_sheet.png"): wf_assets.png_encode(buf.getvalue()),
+        ("common", prefix + "sprite_sheet.atlas.amf3.deflate"): amf_bytes(packed),
+        ("common", prefix + "pixelart.frame.amf3.deflate"): amf_bytes(frame),
+        ("common", prefix + "pixelart.timeline.amf3.deflate"): amf_bytes(timeline),
+    }
+    files.update(build_call_effects(tiles))
+    return files, dict(source_atlas=SOURCE + ".atlas.amf3.deflate", frames=provenance,
+                       pixel_content_changed=False, sheet_size=list(sheet.size), ticks=tick)
+
+
+def build_call_effects(tiles):
+    """Ready/appear/disappear的原生供体常嵌其他小人，故统一用真幼龙制作。"""
+    name = "campus_bianca_dragon_call"
+    files, images, names = {}, [], []
+    for tail in ("effect_ready_generation", "effect_ready_left", "effect_ready_right",
+                 "effect_appear", "effect_disappear", "flight"):
+        keys = SEQUENCES["walk_back" if tail == "flight" else "walk_front"]
+        prefix = CALL_EFFECT + ".gen/" + name + "_" + tail + "/"
+        parts, timeline = build_parts(4, (32, 32), prefix.replace(".gen/", "generated/"), hold=6)
+        for texture in parts["i"]:
+            texture["p"] = texture["p"].replace("/generated/", "/.gen/")
+        # 像素actor的frame.scale为6，flatomo效果须显式复制相同比例。
+        matrix = parts["t"][0]
+        for field in ("a", "d", "x", "y"):
+            matrix[field] *= 6
+        logical = CALL_EFFECT + name + "_" + tail
+        files["common", logical + ".parts.amf3.deflate"] = amf_bytes(parts)
+        files["common", logical + ".timeline.amf3.deflate"] = amf_bytes(timeline)
+        images.extend(tiles[key] for key in keys)
+        names.extend(prefix + f"{i+1:04d}" for i in range(4))
+    sheet, atlas = pack_images(images, names, trim=True, dedup=True, max_width=None)
+    buf = io.BytesIO(); sheet.save(buf, format="PNG")
+    files["common", CALL_EFFECT + name + ".png"] = wf_assets.png_encode(buf.getvalue())
+    files["common", CALL_EFFECT + name + ".atlas.amf3.deflate"] = amf_bytes(atlas)
+    return files
