@@ -1,0 +1,82 @@
+"""真实官方 donor 与反编译引擎约束验证；不修改 live。"""
+from __future__ import annotations
+
+from copy import deepcopy
+from pathlib import Path
+import sys
+import unittest
+
+sys.path.insert(0, str(Path(__file__).parents[1]))
+import wf_bianca_dragon_bridge as bridge
+import wf_campus_bianca as campus
+
+AS3 = Path("D:/WF/outputs/re-workspace/decompile/scripts/pinball")
+
+
+class BiancaDragonBridgeTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        if not (campus.ROOT / "mod-tools/profiles.json").is_file():
+            raise unittest.SkipTest("official fixture unavailable")
+        cls.source = campus.Builder().official_rows("master/ability/ability.orderedmap")
+
+    def test_support_is_real_fire_ability_damage_from_triggering_member(self):
+        before = deepcopy(self.source["1310202"])
+        row = bridge.support_damage_rows(self.source)[bridge.SUPPORT_ABILITY_ID][0]
+        self.assertEqual(row[6:8], ["187", "0"])
+        self.assertEqual(row[12], str(bridge.BREATH_UNIQUE_ID))
+        self.assertEqual(row[27:30], ["185", "5", "(None)"])
+        self.assertEqual(row[34:36], ["(None)", "0"])
+        self.assertEqual(row[37], str(bridge.BREATH_UNIQUE_ID))
+        self.assertEqual(row[47:49], ["251", "7"])
+        self.assertEqual(row[51:53], ["5000000", "5000000"])
+        self.assertEqual(row[69], "(None)", "AllEnemyDamage, not timed nearest-order shots")
+        self.assertEqual(self.source["1310202"], before)
+
+    def test_enhancement_only_exists_in_learned_a1_and_fire_resonance(self):
+        rows = bridge.a1_enhancement_rows(self.source)
+        for row in rows:
+            self.assertEqual(row[0:2], [bridge.CODE + "_1", "true"])
+            self.assertEqual((row[6], row[9], row[10], row[11]),
+                             ("2", "600000", "600000", "Red"))
+        flag, charge, attack = rows
+        self.assertEqual((flag[27], flag[47], flag[70]),
+                         ("0", "536", bridge.CHANGE_SKILL_STRING_ID))
+        self.assertEqual((charge[27], charge[28], charge[37], charge[47], charge[48]),
+                         ("185", "0", str(bridge.BREATH_UNIQUE_ID), "211", "0"))
+        self.assertEqual(charge[51:53], ["50000", "50000"])
+        self.assertEqual((attack[47], attack[48]), ("0", "2"))
+        self.assertEqual(attack[51:53], ["200000", "200000"])
+        self.assertEqual(attack[57:59], ["90000000", "90000000"])
+
+    def test_unique_refresh_has_single_layer_and_forced_member_application(self):
+        rows = bridge.unique_condition_rows()
+        self.assertEqual(set(rows), {"11998901", "11998902"})
+        for value in rows.values():
+            self.assertEqual(len(value[0]), 15)
+            self.assertEqual(value[0][3:5], ["900", "1"])
+            self.assertEqual(value[0][9:14], ["false", "true", "0", "0", "true"])
+        self.assertEqual(set(bridge.icon_reuse_paths().values()), {bridge.ICON_SOURCE})
+
+    @unittest.skipUnless(AS3.is_dir(), "native source fixture unavailable")
+    def test_native_bridge_contract(self):
+        slot = (AS3 / "scene/battle/battle/ability/AbilitySlotImpl.as").read_text()
+        start = slot.index("public function setupTriggerPullerHandler")
+        stop = slot.index("public function setupDuringChecker", start)
+        self.assertIn("squadManager.primary.members", slot[start:stop])
+        target = slot[slot.index("public function forEachInstantContentTarget"):]
+        self.assertIn("case 5:\n               if(param2 != null)", target)
+        self.assertIn("param4(param2);", target)
+        condition = (AS3 / "scene/battle/battle/condition/ConditionSlot.as").read_text()
+        self.assertIn("_loc20_ = _loc25_.addedTime != frameCount;", condition)
+        self.assertIn("_loc65_.executeIfMatch(ownerEnemy,param1.content);", condition)
+        shot = (AS3 / "scene/battle/battle/ability/AbilityDamageShot.as").read_text()
+        self.assertIn('"createdByAbility":true', shot)
+        self.assertIn('"createdByMainSkillAction":false', shot)
+        factory = (AS3 / "scene/battle/battle/squad/MultiballFactory.as").read_text()
+        self.assertIn("_loc14_.support_skill1", factory)
+        self.assertNotIn("isLearned", factory)
+
+
+if __name__ == "__main__":
+    unittest.main()
