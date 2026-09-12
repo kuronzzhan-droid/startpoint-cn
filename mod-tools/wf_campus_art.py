@@ -67,9 +67,9 @@ def atlas_sheet(package, ui, fulls):
     return sheet_rel, sheet
 
 
-def build(role, source_dir, landmarks, output, *, apply=False):
+def build(role, source_dir, landmarks, output, *, apply=False, package=None, headshots=False):
     cid, code = CHARACTERS[role]
-    package = ROOT / f"work/character_packs/campus-{role}-20260911/package"
+    package = Path(package) if package is not None else ROOT / f"work/character_packs/campus-{role}-20260911/package"
     if not package.resolve().is_relative_to((ROOT / "work/character_packs").resolve()):
         raise ValueError("assigned package escaped workspace")
     manifest_path = package / "manifest.json"
@@ -80,7 +80,8 @@ def build(role, source_dir, landmarks, output, *, apply=False):
     output.mkdir(parents=True, exist_ok=True)
     ui = f"character/{code}/ui/"
     candidates, icons_preview, art_preview, fulls, geometry = {}, {}, {}, [], []
-    report = dict(character=role, cid=cid, sources=[], masks=[], gates={}, files=[], writes_live=False)
+    report = dict(character=role, cid=cid, package=str(package), headshots=headshots,
+                  sources=[], masks=[], gates={}, files=[], writes_live=False)
     for level in (0, 1):
         source = source_dir / f"{role}-{level}.png"
         master, source_report = images.load_master(source, landmarks[level])
@@ -106,8 +107,8 @@ def build(role, source_dir, landmarks, output, *, apply=False):
                 for slot in gate.SHAPE_SLOTS})
             masks_source_path.write_text(json.dumps(mask_sources, indent=2), encoding="utf-8")
         report["masks"].append(mask_sources)
-        icons = images.make_icons(master, landmarks[level], masks, role)
-        icons["skill_cutin"] = images.make_cutin(master, landmarks[level])
+        icons = images.make_icons(master, landmarks[level], masks, role, headshots=headshots)
+        icons["skill_cutin"] = images.make_cutin(master, landmarks[level], headshots=headshots)
         problems = gate.derived_icon_problems(icons, masks, level=str(level))
         report["gates"][str(level)] = problems
         if problems:
@@ -152,6 +153,7 @@ def build(role, source_dir, landmarks, output, *, apply=False):
     report["geometry"] = geometry
     manifest.setdefault("snapshot", {})["campus_art"] = dict(sources=report["sources"], geometry=geometry,
         original_template_masks=True, full_ground_preserved=True, android_atf_encoded=True,
+        face_centered_headshots=headshots,
         visual_review_pending=True)
     if role == "bianca":
         manifest["snapshot"].setdefault("campus_bianca", {})["original_portraits_pending_replacement"] = False
@@ -178,9 +180,12 @@ if __name__ == "__main__":
     parser.add_argument("--source-dir", type=Path, required=True)
     parser.add_argument("--landmarks", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--package", type=Path, help="显式指定已从最新live建立的离线候选包")
+    parser.add_argument("--headshots", action="store_true", help="所有头像与技能切入采用脸部居中特写")
     parser.add_argument("--apply", action="store_true")
     args = parser.parse_args()
     result = build(args.character, args.source_dir,
-                   json.loads(args.landmarks.read_bytes())[args.character], args.output, apply=args.apply)
+                   json.loads(args.landmarks.read_bytes())[args.character], args.output,
+                   apply=args.apply, package=args.package, headshots=args.headshots)
     print(json.dumps(dict(character=args.character, applied=result["applied"], gates=result["gates"],
                           changed=sum(r["changed"] for r in result["files"]), writes_live=False)))

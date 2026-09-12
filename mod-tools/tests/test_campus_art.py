@@ -18,6 +18,25 @@ import wf_quest_lib as tables
 
 
 class CampusArtTests(unittest.TestCase):
+    def test_headshots_keep_off_center_face_centered_in_every_native_slot(self):
+        source = Image.new("RGBA", (900, 1200))
+        draw = ImageDraw.Draw(source)
+        draw.rectangle((310, 160, 370, 220), fill="red")
+        mark = dict(face=[340, 190], eyes=[340, 180], square_height=240, head_height=180)
+        masks = {slot: np.full((height, width), 255, np.uint8)
+                 for slot, (width, height) in images.gate.OFFICIAL_ICON_SIZES.items()
+                 if slot in images.gate.SHAPE_SLOTS}
+        icons = images.make_icons(source, mark, masks, "celtie", headshots=True)
+        icons["skill_cutin"] = images.make_cutin(source, mark, headshots=True)
+        for slot, icon in icons.items():
+            pixels = np.asarray(icon)
+            yy, xx = np.where((pixels[:, :, 0] > 220) & (pixels[:, :, 1] < 20)
+                              & (pixels[:, :, 2] < 20) & (pixels[:, :, 3] > 220))
+            self.assertGreater(len(xx), 10, slot)
+            self.assertAlmostEqual(float(xx.mean()) / icon.width, .5, delta=.02, msg=slot)
+            self.assertAlmostEqual(float(yy.mean()) / icon.height, .5, delta=.02, msg=slot)
+            self.assertEqual(icon.size, images.gate.OFFICIAL_ICON_SIZES[slot])
+
     def test_fullshot_keeps_bottom_scene_and_stays_in_native_canvas(self):
         source = Image.new("RGBA", (1000, 1500))
         draw = ImageDraw.Draw(source)

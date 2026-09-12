@@ -91,10 +91,14 @@ def background(size, role):
     return Image.fromarray(np.dstack((rgb.astype(np.uint8), np.full(radius.shape[:2], 255, np.uint8))))
 
 
-def make_icons(source, landmarks, masks, role):
+def make_icons(source, landmarks, masks, role, *, headshots=False):
     icons = {}
     for slots, (fx, fy, factor) in GROUPS:
         size = gate.OFFICIAL_ICON_SIZES[slots[0]]
+        if headshots:
+            # 窄长的原生框仍留足脸宽；锚点居中，不再偏上露出半身。
+            fx = fy = .5
+            factor = max(1.0, .82 * size[1] / size[0])
         base = background(size, role)
         base.alpha_composite(crop_at(source, landmarks["face"], landmarks["square_height"] * factor,
                                     size, (fx, fy)))
@@ -110,9 +114,13 @@ def make_icons(source, landmarks, masks, role):
     return icons
 
 
-def make_cutin(source, landmarks):
-    result = crop_at(source, landmarks["eyes"], 512 * landmarks["head_height"] / 207,
-                     (1024, 512), (.51, .44))
+def make_cutin(source, landmarks, *, headshots=False):
+    if headshots:
+        result = crop_at(source, landmarks["face"], landmarks["head_height"] * 1.35,
+                         (1024, 512), (.5, .5))
+    else:
+        result = crop_at(source, landmarks["eyes"], 512 * landmarks["head_height"] / 207,
+                         (1024, 512), (.51, .44))
     pixels = np.asarray(result).copy()
     alpha = pixels[:, :, 3].astype(float)
     ramp = np.r_[np.zeros(4), np.linspace(0, 1, 60)]
