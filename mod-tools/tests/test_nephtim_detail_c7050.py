@@ -33,7 +33,7 @@ class NephtimDetailC7050Test(unittest.TestCase):
         self.assertEqual(["0", "", "", "", "", "", ""], row[20:27])
         self.assertEqual(["20", "7", "Black", "4500000", "4500000"], row[27:32])
         self.assertEqual(["(None)", "0"], row[34:36])
-        self.assertEqual(["10000", "10000"], row[51:53])
+        self.assertEqual(["15000", "15000"], row[51:53])
 
     def test_panel_moves_the_effect_to_a3_and_keeps_main_badge(self):
         panels = text.panel_descriptions()
@@ -42,7 +42,7 @@ class NephtimDetailC7050Test(unittest.TestCase):
         self.assertTrue(line.startswith(text.MAIN_ICON))
         self.assertNotIn("队长", line)
         self.assertIn("暗属性共鸣时", line)
-        self.assertIn("Fever 槽+10%", line)
+        self.assertIn("Fever 槽+15%", line)
         self.assertNotIn("Fever 模式中", line)
 
 

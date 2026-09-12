@@ -1,4 +1,4 @@
-"""奈芙A4的固定20%球直击独立加成，写入各球原生本地状态槽。"""
+"""奈芙A4的固定50%球直击独立加成，写入各球原生本地状态槽。"""
 from copy import deepcopy
 import json
 from pathlib import Path
@@ -21,7 +21,7 @@ TTL_FRAMES = 2
 
 def action_tree():
     condition = command("CreateCondition", 81,
-        [["ACSeparatedTermDirectDamage", value(TTL_FRAMES), value(0.2), value(1)]],
+        [["ACSeparatedTermDirectDamage", value(TTL_FRAMES), value(0.5), value(1)]],
         value(1), ["None"], False, False, CONDITION_KEY, None, True, 3, value(1), True)
     return ["ActionDsl", 1, ["None"], False, False, False, False, False, False,
             False, 0, block(command("FindMultiballSubjects", 80, 81, False, [],
@@ -33,7 +33,7 @@ def action_assets():
 
 
 def flat_string_rows():
-    return {STRING_ID: [["协力球对敌人造成的直接攻击伤害+20%（独立乘区）。"]]}
+    return {STRING_ID: [["协力球对敌人造成的直接攻击伤害+50%（独立乘区）。"]]}
 
 
 def replace_ball_row(rows):
@@ -54,7 +54,7 @@ def replace_ball_row(rows):
     row = result[index]
     if (row[1] != "true" or row[6] != "2" or row[9:12] != ["600000", "600000", "Black"]
             or row[13] != "12" or row[20] != "0" or row[97] != "4"
-            or row[113:115] != ["20000", "20000"]):
+            or row[113:115] != ["50000", "50000"]):
         raise ValueError("A4 strength, resonance, Fever or unison policy changed")
     row[5] = "0"
     row[27:85] = [""] * 58
@@ -70,7 +70,7 @@ def replace_ball_row(rows):
 
 
 def metadata():
-    return dict(ability_slot=4, percent=20, requires_dark_resonance=True,
+    return dict(ability_slot=4, percent=50, requires_dark_resonance=True,
         requires_fever=True, unisonable=True, target="all local multiball members",
         element_filter=None, summoner_filter=None, update_period_frames=1,
         condition_duration_ball_updates=TTL_FRAMES, condition_key=CONDITION_KEY,

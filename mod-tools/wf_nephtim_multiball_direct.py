@@ -18,7 +18,7 @@ def action_tree():
     conditionSlot。数量放在 strength，不放 magnification，避免低值刷新被拒。
     MultiballNumberVariable 的 ID 数组必须为 null；空数组代表不匹配任何球。
     """
-    strength = [{"min": 0.1, "max": 0.1, "mul": COUNT_VARIABLE}]
+    strength = [{"min": 0.5, "max": 0.5, "mul": COUNT_VARIABLE}]
     def condition(subject):
         return command("CreateCondition", subject,
             [["ACSeparatedTermDirectDamage", value(TTL_FRAMES), strength, value(1)]],
@@ -36,12 +36,12 @@ def action_assets():
 
 
 def flat_string_rows():
-    return {STRING_ID: [["每有1个协力球存在时，全队及协力球对敌人造成的直接攻击伤害+10%（独立乘区）。"]]}
+    return {STRING_ID: [["每有1个协力球存在时，全队及协力球对敌人造成的直接攻击伤害+50%（独立乘区）。"]]}
 
 
 def metadata():
     return {
-        "per_surviving_multiball_percent": 10,
+        "per_surviving_multiball_percent": 50,
         "main_only": True, "requires_dark_resonance": True, "requires_fever": False,
         "party_and_multiballs": "same N, each member's invisible ConditionSlot",
         "count_scope": "native surviving count, including inactive and ectoplasmic squads",

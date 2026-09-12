@@ -18,7 +18,7 @@ class NephtimMultiballFeverTests(unittest.TestCase):
     def original(self):
         # The pre-fix native row factory is retained for this independent fixture.
         source = official_sources()[0]
-        rows = [abilities._during(source, 410, 20_000, target=target) for target in (5, 8)]
+        rows = [abilities._during(source, 410, 50_000, target=target) for target in (5, 8)]
         for row in rows:
             row[0] = "ruin_girl_campus_4"
         return rows
@@ -47,9 +47,9 @@ class NephtimMultiballFeverTests(unittest.TestCase):
         self.assertEqual([], legality.declared_block_field_problems("ability", row))
         self.assertEqual(a4.replace_ball_row(revised), revised)
 
-    def test_existing_during_party_row_is_still_dark_and_fever_twenty_percent(self):
+    def test_existing_during_party_row_is_still_dark_and_fever_fifty_percent(self):
         row = a4.replace_ball_row(self.original())[0]
-        self.assertEqual(("2", "Black", "12", "410", "5", "Black", "20000", "20000"),
+        self.assertEqual(("2", "Black", "12", "410", "5", "Black", "50000", "50000"),
             (row[6], row[11], row[13], row[109], row[110], row[111], row[113], row[114]))
 
     def test_actual_encoded_helper_has_no_damage_count_or_persistent_action(self):
@@ -63,14 +63,14 @@ class NephtimMultiballFeverTests(unittest.TestCase):
         self.assertEqual([80, 81, False, [], ["Block", []]], find[1:6])
         self.assertEqual(condition[1], 81)
         self.assertEqual(condition[2], [["ACSeparatedTermDirectDamage",
-            [{"min": 2, "max": 2}], [{"min": .2, "max": .2}], [{"min": 1, "max": 1}]]])
+            [{"min": 2, "max": 2}], [{"min": .5, "max": .5}], [{"min": 1, "max": 1}]]])
         self.assertEqual(condition[3:], [[{"min": 1, "max": 1}], ["None"], False, False,
             a4.CONDITION_KEY, None, True, 3, [{"min": 1, "max": 1}], True])
 
     def test_a3_and_a4_are_independent_condition_origins(self):
         self.assertNotEqual(a3.CONDITION_KEY, a4.CONDITION_KEY)
         self.assertNotEqual(a3.LOGICAL_PATH, a4.LOGICAL_PATH)
-        self.assertEqual(a4.flat_string_rows()[a4.STRING_ID], [["协力球对敌人造成的直接攻击伤害+20%（独立乘区）。"]])
+        self.assertEqual(a4.flat_string_rows()[a4.STRING_ID], [["协力球对敌人造成的直接攻击伤害+50%（独立乘区）。"]])
         self.assertNotIn("desc_override_", a4.STRING_ID)
 
     def test_unknown_strength_or_unison_policy_is_rejected(self):

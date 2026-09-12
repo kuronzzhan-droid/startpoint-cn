@@ -58,12 +58,12 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
         summon, clear = self.rows["1699891"][2:4]
         self.assertEqual(("2", "Black", "12", "232", "0", "100000", "100000"),
                          (summon[6], summon[11], summon[13], summon[27], summon[28], summon[30], summon[31]))
-        self.assertEqual(("12000000", "12000000", "(None)", "0", "16998901", "629"),
+        self.assertEqual(("9000000", "9000000", "(None)", "0", "16998901", "629"),
                          (summon[32], summon[33], summon[34], summon[35], summon[37], summon[47]))
         self.assertEqual([kit.SPAWN_STRING_ID, kit.SPAWN_ACTION_PATH], summon[70:72])
         self.assertEqual(("0", "0", "184", "528", "0", "16998901"),
                          (clear[6], clear[13], clear[27], clear[47], clear[48], clear[68]))
-        self.assertEqual(1200, kit.metadata()["skill_enhancement"]["per_ball_duration_frames"])
+        self.assertEqual(1500, kit.metadata()["skill_enhancement"]["per_ball_duration_frames"])
         custom = kit.ability_rows(self.source, summon_unique_id=12345, spawn_action_path="custom/action")
         self.assertEqual("12345", custom["1699891"][2][37])
         self.assertEqual("12345", custom["1699891"][3][68])
@@ -119,10 +119,10 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
         combo = self.rows["1699893"][0]
         self.assertEqual(("1", "2", "Black", "12", "2", "100000", "100000", "(None)"),
                          (combo[5], combo[6], combo[11], combo[13], combo[97], combo[100], combo[101], combo[102]))
-        self.assertEqual(("410", "5", "Black", "500", "500"),
+        self.assertEqual(("410", "5", "Black", "1000", "1000"),
                          (combo[109], combo[110], combo[111], combo[113], combo[114]))
         bonuses = [count * int(combo[113]) / 1000 for count in (0, 1, 70, 1000, 2)]
-        self.assertEqual([0, 0.5, 35, 500, 1], bonuses)
+        self.assertEqual([0, 1, 70, 1000, 2], bonuses)
         self.assertIsNone(kit.metadata()["combo_bonus"]["trigger_limit"])
         self.assertTrue(kit.metadata()["combo_bonus"]["falls_when_combo_falls"])
 
@@ -138,7 +138,7 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
         members, balls = self.rows["1699894"]
         for row in (members, balls):
             self.assertEqual(("true", "2", "Black", "12"), (row[1], row[6], row[11], row[13]))
-        self.assertEqual(("4", "410", "20000", "20000"),
+        self.assertEqual(("4", "410", "50000", "50000"),
                          (members[97], members[109], members[113], members[114]))
         self.assertEqual(("5", "Black"), (members[110], members[111]))
         self.assertEqual(("77", "100000", "100000", "629"),
