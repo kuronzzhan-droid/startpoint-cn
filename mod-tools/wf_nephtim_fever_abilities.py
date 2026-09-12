@@ -1,6 +1,7 @@
 """校园奈芙提姆六能力：纯原生表行工厂，不读写角色包或 live。"""
 from copy import deepcopy
 import wf_nephtim_multiball_direct as multiball_direct
+import wf_nephtim_multiball_fever as multiball_fever
 
 CID = "169989"
 CODE = "ruin_girl_campus"
@@ -134,12 +135,14 @@ def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
             row[0] = f"{CODE}_{number}"
             row[1] = "false" if number in (1, 3) else "true"
         result[f"{CID}{number}"] = rows
+    result[CID + "4"] = multiball_fever.replace_ball_row(result[CID + "4"])
     return result
 
 
 def flat_string_rows():
     return {
         **multiball_direct.flat_string_rows(),
+        **multiball_fever.flat_string_rows(),
         CHANGE_SKILL_STRING_ID: [[
             "技能强化：额外赋予暗属性角色及协力球攻击力提升100%效果（20秒）；"
             "在Fever中施放时获得持续20秒的召唤效果，每2秒召唤1个协力球，"
@@ -155,6 +158,7 @@ def metadata():
         "required_client_capabilities": ["kyubi-fever-ratio-v1"],
         "main_only_slots": [1, 3],
         "current_multiball_direct_bonus": multiball_direct.metadata(),
+        "fever_multiball_direct_bonus": multiball_fever.metadata(),
         "direct_attack_fever": {"ability_slot": 3, "requires_ability_unlock": True,
                                 "requires_self_leader": False, "requires_dark_resonance": True,
                                 "dark_hits": 50, "percent_of_maximum": 5,

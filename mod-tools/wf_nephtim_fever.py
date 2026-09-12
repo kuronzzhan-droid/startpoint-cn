@@ -10,6 +10,7 @@ import wf_dsl_sig
 import wf_mod_tool as core
 import wf_nephtim_fever_abilities as abilities
 import wf_nephtim_multiball_direct as multiball_direct
+import wf_nephtim_multiball_fever as multiball_fever
 import wf_nephtim_fever_ball_pixels as balls
 import wf_nephtim_fever_effects as effects
 import wf_nephtim_fever_leader as leader
@@ -91,7 +92,7 @@ def assemble(repo: Path, workspace: Path, *, piercing_extension, apply=False):
     native = candidate.native_assets(bundle)
     files = {**pixels.assets(native), **balls.assets(native),
              **effects.assets(native), **powerflip.action_assets(native),
-             **multiball_direct.action_assets()}
+             **multiball_direct.action_assets(), **multiball_fever.action_assets()}
     spawn = skill.build_spawn()
     validate_program(spawn)
     files["common", abilities.SPAWN_ACTION_PATH + SUFFIX] = encode_tree(spawn)

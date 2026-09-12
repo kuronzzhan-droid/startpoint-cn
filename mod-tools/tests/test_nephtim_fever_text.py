@@ -106,7 +106,9 @@ class NephtimFeverTextTest(unittest.TestCase):
         self.assertIn("暗属性共鸣时，全队贯穿效果时间+20%", panels["a2"])
         self.assertIn("暗属性角色直接攻击伤害+250%", panels["a2"])
         self.assertEqual("暗属性共鸣时，Fever 模式中，暗属性角色及协力球直接攻击造成的伤害+20%。", panels["a4"])
-        self.assertEqual(["5", "8"], [row[110] for row in self.abilities["1699894"]])
+        members, balls = self.abilities["1699894"]
+        self.assertEqual("5", members[110])
+        self.assertEqual([abilities.multiball_fever.STRING_ID, abilities.multiball_fever.ACTION_PATH], balls[70:72])
         self.assertNotIn("共鸣", panels["a5"])
         self.assertEqual(["0", "0"], [row[6] for row in self.abilities["1699895"]])
         self.assertEqual(["非 Fever 模式中，每经过10秒，赋予全队贯穿效果，持续3秒。",

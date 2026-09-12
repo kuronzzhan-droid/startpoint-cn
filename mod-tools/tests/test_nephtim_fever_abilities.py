@@ -131,10 +131,14 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
     def test_a4_covers_dark_members_and_all_cooperative_balls_with_distinct_targets(self):
         members, balls = self.rows["1699894"]
         for row in (members, balls):
-            self.assertEqual(("2", "Black", "12", "4", "410", "20000", "20000"),
-                             (row[6], row[11], row[13], row[97], row[109], row[113], row[114]))
+            self.assertEqual(("true", "2", "Black", "12"), (row[1], row[6], row[11], row[13]))
+        self.assertEqual(("4", "410", "20000", "20000"),
+                         (members[97], members[109], members[113], members[114]))
         self.assertEqual(("5", "Black"), (members[110], members[111]))
-        self.assertEqual(("8", ""), (balls[110], balls[111]))
+        self.assertEqual(("77", "100000", "100000", "629"),
+                         (balls[27], balls[30], balls[31], balls[47]))
+        self.assertEqual(kit.multiball_fever.ACTION_PATH, balls[71])
+        self.assertEqual([""] * 29, balls[97:])
 
     def test_a5_has_no_resonance_gate_and_uses_native_timers_and_three_second_status(self):
         for row, gate, trigger, threshold in zip(self.rows["1699895"],
