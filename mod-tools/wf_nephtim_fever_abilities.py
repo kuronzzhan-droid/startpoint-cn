@@ -1,5 +1,6 @@
 """校园奈芙提姆六能力：纯原生表行工厂，不读写角色包或 live。"""
 from copy import deepcopy
+import wf_nephtim_multiball_direct as multiball_direct
 
 CID = "169989"
 CODE = "ruin_girl_campus"
@@ -85,6 +86,14 @@ def _piercing(source, *, trigger, frames, fever):
                      64: "(None)", 65: "(None)", 67: 0, 72: "false"})
 
 
+def _multiball_direct_rows(source):
+    # One native surviving count feeds both party and balls. P13/D208 use a
+    # different inactive-ball filter, so neither belongs to this added effect.
+    pulse = _instant(source, 629, pre="dark", trigger=77)
+    _set(pulse, {70: multiball_direct.STRING_ID, 71: multiball_direct.ACTION_PATH})
+    return [pulse]
+
+
 def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
                  spawn_action_path=SPAWN_ACTION_PATH):
     """返回1699891..6；主动技能里的强化分支/召唤状态由DSL模块装配。"""
@@ -113,7 +122,7 @@ def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
     # Only AbilityValues parses I724 on the installed ratio-capable client.
     charge = _instant(source, 724, 5_000, pre="dark", trigger=20,
                       threshold=50, puller=7, group="Black")
-    a3 = [combo, piercing_attack, piercing_direct, charge]
+    a3 = [combo, piercing_attack, piercing_direct, charge, *_multiball_direct_rows(source)]
     a4 = [_during(source, 410, 20_000, target=5),
           _during(source, 410, 20_000, target=8)]
     a5 = [_piercing(source, trigger=77, frames=600, fever="not_fever"),
@@ -130,6 +139,7 @@ def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
 
 def flat_string_rows():
     return {
+        **multiball_direct.flat_string_rows(),
         CHANGE_SKILL_STRING_ID: [[
             "技能强化：额外赋予暗属性角色及协力球攻击力提升100%效果（20秒）；"
             "在Fever中施放时获得持续20秒的召唤效果，每2秒召唤1个协力球，"
@@ -144,6 +154,7 @@ def metadata():
         "character_id": CID,
         "required_client_capabilities": ["kyubi-fever-ratio-v1"],
         "main_only_slots": [1, 3],
+        "current_multiball_direct_bonus": multiball_direct.metadata(),
         "direct_attack_fever": {"ability_slot": 3, "requires_ability_unlock": True,
                                 "requires_self_leader": False, "requires_dark_resonance": True,
                                 "dark_hits": 50, "percent_of_maximum": 5,

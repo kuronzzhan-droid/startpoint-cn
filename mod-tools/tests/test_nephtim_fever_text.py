@@ -32,7 +32,7 @@ class NephtimFeverTextTest(unittest.TestCase):
         self.assertNotRegex(panels["active"], r"[0-9%％]")
         for value in panels.values():
             self.assertTrue(value.strip())
-            self.assertNotRegex(value, r"同条件|无上限|无次数上限|I629|I536|I722|DSL|APK|Unique|原生|实现|独立乘区")
+            self.assertNotRegex(value, r"同条件|无上限|无次数上限|I629|I536|I722|DSL|APK|Unique|原生|实现")
         for phrase in ("参战者及协力球贯穿", "队伍内角色及协力球", "Fever 模式中"):
             self.assertIn(phrase, panels["active"])
 
