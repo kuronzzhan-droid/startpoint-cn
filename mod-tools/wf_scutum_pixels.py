@@ -10,7 +10,7 @@ import wf_assets
 import wf_dsl
 from wf_campus_art_images import png, sha
 from wf_character_revision import encode_tree
-from wf_scutum_seed import CODE
+from wf_scutum_seed import CODE, TEMPLATE_CODE
 from wf_scutum_pixel_timeline import exposure_runs, loop_frames, retime
 
 
@@ -62,7 +62,9 @@ def build(seed, source_path, output):
         frame_path = prefix + animation + '.frame.amf3.deflate'
         timeline_path = prefix + animation + '.timeline.amf3.deflate'
         frame = wf_dsl.parse_dsl(zlib.decompress(_read(seed, frame_path), -15))['tree']
-        timeline = wf_dsl.parse_dsl(zlib.decompress(_read(seed, timeline_path), -15))['tree']
+        # Always start from official timing, including on repeated revisions.
+        source_timeline = seed.official(timeline_path.replace(CODE, TEMPLATE_CODE))
+        timeline = wf_dsl.parse_dsl(zlib.decompress(source_timeline, -15))['tree']
         timeline = retime(timeline, period)
         atlas = [dict(n=frame['name'] + f'{end:04d}', x=indices[pose] * 32, y=0,
                       w=26, h=30, fx=fx, fy=fy, fw=256, fh=256)

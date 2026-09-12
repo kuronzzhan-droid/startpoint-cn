@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import wf_assets
 import wf_dsl
 from wf_character_revision import encode_tree
+from wf_client_legality import _pixelart_marker_problems
 import wf_scutum_pixels as pixels
 from wf_scutum_pixel_timeline import frame_index, loop_frames, retime
 
@@ -54,6 +55,9 @@ class Seed:
     def emit(self, tier, logical, raw):
         self.outputs[tier, logical] = raw
 
+    def official(self, logical):
+        return encode_tree(timeline())
+
 
 class ScutumPixelsTests(unittest.TestCase):
     def test_magic_not_extension_and_all_four_frames(self):
@@ -93,6 +97,9 @@ class ScutumPixelsTests(unittest.TestCase):
         self.assertEqual(held(seq['skill_ready']['begin'] + 1), [])
         self.assertEqual(held(seq['kachidoki']['end']), [])
         self.assertTrue(all(m['data'] == [dict(x=0, y=-10)] for m in new['points'][0]['frames']))
+        self.assertEqual(_pixelart_marker_problems(new, new['sequences']), [])
+        self.assertEqual(len(markers), len(new['sequences']))
+        self.assertEqual(len(new['points'][0]['frames']), 1)
 
     def test_every_native_frame_has_correct_pose_and_fixed_foot_anchor(self):
         with tempfile.TemporaryDirectory() as folder:

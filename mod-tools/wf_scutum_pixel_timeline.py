@@ -35,21 +35,22 @@ def retime(tree, duration):
     for channel in ('circles', 'points'):
         for track in result.get(channel, []):
             old_frames = sorted(track['frames'], key=lambda item: item['begin'])
-            new_frames = {}
-            for old, new in mapping:
-                inherited = [f for f in old_frames if f['begin'] <= old['begin']]
-                record = deepcopy(inherited[-1]) if inherited else {'data': []}
-                record['begin'] = new['begin']
-                new_frames[new['begin']] = record
-                for frame in old_frames:
-                    if old['begin'] < frame['begin'] <= old['end']:
-                        offset = frame['begin'] - old['begin']
-                        if offset > new['end'] - new['begin']:
-                            raise ValueError('retiming would discard an animation marker')
-                        record = deepcopy(frame)
-                        record['begin'] = new['begin'] + offset
-                        new_frames[record['begin']] = record
-            track['frames'] = [new_frames[key] for key in sorted(new_frames)]
+            new_frames = []
+            for frame in old_frames:
+                owner = next(((old, new) for old, new in mapping
+                              if old['begin'] <= frame['begin'] <= old['end']), None)
+                if owner is None:
+                    raise ValueError('animation marker is outside all source sequences')
+                old, new = owner
+                offset = frame['begin'] - old['begin']
+                if offset > new['end'] - new['begin']:
+                    raise ValueError('retiming would discard an animation marker')
+                record = deepcopy(frame)
+                record['begin'] = new['begin'] + offset
+                new_frames.append(record)
+            # Native markers hold their previous value. Keep the official one
+            # body marker per sequence and the single global hp_gauge point.
+            track['frames'] = new_frames
     if result.get('sounds'):
         raise ValueError('Scutum source unexpectedly contains sound timeline events')
     return result
