@@ -12,10 +12,10 @@ from wf_miniboss_roster import ROSTER
 from wf_miniboss_rows import Kit, make
 from wf_miniboss_text import ACTIVE, MAIN, panel_rows
 
-EXPECTED = {"129998": 285, "139996": 295, "129996": 270, "149994": 295,
-            "159999": 290, "129995": 285, "149993": 265, "119995": 270,
-            "149992": 285, "129994": 275, "119993": 300, "129993": 275,
-            "169993": 275, "149991": 285, "119994": 295}
+EXPECTED = {"129998": 295, "139996": 285, "129996": 285, "149994": 300,
+            "159999": 300, "129995": 295, "149993": 285, "119995": 295,
+            "149992": 300, "129994": 285, "119993": 300, "129993": 290,
+            "169993": 300, "149991": 295, "119994": 295}
 
 
 def source_pf(char):
@@ -61,16 +61,17 @@ class MinibossKitsTests(unittest.TestCase):
             self.assertEqual(meta["independent_terms"][0]["peak_percent"], 15)
 
     def test_unbounded_growth_is_rejected_even_if_panel_claims_cap(self):
-        rows = deepcopy(self.kits["119995"][0]["1199952"])
-        rows[0][34] = "(None)"
+        rows = deepcopy(self.kits["119995"][0]["1199953"])
+        rows[0][102] = "(None)"
         with self.assertRaisesRegex(ValueError, "finite native cap"):
             audit({2: rows})
 
     def test_during_layer_and_timed_stack_caps_are_counted(self):
         bear = self.kits["149991"][0]
-        self.assertEqual(float(row_peak(bear["1499911"][2])[0]), 35)
-        self.assertEqual(float(row_peak(bear["1499913"][0])[0]), 56)
-        self.assertEqual(float(row_peak(bear["1499913"][1])[0]), 84)
+        clione = self.kits["129996"][0]
+        self.assertEqual(float(row_peak(clione["1299962"][1])[0]), 60)
+        self.assertEqual(float(row_peak(bear["1499913"][0])[0]), 140)
+        self.assertEqual(float(row_peak(bear["1499913"][1])[0]), 140)
         invalid = deepcopy(bear["1499913"])
         invalid[0][102] = "(None)"
         with self.assertRaises(ValueError):
@@ -91,11 +92,12 @@ class MinibossKitsTests(unittest.TestCase):
 
     def test_threshold_growth_and_refill_have_distinct_finite_caps(self):
         dog = self.kits["119995"][0]
-        growth, refill = dog["1199952"][0], dog["1199955"][1]
-        self.assertEqual(growth[27], "12")
-        self.assertEqual(growth[30:32], ["3000000", "3000000"])
-        self.assertEqual(growth[34], "10")
-        self.assertEqual(refill[30:32], ["5000000", "5000000"])
+        growth, refill = dog["1199953"][0], dog["1199955"][0]
+        self.assertEqual(growth[97], "134")
+        self.assertEqual(growth[102], "5")
+        self.assertEqual(float(row_peak(growth)[0]), 200)
+        self.assertEqual(refill[27], "12")
+        self.assertEqual(refill[30:32], ["3000000", "3000000"])
         self.assertEqual(refill[34], "(None)")
 
     def test_genin_poison_and_chase_are_main_only_without_bad_resistance(self):

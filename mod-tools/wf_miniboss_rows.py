@@ -37,12 +37,16 @@ def condition(kind, **fields):
     return kind, fields
 
 
-def event(kind=0, *, every=1, limit=None, ct=0, puller=0, group=None):
+def event(kind=0, *, every=1, limit=None, ct=0, puller=0, group=None, held_seconds=None):
     if not kind:
         return 0, {}
     fields = {**scaled("threshold", every), "trigger_limit": NONE if limit is None else limit,
               "cooltime": round(ct * 60)}
     declared = describe.enum_map()["cases"]["instant_trigger"][str(kind)]["fields"]
+    if held_seconds is not None:
+        if "threshold2" not in declared:
+            raise ValueError("trigger does not accept held-condition frames")
+        fields.update(scaled("threshold2", held_seconds * 60))
     if "trigger_puller" in declared:
         fields["trigger_puller"] = puller
         if group:
@@ -124,6 +128,10 @@ class Kit:
 
     def gain(self, n=1, **kwargs):
         return self.i(461, n * 100, extra={"unique_condition_id": self.uid}, **kwargs)
+
+    def has(self, count):
+        return [(144, {"trigger_puller": 0, "unique_condition_id": self.uid,
+                       **scaled("threshold", count)})]
 
     def helper(self, suffix, **kwargs):
         return self.i(629, extra={"string_id": "ability_skill_" + self.code + "_" + suffix,
