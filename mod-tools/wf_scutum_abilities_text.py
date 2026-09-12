@@ -1,5 +1,6 @@
 """本次修改的能力组说明；机制表仍为原生字段，红M保留。"""
 from wf_scutum_abilities_rows import CODE
+from wf_featured_main_ability import main_description
 
 
 def panel_string_rows():
@@ -18,4 +19,5 @@ def panel_string_rows():
         )),
         6: "风属性共鸣时，强化技能：连击效果变为5次直接攻击，总和伤害提升50%。",
     }
+    texts[1] = main_description(texts[1])
     return {f"desc_override_{CODE}_{slot}": [[text]] for slot, text in texts.items()}

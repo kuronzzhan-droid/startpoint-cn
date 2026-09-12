@@ -1,5 +1,6 @@
 """校园奈芙提姆的官方模板面板文字；纯文本工厂，不改战斗表行。"""
 from copy import deepcopy
+from wf_featured_main_ability import main_description
 
 from wf_nephtim_fever_abilities import CID, CODE, CHANGE_SKILL_STRING_ID, SPAWN_STRING_ID
 from wf_nephtim_fever_leader import PF_STRING_ID
@@ -55,6 +56,7 @@ def _piercing_line(policy):
 def panel_descriptions(*, piercing_extension="dark_resonance"):
     """返回主动、队长和六能力；队长贯穿使用已确认的常驻暗共鸣条件。"""
     texts = deepcopy(_TEXTS)
+    texts["a1"] = main_description(texts["a1"])
     texts["leader"] += "\n" + _piercing_line(piercing_extension)
     return texts
 

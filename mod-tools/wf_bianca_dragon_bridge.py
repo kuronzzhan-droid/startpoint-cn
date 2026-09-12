@@ -54,6 +54,7 @@ def a1_enhancement_rows(source):
                   c57=90000000, c58=90000000)
     for row in (flag, charge, attack):
         row[0] = CODE + "_1"
+        row[1] = "false"
     return [flag, charge, attack]
 
 

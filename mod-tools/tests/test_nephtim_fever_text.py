@@ -75,7 +75,7 @@ class NephtimFeverTextTest(unittest.TestCase):
         rows = self.abilities["1699891"]
         self.assertEqual(("245", "50000"), (rows[0][47], rows[0][51]))
         panel = self.panels()["a1"]
-        self.assertEqual("自身技能槽上限+50%。", panel.splitlines()[0])
+        self.assertEqual(text.MAIN_ICON + "自身技能槽上限+50%。", panel.splitlines()[0])
         self.assertNotIn("战斗开始", panel)
         self.assertNotIn("技能槽+50%", panel)
         self.assertIn("暗属性共鸣时，强化技能", panel)

@@ -140,7 +140,7 @@ def ability_rows(source: dict) -> dict:
     for number, rows in enumerate(slots, 1):
         for row in rows:
             row[0] = f"{CODE}_{number}"
-            row[1] = "false" if number == 3 else "true"
+            row[1] = "false" if number in (1, 3) else "true"
         result[f"{CID}{number}"] = rows
     return result
 
@@ -160,6 +160,7 @@ def flat_string_rows() -> dict:
 def metadata() -> dict:
     return {
         "character_id": CID,
+        "main_only_slots": [1, 3],
         "required_client_capabilities": ["kyubi-fever-ratio-v1"],
         "a1_enhancement": {
             "string_id": CHANGE_SKILL_STRING_ID,

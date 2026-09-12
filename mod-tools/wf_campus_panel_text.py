@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from wf_featured_main_ability import main_description
 
 REQUIRED_CAPABILITY = "panel-description-override-v2"
 FLAT_STRING_TABLE = "master/string/custom_ability_string.orderedmap"
@@ -91,7 +92,9 @@ def panel_descriptions(character_id):
     cid = str(character_id)
     if cid not in CODES:
         raise ValueError(f"unsupported campus character: {cid}")
-    return deepcopy(_BIANCA if cid == "119989" else _CELTIE)
+    texts = deepcopy(_BIANCA if cid == "119989" else _CELTIE)
+    texts["a1"] = main_description(texts["a1"])
+    return texts
 
 
 def active_description(character_id):

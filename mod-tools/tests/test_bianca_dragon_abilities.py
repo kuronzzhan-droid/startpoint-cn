@@ -47,9 +47,9 @@ class BiancaDragonAbilitiesTest(unittest.TestCase):
                 self.assertEqual([], legality.declared_block_field_problems(table, row))
                 self.assertEqual([], legality.ability_element_column_problems(table, row, 1))
 
-    def test_only_ability_three_is_main_position_restricted(self):
+    def test_abilities_one_and_three_are_main_position_restricted(self):
         for slot, rows in self.abilities.items():
-            self.assertEqual({"false" if slot.endswith("3") else "true"}, {r[1] for r in rows})
+            self.assertEqual({"false" if slot.endswith(("1", "3")) else "true"}, {r[1] for r in rows})
         self.assertEqual("75000", self.abilities["1199891"][0][51])
 
     def test_leader_and_ability_two_require_fire_resonance(self):

@@ -33,9 +33,9 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
                 self.assertNotIn("Green", row)
                 self.assertNotIn("Red", row)
 
-    def test_a3_alone_is_main_only(self):
+    def test_a1_and_a3_are_main_only(self):
         for sid, rows in self.rows.items():
-            self.assertEqual({"false" if sid == "1699893" else "true"}, {r[1] for r in rows})
+            self.assertEqual({"false" if sid in ("1699891", "1699893") else "true"}, {r[1] for r in rows})
 
     def test_a1_increases_self_maximum_without_initial_charge(self):
         maximum, flag = self.rows["1699891"][:2]

@@ -36,9 +36,9 @@ class ScutumAbilitiesTest(unittest.TestCase):
                 self.assertEqual([], legality.declared_block_field_problems(kind, row))
                 self.assertEqual([], legality.ability_element_column_problems(kind, row, 3))
 
-    def test_only_a3_is_main_only(self):
+    def test_a1_and_a3_are_main_only(self):
         for key, group in self.abilities.items():
-            self.assertEqual({"false" if key == "1499883" else "true"}, {r[1] for r in group})
+            self.assertEqual({"false" if key in ("1499881", "1499883") else "true"}, {r[1] for r in group})
 
     def test_leader_floating_piercing_and_damage_counter_are_independent(self):
         floating, combo, dash, attack, direct, separate = self.leader

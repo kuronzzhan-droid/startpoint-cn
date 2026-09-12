@@ -35,9 +35,9 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
                 self.assertEqual([], legality.declared_block_field_problems("ability", row))
                 self.assertEqual([], legality.ability_element_column_problems("ability", row, 3))
 
-    def test_only_third_ability_is_main_restricted(self):
+    def test_first_and_third_abilities_are_main_restricted(self):
         for sid, rows in self.rows.items():
-            self.assertEqual({"false" if sid.endswith("3") else "true"},
+            self.assertEqual({"false" if sid.endswith(("1", "3")) else "true"},
                              {r[1] for r in rows})
 
     def test_opening_charge_and_learned_wind_resonance_flag_are_separate(self):

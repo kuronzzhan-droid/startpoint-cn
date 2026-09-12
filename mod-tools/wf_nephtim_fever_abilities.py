@@ -123,7 +123,7 @@ def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
     for number, rows in enumerate(([maximum, enhance, summon, clear, reconcile], a2, a3, a4, a5, a6), 1):
         for row in rows:
             row[0] = f"{CODE}_{number}"
-            row[1] = "false" if number == 3 else "true"
+            row[1] = "false" if number in (1, 3) else "true"
         result[f"{CID}{number}"] = rows
     return result
 
@@ -143,7 +143,7 @@ def metadata():
     return {
         "character_id": CID,
         "required_client_capabilities": ["kyubi-fever-ratio-v1"],
-        "main_only_slots": [3],
+        "main_only_slots": [1, 3],
         "direct_attack_fever": {"ability_slot": 3, "requires_ability_unlock": True,
                                 "requires_self_leader": False, "requires_dark_resonance": True,
                                 "dark_hits": 50, "percent_of_maximum": 5,

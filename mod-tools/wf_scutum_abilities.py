@@ -79,7 +79,7 @@ def ability_rows(source):
     for number, rows in enumerate((a1, a2, a3, a4, a5, a6), 1):
         for row in rows:
             row[0] = f"{CODE}_{number}"
-            row[1] = "false" if number == 3 else "true"
+            row[1] = "false" if number in (1, 3) else "true"
         result[f"{CID}{number}"] = rows
     return result
 
@@ -124,7 +124,7 @@ def flat_string_rows():
 
 def metadata():
     return {
-        "character_id": CID, "main_only_slots": [3],
+        "character_id": CID, "main_only_slots": [1, 3],
         "collect_unique_id": COLLECT_UID,
         "collect_duration_frames": 300, "collect_pf3_cooldown_frames": 300,
         "requires_collect_hit_resolution": False,

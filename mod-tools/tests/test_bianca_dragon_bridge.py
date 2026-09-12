@@ -49,7 +49,7 @@ class BiancaDragonBridgeTests(unittest.TestCase):
     def test_enhancement_only_exists_in_learned_a1_and_fire_resonance(self):
         rows = bridge.a1_enhancement_rows(self.source)
         for row in rows:
-            self.assertEqual(row[0:2], [bridge.CODE + "_1", "true"])
+            self.assertEqual(row[0:2], [bridge.CODE + "_1", "false"])
             self.assertEqual((row[6], row[9], row[10], row[11]),
                              ("2", "600000", "600000", "Red"))
         flag, charge, attack = rows
