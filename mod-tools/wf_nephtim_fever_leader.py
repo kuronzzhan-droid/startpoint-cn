@@ -24,7 +24,7 @@ def leader_rows(source, *, piercing_extension="dark_resonance",
     # the general Fever gain modifier. Both I50/I56 exist in LeaderAbilityValues.
     growth = _instant(source, 50, 20_000, pre="dark", target=5,
                       trigger=12, threshold=35)
-    duration = _instant(source, 56, 10_000, pre="dark")
+    duration = _instant(source, 56, 30_000, pre="dark")
     rows = [pf, direct, attack, maximum, piercing, growth, duration]
     return [[CODE, "0", ""] + deepcopy(row[5:]) for row in rows]
 
@@ -44,7 +44,7 @@ def metadata():
                               "target": "dark party", "requires_fever": False,
                               "trigger_limit": None, "persists_after_combo_reset": True,
                               "counter": "native T12 current-combo multiples; remainder resets on combo reset"},
-        "fever_duration_percent": 10,
+        "fever_duration_percent": 30,
         "piercing_extension": {"strategy": "dark_resonance", "target": "party",
                                "increase_percent": 20, "requires_fever": False,
                                "trigger": 0, "content": 190,

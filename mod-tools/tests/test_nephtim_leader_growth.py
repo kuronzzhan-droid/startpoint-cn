@@ -26,7 +26,7 @@ class NephtimLeaderGrowthTest(unittest.TestCase):
         self.assertEqual(["5", "Black"], rate[46:48])
         self.assertEqual(["20000", "20000"], rate[49:51])
         self.assertEqual("0", duration[25])
-        self.assertEqual(["10000", "10000"], duration[49:51])
+        self.assertEqual(["30000", "30000"], duration[49:51])
         for row in (rate, duration):
             self.assertEqual(["2", "", "", "600000", "600000", "Black", ""], row[4:11])
             self.assertEqual(("0", "0"), (row[11], row[18]))
@@ -49,7 +49,7 @@ class NephtimLeaderGrowthTest(unittest.TestCase):
         self.assertIn("星夜茶会", panels["a1"])
         self.assertIn("35", panels["leader"])
         self.assertIn("Fever 槽上升量+20%", panels["leader"])
-        self.assertIn("暗属性共鸣时，Fever 时间+10%", panels["leader"])
+        self.assertIn("暗属性共鸣时，Fever 时间+30%", panels["leader"])
         self.assertNotIn("Fever 槽上升量", panels["a3"])
         self.assertNotIn("Fever 时间", panels["a3"])
         self.assertTrue(all(line.startswith(text.MAIN_ICON) for line in panels["a3"].splitlines()))
