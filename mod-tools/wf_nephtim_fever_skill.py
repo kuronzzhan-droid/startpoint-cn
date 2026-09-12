@@ -12,6 +12,7 @@ ACTIVE_PATHS = tuple(f"battle/action/skill/action/rare5/{CODE}${CODE}_{level}"
                      for level in (1, 2))
 SKILL_FX = "battle/effect/skill_unique/" + CODE + "_fever/"
 BALL_FX = {kind: f"battle/effect/skill_unique/{CODE}_{kind}_call/" for kind in ("light", "dark")}
+LIGHT_FADE_FX = f"battle/effect/skill_unique/{CODE}_light_fade/{CODE}_light_fade_disappear"
 DURATION = 1200
 
 
@@ -104,9 +105,10 @@ def summon(kind):
     prefix = BALL_FX[kind]
     stem = CODE + "_" + kind + "_call"
     effect = lambda tail: ["SpecifyEffectDirectly", prefix + stem + tail]
+    disappear = ["SpecifyEffectDirectly", LIGHT_FADE_FX] if kind == "light" else effect("_disappear")
     return command("CreateSummonsMultiball", 1, uid, value(DURATION),
         ["E2", effect("_ready_generation"), effect("_ready_left"), effect("_ready_right")],
-        effect("_appear"), effect("_disappear"), 0, False,
+        effect("_appear"), disappear, 0, False,
         "campus_nephtim_" + kind + "_spawn", 74, 75, block(
             condition(75, direct_buff(), attack_buff(), split_buff(), ["ACPiercing", value(DURATION)]),
             _advance_phase(kind)), None)

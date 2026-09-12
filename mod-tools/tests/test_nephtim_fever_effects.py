@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parents[1]))
 import wf_dsl
 import wf_nephtim_fever_effects as effects
 import wf_nephtim_fever_skill as skill
+from wf_character_requirements import MasterAssetReference, required_asset_paths
 from wf_assets import PNG_FAKE, png_decode
 from wf_enhancement_policy import OfficialBaseline
 from wf_nephtim_fever_powerflip import with_bundle_fallback
@@ -50,7 +51,7 @@ class NephtimEffectsTests(unittest.TestCase):
         path = GENERAL + ".png"
         self.assertIsNone(self.cdn(path), "fixture must exercise the real missing CDN asset")
         original = with_bundle_fallback(self.cdn, BUNDLE)(path)
-        target = skill.BALL_FX["light"] + skill.CODE + "_light_fade.png"
+        target = skill.LIGHT_FADE_FX.rsplit("/", 1)[0] + "/" + skill.CODE + "_light_fade.png"
         self.assertEqual(self.files["common", target], original)
         with Image.open(BytesIO(png_decode(original))) as sheet:
             sheet.load()
@@ -90,6 +91,24 @@ class NephtimEffectsTests(unittest.TestCase):
                     self.assertFalse(item["s"], "unexpected nested animation needs explicit closure")
                     self.assertIn(item["p"], images, (path, item["p"]))
         self.assertEqual(parts, 13)
+
+    def test_each_animation_uses_its_directory_default_atlas(self):
+        # The client loads one atlas named after the animation's directory;
+        # finding a texture in a different packaged atlas is insufficient.
+        checked = 0
+        for (_, path), raw in self.files.items():
+            if not path.endswith(".parts.amf3.deflate"):
+                continue
+            effect = path.removesuffix(".parts.amf3.deflate")
+            required = required_asset_paths(MasterAssetReference("skill_effect", effect, path))
+            for dependency in required:
+                self.assertIn(("common", dependency), self.files, (effect, dependency))
+            atlas = decode(self.files["common", required[3]])
+            loaded = {item["n"] for item in atlas}
+            referenced = {item["p"] for item in decode(raw)["i"]}
+            self.assertFalse(referenced - loaded, (effect, sorted(referenced - loaded)))
+            checked += 1
+        self.assertEqual(checked, 13)
 
     def test_all_amf_roundtrips_and_contains_no_official_effect_path(self):
         old_paths = ("battle/effect/skill_unique/ruin_girl_halfanv/",

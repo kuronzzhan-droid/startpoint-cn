@@ -9,7 +9,7 @@ import wf_dsl
 from wf_assets import png_encode
 from wf_character_revision import encode_tree
 from wf_nephtim_fever_powerflip import with_bundle_fallback
-from wf_nephtim_fever_skill import BALL_FX, CODE, SKILL_FX, STATE_ICON
+from wf_nephtim_fever_skill import BALL_FX, CODE, LIGHT_FADE_FX, SKILL_FX, STATE_ICON
 
 ICON_PATH = Path(__file__).resolve().parent / "assets/nephtim-fever-icons/starry-tea.png"
 
@@ -88,8 +88,9 @@ def assets(read, *, bundle_path=None):
         files.update(_clone(read, "battle/effect/skill_unique/" + old_sheet + "/", old_sheet,
             BALL_FX[kind], new_sheet, [(old_base + suffix, new_sheet + suffix) for suffix in suffixes]))
     general = "multiball_general_effect"
+    fade_dir, fade_name = LIGHT_FADE_FX.rsplit("/", 1)
     files.update(_clone(read, "battle/effect/skill_general/multiball/" + general + "/", general,
-        BALL_FX["light"], CODE + "_light_fade", [(general + "_disappear", CODE + "_light_call_disappear")]))
+        fade_dir + "/", CODE + "_light_fade", [(general + "_disappear", fade_name)]))
     raw = ICON_PATH.read_bytes()
     with Image.open(BytesIO(raw)) as icon:
         if icon.size != (48, 48) or icon.mode != "RGBA" or icon.getextrema()[3] != (0, 255):
