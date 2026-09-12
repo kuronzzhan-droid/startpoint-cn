@@ -12,15 +12,12 @@ import wf_bianca_dragon_bridge as bridge
 import wf_bianca_dragon_icons as icons
 import wf_bianca_dragon_pixels as pixels
 import wf_bianca_dragon_skill as skill
+import wf_campus_panel_text as panel
 import wf_campus_bianca_data as old
 import wf_mod_tool as core
 from wf_bianca_dragon_package import Candidate, CID, CODE, encode_tree
 
-DESCRIPTION = (
-    "小龙未在场时：召唤幼龙协力球，降低全场敌人的攻击力，并使自身获得「幼龙回应」。"
-    "小龙在场时：令幼龙飞至上空向下吐息，对全场敌人造成火属性能力伤害，"
-    "降低火属性抗性、增加FEVER槽，并使自身获得「幼龙吐息」。"
-)
+DESCRIPTION = panel.active_description(CID)
 FEVER_NAME = "焰域研修"
 
 
@@ -50,6 +47,7 @@ def assemble(repo: Path, candidate_root: Path, *, apply=False):
     candidate.splice(leader_path, {CID: leaders})
     candidate.splice("master/string/custom_ability_string.orderedmap", {
         **abilities.fever_tick_string_rows(), **bridge.flat_string_rows(),
+        **panel.native_flat_string_rows(CID), **panel.override_string_rows(CID, rows, leaders),
     })
     for (tier, logical), raw in abilities.fever_tick_assets().items():
         candidate.emit(tier, logical, raw)
@@ -105,7 +103,8 @@ def assemble(repo: Path, candidate_root: Path, *, apply=False):
     candidate.splice(text_path, {CID: text_rows})
     candidate.server_character_row("cdndata/character_text.json", text_rows)
     required = candidate.manifest.setdefault("required_capabilities", [])
-    for capability in abilities.metadata()["required_client_capabilities"]:
+    for capability in (abilities.metadata()["required_client_capabilities"]
+                       + panel.metadata()["required_client_capabilities"]):
         if capability not in required:
             required.append(capability)
     candidate.manifest["snapshot"]["campus_bianca"].update(
@@ -129,6 +128,7 @@ def assemble(repo: Path, candidate_root: Path, *, apply=False):
         "dragon_idle": "single official as frame for idle and movement; selected by user",
         "existing_art_voice_preserved": True,
         "status_icons": "three original generated 48px RGBA icons; native condition paths preserved",
+        "panel_descriptions": panel.metadata(),
     }
     return candidate.finish(metadata, apply=apply)
 

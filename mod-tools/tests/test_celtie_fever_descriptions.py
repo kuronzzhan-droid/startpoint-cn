@@ -38,8 +38,10 @@ class CeltieDescriptionDependenciesTest(unittest.TestCase):
             build.validate_descriptions(self.abilities, self.leaders, broken)
 
     def test_native_revision_removes_retired_patch_and_preserves_fever_capability(self):
-        self.assertEqual(["kyubi-fever-ratio-v1"], build.required_capabilities())
-        self.assertEqual(["kyubi-fever-ratio-v1", "other-existing-feature"],
+        self.assertEqual(["kyubi-fever-ratio-v1", "panel-description-override-v2"],
+                         build.required_capabilities())
+        self.assertEqual(["kyubi-fever-ratio-v1", "other-existing-feature",
+                          "panel-description-override-v2"],
                          build.required_capabilities(["celtie-ability-actions-v1",
                              "kyubi-fever-ratio-v1", "other-existing-feature"]))
         self.assertIn("风属性伤害（伤害量以能力伤害加成判定）", build.DESCRIPTION)

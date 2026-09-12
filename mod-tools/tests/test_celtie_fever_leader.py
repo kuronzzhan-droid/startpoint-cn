@@ -66,9 +66,11 @@ class CeltieFeverLeaderTest(unittest.TestCase):
                           leader.STOCK_ACTION_PATH),
                          (acquire[25], acquire[26], acquire[27], acquire[45], acquire[68], acquire[69]))
         self.assertEqual(("26", "2", "0", "100000", "100000", str(leader.STOCK_UID),
-                          "226", "700000", "(None)"),
+                          "629", "", "(None)"),
                          (consume[25], consume[37], consume[38], consume[40], consume[41],
                           consume[43], consume[45], consume[49], consume[32]))
+        self.assertEqual([leader.LEADER_SPEND_STRING_ID, leader.LEADER_SPEND_ACTION_PATH],
+                         consume[68:70])
         stock = leader.unique_rows()[str(leader.STOCK_UID)][0]
         self.assertEqual(["(None)"] * 4, stock[5:9])
         self.assertEqual(["false", "true", "0", "0", "false"], stock[9:14])
@@ -92,7 +94,10 @@ class CeltieFeverLeaderTest(unittest.TestCase):
         self.assertEqual(tree, ability_tree, "only granted layer count may differ")
         earned = leader.unique_rows()[str(leader.GAIN_UID)][0]
         available = leader.unique_rows()[str(leader.STOCK_UID)][0]
-        self.assertEqual(available[2:], earned[2:], "earned layers persist without auto-consumption")
+        self.assertEqual(available[3:], earned[3:], "earned layers persist without auto-consumption")
+        self.assertEqual("星风心得", earned[1])
+        self.assertEqual(leader.GAIN_ICON, earned[2])
+        self.assertNotEqual(available[2], earned[2])
         self.assertNotEqual(leader.GAIN_UID, leader.STOCK_UID)
 
     def test_every_custom_description_reference_has_nonempty_flat_text(self):
@@ -128,13 +133,14 @@ class CeltieFeverLeaderTest(unittest.TestCase):
             self.skipTest("official CDN fixture unavailable")
         builder = campus.Builder()
         assets = leader.action_assets(builder.official)
-        self.assertEqual(38, len(assets))
+        self.assertEqual(41, len(assets))
         one_layer = assets["common", leader.ABILITY_STOCK_ACTION_PATH + ".action.dsl.amf3.deflate"]
         self.assertEqual(leader.stock_action_tree(1), leader._decoded(one_layer))
         from io import BytesIO
         from PIL import Image
         from wf_assets import png_decode
         icon_bytes = assets["common", leader.STOCK_ICON + ".png"]
+        self.assertNotEqual(icon_bytes, assets["common", leader.GAIN_ICON + ".png"])
         self.assertNotEqual(builder.official("battle/common/unique_condition/unique_zeta.png"),
                             icon_bytes, "Starwind Shutter must use its own artwork")
         with Image.open(BytesIO(png_decode(icon_bytes))) as icon:

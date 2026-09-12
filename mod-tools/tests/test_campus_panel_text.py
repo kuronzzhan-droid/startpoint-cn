@@ -1,0 +1,151 @@
+"""简版说明的真实条件、覆盖键以及多行平表编码契约。"""
+from copy import deepcopy
+from pathlib import Path
+import sys
+import unittest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+import wf_bianca_dragon_abilities as bianca
+import wf_bianca_dragon_bridge as bianca_bridge
+import wf_celtie_fever_abilities as celtie
+import wf_celtie_fever_leader as celtie_leader
+import wf_campus_panel_text as text
+import wf_mod_tool as core
+import test_bianca_dragon_abilities as bianca_fixture
+import test_celtie_fever_abilities as celtie_fixture
+import test_celtie_fever_leader as leader_fixture
+
+
+def generated_kit(cid):
+    if cid == "119989":
+        source, leaders = bianca_fixture.official_sources()
+        return bianca.ability_rows(source), bianca.leader_rows(source, leaders)
+    fixture = leader_fixture.CeltieFeverLeaderTest()
+    fixture.setUp()
+    return celtie.ability_rows(celtie_fixture.official_sources()), fixture.rows
+
+
+class CampusPanelTextTest(unittest.TestCase):
+    def test_all_sections_exist_and_active_has_no_numeric_effects_or_implementation_text(self):
+        for cid in text.CODES:
+            sections = text.panel_descriptions(cid)
+            self.assertEqual(set(sections), {"active", "leader", "a1", "a2", "a3", "a4", "a5", "a6"})
+            self.assertEqual(sections["active"], text.active_description(cid))
+            self.assertNotRegex(sections["active"], r"[0-9%％]")
+            for value in sections.values():
+                self.assertTrue(value.strip())
+                self.assertNotRegex(value, r"I251|I629|DSL|APK|Unique|上限2147483647|交叉处不会重复")
+        bianca_active = text.active_description("119989")
+        for term in ("幼龙不在场", "幼龙在场", "成功召唤", "向下吐息", "幼龙回应", "幼龙吐息", "持续驻场", "退场"):
+            self.assertIn(term, bianca_active)
+        self.assertIn("伤害量以能力伤害加成判定", text.active_description("149989"))
+
+    def test_real_first_row_ids_resolve_seven_distinct_overrides_without_mutating_kit(self):
+        keys = set()
+        for cid in text.CODES:
+            abilities, leaders = generated_kit(cid)
+            before = deepcopy((abilities, leaders))
+            rows = text.override_string_rows(cid, abilities, leaders)
+            self.assertEqual(before, (abilities, leaders))
+            self.assertEqual(len(rows), 7)
+            self.assertFalse(keys & rows.keys())
+            keys.update(rows)
+            self.assertEqual(rows["desc_override_" + leaders[0][0]][0][0], text.panel_descriptions(cid)["leader"])
+            for slot in range(1, 7):
+                first = abilities[cid + str(slot)][0]
+                self.assertEqual(rows["desc_override_" + first[0]][0][0], text.panel_descriptions(cid)[f"a{slot}"])
+                # 不能把自定义说明写到原生觉醒种类/等级字段。
+                self.assertEqual(first[3:5], ["0", ""])
+            self.assertEqual(leaders[0][1:3], ["0", ""])
+        self.assertEqual(len(keys), 14)
+
+    def test_missing_or_colliding_string_ids_are_rejected(self):
+        abilities, leaders = generated_kit("119989")
+        del abilities["1199894"]
+        with self.assertRaisesRegex(ValueError, "a4"):
+            text.override_string_rows("119989", abilities, leaders)
+        abilities, leaders = generated_kit("149989")
+        abilities["1499892"][0][0] = abilities["1499891"][0][0]
+        with self.assertRaisesRegex(ValueError, "a2"):
+            text.override_string_rows("149989", abilities, leaders)
+
+    def test_flat_csv_roundtrip_preserves_real_newlines_and_single_cell_shape(self):
+        for cid in text.CODES:
+            rows = text.override_string_rows(cid, *generated_kit(cid))
+            rows.update(text.native_flat_string_rows(cid))
+            for key, group in rows.items():
+                self.assertEqual(len(group), 1, key)
+                self.assertEqual(len(group[0]), 1, key)
+                self.assertTrue(group[0][0].strip(), key)
+                self.assertNotIn("\\n", group[0][0], key)
+                self.assertEqual(core.read_csv_lines(core.write_csv_lines(group)), group)
+
+    def test_native_strings_only_replace_real_existing_content_keys(self):
+        originals = {
+            "119989": {**bianca.fever_tick_string_rows(), **bianca_bridge.flat_string_rows()},
+            "149989": {**celtie.flat_string_rows(), **celtie_leader.flat_string_rows()},
+        }
+        for cid, rows in originals.items():
+            rewritten = text.native_flat_string_rows(cid)
+            self.assertTrue(set(rewritten) <= set(rows))
+            self.assertTrue(all(text.CODES[cid] in key for key in rewritten))
+
+    def test_bianca_conditional_and_unconditional_effects_remain_distinct(self):
+        panels = text.panel_descriptions("119989")
+        leader = panels["leader"].splitlines()
+        self.assertIn("火属性共鸣", leader[0])
+        self.assertIn("火属性共鸣", leader[1])
+        self.assertNotIn("共鸣", leader[2])  # 原真实I251追击没有共鸣门。
+        self.assertIn("50倍火属性能力伤害", leader[2])
+        for term in ("+200%", "+400%", "Fever槽+500", "技能槽+25%"):
+            self.assertIn(term, panels["leader"])
+        for term in ("主位", "火属性共鸣", "Fever中", "上限+20%", "每2秒", "+10%", "+50%", "清空"):
+            self.assertIn(term, panels["a3"])
+        abilities, _ = generated_kit("119989")
+        attack, buff = abilities["1199892"]
+        self.assertEqual((attack[35], buff[35]), ("60", "0"))
+        self.assertIn("伤害触发冷却1秒", panels["a2"].splitlines()[1])
+        self.assertNotIn("冷却", panels["a2"].splitlines()[2])
+        self.assertIn("每次技能均可触发", panels["a2"].splitlines()[2])
+        self.assertTrue(panels["a3"].splitlines()[1].startswith("同条件下，每2秒"))
+        self.assertEqual(panels["a4"].splitlines()[1], "Fever中：火属性角色技能充能速度+10%。")
+        self.assertNotIn("共鸣", panels["a6"])
+        self.assertEqual(panels["a6"].count("最多+100%"), 2)
+
+    def test_celtie_stock_gain_consumption_and_limits_remain_explicit(self):
+        panels = text.panel_descriptions("149989")
+        leaders = generated_kit("149989")[1]
+        self.assertEqual([row[4] for row in leaders[:2]], ["0", "0"])
+        self.assertEqual(panels["leader"].splitlines()[0], "风属性角色攻击力+200%、能力伤害+400%。")
+        self.assertNotIn("共鸣", panels["leader"].splitlines()[0])
+        self.assertTrue(panels["leader"].splitlines()[1].startswith("风属性共鸣：强化弹射"))
+        for term in ("风属性共鸣", "+200%", "+400%", "10倍", "2层", "共获得3层", "最多消耗2层", "连击+14", "暂停"):
+            self.assertIn(term, panels["leader"])
+        for term in ("分为3次", "+200%", "每消耗1层", "+5%", "共+10%"):
+            self.assertIn(term, panels["a2"])
+        for term in ("主位", "风属性共鸣", "35次", "非Fever", "25倍", "70的倍数", "+700%", "+7%", "无次数上限", "星风心得", "+25%", "消耗快门不减少心得"):
+            self.assertIn(term, panels["a3"])
+        self.assertNotIn("星风快门累积", "".join(panels.values()))
+        self.assertIn("命中敌人", panels["a1"])
+        self.assertNotIn("全场敌人", panels["a1"])
+        for slot, effect in (("a4", "贯穿"), ("a5", "浮游"), ("a6", "最大速度+200%")):
+            for term in ("风属性共鸣", "Fever中", "每3秒", "1.5秒", effect):
+                self.assertIn(term, panels[slot])
+        self.assertIn("技能槽获取不衰减", panels["a6"])
+        row = generated_kit("149989")[0]["1499896"][0]
+        self.assertEqual((row[47], row[51], row[52]), ("688", "200000", "200000"))
+
+    def test_override_capability_is_explicit_and_return_values_are_isolated(self):
+        self.assertEqual(text.metadata()["required_client_capabilities"], ["panel-description-override-v2"])
+        self.assertFalse(text.metadata()["combat_rows_modified"])
+        copy = text.panel_descriptions("119989")
+        copy["leader"] = "changed"
+        self.assertNotEqual(copy, text.panel_descriptions("119989"))
+        for function in (text.panel_descriptions, text.active_description, text.native_flat_string_rows):
+            with self.assertRaises(ValueError):
+                function("999999")
+
+
+if __name__ == "__main__":
+    unittest.main()

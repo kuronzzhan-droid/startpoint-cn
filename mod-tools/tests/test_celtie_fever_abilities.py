@@ -51,7 +51,8 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
     def test_change_skill_flag_has_a_flat_text_entry_required_by_native_client(self):
         flag = self.rows["1499891"][1]
         strings = kit.flat_string_rows()
-        self.assertEqual({flag[70], kit.ABILITY_STOCK_STRING_ID}, set(strings))
+        self.assertEqual({flag[70], kit.ABILITY_STOCK_STRING_ID,
+                          kit.ABILITY_SPEND_STRING_ID}, set(strings))
         self.assertEqual(1, len(strings[flag[70]]))
         text = strings[flag[70]][0][0]
         for term in ("贯穿", "15秒", "风属性角色能力伤害提升100%", "风属性抗性降低25%"):
@@ -61,13 +62,25 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
         self.assertTrue(kit.metadata()["a1_enhancement"]["requires_skill_dsl_change_skill_flag_branch"])
 
     def test_a2_uses_native_three_split_hits_and_requires_six_wind_members(self):
-        triple, damage = self.rows["1499892"]
+        triple, damage = self.rows["1499892"][:2]
         for row in (triple, damage):
             self.assertEqual(("2", "600000", "600000", "Green", "5", "Green"),
                              (row[6], row[9], row[10], row[11], row[48], row[49]))
         self.assertEqual(("202", "0", "0"), (triple[47], triple[51], triple[52]))
         self.assertEqual(("388", "200000", "200000"),
                          (damage[47], damage[51], damage[52]))
+
+    def test_a2_rewards_each_distinct_successful_consumer_with_five_percent(self):
+        rows = self.rows["1499892"][2:]
+        self.assertEqual(2, len(rows))
+        self.assertEqual({"14998903", "14998904"}, {r[37] for r in rows})
+        for row in rows:
+            self.assertEqual(("true", "2", "Green", "12", "185", "0"),
+                             (row[1], row[6], row[11], row[13], row[27], row[28]))
+            self.assertEqual(("100000", "100000", "(None)", "0", "724", "5000", "5000"),
+                             (row[30], row[31], row[34], row[35], row[47], row[51], row[52]))
+            self.assertEqual("(None)", row[39], "Fever listener must not consume another layer")
+        self.assertTrue(kit.metadata()["a2_consumed_stock_fever"]["requires_learned_a2"])
 
     def test_direct_attack_counter_gates_and_all_enemy_damage_are_exact(self):
         damage, gauge = self.rows["1499893"][:2]
@@ -102,8 +115,10 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
         self.assertEqual(("23", "7", "Green", "629", kit.ABILITY_STOCK_STRING_ID,
                           kit.ABILITY_STOCK_ACTION_PATH),
                          (grant[27], grant[28], grant[29], grant[47], grant[70], grant[71]))
-        self.assertEqual(("26", "", "", "226", "700000", "700000"),
+        self.assertEqual(("26", "", "", "629", "", ""),
                          (consume[27], consume[28], consume[29], consume[47], consume[51], consume[52]))
+        self.assertEqual([kit.ABILITY_SPEND_STRING_ID, kit.ABILITY_SPEND_ACTION_PATH],
+                         consume[70:72])
         self.assertEqual(("2", "0", "100000", "100000", "14998901"),
                          (consume[39], consume[40], consume[42], consume[43], consume[45]))
         text = kit.flat_string_rows()[grant[70]][0][0]
@@ -151,8 +166,9 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
             self.assertEqual(("", "", "(None)", "0", "false"),
                              (row[48], row[49], row[34], row[35], row[72]))
         speed = self.rows["1499896"][0]
-        self.assertEqual(("100000", "100000", "", "", "(None)"),
+        self.assertEqual(("200000", "200000", "", "", "(None)"),
                          (speed[51], speed[52], speed[53], speed[54], speed[61]))
+        self.assertEqual(2.0, kit.metadata()["periodic_status"]["fixed_speed_strength"])
         self.assertEqual(0, kit.metadata()["periodic_status"]["fixed_speed_skill_charging_strength"])
 
     def test_metadata_declares_native_counter_carry_and_per_battle_attack(self):

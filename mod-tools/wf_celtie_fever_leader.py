@@ -6,12 +6,13 @@ import zlib
 
 import wf_dsl
 from wf_campus_bianca_data import validate_row
-from wf_celtie_fever_icons import stock_icon_bytes
+from wf_celtie_fever_icons import gain_icon_bytes, stock_icon_bytes
 from wf_celtie_fever_skill import ability_damage_reference
 from wf_celtie_fever_stock import (
-    ABILITY_STOCK_ACTION_PATH, GAIN_NAME, GAIN_STRING_ID, GAIN_UID,
+    ABILITY_STOCK_ACTION_PATH, GAIN_ICON, GAIN_NAME, GAIN_STRING_ID, GAIN_UID,
+    LEADER_SPEND_ACTION_PATH, LEADER_SPEND_STRING_ID, SPEND_MARKERS,
     STOCK_ACTION_PATH, STOCK_ICON, STOCK_NAME,
-    STOCK_STRING_ID, STOCK_UID, stock_action_tree,
+    STOCK_STRING_ID, STOCK_UID, spend_action_tree, spend_unique_rows, stock_action_tree,
 )
 
 CID = "149989"
@@ -74,8 +75,9 @@ def leader_rows(ability_source, leader_source):
     _set(pf_hit, {46: 0, 67: "(None)"})
     acquire = _trigger(_resonance(_base(ability_source, 629), True), 23, wind=True)
     _set(acquire, {68: STOCK_STRING_ID, 69: STOCK_ACTION_PATH})
-    consume = _trigger(_resonance(_base(ability_source, 226, 700000), True), 26)
+    consume = _trigger(_resonance(_base(ability_source, 629), True), 26)
     _set(consume, {37: 2, 38: 0, 40: 100000, 41: 100000, 43: STOCK_UID})
+    _set(consume, {68: LEADER_SPEND_STRING_ID, 69: LEADER_SPEND_ACTION_PATH})
     result = [attack, damage, special_pf, pf_hit, acquire, consume]
     for row in result:
         validate_row(row, "leader_ability")
@@ -84,16 +86,20 @@ def leader_rows(ability_source, leader_source):
 
 def unique_rows():
     # 本场库存含倒下期间保留；Fever门只控制取得/消费，不给状态自动弹射过期。
-    return {str(uid): [[string_id, name, STOCK_ICON,
+    result = {str(uid): [[string_id, name, icon,
         "99999999", "2147483647", "(None)", "(None)", "(None)", "(None)",
         "false", "true", "0", "0", "false", "(None)"]]
-        for uid, string_id, name in ((STOCK_UID, STOCK_STRING_ID, STOCK_NAME),
-                                     (GAIN_UID, GAIN_STRING_ID, GAIN_NAME))}
+        for uid, string_id, name, icon in (
+            (STOCK_UID, STOCK_STRING_ID, STOCK_NAME, STOCK_ICON),
+            (GAIN_UID, GAIN_STRING_ID, GAIN_NAME, GAIN_ICON))}
+    result.update(spend_unique_rows())
+    return result
 
 
 def flat_string_rows():
     return {
         STOCK_STRING_ID: [["获得2次「星风快门」（次数可累积；每次弹射消耗1次并增加7连击；非共鸣或非Fever期间保留剩余次数）"]],
+        LEADER_SPEND_STRING_ID: [["成功消耗1层星风快门时，增加7连击"]],
         PF_STRING_ID: [["将强化弹射变为星之剑圣的特殊剑士型强化弹射，"
                        "造成风属性伤害（伤害量以能力伤害加成判定）"]],
     }
@@ -131,7 +137,10 @@ def action_assets(official_bytes_loader):
              _encoded(stock_action_tree()),
              ("common", ABILITY_STOCK_ACTION_PATH + ".action.dsl.amf3.deflate"):
              _encoded(stock_action_tree(1)),
-             ("common", STOCK_ICON + ".png"): stock_icon_bytes()}
+             ("common", STOCK_ICON + ".png"): stock_icon_bytes(),
+             ("common", GAIN_ICON + ".png"): gain_icon_bytes()}
+    for uid, _, path in SPEND_MARKERS:
+        files["common", path + ".action.dsl.amf3.deflate"] = _encoded(spend_action_tree(uid))
     for source, target in zip(PF_SOURCE_PATHS, PF_PROGRAM_PATHS):
         tree = _remap(_decoded(official_bytes_loader(source + ".action.dsl.amf3.deflate")))
         tree = ability_damage_reference(tree)
@@ -160,4 +169,6 @@ def metadata():
             "native_limits": "PowerFlip resistance and independent terms remain; ability-only terms do not apply",
             "stock_unique_id": STOCK_UID, "stock_per_skill": 2, "stock_cost_per_flip": 1,
             "combo_per_flip": 7, "stock_pauses_outside_fever_or_resonance": True,
-            "stock_retained_until_battle_end": True, "stock_trigger": "T26 MySelfFlip"}
+            "stock_retained_until_battle_end": True, "stock_trigger": "T26 MySelfFlip",
+            "spend_marker_lifetime": "created and deleted in the same impact phase",
+            "spend_feedback": "native buff_reset effect; no persistent HUD marker"}

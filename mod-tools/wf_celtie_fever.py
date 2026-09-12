@@ -8,22 +8,20 @@ from pathlib import Path
 import wf_celtie_fever_abilities as abilities
 import wf_celtie_fever_leader as leader
 import wf_celtie_fever_skill as skill
+import wf_campus_panel_text as panel
 import wf_client_legality as legality
 import wf_mod_tool as core
 from wf_celtie_fever_package import Candidate, CID, CODE, encode_tree
 
-DESCRIPTION = (
-    "向最近的敌人突进，释放十字双空牙，对命中的敌人造成风属性伤害"
-    "（伤害量以能力伤害加成判定）。"
-    "两条剑气的交叉处不会重复计算同一段伤害。"
-)
+DESCRIPTION = panel.active_description(CID)
 SKILL_NAME = "风中快门·十字双空牙"
 FLAT_STRINGS = "master/string/custom_ability_string.orderedmap"
 
 
 def required_capabilities(existing=()):
     """迁移旧候选时移除已退用的来源补丁，保留 V12 Fever 及其他依赖。"""
-    return sorted((set(existing) | set(abilities.metadata()["required_client_capabilities"]))
+    return sorted((set(existing) | set(abilities.metadata()["required_client_capabilities"])
+                   | set(panel.metadata()["required_client_capabilities"]))
                   - {"celtie-ability-actions-v1"})
 
 
@@ -54,7 +52,9 @@ def assemble(repo: Path, workspace: Path, *, apply=False):
     official = candidate.official_rows(ability_path)
     rows = abilities.ability_rows(official)
     leaders = leader.leader_rows(official, candidate.official_rows(leader_path))
-    strings = {**abilities.flat_string_rows(), **leader.flat_string_rows()}
+    strings = {**abilities.flat_string_rows(), **leader.flat_string_rows(),
+               **panel.native_flat_string_rows(CID),
+               **panel.override_string_rows(CID, rows, leaders)}
     validate_descriptions(rows, leaders, strings)
     candidate.splice(ability_path, rows)
     candidate.splice(leader_path, {CID: leaders})
@@ -87,7 +87,8 @@ def assemble(repo: Path, workspace: Path, *, apply=False):
     candidate.manifest["skills"]["programs"] = programs + sorted(
         logical for tier, logical in files if logical.endswith(".action.dsl.amf3.deflate"))
     candidate.manifest["unique_condition"] = {
-        "ids": [leader.STOCK_UID, leader.GAIN_UID], "icons": [leader.STOCK_ICON + ".png"],
+        "ids": [int(uid) for uid in leader.unique_rows()],
+        "icons": sorted({values[0][2] + ".png" for values in leader.unique_rows().values()}),
     }
     candidate.manifest["required_capabilities"] = required_capabilities(
         candidate.manifest.get("required_capabilities", []))
@@ -101,7 +102,8 @@ def assemble(repo: Path, workspace: Path, *, apply=False):
         "requires_matching_client_patch": False, "requires_new_apk": False,
         "runtime_acceptance": "pending in-game observation on existing client with Fever percentage support",
         "presentation_preserved": True,
-        "unique_condition_icon_updated": leader.STOCK_ICON + ".png",
+        "unique_condition_icon_updated": leader.GAIN_ICON + ".png",
+        "panel_descriptions": panel.metadata(),
     }
     candidate.manifest["snapshot"]["campus_celtie"].update(
         skill_damage="wind damage using native ability-damage main bonuses",

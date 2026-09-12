@@ -6,7 +6,10 @@ from copy import deepcopy
 from wf_celtie_fever_stock import (
     ABILITY_STOCK_ACTION_PATH,
     ABILITY_STOCK_STRING_ID,
+    ABILITY_SPEND_ACTION_PATH,
+    ABILITY_SPEND_STRING_ID,
     GAIN_UID,
+    SPEND_MARKERS,
     STOCK_UID,
 )
 
@@ -84,6 +87,13 @@ def _stock_gain_bonus(source):
     return row
 
 
+def _consumed_stock_fever(source, marker_uid):
+    # T185 belongs to A2: unlearned A2 cannot reward either consumer.
+    row = _instant(source, 724, 5_000, pre="wind", fever="fever", trigger=185)
+    row[28], row[37] = "0", str(marker_uid)
+    return row
+
+
 def ability_rows(source: dict) -> dict:
     """返回 1499891..6；source 是只读的官方 ability 表解码结果。"""
     opening = _instant(source, 211, 50_000, target=0)
@@ -108,21 +118,23 @@ def ability_rows(source: dict) -> dict:
     stock = _instant(source, 629, pre="wind", fever="fever",
                      trigger=23, wind_counter=True)
     stock[70:72] = [ABILITY_STOCK_STRING_ID, ABILITY_STOCK_ACTION_PATH]
-    consume = _instant(source, 226, 7 * SCALE, pre="wind", fever="fever",
+    consume = _instant(source, 629, pre="wind", fever="fever",
                        trigger=26)
     # Native precontent consumes one layer first; no remaining layer means
     # no AddCombo. A leader consumer is a separate, intentional second call.
     for column, value in {39: 2, 40: 0, 42: SCALE, 43: SCALE, 45: STOCK_UID}.items():
         consume[column] = str(value)
+    consume[70:72] = [ABILITY_SPEND_STRING_ID, ABILITY_SPEND_ACTION_PATH]
 
     slots = [
         [opening, enhance],
-        [triple, ability_damage],
+        [triple, ability_damage,
+         *[_consumed_stock_fever(source, uid) for uid, _, _ in SPEND_MARKERS]],
         [all_enemy, fever_charge, attack, charge, stock, consume,
          _stock_gain_bonus(source)],
         [_fever_status(source, 26)],
         [_fever_status(source, 27)],
-        [_fever_status(source, 688, SCALE)],
+        [_fever_status(source, 688, 2 * SCALE)],
     ]
     result = {}
     for number, rows in enumerate(slots, 1):
@@ -142,7 +154,7 @@ def flat_string_rows() -> dict:
     ]], ABILITY_STOCK_STRING_ID: [[
         "获得1次「星风快门」（次数可累积；每次自身弹射消耗1次并增加7连击；"
         "非风属性共鸣或非Fever期间保留剩余次数）"
-    ]]}
+    ]], ABILITY_SPEND_STRING_ID: [["成功消耗1层星风快门时，增加7连击"]]}
 
 
 def metadata() -> dict:
@@ -187,6 +199,15 @@ def metadata() -> dict:
             "with_leader_max_combo_per_flip": 14,
             "empty_stock_grants_no_combo": True,
         },
+        "a2_consumed_stock_fever": {
+            "requires_learned_a2": True,
+            "requires_wind_resonance_and_fever": True,
+            "percent_of_maximum_per_consumed_layer": 5,
+            "with_both_consumers_max_percent_per_flip": 10,
+            "empty_stock_grants_no_fever": True,
+            "event_sources": [uid for uid, _, _ in SPEND_MARKERS],
+            "event": "successful precontent consumption; not attempted flip",
+        },
         "stock_gain_bonus": {
             "gain_unique_id": GAIN_UID,
             "per_layer_percent": 25,
@@ -204,7 +225,7 @@ def metadata() -> dict:
             "duration_frames": 90,
             "target": "whole player party ball",
             "expires_naturally_after_fever": True,
-            "fixed_speed_strength": 1.0,
+            "fixed_speed_strength": 2.0,
             "fixed_speed_skill_charging_strength": 0,
         },
     }
