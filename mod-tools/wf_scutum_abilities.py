@@ -1,9 +1,10 @@
 """盾牌座队长与六能力。仅构造数据，不操作 store、CDN 或设备。"""
 from wf_scutum_abilities_rows import (
-    CID, CODE, COLLECT_ICON, COLLECT_UID, CHANGE_STRING, CHASE_STRING,
+    CID, CODE, COLLECT_ICON, COLLECT_UID, COLLECT_HIT_UID, CHANGE_STRING, CHASE_STRING,
     COLLECT_CHASE_STRING,
-    DASH_STRING, SCALE, during, helper, instant, put, timed,
+    DASH_STRING, SCALE, during, helper, instant, pre, put, timed,
 )
+from wf_scutum_abilities_text import panel_string_rows
 
 ABILITY_TABLE = "master/ability/ability.orderedmap"
 LEADER_TABLE = "master/ability/leader_ability.orderedmap"
@@ -18,18 +19,35 @@ def _floating_growth(source, content):
 
 def _collect_grant(source, target):
     row = instant(source, 461, SCALE, target=target, group="(None)",
-                  trigger=65, cooldown=300)
+                  gates=("wind_resonance",), trigger=65, cooldown=300)
     return put(row, {59: SCALE, 60: SCALE, 68: COLLECT_UID, 74: 1, 75: 0})
 
 
+def _collect_followup(source):
+    """两个实际命中源汇入同一个原生 handler，共享冷却。"""
+    markers = [put(instant(source, 461, SCALE, target=0,
+                          gates=("collect",), trigger=20, puller=puller),
+                   {59: SCALE, 60: SCALE, 68: COLLECT_HIT_UID, 74: 1, 75: 0})
+               for puller in (0, 9)]
+    chase = helper(source, COLLECT_CHASE_STRING, gates=("collect",),
+                   trigger=185, puller=0, cooldown=300)
+    clear = instant(source, 528, target=0, trigger=185, puller=0)
+    for row in (chase, clear):
+        row[37] = str(COLLECT_HIT_UID)
+    clear[68] = str(COLLECT_HIT_UID)
+    return markers + [chase, clear]
+
+
 def ability_rows(source):
-    """原生队伍窗口：自身持有收集期间，成员与协力球直击均触发追击。"""
+    """自身收集窗口内，自身与协力球直击共用一次5秒冷却追击。"""
     a1 = [
         _floating_growth(source, 33), _floating_growth(source, 32),
         during(source, 3, 15_000, condition=31),
         instant(source, 211, 50_000, target=5, gates=("wind_resonance",)),
         instant(source, 211, SCALE, target=0),
     ]
+    for row in a1:
+        pre(row, "wind_resonance")
     a2 = [
         instant(source, 227, 10_000, target=target, group="(None)",
                 gates=("self_wind",), trigger=65)
@@ -48,12 +66,7 @@ def ability_rows(source):
     a3 = [_collect_grant(source, target) for target in (5, 8)]
     a3 += [during(source, 410, 20_000, condition=72,
                   target=0, gates=("collect",))]
-    # T20 counts real direct-hit events. The owner Unique is the single 5s
-    # window, including newly summoned balls; no OneOfMultiball precondition
-    # binding (unsupported by AbilityPreconditionReader, native C10108).
-    a3 += [helper(source, COLLECT_CHASE_STRING, gates=("collect",),
-                  trigger=20, puller=puller, puller_group="(None)")
-           for puller in (7, 9)]
+    a3 += _collect_followup(source)
     a3 += [resist, instant(source, 717, SCALE, target=0)]
     a4 = [timed(instant(source, 31, gates=("self_wind",), trigger=51), 180),
           _floating_growth(source, 32)]
@@ -61,7 +74,7 @@ def ability_rows(source):
                         threshold=300), 180),
           helper(source, CHASE_STRING, gates=("piercing",), trigger=23,
                  puller=7, puller_group="Green")]
-    a6 = [put(instant(source, 536), {70: CHANGE_STRING})]
+    a6 = [put(instant(source, 536, gates=("wind_resonance",)), {70: CHANGE_STRING})]
     result = {}
     for number, rows in enumerate((a1, a2, a3, a4, a5, a6), 1):
         for row in rows:
@@ -86,11 +99,17 @@ def leader_rows(source):
 
 
 def unique_rows():
-    return {str(COLLECT_UID): [[
+    result = {str(COLLECT_UID): [[
         "unique_scutum_valentine_collect", "收集", COLLECT_ICON,
         "300", "1", "(None)", "(None)", "(None)", "(None)",
         "false", "true", "0", "0", "true", "(None)",
     ]]}
+    marker = result[str(COLLECT_UID)][0].copy()
+    marker[:5] = ["unique_scutum_valentine_collect_hit", "收集追击", COLLECT_ICON, "1", "1"]
+    # Native I528 uses cancelableKind=0; only this private bridge is removable.
+    marker[9] = "true"
+    result[str(COLLECT_HIT_UID)] = [marker]
+    return result
 
 
 def flat_string_rows():
@@ -99,6 +118,7 @@ def flat_string_rows():
         CHASE_STRING: [["对所有敌人造成自身攻击力35倍的伤害（按直接攻击伤害加成计算）"]],
         COLLECT_CHASE_STRING: [["向距离自身最近的敌人追加自身攻击力5倍的风属性伤害（按直接攻击伤害加成计算）"]],
         CHANGE_STRING: [["技能的连击效果强化为5次直接攻击，总和伤害提升50%"]],
+        **panel_string_rows(),
     }
 
 
@@ -109,7 +129,11 @@ def metadata():
         "collect_duration_frames": 300, "collect_pf3_cooldown_frames": 300,
         "requires_collect_hit_resolution": False,
         "collect_followup": {
-            "trigger": 20, "trigger_pullers": [7, 9],
+            "trigger": 20, "trigger_pullers": [0, 9],
+            "shared_handler_trigger": 185, "shared_cooldown_frames": 300,
+            "hit_marker_unique_id": COLLECT_HIT_UID,
+            "hit_marker_duration_frames": 1,
+            "cleanup": "self T185 -> I528 exact private marker; native impact queue and one-frame expiry",
             "gate": "owner holds collect UID14998801; one native 300-frame team window",
             "includes_new_multiballs_during_window": True,
             "individual_trigger_holder_required": False,
@@ -127,6 +151,9 @@ def metadata():
             "per_application_percent": 50, "limit": 4,
             "timer": "native cumulative held-Flying frames; partial period retained"},
         "skill_gauge_50": "initial wind-party charge under wind resonance",
+        "wind_resonance_slots": [1, 6],
+        "collect_grant_requires_wind_resonance": True,
+        "panel_capability": "panel-description-override-v2",
         "leader_pf3_requirement_reduction": 9,
         "a3_wind_resistance": {"content": 442, "per_hit_percent": -2,
             "maximum_layers": 20, "duration_frames": 1500,

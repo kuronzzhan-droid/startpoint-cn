@@ -5,6 +5,7 @@ SCALE = 100_000
 CODE = "scutum_valentine"
 CID = "149988"
 COLLECT_UID = 14998801
+COLLECT_HIT_UID = 14998802
 COLLECT_ICON = "battle/common/unique_condition/scutum_valentine_collect"
 CHANGE_STRING = "change_skill_scutum_valentine"
 HELPER_PREFIX = "battle/action/skill/action/ability_skill/scutum_valentine$"

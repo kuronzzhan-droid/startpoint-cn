@@ -66,8 +66,11 @@ class ScutumAbilitiesTest(unittest.TestCase):
         self.assertEqual(("31", "3", "15000"), (speed[97], speed[109], speed[113]))
         self.assertEqual(("2", "Green", "0", "211", "5", "50000"),
                          (party[6], party[11], party[27], party[47], party[48], party[51]))
-        self.assertEqual(("0", "0", "211", "0", "100000"),
+        self.assertEqual(("2", "0", "211", "0", "100000"),
                          (self_charge[6], self_charge[27], self_charge[47], self_charge[48], self_charge[51]))
+        for row in self.abilities["1499881"]:
+            self.assertEqual(["2", "", "", "600000", "600000", "Green", ""], row[6:13])
+        self.assertEqual("0", self.abilities["1499884"][1][6])
 
     def test_barrier_covers_party_and_multiballs_and_a2_growth_uses_self_hits(self):
         barrier = self.abilities["1499882"][:2]
@@ -85,6 +88,7 @@ class ScutumAbilitiesTest(unittest.TestCase):
         grants = self.abilities["1499883"][:2]
         self.assertEqual(["5", "8"], [r[48] for r in grants])
         for row in grants:
+            self.assertEqual(("2", "Green"), (row[6], row[11]))
             self.assertEqual(("65", "300", "461", "14998801"),
                              (row[27], row[35], row[47], row[68]))
         shield = self.abilities["1499883"][2]
@@ -107,22 +111,26 @@ class ScutumAbilitiesTest(unittest.TestCase):
 
     def test_collect_followup_is_one_expiring_owner_window_for_both_hit_sources(self):
         followups = [r for r in self.abilities["1499883"] if r[47] == "629"]
-        self.assertEqual(["7", "9"], [r[28] for r in followups])
+        self.assertEqual(1, len(followups))
         for row in followups:
             self.assertEqual(["187", "0", "", "", "", "", "14998801"], row[6:13])
-            self.assertEqual(("false", "20", "(None)", "100000", "(None)", "0"),
-                             (row[1], row[27], row[29], row[30], row[34], row[35]))
+            self.assertEqual(("false", "185", "0", "100000", "(None)", "300", "14998802"),
+                             (row[1], row[27], row[28], row[30], row[34], row[35], row[37]))
             self.assertEqual((rows.COLLECT_CHASE_STRING,
                               rows.HELPER_PREFIX + rows.COLLECT_CHASE_STRING),
                              (row[70], row[71]))
-        # Native event gate is checked per event. A newly born ball gets the
-        # remaining window, without refreshing/consuming the owner's Unique.
-        duration = int(kit.unique_rows()[str(rows.COLLECT_UID)][0][3])
-        events = [(0, 7), (150, 9), (299, 7), (300, 9), (301, 7)]
-        fired = [(frame, source) for frame, source in events
-                 for row in followups
-                 if frame < duration and int(row[28]) == source]
-        self.assertEqual([(0, 7), (150, 9), (299, 7)], fired)
+        markers = [r for r in self.abilities["1499883"]
+                   if r[47] == "461" and r[68] == "14998802"]
+        self.assertEqual(["0", "9"], [r[28] for r in markers])
+        for row in markers:
+            self.assertEqual(("187", "14998801", "20", "0", "0"),
+                             (row[6], row[12], row[27], row[35], row[48]))
+        clear = next(r for r in self.abilities["1499883"] if r[47] == "528")
+        self.assertEqual(("0", "185", "0", "14998802", "0", "14998802"),
+                         (clear[6], clear[27], clear[28], clear[37], clear[48], clear[68]))
+        self.assertEqual(["1", "1"], kit.unique_rows()["14998802"][0][3:5])
+        self.assertEqual("true", kit.unique_rows()["14998802"][0][9])
+        self.assertEqual("false", kit.unique_rows()["14998801"][0][9])
         self.assertTrue(all(r[39] == "(None)" for r in followups))
         meta = kit.metadata()["collect_followup"]
         self.assertEqual(5, meta["attack_multiplier"])
@@ -139,8 +147,35 @@ class ScutumAbilitiesTest(unittest.TestCase):
         self.assertEqual(("38", "23", "7", "Green", "629"),
                          (chase[6], chase[27], chase[28], chase[29], chase[47]))
         flag = self.abilities["1499886"][0]
-        self.assertEqual(("0", "0", "536", rows.CHANGE_STRING),
+        self.assertEqual(("2", "0", "536", rows.CHANGE_STRING),
                          (flag[6], flag[27], flag[47], flag[70]))
+        self.assertEqual("Green", flag[11])
+
+    def test_native_shared_handler_cooldown_model_handles_same_frame_balls_and_windows(self):
+        # Mirrors AbilityTriggerHandler: precondition -> synchronous cooltime
+        # assignment -> apply; ConditionSlot may suppress duplicate same-frame
+        # grants, but correctness must also hold if different gids notify twice.
+        def simulate(events, main=True):
+            next_ready, result = 0, []
+            for frame, puller, collect in events:
+                if main and collect and puller in (0, 9) and frame >= next_ready:
+                    next_ready = frame + 300
+                    result.append(frame)
+            return result
+        events = [(0, 7, True), (0, 0, True), (0, 9, True), (1, 9, True),
+                  (299, 0, True), (300, 9, False), (301, 9, True),
+                  (301, 9, True), (600, 0, True), (601, 0, True)]
+        self.assertEqual([0, 301, 601], simulate(events))
+        self.assertEqual([], simulate(events, main=False))
+
+    def test_panel_merges_chase_and_retains_native_main_icon(self):
+        flat = kit.flat_string_rows()
+        a3 = flat["desc_override_scutum_valentine_3"][0][0]
+        self.assertEqual(1, a3.count("共用CT：5秒"))
+        self.assertTrue(all("<icon id='main'>" in line for line in a3.splitlines()))
+        self.assertNotIn("14998802", a3)
+        for slot in (1, 6):
+            self.assertIn("风属性共鸣", flat[f"desc_override_scutum_valentine_{slot}"][0][0])
 
     def test_real_install_output_has_all_flat_dependencies_and_no_publish_side_effect(self):
         class Capture:
