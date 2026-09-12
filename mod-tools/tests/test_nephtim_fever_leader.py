@@ -35,15 +35,8 @@ class NephtimFeverLeaderTest(unittest.TestCase):
         custom = kit.leader_rows(self.source, power_flip_id="custom_pf", power_flip_string_id="custom_text")
         self.assertEqual(["custom_pf", "1,2,3", "custom_text"], custom[0][80:83])
 
-    def test_dark_direct_attack_fifty_adds_five_percent_current_fever_outside_or_inside_fever(self):
-        charge = self.rows[1]
-        self.assertEqual(("0", "20", "7", "Black", "5000000", "5000000", "(None)"),
-                         (charge[11], charge[25], charge[26], charge[27], charge[28], charge[29], charge[32]))
-        self.assertEqual(("724", "5000", "5000"), (charge[45], charge[49], charge[50]))
-        self.assertEqual(["kyubi-fever-ratio-v1"], legality.required_client_capabilities("leader_ability", charge))
-
     def test_dark_base_direct_attack_and_fever_only_skill_gauge_maximum(self):
-        direct, attack, maximum = self.rows[2:5]
+        direct, attack, maximum = self.rows[1:4]
         self.assertEqual(("33", "400000", "5", "Black", "0"),
                          (direct[45], direct[49], direct[46], direct[47], direct[11]))
         self.assertEqual(("32", "200000", "5", "Black", "0"),
@@ -53,8 +46,8 @@ class NephtimFeverLeaderTest(unittest.TestCase):
                           maximum[109], maximum[111], maximum[112]))
 
     def test_dark_resonance_grants_one_constant_party_extension(self):
-        self.assertEqual(6, len(self.rows))
-        row = self.rows[5]
+        self.assertEqual(5, len(self.rows))
+        row = self.rows[4]
         self.assertEqual(("0", "0", "0", "190", "", "20000", "20000"),
                          (row[3], row[11], row[25], row[45], row[46], row[49], row[50]))
         extension = kit.metadata()["piercing_extension"]

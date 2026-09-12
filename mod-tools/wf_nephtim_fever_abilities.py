@@ -112,7 +112,10 @@ def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
                                target=5, trigger=235, threshold=1, threshold2=120)
     piercing_direct = _instant(source, 33, 20_000, pre="dark", fever="fever",
                                target=5, trigger=235, threshold=1, threshold2=120)
-    a3 = [fever_rate, fever_duration, combo, piercing_attack, piercing_direct]
+    # Only AbilityValues parses I724 on the installed ratio-capable client.
+    charge = _instant(source, 724, 5_000, pre="dark", trigger=20,
+                      threshold=50, puller=7, group="Black")
+    a3 = [fever_rate, fever_duration, combo, piercing_attack, piercing_direct, charge]
     a4 = [_during(source, 410, 20_000, target=5),
           _during(source, 410, 20_000, target=8)]
     a5 = [_piercing(source, trigger=77, frames=600, fever="not_fever"),
@@ -143,6 +146,10 @@ def metadata():
         "character_id": CID,
         "required_client_capabilities": ["kyubi-fever-ratio-v1"],
         "main_only_slots": [3],
+        "direct_attack_fever": {"ability_slot": 3, "requires_ability_unlock": True,
+                                "requires_self_leader": False, "requires_dark_resonance": True,
+                                "dark_hits": 50, "percent_of_maximum": 5,
+                                "requires_fever": False},
         "skill_gauge_maximum": {
             "content": 245, "target": "self", "increase_percent": 50,
             "initial_charge_percent": 0, "native_total_extra_gauge_cap_percent": 100,
