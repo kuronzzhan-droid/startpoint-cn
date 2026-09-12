@@ -16,6 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wf_describe  # noqa: E402  行级中文描述器(逆向布局+枚举直译)
 from wf_client_description_legality import description_compatibility_problems  # noqa: E402
+from wf_client_patch_scope import patch_parser_scope_problems, patch_parser_supported  # noqa: E402
 
 
 # master/ability/ability_statue_group.orderedmap 的全部键(25 个,实测取自 store)。
@@ -108,6 +109,8 @@ def required_client_capabilities(kind: str, row: list[str]) -> list[str]:
 
     只看**该触发模式下客户端真的会解析**的那个内容块 —— 瞬发行不读 during_content、
     持续行不读 instant_content,否则从别的模式克隆行时留下的残值会被判成需要补丁。
+    补丁没有扩展该表解析器的构造由 client_legality_problems 报硬错，不将已有
+    capability 误报成可修复它的依赖；本函数返回空不代表这一行合法。
 
     `kind == "custom_ability_string"` 走另一条判据:row[0] 是外层键,报出让
     `desc_override_*` 行真正生效所需的面板覆盖 capability(缺补丁不崩,只是不生效)。
@@ -125,6 +128,8 @@ def required_client_capabilities(kind: str, row: list[str]) -> list[str]:
             continue
         base = int(blocks[block])
         value = (row[base] if base < len(row) else "").strip()
+        if not patch_parser_supported(kind, block, value):
+            continue
         capability = gated.get(value)
         if capability is not None and capability not in needed:
             needed.append(capability)
@@ -425,6 +430,7 @@ def client_legality_problems(kind: str, row: list[str]) -> list[str]:
             )
     # 「声明即必填」通用律。上面的 PRECONDITION_KINDS_NEED_NEXT_COL 与
     # multiply_trigger 两条专项规则是它的特例,保留是因为它们的报错文案更具体。
+    probs.extend(patch_parser_scope_problems(kind, row, B, TRIGGER_MODE_BLOCKS[tmode]))
     probs.extend(declared_block_field_problems(kind, row))
     probs.extend(description_compatibility_problems(kind, row))
     probs.extend(ability_element_column_problems(kind, row))
