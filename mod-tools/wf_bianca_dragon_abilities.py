@@ -118,7 +118,11 @@ def fever_rows(source, *, fever_stack_unique_id=FEVER_STACK_UNIQUE_ID):
     clear[68] = str(fever_stack_unique_id)
     charge = _instant(source, 211, 10_000, trigger=248,
                       threshold=120 * SCALE, target=2, pre="fire", fever=True)
-    return [cap, tick, gain, clear, charge]
+    # Native D412 is the ability-only separated term; it reads the same live
+    # stack as D154, so the existing reset removes both bonuses immediately.
+    separate = copy.deepcopy(gain)
+    _set(separate, {109: 412, 113: 1_000, 114: 1_000})
+    return [cap, tick, gain, clear, charge, separate]
 
 
 def fever_tick_assets(*, fever_stack_unique_id=FEVER_STACK_UNIQUE_ID):
@@ -193,6 +197,8 @@ def metadata(*, summon_unique_id=SUMMON_UNIQUE_ID,
                         "required_unique_remove_if_encoffin": True,
                         "required_unique_duration_frame": 99_999_999,
                         "balance_cap": None, "bonus_per_stack": 0.5,
+                        "separated_ability_bonus_per_stack": 0.01,
+                        "separated_damage_kind": "ability only; native D412",
                         "tick_content": 629, "tick_action": FEVER_TICK_ACTION_PATH,
                         "timer": "native FeverFrame 248; pauses outside Fever; fractional period carries"},
         "skill_gauge_maximum": "D124 adds 20% only during Fever; native total clamp is +100%",

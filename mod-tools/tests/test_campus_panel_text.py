@@ -108,6 +108,10 @@ class CampusPanelTextTest(unittest.TestCase):
         self.assertIn("冷却1秒", panels["a2"].splitlines()[0])
         self.assertNotIn("冷却", panels["a2"].splitlines()[1])
         self.assertIn("火属性共鸣时，Fever模式中，每经过2秒", panels["a3"].splitlines()[1])
+        self.assertIn("每层「焰域研修」使火属性角色能力伤害额外乘区+1%", panels["a3"])
+        separate = [row for row in abilities["1199893"] if row[109] == "412"]
+        self.assertEqual(len(separate), 1)
+        self.assertEqual(separate[0][113:115], ["1000", "1000"])
         self.assertEqual(panels["a4"].splitlines()[1], "Fever模式中，火属性角色技能充能速度+10%。")
         self.assertNotIn("共鸣", panels["a6"])
         self.assertEqual(panels["a6"].count("最大+100%"), 2)

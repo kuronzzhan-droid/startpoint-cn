@@ -86,7 +86,7 @@ class BiancaDragonAbilitiesTest(unittest.TestCase):
 
     def test_fever_stack_reset_deletes_only_private_uid_and_preserves_others(self):
         rows = kit.fever_rows(self.source, fever_stack_unique_id=123457)
-        cap, tick, gain, clear, charge = rows
+        cap, tick, gain, clear, charge, separate = rows
         self.assertEqual(("124", "20000", "4"), (cap[109], cap[113], cap[97]))
         self.assertEqual(("248", "12000000", "629"),
                          (tick[27], tick[30], tick[47]))
@@ -102,6 +102,27 @@ class BiancaDragonAbilitiesTest(unittest.TestCase):
         self.assertEqual({42: 3}, live)
         self.assertEqual(("211", "2", "10000", "(None)"),
                          (charge[47], charge[48], charge[51], charge[34]))
+        self.assertEqual(separate[104], clear[68])
+
+    def test_fever_each_layer_adds_one_percent_ability_only_separated_damage(self):
+        rows = self.abilities["1199893"]
+        regular, separate = rows[2], rows[5]
+        self.assertEqual([i for i, pair in enumerate(zip(regular, separate)) if pair[0] != pair[1]],
+                         [109, 113, 114])
+        self.assertEqual((separate[1], separate[6], separate[9:12], separate[13]),
+                         ("false", "2", ["600000", "600000", "Red"], "12"))
+        self.assertEqual((separate[97:99], separate[100:105]),
+                         (["134", "0"], ["100000", "100000", "(None)", "", "11998903"]))
+        self.assertEqual(separate[109:115], ["412", "5", "Red", "", "1000", "1000"])
+        # Native D134 is a live counter, not a cumulative event trigger. D412 is
+        # summed only in the ability damage branch, while D411 would be skill.
+        for layers in (0, 1, 3, 10, 120):
+            self.assertEqual(layers * int(separate[113]), layers * 1000)
+        live = {kit.FEVER_STACK_UNIQUE_ID: 10, 42: 3}
+        live.pop(int(rows[3][68]))
+        self.assertEqual(live.get(int(separate[104]), 0), 0)
+        self.assertEqual(live[42], 3)
+        self.assertEqual(kit.metadata()["fever_stack"]["separated_ability_bonus_per_stack"], 0.01)
 
     def test_charging_speed_duration_and_fever_ratio_keep_distinct_units(self):
         duration, charging = self.abilities["1199894"]
