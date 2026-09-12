@@ -33,6 +33,7 @@ def revise_abyss(gacha):
     update_entries(abyss, fixed, 150000, exchangeable=EXCHANGEABLE)
     by_id = {int(e["id"]): e for e in abyss["pool"]["1"]}
     for cid in FEATURED:
+        by_id[cid]["isRateUp"] = True
         by_id[cid]["isExchangeable"] = False
     for cid in MINIBOSSES:
         by_id[cid]["isRateUp"] = True
@@ -56,10 +57,26 @@ def revise_abyss(gacha):
 
 def metadata():
     return dict(featured_order=list(FEATURED), featured_percent="0.25",
-                featured_exchangeable=False, legacy_22=list(LEGACY_22),
+                featured_rate_up=True, featured_exchangeable=False, legacy_22=list(LEGACY_22),
                 legacy_percent="0.1", big_boss_zero_overrides_legacy=True,
                 explicitly_exchangeable=sorted(EXCHANGEABLE),
                 miniboss_after=ANCHOR, miniboss_percent="0.2",
                 miniboss_rate_up=True, miniboss_exchangeable=False,
                 fixed_five_star_weight=65500, remaining_five_star_weight=84500,
                 racing_untouched=True)
+
+
+def highlight_featured(gacha):
+    """既有深渊窄修：仅置顶五人的红底/UP 标记，不重算概率或排序。"""
+    source = gacha['990001']
+    entries = source['pool']['1']
+    if [int(e['id']) for e in entries[:5]] != list(FEATURED):
+        raise ValueError('featured order is not the reviewed installed baseline')
+    if any(probability(source, cid) != Fraction(1, 400) for cid in FEATURED):
+        raise ValueError('featured probability is not 0.25 percent')
+    if any(e.get('isExchangeable') for e in entries[:5]):
+        raise ValueError('featured entry unexpectedly exchangeable')
+    result = deepcopy(gacha)
+    for entry in result['990001']['pool']['1'][:5]:
+        entry['isRateUp'] = True
+    return result

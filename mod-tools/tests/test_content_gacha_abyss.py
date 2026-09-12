@@ -48,6 +48,8 @@ class AbyssRevisionTests(unittest.TestCase):
         parsed = [line.split(",") for line in decoded]
         self.assertEqual([e["id"] for e in abyss["pool"]["1"]], [int(row[0]) for row in parsed])
         for entry, row in zip(abyss["pool"]["1"], parsed):
+            if entry['id'] in rules.FEATURED:
+                self.assertEqual('true', row[3])
             self.assertEqual(common.probability(abyss, entry["id"]),
                              Fraction(150, 1000) * Fraction(int(row[2]), sum(int(r[2]) for r in parsed)))
             self.assertEqual([bool(entry.get(f)) for f in odds.BOOL_FIELDS], [v == "true" for v in row[3:7]])
@@ -74,6 +76,7 @@ class AbyssRevisionTests(unittest.TestCase):
             self.assertFalse(by_id[cid]["isExchangeable"])
         for cid in rules.FEATURED:
             self.assertEqual(Fraction(1, 400), common.probability(abyss, cid))
+            self.assertTrue(by_id[cid]["isRateUp"])
             self.assertFalse(by_id[cid]["isExchangeable"])
         for cid in set(rules.LEGACY_22) | rules.EXCHANGEABLE:
             self.assertEqual(0 if cid in common.BIG_BOSS_ZERO else Fraction(1, 1000),
@@ -101,6 +104,19 @@ class AbyssRevisionTests(unittest.TestCase):
         for data in cases:
             with self.assertRaises(ValueError):
                 rules.revise_abyss(data)
+
+    def test_installed_highlight_fix_changes_only_five_booleans(self):
+        data = rules.revise_abyss(source())
+        for entry in data['990001']['pool']['1'][:5]:
+            entry['isRateUp'] = False
+        before = deepcopy(data)
+        result = rules.highlight_featured(data)
+        self.assertEqual(before, data)
+        self.assertEqual(result, rules.highlight_featured(result))
+        for entry in result['990001']['pool']['1'][:5]:
+            self.assertTrue(entry['isRateUp'])
+            entry['isRateUp'] = False
+        self.assertEqual(before, result)
 
 
 if __name__ == "__main__":
