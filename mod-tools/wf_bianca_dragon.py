@@ -123,7 +123,10 @@ def assemble(repo: Path, candidate_root: Path, *, apply=False):
         "enhanced_resistance": "all ability damage resistance -20%, plus fire resistance -25%",
         "a1_optional": "support damage exists even before learning A1",
         "owner_isolation": "own+ID selection, commanded dragon marker, caster TriggerPuller",
-        "client_version_authorized": "user confirmed V12 or newer",
+        "client_version_authorized": "existing client supports dash and Fever percentage; exact version unknown",
+        "dragon_level_100_base": {"hp": 5000, "attack": 5000},
+        "summon_visual": "ready/appear contain only native particles; one active dragon actor",
+        "dragon_idle": "official frames as/at; selected by user",
         "existing_art_voice_preserved": True,
         "status_icons": "three original generated 48px RGBA icons; native condition paths preserved",
     }

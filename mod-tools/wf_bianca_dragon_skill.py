@@ -16,6 +16,10 @@ CALL_EFFECT = "battle/effect/skill_unique/campus_bianca_dragon_call/"
 BREATH_EFFECT = "battle/effect/skill_unique/campus_bianca_descent/"
 FLIGHT_EFFECT = CALL_EFFECT + "campus_bianca_dragon_call_flight"
 TIMER_FOREVER = 2147483647  # 原生召唤参数必为int；约414天，不使用立即过期的-1。
+DRAGON_MAX_LEVEL_STAT = 5000
+# 保留供体的等级曲线（1/10/80/100级：0.1/1/6/6.6），把100级归一为5000。
+# Native以Number顺序计算basic * curve * correction，再floor(+2e-10)。
+DRAGON_STAT_CORRECTION = "0.15151515151515152"
 
 
 def value(number):
@@ -110,16 +114,20 @@ def build_skill(level, *, summon_marker=SUMMON_MARKER, breath_marker=BREATH_MARK
 
 
 def build_multiball_tables(multiball_rows, level_rows, *, support_id=SUPPORT_ID):
-    """借用原生夏日玛丽安妮成长曲线；龙像素和support使用独立资源。"""
+    """保留原生成长比例，100级裸HP/ATK均为5000；像素和support独立。"""
     donor = "1111711"
     row = copy.deepcopy(multiball_rows[donor][0])
     row[0:2] = [DRAGON_CODE + "_1", DRAGON_CODE]
     row[3:6] = ["0", "Dragon", ""]
     row[20:24] = [str(support_id), "(None)", "(None)", "(None)"]
+    levels = copy.deepcopy(level_rows[donor])
+    for basic_index in (1, 4):
+        levels[0][basic_index] = str(DRAGON_MAX_LEVEL_STAT)
+        levels[0][basic_index + 1] = DRAGON_STAT_CORRECTION
     return {
         "master/battle/multiball/multiball.orderedmap": {str(DRAGON_ID): [row]},
         "master/battle/multiball/multiball_level.orderedmap": {
-            str(DRAGON_ID): copy.deepcopy(level_rows[donor])},
+            str(DRAGON_ID): levels},
     }
 
 

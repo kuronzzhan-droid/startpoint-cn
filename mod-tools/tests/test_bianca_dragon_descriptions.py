@@ -46,7 +46,7 @@ class CapturedCandidate:
         if logical.endswith("/multiball.orderedmap"):
             return {"1111711": [[""] * 28]}
         if logical.endswith("/multiball_level.orderedmap"):
-            return {"1111711": [["1"]]}
+            return {"1111711": [["curve", "304", "1", "curve", "455", "1"]]}
         raise AssertionError(f"unexpected official table: {logical}")
 
     def splice(self, logical, replacements, *, codec="flat"):

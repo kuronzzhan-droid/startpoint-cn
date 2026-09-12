@@ -102,9 +102,23 @@ class DragonSkillTests(unittest.TestCase):
         self.assertEqual(row[3:5], ["0", "Dragon"])
         self.assertEqual(row[20:24], ["11998991", "(None)", "(None)", "(None)"])
         self.assertEqual(donor[0], "original")
+        actual_level = result["master/battle/multiball/multiball_level.orderedmap"]["1199891"][0]
+        self.assertEqual(actual_level, ["curve", "5000", "0.15151515151515152",
+                                        "curve", "5000", "0.15151515151515152"])
+        self.assertEqual(level, [["curve", "304", "1", "curve", "455", "1"]])
+        self.assertEqual(len(result), 2)  # 复用已存在的成长曲线，不新增master依赖。
+        # AS3 MultiballFactory以Number依次乘base、curve和correction，最后加两次eps取整。
+        # 100级必须正好5000，不能直接把原表base设5000而长成33000，也不能舍入成4999。
+        for curve, expected in ((.1, 75), (1, 757), (6, 4545), (6.6, 5000)):
+            for basic_index in (1, 4):
+                raw = int(actual_level[basic_index]) * curve * float(actual_level[basic_index + 1])
+                self.assertEqual(math.floor(raw + 1e-10 + 1e-10), expected)
+                if curve == 6.6:
+                    self.assertEqual(raw, 5000.0)
 
     def test_pixel_frames_preserve_native_texels_and_have_collision(self):
-        keys = sorted({k for seq in pixels.SEQUENCES.values() for k in seq})
+        keys = sorted({k for seq in pixels.SEQUENCES.values() for k in seq}
+                      | set(pixels.CALL_PARTICLE_KEYS))
         source = Image.new("RGBA", (len(keys)*12, 12))
         atlas = []
         originals = {}
@@ -159,6 +173,26 @@ class DragonSkillTests(unittest.TestCase):
                 self.assertEqual(parts["t"][0]["a"], 6*4096)
                 parts_count += 1
         self.assertEqual(parts_count, 6)
+
+    def test_idle_uses_selected_frames_and_spawn_particles_exclude_the_dragon(self):
+        self.assertEqual(("as", "at", "as", "at"), pixels.SEQUENCES["neutral"])
+        self.assertEqual(pixels.SEQUENCES["neutral"], pixels.SEQUENCES["walk_front"])
+        actor_keys = {key for sequence in pixels.SEQUENCES.values() for key in sequence}
+        self.assertTrue(actor_keys.isdisjoint(pixels.CALL_PARTICLE_KEYS))
+        keys = sorted(actor_keys | set(pixels.CALL_PARTICLE_KEYS))
+        tiles = {key: Image.new("RGBA", (8, 8), (index * 11, 80, 160, 255))
+                 for index, key in enumerate(keys)}
+        files = pixels.build_call_effects(tiles)
+        stem = skill.CALL_EFFECT + "campus_bianca_dragon_call"
+        sheet = Image.open(io.BytesIO(wf_assets.png_decode(files["common", stem + ".png"])))
+        atlas = wf_dsl.parse_dsl(zlib.decompress(
+            files["common", stem + ".atlas.amf3.deflate"], -15))["tree"]
+        particles = {tiles[key].tobytes() for key in pixels.CALL_PARTICLE_KEYS}
+        summon = [entry for entry in atlas if any(part in entry["n"] for part in
+                  ("effect_ready_generation/", "effect_ready_left/", "effect_ready_right/", "effect_appear/"))]
+        self.assertEqual(16, len(summon))
+        for entry in summon:
+            self.assertIn(restore_frame(sheet, entry).tobytes(), particles)
 
 
 if __name__ == "__main__":
