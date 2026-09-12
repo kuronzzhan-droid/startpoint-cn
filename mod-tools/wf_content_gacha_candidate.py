@@ -80,9 +80,11 @@ def build(repo, output):
     text = core.read_orderedmap_file(core.table_path(store, logical), logical).text_rows()
     names = {cid: core.read_csv_lines(text[str(cid)])[0][0] for cid in custom if str(cid) in text}
     names[149988] = "盾牌座"
-    report = dict(writes_live=False, custom_roster=[dict(id=cid, name=names[cid], overall_percent=1)
+    report = dict(writes_live=False, custom_roster=[dict(id=cid, name=names[cid],
+                                                      overall_percent=0 if cid in rules.BIG_BOSS_ZERO else 1)
                                                   for cid in sorted(custom)],
                   excluded_test_characters=sorted(rules.EARLY_CANARIES),
+                  big_boss_zero=sorted(rules.BIG_BOSS_ZERO),
                   abyss_minibosses=sorted(rules.MINIBOSSES), abyss_new_zero=sorted(rules.NEW_ABYSS_ZERO),
                   abyss_rank_per_mille=[405, 245, 350], racing_rank_per_mille=[950, 20, 30],
                   character_source_sha256=digest(current_raw), gacha_pointer_source_sha256=digest(cdn_raw),

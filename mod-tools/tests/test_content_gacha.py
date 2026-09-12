@@ -52,6 +52,22 @@ class ContentGachaTests(unittest.TestCase):
                 self.assertFalse(e["isExchangeable"])
                 self.assertEqual(e["odds"], 0)
 
+    def test_named_big_boss_series_stay_zero_without_excluding_small_robots(self):
+        data = {"990001": pool([150, 350, 500]), "990002": pool([950, 20, 30])}
+        # 歼灭者原本可抽；本次整个系列明确归零。未入深渊的大Boss不新增条目。
+        data['990001']['pool']['1'].append(dict(id=179981, rank=5, odds=666, isExchangeable=True))
+        roster = g.MINIBOSSES | g.NEW_ABYSS_ZERO | g.BIG_BOSS_ZERO | {169980, 149990}
+        result = g.build(data, roster)
+        self.assertEqual(len(g.BIG_BOSS_ZERO), 25)
+        self.assertFalse(g.BIG_BOSS_ZERO & g.MINIBOSSES)
+        for cid in g.BIG_BOSS_ZERO:
+            self.assertEqual(g.probability(result['990002'], cid), 0)
+        self.assertEqual(g.probability(result['990001'], 179981), 0)
+        self.assertNotIn(119970, {e['id'] for e in result['990001']['pool']['1']})
+        for cid in (159999, 169980):
+            self.assertEqual(g.probability(result['990002'], cid), Fraction(1, 100))
+        self.assertEqual(g.probability(result['990001'], 159999), Fraction(2, 100))
+
 
 if __name__ == "__main__":
     unittest.main()

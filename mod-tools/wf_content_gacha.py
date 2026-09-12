@@ -6,6 +6,11 @@ MINIBOSSES = frozenset((119993, 119994, 119995, 129993, 129994, 129995, 129996, 
                        139996, 149991, 149992, 149993, 149994, 159999, 169993))
 NEW_ABYSS_ZERO = frozenset((119989, 149989, 169989, 149988))
 EARLY_CANARIES = frozenset((119998, 119999))
+# 用户指定保持0%的完整系列：六荒龙、六精灵兽、七蒸汽机兵、六肃清者。
+BIG_BOSS_ZERO = frozenset((119950, 129950, 139950, 149950, 159950, 169950,
+    119951, 129951, 139951, 149951, 159951, 169951,
+    119970, 129970, 139970, 149970, 159970, 169970, 179970,
+    179981, 179982, 179983, 179984, 179985, 179986))
 
 
 def allocate(weights, total):
@@ -56,7 +61,8 @@ def build(gacha, custom_ids):
     custom_ids = frozenset(map(int, custom_ids))
     if not MINIBOSSES <= custom_ids or not NEW_ABYSS_ZERO <= custom_ids:
         raise ValueError("custom roster omits requested characters")
-    if len(custom_ids) >= 95:
+    drawable = custom_ids - BIG_BOSS_ZERO
+    if len(drawable) >= 95:
         raise ValueError("custom 1% allocation exhausts racing five-star probability")
     result = deepcopy(gacha)
     abyss = result["990001"]
@@ -67,11 +73,12 @@ def build(gacha, custom_ids):
     abyss["rankRates"]["multiGuarantee"] = [405, 595]
     fixed = {cid: 20000 for cid in MINIBOSSES}
     fixed.update({cid: 0 for cid in NEW_ABYSS_ZERO | {149990}})
+    fixed.update({int(e['id']): 0 for e in abyss['pool']['1'] if int(e['id']) in BIG_BOSS_ZERO})
     update_entries(abyss, fixed, 405000)
     racing = result["990002"]
     if racing["rankRates"]["normal"] != [950, 20, 30]:
         raise ValueError("unreviewed racing rank-rate baseline")
-    update_entries(racing, {cid: 10000 for cid in custom_ids}, 950000)
+    update_entries(racing, {cid: 10000 if cid in drawable else 0 for cid in custom_ids}, 950000)
     for cid in MINIBOSSES:
         if probability(abyss, cid) != Fraction(2, 100):
             raise AssertionError("Abyss miniboss rate is not 2%")
@@ -79,8 +86,11 @@ def build(gacha, custom_ids):
         if probability(abyss, cid):
             raise AssertionError("zero-rate character became drawable")
     for cid in custom_ids:
-        if probability(racing, cid) != Fraction(1, 100):
-            raise AssertionError("racing custom rate is not 1%")
+        if probability(racing, cid) != (Fraction(1, 100) if cid in drawable else 0):
+            raise AssertionError("racing custom rate does not match requested exception")
+    for entry in abyss['pool']['1']:
+        if int(entry['id']) in BIG_BOSS_ZERO and entry['odds']:
+            raise AssertionError("excluded Abyss boss became drawable")
     if any(result[k] != v for k, v in gacha.items() if k not in ("990001", "990002")):
         raise AssertionError("unrelated gacha changed")
     return result
