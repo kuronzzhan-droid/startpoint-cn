@@ -18,7 +18,7 @@ import wf_scutum_voice as voice
 from wf_scutum_seed import Seed
 
 
-def build(repo, workspace, source_dir, icon_source, output, *, apply=False):
+def build(repo, workspace, source_dir, icon_source, output, *, pixel_source, apply=False):
     seed = Seed(repo, workspace)
     output = Path(output).resolve()
     if not output.is_relative_to(seed.repo / "work/codex_out"):
@@ -36,7 +36,7 @@ def build(repo, workspace, source_dir, icon_source, output, *, apply=False):
     metadata["skill_actions"] = actions.metadata()
     metadata["effects"] = effects.build(seed)
     metadata["art"] = art.build(seed, source_dir, output / "art")
-    metadata["pixels"] = pixels.build(seed, source_dir, output / "pixel")
+    metadata["pixels"] = pixels.build(seed, pixel_source, output / "pixel")
     metadata["voices"] = voice.build(seed, source_dir, output / "voice")
     metadata["collect_icon"] = icon.build(seed, icon_source, output / "icon")
     metadata["unique_condition"] = dict(ids=[abilities.COLLECT_UID], icons=[icon.LOGICAL])
@@ -58,9 +58,10 @@ def build(repo, workspace, source_dir, icon_source, output, *, apply=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    for key in ("repo", "workspace", "source-dir", "icon-source", "output"):
+    for key in ("repo", "workspace", "source-dir", "icon-source", "pixel-source", "output"):
         parser.add_argument("--" + key, type=Path, required=True)
     parser.add_argument("--apply", action="store_true")
     args = parser.parse_args()
-    result = build(args.repo, args.workspace, args.source_dir, args.icon_source, args.output, apply=args.apply)
+    result = build(args.repo, args.workspace, args.source_dir, args.icon_source, args.output,
+                   pixel_source=args.pixel_source, apply=args.apply)
     print(json.dumps(dict(applied=result["applied"], files=result["files"], writes_live=False)))
