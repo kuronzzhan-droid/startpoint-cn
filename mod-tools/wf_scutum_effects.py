@@ -1,18 +1,21 @@
-"""盾牌座特效：只用原生 Flatomo 根颜色变换，完整保留官方图集像素。"""
-from copy import deepcopy
+"""盾牌座青绿技能图集；直接改 RGB，保留官方透明度、几何与时序。"""
+import colorsys
 import hashlib
+from io import BytesIO
 import zlib
 
+from PIL import Image
+
 import wf_dsl
+from wf_assets import png_decode, png_encode
 from wf_character_revision import encode_tree
 
 SOURCE_CODE, CODE = 'prince_zero', 'scutum_valentine'
 SOURCE = f'battle/effect/skill_unique/{SOURCE_CODE}/{SOURCE_CODE}'
 TARGET = f'battle/effect/skill_unique/{CODE}/{CODE}'
 SUFFIXES = ('.png', '.atlas.amf3.deflate', '.parts.amf3.deflate', '.timeline.amf3.deflate')
-# Native uint: multiplier-percent <<24 | red-offset <<16 | green-offset <<8 | blue-offset.
-# This is a data-side shader transform. It never decodes, recolours or writes a PNG.
-TINT = 0x231E7864
+# Gold/orange ribbons become green; cyan/blue accents become teal. Preserve S/V.
+HUE_STOPS = ((0, 110), (90, 150), (180, 160), (270, 170), (360, 110))
 
 
 def remap(value):
@@ -25,7 +28,7 @@ def remap(value):
     return value
 
 
-def tint_parts(tree):
+def remap_parts(tree):
     expected = {'t': 66, 's': [{'s': -2147483648.0, 'i': 1,
         'l': [{'m': 255, 't': 66, 'r': 1073741824.0}]}]}
     if not isinstance(tree, dict) or tree.get('g', [None])[0] != expected:
@@ -34,29 +37,50 @@ def tint_parts(tree):
         raise ValueError('unexpected movie resource')
     if any('c' in frame for graphic in tree['g'] for segment in graphic['s'] for frame in segment['l']):
         raise ValueError('source already contains a colour transform')
-    result = remap(deepcopy(tree))
-    # A single root transform composes once onto every leaf. Setting every nested
-    # record would multiply the tint repeatedly and destroy the original shading.
-    result['g'][0]['s'][0]['l'][0]['c'] = TINT
-    return result
+    # BattleDefaultMeshStyle ignores Flatomo c callbacks. Do not add that field:
+    # baking the palette works in battle and avoids a second tint in UI previews.
+    return remap(tree)
 
 
-def native_rgb(rgb):
-    multiplier = (TINT >> 24 & 255) / 100
-    offsets = (TINT >> 16 & 255, TINT >> 8 & 255, TINT & 255)
-    return tuple(max(0, min(255, int(channel * multiplier + offset)))
-                 for channel, offset in zip(rgb, offsets))
+def tint_rgb(rgb):
+    hue, saturation, value = colorsys.rgb_to_hsv(*(channel / 255 for channel in rgb))
+    if saturation == 0:
+        return rgb  # White glints and black additive-blend edges keep their level.
+    hue *= 360
+    for (left, a), (right, b) in zip(HUE_STOPS, HUE_STOPS[1:]):
+        if hue <= right:
+            mapped = a + (b - a) * (hue - left) / (right - left)
+            return tuple(round(channel * 255) for channel in
+                         colorsys.hsv_to_rgb(mapped / 360, saturation, value))
+    raise ValueError('invalid source hue')
+
+
+def tint_png(raw):
+    with Image.open(BytesIO(png_decode(raw))) as image:
+        if image.mode != 'RGBA' or image.size != (298, 123):
+            raise ValueError('prince_zero texture layout changed')
+        pixels = list(image.getdata())
+        palette = {pixel[:3]: tint_rgb(pixel[:3]) for pixel in set(pixels) if pixel[3]}
+        output = Image.new('RGBA', image.size)
+        output.putdata([(*palette[pixel[:3]], pixel[3]) if pixel[3] else pixel for pixel in pixels])
+        if output.getchannel('A').tobytes() != image.getchannel('A').tobytes():
+            raise ValueError('effect alpha changed')
+        buffer = BytesIO()
+        output.save(buffer, format='PNG')
+    return png_encode(buffer.getvalue())
 
 
 def assets(official_loader):
     outputs = {}
     for suffix in SUFFIXES:
         raw = official_loader(SOURCE + suffix)
-        if suffix in ('.png', '.timeline.amf3.deflate'):
+        if suffix == '.png':
+            output = tint_png(raw)
+        elif suffix == '.timeline.amf3.deflate':
             output = raw
         else:
             tree = wf_dsl.parse_dsl(zlib.decompress(raw, -15))['tree']
-            output = encode_tree(tint_parts(tree) if suffix == '.parts.amf3.deflate' else remap(tree))
+            output = encode_tree(remap_parts(tree) if suffix == '.parts.amf3.deflate' else remap(tree))
         outputs['common', TARGET + suffix] = output
     return outputs
 
@@ -70,10 +94,10 @@ def build(seed):
 
 
 def metadata():
-    return dict(source=SOURCE, target=TARGET, native_colour_field='g[0].s[0].l[0].c',
-                packed_colour=f'0x{TINT:08x}', rgb_multiplier=.35, rgb_offsets=[30,120,100],
-                source_png_bytes_unchanged=True, atlas_rectangles_unchanged=True,
+    return dict(source=SOURCE, target=TARGET, colour_method='baked_rgb_hue_palette',
+                hue_stops=HUE_STOPS, source_png_bytes_unchanged=False,
+                alpha_bytes_unchanged=True, atlas_rectangles_unchanged=True,
                 timeline_bytes_unchanged=True, alpha_blend_geometry_unchanged=True,
                 frame_count=66, requires_new_apk=False,
-                fixed_rgb_probes=[{'input': list(rgb), 'output': list(native_rgb(rgb))}
-                                  for rgb in ((255,255,255),(255,200,0),(0,0,0))])
+                fixed_rgb_probes=[{'input': list(rgb), 'output': list(tint_rgb(rgb))}
+                                  for rgb in ((255,255,255),(255,185,83),(51,190,234),(0,0,0))])
