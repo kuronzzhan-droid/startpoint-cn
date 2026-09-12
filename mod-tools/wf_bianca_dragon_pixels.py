@@ -13,15 +13,18 @@ from wf_generated_vfx import build_parts, pack_images
 from wf_pixelart_vfx import restore_frame
 
 SOURCE = "battle/effect/skill_unique/lady_summoner/lady_summoner"
+STILL_POSE = ("as",) * 4
+FLIGHT_POSES = ("a", "f", "g", "f")
+DISAPPEAR_POSES = ("as", "at", "as", "at")
 SEQUENCES = {
-    "neutral": ("as", "at", "as", "at"),
-    "walk_back": ("a", "f", "g", "f"),
-    "walk_front": ("as", "at", "as", "at"),
+    "neutral": STILL_POSE,
+    "walk_back": STILL_POSE,
+    "walk_front": STILL_POSE,
     "skill_ready": ("l", "m", "u", "m"),
-    "kachidoki": ("as", "at", "as", "at"),
+    "kachidoki": STILL_POSE,
     "into_coffin": ("as", "aq", "ab", "g"),
     "ghost_raise": ("a", "f", "g", "f"),
-    "ghost_neutral": ("as", "at", "as", "at"),
+    "ghost_neutral": STILL_POSE,
     "revive": ("g", "ab", "aq", "as"),
 }
 SEQUENCE_KINDS = {"skill_ready": "once", "into_coffin": "pass",
@@ -39,7 +42,9 @@ def build_dragon_assets(read):
     frame_name = prefix + "pixelart"
     pictures, names, sequences, provenance = [], [], [], []
     tiles = {}
-    for key in {k for sequence in SEQUENCES.values() for k in sequence} | set(CALL_PARTICLE_KEYS):
+    source_keys = ({k for sequence in SEQUENCES.values() for k in sequence}
+                   | set(CALL_PARTICLE_KEYS + FLIGHT_POSES + DISAPPEAR_POSES))
+    for key in source_keys:
         original = restore_frame(image, entries[key])
         tile = original.crop(original.getchannel("A").getbbox())
         canvas = Image.new("RGBA", (32, 32))
@@ -81,8 +86,8 @@ def build_call_effects(tiles):
     files, images, names = {}, [], []
     for tail in ("effect_ready_generation", "effect_ready_left", "effect_ready_right",
                  "effect_appear", "effect_disappear", "flight"):
-        keys = (SEQUENCES["walk_back"] if tail == "flight" else
-                SEQUENCES["walk_front"] if tail == "effect_disappear" else
+        keys = (FLIGHT_POSES if tail == "flight" else
+                DISAPPEAR_POSES if tail == "effect_disappear" else
                 CALL_PARTICLE_KEYS)
         prefix = CALL_EFFECT + ".gen/" + name + "_" + tail + "/"
         parts, timeline = build_parts(4, (32, 32), prefix.replace(".gen/", "generated/"), hold=6)

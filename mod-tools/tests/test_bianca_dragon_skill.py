@@ -118,7 +118,7 @@ class DragonSkillTests(unittest.TestCase):
 
     def test_pixel_frames_preserve_native_texels_and_have_collision(self):
         keys = sorted({k for seq in pixels.SEQUENCES.values() for k in seq}
-                      | set(pixels.CALL_PARTICLE_KEYS))
+                      | set(pixels.CALL_PARTICLE_KEYS + pixels.FLIGHT_POSES + pixels.DISAPPEAR_POSES))
         source = Image.new("RGBA", (len(keys)*12, 12))
         atlas = []
         originals = {}
@@ -175,11 +175,11 @@ class DragonSkillTests(unittest.TestCase):
         self.assertEqual(parts_count, 6)
 
     def test_idle_uses_selected_frames_and_spawn_particles_exclude_the_dragon(self):
-        self.assertEqual(("as", "at", "as", "at"), pixels.SEQUENCES["neutral"])
-        self.assertEqual(pixels.SEQUENCES["neutral"], pixels.SEQUENCES["walk_front"])
+        for sequence in ("neutral", "walk_front", "walk_back", "kachidoki", "ghost_neutral"):
+            self.assertEqual(("as",) * 4, pixels.SEQUENCES[sequence])
         actor_keys = {key for sequence in pixels.SEQUENCES.values() for key in sequence}
         self.assertTrue(actor_keys.isdisjoint(pixels.CALL_PARTICLE_KEYS))
-        keys = sorted(actor_keys | set(pixels.CALL_PARTICLE_KEYS))
+        keys = sorted(actor_keys | set(pixels.CALL_PARTICLE_KEYS + pixels.FLIGHT_POSES + pixels.DISAPPEAR_POSES))
         tiles = {key: Image.new("RGBA", (8, 8), (index * 11, 80, 160, 255))
                  for index, key in enumerate(keys)}
         files = pixels.build_call_effects(tiles)

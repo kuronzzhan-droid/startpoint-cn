@@ -126,7 +126,7 @@ def assemble(repo: Path, candidate_root: Path, *, apply=False):
         "client_version_authorized": "existing client supports dash and Fever percentage; exact version unknown",
         "dragon_level_100_base": {"hp": 5000, "attack": 5000},
         "summon_visual": "ready/appear contain only native particles; one active dragon actor",
-        "dragon_idle": "official frames as/at; selected by user",
+        "dragon_idle": "single official as frame for idle and movement; selected by user",
         "existing_art_voice_preserved": True,
         "status_icons": "three original generated 48px RGBA icons; native condition paths preserved",
     }
