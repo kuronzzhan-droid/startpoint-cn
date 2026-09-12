@@ -97,7 +97,7 @@ class NephtimSkillTests(unittest.TestCase):
         for kind in ("light", "dark"):
             summon = skill.summon(kind)[1]
             self.assertEqual(summon[0], "CreateSummonsMultiball")
-            self.assertEqual(summon[3], skill.value(1200))
+            self.assertEqual(summon[3], skill.value(1500))
             callback = summon[12]
             self.assertTrue(nodes(callback, "ACAttackPoint"))
             self.assertTrue(nodes(callback, "ACDirectDamage"))
@@ -106,6 +106,13 @@ class NephtimSkillTests(unittest.TestCase):
             hits, bonus = extra[2][0]["max"], extra[3][0]["max"]
             self.assertEqual((hits, hits * ((1 + bonus) / hits)), (2, 2))
             self.assertFalse(nodes(callback, "ACUnique"), "callbacks must not extend tea expiry")
+            self.assertEqual(nodes(callback, "ACHealRejection"),
+                             [["ACHealRejection", skill.value(1500)]])
+            for name in ("ACAttackPoint", "ACDirectDamage", "ACPiercing", "ACAdditionalDirectAttack"):
+                self.assertEqual(nodes(callback, name)[0][1], skill.value(1200),
+                                 "25s ball lifetime must not extend the 20s newborn buffs")
+        self.assertEqual(skill.metadata()["each_ball_lifetime_frames"], 1500)
+        self.assertEqual(skill.metadata()["duration_frames"], 1200)
 
     def test_phase_alternates_ninety_nine_times_without_refreshing_expiry(self):
         model = NativePhaseModel()
@@ -149,13 +156,14 @@ class NephtimSkillTests(unittest.TestCase):
         model.run(zero_refresh)
         self.assertEqual(model.count, 0, "late zero refresh must not recreate an expired state")
 
-    def test_one_timed_hud_state_and_original_multiball_stats_supports_preserved(self):
+    def test_one_timed_hud_state_and_multiball_curves_supports_preserved(self):
         rows = skill.unique_rows()
         self.assertEqual(set(rows), {str(skill.STATE_UID)})
         self.assertEqual(rows[str(skill.STATE_UID)][0][3:5], ["1200", "2"])
         self.assertEqual(rows[str(skill.STATE_UID)][0][13], "true")
         donor = ["native_1", "native", "5", "5"] + [str(i) for i in range(4, 30)]
-        multiballs, levels = {"1611772": [donor]}, {"1611772": [["native_curve", "1"]]}
+        multiballs, levels = {"1611772": [donor]}, {
+            "1611772": [["native_hp_curve", "465", "1", "native_atk_curve", "680", "1"]]}
         before = deepcopy((multiballs, levels))
         result = skill.multiball_rows(multiballs, levels)
         for uid, element in ((skill.LIGHT_ID, "4"), (skill.DARK_ID, "5")):
@@ -163,7 +171,8 @@ class NephtimSkillTests(unittest.TestCase):
             self.assertEqual(row[2], donor[2])
             self.assertEqual(row[3], element)
             self.assertEqual(row[4:], donor[4:])
-            self.assertEqual(result["master/battle/multiball/multiball_level.orderedmap"][str(uid)], levels["1611772"])
+            self.assertEqual(result["master/battle/multiball/multiball_level.orderedmap"][str(uid)],
+                             [["native_hp_curve", "697.5", "1", "native_atk_curve", "1020", "1"]])
         self.assertEqual((multiballs, levels), before)
 
 

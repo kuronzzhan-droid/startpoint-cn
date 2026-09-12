@@ -1,5 +1,6 @@
 """奈芙提姆的全队增益与光暗协力球召唤，纯原生Action DSL。"""
 from copy import deepcopy
+from decimal import Decimal
 
 from wf_bianca_dragon_skill import command, block, value
 
@@ -14,6 +15,7 @@ SKILL_FX = "battle/effect/skill_unique/" + CODE + "_fever/"
 BALL_FX = {kind: f"battle/effect/skill_unique/{CODE}_{kind}_call/" for kind in ("light", "dark")}
 LIGHT_FADE_FX = f"battle/effect/skill_unique/{CODE}_light_fade/{CODE}_light_fade_disappear"
 DURATION = 1200
+BALL_LIFETIME = 1500
 
 
 def condition(subject, *contents, silent=False, magnification=1):
@@ -106,11 +108,12 @@ def summon(kind):
     stem = CODE + "_" + kind + "_call"
     effect = lambda tail: ["SpecifyEffectDirectly", prefix + stem + tail]
     disappear = ["SpecifyEffectDirectly", LIGHT_FADE_FX] if kind == "light" else effect("_disappear")
-    return command("CreateSummonsMultiball", 1, uid, value(DURATION),
+    return command("CreateSummonsMultiball", 1, uid, value(BALL_LIFETIME),
         ["E2", effect("_ready_generation"), effect("_ready_left"), effect("_ready_right")],
         effect("_appear"), disappear, 0, False,
         "campus_nephtim_" + kind + "_spawn", 74, 75, block(
-            condition(75, direct_buff(), attack_buff(), split_buff(), ["ACPiercing", value(DURATION)]),
+            condition(75, direct_buff(), attack_buff(), split_buff(), ["ACPiercing", value(DURATION)],
+                      ["ACHealRejection", value(BALL_LIFETIME)]),
             _advance_phase(kind)), None)
 
 
@@ -139,6 +142,13 @@ def multiball_rows(multiballs, levels):
         row[3] = str(element)
         result[str(uid)] = [row]
         growth[str(uid)] = deepcopy(levels["1611772"])
+        for level in growth[str(uid)]:
+            if len(level) != 6:
+                raise ValueError("native multiball level rows must have six columns")
+            # Native MultiballLevelValues parses these bases as Number; retain
+            # the exact half HP and leave both growth curves/corrections intact.
+            for column in (1, 4):
+                level[column] = format((Decimal(level[column]) * Decimal("1.5")).normalize(), "f")
     return {"master/battle/multiball/multiball.orderedmap": result,
             "master/battle/multiball/multiball_level.orderedmap": growth}
 
@@ -148,7 +158,9 @@ def metadata():
             "duration_frames": DURATION, "additional_direct_times": 2,
             "additional_direct_total_ratio": 2,
             "spawn_unique_id": STATE_UID, "alternate_phase": "single timed Unique, guarded signed consumption 1/2",
-            "spawn_order": ["light", "dark"], "each_ball_lifetime_frames": DURATION,
+            "spawn_order": ["light", "dark"], "each_ball_lifetime_frames": BALL_LIFETIME,
+            "new_ball_heal_rejection_frames": BALL_LIFETIME,
+            "ball_base_stats_ratio": 1.5, "ball_growth_curves_unchanged": True,
             "new_ball_buffs": "activated callback grants the same 20s skill effects to each newborn ball",
             "light_appearance": "native ruin_girl_meteor; author-approved Summons conversion",
             "remote_piercing": "native TargetMate channel to primary members",
