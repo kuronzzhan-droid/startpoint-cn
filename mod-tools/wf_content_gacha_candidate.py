@@ -14,7 +14,7 @@ def digest(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
-def build(repo, output):
+def build(repo, output, *, correct_miniboss_rate=False):
     repo, output = Path(repo).resolve(), Path(output).resolve()
     if not output.is_relative_to(repo / "work/codex_out"):
         raise ValueError("gacha candidate must remain in ignored output workspace")
@@ -37,7 +37,8 @@ def build(repo, output):
             raise ValueError(f"custom character {cid} is not five-star")
     server_path = repo / "assets/gacha.json"
     server_raw = server_path.read_bytes()
-    updated = rules.build(json.loads(server_raw), custom)
+    source = json.loads(server_raw)
+    updated = rules.correct_abyss_miniboss_rate(source) if correct_miniboss_rate else rules.build(source, custom)
     cdn_path = core.table_path(store, "master/gacha/gacha.orderedmap")
     cdn_raw = cdn_path.read_bytes()
     cdn = {k: core.read_csv_lines(v)[0] for k, v in core.read_orderedmap_file_from_bytes(cdn_raw).items()}
@@ -86,7 +87,9 @@ def build(repo, output):
                   excluded_test_characters=sorted(rules.EARLY_CANARIES),
                   big_boss_zero=sorted(rules.BIG_BOSS_ZERO),
                   abyss_minibosses=sorted(rules.MINIBOSSES), abyss_new_zero=sorted(rules.NEW_ABYSS_ZERO),
-                  abyss_rank_per_mille=[405, 245, 350], racing_rank_per_mille=[950, 20, 30],
+                  abyss_rank_per_mille=updated['990001']['rankRates']['normal'],
+                  abyss_miniboss_percent='0.1', abyss_miniboss_exchangeable=True,
+                  racing_rank_per_mille=updated['990002']['rankRates']['normal'],
                   character_source_sha256=digest(current_raw), gacha_pointer_source_sha256=digest(cdn_raw),
                   files=records)
     (output / "candidate.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -97,6 +100,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--correct-miniboss-rate", action="store_true")
     args = parser.parse_args()
-    report = build(args.repo, args.output)
+    report = build(args.repo, args.output, correct_miniboss_rate=args.correct_miniboss_rate)
     print(json.dumps(dict(custom_count=len(report["custom_roster"]), files=len(report["files"]), writes_live=False)))
