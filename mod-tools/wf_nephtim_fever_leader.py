@@ -20,7 +20,12 @@ def leader_rows(source, *, piercing_extension="dark_resonance",
     # Native I190 adds the party modifier once at initialization. Keeping it
     # constant avoids Fever/death/zone transitions adding unmatched increments.
     piercing = _instant(source, 190, 20_000, pre="dark")
-    rows = [pf, direct, attack, maximum, piercing]
+    # Native T12 crosses multiples of the current combo; I50 permanently adds
+    # the general Fever gain modifier. Both I50/I56 exist in LeaderAbilityValues.
+    growth = _instant(source, 50, 20_000, pre="dark", target=5,
+                      trigger=12, threshold=35)
+    duration = _instant(source, 56, 10_000, pre="dark")
+    rows = [pf, direct, attack, maximum, piercing, growth, duration]
     return [[CODE, "0", ""] + deepcopy(row[5:]) for row in rows]
 
 
@@ -35,6 +40,11 @@ def metadata():
         "power_flip_id": PF_ID, "power_flip_string_id": PF_STRING_ID,
         "dark_direct_damage_percent": 400, "dark_attack_percent": 200,
         "fever_dark_extra_skill_gauge_percent": 10,
+        "fever_gain_growth": {"combo_step": 35, "increase_percent": 20,
+                              "target": "dark party", "requires_fever": False,
+                              "trigger_limit": None, "persists_after_combo_reset": True,
+                              "counter": "native T12 current-combo multiples; remainder resets on combo reset"},
+        "fever_duration_percent": 10,
         "piercing_extension": {"strategy": "dark_resonance", "target": "party",
                                "increase_percent": 20, "requires_fever": False,
                                "trigger": 0, "content": 190,

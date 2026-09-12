@@ -11,7 +11,7 @@ CID, CODE = "169989", "ruin_girl_campus"
 class Candidate(RevisionCandidate):
     def __init__(self, repo_root: Path, candidate_root: Path):
         super().__init__(repo_root, candidate_root, character_id=CID, code_name=CODE,
-                         package_version="0.2.1", snapshot_key="campus_nephtim_fever",
+                         package_version="0.2.2", snapshot_key="campus_nephtim_fever",
                          evidence_name="dark-fever-revision.json")
 
     def native_assets(self, bundle: Path):

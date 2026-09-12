@@ -105,8 +105,6 @@ def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
     # Piercing is a party state: I190 is natively Party(None), not a character target.
     a2 = [_instant(source, 190, 20_000, pre="dark"),
           _instant(source, 33, 250_000, pre="dark", target=5)]
-    fever_rate = _instant(source, 50, 500_000, pre="dark", target=5)
-    fever_duration = _instant(source, 56, 10_000, pre="dark")
     combo = _during(source, 410, 500, combo=True)
     piercing_attack = _instant(source, 32, 20_000, pre="dark", fever="fever",
                                target=5, trigger=235, threshold=1, threshold2=120)
@@ -115,7 +113,7 @@ def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
     # Only AbilityValues parses I724 on the installed ratio-capable client.
     charge = _instant(source, 724, 5_000, pre="dark", trigger=20,
                       threshold=50, puller=7, group="Black")
-    a3 = [fever_rate, fever_duration, combo, piercing_attack, piercing_direct, charge]
+    a3 = [combo, piercing_attack, piercing_direct, charge]
     a4 = [_during(source, 410, 20_000, target=5),
           _during(source, 410, 20_000, target=8)]
     a5 = [_piercing(source, trigger=77, frames=600, fever="not_fever"),

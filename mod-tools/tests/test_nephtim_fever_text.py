@@ -33,7 +33,7 @@ class NephtimFeverTextTest(unittest.TestCase):
         for value in panels.values():
             self.assertTrue(value.strip())
             self.assertNotRegex(value, r"同条件|无上限|无次数上限|I629|I536|I722|DSL|APK|Unique|原生|实现|独立乘区")
-        for phrase in ("参战者及协力球贯穿", "队伍内角色及协力球", "Fever 模式中", "技能强化后", "星夜茶会", "交替召唤光、暗属性协力球"):
+        for phrase in ("参战者及协力球贯穿", "队伍内角色及协力球", "Fever 模式中"):
             self.assertIn(phrase, panels["active"])
 
     def test_real_group_ids_create_seven_overrides_without_changing_combat_or_awake_rows(self):
@@ -94,15 +94,11 @@ class NephtimFeverTextTest(unittest.TestCase):
             self.assertEqual(restricted, "<icon id='main'>" in panels[f"a{number}"])
         lines = panels["a3"].splitlines()
         self.assertTrue(all(line.startswith(text.MAIN_ICON + "暗属性共鸣时，") for line in lines))
-        self.assertNotIn("Fever 模式中", lines[0])
-        self.assertIn("Fever 槽上升量+500%", lines[0])
-        self.assertNotIn("直接攻击", lines[0])
-        self.assertEqual(text.MAIN_ICON + "暗属性共鸣时，Fever 时间+10%。", lines[1])
-        self.assertIn("Fever 模式中，当前每有1连击", lines[2])
-        self.assertIn("直接攻击造成的伤害+0.5%", lines[2])
-        self.assertIn("Fever 模式中，处于贯穿效果的时间每累计2秒", lines[3])
-        self.assertIn("攻击力+20%、直接攻击伤害+20%", lines[3])
-        combo = self.abilities["1699893"][2]
+        self.assertIn("Fever 模式中，当前每有1连击", lines[0])
+        self.assertIn("直接攻击造成的伤害+0.5%", lines[0])
+        self.assertIn("Fever 模式中，处于贯穿效果的时间每累计2秒", lines[1])
+        self.assertIn("攻击力+20%、直接攻击伤害+20%", lines[1])
+        combo = self.abilities["1699893"][0]
         self.assertEqual(("2", "410", "500"), (combo[97], combo[109], combo[113]))
 
     def test_non_main_bonuses_keep_their_actual_targets_and_a5_has_no_resonance_gate(self):

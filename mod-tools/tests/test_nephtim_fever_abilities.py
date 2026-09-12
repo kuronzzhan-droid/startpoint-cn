@@ -109,11 +109,8 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
         self.assertEqual(("33", "100000", "5", "Black"),
                          (final[47], final[51], final[48], final[49]))
 
-    def test_a3_fever_rate_length_and_current_combo_independent_term(self):
-        rate, length, combo = self.rows["1699893"][:3]
-        self.assertEqual(("50", "500000", "5", "Black", "0"),
-                         (rate[47], rate[51], rate[48], rate[49], rate[13]))
-        self.assertEqual(("56", "10000", "0"), (length[47], length[51], length[13]))
+    def test_a3_current_combo_independent_term(self):
+        combo = self.rows["1699893"][0]
         self.assertEqual(("1", "2", "Black", "12", "2", "100000", "100000", "(None)"),
                          (combo[5], combo[6], combo[11], combo[13], combo[97], combo[100], combo[101], combo[102]))
         self.assertEqual(("410", "5", "Black", "500", "500"),
@@ -124,7 +121,7 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
         self.assertTrue(kit.metadata()["combo_bonus"]["falls_when_combo_falls"])
 
     def test_a3_piercing_growth_is_gated_per_frame_and_keeps_permanent_uncapped_gains(self):
-        for row, content in zip(self.rows["1699893"][3:], ("32", "33")):
+        for row, content in zip(self.rows["1699893"][1:3], ("32", "33")):
             self.assertEqual(("2", "Black", "12", "235", "100000", "12000000", "(None)"),
                              (row[6], row[11], row[13], row[27], row[30], row[32], row[34]))
             self.assertEqual((content, "5", "Black", "20000", "20000", "", ""),
