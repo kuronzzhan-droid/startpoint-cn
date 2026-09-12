@@ -121,8 +121,8 @@ def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
     piercing_direct = _instant(source, 33, 20_000, pre="dark", fever="fever",
                                target=5, trigger=235, threshold=1, threshold2=120)
     # Only AbilityValues parses I724 on the installed ratio-capable client.
-    charge = _instant(source, 724, 5_000, pre="dark", trigger=20,
-                      threshold=50, puller=7, group="Black")
+    charge = _instant(source, 724, 10_000, pre="dark", trigger=20,
+                      threshold=45, puller=7, group="Black")
     a3 = [combo, piercing_attack, piercing_direct, charge, *_multiball_direct_rows(source)]
     a4 = [_during(source, 410, 20_000, target=5),
           _during(source, 410, 20_000, target=8)]
@@ -161,7 +161,7 @@ def metadata():
         "fever_multiball_direct_bonus": multiball_fever.metadata(),
         "direct_attack_fever": {"ability_slot": 3, "requires_ability_unlock": True,
                                 "requires_self_leader": False, "requires_dark_resonance": True,
-                                "dark_hits": 50, "percent_of_maximum": 5,
+                                "dark_hits": 45, "percent_of_maximum": 10,
                                 "requires_fever": False},
         "opening_skill_charge": {
             "content": 211, "target": "self", "initial_charge_percent": 50,

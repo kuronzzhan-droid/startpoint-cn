@@ -148,14 +148,14 @@ def ability_rows(source, *, fever_stack_unique_id=FEVER_STACK_UNIQUE_ID):
     a3 = fever_rows(source, fever_stack_unique_id=fever_stack_unique_id)
     a4 = [_instant(source, 56, 15_000, pre="fire"),
           _during(source, 3, 10_000)]
-    a5 = [_skill(source, 724, 5_000, pre="fire")]
+    a5 = [_skill(source, 724, 15_000, pre="fire")]
     a6 = [_skill(source, 388, 10_000, target=5, target_group="Red", limit=10),
           _skill(source, 32, 10_000, target=5, target_group="Red",
                  fever=True, limit=10)]
     result = {}
     for slot, rows in enumerate((opening, a2, a3, a4, a5, a6), 1):
         for row in rows:
-            row[:5] = [f"{CODE}_{slot}", "false" if slot in (1, 3) else "true",
+            row[:5] = [f"{CODE}_{slot}", "false" if slot in (1, 3, 5) else "true",
                        "attack_red", "0", ""]
         result[f"{CID}{slot}"] = rows
     return result
@@ -187,7 +187,7 @@ def metadata(*, summon_unique_id=SUMMON_UNIQUE_ID,
              fever_stack_unique_id=FEVER_STACK_UNIQUE_ID):
     return {
         "required_client_capabilities": ["kyubi-fever-ratio-v1"],
-        "main_only_slots": [1, 3],
+        "main_only_slots": [1, 3, 5],
         "resonance": "all resonance gates use fire pre2 Member(Red,6)",
         "summon_event": {"unique_id": summon_unique_id, "trigger": 185, "puller": 0,
                          "contract": "owner marker granted only after successful own-dragon summon"},

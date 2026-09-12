@@ -42,7 +42,7 @@ _BIANCA = {
         " <icon id='main'>  Fever结束或自身倒下时，「焰域研修」清空。"
     ),
     "a4": "火属性共鸣时，Fever时间+15%。\nFever模式中，火属性角色技能充能速度+10%。",
-    "a5": "火属性共鸣时，火属性角色发动技能：Fever槽+5%。",
+    "a5": "火属性共鸣时，火属性角色发动技能：Fever槽+15%。",
     "a6": (
         "火属性角色发动技能时，火属性角色能力伤害+10%（最大+100%）。\n"
         "Fever模式中，火属性角色发动技能时，火属性角色攻击力+10%（最大+100%）。"
@@ -94,6 +94,8 @@ def panel_descriptions(character_id):
         raise ValueError(f"unsupported campus character: {cid}")
     texts = deepcopy(_BIANCA if cid == "119989" else _CELTIE)
     texts["a1"] = main_description(texts["a1"])
+    if cid == "119989":
+        texts["a5"] = main_description(texts["a5"])
     return texts
 
 
