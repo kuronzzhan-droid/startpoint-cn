@@ -37,11 +37,17 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
         for sid, rows in self.rows.items():
             self.assertEqual({"false" if sid in ("1699891", "1699893") else "true"}, {r[1] for r in rows})
 
-    def test_a1_increases_self_maximum_without_initial_charge(self):
-        maximum, flag = self.rows["1699891"][:2]
-        self.assertEqual(("0", "0", "245", "0", "50000", "50000"),
-                         (maximum[6], maximum[27], maximum[47], maximum[48], maximum[51], maximum[52]))
-        self.assertFalse(any(r[47] == "211" for rows in self.rows.values() for r in rows))
+    def test_a1_initially_charges_self_without_increasing_the_maximum(self):
+        opening, flag = self.rows["1699891"][:2]
+        self.assertEqual(("false", "0", "0", "211", "0", "50000", "50000"),
+                         (opening[1], opening[6], opening[27], opening[47], opening[48], opening[51], opening[52]))
+        self.assertFalse(any(r[47] == "245" for rows in self.rows.values() for r in rows))
+        donor = self.source["1110211"][0]  # Christmas Bianca's native opening self charge.
+        self.assertEqual((donor[5], donor[27], donor[47], donor[48]),
+                         (opening[5], opening[27], opening[47], opening[48]))
+        meta = kit.metadata()["opening_skill_charge"]
+        self.assertEqual((50, 0, False), (meta["initial_charge_percent"],
+                         meta["gauge_maximum_increase_percent"], meta["requires_resonance"]))
         self.assertEqual(("2", "600000", "600000", "Black", "0", "536"),
                          (flag[6], flag[9], flag[10], flag[11], flag[13], flag[47]))
         self.assertEqual(kit.CHANGE_SKILL_STRING_ID, flag[70])

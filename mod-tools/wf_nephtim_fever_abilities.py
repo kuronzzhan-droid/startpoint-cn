@@ -98,7 +98,7 @@ def _multiball_direct_rows(source):
 def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
                  spawn_action_path=SPAWN_ACTION_PATH):
     """返回1699891..6；主动技能里的强化分支/召唤状态由DSL模块装配。"""
-    maximum = _instant(source, 245, 50_000, target=0)
+    opening_charge = _instant(source, 211, 50_000, target=0)
     enhance = _instant(source, 536, pre="dark")
     enhance[70] = CHANGE_SKILL_STRING_ID
     # ConditionKeepFrame counts only frames actually holding at least one UID.
@@ -130,7 +130,7 @@ def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
           _piercing(source, trigger=248, frames=300, fever="fever")]
     a6 = [_instant(source, 33, 100_000, pre="dark", target=5)]
     result = {}
-    for number, rows in enumerate(([maximum, enhance, summon, clear, reconcile], a2, a3, a4, a5, a6), 1):
+    for number, rows in enumerate(([opening_charge, enhance, summon, clear, reconcile], a2, a3, a4, a5, a6), 1):
         for row in rows:
             row[0] = f"{CODE}_{number}"
             row[1] = "false" if number in (1, 3) else "true"
@@ -163,9 +163,9 @@ def metadata():
                                 "requires_self_leader": False, "requires_dark_resonance": True,
                                 "dark_hits": 50, "percent_of_maximum": 5,
                                 "requires_fever": False},
-        "skill_gauge_maximum": {
-            "content": 245, "target": "self", "increase_percent": 50,
-            "initial_charge_percent": 0, "native_total_extra_gauge_cap_percent": 100,
+        "opening_skill_charge": {
+            "content": 211, "target": "self", "initial_charge_percent": 50,
+            "trigger": 0, "requires_resonance": False, "gauge_maximum_increase_percent": 0,
         },
         "skill_enhancement": {
             "string_id": CHANGE_SKILL_STRING_ID, "summon_unique_id": SUMMON_UNIQUE_ID,

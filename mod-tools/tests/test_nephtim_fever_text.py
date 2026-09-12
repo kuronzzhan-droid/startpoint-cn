@@ -71,13 +71,12 @@ class NephtimFeverTextTest(unittest.TestCase):
             self.assertNotIn("\\n", group[0][0])
             self.assertEqual(group, core.read_csv_lines(core.write_csv_lines(group)))
 
-    def test_a1_is_maximum_gauge_and_summon_state_has_correct_gates_and_durations(self):
+    def test_a1_is_opening_charge_and_summon_state_has_correct_gates_and_durations(self):
         rows = self.abilities["1699891"]
-        self.assertEqual(("245", "50000"), (rows[0][47], rows[0][51]))
+        self.assertEqual(("211", "50000"), (rows[0][47], rows[0][51]))
         panel = self.panels()["a1"]
-        self.assertEqual(text.MAIN_ICON + "自身技能槽上限+50%。", panel.splitlines()[0])
-        self.assertNotIn("战斗开始", panel)
-        self.assertNotIn("技能槽+50%", panel)
+        self.assertEqual(text.MAIN_ICON + "战斗开始时，自身技能槽+50%。", panel.splitlines()[0])
+        self.assertNotIn("技能槽上限+50%", panel)
         self.assertIn("暗属性共鸣时，强化技能", panel)
         self.assertIn("攻击力提升100%效果，持续20秒", panel)
         self.assertIn("暗属性共鸣时，Fever 模式中，发动技能时", panel)
@@ -105,7 +104,7 @@ class NephtimFeverTextTest(unittest.TestCase):
         panels = self.panels()
         self.assertIn("暗属性共鸣时，全队贯穿效果时间+20%", panels["a2"])
         self.assertIn("暗属性角色直接攻击伤害+250%", panels["a2"])
-        self.assertEqual("暗属性共鸣时，Fever 模式中，暗属性角色及协力球直接攻击造成的伤害+20%。", panels["a4"])
+        self.assertEqual("暗属性共鸣时，Fever 模式中，暗属性角色及协力球直接攻击造成的伤害+20%（独立乘区）。", panels["a4"])
         members, balls = self.abilities["1699894"]
         self.assertEqual("5", members[110])
         self.assertEqual([abilities.multiball_fever.STRING_ID, abilities.multiball_fever.ACTION_PATH], balls[70:72])
