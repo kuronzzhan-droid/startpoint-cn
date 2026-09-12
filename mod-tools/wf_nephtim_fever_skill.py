@@ -1,8 +1,8 @@
 """奈芙提姆的全队增益与光暗协力球召唤，纯原生Action DSL。"""
 from copy import deepcopy
-from decimal import Decimal
 
 from wf_bianca_dragon_skill import command, block, value
+import wf_nephtim_fever_shield as shield
 
 CODE = "ruin_girl_campus"
 STATE_UID = 16998901
@@ -77,7 +77,7 @@ def build_skill(level):
     enhanced = command("ConditionalsChangeSkillFlag", 1, block(
         dark_and_balls(attack_buff()),
         command("ConditionalsFeverMode", block(
-            _grant_state()), block())), block())
+            _grant_state(), shield.grant_barriers()), block())), block())
     return action(show(CODE + "_fever_all", -1),
         find(72, 33, [direct_buff(), piercing]),
         # Native co-op condition channel: remote primary members, local balls handled above.
@@ -142,13 +142,6 @@ def multiball_rows(multiballs, levels):
         row[3] = str(element)
         result[str(uid)] = [row]
         growth[str(uid)] = deepcopy(levels["1611772"])
-        for level in growth[str(uid)]:
-            if len(level) != 6:
-                raise ValueError("native multiball level rows must have six columns")
-            # Native MultiballLevelValues parses these bases as Number; retain
-            # the exact half HP and leave both growth curves/corrections intact.
-            for column in (1, 4):
-                level[column] = format((Decimal(level[column]) * Decimal("1.5")).normalize(), "f")
     return {"master/battle/multiball/multiball.orderedmap": result,
             "master/battle/multiball/multiball_level.orderedmap": growth}
 
@@ -160,7 +153,8 @@ def metadata():
             "spawn_unique_id": STATE_UID, "alternate_phase": "single timed Unique, guarded signed consumption 1/2",
             "spawn_order": ["light", "dark"], "each_ball_lifetime_frames": BALL_LIFETIME,
             "new_ball_heal_rejection_frames": BALL_LIFETIME,
-            "ball_base_stats_ratio": 1.5, "ball_growth_curves_unchanged": True,
+            "ball_base_stats_unchanged": True, "ball_growth_curves_unchanged": True,
+            "enhanced_fever_shield": shield.metadata(),
             "new_ball_buffs": "activated callback grants the same 20s skill effects to each newborn ball",
             "light_appearance": "native ruin_girl_meteor; author-approved Summons conversion",
             "remote_piercing": "native TargetMate channel to primary members",

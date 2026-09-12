@@ -156,6 +156,18 @@ class NephtimSkillTests(unittest.TestCase):
         model.run(zero_refresh)
         self.assertEqual(model.count, 0, "late zero refresh must not recreate an expired state")
 
+    def test_active_buff_refresh_does_not_recreate_or_renew_existing_ball_lifetime(self):
+        for level in (1, 2):
+            active = skill.build_skill(level)
+            self.assertFalse(nodes(active, "CreateSummonsMultiball"))
+            self.assertFalse(nodes(active, "RemoveMultiball"))
+            for name in ("ACAttackPoint", "ACDirectDamage", "ACPiercing", "ACAdditionalDirectAttack"):
+                for content in nodes(active, name):
+                    self.assertEqual(content[1], skill.value(1200))
+        self.assertEqual([node[3] for node in nodes(skill.build_spawn(), "CreateSummonsMultiball")],
+                         [skill.value(1500), skill.value(1500)])
+        self.assertEqual(skill.unique_rows()[str(skill.STATE_UID)][0][3], "1200")
+
     def test_one_timed_hud_state_and_multiball_curves_supports_preserved(self):
         rows = skill.unique_rows()
         self.assertEqual(set(rows), {str(skill.STATE_UID)})
@@ -172,7 +184,7 @@ class NephtimSkillTests(unittest.TestCase):
             self.assertEqual(row[3], element)
             self.assertEqual(row[4:], donor[4:])
             self.assertEqual(result["master/battle/multiball/multiball_level.orderedmap"][str(uid)],
-                             [["native_hp_curve", "697.5", "1", "native_atk_curve", "1020", "1"]])
+                             [["native_hp_curve", "465", "1", "native_atk_curve", "680", "1"]])
         self.assertEqual((multiballs, levels), before)
 
 
