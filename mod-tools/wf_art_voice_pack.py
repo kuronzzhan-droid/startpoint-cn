@@ -9,6 +9,7 @@ import re
 import wf_assets
 import wf_voice_gate as gate
 from wf_art_voice_lines import ROLES
+from wf_art_voice_enablement import rows as enablement_rows
 
 SPEECH_TABLE = 'master/character/character_speech.orderedmap'
 EXPECTED_COUNTS = dict(bianca=22, celtie=23, nephtim=24, lion=12, ginovi=21)
@@ -90,4 +91,6 @@ def metadata(plan):
         language='ja',home_ally_subtitles='zh-CN',battle_subtitles='delivery manifest only',
         numbered_skills='four distinct files; native sequential enumeration then random choice',
         ready='two distinct native files; condition routing supplied by wf_art_voice_routes',
-        real_actor_imitation=False,new_client_capabilities=[])
+        real_actor_imitation=False,voice_actor='AI 合成配音',
+        native_enablement='enablement_rows: CV label and exact character voice exclusions',
+        new_client_capabilities=[])
