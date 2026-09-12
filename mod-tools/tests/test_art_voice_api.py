@@ -35,7 +35,7 @@ class ArtVoiceApiTests(unittest.TestCase):
             self.assertEqual(api.generate(line(),target,key,opener=opener)['status'],'cached')
             self.assertEqual(len(calls),1)
             for path in target.rglob('*.json'):
-                text=path.read_text();self.assertNotIn(key,text);self.assertNotIn('X-api-key',text)
+                text=path.read_text(encoding='utf-8');self.assertNotIn(key,text);self.assertNotIn('X-api-key',text)
 
     def test_http_rejection_records_reason_without_raw_body_or_credential(self):
         key='secretcredentialvalue'
@@ -45,7 +45,7 @@ class ArtVoiceApiTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             result=api.generate(line(),Path(temp),key,opener=opener)
             self.assertEqual(result['status'],'failed');self.assertEqual(result['api_code'],'45001125')
-            raw=next(Path(temp).rglob('*.json')).read_text()
+            raw=next(Path(temp).rglob('*.json')).read_text(encoding='utf-8')
             self.assertNotIn(key,raw);self.assertNotIn('private',raw)
             self.assertFalse(list(Path(temp).rglob('*.mp3')))
 
