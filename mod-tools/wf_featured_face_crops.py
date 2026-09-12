@@ -1,4 +1,4 @@
-"""五位指定角色的紧脸部UI裁图；只返回资产字节，不修改立绘或角色包。"""
+"""五位角色按UI用途派生头像和编队卡面，不修改立绘或角色包。"""
 from __future__ import annotations
 
 import io
@@ -60,7 +60,7 @@ def _box(box, size):
 
 
 def make_images(code, source, square_box, masks):
-    """方形槽共用构图，窄长槽保留脸宽，切入图使用独立横幅裁切和原生渐隐。"""
+    """头像留出头部空间，编队和弹射板按各自竖框保留头肩与上身。"""
     if code not in CODES:
         raise ValueError("unassigned character")
     source = source.convert("RGBA")
@@ -68,9 +68,16 @@ def make_images(code, source, square_box, masks):
     result = {}
     for slots in GROUPS:
         size = gate.OFFICIAL_ICON_SIZES[slots[0]]
-        height = max(side, .82 * side * size[1] / size[0])
+        height = 1.13 * max(side, .82 * side * size[1] / size[0])
+        anchor = (.5, .5)
+        if slots[0] == "thumb_party_main":
+            height, anchor = 2.4 * side, (.5, .30)
+        elif slots[0] == "battle_control_board":
+            height, anchor = 2.85 * side, (.5, .23)
+        elif slots[0] == "thumb_level_up":
+            height, anchor = 1.57 * side, (.5, .38)
         image = _background(size, code)
-        image.alpha_composite(images.crop_at(source, center, height, size, (.5, .5)))
+        image.alpha_composite(images.crop_at(source, center, height, size, anchor))
         for slot in slots:
             target = image.resize(gate.OFFICIAL_ICON_SIZES[slot], Image.Resampling.LANCZOS)
             if slot in gate.SHAPE_SLOTS:
@@ -79,7 +86,7 @@ def make_images(code, source, square_box, masks):
                     raise ValueError("wrong native alpha mask for " + slot)
                 target.putalpha(Image.fromarray(alpha))
             result[slot] = target
-    cutin = images.crop_at(source, center, side, (1024, 512), (.5, .5))
+    cutin = images.crop_at(source, center, 1.13 * side, (1024, 512), (.5, .5))
     pixels = np.array(cutin)
     alpha = pixels[:, :, 3].astype(float)
     # Tight portraits can fill the entire banner. Keep transparent side padding
