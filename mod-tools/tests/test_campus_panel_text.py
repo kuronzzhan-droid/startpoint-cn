@@ -96,22 +96,21 @@ class CampusPanelTextTest(unittest.TestCase):
         leader = panels["leader"].splitlines()
         self.assertIn("火属性共鸣", leader[0])
         self.assertIn("火属性共鸣", leader[1])
-        self.assertNotIn("共鸣", leader[2])  # 原真实I251追击没有共鸣门。
-        self.assertIn("50倍火属性能力伤害", leader[2])
+        self.assertNotIn("共鸣", leader[-1])  # 原真实I251追击没有共鸣门。
+        self.assertIn("50倍火属性能力伤害", leader[-1])
         for term in ("+200%", "+400%", "Fever槽+500", "技能槽+25%"):
             self.assertIn(term, panels["leader"])
-        for term in ("主位", "火属性共鸣", "Fever中", "上限+20%", "每2秒", "+10%", "+50%", "清空"):
+        for term in ("<icon id='main'>", "火属性共鸣时", "Fever模式中", "上限+20%", "每经过2秒", "+10%", "+50%", "清空"):
             self.assertIn(term, panels["a3"])
         abilities, _ = generated_kit("119989")
         attack, buff = abilities["1199892"]
         self.assertEqual((attack[35], buff[35]), ("60", "0"))
-        self.assertIn("伤害触发冷却1秒", panels["a2"].splitlines()[1])
-        self.assertNotIn("冷却", panels["a2"].splitlines()[2])
-        self.assertIn("每次技能均可触发", panels["a2"].splitlines()[2])
-        self.assertTrue(panels["a3"].splitlines()[1].startswith("同条件下，每2秒"))
-        self.assertEqual(panels["a4"].splitlines()[1], "Fever中：火属性角色技能充能速度+10%。")
+        self.assertIn("冷却1秒", panels["a2"].splitlines()[0])
+        self.assertNotIn("冷却", panels["a2"].splitlines()[1])
+        self.assertIn("火属性共鸣时，Fever模式中，每经过2秒", panels["a3"].splitlines()[1])
+        self.assertEqual(panels["a4"].splitlines()[1], "Fever模式中，火属性角色技能充能速度+10%。")
         self.assertNotIn("共鸣", panels["a6"])
-        self.assertEqual(panels["a6"].count("最多+100%"), 2)
+        self.assertEqual(panels["a6"].count("最大+100%"), 2)
 
     def test_celtie_stock_gain_consumption_and_limits_remain_explicit(self):
         panels = text.panel_descriptions("149989")
@@ -119,22 +118,32 @@ class CampusPanelTextTest(unittest.TestCase):
         self.assertEqual([row[4] for row in leaders[:2]], ["0", "0"])
         self.assertEqual(panels["leader"].splitlines()[0], "风属性角色攻击力+200%、能力伤害+400%。")
         self.assertNotIn("共鸣", panels["leader"].splitlines()[0])
-        self.assertTrue(panels["leader"].splitlines()[1].startswith("风属性共鸣：强化弹射"))
-        for term in ("风属性共鸣", "+200%", "+400%", "10倍", "2层", "共获得3层", "最多消耗2层", "连击+14", "暂停"):
+        self.assertTrue(panels["leader"].splitlines()[1].startswith("风属性共鸣时，强化弹射"))
+        for term in ("风属性共鸣时", "+200%", "+400%", "10倍", "2层", "消耗1层", "连击+7"):
             self.assertIn(term, panels["leader"])
-        for term in ("分为3次", "+200%", "每消耗1层", "+5%", "共+10%"):
+        for term in ("分为3次", "+200%", "每消耗1层", "+5%"):
             self.assertIn(term, panels["a2"])
-        for term in ("主位", "风属性共鸣", "35次", "非Fever", "25倍", "70的倍数", "+700%", "+7%", "无次数上限", "星风心得", "+25%", "消耗快门不减少心得"):
+        for term in ("<icon id='main'>", "风属性共鸣时", "35次", "非Fever", "25倍", "70的倍数", "+700%", "+7%", "星风心得", "+25%"):
             self.assertIn(term, panels["a3"])
         self.assertNotIn("星风快门累积", "".join(panels.values()))
         self.assertIn("命中敌人", panels["a1"])
         self.assertNotIn("全场敌人", panels["a1"])
-        for slot, effect in (("a4", "贯穿"), ("a5", "浮游"), ("a6", "最大速度+200%")):
-            for term in ("风属性共鸣", "Fever中", "每3秒", "1.5秒", effect):
+        for slot, effect in (("a4", "贯穿"), ("a5", "浮游"), ("a6", "最大速度固定效果")):
+            for term in ("风属性共鸣时", "Fever模式中", "每经过3秒", "1.5秒", effect):
                 self.assertIn(term, panels[slot])
-        self.assertIn("技能槽获取不衰减", panels["a6"])
+        for value in panels.values():
+            self.assertNotRegex(value, "同条件|本场|无次数上限|消耗快门不减少|获取不衰减|与队长技分别|两者齐备")
         row = generated_kit("149989")[0]["1499896"][0]
         self.assertEqual((row[47], row[51], row[52]), ("688", "200000", "200000"))
+
+    def test_main_slot_badge_matches_the_actual_unison_restriction(self):
+        for cid in text.CODES:
+            abilities, _ = generated_kit(cid)
+            panels = text.panel_descriptions(cid)
+            for slot in range(1, 7):
+                restricted = any(row[1] == "false" for row in abilities[cid + str(slot)])
+                self.assertEqual(restricted, "<icon id='main'>" in panels[f"a{slot}"])
+            self.assertNotIn("<icon id='main'>", panels["leader"])
 
     def test_override_capability_is_explicit_and_return_values_are_isolated(self):
         self.assertEqual(text.metadata()["required_client_capabilities"], ["panel-description-override-v2"])

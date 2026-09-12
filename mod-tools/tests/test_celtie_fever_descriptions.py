@@ -44,7 +44,7 @@ class CeltieDescriptionDependenciesTest(unittest.TestCase):
                           "panel-description-override-v2"],
                          build.required_capabilities(["celtie-ability-actions-v1",
                              "kyubi-fever-ratio-v1", "other-existing-feature"]))
-        self.assertIn("风属性伤害（伤害量以能力伤害加成判定）", build.DESCRIPTION)
+        self.assertIn("风属性伤害，伤害量以能力伤害加成判定", build.DESCRIPTION)
         self.assertNotRegex(build.DESCRIPTION, r"[0-9%％]")
 
 
