@@ -114,8 +114,14 @@ class RevisionCandidate:
                       if item["root"] == "common" and item["logical_path"] == logical), None)
         owned = set(claim["outer_keys"]) if claim else set()
         for key, value in replacements.items():
+            panel_override = (
+                logical == "master/string/custom_ability_string.orderedmap"
+                and key in {"desc_override_" + self.code,
+                            *(f"desc_override_{self.code}_{slot}" for slot in range(1, 7))}
+            )
             if key not in owned and not (key.startswith(self.cid) or key.startswith(self.code)
-                                        or key.startswith("change_skill_" + self.code)):
+                                        or key.startswith("change_skill_" + self.code)
+                                        or panel_override):
                 raise ValueError(f"new key is outside the assigned character namespace: {key}")
             if key in old_rows and key not in owned:
                 raise ValueError(f"unowned existing key: {logical}:{key}")
