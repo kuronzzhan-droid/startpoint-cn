@@ -1027,6 +1027,10 @@ def action_dsl_element_problems(tree, character_element=None) -> list[str]:
 #   FindAllSubjects            node[1] -> node[9]
 #   FindNearSubjects           node[5] -> node[6]     (node[1] 是搜索源,不是绑定)
 #   CreateReferencePoint       node[10] -> node[11]
+#   CreateSummonsMultiball     node[10]/node[11] -> node[12](Activated callback)
+#                   ActionEvaluator.as:3720-3723/3778 forwards params[9]/[10]/[11]
+#                   to ActivatedMultiballOfExecutorSelf; ListeningEvent.as:207-212
+#                   binds ball/member only inside a child Environment for that callback.
 #   TargetMate                 node[1] -> **所在 Block 的后续兄弟语句**(不是子块)
 #   CollisionOfBallAndEnemy    node[4] -> node[5]
 #
@@ -1057,6 +1061,7 @@ DSL_SUBJECT_BINDERS: dict[str, tuple[tuple[tuple[int, ...], int], ...]] = {
     "CollisionOfSpecificBallAndSpecificEnemy": (((6,), 7), ((6,), 8)),
     # ListeningEvent case5 binds the activated squad's ball and member separately.
     "ActivatedMultiballOfExecutorSelf": (((2, 3), 4),),
+    "CreateSummonsMultiball": (((10, 11), 12),),
 }
 
 # 语句级绑定:对所在 Block 的**后续兄弟**生效(官方 flame_blessgirl 的写法)

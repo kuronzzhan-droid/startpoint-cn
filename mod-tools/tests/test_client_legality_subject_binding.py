@@ -53,6 +53,12 @@ def _normal_attack(subject: int, element: int = 255) -> list:
     ]
 
 
+def _summon(ball: int, member: int, callback: list | None) -> list:
+    return ["CreateSummonsMultiball", 1, 1611772, [{"min": 1200, "max": 1200}],
+            ["E1", ["None"]], ["None"], ["None"], 0, False,
+            "summon_ready", ball, member, callback, None]
+
+
 def _dsl(*commands: list) -> list:
     return ["ActionDsl", 1, ["None"], False, False, False, False,
             False, False, False, 0, _block(*commands)]
@@ -104,6 +110,33 @@ class SubjectBindingTest(unittest.TestCase):
         self.assertEqual(wf_client_legality.action_dsl_subject_binding_problems(good), [])
         bad = _dsl(_cmd(_normal_attack(9)), _cmd(["TargetMate", 9, [1], [], [], [], []]))
         self.assertEqual(len(wf_client_legality.action_dsl_subject_binding_problems(bad)), 1)
+
+    def test_summon_activation_callback_binds_ball_and_member(self) -> None:
+        callback = _block(_cmd(["StopBall", 74]), _cmd(["CreateCondition", 75]))
+        tree = _dsl(_cmd(_summon(74, 75, callback)))
+        self.assertEqual(wf_client_legality.action_dsl_subject_binding_problems(tree), [])
+
+    def test_summon_activation_rejects_a_different_subject(self) -> None:
+        callback = _block(_cmd(["CreateCondition", 76]))
+        problems = wf_client_legality.action_dsl_subject_binding_problems(
+            _dsl(_cmd(_summon(74, 75, callback))))
+        self.assertEqual(len(problems), 1)
+        self.assertIn("node[1]=76", problems[0])
+
+    def test_summon_binding_does_not_escape_callback(self) -> None:
+        tree = _dsl(_cmd(["CreateCondition", 74]),
+                    _cmd(_summon(74, 75, _block(_cmd(["CreateCondition", 75])))),
+                    _cmd(["CreateCondition", 75]))
+        problems = wf_client_legality.action_dsl_subject_binding_problems(tree)
+        self.assertEqual(len(problems), 2)
+        self.assertIn("node[1]=74", problems[0])
+        self.assertIn("node[1]=75", problems[1])
+
+    def test_summon_callback_keeps_outer_scope_and_is_optional(self) -> None:
+        callback = _block(_cmd(["CreateCondition", 9]), _cmd(["CreateCondition", 75]))
+        tree = _dsl(_cmd(["TargetMate", 9, [1], [], [], [], []]),
+                    _cmd(_summon(74, 75, callback)), _cmd(_summon(84, 85, None)))
+        self.assertEqual(wf_client_legality.action_dsl_subject_binding_problems(tree), [])
 
 
 class HitAreaTargetTest(unittest.TestCase):
