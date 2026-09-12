@@ -60,6 +60,11 @@ def inspect(package: Path, store: Path) -> dict:
             raise ValueError('Shared tables must use the separate keyed receiver')
         if not re.fullmatch('[0-9a-f]{64}', row['sha256']) or type(row['size']) is not int or row['size'] < 0:
             raise ValueError('Invalid size or digest')
+        if 'approved_before_sha256' in row:
+            approved = row['approved_before_sha256']
+            if (row['classification'] != 'dependency' or not isinstance(approved, str)
+                    or not re.fullmatch('[0-9a-f]{64}', approved)):
+                raise ValueError('Invalid approved dependency preimage digest')
         expected[member] = row
     seen, source_members = set(), {}
     for part in parts:
@@ -92,7 +97,8 @@ def inspect(package: Path, store: Path) -> dict:
     for row in rows:
         dest = target(roots, row)
         before = digest_file(dest)
-        if row['classification'] == 'dependency' and before not in (None, row['sha256']):
+        if (row['classification'] == 'dependency'
+                and before not in (None, row['sha256'], row.get('approved_before_sha256'))):
             conflicts.append(dict(logical=row['logical'], current_sha256=before,
                                   incoming_sha256=row['sha256']))
         entries.append(dict(row, destination=str(dest), before_sha256=before,

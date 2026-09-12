@@ -85,6 +85,71 @@ class ReceiveTests(unittest.TestCase):
             inspect(self.package, self.store)
         self.assertFalse(self.store.exists())
 
+    def test_approved_dependency_preimage_updates_with_backup_and_keeps_ownership(self):
+        row, = self.fixture(('dependency',))
+        old = b'reviewed-complete-atlas'
+        row['approved_before_sha256'] = hashlib.sha256(old).hexdigest()
+        self.save_manifest()
+        target = self.install(row, old)
+        plan = inspect(self.package, self.store)
+        self.assertEqual(plan['conflicts'], [])
+        self.assertEqual(plan['entries'][0]['classification'], 'dependency')
+        self.assertEqual(plan['entries'][0]['before_sha256'], row['approved_before_sha256'])
+        output = self.root / 'receipt'
+        receipt = apply_plan(plan, output)
+        self.assertTrue(receipt['complete'])
+        self.assertEqual(target.read_bytes(), b'audio-0')
+        self.assertEqual((output/'before/common'/row['relative']).read_bytes(), old)
+        again = apply_plan(inspect(self.package, self.store), self.root/'again')
+        self.assertEqual(again['applied'], [])
+
+    def test_unrecognized_dependency_preimage_still_conflicts_before_any_write(self):
+        rows = self.fixture()
+        rows[1]['approved_before_sha256'] = hashlib.sha256(b'reviewed-atlas').hexdigest()
+        self.save_manifest()
+        first = self.install(rows[0], b'old-first')
+        other = self.install(rows[1], b'unknown-atlas')
+        plan = inspect(self.package, self.store)
+        self.assertEqual(len(plan['conflicts']), 1)
+        with self.assertRaisesRegex(ValueError, 'dependency conflicts'):
+            apply_plan(plan, self.root/'receipt')
+        self.assertEqual(first.read_bytes(), b'old-first')
+        self.assertEqual(other.read_bytes(), b'unknown-atlas')
+        self.assertFalse((self.root/'receipt').exists())
+
+    def test_approved_dependency_preimage_drift_still_blocks_all_writes(self):
+        rows = self.fixture()
+        old = b'reviewed-atlas'
+        rows[1]['approved_before_sha256'] = hashlib.sha256(old).hexdigest()
+        self.save_manifest()
+        first = self.install(rows[0], b'old-first')
+        target = self.install(rows[1], old)
+        plan = inspect(self.package, self.store)
+        self.assertEqual(plan['conflicts'], [])
+        target.write_bytes(b'concurrent-edit')
+        with self.assertRaisesRegex(ValueError, 'Receiver changed'):
+            apply_plan(plan, self.root/'receipt')
+        self.assertEqual(first.read_bytes(), b'old-first')
+        self.assertEqual(target.read_bytes(), b'concurrent-edit')
+        self.assertFalse((self.root/'receipt').exists())
+
+    def test_malformed_approved_preimage_is_rejected_without_receiver_writes(self):
+        row, = self.fixture(('dependency',))
+        valid = hashlib.sha256(b'reviewed-atlas').hexdigest()
+        for value in (None, '', 'a'*63, 'a'*65, 'g'*64, valid.upper(), valid+'\n',
+                      123, [valid], {'sha256': valid}):
+            with self.subTest(value=value):
+                row['approved_before_sha256'] = value
+                self.save_manifest()
+                with self.assertRaisesRegex(ValueError, 'approved dependency preimage'):
+                    inspect(self.package, self.store)
+                self.assertFalse(self.store.exists())
+        row['approved_before_sha256'] = valid
+        row['classification'] = 'owned'
+        self.save_manifest()
+        with self.assertRaisesRegex(ValueError, 'approved dependency preimage'):
+            inspect(self.package, self.store)
+
     def test_preimage_drift_prevents_earlier_asset_write(self):
         rows = self.fixture(('owned', 'owned'))
         first = self.install(rows[0], b'old-first')
