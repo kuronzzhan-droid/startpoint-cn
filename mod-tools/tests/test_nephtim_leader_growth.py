@@ -41,6 +41,33 @@ class NephtimLeaderGrowthTest(unittest.TestCase):
         self.assertEqual(1, contents.count("724"))
         self.assertEqual({"false"}, {r[1] for r in rows})
 
+    def test_each_removed_multiball_charges_only_dark_party_without_fever_or_cooldown(self):
+        row, = [r for r in self.leader if r[25] == "194"]
+        self.assertEqual(["2", "", "", "600000", "600000", "Black", ""], row[4:11])
+        self.assertEqual(("0", "0"), (row[11], row[18]))
+        self.assertEqual(["194", "", "", "100000", "100000"], row[25:30])
+        self.assertEqual(["(None)", "0"], row[32:34])
+        self.assertEqual(["211", "5", "Black", "", "5000", "5000"], row[45:51])
+        self.assertEqual([], legality.client_legality_problems("leader_ability", row))
+        self.assertEqual([], legality.required_client_capabilities("leader_ability", row))
+        self.assertIn("每有1个协力球消失时，暗属性角色技能槽+5%", text.panel_descriptions()["leader"])
+
+    def test_native_multiball_removal_distinguishes_temporary_inactive_transition(self):
+        native = Path("D:/WF/outputs/re-workspace/decompile/scripts/pinball")
+        if not native.is_dir():
+            self.skipTest("native decompile unavailable")
+        parser = (native/"master/generated/LeaderAbilityValues.as").read_text()
+        self.assertIn('if(_loc2_ == "194")', parser)
+        self.assertIn('InstantAbilityTriggerMasterValue.MultiballRemove', parser)
+        manager = (native/"scene/battle/battle/squad/SquadManagerImpl.as").read_text()
+        disposed = manager[manager.index("public function disposeActiveSquad("):]
+        self.assertIn("activeSquadManager.remove(param1,true);", disposed[:1500])
+        self.assertIn("activeSquadManager.remove(param1,false);\n         inactiveSquadManager.add", manager)
+        active = (native/"scene/battle/battle/squad/ActiveSquadManager.as").read_text()
+        removed = active[active.index("public function remove(param1:SquadImpl"):]
+        self.assertIn("if(param2 && param1.kind.index == 1 && battle.state.index != 5)", removed[:1000])
+        self.assertIn("battleAbilityTrigger.multiballCountUp(1,_loc4_,1,true);", removed[:1000])
+
     def test_panels_describe_the_new_location_and_hide_active_enhancement(self):
         panels = text.panel_descriptions()
         for value in ("技能强化", "星夜茶会", "攻击力"):

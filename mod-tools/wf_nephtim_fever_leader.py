@@ -25,7 +25,9 @@ def leader_rows(source, *, piercing_extension="dark_resonance",
     growth = _instant(source, 50, 20_000, pre="dark", target=5,
                       trigger=12, threshold=35)
     duration = _instant(source, 56, 100_000, pre="dark")
-    rows = [pf, direct, attack, maximum, piercing, growth, duration]
+    removal_charge = _instant(source, 211, 5_000, pre="dark", target=5,
+                              trigger=194, threshold=1)
+    rows = [pf, direct, attack, maximum, piercing, growth, duration, removal_charge]
     return [[CODE, "0", ""] + deepcopy(row[5:]) for row in rows]
 
 
@@ -45,6 +47,11 @@ def metadata():
                               "trigger_limit": None, "persists_after_combo_reset": True,
                               "counter": "native T12 current-combo multiples; remainder resets on combo reset"},
         "fever_duration_percent": 100,
+        "multiball_removal_charge": {"trigger": 194, "content": 211,
+            "per_multiball_percent": 5, "target": "dark party",
+            "requires_dark_resonance": True, "requires_fever": False,
+            "trigger_limit": None, "cooldown_frames": 0,
+            "event": "native MultiballRemove; temporary inactive transition does not count"},
         "piercing_extension": {"strategy": "dark_resonance", "target": "party",
                                "increase_percent": 20, "requires_fever": False,
                                "trigger": 0, "content": 190,
