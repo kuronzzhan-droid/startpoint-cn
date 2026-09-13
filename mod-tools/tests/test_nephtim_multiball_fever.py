@@ -65,7 +65,7 @@ class NephtimMultiballFeverTests(unittest.TestCase):
         self.assertEqual(condition[2], [["ACSeparatedTermDirectDamage",
             [{"min": 2, "max": 2}], [{"min": .5, "max": .5}], [{"min": 1, "max": 1}]]])
         self.assertEqual(condition[3:], [[{"min": 1, "max": 1}], ["None"], False, False,
-            a4.CONDITION_KEY, None, True, 3, [{"min": 1, "max": 1}], True])
+            a4.CONDITION_KEY, None, True, 3, [{"min": 1, "max": 1}], False])
 
     def test_a3_and_a4_are_independent_condition_origins(self):
         self.assertNotEqual(a3.CONDITION_KEY, a4.CONDITION_KEY)

@@ -80,7 +80,10 @@ def build_skill(level, *, summon_marker=SUMMON_MARKER, breath_marker=BREATH_MARK
         effect(CALL_EFFECT + "campus_bianca_dragon_call_effect_disappear"),
         0, False, "campus_dragon_activated", 10, 11,
         block(mark(-17, summon_marker)), None)
-    absent = block(summon, enemies(condition(40,
+    # A new dragon generation must not inherit the preceding one's callbacks.
+    absent = block(*(command("RemoveEventFromOwner", name) for name in (
+        "campus_dragon_breath_begin", "campus_dragon_breath_signal",
+        "campus_dragon_depart", "campus_dragon_activated")), summon, enemies(condition(40,
         ["ACAttackPoint", value(900), value(-0.20), value(1)])))
     enhanced = command("ConditionalsChangeSkillFlag", 1,
         block(enemies(condition(40, ["ACAbilityDamageResistance", value(900),
@@ -93,7 +96,9 @@ def build_skill(level, *, summon_marker=SUMMON_MARKER, breath_marker=BREATH_MARK
                       ["ForesideOfCharacter"], ["PlayOnlyFirstSequence"], ["AB"],
                       0, 0, 0, True, False, ["None"]),
               command("MoveHitArea", 12, ["AB"], 0, 120, ["None"])))
-    present = block(condition(11, ["ACInvincible", value(60)], force_apply=True),
+    # Recasts keep their own breaths/signals, but share the latest departure.
+    present = block(command("RemoveEventFromOwner", "campus_dragon_depart"),
+        condition(11, ["ACInvincible", value(60)], force_apply=True),
         flight, command("HideCharacter", 11, 30),
         command("StopBall", 10, 30, ["Stop"], ["AB"], 0),
         wait(24, "campus_dragon_breath_begin",
@@ -103,10 +108,12 @@ def build_skill(level, *, summon_marker=SUMMON_MARKER, breath_marker=BREATH_MARK
                                    value(-0.25), value(1)]),
                     show_effect("campus_dragon_hit", BREATH_EFFECT + "campus_bianca_descent_hit", subject=40)),
             enhanced,
-            mark(11, breath_marker),
+            command("FindMultiballSubjects", 10, 11, True, [DRAGON_ID], block(),
+                    block(mark(11, breath_marker))),
             wait(1, "campus_dragon_breath_signal", mark(-17, breath_marker),
-                 command("AddFeverPoint", value(250)),
-                 wait(2, "campus_dragon_depart", command("RemoveMultiball", True, [DRAGON_ID])))))
+                 command("AddFeverPoint", value(250)))),
+        # Nested Wait counters start at -1: the old 24 -> 1 -> 2 chain ended at tick 29.
+        wait(29, "campus_dragon_depart", command("RemoveMultiball", True, [DRAGON_ID])))
     return ["ActionDsl", 1, ["None"], False, False, False, False, False, False,
             False, 0, block(command("StopBall", -18, 10,
                 ["RestoreToSpeedBeforeActionExecution"], ["EF"], 0),

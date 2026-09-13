@@ -64,6 +64,21 @@ class NativePhaseModel:
 
 
 class NephtimSkillTests(unittest.TestCase):
+    def test_only_existing_ball_plain_buffs_stop_forcing_dead_targets(self):
+        for level in (1, 2):
+            conditions = nodes(skill.build_skill(level), "CreateCondition")
+            ball = [node for node in conditions if node[1] == 71]
+            self.assertEqual(len(ball), 2)
+            self.assertEqual({node[2][0][0] for node in ball},
+                             {"ACAdditionalDirectAttack", "ACAttackPoint"})
+            self.assertTrue(all(node[12] is False for node in ball))
+            self.assertTrue(all(node[12] is True for node in conditions if node[1] != 71))
+        for kind in ("light", "dark"):
+            born = nodes(skill.summon(kind), "CreateCondition")
+            self.assertEqual(len(born), 1)
+            self.assertIs(born[0][12], True)
+            self.assertTrue(nodes(born[0], "ACHealRejection"))
+
     def test_three_programs_roundtrip_and_native_instruction_bindings(self):
         for tree in (skill.build_skill(1), skill.build_skill(2), skill.build_spawn()):
             self.assertEqual(wf_dsl.parse_dsl(zlib.decompress(encode_tree(tree), -15))["tree"], tree)

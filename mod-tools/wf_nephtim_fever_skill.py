@@ -18,20 +18,21 @@ DURATION = 1200
 BALL_LIFETIME = 1500
 
 
-def condition(subject, *contents, silent=False, magnification=1):
+def condition(subject, *contents, silent=False, magnification=1, force_apply=True):
     return command("CreateCondition", subject, list(contents), value(1),
                    ["None"] if silent else ["GenericConditionHitEffect"],
-                   False, False, "", None, False, 3, value(magnification), True)
+                   False, False, "", None, False, 3, value(magnification), force_apply)
 
 
-def find(subject, selector, contents, elements=()):
+def find(subject, selector, contents, elements=(), *, force_apply=True):
     return command("FindAllSubjects", subject, selector, list(elements), [], [], [], [],
-                   ["DoNothing"], block(condition(subject, *contents)))
+                   ["DoNothing"], block(condition(subject, *contents, force_apply=force_apply)))
 
 
 def dark_and_balls(*contents):
     # 82 is primary members only; 86 is multiball members only. No duplicate dark ball grant.
-    return block(find(70, 82, contents, (6,)), find(71, 86, contents))
+    # A queued ordinary buff must skip a ball that expires during a skill cut-in.
+    return block(find(70, 82, contents, (6,)), find(71, 86, contents, force_apply=False))
 
 
 def direct_buff():

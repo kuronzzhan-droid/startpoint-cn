@@ -45,13 +45,17 @@ class DragonSkillTests(unittest.TestCase):
         breath = next(node[1] for node in present[1] if node[0] == "Event")
         self.assertEqual(breath[0:2], ["Wait", 24])
         actions = breath[3][1]
-        self.assertEqual(actions[-2][1][1:3], [11, [["ACUnique", 11998902, skill.value(1)]]])
+        guard = actions[-2][1]
+        self.assertEqual(guard[:6], ["FindMultiballSubjects", 10, 11, True, [1199891], ["Block", []]])
+        self.assertEqual(guard[6][1][0][1][1:3], [11, [["ACUnique", 11998902, skill.value(1)]]])
         signal = actions[-1][1]
         self.assertEqual(signal[0:2], ["Wait", 1])
         self.assertEqual(signal[3][1][0][1][1], -17)
-        depart = signal[3][1][-1][1]
-        self.assertEqual(depart[0:2], ["Wait", 2])
+        self.assertEqual(len(signal[3][1]), 2)  # Self marker and Fever remain per cast.
+        depart = present[1][-1][1]
+        self.assertEqual(depart[0:2], ["Wait", 29])
         self.assertEqual(depart[3][1][0][1], ["RemoveMultiball", True, [1199891]])
+        self.assertEqual(present[1][0], skill.command("RemoveEventFromOwner", "campus_dragon_depart"))
         self.assertFalse(any("Attack" in c[0] for c in commands(tree)))
 
     def test_native_timed_resists_and_top_down_breath(self):
@@ -82,6 +86,10 @@ class DragonSkillTests(unittest.TestCase):
         self.assertEqual(summon[1:4], [1, 1199891, skill.value(2147483647)])
         mark = summon[12][1][0][1]
         self.assertEqual(mark[1:3], [-17, [["ACUnique", 11998901, skill.value(1)]]])
+        selector = next(c for c in commands(skill.build_skill(1)) if c[0] == "FindMultiballSubjects")
+        self.assertEqual(selector[5][1][:4], [skill.command("RemoveEventFromOwner", name)
+            for name in ("campus_dragon_breath_begin", "campus_dragon_breath_signal",
+                         "campus_dragon_depart", "campus_dragon_activated")])
 
     def test_both_levels_roundtrip_and_native_signatures(self):
         for level in (1, 2):

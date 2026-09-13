@@ -19,16 +19,17 @@ def action_tree():
     MultiballNumberVariable 的 ID 数组必须为 null；空数组代表不匹配任何球。
     """
     strength = [{"min": 0.5, "max": 0.5, "mul": COUNT_VARIABLE}]
-    def condition(subject):
+    def condition(subject, *, force_apply=True):
         return command("CreateCondition", subject,
             [["ACSeparatedTermDirectDamage", value(TTL_FRAMES), strength, value(1)]],
-            value(1), ["None"], False, False, CONDITION_KEY, None, True, 3, value(1), True)
+            value(1), ["None"], False, False, CONDITION_KEY, None, True, 3, value(1), force_apply)
     return ["ActionDsl", 1, ["None"], False, False, False, False, False, False,
             False, 0, block(
                 command("MultiballNumberVariable", COUNT_VARIABLE, False, None, [],
                         1, NATIVE_COUNT_MAX),
-                command("FindAllSubjects", 72, 82, [], [], [], [], [], block(), condition(72)),
-                command("FindMultiballSubjects", 70, 71, False, [], block(), condition(71)))]
+                command("FindAllSubjects", 72, 82, [], [], [], [], [], ["DoNothing"], condition(72)),
+                command("FindMultiballSubjects", 70, 71, False, [], block(),
+                        condition(71, force_apply=False)))]
 
 
 def action_assets():

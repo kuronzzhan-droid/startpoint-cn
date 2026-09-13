@@ -22,7 +22,7 @@ TTL_FRAMES = 2
 def action_tree():
     condition = command("CreateCondition", 81,
         [["ACSeparatedTermDirectDamage", value(TTL_FRAMES), value(0.5), value(1)]],
-        value(1), ["None"], False, False, CONDITION_KEY, None, True, 3, value(1), True)
+        value(1), ["None"], False, False, CONDITION_KEY, None, True, 3, value(1), False)
     return ["ActionDsl", 1, ["None"], False, False, False, False, False, False,
             False, 0, block(command("FindMultiballSubjects", 80, 81, False, [],
                                    block(), condition))]
@@ -74,7 +74,7 @@ def metadata():
         requires_fever=True, unisonable=True, target="all local multiball members",
         element_filter=None, summoner_filter=None, update_period_frames=1,
         condition_duration_ball_updates=TTL_FRAMES, condition_key=CONDITION_KEY,
-        invisible=True, force_apply=True, maximum_accumulation=1,
+        invisible=True, force_apply=False, maximum_accumulation=1,
         fixed_magnification=1, party_row_unchanged=True, panel_unchanged=True,
         timing="Last queued write can apply in impact phase; expires after two ball updates.",
         inactive_ball_timing="Native inactive/ghost ball update cadence governs expiration.",
