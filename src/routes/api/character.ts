@@ -10,6 +10,7 @@ import { getCharacterDataSync } from "../../lib/assets";
 import { characterExpCaps, givePlayerCharacterSync } from "../../lib/character";
 import { clientSerializeDate } from "../../data/utils";
 import { resolvePlayerIdSync } from "../../data/activeAccount";
+import { grantCharacterDegreeRewardsSync } from "../../lib/character-degree-rewards";
 
 interface OverLimitBody {
     viewer_id: number
@@ -177,6 +178,8 @@ const routes = async (fastify: FastifyInstance) => {
             })
         }
 
+        grantCharacterDegreeRewardsSync(playerId, [characterId])
+
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
             "data_headers": generateDataHeaders({
@@ -243,6 +246,7 @@ const routes = async (fastify: FastifyInstance) => {
                 overLimitStep: newOverLimit,
                 stack: newStack,
             })
+            grantCharacterDegreeRewardsSync(playerId, [Number(charId)])
 
             characterList.push({
                 character_id: Number(charId),

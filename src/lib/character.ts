@@ -3,6 +3,7 @@ import { getPlayerCharacterSync, insertPlayerCharacterSync, updatePlayerCharacte
 import { getPlayerSync, updatePlayerSync } from "../data/domains/player"
 import { givePlayerItemSync } from "../data/domains/item"
 import { getCharacterDataSync } from "./assets";
+import { grantCharacterDegreeRewardsSync } from "./character-degree-rewards";
 import { AddExpList, AddExpListItem, ClientReturnBondTokenStatus, ClientReturnBondTokenStatusList, ClientReturnCharacter, Element, GivePlayerCharacterResult, RewardPlayerCharacterExpResult } from "./types";
 
 export const characterExpCaps: Record<number, number[]> = {
@@ -231,6 +232,7 @@ export function givePlayerCharactersExpSync(
             updatePlayerCharacterSync(playerId, characterId, {
                 exp: afterExp
             })
+            grantCharacterDegreeRewardsSync(playerId, [characterId])
 
             addExpList.push({
                 character_id: characterId,
