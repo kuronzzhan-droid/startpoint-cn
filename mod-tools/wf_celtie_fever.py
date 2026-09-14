@@ -12,6 +12,7 @@ import wf_campus_panel_text as panel
 import wf_client_legality as legality
 import wf_mod_tool as core
 from wf_celtie_fever_package import Candidate, CID, CODE, encode_tree
+from wf_celtie_skill_growth import GAIN_FLOAT_ID, GAIN_MAX_LAYERS, MULTIPLIER_PER_LAYER
 
 DESCRIPTION = panel.active_description(CID)
 SKILL_NAME = "风中快门·十字双空牙"
@@ -95,6 +96,9 @@ def assemble(repo: Path, workspace: Path, *, apply=False):
     metadata = {
         "abilities": abilities.metadata(), "leader": leader.metadata(),
         "active_description": DESCRIPTION, "active_multiplier": 75,
+        "active_growth": {"per_starwind_layer": MULTIPLIER_PER_LAYER,
+            "condition": "wind resonance and Fever at cast start",
+            "float_id": GAIN_FLOAT_ID, "layer_limit": GAIN_MAX_LAYERS},
         "active_segments": [25 * 75 / 70, 45 * 75 / 70], "cross_overlap_hits_per_segment": 1,
         "damage_programs": list(skill.PROGRAM_PATHS) + list(leader.PF_PROGRAM_PATHS),
         "damage_calculation": "native buffTargetAs=2; ability-damage main bonuses",

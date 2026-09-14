@@ -71,7 +71,7 @@ def _fever_status(source, content, strength=None):
     return row
 
 
-def _stock_gain_bonus(source):
+def _stock_gain_bonus(source, content=154):
     # Official 1610633 counts Unique layers through native During D134.
     row = deepcopy(source["1610633"][0])
     if len(row) != 126:
@@ -81,7 +81,7 @@ def _stock_gain_bonus(source):
     _pre(row, "fever", offset=13)
     _pre(row, offset=20)
     for column, value in {97: 134, 98: 0, 100: SCALE, 101: SCALE,
-                          102: "(None)", 104: GAIN_UID, 109: 154, 110: 5,
+                          102: "(None)", 104: GAIN_UID, 109: content, 110: 5,
                           111: "Green", 113: 25_000, 114: 25_000}.items():
         row[column] = str(value)
     return row
@@ -107,14 +107,14 @@ def ability_rows(source: dict) -> dict:
     all_enemy = _instant(source, 254, 25 * SCALE, pre="wind", fever="fever",
                          trigger=20, threshold=35, wind_counter=True, target=0)
     all_enemy[69] = "(None)"  # None selects AllEnemyDamage, not NearestOrder.
-    fever_charge = _instant(source, 724, 5_000, pre="wind", fever="not_fever",
+    fever_charge = _instant(source, 724, 15_000, pre="wind", fever="not_fever",
                             trigger=20, threshold=35, wind_counter=True)
-    # T12 listens to current combo crossing 70, 140...; both rewards have
+    # T12 listens to current combo crossing 7, 14...; both rewards have
     # independent limits, so reaching the attack cap does not stop charging.
     attack = _instant(source, 32, 70_000, pre="wind", fever="fever",
-                      trigger=12, threshold=70, target=5, limit=10)
-    charge = _instant(source, 211, 7_000, pre="wind", fever="fever",
-                      trigger=12, threshold=70, target=5)
+                      trigger=12, threshold=7, target=5, limit=10)
+    charge = _instant(source, 211, 1_000, pre="wind", fever="fever",
+                      trigger=12, threshold=7, target=5)
     stock = _instant(source, 629, pre="wind", fever="fever",
                      trigger=23, wind_counter=True)
     stock[70:72] = [ABILITY_STOCK_STRING_ID, ABILITY_STOCK_ACTION_PATH]
@@ -131,7 +131,7 @@ def ability_rows(source: dict) -> dict:
         [triple, ability_damage,
          *[_consumed_stock_fever(source, uid) for uid, _, _ in SPEND_MARKERS]],
         [all_enemy, fever_charge, attack, charge, stock, consume,
-         _stock_gain_bonus(source)],
+         _stock_gain_bonus(source), _stock_gain_bonus(source, content=0)],
         [_fever_status(source, 26)],
         [_fever_status(source, 27)],
         [_fever_status(source, 688, 2 * SCALE)],
@@ -179,12 +179,12 @@ def metadata() -> dict:
             "fever_counters": "independent; fractional period carries across Fever",
         },
         "combo": {
-            "trigger": "current combo crosses each multiple of 70 during Fever",
+            "trigger": "current combo crosses each multiple of 7 during Fever",
             "attack_target": "wind party",
             "attack_gain_percent": 70,
             "attack_max_percent": 700,
             "attack_persists_after_fever": True,
-            "skill_gauge_gain_percent": 7,
+            "skill_gauge_gain_percent": 1,
             "skill_gauge_trigger_limit": None,
         },
         "a3_stock": {
@@ -212,6 +212,7 @@ def metadata() -> dict:
         "stock_gain_bonus": {
             "gain_unique_id": GAIN_UID,
             "per_layer_percent": 25,
+            "attack_per_layer_percent": 25,
             "target": "wind party",
             "only_fever": True,
             "retain_after_fever": True,
@@ -219,7 +220,7 @@ def metadata() -> dict:
             "bonus_uses_cumulative_gained_layers": True,
             "during_trigger_limit": None,
         },
-        "fever_ratio": "add 5% of maximum to current gauge; does not raise maximum",
+        "fever_ratio": "outside Fever add 15% per 35 wind direct hits; successful stock consumption adds 5%; neither raises maximum",
         "periodic_status": {
             "timer": "native cumulative Fever frames; fractional period carries",
             "period_frames": 300,

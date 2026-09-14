@@ -12,6 +12,7 @@ import zlib
 import wf_dsl
 import wf_dsl_sig
 import wf_client_legality as legality
+from wf_celtie_skill_growth import with_starwind_growth
 
 CODE = "wind_spgirl_campus"
 PROGRAM_PATHS = tuple(f"battle/action/skill/action/rare5/{CODE}${CODE}_{lv}" for lv in (1, 2))
@@ -163,7 +164,7 @@ def build_skill(level, official_bytes_loader):
         allies(41, 33, [4], condition(41,
             ["ACAbilityDamage", value(900), value(1), value(1)])))
     result = deepcopy(dash)
-    result[11] = block(buffs, ["Command", near])
+    result[11] = block(buffs, with_starwind_growth(near))
     result = ability_damage_reference(remap(result))
     validate(result)
     return result

@@ -90,7 +90,7 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
             self.assertEqual(("(None)", "0"), (row[34], row[35]))
         self.assertEqual(("12", "254", "0", "2500000", "(None)"),
                          (damage[13], damage[47], damage[48], damage[51], damage[69]))
-        self.assertEqual(("186", "724", "5000", "", ""),
+        self.assertEqual(("186", "724", "15000", "", ""),
                          (gauge[13], gauge[47], gauge[51], gauge[48], gauge[69]))
         self.assertEqual(["kyubi-fever-ratio-v1"],
                          legality.required_client_capabilities("ability", gauge))
@@ -98,12 +98,12 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
     def test_combo_attack_caps_independently_while_team_gauge_remains_unlimited(self):
         attack, charge = self.rows["1499893"][2:4]
         for row in (attack, charge):
-            self.assertEqual(("2", "Green", "12", "12", "7000000", "5", "Green"),
+            self.assertEqual(("2", "Green", "12", "12", "700000", "5", "Green"),
                              (row[6], row[11], row[13], row[27], row[30], row[48], row[49]))
             self.assertEqual("", row[57])  # Permanent native stat gain, no timed buff.
         self.assertEqual(("32", "70000", "10"), (attack[47], attack[51], attack[34]))
         self.assertEqual(700_000, int(attack[51]) * int(attack[34]))
-        self.assertEqual(("211", "7000", "(None)"), (charge[47], charge[51], charge[34]))
+        self.assertEqual(("211", "1000", "(None)"), (charge[47], charge[51], charge[34]))
 
     def test_a3_stock_grant_and_consume_are_main_only_wind_fever_and_unlimited(self):
         grant, consume = self.rows["1499893"][4:6]
@@ -136,6 +136,10 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
 
     def test_a3_bonus_counts_all_earned_layers_only_in_wind_fever_without_a_cap(self):
         row = self.rows["1499893"][6]
+        attack = self.rows["1499893"][7]
+        expected_attack = copy.deepcopy(row)
+        expected_attack[109] = "0"  # Native During AttackPointUp; same counter/target/gates.
+        self.assertEqual(expected_attack, attack)
         self.assertEqual(("false", "1", "2", "Green", "12"),
                          (row[1], row[5], row[6], row[11], row[13]))
         self.assertEqual(("134", "0", "100000", "100000", "(None)", "14998902"),

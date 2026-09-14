@@ -17,8 +17,21 @@ from wf_mod_tool import sha1_path
 
 
 def landing(tree):
+    if tree[0] == "ActionDsl":
+        tree = skill.nodes(tree, "FindNearSubjects")[0]
     event = skill.one(tree, "CollisionOfBallAndSpecificEnemy")
     return event[6], event[7]
+
+
+def ungrown_tree(tree):
+    """三个互斥路线的动作必须一致；移除本轮成长后复核旧演出哈希。"""
+    result = deepcopy(tree)
+    routes = skill.nodes(result, "FindNearSubjects")
+    assert len(routes) == 3 and routes[0] == routes[1] == routes[2]
+    result[11][1][1] = ["Command", routes[0]]
+    for attack in skill.nodes(result, "CreateNormalAttack"):
+        assert len(attack[6][0].pop("vlv")) == 1
+    return result
 
 
 def point_damage(area, point):
@@ -80,7 +93,7 @@ class CeltieOfficialSkillTests(unittest.TestCase):
         # 防止改动命中、状态、时序或任何演出参数。
         original_sha = "c29e81396fd4f30542a0d01ec36ca08513313ff23e78ae284bdc397a23a26dad"
         for tree in self.trees.values():
-            normalized = deepcopy(tree)
+            normalized = ungrown_tree(tree)
             normalized[10] = 0
             areas = skill.nodes(normalized, "CreateHitArea")
             self.assertEqual(4, len(areas))
@@ -88,14 +101,14 @@ class CeltieOfficialSkillTests(unittest.TestCase):
                 self.assertEqual(2, area[24])
                 area[24] = 0
             untouched = deepcopy(normalized)
-            self.assertEqual(tree, skill.ability_damage_reference(normalized))
+            self.assertEqual(ungrown_tree(tree), skill.ability_damage_reference(normalized))
             self.assertEqual(untouched, normalized)
             for attack, multiplier in zip(skill.nodes(normalized, "CreateNormalAttack"), (25, 45, 25, 45)):
                 attack[6] = skill.value(multiplier)
             self.assertEqual(original_sha, hashlib.sha256(skill.encode(normalized)).hexdigest())
 
     def test_dash_collision_and_timeout_have_same_safe_landing(self):
-        tree = self.trees[2]
+        tree = ungrown_tree(self.trees[2])
         self.assertEqual(skill.one(tree, "MoveBall"),
             ["MoveBall", -18, ["GH", 0], 0, 60, 40, ["KeepGoing"], True])
         event = skill.one(tree, "CollisionOfBallAndSpecificEnemy")
@@ -114,7 +127,8 @@ class CeltieOfficialSkillTests(unittest.TestCase):
                              {"花びらAリピート", "花びらBスタート", "花びらBリピート"})
 
     def test_cross_center_and_each_arm_total_seventy_five_outside_zero(self):
-        for tree in self.trees.values():
+        for original in self.trees.values():
+            tree = ungrown_tree(original)
             for branch in landing(tree):
                 areas = skill.nodes(branch, "CreateHitArea")
                 self.assertEqual(len(areas), 2)

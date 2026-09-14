@@ -35,7 +35,9 @@ class CampusPanelTextTest(unittest.TestCase):
             if cid == "149989":
                 self.assertIn("基础合计75倍", sections["active"])
                 self.assertIn("风属性共鸣且Fever模式中", sections["active"])
-                self.assertIn("能力3的「星风心得」成长", sections["active"])
+                self.assertIn("随「星风心得」成长", sections["active"])
+                self.assertNotIn("能力3", sections["active"])
+                self.assertIn("每层额外增加10倍", sections["active"])
             else:
                 self.assertNotRegex(sections["active"], r"[0-9%％]")
             for value in sections.values():
@@ -132,7 +134,7 @@ class CampusPanelTextTest(unittest.TestCase):
             self.assertIn(term, panels["leader"])
         for term in ("分为3次", "+200%", "每消耗1层", "+5%"):
             self.assertIn(term, panels["a2"])
-        for term in ("<icon id='main'>", "风属性共鸣时", "35次", "非Fever", "25倍", "70的倍数", "+700%", "+7%", "星风心得", "+25%"):
+        for term in ("<icon id='main'>", "风属性共鸣时", "35次", "非Fever", "25倍", "7的倍数", "+700%", "+1%", "+15%", "星风心得", "能力伤害+25%、攻击力+25%"):
             self.assertIn(term, panels["a3"])
         self.assertNotIn("星风快门累积", "".join(panels.values()))
         self.assertIn("命中敌人", panels["a1"])
