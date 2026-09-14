@@ -116,7 +116,7 @@ def fever_rows(source, *, fever_stack_unique_id=FEVER_STACK_UNIQUE_ID):
                 113: 50_000, 114: 50_000})
     clear = _instant(source, 528, trigger=184, target=0)
     clear[68] = str(fever_stack_unique_id)
-    charge = _instant(source, 211, 10_000, trigger=248,
+    charge = _instant(source, 211, 5_000, trigger=248,
                       threshold=120 * SCALE, target=2, pre="fire", fever=True)
     # Native D412 is the ability-only separated term; it reads the same live
     # stack as D154, so the existing reset removes both bonuses immediately.

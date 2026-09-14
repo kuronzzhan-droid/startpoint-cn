@@ -83,6 +83,9 @@ class ScutumAbilitiesTest(unittest.TestCase):
             self.assertEqual(("20", "0", "3000000", "7", content, "55000"),
                              (row[27], row[28], row[30], row[34], row[47], row[51]))
             self.assertEqual(385, int(row[34]) * int(row[51]) / 1000)
+        charge = self.abilities["1499882"][-1]
+        self.assertEqual(("51", "211", "5", "Green", "2500", "2500"),
+                         (charge[27], charge[47], charge[48], charge[49], charge[51], charge[52]))
 
     def test_collect_is_friendly_and_shield_and_collect_gate_self_independent_term(self):
         grants = self.abilities["1499883"][:2]

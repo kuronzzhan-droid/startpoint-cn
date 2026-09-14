@@ -157,12 +157,12 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
             self.assertTrue(info[key])
         self.assertIsNone(info["during_trigger_limit"])
 
-    def test_periodic_party_states_use_180_fever_frames_and_90_frame_duration(self):
+    def test_periodic_party_states_use_300_fever_frames_and_60_frame_duration(self):
         for slot, content in ((4, "26"), (5, "27"), (6, "688")):
             row = self.rows[f"149989{slot}"][0]
-            self.assertEqual(("2", "Green", "12", "248", "18000000", content),
+            self.assertEqual(("2", "Green", "12", "248", "30000000", content),
                              (row[6], row[11], row[13], row[27], row[30], row[47]))
-            self.assertEqual(("9000000", "9000000", "100000", "100000"), tuple(row[57:61]))
+            self.assertEqual(("6000000", "6000000", "100000", "100000"), tuple(row[57:61]))
             self.assertEqual(("", "", "(None)", "0", "false"),
                              (row[48], row[49], row[34], row[35], row[72]))
         speed = self.rows["1499896"][0]

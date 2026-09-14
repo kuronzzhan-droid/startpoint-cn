@@ -117,7 +117,7 @@ def _landing(slash_donor):
     areas = nodes(reference, "CreateHitArea")
     if len(areas) != 2:
         raise ValueError("first-anniversary donor must have exactly two hit areas")
-    for area, multiplier in zip(areas, (25, 45)):
+    for area, multiplier in zip(areas, (25 * 75 / 70, 45 * 75 / 70)):
         if area[9] != ["Rectangle", value(300), value(3000)]:
             raise ValueError("first-anniversary donor rectangle changed")
         area[1] = "*"  # 每拍独立组；组内两臂共享按敌人ID计数。

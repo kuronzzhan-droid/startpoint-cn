@@ -40,7 +40,7 @@ def direct_buff():
 
 
 def attack_buff():
-    return ["ACAttackPoint", value(DURATION), value(1), value(1)]
+    return ["ACAttackPoint", value(DURATION), value(2.5), value(1)]
 
 
 def split_buff():
@@ -148,7 +148,7 @@ def multiball_rows(multiballs, levels):
 
 
 def metadata():
-    return {"base_direct_percent": 200, "enhanced_attack_percent": 100,
+    return {"base_direct_percent": 200, "enhanced_attack_percent": 250,
             "duration_frames": DURATION, "additional_direct_times": 2,
             "additional_direct_total_ratio": 2,
             "spawn_unique_id": STATE_UID, "alternate_phase": "single timed Unique, guarded signed consumption 1/2",

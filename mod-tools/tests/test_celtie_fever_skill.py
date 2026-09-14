@@ -75,9 +75,9 @@ class CeltieOfficialSkillTests(unittest.TestCase):
             self.assertEqual(skill.build_skill(lv, self.read), tree)
         self.assertEqual(before, self.cache)
 
-    def test_only_bonus_selectors_differ_from_frozen_cross_skill(self):
-        # 859088dd 的两档动作相同。还原选择器后须逐字节回到原动作，
-        # 防止此次迁移悄悄改动技能倍率、命中、状态、时序或任何演出参数。
+    def test_only_bonus_selectors_and_authorized_multiplier_differ_from_frozen_cross_skill(self):
+        # 还原选择器和本次授权的75倍后，须逐字节回到859088dd原动作，
+        # 防止改动命中、状态、时序或任何演出参数。
         original_sha = "c29e81396fd4f30542a0d01ec36ca08513313ff23e78ae284bdc397a23a26dad"
         for tree in self.trees.values():
             normalized = deepcopy(tree)
@@ -87,10 +87,12 @@ class CeltieOfficialSkillTests(unittest.TestCase):
             for area in areas:
                 self.assertEqual(2, area[24])
                 area[24] = 0
-            self.assertEqual(original_sha, hashlib.sha256(skill.encode(normalized)).hexdigest())
             untouched = deepcopy(normalized)
             self.assertEqual(tree, skill.ability_damage_reference(normalized))
             self.assertEqual(untouched, normalized)
+            for attack, multiplier in zip(skill.nodes(normalized, "CreateNormalAttack"), (25, 45, 25, 45)):
+                attack[6] = skill.value(multiplier)
+            self.assertEqual(original_sha, hashlib.sha256(skill.encode(normalized)).hexdigest())
 
     def test_dash_collision_and_timeout_have_same_safe_landing(self):
         tree = self.trees[2]
@@ -111,15 +113,15 @@ class CeltieOfficialSkillTests(unittest.TestCase):
             self.assertEqual({n[1] for n in skill.nodes(result, "RemoveEvent")},
                              {"花びらAリピート", "花びらBスタート", "花びらBリピート"})
 
-    def test_cross_center_and_each_arm_total_seventy_outside_zero(self):
+    def test_cross_center_and_each_arm_total_seventy_five_outside_zero(self):
         for tree in self.trees.values():
             for branch in landing(tree):
                 areas = skill.nodes(branch, "CreateHitArea")
                 self.assertEqual(len(areas), 2)
                 self.assertEqual([skill.one(a, "CreateNormalAttack")[6] for a in areas],
-                                 [skill.value(25), skill.value(45)])
-                for point, expected in (((0, 0), 70), ((1100, 0), 70),
-                                        ((0, 1100), 70), ((1100, 1100), 0)):
+                                 [skill.value(25 * 75 / 70), skill.value(45 * 75 / 70)])
+                for point, expected in (((0, 0), 75), ((1100, 0), 75),
+                                        ((0, 1100), 75), ((1100, 1100), 0)):
                     self.assertEqual(sum(point_damage(a, point) for a in areas), expected)
                 for a in areas:
                     self.assertEqual(a[1], "*")

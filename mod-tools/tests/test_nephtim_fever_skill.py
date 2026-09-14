@@ -114,7 +114,8 @@ class NephtimSkillTests(unittest.TestCase):
             self.assertEqual(summon[0], "CreateSummonsMultiball")
             self.assertEqual(summon[3], skill.value(1500))
             callback = summon[12]
-            self.assertTrue(nodes(callback, "ACAttackPoint"))
+            self.assertEqual(nodes(callback, "ACAttackPoint"),
+                             [["ACAttackPoint", skill.value(1200), skill.value(2.5), skill.value(1)]])
             self.assertTrue(nodes(callback, "ACDirectDamage"))
             self.assertTrue(nodes(callback, "ACPiercing"))
             extra = nodes(callback, "ACAdditionalDirectAttack")[0]

@@ -27,12 +27,17 @@ def generated_kit(cid):
 
 
 class CampusPanelTextTest(unittest.TestCase):
-    def test_all_sections_exist_and_active_has_no_numeric_effects_or_implementation_text(self):
+    def test_all_sections_exist_and_active_has_only_authorized_numeric_effects(self):
         for cid in text.CODES:
             sections = text.panel_descriptions(cid)
             self.assertEqual(set(sections), {"active", "leader", "a1", "a2", "a3", "a4", "a5", "a6"})
             self.assertEqual(sections["active"], text.active_description(cid))
-            self.assertNotRegex(sections["active"], r"[0-9%％]")
+            if cid == "149989":
+                self.assertIn("基础合计75倍", sections["active"])
+                self.assertIn("风属性共鸣且Fever模式中", sections["active"])
+                self.assertIn("能力3的「星风心得」成长", sections["active"])
+            else:
+                self.assertNotRegex(sections["active"], r"[0-9%％]")
             for value in sections.values():
                 self.assertTrue(value.strip())
                 self.assertNotRegex(value, r"I251|I629|DSL|APK|Unique|上限2147483647|交叉处不会重复")
@@ -100,7 +105,7 @@ class CampusPanelTextTest(unittest.TestCase):
         self.assertIn("50倍火属性能力伤害", leader[-1])
         for term in ("+200%", "+400%", "Fever槽+500", "技能槽+25%"):
             self.assertIn(term, panels["leader"])
-        for term in ("<icon id='main'>", "火属性共鸣时", "Fever模式中", "上限+20%", "每经过2秒", "+10%", "+50%", "清空"):
+        for term in ("<icon id='main'>", "火属性共鸣时", "Fever模式中", "上限+20%", "每经过2秒", "队长技能槽+5%", "+50%", "清空"):
             self.assertIn(term, panels["a3"])
         abilities, _ = generated_kit("119989")
         attack, buff = abilities["1199892"]
@@ -133,7 +138,7 @@ class CampusPanelTextTest(unittest.TestCase):
         self.assertIn("命中敌人", panels["a1"])
         self.assertNotIn("全场敌人", panels["a1"])
         for slot, effect in (("a4", "贯穿"), ("a5", "浮游"), ("a6", "最大速度固定效果")):
-            for term in ("风属性共鸣时", "Fever模式中", "每经过3秒", "1.5秒", effect):
+            for term in ("风属性共鸣时", "Fever模式中", "每经过5秒", "1秒", effect):
                 self.assertIn(term, panels[slot])
         for value in panels.values():
             self.assertNotRegex(value, "同条件|本场|无次数上限|消耗快门不减少|获取不衰减|与队长技分别|两者齐备")

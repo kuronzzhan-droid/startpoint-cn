@@ -61,8 +61,8 @@ def _instant(source, content, strength=None, *, pre=None, fever=None,
 
 def _fever_status(source, content, strength=None):
     row = _instant(source, content, strength, pre="wind", fever="fever",
-                   trigger=248, threshold=180)
-    row[57:61] = [str(90 * SCALE)] * 2 + [str(SCALE)] * 2
+                   trigger=248, threshold=300)
+    row[57:61] = [str(60 * SCALE)] * 2 + [str(SCALE)] * 2
     row[62:66] = ["(None)"] * 4
     row[67], row[72] = "0", "false"
     if content == 688:
@@ -222,8 +222,8 @@ def metadata() -> dict:
         "fever_ratio": "add 5% of maximum to current gauge; does not raise maximum",
         "periodic_status": {
             "timer": "native cumulative Fever frames; fractional period carries",
-            "period_frames": 180,
-            "duration_frames": 90,
+            "period_frames": 300,
+            "duration_frames": 60,
             "target": "whole player party ball",
             "expires_naturally_after_fever": True,
             "fixed_speed_strength": 2.0,

@@ -23,7 +23,7 @@ def commands(tree):
 class NephtimMultiballDirectTest(unittest.TestCase):
     def test_real_row_party_and_balls_share_one_refresh_without_a_different_count_gate(self):
         rows = abilities.ability_rows(official_sources()[0])["1699893"]
-        self.assertEqual(5, len(rows))
+        self.assertEqual(6, len(rows))  # direct and attack combo terms are separate rows
         pulse = rows[-1]
         for row in (pulse,):
             self.assertEqual(("false", "2", "600000", "600000", "Black", "0"),

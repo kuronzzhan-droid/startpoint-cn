@@ -115,7 +115,8 @@ def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
     # Piercing is a party state: I190 is natively Party(None), not a character target.
     a2 = [_instant(source, 190, 20_000, pre="dark"),
           _instant(source, 33, 250_000, pre="dark", target=5)]
-    combo = _during(source, 410, 1_000, combo=True)
+    combo = _during(source, 410, 5_000, combo=True)
+    combo_attack = _during(source, 0, 5_000, combo=True)
     piercing_attack = _instant(source, 32, 20_000, pre="dark", fever="fever",
                                target=5, trigger=235, threshold=1, threshold2=120)
     piercing_direct = _instant(source, 33, 20_000, pre="dark", fever="fever",
@@ -123,7 +124,7 @@ def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
     # Only AbilityValues parses I724 on the installed ratio-capable client.
     charge = _instant(source, 724, 15_000, pre="dark", trigger=20,
                       threshold=45, puller=7, group="Black")
-    a3 = [combo, piercing_attack, piercing_direct, charge, *_multiball_direct_rows(source)]
+    a3 = [combo, combo_attack, piercing_attack, piercing_direct, charge, *_multiball_direct_rows(source)]
     a4 = [_during(source, 410, 50_000, target=5),
           _during(source, 410, 50_000, target=8)]
     a5 = [_piercing(source, trigger=77, frames=600, fever="not_fever"),
@@ -144,7 +145,7 @@ def flat_string_rows():
         **multiball_direct.flat_string_rows(),
         **multiball_fever.flat_string_rows(),
         CHANGE_SKILL_STRING_ID: [[
-            "技能强化：额外赋予暗属性角色及协力球攻击力提升100%效果（20秒）；"
+            "技能强化：额外赋予暗属性角色及协力球攻击力提升250%效果（20秒）；"
             "在Fever中施放时获得或刷新持续20秒的召唤效果，"
             "并赋予暗属性角色及协力球各自最大生命值10%的护盾；每1.5秒召唤1个协力球，"
             "每个协力球持续25秒且无法回复生命值，再次发动技能不会延长已有协力球的存在时间；"
@@ -171,7 +172,7 @@ def metadata():
         },
         "skill_enhancement": {
             "string_id": CHANGE_SKILL_STRING_ID, "summon_unique_id": SUMMON_UNIQUE_ID,
-            "spawn_action_path": SPAWN_ACTION_PATH, "attack_buff_percent": 100,
+            "spawn_action_path": SPAWN_ACTION_PATH, "attack_buff_percent": 250,
             "duration_frames": 1200, "per_ball_duration_frames": 1500,
             "period_frames": 90, "timer": "T232 holding-Unique frames; fractional period retained",
             "fever_end_removes_only_summon_state": True,
@@ -183,7 +184,8 @@ def metadata():
         },
         "piercing_extension": "native party state under dark resonance; no per-character filter",
         "combo_bonus": {
-            "source": "current combo", "per_combo_percent": 1,
+            "source": "current combo", "per_combo_percent": 5,
+            "attack_percent_per_combo": 5, "attack_uses_ordinary_additive_term": True,
             "target": "dark party", "independent_direct_damage_term": True,
             "trigger_limit": None, "falls_when_combo_falls": True,
         },

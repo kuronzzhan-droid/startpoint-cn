@@ -94,8 +94,8 @@ def assemble(repo: Path, workspace: Path, *, apply=False):
         candidate.manifest.get("required_capabilities", []))
     metadata = {
         "abilities": abilities.metadata(), "leader": leader.metadata(),
-        "active_description": DESCRIPTION, "active_multiplier": 70,
-        "active_segments": [25, 45], "cross_overlap_hits_per_segment": 1,
+        "active_description": DESCRIPTION, "active_multiplier": 75,
+        "active_segments": [25 * 75 / 70, 45 * 75 / 70], "cross_overlap_hits_per_segment": 1,
         "damage_programs": list(skill.PROGRAM_PATHS) + list(leader.PF_PROGRAM_PATHS),
         "damage_calculation": "native buffTargetAs=2; ability-damage main bonuses",
         "native_limits": "Skill/PowerFlip source flags, resistance and independent terms remain; ability-only terms do not apply",

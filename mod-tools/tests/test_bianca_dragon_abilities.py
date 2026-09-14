@@ -100,7 +100,7 @@ class BiancaDragonAbilitiesTest(unittest.TestCase):
         live = {123457: 8, 42: 3}
         live.pop(int(clear[68]))
         self.assertEqual({42: 3}, live)
-        self.assertEqual(("211", "2", "10000", "(None)"),
+        self.assertEqual(("211", "2", "5000", "(None)"),
                          (charge[47], charge[48], charge[51], charge[34]))
         self.assertEqual(separate[104], clear[68])
 

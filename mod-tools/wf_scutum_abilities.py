@@ -59,7 +59,7 @@ def ability_rows(source):
         for content in (139, 506)
     ]
     a2 += [instant(source, 191, 15_000, gates=("self_wind",)),
-           instant(source, 211, 5_000, target=5, trigger=51)]
+           instant(source, 211, 2_500, target=5, trigger=51)]
     resist = instant(source, 442, -2_000, gates=("piercing",),
                      trigger=20, puller=0)
     timed(resist, 1500, maximum=20)

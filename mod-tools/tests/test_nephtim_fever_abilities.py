@@ -51,7 +51,7 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
         self.assertEqual(("2", "600000", "600000", "Black", "0", "536"),
                          (flag[6], flag[9], flag[10], flag[11], flag[13], flag[47]))
         self.assertEqual(kit.CHANGE_SKILL_STRING_ID, flag[70])
-        self.assertIn("攻击力提升100%", kit.flat_string_rows()[flag[70]][0][0])
+        self.assertIn("攻击力提升250%", kit.flat_string_rows()[flag[70]][0][0])
         self.assertIn("20秒", kit.flat_string_rows()[flag[70]][0][0])
 
     def test_summoning_counts_only_state_frames_and_fever_end_clears_only_that_state(self):
@@ -119,15 +119,22 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
         combo = self.rows["1699893"][0]
         self.assertEqual(("1", "2", "Black", "12", "2", "100000", "100000", "(None)"),
                          (combo[5], combo[6], combo[11], combo[13], combo[97], combo[100], combo[101], combo[102]))
-        self.assertEqual(("410", "5", "Black", "1000", "1000"),
+        self.assertEqual(("410", "5", "Black", "5000", "5000"),
                          (combo[109], combo[110], combo[111], combo[113], combo[114]))
         bonuses = [count * int(combo[113]) / 1000 for count in (0, 1, 70, 1000, 2)]
-        self.assertEqual([0, 1, 70, 1000, 2], bonuses)
+        self.assertEqual([0, 5, 350, 5000, 10], bonuses)
+        attack = self.rows["1699893"][1]
+        self.assertEqual(attack[109], "0")  # ordinary attack; not a second independent term
+        self.assertEqual(attack[:109] + attack[110:], combo[:109] + combo[110:])
+        self.assertEqual(("false", "2", "Black", "12", "(None)"),
+                         (attack[1], attack[6], attack[11], attack[13], attack[102]))
+        attack_bonuses = [count * int(attack[113]) / 1000 for count in (0, 1, 70, 1000, 2)]
+        self.assertEqual(bonuses, attack_bonuses)
         self.assertIsNone(kit.metadata()["combo_bonus"]["trigger_limit"])
         self.assertTrue(kit.metadata()["combo_bonus"]["falls_when_combo_falls"])
 
     def test_a3_piercing_growth_is_gated_per_frame_and_keeps_permanent_uncapped_gains(self):
-        for row, content in zip(self.rows["1699893"][1:3], ("32", "33")):
+        for row, content in zip(self.rows["1699893"][2:4], ("32", "33")):
             self.assertEqual(("2", "Black", "12", "235", "100000", "12000000", "(None)"),
                              (row[6], row[11], row[13], row[27], row[30], row[32], row[34]))
             self.assertEqual((content, "5", "Black", "20000", "20000", "", ""),
