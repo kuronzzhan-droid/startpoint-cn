@@ -113,7 +113,7 @@ def ability_rows(source: dict) -> dict:
     # independent limits, so reaching the attack cap does not stop charging.
     attack = _instant(source, 32, 70_000, pre="wind", fever="fever",
                       trigger=12, threshold=7, target=5, limit=10)
-    charge = _instant(source, 211, 1_000, pre="wind", fever="fever",
+    charge = _instant(source, 211, 700, pre="wind", fever="fever",
                       trigger=12, threshold=7, target=5)
     stock = _instant(source, 629, pre="wind", fever="fever",
                      trigger=23, wind_counter=True)
@@ -184,7 +184,7 @@ def metadata() -> dict:
             "attack_gain_percent": 70,
             "attack_max_percent": 700,
             "attack_persists_after_fever": True,
-            "skill_gauge_gain_percent": 1,
+            "skill_gauge_gain_percent": 0.7,
             "skill_gauge_trigger_limit": None,
         },
         "a3_stock": {

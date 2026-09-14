@@ -134,7 +134,7 @@ class CampusPanelTextTest(unittest.TestCase):
             self.assertIn(term, panels["leader"])
         for term in ("分为3次", "+200%", "每消耗1层", "+5%"):
             self.assertIn(term, panels["a2"])
-        for term in ("<icon id='main'>", "风属性共鸣时", "35次", "非Fever", "25倍", "7的倍数", "+700%", "+1%", "+15%", "星风心得", "能力伤害+25%、攻击力+25%"):
+        for term in ("<icon id='main'>", "风属性共鸣时", "35次", "非Fever", "25倍", "7的倍数", "+700%", "+0.7%", "+15%", "星风心得", "能力伤害+25%、攻击力+25%"):
             self.assertIn(term, panels["a3"])
         self.assertNotIn("星风快门累积", "".join(panels.values()))
         self.assertIn("命中敌人", panels["a1"])

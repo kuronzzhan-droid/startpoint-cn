@@ -103,7 +103,7 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
             self.assertEqual("", row[57])  # Permanent native stat gain, no timed buff.
         self.assertEqual(("32", "70000", "10"), (attack[47], attack[51], attack[34]))
         self.assertEqual(700_000, int(attack[51]) * int(attack[34]))
-        self.assertEqual(("211", "1000", "(None)"), (charge[47], charge[51], charge[34]))
+        self.assertEqual(("211", "700", "(None)"), (charge[47], charge[51], charge[34]))
 
     def test_a3_stock_grant_and_consume_are_main_only_wind_fever_and_unlimited(self):
         grant, consume = self.rows["1499893"][4:6]
