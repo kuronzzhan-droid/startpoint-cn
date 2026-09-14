@@ -12,6 +12,7 @@ import { ShopItem, ShopItems, ShopType } from "../../lib/types";
 import { generateDataHeaders, getServerDate, getServerTime, realToVirtual } from "../../utils";
 import { computeRealTimeStamina } from "../../lib/stamina";
 import { getPlayerDegreeIdsSync } from "../../data/domains/degree";
+import { withAbyssShopDegreeRewardSync } from "../../lib/abyss-shop-degree-reward";
 import {
     executeShopPurchasesSync,
     getShopItemStockQuantity,
@@ -168,13 +169,14 @@ const routes = async (fastify: FastifyInstance) => {
 
         let atomicResult
         try {
-            atomicResult = executeShopPurchasesSync({
+            const purchases = [{ shopItemId: shopItemId!, count: purchaseAmount }]
+            atomicResult = withAbyssShopDegreeRewardSync(playerId, shopType!, purchases, () => executeShopPurchasesSync({
                 playerId,
                 shopType: shopType!,
-                purchases: [{ shopItemId: shopItemId!, count: purchaseAmount }],
+                purchases,
                 resolveShopItem: getShopItemSync,
                 now: getServerDate(),
-            })
+            }))
         } catch (error) {
             if (error instanceof ShopPurchaseValidationError) {
                 return reply.status(400).send({
@@ -478,13 +480,13 @@ const routes = async (fastify: FastifyInstance) => {
         })
 
         try {
-            const atomicResult = executeShopPurchasesSync({
+            const atomicResult = withAbyssShopDegreeRewardSync(playerId, shopType, purchases, () => executeShopPurchasesSync({
                 playerId,
                 shopType,
                 purchases,
                 resolveShopItem: getShopItemSync,
                 now: getServerDate(),
-            })
+            }))
             const totalPurchaseCount = purchases.reduce((sum, purchase) => sum + purchase.count, 0)
             console.log(`[shop:bulk_buy] player=${playerId} shopType=${shopType} itemKinds=${purchases.length} units=${totalPurchaseCount}`)
 

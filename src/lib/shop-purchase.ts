@@ -13,6 +13,7 @@ import {
 } from "../data/domains/shopPurchase";
 import { givePlayerRewardsSync } from "./quest";
 import { clientSerializeEquipment } from "./equipment";
+import { grantEquipmentDegreeRewardsSync } from "./equipment-degree-rewards";
 import {
     CharacterReward,
     CharacterShopItemReward,
@@ -333,6 +334,9 @@ export function executeShopPurchasesSync(
             });
             update.current.enhancementLevel = update.targetLevel;
             enhancedEquipment.push(clientSerializeEquipment(equipmentId, update.current));
+        }
+        if (enhancementUpdates.size > 0) {
+            grantEquipmentDegreeRewardsSync(input.playerId, [...enhancementUpdates.keys()]);
         }
         for (const degreeId of degrees) grantPlayerDegreeSync(input.playerId, degreeId);
         for (const { shopItemId, count } of purchases) {

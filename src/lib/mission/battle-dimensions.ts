@@ -1,5 +1,6 @@
 import { getDb } from "../../data/db"
 import { grantPracticeCharacterDegreeRewardsSync } from "../character-degree-rewards"
+import { grantPracticeExclusiveDegreeRewardsSync } from "../equipment-degree-rewards"
 import { getCharacterRaces, getRaceKeyString } from "../quest/finish/race-utils"
 import { addMissionCounterSync, setMissionCounterMaxSync } from "./counters"
 import type { BattleFinishMissionEvent } from "./events"
@@ -139,6 +140,7 @@ export function recordBattleMissionDimensions(event: BattleFinishMissionEvent): 
     getDb().transaction(() => {
         recordBattleMissionDimensionWrites(event)
         grantPracticeCharacterDegreeRewardsSync(event)
+        grantPracticeExclusiveDegreeRewardsSync(event)
     })()
 }
 
