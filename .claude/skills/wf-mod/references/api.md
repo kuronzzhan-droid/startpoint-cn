@@ -17,8 +17,12 @@
   ```
   admin(Vite dev 5173)已代理 `/api → 8001`,无需额外配置。
   修改器进程可由 npm script 或 Fastify 启动时 `child_process.spawn("python", ["mod-tools/wf_gui.py"])` 拉起。
-- 前端(React)对接:所有写接口都支持 `dry_run`,推荐交互 = 先 `dry_run:true` 拿预览
-  → 用户确认 → `dry_run:false` 写入(当前原生前端即此模式)。
+- 前端(React)对接:支持 `dry_run` 的写接口采用网页交互流程 = 先 `dry_run:true` 拿预览
+  → 用户确认 → `dry_run:false` 写入(当前原生前端即此模式，保留网页确认)。
+  这是网页交互约定，不是 agent 额外审批点：执行者按当前请求、仍有效的会话授权及
+  `AGENTS.md` 常设授权核对差异；已获授权且差异仅含目标键时可直接写入。
+  须作者当次明确授权的操作仍依 `AGENTS.md`「授权分级」执行。
+  是否支持 `dry_run` 以各端点契约为准；不支持时先用只读差异预览或该端点的预检方式核对目标，不发送不存在的参数。
 
 ## 约定
 
@@ -137,7 +141,7 @@
 | `/export_annotated` | `{}` | 标注版 CSV → 同上 |
 | `/restore` | `{name}` | 用指定备份覆盖当前表 → `{restored, table, target}`(还原前自动存 prerollback 备份) |
 | `/rollback` | `{name, restart?}` | 一键回溯 = restore + 自动发布 + 重启游戏 → restore 响应 + `{ok, publish_log, restart_log?}` |
-| `/publish` | `{tables?, list_only?, restart?}` | 一键发布:调 wf_publish 打增量包到 CDN → `{ok, log, list_only, restart_log?}`;`tables` 缺省=发布 pending 并清空;`list_only:true` 只预检不打包(代替 dry_run);成功后默认重启游戏 |
+| `/publish` | `{tables?, list_only?, restart?}` | 一键发布:调 wf_publish 打增量包到 CDN → `{ok, log, list_only, restart_log?}`;`tables` 缺省=发布 pending 并清空;`list_only:true` 只预检不打包(代替 dry_run);接口成功后默认重启游戏，仍调用 `force-stop`。agent 显式传 `restart:false`，之后按 `SKILL.md` 第 5 节重启；`force-stop` 仅作者明确要求时使用 |
 | `/sync` | `{restart:true}` | adb push pending + 重启游戏 → `{ok, log}`(备用手段;② 层正道是 `/publish`) |
 
 ## 环境变量
