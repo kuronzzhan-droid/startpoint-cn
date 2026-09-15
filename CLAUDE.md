@@ -12,7 +12,8 @@ Fastify + TypeScript，CN 服务入口 `src/cn-server.ts`（端口 8001），国
 - 先读 `work/agent-coordination/当前状态.md`（不带日期、始终当前、不超过 60 行的共同入口）。任务涉及代码、共享表、发布或接管时，
   再读 `work/agent-coordination/codex-to-claude.md` / `claude-to-codex.md` 的**顶部当前状态段**（不读全文）和
   `docs/协作对齐-Claude-Codex.md` 中与任务相关的章节。纯问答、只读调研、单文件小改不需要读协作对齐全文。
-- 带日期的任务书/清单/交接一律只当历史证据；已冻结的在各 `frozen/<日期>/`，禁止据其施工。
+- 带日期的任务书/清单/交接默认只当历史证据；作者明确指定的现行任务书按当前授权执行。
+  已冻结的在各 `frozen/<日期>/`，禁止据其施工；历史记录不能自行恢复旧任务或授权。
 - 主线：自制角色/模式/深渊武器/发布链（分支 `custom/characters-1.4.407`，live 链尾以 `wf_publish.py --list` 报告为准）。
 - 后台管理界面重构（feature/admin-ui，M0–M3 已完成，M4 须作者同意）的历史进度见 `docs/admin-refactor-plan.md`。
 
@@ -35,6 +36,11 @@ Fastify + TypeScript，CN 服务入口 `src/cn-server.ts`（端口 8001），国
 
 - **多执行者对齐**：本项目同时由 Claude 与 Codex 施工。协作协议、冲突处理、事实/判断/决定的标注方式
   见 `docs/协作对齐-Claude-Codex.md`（读法见「开工顺序」）。
+- **自主执行与澄清**：当前请求、仍有效的会话授权、已批准方案和下述常设授权覆盖的工作直接完成；
+  不重复审批相同方案，不为选择子代理/内联执行而停工。用户要求「只审阅」「先给方案」「先别发」时遵守指定边界。
+  需求范围、角色定位、兼容性、数据归属、授权对象或验收目标不明确且查证后仍无法确定时询问作者；
+  范围内的常规实现细节按现有惯例自行决定。分歧只暂停受影响的操作，独立且已授权的工作继续；
+  不自行覆盖作者决定，不把沉默、超时或工具可执行当作批准。Skill 不得扩大授权，也不得为已有授权另设确认门槛。
 - **迁移期间旧后台零改动**：`web/pages/`、`src/routes/web/`、`web/public/` 在 M4 之前不许修改/删除
 - 最终要向上游 `DontBeAlarmed/startpoint-cn` 提 PR，commit 保持小而清晰（前缀 `feat/fix/refactor(<模块或角色>)`）
 - `git rebase origin/main` 只在作者要求时做；工作区有未提交 WIP 时先说明再做
@@ -59,6 +65,9 @@ Fastify + TypeScript，CN 服务入口 `src/cn-server.ts`（端口 8001），国
 - **提交**：完成一个可独立描述的单元即 commit（作者纪律第 3 条，视为常设授权，不必再问）。只暂存自己改的文件或 hunk
   （`git add <file>` / `git add -p`），禁止 `git add -A`。文件同时含用户 WIP 与自己的改动时，用 `git add -p` 只提交自己的 hunk；
   无法分离时不提交，并在 `work/agent-coordination/当前状态.md` 登记「未提交：<文件>：<原因>」。push 一律需作者要求。
+- **完成条件**：完成请求范围内的实现、必要同步、适用验证和本地提交；未请求的远端发布不构成本地任务缺项。
+  必需需求缺口或影响本次验收的真实缺陷不能以 `parked`、达到修复次数上限或阶段结束为由标记完成；
+  上限用于改换方法。真实阻塞须明确剩余事项与原因，仍完成独立的已授权工作；静态/回读证据不等于游戏验收。
 
 ## 常用命令
 
@@ -77,7 +86,9 @@ npm run build:admin      # 构建 SPA 到 web/dist，并执行 bundle budget
 **验收口径**：改 `src/` → `npm run typecheck` + 相关 `src/tests` 聚焦测试；改 `mod-tools/` → 对应 unittest 模块；
 改发布器/校验器/启动器/hygiene → 再加 `test:launcher`、`test:hygiene`；全仓 `npm run verify` 与 `check:hygiene`
 只在依赖变更、发布工具变更或作者要求时跑。全仓已知红项登记在 `docs/verify-baseline.md`；与基线相同的红不算失败，
-**新增红项才算**，回复写「聚焦 N 项通过；全仓与基线一致」。基线变化时更新该文件并单独 commit。
+**新增红项才算**。未运行全仓检查时回复「聚焦 N 项通过；本次未运行全仓检查」；已运行时依据本轮输出报告与基线的差异。
+不得将本次引入的回归登记为既有基线；确认既有失败须附修改前复现或已有证据，基线修订单独 commit。
+验证对应的代码、依赖和相关环境未变且无新疑点时，可引用本次任务已有结果，不因换消息或阶段而重复运行。
 
 ## 已知坑
 
