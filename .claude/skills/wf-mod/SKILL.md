@@ -43,7 +43,7 @@ Python 脚本统一在 `mod-tools/` 下运行(cwd 建议为项目根)。输出�
 ```
 改数据(dry-run 预览 → 写入 + 自动备份)
   → python mod-tools/wf_publish.py --tables <表名>   # 打增量包到 CDN
-  → 用户重启 start-cn.bat + 重启游戏                  # 客户端增量下载生效
+  → 执行者重启服务端(仅 src/静态 JSON 变化时,./start-cn.bat -RestartOwned)+ 重启游戏(第 5 节)
 ```
 
 (GUI 里等价一键:右上角「发布并重启游戏」= 发布 pending + adb 重启游戏,POST `/publish`。)
@@ -280,7 +280,7 @@ Python 脚本统一在 `mod-tools/` 下运行(cwd 建议为项目根)。输出�
   「HP≤≥50%」双比较符已修——触发名末尾带比较符时直接接数值);
   **词条速查** tab 搜四表中文描述/角色名/武器名/键,按效果签名分组显示共用N/专属。
   右上角「发布并重启游戏」按钮 = 第 4 节发布链路一键完成,用户全程不用碰命令行。
-  写操作都先 dry-run 预览再确认,自动备份 + 加入 pending。
+  写操作都先 dry-run 预览,执行者核对差异只含目标键后直接写(不需回作者确认),自动备份 + 加入 pending。
   API 契约见 `references/api.md`(并入服务端后台时用)。
 - **命令行 recipe(批量/可复现)**:`python mod-tools/wf_mod_tool.py apply --recipe <json>`。
   操作:`scale`(倍率)/ `set`(设值)/ `copy_ability`(移植)/ `remove_main_position`。
@@ -288,7 +288,8 @@ Python 脚本统一在 `mod-tools/` 下运行(cwd 建议为项目根)。输出�
 - **临时脚本(GUI 未覆盖的边角场景)**:用 `wf_mod_tool` 的底层函数写针对性脚本。
   嵌套表读写见第 3 节。
 
-改完**务必发布**(第 4 节),否则游戏内看不到。
+改完**务必发布**(第 4 节),否则游戏内看不到。本地发布是改数据任务的默认步骤(授权分级见 `CLAUDE.md`);
+整包 flow publish、公开链/分享包投递、发灰服、APK 安装、设备直推仍须作者当次明确授权。
 
 ## 3. 三类数据结构的读写(定位后按类处理)
 
@@ -395,7 +396,11 @@ python mod-tools/wf_character_flow.py rollback --snapshot-dir <发布输出的sn
   其余 assets json 仍是静态 import,改了照旧要重启。
 - **不要用 preview 面板长期跑服务端**——会随会话回收进程,导致"服务端悄悄退了"。
 - **模拟器操作**(adb 路径见第 0 节,Windows 下 shell 命令加 `MSYS_NO_PATHCONV=1` 防路径转换):
-  重启游戏 = `am force-stop com.leiting.wf` 然后 `monkey -p com.leiting.wf -c android.intent.category.LAUNCHER 1`。
+  重启游戏:优先让客户端回标题自行切版本;要杀进程时用 `kill -9 $(pidof com.leiting.wf)` 再
+  `am start -n com.leiting.wf/.AppEntry`(adb)或 `…/com.leiting.sdk.activity.PrivacyActivity`(MuMuManager sh)。
+  **`am force-stop` 多次实测触发全量重下并留下 AudioFlinger 僵尸音轨,仅作者明确要求时用**
+  (旧写法 `am force-stop` + `monkey … LAUNCHER 1` 作废;`wf_gui.restart_game` 仍是 force-stop,待改)。
+  本机 8001 仅作者自用:改了 `out/` 或静态 JSON 后直接 `./start-cn.bat -RestartOwned`,不必询问。
   **adb 失联兜底**(2026-07-12 实测):MuMu adb 端口会漂移(16384→16416,记录在
   `MuMuPlayer\vms\<实例>\configs\vm_config.json` 的 nat.port_forward.adb)甚至整个不监听;
   此时用 `MuMuManager.exe sh -v <实例号> -c "<命令>"`(自有 RPC 通道,不依赖 adb;实例号看
@@ -404,14 +409,9 @@ python mod-tools/wf_character_flow.py rollback --snapshot-dir <发布输出的sn
   GUI 的 restart_game 已内置此兜底。
 - **验证服务端在线**:按 `.env` 的 `CN_LISTEN_HOST` / `CN_LISTEN_PORT` 请求 `/api/server/currentTime`(本机 + 模拟器内都可达才算通),禁止把某台机器的 LAN IP 写回脚本或文档。
 
-工程改动或发布工具变更后，至少执行：
-
-```powershell
-npm run verify
-npm run test:launcher
-npm run test:hygiene
-npm run check:hygiene
-```
+工程改动后的验收口径以 `CLAUDE.md`「验收口径」为准：改 `src/` 跑 `npm run typecheck` + 聚焦测试；改 `mod-tools/` 跑对应
+unittest 模块；改发布器/校验器/启动器/hygiene 再加 `npm run test:launcher`、`npm run test:hygiene`；全仓 `npm run verify` 与
+`npm run check:hygiene` 只在依赖变更、发布工具变更或作者要求时跑。已知红项见 `docs/verify-baseline.md`，新增红项才算失败。
 
 依赖变更还要分别执行根目录和 `admin/` 的 `npm audit`，high/critical 必须为 0。
 
@@ -460,7 +460,8 @@ npm run check:hygiene
 
 ## 8. 安全规则(写入前必守)
 
-1. **先 dry-run 预览再写**;写入自动生成 `.bak-wfmod-*` 备份。
+1. **先 dry-run 预览再写**(执行者核对差异只含目标键即可,不需回作者确认);写入自动生成 `.bak-wfmod-*` 备份
+   (允许存在,不提交、不清理,不得手工另造)。
 2. **还原用备份取原值**,不要凭记忆填(如队长技原值从 `.bak-wfmod-leader-*` 取)。
 3. **嵌套表内层键序不可重排**;`build_orderedmap_raw_rows` 保持外层原序。
 4. **数值范围** 0 ~ 2³¹-1;千分比语义确认后再改;断点/键白名单(不新增不存在的键)。
