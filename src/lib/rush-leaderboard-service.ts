@@ -22,6 +22,7 @@ import {
 } from "../data/domains/rushLeaderboard";
 import { getRushEventFolderMaxRounds } from "./assets";
 import { getPlayerSync } from "../data/domains/player";
+import { ABYSS_ENDURANCE_EVENT, ABYSS_ENDURANCE_FOLDER, grantAbyssEnduranceDegreesSync } from "./abyss-endurance-degree-reward";
 
 /** 计时一律用真实系统时间:后台「时间控制」能平移服务器时间,拿它算用时会出负数。 */
 function nowMs(): number {
@@ -308,6 +309,9 @@ export function noteRushRoundFinish(input: RushRoundFinishInput): void {
 
         rushLeaderboardStore.updateRun(plan.runId, plan.patch)
         if (plan.completed) {
+            if (eventId === ABYSS_ENDURANCE_EVENT && folderId === ABYSS_ENDURANCE_FOLDER) {
+                grantAbyssEnduranceDegreesSync(playerId)
+            }
             console.log(`[RUSH-LB] run completed: id=${plan.runId} player=${playerId} event=${eventId} `
                 + `folder=${folderId} rounds=${totalRounds} durationMs=${plan.patch.durationMs} `
                 + `battleMs=${plan.patch.battleMs}`)

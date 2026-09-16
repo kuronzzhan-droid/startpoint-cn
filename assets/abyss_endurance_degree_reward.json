@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "enabled": true,
+  "event_id": 700099,
+  "folder_id": 1,
+  "clock": "battle_ms",
+  "comparison": ">",
+  "cumulative": true,
+  "rewards": [
+    { "degree_id": 9911101, "minutes": 60, "name": "艰难依然前行" },
+    { "degree_id": 9911102, "minutes": 120, "name": "蠕动化区" },
+    { "degree_id": 9911103, "minutes": 180, "name": "肉鸽爱好者" }
+  ]
+}
