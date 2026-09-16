@@ -1,9 +1,10 @@
 {
   "schema_version": 1,
-  "id": "abyss-weapons-v3.3",
+  "id": "abyss-weapons-v3.4-resonance",
   "status": "pending",
   "source": "mod-tools/wf_rogue_rewards.py",
-  "source_revision": "3e5ae0d532ce5179f5e8254afb900e5b61c55869",
-  "semantic_sha256": "fe00411013e578151c44e81d93c9d2faf81f1d9bfa59a399ed34150596d5f07d",
-  "artifact": null
+  "source_revision": "dd00ca9573424b6b664b3c992ca82593f3b8f3cd",
+  "semantic_sha256": "6c53e6aed5bcec5d1abaeed62c2af72b315fd0b592470b81ef56d3450e1ffed9",
+  "artifact": null,
+  "source_revision_note": "Base revision before the 2026-09-17 resonance change; semantic hash describes the current generator, not the live incremental patch."
 }

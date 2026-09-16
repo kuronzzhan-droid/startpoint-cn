@@ -283,15 +283,15 @@ class AbyssWeaponReleasePatchTests(unittest.TestCase):
                     ):
                         builder.load_v1_contract(path)
 
-    def test_current_v3_3_is_pending_and_matches_generator_semantics(self) -> None:
+    def test_current_resonance_generator_matches_declared_semantics(self) -> None:
         self.assertTrue(CURRENT_STATUS.is_file(), CURRENT_STATUS)
         status = json.loads(CURRENT_STATUS.read_text(encoding="utf-8"))
         self.assertEqual(1, status["schema_version"])
-        self.assertEqual("abyss-weapons-v3.3", status["id"])
+        self.assertEqual("abyss-weapons-v3.4-resonance", status["id"])
         self.assertEqual("pending", status["status"])
         self.assertEqual("mod-tools/wf_rogue_rewards.py", status["source"])
         self.assertEqual(
-            "3e5ae0d532ce5179f5e8254afb900e5b61c55869",
+            "dd00ca9573424b6b664b3c992ca82593f3b8f3cd",
             status["source_revision"],
         )
         self.assertIsNone(status["artifact"])

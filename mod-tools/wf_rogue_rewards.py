@@ -34,6 +34,7 @@ import wf_mod_tool as core        # noqa: E402
 import wf_describe                # noqa: E402
 import wf_assets                  # noqa: E402
 import wf_rogue_build as rogue_build  # noqa: E402
+from wf_abyss_weapon_resonance import gate_row  # noqa: E402
 
 ITEM_T = "master/item/item.orderedmap"
 EQUIP_T = "master/item/equipment.orderedmap"
@@ -802,6 +803,7 @@ def build_soul_leaf(
             row, explicit, SOUL_TRIGGER_KIND_COL, SOUL_TRIGGER_COMPANION_COLS)
         _clear_kind_companions(
             row, explicit, SOUL_PRE1_KIND_COL, SOUL_PRE1_COMPANION_COLS)
+        row = gate_row(row, spec.id, "ability_soul")
         if validate:
             _assert_soul_row_legal(spec, slot, row)
         rows.append(row)
