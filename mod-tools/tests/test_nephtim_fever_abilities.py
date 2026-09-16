@@ -51,8 +51,13 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
         self.assertEqual(("2", "600000", "600000", "Black", "0", "536"),
                          (flag[6], flag[9], flag[10], flag[11], flag[13], flag[47]))
         self.assertEqual(kit.CHANGE_SKILL_STRING_ID, flag[70])
-        self.assertIn("攻击力提升250%", kit.flat_string_rows()[flag[70]][0][0])
-        self.assertIn("20秒", kit.flat_string_rows()[flag[70]][0][0])
+        # 文案规则2：「技能强化」条目只写强化了什么，不写数字与时间；底层 250%/20 秒未改。
+        description = kit.flat_string_rows()[flag[70]][0][0]
+        self.assertEqual(kit.CHANGE_SKILL_DESCRIPTION, description)
+        self.assertIn("强化『" + kit.SKILL_NAME + "』", description)
+        self.assertNotRegex(description, r"[0-9０-９]")
+        self.assertNotIn("秒", description)
+        self.assertEqual(250, kit.metadata()["skill_enhancement"]["attack_buff_percent"])
 
     def test_summoning_counts_only_state_frames_and_fever_end_clears_only_that_state(self):
         summon, clear = self.rows["1699891"][2:4]
@@ -119,10 +124,14 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
         combo = self.rows["1699893"][0]
         self.assertEqual(("1", "2", "Black", "12", "2", "100000", "100000", "(None)"),
                          (combo[5], combo[6], combo[11], combo[13], combo[97], combo[100], combo[101], combo[102]))
-        self.assertEqual(("410", "5", "Black", "5000", "5000"),
+        # 作者 2026-09-17 减半：每连击 5% → 2.5%（两列同为词条低级/满级，一起取半）。
+        self.assertEqual(("410", "5", "Black", "2500", "2500"),
                          (combo[109], combo[110], combo[111], combo[113], combo[114]))
+        self.assertEqual(2_500, kit.COMBO_STRENGTH)
         bonuses = [count * int(combo[113]) / 1000 for count in (0, 1, 70, 1000, 2)]
-        self.assertEqual([0, 5, 350, 5000, 10], bonuses)
+        self.assertEqual([0, 2.5, 175, 2500, 5], bonuses)
+        self.assertEqual(2.5, kit.metadata()["combo_bonus"]["per_combo_percent"])
+        self.assertEqual(2.5, kit.metadata()["combo_bonus"]["attack_percent_per_combo"])
         attack = self.rows["1699893"][1]
         self.assertEqual(attack[109], "0")  # ordinary attack; not a second independent term
         self.assertEqual(attack[:109] + attack[110:], combo[:109] + combo[110:])
@@ -137,9 +146,15 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
         for row, content in zip(self.rows["1699893"][2:4], ("32", "33")):
             self.assertEqual(("2", "Black", "12", "235", "100000", "12000000", "(None)"),
                              (row[6], row[11], row[13], row[27], row[30], row[32], row[34]))
-            self.assertEqual((content, "5", "Black", "20000", "20000", "", ""),
+            # 作者 2026-09-17 减半：贯穿成长 20% → 10%，周期/次数/目标不动。
+            self.assertEqual((content, "5", "Black", "10000", "10000", "", ""),
                              (row[47], row[48], row[49], row[51], row[52], row[57], row[58]))
-        self.assertTrue(kit.metadata()["piercing_growth"]["persists_after_fever"])
+        self.assertEqual(10_000, kit.PIERCING_GROWTH_STRENGTH)
+        growth = kit.metadata()["piercing_growth"]
+        self.assertEqual((10, 10, 120), (growth["attack_percent"],
+                                         growth["direct_damage_percent"], growth["period_frames"]))
+        self.assertIsNone(growth["trigger_limit"])
+        self.assertTrue(growth["persists_after_fever"])
 
     def test_a4_covers_dark_members_and_all_cooperative_balls_with_distinct_targets(self):
         members, balls = self.rows["1699894"]

@@ -16,6 +16,15 @@ BALL_FX = {kind: f"battle/effect/skill_unique/{CODE}_{kind}_call/" for kind in (
 LIGHT_FADE_FX = f"battle/effect/skill_unique/{CODE}_light_fade/{CODE}_light_fade_disappear"
 DURATION = 1200
 BALL_LIFETIME = 1500
+# 协力球同时在场上限；引擎自身对召唤数量没有任何限制（ActionEvaluator case 36 是纯循环），
+# 必须由 ConditionalsMultiballNumber 自己卡。
+MULTIBALL_CAP = 9
+# 已满上限时这一次召唤改为给自身叠一层攻击力。
+# 作者 2026-09-17：能力1 提供的攻击力减半（原 0.5 = +50%/层），机制与层数上限不动。
+OVERFLOW_ATTACK_STRENGTH = 0.25
+# ACAttackPoint 第三参 = maxAccumulation（叠加层数上限），不是段数；
+# 官方 level_up.action.dsl 同样用 99。
+OVERFLOW_ATTACK_STACKS = 99
 
 
 def condition(subject, *contents, silent=False, magnification=1, force_apply=True):
@@ -118,12 +127,36 @@ def summon(kind):
             _advance_phase(kind)), None)
 
 
+def overflow_attack():
+    """满上限时的替代效果：自身攻击力+25%，靠原生 maxAccumulation 叠层。
+
+    同一条 CreateCondition 的 key 由 battleId + 词条地址决定，整场恒定，重复执行只会
+    覆盖刷新；叠层唯一的原生通路是 ACAttackPoint 的第三参 maxAccumulation。
+    """
+    return condition(-17, ["ACAttackPoint", value(DURATION),
+                           value(OVERFLOW_ATTACK_STRENGTH), value(OVERFLOW_ATTACK_STACKS)])
+
+
+def overflow_attack_percent():
+    """溢出攻击力的面板口径百分比；文案模块引用同一真源。"""
+    percent = OVERFLOW_ATTACK_STRENGTH * 100
+    return int(percent) if float(percent).is_integer() else percent
+
+
 def build_spawn():
+    """球未满上限时交替召唤，已满则把这一次召唤换成自身攻击力叠层。
+
+    ConditionalsMultiballNumber 的 p0 必须显式列出要数的球 ID：只有 null 才是"全部"，
+    空数组等于一个都匹配不到（SquadImpl.matchMultiball）。计数含还在弹板上等待出场的球，
+    所以出场动画期间不会超召。
+    """
     choose = command("ConditionalsConditionAccumulationNumber", ["DCUnique", STATE_UID], 2,
                      block(summon("dark")), block(summon("light")))
+    capped = command("ConditionalsMultiballNumber", [LIGHT_ID, DARK_ID], [], MULTIBALL_CAP,
+                     block(overflow_attack()), block(choose))
     return action(command("ConditionalsFeverMode", block(
         command("ConditionalsConditionExist", -17, ["DCUnique", STATE_UID],
-                block(choose), block())), block()))
+                block(capped), block())), block()))
 
 
 def unique_rows():
@@ -154,6 +187,13 @@ def metadata():
             "spawn_unique_id": STATE_UID, "alternate_phase": "single timed Unique, guarded signed consumption 1/2",
             "spawn_order": ["light", "dark"], "each_ball_lifetime_frames": BALL_LIFETIME,
             "new_ball_heal_rejection_frames": BALL_LIFETIME,
+            "multiball_cap": MULTIBALL_CAP,
+            "overflow_attack_percent": overflow_attack_percent(),
+            "overflow_attack_max_stacks": OVERFLOW_ATTACK_STACKS,
+            "overflow_attack_frames": DURATION,
+            "overflow_counts_ids": [LIGHT_ID, DARK_ID],
+            "overflow_count_includes_inactive_balls": True,
+            "overflow_count_origin_filtered": False,
             "ball_base_stats_unchanged": True, "ball_growth_curves_unchanged": True,
             "enhanced_fever_shield": shield.metadata(),
             "new_ball_buffs": "activated callback grants the same 20s skill effects to each newborn ball",

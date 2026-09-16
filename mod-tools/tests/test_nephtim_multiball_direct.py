@@ -37,8 +37,13 @@ class NephtimMultiballDirectTest(unittest.TestCase):
         line = text.panel_descriptions()["a3"].splitlines()[-1]
         self.assertTrue(line.startswith(text.MAIN_ICON))
         self.assertIn("全队及协力球", line)
-        self.assertIn("50%", line)
+        # 作者 2026-09-17 减半：每球 +50% → +25%（独立乘区）；计数与目标不动。
+        self.assertEqual(25, bonus.per_ball_percent())
+        self.assertIn("+25%（独立乘区）", line)
+        self.assertNotIn("50%", line)
         self.assertNotIn("Fever", line)
+        self.assertEqual(bonus.flat_string_rows()[bonus.STRING_ID][0][0],
+                         line[len(text.MAIN_ICON) + len("暗属性共鸣时，"):])
 
     def test_dsl_roundtrip_all_balls_null_filter_and_no_lingering_objects(self):
         raw = bonus.action_assets()["common", bonus.LOGICAL_PATH]
@@ -68,7 +73,8 @@ class NephtimMultiballDirectTest(unittest.TestCase):
         ac = condition[2][0]
         self.assertEqual("ACSeparatedTermDirectDamage", ac[0])
         self.assertEqual([{"min": 2, "max": 2}], ac[1])
-        self.assertEqual([{"min": 0.5, "max": 0.5, "mul": 1}], ac[2])
+        self.assertEqual([{"min": 0.25, "max": 0.25, "mul": 1}], ac[2])
+        self.assertEqual(0.25, bonus.PER_BALL_STRENGTH)
         self.assertEqual([{"min": 1, "max": 1}], ac[3])
 
     def test_count_reduction_new_ball_and_repeated_refresh_never_accumulate(self):
@@ -82,9 +88,9 @@ class NephtimMultiballDirectTest(unittest.TestCase):
             slots = {i: slots.get(i, {unrelated: Fraction(3, 20)}) for i in targets}
             for _ in range(60):
                 for slot in slots.values():
-                    slot[key] = Fraction(len(ids), 2)
+                    slot[key] = Fraction(len(ids), 4)
                 self.assertTrue(all(len(slot) == 2 for slot in slots.values()))
-                self.assertTrue(all(slot[key] == Fraction(len(ids), 2) for slot in slots.values()))
+                self.assertTrue(all(slot[key] == Fraction(len(ids), 4) for slot in slots.values()))
                 self.assertTrue(all(slot[unrelated] == Fraction(3, 20) for slot in slots.values()))
         self.assertEqual({-1, -2, -3}, set(slots))
         self.assertTrue(all(slot[key] == 0 for slot in slots.values()))
@@ -96,9 +102,9 @@ class NephtimMultiballDirectTest(unittest.TestCase):
         count = len(surviving)
         native_parameter_count = sum(state == "active" or flag for state, flag in surviving)
         self.assertEqual((3, 1), (count, native_parameter_count))
-        effects = [Fraction(count, 2)] * (3 + len(surviving))
-        self.assertEqual({Fraction(3, 2)}, set(effects))
-        self.assertNotIn(Fraction(native_parameter_count, 2), effects)
+        effects = [Fraction(count, 4)] * (3 + len(surviving))
+        self.assertEqual({Fraction(3, 4)}, set(effects))
+        self.assertNotIn(Fraction(native_parameter_count, 4), effects)
 
     def test_gates_stop_new_pulses_and_last_in_flight_write_has_bounded_tail(self):
         for main, unlocked, resonance, alive in ((False, True, True, True),

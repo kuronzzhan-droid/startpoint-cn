@@ -8,8 +8,30 @@ CODE = "ruin_girl_campus"
 SCALE = 100_000
 SUMMON_UNIQUE_ID = 16998901
 CHANGE_SKILL_STRING_ID = "change_skill_ruin_girl_campus_fever"
+SKILL_NAME = "午后星轨·甜蜜续杯"
 SPAWN_STRING_ID = CODE + "_fever_spawn"
 SPAWN_ACTION_PATH = "battle/action/skill/action/ability_skill/" + CODE + "$" + SPAWN_STRING_ID
+# 作者 2026-09-17：能力1/能力3 提供的攻击力、直击伤害与独立乘区一律减半，机制不动。
+# 千分之一为单位的强度列：2_500 = 2.5%，10_000 = 10%。
+COMBO_STRENGTH = 2_500          # 每 1 连击的独立乘区直击与攻击力（原 5_000）
+PIERCING_GROWTH_STRENGTH = 10_000  # 贯穿每累计 2 秒的攻击力与直击伤害（原 20_000）
+# I629 说明的唯一真源：面板模块也引用这一份，避免两处文案漂移。
+SPAWN_DESCRIPTION = (
+    "交替召唤1个光、暗属性协力球，持续25秒且无法回复生命值，协力球最多同时存在9个；"
+    "已达9个时改为自身攻击力+25%，持续20秒，可叠加；"
+    "再次发动技能不会延长已有协力球的存在时间"
+)
+# I536 说明的唯一真源。文案规则2：「技能强化」条目只写强化了什么，不写数字与时间。
+CHANGE_SKILL_DESCRIPTION = (
+    "强化『" + SKILL_NAME + "』：额外赋予暗属性角色及协力球攻击力提升效果；"
+    "Fever 模式中发动时，自身获得或刷新「星夜茶会」，并赋予暗属性角色及协力球护盾"
+)
+
+
+def _percent(strength):
+    """强度列（千分之一）转面板口径的百分比，整数就给整数。"""
+    value = strength / 1000
+    return int(value) if float(value).is_integer() else value
 
 
 def _set(row, values):
@@ -115,11 +137,11 @@ def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
     # Piercing is a party state: I190 is natively Party(None), not a character target.
     a2 = [_instant(source, 190, 20_000, pre="dark"),
           _instant(source, 33, 250_000, pre="dark", target=5)]
-    combo = _during(source, 410, 5_000, combo=True)
-    combo_attack = _during(source, 0, 5_000, combo=True)
-    piercing_attack = _instant(source, 32, 20_000, pre="dark", fever="fever",
+    combo = _during(source, 410, COMBO_STRENGTH, combo=True)
+    combo_attack = _during(source, 0, COMBO_STRENGTH, combo=True)
+    piercing_attack = _instant(source, 32, PIERCING_GROWTH_STRENGTH, pre="dark", fever="fever",
                                target=5, trigger=235, threshold=1, threshold2=120)
-    piercing_direct = _instant(source, 33, 20_000, pre="dark", fever="fever",
+    piercing_direct = _instant(source, 33, PIERCING_GROWTH_STRENGTH, pre="dark", fever="fever",
                                target=5, trigger=235, threshold=1, threshold2=120)
     # Only AbilityValues parses I724 on the installed ratio-capable client.
     charge = _instant(source, 724, 15_000, pre="dark", trigger=20,
@@ -144,14 +166,8 @@ def flat_string_rows():
     return {
         **multiball_direct.flat_string_rows(),
         **multiball_fever.flat_string_rows(),
-        CHANGE_SKILL_STRING_ID: [[
-            "技能强化：额外赋予暗属性角色及协力球攻击力提升250%效果（20秒）；"
-            "在Fever中施放时获得或刷新持续20秒的召唤效果，"
-            "并赋予暗属性角色及协力球各自最大生命值10%的护盾；每1.5秒召唤1个协力球，"
-            "每个协力球持续25秒且无法回复生命值，再次发动技能不会延长已有协力球的存在时间；"
-            "Fever结束时解除召唤效果"
-        ]],
-        SPAWN_STRING_ID: [["召唤1个光或暗属性协力球（持续25秒，无法回复生命值）"]],
+        CHANGE_SKILL_STRING_ID: [[CHANGE_SKILL_DESCRIPTION]],
+        SPAWN_STRING_ID: [[SPAWN_DESCRIPTION]],
     }
 
 
@@ -184,13 +200,16 @@ def metadata():
         },
         "piercing_extension": "native party state under dark resonance; no per-character filter",
         "combo_bonus": {
-            "source": "current combo", "per_combo_percent": 5,
-            "attack_percent_per_combo": 5, "attack_uses_ordinary_additive_term": True,
+            "source": "current combo", "per_combo_percent": _percent(COMBO_STRENGTH),
+            "attack_percent_per_combo": _percent(COMBO_STRENGTH),
+            "attack_uses_ordinary_additive_term": True,
             "target": "dark party", "independent_direct_damage_term": True,
             "trigger_limit": None, "falls_when_combo_falls": True,
         },
         "piercing_growth": {
-            "period_frames": 120, "attack_percent": 20, "direct_damage_percent": 20,
+            "period_frames": 120,
+            "attack_percent": _percent(PIERCING_GROWTH_STRENGTH),
+            "direct_damage_percent": _percent(PIERCING_GROWTH_STRENGTH),
             "trigger_limit": None, "persists_after_fever": True,
             "timer": "T235 piercing frames admitted only during dark resonance and Fever; fractional period retained",
         },

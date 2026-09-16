@@ -32,7 +32,8 @@ class NephtimFeverTextTest(unittest.TestCase):
         self.assertNotRegex(panels["active"], r"[0-9%％]")
         for value in panels.values():
             self.assertTrue(value.strip())
-            self.assertNotRegex(value.replace("（均无上限）", ""),
+            # 文案规则1：没有上限就什么都不写——面板里不许再出现「无上限」。
+            self.assertNotRegex(value,
                                 r"同条件|无上限|无次数上限|I629|I536|I722|DSL|APK|Unique|原生|实现")
         for phrase in ("参战者及协力球贯穿", "队伍内角色及协力球", "Fever 模式中"):
             self.assertIn(phrase, panels["active"])
@@ -64,6 +65,9 @@ class NephtimFeverTextTest(unittest.TestCase):
         native = text.native_flat_string_rows()
         originals = {**abilities.flat_string_rows(), **leader.flat_string_rows(), **powerflip.flat_string_rows()}
         self.assertTrue(set(native) <= set(originals))
+        # I536/I629 说明各自只有一个真源；两个模块曾各写一份不同文案，这里钉死不许再分叉。
+        for key in (abilities.CHANGE_SKILL_STRING_ID, abilities.SPAWN_STRING_ID):
+            self.assertEqual(originals[key], native[key], key)
         self.assertTrue(all("ruin_girl_campus" in key for key in native))
         rows = text.panel_rows(self.abilities, self.leader, piercing_extension="dark_resonance")
         rows.update(native)
@@ -78,12 +82,20 @@ class NephtimFeverTextTest(unittest.TestCase):
         panel = self.panels()["a1"]
         self.assertEqual(text.MAIN_ICON + "战斗开始时，自身技能槽+50%。", panel.splitlines()[0])
         self.assertNotIn("技能槽上限+50%", panel)
-        self.assertIn("暗属性共鸣时，强化技能", panel)
-        self.assertIn("攻击力提升250%效果，持续20秒", panel)
-        self.assertIn("暗属性共鸣时，Fever 模式中，发动技能时", panel)
+        # 文案规则2：「技能强化」条目改成「强化『技能名』…」，不写数字与时间。
+        enhancement = panel.splitlines()[1:3]
+        self.assertIn("强化『" + abilities.SKILL_NAME + "』", enhancement[0])
+        self.assertIn("额外赋予暗属性角色及协力球攻击力提升效果", enhancement[0])
+        self.assertIn("暗属性共鸣时，Fever 模式中，强化后的技能发动时", enhancement[1])
+        self.assertIn("自身获得或刷新「星夜茶会」，并赋予暗属性角色及协力球护盾", enhancement[1])
+        for line in enhancement:
+            self.assertNotRegex(line.replace(text.MAIN_ICON, ""), r"[0-9０-９]")
+            self.assertNotIn("秒", line)
         self.assertIn("每经过1.5秒交替召唤1个光、暗属性协力球，各持续25秒且无法回复生命值", panel)
-        self.assertIn("自身获得或刷新「星夜茶会」，持续20秒", panel)
-        self.assertIn("各自最大生命值10%的护盾", panel)
+        # 作者 2026-09-17 减半：溢出攻击力 +50% → +25%，时长与「可叠加」不动。
+        self.assertEqual(25, skill.overflow_attack_percent())
+        self.assertIn("该次召唤改为自身攻击力+25%，持续20秒，可叠加", panel)
+        self.assertIn("攻击力+25%", abilities.SPAWN_DESCRIPTION)
         self.assertIn("Fever 结束或自身倒下时", panel)
         self.assertEqual("星夜茶会", skill.STATE_NAME)
         self.assertEqual(1500, skill.metadata()["each_ball_lifetime_frames"])
@@ -97,11 +109,16 @@ class NephtimFeverTextTest(unittest.TestCase):
         lines = panels["a3"].splitlines()
         self.assertTrue(all(line.startswith(text.MAIN_ICON + "暗属性共鸣时，") for line in lines))
         self.assertIn("Fever 模式中，当前每有1连击", lines[0])
-        self.assertIn("直接攻击造成的伤害+5%（独立乘区）、攻击力+5%", lines[0])
+        # 作者 2026-09-17 减半：连击 5% → 2.5%、贯穿成长 20% → 10%。
+        self.assertIn("直接攻击造成的伤害+2.5%（独立乘区）、攻击力+2.5%。", lines[0])
+        self.assertNotIn("无上限", lines[0])
         self.assertIn("Fever 模式中，处于贯穿效果的时间每累计2秒", lines[1])
-        self.assertIn("攻击力+20%、直接攻击伤害+20%", lines[1])
+        self.assertIn("攻击力+10%、直接攻击伤害+10%", lines[1])
+        self.assertIn("Fever 槽+15%", lines[2])
         combo = self.abilities["1699893"][0]
-        self.assertEqual(("2", "410", "5000"), (combo[97], combo[109], combo[113]))
+        self.assertEqual(("2", "410", "2500"), (combo[97], combo[109], combo[113]))
+        piercing = self.abilities["1699893"][2]
+        self.assertEqual(("32", "10000"), (piercing[47], piercing[51]))
 
     def test_non_main_bonuses_keep_their_actual_targets_and_a5_has_no_resonance_gate(self):
         panels = self.panels()

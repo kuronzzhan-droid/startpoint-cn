@@ -72,7 +72,8 @@ class NephtimLeaderGrowthTest(unittest.TestCase):
         panels = text.panel_descriptions()
         for value in ("技能强化", "星夜茶会", "攻击力"):
             self.assertNotIn(value, panels["active"])
-        self.assertIn("强化技能", panels["a1"])
+        # 文案规则2 改写后，技能强化条目的句式是「强化『技能名』…」，不再是「强化技能，」。
+        self.assertIn("强化『", panels["a1"])
         self.assertIn("星夜茶会", panels["a1"])
         self.assertIn("35", panels["leader"])
         self.assertIn("Fever 槽上升量+20%", panels["leader"])

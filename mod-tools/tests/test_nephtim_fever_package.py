@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from wf_mod_tool import sha1_path
 from wf_nephtim_fever_package import Candidate
 import wf_nephtim_fever as assemble
+import wf_nephtim_fever_abilities as abilities
 
 
 class Baseline:
@@ -51,6 +52,12 @@ class NephtimPackageTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "常驻"):
             assemble.assemble(Path("nonexistent"), Path("nonexistent"),
                               piercing_extension="self_source", apply=True)
+
+    def test_skill_name_written_to_tables_matches_the_one_quoted_in_the_panel(self):
+        # 文案规则2 的「强化『技能名』…」句式引用 abilities.SKILL_NAME；装配器写表用自己的常量。
+        # 两者漂移会让面板引用一个并不存在的技能名，这里钉死。
+        self.assertEqual(assemble.SKILL_NAME, abilities.SKILL_NAME)
+        self.assertIn("强化『" + assemble.SKILL_NAME + "』", abilities.CHANGE_SKILL_DESCRIPTION)
 
 
 if __name__ == "__main__":

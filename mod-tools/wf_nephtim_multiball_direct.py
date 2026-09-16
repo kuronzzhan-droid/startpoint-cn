@@ -9,6 +9,9 @@ COUNT_VARIABLE = 1
 CONDITION_KEY = STRING_ID
 TTL_FRAMES = 2
 NATIVE_COUNT_MAX = 2_147_483_647
+# 每存续 1 个协力球给出的独立乘区直击增益。
+# 作者 2026-09-17：能力3 提供的乘区减半（原 0.5 = 每球 +50%），计数与目标机制不动。
+PER_BALL_STRENGTH = 0.25
 
 
 def action_tree():
@@ -18,7 +21,7 @@ def action_tree():
     conditionSlot。数量放在 strength，不放 magnification，避免低值刷新被拒。
     MultiballNumberVariable 的 ID 数组必须为 null；空数组代表不匹配任何球。
     """
-    strength = [{"min": 0.5, "max": 0.5, "mul": COUNT_VARIABLE}]
+    strength = [{"min": PER_BALL_STRENGTH, "max": PER_BALL_STRENGTH, "mul": COUNT_VARIABLE}]
     def condition(subject, *, force_apply=True):
         return command("CreateCondition", subject,
             [["ACSeparatedTermDirectDamage", value(TTL_FRAMES), strength, value(1)]],
@@ -36,13 +39,19 @@ def action_assets():
     return {("common", LOGICAL_PATH): encode_tree(action_tree())}
 
 
+def per_ball_percent():
+    value = PER_BALL_STRENGTH * 100
+    return int(value) if float(value).is_integer() else value
+
+
 def flat_string_rows():
-    return {STRING_ID: [["每有1个协力球存在时，全队及协力球对敌人造成的直接攻击伤害+50%（独立乘区）。"]]}
+    return {STRING_ID: [[f"每有1个协力球存在时，全队及协力球对敌人造成的直接攻击伤害"
+                         f"+{per_ball_percent()}%（独立乘区）。"]]}
 
 
 def metadata():
     return {
-        "per_surviving_multiball_percent": 50,
+        "per_surviving_multiball_percent": per_ball_percent(),
         "main_only": True, "requires_dark_resonance": True, "requires_fever": False,
         "party_and_multiballs": "same N, each member's invisible ConditionSlot",
         "count_scope": "native surviving count, including inactive and ectoplasmic squads",
