@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """季节换装 kit：斩铁·白梅（159998 ``samurai_robot_plum``，光/剑士/Attacker，表母本 151117）。
 
-设计真源：``work/character_packs/seasonal7-20260916/design/zantetsu.json``（status=final）。
+设计真源：``work/character_packs/seasonal7-20260916/design/zantetsu.json``（status=final）；
+**行清单与技能 DSL 的现行真源是改版施工单** ``…/revision-20260916/zantetsu/plan.json``
+（作者 2026-09-16 真机试玩后的一轮要求），design 只再提供 identity / text 骨架 / effects / energy。
 本模块按设计逐行回放 donor 行 + 列级 edits（donor 取官方基线 1.4.54，live 自制行取 live），
 逐格断言与设计 ``row_final`` 相同后落包；两棵技能树从官方 131044 + 151117 两棵树重新拼装
 （不直接吃设计里的 composed_tree，只拿它做逐节点对照），并自行复跑静态门禁。
@@ -21,6 +23,14 @@
                                                            # 全过才把 kit-report 置 ready-for-review
     python mod-tools/wf_seasonal7_build.py --char zantetsu --step manifest,status   # 刷新 manifest 快照
     python mod-tools/wf_seasonal7_kit_zantetsu.py gates     # preflight/publish 前最后一次，必须 all_pass
+
+``gates`` 的三个结论字段（角色上线后才会分家，见 ``foreign_shadow_conflicts``）::
+
+    blocking_failures  本角色自己的红项；必须为空。``all_pass`` 就是它为空。
+    deferred           唯一可延后的一类：批次级 live 漂移（包内共享表全表载荷在**别家键**上
+                       落后于链尾）。主控发布步序 preflight → rebase → preflight → publish
+                       的 rebase 一步清零；只要有一条冲突碰到自家键就不会进这里，仍然是阻塞项。
+    publishable_now    连 deferred 也为空才为真（即 rebase 之后）。别拿 all_pass 当"可以直接发"。
 
 - ``kit`` 必须排在 ``tables`` 之后：框架 tables 每次都按母本 151117 重写 character_stance_detail
   （``,1,1,1,,1,1,1``），kit 才能写回设计值 ``,1,"1,5",1,,1,"1,5",1``。单独重跑 tables 后必须再跑 kit；
@@ -100,14 +110,29 @@ CAS_KEY = f"change_skill_{CODE}"
 VOICE_READY = f"{CODE}_voice_ready"
 ROUTE_COLS = ["3", "", "", "", "", VOICE_READY, "false", "false"]   # character c9–c16（kind 3 ChangeSkillFlag）
 SLOT4_OVERRIDE = "slot4_rec1_if_112_fails__F1_507"
+PF_CAS_KEY = f"ability_skill_{CODE}_pf"       # 改版：能力1#3 的 629 行 string_id（缺键=详情页 C8601）
+CAS_KEYS = (CAS_KEY, PF_CAS_KEY)
 REQUIRED_CAPABILITIES = ("kyubi-fever-ratio-v1",)
+
+# ---- 改版 20260916（作者真机试玩后的一轮要求）：词条/队长行清单与技能 DSL 方案的真源是 revision plan，
+# 不再是 design/zantetsu.json 的 leader/abilities/fallbacks 段（design 仍提供 identity/text/effects/energy）。
+REVISION_REL = f"{BATCH_REL}/revision-20260916/zantetsu/plan.json"
+REVISION_DSL_REL = f"{BATCH_REL}/revision-20260916/zantetsu/dsl_validated.json"   # 设计阶段探针的三棵树（特效改写前）
+# ---- 改版 20260916 第二轮（作者第二次真机反馈）：只是对第一轮施工单的**增量**——新增 1 条队长行 +
+# 两条面板文案规则的文案改写。第一轮的 plan.json 是只读历史证据，不改；这里单独放 plan2.json。
+REVISION2_REL = f"{BATCH_REL}/revision2-20260916/zantetsu/plan2.json"
+PF_DONOR_REL = f"{BATCH_REL}/research/_tmp/zehr_pf/knight_lv3.json"               # 官方剑士 PF Lv3（629 树母本）
+PF_PROGRAM = f"battle/action/skill/action/rare5/{CODE}${CODE}_pf"
+PF_LEVEL = "pf"                               # dsl_gates / EXPECTED_ENCODED_BYTES 里 PF 树的档位标识
+# 三处 CreateNormalAttack 的定位：CreateHitArea 的 bind id → plan multipliers 的键名
+REVISION_MULT_SLOTS = ((2, "落地连斩(每段,共4段)"), (5, "横斩"), (9, "一刀两断"))
 
 DONOR_PROGRAM = "battle/action/skill/action/rare5/{code}${code}_{level}"
 D2_CODE, D1_CODE = "samurai_robot", "samurai_robot_smr22"      # 131044 骨架 / 151117 一刀两断子树
 SE_FROM = "sound_effect/water/se_water_stamp_heavy"
 SE_TO = "sound_effect/slash/se_heavy_aura_critical"
 HIT_TIMELINE_BASE = "samurai_robot_smr22_hit"
-EXPECTED_ENCODED_BYTES = {1: 3168, 2: 3182}
+EXPECTED_ENCODED_BYTES = {1: 3542, 2: 3570, PF_LEVEL: 664}    # 改版后重算（落地时以实际编码长度为准）
 
 # doll_lut：设计风险 8——smr22 族小人与像素小人是同一精灵，必须同一张映射（"pixel"）；
 # 131044 族是旧版小人造型，单独一张 LUT（"separate"，按 fx 报告逐色来源核对）。
@@ -127,22 +152,21 @@ TEXTS = {
     "profile": "早春时节，斩铁换上绣满白梅的羽织，系好青绿围巾，手里还拿着一串三色团子。"
                "他最爱坐在石栏上陪同伴赏梅，把落在机体上的花瓣当作勋章。寒梅傲然绽放——在下之剑，亦为守护这份温暖而鸣！",
     "leader": "寒梅武士道、比肩忍道",
+    # 改版：作者要求「角色技能描述不再写太复杂省略一下」（80 字 → 41 字，两档同文）
     "skill1": "超振动斩铁剑·寒梅一闪",
-    "desc1": "跃向敌人，以超振动剑落地连斩，对周围的敌人造成光属性伤害＋赋予其光属性抗性降低效果／"
-             "接着横斩，对命中的敌人造成光属性伤害／最后踏步前冲，以一刀两断之击对周围的敌人造成光属性伤害",
+    "desc1": "跃向敌人连斩，对周围的敌人造成光属性伤害并赋予光属性抗性降低效果，最后以一刀两断收尾",
     "skill2": "超振动斩铁剑·寒梅一闪＋",
-    "desc2": "跃向敌人，以超振动剑落地连斩，对周围的敌人造成光属性伤害＋赋予其光属性抗性降低效果／"
-             "接着横斩，对命中的敌人造成光属性伤害／最后踏步前冲，以一刀两断之击对周围的敌人造成光属性伤害",
+    "desc2": "跃向敌人连斩，对周围的敌人造成光属性伤害并赋予光属性抗性降低效果，最后以一刀两断收尾",
     "cv": "AI 合成配音",
 }
 SPEC = {
     "required_capabilities": REQUIRED_CAPABILITIES,
-    "extra_keys": {CAS: (CAS_KEY,), SWITCHED: (VOICE_READY,)},
+    "extra_keys": {CAS: CAS_KEYS, SWITCHED: (VOICE_READY,)},
 }
 
 KIT_TABLE_KEYS = {           # kit 拥有的表键（指纹与认领核对用）
     ABILITY: tuple(f"{CID}{i}" for i in range(1, 7)),
-    LEADER: (CID,), CHAR: (CID,), TEXT: (CID,), CAS: (CAS_KEY,), UPSKILL: (CID,), STANCE: (CID,),
+    LEADER: (CID,), CHAR: (CID,), TEXT: (CID,), CAS: CAS_KEYS, UPSKILL: (CID,), STANCE: (CID,),
 }
 KIT_NESTED_KEYS = {ACTION: CODE, SWITCHED: VOICE_READY}
 
@@ -176,6 +200,172 @@ def load_design(root: Path) -> dict:
     if design.get("pf_override") is not None or design.get("dash") is not None:
         raise KitError("design now carries a PF/dash override that this kit does not implement")
     return design
+
+
+TEXT_PLAN_KEY = "action_skill c1 / character_text c5,c7"
+
+
+def load_revision(root: Path) -> dict:
+    """改版施工单（本轮真源）：词条/队长逐行 donor+edits+row_final、技能 DSL delta、新 629 PF 树、文案改写。"""
+    plan = json.loads((root / REVISION_REL).read_text(encoding="utf-8"))
+    if plan.get("schema") != "seasonal7-revision-plan/1":
+        raise KitError(f"unknown revision plan schema {plan.get('schema')!r}")
+    if (plan.get("key"), str(plan.get("cid")), plan.get("code"), plan.get("element")) != (KEY, CID, CODE, ELEMENT):
+        raise KitError(f"revision plan identity mismatch: {plan.get('key')} {plan.get('cid')} {plan.get('code')}")
+    for table in (LEADER, ABILITY):
+        if table not in plan["tables"]:
+            raise KitError(f"revision plan lacks {table}")
+    if plan["skill_dsl"]["new_program"]["path"] != PF_PROGRAM:
+        raise KitError("revision plan PF program path differs from kit constant")
+    return apply_revision2(plan, load_revision2(root))
+
+
+def load_revision2(root: Path) -> dict:
+    """第二轮增量施工单。第一轮的 plan.json 只读，新增/改写全部走这里。"""
+    plan2 = json.loads((root / REVISION2_REL).read_text(encoding="utf-8"))
+    if plan2.get("schema") != "seasonal7-revision2-plan/1":
+        raise KitError(f"unknown revision2 plan schema {plan2.get('schema')!r}")
+    if (plan2.get("key"), str(plan2.get("cid")), plan2.get("code"), plan2.get("element")) != (KEY, CID, CODE, ELEMENT):
+        raise KitError(f"revision2 plan identity mismatch: {plan2.get('key')} {plan2.get('cid')} {plan2.get('code')}")
+    if LEADER not in plan2["tables"]:
+        raise KitError(f"revision2 plan lacks {LEADER}")
+    return plan2
+
+
+def apply_revision2(plan: dict, plan2: dict) -> dict:
+    """把第二轮的队长新增行插进第一轮施工单（就地改副本），并把第二轮文案挂到 ``plan['revision2']``。
+
+    插入位置用 ``after_id``/``before_id`` 双锚定：第一轮的记录顺序漂了立刻停，而不是默默插错地方。"""
+    plan = copy.deepcopy(plan)
+    lead, lead2 = plan["tables"][LEADER], plan2["tables"][LEADER]
+    if lead["key"] != lead2["key"]:
+        raise KitError(f"revision2 leader key {lead2['key']} != revision1 {lead['key']}")
+    if lead["record_count_new"] != lead2["record_count_old"]:
+        raise KitError(f"revision2 record_count_old {lead2['record_count_old']} "
+                       f"!= revision1 record_count_new {lead['record_count_new']}")
+    apply_donor_retargets(plan, plan2.get("donor_retargets") or [])
+    for ins in lead2["inserts"]:
+        pos = int(ins["position"])                       # 1-based：新行插完后所处的名次
+        records = lead["records"]
+        if not 1 <= pos <= len(records) + 1:
+            raise KitError(f"revision2 insert position {pos} out of range (1..{len(records) + 1})")
+        before = records[pos - 2]["id"] if pos >= 2 else None
+        after = records[pos - 1]["id"] if pos - 1 < len(records) else None
+        if (before, after) != (ins.get("after_id"), ins.get("before_id")):
+            raise KitError(f"revision2 insert anchors drifted: got ({before}, {after}), "
+                           f"plan says ({ins.get('after_id')}, {ins.get('before_id')})")
+        if ins["record"]["id"] in {r["id"] for r in records}:
+            raise KitError(f"revision2 insert id {ins['record']['id']} already in revision1 records")
+        records.insert(pos - 1, ins["record"])
+    lead["record_count_new"] = lead2["record_count_new"]
+    if len(lead["records"]) != lead["record_count_new"]:
+        raise KitError(f"revision2 leader records {len(lead['records'])} != record_count_new "
+                       f"{lead['record_count_new']}")
+    plan["revision2"] = plan2
+    return plan
+
+
+def apply_revision_texts(design: dict, plan: dict) -> dict:
+    """把改版的文案改写盖到设计上（就地改副本）：技能说明简化 + 两个 custom_ability_string。
+
+    设计文件属于上一轮、本轮不改，所以 build/gates 都先做这一步再往下走；每处都断言旧值与
+    plan 的 ``old`` 一致，设计漂了立刻停。"""
+    design = copy.deepcopy(design)
+    desc = plan["texts"][TEXT_PLAN_KEY]
+    text = design["text"]
+    for field in ("skill1_desc", "skill2_desc"):
+        if text[field] != desc["old"]:
+            raise KitError(f"design {field} != revision plan old text")
+        text[field] = desc["new"]
+    row = list(text["character_text_row"])
+    for col in (5, 7):
+        if row[col] != desc["old"]:
+            raise KitError(f"design character_text c{col} != revision plan old text")
+        row[col] = desc["new"]
+    text["character_text_row"] = row
+    for level in ("1", "2"):
+        inner = design["skills"]["action_skill_rows"][f"inner_{level}"]
+        if inner["1"] != desc["old"]:
+            raise KitError(f"design action_skill inner_{level} c1 != revision plan old text")
+        inner["1"] = desc["new"]
+    cas_plan = plan["texts"]["custom_ability_string"]
+    if sorted(cas_plan) != sorted(CAS_KEYS):
+        raise KitError(f"revision plan custom strings {sorted(cas_plan)} != {sorted(CAS_KEYS)}")
+    existing = {c["key"]: c for c in design["custom_strings"] if c["table"] == CAS}
+    if sorted(existing) != [CAS_KEY]:
+        raise KitError(f"design custom strings {sorted(existing)} != [{CAS_KEY}]")
+    if existing[CAS_KEY]["value"] != cas_plan[CAS_KEY]["old"]:
+        raise KitError("design custom_ability_string value != revision plan old text")
+    existing[CAS_KEY]["value"] = cas_plan[CAS_KEY]["new"]
+    if cas_plan[PF_CAS_KEY]["old"] is not None:
+        raise KitError("revision plan marks the PF string as pre-existing")
+    design["custom_strings"].append({"table": CAS, "key": PF_CAS_KEY, "value": cas_plan[PF_CAS_KEY]["new"],
+                                     "why": cas_plan[PF_CAS_KEY]["reason"]})
+    apply_revision2_texts(design, plan.get("revision2") or {})
+    problems = text_rule_problems(design)
+    if problems:
+        raise KitError("面板文案规则（作者 2026-09-16 晚补充）不通过：" + "；".join(problems))
+    return design
+
+
+def apply_revision2_texts(design: dict, plan2: dict) -> None:
+    """第二轮文案改写（就地改 design 副本）：每处都断言旧值＝第一轮改完的值，漂了立刻停。"""
+    for key, spec in ((plan2.get("texts") or {}).get("custom_ability_string") or {}).items():
+        entry = next((c for c in design["custom_strings"] if c["table"] == CAS and c["key"] == key), None)
+        if entry is None:
+            raise KitError(f"revision2 rewrites unknown custom_ability_string {key!r}")
+        if entry["value"] != spec["old"]:
+            raise KitError(f"custom_ability_string {key} = {entry['value']!r} != revision2 old text")
+        entry["value"] = spec["new"]
+        entry["why"] = spec["reason"]
+
+
+# ---- 面板文案规则（作者 2026-09-16 晚补充件，优先级高于此前任何写法）
+#   规则 1：没有上限就什么都不写——面板禁止出现「无上限」及其替代说法；有上限的才写上限。
+#   规则 2：能力里由 ChangeSkillFlag(536/704) 驱动的「强化技能效果」条目只写强化了什么，不写数值、不写秒数。
+# 客户端侧佐证：ui_string 里唯一的上限串是 ability_description_instant_trigger_limit_n_times
+#   =「（上限 ::count:: 次）」，trigger_limit 写 (None) 时什么都不渲染 ⇒ 规则 1 只约束我们自己写的文案。
+TEXT_RULE_BANNED = ("无上限", "无限叠加", "可无限", "上不封顶")
+SKILL_BOOST_CAS_KEYS = (CAS_KEY,)          # 536 ChangeSkillFlag 条目的文案键（629 的不算「技能强化」条目）
+
+
+def player_visible_texts(design: dict) -> dict[str, str]:
+    """玩家在客户端能看到的本角色文案全集（文案规则的检查面）。"""
+    text = design["text"]
+    out = {f"text.{k}": text[k] for k in ("name", "nickname", "profile", "leader_name",
+                                          "skill1_name", "skill1_desc", "skill2_name", "skill2_desc")}
+    for i, cell in enumerate(text["character_text_row"]):
+        out[f"character_text.c{i}"] = cell
+    for level in ("1", "2"):
+        out[f"action_skill.inner_{level}.c1"] = design["skills"]["action_skill_rows"][f"inner_{level}"]["1"]
+    for entry in design["custom_strings"]:
+        if entry["table"] == CAS:
+            out[f"custom_ability_string.{entry['key']}"] = entry["value"]
+    return out
+
+
+def text_rule_problems(design: dict) -> list[str]:
+    problems: list[str] = []
+    for where, value in player_visible_texts(design).items():
+        for banned in TEXT_RULE_BANNED:
+            if banned in str(value):
+                problems.append(f"规则1：{where} 含禁用词 {banned!r}（没有上限就写到效果为止）")
+    strings = {e["key"]: e["value"] for e in design["custom_strings"] if e["table"] == CAS}
+    for key in SKILL_BOOST_CAS_KEYS:
+        value = strings.get(key)
+        if value is None:
+            problems.append(f"规则2：缺少技能强化文案键 {key}")
+            continue
+        if any(ch.isdigit() for ch in value):
+            problems.append(f"规则2：{key} 含数字（技能强化条目只写强化了什么）：{value!r}")
+        if "秒" in value:
+            problems.append(f"规则2：{key} 含「秒」（技能强化条目不写持续时间）：{value!r}")
+    return problems
+
+
+def load_revised_design(root: Path) -> tuple[dict, dict]:
+    plan = load_revision(root)
+    return apply_revision_texts(load_design(root), plan), plan
 
 
 def _slv(a, b=None):
@@ -232,8 +422,19 @@ class _Donors:
 
 
 def replay_row(donors: _Donors, rec: dict, kind: str) -> list[str]:
-    """donor 行 + edits + copy_cells；断言 donor 原值（edits_before）与最终行（row_final）都和设计一致。"""
-    donor = donors.rows(rec["donor_source"], kind, rec["donor_key"])[rec["row_index"] - 1]
+    """donor 行 + edits + copy_cells；断言 donor 原值（edits_before）与最终行（row_final）都和设计一致。
+
+    ``row_index`` 写 ``"match_row_final"`` 时按内容在 donor 表里唯一定位（第一轮发布后自引用 donor 的
+    行序会随每次发布顺延，序号写死会越发越错；这类记录 edits 为空，donor 本就等于 row_final）。"""
+    table = donors.rows(rec["donor_source"], kind, rec["donor_key"])
+    if rec["row_index"] == MATCH_ROW_FINAL:
+        matches = [r for r in table if r == rec["row_final"]]
+        if len(matches) != 1:
+            raise KitError(f"{rec['donor']}: match_row_final found {len(matches)} rows in "
+                           f"{rec['donor_source']} {rec['donor_key']} (need exactly 1)")
+        donor = matches[0]
+    else:
+        donor = table[rec["row_index"] - 1]
     row = list(donor)
     width = 124 if kind == "leader_ability" else 126
     if len(row) != width:
@@ -250,40 +451,96 @@ def replay_row(donors: _Donors, rec: dict, kind: str) -> list[str]:
     return row
 
 
-def design_rows(ctx, design: dict) -> dict[str, Any]:
+MATCH_ROW_FINAL = "match_row_final"
+
+
+def _revision_record(rec: dict) -> dict:
+    """plan 的记录形状 → ``replay_row`` 认的形状（plan 用 ``*_on_donor`` 后缀强调这是「对 donor 的改」）。"""
+    return dict(rec, edits_before=rec.get("edits_before_on_donor") or {},
+                edits=rec.get("edits_on_donor") or {})
+
+
+def apply_donor_retargets(plan: dict, retargets: list[dict]) -> None:
+    """就地重锚第一轮施工单里指向 **live 上本角色自己** 的 donor。
+
+    第一轮已在 1.4.878 发布，那些 donor 现在读到的是第一轮的产物：行序顺延、``edits_before``
+    （改动前的值）必然对不上。这里只改「去哪儿取 donor / donor 当前长什么样」，不改 ``row_final``；
+    ``replay_row`` 仍然逐格比对 ``row_final``，锚错照样红。"""
+    for spec in retargets:
+        table = spec["table"]
+        if table == LEADER:
+            records = plan["tables"][LEADER]["records"]
+        elif table == ABILITY:
+            records = plan["tables"][ABILITY]["keys"][spec["key"]]["records"]
+        else:
+            raise KitError(f"donor retarget on unknown table {table!r}")
+        rec = next((r for r in records if r["id"] == spec["record_id"]), None)
+        if rec is None:
+            raise KitError(f"donor retarget names unknown record {spec['record_id']!r}")
+        if "row_index_new" in spec:
+            if rec["row_index"] != spec["row_index_old"]:
+                raise KitError(f"{spec['record_id']}: row_index {rec['row_index']} != retarget old "
+                               f"{spec['row_index_old']}")
+            rec["row_index"] = spec["row_index_new"]
+        if "edits_before_on_donor_new" in spec:
+            if rec.get("edits_before_on_donor") != spec["edits_before_on_donor_old"]:
+                raise KitError(f"{spec['record_id']}: edits_before drifted from retarget old value")
+            rec["edits_before_on_donor"] = spec["edits_before_on_donor_new"]
+
+
+def revision_rows(ctx, plan: dict) -> dict[str, Any]:
+    """按改版施工单回放 21 行（队长 6 + 词条 15）：donor 行 + 列级 edits，逐格对齐 plan 的 ``row_final``。
+
+    与上一轮 ``design_rows`` 的差别：真源换成 revision plan；槽 4 第 1 条已经是 live 上线的 F1/507 行
+    （donor 就是它自己），不再需要 ``SLOT4_OVERRIDE`` 分支。"""
     donors = _Donors(ctx)
-    leader = [replay_row(donors, rec, "leader_ability") for rec in design["leader"]]
+    lead = plan["tables"][LEADER]
+    if lead["key"] != CID or not lead["replace_whole_key"]:
+        raise KitError("revision plan leader table does not replace the whole key")
+    leader = [replay_row(donors, _revision_record(rec), "leader_ability") for rec in lead["records"]]
+    if len(leader) != lead["record_count_new"] or len(leader) > RECORD_SANITY_CAP["leader_ability"]:
+        raise KitError(f"leader record count {len(leader)} != plan record_count_new "
+                       f"{lead['record_count_new']}（或超出安全上限 "
+                       f"{RECORD_SANITY_CAP['leader_ability']}）")
+    keys = plan["tables"][ABILITY]["keys"]
+    if sorted(keys) != list(KIT_TABLE_KEYS[ABILITY]):
+        raise KitError(f"revision plan ability keys {sorted(keys)} != {list(KIT_TABLE_KEYS[ABILITY])}")
     abilities: dict[str, list[list[str]]] = {}
     records: list[dict] = []
     for slot in range(1, 7):
         key = f"{CID}{slot}"
-        rows = []
-        for rec in design["abilities"][f"slot{slot}"]:
-            if rec["key"] != key:
-                raise KitError(f"design slot{slot} key {rec['key']} != {key}")
-            used, override = rec, None
-            if slot == 4 and rec["record"] == 1:
-                used = design["fallbacks"][SLOT4_OVERRIDE]
-                if (used["key"], used["record"]) != (key, 1):
-                    raise KitError("F1 fallback does not target slot4 record1")
-                override = SLOT4_OVERRIDE
-            row = replay_row(donors, used, "ability")
-            rows.append(row)
-            records.append({"key": key, "record": rec["record"], "donor": used["donor"],
-                            "intent": used["intent"], "override": override,
-                            "replaced_design_row": rec["donor"] if override else None})
-        head = design["abilities"][f"slot{slot}"][0]
-        if (rows[0][1], rows[0][2]) != (head["unisonable_effective"], head["statue_group_effective"]):
-            raise KitError(f"slot{slot} record0 unisonable/statue group drifted")
+        entry = keys[key]
+        rows = [replay_row(donors, _revision_record(rec), "ability") for rec in entry["records"]]
+        if len(rows) != entry["record_count_new"] or not 1 <= len(rows) <= RECORD_SANITY_CAP["ability"]:
+            raise KitError(f"{key}: record count {len(rows)} != plan record_count_new "
+                           f"{entry['record_count_new']}（或超出安全上限 "
+                           f"{RECORD_SANITY_CAP['ability']}）")
+        if (rows[0][1], rows[0][2]) != (entry["unisonable_c1"], entry["statue_group_c2"]):
+            raise KitError(f"{key} record1 unisonable/statue group != plan "
+                           f"({rows[0][1]}/{rows[0][2]} vs {entry['unisonable_c1']}/{entry['statue_group_c2']})")
+        for i, row in enumerate(rows[1:], 2):      # 一键内 c1/c2 必须一致，否则客户端按首条读、其余静默失效
+            if (row[1], row[2]) != (rows[0][1], rows[0][2]):
+                raise KitError(f"{key} record{i} c1/c2 {row[1]}/{row[2]} differs from record1")
         abilities[key] = rows
-    if sum(len(v) for v in abilities.values()) != design["ability_record_count"]:
-        raise KitError("ability record count differs from design")
-    return {"leader": leader, "abilities": abilities, "records": records}
+        records += [{"key": key, "record": i, "id": rec["id"], "donor": rec["donor"], "intent": rec["intent"]}
+                    for i, rec in enumerate(entry["records"], 1)]
+    if sum(len(v) for v in abilities.values()) != sum(k["record_count_new"] for k in keys.values()):
+        raise KitError("ability record count differs from revision plan")
+    return {"leader": leader, "abilities": abilities, "records": records,
+            "leader_records": [{"record": i, "id": r["id"], "donor": r["donor"], "intent": r["intent"]}
+                               for i, r in enumerate(lead["records"], 1)]}
 
 
 def _block(kind: str) -> dict[str, int]:
     import wf_describe
     return {k: int(v) for k, v in wf_describe.layout(kind)["blocks"].items()}
+
+
+# 记录数安全上限：**不是客户端上限**。客户端 MasterArray/AbilityLogic 全量遍历一键内所有记录，
+# 没有行数硬上限（记忆卡 wf-ability-multirecord-rows 2026-08-26 纠偏；杰拉德 149999 的 9 行队长技已真机验证）。
+# live 实测每键最大记录数：leader 15（169980）、ability 14（1699951/1499501）；官方基线 leader 最大 8。
+# 这里只作「施工单写出离谱行数」的兜底，真正的记录数判据是 plan 的 record_count_new。
+RECORD_SANITY_CAP = {"leader_ability": 20, "ability": 20}
 
 
 PULLER_EMPTY_DURING = frozenset({"4", "30", "31", "136", "209"})
@@ -431,6 +688,131 @@ def compose_tree(A: list, B: list, level: int) -> list:
     w28[0][3][1].append(["Event", ["Wait", 25, "*", ["Block", [ret]]]])   # 归还演出挪到 t=116
     w19[3][1][0] = sub
     return T
+
+
+def _combo_branch(cna: list) -> list:
+    """把一条 ``CreateNormalAttack`` 包进 ``ConditionalsChangeSkillFlag(1)``：
+    then 支是开了 ``#8 enablesComboBonus`` 的副本（伤害 ×(1+连击×0.005)，NormalAttackCalculator.as:42/319-321），
+    else 支是原件。两支都是非空 Block，禁裸 ``["DoNothing"]``（F1009）。"""
+    boosted = copy.deepcopy(cna)
+    if boosted[8] is not False:
+        raise KitError(f"CreateNormalAttack#8 already {boosted[8]!r}, expected False")
+    boosted[8] = True
+    return ["Command", ["ConditionalsChangeSkillFlag", 1,
+                        ["Block", [["Command", boosted]]],
+                        ["Block", [["Command", cna]]]]]
+
+
+def revise_tree(tree: list, level: int, plan: dict) -> list:
+    """改版 delta（plan ``skill_dsl.delta_steps`` 1–4）：三处新倍率 + 三处连击加成开关分支。
+
+    落地连斩那处已经有一个 ``ConditionalsChangeSkillFlag(1)``（抗性降低强化），把伤害并进同一分支，
+    保持「先伤害、后挂减益」顺序；横斩与一刀两断各自新包一层。改完全树共 3 个开关分支。"""
+    program = DONOR_PROGRAM.format(code=CODE, level=level)
+    mult = plan["skill_dsl"]["programs"][program]["multipliers"]
+    if sorted(mult) != sorted(name for _bind, name in REVISION_MULT_SLOTS):
+        raise KitError(f"revision multipliers {sorted(mult)} unexpected")
+    areas = {}
+    for bind, name in REVISION_MULT_SLOTS:
+        area = _one(tree, "CreateHitArea", lambda a, b=bind: a[19] == b)
+        cna = _one(area[23], "CreateNormalAttack")
+        want_old = _slv(*mult[name]["old"])
+        if cna[6] != want_old:
+            raise KitError(f"{name}: composed multiplier {cna[6]} != plan old {want_old}")
+        cna[6] = _slv(*mult[name]["new"])
+        areas[name] = (area, cna)
+
+    # 落地连斩：与既有抗性降低分支合并
+    land, cna_land = areas["落地连斩(每段,共4段)"]
+    onhit = land[23][1]
+    idx_cna = [i for i, n in enumerate(onhit) if n[0] == "Command" and n[1] is cna_land]
+    idx_flag = [i for i, n in enumerate(onhit) if n[0] == "Command" and isinstance(n[1], list)
+                and n[1][0] == "ConditionalsChangeSkillFlag"]
+    if len(idx_cna) != 1 or len(idx_flag) != 1 or idx_cna[0] >= idx_flag[0]:
+        raise KitError(f"landing onHit layout unexpected: attack@{idx_cna} flag@{idx_flag}")
+    flag = onhit[idx_flag[0]][1]
+    boosted = copy.deepcopy(cna_land)
+    if boosted[8] is not False:
+        raise KitError("landing CreateNormalAttack#8 already true")
+    boosted[8] = True
+    flag[2][1].insert(0, ["Command", boosted])       # then：先打（带连击加成的）伤害，再挂强化减益
+    flag[3][1].insert(0, ["Command", cna_land])      # else：原伤害 + 原减益
+    onhit.pop(idx_cna[0])
+
+    # 横斩 / 一刀两断：各自新包一层
+    for name in ("横斩", "一刀两断"):
+        area, cna = areas[name]
+        block = area[23][1]
+        hits = [i for i, n in enumerate(block) if n[0] == "Command" and n[1] is cna]
+        if len(hits) != 1:
+            raise KitError(f"{name}: CreateNormalAttack not a direct child of onHit block")
+        block[hits[0]] = _combo_branch(cna)
+    return tree
+
+
+def build_pf_action_tree(root: Path, plan: dict) -> list:
+    """能力1#3 的 629 ``InvokeSkill`` 动作树：官方剑士 PF Lv3 判定区整块。
+
+    去掉两条 PF 上下文专用命令（``SetPowerFilpSuppress`` 会压掉玩家真正的拍板；
+    ``NotifyPowerflipEnd`` 在非 PF 上下文不计数，ActionEvaluator.as:5064-5078），
+    元素 255→光、开 ``#8 enablesComboBonus``；根头 ``tree[10]=0`` 保持自动档
+    （629 的 ActionKind=AbilitySkill(4)，自动档即技能伤害）。母本缺席时退回 plan 里的成树。"""
+    spec = plan["skill_dsl"]["new_program"]
+    donor = root / PF_DONOR_REL
+    if donor.is_file():
+        knight = json.loads(donor.read_text(encoding="utf-8"))
+        body = copy.deepcopy(knight[11][1])
+        if _cmd(body[0])[0] != "SetPowerFilpSuppress":
+            raise KitError("knight_lv3 body[0] is not SetPowerFilpSuppress")
+        tail = _cmd(body[2])
+        if not (tail[0] == "Wait" and _cmd(tail[3][1][0])[0] == "NotifyPowerflipEnd"):
+            raise KitError("knight_lv3 body[2] is not Wait→NotifyPowerflipEnd")
+        hit = copy.deepcopy(body[1])                 # 只留 CreateHitArea 整块
+        cna = _one(hit[1][23], "CreateNormalAttack")
+        if not (cna[2] == 255 and cna[8] is False):
+            raise KitError(f"knight_lv3 attack drifted: element={cna[2]} comboBonus={cna[8]}")
+        cna[2] = ELEMENT + 1                         # 光（DSL 元素码 = 内部 + 1）
+        cna[8] = True
+        tree = ["ActionDsl", 1, ["None"], False, False, False, False, False, False, False, 0, ["Block", [hit]]]
+    else:
+        tree = copy.deepcopy(spec["tree"])
+    if tree != spec["tree"]:
+        raise KitError("PF tree rebuilt from knight_lv3 differs from revision plan new_program.tree")
+    return tree
+
+
+def revision_reference_trees(root: Path) -> dict[Any, Any] | None:
+    """设计阶段探针 ``dsl_validated.json`` 里的三棵树（特效改写前），用作逐节点回归基准。"""
+    path = root / REVISION_DSL_REL
+    if not path.is_file():
+        return None
+    data = json.loads(path.read_text(encoding="utf-8"))
+    trees = {entry["level"]: entry["tree"] for entry in data["skill"]}
+    trees[PF_LEVEL] = data["pf"]["tree"]
+    return trees
+
+
+def official_effect_dir_map() -> dict[str, str]:
+    """包内克隆特效目录 → 官方源目录（``rewrite_effect_refs`` 是纯路径段替换，可逐字还原）。"""
+    return {f"battle/effect/skill_unique/{CODE}_{fam['subdir']}/": fam["src_dir"] + "/" for fam in FAMILIES}
+
+
+def unrewrite_effect_refs(tree):
+    """把包内树的特效引用还原成官方路径，便于与 ``dsl_validated.json`` 的改版树逐节点比对。"""
+    mapping = official_effect_dir_map()
+
+    def rec(node):
+        if isinstance(node, str):
+            for dst, src in mapping.items():
+                if node.startswith(dst):
+                    return src + node[len(dst):]
+            return node
+        if isinstance(node, list):
+            return [rec(x) for x in node]
+        if isinstance(node, dict):
+            return {k: rec(v) for k, v in node.items()}
+        return node
+    return rec(tree)
 
 
 def _kind_of(v) -> str:
@@ -587,17 +969,25 @@ def lookup_scope_problems(tree) -> list[str]:
     return probs
 
 
-def dsl_gates(tree, raw: bytes, level: int, root: Path) -> dict[str, Any]:
+# 改版后各树的根头与开关分支数：技能两档 movementPriority=2（含 StopBall）、3 个连击加成分支；
+# 629 PF 树沿用官方 knight_lv3 的 movementPriority=1，没有开关分支。buffTargetAs（tree[10]）一律 0=自动档。
+TREE_SHAPE = {1: {"movement_priority": 2, "flags": 3}, 2: {"movement_priority": 2, "flags": 3},
+              PF_LEVEL: {"movement_priority": 1, "flags": 0}}
+
+
+def dsl_gates(tree, raw: bytes, level, root: Path) -> dict[str, Any]:
     import wf_client_legality as L
     import wf_dsl
+    shape = TREE_SHAPE[level]
     enc = wf_dsl.encode_amf3(tree)
     back = wf_dsl.parse_dsl(zlib.decompress(raw, -15))["tree"]
     sig_path = root / OFFICIAL_SIG_REL
     official_sig = json.loads(sig_path.read_text(encoding="utf-8")) if sig_path.is_file() else None
     strings = [s for s in _iter_strings(tree)]
     extra = []
-    if not (tree[0] == "ActionDsl" and tree[1] == 2 and tree[10] == 0):
-        extra.append(f"root header movementPriority/buffTargetAs = {tree[1]}/{tree[10]} (want 2/0)")
+    if not (tree[0] == "ActionDsl" and tree[1] == shape["movement_priority"] and tree[10] == 0):
+        extra.append(f"root header movementPriority/buffTargetAs = {tree[1]}/{tree[10]} "
+                     f"(want {shape['movement_priority']}/0)")
     if isinstance(tree, dict):
         extra.append("wrapper dict instead of bare tree")
     if any(s.startswith("battle/effect/enemy") for s in strings):
@@ -606,8 +996,16 @@ def dsl_gates(tree, raw: bytes, level: int, root: Path) -> dict[str, Any]:
            if not _is_iftargetnotfound_slot(tree, n)):
         extra.append("bare ['DoNothing'] outside IfTargetNotFound slot (F1009)")
     flags = _find_cmds(tree, "ConditionalsChangeSkillFlag")
-    if len(flags) != 1 or flags[0][1] != 1:
-        extra.append(f"expected one ConditionalsChangeSkillFlag(1), got {len(flags)}")
+    if len(flags) != shape["flags"] or any(f[1] != 1 for f in flags):
+        extra.append(f"expected {shape['flags']} ConditionalsChangeSkillFlag(1), got "
+                     f"{[f[1] for f in flags]}")
+    for i, flag in enumerate(flags):               # 每支都得是非空 Block；then 开连击加成、else 不开
+        if [b[0] for b in flag[2:4]] != ["Block", "Block"] or not (flag[2][1] and flag[3][1]):
+            extra.append(f"ConditionalsChangeSkillFlag#{i} branch is not a non-empty Block")
+            continue
+        combo = [[a[8] for a in _find_cmds(branch, "CreateNormalAttack")] for branch in flag[2:4]]
+        if combo != [[True], [False]]:
+            extra.append(f"ConditionalsChangeSkillFlag#{i} enablesComboBonus then/else = {combo} (want [[True],[False]])")
     return {
         "level": level,
         "roundtrip_equal": back == tree and wf_dsl.parse_dsl(enc)["tree"] == tree,
@@ -1307,7 +1705,7 @@ def build(ctx) -> dict[str, Any]:
         raise KitError(f"spec identity mismatch: {spec.cid_s} {spec.code}")
     if spec.identity != int(CID):
         raise KitError(f"c27 identity {spec.identity} != self cid (roster c27_policy)")
-    design = load_design(root)
+    design, plan = load_revised_design(root)      # 设计文件 + 改版 20260916 文案改写
     text = design["text"]
     want_texts = {"name": text["name"], "furigana": text["name_en"], "title": text["nickname"],
                   "profile": text["profile"], "leader": text["leader_name"], "skill1": text["skill1_name"],
@@ -1317,11 +1715,11 @@ def build(ctx) -> dict[str, Any]:
         raise KitError("TEXTS drifted from design text section (or spec did not merge TEXTS)")
     notes: list[str] = []
 
-    # ---- 1. 词条 / 队长（donor 回放 + 主控覆盖 F1）
-    rows = design_rows(ctx, design)
+    # ---- 1. 词条 / 队长（改版施工单逐行 donor 回放）
+    rows = revision_rows(ctx, plan)
     cas_text = {c["key"]: c["value"] for c in design["custom_strings"] if c["table"] == CAS}
-    if set(cas_text) != {CAS_KEY}:
-        raise KitError(f"design custom strings {sorted(cas_text)} != {{{CAS_KEY}}}")
+    if sorted(cas_text) != sorted(CAS_KEYS):
+        raise KitError(f"custom strings {sorted(cas_text)} != {sorted(CAS_KEYS)}")
     row_gates = {"leader_ability": [row_gate("leader_ability", r, set(cas_text)) for r in rows["leader"]],
                  "ability": {k: [row_gate("ability", r, set(cas_text)) for r in v]
                              for k, v in rows["abilities"].items()}}
@@ -1332,7 +1730,7 @@ def build(ctx) -> dict[str, Any]:
                        + json.dumps(row_gates, ensure_ascii=False)[:1500])
     ctx.write_flat(ABILITY, rows["abilities"])
     ctx.write_flat(LEADER, {CID: rows["leader"]})
-    ctx.write_flat(CAS, {CAS_KEY: [[cas_text[CAS_KEY]]]})
+    ctx.write_flat(CAS, {key: [[cas_text[key]]] for key in CAS_KEYS})
 
     # ---- 2. upskill / stance_detail 显式行（照 131044，黄→白）
     explicit = design["identity"]["explicit_rows"]
@@ -1457,9 +1855,10 @@ def build(ctx) -> dict[str, Any]:
     sounds[0]["path"] = SE_TO
     ctx.write_asset(hit_root, hit_logical, ctx.amf_bytes(hit_tree), owner="kit")
 
-    # ---- 6. 两棵技能树（官方基线拼装 → 特效重定向 → 与设计提案逐节点对照 → 门禁 → 落包）
+    # ---- 6. 三棵树：两档技能（官方基线拼装 → 改版 delta → 特效重定向）+ 629 剑 PF（官方 knight_lv3）
     trees: dict[str, Any] = {}
     dsl_report: dict[str, Any] = {}
+    reference_trees = revision_reference_trees(root)
     for level in (1, 2):
         donors = {}
         for code in (D2_CODE, D1_CODE):
@@ -1472,24 +1871,48 @@ def build(ctx) -> dict[str, Any]:
             if _sha(official) != _sha(live):
                 notes.append(f"donor DSL {logical} live != official; official used")
             donors[code] = ctx.amf_parse(official)
-        tree = compose_tree(donors[D2_CODE], donors[D1_CODE], level)
+        base = compose_tree(donors[D2_CODE], donors[D1_CODE], level)
+        proposal_path = root / PROPOSAL_REL.format(level=level)
+        proposal_equal = None
+        if proposal_path.is_file():                  # 上一轮提案（特效改写后）：compose_tree 未漂移的回归基准
+            rewritten = copy.deepcopy(base)
+            for fam_id in ("S2_kanbai", "S1_ittou"):
+                rewritten, _r = ctx.rewrite_effect_refs(rewritten, families[fam_id], strict=True)
+            proposal_equal = json.loads(proposal_path.read_text(encoding="utf-8")) == rewritten
+            if not proposal_equal:
+                raise KitError(f"composed tree {level} differs from design proposal_tree_{level}.json "
+                               "(改版 delta 之前就已漂移)")
+        tree = revise_tree(base, level, plan)
+        revision_equal = None
+        if reference_trees is not None:              # 改版探针树（特效改写前）：逐节点比对
+            revision_equal = reference_trees[level] == tree
+            if not revision_equal:
+                raise KitError(f"revised tree {level} differs from revision dsl_validated.json")
         refs = {}
         for fam_id in ("S2_kanbai", "S1_ittou"):
             tree, refs[fam_id] = ctx.rewrite_effect_refs(tree, families[fam_id], strict=True)
-        proposal_path = root / PROPOSAL_REL.format(level=level)
-        proposal_equal = (json.loads(proposal_path.read_text(encoding="utf-8")) == tree
-                          if proposal_path.is_file() else None)
-        if proposal_equal is False:
-            raise KitError(f"composed tree {level} differs from design proposal_tree_{level}.json")
         raw = ctx.amf_bytes(tree)
         gate = dsl_gates(tree, raw, level, root)
         gate["effect_refs"] = refs
         gate["design_proposal_equal"] = proposal_equal
+        gate["revision_reference_equal"] = revision_equal
         if _dsl_gate_failed(gate):
             raise KitError(f"skill tree {level} gates failed: " + json.dumps(gate, ensure_ascii=False)[:1500])
         logical = ctx.write_dsl(ctx.program_path(str(level)), tree)
         trees[logical] = tree
         dsl_report[logical] = gate
+
+    # 改版新增：能力1#3 的 629 剑 PF 动作树（官方特效路径，不随角色克隆）
+    pf = build_pf_action_tree(root, plan)
+    pf_gate = dsl_gates(pf, ctx.amf_bytes(pf), PF_LEVEL, root)
+    pf_gate["revision_reference_equal"] = None if reference_trees is None else reference_trees[PF_LEVEL] == pf
+    if pf_gate["revision_reference_equal"] is False:
+        raise KitError("PF tree differs from revision dsl_validated.json")
+    if _dsl_gate_failed(pf_gate):
+        raise KitError("PF tree gates failed: " + json.dumps(pf_gate, ensure_ascii=False)[:1500])
+    pf_logical = ctx.write_dsl(PF_PROGRAM, pf)
+    trees[pf_logical] = pf
+    dsl_report[pf_logical] = pf_gate
 
     effect_refs = effect_reference_problems(ctx, trees)
     se_checks = [c for fam in families.values() for c in timeline_se_problems(ctx, fam)]
@@ -1510,7 +1933,7 @@ def build(ctx) -> dict[str, Any]:
     unclaimed = []
     for claim in ctx.pack.load_claims():
         if claim["logical_path"] == CAS:
-            stray = [k for k in claim["outer_keys"] if k != CAS_KEY]
+            stray = [k for k in claim["outer_keys"] if k not in CAS_KEYS]
             if stray:
                 ctx.unclaim(CAS, stray)
                 unclaimed.append({"table": CAS, "keys": stray})
@@ -1556,14 +1979,45 @@ def build(ctx) -> dict[str, Any]:
         for i, g in enumerate(gs):
             panel.append(f"词条 {key}#{i + 1}：{g['describe']}")
     notes += [
-        "主控覆盖：槽4 第1条 112（零先例）→ 退路 F1 507「自身 光属性抗性降低中的敌人 攻击特攻 60%→120%」；"
-        "112 行与金丝雀①比值 A/B 不再适用，F2(694) 未启用。",
+        "改版 20260916：行清单真源是 revision-20260916/zantetsu/plan.json（第一轮，已在 1.4.878 上线）"
+        " + revision2-20260916/zantetsu/plan2.json（第二轮增量：新增 1 条队长行 + 文案改写）"
+        "⇒ 队长 8 条、词条 15 条；槽4 第1条仍是上线中的 F1/507 行"
+        f"（donor=live {CID}4#1，无改动）。",
+        "第二轮新增队长 L7：光共鸣 + instant_trigger 141 SkillGauge（puller 0、阈值 ≥1、上限 20 次、CT 0）"
+        "→ 自身 技能伤害 25%→50%，满级累计 20×50% = 1000%（作者原话「最大 1000%」；面板由客户端渲染成"
+        "「（上限 20 次）」+ 当前等级单值）。触发形沿用本角色能力3 第1条已上线的 141。"
+        "先例：官方队长表 141 零行、live 队长表 1 行（139997#9，已上线并经作者试玩）；"
+        "官方词条 2110036#1 就是「技能槽≥1(限12次) → 自身 技能伤害」逐格同义（只差表列位）。"
+        "语义实锤：InstantAbilityTriggerMasterValueTools case 141 → CharacterCount(puller,10,阈值)，"
+        "计数器 10 只由 MemberImpl._addSkillPoint 的 countUp(_,10,1,true) 递增（能力/效果/DSL 给的技能槽），"
+        "普通弹射充能走 MemberImpl 里的 skillPoint.add 不计数 ⇒ 不会被每次命中刷爆。"
+        "退路：真机若不触发，把同一行搬进词条槽 3（该键已有一条 141 在线），按 leader→ability 列位重排。",
+        "第一轮发布后 3 条自引用 live 的 donor 已重锚（revision2 的 donor_retargets）："
+        "队长 Fever 行改成按内容定位（每发一次都会顺延一位，写死序号越发越错）、"
+        "能力6 两条的 edits_before 改成当前 live 实际值（donor 现在就是第一轮的产物）；"
+        "row_final 逐格比对不变，锚错照样红。",
+        "「随移动剧烈增加」实现为队长 L1/L2 的连击成长形 instant_trigger 12 Combo（每 30 连击、限 10 次、"
+        "累计 +330% 攻击力 / +400% 技能伤害）：连击是本作里唯一可读的「移动剧烈程度」量表，"
+        "客户端 ThresholdComboListener.update 每跨过一个阈值倍数就触发一次；live 队长表同形 27 行。"
+        "引擎没有任何真正的移动量读数（DuringBattleAbilityThresholdKind / CharacterFloatParameterKind / "
+        "BattleFloatParameterKind 三张量表均无 Distance/Move 项，92 SpeedUp 官方+live 全表 0 行）。"
+        "复审修正：上一版把这两条做成 during_trigger 30（贯穿状态门）的定额提升，开局与技能间隙为 0，已推翻。",
+        "队长 L8（第二轮之前是 L7）= live 已上线的「Fever 中 → 赋予全队(光) 技能伤害 100%」原样保留"
+        "（edits 为空、按内容定位）：上一版以「客户端队长表上限 6 条」为由删掉它，该上限是伪约束"
+        "（live 每键实测最大 15 条、官方最大 8 条），作者本轮也没有要求删除 Fever 轴。",
+        "面板文案规则（作者 2026-09-16 晚补充）：① 没有上限的成长不写「无上限」——本角色玩家可见文案里"
+        "该词出现 0 次（能力3 的三条 250 连击行、能力6 第1条限次写 (None)，客户端在 trigger_limit=(None) 时"
+        "什么都不渲染，ui_string 只有 ability_description_instant_trigger_limit_n_times 一个上限串）；"
+        "② 技能强化条目不写数字与秒——change_skill 文案改成「强化『超振动斩铁剑·寒梅一闪』的威力与"
+        "「光属性抗性降低效果」」。两条都有 kit 门禁 text_rule_problems + 阴性对照测试。",
+        "629 剑 PF 只把当前连击换算进伤害（CreateNormalAttack#8 enablesComboBonus，×(1+连击×0.005)），"
+        "不消耗/清零连击：DSL 命令白名单里没有任何消耗连击的命令，真正的拍板才会 comboCalculator.expire()。",
         "一刀两断「RP1 为原点的 RP 再移动」是零先例组合（设计金丝雀②），退路=CRP8 node[1] 1→-18、node[4] 300→0。",
         "custom_ability_power_up_string 未写：客户端缺键按等级 1 处理不崩（CustomAbilityPowerUpStringTools），设计未要求。",
         "静态门禁 ≠ 真机验收。",
     ]
     report = {
-        "summary": "斩铁·白梅 kit：18 行（12 词条+6 队长，槽4#1 按主控覆盖用 F1/507）、两棵拼装技能树、"
+        "summary": "斩铁·白梅 kit（改版 20260916 两轮）：23 行（15 词条+8 队长）、两棵拼装技能树 + 1 棵 629 剑 PF 树、"
                    "两族特效克隆（染色 sheet 存储态）、语音路由、预览 420 帧；像素小人 "
                    + ("已装包" if pixel["status"] == "installed" else "pending")
                    + "；AI 语音 " + ("已装包" if voice["packed"] else "pending"),
@@ -1612,12 +2066,13 @@ def run_gates() -> dict[str, Any]:
             for i, g in enumerate(gs):
                 if _row_gate_failed(g):
                     failures.append(f"{kind} {key}#L{i}: row gate")
-    design = load_design(root)
-    expected = design_rows(ctx, design)
+    design, plan = load_revised_design(root)
+    expected = revision_rows(ctx, plan)
     if [list(r) for r in leader_rows] != expected["leader"] or {k: [list(r) for r in v] for k, v in ability_rows.items()} != expected["abilities"]:
-        failures.append("package ability/leader rows differ from design replay (with F1 override)")
-    if CAS_KEY not in cas_keys:
-        failures.append(f"{CAS_KEY} missing from package custom_ability_string")
+        failures.append("package ability/leader rows differ from revision plan replay")
+    for key in CAS_KEYS:
+        if key not in cas_keys:
+            failures.append(f"{key} missing from package custom_ability_string")
 
     row_caps = sorted({c for table in rows.values() for gs in table.values() for g in gs
                        for c in g["required_client_capabilities"]})
@@ -1625,22 +2080,27 @@ def run_gates() -> dict[str, Any]:
     manifest_caps = sorted(manifest.get("required_capabilities") or [])
     if row_caps != manifest_caps:
         failures.append(f"manifest required_capabilities {manifest_caps} != row patch kinds {row_caps}")
-    cas_caps = sorted({c for k in cas_keys if k in (CAS_KEY,) for c in L.required_client_capabilities(L.CUSTOM_ABILITY_STRING_KIND, [k])})
+    cas_caps = sorted({c for k in cas_keys if k in CAS_KEYS for c in L.required_client_capabilities(L.CUSTOM_ABILITY_STRING_KIND, [k])})
     if cas_caps:
         failures.append(f"custom_ability_string keys need panel capability {cas_caps}")
 
     dsl = {}
     trees = {}
-    for level in (1, 2):
-        logical = C.wf_dsl.dsl_logical(ctx.program_path(str(level)))
+    reference_trees = revision_reference_trees(root)
+    for level in (1, 2, PF_LEVEL):
+        program = PF_PROGRAM if level == PF_LEVEL else ctx.program_path(str(level))
+        logical = C.wf_dsl.dsl_logical(program)
+        if not pack.pkg_has("common", logical):
+            failures.append(f"package lacks DSL program {program}")
+            continue
         raw = pack.pkg_path("common", logical).read_bytes()
         tree = C.amf_parse(raw)
         gate = dsl_gates(tree, raw, level, root)
-        proposal_path = root / PROPOSAL_REL.format(level=level)
-        if proposal_path.is_file():
-            gate["design_proposal_equal"] = json.loads(proposal_path.read_text(encoding="utf-8")) == tree
-            if not gate["design_proposal_equal"]:
-                failures.append(f"tree {level} differs from design proposal")
+        if reference_trees is not None:
+            # 包内树的特效引用已重定向到克隆目录；逐字还原成官方路径后与改版探针树逐节点比对
+            gate["revision_reference_equal"] = reference_trees[level] == unrewrite_effect_refs(tree)
+            if not gate["revision_reference_equal"]:
+                failures.append(f"tree {level} differs from revision dsl_validated.json")
         if _dsl_gate_failed(gate):
             failures.append(f"tree {level}: dsl gate")
         dsl[logical] = gate
@@ -1690,8 +2150,21 @@ def run_gates() -> dict[str, Any]:
         failures.append("server cdndata/character.json mirror != package character row (sync_character_mirrors)")
     if pack.pkg_flat(UPSKILL).get(CID) != design["identity"]["explicit_rows"][UPSKILL]["value"]:
         failures.append("upskill row != design")
-    if C.csv_split(pack.pkg_flat(CAS).get(CAS_KEY, "")) != [[next(c["value"] for c in design["custom_strings"])]]:
-        failures.append("custom_ability_string text != design")
+    want_cas = {c["key"]: c["value"] for c in design["custom_strings"] if c["table"] == CAS}
+    for key in CAS_KEYS:
+        if C.csv_split(pack.pkg_flat(CAS).get(key, "")) != [[want_cas[key]]]:
+            failures.append(f"custom_ability_string {key} text != revision plan")
+    # 面板文案规则（作者 2026-09-16 晚补充）：按**包内实际文案**复查，而不是只查 design
+    pkg_design = copy.deepcopy(design)
+    pkg_cas = pack.pkg_flat(CAS)
+    for entry in pkg_design["custom_strings"]:
+        if entry["table"] == CAS and entry["key"] in pkg_cas:
+            entry["value"] = C.csv_split(pkg_cas[entry["key"]])[0][0]
+    pkg_design["text"] = dict(pkg_design["text"], character_text_row=list(pack.pkg_character_text_row()))
+    text_rules = {"problems": text_rule_problems(pkg_design), "banned_words": list(TEXT_RULE_BANNED),
+                  "texts": player_visible_texts(pkg_design)}
+    for problem in text_rules["problems"]:
+        failures.append(f"panel text rules: {problem}")
     claims = {(c["root"], c["logical_path"]): c for c in pack.load_claims()}
     for logical, keys in KIT_TABLE_KEYS.items():
         claim = claims.get(("common", logical))
@@ -1734,8 +2207,12 @@ def run_gates() -> dict[str, Any]:
     if mr.get("problems") != [] or mr.get("missing") not in ([], None):
         failures.append(f"inspect master_reference problems={mr.get('problems')} missing={mr.get('missing')}")
     pre = summary.get("preflight") or {}
+    # 批次级 live 漂移（别家键的共享表影子）在这里就地重算，不信 inspect 写下的旧字段。
+    drift = foreign_shadow_conflicts(pack, summary) if summary else {"batch_live_drift_only": False,
+                                                                     "checks": {"inspect_evidence_present": False}}
+    flow["foreign_shadow_conflicts"] = drift
     if not (summary.get("structurally_ready") and pre.get("can_prepare") and pre.get("conflicts") == []):
-        failures.append("inspect: flow preflight not structurally ready")
+        failures.append(INSPECT_NOT_READY)
     report_status = pack.read_evidence("status.json", None)
     manifest_report = pack.read_evidence("manifest_report.json", {}) or {}
     if manifest_report.get("validate_manifest") or any((manifest_report.get("reconcile") or {}).values()):
@@ -1756,13 +2233,24 @@ def run_gates() -> dict[str, Any]:
             fingerprint_changes = fingerprint_part_changes(kit_gates["kit_fingerprint_parts"], fingerprint_parts)
         failures.append("package kit outputs changed since last kit build (rerun --step kit)"
                         + (f": {fingerprint_changes}" if fingerprint_changes else ""))
+    # 唯一可延后的红项：批次级 live 漂移（别家键的影子），由主控发布步序里的 flow rebase 清零。
+    # 判据是机器算的（foreign_shadow_conflicts 七项全真），只要有一条冲突碰到自家键就仍然是阻塞项。
+    blocking, deferred = split_deferred(failures, drift)
     result = {
         "character": KEY, "cid": CID, "code": CODE,
-        "all_pass": not failures, "failures": failures,
+        # all_pass = 本角色自己的活全绿（阻塞项为空）；deferred 不为空时仍然不能直接发布，
+        # 看 publishable_now（= 连批次级漂移也清零，rebase 之后才会变真）。
+        "all_pass": not blocking, "publishable_now": not failures,
+        "failures": failures, "blocking_failures": blocking, "deferred": deferred,
+        "deferred_reason": ("批次级 live 漂移：包内共享表全表载荷在别家键上落后于链尾 "
+                            f"{drift.get('validated_chain_tail')}；{drift.get('clears_by')}"
+                            ) if deferred else None,
         "kit_fingerprint": fingerprint, "kit_fingerprint_changes_since_kit": fingerprint_changes,
         "kit_source_sha256": kit_source_sha256(),
         "manifest_sha256": manifest_sha,
-        "override": {"slot4_record1": SLOT4_OVERRIDE, "note": "112 → F1 507（主控拍板）"},
+        "override": {"slot4_record1": SLOT4_OVERRIDE, "note": "112 → F1 507（主控拍板，已在 live 上线）",
+                     "revision": REVISION_REL, "revision2": REVISION2_REL},
+        "text_rules": text_rules,
         "stance_detail": stance, "doll_colors": doll,
         "pixel": {"problems": pixel_problems, "inputs": pixel_inputs(root)}, "voice": voice,
         "rows": rows, "row_required_capabilities": row_caps, "manifest_required_capabilities": manifest_caps,
@@ -1773,10 +2261,180 @@ def run_gates() -> dict[str, Any]:
     (impl / "gates.json").write_text(_json(result), encoding="utf-8")
     report = pack.read_evidence("kit-report.json", None)
     if isinstance(report, dict):
-        report["status"] = "ready-for-review" if not failures else "draft"
+        # 按**阻塞项**置状态：wf_seasonal7_build.step_preflight 会拒绝 status='draft' 的包
+        # （"refusing sealing preflight on a draft package"），而主控的发布步序第一步正是那次封存 preflight。
+        # 只因别家键的影子漂移就把本包钉成草稿，等于把它挡在自己的发布步序之外。
+        report["status"] = "ready-for-review" if not blocking else "draft"
         pack.write_evidence("kit-report.json", report)
-    return {"all_pass": not failures, "failures": failures, "gates": str(impl / "gates.json"),
-            "kit_fingerprint": fingerprint}
+    return {"all_pass": not blocking, "publishable_now": not failures,
+            "failures": failures, "blocking_failures": blocking, "deferred": deferred,
+            "gates": str(impl / "gates.json"), "kit_fingerprint": fingerprint}
+
+
+# ======================================================================== 框架缺口规避：发布后的 inspect
+
+PKG_ARCHIVE_DIRNAME = "pkgarchive"                # <仓库父目录>/pkgarchive/<package_id>-<链号>/
+
+INSPECT_NOT_READY = "inspect: flow preflight not structurally ready"
+BATCH_DRIFT_ERROR = "package preflight 尚未达到发布条件"
+
+
+def foreign_shadow_conflicts(pack, summary: dict[str, Any]) -> dict[str, Any]:
+    """把 flow preflight 的不就绪分成「别家键的共享表影子漂移」与「碰到自家键」两堆。
+
+    本批 7 个角色串行发布：本包的共享表全表载荷停在 zantetsu 自己的发布点 1.4.878，
+    之后 879–882 又发了四个角色，于是**别家键**在包内落后于 live，preflight 报 ``unclaimed_change``。
+    这是主控 publish 前 ``flow rebase`` 负责的事（记忆卡 wf-flow-serial-publish-order /
+    wf-package-shadow-table-refresh），不是本角色的缺陷。
+
+    判定只在**全部**条件成立时才给 ``batch_live_drift_only=True``（宁可误红不可误绿）：
+    冲突表非空且每条都是 ``unclaimed_change``、没有一条碰到本角色的键或认领、
+    错误只有「尚未达到发布条件」这一条、master_reference 干净、必需资产不缺、三层认领一致。
+    与 tekuto / philia 两个包内的同名函数同口径（多加了后四项）。
+    """
+    pre = summary.get("preflight") or {}
+    conflicts = pre.get("conflicts")
+    claimed: dict[str, set[str]] = {}
+    for claim in pack.load_claims():
+        keys = claimed.setdefault(claim["logical_path"], set())
+        keys.update(claim.get("outer_keys") or [])
+        for inner in claim.get("inner_keys") or []:
+            if inner.get("outer_key"):
+                keys.add(inner["outer_key"])
+    own, foreign, kinds = [], [], {}
+    for item in conflicts or []:
+        path, _, key = str(item.get("claim", "")).partition(":")
+        outer = key.split("/", 1)[0]
+        kinds[item.get("kind")] = kinds.get(item.get("kind"), 0) + 1
+        mine = (CID in key or CODE in key or outer in claimed.get(path, set())
+                or key in claimed.get(path, set()))
+        (own if mine else foreign).append(item)
+    errors = list(summary.get("errors") or [])
+    mr = summary.get("master_reference") or {}
+    three = summary.get("three_layer_claim_status") or {}
+    checks = {
+        "conflicts_is_nonempty_list": isinstance(conflicts, list) and bool(conflicts),
+        "all_unclaimed_change": bool(conflicts) and set(kinds) == {"unclaimed_change"},
+        "no_conflict_touches_this_character": not own,
+        "errors_are_only_the_known_drift_error": errors == [BATCH_DRIFT_ERROR],
+        "master_reference_clean": mr.get("problems") == [] and mr.get("missing") in ([], None),
+        "no_missing_required": (summary.get("missing_required") or []) == [],
+        "three_layer_consistent": bool(three.get("consistent")),
+    }
+    return {
+        "total": len(conflicts or []), "foreign": len(foreign), "own": own,  # own 非空 = 碰到自家键 = 必红
+        "kinds": kinds, "checks": checks,
+        "batch_live_drift_only": all(checks.values()),
+        "validated_chain_tail": pre.get("validated_chain_tail"),
+        "foreign_keys": sorted({str(c.get("claim", "")) for c in foreign}),
+        "clears_by": "主控按 wf-flow-serial-publish-order 的 preflight → rebase → preflight → publish 走，"
+                     "rebase 一步清零；本任务被要求不发布，故真实 workspace 不在此处 rebase",
+    }
+
+
+def inspect_should_raise(rc: int, drift: dict[str, Any]) -> bool:
+    """inspect 子命令是否该抛：rc=2 永远抛（真错）；其余非 0 只在**不是**纯别家漂移时抛。
+    与框架 ``wf_seasonal7_build.step_inspect`` 的 rc 语义对齐（它同样只在 rc==2 抛）。"""
+    return rc == 2 or (rc != 0 and not drift.get("batch_live_drift_only"))
+
+
+def split_deferred(failures: list[str], drift: dict[str, Any]) -> tuple[list[str], list[str]]:
+    """把红项分成阻塞项与可延后项。可延后的**只有** ``INSPECT_NOT_READY`` 一条，
+    而且必须 ``foreign_shadow_conflicts`` 判定为纯批次级漂移；其余任何红项一律阻塞。"""
+    deferred = [f for f in failures if f == INSPECT_NOT_READY and drift.get("batch_live_drift_only")]
+    return [f for f in failures if f not in deferred], deferred
+
+
+def installed_package_candidates(root: Path, pkg_id: str) -> list[Path]:
+    """已发布包的归档目录（新→旧）。角色上线后 flow preflight 必须拿到 installed manifest，
+    否则报 ``active ownership hash exists but installed manifest was not supplied``。"""
+    base = root.parent / PKG_ARCHIVE_DIRNAME
+    if not base.is_dir():
+        return []
+    def version_key(path: Path):
+        tail = path.name[len(pkg_id) + 1:]
+        parts = [int(x) for x in re.findall(r"\d+", tail)] or [0]
+        return parts
+    found = [d for d in base.iterdir()
+             if d.is_dir() and d.name.startswith(pkg_id + "-") and (d / "manifest.json").is_file()]
+    return sorted(found, key=version_key, reverse=True)
+
+
+def run_inspect(installed_dir: str | None = None) -> dict[str, Any]:
+    """``--step inspect`` 的替代（框架缺口，见返回里的报告）：把 workspace 复制出去跑 flow preflight，
+    并补上框架没传的 ``--installed-package-dir``。只在副本里封存；真实 workspace 字节不变。
+    结果写 ``evidence/flow-inspect.json``，形状与框架一致，``gates`` 照常读。"""
+    import os
+    import shutil
+    import wf_seasonal7_build as B
+    import wf_seasonal7_common as C
+    import wf_seasonal7_specs as S
+    spec = S.get_spec(KEY)
+    pack = C.S7Pack(spec)
+    pack.check_identity()
+    root = pack.root
+    candidates = ([Path(installed_dir)] if installed_dir
+                  else installed_package_candidates(root, spec.pkg_id))
+    guarded = [pack.package / "manifest.json", pack.evidence / "status.json", pack.evidence / "hash-cache.json"]
+    before = {str(f): (f.read_bytes() if f.is_file() else None) for f in guarded}
+    base = pack.batch_dir / B.INSPECT_DIR
+    attempts: list[dict[str, Any]] = []
+    rc, payload, used = None, None, None
+    for candidate in candidates or [None]:
+        copy_root = base / f"{KEY}-{os.getpid()}"
+        if copy_root.exists():
+            shutil.rmtree(copy_root)
+        try:
+            copy_root.mkdir(parents=True)
+            workspace_copy = copy_root / pack.workspace.name
+            shutil.copytree(pack.workspace, workspace_copy)
+            extra = ["--profile", "cn"]
+            if candidate is not None:
+                extra += ["--installed-package-dir", str(candidate)]
+            rc, payload = B._flow("preflight", workspace_copy, root, extra)
+        finally:
+            shutil.rmtree(copy_root, ignore_errors=True)
+            try:
+                base.rmdir()
+            except OSError:
+                pass
+        errors = payload.get("errors") or []
+        attempts.append({"installed_package_dir": None if candidate is None else str(candidate),
+                         "returncode": rc, "errors": errors})
+        used = candidate
+        if not any("not hash-bound" in e or "different package_id" in e for e in errors):
+            break
+    after = {str(f): (f.read_bytes() if f.is_file() else None) for f in guarded}
+    if after != before:
+        raise KitError("inspect modified the real workspace")
+    text = json.dumps(payload, ensure_ascii=False)
+    for old, new in ((base / f"{KEY}-{os.getpid()}" / pack.workspace.name, pack.workspace),):
+        text = text.replace(json.dumps(str(old))[1:-1], json.dumps(str(new))[1:-1])
+    payload = json.loads(text)
+    ready, reason = B.kit_readiness(pack)
+    result = B._preflight_summary(rc, payload, pack, pack.workspace)
+    result.update({"sealed_real_workspace": False, "sealed_copy_only": True, "kit_ready": ready,
+                   "kit_reason": reason, "structurally_ready": rc == 0,
+                   "flow_next_command": result.get("next_command"),
+                   "installed_package_dir": None if used is None else str(used),
+                   "installed_package_attempts": attempts,
+                   "framework_gap": "wf_seasonal7_build.step_inspect 不传 --installed-package-dir，"
+                                    "角色上线后（active ledger 已有 ownership hash）必然 rc=2；"
+                                    "本 kit 的 inspect 子命令补上该参数，其余与框架一致"})
+    drift = foreign_shadow_conflicts(pack, result)
+    result["foreign_shadow_conflicts"] = drift
+    pack.write_evidence("flow-inspect.json", {"summary": result, "payload": payload})
+    # rc 语义与框架 step_inspect 对齐：2 = 真错（必抛）；3 = "还不能发布"。
+    # 角色上线后 3 几乎必然出现，原因是别家键的共享表影子漂移（主控 rebase 负责）；
+    # 只有当它**不是**纯别家漂移时才抛，否则 inspect 会把整条验收链钉死在一个不是本角色缺陷的状态上。
+    if inspect_should_raise(rc, drift):
+        raise KitError(f"flow preflight (inspect copy) rc={rc}: {payload.get('errors')}; "
+                       f"foreign_shadow_conflicts={drift['checks']}")
+    if rc != 0:
+        result["deferred_batch_live_drift"] = (
+            f"flow preflight rc={rc}：{drift['total']} 条 unclaimed_change 全部落在别家键"
+            f"（链尾 {drift['validated_chain_tail']}），{drift['clears_by']}")
+    return result
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1785,8 +2443,16 @@ def main(argv: list[str] | None = None) -> int:
     except (AttributeError, ValueError):
         pass
     args = list(sys.argv[1:] if argv is None else argv)
+    if args[:1] == ["inspect"]:
+        installed = args[1] if len(args) == 2 else None
+        if len(args) > 2:
+            print("usage: python mod-tools/wf_seasonal7_kit_zantetsu.py inspect [<installed package dir>]")
+            return 2
+        result = run_inspect(installed)
+        print(json.dumps(result, ensure_ascii=False, indent=1))
+        return 0
     if args != ["gates"]:
-        print("usage: python mod-tools/wf_seasonal7_kit_zantetsu.py gates")
+        print("usage: python mod-tools/wf_seasonal7_kit_zantetsu.py gates|inspect [<installed package dir>]")
         return 2
     result = run_gates()
     print(json.dumps(result, ensure_ascii=False, indent=1))

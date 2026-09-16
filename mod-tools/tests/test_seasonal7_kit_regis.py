@@ -5,7 +5,12 @@
 - kit-report 状态只在 gates.json 全过且指纹一致时为 ready-for-review；换色未落包 / 缺 manifest 时强制 draft；
 - recolor_problems：审查复现态（manifest 已出、包内仍母本原色）、report 陈旧、alpha 被改、manifest 不全；
 - 指纹换色输入随染色 PNG 字节变化；未跟踪 work/ 输入清单；移植的设计期静态校验与原模块逐字相同；
-- 严格树比较区分 int/float；面板禁词；
+- 严格树比较区分 int/float；面板禁词（含第二轮规则①的「无上限」族）；
+- 第二轮改版（2026-09-16 晚）：rev2_panel_text 删「（无上限）」并给主位键逐行补 <icon id='main'>、
+  主位限制 c1 与面板 Ⓜ 双向一致（main_slot_panel_problems）、ChangeSkillFlag 规则②空过断言、
+  叠加后行的其余 125 格与固有上限 99 不变；
+- 改版（2026-09-16）：revision_rows 适配器形状/行数、固有状态行（上限 99 / 入棺不清除）、
+  apply_revision 的 D1–D5 增量与参考树逐节点相等、Bind/vlv 的 int/float 形状、图标 48×48 与 alpha；
 - 像素小人：产物就绪判定（report/复核/sha 漂移）、装包幂等与母本字节负向对照（临时 workspace）。
 """
 from __future__ import annotations
@@ -228,8 +233,9 @@ class UntrackedInputsTests(unittest.TestCase):
     def test_lists_missing_work_inputs(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            self.assertEqual(len(K.untracked_input_problems(root)), 4)
+            self.assertEqual(len(K.untracked_input_problems(root)), 7)
             for rel in (K.DESIGN_REL, K.DESIGN_TREE_REL.format(level="1"), K.DESIGN_TREE_REL.format(level="2"),
+                        K.REVISION_REL, K.REV_TREE_REL.format(level="1"), K.REV_TREE_REL.format(level="2"),
                         K.OFFICIAL_SIG_REL):
                 (root / rel).parent.mkdir(parents=True, exist_ok=True)
                 (root / rel).write_text("{}", encoding="utf-8")
@@ -300,12 +306,309 @@ class StatusAndHelpersTests(unittest.TestCase):
         self.assertTrue(K.panel_text_problems("自身为队长时，攻击力＋10%"))
         self.assertTrue(K.panel_text_problems("生命值100%以下时"))
         self.assertEqual(K.panel_text_problems("雷属性共鸣时，FEVER时间＋50%"), [])
+        # 第二轮规则①：面板不许出现「无上限」，也不许换成「可无限叠加」之类的说法
+        self.assertTrue(K.panel_text_problems("每层「浪涌充能」，自身攻击力＋150%（无上限）"))
+        self.assertTrue(K.panel_text_problems("每层「浪涌充能」，自身攻击力＋150%，可无限叠加"))
+        self.assertEqual(K.panel_text_problems("每层「浪涌充能」，自身攻击力＋150%"), [])
+        # 有上限的照旧要写出来
+        self.assertEqual(K.panel_text_problems("雷属性角色能力伤害＋10%（最多10次）"), [])
 
-    def test_texts_constant_matches_design(self):
+    def test_texts_constant_matches_design_and_revision(self):
         root = Path(__file__).resolve().parents[2]
-        if not (root / K.DESIGN_REL).is_file():
-            self.skipTest("design json absent")
-        self.assertEqual(K.check_texts_constant(K.load_design(root)), [])
+        if not (root / K.DESIGN_REL).is_file() or not (root / K.REVISION_REL).is_file():
+            self.skipTest("design / revision json absent")
+        design = K.load_design(root)
+        revision = K.revision_rows(K.load_revision(root))
+        self.assertEqual(K.check_texts_constant(design, revision), [])
+        rows = K.design_text_rows(design, revision)
+        self.assertEqual(rows["character_text"][5], revision["skill_desc"])
+        self.assertEqual(rows["character_text"][7], revision["skill_desc"])
+        self.assertEqual([v[1] for v in rows["action"].values()],
+                         [revision["skill_desc"], revision["skill_desc"]])
+        self.assertEqual(len(revision["skill_desc"].split("\n")), 3)
+        # 面板禁词不得出现在任何一条覆盖文案里
+        for item in revision["custom_strings"]:
+            self.assertEqual(K.panel_text_problems(item["text"]), [], item["key"])
+
+    def test_rev2_panel_text_drops_the_no_cap_clause(self):
+        """规则①：删「（无上限）」，句子写到效果为止，后面什么都不跟。"""
+        got = K.rev2_panel_text(K.CAS_KEYS[0], "雷属性角色能力伤害＋150%（无上限）\n第二行")
+        self.assertEqual(got, "雷属性角色能力伤害＋150%\n第二行")
+        self.assertEqual(K.panel_text_problems(got), [])
+
+    def test_rev2_panel_text_tags_main_slot_keys_only(self):
+        """能力 1 / 3 是主位限制键：覆盖文案整段替换官方生成器 ⇒ Ⓜ 必须写进文本，每行都要有。"""
+        self.assertEqual(K.rev2_main_slot_cas_keys(), (K.CAS_KEYS[1], K.CAS_KEYS[3]))
+        got = K.rev2_panel_text(K.CAS_KEYS[1], "战斗开始时，自身技能槽＋50%\n自身「浪涌充能」＋1层（无上限）")
+        self.assertEqual(got.split("\n"),
+                         [K.MAIN_ICON + "战斗开始时，自身技能槽＋50%",
+                          K.MAIN_ICON + "自身「浪涌充能」＋1层"])
+        # 幂等：已经带 Ⓜ 的行不再重复加
+        self.assertEqual(K.rev2_panel_text(K.CAS_KEYS[1], got), got)
+        # 非主位键不加
+        self.assertEqual(K.rev2_panel_text(K.CAS_KEYS[2], "雷属性角色攻击力＋100%"), "雷属性角色攻击力＋100%")
+
+    def test_rev2_skill_flag_problems_flags_change_skill_rows(self):
+        """规则②在本角色空过，但 ChangeSkillFlag 行一旦出现必须被门禁点名。"""
+        row = ["x"] * 126
+        self.assertEqual(K.rev2_skill_flag_problems("ability", row), [])
+        row[47] = "536"
+        self.assertTrue(K.rev2_skill_flag_problems("ability", row))
+        lrow = ["x"] * 124
+        lrow[107] = "704"
+        self.assertTrue(K.rev2_skill_flag_problems("leader_ability", lrow))
+        self.assertEqual(K.rev2_skill_flag_problems("leader_ability", ["x"] * 124), [])
+
+    def test_main_slot_panel_problems_both_directions(self):
+        def rows(c1_by_slot):
+            return {f"{K.CID}{slot}": [["code", c1] + ["x"] * 124] for slot, c1 in c1_by_slot.items()}
+
+        def cas(texts):
+            return {k: [[v]] for k, v in texts.items()}
+
+        good_rows = rows({1: "false", 2: "true", 3: "false", 4: "true", 5: "true", 6: "true"})
+        good_cas = cas({K.CAS_KEYS[1]: K.MAIN_ICON + "一行", K.CAS_KEYS[2]: "一行",
+                        K.CAS_KEYS[3]: K.MAIN_ICON + "一行\n" + K.MAIN_ICON + "二行",
+                        K.CAS_KEYS[4]: "一行", K.CAS_KEYS[5]: "一行", K.CAS_KEYS[6]: "一行"})
+        self.assertEqual(K.main_slot_panel_problems(good_rows, good_cas), [])
+        # 主位键漏了 Ⓜ
+        bad_cas = dict(good_cas, **{K.CAS_KEYS[3]: [[K.MAIN_ICON + "一行\n二行"]]})
+        self.assertTrue(any("lack" in p for p in K.main_slot_panel_problems(good_rows, bad_cas)))
+        # 非主位键多了 Ⓜ
+        bad_cas2 = dict(good_cas, **{K.CAS_KEYS[2]: [[K.MAIN_ICON + "一行"]]})
+        self.assertTrue(any("not a main-slot" in p for p in K.main_slot_panel_problems(good_rows, bad_cas2)))
+        # 能力 1 忘了加主位限制
+        bad_rows = rows({1: "true", 2: "true", 3: "false", 4: "true", 5: "true", 6: "true"})
+        self.assertTrue(any("main_only=True" in p for p in K.main_slot_panel_problems(bad_rows, good_cas)))
+
+    def test_skill_desc_covers_every_effect_in_the_tree(self):
+        """说明 / 树 / upskill 标签三方一致（审查 20260916 minor 7 的回归闸）。"""
+        tree = ["X", ["Block", [["Command", ["AddFeverPoint", [{"min": 80, "max": 80}]]],
+                                ["Command", ["CreateCondition", -17,
+                                             [["ACAttackPoint", [{"min": 600}], [{"min": 0.5}], [{"min": 1}]]]]],
+                                ["Command", ["CreateCondition", 12,
+                                             [["ACAbilityDamage", [{"min": 900}], [{"min": 1.5}], [{"min": 1}]]]]]]]]
+        up = ["common_attack_up", "condition_attack_up", "ability_damage_up",
+              "condition_add_fever_point_up", "(None)", "(None)"]
+        self.assertEqual(K.skill_effect_tokens(tree),
+                         {"AddFeverPoint", "ACAttackPoint", "ACAbilityDamage"})
+        self.assertEqual(K.skill_desc_coverage_problems([tree], K.SKILL_DESC, up), [])
+        # 审查发现的那版说明（漏写攻击力 / FEVER 槽）必须报两条
+        short = ("向最近的敌人释放激光炮与光束，造成雷属性伤害（FEVER模式中威力提升）\n"
+                 "发动时赋予雷属性角色能力伤害提升效果\n"
+                 "伤害以能力伤害判定；每层「浪涌充能」威力＋10倍")
+        probs = K.skill_desc_coverage_problems([tree], short, up)
+        self.assertTrue(any("'攻击力'" in p for p in probs), probs)
+        self.assertTrue(any("'FEVER槽'" in p for p in probs), probs)
+        # 反向：树里没有的效果却挂着标签
+        bare = ["X", ["Block", [["Command", ["CreateCondition", 12,
+                                             [["ACAbilityDamage", [{"min": 900}], [{"min": 1.5}], [{"min": 1}]]]]]]]]
+        probs2 = K.skill_desc_coverage_problems([bare], K.SKILL_DESC, up)
+        self.assertTrue(any("condition_attack_up" in p and "no matching effect" in p for p in probs2), probs2)
+        # 未知标签也要报
+        probs3 = K.skill_desc_coverage_problems([tree], K.SKILL_DESC, up + ["something_else_up"])
+        self.assertTrue(any("something_else_up" in p for p in probs3), probs3)
+
+    def test_skill_desc_constant_covers_package_effects(self):
+        """常量 SKILL_DESC 本身必须覆盖三个效果（不依赖 live）。"""
+        tree = ["X", ["Block", [["Command", ["AddFeverPoint", [{"min": 1}]]],
+                                ["Command", ["CreateCondition", -17, [["ACAttackPoint"]]]],
+                                ["Command", ["CreateCondition", 12, [["ACAbilityDamage"]]]]]]]
+        self.assertEqual(K.skill_desc_coverage_problems([tree], K.SKILL_DESC), [])
+        self.assertEqual(len(K.SKILL_DESC.split("\n")), 3)
+
+    def test_texts_constant_catches_drift(self):
+        root = Path(__file__).resolve().parents[2]
+        if not (root / K.DESIGN_REL).is_file() or not (root / K.REVISION_REL).is_file():
+            self.skipTest("design / revision json absent")
+        design = K.load_design(root)
+        revision = dict(K.revision_rows(K.load_revision(root)))
+        revision["skill_desc"] = revision["skill_desc"] + "X"
+        probs = K.check_texts_constant(design, revision)
+        self.assertTrue(any("desc1" in p for p in probs), probs)
+        self.assertIn("SKILL_DESC != revision plan action_skill c1", probs)
+
+
+class RevisionPlanTests(unittest.TestCase):
+    """改版方案适配器：行数、键、固有状态、面板文案。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.root = Path(__file__).resolve().parents[2]
+        if not (cls.root / K.REVISION_REL).is_file():
+            raise unittest.SkipTest("revision plan absent")
+        cls.plan = K.load_revision(cls.root)
+        cls.rev = K.revision_rows(cls.plan)
+
+    def test_shape(self):
+        self.assertEqual(len(self.rev["leader"]), 6)
+        self.assertEqual(self.rev["ability_record_count"], 16)
+        self.assertEqual(sorted(self.rev["abilities"]), [f"slot{i}" for i in range(1, 7)])
+        self.assertEqual([len(self.rev["abilities"][f"slot{i}"]) for i in range(1, 7)], [3, 2, 5, 1, 2, 3])
+        self.assertEqual(sorted(x["key"] for x in self.rev["custom_strings"]), sorted(K.CAS_KEYS))
+        for entry in self.rev["leader"]:
+            self.assertEqual(len(entry["row_built"]), 124)
+        for slot in range(1, 7):
+            for entry in self.rev["abilities"][f"slot{slot}"]:
+                self.assertEqual(len(entry["row_built"]), 126)
+                self.assertEqual(entry["row_built"][0], f"{K.CODE}_{slot}")
+
+    def test_revision2_layer_is_applied_on_top_of_the_plan(self):
+        """第二轮增量（能力 1 主位限制 + 文案规则①）必须已经叠在 plan 解析结果上。"""
+        rev2 = self.rev["revision2"]
+        self.assertEqual(sorted(rev2["main_slot_ability_keys"]), [f"{K.CID}1", f"{K.CID}3"])
+        for slot in range(1, 7):
+            want = "false" if slot in K.REV2_MAIN_SLOT_SLOTS else "true"
+            for e in self.rev["abilities"][f"slot{slot}"]:
+                self.assertEqual(e["row_built"][1], want, f"slot{slot}#{e['record']}")
+                if slot in K.REV2_MAIN_SLOT_SLOTS:
+                    self.assertEqual(e["edits"]["1"], "false")
+        # 文案：全部覆盖键零「无上限」、零禁词；主位键每行带 Ⓜ、非主位键一行都不带
+        for item in self.rev["custom_strings"]:
+            self.assertNotIn("无上限", item["text"], item["key"])
+            self.assertEqual(K.panel_text_problems(item["text"]), [], item["key"])
+            tagged = [ln.startswith(K.MAIN_ICON) for ln in item["text"].split("\n")]
+            if item["key"] in K.rev2_main_slot_cas_keys():
+                self.assertTrue(all(tagged), item["key"])
+            else:
+                self.assertFalse(any(tagged), item["key"])
+        self.assertNotIn("无上限", self.rev["skill_desc"])
+
+    def test_revision2_does_not_touch_the_plan_baseline(self):
+        """机制不动：删的只是「（无上限）」四个字 + 加 Ⓜ，行的其余 125 格与固有上限都不变。"""
+        plan_rows = {e["record"]: e["row_built"]
+                     for e in self.plan["tables"]["ability"]["keys"][f"{K.CID}1"]["rows"]}
+        for e in self.rev["abilities"]["slot1"]:
+            before, after = plan_rows[e["record"]], e["row_built"]
+            self.assertEqual([i for i, (a, b) in enumerate(zip(before, after)) if a != b], [1])
+        self.assertEqual(self.rev["unique_conditions"][0]["row_built"][4], "99")
+        plan_text = self.plan["tables"]["custom_ability_string"]["rows"]
+        for item in self.rev["custom_strings"]:
+            stripped = item["text"].replace(K.MAIN_ICON, "")
+            want = plan_text[item["key"]].replace("（无上限）", "").replace(K.MAIN_ICON, "")
+            self.assertEqual(stripped, want, item["key"])
+
+    def test_unique_condition_entry(self):
+        u = self.rev["unique_conditions"]
+        self.assertEqual(len(u), 1)
+        self.assertEqual(u[0]["key"], K.UID)
+        self.assertEqual(u[0]["icon"], K.ICON_LOGICAL)
+        row = u[0]["row_built"]
+        self.assertEqual(len(row), 15)
+        self.assertEqual(row[1], K.UNIQUE_NAME)
+        self.assertEqual(row[2], K.ICON_ROW_PATH)
+        self.assertEqual(row[4], "99")            # 无上限的官方写法；(None) = 上限 1
+        self.assertNotEqual(row[4], "(None)")
+        self.assertEqual(row[13], "false")        # 入棺不清除
+
+    def test_plan_rejects_foreign_identity(self):
+        import copy as _copy
+        bad = _copy.deepcopy(self.plan)
+        bad["tables"]["leader_ability"]["rows"][0]["key"] = "139995"
+        with self.assertRaises(K.KitError):
+            K.revision_rows(bad)
+        bad2 = _copy.deepcopy(self.plan)
+        bad2["tables"]["ability"]["keys"]["1399943"]["new_row_count"] = 4
+        with self.assertRaises(K.KitError):
+            K.revision_rows(bad2)
+
+
+class RevisionSkillTests(unittest.TestCase):
+    """apply_revision 的 D1–D5：从上一轮定稿树出发必须逐节点等于改版参考树。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.root = Path(__file__).resolve().parents[2]
+        for rel in (K.DESIGN_TREE_REL.format(level="1"), K.REV_TREE_REL.format(level="1")):
+            if not (cls.root / rel).is_file():
+                raise unittest.SkipTest("design / revision trees absent")
+
+    def _trees(self, level):
+        base = json.loads((self.root / K.DESIGN_TREE_REL.format(level=level)).read_text(encoding="utf-8"))
+        want = json.loads((self.root / K.REV_TREE_REL.format(level=level)).read_text(encoding="utf-8"))
+        return base, want
+
+    def test_apply_revision_reproduces_reference_tree(self):
+        for level in ("1", "2"):
+            base, want = self._trees(level)
+            edits = K.apply_revision(base, level)
+            self.assertIsNone(K.first_difference(base, want), level)
+            self.assertEqual(len(edits), 5, edits)
+
+    def test_bind_and_vlv_shapes(self):
+        base, _ = self._trees("2")
+        K.apply_revision(base, "2")
+        binds = list(K.iter_commands(base, "BindConditionAccumulationVariable"))
+        self.assertEqual(len(binds), 2)
+        for c in binds:
+            self.assertEqual(c[1], -17)
+            self.assertEqual(c[3], ["DCUnique", int(K.UID)])
+            self.assertIsInstance(c[3][1], int)
+            self.assertIsInstance(c[4], int)             # 除数是 int
+            self.assertIsInstance(c[5], float)           # 上限是 double（AMF3 编码不同）
+        grown = [c[6][0] for c in K.iter_commands(base, "CreateNormalAttack") if "vlv" in c[6][0]]
+        self.assertEqual(len(grown), 2)
+        for cell in grown:
+            self.assertIsInstance(cell["min"], float)
+            self.assertIsInstance(cell["max"], float)
+            self.assertEqual(cell["vlv"][0]["max"], K.REV_GROWTH)
+            self.assertIsInstance(cell["vlv"][0]["vid"], int)
+
+    def test_totals_match_the_plan(self):
+        if not (self.root / K.REVISION_REL).is_file():
+            self.skipTest("revision plan absent")
+        totals = K.load_revision(self.root)["skill_dsl"]["totals"]
+        for level in ("1", "2"):
+            base, _ = self._trees(level)
+            K.apply_revision(base, level)
+            cfm = K.cmd(base[11][1][1])
+            got = {}
+            for label, blk in (("fever", cfm[1]), ("normal", cfm[2])):
+                acc = [0.0, 0.0]
+                for c in K.iter_commands(blk, "CreateHitArea"):
+                    n = c[14][1]
+                    for a in K.iter_commands(c[23], "CreateNormalAttack"):
+                        acc[0] += a[6][0]["min"] * n
+                        acc[1] += a[6][0]["max"] * n
+                got[label] = [round(v, 3) for v in acc]
+            want = totals[level]
+            for label in ("fever", "normal"):
+                w = want[label]
+                self.assertEqual(got[label], [w, w] if isinstance(w, float) else w, (level, label))
+
+    def test_rejects_an_unexpected_branch_layout(self):
+        base, _ = self._trees("1")
+        cfm = K.cmd(base[11][1][1])
+        del cfm[2][1][1]                                  # 删掉通常分支的光束节点
+        with self.assertRaises(K.KitError):
+            K.apply_revision(base, "1")
+
+    def test_applying_twice_is_caught(self):
+        base, want = self._trees("1")
+        K.apply_revision(base, "1")
+        with self.assertRaises(K.KitError):
+            K.apply_revision(base, "1")                    # 分支头已不再是 FindNearSubjects
+
+
+class UniqueIconTests(unittest.TestCase):
+    def test_icon_is_48_and_keeps_the_official_alpha(self):
+        from PIL import Image
+        frame = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+        px = frame.load()
+        for y in range(48):
+            for x in range(48):
+                edge = x in (0, 47) or y in (0, 47)
+                px[x, y] = (0, 0, 0, 0 if (edge and (x + y) % 2 == 0) else 255)
+        icon = K.draw_icon(frame)
+        self.assertEqual(icon.size, (48, 48))
+        self.assertEqual(icon.mode, "RGBA")
+        self.assertEqual(icon.getchannel("A").tobytes(), frame.getchannel("A").tobytes())
+        self.assertGreater(len({icon.getpixel((x, y))[:3] for x in range(8, 40) for y in range(8, 40)}), 8)
+
+    def test_icon_rejects_a_wrong_sized_frame(self):
+        from PIL import Image
+        with self.assertRaises(K.KitError):
+            K.draw_icon(Image.new("RGBA", (32, 32), (0, 0, 0, 255)))
 
 
 class PixelInputsTests(unittest.TestCase):

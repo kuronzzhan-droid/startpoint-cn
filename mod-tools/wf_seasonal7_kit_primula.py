@@ -1,19 +1,42 @@
 # -*- coding: utf-8 -*-
 """普莉姆拉·浴衣 169992 ``blackflower_wiz_yukata`` 套件（季节换装七角色 kit）。
 
-设计定稿：``work/character_packs/seasonal7-20260916/design/primula.json``（status=final）与 ``primula.md``。
+设计定稿（改版）：``work/character_packs/seasonal7-20260916/revision-20260916/primula/``
+（``requirements.md`` 逐条拆解、``plan.json`` 施工单、``primula.json`` / ``primula_tree_{1,2}.json`` /
+``ability_skill_tree.json`` 交叉校验件）。上一轮 ``design/primula.json`` 只读留档，不再作为断言源。
 本模块按设计落地：
 
 - character 行语音路由 c9–c16、character_text（设计全文）；
-- 队长 6 行、词条 6 键 11 条：一律取**官方基线** donor 行，逐列断言旧值后改写（``LEADER_PLAN``/``ABILITY_PLAN``），
+- 队长 6 行、词条 6 键 13 条：一律取**官方基线** donor 行，逐列断言旧值后改写（``LEADER_PLAN``/``ABILITY_PLAN``），
   设计 JSON 在场时再断言成品行与设计逐字相同；
-- 固有状态「百合夜」``16999201``（官方 11 同构，上限 10）＋ 48×48 图标（官方外框 alpha，程序绘制百合与团扇）；
+- 固有状态「夜百合」``16999201``（官方 11 同构，上限 20）＋ 48×48 图标（官方外框 alpha，程序绘制百合/团扇/新月）；
 - action_skill 两档（161069 inner 行为底）、两棵技能 DSL（从官方 DSL 按 f3_tree.py 逐参数断言拼装，裸树编码）；
+- 能力1#3 的 ``629 InvokeSkill`` 行 + 它调用的 ``ability_skill_<code>`` DSL（``compose_ability_skill_tree``）：
+  暗共鸣前置、技能发动触发，给暗属性角色与协力球发直击伤害提升与贯穿（贯穿时长随夜百合层数），
+  ≥5 层追加暗主队最大速度固定。c70 的文案键写进 ``custom_ability_string``（缺键＝详情页 C8601）；
 - 两个特效族（sibling 形态）克隆与 DSL 特效引用改写；预留 Effects 阶段染色 sheet 钩子
   （``fx/primula/out/manifest.json``）；
 - switched_action_skill ``<code>_voice_ready``（与 ``wf_seasonal7_voice.pack_voice`` 同列约定：action_skill c7..c23）。
 
-不做（设计 §0.7）：722 PF 覆盖、422 冲刺参数、724、desc_override、custom_ability_string。
+不做：722 PF 覆盖、422 冲刺参数、724、desc_override。
+
+改版 2（2026-09-16 晚，``revision2-20260916/文案规则-补充.md``）：本角色**无机制改动**，只把两条面板文案规则
+（规则 1 不写「无上限」、规则 2 技能强化条目不写数字与时间）做成常驻检查器 ``panel_text_problems``，
+静态门禁与离线门禁各挂一处。复核结论：本角色文案原本就零处「无上限」、且一行 ``ChangeSkillFlag`` 都没有
+（规则 2 无适用条目），所以本轮文案一个字未改；证据见 ``revision2-20260916/primula/verify.md``。
+
+改版 3（2026-09-16 夜，作者原话「夜百合的能力3加成给到暗属性角色全体和协力球而不是自身」）：
+能力3 的两条「每层夜百合」加成改受益面，获取夜百合的两条瞬发行（自身叠层）不动。
+
+- 每层攻击力 +50%：保留 target 5+``Black``（暗属性角色全体），**并列新增一条 target 8 Multiball**——
+  CN 客户端 ``ui_string`` 把 Multiball 直译作「协力球」，协力角色本身就是
+  ``createSummonsMultiball`` 生成的非 primary 小队，官方正形 1110063#L2（持续 → 赋予多球 攻击力）。
+- 每层独立乘区直击伤害 +10%：target 0 自身 → 5+``Black`` 暗属性角色全体。
+  **协力球够不到**：``MemberImpl.getStatModifierSeparatedTermDirectAttackDamage()`` 只读自身
+  ``abilityTotalizer + conditionSlot``，不查任何 multiball 合计器；DSL 的 ``ACSeparatedTermDirectDamage``
+  官方零先例。所以这一条按退路②只覆盖暗属性角色全体，并如实登记，不写会说谎的死行。
+常驻门禁 ``lily_layer_target_problems``（静态 + 离线各挂一处）锁住这三件事；
+对照表与强度影响见 ``revision3-20260916/primula/target.md``，回读核对见同目录 ``verify.md``。
 
 离线门禁（manifest/status/inspect 之后）::
 
@@ -27,6 +50,9 @@
 
 ``ready-for-review`` / ``all_pass`` 只覆盖 kit 范围。语音 22 条、speech 8 行、像素 2 张由 Integrate 阶段装包；
 gates.json 的 ``integration_pending.clear`` 与 ``release_ready_after_integration`` 为 true 之前不得发布。
+``publish_blockers`` / ``needs_rebase_before_publish`` 是 kit 范围之外的发布前置：包内共享表持有别人角色的陈旧行时
+（键在、内容旧；串行发布第二包起的常态），``release_ready_after_integration`` 强制为 false，只有 ``release_ready_after_rebase``
+为 true —— 必须先按 ``wf-flow-serial-publish-order`` 走 ``preflight 封存 → flow rebase → preflight → publish``。
 
 Integrate 阶段（媒体整合）：
 
@@ -47,6 +73,7 @@ import hashlib
 import io
 import json
 import math
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -61,8 +88,11 @@ UID = "16999201"
 UID_INT = 16999201
 ELEMENT = 5                                    # Black（0 基）
 BATCH = "work/character_packs/seasonal7-20260916"
-DESIGN_JSON = f"{BATCH}/design/primula.json"
-DESIGN_TREES = {"1": f"{BATCH}/design/primula_tree_1.json", "2": f"{BATCH}/design/primula_tree_2.json"}
+# 改版（2026-09-16）：设计件改指 revision-20260916/primula/（上一轮 design/ 只读留档，不改）
+REVISION = f"{BATCH}/revision-20260916/primula"
+DESIGN_JSON = f"{REVISION}/primula.json"
+DESIGN_TREES = {"1": f"{REVISION}/primula_tree_1.json", "2": f"{REVISION}/primula_tree_2.json"}
+DESIGN_AS_TREE = f"{REVISION}/ability_skill_tree.json"
 OFFICIAL_SIG = f"{BATCH}/research/_tmp/official_sig.json"
 FX_MANIFEST = f"{BATCH}/fx/primula/out/manifest.json"
 IMPL_DIR = f"{BATCH}/impl/primula"
@@ -81,12 +111,18 @@ ICON_ROW_PATH = f"battle/common/unique_condition/unique_{CODE}_lily_night"
 ICON_LOGICAL = ICON_ROW_PATH + ".png"
 ICON_FRAME_DONOR = "battle/common/unique_condition/unique_blackflower_wiz_smr22.png"
 
+# 固有状态「夜百合」的名字与**真实上限**（UNIQUE_EDITS 与 DSL 的 BindConditionAccumulationVariable 都用它）。
+# 提到这里是因为文案要引用上限：rev2 文案规则 1 第三条「有上限的才写上限」，
+# 夜百合是真有上限（unique_condition c4 = 20，DSL 里同样硬钳 20），所以面板必须把 20 写出来。
+UNIQUE_NAME = "夜百合"
+UNIQUE_MAX = "20"
+CAP_PHRASE = f"最多{UNIQUE_MAX}层"
+
 SKILL_NAME_1 = "紫百合·烟花扇舞"
 SKILL_NAME_2 = "紫百合·烟花扇舞＋"
-SKILL_DESC = ("在距离最近的敌人处创造紫百合花园，持续造成暗属性伤害并赋予其暗属性抗性降低效果，"
-              "消散前绽放烟花追加暗属性伤害【威力随“百合夜”层数提升】（花园与烟花均以直接攻击伤害判定）"
-              "／赋予队伍及协力球直接攻击伤害提升【随“百合夜”层数提升】＆贯穿效果"
-              "／发动时“百合夜”为5层以上则赋予暗属性角色最大速度固定效果")
+# 改版（revision-20260916 R12）：赋予类效果已迁到能力1 的 ability_skill，说明只讲伤害；149 字 → 77 字。
+SKILL_DESC = ("在距离最近的敌人处开出紫百合花园，持续造成暗属性伤害并降低其暗属性抗性，"
+              "消散时绽放烟花追加伤害（威力随“夜百合”层数提升）／花园与烟花均按直接攻击伤害判定")
 PROFILE = ("夏日祭典之夜，普莉姆拉换上绣满紫百合的浴衣，握着团扇怯生生地走进人群。"
            "烟花升空的刹那，她轻摇扇面，让曾被人畏惧的黑百合魔力在夜空中绽成紫花——"
            "今晚，她想让同伴看见这份力量温柔的一面。")
@@ -96,7 +132,24 @@ CV = "AI 合成配音"
 TEXTS = {"name": "普莉姆拉", "furigana": "PULIMULA", "title": "夏夜扇舞的百合魔女", "profile": PROFILE,
          "leader": LEADER_NAME, "skill1": SKILL_NAME_1, "desc1": SKILL_DESC,
          "skill2": SKILL_NAME_2, "desc2": SKILL_DESC, "cv": CV}
-SPEC = {"extra_keys": {UNIQUE: (UID,), SWITCHED: (VOICE_READY,)}}
+
+# 改版 R1/R3/R13：能力1#3 的 629 InvokeSkill 行。c70 文案键必须存在于 custom_ability_string，
+# 否则详情页 MasterStringMap.get 抛 C8601（wf_client_legality.invoke_skill_string_problems）。
+CAS_KEY = f"ability_skill_{CODE}"
+# 详情页渲染顺序是「合击标记 ＋ 前置/触发串 ＋ CAS 正文」（AbilityGroupingDescriptionGenerator.as:313-325），
+# 所以 CAS 正文**只写效果**：前置（暗共鸣）与触发（技能发动）由行的列自己渲染，写进正文＝重复一遍。
+# live 74 行 629 的正文全是纯效果（复核脚本 revision-20260916/primula/_fix/f2_verify_claims.py）。
+# 改版 2 审查第 2 条：夜百合的逐层成长**有上限**（20 层，DSL BindConditionAccumulationVariable 第 5 参
+# 与 unique_condition c4 同为 20），而 629 行的面板没有累积计数子句可渲染上限（合击标记＋前置/触发串＋
+# CAS 正文，上限只在 DSL 里），所以按规则 1 第三条由 CAS 正文自己写出 —— 不写玩家无从得知封顶。
+CAS_TEXT = ("赋予暗属性角色与协力球 直接攻击伤害提升125%与20秒贯穿效果，"
+            f"每层“{UNIQUE_NAME}”追加+10%伤害与+2秒贯穿（{CAP_PHRASE}）；"
+            f"“{UNIQUE_NAME}”达5层以上时，追加赋予暗属性角色最大速度固定效果")
+# 正文里不许出现的前置/触发措辞（客户端已经渲染过一遍）
+CAS_FORBIDDEN = ("共鸣时", "编成", "发动技能时", "自身为队长时", "自身为主位时", "Fever 时")
+AS_PROGRAM = f"battle/action/skill/action/ability_skill/{CAS_KEY}${CAS_KEY}"
+
+SPEC = {"extra_keys": {UNIQUE: (UID,), SWITCHED: (VOICE_READY,), CAS: (CAS_KEY,)}}
 
 # 语音路由（设计 §10.1，阵容审查 R6）：ConditionExist(1) + Piercing(31)，c11 写 0（客户端不读，过构建器数字校验）
 ROUTE_COLS = ["1", "31", "0", "", "", VOICE_READY, "false", "false"]
@@ -106,26 +159,94 @@ ROUTE_COLS = ["1", "31", "0", "", "", VOICE_READY, "false", "false"]
 LEADER_PLAN = [
     ("leader_ability", "161135", 1, {0: ("wind_spgirl_hw22", CODE), 111: ("230000", "300000"), 112: ("300000", "300000")}),
     ("leader_ability", "161177", 1, {0: ("ruin_girl_3halfanv", CODE), 49: ("40000", "50000"), 50: ("50000", "50000")}),
-    ("leader_ability", "161123", 1, {0: ("blackflower_wiz_smr22", CODE), 102: ("11", UID), 107: ("0", "1"),
-                                      111: ("11500", "15000"), 112: ("15000", "15000")}),
+    ("leader_ability", "161123", 1, {0: ("blackflower_wiz_smr22", CODE), 100: ("10", "20"), 102: ("11", UID),
+                                      107: ("0", "1"), 111: ("11500", "15000"), 112: ("15000", "15000")}),
     ("leader_ability", "161123", 4, {0: ("blackflower_wiz_smr22", CODE), 49: ("100000", "300000"),
                                       50: ("100000", "300000"), 66: ("11", UID)}),
     ("leader_ability", "161069", 2, {0: ("blackflower_wiz", CODE), 49: ("60000", "100000"), 50: ("80000", "100000")}),
-    ("leader_ability", "161123", 2, {0: ("blackflower_wiz_smr22", CODE), 102: ("11", UID), 111: ("750", "1000"),
-                                      112: ("1000", "1000")}),
+    ("leader_ability", "161123", 2, {0: ("blackflower_wiz_smr22", CODE), 100: ("10", "20"), 102: ("11", UID),
+                                      111: ("750", "1000"), 112: ("1000", "1000")}),
 ]
+# 暗属性共鸣前置（precondition1 = kind 2 Member，阈值 100000 = 1 人 ⇒ 6 人 = 600000）
+RESONANCE = {6: ("0", "2"), 9: ("", "600000"), 10: ("", "600000"), 11: ("", "Black")}
+# 主位限制（precondition1 = 202 OwnerIsMain，无参；202/203 的 puller 等列**留空才是官方写法**，
+# 见 wf-precondition-puller-c7050 的反例段）。共鸣是编成条件，与主位/副位正交，挡不住副位装配，
+# 所以要主位限制必须另写 202（或让整键 values[0]=false）。
+MAIN_ONLY = {6: ("0", "202")}
+# 202 占了 precondition1 时，暗共鸣挪到 precondition2（块起点 c13，块内偏移同 precondition1：
+# 0=kind 1=puller 2=puller组 3=阈值 4=阈值满级 5=角色组 6=固有ID）。
+# 同批正形：zantetsu 1599981#2（629）、tekuto 1399931#1 / philia 1599961#2 / yuki 1299911#1（536）。
+RESONANCE2 = {13: ("0", "2"), 16: ("", "600000"), 17: ("", "600000"), 18: ("", "Black")}
+
+# ---- 改版 3（2026-09-16 夜，作者原话：「夜百合的能力3加成给到暗属性角色全体和协力球而不是自身」）----
+# 受益面两个落点（during_content 目标列 c110 / 目标角色组列 c111）：
+#   * 暗属性角色全体 = target 5 Party + c111=Black。客户端 forEachPartyTotalizer 只遍历 primary 三格，
+#     不排除自身（Party 的 exceptMyself=false）⇒ 普莉姆拉本人照吃。
+#   * 协力球 = target 8 Multiball。**CN 客户端自己的文案就叫「协力球」**：
+#     ui_string `ability_description_target_multiball` = 「协力球」、`…_multiball_constraint` = 「::constraint::的协力球」；
+#     引擎侧 MemberImpl.isMultiball() = !squad.isPrimary()，而协力角色由
+#     BattleQuestBaseImpl.convertAssistCharacterToMultiballSource → AssistCharacterFactory.createSummonsMultiball
+#     生成，就是一支非 primary 小队 ⇒ target 8 命中协力球。c111 对 target 8 不读（parseAt110 的 "8" 分支无参），
+#     官方 4 条 during target 8 行的 c111 也全是空。
+#   ⚠ target 6 UnisonParty **不是**协力：它渲染成「已被选为合击角色」，且 forEachUnisonParty 仍然只走 primary 三格。
+LILY_PARTY_TARGET = "5"
+LILY_PARTY_GROUPS = "Black"
+LILY_ASSIST_TARGET = "8"
+LAYER_TRIGGER = "134"                          # during_trigger 134 ConditionCountUnique = 「每层夜百合」
+# 哪些 during 效果 kind 真能被协力球读到——判据是**客户端的读取函数有没有查 multiball 合计器**，
+# 不是目标列能不能写（目标列什么都能写，写错只是静默失效，面板却照样写「协力球」）：
+#   * kind 0 AttackPoint：MemberImpl._getStatModifierAttackPoint 里 `if(isMultiball())` 分支
+#     逐个加 squadManager.commonMultiballAbilityTotalizer / specific / characterGroup 三种合计器 ⇒ 读得到。
+#   * kind 410 SeparatedTermDirectDamage：MemberImpl.getStatModifierSeparatedTermDirectAttackDamage() 全文是
+#     `abilityTotalizer.getTotalSeparatedTermDirectDamage() + conditionSlot.getTotalSeparatedTermDirectDamage()`，
+#     一个 multiball 合计器都不查 ⇒ 写 target 8/14 是死行。DSL 侧的 ACSeparatedTermDirectDamage 全库官方零先例
+#     （p10_direct_scan 扫 1200+ 棵技能树 0 命中），按「无先例命令禁用」也不走 ⇒ 独立乘区只给暗属性角色全体。
+LILY_MULTIBALL_READABLE = frozenset({"0"})
+LILY_MULTIBALL_UNREADABLE = frozenset({"410"})
+# (队长行数, 词条行数)：改版 3 把 A3 从 4 行加到 5 行（每层攻击力多一条发给协力球）
+ROW_COUNTS = (6, 14)
+
 ABILITY_PLAN = {
-    1: [("ability", "1610691", 1, {0: ("blackflower_wiz_1", f"{CODE}_1"), 51: ("25000", "100000"), 52: ("50000", "100000")}),
+    # A1#1 改版 R4：开局自身技能槽 100% → 50%
+    1: [("ability", "1610691", 1, {0: ("blackflower_wiz_1", f"{CODE}_1"), 51: ("25000", "50000"), 52: ("50000", "50000")}),
         ("ability", "1611111", 1, {0: ("mirror_witch_1", f"{CODE}_1"), 109: ("1", "3"), 113: ("60000", "15000"),
-                                   114: ("120000", "15000")})],
+                                   114: ("120000", "15000")}),
+        # A1#3 改版 R1/R2/R3/R13：新增 629 InvokeSkill，承接原技能 B4（全队直击UP＋贯穿）与 B6（≥5 层最大速度固定）；
+        # 触发改「技能发动」(c27=23)，延迟 c35 归零。
+        # 改版 2 审查第 1 条：1699921 的 values[0]=true（整键进合击池），629 行原来只有暗共鸣前置，
+        # 副位时会并入主位角色的能力池、由主位的技能发动拉起 —— 629 演出者硬绑主位，官方零副位先例
+        # （官方 ability 表全表只有 1 行 629：1611053#0，正是本行 donor，且它所在键 values[0]=false）。
+        # 正形照同批 zantetsu：precondition1 = 202 主位门，暗共鸣退到 precondition2；
+        # c1 保持 true，面板才只画一个 Ⓜ（c1=false 与 202 同写＝双 Ⓜ，wf-unison-slot-mechanics）。
+        ("ability", "1611053", 1, {0: ("estateguild_leader_3", f"{CODE}_1"), 1: ("false", "true"),
+                                   2: ("special", "action_skill"), **MAIN_ONLY, **RESONANCE2,
+                                   27: ("139", "23"), 35: ("300", "0"),
+                                   70: ("ability_skill_estateguild_leader", CAS_KEY),
+                                   71: ("battle/action/skill/action/ability_skill/ability_skill_estateguild_leader"
+                                        "$ability_skill_estateguild_leader", AS_PROGRAM)})],
     2: [("ability", "1611111", 1, {0: ("mirror_witch_1", f"{CODE}_2"), 113: ("60000", "150000"), 114: ("120000", "150000")}),
         ("ability", "1610692", 2, {0: ("blackflower_wiz_2", f"{CODE}_2"), 51: ("10000", "50000"), 52: ("20000", "50000")})],
-    3: [("ability", "1611231", 1, {0: ("blackflower_wiz_smr22_1", f"{CODE}_3"), 1: ("true", "false"), 68: ("11", UID)}),
-        ("ability", "1611231", 1, {0: ("blackflower_wiz_smr22_1", f"{CODE}_3"), 1: ("true", "false"), 27: ("23", "20"),
-                                   28: ("0", "7"), 29: ("", "Black"), 30: ("100000", "5000000"), 31: ("100000", "5000000"),
+    # A3#1/#2 改版 R10：夜百合两个获取来源加暗共鸣前置
+    3: [("ability", "1611231", 1, {0: ("blackflower_wiz_smr22_1", f"{CODE}_3"), 1: ("true", "false"), **RESONANCE,
+                                   68: ("11", UID)}),
+        ("ability", "1611231", 1, {0: ("blackflower_wiz_smr22_1", f"{CODE}_3"), 1: ("true", "false"), **RESONANCE,
+                                   27: ("23", "20"), 28: ("0", "7"), 29: ("", "Black"),
+                                   30: ("100000", "5000000"), 31: ("100000", "5000000"),
                                    51: ("200000", "100000"), 52: ("200000", "100000"), 68: ("11", UID)}),
-        ("ability", "1611233", 3, {0: ("blackflower_wiz_smr22_3", f"{CODE}_3"), 104: ("11", UID), 110: ("0", "5"),
-                                   111: ("", "Black"), 113: ("10000", "10000"), 114: ("20000", "10000")})],
+        # A3#3 改版 R5/R7：每层全队暗攻击 10% → 50%，次上限 10 → 20
+        ("ability", "1611233", 3, {0: ("blackflower_wiz_smr22_3", f"{CODE}_3"), 102: ("10", "20"), 104: ("11", UID),
+                                   110: ("0", LILY_PARTY_TARGET), 111: ("", LILY_PARTY_GROUPS),
+                                   113: ("10000", "50000"), 114: ("20000", "50000")}),
+        # A3#4 改版 3：同一条「每层攻击力」再发一份给协力球（target 8 Multiball，客户端文案原文就是「协力球」）。
+        # 与 A3#3 是同触发同强度的孪生行，只有目标列不同；官方正形 1110063#L2（持续·多球≥2 → 赋予多球 攻击力）。
+        ("ability", "1611233", 3, {0: ("blackflower_wiz_smr22_3", f"{CODE}_3"), 102: ("10", "20"), 104: ("11", UID),
+                                   110: ("0", LILY_ASSIST_TARGET), 113: ("10000", "50000"),
+                                   114: ("20000", "50000")}),
+        # A3#5 改版 R9 新增、改版 3 改受益面：每层夜百合 独立乘区直击伤害 +10%，自身 → 暗属性角色全体。
+        # 协力球够不到：见 LILY_MULTIBALL_UNREADABLE 的注释（引擎读取路径不含 multiball 合计器）。
+        ("ability", "1611233", 3, {0: ("blackflower_wiz_smr22_3", f"{CODE}_3"), 102: ("10", "20"), 104: ("11", UID),
+                                   109: ("0", "410"), 110: ("0", LILY_PARTY_TARGET), 111: ("", LILY_PARTY_GROUPS),
+                                   113: ("10000", "10000"), 114: ("20000", "10000")})],
     4: [("ability", "1611113", 1, {0: ("mirror_witch_3", f"{CODE}_4"), 1: ("false", "true"), 113: ("5000", "20000"),
                                    114: ("10000", "20000")}),
         ("ability", "1610693", 2, {0: ("blackflower_wiz_3", f"{CODE}_4"), 1: ("false", "true"), 51: ("-10000", "-20000"),
@@ -134,11 +255,28 @@ ABILITY_PLAN = {
                                    52: ("100000", "100000")})],
     6: [("ability", "1610696", 1, {0: ("blackflower_wiz_6", f"{CODE}_6"), 51: ("12500", "40000"), 52: ("25000", "40000")})],
 }
-# 固有状态：官方 11（能量吸取）只改 c0–c2；c4=10 上限（不能写 (None)）
-UNIQUE_DONOR = "11"
+# 固有状态：官方 11（能量吸取）donor；改版 R7/R11：名字统一「夜百合」、c4 上限 10 → 20
+# （上限列必须是整数，写 (None) = 上限 1，叠层全死，wf-unique-cap-none-trap）
+UNIQUE_DONOR = "11"                            # UNIQUE_NAME / UNIQUE_MAX 在文件头（文案要引用上限）
 UNIQUE_EDITS = {0: ("unique_blackflower_wiz_smr22", f"unique_{CODE}_lily_night"),
-                1: (None, "百合夜"),
-                2: ("battle/common/unique_condition/unique_blackflower_wiz_smr22", ICON_ROW_PATH)}
+                1: (None, UNIQUE_NAME),
+                2: ("battle/common/unique_condition/unique_blackflower_wiz_smr22", ICON_ROW_PATH),
+                4: ("10", UNIQUE_MAX)}
+
+# ---- 面板文案规则（rev2，见 panel_text_problems 的注释）--------------------------------
+# 「无上限」及其替代说法一律不写；有上限的才写上限。禁词表只作用于**本 kit 自己写的文案**，
+# 客户端自动生成的那半句由数据列决定（ui_string 全表零处「无上限」，客户端不会自己造这三个字）。
+# 改版 2 审查第 3 条：禁词表原来只有 5 个词，「不设上限」「没有上限」「上限无」三种写法漏网
+# （变异测试实测全绿），而 impl/primula/rev2_text_audit.py 另写了一份含「上限无」的表 —— 两表不一致。
+# 现在这里是唯一真源，审计脚本直接 import 本常量。
+CAP_WORDING_BANNED = ("无上限", "无限叠加", "可无限", "不封顶", "无次数限制",
+                      "不设上限", "没有上限", "上限无", "无叠加上限", "没有次数限制")
+# ChangeSkillFlag 族（规则 2 的适用范围）；本角色零行，检查器只用于防回归
+SKILL_FLAG_KINDS = frozenset({"536", "704", "705", "706", "707", "708"})
+# 本角色全部玩家可见文案（character_text 的 c2/c3/c4/c6/c10 与 action_skill c0/c1 同源）
+PANEL_TEXTS = {"SKILL_NAME_1": SKILL_NAME_1, "SKILL_NAME_2": SKILL_NAME_2, "SKILL_DESC": SKILL_DESC,
+               "PROFILE": PROFILE, "LEADER_NAME": LEADER_NAME, "TITLE": TEXTS["title"],
+               "UNIQUE_NAME": UNIQUE_NAME, "CAS_TEXT": CAS_TEXT}
 
 # action_skill：161069 blackflower_wiz inner 行为底（c2 图标 atk_nearest、c8-c23 自动施放区域原样）
 ACTION_DONOR = "blackflower_wiz"
@@ -161,8 +299,11 @@ EFFECT_FAMILIES = (
 
 # 技能树参数（设计 §6.1 / f3_tree.py V）
 HEART_NAME = "`自身のハート"
-KEY_DD = "百合夜直撃バフ"
-KEY_FS = "百合夜最大速度固定"
+# 固定区分键（带 vlv 的 CreateCondition 必须有非空键，否则不同层数会叠加）；R11 统一叫「夜百合」
+KEY_DD = "夜百合直撃バフ"
+KEY_FS = "夜百合最大速度固定"
+KEY_PC = "夜百合貫通"
+UNIQUE_CAP = int(UNIQUE_MAX)
 
 
 def _slv(a, b=None, vlv=None):
@@ -173,14 +314,298 @@ def _slv(a, b=None, vlv=None):
 
 
 TREE_VALUES = {
-    "1": dict(garden_mul=_slv(2.0), fin_mul=_slv(6.7, vlv=[{"vid": 2, "min": 0, "max": 0.6}]),
-              dd=_slv(0.8, vlv=[{"vid": 1, "min": 0, "max": 0.1}]), pierce=_slv(1080),
-              fs_time=_slv(720), fs_speed=_slv(1), fs_charge=_slv(0)),
-    "2": dict(garden_mul=_slv(2.6, 3.0), fin_mul=_slv(8.7, 10, vlv=[{"vid": 2, "min": 0, "max": 0.6}]),
-              dd=_slv(1.0, 1.25, vlv=[{"vid": 1, "min": 0, "max": 0.1}]), pierce=_slv(1200),
-              fs_time=_slv(900), fs_speed=_slv(1), fs_charge=_slv(0)),
+    "1": dict(garden_mul=_slv(2.0), fin_mul=_slv(6.7, vlv=[{"vid": 2, "min": 0, "max": 0.6}])),
+    "2": dict(garden_mul=_slv(2.6, 3.0), fin_mul=_slv(8.7, 10, vlv=[{"vid": 2, "min": 0, "max": 0.6}])),
 }
 
+# ---------------------------------------------------------------- 迁移源（R1「移动」的原块）
+#
+# 审查第 1/3 条换来的门禁：R1 是「把技能赋予的强化效果**移动**到能力1」，不是重新设计，
+# 所以 ability_skill 的参数必须能与**上一轮 live（归档包 1.4.873）技能树 Wait(1) 容器里的原块**逐项对齐，
+# 差异只允许出现在 MIGRATION_DIFF 白名单里。下面是那三块的逐字快照（两档分开记）：
+# 复核脚本 revision-20260916/primula/_fix/f1_archive_block.py 直接从归档包字节解出同样的值；
+# 测试 ``test_ability_skill_values_match_migrated_live_block`` 在归档包在场时用实际字节复核这份快照。
+#
+# **取哪一档**：``ability_skill`` 是一份 DSL，不随技能等级分档，所以整套取「＋」档（skill_2，满技能等级形态），
+# 即玩家在真机上实际体验到的强度。lv1 档的数值一并记下来只为留证，不参与断言。
+MIGRATION_ARCHIVE = "s7-primula-20260916-1.4.873"
+MIGRATION_LEVEL = "2"
+MIGRATION_SOURCE = {
+    # lv1 档（blackflower_wiz_yukata_1）——留证，不是迁移基准
+    "1": {"ACDirectDamage": [[{"min": 1200, "max": 1200}],
+                             [{"min": 0.8, "max": 0.8, "vlv": [{"vid": 1, "min": 0, "max": 0.1}]}],
+                             [{"min": 1, "max": 1}]],
+          "ACPiercing": [[{"min": 1080, "max": 1080}]],
+          "ACFixedSpeed": [[{"min": 720, "max": 720}], [{"min": 1, "max": 1}],
+                           [{"min": 0, "max": 0}], [{"min": 1, "max": 1}]]},
+    # 「＋」档（blackflower_wiz_yukata_2）——迁移基准
+    "2": {"ACDirectDamage": [[{"min": 1200, "max": 1200}],
+                             [{"min": 1.0, "max": 1.25, "vlv": [{"vid": 1, "min": 0, "max": 0.1}]}],
+                             [{"min": 1, "max": 1}]],
+          "ACPiercing": [[{"min": 1200, "max": 1200}]],
+          "ACFixedSpeed": [[{"min": 900, "max": 900}], [{"min": 1, "max": 1}],
+                           [{"min": 0, "max": 0}], [{"min": 1, "max": 1}]]},
+}
+# 允许与迁移源不同的项：(AC 名, 参数序号) -> (**写死的新值**, 理由)。
+# 白名单登记的是「改成什么」，不是「这一项随便改」—— 其它任何取值照样判红。
+MIGRATION_DIFF = {
+    ("ACDirectDamage", 1): ([{"min": 1.25, "max": 1.25, "vlv": [{"vid": 1, "min": 0, "max": 0.1}]}],
+                            "SLv(1.0→1.25) 折成 ALv 常量，取「＋」档满值 1.25；"
+                            "每层 +0.1 的 vlv 逐字保留（0 层 +125%，20 层 +325%）"),
+    ("ACPiercing", 0): ([{"min": 1200, "max": 1200, "vlv": [{"vid": 1, "min": 0, "max": 120}]}],
+                        "R8 新增 vlv：每层夜百合 +120 帧（= 基础 1200 帧的 10%）；基础时长 1200 帧不变，"
+                        "20 层 = 3600 帧 = 60 秒"),
+}
+
+# 能力1 的 ability_skill（629 调用）参数。629 的 SLv 走 ALv（MemberImpl.as:8154），不是技能等级，
+# 所以全部 min == max，避免按能力等级插值产生歧义（plan.json dsl.new_program.slv_note）。
+# 直击增伤与贯穿时长各挂一条 vlv：value = min + (max-min) × 变量，变量 = min(夜百合层数/1, 20)
+# ⇒ 直击 1.25 + 0.1/层（20 层 = +325%）、贯穿 1200 帧 + 120 帧/层（20 层 = 3600 帧 = 60 秒，改版 R8）。
+AS_VALUES = dict(dd_time=_slv(1200), dd=_slv(1.25, vlv=[{"vid": 1, "min": 0, "max": 0.1}]), dd_count=_slv(1),
+                 pierce=_slv(1200, vlv=[{"vid": 1, "min": 0, "max": 120}]),
+                 fs_time=_slv(900), fs_speed=_slv(1), fs_charge=_slv(0))
+# ACFixedSpeed 的第 4 参在 compose 里是常量（层数 1），迁移源比对时补上
+FS_STACK = [{"min": 1, "max": 1}]
+
+
+def ac_payloads(tree, names) -> dict[str, list[list]]:
+    """树里每个 AdditionalCondition 的参数载荷，按 AC 名归组（同名可能出现多处）。"""
+    out: dict[str, list[list]] = {}
+    def walk(n):
+        if isinstance(n, list):
+            if n and isinstance(n[0], str) and n[0] in names:
+                out.setdefault(n[0], []).append(copy.deepcopy(list(n[1:])))
+            for x in n:
+                walk(x)
+    walk(tree)
+    return out
+
+
+def migration_problems(tree=None, values: dict | None = None, source: dict | None = None,
+                       level: str = MIGRATION_LEVEL) -> list[str]:
+    """R1「移动」的忠实度门禁：新块参数 vs 迁移源，差异只允许在 MIGRATION_DIFF 白名单里。
+
+    给 ``tree`` 就从成品树里取（run_gates 用包内字节），否则从 ``AS_VALUES`` 取（静态门禁用）。
+    负向用例正是审查的第 1 条（直击增伤丢掉逐层成长 vlv）与第 3 条（基础时长换成别的档位）。
+    """
+    src = (MIGRATION_SOURCE if source is None else source)[level]
+    probs: list[str] = []
+    if tree is not None:
+        found = ac_payloads(tree, set(src))
+        got = {}
+        for ac in src:
+            occ = found.get(ac) or []
+            if not occ:
+                probs.append(f"{ac}: 成品树里找不到")
+                continue
+            if any(o != occ[0] for o in occ[1:]):
+                probs.append(f"{ac}: 树里 {len(occ)} 处载荷不一致")
+            got[ac] = occ[0]
+    else:
+        v = AS_VALUES if values is None else values
+        got = {"ACDirectDamage": [v["dd_time"], v["dd"], v["dd_count"]],
+               "ACPiercing": [v["pierce"]],
+               "ACFixedSpeed": [v["fs_time"], v["fs_speed"], v["fs_charge"], FS_STACK]}
+    for ac, want in src.items():
+        mine = got.get(ac)
+        if mine is None:
+            continue
+        if len(mine) != len(want):
+            probs.append(f"{ac}: 参数个数 {len(mine)} != 迁移源 {len(want)}")
+            continue
+        for i, (a, b) in enumerate(zip(mine, want)):
+            allowed = MIGRATION_DIFF.get((ac, i))
+            if allowed is not None:
+                # 白名单登记的是**必须改成的样子**，不是「这一项随便改」：改少了、改多了都判红
+                if a != allowed[0]:
+                    probs.append(f"{ac}[{i}] 必须等于白名单登记的新值 {allowed[0]!r}"
+                                 f"（登记理由：{allowed[1]}）；实际 {a!r}，迁移源是 {b!r}")
+                continue
+            if a == b:
+                continue
+            if any(isinstance(d, dict) and "vlv" in d for d in b) \
+                    and not any(isinstance(d, dict) and "vlv" in d for d in a):
+                probs.append(f"{ac}[{i}] 迁移源带 vlv（逐层成长），新值把它丢了：{a!r}")
+                continue
+            probs.append(f"{ac}[{i}] 与迁移源不同且不在白名单：{a!r} != 迁移源 {b!r}")
+    return probs
+
+
+def cas_text_problems(text: str = None) -> list[str]:
+    """629 行的 CAS 正文不得复述前置/触发（客户端已经渲染过一遍，会重复显示）。"""
+    t = CAS_TEXT if text is None else text
+    return [f"CAS 正文含前置/触发措辞 {w!r}（详情页会重复渲染一遍）" for w in CAS_FORBIDDEN if w in t]
+
+
+# 规则 2 的「技能强化」条目识别：正序「强化『技能名』…」与倒装「『技能名』…强化」都要认出来
+# （改版 2 审查第 3 条：原来只有正序一支，语序一换就漏）。
+_QUOTED = r"[「『“\"][^」』”\"]+[」』”\"]"
+SKILL_ENHANCE_CLAUSE = re.compile(rf"强化\s*{_QUOTED}|{_QUOTED}[^；;。\n]*强化")
+# 中文数字也算「写了数字」（规则 2 的负向用例「持续十五秒」）
+_CN_NUM = r"[零一二两三四五六七八九十百千]"
+
+
+def panel_text_problems(texts: dict[str, str] | None = None) -> list[str]:
+    """面板文案两条规则（作者 2026-09-16 晚补充，``revision2-20260916/文案规则-补充.md``）。
+
+    规则 1：面板不出现「无上限」三个字——没有上限的成长写到效果为止，后面什么都不跟
+    （替代说法「可无限叠加」「不封顶」「不设上限」「没有上限」同样禁）；**有上限的才写上限**，
+    所以写了「每层“夜百合”…」逐层成长的文案必须带 ``CAP_PHRASE``（夜百合真上限 20 层，
+    上限只存在于 DSL 的 BindConditionAccumulationVariable 第 5 参，面板不写玩家无从得知）。
+    规则 2：「技能强化」（``ChangeSkillFlag`` 536/704…）条目只写强化了什么，不写数字与持续秒数。
+
+    本角色 2026-09-16 二轮复核：一行 ChangeSkillFlag 都没有 ⇒ 规则 2 无适用条目，检查器留着防回归；
+    规则 1 的上限句在改版 2 按审查第 2 条补进 ``CAS_TEXT``。
+    """
+    t = PANEL_TEXTS if texts is None else texts
+    probs: list[str] = []
+    for name, text in t.items():
+        text = text or ""
+        for w in CAP_WORDING_BANNED:
+            if w in text:
+                probs.append(f"{name} 含无上限措辞 {w!r}（规则 1：没有上限就写到效果为止，后面什么都不跟）")
+        # 规则 1 第三条：有上限就得写出来
+        if re.search(rf"每层\s*[「『“\"]?{re.escape(UNIQUE_NAME)}", text) and CAP_PHRASE not in text:
+            probs.append(f"{name} 写了“{UNIQUE_NAME}”逐层成长却没写上限"
+                         f"（规则 1：有上限的才写上限，应含 {CAP_PHRASE!r}）")
+        # 规则 2 只管「强化『技能名』」这类条目；「强化弹射」不带引号，不会误判
+        for clause in re.split(r"[；;。\n]", text):
+            if not SKILL_ENHANCE_CLAUSE.search(clause):
+                continue
+            if re.search(r"[0-9０-９]", clause) or re.search(rf"{_CN_NUM}+(?:%|％|秒|帧|次|层|段)", clause):
+                probs.append(f"{name} 的技能强化条目写了数字（规则 2：只写强化了什么）：{clause.strip()!r}")
+            if re.search(r"秒|帧", clause):
+                probs.append(f"{name} 的技能强化条目写了时间（规则 2：只写强化了什么）：{clause.strip()!r}")
+    return probs
+
+
+def unison_lock_problems(rows_by_key: dict[str, list[list[str]]]) -> list[str]:
+    """629 InvokeSkill 行必须主位绑定（改版 2 审查第 1 条换来的常驻门禁）。
+
+    629 的演出者硬绑主位、官方零副位先例（官方 ability 全表唯一一行 629 = 1611053#0，正是本角色的
+    donor，它所在键 values[0]=false）。共鸣前置是**编成条件**，与主位/副位正交，挡不住副位装配：
+    副位行整体并入主位角色能力池，会由主位的技能发动拉起（wf-unison-slot-mechanics）。
+    判据二选一：整键 ``values[0]``（= record0 的 c1）为 ``false``，或该行三个 precondition 块含 202。
+    """
+    probs: list[str] = []
+    for key in sorted(rows_by_key):
+        rows = rows_by_key[key]
+        if not rows:
+            continue
+        values0 = rows[0][1] if len(rows[0]) > 1 else ""
+        for i, row in enumerate(rows):
+            if len(row) <= 47 or row[47] != "629":
+                continue
+            pre_kinds = [row[c] for c in (6, 13, 20) if c < len(row)]
+            if values0 == "false" or "202" in pre_kinds:
+                continue
+            probs.append(f"{key}#{i} 是 629 InvokeSkill，但整键 values[0]={values0!r} 可进合击池"
+                         f"、且前置 {pre_kinds} 里没有 202 OwnerIsMain ⇒ 副位会把它并进主位能力池"
+                         f"（官方零副位先例；正形＝202 主位门 + c1 保持 true）")
+    return probs
+
+
+def lily_layer_rows(rows_by_key: dict[str, list[list[str]]]) -> list[tuple[str, int, list[str]]]:
+    """全部「每层“夜百合” → …」的持续行：during 行（c5=1）+ during_trigger 134 + 固有 ID = 本角色的。"""
+    out = []
+    for key in sorted(rows_by_key):
+        for i, row in enumerate(rows_by_key[key]):
+            if len(row) > 118 and row[5] == "1" and row[97] == LAYER_TRIGGER and row[104] == UID:
+                out.append((key, i, row))
+    return out
+
+
+def lily_layer_target_problems(rows_by_key: dict[str, list[list[str]]]) -> list[str]:
+    """「每层夜百合」的加成必须落在作者指定的受益面上（改版 3 换来的常驻门禁）。
+
+    三条判据，缺一条这门禁就成摆设：
+      1. 目标只准是 ``5``+``Black``（暗属性角色全体）或 ``8``（协力球）；留 ``0`` 自身＝回归到改版 3 之前。
+      2. 协力球读不到的效果 kind（``LILY_MULTIBALL_UNREADABLE``）**不准**配 target 8：
+         客户端的读取函数根本不查 multiball 合计器，行是死的，面板却会照写「协力球」＝面板说谎。
+      3. 协力球读得到的效果 kind（``LILY_MULTIBALL_READABLE``）必须**两个目标各一条**，
+         少一条就是「给了暗属性全体没给协力球」或反过来，都没做到作者要求。
+    """
+    probs: list[str] = []
+    seen: dict[str, set[str]] = {}
+    for key, i, row in lily_layer_rows(rows_by_key):
+        kind, target, groups = row[109], row[110], row[111]
+        seen.setdefault(kind, set()).add(target)
+        if target == LILY_PARTY_TARGET:
+            if groups != LILY_PARTY_GROUPS:
+                probs.append(f"{key}#{i} 每层夜百合给全队但目标角色组是 {groups!r}，应为 {LILY_PARTY_GROUPS!r}"
+                             f"（空串＝谁都不匹配的死值，wf-character-groups-semantics）")
+        elif target == LILY_ASSIST_TARGET:
+            if kind in LILY_MULTIBALL_UNREADABLE:
+                probs.append(f"{key}#{i} 把 during kind {kind} 发给协力球(target 8)，但客户端读取路径不查 "
+                             f"multiball 合计器 ⇒ 死行、面板却写「协力球」")
+        else:
+            probs.append(f"{key}#{i} 每层夜百合的目标是 {target!r}（改版 3 只许 "
+                         f"{LILY_PARTY_TARGET}+{LILY_PARTY_GROUPS} 暗属性角色全体 或 {LILY_ASSIST_TARGET} 协力球）")
+    for kind, targets in sorted(seen.items()):
+        want = {LILY_PARTY_TARGET, LILY_ASSIST_TARGET} if kind in LILY_MULTIBALL_READABLE else {LILY_PARTY_TARGET}
+        if targets != want:
+            probs.append(f"每层夜百合 during kind {kind} 的受益面是 {sorted(targets)}，应为 {sorted(want)}"
+                         f"（协力球可达的 kind 必须暗属性全体与协力球各一条）")
+    return probs
+
+
+# ---- 改版 2 与上一轮设计件的差异登记 -----------------------------------------------------
+# 设计件 ``revision-20260916/primula/primula.json`` 是上一轮的**只读证据**，本轮不改它；
+# 审查换来的两处改动因此与设计件不同，逐项登记在下面。比对时先把设计件补到改版 2 形态，
+# **未登记的任何差异照样判红** —— 登记的是「必须改成什么」，不是「这里随便改」。
+#   审查第 1 条：629 行 precondition1 改 202 主位门、暗共鸣退到 precondition2；
+#   审查第 2 条：CAS 正文插入上限句（夜百合真上限 20 层，面板不写玩家看不到）。
+REV2_ROW_DELTA = {(f"{CID}1", 2): {6: "202", 9: "", 10: "", 11: "",
+                                   13: "2", 16: "600000", 17: "600000", 18: "Black"}}
+REV2_CAS_INSERT = f"（{CAP_PHRASE}）"
+
+
+def rev2_design_rows(slot_key: str, rows: list[list[str]]) -> list[list[str]]:
+    """设计件里某一槽的行 → 改版 2 期望形态（只改 ``REV2_ROW_DELTA`` 登记过的列）。"""
+    out: list[list[str]] = []
+    for i, row in enumerate(rows):
+        r = list(row)
+        for col, val in (REV2_ROW_DELTA.get((slot_key, i)) or {}).items():
+            r[col] = val
+        out.append(r)
+    return out
+
+
+def rev2_design_cas() -> str:
+    """改版 2 的 CAS 正文去掉上限句 = 设计件里的原文（唯一允许的差异就是这一句）。"""
+    return CAS_TEXT.replace(REV2_CAS_INSERT, "")
+
+
+# ---- 改版 3 与设计件的差异登记（同 REV2：登记的是「必须改成什么」，未登记的差异照样判红）------------
+#   作者要求：夜百合的能力3 加成给到暗属性角色全体和协力球，而不是自身。
+#   A3#4（设计件 slot3 index 3，独立乘区直击）目标列 0 自身 → 5+Black 暗属性角色全体。
+REV3_ROW_DELTA = {(f"{CID}3", 3): {110: LILY_PARTY_TARGET, 111: LILY_PARTY_GROUPS}}
+#   设计件里没有的新行：(槽键, 插入位置) -> (照抄 delta 后的哪一行, 该行基础上要改的列)。
+#   每层攻击力那条再发一份给协力球；源行下标必须小于插入位置（目前只有一条，多条时需自行核对下标位移）。
+REV3_ROW_INSERT = {(f"{CID}3", 3): (2, {110: LILY_ASSIST_TARGET, 111: ""})}
+
+
+def rev3_design_rows(slot_key: str, rows: list[list[str]]) -> list[list[str]]:
+    """改版 2 形态的设计行 → 改版 3 期望形态（先改登记过的列，再插入登记过的新行）。"""
+    out = [list(row) for row in rows]
+    for i, row in enumerate(out):
+        for col, val in (REV3_ROW_DELTA.get((slot_key, i)) or {}).items():
+            row[col] = val
+    for (key, pos), (src, edits) in sorted(REV3_ROW_INSERT.items(), key=lambda kv: kv[0][1]):
+        if key != slot_key:
+            continue
+        if not src < pos <= len(out):
+            raise KitError(f"REV3_ROW_INSERT {key}@{pos}: 源行下标 {src} 必须小于插入位置且位置在范围内")
+        row = list(out[src])
+        for col, val in edits.items():
+            row[col] = val
+        out.insert(pos, row)
+    return out
+
+
+def design_rows_expected(slot_key: str, rows: list[list[str]]) -> list[list[str]]:
+    """设计件原行 → 当前改版期望的成品行（rev2 列 delta → rev3 列 delta + 新行）。"""
+    return rev3_design_rows(slot_key, rev2_design_rows(slot_key, rows))
 
 class KitError(RuntimeError):
     pass
@@ -237,8 +662,8 @@ def build_unique_row(pack) -> list[str]:
         raise KitError("official baseline lacks unique_condition table")
     donor = C.csv_split(core.read_orderedmap_file_from_bytes(raw)[UNIQUE_DONOR])[0]
     row = _apply_edits(donor, UNIQUE_EDITS, f"unique_condition:{UNIQUE_DONOR}")
-    if row[4] in ("", "(None)") or int(row[4]) != 10:
-        raise KitError(f"unique max_accumulation must be 10, got {row[4]!r}")
+    if row[4] in ("", "(None)") or int(row[4]) != int(UNIQUE_MAX):
+        raise KitError(f"unique max_accumulation must be {UNIQUE_MAX}, got {row[4]!r}")
     return row
 
 
@@ -314,9 +739,6 @@ def compose_tree(pack, level: str) -> tuple[list, list[dict]]:
     log = _Log()
     W = pack.template_dsl(_program(pack, "blackflower_wiz", level))
     S2 = pack.template_dsl(_program(pack, "blackflower_wiz_smr22", level))
-    SA = pack.template_dsl(_program(pack, "sing_android_hw20", "2"))
-    MW = pack.template_dsl(_program(pack, "mirror_witch", "2"))
-    SW = pack.template_dsl(_program(pack, "special_week", "2"))
     v = TREE_VALUES[level]
     root = []
     # B0 扇舞（smr22 heart，挂 -17）
@@ -392,6 +814,8 @@ def compose_tree(pack, level: str) -> tuple[list, list[dict]]:
     if _cmd(leader)[0] != "IfThisCharacterIsLeader":
         raise KitError("B3 leader heal block missing")
     log.setp("B3_hanabi.bind_vid2", bind2, 2, ["DCUnique", 11], ["DCUnique", UID_INT])
+    # 改版 R7：烟花倍率变量的上限必须跟随夜百合新上限，漏改就停在 10 层
+    log.setp("B3_hanabi.bind_vid2", bind2, 4, 10, UNIQUE_CAP)
     log.setp("B3_hanabi.HA_F", ha_f, 1, 0, 11)
     log.setp("B3_hanabi.HA_F", ha_f, 8, ["Circle", [{"min": 250, "max": 250}]], ["Circle", [{"min": 300, "max": 300}]])
     for i, (o, n) in zip((18, 20, 21), ((3, 18), (4, 19), (5, 20))):
@@ -407,59 +831,113 @@ def compose_tree(pack, level: str) -> tuple[list, list[dict]]:
     log.note("B3_hanabi.wait_hit", "Wait", "p2 body", "[Bind vid2, HA, IfThisCharacterIsLeader(heal)]", "[Bind vid2, HA]")
     rpb.extend([w38, w60])
     root.append(g)
-    # W1：官方 smr22 Wait 1 容器
-    w1 = copy.deepcopy(_get(S2, [11, 1, 2, 1, 11, 1, 1]))
-    if not (_cmd(w1)[0] == "Wait" and _cmd(w1)[1] == 1):
-        raise KitError("W1 Wait 1 missing")
-    w1b = _get(w1, [1, 3, 1])
-    b1 = w1b[0]
-    if _cmd(b1)[0] != "BindConditionAccumulationVariable":
-        raise KitError("W1 Bind vid1 missing")
-    log.setp("W1.B1_bind_vid1", b1, 2, ["DCUnique", 11], ["DCUnique", UID_INT])
-    # B4 全队增益（sing_android_hw20 FindAll(33) + mirror_witch ACPiercing）
-    fa = copy.deepcopy(_get(SA, [11, 1, 4]))
-    if not (_cmd(fa)[0] == "FindAllSubjects" and _cmd(fa)[2] == 33):
-        raise KitError("B4 FindAll(33) missing")
-    log.setp("W1.B4_team", fa, 0, 0, 30)
-    body = _get(fa, [1, 9, 1])
-    dd = body[1]
-    if _cmd(dd)[2][0][0] != "ACDirectDamage":
-        raise KitError("B4 ACDirectDamage missing")
-    log.setp("W1.B4_team.ACDirectDamage", dd, 0, 0, 30)
-    log.setp("W1.B4_team.ACDirectDamage", dd, 1, _cmd(dd)[2],
-             [["ACDirectDamage", [{"min": 1200, "max": 1200}], v["dd"], [{"min": 1, "max": 1}]]])
-    log.setp("W1.B4_team.ACDirectDamage", dd, 6, "", KEY_DD)
-    pc = copy.deepcopy(_get(MW, [11, 1, 3, 1, 9, 1, 0]))
-    if _cmd(pc)[2][0][0] != "ACPiercing":
-        raise KitError("B4 ACPiercing missing")
-    log.setp("W1.B4_team.ACPiercing", pc, 0, 0, 30)
-    log.setp("W1.B4_team.ACPiercing", pc, 1, _cmd(pc)[2], [["ACPiercing", v["pierce"]]])
-    body[:] = [dd, pc]
-    log.note("W1.B4_team", "FindAllSubjects", "p8 body", "[CC ACAttackPoint, CC ACDirectDamage]",
-             "[CC ACDirectDamage(vlv vid1, fixed key), CC ACPiercing]")
-    # B6 ≥5 层 → 暗主队最大速度固定（special_week_2 块形状）
-    fs = copy.deepcopy(_get(SW, [11, 1, 4, 1, 1, 1, 0]))
-    if not (_cmd(fs)[0] == "FindAllSubjects" and _cmd(fs)[2] == 82):
-        raise KitError("B6 FindAll(82) missing")
-    log.setp("W1.B6_layers5.f82", fs, 0, 1, 32)
-    log.setp("W1.B6_layers5.f82", fs, 2, [], [6])
-    fcc = _get(fs, [1, 9, 1, 0])
-    if not (_cmd(fcc)[2][0][0] == "ACFixedSpeed" and _cmd(fcc)[10] == 3):
-        raise KitError("B6 ACFixedSpeed (target kind 3) missing")
-    log.setp("W1.B6_layers5.ACFixedSpeed", fcc, 0, 1, 32)
-    log.setp("W1.B6_layers5.ACFixedSpeed", fcc, 1, _cmd(fcc)[2],
-             [["ACFixedSpeed", v["fs_time"], v["fs_speed"], v["fs_charge"], [{"min": 1, "max": 1}]]])
-    log.setp("W1.B6_layers5.ACFixedSpeed", fcc, 6, "スペシャルウィーク最大速度固定", KEY_FS)
-    cond = ["Command", ["ConditionalsConditionAccumulationNumber", ["DCUnique", UID_INT], 5,
-                        ["Block", [fs]], ["Block", []]]]
-    log.note("W1.B6_layers5", "ConditionalsConditionAccumulationNumber", "new node",
-             "combat_soldier_smr22_2 shape", f"[DCUnique {UID}],5,Block[FindAll(32,82,[6]) ACFixedSpeed],Block[]")
-    w1b[:] = [b1, fa, cond]
-    log.note("W1", "Wait", "p2 body", "[Bind vid1, CC(-17) ACSkillDamage]", "[Bind vid1, B4, B6]")
-    root.append(w1)
+    # 改版 R1/R13：原根部 Wait 1 容器（Bind vid1 + B4 全队增益 + B6 ≥5 层速度固定）整块迁到
+    # 能力1 的 ability_skill DSL（compose_ability_skill_tree），技能树只留 [B0 扇舞, B2 花园(含 B3 烟花)]。
+    log.note("W1", "Wait", "root block", "[Bind vid1, B4 team buffs, B6 fixed speed]",
+             "removed → ability_skill_" + CODE)
     tree = ["ActionDsl", 1, ["None"], False, False, False, False, False, False, False, 0, ["Block", root]]
     if W[:11] != tree[:11]:
         raise KitError(f"root head differs from 161069 source: {W[:11]}")
+    if len(root) != 2:
+        raise KitError(f"skill tree root must hold 2 blocks after the revision, got {len(root)}")
+    return tree, log.items
+
+
+def compose_ability_skill_tree(pack) -> tuple[list, list[dict]]:
+    """能力1#3（629 InvokeSkill）调用的 ability_skill DSL（改版 R1/R2/R3/R8/R13）。
+
+    块序：Bind vid1（夜百合层数，cap 20）→ FindAll(33,[6]) 暗属性角色 → FindAll(145,[]) 协力球 → ≥5 层速度固定。
+    每块里 CreateCondition 挂 ACDirectDamage（+125% ＋ 10%/层，1200 帧）与 ACPiercing（1200 帧 ＋ 120 帧/层）；
+    两块用同一组固定区分键，重复赋予只刷新不叠加。
+
+    参数不是新设计的：整套取自上一轮 live 技能树被搬走的那三块（``MIGRATION_SOURCE["2"]``，「＋」档），
+    差异由 ``MIGRATION_DIFF`` 白名单列明，``migration_problems()`` 逐项守住。
+    """
+    log = _Log()
+    S2 = pack.template_dsl(_program(pack, "blackflower_wiz_smr22", "2"))
+    SA = pack.template_dsl(_program(pack, "sing_android_hw20", "2"))
+    MW = pack.template_dsl(_program(pack, "mirror_witch", "2"))
+    SW = pack.template_dsl(_program(pack, "special_week", "2"))
+    AS = pack.template_dsl("battle/action/skill/action/ability_skill/"
+                           "ability_skill_estateguild_leader$ability_skill_estateguild_leader")
+    v = AS_VALUES
+
+    # B1 Bind vid1 = min(夜百合层数 / 1, 20)（官方 smr22 Wait 1 容器里的绑定）
+    w1b = _get(copy.deepcopy(_get(S2, [11, 1, 2, 1, 11, 1, 1])), [1, 3, 1])
+    b1 = w1b[0]
+    if _cmd(b1)[0] != "BindConditionAccumulationVariable":
+        raise KitError("AS Bind vid1 missing")
+    log.setp("AS.bind_vid1", b1, 2, ["DCUnique", 11], ["DCUnique", UID_INT])
+    log.setp("AS.bind_vid1", b1, 4, 10, UNIQUE_CAP)
+    log.expect("AS.bind_vid1", b1, 0, -17)
+    log.expect("AS.bind_vid1", b1, 1, 1)
+    log.expect("AS.bind_vid1", b1, 3, 1)
+
+    def team_block(label: str, bind_id: int, selector: int, filt: list[int]):
+        """sing_android_hw20 的 FindAllSubjects(33) 壳 + mirror_witch 的 ACPiercing。"""
+        fa = copy.deepcopy(_get(SA, [11, 1, 4]))
+        if not (_cmd(fa)[0] == "FindAllSubjects" and _cmd(fa)[2] == 33):
+            raise KitError(f"{label}: donor FindAll(33) missing")
+        log.expect(label, fa, 7, ["DoNothing"])          # IfTargetNotFound 枚举位，不是表达式位
+        if bind_id != 0:
+            log.setp(label, fa, 0, 0, bind_id)
+        if selector != 33:
+            log.setp(label, fa, 1, 33, selector)
+        if filt:
+            log.setp(label, fa, 2, [], list(filt))
+        body = _get(fa, [1, 9, 1])
+        dd = body[1]
+        if _cmd(dd)[2][0][0] != "ACDirectDamage":
+            raise KitError(f"{label}: donor ACDirectDamage missing")
+        if bind_id != 0:
+            log.setp(label + ".ACDirectDamage", dd, 0, 0, bind_id)
+        # 两块共用同一份 AS_VALUES：deepcopy 出来，避免两棵子树共享同一个 SLv 列表对象
+        log.setp(label + ".ACDirectDamage", dd, 1, _cmd(dd)[2],
+                 [["ACDirectDamage", copy.deepcopy(v["dd_time"]), copy.deepcopy(v["dd"]),
+                   copy.deepcopy(v["dd_count"])]])
+        log.setp(label + ".ACDirectDamage", dd, 6, "", KEY_DD)
+        pc = copy.deepcopy(_get(MW, [11, 1, 3, 1, 9, 1, 0]))
+        if _cmd(pc)[2][0][0] != "ACPiercing":
+            raise KitError(f"{label}: donor ACPiercing missing")
+        if bind_id != 0:
+            log.setp(label + ".ACPiercing", pc, 0, 0, bind_id)
+        log.setp(label + ".ACPiercing", pc, 1, _cmd(pc)[2], [["ACPiercing", copy.deepcopy(v["pierce"])]])
+        log.setp(label + ".ACPiercing", pc, 6, "", KEY_PC)
+        body[:] = [dd, pc]
+        log.note(label, "FindAllSubjects", "p8 body", "[CC ACAttackPoint, CC ACDirectDamage]",
+                 "[CC ACDirectDamage(fixed key), CC ACPiercing(vlv vid1, fixed key)]")
+        return fa
+
+    # B2 暗属性角色（33 = 主小队 + 存活多球小队成员；过滤数组是 1 基属性码，[6] = 暗）
+    team_dark = team_block("AS.team_dark", 0, 33, [6])
+    # B3 协力球（145 = 全部多球小队成员，不过滤属性）
+    team_ball = team_block("AS.team_ball", 1, 145, [])
+
+    # B4 ≥5 层 → 暗主队最大速度固定（special_week_2 块形状原样搬入）
+    fs = copy.deepcopy(_get(SW, [11, 1, 4, 1, 1, 1, 0]))
+    if not (_cmd(fs)[0] == "FindAllSubjects" and _cmd(fs)[2] == 82):
+        raise KitError("AS FindAll(82) missing")
+    log.setp("AS.layers5.f82", fs, 0, 1, 2)
+    log.setp("AS.layers5.f82", fs, 2, [], [6])
+    fcc = _get(fs, [1, 9, 1, 0])
+    if not (_cmd(fcc)[2][0][0] == "ACFixedSpeed" and _cmd(fcc)[10] == 3):
+        raise KitError("AS ACFixedSpeed (target kind 3) missing")
+    log.setp("AS.layers5.ACFixedSpeed", fcc, 0, 1, 2)
+    log.setp("AS.layers5.ACFixedSpeed", fcc, 1, _cmd(fcc)[2],
+             [["ACFixedSpeed", v["fs_time"], v["fs_speed"], v["fs_charge"], [{"min": 1, "max": 1}]]])
+    log.setp("AS.layers5.ACFixedSpeed", fcc, 6, "スペシャルウィーク最大速度固定", KEY_FS)
+    # 否分支必须是 ["Block", []]；写 ["DoNothing"] 进游戏 F1009（wf-dsl-donothing-enum-trap）
+    cond = ["Command", ["ConditionalsConditionAccumulationNumber", ["DCUnique", UID_INT], 5,
+                        ["Block", [fs]], ["Block", []]]]
+    log.note("AS.layers5", "ConditionalsConditionAccumulationNumber", "new node", "special_week_2 shape",
+             f"[DCUnique {UID}],5,Block[FindAll(2,82,[6]) ACFixedSpeed],Block[]")
+
+    root = [b1, team_dark, team_ball, cond]
+    tree = ["ActionDsl", 1, ["None"], False, False, False, False, False, False, False, 0, ["Block", root]]
+    if AS[:11] != tree[:11]:
+        raise KitError(f"root head differs from official ability_skill source: {AS[:11]}")
+    log.note("AS", "ActionDsl", "root", "battle/action/skill/action/ability_skill/ability_skill_estateguild_leader",
+             AS_PROGRAM)
     return tree, log.items
 
 
@@ -877,14 +1355,19 @@ def install_pixel(ctx) -> dict[str, Any]:
 # ---------------------------------------------------------------- 图标
 
 def draw_icon(frame) -> Any:
-    """48×48：沿用官方固有图标外框 alpha 与白边，内底夜靛渐变，白色百合 + 金团扇。"""
+    """48×48：沿用官方固有图标外框 alpha 与白边，内底夜空渐变，白色百合 + 金团扇 + 金新月。
+
+    改版 R6（revision-20260916）：底色比上一版更暗（#1E1442 → #5A3A96）以托住白百合；百合左上加一弯
+    金色新月（压在花瓣下层）点出「夜」；花瓣外缘加 1px 淡藤描边，避免纯白在浅色格子里糊成一团。
+    不画数字——右下层数、右上永续由客户端绘制。
+    """
     from PIL import Image, ImageDraw
     if frame.size != (48, 48):
         raise KitError(f"icon frame donor must be 48x48, got {frame.size}")
     K = 8
     N = 48 * K
     layer = Image.new("RGBA", (N, N), (0, 0, 0, 0))
-    top, bot = (40, 26, 92), (116, 70, 186)
+    top, bot = (30, 20, 66), (90, 58, 150)
     grad = Image.new("RGBA", (1, N))
     for y in range(N):
         t = y / (N - 1)
@@ -895,6 +1378,13 @@ def draw_icon(frame) -> Any:
     layer.paste(grad, (0, 0), inner)
     d = ImageDraw.Draw(layer)
     gold, gold_dk = (236, 192, 90, 255), (170, 118, 38, 255)
+    # 新月（画在百合之下：先画，后面的花瓣会压住右下缘）
+    mcx, mcy, mr = 11.0 * K, 12.5 * K, 5.2 * K
+    moon = Image.new("L", (N, N), 0)
+    md = ImageDraw.Draw(moon)
+    md.ellipse((mcx - mr, mcy - mr, mcx + mr, mcy + mr), fill=255)
+    md.ellipse((mcx - mr + 2.8 * K, mcy - mr - 1.1 * K, mcx + mr + 2.8 * K, mcy + mr - 1.1 * K), fill=0)
+    layer.paste(Image.new("RGBA", (N, N), gold), (0, 0), moon)
     fcx, fcy, fr = 32.0 * K, 21.5 * K, 10.0 * K
     hx, hy = fcx - 2.5 * K, fcy + fr - 1.5 * K
     d.line((hx, hy, fcx - 6.0 * K, fcy + fr + 9.5 * K), fill=gold_dk, width=int(2.4 * K))
@@ -913,7 +1403,8 @@ def draw_icon(frame) -> Any:
                for s in range(41)]
         poly = pts + [(x, -y) for x, y in reversed(pts)]
         ca, sa = math.cos(ang), math.sin(ang)
-        d.polygon([(lcx + x * ca - y * sa, lcy + x * sa + y * ca) for x, y in poly], fill=white)
+        d.polygon([(lcx + x * ca - y * sa, lcy + x * sa + y * ca) for x, y in poly],
+                  fill=white, outline=vein, width=int(1.0 * K))
     for i in range(6):
         ang = math.radians(-90 + i * 60 + 10)
         d.line((lcx + 3.5 * K * math.cos(ang), lcy + 3.5 * K * math.sin(ang),
@@ -1064,6 +1555,7 @@ def kit_digest(pack) -> str:
     parts["leader"] = flat(LEADER, [CID])
     parts["unique"] = flat(UNIQUE, [UID])
     parts["text"] = flat(TEXT, [CID])
+    parts["custom_ability_string"] = flat(CAS, [CAS_KEY])       # 629 文案改了要触发摘要变化
     char = flat(CHAR, [CID])
     parts["route"] = C.csv_split(char[CID])[0][9:17] if char and char.get(CID) else None
     for logical, outer in ((ACTION, CODE), (SWITCHED, VOICE_READY)):
@@ -1095,7 +1587,8 @@ def row_gates(kind: str, rows: list[list[str]]) -> dict[str, Any]:
         probs = LG.client_legality_problems(kind, row) + LG.declared_block_field_problems(kind, row)
         elem = LG.ability_element_column_problems(kind, row, ELEMENT) if kind == "ability" else []
         need = LG.required_client_capabilities(kind, row)
-        inv = LG.invoke_skill_string_problems(row, frozenset(), kind)
+        # 629 行的 c70 文案键必须在 custom_ability_string 里（kit 自己写的 CAS_KEY 算已存在）
+        inv = LG.invoke_skill_string_problems(row, frozenset({CAS_KEY}), kind)
         ok &= not probs and not elem and not inv
         caps += [c for c in need if c not in caps]
         lines.append({"describe": desc, "legality": probs, "element": elem, "invoke_skill_string": inv,
@@ -1128,9 +1621,10 @@ def build(ctx) -> dict[str, Any]:
         if leader_rows != want_leader:
             problems.append("leader rows differ from design")
         for slot in range(1, 7):
-            want = [r["row"] for r in design["abilities"][f"slot{slot}"]]
-            if ability_rows[f"{CID}{slot}"] != want:
-                problems.append(f"ability slot{slot} rows differ from design")
+            key = f"{CID}{slot}"
+            want = design_rows_expected(key, [r["row"] for r in design["abilities"][f"slot{slot}"]])
+            if ability_rows[key] != want:
+                problems.append(f"ability slot{slot} rows differ from design(+rev2/rev3 delta)")
         if unique_row != design["unique_conditions"][0]["row"]:
             problems.append("unique_condition row differs from design")
         if trow != design["text"]["character_text_row"]:
@@ -1143,6 +1637,10 @@ def build(ctx) -> dict[str, Any]:
         if design["identity"]["character_row_edits"] and \
                 [design["identity"]["character_row_edits"][str(c)] for c in range(9, 17)] != ROUTE_COLS:
             problems.append("voice route differs from design")
+        want_cas = {c["key"]: c["text"] for c in design.get("custom_strings") or []}
+        # 改版 2 唯一允许的 CAS 差异 = 插入的上限句；其余一个字都不能变
+        if want_cas != {CAS_KEY: rev2_design_cas()}:
+            problems.append("custom_ability_string differs from design beyond the rev2 cap clause")
     else:
         notes.append("design JSON absent: rows not cross-checked against design")
 
@@ -1155,6 +1653,10 @@ def build(ctx) -> dict[str, Any]:
     ctx.write_flat(ABILITY, ability_rows)
     ctx.write_flat(UNIQUE, {UID: [unique_row]})
     ctx.write_flat(TEXT, {CID: [trow]})
+    # 629 行 c70 引用的文案键：必须先写进 custom_ability_string，否则详情页 C8601
+    ctx.write_flat(CAS, {CAS_KEY: [[CAS_TEXT]]})
+    if ctx.pkg_flat(CAS).get(CAS_KEY) != CAS_TEXT:
+        raise KitError("custom_ability_string roundtrip failed for " + CAS_KEY)
     crow = list(pack.pkg_character_row())
     if crow[9] not in ("(None)",) and crow[9:17] != ROUTE_COLS:
         raise KitError(f"character c9-c16 holds an unrelated skill switch: {crow[9:17]}")
@@ -1238,6 +1740,29 @@ def build(ctx) -> dict[str, Any]:
         tree_reports[level] = {"logical": logical, "edits": len(log), "effect_refs": refs_total,
                                "checks": checks, "edit_log": log}
 
+    # ---- 能力1#3（629）调用的 ability_skill DSL（无特效引用，不走 rewrite_effect_refs）
+    as_tree, as_log = compose_ability_skill_tree(pack)
+    as_checks = tree_checks(as_tree, sig)
+    as_want = _load_json(root, DESIGN_AS_TREE)
+    as_checks["equals_design_prototype"] = None if as_want is None else as_want == as_tree
+    as_checks["equals_design_prototype_typed"] = None if as_want is None else _typed(as_want) == _typed(as_tree)
+    if as_want is not None and as_want != as_tree:
+        problems.append("ability_skill tree differs from design prototype")
+    if not as_checks["ok"]:
+        problems.append("ability_skill tree static checks failed")
+    # R1「移动」忠实度：成品树的三块参数 vs 归档/live 迁移源（审查第 1/3 条）
+    as_checks["migration_source"] = {"archive": MIGRATION_ARCHIVE, "level": MIGRATION_LEVEL,
+                                     "diff_whitelist": {f"{a}[{i}]": {"new": nv, "why": why}
+                                                        for (a, i), (nv, why) in MIGRATION_DIFF.items()},
+                                     "problems": migration_problems(as_tree)}
+    if as_checks["migration_source"]["problems"]:
+        problems.append(f"ability_skill drifted from the migrated live block: "
+                        f"{as_checks['migration_source']['problems'][:4]}")
+    as_logical = ctx.write_dsl(AS_PROGRAM, as_tree)
+    programs.append(as_logical)
+    tree_reports["ability_skill"] = {"logical": as_logical, "edits": len(as_log), "effect_refs": {},
+                                     "checks": as_checks, "edit_log": as_log}
+
     # ---- action_skill / switched_action_skill
     ctx.write_nested(ACTION, CODE, {lv: [row] for lv, row in action_rows.items()}, replace_inner=True)
     switched = {lv: [row[7:24]] for lv, row in action_rows.items()}
@@ -1245,16 +1770,19 @@ def build(ctx) -> dict[str, Any]:
         raise KitError("switched_action_skill rows must be 17 cells (action_skill c7..c23)")
     ctx.write_nested(SWITCHED, VOICE_READY, switched, replace_inner=True)
 
-    # ---- 未使用的框架克隆键（custom_ability_string）
+    # ---- 未使用的框架克隆键（custom_ability_string）；kit 自己写的 CAS_KEY 被 629 行 c70 引用，永不撤销
     unclaimed = []
     claims = pack.load_claims()
     cas_claim = next((c for c in claims if (c["root"], c["logical_path"]) == ("common", CAS)), None)
     if cas_claim:
         referenced = {cell for rows in ability_rows.values() for r in rows for cell in r} \
-            | {cell for r in leader_rows for cell in r}
+            | {cell for r in leader_rows for cell in r} | {CAS_KEY}
         stale = [k for k in cas_claim["outer_keys"] if k not in referenced]
         if stale:
             unclaimed.append(ctx.unclaim(CAS, stale))
+    pkg_cas = ctx.pkg_flat(CAS) if pack.pkg_has("common", CAS) else {}
+    if pkg_cas.get(CAS_KEY) != CAS_TEXT:
+        raise KitError(f"custom_ability_string lost {CAS_KEY} after unclaim pass")
 
     mirrors = ctx.sync_character_mirrors()
     if mirrors["character"][9:17] != ROUTE_COLS:
@@ -1273,6 +1801,32 @@ def build(ctx) -> dict[str, Any]:
             ref_problems.append(f"action_skill {level} program not in package: {row[7]}")
     if not pack.pkg_has("common", ICON_LOGICAL):
         ref_problems.append(ICON_LOGICAL)
+    # 629 行 c70 文案键 / c71 动作路径：键缺＝详情页 C8601，DSL 缺＝进战斗「数据不足」
+    invoke_rows = [r for rows in ability_rows.values() for r in rows if r[47] == "629"]
+    if len(invoke_rows) != 1:
+        problems.append(f"expected exactly one InvokeSkill(629) ability row, found {len(invoke_rows)}")
+    # 改版 2 审查第 1 条：629 行必须主位绑定（共鸣是编成条件，挡不住副位装配）
+    unison_lock = unison_lock_problems(ability_rows)
+    if unison_lock:
+        problems.append(f"InvokeSkill unison lock: {unison_lock}")
+    # 改版 3：每层夜百合的受益面 = 暗属性角色全体 + 协力球（协力球读不到的 kind 不准挂协力球目标）
+    lily_target = lily_layer_target_problems(ability_rows)
+    if lily_target:
+        problems.append(f"lily layer targets: {lily_target}")
+    cas_style = cas_text_problems(pkg_cas.get(CAS_KEY) or CAS_TEXT)
+    if cas_style:
+        problems.append(f"custom_ability_string style: {cas_style}")
+    # 面板文案两条规则（rev2）：成品文案取包内值，缺键时回退 kit 常量
+    text_style = panel_text_problems(dict(PANEL_TEXTS, CAS_TEXT=pkg_cas.get(CAS_KEY) or CAS_TEXT))
+    if text_style:
+        problems.append(f"panel text rules: {text_style}")
+    for r in invoke_rows:
+        if r[70] != CAS_KEY or pkg_cas.get(CAS_KEY) != CAS_TEXT:
+            ref_problems.append(f"InvokeSkill string key {r[70]!r} not written to {CAS}")
+        if r[71] != AS_PROGRAM:
+            ref_problems.append(f"InvokeSkill action path {r[71]!r} != {AS_PROGRAM}")
+        if not pack.pkg_has("common", C.wf_dsl.dsl_logical(r[71])):
+            ref_problems.append(f"ability_skill program not in package: {r[71]}")
     if ref_problems:
         problems.append(f"unresolved references: {ref_problems[:10]}")
     # 克隆特效 timeline 内嵌 SE（预载引用）
@@ -1307,10 +1861,12 @@ def build(ctx) -> dict[str, Any]:
             panel.append(f"能力{slot}#{n + 1}：{ability_gate['rows'][idx]['describe']}")
             idx += 1
     ctx.report({
-        "summary": "普莉姆拉·浴衣 kit：官方 donor 行 6+11、百合夜固有 16999201、两棵拼装技能树、两个 sibling 特效族、贯通语音路由",
+        "summary": ("普莉姆拉·浴衣 kit（改版 20260916）：官方 donor 行 6+13、夜百合固有 16999201（上限 20）、"
+                    "两棵技能树 + 能力1#3 的 ability_skill DSL、两个 sibling 特效族、贯通语音路由"),
         "status": status,
         "skills": {"programs": programs},
-        "unique_condition": {UID: {"icon": ICON_LOGICAL, "name": "百合夜", "max_accumulation": 10}},
+        "unique_condition": {UID: {"icon": ICON_LOGICAL, "name": UNIQUE_NAME,
+                                   "max_accumulation": int(UNIQUE_MAX)}},
         "required_capabilities": caps,
         "panel": panel,
         "notes": notes + [f"problem: {p}" for p in problems],
@@ -1325,6 +1881,40 @@ def build(ctx) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------- 离线门禁（manifest/status/inspect 之后）
+
+def split_preflight_conflicts(conflicts: list[dict], claims: list[dict]) -> tuple[list[dict], list[dict]]:
+    """把 flow preflight 的 ``conflicts`` 分成「落在本包认领的键上」和「跨角色共享表漂移」。
+
+    conflict 的 ``claim`` 形如 ``<logical_path>:<outer>`` 或 ``<logical_path>:<outer>/<inner>``。
+    本包认领的键出现冲突＝真问题（必须判红）；别的角色已发布、本包全表载荷还是旧的＝串行发布的预期漂移，
+    由主控在发布前 ``flow rebase`` 收口（记忆卡 wf-flow-serial-publish-order），门禁只记 info。
+    """
+    owned: dict[str, set[str]] = {}
+    for c in claims:
+        owned.setdefault(c["logical_path"], set()).update(c["outer_keys"])
+    own, foreign = [], []
+    for conflict in conflicts:
+        path, _, key = str(conflict.get("claim", "")).partition(":")
+        (own if key.split("/")[0] in owned.get(path, ()) else foreign).append(conflict)
+    return own, foreign
+
+
+def publish_blockers_for(foreign: list[dict]) -> list[str]:
+    """kit 范围之外、但必须挡在「可发布」前面的前置（审查第 4 条）。
+
+    跨角色共享表漂移不算本角色的缺陷，但共享表是**整文件投递**：包内那些键**在、内容是旧的**
+    （逐字节比对实证 removed=[]，不是缺键），直接发就把别人已发布的新内容回滚掉。
+    所以它不能只记 info 和 ``all_pass=true`` 同屏 —— 单列成 blocker，
+    并把 ``release_ready_after_integration`` 压成 false。
+    """
+    if not foreign:
+        return []
+    paths = sorted({str(c.get("claim", "")).partition(":")[0] for c in foreign})
+    return [f"需要 flow rebase：包内共享表持有 {len(foreign)} 处别人角色的**陈旧**行"
+            f"（键在、内容是旧的；整文件投递会把他们已发布的新内容回滚掉）；"
+            f"涉及 {len(paths)} 张表 {paths[:6]}；按记忆卡 wf-flow-serial-publish-order 走"
+            f" preflight 封存 → flow rebase → preflight → publish，禁止用 force 绕过 can_prepare=false"]
+
 
 def run_gates(write_status: bool = True) -> dict[str, Any]:
     import wf_client_legality as LG
@@ -1350,8 +1940,9 @@ def run_gates(write_status: bool = True) -> dict[str, Any]:
                      "counts": {"leader": len(leader_rows), "ability": len(ability_rows)}}
     if not (ag["ok"] and lg_["ok"]):
         failures.append("row legality")
-    if (len(leader_rows), len(ability_rows)) != (6, 11):
-        failures.append(f"row counts {len(leader_rows)}/{len(ability_rows)} != 6/11")
+    if (len(leader_rows), len(ability_rows)) != ROW_COUNTS:
+        failures.append(f"row counts {len(leader_rows)}/{len(ability_rows)} != "
+                        f"{ROW_COUNTS[0]}/{ROW_COUNTS[1]}")
     # 对照 kit 方案（官方 donor 重建）
     if leader_rows != build_leader_rows(pack):
         failures.append("package leader rows != kit plan")
@@ -1359,9 +1950,11 @@ def run_gates(write_status: bool = True) -> dict[str, Any]:
     if [r for k in sorted(plan) for r in plan[k]] != ability_rows:
         failures.append("package ability rows != kit plan")
     uniq = C.csv_split(pack.pkg_flat(UNIQUE)[UID])[0]
-    gates["unique_condition"] = {"row": uniq, "max_accumulation": uniq[4]}
+    gates["unique_condition"] = {"row": uniq, "name": uniq[1], "max_accumulation": uniq[4]}
     if uniq != build_unique_row(pack):
         failures.append("unique_condition row != kit plan")
+    if uniq[4] != UNIQUE_MAX or uniq[1] != UNIQUE_NAME:
+        failures.append(f"unique_condition name/cap {uniq[1]!r}/{uniq[4]!r} != {UNIQUE_NAME!r}/{UNIQUE_MAX!r}")
 
     # 技能树（从包字节读）
     sig = _load_json(root, OFFICIAL_SIG)
@@ -1382,6 +1975,87 @@ def run_gates(write_status: bool = True) -> dict[str, Any]:
         gates["trees"][level] = checks
         if not checks["ok"] or checks["equals_design_prototype"] is False or not all(resolved.values()):
             failures.append(f"tree {level}")
+
+    # 能力1#3（629）调用的 ability_skill DSL：从包字节读回、静态校验、与设计原型逐字相同
+    as_logical = wf_dsl.dsl_logical(AS_PROGRAM)
+    if not pack.pkg_has("common", as_logical):
+        failures.append(f"ability_skill program missing from package: {as_logical}")
+        gates["trees"]["ability_skill"] = {"logical": as_logical, "ok": False, "missing": True}
+    else:
+        as_tree = C.amf_parse(pack.pkg_path("common", as_logical).read_bytes())
+        as_checks = tree_checks(as_tree, sig)
+        want = _load_json(root, DESIGN_AS_TREE)
+        as_checks["equals_design_prototype"] = None if want is None else (want == as_tree)
+        as_checks["equals_kit_plan"] = as_tree == compose_ability_skill_tree(pack)[0]
+        as_checks["logical"] = as_logical
+        # R1「移动」忠实度：包内成品字节 vs 归档/live 迁移源（审查第 1/3 条）。
+        # 交叉校验源是**被迁移的原块**，不是 plan.json —— plan.json 与 kit 同源，对规格级错误免疫。
+        as_checks["migration_source"] = {"archive": MIGRATION_ARCHIVE, "level": MIGRATION_LEVEL,
+                                         "diff_whitelist": {f"{a}[{i}]": {"new": nv, "why": why}
+                                                            for (a, i), (nv, why) in MIGRATION_DIFF.items()},
+                                         "problems": migration_problems(as_tree)}
+        gates["trees"]["ability_skill"] = as_checks
+        if not as_checks["ok"] or as_checks["equals_design_prototype"] is False \
+                or not as_checks["equals_kit_plan"]:
+            failures.append("tree ability_skill")
+        if as_checks["migration_source"]["problems"]:
+            failures.append(f"ability_skill vs migrated live block: "
+                            f"{as_checks['migration_source']['problems'][:4]}")
+
+    # custom_ability_string：629 行 c70 的文案键必须在包内且被认领（漏认领会在 rebase 时静默回滚）
+    cas_rows = pack.pkg_flat(CAS) if pack.pkg_has("common", CAS) else {}
+    cas_claim = next((c for c in pack.load_claims()
+                      if (c["root"], c["logical_path"]) == ("common", CAS)), None)
+    invoke_rows = [r for r in ability_rows if r[47] == "629"]
+    # 改版 2 审查第 1 条：从包字节按键复核 629 行的主位绑定
+    unison_lock = unison_lock_problems({f"{CID}{i}": C.csv_split(abil[f"{CID}{i}"]) for i in range(1, 7)})
+    gates["unison_lock"] = {"problems": unison_lock,
+                            "keys": {f"{CID}{i}": C.csv_split(abil[f"{CID}{i}"])[0][1] for i in range(1, 7)},
+                            "invoke_rows": [[r[0], r[1], r[6], r[13], r[20]] for r in invoke_rows]}
+    if unison_lock:
+        failures.append(f"InvokeSkill unison lock: {unison_lock}")
+    # 改版 3：从包字节复核「每层夜百合」的受益面（暗属性角色全体 + 协力球）
+    by_key = {f"{CID}{i}": C.csv_split(abil[f"{CID}{i}"]) for i in range(1, 7)}
+    lily_target = lily_layer_target_problems(by_key)
+    gates["lily_layer_targets"] = {
+        "problems": lily_target,
+        "party_target": [LILY_PARTY_TARGET, LILY_PARTY_GROUPS], "assist_target": LILY_ASSIST_TARGET,
+        "multiball_readable_kinds": sorted(LILY_MULTIBALL_READABLE),
+        "multiball_unreadable_kinds": sorted(LILY_MULTIBALL_UNREADABLE),
+        "rows": [{"key": k, "line": i, "during_kind": r[109], "target": r[110], "target_groups": r[111],
+                  "per_stack": r[113], "per_stack_max_level": r[114], "stack_cap": r[102]}
+                 for k, i, r in lily_layer_rows(by_key)]}
+    if lily_target:
+        failures.append(f"lily layer targets: {lily_target}")
+    cas_style = cas_text_problems(cas_rows.get(CAS_KEY) or CAS_TEXT)
+    gates["custom_ability_string"] = {"key": CAS_KEY, "in_package": CAS_KEY in cas_rows,
+                                      "claimed": bool(cas_claim and CAS_KEY in cas_claim["outer_keys"]),
+                                      "text_equals_kit": cas_rows.get(CAS_KEY) == CAS_TEXT,
+                                      "text": cas_rows.get(CAS_KEY), "style_problems": cas_style,
+                                      "invoke_rows": [[r[0], r[70], r[71]] for r in invoke_rows]}
+    if cas_rows.get(CAS_KEY) != CAS_TEXT:
+        failures.append("custom_ability_string row != kit plan")
+    if cas_style:
+        failures.append(f"custom_ability_string style: {cas_style}")
+    if not (cas_claim and CAS_KEY in cas_claim["outer_keys"]):
+        failures.append("custom_ability_string key not claimed")
+
+    # 面板文案两条规则（rev2 文案规则-补充.md）：文案全集 + 包内 CAS 正文
+    pkg_texts = dict(PANEL_TEXTS, CAS_TEXT=cas_rows.get(CAS_KEY) or CAS_TEXT)
+    text_style = panel_text_problems(pkg_texts)
+    flag_rows = [r[0] for r in ability_rows if SKILL_FLAG_KINDS & set(r)]
+    gates["panel_text"] = {"texts": pkg_texts, "problems": text_style,
+                           "banned_words": list(CAP_WORDING_BANNED),
+                           "wushangxian_count": sum(t.count("无上限") for t in pkg_texts.values()),
+                           "change_skill_flag_rows": flag_rows,
+                           "rule2_applicable": bool(flag_rows)}
+    if text_style:
+        failures.append(f"panel text rules: {text_style}")
+    if len(invoke_rows) != 1:
+        failures.append(f"InvokeSkill(629) ability rows = {len(invoke_rows)}, want 1")
+    for r in invoke_rows:
+        if r[70] != CAS_KEY or r[71] != AS_PROGRAM:
+            failures.append(f"InvokeSkill row references {r[70]!r}/{r[71]!r}")
 
     # 特效 timeline 内嵌 SE（预载引用，解析失败＝数据不足）/ parts 纹理
     fams = pack.read_evidence("effect-families.json", {}) or {}
@@ -1460,8 +2134,14 @@ def run_gates(write_status: bool = True) -> dict[str, Any]:
     gates["capabilities"] = {"needed_by_rows": needed, "manifest": declared}
     if declared != needed:
         failures.append(f"manifest required_capabilities {declared} != rows {needed}")
-    if manifest.get("unique_condition", {}).get(UID, {}).get("icon") != ICON_LOGICAL:
+    m_uniq = manifest.get("unique_condition", {}).get(UID, {})
+    if m_uniq.get("icon") != ICON_LOGICAL:
         failures.append("manifest unique_condition icon missing")
+    if m_uniq.get("name") != UNIQUE_NAME or m_uniq.get("max_accumulation") != int(UNIQUE_MAX):
+        failures.append(f"manifest unique_condition {m_uniq.get('name')!r}/"
+                        f"{m_uniq.get('max_accumulation')!r} != {UNIQUE_NAME!r}/{UNIQUE_MAX}")
+    if as_logical not in (manifest.get("skills") or {}).get("programs", []):
+        failures.append(f"manifest skills.programs missing {as_logical}")
     mrep = pack.read_evidence("manifest_report.json", {}) or {}
     gates["manifest_report"] = {k: mrep.get(k) for k in ("validate_manifest", "reconcile", "required",
                                                           "missing_required", "manifest_errors",
@@ -1475,13 +2155,24 @@ def run_gates(write_status: bool = True) -> dict[str, Any]:
         failures.append("flow status")
     inspect = (pack.read_evidence("flow-inspect.json", {}) or {}).get("summary") or {}
     master = inspect.get("master_reference") or {}
+    conflicts = ((inspect.get("preflight") or {}).get("conflicts")) or []
+    own, foreign = split_preflight_conflicts(conflicts, pack.load_claims())
     gates["inspect"] = {"returncode": inspect.get("returncode"), "structurally_ready": inspect.get("structurally_ready"),
                         "master_reference": master, "preflight": inspect.get("preflight"),
-                        "chain": inspect.get("chain")}
-    if master.get("problems") != [] or master.get("missing") not in ([], None) or not inspect.get("structurally_ready"):
-        failures.append("inspect master_reference / structural readiness")
-    if ((inspect.get("preflight") or {}).get("conflicts")):
-        failures.append("inspect conflicts")
+                        "chain": inspect.get("chain"),
+                        "conflicts_own_claims": own, "conflicts_foreign_live_drift": foreign,
+                        "conflicts_note": ("本角色自己认领的键才判红；跨角色共享表漂移（别人角色已发布、本包的全表载荷还是旧的）"
+                                           "是串行发布第二包起的预期状态，由主控在发布前 flow rebase 收口"
+                                           "（记忆卡 wf-flow-serial-publish-order）")}
+    if master.get("problems") != [] or master.get("missing") not in ([], None):
+        failures.append("inspect master_reference")
+    if own:
+        failures.append(f"inspect conflicts on own claims: {own[:5]}")
+    # rc!=0 只允许「仅剩跨角色漂移」这一种；其余（缺资产、认领不一致、引用缺失）照样判红
+    if not inspect.get("structurally_ready") and not (foreign and not own and not master.get("problems")
+                                                      and inspect.get("missing_required") in ([], None)
+                                                      and (inspect.get("three_layer_claim_status") or {}).get("consistent")):
+        failures.append("inspect structural readiness")
 
     digest = kit_digest(pack)
     kit_report = pack.read_evidence("kit-report.json", {}) or {}
@@ -1522,8 +2213,17 @@ def run_gates(write_status: bool = True) -> dict[str, Any]:
     if trow[11] != V.VOICE_ACTOR:
         vprobs.append(f"character_text c11={trow[11]!r} != {V.VOICE_ACTOR}")
     gates["voice_report"] = {"status": vrep.get("status"), "run": vrep.get("run"), "problems": vprobs}
+    # 发布前置：包内共享表是整文件投递，缺别人角色的键 = 把他们从 live 抹掉。
+    # 跨角色漂移不算本角色的缺陷（串行发布第二包起的预期状态），但**绝不能和「可发布」同屏**：
+    # 单列成 publish_blockers，并把 release_ready_after_integration 压成 false（审查第 4 条）。
+    publish_blockers = publish_blockers_for(foreign)
+    gates["publish_blockers"] = publish_blockers
+    gates["needs_rebase_before_publish"] = bool(foreign)
+    kit_scope_ready = bool(not failures and integration["clear"] and not vprobs)
     gates.update({"kit_digest": digest, "failures": failures, "all_pass": not failures,
-                  "release_ready_after_integration": bool(not failures and integration["clear"] and not vprobs)})
+                  "kit_scope_ready": kit_scope_ready,
+                  "release_ready_after_rebase": kit_scope_ready,
+                  "release_ready_after_integration": bool(kit_scope_ready and not publish_blockers)})
     out = root / GATES_FILE
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(gates, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
@@ -1534,15 +2234,133 @@ def run_gates(write_status: bool = True) -> dict[str, Any]:
             "kit_status": kit_report.get("status"), "integration_clear": integration["clear"],
             "pixel_clear": integration["pixel"]["clear"], "voice_clear": integration["voice"]["clear"],
             "voice_report_problems": vprobs,
+            "needs_rebase_before_publish": gates["needs_rebase_before_publish"],
+            "publish_blockers": publish_blockers,
+            "release_ready_after_rebase": gates["release_ready_after_rebase"],
             "release_ready_after_integration": gates["release_ready_after_integration"]}
 
 
-if __name__ == "__main__":
+# ---------------------------------------------------------------- 框架缺口规避：发布后的 inspect
+#
+# 角色已上线（active 账本里已有本包的 ownership hash）后，``flow preflight`` 必须拿到 installed manifest，
+# 否则直接报 ``active ownership hash exists but installed manifest was not supplied``（rc=2）。
+# ``wf_seasonal7_build.step_inspect`` 不传 ``--installed-package-dir``，所以框架的 ``--step inspect``
+# 在改版重建包时必然失败。这里在 kit 内补上该参数，其余（复制到临时副本、只在副本里封存、
+# 回写 evidence/flow-inspect.json）与框架一致。不改框架公共文件。
+
+PKG_ARCHIVE_DIRNAME = "pkgarchive"                # <仓库父目录>/pkgarchive/<package_id>-<链号>/
+
+
+def installed_package_candidates(root: Path, pkg_id: str) -> list[Path]:
+    """已发布包的归档目录（链号新→旧）。"""
+    import re
+    base = root.parent / PKG_ARCHIVE_DIRNAME
+    if not base.is_dir():
+        return []
+
+    def version_key(path: Path):
+        return [int(x) for x in re.findall(r"\d+", path.name[len(pkg_id) + 1:])] or [0]
+
+    found = [d for d in base.iterdir()
+             if d.is_dir() and d.name.startswith(pkg_id + "-") and (d / "manifest.json").is_file()]
+    return sorted(found, key=version_key, reverse=True)
+
+
+def run_inspect(installed_dir: str | None = None) -> dict[str, Any]:
+    """``--step inspect`` 的替代：在 workspace 副本上跑 flow preflight，并补上 ``--installed-package-dir``。"""
+    import os
+    import shutil
+    import wf_seasonal7_build as B
+    import wf_seasonal7_common as C
+    import wf_seasonal7_specs as S
+    pack = C.S7Pack(S.get_spec("primula"))
+    pack.check_identity()
+    root = pack.root
+    candidates = ([Path(installed_dir)] if installed_dir
+                  else installed_package_candidates(root, pack.spec.pkg_id))
+    guarded = [pack.package / "manifest.json", pack.evidence / "status.json", pack.evidence / "hash-cache.json"]
+    before = {str(f): (f.read_bytes() if f.is_file() else None) for f in guarded}
+    base = pack.batch_dir / B.INSPECT_DIR
+    attempts: list[dict[str, Any]] = []
+    rc, payload, used, workspace_copy = None, None, None, None
+    for candidate in candidates or [None]:
+        copy_root = base / f"primula-{os.getpid()}"
+        if copy_root.exists():
+            shutil.rmtree(copy_root)
+        try:
+            copy_root.mkdir(parents=True)
+            workspace_copy = copy_root / pack.workspace.name
+            shutil.copytree(pack.workspace, workspace_copy)
+            extra = ["--profile", "cn"]
+            if candidate is not None:
+                extra += ["--installed-package-dir", str(candidate)]
+            rc, payload = B._flow("preflight", workspace_copy, root, extra)
+        finally:
+            shutil.rmtree(copy_root, ignore_errors=True)
+            try:
+                base.rmdir()
+            except OSError:
+                pass
+        errors = payload.get("errors") or []
+        attempts.append({"installed_package_dir": None if candidate is None else str(candidate),
+                         "returncode": rc, "errors": errors})
+        used = candidate
+        if not any("not hash-bound" in e or "different package_id" in e for e in errors):
+            break
+    after = {str(f): (f.read_bytes() if f.is_file() else None) for f in guarded}
+    if after != before:
+        raise KitError("inspect modified the real workspace")
+    text = json.dumps(payload, ensure_ascii=False)
+    for old in (workspace_copy, None if workspace_copy is None else workspace_copy.resolve()):
+        if old is not None:
+            text = text.replace(json.dumps(str(old))[1:-1], json.dumps(str(pack.workspace))[1:-1])
+    payload = json.loads(text)
+    ready, reason = B.kit_readiness(pack)
+    result = B._preflight_summary(rc, payload, pack, pack.workspace)
+    own, foreign = split_preflight_conflicts((result.get("preflight") or {}).get("conflicts") or [],
+                                             pack.load_claims())
+    # rc=3「尚未达到发布条件」只要全部堵点都是跨角色共享表漂移，就是串行发布第二包起的预期状态：
+    # 由主控在发布前 flow rebase 收口，不是本角色的缺陷（记忆卡 wf-flow-serial-publish-order）。
+    drift_only = bool(rc == 3 and foreign and not own and not result.get("missing_required")
+                      and (result.get("master_reference") or {}).get("problems") == []
+                      and (result.get("three_layer_claim_status") or {}).get("consistent"))
+    result.update({"sealed_real_workspace": False, "sealed_copy_only": True, "kit_ready": ready,
+                   "kit_reason": reason, "structurally_ready": rc == 0 or drift_only,
+                   "flow_returncode": rc,
+                   "conflicts_own_claims": own, "conflicts_foreign_live_drift": foreign,
+                   "blocked_only_by_foreign_live_drift": drift_only,
+                   "needs_rebase_before_publish": bool(foreign),
+                   "flow_next_command": result.get("next_command"),
+                   "installed_package_dir": None if used is None else str(used),
+                   "installed_package_attempts": attempts,
+                   "framework_gap": "wf_seasonal7_build.step_inspect 不传 --installed-package-dir，"
+                                    "角色上线后（active 账本已有 ownership hash）必然 rc=2；"
+                                    "本 kit 的 inspect 子命令补上该参数，其余与框架一致"})
+    pack.write_evidence("flow-inspect.json", {"summary": result, "payload": payload})
+    if rc != 0 and not drift_only:
+        raise KitError(f"flow preflight (inspect copy) rc={rc}: {payload.get('errors')}; own_conflicts={own[:5]}")
+    return result
+
+
+def main(argv: list[str] | None = None) -> int:
     try:
         sys.stdout.reconfigure(encoding="utf-8")
     except (AttributeError, ValueError):
         pass
-    if len(sys.argv) > 1 and sys.argv[1] == "gates":
-        print(json.dumps(run_gates(), ensure_ascii=False, indent=1))
-    else:
+    args = list(sys.argv[1:] if argv is None else argv)
+    if args[:1] == ["inspect"]:
+        if len(args) > 2:
+            print("usage: python mod-tools/wf_seasonal7_kit_primula.py gates|inspect [<installed package dir>]")
+            return 2
+        print(json.dumps(run_inspect(args[1] if len(args) == 2 else None), ensure_ascii=False, indent=1))
+        return 0
+    if args[:1] != ["gates"]:
         print(__doc__)
+        return 0
+    result = run_gates()
+    print(json.dumps(result, ensure_ascii=False, indent=1))
+    return 0 if result["all_pass"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

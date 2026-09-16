@@ -4,13 +4,41 @@
 由 ``python mod-tools/wf_seasonal7_build.py --char zehr --step kit`` 调用 :func:`build`。
 只写 ``work/character_packs/s7-zehr/``（经 KitContext）；live store / assets / .cdn / src / APK 只读。
 
-落地内容（以设计 JSON 为准，逐项断言；主控拍板的覆盖见 ``OVERRIDES``）：
-- character 行 c9–c16 语音路由（ConditionExist + Unique 159997）、c18 队长名；character_text 12 列；三层镜像；
-- 队长 6 行、词条 6 键 14 条：donor（官方基线 / live）+ 声明编辑重建，与设计 ``row`` 逐格核对；
-- unique_condition 159997「灯火正旺」+ 48×48 官方风固有图标（kit 绘制，WF 小写魔数）；
-- custom_ability_string 4 键 + custom_ability_power_up_string 1 键（官方原行字节）；
-- action_skill 两档（名称/描述/能量 c4–c6/DSL 路径）；两棵技能 DSL（官方 151069 骨架 + 助战技 5 发光弹 +
-  浮游/全队 PF 伤害，移植 design/_tmp/zehr/c8_final_build.py），与设计定稿树逐节点严格比对；
+2026-09-16 第四轮作者改版（revision3-20260916 续）：作者原话「能力 3 的 50% 降到 30%、灯芯每层 5% 降到 3%」
+（= 上一轮 ``timing.md``「如果要收一点」的第 1、2 档）。声明式增量见 :data:`REV4_VALUE_ROWS` /
+:data:`REV4_KEEP_ROWS` / :data:`REV4_TEXT_REWRITES` 一段注释：能力3#0/#3 的数值列 50000→30000、
+能力1#5（灯芯乘区）113/114 列 5000→3000、面板两处数字随之改写（百分数由数值列常量推出）。
+节奏（CT 5 秒 / 灯火正旺 12 秒）与机制一格未动。
+
+2026-09-16 第三轮作者改版（revision3-20260916）：作者原话「灯火正旺效果延长到12s,ct改为5s」。声明式增量见
+:data:`UC_LAMP_FRAMES` / :data:`CT_LAMP_FRAMES` / :data:`REV3_CT_ROWS` / :data:`REV3_TEXT_REWRITES` 一段注释：
+固有 159997「灯火正旺」600→720 帧、本角色全部四行 CT600（能力1#3/#4 发放行 + 能力3#0/#3 受益行）600→300 帧、
+面板两处节奏文案随之改写（秒数由帧常量推出，不会与表脱节）。机制副作用（叠层翻倍 / 状态可常驻）另见
+``revision3-20260916/zehr/timing.md``。
+
+2026-09-16 第二轮作者改版（revision2-20260916）叠在第一轮之上，声明式增量见 :data:`REV2_MAIN_SLOT_SLOTS` /
+:data:`REV2_TEXT_REWRITES` 一段注释：**能力 1/3/5 主位限制**（整键 c1='false'，不加前置 202 以免双 Ⓜ；
+有覆盖文案的键逐行补 ``<icon id='main'>``，能力 5 无覆盖文案由客户端自动画）＋**文案规则①②**
+（面板不再出现「无上限」；能力里的「技能强化」条目只写强化了什么，不写数值与秒数）。规则原文见
+``revision2-20260916/文案规则-补充.md``；机制一格未动。
+
+2026-09-16 作者改版（真机试玩后）：行 / 覆盖文案 / 固有状态 / 技能 ALv 通道以
+``work/character_packs/seasonal7-20260916/revision-20260916/zehr/plan.json`` 为唯一来源；
+``design/zehr.json`` 降级为「上一轮基线」，仍提供语音路由、技能能量、两棵技能定稿树、三棵 PF 定稿树、
+722 文案与不变的 power_up 字节。技能树先合成到与上一轮定稿树逐节点相同，再落改版的两处 ALv 编辑。
+
+落地内容（以改版计划 + 设计 JSON 为准，逐项断言；主控拍板的覆盖见 ``OVERRIDES``）：
+- character 行 c9–c16 语音路由（ConditionExist + Unique 159997）、c18 队长名；character_text 12 列
+  （c5/c7 换成改版后的短技能说明）；三层镜像；
+- 队长 6 行、词条 6 键 20 条：donor（官方基线 / live）+ 声明编辑重建，与计划 ``row`` 逐格核对；
+  「无上限」一律写字面量 ``(None)``（空串会被 Std.parseInt 吃成 0 次）；
+- unique_condition 159997「灯火正旺」+ 1599971「灯芯」（99 层永续）+ 两张 48×48 官方风固有图标
+  （kit 绘制，WF 小写魔数）；
+- custom_ability_string 7 键（队长 + 能力 1/2/3/6 覆盖文案、536 强化说明、722 说明）
+  + custom_ability_power_up_string 1 键（官方原行字节）；
+- action_skill 两档（名称/改版后的短描述/能量 c4–c6/DSL 路径）；两棵技能 DSL（官方 151069 骨架 + 助战技 5 发光弹 +
+  浮游/全队 PF 伤害，移植 design/_tmp/zehr/c8_final_build.py），与设计定稿树逐节点严格比对后再落改版 ALv 编辑
+  （ACAttackPoint / ACPowerFlipDamage 的 alv_min/alv_max，使 536 强化态合计 250%）；
 - 722 双形态 PF：power_flip_action 新键 + 三档 DSL（APK 内官方 knight/supporter 经
   ``wf_gerald_native_pf_dsl.compose`` 组合），**每段倍率恢复官方 3.25/4.75/6.3**，寿命/命中/Notify ×3，
   suppress 保持官方；在 spin 之外叠一层新演出（官方火光族 ``master_knight_blaze`` 克隆到
@@ -31,7 +59,8 @@ kit-report 的 ``status``：只有 ``impl/zehr/gates.json`` 全过且其 ``kit_f
 才写 ``ready-for-review``，否则 ``draft``（门禁脚本 ``impl/zehr/gates.py``）。
 
 未跟踪输入（``work/`` 被 gitignore；build 开头由 :func:`required_input_problems` 统一核对并报清单）：
-``design/zehr.json``、``design/_tmp/zehr/final_skill_{1,2}.json``、``final_pf_lv{1,2,3}.json``、
+``design/zehr.json``、``revision-20260916/zehr/plan.json``、
+``design/_tmp/zehr/final_skill_{1,2}.json``、``final_pf_lv{1,2,3}.json``、
 官方 DSL 参数形状表 ``official_sig.json``（``impl/zehr/`` 自有副本优先，``research/_tmp/`` 原件回退，均按 sha 锁定）。
 DSL 静态校验 ``blueprint_check_with_sig`` 移植自 ``research/_tmp/blueprint_build.py``，运行时不再 import 研究目录。
 """
@@ -45,6 +74,7 @@ import os
 import sys
 import zipfile
 import zlib
+from fractions import Fraction
 from pathlib import Path
 from typing import Any, Callable
 
@@ -84,12 +114,197 @@ PF_KEY = f"override_{CODE}_dual_pf"
 PF_STRING_KEY = f"override_string_{CODE}_dual_pf"
 CHANGE_SKILL_KEY = f"change_skill_{CODE}"
 LEADER_OVERRIDE_KEY = f"desc_override_{CODE}"
+OVERRIDE_SLOTS = (1, 2, 3, 6)                       # 改版后有覆盖文案的词条槽
+SLOT_OVERRIDE_KEYS = tuple(f"desc_override_{CODE}_{s}" for s in OVERRIDE_SLOTS)
 SLOT3_OVERRIDE_KEY = f"desc_override_{CODE}_3"
-CAS_KEYS = (PF_STRING_KEY, CHANGE_SKILL_KEY, LEADER_OVERRIDE_KEY, SLOT3_OVERRIDE_KEY)
-UC_ID = "159997"
+CAS_KEYS = (PF_STRING_KEY, CHANGE_SKILL_KEY, LEADER_OVERRIDE_KEY) + SLOT_OVERRIDE_KEYS
+UC_ID = "159997"                                    # 「灯火正旺」（第三轮改为 12 秒 / 1 层）
+UC_ID2 = "1599971"                                  # 「灯芯」（永续 / 99 层，改版新增，承载可成长的 PF 独立乘区）
 UC_ICON = f"battle/common/unique_condition/unique_{CODE}_lamp.png"
+UC2_ICON = f"battle/common/unique_condition/unique_{CODE}_wick.png"
+UC_IDS = (UC_ID, UC_ID2)
+UC_ICONS = {UC_ID: UC_ICON, UC_ID2: UC2_ICON}
+FPS = 60                                            # 战斗帧率：面板秒数 = 帧 / 60
+CT_LAMP_FRAMES_REV2 = 600                           # 上一轮：「≥50 连击弹射」四行 CT = 10 秒
+CT_LAMP_FRAMES = 300                                # 第三轮（作者「ct改为5s」）：同四行 CT = 5 秒
+UC_LAMP_FRAMES_REV2 = 600                           # 上一轮：「灯火正旺」10 秒
+UC_LAMP_FRAMES = 720                                # 第三轮（作者「灯火正旺效果延长到12s」）：12 秒
+CT_SECONDS = CT_LAMP_FRAMES // FPS                  # 5
+LAMP_SECONDS = UC_LAMP_FRAMES // FPS                # 12
+# 第四轮（作者「能力 3 的 50% 降到 30%、灯芯每层 5% 降到 3%」）：数值列与面板百分数同源，
+# 面板写的数字由这几个常量除以刻度推出来，改了表面板必须跟着改（反之残留旧数字当场报红）。
+PCT_SCALE = 1000                                    # 词条数值列的百分比刻度：50000 = 50%
+A3_LAMP_GAIN_REV3 = 50000                           # 上一轮：能力3「每获得1次灯火正旺」两行各 +50%
+A3_LAMP_GAIN = 30000                                # 第四轮：+30%
+A1_WICK_MULT_REV3 = 5000                            # 上一轮：能力1「每 1 层灯芯」PF 独立乘区 +5%
+A1_WICK_MULT = 3000                                 # 第四轮：+3%
+A3_LAMP_GAIN_PCT = A3_LAMP_GAIN // PCT_SCALE                # 30
+A3_LAMP_GAIN_PCT_REV3 = A3_LAMP_GAIN_REV3 // PCT_SCALE      # 50
+A1_WICK_MULT_PCT = A1_WICK_MULT // PCT_SCALE                # 3
+A1_WICK_MULT_PCT_REV3 = A1_WICK_MULT_REV3 // PCT_SCALE      # 5
 CAPABILITIES = ("dash-parameter-v1", "panel-description-override-v2")
-FORBIDDEN_PANEL_WORDS = ("自身为队长时", "觉醒后", "生命值100%以下", "HP100%以下", "null")
+# 覆盖文案禁词（记忆卡 wf-leader-override-text-rules / wf-no-hplow-text-discipline
+# + 作者 2026-09-16 晚文案规则①：面板不再出现「无上限」，也不许换成「可无限叠加」之类的替代说法）
+FORBIDDEN_PANEL_WORDS = ("自身为队长时", "觉醒后", "生命值100%以下", "HP100%以下", "null",
+                         "无上限", "无限叠加", "不设上限", "可无限")
+
+# ---- 2026-09-16 审查修复轮的三条锁（详见 revision-20260916/zehr/fix-log.md）
+# R1：作者原文这一段只在能力2 写了「自身为队长时」。50 连击触发的四行不许再带 pre42（队长门），
+#     否则面板（不写队长条件）与数据不一致，且能力1 在合击位上会有三行是死行。
+NO_LEADER_GATE_ROWS = ((f"{CID}1", 3), (f"{CID}1", 4), (f"{CID}3", 0), (f"{CID}3", 3))
+LEADER_GATE_ROWS = ((f"{CID}2", 0), (f"{CID}2", 1))
+# R3：CT（每 N 秒 1 次）与「灯芯」99 层封顶是**真上限**，必须写进面板（文案规则①：有上限的才写上限）。
+# 第三轮：秒数由 CT_LAMP_FRAMES / UC_LAMP_FRAMES 推出来，面板与表里的帧数不可能各说各话。
+# 第四轮：两处百分数同样由数值列常量推出来（A3_LAMP_GAIN / A1_WICK_MULT ÷ PCT_SCALE）。
+PANEL_REQUIRED_PHRASES = {
+    f"desc_override_{CODE}_1": (f"（每{CT_SECONDS}秒1次）", "最多99层", f"「灯火正旺」{LAMP_SECONDS}秒",
+                                f"强化弹射伤害额外乘区＋{A1_WICK_MULT_PCT}%"),
+    f"desc_override_{CODE}_3": (f"每{CT_SECONDS}秒1次",
+                                f"光属性角色攻击力＋{A3_LAMP_GAIN_PCT}%、"
+                                f"强化弹射伤害＋{A3_LAMP_GAIN_PCT}%"),
+}
+# R6：kind 55 / 696 / 413 是战斗（小队）级，不读 target 列，面板不许写成「自身强化弹射伤害」。
+# 第三轮：两条覆盖文案里不许再留上一轮的节奏（10 秒）——CT 与状态时长都变了。
+# 第四轮：这两条覆盖文案里不许再留上一轮的强度数字。**只按键禁**：别的键里的「＋50%」是别的效果
+#        （能力1#1 开局技能槽、能力2 / 能力6 / 队长的强化弹射伤害），一刀切全局禁会误伤。
+REV3_STALE_TIMING = ("10秒",)
+REV4_STALE_NUMBERS = {
+    f"desc_override_{CODE}_1": (f"强化弹射伤害额外乘区＋{A1_WICK_MULT_PCT_REV3}%",),
+    f"desc_override_{CODE}_3": (f"光属性角色攻击力＋{A3_LAMP_GAIN_PCT_REV3}%",
+                                f"强化弹射伤害＋{A3_LAMP_GAIN_PCT_REV3}%"),
+}
+PANEL_FORBIDDEN_PHRASES = {
+    f"desc_override_{CODE}": ("自身强化弹射伤害",),
+    f"desc_override_{CODE}_1": REV3_STALE_TIMING + REV4_STALE_NUMBERS[f"desc_override_{CODE}_1"],
+    f"desc_override_{CODE}_3": REV3_STALE_TIMING + REV4_STALE_NUMBERS[f"desc_override_{CODE}_3"],
+}
+# R5：技能说明精简后仍须提到能力1 面板里点名的「攻击力提升效果」。
+SKILL_DESC_REQUIRED = ("攻击力提升效果", "强化弹射伤害提升效果")
+
+# ─────────── 第二轮作者改版（2026-09-16 晚，revision2-20260916）：声明式增量叠在 plan.json 上 ───────────
+#
+# plan.json 在第一轮证据目录 revision-20260916/ 下，本轮不可写，所以第二轮的改动写成增量：
+# 先照常「donor + edits 重放 == plan row」，再叠下面两处，且只准改到声明的那一列 / 那几段文字。
+#
+# T1 作者原话「泽赫尔的能力1和3和5带上主位限制」：主位限制 = 整键 values[0] 的 c1='false'
+#    （``AbilityLogic.get_unisonable()`` 只读 values[0]；本 kit 另要求同键 c1 一致 ⇒ 键内每条同改）。
+#    **不加前置 202**：c1=false 与 202 同键双写会画两个 Ⓜ（记忆卡 wf-unison-slot-mechanics）；
+#    护栏查 ``ABILITY_PRECONDITION_BLOCKS`` 三个前置槽（c6/c13/c20），不是只查 precondition1。
+#    能力3 上一轮就是 false（422 冲刺行本来就是主位），本轮它只补面板 Ⓜ；能力1/5 是本轮新加。
+#    面板 Ⓜ 本由客户端逐行画（``AbilityDescriptionTools.stringfyUnisonable`` →
+#    ``ability_description_not_unisonable_icon``），但 desc_override 把整段文字换掉了 ⇒ **有覆盖文案的
+#    主位键必须把 ``<icon id='main'>`` 写进文本**（官方同写法：``wf_featured_main_ability.main_description``、
+#    live 先例 scutum_valentine / *_campus）。能力5 没有覆盖文案，Ⓜ 由客户端自动画。
+# T2 文案规则（``revision2-20260916/文案规则-补充.md``，优先级高于此前写法）：
+#    ① 没有上限就什么都不写——删掉「（无上限）」，句子写到效果为止，也不换成「可无限叠加」之类说法；
+#       机制不动（灯芯仍是 99 层、触发上限仍是 (None)）。**有上限的照写上限**：CT「每10秒1次」、
+#       「灯芯」99 层封顶都是真上限，保留（PANEL_REQUIRED_PHRASES 钉死）。
+#    ② 能力里的「技能强化」条目（ChangeSkillFlag 536/704）只写强化了什么，不写数值与秒数：
+#       能力1 第 3 行改成与 ``change_skill_*`` 主文案同形的「强化『<技能名>』的「<效果名>」…」。
+REVISION2_DIR = f"{BATCH}/revision2-20260916/zehr"
+REVISION2_RULES_REL = f"{BATCH}/revision2-20260916/文案规则-补充.md"
+MAIN_ICON = " <icon id='main'>  "
+REV2_MAIN_SLOT_SLOTS = (1, 3, 5)                    # 主位限制的词条槽（3 是上一轮就有的，1/5 本轮新加）
+REV2_MAIN_SLOT_KEYS = tuple(f"{CID}{s}" for s in REV2_MAIN_SLOT_SLOTS)
+SLOT_CAS_KEY = {s: f"desc_override_{CODE}_{s}" for s in OVERRIDE_SLOTS}
+REV2_MAIN_ICON_KEYS = tuple(SLOT_CAS_KEY[s] for s in REV2_MAIN_SLOT_SLOTS if s in SLOT_CAS_KEY)
+REV2_TEXT_DROPS = ("（无上限）",)                     # 规则①：整段删掉，不替换成别的说法
+REV2_TEXT_REWRITES = {                              # 先做改写再做删除（第 3 槽那段两条规则都沾）
+    SLOT3_OVERRIDE_KEY: (("（每10秒1次，无上限）", "（每10秒1次）"),),
+    f"desc_override_{CODE}_1": (
+        ("光属性共鸣时，强化「白银一闪·打烊时刻」：攻击力提升效果＋250%、强化弹射伤害提升效果＋250%",
+         "光属性共鸣时，强化『白银一闪·打烊时刻』的「攻击力提升效果」与「强化弹射伤害提升效果」"),),
+}
+# ability 布局的**三个**前置槽 kind 列（mod-tools/ability_enum_map.json:layouts.ability.blocks）。
+# 只盯 precondition1 会漏：live 全库确有 202 落在 c13 / c20 的写法，而「c1=false 不加 202」是本轮 T1
+# 防双 Ⓜ 的唯一护栏，三个槽必须一起查（审查复现修复，2026-09-16 晚）。
+ABILITY_PRECONDITION_BLOCKS = (6, 13, 20)
+PRE_OWNER_IS_MAIN = "202"                           # AbilityPrecondition OwnerIsMain（主位限制的前置写法）
+SKILL_FLAG_KINDS = ("536", "704")                   # ChangeSkillFlag：规则②针对的「技能强化」条目
+ENHANCE_TEXT_MARK = "强化『"                          # 技能强化条目的句式标记（技能名用 『』 括）
+ENHANCE_TEXT_FORBIDDEN = tuple("0123456789０１２３４５６７８９") + ("秒", "%", "％", "倍")
+
+# ─────────── 第三轮作者改版（2026-09-16 夜，revision3-20260916）：节奏调整，再叠一层增量 ───────────
+#
+# 作者原话：「灯火正旺效果延长到12s,ct改为5s」。落成两处数值 + 随之而来的面板文案：
+#  T3-a 固有 159997「灯火正旺」duration_frame（unique_condition c3）600 → 720 帧（10 → 12 秒）。
+#  T3-b 面板写「（每10秒1次）」的那些行 = 本角色**全部** c35=600 的词条行（``REV3_CT_ROWS`` 四行）→ 300 帧（5 秒）。
+#       这四行同触发（kind 13 弹射 + 连击≥50，c30/c31=5000000），CT 各自独立计时但条件相同，
+#       只改其中一部分会让「发放灯火正旺 / 累积灯芯」与能力3 的两条收益行**错拍**
+#       （当时那两条是 +50%，第四轮已降到 +30%，节奏仍同拍），所以必须整组改。
+#       其余 c35 取值：能力2 两行、能力3#5、能力5#1 都是 ``'0'``（无 CT，不属于作者说的那组）；
+#       队长表 CT 列 c33/c91 全为空或 '0'（``LEADER_CT_BLOCKS`` 扫描钉死），本轮不动。
+#       ``apply_rev3_cooldown`` 对**不在名单里却写着 600** 的行直接报错 ⇒ 将来有人加 CT 行必须重新逐条判断。
+#  T3-c 文案：规则①②不变，只把节奏数字改对——能力1「…「灯火正旺」12秒…（每5秒1次）」、
+#       能力3「…（每5秒1次）」；``PANEL_REQUIRED_PHRASES`` / ``REV3_STALE_TIMING`` 两头钉死，
+#       面板秒数与帧数常量同源，不会再各说各话。
+#  副作用（叠层速度翻倍 / 灯火正旺可常驻）写在 ``revision3-20260916/zehr/timing.md``，供作者判断强度。
+REVISION3_DIR = f"{BATCH}/revision3-20260916/zehr"
+REV3_CT_ROWS = ((f"{CID}1", 3), (f"{CID}1", 4), (f"{CID}3", 0), (f"{CID}3", 3))
+LEADER_CT_BLOCKS = (33, 91)                         # leader_ability 的 CT 列（记忆卡 wf-kit-round2-20260909）
+REV3_TEXT_REWRITES = {                              # 在 REV2 改写之后执行（第 3 槽那段两轮都沾）
+    f"desc_override_{CODE}_1": (
+        ("弹射时连击达到50以上，赋予自身「灯火正旺」10秒，并累积1层「灯芯」（每10秒1次）",
+         f"弹射时连击达到50以上，赋予自身「灯火正旺」{LAMP_SECONDS}秒，"
+         f"并累积1层「灯芯」（每{CT_SECONDS}秒1次）"),),
+    SLOT3_OVERRIDE_KEY: (("（每10秒1次）", f"（每{CT_SECONDS}秒1次）"),),
+}
+
+# ─────────── 第四轮作者改版（2026-09-16 夜，revision3-20260916 续）：强度回调，再叠一层增量 ───────────
+#
+# 作者原话：「能力 3 的 50% 降到 30%、灯芯每层 5% 降到 3%」——正好是上一轮 timing.md「如果要收一点」
+# 列出的第 1、2 档。落成三行的数值列 + 两处面板数字，节奏（CT 5 秒 / 灯火正旺 12 秒）与机制一格未动。
+#
+#  T4-a 能力3#0（kind 32，赋予全队(光)攻击力）与 #3（kind 55，强化弹射伤害）的瞬发数值列 c51/c52：
+#       50000 → 30000。这两行是面板「每获得1次「灯火正旺」，…攻击力＋50%、强化弹射伤害＋50%」同一句
+#       文案的两半，同触发（弹射·连击≥50，CT 5 秒），必须同改。
+#  T4-b 能力1#5（during kind 413，灯芯层数 → PF 独立乘区）的持续数值列 c113/c114：5000 → 3000。
+#  T4-c 面板：能力3 那句两个数字 50→30、能力1 末行 5%→3%；百分数由上面的数值常量推出。
+#
+# **两列同步**：c51/c52（瞬发）与 c113/c114（持续）是「词条等级低级列 / 满级列」，本角色这三行
+# 原本就两列拉平（50000/50000、5000/5000），所以按满级列的缩放比例同步换算后依然拉平
+# （记忆卡 wf-leader-override-text-rules：固定覆盖文案只写单值，行必须拉平，面板才不会前后不一致）。
+# ``rev4_scaled_pair`` 用 Fraction 按比例缩放并要求结果是整数——将来若有人把某行写成不拉平的两列，
+# 比例照旧保持，除不尽则直接报错而不是悄悄取整。
+#
+# **名单之外同量级的行必须显式留证**：能力1#1（kind 211「战斗开始时自身技能槽＋50%」）也是 50000，
+# 但不是作者说的「能力3 的 50%」，也不是灯芯乘区 ⇒ 记在 ``REV4_KEEP_ROWS`` 里，附不动的理由；
+# ``rev4_value_scan`` 每次构建重扫能力1/3 两键的四个数值列，扫出来的同量级格必须恰好等于
+# 「改的三行 + 留的一行」，多一格少一格都红。
+REV4_VALUE_COLS_INSTANT = (51, 52)                  # 瞬发内容 值（低级列, 满级列）
+REV4_VALUE_COLS_DURING = (113, 114)                 # 持续内容 值（低级列, 满级列）
+REV4_VALUE_ROWS = {
+    (f"{CID}3", 0): (REV4_VALUE_COLS_INSTANT, A3_LAMP_GAIN_REV3, A3_LAMP_GAIN),
+    (f"{CID}3", 3): (REV4_VALUE_COLS_INSTANT, A3_LAMP_GAIN_REV3, A3_LAMP_GAIN),
+    (f"{CID}1", 5): (REV4_VALUE_COLS_DURING, A1_WICK_MULT_REV3, A1_WICK_MULT),
+}
+REV4_KEEP_ROWS = {
+    (f"{CID}1", 1): "能力1#1 kind 211「战斗开始时，自身技能槽＋50%」：同为 50000，但它是开局技能槽，"
+                    "既不是作者说的「能力3 的 50%」也不是「灯芯每层 5%」——不动",
+}
+REV4_SCAN_KEYS = (f"{CID}1", f"{CID}3")             # 作者点名的两键：能力1 / 能力3
+REV4_SCAN_COLS = REV4_VALUE_COLS_INSTANT + REV4_VALUE_COLS_DURING
+REV4_SCAN_MAGNITUDES = (str(A3_LAMP_GAIN_REV3), str(A1_WICK_MULT_REV3))
+# 面板数字 ⇄ 成品行数值列的绑定：面板上写的百分数必须等于**装包那一行**的满级列 ÷ PCT_SCALE，
+# 不是等于某个常量。常量写错、行改了文案没改（或反过来）都会在 ``panel_matches_row_values`` 里红。
+PANEL_VALUE_BINDINGS = {
+    (f"{CID}3", 0): (SLOT3_OVERRIDE_KEY, "光属性角色攻击力＋{pct}%"),
+    (f"{CID}3", 3): (SLOT3_OVERRIDE_KEY, "强化弹射伤害＋{pct}%"),
+    (f"{CID}1", 5): (f"desc_override_{CODE}_1", "强化弹射伤害额外乘区＋{pct}%"),
+}
+REV4_TEXT_REWRITES = {                              # 在 REV3 改写之后执行
+    f"desc_override_{CODE}_1": (
+        (f"强化弹射伤害额外乘区＋{A1_WICK_MULT_PCT_REV3}%",
+         f"强化弹射伤害额外乘区＋{A1_WICK_MULT_PCT}%"),),
+    SLOT3_OVERRIDE_KEY: (
+        (f"光属性角色攻击力＋{A3_LAMP_GAIN_PCT_REV3}%、强化弹射伤害＋{A3_LAMP_GAIN_PCT_REV3}%",
+         f"光属性角色攻击力＋{A3_LAMP_GAIN_PCT}%、强化弹射伤害＋{A3_LAMP_GAIN_PCT}%"),),
+}
+
+# 2026-09-16 作者改版（真机试玩后）：行 / 文案 / 技能 DSL 的 ALv 通道以本计划为准，
+# 设计定稿 design/zehr.json 仍是「上一轮基线」，只用于 donor 回放之外的不变部分（语音路由、能量、PF 树、特效）。
+REVISION_REL = f"{BATCH}/revision-20260916/zehr/plan.json"
+REVISION_SCHEMA = "s7-revision-plan/1"
 
 # 722 PF 程序路径与 power_flip_action 键解耦（live 先例：键 wind_spgirl_campus_fever → campus_celtie_fever/…）。
 # 设计路径 override/<键>$<键>_lvN 在框架 inspect 副本（_inspect/zehr-<pid>/s7-zehr/…）里全长 263–265 字符，
@@ -174,20 +389,26 @@ TEXTS = {
                "嘴上说着今晚不谈工作，那把金蓝长剑却始终靠在手边。",
     "leader": "今晚由团长买单",
     "skill1": "白银一闪·打烊时刻",
-    "desc1": "向距离最近的敌人使出白银闪击，对接触到的敌人造成光属性伤害／赋予自身攻击力提升效果／"
-             "赋予己方贯穿、浮游、强化弹射伤害提升效果／增加连击数／随后5次对距离最近的敌人放出灯火光弹，造成光属性伤害",
+    # 改版：作者要求「角色技能描述不再写太复杂省略一下」，两档同文压到 70 字（texts.action_skill_desc.new）。
+    # 审查修复轮补回「赋予自身攻击力提升效果」：能力1 面板写「攻击力提升效果＋250%」，技能说明不提它玩家无从对应。
+    "desc1": "对最近的敌人使出白银闪击，随后放出5发灯火光弹，造成光属性伤害／赋予自身攻击力提升效果／"
+             "赋予己方贯穿、浮游和强化弹射伤害提升效果／增加连击数",
     "skill2": "白银一闪·打烊时刻＋",
-    "desc2": "向距离最近的敌人使出白银闪击，对接触到的敌人造成光属性伤害／赋予自身攻击力提升效果／"
-             "赋予己方贯穿、浮游、强化弹射伤害提升效果／增加连击数／随后5次对距离最近的敌人放出灯火光弹，造成光属性伤害",
+    "desc2": "对最近的敌人使出白银闪击，随后放出5发灯火光弹，造成光属性伤害／赋予自身攻击力提升效果／"
+             "赋予己方贯穿、浮游和强化弹射伤害提升效果／增加连击数",
     "cv": "AI 合成配音",
 }
+# 上一轮（design/zehr.json）的技能描述：check_texts_constant 用它确认设计文件仍是改版前的基线
+DESIGN_SKILL_DESC = ("向距离最近的敌人使出白银闪击，对接触到的敌人造成光属性伤害／赋予自身攻击力提升效果／"
+                     "赋予己方贯穿、浮游、强化弹射伤害提升效果／增加连击数／随后5次对距离最近的敌人放出灯火光弹，"
+                     "造成光属性伤害")
 
 SPEC = {
     "required_capabilities": CAPABILITIES,
     "extra_keys": {
         CAS: CAS_KEYS,
         CAPS: (CHANGE_SKILL_KEY,),
-        UC: (UC_ID,),
+        UC: UC_IDS,
         PFA: (PF_KEY,),
         SW: (VOICE_KEY,),
     },
@@ -204,8 +425,29 @@ def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def slv(a, b=None) -> list[dict]:
-    return [{"min": a, "max": a if b is None else b}]
+def slv(a, b=None, *, alv_min=None, alv_max=None) -> list[dict]:
+    """SLv 值数组。``alv_min/alv_max`` 是 ChangeSkillFlag(536) 槽 1 的强化增量，与基值**相加**
+    （FixedSLvValueResolver.as:75-118、:369）；两者要么都给要么都不给（官方写法）。"""
+    cell = {"min": a, "max": a if b is None else b}
+    if (alv_min is None) != (alv_max is None):
+        raise KitError("slv: alv_min/alv_max must be given together")
+    if alv_min is not None:
+        cell["alv_min"] = alv_min
+        cell["alv_max"] = alv_max
+    return [cell]
+
+
+def num_equal(a: Any, b: Any) -> bool:
+    """数值宽松比较（JSON 1 vs DSL 1.0），结构逐层相同。"""
+    if isinstance(a, bool) or isinstance(b, bool):
+        return a is b
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+        return float(a) == float(b)
+    if isinstance(a, dict) and isinstance(b, dict):
+        return a.keys() == b.keys() and all(num_equal(a[k], b[k]) for k in a)
+    if isinstance(a, list) and isinstance(b, list):
+        return len(a) == len(b) and all(num_equal(x, y) for x, y in zip(a, b))
+    return type(a) is type(b) and a == b
 
 
 def cmd(node):
@@ -257,8 +499,361 @@ def find_cmd(node, name: str):
     return next(iter_commands(node, name), None)
 
 
-def panel_text_problems(text: str) -> list[str]:
-    return [f"panel text contains forbidden word {w!r}" for w in FORBIDDEN_PANEL_WORDS if w in text]
+def panel_text_problems(text: str, key: str | None = None) -> list[str]:
+    probs = [f"panel text contains forbidden word {w!r}" for w in FORBIDDEN_PANEL_WORDS if w in text]
+    if key is not None:
+        # R3：CT / 层数封顶 / 状态秒数必须写出来（不能只写「无上限」）；
+        # R6：战斗级 PF 伤害不许写「自身」；第三轮：不许留上一轮的节奏（10 秒）。
+        probs += [f"{key}: panel text must mention {w!r}" for w in PANEL_REQUIRED_PHRASES.get(key, ())
+                  if w not in text]
+        probs += [f"{key}: panel text must not say {w!r}"
+                  for w in PANEL_FORBIDDEN_PHRASES.get(key, ()) if w in text]
+    return probs
+
+
+def _rewrite_once(key: str, text: str, rewrites: dict, label: str) -> str:
+    for old, new in rewrites.get(key, ()):
+        if text.count(old) != 1:
+            raise KitError(f"{key}: {label} rewrite source appears {text.count(old)} times: {old!r}")
+        text = text.replace(old, new)
+    return text
+
+
+def rev4_panel_text(key: str, text: str) -> str:
+    """plan 文案 → 包里文案（累积到第四轮）：第二轮规则①/②的改写与删除、第三轮的节奏改写、
+    第四轮的强度数字改写，最后给主位键逐行补 ``<icon id='main'>``（已有则不重复）。
+
+    改写段必须**恰好出现一次**（否则 plan 漂了或已经改过），删除段允许 0..n 次；空行不加图标。
+    顺序要紧：第三轮第 3 槽的改写源「（每10秒1次）」是第二轮改写的产物；第四轮只碰数字，
+    与前两轮的改写段不重叠；图标必须最后加（它顶在行首）。"""
+    text = _rewrite_once(key, text, REV2_TEXT_REWRITES, "revision2")
+    text = _rewrite_once(key, text, REV3_TEXT_REWRITES, "revision3")
+    text = _rewrite_once(key, text, REV4_TEXT_REWRITES, "revision4")
+    for drop in REV2_TEXT_DROPS:
+        text = text.replace(drop, "")
+    if key in REV2_MAIN_ICON_KEYS:
+        text = "\n".join(line if not line.strip() or MAIN_ICON in line else MAIN_ICON + line
+                         for line in text.split("\n"))
+    return text
+
+
+def rev3_text_problems(texts: dict[str, str]) -> list[str]:
+    """第三轮收口：面板上不许再出现上一轮的节奏（10 秒），也不许有人只改了一半。"""
+    return [f"{k}: 面板仍写着上一轮的节奏 {w!r}（CT 已改 {CT_SECONDS} 秒 / 「灯火正旺」已改 {LAMP_SECONDS} 秒）"
+            for k, t in sorted(texts.items()) for w in REV3_STALE_TIMING if w in t]
+
+
+def rev4_text_problems(texts: dict[str, str]) -> list[str]:
+    """第四轮收口：能力1/3 的覆盖文案必须写新数字、不许留旧数字。
+
+    **按键查**，不做全局禁词：别的键里的「＋50%」是别的效果（能力1#1 开局技能槽、能力2 / 能力6 /
+    队长的强化弹射伤害），作者这次没让改，一刀切会误伤。"""
+    probs = []
+    for key, stale in sorted(REV4_STALE_NUMBERS.items()):
+        text = texts.get(key)
+        if text is None:
+            probs.append(f"{key}: 覆盖文案缺失，无法核对第四轮强度数字")
+            continue
+        probs += [f"{key}: 面板仍写着上一轮的强度 {w!r}（已改 {A3_LAMP_GAIN_PCT}% / {A1_WICK_MULT_PCT}%）"
+                  for w in stale if w in text]
+        probs += [f"{key}: 面板缺少第四轮的强度写法 {w!r}"
+                  for w in PANEL_REQUIRED_PHRASES.get(key, ()) if w not in text]
+    return probs
+
+
+def rev2_enhance_text_problems(texts: dict[str, str]) -> list[str]:
+    """规则②：「技能强化」条目只写强化了什么，不写数值与时间（数字 / 秒 / 百分号 / 倍都不许）。"""
+    probs = []
+    for key, text in sorted(texts.items()):
+        for line in text.split("\n"):
+            if ENHANCE_TEXT_MARK not in line:
+                continue
+            bad = sorted({ch for ch in line if ch in ENHANCE_TEXT_FORBIDDEN})
+            if bad:
+                probs.append(f"{key}: 技能强化条目不写数值与时间（规则②），出现 {bad}：{line.strip()}")
+    return probs
+
+
+def rev2_skill_flag_problems(ability_rows: dict[str, list[list[str]]], texts: dict[str, str]) -> list[str]:
+    """规则②的正向对照：本角色确实有 ChangeSkillFlag(536) 行，它的文案必须是「强化『…』」句式。
+
+    将来若有人加/删这类行，这里会直接红——规则②对本角色不是空过条款。"""
+    flag_rows = [(key, i) for key, lines in sorted(ability_rows.items()) for i, row in enumerate(lines)
+                 if row[47] in SKILL_FLAG_KINDS or (len(row) > 109 and row[109] in SKILL_FLAG_KINDS)]
+    probs = []
+    if len(flag_rows) != 1:
+        probs.append(f"expected exactly one ChangeSkillFlag(536/704) row, got {flag_rows}")
+    for key, i in flag_rows:
+        row = ability_rows[key][i]
+        if row[70] != CHANGE_SKILL_KEY:
+            probs.append(f"ability {key}#{i} ChangeSkillFlag string_id {row[70]!r} != {CHANGE_SKILL_KEY}")
+    for key in (CHANGE_SKILL_KEY, f"desc_override_{CODE}_1"):
+        if ENHANCE_TEXT_MARK not in texts.get(key, ""):
+            probs.append(f"{key}: 技能强化条目缺少「{ENHANCE_TEXT_MARK}…」句式（规则②）")
+    return probs + rev2_enhance_text_problems(texts)
+
+
+def apply_main_slot_only(key: str, row: list[str], label: str) -> list[str]:
+    """第二轮 T1：主位限制 = 整键 c1='false'；非主位键必须保持 ``true``（防误伤合击位）。"""
+    want = "false" if key in REV2_MAIN_SLOT_KEYS else "true"
+    if row[1] not in ("true", "false"):
+        raise KitError(f"{label} c1={row[1]!r} is not a boolean")
+    if want == "true" and row[1] != "true":
+        raise KitError(f"{label} c1={row[1]!r}: {key} 不在主位限制名单里，不许变成主位专用")
+    pre202 = [b for b in ABILITY_PRECONDITION_BLOCKS if len(row) > b and row[b] == PRE_OWNER_IS_MAIN]
+    if pre202:
+        raise KitError(f"{label} carries pre202 (OwnerIsMain) at c{pre202}："
+                       f"与 c1=false 同键双写会画两个 Ⓜ")
+    out = list(row)
+    out[1] = want
+    return out
+
+
+def apply_rev3_cooldown(key: str, index: int, row: list[str], label: str) -> list[str]:
+    """第三轮 T3-b：``REV3_CT_ROWS`` 四行的 CT（c35）600 → 300 帧。
+
+    名单外的行若也写着 600，直接报错——作者说的「那个每 10 秒 1 次」只有这一组，
+    将来多出来的 CT 行必须重新逐条判断，不许被这层增量顺手改掉（也不许悄悄留着两种节奏）。"""
+    out = list(row)
+    if (key, index) in REV3_CT_ROWS:
+        if out[35] != str(CT_LAMP_FRAMES_REV2):
+            raise KitError(f"{label} c35={out[35]!r} != 上一轮的 {CT_LAMP_FRAMES_REV2}（plan 漂了？）")
+        out[35] = str(CT_LAMP_FRAMES)
+    elif out[35] == str(CT_LAMP_FRAMES_REV2):
+        raise KitError(f"{label} 也写着 CT {CT_LAMP_FRAMES_REV2}，却不在第三轮名单 REV3_CT_ROWS 里："
+                       f"请先逐条判断它是不是作者说的「每 10 秒 1 次」")
+    return out
+
+
+def panel_matches_row_values(ability_rows: dict[str, list[list[str]]], texts: dict[str, str]) -> list[str]:
+    """面板上写的百分数 = 成品行数值列 ÷ 1000，逐条对。
+
+    比「文案里有没有这串字」更硬：拿的是真正要装包的行。另要求这几行两列拉平——
+    ``desc_override`` 是固定文案、不跟词条等级走，两列不平面板就会和实际收益对不上
+    （记忆卡 wf-leader-override-text-rules）。"""
+    probs = []
+    for (key, idx), (cas_key, shape) in sorted(PANEL_VALUE_BINDINGS.items()):
+        lines = ability_rows.get(key, [])
+        if len(lines) <= idx:
+            probs.append(f"ability {key}#{idx} missing，面板数字无从核对")
+            continue
+        cols = REV4_VALUE_ROWS[(key, idx)][0]
+        low, high = (lines[idx][c] for c in cols)
+        if low != high:
+            probs.append(f"ability {key}#{idx} 数值列 c{cols[0]}/c{cols[1]} = {low}/{high} 未拉平："
+                         f"固定覆盖文案只写一个数字，两列不平面板会与实际收益不符")
+        if not high.isdigit() or int(high) % PCT_SCALE:
+            probs.append(f"ability {key}#{idx} 满级列 {high!r} 不是整数百分比（刻度 {PCT_SCALE}）")
+            continue
+        want = shape.format(pct=int(high) // PCT_SCALE)
+        text = texts.get(cas_key, "")
+        if want not in text:
+            probs.append(f"{cas_key}: 面板缺少与 ability {key}#{idx} 数值列对应的写法 {want!r}")
+    return probs
+
+
+def rev4_scaled_pair(pair: list[str], old_ref: int, new_ref: int, label: str) -> list[str]:
+    """按满级列的缩放比例同步「低级列 / 满级列」两列，保持该行原本的 低级:满级 关系。
+
+    用 ``Fraction`` 而不是浮点：除不尽就报错，绝不静默取整（词条数值列是整数千分比，
+    50000 = 50%）。本角色这三行两列本来就拉平，缩放后仍拉平。"""
+    if len(pair) != 2:
+        raise KitError(f"{label} 数值列应为（低级, 满级）两列，实际 {pair!r}")
+    if pair[1] != str(old_ref):
+        raise KitError(f"{label} 满级列 {pair[1]!r} != 上一轮的 {old_ref}（plan 漂了？）")
+    ratio = Fraction(new_ref, old_ref)
+    out = []
+    for value in pair:
+        if not (value.lstrip("-").isdigit()):
+            raise KitError(f"{label} 数值列 {value!r} 不是整数，无法按比例缩放")
+        scaled = Fraction(int(value)) * ratio
+        if scaled.denominator != 1:
+            raise KitError(f"{label} 数值列 {value!r} 按 {new_ref}/{old_ref} 缩放后不是整数：{scaled}")
+        out.append(str(scaled.numerator))
+    return out
+
+
+def apply_rev4_values(key: str, index: int, row: list[str], label: str) -> list[str]:
+    """第四轮 T4-a/T4-b：``REV4_VALUE_ROWS`` 三行的数值列按作者给的新强度缩放（两列同步）。
+
+    名单外的行不动；同量级（50000 / 5000）却既不在改名单也不在 ``REV4_KEEP_ROWS`` 的行直接报错——
+    将来有人往能力1/3 里加 50% 的行，必须重新逐条判断它是不是作者说的那两处。"""
+    out = list(row)
+    spec = REV4_VALUE_ROWS.get((key, index))
+    if spec is not None:
+        cols, old_ref, new_ref = spec
+        for col, value in zip(cols, rev4_scaled_pair([out[c] for c in cols], old_ref, new_ref, label)):
+            out[col] = value
+        return out
+    if key in REV4_SCAN_KEYS and (key, index) not in REV4_KEEP_ROWS:
+        hit = [c for c in REV4_SCAN_COLS if len(out) > c and out[c] in REV4_SCAN_MAGNITUDES]
+        if hit:
+            raise KitError(f"{label} 的数值列 c{hit} 也写着 {REV4_SCAN_MAGNITUDES} 量级，"
+                           f"却既不在 REV4_VALUE_ROWS 也不在 REV4_KEEP_ROWS："
+                           f"请先逐条判断它是不是作者说的「能力3 的 50%」/「灯芯每层 5%」")
+    return out
+
+
+def rev4_value_scan(plan: dict) -> dict:
+    """「先把能力1/3 里含 50% / 5% 的行逐条列出来」的机器版：扫两键全部记录的四个数值列。
+
+    瞬发值 = c51/c52（``AbilityValues`` instant_content 块），持续值 = c113/c114（during_content 块）。
+    扫出来的同量级行必须恰好等于「改的三行（``REV4_VALUE_ROWS``）+ 留的一行（``REV4_KEEP_ROWS``，附理由）」。
+    """
+    found = {}
+    for key in REV4_SCAN_KEYS:
+        for i, entry in enumerate(plan["tables"]["ability"]["keys"][key]):
+            row = entry["row"]
+            cells = {f"c{c}": row[c] for c in REV4_SCAN_COLS if len(row) > c and row[c] in REV4_SCAN_MAGNITUDES}
+            if cells:
+                found[(key, i)] = {"row": f"{key}#{i}", "cells": cells, "kind_instant": row[47],
+                                   "kind_during": row[109] if len(row) > 109 else "",
+                                   "note": entry.get("note"), "describe": entry.get("describe")}
+    changed, kept, probs = [], [], []
+    for ref, info in sorted(found.items()):
+        if ref in REV4_VALUE_ROWS:
+            cols, old_ref, new_ref = REV4_VALUE_ROWS[ref]
+            changed.append(dict(info, cols=list(cols), old=old_ref, new=new_ref))
+        elif ref in REV4_KEEP_ROWS:
+            kept.append(dict(info, reason=REV4_KEEP_ROWS[ref]))
+        else:
+            probs.append(f"ability {info['row']} 的数值列 {info['cells']} 同为 "
+                         f"{REV4_SCAN_MAGNITUDES} 量级，却不在第四轮的改 / 留名单里：请先逐条判断")
+    missing = [f"{k}#{i}" for k, i in REV4_VALUE_ROWS if (k, i) not in found]
+    if missing:
+        probs.append(f"第四轮要改的行在 plan 里没有上一轮的数值：{missing}（plan 漂了？）")
+    stale_keep = [f"{k}#{i}" for k, i in REV4_KEEP_ROWS if (k, i) not in found]
+    if stale_keep:
+        probs.append(f"REV4_KEEP_ROWS 里的行已不再是同量级：{stale_keep}（名单该清了）")
+    return {"changed": changed, "kept": kept, "problems": probs,
+            "scanned_keys": list(REV4_SCAN_KEYS), "scanned_cols": list(REV4_SCAN_COLS),
+            "magnitudes": list(REV4_SCAN_MAGNITUDES)}
+
+
+def rev3_cooldown_scan(plan: dict) -> dict:
+    """「先把本角色所有 c35=600 的行列出来」的机器版：扫计划里每一行的 CT 列。
+
+    词条表 CT = c35（``AbilityValues.parseAt35``，during 块无 CT）；队长表 CT = c33 / c91
+    （记忆卡 wf-kit-round2-20260909）。扫描结果进 kit-report，与名单不符就报错。"""
+    ability = [(key, i) for key, records in plan["tables"]["ability"]["keys"].items()
+               for i, e in enumerate(records) if e["row"][35] == str(CT_LAMP_FRAMES_REV2)]
+    leader = [(i, c) for i, e in enumerate(plan["tables"]["leader_ability"]["records"])
+              for c in LEADER_CT_BLOCKS if e["row"][c] == str(CT_LAMP_FRAMES_REV2)]
+    other = sorted({e["row"][35] for records in plan["tables"]["ability"]["keys"].values() for e in records}
+                   - {str(CT_LAMP_FRAMES_REV2)})
+    probs = []
+    if sorted(ability) != sorted(REV3_CT_ROWS):
+        probs.append(f"plan 里 CT{CT_LAMP_FRAMES_REV2} 的行是 {sorted(ability)}，名单是 {sorted(REV3_CT_ROWS)}")
+    if leader:
+        probs.append(f"leader_ability 也有 CT{CT_LAMP_FRAMES_REV2} 的格 {leader}：本轮未判断，先别改")
+    return {"ability_rows": [f"{k}#{i}" for k, i in sorted(ability)],
+            "leader_cells": [f"L{i}c{c}" for i, c in leader],
+            "other_ability_c35_values": other, "problems": probs}
+
+
+def rev4_expected_ability_rows(plan: dict) -> dict[str, list[list[str]]]:
+    """plan.json 的行 + 第二轮 T1（主位限制）+ 第三轮 T3-b（CT 5 秒）+ 第四轮 T4-a/b（强度回调）
+    = 包里应有的词条行（门禁 / 单测与 kit 用同一个真源）。"""
+    out = {}
+    for slot in range(1, 7):
+        key = f"{CID}{slot}"
+        records = plan["tables"]["ability"]["keys"].get(key)
+        if not records:
+            raise KitError(f"plan has no ability records for {key}")
+        rows = []
+        for i, e in enumerate(records):
+            label = f"ability {key}#{i}"
+            row = apply_main_slot_only(key, list(e["row"]), label)
+            row = apply_rev3_cooldown(key, i, row, label)
+            rows.append(apply_rev4_values(key, i, row, label))
+        out[key] = rows
+    return out
+
+
+def rev4_row_changes(plan: dict, ability_rows: dict[str, list[list[str]]]) -> dict:
+    """成品行 vs plan 行的逐格差异：只准差在 c1（第二轮主位限制）、c35（第三轮 CT）与
+    第四轮声明的数值列，且只准差在各自声明的键 / 行上。
+
+    返回 ``{"c1": …, "ct": …, "values": …, "problems": […]}``（每项是 {键: [记录号]}）。"""
+    c1_changes, ct_changes, value_changes, probs = {}, {}, {}, []
+    for key, lines in sorted(ability_rows.items()):
+        planned = [e["row"] for e in plan["tables"]["ability"]["keys"][key]]
+        if len(lines) != len(planned):
+            probs.append(f"ability {key} record count {len(lines)} != plan {len(planned)}")
+            continue
+        for i, (built, want) in enumerate(zip(lines, planned)):
+            diff = [c for c, (a, b) in enumerate(zip(built, want)) if a != b]
+            value_spec = REV4_VALUE_ROWS.get((key, i))
+            for col in diff:
+                if col == 1 and (built[1], want[1]) == ("false", "true") and key in REV2_MAIN_SLOT_KEYS:
+                    c1_changes.setdefault(key, []).append(i)
+                elif col == 35 and (key, i) in REV3_CT_ROWS and \
+                        (built[35], want[35]) == (str(CT_LAMP_FRAMES), str(CT_LAMP_FRAMES_REV2)):
+                    ct_changes.setdefault(key, []).append(i)
+                elif value_spec is not None and col in value_spec[0] and \
+                        [built[c] for c in value_spec[0]] == \
+                        rev4_scaled_pair([want[c] for c in value_spec[0]], value_spec[1], value_spec[2],
+                                         f"ability {key}#{i}"):
+                    if i not in value_changes.setdefault(key, []):
+                        value_changes[key].append(i)
+                else:
+                    probs.append(f"ability {key}#{i}: 只准改 c1（主位限制）/ c35（CT）/ "
+                                 f"第四轮声明的数值列，实际差异列 {diff}")
+                    break
+        if len({r[1] for r in lines}) != 1:
+            probs.append(f"ability {key}: c1 在同键内不一致 {[r[1] for r in lines]}（get_unisonable 只读 values[0]）")
+    missing = [f"{k}#{i}" for k, i in REV3_CT_ROWS if i not in ct_changes.get(k, ())]
+    if missing:
+        probs.append(f"第三轮 CT 未落到这些行：{missing}")
+    missing_values = [f"{k}#{i}" for k, i in REV4_VALUE_ROWS if i not in value_changes.get(k, ())]
+    if missing_values:
+        probs.append(f"第四轮强度未落到这些行：{missing_values}")
+    return {"c1": c1_changes, "ct": ct_changes, "values": value_changes, "problems": probs}
+
+
+def rev3_unique_row(uid: str, row: list[str]) -> list[str]:
+    """第三轮 T3-a：固有 159997「灯火正旺」的 duration_frame（c3）600 → 720 帧（10 → 12 秒）。
+
+    「灯芯」1599971 是永续状态（99999999 帧），不在本轮改动范围；名单外的行若写着 600 帧同样报错。"""
+    out = list(row)
+    if uid == UC_ID:
+        if out[3] != str(UC_LAMP_FRAMES_REV2):
+            raise KitError(f"unique {uid} duration {out[3]!r} != 上一轮的 {UC_LAMP_FRAMES_REV2}（plan 漂了？）")
+        out[3] = str(UC_LAMP_FRAMES)
+    elif out[3] == str(UC_LAMP_FRAMES_REV2):
+        raise KitError(f"unique {uid} 也是 {UC_LAMP_FRAMES_REV2} 帧，却不在第三轮名单里：请先逐条判断")
+    return out
+
+
+def main_slot_panel_problems(ability_rows: dict[str, list[list[str]]], texts: dict[str, str]) -> list[str]:
+    """词条键的 c1（主位限制）与它的覆盖文案是否一致：c1=false ⇔ 覆盖文案每行都带 ``<icon id='main'>``。
+
+    面板 Ⓜ 本由客户端逐行画，但 desc_override 把整段文字换掉了，所以图标要写进文本；
+    两边错位 = 面板上「有 Ⓜ 没限制」或「有限制没 Ⓜ」。没有覆盖文案的槽（4/5）由客户端自动画，跳过文本检查。"""
+    probs = []
+    for slot in range(1, 7):
+        key = f"{CID}{slot}"
+        lines = ability_rows.get(key)
+        if not lines:
+            probs.append(f"ability {key} missing")
+            continue
+        main_only = lines[0][1] == "false"
+        want = slot in REV2_MAIN_SLOT_SLOTS
+        if main_only != want:
+            probs.append(f"ability {key} c1={lines[0][1]!r} but revision2 expects main_only={want}")
+        cas_key = SLOT_CAS_KEY.get(slot)
+        if cas_key is None:
+            continue
+        if cas_key not in texts:
+            probs.append(f"{cas_key} missing")
+            continue
+        text_lines = [ln for ln in texts[cas_key].split("\n") if ln.strip()]
+        tagged = [ln.startswith(MAIN_ICON) for ln in text_lines]
+        if main_only and not all(tagged):
+            probs.append(f"{cas_key}: main-slot ability but {tagged.count(False)} line(s) lack {MAIN_ICON!r}")
+        if not main_only and any(tagged):
+            probs.append(f"{cas_key}: not a main-slot ability but carries {MAIN_ICON!r}")
+    return probs
 
 
 def load_design(root: Path) -> dict:
@@ -271,19 +866,90 @@ def load_design(root: Path) -> dict:
     return design
 
 
-def check_texts_constant(design: dict) -> list[str]:
+def load_revision(root: Path) -> dict:
+    """2026-09-16 作者改版计划（revision-20260916/zehr/plan.json）：行 / 文案 / 技能 ALv 的唯一来源。"""
+    plan = json.loads((root / REVISION_REL).read_text(encoding="utf-8"))
+    if plan.get("schema") != REVISION_SCHEMA or plan.get("key") != KEY:
+        raise KitError(f"revision {REVISION_REL} schema/key unexpected: {plan.get('schema')} {plan.get('key')}")
+    if (plan.get("cid"), plan.get("code")) != (CID, CODE):
+        raise KitError(f"revision identity mismatch {plan.get('cid')} {plan.get('code')}")
+    if sorted(plan.get("required_capabilities") or []) != sorted(CAPABILITIES):
+        raise KitError(f"revision required_capabilities {plan.get('required_capabilities')}")
+    return plan
+
+
+def character_text_row(design: dict) -> list[str]:
+    """改版后的 character_text 行 = 设计行，只换两档技能描述（c5/c7）。"""
+    row = list(design["text"]["character_text_row"])
+    if (row[5], row[7]) != (DESIGN_SKILL_DESC, DESIGN_SKILL_DESC):
+        raise KitError("design character_text c5/c7 is not the pre-revision skill description")
+    row[5], row[7] = TEXTS["desc1"], TEXTS["desc2"]
+    return row
+
+
+def check_texts_constant(design: dict, plan: dict | None = None) -> list[str]:
+    """TEXTS 与设计定稿逐项核对；技能描述两档按改版计划改写（其余文本仍必须等于设计）。"""
     t = design["text"]
     want = {"name": t["name"], "furigana": t["furigana"], "title": t["nickname"],
             "profile": t["character_text_row"][2], "leader": t["leader_skill_name"],
-            "skill1": t["skill_name_1"], "desc1": t["skill_desc_1"], "skill2": t["skill_name_2"],
-            "desc2": t["skill_desc_2"], "cv": t["cv"]}
+            "skill1": t["skill_name_1"], "skill2": t["skill_name_2"], "cv": t["cv"]}
     probs = [f"TEXTS[{k}] != design" for k, v in want.items() if TEXTS.get(k) != v]
+    if (t["skill_desc_1"], t["skill_desc_2"]) != (DESIGN_SKILL_DESC, DESIGN_SKILL_DESC):
+        probs.append("design skill_desc_1/2 != pre-revision baseline (design file changed?)")
+    if TEXTS["desc1"] != TEXTS["desc2"]:
+        probs.append("TEXTS desc1 != desc2 (两档同文)")
+    # R5：面板点名「攻击力提升效果＋250%」/「强化弹射伤害提升效果＋250%」，技能说明必须提到这两个效果名，
+    # 否则玩家在技能说明里找不到 536 强化的对象。
+    probs += [f"TEXTS[desc1] must mention {w!r}" for w in SKILL_DESC_REQUIRED if w not in TEXTS["desc1"]]
+    if plan is not None:
+        desc = plan["texts"]["action_skill_desc"]
+        if desc["old"] != DESIGN_SKILL_DESC:
+            probs.append("revision action_skill_desc.old != design skill description")
+        if desc["new"] != TEXTS["desc1"]:
+            probs.append("TEXTS[desc1] != revision action_skill_desc.new")
     row = t["character_text_row"]
     expect_row = [TEXTS["name"], TEXTS["furigana"], TEXTS["profile"], TEXTS["title"], TEXTS["skill1"],
-                  TEXTS["desc1"], TEXTS["skill2"], TEXTS["desc2"], "(None)", "(None)", TEXTS["leader"], TEXTS["cv"]]
+                  DESIGN_SKILL_DESC, TEXTS["skill2"], DESIGN_SKILL_DESC, "(None)", "(None)",
+                  TEXTS["leader"], TEXTS["cv"]]
     if row != expect_row:
         probs.append("design character_text_row != TEXTS-derived row")
     return probs
+
+
+def power_up_blob(blob: bytes, plan: dict) -> bytes:
+    """审查修复轮 R4：536 ChangeSkillFlag 的「强化」后缀真源是 ``custom_ability_power_up_string``。
+
+    【事实】``InstantAbilitySource.as:5018`` 把 536 的 ``string_id`` 交给
+    ``CustomAbilityPowerUpStringTools.resolveDescriptionPowerLevel``；面板由
+    ``AbilityDescriptionStringfier_Impl_.as:1699`` / ``AbilityDescriptionTools.as:3077`` 读
+    ``CustomAbilityPowerUpStringTable``。``custom_ability_string`` 那个同名键是**主文案**
+    （``AbilityDescriptionGenerator.as:8531`` case 15），两张表都读、都要改。
+    官方同形：``change_skill_combat_animal_xm21``「攻击力提升效果强化/技能伤害提升效果强化」。
+    """
+    import wf_seasonal7_tables as T
+    item = plan["texts"]["custom_ability_power_up_string"][CHANGE_SKILL_KEY]
+    if item["action"] == "unchanged":
+        return blob
+    if item["action"] != "rewrite":
+        raise KitError(f"power_up string unknown action {item['action']!r}")
+    old, new = item["old"], item["value"]
+    levels = [str(i) for i in range(2, 7)]
+    if sorted(old) != levels or sorted(new) != levels:
+        raise KitError(f"power_up levels {sorted(old)}/{sorted(new)} != {levels}")
+    got = T.decode_blob(blob)
+    if got != old:
+        raise KitError(f"power_up donor text {got} != plan old {old}")
+    src, dst = set(old.values()), set(new.values())
+    if len(src) != 1 or len(dst) != 1:
+        raise KitError(f"power_up rewrite must be one text for all 5 levels: {sorted(src)} -> {sorted(dst)}")
+    src, dst = src.pop(), dst.pop()
+    if src == dst:
+        raise KitError("power_up rewrite is a no-op")
+    out = T.clone_blob(blob, lambda cell: dst if cell == src else cell)          # 层键 '2'..'6' 不会命中
+    back = T.decode_blob(out)
+    if back != new:
+        raise KitError(f"power_up rewrite roundtrip {back} != plan {new}")
+    return out
 
 
 def apply_text_override(text: str, label: str) -> str:
@@ -327,56 +993,122 @@ def row_checks(kind: str, row: list[str]) -> dict[str, Any]:
     }
 
 
-def build_rows(ctx, design: dict) -> tuple[dict, list[dict]]:
+def replay_row(ctx, entry: dict, table_hint: str, label: str, index: int) -> list[str]:
+    """donor 原行 + 声明编辑 → 与计划成品行逐格核对。"""
+    if entry["target_record"] != index:
+        raise KitError(f"{label} record order {entry['target_record']} != {index}")
+    row, table = donor_row(ctx, entry["donor"], entry["row_index"])
+    if table != table_hint:
+        raise KitError(f"{label} donor table {table} != {table_hint}")
+    for col, val in entry["edits"].items():
+        if row[int(col)] != entry["old_values"][col]:
+            raise KitError(f"{label} donor c{col}={row[int(col)]!r} != plan old {entry['old_values'][col]!r}")
+        row[int(col)] = val
+    if row != entry["row"]:
+        diff = {c: (a, b) for c, (a, b) in enumerate(zip(row, entry["row"])) if a != b}
+        raise KitError(f"{label} donor+edits != plan row: {diff}")
+    return row
+
+
+def trigger_limit_problems(kind: str, row: list[str]) -> list[str]:
+    """「无上限」必须写字面量 ``(None)``：空串会被 Std.parseInt 吃成 0 = 永不触发
+    （AbilityValues.parseAt34 / LeaderAbilityValues.parseAt32）。有瞬发触发（kind 非空且非 0）就必须有上限列。"""
+    trig, lim = (27, 34) if kind == "ability" else (25, 32)
+    if row[trig] not in ("", "0") and row[lim] == "":
+        return [f"instant trigger {row[trig]} has empty trigger_limit (= 0 次, never fires)"]
+    return []
+
+
+def leader_gate_problems(ability_rows: dict[str, list[list[str]]]) -> list[str]:
+    """审查修复轮 R1：pre42（自身为队长）只准出现在作者原文点名的能力2 两行上。
+
+    作者 2026-09-16 原文这一段只在「能力2,自身为队长时强化弹射伤害随连击数提升」写了队长条件；
+    50 连击触发的四行（能力1 两条发放行 + 能力3 两条受益行）没有队长条件，面板文案也不写，
+    带着 pre42 就是「面板承诺 ≠ 实际生效」，并且能力1 可上合击位（c1=true）时那三行全是死行。
+    422 冲刺两行（1599973#1/#2）的 pre42 是上一轮就有的、作者要求「特殊冲刺不变」，不在此列。
+    """
+    probs = []
+    for key, idx in NO_LEADER_GATE_ROWS:
+        row = ability_rows.get(key, [])
+        if len(row) <= idx:
+            probs.append(f"{key}#{idx} missing")
+        elif row[idx][6] == "42":
+            probs.append(f"{key}#{idx} still carries pre42")
+    for key, idx in LEADER_GATE_ROWS:
+        row = ability_rows.get(key, [])
+        if len(row) <= idx:
+            probs.append(f"{key}#{idx} missing")
+        elif row[idx][6] != "42":
+            probs.append(f"{key}#{idx} lost pre42 (作者原文「自身为队长时」)")
+    return probs
+
+
+def build_rows(ctx, plan: dict) -> tuple[dict, list[dict]]:
+    """按改版计划 plan.json 重放 6 条队长行与 6 键 20 条词条行（donor + edits，逐格核对成品行）。"""
     evidence: list[dict] = []
     leader_rows: list[list[str]] = []
-    for i, entry in enumerate(design["leader"]):
-        if entry["target_record"] != i:
-            raise KitError(f"leader record order {entry['target_record']} != {i}")
-        row, table = donor_row(ctx, entry["donor"], entry["row_index"])
-        if table != "leader_ability":
-            raise KitError(f"leader donor table {table}")
-        for col, val in entry["edits"].items():
-            if row[int(col)] != entry["old_values"][col]:
-                raise KitError(f"leader#{i} donor c{col}={row[int(col)]!r} != design old {entry['old_values'][col]!r}")
-            row[int(col)] = val
-        if row != entry["row"]:
-            diff = {j: (a, b) for j, (a, b) in enumerate(zip(row, entry["row"])) if a != b}
-            raise KitError(f"leader#{i} donor+edits != design row: {diff}")
+    leader_block = plan["tables"]["leader_ability"]
+    if leader_block["key"] != CID or leader_block["logical_path"] != LEADER:
+        raise KitError(f"plan leader block {leader_block['key']} {leader_block['logical_path']}")
+    for i, entry in enumerate(leader_block["records"]):
+        row = replay_row(ctx, entry, "leader_ability", f"leader#{i}", i)
+        if row[0] != CODE:
+            raise KitError(f"leader#{i} c0 {row[0]}")
         leader_rows.append(row)
         evidence.append({"table": "leader_ability", "key": CID, "record": i, "donor": entry["donor"], "row": row})
+    ability_block = plan["tables"]["ability"]
+    if ability_block["logical_path"] != ABILITY:
+        raise KitError(f"plan ability logical_path {ability_block['logical_path']}")
     ability_rows: dict[str, list[list[str]]] = {}
     for slot in range(1, 7):
-        block = design["abilities"][f"slot{slot}"]
         key = f"{CID}{slot}"
-        if block["key"] != key:
-            raise KitError(f"design slot{slot} key {block['key']} != {key}")
+        records = ability_block["keys"].get(key)
+        if not records:
+            raise KitError(f"plan has no ability records for {key}")
         lines = []
-        for j, entry in enumerate(block["records"]):
-            if entry["target_record"] != j:
-                raise KitError(f"ability {key} record order")
-            row, table = donor_row(ctx, entry["donor"], entry["row_index"])
-            if table != "ability":
-                raise KitError(f"ability donor table {table}")
-            for col, val in entry["edits"].items():
-                if row[int(col)] != entry["old_values"][col]:
-                    raise KitError(f"ability {key}#{j} donor c{col}={row[int(col)]!r} != design old "
-                                   f"{entry['old_values'][col]!r}")
-                row[int(col)] = val
-            if row != entry["row"]:
-                diff = {c: (a, b) for c, (a, b) in enumerate(zip(row, entry["row"])) if a != b}
-                raise KitError(f"ability {key}#{j} donor+edits != design row: {diff}")
+        for j, entry in enumerate(records):
+            row = replay_row(ctx, entry, "ability", f"ability {key}#{j}", j)
             if row[0] != f"{CODE}_{slot}":
                 raise KitError(f"ability {key} c0 {row[0]}")
+            row = apply_main_slot_only(key, row, f"ability {key}#{j}")      # 第二轮 T1：能力 1/3/5 主位限制
+            row = apply_rev3_cooldown(key, j, row, f"ability {key}#{j}")    # 第三轮 T3-b：CT 10 秒 → 5 秒
+            row = apply_rev4_values(key, j, row, f"ability {key}#{j}")      # 第四轮 T4-a/b：50%→30% / 5%→3%
             lines.append(row)
             evidence.append({"table": "ability", "key": key, "record": j, "donor": entry["donor"], "row": row})
         ability_rows[key] = lines
     total = sum(len(v) for v in ability_rows.values())
-    counts = design["record_counts"]
-    if total != counts["abilities"] or len(leader_rows) != counts["leader"]:
-        raise KitError(f"row counts ability={total} leader={len(leader_rows)} design={counts}")
+    if total != ability_block["record_count"] or len(leader_rows) != leader_block["record_count"]:
+        raise KitError(f"row counts ability={total} leader={len(leader_rows)} plan="
+                       f"{ability_block['record_count']}/{leader_block['record_count']}")
+    for probs in (leader_gate_problems(ability_rows),):
+        if probs:
+            raise KitError(f"leader gate (pre42) placement: {probs}")
+    scan = rev3_cooldown_scan(plan)                 # 「所有 c35=600 的行」与名单必须一致
+    if scan["problems"]:
+        raise KitError(f"revision3 cooldown scan: {scan['problems']}")
+    value_scan = rev4_value_scan(plan)              # 「能力1/3 里所有 50000 / 5000 的格」与名单必须一致
+    if value_scan["problems"]:
+        raise KitError(f"revision4 value scan: {value_scan['problems']}")
+    if rev4_expected_ability_rows(plan) != ability_rows:
+        raise KitError("ability rows != plan rows + revision2 main-slot + revision3 cooldown + revision4 values")
+    changes = rev4_row_changes(plan, ability_rows)
+    if changes["problems"]:
+        raise KitError(f"revision2/3/4 row edits: {changes['problems']}")
+    for item in evidence:
+        if item["table"] != "ability":
+            continue
+        if item["record"] in changes["c1"].get(item["key"], ()):
+            item["revision2"] = "c1 true -> false（主位限制）"
+        if item["record"] in changes["ct"].get(item["key"], ()):
+            item["revision3"] = (f"c35 {CT_LAMP_FRAMES_REV2} -> {CT_LAMP_FRAMES}"
+                                 f"（CT 10 秒 -> {CT_SECONDS} 秒）")
+        if item["record"] in changes["values"].get(item["key"], ()):
+            cols, old_ref, new_ref = REV4_VALUE_ROWS[(item["key"], item["record"])]
+            item["revision4"] = (f"c{cols[0]}/c{cols[1]} {old_ref} -> {new_ref}"
+                                 f"（{old_ref // PCT_SCALE}% -> {new_ref // PCT_SCALE}%）")
     for item in evidence:
         item.update(row_checks(item["table"], item["row"]))
+        item["trigger_limit_problems"] = trigger_limit_problems(item["table"], item["row"])
     return {"leader": leader_rows, "ability": ability_rows}, evidence
 
 
@@ -388,10 +1120,13 @@ def mixed_c1_c2(ability_rows: dict[str, list[list[str]]]) -> dict[str, list[tupl
 
 # ---------------------------------------------------------------- 固有状态图标
 
-def draw_lamp_icon():
-    """48×48 官方风固有状态图标：白色圆角框 + 暗红渐变底 + 白色提灯 + 金色灯芯火苗（8× 超采样）。"""
+ICON_SUPERSAMPLE = 8
+
+
+def _icon_base(glow_box=(12, 13, 36, 37), glow_color=(255, 179, 71, 150)):
+    """两个固有图标共用的底：白色圆角外框 + 暗红渐变内底 + 一团暖光（8× 超采样，未缩小）。"""
     from PIL import Image, ImageDraw, ImageFilter
-    k = 8
+    k = ICON_SUPERSAMPLE
     size = 48 * k
     base = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     d = ImageDraw.Draw(base)
@@ -406,14 +1141,22 @@ def draw_lamp_icon():
     ImageDraw.Draw(inner).rounded_rectangle([3 * k, 3 * k, size - 1 - 3 * k, size - 1 - 3 * k], radius=5 * k, fill=255)
     base.paste(grad, (0, 0), inner)
     glow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    ImageDraw.Draw(glow).ellipse([12 * k, 13 * k, 36 * k, 37 * k], fill=(255, 179, 71, 150))
+    ImageDraw.Draw(glow).ellipse([glow_box[0] * k, glow_box[1] * k, glow_box[2] * k, glow_box[3] * k], fill=glow_color)
     glow = glow.filter(ImageFilter.GaussianBlur(4 * k))
     glow_mask = Image.new("L", (size, size), 0)
     ImageDraw.Draw(glow_mask).rounded_rectangle([3 * k, 3 * k, size - 1 - 3 * k, size - 1 - 3 * k],
                                                 radius=5 * k, fill=255)
     clipped = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     clipped.paste(glow, (0, 0), glow_mask)
-    base = Image.alpha_composite(base, clipped)
+    return Image.alpha_composite(base, clipped)
+
+
+def draw_lamp_icon():
+    """48×48 官方风固有状态图标「灯火正旺」：白色圆角框 + 暗红渐变底 + 白色提灯 + 金色灯芯火苗（8× 超采样）。"""
+    from PIL import Image, ImageDraw
+    k = ICON_SUPERSAMPLE
+    size = 48 * k
+    base = _icon_base()
     d = ImageDraw.Draw(base)
     white = (255, 255, 255, 255)
     s = k
@@ -426,6 +1169,37 @@ def draw_lamp_icon():
                (20.4 * s, 30.5 * s), (19.8 * s, 27 * s)], fill=(255, 211, 106, 255))                   # 火苗
     d.polygon([(24 * s, 23 * s), (26.2 * s, 28 * s), (24 * s, 31.2 * s), (21.8 * s, 28 * s)],
               fill=(255, 246, 224, 255))
+    return base.resize((48, 48), Image.Resampling.LANCZOS)
+
+
+def draw_wick_icon():
+    """48×48 官方风固有状态图标「灯芯」：同族白框暗红底 + 裸灯芯火苗 + 向上细光柱 + 白色芯线。
+
+    与「灯火正旺」的提灯轮廓刻意拉开（方盒 vs 竖向光柱），两者会同屏出现；
+    右下角留白给客户端自绘层数数字（accumulatable=true 时才画）。"""
+    from PIL import Image, ImageDraw, ImageFilter
+    k = ICON_SUPERSAMPLE
+    size = 48 * k
+    s = k
+    base = _icon_base(glow_box=(9, 12, 33, 36), glow_color=(255, 196, 96, 160))
+    inner_mask = Image.new("L", (size, size), 0)
+    ImageDraw.Draw(inner_mask).rounded_rectangle([3 * k, 3 * k, size - 1 - 3 * k, size - 1 - 3 * k],
+                                                 radius=5 * k, fill=255)
+    beam = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    ImageDraw.Draw(beam).polygon([(19.9 * s, 4.5 * s), (22.1 * s, 4.5 * s), (26.4 * s, 25 * s), (15.6 * s, 25 * s)],
+                                 fill=(255, 232, 168, 105))                                        # 向上细光柱
+    beam = beam.filter(ImageFilter.GaussianBlur(1.2 * k))
+    clipped = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    clipped.paste(beam, (0, 0), inner_mask)
+    base = Image.alpha_composite(base, clipped)
+    d = ImageDraw.Draw(base)
+    white = (255, 255, 255, 255)
+    d.line([(21 * s, 30 * s), (21 * s, 40 * s)], fill=white, width=int(2.4 * s))                   # 芯线
+    d.line([(21 * s, 40 * s), (17.4 * s, 42.6 * s)], fill=white, width=int(2.2 * s))               # 芯线末端弯钩
+    d.polygon([(21 * s, 11.5 * s), (25.9 * s, 23.5 * s), (25.2 * s, 28.6 * s), (21 * s, 31.6 * s),
+               (16.8 * s, 28.6 * s), (16.1 * s, 23.5 * s)], fill=(255, 211, 106, 255))             # 火苗
+    d.polygon([(21 * s, 17 * s), (23.5 * s, 23.4 * s), (21 * s, 27.8 * s), (18.5 * s, 23.4 * s)],
+              fill=(255, 246, 224, 255))                                                           # 焰心
     return base.resize((48, 48), Image.Resampling.LANCZOS)
 
 
@@ -812,6 +1586,73 @@ def compose_skill(ctx, level: int, sources: dict) -> tuple[list, dict]:
     return tree, {"multiplier_estimate": total}
 
 
+SKILL_ENHANCED_TOTAL = 2.5      # 强化态（ChangeSkillFlag 536 生效）合计：基值 + alv = 250%
+REVISION_SKILL_NODES = {"atk_alv": "ACAttackPoint", "pfd_alv": "ACPowerFlipDamage"}
+
+
+def revision_value(cell: dict, label: str) -> list[dict]:
+    """把计划里的值单元还原成 SLv 值数组（键序与官方一致：min/max/alv_min/alv_max）。"""
+    keys = set(cell)
+    if keys not in ({"min", "max"}, {"min", "max", "alv_min", "alv_max"}):
+        raise KitError(f"{label}: unexpected slv keys {sorted(keys)}")
+    return slv(cell["min"], cell["max"], alv_min=cell.get("alv_min"), alv_max=cell.get("alv_max"))
+
+
+def skill_revision_targets(tree) -> dict[str, list]:
+    """改版要改的两个 CreateCondition 值数组（返回可原地改写的 list 引用）。"""
+    blk = tree[11][1]
+    atk = cmd(blk[1])
+    if not (atk[0] == "CreateCondition" and atk[1] == -17 and len(atk[2]) == 1
+            and atk[2][0][0] == "ACAttackPoint"):
+        raise KitError("skill revision: blk[1] is not self CreateCondition(ACAttackPoint)")
+    fa = cmd(blk[0])
+    if not (fa[0] == "FindAllSubjects" and fa[2] == 33):
+        raise KitError("skill revision: blk[0] is not FindAllSubjects(33)")
+    pfd = [cmd(n) for n in fa[9][1]
+           if cmd(n)[0] == "CreateCondition" and cmd(n)[2][0][0] == "ACPowerFlipDamage"]
+    if len(pfd) != 1:
+        raise KitError(f"skill revision: {len(pfd)} ACPowerFlipDamage nodes in FindAllSubjects body")
+    return {"atk_alv": atk[2][0], "pfd_alv": pfd[0][2][0]}
+
+
+def apply_skill_revision(tree, level: int, plan: dict) -> list[dict]:
+    """按 plan.json ``skill_dsl.edits`` 改两处 ALv 通道：强化态合计 250%（作者「攻击力提升效果+250%」
+    「强化弹射提升效果+250%」）。伤害倍率、块序、判定区、光弹、特效路径一概不动。"""
+    targets = skill_revision_targets(tree)
+    applied = []
+    for edit in plan["skill_dsl"]["edits"]:
+        eid = edit["id"]
+        if eid not in targets:
+            raise KitError(f"skill revision: unknown edit id {eid}")
+        node = targets[eid]
+        if node[0] != REVISION_SKILL_NODES[eid]:
+            raise KitError(f"skill revision {eid}: node is {node[0]}")
+        lv = edit[f"lv{level}"]
+        old, new = lv["old"], lv["new"]
+        if not num_equal(node[2], old):
+            raise KitError(f"skill revision {eid} lv{level}: value {node[2]} != plan old {old}")
+        built = revision_value(new[0], f"{eid} lv{level}") if len(new) == 1 else None
+        if built is None or not num_equal(built, new):
+            raise KitError(f"skill revision {eid} lv{level}: rebuilt {built} != plan new {new}")
+        cell = built[0]
+        if "alv_min" not in cell:
+            raise KitError(f"skill revision {eid} lv{level}: new value has no ALv channel: {cell}")
+        if float(cell["min"]) + float(cell["alv_min"]) != SKILL_ENHANCED_TOTAL or \
+                float(cell["max"]) + float(cell["alv_max"]) != SKILL_ENHANCED_TOTAL:
+            raise KitError(f"skill revision {eid} lv{level}: enhanced total != {SKILL_ENHANCED_TOTAL}: {cell}")
+        node[2] = built
+        applied.append({"id": eid, "node": node[0], "old": old, "new": built,
+                        "enhanced_total": SKILL_ENHANCED_TOTAL})
+    if len(applied) != 2:
+        raise KitError(f"skill revision: expected 2 edits, applied {len(applied)}")
+    return applied
+
+
+def skill_revision_state(tree) -> dict[str, list[dict]]:
+    """从成品树回读两个值数组（门禁用）。"""
+    return {eid: node[2] for eid, node in skill_revision_targets(tree).items()}
+
+
 # ---------------------------------------------------------------- PF DSL
 
 def apk_pf_sources(root: Path) -> tuple[dict[str, bytes], str]:
@@ -1179,7 +2020,8 @@ def blueprint_check_with_sig(tree, off: dict[str, list[str]]) -> tuple[list[str]
 def required_input_problems(root: Path) -> list[str]:
     """kit 依赖的未跟踪输入（work/ 被 gitignore）。fx manifest 与 gates.json 允许缺（只影响染色来源 / status）。"""
     probs = []
-    for rel, use in ((DESIGN_REL, "设计定稿：行 / 文案 / 语音路由 / 字符串的唯一来源"),
+    for rel, use in ((DESIGN_REL, "上一轮设计定稿：语音路由 / 能量 / PF 与技能定稿树 / 不变字符串的来源"),
+                     (REVISION_REL, "2026-09-16 作者改版计划：队长/词条行、固有状态、覆盖文案、技能 ALv 的唯一来源"),
                      *((f"{DESIGN_TMP_REL}/final_skill_{lv}.json", f"技能 {lv} 定稿树（逐节点比对）") for lv in (1, 2)),
                      *((f"{DESIGN_TMP_REL}/final_pf_lv{lv}.json", f"PF Lv{lv} 定稿树（逐节点比对）") for lv in (1, 2, 3))):
         if not (root / rel).is_file():
@@ -1526,8 +2368,9 @@ def kit_fingerprint(ctx) -> tuple[str, dict]:
     import wf_mod_tool as core
     caps_om = core.read_orderedmap_raw_rows_from_bytes(ctx.pack.pkg_path("common", CAPS).read_bytes(), CAPS)
     parts["custom_ability_power_up_string"] = sha256(dict(zip(caps_om.keys, caps_om.rows))[CHANGE_SKILL_KEY])
-    parts["unique_condition"] = ctx.pkg_flat(UC)[UC_ID]
-    parts["unique_icon"] = sha256(ctx.pack.pkg_path("common", UC_ICON).read_bytes())
+    uc_flat = ctx.pkg_flat(UC)
+    parts["unique_condition"] = {uid: uc_flat[uid] for uid in UC_IDS}
+    parts["unique_icon"] = {uid: sha256(ctx.pack.pkg_path("common", UC_ICONS[uid]).read_bytes()) for uid in UC_IDS}
     parts["power_flip_action"] = ctx.pkg_flat(PFA)[PF_KEY]
     parts["action_skill"] = ctx.pkg_nested(CODE)
     parts["switched_action_skill"] = ctx.pkg_nested(VOICE_KEY, SW)
@@ -1548,6 +2391,7 @@ def kit_fingerprint(ctx) -> tuple[str, dict]:
     parts["required_capabilities"] = sorted(CAPABILITIES)
     parts["overrides"] = OVERRIDES
     parts["official_sig_pin"] = OFFICIAL_SIG_PIN          # 校验依据变了也要重跑门禁
+    parts["revision_plan"] = sha256((ctx.root / REVISION_REL).read_bytes())   # 改版计划换了必须重跑门禁
     blob = json.dumps(parts, ensure_ascii=False, sort_keys=True).encode("utf-8")
     return sha256(blob), parts
 
@@ -1587,9 +2431,10 @@ def build(ctx) -> dict[str, Any]:
     if missing_inputs:
         raise KitError(f"kit inputs unavailable: {missing_inputs}")
     design = load_design(ctx.root)
-    text_probs = check_texts_constant(design)
+    plan = load_revision(ctx.root)
+    text_probs = check_texts_constant(design, plan)
     if text_probs:
-        raise KitError(f"TEXTS constant drifted from design: {text_probs}")
+        raise KitError(f"TEXTS constant drifted from design/revision: {text_probs}")
     notes: list[str] = []
 
     # ---- character 行：spec 列断言 + c9–c16 语音路由 + c18 队长名
@@ -1606,70 +2451,117 @@ def build(ctx) -> dict[str, Any]:
             raise KitError(f"character c{col}={new_crow[int(col)]!r} != design {val!r} (rerun tables?)")
     V.route_character_row(new_crow, route_cols, CODE)
     ctx.write_flat(CHAR, {CID: [new_crow]})
-    ctx.write_flat(TEXT, {CID: [design["text"]["character_text_row"]]})
+    text_row = character_text_row(design)
+    ctx.write_flat(TEXT, {CID: [text_row]})
 
-    # ---- 词条 / 队长
-    rows, row_evidence = build_rows(ctx, design)
+    # ---- 词条 / 队长（按改版计划重放）
+    rows, row_evidence = build_rows(ctx, plan)
     bad = {f"{e['table']}#{e['key']}#{e['record']}": {k: e[k] for k in
-           ("client_legality_problems", "declared_block_field_problems", "ability_element_column_problems") if e[k]}
+           ("client_legality_problems", "declared_block_field_problems", "ability_element_column_problems",
+            "trigger_limit_problems") if e[k]}
            for e in row_evidence if e["client_legality_problems"] or e["declared_block_field_problems"]
-           or e["ability_element_column_problems"]}
+           or e["ability_element_column_problems"] or e["trigger_limit_problems"]}
     if bad:
         raise KitError(f"row legality problems: {bad}")
     ctx.write_flat(LEADER, {CID: rows["leader"]})
     ctx.write_flat(ABILITY, rows["ability"])
 
-    # ---- 固有状态「灯火正旺」+ 图标
-    uc = design["unique_conditions"][0]
-    if uc["id"] != UC_ID or uc["table"] != UC or uc["row"][2] + ".png" != UC_ICON:
-        raise KitError(f"unique condition design unexpected {uc['id']} {uc['row'][2]}")
-    uc_row = list(uc["row"])
-    if uc_row[4] in ("", "(None)"):
-        raise KitError("unique_condition max stack must not be (None) (wf-unique-cap-none-trap)")
-    ctx.write_flat(UC, {UC_ID: [uc_row]})
-    icon_bytes = ctx.png_store_bytes(draw_lamp_icon())
-    if icon_bytes[:8] != b"\x89png\r\n\x1a\n":
-        raise KitError("unique icon lacks WF storage signature")
-    ctx.write_asset("common", UC_ICON, icon_bytes)
-    if not any(r[68] == UC_ID and r[47] == "461" for r in rows["ability"][f"{CID}6"]):
-        raise KitError("slot6 has no 461 row granting unique 159997")
+    # ---- 固有状态：159997「灯火正旺」（不变）+ 1599971「灯芯」（改版新增）+ 两张图标
+    uc_plan = plan["tables"]["unique_condition"]
+    if uc_plan["logical_path"] != UC or sorted(uc_plan["rows"]) != sorted(UC_IDS):
+        raise KitError(f"revision unique_condition rows {sorted(uc_plan['rows'])}")
+    design_uc = design["unique_conditions"][0]
+    if design_uc["id"] != UC_ID or design_uc["table"] != UC or design_uc["row"] != uc_plan["rows"][UC_ID]["row"]:
+        raise KitError("revision keeps 159997 row but it differs from the design row")
+    uc_rows = {}
+    for uid in UC_IDS:
+        row = rev3_unique_row(uid, uc_plan["rows"][uid]["row"])      # 第三轮 T3-a：灯火正旺 10 秒 → 12 秒
+        if len(row) != len(uc_plan["columns"]):
+            raise KitError(f"unique_condition {uid} width {len(row)}")
+        if row[4] in ("", "(None)"):
+            raise KitError(f"unique_condition {uid} max stack must not be (None) (wf-unique-cap-none-trap)")
+        if row[2] + ".png" != UC_ICONS[uid]:
+            raise KitError(f"unique_condition {uid} icon path {row[2]}")
+        uc_rows[uid] = [row]
+    if uc_rows[UC_ID2][0][4] != "99":
+        raise KitError(f"「灯芯」max_accumulation must be 99, got {uc_rows[UC_ID2][0][4]!r}")
+    if uc_rows[UC_ID][0][3] != str(UC_LAMP_FRAMES):
+        raise KitError(f"「灯火正旺」duration must be {UC_LAMP_FRAMES}, got {uc_rows[UC_ID][0][3]!r}")
+    if UC_LAMP_FRAMES <= CT_LAMP_FRAMES:            # 第三轮的立意：12 秒 > 5 秒 ⇒ 状态可常驻
+        raise KitError(f"「灯火正旺」{UC_LAMP_FRAMES} 帧 <= CT {CT_LAMP_FRAMES} 帧：状态会出现空档")
+    ctx.write_flat(UC, uc_rows)
+    for uid, draw in ((UC_ID, draw_lamp_icon), (UC_ID2, draw_wick_icon)):
+        icon_bytes = ctx.png_store_bytes(draw())
+        if icon_bytes[:8] != b"\x89png\r\n\x1a\n":
+            raise KitError(f"unique icon {uid} lacks WF storage signature")
+        ctx.write_asset("common", UC_ICONS[uid], icon_bytes)
+    grants = {uid: [(k, i) for k, lines in rows["ability"].items() for i, r in enumerate(lines)
+                    if r[47] == "461" and r[68] == uid] for uid in UC_IDS}
+    if any(len(v) != 1 for v in grants.values()):
+        raise KitError(f"each unique condition needs exactly one 461 grant row: {grants}")
 
-    # ---- 字符串
+    # ---- 字符串（改版：7 个 CAS 键，只有 722 说明沿用设计值）
     strings = {(item["table"], item["key"]): item for item in design["custom_strings"]}
-    if sorted(k for t, k in strings if t == CAS) != sorted(CAS_KEYS) or \
-            [k for t, k in strings if t == CAPS] != [CHANGE_SKILL_KEY]:
+    if [k for t, k in strings if t == CAPS] != [CHANGE_SKILL_KEY]:
         raise KitError(f"design custom_strings keys unexpected: {sorted(strings)}")
+    plan_cas = plan["texts"]["custom_ability_string"]
+    if sorted(plan_cas) != sorted(CAS_KEYS):
+        raise KitError(f"revision custom_ability_string keys {sorted(plan_cas)} != {sorted(CAS_KEYS)}")
     cas_rows = {}
+    rev2_text_changes = {}
     for key in CAS_KEYS:
-        item = strings[(CAS, key)]
-        value = item["value"]
-        if key in (PF_STRING_KEY, LEADER_OVERRIDE_KEY):
-            value = apply_text_override(value, key)
+        item = plan_cas[key]
+        if item["action"] == "unchanged":
+            if key != PF_STRING_KEY:
+                raise KitError(f"revision marks {key} unchanged but it is not the 722 string")
+            value = apply_text_override(strings[(CAS, key)]["value"], key)
+        else:
+            if item["action"] not in ("new", "rewrite"):
+                raise KitError(f"{key}: unknown revision action {item['action']!r}")
+            value = item["value"]
+            if TEXT_DROPPED_BY_OVERRIDE in value:
+                raise KitError(f"{key}: revision text still says {TEXT_DROPPED_BY_OVERRIDE}")
+        before = value
+        # 第二轮 T2 文案规则①②＋主位键 Ⓜ；第三轮 T3-c 节奏；第四轮 T4-c 强度数字
+        value = rev4_panel_text(key, value)
+        if value != before:
+            rev2_text_changes[key] = {"rewrites": [o for o, _ in REV2_TEXT_REWRITES.get(key, ()) if o in before],
+                                      "revision3_rewrites": [o for o, _ in REV3_TEXT_REWRITES.get(key, ())],
+                                      "revision4_rewrites": [o for o, _ in REV4_TEXT_REWRITES.get(key, ())],
+                                      "dropped": [d for d in REV2_TEXT_DROPS if d in before],
+                                      "main_icon": key in REV2_MAIN_ICON_KEYS}
         if key.startswith("desc_override_"):
-            probs = panel_text_problems(value)
+            probs = panel_text_problems(value, key)
             if probs:
                 raise KitError(f"{key}: {probs}")
             if L.panel_override_capability(key) != "panel-description-override-v2":
                 raise KitError(f"{key} panel capability mismatch")
         cas_rows[key] = [[value]]
-    if design["leader_desc_override"]["key"] != LEADER_OVERRIDE_KEY or \
-            apply_text_override(design["leader_desc_override"]["value"], "leader_desc_override") != cas_rows[LEADER_OVERRIDE_KEY][0][0]:
-        raise KitError("leader_desc_override block != custom_strings entry")
     if design["abilities"]["slot3"].get("desc_override_key") != SLOT3_OVERRIDE_KEY:
         raise KitError("slot3 desc_override key mismatch")
     string_ids = {rows["leader"][0][0]} | {lines[0][0] for lines in rows["ability"].values()}
-    for key in (LEADER_OVERRIDE_KEY, SLOT3_OVERRIDE_KEY):
+    for key in (LEADER_OVERRIDE_KEY,) + SLOT_OVERRIDE_KEYS:
         if key[len("desc_override_"):] not in string_ids:
             raise KitError(f"{key} matches no row string id {sorted(string_ids)}")
     refs = {r[70] for lines in rows["ability"].values() for r in lines if len(r) > 70 and r[70]}
     refs |= {r[82] for r in rows["leader"] if r[82]}
     if not {PF_STRING_KEY, CHANGE_SKILL_KEY} <= refs:
         raise KitError(f"string keys not referenced by rows: {refs}")
+    # 第二轮 T1/T2 的收口：Ⓜ 与 c1 对齐、技能强化条目按规则②写（正向对照钉死本角色确有 536 行）；
+    # 第三轮收节奏、第四轮收强度数字（面板与数值列同源，谁改了一半都红）
+    cas_texts = {k: v[0][0] for k, v in cas_rows.items()}
+    panel_probs = main_slot_panel_problems(rows["ability"], cas_texts) \
+        + rev2_skill_flag_problems(rows["ability"], cas_texts) \
+        + rev3_text_problems(cas_texts) + rev4_text_problems(cas_texts) \
+        + panel_matches_row_values(rows["ability"], cas_texts)
+    if panel_probs:
+        raise KitError(f"revision2/3/4 main-slot / skill-enhancement / timing / strength wording: {panel_probs}")
     ctx.write_flat(CAS, cas_rows)
     import wf_seasonal7_tables as T
     caps_blob = ctx.pack.template_raw(CAPS)[f"change_skill_{TEMPLATE_CODE}"]     # 官方原行字节（5 档文本不含技能名）
     if T.decode_blob(caps_blob) != strings[(CAPS, CHANGE_SKILL_KEY)]["value"]:
         raise KitError("official power_up row != design value")
+    caps_blob = power_up_blob(caps_blob, plan)                                   # R4：536 的「强化」后缀真源
     ctx.write_raw_outer(CAPS, {CHANGE_SKILL_KEY: caps_blob})
 
     # ---- 撤销框架自动克隆但本 kit 不用的字符串键
@@ -1720,6 +2612,9 @@ def build(ctx) -> dict[str, Any]:
         diff = first_difference(tree, design_tree)
         if diff:
             raise KitError(f"composed skill {level} differs from design final tree: {diff}")
+        # 改版：两处 ALv 通道（强化态合计 250%）；先证明合成结果仍等于上一轮定稿树，再落改版编辑
+        revision_edits = apply_skill_revision(tree, level, plan)
+        info["revision_edits"] = revision_edits
         checks = dsl_problems(ctx.root, tree)
         if not checks["all_empty"] or not checks["roundtrip"]:
             raise KitError(f"skill {level} static checks failed: {checks}")
@@ -1727,7 +2622,8 @@ def build(ctx) -> dict[str, Any]:
         if ref_probs:
             raise KitError(f"skill {level} effect refs unresolved: {ref_probs}")
         logical = ctx.write_dsl(ctx.program_path(str(level)), tree)
-        info.update(checks=checks, effect_refs=refinfo, logical=logical, equals_design_tree=True,
+        info.update(checks=checks, effect_refs=refinfo, logical=logical,
+                    equals_design_tree_before_revision=True,
                     sha256=sha256(ctx.pack.pkg_path("common", logical).read_bytes()))
         skills_report[str(level)] = info
 
@@ -1821,7 +2717,8 @@ def build(ctx) -> dict[str, Any]:
          "fx manifest 替换 sheet 时以 Effects 产物为准（其 alpha 逐字节保留，即未做 B）；两种情况都不动 .parts c 字段"),
         ("词条行按设计逐格落地；同键 c1/c2 混写只作信息（live 多记录键 152 个混写，含已上线 1499993 / 1699991）："
          f"{mixed_c1_c2(rows['ability']) or '无'}"),
-        "unique_condition「灯火正旺」图标为 kit 程序绘制（提灯+金芯火苗，暗红底白框），需作者目检",
+        "unique_condition 两张图标均为 kit 程序绘制（159997「灯火正旺」提灯 / 1599971「灯芯」光柱火苗，"
+        "同族暗红底白框，轮廓刻意拉开），需作者目检",
         ("语音已装包（22 槽 AI 合成，speech 8 行引用新槽，旧母本语音已清，c11=AI 合成配音）；"
          "c9–c16 ConditionExist(28)+Unique 159997 路由与 switched_action_skill 已写" if voice["packed"]
          else f"语音未装齐：missing={voice['missing_slots'][:3]} not_voice_owned={voice['not_voice_owned'][:3]} "
@@ -1830,19 +2727,101 @@ def build(ctx) -> dict[str, Any]:
          if pixel["status"] == "installed" else f"像素小人 pending（母本原色）：{pixel['problems'][:3]}"),
         "skill_preview 沿用母本 905、upskill 沿用母本（common_attack/piercing/combo/condition_attack）；设计未要求改",
         "待作者拍板项取设计默认：c27=自身 cid、冲刺方案 A（斜下 45°）、语音参考 A（官方声纹）",
+        ("2026-09-16 作者改版已落地（plan.json）：队长 6 行数值改 4 行（全队光攻 400%、每 35 连击 PF 伤害 50% 不封顶、"
+         "每 1 次 PF 全队光攻 35% 不封顶、每 3 次 PF 连击加成 +9 持续 6 次）；词条 6 键 20 条记录（原 14）；"
+         "新增固有 1599971「灯芯」（99 层永续）+ 新图标；5 条覆盖文案（原 2 条）；技能两档 ALv 改成强化态合计 250%；"
+         "技能说明压到 54 字（两档同文）"),
+        ("「光属性角色强化弹射伤害」在引擎里是战斗（小队）级参数，词条行 target 列不读"
+         "（InstantAbilitySource kind 28/55/696/712、DuringAbilitySource kind 413）；"
+         "本 kit 按引擎真实行为实现为战斗级增伤（作者要求的超集），面板文案相应写「强化弹射伤害＋N%」"),
+        ("2026-09-16 第二轮作者改版：能力 1/3/5 主位限制（整键 c1='false'，不加前置 202 以免双 Ⓜ；能力 3 上一轮"
+         "就是主位键，本轮只补面板 Ⓜ）；能力 1/3 的覆盖文案逐行加 <icon id='main'>，能力 5 无覆盖文案由客户端自动画 Ⓜ；"
+         f"文案按规则①删「（无上限）」共 {sum(len(v['dropped']) for v in rev2_text_changes.values())} 处、"
+         "按规则②把能力1 的技能强化条目改成「强化『白银一闪·打烊时刻』的「攻击力提升效果」与「强化弹射伤害提升效果」」"
+         "（不写数值与秒数）；机制一格未动（灯芯仍 99 层、触发上限仍 (None)）"),
+        ("能力 1/5 变主位专用后，泽赫尔放在合击位时这两键整键不进能力池（自身攻击力 150%、开局技能槽 50%、"
+         "536 技能强化、灯火正旺 / 灯芯发放、全队光攻 100%、PF Lv3 全队技能槽 5% 都不再喂给主位携带者）——"
+         "这是作者要的效果，但合击位收益确实变小，真机验收时请注意"),
+        ("2026-09-16 第三轮作者改版（「灯火正旺效果延长到12s,ct改为5s」）：固有 159997 时长 "
+         f"{UC_LAMP_FRAMES_REV2}→{UC_LAMP_FRAMES} 帧（10→{LAMP_SECONDS} 秒）；「≥50 连击弹射」四行 CT "
+         f"{CT_LAMP_FRAMES_REV2}→{CT_LAMP_FRAMES} 帧（10→{CT_SECONDS} 秒，能力1#3/#4 + 能力3#0/#3，"
+         "本角色全部 c35=600 的行就这四行，其余 CT 列为空或 0）；面板两处节奏文案随之改写"),
+        (f"第三轮副作用（详算见 {REVISION3_DIR}/timing.md）：「灯芯」叠层与能力3「每获得 1 次灯火正旺」的收益"
+         f"速度**翻倍**（最快 10 秒 1 层 → {CT_SECONDS} 秒 1 层；99 层由 990 秒缩到 495 秒）；"
+         f"「灯火正旺」{LAMP_SECONDS} 秒 > CT {CT_SECONDS} 秒 ⇒ 只要连击保持 50 以上，状态可**常驻**（不再有空档），"
+         "能力3 的 +40% 独立乘区与「每 15 连击 +5 连击」也随之常驻，技能语音路由（ConditionExist 159997）"
+         "几乎恒走 voice_ready 那条。强度是否过头请作者判断"),
+        ("作者未给、本设计拍板的 7 条（plan.judgements J1-J7）：≥50 连击弹射四行 CT=600 帧"
+         "（第三轮已按作者要求改为 300 帧）、能力2 上限 10 次、"
+         f"灯芯每层 +5% 独立乘区（第四轮已按作者要求改为 +{A1_WICK_MULT_PCT}%）、新状态命名/ID、"
+         "删除原能力3「每 3 次 PF 自身攻击力 +60%」、"
+         "灯芯乘区行不加光共鸣前置、能力6 rec#0 的 c2 变为 action_skill（玛纳板雕像组随之变化，验收要看）"),
+        ("2026-09-16 第四轮作者改版（「能力 3 的 50% 降到 30%、灯芯每层 5% 降到 3%」= 上一轮 timing.md "
+         f"「如果要收一点」的第 1、2 档）：能力3#0（全队光攻）与 #3（强化弹射伤害）c51/c52 "
+         f"{A3_LAMP_GAIN_REV3}→{A3_LAMP_GAIN}（{A3_LAMP_GAIN_PCT_REV3}%→{A3_LAMP_GAIN_PCT}%）、"
+         f"能力1#5（灯芯层数→PF 独立乘区）c113/c114 {A1_WICK_MULT_REV3}→{A1_WICK_MULT}"
+         f"（{A1_WICK_MULT_PCT_REV3}%→{A1_WICK_MULT_PCT}%）；面板两处数字随之改写。"
+         "节奏（CT 5 秒 / 灯火正旺 12 秒）、触发、上限、机制一格未动"),
+        ("第四轮**没动**的同量级行：能力1#1「战斗开始时自身技能槽＋50%」（kind 211，也是 50000）"
+         "不是作者说的那两处；能力2 / 能力6 / 队长 L3 的「强化弹射伤害＋50%」与能力5#1「技能槽＋5%」"
+         "不在作者点名的能力1/3 里。四处都留在原值，面板一个字没改"),
+        (f"第四轮强度（详算见 {REVISION3_DIR}/timing.md，模型与上一版同一套假设）：三个桶里跟 N 走的系数"
+         "各降 40%（攻击桶 50%→30%、强化弹射桶 50%→30%、独立乘区每层 5%→3%）。"
+         "PF 一发相对第三轮定稿 ×0.70（60 秒）→ ×0.46（300 秒）；"
+         "相对线上 1.4.886 从 1.69–2.85 倍收到 **1.19–1.31 倍**，技能/普通伤害 1.03–1.08 倍。"
+         "节奏红利（可常驻、叠层翻倍）留着，超额伤害收回"),
     ]
     if unclaimed:
         notes.append(f"已撤销框架自动克隆但未使用的字符串键 {unclaimed}")
     report = {
-        "summary": "泽赫尔·灯火酒馆 kit：6 队长行 / 14 词条行 / 固有「灯火正旺」/ 4 字符串 + power_up / 两档技能 / "
+        "summary": f"泽赫尔·灯火酒馆 kit（2026-09-16 作者改版，第四轮：能力3 {A3_LAMP_GAIN_PCT}% / "
+                   f"灯芯每层 {A1_WICK_MULT_PCT}%，节奏仍是灯火正旺 {LAMP_SECONDS} 秒 / CT {CT_SECONDS} 秒）："
+                   "6 队长行 / 20 词条行 / 固有「灯火正旺」+「灯芯」/ "
+                   "7 字符串 + power_up / 两档技能（ALv 强化态 250%）/ "
                    "722 双形态 PF（官方每段倍率、剑士段寿命/命中×3 + 火光新层）/ 4 特效族 / 语音路由",
         "status": status,
         "status_reason": status_reason,
         "kit_fingerprint": fingerprint,
         "design": {"path": DESIGN_REL, "sha256": sha256((ctx.root / DESIGN_REL).read_bytes())},
+        "revision": {"path": REVISION_REL, "sha256": sha256((ctx.root / REVISION_REL).read_bytes()),
+                     "schema": plan["schema"], "generated": plan.get("generated"),
+                     "judgements": [{k: j[k] for k in ("id", "item", "value")} for j in plan.get("judgements") or []],
+                     "open_items": plan.get("open_items") or [],
+                     "skill_desc": {"old": DESIGN_SKILL_DESC, "new": TEXTS["desc1"]},
+                     "record_counts": {"leader": len(rows["leader"]),
+                                       "ability": sum(len(v) for v in rows["ability"].values())}},
+        "revision2": {"rules": REVISION2_RULES_REL, "dir": REVISION2_DIR,
+                      "main_slot_ability_keys": {k: "c1=false" for k in REV2_MAIN_SLOT_KEYS},
+                      "main_slot_c1_flipped_records": rev4_row_changes(plan, rows["ability"])["c1"],
+                      "main_icon_cas_keys": list(REV2_MAIN_ICON_KEYS),
+                      "panel_text_changes": rev2_text_changes,
+                      "unisonable_by_key": {f"{CID}{s}": rows["ability"][f"{CID}{s}"][0][1] for s in range(1, 7)}},
+        "revision3": {"dir": REVISION3_DIR,
+                      "request": "灯火正旺效果延长到12s,ct改为5s",
+                      "unique_duration_frames": {UC_ID: [UC_LAMP_FRAMES_REV2, UC_LAMP_FRAMES],
+                                                 UC_ID2: [uc_rows[UC_ID2][0][3], uc_rows[UC_ID2][0][3]]},
+                      "cooldown_frames": [CT_LAMP_FRAMES_REV2, CT_LAMP_FRAMES],
+                      "cooldown_rows": [f"{k}#{i}" for k, i in REV3_CT_ROWS],
+                      "cooldown_records": rev4_row_changes(plan, rows["ability"])["ct"],
+                      "cooldown_scan": rev3_cooldown_scan(plan),
+                      "panel_seconds": {"lamp": LAMP_SECONDS, "cooldown": CT_SECONDS},
+                      "timing_note": f"{REVISION3_DIR}/timing.md"},
+        "revision4": {"dir": REVISION3_DIR,
+                      "request": "能力 3 的 50% 降到 30%、灯芯每层 5% 降到 3%",
+                      "value_rows": {f"{k}#{i}": {"cols": list(cols), "old": old, "new": new,
+                                                  "percent": [old // PCT_SCALE, new // PCT_SCALE],
+                                                  "built": [rows["ability"][k][i][c] for c in cols]}
+                                     for (k, i), (cols, old, new) in sorted(REV4_VALUE_ROWS.items())},
+                      "value_records": rev4_row_changes(plan, rows["ability"])["values"],
+                      "value_scan": rev4_value_scan(plan),
+                      "panel_percent": {"a3_lamp_gain": A3_LAMP_GAIN_PCT, "a1_wick_mult": A1_WICK_MULT_PCT},
+                      "panel_bindings": {f"{k}#{i}": shape.format(pct=REV4_VALUE_ROWS[(k, i)][2] // PCT_SCALE)
+                                         for (k, i), (_cas, shape) in sorted(PANEL_VALUE_BINDINGS.items())},
+                      "unchanged": "节奏（CT / 灯火正旺时长）、机制、触发、上限、别的键的 50% 一格未动",
+                      "timing_note": f"{REVISION3_DIR}/timing.md"},
         "overrides": OVERRIDES,
         "skills": {"programs": programs},
-        "unique_condition": {UC_ID: {"icon": UC_ICON}},
+        "unique_condition": {uid: {"icon": UC_ICONS[uid], "row": uc_rows[uid][0]} for uid in UC_IDS},
         "required_capabilities": list(CAPABILITIES),
         "panel": panel,
         "notes": notes,
