@@ -6,7 +6,8 @@ import wf_mod_tool as core
 import wf_dsl
 from wf_client_legality import client_legality_problems
 from wf_character_revision import RevisionCandidate,encode_tree
-from wf_zehr_slow_spin import slow_parts,slow_timeline,slow_attack
+from wf_zehr_slow_spin import slow_timeline,slow_attack
+from wf_zehr_spin_animation import smooth_parts
 
 ABILITY='master/ability/ability.orderedmap'
 CAS='master/string/custom_ability_string.orderedmap'
@@ -77,11 +78,11 @@ def apply_candidate(repo,role,*,apply=False):
             if errors:raise ValueError(str(errors))
             candidate.emit('common',logical,encode_tree(result));budgets.append(budget)
             stem=f'battle/effect/skill_unique/{code}/pf_spin/powerflip_attack_spin_{name}'
-            for suffix,transform in [('parts',slow_parts),('timeline',slow_timeline)]:
+            for suffix,transform in [('parts',lambda tree:smooth_parts(tree,ornament=level>1)),('timeline',slow_timeline)]:
                 logical=stem+'.'+suffix+'.amf3.deflate'
                 value=wf_dsl.parse_dsl(zlib.decompress(candidate.read('common',logical),-15))['tree']
                 candidate.emit('common',logical,encode_tree(transform(value)))
-        metadata.update(combo_threshold=35,combo_added=5,spin_speed=0.5,budgets=budgets,
+        metadata.update(combo_threshold=35,combo_added=5,spin_speed=0.33,budgets=budgets,
                         auxiliary_attack_unchanged=True,texture_atlas_unchanged=True)
     return candidate.finish(metadata,apply=apply)
 
