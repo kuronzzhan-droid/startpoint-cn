@@ -1,6 +1,6 @@
 import unittest
 import wf_seasonal7_voice as voice
-from wf_seasonal7_voice_merge import remap_slot, merge_speech
+from wf_seasonal7_voice_merge import remap_slot, merge_speech, check_native_bindings
 
 
 class VoiceMergeTest(unittest.TestCase):
@@ -27,15 +27,49 @@ class VoiceMergeTest(unittest.TestCase):
                 ['2','','','旧加入','ally/join']]
         added=[{'slot':r[4],'zh':'新'+r[3]} for r in before]
         after=merge_speech(before,added)
-        self.assertEqual(after[:3],before)
-        for old,new in zip(before,after[3:]):
+        self.assertEqual(after[0],before[0])
+        for old,new in zip(before[1:],after[1:3]):
+            self.assertEqual(new[:3],old[:3])
+            self.assertEqual(new[3],'新'+old[3])
+            self.assertEqual(new[4],old[4])
+        self.assertEqual(len(after),4)
+        for old,new in zip(before[:1],after[3:]):
             self.assertEqual(old[:3],new[:3]);self.assertEqual(new[3],'新'+old[3])
             self.assertEqual(new[4],remap_slot(old[4]))
 
     def test_duplicate_or_missing_donor_rejected(self):
-        row=['2','','','hello','ally/join']
-        for before in [[],[row,row]]:
-            with self.assertRaises(ValueError):merge_speech(before,[{'slot':'ally/join','zh':'x'}])
+        row=['0','2','','hello','home/home_0']
+        for slot in ['home/home_0','ally/join']:
+            row[4]=slot
+            for before in [[],[row,row]]:
+                with self.assertRaises(ValueError):merge_speech(before,[{'slot':slot,'zh':'x'}])
+
+    def test_fixed_speech_uses_new_subtitle_without_adding_rows(self):
+        before=[['2','','','旧加入','ally/join'],['1','','1','旧觉醒','ally/evolution']]
+        added=[{'slot':r[4],'zh':'新台词'} for r in before]
+        after=merge_speech(before,added)
+        self.assertEqual(len(after),len(before))
+        for old,new in zip(before,after):
+            self.assertEqual(new[:3],old[:3]);self.assertEqual(new[4],old[4])
+            self.assertEqual(new[3],'新台词')
+
+    def test_pre_and_post_awakening_bindings(self):
+        available=set(voice.SLOTS)|{remap_slot(s) for s in voice.SLOTS}
+        rows=[['0','2','','主页','home/home_0'],['2','','','加入','ally/join'],
+              ['1','','1','觉醒','ally/evolution']]
+        self.assertEqual(check_native_bindings(rows,available)['home_visible_by_evolution'],{'0':1,'1':1})
+        for constraint in ('0','1'):
+            rows[0][1]=constraint
+            with self.assertRaisesRegex(ValueError,'2265'):
+                check_native_bindings(rows,available)
+
+    def test_missing_audio_and_awakening_binding_rejected(self):
+        available=set(voice.SLOTS)|{remap_slot(s) for s in voice.SLOTS}
+        rows=[['0','2','','主页','home/home_0'],['2','','','加入','ally/join'],
+              ['1','','1','觉醒','ally/evolution']]
+        for slot in ['home/home_0','battle/skill_ready','battle/skill_7']:
+            with self.assertRaises(ValueError):check_native_bindings(rows,available-{slot})
+        with self.assertRaises(ValueError):check_native_bindings(rows[:-1],available)
 
 
 if __name__=='__main__':unittest.main()
