@@ -2615,6 +2615,8 @@ def build(ctx) -> dict[str, Any]:
         # 改版：两处 ALv 通道（强化态合计 250%）；先证明合成结果仍等于上一轮定稿树，再落改版编辑
         revision_edits = apply_skill_revision(tree, level, plan)
         info["revision_edits"] = revision_edits
+        from wf_zehr_skill_feel import revise_skill
+        tree = revise_skill(tree)
         checks = dsl_problems(ctx.root, tree)
         if not checks["all_empty"] or not checks["roundtrip"]:
             raise KitError(f"skill {level} static checks failed: {checks}")

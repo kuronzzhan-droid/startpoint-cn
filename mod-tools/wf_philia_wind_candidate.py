@@ -61,7 +61,7 @@ def apply_candidate(repo, *, apply=False):
         inner.set_text_rows({level: core.write_csv_lines(cells).rstrip('\n')})
     c.splice(K.ACTION, {c.code: core.build_orderedmap(inner)}, codec='action_nested')
     c.server_character_row('cdndata/character_text.json', rows)
-    return c.finish(dict(skill_speed=[18, 6], skill_interval_frames=[9, 24],
+    return c.finish(dict(skill_speed=[18, 12], skill_stop_frames=15, skill_interval_frames=[9, 24],
         skill_count=10, skill_range_unchanged=True, damage_multipliers_unchanged=True,
         skill_piercing=True, skill_homing=False, skill_direction='world_up_AB_0',
         stock=dict(unique_id=stock.UID, per_hit=2, cost_per_flip=1, combo_per_flip=15,

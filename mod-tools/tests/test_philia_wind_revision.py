@@ -21,11 +21,12 @@ class WindRevisionTest(unittest.TestCase):
         new = revise_skill(old)
         self.assertEqual(K.cmds(new, 'CreateNormalAttack'), K.cmds(old, 'CreateNormalAttack'))
         self.assertEqual(len(K.cmds(new, 'MoveHitArea')), 10)
-        self.assertEqual({m[4] for m in K.cmds(new, 'MoveHitArea')}, {6})
+        self.assertEqual({m[4] for m in K.cmds(new, 'MoveHitArea')}, {12})
         launch = next(e for e in K.events(new) if e[:2] == ['Wait', 20])
         self.assertEqual([e[1][1] for e in launch[3][1]], [24*i for i in range(10)])
-        self.assertGreater(SKILL_STOP, 20+24*9)
-        self.assertEqual(18*100, 6*300)
+        self.assertEqual(SKILL_STOP, 15)
+        self.assertLess(SKILL_STOP, 20)
+        self.assertEqual(18*100, 12*150)
 
     def test_skill_world_up_pierces_each_enemy_and_rain_snapshots_each_hit(self):
         for level in (1, 2):
@@ -36,7 +37,7 @@ class WindRevisionTest(unittest.TestCase):
             for c in swords:
                 self.assertEqual((c[3], c[6], c[18]), (['AB'], 0, ['None']))
                 self.assertEqual(c[15], ['Some', K.slv(1, 1)])
-                self.assertEqual([m[2:5] for m in K.cmds(c[20], 'MoveHitArea')], [[['AB'], 0, 6]])
+                self.assertEqual([m[2:5] for m in K.cmds(c[20], 'MoveHitArea')], [[['AB'], 0, 12]])
                 rain = next(r for r in K.cmds(c[23], 'CreateReferencePoint') if 200 <= r[10] < 240)
                 self.assertEqual(rain[1], c[21])
                 self.assertFalse(rain[6])

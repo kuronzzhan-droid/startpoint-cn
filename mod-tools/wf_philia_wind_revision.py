@@ -1,11 +1,11 @@
 """浴菲莉亚向上直射风刃、命中点五向贯穿与逐命中剑雨（2026-09-17）。"""
 from copy import deepcopy
 
-SKILL_SPEED = 6
+SKILL_SPEED = 12
 SKILL_WAIT = 24
-SKILL_LIFETIME = 300
+SKILL_LIFETIME = 150
 SKILL_REFERENCE_LIFETIME = 310
-SKILL_STOP = 248
+SKILL_STOP = 15
 PF_TEXT = ('特殊强化弹射命中时，从命中处向五个方向发射贯穿风刃，风刃命中处降下剑雨'
            '【均以强化弹射伤害计算】／强化弹射时，提升参战角色攻击力并赋予贯穿、浮游效果')
 
@@ -29,7 +29,7 @@ def revise_skill(tree):
     if len(units) != 10 or waits not in ([9*i for i in range(10)], [SKILL_WAIT*i for i in range(10)]):
         raise ValueError('skill sword count or interval drift')
     stops = K.cmds(out, 'StopBall')
-    if len(stops) != 1 or stops[0][2] not in (110, SKILL_STOP):
+    if len(stops) != 1 or stops[0][2] not in (110, 248, SKILL_STOP):
         raise ValueError('skill stop window drift')
     stops[0][2] = SKILL_STOP
     for i, unit in enumerate(units):
@@ -37,10 +37,11 @@ def revise_skill(tree):
         moves = K.cmds(unit, 'MoveHitArea')
         swords = [c for c in K.cmds(unit, 'CreateHitArea') if c[2] == -18]
         targets = [c for c in K.cmds(unit, 'CreateReferencePoint') if c[9] in (110, SKILL_REFERENCE_LIFETIME)]
-        if len(moves) != 1 or moves[0][4] not in (18, SKILL_SPEED) or len(swords) != 1 or len(targets) > 1:
+        if len(moves) != 1 or moves[0][4] not in (18, 6, SKILL_SPEED) or len(swords) != 1 or len(targets) > 1:
             raise ValueError('skill sword movement or target drift')
         sword = swords[0]
         if sword[13] not in (['SpecifyHitAreaLifetimeDirectly', 100],
+                                ['SpecifyHitAreaLifetimeDirectly', 300],
                                 ['SpecifyHitAreaLifetimeDirectly', SKILL_LIFETIME]):
             raise ValueError('skill sword lifetime drift')
         if sword[3] not in (['GH', 5*i+1], ['AB']) or moves[0][2] != sword[3]:

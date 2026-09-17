@@ -24,7 +24,7 @@ def grant_on_hit():
     # -17 is the caster MEMBER. Unique does not fit the shared ball slot, so
     # simultaneous enemy hits all accumulate (ball-only same-frame dedup does not apply).
     grant = ['Command', ['CreateCondition', -17, [['ACUnique', UID, K.slv(1, 1)]],
-             K.slv(1, 1), ['None'], False, False, '', None, False, 1, K.slv(2, 2), True]]
+             K.slv(1, 1), ['None'], False, True, '', None, False, 1, K.slv(2, 2), True]]
     return ['Command', ['ConditionalsChangeSkillFlag', K.RESONANCE_FLAG_INDEX,
                        ['Block', [grant]], ['Block', []]]]
 
@@ -40,8 +40,14 @@ def revise_skill(tree):
                     if any(v[:2] == ['ACUnique', UID] for v in c[2])]
         wanted = grant_on_hit()
         if existing:
-            if len(existing) != 1 or wanted not in sword[23][1]:
+            old = deepcopy(wanted)
+            K.cmds(old, 'CreateCondition')[0][6] = False
+            if len(existing) != 1 or not any(v in sword[23][1] for v in (old, wanted)):
                 raise ValueError('stock grant drift')
+            # ActionEvaluator's per-cast conditionChanges hash otherwise blocks
+            # every later hit on the same recipient. Unique's stacking cap alone
+            # cannot bypass that earlier gate. p5 permits repeated application.
+            existing[0][6] = True
         else:
             sword[23][1].append(wanted)
     return out

@@ -47,6 +47,7 @@ class StockTests(unittest.TestCase):
         grant = S.grant_on_hit()[1]
         self.assertEqual(grant[:2], ['ConditionalsChangeSkillFlag',1])
         cc = K.cmds(grant[2],'CreateCondition')[0]
+        self.assertTrue(cc[6], 'p5 must bypass ActionEvaluator per-cast condition dedup')
         self.assertEqual((cc[1],cc[10],cc[11]), (-17,1,K.slv(2,2)))
         self.assertEqual(grant[3],['Block',[]])
         for level in (1,2,3):
@@ -59,6 +60,29 @@ class StockTests(unittest.TestCase):
         self.assertEqual(row[5:9],['(None)']*4)
         self.assertEqual(row[4],'2147483647')
         self.assertEqual(row[9:11],['false','true'])
+
+    def test_repeated_hits_bypass_native_per_cast_condition_hash(self):
+        # ActionEvaluator case21: params[5] false hashes the grant per recipient
+        # and returns early after the first call, even with a large Unique cap.
+        command = K.cmds(S.grant_on_hit(), 'CreateCondition')[0]
+        def native_cast(repeat):
+            seen, layers = set(), 0
+            for _ in range(3):
+                key = ('self-member', S.UID)
+                if not repeat and key in seen:
+                    continue
+                seen.add(key)
+                layers += command[11][0]['min']
+            return layers
+        self.assertEqual(native_cast(False), 2)  # reproduces the reported bug
+        self.assertEqual(native_cast(command[6]), 6)
+        tree = revise_skill(json.loads((PROTO/'skill_1.json').read_bytes()))
+        for c in K.cmds(tree, 'CreateCondition'):
+            if any(v[:2] == ['ACUnique', S.UID] for v in c[2]):
+                c[6] = False
+        fixed = S.revise_skill(tree)
+        self.assertTrue(all(c[6] for c in K.cmds(fixed, 'CreateCondition')
+                            if any(v[:2] == ['ACUnique', S.UID] for v in c[2])))
 
     def test_three_hits_pay_exactly_six_flips_and_can_gain_between_flips(self):
         # Native semantics: member Unique gains magnification per impact;
