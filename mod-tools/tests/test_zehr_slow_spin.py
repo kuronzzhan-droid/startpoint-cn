@@ -41,8 +41,8 @@ class SlowSpinTest(unittest.TestCase):
             result,report=slow_attack(area)
             self.assertEqual(result[13],area[13]);self.assertLess(result[14][1],hits)
             for col in (6,13,14):
-                self.assertAlmostEqual(result[23][1][0][1][col][0]['max']*result[14][1],atk[col][0]['max']*hits*(1.5 if col==6 else 1))
-            self.assertEqual(report['total_damage_ratio'],1.5)
+                self.assertAlmostEqual(result[23][1][0][1][col][0]['max']*result[14][1],atk[col][0]['max']*hits*(2.025 if col==6 else 1))
+            self.assertEqual(report['total_damage_ratio'],2.025)
             ratio={9:1,12:1.2,15:1.1}[hits]
             self.assertAlmostEqual(result[9][1][0]['max'],160*ratio)
             self.assertAlmostEqual(result[20][1][0][1][12][1][0]['max'],3.2*ratio)

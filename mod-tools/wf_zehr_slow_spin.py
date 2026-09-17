@@ -1,6 +1,8 @@
-"""泽赫尔回旋斩：33%转速与重击，总伤害提高50%，保留破弱点/fever总量。"""
+"""泽赫尔回旋斩：33%转速与重击，回旋伤害为原版202.5%，保留破弱点/fever总量。"""
 from copy import deepcopy
 from wf_zantetsu_fever_revision import nodes
+
+TOTAL_DAMAGE_RATIO = 2.025
 
 
 def stretched(frame):
@@ -66,8 +68,9 @@ def slow_attack(tree):
     for col in (6,13,14):
         for value in attacks[0][col]:
             if set(value)!={'min','max'}:raise ValueError('unexpected variable-scaled hit value')
-            for key in ('min','max'):value[key]=value[key]*old/new*(1.5 if col==6 else 1)
-    return result,dict(old_hits=old,new_hits=new,per_hit_ratio=old/new*1.5,
+            for key in ('min','max'):
+                value[key]=round(value[key]*old/new*(TOTAL_DAMAGE_RATIO if col==6 else 1),6)
+    return result,dict(old_hits=old,new_hits=new,per_hit_ratio=old/new*TOTAL_DAMAGE_RATIO,
                        per_hit_break_fever_ratio=old/new,
-                       lifetime_frames=area[13][1],total_damage_ratio=1.5,
+                       lifetime_frames=area[13][1],total_damage_ratio=TOTAL_DAMAGE_RATIO,
                        radius_ratio=radius_ratio,radius=area[9][1][0]['max'])
