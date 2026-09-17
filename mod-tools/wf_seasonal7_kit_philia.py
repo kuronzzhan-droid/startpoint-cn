@@ -293,6 +293,10 @@ def scope_problems(tree) -> list[str]:
     def walk(node, bound: frozenset) -> None:
         if not isinstance(node, list):
             return
+        if node and node[0] == "Event" and node[1][0] == "CollisionOfBallAndEnemy":
+            # Native ListeningEvent binds the collided enemy only inside this event.
+            walk(node[1][5], bound | {node[1][4]})
+            return
         if node and node[0] == "Command" and isinstance(node[1], list):
             c = node[1]
             name = c[0]
@@ -1337,7 +1341,9 @@ def build_skill_tree(ctx, level: str, params: dict, families: list[dict], hashes
     body = [stop, fx_all, charge, fly, heal113, heal145, heal_mate, pf_dmg, leader_atk, add_combo,
             swords, self_atk]
     tree = head[:10] + [SKILL_BUFF_TARGET_AS] + [["Block", body]]   # R16：tree[10]=3 走强化弹射乘区
-    return rewrite_all(ctx, tree, families)
+    from wf_philia_wind_revision import revise_skill
+    rewritten, counts = rewrite_all(ctx, tree, families)
+    return revise_skill(rewritten), counts
 
 
 def rewrite_all(ctx, tree, families: list[dict]):
@@ -1489,7 +1495,9 @@ def build_pf_tree(ctx, level: int, donor_1anv_2: list, rain_donor: list, familie
         for c in cmds(node, "ShowEffect"):
             c[1] = c[1] + PF_EFFECT_LABEL_SUFFIX
     burst[0][11][1].extend(appended)
-    return rewrite_all(ctx, tree, families)
+    from wf_philia_wind_revision import revise_pf
+    rewritten, counts = rewrite_all(ctx, tree, families)
+    return revise_pf(rewritten), counts
 
 
 # ================================================================ 像素小人 / 语音（Integrate 阶段）
@@ -1833,6 +1841,10 @@ def build(ctx) -> dict[str, Any]:
     # ---- 写表：词条 / 队长 / 字符串（撤销框架克隆的未用键）
     _write_checked_flat(ctx, ABILITY, ability_rows)
     _write_checked_flat(ctx, LEADER, {spec.cid_s: leader_rows})
+    from wf_philia_wind_revision import PF_TEXT, skill_description
+    for index in (5, 7):
+        text_row[index] = skill_description(text_row[index])
+    cas_rows[CAS_PF_OVERRIDE] = PF_TEXT
     _write_checked_flat(ctx, CAS, {k: [[v]] for k, v in cas_rows.items()})
     unclaimed = []
     claimed_cas = next((c for c in ctx.pack.load_claims() if c["logical_path"] == CAS and c["root"] == "common"), None)
