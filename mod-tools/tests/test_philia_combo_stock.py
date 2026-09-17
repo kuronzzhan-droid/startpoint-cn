@@ -102,7 +102,9 @@ class StockTests(unittest.TestCase):
         self.assertEqual(stock,3)
 
     def test_new_description_is_idempotent_and_536_remains_concise(self):
-        self.assertEqual(S.skill_description(S.skill_description('x')), 'x'+S.DETAIL)
+        original = '向上射出10道贯穿风刃／提升连击数'
+        old = original+'／强化时追加降低命中敌人的强化弹射伤害抗性'+S.DETAIL
+        self.assertEqual(S.skill_description(S.skill_description(old)), original)
         self.assertEqual(K.text_rule_problems({K.CAS_CHANGE_SKILL:S.DESCRIPTION}),[])
 
 

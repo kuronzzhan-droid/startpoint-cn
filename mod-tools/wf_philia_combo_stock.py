@@ -90,4 +90,4 @@ def revise_abilities(a1, a4):
 
 
 def skill_description(text):
-    return text if text.endswith(DETAIL) else text + DETAIL
+    return text.replace('／强化时追加降低命中敌人的强化弹射伤害抗性', '').replace(DETAIL, '')
