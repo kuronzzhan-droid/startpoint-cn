@@ -27,7 +27,12 @@ def smooth_parts(parts, *, ornament=False):
                 cursor += duration
                 if kind == 2:
                     ref = int(key.get('r') or 0) & 0xffffffff
-                    key['r'] = (ref & 0xc0000000) | stretched(ref & 0x3fffffff)
+                    loop, base = ref >> 30, ref & 0x3fffffff
+                    # Rounding can add one frame to a parent strip. A source
+                    # that never wraps must not flash its first frame there.
+                    if loop == 2 and base + duration <= parts['g'][strip['i']]['t']:
+                        loop = 1
+                    key['r'] = (loop << 30) | stretched(base)
     if ornament:
         original = result['g'][0]
         index = len(result['g'])

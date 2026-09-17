@@ -26,5 +26,16 @@ class SpinAnimationTest(unittest.TestCase):
         self.assertEqual([s['l'][0]['m']&255 for s in result['g'][0]['s']],[255,64])
         self.assertTrue(all(s['i']==2 for s in result['g'][0]['s']))
 
+    def test_rounding_does_not_restart_child_on_last_frame(self):
+        source=self.source()
+        source['g'][0]=dict(t=104,s=[dict(s=2<<30,i=1,l=[
+            dict(m=255,t=41,r=2<<30),dict(m=255,t=63,r=2<<30)])])
+        source['g'][1]['t']=63
+        result=smooth_parts(source)
+        keys=result['g'][0]['s'][0]['l']
+        self.assertEqual(keys[1]['t'],191)
+        self.assertEqual(result['g'][1]['t'],190)
+        self.assertEqual(keys[1]['r']>>30,1)
+
 
 if __name__=='__main__':unittest.main()
