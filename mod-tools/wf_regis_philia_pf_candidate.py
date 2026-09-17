@@ -17,7 +17,7 @@ def apply_candidate(repo, role, *, apply=False):
         raise ValueError(role)
     cid, code = (R.CID, R.CODE) if role == 'regis' else ('159996', K.CODE)
     c = RevisionCandidate(repo, repo/f'work/character_packs/s7-{role}',
-        character_id=cid, code_name=code, package_version='1.0.7' if role == 'philia' else '1.0.6',
+        character_id=cid, code_name=code, package_version='1.0.8' if role == 'philia' else '1.0.6',
         snapshot_key='gauge_random_pf_20260917', evidence_name='gauge-random-pf.json')
     def rows(logical, key):
         return C.read_csv_lines(C.read_orderedmap_file_from_bytes(c.read('common', logical))[key])
@@ -37,4 +37,5 @@ def apply_candidate(repo, role, *, apply=False):
     return c.finish(dict(role=role, texture_changes=False, apk_changes=False,
         multipliers_unchanged=role != 'philia', random_directions=5 if role == 'philia' else None,
         blade_damage_factor=1.25 if role == 'philia' else None,
+        rain_total_damage=[5, 7, 11] if role == 'philia' else None,
         angular_spacing_degrees=72 if role == 'philia' else None), apply=apply)

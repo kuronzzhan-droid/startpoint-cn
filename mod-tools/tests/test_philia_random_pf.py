@@ -44,6 +44,9 @@ class RandomPfTest(unittest.TestCase):
                     original_damage = K.cmds(original[i], 'CreateNormalAttack')[0][6][0]['min']
                     self.assertEqual(attacks[0][6], K.slv(original_damage*1.25, original_damage*1.25))
                     attacks[0][6] = K.slv(original_damage, original_damage)
+                    old_rain = K.cmds(original[i], 'CreateNormalAttack')[1][6][0]['min']
+                    self.assertEqual(attacks[1][6], K.slv(R.RAIN_DAMAGE[old_rain], R.RAIN_DAMAGE[old_rain]))
+                    attacks[1][6] = K.slv(old_rain, old_rain)
                     for a, b in zip(K.cmds(restored, 'ShowEffect'), K.cmds(original[i], 'ShowEffect')):
                         a[9] = b[9]
                     self.assertEqual(restored, original[i])
@@ -92,15 +95,26 @@ class RandomPfTest(unittest.TestCase):
         K.cmds(broken, 'ConditionalsProbability')[0][1][1][0][1].pop()
         with self.assertRaises(ValueError):
             R.validate(broken)
-        broken = deepcopy(tree)
+
+    def test_existing_even_volley_only_changes_rain_multiplier(self):
+        for level, old, new in ((1, 0.4, 2.5), (2, 0.55, 3.5), (3, 0.8, 5.5)):
+            expected = R.revise_pf(self.source(level))
+            previous = deepcopy(expected)
+            for branch in K.cmds(previous, 'ConditionalsProbability')[0][1][1]:
+                for blade in branch[1][1][1]:
+                    rain = K.cmds(blade, 'CreateNormalAttack')[1]
+                    self.assertEqual(rain[6], K.slv(new, new))
+                    rain[6] = K.slv(old, old)
+            self.assertEqual(R.revise_pf(previous), expected)
+        broken = deepcopy(expected)
         broken[10] = 2
         with self.assertRaisesRegex(ValueError, 'power flip damage bucket'):
             R.validate(broken)
-        broken = deepcopy(tree)
+        broken = deepcopy(expected)
         K.cmds(broken, 'ConditionalsProbability')[0][1][1][0][1][1][1][1][1][6] += 0.1
         with self.assertRaisesRegex(ValueError, 'direction'):
             R.validate(broken)
-        broken = deepcopy(tree)
+        broken = deepcopy(expected)
         K.cmds(broken, 'MoveHitArea')[-1][1] = 999999
         with self.assertRaises(ValueError):
             R.validate(broken)
