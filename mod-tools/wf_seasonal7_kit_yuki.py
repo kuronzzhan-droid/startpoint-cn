@@ -181,6 +181,20 @@ ABILITY_RECIPE = {
         ('store', '1299923', 0, {0: f'{CODE}_1', 1: 'true', 2: 'action_skill', 6: '202', 9: '', 10: '', 11: '',
                                  13: '2', 16: '600000', 17: '600000', 18: 'Blue', 70: CHANGE_SKILL_KEY},
          '28ec9293187a1996e9cf7219a85e7c525accecf0ced12292c9c61212dc705d9c'),  # R1/R8 Ⓜ主位+水共鸣 强化技能（从槽3搬来）
+        # 五轮 R31（作者 2026-09-17：「和达到多少连击赋予攻击力技能槽那些差不多，达到多少连击加连击」）：
+        # 阈值型触发只能落在词条行上——技能 DSL 侧的 ACComboBoost 既没有时间维度
+        # （resolveTime case 32 恒返回永续），也只按弹射次数结算，做不出「每达成 N 连击」。
+        # instant_trigger 12 Combo 的判据是 ThresholdComboListener：floor(prev/N) < floor(now/N) 时
+        # **每跨过一个整数倍就触发一次**（跨多个就循环触发多次）⇒ 字面就是「每达成 75 连击」。
+        # 加的连击自身只贡献 15/75 = 20% 的额外进度，收敛，不会自激。
+        # 数值按本角色同族口径：能力2 是「每 75 连击 → 全队水技能槽 5%」，这里取同一个 75。
+        # 官方先例 instant 12 + content 226 共 5 行（2410015#1 / 2410045#1 / 2430015#1 /
+        # 3410013#1 觉醒 / 1599973#5 泽赫尔）；226 全表 74 行 target 列留空、3 行写 0 ——
+        # 连击是全局计数器，没有「给谁」之分，所以不写 target/组。
+        ('official', '2410015', 1, {0: f'{CODE}_1', 1: 'true', 2: 'action_skill', 6: '2', 9: '600000',
+                                    10: '600000', 11: 'Blue', 30: '7500000', 31: '7500000',
+                                    34: '(None)', 51: '1500000', 52: '1500000'},
+         'd6e077ad27601164eab687f257c847c42104a05f32b141414fbc325805a449aa'),  # R31 水共鸣 每75连击 连击+15
     ),
     2: (
         ('store', '1299922', 2, {0: f'{CODE}_2', 6: '2', 9: '600000', 10: '600000', 11: 'Blue',
@@ -2050,7 +2064,23 @@ def row_sha_lock(revision: dict | None, revision5: dict | None) -> dict[str, lis
             raise AssertionError(f"revision5 override {ov['id']}: plan sha {out[bucket][idx][:12]} "
                                  f"!= row_sha256_before {ov['row_sha256_before'][:12]}")
         out[bucket][idx] = ov["row_sha256"]
+    for add in revision5.get("adds", ()):          # 追加行只能接在该键末尾，索引必须连号
+        bucket = "leader" if add["table"] == LD else add["key"]
+        if add["index"] != len(out[bucket]):
+            raise AssertionError(f"revision5 add {add['id']}: index {add['index']} "
+                                 f"!= 该键现有记录数 {len(out[bucket])}（新行只能追加在末尾）")
+        out[bucket].append(add["row_sha256"])
     return out
+
+
+def record_counts_lock(revision: dict, revision5: dict | None) -> dict[str, int]:
+    """现行记录数：二轮 plan 的 {leader, <键>: n} 加上五轮追加的行。"""
+    counts = {"leader": revision["record_counts"]["leader"],
+              **{k: v for k, v in revision["record_counts"]["abilities"].items()}}
+    for add in (revision5 or {}).get("adds", ()):
+        bucket = "leader" if add["table"] == LD else add["key"]
+        counts[bucket] = counts.get(bucket, 0) + 1
+    return counts
 
 
 def _override_cells(ov: dict) -> list[tuple[int, str, str]]:
@@ -2086,6 +2116,13 @@ def _locked_rows(revision: dict | None, revision5: dict | None = None) -> dict[s
             raise AssertionError(f"revision5 override {ov['id']}: 打补丁后的 plan 行 sha "
                                  f"{row_sha(row)[:12]} != row_sha256 {ov['row_sha256'][:12]}")
         out[bucket][ov["index"]] = row
+    # 追加行 plan 里没有成品行可打补丁 ⇒ donor 漂移时没有兜底，只能靠配方的 sha 锁（build 会报错）
+    for add in (revision5 or {}).get("adds", ()):
+        bucket = "leader" if add["table"] == LD else add["key"]
+        if add["index"] != len(out[bucket]):
+            raise AssertionError(f"revision5 add {add['id']}: index {add['index']} "
+                                 f"!= 该键现有记录数 {len(out[bucket])}（新行只能追加在末尾）")
+        out[bucket].append(None)
     return out
 
 
@@ -2110,6 +2147,7 @@ def _build_rows(ctx, locked: dict[str, list[list[str]]], notes: list) -> tuple[l
                 out.append(row)
                 continue
             fallback = locked_rows[i] if locked_rows and i < len(locked_rows) else None
+            # 五轮追加的行 plan 里没有成品行（占位 None）⇒ donor 漂移时没有兜底，直接报错
             if fallback is not None and row_sha(fallback) == sha:
                 notes.append(f"donor drift {src}:{key}#{idx}; used locked revision row (sha {sha[:12]})")
                 out.append(list(fallback))
@@ -2336,18 +2374,17 @@ def build(ctx) -> dict[str, Any]:
     if rows_report["required_capabilities"] != list(spec.required_capabilities):
         gate_failures.append(f"spec.required_capabilities {list(spec.required_capabilities)} != rows "
                              f"{rows_report['required_capabilities']}")
-    if sum(len(v) for v in abilities.values()) != 15 or len(leader) != 7:
-        gate_failures.append("record counts differ from revision plan (leader 7 / abilities 15)")
     if revision is not None:
-        want_counts = {"leader": revision["record_counts"]["leader"],
-                       **{k: v for k, v in revision["record_counts"]["abilities"].items()}}
+        want_counts = record_counts_lock(revision, revision5)
         got_counts = {"leader": len(leader), **{k: len(v) for k, v in abilities.items()}}
         if got_counts != want_counts:
             gate_failures.append(f"record counts {got_counts} != revision plan {want_counts}")
         locked = _locked_rows(revision, revision5)
-        drift = ([f"leader#{i}" for i, r in enumerate(leader) if r != locked["leader"][i]]
+        drift = ([f"leader#{i}" for i, r in enumerate(leader)
+                  if locked["leader"][i] is not None and r != locked["leader"][i]]
                  + [f"{k}#{i}" for k, rows in abilities.items()
-                    for i, r in enumerate(rows) if r != locked[k][i]])
+                    for i, r in enumerate(rows)
+                    if locked[k][i] is not None and r != locked[k][i]])
         if drift:
             gate_failures.append(f"rows differ from revision plan locked rows: {drift[:6]}")
     fx_manifest_sha = (hashlib.sha256(Path(fx_manifest).read_bytes()).hexdigest() if fx_manifest else None)

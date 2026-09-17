@@ -37,9 +37,10 @@ class PureGateTests(unittest.TestCase):
 
     def test_recipe_locks_are_unique_and_complete(self):
         shas = [r[4] for r in K.LEADER_RECIPE] + [r[4] for rs in K.ABILITY_RECIPE.values() for r in rs]
-        self.assertEqual(len(shas), 22)                    # 改版：队长 7 + 词条 15
-        self.assertEqual(len(set(shas)), 22)
-        self.assertEqual(sum(len(v) for v in K.ABILITY_RECIPE.values()), 15)
+        self.assertEqual(len(shas), 23)                    # 队长 7 + 词条 16（五轮 R31 给能力1 加了一条）
+        self.assertEqual(len(set(shas)), 23)
+        self.assertEqual(sum(len(v) for v in K.ABILITY_RECIPE.values()), 16)
+        self.assertEqual(len(K.ABILITY_RECIPE[1]), 3)
         self.assertEqual(len(K.LEADER_RECIPE), 7)
 
     def test_recipe_donors_avoid_own_keys(self):
@@ -238,6 +239,17 @@ class PureGateTests(unittest.TestCase):
         self.assertEqual((lock["key"], lock["cid"]), (K.KEY, K.CID))
         ids = [o["id"] for o in lock["overrides"]]
         self.assertEqual(ids, ["R28", "R29", "R30"])
+        # R31：能力1 追加「每达成 75 连击 → 连击 +15」（instant 12 Combo + content 226）
+        self.assertEqual([a["id"] for a in lock["adds"]], ["R31"])
+        r31 = K.ABILITY_RECIPE[1][2][3]
+        self.assertEqual((r31[27] if 27 in r31 else "12"), "12")
+        self.assertEqual((r31[30], r31[31]), ("7500000", "7500000"))   # 每 75 连击
+        self.assertEqual(r31[34], "(None)")                            # 不限次数
+        self.assertEqual((r31[51], r31[52]), ("1500000", "1500000"))   # 连击 +15
+        self.assertEqual(r31[6], "2")                                  # 水属性共鸣前置
+        self.assertEqual(K.ABILITY_RECIPE[1][2][4], lock["adds"][0]["row_sha256"])
+        self.assertEqual(K.record_counts_lock(
+            json.loads((ROOT / K.REVISION_REL).read_text(encoding="utf-8")), lock)["1299911"], 3)
         recipe_sha = {"leader": [r[4] for r in K.LEADER_RECIPE]}
         recipe_sha.update({f"{K.CID}{s}": [r[4] for r in rs] for s, rs in K.ABILITY_RECIPE.items()})
         for ov in lock["overrides"]:
