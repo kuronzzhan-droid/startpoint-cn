@@ -60,7 +60,8 @@ def revise_skill(tree):
             raise ValueError('skill rain must snapshot each blade hit position')
         # Remove the enclosing nearest-target search and reference point completely.
         unit[1][3] = ['Block', [['Command', sword]]]
-    return out
+    from wf_philia_combo_stock import revise_skill as add_stock
+    return add_stock(out)
 
 
 def revise_pf(tree):

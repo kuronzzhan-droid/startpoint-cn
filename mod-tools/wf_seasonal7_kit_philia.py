@@ -1839,12 +1839,22 @@ def build(ctx) -> dict[str, Any]:
         raise KitError("leader 722 row drift (c80/c81)")
 
     # ---- 写表：词条 / 队长 / 字符串（撤销框架克隆的未用键）
+    import wf_philia_combo_stock as stock
+    ability_rows[spec.cid_s+'1'], ability_rows[spec.cid_s+'4'] = stock.revise_abilities(
+        ability_rows[spec.cid_s+'1'], ability_rows[spec.cid_s+'4'])
+    _write_checked_flat(ctx, stock.UNIQUE, {str(stock.UID): stock.unique_row()})
+    stock_icon = ctx.workspace/'source/wind-stock-icon.png'
+    # The revision candidate owns the generated source; rebuilds must not redraw it.
+    if not stock_icon.is_file():
+        raise KitError(f'wind-stock icon source missing: {stock_icon}')
+    ctx.write_asset('common', stock.ICON+'.png', C.png_store_bytes(C.png_open(stock_icon.read_bytes())))
     _write_checked_flat(ctx, ABILITY, ability_rows)
     _write_checked_flat(ctx, LEADER, {spec.cid_s: leader_rows})
     from wf_philia_wind_revision import PF_TEXT, skill_description
     for index in (5, 7):
-        text_row[index] = skill_description(text_row[index])
+        text_row[index] = stock.skill_description(skill_description(text_row[index]))
     cas_rows[CAS_PF_OVERRIDE] = PF_TEXT
+    cas_rows[CAS_CHANGE_SKILL] = stock.DESCRIPTION
     _write_checked_flat(ctx, CAS, {k: [[v]] for k, v in cas_rows.items()})
     unclaimed = []
     claimed_cas = next((c for c in ctx.pack.load_claims() if c["logical_path"] == CAS and c["root"] == "common"), None)
@@ -2050,6 +2060,7 @@ def build(ctx) -> dict[str, Any]:
                    "PF special 覆盖三档/语音路由/特效三族",
         "status": status,
         "skills": {"programs": sorted(programs)},
+        "unique_condition": {str(stock.UID): {"icon": stock.ICON+'.png', "name": stock.NAME}},
         "required_capabilities": caps,
         "panel": panel,
         "notes": notes,
