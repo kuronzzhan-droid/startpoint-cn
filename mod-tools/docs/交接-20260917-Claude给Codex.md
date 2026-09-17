@@ -16,9 +16,9 @@
 | `mod-tools/work/sync_pending.json` | 【事实】`[]` |
 | 我的占用 | **已释放**。`mod-tools/wf_seasonal7_kit_{tekuto,yuki}.py`、`mod-tools/wf_gacha_seasonal7_*.py`、`mod-tools/wf_pack_push_keys.py`、`work/character_packs/{s7-tekuto,s7-yuki,seasonal7-20260916}/` 我这一轮写完了，没有在途改动 |
 
-⚠ **flow 账本 base 1.4.896 ≠ 链尾 1.4.902**：下一次**整包 `flow publish`** 之前必须先经作者授权
+⚠ **flow 账本 base 1.4.896 ≠ 链尾 1.4.903**：下一次**整包 `flow publish`** 之前必须先经作者授权
 `reanchor`，否则铸中段边、投递为零（记忆卡 `wf-flow-ledger-dual-tail`）。
-899→902 这四条边都是 `wf_publish` 裸表边（见 §2），账本不记录它们。
+899→903 这四条边都是 `wf_publish` 裸表边（见 §2），账本不记录它们。
 
 ---
 
@@ -32,8 +32,8 @@
 | 1.4.902 | 见岛勇希 129991 三条口径修正（见 §4.2） | 裸表边（`ability` + `leader_ability`） |
 | 1.4.903 | 见岛勇希能力1 新增「每达成 75 连击 → 连击 +15」（见 §4.3） | 裸表边（`ability.orderedmap`） |
 
-**为什么 901/902 走裸表边而不是整包发布**：CLAUDE.md 授权分级里「整包 `flow publish`」
-要作者在当次请求里明确说；这两次作者只说了改内容。走的是常设授权那条路径
+**为什么 900-903 走裸表边而不是整包发布**：CLAUDE.md 授权分级里「整包 `flow publish`」
+要作者在当次请求里明确说；这几次作者只说了改内容。走的是常设授权那条路径
 （键级改 live store + `wf_publish` 裸表边），并且**两个包的 workspace 候选都已经回写**
 （`--step kit,manifest,status` 重建，同一任务的一部分，不是可选项）。
 ⇒ 这两个包现在「live == 包」，随时可以整包发布，不会把行退回去。
