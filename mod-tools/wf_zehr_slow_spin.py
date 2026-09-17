@@ -1,0 +1,58 @@
+"""泽赫尔回旋斩：半速动画与重击，总伤害提高25%，保留破弱点/fever总量。"""
+from copy import deepcopy
+from wf_zantetsu_fever_revision import nodes
+
+
+def slow_parts(parts):
+    result=deepcopy(parts)
+    if result.get('m'):
+        raise ValueError('spin source unexpectedly contains independent movie clips')
+    groups=result['g']; original=deepcopy(groups[0]); frames=int(original['t'])
+    if not 1 <= frames <= 300:raise ValueError('unexpected spin duration')
+    # GraphicsLoopKindTools: r top bits 0 = freeze at low-30-bit frame.
+    # Refer to the untouched original root, and hold every rendered frame twice.
+    # Nested graphics retain their original time offsets and tween bitfields.
+    for group in groups:
+        for strip in group['s']:
+            if (int(strip['s']) & 0xffffffff)>>30==2 and strip['i']==0:
+                raise ValueError('source references root recursively')
+    identity={'a':4096,'b':0,'c':0,'d':4096,'x':0,'y':0}
+    if identity not in result['t']:result['t'].append(identity)
+    matrix=result['t'].index(identity)
+    groups[0]={'t':2*frames,'s':[{'s':-2147483648,'i':len(groups),
+        'l':[{'m':(matrix<<12)|255,'t':2,'r':f} for f in range(frames)]}]}
+    groups.append(original)
+    return result
+
+
+def slow_timeline(timeline):
+    result=deepcopy(timeline)
+    if any(result.get(k) for k in ('points','circles','rectangles','matrices')):
+        raise ValueError('unexpected collision or attachment timeline')
+    for seq in result['sequences']:
+        seq['begin']=(seq['begin']-1)*2+1;seq['end']*=2
+    for sound in result['sounds']:
+        sound['begin']=(sound['begin']-1)*2+1
+        if sound['end']>=0:sound['end']*=2
+    return result
+
+
+def slow_attack(tree):
+    result=deepcopy(tree)
+    areas=nodes(result,'CreateHitArea')
+    if not areas or areas[0][2]!=-18:raise ValueError('missing sword spin hit area')
+    area=areas[0]
+    if area[13][0]!='SpecifyHitAreaLifetimeDirectly' or area[14][0]!='CalculatedUsingMaxNumOfHits':
+        raise ValueError('unexpected spin timing model')
+    old=area[14][1]
+    if old not in (9,12,15):raise ValueError('unexpected spin hit budget')
+    new=(old+1)//2;area[14][1]=new
+    attacks=nodes(area[23],'CreateNormalAttack')
+    if len(attacks)!=1:raise ValueError('expected one sword spin damage source')
+    for col in (6,13,14):
+        for value in attacks[0][col]:
+            if set(value)!={'min','max'}:raise ValueError('unexpected variable-scaled hit value')
+            for key in ('min','max'):value[key]=value[key]*old/new*(1.25 if col==6 else 1)
+    return result,dict(old_hits=old,new_hits=new,per_hit_ratio=old/new*1.25,
+                       per_hit_break_fever_ratio=old/new,
+                       lifetime_frames=area[13][1],total_damage_ratio=1.25)
