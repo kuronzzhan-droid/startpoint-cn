@@ -2557,6 +2557,17 @@ def build(ctx) -> dict[str, Any]:
     if panel_probs:
         raise KitError(f"revision2/3/4 main-slot / skill-enhancement / timing / strength wording: {panel_probs}")
     ctx.write_flat(CAS, cas_rows)
+    # 2026-09-17 作者修订在历史基线门禁之后收口，避免重建恢复旧灯火。
+    from wf_zehr_lamp_revision import revise_rows as lamp_rows, revise_unique, revise_text
+    rows["ability"][CID+'1'], rows["ability"][CID+'3'] = lamp_rows(
+        rows["ability"][CID+'1'], rows["ability"][CID+'3'])
+    uc_rows[UC_ID] = revise_unique(uc_rows[UC_ID])
+    for slot in (1, 3):
+        key = f'desc_override_{CODE}_{slot}'
+        cas_rows[key] = [[revise_text(slot, cas_rows[key][0][0])]]
+    ctx.write_flat(ABILITY, {CID+'1': rows['ability'][CID+'1'], CID+'3': rows['ability'][CID+'3']})
+    ctx.write_flat(UC, {UC_ID: uc_rows[UC_ID]})
+    ctx.write_flat(CAS, {f'desc_override_{CODE}_{s}': cas_rows[f'desc_override_{CODE}_{s}'] for s in (1, 3)})
     import wf_seasonal7_tables as T
     caps_blob = ctx.pack.template_raw(CAPS)[f"change_skill_{TEMPLATE_CODE}"]     # 官方原行字节（5 档文本不含技能名）
     if T.decode_blob(caps_blob) != strings[(CAPS, CHANGE_SKILL_KEY)]["value"]:
