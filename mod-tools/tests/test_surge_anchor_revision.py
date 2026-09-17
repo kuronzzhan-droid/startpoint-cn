@@ -45,7 +45,9 @@ class SurgeAnchorTest(unittest.TestCase):
 
     def test_fever_end_grants_one_stack_leader_only_without_new_gate(self):
         leader, third = R.revise_rows(self.data['139994'],self.data['1399943'],self.data['1399941'])
-        self.assertEqual(leader[:-1],self.data['139994'])
+        expected = deepcopy(self.data['139994'])
+        expected[4][49:51] = ['25000', '25000']
+        self.assertEqual(leader[:-1], expected)
         row = leader[-1]
         self.assertEqual((row[25],row[45],row[49],row[57],row[66]),
                          ('184','461','100000','100000',str(R.UID)))
@@ -54,7 +56,9 @@ class SurgeAnchorTest(unittest.TestCase):
 
     def test_skill_multiplier_keeps_original_ability_buff_and_is_self_only(self):
         _, third = R.revise_rows(self.data['139994'],self.data['1399943'],self.data['1399941'])
-        self.assertEqual(third[:-1], self.data['1399943'])
+        expected = deepcopy(self.data['1399943'])
+        expected[2][51:53] = ['25000', '25000']
+        self.assertEqual(third[:-1], expected)
         row = third[-1]
         self.assertEqual((row[1],row[6],row[11],row[13],row[97]),('false','2','Yellow','12','4'))
         self.assertEqual(row[109:115],['411','0','','','25000','25000'])
@@ -77,6 +81,17 @@ class SurgeAnchorTest(unittest.TestCase):
         leader,third=R.revise_rows(self.data['139994'],self.data['1399943'],self.data['1399941'])
         self.assertEqual(R.revise_rows(leader,third,self.data['1399941']),(leader,third))
         self.assertEqual(before,self.data)
+
+    def test_fever_gauge_text_and_opening_gauge_are_separate(self):
+        before = deepcopy(self.data['1399941'])
+        leader, third = R.revise_rows(self.data['139994'], self.data['1399943'], before)
+        self.assertEqual(before, self.data['1399941'])
+        self.assertEqual(before[0][51:53], ['50000', '50000'])
+        self.assertEqual(leader[5][49:51], ['25000', '25000'])
+        for slot in (0, 3):
+            updated = R.revise_text(slot, '进入FEVER模式时，自身技能槽＋50%')
+            self.assertIn('自身技能槽＋25%', updated)
+            self.assertNotIn('自身技能槽＋50%', updated)
 
 
 if __name__ == '__main__':

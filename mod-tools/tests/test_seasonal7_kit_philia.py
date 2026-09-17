@@ -449,7 +449,8 @@ class DesignIntegration(unittest.TestCase):
         for level in (1, 2, 3):
             tree, _ = K.build_pf_tree(self.ctx, level, donor, rain_donor, families, special)
             self.assertEqual(K.dsl_gate_failures(K.dsl_gates(tree)), [])
-            self.assertEqual(tree, package_tree(K.PF_PROGRAMS[level - 1]), level)
+            from wf_philia_random_pf import revise_pf as random_pf
+            self.assertEqual(random_pf(tree), package_tree(K.PF_PROGRAMS[level - 1]), level)
             attacks = K.cmds(tree, "CreateNormalAttack")
             swords = [c for c in attacks if K.PF_SUBJECT_OFFSET <= c[1] < K.PF_RAIN_BASE_ID]
             self.assertEqual(len(swords), K.PF_SWORDS)

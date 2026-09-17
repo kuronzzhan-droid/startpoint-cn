@@ -1961,7 +1961,11 @@ def build(ctx) -> dict[str, Any]:
             bad.append(f"fx refs outside cloned families: {stray}")
         if bad:
             raise KitError(f"PF lv{level} DSL gates failed: {bad}")
+        from wf_philia_random_pf import revise_pf as random_pf
+        tree = random_pf(tree)
+        gates = dsl_gates(tree)
         gates["effect_rewrites"] = counts
+        gates["attacks_per_execution_path"] = want_attacks
         pf_gates[str(level)] = gates
         programs.append(ctx.write_dsl(PF_PROGRAMS[level - 1], tree))
     _write_checked_flat(ctx, PFA, {PF_KEY: [list(PF_PROGRAMS)]})

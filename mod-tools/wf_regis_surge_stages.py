@@ -66,6 +66,13 @@ def validate(tree):
 
 def revise_rows(leader, third, first):
     leader, third = deepcopy(leader), deepcopy(third)
+    for rows, offset in ((leader, 0), (third, 2)):
+        targets = [r for r in rows if r[25+offset] == '8' and r[45+offset] == '211'
+                   and r[46+offset] in ('', '0')]
+        if len(targets) != 1 or targets[0][49+offset:51+offset] not in (
+                ['50000', '50000'], ['25000', '25000']):
+            raise ValueError('Regis self Fever gauge baseline drift')
+        targets[0][49+offset:51+offset] = ['25000', '25000']
     grant = next(r for r in first if r[47] == '461' and r[68] == str(UID))
     end = [leader[0][0], *deepcopy(grant[3:])]
     end[25] = '184'  # Native FeverEnd; one event per completed Fever.
@@ -85,6 +92,7 @@ def revise_rows(leader, third, first):
 
 
 def revise_text(slot, text):
+    text = text.replace('自身技能槽＋50%', '自身技能槽＋25%')
     if slot == 0:
         extra = 'FEVER模式结束时，自身「浪涌充能」＋1层'
         return text if extra in text else text + '\n' + extra

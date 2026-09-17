@@ -6,7 +6,7 @@ SKILL_WAIT = 24
 SKILL_LIFETIME = 150
 SKILL_REFERENCE_LIFETIME = 310
 SKILL_STOP = 15
-PF_TEXT = ('特殊强化弹射命中时，从命中处向五个方向发射贯穿风刃，风刃命中处降下剑雨'
+PF_TEXT = ('特殊强化弹射命中时，从命中处向周围随机五个方向发射贯穿风刃，风刃命中处降下剑雨'
            '【均以强化弹射伤害计算】／强化弹射时，提升参战角色攻击力并赋予贯穿、浮游效果')
 
 
@@ -67,6 +67,9 @@ def revise_skill(tree):
 
 def revise_pf(tree):
     import wf_seasonal7_kit_philia as K
+    if K.cmds(tree, 'ConditionalsProbability'):
+        from wf_philia_random_pf import revise_pf as random_pf
+        return random_pf(tree)
     out = deepcopy(tree)
     events = [e for e in K.events(out) if e[0] == 'CollisionOfBallAndEnemy']
     if len(events) != 1:
