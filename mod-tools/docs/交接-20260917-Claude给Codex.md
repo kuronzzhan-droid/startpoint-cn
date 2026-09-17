@@ -10,7 +10,7 @@
 
 | 项 | 值 |
 |---|---|
-| legacy 链尾 | 【事实】**1.4.902** |
+| legacy 链尾 | 【事实】**1.4.903** |
 | flow 账本 base | 【事实】**1.4.896**，其上 3 条 release（s7-tekuto 897、s7-yuki 898、campus-nephtim 899） |
 | 本机 8001 | 【事实】2026-09-17 03:48 分离式重启，PID 145260；操作前用 `./start-cn.bat -CheckOnly` 重核 |
 | `mod-tools/work/sync_pending.json` | 【事实】`[]` |
@@ -29,7 +29,8 @@
 | 1.4.899 | 校园奈芙 169989 能力1/3 数值减半（机制未动） | 整包 `flow publish` |
 | 1.4.900 | 两个自制卡池的概率/兑换/排序修订（见 §3） | 裸表边（`gacha_odds` 两张） |
 | 1.4.901 | 特克托 139993 **能力2** 改成按「引擎启动」层数成长、不设上限 | 裸表边（`ability.orderedmap`） |
-| 1.4.902 | 见岛勇希 129991 三条口径修正（见 §4） | 裸表边（`ability` + `leader_ability`） |
+| 1.4.902 | 见岛勇希 129991 三条口径修正（见 §4.2） | 裸表边（`ability` + `leader_ability`） |
+| 1.4.903 | 见岛勇希能力1 新增「每达成 75 连击 → 连击 +15」（见 §4.3） | 裸表边（`ability.orderedmap`） |
 
 **为什么 901/902 走裸表边而不是整包发布**：CLAUDE.md 授权分级里「整包 `flow publish`」
 要作者在当次请求里明确说；这两次作者只说了改内容。走的是常设授权那条路径
@@ -122,12 +123,24 @@ live 全表 instant puller=7 共 145 行，trigger 20 + puller 7 共 17 行，
 `K._locked_rows(revision, revision5)` 逐格断言 before、再校验补丁后的行 sha == 锁值
 ⇒ plan 被人改过会立刻报错，不会静默沿用旧覆盖。
 
+### 4.3 见岛勇希能力1 新增一条（1.4.903）
+
+`ability[1299911]` 加第 3 条：**水属性共鸣时，每达成 75 连击 → 连击 +15**
+（instant_trigger **12 Combo** + instant_content **226 追加连击**，`c34='(None)'` 不限次数）。
+
+- 「每达成 N 连击」是真的：`ThresholdComboListener.update` 比 `floor(prev/N)` 与 `floor(now/N)`，
+  **每跨过一个整数倍触发一次**（一次跨多个就循环触发多次）。
+- 不自激：加的 15 连击自身只贡献 15/75 = 20% 的额外进度，收敛。
+- 数值取本角色同族口径（能力2 是「每 75 连击 → 全队水技能槽 5%」）。
+- `226` 全表 74 行 target 列留空 —— 连击是全局计数器，没有「给谁」之分，所以不写 target/组。
+- 行锁的 `adds` 段：追加行只能接在该键末尾、索引连号；plan 里没有成品行兜底，donor 漂移直接报错。
+
 ---
 
 ## 5. 待办 / 待拍板（按优先级）
 
-1. **【待拍板·卡在作者】见岛勇希能力1 的「技能强化」** —— 作者要「连击强化效果持续12s，
-   每获得1连击额外获得2连击」。**引擎侧两处都对不上**：
+1. **【已落地，但只做了一半】见岛勇希能力1** —— 作者原话「连击强化效果持续12s，
+   每获得1连击额外获得2连击」**引擎侧两处都对不上**：
    - `AdditionalConditionKindTools.resolveTime` 的 ComboBoost 分支（case 32）直接
      `return ETERNAL_CONDITION_THRESHOLD` ⇒ **ACComboBoost 没有时间维度**，寿命只由
      `ballFlipLimit`（`params[0]`，`ActionEvaluator` case 32 → `Option.Some`）按**弹射次数**计
@@ -136,7 +149,10 @@ live 全表 instant puller=7 共 145 行，trigger 20 + puller 7 共 17 行，
      ⇒ 「每获得1连击额外获得2连击」= 连击乘区，引擎里不存在
    现行值 `ACComboBoost(ballFlipLimit=3, combo=5)`；官方 15 处的取值范围
    `ballFlipLimit ∈ {1,2,3,5}`、`combo ∈ {2,3,5,6,10,15,30}`。
-   选项与证据都写在 `revision5-20260917/yuki/rows.json` 的 `open` 段。**已问作者，等回答。**
+   问过作者，澄清是「和达到多少连击赋予攻击力技能槽那些差不多，达到多少连击加连击」
+   ⇒ 已落成词条行（§4.3）。**仍未动**的是 1299911#1 的技能强化本体（536 + 分支里的
+   ACComboBoost「3次弹射每次+5」）：它是技能分支效果不是阈值触发，换掉会让 536 行、CAS 键、
+   语音路由 c9-16(kind 3) 与 switched_action_skill 一起失去意义 ⇒ **要不要一并换掉/删掉，等作者说**。
 2. **【待拍板】战斗图集预算已超阈**：`wf_atlas_budget_check.py` 报 RED，归因 `pre-existing` ——
    不加任何新包时 layer0/layer1 已占 90.4%／92.3%（`seris_dragon_king` 单角色 17.7%）。
    897/898/899 三次发布是带 `-SkipAtlasCheck` 过的。建议瘦 `seris_dragon_king`。
