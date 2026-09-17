@@ -328,7 +328,7 @@ class TreeAssemblyTest(unittest.TestCase):
         self.assertEqual(len(once[f"{K.CID}3"]), 5)      # 第三轮 D2：队长那条 461 搬进来
         self.assertEqual(once[f"{K.CID}1"][1][47], "536")
         self.assertEqual(once[f"{K.CID}3"][1][47], "704")
-        self.assertEqual(once[f"{K.CID}2"], pre[f"{K.CID}2"])              # 能力2 不动
+        self.assertEqual(once[f"{K.CID}2"], K.apply_rev5_ability2(pre[f"{K.CID}2"]))   # 第五轮 T3
         with self.assertRaises(K.KitError):                                # 既不是 old 也不是 new → 报错
             broken = {k: [list(r) for r in v] for k, v in pre.items()}
             broken[f"{K.CID}1"][0][52] = "123456"
@@ -487,6 +487,96 @@ class TreeAssemblyTest(unittest.TestCase):
         # 文案规则①：没有上限的成长写到效果为止 ⇒ 面板不许出现「无上限」类字样
         self.assertEqual([line for line in lines
                           if any(w in line for w in ("无上限", "可无限", "可累计"))], [])
+
+    # ------------------------------------------------------------------ 第五轮 T3
+
+    def test_rev5_t3_ability2_grows_with_engine_stacks_uncapped(self):
+        """T3：能力2 = 两条 during-134 行，按「引擎启动」层数给自身攻击力/技能伤害各 50%，无上限。"""
+        import wf_client_legality as LG
+        import wf_describe
+        pre = _design_ability_rows(json.loads(DESIGN.read_text(encoding="utf-8")))
+        rows, _ = K.revision_ability_rows(self.plan, pre)
+        got = rows[K.REV5_ABILITY_KEY]
+        self.assertEqual(len(got), 2)
+        for row in got:
+            self.assertEqual(len(row), 126)
+            self.assertEqual(row[0], f"{K.CODE}_2")
+            self.assertEqual(row[5], "1")                       # 持续行
+            self.assertEqual(row[85], "(None)")                 # 持续行的块入口哨兵在 c85
+            self.assertEqual(row[39], "")                       # …不是瞬发行的 c39
+            self.assertEqual(row[97], "134")                    # 按固有层数成长（194 只数实例个数）
+            self.assertEqual(row[98], "0")                      # 134 的 during puller
+            self.assertEqual([row[100], row[101]], ["100000", "100000"])
+            self.assertEqual(row[102], K.REV5_NO_CAP)           # 不设置上限
+            self.assertEqual(row[104], K.UID_ENGINE)
+            self.assertEqual(row[110], "0")                     # target 0 = 自身
+            self.assertEqual(row[111], "")                      # 只给自身 ⇒ 不带元素组
+            self.assertEqual([row[113], row[114]], [K.REV5_STRENGTH] * 2)
+            self.assertEqual(row[27], "")                       # 瞬发块整块空
+            self.assertEqual(row[47], "")
+            self.assertEqual(LG.client_legality_problems("ability", row)
+                             + LG.declared_block_field_problems("ability", row)
+                             + LG.ability_element_column_problems("ability", row, K.ELEMENT), [])
+            self.assertEqual(sorted(LG.required_client_capabilities("ability", row)), [])
+        self.assertEqual([row[109] for row in got], [K.REV5_ATTACK_KIND, K.REV5_SKILL_KIND])
+        self.assertEqual([row[1] for row in got], [pre[K.REV5_ABILITY_KEY][0][1]] * 2)
+        self.assertEqual([row[2] for row in got], [pre[K.REV5_ABILITY_KEY][0][2]] * 2)
+        # 面板：按作者文案规则①，成长写到效果为止、后面什么都不跟（没有「上限」「最大」）
+        lines = [wf_describe.describe_line(row, "ability") for row in got]
+        self.assertEqual(lines, [spec["desc_expected"] for spec in K.REV5_ROWS])
+        for line in lines:
+            self.assertNotIn("上限", line)
+            self.assertNotIn("最大", line)
+            self.assertNotIn("无上限", line)
+
+    def test_rev5_t3_replaces_the_capped_instant_rows(self):
+        """被换掉的必须正是「技能发动限3次 → 攻击 50/100、技伤 25/50」那两条瞬发行。"""
+        pre = _design_ability_rows(json.loads(DESIGN.read_text(encoding="utf-8")))
+        before = pre[K.REV5_ABILITY_KEY]
+        self.assertEqual(tuple((r[27], r[34], r[47], r[51], r[52]) for r in before),
+                         K.REV5_REPLACED_SHAPE)
+        self.assertEqual(K.apply_rev5_ability2(K.apply_rev5_ability2(before)),
+                         K.apply_rev5_ability2(before))          # 幂等
+        for broken, why in (
+                ([before[0]], "只剩一条"),
+                ([list(before[0]), [*before[1][:34], "9", *before[1][35:]]], "次数上限被动过"),
+                ([[*before[0][:1], "false", *before[0][2:]], list(before[1])], "整键 c1 不自洽")):
+            with self.assertRaises(K.KitError, msg=why):
+                K.apply_rev5_ability2([list(r) for r in broken])
+
+    def test_accumulation_cap_guard(self):
+        """被 during-134 数层数的固有，叠层上限必须 >1；写 1 或 (None) 会让整条词条静默失效。"""
+        row = K.revision_row({"0": f"{K.CODE}_2", "3": "0", "5": "1", "97": "134",
+                              "104": K.UID_ENGINE, "109": "0"}, "ability")
+        leader = [K.revision_row({"0": K.CODE, "3": "1", "95": "134", "102": K.UID_CANNON},
+                                 "leader_ability")]
+        ok = {K.UID_ENGINE: ["", "", "", "99999999", "99"], K.UID_CANNON: ["", "", "", "720", "9"]}
+        self.assertEqual(K.accumulation_cap_problems({f"{K.CID}2": [row]}, leader, ok), [])
+        for bad in ("1", "(None)", "", "99.5"):
+            caps = {K.UID_ENGINE: ["", "", "", "99999999", bad], K.UID_CANNON: ok[K.UID_CANNON]}
+            probs = K.accumulation_cap_problems({f"{K.CID}2": [row]}, leader, caps)
+            self.assertEqual(len(probs), 1, bad)
+            self.assertIn(K.UID_ENGINE, probs[0])
+        # 只查被 134 数层数的固有：194 / 瞬发行不该被牵连
+        instant = K.revision_row({"0": f"{K.CODE}_2", "3": "0", "5": "0", "27": "23", "47": "32"}, "ability")
+        self.assertEqual(K.accumulation_cap_problems(
+            {f"{K.CID}2": [instant]}, [], {K.UID_ENGINE: ["", "", "", "1", "1"]}), [])
+        # 本 kit 不写的固有（不在 unique_rows 里）跳过，不误伤
+        self.assertEqual(K.accumulation_cap_problems({f"{K.CID}2": [row]}, [], {}), [])
+
+    def test_ability_mode_column_is_c5_not_c3(self):
+        """哨兵补齐要按 ability 的 c5（c3 是 awake_kind）——第五轮之前这里读错列也看不出来。"""
+        self.assertEqual(K.MODE_COL, {"leader_ability": 3, "ability": 5})
+        during = K.revision_row({"0": f"{K.CODE}_2", "3": "0", "5": "1", "97": "134"}, "ability")
+        self.assertEqual((during[39], during[85]), ("", "(None)"))
+        instant = K.revision_row({"0": f"{K.CODE}_2", "3": "0", "5": "0", "27": "23"}, "ability")
+        self.assertEqual((instant[39], instant[85], instant[34]), ("(None)", "", "(None)"))
+        # 觉醒词条（c3='1'）不该被当成持续行
+        awake = K.revision_row({"0": f"{K.CODE}_2", "3": "1", "5": "0", "27": "23"}, "ability")
+        self.assertEqual((awake[39], awake[85]), ("(None)", ""))
+        # leader 仍按 c3
+        lead_during = K.revision_row({"0": K.CODE, "3": "1", "95": "134"}, "leader_ability")
+        self.assertEqual((lead_during[37], lead_during[83]), ("", "(None)"))
 
     def test_rev4_t2_ability3_461_precondition_is_engine(self):
         """T2：能力3 的 461「赋予重炮展开」前置 = 自身持有「引擎启动」，不再是自持环的「重炮展开」。"""

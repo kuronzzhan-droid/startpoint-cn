@@ -315,9 +315,15 @@ def step_preflight(pack: C.S7Pack) -> dict[str, Any]:
     return result
 
 
-def step_inspect(pack: C.S7Pack) -> dict[str, Any]:
+def step_inspect(pack: C.S7Pack, installed_package_dir: Path | None = None) -> dict[str, Any]:
     """草稿检查：把 workspace 复制到批目录 ``_inspect/`` 下跑 flow preflight（只在副本里封存），
-    结果写 ``evidence/flow-inspect.json``；真实 workspace 的 manifest/status/hash-cache 字节不变。"""
+    结果写 ``evidence/flow-inspect.json``；真实 workspace 的 manifest/status/hash-cache 字节不变。
+
+    ``installed_package_dir``：角色**已经发布过**时必须给（归档包目录，如
+    ``D:/WF/pkgarchive/s7-tekuto-20260916-1.4.897``）。不给的话 flow 会以
+    ``active ownership hash exists but installed manifest was not supplied`` 报 rc=2 ——
+    那不是包有问题，是缺了「上一版是谁」这份证据。给了以后 inspect 对已发布角色照样可用，
+    改版轮的 gates.py 才不会因为 inspect 过期而报假红。"""
     pack.check_identity()
     guarded = [pack.package / "manifest.json", pack.evidence / "status.json",
                pack.evidence / "hash-cache.json"]
@@ -330,7 +336,13 @@ def step_inspect(pack: C.S7Pack) -> dict[str, Any]:
         copy_root.mkdir(parents=True)
         workspace_copy = copy_root / pack.workspace.name
         shutil.copytree(pack.workspace, workspace_copy)
-        rc, payload = _flow("preflight", workspace_copy, pack.root, ["--profile", "cn"])
+        extra = ["--profile", "cn"]
+        if installed_package_dir is not None:
+            installed = Path(installed_package_dir)
+            if not (installed / "manifest.json").is_file():
+                raise C.S7Error(f"installed package dir has no manifest.json: {installed}")
+            extra += ["--installed-package-dir", str(installed)]
+        rc, payload = _flow("preflight", workspace_copy, pack.root, extra)
     finally:
         shutil.rmtree(copy_root, ignore_errors=True)
         try:
@@ -387,7 +399,7 @@ def run_step(step: str, pack: C.S7Pack, args: argparse.Namespace) -> dict[str, A
     if step == "status":
         return step_status(pack)
     if step == "inspect":
-        return step_inspect(pack)
+        return step_inspect(pack, args.installed_package_dir)
     if step == "preflight":
         return step_preflight(pack)
     raise C.S7Error(f"unknown step {step}")
@@ -407,6 +419,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="art 只预览不写包")
     parser.add_argument("--skip-occupancy-check", action="store_true",
                         help="已发布后重建包时跳过未占用断言（live 已有自身键）")
+    parser.add_argument("--installed-package-dir", type=Path,
+                        help="inspect：角色已发布过时必须给上一版归档包目录"
+                             "（如 D:/WF/pkgarchive/s7-tekuto-20260916-1.4.897）")
     args = parser.parse_args(argv)
     keys = S.all_keys() if args.char == "all" else [k.strip() for k in args.char.split(",")]
     steps = [s.strip() for s in args.step.split(",") if s.strip()]

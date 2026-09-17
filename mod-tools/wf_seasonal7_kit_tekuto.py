@@ -142,6 +142,22 @@
   前置 kind 仍是 188 ``ConditionCountUnique``（≥1 实例 = 持有），列形与官方 3 行先例逐格相同
   （``['188','0','','100000','100000','']``），零 C7050 风险。
   能力面板文案由客户端按行自动生成（本角色没有 ``desc_override_*``），行改完文案同步改完。
+
+2026-09-17 第五轮（作者：「能力2改为，自身对引擎启动每上升1，自身攻击力+50%，技能伤害+50%，
+不设置上限」，落在 ``REV5_*``）：
+
+- **T3**：能力2 从两条**瞬发**行（技能发动限 3 次 → 自身攻击力 50%→100% 最大 300%、
+  技能伤害 25%→50% 最大 150%）整键换成两条**持续**行，按「引擎启动」层数成长、不封上限。
+  必须用 during_trigger **134**：194 ``ConditionCountUnique`` 数的是固有**实例个数**
+  （461 叠层固有恒为 1）⇒ 只能做「持有就给固定值」；134 才按层数算
+  （记忆卡 ``wf-unique-cap-none-trap``）。
+  供体 = live ``ability[1399943]#3/#4``（本批雷吉斯能力3，1.4.883 起在线，同样是
+  「134 + 自身固有 uid + target 0 Myself + 次数上限 ``(None)``」），本行只改
+  ``c0/c1/c2``（同键头部）、``c104``（uid）、``c109``（内容 kind）、``c113/c114``（强度）。
+- **顺带修掉一个潜伏 bug**：``_fill_sentinels`` 原来两张表都读 ``c3`` 当触发模式，但
+  ability 的模式列是 ``c5``（``c3`` 是 awake_kind）。到第四轮为止本 kit 只产瞬发行
+  （``c3`` 与 ``c5`` 同为 ``'0'``）所以一直没暴露；第五轮的 during 行 ``c3='0'`` 而 ``c5='1'``，
+  照旧读 ``c3`` 会把哨兵补到 ``c39`` 而不是 ``c85``，出一个 live 里零先例的行形。
 """
 from __future__ import annotations
 
@@ -1912,10 +1928,18 @@ SENTINELS = {
     "ability": {"0": {39: "(None)"}, "1": {85: "(None)"}},
 }
 TRIGGER_LIMIT_COL = {"leader_ability": (25, 32), "ability": (27, 34)}
+# 触发模式列（0=瞬发 / 1=持续）两表不同号：leader ``c3``、ability ``c5``——ability 的 ``c3``
+# 是 awake_kind。取法与 ``wf_seasonal7_kit_zantetsu.row_gate`` 一致 = precondition1 块基址 − 1
+# （leader 4−1、ability 6−1）。live 实测（2026-09-17 全表）：
+#   ability c5='0' → c39='(None)'、c85=''（4358 行）；c5='1' → c39=''、c85='(None)'（1076 行）
+#   leader  c3='0' → c37='(None)'、c83=''（1305 行）；c3='1' → 反过来（275 行）
+# 本 kit 到第四轮为止只产瞬发行（c3 与 c5 同为 '0'），所以原来两表都读 c3 也算对；
+# 第五轮的 during 行 c3='0'、c5='1'，读错列会把哨兵补到 c39，出 live 零先例的行形。
+MODE_COL = {"leader_ability": 3, "ability": 5}
 
 
 def _fill_sentinels(row: list[str], table: str) -> list[str]:
-    mode = row[3]
+    mode = row[MODE_COL[table]]
     for col, value in SENTINELS[table].get(mode, {}).items():
         if not row[col]:
             row[col] = value
@@ -2201,6 +2225,74 @@ def _rev3_move_guard(rows: list[list[str]]) -> None:
         raise KitError(f"rev3 move: {REV3_MOVED_ABILITY_KEY} 里已经有 461/{UID_CANNON} 记录 {dup}（重复搬运？）")
 
 
+# ================================================================ 第五轮行改动（T3）
+#
+# 作者原话（2026-09-17）：
+#   「特克托的能力2改为,自身对引擎启动每上升1,自身攻击力+50%,技能伤害+50%,不设置上限」
+#
+# plan.json 里 1399932 是 ``op: no_change``（第一轮那两条瞬发行照抄 live）。本轮整键换成
+# 两条 during 行，所以不走 plan 的 edits/add，而是在 ``revision_ability_rows`` 末尾单独收口，
+# 对被换掉的两条瞬发行做逐格断言（plan/live 被别人动过 ⇒ 报错，不静默漂移）。
+#
+# ability during 块列位（live 全表 151 条 134 行实测）：
+#   c97 kind / c98 puller / c100,c101 阈值 / c102 次数上限 / c104 固有 uid /
+#   c108 'false' / c109 内容 kind / c110 target / c111 元素组 / c113,c114 强度(低级,满级)
+# 与 leader 的 95/96/98,99/100/102/106/107/108/109/111,112 逐列 +2（两表 during kind 枚举同一套，
+# 记忆卡 wf-leader-ability-layout）。134 的 puller 写 '0'：
+# 供体与官方 134 行全是 '0'，且 134 不在 zantetsu kit 的 ``PULLER_EMPTY_DURING`` 里。
+#
+# 「不设置上限」= c102 ``'(None)'``：live 该列 8 行是 ``'(None)'``（含供体两行），
+# 写数字会让客户端 ``calculateLimit`` 算出上限并渲染「[最大 +N%]」——第四轮 T1 就是靠这个写出 500%。
+# 反过来这里要的是后面什么都不跟，正好是作者的文案规则①。
+REV5_ABILITY_KEY = f"{CID}2"
+REV5_DONOR = ("live ability[1399943]#3/#4（本批雷吉斯能力3：134 + 自身固有 uid + "
+              "target 0 Myself + 次数上限 (None)，1.4.883 起在线）")
+# 被换掉的两条瞬发行：(c27 触发, c34 次数上限, c47 内容 kind, c51 低级强度, c52 满级强度)
+REV5_REPLACED_SHAPE = (("23", "3", "32", "50000", "100000"),
+                       ("23", "3", "34", "25000", "50000"))
+REV5_ATTACK_KIND = "0"        # DuringAbilityContentMasterValue 0 = AttackPoint
+REV5_SKILL_KIND = "2"         # 2 = SkillDamage
+REV5_STRENGTH = "50000"       # +50%，低级/满级拉平（固定文案单值，记忆卡 wf-leader-override-text-rules）
+REV5_NO_CAP = "(None)"
+REV5_ROWS = (
+    {"id": "T3_attack", "kind": REV5_ATTACK_KIND,
+     "desc_expected": "持续·状态累积计数固有≥1[固有13999301] → 自身 攻击力 50%"},
+    {"id": "T3_skill", "kind": REV5_SKILL_KIND,
+     "desc_expected": "持续·状态累积计数固有≥1[固有13999301] → 自身 技能伤害 50%"},
+)
+
+
+def _rev5_during_cells(head: dict[str, str], kind: str) -> dict[str, str]:
+    cells = dict(head)
+    cells.update({"3": "0", "5": "1", "6": "0", "13": "0", "20": "0",
+                  "97": "134", "98": "0", "100": "100000", "101": "100000",
+                  "102": REV5_NO_CAP, "104": UID_ENGINE, "108": "false",
+                  "109": kind, "110": "0", "113": REV5_STRENGTH, "114": REV5_STRENGTH})
+    return cells
+
+
+def rev5_ability2_rows(head: dict[str, str]) -> list[list[str]]:
+    return [revision_row(_rev5_during_cells(head, spec["kind"]), "ability") for spec in REV5_ROWS]
+
+
+def apply_rev5_ability2(rows: list[list[str]]) -> list[list[str]]:
+    """T3：能力2 的两条瞬发行 → 两条按「引擎启动」层数成长、无上限的 during 行（幂等）。"""
+    if len(rows) != 2:
+        raise KitError(f"rev5 T3: {REV5_ABILITY_KEY} 期望 2 条记录，实际 {len(rows)}")
+    if rows[0][1] != rows[1][1] or rows[0][2] != rows[1][2]:
+        raise KitError(f"rev5 T3: {REV5_ABILITY_KEY} 的整键列 c1/c2 同键不自洽："
+                       f"{rows[0][1:3]} vs {rows[1][1:3]}")
+    head = {"0": f"{CODE}_2", "1": rows[0][1], "2": rows[0][2]}
+    built = rev5_ability2_rows(head)
+    if [list(r) for r in rows] == built:                   # 幂等：已经是新形（kit 重跑 / 包已回写）
+        return built
+    shape = tuple((r[27], r[34], r[47], r[51], r[52]) for r in rows)
+    if shape != REV5_REPLACED_SHAPE:
+        raise KitError(f"rev5 T3: {REV5_ABILITY_KEY} 现行两条既不是改版前的瞬发行也不是改后的 during 行"
+                       f"（c27/c34/c47/c51/c52 = {shape}，期望 {REV5_REPLACED_SHAPE}）")
+    return built
+
+
 def revision_leader_rows(plan: dict) -> list[list[str]]:
     return apply_rev3_leader(plan_leader_rows(plan))
 
@@ -2263,6 +2355,11 @@ def revision_ability_rows(plan: dict, current: dict[str, list[list[str]]]) -> tu
                   "req": "D2", "from": f"leader#{REV3_LEADER_MOVED}", "colmap": "REV3_MOVE_COLMAP"})
     if len(target) > 9:                                    # 一键最多 9/10 条（记忆卡 wf-ability-multirecord-rows）
         raise KitError(f"{REV3_MOVED_ABILITY_KEY}: {len(target)} records > 9")
+    # ---- 第五轮 T3：能力2 整键换成两条按「引擎启动」层数成长、无上限的 during 行
+    out[REV5_ABILITY_KEY] = apply_rev5_ability2(out[REV5_ABILITY_KEY])
+    trace.append({"key": REV5_ABILITY_KEY, "op": "replace_all_rows", "req": "T3",
+                  "records": len(out[REV5_ABILITY_KEY]), "donor": REV5_DONOR,
+                  "rows": [spec["id"] for spec in REV5_ROWS]})
     return out, trace
 
 
@@ -2309,6 +2406,28 @@ def revision_donor_check(ctx, plan: dict, leader: list[list[str]]) -> list[dict]
 
 
 # ================================================================ 固有状态与图标
+
+def accumulation_cap_problems(ability_rows: dict[str, list[list[str]]], leader_rows: list[list[str]],
+                              unique_rows: dict[str, list[str]]) -> list[str]:
+    """被 during 134 按层数计数的固有，叠层上限 ``c4`` 必须是 >1 的整数。
+
+    客户端 ``Condition.get_accumulatable() = maxAccumulation > 1``（``Condition.as:291-294``），
+    为 false 时 ``_getConditionAccumulationCount`` 根本不计层 ⇒ 整条词条静默零收益，
+    而面板照样渲染「…等级每提升 1 级时…」= 会骗人的面板。
+    这是第五轮把能力2 改成 during-134 之后**新增**的失效面：旧的瞬发 SkillInvoke 行不读固有层数，
+    所以现有门禁一条都覆盖不到它。本 kit 不写的固有（别家角色的）跳过，交给对方的 kit 自证。
+    """
+    counted = {str(row[104]) for rows in ability_rows.values() for row in rows
+               if row[97] == "134" and row[104] and row[104] != "(None)"}
+    counted |= {str(row[102]) for row in leader_rows if row[95] == "134" and row[102]}
+    problems = []
+    for uid in sorted(counted & set(unique_rows)):
+        cap = unique_rows[uid][4]
+        if not (cap.isdigit() and int(cap) > 1):
+            problems.append(f"unique {uid} 被 during-134 按层数计数，但叠层上限 c4={cap!r} 不是 >1 的整数 "
+                            "⇒ get_accumulatable() 为 false，层数永远不计，词条静默失效")
+    return problems
+
 
 def build_unique_rows(ctx, plan: dict) -> dict[str, list[str]]:
     """两个新固有状态：官方 donor ``1``（神速剑技，自身增益叠层）+ plan 声明列，与 plan 的整行逐格核对。
@@ -2604,12 +2723,17 @@ def build(ctx) -> dict[str, Any]:
     derivation["unique_condition"] = {uid: {"row": row, "icon": icons[uid]} for uid, row in unique_rows.items()}
     derivation["rev2_unique_fixes"] = REV2_UNIQUE_FIXES
     derivation["rev3_unique_fixes"] = REV3_UNIQUE_FIXES
+    # 固有 id 的引用面：leader 前置 c102 / 瞬发 461 的 c66；ability 前置 c19 / 瞬发 461 的 c68 /
+    # **持续 134 的 c104**（第五轮 T3 的引用落点，普查漏了它就等于少一份证据）
     referenced_uids = {str(row[102]) for row in leader_rows if row[102]} | {str(row[66]) for row in leader_rows if row[66]}
     for rows in ability_rows.values():
         referenced_uids |= {str(row[19]) for row in rows if row[19] and row[19] != "(None)"}
         referenced_uids |= {str(row[68]) for row in rows if row[68]}
+        referenced_uids |= {str(row[104]) for row in rows if row[104] and row[104] != "(None)"}
     if not set(UNIQUE_META) <= referenced_uids:
         raise KitError(f"rows reference unique ids {sorted(referenced_uids)}; both {sorted(UNIQUE_META)} must be used")
+    for problem in accumulation_cap_problems(ability_rows, leader_rows, unique_rows):
+        raise KitError(problem)
 
     # ---- 字符串：两个开关槽的 custom_ability_string + 各自的潜能 2–6 文案
     cas_plan = plan["texts"]["custom_ability_string"]
@@ -2886,11 +3010,12 @@ def build(ctx) -> dict[str, Any]:
     totals = plan["skill_dsl"]["multipliers"]["totals"]
     report_notes = [
         f"gate: {gate_state}",
-        (f"改版 2026-09-16（plan.json {PLAN_CACHE['sha256'][:12]} + 第三轮 REV3_*）："
+        (f"改版 2026-09-16（plan.json {PLAN_CACHE['sha256'][:12]} + REV3_*/REV4_*/REV5_*）："
          f"队长 {derivation['record_counts']['leader']} 行整体替换（134 按「引擎启动」层数，第三轮 D1 提到 100%/200%；"
-         "D3/D4 新增 194/134 两组技能槽行；D2 把 461 那条移到能力3），"
+         "D3/D4 新增 194/134 两组技能槽行；D2 把 461 那条移到能力3；第四轮 T1 补瞬发攻击力行并封 500%），"
          f"词条 {derivation['record_counts']['abilities']} 条（能力1#1 → 开关槽1 536、能力3#1 → 开关槽2 704、"
-         "能力3 新增 461/245 两条，能力 2/4/5/6 未动），新增固有状态 "
+         "能力3 新增 461/245 两条并把 461 前置改成「自身持有引擎启动」（T2）、"
+         "**能力2 两条瞬发行整键换成按引擎启动层数成长且无上限的 during-134 行（T3）**，能力 4/5/6 未动），新增固有状态 "
          f"{UID_ENGINE}「引擎启动」(上限 99)/{UID_CANNON}「重炮展开」({UNIQUE_META[UID_CANNON]['duration']} 帧) 与两张 48×48 图标"),
         (f"技能倍率口径（审查 R-m6 后无条件成立）：档2 满级 + 单体吃满 = {totals['lv2_full_with_missile']}×，"
          f"每层「引擎启动」+{totals['per_stack_lv2']}×；档1 = {totals['lv1_with_missile']}×。"
@@ -2919,7 +3044,7 @@ def build(ctx) -> dict[str, Any]:
         *[f"open_item {o['id']}（{o['req']}）：{o['text']}" for o in plan.get("open_items", [])],
     ]
     ctx.report({
-        "summary": (f"tekuto kit（改版 2026-09-16 第三轮）: 队长{derivation['record_counts']['leader']}行/"
+        "summary": (f"tekuto kit（改版至第五轮 T3，2026-09-17）: 队长{derivation['record_counts']['leader']}行/"
                     f"词条{derivation['record_counts']['abilities']}条/"
                     "固有状态2键+2图标/两档技能DSL(跟随球的重炮+延长槽)/5特效族克隆(染色)/预览600/语音路由"
                     f"；pixel={pixel['status']}；voice={voice['status']}"),
