@@ -1,6 +1,7 @@
 """原生 flatomo 时间轴伸缩；保留补间曲线，并增加低透明度内层刀光。"""
 from copy import deepcopy
 from wf_zehr_slow_spin import stretched
+from wf_flatomo_capacity import image_capacities, validate_image_capacities
 
 
 def smooth_parts(parts, *, ornament=False):
@@ -47,4 +48,6 @@ def smooth_parts(parts, *, ornament=False):
                 m=((len(result['t'])-1) << 12) | alpha,
                 t=original['t'], r=1 << 30)]))
         result['g'][0] = dict(t=original['t'], s=strips)
+    result['a']=[max(1,n) for n in image_capacities(result)]
+    validate_image_capacities(result)
     return result

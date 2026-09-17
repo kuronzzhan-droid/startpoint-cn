@@ -5,7 +5,7 @@ from wf_zehr_spin_animation import smooth_parts
 
 class SpinAnimationTest(unittest.TestCase):
     def source(self):
-        return dict(m=[],i=[],t=[],g=[dict(t=33,s=[dict(s=2<<30,i=1,l=[
+        return dict(m=[],i=[{}],a=[1],t=[],g=[dict(t=33,s=[dict(s=2<<30,i=1,l=[
             dict(m=255,t=33,r=(2<<30)|2)])]),dict(t=33,s=[dict(s=1,i=0,l=[
             dict(m=255,t=(2<<16)|10),dict(m=255,t=22)])])])
 
