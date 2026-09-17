@@ -11,7 +11,8 @@ import wf_seasonal7_kit_philia as K
 CHOICES = 36
 ID_BASE = 1000
 SWORD_DAMAGE = {0.4: (0.8, 1.0), 0.55: (1.0, 1.25), 0.8: (1.3, 1.625)}
-RAIN_DAMAGE = {0.4: 2.5, 0.55: 3.5, 0.8: 5.5}  # 两段合计5/7/11倍。
+RAIN_DAMAGE = {0.4: 1.5, 0.55: 2.5, 0.8: 3.5}  # 两段合计3/5/7倍。
+PREVIOUS_RAIN_DAMAGE = {0.4: 2.5, 0.55: 3.5, 0.8: 5.5}
 
 
 def launch_body(tree):
@@ -48,7 +49,8 @@ def revise_pf(source):
         for i, node in enumerate(swords):
             blade = deepcopy(node)
             attacks = K.cmds(blade, 'CreateNormalAttack')
-            old, new = SWORD_DAMAGE[_rain_baseline(attacks[1][6][0]['min'])]
+            old, new = SWORD_DAMAGE[_rain_baseline(
+                attacks[1][6][0]['min'], attacks[0][6][0]['min'], legacy=True)]
             if attacks[0][6] != K.slv(old, old):
                 raise ValueError('source windblade multiplier drift')
             attacks[0][6] = K.slv(new, new)
@@ -107,19 +109,19 @@ def _validate_blade(blade, angle, *, legacy=False):
     if len(attacks) != 2:
         raise ValueError('blade/rain attack count drift')
     rain = attacks[1][6][0]['min']
-    old, new = SWORD_DAMAGE[_rain_baseline(rain)]
+    old, new = SWORD_DAMAGE[_rain_baseline(rain, attacks[0][6][0]['min'], legacy=legacy)]
     if attacks[0][6] != K.slv(old if legacy else new, old if legacy else new) \
             or attacks[1][6] != K.slv(rain, rain) \
             or any(c[24] != 0 for c in K.cmds(['Command', blade], 'CreateHitArea')):
         raise ValueError('PF damage multiplier or native PF damage bucket drift')
 
 
-def _rain_baseline(value):
-    if value in RAIN_DAMAGE:
-        return value
-    for old, new in RAIN_DAMAGE.items():
-        if new == value:
-            return old
+def _rain_baseline(value, sword, *, legacy=False):
+    # 旧Lv1的2.5与新Lv2的2.5重叠，必须结合风刃倍率识别档位。
+    for baseline, values in SWORD_DAMAGE.items():
+        if sword == values[0 if legacy else 1] and value in (
+                baseline, PREVIOUS_RAIN_DAMAGE[baseline], RAIN_DAMAGE[baseline]):
+            return baseline
     raise ValueError('rain multiplier baseline drift')
 
 
@@ -127,6 +129,6 @@ def _upgrade_rain(tree):
     choice = K.cmds(launch_body(tree), 'ConditionalsProbability')[0]
     for branch in choice[1][1]:
         for blade in branch[1][1][1]:
-            rain = K.cmds(blade, 'CreateNormalAttack')[1]
-            value = RAIN_DAMAGE[_rain_baseline(rain[6][0]['min'])]
+            sword, rain = K.cmds(blade, 'CreateNormalAttack')
+            value = RAIN_DAMAGE[_rain_baseline(rain[6][0]['min'], sword[6][0]['min'])]
             rain[6] = K.slv(value, value)

@@ -97,7 +97,7 @@ class RandomPfTest(unittest.TestCase):
             R.validate(broken)
 
     def test_existing_even_volley_only_changes_rain_multiplier(self):
-        for level, old, new in ((1, 0.4, 2.5), (2, 0.55, 3.5), (3, 0.8, 5.5)):
+        for level, old, new in ((1, 2.5, 1.5), (2, 3.5, 2.5), (3, 5.5, 3.5)):
             expected = R.revise_pf(self.source(level))
             previous = deepcopy(expected)
             for branch in K.cmds(previous, 'ConditionalsProbability')[0][1][1]:
