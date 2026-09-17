@@ -1,9 +1,8 @@
 """覆盖每一条原生随机分支，不以静态分支总数冒充实际发射数。"""
 from copy import deepcopy
 import json
-from math import degrees
+from math import degrees, radians
 from pathlib import Path
-import random
 import unittest
 
 import wf_seasonal7_kit_philia as K
@@ -28,9 +27,9 @@ class RandomPfTest(unittest.TestCase):
             self.assertEqual(set(K.spec_paths(tree)), set(K.spec_paths(source)))
             for name in ('NotifyPowerflipEnd', 'SetPowerFilpSuppress', 'CreateCondition'):
                 self.assertEqual(K.cmds(tree, name), K.cmds(source, name))
-            for i, choice in enumerate(K.cmds(tree, 'ConditionalsProbability')):
-                for branch in choice[1][1]:
-                    blade = branch[1][1][1][0]
+            choice = K.cmds(tree, 'ConditionalsProbability')[0]
+            for branch in choice[1][1]:
+                for i, blade in enumerate(branch[1][1][1]):
                     # Undo only angle/art heading and subject remapping; exact tree equality
                     # proves no change to hit count, damage, speed, rain, or its timing.
                     reverse = {1: 1}
@@ -41,6 +40,10 @@ class RandomPfTest(unittest.TestCase):
                     restored = deepcopy(blade)
                     K.remap_subjects(restored, reverse.__getitem__)
                     restored[1][6] = original[i][1][6]
+                    attacks = K.cmds(restored, 'CreateNormalAttack')
+                    original_damage = K.cmds(original[i], 'CreateNormalAttack')[0][6][0]['min']
+                    self.assertEqual(attacks[0][6], K.slv(original_damage*1.25, original_damage*1.25))
+                    attacks[0][6] = K.slv(original_damage, original_damage)
                     for a, b in zip(K.cmds(restored, 'ShowEffect'), K.cmds(original[i], 'ShowEffect')):
                         a[9] = b[9]
                     self.assertEqual(restored, original[i])
@@ -48,32 +51,54 @@ class RandomPfTest(unittest.TestCase):
             self.assertEqual(straight_pf(tree), tree)
             encode_tree(tree)
 
-    def test_runtime_draws_exactly_five_distinct_angles_covering_full_circle(self):
+    def test_one_draw_rotates_five_blades_with_72_degree_gaps(self):
         choices = K.cmds(R.revise_pf(self.source(3)), 'ConditionalsProbability')
-        angle_sets = []
-        for choice in choices:
-            angles = [round(degrees(b[1][1][1][0][1][6])) for b in choice[1][1]]
-            self.assertEqual(len(angles), 36)
-            self.assertEqual({a//90 for a in angles}, {0, 1, 2, 3})
-            angle_sets.append(set(angles))
+        self.assertEqual(len(choices), 1)
+        starts = []
+        for branch in choices[0][1][1]:
+            volley = branch[1][1][1]
+            self.assertEqual(len(volley), 5)
+            angles = [degrees(n[1][6]) for n in volley]
+            starts.append(round(angles[0]))
+            for i in range(5):
+                self.assertAlmostEqual((angles[(i+1)%5]-angles[i]) % 360, 72)
+        self.assertEqual(starts, list(range(0, 360, 10)))
+
+    def test_migrates_independent_draws_to_same_result_as_generator(self):
+        source = self.source(2)
+        expected = R.revise_pf(source)
+        legacy = deepcopy(expected)
+        body = R.launch_body(legacy)
+        node = next(n for n in body if n[0] == 'Command' and n[1][0] == 'ConditionalsProbability')
+        independent = []
         for i in range(5):
-            for j in range(i):
-                self.assertFalse(angle_sets[i] & angle_sets[j])
-        rng = random.Random(921)
-        patterns = set()
-        for _ in range(500):
-            draw = [rng.choice(c[1][1])[1][1][1][0] for c in choices]
-            angles = tuple(n[1][6] for n in draw)
-            self.assertEqual(len(set(angles)), 5)
-            self.assertEqual(len(draw), 5)
-            patterns.add(angles)
-        self.assertGreater(len(patterns), 490)
+            branches = []
+            for j, branch in enumerate(node[1][1][1]):
+                blade = deepcopy(branch[1][1][1][i])
+                blade[1][6] = radians(j*10+i*2)
+                K.cmds(blade, 'CreateNormalAttack')[0][6] = K.slv(1.0, 1.0)
+                for fx in K.cmds(blade[1][20], 'ShowEffect'):
+                    if fx[3] == 1 and fx[6] == ['AB']:
+                        fx[9] = blade[1][6]
+                branches.append(['Block', [['Command', ['ProbabilityWeight', 1.0]], ['Block', [blade]]]])
+            independent.append(['Command', ['ConditionalsProbability', ['Block', branches]]])
+        index = body.index(node)
+        body[index:index+1] = independent
+        self.assertEqual(R.revise_pf(legacy), expected)
 
     def test_invalid_random_payload_or_scope_is_rejected(self):
         tree = R.revise_pf(self.source(1))
         broken = deepcopy(tree)
         K.cmds(broken, 'ConditionalsProbability')[0][1][1][0][1].pop()
         with self.assertRaises(ValueError):
+            R.validate(broken)
+        broken = deepcopy(tree)
+        broken[10] = 2
+        with self.assertRaisesRegex(ValueError, 'power flip damage bucket'):
+            R.validate(broken)
+        broken = deepcopy(tree)
+        K.cmds(broken, 'ConditionalsProbability')[0][1][1][0][1][1][1][1][1][6] += 0.1
+        with self.assertRaisesRegex(ValueError, 'direction'):
             R.validate(broken)
         broken = deepcopy(tree)
         K.cmds(broken, 'MoveHitArea')[-1][1] = 999999
