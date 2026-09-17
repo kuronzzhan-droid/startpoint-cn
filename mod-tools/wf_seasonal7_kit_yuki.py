@@ -2329,6 +2329,8 @@ def build(ctx) -> dict[str, Any]:
                 want, _ = ctx.rewrite_effect_refs(want, fam, strict=True)
             if tree != want:
                 raise AssertionError(f"composed tree {level} differs from design composed_tree + revision ops")
+        from wf_yuki_leader_anchor import revise_skill as leader_anchor
+        tree = leader_anchor(tree)
         ctx.write_dsl(ctx.program_path(level), tree)
         logical = f"{ctx.program_path(level)}.action.dsl.amf3.deflate"
         back = ctx.amf_parse(ctx.pack.pkg_path("common", logical).read_bytes())

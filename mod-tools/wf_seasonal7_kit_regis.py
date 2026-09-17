@@ -1559,6 +1559,13 @@ def build(ctx) -> dict[str, Any]:
                   for p in rev2_skill_flag_problems("leader_ability" if e["table"] == LEADER else "ability", e["row"])]
     if flag_probs:
         raise KitError(f"revision2 rule 2 (technique-enhancement wording) applies now: {flag_probs}")
+    import wf_regis_surge_stages as surge
+    rows['leader'], rows['ability'][CID+'3'] = surge.revise_rows(
+        rows['leader'], rows['ability'][CID+'3'], rows['ability'][CID+'1'])
+    texts['character_text'][5] = texts['character_text'][7] = surge.DESCRIPTION
+    for level in ('1', '2'):
+        texts['action'][level][1] = surge.DESCRIPTION
+    ctx.write_flat(TEXT, {CID: [texts['character_text']]})
     ctx.write_flat(LEADER, {CID: rows["leader"]})
     ctx.write_flat(ABILITY, rows["ability"])
     ctx.write_flat(UNIQUE, {UID: [unique_row]})
@@ -1587,6 +1594,8 @@ def build(ctx) -> dict[str, Any]:
     ms_probs = main_slot_panel_problems(rows["ability"], cas_rows)
     if ms_probs:
         raise KitError(f"main-slot marker mismatch: {ms_probs}")
+    for slot, key in ((0, 'desc_override_'+CODE), (3, 'desc_override_'+CODE+'_3')):
+        cas_rows[key][0][0] = surge.revise_text(slot, cas_rows[key][0][0])
     ctx.write_flat(CAS, cas_rows)
 
     # ---- action_skill：名称 / 描述 / 能量
@@ -1627,6 +1636,7 @@ def build(ctx) -> dict[str, Any]:
     built_trees = []
     for level in ("1", "2"):
         tree, info = compose_skill(ctx, level, families)   # 内部已与定稿树 + 改版参考树逐节点比对
+        tree = surge.revise_skill(tree)
         built_trees.append(tree)
         checks = dsl_problems(ctx.root, tree)
         if not checks["all_empty"] or not checks["roundtrip"]:
