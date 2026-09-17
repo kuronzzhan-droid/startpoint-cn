@@ -2713,11 +2713,14 @@ def build(ctx) -> dict[str, Any]:
                      for cap in LG.required_client_capabilities("ability", row)})
     if caps:
         raise KitError(f"tekuto rows unexpectedly need client capabilities {caps} (plan: none)")
+    import wf_tekuto_low_hp as low_hp
+    leader_rows, ability_rows[CID+'3'] = low_hp.revise_rows(leader_rows, ability_rows[CID+'3'])
     ctx.write_flat(LEADER, {CID: leader_rows})
     ctx.write_flat(ABILITY, ability_rows)
 
     # ---- 固有状态两键 + 两张 48×48 图标
     unique_rows = build_unique_rows(ctx, plan)
+    unique_rows[UID_CANNON] = low_hp.revise_unique([unique_rows[UID_CANNON]])[0]
     ctx.write_flat(UNIQUE, {uid: [row] for uid, row in unique_rows.items()})
     icons = install_unique_icons(ctx)
     derivation["unique_condition"] = {uid: {"row": row, "icon": icons[uid]} for uid, row in unique_rows.items()}
@@ -2756,7 +2759,7 @@ def build(ctx) -> dict[str, Any]:
         cas_rows[entry["key"]] = text
         cas_slots[entry["key"]] = entry["slot"]
         current = ctx.pkg_flat(CAS).get(entry["key"])
-        if entry["op"] == "edit" and current not in (entry["old"], entry["new"], text):
+        if entry["op"] == "edit" and current not in (entry["old"], entry["new"], text, low_hp.SHIELD_TEXT):
             raise KitError(f"custom_ability_string {entry['key']} current text is neither plan.old/new nor rev2")
     banned = [(k, w) for k, v in cas_rows.items() for w in ("无上限", "可无限", "可累计") if w in v]
     if banned:
@@ -2773,6 +2776,7 @@ def build(ctx) -> dict[str, Any]:
     extra = {row[70] for rows in ability_rows.values() for row in rows if row[47] in ("629", "722")}
     if referenced != cas_slots or extra:
         raise KitError(f"ability string refs {referenced} (+{extra}) != plan slots {cas_slots}")
+    cas_rows[CHANGE_SKILL2_KEY] = low_hp.SHIELD_TEXT
     ctx.write_flat(CAS, cas_rows)
     derivation["rev2_text_fixes"] = cas_fixes
     unclaimed: list[str] = []
@@ -2942,6 +2946,7 @@ def build(ctx) -> dict[str, Any]:
         tprobs, tfacts = template_derivation_problems(tree, template, lv)
         if tprobs:
             raise KitError(f"level {lv}: template derivation problems: {tprobs}")
+        tree = low_hp.revise_skill(tree)
         qprobs = dsl_quick_problems(tree)
         if qprobs:
             raise KitError(f"level {lv}: DSL problems: {qprobs}")
