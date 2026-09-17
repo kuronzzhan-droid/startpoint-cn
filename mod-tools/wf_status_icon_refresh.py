@@ -9,6 +9,11 @@ from wf_character_revision import RevisionCandidate
 from wf_assets import png_encode, png_decode, png_dims
 
 ART = Path(__file__).resolve().parent/'art/status-icons-20260917'
+PREVIOUS_CANDIDATES = {
+    'gerald_duel': '144115ef0a2f2d52f0d24a19eb70f134dede252cf99c4991ae16538172898612',
+    'inaho_foxfire': 'e6906cafcb577054e14c73611848973127e773fbaf7b3cc2028997786eb1aa57',
+    'inaho_afterglow': 'ac35945f92b4434b885e32dfd02bb5124625ec1dac98dd514fc9da1a249dccc3',
+}
 SPECS = {
  'unicorn_lancer_rose': ('129992','0.1.12', [
     ('gerald_duel','unique_unicorn_lancer_rose_duel',
@@ -35,7 +40,7 @@ def prepare(repo, code, backup, *, apply=False):
         if png_dims(standard)!=(48,48):raise ValueError('requires native 48px asset')
         after=png_encode(standard)
         if png_decode(after)!=standard:raise ValueError('PNG storage roundtrip')
-        if hashlib.sha256(before).hexdigest()!=old_sha and before!=after:
+        if hashlib.sha256(before).hexdigest() not in (old_sha, PREVIOUS_CANDIDATES[name]) and before!=after:
             raise ValueError('existing status icon changed: '+logical)
         originals[logical]=before
         candidate.emit('common',logical,after)
