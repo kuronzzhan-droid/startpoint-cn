@@ -1,4 +1,4 @@
-"""泽赫尔灯火：共鸣55连击、15秒；持有时每连击增加2% PF伤害。"""
+"""泽赫尔灯火：共鸣55连击、15秒；持有时每连击增加5% PF伤害。"""
 from copy import deepcopy
 
 from wf_character_revision import RevisionCandidate
@@ -45,11 +45,15 @@ def revise_rows(first, third):
     growth = deepcopy(multi[0])
     growth[6:13] = deepcopy(combo[0][6:13])
     growth[97:109] = ['2', '', '', '100000', '100000', '(None)', '', '', '', '', '', 'false']
-    growth[109:126] = ['23', '', '', '', '2000', '2000', '', '', '', '', '', '', '', '', '', '', '']
+    growth[109:126] = ['23', '', '', '', '5000', '5000', '', '', '', '', '', '', '', '', '', '', '']
     existing = [r for r in b if r[5] == '1' and r[97] == '2' and r[109] == '23']
-    if existing and existing != [growth]:
-        raise ValueError('combo PF growth drift')
-    if not existing:
+    if existing:
+        old_growth = deepcopy(growth)
+        old_growth[113:115] = ['2000'] * 2
+        if existing not in ([old_growth], [growth]):
+            raise ValueError('combo PF growth drift')
+        existing[0][113:115] = ['5000'] * 2
+    else:
         b.append(growth)
     for r in a + b:
         if errors := row_problems('ability', r):
@@ -76,7 +80,10 @@ def revise_text(slot, text):
         lines = [s.replace('额外乘区＋40%', '额外乘区＋15%')
                  .replace('每达成15连击，连击＋5', '每达成35连击，连击＋15')
                  .replace('每达成35连击，连击＋5', '每达成35连击，连击＋15') for s in lines]
-        extra = ICON+'持有「灯火正旺」期间，每1连击，强化弹射伤害＋2%'
+        lines = [s for s in lines if s not in (
+            ICON+'持有「灯火正旺」期间，每1连击，强化弹射伤害＋2%',
+            ICON+'持有「灯火正旺」期间，每1连击，强化弹射伤害＋5%')]
+        extra = ICON+'持有「灯火正旺」期间，强化弹射伤害随连击数提高'
         if extra not in lines:
             lines.append(extra)
     else:
@@ -86,7 +93,7 @@ def revise_text(slot, text):
 
 def apply_candidate(repo, *, apply=False):
     c = RevisionCandidate(repo, repo/'work/character_packs/s7-zehr',
-        character_id=CID, code_name=CODE, package_version='1.0.5',
+        character_id=CID, code_name=CODE, package_version='1.0.6',
         snapshot_key='lamp_combo_20260917', evidence_name='lamp-combo-20260917.json')
     def rows(table, key):
         return core.read_csv_lines(core.read_orderedmap_file_from_bytes(c.read('common', table))[key])
@@ -96,7 +103,7 @@ def apply_candidate(repo, *, apply=False):
     c.splice(CAS, {f'desc_override_{CODE}_{s}': [[revise_text(s, rows(CAS, f'desc_override_{CODE}_{s}')[0][0])]]
                    for s in (1, 3)})
     return c.finish(dict(resonance='White x6', lamp_combo=55, lamp_frames=900,
-        cooldown_frames=300, combo_reward=[35, 15], pf_per_combo_percent=2,
+        cooldown_frames=300, combo_reward=[35, 15], pf_per_combo_percent=5,
         pf_combo_limit=None, lamp_multiplier_percent=15, a1_attack_removed=True), apply=apply)
 
 

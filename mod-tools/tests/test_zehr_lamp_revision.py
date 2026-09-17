@@ -33,9 +33,9 @@ class LampTest(unittest.TestCase):
         self.assertEqual(r[6:13], self.b[5][6:13])
         self.assertEqual(r[97:103], ['2','','','100000','100000','(None)'])
         self.assertEqual(r[109], '23')
-        self.assertEqual(r[113:115], ['2000']*2)
+        self.assertEqual(r[113:115], ['5000']*2)
         # Match native floor(combo/1) multiplier; dropping combo removes growth.
-        for combo, expected in [(0,0), (35,.7), (55,1.1), (9999,199.98)]:
+        for combo, expected in [(0,0), (35,1.75), (55,2.75), (9999,499.95)]:
             self.assertAlmostEqual((combo//(int(r[100])/100000))*int(r[113])/100000, expected)
         self.assertEqual(b[4][113:115], ['15000']*2)
         self.assertEqual(b[5][30:32], ['3500000']*2)
@@ -50,7 +50,8 @@ class LampTest(unittest.TestCase):
         self.assertIn('15秒', one)
         self.assertIn('额外乘区＋15%', three)
         self.assertIn('每达成35连击，连击＋15', three)
-        self.assertIn('每1连击，强化弹射伤害＋2%', three)
+        self.assertIn('强化弹射伤害随连击数提高', three)
+        self.assertNotIn('每1连击', three)
         self.assertNotIn('上限', three)
 
     def test_idempotent_and_input_not_mutated(self):
@@ -61,6 +62,20 @@ class LampTest(unittest.TestCase):
         for s in (1,3):
             text = R.revise_text(s,self.data['text'+str(s)])
             self.assertEqual(R.revise_text(s,text),text)
+
+    def test_migrates_published_two_percent_without_changing_other_fields(self):
+        a, b = R.revise_rows(self.a, self.b)
+        b[-1][113:115] = ['2000']*2
+        before = deepcopy(b)
+        new_a, new_b = R.revise_rows(a, b)
+        self.assertEqual(new_a, a)
+        self.assertEqual(new_b[:-1], before[:-1])
+        self.assertEqual(new_b[-1][:113], before[-1][:113])
+        self.assertEqual(new_b[-1][115:], before[-1][115:])
+        self.assertEqual(new_b[-1][113:115], ['5000']*2)
+        old = R.ICON+'持有「灯火正旺」期间，每1连击，强化弹射伤害＋2%'
+        new = R.revise_text(3, old)
+        self.assertEqual(new, R.ICON+'持有「灯火正旺」期间，强化弹射伤害随连击数提高')
 
 
 if __name__ == '__main__':
