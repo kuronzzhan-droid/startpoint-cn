@@ -50,18 +50,22 @@ class PureGateTests(unittest.TestCase):
         self.assertEqual([d for d in donors if d[1] in own], [])
 
     def test_recipe_matches_revision_plan(self):
-        """配方 sha 锁 == 二轮 plan.json 的成品行 sha；技能说明对三轮 text.json（方案与实现不得分叉）。"""
+        """配方 sha 锁 == 二轮 plan.json + 五轮行锁覆盖；技能说明对三轮 text.json（方案与实现不得分叉）。"""
         import json
         plan_path = ROOT / K.REVISION_REL
         if not plan_path.is_file():
             self.skipTest("revision plan absent")
         plan = json.loads(plan_path.read_text(encoding="utf-8"))
-        self.assertEqual([r[4] for r in K.LEADER_RECIPE],
-                         [r["row_sha256"] for r in plan["leader"]["records"]])
+        lock_path = ROOT / K.REVISION5_REL
+        rev5 = json.loads(lock_path.read_text(encoding="utf-8")) if lock_path.is_file() else None
+        want = K.row_sha_lock(plan, rev5)
+        self.assertEqual([r[4] for r in K.LEADER_RECIPE], want["leader"])
         for slot, recipe in K.ABILITY_RECIPE.items():
-            self.assertEqual([r[4] for r in recipe],
-                             [r["row_sha256"] for r in plan["abilities"]["keys"][f"{K.CID}{slot}"]],
-                             f"slot {slot}")
+            self.assertEqual([r[4] for r in recipe], want[f"{K.CID}{slot}"], f"slot {slot}")
+        if rev5 is not None:                      # 五轮确实覆盖了三条（否则这层锁形同虚设）
+            plan_only = K.row_sha_lock(plan, None)
+            diff = [i for i, (a, b) in enumerate(zip(plan_only["leader"], want["leader"])) if a != b]
+            self.assertEqual(diff, [3])           # 只有 L3
         self.assertEqual(K.CHANGE_SKILL_TEXT, plan["text"]["custom_ability_string"]["text"])
         # R26：技能说明首句随「旋转结界」改动，锁移到三轮 text.json；缺文件时回落二轮 plan.json
         lock_path = ROOT / K.REVISION3_REL
@@ -210,12 +214,36 @@ class PureGateTests(unittest.TestCase):
         self.assertEqual([e.get(1) for e in edits], ["false"] * 5)
         self.assertEqual([e for e in edits if e.get(6) == "202"], [])
 
-    def test_slot3_direct_attack_trigger_is_self(self):
-        """R13「每直击敌人50次」= 自身（puller master 0 = Myself），组列留空。"""
+    def test_slot3_direct_attack_counts_the_whole_water_party(self):
+        """R13/R30「每直击敌人50次」= 水属性角色**合计**（puller master 7 = TotalOfParty + 组 Blue）。
+
+        改前是 0 Myself 而面板照样渲染「编成直接攻击」——面板说谎，作者在游戏里抓到了。
+        """
         r13 = K.ABILITY_RECIPE[3][1][3]
-        self.assertEqual((r13[28], r13[29]), ("0", ""))
+        self.assertEqual((r13[28], r13[29]), ("7", "Blue"))
+        self.assertNotEqual(r13[28], "0")                              # 负向：回到 Myself 就红
         self.assertEqual((r13[30], r13[31]), ("5000000", "5000000"))    # 50 次
         self.assertEqual((r13[34], r13[35]), ("(None)", "0"))           # 无上限、无 CT
+
+    def test_revision5_row_overrides(self):
+        """五轮三条口径修正：屏障→攻击力、75连击技能槽 5%、直击按水属性合计。"""
+        import json
+        self.assertEqual(K.LEADER_RECIPE[3][3][107], "0")               # R28 AttackPoint
+        self.assertEqual((K.ABILITY_RECIPE[2][1][3][51], K.ABILITY_RECIPE[2][1][3][52]),
+                         ("5000", "5000"))                              # R29
+        lock_path = ROOT / K.REVISION5_REL
+        if not lock_path.is_file():
+            self.skipTest("revision5 row lock absent")
+        lock = json.loads(lock_path.read_text(encoding="utf-8"))
+        self.assertEqual((lock["key"], lock["cid"]), (K.KEY, K.CID))
+        ids = [o["id"] for o in lock["overrides"]]
+        self.assertEqual(ids, ["R28", "R29", "R30"])
+        recipe_sha = {"leader": [r[4] for r in K.LEADER_RECIPE]}
+        recipe_sha.update({f"{K.CID}{s}": [r[4] for r in rs] for s, rs in K.ABILITY_RECIPE.items()})
+        for ov in lock["overrides"]:
+            bucket = "leader" if ov["table"] == K.LD else ov["key"]
+            self.assertEqual(recipe_sha[bucket][ov["index"]], ov["row_sha256"], ov["id"])
+            self.assertNotEqual(ov["row_sha256"], ov["row_sha256_before"], ov["id"])
 
 
     def test_template_provenance_rejects_live_fallback(self):

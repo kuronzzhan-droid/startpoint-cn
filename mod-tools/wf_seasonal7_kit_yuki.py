@@ -75,6 +75,9 @@ REVISION_REL = f"{BATCH}/revision2-20260916/yuki/plan.json"   # 作者 20260916 
 # 三轮 R26：技能说明首句随「旋转结界」改动同步更新，只覆盖 action_skill c1 / character_text c5,c7
 # 这三格；成品行与 536 串仍锁在二轮 plan.json（改一份文案不该让 22 条行锁失效）。
 REVISION3_REL = f"{BATCH}/revision3-20260916/yuki/text.json"
+# 五轮 R28/R29/R30：三条行的口径修正。plan.json 是二轮的外部方案、不改，
+# 被覆盖的三个 row_sha256 记在这份行锁里（只记被覆盖的，其余 19 条仍以 plan.json 为准）。
+REVISION5_REL = f"{BATCH}/revision5-20260917/yuki/rows.json"
 FX_MANIFEST_REL = f"{BATCH}/fx/{KEY}/out/manifest.json"
 
 AB = "master/ability/ability.orderedmap"
@@ -159,8 +162,10 @@ LEADER_RECIPE = (
      '8edf4b09e2f7ba7ccd22383ef19bdb7d21bd9f88d2574c21c034594e93c31c9b'),  # L1 水共鸣 全队水技伤 300%
     ('store', '129992', 1, {0: CODE, 28: '15000000', 29: '15000000', 32: '5', 46: '5', 47: 'Blue'},
      '9ecd109696868668a791c10e633c7dd1827dafb22bfaf7741aeb2bd9d45af885'),  # L2 R2 每150连击(限5次) 全队水技伤 100%
-    ('store', '129970', 7, {0: CODE, 107: '2', 111: '500000', 112: '500000'},
-     '2fb8b8c7857edb33d9c79f6f426578910f1746818ded5df86441395da6b10779'),  # L3 R3 自身屏障中 全队水技伤 500%
+    # 五轮 R28（作者 2026-09-17「队长技自身拥有护盾期间应该是水属性角色攻击力+500%」）：
+    # during_content c107 从 2 SkillDamage 改成 0 AttackPoint；72 屏障触发 / target 5 / 组 Blue / 强度都不动。
+    ('store', '129970', 7, {0: CODE, 107: '0', 111: '500000', 112: '500000'},
+     'd03445e084daf9a6a6dbaf42fb9ada38761a5fce3d17fc6a3a35cb4cb6ad775a'),  # L3 R3/R28 自身屏障中 全队水攻击 500%
     ('official', '121117', 2, {0: CODE, 4: '2', 7: '600000', 8: '600000', 9: 'Blue', 26: '0', 27: '',
                                49: '15000000', 50: '15000000'},
      '9dc7c53103513d07a39bb22237595546c00d4c2352533b7ffd14c50ae79ba588'),  # L4 R4 水共鸣 自身施技 连击加成150×2弹射
@@ -183,8 +188,8 @@ ABILITY_RECIPE = {
          'e792173fd6f4678230d088e4511ec6a1b249e6985b72e8c3d53418180474eb40'),  # R10 水共鸣 水属性施技 连击+10
         ('official', '2410016', 0, {0: f'{CODE}_2', 2: 'action_skill', 6: '2', 9: '600000', 10: '600000',
                                     11: 'Blue', 30: '7500000', 31: '7500000', 34: '(None)', 47: '211',
-                                    49: 'Blue', 51: '3000', 52: '3000'},
-         'd93bab036c265b112a1275ec2f15ce0edb4845231632aa12f7a20dc10b8c08b1'),  # R11 水共鸣 每75连击(c34 触发次数上限=(None)) 全队水技能槽 3%
+                                    49: 'Blue', 51: '5000', 52: '5000'},   # 五轮 R29：3% → 5%
+         '615fb88637dba7f305e624537df0a5ca66f99e2c01616f3ba7ffce71cf42eff0'),  # R11/R29 水共鸣 每75连击(c34 触发次数上限=(None)) 全队水技能槽 5%
     ),
     # 槽 3 整键 c1 保持 live 的 'false'（官方槽3=主位身份槽惯例；把 536 搬去槽 1 并不强制翻转本槽 unisonable）。
     # c1=false 已经是「仅主位」，所以 R12 不再写 202 前置——同键双写会画双 Ⓜ（wf-unison-slot-mechanics）。
@@ -193,10 +198,15 @@ ABILITY_RECIPE = {
                                  47: '223', 49: 'Blue', 51: '100000', 52: '100000',
                                  57: '90000000', 58: '90000000'},
          'baad84dab1fb967f80d95424931101a09bc850395973ba8936daa9a75c6f9e5b'),  # R12 水共鸣 施技 全队水 直击2段(15秒)
+        # 五轮 R30（作者 2026-09-17「能力3 的共鸣时每当直击应该是水属性角色合计直击50次不是只有自身」）：
+        # 触发 puller c28 从 0 Myself 改回 donor 自己的 7 TotalOfParty + c29=Blue ⇒ 真按「水属性角色合计」数。
+        # 这条改前是**面板说谎**：wf_describe 对 trigger 20 一律渲染「编成直接攻击」，与 puller 无关，
+        # 所以面板写着「编成」而机制只数自身。官方 trigger20 + puller7 共 17 行，donor 1510573#1 本身就是这形状
+        # （parseAt28 case "7" = TotalOfParty{character_groups: c29}）。
         ('official', '1510573', 1, {0: f'{CODE}_3', 1: 'false', 2: 'special', 6: '2', 9: '600000', 10: '600000',
-                                    11: 'Blue', 28: '0', 29: '', 30: '5000000', 31: '5000000', 34: '(None)',
+                                    11: 'Blue', 28: '7', 29: 'Blue', 30: '5000000', 31: '5000000', 34: '(None)',
                                     35: '0', 47: '226', 48: '', 49: '', 51: '5000000', 52: '5000000'},
-         '3770145b921cce32d27e59ce8026e8b3fbf595e6b1618b166af26247685df4e2'),  # R13 水共鸣 自身直击每50次 连击+50
+         'b0d6f6df9b406724b6e4232dec61dddbb36a8b8102b92fd7ef75e657d172fc0d'),  # R13/R30 水共鸣 水属性合计直击每50次 连击+50
         ('store', '2610896', 0, {0: f'{CODE}_3', 1: 'false', 11: 'Blue', 49: 'Blue', 51: '15000', 52: '15000'},
          'c24e1f894c607ec16d865516efd98487ae34f1be7b4d8024d9524e538549c37f'),  # R14 水共鸣 全队水 694 独立乘区 15%
         ('official', '1211893', 0, {0: f'{CODE}_3', 1: 'false', 2: 'special', 6: '2', 9: '600000', 10: '600000',
@@ -2013,11 +2023,69 @@ def skill_desc_lock(revision: dict | None, revision3: dict | None) -> dict[str, 
     return None
 
 
-def _locked_rows(revision: dict | None) -> dict[str, list[list[str]]]:
+def _revision5(ctx) -> dict | None:
+    """五轮 R28/R29/R30 的行锁（只覆盖三条 row_sha256）。缺文件时全部回落二轮 plan.json。"""
+    path = ctx.root / REVISION5_REL
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+
+
+def row_sha_lock(revision: dict | None, revision5: dict | None) -> dict[str, list[str]] | None:
+    """现行成品行 sha 锁：``{"leader": [...], "<cid><slot>": [...]}``；二轮方案缺失时返回 None。
+
+    先取二轮 plan.json 的 22 条，再按五轮行锁逐条覆盖。覆盖项必须同时给出
+    ``row_sha256_before``（= plan 里那条）与 ``row_sha256``，对不上就报错——
+    防止 plan 被人改过却静默沿用旧覆盖。
+    """
+    if revision is None:
+        return None
+    out = {"leader": [r["row_sha256"] for r in revision["leader"]["records"]]}
+    out.update({key: [r["row_sha256"] for r in recs]
+                for key, recs in revision["abilities"]["keys"].items()})
+    if revision5 is None:
+        return out
+    for ov in revision5["overrides"]:
+        bucket = "leader" if ov["table"] == LD else ov["key"]
+        idx = ov["index"]
+        if out[bucket][idx] != ov["row_sha256_before"]:
+            raise AssertionError(f"revision5 override {ov['id']}: plan sha {out[bucket][idx][:12]} "
+                                 f"!= row_sha256_before {ov['row_sha256_before'][:12]}")
+        out[bucket][idx] = ov["row_sha256"]
+    return out
+
+
+def _override_cells(ov: dict) -> list[tuple[int, str, str]]:
+    """行锁覆盖项 → [(列, 改前, 改后)]；``col``/``before``/``after`` 允许单值或等长列表。"""
+    cols = ov["col"] if isinstance(ov["col"], list) else [ov["col"]]
+    def spread(value):
+        return value if isinstance(value, list) else [value] * len(cols)
+    before, after = spread(ov["before"]), spread(ov["after"])
+    if not (len(cols) == len(before) == len(after)):
+        raise AssertionError(f"revision5 override {ov['id']}: col/before/after 长度不一致")
+    return list(zip(cols, before, after))
+
+
+def _locked_rows(revision: dict | None, revision5: dict | None = None) -> dict[str, list[list[str]]]:
+    """二轮 plan.json 的成品行，按五轮行锁逐格打补丁。
+
+    每条覆盖都带 ``before`` 与 ``row_sha256``：plan 里那格对不上 ``before`` 就报错，
+    打完补丁的行 sha 对不上 ``row_sha256`` 也报错 —— 与配方里的 sha 锁互为独立证据。
+    """
     if revision is None:
         return {}
     out = {"leader": [r["row"] for r in revision["leader"]["records"]]}
     out.update({key: [r["row"] for r in recs] for key, recs in revision["abilities"]["keys"].items()})
+    for ov in (revision5 or {}).get("overrides", ()):
+        bucket = "leader" if ov["table"] == LD else ov["key"]
+        row = list(out[bucket][ov["index"]])
+        for col, before, after in _override_cells(ov):
+            if row[col] != before:
+                raise AssertionError(f"revision5 override {ov['id']}: plan c{col}={row[col]!r} "
+                                     f"!= before {before!r}")
+            row[col] = after
+        if row_sha(row) != ov["row_sha256"]:
+            raise AssertionError(f"revision5 override {ov['id']}: 打补丁后的 plan 行 sha "
+                                 f"{row_sha(row)[:12]} != row_sha256 {ov['row_sha256'][:12]}")
+        out[bucket][ov["index"]] = row
     return out
 
 
@@ -2074,9 +2142,22 @@ def build(ctx) -> dict[str, Any]:
     desc_lock = skill_desc_lock(revision, revision3)
     if revision3 is None:
         notes.append(f"{REVISION3_REL} 缺失：技能说明锁回落二轮 plan.json")
+    revision5 = _revision5(ctx)
+    if revision5 is not None and (revision5.get("key"), revision5.get("cid")) != (KEY, CID):
+        raise AssertionError(f"revision5 row lock is for {revision5.get('key')}/{revision5.get('cid')}")
+    sha_lock = row_sha_lock(revision, revision5)
+    if sha_lock is not None:                      # 配方 sha 必须等于「二轮 plan + 五轮覆盖」
+        want = [r[4] for r in LEADER_RECIPE]
+        if want != sha_lock["leader"]:
+            raise AssertionError("leader recipe sha != plan+revision5 lock")
+        for slot, recipe in ABILITY_RECIPE.items():
+            if [r[4] for r in recipe] != sha_lock[f"{CID}{slot}"]:
+                raise AssertionError(f"ability {slot} recipe sha != plan+revision5 lock")
+    if revision5 is None:
+        notes.append(f"{REVISION5_REL} 缺失：五轮三条行的 sha 覆盖无外部锁（配方 sha 仍生效）")
 
     # ---- 1 词条 / 队长
-    leader, abilities = _build_rows(ctx, _locked_rows(revision), notes)
+    leader, abilities = _build_rows(ctx, _locked_rows(revision, revision5), notes)
     ctx.write_flat(LD, {CID: leader})
     ctx.write_flat(AB, abilities)
 
@@ -2263,7 +2344,7 @@ def build(ctx) -> dict[str, Any]:
         got_counts = {"leader": len(leader), **{k: len(v) for k, v in abilities.items()}}
         if got_counts != want_counts:
             gate_failures.append(f"record counts {got_counts} != revision plan {want_counts}")
-        locked = _locked_rows(revision)
+        locked = _locked_rows(revision, revision5)
         drift = ([f"leader#{i}" for i, r in enumerate(leader) if r != locked["leader"][i]]
                  + [f"{k}#{i}" for k, rows in abilities.items()
                     for i, r in enumerate(rows) if r != locked[k][i]])
