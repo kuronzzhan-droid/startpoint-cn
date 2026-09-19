@@ -13,6 +13,13 @@ SOURCE = Path("D:/WF/out/海豹球-CharacterStudio像素试作-20260918/修订05
 def frames_for(name):
     front = lambda pose: Image.open(SOURCE / f"front_{pose}.png").convert("RGBA")
     back = lambda pose: Image.open(SOURCE / f"back_{pose}.png").convert("RGBA")
+    if name == "special_land":
+        return [(front(p), n) for p, n in zip(
+            ("apex", "up", "squash", "up", "rest"), (8, 6, 10, 6, 12))]
+    if name == "special_pose":
+        return [(front(p), n) for p, n in zip(
+            ("rest", "squash", "up", "apex", "up", "rest", "blink", "rest"),
+            (8, 6, 6, 10, 6, 12, 6, 18))]
     if name == "neutral":
         return [(front(p), n) for p, n in zip(("rest", "squash", "rest", "blink", "rest"), (30, 10, 16, 6, 16))]
     if name in ("walk_front", "walk_back", "skill_ready", "kachidoki", "skill"):
@@ -35,7 +42,7 @@ def frames_for(name):
 
 
 def build_family(pack, special=False):
-    names = ["skill"] if special else ["neutral", "walk_back", "walk_front", "skill_ready", "kachidoki",
+    names = ["special_land", "special_pose"] if special else ["neutral", "walk_back", "walk_front", "skill_ready", "kachidoki",
                                        "into_coffin", "ghost_raise", "ghost_neutral", "revive"]
     stem = "special" if special else "pixelart"
     sheet_name = "special_sprite_sheet" if special else "sprite_sheet"
@@ -56,7 +63,8 @@ def build_family(pack, special=False):
                               w=24, h=24, fx=-116, fy=-106, fw=256, fh=256))
             cursor += hold
             preview.extend([im.resize((192,192), Image.Resampling.NEAREST)] * hold)
-        kind = "loop" if name in ("neutral", "walk_back", "walk_front", "kachidoki", "ghost_neutral") else "once"
+        kind = ("pass" if name in ("special_land", "into_coffin", "ghost_raise") else
+                "loop" if name in ("neutral", "walk_back", "walk_front", "kachidoki", "ghost_neutral") else "once")
         sequences.append(dict(name=name, kind=kind, begin=begin, end=cursor-1))
         circles.append(dict(begin=begin+1, data=[dict(x=0,y=0,r=8.3)]
                             if name in ("neutral", "walk_back", "walk_front") else []))
@@ -72,6 +80,9 @@ def build_family(pack, special=False):
     pack.write_asset("common", prefix+sheet_name+".png", C.wf_assets.png_encode(buf.getvalue()), owner="pixel")
     timeline = dict(sequences=sequences, circles=[dict(path="unit_body", frames=circles)],
                     points=[dict(path="hp_gauge", frames=[dict(begin=1,data=[dict(x=0,y=-10)])])], sounds=[])
+    if special:
+        # 原生五星展示动画不带战斗碰撞体/血条；UI依次请求这两个固定名称。
+        timeline.update(circles=[], points=[])
     metadata = {sheet_name+".atlas": atlas,
                 stem+".frame": dict(name=prefix+stem,x=-128,y=-128,scale=6,smoothing=False),
                 stem+".timeline": timeline}
@@ -81,7 +92,7 @@ def build_family(pack, special=False):
 
 
 def build(pack):
-    result = dict(status="candidate", summary="海豹球自有9个战斗动作＋1个技能动作",
+    result = dict(status="candidate", summary="海豹球自有9个常规动作＋落地/摆姿势2段展示动作",
                   regular=build_family(pack), special=build_family(pack, True),
                   source_hashes={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(SOURCE.glob('*.png'))})
     pack.write_evidence("pixel-report.json",result)

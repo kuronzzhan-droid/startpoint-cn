@@ -78,7 +78,30 @@ class SphealCandidateTests(unittest.TestCase):
             self.assertGreater(float((np.asarray(image)[:,:,3]==0).mean()),.1)
         report=self.pack.read_evidence("pixel-report.json")
         self.assertEqual(len(report["regular"]["sequences"]),9)
-        self.assertEqual(len(report["special"]["sequences"]),1)
+        self.assertEqual(len(report["special"]["sequences"]),2)
+
+    def test_pixel_click_special_follows_native_playhead_contract(self):
+        prefix="character/spheal_mascot/pixelart/"
+        timeline=C.amf_parse(self.pack.pkg_path("common",prefix+"special.timeline.amf3.deflate").read_bytes())
+        sequences=timeline["sequences"]
+        # Four/five-star PixelArtCharacter calls special_land, then special_pose.
+        self.assertEqual([(s["name"],s["kind"]) for s in sequences],
+                         [("special_land","pass"),("special_pose","once")])
+        atlas=C.amf_parse(self.pack.pkg_path("common",prefix+"special_sprite_sheet.atlas.amf3.deflate").read_bytes())
+        frame=C.amf_parse(self.pack.pkg_path("common",prefix+"special.frame.amf3.deflate").read_bytes())
+        from PIL import Image
+        sheet=C.png_open(self.pack.pkg_path("common",prefix+"special_sprite_sheet.png").read_bytes())
+        names={entry["n"] for entry in atlas}
+        for sequence in sequences:
+            self.assertIn(f'{frame["name"]}{sequence["begin"]:04d}',names)
+            self.assertGreaterEqual(sequence["end"],sequence["begin"])
+        self.assertEqual(sequences[1]["begin"],sequences[0]["end"]+1)
+        for entry in atlas:
+            self.assertLessEqual(entry["x"]+entry["w"],sheet.width)
+            self.assertLessEqual(entry["y"]+entry["h"],sheet.height)
+        regular=C.amf_parse(self.pack.pkg_path("common",prefix+"pixelart.timeline.amf3.deflate").read_bytes())
+        kinds={s["name"]:s["kind"] for s in regular["sequences"]}
+        self.assertEqual([kinds[n] for n in ("into_coffin","ghost_raise")],["pass","pass"])
 
     def test_before_and_after_have_safe_speech(self):
         rows=self.rows("master/character/character_speech.orderedmap","129990")
