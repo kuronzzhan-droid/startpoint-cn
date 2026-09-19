@@ -26,6 +26,9 @@ def context(code, source=SOURCE):
         rarity=5, pf_type=pf, stance=stance, identity=cid, template_identity=donor,
         theme=identity['title'], backdrop_colors=((57, 156, 207), (18, 48, 75)),
         requires_client_base='1.4.933',
+        # Native adversity / Fever rules do not implement the authored design.
+        # No corresponding client capability has been implemented or installed.
+        required_capabilities=(f'gbf-{code}-mechanics-v1',),
         texts=dict(name=design['name'], furigana=code.upper(), title=identity['title'],
                    profile=identity['description'], cv=cv, leader=gameplay['leader']['name'],
                    skill1=skill['name'], skill2=skill['name'],
