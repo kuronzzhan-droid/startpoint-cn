@@ -91,6 +91,27 @@ def bind_voices(pack, store, project):
     return result
 
 
+def selected_portraits(evidence):
+    """Load an author's pinned originals; refuse drift or paths outside evidence."""
+    evidence = Path(evidence).resolve()
+    selection = evidence / 'portrait-selection.json'
+    if not selection.is_file():
+        return None
+    entries = json.loads(selection.read_text(encoding='utf-8'))['states']
+    if len(entries) != 2:
+        raise ValueError('Portrait selection requires both evolution states')
+    result = []
+    for entry in entries:
+        path = (evidence / entry['file']).resolve()
+        if not path.is_relative_to(evidence):
+            raise ValueError('Selected portrait must stay inside candidate evidence')
+        raw = path.read_bytes()
+        if hashlib.sha256(raw).hexdigest() != entry['sha256']:
+            raise ValueError('Selected portrait hash changed')
+        result.append((raw, entry['landmarks']))
+    return result
+
+
 def build(pack, source):
     if str(STUDIO) not in sys.path:
         sys.path.insert(0, str(STUDIO))
@@ -120,10 +141,13 @@ def build(pack, source):
             outputs.append(logical)
     masters = pack.evidence_path('masters')
     masters.mkdir(parents=True, exist_ok=True)
+    selected = selected_portraits(pack.evidence)
+    landmarks = LANDMARKS[pack.spec.code] if selected is None else [x[1] for x in selected]
     for level, key in enumerate(('base', 'evolved')):
-        (masters/f'{pack.spec.key}-{level}.png').write_bytes(store.asset_bytes(project, project['portraits'][key]))
+        raw = store.asset_bytes(project, project['portraits'][key]) if selected is None else selected[level][0]
+        (masters/f'{pack.spec.key}-{level}.png').write_bytes(raw)
     manifest.build(pack)
-    art_report = art.build(pack, LANDMARKS[pack.spec.code], source_dir=masters, apply=True, headshots=True)
+    art_report = art.build(pack, landmarks, source_dir=masters, apply=True, headshots=True)
     voice_report = bind_voices(pack, store, project)
     pack.sync_character_mirrors()
     pack.write_evidence('pixel-report.json', dict(status='candidate', summary='All authored native action slots retained', files=outputs))

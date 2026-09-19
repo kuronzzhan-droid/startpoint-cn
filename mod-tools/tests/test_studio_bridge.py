@@ -1,8 +1,39 @@
 """Regression coverage for Studio/native integration boundaries."""
 import copy
+import hashlib
+import json
+from pathlib import Path
+import tempfile
 import unittest
 
-from wf_studio_bridge import native_timeline
+from wf_studio_bridge import native_timeline, selected_portraits
+
+
+class SelectedPortraitTests(unittest.TestCase):
+    def test_no_selection_keeps_uploaded_project_default(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self.assertIsNone(selected_portraits(folder))
+
+    def test_pinned_pair_is_read_and_hash_drift_is_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            entries = []
+            for level in range(2):
+                raw = f'original-{level}'.encode()
+                name = f'{level}.png'
+                (root/name).write_bytes(raw)
+                entries.append(dict(file=name, sha256=hashlib.sha256(raw).hexdigest(),
+                                    landmarks={'face': [level, 1]}))
+            selection = root/'portrait-selection.json'
+            selection.write_text(json.dumps({'states': entries}))
+            self.assertEqual(selected_portraits(root)[1], (b'original-1', {'face': [1, 1]}))
+            (root/'0.png').write_bytes(b'changed')
+            with self.assertRaisesRegex(ValueError, 'hash changed'):
+                selected_portraits(root)
+            entries[0]['file'] = '../outside.png'
+            selection.write_text(json.dumps({'states': entries}))
+            with self.assertRaisesRegex(ValueError, 'inside candidate'):
+                selected_portraits(root)
 
 
 class TimelineTests(unittest.TestCase):
