@@ -49,6 +49,14 @@ class SphealCandidateTests(unittest.TestCase):
             self.assertEqual(effect[2:],[ [{"min":1,"max":1}], [{"min":1,"max":1}] ])
             self.assertFalse(command[5])
 
+    def test_party_targets_use_native_absent_group_sentinel(self):
+        # Blank is Some([]), which renders null and is not unrestricted Party(None).
+        leader = self.rows("master/ability/leader_ability.orderedmap", "129990")
+        charge = next(r for r in leader if r[45] == "211")
+        hp = self.rows("master/ability/ability.orderedmap", "1299903")[0]
+        self.assertEqual(charge[46:48], ["5", "(None)"])
+        self.assertEqual(hp[48:50], ["5", "(None)"])
+
     def test_mascot_abilities_and_client_abi(self):
         rows=[self.rows("master/ability/ability.orderedmap",f"129990{i}")[0] for i in range(1,7)]
         self.assertEqual([r[47] for r in rows],["205","37","205","205","33","206"])

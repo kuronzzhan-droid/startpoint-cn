@@ -47,7 +47,8 @@ def leader_tree(pack):
 
 def ability(slot, effect, value, *, target="0", main=False, trigger="0"):
     row = wf_gui.composer_generate(f"129990{slot}", mode="instant", trigger_kind=trigger,
-                                  effect_kind=str(effect), value=value, target=target)["row"]
+                                  effect_kind=str(effect), value=value, target=target,
+                                  groups="(None)" if target == "5" else "")["row"]
     row[0] = f"spheal_mascot_{slot}"
     row[1], row[2], row[3], row[4] = ("false" if main else "true"), "defense_common", "0", "0"
     if slot == 6:
@@ -66,7 +67,7 @@ def build(pack):
     pack.write_flat(T.ABILITY, {key: [row] for key, row in zip(spec.ability_keys, abilities)})
     opening = f"battle/action/skill/ability/ability_skill_{spec.code}_leader"
     leaders = []
-    for params in (dict(effect_kind="211", value=100, target="5"),
+    for params in (dict(effect_kind="211", value=100, target="5", groups="(None)"),
                    dict(effect_kind="629", value=0, string_id=f"{spec.code}_leader",
                         action_path=opening)):
         row = wf_gui.composer_generate(f"L:{spec.cid}", mode="instant", trigger_kind="0", **params)["row"]
