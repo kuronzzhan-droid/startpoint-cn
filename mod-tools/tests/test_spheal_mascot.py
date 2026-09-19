@@ -82,9 +82,22 @@ class SphealCandidateTests(unittest.TestCase):
 
     def test_before_and_after_have_safe_speech(self):
         rows=self.rows("master/character/character_speech.orderedmap","129990")
-        self.assertEqual({r[1] for r in rows},{"0","1"})
+        self.assertEqual({r[1] for r in rows if r[0]=="0"},{"0","1"})
         self.assertTrue(all(r[4]=="(None)" for r in rows))
         self.assertFalse(list(self.pack.pkg_path("common","character/spheal_mascot/voice").glob("**/*.mp3")))
+
+    def test_join_and_evolution_speeches_resolve_without_c2265(self):
+        # CharacterSpeechRepository.getJoinSpeech requires kind=2;
+        # getSpecificEvolutionSpeech(1) requires kind=1, column 2=1.
+        # Two Home rows alone pass asset checks but crash first acquisition.
+        rows=self.rows("master/character/character_speech.orderedmap","129990")
+        joins=[r for r in rows if r[0]=="2"]
+        evolutions=[r for r in rows if r[0]=="1" and r[2]=="1"]
+        self.assertEqual(len(joins),1,"C2265: missing join speech")
+        self.assertEqual(len(evolutions),1,"C2265: missing evolution speech")
+        for row in joins+evolutions:
+            self.assertTrue(row[3].strip())
+            self.assertEqual(row[4],"(None)")
 
     def test_required_assets_and_three_layers(self):
         status=W.workspace_status(W.load_workspace(WORKSPACE),persist=False)

@@ -92,9 +92,12 @@ def build(pack):
             raise ValueError(wf_dsl.player_side_dsl_problems(tree))
         programs.append(pack.write_dsl(path, tree, owner="kit"))
     pack.write_nested(T.ACTION, spec.code, actions)
-    # 原生无语音角色使用 (None)，两档展示行均存在；不冒用法夫的人声与台词。
+    # Home / Evolution / Join 是独立种类；主页的觉醒约束不替代演出台词。
+    # 原生无语音角色使用 (None)，首次加入和觉醒仍必须有文本行，否则 C2265。
     pack.write_flat(T.SPEECH, {spec.cid_s: [["0", "0", "", "ぱう、ぱう！", "(None)"],
-                                         ["0", "1", "", "ぱう〜♪", "(None)"]]})
+                                         ["0", "1", "", "ぱう〜♪", "(None)"],
+                                         ["1", "", "1", "ぱう〜っ！ぱう、ぱう♪", "(None)"],
+                                         ["2", "", "", "ぱう！ぱう、ぱう〜♪", "(None)"]]})
     char = C.csv_split(pack.pkg_flat(T.CHAR)[spec.cid_s])[0]
     char[4] = "Beast,Aquatic"
     pack.write_flat(T.CHAR, {spec.cid_s: [char]})
