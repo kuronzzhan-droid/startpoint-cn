@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "enabled": true,
+  "event_id": 700099,
+  "folder_id": 1,
+  "degree_id": 9911301,
+  "character_id": 129990,
+  "party_scope": "final_clear_main_or_unison",
+  "name": "滚到深渊尽头"
+}

@@ -8,6 +8,7 @@ import { getPlayerPartyGroupListSync } from "../../data/domains/party"
 import { getPlayerDegreeIdsSync } from "../../data/domains/degree"
 import { grantAbyssShopDegreeRewardSync } from "../../lib/abyss-shop-degree-reward"
 import { grantAbyssEnduranceDegreesSync } from "../../lib/abyss-endurance-degree-reward"
+import { grantAbyssSphealDegreeSync } from "../../lib/abyss-spheal-degree-reward"
 import { fromProfileTargetId } from "../../lib/rush-leaderboard-native-rows"
 import { buildProfileFavoriteParty } from "../../lib/rush-profile-party"
 import { getRankDegree } from "../../lib/stamina"
@@ -160,6 +161,7 @@ const routes = async (fastify: FastifyInstance) => {
         const degreeId = player?.degreeId || 1
         if (player) grantAbyssShopDegreeRewardSync(playerId)
         if (player) grantAbyssEnduranceDegreesSync(playerId)
+        if (player) grantAbyssSphealDegreeSync(playerId)
 
         // The client builds the whole degree-select list out of this array
         // (DegreeSelectLoadingTask), so it is the only place ownership lives:
