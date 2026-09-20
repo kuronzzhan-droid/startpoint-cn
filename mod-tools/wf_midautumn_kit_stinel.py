@@ -82,7 +82,7 @@ FX_EXPLOSION = f"{TEMPLATE_CODE}_explosion"
 #: 特效代理的交付目录（优先），退回上一轮的 ``B/pixel/<key>/``。
 FX_DELIVERY = "work/character_packs/midautumn-20260920/rework1/fx/stinel"
 #: 「只要一排」第二级：删掉 funnel ``parts`` 的镜像排（调研卡 C §5.2）。
-SINGLE_ROW_SURGERY = True
+SINGLE_ROW_SURGERY = False     # 作者真机 09-21：切掉镜像排后技能只剩左边一半＝删多了；「只要一排」只靠删第二个 funnel ShowEffect
 FUNNEL_MIRROR_GROUP = 2          # g[2]：一排 3 盏灯的容器
 FUNNEL_MIRROR_SEGMENTS = 3       # 母本段数（正排 / 镜像排 / G[33]@49）
 
