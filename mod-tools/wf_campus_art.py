@@ -60,9 +60,17 @@ def atlas_sheet(package, ui, fulls):
     sheet = Image.new("RGBA", images.read_png(package / "roots" / sheet_rel).size)
     for item in atlas:
         level = int(item["n"].rsplit("_", 1)[1])
-        tile = wf_canary_skin.fit_rgba(fulls[level], (item["w"], item["h"]))
-        if item.get("r", False):
-            raise ValueError("rotated illustration atlas requires explicit handling")
+        rotated = bool(item.get("r", False))
+        fit_size = (item["h"], item["w"]) if rotated else (item["w"], item["h"])
+        tile = wf_canary_skin.fit_rgba(fulls[level], fit_size)
+        if rotated:
+            # Starling SubTexture stores a rotated region clockwise (see
+            # wf_pixelart_vfx.restore_frame, which undoes it with a
+            # counter-clockwise ROTATE_90); re-rotating our correctly
+            # oriented tile clockwise (ROTATE_270) reproduces that storage
+            # orientation. Same convention already shipped in
+            # wf_summer_bai_pixel_reference.build.
+            tile = tile.transpose(Image.Transpose.ROTATE_270)
         sheet.alpha_composite(tile, (item["x"], item["y"]))
     return sheet_rel, sheet
 
