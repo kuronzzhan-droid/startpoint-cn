@@ -1,41 +1,30 @@
 # -*- coding: utf-8 -*-
-"""中秋批次 kit：黑 139991 ``outlaw_panther_moon``（雷 · 拳 · 直击辅助）。
+"""中秋批次 kit：黑 139991 ``outlaw_panther_moon``（雷 · 拳 · 直击辅助）· **rework1**。
 
-轴线：**把「Fever 中」当门，把全队直击的段数与倍率一次性抬起来，再用段数回喂 Fever**。
+轴线（`rework1/impl/kuro.md`）：**摇骰子**——三条线咬合。
 
-- 队长技／词条的主轴全部挂在持续触发 4（Fever 中）下：全队(雷)直击伤害 400%＋120%＋80%、
-  攻击力 200%＋50%＋45%＋骰运每层 12%。
-- 技能「博饼·满堂彩」把判定区改成**按直接攻击伤害判定**（``CreateHitArea`` params[23] = 4），
-  并给队伍全员及协力球发两条状态：直击伤害 UP ＋ **3 段追加直接攻击**。
-- 3 段让全队的 Fever 点／连击／「编成直接攻击≥N」计数一起 ×3，回喂黑自己的
-  724（非 Fever 时每 45 次直击 → Fever 槽 +12%）与固有状态「骰运」（每 35 次 +1 层，上限 6）。
+- **强化技能线**：雷共鸣 → ``IC 536 ChangeSkillFlag`` 开强化档；技能 DSL 里
+  ``ConditionalsChangeSkillFlag`` 两分支，强化档判定区寿命 60→180 帧、段数 15→45、
+  ``CreateNormalAttack[8] = enablesComboBonus = true``（威力随连击成长）。
+- **骰运轮盘线**：雷属性角色每 75 次直击 → 固有「骰运」+1（上限 6）；强化分支末尾 6 个
+  ``ConditionalsProbability`` 轮盘，第 n 个由 ``ConditionalsConditionAccumulationNumber``
+  按骰运层数开门 ⇒ 抽取次数 = ``max(1, 层数)``，最多 6 次，每次独立掷点。
+- **Fever 收支线**：非 Fever 每 45 次直击 +35% 槽（724 正）／Fever 中每 20 次直击 −50% 槽
+  （724 负）／每次进入 Fever 全队(雷) 直击伤害 +150%。
+
+技能本体演出不变（4 条 ``ShowEffect`` 全部引用官方母本路径，**零克隆零图集增量**），
+只做参数手术：取消后摇（``StopBall`` 换千岳式 ``RestoreToSpeedBeforeActionExecution``）、
+强化档寿命/段数、强化档连击加成。
+
+面板 7 块（队长技 ＋ 6 个词条槽）**全部走 ``desc_override_*`` 整块接管**，逐行等于
+``rework1/panel/kuro.json``。
 
 由 ``python mod-tools/wf_midautumn_build.py --char kuro --step kit`` 调用 :func:`build`。
 只经 ``KitContext`` 写 ``work/character_packs/ma-kuro/``；live store / ``assets/`` / ``.cdn`` /
 设备 / 存档一律不碰，不发布、不 git。
 
-设计稿：``work/character_packs/midautumn-20260920/design/kuro.{md,json}``。
-17 行方案（donor + 逐格改 + ``wf_describe`` 回读）全部内联在本模块，设计稿在场时逐条互校
-（:func:`design_crosscheck`）——设计稿在 gitignore 的 ``work/`` 下，缺失时不阻塞。
-
-落地内容
---------
-- ``character`` 行 c9–c16 语音路由（kind 1 ConditionExist / 条件种类 28 固有 → ``<code>_voice_ready``）
-  ＋ c18 队长技名；``character_text`` 与 ``action_skill`` 两档文案由 ``tables`` 依 :data:`TEXTS` 写，
-  本模块只断言不漂移。
-- 队长技 4 行、词条 6 键 13 条：官方／live donor 行 + 逐格改，逐行过 ``wf_client_legality``
-  （合法性 / 声明块字段 / 元素列）并与登记的面板文案逐字比对。
-- 固有状态 ``13999101``「骰运」（8 位 ID，上限 **6**，不是 ``(None)``）。
-- ``action_skill`` 两档能量 c4/c5 = 母本原值 490/490 与 490/440（零改动）。
-- 两棵技能 DSL：母本 ``outlaw_panther_ny22$_1/_2`` 整树，只做 S1–S4 四处改动
-  （判定区 buffTargetAs、``CreateNormalAttack`` 倍率、``CreateCondition`` 的 AC、追加第二条 ``CreateCondition``）。
-  **不新增构造名、不改命令顺序、不动判定区形状**；4 条 ``ShowEffect`` 全部直接引用官方路径，
-  零克隆零图集增量。
-- ``switched_action_skill`` ``<code>_voice_ready``（matched_skill_ready 的路由目标）。
-- 像素/特效交付件：``B/pixel/kuro/install.json`` 在场才装，缺失静默跳过。
-
-**无 ``custom_ability_string``、无 ``desc_override``、无 422、无 722。**
-唯一的 APK 补丁 kind 是 724（``kyubi-fever-ratio-v1``），且**只在 ability 表**（写进队长表 = C7050）。
+APK 依赖：``kyubi-fever-ratio-v1``（724，**只许 ability 表**，写队长表 = C7050）＋
+``panel-description-override-v2``（V14，``desc_override_*`` 惰性生效，缺补丁不崩）。
 """
 from __future__ import annotations
 
@@ -43,6 +32,7 @@ import copy
 import json
 from typing import Any
 
+import wf_client_legality as L
 import wf_midautumn_kitlib as KL
 import wf_midautumn_specs as MS
 
@@ -57,7 +47,8 @@ ELEMENT_TOKEN = "Yellow"
 PF_TYPE = 1                      # 拳
 STANCE = "Supporter"
 
-UID = MS.unique_condition_id(CID, 1)          # "13999101"：8 位（裁决 §1，7 位撞过基诺维段）
+UID_DICE = MS.unique_condition_id(CID, 1)      # "13999101" 骰运（上限 6，常驻）
+UID_STEP = MS.unique_condition_id(CID, 2)      # "13999102" 豹步（上限 1，15 秒）
 VOICE_KEY = CODE + "_voice_ready"
 
 CHARACTER = KL.CHARACTER
@@ -70,24 +61,39 @@ TEXTS = {
     "profile": "中秋夜的长街上，黑支起一张矮几，摆出朱漆骰碗，招呼路过的人来赌一把月饼。"
                "这位看似只顾摇骰起哄的猫族长老，却在每次开碗时数清了场上有几个人在笑——"
                "他想改变的世界，就是这样一个谁都能笑着掷一次骰子的地方。",
+    # 第三段对应 panel/kuro.json › skill.lines[1]（status "changed"）：S1 取消后摇。
     "skill1": "博饼·满堂彩",
     "desc1": "手托朱漆骰碗原地摇转，对周围的敌人持续造成雷属性伤害（以直接攻击伤害判定）"
-             "／赋予队伍全员及协力球直接攻击伤害提升与追加直接攻击效果",
+             "／赋予队伍全员及协力球直接攻击伤害提升与追加直接攻击效果"
+             "／释放技能后不再进入硬直，可立即行动",
     "skill2": "博饼·满堂彩＋",
     "desc2": "手托朱漆骰碗原地摇转，对周围的敌人持续造成雷属性伤害（以直接攻击伤害判定）"
-             "／赋予队伍全员及协力球直接攻击伤害提升与追加直接攻击效果",
+             "／赋予队伍全员及协力球直接攻击伤害提升与追加直接攻击效果"
+             "／释放技能后不再进入硬直，可立即行动",
     "leader": "今宵手气正旺",
     "cv": "AI 合成配音",
 }
 
+# ------------------------------------------------------------------ 面板字符串键
+
+CAS_CHANGE_SKILL = f"change_skill_{CODE}"              # 536 的 c70
+CAS_LEADER = f"desc_override_{CODE}"                   # 队长块整体接管
+CAS_ABILITY = {slot: f"desc_override_{CODE}_{slot}" for slot in range(1, 7)}
+
 SPEC = {
-    "required_capabilities": ("kyubi-fever-ratio-v1",),   # 词条 1399913#0 的 kind 724
-    "extra_keys": {KL.UNIQUE: (UID,), KL.SWITCHED: (VOICE_KEY,)},
+    # 724 = kyubi-fever-ratio-v1；desc_override_* 行要生效需要 V14（缺补丁不崩，面板回落）
+    "required_capabilities": ("kyubi-fever-ratio-v1", L.PANEL_OVERRIDE_V2),
+    "extra_keys": {
+        KL.UNIQUE: (UID_DICE, UID_STEP),
+        KL.CAS: (CAS_CHANGE_SKILL, CAS_LEADER, *(CAS_ABILITY[s] for s in range(1, 7))),
+        KL.SWITCHED: (VOICE_KEY,),
+    },
 }
 
 #: character c9–c16：kind 1 ConditionExist，条件种类 **28**（固有状态）、条件 id = 骰运。
-#: 首次技能发动后骰运常驻（A4#1 一次 +2 层）⇒ 开局与开局后各听得到一种「技能准备好」台词。
-VOICE_ROUTE = {"kind": 1, "condition_kind": "28", "condition_id": UID}
+#: 骰运一旦获得就常驻（c3 = 99999999）⇒ 开局与开局后各听得到一种「技能准备好」台词。
+#: kind 3 ChangeSkillFlag 不能用：536 在共鸣队里常驻，会让 skill_ready 永不播（magnus 先例）。
+VOICE_ROUTE = {"kind": 1, "condition_kind": "28", "condition_id": UID_DICE}
 
 
 class KuroError(KL.KitError):
@@ -97,32 +103,45 @@ class KuroError(KL.KitError):
 # ------------------------------------------------------------------ 固有状态
 
 #: 官方 ``unique_condition[11]`` ``unique_blackflower_wiz_smr22``「能量吸取」整行，
-#: 只改 c0/c1/c2/c4；c3 起逐列相同（常驻 99999999、不可驱散、入棺不清除）。
+#: 只改 c0/c1/c2/c3/c4；其余列逐列相同（不可驱散、入棺不清除）。
 UNIQUE_DONOR = "11"
-UNIQUE_NAME = "骰运"
-#: **上限 6**（博饼六颗骰子）。写 ``(None)`` 会被读成上限 1，during 134 的叠层全部失效
-#: （记忆 ``wf-unique-cap-none-trap``）；``KL.unique_row`` 也硬拒 ``(None)``。
-UNIQUE_CAP = "6"
-UNIQUE_ICON = f"battle/common/unique_condition/unique_{CODE}_dice_luck"
-UNIQUE_ICON_LOGICAL = UNIQUE_ICON + ".png"
+
+#: 骰运：**上限 6**（博饼六颗骰子）、无时间限制。写 ``(None)``／空 = 上限 1，会把 461 叠层、
+#: during 134、DSL 的 ``ConditionalsConditionAccumulationNumber`` 全部弄死
+#: （记忆 ``wf-unique-cap-none-trap``）；``KL.unique_row`` 也硬拒。
+DICE_NAME = "骰运"
+DICE_CAP = "6"
+DICE_FRAMES = "99999999"
+DICE_ICON = f"battle/common/unique_condition/unique_{CODE}_dice_luck"
+
+#: 豹步：技能发动即付与、**15 秒**（900 帧）、上限 1 的二值状态。
+#: 上限 1 ⇒ ``shouldDisplayNumber = 上限 > 1`` 为假，图标右下不画层数（正确）。
+STEP_NAME = "豹步"
+STEP_CAP = "1"
+STEP_FRAMES = "900"
+STEP_ICON = f"battle/common/unique_condition/unique_{CODE}_panther_step"
+
 #: 取 alpha 与尺寸的官方画框 donor（就是固有状态行的 donor 自己的图标）。
 #: manifest 门禁要求「被表引用的资产必须在 roots.common 里声明」⇒ 图标**必须进包**，
 #: 引用官方路径当回落是过不了的（实测：`validate_manifest: referenced asset is not declared`）。
 UNIQUE_ICON_FRAME = "battle/common/unique_condition/unique_blackflower_wiz_smr22.png"
 
-#: 图标配色（设计稿 §5）：夜靛底 ＋ 金边 ＋ 立体金骰子（五点面）＋ 极细月牙。
+#: 图标配色：夜靛底 ＋ 金边（与引擎点火／月牙／回响／桂灯同一套）。
 ICON_INK = (0x22, 0x1E, 0x1A)          # 夜靛
 ICON_GOLD = (0xBA, 0x9E, 0x46)         # 金边 / 骰身
-ICON_GOLD_LIGHT = (0xD8, 0xBC, 0x66)   # 骰子受光面
-ICON_GOLD_DARK = (0x7E, 0x68, 0x2C)    # 骰子背光面
-ICON_PIP = (0xFF, 0xF4, 0xC0)          # 骰点 / 月牙
-ICON_SCALE = 8                         # PIL 8× 画 + LANCZOS 缩（设计稿 §5）
+ICON_GOLD_LIGHT = (0xD8, 0xBC, 0x66)   # 受光面
+ICON_GOLD_DARK = (0x7E, 0x68, 0x2C)    # 背光面
+ICON_PIP = (0xFF, 0xF4, 0xC0)          # 骰点 / 月牙 / 爪印高光
+ICON_SCALE = 8                         # PIL 8× 画 + LANCZOS 缩
 
 
 # ------------------------------------------------------------------ 行方案
-# 每条 =（donor 键#记录号（0 基）, 逐格改, 面板预期文案）。
+# 每条 =（donor 键#记录号（0 基）, 逐格改, 面板预期文案（wf_describe 回读））。
 # donor 默认取官方基线（``.cdn/cn`` OfficialBaseline），``live:`` 前缀才取 live store
-# （只有 724 那条：补丁 kind 在官方全表零行，唯一可抄的形状是自制 149989 希尔媞·校园）。
+# （只有 724 那两条：补丁 kind 在官方全表零行，唯一可抄的形状是自制 149989 希尔媞·校园）。
+#
+# 面板上真正显示的是 ``desc_override_*``（:data:`CAS_TEXTS`）；这里登记的 describe
+# 是**行装配的回读判据**（donor 漂移 / 改错列都会在 build 时当场炸）。
 
 LEADER: tuple[tuple[str, dict[int, str], str], ...] = (
     # L1 Fever 中 → 全队(雷) 直击伤害 400%（裁决 §2「直击队长全队直击 300–400%」带顶）
@@ -137,7 +156,7 @@ LEADER: tuple[tuple[str, dict[int, str], str], ...] = (
     ('331004#1', {0: CODE, 1: '0', 3: '0', 4: '0', 11: '0', 18: '0', 25: '0', 37: '(None)',
                   44: '0', 45: '56', 49: '25000', 50: '25000'},
      '自身 Fever时间延长 25%'),
-    # L4 Fever 引擎：非 Fever 时任一雷属性角色发动技能 → 追加 Fever 点 50
+    # L4 Fever 引擎：雷共鸣且非 Fever 时任一雷属性角色发动技能 → 追加 Fever 点
     #    724 不能进队长表（= C7050），队长层的 Fever 回转只能用官方 213
     ('131164#3', {0: CODE, 1: '0', 3: '0', 4: '2', 7: '600000', 8: '600000', 9: ELEMENT_TOKEN,
                   11: '186', 18: '0', 25: '23', 26: '7', 27: ELEMENT_TOKEN, 28: '100000',
@@ -146,106 +165,121 @@ LEADER: tuple[tuple[str, dict[int, str], str], ...] = (
      '雷·编成≥6 且 非Fever 时: 技能发动≥1 → 自身 追加Fever点 5000%'),
 )
 
-#: 一键内 c2（雕像组）必须单值（裁决 §8：官方 790 个多记录键 0 个混用，``KL.check_ability_key``
-#: 也硬卡）。选组规则＝**该键用到的每个 kind 在官方基线上都有这一组的先例**，多个候选取
-#: 「最小先例数最大」的，并列时取母本 231069 用过的组。官方实测（I=瞬发内容 / D=持续内容）：
+#: 一键内 c2（雕像组）必须单值（裁决 §8）。选组规则＝**该键用到的每个 kind 在官方基线上
+#: 都有这一组的先例**，多候选取「最小先例数最大」的。本轮实扫（官方 ability 表）：
 #:
-#: ======== ============== ===============================================================
-#: 键       组             官方先例
-#: ======== ============== ===============================================================
-#: 1399911  attack_common  I211 = 31、D1 = 33
-#: 1399912  attack_common  I0 = 61、D0 = 210
-#: 1399913  attack_common  D1 = 33、D0 = 210（I724 是 APK 补丁 kind，官方全表零行）
-#: 1399914  condition      I461 = 7（全表最高）
-#: 1399915  action_skill   D3 = 7、I226 = 4
-#: 1399916  special        D0 = 12、I69 = 2；母本 2310693（I226＋I55 混 kind）同样挂 special
-#: ======== ============== ===============================================================
-STATUE_GROUPS = {'1399911': 'attack_common', '1399912': 'attack_common', '1399913': 'attack_common',
-                 '1399914': 'condition', '1399915': 'action_skill', '1399916': 'special'}
+#: ======== ================= ====================================================
+#: 键       kinds             候选（最小先例数）→ 取
+#: ======== ================= ====================================================
+#: 1399911  I211 I536         special(21) / action_skill(7) / attack_common(2) → special
+#: 1399912  I32×2 I461        attack_common(2) / attack_yellow(1) / special(1)  → attack_common
+#: 1399913  I724×2 I33 I461   attack_common（724 官方零行，不约束）             → attack_common
+#: 1399914  I211 I226         special(18) / attack_common(7) / action_skill(4)  → special
+#: 1399915  I211 I226         同上                                              → special
+#: 1399916  I69 I205          condition(3) / special(2) / action_skill(1)       → condition
+#: ======== ================= ====================================================
+STATUE_GROUPS = {'1399911': 'special', '1399912': 'attack_common', '1399913': 'attack_common',
+                 '1399914': 'special', '1399915': 'special', '1399916': 'condition'}
+
+_A = {slot: f"{CODE}_{slot}" for slot in range(1, 7)}
 
 ABILITY: dict[str, tuple[tuple[str, dict[int, str], str], ...]] = {
-    # 1 自充 ＋ Fever 门下的全队直击基础档
+    # 1 自充 ＋ 共鸣时开强化档（效果全在 DSL 的 ConditionalsChangeSkillFlag 强化分支里）
     '1399911': (
-        ('2310694#0', {0: 'outlaw_panther_moon_1', 1: 'true', 2: 'attack_common', 3: '0', 5: '0',
-                       6: '0', 13: '0', 20: '0', 27: '0', 39: '(None)', 46: '0', 47: '211',
-                       48: '0', 51: '100000', 52: '100000'},
-         '自身 技能槽 100%'),
-        ('1511472#0', {0: 'outlaw_panther_moon_1', 1: 'true', 2: 'attack_common', 3: '0', 5: '1',
-                       6: '0', 13: '0', 20: '0', 85: '(None)', 97: '4', 108: 'false', 109: '1',
-                       110: '5', 111: 'Yellow', 113: '80000', 114: '80000'},
-         '持续·Fever → 赋予全队(雷) Direct伤害 80%'),
+        ('2310694#0', {0: _A[1], 1: 'true', 2: 'special', 3: '0', 5: '0', 6: '0', 13: '0',
+                       20: '0', 27: '0', 39: '(None)', 46: '0', 47: '211', 48: '0',
+                       51: '50000', 52: '50000'},
+         '自身 技能槽 50%'),
+        ('1411113#0', {0: _A[1], 1: 'true', 2: 'special', 3: '0', 5: '0', 6: '2',
+                       9: '600000', 10: '600000', 11: ELEMENT_TOKEN, 13: '0', 20: '0',
+                       27: '0', 39: '(None)', 46: '0', 47: '536', 70: CAS_CHANGE_SKILL},
+         f'雷·编成≥6 时: 自身 切换技能形态[{CAS_CHANGE_SKILL}]'),
     ),
-    # 2 「开碗见彩」技能命中给 15 秒状态攻击力（CT 20 秒）＋ 吃到追加直击状态后再叠一层攻击
+    # 2 技能命中喂队长 ＋ 豹步门下的全队攻击（第三条是豹步的获取行，面板不显示）
     '1399912': (
-        ('1610693#0', {0: 'outlaw_panther_moon_2', 1: 'true', 2: 'attack_common', 3: '0', 5: '0',
-                       6: '0', 13: '0', 20: '0', 27: '107', 28: '0', 30: '100000', 31: '100000',
-                       34: '(None)', 35: '1200', 39: '(None)', 46: '0', 47: '0', 48: '5',
-                       49: 'Yellow', 51: '80000', 52: '80000', 57: '90000000', 58: '90000000',
-                       59: '100000', 60: '100000', 61: '(None)', 62: '(None)', 63: '(None)',
-                       64: '(None)', 65: '(None)', 67: '0', 72: 'false', 74: '1', 75: '0'},
-         '技能Hit≥1(CT20秒) → 赋予全队(雷) 状态攻击力 80%(15秒)×1次'),
-        ('2310872#1', {0: 'outlaw_panther_moon_2', 1: 'true', 2: 'attack_common', 3: '0', 5: '1',
-                       6: '0', 13: '0', 20: '0', 85: '(None)', 97: '73', 98: '0', 108: 'false',
-                       109: '0', 110: '5', 111: 'Yellow', 113: '45000', 114: '45000'},
-         '持续·状态追加直接攻击 → 赋予全队(雷) 攻击力 45%'),
-    ),
-    # 3 Ⓜ 主位核心：724 Fever 回转 ＋ Fever 门下全队直击 ＋ 骰运每层全队攻击
-    '1399913': (
-        ('live:1499893#1', {0: 'outlaw_panther_moon_3', 1: 'false', 2: 'attack_common', 3: '0',
-                            5: '0', 6: '2', 9: '600000', 10: '600000', 11: 'Yellow', 13: '186',
-                            20: '0', 27: '20', 28: '7', 29: 'Yellow', 30: '4500000',
-                            31: '4500000', 34: '(None)', 35: '0', 39: '(None)', 46: '0',
-                            47: '724', 51: '12000', 52: '12000'},
-         '雷·编成≥6 且 非Fever 时: 编成直接攻击≥45 → 自身 Fever槽增减(上限比例) 12%'),
-        ('1511472#0', {0: 'outlaw_panther_moon_3', 1: 'false', 2: 'attack_common', 3: '0', 5: '1',
-                       6: '0', 13: '0', 20: '0', 85: '(None)', 97: '4', 108: 'false', 109: '1',
-                       110: '5', 111: 'Yellow', 113: '120000', 114: '120000'},
-         '持续·Fever → 赋予全队(雷) Direct伤害 120%'),
-        ('1611233#2', {0: 'outlaw_panther_moon_3', 1: 'false', 2: 'attack_common', 3: '0', 5: '1',
-                       6: '0', 13: '0', 20: '0', 85: '(None)', 97: '134', 98: '0', 100: '100000',
-                       101: '100000', 102: '6', 104: UID, 108: 'false', 109: '0', 110: '5',
-                       111: 'Yellow', 113: '12000', 114: '12000'},
-         '持续·状态累积计数固有≥1(限6次)[固有13999101] → 赋予全队(雷) 攻击力 12%'),
-    ),
-    # 4 骰运叠层：技能发动 +2 层、雷属性直击合计每 35 次 +1 层
-    '1399914': (
-        ('1611231#0', {0: 'outlaw_panther_moon_4', 1: 'true', 2: 'condition', 3: '0', 5: '0',
-                       6: '0', 13: '0', 20: '0', 27: '23', 28: '0', 30: '100000', 31: '100000',
+        ('1610054#0', {0: _A[2], 1: 'true', 2: 'attack_common', 3: '0', 5: '0', 6: '2',
+                       9: '600000', 10: '600000', 11: ELEMENT_TOKEN, 13: '0', 20: '0',
+                       27: '107', 28: '0', 30: '100000', 31: '100000', 34: '(None)', 35: '0',
+                       39: '(None)', 46: '0', 47: '32', 48: '2', 51: '50000', 52: '50000'},
+         '雷·编成≥6 时: 技能Hit≥1 → 赋予队长 攻击力 50%'),
+        # 前置块 6–12 / 13–19 / 20–26 三段列偏移完全相同（1611831#L1 与 1411413#L1 互证）
+        # ⇒ 把 donor 的前置2（187 + puller '0' + 固有 id）整段搬到前置1，前置2 清成 '0' 哨兵。
+        ('1411413#0', {0: _A[2], 1: 'true', 2: 'attack_common', 3: '0', 5: '0',
+                       6: '187', 7: '0', 8: '', 9: '', 10: '', 11: '', 12: UID_STEP,
+                       13: '0', 14: '', 19: '', 20: '0', 27: '0', 39: '(None)', 46: '0',
+                       47: '32', 48: '5', 49: ELEMENT_TOKEN, 51: '250000', 52: '250000'},
+         f'状态固有[固有{UID_STEP}] 时: 赋予全队(雷) 攻击力 250%'),
+        ('1611231#0', {0: _A[2], 1: 'true', 2: 'attack_common', 3: '0', 5: '0', 6: '0',
+                       13: '0', 20: '0', 27: '23', 28: '0', 30: '100000', 31: '100000',
                        34: '(None)', 35: '0', 39: '(None)', 46: '0', 47: '461', 48: '0',
-                       51: '200000', 52: '200000', 59: '100000', 60: '100000', 68: UID,
+                       51: '100000', 52: '100000', 59: '100000', 60: '100000', 68: UID_STEP,
                        74: '1', 75: '0'},
-         '技能发动≥1 → 自身 状态固有 200%×1次'),
-        ('1611231#0', {0: 'outlaw_panther_moon_4', 1: 'true', 2: 'condition', 3: '0', 5: '0',
-                       6: '0', 13: '0', 20: '0', 27: '20', 28: '7', 29: 'Yellow', 30: '3500000',
-                       31: '3500000', 34: '(None)', 35: '0', 39: '(None)', 46: '0', 47: '461',
-                       48: '0', 51: '100000', 52: '100000', 59: '100000', 60: '100000',
-                       68: UID, 74: '1', 75: '0'},
-         '编成直接攻击≥35 → 自身 状态固有 100%×1次'),
+         '技能发动≥1 → 自身 状态固有 100%×1次'),
     ),
-    # 5 Fever 门下的全队充能（给 Fever 中的技能循环提速）＋ 击杀追加连击
+    # 3 Ⓜ 主位核心：Fever 收支三条 ＋ 骰运获取（轮盘本体在技能 DSL 里，零行）
+    '1399913': (
+        ('live:1499893#1', {0: _A[3], 1: 'false', 2: 'attack_common', 3: '0', 5: '0',
+                            6: '2', 9: '600000', 10: '600000', 11: ELEMENT_TOKEN, 13: '186',
+                            20: '0', 27: '20', 28: '7', 29: ELEMENT_TOKEN, 30: '4500000',
+                            31: '4500000', 34: '(None)', 35: '0', 39: '(None)', 46: '0',
+                            47: '724', 51: '35000', 52: '35000'},
+         '雷·编成≥6 且 非Fever 时: 编成直接攻击≥45 → 自身 Fever槽增减(上限比例) 35%'),
+        ('1310011#0', {0: _A[3], 1: 'false', 2: 'attack_common', 3: '0', 5: '0', 6: '0',
+                       13: '0', 20: '0', 27: '8', 30: '100000', 31: '100000', 34: '(None)',
+                       35: '0', 39: '(None)', 46: '0', 47: '33', 48: '5', 49: ELEMENT_TOKEN,
+                       51: '150000', 52: '150000'},
+         'Fever≥1 → 赋予全队(雷) Direct伤害 150%'),
+        # 前置 12 Fever 只填 kind 列（照官方 1310012#L1 的 186 写法）
+        ('live:1499893#1', {0: _A[3], 1: 'false', 2: 'attack_common', 3: '0', 5: '0',
+                            6: '12', 9: '', 10: '', 11: '', 13: '0', 20: '0', 27: '20',
+                            28: '7', 29: ELEMENT_TOKEN, 30: '2000000', 31: '2000000',
+                            34: '(None)', 35: '0', 39: '(None)', 46: '0', 47: '724',
+                            51: '-50000', 52: '-50000'},
+         'Fever 时: 编成直接攻击≥20 → 自身 Fever槽增减(上限比例) -50%'),
+        ('1611231#0', {0: _A[3], 1: 'false', 2: 'attack_common', 3: '0', 5: '0', 6: '2',
+                       9: '600000', 10: '600000', 11: ELEMENT_TOKEN, 13: '0', 20: '0',
+                       27: '20', 28: '7', 29: ELEMENT_TOKEN, 30: '7500000', 31: '7500000',
+                       34: '(None)', 35: '0', 39: '(None)', 46: '0', 47: '461', 48: '0',
+                       51: '100000', 52: '100000', 59: '100000', 60: '100000', 68: UID_DICE,
+                       74: '1', 75: '0'},
+         '雷·编成≥6 时: 编成直接攻击≥75 → 自身 状态固有 100%×1次'),
+    ),
+    # 4 每次获得贯穿 → 自充 ＋ 连击（IT 51 = 每被付与一次贯通就 countUp 一次）
+    '1399914': (
+        ('2110012#0', {0: _A[4], 1: 'true', 2: 'special', 3: '0', 5: '0', 6: '2',
+                       9: '600000', 10: '600000', 11: ELEMENT_TOKEN, 13: '0', 20: '0',
+                       27: '51', 30: '100000', 31: '100000', 34: '(None)', 35: '0',
+                       39: '(None)', 46: '0', 47: '211', 48: '0', 51: '5000', 52: '5000'},
+         '雷·编成≥6 时: 状态贯通≥1 → 自身 技能槽 5%'),
+        ('2110012#0', {0: _A[4], 1: 'true', 2: 'special', 3: '0', 5: '0', 6: '2',
+                       9: '600000', 10: '600000', 11: ELEMENT_TOKEN, 13: '0', 20: '0',
+                       27: '51', 30: '100000', 31: '100000', 34: '(None)', 35: '0',
+                       39: '(None)', 46: '0', 47: '226', 48: '', 51: '5000000', 52: '5000000'},
+         '雷·编成≥6 时: 状态贯通≥1 → 自身 追加连击 50'),
+    ),
+    # 5 击杀回馈（技能槽给全队(雷)，连击是全局量 ⇒ target 列官方留空）
     '1399915': (
-        ('1510633#1', {0: 'outlaw_panther_moon_5', 1: 'true', 2: 'action_skill', 3: '0', 5: '1',
-                       6: '0', 9: '', 10: '', 11: '', 13: '0', 20: '0', 85: '(None)', 97: '4',
-                       108: 'false', 109: '3', 110: '5', 111: 'Yellow', 113: '12000',
-                       114: '12000'},
-         '持续·Fever → 赋予全队(雷) 技能槽充能 12%'),
-        ('2310693#0', {0: 'outlaw_panther_moon_5', 1: 'true', 2: 'action_skill', 3: '0', 5: '0',
-                       6: '0', 11: '', 13: '0', 20: '0', 27: '10', 30: '100000', 31: '100000',
-                       34: '(None)', 35: '0', 39: '(None)', 46: '0', 47: '226', 51: '500000',
-                       52: '500000'},
-         '击杀敌人≥1 → 自身 追加连击 5'),
+        ('1110033#0', {0: _A[5], 1: 'true', 2: 'special', 3: '0', 5: '0', 6: '0', 13: '0',
+                       20: '0', 27: '10', 30: '100000', 31: '100000', 34: '(None)', 35: '0',
+                       39: '(None)', 46: '0', 47: '211', 48: '5', 49: ELEMENT_TOKEN,
+                       51: '25000', 52: '25000'},
+         '击杀敌人≥1 → 赋予全队(雷) 技能槽 25%'),
+        ('1110033#0', {0: _A[5], 1: 'true', 2: 'special', 3: '0', 5: '0', 6: '0', 13: '0',
+                       20: '0', 27: '10', 30: '100000', 31: '100000', 34: '(None)', 35: '0',
+                       39: '(None)', 46: '0', 47: '226', 48: '', 49: '', 51: '5000000',
+                       52: '5000000'},
+         '击杀敌人≥1 → 自身 追加连击 50'),
     ),
-    # 6 副位友好档：Fever 门下全队攻击 ＋ 全队麻痹无效（麻痹中的成员不产生直击 ⇒ 真收益）
+    # 6 副位友好档：全队麻痹无效（麻痹中的成员不产生直击 ⇒ 对直击队是真收益）＋ 全队体力
     '1399916': (
-        ('1511473#0', {0: 'outlaw_panther_moon_6', 1: 'true', 2: 'special', 3: '0', 5: '1',
-                       6: '0', 9: '', 10: '', 11: '', 13: '0', 20: '0', 85: '(None)', 97: '4',
-                       108: 'false', 109: '0', 110: '5', 111: 'Yellow', 113: '50000',
-                       114: '50000'},
-         '持续·Fever → 赋予全队(雷) 攻击力 50%'),
-        ('1411833#3', {0: 'outlaw_panther_moon_6', 1: 'true', 2: 'special', 3: '0', 5: '0',
-                       6: '0', 13: '0', 20: '0', 27: '0', 30: '', 31: '', 34: '', 36: '',
-                       39: '(None)', 46: '0', 47: '69', 48: '5', 49: 'Yellow'},
+        ('1411833#3', {0: _A[6], 1: 'true', 2: 'condition', 3: '0', 5: '0', 6: '0',
+                       13: '0', 20: '0', 27: '0', 30: '', 31: '', 34: '', 36: '',
+                       39: '(None)', 46: '0', 47: '69', 48: '5', 49: ELEMENT_TOKEN},
          '赋予全队(雷) 麻痹无效'),
+        ('1410021#0', {0: _A[6], 1: 'true', 2: 'condition', 3: '0', 5: '0', 6: '0',
+                       13: '0', 20: '0', 27: '0', 39: '(None)', 46: '0', 47: '205',
+                       48: '5', 49: ELEMENT_TOKEN, 51: '25000', 52: '25000'},
+         '赋予全队(雷) HP 25%'),
     ),
 }
 
@@ -260,10 +294,75 @@ LEADER_KIND_COLUMNS = (25, 45, 95, 107)
 ABILITY_KIND_COLUMNS = (27, 47, 97, 109)
 
 
+# ------------------------------------------------------------------ 面板文案
+# 逐行 = rework1/panel/kuro.json（作者已过目）。desc_override 会盖掉客户端逐行画的 Ⓜ，
+# 主位限制的键（槽 3，c1 = 'false'）必须每行自带 <icon id='main'>。
+
+MAIN_ICON = " <icon id='main'>  "
+
+PANEL_LEADER = (
+    "Fever中：赋予雷属性角色直接攻击伤害＋400%",
+    "Fever中：赋予雷属性角色攻击力＋200%",
+    "自身Fever持续时间延长＋25%",
+    "雷属性共鸣时，非Fever状态下：发动技能，自身Fever槽＋50%",
+)
+
+PANEL_ABILITY: dict[int, tuple[str, ...]] = {
+    1: (
+        "战斗开始时：自身技能槽＋50%",
+        "雷属性共鸣时：强化技能——技能的持续时间延长，且威力随连击数提升，按直接攻击伤害判定",
+    ),
+    2: (
+        "雷属性共鸣时：自身技能每命中1次，队长攻击力＋50%",
+        "自身处于「豹步」状态时：雷属性角色攻击力＋250%",
+    ),
+    3: (
+        "雷属性共鸣时，非Fever状态下：雷属性角色直接攻击合计每达到45次，自身Fever槽＋35%",
+        "每次进入Fever：雷属性角色直击伤害＋150%",
+        "Fever中：雷属性角色每直击20次，自身Fever槽－50%",
+        "雷属性共鸣时：雷属性角色每直击75次，自身「骰运」＋1层，最多6层",
+        "强化技能：释放技能后，从下列效果中随机抽取一项（抽取次数随「骰运」层数提升，最多6次，"
+        "每次独立判定，可能抽到重复效果）：攻击力＋500%（持续15秒）、Fever槽大幅上升、"
+        "贯穿效果（持续15秒）、直击伤害＋500%（持续15秒）、连击＋500、队长技能槽＋15%",
+    ),
+    4: ("雷属性共鸣时：每次获得贯穿效果，自身技能槽＋5%、连击＋50",),
+    5: ("击败敌人时：雷属性角色技能槽＋25%、连击＋50",),
+    6: ("雷属性角色免疫麻痹效果", "雷属性角色生命值＋25%"),
+}
+
+#: 536「技能强化」条目：按裁决 §3 不写数字与时间。
+CAS_SKILL_FLAG_TEXT = "强化『博饼·满堂彩』：摇碗的持续时间延长，威力随连击数提升，" \
+                      "并按直接攻击伤害判定"
+
+
+def ability_key(slot: int) -> str:
+    """词条键 = ``<cid><槽号>``（1399911 … 1399916）。"""
+    return f"{CID_S}{slot}"
+
+
+def _main_only(slot: int) -> bool:
+    """该槽是否 Ⓜ 主位限制（ability c1 = ``'false'`` ＝不可上合击位）。"""
+    return ABILITY[ability_key(slot)][0][1].get(1) == "false"
+
+
+def _override_text(slot: int) -> str:
+    prefix = MAIN_ICON if _main_only(slot) else ""
+    return "\n".join(prefix + line for line in PANEL_ABILITY[slot])
+
+
+CAS_TEXTS = {
+    CAS_CHANGE_SKILL: CAS_SKILL_FLAG_TEXT,
+    CAS_LEADER: "\n".join(PANEL_LEADER),
+    **{CAS_ABILITY[slot]: _override_text(slot) for slot in range(1, 7)},
+}
+SKILL_FLAG_TEXT_KEYS = (CAS_CHANGE_SKILL,)
+
+
 # ------------------------------------------------------------------ 技能
 
-#: ``action_skill`` c4/c5：母本 231069 原值，零改动（★5 辅助带内）。
-SKILL_ENERGY = {"1": ("490", "490"), "2": ("490", "440")}
+#: ``action_skill`` c4/c5：作者放行第 5 条「黑 550 —— 觉醒前后两档都写这个数」。
+#: 母本原值是 490/490 与 490/440。
+SKILL_ENERGY = {"1": ("550", "550"), "2": ("550", "550")}
 
 #: ``CreateNormalAttack`` 下标 6（倍率）：旧 → 新。15 段 × 2.7 = 40.5 倍（裁决 §2「辅助技能 36–50×」）。
 SKILL_MULTIPLIER = {
@@ -272,7 +371,6 @@ SKILL_MULTIPLIER = {
 }
 
 #: ``FindAllSubjects(33)`` 下 ``CreateCondition`` 的 AC 列表：旧（母本 PF 伤害）→ 新（直击伤害）。
-#: arity 完全相同（3 参），只换构造名与数值。
 SKILL_DIRECT_AC = {
     "1": (["ACPowerFlipDamage", [{"min": 720, "max": 720}], [{"min": 0.3, "max": 0.3}],
            [{"min": 1, "max": 1}]],
@@ -285,8 +383,8 @@ SKILL_DIRECT_AC = {
 }
 
 #: 追加的第二条 ``CreateCondition`` 的 AC：全队＋协力球 **3 段**追加直接攻击。
-#: 形状逐格抄 live 149988 ``scutum_valentine`` 的 ``CreateCondition 204``
-#: （官方 20 处 ACAdditionalDirectAttack 全是 subject -17／2 段；>2 段且发给一群人的先例只有它）。
+#: 跨角色段数取优不相加（卡 B §1.1）：凯尔 +300% ＞ 罗尔夫 +200% ＞ 黑 +80%/+100%，
+#: 黑是辅助，% 最低 ⇒ 同队时被主 C 顶掉，不会把主 C 拉低。
 SKILL_ADDITIONAL_AC = {
     "1": ["ACAdditionalDirectAttack", [{"min": 900, "max": 900}], [{"min": 3, "max": 3}],
           [{"min": 0.8, "max": 0.8}], [{"min": 1, "max": 1}]],
@@ -295,14 +393,53 @@ SKILL_ADDITIONAL_AC = {
 }
 
 #: ``CreateHitArea`` 命令列表下标 24（= params[23] buffTargetAs）：0 自动 → **4 按直接攻击伤害判定**。
-#: 先例：live 169992 ``blackflower_wiz_yukata`` 两档各两处判定区实读 = 4（记忆 ``wf-persistent-field-direct-damage``）。
 HITAREA_BUFF_TARGET_SLOT = 24
 HITAREA_BUFF_TARGET_AS = 4
+
+#: S1 取消后摇：母本 ``[-18, 75, ["Stop"], ["AB"], 0]`` → 官方千岳 ``psychic_tohru`` 的非定住形。
+STOPBALL_BEFORE = [-18, 75, ["Stop"], ["AB"], 0]
+STOPBALL_AFTER = [-18, 30, ["RestoreToSpeedBeforeActionExecution"], ["AB"], 0]
+
+#: 强化分支的判定区旋钮（常态 → 强化）。每段间隔由 ``CalculatedUsingMaxNumOfHits`` 自动算
+#: ⇒ 180/45 仍是 4 帧一跳，只是打得更久（总倍率 ×3），手感不变。
+HITAREA_LIFETIME = (60, 180)
+HITAREA_MAX_HITS = (15, 45)
+CLOSE_WAIT = (59, 179)
+EFFECT_LIFETIME = (60, 180)
+
+#: 骰运轮盘旋钮。
+ROULETTE_SLOTS = 6                 # 骰运上限 6 ⇒ 最多 6 个轮盘
+ROULETTE_BIND_BASE = 20            # 母本只用了绑定 id 3；20–25 不会撞
+ROULETTE_FRAMES = 900              # 15 秒
+ROULETTE_ATTACK = 5.0              # 攻击力 +500%
+ROULETTE_DIRECT = 5.0              # 直击伤害 +500%
+ROULETTE_FEVER_POINT = 250         # 官方最高档（AddFeverPoint 只能加点数，不能按槽比例）
+ROULETTE_COMBO = 500               # 连击 +500
+ROULETTE_LEADER_SKILL = 0.15       # 队长技能槽 +15%（选择器 34 = 队长）
+LEADER_SELECTOR = 34               # 官方 student_gunsmith_2（夏·丝丝）实读
+CREATE_CONDITION_TARGET_KIND = 3   # subject -17 下官方 277 处都是 3；错配 = 施法 C16102
 
 #: 母本整树的命令计数指纹：任何一项对不上都说明母本漂移或改错了结构。
 DONOR_COMMAND_COUNTS = {
     "StopBall": 1, "ShowEffect": 4, "CreateHitArea": 1, "ShakeCamera": 1,
     "CreateNormalAttack": 1, "FindAllSubjects": 1, "CreateCondition": 1,
+}
+#: 改完之后应有的命令计数（两档相同）。
+MUTATED_COMMAND_COUNTS = {
+    "StopBall": 1,
+    "ShowEffect": 7,                     # 开碗 1 ＋（旋转/吹雪/收碗）×2 分支
+    "CreateHitArea": 2,
+    "ShakeCamera": 2,
+    "CreateNormalAttack": 2,
+    "FindAllSubjects": 1 + ROULETTE_SLOTS,
+    "CreateCondition": 2 + 3 * ROULETTE_SLOTS,
+    "ConditionalsChangeSkillFlag": 1,
+    "ConditionalsProbability": ROULETTE_SLOTS,
+    "ProbabilityWeight": 6 * ROULETTE_SLOTS,
+    "ConditionalsConditionAccumulationNumber": ROULETTE_SLOTS - 1,
+    "AddFeverPoint": ROULETTE_SLOTS,
+    "AddCombo": ROULETTE_SLOTS,
+    "AddSkillPoint": ROULETTE_SLOTS,
 }
 
 OFFICIAL_EFFECT_PREFIX = f"battle/effect/skill_unique/{TEMPLATE_CODE}/"
@@ -351,8 +488,106 @@ def effect_paths(tree) -> list[str]:
             and node[0] == "SpecifyEffectDirectly" and isinstance(node[1], str)]
 
 
+def _cmd(*payload) -> list:
+    return ["Command", list(payload)]
+
+
+def _create_condition(subject: int, ac: list) -> list:
+    """``CreateCondition`` 12 参，形状逐格照抄母本（下标 10 = 付与对象种类）。"""
+    return _cmd("CreateCondition", subject, [ac], [{"min": 1, "max": 1}],
+                ["GenericConditionHitEffect"], True, False, "", None, False,
+                CREATE_CONDITION_TARGET_KIND, [{"min": 1, "max": 1}], False)
+
+
+def _roulette_effects(bind: int) -> list[list]:
+    """一个轮盘的 6 个分支体（各是一条语句）。顺序 = 面板文案顺序。"""
+    frames = [{"min": ROULETTE_FRAMES, "max": ROULETTE_FRAMES}]
+    one = [{"min": 1, "max": 1}]
+    return [
+        # ① 攻击力 +500%（15 秒）
+        _create_condition(-17, ["ACAttackPoint", frames,
+                                [{"min": ROULETTE_ATTACK, "max": ROULETTE_ATTACK}], one]),
+        # ② Fever 槽大幅上升（DSL 只能加固定点数，官方最高档 250 —— _deviations kuro #1）
+        _cmd("AddFeverPoint", [{"min": ROULETTE_FEVER_POINT, "max": ROULETTE_FEVER_POINT}]),
+        # ③ 贯穿效果（15 秒）
+        _create_condition(-17, ["ACPiercing", frames]),
+        # ④ 直击伤害 +500%（15 秒）
+        _create_condition(-17, ["ACDirectDamage", frames,
+                                [{"min": ROULETTE_DIRECT, "max": ROULETTE_DIRECT}], one]),
+        # ⑤ 连击 +500
+        _cmd("AddCombo", [{"min": ROULETTE_COMBO, "max": ROULETTE_COMBO}]),
+        # ⑥ 队长技能槽 +15%（选择器 34 = 队长，官方 student_gunsmith_2 实读）
+        _cmd("FindAllSubjects", bind, LEADER_SELECTOR, [], [], [], [], [], ["DoNothing"],
+             ["Block", [_cmd("AddSkillPoint", bind,
+                             [{"min": ROULETTE_LEADER_SKILL, "max": ROULETTE_LEADER_SKILL}])]]),
+    ]
+
+
+def _wheel(index: int) -> list:
+    """一个等权 6 选 1 轮盘。
+
+    ``ConditionalsProbability`` 的分支形状是强校验的：每个分支**恰好两个元素**，
+    ``[0]`` 是 ``Command(ProbabilityWeight w)``、``[1]`` 是 ``Block``；偏差直接
+    ``throw INTERNAL ERROR`` ＝进战斗崩（官方先例 ``dryad_hw23_2``，权重 5/95）。
+    """
+    branches = [["Block", [_cmd("ProbabilityWeight", 1), ["Block", [effect]]]]
+                for effect in _roulette_effects(ROULETTE_BIND_BASE + index)]
+    return _cmd("ConditionalsProbability", ["Block", branches])
+
+
+def build_roulette() -> list[list]:
+    """骰运门链：抽取次数 = ``max(1, 骰运层数)``，上限 6。返回**语句列表**。
+
+    ``ConditionalsConditionAccumulationNumber`` 唯一官方先例 ``combat_soldier_smr22_2``：
+    ``[["DCUnique", <uid>], <阈值>, <成立分支>, <否则分支>]``；空分支写 ``["Block", []]``，
+    **不能写 ``["DoNothing"]``**（那是 IfTargetNotFound 枚举，进游戏 F1009）。
+    """
+    node = ["Block", [_wheel(ROULETTE_SLOTS - 1)]]
+    for level in range(ROULETTE_SLOTS, 1, -1):
+        gate = _cmd("ConditionalsConditionAccumulationNumber", ["DCUnique", int(UID_DICE)],
+                    level, node, ["Block", []])
+        node = ["Block", [_wheel(level - 2), gate]]
+    return list(node[1])
+
+
+def _enhance_event(event: list) -> None:
+    """强化分支的 ``Event Wait 10`` 就地改：判定区寿命／段数／连击加成／特效寿命／收碗等待。"""
+    if not (isinstance(event, list) and len(event) == 2 and event[0] == "Event"
+            and isinstance(event[1], list) and event[1][0] == "Wait"):
+        raise KuroError(f"enhanced branch expects the donor Wait event, got {event[:1]!r}")
+    inner = event[1][3]
+    if not (isinstance(inner, list) and inner[0] == "Block" and len(inner[1]) == 2):
+        raise KuroError("donor Wait event body drifted (expected 2 statements)")
+    hit_area = inner[1][0][1]
+    close_event = inner[1][1]
+
+    if hit_area[13] != ["SpecifyHitAreaLifetimeDirectly", HITAREA_LIFETIME[0]]:
+        raise KuroError(f"donor hit-area lifetime drifted: {hit_area[13]!r}")
+    hit_area[13] = ["SpecifyHitAreaLifetimeDirectly", HITAREA_LIFETIME[1]]
+    if hit_area[15] != ["Some", [{"min": HITAREA_MAX_HITS[0], "max": HITAREA_MAX_HITS[0]}]]:
+        raise KuroError(f"donor hit-area max hits drifted: {hit_area[15]!r}")
+    hit_area[15] = ["Some", [{"min": HITAREA_MAX_HITS[1], "max": HITAREA_MAX_HITS[1]}]]
+
+    # 判定区里的两条 ShowEffect（旋转／吹雪）跟着加长，否则演出与判定脱节
+    for statement in hit_area[20][1]:
+        show = statement[1]
+        if show[5] != ["SpecifyEffectLifetimeDirectly", EFFECT_LIFETIME[0]]:
+            raise KuroError(f"donor effect lifetime drifted: {show[5]!r}")
+        show[5] = ["SpecifyEffectLifetimeDirectly", EFFECT_LIFETIME[1]]
+
+    # CreateNormalAttack 下标 8 = enablesComboBonus（×(1 + 连击 × 0.005)，无上限）
+    cna = hit_area[23][1][1][1]
+    if cna[0] != "CreateNormalAttack" or cna[8] is not False:
+        raise KuroError(f"donor CreateNormalAttack combo flag drifted: {cna[:1]!r} {cna[8]!r}")
+    cna[8] = True
+
+    if close_event[1][1] != CLOSE_WAIT[0]:
+        raise KuroError(f"donor close-effect wait drifted: {close_event[1][1]!r}")
+    close_event[1][1] = CLOSE_WAIT[1]
+
+
 def mutate_tree(tree, level: str):
-    """母本整树 → 本角色的树（S1–S4）。返回 ``(tree, evidence)``；结构不符直接抛错。"""
+    """母本整树 → 本角色的树（S1–S6）。返回 ``(tree, evidence)``；结构不符直接抛错。"""
     counts = _command_counts(tree)
     if counts != DONOR_COMMAND_COUNTS:
         raise KuroError(f"donor skill tree {level} drifted: commands {counts} "
@@ -361,11 +596,18 @@ def mutate_tree(tree, level: str):
         raise KuroError(f"donor skill tree {level}: unexpected root {tree[:2]!r}")
     if tree[1] != 2 or tree[10] != 0:
         # tree[10] = buffTargetAs（记忆 ``wf-dsl-damage-attribution-bufftargetas``）：
-        # 0 = 自动。伤害归属由判定区那一格（S1）决定，根头保持 0。
+        # 0 = 自动。伤害归属由判定区那一格（S2）决定，根头保持 0。
         raise KuroError(f"donor root header {level}: movementPriority={tree[1]} "
                         f"buffTargetAs={tree[10]}, expected 2/0")
 
-    # --- S1 CreateHitArea params[23] buffTargetAs：0 → 4（按直接攻击伤害判定）
+    # --- S1 取消后摇：StopBall 换官方千岳的非定住形
+    (sb_parent, sb_index), = _command_slots(tree, "StopBall")
+    stop_ball = sb_parent[sb_index][1]
+    if stop_ball[1:] != STOPBALL_BEFORE:
+        raise KuroError(f"donor StopBall drifted: {stop_ball[1:]!r} != {STOPBALL_BEFORE!r}")
+    stop_ball[1:] = copy.deepcopy(STOPBALL_AFTER)
+
+    # --- S2 CreateHitArea params[23] buffTargetAs：0 → 4（按直接攻击伤害判定）
     (ha_parent, ha_index), = _command_slots(tree, "CreateHitArea")
     hit_area = ha_parent[ha_index][1]
     if len(hit_area) != 27:
@@ -373,11 +615,11 @@ def mutate_tree(tree, level: str):
     if hit_area[HITAREA_BUFF_TARGET_SLOT] != 0:
         raise KuroError(f"donor CreateHitArea[{HITAREA_BUFF_TARGET_SLOT}] "
                         f"{hit_area[HITAREA_BUFF_TARGET_SLOT]!r} != 0")
-    if hit_area[14] != ["CalculatedUsingMaxNumOfHits", 15]:
+    if hit_area[14] != ["CalculatedUsingMaxNumOfHits", HITAREA_MAX_HITS[0]]:
         raise KuroError(f"donor CreateHitArea hit budget drifted: {hit_area[14]!r}")
     hit_area[HITAREA_BUFF_TARGET_SLOT] = HITAREA_BUFF_TARGET_AS
 
-    # --- S2 CreateNormalAttack 下标 6（倍率）
+    # --- S3 CreateNormalAttack 下标 6（倍率）
     (cna_parent, cna_index), = _command_slots(tree, "CreateNormalAttack")
     cna = cna_parent[cna_index][1]
     if cna[2] != 255:
@@ -389,7 +631,7 @@ def mutate_tree(tree, level: str):
         raise KuroError(f"CreateNormalAttack multiplier {cna[6]!r} != donor {before_mult!r}")
     cna[6] = copy.deepcopy(after_mult)
 
-    # --- S3 FindAllSubjects(33) 下 CreateCondition 的 AC 列表：PF 伤害 → 直击伤害
+    # --- S4 FindAllSubjects(33) 下 CreateCondition 的 AC 列表：PF 伤害 → 直击伤害
     (fas_parent, fas_index), = _command_slots(tree, "FindAllSubjects")
     find_all = fas_parent[fas_index][1]
     if find_all[1] != 3 or find_all[2] != 33:
@@ -402,7 +644,7 @@ def mutate_tree(tree, level: str):
     if body[1] != find_all[1]:
         # CHA p1 必须 = 所在 FindAll 的绑定 id（记忆 ``wf-dsl-subject-lookup-map``）
         raise KuroError(f"CreateCondition subject {body[1]!r} != FindAllSubjects binding {find_all[1]!r}")
-    if body[10] != 3:
+    if body[10] != CREATE_CONDITION_TARGET_KIND:
         # 下标 10 = 付与对象种类：选择器 33/82 写 3（记忆 ``wf-createcondition-target-kind``）；
         # 错配 = 施法 C16102。母本这条已经是 3，整条克隆 ⇒ 原样保留。
         raise KuroError(f"donor CreateCondition target kind {body[10]!r} != 3")
@@ -415,34 +657,60 @@ def mutate_tree(tree, level: str):
     # 会把嵌套层吃掉一层，往返自检抓不到，进战斗才炸。
     body[2] = [copy.deepcopy(after_ac)]
 
-    # --- S4 同一个 Block 内追加第二条 CreateCondition（3 段追加直接攻击）
+    # --- S5 同一个 Block 内追加第二条 CreateCondition（3 段追加直接攻击）
     extra = copy.deepcopy(donor_cmd)
     extra[1][2] = [copy.deepcopy(SKILL_ADDITIONAL_AC[level])]
     cc_parent.insert(cc_index + 1, extra)
+
+    # --- S6 把「Wait 10 → 判定区」整段包进 ConditionalsChangeSkillFlag 两分支
+    statements = tree[11][1]
+    event_index = next(i for i, node in enumerate(statements)
+                       if isinstance(node, list) and node and node[0] == "Event")
+    plain_event = statements[event_index]
+    enhanced_event = copy.deepcopy(plain_event)
+    _enhance_event(enhanced_event)
+    roulette = build_roulette()
+    statements[event_index] = _cmd(
+        "ConditionalsChangeSkillFlag", 1,
+        ["Block", [enhanced_event, *roulette]],     # 强化档（雷共鸣时由 IC 536 打开）
+        ["Block", [plain_event]])                   # 常态档
 
     # --- 特效：全部还是官方母本路径（零克隆、零图集增量）
     paths = effect_paths(tree)
     stray = [p for p in paths if not p.startswith(OFFICIAL_EFFECT_PREFIX)]
     if stray:
         raise KuroError(f"skill {level} references non-official effect paths: {stray}")
-    if len(paths) != DONOR_COMMAND_COUNTS["ShowEffect"]:
+    if len(paths) != MUTATED_COMMAND_COUNTS["ShowEffect"]:
         raise KuroError(f"skill {level} has {len(paths)} effect refs, expected "
-                        f"{DONOR_COMMAND_COUNTS['ShowEffect']}")
+                        f"{MUTATED_COMMAND_COUNTS['ShowEffect']}")
+    if len(set(paths)) != DONOR_COMMAND_COUNTS["ShowEffect"]:
+        raise KuroError(f"skill {level} effect path set drifted: {sorted(set(paths))}")
 
     after = _command_counts(tree)
-    expect_after = dict(DONOR_COMMAND_COUNTS, CreateCondition=2)
-    if after != expect_after:
-        raise KuroError(f"mutated skill tree {level}: commands {after} != {expect_after}")
+    if after != MUTATED_COMMAND_COUNTS:
+        raise KuroError(f"mutated skill tree {level}: commands {after} != {MUTATED_COMMAND_COUNTS}")
 
     evidence = {
         "level": level,
+        "stop_ball": {"before": STOPBALL_BEFORE, "after": STOPBALL_AFTER,
+                      "why": "取消后摇：官方千岳 psychic_tohru 的非定住形（卡 C §5.4）"},
         "hit_area_buff_target_as": {"before": 0, "after": HITAREA_BUFF_TARGET_AS,
                                     "slot": HITAREA_BUFF_TARGET_SLOT},
         "create_normal_attack": {"before": before_mult, "after": copy.deepcopy(cna[6])},
         "create_condition": {"direct": {"before": before_ac, "after": after_ac},
                              "additional": copy.deepcopy(SKILL_ADDITIONAL_AC[level]),
                              "target_kind": body[10], "subject": body[1]},
-        "effect_refs": paths,
+        "change_skill_flag": {"enhanced": {"hit_area_lifetime": HITAREA_LIFETIME[1],
+                                           "max_hits": HITAREA_MAX_HITS[1],
+                                           "enables_combo_bonus": True},
+                              "plain": {"hit_area_lifetime": HITAREA_LIFETIME[0],
+                                        "max_hits": HITAREA_MAX_HITS[0],
+                                        "enables_combo_bonus": False}},
+        "roulette": {"wheels": ROULETTE_SLOTS, "unique": UID_DICE,
+                     "binds": [ROULETTE_BIND_BASE + i for i in range(ROULETTE_SLOTS)],
+                     "effects": ["ACAttackPoint", "AddFeverPoint", "ACPiercing",
+                                 "ACDirectDamage", "AddCombo", "AddSkillPoint(选择器34=队长)"]},
+        "effect_refs": sorted(set(paths)),
     }
     return tree, evidence
 
@@ -459,81 +727,149 @@ def donor_program(ctx, level: str) -> str:
 
 # ------------------------------------------------------------------ 固有状态图标
 
-def draw_icon(frame):
-    """48×48「骰运」图标：8× 画 + LANCZOS 缩，**alpha 一格不改**（沿用官方画框 donor）。
-
-    夜靛底 ``#221E1A`` ＋ 2px 金边，正中一颗立体金骰子（五点面朝前，点 ``#FFF4C0``），
-    骰子左上挑一弯极细月牙。四角透明由 ``frame`` 的 alpha 保证。
-    """
+def _canvas():
     from PIL import Image, ImageDraw
-
-    if frame.size != (48, 48):
-        raise KuroError(f"unique_condition icon frame is {frame.size}, expected (48, 48)")
-    scale = ICON_SCALE
-    size = 48 * scale
+    size = 48 * ICON_SCALE
     canvas = Image.new("RGB", (size, size), ICON_INK)
     draw = ImageDraw.Draw(canvas)
 
     def box(x0, y0, x1, y1):
-        return [x0 * scale, y0 * scale, x1 * scale, y1 * scale]
+        return [x0 * ICON_SCALE, y0 * ICON_SCALE, x1 * ICON_SCALE, y1 * ICON_SCALE]
 
-    # 金边：2px（1× 口径）的圆角外框
-    draw.rounded_rectangle(box(0, 0, 47.9, 47.9), radius=10 * scale,
-                           outline=ICON_GOLD, width=2 * scale)
-    # 月牙：整圆挖掉一个偏移的圆 ⇒ 极细的一弯，压在骰子左上、由骰子盖住一角
-    draw.ellipse(box(3.5, 3.0, 15.0, 14.5), fill=ICON_PIP)
-    draw.ellipse(box(5.9, 1.4, 17.4, 12.9), fill=ICON_INK)
-    # 骰子：背光面（偏移一点的暗金）→ 骰身 → 受光面
-    draw.rounded_rectangle(box(14.2, 14.6, 36.0, 36.4), radius=5 * scale, fill=ICON_GOLD_DARK)
-    draw.rounded_rectangle(box(13.0, 13.4, 34.8, 35.2), radius=5 * scale, fill=ICON_GOLD)
-    draw.rounded_rectangle(box(14.4, 14.8, 33.4, 24.0), radius=3 * scale, fill=ICON_GOLD_LIGHT)
-    # 五点面：四角 + 正中
-    for cx, cy in ((18.4, 18.8), (29.4, 18.8), (23.9, 24.3), (18.4, 29.8), (29.4, 29.8)):
-        draw.ellipse(box(cx - 2.1, cy - 2.1, cx + 2.1, cy + 2.1), fill=ICON_PIP)
+    draw.rounded_rectangle(box(0, 0, 47.9, 47.9), radius=10 * ICON_SCALE,
+                           outline=ICON_GOLD, width=2 * ICON_SCALE)
+    return canvas, draw, box
 
-    small = canvas.resize((48, 48), Image.LANCZOS)
-    out = small.convert("RGBA")
+
+def _finish(canvas, frame):
+    from PIL import Image
+    out = canvas.resize((48, 48), Image.LANCZOS).convert("RGBA")
     out.putalpha(frame.getchannel("A"))
     return out
 
 
-def install_unique_icon(ctx) -> dict[str, Any]:
-    """把「骰运」图标写进包。像素代理已经交付同路径的件时原样保留，不覆盖。
+def draw_dice_icon(frame):
+    """48×48「骰运」图标：夜靛底 ＋ 金边 ＋ 立体金骰子（五点面）＋ 极细月牙。
 
-    manifest 门禁要求被表引用的资产在 ``roots.common`` 里声明 ⇒ 这张图必须进包
-    （引用官方路径过不了门禁）。
+    8× 画 + LANCZOS 缩，**alpha 一格不改**（沿用官方画框 donor）。
+    """
+    if frame.size != (48, 48):
+        raise KuroError(f"unique_condition icon frame is {frame.size}, expected (48, 48)")
+    canvas, draw, box = _canvas()
+    # 月牙：整圆挖掉一个偏移的圆 ⇒ 极细的一弯，压在骰子左上、由骰子盖住一角
+    draw.ellipse(box(3.5, 3.0, 15.0, 14.5), fill=ICON_PIP)
+    draw.ellipse(box(5.9, 1.4, 17.4, 12.9), fill=ICON_INK)
+    # 骰子：背光面（偏移一点的暗金）→ 骰身 → 受光面
+    draw.rounded_rectangle(box(14.2, 14.6, 36.0, 36.4), radius=5 * ICON_SCALE, fill=ICON_GOLD_DARK)
+    draw.rounded_rectangle(box(13.0, 13.4, 34.8, 35.2), radius=5 * ICON_SCALE, fill=ICON_GOLD)
+    draw.rounded_rectangle(box(14.4, 14.8, 33.4, 24.0), radius=3 * ICON_SCALE, fill=ICON_GOLD_LIGHT)
+    # 五点面：四角 + 正中
+    for cx, cy in ((18.4, 18.8), (29.4, 18.8), (23.9, 24.3), (18.4, 29.8), (29.4, 29.8)):
+        draw.ellipse(box(cx - 2.1, cy - 2.1, cx + 2.1, cy + 2.1), fill=ICON_PIP)
+    return _finish(canvas, frame)
+
+
+def draw_step_icon(frame):
+    """48×48「豹步」图标：夜靛底 ＋ 金边 ＋ 金色猫爪印 ＋ 三道速度线。
+
+    与骰运/引擎点火/月牙/回响同一套（夜底＋金边，外框取官方图标的 alpha）。
+    """
+    if frame.size != (48, 48):
+        raise KuroError(f"unique_condition icon frame is {frame.size}, expected (48, 48)")
+    canvas, draw, box = _canvas()
+    # 速度线（左侧三道，暗金／亮金交替，表示「正在移动」）
+    for index, (y, x0, x1) in enumerate(((16.0, 5.5, 13.5), (23.0, 4.5, 12.0),
+                                         (30.0, 5.5, 13.5))):
+        color = ICON_GOLD_LIGHT if index == 1 else ICON_GOLD_DARK
+        draw.rounded_rectangle(box(x0, y - 1.2, x1, y + 1.2),
+                               radius=1.2 * ICON_SCALE, fill=color)
+    # 掌垫：上宽下窄的圆角块 ＋ 顶缘一道受光
+    draw.rounded_rectangle(box(19.5, 25.5, 40.5, 38.5), radius=6.0 * ICON_SCALE, fill=ICON_GOLD_DARK)
+    draw.rounded_rectangle(box(18.5, 24.5, 39.5, 37.5), radius=6.0 * ICON_SCALE, fill=ICON_GOLD)
+    draw.rounded_rectangle(box(21.0, 26.0, 37.0, 30.5), radius=2.2 * ICON_SCALE,
+                           fill=ICON_GOLD_LIGHT)
+    # 四个趾垫：沿掌垫上缘排成一道弧，彼此留 1.5px 以上空隙（缩到 48×48 后才分得开）
+    for cx, cy in ((18.5, 20.0), (25.5, 16.5), (32.5, 16.5), (39.5, 20.0)):
+        draw.ellipse(box(cx - 2.6, cy - 3.3, cx + 2.6, cy + 3.3), fill=ICON_GOLD)
+        draw.ellipse(box(cx - 1.3, cy - 2.4, cx + 1.3, cy - 0.2), fill=ICON_GOLD_LIGHT)
+    return _finish(canvas, frame)
+
+
+UNIQUE_ICONS = {
+    UID_DICE: (DICE_ICON + ".png", draw_dice_icon),
+    UID_STEP: (STEP_ICON + ".png", draw_step_icon),
+}
+
+
+def install_unique_icons(ctx) -> dict[str, Any]:
+    """把两张固有状态图标写进包。像素代理已经交付同路径的件时原样保留，不覆盖。
+
+    manifest 门禁要求被表引用的资产在 ``roots.common`` 里声明 ⇒ 这两张图必须进包
+    （引用官方路径当回落过不了门禁）。
     """
     import hashlib
-
-    staged = ctx.pack.pkg_path("common", UNIQUE_ICON_LOGICAL)
-    owner = (ctx.pack.owned_record("common", UNIQUE_ICON_LOGICAL) or {}).get("owner")
-    if staged.is_file() and owner == "pixel":
-        data = staged.read_bytes()
-        return {"logical": UNIQUE_ICON_LOGICAL, "source": "pixel", "owner": owner,
-                "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
 
     raw = ctx.official_read(UNIQUE_ICON_FRAME)
     if raw is None:
         raise KuroError(f"official baseline lacks the icon frame donor {UNIQUE_ICON_FRAME}")
     frame = ctx.png_open(raw)
-    data = ctx.png_store_bytes(draw_icon(frame))
-    ctx.write_asset("common", UNIQUE_ICON_LOGICAL, data)
-    back = ctx.png_open(staged.read_bytes())
-    if back.size != (48, 48):
-        raise KuroError(f"unique_condition icon is {back.size}, expected (48, 48)")
-    if back.getchannel("A").tobytes() != frame.getchannel("A").tobytes():
-        raise KuroError("unique_condition icon alpha differs from the official frame donor")
-    return {"logical": UNIQUE_ICON_LOGICAL, "source": "kit", "frame_donor": UNIQUE_ICON_FRAME,
-            "size": list(back.size), "sha256": hashlib.sha256(data).hexdigest(),
-            "bytes": len(data),
-            "why": "kit 自画（PIL 8× + LANCZOS，alpha 沿用官方画框）。像素代理若交付同路径的件，"
-                   "install_staged_assets 会以 owner=pixel 写进去，本函数就不再覆盖"}
+    notes: dict[str, Any] = {}
+    for key, (logical, painter) in UNIQUE_ICONS.items():
+        staged = ctx.pack.pkg_path("common", logical)
+        owner = (ctx.pack.owned_record("common", logical) or {}).get("owner")
+        if staged.is_file() and owner == "pixel":
+            data = staged.read_bytes()
+            notes[key] = {"logical": logical, "source": "pixel", "owner": owner,
+                          "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
+            continue
+        data = ctx.png_store_bytes(painter(frame))
+        ctx.write_asset("common", logical, data)
+        back = ctx.png_open(staged.read_bytes())
+        if back.size != (48, 48):
+            raise KuroError(f"unique_condition icon {logical} is {back.size}, expected (48, 48)")
+        if back.getchannel("A").tobytes() != frame.getchannel("A").tobytes():
+            raise KuroError(f"unique_condition icon {logical} alpha differs from the frame donor")
+        notes[key] = {"logical": logical, "source": "kit", "frame_donor": UNIQUE_ICON_FRAME,
+                      "size": list(back.size), "sha256": hashlib.sha256(data).hexdigest(),
+                      "bytes": len(data)}
+    return notes
+
+
+# ------------------------------------------------------------------ 面板字符串
+
+def write_strings(ctx) -> dict[str, str]:
+    """``custom_ability_string``：536 的条目串 ＋ 队长与 6 个词条槽的面板接管。"""
+    declared = set(ctx.spec.extra_keys.get(KL.CAS, ()))
+    missing = [key for key in CAS_TEXTS if key not in declared]
+    if missing:
+        raise KuroError(f"custom_ability_string keys not declared in SPEC['extra_keys']: {missing}")
+    for key, text in CAS_TEXTS.items():
+        for line in text.split("\n"):
+            KL.check_panel(line.replace(MAIN_ICON, ""),
+                           skill_flag=key in SKILL_FLAG_TEXT_KEYS, label=key)
+    # desc_override 的键名 = "desc_override_" + 该块第 0 行的 string_id（c0）
+    if CAS_LEADER != L.PANEL_OVERRIDE_KEY_PREFIX + LEADER[0][1][0]:
+        raise KuroError(f"leader override key {CAS_LEADER!r} does not match the leader c0")
+    for slot in range(1, 7):
+        want = L.PANEL_OVERRIDE_KEY_PREFIX + ABILITY[ability_key(slot)][0][1][0]
+        if CAS_ABILITY[slot] != want:
+            raise KuroError(f"slot {slot} override key {CAS_ABILITY[slot]!r} != {want!r}")
+        # 覆盖串会盖掉客户端逐行画的 Ⓜ ⇒ 主位键每行必须自带图标
+        for line in CAS_TEXTS[CAS_ABILITY[slot]].split("\n"):
+            if line.startswith(MAIN_ICON) != _main_only(slot):
+                raise KuroError(f"slot {slot} desc_override main-position icon does not match c1")
+    official = ctx.official_flat(KL.CAS)
+    clashes = [key for key in CAS_TEXTS if key in official]
+    if clashes:
+        raise KuroError(f"custom_ability_string keys already exist officially: {clashes}")
+    ctx.write_flat(KL.CAS, {key: [[text]] for key, text in CAS_TEXTS.items()})
+    return dict(CAS_TEXTS)
 
 
 # ------------------------------------------------------------------ 自查断言
 
 def guard_rows(leader_rows, ability_rows) -> dict[str, Any]:
-    """裁决 §8 / 设计稿 §14 的两条硬自查：724 只在 ability 表；词条里没有 201/202/521。"""
+    """裁决 §8 / 设计稿 §14 的硬自查：724 只在 ability 表；词条里没有 201/202/521。"""
     for index, row in enumerate(leader_rows):
         hit = [row[col] for col in LEADER_KIND_COLUMNS if row[col] in ABILITY_ONLY_KINDS]
         if hit:
@@ -546,8 +882,8 @@ def guard_rows(leader_rows, ability_rows) -> dict[str, Any]:
     patch_rows = [f"{key}#{index}" for key, rows in ability_rows.items()
                   for index, row in enumerate(rows)
                   if any(row[col] == "724" for col in ABILITY_KIND_COLUMNS)]
-    if patch_rows != ["1399913#0"]:
-        raise KuroError(f"724 rows {patch_rows} != ['1399913#0']")
+    if patch_rows != ["1399913#0", "1399913#2"]:
+        raise KuroError(f"724 rows {patch_rows} != ['1399913#0', '1399913#2']")
     return {"ability_only_kinds": list(ABILITY_ONLY_KINDS), "leader_clean": True,
             "c2308_kinds_absent": list(C2308_KINDS), "kind_724_rows": patch_rows}
 
@@ -568,7 +904,7 @@ def _norm_donor(text: str) -> str:
 
 
 def design_crosscheck(ctx) -> dict[str, Any]:
-    """设计稿在场时逐条互校（身份 / 文案 / 17 行 donor·面板文案 / 雕像组 / 能量 / 倍率 / 语音路由）。
+    """设计稿在场时逐条互校（身份 / 文案 / 行 donor·面板文案 / 雕像组 / 能量 / 面板串 / 语音路由）。
 
     设计稿在 gitignore 的 ``work/`` 下，缺失时只记一条 note，不阻塞构建。
     """
@@ -588,11 +924,13 @@ def design_crosscheck(ctx) -> dict[str, Any]:
 
     plan = design.get("plan", {})
 
-    add = plan.get("unique_conditions", {}).get("add", [])
-    if len(add) != 1 or add[0].get("key") != UID:
-        problems.append(f"design unique_conditions {[a.get('key') for a in add]} != [{UID!r}]")
-    elif add[0].get("row", [None] * 5)[4] != UNIQUE_CAP:
-        problems.append(f"design unique cap {add[0]['row'][4]!r} != {UNIQUE_CAP!r}")
+    add = {entry.get("key"): entry for entry in plan.get("unique_conditions", {}).get("add", [])}
+    if sorted(add) != sorted(UNIQUE_ICONS):
+        problems.append(f"design unique_conditions {sorted(add)} != {sorted(UNIQUE_ICONS)}")
+    else:
+        for key, cap in ((UID_DICE, DICE_CAP), (UID_STEP, STEP_CAP)):
+            if add[key].get("row", [None] * 5)[4] != cap:
+                problems.append(f"design unique {key} cap {add[key]['row'][4]!r} != {cap!r}")
 
     rows = plan.get("leader_ability", {}).get("rows", [])
     if len(rows) != len(LEADER):
@@ -622,27 +960,40 @@ def design_crosscheck(ctx) -> dict[str, Any]:
             if record.get("desc_expected") != expect:
                 problems.append(f"ability {key}#{record.get('index')}: desc_expected drifted")
 
+    strings = {row.get("key"): row.get("text")
+               for row in plan.get("texts", {}).get("custom_ability_string", {}).get("rows", [])}
+    if strings != CAS_TEXTS:
+        drift = sorted(set(strings) ^ set(CAS_TEXTS)) or \
+            [k for k in CAS_TEXTS if strings.get(k) != CAS_TEXTS[k]]
+        problems.append(f"custom_ability_string drifted from the design: {drift}")
+
     skills = plan.get("skills", {})
     for level, (c4, c5) in SKILL_ENERGY.items():
         energy = skills.get("energy", {}).get(level, {})
         if (str(energy.get("c4")), str(energy.get("c5"))) != (c4, c5):
             problems.append(f"action_skill {level}: energy {energy!r} != {(c4, c5)!r}")
     changes = {change.get("id"): change for change in skills.get("changes", [])}
-    if changes.get("S1", {}).get("new") != HITAREA_BUFF_TARGET_AS:
-        problems.append(f"skill S1 new {changes.get('S1', {}).get('new')!r} "
+    if changes.get("S1", {}).get("new") != STOPBALL_AFTER:
+        problems.append("skill S1 (StopBall) drifted from the design")
+    if changes.get("S2", {}).get("new") != HITAREA_BUFF_TARGET_AS:
+        problems.append(f"skill S2 new {changes.get('S2', {}).get('new')!r} "
                         f"!= {HITAREA_BUFF_TARGET_AS!r}")
     for level in ("1", "2"):
         want_old, want_new = SKILL_MULTIPLIER[level]
-        got = changes.get("S2", {})
-        if got.get("old", {}).get(level) != want_old or got.get("new", {}).get(level) != want_new:
-            problems.append(f"skill S2 level {level}: multiplier drifted from the design")
-        want_old_ac, want_new_ac = SKILL_DIRECT_AC[level]
         got = changes.get("S3", {})
+        if got.get("old", {}).get(level) != want_old or got.get("new", {}).get(level) != want_new:
+            problems.append(f"skill S3 level {level}: multiplier drifted from the design")
+        want_old_ac, want_new_ac = SKILL_DIRECT_AC[level]
+        got = changes.get("S4", {})
         if got.get("old", {}).get(level) != want_old_ac or got.get("new", {}).get(level) != want_new_ac:
-            problems.append(f"skill S3 level {level}: AC drifted from the design")
-        got = changes.get("S4", {}).get("new", {}).get(level)
-        if not isinstance(got, list) or got[2] != [SKILL_ADDITIONAL_AC[level]]:
             problems.append(f"skill S4 level {level}: AC drifted from the design")
+        got = changes.get("S5", {}).get("new", {}).get(level)
+        if got != SKILL_ADDITIONAL_AC[level]:
+            problems.append(f"skill S5 level {level}: AC drifted from the design")
+    s6 = changes.get("S6", {}).get("new", {})
+    if (s6.get("hit_area_lifetime"), s6.get("max_hits"), s6.get("roulette_wheels")) != \
+            (HITAREA_LIFETIME[1], HITAREA_MAX_HITS[1], ROULETTE_SLOTS):
+        problems.append(f"skill S6 (ConditionalsChangeSkillFlag) drifted from the design: {s6!r}")
 
     route = design.get("voice", {}).get("route", {})
     if {k: str(v) for k, v in route.items()} != {k: str(v) for k, v in VOICE_ROUTE.items()}:
@@ -652,8 +1003,8 @@ def design_crosscheck(ctx) -> dict[str, Any]:
         raise KuroError("design/kuro.json disagrees with the kit: " + "; ".join(problems))
     return {"design_json": str(path), "present": True, "checked": [
         "identity", "texts", "unique_condition", "leader donors + panel text",
-        "ability donors + panel text", "statue_group", "skill energy",
-        "skill S1/S2/S3/S4", "voice route"]}
+        "ability donors + panel text", "statue_group", "custom_ability_string",
+        "skill energy", "skill S1–S6", "voice route"]}
 
 
 # ------------------------------------------------------------------ build
@@ -667,8 +1018,9 @@ def build(ctx) -> dict[str, Any]:
     if spec.rarity != 5 or spec.pf_type != PF_TYPE or spec.stance != STANCE:
         raise KuroError(f"spec rarity/pf/stance mismatch: "
                         f"{spec.rarity}/{spec.pf_type}/{spec.stance}")
-    if UID != f"{CID}01" or len(UID) != 8:
-        raise KuroError(f"unique_condition id {UID!r} must be 8 digits cid*100+n")
+    for index, uid in enumerate((UID_DICE, UID_STEP), start=1):
+        if uid != f"{CID}0{index}" or len(uid) != 8:
+            raise KuroError(f"unique_condition id {uid!r} must be 8 digits cid*100+n")
 
     notes: list[Any] = [design_crosscheck(ctx)]
     evidence: list[dict[str, Any]] = []
@@ -676,15 +1028,20 @@ def build(ctx) -> dict[str, Any]:
     # ---- 1) 像素/特效交付件（先装：固有状态图标要不要回落取决于它）
     pixel = KL.install_staged_assets(ctx)
 
-    # ---- 2) 固有状态「骰运」（图标先进包：manifest 门禁要求被引用的资产在 roots.common 里）
-    icon_note = install_unique_icon(ctx)
-    unique_key, unique_row = KL.unique_row(
-        ctx, spec, 1, donor=UNIQUE_DONOR,
-        cells={0: f"unique_{CODE}_dice_luck", 3: "99999999", 4: UNIQUE_CAP},
-        name=UNIQUE_NAME, icon=UNIQUE_ICON)
-    if unique_key != UID:
-        raise KuroError(f"unique key {unique_key!r} != {UID!r}")
-    KL.write_unique(ctx, spec, {unique_key: unique_row})
+    # ---- 2) 固有状态两条（图标先进包：manifest 门禁要求被引用的资产在 roots.common 里）
+    icon_notes = install_unique_icons(ctx)
+    unique_entries: dict[str, list[str]] = {}
+    for n, (name, icon, frames, cap) in enumerate(
+            ((DICE_NAME, DICE_ICON, DICE_FRAMES, DICE_CAP),
+             (STEP_NAME, STEP_ICON, STEP_FRAMES, STEP_CAP)), start=1):
+        code_suffix = icon.rsplit("/", 1)[-1]
+        key, row = KL.unique_row(ctx, spec, n, donor=UNIQUE_DONOR,
+                                 cells={0: code_suffix, 3: frames, 4: cap},
+                                 name=name, icon=icon)
+        unique_entries[key] = row
+    if sorted(unique_entries) != sorted((UID_DICE, UID_STEP)):
+        raise KuroError(f"unique keys {sorted(unique_entries)} != {sorted((UID_DICE, UID_STEP))}")
+    KL.write_unique(ctx, spec, unique_entries)
 
     # ---- 3) character 行：语音路由 c9–c16 ＋ 队长技名 c18
     crow = list(ctx.pack.pkg_character_row())
@@ -730,8 +1087,10 @@ def build(ctx) -> dict[str, Any]:
     ctx.write_flat(KL.LEADER, {CID_S: leader_rows})
     ctx.write_flat(KL.ABILITY, ability_rows)
 
-    # ---- 6) 面板文案规则（队长 + 词条 + 技能名/说明 + 称号 + 简介）
-    panel = [ev["describe"] for ev in evidence]
+    # ---- 6) 面板文案（desc_override 整块接管；逐行 = rework1/panel/kuro.json）
+    strings = write_strings(ctx)
+    panel = [line.replace(MAIN_ICON, "") for key in (CAS_LEADER, *CAS_ABILITY.values())
+             for line in strings[key].split("\n")]
     for text in panel:
         KL.check_panel(text, label="panel row")
     for name in ("title", "skill1", "desc1", "skill2", "desc2", "leader", "profile"):
@@ -784,7 +1143,7 @@ def build(ctx) -> dict[str, Any]:
     if lut_path.is_file():
         notes.append({"fx_lut": str(lut_path),
                       "unused": "本角色技能特效全部直接引用官方母本路径（零克隆），包内没有可换色的"
-                                "特效件；要改色须先改设计稿 §8 改成 clone_effect_family 并重跑图集预检"})
+                                "特效件；要改色须先改设计稿改成 clone_effect_family 并重跑图集预检"})
 
     ctx.sync_character_mirrors()
 
@@ -797,100 +1156,139 @@ def build(ctx) -> dict[str, Any]:
                                        "describe": expect}
                                       for donor, cells, expect in records]}
                     for key, records in ABILITY.items()},
-        "unique_condition": {unique_key: unique_row},
+        "unique_condition": unique_entries,
+        "custom_ability_string": strings,
         "guards": guards,
         "rows": evidence,
     })
     ctx.evidence_write("kit-skills.json", {"programs": programs, "levels": skill_evidence})
 
+    capabilities = {cap for ev in evidence for cap in ev.get("capabilities", ())}
+
     notes.extend([
         {"voice_route": route, "switched_action_skill": switched,
-         "why": "kind 1 ConditionExist / 条件种类 28（固有状态）/ 条件 id 13999101「骰运」："
-                "首次技能后骰运常驻 ⇒ 开局与开局后各听得到一种「技能准备好」台词"},
-        {"unique_condition": {unique_key: {"row": unique_row, **icon_note}}},
+         "why": f"kind 1 ConditionExist / 条件种类 28（固有状态）/ 条件 id {UID_DICE}「骰运」："
+                "骰运一旦获得就常驻 ⇒ 开局与开局后各听得到一种「技能准备好」台词。"
+                "kind 3 ChangeSkillFlag 不能用：536 在共鸣队里常驻，会让 skill_ready 永不播"},
+        {"unique_condition": {key: {"row": unique_entries[key], **icon_notes[key]}
+                              for key in unique_entries}},
         {"pixel_install": pixel},
         {"statue_group": STATUE_GROUPS,
          "why": "裁决 §8：一键内 c2 必须单值。选组规则＝该键每个 kind 在官方基线上都有这一组的"
-                "先例，多候选取「最小先例数最大」的。attack_yellow 在 D1/I0/D3/I226/I69 上官方"
-                "全是零行 ⇒ 不能当统一组"},
+                "先例，多候选取「最小先例数最大」的（实扫见模块常量表）"},
         {"guards": guards,
          "why": "422/724/713 写进队长表 = C7050（裁决 §2、框架 §10.3）；词条里没有 201/202/521 "
                 "⇒ 不会撞 C2308（段数统一走技能 DSL）"},
-        {"effects": "零克隆：4 条 ShowEffect 全部引用官方 "
+        {"effects": "零克隆：ShowEffect 全部引用官方 "
                     f"{OFFICIAL_EFFECT_PREFIX}*（开碗/摇碗旋转/金纸吹雪/收碗），"
-                    "包内不含 battle/effect 目录 ⇒ 图集增量 0"},
-        {"skill_damage_type": "CreateHitArea params[23] = 4：15 段按直接攻击伤害判定 ⇒ "
+                    "包内不含 battle/effect 目录 ⇒ 图集增量 0；"
+                    "特效集合与上一版完全相同 ⇒ wf_offline_content 的位置表无需改"},
+        {"skill_no_recovery": {"before": STOPBALL_BEFORE, "after": STOPBALL_AFTER},
+         "why": "作者原话「黑的技能取消后摇释放技能不停下」。官方非定住先例＝千岳 psychic_tohru "
+                "的 [-18, 30, RestoreToSpeedBeforeActionExecution, AB, 0]（卡 C §5.4）。"
+                "不整条删除：Wait 10 与判定区都挂在 -18 上，完全不停会让判定圈跟着球飞走。"
+                "属结构手术 ⇒ 预览器不可信，必须真机看一眼"},
+        {"skill_enhanced_branch": {"gate": f"IC 536 [{CAS_CHANGE_SKILL}]（1399911#1，前置 2 雷共鸣）",
+                                   "hit_area_lifetime": list(HITAREA_LIFETIME),
+                                   "max_hits": list(HITAREA_MAX_HITS),
+                                   "enables_combo_bonus": [False, True]},
+         "why": "面板「技能的持续时间延长，且威力随连击数提升」。每段间隔由 "
+                "CalculatedUsingMaxNumOfHits 自动算 ⇒ 180/45 仍是 4 帧一跳，只是打得更久"},
+        {"skill_roulette": {"wheels": ROULETTE_SLOTS, "gate": f"DCUnique {UID_DICE}（骰运）",
+                            "draws": "max(1, 层数)，上限 6，每次独立掷点（无互斥原语）",
+                            "leader_selector": LEADER_SELECTOR},
+         "why": "随机只存在于 DSL（卡 B §4）。ConditionalsProbability 官方先例 dryad_hw23、"
+                "ConditionalsConditionAccumulationNumber 官方先例 combat_soldier_smr22；"
+                "「队长技能槽」用选择器 34（官方 student_gunsmith_2 夏·丝丝，09-21 作者纠正）"},
+        {"skill_damage_type": "CreateHitArea params[23] = 4：按直接攻击伤害判定 ⇒ "
                               "吃直击伤害 UP／攻击力／雷耐性降低，不吃技能伤害 UP 与 410",
          "precedent": "live 169992 blackflower_wiz_yukata 两档各两处判定区实读 = 4"},
         {"skill_team_buff": {"direct_damage_up": {lv: SKILL_DIRECT_AC[lv][1][1:] for lv in ("1", "2")},
                              "additional_direct_attack": {lv: SKILL_ADDITIONAL_AC[lv][1:]
                                                           for lv in ("1", "2")}},
-         "why": "选择器 33 = 队伍全员及协力球，是词条 t5 够不到的覆盖面；3 段让全队的 Fever 点／"
-                "连击／「编成直接攻击≥N」计数一起 ×3，回喂 724 与骰运"},
-        {"patch_kind": "724（kyubi-fever-ratio-v1）只出现在 1399913#0，donor 取 live 1499893#1"
-                       "（自制 149989 希尔媞·校园）——724 是 APK 补丁 kind，官方全表零行，"
-                       "没有官方 donor 可抄；行的合法性与面板文案已由 wf_client_legality 与 "
-                       "wf_describe 逐行核过"},
+         "why": "选择器 33 = 队伍全员及协力球，是词条 t5 够不到的覆盖面；跨角色段数取优不相加 ⇒ "
+                "本批统一 3 段，黑（辅助）合计 +80%/+100% 低于凯尔 +300%、罗尔夫 +200%"},
+        {"patch_kinds": {"724": ["1399913#0（+35%）", "1399913#2（-50%）"],
+                         "desc_override": sorted(k for k in strings
+                                                 if k.startswith(L.PANEL_OVERRIDE_KEY_PREFIX))},
+         "why": "724 是 APK 补丁 kind（官方全表零行，donor 取 live 1499893#1）且只许 ability 表；"
+                "desc_override_* 需要 V14（panel-description-override-v2），缺补丁不崩、"
+                "只是面板回落到客户端自动文案"},
     ])
 
     deviations = [
-        {"want": "设计稿按记录分别给 c2 雕像组（1399911 action_skill/attack_yellow、"
-                 "1399912 attack_yellow/attack_common、1399913 special/attack_yellow/action_skill、"
-                 "1399915 attack_yellow/special、1399916 attack_yellow×2）",
-         "got": f"每键单值：{STATUE_GROUPS}（设计稿 md/json 已同步改，登记为 D7）",
-         "why": "裁决 §8「ability 表 c2 statue_group 每个键必须单值（官方 790 个多记录键 0 个混用）」，"
-                "KL.check_ability_key 也硬卡这条。attack_yellow 在本套件用到的 D1/I0/D3/I226/I69 上"
-                "官方全是零行，不能当统一组"},
-        {"want": "设计稿 json 的 cells 只写要改的列",
-         "got": "把 md §4 说的「清空前置/触发块」显式写进 cells（空串）：1399915#0 c9/c10/c11、"
-                "1399915#1 c11、1399916#0 c9/c10/c11、1399916#1 c30/c31/c34/c36（登记为 D8）",
-         "why": "donor 的块参数列在 kind 改成 0 之后仍留在行里。1399916#1 实测 describe 渲染成"
-                "「风·开局≥6(限1次) → 赋予全队(雷) 麻痹无效」，与登记文案不符（裁决 §3）；"
-                "另外三条 describe 虽不变，但留着母本的 600000/White/Yellow 是死数据"},
-        {"want": "固有状态图标由像素代理交付（设计稿 §5 的夜靛金骰子）",
-         "got": f"kit 自画并写进包（{UNIQUE_ICON_LOGICAL}，source = {icon_note['source']}；"
-                "登记为 D9）：PIL 8× 画 + LANCZOS 缩，alpha 与尺寸沿用官方画框 "
-                f"{UNIQUE_ICON_FRAME}",
-         "why": "manifest 门禁要求被表引用的资产在 roots.common 里声明 —— 引用官方路径当回落"
-                "直接红（实测 validate_manifest: referenced asset is not declared）。"
-                "像素代理若交付同路径的件，install_staged_assets 以 owner=pixel 写进去，"
-                "kit 就不再覆盖（install_unique_icon 判 owner）"},
-        {"want": "技能 DSL 的 3 段追加直接攻击发给选择器 33（队伍全员及协力球）",
-         "got": "照做，但登记为本套件最大的机制风险（设计稿 R1）",
-         "why": "官方 20 处 ACAdditionalDirectAttack 全是 subject -17／2 段；>2 段且发给一群人的"
-                "先例只有 live 149988 scutum_valentine（5 段、选择器 82、付与种类 3）。真机不成立时"
-                "退到 2 段（伤害总量不变，只少掉计数 ×3），再退就删 S4 并把 1399912#1 的 D73 改成 D4"},
+        {"want": "「自身处于连击效果期间」直接当词条门",
+         "got": "新固有「豹步」（13999102，15 秒、上限 1）当门：技能发动即付与"
+                "（1399912#2，IT 23 → IC 461），词条挂前置 187（1399912#1）",
+         "why": "_deviations.json kuro 第 3 条已裁定：DT 185 ConditionComboBoost 与 IT 55 官方各 0 行，"
+                "ACComboBoost 也没有时间维度。落成「技能发动即付与」而不是在 DSL 里塞 ACUnique —— "
+                "IT 23 → IC 461 有现成官方 donor（1611231#0），少一处结构手术"},
+        {"want": "随机池里的「Fever 槽 +50%」",
+         "got": "「Fever 槽大幅上升」＝ DSL AddFeverPoint 250（官方最高档）",
+         "why": "_deviations.json kuro 第 1 条：技能树只能加固定 Fever 点数，"
+                "按槽上限比例加只有词条 724，而 724 进不了 DSL"},
+        {"want": "「最多同时抽 6 个」互斥抽取",
+         "got": "按骰运层数掷 max(1, 层数) 次，每次独立、可能重复",
+         "why": "_deviations.json kuro 第 2 条：引擎没有互斥原语；面板已写「每次独立判定，"
+                "可能抽到重复效果」"},
+        {"want": "能力 3 ⑤的随机池受主位限制约束",
+         "got": "开关是能力 1 的 536（非主位限制），随机池写在技能 DSL 的强化分支里",
+         "why": "一个角色只能有一份 ChangeSkillFlag，「持续时间延长」与「随机池」共用同一个强化档。"
+                "无实际差异：合击位角色不发动技能，随机池本来就不会跑"},
+        {"want": "技能能量 550 只改一档",
+         "got": "两档 c4/c5 都写 550（母本 490/490 与 490/440）",
+         "why": "作者放行第 5 条逐字：「玛格诺斯 600、黑 550、夏琳 500——觉醒前后两档都写这个数」"},
+        {"want": "面板按 wf_describe 自动渲染",
+         "got": f"队长技 ＋ 6 个词条槽全部 desc_override（{1 + 6} 个键），逐行 = rework1/panel/kuro.json",
+         "why": "自动文案会写成「持续·Fever → 赋予全队(雷) Direct伤害 400%」这类引擎术语，"
+                "与作者已过目的面板逐行对不上。代价＝required_capabilities 多一项 "
+                f"{L.PANEL_OVERRIDE_V2}（惰性，缺补丁不崩）"},
+        {"want": "技能说明只保留原来两段（panel note 把「不再进入硬直」当备注）",
+         "got": "action_skill c1 两档追加第三段「／释放技能后不再进入硬直，可立即行动」",
+         "why": "panel/kuro.json 的 skill.lines[1] 标的是 status:\"changed\"，作者看过预览页后回「开做」"
+                "⇒ 面板要逐行对齐就必须写进技能说明（技能说明是单串，只能追加段落）"},
+        {"want": "队长技按本轮重写",
+         "got": "4 行一格不动",
+         "why": "panel/kuro.json 四行全是 status:\"same\"；作者本轮原话没提黑的队长技；"
+                "L4 的前置 1 已经是 kind 2 阈值 6 ＝官方共鸣写法，符合 09-21 补充①"},
     ]
 
-    # ---- 10) 放行闸：kit 自有产物（17 行 / 固有 / 图标 / 2 棵 DSL / 语音路由）全部就绪后，
-    #          只等像素代理的小人件。像素件未到之前保持 draft（批内同口径，见 mia/nicola/rebecca）。
+    # ---- 10) 放行闸：kit 自有产物（17 行 / 2 个固有 / 2 张图标 / 8 个面板串 / 2 棵 DSL /
+    #          语音路由）全部就绪后，只等像素代理的小人件。
     gate = {"rows": len(evidence), "programs": len(programs),
-            "unique_condition": unique_key, "unique_icon": icon_note["source"],
+            "unique_conditions": sorted(unique_entries),
+            "unique_icons": {k: v["source"] for k, v in icon_notes.items()},
+            "custom_ability_string": sorted(strings),
             "pixel_present": pixel["present"],
             "pixel_missing": [entry["logical"] for entry in pixel["skipped"]]}
     ready = bool(pixel["present"]) and not pixel["skipped"]
     gate["reason"] = "kit 自有产物全部过闸" if ready else (
         f"像素成品未就绪：{gate['pixel_missing'] or 'B/pixel/kuro/install.json 不存在'}"
-        "（行/固有/图标/DSL/语音路由已全部就绪，像素件一落地重跑 kit 即 ready-for-review）")
+        "（行/固有/图标/面板串/DSL/语音路由已全部就绪，像素件一落地重跑 kit 即 ready-for-review）")
     notes.append({"gate": gate})
 
     return KL.report(
         ctx,
-        summary="黑（139991）：雷 · 拳 · 直击辅助——Fever 中把全队直击的倍率与段数一起抬起来，"
-                "再用 3 段直击回喂 724 Fever 回转与固有「骰运」",
+        summary="黑（139991）：雷 · 拳 · 直击辅助 rework1——雷共鸣开强化档（摇碗更久、威力随连击成长），"
+                "骰运层数决定技能后掷几次轮盘；Fever 收支三条（+35% / −50% / 进入 Fever 全队直击 +150%）",
         status=KL.READY if ready else KL.DRAFT,
         panel=panel,
         notes=notes,
         programs=programs,
-        unique_condition={unique_key: icon_note},
-        required_capabilities=SPEC["required_capabilities"],
+        unique_condition={key: icon_notes[key] for key in unique_entries},
+        required_capabilities=sorted(capabilities | set(SPEC["required_capabilities"])),
         deviations=deviations,
         extra={"statue_group": STATUE_GROUPS,
                "guards": guards,
                "gate": gate,
+               "custom_ability_string": sorted(strings),
                "skills": {"programs": programs,
                           "energy": {lv: list(v) for lv, v in SKILL_ENERGY.items()},
                           "multiplier": {lv: SKILL_MULTIPLIER[lv][1] for lv in SKILL_MULTIPLIER},
                           "hit_area_buff_target_as": HITAREA_BUFF_TARGET_AS,
+                          "enhanced": {"hit_area_lifetime": HITAREA_LIFETIME[1],
+                                       "max_hits": HITAREA_MAX_HITS[1],
+                                       "enables_combo_bonus": True},
+                          "roulette": {"wheels": ROULETTE_SLOTS, "unique": UID_DICE},
                           "team_conditions": ["ACDirectDamage", "ACAdditionalDirectAttack"]}},
     )

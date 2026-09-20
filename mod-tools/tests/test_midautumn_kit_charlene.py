@@ -61,25 +61,51 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(spec.element_token, KIT.ELEMENT_TOKEN)
         self.assertEqual(str(spec.cid), KIT.CID_S)
 
-    def test_spec_declares_only_the_voice_key(self):
-        self.assertEqual(SPEC_KEYS := set(KIT.SPEC["extra_keys"]), {KL.SWITCHED})
+    def test_spec_declares_the_voice_and_skill_flag_keys(self):
+        self.assertEqual(SPEC_KEYS := set(KIT.SPEC["extra_keys"]), {KL.SWITCHED, KL.CAS})
         self.assertEqual(KIT.SPEC["extra_keys"][KL.SWITCHED], (KIT.VOICE_KEY,))
+        self.assertEqual(KIT.SPEC["extra_keys"][KL.CAS], (KIT.CAS_SWITCH,))
         self.assertEqual(KIT.VOICE_KEY, KIT.CODE + "_voice_ready")
-        # 无固有状态、无 custom_ability_string ⇒ 不占 8 位固有 ID，也不需要 APK 补丁 kind
+        self.assertEqual(KIT.CAS_SWITCH, "change_skill_" + KIT.CODE)
+        # 无固有状态 ⇒ 不占 8 位固有 ID；零 APK 补丁 kind
         self.assertNotIn(MS.UNIQUE_CONDITION_LOGICAL, SPEC_KEYS)
-        self.assertNotIn(KL.CAS, SPEC_KEYS)
         self.assertEqual(tuple(KIT.SPEC["required_capabilities"]), ())
 
     def test_merged_spec_carries_the_kit_overrides(self):
         spec = MS.get_spec(KIT.KEY)
         self.assertEqual(spec.stance, "Jammer")
         self.assertEqual(spec.extra_keys.get(KL.SWITCHED), (KIT.VOICE_KEY,))
+        self.assertEqual(spec.extra_keys.get(KL.CAS), (KIT.CAS_SWITCH,))
         self.assertEqual(tuple(spec.required_capabilities), ())
 
     def test_ability_keys_are_the_six_character_slots(self):
         self.assertEqual(sorted(KIT.ABILITY), [f"{KIT.CID_S}{n}" for n in range(1, 7)])
         self.assertEqual(len(KIT.LEADER), 5)
-        self.assertEqual(sum(len(v) for v in KIT.ABILITY.values()), 10)
+        self.assertEqual(sum(len(v) for v in KIT.ABILITY.values()), 11)
+
+    def test_skill_flag_row_points_at_the_declared_string(self):
+        """536 的 c70 必须指向 SPEC 里声明过的 custom_ability_string 键。"""
+        flag_rows = [cells for _donor, cells, _expect in KIT.ABILITY[f"{KIT.CID_S}1"]
+                     if 70 in cells]
+        self.assertEqual(len(flag_rows), 1)
+        self.assertEqual(flag_rows[0][70], KIT.CAS_SWITCH)
+        self.assertIn(KIT.CAS_SWITCH, KIT.SPEC["extra_keys"][KL.CAS])
+        self.assertIn(KIT.CAS_SWITCH, KIT.CAS_TEXTS)
+
+    def test_skill_flag_string_carries_no_numbers(self):
+        """裁决 §3：「技能强化」条目不写数字与时间。"""
+        for key, text in KIT.CAS_TEXTS.items():
+            self.assertEqual(KL.panel_problems(text, skill_flag=True), [], key)
+
+    def test_resonance_gate_is_the_official_precondition_form(self):
+        """主控 09-21 落实①：本轮带门槛的条目一律用「X 属性共鸣」前置（前置 kind 2）。"""
+        self.assertEqual(KIT.PRE_RESONANCE,
+                         {6: "2", 9: "600000", 10: "600000", 11: KIT.ELEMENT_TOKEN})
+        gated = [cells for records in KIT.ABILITY.values()
+                 for _donor, cells, _e in records if cells.get(6) == "2"]
+        self.assertTrue(gated)
+        for cells in gated:
+            self.assertEqual(cells[11], KIT.ELEMENT_TOKEN)
 
     def test_every_ability_key_has_a_single_statue_group(self):
         """裁决 §8：一键内 c2 必须单值（官方 790 个多记录键 0 个混用）。"""
@@ -139,12 +165,24 @@ class PanelTextTests(unittest.TestCase):
         self.assertTrue(all(KIT.TEXTS.values()))
         self.assertNotIn("（待设计稿）", "".join(KIT.TEXTS.values()))
 
-    def test_skill_descriptions_mention_every_condition_family(self):
-        """面板文案必须与真实机制一致：技能真给四种弱体。"""
+    def test_skill_descriptions_match_the_reworked_body(self):
+        """面板文案必须与真实机制一致：技能本体＝抽血 ＋ 护盾 ＋ 贯穿弹命中爆炸。
+
+        rework1 把四条弱体整体移进「雷共鸣强化档」（词条 1 的 536 ＋ DSL
+        ``ConditionalsChangeSkillFlag``）⇒ 技能描述里**不许**再出现弱体字样，
+        它们归 ``CAS_TEXTS[CAS_SWITCH]`` 那条「技能强化」条目。
+        """
         for level in ("1", "2"):
             desc = KIT.TEXTS[f"desc{level}"]
-            for token in ("抗性降低", "攻击力降低", "麻痹", "中毒", "无视弱体耐性"):
+            for token in ("抽取", "55%", "50%", "20%", "护盾", "25%", "贯穿", "爆炸", "雷属性伤害"):
                 self.assertIn(token, desc, level)
+            for token in ("抗性降低", "攻击力降低", "麻痹", "中毒", "迟缓"):
+                self.assertNotIn(token, desc, level)
+
+    def test_skill_flag_string_mentions_every_boost_family(self):
+        text = KIT.CAS_TEXTS[KIT.CAS_SWITCH]
+        for token in ("抗性降低", "攻击力降低", "无视弱体抗性", "麻痹", "中毒", "迟缓", "DOWN"):
+            self.assertIn(token, text)
 
 
 # ---------------------------------------------------------------- 静态：语音路由
@@ -184,7 +222,7 @@ def _fake_donor_tree(**overrides):
                                     False, False, False, False, False,
                                     [{"min": 10, "max": 10}], [{"min": 10, "max": 10}],
                                     ["None"], True]],
-                       condition, show("hiteffect")]]
+                       condition, show("ヒットエフェクト")]]
     move_block = ["Block", [["Command", ["MoveHitArea", 0, 0, 0, 0]], show("bullet")]]
     hit_area = ["Command", ["CreateHitArea", "", -18, ["GH", 0], move_block, onhit]]
     body = ["Block", [["Command", ["StopBall", -18, 50, ["Stop"], ["GH", 0], 0]],
@@ -200,36 +238,99 @@ class MutateTreeTests(unittest.TestCase):
     def test_fake_donor_matches_the_expected_command_counts(self):
         self.assertEqual(KIT._command_counts(_fake_donor_tree()), KIT.DONOR_COMMAND_COUNTS)
 
+    def _all_conditions(self):
+        """强化块里所有 CreateCondition 的 (name, ac, force)，顺序＝装配顺序。"""
+        out = list(KIT.BOOST_CONDITIONS)
+        for _draw in range(KIT.ROULETTE_DRAWS):
+            out.extend((name, ac, force) for name, ac, force, _w in KIT.ROULETTE)
+        return out
+
     def test_multiplier_and_conditions_are_rewritten(self):
         for level, (low, high) in KIT.SKILL_MULTIPLIER.items():
             tree, ev = KIT.mutate_tree(_fake_donor_tree(), level)
+            # 唯一的 CNA 现在在爆炸段里，subject 是爆炸判定区的命中绑定
             (parent, index), = KIT._command_slots(tree, "CreateNormalAttack")
-            self.assertEqual(parent[index][1][6], [{"min": low, "max": high}])
-            self.assertEqual(ev["create_normal_attack"]["after"], [{"min": low, "max": high}])
+            body = parent[index][1]
+            self.assertEqual(body[6], [{"min": low, "max": high}])
+            self.assertEqual(body[1], KIT.BIND_BLAST_ENEMY)
+            self.assertIs(body[12], True)                    # enablesRangeBonus
+            self.assertEqual(ev["explosion"]["multiplier"], [low, high])
             slots = KIT._command_slots(tree, "CreateCondition")
-            self.assertEqual(len(slots), len(KIT.CONDITIONS))
-            for (parent, index), (name, ac, force) in zip(slots, KIT.CONDITIONS):
-                body = parent[index][1]
-                self.assertEqual(body[2], [ac], name)
-                self.assertIs(body[12], force, name)
-                self.assertEqual(body[10], 3, name)          # 付与对象种类原样保留
-                self.assertEqual(len(body), 13, name)
+            wanted = self._all_conditions()
+            self.assertEqual(len(slots), len(wanted))
+            for (parent, index), (name, ac, force) in zip(slots, wanted):
+                cbody = parent[index][1]
+                self.assertEqual(cbody[2], [ac], name)
+                self.assertIs(cbody[12], force, name)
+                self.assertEqual(cbody[10], 3, name)         # 付与对象种类原样保留
+                self.assertEqual(cbody[1], KIT.BIND_HIT_ENEMY, name)
+                self.assertEqual(len(cbody), 13, name)
 
-    def test_conditions_stay_adjacent_and_keep_the_command_order(self):
+    def test_onhit_block_order(self):
+        """on-hit 只剩：震屏 → 强化分流 → 命中特效 → 爆炸段（CNA 已挪进爆炸段）。"""
         tree, _ev = KIT.mutate_tree(_fake_donor_tree(), "1")
-        (parent, first), = [(p, i) for p, i in KIT._command_slots(tree, "CreateCondition")][:1]
+        (parent, _index), = KIT._command_slots(tree, "ConditionalsChangeSkillFlag")
         names = [child[1][0] for child in parent]
-        self.assertEqual(names, ["ShakeCamera", "CreateNormalAttack"]
-                         + ["CreateCondition"] * len(KIT.CONDITIONS) + ["ShowEffect"])
+        self.assertEqual(names, ["ShakeCamera", "ConditionalsChangeSkillFlag",
+                                 "ShowEffect", "CreateReferencePoint"])
+
+    def test_top_block_runs_drain_and_barrier_before_the_shot(self):
+        tree, _ev = KIT.mutate_tree(_fake_donor_tree(), "1")
+        top = tree[11][1]
+        self.assertEqual([c[1][0] for c in top],
+                         ["FindAllSubjects", "FindAllSubjects", "FindNearSubjects"])
+        drain, barrier = top[0][1], top[1][1]
+        self.assertEqual((drain[1], drain[2]), (KIT.BIND_DRAIN, KIT.DRAIN_SELECTOR))
+        self.assertEqual(drain[3], [])                       # 抽血不挑属性
+        self.assertEqual((barrier[1], barrier[2]), (KIT.BIND_BARRIER, KIT.BARRIER_SELECTOR))
+        self.assertEqual(barrier[3], [KIT.BARRIER_ELEMENT_FILTER])
+
+    def test_drain_branches_follow_the_official_semantics(self):
+        """官方两例互证：then ＝ HP ≥ 阈值，else ＝ HP < 阈值 ⇒ 低血成员抽得少。"""
+        tree, _ev = KIT.mutate_tree(_fake_donor_tree(), "1")
+        (parent, index), = KIT._command_slots(tree, "ConditionalsHealthPointRatioOf")
+        body = parent[index][1]
+        self.assertEqual((body[1], body[2]), (KIT.BIND_DRAIN, KIT.DRAIN_THRESHOLD))
+        high = body[3][1][0][1]
+        low = body[4][1][0][1]
+        self.assertEqual(high[3], [{"min": KIT.DRAIN_RATIO_HIGH, "max": KIT.DRAIN_RATIO_HIGH}])
+        self.assertEqual(low[3], [{"min": KIT.DRAIN_RATIO_LOW, "max": KIT.DRAIN_RATIO_LOW}])
+        self.assertLess(KIT.DRAIN_RATIO_LOW, KIT.DRAIN_RATIO_HIGH)
+        self.assertEqual((high[1], high[2]), (KIT.BIND_DRAIN, KIT.DRAIN_KIND))
+
+    def test_roulette_branch_shape_is_strictly_two_elements(self):
+        """分支必须恰好 [ProbabilityWeight, Block]，否则进战斗 INTERNAL ERROR。"""
+        tree, _ev = KIT.mutate_tree(_fake_donor_tree(), "1")
+        slots = KIT._command_slots(tree, "ConditionalsProbability")
+        self.assertEqual(len(slots), KIT.ROULETTE_DRAWS)
+        for parent, index in slots:
+            branches = parent[index][1][1][1]
+            self.assertEqual(len(branches), len(KIT.ROULETTE))
+            for branch in branches:
+                self.assertEqual(branch[0], "Block")
+                self.assertEqual(len(branch[1]), 2)
+                self.assertEqual(branch[1][0], ["Command", ["ProbabilityWeight", 25]])
+                self.assertEqual(branch[1][1][0], "Block")
+                self.assertEqual(len(branch[1][1][1]), 1)
+
+    def test_skill_flag_else_branch_is_an_empty_block(self):
+        """空分支写 ["Block", []]，写 ["DoNothing"] = 进游戏 F1009。"""
+        tree, _ev = KIT.mutate_tree(_fake_donor_tree(), "1")
+        (parent, index), = KIT._command_slots(tree, "ConditionalsChangeSkillFlag")
+        body = parent[index][1]
+        self.assertEqual(body[1], KIT.SKILL_FLAG_INDEX)
+        self.assertEqual(body[3], ["Block", []])
+        self.assertEqual(body[2][0], "Block")
+        self.assertEqual([c[1][0] for c in body[2][1]],
+                         ["CreateCondition", "CreateCondition"]
+                         + ["ConditionalsProbability"] * KIT.ROULETTE_DRAWS)
 
     def test_condition_parameter_shapes_are_slv_wrapped(self):
         """裸数值进 Array 参 = 详情页 F1034（记忆 wf-dsl-param-shape-f1034）。"""
-        shapes = {"ACToleranceOfElement": ["Array", "int", "Array", "Array"],
-                  "ACAttackPoint": ["Array", "Array", "Array"],
-                  "ACParalysis": ["Array", "Boolean"],
-                  "ACPoison": ["Array", "Array", "Array"]}
-        for _name, ac, _force in KIT.CONDITIONS:
-            want = shapes[ac[0]]
+        import wf_dsl_sig
+        enums = wf_dsl_sig.ENUMS["AdditionalConditionKind"]
+        for _name, ac, _force in self._all_conditions():
+            want = enums[ac[0]]
             self.assertEqual(len(ac) - 1, len(want), ac[0])
             for value, kind in zip(ac[1:], want):
                 if kind == "Array":
@@ -242,27 +343,59 @@ class MutateTreeTests(unittest.TestCase):
 
     def test_tolerance_uses_the_all_element_code(self):
         """boss 的 resist_element_resistance 是白名单，只放行 254；写单元素码被静默硬拒。"""
-        tolerance = {name: ac for name, ac, _f in KIT.CONDITIONS}["tolerance_all"]
+        tolerance = {name: ac for name, ac, _f in KIT.BOOST_CONDITIONS}["tolerance_all"]
         self.assertEqual(tolerance[0], "ACToleranceOfElement")
         self.assertEqual(tolerance[2], 254)
         self.assertLess(tolerance[3][0]["max"], 0)           # 负值 = 抗性降低
 
     def test_force_apply_only_on_the_two_stat_debuffs(self):
-        """裁决 §2：麻痹不对 boss 强制付与；毒同理。"""
-        forced = {name for name, _ac, force in KIT.CONDITIONS if force}
+        """裁决 §2：麻痹不对 boss 强制付与；毒 / 迟缓 / 眩晕蓄积同理。"""
+        forced = {name for name, _ac, force in self._all_conditions() if force}
         self.assertEqual(forced, {"tolerance_all", "attack_down"})
 
-    def test_four_distinct_debuff_families(self):
-        """D136 数的是敌人身上同时存在的弱体条数 ⇒ 必须四条不同 kind。"""
-        families = [ac[0] for _name, ac, _f in KIT.CONDITIONS]
+    def test_roulette_has_four_distinct_families(self):
+        """作者要的四选二：四格必须是四种不同的 AC，且常驻两条不与随机池重复。"""
+        families = [ac[0] for _name, ac, _f, _w in KIT.ROULETTE]
         self.assertEqual(len(families), 4)
         self.assertEqual(len(set(families)), 4)
+        self.assertEqual(KIT.ROULETTE_DRAWS, 2)
+        self.assertEqual({w for _n, _a, _f, w in KIT.ROULETTE}, {25})
+        boost = {ac[0] for _name, ac, _f in KIT.BOOST_CONDITIONS}
+        self.assertFalse(boost & set(families))
+
+    def test_stun_slot_is_the_stunify_substitute(self):
+        """「气绝」无付与口：ACStun 实为 Stunify＝眩晕蓄积（作者 09-21 定案）。"""
+        names = {name: ac for name, ac, _f, _w in KIT.ROULETTE}
+        self.assertEqual(names["stun_accum"][0], "ACStun")
+        self.assertNotIn("ACParalysis", [names["stun_accum"][0]])
+        self.assertIn("DOWN", KIT.CAS_TEXTS[KIT.CAS_SWITCH])
 
     def test_effect_refs_stay_on_official_paths(self):
         tree, ev = KIT.mutate_tree(_fake_donor_tree(), "1")
         self.assertEqual(len(ev["effect_refs"]), 5)
         for path in KIT.effect_paths(tree):
             self.assertTrue(path.startswith(KIT.OFFICIAL_EFFECT_PREFIX), path)
+
+    def test_explosion_reuses_the_donor_hit_effect_scaled_up(self):
+        """爆炸不新增特效引用（图集增量仍是 0），只把母本命中特效放大。"""
+        tree, _ev = KIT.mutate_tree(_fake_donor_tree(), "1")
+        scales = [p[i][1][12] for p, i in KIT._command_slots(tree, "ShowEffect")
+                  if p[i][1][1] == "ヒットエフェクト"]
+        self.assertEqual(scales, [["Some", [{"min": KIT.EXPLOSION_EFFECT_SCALE,
+                                             "max": KIT.EXPLOSION_EFFECT_SCALE}]]])
+
+    def test_explosion_area_is_a_circle_within_the_engine_cap(self):
+        tree, _ev = KIT.mutate_tree(_fake_donor_tree(), "1")
+        (parent, index), = KIT._command_slots(tree, "CreateReferencePoint")
+        rp = parent[index][1]
+        self.assertEqual(rp[1], KIT.BIND_HIT_POS)
+        self.assertEqual(rp[2], ["GH", 0])                   # 参照点不用 CD/EF
+        self.assertEqual(rp[10], KIT.BIND_RP)
+        area = rp[11][1][0][1]
+        self.assertEqual(area[2], KIT.BIND_RP)               # 判定区挂在参照点上
+        self.assertEqual(area[9][0], "Circle")
+        self.assertLessEqual(KIT.EXPLOSION_RADIUS, 600)      # 判定区参数卡：Circle 上限 600
+        self.assertEqual(area[24], 0)                        # buffTargetAs 保持自动
 
     def test_drifted_donor_is_rejected(self):
         tree = _fake_donor_tree()
@@ -294,14 +427,23 @@ class MutateTreeTests(unittest.TestCase):
 
 
 class EnergyTests(unittest.TestCase):
-    def test_energy_is_the_template_supporter_tier(self):
-        self.assertEqual(KIT.SKILL_ENERGY, {"1": ("500", "500"), "2": ("500", "450")})
+    def test_energy_is_500_on_both_tiers(self):
+        """作者放行 §5：夏琳 500，觉醒前后两档都写这个数。"""
+        self.assertEqual(KIT.SKILL_ENERGY, {"1": ("500", "500"), "2": ("500", "500")})
 
     def test_multiplier_band(self):
-        """裁决 §2：辅助技能 36–50×（单发贯通弹 ⇒ 总倍率 = CNA 倍率）。"""
-        self.assertLessEqual(36, KIT.SKILL_MULTIPLIER["2"][1])
-        self.assertLessEqual(KIT.SKILL_MULTIPLIER["2"][1], 50)
+        """作者口径：满级 50×（爆炸段 CNA）；未觉醒档按 ×0.8 惯例。"""
+        self.assertEqual(KIT.SKILL_MULTIPLIER["2"][1], 50)
         self.assertLess(KIT.SKILL_MULTIPLIER["1"][1], KIT.SKILL_MULTIPLIER["2"][1])
+        self.assertLess(KIT.SKILL_MULTIPLIER["2"][0], KIT.SKILL_MULTIPLIER["2"][1])
+
+    def test_barrier_and_drain_match_the_panel(self):
+        self.assertEqual(KIT.BARRIER_RATIO, 0.25)
+        self.assertEqual(KIT.BARRIER_SELECTOR, 35)          # 除自身外（82 含自身）
+        self.assertEqual(KIT.BARRIER_ELEMENT_FILTER, KIT.ELEMENT + 1)
+        self.assertEqual(KIT.DRAIN_SELECTOR, 33)            # 扣血走 33（基诺维 v3 锁定）
+        self.assertEqual((KIT.DRAIN_RATIO_HIGH, KIT.DRAIN_RATIO_LOW, KIT.DRAIN_THRESHOLD),
+                         (0.55, 0.20, 50))
 
 
 # ---------------------------------------------------------------- 集成：官方基线
@@ -363,14 +505,36 @@ class OfficialSkillTreeTests(unittest.TestCase):
             self.assertEqual(tree[0], "ActionDsl")
             self.assertEqual((tree[1], tree[10]), (2, 0), level)
 
-    def test_mutated_trees_carry_four_conditions_and_official_effects(self):
+    def test_mutated_trees_carry_the_boost_block_and_official_effects(self):
+        want = len(KIT.BOOST_CONDITIONS) + KIT.ROULETTE_DRAWS * len(KIT.ROULETTE)
         for level, (low, high) in KIT.SKILL_MULTIPLIER.items():
             tree, ev = KIT.mutate_tree(donor_tree(level), level)
-            self.assertEqual(KIT._command_counts(tree)["CreateCondition"], len(KIT.CONDITIONS))
+            counts = KIT._command_counts(tree)
+            self.assertEqual(counts["CreateCondition"], want, level)
+            self.assertEqual(counts["ConditionalsChangeSkillFlag"], 1, level)
+            self.assertEqual(counts["CreateHitArea"], 2, level)
+            self.assertEqual(counts["CreateBarrier"], 1, level)
             (parent, index), = KIT._command_slots(tree, "CreateNormalAttack")
             self.assertEqual(parent[index][1][6], [{"min": low, "max": high}])
             for path in ev["effect_refs"]:
                 self.assertTrue(path.startswith(KIT.OFFICIAL_EFFECT_PREFIX), path)
+
+    def test_no_cd_or_ef_coordsys_on_enemy_or_ball_subjects(self):
+        """记忆 U_4f5401：敌人/球/角色主体上写 CD/EF 坐标系 = 进战斗崩。
+
+        本轮新增的节点一律用 GH；母本自带的两处 CD（MoveHitArea 1 / 命中特效 2）
+        挂在判定区与命中位置绑定上，是官方原样，验证器的 dsl/coordsys-on-enemy-subject
+        判据也放行（``--step verify`` 0 阻断）。
+        """
+        enemy_binds = {KIT.BIND_HIT_ENEMY, KIT.BIND_BLAST_ENEMY, -18}
+        for level in ("1", "2"):
+            tree, _ev = KIT.mutate_tree(donor_tree(level), level)
+            for parent, index in KIT._command_slots(tree, "ShowEffect"):
+                body = parent[index][1]
+                if body[6][0] in ("CD", "EF"):
+                    self.assertNotIn(body[3], enemy_binds, f"{level} {body[1]}")
+            for parent, index in KIT._command_slots(tree, "CreateReferencePoint"):
+                self.assertEqual(parent[index][1][2][0], "GH", level)
 
     def test_mutated_trees_survive_the_amf3_roundtrip(self):
         """``amf_bytes`` 只吃裸树；喂 {tree, numbers} 包装壳 = 进战斗 F1034。"""
@@ -470,12 +634,25 @@ class PackageTests(unittest.TestCase):
         logical = wf_dsl.dsl_logical(self.ctx.program_path(level))
         return self.ctx.amf_parse(self.ctx.pack.pkg_path("common", logical).read_bytes())
 
-    def test_package_skill_trees_carry_four_conditions(self):
+    @staticmethod
+    def _all_conditions():
+        out = list(KIT.BOOST_CONDITIONS)
+        for _draw in range(KIT.ROULETTE_DRAWS):
+            out.extend((name, ac, force) for name, ac, force, _w in KIT.ROULETTE)
+        return out
+
+    def test_package_skill_trees_carry_the_boost_block(self):
+        want = len(KIT.BOOST_CONDITIONS) + KIT.ROULETTE_DRAWS * len(KIT.ROULETTE)
         for level in ("1", "2"):
             tree = self._package_tree(level)
             counts = KIT._command_counts(tree)
-            self.assertEqual(counts["CreateCondition"], len(KIT.CONDITIONS), level)
+            self.assertEqual(counts["CreateCondition"], want, level)
             self.assertEqual(counts["CreateNormalAttack"], 1, level)
+            self.assertEqual(counts["ConditionalsChangeSkillFlag"], 1, level)
+            self.assertEqual(counts["ConditionalsProbability"], KIT.ROULETTE_DRAWS, level)
+            self.assertEqual(counts["CreateRatioAttack"], 2, level)
+            self.assertEqual(counts["CreateBarrier"], 1, level)
+            self.assertEqual(counts["CreateReferencePoint"], 1, level)
             for path in KIT.effect_paths(tree):
                 self.assertTrue(path.startswith(KIT.OFFICIAL_EFFECT_PREFIX), path)
 
@@ -484,8 +661,9 @@ class PackageTests(unittest.TestCase):
         for level in ("1", "2"):
             tree = self._package_tree(level)
             slots = KIT._command_slots(tree, "CreateCondition")
-            self.assertEqual(len(slots), len(KIT.CONDITIONS), level)
-            for (parent, index), (name, ac, force) in zip(slots, KIT.CONDITIONS):
+            wanted = self._all_conditions()
+            self.assertEqual(len(slots), len(wanted), level)
+            for (parent, index), (name, ac, force) in zip(slots, wanted):
                 body = parent[index][1]
                 self.assertEqual(body[2], [ac], f"{level}/{name}")
                 self.assertIs(body[12], force, f"{level}/{name}")
@@ -502,27 +680,25 @@ class PackageTests(unittest.TestCase):
         effects = self.ctx.pack.package / "roots" / "common" / "battle" / "effect"
         self.assertFalse(effects.exists())
 
-    def test_package_has_no_custom_ability_string_claim(self):
-        """零 629、零 desc_override ⇒ 本包不该认领任何 custom_ability_string。
-
-        ``tables`` 会从母本克隆 ChangeSkillFlag 的 ``change_skill_<code>``；本套件没有
-        ChangeSkillFlag 行，:func:`KIT.drop_orphan_change_skill` 必须把它撤掉。
-        """
+    def test_package_claims_exactly_the_skill_flag_string(self):
+        """536 的面板条目必须被认领；本包不认领别的 custom_ability_string 键。"""
         entry = next((claim for claim in self.ctx.pack.load_claims()
                       if (claim["root"], claim["logical_path"]) == ("common", KL.CAS)), None)
-        self.assertIsNone(entry, entry)
+        self.assertIsNotNone(entry)
+        self.assertEqual(sorted(entry["outer_keys"]), [KIT.CAS_SWITCH])
 
-    def test_orphan_change_skill_string_is_gone_from_the_package(self):
-        path = self.ctx.pack.pkg_path("common", KL.CAS)
-        if not path.is_file():
-            return                                   # 表已整体删除（与底表逐行相同）
-        self.assertNotIn(KIT.ORPHAN_CAS_KEY, self.ctx.pkg_flat(KL.CAS))
+    def test_package_change_skill_string_matches_the_kit(self):
+        rows = self.ctx.pkg_flat(KL.CAS)
+        self.assertIn(KIT.CAS_SWITCH, rows)
+        self.assertEqual(self.ctx.csv_split(rows[KIT.CAS_SWITCH])[0][0],
+                         KIT.CAS_TEXTS[KIT.CAS_SWITCH])
 
-    def test_drop_orphan_change_skill_is_idempotent(self):
-        result = KIT.drop_orphan_change_skill(self.ctx)
-        self.assertFalse(result["still_claimed"])
-        self.assertNotIn("unclaimed", result)        # 已经撤过，重跑不再动认领
-        self.assertNotIn("package_table_deleted", result)
+    def test_package_skill_flag_row_references_the_string(self):
+        """536 行的 c70 与包里的 custom_ability_string 键必须对得上，否则面板空白。"""
+        rows = self.ctx.csv_split(self.ctx.pkg_flat(KL.ABILITY)[f"{KIT.CID_S}1"])
+        keys = {row[70] for row in rows if row[47] == "536"}
+        self.assertEqual(keys, {KIT.CAS_SWITCH})
+        self.assertIn(KIT.CAS_SWITCH, self.ctx.pkg_flat(KL.CAS))
 
 
 if __name__ == "__main__":

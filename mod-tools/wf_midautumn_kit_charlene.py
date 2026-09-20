@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
-"""中秋批次 kit：夏琳 139992 ``artificialeye_sniper_moon``（雷 · 射击 · 直击辅助）。
+"""中秋批次 kit：夏琳 139992 ``artificialeye_sniper_moon``（雷 · 射击 · 妨害辅助）。
 
-轴线：**把敌人身上「同时存在的弱体条数」当层数卖给全队**。
-技能一发给敌人挂 4 条不同来源的弱体（全属性抗性↓ / 攻击力↓ / 麻痹 / 中毒），
-队长技与词条把这 4 层翻译成「触发敌方 Direct 伤害特攻」与「触发敌方攻击特攻」
-两条互不稀释的乘区，再补一条不挑 boss 的 491「减益攻击特攻」兜底。
+**rework1（2026-09-21）**：按 ``rework1/panel/charlene.json`` 重做。轴线仍是
+「把敌人身上同时存在的弱体条数当层数卖给全队」，但四条弱体**移出技能本体**，
+改由词条 1「雷属性共鸣时强化技能」（536 ChangeSkillFlag ＋ DSL
+``ConditionalsChangeSkillFlag``）接管，并追加「随机两种异常」轮盘；
+技能本体换成「抽血 ＋ 护盾 ＋ 贯穿弹命中爆炸」。
 
 由 ``python mod-tools/wf_midautumn_build.py --char charlene --step kit`` 调用 :func:`build`。
 只经 ``KitContext`` 写 ``work/character_packs/ma-charlene/``；live store / ``assets/`` /
 ``.cdn`` / 设备 / 存档 一律不碰，不发布、不 git。
 
-设计稿：``work/character_packs/midautumn-20260920/design/charlene.{md,json}``。
+设计稿：``work/character_packs/midautumn-20260920/design/charlene.{md,json}``；
+施工单：``…/midautumn-20260920/rework1/impl/charlene.md``。
 行方案（donor + 逐格改 + ``wf_describe`` 回读）全部内联在本模块，设计稿在场时逐条互校
 （:func:`design_crosscheck`）——设计稿在 gitignore 的 ``work/`` 下，缺失时不阻塞。
 
@@ -19,16 +21,22 @@
 - character 行 c9–c16 语音路由（kind 1 ConditionExist / 3 AttackPointUp → ``<code>_voice_ready``）
   ＋ c18 队长技名；character_text 12 列与 action_skill 两档文案由 ``tables`` 依 :data:`TEXTS` 写，
   本模块只断言不漂移。
-- 队长技 5 行、词条 6 键 10 条：官方 donor 行 + 逐格改，逐行过 ``wf_client_legality``
-  （合法性 / 声明块字段 / 元素列）并与登记的面板文案逐字比对。
-- action_skill 两档能量 c4/c5 = 母本原值 500/500 与 500/450（辅助档），名称/描述同 :data:`TEXTS`。
-- 两棵技能 DSL：官方母本 ``artificialeye_sniper$_1/_2`` 整树，只改
-  ``CreateNormalAttack`` 倍率格与 on-hit 的 ``CreateCondition``（母本那条改参数 + 克隆 3 条）。
-  **不新增构造名、不改命令顺序、不动判定区形状**；特效全部直接引用官方路径，零克隆零图集增量。
+- 队长技 5 行（**本轮一格不动**）、词条 6 键 11 条：官方 donor 行 + 逐格改，逐行过
+  ``wf_client_legality``（合法性 / 声明块字段 / 元素列）并与登记的面板文案逐字比对。
+- action_skill 两档能量 c4/c5 两档统一 500/500（作者放行 §5），名称/描述同 :data:`TEXTS`。
+- 两棵技能 DSL：官方母本 ``artificialeye_sniper$_1/_2`` 整树 + 三处官方蓝本移植：
+  ① 顶层插「抽血」``FindAllSubjects(33) → ConditionalsHealthPointRatioOf → CreateRatioAttack``
+  （蓝本 ``rector_sorcerer_playable``）与「护盾」``FindAllSubjects(35,[3]) → CreateBarrier``
+  （蓝本 ``priest_prince_playable``）；② 贯穿弹 on-hit 里把母本那条 ``CreateCondition`` 换成
+  ``ConditionalsChangeSkillFlag``（蓝本 ``amulet_bosslady``）分流的强化块；③ on-hit 末尾接
+  「命中爆炸」``CreateReferencePoint → CreateHitArea(Circle) → CreateNormalAttack``
+  （蓝本 ``blindness_gunner``，官方 82 棵树有同形嵌套）。
+  **特效全部直接引用官方母本路径，零克隆零图集增量。**
+- ``custom_ability_string`` ``change_skill_<code>``＝536 的面板条目（官方母本自带同名键）。
 - ``switched_action_skill`` ``<code>_voice_ready``（matched_skill_ready 的路由目标）。
 - 像素/特效交付件：``B/pixel/charlene/install.json`` 在场才装，缺失静默跳过。
 
-**无固有状态、无 ``custom_ability_string``、无 ``desc_override``、零 APK 补丁 kind。**
+**无固有状态、无 ``desc_override``、零 APK 补丁 kind（``required_capabilities`` 仍为空）。**
 """
 from __future__ import annotations
 
@@ -56,6 +64,21 @@ STATUE_GROUP = "attack_yellow"
 CHARACTER = KL.CHARACTER
 ACTION = KL.ACTION
 
+#: 536 ChangeSkillFlag 的面板条目键。母本 131176 自己就有同名键（``change_skill_artificialeye_sniper``），
+#: ``tables`` 步会按新 code 克隆出 ``change_skill_artificialeye_sniper_moon``；本模块重写它的文案。
+CAS_SWITCH = "change_skill_" + CODE
+
+#: 技能强化条目的文案。裁决 §3：「技能强化」条目不写数字与时间
+#: （``KL.check_panel(skill_flag=True)`` 硬卡数字 / 秒 / %）。
+CAS_TEXTS = {
+    CAS_SWITCH: "雷属性共鸣时强化技能：命中敌人时赋予其累积全属性抗性降低与累积攻击力降低效果"
+                "（无视弱体抗性），并随机追加赋予麻痹、中毒、迟缓、使敌人更容易进入DOWN中的两种效果",
+}
+
+_SKILL_DESC = ("抽取全体队伍成员生命值55%（若该成员当前生命值低于50%，则改为抽取其生命值20%），"
+               "并为除自身外的雷属性角色赋予护盾，护盾值为其最大生命值25% ＋ "
+               "瞄准敌人射出月华贯穿弹，命中后爆炸，对范围内的敌人造成雷属性伤害")
+
 TEXTS = {
     "name": "夏琳",
     "furigana": "XIALIN",
@@ -63,19 +86,17 @@ TEXTS = {
                "她说今晚歇业——可要是有人扰了这轮满月，桂花落地之前，对方就已经躺在准星里了。",
     "title": "代号·月兔",
     "skill1": "桂影·望月三千",
-    "desc1": "瞄准距离最近的敌人射出月华贯通弹，对命中的敌人造成雷属性伤害 ＋ 赋予其累积全属性抗性降低"
-             "与累积攻击力降低效果（无视弱体耐性）＋ 追加赋予麻痹与中毒效果",
+    "desc1": _SKILL_DESC,
     "skill2": "桂影·望月三千＋",
-    "desc2": "瞄准距离最近的敌人射出月华贯通弹，对命中的敌人造成雷属性伤害 ＋ 赋予其累积全属性抗性降低"
-             "与累积攻击力降低效果（无视弱体耐性）＋ 追加赋予麻痹与中毒效果",
+    "desc2": _SKILL_DESC,
     "leader": "Ace of Moonlight",
     "cv": "AI 合成配音",
 }
 
 SPEC = {
     "stance": "Jammer",                      # 母本 c26；整套 kit 的轴就是给敌人挂弱体
-    "required_capabilities": (),             # 10+5 条行实跑 caps 全空，不需要任何 APK 补丁 kind
-    "extra_keys": {KL.SWITCHED: (VOICE_KEY,)},
+    "required_capabilities": (),             # 12+5 条行实跑 caps 全空，不需要任何 APK 补丁 kind
+    "extra_keys": {KL.SWITCHED: (VOICE_KEY,), KL.CAS: (CAS_SWITCH,)},
 }
 
 # character c9–c16：kind 1 ConditionExist，条件种类 3 = AttackPointUp、条件 id 0。
@@ -106,32 +127,53 @@ LEADER: tuple[tuple[str, dict[int, str], str], ...] = (
      "赋予除自身全员(雷) 技能槽 40%→50%"),
 )
 
+#: 「X 属性共鸣时」＝官方常规共鸣前置（主控 2026-09-21 落实①）：ability 前置 1 写
+#: kind 2（编成人数）+ 阈值 600000 + 元素。与 kyle 的 ``_PRE_RESONANCE_A`` 同一套。
+#: ``wf_describe`` 把它渲染成「雷·编成≥6 时:」——引擎里「共鸣」就是这个门。
+PRE_RESONANCE = {6: "2", 9: "600000", 10: "600000", 11: ELEMENT_TOKEN}
+
+#: 把母本行的「瞬发触发块」压回常驻（trigger kind 0）。空串是坑（``parseAt*`` 无空串分支），
+#: 官方常驻行的写法就是 c27='0' + c28/c30/c31/c34/c35/c36 全空 + c39='(None)' + c46='0'。
+NO_TRIGGER = {27: "0", 28: "", 30: "", 31: "", 34: "", 35: "", 36: ""}
+
 ABILITY: dict[str, tuple[tuple[str, dict[int, str], str], ...]] = {
-    # 1 自身充能 ＋ 本体轴（直击伤害池）
+    # 1 开局自身充能 ＋ 雷共鸣时「强化技能」（536 → DSL ConditionalsChangeSkillFlag）
     "1399921": (
-        ("1311761#0", {0: CODE + "_1", 2: STATUE_GROUP},
-         "雷·MySelf 时: 自身 技能槽 50%→100%"),
-        ("1211651#0", {0: CODE + "_1", 2: STATUE_GROUP, 102: "4", 111: ELEMENT_TOKEN},
-         "持续·任一敌方状态计数减益≥1(限4次) → 赋予全队(雷) 触发敌方Direct伤害特攻 12.5%→25%"),
+        ("1311761#0", {0: CODE + "_1", 2: STATUE_GROUP, 6: "0", 11: "",
+                       51: "50000", 52: "50000"},
+         "自身 技能槽 50%"),
+        ("1311763#4", {0: CODE + "_1", 1: "true", 2: STATUE_GROUP, 70: CAS_SWITCH,
+                       **PRE_RESONANCE, **NO_TRIGGER},
+         f"雷·编成≥6 时: 自身 切换技能形态[{CAS_SWITCH}]"),
     ),
-    # 2 减益特攻两池（P1 攻击力池 / P4 独立特攻池）
+    # 2 对「弱体中的敌人」三池：P1 攻击力 / P6 直击伤害 / P4 独立乘区（调研卡 B §6.6）
     "1399922": (
         ("1110934#0", {0: CODE + "_2", 2: STATUE_GROUP, 49: ELEMENT_TOKEN,
-                       51: "15000", 52: "30000"},
-         "赋予全队(雷) 减益攻击特攻 15%→30%"),
+                       51: "200000", 52: "200000"},
+         "赋予全队(雷) 减益攻击特攻 200%"),
+        # 124 官方只有 1210153#0 一行且 target 0；这里换 491 那张「target 5 + 元素列」的整行、
+        # 只改内容 kind ⇒ 列布局与已验证行逐格一致，零新列形状。
+        ("1110934#0", {0: CODE + "_2", 2: STATUE_GROUP, 47: "124", 49: ELEMENT_TOKEN,
+                       51: "100000", 52: "100000"},
+         "赋予全队(雷) 减益Direct伤害特攻 100%"),
         ("1610052#1", {0: CODE + "_2", 2: STATUE_GROUP, 49: ELEMENT_TOKEN,
-                       51: "2500", 52: "5000"},
-         "赋予全队(雷) 减益特攻 2.5%→5%"),
+                       51: "10000", 52: "10000"},
+         "赋予全队(雷) 减益特攻 10%"),
     ),
-    # 3 Ⓜ 主位：团队状态攻击力 ＋ 自带第 4 条弱体源 ＋ 官方夏琳的 2 号位充能
+    # 3 Ⓜ 主位：共鸣团队攻击力（无 CT）＋ 敌方攻击力↓ 两层 ＋ 共鸣队长技能槽上限
     "1399923": (
-        ("1610693#0", {0: CODE + "_3", 2: STATUE_GROUP, 49: ELEMENT_TOKEN},
-         "技能Hit≥1(CT20秒) → 赋予全队(雷) 状态攻击力 50%→100%(15秒)×1次"),
-        ("1210873#0", {0: CODE + "_3", 2: STATUE_GROUP,
-                       51: "-4000", 52: "-8000", 58: "300000000"},
-         "技能发动≥1 → 自身 敌方状态攻击力 -4%→-8%(50秒)[累积上限3]"),
-        ("1311763#2", {0: CODE + "_3", 2: STATUE_GROUP},
-         "雷·编成≥6(限1次) → 赋予队长 2号位技能槽 5%→10%"),
+        ("1610693#0", {0: CODE + "_3", 2: STATUE_GROUP, 35: "0", 49: ELEMENT_TOKEN,
+                       51: "150000", 52: "150000", **PRE_RESONANCE},
+         "雷·编成≥6 时: 技能Hit≥1 → 赋予全队(雷) 状态攻击力 150%(15秒)×1次"),
+        ("1610693#1", {0: CODE + "_3", 2: STATUE_GROUP, 35: "0",
+                       51: "-20000", 52: "-20000",
+                       57: "300000000", 58: "300000000", 61: "2"},
+         "技能Hit≥1 → 自身 敌方状态攻击力 -20%(50秒)[累积上限2]"),
+        # 245 = SecondSkillGauge ＝技能槽上限（记忆卡 wf-skill-gauge-max-exists；
+        # wf_describe 直译成「2号位技能槽」，见施工单偏离 V4）。母本这行 target 就是队长。
+        ("1311763#2", {0: CODE + "_3", 2: STATUE_GROUP, 51: "20000", 52: "20000",
+                       **PRE_RESONANCE, **NO_TRIGGER},
+         "雷·编成≥6 时: 赋予队长 2号位技能槽 20%"),
     ),
     # 4 雷共鸣门控的独立特攻池按层
     "1399924": (
@@ -154,17 +196,42 @@ ABILITY: dict[str, tuple[tuple[str, dict[int, str], str], ...]] = {
 }
 
 # ------------------------------------------------------------------ 技能 DSL
-# 母本整树保留；只改两处（设计稿 §4.2 S1–S5）。
+# 母本整树保留；三处官方蓝本移植（施工单 §2 配方 R1–R4）。
 
-# S1 CreateNormalAttack 倍率格（单发贯通弹，每敌命中 1 次 ⇒ 总倍率 = CNA 倍率）。
-# 满级 40× 落在裁决 §2「辅助技能 36–50×」带内偏下；两档维持官方的档差比例。
-SKILL_MULTIPLIER = {"1": (24, 28), "2": (34, 40)}
-SKILL_ENERGY = {"1": ("500", "500"), "2": ("500", "450")}
+#: 爆炸段 CreateNormalAttack 的倍率（slv1 → slv max）。面板写满级单值「50 倍」。
+#: 觉醒档 max = 50×，未觉醒档按本套件既有的 ×0.8 惯例（偏离 D9）。
+SKILL_MULTIPLIER = {"1": (32, 40), "2": (40, 50)}
+#: 作者放行 §5：夏琳 500，觉醒前后两档都写这个数。
+SKILL_ENERGY = {"1": ("500", "500"), "2": ("500", "500")}
 
-#: 母本那条 CreateCondition 的整体形状被复用四次；只换 AC 列表与末位 forceApply。
-#: 名称 / AC / forceApply。数值两档相同（设计稿 §4.2：升档只加伤害倍率）。
-CONDITIONS: tuple[tuple[str, list, bool], ...] = (
-    # S2 全属性抗性↓（累积 4 层 = −32%）。元素码 254 = 全属性：boss 的 resist_element_resistance
+#: 抽血（作者原话「抽取全体成员 55% 血量；低于 50% 的成员只抽 20%」）。
+#: 蓝本 ``rector_sorcerer_playable_2``：``FindAllSubjects(4,113,[6]) →
+#: ConditionalsHealthPointRatioOf(4,50, then CreateRatioAttack 0.1, else [])``。
+#: 分支语义【官方两例互证】：**then ＝ HP ≥ 阈值，else ＝ HP < 阈值**。
+DRAIN_SELECTOR = 33          # 参战全员（主队 3 人 + 协力/召唤球）；基诺维 v3 锁定「扣血走 33」
+DRAIN_THRESHOLD = 50         # 百分数整数（官方三例 40 / 50 / 50）
+DRAIN_RATIO_HIGH = 0.55      # HP ≥ 50% 的成员
+DRAIN_RATIO_LOW = 0.20       # HP < 50% 的成员
+DRAIN_KIND = 2               # CreateRatioAttack p1：官方 22 例恒为 2 ＝ 按最大生命值比例
+
+#: 护盾（「除自身外的雷属性角色，最大生命值 25%」）。蓝本 ``priest_prince_playable_2``
+#: 的 ``CreateBarrier(_, [ratio], ["GenericBarrierHitEffect"])``（官方带 0.03–0.075）。
+BARRIER_SELECTOR = 35        # 除自身外的队友（82 含自身，裁决 §8 踩过）
+BARRIER_ELEMENT_FILTER = 3   # FindAllSubjects 元素过滤槽 = 内部元素码 + 1（雷 2 → 3）
+BARRIER_RATIO = 0.25
+
+#: 爆炸段（贯穿弹 on-hit → 参照点 → 圆形判定区 → CNA）。蓝本 ``blindness_gunner_2``
+#: （同为枪手母本；官方 1052 棵可解技能树里 82 棵有「on-hit 块里再开 CreateHitArea」）。
+EXPLOSION_RADIUS = 300       # Circle 上限 600（判定区参数卡）
+EXPLOSION_LIFETIME = 10      # 蓝本同值
+REFERENCE_POINT_LIFETIME = 100
+
+#: ``ConditionalsChangeSkillFlag`` 的 flag 下标。蓝本 ``amulet_bosslady_2`` 与本批 kyle 都写 1。
+SKILL_FLAG_INDEX = 1
+
+#: 强化档常驻的两条弱体（母本那条 CreateCondition 改参数 + 克隆）。名称 / AC / forceApply。
+BOOST_CONDITIONS: tuple[tuple[str, list, bool], ...] = (
+    # 全属性抗性↓（累积 4 层 = −32%）。元素码 254 = 全属性：boss 的 resist_element_resistance
     # 是白名单，只放行 254 与克制属性，写单元素码会被静默硬拒（记忆 wf-force-apply-and-damage-floors）。
     # forceApply=true 穿 boss 弱体耐性，蓝本官方 ``stella_copy_assist``（254 + 负值 + 累积 + true）。
     ("tolerance_all",
@@ -174,7 +241,7 @@ CONDITIONS: tuple[tuple[str, list, bool], ...] = (
       [{"min": -0.06, "max": -0.08, "alv_min": -0.02, "alv_max": -0.03}],
       [{"min": 4, "max": 4}]],
      True),
-    # S3 敌方攻击力↓（累积 4 层 = −24%）。AC 形状抄官方 ``amulet_bosslady_2``
+    # 敌方攻击力↓（累积 4 层 = −24%）。AC 形状抄官方 ``amulet_bosslady_2``
     # ``[3900, -0.06→-0.07, 累积 3]``，只改帧/强度/层上限。
     ("attack_down",
      ["ACAttackPoint",
@@ -182,20 +249,41 @@ CONDITIONS: tuple[tuple[str, list, bool], ...] = (
       [{"min": -0.05, "max": -0.06, "alv_min": -0.02, "alv_max": -0.03}],
       [{"min": 4, "max": 4}]],
      True),
-    # S4 麻痹 3 秒。**不强制付与**（裁决 §2 对麻痹的口径：不对 boss 强制付与）。
-    ("paralysis",
-     ["ACParalysis", [{"min": 180, "max": 180}], True],
-     False),
-    # S5 中毒（「桂花醉」）。毒走 FixedAttackCalculator 独立通道，强度取官方下档，是风味不是输出。
-    # 1200 帧是官方 ACPoison 最常见档（31 条里 16 条）。
-    ("poison",
-     ["ACPoison", [{"min": 1200, "max": 1200}], [{"min": 4000, "max": 4000}],
-      [{"min": 1, "max": 1}]],
-     False),
+)
+
+#: 强化档的随机池：4 选 1 轮盘 × :data:`ROULETTE_DRAWS` 次（每次独立掷点，可能重复——
+#: 作者原话是「随机追加两种」，没要求互斥；调研卡 B §4.2 建议接受可重复）。
+#: 权重相等 ⇒ 每格 25%。名称 / AC / forceApply / 权重。
+ROULETTE_DRAWS = 2
+ROULETTE: tuple[tuple[str, list, bool, int], ...] = (
+    # 麻痹 3 秒（官方带 180/240/480/600 帧）。**不强制付与**（裁决 §2 口径）。
+    ("paralysis", ["ACParalysis", [{"min": 180, "max": 180}], True], False, 25),
+    # 中毒（「桂花醉」）。毒走 FixedAttackCalculator 独立通道；官方 1800 帧 / 强度 5000–6000。
+    ("poison", ["ACPoison", [{"min": 1800, "max": 1800}], [{"min": 5000, "max": 5000}],
+                [{"min": 1, "max": 1}]], False, 25),
+    # 「迟缓」＝引擎枚举 Frozen（国服面板作「迟缓」）。官方带 900 / 1200 帧。
+    ("frozen", ["ACFrozen", [{"min": 900, "max": 900}], True], False, 25),
+    # 「气绝」无付与口：``ACStun`` 实为 Stunify＝**眩晕蓄积**（使敌人更容易进入 DOWN）。
+    # 作者 09-21 已定案把这一格换成这个说法。DSL 侧官方零先例 ⇒ 金丝雀 Z1。
+    ("stun_accum", ["ACStun", [{"min": 900, "max": 900}], [{"min": 0.2, "max": 0.2}],
+                    [{"min": 1, "max": 1}]], False, 25),
 )
 
 #: 技能特效全部直接引用官方母本路径（零克隆、零图集增量，裁决 §4）。
 OFFICIAL_EFFECT_PREFIX = f"battle/effect/skill_unique/{TEMPLATE_CODE}/"
+
+#: 爆炸演出：复用母本自己的命中特效，只放大倍率（不新增特效引用 ⇒ 图集增量仍是 0）。
+EXPLOSION_EFFECT_SCALE = 3.5
+
+#: 新增绑定号。母本占用 -18 / 1（判定区自身）/ 2（命中位置）/ 3（命中的敌人）。
+BIND_HIT_POS = 2
+BIND_HIT_ENEMY = 3
+BIND_DRAIN = 4
+BIND_BARRIER = 5
+BIND_RP = 6                  # 爆炸参照点
+BIND_BLAST_AREA = 7          # 爆炸判定区自身
+BIND_BLAST_POS = 8
+BIND_BLAST_ENEMY = 9
 
 #: 母本整树的命令计数指纹：任何一项对不上都说明母本漂移或改错了结构。
 DONOR_COMMAND_COUNTS = {
@@ -251,6 +339,69 @@ def effect_paths(tree) -> list[str]:
             and node[0] == "SpecifyEffectDirectly" and isinstance(node[1], str)]
 
 
+def _cmd(name: str, *args) -> list:
+    return ["Command", [name, *args]]
+
+
+def _block(*commands) -> list:
+    return ["Block", list(commands)]
+
+
+def _condition(donor_cmd: list, ac: list, force: bool) -> list:
+    """母本那条 ``CreateCondition`` 整体克隆，只换 AC 列表与末位 ``forceApply``。"""
+    command = copy.deepcopy(donor_cmd)
+    # 下标 2 是 **AC 列表**（母本是 ``[[ACToleranceOfElement, …]]`` 一条）：
+    # 直接塞裸 AC 会把嵌套层吃掉一层，往返自检抓不到，进战斗才炸。
+    command[1][2] = [copy.deepcopy(ac)]
+    command[1][12] = bool(force)
+    return command
+
+
+def drain_block() -> list:
+    """抽血：参战全员按 HP 档位扣最大生命值的比例（蓝本 ``rector_sorcerer_playable_2``）。"""
+    return _cmd(
+        "FindAllSubjects", BIND_DRAIN, DRAIN_SELECTOR, [], [], [], [], [], ["DoNothing"],
+        _block(_cmd(
+            "ConditionalsHealthPointRatioOf", BIND_DRAIN, DRAIN_THRESHOLD,
+            # then ＝ HP ≥ 阈值（官方自伤放 then、治疗放 else，两例互证）
+            _block(_cmd("CreateRatioAttack", BIND_DRAIN, DRAIN_KIND,
+                        [{"min": DRAIN_RATIO_HIGH, "max": DRAIN_RATIO_HIGH}])),
+            # else ＝ HP < 阈值
+            _block(_cmd("CreateRatioAttack", BIND_DRAIN, DRAIN_KIND,
+                        [{"min": DRAIN_RATIO_LOW, "max": DRAIN_RATIO_LOW}])))))
+
+
+def barrier_block() -> list:
+    """护盾：除自身外的雷属性队友，最大生命值比例（蓝本 ``priest_prince_playable_2``）。"""
+    return _cmd(
+        "FindAllSubjects", BIND_BARRIER, BARRIER_SELECTOR, [BARRIER_ELEMENT_FILTER],
+        [], [], [], [], ["DoNothing"],
+        _block(_cmd("CreateBarrier", BIND_BARRIER,
+                    [{"min": BARRIER_RATIO, "max": BARRIER_RATIO}],
+                    ["GenericBarrierHitEffect"])))
+
+
+def explosion_block(donor_cna: list, level: str) -> list:
+    """命中爆炸：参照点 → 圆形判定区 → CNA（蓝本 ``blindness_gunner_2`` 的嵌套段）。"""
+    low, high = SKILL_MULTIPLIER[level]
+    cna = copy.deepcopy(donor_cna)
+    cna[1][1] = BIND_BLAST_ENEMY
+    cna[1][6] = [{"min": low, "max": high}]
+    # 下标 12 ＝ enablesRangeBonus：蓝本的爆炸段就开着（范围加成），母本的单点弹是 false。
+    cna[1][12] = True
+    return _cmd(
+        "CreateReferencePoint", BIND_HIT_POS, ["GH", 0], 0, 0, 0, False, False,
+        ["Single"], REFERENCE_POINT_LIFETIME, BIND_RP,
+        _block(_cmd(
+            "CreateHitArea", "*", BIND_RP, ["GH", 0], 0, 0, 0, False, False,
+            ["Circle", [{"min": EXPLOSION_RADIUS, "max": EXPLOSION_RADIUS}]],
+            ["Center"], ["Center"], ["Single"],
+            ["SpecifyHitAreaLifetimeDirectly", EXPLOSION_LIFETIME],
+            ["CalculatedUsingMaxNumOfHits", 1], ["None"], False, True, ["None"],
+            BIND_BLAST_AREA, _block(), BIND_BLAST_POS, BIND_BLAST_ENEMY,
+            _block(cna), 0, 0, ["None"])))
+
+
 def mutate_tree(tree, level: str):
     """母本整树 → 本角色的树。返回 ``(tree, evidence)``；结构不符直接抛错。"""
     counts = _command_counts(tree)
@@ -261,22 +412,28 @@ def mutate_tree(tree, level: str):
         raise CharleneError(f"donor skill tree {level}: unexpected root {tree[:2]!r}")
     if tree[1] != 2 or tree[10] != 0:
         # tree[10] = buffTargetAs：0 = 自动（技能伤害）。她不是直击输出位，保持 0。
+        # 调研卡 B §7.3：这一段**不要**写 4，写 4 会丢掉全部技能伤害 UP。
         raise CharleneError(f"donor root header {level}: movementPriority={tree[1]} "
                             f"buffTargetAs={tree[10]}, expected 2/0")
 
-    # --- S1 CreateNormalAttack 倍率
+    # --- 母本的单点 CNA：整条挪进爆炸段（母本弹体本身不再直接造成伤害）
     (cna_parent, cna_index), = _command_slots(tree, "CreateNormalAttack")
-    cna = cna_parent[cna_index][1]
-    if cna[2] != 255:
+    donor_cna = cna_parent[cna_index]
+    cna_body = donor_cna[1]
+    if cna_body[2] != 255:
         # 255 = 随自身属性。DSL 显式元素码只有 CreateNormalAttack[2] 有 +1 偏移
         # （记忆 wf-dsl-element-code-offset），写死反而会错，这一格不动。
-        raise CharleneError(f"CreateNormalAttack element slot {cna[2]!r} != 255")
-    low, high = SKILL_MULTIPLIER[level]
-    before_mult = copy.deepcopy(cna[6])
-    cna[6] = [{"min": low, "max": high}]
+        raise CharleneError(f"CreateNormalAttack element slot {cna_body[2]!r} != 255")
+    if len(cna_body) != 17:
+        raise CharleneError(f"donor CreateNormalAttack has {len(cna_body) - 1} params, expected 16")
+    before_mult = copy.deepcopy(cna_body[6])
+    blast = explosion_block(donor_cna, level)
 
-    # --- S2–S5 on-hit CreateCondition：母本那条改参数，再克隆 3 条
+    # --- on-hit CreateCondition → ConditionalsChangeSkillFlag 分流的强化块
     (cc_parent, cc_index), = _command_slots(tree, "CreateCondition")
+    if cc_parent is not cna_parent:
+        raise CharleneError(f"skill {level}: CreateCondition and CreateNormalAttack "
+                            "are not in the same on-hit block")
     donor_cmd = cc_parent[cc_index]
     donor_body = donor_cmd[1]
     if len(donor_body) != 13:
@@ -285,19 +442,34 @@ def mutate_tree(tree, level: str):
         # 下标 10 = 付与对象种类；母本这条挂在 on-hit 的敌人身上，错配 = 施法 C16102
         # （记忆 wf-createcondition-target-kind）。整条克隆 ⇒ 这一格原样保留。
         raise CharleneError(f"donor CreateCondition target kind {donor_body[10]!r} != 3")
+    if donor_body[1] != BIND_HIT_ENEMY:
+        raise CharleneError(f"donor CreateCondition subject {donor_body[1]!r} != {BIND_HIT_ENEMY}")
     if donor_body[12] is not False:
         raise CharleneError(f"donor CreateCondition forceApply {donor_body[12]!r} != False")
     before_ac = copy.deepcopy(donor_body[2])
 
-    new_commands = []
-    for name, ac, force in CONDITIONS:
-        command = copy.deepcopy(donor_cmd)
-        # 下标 2 是 **AC 列表**（母本是 ``[[ACToleranceOfElement, …]]`` 一条）：
-        # 直接塞裸 AC 会把嵌套层吃掉一层，往返自检抓不到，进战斗才炸。
-        command[1][2] = [copy.deepcopy(ac)]
-        command[1][12] = bool(force)
-        new_commands.append(command)
-    cc_parent[cc_index:cc_index + 1] = new_commands
+    boost = [_condition(donor_cmd, ac, force) for _name, ac, force in BOOST_CONDITIONS]
+    for _draw in range(ROULETTE_DRAWS):
+        branches = []
+        for _name, ac, force, weight in ROULETTE:
+            # 分支形状是强校验的：必须恰好两个元素 —— [0] ProbabilityWeight、[1] Block。
+            # 任何偏差 = 进战斗 INTERNAL ERROR（调研卡 B §4.1）。
+            branches.append(_block(_cmd("ProbabilityWeight", weight),
+                                   _block(_condition(donor_cmd, ac, force))))
+        boost.append(_cmd("ConditionalsProbability", ["Block", branches]))
+    # 空分支写 ["Block", []]，**不能写 ["DoNothing"]**（记忆 wf-dsl-donothing-enum-trap：F1009）。
+    cc_parent[cc_index] = _cmd("ConditionalsChangeSkillFlag", SKILL_FLAG_INDEX,
+                               ["Block", boost], _block())
+
+    # --- 把母本的单点 CNA 从 on-hit 里摘掉，末尾接爆炸段
+    cna_parent.pop(cna_index)
+    cc_parent.append(blast)
+
+    # --- 顶层：抽血 + 护盾排在母本的瞄准/射击块之前
+    top = tree[11]
+    if not (isinstance(top, list) and top[0] == "Block" and len(top[1]) == 1):
+        raise CharleneError(f"donor top block {level}: expected a single command, got {len(top[1])}")
+    top[1][0:0] = [drain_block(), barrier_block()]
 
     # --- 特效：全部还是官方母本路径（零克隆、零图集增量）
     paths = effect_paths(tree)
@@ -308,60 +480,69 @@ def mutate_tree(tree, level: str):
         raise CharleneError(f"skill {level} has {len(paths)} effect refs, expected "
                             f"{DONOR_COMMAND_COUNTS['ShowEffect']}")
 
+    # 爆炸演出：放大母本自己的命中特效（不新增引用 ⇒ 图集增量仍是 0）
+    (hit_parent, hit_index), = [(p, i) for p, i in _command_slots(tree, "ShowEffect")
+                                if p[i][1][1] == "ヒットエフェクト"]
+    hit_parent[hit_index][1][12] = ["Some", [{"min": EXPLOSION_EFFECT_SCALE,
+                                              "max": EXPLOSION_EFFECT_SCALE}]]
+
     after = _command_counts(tree)
-    expect_after = dict(DONOR_COMMAND_COUNTS, CreateCondition=len(CONDITIONS))
+    n_cond = len(BOOST_CONDITIONS) + ROULETTE_DRAWS * len(ROULETTE)
+    expect_after = dict(
+        DONOR_COMMAND_COUNTS, CreateCondition=n_cond, CreateNormalAttack=1,
+        FindAllSubjects=2, ConditionalsHealthPointRatioOf=1, CreateRatioAttack=2,
+        CreateBarrier=1, ConditionalsChangeSkillFlag=1,
+        ConditionalsProbability=ROULETTE_DRAWS,
+        ProbabilityWeight=ROULETTE_DRAWS * len(ROULETTE),
+        CreateReferencePoint=1, CreateHitArea=2)
     if after != expect_after:
         raise CharleneError(f"mutated skill tree {level}: commands {after} != {expect_after}")
 
     evidence = {
         "level": level,
-        "create_normal_attack": {"before": before_mult, "after": copy.deepcopy(cna[6])},
-        "create_condition": {
+        "create_normal_attack": {"before": before_mult, "after": [{"min": SKILL_MULTIPLIER[level][0],
+                                                                   "max": SKILL_MULTIPLIER[level][1]}],
+                                 "moved_to": "explosion block"},
+        "drain": {"selector": DRAIN_SELECTOR, "threshold": DRAIN_THRESHOLD,
+                  "ratio_high": DRAIN_RATIO_HIGH, "ratio_low": DRAIN_RATIO_LOW},
+        "barrier": {"selector": BARRIER_SELECTOR, "element_filter": BARRIER_ELEMENT_FILTER,
+                    "ratio": BARRIER_RATIO},
+        "explosion": {"radius": EXPLOSION_RADIUS, "lifetime": EXPLOSION_LIFETIME,
+                      "reference_point_lifetime": REFERENCE_POINT_LIFETIME,
+                      "multiplier": list(SKILL_MULTIPLIER[level])},
+        "boost": {
+            "flag_index": SKILL_FLAG_INDEX,
             "donor_ac": before_ac,
-            "records": [{"name": name, "ac": ac[0], "force_apply": force}
-                        for name, ac, force in CONDITIONS],
+            "always": [{"name": name, "ac": ac[0], "force_apply": force}
+                       for name, ac, force in BOOST_CONDITIONS],
+            "roulette_draws": ROULETTE_DRAWS,
+            "roulette": [{"name": name, "ac": ac[0], "force_apply": force, "weight": weight}
+                         for name, ac, force, weight in ROULETTE],
         },
         "effect_refs": paths,
     }
     return tree, evidence
 
 
-#: ``tables`` 会把母本 131176 的 ChangeSkillFlag 那套整体克隆过来（词条 1311763#L5 的 c70
-#: 指向 ``change_skill_<code>`` 这条 ``custom_ability_string``）。本套件重写了整个词条 3，
-#: 没有 ChangeSkillFlag 行 ⇒ 那条字符串成了**谁都不引用的孤行**，且内容还是母本的
-#: 「雷属性抗性降低」（本角色改成全属性了，文案与真实机制不符）。按裁决 §3「死行不上面板」删掉。
-ORPHAN_CAS_KEY = "change_skill_" + CODE
+def write_custom_strings(ctx) -> dict[str, Any]:
+    """写 536 的面板条目 ``change_skill_<code>``（``custom_ability_string``）。
 
-
-def _cas_claim(ctx):
-    return next((claim for claim in ctx.pack.load_claims()
-                 if (claim["root"], claim["logical_path"]) == ("common", KL.CAS)), None)
-
-
-def drop_orphan_change_skill(ctx) -> dict[str, Any]:
-    """撤销孤儿 ``change_skill_<code>`` 字符串，并让本包彻底不带 ``custom_ability_string`` 表。
-
-    幂等：``tables`` 每次重跑都会把这张共享全表再复制进包，本函数每次都把它清掉。
+    母本 131176 自己就有 ``change_skill_artificialeye_sniper``，``tables`` 步已按新 code
+    克隆并认领了 ``change_skill_<code>``；本函数只重写文案（母本写的是「雷属性抗性降低」，
+    与本套件改成全属性 254 + 随机池之后的真实机制不符 ⇒ 裁决 §3 面板不许说谎）。
     """
-    result: dict[str, Any] = {
-        "key": ORPHAN_CAS_KEY,
-        "why": "本套件没有 ChangeSkillFlag 词条行 ⇒ 这条字符串无人引用，且文案仍是母本的"
-               "「雷属性抗性降低」，与技能改成全属性 254 之后的真实机制不符（裁决 §3 死行不上面板）",
-    }
-    entry = _cas_claim(ctx)
-    if entry is not None and ORPHAN_CAS_KEY in entry.get("outer_keys", []):
-        result["unclaimed"] = ctx.unclaim(KL.CAS, [ORPHAN_CAS_KEY])
-        entry = _cas_claim(ctx)
-    result["still_claimed"] = entry is not None
-    path = ctx.pack.pkg_path("common", KL.CAS)
-    if entry is None and path.is_file():
-        # ``custom_ability_string`` 是共享全表。本包一个键都不认领，却还带着 ``tables``
-        # 那一刻的旧快照 —— 批内别的角色随后进 live 的键不在里面，照这份快照整表覆盖
-        # 就会把它们删掉（记忆 wf-device-push-overwrites-device-only-rows：整表覆盖＝灾难）。
-        # 无认领就不带这张表；manifest 的 ``root_tables_not_claimed`` 门禁同样要求这样。
-        path.unlink()
-        result["package_table_deleted"] = True
-    return result
+    declared = set(ctx.spec.extra_keys.get(KL.CAS, ()))
+    missing = [key for key in CAS_TEXTS if key not in declared]
+    if missing:
+        raise CharleneError(f"custom_ability_string keys not declared in SPEC['extra_keys']: {missing}")
+    official = ctx.official_flat(KL.CAS)
+    clashes = [key for key in CAS_TEXTS if key in official]
+    if clashes:
+        raise CharleneError(f"custom_ability_string keys collide with official rows: {clashes}")
+    for key, text in CAS_TEXTS.items():
+        KL.check_panel(text, skill_flag=True, label=key)
+    ctx.write_flat(KL.CAS, {key: [[text]] for key, text in CAS_TEXTS.items()})
+    return dict(CAS_TEXTS)
 
 
 # ------------------------------------------------------------------ 设计稿互校
@@ -480,7 +661,7 @@ def build(ctx) -> dict[str, Any]:
         evidence.append(ev)
     ctx.write_flat(KL.LEADER, {CID_S: leader_rows})
 
-    # ---- 3) 词条 6 键 10 条
+    # ---- 3) 词条 6 键 11 条
     ability_rows: dict[str, list[list[str]]] = {}
     for key, records in ABILITY.items():
         built = []
@@ -492,7 +673,7 @@ def build(ctx) -> dict[str, Any]:
         KL.check_ability_key(built, key, CODE, int(key[-1]))
         ability_rows[key] = built
     ctx.write_flat(KL.ABILITY, ability_rows)
-    orphan = drop_orphan_change_skill(ctx)
+    cas = write_custom_strings(ctx)
 
     # ---- 4) 面板文案规则（队长 + 词条 + 技能名/说明 + 称号）
     panel = [ev["describe"] for ev in evidence]
@@ -570,14 +751,20 @@ def build(ctx) -> dict[str, Any]:
          "why": "一键内 c2 必须单值（裁决 §8）。母本 131176 的 1311763 把 5 条混 kind 记录"
                 "（D0/I245/I209/I536）统一挂 attack_yellow，是雷属性角色攻击系词条的官方写法"},
         {"effects": "零克隆：5 条 ShowEffect 全部引用官方 "
-                    f"{OFFICIAL_EFFECT_PREFIX}*，包内不含 battle/effect 目录 ⇒ 图集增量 0"},
-        {"skill_conditions": [name for name, _ac, _force in CONDITIONS],
-         "force_apply": [name for name, _ac, force in CONDITIONS if force],
-         "why": "4 条不同来源的弱体 = 队长/词条 D136 的 4 层来源；麻痹与毒不强制付与（裁决 §2），"
-                "boss 免疫时退化到 2–3 层（设计稿 R3）"},
+                    f"{OFFICIAL_EFFECT_PREFIX}*，包内不含 battle/effect 目录 ⇒ 图集增量 0；"
+                    f"爆炸演出＝把母本自己的命中特效放大到 ×{EXPLOSION_EFFECT_SCALE}"},
+        {"custom_ability_string": cas,
+         "why": "536 ChangeSkillFlag 的面板条目。母本 131176 自己就有同名键，tables 已按新 code"
+                "克隆并认领；kit 只重写文案，让它和 DSL 里 ConditionalsChangeSkillFlag 的强化块一致"},
+        {"skill_boost_conditions": [name for name, _ac, _force in BOOST_CONDITIONS],
+         "roulette": [name for name, _ac, _force, _w in ROULETTE],
+         "roulette_draws": ROULETTE_DRAWS,
+         "force_apply": [name for name, _ac, force in BOOST_CONDITIONS if force],
+         "why": "弱体全部移进「雷共鸣强化档」：常驻 2 条（全属性抗性↓ / 攻击力↓，forceApply 穿"
+                "boss 弱体耐性）＋ 4 选 1 轮盘掷 2 次；非共鸣队伍技能只有抽血/护盾/爆炸伤害。"
+                "队长技与词条 D136 的层数来源随之只在共鸣时满额（金丝雀 Z4）"},
         {"unique_condition": "无。层数来源是敌人身上的弱体条数（D136），不需要自身固有状态，"
                              "不占 8 位固有 ID、不需要 48×48 图标"},
-        {"orphan_custom_ability_string": orphan},
     ])
 
     deviations = [
@@ -586,24 +773,39 @@ def build(ctx) -> dict[str, Any]:
          "why": "裁决 §8：ability 表 c2 每个键必须单值（官方 790 个多记录键 0 个混用），"
                 "``KL.check_ability_key`` 也硬卡这条。kind 211 × attack_yellow 官方 2 条先例；"
                 "母本 131176 自己就把 1311763 的 5 条混 kind 记录统一挂 attack_yellow"},
-        {"want": "设计稿 §4.2 S2/S3 的累积上限（maxAccum）4",
-         "got": "照写 4",
-         "why": "官方 ACToleranceOfElement 的 maxAccum 实测取值 {1, 3, 5, 60}、ACAttackPoint 取 {1, 3}，"
-                "没有恰好 4 的先例，但它是数值档不是枚举（官方同族已有 3 与 5），"
-                "满层强度 −32% / −24% 按设计稿口径不变。真机若异常改 3 并把每层上调到 −0.107 / −0.08"},
-        {"want": "设计稿没提 ``tables`` 从母本克隆过来的 ``change_skill_artificialeye_sniper_moon``",
-         "got": "kit 里撤销认领并删行（:func:`drop_orphan_change_skill`）",
-         "why": "本套件重写了整个词条 3，没有 ChangeSkillFlag 行 ⇒ 这条字符串无人引用；"
-                "且它的文案还是母本的「雷属性抗性降低」，技能改成全属性 254 之后与真实机制不符"
-                "（裁决 §3：死行不上面板）"},
-        {"want": "S2/S3 两档（slv 1/2）分别给不同的弱体强度（母本 960→1200 帧、−0.2→−0.3 的档差）",
-         "got": "两档写同一组条件参数，升档只提升 CreateNormalAttack 倍率（24→34 / 28→40）",
-         "why": "设计稿 §4.2 只登记了一组条件参数；面板文案不写数字，两档差异由伤害倍率体现"},
+        {"want": "作者原话「随机追加赋予麻痹气绝中毒迟缓两种效果」",
+         "got": "「气绝」这一格落成 ``ACStun``＝眩晕蓄积（使敌人更容易进入 DOWN），"
+                "面板文案随之改写（作者 09-21 已定案，_deviations.json charlene[0]）",
+         "why": "数据层没有「付与气绝」的口：``ACStun`` 实际返回 ``ConditionChangeContent.Stunify``，"
+                "气绝是 down 槽满了自然进入的状态（调研卡 B §4.4）"},
+        {"want": "目标面板「雷属性角色对处于减益状态的敌人：攻击力＋200%、直击伤害＋100%」写成一行",
+         "got": "拆成 491 与 124 两条记录（面板两行），第三行是 96 的独立乘区 10%",
+         "why": "攻击力池与直击伤害池是两个 kind，一条记录只能渲染一条效果。本角色不引入"
+                "``desc_override``（``required_capabilities`` 保持空，不为文案添客户端补丁依赖）；"
+                "已回写 ``rework1/panel/charlene.json`` 为三行并标 dev:true"},
+        {"want": "目标面板「队长技能槽上限＋20%」",
+         "got": "引擎渲染「雷·编成≥6 时: 赋予队长 2号位技能槽 20%」",
+         "why": "kind 245 的枚举名是 SecondSkillGauge＝技能槽上限（记忆卡 wf-skill-gauge-max-exists），"
+                "``wf_describe`` 直译成「2号位技能槽」。真机面板用的是客户端自己的文案，"
+                "以真机截图为准（金丝雀 Z5）"},
+        {"want": "作者原话「对范围内敌方造成 50 倍雷属性伤害」",
+         "got": "技能描述写「造成雷属性伤害」不写倍数；50× 落在爆炸段 CNA 的 slv max",
+         "why": "官方技能描述从不印倍率（印了会随技能等级变成假话）。倍率两档 32→40 / 40→50，"
+                "满级＝作者要的 50×"},
+        {"want": "抽血与护盾作用于「全体队伍成员」",
+         "got": "单机完全生效；联机时抽血与护盾作用不到其他玩家的角色",
+         "why": "跨机通道 ``TargetMate`` 只能送 NormalHeal / RatioHeal / ConditionChanges / "
+                "ConditionCancels；``RatioAttack``／``Barrier`` 走该路径在 evaluator 里是 "
+                "throw INTERNAL ERROR。沿用基诺维时作者的裁决（_deviations.json charlene[1]）"},
+        {"want": "两档（slv 1/2）分别给不同的弱体强度（母本 960→1200 帧、−0.2→−0.3 的档差）",
+         "got": "两档写同一组条件参数，升档只提升爆炸段的 CNA 倍率",
+         "why": "面板文案不写弱体数字，两档差异由伤害倍率体现（本套件既有偏离 D9）"},
     ]
 
     return KL.report(
         ctx,
-        summary="夏琳（139992）：雷 · 射击 · 直击辅助——技能一发挂 4 条弱体，"
+        summary="夏琳（139992）：雷 · 射击 · 妨害辅助——技能抽全队血换除自身外雷属性队友的护盾，"
+                "贯穿弹命中爆炸；雷共鸣时词条 1 强化技能，命中挂两条累积弱体并随机追加两种异常，"
                 "队长技与词条把弱体条数翻译成触发敌方 Direct 伤害特攻／攻击特攻两条乘区",
         status=KL.DRAFT,
         panel=panel,
@@ -612,8 +814,10 @@ def build(ctx) -> dict[str, Any]:
         required_capabilities=(),
         deviations=deviations,
         extra={"statue_group": STATUE_GROUP,
+               "custom_ability_string": cas,
                "skills": {"programs": programs,
                           "energy": {lv: list(v) for lv, v in SKILL_ENERGY.items()},
                           "multiplier": {lv: list(v) for lv, v in SKILL_MULTIPLIER.items()},
-                          "conditions": [name for name, _ac, _force in CONDITIONS]}},
+                          "boost_conditions": [name for name, _ac, _force in BOOST_CONDITIONS],
+                          "roulette": [name for name, _ac, _force, _w in ROULETTE]}},
     )

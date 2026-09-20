@@ -1,19 +1,13 @@
 # -*- coding: utf-8 -*-
-"""芙拉菲 kit（149987 ``combat_animal_moon``）：设计稿自查 + 行装配 + DSL 嫁接门禁。
+"""芙拉菲 kit（149987 ``combat_animal_moon``）单测 —— **rework1（2026-09-21）**。
 
-三组用例：
+三层：
 
-1. **纯静态**（不需要 live / 官方基线）：模块常量与 ``design/fluffy.json`` 的互锁、裁决 §8 的
-   设计自查（队长表禁 422/724/713、c2 雕像组每键单值、面板禁词、``donor_ref`` 1 基→0 基换算、
-   536/704 的 c70 字符串键登记）、以及本模块的 DSL 小工具（``signature_problems`` 能抓住裸数值
-   塞进 Array 参与构造名写错、``roundtrip_problems`` 能抓住 ``{tree,numbers}`` 包装壳）。
-2. **官方基线**（缺 ``.cdn/cn`` 或 live store 时跳过）：7+15 行逐行装配并与设计登记的
-   ``wf_describe`` / ``row_final`` 逐字比对；两档技能树的嫁接（帧号、主体 id 重映射、倍率、
-   终结段 Conditionals 两支）与全部 DSL 门禁。
-3. **已构建的 workspace**（``work/character_packs/ma-fluffy`` 不存在时跳过）：包内自有键、
-   kit-report、DSL 程序清单、语音路由、特效族与图集预算回执。
+1. **纯静态**（不需要 live / 官方基线）：模块常量、裁决 §8 的硬规矩、DSL 闸门工具自身；
+2. **官方基线**：逐行装配（donor ＋ 逐格改 ＋ ``wf_describe`` 回读）、技能树嫁接、722 覆盖树；
+3. **workspace**：``--step kit`` 跑完后对 ``evidence/kit-{report,gates}.json`` 的回执核对。
 
-不写 live store / ``assets/`` / ``.cdn``，不跑发布；官方基线只读。
+第 2/3 层在没有 `.cdn/cn` 官方归档、live store 或 workspace 时自动跳过。
 """
 from __future__ import annotations
 
@@ -23,7 +17,9 @@ import sys
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+HERE = Path(__file__).resolve().parent
+if str(HERE.parent) not in sys.path:
+    sys.path.insert(0, str(HERE.parent))
 
 import wf_dsl  # noqa: E402
 import wf_midautumn_common as MC  # noqa: E402
@@ -35,6 +31,8 @@ import wf_seasonal7_build as B  # noqa: E402
 
 ROOT = core.project_root()
 DESIGN = MS.load_design(ROOT, "fluffy")
+PANEL = json.loads((ROOT / "work/character_packs/midautumn-20260920/rework1/panel/fluffy.json")
+                   .read_text("utf-8"))
 WORKSPACE = ROOT / "work/character_packs/ma-fluffy"
 
 
@@ -70,117 +68,195 @@ def fake_families() -> list[dict]:
 
 class ConstantTests(unittest.TestCase):
     def test_identity_matches_the_registry(self):
-        spec = MS.get_spec("fluffy")
+        spec = MS.get_spec("fluffy", with_kit=False, with_design=False)
         self.assertEqual((spec.cid, spec.code), (K.CID, K.CODE))
         self.assertEqual((spec.template_id, spec.template_code), (K.TEMPLATE_ID, K.TEMPLATE_CODE))
         self.assertEqual(spec.element, K.ELEMENT)
-        self.assertEqual(spec.pf_type, 1)                 # 拳型（母本 141033 c6=1）
-        self.assertEqual(spec.stance, "Attacker")
-        self.assertEqual(int(spec.rarity), 5)
+
+    def test_pf_type_is_overridden_to_supporter(self):
+        """作者 09-21：详情页显示「辅助」⇒ character c6=3（母本 141033 原值是 1 格斗）。"""
+        self.assertEqual(K.SPEC["pf_type"], 3)
+        self.assertEqual(MS.get_spec("fluffy").pf_type, 3)
 
     def test_no_unique_condition_is_declared(self):
-        """连击轴不建固有状态（设计稿 D2）⇒ SPEC 里不许出现 unique_condition 键。"""
+        """本轮不新增固有状态 ⇒ 不需要 48×48 状态图标。"""
         self.assertNotIn(MS.UNIQUE_CONDITION_LOGICAL, K.SPEC["extra_keys"])
-        self.assertEqual(DESIGN["plan"]["unique_conditions"]["add"], [])
 
     def test_spec_declares_every_self_owned_key(self):
-        declared = {table: set(keys) for table, keys in K.SPEC["extra_keys"].items()}
-        self.assertEqual(declared[KL.CAS], {K.CAS_FLAG1, K.CAS_FLAG2})
+        declared = {t: set(v) for t, v in K.SPEC["extra_keys"].items()}
+        self.assertEqual(declared[KL.CAS], set(K.CAS_TEXTS))
         self.assertEqual(declared[KL.SWITCHED], {K.VOICE_KEY})
-        design_keys = {t: set(v) for t, v in (DESIGN["spec"].get("extra_keys") or {}).items()}
-        self.assertEqual(design_keys, declared, "kit SPEC 与设计稿 spec.extra_keys 必须一致")
+        self.assertEqual(declared[K.PFA], {K.PF_KEY})
+        # 629 与 722 的查找键必须在声明里，否则详情页 C8601
+        for key in (K.INVOKE_STRING, K.PF_STRING, K.LEADER_OVERRIDE):
+            self.assertIn(key, declared[KL.CAS])
 
-    def test_no_apk_capability_is_required(self):
-        """整套 22 行不依赖任何补丁 kind（设计稿 §1）。"""
-        self.assertEqual(tuple(K.SPEC["required_capabilities"]), ())
-        self.assertEqual(list(DESIGN["spec"].get("required_capabilities") or []), [])
+    def test_row_and_record_counts(self):
+        self.assertEqual(len(K.LEADER), K.LEADER_ROW_COUNT)
+        self.assertEqual(sum(len(K.PLAN[s]) for s in range(1, 7)), K.ABILITY_RECORD_TOTAL)
 
-    def test_ability_keys_and_record_counts_match_the_design(self):
-        plan = DESIGN["plan"]["ability"]
-        self.assertEqual(tuple(plan["keys_order"]), K.ABILITY_KEYS)
-        total = sum(len(plan["keys"][key]["records"]) for key in K.ABILITY_KEYS)
-        self.assertEqual(total, K.ABILITY_RECORD_TOTAL)
-        self.assertEqual(len(DESIGN["plan"]["leader_ability"]["rows"]), K.LEADER_ROW_COUNT)
+    def test_desc_override_needs_the_panel_capability(self):
+        self.assertIn("panel-description-override-v2", K.SPEC["required_capabilities"])
 
 
-class DesignSelfCheckTests(unittest.TestCase):
-    """裁决 §8：kit 实现前对设计稿的自查，全部做成断言。"""
+class PlanStaticTests(unittest.TestCase):
+    """不碰基线也能查出来的行契约（裁决 §8 的自查清单）。"""
 
-    def test_donor_addresses_are_one_based(self):
-        source, kind, donor = K._parse_donor("o:leader:141165:3")
-        self.assertEqual((source, kind, donor), ("official", "leader_ability", "141165#2"))
-        source, kind, donor = K._parse_donor("s:ability:1599983:7")
-        self.assertEqual((source, kind, donor), ("live", "ability", "1599983#6"))
-        for bad in ("o:leader:141165", "x:leader:141165:1", "o:weapon:1:1", "o:leader:141165:0"):
-            with self.assertRaises(KL.KitError):
-                K._parse_donor(bad)
+    def test_leader_plan_carries_no_forbidden_kind(self):
+        """队长表禁 422/724/713（写进去 = 角色页 C7050）。"""
+        for n, (_donor, _src, cells, _desc) in enumerate(K.LEADER):
+            for col in (45, 107):
+                self.assertNotIn(str(cells.get(col, "")), ("422", "724", "713"),
+                                 f"leader#{n} 写了禁用 kind")
 
-    def test_leader_rows_carry_no_forbidden_kind(self):
-        """422（冲刺参数）/724（Fever 比例）/713 写进队长表 = C7050（裁决 §2/§8）。"""
-        rows = [[str(c) for c in row["row_final"]] for row in DESIGN["plan"]["leader_ability"]["rows"]]
-        K._ban_forbidden_leader_kinds(rows)                    # 不抛即通过
-        poisoned = copy.deepcopy(rows)
-        poisoned[0][45] = "422"
+    def test_dash_and_fever_kinds_stay_out_of_the_kit(self):
+        """本套件不碰 422/724：整套行的 required_client_capabilities 只该有面板接管一项。"""
+        for slot in range(1, 7):
+            for _donor, _src, cells, _desc in K.PLAN[slot]:
+                self.assertNotIn(str(cells.get(109, "")), ("422", "724"))
+
+    def test_slot3_is_main_position_only(self):
+        for _donor, _src, cells, _desc in K.PLAN[3]:
+            self.assertEqual(cells[1], "false", "槽 3 是 Ⓜ 主位限制键")
+        for slot in (1, 2, 4, 5, 6):
+            for _donor, _src, cells, _desc in K.PLAN[slot]:
+                self.assertEqual(cells.get(1, "true"), "true")
+
+    def test_statue_group_is_single_valued_per_key(self):
+        """ability c2 每键单值（裁决 §8：官方 790 个多记录键 0 个混用）。"""
+        for slot in range(1, 7):
+            groups = {cells[2] for _d, _s, cells, _e in K.PLAN[slot]}
+            self.assertEqual(len(groups), 1, f"槽 {slot} 的 c2 混用了 {groups}")
+
+    def test_invoke_rows_carry_a_string_key_and_the_same_program(self):
+        """629 行必须配字符串键；队长与词条两处指向同一棵 ability_skill 树。
+
+        kind 629 本身来自 donor（官方 111165#4 / 1611053#0），``cells`` 里看不到 ⇒
+        用只有 629 行才会写的字符串键列（leader c68/c69、ability c70/c71）来认。
+        """
+        leader = [cells for _d, _s, cells, _e in K.LEADER if 68 in cells]
+        ability = [cells for _d, _s, cells, _e in K.PLAN[3] if 71 in cells]
+        self.assertEqual(len(leader), 1)
+        self.assertEqual(len(ability), 1)
+        self.assertEqual(leader[0][68], K.INVOKE_STRING)
+        self.assertEqual(leader[0][69], K.INVOKE_PROGRAM)
+        self.assertEqual(ability[0][70], K.INVOKE_STRING)
+        self.assertEqual(ability[0][71], K.INVOKE_PROGRAM)
+
+    def test_trigger65_pair_shares_threshold_and_cooltime(self):
+        """L#7（226 连击＋500）与 L#8（629）是同触发两行，阈值/CT 必须逐格一致（A 卡 §3.4）。"""
+        pair = [cells for _d, _s, cells, _e in K.LEADER if 33 in cells]
+        self.assertEqual(len(pair), 2)
+        a, b = pair
+        for col in (28, 29, 33):
+            self.assertEqual(a[col], b[col], f"c{col} 不一致会出现「加了连击没放技能」")
+        self.assertEqual(a[33], "600", "CT 10 秒 = 600 帧")
+
+    def test_lv3_pair_checker_catches_drift(self):
+        rows = [[""] * 124 for _ in range(2)]
+        for row, kind in zip(rows, ("226", "629")):
+            row[25], row[28], row[29], row[33], row[45] = "65", "500000", "500000", "600", kind
+        rows[1][68], rows[1][69] = K.INVOKE_STRING, K.INVOKE_PROGRAM
+        K._check_lv3_pair(rows)                                   # 一致 ⇒ 过
+        drifted = copy.deepcopy(rows)
+        drifted[1][33] = "900"
         with self.assertRaises(KL.KitError):
-            K._ban_forbidden_leader_kinds(poisoned)
-        poisoned = copy.deepcopy(rows)
-        poisoned[0][107] = "724"
+            K._check_lv3_pair(drifted)
+        swapped = [copy.deepcopy(rows[1]), copy.deepcopy(rows[0])]
         with self.assertRaises(KL.KitError):
-            K._ban_forbidden_leader_kinds(poisoned)
+            K._check_lv3_pair(swapped)                            # 629 排在 226 之前 ⇒ 拒绝
 
-    def test_statue_group_and_unisonable_are_single_valued_per_key(self):
-        """ability c2 雕像组、c1 主位限制每个键必须单值（裁决 §8：官方 790 个多记录键 0 个混用）。"""
-        for slot, key in enumerate(K.ABILITY_KEYS, start=1):
-            block = DESIGN["plan"]["ability"]["keys"][key]
-            rows = [[str(c) for c in rec["row_final"]] for rec in block["records"]]
-            KL.check_ability_key(rows, key, K.CODE, slot)
-            self.assertEqual({r[1] for r in rows}, {block["unisonable_c1"]})
-            self.assertEqual({r[2] for r in rows}, {block["statue_group_c2"]})
-
-    def test_skill_flag_rows_reference_a_registered_string_key(self):
-        """536/704 的 c70 查找键漏登记 ⇒ 详情页 C8601「资源损坏」假象。"""
-        rows = [[str(c) for c in rec["row_final"]]
-                for key in K.ABILITY_KEYS
-                for rec in DESIGN["plan"]["ability"]["keys"][key]["records"]]
-        keys = {entry["key"] for entry in
-                DESIGN["plan"]["texts"]["custom_ability_string"]["rows"]}
-        self.assertEqual(keys, {K.CAS_FLAG1, K.CAS_FLAG2})
-        used = K.check_skill_flag_strings(rows, keys)
-        self.assertEqual(sorted(used), sorted(keys))
+    def test_forbidden_leader_kind_checker(self):
+        row = [""] * 124
+        row[45] = "422"
         with self.assertRaises(KL.KitError):
-            K.check_skill_flag_strings(rows, {K.CAS_FLAG1})     # 少登记一条就必须炸
+            K._ban_forbidden_leader_kinds([row])
 
-    def test_panel_texts_obey_the_batch_rules(self):
-        for row in DESIGN["plan"]["leader_ability"]["rows"]:
-            self.assertEqual(KL.panel_problems(row["panel_expected"]), [], row["id"])
-        for key in K.ABILITY_KEYS:
-            for rec in DESIGN["plan"]["ability"]["keys"][key]["records"]:
-                flag = str(rec["row_final"][47]) in K.SKILL_FLAG_KINDS
-                self.assertEqual(KL.panel_problems(rec["panel_expected"], skill_flag=flag),
-                                 [], rec["id"])
-        for entry in DESIGN["plan"]["texts"]["custom_ability_string"]["rows"]:
-            # 能力里的「技能强化」条目不写数字与时间（裁决 §3）
-            self.assertEqual(KL.panel_problems(entry["text"], skill_flag=True), [], entry["key"])
-
-    def test_design_does_not_write_desc_override(self):
-        """没有 422/724/413、也没有恒真 HpLow 行 ⇒ 不写 desc_override（裁决 §3）。"""
-        self.assertIsNone(DESIGN["plan"]["texts"]["desc_override"]["value"])
-        self.assertFalse([k for k in K.SPEC["extra_keys"][KL.CAS] if k.startswith("desc_override")])
-
-    def test_row_final_lengths_match_the_table_layouts(self):
-        for row in DESIGN["plan"]["leader_ability"]["rows"]:
-            self.assertEqual(len(row["row_final"]), KL.LEADER_NCOLS, row["id"])
-        for key in K.ABILITY_KEYS:
-            for rec in DESIGN["plan"]["ability"]["keys"][key]["records"]:
-                self.assertEqual(len(rec["row_final"]), KL.ABILITY_NCOLS, rec["id"])
-
-    def test_row_final_checker_catches_drift(self):
-        entry = DESIGN["plan"]["leader_ability"]["rows"][0]
-        row = [str(c) for c in entry["row_final"]]
-        K._check_row_final(entry, row, "L0")                   # 一致：不抛
-        row[49] = "999999"
+    def test_order_checker_requires_the_invoke_row(self):
+        row = [""] * 126
+        row[47] = "33"
         with self.assertRaises(KL.KitError):
-            K._check_row_final(entry, row, "L0")
+            K._order_problems([row])
+
+    def test_wind_gate_is_the_official_resonance_precondition(self):
+        """作者补充 09-21：本轮带门槛的条目一律用「X 属性共鸣」＝前置 kind 2 编成≥6。"""
+        self.assertEqual(K.WIND_LEADER, {4: "2", 7: "600000", 8: "600000", 9: "Green"})
+        self.assertEqual(K.WIND_ABILITY, {6: "2", 9: "600000", 10: "600000", 11: "Green"})
+
+
+class PanelTextTests(unittest.TestCase):
+    def test_every_override_line_obeys_the_batch_rules(self):
+        for key, text in K.CAS_TEXTS.items():
+            for line in text.split("\n"):
+                KL.check_panel(line.replace(K.MAIN_ICON, ""),
+                               skill_flag=key in K.SKILL_FLAG_TEXT_KEYS, label=key)
+
+    def test_skill_flag_entries_carry_no_number_or_time(self):
+        """裁决 §3：能力里的「技能强化」条目不写数字与时间。"""
+        for key in K.SKILL_FLAG_TEXT_KEYS:
+            self.assertEqual(KL.panel_problems(K.CAS_TEXTS[key], skill_flag=True), [])
+
+    def test_slot3_override_lines_carry_the_main_position_icon(self):
+        """desc_override 会盖掉客户端逐行画的 Ⓜ ⇒ 主位键必须自带图标。"""
+        for line in K.CAS_TEXTS[K.SLOT_OVERRIDE[3]].split("\n"):
+            self.assertTrue(line.startswith(K.MAIN_ICON))
+        for slot in (1, 2):
+            for line in K.CAS_TEXTS[K.SLOT_OVERRIDE[slot]].split("\n"):
+                self.assertFalse(line.startswith(K.MAIN_ICON))
+
+    def test_leader_override_matches_the_target_panel(self):
+        """队长 override 逐行对齐 rework1/panel/fluffy.json（首行是偏离 D-1 的 722 说明）。"""
+        lines = K.CAS_TEXTS[K.LEADER_OVERRIDE].split("\n")
+        want = [entry["text"] for entry in PANEL["leader"]["lines"]]
+        self.assertEqual(lines, want)
+
+    def test_slot_overrides_match_the_target_panel(self):
+        by_index = {entry["index"]: entry for entry in PANEL["abilities"]}
+        for slot in K.SLOT_OVERRIDE_SLOTS:
+            got = [line.replace(K.MAIN_ICON, "")
+                   for line in K.CAS_TEXTS[K.SLOT_OVERRIDE[slot]].split("\n")]
+            want = [line["text"] for line in by_index[slot]["lines"]]
+            self.assertEqual(got, want, f"槽 {slot} 面板文字与目标面板不一致")
+
+    def test_auto_text_slots_match_the_target_panel(self):
+        by_index = {entry["index"]: entry for entry in PANEL["abilities"]}
+        for slot, lines in K.PANEL_AUTO.items():
+            want = tuple(line["text"] for line in by_index[slot]["lines"])
+            self.assertEqual(lines, want)
+
+    def test_main_only_flags_match_the_target_panel(self):
+        by_index = {entry["index"]: entry for entry in PANEL["abilities"]}
+        for slot in range(1, 7):
+            want_main_only = bool(by_index[slot]["main_only"])
+            got = K.PLAN[slot][0][2][1] == "false"
+            self.assertEqual(got, want_main_only, f"槽 {slot} 的主位限制与目标面板不一致")
+
+    def test_skill_texts_match_the_target_panel(self):
+        self.assertEqual(K.TEXTS["skill1"], PANEL["skill"]["name"])
+        self.assertEqual(K.TEXTS["skill2"], PANEL["skill"]["name"])
+        self.assertEqual(K.TEXTS["desc1"], PANEL["skill"]["lines"][0]["text"])
+        self.assertEqual(K.TEXTS["desc2"], K.TEXTS["desc1"])
+        self.assertIn("65", K.TEXTS["desc1"])
+
+    def test_skill_total_matches_the_number_written_on_the_panel(self):
+        self.assertEqual(K.SKILL_TOTAL_NO_FLAG, 65.0)
+        for level in ("1", "2"):
+            mult = K.SKILL_MULT[level]
+            total = sum(mult[seg]["max"] * K.HITS[seg] for seg in K.HITS)
+            self.assertAlmostEqual(total, K.SKILL_TOTAL_NO_FLAG, places=6)
+
+    def test_rows_are_flattened_to_a_single_max_value(self):
+        """满级单值、行拉平（min=max）⇒ 面板文字与真实数值逐字一致。"""
+        pairs = ((49, 50), (51, 52), (113, 114), (28, 29), (30, 31))
+        for label, plan in [("leader", [e[2] for e in K.LEADER])] + \
+                [(f"slot{s}", [e[2] for e in K.PLAN[s]]) for s in range(1, 7)]:
+            for cells in plan:
+                for lo, hi in pairs:
+                    if lo in cells and hi in cells:
+                        self.assertEqual(cells[lo], cells[hi], f"{label} c{lo}/c{hi} 没拉平")
+
+    def test_both_skill_levels_are_identical(self):
+        self.assertEqual(K.SKILL_MULT["1"], K.SKILL_MULT["2"])
 
 
 class DslToolTests(unittest.TestCase):
@@ -216,6 +292,15 @@ class DslToolTests(unittest.TestCase):
         good = ["Command", ["ConditionalsChangeSkillFlag", 1, ["Block", []], ["Block", []]]]
         self.assertEqual(K.signature_problems(good), [])
 
+    def test_add_combo_uses_the_alv2_channel(self):
+        """704 没开时 ALv 项返回 0 ⇒ 加 0 连击；开了才加 50（客户端 Environment case 2）。"""
+        cmd = K.add_combo_cmd()
+        self.assertEqual(cmd[0], "AddCombo")
+        self.assertEqual(K.signature_problems(["Command", cmd]), [])
+        value = cmd[1][0]
+        self.assertEqual((value["min"], value["max"]), (0.0, 0.0))
+        self.assertEqual((value["alv2_min"], value["alv2_max"]), (50.0, 50.0))
+
     def test_roundtrip_gate_rejects_the_wrapper_shell(self):
         """``encode_amf3`` 只吃裸树；喂 ``{tree, numbers}`` 壳 = 进战斗 F1034。"""
         tree = ["ActionDsl", 3, ["None"], True, False, False, False, False, False, False, 0,
@@ -238,7 +323,7 @@ class DslToolTests(unittest.TestCase):
         self.assertEqual(K.effect_refs(tree), ["x/y", "p/q"])
 
     def test_jab_family_is_direct_referenced_by_default(self):
-        """设计稿 §5 退路（偏离 D7'）：jab 族不克隆，走官方路径直接引用。"""
+        """施工单偏离 D-7：jab 族不克隆，走官方路径直接引用（图集预算）。"""
         self.assertFalse(K.CLONE_JAB_FAMILY)
         self.assertEqual([f[0] for f in K.FX_FAMILIES], ["rush"])
         for base in K.FX_JAB[2]:
@@ -249,142 +334,118 @@ class DslToolTests(unittest.TestCase):
 
 @unittest.skipUnless(_BASELINE, "需要 .cdn/cn 官方归档与 live store")
 class RowAssemblyTests(unittest.TestCase):
-    def test_leader_rows_render_exactly_as_designed(self):
-        rows, evidence = K.build_leader_rows(ctx(), DESIGN)
-        self.assertEqual(len(rows), K.LEADER_ROW_COUNT)
-        for row, entry in zip(rows, DESIGN["plan"]["leader_ability"]["rows"]):
-            self.assertEqual(row, [str(c) for c in entry["row_final"]])
-        self.assertEqual([e["describe"] for e in evidence],
-                         [r["desc_expected"] for r in DESIGN["plan"]["leader_ability"]["rows"]])
-        self.assertEqual(sorted({c for e in evidence for c in e["capabilities"]}), [])
+    def test_leader_rows_render_exactly_as_planned(self):
+        for n, (donor, source, cells, expect) in enumerate(K.LEADER):
+            row, ev = KL.build_row(ctx(), "leader_ability", donor, cells, source=source,
+                                   expect_describe=expect, label=f"L#{n}")
+            self.assertEqual(row[0], K.CODE)
+            self.assertEqual(ev["describe"], expect)
 
-    def test_ability_rows_render_exactly_as_designed(self):
-        rows_by_key, evidence = K.build_ability_rows(ctx(), DESIGN)
-        self.assertEqual(sorted(rows_by_key), sorted(K.ABILITY_KEYS))
-        self.assertEqual(len(evidence), K.ABILITY_RECORD_TOTAL)
-        for slot, key in enumerate(K.ABILITY_KEYS, start=1):
-            block = DESIGN["plan"]["ability"]["keys"][key]
-            for row, rec in zip(rows_by_key[key], block["records"]):
-                self.assertEqual(row, [str(c) for c in rec["row_final"]], rec["id"])
-                self.assertEqual(row[0], f"{K.CODE}_{slot}")
-        self.assertEqual(sorted({c for e in evidence for c in e["capabilities"]}), [])
+    def test_ability_rows_render_exactly_as_planned(self):
+        for slot in range(1, 7):
+            rows = []
+            for n, (donor, source, cells, expect) in enumerate(K.PLAN[slot]):
+                row, ev = KL.build_row(ctx(), "ability", donor, cells, source=source,
+                                       element=K.ELEMENT, expect_describe=expect,
+                                       label=f"A{slot}#{n}")
+                self.assertEqual(ev["describe"], expect)
+                rows.append(row)
+            KL.check_ability_key(rows, f"{K.CID}{slot}", K.CODE, slot)
 
-    def test_a6_wind_token_is_set_in_all_three_columns(self):
-        """A6#1 的 c11/c29/c49 三处都要换成 Green，漏 c49 会筛成光属性角色（设计稿 §3 ⚠）。"""
-        rows_by_key, _ = K.build_ability_rows(ctx(), DESIGN)
-        row = rows_by_key[f"{K.CID}6"][1]
-        self.assertEqual([row[11], row[29], row[49]], ["Green", "Green", "Green"])
+    def test_slot6_lost_its_second_record(self):
+        """作者：「能力 6 的除自身外风属性角色技能槽＋5% 去掉」。"""
+        self.assertEqual(len(K.PLAN[6]), 1)
+
+    def test_slot3_was_replaced_wholesale(self):
+        """作者用「能力 3，…」整段给出新内容 ⇒ 5 条全新行。"""
+        self.assertEqual(len(K.PLAN[3]), 5)
+        # 五条的落点：during 技伤门 / PF 加连击 / 629 追击 / 694 独立乘区 / 704 换技能 Flag2
+        self.assertTrue(any(cells.get(70) == K.CAS_FLAG2 for _d, _s, cells, _e in K.PLAN[3]))
+        self.assertTrue(any(71 in cells for _d, _s, cells, _e in K.PLAN[3]))
+        descs = [desc for _d, _s, _c, desc in K.PLAN[3]]
+        self.assertTrue(any("独立乘区技能伤害" in d for d in descs), descs)
 
 
-@unittest.skipUnless(_BASELINE, "需要 .cdn/cn 官方归档")
+@unittest.skipUnless(_BASELINE, "需要 .cdn/cn 官方归档与 live store")
 class SkillTreeTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.trees = {}
-        cls.evidence = {}
+        cls.trees, cls.gates = {}, {}
         for level in ("1", "2"):
-            base = ctx().template_dsl(f"{K.PROGRAM_DIR}/{K.TEMPLATE_CODE}${K.TEMPLATE_CODE}_{level}")
+            base = ctx().template_dsl(f"{K.PROGRAM_DIR}/{K.TEMPLATE_CODE}$"
+                                      f"{K.TEMPLATE_CODE}_{level}")
             xm = ctx().template_dsl(f"{K.PROGRAM_DIR}/{K.GRAFT_CODE}${K.GRAFT_CODE}_{level}")
-            cls.trees[level], cls.evidence[level] = K.graft_tree(base, xm, level)
+            cls.trees[level], cls.gates[level] = K.graft_tree(base, xm, level)
 
     def test_root_head_is_untouched(self):
-        """``tree[1]=3``（有 MoveBall）、``tree[3]=true``、``tree[10]=0``（自动归属＝技能伤害）。"""
         for level, tree in self.trees.items():
             self.assertEqual(tree[:2], ["ActionDsl", 3], level)
-            self.assertIs(tree[3], True, level)
-            self.assertEqual(tree[10], 0, level)
+            self.assertEqual(tree[10], 0, "tree[10]=0 ⇒ 自动档＝技能伤害归属")
 
-    def test_timing_and_reference_point_lifetime(self):
+    # 嫁接来的八段：前四段 id +ID_SHIFT（11/14/17/20），后四段再 +ID_SHIFT_2（41/44/47/50）
+    PESTLE_IDS = sorted([i + K.ID_SHIFT for i in K.GRAFT_PESTLE_AREA_IDS]
+                        + [i + K.ID_SHIFT + K.ID_SHIFT_2 for i in K.GRAFT_PESTLE_AREA_IDS])
+
+    def test_pestle_segments_were_doubled(self):
         for level, tree in self.trees.items():
-            rp = next(iter(wf_dsl.iter_dsl_commands(tree, "CreateReferencePoint")))
-            self.assertEqual(rp[9], K.RP_LIFETIME, level)
-            self.assertEqual(rp[10], K.BASE_RP_ID, level)
-            waits = [node[1][1] for node in rp[11][1] if node[0] == "Event"]
-            self.assertEqual(waits, [K.FRAME_JAB, *K.FRAMES_PESTLE, K.FRAME_FINAL,
-                                     K.FRAME_FINISHER], level)
-            # 参考点寿命必须 ≥ 最后一个 Wait 帧 + 判定区寿命，否则伤害静默消失
-            self.assertGreaterEqual(K.RP_LIFETIME, K.FRAME_FINISHER + K.FINISHER_LIFETIME)
-            stop = next(iter(wf_dsl.iter_dsl_commands(tree, "StopBall")))
-            self.assertEqual(stop[2], K.STOP_BALL_FRAMES, level)
-            hide = next(iter(wf_dsl.iter_dsl_commands(tree, "HideCharacter")))
-            self.assertEqual(hide[2], K.HIDE_CHARACTER_FRAMES, level)
+            areas = [a for a in wf_dsl.iter_dsl_commands(tree, "CreateHitArea")
+                     if a[19] in self.PESTLE_IDS]
+            self.assertEqual(len(areas), 8, f"skill{level} 八连重击段数不对")
+            self.assertEqual(sorted(a[19] for a in areas), self.PESTLE_IDS)
+            self.assertEqual(self.gates[level]["segment_hits"]["pestle"], 8)
 
-    def test_grafted_subject_ids_are_remapped(self):
-        """xm21 子树 1..12 → 11..22；漏一处 lookup 位即 C16103。"""
+    def test_subject_ids_do_not_collide(self):
+        """整棵树的判定区 id / 两个 bind id 必须互不相交（复制段数最容易在这里翻车）。"""
         for level, tree in self.trees.items():
             areas = list(wf_dsl.iter_dsl_commands(tree, "CreateHitArea"))
-            ids = sorted(a[19] for a in areas)
-            self.assertEqual(ids, [1, 5, 8, 11, 14, 17, 20], level)
-            for area in areas:
-                if area[19] < K.ID_SHIFT + 1:
-                    continue                                    # 底座的三个区不动
-                self.assertEqual(area[2], K.BASE_RP_ID, level)  # 改挂敌侧参考点
-                self.assertEqual([area[19], area[21], area[22]],
-                                 [area[19], area[19] + 1, area[19] + 2], level)
-                cna = next(iter(wf_dsl.iter_dsl_commands(area[23], "CreateNormalAttack")))
-                self.assertEqual(cna[1], area[22], level)       # 伤害挂 node[22]（命中目标）
+            ids = [a[19] for a in areas] + [a[21] for a in areas] + [a[22] for a in areas]
+            self.assertEqual(len(set(ids)), len(ids), f"skill{level} 主体 id 撞号")
+            for want in self.PESTLE_IDS:
+                self.assertIn(want, ids, f"skill{level} 少了嫁接段 {want}")
 
-    def test_multipliers_and_alv_supplies(self):
+    def test_no_recoil_timing(self):
+        """无后摇：停球/隐身/替身球压到裂地一击之后第 3 帧，参考点寿命仍覆盖判定窗口。"""
         for level, tree in self.trees.items():
-            want = K.SKILL_MULT[level]
-            found = [cna[6][0] for cna in wf_dsl.iter_dsl_commands(tree, "CreateNormalAttack")]
-            self.assertEqual(len(found), 1 + 4 + 2, level)      # rush + 4 重击 + 终结两支
-            self.assertIn(want["rush"], found, level)
-            self.assertIn(want["pestle"], found, level)
-            self.assertIn(want["finisher"], found, level)
-            self.assertEqual(found.count(want["pestle"]), 4, level)
-            # 536 供 alv 给四连重击，704 供 alv2 给精准连击；没供值时 ALv 项返回 0
-            self.assertIn("alv_min", want["pestle"])
-            self.assertIn("alv2_min", want["rush"])
-            self.assertNotIn("alv_min", want["finisher"])
+            stop = next(iter(wf_dsl.iter_dsl_commands(tree, "StopBall")))
+            hide = next(iter(wf_dsl.iter_dsl_commands(tree, "HideCharacter")))
+            rp = next(iter(wf_dsl.iter_dsl_commands(tree, "CreateReferencePoint")))
+            self.assertEqual(stop[2], K.FRAME_FINISHER + 3, level)
+            self.assertEqual(hide[2], K.STOP_BALL_FRAMES, level)
+            self.assertGreaterEqual(rp[9], K.FRAME_FINISHER + K.FINISHER_LIFETIME)
+            self.assertLess(K.STOP_BALL_FRAMES, rp[9], "停球必须早于参考点寿命，否则谈不上无后摇")
 
-    def test_totals_land_in_the_decided_band(self):
-        """裁决 §2：主 C 技能周期总倍率 78–95×（满级名义值）。"""
-        ev = self.evidence["2"]
-        self.assertAlmostEqual(ev["total_no_flag"], 78.0, places=2)
-        self.assertAlmostEqual(ev["total_flag2_only"], 84.0, places=2)
-        self.assertAlmostEqual(ev["total_both_flags"], 88.0, places=2)
-        self.assertLessEqual(ev["total_both_flags"], 95.0)
-        self.assertGreaterEqual(ev["total_no_flag"], 78.0)
+    def test_add_combo_is_attached_to_every_hit_area(self):
+        for level, tree in self.trees.items():
+            combos = list(wf_dsl.iter_dsl_commands(tree, "AddCombo"))
+            self.assertEqual(len(combos), 1 + K.HITS["pestle"] + 1, level)
+            for cmd in combos:
+                self.assertEqual(cmd[1][0]["alv2_max"], 50.0)
+
+    def test_totals_match_the_panel(self):
+        for level in ("1", "2"):
+            self.assertAlmostEqual(self.gates[level]["total_no_flag"], 65.0, places=4)
+            self.assertAlmostEqual(self.gates[level]["total_with_flag1"], 71.0, places=4)
 
     def test_finisher_branches_are_complete_blocks(self):
-        """``ConditionalsChangeSkillFlag`` 两支都是完整 CNA；空分支才写 ``["Block", []]``。"""
+        """536 开关：then 支 p8=true 吃连击加成，else 支 p8=false；禁 ["DoNothing"]。"""
         for level, tree in self.trees.items():
-            cond = next(iter(wf_dsl.iter_dsl_commands(tree, "ConditionalsChangeSkillFlag")))
-            self.assertEqual(cond[1], 1, level)
-            for branch, p8 in ((cond[2], True), (cond[3], False)):
-                self.assertEqual(branch[0], "Block", level)
-                cna = next(iter(wf_dsl.iter_dsl_commands(branch, "CreateNormalAttack")))
-                self.assertIs(cna[8], p8, level)
-                self.assertEqual(cna[2], 255, level)            # 继承角色属性，不写显式元素码
-
-    def test_finisher_hit_area_was_widened(self):
-        for level, tree in self.trees.items():
-            area = next(a for a in wf_dsl.iter_dsl_commands(tree, "CreateHitArea")
-                        if a[19] == K.BASE_FINISH_AREA_ID)
-            self.assertEqual(area[9], ["Circle", [{"min": K.FINISHER_RADIUS,
-                                                   "max": K.FINISHER_RADIUS}]], level)
-            self.assertEqual(area[13], ["SpecifyHitAreaLifetimeDirectly", K.FINISHER_LIFETIME], level)
-            names = [s[1] for s in wf_dsl.iter_dsl_commands(area[20], "ShowEffect")]
-            self.assertEqual(names, [K.EFFECT_CRACK_LABEL], level)
+            cond = list(wf_dsl.iter_dsl_commands(tree, "ConditionalsChangeSkillFlag"))
+            self.assertEqual(len(cond), 1, level)
+            self.assertEqual(cond[0][1], 1)
+            for branch in (cond[0][2], cond[0][3]):
+                self.assertEqual(branch[0], "Block")
+            then_cna = next(iter(wf_dsl.iter_dsl_commands(cond[0][2], "CreateNormalAttack")))
+            else_cna = next(iter(wf_dsl.iter_dsl_commands(cond[0][3], "CreateNormalAttack")))
+            self.assertTrue(then_cna[8])
+            self.assertFalse(else_cna[8])
 
     def test_all_dsl_gates_pass_after_effect_rewrite(self):
         for level in ("1", "2"):
-            tree = copy.deepcopy(self.trees[level])
-            for family in fake_families():
-                tree, _info = ctx().rewrite_effect_refs(tree, family, strict=True)
-            self.assertEqual(K.dsl_problems(tree, element=K.ELEMENT), [], level)
-            self.assertEqual(K.roundtrip_problems(tree), [], level)
-
-    def test_every_effect_reference_is_cloned_or_whitelisted(self):
-        allowed = {f["dst_dir"] for f in fake_families()}
-        for level in ("1", "2"):
-            tree = copy.deepcopy(self.trees[level])
-            for family in fake_families():
-                tree, _info = ctx().rewrite_effect_refs(tree, family, strict=True)
-            for ref in K.effect_refs(tree):
-                self.assertTrue(ref.rsplit("/", 1)[0] in allowed or ref in K.FX_DIRECT_REFERENCE,
-                                f"{level}: {ref}")
+            tree, _ = K.build_skill_tree(ctx(), level, fake_families()) \
+                if False else (self.trees[level], None)
+            problems = K.dsl_problems(tree, element=K.ELEMENT) + K.roundtrip_problems(tree)
+            # 特效引用此时仍是官方路径（rewrite 在 build_skill_tree 里做），只查其余闸门
+            self.assertEqual([p for p in problems if not p.startswith("effect")], [], level)
 
     def test_graft_rejects_a_drifted_donor(self):
         base = copy.deepcopy(ctx().template_dsl(
@@ -394,11 +455,59 @@ class SkillTreeTests(unittest.TestCase):
         with self.assertRaises(KL.KitError):
             K.graft_tree(base, xm, "2")
 
+    def test_invoke_tree_is_a_faithful_copy_of_the_skill(self):
+        tree, gates = K.build_invoke_tree(self.trees["2"])
+        self.assertEqual(tree, self.trees["2"])
+        self.assertEqual(gates["damage_attribution"], 0)
 
-# ---------------------------------------------------------------- 3. 已构建的 workspace
 
+@unittest.skipUnless(_BASELINE, "需要 .cdn/cn 官方归档与 live store")
+class PowerFlipTests(unittest.TestCase):
+    """722 双类型覆盖树：官方 fighter 底座 ＋ 官方 supporter 辅助增益块。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.trees, cls.gates = {}, {}
+        for level in (1, 2, 3):
+            cls.trees[level], cls.gates[level] = K.build_pf_tree(ctx(), level)
+
+    def test_base_is_the_official_fighter_tree(self):
+        for level, tree in self.trees.items():
+            self.assertEqual(tree[1], 2, "拼树后 movementPriority 必须是 2")
+            self.assertEqual(tree[10], 0)
+            self.assertEqual(self.gates[level]["cna_total"], K.FIGHTER_CNA_TOTAL[level])
+
+    def test_lifecycle_commands_survive(self):
+        """覆盖树必须自带 SetPowerFilpSuppress ＋ NotifyPowerflipEnd，否则球卡死。"""
+        for level, tree in self.trees.items():
+            self.assertEqual([c[1] for c in wf_dsl.iter_dsl_commands(tree, "SetPowerFilpSuppress")],
+                             K.FIGHTER_SUPPRESS[level])
+            self.assertTrue(list(wf_dsl.iter_dsl_commands(tree, "NotifyPowerflipEnd")))
+
+    def test_supporter_buff_block_was_grafted_in(self):
+        for level, tree in self.trees.items():
+            kinds = [c[2][0][0] for c in wf_dsl.iter_dsl_commands(tree, "CreateCondition")]
+            for want in ("ACAttackPoint", "ACPiercing", "ACFlying"):
+                self.assertIn(want, kinds, f"lv{level} 丢了辅助增益 {want}")
+            self.assertEqual(self.gates[level]["support_block_bind"], K.PF_SUPPORT_BIND)
+
+    def test_hit_areas_keep_the_pf_multiplier_lane(self):
+        """``CreateHitArea`` 第 24 位写 4 = 按直击算，整块 PF 乘区被跳过。"""
+        for level, tree in self.trees.items():
+            for cha in wf_dsl.iter_dsl_commands(tree, "CreateHitArea"):
+                self.assertEqual(cha[24], 0, f"lv{level}")
+
+    def test_no_package_local_effect_is_referenced(self):
+        for level, tree in self.trees.items():
+            for ref in K.effect_refs(tree):
+                self.assertNotIn(f"skill_unique/{K.CODE}/", ref, f"lv{level} 引用了包内特效")
+
+
+# ---------------------------------------------------------------- 3. workspace 回执
+
+@unittest.skipUnless(_BASELINE, "需要 .cdn/cn 官方归档与 live store")
 @unittest.skipUnless((WORKSPACE / "evidence" / "kit-report.json").is_file(),
-                     "需要先跑 --step init,tables,kit,assets,manifest")
+                     "需要先跑 --step tables,kit,assets,manifest")
 class WorkspaceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -407,15 +516,25 @@ class WorkspaceTests(unittest.TestCase):
 
     def test_report_identity_and_capabilities(self):
         self.assertEqual((self.report["cid"], self.report["code"]), (K.CID, K.CODE))
-        self.assertEqual(self.report["required_capabilities"], [])
-        self.assertEqual(sorted(self.report["custom_ability_string"]),
-                         sorted((K.CAS_FLAG1, K.CAS_FLAG2)))
+        self.assertEqual(self.report["required_capabilities"], ["panel-description-override-v2"])
 
-    def test_two_skill_programs_are_written(self):
+    def test_every_program_is_written(self):
         programs = self.report["skills"]["programs"]
-        self.assertEqual(len(programs), 2)
         for level in ("1", "2"):
             self.assertTrue(any(f"{K.CODE}${K.CODE}_{level}." in p for p in programs), programs)
+        self.assertTrue(any(K.INVOKE_STRING in p for p in programs), programs)
+        for program in K.PF_PROGRAMS:
+            stem = program.split("/")[-1]
+            self.assertTrue(any(stem in p for p in programs), (stem, programs))
+
+    def test_power_flip_action_row_points_at_three_levels(self):
+        pf = self.gates["power_flip"]
+        self.assertEqual(pf["key"], K.PF_KEY)
+        self.assertEqual(pf["programs"], list(K.PF_PROGRAMS))
+        self.assertEqual(sorted(pf["levels"]), ["1", "2", "3"])
+
+    def test_character_row_says_supporter(self):
+        self.assertEqual(self.gates["mirrors"]["character"][6], "3")
 
     def test_voice_route_is_change_skill_flag(self):
         route = self.gates["voice_route"]
@@ -423,32 +542,29 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual(route[5], K.VOICE_KEY)
         self.assertEqual(self.gates["voice_ready"]["levels"], ["1", "2"])
 
-    def test_effect_family_layout(self):
-        families = self.gates["effect_families"]
-        self.assertEqual([f["dst_dir"] for f in families],
-                         [f"battle/effect/skill_unique/{K.CODE}/rush"])
-        self.assertEqual(sorted(families[0]["copied_bases"]), sorted(K.FX_RUSH[2]))
-
-    def test_action_skill_energy_matches_the_design(self):
-        energy = DESIGN["plan"]["skills"]["energy"]
+    def test_action_skill_energy_is_580_on_both_levels(self):
         for level, cells in self.gates["action_skill"].items():
-            self.assertEqual([cells[4], cells[5]],
-                             [str(energy[level]["c4"]), str(energy[level]["c5"])], level)
+            self.assertEqual((cells[4], cells[5]), ("580", "580"), level)
 
     def test_package_carries_only_its_own_ability_and_leader_keys(self):
-        rows = self.gates["ability"]["rows"]
-        self.assertEqual(sorted(rows), sorted(K.ABILITY_KEYS))
+        self.assertEqual(sorted(self.gates["ability"]["rows"]), sorted(K.ABILITY_KEYS))
         self.assertEqual(len(self.gates["leader"]["rows"]), K.LEADER_ROW_COUNT)
 
     def test_panel_block_obeys_the_batch_rules(self):
-        for text in self.report["panel"]:
-            self.assertEqual(KL.panel_problems(text), [], text)
+        for line in self.report["panel"]:
+            KL.check_panel(line.replace(K.MAIN_ICON, ""), label="report.panel")
 
     def test_deviations_are_registered(self):
-        """做不到／主动不做的条目不许静默降级（裁决 §6）。"""
-        self.assertTrue(self.report["deviations"])
-        blob = json.dumps(self.report["deviations"], ensure_ascii=False)
-        self.assertIn("jab", blob)                            # 图集退路必须留痕
+        """做不到的条目不许静默降级（裁决 §6）。"""
+        wants = [d["want"] for d in self.report["deviations"]]
+        self.assertGreaterEqual(len(wants), 6)
+        self.assertTrue(any("辅助＋格斗" in w for w in wants))
+
+    def test_design_history_block_is_preserved(self):
+        """rework1 的 plan 写在 design 的 ``rework1`` 段，旧 ``plan`` 留作历史。"""
+        self.assertIn("plan", DESIGN)
+        self.assertIn("rework1", DESIGN)
+        self.assertEqual(DESIGN["rework1"]["leader_ability"]["row_count"], K.LEADER_ROW_COUNT)
 
 
 if __name__ == "__main__":

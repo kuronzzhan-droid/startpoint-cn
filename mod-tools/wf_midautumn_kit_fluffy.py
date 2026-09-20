@@ -1,30 +1,29 @@
 # -*- coding: utf-8 -*-
 """中秋批次 kit：芙拉菲·中秋 149987 ``combat_animal_moon``（风属性技能伤害主 C）。
 
-定位「连击 × 冲刺」近身突进连打型技伤主 C：冲刺攒攻击层数与连击 → 连击过 50 / 150 两道门槛
-→ 自身技伤翻倍并开出独立乘区 → 技能终结一击在「主位＋风共鸣」时随连击数放大。设计与数值以
-``work/character_packs/midautumn-20260920/design/fluffy.{md,json}`` 为准 —— 行装配部分是
-「设计 JSON 驱动」的薄壳：队长 7 行、词条 6 键 15 条的 donor / 逐格改 / 预期 ``wf_describe``
-全部从 ``design/fluffy.json`` 的 ``plan`` 块读出后交给 :func:`wf_midautumn_kitlib.build_row`
-装配，两边漂移（donor 缺失、legality 不过、``wf_describe`` 对不上、``row_final`` 不一致）当场
-报错，不在本文件里手抄 22 行的具体数值。
+**rework1（2026-09-21）**：按作者已过目的目标面板
+``work/character_packs/midautumn-20260920/rework1/panel/fluffy.json`` 整体重做。施工单与逐行
+映射见 ``rework1/impl/fluffy.md``；上一轮的内容留在 ``design/fluffy.{md,json}`` 的历史段落里。
 
-本模块自己负责设计 JSON 管不到的部分：
+一句话：队长位授予**双类型强化弹射**（722 ＝ 官方 ``fighter`` 底座 ＋ 官方 ``supporter`` 辅助增益块）；
+队长技换成「开局铺垫 → 每次 PF 滚雪球 → 每 5 次 PF Lv3 触发技能 → 每 250 连击自身技伤翻倍」；
+技能四连重击改**八连重击＋无后摇**、满级单值 **65×**；两处「立即发动自身技能」统一落成
+**一棵 629 ``ability_skill`` 树**（``_deviations.json›fluffy[1]`` 的追击等价）。
 
-* ``custom_ability_string`` 两条强化开关串（536 的 ``change_skill_*``、704 的 ``change_skill_2_*``）；
-* ``action_skill`` 两档能量（580/580 与 580/530）；
-* 技能 DSL 两档：官方母本 141033 ``combat_animal_{1,2}`` 整树当底座，把官方
-  141081 ``combat_animal_xm21_{1,2}`` 的「四连重击 ＋ 裂地演出」嫁接到底座的**敌侧参考点**
-  （id 4）上，主体 id 1..12 整体重映射到 11..22，终结一击外包一层
-  ``ConditionalsChangeSkillFlag(1)`` 开连击加成（``p8``）；
-* 两族技能特效整族克隆（``skill_unique/combat_animal_moon/{rush,jab}/``）＋
-  ``B/pixel/fluffy/fx_lut.json`` 染色（文件不在就按母本原色克隆）；
-* 语音路由 kind 3（ChangeSkillFlag ← A1#1 的 536）与 ``switched_action_skill``；
-* ``B/pixel/fluffy/install.json`` 里的像素小人成品（缺文件静默跳过）。
+本模块负责：
 
-不做：422 冲刺参数、724、新固有状态、觉醒替换行、722（她不是 PF 角色）——整套 22 行的
-``required_client_capabilities`` 全为空，不依赖任何 APK 补丁。
+* 队长 10 行 ＋ 词条 6 键 15 条（官方/live donor ＋ 逐格改 ＋ ``wf_client_legality`` ＋ ``wf_describe`` 回读）；
+* 8 条 ``custom_ability_string``：536/704 两条强化开关串、629 串、722 串、4 个 ``desc_override``；
+* ``power_flip_action`` 三档覆盖树（fighter ＋ supporter 增益块）；
+* 629 ``ability_skill`` 树（技能档 2 的深拷贝）；
+* ``action_skill`` 两档能量（580/580）；
+* 技能 DSL 两档：官方母本 141033 整树当底座，嫁接官方 141081 的重击段（4→**8 段**）与裂地演出；
+  裂地一击外包 ``ConditionalsChangeSkillFlag(1)`` 开连击加成（536）；每个判定区 on-hit 挂
+  ``AddCombo`` 走 ``alv2`` 通道（704，没开时加 0）；
+* ``rush`` 特效族整族克隆 ＋ LUT 染色（``jab`` 族按图集预算直接引用官方路径）；
+* 语音路由 kind 3 ＋ ``switched_action_skill``；``B/pixel/fluffy/install.json`` 的像素成品。
 
+不做：422 冲刺参数、724、**新固有状态（⇒ 本轮不需要 48×48 状态图标）**、觉醒替换行。
 不碰：live store / ``assets/`` / ``.cdn`` / 设备 / 存档；不发布、不提交。
 由 ``python mod-tools/wf_midautumn_build.py --char fluffy --step kit`` 调用 :func:`build`。
 """
@@ -44,56 +43,245 @@ import wf_dsl  # noqa: E402
 import wf_dsl_sig as SIG  # noqa: E402
 import wf_midautumn_kitlib as KL  # noqa: E402
 import wf_midautumn_specs as MS  # noqa: E402
+import wf_seasonal7_common as C  # noqa: E402
+import wf_seasonal7_kit_philia as PH  # noqa: E402
 
 KitError = KL.KitError
 
 KEY = "fluffy"
 CID, CODE = 149987, "combat_animal_moon"
+CID_S = str(CID)
 ELEMENT = 3                                    # 风（0 基内部编号，Green）
 TEMPLATE_ID, TEMPLATE_CODE = 141033, "combat_animal"
-GRAFT_CODE = "combat_animal_xm21"              # 141081（她的圣诞版）：四连重击 + 裂地演出的血统
+GRAFT_CODE = "combat_animal_xm21"              # 141081（她的圣诞版）：重击段 + 裂地演出的血统
 
 ABILITY_KEYS = tuple(f"{CID}{slot}" for slot in range(1, 7))
-LEADER_ROW_COUNT = 7
+LEADER_ROW_COUNT = 10
 ABILITY_RECORD_TOTAL = 15
 
-# custom_ability_string：两条「强化技能效果」串（裁决 §3：技能强化条目不写数字与时间）
-CAS_FLAG1 = f"change_skill_{CODE}"             # A1#1 的 536（alv）
-CAS_FLAG2 = f"change_skill_2_{CODE}"           # A3#3 的 704（alv2）
+# ---------------------------------------------------------------- 自有键
+
+CAS_FLAG1 = f"change_skill_{CODE}"                  # 536（A1#1，主位＋风共鸣）→ alv
+CAS_FLAG2 = f"change_skill_2_{CODE}"                # 704（A3#4，风共鸣）→ alv2
+INVOKE_STRING = f"ability_skill_{CODE}"             # 629 的 c68（leader）/ c70（ability）
+INVOKE_PROGRAM = (f"battle/action/skill/action/ability_skill/"
+                  f"{INVOKE_STRING}${INVOKE_STRING}")
+PF_KEY = f"{CODE}_pf"
+PF_STRING = f"override_string_{PF_KEY}"             # 722 的 c82
+PFA = "master/skill/power_flip_action.orderedmap"
+PF_PROGRAMS = tuple(f"battle/action/power_flip/action/override/{PF_KEY}${PF_KEY}_lv{n}"
+                    for n in (1, 2, 3))
+LEADER_OVERRIDE = f"desc_override_{CODE}"
+SLOT_OVERRIDE_SLOTS = (1, 2, 3)
+SLOT_OVERRIDE = {slot: f"desc_override_{CODE}_{slot}" for slot in SLOT_OVERRIDE_SLOTS}
+
 SKILL_FLAG_KINDS = ("536", "704")
+SKILL_FLAG_TEXT_KEYS = (CAS_FLAG1, CAS_FLAG2)
 VOICE_KEY = f"{CODE}_voice_ready"
 VOICE_ROUTE = {"kind": 3}                      # ChangeSkillFlag ← A1#1 的 536
 
-TEXTS: dict[str, str] = {}       # 10 个文本键在 design/fluffy.json 的 texts 块里（build 里核验）
+MAIN_ICON = " <icon id='main'>  "              # desc_override 会盖掉客户端逐行画的 Ⓜ
+
+TEXTS: dict[str, str] = {
+    "skill1": "玉杵捣月·桂风连打",
+    "skill2": "玉杵捣月·桂风连打",
+    "desc1": "向距离最近的敌人突进，对接触到的敌人使出精准连击，随后以玉杵般的八连重击追打，"
+             "最后砸下裂地一击（无后摇），造成自身攻击力65倍的风属性伤害，并赋予自身攻击力提升效果",
+    "desc2": "向距离最近的敌人突进，对接触到的敌人使出精准连击，随后以玉杵般的八连重击追打，"
+             "最后砸下裂地一击（无后摇），造成自身攻击力65倍的风属性伤害，并赋予自身攻击力提升效果",
+}
 SPEC = {
-    "required_capabilities": (),               # 22 行全部 required_client_capabilities=[]
+    # desc_override 需要客户端面板接管能力；722 的 override_string_* 不需要补丁
+    "required_capabilities": ("panel-description-override-v2",),
+    "pf_type": 3,                              # 作者 09-21：详情页显示「辅助」（原生 PF 也随之为 supporter）
     "extra_keys": {
-        KL.CAS: (CAS_FLAG1, CAS_FLAG2),
+        KL.CAS: (CAS_FLAG1, CAS_FLAG2, INVOKE_STRING, PF_STRING, LEADER_OVERRIDE,
+                 *(SLOT_OVERRIDE[s] for s in SLOT_OVERRIDE_SLOTS)),
         KL.SWITCHED: (VOICE_KEY,),
+        PFA: (PF_KEY,),
     },
+}
+
+# ---------------------------------------------------------------- 行计划（donor + 逐格改）
+
+# 「风属性共鸣」＝官方常规共鸣前置（前置 kind 2 编成≥6，作者补充 09-21 00:5x）
+WIND_LEADER = {4: "2", 7: "600000", 8: "600000", 9: "Green"}
+WIND_ABILITY = {6: "2", 9: "600000", 10: "600000", 11: "Green"}
+
+PF_LV3_THRESHOLD = "500000"     # 5 次 Lv3 强化弹射
+PF_LV3_COOLTIME = "600"         # 10 秒（帧）
+COMBO_INVOKE_THRESHOLD = "15000000"   # 150 连击
+COMBO_INVOKE_COOLTIME = "900"         # 15 秒（帧）
+
+# (donor, source, cells, expect_describe)
+LEADER: tuple[tuple[str, str, dict[int, str], str], ...] = (
+    # L#0 722 双类型 PF（donor 自带风共鸣门，官方 141201#1）
+    ("141201#1", "official",
+     {0: CODE, 45: "722", 80: PF_KEY, 81: "1,2,3", 82: PF_STRING},
+     "风·编成≥6 时: 自身 强化弹射覆盖"),
+    # L#1..L#3 开局三件
+    ("131122#2", "official",
+     {0: CODE, 9: "Green", 47: "Green", 49: "20000", 50: "20000"},
+     # kind 245 SecondSkillGauge ＝ 技能槽**上限**（记忆卡 wf-skill-gauge-max-exists，已两次误判）；
+     # wf_describe 把枚举名直译成「2号位技能槽」，面板由 desc_override 接管，玩家看不到这串
+     "风·编成≥6 时: 赋予全队(风) 2号位技能槽 20%"),
+    ("141165#2", "official",
+     {0: CODE, 49: "20000", 50: "20000"},
+     "风·编成≥6 时: 赋予全队(风) 技能槽充能 20%"),
+    ("141033#0", "official",
+     {0: CODE, **WIND_LEADER, 49: "50000", 50: "50000"},
+     "风·编成≥6 时: 赋予全队(风) 技能槽 50%"),
+    # L#4..L#6 每 1 次强化弹射
+    ("111183#1", "official",
+     {0: CODE, **WIND_LEADER, 28: "100000", 29: "100000", 32: "(None)",
+      45: "32", 47: "Green", 49: "20000", 50: "20000"},
+     "风·编成≥6 时: 强化弹射≥1 → 赋予全队(风) 攻击力 20%"),
+    ("111183#1", "official",
+     {0: CODE, **WIND_LEADER, 28: "100000", 29: "100000", 32: "(None)",
+      45: "34", 47: "Green", 49: "20000", 50: "20000"},
+     "风·编成≥6 时: 强化弹射≥1 → 赋予全队(风) 技能伤害 20%"),
+    ("121177#5", "official",
+     {0: CODE, 9: "Green", 25: "2", 28: "100000", 29: "100000",
+      49: "500000", 50: "500000"},
+     "风·编成≥6 时: 强化弹射≥1 → 自身 追加连击 5"),
+    # L#7/L#8 每 5 次 Lv3 强化弹射（同触发两行；226 排在 629 之前，让 629 吃到刚加的 500 连击）
+    ("121177#5", "official",
+     {0: CODE, 9: "Green", 25: "65", 28: PF_LV3_THRESHOLD, 29: PF_LV3_THRESHOLD,
+      33: PF_LV3_COOLTIME, 49: "50000000", 50: "50000000"},
+     "风·编成≥6 时: 强化弹射Lv3≥5(CT10秒) → 自身 追加连击 500"),
+    ("111165#4", "official",
+     {0: CODE, 9: "Green", 11: "0", 12: "", 14: "", 15: "", 17: "",
+      28: PF_LV3_THRESHOLD, 29: PF_LV3_THRESHOLD, 33: PF_LV3_COOLTIME,
+      68: INVOKE_STRING, 69: INVOKE_PROGRAM},
+     f"风·编成≥6 时: 强化弹射Lv3≥5(CT10秒) → 自身 发动技能动作[{INVOKE_STRING}]"),
+    # L#9 每 250 连击 → 自身技能伤害
+    ("241004#1", "official",
+     {0: CODE, **WIND_LEADER, 28: "25000000", 29: "25000000", 32: "(None)",
+      45: "34", 46: "0", 47: "", 49: "100000", 50: "100000"},
+     "风·编成≥6 时: 连击≥250 → 自身 技能伤害 100%"),
+)
+
+_A, _AC = "action_skill", "attack_common"
+
+PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str], ...]] = {
+    1: (
+        ("1599981#0", "live",
+         {0: f"{CODE}_1", 1: "true", 2: _A, 51: "50000", 52: "50000"},
+         "自身 技能槽 50%"),
+        ("1599981#1", "live",
+         {0: f"{CODE}_1", 1: "true", 2: _A, 18: "Green", 70: CAS_FLAG1},
+         f"持有者为主位 且 风·编成≥6 时: 自身 切换技能形态[{CAS_FLAG1}]"),
+    ),
+    2: (
+        ("1410333#0", "official",
+         {0: f"{CODE}_2", 1: "true", 2: _AC, **WIND_ABILITY, 51: "25000", 52: "25000"},
+         "风·编成≥6 时: 冲刺≥1 → 自身 状态攻击力 25%(6秒)×1次[累积上限4]"),
+        ("1299914#0", "live",
+         {0: f"{CODE}_2", 1: "true", 2: _AC, 11: "Green", 51: "500000", 52: "500000"},
+         "风·编成≥6 时: 冲刺≥1 → 自身 追加连击 5"),
+        ("1599982#2", "live",
+         {0: f"{CODE}_2", 1: "true", 2: _AC, 11: "Green", 29: "Green",
+          51: "40000", 52: "40000"},
+         "风·编成≥6 时: 技能发动≥1(限5次) → 自身 技能伤害 40%"),
+    ),
+    3: (
+        ("1410333#1", "official",
+         {0: f"{CODE}_3", 1: "false", 2: _A, **WIND_ABILITY, 113: "200000", 114: "200000"},
+         "风·编成≥6 时: 持续·连击≥50(限1次) → 自身 技能伤害 200%"),
+        ("1599982#0", "live",
+         {0: f"{CODE}_3", 1: "false", 2: _A, 11: "Green", 27: "2", 28: "", 29: "",
+          30: "100000", 31: "100000", 51: "1000000", 52: "1000000"},
+         "风·编成≥6 时: 强化弹射≥1 → 自身 追加连击 10"),
+        # 629：字符串键 c70 + 程序路径 c71。本角色没有 525 消耗行（不吃固有层数）。
+        ("1611053#0", "official",
+         {0: f"{CODE}_3", 1: "false", 2: _A, **WIND_ABILITY,
+          27: "12", 28: "", 30: COMBO_INVOKE_THRESHOLD, 31: COMBO_INVOKE_THRESHOLD,
+          34: "(None)", 35: COMBO_INVOKE_COOLTIME,
+          70: INVOKE_STRING, 71: INVOKE_PROGRAM},
+         f"风·编成≥6 时: 连击≥150(CT15秒) → 自身 发动技能动作[{INVOKE_STRING}]"),
+        # kind 694（瞬发独立乘区技能伤害）官方 0 行，只有 live 先例 ⇒ 取 store（同玛格诺斯 A5#0）
+        ("1299925#1", "live",
+         {0: f"{CODE}_3", 1: "false", 2: _A, **WIND_ABILITY, 51: "10000", 52: "10000"},
+         "风·编成≥6 时: 自身 独立乘区技能伤害 10%"),
+        ("1599983#6", "live",
+         {0: f"{CODE}_3", 1: "false", 2: _A, 11: "Green", 70: CAS_FLAG2},
+         f"风·编成≥6 时: 自身 切换技能Flag2[{CAS_FLAG2}]"),
+    ),
+    4: (
+        ("1511652#1", "official",
+         {0: f"{CODE}_4", 1: "true", 2: _AC, 51: "100000", 52: "100000"},
+         "自身 技能伤害 100%"),
+        ("1511652#0", "official",
+         {0: f"{CODE}_4", 1: "true", 2: _AC, 51: "100000", 52: "100000"},
+         "自身 攻击力 100%"),
+    ),
+    5: (
+        ("1410334#0", "official",
+         {0: f"{CODE}_5", 1: "true", 2: _AC, 6: "0", 11: "", 113: "50000", 114: "50000"},
+         "持续·连击≥10(限1次) → 自身 攻击力 50%"),
+        ("1410332#0", "official",
+         {0: f"{CODE}_5", 1: "true", 2: _AC, 51: "25000", 52: "25000"},
+         "自身 眩晕畏缩特攻 25%"),
+    ),
+    6: (
+        ("1411835#0", "official",
+         {0: f"{CODE}_6", 1: "true", 2: _A, 51: "10000", 52: "10000"},
+         "风·编成≥6 时: 赋予全队(风) 技能槽充能 10%"),
+    ),
+}
+
+# ---------------------------------------------------------------- 面板文案
+
+CAS_TEXTS: dict[str, str] = {
+    # 536 / 704 是「技能强化」条目：不写数字与时间（裁决 §3）
+    CAS_FLAG1: "强化『玉杵捣月·桂风连打』的八连重击效果，并使裂地一击的伤害随连击数提升",
+    CAS_FLAG2: "强化『玉杵捣月·桂风连打』的连击效果，技能命中时追加连击",
+    INVOKE_STRING: "触发『玉杵捣月·桂风连打』的技能效果（不消耗技能槽）",
+    PF_STRING: "强化弹射同时具备辅助与格斗两种类型：在格斗突进的同时赋予队伍辅助增益",
+    LEADER_OVERRIDE: "\n".join((
+        "风属性共鸣时，自身的强化弹射同时具备辅助与格斗两种类型",
+        "风属性共鸣时，战斗开始时风属性角色技能槽最大值＋20%、技能充能速度＋20%、技能槽＋50%",
+        "风属性共鸣时，每发动1次强化弹射，风属性角色攻击力＋20%、技能伤害＋20%、连击＋5",
+        "风属性共鸣时，每发动5次强化弹射Lv3时，连击＋500，并触发自身技能效果（不消耗技能槽，冷却时间：10秒）",
+        "风属性共鸣时，每达到250连击，自身技能伤害＋100%",
+    )),
+    SLOT_OVERRIDE[1]: "\n".join((
+        "战斗开始时，自身技能槽＋50%",
+        "主位且风属性共鸣时，强化『玉杵捣月·桂风连打』的八连重击效果，并使裂地一击的伤害随连击数提升",
+    )),
+    SLOT_OVERRIDE[2]: "\n".join((
+        "风属性共鸣时，冲刺时自身攻击力＋25%（6秒，最多累积4次）",
+        "风属性共鸣时，冲刺时连击＋5",
+        "风属性共鸣时，发动技能时自身技能伤害＋40%（最多5层）",
+    )),
+    SLOT_OVERRIDE[3]: "\n".join(MAIN_ICON + line for line in (
+        "风属性共鸣时，连击达到50以上时，自身技能伤害＋200%",
+        "风属性共鸣时，发动强化弹射时，连击＋10",
+        "风属性共鸣时，每达成150连击，触发自身技能效果（不消耗技能槽，冷却时间：15秒）",
+        "风属性共鸣时，自身对敌人的技能伤害额外乘区＋10%",
+        "风属性共鸣时，强化『玉杵捣月·桂风连打』的连击效果，技能命中每次连击＋50",
+    )),
+}
+
+# 槽 4/5/6 用客户端自动文案（describe 与目标面板语义一致），只记录进回执
+PANEL_AUTO = {
+    4: ("自身技能伤害＋100%", "自身攻击力＋100%"),
+    5: ("连击达到10时，自身攻击力＋50%", "自身对陷入眩晕、畏缩状态的敌人攻击特攻＋25%"),
+    6: ("风属性共鸣时，风属性角色技能槽充能＋10%",),
 }
 
 # ---------------------------------------------------------------- 特效族
 
-# (dst_subdir, 官方源目录, 取的基名, B/pixel/fluffy/ 下的 LUT 文件名)
 FX_RUSH = ("rush", f"battle/effect/skill_unique/{TEMPLATE_CODE}",
            (f"{TEMPLATE_CODE}_rush", f"{TEMPLATE_CODE}_final"), "fx_lut.json")
 FX_JAB = ("jab", f"battle/effect/skill_unique/{GRAFT_CODE}",
           (f"{GRAFT_CODE}_jab", f"{GRAFT_CODE}_blow", f"{GRAFT_CODE}_crack"), "fx_lut_jab.json")
 
-# **jab 族默认不克隆**（设计稿 §5 自带的退路，偏离 D7'）：
-#   * rush 族**必须**克隆——族内含芙拉菲的小人剪影帧，要和像素管线用同一张 LUT，
-#     否则战斗里会出现没染色的原版剪影（设计稿 §5 ⚠ / §9 风险 8）；
-#   * jab 族没有小人帧，只有彩色剪影。整族克隆给战斗图集加 0.1823 Mpx（≈1.09%），
-#     实测把 `five-boss-r1` 从 baseline `fits=true` 压成 `false`（溢出点落在既有的
-#     `super_robot_tailcoat/laser_ll`），越过裁决 §6 的「单角色 ≤3.5% **且 fits**」通过线；
-#     同批玛格诺斯只占 0.44%，14 人叠加风险更大（记忆卡 wf-battle-atlas-budget）。
-#   * 代价只有配色：jab/振りかぶり/裂地三段保持母本风绿。像素代理已备好
-#     `fx_lut_jab.json`，作者/主控若决定吃下这 1.09%，把下面一行改成 True 即可（只此一处）。
+# jab 族默认不克隆（施工单偏离 D-7）：整族克隆给战斗图集加 0.1823 Mpx（≈1.09%），
+# 实测把 five-boss-r1 的 fits 压成 false，越过裁决 §6「单角色 ≤3.5% 且 fits」的通过线。
 CLONE_JAB_FAMILY = False
 
 FX_FAMILIES = (FX_RUSH,) + ((FX_JAB,) if CLONE_JAB_FAMILY else ())
-# 只引用、不改色的官方件：直接引用官方路径，不克隆不占图集（裁决 §4 / 框架 §10.3）
 FX_DIRECT_REFERENCE = (
     "battle/effect/skill_general/decoration/rush_aura",
     "battle/effect/skill_general/decoration/dummy_ball",
@@ -103,22 +291,20 @@ FX_DIRECT_REFERENCE = (
 
 PROGRAM_DIR = "battle/action/skill/action/rare5"
 
-# 底座（141033）的编辑：连段变长 ⇒ 停球/隐身/替身球/参考点寿命一起拉长
-STOP_BALL_FRAMES = 80          # donor 30
-HIDE_CHARACTER_FRAMES = 80     # donor 24
-DUMMY_EFFECT_FRAMES = 80       # donor 24
-RP_LIFETIME = 100              # donor 60；必须 ≥ 最后一个 Wait 帧 60 + 判定区寿命 15
-
-# 参考点块的新时间轴（帧号相对参考点创建的那一刻；兄弟 Wait 各自从块首计帧）
+# 「无后摇」：裂地一击落下后第 3 帧就放球（判定区挂在敌侧参考点上，寿命不受影响）
 FRAME_JAB = 20
-FRAMES_PESTLE = (24, 30, 36, 42)
-FRAME_BLOW = 42
-FRAME_FINAL = 57
-FRAME_FINISHER = 60
+FRAMES_PESTLE = (24, 28, 32, 36, 40, 44, 48, 52)
+FRAME_FINAL = 62
+FRAME_FINISHER = 65
+FINISHER_LIFETIME = 15
+RP_LIFETIME = 85                                   # ≥ FRAME_FINISHER + FINISHER_LIFETIME
+STOP_BALL_FRAMES = FRAME_FINISHER + 3              # donor 30；上一轮 80
+HIDE_CHARACTER_FRAMES = STOP_BALL_FRAMES           # donor 24
+DUMMY_EFFECT_FRAMES = STOP_BALL_FRAMES             # donor 24
 
 FINISHER_RADIUS = 150          # donor Circle{100}
-FINISHER_LIFETIME = 15         # donor 10
 ID_SHIFT = 10                  # xm21 子树主体 id 1..12 → 11..22
+ID_SHIFT_2 = 30                # 复制出的后四段 → 31..42（与底座 4/5/8 及 11..22 都不相交）
 
 BASE_RUSH_AREA_ID = 5          # 底座精准连击判定区 p19
 BASE_FINISH_AREA_ID = 8        # 底座终结判定区 p19（裂地演出挂在它身上）
@@ -127,110 +313,59 @@ GRAFT_PESTLE_AREA_IDS = (1, 4, 7, 10)
 GRAFT_FINISH_AREA_ID = 13
 
 EFFECT_JAB = "ジャブ演出"
+EFFECT_JAB2 = "ジャブ演出2"
 EFFECT_BLOW = "振りかぶり"
 EFFECT_FINISH = "フィニッシュ演出"
 EFFECT_DUMMY = "ダミー演出"
 EFFECT_CRACK_LABEL = "裂地演出"
 
-# 倍率（design/fluffy.json plan.skills.multipliers）。inner1 单标量，inner2 min~max。
-# alv = 536（主位＋风共鸣）供值，alv2 = 704（风共鸣）供值；没供值时 ALv 项返回 0。
+# 倍率：两档同值、min=max 拉平（施工单偏离 D-4）。
+# 满级无开关合计 = 10×1.2 + 8×2.5 + 33.0 = 65.0×（作者「技能倍率为 65 倍」）；
+# 536 开关再给玉杵每段 +0.75 ⇒ 71.0×。
 SKILL_MULT: dict[str, dict[str, dict[str, float]]] = {
-    "1": {
-        "rush": {"min": 0.8, "max": 0.8, "alv2_min": 0.4, "alv2_max": 0.4},
-        "pestle": {"min": 2.67, "max": 2.67, "alv_min": 0.67, "alv_max": 0.67},
-        "finisher": {"min": 33.3, "max": 33.3},
-    },
-    "2": {
-        "rush": {"min": 1.044, "max": 1.2, "alv2_min": 0.52, "alv2_max": 0.6},
-        "pestle": {"min": 3.48, "max": 4.0, "alv_min": 0.87, "alv_max": 1.0},
-        "finisher": {"min": 43.5, "max": 50},
-    },
+    level: {
+        "rush": {"min": 1.2, "max": 1.2},
+        "pestle": {"min": 2.5, "max": 2.5, "alv_min": 0.75, "alv_max": 0.75},
+        "finisher": {"min": 33.0, "max": 33.0},
+    } for level in ("1", "2")
 }
+# 704（alv2）驱动的每段命中追加连击：没开 704 时 ALv 项返回 0 ⇒ 加 0
+COMBO_PER_HIT = {"min": 0.0, "max": 0.0, "alv2_min": 50.0, "alv2_max": 50.0}
+
 # donor 现值（防母本漂移；只比 min/max，容差 1e-6）
 DONOR_MULT = {
     "1": {"rush": (0.33, 0.33), "pestle": (1.675, 1.675), "finisher": (16.7, 16.7)},
     "2": {"rush": (0.429, 0.5), "pestle": (2.1775, 2.5), "finisher": (21.71, 25.0)},
 }
-# 段数（用于回执里的倍率合计核对）
-HITS = {"rush": 10, "pestle": 4, "finisher": 1}
-# 落盘前的 AMF3 最小字节数：官方 donor 未压缩就已 3–4 KB，嫁接后只会更大。
-# 喂 ``{tree, numbers}`` 包装壳时往返自检抓不到，但尺寸会塌下来（记忆卡 wf-dsl-encode-wrapper-trap）。
+HITS = {"rush": 10, "pestle": 8, "finisher": 1}
+SKILL_TOTAL_NO_FLAG = 65.0
 MIN_ENCODED_BYTES = 2000
 
-
-# ---------------------------------------------------------------- 设计稿读取
-
-def load_design(root: Path) -> dict[str, Any]:
-    design = MS.load_design(Path(root), KEY)
-    if not design:
-        raise KitError(f"design/{KEY}.json missing (batch {MS.BATCH_DIR})")
-    if design.get("schema") != "ma-design/1" or design.get("key") != KEY:
-        raise KitError(f"design identity drift: {design.get('schema')} {design.get('key')}")
-    spec_block = design.get("spec") or {}
-    if int(spec_block.get("cid", CID)) != CID or spec_block.get("code", CODE) != CODE:
-        raise KitError(f"design identity drift: {spec_block.get('cid')} {spec_block.get('code')}")
-    return design
-
-
-def _parse_donor(donor_ref: str) -> tuple[str, str, str]:
-    """设计稿 donor 地址 ``"<o|s>:<leader|ability>:<键>:<记录号(1基)>"``。
-
-    返回 ``(source, kind, "键#记录号(0基)")``。记录号是 **1 基**（``design/fluffy.md`` 的
-    ``#1``/``#3`` 写法，与同批 mia/hibiki 约定一致）；实读核实：官方 ``leader_ability[141165]``
-    只有 3 条记录而设计写 ``:3``，``ability[1410334]`` 只有 1 条而设计写 ``:1`` ⇒ 只能是 1 基。
-    """
-    parts = str(donor_ref).split(":")
-    if len(parts) != 4:
-        raise KitError(f"unexpected donor address shape: {donor_ref!r}")
-    src, table, key, index = parts
-    source = {"o": "official", "s": "live"}.get(src)
-    kind = {"leader": "leader_ability", "ability": "ability"}.get(table)
-    if source is None or kind is None:
-        raise KitError(f"unrecognised donor address: {donor_ref!r}")
-    index0 = int(index) - 1
-    if index0 < 0:
-        raise KitError(f"donor record number must be >= 1 (1-based): {donor_ref!r}")
-    return source, kind, f"{key}#{index0}"
-
-
-def _check_row_final(entry: dict[str, Any], row: list[str], label: str) -> None:
-    """设计稿登记的 126/124 列 ``row_final`` 与实装行逐格核对（行漂移的最后一道闸）。"""
-    expected = entry.get("row_final")
-    if expected is None:
-        return
-    expected = [("" if cell is None else str(cell)) for cell in expected]
-    if list(row) != expected:
-        diff = [(i, expected[i] if i < len(expected) else None, row[i] if i < len(row) else None)
-                for i in range(max(len(row), len(expected)))
-                if (expected[i] if i < len(expected) else None) != (row[i] if i < len(row) else None)]
-        raise KitError(f"{label}: row_final drift at columns {diff[:8]}"
-                       + (f" (+{len(diff) - 8} more)" if len(diff) > 8 else ""))
+# 722：官方 fighter 底座（实读 2026-09-21，官方基线）
+FIGHTER_PROGRAMS = {n: f"battle/action/power_flip/action/fighter$fighter_lv{n}" for n in (1, 2, 3)}
+FIGHTER_SUPPRESS = {1: [90, 18], 2: [90, 20], 3: [90, 24]}
+FIGHTER_CNA_COUNT = {1: 4, 2: 5, 3: 7}
+FIGHTER_CNA_TOTAL = {1: 7.5, 2: 16.0, 3: 27.0}
+PF_SUPPORT_BIND = PH.PF_SUPPORT_OFFSET             # 400
 
 
 # ---------------------------------------------------------------- 行装配
 
-def build_leader_rows(ctx, design: dict[str, Any]) -> tuple[list[list[str]], list[dict[str, Any]]]:
-    plan = design["plan"]["leader_ability"]
-    if plan["key"] != str(CID) or int(plan["ncols"]) != KL.LEADER_NCOLS:
-        raise KitError(f"design leader block drift: key={plan.get('key')} ncols={plan.get('ncols')}")
+def build_leader_rows(ctx) -> tuple[list[list[str]], list[dict[str, Any]]]:
     rows: list[list[str]] = []
     evidence: list[dict[str, Any]] = []
-    for entry in plan["rows"]:
-        source, kind, donor = _parse_donor(entry["donor_ref"])
-        if kind != "leader_ability":
-            raise KitError(f"{entry['id']}: donor table {kind} is not leader_ability")
-        label = f"leader#{entry['index']}({entry['id']})"
-        row, ev = KL.build_row(ctx, "leader_ability", donor, entry["cells"], source=source,
-                               expect_describe=entry["desc_expected"], label=label)
+    for n, (donor, source, cells, expect) in enumerate(LEADER):
+        label = f"leader#{n}({donor})"
+        row, ev = KL.build_row(ctx, "leader_ability", donor, cells, source=source,
+                               expect_describe=expect, label=label)
         if row[0] != CODE:
             raise KitError(f"{label}: c0 {row[0]!r} != {CODE}")
-        _check_row_final(entry, row, label)
-        ev["panel"] = entry["panel_expected"]
         rows.append(row)
         evidence.append(ev)
     if len(rows) != LEADER_ROW_COUNT:
-        raise KitError(f"design leader_ability carries {len(rows)} rows, expected {LEADER_ROW_COUNT}")
+        raise KitError(f"leader plan carries {len(rows)} rows, expected {LEADER_ROW_COUNT}")
     _ban_forbidden_leader_kinds(rows)
+    _check_lv3_pair(rows)
     return rows, evidence
 
 
@@ -244,51 +379,70 @@ def _ban_forbidden_leader_kinds(rows: Sequence[Sequence[str]]) -> None:
                            f"(c45={instant!r} c107={during!r})")
 
 
-def build_ability_rows(ctx, design: dict[str, Any]
-                       ) -> tuple[dict[str, list[list[str]]], list[dict[str, Any]]]:
-    plan = design["plan"]["ability"]
-    if int(plan["ncols"]) != KL.ABILITY_NCOLS:
-        raise KitError(f"design ability ncols drift: {plan.get('ncols')}")
-    if tuple(sorted(plan["keys"])) != tuple(sorted(ABILITY_KEYS)):
-        raise KitError(f"design ability keys drift: {sorted(plan['keys'])}")
+def _check_lv3_pair(rows: Sequence[Sequence[str]]) -> None:
+    """L#7（226 连击＋500）与 L#8（629 触发技能）是同触发两行：阈值/CT 必须逐格一致。
+
+    A 卡 §3.4 的警告：两行各自计数、各自 CT，不一致会出现「加了连击没放技能」。
+    226 必须排在 629 之前 —— 让 629 跑的那棵技能树吃到刚加上去的 500 连击。
+    """
+    lv3 = [(n, r) for n, r in enumerate(rows) if r[25] == "65"]
+    if len(lv3) != 2:
+        raise KitError(f"expected exactly 2 trigger-65 leader rows, got {len(lv3)}")
+    (n_a, a), (n_b, b) = lv3
+    if a[45] != "226" or b[45] != "629":
+        raise KitError(f"trigger-65 pair must be (226, 629) in that order, got "
+                       f"({a[45]!r}, {b[45]!r})")
+    if n_a > n_b:
+        raise KitError("the 226 AddCombo row must precede the 629 invoke row")
+    for col, what in ((28, "threshold-min"), (29, "threshold-max"), (33, "cooltime")):
+        if a[col] != b[col]:
+            raise KitError(f"trigger-65 pair {what} differs at c{col}: {a[col]!r} vs {b[col]!r}")
+    if not b[68].strip():
+        raise KitError("leader 629 row has an empty c68 string_id (C8601)")
+    if b[69] != INVOKE_PROGRAM:
+        raise KitError(f"leader 629 action_path drift: {b[69]!r}")
+
+
+def build_ability_rows(ctx) -> tuple[dict[str, list[list[str]]], list[dict[str, Any]]]:
     rows_by_key: dict[str, list[list[str]]] = {}
     evidence: list[dict[str, Any]] = []
-    for slot, key_name in enumerate(ABILITY_KEYS, start=1):
-        block = plan["keys"][key_name]
-        if int(str(block["slot"]).removeprefix("slot")) != slot:
-            raise KitError(f"ability {key_name}: slot {block['slot']} != {slot}")
+    for slot in range(1, 7):
+        key_name = f"{CID}{slot}"
         rows: list[list[str]] = []
-        for entry in block["records"]:
-            source, kind, donor = _parse_donor(entry["donor_ref"])
-            if kind != "ability":
-                raise KitError(f"{entry['id']}: donor table {kind} is not ability")
-            label = f"{key_name}#{entry['index']}({entry['id']})"
-            row, ev = KL.build_row(ctx, "ability", donor, entry["cells"], source=source,
-                                   element=ELEMENT, expect_describe=entry["desc_expected"],
-                                   label=label)
-            _check_row_final(entry, row, label)
-            ev["panel"] = entry["panel_expected"]
+        for n, (donor, source, cells, expect) in enumerate(PLAN[slot]):
+            label = f"{key_name}#{n}({donor})"
+            row, ev = KL.build_row(ctx, "ability", donor, cells, source=source,
+                                   element=ELEMENT, expect_describe=expect, label=label)
             ev["skill_flag"] = row[47] in SKILL_FLAG_KINDS
             rows.append(row)
             evidence.append(ev)
         KL.check_ability_key(rows, key_name, CODE, slot)
-        if rows[0][1] != block["unisonable_c1"] or rows[0][2] != block["statue_group_c2"]:
-            raise KitError(f"ability {key_name}: c1/c2 {rows[0][1]}/{rows[0][2]} != design "
-                           f"{block['unisonable_c1']}/{block['statue_group_c2']}")
         rows_by_key[key_name] = rows
     total = sum(len(v) for v in rows_by_key.values())
     if total != ABILITY_RECORD_TOTAL:
         raise KitError(f"ability records {total} != {ABILITY_RECORD_TOTAL}")
+    _order_problems(rows_by_key[f"{CID}3"])
     return rows_by_key, evidence
 
 
-def check_skill_flag_strings(rows: Iterable[Sequence[str]], keys: set[str]) -> list[str]:
-    """536 / 704 行的 c70 字符串键必须已登记在 ``custom_ability_string``。
+def _order_problems(rows: Sequence[Sequence[str]]) -> None:
+    """629 行必须配字符串键，且排在同触发的 525 消耗行之前（本角色暂无 525，断言防以后加行）。"""
+    kinds = [r[47] for r in rows]
+    if "629" not in kinds:
+        raise KitError(f"ability slot 3 lost the 629 invoke row: {kinds}")
+    invoke = rows[kinds.index("629")]
+    if not invoke[70].strip():
+        raise KitError("ability 629 row has an empty c70 string_id (C8601)")
+    if invoke[71] != INVOKE_PROGRAM:
+        raise KitError(f"ability 629 action_path drift: {invoke[71]!r}")
+    if invoke[1] != "false":
+        raise KitError("629 does not work in the unison slot; the key must be c1=false")
+    if "525" in kinds and kinds.index("629") > kinds.index("525"):
+        raise KitError(f"629 must precede the 525 consume row, got {kinds}")
 
-    漏登记 = 详情页渲染描述时 ``MasterStringMap.get`` 抛 C8601「资源损坏」假象
-    （与 629 的 :func:`wf_client_legality.invoke_skill_string_problems` 同一条通路，
-    只是那个函数只管 kind 629）。
-    """
+
+def check_skill_flag_strings(rows: Iterable[Sequence[str]], keys: set[str]) -> list[str]:
+    """536 / 704 行的 c70 字符串键必须已登记在 ``custom_ability_string``（漏登记 = C8601）。"""
     hits: list[str] = []
     for row in rows:
         if len(row) > 70 and row[47] in SKILL_FLAG_KINDS:
@@ -304,31 +458,32 @@ def check_skill_flag_strings(rows: Iterable[Sequence[str]], keys: set[str]) -> l
 
 # ---------------------------------------------------------------- 共享表文本
 
-def write_strings(ctx, design: dict[str, Any]) -> tuple[dict[str, str], set[str]]:
-    """``custom_ability_string``：两条强化开关串。"""
-    rows = design["plan"]["texts"]["custom_ability_string"]["rows"]
-    cas_plan = {entry["key"]: entry["text"] for entry in rows}
-    if set(cas_plan) != {CAS_FLAG1, CAS_FLAG2}:
-        raise KitError(f"design custom_ability_string keys drift: {sorted(cas_plan)}")
+def write_strings(ctx) -> dict[str, str]:
+    """``custom_ability_string``：536/704/629/722 条目 + 4 个 ``desc_override``。"""
     declared = set(ctx.spec.extra_keys.get(KL.CAS, ()))
-    missing = [k for k in cas_plan if k not in declared]
+    missing = [key for key in CAS_TEXTS if key not in declared]
     if missing:
         raise KitError(f"custom_ability_string keys not declared in SPEC['extra_keys']: {missing}")
-    caps: set[str] = set()
-    for key, text in cas_plan.items():
-        # 「技能强化」条目不写数字与时间（裁决 §3）
-        KL.check_panel(text, skill_flag=True, label=key)
-        cap = L.panel_override_capability(key)
-        if cap:
-            caps.add(cap)
-    ctx.write_flat(KL.CAS, {k: [[v]] for k, v in cas_plan.items()})
-    return cas_plan, caps
+    for key, text in CAS_TEXTS.items():
+        for line in text.split("\n"):
+            KL.check_panel(line.replace(MAIN_ICON, ""),
+                           skill_flag=key in SKILL_FLAG_TEXT_KEYS, label=key)
+    for slot in SLOT_OVERRIDE_SLOTS:
+        rendered = CAS_TEXTS[SLOT_OVERRIDE[slot]].split("\n")
+        wants_icon = PLAN[slot][0][2].get(1) == "false"
+        if any(line.startswith(MAIN_ICON) != wants_icon for line in rendered):
+            raise KitError(f"slot {slot} desc_override main-position icon does not match c1")
+    official = ctx.official_flat(KL.CAS)
+    clashes = [key for key in CAS_TEXTS if key in official]
+    if clashes:
+        raise KitError(f"custom_ability_string keys already exist officially: {clashes}")
+    ctx.write_flat(KL.CAS, {key: [[text]] for key, text in CAS_TEXTS.items()})
+    return dict(CAS_TEXTS)
 
 
-def write_action_skill(ctx, design: dict[str, Any]) -> dict[str, list[str]]:
+def write_action_skill(ctx) -> dict[str, list[str]]:
     """``action_skill`` 两档：名称/描述由 tables 写 TEXTS，这里只改能量并核对程序路径。"""
     spec = ctx.spec
-    energy = design["plan"]["skills"]["energy"]
     inner = ctx.pkg_nested(CODE)
     if set(inner) != {"1", "2"}:
         raise KitError(f"package action_skill inner keys {sorted(inner)}")
@@ -341,8 +496,7 @@ def write_action_skill(ctx, design: dict[str, Any]) -> dict[str, list[str]]:
             raise KitError(f"action_skill {level} program path drift: {cells[7]!r}")
         if cells[0] != spec.texts[f"skill{level}"] or cells[1] != spec.texts[f"desc{level}"]:
             raise KitError(f"action_skill {level}: name/desc differ from design texts (rerun tables)")
-        entry = energy[level]
-        cells[4], cells[5] = str(entry["c4"]), str(entry["c5"])
+        cells[4] = cells[5] = "580"        # 目标面板 skill.energy；觉醒前后两档同值
         out[level] = cells
     ctx.write_nested(KL.ACTION, CODE, {lv: [cells] for lv, cells in out.items()}, replace_inner=True)
     return out
@@ -367,6 +521,16 @@ def block(payloads: Sequence[list]) -> list:
     return ["Block", [command(p) for p in payloads]]
 
 
+def add_combo_cmd() -> list:
+    """``AddCombo`` 走 SLv/ALv 通道：``alv2`` 由 704 供值，没开时 ALv 项返回 0。
+
+    客户端实证：``ActionEvaluator`` case 82 → ``resolveSLvValueRoundInt``（硬钳 9999）；
+    ``Environment.internalResolveALvValueTerm`` 的 ``case 2 → alv2_min/alv2_max`` 是战斗侧真通路
+    （``FixedSLvValueResolver`` 只喂描述器，别拿它当依据）。
+    """
+    return ["AddCombo", [dict(COMBO_PER_HIT)]]
+
+
 def _only(items: list, what: str) -> list:
     if len(items) != 1:
         raise KitError(f"expected exactly 1 {what}, got {len(items)}")
@@ -388,8 +552,7 @@ def signature_problems(tree) -> list[str]:
     """官方参数形状签名差分（``wf_dsl_sig`` 逐参类型）—— 防 F1034。
 
     裸数值塞进 ``Array`` 参（例如 Sector 角度）会在详情页/进战斗 F1034，而 AMF3 往返自检
-    抓不到（记忆卡 wf-dsl-param-shape-f1034）。同时兜住「构造名写错被静默吞掉」
-    （未知命令名/事件名直接报错）。
+    抓不到（记忆卡 wf-dsl-param-shape-f1034）。同时兜住「构造名写错被静默吞掉」。
     """
     problems: list[str] = []
 
@@ -467,12 +630,7 @@ def dsl_problems(tree, *, element: int | None = None) -> list[str]:
 
 
 def roundtrip_problems(tree) -> list[str]:
-    """AMF3 往返自检：``encode_amf3`` **只吃裸树**（喂 ``{tree, numbers}`` 壳会 F1034）。
-
-    注意 :func:`wf_dsl.parse_dsl` 吃的是**已解压**的 AMF3 字节（设计稿 §4.5 门禁 1 写成
-    ``parse_dsl(zlib.compress(...)[2:-4])`` 是笔误，那样喂进去会 ``未支持的 AMF3 标记``；
-    已同步修正设计稿）。这里额外跑一次 deflate/inflate，确认落盘编码链也能还原。
-    """
+    """AMF3 往返自检：``encode_amf3`` **只吃裸树**（喂 ``{tree, numbers}`` 壳会 F1034）。"""
     import zlib
     try:
         raw = wf_dsl.encode_amf3(tree)
@@ -492,7 +650,6 @@ def encoded_size(tree) -> int:
 
 
 def effect_refs(tree) -> list[str]:
-    """树里所有特效引用路径（``SpecifyEffectDirectly`` 与 ``ResolveByElement``）。"""
     out: list[str] = []
     for cmd in wf_dsl.iter_dsl_commands(tree, "ShowEffect"):
         ref = cmd[2]
@@ -513,16 +670,19 @@ def _write_dsl_checked(ctx, program: str, tree) -> str:
 
 # ---------------------------------------------------------------- 技能树嫁接
 
+def _shift_area(area: list, cna: list, shift: int) -> None:
+    area[19] += shift
+    area[21] += shift
+    area[22] += shift
+    cna[1] += shift
+
+
 def graft_tree(base_tree, graft_source, level: str) -> tuple[list, dict[str, Any]]:
     """底座 141033 ``combat_animal_<level>`` ＋ 嫁接 141081 ``combat_animal_xm21_<level>``。
 
-    纯函数（不碰 ctx / 不写盘），参数是两棵官方裸树，返回 ``(新树, 证据)``。特效引用
-    在这一步保持官方路径，由调用方的 ``rewrite_effect_refs`` 统一改写。
-
-    嫁接的东西只有「ジャブ演出 ＋ 四段 CHA/CNA ＋ 振りかぶり ＋ 裂地演出」；xm21 自己的
-    ``StopBall`` / ``CreateReferencePoint`` / 两条 ``CreateCondition`` 一律不取（底座已有
-    ``StopBall`` 与 ``ACAttackPoint``；四连重击改挂底座的**敌侧**参考点 id 4，否则会打在
-    球前方而不是敌人身上）。
+    纯函数（不碰 ctx / 不写盘）。rework1 相对上一轮的改动：玉杵重击 4 段 → **8 段**
+    （复制一份，主体 id 再 +30），时间轴拉成 24..52，停球/隐身/替身球压到裂地一击后第 3 帧
+    （「无后摇」），每个判定区 on-hit 追加走 ``alv2`` 通道的 ``AddCombo``（704）。
     """
     if level not in SKILL_MULT:
         raise KitError(f"unknown skill level {level!r}")
@@ -574,6 +734,7 @@ def graft_tree(base_tree, graft_source, level: str) -> tuple[list, dict[str, Any
     if rush_area[13] != ["SpecifyHitAreaLifetimeDirectly", 18] \
             or rush_area[14] != ["CalculatedUsingMaxNumOfHits", HITS["rush"]]:
         raise KitError(f"base rush area drift: {rush_area[13]} {rush_area[14]}")
+    rush_area[23] = block([rush_cna, add_combo_cmd()])
 
     finish_cna = _only(list(wf_dsl.iter_dsl_commands(finish_area[23], "CreateNormalAttack")),
                        "base finisher CreateNormalAttack")
@@ -591,31 +752,42 @@ def graft_tree(base_tree, graft_source, level: str) -> tuple[list, dict[str, Any
     xareas = list(wf_dsl.iter_dsl_commands(xblock, "CreateHitArea"))
     if tuple(a[19] for a in xareas) != GRAFT_PESTLE_AREA_IDS + (GRAFT_FINISH_AREA_ID,):
         raise KitError(f"graft donor hit-area ids drift: {[a[19] for a in xareas]}")
-    pestle_areas = [a for a in xareas if a[19] in GRAFT_PESTLE_AREA_IDS]
+    donor_pestles = [a for a in xareas if a[19] in GRAFT_PESTLE_AREA_IDS]
     xshow = {s[1]: s for s in wf_dsl.iter_dsl_commands(xblock, "ShowEffect")}
     missing = [n for n in (EFFECT_JAB, EFFECT_BLOW, EFFECT_FINISH) if n not in xshow]
     if missing:
         raise KitError(f"graft donor is missing effects {missing}")
     jab_show, blow_show, crack_show = xshow[EFFECT_JAB], xshow[EFFECT_BLOW], xshow[EFFECT_FINISH]
 
-    # 主体 id 1..12 → 11..22；坐标锚点从 xm21 自己的球前参考点（p2=0）改挂底座敌侧参考点 4
-    for area in pestle_areas:
-        if area[2] != 0:
-            raise KitError(f"graft pestle area anchor drift: p2={area[2]}")
-        cna = _only(list(wf_dsl.iter_dsl_commands(area[23], "CreateNormalAttack")),
-                    "graft pestle CreateNormalAttack")
-        _assert_mult(cna, donor_mult["pestle"], f"skill{level} pestle")
-        if cna[1] != area[22]:
-            raise KitError(f"graft pestle CNA subject {cna[1]} != hit-area node[22] {area[22]}")
-        area[2] = BASE_RP_ID
-        area[19] += ID_SHIFT
-        area[21] += ID_SHIFT
-        area[22] += ID_SHIFT
-        cna[1] += ID_SHIFT
-        cna[6] = [dict(mult["pestle"])]
+    # 段数翻倍：原四段 id +10（11..22），复制出的后四段再 +30（31..42），两组 bind 不相交；
+    # 坐标锚点从 xm21 自己的球前参考点（p2=0）改挂底座敌侧参考点 4
+    pestle_areas: list[list] = []
+    for shift in (ID_SHIFT, ID_SHIFT + ID_SHIFT_2):
+        for donor_area in donor_pestles:
+            area = copy.deepcopy(donor_area)
+            if area[2] != 0:
+                raise KitError(f"graft pestle area anchor drift: p2={area[2]}")
+            cna = _only(list(wf_dsl.iter_dsl_commands(area[23], "CreateNormalAttack")),
+                        "graft pestle CreateNormalAttack")
+            _assert_mult(cna, donor_mult["pestle"], f"skill{level} pestle")
+            if cna[1] != area[22]:
+                raise KitError(f"graft pestle CNA subject {cna[1]} != hit-area node[22] {area[22]}")
+            area[2] = BASE_RP_ID
+            _shift_area(area, cna, shift)
+            cna[6] = [dict(mult["pestle"])]
+            area[23] = block([cna, add_combo_cmd()])
+            pestle_areas.append(area)
+    if len(pestle_areas) != HITS["pestle"]:
+        raise KitError(f"pestle segments {len(pestle_areas)} != {HITS['pestle']}")
+    ids = [a[19] for a in pestle_areas] + [a[21] for a in pestle_areas] \
+        + [a[22] for a in pestle_areas] + [BASE_RP_ID, BASE_RUSH_AREA_ID, BASE_FINISH_AREA_ID]
+    if len(set(ids)) != len(ids):
+        raise KitError(f"subject id collision after doubling the pestle segments: {sorted(ids)}")
 
-    for show, anchor in ((jab_show, BASE_RP_ID), (blow_show, BASE_RP_ID),
-                         (crack_show, BASE_FINISH_AREA_ID)):
+    jab_show2 = copy.deepcopy(jab_show)
+    jab_show2[1] = EFFECT_JAB2
+    for show, anchor in ((jab_show, BASE_RP_ID), (jab_show2, BASE_RP_ID),
+                         (blow_show, BASE_RP_ID), (crack_show, BASE_FINISH_AREA_ID)):
         show[3] = anchor
     crack_show[1] = EFFECT_CRACK_LABEL          # 与底座的「フィニッシュ演出」区分开
 
@@ -627,40 +799,51 @@ def graft_tree(base_tree, graft_source, level: str) -> tuple[list, dict[str, Any
     finish_area[13] = ["SpecifyHitAreaLifetimeDirectly", FINISHER_LIFETIME]
     finish_area[20] = block([crack_show, shake_finish])
     then_cna = copy.deepcopy(finish_cna)
-    then_cna[8] = True                           # 536 开关：终结一击吃连击加成
+    then_cna[8] = True                           # 536 开关：裂地一击吃连击加成（×(1+连击×0.005)）
     else_cna = copy.deepcopy(finish_cna)
     else_cna[8] = False
     # Conditionals 的分支必须是完整 Block；空分支写 ["Block", []]，禁写 ["DoNothing"]
     # （那是 IfTargetNotFound 的枚举，进游戏 F1009 —— 记忆卡 wf-dsl-donothing-enum-trap）
-    finish_area[23] = block([["ConditionalsChangeSkillFlag", 1,
+    finish_area[23] = block([add_combo_cmd(),
+                             ["ConditionalsChangeSkillFlag", 1,
                               block([then_cna]), block([else_cna])]])
 
     # ---- 重排参考点块的时间轴（兄弟 Wait 各自从块首计帧，沿用 xm21 的写法）
-    rp[11] = ["Block", [
-        command(rush_area),
-        wait_event(FRAME_JAB, [jab_show]),
-        wait_event(FRAMES_PESTLE[0], [pestle_areas[0]]),
-        wait_event(FRAMES_PESTLE[1], [pestle_areas[1]]),
-        wait_event(FRAMES_PESTLE[2], [pestle_areas[2]]),
-        wait_event(FRAMES_PESTLE[3], [pestle_areas[3], blow_show]),
-        wait_event(FRAME_FINAL, [final_show]),
-        wait_event(FRAME_FINISHER, [finish_area]),
-    ]]
+    timeline: list[list] = [command(rush_area), wait_event(FRAME_JAB, [jab_show])]
+    for n, (frame, area) in enumerate(zip(FRAMES_PESTLE, pestle_areas)):
+        payloads: list[list] = [area]
+        if n == 4:                                # 后半段补一次挥拳演出（复用同一张特效，零图集增量）
+            payloads.append(jab_show2)
+        if n == len(pestle_areas) - 1:
+            payloads.append(blow_show)
+        timeline.append(wait_event(frame, payloads))
+    timeline.append(wait_event(FRAME_FINAL, [final_show]))
+    timeline.append(wait_event(FRAME_FINISHER, [finish_area]))
+    rp[11] = ["Block", timeline]
     if FRAME_FINISHER + FINISHER_LIFETIME > RP_LIFETIME:
         raise KitError("reference point lifetime is shorter than the last hit area window "
                        "(伤害会静默消失)")
 
     totals = {seg: round(mult[seg]["max"] * HITS[seg], 4) for seg in HITS}
     alv = round(mult["pestle"].get("alv_max", 0.0) * HITS["pestle"], 4)
-    alv2 = round(mult["rush"].get("alv2_max", 0.0) * HITS["rush"], 4)
+    total_no_flag = round(sum(totals.values()), 4)
+    if abs(total_no_flag - SKILL_TOTAL_NO_FLAG) > 1e-6:
+        raise KitError(f"skill{level} total {total_no_flag}× != the panel's {SKILL_TOTAL_NO_FLAG}×")
+    # 每个判定区的 on-hit 块各挂一条：精准连击 1 + 玉杵 8 + 裂地 1
+    want_combo_areas = 1 + HITS["pestle"] + 1
+    combo_areas = len(list(wf_dsl.iter_dsl_commands(tree, "AddCombo")))
+    if combo_areas != want_combo_areas:
+        raise KitError(f"AddCombo appears on {combo_areas} hit areas, expected {want_combo_areas}")
     evidence = {
         "level": level,
         "multipliers": {seg: dict(mult[seg]) for seg in HITS},
+        "segment_hits": dict(HITS),
         "segment_totals": totals,
-        "total_no_flag": round(sum(totals.values()), 4),
-        "total_flag2_only": round(sum(totals.values()) + alv2, 4),
-        "total_both_flags": round(sum(totals.values()) + alv + alv2, 4),
-        "frames": {"jab": FRAME_JAB, "pestle": list(FRAMES_PESTLE), "blow": FRAME_BLOW,
+        "total_no_flag": total_no_flag,
+        "total_with_flag1": round(total_no_flag + alv, 4),
+        "combo_per_hit": dict(COMBO_PER_HIT),
+        "combo_hits_per_cast": sum(HITS.values()),
+        "frames": {"jab": FRAME_JAB, "pestle": list(FRAMES_PESTLE),
                    "final": FRAME_FINAL, "finisher": FRAME_FINISHER},
         "stop_ball": STOP_BALL_FRAMES, "reference_point_lifetime": RP_LIFETIME,
         "subject_ids": {"base_rush": BASE_RUSH_AREA_ID, "base_finisher": BASE_FINISH_AREA_ID,
@@ -699,6 +882,85 @@ def build_skill_tree(ctx, level: str, families: Sequence[dict[str, Any]]
     return tree, evidence
 
 
+# ---------------------------------------------------------------- 629「触发自身技能效果」
+
+def build_invoke_tree(skill_tree_2) -> tuple[list, dict[str, Any]]:
+    """629 指向的 ``ability_skill`` 树 ＝ 技能档 2 的深拷贝。
+
+    ``_deviations.json›fluffy[1]`` 的落法：伤害、段数、连击效果与真正发动技能完全相同，
+    但不消耗技能槽、不播 cut-in／技能语音、不触发别人的「发动技能时」（trigger 23）。
+    ``tree[10]`` 保持 0（自动档＝AbilitySkill＝技能伤害）；写 3 只拿 PF 通用乘区、丢技能增伤。
+    """
+    tree = copy.deepcopy(skill_tree_2)
+    if tree[10] != 0:
+        raise KitError(f"629 tree must keep the automatic damage attribution, got {tree[10]}")
+    problems = roundtrip_problems(tree)
+    if problems:
+        raise KitError(f"629 ability_skill tree gates failed: {problems}")
+    return tree, {"source": "skill level 2 (deep copy)",
+                  "encoded_bytes": encoded_size(tree),
+                  "damage_attribution": tree[10]}
+
+
+# ---------------------------------------------------------------- 722 双类型强化弹射
+
+def build_pf_tree(ctx, level: int) -> tuple[list, dict[str, Any]]:
+    """官方 ``fighter_lv{n}`` 整树作底座 ＋ 官方 ``supporter_lv{n}`` 的辅助增益块（白虎/夏日白配方）。
+
+    倍率**不缩放**：她是技伤主 C，PF 只负责把辅助增益铺出去（A 卡 §4.2 白虎先例同样未缩放）。
+    """
+    program = FIGHTER_PROGRAMS[level]
+    tree = copy.deepcopy(ctx.template_dsl(program))
+    raw = ctx.official_read(wf_dsl.dsl_logical(program), "common")
+    if raw is None:
+        raise KitError(f"official baseline lacks the fighter PF donor {program}")
+    if tree[0] != "ActionDsl" or tree[1] != 2 or tree[10] != 0:
+        raise KitError(f"fighter lv{level} head drift: {tree[:3]} bta={tree[10]}")
+    suppress = [c[1] for c in wf_dsl.iter_dsl_commands(tree, "SetPowerFilpSuppress")]
+    if suppress != FIGHTER_SUPPRESS[level]:
+        raise KitError(f"fighter lv{level} suppress drift: {suppress} != {FIGHTER_SUPPRESS[level]}")
+    if not list(wf_dsl.iter_dsl_commands(tree, "NotifyPowerflipEnd")):
+        raise KitError(f"fighter lv{level} lost NotifyPowerflipEnd (PF 会卡死)")
+    cnas = list(wf_dsl.iter_dsl_commands(tree, "CreateNormalAttack"))
+    if len(cnas) != FIGHTER_CNA_COUNT[level]:
+        raise KitError(f"fighter lv{level} CNA count {len(cnas)} != {FIGHTER_CNA_COUNT[level]}")
+    total = round(sum(_slv(c[6])[1] for c in cnas), 4)
+    if abs(total - FIGHTER_CNA_TOTAL[level]) > 1e-4:
+        raise KitError(f"fighter lv{level} CNA total {total} != {FIGHTER_CNA_TOTAL[level]}")
+    for cha in wf_dsl.iter_dsl_commands(tree, "CreateHitArea"):
+        if cha[24] != 0:
+            raise KitError("PF CreateHitArea p24 must stay 0 (4 = 按直击算，整块 PF 乘区被跳过)")
+
+    root_body = tree[11][1]
+    aura = [n for n, e in enumerate(root_body)
+            if e[0] == "Command" and e[1][0] == "ShowEffect"]
+    if not aura:
+        raise KitError(f"fighter lv{level} has no root-level ShowEffect to anchor the支援 block")
+    support = PH.pf_support_block(ctx.root, level)
+    kinds = [c[2][0][0] for c in PH.cmds(support, "CreateCondition")]
+    if kinds != ["ACAttackPoint", "ACPiercing", "ACFlying"]:
+        raise KitError(f"supporter buff block drift: {kinds}")
+    if sorted(set(PH.bound_ids(support))) != [PF_SUPPORT_BIND]:
+        raise KitError(f"supporter block bound ids {sorted(set(PH.bound_ids(support)))} "
+                       f"!= [{PF_SUPPORT_BIND}]")
+    base_ids = set(PH.bound_ids(tree))
+    if PF_SUPPORT_BIND in base_ids:
+        raise KitError(f"fighter lv{level} already binds id {PF_SUPPORT_BIND}; bind sets must be disjoint")
+    root_body.insert(aura[-1] + 1, support)
+
+    stray = sorted({p for p in PH.spec_paths(tree) if p.startswith("battle/effect/skill_unique/"
+                                                                  f"{CODE}/")})
+    if stray:
+        raise KitError(f"PF lv{level} 引用了包内特效（底座与辅助块的官方件必须直接引用）: {stray}")
+    problems = dsl_problems(tree) + roundtrip_problems(tree)
+    if problems:
+        raise KitError(f"PF lv{level} DSL gates failed: {problems}")
+    return tree, {"level": level, "base": program, "base_sha256": C.sha256(raw),
+                  "suppress": suppress, "cna_total": total,
+                  "support_block_bind": PF_SUPPORT_BIND,
+                  "official_effects": sorted(set(PH.spec_paths(tree)))}
+
+
 # ---------------------------------------------------------------- 入口
 
 def build(ctx) -> dict[str, Any]:
@@ -707,38 +969,40 @@ def build(ctx) -> dict[str, Any]:
         raise KitError(f"identity drift: {spec.cid}/{spec.code}/element {spec.element}")
     if (spec.template_id, spec.template_code) != (TEMPLATE_ID, TEMPLATE_CODE):
         raise KitError(f"template drift: {spec.template_id}/{spec.template_code}")
-    if spec.pf_type != 1 or spec.stance != "Attacker" or int(spec.rarity) != 5:
+    if spec.pf_type != 3 or spec.stance != "Attacker" or int(spec.rarity) != 5:
         raise KitError(f"spec drift: pf_type={spec.pf_type} stance={spec.stance} rarity={spec.rarity}")
     if MS.text_placeholders(spec):
         raise KitError(f"design texts still placeholders: {MS.text_placeholders(spec)}")
 
-    design = load_design(ctx.root)
-
-    # ---- 1) 队长技 7 行（design.json 驱动，含队长表禁 kind 检查）
-    leader_rows, leader_evidence = build_leader_rows(ctx, design)
+    # ---- 1) 队长技 10 行（含队长表禁 kind 与 trigger-65 配对检查）
+    leader_rows, leader_evidence = build_leader_rows(ctx)
     capabilities: set[str] = set()
     for ev in leader_evidence:
         capabilities.update(ev["capabilities"])
-    ctx.write_flat(KL.LEADER, {str(CID): leader_rows})
+    ctx.write_flat(KL.LEADER, {CID_S: leader_rows})
 
-    # ---- 2) 词条 6 键 15 条（design.json 驱动）
-    ability_rows, ability_evidence = build_ability_rows(ctx, design)
+    # ---- 2) 词条 6 键 15 条
+    ability_rows, ability_evidence = build_ability_rows(ctx)
     for ev in ability_evidence:
         capabilities.update(ev["capabilities"])
     ctx.write_flat(KL.ABILITY, ability_rows)
 
-    # ---- 3) 两条强化开关串（536 / 704 的 c70 查找键）
-    cas_plan, cas_caps = write_strings(ctx, design)
-    capabilities.update(cas_caps)
+    # ---- 3) custom_ability_string：536/704/629/722 + 4 个 desc_override
+    cas_plan = write_strings(ctx)
+    for key in cas_plan:
+        cap = L.panel_override_capability(key)
+        if cap:
+            capabilities.add(cap)
     flag_strings = check_skill_flag_strings(
         [row for rows in ability_rows.values() for row in rows], set(cas_plan))
-    if sorted(flag_strings) != sorted(cas_plan):
-        raise KitError(f"custom_ability_string keys {sorted(cas_plan)} vs used {sorted(flag_strings)}")
+    if sorted(flag_strings) != sorted((CAS_FLAG1, CAS_FLAG2)):
+        raise KitError(f"skill-flag string keys {sorted(flag_strings)} != "
+                       f"{sorted((CAS_FLAG1, CAS_FLAG2))}")
 
-    # ---- 4) action_skill 两档能量
-    action_rows = write_action_skill(ctx, design)
+    # ---- 4) action_skill 两档能量（580/580）
+    action_rows = write_action_skill(ctx)
 
-    # ---- 5) 特效族（整族克隆 + LUT 染色；LUT 文件不在就按母本原色克隆）
+    # ---- 5) 特效族（rush 整族克隆 + LUT 染色；jab 族直接引用官方路径）
     pixel_dir = KL.pixel_dir(ctx)
     families: list[dict[str, Any]] = []
     luts: dict[str, bool] = {}
@@ -753,46 +1017,58 @@ def build(ctx) -> dict[str, Any]:
         families.append(family)
     lut = all(luts.values()) and bool(luts)
 
-    # ---- 6) 技能 DSL 两档（底座 141033 + 嫁接 141081）
+    # ---- 6) 技能 DSL 两档 + 629 ability_skill 树
     programs: list[str] = []
     skill_gates: dict[str, Any] = {}
+    skill_trees: dict[str, list] = {}
     for level in ("1", "2"):
         tree, gates = build_skill_tree(ctx, level, families)
         programs.append(_write_dsl_checked(ctx, ctx.program_path(level), tree))
         skill_gates[level] = gates
+        skill_trees[level] = tree
+    invoke_tree, invoke_gates = build_invoke_tree(skill_trees["2"])
+    programs.append(_write_dsl_checked(ctx, INVOKE_PROGRAM, invoke_tree))
 
-    # ---- 7) 语音路由 kind 3（ChangeSkillFlag ← A1#1 的 536）+ character 行
-    design_route = design["voice"]["route"]
-    if int(design_route.get("kind")) != VOICE_ROUTE["kind"]:
-        raise KitError(f"design voice route drift: {design_route}")
+    # ---- 7) 722 三档覆盖树 + power_flip_action 行
+    pf_gates: dict[str, Any] = {}
+    for level in (1, 2, 3):
+        tree, gates = build_pf_tree(ctx, level)
+        programs.append(_write_dsl_checked(ctx, PF_PROGRAMS[level - 1], tree))
+        pf_gates[str(level)] = gates
+    ctx.write_flat(PFA, {PF_KEY: [list(PF_PROGRAMS)]})
+
+    # ---- 8) 语音路由 kind 3（ChangeSkillFlag ← A1#1 的 536）+ character 行
     route = KL.voice_route(CODE, VOICE_ROUTE)
     char_row = ctx.pack.pkg_character_row()
     char_row[9:17] = route
-    if char_row[6] != "1" or char_row[26] != "Attacker" or char_row[27] != str(CID):
-        raise KitError(f"character row drift: c6={char_row[6]} c26={char_row[26]} c27={char_row[27]}")
-    ctx.write_flat(KL.CHARACTER, {str(CID): [char_row]})
+    char_row[6] = str(spec.pf_type)              # 作者 09-21：详情页显示「辅助」
+    if char_row[26] != "Attacker" or char_row[27] != CID_S:
+        raise KitError(f"character row drift: c26={char_row[26]} c27={char_row[27]}")
+    ctx.write_flat(KL.CHARACTER, {CID_S: [char_row]})
     voice_ready = KL.write_voice_ready(ctx)
 
-    # ---- 8) 像素成品（缺文件静默跳过）+ 三层镜像
+    # ---- 9) 像素成品（缺文件静默跳过）+ 三层镜像
     pixel = KL.install_staged_assets(ctx)
     mirrors = ctx.sync_character_mirrors()
     if mirrors["character"][9:17] != route:
         raise KitError("character mirror lost the voice route")
+    if mirrors["character"][6] != str(spec.pf_type):
+        raise KitError("character mirror lost the pf_type override")
 
-    # ---- 面板：本套件不写 desc_override，22 行全部按原生文案显示
-    panel: list[str] = []
-    for ev in leader_evidence:
-        KL.check_panel(ev["panel"], label=ev["label"])
-        panel.append(ev["panel"])
-    for ev in ability_evidence:
-        KL.check_panel(ev["panel"], skill_flag=bool(ev.get("skill_flag")), label=ev["label"])
-        panel.append(ev["panel"])
-    panel.extend(cas_plan[k] for k in (CAS_FLAG1, CAS_FLAG2))
+    # ---- 面板：队长 + 槽 1/2/3 由 desc_override 接管；槽 4/5/6 用客户端自动文案
+    panel: list[str] = list(CAS_TEXTS[LEADER_OVERRIDE].split("\n"))
+    for slot in SLOT_OVERRIDE_SLOTS:
+        panel.extend(line.replace(MAIN_ICON, "") for line in CAS_TEXTS[SLOT_OVERRIDE[slot]].split("\n"))
+    for slot in (4, 5, 6):
+        for line in PANEL_AUTO[slot]:
+            panel.append(KL.check_panel(line, label=f"slot{slot}"))
 
     ctx.evidence_write("kit-gates.json", {
         "leader": {"rows": leader_rows, "evidence": leader_evidence},
         "ability": {"rows": ability_rows, "evidence": ability_evidence},
         "skills": skill_gates,
+        "invoke_tree": invoke_gates,
+        "power_flip": {"key": PF_KEY, "programs": list(PF_PROGRAMS), "levels": pf_gates},
         "custom_ability_string": cas_plan,
         "effect_families": [{k: f[k] for k in ("src_dir", "dst_dir", "layout", "copied_bases",
                                                "complete_family", "missing_effects")}
@@ -803,59 +1079,76 @@ def build(ctx) -> dict[str, Any]:
     })
 
     notes = [
-        "技能：官方母本 141033 combat_animal_{1,2} 整树当底座，嫁接官方 141081 "
-        "combat_animal_xm21_{1,2} 的四连重击 + 裂地演出到底座的敌侧参考点（id 4）；"
-        f"xm21 主体 id 1..12 整体 +{ID_SHIFT} → 11..22；停球 30→{STOP_BALL_FRAMES} 帧、"
-        f"参考点寿命 60→{RP_LIFETIME} 帧（≥ 最后一个 Wait 帧 {FRAME_FINISHER} + 判定区寿命 "
-        f"{FINISHER_LIFETIME}）；tree[10]=0 保持（自动归属＝技能伤害，donor 原值不动）",
-        f"倍率：满级 10 段精准连击 + 4 段玉杵重击 + 裂地终结 = "
-        f"{skill_gates['2']['total_no_flag']}×（无开关）／"
-        f"{skill_gates['2']['total_flag2_only']}×（仅 704 风共鸣）／"
-        f"{skill_gates['2']['total_both_flags']}×（536+704 主位风共鸣），裁决 §2 带 78–95×；"
-        f"SLv1 = {skill_gates['1']['total_no_flag']}×／{skill_gates['1']['total_both_flags']}×。"
-        "终结一击外包 ConditionalsChangeSkillFlag(1)：then 支 p8=true 吃连击加成，"
-        "else 支 p8=false（两支都是完整 CNA 行，禁 [\"DoNothing\"]）",
-        "强化开关走 SLv 的 alv / alv2 附加项（FixedSLvValueResolver），不是 DSL 分支："
-        "536（A1#1，主位＋风共鸣）供 alv 给四连重击，704（A3#3，风共鸣）供 alv2 给精准连击；"
-        "没供值时 ALv 项返回 0，所以非共鸣队的面板与实际一致",
+        "rework1（2026-09-21）：按 rework1/panel/fluffy.json 整体重做；逐行映射与偏离见 "
+        "rework1/impl/fluffy.md。队长 7 行→10 行、词条 15 条（槽 3 整段替换、槽 6 删第 2 行）",
+        f"722 双类型强化弹射：官方 fighter_lv{{1,2,3}} 底座 + 官方 supporter 辅助增益块"
+        f"（bind 归到 {PF_SUPPORT_BIND} 段），倍率不缩放（"
+        + "／".join(f"{pf_gates[str(n)]['cna_total']}" for n in (1, 2, 3))
+        + "）。只在她当队长且风共鸣时生效；详情页图标按 character c6=3 显示单一「辅助」",
+        f"629「触发自身技能效果」：一棵 {INVOKE_STRING} 树 = 技能档 2 深拷贝，由队长 L#8"
+        "（每 5 次 PF Lv3，CT10 秒）与能力 3#2（每 150 连击，CT15 秒）共用；"
+        "不消耗技能槽、不播 cut-in／技能语音、不触发别人的「发动技能时」",
+        f"技能：玉杵重击 4 段→8 段（id 11..22 与 31..42 两组，bind 不相交），满级无开关合计 "
+        f"{skill_gates['2']['total_no_flag']}×、536 开关 {skill_gates['2']['total_with_flag1']}×；"
+        f"两档同值、min=max 拉平；停球 {STOP_BALL_FRAMES} 帧＝裂地一击后第 3 帧放球（无后摇）",
+        f"704 走 alv2 通道驱动 AddCombo：{len(HITS)} 个判定区各挂一条 "
+        f"AddCombo([{{min:0,max:0,alv2_min:50,alv2_max:50}}])，满编 {sum(HITS.values())} 段命中 "
+        f"⇒ 开了 704 每次技能最多 +{sum(HITS.values()) * 50} 连击（引擎硬钳 9999）",
         f"特效：克隆 {sorted(luts)} 族到 skill_unique/{CODE}/（rush 族含小人剪影帧，必须与像素管线同 LUT）"
-        + ("，已套用 B/pixel/fluffy/ 的 LUT 换色（风绿→青玉/月白/桂金）"
-           if lut else "；LUT 文件缺失，缺的那族按母本原色克隆（像素代理交付后重跑 kit）")
+        + ("，已套用 B/pixel/fluffy/ 的 LUT 换色" if lut else
+           "；LUT 文件缺失，缺的那族按母本原色克隆（像素代理交付后重跑 kit）")
         + ("" if CLONE_JAB_FAMILY else
-           "；jab 族（四连重击/振りかぶり/裂地）按设计稿 §5 退路直接引用官方 "
-           f"skill_unique/{GRAFT_CODE}/ 路径不进包，省 0.1823 Mpx ≈ 1.09% 图集"
-           "（像素代理已备好 fx_lut_jab.json；要吃下这 1.09% 就把 kit 里的 CLONE_JAB_FAMILY 改 True）")
-        + "；rush_aura / dummy_ball 是 ResolveByElement 官方公共件，同样直接引用",
-        "面板：本套件没有 422/724/413，也没有恒真的 HpLow 持续行 ⇒ 不写 desc_override，"
-        "22 行全部按 wf_describe 原生文案显示；两条 custom_ability_string 不含数字与时间",
+           f"；jab 族按施工单偏离 D-7 直接引用官方 skill_unique/{GRAFT_CODE}/ 路径不进包"),
+        "面板：队长技与槽 1/2/3 由 4 个 desc_override 整段接管（槽 3 每行自带 <icon id='main'>），"
+        "槽 4/5/6 用客户端自动文案；722 行自己的 c82 说明串在 desc_override 接管后不显示",
+        "本轮不新增固有状态 ⇒ 不需要 48×48 状态图标（能力 2 的「最多累积 4 次」是母本 141033 "
+        "ACAttackPoint 自带的累积上限，不是自定义固有）",
         {"pixel_install": pixel},
     ]
 
-    deviations: list[dict[str, Any]] = []
-    for entry in design.get("deviations", ()):
+    deviations: list[dict[str, Any]] = [
+        {"want": "目标面板队长技 4 行（pf_type「辅助＋格斗」只写在表头）",
+         "got": "队长技面板多出一行「风属性共鸣时，自身的强化弹射同时具备辅助与格斗两种类型」，"
+                "已回写 panel/fluffy.json 并标 dev:true",
+         "why": "character c6 是单值，详情页图标只能显示「辅助」（作者 09-21 已定）；不写这一行，"
+                "玩家在游戏里没有任何途径知道格斗那一半存在。722 行自己的 c82 串在 desc_override "
+                "接管队长面板后不会显示，只能写进 override 正文"},
+        {"want": "作者的 4 条队长技 = 4 行",
+         "got": "10 行（722 + 开局 3 + 每次 PF 3 + 每 5 次 PF Lv3 2 + 每 250 连击 1），"
+                "面板靠 desc_override 合并回 5 行",
+         "why": "一条面板文案里并列的多个效果在数据层是不同 kind，必须分行"},
+        {"want": "队长全队主轴合计落在裁决 §2 的 490–650% 带内",
+         "got": "超带：每次 PF ＋20%/＋20% 与每 250 连击 ＋100% 都不设上限（trigger_limit=(None)）",
+         "why": "作者原话逐条都没写上限，裁决 §3 又规定「无上限的成长写到效果为止」；"
+                "对冲＝技能倍率从 78× 砍到 65×、能力 3 的独立乘区从 20% 砍到 10%"},
+        {"want": "技能两档保持觉醒前/后的 2/3 梯度与 SLv1→满级渐进",
+         "got": "两档同值、min=max 拉平（都是 65×、能量都 580）",
+         "why": "目标面板只有一行技能描述、一个能量值与一个倍率；作者放行 #5 对同批角色已定"
+                "「觉醒前后两档都写这个数」"},
+        {"want": "能力 3 第 4 条「技能伤害额外乘区＋10%」用持续 411",
+         "got": "用瞬发 694（live 1299925#1，官方 0 行、live 有先例，与玛格诺斯 A5#0 同 donor）",
+         "why": "官方 ability 表的 411 只有 1 行且带 during 194 计数门，没有「恒定生效」的官方先例"},
+        {"want": "「每 5 次 PF Lv3 → 连击＋500 并触发技能」写成一行 629，把 AddCombo 500 做进那棵 DSL"
+                 "（A 卡 §3.4 推荐的更稳写法）",
+         "got": "拆成两行（226 + 629），阈值与 CT 逐格一致并加硬断言 _check_lv3_pair",
+         "why": "那棵 629 树要被能力 3「每 150 连击」复用；把 +500 连击焊进树里会让能力 3 那条也白送 "
+                "500 连击，与它的面板文案不符"},
+    ]
+    if not CLONE_JAB_FAMILY:
         deviations.append({
-            "want": entry.get("planned") or entry.get("原设想") or entry.get("want"),
-            "got": entry.get("actual") or entry.get("实际落法") or entry.get("got"),
-            "why": entry.get("why") or entry.get("原因"),
+            "want": f"jab 族（玉杵重击/振りかぶり/裂地）整族克隆并套中秋配色 LUT",
+            "got": f"直接引用官方 skill_unique/{GRAFT_CODE}/ 路径，不克隆也不染色",
+            "why": "整族克隆给战斗图集加 0.1823 Mpx（≈1.09%），实测把 five-boss-r1 的 fits 压成 "
+                   "false，越过裁决 §6 通过线。开关＝ wf_midautumn_kit_fluffy.CLONE_JAB_FAMILY",
         })
-    # jab 族不克隆（设计稿 §5 退路）已在 design/fluffy.json 的 deviations D7' 里登记，
-    # 由上面的循环带进回执，这里不重复写。
     if not lut:
         missing_luts = sorted(k for k, v in luts.items() if not v)
         deviations.append({
-            "want": "design/fluffy.json plan.skills.effects_clone：克隆时套 LUT 换成青玉/月白/桂金的中秋配色",
+            "want": "克隆特效族时套 LUT 换成青玉/月白/桂金的中秋配色",
             "got": f"本轮 B/pixel/fluffy/ 下 {missing_luts} 族的 LUT 文件不存在 ⇒ 这些族按母本原色"
                    "克隆（风绿），kit 已留好挂点，像素代理交付后重跑 --step kit 即生效",
             "why": "像素/特效换色件不归 kit 代理；缺件时静默跳过是框架 §7.6 的约定，"
                    "但不登记就会被当成「已换色」验收",
-        })
-    if not CLONE_JAB_FAMILY and (pixel_dir / FX_JAB[3]).is_file():
-        deviations.append({
-            "want": f"像素代理已交付 B/pixel/fluffy/{FX_JAB[3]}（jab 族的中秋配色 LUT）",
-            "got": "本轮没用它：jab 族按设计稿 §5 退路直接引用官方路径，不克隆也就不染色",
-            "why": "克隆 jab 族会让 five-boss-r1 的 wf_atlas_budget_check fits 翻成 false"
-                   "（越过裁决 §6 通过线）。要吃下这 1.09% 图集，把 "
-                   "wf_midautumn_kit_fluffy.CLONE_JAB_FAMILY 改成 True 并重跑 kit,assets,manifest",
         })
 
     gate = {"rows": len(leader_evidence) + len(ability_evidence), "programs": len(programs),
@@ -869,11 +1162,13 @@ def build(ctx) -> dict[str, Any]:
         + ("" if lut else "；fx_lut.json 不存在"))
 
     return KL.report(
-        ctx, summary="芙拉菲：风属性技能伤害主 C（连击 × 冲刺，玉杵捣月·桂风连打）",
+        ctx, summary="芙拉菲：风技伤主 C（双类型 PF 队长 × 连击滚雪球 × 629 自动技能追击）",
         status=KL.READY if ready else KL.DRAFT, panel=panel, notes=notes, programs=programs,
         required_capabilities=sorted(capabilities | set(SPEC["required_capabilities"])),
         deviations=deviations,
         extra={"custom_ability_string": sorted(cas_plan),
                "effect_families": [f["dst_dir"] for f in families],
+               "power_flip_action": {PF_KEY: list(PF_PROGRAMS)},
+               "invoke_program": INVOKE_PROGRAM,
                "kit_gate": gate, "voice_route": route,
-               "skill_totals": {lv: skill_gates[lv]["total_both_flags"] for lv in ("1", "2")}})
+               "skill_totals": {lv: skill_gates[lv]["total_no_flag"] for lv in ("1", "2")}})
