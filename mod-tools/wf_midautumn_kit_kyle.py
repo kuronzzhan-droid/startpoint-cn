@@ -103,6 +103,17 @@ SPEC = {
 # 列号 0 基；donor 的 ``#N`` 也是 0 基。ability 126 列 / leader 124 列（leader 在 c3 之后逐列 −2）。
 # 预期 describe 为 None = 首建时只记录不比对（填好后就是逐字门禁）。
 
+#: 422「冲刺参数(可调)」是客户端补丁 kind，官方零先例，只能从本仓自制角色借行。
+#: 现取响（``psychic_teleport_moon``）的 ability 5 —— 但**按 kind 定位，不按记录号**：
+#: 响 1.4.974 在该键首位插了一条 413，原来的 ``#0`` 变成了 ``#1``，
+#: 写死记录号的后果是下一次共享行改动时 kyle 直接构建失败（2026-09-21 实际发生过一次）。
+DASH_DONOR_KEY = "1699885"
+DASH_DONOR_KIND = "422"
+#: 写在行计划/设计镜像里的地址：``#kind422`` = 「该键里 kind 为 422 的那条记录」，
+#: build_rows 开头解析成真正的 ``#<记录号>``。
+DASH_DONOR = f"{DASH_DONOR_KEY}#kind{DASH_DONOR_KIND}"
+DASH_DONOR_KIND_COL = 109           # ability c109 = 瞬发内容 kind（memory wf-dash-parameter-leader-table-trap）
+
 _PRE_RESONANCE_A = {6: "2", 9: "600000", 10: "600000", 11: ELEMENT_TOKEN}   # ability 前置 1：雷共鸣
 _PRE_RESONANCE_A2 = {13: "2", 16: "600000", 17: "600000", 18: ELEMENT_TOKEN}  # ability 前置 2
 _PRE_LEADER_A = {6: "42"}                                                   # ability 前置 1：持有者为队长
@@ -215,9 +226,9 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
           34: "(None)", 35: "0", 47: "51", 48: "5", 49: ELEMENT_TOKEN,
           51: "100000", 52: "100000"},
          None),
-        ("1699885#0", "store", {**_PRE_LEADER_A, 113: "100000", 114: "100000", 118: "1"}, None),
-        ("1699885#0", "store", {**_PRE_LEADER_A, 113: "-50000", 114: "-50000", 118: "0"}, None),
-        ("1699885#0", "store", {**_PRE_LEADER_A, 113: "40000", 114: "40000", 118: "6"}, None),
+        (DASH_DONOR, "store", {**_PRE_LEADER_A, 113: "100000", 114: "100000", 118: "1"}, None),
+        (DASH_DONOR, "store", {**_PRE_LEADER_A, 113: "-50000", 114: "-50000", 118: "0"}, None),
+        (DASH_DONOR, "store", {**_PRE_LEADER_A, 113: "40000", 114: "40000", 118: "6"}, None),
         # 冲刺 → 贯通 5.5 秒（330 帧 ×100000）
         ("1110023#0", "official",
          {**_PRE_LEADER_A, **_PRE_RESONANCE_A2, 27: "4", 28: "", 30: "100000", 31: "100000",
@@ -274,29 +285,44 @@ ALLOWED_PRECONDITION_KINDS = ("", "0", "2", "3", "38", "42", "187", "202")
 
 # ---------------------------------------------------------------- 面板文案
 # 逐行抄 rework1/panel/kyle.json（作者已过目的那一版）。describe 渲染表达不了的整块接管。
+# 一条记录一行，用换行符分行（禁止用「／」挤成一行）；能力 3 是主位限制槽，desc_override 会盖掉
+# 客户端逐行画的 Ⓜ，所以每行都要自带 MAIN_ICON（写法与 wf_featured_main_ability 的共享常量一致）。
 
-PANEL_LEADER = (
+MAIN_ICON = " <icon id='main'>  "
+
+PANEL_LEADER = "\n".join((
     "雷属性共鸣时：自身冲刺获得强化，冲刺冷却时间－50%、附加贯穿效果、冲刺弹射速度提升，并"
-    "可从更高的位置发动冲刺／雷属性共鸣时：自身“月牙”每上升1层，自身攻击力＋100%、直击"
-    "伤害＋200%，除自身外雷属性角色攻击力＋50%、直击伤害＋100%／雷属性共鸣时：自身"
-    "每获得一次贯穿效果，自身直击敌人的判定次数＋1"
-)
+    "可从更高的位置发动冲刺",
+    "雷属性共鸣时：自身“月牙”每上升1层，自身攻击力＋100%、直击伤害＋200%，除自身外雷属性"
+    "角色攻击力＋50%、直击伤害＋100%",
+    "雷属性共鸣时：自身每获得一次贯穿效果，自身直击敌人的判定次数＋1",
+))
 
-PANEL_ABILITY = {
-    1: ("战斗开始时：雷属性角色技能槽＋50%／雷属性共鸣时：自身技能槽＋50%，并强化技能效果—"
-         "—额外赋予雷属性角色直击效果强化、技能的额外伤害乘区＋100%，技能额外附加贯穿效果（5"
-         ".5秒）与加速效果（15秒），技能造成的雷击按直接攻击伤害结算，且威力随连击数大幅提升"),
+_PANEL_ABILITY_LINES = {
+    1: ("战斗开始时：雷属性角色技能槽＋50%",
+        "雷属性共鸣时：自身技能槽＋50%，并强化技能效果——额外赋予雷属性角色直击效果强化、"
+        "技能的额外伤害乘区＋100%，技能额外附加贯穿效果（5.5秒）与加速效果（15秒），"
+        "技能造成的雷击按直接攻击伤害结算，且威力随连击数大幅提升"),
     2: ("雷属性共鸣时：自身“月牙”每提升1层，自身直击伤害＋50%、攻击力＋50%，除自身外雷属"
-         "性角色直击伤害＋50%／雷属性共鸣时：自身每获得一次贯穿效果，雷属性角色攻击力＋50%"),
+        "性角色直击伤害＋50%",
+        "雷属性共鸣时：自身每获得一次贯穿效果，雷属性角色攻击力＋50%"),
     3: ("雷属性共鸣时：自身发动技能时，自身“月牙”＋1层；雷属性角色每造成50次直击，自身“月牙"
-         "”＋1层／雷属性共鸣时：自身每获得一次贯穿效果，2秒后自身技能槽＋10%／雷属性共鸣时："
-         "自身持有“月牙”时，强化雷属性角色的直接攻击为3次，合计伤害额外乘区＋300%"),
+        "”＋1层",
+        "雷属性共鸣时：自身每获得一次贯穿效果，2秒后自身技能槽＋10%",
+        "雷属性共鸣时：自身持有“月牙”时，强化雷属性角色的直接攻击为3次，合计伤害额外乘区＋300%"),
     4: ("雷属性共鸣时：雷属性角色发动技能时，赋予全队直击伤害＋100%、攻击力＋100%（持续1"
-         "5秒，每名触发该效果的角色分别独立生效）"),
+        "5秒，每名触发该效果的角色分别独立生效）",),
     5: ("雷属性共鸣时：雷属性角色每造成50次直击，雷属性角色技能充能速度＋5%，敌人进入击倒状态"
-         "的几率＋100%"),
-    6: ("雷属性共鸣时：强化技能效果——驱散敌方2个增益效果，并对敌人施加“迟缓”效果／雷属性共鸣"
-         "时：雷属性角色对处于“迟缓”状态的敌人造成伤害，额外乘区＋15%"),
+        "的几率＋100%",),
+    6: ("雷属性共鸣时：强化技能效果——驱散敌方2个增益效果，并对敌人施加“迟缓”效果",
+        "雷属性共鸣时：雷属性角色对处于“迟缓”状态的敌人造成伤害，额外乘区＋15%"),
+}
+
+#: 主位限制槽（整键 c1="false"）每行带 MAIN_ICON；与 _UNISONABLE 同源，write_strings 再逐行核一次
+PANEL_ABILITY = {
+    slot: "\n".join((MAIN_ICON + line) if _UNISONABLE[slot] == "false" else line
+                     for line in lines)
+    for slot, lines in _PANEL_ABILITY_LINES.items()
 }
 
 CAS_TEXTS = {
@@ -509,9 +535,26 @@ def _order_problems(rows: list[list[str]]) -> None:
                 raise KitError(f"ability 3#{index}: 629 在副位不生效，该键必须 unisonable=false")
 
 
+def resolve_dash_donor(ctx) -> str:
+    """把 ``DASH_DONOR`` 哨兵解析成 live store 里真正带 422 的那条记录的地址。"""
+    rows = KL._rows(ctx, KL.ABILITY, "store")
+    if DASH_DONOR_KEY not in rows:
+        raise KitError(f"dash donor {DASH_DONOR_KEY} 不在 live store 的 ability 表里")
+    records = ctx.csv_split(rows[DASH_DONOR_KEY])
+    hits = [index for index, record in enumerate(records)
+            if len(record) > DASH_DONOR_KIND_COL
+            and record[DASH_DONOR_KIND_COL] == DASH_DONOR_KIND]
+    if not hits:
+        kinds = [r[DASH_DONOR_KIND_COL] if len(r) > DASH_DONOR_KIND_COL else "?" for r in records]
+        raise KitError(f"dash donor {DASH_DONOR_KEY} 里没有 kind {DASH_DONOR_KIND} 的记录"
+                       f"（现有 c{DASH_DONOR_KIND_COL} = {kinds}）")
+    return f"{DASH_DONOR_KEY}#{hits[0]}"
+
+
 def build_rows(ctx) -> dict[str, Any]:
     evidence: list[dict[str, Any]] = []
     caps: set[str] = set()
+    dash_donor = resolve_dash_donor(ctx)
 
     leader_rows: list[list[str]] = []
     for index, (addr, source, cells, expect) in enumerate(LEADER):
@@ -532,6 +575,8 @@ def build_rows(ctx) -> dict[str, Any]:
         for index, (addr, source, cells, expect) in enumerate(PLAN[slot]):
             merged = {0: f"{CODE}_{slot}", 1: _UNISONABLE[slot], 2: _STATUE[slot], **cells}
             label = f"{key}#{index}"
+            if addr == DASH_DONOR:
+                addr = dash_donor
             row, ev = KL.build_row(ctx, "ability", addr, merged, source=source,
                                    element=ELEMENT,
                                    expect_describe=expect or EXPECT.get(label),
@@ -731,9 +776,14 @@ def _remap_binds(node, offset: int) -> None:
     """整块绑定号平移（两个互斥分支同树时避免重号；记忆 wf-dsl-subject-lookup-map）。
 
     声明位与使用位都取 ``wf_client_legality`` 的权威表，别自己抄一份（抄漏 = 悬空主体）。
+
+    使用位必须走 ``L._dsl_lookup_slots``（客户端 ``ActionEvaluator`` 机械提取的**全量**
+    lookup 列），不能只用手抄的 ``DSL_SUBJECT_CONSUMERS``：后者漏了
+    ``CreateReferencePoint`` node[1]、``ShowEffect`` node[3]、``CreateHitArea`` node[2]，
+    2026-09-21 的真机 C16103（强化天雷分支 lookup 母本遗留的 0/1）就是这么漏出去的。
     """
     for cmd in (n[1] for n in _walk(node) if _is_command(n)):
-        positions: set[int] = set(L.DSL_SUBJECT_CONSUMERS.get(cmd[0], ()))
+        positions: set[int] = set(L._dsl_lookup_slots(cmd[0]))
         for ids, _block in L.DSL_SUBJECT_BINDERS.get(cmd[0], ()):
             positions.update(ids)
         for index in sorted(positions):
@@ -741,6 +791,12 @@ def _remap_binds(node, offset: int) -> None:
                 value = cmd[index]
                 if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
                     cmd[index] = value + offset
+        # 坐标系 ["GH", n] 同样走 Environment.lookup（ActionEvaluator.as:1037）
+        for slot in cmd[1:]:
+            if (isinstance(slot, list) and len(slot) == 2 and slot[0] == "GH"
+                    and isinstance(slot[1], int) and not isinstance(slot[1], bool)
+                    and slot[1] >= 0):
+                slot[1] += offset
 
 
 # ---------------------------------------------------------------- 主技能树
@@ -1037,6 +1093,8 @@ def _dsl_problems(tree) -> list[str]:
     problems = [f"direction: {p}" for p in wf_dsl.player_side_dsl_problems(tree)]
     problems += [f"coord: {p}" for p in wf_dsl.coord_sys_source_problems(tree)]
     problems += [f"subject: {p}" for p in L.action_dsl_subject_binding_problems(tree)]
+    # 全量 lookup 作用域（C16103）：上面那条只看手抄子集，会漏 CRP/ShowEffect/CHA 的引用位
+    problems += [f"lookup_scope: {p}" for p in L.action_dsl_lookup_scope_problems(tree)]
     problems += [f"hit_target: {p}" for p in L.action_dsl_hit_area_target_problems(tree)]
     problems += [f"element: {p}" for p in L.action_dsl_element_problems(tree, ELEMENT)]
     return problems
@@ -1290,7 +1348,13 @@ def write_strings(ctx) -> dict[str, str]:
     if clashes:
         raise KitError(f"custom_ability_string keys already exist officially: {clashes}")
     for key, text in CAS_TEXTS.items():
-        KL.check_panel(text, skill_flag=(key == CAS_SWITCH), label=key)
+        for line in text.split("\n"):
+            KL.check_panel(line.replace(MAIN_ICON, ""), skill_flag=(key == CAS_SWITCH), label=key)
+    for slot in range(1, 7):
+        rendered = CAS_TEXTS[CAS_ABILITY[slot]].split("\n")
+        wants_icon = _UNISONABLE[slot] == "false"
+        if any(line.startswith(MAIN_ICON) != wants_icon for line in rendered) or "Ⓜ" in "".join(rendered):
+            raise KitError(f"slot {slot} desc_override main-position icon does not match c1")
     ctx.write_flat(KL.CAS, {key: [[text]] for key, text in CAS_TEXTS.items()})
     return dict(CAS_TEXTS)
 
@@ -1350,7 +1414,8 @@ def build(ctx) -> dict[str, Any]:
 
     panel = [PANEL_LEADER] + [PANEL_ABILITY[slot] for slot in range(1, 7)]
     for text in panel:
-        KL.check_panel(text, label="panel row")
+        for line in text.split("\n"):
+            KL.check_panel(line.replace(MAIN_ICON, ""), label="panel row")
 
     notes: list[Any] = [
         {"design_json": str(MS.design_path(ctx.root, KEY)), "stage": design.get("stage"),

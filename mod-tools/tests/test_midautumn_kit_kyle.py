@@ -22,6 +22,7 @@ import copy
 import json
 import sys
 import unittest
+import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -215,9 +216,11 @@ class PlanSelfCheckTests(unittest.TestCase):
 
 class PanelTextTests(unittest.TestCase):
     def test_panel_text_obeys_the_project_rules(self):
-        KL.check_panel(K.PANEL_LEADER, label="leader")
+        for line in K.PANEL_LEADER.split("\n"):
+            KL.check_panel(line, label="leader")
         for slot, text in K.PANEL_ABILITY.items():
-            KL.check_panel(text, label=f"ability {slot}")
+            for line in text.split("\n"):
+                KL.check_panel(line.replace(K.MAIN_ICON, ""), label=f"ability {slot}")
         KL.check_panel(K.CAS_TEXTS[K.CAS_SWITCH], skill_flag=True, label="change_skill")
 
     def test_panel_text_matches_the_author_approved_target(self):
@@ -226,11 +229,22 @@ class PanelTextTests(unittest.TestCase):
             self.skipTest("rework1/panel/kyle.json missing")
         panel = json.loads(PANEL.read_text(encoding="utf-8"))
         want_leader = [line["text"] for line in panel["leader"]["lines"]]
-        self.assertEqual(K.PANEL_LEADER.split("／"), want_leader)
+        self.assertEqual(K.PANEL_LEADER.split("\n"), want_leader)
         for entry in panel["abilities"]:
             slot = int(entry["index"])
-            self.assertEqual(K.PANEL_ABILITY[slot].split("／"),
+            self.assertEqual([line.replace(K.MAIN_ICON, "")
+                              for line in K.PANEL_ABILITY[slot].split("\n")],
                              [line["text"] for line in entry["lines"]], f"ability {slot}")
+
+    def test_main_only_slots_carry_the_icon_on_every_line(self):
+        """desc_override 整槽接管后客户端不再逐行画 Ⓜ：主位限制槽每行自带图标，其余槽不带。"""
+        for slot, text in K.PANEL_ABILITY.items():
+            wants = K._UNISONABLE[slot] == "false"
+            for line in text.split("\n"):
+                self.assertEqual(line.startswith(K.MAIN_ICON), wants, f"ability {slot}: {line[:20]}")
+            self.assertNotIn("Ⓜ", text)
+            self.assertNotIn("／", text)
+        self.assertNotIn("／", K.PANEL_LEADER)
 
     def test_main_only_slot_matches_the_panel(self):
         if not PANEL.is_file():
@@ -637,6 +651,50 @@ class AbilitySkillTreeTests(unittest.TestCase):
         for path in K.effect_paths(tree):
             self.assertFalse(path.startswith(f"{K.FX_BOLT_SRC}/"), path)
 
+    def test_every_lookup_in_the_thunder_tree_resolves(self):
+        """1.4.966 事故:强化分支平移了绑定位、引用位留在母本的 0/1 ⇒ 开打 C16103。
+
+        `_dsl_problems` 里已经挂了这条门禁,这里单独再断一次 —— 它是真机崩溃换来的。
+        """
+        tree, _ = K.build_thunder_tree(self.context, self.donor, bolt_family())
+        self.assertEqual(L.action_dsl_lookup_scope_problems(tree), [])
+
+    def test_boost_branch_anchors_on_its_own_bindings_not_the_donor_numbers(self):
+        """强化分支的三个引用位必须指向本分支的绑定,而不是常态分支的 0/1。"""
+        tree, _ = K.build_thunder_tree(self.context, self.donor, bolt_family())
+        flag = [node[1] for node in K._walk(tree)
+                if K._is_command(node, "ConditionalsChangeSkillFlag")][0]
+        boost, normal = flag[2], flag[3]
+
+        def one(node, name):
+            hits = [n[1] for n in K._walk(node) if K._is_command(n, name)]
+            self.assertEqual(len(hits), 1, f"{name} 应恰好 1 处")
+            return hits[0]
+
+        near = one(boost, "FindNearSubjects")
+        rp = one(boost, "CreateReferencePoint")
+        area = one(boost, "CreateHitArea")
+        self.assertEqual(rp[1], near[5], "CreateReferencePoint 原点必须是 FindNearSubjects 的绑定")
+        self.assertEqual(area[2], rp[10], "CreateHitArea 主体必须是 CreateReferencePoint 的绑定")
+        anchors = [n[1][3] for n in K._walk(rp[11]) if K._is_command(n, "ShowEffect")]
+        self.assertTrue(anchors, "强化分支的参考点块里应有 ShowEffect")
+        for anchor in anchors:
+            # 要么是内建主体（-18 = 弹射球，射出演出挂在球上），要么是本参考点的绑定；
+            # 绝不能是母本遗留的 0/1（那正是 C16103 的签名）。
+            self.assertIn(anchor, (rp[10], -1, -2, -17, -18, -33), f"ShowEffect 锚点 {anchor}")
+        # 强化分支整体平移过,不能和常态分支撞号(撞号会 lookup 到别的主体,不报错但打错人)
+        self.assertNotEqual(near[5], one(normal, "FindNearSubjects")[5])
+
+    def test_mutating_a_lookup_slot_turns_the_gate_red(self):
+        """变异检验:把引用位改回母本的 0 必须变红,否则这条门禁等于没接。"""
+        tree, _ = K.build_thunder_tree(self.context, self.donor, bolt_family())
+        flag = [node[1] for node in K._walk(tree)
+                if K._is_command(node, "ConditionalsChangeSkillFlag")][0]
+        rp = [n[1] for n in K._walk(flag[2]) if K._is_command(n, "CreateReferencePoint")][0]
+        rp[1] = 0
+        self.assertNotEqual(K._dsl_problems(tree), [])
+        self.assertTrue(any(p.startswith("lookup_scope:") for p in K._dsl_problems(tree)))
+
 
 # ---------------------------------------------------------------- 3. 已构建的包
 
@@ -674,6 +732,15 @@ class WorkspaceTests(unittest.TestCase):
         for dst in (K.FX_BLADE_DST, K.FX_BOLT_DST, K.FX_TRAIL_DST):
             path = WORKSPACE / "package" / "roots" / "common" / dst
             self.assertTrue(path.is_dir(), path)
+
+    def test_packaged_dsl_has_no_dangling_subject_lookup(self):
+        """包里落盘的四棵树都要过作用域门禁 —— 1.4.966 就是这里漏出去的。"""
+        root = WORKSPACE / "package" / "roots" / "common"
+        programs = sorted(root.rglob("*.action.dsl.amf3.deflate"))
+        self.assertTrue(programs, "workspace 里没有 DSL 程序")
+        for path in programs:
+            tree = wf_dsl.parse_dsl(zlib.decompress(path.read_bytes(), -15))["tree"]
+            self.assertEqual(L.action_dsl_lookup_scope_problems(tree), [], path.name)
 
     def test_the_normal_thunder_family_is_not_cloned(self):
         path = WORKSPACE / "package" / "roots" / "common" / "battle/effect/skill_unique/psychic_tohru"
