@@ -1026,9 +1026,11 @@ def build_pf_tree(ctx, level: int) -> tuple[list, dict[str, Any]]:
             if e[0] == "Command" and e[1][0] == "ShowEffect"]
     if not aura:
         raise KitError(f"fighter lv{level} has no root-level ShowEffect to anchor the支援 block")
-    support = PH.pf_support_block(ctx.root, level)
+    # 作者 09-21 真机反馈：「芙拉菲也不要浮游」⇒ 辅助增益块只留攻击力提升与贯穿。
+    # donor 仍按官方三件套校验（pf_support_block 内部），只是 ACFlying 那条不进成品树。
+    support = PH.pf_support_block(ctx.root, level, keep_flying=False)
     kinds = [c[2][0][0] for c in PH.cmds(support, "CreateCondition")]
-    if kinds != ["ACAttackPoint", "ACPiercing", "ACFlying"]:
+    if kinds != ["ACAttackPoint", "ACPiercing"]:
         raise KitError(f"supporter buff block drift: {kinds}")
     if sorted(set(PH.bound_ids(support))) != [PF_SUPPORT_BIND]:
         raise KitError(f"supporter block bound ids {sorted(set(PH.bound_ids(support)))} "

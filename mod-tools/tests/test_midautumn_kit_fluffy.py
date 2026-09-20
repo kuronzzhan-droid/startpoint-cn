@@ -579,8 +579,10 @@ class PowerFlipTests(unittest.TestCase):
     def test_supporter_buff_block_was_grafted_in(self):
         for level, tree in self.trees.items():
             kinds = [c[2][0][0] for c in wf_dsl.iter_dsl_commands(tree, "CreateCondition")]
-            for want in ("ACAttackPoint", "ACPiercing", "ACFlying"):
+            for want in ("ACAttackPoint", "ACPiercing"):
                 self.assertIn(want, kinds, f"lv{level} 丢了辅助增益 {want}")
+            # 作者 09-21「芙拉菲也不要浮游」：成品树里不许再有 ACFlying
+            self.assertNotIn("ACFlying", kinds, f"lv{level}")
             self.assertEqual(self.gates[level]["support_block_bind"], K.PF_SUPPORT_BIND)
 
     def test_hit_areas_keep_the_pf_multiplier_lane(self):

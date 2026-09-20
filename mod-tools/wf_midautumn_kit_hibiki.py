@@ -24,6 +24,16 @@ live 1.4.974 已是如此），缺的是**面板那个 Ⓜ**：``desc_override``
 所以主位键必须自己在每行前面写 ``MAIN_ICON``（本批 magnus / fluffy / kuro / stinel 同款做法，
 live 先例 ``desc_override_ginovi_3``）。本轮把 ``MAIN_ONLY_SLOTS`` 做成 c1 与图标的唯一真源。
 
+反馈轮 3（作者 09-21 真机，「澄波响去掉浮游效果」）：撤浮游 ＝ 引擎里的状态 ``ACFlying``，
+只出现在 722 三档共用的 P1 supporter 辅助增益块（借道 :func:`wf_seasonal7_kit_philia.pf_support_block`，
+菲莉亚同一批反馈也在改这个函数，本模块不碰那个文件）里的一条 ``CreateCondition``。
+``build_pf_tree`` 接受该块的两种合法形态：donor 仍是官方原始三件套时用 :func:`strip_ac_flying`
+自己删 1 条；共享函数已经在源头删过时（两件套）不重复删——两条路径终态相同，
+``ACAttackPoint`` / ``ACPiercing`` 原样保留、绑定与参数不动，形态漂移（既非三件套也非两件套）
+当场炸。技能两档、629 追击树本来就不含 ACFlying，:func:`build` 里做了一次全包汇总断言兜底。
+文案同步：``PANEL_LEADER`` 第 1 行与 ``CAS_TEXTS[CAS_PF]`` 删掉「、浮游」；
+队长/词条行数据本轮零变化（row_diff 应为空）。
+
 落地内容
     - ``unique_condition[16998801]``「回响」（donor 官方 ``7``「加热」；c4 上限 **99**，禁 ``(None)``）
       与它的 48×48 图标（alpha 取官方图标外框）；
@@ -150,8 +160,9 @@ MAIN_ONLY_SLOTS = (3,)
 MAIN_ICON = " <icon id='main'>  "
 
 PANEL_LEADER = "\n".join((
+    # rework1 反馈轮 3（作者 09-21）：撤掉浮游效果，树里的 ACFlying 一并删（见 build_pf_tree）。
     "特殊强化弹射：以特殊型的冲击波贯入敌阵，单次威力大幅提升／强化弹射时赋予参战角色攻击力提升、"
-    "贯穿、浮游效果，其中贯穿效果持续时间大幅延长",
+    "贯穿效果，其中贯穿效果持续时间大幅延长",
     "持有贯穿效果期间，暗属性角色攻击力＋300%",
     "持有贯穿效果期间，强化弹射伤害＋200%",
     "暗属性共鸣时，贯穿效果持续时间＋30%",
@@ -187,8 +198,9 @@ def slot_override_text(slot: int) -> str:
 
 
 CAS_TEXTS = {
+    # rework1 反馈轮 3：与 PANEL_LEADER 第 1 行同一句，同步去掉「、浮游」。
     CAS_PF: "特殊强化弹射：以特殊型的冲击波贯入敌阵，单次威力大幅提升／强化弹射时赋予参战角色"
-            "攻击力提升、贯穿、浮游效果，其中贯穿效果持续时间大幅延长",
+            "攻击力提升、贯穿效果，其中贯穿效果持续时间大幅延长",
     CAS_INVOKE_SKILL: "立即获得强化弹射效果",
     CAS_INVOKE_DASH: "立即获得强化弹射效果（冷却时间：5秒）",
     CAS_LEADER: PANEL_LEADER,
@@ -466,6 +478,11 @@ def conditional_names(node, out: set[str] | None = None) -> set[str]:
     return out
 
 
+def count_ac_flying(node) -> int:
+    """树里还剩几条 ``ACFlying`` 的 ``CreateCondition``（rework1 反馈轮 3：作者要求撤浮游后的全包核对）。"""
+    return len([c for c in PH.cmds(node, "CreateCondition") if c[2] and c[2][0][0] == "ACFlying"])
+
+
 def dsl_problems(tree, *, element: int | None = ELEMENT) -> list[str]:
     """DSL 门禁：客户端合法性三件套 + 参数形状 + 表达式外壳 + 严格作用域 + 主体 id 不重复。"""
     problems: list[str] = []
@@ -661,16 +678,58 @@ def build_skill_tree(ctx, level: str, family: dict[str, Any]):
     problems = dsl_problems(tree)
     if problems:
         raise KitError(f"skill {level} DSL gates failed: {problems}")
+    # rework1 反馈轮 3 全包核对：技能树母本（161183/veteran_hunter_3anv/herbalist_xm22）不带 ACFlying。
+    skill_fly = count_ac_flying(tree)
+    if skill_fly:
+        raise KitError(f"skill {level}: 树里残留 {skill_fly} 条 ACFlying（浮游已撤，不该再出现）")
     return tree, {"level": level, "fx_paths": paths, "effect_rewrites": info["rewritten"],
                   "bound_ids": sorted(set(PH.bound_ids(tree))),
                   "n_attacks": len(PH.cmds(tree, "CreateNormalAttack")),
+                  "ac_flying_count": skill_fly,
                   "multipliers": {k: list(v) for k, v in params.items()}}
 
 
 # ---------------------------------------------------------------- 专属强化弹射（722）
 
+def strip_ac_flying(block: list) -> int:
+    """从 P1 辅助增益块删掉浮游那条 ``CreateCondition``（rework1 反馈轮 3：作者 09-21 要求撤浮游）。
+
+    调用方必须先核对 donor 是「``FindAllSubjects(33)`` 包着恰好 ``ACAttackPoint / ACPiercing /
+    ACFlying`` 三条 ``CreateCondition``」的原形态（``build_pf_tree`` 里的 ``kinds_before`` 门禁，
+    以及 ``PH.pf_support_block`` 自带的同款校验）——donor 漂移必须在那一步就炸，不能在这里悄悄放行。
+    这里只做单一动作：摘掉 ``ACFlying`` 那一条，``ACAttackPoint`` / ``ACPiercing`` 原样保留、
+    绑定 id 与参数都不碰。返回删掉的条数（恒为 1，供上层写进 gates 报告）。
+    """
+    find_all = block[1]
+    if find_all[0] != "FindAllSubjects" or find_all[2] != 33:
+        raise KitError(f"supporter 辅助增益块外层漂移: {find_all[:3]}")
+    body_wrap = find_all[9]
+    if not (isinstance(body_wrap, list) and body_wrap and body_wrap[0] == "Block"):
+        raise KitError(f"supporter 辅助增益块 body 漂移: {body_wrap}")
+    body = body_wrap[1]
+
+    def is_flying(entry) -> bool:
+        return (isinstance(entry, list) and len(entry) == 2 and entry[0] == "Command"
+                and entry[1][0] == "CreateCondition" and entry[1][2]
+                and entry[1][2][0][0] == "ACFlying")
+
+    hits = [entry for entry in body if is_flying(entry)]
+    if len(hits) != 1:
+        raise KitError(f"supporter 辅助增益块 ACFlying 条数 {len(hits)}（应恰好 1 条）")
+    body[:] = [entry for entry in body if not is_flying(entry)]
+    return len(hits)
+
+
 def build_pf_tree(ctx, level: int):
-    """官方 ``special_lv{n}`` 整树作底座（sha 锁定）+ 官方 supporter 辅助增益块；倍率统一 ×``PF_SCALE``。"""
+    """官方 ``special_lv{n}`` 整树作底座（sha 锁定）+ 官方 supporter 辅助增益块；倍率统一 ×``PF_SCALE``。
+
+    rework1 反馈轮 3（作者 09-21「澄波响去掉浮游效果」）：辅助增益块里的 ``ACFlying`` 那条
+    ``CreateCondition`` 整条删掉，``ACAttackPoint`` / ``ACPiercing`` 原样保留、绑定/参数不动。
+    ``PH.pf_support_block`` 是与菲莉亚共用的读代码（同一批反馈、同一处理点，本模块不改那个文件）：
+    它若已经在源头删掉 ACFlying（两件套），这里就不重复删；若还没删（官方三件套原样），
+    本模块自己用 :func:`strip_ac_flying` 删。两条路径终态相同，三档都过 ``kinds_after``/
+    ``count_ac_flying`` 兜底校验。
+    """
     tree = copy.deepcopy(source_tree(ctx, SPECIAL_PROGRAMS[level], SPECIAL_SHA[level]))
     if tree[0] != "ActionDsl" or tree[1] != 1 or tree[10] != 0:
         raise KitError(f"special lv{level} head drift: {tree[:2]} bta={tree[10]}")
@@ -683,6 +742,20 @@ def build_pf_tree(ctx, level: int):
         raise KitError(f"special lv{level} オーラ演出 not unique ({len(aura)})")
 
     block = PH.pf_support_block(ctx.root, level)
+    # 形态校验：只认两种合法形态，别的都是漂移，当场炸——不能在下游悄悄用错的块。
+    #   1) 官方三件套原样（ACAttackPoint/ACPiercing/ACFlying）：本模块自己删 ACFlying。
+    #   2) 已经是删后的两件套：共享 ``wf_seasonal7_kit_philia.pf_support_block`` 本轮
+    #      （反馈轮 3，菲莉亚同一处理点）已经在源头把 ACFlying 摘掉，这里不重复删、只confirm 形态。
+    # 两条路径的终态相同（``kinds_after`` 必须是两件套），且都不碰共享库文件本身。
+    kinds_before = [c[2][0][0] for c in PH.cmds(block, "CreateCondition")]
+    if kinds_before == ["ACAttackPoint", "ACPiercing", "ACFlying"]:
+        ac_flying_removed = strip_ac_flying(block)
+    elif kinds_before == ["ACAttackPoint", "ACPiercing"]:
+        ac_flying_removed = 0     # 共享 pf_support_block 已经删过，这里不重复删
+    else:
+        raise KitError(f"supporter 辅助增益块形态漂移: {kinds_before}（应为官方三件套 "
+                       "ACAttackPoint/ACPiercing/ACFlying，或共享 pf_support_block 已删浮游后的"
+                       "ACAttackPoint/ACPiercing 两件套；两者都不是，需要人工核查 donor 或共享库）")
     pierce = [c for c in PH.cmds(block, "CreateCondition") if c[2][0][0] == "ACPiercing"]
     if len(pierce) != 1:
         raise KitError("supporter 辅助增益块 ACPiercing not unique")
@@ -690,6 +763,10 @@ def build_pf_tree(ctx, level: int):
     ac_node(pierce[0], "ACPiercing")[1] = PH.slv(frames, frames)
     if sorted(set(PH.bound_ids(block))) != [PF_SUPPORT_BIND]:
         raise KitError(f"supporter block bound ids {sorted(set(PH.bound_ids(block)))} != [{PF_SUPPORT_BIND}]")
+    # 删后形态校验：只剩 ACAttackPoint/ACPiercing，且顺序不变（rework1 反馈轮 3）。
+    kinds_after = [c[2][0][0] for c in PH.cmds(block, "CreateCondition")]
+    if kinds_after != ["ACAttackPoint", "ACPiercing"]:
+        raise KitError(f"supporter 辅助增益块删除浮游后形态漂移: {kinds_after}")
     root_body.insert(aura[0] + 1, block)
 
     scaled = []
@@ -711,8 +788,15 @@ def build_pf_tree(ctx, level: int):
     problems = dsl_problems(tree, element=None)   # PF 底座的 CNA 同样是 255 继承，元素检查在技能侧
     if problems:
         raise KitError(f"PF lv{level} DSL gates failed: {problems}")
+    # 全树核对：special 底座本身不带 ACFlying，删完之后整棵树（不只是辅助增益块）也不该再剩。
+    tree_fly = count_ac_flying(tree)
+    if tree_fly:
+        raise KitError(f"PF lv{level}: 整树仍残留 {tree_fly} 条 ACFlying（浮游未删干净）")
     return tree, {"level": level, "multipliers": scaled, "total": round(sum(scaled), 6),
                   "pierce_frames": frames, "support_block_bind": PF_SUPPORT_BIND,
+                  "ac_flying_removed": ac_flying_removed,
+                  "ac_flying_count": tree_fly,
+                  "support_block_kinds": kinds_after,
                   "official_effects": sorted(set(PH.spec_paths(tree))),
                   "bound_ids": sorted(set(PH.bound_ids(tree)))}
 
@@ -772,9 +856,15 @@ def build_invoke_tree(ctx):
     problems = dsl_problems(tree, element=None)
     if problems:
         raise KitError(f"invoke tree DSL gates failed: {problems}")
+    # rework1 反馈轮 3 全包核对：这棵树只搬了命中块（CollisionOfBallAndEnemy 的 CreateReferencePoint），
+    # 不含 supporter 辅助增益块，本来就不该带 ACFlying —— 这里显式钉死，不留隐性假设。
+    invoke_fly = count_ac_flying(tree)
+    if invoke_fly:
+        raise KitError(f"629 载荷树残留 {invoke_fly} 条 ACFlying（浮游已撤，不该再出现）")
     return tree, {"program": INVOKE_PROGRAM, "buff_target_as": INVOKE_BTA,
                   "multipliers": scaled, "total": round(sum(scaled), 6),
                   "scale": INVOKE_SCALE, "official_effects": paths,
+                  "ac_flying_count": invoke_fly,
                   "bound_ids": sorted(set(PH.bound_ids(tree)))}
 
 
@@ -1025,6 +1115,23 @@ def build(ctx) -> dict[str, Any]:
             raise KitError(f"leader#{n}: 629 action_path {leader_row[LEADER_ACTION_PATH]!r} "
                            f"!= {INVOKE_PROGRAM!r}")
 
+    # rework1 反馈轮 3（作者 09-21「澄波响去掉浮游效果」）全包核对：722 三档最终都不该带 ACFlying。
+    # ``ac_flying_removed`` 是 1 还是 0 取决于共享 ``PH.pf_support_block``（与菲莉亚同一处理点，
+    # 本模块不改那个文件）当前是否已经在源头删过——三档必须整齐划一（同为 1 或同为 0），
+    # 一半删了一半没删才是真漂移；技能两档与 629 追击树本来就是 0 条。
+    ac_flying_report = {
+        "power_flip": {lv: pf_gates[lv]["ac_flying_removed"] for lv in ("1", "2", "3")},
+        "power_flip_final_count": {lv: pf_gates[lv]["ac_flying_count"] for lv in ("1", "2", "3")},
+        "skills": {lv: skill_gates[lv]["ac_flying_count"] for lv in ("1", "2")},
+        "invoke": invoke_gates["ac_flying_count"],
+    }
+    if len(set(ac_flying_report["power_flip"].values())) != 1:
+        raise KitError(f"ACFlying removal count is inconsistent across PF levels (should be all-1 or "
+                       f"all-0, not a mix): {ac_flying_report['power_flip']}")
+    if any(ac_flying_report["power_flip_final_count"].values()) \
+            or any(ac_flying_report["skills"].values()) or ac_flying_report["invoke"]:
+        raise KitError(f"ACFlying still present somewhere after the build: {ac_flying_report}")
+
     # ---- 8) 语音路由（kind 1 ConditionExist ← 固有 16998801）+ switched_action_skill
     route = KL.voice_route(CODE, VOICE_ROUTE)
     design_route = design["voice"]["route"]
@@ -1071,6 +1178,12 @@ def build(ctx) -> dict[str, Any]:
         + "；辅助增益块贯通帧 " + "/".join(str(PF_PIERCE_FRAMES[n]) for n in (1, 2, 3)),
         "面板：队长块与 6 槽全部走 desc_override_*，逐行对齐 rework1/panel/hibiki.json；"
         "冲刺 422 行留在能力 5（写队长表 = C7050），文案在队长块第 10 行",
+        f"rework1 反馈轮 3（作者 09-21 真机反馈，要求撤掉专属PF的一项赋予状态）：722 三档辅助增益块"
+        f"最终都不带 ACFlying CreateCondition 了（本模块自删 {ac_flying_report['power_flip']['1']} 条/档，"
+        "或已经由共享 pf_support_block 在源头删过，两种情况整齐一致；ACAttackPoint/ACPiercing 原样"
+        "保留、绑定/参数不动）；技能两档与 629 追击树全包核对确认 0 条；面板 c82 串与队长块文案同步"
+        "收窄为「攻击力提升、贯穿效果」，行数据（队长/词条）零变化",
+        {"ac_flying_removal": ac_flying_report},
         {"statue_group_zero_precedent":
             [f"{e['key']}#{e['record']} {e['group']}×{e['trigger']}{e['kind']}"
              for e in statue if e["official_rows"] == 0]},

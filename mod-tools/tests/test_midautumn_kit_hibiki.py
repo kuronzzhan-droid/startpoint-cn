@@ -64,6 +64,16 @@ def fake_family() -> dict:
             "dst_name": K.FX_SUBDIR, "copied_bases": [K.FX_BACK, K.FX_EF]}
 
 
+def _synthetic_support_block(kinds: list[str]) -> list:
+    """``strip_ac_flying`` 单元测试用的最小合成块，不依赖 ``PH.pf_support_block`` 的当前实现。"""
+    def cc(kind: str) -> list:
+        return ["Command", ["CreateCondition", 400, [[kind, [{"min": 60, "max": 60}]]],
+                            [{"min": 1, "max": 1}], ["None"], True, False, "", None, False, 3,
+                            [{"min": 1, "max": 1}], False]]
+    return ["Command", ["FindAllSubjects", 400, 33, [], [], [], [], [], ["DoNothing"],
+                        ["Block", [cc(k) for k in kinds]]]]
+
+
 def assembled_rows():
     """27 行成品（leader 9 + ability 18），只装配不写包。"""
     leader = [KL.apply_cells(KL.donor_row(ctx(), KL.LEADER, addr, source=src), cells,
@@ -541,15 +551,88 @@ class PowerFlipTests(unittest.TestCase):
             self.assertEqual(gates["pierce_frames"], K.PF_PIERCE_FRAMES[level])
 
     def test_support_block_is_appended_once(self):
+        """rework1 反馈轮 3（作者「澄波响去掉浮游效果」）：ACFlying 已从三档辅助增益块删掉，
+        只剩 ACAttackPoint / ACPiercing（原样保留，绑定/参数不动）。
+
+        注：``PH.pf_support_block`` 是与菲莉亚共用的读代码，同一批反馈期间对方也在改它
+        （本模块不碰那个文件）；不管它现在是「已经删过」还是「原样三件套」，本模块自己的
+        分支都要把最终结果收到同一个终态，所以这里只断言终态，不假设 ``ac_flying_removed``
+        具体是 0 还是 1（那两个分支各自的行为见下面两条测试）。"""
         for level in (1, 2, 3):
-            tree, _ = K.build_pf_tree(ctx(), level)
+            tree, gates = K.build_pf_tree(ctx(), level)
             kinds = [c[2][0][0] for c in PH.cmds(tree, "CreateCondition")]
-            self.assertEqual(kinds, ["ACAttackPoint", "ACPiercing", "ACFlying"])
+            self.assertEqual(kinds, ["ACAttackPoint", "ACPiercing"])
+            self.assertEqual(K.count_ac_flying(tree), 0)
+            self.assertIn(gates["ac_flying_removed"], (0, 1))
+            self.assertEqual(gates["ac_flying_count"], 0)
+            self.assertEqual(gates["support_block_kinds"], ["ACAttackPoint", "ACPiercing"])
             pierce = next(c for c in PH.cmds(tree, "CreateCondition")
                           if c[2][0][0] == "ACPiercing")
             self.assertEqual(K.ac_node(pierce, "ACPiercing")[1][0]["min"],
                              K.PF_PIERCE_FRAMES[level])
             self.assertIn(K.PF_SUPPORT_BIND, PH.bound_ids(tree))
+
+    def test_accepts_a_donor_that_still_carries_flying(self):
+        """分支 1：``pf_support_block`` 默认送回官方原始三件套（共享函数默认保留浮游，
+        芙拉菲/丝缇涅尔还要用），本模块自己删干净。"""
+        donor = PH.pf_support_block(ctx().root, 1)
+        self.assertEqual([c[2][0][0] for c in PH.cmds(donor, "CreateCondition")],
+                         ["ACAttackPoint", "ACPiercing", "ACFlying"])
+        tree, gates = K.build_pf_tree(ctx(), 1)
+        self.assertEqual(gates["ac_flying_removed"], 1)
+        self.assertEqual(gates["ac_flying_count"], 0)
+        self.assertEqual(K.count_ac_flying(tree), 0)
+        kinds = [c[2][0][0] for c in PH.cmds(tree, "CreateCondition")]
+        self.assertEqual(kinds, ["ACAttackPoint", "ACPiercing"])
+
+    def test_accepts_a_donor_that_already_dropped_flying(self):
+        """分支 2：共享函数哪天改成源头就删（``keep_flying=False`` 的形态）时不重复删。"""
+        original = PH.pf_support_block
+
+        def already_dropped(root, level):
+            return original(root, level, keep_flying=False)
+
+        K.PH.pf_support_block = already_dropped
+        try:
+            tree, gates = K.build_pf_tree(ctx(), 1)
+            self.assertEqual(gates["ac_flying_removed"], 0)
+            self.assertEqual(gates["ac_flying_count"], 0)
+            self.assertEqual(K.count_ac_flying(tree), 0)
+        finally:
+            K.PH.pf_support_block = original
+
+    def test_rejects_a_block_that_is_neither_known_shape(self):
+        """真漂移（既不是原始三件套也不是删后两件套，比如少了 ACAttackPoint）必须当场炸。"""
+        original = PH.pf_support_block
+
+        def missing_attack_point(root, level):
+            block = original(root, level)
+            find_all = block[1]
+            body = find_all[9][1]
+            find_all[9][1] = [e for e in body if e[1][2][0][0] != "ACAttackPoint"]
+            return block
+
+        K.PH.pf_support_block = missing_attack_point
+        try:
+            with self.assertRaises(K.KitError):
+                K.build_pf_tree(ctx(), 1)
+        finally:
+            K.PH.pf_support_block = original
+
+    def test_strip_ac_flying_removes_the_one_entry(self):
+        block = _synthetic_support_block(["ACAttackPoint", "ACPiercing", "ACFlying"])
+        removed = K.strip_ac_flying(block)
+        self.assertEqual(removed, 1)
+        kinds = [c[2][0][0] for c in PH.cmds(block, "CreateCondition")]
+        self.assertEqual(kinds, ["ACAttackPoint", "ACPiercing"])
+
+    def test_strip_ac_flying_rejects_a_block_without_exactly_one(self):
+        """``strip_ac_flying`` 自己也不该在没有恰好 1 条 ACFlying 时悄悄通过。"""
+        with self.assertRaises(K.KitError):
+            K.strip_ac_flying(_synthetic_support_block(["ACAttackPoint", "ACPiercing"]))
+        with self.assertRaises(K.KitError):
+            K.strip_ac_flying(_synthetic_support_block(
+                ["ACAttackPoint", "ACPiercing", "ACFlying", "ACFlying"]))
 
     def test_official_effects_are_referenced_not_packaged(self):
         for level in (1, 2, 3):

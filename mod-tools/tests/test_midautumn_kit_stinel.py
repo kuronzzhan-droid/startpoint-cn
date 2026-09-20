@@ -471,6 +471,17 @@ class PowerFlipTreeTests(unittest.TestCase):
             self.assertEqual(gates["bound_ids"].count(K.PF_SUPPORT_BIND), 1)
             self.assertEqual(gates["support_block_bind"], K.PF_SUPPORT_BIND)
 
+    def test_support_block_grants_no_flying(self):
+        """作者 09-21「丝缇涅尔也不要浮游」：三档树里 ACFlying 为 0，攻击力提升与贯穿两条仍在。"""
+        import json
+        import wf_seasonal7_kit_philia as PH
+        for level in (1, 2, 3):
+            tree, _ = K.build_pf_tree(ctx(), level)
+            self.assertNotIn("ACFlying", json.dumps(tree, ensure_ascii=False), level)
+            kinds = [c[2][0][0] for c in PH.cmds(tree, "CreateCondition")]
+            self.assertEqual(kinds.count("ACAttackPoint"), 1, level)
+            self.assertEqual(kinds.count("ACPiercing"), 1, level)
+
     def test_hit_areas_keep_the_powerflip_multiplier_slot(self):
         """``CreateHitArea`` 第 24 位写 4 ＝ 按直击算，整块 PF 乘区被跳过。"""
         import wf_seasonal7_kit_philia as PH

@@ -645,7 +645,12 @@ def build_pf_tree(ctx, level: int):
     if len(aura) != 1:
         raise KitError(f"special lv{level} オーラ演出 not unique ({len(aura)})")
 
-    block = PH.pf_support_block(ctx.root, level)
+    # 作者 09-21 真机反馈：「丝缇涅尔也不要浮游」⇒ 辅助增益块只留攻击力提升与贯穿。
+    # donor 仍按官方三件套校验（pf_support_block 内部），只是 ACFlying 那条不进成品树。
+    block = PH.pf_support_block(ctx.root, level, keep_flying=False)
+    kinds = [c[2][0][0] for c in PH.cmds(block, "CreateCondition")]
+    if kinds != ["ACAttackPoint", "ACPiercing"]:
+        raise KitError(f"supporter 辅助增益块应为 ACAttackPoint/ACPiercing 两件套，实为 {kinds}")
     pierce = [c for c in PH.cmds(block, "CreateCondition") if c[2][0][0] == "ACPiercing"]
     if len(pierce) != 1:
         raise KitError("supporter 辅助增益块 ACPiercing not unique")
