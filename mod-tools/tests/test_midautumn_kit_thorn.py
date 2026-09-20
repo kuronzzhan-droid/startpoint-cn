@@ -1,0 +1,495 @@
+# -*- coding: utf-8 -*-
+"""索恩 kit（159994 ``tweyen_light``）：设计稿自查 + 行装配 + 技能树门禁。
+
+三组用例：
+
+1. **纯静态**（不需要 live / 官方基线）：模块常量与 ``design/thorn.json`` 的互锁、裁决 §8 的
+   设计自查（队长表禁 422/724/713、零固有状态、零 desc_override、词条 c1/c2 每键单值、
+   during 136 的 puller 列留空、面板禁词），以及本模块的小工具
+   （``design_row`` / ``donor_address`` / ``edits_from_donor`` / ``_write_dsl_checked`` 包装壳拦截）
+   与设计稿登记的两棵成品树的结构自查（三条弱体的付与对象种类与 forceApply、抗性↓ 元素码 254、
+   CNA 条件特攻、换尾的绑定一致性、特效路径全部落在官方 donor 族内）。
+2. **官方基线**（缺 ``.cdn/cn`` 或 live store 时跳过）：15 行逐行装配并与设计登记的
+   ``wf_describe`` 回读逐字比对；两棵技能树从官方 donor 重建后与设计稿逐节点一致、四道
+   DSL 门全空、AMF3 编码往返逐字节一致。
+3. **已构建的 workspace**（``work/character_packs/ma-thorn`` 不存在时跳过）：包内自有键、
+   认领、kit-report、技能能量与施法目标列、语音路由、零克隆（包里不许出现特效族）。
+
+不写 live store / ``assets/`` / ``.cdn``，不跑发布；官方基线与 workspace 只读。
+"""
+from __future__ import annotations
+
+import copy
+import json
+import sys
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+import wf_client_legality as L  # noqa: E402
+import wf_dsl  # noqa: E402
+import wf_midautumn_common as MC  # noqa: E402
+import wf_midautumn_kit_thorn as K  # noqa: E402
+import wf_midautumn_kitlib as KL  # noqa: E402
+import wf_midautumn_specs as MS  # noqa: E402
+import wf_mod_tool as core  # noqa: E402
+import wf_seasonal7_build as B  # noqa: E402
+import wf_seasonal7_common as C  # noqa: E402
+
+ROOT = core.project_root()
+DESIGN = MS.load_design(ROOT, "thorn")
+WORKSPACE = ROOT / "work/character_packs/ma-thorn"
+LEADER_PLAN = DESIGN["plan"]["leader_ability"]
+ABILITY_PLAN = DESIGN["plan"]["ability"]
+PROGRAMS = {str(p["level"]): p for p in DESIGN["plan"]["skills"]["programs"]}
+
+
+def _baseline_available() -> bool:
+    profile = core.resolve_profile()
+    return profile is not None and profile.store.is_dir() and (ROOT / ".cdn" / "cn").is_dir()
+
+
+_BASELINE = _baseline_available()
+_CTX = None
+
+
+def ctx():
+    """只读上下文：``record_sources=False`` ⇒ 母本取数不写 workspace（框架 §10.2）。"""
+    global _CTX
+    if _CTX is None:
+        _CTX = B.KitContext(MC.MAPack(MS.get_spec("thorn"), record_sources=False))
+    return _CTX
+
+
+def design_rows():
+    """(kind, label, donor_spec, cells, desc_expected, changed) 六元组，队长在前词条在后。"""
+    out = []
+    for entry, spec in zip(LEADER_PLAN["rows"], K.LEADER_DONORS):
+        out.append(("leader_ability", f"leader#{entry['index']}", spec["donor"], entry["cells"],
+                    entry["desc_expected"], spec["changed"]))
+    for key in K.ABILITY_KEYS:
+        block = ABILITY_PLAN["keys"][key]
+        for entry, spec in zip(block["records"], K.ABILITY_DONORS[key]):
+            out.append(("ability", f"{key}#{entry['index']}", spec["donor"], entry["cells"],
+                        entry["desc_expected"], spec["changed"]))
+    return out
+
+
+def conditions_of(tree, ac_name: str):
+    return [c for c in wf_dsl.iter_dsl_commands(tree, "CreateCondition")
+            if c[2] and isinstance(c[2][0], list) and c[2][0][0] == ac_name]
+
+
+# ---------------------------------------------------------------- 1. 纯静态
+
+class DesignInterlockTests(unittest.TestCase):
+    """模块常量 ↔ 设计稿：任何一边单独改都要红。"""
+
+    def test_identity(self):
+        self.assertEqual((DESIGN["key"], DESIGN["cid"], DESIGN["code"]), (K.KEY, K.CID, K.CODE))
+        spec = MS.get_spec("thorn")
+        self.assertEqual((spec.cid, spec.code, spec.element), (K.CID, K.CODE, K.ELEMENT))
+        self.assertEqual((spec.template_id, spec.template_code), (K.TEMPLATE_ID, K.TEMPLATE_CODE))
+        self.assertEqual((spec.pf_type, spec.stance), (K.PF_TYPE, K.STANCE))
+        self.assertEqual(MS.text_placeholders(spec), [])
+
+    def test_row_counts_match_the_design(self):
+        self.assertEqual(len(LEADER_PLAN["rows"]), K.LEADER_ROWS)
+        self.assertEqual(len(K.LEADER_DONORS), K.LEADER_ROWS)
+        self.assertEqual(sorted(ABILITY_PLAN["keys"]), sorted(K.ABILITY_KEYS))
+        self.assertEqual(sorted(K.ABILITY_DONORS), sorted(K.ABILITY_KEYS))
+        total = 0
+        for key in K.ABILITY_KEYS:
+            records = ABILITY_PLAN["keys"][key]["records"]
+            self.assertEqual(len(records), len(K.ABILITY_DONORS[key]), key)
+            total += len(records)
+        self.assertEqual(total, K.ABILITY_RECORDS)
+
+    def test_donor_keys_appear_in_the_design_prose(self):
+        for entry, spec in zip(LEADER_PLAN["rows"], K.LEADER_DONORS):
+            K.check_design_donor_text(entry, spec["donor"], "leader")
+        for key in K.ABILITY_KEYS:
+            block = ABILITY_PLAN["keys"][key]
+            for entry, spec in zip(block["records"], K.ABILITY_DONORS[key]):
+                K.check_design_donor_text(entry, spec["donor"], key)
+
+    def test_extra_keys_declare_every_self_owned_key(self):
+        spec = MS.get_spec("thorn")
+        self.assertEqual(spec.extra_keys.get(KL.SWITCHED), (K.VOICE_KEY,))
+        self.assertEqual(K.SPEC["extra_keys"][KL.SWITCHED], (K.VOICE_KEY,))
+        # 零固有状态 / 零自定义串 ⇒ 不许有别的自有键。
+        self.assertEqual(set(spec.extra_keys), {KL.SWITCHED})
+
+    def test_voice_route_matches_the_design(self):
+        route = DESIGN["voice"]["route"]
+        self.assertEqual(int(route["kind"]), K.VOICE_ROUTE["kind"])
+        self.assertEqual(str(route["threshold"]), K.VOICE_ROUTE["threshold"])
+        cols = KL.voice_route(K.CODE, K.VOICE_ROUTE)
+        self.assertEqual(cols[0], "0")
+        self.assertEqual(cols[4], "0.5")
+        self.assertEqual(cols[5], K.VOICE_KEY)
+        self.assertEqual(len(DESIGN["voice"]["lines"]), 22)
+
+    def test_energy_block_shape(self):
+        energy = DESIGN["plan"]["skills"]["energy"]
+        for level in ("1", "2"):
+            pair = energy[f"lv{level}"]
+            self.assertEqual(sorted(pair), ["c4", "c5"])
+            self.assertTrue(int(pair["c4"]) > 0 and int(pair["c5"]) > 0)
+
+
+class DesignSelfCheckTests(unittest.TestCase):
+    """裁决 §8 要求的 kit 前自查，全部落在设计稿登记的成品行上。"""
+
+    def test_leader_table_carries_no_forbidden_kind(self):
+        rows = [K.design_row(entry["cells"], KL.LEADER_NCOLS, "leader")
+                for entry in LEADER_PLAN["rows"]]
+        K.ban_forbidden_leader_kinds(rows)
+        for row in rows:
+            self.assertNotIn(row[K.LEADER_INSTANT_KIND], K.FORBIDDEN_LEADER_KINDS)
+            self.assertNotIn(row[K.LEADER_DURING_KIND], K.FORBIDDEN_LEADER_KINDS)
+
+    def test_ban_forbidden_leader_kinds_actually_trips(self):
+        row = K.design_row(LEADER_PLAN["rows"][0]["cells"], KL.LEADER_NCOLS, "leader")
+        row[K.LEADER_INSTANT_KIND] = "422"
+        with self.assertRaises(K.KitError):
+            K.ban_forbidden_leader_kinds([row])
+
+    def test_no_unique_condition_and_no_panel_override(self):
+        self.assertEqual(DESIGN["plan"]["unique_conditions"]["add"], [])
+        texts = DESIGN["plan"]["texts"]
+        self.assertEqual(texts["custom_ability_string"]["rows"], [])
+        self.assertEqual(texts["custom_ability_power_up_string"]["rows"], [])
+        self.assertIsNone(texts["desc_override"]["value"])
+
+    def test_ability_c1_c2_are_single_valued_per_key(self):
+        for key in K.ABILITY_KEYS:
+            block = ABILITY_PLAN["keys"][key]
+            rows = [K.design_row(r["cells"], KL.ABILITY_NCOLS, key) for r in block["records"]]
+            self.assertEqual(len({r[1] for r in rows}), 1, key)
+            self.assertEqual(len({r[2] for r in rows}), 1, key)
+            self.assertIn(rows[0][2], L.ABILITY_STATUE_GROUPS, key)
+            self.assertEqual(rows[0][2], str(block["statue_group"]), key)
+            slot = key[-1]
+            for row in rows:
+                self.assertEqual(row[0], f"{K.CODE}_{slot}")
+
+    def test_during_136_leaves_the_puller_columns_empty(self):
+        leader = [K.design_row(e["cells"], KL.LEADER_NCOLS, "leader") for e in LEADER_PLAN["rows"]]
+        ability = {key: [K.design_row(r["cells"], KL.ABILITY_NCOLS, key)
+                         for r in ABILITY_PLAN["keys"][key]["records"]] for key in K.ABILITY_KEYS}
+        checked = K.check_during_pullers(leader, ability)
+        self.assertEqual(len(checked), 3)          # 队长 L1/L2 + 词条 2#0
+        bad = copy.deepcopy(leader)
+        bad[1][K.LEADER_DURING_PULLER[0]] = "1"
+        with self.assertRaises(K.KitError):
+            K.check_during_pullers(bad, ability)
+
+    def test_panel_texts_pass_the_batch_rules(self):
+        for _kind, label, _donor, _cells, expect, _changed in design_rows():
+            self.assertEqual(KL.panel_problems(expect), [], f"{label}: {expect}")
+        spec = MS.get_spec("thorn")
+        for name in ("title", "profile", "leader", "skill1", "desc1", "skill2", "desc2"):
+            self.assertEqual(KL.panel_problems(spec.texts[name]), [], name)
+
+    def test_element_columns_are_light(self):
+        for key in K.ABILITY_KEYS:
+            for record in ABILITY_PLAN["keys"][key]["records"]:
+                row = K.design_row(record["cells"], KL.ABILITY_NCOLS, key)
+                self.assertEqual(L.ability_element_column_problems("ability", row, K.ELEMENT), [])
+
+
+class HelperTests(unittest.TestCase):
+    def test_design_row_rejects_out_of_range_columns(self):
+        with self.assertRaises(K.KitError):
+            K.design_row({"c999": "1"}, KL.ABILITY_NCOLS, "x")
+        row = K.design_row({"c0": "a", "c3": 7}, 5, "x")
+        self.assertEqual(row, ["a", "", "", "7", ""])
+
+    def test_donor_address_shapes(self):
+        self.assertEqual(K.donor_address("151165#2"), ("151165", 2))
+        for bad in ("151165", "151165#L1", "abc#0", "#0"):
+            with self.assertRaises(K.KitError):
+                K.donor_address(bad)
+
+    def test_edits_from_donor_traps_unexpected_drift(self):
+        donor = ["a", "b", "c"]
+        want = ["a", "x", "c"]
+        self.assertEqual(K.edits_from_donor(donor, want, (1,), "x"), {1: "x"})
+        with self.assertRaises(K.KitError):
+            K.edits_from_donor(donor, want, (2,), "x")
+        with self.assertRaises(K.KitError):
+            K.edits_from_donor(donor, ["a", "b", "c"], (1,), "x")
+
+    def test_write_dsl_checked_rejects_the_wrapper_shape(self):
+        class Boom:
+            def write_dsl(self, *a, **kw):
+                raise AssertionError("must not reach write_dsl")
+        with self.assertRaises(K.KitError):
+            K._write_dsl_checked(Boom(), "p", {"tree": [], "numbers": []})
+
+    def test_find_statements_and_only(self):
+        tree = ["Block", [["Command", ["A", 1]], ["Command", ["B", 2]], ["Command", ["A", 3]]]]
+        self.assertEqual(len(K.find_statements(tree, "A")), 2)
+        self.assertEqual(K._command(K._only(K.find_statements(tree, "B"), "B"))[1], 2)
+        with self.assertRaises(K.KitError):
+            K._only(K.find_statements(tree, "A"), "A")
+
+
+class DesignTreeShapeTests(unittest.TestCase):
+    """设计稿登记的两棵成品树的结构自查（不需要官方基线）。"""
+
+    def test_root_and_onhit_shape(self):
+        for level, entry in PROGRAMS.items():
+            tree = entry["tree"]
+            self.assertEqual(tree[0], "ActionDsl", level)
+            self.assertEqual(tree[10], 0, level)        # 自动档＝技能伤害归属
+            self.assertEqual(len(K._statements(tree)), K.KIT_ROOT_STATEMENTS, level)
+            hit = K._command(K._only(K.find_statements(tree, "CreateHitArea"), "CreateHitArea"))
+            self.assertEqual(len(hit), K.HIT_AREA_NCOLS, level)
+            onhit = hit[K.HIT_AREA_ONHIT_SLOT]
+            self.assertEqual(onhit[0], "Block", level)
+            self.assertEqual(len(onhit[1]), K.ONHIT_DONOR_STATEMENTS + 3, level)
+
+    def test_three_debuffs_are_bound_to_the_cna_subject(self):
+        for level, entry in PROGRAMS.items():
+            tree = entry["tree"]
+            cna = K._command(K._only(K.find_statements(tree, "CreateNormalAttack"), "CNA"))
+            self.assertEqual(cna[4], [["DCParalysis"]], level)
+            for ac in ("ACParalysis", "ACFrozen", "ACToleranceOfElement"):
+                cmd = K._only(conditions_of(tree, ac), ac)
+                self.assertEqual(cmd[1], cna[1], f"{level} {ac}")
+                self.assertEqual(cmd[10], K.CONDITION_TARGET_KIND_ENEMY, f"{level} {ac}")
+                self.assertIs(cmd[12], K.CONDITION_FORCE_APPLY, f"{level} {ac}")
+
+    def test_tolerance_uses_element_254(self):
+        for level, entry in PROGRAMS.items():
+            cmd = K._only(conditions_of(entry["tree"], "ACToleranceOfElement"), "tolerance")
+            ac = cmd[2][0]
+            self.assertEqual(ac[2], K.TOLERANCE_ELEMENT_ALL, level)
+            self.assertEqual(ac[4], [{"min": K.TOLERANCE_STACKS, "max": K.TOLERANCE_STACKS}], level)
+            self.assertLess(ac[3][0]["min"], 0, level)
+
+    def test_tail_binding_is_consistent(self):
+        for level, entry in PROGRAMS.items():
+            tail = K._statements(entry["tree"])[2]
+            cmd = K._command(tail)
+            self.assertEqual(cmd[0], "FindAllSubjects", level)
+            self.assertEqual((cmd[1], cmd[2], cmd[3]), (K.TAIL_BIND, K.TAIL_SELECTOR, K.TAIL_FILTER))
+            inner = K._command(K._only(K.find_statements(cmd[9], "CreateCondition"), "tail"))
+            self.assertEqual(inner[1], K.TAIL_BIND, level)     # lookup 位必须 = 绑定 id（防 C16103）
+            self.assertEqual(inner[2][0][0], "ACSkillDamage", level)
+
+    def test_design_values_match_the_module_constants(self):
+        for level, entry in PROGRAMS.items():
+            values = K.SKILL_VALUES[level]
+            tree = entry["tree"]
+            cna = K._command(K._only(K.find_statements(tree, "CreateNormalAttack"), "CNA"))
+            self.assertEqual(cna[6], K._range(values["cna"]), level)
+            self.assertEqual(K._only(conditions_of(tree, "ACParalysis"), "p")[2][0][1],
+                             K._range(values["paralysis"]), level)
+            self.assertEqual(K._only(conditions_of(tree, "ACFrozen"), "f")[2][0][1],
+                             K._range(values["frozen"]), level)
+
+    def test_effects_reference_the_official_family_only(self):
+        for level, entry in PROGRAMS.items():
+            paths = K.effect_paths(entry["tree"])
+            self.assertTrue(paths, level)
+            for path in sorted(paths):
+                self.assertTrue(path.startswith(K.FX_SRC_DIR + "/"), f"{level}: {path}")
+                self.assertIn(path.rsplit("/", 1)[-1], K.FX_MEMBERS, f"{level}: {path}")
+
+
+# ---------------------------------------------------------------- 2. 官方基线
+
+@unittest.skipUnless(_BASELINE, "official baseline (.cdn/cn) or live store is unavailable")
+class BaselineRowTests(unittest.TestCase):
+    def test_every_row_rebuilds_from_the_official_donor(self):
+        for kind, label, donor, cells, expect, changed in design_rows():
+            with self.subTest(label):
+                row, evidence = K._build(ctx(), kind, donor, cells, expect, changed, label)
+                self.assertEqual(evidence["describe"], expect)
+                ncols = KL.ABILITY_NCOLS if kind == "ability" else KL.LEADER_NCOLS
+                self.assertEqual(len(row), ncols)
+                self.assertEqual(KL.row_problems(kind, row,
+                                                 K.ELEMENT if kind == "ability" else None), {})
+
+    def test_full_row_mismatch_is_reported(self):
+        kind, label, donor, cells, expect, changed = design_rows()[0]
+        broken = dict(cells)
+        broken["c49"] = "1"
+        with self.assertRaises(K.KitError):
+            K._build(ctx(), kind, donor, broken, expect, changed, label)
+
+    def test_rows_need_no_client_patch(self):
+        caps = set()
+        for kind, label, donor, cells, expect, changed in design_rows():
+            _row, evidence = K._build(ctx(), kind, donor, cells, expect, changed, label)
+            caps.update(evidence["capabilities"])
+        self.assertEqual(sorted(caps), [])
+
+    def test_official_action_skill_donor_is_the_arrow_rain_row(self):
+        rows = K._official_action_rows(ctx(), "psychic_gal")
+        self.assertEqual(sorted(rows), ["1", "2"])
+        for level, energy in (("1", ("500", "500")), ("2", ("500", "450"))):
+            self.assertEqual(rows[level][2], "dynamic/skill/atk_nearest")
+            self.assertEqual((rows[level][4], rows[level][5]), energy)
+            design = DESIGN["plan"]["skills"]["energy"][f"lv{level}"]
+            self.assertEqual((str(design["c4"]), str(design["c5"])), energy)
+
+
+@unittest.skipUnless(_BASELINE, "official baseline (.cdn/cn) or live store is unavailable")
+class BaselineSkillTreeTests(unittest.TestCase):
+    def test_tree_rebuilds_to_the_design_and_passes_every_gate(self):
+        for level in ("1", "2"):
+            with self.subTest(level):
+                tree, gates = K.build_skill_tree(ctx(), level)
+                K.check_design_tree(DESIGN, level, tree)
+                self.assertEqual(K._dsl_problems(tree), [])
+                self.assertEqual(gates["buff_target_as"], 0)
+                self.assertEqual(gates["onhit_statements"], K.ONHIT_DONOR_STATEMENTS + 3)
+                self.assertEqual(len(gates["dropped_tail"]), 3)
+
+    def test_encoded_tree_round_trips_byte_for_byte(self):
+        for level in ("1", "2"):
+            tree, _ = K.build_skill_tree(ctx(), level)
+            blob = wf_dsl.encode_amf3(tree)
+            self.assertEqual(wf_dsl.parse_dsl(blob)["tree"], tree, level)
+            self.assertEqual(len(blob), PROGRAMS[level]["encoded_bytes"], level)
+
+    def test_design_tree_drift_is_caught(self):
+        tree, _ = K.build_skill_tree(ctx(), "2")
+        broken = copy.deepcopy(tree)
+        K._command(K._only(K.find_statements(broken, "CreateNormalAttack"), "CNA"))[6] = \
+            [{"min": 1, "max": 1}]
+        with self.assertRaises(K.KitError):
+            K.check_design_tree(DESIGN, "2", broken)
+
+    def test_donor_pickers_take_the_ranged_shape(self):
+        statement = K.pick_condition(ctx().template_dsl(K.TOLERANCE_DONOR.format(lv="2")),
+                                     "ACToleranceOfElement")
+        ac = K._command(statement)[2][0]
+        self.assertIn("min", ac[1][0])                   # 排掉 alv 觉醒成长形
+        self.assertEqual(K.slayer_param(ctx()), [["DCParalysis"]])
+        empty = ["ActionDsl", 1, ["None"], False, False, False, False, False, False, False, 0,
+                 ["Block", []]]
+        with self.assertRaises(K.KitError):
+            K.pick_condition(empty, "ACParalysis")
+
+
+# ---------------------------------------------------------------- 3. 已构建的 workspace
+
+@unittest.skipUnless((WORKSPACE / "evidence/kit-report.json").is_file(),
+                     "workspace ma-thorn has not been built yet")
+class PackageTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.pack = MC.MAPack(MS.get_spec("thorn"), record_sources=False)
+        cls.report = json.loads((WORKSPACE / "evidence/kit-report.json").read_text("utf-8"))
+        cls.claims = json.loads((WORKSPACE / "evidence/table_claims.json").read_text("utf-8"))
+
+    def claimed(self, logical: str) -> set[str]:
+        return {key for entry in self.claims if entry["logical_path"] == logical
+                for key in entry["outer_keys"]}
+
+    def test_every_self_owned_key_is_claimed(self):
+        self.assertEqual(self.claimed(KL.ABILITY), set(K.ABILITY_KEYS))
+        self.assertEqual(self.claimed(KL.LEADER), {str(K.CID)})
+        self.assertEqual(self.claimed(KL.CHARACTER), {str(K.CID)})
+        self.assertIn(K.VOICE_KEY, self.claimed(KL.SWITCHED))
+        self.assertEqual(self.claimed(MS.UNIQUE_CONDITION_LOGICAL), set())
+        self.assertEqual(self.claimed(KL.CAS), set())
+
+    def test_package_rows_match_the_design(self):
+        rows = self.pack.pkg_flat(KL.ABILITY)
+        total = 0
+        for key in K.ABILITY_KEYS:
+            records = C.csv_split(rows[key])
+            self.assertEqual(len(records), len(K.ABILITY_DONORS[key]), key)
+            total += len(records)
+            for index, record in enumerate(records):
+                want = K.design_row(ABILITY_PLAN["keys"][key]["records"][index]["cells"],
+                                    KL.ABILITY_NCOLS, key)
+                self.assertEqual(list(record), want, f"{key}#{index}")
+        self.assertEqual(total, K.ABILITY_RECORDS)
+        leader = C.csv_split(self.pack.pkg_flat(KL.LEADER)[str(K.CID)])
+        self.assertEqual(len(leader), K.LEADER_ROWS)
+        for index, record in enumerate(leader):
+            self.assertEqual(list(record),
+                             K.design_row(LEADER_PLAN["rows"][index]["cells"],
+                                          KL.LEADER_NCOLS, "leader"))
+
+    def test_action_skill_targeting_and_energy(self):
+        rows = B.KitContext(self.pack).pkg_nested(K.CODE)
+        self.assertEqual(sorted(rows), ["1", "2"])
+        for level in ("1", "2"):
+            cells = list(rows[level])
+            design = DESIGN["plan"]["skills"]["energy"][f"lv{level}"]
+            self.assertEqual(cells[2], "dynamic/skill/atk_nearest", level)
+            self.assertEqual((cells[4], cells[5]), (str(design["c4"]), str(design["c5"])), level)
+            self.assertEqual(cells[0], MS.get_spec("thorn").texts[f"skill{level}"])
+
+    def test_written_dsl_equals_the_design_tree(self):
+        # 设计稿登记的是零克隆基线树（D-8 默认项）；一旦 B/pixel/thorn/fx_lut.json 交付，
+        # kit 会把效果引用整族改写到 K.FX_DST_DIR（保留成员基名，只换目录前缀，D-8 实际落法）。
+        # 这里按 kit-report 实际报告的 effect_mode 决定要不要做同样的前缀替换再比较，
+        # 这样测试跟着 kit 的真实分支走，不会因为像素/特效交付节奏而漂移。
+        cloned = self.report["effect_mode"] == "clone+lut"
+        src_prefix, dst_prefix = K.FX_SRC_DIR + "/", K.FX_DST_DIR + "/"
+
+        def rewritten(node):
+            if isinstance(node, str):
+                return dst_prefix + node[len(src_prefix):] if node.startswith(src_prefix) else node
+            if isinstance(node, list):
+                return [rewritten(item) for item in node]
+            return node
+
+        for level in ("1", "2"):
+            logical = wf_dsl.dsl_logical(
+                f"battle/action/skill/action/rare5/{K.CODE}${K.CODE}_{level}")
+            tree = C.amf_parse(self.pack.pkg_path("common", logical).read_bytes())
+            expected = rewritten(PROGRAMS[level]["tree"]) if cloned else PROGRAMS[level]["tree"]
+            self.assertEqual(tree, expected, logical)
+
+    def test_character_row_routes_the_voice(self):
+        row = self.pack.pkg_character_row()
+        self.assertEqual(row[9:17], KL.voice_route(K.CODE, K.VOICE_ROUTE))
+        self.assertEqual(row[6], str(K.PF_TYPE))
+        self.assertEqual(row[26], K.STANCE)
+        self.assertEqual(row[27], str(K.CID))
+
+    def test_effect_family_matches_the_reported_mode(self):
+        # D-8：默认零克隆（official-reference，无 fx_lut.json 时）；fx_lut.json 一旦交付，
+        # kit 改走 clone+lut，包里必须有 K.FX_DST_DIR 整族且 report 登记这一族。两态都锁：
+        # 不允许「报告说克隆了但包里没有」或反过来。
+        family_dir = self.pack.pkg_path("common", K.FX_DST_DIR)
+        if self.report["effect_mode"] == "clone+lut":
+            self.assertEqual(self.report["effect_families"], [K.FX_DST_DIR])
+            self.assertTrue(family_dir.is_dir(), family_dir)
+        else:
+            self.assertEqual(self.report["effect_mode"], "official-reference")
+            self.assertEqual(self.report["effect_families"], [])
+            self.assertFalse(family_dir.exists(), family_dir)
+
+    def test_report_status_and_gate(self):
+        gate = self.report["kit_gate"]
+        self.assertEqual(gate["rows"], K.LEADER_ROWS + K.ABILITY_RECORDS)
+        self.assertEqual(gate["programs"], 2)
+        ready = gate["pixel_present"] and not gate["pixel_missing"]
+        self.assertEqual(self.report["status"], KL.READY if ready else KL.DRAFT)
+        if not ready:
+            self.assertTrue(gate["reason"])
+
+    def test_report_panel_and_capabilities(self):
+        self.assertEqual(self.report["cid"], K.CID)
+        self.assertEqual(len(self.report["panel"]), K.LEADER_ROWS + K.ABILITY_RECORDS)
+        for text in self.report["panel"]:
+            self.assertEqual(KL.panel_problems(text), [], text)
+        self.assertEqual(self.report["required_capabilities"], [])
+        self.assertTrue(self.report["deviations"])
+        self.assertIn("D-8", [d["id"] for d in self.report["deviations"]])
+
+
+if __name__ == "__main__":
+    unittest.main()
