@@ -1310,6 +1310,53 @@ def check_panel(pack: Pack, rep: Report) -> None:
                 "rules": list(KL.FORBIDDEN_PANEL_WORDS)})
 
 
+MAIN_ICON_TAG = "<icon id='main'>"
+
+
+def check_panel_override_markup(pack: Pack, rep: Report) -> None:
+    """``desc_override_<code>_<slot>`` 整槽接管后客户端不再逐行画主位限制图标。
+
+    作者真机 2026-09-21 连报四个角色:漏写图标(看不到 Ⓜ)、写成字面「Ⓜ」(渲染成白字)、
+    多条记录用「／」挤成一行(不分行)。判据:主位限制槽(整键 c1 全为 false)的覆盖串每一行
+    都带 ``<icon id='main'>``;非主位槽一行都不带;任何覆盖串不含字面「Ⓜ」;多记录槽不许单行「／」。
+    """
+    problems: list[str] = []
+    checked = 0
+    cas = pack.table(CAS) or {}
+    ability = pack.table(ABILITY) or {}
+    prefix = L.PANEL_OVERRIDE_KEY_PREFIX + pack.code
+
+    def lines_of(key: str) -> list[str]:
+        rows = split_rows(cas.get(key, ""))
+        return cell(rows[0], 0).split("\n") if rows else []
+
+    for slot in range(1, 7):
+        rows = split_rows(ability.get(f"{pack.cid}{slot}", ""))
+        key = f"{prefix}_{slot}"
+        if not rows or key not in cas:
+            continue
+        checked += 1
+        main_only = {cell(row, 1) for row in rows} == {"false"}
+        lines = lines_of(key)
+        with_icon = sum(1 for line in lines if MAIN_ICON_TAG in line)
+        if main_only and with_icon != len(lines):
+            problems.append(f"{key}: main-only slot but {with_icon}/{len(lines)} lines carry {MAIN_ICON_TAG}")
+        if not main_only and with_icon:
+            problems.append(f"{key}: not a main-only slot but {with_icon} lines carry {MAIN_ICON_TAG}")
+        if any("Ⓜ" in line for line in lines):
+            problems.append(f"{key}: literal 'Ⓜ' renders as plain white text, use {MAIN_ICON_TAG}")
+        if len(lines) == 1 and len(rows) > 1 and "／" in lines[0]:
+            problems.append(f"{key}: {len(rows)} records squeezed into one line with '／', use line breaks")
+    if prefix in cas:
+        checked += 1
+        lines = lines_of(prefix)
+        if len(lines) == 1 and "／" in lines[0]:
+            problems.append(f"{prefix}: leader override squeezed into one line with '／', use line breaks")
+        if any("Ⓜ" in line for line in lines):
+            problems.append(f"{prefix}: literal 'Ⓜ' in leader override")
+    rep.result(problems, "panel/override-markup", BLOCKING, {"overrides_checked": checked})
+
+
 # ---------------------------------------------------------------- 设计稿对照(可选)
 
 def check_design(pack: Pack, rep: Report, design: Path | None) -> None:
@@ -1355,6 +1402,7 @@ def verify(workspace: Path, *, root: Path, design: Path | None = None,
     if not skip_atlas:
         check_atlas(pack, rep, gbf=gbf, threshold=threshold)
     check_panel(pack, rep)
+    check_panel_override_markup(pack, rep)
     check_design(pack, rep, design)
     blocking = rep.blocking
     return {

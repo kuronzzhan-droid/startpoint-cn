@@ -403,6 +403,69 @@ class DonorCodeLeakTest(unittest.TestCase):
             self.skipTest("no ma-* package on this machine")
 
 
+class _StubPack:
+    """``check_panel_override_markup`` 只读 cid/code/table —— 用桩包就能造坏样本。"""
+
+    cid = "159994"
+    code = "tweyen_light"
+
+    def __init__(self, ability: dict, strings: dict) -> None:
+        self._tables = {V.ABILITY: ability, V.CAS: strings}
+
+    def table(self, logical: str, root: str = "common"):
+        return self._tables.get(logical)
+
+
+class PanelOverrideMarkupTest(unittest.TestCase):
+    """``panel/override-markup``：作者真机 2026-09-21 连报四个角色的三种失效形态。"""
+
+    ICON = " <icon id='main'>  "
+
+    @staticmethod
+    def _ability(unisonable: str, records: int = 2) -> str:
+        return "\n".join(f"tweyen_light_3,{unisonable},x" for _ in range(records))
+
+    @staticmethod
+    def _cell(text: str) -> str:
+        return '"' + text + '"'
+
+    def _run(self, unisonable: str, override: str, records: int = 2, key: str = "desc_override_tweyen_light_3"):
+        pack = _StubPack({"1599943": self._ability(unisonable, records)}, {key: self._cell(override)})
+        rep = V.Report()
+        V.check_panel_override_markup(pack, rep)
+        return next(c for c in rep.checks if c["name"] == "panel/override-markup")
+
+    def test_main_only_slot_with_icon_on_every_line_passes(self):
+        check = self._run("false", self.ICON + "第一条\n" + self.ICON + "第二条")
+        self.assertTrue(check["pass"], json.dumps(check["evidence"], ensure_ascii=False))
+        self.assertEqual(check["level"], V.BLOCKING)
+
+    def test_missing_icon_is_blocked(self):
+        check = self._run("false", self.ICON + "第一条\n第二条")
+        self.assertFalse(check["pass"])
+        self.assertIn("1/2", json.dumps(check["evidence"], ensure_ascii=False))
+
+    def test_literal_glyph_is_blocked(self):
+        check = self._run("false", "Ⓜ第一条\nⓂ第二条")
+        self.assertFalse(check["pass"])
+
+    def test_icon_on_a_non_main_slot_is_blocked(self):
+        check = self._run("true", self.ICON + "第一条\n第二条")
+        self.assertFalse(check["pass"])
+
+    def test_records_squeezed_with_slash_are_blocked(self):
+        check = self._run("true", "第一条／第二条")
+        self.assertFalse(check["pass"])
+
+    def test_single_record_may_contain_a_slash(self):
+        check = self._run("true", "攻击力／技能伤害＋50%", records=1)
+        self.assertTrue(check["pass"], json.dumps(check["evidence"], ensure_ascii=False))
+
+    def test_leader_override_in_one_slash_line_is_blocked(self):
+        check = self._run("true", "第一条／第二条", key="desc_override_tweyen_light")
+        self.assertFalse(check["pass"])
+
+
 def deflate(tree) -> bytes:
     """像素三件套的存储形态：AMF3 裸树 + 原始 deflate（验证器按 wbits=-15 读）。"""
     comp = zlib.compressobj(9, zlib.DEFLATED, -15)
