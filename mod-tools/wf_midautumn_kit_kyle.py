@@ -1,41 +1,31 @@
 # -*- coding: utf-8 -*-
-"""中秋批次 kit：凯尔 139990 ``kyle_moon``（雷 · 近战 · 直击输出主 C）。
+"""中秋批次 kit：凯尔 139990 ``kyle_moon``（雷 · 近战 · 冲刺型直击主 C）—— rework1。
 
-轴线是**「贯通 × 月牙层数」两条互相咬合的直击线**：技能一发给全队与协力球挂「贯通／直击
-伤害提升／加速」三条状态，自身再靠「月牙」（固有 ``13999001``，上限 20 层）把层数翻译成
-全队与自身的直击伤害；队长技与词条各有一条 D204 把直击伤害池**跨池换算**成攻击力。
-技能三段斩全部写 ``CreateHitArea params[23] = 4``（按直接攻击伤害结算），所以技能本身也吃
-直击线的全部加成。设计与数值以 ``work/character_packs/midautumn-20260920/design/kyle.{md,json}``
-为准 —— 本模块是「设计 JSON 驱动」的薄壳：队长 6 行、词条 6 键 13 条的 donor／逐格改／预期
-``wf_describe`` 全部从 ``design/kyle.json`` 的 ``plan`` 块读出后装配，两边漂移（donor 缺失、
-legality 不过、``wf_describe`` 对不上）当场报错，不在本文件里手抄 19 行的具体数值。
+作者 2026-09-20/21 把凯尔整套重写（``rework1/author-request.md`` 第 16 行 + 09-21 答复），
+目标面板 = ``rework1/panel/kyle.json``，引擎落法 = ``rework1/panel/_deviations.json``，
+逐行映射与零先例退路见施工单 ``rework1/impl/kyle.md``。三条互相咬合的轴线：
 
-本模块自己负责设计 JSON 管不到的部分：
+- **冲刺线**：队长位 422 冲刺参数（CD −50% / 弹射速度 +100% / 可从更高位置发动）
+  ＋「冲刺 → 付与贯通」；422 只许写 ability 表，全部挂前置 42（Leader），文案由
+  ``desc_override_kyle_moon`` 在队长块整体接管（hibiki 能力 5 的同一条既判偏离）。
+- **贯通线**：每次获得贯通 → 固有「贯穿印」+1 层 → 629 追击树重新付与
+  ``ACAdditionalDirectAttack``，**段数 = 1 + 层数（vlv 绑定，可超 3）**（杰拉德 v3 路线）。
+- **月牙线**：技能 / 每 50 次直击 → 月牙 +1（上限 99 ＝「不设置上限」）→ during 134
+  把层数翻成自身与全队的攻击力 / 直击伤害。
 
-- 固有状态「月牙」（``13999001``，官方 donor 11「能量吸取」同形，上限 20 层、入棺不清层）
-  ＋ 48×48 图标（PIL 8× 画 → LANCZOS，alpha 取官方图标外框，一格不改）；
-- 技能 DSL 两档：官方母本 ``black_wolf_knight_wt23`` 的 ``_1``/``_2`` 整树改参数 ——
-  三段斩（第 9／49／92 帧）判定区全部 ``p23 = 4``，末段「月华终斩」直接引用官方
-  ``light_adventurer_4anv_ground_thunder``（零图集增量）；母本那块「PF 伤害」整块换成
-  「全队及协力球：贯通 ＋ 直击伤害 UP ＋ 加速」三条 ``CreateCondition``；
-- 技能特效族 ``black_wolf_knight_wt23``（slash/smash/explosion，593×253）换名重打到
-  ``skill_unique/kyle_moon/blade/``，风绿 → 雷黄 LUT 染色（``B/pixel/kyle/fx_lut.json``
-  优先，没有就用设计稿内联的 13 格色表）；
-- ``action_skill`` 两档能量 560/560 与 560/510、名称与说明（其余列断言与母本一致）；
-- 语音路由（kind 1 ConditionExist ← 条件种类 31 贯通）与 ``switched_action_skill``；
-- ``B/pixel/kyle/install.json`` 里的像素小人成品（缺文件静默跳过）。
+技能本体：母本 ``black_wolf_knight_wt23`` 的三段斩 + ``MoveBall``（逐格抄官方
+``dog_slasher_proud_2``）＝「向最近的敌人冲刺」；自身挂固有「月狼·觉」15 秒＝强化状态，
+期间每 10 次直击由 629 召唤天雷（常态 = 官方千岳十织，零克隆零染色；强化档 = 梅媞斯雷弓
+克隆染冷蓝白），两档由词条 536 的 ``ConditionalsChangeSkillFlag`` 分流。
 
-**无 ``custom_ability_string``、无 ``desc_override``、无 629／722／422／724／713，零 APK 补丁 kind。**
-由 ``python mod-tools/wf_midautumn_build.py --char kyle --step kit`` 调用 :func:`build`。
-只经 ``KitContext`` 写 ``work/character_packs/ma-kyle/``；live store / ``assets/`` / ``.cdn`` /
-设备 / 存档一律不碰，不发布、不 git。
+写入边界：只经 ``KitContext`` 写 ``work/character_packs/ma-kyle/``；live store / ``assets/`` /
+``.cdn`` / 设备 / 存档一律不碰，不发布、不 git。
 """
 from __future__ import annotations
 
 import copy
 import hashlib
 import json
-import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -60,89 +50,308 @@ TEMPLATE_ID, TEMPLATE_CODE = 141159, "black_wolf_knight_wt23"
 
 ABILITY_KEYS = tuple(f"{CID}{slot}" for slot in range(1, 7))
 
-# ---- 固有状态「月牙」
-UID = MS.unique_condition_id(CID, 1)            # "13999001"（8 位；7 位撞过基诺维）
+# ---------------------------------------------------------------- 固有状态
+# ID 一律 8 位 cid*100+n（7 位撞过基诺维）。c4 上限禁写 (None)：那是上限 1，
+# during 134 按层加成与 vlv 成长会全死（记忆 wf-unique-cap-none-trap）。
+
+UID_CRESCENT = MS.unique_condition_id(CID, 1)   # 「月牙」13999001
+UID_PIERCE = MS.unique_condition_id(CID, 2)     # 「贯穿印」13999002
+UID_AWAKE = MS.unique_condition_id(CID, 3)      # 「月狼·觉」13999003
+
+ETERNAL_FRAMES = "99999999"                     # 官方 21 行里 13 行就是这个值 = 无时间限制
+NO_CAP = "99"                                   # 「不设置上限」的官方写法
+AWAKE_FRAMES = "900"                            # 15 秒（主控放行默认值第 1 条）
+
 UNIQUE_DONOR = "11"                             # 官方 unique_condition[11]「能量吸取」
-UNIQUE_STRING_ID = f"unique_{CODE}_crescent"
-UNIQUE_NAME = "月牙"
-UNIQUE_CAP = "20"                               # 禁 (None)：那是上限 1，during 134 按层加成会全死
-UNIQUE_ICON_ROW = f"battle/common/unique_condition/{UNIQUE_STRING_ID}"
-UNIQUE_ICON_LOGICAL = UNIQUE_ICON_ROW + ".png"
-UNIQUE_ICON_FRAME = f"battle/common/unique_condition/unique_blackflower_wiz_smr22.png"
+UNIQUE_ICON_FRAME = "battle/common/unique_condition/unique_blackflower_wiz_smr22.png"
+
+#: (键, string_id, 显示名, 上限, 持续帧, 图标画法)
+UNIQUES: tuple[tuple[str, str, str, str, str, str], ...] = (
+    (UID_CRESCENT, f"unique_{CODE}_crescent", "月牙", NO_CAP, ETERNAL_FRAMES, "crescent"),
+    (UID_PIERCE, f"unique_{CODE}_pierce", "贯穿印", NO_CAP, ETERNAL_FRAMES, "pierce"),
+    (UID_AWAKE, f"unique_{CODE}_awake", "月狼·觉", "1", AWAKE_FRAMES, "awake"),
+)
+UNIQUE_ICON_ROW = {key: f"battle/common/unique_condition/{sid}" for key, sid, *_ in UNIQUES}
 
 VOICE_KEY = f"{CODE}_voice_ready"
 VOICE_ROUTE = {"kind": 1, "condition_kind": "31", "condition_id": "0"}   # 31 = 贯通
 
-TEXTS: dict[str, str] = {}      # 10 个文本键在 design/kyle.json 的 texts 块里（build 里核验）
+# ---------------------------------------------------------------- 自有字符串键
+CAS_SWITCH = f"change_skill_{CODE}"                    # 536 的面板条目
+CAS_PIERCE = f"ability_skill_{CODE}_pierce"            # 629 追击（段数成长）
+CAS_THUNDER = f"ability_skill_{CODE}_thunder"          # 629 追击（天雷）
+CAS_LEADER = f"desc_override_{CODE}"                   # 队长块整体接管
+CAS_ABILITY = {slot: f"desc_override_{CODE}_{slot}" for slot in range(1, 7)}
+
+PIERCE_PROGRAM = f"battle/action/skill/action/ability_skill/{CAS_PIERCE}${CAS_PIERCE}"
+THUNDER_PROGRAM = f"battle/action/skill/action/ability_skill/{CAS_THUNDER}${CAS_THUNDER}"
+
 SPEC = {
-    "required_capabilities": (),                # 19 行实跑 caps 全空，不需要任何 APK 补丁 kind
+    # 本轮从「零 APK 补丁 kind」变成需要这两项（422 冲刺参数 + 面板文案接管）；
+    # 两者本批 hibiki 已在用，已安装客户端具备。
+    "required_capabilities": ("dash-parameter-v1", "panel-description-override-v2"),
     "extra_keys": {
-        MS.UNIQUE_CONDITION_LOGICAL: (UID,),
+        MS.UNIQUE_CONDITION_LOGICAL: tuple(key for key, *_ in UNIQUES),
+        KL.CAS: (CAS_SWITCH, CAS_PIERCE, CAS_THUNDER, CAS_LEADER,
+                 *(CAS_ABILITY[slot] for slot in range(1, 7))),
         KL.SWITCHED: (VOICE_KEY,),
     },
 }
 
-# ---------------------------------------------------------------- donor 地址
-# 设计稿的 donor 字段是人读散文（"触发 1630012#L1 / 内容 1611231#L1"），这里给出机读地址。
-# ``#N`` 一律 **0 基**；设计稿写的 ``#LN`` 是 1 基，两边在 :func:`_check_design_donor` 互校。
-# 多个 donor = 复合行（触发块取一个、内容块取另一个），逐格审计时任一 donor 命中即算有来源。
+# ---------------------------------------------------------------- 行计划
+# 形状：(donor 地址, donor 来源, {列号: 值}, 预期 wf_describe 回读)。
+# 列号 0 基；donor 的 ``#N`` 也是 0 基。ability 126 列 / leader 124 列（leader 在 c3 之后逐列 −2）。
+# 预期 describe 为 None = 首建时只记录不比对（填好后就是逐字门禁）。
 
-LEADER_DONORS: dict[int, tuple[str, ...]] = {
-    0: ("131182#0", "131170#2"),    # I32 全队攻击力 + 雷共鸣前置块
-    1: ("161135#0",),               # D30 贯通 → D1 全队直击
-    2: ("161123#0",),               # D134 固有层数 → D1（c107 0→1）
-    3: ("161135#1",),               # 前置 38 + D204 → D0 跨池
-    4: ("161123#2",),               # I23 技能发动 → I461 月牙 +2
-    5: ("161123#3",),               # I0 开局 → I461 月牙 +3
+_PRE_RESONANCE_A = {6: "2", 9: "600000", 10: "600000", 11: ELEMENT_TOKEN}   # ability 前置 1：雷共鸣
+_PRE_RESONANCE_A2 = {13: "2", 16: "600000", 17: "600000", 18: ELEMENT_TOKEN}  # ability 前置 2
+_PRE_LEADER_A = {6: "42"}                                                   # ability 前置 1：持有者为队长
+_PRE_RESONANCE_L = {4: "2", 7: "600000", 8: "600000", 9: ELEMENT_TOKEN}     # leader 前置 1：雷共鸣
+
+#: 队长技 4 行：月牙每层 → 攻击力 / 直击伤害。
+#: ⚠ during 134 × target 1（除自身全员）官方与 live 双零先例 ⇒ 不开首例，
+#: 改用「t5 全队(雷) 低值 + t0 自身补差」的等价拆分（施工单 R2），合计数值与面板逐字一致。
+LEADER: tuple[tuple[str, str, dict[int, str], str | None], ...] = (
+    ("161123#0", "official",
+     {0: CODE, **_PRE_RESONANCE_L, 100: "(None)", 102: UID_CRESCENT, 107: "0", 108: "5",
+      109: ELEMENT_TOKEN, 111: "50000", 112: "50000"},
+     None),
+    ("161063#2", "official",
+     {0: CODE, **_PRE_RESONANCE_L, 98: "100000", 99: "100000", 100: "(None)",
+      102: UID_CRESCENT, 107: "0", 108: "0", 109: "", 111: "50000", 112: "50000"},
+     None),
+    ("161123#0", "official",
+     {0: CODE, **_PRE_RESONANCE_L, 100: "(None)", 102: UID_CRESCENT, 107: "1", 108: "5",
+      109: ELEMENT_TOKEN, 111: "100000", 112: "100000"},
+     None),
+    ("161063#2", "official",
+     {0: CODE, **_PRE_RESONANCE_L, 98: "100000", 99: "100000", 100: "(None)",
+      102: UID_CRESCENT, 107: "1", 108: "0", 109: "", 111: "100000", 112: "100000"},
+     None),
+)
+
+_STATUE = {1: "attack_common", 2: "attack_common", 3: "condition",
+           4: "attack_common", 5: "special", 6: "attack_common"}
+_UNISONABLE = {1: "true", 2: "true", 3: "false", 4: "true", 5: "true", 6: "true"}
+
+PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
+    # ---- 能力 1：开局技能槽 + 共鸣强化技能
+    1: (
+        ("2310933#0", "official", {51: "50000", 52: "50000"}, None),
+        ("1110014#0", "official", {**_PRE_RESONANCE_A, 51: "50000", 52: "50000"}, None),
+        ("1411113#0", "official", {11: ELEMENT_TOKEN, 70: CAS_SWITCH}, None),
+        # kind 694（独立乘区技能伤害）官方 0 行，只有 live 先例 ⇒ 这一行取 store（同 magnus）。
+        ("1299925#1", "store", {**_PRE_RESONANCE_A, 51: "100000", 52: "100000"}, None),
+    ),
+    # ---- 能力 2：月牙每层 + 贯通计数
+    2: (
+        ("1610633#0", "official",
+         {**_PRE_RESONANCE_A, 100: "100000", 101: "100000", 102: "(None)",
+          104: UID_CRESCENT, 109: "1", 110: "5", 111: ELEMENT_TOKEN,
+          113: "50000", 114: "50000"},
+         None),
+        ("1611233#2", "official",
+         {**_PRE_RESONANCE_A, 102: "(None)", 104: UID_CRESCENT, 109: "0", 110: "0",
+          113: "50000", 114: "50000"},
+         None),
+        ("2110012#0", "official",
+         {**_PRE_RESONANCE_A, 34: "(None)", 48: "5", 49: ELEMENT_TOKEN,
+          51: "50000", 52: "50000"},
+         None),
+    ),
+    # ---- 能力 3（Ⓜ）：月牙生产 + 直击段数 + 两棵 629 追击
+    3: (
+        ("1611231#0", "official",
+         {**_PRE_RESONANCE_A, 51: "100000", 52: "100000", 68: UID_CRESCENT}, None),
+        ("1611231#0", "official",
+         {**_PRE_RESONANCE_A, 27: "20", 28: "7", 29: ELEMENT_TOKEN,
+          30: "5000000", 31: "5000000", 34: "(None)",
+          51: "100000", 52: "100000", 68: UID_CRESCENT},
+         None),
+        ("2110012#0", "official",
+         {**_PRE_RESONANCE_A, 34: "(None)", 46: "2", 47: "211", 48: "0",
+          51: "10000", 52: "10000"},
+         None),
+        ("1412012#2", "official",
+         {6: "187", 7: "0", 12: UID_CRESCENT, **_PRE_RESONANCE_A2,
+          48: "5", 49: ELEMENT_TOKEN, 51: "300000", 52: "300000"},
+         None),
+        # 贯穿印 +1：必须排在下面的 629 之前，否则段数落后一拍。
+        ("1611231#0", "official",
+         {**_PRE_LEADER_A, **_PRE_RESONANCE_A2, 27: "51", 28: "", 34: "(None)",
+          51: "100000", 52: "100000", 68: UID_PIERCE},
+         None),
+        ("1611053#0", "official",
+         {**_PRE_LEADER_A, **_PRE_RESONANCE_A2, 27: "51", 28: "", 34: "(None)", 35: "0",
+          70: CAS_PIERCE, 71: PIERCE_PROGRAM},
+         None),
+        # 强化状态中每 10 次自身直击 → 召唤天雷（trigger 20 传入被打的敌人，非 null）
+        ("1611053#0", "official",
+         {6: "187", 7: "0", 12: UID_AWAKE, **_PRE_RESONANCE_A2,
+          27: "20", 28: "0", 30: "1000000", 31: "1000000", 34: "(None)", 35: "0",
+          70: CAS_THUNDER, 71: THUNDER_PROGRAM},
+         None),
+    ),
+    # ---- 能力 4：里布拉姆写法（by_each_trigger_puller）
+    4: (
+        ("1211593#0", "official",
+         {11: ELEMENT_TOKEN, 29: ELEMENT_TOKEN, 47: "0", 48: "5", 49: "",
+          51: "100000", 52: "100000"},
+         None),
+        ("1211593#0", "official",
+         {11: ELEMENT_TOKEN, 29: ELEMENT_TOKEN, 47: "214", 48: "5", 49: "",
+          51: "100000", 52: "100000"},
+         None),
+    ),
+    # ---- 能力 5：直击计数收益 + 队长位冲刺参数（4 条 422，不进面板）
+    5: (
+        ("1510573#1", "official",
+         {**_PRE_RESONANCE_A, 29: ELEMENT_TOKEN, 30: "5000000", 31: "5000000",
+          34: "(None)", 35: "0", 47: "35", 48: "5", 49: ELEMENT_TOKEN,
+          51: "5000", 52: "5000"},
+         None),
+        ("1510573#1", "official",
+         {**_PRE_RESONANCE_A, 29: ELEMENT_TOKEN, 30: "5000000", 31: "5000000",
+          34: "(None)", 35: "0", 47: "51", 48: "5", 49: ELEMENT_TOKEN,
+          51: "100000", 52: "100000"},
+         None),
+        ("1699885#0", "store", {**_PRE_LEADER_A, 113: "100000", 114: "100000", 118: "1"}, None),
+        ("1699885#0", "store", {**_PRE_LEADER_A, 113: "-50000", 114: "-50000", 118: "0"}, None),
+        ("1699885#0", "store", {**_PRE_LEADER_A, 113: "40000", 114: "40000", 118: "6"}, None),
+        # 冲刺 → 贯通 5.5 秒（330 帧 ×100000）
+        ("1110023#0", "official",
+         {**_PRE_LEADER_A, **_PRE_RESONANCE_A2, 27: "4", 28: "", 30: "100000", 31: "100000",
+          34: "(None)", 35: "0", 48: "0", 57: "33000000", 58: "33000000",
+          59: "100000", 60: "100000"},
+         None),
+    ),
+    # ---- 能力 6：迟缓特攻（驱散 + 迟缓本体在强化档 DSL 里）
+    6: (
+        ("2210013#0", "official",
+         {**_PRE_RESONANCE_A, 49: ELEMENT_TOKEN, 51: "15000", 52: "15000"}, None),
+    ),
 }
 
-ABILITY_DONORS: dict[tuple[str, int], tuple[str, ...]] = {
-    ("1399901", 0): ("1310024#0",),
-    ("1399901", 1): ("1610023#2",),
-    ("1399902", 0): ("1410216#1",),
-    ("1399902", 1): ("1611352#0",),
-    ("1399903", 0): ("1611231#0", "1630012#0"),     # 内容块 / 触发块
-    ("1399903", 1): ("1611231#0",),
-    ("1399903", 2): ("1610083#2",),
-    ("1399904", 0): ("1411112#1",),
-    ("1399904", 1): ("1611352#0", "1410073#0"),     # 内容块 / 触发块
-    ("1399905", 0): ("1411113#1",),
-    ("1399905", 1): ("1411113#2",),
-    ("1399906", 0): ("2610351#0",),
-    ("1399906", 1): ("1310326#0",),
+#: 首建实跑出来的 ``wf_describe`` 回读，烤成逐字门禁：donor 漂移 / 描述器改版 / 改错格
+#: 都会在这里当场炸。面板上真正显示的是 ``desc_override_*``（PANEL_LEADER / PANEL_ABILITY），
+#: 这张表只管「表行本身渲染成什么」。
+EXPECT: dict[str, str] = {
+    "leader#0": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) 攻击力 50%",
+    "leader#1": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 攻击力 50%",
+    "leader#2": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) Direct伤害 100%",
+    "leader#3": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 Direct伤害 100%",
+    "1399901#0": "赋予全队(雷) 技能槽 50%",
+    "1399901#1": "雷·编成≥6 时: 自身 技能槽 50%",
+    "1399901#2": "雷·编成≥6 时: 自身 切换技能形态[change_skill_kyle_moon]",
+    "1399901#3": "雷·编成≥6 时: 自身 独立乘区技能伤害 100%",
+    "1399902#0": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) Direct伤害 50%",
+    "1399902#1": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 攻击力 50%",
+    "1399902#2": "雷·编成≥6 时: 状态贯通≥1 → 赋予全队(雷) 攻击力 50%",
+    "1399903#0": "雷·编成≥6 时: 技能发动≥1 → 自身 状态固有 100%×1次",
+    "1399903#1": "雷·编成≥6 时: 编成直接攻击≥50 → 自身 状态固有 100%×1次",
+    "1399903#2": "雷·编成≥6 时: 状态贯通≥1 → 自身 技能槽 10%(延迟2秒)",
+    "1399903#3": "状态固有[固有13999001] 且 雷·编成≥6 时: 赋予全队(雷) DirectAttack3 300%",
+    "1399903#4": "队长 且 雷·编成≥6 时: 状态贯通≥1 → 自身 状态固有 100%×1次",
+    "1399903#5": "队长 且 雷·编成≥6 时: 状态贯通≥1 → 自身 发动技能动作[ability_skill_kyle_moon_pierce]",
+    "1399903#6": "状态固有[固有13999003] 且 雷·编成≥6 时: 编成直接攻击≥10 → 自身 发动技能动作[ability_skill_kyle_moon_thunder]",
+    "1399904#0": "雷·编成≥6 时: 技能发动≥1 → 赋予全队 状态攻击力 100%(15秒)×1次",
+    "1399904#1": "雷·编成≥6 时: 技能发动≥1 → 赋予全队 状态Direct伤害 100%(15秒)×1次",
+    "1399905#0": "雷·编成≥6 时: 编成直接攻击≥50 → 赋予全队(雷) 技能槽充能 5%",
+    "1399905#1": "雷·编成≥6 时: 编成直接攻击≥50 → 赋予全队(雷) 眩晕蓄积 100%",
+    "1399905#2": "队长 时: 持续·HP≤1 → 自身 冲刺参数(可调) 100%",
+    "1399905#3": "队长 时: 持续·HP≤1 → 自身 冲刺参数(可调) -50%",
+    "1399905#4": "队长 时: 持续·HP≤1 → 自身 冲刺参数(可调) 40%",
+    "1399905#5": "队长 且 雷·编成≥6 时: 冲刺≥1 → 自身 状态贯通(5.5秒)×1次",
+    "1399906#0": "雷·编成≥6 时: 赋予全队(雷) 冻结特攻 15%",
 }
 
-#: 内容 kind 黑名单。422 冲刺参数 / 724 Fever 比例 只许写 ability 表且本套件不用；
-#: 713 独立乘区本套件不用；201/202/521 是被 C2308 卡住的瞬发常驻型（设计稿 E6）。
-FORBIDDEN_CONTENT_KINDS = ("201", "202", "422", "521", "713", "724")
+#: 内容 kind 黑名单：201/202/521 的**瞬发常驻**形态受 C2308 限制（本套件的 202 触发写
+#: Initial ⇒ 不在此列）；724 Fever 比例、713 独立乘区本套件不用。
+FORBIDDEN_CONTENT_KINDS = ("201", "521", "713", "724")
 #: 前置 kind 白名单（裁决 §8：前置留空 = 角色页 C7050，只用有先例的几种）。
-#: 2 = 元素编成、3 = MySelf、38 = 状态贯通、202 = OwnerIsMain。
-ALLOWED_PRECONDITION_KINDS = ("", "0", "2", "3", "38", "202")
+#: 2 = 元素编成、3 = MySelf、38 = 状态贯通、42 = Leader、187 = ConditionUnique、202 = OwnerIsMain。
+ALLOWED_PRECONDITION_KINDS = ("", "0", "2", "3", "38", "42", "187", "202")
 
-# ---------------------------------------------------------------- 技能 DSL
+# ---------------------------------------------------------------- 面板文案
+# 逐行抄 rework1/panel/kyle.json（作者已过目的那一版）。describe 渲染表达不了的整块接管。
 
-FX_SRC_DIR = f"battle/effect/skill_unique/{TEMPLATE_CODE}"
-FX_SUBDIR = "blade"
-FX_DST_DIR = f"battle/effect/skill_unique/{CODE}/{FX_SUBDIR}"
-#: 末段「月华终斩」：直接引用官方件（裁决 §4「优先直接引用官方路径」）。莱特 4 周年把像素
-#: 小人单独放在 ``_player`` / ``_player_thunder`` / ``_player_dash``（ShowEffect 名「キャラドット」），
-#: ``_ground_thunder``（名「フィニッシュ」）是纯落雷件 ⇒ 不会把别人的小人带进来（设计稿 R3）。
-FINISH_EFFECT = ("battle/effect/skill_unique/light_adventurer_4anv/"
-                 "light_adventurer_4anv_ground_thunder")
-FINISH_EFFECT_ANCHOR = ["AB"]            # 官方本人就是 AB + Some(3)（实读其 _1/_2 两树）
-FINISH_EFFECT_SCALE = ["Some", [{"min": 3, "max": 3}]]
+PANEL_LEADER = (
+    "雷属性共鸣时：自身冲刺获得强化，冲刺冷却时间－50%、附加贯穿效果、冲刺弹射速度提升，并"
+    "可从更高的位置发动冲刺／雷属性共鸣时：自身“月牙”每上升1层，自身攻击力＋100%、直击"
+    "伤害＋200%，除自身外雷属性角色攻击力＋50%、直击伤害＋100%／雷属性共鸣时：自身"
+    "每获得一次贯穿效果，自身直击敌人的判定次数＋1"
+)
 
-#: 三条「全队及协力球」状态的 donor（整条 ``CreateCondition`` 克隆，只改参数与主体绑定号）。
-#: exact 色表漏网的抗锯齿过渡色兜底（裁决 §4「风绿→雷黄，暗部偏蓝紫；只换色不重画形状」）。
-#: 母本可见像素的色相分布实测：75–160° 绿带 ~1.1 万、160–215° 青带 ~3.4 万、低饱和 ~1.3 万。
-#: 低饱和（芯白）与全黑描边靠 ``sat_min`` / ``val_min`` 挡住，一格不动。
+PANEL_ABILITY = {
+    1: ("战斗开始时：雷属性角色技能槽＋50%／雷属性共鸣时：自身技能槽＋50%，并强化技能效果—"
+         "—额外赋予雷属性角色直击效果强化、技能的额外伤害乘区＋100%，技能额外附加贯穿效果（5"
+         ".5秒）与加速效果（15秒），技能造成的雷击按直接攻击伤害结算，且威力随连击数大幅提升"),
+    2: ("雷属性共鸣时：自身“月牙”每提升1层，自身直击伤害＋50%、攻击力＋50%，除自身外雷属"
+         "性角色直击伤害＋50%／雷属性共鸣时：自身每获得一次贯穿效果，雷属性角色攻击力＋50%"),
+    3: ("雷属性共鸣时：自身发动技能时，自身“月牙”＋1层；雷属性角色每造成50次直击，自身“月牙"
+         "”＋1层／雷属性共鸣时：自身每获得一次贯穿效果，2秒后自身技能槽＋10%／雷属性共鸣时："
+         "自身持有“月牙”时，强化雷属性角色的直接攻击为3次，合计伤害额外乘区＋300%"),
+    4: ("雷属性共鸣时：雷属性角色发动技能时，赋予全队直击伤害＋100%、攻击力＋100%（持续1"
+         "5秒，每名触发该效果的角色分别独立生效）"),
+    5: ("雷属性共鸣时：雷属性角色每造成50次直击，雷属性角色技能充能速度＋5%，敌人进入击倒状态"
+         "的几率＋100%"),
+    6: ("雷属性共鸣时：强化技能效果——驱散敌方2个增益效果，并对敌人施加“迟缓”效果／雷属性共鸣"
+         "时：雷属性角色对处于“迟缓”状态的敌人造成伤害，额外乘区＋15%"),
+}
+
+CAS_TEXTS = {
+    CAS_SWITCH: "雷属性共鸣时强化技能：追加贯穿与加速效果，天雷按直接攻击伤害结算，"
+                "并驱散敌方增益、施加「迟缓」",
+    CAS_PIERCE: "自身直击敌人的判定次数＋1",
+    CAS_THUNDER: "召唤天雷攻击该敌人",
+    CAS_LEADER: PANEL_LEADER,
+    **{CAS_ABILITY[slot]: PANEL_ABILITY[slot] for slot in range(1, 7)},
+}
+
+# ---------------------------------------------------------------- 特效与 DSL
+
+FX_BLADE_SRC = f"battle/effect/skill_unique/{TEMPLATE_CODE}"
+FX_BLADE_SUB = "blade"
+FX_BLADE_DST = f"battle/effect/skill_unique/{CODE}/{FX_BLADE_SUB}"
+
+#: 强化档天雷 = 梅媞斯（雷弓）131004；常态档直接引用官方千岳十织，零克隆零染色
+#: （作者 09-21 同意；全克隆千岳会让图集 fits=False，卡 C §3.4）。
+#: 子目录名与 LUT 文件名都按特效素材代理的交付件（rework1/fx/kyle/README.md §2/§3）。
+FX_BOLT_TEMPLATE = "thunder_archer"
+FX_BOLT_SRC = f"battle/effect/skill_unique/{FX_BOLT_TEMPLATE}"
+FX_BOLT_SUB = "thunder_enhanced"
+FX_BOLT_DST = f"battle/effect/skill_unique/{CODE}/{FX_BOLT_SUB}"
+FX_BOLT_LUT = "fx_lut.thunder_archer.json"
+#: 母本指纹（卡 C §3.2 实读）：sheet 125×462、atlas 59 rect、4 个基名。任一不符 = 母本漂移，拒绝。
+FX_BOLT_FINGERPRINT = {"sheet": (125, 462), "bases": 4}
+
+#: 「角色移动时身后的那个特效」= 心角（梅姆拉姆 131068）的光环族，染成雷金。
+#: 作者 09-21 澄清：小人本体一格不改，换的是这个独立 ShowEffect（做法同校园奈芙的整族克隆）。
+#: 落点＝技能冲刺块上的拖尾（特效代理 README §3.3 的推荐，登记为偏离待作者确认）。
+FX_TRAIL_TEMPLATE = "horn_leader"
+FX_TRAIL_SRC = f"battle/effect/skill_unique/{FX_TRAIL_TEMPLATE}"
+FX_TRAIL_SUB = "moving_trail"
+FX_TRAIL_DST = f"battle/effect/skill_unique/{CODE}/{FX_TRAIL_SUB}"
+FX_TRAIL_LUT = "fx_lut.horn_leader.json"
+FX_TRAIL_BASE = f"{FX_TRAIL_TEMPLATE}_aura"          # 全族唯一带 loop 序列的基名
+FX_TRAIL_FINGERPRINT = {"sheet": (523, 256)}
+FX_TRAIL_EFFECT = f"{FX_TRAIL_DST}/{FX_TRAIL_BASE}"
+FX_TRAIL_LABEL = "月狼の尾"
+FX_TRAIL_FRAMES = 60                                  # 与 MoveBall 的 60 帧对齐，卡 loop 边界
+FX_TRAIL_SCALE = 2.5                                  # 官方原件只有 51×50，2.5 是代理给的居中起点
+
+#: 风绿 → 雷黄的兜底色相区间（blade 族）；exact 色表在设计稿里。
 FX_HUE_FALLBACK = [
     {"from": [75, 160], "sat_min": 0.12, "val_min": 0.04,
-     "hue_set": 52, "sat_scale": 1.05},          # 风绿 → 雷黄
+     "hue_set": 52, "sat_scale": 1.05},
     {"from": [160, 215], "sat_min": 0.12, "val_min": 0.04,
-     "hue_set": 201, "sat_scale": 0.80, "val_scale": 1.02},   # 青 → 冷蓝白（同 41EACE→A8E4FF）
+     "hue_set": 201, "sat_scale": 0.80, "val_scale": 1.02},
 ]
 
+THUNDER_NORMAL_DONOR = "battle/action/skill/action/rare5/psychic_tohru$psychic_tohru_1"
+THUNDER_BOOST_DONOR = "battle/action/skill/action/rare5/thunder_archer$thunder_archer_1"
+FROZEN_DONOR = "battle/action/skill/action/rare5/dog_slasher_proud$dog_slasher_proud_2"
+ADDITIONAL_DONOR = "battle/action/skill/action/rare5/silence_suzuka$silence_suzuka_2"
 PIERCING_DONOR = "battle/action/skill/action/rare5/black_wolf_knight$black_wolf_knight_2"
 DIRECT_DONOR = ("battle/action/skill/action/rare5/"
                 "combat_animal_meteor23$combat_animal_meteor23_2")
@@ -154,41 +363,66 @@ DONOR_COMMAND_COUNTS = {
     "CreateHitArea": 2, "ShakeCamera": 2, "CreateNormalAttack": 2,
     "FindAllSubjects": 2, "CreateCondition": 1,
 }
-#: 改完之后应有的命令计数（S5 加一段斩、S6 删 PF 块、S7–S9 换成三条状态）。
-RESULT_COMMAND_COUNTS = {
-    "FindNearSubjects": 1, "CreateReferencePoint": 1, "StopBall": 1, "ShowEffect": 4,
-    "CreateHitArea": 3, "ShakeCamera": 3, "CreateNormalAttack": 3,
-    "FindAllSubjects": 1, "CreateCondition": 3,
-}
 
-RP_LIFETIME = 130                    # S0：容下第 92 帧的 S3（寿命 20 ⇒ 最晚 112 帧）
-STOPBALL_FRAMES = 95                 # S1：S3 在球恢复前触发
-FINISH_WAIT = 92                     # S5：第三段的起始帧
-FINISH_BINDS = (8, 9, 10)            # S5 判定区的三个绑定号（CNA 主体 = 第三个）
+#: Z6 开关：True = 把母本的 StopBall 换成官方同形的 MoveBall（＝「向最近的敌人冲刺」）。
+#: 真机若发现三段斩与球脱节，改成 False 就退回母本行为（面板「冲刺」改写「突进斩」）。
+DASH_REPLACES_STOPBALL = True
+#: 逐格抄官方 dog_slasher_proud_2（唯一「冲向最近敌人再砍」的现成蓝本）。
+MOVE_BALL = ["MoveBall", -18, ["GH", 0], 0, 60, 3, ["KeepGoing"], True]
 
-#: 三段斩的判定区参数（``CreateHitArea`` 的 params 下标，见设计稿 §4）。
+RP_LIFETIME = 130                    # 容下第 92 帧的第三段（寿命 20 ⇒ 最晚 112 帧）
+FINISH_WAIT = 92
+FINISH_BINDS = (8, 9, 10)
+FINISH_EFFECT = ("battle/effect/skill_unique/light_adventurer_4anv/"
+                 "light_adventurer_4anv_ground_thunder")
+FINISH_EFFECT_ANCHOR = ["AB"]
+FINISH_EFFECT_SCALE = ["Some", [{"min": 3, "max": 3}]]
+
 HITAREA_EDITS = {
-    0: {"radius": 260, "lifetime": 12, "max_hits": 1},     # S3 第 9 帧「月牙斩」
-    1: {"radius": 280, "lifetime": 40, "max_hits": 14},    # S4 第 49 帧「狼牙连斩」
+    0: {"radius": 260, "lifetime": 12, "max_hits": 1},
+    1: {"radius": 280, "lifetime": 40, "max_hits": 14},
 }
 FINISH_HITAREA = {"radius": 320, "lifetime": 20, "max_hits": 1, "break_weak_point": True}
-BUFF_TARGET_AS_DIRECT = 4            # CreateHitArea params[23]：4 = 按直接攻击伤害结算
+BUFF_TARGET_AS_DIRECT = 4
 
-#: 三段 ``CreateNormalAttack`` 的非倍率格（倍率从设计稿读）。
 CNA_SHAPE = {
     0: {"subject": 4, "base": 200, "p12": 10, "p13": 5},
     1: {"subject": 7, "base": 3, "p12": 1, "p13": 0.5},
-    2: {"subject": 10, "base": 200, "p12": 12, "p13": 6},   # S5 新增段（由第 1 段克隆改）
+    2: {"subject": 10, "base": 200, "p12": 12, "p13": 6},
 }
-
-#: 特效重命名（只是 DSL 里的内部标签，不上面板）。
+CNA_MULT = {
+    "1": ({"min": 26, "max": 30}, {"min": 0.429, "max": 0.5}, {"min": 30, "max": 34}),
+    "2": ({"min": 30, "max": 34}, {"min": 0.5, "max": 0.6}, {"min": 34, "max": 38}),
+}
 EFFECT_NAMES = {0: "月牙斬", 1: "狼牙連斬", 2: "爆発", 3: "月華終斬"}
 
-_NUM_RE = re.compile(r"-?\d+(?:\.\d+)?")
-_MINMAX_RE = re.compile(r"min\s*:\s*(-?[\d.]+)\s*,\s*max\s*:\s*(-?[\d.]+)")
+#: 强化档追加的队伍状态（帧数；贯通 5.5 秒 / 加速 15 秒 —— 面板逐字）。
+BOOST_PIERCING_FRAMES = 330
+BOOST_SPEEDUP_FRAMES = 900
+BOOST_DIRECT_FRAMES = 900
+BOOST_DIRECT = {"1": (1.0, 1.0), "2": (1.2, 1.5)}
+BOOST_SPEEDUP = {"1": (1.0, 1.0), "2": (1.0, 1.0)}
+FROZEN_FRAMES = 900                  # 迟缓 15 秒（官方带 900/1200）
+DISPEL_COUNT = 2                     # 驱散敌方 2 个增益
+ENEMY_BIND = 20                      # 强化档驱散/迟缓块的绑定号（与主树 1/4/7/8/9/10 不冲突）
+
+#: 段数成长：段数 = 1 + 贯穿印层数（vlv，绑定上限 99）；合计伤害 300% 与能力 3 的 202 等值，
+#: 使 ``AdditionalDirectAttackContent.getBetter``（段数多者胜，段数同比伤害%）在 ≥3 层时取本条。
+PIERCE_VAR_ID = 1
+PIERCE_VAR_CEIL = 99
+PIERCE_FRAMES = 1200
+PIERCE_BASE_TIMES = 1
+PIERCE_TIMES_PER_LAYER = 1
+PIERCE_DAMAGE = 3.0
+PIERCE_CONDITION_KEY = "月牙貫通追撃"
+
+#: 天雷倍率（连击成长开关只在强化档打开 ⇒ 基础倍率按 500 连击 ×3.5 反推压低）。
+THUNDER_MULT_NORMAL = {"min": 14.0, "max": 16.0}
+THUNDER_MULT_BOOST = {"min": 5.0, "max": 6.0}
+THUNDER_BOOST_BIND_OFFSET = 30       # 强化分支整体重映射，避免与常态分支重号
 
 
-# ---------------------------------------------------------------- 设计稿读取
+# ---------------------------------------------------------------- 设计稿对照
 
 def load_design(root: Path) -> dict[str, Any]:
     design = MS.load_design(Path(root), KEY)
@@ -200,138 +434,34 @@ def load_design(root: Path) -> dict[str, Any]:
     return design
 
 
-def _check_design_donor(donor_text: str, addresses: tuple[str, ...], label: str) -> None:
-    """设计稿散文 donor 与本模块机读地址互校：每个地址的「键 + 1 基记录号」都要在散文里出现。"""
-    text = str(donor_text)
-    for address in addresses:
-        key, _, index = address.partition("#")
-        if key not in text:
-            raise KitError(f"{label}: design donor {donor_text!r} does not mention {key}")
-        one_based = f"#L{int(index) + 1}"
-        if one_based not in text and f"#{int(index) + 1}" not in text:
-            raise KitError(f"{label}: design donor {donor_text!r} does not mention record "
-                           f"{one_based} (kit uses 0-based {address})")
-
-
-def _minmax(numbers: list[float]) -> dict[str, float]:
-    if len(numbers) == 1:
-        return {"min": numbers[0], "max": numbers[0]}
-    if len(numbers) == 2:
-        return {"min": numbers[0], "max": numbers[1]}
-    raise KitError(f"cannot read a min/max pair out of {numbers}")
-
-
-def _num(text: str) -> float:
-    value = float(text)
-    return int(value) if value.is_integer() else value
-
-
-def _groups(spec_text: str) -> list[dict[str, float]]:
-    """``"[{960}],[{1.0,1.0}]"`` / ``"{600,600}"`` → ``[{min,max}, …]``（设计稿的速记写法）。"""
-    return [_minmax([_num(n) for n in _NUM_RE.findall(chunk)])
-            for chunk in str(spec_text).split("],[") if _NUM_RE.search(chunk)]
-
-
-def _cna_mult(spec_text: str, label: str) -> dict[str, float]:
-    match = _MINMAX_RE.search(str(spec_text))
-    if not match:
-        raise KitError(f"{label}: cannot read the CreateNormalAttack multiplier out of {spec_text!r}")
-    return {"min": _num(match.group(1)), "max": _num(match.group(2))}
-
-
-def read_skill_plan(design: dict[str, Any]) -> dict[str, Any]:
-    """从设计稿的 ``plan.skills`` 读出两档的全部可变数值。"""
-    skills = design["plan"]["skills"]
-    changes = {entry["id"]: entry for entry in skills["structural_changes"]}
-    missing = [sid for sid in ("S0", "S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9")
-               if sid not in changes]
-    if missing:
-        raise KitError(f"design plan.skills lacks structural changes {missing}")
-    if int(changes["S0"]["new"]) != RP_LIFETIME or int(changes["S1"]["new"]) != STOPBALL_FRAMES:
-        raise KitError("design S0/S1 disagree with the kit on reference-point lifetime / StopBall")
-
-    plan: dict[str, Any] = {"energy": {}, "levels": {}}
-    for level in ("1", "2"):
-        energy = skills["energy"][level]
-        plan["energy"][level] = (str(energy["c4"]), str(energy["c5"]), str(energy["c6"]))
-        plan["levels"][level] = {
-            "cna": [_cna_mult(changes["S3"]["cna"][level], f"S3/{level}"),
-                    _cna_mult(changes["S4"]["cna"][level], f"S4/{level}"),
-                    _cna_mult(changes["S5"]["cna"][level], f"S5/{level}")],
-            "piercing": _groups(changes["S7"]["edits"]["frames"][level])[0],
-            "direct": _groups(changes["S8"]["edits"][level]),
-            "speedup": _groups(changes["S9"]["edits"][level]),
-        }
-        for name in ("direct", "speedup"):
-            if len(plan["levels"][level][name]) != 2:
-                raise KitError(f"design S8/S9 {name} for level {level} must carry frames + strength")
-    return plan
+def _design_problems(design: dict[str, Any]) -> list[str]:
+    """设计稿 ``plan.rework1`` 是本模块 PLAN/LEADER/UNIQUES 的镜像：两边漂移即红。"""
+    problems: list[str] = []
+    plan = (design.get("plan") or {}).get("rework1")
+    if not isinstance(plan, dict):
+        return ["design/kyle.json plan.rework1 missing（本轮重做的镜像块）"]
+    want_leader = [f"{src}:{addr}" for addr, src, _cells, _d in LEADER]
+    if list(plan.get("leader") or []) != want_leader:
+        problems.append(f"leader donor mirror drift: {plan.get('leader')} != {want_leader}")
+    ability = plan.get("ability") or {}
+    for slot, rows in PLAN.items():
+        key = f"{CID}{slot}"
+        want = [f"{src}:{addr}" for addr, src, _cells, _d in rows]
+        if list(ability.get(key) or []) != want:
+            problems.append(f"ability {key} donor mirror drift: {ability.get(key)} != {want}")
+    want_unique = [key for key, *_ in UNIQUES]
+    if list(plan.get("unique_conditions") or []) != want_unique:
+        problems.append(f"unique mirror drift: {plan.get('unique_conditions')} != {want_unique}")
+    want_programs = sorted([PIERCE_PROGRAM, THUNDER_PROGRAM])
+    if sorted(plan.get("ability_skill_programs") or []) != want_programs:
+        problems.append(f"ability_skill program mirror drift: {plan.get('ability_skill_programs')}")
+    return problems
 
 
 # ---------------------------------------------------------------- 行装配
-# 设计稿的 ``cells`` 是**整行的全部非空列**（"只列非空列；其余一律写空串"），所以这里不是
-# 「donor + 少数几格」而是「按设计稿铺整行」。donor 仍然是硬门禁：每个写进去的值都必须
-# 要么在某个 donor 的同一列上出现过，要么被设计稿的 ``edits`` 点名；donor 上非空而设计稿
-# 不要的列同样必须被 ``edits`` 点名（否则就是漏抄）。
-
-def _cells(entry: dict[str, Any]) -> dict[int, str]:
-    return {int(k): str(v) for k, v in entry["cells"].items()}
-
-
-def _audit_against_donors(donors: list[list[str]], cells: dict[int, str],
-                          edits: dict[str, Any], ncols: int, label: str) -> dict[str, Any]:
-    named = {key for key in edits if re.fullmatch(r"c\d+", str(key))}
-
-    def donor_value(row: list[str], col: int) -> str:
-        return row[col] if col < len(row) else ""
-
-    unexplained = [f"c{col}={value!r} (donors {[donor_value(d, col) for d in donors]})"
-                   for col, value in sorted(cells.items())
-                   if not any(donor_value(d, col) == value for d in donors)
-                   and f"c{col}" not in named]
-    dropped = {}
-    for col in range(ncols):
-        if col in cells:
-            continue
-        values = [donor_value(d, col) for d in donors]
-        if all(values) and f"c{col}" not in named:
-            unexplained.append(f"c{col} dropped silently (donors {values})")
-        elif values[0]:
-            dropped[f"c{col}"] = values[0]
-    if unexplained:
-        raise KitError(f"{label}: cells not traceable to a donor nor listed in the design edits: "
-                       + "; ".join(unexplained))
-    return {"donor_cells_dropped": dropped, "edits_declared": sorted(named)}
-
-
-def _build_row(ctx, kind: str, addresses: tuple[str, ...], entry: dict[str, Any],
-               label: str) -> tuple[list[str], dict[str, Any]]:
-    table = KL.ABILITY if kind == "ability" else KL.LEADER
-    ncols = KL.ABILITY_NCOLS if kind == "ability" else KL.LEADER_NCOLS
-    _check_design_donor(entry["donor"], addresses, label)
-    donors = [KL.donor_row(ctx, table, address) for address in addresses]
-    cells = _cells(entry)
-    audit = _audit_against_donors(donors, cells, entry.get("edits") or {}, ncols, label)
-    row = KL.apply_cells([""] * ncols, cells, ncols)
-
-    problems = KL.row_problems(kind, row, ELEMENT if kind == "ability" else None)
-    if problems:
-        raise KitError(f"{label}: client legality rejected the row: {problems}")
-    rendered = KL.describe(kind, row)
-    if rendered != entry["desc_expected"]:
-        raise KitError(f"{label}: wf_describe drift\n  got    {rendered!r}\n"
-                       f"  expect {entry['desc_expected']!r}")
-    caps = KL.capabilities(kind, row)
-    if caps:
-        raise KitError(f"{label}: row needs client capabilities {caps}; 本套件要求零 APK 补丁 kind")
-    evidence = {"label": label, "kind": kind, "donors": list(addresses),
-                "describe": rendered, "capabilities": caps}
-    evidence.update(audit)
-    return row, evidence
-
 
 def _ban_kinds(kind: str, rows: list[list[str]], label: str) -> None:
-    """内容 kind 黑名单 + 前置 kind 白名单（裁决 §2/§8；写错 = C7050 / C2308）。"""
+    """内容 kind 黑名单 + 前置 kind 白名单 + 422 的两条硬规矩。"""
     if kind == "ability":
         content, precondition = (47, 109), (6, 13, 20)
     else:
@@ -344,84 +474,103 @@ def _ban_kinds(kind: str, rows: list[list[str]], label: str) -> None:
             if row[col] not in ALLOWED_PRECONDITION_KINDS:
                 raise KitError(f"{label}#{index}: precondition kind {row[col]!r} at c{col} "
                                f"is outside the vetted set {ALLOWED_PRECONDITION_KINDS}")
+        if kind == "leader_ability" and row[107] in ("422", "724", "713"):
+            # LeaderAbilityValues.parseAt107 没打补丁 ⇒ 队长表写 422 = 角色页 C7050
+            raise KitError(f"{label}#{index}: 队长表禁止 422/724/713（记忆 "
+                           f"wf-dash-parameter-leader-table-trap）")
+        if kind == "ability" and row[109] == "422":
+            if row[6] != "42":
+                raise KitError(f"{label}#{index}: 422 行必须挂前置 42（持有者为队长），"
+                               f"否则会与基诺维/泽赫尔的 422 相加")
+            if not row[118]:
+                raise KitError(f"{label}#{index}: 422 行的 c118 param_id 不能留空"
+                               f"（param 0 也要显式写 '0'）")
 
 
-def build_leader_rows(ctx, design: dict[str, Any]) -> tuple[list[list[str]], list[dict[str, Any]]]:
-    plan = design["plan"]["leader_ability"]
-    if plan["key"] != CID_S:
-        raise KitError(f"design leader block key {plan.get('key')!r} != {CID_S}")
-    if int(plan["layout"]["ncols"]) != KL.LEADER_NCOLS:
-        raise KitError(f"design leader ncols {plan['layout'].get('ncols')}")
-    rows, evidence = [], []
-    for entry in plan["rows"]:
-        index = int(entry["index"])
-        label = f"leader#{index}"
-        row, ev = _build_row(ctx, "leader_ability", LEADER_DONORS[index], entry, label)
-        if row[0] != CODE:
-            raise KitError(f"{label}: c0 {row[0]!r} != {CODE}")
-        rows.append(row)
-        evidence.append(ev)
-    if len(rows) != len(LEADER_DONORS):
-        raise KitError(f"design leader_ability carries {len(rows)} rows, "
-                       f"expected {len(LEADER_DONORS)}")
-    _ban_kinds("leader_ability", rows, "leader")
-    return rows, evidence
+def _order_problems(rows: list[list[str]]) -> None:
+    """能力 3 的硬顺序契约：贯穿印 +1（461）必须排在读它的 629 之前，否则段数落后一拍。"""
+    kinds = [row[47] for row in rows]
+    triggers = [row[27] for row in rows]
+    pierce_add = [i for i, (k, t) in enumerate(zip(kinds, triggers))
+                  if k == "461" and t == "51"]
+    pierce_invoke = [i for i, (k, t) in enumerate(zip(kinds, triggers))
+                     if k == "629" and t == "51"]
+    if not pierce_add or not pierce_invoke:
+        raise KitError(f"ability slot 3 lost the 461/629 piercing pair: {list(zip(triggers, kinds))}")
+    if min(pierce_add) > min(pierce_invoke):
+        raise KitError("ability slot 3: the 461 that feeds 贯穿印 must precede the 629 that reads it")
+    for index, row in enumerate(rows):
+        if row[47] == "629":
+            if not row[70] or not row[71]:
+                raise KitError(f"ability 3#{index}: 629 行必须同时带字符串键 c70 与程序路径 c71")
+            if row[35] == "":
+                raise KitError(f"ability 3#{index}: 629 行的 c35 cooltime 不能留空")
+            if row[1] != "false":
+                raise KitError(f"ability 3#{index}: 629 在副位不生效，该键必须 unisonable=false")
 
 
-def build_ability_rows(ctx, design: dict[str, Any]) -> tuple[dict[str, list[list[str]]],
-                                                             list[dict[str, Any]]]:
-    plan = design["plan"]["ability"]
-    if int(plan["layout"]["ncols"]) != KL.ABILITY_NCOLS:
-        raise KitError(f"design ability ncols {plan['layout'].get('ncols')}")
-    if tuple(sorted(plan["keys"])) != tuple(sorted(ABILITY_KEYS)):
-        raise KitError(f"design ability keys drift: {sorted(plan['keys'])}")
-    rows_by_key: dict[str, list[list[str]]] = {}
+def build_rows(ctx) -> dict[str, Any]:
     evidence: list[dict[str, Any]] = []
-    for slot, key in enumerate(ABILITY_KEYS, start=1):
-        block = plan["keys"][key]
-        rows = []
-        for entry in block["records"]:
-            label = f"{key}#{int(entry['index'])}"
-            row, ev = _build_row(ctx, "ability", ABILITY_DONORS[(key, int(entry["index"]))],
-                                 entry, label)
+    caps: set[str] = set()
+
+    leader_rows: list[list[str]] = []
+    for index, (addr, source, cells, expect) in enumerate(LEADER):
+        row, ev = KL.build_row(ctx, "leader_ability", addr, cells, source=source,
+                               expect_describe=expect or EXPECT.get(f"leader#{index}"),
+                               label=f"leader#{index}")
+        if row[0] != CODE:
+            raise KitError(f"leader#{index}: c0 {row[0]!r} != {CODE}")
+        leader_rows.append(row)
+        evidence.append(ev)
+        caps.update(ev["capabilities"])
+    _ban_kinds("leader_ability", leader_rows, "leader")
+
+    ability: dict[str, list[list[str]]] = {}
+    for slot in range(1, 7):
+        key = f"{CID}{slot}"
+        rows: list[list[str]] = []
+        for index, (addr, source, cells, expect) in enumerate(PLAN[slot]):
+            merged = {0: f"{CODE}_{slot}", 1: _UNISONABLE[slot], 2: _STATUE[slot], **cells}
+            label = f"{key}#{index}"
+            row, ev = KL.build_row(ctx, "ability", addr, merged, source=source,
+                                   element=ELEMENT,
+                                   expect_describe=expect or EXPECT.get(label),
+                                   label=label)
             rows.append(row)
             evidence.append(ev)
-        # c0 = <code>_<slot>；c1（主位限制）与 c2（雕像组）全键一致（裁决 §8）
+            caps.update(ev["capabilities"])
         KL.check_ability_key(rows, key, CODE, slot)
-        if rows[0][1] != str(block["unisonable"]):
-            raise KitError(f"ability {key}: c1 {rows[0][1]!r} != design {block['unisonable']!r}")
-        if "statue_group" in block and rows[0][2] != block["statue_group"]:
-            raise KitError(f"ability {key}: c2 {rows[0][2]!r} != design {block['statue_group']!r}")
         _ban_kinds("ability", rows, key)
-        rows_by_key[key] = rows
-    return rows_by_key, evidence
+        ability[key] = rows
+    _order_problems(ability[f"{CID}3"])
+
+    missing = sorted(caps - set(ctx.spec.required_capabilities))
+    if missing:
+        raise KitError(f"rows need client capabilities {missing} that SPEC does not declare")
+    return {"leader": leader_rows, "ability": ability, "evidence": evidence,
+            "capabilities": sorted(caps)}
 
 
 # ---------------------------------------------------------------- 固有状态与图标
 
-def build_unique(ctx, design: dict[str, Any]) -> tuple[str, list[str]]:
-    plan = design["plan"]["unique_conditions"]["add"]
-    if len(plan) != 1 or plan[0]["key"] != UID:
-        raise KitError(f"design unique_conditions drift: {[e.get('key') for e in plan]}")
-    want = [str(cell) for cell in plan[0]["row"]]
-    if len(want) != KL.UNIQUE_NCOLS:
-        raise KitError(f"design unique row has {len(want)} columns, expected {KL.UNIQUE_NCOLS}")
-    if (want[0], want[1], want[4]) != (UNIQUE_STRING_ID, UNIQUE_NAME, UNIQUE_CAP):
-        raise KitError(f"design unique row head drift: {want[:5]}")
-    key, row = KL.unique_row(ctx, ctx.spec, 1, donor=UNIQUE_DONOR,
-                             cells={0: UNIQUE_STRING_ID, 2: UNIQUE_ICON_ROW, 4: UNIQUE_CAP},
-                             name=UNIQUE_NAME)
-    if row != want:
-        raise KitError(f"unique_condition {key} differs from the design row:\n"
-                       f"  got    {row}\n  expect {want}")
-    if row[13] != "false":
-        raise KitError(f"unique_condition {key}: c13 remove_if_encoffin must stay false")
-    KL.write_unique(ctx, ctx.spec, {key: row})
-    return key, row
+def build_uniques(ctx) -> dict[str, list[str]]:
+    out: dict[str, list[str]] = {}
+    for n, (key, string_id, name, cap, frames, _style) in enumerate(UNIQUES, start=1):
+        built, row = KL.unique_row(ctx, ctx.spec, n, donor=UNIQUE_DONOR,
+                                   cells={0: string_id, 2: UNIQUE_ICON_ROW[key],
+                                          3: frames, 4: cap},
+                                   name=name)
+        if built != key:
+            raise KitError(f"unique id drift: {built} != {key}")
+        if row[13] != "false":
+            raise KitError(f"unique_condition {key}: c13 remove_if_encoffin must stay false")
+        out[key] = row
+    KL.write_unique(ctx, ctx.spec, out)
+    return out
 
 
-def draw_icon(frame):
-    """48×48「月牙」：深靛圆底 (#1B1A24) ＋ 2px 描边；金色新月（内缘做成狼牙尖角）＋右下冷白高光。
+def draw_icon(frame, style: str):
+    """48×48 图标：深靛圆底 (#1B1A24) ＋ 2px 金环；主体按 ``style`` 画。
 
     8× 画布绘制后 LANCZOS 缩回 48×48；alpha 取官方图标外框（同批统一工艺，alpha 一格不改）。
     """
@@ -439,23 +588,35 @@ def draw_icon(frame):
     layer.paste(Image.new("RGBA", (N, N), ink), (0, 0), inner)
     ImageDraw.Draw(layer).ellipse((4 * K, 4 * K, 44 * K - 1, 44 * K - 1), outline=gold, width=2 * K)
 
-    # 新月 = 大圆减偏移小圆；小圆再被两枚小尖角咬出「狼牙」内缘
-    moon = Image.new("L", (N, N), 0)
-    md = ImageDraw.Draw(moon)
-    md.ellipse((12 * K, 10 * K, 36 * K, 34 * K), fill=255)
-    bite = Image.new("L", (N, N), 0)
-    bd = ImageDraw.Draw(bite)
-    bd.ellipse((19 * K, 8 * K, 43 * K, 32 * K), fill=255)
-    bd.polygon([(20 * K, 17 * K), (26 * K, 20 * K), (20 * K, 23 * K)], fill=0)
-    bd.polygon([(23 * K, 25 * K), (29 * K, 27 * K), (23 * K, 30 * K)], fill=0)
-    moon = Image.composite(Image.new("L", (N, N), 0), moon, bite)
-    moon = Image.composite(moon, Image.new("L", (N, N), 0), inner)
-    layer.paste(Image.new("RGBA", (N, N), gold), (0, 0), moon)
+    body = Image.new("L", (N, N), 0)
+    bd = ImageDraw.Draw(body)
+    if style == "crescent":
+        # 新月 = 大圆减偏移小圆；小圆再被两枚小尖角咬出「狼牙」内缘
+        bd.ellipse((12 * K, 10 * K, 36 * K, 34 * K), fill=255)
+        bite = Image.new("L", (N, N), 0)
+        cut = ImageDraw.Draw(bite)
+        cut.ellipse((19 * K, 8 * K, 43 * K, 32 * K), fill=255)
+        cut.polygon([(20 * K, 17 * K), (26 * K, 20 * K), (20 * K, 23 * K)], fill=0)
+        cut.polygon([(23 * K, 25 * K), (29 * K, 27 * K), (23 * K, 30 * K)], fill=0)
+        body = Image.composite(Image.new("L", (N, N), 0), body, bite)
+    elif style == "pierce":
+        # 贯穿印：一道斜贯的长枪痕 + 两侧破口
+        bd.polygon([(12 * K, 33 * K), (17 * K, 33 * K), (36 * K, 13 * K),
+                    (31 * K, 13 * K)], fill=255)
+        bd.polygon([(33 * K, 11 * K), (38 * K, 11 * K), (38 * K, 16 * K)], fill=255)
+        bd.polygon([(10 * K, 30 * K), (10 * K, 35 * K), (15 * K, 35 * K)], fill=255)
+    elif style == "awake":
+        # 月狼·觉：竖立的狼牙 + 上方一点月芒
+        bd.polygon([(24 * K, 9 * K), (31 * K, 26 * K), (24 * K, 38 * K),
+                    (17 * K, 26 * K)], fill=255)
+        bd.ellipse((21 * K, 6 * K, 27 * K, 12 * K), fill=255)
+    else:
+        raise KitError(f"unknown icon style {style!r}")
+    body = Image.composite(body, Image.new("L", (N, N), 0), inner)
+    layer.paste(Image.new("RGBA", (N, N), gold), (0, 0), body)
 
-    # 右下一点冷白高光
     spark = Image.new("L", (N, N), 0)
-    sd = ImageDraw.Draw(spark)
-    sd.ellipse((32 * K, 32 * K, 38 * K, 38 * K), fill=255)
+    ImageDraw.Draw(spark).ellipse((32 * K, 32 * K, 38 * K, 38 * K), fill=255)
     layer.paste(Image.new("RGBA", (N, N), chill), (0, 0),
                 Image.composite(spark, Image.new("L", (N, N), 0), inner))
 
@@ -475,18 +636,23 @@ def draw_icon(frame):
     return out
 
 
-def install_unique_icon(ctx) -> dict[str, Any]:
+def install_unique_icons(ctx) -> list[dict[str, Any]]:
     frame_raw = ctx.official_read(UNIQUE_ICON_FRAME)
     if frame_raw is None:
         _root, frame_raw, _how = ctx.pack.template_asset(UNIQUE_ICON_FRAME)
     frame = ctx.png_open(frame_raw)
-    data = ctx.png_store_bytes(draw_icon(frame))
-    ctx.write_asset("common", UNIQUE_ICON_LOGICAL, data)
-    back = ctx.png_open(ctx.pack.pkg_path("common", UNIQUE_ICON_LOGICAL).read_bytes())
-    if back.size != (48, 48) or back.getchannel("A").tobytes() != frame.getchannel("A").tobytes():
-        raise KitError("unique_condition icon size/alpha differ from the official frame donor")
-    return {"logical": UNIQUE_ICON_LOGICAL, "frame_donor": UNIQUE_ICON_FRAME,
-            "size": list(back.size), "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
+    notes = []
+    for key, _sid, name, _cap, _frames, style in UNIQUES:
+        logical = UNIQUE_ICON_ROW[key] + ".png"
+        data = ctx.png_store_bytes(draw_icon(frame, style))
+        ctx.write_asset("common", logical, data)
+        back = ctx.png_open(ctx.pack.pkg_path("common", logical).read_bytes())
+        if back.size != (48, 48) or back.getchannel("A").tobytes() != frame.getchannel("A").tobytes():
+            raise KitError(f"unique icon {key}: size/alpha differ from the official frame donor")
+        notes.append({"key": key, "name": name, "logical": logical, "style": style,
+                      "frame_donor": UNIQUE_ICON_FRAME,
+                      "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)})
+    return notes
 
 
 # ---------------------------------------------------------------- DSL 工具
@@ -516,7 +682,6 @@ def _command_counts(tree) -> dict[str, int]:
 
 
 def _bodies(tree, name: str) -> list[list]:
-    """树序里所有 ``["Command", [<name>, …]]`` 的命令体（可原地改）。"""
     return [node[1] for node in _walk(tree) if _is_command(node, name)]
 
 
@@ -526,16 +691,234 @@ def _one(bodies: list[list], name: str) -> list:
     return bodies[0]
 
 
+def _cmd(*body) -> list:
+    return ["Command", list(body)]
+
+
+def _block(*children) -> list:
+    return ["Block", list(children)]
+
+
 def effect_paths(tree) -> list[str]:
     return [node[1] for node in _walk(tree)
             if isinstance(node, list) and len(node) == 2
             and node[0] == "SpecifyEffectDirectly" and isinstance(node[1], str)]
 
 
+def _condition_donor(ctx, program: str, kind: str) -> list:
+    """官方树里唯一携带该 AdditionalCondition 的 ``CreateCondition``（整条命令，深拷贝）。"""
+    tree = ctx.template_dsl(program)
+    hits = [node for node in _walk(tree) if _is_command(node, "CreateCondition")
+            and node[1][2] and isinstance(node[1][2][0], list) and node[1][2][0][0] == kind]
+    if not hits:
+        raise KitError(f"{program}: no CreateCondition/{kind}")
+    return copy.deepcopy(hits[0])
+
+
+def _check_condition_shape(command: list, kind: str, target_kind: int) -> list:
+    body = command[1]
+    if len(body) != 13:
+        raise KitError(f"{kind}: CreateCondition has {len(body) - 1} slots, expected 12")
+    if body[2][0][0] != kind:
+        raise KitError(f"{kind}: donor carries {body[2][0][0]!r}")
+    if body[10] != target_kind:
+        # 下标 10 = 付与对象种类；错配 = 施法 C16102（记忆 wf-createcondition-target-kind）
+        raise KitError(f"{kind}: CreateCondition target kind {body[10]!r} != {target_kind}")
+    return body
+
+
+def _remap_binds(node, offset: int) -> None:
+    """整块绑定号平移（两个互斥分支同树时避免重号；记忆 wf-dsl-subject-lookup-map）。
+
+    声明位与使用位都取 ``wf_client_legality`` 的权威表，别自己抄一份（抄漏 = 悬空主体）。
+    """
+    for cmd in (n[1] for n in _walk(node) if _is_command(n)):
+        positions: set[int] = set(L.DSL_SUBJECT_CONSUMERS.get(cmd[0], ()))
+        for ids, _block in L.DSL_SUBJECT_BINDERS.get(cmd[0], ()):
+            positions.update(ids)
+        for index in sorted(positions):
+            if index < len(cmd):
+                value = cmd[index]
+                if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+                    cmd[index] = value + offset
+
+
+# ---------------------------------------------------------------- 主技能树
+
+def _team_block(ctx, level: str) -> list:
+    """强化档：``FindAllSubjects(11, 33)`` 一块里挂贯通 / 直击伤害 UP / 加速三条状态。"""
+    tree = ctx.template_dsl(PIERCING_DONOR)
+    hits = [node for node in _walk(tree) if _is_command(node, "FindAllSubjects")]
+    if len(hits) != 1:
+        raise KitError(f"{PIERCING_DONOR}: expected exactly 1 FindAllSubjects, got {len(hits)}")
+    command = copy.deepcopy(hits[0])
+    body = command[1]
+    if (body[1], body[2]) != (11, 33):
+        raise KitError(f"{PIERCING_DONOR}: FindAllSubjects bind/selector {body[1]}/{body[2]} "
+                       f"!= 11/33（33 = 含自身的己方全体）")
+    bind = body[1]
+    block = body[9]
+    if block[0] != "Block" or len(block[1]) != 1:
+        raise KitError("FindAllSubjects donor block shape drifted")
+
+    piercing = block[1][0]
+    _check_condition_shape(piercing, "ACPiercing", 3)
+    piercing[1][2][0][1] = [{"min": BOOST_PIERCING_FRAMES, "max": BOOST_PIERCING_FRAMES}]
+
+    direct = _condition_donor(ctx, DIRECT_DONOR, "ACDirectDamage")
+    _check_condition_shape(direct, "ACDirectDamage", 3)
+    direct[1][1] = bind
+    direct[1][2][0][1] = [{"min": BOOST_DIRECT_FRAMES, "max": BOOST_DIRECT_FRAMES}]
+    direct[1][2][0][2] = [{"min": BOOST_DIRECT[level][0], "max": BOOST_DIRECT[level][1]}]
+
+    speedup = _condition_donor(ctx, SPEEDUP_DONOR, "ACSpeedup")
+    _check_condition_shape(speedup, "ACSpeedup", 3)
+    speedup[1][1] = bind
+    speedup[1][2][0][1] = [{"min": BOOST_SPEEDUP_FRAMES, "max": BOOST_SPEEDUP_FRAMES}]
+    speedup[1][2][0][2] = [{"min": BOOST_SPEEDUP[level][0], "max": BOOST_SPEEDUP[level][1]}]
+
+    block[1][:] = [piercing, direct, speedup]
+    return command
+
+
+def _enemy_debuff_block(ctx, near_donor: list) -> list:
+    """强化档：找最近的敌人 → 驱散 2 个增益 + 施加「迟缓」（能力 6 第 1 行的本体）。"""
+    command = copy.deepcopy(near_donor)
+    body = command[1]
+    if body[0] != "FindNearSubjects" or len(body) != 7:
+        raise KitError("FindNearSubjects donor shape drifted")
+    # FindNearSubjects 的绑定位是 node[5]（权威表 wf_client_legality.DSL_SUBJECT_BINDERS），
+    # node[2] 是搜索个数、node[3] 是选择器（49 = 敌方）。
+    if body[3] != 49:
+        raise KitError(f"FindNearSubjects donor selector {body[3]} != 49（敌方）")
+    body[4] = ["DoNothing"]            # 没有敌人时什么都不做（不造虚拟目标）
+    body[5] = ENEMY_BIND
+    frozen = _condition_donor(ctx, FROZEN_DONOR, "ACFrozen")
+    _check_condition_shape(frozen, "ACFrozen", 3)
+    frozen[1][1] = ENEMY_BIND
+    frozen[1][2][0][1] = [{"min": FROZEN_FRAMES, "max": FROZEN_FRAMES}]
+    dispel = _cmd("DeleteCondition", ENEMY_BIND, ["DCAll", 2], DISPEL_COUNT, 0, "", ["Default"])
+    body[6] = _block(dispel, frozen)
+    return command
+
+
+def mutate_tree(ctx, tree, level: str) -> tuple[Any, dict[str, Any]]:
+    counts = _command_counts(tree)
+    if counts != DONOR_COMMAND_COUNTS:
+        raise KitError(f"donor skill tree {level} drifted: commands {counts} != {DONOR_COMMAND_COUNTS}")
+    if not (isinstance(tree, list) and len(tree) == 12 and tree[0] == "ActionDsl"):
+        raise KitError(f"donor skill tree {level}: unexpected root {tree[:2]!r}")
+    if tree[1] != 2 or tree[10] != 0:
+        raise KitError(f"donor root header {level}: movementPriority={tree[1]} buffTargetAs={tree[10]}")
+
+    near = _one(_bodies(tree, "FindNearSubjects"), "FindNearSubjects")
+    near_donor = ["Command", copy.deepcopy(near)]
+
+    rp = _one(_bodies(tree, "CreateReferencePoint"), "CreateReferencePoint")
+    rp[9] = RP_LIFETIME
+    rp_block = rp[11]
+    if rp_block[0] != "Block":
+        raise KitError("CreateReferencePoint does not carry a Block")
+
+    # ---- 冲刺：把母本的 StopBall 换成官方同形的 MoveBall（Z6 一行开关），
+    #      并在同一个 Block 里挂上「移动时身后的那个特效」（心角光环族，作者 09-21）。
+    show_template = next((node for node in rp_block[1] if _is_command(node, "ShowEffect")), None)
+    if show_template is None:
+        raise KitError("RP block carries no ShowEffect to clone the trail from")
+    trail = copy.deepcopy(show_template)
+    trail[1][1] = FX_TRAIL_LABEL
+    trail[1][2] = ["SpecifyEffectDirectly", f"{FX_TRAIL_SRC}/{FX_TRAIL_BASE}"]
+    trail[1][3] = -18                                   # 球：随移动/冲刺走
+    trail[1][4] = ["BacksideOfCharacter"]               # 「身后」
+    trail[1][5] = ["SpecifyEffectLifetimeDirectly", FX_TRAIL_FRAMES]
+    trail[1][6] = ["AB"]                                # subject 是球不是敌人 ⇒ AB 安全
+    trail[1][12] = ["Some", [{"min": FX_TRAIL_SCALE, "max": FX_TRAIL_SCALE}]]
+
+    dash = None
+    stop_nodes = [node for node in rp_block[1] if _is_command(node, "StopBall")]
+    if len(stop_nodes) != 1:
+        raise KitError(f"expected exactly one StopBall in the RP block, got {len(stop_nodes)}")
+    index = rp_block[1].index(stop_nodes[0])
+    if DASH_REPLACES_STOPBALL:
+        rp_block[1][index] = _cmd(*MOVE_BALL)
+        dash = {"replaced": "StopBall", "with": copy.deepcopy(MOVE_BALL),
+                "donor": "dog_slasher_proud_2"}
+    # 追加在块尾：ShowEffect 的树序仍是 slash/smash/explosion 在前，
+    # 下面按下标 0/1/2 改名与改参的逻辑不受影响（同一个 Block 内命令同帧执行）。
+    rp_block[1].append(trail)
+
+    events = [node for node in rp_block[1] if isinstance(node, list) and node[0] == "Event"]
+    if len(events) != 2 or [event[1][1] for event in events] != [9, 49]:
+        raise KitError(f"donor event waits drifted: {[e[1][1] for e in events]} != [9, 49]")
+
+    show_effects = _bodies(tree, "ShowEffect")
+    hit_areas = _bodies(tree, "CreateHitArea")
+    normal_attacks = _bodies(tree, "CreateNormalAttack")
+    for index in (0, 1, 2):
+        show_effects[index][1] = EFFECT_NAMES[index]
+    for index, edit in HITAREA_EDITS.items():
+        _set_hitarea(hit_areas[index], label=f"skill{level} hitarea{index}", **edit)
+    for index in (0, 1):
+        _set_cna(normal_attacks[index], CNA_SHAPE[index], CNA_MULT[level][index],
+                 f"skill{level} cna{index}")
+
+    # ---- 第三段「月華終斬」：同树内克隆第 49 帧那块（签名零漂移），只改参数
+    finish = copy.deepcopy(events[1])
+    finish[1][1] = FINISH_WAIT
+    finish_effect = _one(_bodies(finish, "ShowEffect"), "ShowEffect in the cloned block")
+    finish_effect[1] = EFFECT_NAMES[3]
+    if finish_effect[2][0] != "SpecifyEffectDirectly":
+        raise KitError("cloned ShowEffect does not use SpecifyEffectDirectly")
+    finish_effect[2][1] = FINISH_EFFECT
+    finish_effect[6] = list(FINISH_EFFECT_ANCHOR)
+    finish_effect[12] = copy.deepcopy(FINISH_EFFECT_SCALE)
+    _set_hitarea(_one(_bodies(finish, "CreateHitArea"), "CreateHitArea in the cloned block"),
+                 binds=FINISH_BINDS, label=f"skill{level} finish", **FINISH_HITAREA)
+    _one(_bodies(finish, "ShakeCamera"), "ShakeCamera in the cloned block")[1] = 2
+    _set_cna(_one(_bodies(finish, "CreateNormalAttack"), "CreateNormalAttack in the cloned block"),
+             CNA_SHAPE[2], CNA_MULT[level][2], f"skill{level} cna2")
+    rp_block[1].append(finish)
+
+    # ---- 顶层：删掉母本的 PF 伤害块 → 强化状态固有 + 共鸣分档
+    top = tree[11]
+    if top[0] != "Block" or len(top[1]) != 2:
+        raise KitError(f"donor top-level block has {len(top[1])} commands, expected 2")
+    if not _is_command(top[1][1], "FindAllSubjects"):
+        raise KitError("donor top-level command #2 is not FindAllSubjects")
+    removed = top[1][1][1][2]
+
+    awake = _condition_donor(ctx, ADDITIONAL_DONOR, "ACAdditionalDirectAttack")
+    _check_condition_shape(awake, "ACAdditionalDirectAttack", 3)
+    awake[1][2] = [["ACUnique", int(UID_AWAKE), [{"min": 1, "max": 1}]]]
+    awake[1][1] = -17
+    awake[1][7] = "月狼覚醒"
+
+    boost = _block(_team_block(ctx, level), _enemy_debuff_block(ctx, near_donor))
+    top[1][1] = awake
+    top[1].append(_cmd("ConditionalsChangeSkillFlag", 1, boost, _block()))
+
+    evidence = {
+        "level": level,
+        "dash": dash,
+        "reference_point_lifetime": rp[9],
+        "hit_areas": [{"radius": area[9][1][0]["min"], "lifetime": area[13][1],
+                       "max_hits": area[14][1], "buff_target_as": area[24],
+                       "binds": [area[19], area[21], area[22]]}
+                      for area in _bodies(tree, "CreateHitArea")],
+        "multipliers": [copy.deepcopy(body[6]) for body in _bodies(tree, "CreateNormalAttack")],
+        "removed_power_flip_selector": removed,
+        "awake_unique": UID_AWAKE,
+        "boost": {"piercing_frames": BOOST_PIERCING_FRAMES,
+                  "speedup_frames": BOOST_SPEEDUP_FRAMES,
+                  "frozen_frames": FROZEN_FRAMES, "dispel": DISPEL_COUNT},
+    }
+    return tree, evidence
+
+
 def _set_hitarea(body: list, *, radius: int, lifetime: int, max_hits: int,
                  break_weak_point: bool | None = None, binds: tuple[int, int, int] | None = None,
-                 label: str = "") -> None:
-    """``CreateHitArea``：params[8] 形状 / [12] 寿命 / [13] 命中数 / [23] 归属（+ 可选 [6] 破弱点、绑定号）。"""
+                 buff_target_as: int = BUFF_TARGET_AS_DIRECT, label: str = "") -> None:
+    """``CreateHitArea``：[9] 形状 / [13] 寿命 / [14] 命中数 / [24] 归属（+ 可选破弱点、绑定号）。"""
     if len(body) != 27:
         raise KitError(f"{label}: CreateHitArea has {len(body) - 1} params, expected 26")
     if body[9][0] != "Circle":
@@ -545,14 +928,15 @@ def _set_hitarea(body: list, *, radius: int, lifetime: int, max_hits: int,
     body[9] = ["Circle", [{"min": radius, "max": radius}]]
     body[13] = ["SpecifyHitAreaLifetimeDirectly", lifetime]
     body[14] = ["CalculatedUsingMaxNumOfHits", max_hits]
-    body[24] = BUFF_TARGET_AS_DIRECT
+    body[24] = buff_target_as
     if break_weak_point is not None:
         body[7] = bool(break_weak_point)
     if binds is not None:
         body[19], body[21], body[22] = binds
 
 
-def _set_cna(body: list, shape: dict[str, Any], mult: dict[str, float], label: str) -> None:
+def _set_cna(body: list, shape: dict[str, Any], mult: dict[str, float], label: str,
+             combo_bonus: bool | None = None) -> None:
     if len(body) != 17:
         raise KitError(f"{label}: CreateNormalAttack has {len(body) - 1} params, expected 16")
     if body[2] != 255:
@@ -564,160 +948,90 @@ def _set_cna(body: list, shape: dict[str, Any], mult: dict[str, float], label: s
     body[6] = [dict(mult)]
     body[13] = [{"min": shape["p12"], "max": shape["p12"]}]
     body[14] = [{"min": shape["p13"], "max": shape["p13"]}]
+    if combo_bonus is not None:
+        body[8] = bool(combo_bonus)
 
 
-def _condition_donor(ctx, program: str, kind: str) -> list:
-    """官方树里唯一携带该 AdditionalCondition 的 ``CreateCondition``（整条命令，深拷贝）。"""
+# ---------------------------------------------------------------- 629 追击树
+
+def _ability_skill_root(donor_tree, body_block: list) -> list:
+    """用官方主树的根头部造一棵 ability_skill 树（629 以 AbilitySkill 执行）。"""
+    root = copy.deepcopy(donor_tree[:11])
+    if root[0] != "ActionDsl" or root[10] != 0:
+        raise KitError(f"ability_skill root header drift: {root[:2]} buffTargetAs={root[10]}")
+    return list(root) + [body_block]
+
+
+def build_pierce_tree(ctx, donor_tree) -> tuple[Any, dict[str, Any]]:
+    """段数成长：贯穿印层数 → ``ACAdditionalDirectAttack`` 段数（1 + 层数，可超 3）。
+
+    三条硬纪律（卡 B §1.2 B 路）：① 绑定与使用必须在同一个 Block；
+    ② 带 ``vlv`` 的 ``CreateCondition`` 必须有非空区分键；③ 段数在付与那一刻定格。
+    """
+    condition = _condition_donor(ctx, ADDITIONAL_DONOR, "ACAdditionalDirectAttack")
+    body = _check_condition_shape(condition, "ACAdditionalDirectAttack", 3)
+    ac = body[2][0]
+    if len(ac) != 5:
+        raise KitError(f"ACAdditionalDirectAttack donor has {len(ac) - 1} params, expected 4")
+    ac[1] = [{"min": PIERCE_FRAMES, "max": PIERCE_FRAMES}]
+    ac[2] = [{"min": PIERCE_BASE_TIMES, "max": PIERCE_BASE_TIMES,
+              "vlv": [{"vid": PIERCE_VAR_ID, "min": 0, "max": PIERCE_TIMES_PER_LAYER}]}]
+    ac[3] = [{"min": PIERCE_DAMAGE, "max": PIERCE_DAMAGE}]
+    ac[4] = [{"min": 1, "max": 1}]
+    body[1] = -17
+    body[7] = PIERCE_CONDITION_KEY
+    bind = _cmd("BindConditionAccumulationVariable", -17, PIERCE_VAR_ID,
+                ["DCUnique", int(UID_PIERCE)], 1, PIERCE_VAR_CEIL)
+    tree = _ability_skill_root(donor_tree, _block(bind, condition))
+    return tree, {"unique": UID_PIERCE, "var": PIERCE_VAR_ID, "ceiling": PIERCE_VAR_CEIL,
+                  "base_times": PIERCE_BASE_TIMES, "per_layer": PIERCE_TIMES_PER_LAYER,
+                  "damage": PIERCE_DAMAGE, "key": PIERCE_CONDITION_KEY}
+
+
+def _thunder_branch(ctx, program: str, mult: dict[str, float], *, direct: bool,
+                    offset: int = 0) -> tuple[list, dict[str, Any]]:
+    """从官方天雷树里取 ``FindNearSubjects`` 整块（含特效 / 判定区 / 伤害），只改参数。"""
     tree = ctx.template_dsl(program)
-    hits = [node for node in _walk(tree) if _is_command(node, "CreateCondition")
-            and node[1][2] and isinstance(node[1][2][0], list) and node[1][2][0][0] == kind]
+    hits = [node for node in _walk(tree) if _is_command(node, "FindNearSubjects")]
     if len(hits) != 1:
-        raise KitError(f"{program}: expected exactly 1 CreateCondition/{kind}, got {len(hits)}")
-    return copy.deepcopy(hits[0])
+        raise KitError(f"{program}: expected exactly 1 FindNearSubjects, got {len(hits)}")
+    command = copy.deepcopy(hits[0])
+    areas = _bodies(command, "CreateHitArea")
+    attacks = _bodies(command, "CreateNormalAttack")
+    if len(areas) != 1 or len(attacks) != 1:
+        raise KitError(f"{program}: expected 1 CreateHitArea + 1 CreateNormalAttack, "
+                       f"got {len(areas)}/{len(attacks)}")
+    if direct:
+        # 能力 1「技能雷击按直接攻击伤害结算，且威力随连击数大幅提升」= 两件事各写一处
+        areas[0][24] = BUFF_TARGET_AS_DIRECT
+        attacks[0][8] = True
+    attacks[0][6] = [dict(mult)]
+    if offset:
+        _remap_binds(command, offset)
+    note = {"donor": program, "multiplier": dict(mult), "direct": direct,
+            "effects": effect_paths(command)}
+    return command, note
 
 
-def _findall_donor(ctx) -> list:
-    """``black_wolf_knight_2`` 的 ``FindAllSubjects(11, 33)`` 整块（含内含的 ACPiercing）。"""
-    tree = ctx.template_dsl(PIERCING_DONOR)
-    hits = [node for node in _walk(tree) if _is_command(node, "FindAllSubjects")]
-    if len(hits) != 1:
-        raise KitError(f"{PIERCING_DONOR}: expected exactly 1 FindAllSubjects, got {len(hits)}")
-    body = hits[0][1]
-    if (body[1], body[2]) != (11, 33):
-        raise KitError(f"{PIERCING_DONOR}: FindAllSubjects bind/selector {body[1]}/{body[2]} "
-                       f"!= 11/33（33 = 含自身的己方全体，35 是「除自身外」）")
-    return copy.deepcopy(hits[0])
+def build_thunder_tree(ctx, donor_tree, bolt_family) -> tuple[Any, dict[str, Any]]:
+    """天雷两档：常态 = 官方千岳（零克隆零染色）；强化 = 本包克隆的雷弓（冷蓝白）。"""
+    normal, normal_note = _thunder_branch(ctx, THUNDER_NORMAL_DONOR, THUNDER_MULT_NORMAL,
+                                          direct=False)
+    boost, boost_note = _thunder_branch(ctx, THUNDER_BOOST_DONOR, THUNDER_MULT_BOOST,
+                                        direct=True, offset=THUNDER_BOOST_BIND_OFFSET)
+    boost, rewrite = ctx.rewrite_effect_refs(boost, bolt_family)
+    boost_note["effects"] = effect_paths(boost)
+    boost_note["rewrite"] = rewrite
+    body = _block(_cmd("ConditionalsChangeSkillFlag", 1, _block(boost), _block(normal)))
+    tree = _ability_skill_root(donor_tree, body)
+    leaked = [path for path in effect_paths(tree)
+              if path.startswith(f"battle/effect/skill_unique/{FX_BOLT_TEMPLATE}/")]
+    if leaked:
+        raise KitError(f"thunder tree still references the un-cloned donor family: {leaked}")
+    return tree, {"normal": normal_note, "boost": boost_note}
 
 
-def _team_block(ctx, level: str, numbers: dict[str, Any]) -> tuple[list, dict[str, Any]]:
-    """S7–S9：``FindAllSubjects(11, 33)`` 一块里挂贯通 / 直击伤害 UP / 加速三条状态。"""
-    command = _findall_donor(ctx)
-    bind = command[1][1]
-    block = command[1][9]
-    if block[0] != "Block" or len(block[1]) != 1:
-        raise KitError("FindAllSubjects donor block shape drifted")
-
-    piercing = block[1][0]
-    if piercing[1][2][0][0] != "ACPiercing":
-        raise KitError("FindAllSubjects donor does not carry ACPiercing")
-    piercing[1][2][0][1] = [dict(numbers["piercing"])]
-
-    direct = _condition_donor(ctx, DIRECT_DONOR, "ACDirectDamage")
-    direct[1][1] = bind
-    direct[1][2][0][1] = [dict(numbers["direct"][0])]
-    direct[1][2][0][2] = [dict(numbers["direct"][1])]
-
-    speedup = _condition_donor(ctx, SPEEDUP_DONOR, "ACSpeedup")
-    speedup[1][1] = bind
-    speedup[1][2][0][1] = [dict(numbers["speedup"][0])]
-    speedup[1][2][0][2] = [dict(numbers["speedup"][1])]
-
-    for command_node, name in ((piercing, "ACPiercing"), (direct, "ACDirectDamage"),
-                               (speedup, "ACSpeedup")):
-        body = command_node[1]
-        if len(body) != 13:
-            raise KitError(f"{name}: CreateCondition has {len(body) - 1} slots, expected 12")
-        if body[10] != 3:
-            # 下标 10 是付与对象种类：FindAllSubjects 33/34/35/49/82 下必须写 3，
-            # 97（球）写 2；错配 = 施法 C16102（裁决 §8 / 记忆 wf-createcondition-target-kind）。
-            raise KitError(f"{name}: CreateCondition target kind {body[11]!r} != 3 for selector 33")
-        if body[1] != bind:
-            raise KitError(f"{name}: subject {body[1]!r} != FindAllSubjects bind {bind}")
-
-    block[1][:] = [piercing, direct, speedup]
-    evidence = {"level": level, "bind": bind, "selector": command[1][2],
-                "piercing_frames": numbers["piercing"],
-                "direct": numbers["direct"], "speedup": numbers["speedup"],
-                "donors": {"ACPiercing": PIERCING_DONOR, "ACDirectDamage": DIRECT_DONOR,
-                           "ACSpeedup": SPEEDUP_DONOR}}
-    return command, evidence
-
-
-def mutate_tree(ctx, tree, level: str, numbers: dict[str, Any]) -> tuple[Any, dict[str, Any]]:
-    """母本整树 → 本角色的树（S0–S9）。返回 ``(tree, evidence)``；结构不符直接抛错。"""
-    counts = _command_counts(tree)
-    if counts != DONOR_COMMAND_COUNTS:
-        raise KitError(f"donor skill tree {level} drifted: commands {counts} != {DONOR_COMMAND_COUNTS}")
-    if not (isinstance(tree, list) and len(tree) == 12 and tree[0] == "ActionDsl"):
-        raise KitError(f"donor skill tree {level}: unexpected root {tree[:2]!r}")
-    if tree[1] != 2 or tree[10] != 0:
-        # tree[10] = buffTargetAs：保持 0（自动），直击归属逐判定区写 p23 = 4（设计稿 E1）。
-        raise KitError(f"donor root header {level}: movementPriority={tree[1]} buffTargetAs={tree[10]}")
-
-    # ---- S0 参照点寿命 100 → 130；S1 StopBall 70 → 95
-    rp = _one(_bodies(tree, "CreateReferencePoint"), "CreateReferencePoint")
-    before_rp = rp[9]
-    rp[9] = RP_LIFETIME
-    stopball = _one(_bodies(tree, "StopBall"), "StopBall")
-    before_stop = stopball[2]
-    stopball[2] = STOPBALL_FRAMES
-
-    rp_block = rp[11]
-    if rp_block[0] != "Block":
-        raise KitError("CreateReferencePoint does not carry a Block")
-    events = [node for node in rp_block[1] if isinstance(node, list) and node[0] == "Event"]
-    if len(events) != 2 or [event[1][1] for event in events] != [9, 49]:
-        raise KitError(f"donor event waits drifted: {[e[1][1] for e in events]} != [9, 49]")
-
-    # ---- S2/S3/S4 前两段：换特效标签、判定区与倍率
-    show_effects = _bodies(tree, "ShowEffect")
-    hit_areas = _bodies(tree, "CreateHitArea")
-    normal_attacks = _bodies(tree, "CreateNormalAttack")
-    for index in (0, 1, 2):
-        show_effects[index][1] = EFFECT_NAMES[index]
-    for index, edit in HITAREA_EDITS.items():
-        _set_hitarea(hit_areas[index], label=f"skill{level} hitarea{index}", **edit)
-    for index in (0, 1):
-        _set_cna(normal_attacks[index], CNA_SHAPE[index], numbers["cna"][index],
-                 f"skill{level} cna{index}")
-
-    # ---- S5 第三段「月华终斩」：同树内克隆第 49 帧那块（签名零漂移），只改参数
-    finish = copy.deepcopy(events[1])
-    finish[1][1] = FINISH_WAIT
-    finish_effect = _one(_bodies(finish, "ShowEffect"), "ShowEffect in the cloned block")
-    finish_effect[1] = EFFECT_NAMES[3]
-    if finish_effect[2][0] != "SpecifyEffectDirectly":
-        raise KitError("cloned ShowEffect does not use SpecifyEffectDirectly")
-    finish_effect[2][1] = FINISH_EFFECT
-    finish_effect[6] = list(FINISH_EFFECT_ANCHOR)
-    finish_effect[12] = copy.deepcopy(FINISH_EFFECT_SCALE)
-    finish_area = _one(_bodies(finish, "CreateHitArea"), "CreateHitArea in the cloned block")
-    _set_hitarea(finish_area, binds=FINISH_BINDS, label=f"skill{level} finish",
-                 **FINISH_HITAREA)
-    finish_shake = _one(_bodies(finish, "ShakeCamera"), "ShakeCamera in the cloned block")
-    finish_shake[1] = 2
-    _set_cna(_one(_bodies(finish, "CreateNormalAttack"), "CreateNormalAttack in the cloned block"),
-             CNA_SHAPE[2], numbers["cna"][2], f"skill{level} cna2")
-    rp_block[1].append(finish)
-
-    # ---- S6 删掉母本的 PF 伤害块；S7–S9 换成「全队及协力球」三条状态
-    top = tree[11]
-    if top[0] != "Block" or len(top[1]) != 2:
-        raise KitError(f"donor top-level block has {len(top[1])} commands, expected 2")
-    if not _is_command(top[1][1], "FindAllSubjects"):
-        raise KitError("donor top-level command #2 is not FindAllSubjects")
-    removed = top[1][1][1][2]
-    team, team_evidence = _team_block(ctx, level, numbers)
-    top[1][1] = team
-
-    after = _command_counts(tree)
-    if after != RESULT_COMMAND_COUNTS:
-        raise KitError(f"mutated skill tree {level}: commands {after} != {RESULT_COMMAND_COUNTS}")
-    evidence = {
-        "level": level,
-        "reference_point_lifetime": {"before": before_rp, "after": rp[9]},
-        "stop_ball": {"before": before_stop, "after": stopball[2]},
-        "hit_areas": [{"radius": area[9][1][0]["min"], "lifetime": area[13][1],
-                       "max_hits": area[14][1], "buff_target_as": area[24],
-                       "binds": [area[19], area[21], area[22]]} for area in _bodies(tree, "CreateHitArea")],
-        "multipliers": [copy.deepcopy(body[6]) for body in _bodies(tree, "CreateNormalAttack")],
-        "waits": [node[1][1] for node in _walk(tree)
-                  if isinstance(node, list) and len(node) == 2 and node[0] == "Event"],
-        "removed_power_flip_selector": removed,
-        "team_conditions": team_evidence,
-    }
-    return tree, evidence
-
+# ---------------------------------------------------------------- DSL 落盘
 
 def _dsl_problems(tree) -> list[str]:
     problems = [f"direction: {p}" for p in wf_dsl.player_side_dsl_problems(tree)]
@@ -728,64 +1042,102 @@ def _dsl_problems(tree) -> list[str]:
     return problems
 
 
-def write_skill_dsl(ctx, design: dict[str, Any], plan: dict[str, Any],
-                    family: dict[str, Any]) -> tuple[list[str], list[dict[str, Any]]]:
+def _write_tree(ctx, program: str, tree, label: str) -> str:
+    problems = _dsl_problems(tree)
+    if problems:
+        raise KitError(f"{label}: DSL problems {problems}")
+    if not (isinstance(tree, list) and tree and tree[0] == "ActionDsl"):
+        raise KitError(f"{label}: write_dsl needs a bare ActionDsl tree")
+    logical = ctx.write_dsl(program, tree)
+    back = ctx.amf_parse(ctx.pack.pkg_path("common", logical).read_bytes())
+    if back != tree:
+        raise KitError(f"{label}: package DSL read-back differs from the written tree")
+    return logical
+
+
+def write_skills(ctx, blade_family, bolt_family, trail_family) -> tuple[list[str], list[dict[str, Any]]]:
     programs, evidence = [], []
-    want_programs = list(design["plan"]["skills"]["programs"])
+    donor_tree = None
     for level in ("1", "2"):
         donor_program = ctx.program_path(level).replace(CODE, TEMPLATE_CODE)
-        tree, ev = mutate_tree(ctx, ctx.template_dsl(donor_program), level, plan["levels"][level])
-        tree, rewrite = ctx.rewrite_effect_refs(tree, family)
-        paths = effect_paths(tree)
-        expected = sorted([f"{FX_DST_DIR}/{TEMPLATE_CODE}_slash",
-                           f"{FX_DST_DIR}/{TEMPLATE_CODE}_smash",
-                           f"{FX_DST_DIR}/{TEMPLATE_CODE}_explosion", FINISH_EFFECT])
-        if sorted(paths) != expected:
-            raise KitError(f"skill {level} effect refs {sorted(paths)} != {expected}")
-        problems = _dsl_problems(tree)
-        if problems:
-            raise KitError(f"skill {level}: DSL problems {problems}")
-        if not (isinstance(tree, list) and tree and tree[0] == "ActionDsl"):
-            raise KitError(f"skill {level}: write_dsl needs a bare ActionDsl tree")
-        logical = ctx.write_dsl(ctx.program_path(level), tree)
-        back = ctx.amf_parse(ctx.pack.pkg_path("common", logical).read_bytes())
-        if back != tree:
-            raise KitError(f"skill {level}: package DSL read-back differs from the written tree")
-        ev.update({"logical": logical, "donor_program": donor_program,
-                   "effect_refs": paths, "effect_rewrite": rewrite})
+        raw = ctx.template_dsl(donor_program)
+        if donor_tree is None:
+            donor_tree = copy.deepcopy(raw)
+        tree, ev = mutate_tree(ctx, raw, level)
+        tree, rewrite = ctx.rewrite_effect_refs(tree, blade_family)
+        tree, trail_rewrite = ctx.rewrite_effect_refs(tree, trail_family)
+        paths = sorted(effect_paths(tree))
+        expected = sorted([f"{FX_BLADE_DST}/{TEMPLATE_CODE}_slash",
+                           f"{FX_BLADE_DST}/{TEMPLATE_CODE}_smash",
+                           f"{FX_BLADE_DST}/{TEMPLATE_CODE}_explosion",
+                           FX_TRAIL_EFFECT, FINISH_EFFECT])
+        if paths != expected:
+            raise KitError(f"skill {level} effect refs {paths} != {expected}")
+        ev.update({"logical": _write_tree(ctx, ctx.program_path(level), tree, f"skill {level}"),
+                   "donor_program": donor_program, "effect_refs": paths,
+                   "effect_rewrite": rewrite, "trail_rewrite": trail_rewrite})
         evidence.append(ev)
-        programs.append(logical)
-    got_programs = sorted(ctx.program_path(level) for level in ("1", "2"))
-    if got_programs != sorted(want_programs):
-        raise KitError(f"skill programs {got_programs} != design {sorted(want_programs)}")
+        programs.append(ctx.program_path(level))
+
+    pierce, pierce_note = build_pierce_tree(ctx, donor_tree)
+    pierce_note["logical"] = _write_tree(ctx, PIERCE_PROGRAM, pierce, "pierce")
+    pierce_note["program"] = PIERCE_PROGRAM
+    evidence.append({"level": "pierce", **pierce_note})
+    programs.append(PIERCE_PROGRAM)
+
+    thunder, thunder_note = build_thunder_tree(ctx, donor_tree, bolt_family)
+    thunder_note["logical"] = _write_tree(ctx, THUNDER_PROGRAM, thunder, "thunder")
+    thunder_note["program"] = THUNDER_PROGRAM
+    evidence.append({"level": "thunder", **thunder_note})
+    programs.append(THUNDER_PROGRAM)
     return programs, evidence
 
 
 # ---------------------------------------------------------------- 特效族
 
-def fx_transform(ctx, design: dict[str, Any]) -> tuple[Any, dict[str, Any]]:
-    """风绿 → 雷黄的 LUT：``B/pixel/kyle/fx_lut.json`` 优先，没有就用设计稿内联的色表。"""
+def fx_dir(ctx) -> Path:
+    return ctx.pack.batch_dir / "rework1" / "fx" / KEY
+
+
+def fx_lut_path(ctx, name: str) -> Path | None:
+    """LUT 查找顺序：``rework1/fx/kyle/<name>`` → ``B/pixel/kyle/<name>``；都没有返回 None。
+
+    ⚠ ``rework1/fx/kyle/fx_lut.json`` 是特效代理的**清单**（``ma-fx-lut-manifest/1``），
+    不是 LUT；按族取 ``fx_lut.<母本>.json``，别把清单喂给 ``png_transform_from_lut``。
+    """
+    for candidate in (fx_dir(ctx) / name, KL.pixel_dir(ctx) / name):
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def _staged_lut(ctx, name: str, why: str) -> tuple[Any, dict[str, Any]]:
+    """代理交付的族 LUT：在就套用，不在就先不染色（kit 无需改代码）。"""
+    staged = fx_lut_path(ctx, name)
+    if staged is None:
+        return None, {"source": "none", "expected": name, "why": why}
+    data = KL.load_lut(staged) or {}
+    return KL.png_transform_from_lut(staged), {
+        "source": "staged", "path": str(staged), "mode": data.get("mode"),
+        "exact_entries": len(data.get("exact") or {}), "hue_rules": len(data.get("hue") or [])}
+
+
+def _blade_transform(ctx, design: dict[str, Any]) -> tuple[Any, dict[str, Any]]:
     staged = KL.pixel_dir(ctx) / "fx_lut.json"
     if staged.is_file():
         fallback = ctx.pack.evidence_path("kit-fx-lut.json")
         if fallback.is_file():
-            fallback.unlink()        # 像素代理的色表已到位：别把 kit 的兜底色表留在回执里误导
+            fallback.unlink()
         data = KL.load_lut(staged) or {}
         return KL.png_transform_from_lut(staged), {
-            "source": "pixel", "path": str(staged), "mode": data.get("mode"),
+            "source": "staged", "path": str(staged), "mode": data.get("mode"),
             "exact_entries": len(data.get("exact") or {}), "hue_rules": len(data.get("hue") or [])}
-    clone = design["plan"]["skills"]["effects_clone"][0]
-    lut = dict((clone.get("recolor") or {}).get("lut") or {})
+    clone = ((design.get("plan") or {}).get("skills") or {}).get("effects_clone") or []
+    lut = dict(((clone[0] if clone else {}).get("recolor") or {}).get("lut") or {})
     if not lut:
-        return None, {"source": "none",
-                      "why": "设计稿没有内联色表，且像素代理还没交付 fx_lut.json ⇒ 先不改色"}
+        return None, {"source": "none", "why": "设计稿没有内联色表且代理未交付 ⇒ 先不改色"}
     payload = {"schema": KL.LUT_SCHEMA, "mode": "both", "tolerance": 0,
-               "_source": "design/kyle.json plan.skills.effects_clone[0].recolor.lut"
-                          "（13 格精确色表）+ kit 补的两条色相区间兜底",
-               "_why": "母本 593×253 的可见像素 7.5 万，13 格精确色只命中约 1.1 万（抗锯齿过渡色"
-                       "全部漏网）⇒ 只跑 exact 会留下大片风绿。exact 先跑（保住设计稿点名的"
-                       "芯白/冷蓝/靛紫暗部），剩下的像素再按裁决 §4 的「风绿→雷黄、暗部偏蓝紫」"
-                       "走色相区间。B/pixel/kyle/fx_lut.json 一旦到位就整份取代本文件。",
+               "_source": "design/kyle.json plan.skills.effects_clone[0].recolor.lut",
                "exact": {f"#{src}": f"#{dst}" for src, dst in lut.items()},
                "hue": FX_HUE_FALLBACK}
     path = ctx.pack.evidence_path("kit-fx-lut.json")
@@ -795,23 +1147,79 @@ def fx_transform(ctx, design: dict[str, Any]) -> tuple[Any, dict[str, Any]]:
                                              "entries": len(lut)}
 
 
-def clone_effects(ctx, design: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
-    clone = design["plan"]["skills"]["effects_clone"][0]
-    if clone["src"].rstrip("/") != FX_SRC_DIR or clone["dst"].rstrip("/") != FX_DST_DIR:
-        raise KitError(f"design effects_clone drift: {clone.get('src')} → {clone.get('dst')}")
-    transform, lut_note = fx_transform(ctx, design)
-    family = ctx.clone_effect_family(FX_SRC_DIR, FX_SUBDIR, layout="codename",
-                                     png_transform=transform)
-    want_bases = sorted(clone["bases"])
-    if sorted(family["copied_bases"]) != want_bases:
-        raise KitError(f"cloned effect bases {sorted(family['copied_bases'])} != design {want_bases}")
-    if family.get("missing_effects"):
-        raise KitError(f"effect family clone is missing {family['missing_effects']}")
-    note = {"src": FX_SRC_DIR, "dst": family["dst_dir"], "bases": sorted(family["copied_bases"]),
-            "files": len(family.get("files") or []), "lut": lut_note,
-            "finish_effect": {"path": FINISH_EFFECT, "cloned": False,
-                              "why": "裁决 §4：只引用不改色的官方件直接引用官方路径，零图集增量"}}
-    return family, note
+def _assert_fx_donor(ctx, src_dir: str, template: str, fingerprint: dict) -> dict[str, Any]:
+    """母本漂移即拒绝：sheet 尺寸对不上就说明调研卡与代理的配方全部失效，当场停工。"""
+    raw = ctx.official_read(f"{src_dir}/{template}.png")
+    if raw is None:
+        raise KitError(f"official baseline lacks {src_dir}/{template}.png")
+    size = ctx.png_open(raw).size
+    if tuple(size) != fingerprint["sheet"]:
+        raise KitError(f"{template} sheet {size} != {fingerprint['sheet']} "
+                       f"（母本漂移，调研卡 C 与 rework1/fx/{KEY} 的配方失效，拒绝施工）")
+    return {"sheet": list(size)}
+
+
+def clone_effects(ctx, design: dict[str, Any]) -> tuple[Any, Any, Any, dict[str, Any]]:
+    blade_transform, blade_lut = _blade_transform(ctx, design)
+    blade = ctx.clone_effect_family(FX_BLADE_SRC, FX_BLADE_SUB, layout="codename",
+                                    png_transform=blade_transform)
+    if blade.get("missing_effects"):
+        raise KitError(f"blade family clone is missing {blade['missing_effects']}")
+
+    bolt_fp = _assert_fx_donor(ctx, FX_BOLT_SRC, FX_BOLT_TEMPLATE, FX_BOLT_FINGERPRINT)
+    bolt_transform, bolt_lut = _staged_lut(
+        ctx, FX_BOLT_LUT, "特效代理未交付冷蓝白色表 ⇒ 先按原色克隆（到位后自动生效）")
+    bolt = ctx.clone_effect_family(FX_BOLT_SRC, FX_BOLT_SUB, layout="codename",
+                                   png_transform=bolt_transform)
+    if bolt.get("missing_effects"):
+        raise KitError(f"bolt family clone is missing {bolt['missing_effects']}")
+
+    trail_fp = _assert_fx_donor(ctx, FX_TRAIL_SRC, FX_TRAIL_TEMPLATE, FX_TRAIL_FINGERPRINT)
+    trail_transform, trail_lut = _staged_lut(
+        ctx, FX_TRAIL_LUT, "特效代理未交付雷金色表 ⇒ 先按原色克隆（到位后自动生效）")
+    trail = ctx.clone_effect_family(FX_TRAIL_SRC, FX_TRAIL_SUB, layout="codename",
+                                    fx_names=[FX_TRAIL_BASE], png_transform=trail_transform)
+    if trail.get("missing_effects"):
+        raise KitError(f"trail family clone is missing {trail['missing_effects']}")
+    if FX_TRAIL_BASE not in trail["copied_bases"]:
+        raise KitError(f"trail clone did not copy {FX_TRAIL_BASE}: {trail['copied_bases']}")
+
+    surgery = _apply_parts_surgery(ctx, {"blade": blade, "bolt": bolt, "trail": trail})
+    note = {
+        "blade": {"src": FX_BLADE_SRC, "dst": blade["dst_dir"],
+                  "bases": sorted(blade["copied_bases"]), "lut": blade_lut},
+        "bolt": {"src": FX_BOLT_SRC, "dst": bolt["dst_dir"],
+                 "bases": sorted(bolt["copied_bases"]), "lut": bolt_lut,
+                 "donor_fingerprint": bolt_fp},
+        "trail": {"src": FX_TRAIL_SRC, "dst": trail["dst_dir"],
+                  "bases": sorted(trail["copied_bases"]), "lut": trail_lut,
+                  "donor_fingerprint": trail_fp,
+                  "attached_to": "技能冲刺块（MoveBall 同一个 Block，subject -18 / "
+                                 "BacksideOfCharacter / AB）"},
+        "normal_thunder": {"path": THUNDER_NORMAL_DONOR, "cloned": False,
+                           "why": "作者 09-21 同意常态档直接引用官方千岳十织、不染色；"
+                                  "全克隆它会让单角色 layer0 到 3.44% 且 fits=False（卡 C §3.4）"},
+        "parts_surgery": surgery,
+    }
+    return blade, bolt, trail, note
+
+
+def _apply_parts_surgery(ctx, families: dict[str, Any]) -> dict[str, Any]:
+    """特效代理的 parts 手术（只取末段 / 拆档）钩子：脚本在就跑，不在就跳过。"""
+    script = ctx.pack.batch_dir / "rework1" / "fx" / KEY / "parts_surgery.py"
+    if not script.is_file():
+        return {"applied": False, "script": str(script),
+                "why": "特效素材代理尚未交付 parts 手术脚本 ⇒ 按整族克隆"}
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(f"ma_fx_surgery_{KEY}", script)
+    if spec is None or spec.loader is None:
+        raise KitError(f"cannot load the parts surgery script {script}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    apply = getattr(module, "apply", None)
+    if apply is None:
+        raise KitError(f"{script} must expose apply(ctx, families)")
+    return {"applied": True, "script": str(script), "result": apply(ctx, families)}
 
 
 # ---------------------------------------------------------------- 表与文案
@@ -846,11 +1254,8 @@ def write_character_row(ctx, texts: dict[str, str]) -> list[str]:
     return route
 
 
-def write_action_skill(ctx, design: dict[str, Any], plan: dict[str, Any],
-                       texts: dict[str, str]) -> dict[str, list[str]]:
-    desc = design["plan"]["texts_tables"]["action_skill_desc"]
-    if desc["outer_key"] != CODE or desc["value"] != texts["desc1"] != texts["desc2"]:
-        raise KitError("design action_skill description block disagrees with texts.desc1/desc2")
+def write_action_skill(ctx, design: dict[str, Any], texts: dict[str, str]) -> dict[str, list[str]]:
+    energy = design["plan"]["skills"]["energy"]
     inner = ctx.pkg_nested(CODE, KL.ACTION)
     if sorted(inner) != ["1", "2"]:
         raise KitError(f"package action_skill inner keys {sorted(inner)} != ['1', '2']")
@@ -863,55 +1268,31 @@ def write_action_skill(ctx, design: dict[str, Any], plan: dict[str, Any],
             raise KitError(f"action_skill {level}: program {cells[7]!r} != {ctx.program_path(level)!r}")
         if cells[2:4] != ["dynamic/skill/atk_nearest", "true"]:
             raise KitError(f"action_skill {level}: targeting columns changed {cells[2:4]}")
-        if cells[8:17] != ["1", "0", "425", "", "0", "0", "", "", "(None)"]:
-            raise KitError(f"action_skill {level}: c8–c16 differ from the template {cells[8:17]}")
-        if any(cells[17:]):
-            raise KitError(f"action_skill {level}: c17+ not empty {cells[17:]}")
         cells[0] = texts[f"skill{level}"]
         cells[1] = texts[f"desc{level}"]
-        cells[4], cells[5], cells[6] = plan["energy"][level]
+        cells[4] = str(energy[level]["c4"])
+        cells[5] = str(energy[level]["c5"])
+        cells[6] = str(energy[level]["c6"])
         out[level] = cells
     ctx.write_nested(KL.ACTION, CODE, {level: [cells] for level, cells in out.items()},
                      replace_inner=True)
     return out
 
 
-# ---------------------------------------------------------------- 孤儿字符串
-
-#: ``tables`` 把母本 141159 的 ChangeSkillFlag 那套整体克隆了过来（母本词条 1411596#L1 的 c70
-#: 指向 ``change_skill_<code>``）。本套件重写了全部 6 个词条键，一条 ChangeSkillFlag 行都没有
-#: ⇒ 这条字符串成了谁都不引用的孤行（裁决 §3：死行不上面板）。
-ORPHAN_CAS_KEY = "change_skill_" + CODE
-
-
-def _cas_claim(ctx):
-    return next((claim for claim in ctx.pack.load_claims()
-                 if (claim["root"], claim["logical_path"]) == ("common", KL.CAS)), None)
-
-
-def drop_orphan_change_skill(ctx) -> dict[str, Any]:
-    """撤销孤儿 ``change_skill_<code>``，并让本包彻底不带 ``custom_ability_string`` 表。
-
-    幂等：``tables`` 每次重跑都会把这张共享全表再复制进包，本函数每次都把它清掉。
-    """
-    result: dict[str, Any] = {
-        "key": ORPHAN_CAS_KEY,
-        "why": "本套件没有 ChangeSkillFlag 词条行（c70 全空）⇒ 这条字符串无人引用，"
-               "内容还是母本黑狼骑士的旧文案",
-    }
-    entry = _cas_claim(ctx)
-    if entry is not None and ORPHAN_CAS_KEY in entry.get("outer_keys", []):
-        result["unclaimed"] = ctx.unclaim(KL.CAS, [ORPHAN_CAS_KEY])
-        entry = _cas_claim(ctx)
-    result["still_claimed"] = entry is not None
-    path = ctx.pack.pkg_path("common", KL.CAS)
-    if entry is None and path.is_file():
-        # ``custom_ability_string`` 是共享全表。一个键都不认领却带着 ``tables`` 那一刻的旧快照，
-        # 照它整表覆盖会把批内别的角色随后进 live 的键删掉
-        # （记忆 wf-device-push-overwrites-device-only-rows：整表覆盖＝灾难）。
-        path.unlink()
-        result["package_table_deleted"] = True
-    return result
+def write_strings(ctx) -> dict[str, str]:
+    """``custom_ability_string``：536 / 两条 629 的条目 + 队长与 6 条能力的面板接管。"""
+    declared = set(ctx.spec.extra_keys.get(KL.CAS, ()))
+    missing = [key for key in CAS_TEXTS if key not in declared]
+    if missing:
+        raise KitError(f"custom_ability_string keys not declared in SPEC['extra_keys']: {missing}")
+    official = ctx.official_flat(KL.CAS)
+    clashes = [key for key in CAS_TEXTS if key in official]
+    if clashes:
+        raise KitError(f"custom_ability_string keys already exist officially: {clashes}")
+    for key, text in CAS_TEXTS.items():
+        KL.check_panel(text, skill_flag=(key == CAS_SWITCH), label=key)
+    ctx.write_flat(KL.CAS, {key: [[text]] for key, text in CAS_TEXTS.items()})
+    return dict(CAS_TEXTS)
 
 
 # ---------------------------------------------------------------- build
@@ -927,115 +1308,122 @@ def build(ctx) -> dict[str, Any]:
         raise KitError(f"spec pf_type {spec.pf_type} != 0（APK 原生剑型 PF，本角色不做 722）")
 
     design = load_design(ctx.root)
+    design_problems = _design_problems(design)
     texts = check_texts(ctx, design)
-    plan = read_skill_plan(design)
 
     # ---- 1) character 行：语音路由 c9–c16 ＋ 队长技名 c18
     route = write_character_row(ctx, texts)
 
-    # ---- 2) 固有状态「月牙」＋ 48×48 图标
-    unique_key, unique_row = build_unique(ctx, design)
-    icon = install_unique_icon(ctx)
+    # ---- 2) 三个固有状态 + 三张 48×48 图标
+    uniques = build_uniques(ctx)
+    icons = install_unique_icons(ctx)
 
-    # ---- 3) 队长技 6 行 + 词条 6 键 13 条
-    leader_rows, leader_evidence = build_leader_rows(ctx, design)
-    ctx.write_flat(KL.LEADER, {CID_S: leader_rows})
-    ability_rows, ability_evidence = build_ability_rows(ctx, design)
-    ctx.write_flat(KL.ABILITY, ability_rows)
-    orphan = drop_orphan_change_skill(ctx)
+    # ---- 3) 队长 4 行 + 词条 6 键 23 条
+    built = build_rows(ctx)
+    ctx.write_flat(KL.LEADER, {CID_S: built["leader"]})
+    ctx.write_flat(KL.ABILITY, built["ability"])
+    strings = write_strings(ctx)
 
-    # ---- 4) 面板文案规则
-    evidence = leader_evidence + ability_evidence
-    panel = [ev["describe"] for ev in evidence]
-    for text in panel:
-        KL.check_panel(text, label="panel row")
+    # ---- 4) action_skill：名称 / 说明 / 能量
+    action = write_action_skill(ctx, design, texts)
 
-    # ---- 5) action_skill：名称 / 说明 / 能量
-    action = write_action_skill(ctx, design, plan, texts)
+    # ---- 5) 特效族（blade 保留 + bolt 新增）与 4 棵 DSL
+    blade, bolt, trail, fx_note = clone_effects(ctx, design)
+    programs, skill_evidence = write_skills(ctx, blade, bolt, trail)
 
-    # ---- 6) 技能特效族 + 两档 DSL
-    family, fx_note = clone_effects(ctx, design)
-    programs, skill_evidence = write_skill_dsl(ctx, design, plan, family)
-
-    # ---- 7) 语音路由目标 + 像素交付件
+    # ---- 6) 语音路由目标 + 像素交付件（本轮小人一格不改）
     switched = KL.write_voice_ready(ctx)
     pixel = KL.install_staged_assets(ctx)
 
     ctx.sync_character_mirrors()
 
     ctx.evidence_write("kit-rows.json", {
-        "leader": leader_evidence, "ability": ability_evidence,
-        "unique_condition": {unique_key: unique_row}, "icon": icon,
+        "leader": built["evidence"][:len(LEADER)],
+        "ability": built["evidence"][len(LEADER):],
+        "unique_condition": uniques, "icons": icons,
+        "custom_ability_string": strings,
     })
     ctx.evidence_write("kit-skills.json", {
-        "programs": programs, "energy": {lv: list(v) for lv, v in plan["energy"].items()},
-        "action_skill": action, "effects": fx_note, "levels": skill_evidence,
+        "programs": programs, "action_skill": action, "effects": fx_note,
+        "levels": skill_evidence,
     })
+
+    panel = [PANEL_LEADER] + [PANEL_ABILITY[slot] for slot in range(1, 7)]
+    for text in panel:
+        KL.check_panel(text, label="panel row")
 
     notes: list[Any] = [
         {"design_json": str(MS.design_path(ctx.root, KEY)), "stage": design.get("stage"),
-         "rows_checked": len(evidence),
-         "how": "每行都按设计稿铺整行，再用 donor 逐列审计（值必须在 donor 同列出现过或被 "
-                "design.edits 点名），然后过 wf_client_legality 三件套并与 desc_expected 逐字比对"},
-        {"voice_route": route, "switched_action_skill": switched,
-         "why": "kind 1 ConditionExist / 条件种类 31 贯通：技能给全队（含自身）挂贯通 "
-                "10–15 秒，这段窗口内满槽播 matched_skill_ready"},
-        {"unique_condition": {unique_key: {"name": UNIQUE_NAME, "cap": UNIQUE_CAP,
-                                           "remove_if_encoffin": unique_row[13]}},
-         "why": "上限写 20（数字）：(None) 会被读成上限 1，队长 L3 与词条 A2#1 的 D134 按层加成会全死"},
-        {"unique_icon": icon},
+         "rows_checked": len(built["evidence"]),
+         "how": "每行 donor + 逐格改，过 wf_client_legality 三件套并 wf_describe 回读；"
+                "面板文案由 desc_override_* 整块接管，逐行对齐 rework1/panel/kyle.json"},
+        {"design_mirror_problems": design_problems,
+         "why": "design/kyle.json plan.rework1 是 PLAN/LEADER/UNIQUES 的镜像；非空即两边漂移"},
+        {"voice_route": route, "switched_action_skill": switched},
+        {"unique_conditions": {key: {"name": row[1], "cap": row[4], "frames": row[3]}
+                               for key, row in uniques.items()},
+         "why": "上限写 99（「不设置上限」的官方写法）；(None) 会被读成上限 1，"
+                "during 134 与 vlv 成长会全死"},
+        {"unique_icons": icons},
         {"effects": fx_note},
         {"pixel_install": pixel},
-        {"skills": {"energy": {lv: list(v) for lv, v in plan["energy"].items()},
-                    "multipliers": {lv: [d["cna"] for d in [plan["levels"][lv]]][0]
-                                    for lv in ("1", "2")},
-                    "buff_target_as": "三段判定区全写 params[23]=4 ⇒ 按直接攻击伤害结算"}},
-        {"capabilities": "19 行 + 2 棵 DSL 实跑 required_client_capabilities 全空：零 APK 补丁 kind"},
-        {"orphan_custom_ability_string": orphan},
+        {"capabilities": built["capabilities"],
+         "why": "本轮新增 422 冲刺参数与面板文案接管 ⇒ 不再是零 APK 补丁 kind"},
+        {"panel": panel},
     ]
 
     deviations = [
-        {"want": "设计稿 1399901 两条记录的 c2 分别写 action_skill / attack_common",
-         "got": "统一写 attack_common（设计稿 md/json 已同步改，登记为 D12）",
-         "why": "裁决 §8：ability 表 c2 每键必须单值，KL.check_ability_key 也硬卡；"
-                "官方 attack_common 上 I211 有 31 行、during 内容 kind 1 有 33 行先例"},
-        {"want": "设计稿 1399906 两条记录的 c2 写 attack_yellow",
-         "got": "改写 attack_common（设计稿已同步，登记为 D13）",
-         "why": "官方 attack_yellow × I33（Direct伤害 t5）先例 0 行；attack_common 上 I33 21 行、"
-                "I32 518 行。雕像组只影响分类展示，不影响生效"},
-        {"want": "L5/L6 与 1399903#1/#2 的 desc_expected 带括注（「月牙」+N 层 / puller 说明）",
-         "got": "desc_expected 改成 wf_describe 逐字回读，括注移到设计稿新字段 panel_note（D14）",
-         "why": "expect_describe 是逐字比对门禁；带括注就只能整条放弃这道漂移检查"},
-        {"want": "设计稿 S7 把新 FindAllSubjects 的绑定号从 donor 的 11 改成 8",
-         "got": "保持 donor 原值 11（设计稿已同步，登记为 D15）",
-         "why": "S5 新增的月华终斩判定区按设计占用绑定号 8/9/10（CNA 主体＝10）；"
-                "FindAllSubjects 再写 8 会在同一棵树里重号，lookup 位会解析到错误主体"
-                "（记忆 wf-dsl-subject-lookup-map）"},
-        {"want": "设计稿 S5 给「月华终斩」的 ShowEffect 指定 anchor AB / scale Some(3)，未指定主体位",
-         "got": "主体位沿用被克隆块的 1（CreateReferencePoint），只改名称/路径/锚点/缩放（D16）",
-         "why": "判定区绑定号 10 要等这条 ShowEffect 之后的 CreateHitArea 才创建；"
-                "引用尚未创建的绑定＝静默失效。锚点 AB 与 Some(3) 与官方本人 "
-                "light_adventurer_4anv 的用法逐格一致（实读其 _1/_2 两树）"},
-        {"want": "特效换色用 B/pixel/kyle/fx_lut.json",
-         "got": fx_note["lut"].get("source"),
-         "why": "像素代理还没交付时用设计稿内联的 13 格色表落盘到 evidence/kit-fx-lut.json；"
-                "文件到位后优先用它，kit 无需改代码"},
+        {"want": "队长技第 1/3 条写进 leader_ability 表",
+         "got": "落在 ability 槽 5（422×3 + 冲刺付与贯通）与槽 3（461 + 629），"
+                "各挂前置 42（持有者为队长）；文案由 desc_override_kyle_moon 在队长块接管",
+         "why": "422 进队长表 = 角色页 C7050（LeaderAbilityValues.parseAt107 没打补丁）；"
+                "触发 51 在队长表零官方先例，杰拉德 v3 手册第 23 条：零先例 kind 必崩"},
+        {"want": "「除自身外雷属性角色 +N%」单独一行（during 134 × target 1）",
+         "got": "拆成「t5 全队(雷) 低值 + t0 自身补差」，自身与他人的合计数值与面板逐字一致",
+         "why": "during 134 × target 1 官方与 live 双零先例（本轮实扫 0 行），不开这个首例"},
+        {"want": "能力 4「赋予全队直击 +100%、攻击 +100%」常驻",
+         "got": "15 秒状态型（c57/c58=90000000），面板已补写「持续 15 秒」并标 dev:true",
+         "why": "by_each_trigger_puller（c72=true）的官方先例全是状态型；"
+                "常驻 + by_each 零先例且会无限叠加"},
+        {"want": "技能「向最近的敌人冲刺」",
+         "got": f"MoveBall 逐格抄官方 dog_slasher_proud_2，替换母本 StopBall"
+                f"（开关 DASH_REPLACES_STOPBALL={DASH_REPLACES_STOPBALL}）",
+         "why": "引擎没有「冲刺」语义命令；MoveBall 无权威参数卡，只能整组抄官方同形树"},
+        {"want": "能力 1「技能的额外伤害乘区 +100%」",
+         "got": "kind 694（独立乘区技能伤害）t0，donor 取 live 1299925#1",
+         "why": "官方无同义 kind；694 是本服已上线的独立乘区通道（与 magnus 同源）"},
+        {"want": "两档天雷都做 API 染色",
+         "got": "常态档直接引用官方千岳十织、不染色（作者 09-21 已同意）",
+         "why": "全克隆千岳会让单角色 layer0 到 3.44% 且 fits=False（卡 C §3.4 出路 1）"},
+        {"want": "强化档天雷按调研卡 C §3.3 的冷蓝白 LUT 染色",
+         "got": fx_note["bolt"]["lut"].get("source"),
+         "why": "特效素材代理的 rework1/fx/kyle/fx_lut_bolt.json 到位后自动生效，kit 无需改代码"},
+        {"want": "技能「每 10 次直击召唤天雷」不带主位限制",
+         "got": "落在 Ⓜ 的能力 3 槽",
+         "why": "629 在副位不生效，只能进 unisonable=false 的键"},
+        {"want": "不新增面板之外的状态",
+         "got": "新增固有「贯穿印」13999002 与「月狼·觉」13999003（战斗中会显示图标）",
+         "why": "段数成长需要可绑定的层数源（vlv 只认 DCUnique）；"
+                "强化状态需要可当前置的门（前置只认 187 ConditionUnique）"},
     ]
+
+    gate = {"rows": len(built["evidence"]), "programs": len(programs),
+            "unique_conditions": sorted(uniques), "pixel_present": pixel.get("present"),
+            "design_mirror_ok": not design_problems,
+            "bolt_lut": fx_note["bolt"]["lut"].get("source")}
+    status = KL.READY if not design_problems else KL.DRAFT
 
     return KL.report(
         ctx,
-        summary="凯尔（139990）：雷 · 近战 · 直击输出主C —— 技能给全队与协力球挂贯通／直击伤害"
-                "提升／加速，自身「月牙」最多 20 层把层数换成全队与自身直击；三段斩全部按直接"
-                "攻击伤害结算",
-        status=KL.READY,
+        summary="凯尔（139990）：雷 · 冲刺型直击主C —— 队长位 422 冲刺强化 ＋ 贯通计数驱动的"
+                "可成长直击段数 ＋ 月牙层数换攻击力/直击；技能冲刺斩后进入 15 秒强化状态，"
+                "每 10 次直击召唤天雷（常态千岳／强化雷弓两档）",
+        status=status,
         panel=panel,
         notes=notes,
         programs=programs,
-        unique_condition={unique_key: {"name": UNIQUE_NAME, "icon": icon["logical"],
-                                       "cap": UNIQUE_CAP}},
-        required_capabilities=(),
+        unique_condition={key: {"name": row[1], "cap": row[4]} for key, row in uniques.items()},
+        required_capabilities=tuple(built["capabilities"]),
         deviations=deviations,
-        extra={"skills": {"programs": programs,
-                          "energy": {lv: list(v) for lv, v in plan["energy"].items()},
-                          "effects": fx_note}},
+        extra={"skills": {"programs": programs, "effects": fx_note}, "gate": gate},
     )

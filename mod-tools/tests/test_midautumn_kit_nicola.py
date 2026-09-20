@@ -87,11 +87,36 @@ class ConstantTests(unittest.TestCase):
 
     def test_spec_declares_every_self_owned_key(self):
         keys = MS.get_spec("nicola").extra_keys
-        self.assertEqual(keys[KL.CAS], (K.CAS_CHANGE_SKILL,))
+        self.assertEqual(sorted(keys[KL.CAS]), sorted((K.CAS_CHANGE_SKILL, K.CAS_OVERRIDE)))
         self.assertEqual(keys[KL.SWITCHED], (K.VOICE_KEY,))
-        # 本套件零固有状态 ⇒ 不许声明 unique_condition 键，设计稿也必须是空的
-        self.assertNotIn(MS.UNIQUE_CONDITION_LOGICAL, keys)
-        self.assertEqual(DESIGN["plan"]["unique_conditions"]["add"], [])
+        # rework1：新增固有状态「月讲」⇒ 键必须声明，且与设计稿登记的一致
+        self.assertEqual(keys[MS.UNIQUE_CONDITION_LOGICAL], (K.UID,))
+        add = DESIGN["plan"]["unique_conditions"]["add"]
+        self.assertEqual([str(entry["key"]) for entry in add], [K.UID])
+
+    def test_unique_condition_id_is_eight_digits(self):
+        # 裁决 §1：cid*100+n；7 位撞过基诺维 1699901/02
+        self.assertEqual(K.UID, str(K.CID * 100 + 1))
+        self.assertEqual(len(K.UID), 8)
+        self.assertTrue(K.UID.isdigit())
+
+    def test_unique_condition_cells_are_unbounded_and_timeless(self):
+        cells = DESIGN["plan"]["unique_conditions"]["add"][0]["cells"]
+        # c3 = 无时间限制；c4 = 不设上限（写 (None) ＝上限 1，会把 461 叠层弄死）
+        self.assertEqual(cells["3"], "99999999")
+        self.assertEqual(cells["4"], "99")
+        self.assertEqual(cells["1"], K.UNIQUE_NAME)
+        self.assertEqual(cells["2"], K.UC_ICON_ROW)
+        self.assertEqual(cells["14"], K.CODE)
+
+    def test_panel_override_key_follows_the_client_rule(self):
+        # 客户端查的键 = "desc_override_" + 该槽第 0 行的 string_id
+        import wf_client_legality as L
+        slot0 = ABILITY_PLAN["keys"][f"{K.CID}{K.OVERRIDE_SLOT}"]["records"][0]
+        self.assertEqual(K.CAS_OVERRIDE,
+                         L.PANEL_OVERRIDE_KEY_PREFIX + slot0["row_final"][0])
+        self.assertEqual(L.panel_override_capability(K.CAS_OVERRIDE), L.PANEL_OVERRIDE_V2)
+        self.assertIn(L.PANEL_OVERRIDE_V2, K.SPEC["required_capabilities"])
 
     def test_ability_keys_are_the_six_slots(self):
         self.assertEqual(K.ABILITY_KEYS, tuple(f"{K.CID}{n}" for n in range(1, 7)))
@@ -177,10 +202,71 @@ class DesignSelfCheckTests(unittest.TestCase):
 
     def test_536_string_key_is_declared_and_referenced(self):
         rows = DESIGN["plan"]["texts"]["custom_ability_string"]["rows"]
-        self.assertEqual([r["key"] for r in rows], [K.CAS_CHANGE_SKILL])
+        self.assertEqual(sorted(r["key"] for r in rows),
+                         sorted((K.CAS_CHANGE_SKILL, K.CAS_OVERRIDE)))
         referenced = {str(record["row_final"][70]) for _k, _b, record in all_records()
                       if str(record["row_final"][70])}
         self.assertIn(K.CAS_CHANGE_SKILL, referenced)
+
+    def test_panel_override_text_matches_the_author_panel(self):
+        """能力 3 的覆盖文案逐行 ＝ rework1/panel/nicola.json 的 4 行（作者已过目的目标面板）。"""
+        panel = json.loads((ROOT / "work/character_packs/midautumn-20260920/rework1"
+                            / "panel/nicola.json").read_text(encoding="utf-8"))
+        want = [line["text"] for ability in panel["abilities"]
+                if ability["index"] == K.OVERRIDE_SLOT for line in ability["lines"]]
+        rows = {r["key"]: r["text"] for r in
+                DESIGN["plan"]["texts"]["custom_ability_string"]["rows"]}
+        self.assertEqual(rows[K.CAS_OVERRIDE].split("\n"), want)
+        for line in want:
+            self.assertEqual(KL.panel_problems(line), [], line)
+
+    def test_ability_slot3_consumes_after_the_beneficiaries(self):
+        """行序契约：525 消耗行排在同触发的受益行之后，否则层数先被吃掉、前置 187 当场不成立。"""
+        rows = [record["row_final"] for _k, _b, record in all_records()
+                if _k == f"{K.CID}{K.OVERRIDE_SLOT}"]
+        self.assertEqual(len(rows), 9)
+        self.assertEqual(K.consume_order_problems(rows), [])
+        # 打乱顺序必须变红（判据是真的在判，不是恒绿）
+        swapped = list(rows)
+        consume = [i for i, r in enumerate(swapped) if r[47] == K.CONSUME_KIND][0]
+        benefit = [i for i, r in enumerate(swapped) if r[47] in K.BENEFIT_KINDS][-1]
+        swapped[consume], swapped[benefit] = swapped[benefit], swapped[consume]
+        self.assertNotEqual(K.consume_order_problems(swapped), [])
+
+    def test_ability_slot3_unique_columns_point_at_the_new_state(self):
+        rows = [record["row_final"] for _k, _b, record in all_records()
+                if _k == f"{K.CID}{K.OVERRIDE_SLOT}"]
+        add = [r for r in rows if r[47] == "461"]
+        consume = [r for r in rows if r[47] == K.CONSUME_KIND]
+        self.assertEqual(len(add), 1)
+        self.assertEqual(len(consume), 1)
+        self.assertEqual(add[0][68], K.UID)
+        self.assertEqual(consume[0][68], K.UID)
+        self.assertEqual(add[0][27], "24")            # 触发 24 SkillMax（自身技能槽充满）
+        self.assertEqual(add[0][28], "0")             # 官方 9 行零例外：puller 自身
+        self.assertEqual((add[0][51], add[0][52]), ("100000", "100000"))   # 1 层
+        for row in rows:
+            if row[47] in K.BENEFIT_KINDS or row[47] == K.CONSUME_KIND:
+                # 前置2 = 187 ConditionUnique（自身持有月讲），固有列不许留空（留空 = C7050）
+                self.assertEqual(row[13], "187")
+                self.assertEqual(row[14], "0")
+                self.assertEqual(row[19], K.UID)
+                self.assertEqual(row[28], "4")        # puller 4 OneOfExceptMyself
+                self.assertEqual(row[29], "Red")
+
+    def test_precondition_188_is_never_used(self):
+        """前置 188 数的是实例数（恒为 1）；层数门只能走前置 187 或 during 134（裁决 §8）。"""
+        for key, _block, record in all_records():
+            row = record["row_final"]
+            for slot, col in ((1, 6), (2, 13), (3, 20)):
+                self.assertNotIn(row[col], ("188", "144"),
+                                 f"{key}#{record['index']} precondition{slot}")
+
+    def test_ability_slot6_first_record_carries_the_15s_cooldown(self):
+        record = ABILITY_PLAN["keys"][f"{K.CID}6"]["records"][0]
+        self.assertEqual(record["cells"]["35"], "900")          # 60 帧 = 1 秒
+        self.assertIn("CT15秒", record["desc_expected"])
+        self.assertEqual(record["row_final"][35], "900")
 
     def test_panel_texts_pass_the_batch_rules(self):
         for entry in LEADER_PLAN["rows"]:
@@ -350,7 +436,9 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(self.report["code"], K.CODE)
         self.assertEqual(self.report["batch"], "midautumn-20260920")
         self.assertIn(self.report["status"], (KL.DRAFT, KL.READY))
-        self.assertEqual(self.report["unique_conditions"], [])
+        self.assertEqual(self.report["unique_conditions"], [K.UID])
+        self.assertEqual(sorted(self.report["unique_condition"]), [K.UID])
+        self.assertIn("panel-description-override-v2", self.report["required_capabilities"])
 
     def test_report_programs_are_the_two_skill_levels(self):
         programs = self.report["skills"]["programs"]
@@ -374,6 +462,29 @@ class PackageTests(unittest.TestCase):
         self.assertIn(K.CAS_CHANGE_SKILL, cas)
         self.assertEqual(KL.panel_problems(self.ctx.csv_split(cas[K.CAS_CHANGE_SKILL])[0][0],
                                            skill_flag=True), [])
+        self.assertIn(K.CAS_OVERRIDE, cas)
+        override = self.ctx.csv_split(cas[K.CAS_OVERRIDE])[0][0]
+        self.assertEqual(len(override.split("\n")), 4)
+        for line in override.split("\n"):
+            self.assertEqual(KL.panel_problems(line), [], line)
+
+    def test_package_carries_the_unique_condition_and_its_icon(self):
+        unique = self.ctx.pkg_flat(KL.UNIQUE)
+        self.assertIn(K.UID, unique)
+        row = self.ctx.csv_split(unique[K.UID])[0]
+        self.assertEqual(len(row), KL.UNIQUE_NCOLS)
+        self.assertEqual(row[1], K.UNIQUE_NAME)
+        self.assertEqual(row[2], K.UC_ICON_ROW)
+        self.assertEqual((row[3], row[4]), ("99999999", "99"))
+        icon = self.ctx.pack.pkg_path("common", K.UC_ICON_LOGICAL)
+        self.assertTrue(icon.is_file(), icon)
+        image = self.ctx.png_open(icon.read_bytes())
+        self.assertEqual(image.size, (48, 48))
+        # alpha 必须与官方 frame donor 逐字节一致（图集 alpha 门禁）
+        raw = self.ctx.official_read(K.UC_ICON_FRAME_DONOR)
+        if raw is not None:
+            frame = self.ctx.png_open(raw)
+            self.assertEqual(image.getchannel("A").tobytes(), frame.getchannel("A").tobytes())
 
     def test_action_skill_energy_matches_the_design(self):
         energy = DESIGN["plan"]["skills"]["energy"]

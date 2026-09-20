@@ -15,6 +15,10 @@
    自有共享表键、认领、两棵 DSL 往返、语音路由、kit-report 的状态与面板。
 
 不写 live store / ``assets/`` / ``.cdn``，不跑发布；官方基线只读。
+
+**rework1（2026-09-21）** 额外钉住三条：技能树里 ``AddSkillPoint`` 必须一条不剩、
+队友块里的条件治疗（``ConditionalsHealthPointRatioOf`` → ``CreateRatioHeal``）形状与两档比例、
+词条 3 第 4 条是 ``(CT15秒)`` 而不是 ``(限5次)``。
 """
 from __future__ import annotations
 
@@ -105,7 +109,7 @@ class ConstantTests(unittest.TestCase):
         self.assertTrue(36 <= enhanced <= 50, enhanced)
         self.assertLess(base, enhanced)
         # 偏离 D9：未强化档 = 强化档 × 0.8（比例取自 ★3 母本自己的官方 _1/_2 比）
-        for field in ("cna", "tolerance_self", "tolerance_all", "skill_point", "pf_value"):
+        for field in ("cna", "tolerance_self", "tolerance_all", "heal_ratio", "pf_value"):
             for edge in ("min", "max"):
                 self.assertAlmostEqual(tiers["1"][field][edge], tiers["2"][field][edge] * 0.8,
                                        places=6, msg=f"{field}.{edge}")
@@ -128,6 +132,27 @@ class ConstantTests(unittest.TestCase):
     def test_shared_effect_is_not_under_any_character_directory(self):
         self.assertTrue(K.SHARED_EFFECT.startswith("battle/effect/skill_general/"))
         self.assertNotIn("skill_unique", K.SHARED_EFFECT)
+
+    def test_rework1_heal_constants(self):
+        # rework1：治疗基准恒为 2（按最大生命值，全库 172 例）、命中特效必须是官方枚举、
+        # 阈值按百分数整数写（官方三例 40/50/50）、选择器 35 ＝ 除自身外队友（面板的「队友」）。
+        self.assertEqual(K.HEAL_BASIS, 2)
+        self.assertEqual(K.HEAL_HIT_EFFECT, ["GenericHealHitEffect"])
+        self.assertNotIn("SpecifyHealEffectDirectly", K.HEAL_HIT_EFFECT)
+        self.assertEqual(K.HEAL_HP_THRESHOLD, 40)
+        self.assertEqual(K.SPINE_ALLY_SELECTOR, 35)
+        self.assertTrue(K.HEAL_DONOR.endswith("psychic_teleport_playable_2"))
+        # 觉醒档 ＝ 作者口径的「满级」35%，未觉醒档 28%
+        self.assertEqual(K.SKILL_TIERS["2"]["heal_ratio"], {"min": 0.35, "max": 0.35})
+        self.assertEqual(K.SKILL_TIERS["1"]["heal_ratio"], {"min": 0.28, "max": 0.28})
+        for tier in K.SKILL_TIERS.values():
+            self.assertNotIn("skill_point", tier, "rework1：技能不再给队友技能槽")
+
+    def test_dsl_events_finds_the_wait_wrapper(self):
+        tree = ["Block", [["Event", ["Wait", 300, "*", ["Block", []]]],
+                          ["Command", ["AddCombo", []]]]]
+        self.assertEqual([e[1] for e in K._dsl_events(tree, "Wait")], [300])
+        self.assertEqual(K._dsl_events(tree, "Nope"), [])
 
 
 @unittest.skipUnless(bool(DESIGN), "design/rebecca.json missing")
@@ -231,7 +256,37 @@ class DesignSelfCheckTests(unittest.TestCase):
             self.assertEqual(tiers[level]["cna"], K.SKILL_TIERS[level]["cna"], level)
             self.assertEqual(tiers[level]["frozen_frames"], K.SKILL_TIERS[level]["frozen"], level)
             self.assertEqual(tiers[level]["piercing_frames"], K.SKILL_TIERS[level]["piercing"], level)
+            # rework1：治疗比例与阈值两边互锁（设计稿漂移当场红）
+            self.assertEqual(tiers[level]["heal_ratio"], K.SKILL_TIERS[level]["heal_ratio"], level)
+            self.assertEqual(tiers[level]["heal_hp_threshold"], K.HEAL_HP_THRESHOLD, level)
+            self.assertNotIn("add_skill_point", tiers[level], level)
         self.assertEqual(tiers["shared"]["root_bta_tree10"], 0)   # 技能伤害归属，不写 3
+        self.assertEqual(tiers["shared"]["heal_basis"], K.HEAL_BASIS)
+        self.assertEqual(tiers["shared"]["heal_hit_effect"], K.HEAL_HIT_EFFECT)
+        self.assertEqual(tiers["shared"]["heal_selector"], K.SPINE_ALLY_SELECTOR)
+        self.assertEqual(tiers["shared"]["heal_wait_frames"], 0)  # 偏离 D13：donor 的 300 帧去掉
+
+    def test_rework1_skill_description_swaps_the_skill_gauge_line_for_the_heal(self):
+        for field in ("desc1", "desc2"):
+            desc = DESIGN["texts"][field]
+            self.assertNotIn("增加除自身外的队友的技能槽", desc, field)
+            self.assertIn("回复生命值低于40%的队友最大生命值35%的生命值", desc, field)
+
+    def test_rework1_ability3_record4_is_a_cooldown_not_a_count_limit(self):
+        record = DESIGN["plan"]["ability"]["keys"]["1699913"]["records"][3]
+        self.assertEqual(record["cells"]["34"], "(None)")   # 触发次数上限：撤掉「限 5 次」
+        self.assertEqual(record["cells"]["35"], "900")      # 触发冷却：900 帧 = 15 秒
+        self.assertEqual(record["desc_expected"],
+                         "技能发动≥1(CT15秒) → 赋予除自身全员(暗) 技能槽 10%")
+
+    def test_rework1_block_records_the_previous_values(self):
+        block = DESIGN["rework1"]
+        self.assertEqual({c["id"] for c in block["changes"]}, {"R1", "R2", "R3"})
+        before = block["before_snapshot"]
+        self.assertIn("增加除自身外的队友的技能槽", before["texts.desc1"])
+        self.assertEqual(before["plan.ability.keys.1699913.records[3]"]["desc_expected"],
+                         "技能发动≥1(限5次) → 赋予除自身全员(暗) 技能槽 10%")
+        self.assertTrue(block["zero_precedent"])
 
     def test_effects_plan_clones_nothing(self):
         effects = DESIGN["plan"]["skills"]["effects"]
@@ -251,7 +306,8 @@ class DesignSelfCheckTests(unittest.TestCase):
     def test_deviations_are_registered_with_reasons(self):
         ids = [d["id"] for d in DESIGN["deviations"]]
         self.assertEqual(ids, sorted(ids, key=lambda s: int(s[1:])))
-        self.assertLessEqual({"D9", "D10", "D11"}, set(ids))       # kit 阶段自查补登的三条
+        # kit 阶段自查补登三条 + rework1 补登三条
+        self.assertLessEqual({"D9", "D10", "D11", "D12", "D13", "D14"}, set(ids))
         for item in DESIGN["deviations"]:
             self.assertTrue(item.get("planned") and item.get("actual") and item.get("reason"), item)
 
@@ -398,14 +454,32 @@ class RowAssemblyTests(unittest.TestCase):
             self.assertEqual([pf[0][10], pierce[0][10]], [2, 2])   # 配选择器 97，错配 = C16102
 
             finds = {f[2]: f[1] for f in wf_dsl.iter_dsl_commands(tree, "FindAllSubjects")}
-            self.assertEqual(finds[35], K.SPINE_ALLY_BINDING)
+            self.assertEqual(finds[K.SPINE_ALLY_SELECTOR], K.SPINE_ALLY_BINDING)
             self.assertEqual(finds[97], K.BUFF_BINDING_SHIFT)
             self.assertEqual(finds[113], K.BUFF_BINDING_SHIFT + 1)
             self.assertEqual(finds[145], K.BUFF_BINDING_SHIFT + 2)
 
-            add = list(wf_dsl.iter_dsl_commands(tree, "AddSkillPoint"))
-            self.assertEqual(len(add), 1)
-            self.assertEqual(add[0][2], [dict(tier["skill_point"])])
+            # rework1：技能不再给队友技能槽，队友块里只剩条件治疗
+            self.assertEqual(list(wf_dsl.iter_dsl_commands(tree, "AddSkillPoint")), [])
+            self.assertIsNone(gates["add_skill_point"])
+            conds = list(wf_dsl.iter_dsl_commands(tree, "ConditionalsHealthPointRatioOf"))
+            self.assertEqual(len(conds), 1)
+            self.assertEqual(conds[0][1], K.SPINE_ALLY_BINDING)    # lookup 位＝所在 FindAllSubjects 绑定
+            self.assertEqual(conds[0][2], K.HEAL_HP_THRESHOLD)
+            # 空分支必须是 ["Block", []]；写 ["DoNothing"] ⇒ 进游戏 F1009
+            self.assertEqual(conds[0][3], ["Block", []])
+            heals = list(wf_dsl.iter_dsl_commands(tree, "CreateRatioHeal"))
+            self.assertEqual(len(heals), 1)
+            self.assertEqual(heals[0][1], K.SPINE_ALLY_BINDING)
+            self.assertEqual(heals[0][2], K.HEAL_BASIS)
+            self.assertEqual(heals[0][3], [dict(tier["heal_ratio"])])
+            self.assertEqual(heals[0][6], K.HEAL_HIT_EFFECT)
+            # 治疗只能长在 else 分支（＝HP 低于阈值）里，不能漏到 then 或块外
+            self.assertEqual(list(wf_dsl.iter_dsl_commands(conds[0][4], "CreateRatioHeal")), heals)
+            # 偏离 D13：donor 自带的 Event Wait 300 包装已去掉
+            self.assertEqual(K._dsl_events(conds[0], "Wait"), [])
+            self.assertEqual(gates["heal"]["ratio"], dict(tier["heal_ratio"]))
+            self.assertEqual(gates["heal"]["selector"], K.SPINE_ALLY_SELECTOR)
 
             self.assertEqual(K._dsl_problems(tree, element=K.ELEMENT), [])
             self.assertEqual(gates["cna_total"], tier["cna"]["max"] * K.TOTAL_HITS)
@@ -494,6 +568,11 @@ class PackageTests(unittest.TestCase):
             self.assertEqual(len(K._cc_commands(tree, "ACToleranceOfElement")), 2)
             pierce = K._cc_commands(tree, "ACPiercing")[0][2][0][1][0]
             self.assertEqual(pierce["max"], K.SKILL_TIERS[level]["piercing"])
+            # rework1：落盘的树里确实没有 AddSkillPoint，条件治疗带着新比例
+            self.assertEqual(list(wf_dsl.iter_dsl_commands(tree, "AddSkillPoint")), [], logical)
+            heal = list(wf_dsl.iter_dsl_commands(tree, "CreateRatioHeal"))
+            self.assertEqual(len(heal), 1, logical)
+            self.assertEqual(heal[0][3], [dict(K.SKILL_TIERS[level]["heal_ratio"])], logical)
 
     def test_action_skill_energy_and_motion(self):
         inner = {lv: C.csv_split(v)[0] for lv, v in C.core.load_nested_table_bytes(

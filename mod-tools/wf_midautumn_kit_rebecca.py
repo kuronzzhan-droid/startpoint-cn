@@ -17,7 +17,9 @@
     - 技能 DSL 两档：**官方 donor 树改参数**为主——主干＝她 ★3 自己的
       ``bearish_darkwitch_2``；从 ``blackflower_wiz_2`` 整块移植判定区节流三格与
       ``CreateNormalAttack``；从 ``herbalist_xm22_2``（荷莉·圣诞）整块移植
-      ``FindAllSubjects(97)`` 全队增益块并把绑定 id 统一 +4；
+      ``FindAllSubjects(97)`` 全队增益块并把绑定 id 统一 +4；从
+      ``psychic_teleport_playable_2`` 整块移植 ``ConditionalsHealthPointRatioOf`` ＋
+      ``CreateRatioHeal``，装进主干自带的 ``FindAllSubjects(3, 35)``（rework1）；
     - 特效**零克隆**：主干自带的 ``battle/effect/skill_general/area/miasma`` 是通用共享件，
       直接引用官方路径（裁决 §4）；``B/pixel/rebecca/fx_lut.json`` 存在时才会被读到，
       本角色不克隆特效族 ⇒ LUT 只作记录、不参与装配；
@@ -27,6 +29,11 @@
 **不做**：722 专属 PF（裁决 §2「蕾贝卡：不做 722」）、固有状态、``custom_ability_string``
 面板覆盖、422／724 补丁 kind —— 自有共享表键只有一个 ``<code>_voice_ready``。
 不碰 live store / ``assets/`` / ``.cdn`` / 设备 / 存档。
+
+**rework1（2026-09-21，作者原话见 ``rework1/author-request.md`` 第 32 行，施工单
+``rework1/impl/rebecca.md``）**：技能里删掉「增加除自身外的队友的技能槽」，换成
+「回复生命值低于 40% 的队友最大生命值 35% 的生命值」；词条 3 第 4 条的触发限制由
+「限 5 次」改成「CT 15 秒」（c34 → ``(None)``、c35 → 900 帧）。其余 20 行与技能的其他三段不动。
 
 由 ``python mod-tools/wf_midautumn_build.py --char rebecca --step kit`` 调用 :func:`build`。
 """
@@ -73,6 +80,9 @@ SPEC = {
 SPINE_DONOR = f"battle/action/skill/action/rare3/{LINEAGE_CODE}${LINEAGE_CODE}_2"
 CNA_DONOR = "battle/action/skill/action/rare5/blackflower_wiz$blackflower_wiz_2"
 BUFF_DONOR = "battle/action/skill/action/rare4/herbalist_xm22$herbalist_xm22_2"
+# rework1：条件治疗的唯一官方蓝本（3 棵树里唯一一棵把 ConditionalsHealthPointRatioOf 用在治疗上的）
+HEAL_DONOR = ("battle/action/skill/action/rare5/psychic_teleport_playable"
+              "$psychic_teleport_playable_2")
 
 # 主干 donor 的原值（逐格改之前先断言，donor 漂移当场炸）
 SPINE_RADIUS = 200
@@ -80,11 +90,17 @@ SPINE_LIFETIME = 300
 SPINE_TOLERANCE_FRAMES = 900
 SPINE_TOLERANCE_VALUE = {"min": -0.16, "max": -0.2}
 SPINE_FROZEN = {"min": 600, "max": 720}
-SPINE_SKILL_POINT = {"min": 0.125, "max": 0.15}
+SPINE_SKILL_POINT = {"min": 0.125, "max": 0.15}   # rework1 删掉的那条 AddSkillPoint 的 donor 原值
 CNA_DONOR_MULT = {"min": 1.73875, "max": 2}
 BUFF_DONOR_PF_FRAMES = 900
 BUFF_DONOR_PF_VALUE = {"min": 0.4, "max": 0.5}
 BUFF_DONOR_PIERCING = {"min": 570, "max": 660}
+HEAL_DONOR_SUBJECT = -17                          # donor 里是「自身」内置主体，移植后换成绑定 id
+HEAL_DONOR_RATIO = {"min": 0.2, "max": 0.2}
+HEAL_DONOR_WAIT_FRAMES = 300                      # donor 自带的 5 秒延迟包装，本角色去掉（偏离 D13）
+HEAL_BASIS = 2                                    # CreateRatioHeal p1：全库 172 例恒为 2 ＝ 按最大生命值
+HEAL_HP_THRESHOLD = 40                            # ConditionalsHealthPointRatioOf p1：按百分数整数写
+HEAL_HIT_EFFECT = ["GenericHealHitEffect"]        # 官方枚举，零资产依赖
 
 # 两档共用的几何与形状（design/rebecca.json plan.skills.level_tiers.shared）
 HIT_RADIUS = 240
@@ -97,7 +113,8 @@ HIT_EFFECT = ["Fine"]             # 偏离 D10：AttackHitEffect 官方枚举，
 
 # 主干判定区的绑定 id（CreateHitArea p18/p20/p21 = args[19]/args[21]/args[22]）。
 SPINE_HIT_BINDING = 2             # 命中目标绑定，移植进来的 CNA/CreateCondition 的 p0 要指它
-SPINE_ALLY_BINDING = 3            # FindAllSubjects(3, 35) ⇒ 除自身外队友
+SPINE_ALLY_BINDING = 3            # FindAllSubjects(3, 35) ⇒ 除自身外队友（rework1 起装条件治疗）
+SPINE_ALLY_SELECTOR = 35          # 面板里的「队友」＝除自身外的队友（偏离 V4）
 BUFF_BINDING_SHIFT = 4            # herbalist 块的 0/1/2 → 4/5/6，避开主干已用的 0/1/2/3
 
 # 两档数值：`2` ＝设计稿数值（成品），`1` ＝ ×0.8（比例取自 ★3 母本自己的官方 _1/_2 比，偏离 D9）
@@ -106,14 +123,14 @@ SKILL_TIERS = {
           "tolerance_self": {"min": -0.28, "max": -0.28},
           "tolerance_all": {"min": -0.12, "max": -0.12},
           "frozen": 576,
-          "skill_point": {"min": 0.16, "max": 0.16},
+          "heal_ratio": {"min": 0.28, "max": 0.28},
           "pf_frames": 960, "pf_value": {"min": 1.2, "max": 1.2},
           "piercing": 648},
     "2": {"cna": {"min": 5.0, "max": 5.0},
           "tolerance_self": {"min": -0.35, "max": -0.35},
           "tolerance_all": {"min": -0.15, "max": -0.15},
           "frozen": 720,
-          "skill_point": {"min": 0.20, "max": 0.20},
+          "heal_ratio": {"min": 0.35, "max": 0.35},
           "pf_frames": 1200, "pf_value": {"min": 1.5, "max": 1.5},
           "piercing": 810},
 }
@@ -287,6 +304,18 @@ def _only(tree, name: str, *, where: str):
     return hits[0]
 
 
+def _dsl_events(node, name: str) -> list[list]:
+    """``["Event", [名称, …]]`` 节点（``wf_dsl`` 只提供 Command 迭代器，Event 要自己走）。"""
+    out: list[list] = []
+    if isinstance(node, list):
+        if node and node[0] == "Event" and len(node) > 1 and isinstance(node[1], list) \
+                and node[1] and node[1][0] == name:
+            out.append(node[1])
+        for child in node:
+            out.extend(_dsl_events(child, name))
+    return out
+
+
 def _ac_entries(tree, kind: str) -> list[list]:
     """所有携带该 AdditionalCondition kind 的 ``CreateCondition`` 的 AC 条目。"""
     return [c[2][0] for c in wf_dsl.iter_dsl_commands(tree, "CreateCondition")
@@ -335,7 +364,8 @@ def _remap_binding(node, shift: int) -> None:
                     raise KitError(f"{args[0]}: subject slot is not an int: {args[1]!r}")
                 args[1] += shift
             elif args[0] in ("CreateHitArea", "CreateReferencePoint", "FindNearSubjects",
-                             "CreateNormalAttack", "ShowEffect", "AddSkillPoint", "StopBall"):
+                             "CreateNormalAttack", "ShowEffect", "AddSkillPoint", "StopBall",
+                             "CreateRatioHeal", "ConditionalsHealthPointRatioOf"):
                 raise KitError(f"{args[0]} inside the transplanted buff block needs its own "
                                f"lookup remap (wf-dsl-subject-lookup-map); refusing to guess")
         for child in node:
@@ -420,17 +450,22 @@ def build_skill_tree(ctx, level: str) -> tuple[Any, dict[str, Any]]:
     if frozen[12] is not False:
         raise KitError(f"skill {level} frozen forceApply must stay false, got {frozen[12]}")
 
-    # ---- 5) 队友技能槽（FindAllSubjects(35) ＝ 除自身外队友，选择器不动）
+    # ---- 5) rework1：队友块整块换成条件治疗（选择器 35 ＝ 除自身外队友，不动）
+    #         作者原话「不要增加队友技能槽的效果」⇒ donor 自带的 AddSkillPoint 整条删掉。
     ally = next((f for f in wf_dsl.iter_dsl_commands(tree, "FindAllSubjects")
-                 if f[1] == SPINE_ALLY_BINDING and f[2] == 35), None)
+                 if f[1] == SPINE_ALLY_BINDING and f[2] == SPINE_ALLY_SELECTOR), None)
     if ally is None:
-        raise KitError(f"skill {level}: spine FindAllSubjects({SPINE_ALLY_BINDING}, 35) not found")
+        raise KitError(f"skill {level}: spine FindAllSubjects({SPINE_ALLY_BINDING}, "
+                       f"{SPINE_ALLY_SELECTOR}) not found")
     add = _only(ally[9], "AddSkillPoint", where=f"skill {level} ally block")
-    if add[2] != [SPINE_SKILL_POINT]:
-        raise KitError(f"skill {level} AddSkillPoint donor drift: {add[2]}")
-    if add[1] != SPINE_ALLY_BINDING:
-        raise KitError(f"skill {level} AddSkillPoint lookup drift: {add[1]}")
-    add[2] = [dict(tier["skill_point"])]
+    if add[1] != SPINE_ALLY_BINDING or add[2] != [SPINE_SKILL_POINT]:
+        raise KitError(f"skill {level} AddSkillPoint donor drift: lookup={add[1]} value={add[2]}")
+    if ally[9] != ["Block", [["Command", add]]]:
+        raise KitError(f"skill {level}: spine ally block carries more than the AddSkillPoint "
+                       f"that rework1 removes —— refusing to drop anything else")
+    ally[9] = ["Block", [["Command", _build_heal_block(ctx, tier)]]]
+    if list(wf_dsl.iter_dsl_commands(tree, "AddSkillPoint")):
+        raise KitError(f"skill {level}: AddSkillPoint survived the rework1 removal")
 
     # ---- 6) 移植全队增益块（荷莉·圣诞）：绑定 id 0/1/2 统一 +4，避开主干已用的 0/1/2/3
     buff = _build_buff_block(ctx, tier)
@@ -451,13 +486,56 @@ def build_skill_tree(ctx, level: str) -> tuple[Any, dict[str, Any]]:
                       {"element": TOLERANCE_ELEMENT_ALL, "value": dict(tier["tolerance_all"]),
                        "force_apply": True}],
         "frozen_frames": tier["frozen"], "frozen_force_apply": False,
-        "add_skill_point": dict(tier["skill_point"]),
+        "heal": {"selector": SPINE_ALLY_SELECTOR, "binding": SPINE_ALLY_BINDING,
+                 "hp_threshold_pct": HEAL_HP_THRESHOLD, "basis": HEAL_BASIS,
+                 "ratio": dict(tier["heal_ratio"]), "branch": "else (HP < threshold)",
+                 "hit_effect": list(HEAL_HIT_EFFECT), "wait_frames": 0},
+        "add_skill_point": None,                  # rework1：作者要求删除，树里必须一条都不剩
         "pf_damage": {"frames": tier["pf_frames"], "value": dict(tier["pf_value"])},
         "piercing_frames": tier["piercing"],
         "bta_tree10": tree[10],
         "buff_binding_shift": BUFF_BINDING_SHIFT,
     }
     return tree, gates
+
+
+def _build_heal_block(ctx, tier: dict[str, Any]) -> list:
+    """``psychic_teleport_playable_2`` 的条件治疗整块，改 subject／比例并去掉 ``Wait`` 包装。
+
+    形状 ``ConditionalsHealthPointRatioOf(subject, 40, then=["Block",[]], else=["Block",[heal]])``：
+    **else 分支 ＝ HP 低于阈值**（判据：同一角色的词条行 ``1611831#0`` 面板写「HP≤…≥40% 时 →
+    比例治疗 20%(延迟5秒)」，与这棵树的 40／0.2／300 帧三项逐一对得上）。空分支写
+    ``["Block", []]``，不写 ``["DoNothing"]``（记忆卡 wf-dsl-donothing-enum-trap：那是
+    ``IfTargetNotFound`` 的枚举，塞进表达式位 ⇒ 进游戏 F1009，往返自检抓不到）。
+    """
+    donor_tree = ctx.template_dsl(HEAL_DONOR)
+    donor = _only(donor_tree, "ConditionalsHealthPointRatioOf", where="heal donor")
+    if donor[1] != HEAL_DONOR_SUBJECT or donor[2] != HEAL_HP_THRESHOLD:
+        raise KitError(f"heal donor gate drift: subject={donor[1]} threshold={donor[2]}")
+    if donor[3] != ["Block", []]:
+        raise KitError(f"heal donor then-branch drift: {donor[3]} —— 期望空分支 ['Block', []]")
+
+    heal_donor = _only(donor[4], "CreateRatioHeal", where="heal donor else-branch")
+    waits = _dsl_events(donor[4], "Wait")
+    if len(waits) != 1 or waits[0][1] != HEAL_DONOR_WAIT_FRAMES:
+        raise KitError(f"heal donor Wait drift: {[w[1:2] for w in waits]} "
+                       f"（期望恰好一层 Wait {HEAL_DONOR_WAIT_FRAMES}；本角色把它去掉，偏离 D13）")
+    if heal_donor[1] != HEAL_DONOR_SUBJECT or heal_donor[2] != HEAL_BASIS:
+        raise KitError(f"heal donor drift: subject={heal_donor[1]} basis={heal_donor[2]}")
+    if heal_donor[3] != [HEAL_DONOR_RATIO]:
+        raise KitError(f"heal donor ratio drift: {heal_donor[3]}")
+    if heal_donor[6] != HEAL_HIT_EFFECT:
+        raise KitError(f"heal donor HealHitEffect drift: {heal_donor[6]} != {HEAL_HIT_EFFECT}")
+
+    heal = copy.deepcopy(heal_donor)
+    heal[1] = SPINE_ALLY_BINDING                  # lookup 位：所在 FindAllSubjects 的绑定 id
+    heal[3] = [dict(tier["heal_ratio"])]
+    # 偏离 D13：去掉 donor 的 Event Wait 300（那 5 秒是 teleport 自己的设计，面板没写就不能留）
+    block = ["ConditionalsHealthPointRatioOf", SPINE_ALLY_BINDING, HEAL_HP_THRESHOLD,
+             ["Block", []], ["Block", [["Command", heal]]]]
+    if list(wf_dsl.iter_dsl_commands(block, "CreateRatioHeal"))[0][1] != SPINE_ALLY_BINDING:
+        raise KitError("heal block lookup remap failed")
+    return block
 
 
 def _build_buff_block(ctx, tier: dict[str, Any]) -> list:
@@ -508,6 +586,10 @@ def _assert_effects_are_shared(tree, level: str) -> None:
     for cna in wf_dsl.iter_dsl_commands(tree, "CreateNormalAttack"):
         if isinstance(cna[15], list) and cna[15] and cna[15][0] == "SpecifyHitEffectDirectly":
             raise KitError(f"skill {level}: CreateNormalAttack still carries a donor-specific hit effect")
+    for heal in wf_dsl.iter_dsl_commands(tree, "CreateRatioHeal"):
+        if heal[6] != HEAL_HIT_EFFECT:
+            raise KitError(f"skill {level}: CreateRatioHeal HealHitEffect {heal[6]!r} != "
+                           f"{HEAL_HIT_EFFECT}（SpecifyHealEffectDirectly 会引用别人的专属目录）")
 
 
 # ---------------------------------------------------------------- 入口
@@ -605,6 +687,18 @@ def build(ctx) -> dict[str, Any]:
         "（避开主干已用的 0/1/2/3；CreateCondition/DeleteCondition 的 lookup 位同步平移）；"
         f"强化档 PF 伤害 {SKILL_TIERS['2']['pf_frames']} 帧 +150%、贯通 {SKILL_TIERS['2']['piercing']} 帧"
         f"（{SKILL_TIERS['2']['piercing'] / 60:g} 秒）；付与对象种类保持 2（配选择器 97）",
+        f"rework1（作者 09-21）：主干自带的 FindAllSubjects({SPINE_ALLY_BINDING}, "
+        f"{SPINE_ALLY_SELECTOR}) 块里那条 AddSkillPoint（「增加除自身外的队友的技能槽」）整条删除，"
+        f"换成 psychic_teleport_playable_2 移植来的条件治疗："
+        f"ConditionalsHealthPointRatioOf(绑定 {SPINE_ALLY_BINDING}, {HEAL_HP_THRESHOLD}) 的 "
+        f"else 分支（＝HP 低于 {HEAL_HP_THRESHOLD}%）里 CreateRatioHeal 基准 {HEAL_BASIS}"
+        f"（按最大生命值）强化档 {SKILL_TIERS['2']['heal_ratio']['max']:.0%}／未觉醒档 "
+        f"{SKILL_TIERS['1']['heal_ratio']['max']:.0%}；donor 自带的 Event Wait "
+        f"{HEAL_DONOR_WAIT_FRAMES} 帧延迟去掉（偏离 D13），HealHitEffect 用官方枚举 "
+        f"{HEAL_HIT_EFFECT}（零资产依赖）。面板的「队友」＝选择器 {SPINE_ALLY_SELECTOR} 除自身外队友",
+        "rework1（作者 09-21）：词条 3 第 4 条的触发限制由「限 5 次」（c34=5）改成「CT 15 秒」"
+        "（c34=(None)、c35=900 帧）——官方触发 kind 23 配 c35=900 有 3 条先例，且 14 条"
+        "「kind 23 带冷却」的官方行 c34 全是 (None)（限次与冷却不同时写）",
         f"特效零克隆：技能主特效沿用主干自带的 {SHARED_EFFECT}（skill_general 通用共享件，"
         "不在任何角色专属目录下 ⇒ 零下载增量、零 code_name 耦合）；移植进来的 CNA 把 donor 的 "
         f"SpecifyHitEffectDirectly 换成官方枚举 {HIT_EFFECT}（偏离 D10）",

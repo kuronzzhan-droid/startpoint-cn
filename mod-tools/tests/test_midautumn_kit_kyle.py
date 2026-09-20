@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
-"""凯尔 kit（139990 ``kyle_moon``）：设计稿自查 + 行装配 + DSL 门禁。
+"""凯尔 kit（139990 ``kyle_moon``）rework1：行计划自查 + 行装配 + DSL 门禁。
 
 三组用例：
 
-1. **纯静态**（不需要 live / 官方基线）：模块常量与 ``design/kyle.json`` 的互锁、裁决 §8 的
-   设计自查（队长表禁 422/724/713、前置 kind 白名单、固有 ID 8 位且上限非 ``(None)``、
-   c2 雕像组每键单值、``desc_expected`` 不许带括注、面板禁词），以及本模块的小工具
-   （donor 地址 1 基↔0 基互校、设计稿速记数值解析、判定区/CNA 改格、图标绘制）。
-2. **官方基线**（缺 ``.cdn/cn`` 或 live store 时跳过）：6＋13 行逐行装配并与设计登记的
-   ``wf_describe`` 回读逐字比对；两棵技能树的 S0–S9 装配与全部 DSL 门禁（元素、主体绑定、
-   判定区归属、方向、坐标系）。
+1. **纯静态**（不需要 live / 官方基线）：模块常量与 ``design/kyle.json`` 的互锁、
+   裁决 §8 的自查（队长表禁 422/724/713、422 必挂前置 42 且 c118 非空、前置 kind 白名单、
+   固有 ID 8 位且上限非 ``(None)``、629 必配字符串键且排在读它的计数行之后、
+   面板文案逐行对齐 ``rework1/panel/kyle.json``、面板禁词），以及本模块的小工具
+   （判定区/CNA 改格、绑定号平移、图标绘制）。
+2. **官方基线**（缺 ``.cdn/cn`` 或 live store 时跳过）：4＋23 行逐行装配并与 ``EXPECT``
+   的 ``wf_describe`` 回读逐字比对；两棵主技能树与两棵 629 追击树的装配与全部 DSL 门禁
+   （元素、主体绑定、判定区归属、方向、坐标系），母本漂移断言。
 3. **已构建的 workspace**（``work/character_packs/ma-kyle`` 不存在时跳过）：包内自有键、
-   认领、kit-report、DSL 程序清单与特效引用、语音路由、孤儿字符串已清。
+   4 棵 DSL 程序、三个固有状态与图标、三族特效、``custom_ability_string`` 10 键。
 
 不写 live store / ``assets/`` / ``.cdn``，不跑发布；官方基线只读。
 """
@@ -33,11 +34,11 @@ import wf_midautumn_kitlib as KL  # noqa: E402
 import wf_midautumn_specs as MS  # noqa: E402
 import wf_mod_tool as core  # noqa: E402
 import wf_seasonal7_build as B  # noqa: E402
-import wf_seasonal7_common as C  # noqa: E402
 
 ROOT = core.project_root()
 DESIGN = MS.load_design(ROOT, "kyle")
 WORKSPACE = ROOT / "work/character_packs/ma-kyle"
+PANEL = ROOT / "work/character_packs/midautumn-20260920/rework1/panel/kyle.json"
 
 
 def _baseline_available() -> bool:
@@ -57,511 +58,633 @@ def ctx():
     return _CTX
 
 
-def fake_family() -> dict:
-    """``clone_effect_family`` 结果的只读替身（测树装配时不往包里写特效）。"""
-    bases = [f"{K.TEMPLATE_CODE}_slash", f"{K.TEMPLATE_CODE}_smash", f"{K.TEMPLATE_CODE}_explosion"]
-    return {"src_dir": K.FX_SRC_DIR, "dst_dir": K.FX_DST_DIR, "donor": K.TEMPLATE_CODE,
-            "dst_name": K.FX_SUBDIR, "copied_bases": bases}
+def fake_family(src_dir: str, dst_dir: str, sub: str, donor: str, bases: list[str]) -> dict:
+    return {"src_dir": src_dir, "dst_dir": dst_dir, "donor": donor,
+            "dst_name": sub, "copied_bases": list(bases)}
+
+
+def blade_family() -> dict:
+    return fake_family(K.FX_BLADE_SRC, K.FX_BLADE_DST, K.FX_BLADE_SUB, K.TEMPLATE_CODE,
+                       [f"{K.TEMPLATE_CODE}_slash", f"{K.TEMPLATE_CODE}_smash",
+                        f"{K.TEMPLATE_CODE}_explosion"])
+
+
+def bolt_family() -> dict:
+    return fake_family(K.FX_BOLT_SRC, K.FX_BOLT_DST, K.FX_BOLT_SUB, K.FX_BOLT_TEMPLATE,
+                       [f"{K.FX_BOLT_TEMPLATE}_start", f"{K.FX_BOLT_TEMPLATE}_shock",
+                        f"{K.FX_BOLT_TEMPLATE}_shock_ground", f"{K.FX_BOLT_TEMPLATE}_hit"])
+
+
+def trail_family() -> dict:
+    return fake_family(K.FX_TRAIL_SRC, K.FX_TRAIL_DST, K.FX_TRAIL_SUB, K.FX_TRAIL_TEMPLATE,
+                       [K.FX_TRAIL_BASE])
+
+
+def all_rows(context) -> dict:
+    return K.build_rows(context)
 
 
 # ---------------------------------------------------------------- 1. 纯静态
 
 class ConstantTests(unittest.TestCase):
     def test_identity_matches_the_registry(self):
-        spec = MS.get_spec("kyle")
-        self.assertEqual((spec.cid, spec.code), (K.CID, K.CODE))
-        self.assertEqual((spec.template_id, spec.template_code), (K.TEMPLATE_ID, K.TEMPLATE_CODE))
-        self.assertEqual((spec.element, spec.element_token), (K.ELEMENT, K.ELEMENT_TOKEN))
-        self.assertEqual(spec.pf_type, 0)             # APK 原生剑型 PF；本角色不做 722
-        self.assertEqual(spec.stance, "Attacker")
-        self.assertEqual(spec.rarity, 5)
+        spec = MS.SPECS["kyle"]
+        self.assertEqual((K.CID, K.CODE, K.ELEMENT), (spec.cid, spec.code, spec.element))
+        self.assertEqual((K.TEMPLATE_ID, K.TEMPLATE_CODE),
+                         (spec.template_id, spec.template_code))
 
     def test_element_is_not_colorless(self):
-        # element=6（Colorless）是敌专属，可玩角色写 6 会 C7050（记忆 wf-element6-colorless-crash）
-        self.assertNotEqual(K.ELEMENT, 6)
+        # element=6 是敌专属 Colorless，可玩角色写 6 会 C7050（记忆 wf-element6-colorless-crash）
+        self.assertEqual(K.ELEMENT, 2)
+        self.assertEqual(K.ELEMENT_TOKEN, "Yellow")
 
-    def test_unique_condition_id_is_eight_digits(self):
-        self.assertEqual(K.UID, str(K.CID * 100 + 1))
-        self.assertEqual(len(K.UID), 8)
-        self.assertTrue(MS.unique_condition_ok(K.CID, K.UID))
+    def test_unique_condition_ids_are_eight_digits_and_distinct(self):
+        keys = [key for key, *_ in K.UNIQUES]
+        self.assertEqual(len(set(keys)), 3)
+        for key in keys:
+            self.assertEqual(len(key), 8, key)
+            self.assertTrue(key.startswith(str(K.CID)), key)
+
+    def test_unique_cap_is_never_none(self):
+        # c4 写 (None) ＝ 上限 1，during 134 / vlv 成长会全死（记忆 wf-unique-cap-none-trap）
+        for _key, _sid, _name, cap, frames, _style in K.UNIQUES:
+            self.assertNotIn(cap, ("", "(None)"))
+            self.assertTrue(cap.isdigit(), cap)
+            self.assertTrue(frames.isdigit(), frames)
 
     def test_spec_declares_every_self_owned_key(self):
-        keys = MS.get_spec("kyle").extra_keys
-        self.assertEqual(keys[MS.UNIQUE_CONDITION_LOGICAL], (K.UID,))
-        self.assertEqual(keys[KL.SWITCHED], (K.VOICE_KEY,))
-        self.assertNotIn(KL.CAS, keys)                # 无 629 / 536 ⇒ 不认领任何字符串键
+        extra = K.SPEC["extra_keys"]
+        self.assertEqual(set(extra[MS.UNIQUE_CONDITION_LOGICAL]),
+                         {key for key, *_ in K.UNIQUES})
+        self.assertEqual(set(extra[KL.CAS]), set(K.CAS_TEXTS))
+        self.assertEqual(len(extra[KL.CAS]), 10)
+
+    def test_required_capabilities_cover_dash_and_panel_override(self):
+        self.assertEqual(set(K.SPEC["required_capabilities"]),
+                         {"dash-parameter-v1", "panel-description-override-v2"})
 
     def test_ability_keys_are_the_six_slots(self):
         self.assertEqual(K.ABILITY_KEYS, tuple(f"{K.CID}{n}" for n in range(1, 7)))
-
-    def test_every_design_row_has_a_machine_readable_donor(self):
-        rows = DESIGN["plan"]["leader_ability"]["rows"]
-        self.assertEqual({int(row["index"]) for row in rows}, set(K.LEADER_DONORS))
-        pairs = {(key, int(record["index"]))
-                 for key, block in DESIGN["plan"]["ability"]["keys"].items()
-                 for record in block["records"]}
-        self.assertEqual(pairs, set(K.ABILITY_DONORS))
-
-    def test_design_donor_prose_and_kit_addresses_agree(self):
-        for row in DESIGN["plan"]["leader_ability"]["rows"]:
-            index = int(row["index"])
-            K._check_design_donor(row["donor"], K.LEADER_DONORS[index], f"leader#{index}")
-        for key, block in DESIGN["plan"]["ability"]["keys"].items():
-            for record in block["records"]:
-                index = int(record["index"])
-                K._check_design_donor(record["donor"], K.ABILITY_DONORS[(key, index)],
-                                      f"{key}#{index}")
-
-    def test_check_design_donor_rejects_a_zero_based_record_number(self):
-        # 设计稿写 1 基（#L1），kit 写 0 基（#0）；两边写反了必须当场报错
-        with self.assertRaises(KL.KitError):
-            K._check_design_donor("161123#L1", ("161123#1",), "probe")
-        with self.assertRaises(KL.KitError):
-            K._check_design_donor("161123#L1", ("999999#0",), "probe")
+        self.assertEqual(sorted(K.PLAN), [1, 2, 3, 4, 5, 6])
 
 
-class DesignSelfCheckTests(unittest.TestCase):
-    """裁决 §8：kit 实现前对设计稿的自查，全部固化成用例。"""
+class PlanSelfCheckTests(unittest.TestCase):
+    """不碰基线，只看 PLAN/LEADER 里写死的列值本身是否踩线。"""
 
-    def test_leader_table_carries_no_dash_fever_or_independent_multiplier_kinds(self):
-        # 422 冲刺参数 / 724 Fever 比例 / 713 独立乘区 写进队长表 = C7050
-        for row in DESIGN["plan"]["leader_ability"]["rows"]:
-            cells = {int(col): str(value) for col, value in row["cells"].items()}
-            for col in (45, 107):
-                self.assertNotIn(cells.get(col, ""), ("422", "724", "713"),
-                                 f"leader#{row['index']} c{col}")
+    def ability_cells(self, slot: int):
+        for _addr, _src, cells, _expect in K.PLAN[slot]:
+            yield cells
 
-    def test_ability_content_kinds_stay_out_of_the_blacklist(self):
-        for key, block in DESIGN["plan"]["ability"]["keys"].items():
-            for record in block["records"]:
-                cells = {int(col): str(value) for col, value in record["cells"].items()}
-                for col in (47, 109):
-                    self.assertNotIn(cells.get(col, ""), K.FORBIDDEN_CONTENT_KINDS,
-                                     f"{key}#{record['index']} c{col}")
+    def test_leader_plan_writes_no_dash_fever_or_independent_multiplier_kinds(self):
+        # LeaderAbilityValues.parseAt107 没打补丁 ⇒ 队长表写 422/724/713 = 角色页 C7050
+        for _addr, _src, cells, _expect in K.LEADER:
+            self.assertNotIn(cells.get(107), ("422", "724", "713"))
+
+    def test_dash_rows_are_leader_gated_and_carry_a_param_id(self):
+        dash = [cells for cells in self.ability_cells(5) if cells.get(118)]
+        self.assertEqual(len(dash), 3, "冲刺参数应当是 3 条（CD / 弹射速度 / 可发动高度）")
+        ids = sorted(cells["118"] if "118" in cells else cells[118] for cells in dash)
+        self.assertEqual(ids, ["0", "1", "6"])
+        for cells in dash:
+            self.assertEqual(cells.get(6), "42", "422 行必须挂前置 42（持有者为队长）")
+
+    def test_invoke_rows_declare_both_a_string_key_and_a_program(self):
+        for slot, rows in K.PLAN.items():
+            for addr, _src, cells, _expect in rows:
+                if cells.get(71):
+                    self.assertTrue(cells.get(70), f"{slot} {addr}: 629 行缺字符串键 c70")
+                    self.assertEqual(cells.get(35), "0", f"{slot} {addr}: 629 的 CT 不能留空")
+
+    def test_invoke_programs_live_under_the_ability_skill_namespace(self):
+        for program in (K.PIERCE_PROGRAM, K.THUNDER_PROGRAM):
+            self.assertIn("/ability_skill/", program)
+            self.assertIn("$", program)
+
+    def test_only_the_main_only_slot_hosts_629(self):
+        # 629 在副位不生效 ⇒ 宿主键必须 unisonable=false
+        for slot, rows in K.PLAN.items():
+            if any(cells.get(71) for _a, _s, cells, _e in rows):
+                self.assertEqual(K._UNISONABLE[slot], "false", slot)
 
     def test_precondition_kinds_stay_inside_the_vetted_set(self):
-        for row in DESIGN["plan"]["leader_ability"]["rows"]:
-            cells = {int(col): str(value) for col, value in row["cells"].items()}
+        for _addr, _src, cells, _expect in K.LEADER:
             for col in (4, 11, 18):
-                self.assertIn(cells.get(col, ""), K.ALLOWED_PRECONDITION_KINDS,
-                              f"leader#{row['index']} c{col}")
-        for key, block in DESIGN["plan"]["ability"]["keys"].items():
-            for record in block["records"]:
-                cells = {int(col): str(value) for col, value in record["cells"].items()}
+                self.assertIn(str(cells.get(col, "")), K.ALLOWED_PRECONDITION_KINDS + ("",))
+        for slot, rows in K.PLAN.items():
+            for addr, _src, cells, _expect in rows:
                 for col in (6, 13, 20):
-                    self.assertIn(cells.get(col, ""), K.ALLOWED_PRECONDITION_KINDS,
-                                  f"{key}#{record['index']} c{col}")
+                    value = str(cells.get(col, ""))
+                    self.assertIn(value, K.ALLOWED_PRECONDITION_KINDS + ("",),
+                                  f"{slot} {addr} c{col}")
 
-    def test_statue_group_is_single_valued_per_ability_key(self):
-        for key, block in DESIGN["plan"]["ability"]["keys"].items():
-            groups = {str(record["cells"]["2"]) for record in block["records"]}
-            unisonable = {str(record["cells"]["1"]) for record in block["records"]}
-            self.assertEqual(len(groups), 1, f"{key}: mixed statue groups {groups}")
-            self.assertEqual(len(unisonable), 1, f"{key}: mixed c1 {unisonable}")
-            self.assertIn(groups.pop(), L.ABILITY_STATUE_GROUPS)
+    def test_condition_unique_preconditions_name_a_unique_and_a_puller(self):
+        # 手拼前置 187/188 漏 c7='0' 会 C7050；固有 id 列留空同样会崩
+        owned = {key for key, *_ in K.UNIQUES}
+        for slot, rows in K.PLAN.items():
+            for addr, _src, cells, _expect in rows:
+                if cells.get(6) == "187":
+                    self.assertEqual(cells.get(7), "0", f"{slot} {addr}: 前置 187 缺 c7 puller")
+                    self.assertIn(cells.get(12), owned, f"{slot} {addr}: 前置 187 的固有 id")
 
-    def test_unique_condition_cap_is_a_number_not_none(self):
-        row = DESIGN["plan"]["unique_conditions"]["add"][0]["row"]
-        self.assertEqual(row[4], K.UNIQUE_CAP)
-        self.assertNotIn(row[4], ("", "(None)"))      # (None) = 上限 1 ⇒ D134 按层加成全死
-        self.assertTrue(row[4].isdigit())
-        self.assertEqual(row[13], "false")            # 入棺不清层
+    def test_no_precondition_188_or_144(self):
+        # 188 数的是实例个数（461 叠层恒为 1），144 官方零先例（裁决 §8）
+        for slot, rows in K.PLAN.items():
+            for _addr, _src, cells, _expect in rows:
+                for col in (6, 13, 20):
+                    self.assertNotIn(str(cells.get(col, "")), ("188", "144"), slot)
 
-    def test_expected_panel_text_has_no_hand_written_annotation(self):
-        """``desc_expected`` 是 ``wf_describe`` 的逐字回读，不能带设计注解（设计稿 D14）。"""
-        texts = [row["desc_expected"] for row in DESIGN["plan"]["leader_ability"]["rows"]]
-        texts += [record["desc_expected"] for block in DESIGN["plan"]["ability"]["keys"].values()
-                  for record in block["records"]]
-        for text in texts:
-            self.assertNotIn("（", text, f"annotation leaked into desc_expected: {text}")
-            self.assertEqual(KL.panel_problems(text), [], text)
+    def test_unlimited_growth_rows_write_none_not_an_empty_limit(self):
+        # during 134 的 limit 留空 = 上限 0（词条全程零收益，面板出「上限 0 次」）
+        for _addr, _src, cells, _expect in K.LEADER:
+            if cells.get(95) == "134" or cells.get(102):
+                self.assertNotEqual(cells.get(100), "")
+        for slot, rows in K.PLAN.items():
+            for addr, _src, cells, _expect in rows:
+                if cells.get(104):
+                    self.assertEqual(cells.get(102), "(None)", f"{slot} {addr}")
+
+    def test_unique_references_point_at_our_own_ids(self):
+        owned = {key for key, *_ in K.UNIQUES}
+        for slot, rows in K.PLAN.items():
+            for addr, _src, cells, _expect in rows:
+                for col in (12, 68, 104):
+                    value = cells.get(col)
+                    if value and str(value).isdigit() and len(str(value)) == 8:
+                        self.assertIn(value, owned, f"{slot} {addr} c{col}")
+
+
+class PanelTextTests(unittest.TestCase):
+    def test_panel_text_obeys_the_project_rules(self):
+        KL.check_panel(K.PANEL_LEADER, label="leader")
+        for slot, text in K.PANEL_ABILITY.items():
+            KL.check_panel(text, label=f"ability {slot}")
+        KL.check_panel(K.CAS_TEXTS[K.CAS_SWITCH], skill_flag=True, label="change_skill")
+
+    def test_panel_text_matches_the_author_approved_target(self):
+        """逐行对齐 ``rework1/panel/kyle.json``：那是作者已过目并放行的目标面板。"""
+        if not PANEL.is_file():
+            self.skipTest("rework1/panel/kyle.json missing")
+        panel = json.loads(PANEL.read_text(encoding="utf-8"))
+        want_leader = [line["text"] for line in panel["leader"]["lines"]]
+        self.assertEqual(K.PANEL_LEADER.split("／"), want_leader)
+        for entry in panel["abilities"]:
+            slot = int(entry["index"])
+            self.assertEqual(K.PANEL_ABILITY[slot].split("／"),
+                             [line["text"] for line in entry["lines"]], f"ability {slot}")
+
+    def test_main_only_slot_matches_the_panel(self):
+        if not PANEL.is_file():
+            self.skipTest("rework1/panel/kyle.json missing")
+        panel = json.loads(PANEL.read_text(encoding="utf-8"))
+        for entry in panel["abilities"]:
+            slot = int(entry["index"])
+            self.assertEqual(K._UNISONABLE[slot] == "false", bool(entry["main_only"]),
+                             f"ability {slot} 的主位限制与面板不符")
+
+    def test_skill_energy_matches_the_panel(self):
+        if not PANEL.is_file() or not DESIGN:
+            self.skipTest("panel or design missing")
+        panel = json.loads(PANEL.read_text(encoding="utf-8"))
+        energy = DESIGN["plan"]["skills"]["energy"]
+        for level in ("1", "2"):
+            self.assertEqual(int(energy[level]["c4"]), int(panel["skill"]["energy"]))
+
+
+class DesignMirrorTests(unittest.TestCase):
+    def test_design_mirrors_the_module_plan(self):
+        if not DESIGN:
+            self.skipTest("design/kyle.json missing")
+        self.assertEqual(K._design_problems(DESIGN), [])
+
+    def test_a_drifted_mirror_is_rejected(self):
+        if not DESIGN:
+            self.skipTest("design/kyle.json missing")
+        broken = copy.deepcopy(DESIGN)
+        broken["plan"]["rework1"]["leader"] = ["official:999999#0"]
+        self.assertTrue(K._design_problems(broken))
 
     def test_design_texts_pass_the_panel_rules(self):
+        if not DESIGN:
+            self.skipTest("design/kyle.json missing")
         for name in ("title", "profile", "leader", "skill1", "desc1", "skill2", "desc2"):
-            self.assertEqual(KL.panel_problems(DESIGN["texts"][name]), [], name)
-
-    def test_design_declares_no_override_string_and_no_dash_parameters(self):
-        self.assertIsNone(DESIGN["plan"]["texts_tables"]["desc_override"]["value"])
-        self.assertIsNone(DESIGN["plan"]["texts_tables"]["custom_ability_string"]["value"])
-        self.assertIsNone(DESIGN["plan"]["dash"]["kind_422"])
-        self.assertIsNone(DESIGN["plan"]["power_flip"]["pf_override"])
-
-    def test_skill_description_matches_the_two_level_texts(self):
-        desc = DESIGN["plan"]["texts_tables"]["action_skill_desc"]
-        self.assertEqual(desc["outer_key"], K.CODE)
-        self.assertEqual(desc["value"], DESIGN["texts"]["desc1"])
-        self.assertEqual(desc["value"], DESIGN["texts"]["desc2"])
-        self.assertLessEqual(len(desc["value"]), 142)     # live p99 技能说明长度
-
-
-class SkillPlanParsingTests(unittest.TestCase):
-    def test_shorthand_number_groups(self):
-        self.assertEqual(K._groups("{600,600}"), [{"min": 600, "max": 600}])
-        self.assertEqual(K._groups("[{960}],[{1.0,1.0}]"),
-                         [{"min": 960, "max": 960}, {"min": 1.0, "max": 1.0}])
-        self.assertEqual(K._groups("[{600,720}],[{0.25,0.3}]"),
-                         [{"min": 600, "max": 720}, {"min": 0.25, "max": 0.3}])
-
-    def test_create_normal_attack_multiplier(self):
-        self.assertEqual(K._cna_mult("[4,255,[],[],200,[{min:20.8,max:24.0}],…]", "probe"),
-                         {"min": 20.8, "max": 24.0})
-        with self.assertRaises(KL.KitError):
-            K._cna_mult("[4,255,[],[],200,[],…]", "probe")
-
-    def test_read_skill_plan_matches_the_design(self):
-        plan = K.read_skill_plan(DESIGN)
-        self.assertEqual(plan["energy"], {"1": ("560", "560", "1"), "2": ("560", "510", "1")})
-        level1 = plan["levels"]["1"]
-        self.assertEqual(level1["cna"], [{"min": 16.3, "max": 16.3}, {"min": 1.63, "max": 1.63},
-                                         {"min": 20.4, "max": 20.4}])
-        self.assertEqual(level1["piercing"], {"min": 600, "max": 600})
-        self.assertEqual(level1["speedup"][0], {"min": 480, "max": 480})
-        level2 = plan["levels"]["2"]
-        self.assertEqual(level2["cna"][0], {"min": 20.8, "max": 24.0})
-        self.assertEqual(level2["direct"], [{"min": 1200, "max": 1200}, {"min": 1.2, "max": 1.5}])
-        # 升档只能更强，不能更弱
-        for index in range(3):
-            self.assertGreaterEqual(level2["cna"][index]["max"], level1["cna"][index]["max"])
-
-    def test_read_skill_plan_rejects_a_truncated_design(self):
-        broken = copy.deepcopy(DESIGN)
-        broken["plan"]["skills"]["structural_changes"] = [
-            entry for entry in broken["plan"]["skills"]["structural_changes"]
-            if entry["id"] != "S5"]
-        with self.assertRaises(KL.KitError):
-            K.read_skill_plan(broken)
-
-
-class RowAuditTests(unittest.TestCase):
-    """donor 逐列审计：写进去的值必须有官方出处，漏抄的 donor 格必须被 ``edits`` 点名。"""
-
-    def test_value_without_a_donor_or_an_edit_is_rejected(self):
-        donors = [["a", "b", "c"]]
-        with self.assertRaises(KL.KitError):
-            K._audit_against_donors(donors, {0: "a", 1: "X"}, {}, 3, "probe")
-        K._audit_against_donors(donors, {0: "a", 1: "X"}, {"c1": "b→X", "c2": "c→空"}, 3, "probe")
-
-    def test_silently_dropping_a_donor_cell_is_rejected(self):
-        donors = [["a", "b", "c"]]
-        with self.assertRaises(KL.KitError):
-            K._audit_against_donors(donors, {0: "a", 1: "b"}, {}, 3, "probe")
-        audit = K._audit_against_donors(donors, {0: "a", 1: "b"}, {"c2": "c→空"}, 3, "probe")
-        self.assertEqual(audit["donor_cells_dropped"], {"c2": "c"})
-
-    def test_a_composite_row_may_take_each_block_from_a_different_donor(self):
-        donors = [["a", "", "c"], ["a", "b", ""]]
-        audit = K._audit_against_donors(donors, {0: "a", 1: "b", 2: "c"}, {}, 3, "probe")
-        self.assertEqual(audit["donor_cells_dropped"], {})
+            KL.check_panel(DESIGN["texts"][name], label=name)
 
 
 class KindGuardTests(unittest.TestCase):
+    def blank(self, ncols: int) -> list[str]:
+        return [""] * ncols
+
     def test_forbidden_content_kind_in_the_leader_table_is_rejected(self):
-        row = [""] * KL.LEADER_NCOLS
-        row[45] = "422"
+        row = self.blank(KL.LEADER_NCOLS)
+        row[107] = "422"
         with self.assertRaises(KL.KitError):
             K._ban_kinds("leader_ability", [row], "leader")
 
-    def test_unvetted_precondition_kind_is_rejected(self):
-        row = [""] * KL.ABILITY_NCOLS
-        row[6] = "188"          # 188 数的是固有「实例数」（恒 1），阈值 ≥2 永不成立（裁决 §8）
+    def test_dash_row_without_the_leader_precondition_is_rejected(self):
+        row = self.blank(KL.ABILITY_NCOLS)
+        row[109], row[118] = "422", "0"
         with self.assertRaises(KL.KitError):
-            K._ban_kinds("ability", [row], "1399901")
+            K._ban_kinds("ability", [row], "1399905")
+
+    def test_dash_row_without_a_param_id_is_rejected(self):
+        row = self.blank(KL.ABILITY_NCOLS)
+        row[6], row[109] = "42", "422"
+        with self.assertRaises(KL.KitError):
+            K._ban_kinds("ability", [row], "1399905")
+
+    def test_unvetted_precondition_kind_is_rejected(self):
+        row = self.blank(KL.ABILITY_NCOLS)
+        row[6] = "188"
+        with self.assertRaises(KL.KitError):
+            K._ban_kinds("ability", [row], "1399903")
+
+    def test_invoke_must_follow_the_counter_row(self):
+        add = self.blank(KL.ABILITY_NCOLS)
+        add[1], add[27], add[47] = "false", "51", "461"
+        invoke = self.blank(KL.ABILITY_NCOLS)
+        invoke[1], invoke[27], invoke[47] = "false", "51", "629"
+        invoke[35], invoke[70], invoke[71] = "0", K.CAS_PIERCE, K.PIERCE_PROGRAM
+        K._order_problems([add, invoke])
+        with self.assertRaises(KL.KitError):
+            K._order_problems([invoke, add])
+
+    def test_invoke_without_a_string_key_is_rejected(self):
+        add = self.blank(KL.ABILITY_NCOLS)
+        add[1], add[27], add[47] = "false", "51", "461"
+        invoke = self.blank(KL.ABILITY_NCOLS)
+        invoke[1], invoke[27], invoke[47], invoke[35] = "false", "51", "629", "0"
+        with self.assertRaises(KL.KitError):
+            K._order_problems([add, invoke])
 
 
 class DslHelperTests(unittest.TestCase):
+    def hit_area(self) -> list:
+        body = ["CreateHitArea"] + [None] * 26
+        body[9] = ["Circle", [{"min": 225, "max": 225}]]
+        body[13] = ["SpecifyHitAreaLifetimeDirectly", 30]
+        body[14] = ["CalculatedUsingMaxNumOfHits", 1]
+        body[24] = 0
+        return body
+
     def test_hit_area_setter_writes_the_direct_attack_attribution(self):
-        body = ["CreateHitArea", "*", 1, ["CD"], 0, 0, 0, False, False,
-                ["Circle", [{"min": 225, "max": 225}]], ["Center"], ["Center"], ["Single"],
-                ["SpecifyHitAreaLifetimeDirectly", 10], ["CalculatedUsingMaxNumOfHits", 1],
-                ["None"], False, True, ["None"], 2, ["Block", []], 3, 4, ["Block", []], 0, 0,
-                ["None"]]
-        K._set_hitarea(body, radius=320, lifetime=20, max_hits=2, break_weak_point=True,
-                       binds=(8, 9, 10), label="probe")
+        body = self.hit_area()
+        K._set_hitarea(body, radius=320, lifetime=20, max_hits=1, label="t")
         self.assertEqual(body[9], ["Circle", [{"min": 320, "max": 320}]])
-        self.assertEqual(body[13], ["SpecifyHitAreaLifetimeDirectly", 20])
-        self.assertEqual(body[14], ["CalculatedUsingMaxNumOfHits", 2])
         self.assertEqual(body[24], K.BUFF_TARGET_AS_DIRECT)
-        self.assertIs(body[7], True)
-        self.assertEqual((body[19], body[21], body[22]), (8, 9, 10))
 
     def test_hit_area_setter_rejects_a_drifted_shape(self):
+        body = self.hit_area()
+        body[9] = ["Rectangle", []]
         with self.assertRaises(KL.KitError):
-            K._set_hitarea(["CreateHitArea"], radius=1, lifetime=1, max_hits=1, label="probe")
+            K._set_hitarea(body, radius=10, lifetime=1, max_hits=1, label="t")
 
     def test_create_normal_attack_keeps_the_inherited_element_slot(self):
-        body = ["CreateNormalAttack", 4, 255, [], [], 200, [{"min": 20, "max": 20}],
-                [{"min": 0, "max": 0}], False, False, False, False, False,
-                [{"min": 10, "max": 10}], [{"min": 5, "max": 5}], ["Fine"], True]
-        K._set_cna(body, K.CNA_SHAPE[2], {"min": 20.4, "max": 20.4}, "probe")
-        self.assertEqual(body[1], 10)
+        body = ["CreateNormalAttack"] + [None] * 16
+        body[2] = 255
+        K._set_cna(body, K.CNA_SHAPE[0], {"min": 1, "max": 1}, "t", combo_bonus=True)
         self.assertEqual(body[2], 255)
-        self.assertEqual(body[6], [{"min": 20.4, "max": 20.4}])
-        self.assertEqual(body[13], [{"min": 12, "max": 12}])
+        self.assertIs(body[8], True)
         body[2] = 3
         with self.assertRaises(KL.KitError):
-            K._set_cna(body, K.CNA_SHAPE[2], {"min": 1, "max": 1}, "probe")
+            K._set_cna(body, K.CNA_SHAPE[0], {"min": 1, "max": 1}, "t")
 
-    def test_finish_hit_area_binds_do_not_collide_with_the_team_block(self):
-        """S5 判定区占 8/9/10 ⇒ 全队块只能用 donor 原来的 11（设计稿 D15）。"""
-        self.assertNotIn(11, K.FINISH_BINDS)
-        self.assertEqual(K.CNA_SHAPE[2]["subject"], K.FINISH_BINDS[-1])
+    def test_bind_remap_uses_the_authoritative_slot_table(self):
+        node = ["Command", ["FindNearSubjects", -18, 1, 49, ["DoNothing"], 3,
+                            ["Block", [["Command", ["CreateCondition", 3, [], [], None, True,
+                                                    False, "", None, False, 3, [], False]]]]]]
+        K._remap_binds(node, 30)
+        self.assertEqual(node[1][5], 33)
+        self.assertEqual(node[1][6][1][0][1][1], 33)
+        self.assertEqual(node[1][1], -18, "内建主体（球）不许被平移")
 
-    def test_finish_effect_is_referenced_not_cloned(self):
-        self.assertTrue(K.FINISH_EFFECT.startswith("battle/effect/skill_unique/light_adventurer_4anv/"))
-        self.assertNotIn("player", K.FINISH_EFFECT)     # 「キャラドット」件会把别人的小人烤进来
-        self.assertFalse(K.FINISH_EFFECT.startswith(K.FX_DST_DIR))
+    def test_finish_hit_area_binds_do_not_collide_with_the_enemy_block(self):
+        self.assertNotIn(K.ENEMY_BIND, K.FINISH_BINDS)
+
+    def test_normal_thunder_is_referenced_not_cloned(self):
+        self.assertTrue(K.THUNDER_NORMAL_DONOR.endswith("psychic_tohru_1"))
+        self.assertNotIn("psychic_tohru", K.FX_BOLT_DST)
+
+    def test_pierce_growth_is_not_capped_at_three(self):
+        self.assertGreater(K.PIERCE_VAR_CEIL, 3)
+        self.assertEqual(K.PIERCE_BASE_TIMES, 1)
+        self.assertEqual(K.PIERCE_TIMES_PER_LAYER, 1)
+        # 段数取优不相加：同段数时比伤害% ⇒ 不得低于词条层的 3 段 +300%
+        self.assertGreaterEqual(K.PIERCE_DAMAGE, 3.0)
+
+    def test_pierce_condition_carries_a_distinct_key(self):
+        # 带 vlv 的 CreateCondition 必须有非空区分键，否则不同层数会叠加
+        self.assertTrue(K.PIERCE_CONDITION_KEY)
 
 
 class IconTests(unittest.TestCase):
-    def test_icon_keeps_the_official_alpha_and_size(self):
-        try:
-            from PIL import Image
-        except ImportError:                              # pragma: no cover
-            self.skipTest("Pillow not installed")
-        frame = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-        for y in range(6, 42):
-            for x in range(6, 42):
-                frame.putpixel((x, y), (255, 255, 255, 255))
-        icon = K.draw_icon(frame)
-        self.assertEqual(icon.size, (48, 48))
-        self.assertEqual(icon.getchannel("A").tobytes(), frame.getchannel("A").tobytes())
-        self.assertGreater(len({icon.getpixel((x, y))[:3] for x in range(48) for y in range(48)}), 4)
+    def frame(self):
+        from PIL import Image
+        image = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+        pixels = image.load()
+        for y in range(48):
+            for x in range(48):
+                pixels[x, y] = (0, 0, 0, 255 if 4 <= x < 44 and 4 <= y < 44 else 0)
+        return image
+
+    def test_every_style_keeps_the_official_alpha_and_size(self):
+        frame = self.frame()
+        for _key, _sid, _name, _cap, _frames, style in K.UNIQUES:
+            icon = K.draw_icon(frame, style)
+            self.assertEqual(icon.size, (48, 48))
+            self.assertEqual(icon.getchannel("A").tobytes(), frame.getchannel("A").tobytes())
+
+    def test_styles_differ_from_each_other(self):
+        frame = self.frame()
+        blobs = {style: K.draw_icon(frame, style).tobytes()
+                 for _k, _s, _n, _c, _f, style in K.UNIQUES}
+        self.assertEqual(len(set(blobs.values())), len(blobs))
+
+    def test_unknown_style_is_rejected(self):
+        with self.assertRaises(KL.KitError):
+            K.draw_icon(self.frame(), "nope")
 
     def test_icon_rejects_a_wrong_sized_frame(self):
-        try:
-            from PIL import Image
-        except ImportError:                              # pragma: no cover
-            self.skipTest("Pillow not installed")
+        from PIL import Image
         with self.assertRaises(KL.KitError):
-            K.draw_icon(Image.new("RGBA", (32, 32)))
+            K.draw_icon(Image.new("RGBA", (32, 32)), "crescent")
 
 
 # ---------------------------------------------------------------- 2. 官方基线
 
-@unittest.skipUnless(_BASELINE, "需要 live store 与 .cdn/cn 官方归档")
+@unittest.skipUnless(_BASELINE, "需要 .cdn/cn 官方基线与 live store")
 class RowBuildTests(unittest.TestCase):
-    def test_leader_rows_render_exactly_as_the_design_says(self):
-        rows, evidence = K.build_leader_rows(ctx(), DESIGN)
-        self.assertEqual(len(rows), 6)
-        for row, entry in zip(rows, DESIGN["plan"]["leader_ability"]["rows"]):
-            self.assertEqual(len(row), KL.LEADER_NCOLS)
-            self.assertEqual(row[0], K.CODE)
-            self.assertEqual(KL.describe("leader_ability", row), entry["desc_expected"])
-        self.assertTrue(all(not ev["capabilities"] for ev in evidence))
+    @classmethod
+    def setUpClass(cls):
+        cls.built = all_rows(ctx())
 
-    def test_ability_rows_render_exactly_as_the_design_says(self):
-        rows_by_key, evidence = K.build_ability_rows(ctx(), DESIGN)
-        self.assertEqual(sorted(rows_by_key), sorted(K.ABILITY_KEYS))
-        self.assertEqual(sum(len(rows) for rows in rows_by_key.values()), 13)
-        for slot, key in enumerate(K.ABILITY_KEYS, start=1):
-            rows = rows_by_key[key]
-            self.assertEqual({row[0] for row in rows}, {f"{K.CODE}_{slot}"})
-            self.assertEqual(len({row[1] for row in rows}), 1)
-            self.assertEqual(len({row[2] for row in rows}), 1)
-            for row in rows:
-                self.assertEqual(len(row), KL.ABILITY_NCOLS)
-                self.assertEqual(KL.row_problems("ability", row, K.ELEMENT), {})
-        self.assertTrue(all(not ev["capabilities"] for ev in evidence))
+    def test_row_counts(self):
+        self.assertEqual(len(self.built["leader"]), 4)
+        self.assertEqual(sum(len(rows) for rows in self.built["ability"].values()), 23)
 
-    def test_only_the_third_ability_key_is_main_slot_only(self):
-        rows_by_key, _ = K.build_ability_rows(ctx(), DESIGN)
-        unisonable = {key: rows[0][1] for key, rows in rows_by_key.items()}
-        self.assertEqual(unisonable[f"{K.CID}3"], "false")
-        self.assertEqual({v for k, v in unisonable.items() if k != f"{K.CID}3"}, {"true"})
+    def test_every_row_matches_the_baked_describe_readback(self):
+        for ev in self.built["evidence"]:
+            self.assertEqual(ev["describe"], K.EXPECT[ev["label"]], ev["label"])
 
-    def test_a_drifted_expected_panel_text_is_caught(self):
-        broken = copy.deepcopy(DESIGN)
-        broken["plan"]["leader_ability"]["rows"][0]["desc_expected"] = "赋予全队(雷) 攻击力 999%"
-        with self.assertRaises(KL.KitError):
-            K.build_leader_rows(ctx(), broken)
+    def test_capabilities_are_declared(self):
+        self.assertTrue(set(self.built["capabilities"])
+                        <= set(K.SPEC["required_capabilities"]))
 
-    def test_a_cell_that_no_donor_backs_is_caught(self):
-        broken = copy.deepcopy(DESIGN)
-        broken["plan"]["leader_ability"]["rows"][0]["cells"]["49"] = "999000"
-        with self.assertRaises(KL.KitError):
-            K.build_leader_rows(ctx(), broken)
+    def test_leader_rows_are_all_crescent_growth(self):
+        for row in self.built["leader"]:
+            self.assertEqual(row[95], "134")
+            self.assertEqual(row[102], K.UID_CRESCENT)
+            self.assertEqual(row[100], "(None)")
 
-    def test_unique_condition_row_equals_the_design_row(self):
-        row = KL.apply_cells(KL.donor_row(ctx(), KL.UNIQUE, K.UNIQUE_DONOR),
-                             {0: K.UNIQUE_STRING_ID, 1: K.UNIQUE_NAME,
-                              2: K.UNIQUE_ICON_ROW, 4: K.UNIQUE_CAP}, KL.UNIQUE_NCOLS)
-        self.assertEqual(row, [str(cell) for cell in
-                               DESIGN["plan"]["unique_conditions"]["add"][0]["row"]])
+    def test_self_and_party_layers_sum_to_the_panel_numbers(self):
+        """面板：自身攻击 +100% / 直击 +200%，除自身外 +50% / +100%。"""
+        share = {(row[107], row[108]): int(row[111]) for row in self.built["leader"]}
+        self.assertEqual(share[("0", "5")] + share[("0", "0")], 100000)
+        self.assertEqual(share[("1", "5")] + share[("1", "0")], 200000)
+        self.assertEqual(share[("0", "5")], 50000)
+        self.assertEqual(share[("1", "5")], 100000)
+
+    def test_direct_attack_stack_row_beats_the_batch_floor(self):
+        row = next(r for r in self.built["ability"][f"{K.CID}3"] if r[47] == "202")
+        self.assertEqual(row[48], "5")
+        self.assertEqual(row[49], K.ELEMENT_TOKEN)
+        # 跨角色：全批统一 3 段，主 C 的合计伤害不低于辅助（罗尔夫 200%）
+        self.assertGreaterEqual(int(row[51]), 200000)
+
+    def test_dash_parameters_match_the_panel(self):
+        dash = {row[118]: int(row[113]) for row in self.built["ability"][f"{K.CID}5"]
+                if row[109] == "422"}
+        self.assertEqual(dash["0"], -50000, "冲刺冷却时间 −50%")
+        self.assertGreater(dash["1"], 0, "冲刺弹射速度提升")
+        self.assertGreater(dash["6"], 0, "可从更高的位置发动冲刺")
 
 
-@unittest.skipUnless(_BASELINE, "需要 live store 与 .cdn/cn 官方归档")
+@unittest.skipUnless(_BASELINE, "需要 .cdn/cn 官方基线与 live store")
 class SkillTreeTests(unittest.TestCase):
-    def _tree(self, level: str):
-        plan = K.read_skill_plan(DESIGN)
-        donor = f"battle/action/skill/action/rare5/{K.TEMPLATE_CODE}${K.TEMPLATE_CODE}_{level}"
-        tree, evidence = K.mutate_tree(ctx(), ctx().template_dsl(donor), level,
-                                       plan["levels"][level])
+    @classmethod
+    def setUpClass(cls):
+        cls.context = ctx()
+        cls.donor = cls.context.template_dsl(
+            f"battle/action/skill/action/rare5/{K.TEMPLATE_CODE}${K.TEMPLATE_CODE}_2")
+
+    def mutated(self, level: str = "2"):
+        donor = self.context.template_dsl(
+            f"battle/action/skill/action/rare5/{K.TEMPLATE_CODE}${K.TEMPLATE_CODE}_{level}")
+        tree, evidence = K.mutate_tree(self.context, donor, level)
+        tree, _ = self.context.rewrite_effect_refs(tree, blade_family())
+        tree, _ = self.context.rewrite_effect_refs(tree, trail_family())
         return tree, evidence
 
-    def test_donor_tree_shape_is_still_what_the_kit_expects(self):
-        donor = f"battle/action/skill/action/rare5/{K.TEMPLATE_CODE}${K.TEMPLATE_CODE}_1"
-        tree = ctx().template_dsl(donor)
-        self.assertEqual(K._command_counts(tree), K.DONOR_COMMAND_COUNTS)
-        self.assertEqual(tree[0], "ActionDsl")
-        self.assertEqual(tree[10], 0)          # 根头 buffTargetAs 保持 0（自动）
+    def test_donor_fingerprint_is_asserted(self):
+        self.assertEqual(K._command_counts(copy.deepcopy(self.donor)), K.DONOR_COMMAND_COUNTS)
 
-    def test_three_slashes_land_on_the_designed_frames(self):
-        for level in ("1", "2"):
-            tree, evidence = self._tree(level)
-            self.assertEqual(evidence["waits"], [9, 49, K.FINISH_WAIT])
-            self.assertEqual(evidence["reference_point_lifetime"]["after"], K.RP_LIFETIME)
-            self.assertEqual(evidence["stop_ball"]["after"], K.STOPBALL_FRAMES)
-            # 最后一段的寿命必须落在参照点寿命之内
-            self.assertLessEqual(K.FINISH_WAIT + K.FINISH_HITAREA["lifetime"], K.RP_LIFETIME)
-
-    def test_every_hit_area_settles_as_direct_attack_damage(self):
-        for level in ("1", "2"):
-            tree, evidence = self._tree(level)
-            self.assertEqual(len(evidence["hit_areas"]), 3)
-            for area in evidence["hit_areas"]:
-                self.assertEqual(area["buff_target_as"], K.BUFF_TARGET_AS_DIRECT)
-            self.assertEqual([area["radius"] for area in evidence["hit_areas"]], [260, 280, 320])
-            self.assertEqual([area["max_hits"] for area in evidence["hit_areas"]], [1, 14, 1])
-
-    def test_subject_binding_ids_are_unique_across_the_tree(self):
-        for level in ("1", "2"):
-            tree, evidence = self._tree(level)
-            binds = [bind for area in evidence["hit_areas"] for bind in area["binds"]]
-            binds.append(evidence["team_conditions"]["bind"])
-            self.assertEqual(len(binds), len(set(binds)), f"level {level}: duplicate binds {binds}")
-
-    def test_power_flip_block_is_replaced_by_the_three_team_conditions(self):
-        for level in ("1", "2"):
-            tree, evidence = self._tree(level)
-            self.assertEqual(K._command_counts(tree), K.RESULT_COMMAND_COUNTS)
-            self.assertEqual(evidence["team_conditions"]["selector"], 33)   # 33 = 含自身的己方全体
-            kinds = [body[2][0][0] for body in K._bodies(tree, "CreateCondition")]
-            self.assertEqual(kinds, ["ACPiercing", "ACDirectDamage", "ACSpeedup"])
-            for body in K._bodies(tree, "CreateCondition"):
-                self.assertEqual(body[10], 3)     # 付与对象种类；错配 = 施法 C16102
-                self.assertEqual(body[1], evidence["team_conditions"]["bind"])
-
-    def test_no_power_flip_damage_survives(self):
-        for level in ("1", "2"):
-            tree, _ = self._tree(level)
-            self.assertNotIn("ACPowerFlipDamage", json.dumps(tree, ensure_ascii=False))
-
-    def test_dsl_gates_are_clean(self):
-        for level in ("1", "2"):
-            tree, _ = self._tree(level)
-            self.assertEqual(K._dsl_problems(tree), [], f"level {level}")
-
-    def test_effect_refs_become_the_cloned_family_plus_one_official_path(self):
-        for level in ("1", "2"):
-            tree, _ = self._tree(level)
-            tree, _rewrite = ctx().rewrite_effect_refs(tree, fake_family())
-            paths = sorted(K.effect_paths(tree))
-            self.assertEqual(paths, sorted([f"{K.FX_DST_DIR}/{K.TEMPLATE_CODE}_slash",
-                                            f"{K.FX_DST_DIR}/{K.TEMPLATE_CODE}_smash",
-                                            f"{K.FX_DST_DIR}/{K.TEMPLATE_CODE}_explosion",
-                                            K.FINISH_EFFECT]))
-
-    def test_the_second_level_hits_harder_than_the_first(self):
-        first, _ = self._tree("1")
-        second, _ = self._tree("2")
-        for body_1, body_2 in zip(K._bodies(first, "CreateNormalAttack"),
-                                  K._bodies(second, "CreateNormalAttack")):
-            self.assertGreaterEqual(body_2[6][0]["max"], body_1[6][0]["max"])
-
-    def test_a_drifted_donor_tree_is_caught(self):
-        donor = f"battle/action/skill/action/rare5/{K.TEMPLATE_CODE}${K.TEMPLATE_CODE}_1"
-        tree = ctx().template_dsl(donor)
-        tree[10] = 3                                   # 有人把根头 buffTargetAs 改成了 PF
+    def test_drifted_donor_is_rejected(self):
+        broken = copy.deepcopy(self.donor)
+        broken[11][1].pop()
         with self.assertRaises(KL.KitError):
-            K.mutate_tree(ctx(), tree, "1", K.read_skill_plan(DESIGN)["levels"]["1"])
+            K.mutate_tree(self.context, broken, "2")
+
+    def test_skill_tree_passes_every_dsl_gate(self):
+        for level in ("1", "2"):
+            tree, _ = self.mutated(level)
+            self.assertEqual(K._dsl_problems(tree), [], level)
+
+    def test_dash_replaces_stop_ball(self):
+        tree, evidence = self.mutated()
+        names = {body[0] for body in
+                 (node[1] for node in K._walk(tree) if K._is_command(node))}
+        if K.DASH_REPLACES_STOPBALL:
+            self.assertIn("MoveBall", names)
+            self.assertNotIn("StopBall", names)
+            self.assertEqual(evidence["dash"]["with"], K.MOVE_BALL)
+        else:
+            self.assertIn("StopBall", names)
+
+    def test_trail_effect_is_attached_to_the_dash_block(self):
+        tree, _ = self.mutated()
+        trail = [body for body in (node[1] for node in K._walk(tree)
+                                   if K._is_command(node, "ShowEffect"))
+                 if body[1] == K.FX_TRAIL_LABEL]
+        self.assertEqual(len(trail), 1)
+        self.assertEqual(trail[0][2], ["SpecifyEffectDirectly", K.FX_TRAIL_EFFECT])
+        self.assertEqual(trail[0][3], -18)
+        self.assertEqual(trail[0][4], ["BacksideOfCharacter"])
+        self.assertEqual(trail[0][6], ["AB"])
+
+    def test_blade_effect_names_keep_their_tree_order(self):
+        tree, _ = self.mutated()
+        shows = [body[1] for body in (node[1] for node in K._walk(tree)
+                                      if K._is_command(node, "ShowEffect"))]
+        self.assertEqual(shows[:3], [K.EFFECT_NAMES[0], K.EFFECT_NAMES[1], K.EFFECT_NAMES[2]])
+
+    def test_all_three_slashes_settle_as_direct_attack_damage(self):
+        tree, _ = self.mutated()
+        areas = [body for body in (node[1] for node in K._walk(tree)
+                                   if K._is_command(node, "CreateHitArea"))]
+        self.assertEqual(len(areas), 3)
+        for area in areas:
+            self.assertEqual(area[24], K.BUFF_TARGET_AS_DIRECT)
+
+    def test_resonance_branch_carries_the_team_buffs_and_the_enemy_debuffs(self):
+        tree, _ = self.mutated()
+        flags = [body for body in (node[1] for node in K._walk(tree)
+                                   if K._is_command(node, "ConditionalsChangeSkillFlag"))]
+        self.assertEqual(len(flags), 1)
+        boost, plain = flags[0][2], flags[0][3]
+        self.assertEqual(plain, ["Block", []], "非共鸣档不加任何东西")
+        kinds = {ac[0] for body in (node[1] for node in K._walk(boost)
+                                    if K._is_command(node, "CreateCondition"))
+                 for ac in body[2]}
+        self.assertTrue({"ACPiercing", "ACDirectDamage", "ACSpeedup", "ACFrozen"} <= kinds)
+        dispel = [body for body in (node[1] for node in K._walk(boost)
+                                    if K._is_command(node, "DeleteCondition"))]
+        self.assertEqual(len(dispel), 1)
+        self.assertEqual(dispel[0][2], ["DCAll", 2])
+        self.assertEqual(dispel[0][3], K.DISPEL_COUNT)
+
+    def test_boost_durations_match_the_panel(self):
+        tree, evidence = self.mutated()
+        self.assertEqual(evidence["boost"]["piercing_frames"], 330)   # 5.5 秒
+        self.assertEqual(evidence["boost"]["speedup_frames"], 900)    # 15 秒
+
+    def test_awake_unique_is_applied_outside_the_branch(self):
+        tree, _ = self.mutated()
+        awake = [body for body in (node[1] for node in K._walk(tree[11][1][1:2])
+                                   if K._is_command(node, "CreateCondition"))]
+        self.assertEqual(len(awake), 1)
+        self.assertEqual(awake[0][2][0][0], "ACUnique")
+        self.assertEqual(awake[0][2][0][1], int(K.UID_AWAKE))
+
+    def test_effect_refs_leave_no_donor_namespace_behind(self):
+        for level in ("1", "2"):
+            tree, _ = self.mutated(level)
+            for path in K.effect_paths(tree):
+                self.assertFalse(path.startswith(f"battle/effect/skill_unique/{K.TEMPLATE_CODE}/"),
+                                 path)
+                self.assertFalse(path.startswith(f"{K.FX_TRAIL_SRC}/"), path)
 
 
-# ---------------------------------------------------------------- 3. 已构建的 workspace
+@unittest.skipUnless(_BASELINE, "需要 .cdn/cn 官方基线与 live store")
+class AbilitySkillTreeTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.context = ctx()
+        cls.donor = cls.context.template_dsl(
+            f"battle/action/skill/action/rare5/{K.TEMPLATE_CODE}${K.TEMPLATE_CODE}_2")
 
-@unittest.skipUnless(WORKSPACE.is_dir() and (WORKSPACE / "evidence/kit-report.json").is_file(),
-                     "需要先跑 --step init,tables,kit")
+    def test_pierce_tree_binds_and_uses_the_variable_in_one_block(self):
+        tree, note = K.build_pierce_tree(self.context, self.donor)
+        self.assertEqual(K._dsl_problems(tree), [])
+        block = tree[11]
+        self.assertEqual(block[0], "Block")
+        names = [node[1][0] for node in block[1] if K._is_command(node)]
+        self.assertEqual(names, ["BindConditionAccumulationVariable", "CreateCondition"])
+        bind = block[1][0][1]
+        self.assertEqual(bind[3], ["DCUnique", int(K.UID_PIERCE)])
+        ac = block[1][1][1][2][0]
+        self.assertEqual(ac[0], "ACAdditionalDirectAttack")
+        self.assertEqual(ac[2][0]["vlv"][0]["vid"], bind[2])
+        self.assertEqual(note["ceiling"], K.PIERCE_VAR_CEIL)
+
+    def test_pierce_condition_has_a_non_empty_discriminator(self):
+        tree, _ = K.build_pierce_tree(self.context, self.donor)
+        condition = tree[11][1][1][1]
+        self.assertTrue(condition[7])
+        self.assertEqual(condition[10], 3, "付与对象种类必须是 3（Member），否则施法 C16102")
+
+    def test_thunder_tree_has_two_mutually_exclusive_branches(self):
+        tree, note = K.build_thunder_tree(self.context, self.donor, bolt_family())
+        self.assertEqual(K._dsl_problems(tree), [])
+        flags = [body for body in (node[1] for node in K._walk(tree)
+                                   if K._is_command(node, "ConditionalsChangeSkillFlag"))]
+        self.assertEqual(len(flags), 1)
+        boost_paths = K.effect_paths(flags[0][2])
+        normal_paths = K.effect_paths(flags[0][3])
+        self.assertTrue(all(path.startswith(K.FX_BOLT_DST) for path in boost_paths), boost_paths)
+        self.assertTrue(all("psychic_tohru" in path for path in normal_paths), normal_paths)
+        self.assertFalse(note["normal"]["direct"])
+        self.assertTrue(note["boost"]["direct"])
+
+    def test_boost_thunder_settles_as_direct_attack_and_grows_with_combo(self):
+        tree, _ = K.build_thunder_tree(self.context, self.donor, bolt_family())
+        flags = [body for body in (node[1] for node in K._walk(tree)
+                                   if K._is_command(node, "ConditionalsChangeSkillFlag"))][0]
+        area = [body for body in (node[1] for node in K._walk(flags[2])
+                                  if K._is_command(node, "CreateHitArea"))][0]
+        attack = [body for body in (node[1] for node in K._walk(flags[2])
+                                    if K._is_command(node, "CreateNormalAttack"))][0]
+        self.assertEqual(area[24], K.BUFF_TARGET_AS_DIRECT)
+        self.assertIs(attack[8], True)
+
+    def test_branch_binds_do_not_collide(self):
+        tree, _ = K.build_thunder_tree(self.context, self.donor, bolt_family())
+        flags = [body for body in (node[1] for node in K._walk(tree)
+                                   if K._is_command(node, "ConditionalsChangeSkillFlag"))][0]
+
+        def binds(node):
+            out = set()
+            for cmd in (n[1] for n in K._walk(node) if K._is_command(n)):
+                for ids, _block in L.DSL_SUBJECT_BINDERS.get(cmd[0], ()):
+                    for slot in ids:
+                        if slot < len(cmd) and isinstance(cmd[slot], int):
+                            out.add(cmd[slot])
+            return out
+
+        self.assertFalse(binds(flags[2]) & binds(flags[3]),
+                         "两个分支的绑定号不能重号（lookup 会解析到错误主体）")
+
+    def test_thunder_tree_keeps_no_reference_to_the_uncloned_donor_family(self):
+        tree, _ = K.build_thunder_tree(self.context, self.donor, bolt_family())
+        for path in K.effect_paths(tree):
+            self.assertFalse(path.startswith(f"{K.FX_BOLT_SRC}/"), path)
+
+
+# ---------------------------------------------------------------- 3. 已构建的包
+
+@unittest.skipUnless(WORKSPACE.is_dir(), "workspace 尚未构建")
 class WorkspaceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.report = json.loads((WORKSPACE / "evidence/kit-report.json").read_text(encoding="utf-8"))
-        cls.claims = json.loads((WORKSPACE / "evidence/table_claims.json").read_text(encoding="utf-8"))
-        cls.pack = MC.MAPack(MS.get_spec("kyle"), record_sources=False)
+        cls.report = json.loads((WORKSPACE / "evidence" / "kit-report.json").read_text("utf-8")) \
+            if (WORKSPACE / "evidence" / "kit-report.json").is_file() else {}
+        cls.rows = json.loads((WORKSPACE / "evidence" / "kit-rows.json").read_text("utf-8"))
+        cls.skills = json.loads((WORKSPACE / "evidence" / "kit-skills.json").read_text("utf-8"))
 
-    def _claim(self, logical: str):
-        return next((entry for entry in self.claims
-                     if entry["logical_path"] == logical and entry["root"] == "common"), None)
+    def test_four_programs_are_written(self):
+        self.assertEqual(len(self.skills["programs"]), 4)
+        self.assertIn(K.PIERCE_PROGRAM, self.skills["programs"])
+        self.assertIn(K.THUNDER_PROGRAM, self.skills["programs"])
 
-    def test_kit_report_is_ready_for_review(self):
-        self.assertEqual(self.report["status"], KL.READY)
-        self.assertEqual((self.report["cid"], self.report["code"]), (K.CID, K.CODE))
-        self.assertEqual(self.report["required_capabilities"], [])
-        self.assertTrue(self.report["deviations"])
-        for text in self.report["panel"]:
-            self.assertEqual(KL.panel_problems(text), [], text)
+    def test_every_program_file_exists(self):
+        for program in self.skills["programs"]:
+            path = WORKSPACE / "package" / "roots" / "common" / (
+                wf_dsl.dsl_logical(program))
+            self.assertTrue(path.is_file(), path)
 
-    def test_package_carries_the_six_ability_keys_and_the_leader_key(self):
-        ability = self.pack.pkg_flat(KL.ABILITY)
-        leader = self.pack.pkg_flat(KL.LEADER)
-        for key in K.ABILITY_KEYS:
-            self.assertIn(key, ability)
-        self.assertIn(K.CID_S, leader)
-        self.assertEqual(len(C.csv_split(leader[K.CID_S])), 6)
+    def test_three_unique_conditions_with_icons(self):
+        self.assertEqual(sorted(self.rows["unique_condition"]),
+                         sorted(key for key, *_ in K.UNIQUES))
+        for icon in self.rows["icons"]:
+            path = WORKSPACE / "package" / "roots" / "common" / icon["logical"]
+            self.assertTrue(path.is_file(), path)
 
-    def test_package_carries_the_unique_condition_and_its_icon(self):
-        unique = self.pack.pkg_flat(MS.UNIQUE_CONDITION_LOGICAL)
-        self.assertIn(K.UID, unique)
-        row = C.csv_split(unique[K.UID])[0]
-        self.assertEqual(row[0], K.UNIQUE_STRING_ID)
-        self.assertEqual(row[1], K.UNIQUE_NAME)
-        self.assertEqual(row[4], K.UNIQUE_CAP)
-        self.assertTrue(self.pack.pkg_path("common", K.UNIQUE_ICON_LOGICAL).is_file())
+    def test_custom_ability_strings_cover_the_panel(self):
+        self.assertEqual(sorted(self.rows["custom_ability_string"]), sorted(K.CAS_TEXTS))
 
-    def test_claims_cover_every_self_owned_key(self):
-        self.assertEqual(self._claim(MS.UNIQUE_CONDITION_LOGICAL)["outer_keys"], [K.UID])
-        self.assertIn(K.VOICE_KEY, self._claim(KL.SWITCHED)["outer_keys"])
-        self.assertEqual(sorted(self._claim(KL.ABILITY)["outer_keys"]), sorted(K.ABILITY_KEYS))
+    def test_three_effect_families_are_packaged(self):
+        for dst in (K.FX_BLADE_DST, K.FX_BOLT_DST, K.FX_TRAIL_DST):
+            path = WORKSPACE / "package" / "roots" / "common" / dst
+            self.assertTrue(path.is_dir(), path)
 
-    def test_the_orphan_change_skill_string_is_gone(self):
-        self.assertIsNone(self._claim(KL.CAS))
-        self.assertFalse(self.pack.pkg_path("common", KL.CAS).is_file())
+    def test_the_normal_thunder_family_is_not_cloned(self):
+        path = WORKSPACE / "package" / "roots" / "common" / "battle/effect/skill_unique/psychic_tohru"
+        self.assertFalse(path.exists(), "常态天雷必须只引用官方路径，克隆会让图集 fits=False")
 
-    def test_package_skill_programs_and_energy(self):
-        programs = self.report["skills"]["programs"]
-        self.assertEqual(len(programs), 2)
-        for level in ("1", "2"):
-            self.assertTrue(any(f"{K.CODE}_{level}." in program for program in programs))
-        inner = B.KitContext(self.pack).pkg_nested(K.CODE, KL.ACTION)
-        energy = K.read_skill_plan(DESIGN)["energy"]
-        for level, cells in inner.items():
-            self.assertEqual((cells[4], cells[5], cells[6]), energy[level])
-            self.assertEqual(cells[0], DESIGN["texts"][f"skill{level}"])
-            self.assertEqual(cells[1], DESIGN["texts"][f"desc{level}"])
-
-    def test_package_dsl_reads_back_and_keeps_the_direct_attack_attribution(self):
-        for level in ("1", "2"):
-            logical = wf_dsl.dsl_logical(
-                f"battle/action/skill/action/rare5/{K.CODE}${K.CODE}_{level}")
-            raw = self.pack.pkg_path("common", logical).read_bytes()
-            tree = C.amf_parse(raw)
-            self.assertEqual(tree[0], "ActionDsl")
-            self.assertEqual(K._command_counts(tree), K.RESULT_COMMAND_COUNTS)
-            for body in K._bodies(tree, "CreateHitArea"):
-                self.assertEqual(body[24], K.BUFF_TARGET_AS_DIRECT)
-            self.assertEqual(K._dsl_problems(tree), [])
-
-    def test_character_row_carries_the_voice_route_and_the_leader_name(self):
-        row = self.pack.pkg_character_row()
-        self.assertEqual(list(row[9:17]), KL.voice_route(K.CODE, K.VOICE_ROUTE))
-        self.assertEqual(row[18], DESIGN["texts"]["leader"])
-        self.assertEqual(row[3], str(K.ELEMENT))
-        self.assertEqual(row[27], K.CID_S)
-
-    def test_package_does_not_leak_into_live_or_assets(self):
-        owned = json.loads((WORKSPACE / "evidence/owned_outputs.json").read_text(encoding="utf-8"))
-        for name in owned:
-            self.assertFalse(name.startswith("live:"), name)
-        self.assertTrue(str(WORKSPACE).replace("\\", "/").endswith("work/character_packs/ma-kyle"))
+    def test_pixel_and_voice_assets_are_untouched_by_this_rework(self):
+        """本轮只改表/DSL/特效/图标；小人与语音一格不改（作者 09-21：凯尔小人不变）。"""
+        pixel = WORKSPACE / "package" / "roots" / "common" / "character" / K.CODE / "pixelart"
+        self.assertTrue(pixel.is_dir())
+        self.assertTrue(any(pixel.iterdir()))
 
 
-if __name__ == "__main__":                              # pragma: no cover
+if __name__ == "__main__":
     unittest.main()

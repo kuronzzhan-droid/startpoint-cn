@@ -1,22 +1,24 @@
 # -*- coding: utf-8 -*-
 """玛格诺斯（119990 ``lion_swordman_moon``）：火 · 用强化弹射打技能伤害。
 
-体系（裁决 §2「火龙式引擎放能力 3 主位槽 + 情娅式 PF 次数叠技伤」）：
+**rework1（2026-09-21）**——目标面板 ``B/rework1/panel/magnus.json``，施工单
+``B/rework1/impl/magnus.md``，原语配方 ``B/rework1/research/{A,B,C}``。
 
-- 放技能 → 自身叠「引擎点火」（固有 ``11999001``）3 层，队长位再 +2 层 ⇒ 上限 5；
-- 点火在身时每次强化弹射 → 629 发动追击「氮气爆燃」（一棵独立 DSL 树，按**技能伤害**结算）
-  并消耗 1 层；629 行排在 525 消耗行**之前**（记忆卡 R3）；
-- 主技能本体 = 母本一刀 + 情娅式「球上挂 900 帧碰撞判定」骑行段（同样按技能伤害结算）；
-- 独立乘区（kind 694）与强化弹射次数档（1111833 / 1110993）把 PF 次数换成技能伤害。
+- 队长位授予**特殊强化弹射**（722 + ``power_flip_action`` 三档覆盖树，火共鸣门）：
+  赛达三档特效逐档叠加、球追踪 boss（选择器 51）、命中点爆克拉莉丝末端圆形爆炸；
+- 冲刺强化：422 param0 ``-30%`` 常驻 + ``+245%`` 疾走抵消行（**只写 ability 表**，前置 42 队长）；
+- 主技能把上一轮的情娅式骑行段换成**魏虎式光圈**（球上长寿命判定区，按技能伤害结算）；
+- 「引擎点火」固有改成 **99 层 / 99999999 帧**，靠 during 134 按层给技能伤害、攻击力与独立乘区；
+- PF **命中敌人**（触发 180，CT 0.6 秒）→ 629 追击「引擎之炎」并消耗 1 层；629 行排在 525 之前。
 
-设计稿 ``B/design/magnus.{md,json}``；本模块的 PLAN/LEADER/UNIQUE 与设计稿在 :func:`build`
-里逐项对账（``_design_problems``），设计稿漂移会当场报错。
+面板文案由 5 个 ``desc_override_*`` 接管（队长技 + 槽 1/2/3/5）；槽 4/6 用客户端自动文案。
 """
 from __future__ import annotations
 
 import copy
 import hashlib
 import json
+from pathlib import Path
 from typing import Any
 
 import wf_dsl
@@ -30,25 +32,58 @@ CID_S = str(CID)
 TEMPLATE_ID, TEMPLATE_CODE = 111129, "lion_swordman_playable"
 UID = MS.unique_condition_id(CID, 1)                       # "11999001"
 
+PFA = "master/skill/power_flip_action.orderedmap"
+PF_KEY = f"{CODE}_pf"
+PF_PROGRAMS = tuple(f"battle/action/power_flip/action/override/{PF_KEY}${PF_KEY}_lv{n}"
+                    for n in (1, 2, 3))
+SPECIAL_PROGRAMS = {n: f"battle/action/power_flip/action/special$special_lv{n}" for n in (1, 2, 3)}
+# 官方 special 底座指纹（2026-09-21 实读 .cdn/cn 官方归档）。漂移 ⇒ 底座换了，倍率要重算。
+SPECIAL_SHA = {
+    1: "569f2082c4633bae7e71610c296d6ab141cfabe1f3c4e5e0034c46dbf3e22961",
+    2: "4ed6440b9ded6d435e2c2fb9a640541b2c3fc43c5c0068de41077bab07ad73f2",
+    3: "7bebfdd5fc3ff46f2a789f7d631ac02084afa0cd11f4f19f71037f7faba3447d",
+}
+
 CHASE_STRING = f"ability_skill_{CODE}_ignite"
 SWITCH_STRING = f"change_skill_{CODE}"
+PF_STRING = f"override_string_{CODE}_pf"
+LEADER_OVERRIDE = f"desc_override_{CODE}"
+SLOT_OVERRIDE_SLOTS = (1, 2, 3, 5)
+SLOT_OVERRIDE = {slot: f"desc_override_{CODE}_{slot}" for slot in SLOT_OVERRIDE_SLOTS}
 VOICE_KEY = f"{CODE}_voice_ready"
 
-CHASE_PROGRAM = f"battle/action/skill/action/rare5/{CODE}${CODE}_ignite"
+CHASE_PROGRAM = f"battle/action/skill/action/ability_skill/{CHASE_STRING}${CHASE_STRING}"
 UC_ICON_ROW = f"battle/common/unique_condition/unique_{CODE}_ignition"
 UC_ICON_LOGICAL = UC_ICON_ROW + ".png"
 UC_ICON_FRAME_DONOR = "battle/common/unique_condition/unique_fire_dragon_zenith.png"
 
-# 特效：只引用、不改色 ⇒ 直接引用官方路径，不复制（裁决 §4 / 框架 §10.3 / 偏离 D12）。
+# 母本特效：只引用、不改色 ⇒ 直接引用官方路径，不复制（裁决 §4 / 框架 §10.3）。
 DONOR_FX_DIR = f"battle/effect/skill_unique/{TEMPLATE_CODE}"
 FLAME = f"{DONOR_FX_DIR}/{TEMPLATE_CODE}_flame"
 
-RIDE_DONOR = "battle/action/skill/action/rare5/tsundere_bountyhunter_vt22$tsundere_bountyhunter_vt22_%s"
+# 克隆三族（调研卡 C §2）：赛达三档 / 克拉莉丝末端爆炸 / 魏虎光圈
+FX_CLONES = (
+    ("lance", "battle/effect/skill_unique/zeta",
+     ("zeta_lance", "zeta_lance_hit", "zeta_lance_end")),
+    ("burst", "battle/effect/skill_unique/clarisse", ("clarisse",)),
+    ("aura", "battle/effect/skill_unique/anger_investigator", ("anger_investigator_aura",)),
+)
+FX_ROOT = f"battle/effect/skill_unique/{CODE}"
+ZETA_LANCE = f"{FX_ROOT}/lance/zeta_lance"
+ZETA_HIT = f"{FX_ROOT}/lance/zeta_lance_hit"
+ZETA_END = f"{FX_ROOT}/lance/zeta_lance_end"
+CLARISSE = f"{FX_ROOT}/burst/clarisse"
+AURA = f"{FX_ROOT}/aura/anger_investigator_aura"
+
 CHASE_DONOR = ("battle/action/skill/action/ability_skill/"
                "ability_skill_fire_dragon_zenith$ability_skill_fire_dragon_zenith")
+AURA_DONOR = "battle/action/skill/action/rare5/anger_investigator$anger_investigator_1"
 
-_SKILL_DESC = ("挥舞缠绕着火焰的剑向前方斩劈，对敌人造成火属性伤害／之后的一段时间内，"
-               "对与球碰撞到的敌人造成火属性伤害／赋予火属性角色及火属性协力球攻击力提升效果")
+_SKILL_DESC = ("挥舞缠绕着火焰的剑向前方斩劈，对敌人造成火属性伤害／"
+               "发动技能后的一段时间内，自身获得光圈效果，对与光圈碰撞到的敌人造成技能伤害／"
+               "赋予火属性角色及火属性协力球攻击力提升效果／"
+               "强化弹射变为特殊强化弹射时：火焰突进随发动次数分三档逐渐增强，"
+               "命中敌人后引爆大范围火焰，并可追击敌方boss目标")
 
 TEXTS = {
     "title": "月下归途的机车骑士",
@@ -63,116 +98,214 @@ TEXTS = {
 }
 
 SPEC = {
+    "required_capabilities": ("dash-parameter-v1", "panel-description-override-v2"),
     "extra_keys": {
         MS.UNIQUE_CONDITION_LOGICAL: (UID,),
-        "master/string/custom_ability_string.orderedmap": (CHASE_STRING, SWITCH_STRING),
-        "master/skill/switched_action_skill.orderedmap": (VOICE_KEY,),
+        KL.CAS: (CHASE_STRING, SWITCH_STRING, PF_STRING, LEADER_OVERRIDE,
+                 *(SLOT_OVERRIDE[s] for s in SLOT_OVERRIDE_SLOTS)),
+        KL.SWITCHED: (VOICE_KEY,),
+        PFA: (PF_KEY,),
     },
 }
 
 # ---------------------------------------------------------------- 行计划（donor + 逐格改）
 
 # 固有状态：官方 unique_condition[19] unique_fire_dragon_zenith「勇敢之焰」
+# c3=99999999 无时间限制 / c4=99 不设上限（作者原话）。c4 写 (None) ＝ 上限 1，叠层机制全死。
 UNIQUE_DONOR = "19"
 UNIQUE_NAME = "引擎点火"
-UNIQUE_CELLS = {0: f"unique_{CODE}_ignition", 2: UC_ICON_ROW, 4: "5", 14: CODE}
+UNIQUE_FRAMES = "99999999"
+UNIQUE_CAP = "99"
+UNIQUE_CELLS = {0: f"unique_{CODE}_ignition", 2: UC_ICON_ROW, 3: UNIQUE_FRAMES,
+                4: UNIQUE_CAP, 14: CODE}
 
-# 队长技 5 行（全部瞬发；无 during 行 ⇒ 不会出现恒真 HP 文案）
+FIRE_LEADER = {4: "2", 7: "600000", 8: "600000", 9: "Red"}     # leader 前置1 = 火编成≥6
+FIRE_ABILITY = {6: "2", 9: "600000", 10: "600000", 11: "Red"}  # ability 前置1 = 火编成≥6
+
+# 队长技 5 行（面板 6 行：2 条冲刺文案对应的 422 行在词条槽 5，见施工单偏离 D-1）
 LEADER: tuple[tuple[str, str, dict[int, str], str], ...] = (
-    ("111099#0", "official",
-     {0: CODE, 4: "2", 7: "600000", 8: "600000", 9: "Red", 49: "200000", 50: "200000"},
-     "火·编成≥6 时: 赋予全队(火) 攻击力 200%"),
+    ("141201#1", "official",
+     {0: CODE, **FIRE_LEADER, 45: "722", 80: PF_KEY, 81: "1,2,3", 82: PF_STRING},
+     "火·编成≥6 时: 自身 强化弹射覆盖"),
     ("111183#1", "official",
-     {0: CODE, 4: "2", 7: "600000", 8: "600000", 9: "Red",
-      25: "0", 28: "", 29: "", 32: "", 49: "200000", 50: "200000"},
-     "火·编成≥6 时: 赋予全队(火) 技能伤害 200%"),
+     {0: CODE, **FIRE_LEADER, 32: "(None)", 45: "34", 46: "5", 47: "Red",
+      49: "100000", 50: "100000"},
+     "火·编成≥6 时: 强化弹射≥3 → 赋予全队(火) 技能伤害 100%"),
     ("111183#1", "official",
-     {0: CODE, 4: "2", 7: "600000", 8: "600000", 9: "Red",
-      28: "200000", 29: "200000", 32: "10", 49: "20000", 50: "20000"},
-     "火·编成≥6 时: 强化弹射≥2(限10次) → 赋予全队(火) 技能伤害 20%"),
-    ("111183#2", "official", {0: CODE, 49: "5000", 50: "5000"},
-     "火·编成≥6 时: 强化弹射≥5 → 赋予全队(火) 技能槽 5%"),
-    ("111183#3", "official", {0: CODE, 49: "200000", 50: "200000", 66: UID},
-     "火·编成≥6 时: 技能发动≥1 → 自身 状态固有 200%×1次"),
+     {0: CODE, **FIRE_LEADER, 32: "(None)", 45: "32", 46: "5", 47: "Red",
+      49: "50000", 50: "50000"},
+     "火·编成≥6 时: 强化弹射≥3 → 赋予全队(火) 攻击力 50%"),
+    ("111183#2", "official",
+     {0: CODE, 46: "0", 47: "", 49: "10000", 50: "10000"},
+     "火·编成≥6 时: 强化弹射≥5 → 自身 技能槽 10%"),
+    ("111183#3", "official",
+     {0: CODE, 25: "2", 26: "", 28: "500000", 29: "500000",
+      49: "200000", 50: "200000", 66: UID},
+     "火·编成≥6 时: 强化弹射≥5 → 自身 状态固有 200%×1次"),
 )
+
+_A = "action_skill"
 
 # 六个词条键。每键 c1（主位限制）与 c2（雕像组）必须全键一致（kitlib.check_ability_key）。
 PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str], ...]] = {
     1: (
-        ("1111831#0", "official", {0: f"{CODE}_1", 2: "attack_common"},
-         "火·MySelf 时: 自身 技能槽 50%→100%"),
-        ("1111832#0", "official",
-         {0: f"{CODE}_1", 2: "attack_common", 30: "200000", 31: "200000"},
-         "火·MySelf 时: 强化弹射≥2(限10次) → 自身 攻击力 10%→20%"),
+        ("1111831#0", "official",
+         {0: f"{CODE}_1", 1: "true", 2: _A, 6: "0", 11: "", 51: "50000", 52: "50000"},
+         "自身 技能槽 50%"),
+        ("1111296#0", "official",
+         {0: f"{CODE}_1", 1: "true", 2: _A, **FIRE_ABILITY, 70: SWITCH_STRING},
+         f"火·编成≥6 时: 自身 切换技能形态[{SWITCH_STRING}]"),
+        ("1111833#1", "official",
+         {0: f"{CODE}_1", 1: "true", 2: _A, **FIRE_ABILITY,
+          30: "300000", 31: "300000", 34: "(None)", 47: "34", 51: "25000", 52: "25000"},
+         "火·编成≥6 时: 强化弹射≥3 → 自身 技能伤害 25%"),
     ),
     2: (
-        ("1110992#0", "official",
-         {0: f"{CODE}_2", 2: "action_skill", 30: "200000", 31: "200000",
-          51: "5000", 52: "10000"},
-         "强化弹射≥2(限10次) → 赋予全队(火) 技能伤害 5%→10%"),
-        ("2110065#0", "official",
-         {0: f"{CODE}_2", 2: "action_skill", 51: "1000000", 52: "1500000"},
-         "技能发动≥1 → 自身 追加连击 10→15"),
+        ("1611232#0", "official",
+         {0: f"{CODE}_2", 1: "true", 2: _A, **FIRE_ABILITY,
+          102: "(None)", 104: UID, 109: "2", 110: "0", 113: "50000", 114: "50000"},
+         f"火·编成≥6 时: 持续·状态累积计数固有≥1[固有{UID}] → 自身 技能伤害 50%"),
+        ("1611231#1", "official",
+         {0: f"{CODE}_2", 1: "true", 2: _A, **FIRE_ABILITY,
+          102: "(None)", 104: UID, 109: "0", 110: "0", 113: "50000", 114: "50000"},
+         f"火·编成≥6 时: 持续·状态累积计数固有≥1[固有{UID}] → 自身 攻击力 50%"),
     ),
     3: (
-        ("1111652#0", "official", {0: f"{CODE}_3", 2: "action_skill", 68: UID},
-         "技能发动≥1 → 自身 状态固有 300%×1次"),
+        ("1111652#0", "official",
+         {0: f"{CODE}_3", 1: "false", 2: _A, **FIRE_ABILITY,
+          28: "5", 29: "Red", 51: "300000", 52: "300000", 68: UID},
+         "火·编成≥6 时: 技能发动≥1 → 自身 状态固有 300%×1次"),
         # 629：字符串键 c70 + 程序路径 c71；必须排在下面的 525 消耗行之前。
         ("1611053#0", "official",
-         {0: f"{CODE}_3", 1: "false", 2: "action_skill", 6: "188", 7: "0",
-          9: "100000", 10: "100000", 12: UID, 27: "2", 28: "", 35: "0",
+         {0: f"{CODE}_3", 1: "false", 2: _A, 6: "188", 7: "0", 9: "100000", 10: "100000",
+          12: UID, 27: "180", 28: "0", 30: "100000", 31: "100000", 34: "(None)", 35: "36",
           70: CHASE_STRING, 71: CHASE_PROGRAM},
-         f"状态计数固有≥1[固有{UID}] 时: 强化弹射≥1 → 自身 发动技能动作[{CHASE_STRING}]"),
+         f"状态计数固有≥1[固有{UID}] 时: 任一敌方强化弹射HitLv1≥1(CT0.6秒) → "
+         f"自身 发动技能动作[{CHASE_STRING}]"),
         ("1111652#2", "official",
-         {0: f"{CODE}_3", 2: "action_skill", 6: "188", 7: "0", 9: "100000",
-          10: "100000", 12: UID, 27: "2", 68: UID},
-         f"状态计数固有≥1[固有{UID}] 时: 强化弹射≥1 → 自身 消耗固有状态 100%"),
-        ("1111296#0", "official",
-         {0: f"{CODE}_3", 1: "false", 2: "action_skill", 70: SWITCH_STRING},
-         f"自身 切换技能形态[{SWITCH_STRING}]"),
+         {0: f"{CODE}_3", 1: "false", 2: _A, 6: "188", 7: "0", 9: "100000", 10: "100000",
+          12: UID, 27: "180", 28: "0", 30: "100000", 31: "100000", 34: "(None)", 35: "36",
+          68: UID},
+         f"状态计数固有≥1[固有{UID}] 时: 任一敌方强化弹射HitLv1≥1(CT0.6秒) → 自身 消耗固有状态 100%"),
+        ("1310323#3", "official",
+         {0: f"{CODE}_3", 1: "false", 2: _A, 6: "0", 7: "", 9: "", 10: "",
+          98: "0", 100: "500000", 101: "500000", 102: "1", 104: UID,
+          109: "411", 110: "0", 111: "", 113: "100000", 114: "100000"},
+         f"持续·状态累积计数固有≥5(限1次)[固有{UID}] → 自身 独立乘区技能伤害 100%"),
+        ("1310323#2", "official",
+         {0: f"{CODE}_3", 1: "false", 2: _A, 6: "0", 7: "", 9: "", 10: "",
+          98: "0", 100: "100000", 101: "100000", 102: "(None)", 104: UID,
+          109: "411", 110: "5", 111: "Red", 113: "5000", 114: "5000"},
+         f"持续·状态累积计数固有≥1[固有{UID}] → 赋予全队(火) 独立乘区技能伤害 5%"),
     ),
     4: (
         ("1111833#1", "official",
-         {0: f"{CODE}_4", 1: "true", 2: "attack_common", 30: "200000", 31: "200000",
-          51: "15000", 52: "30000"},
-         "强化弹射≥2(限10次) → 自身 技能伤害 15%→30%"),
-        ("1110993#1", "official", {0: f"{CODE}_4", 1: "true", 2: "attack_common"},
-         "强化弹射≥5(限4次) → 自身 技能伤害 18.75%→37.5%"),
+         {0: f"{CODE}_4", 1: "true", 2: "attack_common",
+          30: "200000", 31: "200000", 47: "32", 51: "30000", 52: "30000"},
+         "强化弹射≥2(限10次) → 自身 攻击力 30%"),
+        ("1110993#1", "official",
+         {0: f"{CODE}_4", 1: "true", 2: "attack_common", 51: "37500", 52: "37500"},
+         "强化弹射≥5(限4次) → 自身 技能伤害 37.5%"),
     ),
     5: (
         # kind 694（瞬发独立乘区技能伤害）官方 0 行，只有 live 先例 ⇒ 这一行取 store。
-        ("1299925#1", "store", {0: f"{CODE}_5", 2: "action_skill"},
-         "自身 独立乘区技能伤害 20%→40%"),
-        ("1110993#2", "official", {0: f"{CODE}_5", 1: "true", 2: "action_skill"},
-         "火·编成≥6 时: 强化弹射≥5(CT15秒) → 自身 技能槽 5%→10%"),
+        ("1299925#1", "store",
+         {0: f"{CODE}_5", 1: "true", 2: _A, 51: "15000", 52: "15000"},
+         "自身 独立乘区技能伤害 15%"),
+        ("1110993#2", "official",
+         {0: f"{CODE}_5", 1: "true", 2: _A, 51: "5000", 52: "5000"},
+         "火·编成≥6 时: 强化弹射≥5(CT15秒) → 自身 技能槽 5%"),
+        # 422 冲刺参数：只许 ability 表（队长表写 = C7050），前置 42 Leader ⇒ 只在他当队长时生效。
+        ("1699885#1", "store",
+         {0: f"{CODE}_5", 1: "true", 2: _A, 113: "-30000", 114: "-30000"},
+         "队长 时: 持续·HP≤1 → 自身 冲刺参数(可调) -30%"),
+        ("1699991#7", "store",
+         {0: f"{CODE}_5", 1: "true", 2: _A, 113: "245000", 114: "245000"},
+         "队长 时: 持续·状态冲刺 → 自身 冲刺参数(可调) 245%"),
     ),
     6: (
         ("1110996#0", "official",
-         {0: f"{CODE}_6", 2: "special", 51: "10000", 52: "20000"},
-         "火·MySelf 时: 自身 技能槽充能 10%→20%"),
-        ("1110013#0", "official", {0: f"{CODE}_6", 1: "true", 2: "special"},
-         "自身 强化弹射连击数↓ 3→5"),
+         {0: f"{CODE}_6", 1: "true", 2: "special", 6: "0", 11: "",
+          51: "20000", 52: "20000"},
+         "自身 技能槽充能 20%"),
+        ("1110013#0", "official",
+         {0: f"{CODE}_6", 1: "true", 2: "special", 51: "500000", 52: "500000"},
+         "自身 强化弹射连击数↓ 5"),
     ),
 }
 
-# 面板字符串（custom_ability_string）。629 的条目不写数字与时间（裁决 §3）。
-CAS_TEXTS = {
-    CHASE_STRING: "发动技能「氮气爆燃」：在球身点燃引擎之炎，碰撞到敌人时引爆，造成火属性伤害（以技能伤害计算）",
-    SWITCH_STRING: "强化『月下咆哮·烈焰甩尾』的威力",
-}
+DASH_PARAM0_BASE = -30000          # 常驻 CD −30%
+DASH_PARAM0_SWIFT = 245000         # 3.5 × (1 + (−0.30)) = 2.45 ⇒ Swift 中帧数与非 Swift 相同
 
-# action_skill c4/c5/c6（官方 492 个双档技能的 c4 两档恒同值）
-ENERGY = {"1": ("560", "560", "1"), "2": ("560", "510", "1")}
+MAIN_ICON = " <icon id='main'>  "   # desc_override 会盖掉客户端逐行画的 Ⓜ，主位键必须自带
+
+# 面板字符串（custom_ability_string）。629 / 536 的条目不写数字与时间（裁决 §3）。
+CAS_TEXTS = {
+    CHASE_STRING: "发动技能「引擎之炎」：在命中点引爆积蓄的引擎火焰，造成火属性伤害（以技能伤害计算）",
+    SWITCH_STRING: "强化『月下咆哮·烈焰甩尾』：光环的范围扩大",
+    PF_STRING: "强化弹射变为特殊强化弹射时：火焰突进随发动次数分三档逐渐增强，"
+               "命中敌人后引爆大范围火焰，并可追击敌方boss目标",
+    LEADER_OVERRIDE: "\n".join((
+        "火属性共鸣时，自身的强化弹射变为特殊强化弹射",
+        "火属性共鸣时，自身获得冲刺强化效果，冲刺冷却时间－30%",
+        "火属性共鸣时，冲刺间隔缩短效果不会让自身的冲刺冷却时间进一步缩短",
+        "火属性共鸣时，每发动3次强化弹射，火属性角色技能伤害＋100%、攻击力＋50%",
+        "火属性共鸣时，每发动5次强化弹射，自身技能槽＋10%",
+        "火属性共鸣时，每发动5次强化弹射，自身引擎点火＋2层",
+    )),
+    SLOT_OVERRIDE[1]: "\n".join((
+        "战斗开始时，自身技能槽＋50%",
+        "火属性共鸣时，强化自身技能：光环范围扩大，自身技能伤害随强化弹射次数按层叠加提升",
+    )),
+    SLOT_OVERRIDE[2]: "火属性共鸣时，引擎点火每提升1层，自身技能伤害＋50%、攻击力＋50%",
+    SLOT_OVERRIDE[3]: "\n".join(MAIN_ICON + line for line in (
+        "火属性共鸣时，火属性角色发动技能时，自身引擎点火＋3层",
+        "自身处于「引擎点火」期间，强化弹射命中敌人时，发动「引擎之炎」：造成技能伤害",
+        "自身处于「引擎点火」期间，强化弹射命中敌人时，消耗1层「引擎点火」",
+        "自身引擎点火在5层以上时：自身技能伤害额外乘区＋100%",
+        "自身引擎点火每提升1层，火属性角色技能伤害额外乘区＋5%",
+    )),
+    SLOT_OVERRIDE[5]: "\n".join((
+        "自身独立乘区技能伤害＋15%",
+        "火属性共鸣时，每发动5次强化弹射，自身技能槽＋5%（冷却时间：15秒）",
+    )),
+}
+SKILL_FLAG_TEXT_KEYS = (CHASE_STRING, SWITCH_STRING)
+
+# action_skill c4/c5/c6（作者放行第 5 条：两档都写 600）
+ENERGY = {"1": ("600", "600", "1"), "2": ("600", "600", "1")}
 
 # 语音路由：kind 1 ConditionExist（引擎点火）。kind 3 会因 536 常驻而让 skill_ready 永不播。
 VOICE_ROUTE = {"kind": 1, "condition_kind": "28", "condition_id": UID}
 
-# DSL
-RIDE_MULT = {"1": (0.15, 0.15), "2": (0.19, 0.225)}
-RIDE_ID_REMAP = {7: 6, 8: 7, 9: 8}
-RIDE_REMAP_HITS = 6          # ids 19/21/22 各 1 处 + 内层 GH 与两条 CNA 的 p1 共 3 处
-CHASE_MULT = 2.0
-CHASE_BURST_SCALE = 4
+# ---- DSL 旋钮 ----------------------------------------------------------------
+AURA_FRAMES = 600
+AURA_TUNING = {                       # 档 → (ShowEffect scale, 判定圆半径, 每跳倍率)
+    "1": (3.75, 200, 4.0),
+    "2": (5.00, 270, 5.5),
+}
+AURA_BINDS = (10, 11, 12)             # 母本 111129 自己占 0–5
+CHASE_MULT = 3.0
+BURST_SCALE = 6.5                     # 克拉莉丝演出缩放（母本 clarisse_1 是 5，火龙树是 4）
+BURST_RADIUS = 330                    # 「范围增大一些」：250/200 → 330
+BURST_MAX_HITS = 5
+PF_SCALE = 2.0                        # 官方 special 合计 5 / 7.667 / 13 ⇒ 10 / 15.33 / 26
+PF_SUPPRESS = 90                      # 底座 SetPowerFilpSuppress
+PF_LANCE_SCALE = {1: 1.0, 2: 1.3, 3: 1.6}
+PF_EXTRA_FX = {1: (), 2: (("lance_hit", ZETA_HIT),),
+               3: (("lance_hit", ZETA_HIT), ("lance_end", ZETA_END))}
+CHASE_TAG = f"{CODE}_chase"
+CHASE_STEP = 4
+CHASE_SPEED = 40
+CHASE_SELECTOR = 51                   # 49=全体 / 50=杂兵 / 51=BOSS / 52=漏斗
+CHASE_BIND = 1001                     # 底座占 0–7
+
+# 克拉莉丝末端裁段（调研卡 C §2.2 落法 A）：母本漂移即拒绝
+CLARISSE_TOTAL = 157
+CLARISSE_CUT = 78
+CLARISSE_ROOT_R = 1073741824
+CLARISSE_NEW_R = (1 << 30) | CLARISSE_CUT
+CLARISSE_NEW_T = CLARISSE_TOTAL - CLARISSE_CUT
 
 
 class KitError(KL.KitError):
@@ -197,9 +330,11 @@ def _norm_cells(cells: Any) -> dict[int, str]:
 
 
 def _design_problems(design: dict[str, Any]) -> list[str]:
-    """kit 里的行计划与设计稿逐项对账（donor / source / cells / 预期面板文案）。"""
+    """kit 的行计划与设计稿 ``plan_rework1`` 逐项对账（donor / source / cells / 预期面板文案）。"""
     problems: list[str] = []
-    plan = design.get("plan", {})
+    plan = design.get("plan_rework1")
+    if not plan:
+        return ["design/magnus.json lacks the plan_rework1 block"]
 
     def cmp(label: str, got: tuple[str, str, dict[int, str], str], want: dict[str, Any]) -> None:
         donor, source, cells, expect = got
@@ -208,15 +343,15 @@ def _design_problems(design: dict[str, Any]) -> list[str]:
         if source != want.get("source"):
             problems.append(f"{label}: source {source!r} != design {want.get('source')!r}")
         if _norm_cells(cells) != _norm_cells(want.get("cells")):
-            problems.append(f"{label}: cells {_norm_cells(cells)} != design {_norm_cells(want.get('cells'))}")
+            problems.append(f"{label}: cells differ from design")
         if expect != want.get("desc_expected"):
             problems.append(f"{label}: desc {expect!r} != design {want.get('desc_expected')!r}")
 
     rows = plan.get("leader_ability", {}).get("rows", [])
     if len(rows) != len(LEADER):
         problems.append(f"leader row count {len(LEADER)} != design {len(rows)}")
-    for got, want in zip(LEADER, rows):
-        cmp(f"leader#{want.get('index')}", got, want)
+    for index, (got, want) in enumerate(zip(LEADER, rows)):
+        cmp(f"leader#{index}", got, want)
 
     keys = plan.get("ability", {}).get("keys", {})
     for slot, records in PLAN.items():
@@ -227,14 +362,14 @@ def _design_problems(design: dict[str, Any]) -> list[str]:
         want_records = want_block.get("records", [])
         if len(want_records) != len(records):
             problems.append(f"ability {CID}{slot}: {len(records)} records != design {len(want_records)}")
-        for got, want in zip(records, want_records):
-            cmp(f"ability {CID}{slot}#{want.get('index')}", got, want)
+        for index, (got, want) in enumerate(zip(records, want_records)):
+            cmp(f"ability {CID}{slot}#{index}", got, want)
 
     add = plan.get("unique_conditions", {}).get("add", [])
     if len(add) != 1 or add[0].get("key") != UID:
         problems.append(f"unique_conditions design block unexpected: {[a.get('key') for a in add]}")
     elif _norm_cells(add[0].get("cells")) != _norm_cells(UNIQUE_CELLS):
-        problems.append(f"unique cells {_norm_cells(UNIQUE_CELLS)} != design {_norm_cells(add[0].get('cells'))}")
+        problems.append("unique cells differ from design")
 
     energy = plan.get("skills", {}).get("energy", {})
     for level in ("1", "2"):
@@ -248,6 +383,10 @@ def _design_problems(design: dict[str, Any]) -> list[str]:
         if cas.get(key) != text:
             problems.append(f"custom_ability_string {key}: text differs from design")
 
+    pf = plan.get("pf_override", {})
+    if pf.get("key") != PF_KEY or list(pf.get("programs", ())) != list(PF_PROGRAMS):
+        problems.append("power_flip_action design block drift")
+
     route = design.get("voice", {}).get("route", {})
     if {str(k): str(v) for k, v in route.items()} != {str(k): str(v) for k, v in VOICE_ROUTE.items()}:
         problems.append(f"voice route {VOICE_ROUTE} != design {route}")
@@ -260,7 +399,7 @@ def build_unique(ctx) -> tuple[str, list[str]]:
     key, row = KL.unique_row(ctx, ctx.spec, 1, UNIQUE_DONOR, UNIQUE_CELLS, name=UNIQUE_NAME)
     if key != UID:
         raise KitError(f"unique id {key} != {UID}")
-    if row[3] != "1200" or row[4] != "5":
+    if row[3] != UNIQUE_FRAMES or row[4] != UNIQUE_CAP:
         raise KitError(f"unique duration/cap unexpected: c3={row[3]!r} c4={row[4]!r}")
     KL.write_unique(ctx, ctx.spec, {key: row})
     return key, row
@@ -366,6 +505,7 @@ def build_rows(ctx) -> dict[str, Any]:
         caps.update(ev["capabilities"])
     if any(r[0] != CODE for r in leader):
         raise KitError(f"leader c0 must be {CODE}: {[r[0] for r in leader]}")
+    _leader_forbidden(leader)
 
     ability: dict[str, list[list[str]]] = {}
     for slot, records in PLAN.items():
@@ -382,8 +522,20 @@ def build_rows(ctx) -> dict[str, Any]:
         ability[key] = rows
 
     _order_problems(ability[f"{CID}3"])
+    _dash_problems(ability[f"{CID}5"])
     return {"leader": leader, "ability": ability, "evidence": evidence,
             "capabilities": sorted(caps)}
+
+
+LEADER_FORBIDDEN_KINDS = ("422", "724", "713")
+
+
+def _leader_forbidden(rows: list[list[str]]) -> None:
+    """队长表写 422/724/713 = 角色详情页 C7050（记忆卡 wf-dash-parameter-leader-table-trap）。"""
+    bad = [(i, r[45], r[107]) for i, r in enumerate(rows)
+           if r[45] in LEADER_FORBIDDEN_KINDS or r[107] in LEADER_FORBIDDEN_KINDS]
+    if bad:
+        raise KitError(f"leader rows carry a forbidden kind (C7050): {bad}")
 
 
 def _order_problems(rows: list[list[str]]) -> None:
@@ -397,20 +549,48 @@ def _order_problems(rows: list[list[str]]) -> None:
     if kinds.index("629") > kinds.index("525"):
         raise KitError(f"629 must precede the 525 consume row, got {kinds}")
     invoke, consume = rows[kinds.index("629")], rows[kinds.index("525")]
-    if invoke[27] != consume[27]:
-        raise KitError(f"629/525 trigger kinds differ: {invoke[27]} vs {consume[27]}")
+    for col, what in ((27, "trigger kind"), (30, "threshold"), (31, "threshold"),
+                      (34, "trigger limit"), (35, "cooldown")):
+        if invoke[col] != consume[col]:
+            raise KitError(f"629/525 {what} differ at c{col}: {invoke[col]!r} vs {consume[col]!r}")
     if invoke[6] != consume[6] or invoke[12] != consume[12]:
         raise KitError("629/525 preconditions differ; both must gate on the same unique condition")
 
 
+def _dash_problems(rows: list[list[str]]) -> None:
+    """422 行契约：前置 42 队长、param_id 显式写 '0'、两条强度就是抵消公式的两端。"""
+    dash = [r for r in rows if r[109] == "422"]
+    if len(dash) != 2:
+        raise KitError(f"slot 5 must carry exactly 2 dash rows, got {len(dash)}")
+    for row in dash:
+        if row[6] != "42":
+            raise KitError(f"422 row must gate on precondition 42 (Leader), got {row[6]!r}")
+        if row[118] != "0":
+            raise KitError(f"422 param_id must be an explicit '0', got {row[118]!r}")
+    strengths = sorted(int(r[113]) for r in dash)
+    if strengths != sorted((DASH_PARAM0_BASE, DASH_PARAM0_SWIFT)):
+        raise KitError(f"dash strengths {strengths} differ from the offset formula")
+    # 3.5 × (1 + s0) —— 非 Swift 90×(1+s0) 帧与 Swift 中 20×(1+s0+m) 帧相等
+    want = round(3.5 * (1 + DASH_PARAM0_BASE / 100000) * 100000)
+    if DASH_PARAM0_SWIFT != want:
+        raise KitError(f"swift offset {DASH_PARAM0_SWIFT} != 3.5×(1+s0) = {want}")
+
+
 def write_strings(ctx) -> dict[str, str]:
-    """custom_ability_string：629 条目 + 技能强化条目。"""
+    """custom_ability_string：629 / 536 / 722 条目 + 5 个 desc_override。"""
     declared = set(ctx.spec.extra_keys.get(KL.CAS, ()))
     missing = [key for key in CAS_TEXTS if key not in declared]
     if missing:
         raise KitError(f"custom_ability_string keys not declared in SPEC['extra_keys']: {missing}")
-    KL.check_panel(CAS_TEXTS[CHASE_STRING], label=CHASE_STRING)
-    KL.check_panel(CAS_TEXTS[SWITCH_STRING], skill_flag=True, label=SWITCH_STRING)
+    for key, text in CAS_TEXTS.items():
+        for line in text.split("\n"):
+            KL.check_panel(line.replace(MAIN_ICON, ""),
+                           skill_flag=key in SKILL_FLAG_TEXT_KEYS, label=key)
+    for slot in SLOT_OVERRIDE_SLOTS:
+        rendered = CAS_TEXTS[SLOT_OVERRIDE[slot]].split("\n")
+        wants_icon = PLAN[slot][0][2].get(1) == "false"
+        if any(line.startswith(MAIN_ICON) != wants_icon for line in rendered):
+            raise KitError(f"slot {slot} desc_override main-position icon does not match c1")
     official = ctx.official_flat(KL.CAS)
     clashes = [key for key in CAS_TEXTS if key in official]
     if clashes:
@@ -456,7 +636,120 @@ def write_action_skill(ctx) -> dict[str, list[str]]:
     return out
 
 
-# ---------------------------------------------------------------- DSL
+# ---------------------------------------------------------------- 特效克隆 + 染色 + parts 手术
+
+def fx_lut_path(ctx) -> Path | None:
+    """特效染色 LUT：特效素材代理交付到 ``W/fx/magnus/``；缺文件就不染色，照常克隆。"""
+    batch = ctx.pack.batch_dir
+    for candidate in (batch / "rework1" / "fx" / "magnus" / "fx_lut.json",
+                      batch / "fx" / "magnus" / "fx_lut.json",
+                      KL.pixel_dir(ctx) / "fx_lut.json"):
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def fx_transforms(ctx) -> tuple[Path | None, dict[str, Any]]:
+    """把交付的 LUT 拆成 {donor 族名: png_transform}。
+
+    交付件有两种形状：单族的裸 ``ma-fx-lut/1``（对三族统一套用），或特效代理用的
+    ``{"families": {"<donor>": <ma-fx-lut/1>, …}}`` 合集（每族一份）。
+    ``KL.png_transform_from_lut`` 只吃文件，所以合集会先拆进 workspace 的 evidence 目录。
+    """
+    lut = fx_lut_path(ctx)
+    if lut is None:
+        return None, {}
+    data = json.loads(lut.read_text(encoding="utf-8"))
+    if data.get("schema") == KL.LUT_SCHEMA:
+        shared = KL.png_transform_from_lut(lut)
+        return lut, {src.rsplit("/", 1)[-1]: shared for _sub, src, _n in FX_CLONES}
+    families = data.get("families")
+    if not isinstance(families, dict):
+        raise KitError(f"unrecognised fx_lut shape (no schema, no families): {lut}")
+    out: dict[str, Any] = {}
+    target = ctx.pack.evidence / "fx"
+    target.mkdir(parents=True, exist_ok=True)
+    for _sub, src_dir, _names in FX_CLONES:
+        donor = src_dir.rsplit("/", 1)[-1]
+        block = families.get(donor)
+        if block is None:
+            continue
+        split = target / f"fx_lut_{donor}.json"
+        split.write_text(json.dumps(block, ensure_ascii=False, indent=1) + "\n",
+                         encoding="utf-8")
+        out[donor] = KL.png_transform_from_lut(split)
+    if not out:
+        raise KitError(f"fx_lut {lut} carries none of the three donor families")
+    return lut, out
+
+
+def clone_effects(ctx):
+    lut, transforms = fx_transforms(ctx)
+    families: dict[str, Any] = {}
+    for subdir, src_dir, names in FX_CLONES:
+        donor = src_dir.rsplit("/", 1)[-1]
+        fam = ctx.clone_effect_family(src_dir, subdir, list(names),
+                                      layout="codename",
+                                      png_transform=transforms.get(donor))
+        missing = list(fam.get("missing_effects") or ())
+        if missing:
+            raise KitError(f"effect family {src_dir} missing bases {missing}")
+        if sorted(fam.get("copied_bases") or ()) != sorted(names):
+            raise KitError(f"effect family {src_dir} copied {fam.get('copied_bases')} != {names}")
+        families[subdir] = fam
+    surgery = cut_clarisse_tail(ctx, families["burst"])
+    return {"lut": str(lut) if lut is not None else None,
+            "recolored": sorted(transforms),
+            "families": {k: {"src_dir": v["src_dir"], "dst_dir": v["dst_dir"],
+                             "copied_bases": v["copied_bases"],
+                             "files": [f["target"] for f in v["files"]]}
+                         for k, v in families.items()},
+            "clarisse_tail": surgery}, families
+
+
+def _pkg_amf(ctx, root: str, logical: str):
+    return ctx.amf_parse(ctx.pack.pkg_path(root, logical).read_bytes())
+
+
+def cut_clarisse_tail(ctx, family) -> dict[str, Any]:
+    """只留克拉莉丝的末端圆形爆炸（调研卡 C §2.2 落法 A：改 3 个数字，零结构手术）。
+
+    ``clone_effect_family`` 只有 ``png_transform`` 钩子、没有 parts 钩子 ⇒ 手术必须在 clone
+    之后重新施加，否则每次 ``--step kit`` 都会被官方母本冲掉（09-16 特克托激光的教训）。
+    母本任何一处漂移都直接拒绝。
+    """
+    dst = family["dst_dir"]
+    root = family["files"][0]["root"]
+    parts_logical = f"{dst}/clarisse.parts.amf3.deflate"
+    timeline_logical = f"{dst}/clarisse.timeline.amf3.deflate"
+    parts = _pkg_amf(ctx, root, parts_logical)
+    timeline = _pkg_amf(ctx, root, timeline_logical)
+
+    g0 = parts["g"][0]
+    keyframe = g0["s"][0]["l"][0]
+    if int(keyframe["r"]) != CLARISSE_ROOT_R or int(keyframe["t"]) != CLARISSE_TOTAL:
+        raise KitError(f"clarisse root keyframe drift: r={keyframe['r']} t={keyframe['t']}")
+    if int(g0["t"]) != CLARISSE_TOTAL or len(g0["s"]) != 1:
+        raise KitError(f"clarisse root group drift: t={g0['t']} segments={len(g0['s'])}")
+    seq = timeline["sequences"]
+    if len(seq) != 1 or seq[0]["begin"] != 1 or int(seq[0]["end"]) != CLARISSE_TOTAL:
+        raise KitError(f"clarisse timeline drift: {seq}")
+
+    keyframe["r"] = float(CLARISSE_NEW_R)      # kind=1（播一次），起始帧 78
+    keyframe["t"] = CLARISSE_NEW_T
+    g0["t"] = CLARISSE_NEW_T
+    seq[0]["end"] = CLARISSE_NEW_T             # begin 保持 1
+
+    for logical, tree in ((parts_logical, parts), (timeline_logical, timeline)):
+        data = ctx.amf_bytes(tree)
+        ctx.write_asset(root, logical, data)
+        if _pkg_amf(ctx, root, logical) != tree:
+            raise KitError(f"{logical} readback differs from the written tree")
+    return {"start_frame": CLARISSE_CUT, "frames": CLARISSE_NEW_T,
+            "r": CLARISSE_NEW_R, "files": [parts_logical, timeline_logical]}
+
+
+# ---------------------------------------------------------------- DSL 工具
 
 def _commands(tree, name: str | None = None) -> list[list]:
     return list(wf_dsl.iter_dsl_commands(tree, name) if name
@@ -476,101 +769,67 @@ def _declared_ids(tree) -> list[int]:
     return ids
 
 
-def _remap_ints(node, mapping: dict[int, int]) -> int:
-    hits = 0
-    if isinstance(node, list):
-        for i, value in enumerate(node):
-            if isinstance(value, bool):
-                continue
-            if isinstance(value, int) and value in mapping:
-                node[i] = mapping[value]
-                hits += 1
-            else:
-                hits += _remap_ints(value, mapping)
-    elif isinstance(node, dict):
-        for value in node.values():
-            hits += _remap_ints(value, mapping)
-    return hits
+def _only(items: list, what: str) -> Any:
+    if len(items) != 1:
+        raise KitError(f"expected exactly 1 {what}, got {len(items)}")
+    return items[0]
 
 
-def _ride_event(ctx, level: str) -> list:
-    """从情娅 vt22 的树里摘出「Wait 90 → 球上 Circle30 / 寿命 900」那个 Event 块。
+def _slv(value: float) -> list[dict[str, float]]:
+    return [{"min": value, "max": value}]
 
-    只保留其中的 CreateHitArea（丢掉同块里的 ConditionalsChangeSkillFlag → 直击分支：
-    直击不是本角色的轴）。
+
+def _rewrite(ctx, tree, families) -> Any:
+    for fam in families.values():
+        tree, _info = ctx.rewrite_effect_refs(tree, fam)
+    return tree
+
+
+# ---------------------------------------------------------------- 主技能：魏虎式光圈
+
+def aura_block(ctx, level: str) -> tuple[list[list], dict[str, Any]]:
+    """从魏虎 111105 的技能树里摘出「球上光圈 + 长寿命碰撞判定」整块（调研卡 C §2.3）。
+
+    官方原块里的 ``ACToleranceOfElement``（火耐性↓）丢掉——目标面板没有这一条；
+    命中特效换引擎内置 ``Fine`` ⇒ 只需克隆 ``_aura`` 一个基名。
     """
-    donor = ctx.template_dsl(RIDE_DONOR % level)
-    block = None
-    for node in donor[11][1]:
-        if not (isinstance(node, list) and node and node[0] == "Event"):
-            continue
-        if any(c[2] == -18 and c[13] == ["SpecifyHitAreaLifetimeDirectly", 900]
-               for c in _commands(node, "CreateHitArea")):
-            block = copy.deepcopy(node)
-            break
-    if block is None:
-        raise KitError(f"vt22 level {level}: riding Event block not found")
+    donor = ctx.template_dsl(AURA_DONOR)
+    show = _only([c for c in _commands(donor, "ShowEffect")
+                  if str(c[2][1]).endswith("_aura")], "anger_investigator aura ShowEffect")
+    area = _only([c for c in _commands(donor, "CreateHitArea") if c[2] == -18],
+                 "anger_investigator ball hit area")
+    if show[3] != -18 or show[6] != ["AB"] or area[3] != ["AB"]:
+        raise KitError(f"anger_investigator aura donor drift: subject={show[3]} coord={show[6]}/{area[3]}")
+    if (area[19], area[21], area[22]) != (0, 1, 2) or area[24] != 0:
+        raise KitError(f"anger_investigator hit-area binds drift: {area[19:25]}")
 
-    waits = _find_waits(block)
-    if len(waits) < 1:
-        raise KitError("riding block has no Wait node")
-    wait = waits[0]
-    if wait[1] != 90:
-        raise KitError(f"riding block Wait frame {wait[1]} != 90")
-    bodies = [x for x in wait if isinstance(x, list) and x and x[0] == "Block"]
-    if len(bodies) != 1:
-        raise KitError(f"unexpected Wait body shape ({len(bodies)} blocks)")
-    keep = [c for c in bodies[0][1]
-            if isinstance(c, list) and c[0] == "Command" and c[1][0] == "CreateHitArea"]
-    if len(keep) != 1:
-        raise KitError(f"expected exactly 1 CreateHitArea in the riding block, got {len(keep)}")
-    bodies[0][1][:] = keep
-    return block
+    show, area = copy.deepcopy(show), copy.deepcopy(area)
+    scale, radius, mult = AURA_TUNING[level]
+    show[1] = "aura_ring"
+    show[5] = ["SpecifyEffectLifetimeDirectly", AURA_FRAMES]
+    show[12] = ["Some", _slv(scale)]
 
-
-def _find_waits(node, out: list | None = None) -> list:
-    out = [] if out is None else out
-    if isinstance(node, list):
-        if node and node[0] == "Wait":
-            out.append(node)
-            return out
-        for item in node:
-            _find_waits(item, out)
-    return out
+    area[9] = ["Circle", _slv(radius)]
+    area[13] = ["SpecifyHitAreaLifetimeDirectly", AURA_FRAMES]
+    area[19], area[21], area[22] = AURA_BINDS
+    body = area[23][1]
+    keep = [n for n in body
+            if not (n[0] == "Command" and n[1][0] == "CreateCondition")]
+    if len(keep) != len(body) - 1:
+        raise KitError(f"aura on-hit block shape drift ({len(body)} → {len(keep)})")
+    area[23][1][:] = keep
+    cna = _only(_commands(area, "CreateNormalAttack"), "aura CreateNormalAttack")
+    cna[1] = AURA_BINDS[2]
+    cna[6] = _slv(mult)
+    cna[15] = ["Fine"]
+    if area[24] != 0:
+        raise KitError("aura hit area p24 must stay 0")
+    return ([["Command", show], ["Command", area]],
+            {"scale": scale, "radius": radius, "multiplier": mult,
+             "lifetime": AURA_FRAMES, "binds": list(AURA_BINDS)})
 
 
-def _tune_ride(hitarea: list, level: str) -> dict[str, Any]:
-    if (hitarea[19], hitarea[21], hitarea[22]) != (7, 8, 9):
-        raise KitError(f"riding hit-area ids {hitarea[19:23]} differ from the vt22 donor")
-    hits = _remap_ints(hitarea, RIDE_ID_REMAP)
-    if hits != RIDE_REMAP_HITS:
-        raise KitError(f"riding id remap touched {hits} ints, expected {RIDE_REMAP_HITS}")
-    if (hitarea[19], hitarea[21], hitarea[22]) != (6, 7, 8):
-        raise KitError(f"riding hit-area ids after remap: {hitarea[19:23]}")
-
-    low, high = RIDE_MULT[level]
-    attacks = _commands(hitarea, "CreateNormalAttack")
-    if len(attacks) != 2:
-        raise KitError(f"riding block should carry 2 CreateNormalAttack, got {len(attacks)}")
-    for cna in attacks:
-        cna[6][0]["min"], cna[6][0]["max"] = low, high
-        if isinstance(cna[15], list) and cna[15] and cna[15][0] == "SpecifyHitEffectDirectly":
-            cna[15] = ["Fine"]          # 引擎内置命中特效 ⇒ 不引用情娅族，图集零增量
-
-    effects = _commands(hitarea, "ShowEffect")
-    if len(effects) != 2:
-        raise KitError(f"riding block should carry 2 ShowEffect, got {len(effects)}")
-    for show in effects:
-        on_create = show[5][:1] == ["SpecifyEffectLifetimeDirectly"]
-        show[1] = "ride_aura" if on_create else "ride_hit"
-        show[2] = ["SpecifyEffectDirectly", FLAME]
-        show[5] = ["PlayOnlyFirstSequence"]
-        show[6] = ["AB"]                # 球上不用朝向坐标
-    return {"multiplier": [low, high], "hit_area_ids": [6, 7, 8],
-            "effects": [show[1] for show in effects]}
-
-
-def build_main_tree(ctx, level: str) -> tuple[Any, dict[str, Any]]:
+def build_main_tree(ctx, level: str, families) -> tuple[Any, dict[str, Any]]:
     template_program = ctx.program_path(level).replace(CODE, TEMPLATE_CODE)
     tree = copy.deepcopy(ctx.template_dsl(template_program))
     before = _declared_ids(tree)
@@ -579,30 +838,35 @@ def build_main_tree(ctx, level: str) -> tuple[Any, dict[str, Any]]:
     if tree[10] != 0:
         raise KitError(f"template root buffTargetAs {tree[10]} != 0 (skill-damage attribution)")
 
-    ride = _ride_event(ctx, level)
-    hitarea = _commands(ride, "CreateHitArea")[0]
-    ride_info = _tune_ride(hitarea, level)
-
+    block, meta = aura_block(ctx, level)
     root = tree[11]
     positions = [i for i, node in enumerate(root[1])
                  if isinstance(node, list) and node[0] == "Command"
                  and node[1][0] == "CreateReferencePoint"]
     if len(positions) != 1:
         raise KitError(f"template root has {len(positions)} CreateReferencePoint commands")
-    root[1].insert(positions[0] + 1, ride)
+    root[1][positions[0] + 1:positions[0] + 1] = block
 
     ids = _declared_ids(tree)
-    if len(ids) != len(set(ids)) or sorted(ids) != list(range(9)):
-        raise KitError(f"merged tree binding ids not unique/contiguous: {sorted(ids)}")
-    sword = [c for c in _commands(tree, "CreateNormalAttack") if c[6][0].get("max", 0) > 1]
+    if len(ids) != len(set(ids)):
+        raise KitError(f"merged tree binding ids not unique: {sorted(ids)}")
+    if set(AURA_BINDS) - set(ids):
+        raise KitError(f"aura binds lost during the merge: {sorted(ids)}")
+    sword = [c for c in _commands(tree, "CreateNormalAttack") if c[6][0].get("max", 0) > 10]
     if len(sword) != 1:
         raise KitError(f"expected exactly 1 main-slash CreateNormalAttack, got {len(sword)}")
-    return tree, {"level": level, "ride": ride_info, "slash": dict(sword[0][6][0]),
-                  "root_commands": [n[1][0] if n[0] == "Command" else n[0] for n in root[1]]}
+    tree = _rewrite(ctx, tree, families)
+    if AURA not in _effect_paths(tree):
+        raise KitError("main tree lost the cloned aura reference after rewrite_effect_refs")
+    return tree, {"level": level, "aura": meta, "slash": dict(sword[0][6][0]),
+                  "root_commands": [n[1][0] if n[0] == "Command" else n[1][0]
+                                    for n in tree[11][1]]}
 
 
-def build_chase_tree(ctx) -> tuple[Any, dict[str, Any]]:
-    """追击「氮气爆燃」：官方火龙 ability_skill 原树，只换特效路径与倍率。
+# ---------------------------------------------------------------- 629 追击「引擎之炎」
+
+def build_chase_tree(ctx, families) -> tuple[Any, dict[str, Any]]:
+    """官方火龙 ability_skill 原树：球身光环留母本 ``_flame``，命中点爆炸换裁段后的克拉莉丝。
 
     根头 ``tree[10]=0`` 保持不动：629 以 AbilitySkill 执行 ⇒ 自动按**技能伤害**结算
     （记忆卡 wf-dsl-damage-attribution-bufftargetas）。写 2 会被掰成能力伤害，那是卖点的反面。
@@ -617,29 +881,157 @@ def build_chase_tree(ctx) -> tuple[Any, dict[str, Any]]:
     for show in effects:
         aura = str(show[2][1]).endswith("_player")
         show[1] = "ignite_aura" if aura else "ignite_burst"
-        show[2] = ["SpecifyEffectDirectly", FLAME]
         if aura:
             if show[5] != ["SpecifyEffectLifetimeDirectly", 100]:
                 raise KitError(f"chase aura lifetime {show[5]} differs from the donor")
-            show[5] = ["PlayOnlyFirstSequence"]      # 母本 _flame 是 once/70 帧
+            show[2] = ["SpecifyEffectDirectly", FLAME]     # 母本件，直接引用官方路径
+            show[5] = ["PlayOnlyFirstSequence"]            # _flame 是 once/70 帧
         else:
             if show[5] != ["SpecifyEffectLifetimeDirectly", 30]:
                 raise KitError(f"chase burst lifetime {show[5]} differs from the donor")
-            show[12] = ["Some", [{"min": CHASE_BURST_SCALE, "max": CHASE_BURST_SCALE}]]
+            show[2] = ["SpecifyEffectDirectly", CLARISSE]
+            show[5] = ["SpecifyEffectLifetimeDirectly", CLARISSE_NEW_T]
+            show[12] = ["Some", _slv(BURST_SCALE)]
+        if show[6] not in (["AB"], ["GH"]):
+            raise KitError(f"chase ShowEffect coord system {show[6]} must stay AB/GH")
         names.append(show[1])
     if sorted(names) != ["ignite_aura", "ignite_burst"]:
         raise KitError(f"chase effect names unexpected: {names}")
     for hide in _commands(tree, "HideEffect"):
         hide[1] = "ignite_aura"
-    attacks = _commands(tree, "CreateNormalAttack")
-    if len(attacks) != 1:
-        raise KitError(f"chase donor should carry 1 CreateNormalAttack, got {len(attacks)}")
-    attacks[0][6][0]["min"] = attacks[0][6][0]["max"] = CHASE_MULT
+    cna = _only(_commands(tree, "CreateNormalAttack"), "chase CreateNormalAttack")
+    cna[6] = _slv(CHASE_MULT)
     areas = _commands(tree, "CreateHitArea")
     if len(areas) != 2:
         raise KitError(f"chase donor should carry 2 CreateHitArea, got {len(areas)}")
-    return tree, {"multiplier": CHASE_MULT, "burst_scale": CHASE_BURST_SCALE,
-                  "hit_areas": [[a[9], a[13], a[14]] for a in areas]}
+    burst = _only([a for a in areas if a[9][1][0]["max"] == 250], "chase burst hit area")
+    burst[9] = ["Circle", _slv(BURST_RADIUS)]
+    if burst[14][0] != "CalculatedUsingMaxNumOfHits":
+        raise KitError(f"chase burst hit accounting drift: {burst[14]}")
+    burst[14] = ["CalculatedUsingMaxNumOfHits", BURST_MAX_HITS]
+    tree = _rewrite(ctx, tree, families)
+    return tree, {"multiplier": CHASE_MULT, "burst_scale": BURST_SCALE,
+                  "burst_radius": BURST_RADIUS, "burst_max_hits": BURST_MAX_HITS,
+                  "hit_areas": [[a[9], a[13], a[14]] for a in _commands(tree, "CreateHitArea")]}
+
+
+# ---------------------------------------------------------------- 722 特殊强化弹射
+
+def _cmd(*values) -> list:
+    return ["Command", list(values)]
+
+
+def _block(*values) -> list:
+    return ["Block", list(values)]
+
+
+def build_pf_tree(ctx, level: int, families) -> tuple[Any, dict[str, Any]]:
+    """官方 ``special_lv{n}`` 整树作底座（sha 锁定）+ 赛达三档 + 追踪 boss + 克拉莉丝爆炸。"""
+    program = SPECIAL_PROGRAMS[level]
+    raw = ctx.official_read(wf_dsl.dsl_logical(program))
+    if raw is None:
+        raise KitError(f"official baseline lacks the special PF base {program}")
+    if _sha256(raw) != SPECIAL_SHA[level]:
+        raise KitError(f"special lv{level} base drift: {_sha256(raw)}")
+    tree = copy.deepcopy(ctx.template_dsl(program))
+    if tree[0] != "ActionDsl" or tree[1] != 1 or tree[10] != 0:
+        raise KitError(f"special lv{level} head drift: {tree[:2]} bta={tree[10]}")
+    suppress = _only(_commands(tree, "SetPowerFilpSuppress")[:1], "SetPowerFilpSuppress")
+    if suppress[1] != PF_SUPPRESS:
+        raise KitError(f"special lv{level} suppress {suppress[1]} != {PF_SUPPRESS}")
+    if not _commands(tree, "NotifyPowerflipEnd"):
+        raise KitError(f"special lv{level} lost NotifyPowerflipEnd (PF 会卡死)")
+
+    root_body = tree[11][1]
+    aura_at = [n for n, e in enumerate(root_body)
+               if e[0] == "Command" and e[1][0] == "ShowEffect" and e[1][1] == "オーラ演出"]
+    if len(aura_at) != 1:
+        raise KitError(f"special lv{level} オーラ演出 not unique ({len(aura_at)})")
+    aura = root_body[aura_at[0]][1]
+    aura[2] = ["SpecifyEffectDirectly", ZETA_LANCE]
+    aura[12] = ["Some", _slv(PF_LANCE_SCALE[level])]
+    if aura[6] != ["AB"] or aura[3] != -18:
+        raise KitError(f"special lv{level} aura subject/coord drift: {aura[3]} {aura[6]}")
+
+    extras = []
+    for offset, (name, path) in enumerate(PF_EXTRA_FX[level], start=1):
+        extra = copy.deepcopy(aura)
+        extra[1] = name
+        extra[2] = ["SpecifyEffectDirectly", path]
+        root_body.insert(aura_at[0] + offset, ["Command", extra])
+        extras.append(name)
+
+    # 命中爆炸：克拉莉丝末端 + 判定圆放大
+    bursts = [c for c in _commands(tree, "ShowEffect") if c[1] == "特殊演出"]
+    if not bursts:
+        raise KitError(f"special lv{level} lost the 特殊演出 burst ShowEffect")
+    for show in bursts:
+        show[2] = ["SpecifyEffectDirectly", CLARISSE]
+        show[5] = ["SpecifyEffectLifetimeDirectly", CLARISSE_NEW_T]
+        show[12] = ["Some", _slv(BURST_SCALE)]
+        if show[6] != ["AB"]:
+            raise KitError(f"special lv{level} burst coord {show[6]} must stay AB")
+    radii = []
+    for area in _commands(tree, "CreateHitArea"):
+        if area[24] != 0:
+            raise KitError("PF CreateHitArea p24 must stay 0 (4 = 按直击算，整块 PF 乘区被跳过)")
+        if area[9][0] != "Circle":
+            raise KitError(f"unexpected PF hit-area shape {area[9][0]}")
+        radii.append(area[9][1][0]["max"])
+        area[9] = ["Circle", _slv(BURST_RADIUS)]
+
+    scaled = []
+    for cna in _commands(tree, "CreateNormalAttack"):
+        mult = cna[6]
+        if len(mult) != 1 or mult[0]["min"] != mult[0]["max"]:
+            raise KitError(f"special lv{level} CNA multiplier shape drift: {mult}")
+        value = round(mult[0]["min"] * PF_SCALE, 6)
+        cna[6] = _slv(value)
+        scaled.append(value)
+    if not scaled:
+        raise KitError(f"special lv{level} carries no CreateNormalAttack")
+
+    # 追踪 boss：Repeat 每 4 帧重新瞄一次；撞到就掐掉（否则球贴着敌人抖）
+    collisions = [n for n in root_body
+                  if n[0] == "Event" and n[1][0] == "CollisionOfBallAndEnemy"]
+    collision = _only(collisions, "root CollisionOfBallAndEnemy")
+    collision[1][5][1].insert(0, _cmd("RemoveEvent", CHASE_TAG))
+    for name in extras:
+        collision[1][5][1].insert(1, _cmd("HideEffect", name))
+    steer = _cmd("FindNearSubjects", -18, 1, CHASE_SELECTOR, ["DoNothing"], CHASE_BIND,
+                 _block(_cmd("MoveBall", -18, ["GH", CHASE_BIND], 0,
+                             CHASE_STEP, CHASE_SPEED, ["KeepGoing"], False)))
+    repeats = (PF_SUPPRESS - 2) // CHASE_STEP
+    root_body.append(["Event", ["Repeat", CHASE_STEP, repeats, CHASE_TAG, _block(steer)]])
+
+    ids = _declared_ids(tree)
+    if len(ids) != len(set(ids)):
+        raise KitError(f"PF lv{level} binding ids not unique: {sorted(ids)}")
+    if CHASE_BIND in ids:
+        raise KitError(f"PF lv{level} chase bind {CHASE_BIND} collides with a declared id")
+    tree = _rewrite(ctx, tree, families)
+    return tree, {"level": level, "multipliers": scaled, "total": round(sum(scaled), 6),
+                  "lance_scale": PF_LANCE_SCALE[level], "extra_effects": extras,
+                  "donor_radii": radii, "burst_radius": BURST_RADIUS,
+                  "chase": {"selector": CHASE_SELECTOR, "step": CHASE_STEP,
+                            "speed": CHASE_SPEED, "repeats": repeats, "bind": CHASE_BIND}}
+
+
+# ---------------------------------------------------------------- DSL 闸门与落盘
+
+def _effect_paths(tree) -> set[str]:
+    return {v for v in (x for x in _walk_strings(tree)) if v.startswith("battle/effect/")}
+
+
+def _walk_strings(node):
+    if isinstance(node, str):
+        yield node
+    elif isinstance(node, list):
+        for child in node:
+            yield from _walk_strings(child)
+    elif isinstance(node, dict):
+        for child in node.values():
+            yield from _walk_strings(child)
 
 
 def _dsl_problems(tree) -> None:
@@ -649,81 +1041,111 @@ def _dsl_problems(tree) -> None:
 
 
 def _effect_ref_problems(ctx, tree) -> list[str]:
-    """DSL 引用的特效路径必须在官方归档里真的存在（引用官方路径，不复制）。"""
+    """DSL 引用的特效必须真的存在：官方归档里有（直接引用），或包里有（本轮克隆）。"""
     missing = []
-    for value in ctx.walk(tree):
-        if not isinstance(value, str) or not value.startswith("battle/effect/"):
+    for value in sorted(_effect_paths(tree)):
+        if any(ctx.official_read(f"{value}.{kind}.amf3.deflate") is not None
+               for kind in ("parts", "timeline")):
             continue
-        if not any(ctx.official_read(f"{value}.{kind}.amf3.deflate") is not None
-                   for kind in ("parts", "timeline")):
-            missing.append(value)
-    return sorted(set(missing))
+        if any(ctx.pack.pkg_path("common", f"{value}.{kind}.amf3.deflate").is_file()
+               for kind in ("parts", "timeline")):
+            continue
+        missing.append(value)
+    return missing
 
 
-def write_skills(ctx) -> dict[str, Any]:
+def _write_tree(ctx, program: str, tree) -> str:
+    _dsl_problems(tree)
+    refs = _effect_ref_problems(ctx, tree)
+    if refs:
+        raise KitError(f"{program} references effects absent from baseline and package: {refs}")
+    logical = ctx.write_dsl(program, tree)
+    if ctx.amf_parse(ctx.pack.pkg_path("common", logical).read_bytes()) != tree:
+        raise KitError(f"{program} readback differs from the written tree")
+    return logical
+
+
+def write_skills(ctx, families) -> dict[str, Any]:
     info: dict[str, Any] = {}
     programs = []
     for level in ("1", "2"):
-        tree, meta = build_main_tree(ctx, level)
-        _dsl_problems(tree)
-        refs = _effect_ref_problems(ctx, tree)
-        if refs:
-            raise KitError(f"skill {level} references effects absent from the official baseline: {refs}")
-        logical = ctx.write_dsl(ctx.program_path(level), tree)
-        back = ctx.amf_parse(ctx.pack.pkg_path("common", logical).read_bytes())
-        if back != tree:
-            raise KitError(f"skill {level} readback differs from the written tree")
+        tree, meta = build_main_tree(ctx, level, families)
+        logical = _write_tree(ctx, ctx.program_path(level), tree)
         meta["logical"] = logical
         meta["sha256"] = _sha256(ctx.pack.pkg_path("common", logical).read_bytes())
         info[level] = meta
         programs.append(ctx.program_path(level))
 
-    tree, meta = build_chase_tree(ctx)
-    _dsl_problems(tree)
-    refs = _effect_ref_problems(ctx, tree)
-    if refs:
-        raise KitError(f"chase references effects absent from the official baseline: {refs}")
-    logical = ctx.write_dsl(CHASE_PROGRAM, tree)
-    if ctx.amf_parse(ctx.pack.pkg_path("common", logical).read_bytes()) != tree:
-        raise KitError("chase readback differs from the written tree")
+    tree, meta = build_chase_tree(ctx, families)
+    logical = _write_tree(ctx, CHASE_PROGRAM, tree)
     meta["logical"] = logical
     meta["sha256"] = _sha256(ctx.pack.pkg_path("common", logical).read_bytes())
     info["ignite"] = meta
     programs.append(CHASE_PROGRAM)
-    return {"skills": info, "programs": programs}
+
+    pf: dict[str, Any] = {}
+    for level in (1, 2, 3):
+        tree, meta = build_pf_tree(ctx, level, families)
+        program = PF_PROGRAMS[level - 1]
+        logical = _write_tree(ctx, program, tree)
+        meta["logical"] = logical
+        meta["sha256"] = _sha256(ctx.pack.pkg_path("common", logical).read_bytes())
+        pf[str(level)] = meta
+        programs.append(program)
+    ctx.write_flat(PFA, {PF_KEY: [list(PF_PROGRAMS)]})
+    return {"skills": info, "power_flip": pf, "programs": programs}
 
 
 # ---------------------------------------------------------------- 入口
 
-SUMMARY = "玛格诺斯：火 · 用强化弹射打技能伤害（引擎点火 → 629 追击「氮气爆燃」+ 骑行碰撞）"
+SUMMARY = ("玛格诺斯 rework1：火 · 特殊强化弹射主C"
+           "（722 三档追踪 PF → 629「引擎之炎」→ 引擎点火按层堆技能伤害）")
 
 NOTES = [
-    "特效全部直接引用官方 battle/effect/skill_unique/lion_swordman_playable/*（不克隆、图集零增量，裁决 §4）",
-    "槽 3 整键 c1=false（主位限制，与母本 111129 槽 3 同形）：合击副位不显示这四条",
-    "629 追击与主技能骑行段都按技能伤害结算（根头 buffTargetAs=0），吃 694 独立乘区",
-    "「引擎点火」固有 1200 帧 / 上限 5 层：能力 3 每次施放 +3 层，队长技 L4 再 +2 层",
-    "球上的两处光环（骑行 ride_aura、追击 ignite_aura）都保持 donor 的缩放（≈1）："
-    "母本 _flame 在主技能地裂处是 scale 3 配 Circle150，球半径只有 30 ⇒ 不放大；金丝雀 C5 真机再调",
-    "像素交付件（sprite_sheet / special_sprite_sheet）若是标准 PNG，装包时由 kitlib 换成 WF 存储态魔数"
-    "（\\x89png）；不换会在 manifest 门禁报 WF storage signature required",
+    "722 带火共鸣门（官方 141201#1 先例）：非共鸣队伍或他不当队长时是原生剑士 PF，面板已写明",
+    "422 冲刺两行在词条槽 5（前置 42 队长），队长表写 422 = 角色页 C7050；文案挪到队长技 desc_override",
+    "Swift 抵消 +245% 只对非飞行形态精确（飞行基数 60 而非 90）⇒ 面板不写「完全无法获得」",
+    "629 触发改成 180（PF 命中敌人）并带 CT 0.6 秒：空挥不触发，多敌时靠 CT 限流；629 排在 525 之前",
+    "「引擎点火」固有 99999999 帧 / 99 层：能力 3 每次火属性技能 +3 层，队长技每 5 次 PF 再 +2 层",
+    "引擎点火的「≥5 层」用 during 134 + limit 1 的平坦门槛（前置 188 数实例恒为 1，写 ≥5 永不成立）",
+    "三族特效克隆到 skill_unique/lion_swordman_moon/{lance,burst,aura}/，预算 0.44% → 约 2.19%",
+    "克拉莉丝只播末端 79 帧（parts 根层 r=(1<<30)|78），手术在 clone 之后施加并带母本漂移断言",
+    "像素交付件（sprite_sheet / special_sprite_sheet）若是标准 PNG，装包时由 kitlib 换成 WF 存储态魔数",
 ]
 
 DEVIATIONS = [
-    {"want": "设计稿 effects_clone：把母本三个特效基名克隆到 skill_unique/lion_swordman_moon/（约 1.02% 图集）",
-     "got": "不克隆，三处全部直接引用官方 lion_swordman_playable 族路径",
-     "why": "裁决 §4 / 框架 §10.3：只引用不改色的官方特效直接引用官方路径；B/pixel/magnus/fx_lut.json "
-            "不存在 ⇒ 本轮不改色。另：clone_effect_family 保留 donor 基名并落在 <code>/<子目录>/ 下，"
-            "设计稿 A1「基名改成 lion_swordman_moon_*」在框架里做不到。设计稿已同步（偏离 D12）。"},
-    {"want": "设计稿 skills.energy.level1 = c4 550 / c5 560",
-     "got": "c4 560 / c5 560（二档仍 560/510）",
-     "why": "官方 492 个双档 action_skill 的 c4 在两档之间 100% 相同，且 c5 从不高于 c4；原值让一档比母本"
-            "还贵、二档反而便宜。设计稿已同步（偏离 D13）。"},
-    {"want": "追击光环用 loop 型光环（情娅 _player / 火龙 _player 的 900 与 100 帧寿命）",
-     "got": "母本 _flame 的 PlayOnlyFirstSequence（一次性 70 帧），开窗与每次命中各烧一下",
-     "why": "母本 _flame 是 once/70 帧序列，把它按 900/100 帧强行拉长属于未验行为；改用官方已有的寿命写法。"},
+    {"want": "队长技面板第 2/3 行「冲刺强化 + CD−30%」「冲刺间隔缩短不再叠加」写在队长表",
+     "got": "422 行落在词条槽 5（前置 42 Leader），文案由 desc_override 挪到队长技面板",
+     "why": "422 写进队长表 = 角色详情页 C7050（LeaderAbilityValues.parseAt107 没打补丁）；"
+            "同澄波响 _deviations 的裁决。"},
+    {"want": "「无法获得冲刺间隔缩短效果」",
+     "got": "「冲刺间隔缩短效果不会让自身的冲刺冷却时间进一步缩短」+ 422 param0 数值抵消 +245%",
+     "why": "引擎没有「拒绝某一个具体增益」的 kind（ACBuffRejection 是拒绝全部）；"
+            "Swift 把 CD 基数 90 换成 20，补回 3.5×(1+s0) 即等价。"},
+    {"want": "「技能倍率随强化弹射次数提升」",
+     "got": "词条「火共鸣时，每发动 3 次强化弹射，自身技能伤害 +25%」（无上限叠加）",
+     "why": "DSL 没有表达式求值，倍率槽是静态两端值；_deviations.magnus[2] 原样。"},
+    {"want": "「引擎点火在 5 以上时强化所有技能伤害倍率（翻倍）」",
+     "got": "during 134 阈值 5 层 + limit 1 的平坦门槛 → 自身独立乘区技能伤害 +100%",
+     "why": "前置 188 / during 194 数的是实例个数（461 叠层恒为 1），「≥5 层」永不成立。"},
+    {"want": "面板里的「塞达式技能特效」「克拉莉丝式圆形爆炸（范围较原版增大）」",
+     "got": "改写成玩家可读的描述（「火焰突进随发动次数分三档逐渐增强」「造成技能伤害」），机制不变",
+     "why": "面板是给玩家看的，不能出现其它官方角色的内部代号；已回写 panel/magnus.json 并标 dev:true。"},
+    {"want": "面板 skill 第 4 行（特殊强化弹射说明）单独成行",
+     "got": "落成 action_skill 描述的第 4 段；722 行自带 override_string_…_pf 说明串",
+     "why": "队长技面板被 desc_override 整段接管后，722 行自己的说明串不会显示。"},
+    {"want": "能力 1 第 1 行、能力 6 第 1 行保留 donor 的「火·MySelf」前置",
+     "got": "去掉该前置（c6=0）",
+     "why": "对火属性的玛格诺斯恒真，属裁决 §3 禁止的恒真条件文案；行为完全一致。"},
+    {"want": "设计稿先行、kit 与设计稿双向对账",
+     "got": "design/magnus.json 的 plan_rework1 由 kit 常量生成，对账退化为漂移探测",
+     "why": "额度约束下不重复手写同一份 23 行；仍能抓住事后单边改动，抓不到首次录入的共同错误。"},
+    {"want": "魏虎光圈块自带的 ACToleranceOfElement（火耐性↓）与 _shot 命中特效",
+     "got": "丢掉耐性行；命中特效换引擎内置 Fine",
+     "why": "目标面板没有耐性这一条；命中特效用内置件后特效族只需克隆 _aura 一个基名。"},
     {"want": "像素件（小人 sprite_sheet 等）随 kit 一起装包",
      "got": "B/pixel/magnus/install.json 不存在时自动跳过，包内保持母本像素件",
-     "why": "像素/立绘/语音不归本代理；像素代理交付后重跑 kit 即可装入（install_staged_assets 的静默跳过口）。"},
+     "why": "像素/立绘/语音不归本代理；像素代理交付后重跑 kit 即可装入。"},
 ]
 
 
@@ -752,7 +1174,8 @@ def build(ctx) -> dict[str, Any]:
     strings = write_strings(ctx)
 
     action = write_action_skill(ctx)
-    skills = write_skills(ctx)
+    fx_report, families = clone_effects(ctx)
+    skills = write_skills(ctx, families)
     voice_ready = KL.write_voice_ready(ctx)
     pixel = KL.install_staged_assets(ctx)
     mirrors = ctx.sync_character_mirrors()
@@ -762,7 +1185,8 @@ def build(ctx) -> dict[str, Any]:
         "leader": rows["leader"], "ability": rows["ability"],
         "unique_condition": {unique_key: unique_row},
         "custom_ability_string": strings, "action_skill": action,
-        "voice_route": voice_cols, "evidence": rows["evidence"],
+        "power_flip_action": {PF_KEY: list(PF_PROGRAMS)},
+        "voice_route": voice_cols, "evidence": rows["evidence"], "effects": fx_report,
     })
     return KL.report(
         ctx,
@@ -770,14 +1194,18 @@ def build(ctx) -> dict[str, Any]:
         status=KL.READY,
         panel=panel,
         notes=NOTES + [{"icon": icon, "pixel": pixel, "voice_ready": voice_ready,
-                        "mirrors": mirrors, "design_checked": bool(design)}],
+                        "mirrors": mirrors, "design_checked": bool(design),
+                        "effects": fx_report}],
         programs=skills["programs"],
         unique_condition={unique_key: {"name": UNIQUE_NAME, "icon": UC_ICON_LOGICAL,
                                        "duration_frames": int(unique_row[3]),
                                        "cap": int(unique_row[4])}},
-        required_capabilities=rows["capabilities"],
+        required_capabilities=sorted(set(rows["capabilities"])
+                                     | set(SPEC["required_capabilities"])),
         deviations=DEVIATIONS,
         extra={"skills_detail": {"trees": skills["skills"],
+                                 "power_flip": skills["power_flip"],
                                  "energy": {lv: list(ENERGY[lv]) for lv in ("1", "2")}},
+               "effects": fx_report,
                "voice_route": voice_cols},
     )
