@@ -154,7 +154,61 @@ class PlanSelfCheckTests(unittest.TestCase):
             for addr, _src, cells, _expect in rows:
                 if cells.get(71):
                     self.assertTrue(cells.get(70), f"{slot} {addr}: 629 行缺字符串键 c70")
-                    self.assertEqual(cells.get(35), "0", f"{slot} {addr}: 629 的 CT 不能留空")
+                    ct = cells.get(35)
+                    self.assertIsNotNone(ct, f"{slot} {addr}: 629 的 CT 不能留空")
+                    self.assertTrue(str(ct).isdigit(), f"{slot} {addr}: CT c35 {ct!r} 不是帧数")
+
+    def test_the_two_cooltimes_from_the_second_feedback_round(self):
+        """作者真机反馈轮 2：召唤天雷 CT 3 秒、贯通→技能槽 CT 10 秒（c35 单位帧）。"""
+        self.assertEqual((K.THUNDER_COOLTIME, K.PIERCE_GAUGE_COOLTIME), ("180", "600"))
+        self.assertEqual(int(K.THUNDER_COOLTIME) / 60, 3)
+        self.assertEqual(int(K.PIERCE_GAUGE_COOLTIME) / 60, 10)
+        thunder = [cells for _a, _s, cells, _e in K.PLAN[3]
+                   if cells.get(70) == K.CAS_THUNDER]
+        self.assertEqual(len(thunder), 1)
+        self.assertEqual(thunder[0].get(35), K.THUNDER_COOLTIME)
+        # 计划层只写非空格：触发 51（获得贯穿）继承自 donor 2110012#0，不在 cells 里，
+        # 所以这里按内容 kind 211 定位；触发位的核对留给装配后的 _cooltime_problems。
+        gauge = [cells for _a, _s, cells, _e in K.PLAN[3] if cells.get(47) == "211"]
+        self.assertEqual(len(gauge), 1)
+        self.assertEqual(gauge[0].get(35), K.PIERCE_GAUGE_COOLTIME)
+
+    def test_the_cooltime_guard_locates_rows_by_content_not_by_index(self):
+        """守卫必须按 kind/内容找行：记录号会被共享 donor 的插行打漂（1.4.974 实际发生过）。"""
+        def blank(kind: str, **cells) -> list[str]:
+            row = [""] * KL.ABILITY_NCOLS
+            row[47] = kind
+            for col, value in cells.items():
+                row[int(col)] = value
+            return row
+
+        thunder = blank("629", **{"27": "20", "35": K.THUNDER_COOLTIME, "70": K.CAS_THUNDER})
+        gauge = blank("211", **{"27": "51", "35": K.PIERCE_GAUGE_COOLTIME})
+        # 前面塞两条无关行：按记录号写死的断言会在这里失效，按内容定位的不受影响
+        noise = [blank("461", **{"27": "23"}), blank("32", **{"27": "51"})]
+        K._cooltime_problems(noise + [thunder, gauge])
+        for broken in ("0", "", "300"):
+            bad = copy.deepcopy(thunder)
+            bad[35] = broken
+            with self.assertRaises(KL.KitError):
+                K._cooltime_problems(noise + [bad, gauge])
+            bad = copy.deepcopy(gauge)
+            bad[35] = broken
+            with self.assertRaises(KL.KitError):
+                K._cooltime_problems(noise + [thunder, bad])
+        with self.assertRaises(KL.KitError):   # 锚点丢失（行被删）也要红
+            K._cooltime_problems(noise + [gauge])
+
+    def test_main_only_slots_are_one_two_and_three(self):
+        """作者真机反馈轮 2：「凯尔的能力1和2都带上主位限制」。"""
+        self.assertEqual(K.MAIN_ONLY_SLOTS, {1, 2, 3})
+        for slot in range(1, 7):
+            self.assertEqual(K._UNISONABLE[slot] == "false", slot in K.MAIN_ONLY_SLOTS, slot)
+        # 「切换技能形态」(536) 与技能强化条目在能力 1 ⇒ 这一槽必须是主位限制槽
+        switch = [slot for slot, rows in K.PLAN.items()
+                  if any(cells.get(70) == K.CAS_SWITCH for _a, _s, cells, _e in rows)]
+        self.assertEqual(switch, [1])
+        self.assertIn(1, K.MAIN_ONLY_SLOTS)
 
     def test_invoke_programs_live_under_the_ability_skill_namespace(self):
         for program in (K.PIERCE_PROGRAM, K.THUNDER_PROGRAM):
@@ -254,6 +308,45 @@ class PanelTextTests(unittest.TestCase):
             slot = int(entry["index"])
             self.assertEqual(K._UNISONABLE[slot] == "false", bool(entry["main_only"]),
                              f"ability {slot} 的主位限制与面板不符")
+
+    #: 作者反馈轮 2：「技能里面也不用描述怎么改的是我描述给你的」——这些是给主控的施工用语，
+    #: 不是玩家文案；只许出现在代码注释与 impl 文档里，一律不许进任何会上屏的字符串。
+    BUILD_NOTE_WORDS = ("千岳", "梅媞斯", "雷弓", "染色", "冷蓝白", "不做染色", "特效")
+
+    def test_skill_description_mirrors_the_panel_skill_lines(self):
+        """技能说明（action_skill desc 列）＝面板 skill.lines 按「／」拼接，逐字。"""
+        if not PANEL.is_file() or not DESIGN:
+            self.skipTest("panel or design missing")
+        panel = json.loads(PANEL.read_text(encoding="utf-8"))
+        want = "／".join(line["text"] for line in panel["skill"]["lines"])
+        self.assertEqual(DESIGN["texts"]["desc1"], want)
+        self.assertEqual(DESIGN["texts"]["desc2"], want)
+        self.assertEqual(len(panel["skill"]["lines"]), 2, "施工说明那一句已删，只剩两句")
+
+    def test_no_build_notes_leak_into_player_facing_text(self):
+        if not DESIGN:
+            self.skipTest("design/kyle.json missing")
+        surfaces = {f"design.texts.{name}": DESIGN["texts"][name]
+                    for name in ("title", "profile", "leader", "skill1", "desc1",
+                                 "skill2", "desc2")}
+        surfaces.update({f"cas.{key}": text for key, text in K.CAS_TEXTS.items()})
+        surfaces["panel.leader"] = K.PANEL_LEADER
+        surfaces.update({f"panel.ability{slot}": text
+                         for slot, text in K.PANEL_ABILITY.items()})
+        for label, text in surfaces.items():
+            for word in self.BUILD_NOTE_WORDS:
+                self.assertNotIn(word, text, f"{label} 残留施工用语 {word!r}")
+
+    def test_cooltime_wording_matches_the_panel(self):
+        if not PANEL.is_file():
+            self.skipTest("rework1/panel/kyle.json missing")
+        panel = json.loads(PANEL.read_text(encoding="utf-8"))
+        thunder = panel["skill"]["lines"][1]["text"]
+        self.assertIn(f"（冷却时间：{int(K.THUNDER_COOLTIME) // 60}秒）", thunder)
+        gauge = next(e for e in panel["abilities"] if e["index"] == 3)["lines"][1]["text"]
+        self.assertIn(f"（冷却时间：{int(K.PIERCE_GAUGE_COOLTIME) // 60}秒）", gauge)
+        self.assertIn(f"（冷却时间：{int(K.PIERCE_GAUGE_COOLTIME) // 60}秒）",
+                      K.PANEL_ABILITY[3])
 
     def test_skill_energy_matches_the_panel(self):
         if not PANEL.is_file() or not DESIGN:
@@ -463,6 +556,25 @@ class RowBuildTests(unittest.TestCase):
         self.assertEqual(row[49], K.ELEMENT_TOKEN)
         # 跨角色：全批统一 3 段，主 C 的合计伤害不低于辅助（罗尔夫 200%）
         self.assertGreaterEqual(int(row[51]), 200000)
+
+    def test_built_rows_carry_the_two_cooltimes(self):
+        """装配后的实际行（不是计划）：CT 必须落在 c35，且 describe 渲染出 CT 字样。"""
+        rows = self.built["ability"][f"{K.CID}3"]
+        thunder = [row for row in rows if row[47] == "629" and row[70] == K.CAS_THUNDER]
+        gauge = [row for row in rows if row[47] == "211" and row[27] == "51"]
+        self.assertEqual((len(thunder), len(gauge)), (1, 1))
+        self.assertEqual(thunder[0][35], K.THUNDER_COOLTIME)
+        self.assertEqual(gauge[0][35], K.PIERCE_GAUGE_COOLTIME)
+        rendered = {ev["label"]: ev["describe"] for ev in self.built["evidence"]}
+        self.assertIn("(CT3秒)", rendered[f"{K.CID}3#{rows.index(thunder[0])}"])
+        self.assertIn("(CT10秒)", rendered[f"{K.CID}3#{rows.index(gauge[0])}"])
+
+    def test_main_only_slots_write_false_on_every_record(self):
+        """c1 是整键语义：主位限制槽的每一条记录都必须是 false，非主位槽都必须是 true。"""
+        for slot in range(1, 7):
+            rows = self.built["ability"][f"{K.CID}{slot}"]
+            want = "false" if slot in K.MAIN_ONLY_SLOTS else "true"
+            self.assertEqual({row[1] for row in rows}, {want}, f"ability slot {slot}")
 
     def test_dash_parameters_match_the_panel(self):
         dash = {row[118]: int(row[113]) for row in self.built["ability"][f"{K.CID}5"]

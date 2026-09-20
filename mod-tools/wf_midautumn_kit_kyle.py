@@ -114,6 +114,13 @@ DASH_DONOR_KIND = "422"
 DASH_DONOR = f"{DASH_DONOR_KEY}#kind{DASH_DONOR_KIND}"
 DASH_DONOR_KIND_COL = 109           # ability c109 = 瞬发内容 kind（memory wf-dash-parameter-leader-table-trap）
 
+#: 冷却（词条 c35，单位帧，60 帧 = 1 秒；describe 会渲染成 ``(CTN秒)``）。
+#: 作者真机反馈轮 2（09-21 05:1x）：「凯尔召唤雷添加ct3s」「能力3的2s后自身技能槽+10%添加ct10s」。
+#: 定位一律按 kind/内容（见 ``_cooltime_problems``），不按记录号——记录号会被共享 donor 的
+#: 插行打漂（1.4.974 响在 1699885 首位插 413 就打漂过冲刺行）。
+THUNDER_COOLTIME = "180"            # 天雷 629：3 秒
+PIERCE_GAUGE_COOLTIME = "600"       # 贯通 → 技能槽 +10%（延迟 2 秒）：10 秒
+
 _PRE_RESONANCE_A = {6: "2", 9: "600000", 10: "600000", 11: ELEMENT_TOKEN}   # ability 前置 1：雷共鸣
 _PRE_RESONANCE_A2 = {13: "2", 16: "600000", 17: "600000", 18: ELEMENT_TOKEN}  # ability 前置 2
 _PRE_LEADER_A = {6: "42"}                                                   # ability 前置 1：持有者为队长
@@ -143,7 +150,13 @@ LEADER: tuple[tuple[str, str, dict[int, str], str | None], ...] = (
 
 _STATUE = {1: "attack_common", 2: "attack_common", 3: "condition",
            4: "attack_common", 5: "special", 6: "attack_common"}
-_UNISONABLE = {1: "true", 2: "true", 3: "false", 4: "true", 5: "true", 6: "true"}
+#: c1 是整键语义（``get_unisonable`` 只读 ``values[0]``）⇒ 同键所有记录必须一致。
+#: 作者真机反馈轮 2（09-21 05:1x）：「凯尔的能力1和2都带上主位限制」⇒ 槽 1/2/3 都是 false。
+#: ⚠ 能力 1 里有「切换技能形态」（536）与技能强化条目，改主位限制后他在合击位时技能不再强化，
+#: 这是作者明确要求的取舍（施工单 §反馈轮 2）。面板的主位图标由 PANEL_ABILITY 从这张表派生。
+_UNISONABLE = {1: "false", 2: "false", 3: "false", 4: "true", 5: "true", 6: "true"}
+#: 主位限制槽的集合（派生，别再手写第二份）：面板图标、629 宿主校验都读它。
+MAIN_ONLY_SLOTS = frozenset(slot for slot, value in _UNISONABLE.items() if value == "false")
 
 PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
     # ---- 能力 1：开局技能槽 + 共鸣强化技能
@@ -179,9 +192,10 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
           30: "5000000", 31: "5000000", 34: "(None)",
           51: "100000", 52: "100000", 68: UID_CRESCENT},
          None),
+        # 贯通 → 2 秒后技能槽 +10%；作者反馈轮 2 要求 CT 10 秒（否则连续贯通时几乎白送满槽）
         ("2110012#0", "official",
-         {**_PRE_RESONANCE_A, 34: "(None)", 46: "2", 47: "211", 48: "0",
-          51: "10000", 52: "10000"},
+         {**_PRE_RESONANCE_A, 34: "(None)", 35: PIERCE_GAUGE_COOLTIME,
+          46: "2", 47: "211", 48: "0", 51: "10000", 52: "10000"},
          None),
         ("1412012#2", "official",
          {6: "187", 7: "0", 12: UID_CRESCENT, **_PRE_RESONANCE_A2,
@@ -197,10 +211,11 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
           70: CAS_PIERCE, 71: PIERCE_PROGRAM},
          None),
         # 强化状态中每 10 次自身直击 → 召唤天雷（trigger 20 传入被打的敌人，非 null）
+        # 作者反馈轮 2：召唤雷加 CT 3 秒（c35 = 180 帧）
         ("1611053#0", "official",
          {6: "187", 7: "0", 12: UID_AWAKE, **_PRE_RESONANCE_A2,
-          27: "20", 28: "0", 30: "1000000", 31: "1000000", 34: "(None)", 35: "0",
-          70: CAS_THUNDER, 71: THUNDER_PROGRAM},
+          27: "20", 28: "0", 30: "1000000", 31: "1000000", 34: "(None)",
+          35: THUNDER_COOLTIME, 70: CAS_THUNDER, 71: THUNDER_PROGRAM},
          None),
     ),
     # ---- 能力 4：里布拉姆写法（by_each_trigger_puller）
@@ -260,11 +275,11 @@ EXPECT: dict[str, str] = {
     "1399902#2": "雷·编成≥6 时: 状态贯通≥1 → 赋予全队(雷) 攻击力 50%",
     "1399903#0": "雷·编成≥6 时: 技能发动≥1 → 自身 状态固有 100%×1次",
     "1399903#1": "雷·编成≥6 时: 编成直接攻击≥50 → 自身 状态固有 100%×1次",
-    "1399903#2": "雷·编成≥6 时: 状态贯通≥1 → 自身 技能槽 10%(延迟2秒)",
+    "1399903#2": "雷·编成≥6 时: 状态贯通≥1(CT10秒) → 自身 技能槽 10%(延迟2秒)",
     "1399903#3": "状态固有[固有13999001] 且 雷·编成≥6 时: 赋予全队(雷) DirectAttack3 300%",
     "1399903#4": "队长 且 雷·编成≥6 时: 状态贯通≥1 → 自身 状态固有 100%×1次",
     "1399903#5": "队长 且 雷·编成≥6 时: 状态贯通≥1 → 自身 发动技能动作[ability_skill_kyle_moon_pierce]",
-    "1399903#6": "状态固有[固有13999003] 且 雷·编成≥6 时: 编成直接攻击≥10 → 自身 发动技能动作[ability_skill_kyle_moon_thunder]",
+    "1399903#6": "状态固有[固有13999003] 且 雷·编成≥6 时: 编成直接攻击≥10(CT3秒) → 自身 发动技能动作[ability_skill_kyle_moon_thunder]",
     "1399904#0": "雷·编成≥6 时: 技能发动≥1 → 赋予全队 状态攻击力 100%(15秒)×1次",
     "1399904#1": "雷·编成≥6 时: 技能发动≥1 → 赋予全队 状态Direct伤害 100%(15秒)×1次",
     "1399905#0": "雷·编成≥6 时: 编成直接攻击≥50 → 赋予全队(雷) 技能槽充能 5%",
@@ -285,8 +300,9 @@ ALLOWED_PRECONDITION_KINDS = ("", "0", "2", "3", "38", "42", "187", "202")
 
 # ---------------------------------------------------------------- 面板文案
 # 逐行抄 rework1/panel/kyle.json（作者已过目的那一版）。describe 渲染表达不了的整块接管。
-# 一条记录一行，用换行符分行（禁止用「／」挤成一行）；能力 3 是主位限制槽，desc_override 会盖掉
-# 客户端逐行画的 Ⓜ，所以每行都要自带 MAIN_ICON（写法与 wf_featured_main_ability 的共享常量一致）。
+# 一条记录一行，用换行符分行（禁止用「／」挤成一行）；主位限制槽（MAIN_ONLY_SLOTS，本轮 = 1/2/3）
+# 的 desc_override 会盖掉客户端逐行画的 Ⓜ，所以每行都要自带 MAIN_ICON
+# （写法与 wf_featured_main_ability 的共享常量一致）。
 
 MAIN_ICON = " <icon id='main'>  "
 
@@ -308,7 +324,7 @@ _PANEL_ABILITY_LINES = {
         "雷属性共鸣时：自身每获得一次贯穿效果，雷属性角色攻击力＋50%"),
     3: ("雷属性共鸣时：自身发动技能时，自身“月牙”＋1层；雷属性角色每造成50次直击，自身“月牙"
         "”＋1层",
-        "雷属性共鸣时：自身每获得一次贯穿效果，2秒后自身技能槽＋10%",
+        "雷属性共鸣时：自身每获得一次贯穿效果，2秒后自身技能槽＋10%（冷却时间：10秒）",
         "雷属性共鸣时：自身持有“月牙”时，强化雷属性角色的直接攻击为3次，合计伤害额外乘区＋300%"),
     4: ("雷属性共鸣时：雷属性角色发动技能时，赋予全队直击伤害＋100%、攻击力＋100%（持续1"
         "5秒，每名触发该效果的角色分别独立生效）",),
@@ -535,6 +551,32 @@ def _order_problems(rows: list[list[str]]) -> None:
                 raise KitError(f"ability 3#{index}: 629 在副位不生效，该键必须 unisonable=false")
 
 
+def _cooltime_problems(rows: list[list[str]]) -> None:
+    """作者反馈轮 2 的两格冷却：**按内容定位，不按记录号**。
+
+    记录号会漂（1.4.974 响在共享 donor 首位插了一条 413，凯尔写死的 ``1699885#0`` 当场失效），
+    所以这里用「这条记录是干什么的」来找：
+
+    - 天雷 = ``c47=629`` 且 ``c70`` 指向 ``CAS_THUNDER`` 的那条 ⇒ c35 必须是 3 秒；
+    - 贯通回槽 = ``c47=211`` 且触发 ``c27=51``（获得贯穿）的那条 ⇒ c35 必须是 10 秒。
+
+    两者都要求「恰好一条」：多出一条说明有人复制了行而没同步 CT，少一条说明行被删/改 kind 了。
+    """
+    thunder = [index for index, row in enumerate(rows)
+               if row[47] == "629" and row[70] == CAS_THUNDER]
+    gauge = [index for index, row in enumerate(rows)
+             if row[47] == "211" and row[27] == "51"]
+    for label, hits, want in (("天雷 629", thunder, THUNDER_COOLTIME),
+                              ("贯通→技能槽 211", gauge, PIERCE_GAUGE_COOLTIME)):
+        if len(hits) != 1:
+            raise KitError(f"ability slot 3: 按内容定位「{label}」命中 {len(hits)} 条，应当恰好 1 条"
+                           f"（行计划被改动过？CT 断言失去锚点）")
+        got = rows[hits[0]][35]
+        if got != want:
+            raise KitError(f"ability 3#{hits[0]}（{label}）: c35 冷却 {got!r} != {want!r}"
+                           f"（{int(want) / 60:g} 秒，作者真机反馈轮 2）")
+
+
 def resolve_dash_donor(ctx) -> str:
     """把 ``DASH_DONOR`` 哨兵解析成 live store 里真正带 422 的那条记录的地址。"""
     rows = KL._rows(ctx, KL.ABILITY, "store")
@@ -588,6 +630,7 @@ def build_rows(ctx) -> dict[str, Any]:
         _ban_kinds("ability", rows, key)
         ability[key] = rows
     _order_problems(ability[f"{CID}3"])
+    _cooltime_problems(ability[f"{CID}3"])
 
     missing = sorted(caps - set(ctx.spec.required_capabilities))
     if missing:
