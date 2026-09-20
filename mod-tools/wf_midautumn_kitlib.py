@@ -28,7 +28,9 @@ from __future__ import annotations
 import colorsys
 import hashlib
 import json
+import re
 import sys
+import zlib
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
@@ -53,6 +55,9 @@ UNIQUE_NCOLS = 15
 
 READY = "ready-for-review"
 DRAFT = "draft"
+
+# 「character/<一个完整路径段>/」——带两边的斜杠，前缀型 code 不会误伤。
+_CHARACTER_SEGMENT = re.compile(rb"character/([A-Za-z0-9_]+)/")
 
 
 class KitError(RuntimeError):
@@ -278,6 +283,34 @@ def pixel_dir(ctx) -> Path:
     return ctx.pack.batch_dir / "pixel" / ctx.spec.key
 
 
+def _logical_character(logical: str) -> str | None:
+    """``character/<code>/…`` 里的 ``<code>``；不是角色命名空间下的路径返回 ``None``。"""
+    parts = str(logical).split("/")
+    return parts[1] if len(parts) >= 3 and parts[0] == "character" and parts[1] else None
+
+
+def donor_code_leaks(data: bytes, code: str) -> list[str]:
+    """交付件里内嵌的 ``character/<别人>/`` 路径段（deflate 会先解压再看）。
+
+    ``code`` 是本角色的新 code。按**路径段**精确匹配，所以母本 code 是新 code 的前缀
+    （``sorceress_teacher`` vs ``sorceress_teacher_moon``）也不会漏判或误判。
+    只看 ``character/`` 命名空间：DSL/表里直接引用官方特效路径
+    （``battle/effect/skill_unique/<母本>/…``）是合法设计，不在这条判据里。
+    """
+    for wbits in (15, -15, 31):
+        try:
+            data = zlib.decompress(data, wbits)
+            break
+        except zlib.error:
+            continue
+    seen: list[str] = []
+    for found in _CHARACTER_SEGMENT.findall(data):
+        other = found.decode("ascii")
+        if other != code and other not in seen:
+            seen.append(other)
+    return seen
+
+
 def install_staged_assets(ctx, path: Path | None = None) -> dict[str, Any]:
     """装 ``B/pixel/<key>/install.json``：``[{root, logical, file, owner}]``。
 
@@ -287,6 +320,12 @@ def install_staged_assets(ctx, path: Path | None = None) -> dict[str, Any]:
     - ``.png`` 交付件若是标准 PNG（``\\x89PNG``），自动换成 WF 存储态魔数（``\\x89png``）。
       这一步只改前 8 个字节，像素数据一位不动；不换会在 manifest 门禁报
       「WF storage signature required」（20260920 magnus 实测）。
+    - **非 PNG 交付件（atlas/frame/timeline 等 AMF3）解压后扫一遍内嵌 code**：出现
+      ``character/<别人>/`` 直接拒绝。20260920 真机事故：像素代理把母本元数据「字节不动」
+      交付，owner=pixel 盖掉了 assets 步已改写好 code 的正确版本，客户端按母本纹理 id
+      取图 → 领取演出 C8003「影像短片尚未加载」。LUT 改色不改 atlas/frame/timeline，
+      这几个文件本来就该由 assets 步从母本克隆＋改写；确实需要自带元数据的
+      （像素母本 ≠ kit 表母本，或程序化合成的新布局）必须先把内嵌 code 改写干净。
     """
     path = Path(path) if path is not None else pixel_dir(ctx) / "install.json"
     if not path.is_file():
@@ -317,10 +356,29 @@ def install_staged_assets(ctx, path: Path | None = None) -> dict[str, Any]:
             continue
         data = source.read_bytes()
         restored = False
-        if str(logical).lower().endswith(".png") and data[:8] == b"\x89PNG\r\n\x1a\n":
-            import wf_assets
-            data = wf_assets.png_encode(data)
-            restored = True
+        if str(logical).lower().endswith(".png"):
+            if data[:8] == b"\x89PNG\r\n\x1a\n":
+                import wf_assets
+                data = wf_assets.png_encode(data)
+                restored = True
+        else:
+            # 期望 code 优先取 ctx.spec（权威），取不到就用交付目标路径自己的
+            # `character/<seg>/` 段 —— 让这道闸不依赖 ctx 的具体形状（老的 kit
+            # 测试用的是只有 write_asset 的桩 ctx），同时口径与验证器一致：
+            # 「装在 character/<X>/ 下的文件不许引用别的 character/<Y>/」。
+            spec = getattr(ctx, "spec", None)
+            own = getattr(spec, "code", None) or _logical_character(logical)
+            leaks = donor_code_leaks(data, own) if own else []
+            if leaks:
+                raise KitError(
+                    f"staged asset {logical} still embeds another character's texture paths "
+                    f"{['character/%s/' % c for c in leaks]} — it would override the rewritten "
+                    f"copy that the `assets` step produces and make the client fetch the donor "
+                    f"atlas (C8003 at the character-get movie). LUT recolor does not change "
+                    f"atlas/frame/timeline: drop this entry from install.json and let `assets` "
+                    f"generate it. If the pixel donor really differs from the table donor, "
+                    f"rewrite character/<donor>/ to character/{ctx.spec.code}/ before delivering "
+                    f"(source: {source})")
         ctx.write_asset(root, logical, data, owner=owner)
         installed.append({"root": root, "logical": logical, "owner": owner,
                           "sha256": hashlib.sha256(data).hexdigest(), "size": len(data),

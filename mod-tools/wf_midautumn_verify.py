@@ -925,6 +925,152 @@ def check_art(pack: Pack, rep: Report, *, gbf: bool = False, pixel_freeform: boo
     rep.add("art/pixel-alpha", True, WARNING, _alpha_report(pack))
 
 
+CHARACTER_SEGMENT = re.compile(rb"character/([A-Za-z0-9_]+)/")
+# 二进制媒体:不是文本容器,里面出现的字节序列没有路径语义,不扫。
+BINARY_SUFFIXES = (".png", ".mp3", ".atf", ".jpg", ".jpeg", ".ogg", ".wav")
+
+
+def _inflate(data: bytes) -> bytes:
+    for wbits in (15, -15, 31):
+        try:
+            return zlib.decompress(data, wbits)
+        except zlib.error:
+            continue
+    return data
+
+
+def check_donor_code_leak(pack: Pack, rep: Report) -> None:
+    """包内 ``character/<新 code>/`` 目录下任何文件都不许内嵌别人的 ``character/<X>/`` 路径。
+
+    20260920 真机事故:像素代理把母本 atlas/frame/timeline「字节不动」交付并登记
+    owner=pixel,盖掉了 ``assets`` 步已改写好 code 的正确版本;客户端照母本纹理 id 取图,
+    领取演出报 C8003「影像短片尚未加载」。
+
+    判据按**路径段**精确匹配(``character/<seg>/``),所以母本 code 是新 code 的前缀
+    (``sorceress_teacher`` vs ``sorceress_teacher_moon``)不会漏判也不会误判;
+    只看 ``character/`` 命名空间 —— DSL/表里直接引用官方特效路径
+    (``battle/effect/skill_unique/<母本>/…``)是裁决 §4 的合法设计,不在这条里。
+    """
+    problems: list[str] = []
+    scanned = 0
+    for root in CLIENT_ROOTS:
+        base = pack.roots / root / "character" / pack.code
+        if not base.is_dir():
+            continue
+        for path in sorted(base.rglob("*")):
+            if not path.is_file() or path.name.lower().endswith(BINARY_SUFFIXES):
+                continue
+            scanned += 1
+            leaks = []
+            for found in CHARACTER_SEGMENT.findall(_inflate(path.read_bytes())):
+                other = found.decode("ascii")
+                if other != pack.code and other not in leaks:
+                    leaks.append(other)
+            if leaks:
+                rel = path.relative_to(pack.roots).as_posix()
+                problems.append(f"{rel} 内嵌别人的纹理路径 " +
+                                ", ".join(f"character/{c}/" for c in leaks) +
+                                "(客户端会去取母本图集 → 领取演出 C8003;"
+                                "该文件应由 assets 步从母本克隆并改写 code)")
+    rep.result(problems, "assets/donor-code-leak", BLOCKING,
+               {"files_scanned": scanned, "code": pack.code})
+
+
+# ---- 像素三件套的自洽（判据来自反编译的客户端播放器，不是推测）
+#
+# `弹国服/scripts/flatomo/animation/frame/FrameAnimationSource.as`（AIR 反编译原文）::
+#
+#     _loc8_ = Std.parseInt(_loc7_.substr(param2.name.length));   # _loc7_ = 纹理 id
+#     while(_loc3_ < _loc8_) { imageFrames[_loc3_] = _loc6_; _loc3_++; }
+#     getImageFrame(tick) => imageFrames[tick - 1]
+#
+# 三条可机械检查的后果：
+#   A. 帧号是拿 **frame.name 的长度**去 `substr` 切出来的 —— 纹理 id 必须是
+#      `<frame.name><4 位帧号>`，且 `frame.name` 必须等于本角色自己的
+#      `character/<code>/pixelart/{pixelart,special}`。name 指向母本时容器
+#      （`ViewAssetContainer/getTextureIds`）按母本名去找，找不到就是领取演出
+#      C8003「影像短片尚未加载」（20260920 澄波响/米娅真机事故）。
+#   B. `while(_loc3_ < _loc8_)` 从上一条的帧号往后填，**图集条目必须按帧号升序**；
+#      乱序会让后面的记录一格都填不到（区间为空）。
+#   C. 填表只填到最后一条记录的帧号；`tick > 末帧号` 时 `imageFrames[tick-1]`
+#      是 undefined，`int(undefined)` = 0 ⇒ **回落到第 0 条记录**（画面跳回第一帧）。
+#      所以最后一条记录的帧号必须等于末序列的 `end`。
+#
+# **反过来，「序列 begin 之前必须有图可沿用」是错的判据，不要加**：帧是
+# END 语义（记录 N 覆盖「上一条记录+1 .. N」这一段），官方 908 张 sheet 里
+# 894 张的首条记录都晚于首序列 begin（`neutral loop 1..2` 配首帧 0002 是全库常态，
+# `spirit_fire` 更是 `neutral loop 1..600` 只配一条 0600），按「沿用前一帧」
+# 判会把官方全判红。20260920 审计曾据此误报索恩 special_land「113 帧只有 1 帧有图」。
+PIXEL_SHEETS = (("pixelart", "sprite_sheet"), ("special", "special_sprite_sheet"))
+
+
+def check_pixel_frames(pack: Pack, rep: Report) -> None:
+    """像素 frame/atlas/timeline 三者自洽（判据见上方注释）。"""
+    name_problems: list[str] = []
+    cover_problems: list[str] = []
+    checked: list[str] = []
+    base = pack.roots / "common" / "character" / pack.code / "pixelart"
+
+    def read(path: Path) -> Any:
+        return wf_dsl.parse_dsl(zlib.decompress(path.read_bytes(), -15))["tree"]
+
+    for kind, stem in PIXEL_SHEETS:
+        frame_path = base / f"{kind}.frame.amf3.deflate"
+        atlas_path = base / f"{stem}.atlas.amf3.deflate"
+        timeline_path = base / f"{kind}.timeline.amf3.deflate"
+        if not (frame_path.is_file() and atlas_path.is_file()):
+            continue                      # 缺件由 files/keys 那几项管,这里只查自洽
+        try:
+            frame = read(frame_path)
+            entries = read(atlas_path)
+        except Exception as exc:
+            name_problems.append(f"{kind}: frame/atlas 解不出（{exc}）")
+            continue
+        checked.append(kind)
+        want = f"character/{pack.code}/pixelart/{kind}"
+        got = frame.get("name") if isinstance(frame, dict) else None
+        if got != want:
+            name_problems.append(
+                f"{kind}.frame 的 name={got!r}，必须是 {want!r}"
+                "（客户端按 name 找纹理容器并按 len(name) 切帧号，指向别人 = 领取演出 C8003）")
+            continue                      # name 不对时帧号切法无意义,不再往下判
+        numbers: list[int] = []
+        for entry in entries if isinstance(entries, list) else []:
+            ident = str((entry or {}).get("n") or "")
+            tail = ident[len(want):]
+            if not ident.startswith(want) or not tail.isdigit():
+                name_problems.append(
+                    f"{kind}: 图集条目 {ident!r} 不是 <frame.name>+帧号"
+                    "（客户端 substr(len(name)) 后 parseInt 会取到垃圾）")
+                continue
+            numbers.append(int(tail))
+        if not numbers:
+            continue
+        if numbers != sorted(numbers):
+            name_problems.append(
+                f"{kind}: 图集条目没有按帧号升序（前几条 {numbers[:6]}）"
+                "（填表从上一条帧号往后填,乱序会让后面的记录覆盖不到任何 tick）")
+        if not timeline_path.is_file():
+            continue
+        try:
+            timeline = read(timeline_path)
+        except Exception as exc:
+            cover_problems.append(f"{kind}: timeline 解不出（{exc}）")
+            continue
+        ends = [int(s["end"]) for s in (timeline.get("sequences") or [])
+                if isinstance(s, dict) and str(s.get("end", "")).lstrip("-").isdigit()]
+        if ends and max(numbers) != max(ends):
+            cover_problems.append(
+                f"{kind}: 图集末帧号 {max(numbers)} != 末序列 end {max(ends)}"
+                "（tick 超过末帧号时 imageFrames 是 undefined,画面回落到第 0 条记录）")
+
+    rep.result(name_problems, "pixel/frame-name-and-ids", BLOCKING,
+               {"code": pack.code, "sheets": checked})
+    rep.result(cover_problems, "pixel/atlas-covers-sequence-end", BLOCKING,
+               {"code": pack.code, "sheets": checked,
+                "note": "官方 908 张 sheet 里 906 张满足；两个例外都是 *_assist 援护角色"})
+
+
 def _alpha_report(pack: Pack) -> Any:
     """半透明像素计数(只报告,不判红;全透明区域 RGB 不检查)。"""
     try:
@@ -1075,6 +1221,8 @@ def verify(workspace: Path, *, root: Path, design: Path | None = None,
     check_periods(pack, rep)
     check_voice(pack, rep, gbf=gbf)
     check_art(pack, rep, gbf=gbf, pixel_freeform=pixel_freeform)
+    check_donor_code_leak(pack, rep)
+    check_pixel_frames(pack, rep)
     if not skip_atlas:
         check_atlas(pack, rep, gbf=gbf, threshold=threshold)
     check_panel(pack, rep)

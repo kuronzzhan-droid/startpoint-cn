@@ -557,6 +557,62 @@ class KitLibTests(unittest.TestCase):
             with self.assertRaisesRegex(KL.KitError, "escapes the batch directory"):
                 KL.install_staged_assets(B.KitContext(pack))
 
+    def _staged_pack(self, tmp: str):
+        root = Path(tmp)
+        (root / "store" / "upload").mkdir(parents=True)
+        (root / "assets").mkdir()
+        pack = MC.MAPack(MS.SPECS["nicola"], root=root, store=root / "store" / "upload",
+                         workspace=root / "ws" / "ma-nicola", server_base=root / "assets",
+                         use_official=False)
+        import wf_seasonal7_build as B
+        B.step_init(pack)
+        staged = pack.batch_dir / "pixel" / "nicola"
+        staged.mkdir(parents=True)
+        return pack, staged, B
+
+    def _stage_metadata(self, staged: Path, payload: bytes) -> None:
+        (staged / "meta.amf3.deflate").write_bytes(payload)
+        (staged / "install.json").write_text(json.dumps([
+            {"root": "common",
+             "logical": "character/sorceress_teacher_moon/pixelart/pixelart.frame.amf3.deflate",
+             "file": "meta.amf3.deflate", "owner": "pixel"}]), encoding="utf-8")
+
+    def test_install_staged_assets_rejects_donor_texture_paths(self):
+        """20260920 真机事故：母本元数据「字节不动」交付 → 客户端取母本图集 → 领取演出 C8003。
+
+        母本 ``sorceress_teacher`` 正好是新 code ``sorceress_teacher_moon`` 的前缀，
+        这条用例同时钉住「按路径段匹配、前缀不漏判」。
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            pack, staged, B = self._staged_pack(tmp)
+            self._stage_metadata(staged, zlib.compress(
+                b"character/sorceress_teacher/pixelart/sprite_sheet"))
+            with self.assertRaisesRegex(KL.KitError, "embeds another character's texture paths"):
+                KL.install_staged_assets(B.KitContext(pack))
+            self.assertFalse(pack.pkg_has(
+                "common", "character/sorceress_teacher_moon/pixelart/pixelart.frame.amf3.deflate"),
+                "被拒绝的交付件不许留在包里")
+
+    def test_install_staged_assets_accepts_rewritten_metadata(self):
+        """像素母本 ≠ kit 表母本时元数据必须自带（米娅先例），改写干净就该放行。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            pack, staged, B = self._staged_pack(tmp)
+            self._stage_metadata(staged, zlib.compress(
+                b"character/sorceress_teacher_moon/pixelart/sprite_sheet"))
+            report = KL.install_staged_assets(B.KitContext(pack))
+            self.assertEqual(len(report["installed"]), 1)
+            self.assertEqual(pack.owner_of(
+                "common", "character/sorceress_teacher_moon/pixelart/pixelart.frame.amf3.deflate"),
+                "pixel")
+
+    def test_install_staged_assets_allows_official_effect_references(self):
+        """裁决 §4：只引用不改色的官方特效直接写官方路径，不许被这道闸误杀。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            pack, staged, B = self._staged_pack(tmp)
+            self._stage_metadata(staged, zlib.compress(
+                b"battle/effect/skill_unique/sorceress_teacher/fire_01"))
+            self.assertEqual(len(KL.install_staged_assets(B.KitContext(pack))["installed"]), 1)
+
     def test_report_rejects_forbidden_panel_text_and_bad_status(self):
         ctx = _StubCtx()
         with self.assertRaisesRegex(KL.KitError, "panel text"):

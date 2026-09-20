@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import sys
+import tempfile
 import unittest
 import zlib
 from pathlib import Path
@@ -17,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import wf_dsl  # noqa: E402
 import wf_client_legality as L  # noqa: E402
+import wf_midautumn_kitlib as KL  # noqa: E402
 import wf_midautumn_verify as V  # noqa: E402
 import wf_mod_tool as core  # noqa: E402
 
@@ -242,6 +244,195 @@ class RegisControlTest(unittest.TestCase):
         row[9] = "(None)"
         self.assertTrue(all(v in ("", "(None)") for v in
                             [row[i] for i in V.VOICE_ROUTE_COLS if row[i] == "(None)"]))
+
+
+class DonorCodeLeakTest(unittest.TestCase):
+    """``assets/donor-code-leak``：包内 ``character/<新 code>/`` 下不许内嵌别人的纹理路径。
+
+    20260920 真机事故：像素代理把母本 atlas/frame/timeline「字节不动」交付并登记
+    owner=pixel，盖掉了 ``assets`` 步已改写 code 的正确版本 → 领取演出 C8003。
+    正向对照跑真包，负向用例在临时目录里造一份坏元数据（不碰任何真 workspace）。
+    """
+
+    CODE = "sorceress_teacher_moon"
+    DONOR = "sorceress_teacher"          # 故意选「母本 code 是新 code 前缀」的那一对
+
+    def _pack(self, tmp: Path, payload: bytes, name: str = "pixelart.frame.amf3.deflate"):
+        pixelart = tmp / "package/roots/common/character" / self.CODE / "pixelart"
+        pixelart.mkdir(parents=True)
+        (pixelart / name).write_bytes(payload)
+        (tmp / "package/manifest.json").write_text(json.dumps(
+            {"character_id": "119991", "code_name": self.CODE}), encoding="utf-8")
+        pack = V.Pack(tmp, ROOT)
+        rep = V.Report()
+        V.check_donor_code_leak(pack, rep)
+        return next(c for c in rep.checks if c["name"] == "assets/donor-code-leak")
+
+    def test_donor_path_is_blocked(self):
+        payload = zlib.compress(b"\x0a\x0bcharacter/%s/pixelart/sprite_sheet" % self.DONOR.encode())
+        with tempfile.TemporaryDirectory() as raw:
+            check = self._pack(Path(raw), payload)
+        self.assertFalse(check["pass"])
+        self.assertEqual(check["level"], V.BLOCKING)
+        self.assertIn(f"character/{self.DONOR}/", json.dumps(check["evidence"], ensure_ascii=False))
+
+    def test_new_code_is_not_flagged_although_donor_is_its_prefix(self):
+        """前缀型母本：``sorceress_teacher`` 是 ``sorceress_teacher_moon`` 的前缀，
+        判据按路径段匹配，正确改写后的文件绝不能误报。"""
+        payload = zlib.compress(b"\x0a\x0bcharacter/%s/pixelart/sprite_sheet" % self.CODE.encode())
+        with tempfile.TemporaryDirectory() as raw:
+            check = self._pack(Path(raw), payload)
+        self.assertTrue(check["pass"], json.dumps(check["evidence"], ensure_ascii=False))
+
+    def test_official_effect_reference_is_not_flagged(self):
+        """裁决 §4：只引用不改色的官方特效直接写官方路径，是合法设计，不许误报。"""
+        payload = zlib.compress(
+            b"battle/effect/skill_unique/%s/fire_01" % self.DONOR.encode())
+        with tempfile.TemporaryDirectory() as raw:
+            check = self._pack(Path(raw), payload, name="pixelart.timeline.amf3.deflate")
+        self.assertTrue(check["pass"], json.dumps(check["evidence"], ensure_ascii=False))
+
+    def test_uncompressed_payload_is_scanned_too(self):
+        with tempfile.TemporaryDirectory() as raw:
+            check = self._pack(Path(raw), b"character/%s/pixelart/x" % self.DONOR.encode())
+        self.assertFalse(check["pass"])
+
+    def test_real_packages_are_clean(self):
+        """修复后的 12 个中秋包（本机存在的）一条泄漏都不许有。"""
+        checked = 0
+        for workspace in sorted((ROOT / "work/character_packs").glob("ma-*")):
+            if not (workspace / "package/roots").is_dir():
+                continue
+            pack = V.Pack(workspace, ROOT)
+            rep = V.Report()
+            V.check_donor_code_leak(pack, rep)
+            check = next(c for c in rep.checks if c["name"] == "assets/donor-code-leak")
+            self.assertTrue(check["pass"],
+                            f"{workspace.name}: " + json.dumps(check["evidence"], ensure_ascii=False))
+            self.assertGreater(check["evidence"]["files_scanned"], 0, workspace.name)
+            checked += 1
+        if not checked:
+            self.skipTest("no ma-* package on this machine")
+
+
+def deflate(tree) -> bytes:
+    """像素三件套的存储形态：AMF3 裸树 + 原始 deflate（验证器按 wbits=-15 读）。"""
+    comp = zlib.compressobj(9, zlib.DEFLATED, -15)
+    return comp.compress(wf_dsl.encode_amf3(tree)) + comp.flush()
+
+
+class PixelFrameCoherenceTest(unittest.TestCase):
+    """``pixel/frame-name-and-ids`` / ``pixel/atlas-covers-sequence-end``。
+
+    判据来自反编译的客户端播放器 ``FrameAnimationSource``（帧号 =
+    ``parseInt(id.substr(len(frame.name)))``，``imageFrames`` 从上一条帧号往后填到本条帧号，
+    ``getImageFrame(tick)=imageFrames[tick-1]``）。负向用例在临时目录里造坏件。
+    """
+
+    CODE = "tweyen_light"
+
+    def _checks(self, tmp: Path, *, frame_name: str | None = None,
+                ids: list[str] | None = None, last_end: int = 150):
+        name = f"character/{self.CODE}/pixelart/special"
+        ids = ids if ids is not None else [f"{name}{n:04d}" for n in (113, 120, 150)]
+        pixelart = tmp / "package/roots/common/character" / self.CODE / "pixelart"
+        pixelart.mkdir(parents=True)
+        (pixelart / "special.frame.amf3.deflate").write_bytes(deflate(
+            {"name": frame_name if frame_name is not None else name,
+             "x": -128, "y": -128, "scale": 6, "smoothing": False}))
+        (pixelart / "special_sprite_sheet.atlas.amf3.deflate").write_bytes(deflate(
+            [{"n": i, "w": 15, "h": 18, "x": 0, "y": 0,
+              "fx": -121, "fy": -111, "fw": 256, "fh": 256} for i in ids]))
+        (pixelart / "special.timeline.amf3.deflate").write_bytes(deflate(
+            {"sequences": [{"name": "special_land", "kind": "pass", "begin": 1, "end": 113},
+                           {"name": "special_pose", "kind": "once", "begin": 114,
+                            "end": last_end}],
+             "circles": [], "points": [], "sounds": []}))
+        (tmp / "package/manifest.json").write_text(json.dumps(
+            {"character_id": "159994", "code_name": self.CODE}), encoding="utf-8")
+        rep = V.Report()
+        V.check_pixel_frames(V.Pack(tmp, ROOT), rep)
+        return {c["name"]: c for c in rep.checks}
+
+    def test_good_sheet_passes(self):
+        with tempfile.TemporaryDirectory() as raw:
+            checks = self._checks(Path(raw))
+        for name in ("pixel/frame-name-and-ids", "pixel/atlas-covers-sequence-end"):
+            self.assertTrue(checks[name]["pass"],
+                            json.dumps(checks[name]["evidence"], ensure_ascii=False))
+
+    def test_long_leading_gap_is_not_flagged(self):
+        """END 语义：记录 0113 覆盖 tick 1..113。官方 ``spirit_fire`` 的
+        ``neutral loop 1..600`` 只配一条 0600，「begin 之前要有图」是错判据。"""
+        name = f"character/{self.CODE}/pixelart/special"
+        with tempfile.TemporaryDirectory() as raw:
+            checks = self._checks(Path(raw), ids=[f"{name}0113", f"{name}0150"])
+        self.assertTrue(checks["pixel/frame-name-and-ids"]["pass"])
+        self.assertTrue(checks["pixel/atlas-covers-sequence-end"]["pass"])
+
+    def test_donor_frame_name_is_blocked(self):
+        """frame.name 指向母本 = 容器按母本名找纹理 → 领取演出 C8003（米娅事故）。"""
+        with tempfile.TemporaryDirectory() as raw:
+            checks = self._checks(Path(raw), frame_name="character/high_priestess_ny22/pixelart/special")
+        check = checks["pixel/frame-name-and-ids"]
+        self.assertFalse(check["pass"])
+        self.assertEqual(check["level"], V.BLOCKING)
+        self.assertIn("high_priestess_ny22", json.dumps(check["evidence"], ensure_ascii=False))
+
+    def test_id_without_frame_name_prefix_is_blocked(self):
+        name = f"character/{self.CODE}/pixelart/special"
+        with tempfile.TemporaryDirectory() as raw:
+            checks = self._checks(Path(raw), ids=[f"{name}0113", "character/other/pixelart/special0150"])
+        self.assertFalse(checks["pixel/frame-name-and-ids"]["pass"])
+
+    def test_unsorted_atlas_is_blocked(self):
+        name = f"character/{self.CODE}/pixelart/special"
+        with tempfile.TemporaryDirectory() as raw:
+            checks = self._checks(Path(raw), ids=[f"{name}0150", f"{name}0113"])
+        self.assertFalse(checks["pixel/frame-name-and-ids"]["pass"])
+
+    def test_atlas_short_of_last_sequence_end_is_blocked(self):
+        """末帧号 < 末序列 end：超出的 tick 读到 undefined，画面回落到第 0 条记录。"""
+        with tempfile.TemporaryDirectory() as raw:
+            checks = self._checks(Path(raw), last_end=180)
+        check = checks["pixel/atlas-covers-sequence-end"]
+        self.assertFalse(check["pass"])
+        self.assertEqual(check["level"], V.BLOCKING)
+
+    def test_real_packages_are_clean(self):
+        checked = 0
+        for workspace in sorted((ROOT / "work/character_packs").glob("ma-*")):
+            if not (workspace / "package/roots").is_dir():
+                continue
+            rep = V.Report()
+            V.check_pixel_frames(V.Pack(workspace, ROOT), rep)
+            for check in rep.checks:
+                self.assertTrue(check["pass"], f"{workspace.name} {check['name']}: " +
+                                json.dumps(check["evidence"], ensure_ascii=False))
+            checked += 1
+        if not checked:
+            self.skipTest("no ma-* package on this machine")
+
+
+class InstallStagedAssetsGuardTest(unittest.TestCase):
+    """``kitlib.install_staged_assets`` 的交付件闸门（纯函数部分）。"""
+
+    def test_donor_code_leaks_sees_through_deflate(self):
+        raw = zlib.compress(b"character/sorceress_teacher/pixelart/sprite_sheet")
+        self.assertEqual(KL.donor_code_leaks(raw, "sorceress_teacher_moon"),
+                         ["sorceress_teacher"])
+
+    def test_donor_code_leaks_accepts_own_code(self):
+        raw = zlib.compress(b"character/sorceress_teacher_moon/pixelart/sprite_sheet")
+        self.assertEqual(KL.donor_code_leaks(raw, "sorceress_teacher_moon"), [])
+
+    def test_donor_code_leaks_ignores_effect_paths(self):
+        raw = b"battle/effect/skill_unique/sorceress_teacher/fire_01"
+        self.assertEqual(KL.donor_code_leaks(raw, "sorceress_teacher_moon"), [])
+
+    def test_donor_code_leaks_dedupes_and_keeps_order(self):
+        raw = b"character/a_one/x character/b_two/y character/a_one/z"
+        self.assertEqual(KL.donor_code_leaks(raw, "new_code"), ["a_one", "b_two"])
 
 
 class GbfDowngradeTest(unittest.TestCase):

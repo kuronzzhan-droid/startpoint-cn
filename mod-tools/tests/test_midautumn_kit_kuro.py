@@ -512,6 +512,10 @@ class RowIntegrationTests(unittest.TestCase):
         self.assertEqual(row[4], KIT.UNIQUE_CAP)
 
     def test_identity_is_unoccupied(self):
+        # 发布后自己的键被自己占用是预期（与 test_midautumn_framework 同口径）
+        ledger = ctx().root / ".cdn" / "cn" / "character-releases" / "active.json"
+        if ledger.is_file() and MS.get_spec(KIT.KEY).pkg_id in ledger.read_text(encoding="utf-8"):
+            self.skipTest("already published: own keys are expected to be occupied")
         problems = MS.occupancy_problems([MS.get_spec(KIT.KEY)], repo_root=ctx().root,
                                          store=ctx().store)
         self.assertEqual(problems, {KIT.KEY: []})
