@@ -6,13 +6,14 @@
 1. **纯静态**（不需要 live / 官方基线）：模块常量与 ``design/rolf.json`` 的 ``plan_rework1``
    互锁；裁决 §8 的自查（队长表禁 422/724/713/693、422 必挂前置 42 且 c118 非空、
    前置 kind 白名单、201/202/521 必须 Initial 触发、629 必配字符串键且该键 unisonable=false、
-   536 必带 c70、during puller 契约）；面板文案逐块对齐 ``rework1/panel/rolf.json``、面板禁词；
-   以及本模块的小工具（``ConditionalsChangeSkillFlag`` 形状、``StopBall`` 剥离、AMF3 数值壳）。
-2. **官方基线**（缺 ``.cdn/cn`` 或 live store 时跳过）：7＋18 行逐行装配并与 ``EXPECT`` 的
+   536/704 必带 c70、704 必挂前置 42 ＋ 风共鸣、during puller 契约）；面板文案逐块对齐
+   ``rework1/panel/rolf.json``、面板禁词；以及本模块的小工具
+   （``ConditionalsChangeSkillFlag`` 形状与旗号、``StopBall`` 剥离、AMF3 数值壳）。
+2. **官方基线**（缺 ``.cdn/cn`` 或 live store 时跳过）：7＋19 行逐行装配并与 ``EXPECT`` 的
    ``wf_describe`` 回读逐字比对；两棵主技能树与一棵 629 追击树的装配与全部 DSL 门禁
    （元素、主体绑定、判定区归属、方向、坐标系），母本漂移断言。
 3. **已构建的 workspace**（``work/character_packs/ma-rolf`` 不存在时跳过）：包内 3 棵 DSL 程序、
-   ``custom_ability_string`` 9 键、零固有状态、特效仍指官方 wt23 路径。
+   ``custom_ability_string`` 10 键、零固有状态、特效仍指官方 wt23 路径。
 
 不写 live store / ``assets/`` / ``.cdn``，不跑发布；官方基线只读。
 """
@@ -94,8 +95,22 @@ class ConstantTests(unittest.TestCase):
     def test_spec_declares_every_self_owned_key(self):
         declared = set(K.SPEC["extra_keys"][KL.CAS])
         self.assertEqual(declared, set(K.CAS_TEXTS))
-        self.assertEqual(len(declared), 9)
+        self.assertEqual(len(declared), 10)
+        self.assertIn(K.CAS_FLAG2, declared)
         self.assertEqual(K.SPEC["extra_keys"][KL.SWITCHED], (K.VOICE_KEY,))
+
+    def test_the_two_skill_flags_are_distinct_kinds_and_indices(self):
+        """536 → 旗号 1（连击成长，只限主位）、704 → 旗号 2（4 档速度固定，队长 ∧ 风共鸣）。
+
+        引擎侧：``InstantAbilitySource.as`` 把 536/704/705/706/707/708 映射成旗号 1..6，
+        存进 ``instantChangeSkillFlag[成员][旗号]``；DSL ``case 86`` 按 ``int(params[0])``
+        取，两个旗号互不干扰。两个旗号写成同一个下标 = 拆分失效。
+        """
+        self.assertEqual((K.SKILL_FLAG_INDEX, K.SKILL_FLAG_INDEX_BOOST), (1, 2))
+        self.assertIn("536", KL.SKILL_FLAG_KINDS)
+        self.assertIn("704", KL.SKILL_FLAG_KINDS)
+        self.assertNotEqual(K.CAS_FLAG, K.CAS_FLAG2)
+        self.assertEqual(K.CAS_FLAG2, f"change_skill_{K.CODE}_2")
 
     def test_required_capabilities_cover_dash_and_panel_override(self):
         self.assertIn("dash-parameter-v1", K.SPEC["required_capabilities"])
@@ -138,8 +153,17 @@ class DesignMirrorTests(unittest.TestCase):
         for level in ("1", "2"):
             self.assertEqual(values[level]["fixed_speed_speed_boost"], 4)
             self.assertEqual(values[level]["fixed_speed_charge_boost"], 0)
+            self.assertEqual(values[level]["fixed_speed_speed"], 1)      # 常态 = 官方最轻的 1 档
             # 常态档的充能必须留在官方实读区间；强化档的 0 是作者点名要的例外
             self.assertIn(values[level]["fixed_speed_charge"], K.OFFICIAL_FIXED_SPEED_CHARGES)
+
+    def test_fixed_speed_base_duration_is_four_seconds_and_piercing_is_untouched(self):
+        """反馈轮 3：技能附加的最大速度固定基础时长 = 4 秒 = 240 帧；贯穿时长一格不动。"""
+        values = DESIGN["plan_rework1"]["skills"]["values"]
+        for level in ("1", "2"):
+            self.assertEqual(values[level]["fixed_speed_frames"], 240, level)
+        self.assertEqual(values["1"]["piercing_frames"], 720)
+        self.assertEqual(values["2"]["piercing_frames"], 900)
 
 
 class PlanSelfCheckTests(unittest.TestCase):
@@ -165,6 +189,19 @@ class PlanSelfCheckTests(unittest.TestCase):
         self.assertEqual(K._UNISONABLE[3], "false")     # 629 在副位不生效
         flag = [c for c in self.cells(3) if c.get(70) == K.CAS_FLAG]
         self.assertEqual(len(flag), 1)
+
+    def test_the_boost_flag_row_is_leader_gated_in_the_plan(self):
+        """704 行必须落在能承载队长门的槽（A6），并同时挂前置 42 ＋ 风共鸣。"""
+        boost = [(slot, c) for slot in range(1, 7) for c in self.cells(slot)
+                 if c.get(70) == K.CAS_FLAG2]
+        self.assertEqual(len(boost), 1)
+        slot, cells = boost[0]
+        self.assertEqual(slot, 6)
+        self.assertEqual(cells[6], "42")                       # 持有者为队长
+        self.assertEqual((cells[13], cells[18]), ("2", K.ELEMENT_TOKEN))   # 风属性共鸣
+        # 536 那条不许再带队长门：连击成长仍按现行条件（主位 + 风共鸣）生效
+        flag = [c for c in self.cells(3) if c.get(70) == K.CAS_FLAG][0]
+        self.assertNotEqual(flag.get(6), "42")
 
     def test_unlimited_growth_rows_write_none_not_an_empty_limit(self):
         """trigger_limit 留空 = 上限 0（词条全程零收益）；无上限的官方写法是 ``(None)``。"""
@@ -263,6 +300,41 @@ class KindGuardTests(unittest.TestCase):
         with self.assertRaises(KL.KitError):
             K._order_problems([self.blank(KL.ABILITY_NCOLS)])
 
+    def boost_row(self) -> list[str]:
+        row = self.blank(KL.ABILITY_NCOLS)
+        row[1] = "true"
+        row[K.ABILITY_INSTANT_KIND] = "704"
+        row[6] = "42"
+        row[13], row[18] = "2", K.ELEMENT_TOKEN
+        row[70] = K.CAS_FLAG2
+        return row
+
+    def test_a_well_formed_boost_flag_row_passes(self):
+        K._ban_kinds("ability", [self.boost_row()], "a")        # 对照组：门禁不是恒红
+
+    def test_boost_flag_row_without_the_leader_precondition_is_rejected(self):
+        """丢了前置 42 = 主位非队长也吃 4 档速度固定（作者反馈第 3 轮点名要修的就是这个）。"""
+        row = self.boost_row()
+        row[6] = "0"
+        with self.assertRaises(KL.KitError):
+            K._ban_kinds("ability", [row], "a")
+
+    def test_boost_flag_row_without_the_wind_resonance_is_rejected(self):
+        row = self.boost_row()
+        row[13], row[18] = "", ""
+        with self.assertRaises(KL.KitError):
+            K._ban_kinds("ability", [row], "a")
+        row = self.boost_row()
+        row[18] = "Red"
+        with self.assertRaises(KL.KitError):
+            K._ban_kinds("ability", [row], "a")
+
+    def test_boost_flag_row_with_the_wrong_string_key_is_rejected(self):
+        row = self.boost_row()
+        row[70] = K.CAS_FLAG
+        with self.assertRaises(KL.KitError):
+            K._ban_kinds("ability", [row], "a")
+
 
 class PanelTextTests(unittest.TestCase):
     def test_panel_text_obeys_the_project_rules(self):
@@ -270,11 +342,19 @@ class PanelTextTests(unittest.TestCase):
             for line in text.split("\n"):
                 self.assertEqual(
                     KL.panel_problems(line.replace(K.MAIN_ICON, ""),
-                                      skill_flag=(key == K.CAS_FLAG)),
+                                      skill_flag=(key in (K.CAS_FLAG, K.CAS_FLAG2))),
                     [], f"{key}: {line}")
 
     def test_skill_flag_entry_carries_no_numbers_or_time(self):
-        self.assertFalse(any(ch.isdigit() for ch in K.CAS_TEXTS[K.CAS_FLAG]))
+        for key in (K.CAS_FLAG, K.CAS_FLAG2):
+            self.assertFalse(any(ch.isdigit() for ch in K.CAS_TEXTS[key]), key)
+
+    def test_the_536_entry_no_longer_claims_the_fixed_speed_boost(self):
+        """速度固定那半句搬去 704 条目；536 条目只剩连击成长（反馈轮 3）。"""
+        self.assertNotIn("最大速度固定", K.CAS_TEXTS[K.CAS_FLAG])
+        self.assertIn("连击", K.CAS_TEXTS[K.CAS_FLAG])
+        self.assertIn("最大速度固定", K.CAS_TEXTS[K.CAS_FLAG2])
+        self.assertIn("队长", K.CAS_TEXTS[K.CAS_FLAG2])
 
     def test_panel_text_matches_the_author_approved_target(self):
         """多条记录用换行分行（禁止「／」挤成一行）；每行文字以目标面板 lines[].text 为准。"""
@@ -337,6 +417,17 @@ class DslHelperTests(unittest.TestCase):
             self.assertEqual(branch[0], "Block")       # 禁写 ["DoNothing"]（F1009）
         self.assertNotIn("DoNothing", json.dumps(node))
 
+    def test_flag_branch_can_select_the_second_flag(self):
+        node = K.flag_branch([["ShakeCamera", 1]], [["ShakeCamera", 2]],
+                             index=K.SKILL_FLAG_INDEX_BOOST)
+        self.assertEqual(node[1], 2)
+
+    def test_flag_branch_rejects_an_unknown_flag_index(self):
+        """写错下标 = 分支永远走 else（引擎只是 hasAbilityPower(下标) 取不到），静默失效。"""
+        for bad in (0, 3, 6):
+            with self.assertRaises(KL.KitError):
+                K.flag_branch([["ShakeCamera", 1]], [], index=bad)
+
     def test_number_shape_keeps_integers_integral(self):
         self.assertIsInstance(K.num(900), int)
         self.assertIsInstance(K.num(-0.1), float)
@@ -397,12 +488,32 @@ class OfficialRowTests(unittest.TestCase):
         self.assertEqual(invoke[0][35], "300")          # CT 5 秒，不能留空
         self.assertEqual(rows[0][1], "false")           # 629 在副位不生效
 
-    def test_only_the_main_only_slot_hosts_629_and_the_skill_flag(self):
-        ability = all_rows(ctx())["ability"]
-        for key, rows in ability.items():
+    def test_each_skill_flag_lives_in_exactly_one_slot(self):
+        """629 与 536（旗号 1）只许在主位限制槽 A3；704（旗号 2）只许在队长承载槽 A6。"""
+        want = {"629": f"{K.CID}3", "536": f"{K.CID}3", "704": f"{K.CID}6"}
+        seen: dict[str, list[str]] = {}
+        for key, rows in all_rows(ctx())["ability"].items():
             for row in rows:
-                if row[K.ABILITY_INSTANT_KIND] in ("629",) + KL.SKILL_FLAG_KINDS:
-                    self.assertEqual(key, f"{K.CID}3", row[K.ABILITY_INSTANT_KIND])
+                kind = row[K.ABILITY_INSTANT_KIND]
+                if kind in want:
+                    seen.setdefault(kind, []).append(key)
+        self.assertEqual({k: sorted(set(v)) for k, v in seen.items()},
+                         {k: [v] for k, v in want.items()})
+        self.assertEqual({k: len(v) for k, v in seen.items()},
+                         {"629": 1, "536": 1, "704": 1})
+
+    def test_the_boost_flag_row_gates_on_leader_and_wind_resonance(self):
+        """这一行是「不在队长位就只给 1 档」的唯一落点；门丢了作者反馈的缺陷就回来了。"""
+        rows = all_rows(ctx())["ability"][f"{K.CID}6"]
+        boost = [r for r in rows if r[K.ABILITY_INSTANT_KIND] == "704"]
+        self.assertEqual(len(boost), 1)
+        row = boost[0]
+        self.assertEqual(row[6], "42")                              # 前置 42 Leader
+        self.assertEqual((row[13], row[18]), ("2", K.ELEMENT_TOKEN))  # 前置 2 风共鸣
+        self.assertEqual((row[16], row[17]), ("600000", "600000"))    # 编成 ≥6
+        self.assertEqual(row[70], K.CAS_FLAG2)
+        self.assertIn(row[27], ("", "0"))                            # Initial 触发
+        self.assertEqual(row[2], "special")                          # 官方 704 全部 special
 
     def test_direct_attack3_row_uses_an_initial_trigger(self):
         """C2308：瞬发常驻 201/202/521 的触发不是 Initial 就会被 validate() 打回。"""
@@ -472,6 +583,24 @@ class SkillTreeTests(unittest.TestCase):
                          [False, False, True, True])
         self.assertEqual(json.dumps(tree).count("ConditionalsChangeSkillFlag"), 3)
 
+    def test_the_two_skill_flag_branches_use_different_flag_indices(self):
+        """两条 CNA 判旗号 1（536，只限主位）、ACFixedSpeed 判旗号 2（704，队长 ∧ 风共鸣）。
+
+        两处写成同一个下标 = 非队长的主位也会拿到 4 档，作者反馈第 3 轮的缺陷原样复发。
+        """
+        for level in ("1", "2"):
+            tree, _ = self.tree(level)
+            nodes = list(wf_dsl.iter_dsl_commands(tree, "ConditionalsChangeSkillFlag"))
+            self.assertEqual(len(nodes), 3, level)
+            by_index = {}
+            for node in nodes:
+                kinds = sorted({c[2][0][0] for c in wf_dsl.iter_dsl_commands(node, "CreateCondition")}
+                               | {c[0] for c in wf_dsl.iter_dsl_commands(node, "CreateNormalAttack")})
+                by_index.setdefault(node[1], []).append(kinds)
+            self.assertEqual(sorted(by_index), [1, 2], level)
+            self.assertEqual(by_index[1], [["CreateNormalAttack"], ["CreateNormalAttack"]], level)
+            self.assertEqual(by_index[2], [["ACFixedSpeed"]], level)
+
     def test_fixed_speed_has_a_boosted_and_a_normal_branch(self):
         tree, _ = self.tree("2")
         values = self.values("2")
@@ -484,6 +613,18 @@ class SkillTreeTests(unittest.TestCase):
         self.assertEqual(len(normal), 1)
         self.assertEqual(boosted[0][3], K.span(values["fixed_speed_charge_boost"]))
         self.assertEqual(normal[0][3], K.span(values["fixed_speed_charge"]))
+        # 反馈轮 3：两支的基础时长都是 4 秒 = 240 帧
+        for entry in speeds:
+            self.assertEqual(entry[1], K.span(240))
+
+    def test_piercing_keeps_its_own_duration(self):
+        """贯穿时长不跟着速度固定缩短（作者只点名最大速度固定）。"""
+        for level, frames in (("1", 720), ("2", 900)):
+            tree, _ = self.tree(level)
+            piercing = [c[2][0] for c in wf_dsl.iter_dsl_commands(tree, "CreateCondition")
+                        if c[2][0][0] == "ACPiercing"]
+            self.assertEqual(len(piercing), 1, level)
+            self.assertEqual(piercing[0][1], K.span(frames), level)
 
     def test_grafted_conditions_keep_the_official_target_kinds(self):
         """``CreateCondition`` 下标 10 = 付与对象种类：82 配 3 Member、113 配 1（错配 = C16102）。"""
@@ -577,7 +718,7 @@ class PackageTests(unittest.TestCase):
             path = self.pkg() / wf_dsl.dsl_logical(program)
             self.assertTrue(path.is_file(), program)
 
-    def test_custom_ability_string_carries_exactly_our_nine_keys(self):
+    def test_custom_ability_string_carries_exactly_our_ten_keys(self):
         """多行 desc_override 的 ``\\n`` 必须活过 orderedmap 的 CSV 编解码（同 hibiki 的等价用例）。"""
         blob = core.read_orderedmap_file_from_bytes(
             (self.pkg() / KL.CAS).read_bytes())

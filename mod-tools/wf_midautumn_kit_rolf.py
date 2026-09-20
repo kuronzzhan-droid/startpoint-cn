@@ -9,9 +9,12 @@ rework1（2026-09-21，作者目标面板 ``rework1/panel/rolf.json``）把旧�
 * **冲刺线**：两条 ``422 DashParameter``（CD −33% ＋ Swift 数值抵消 +234.5%）落 ability 表、
   挂前置 42（Leader），文案由 ``desc_override_black_wolf_knight_moon`` 在队长块接管
   （422 写队长表 = 角色页 C7050，记忆 ``wf-dash-parameter-leader-table-trap``）；
-* **速度固定线**：``536`` 开的强化分支把技能树的 ``ACFixedSpeed`` 写成 ``[帧, 4, 0, 1]``
-  （速度 4 档、充能不衰减）；``IT 246`` 每持续 1 秒叠自身攻击力/直击伤害；
-* **连击线**：强化分支的 ``CreateNormalAttack tree[8]=true`` 吃连击成长；``IT 12`` 每 500 连击
+* **速度固定线**：``704``（ChangeSkillFlag2 = 旗号 2）**只在「队长 ∧ 风共鸣」时**打开，
+  技能树的 ``ACFixedSpeed`` 据此写成 ``[帧, 4, 0, 1]``（速度 4 档、充能不衰减）；
+  不在队长位时走常态档 ``[帧, 1, -0.1, 1]``（官方最轻档）。``IT 246`` 每持续 1 秒叠
+  自身攻击力/直击伤害；
+* **连击线**：``536``（旗号 1、只限主位）开的强化分支让 ``CreateNormalAttack tree[8]=true``
+  吃连击成长；``IT 12`` 每 500 连击
   用 ``629`` 调新建的 ``ability_skill_…_encore`` 追击树、每 100 连击 ``226`` 加 50 连击；
 * **段数线**：``IC 202 DirectAttack3`` t5＋风 常驻 ＋200%（全批统一 3 段，主 C 的 % ≥ 辅助）。
 
@@ -51,10 +54,13 @@ PF_TYPE, STANCE = 0, "Attacker"                  # c6 母本原值；c26 直击�
 
 ABILITY_KEYS = tuple(f"{CID}{slot}" for slot in range(1, 7))
 LEADER_ROWS = 7
-ABILITY_RECORDS = 18
+ABILITY_RECORDS = 19
 
 # ---------------------------------------------------------------- 自有字符串键
-CAS_FLAG = f"change_skill_{CODE}"                      # A3#3 的 536 面板条目
+CAS_FLAG = f"change_skill_{CODE}"                      # A3#3 的 536 面板条目（旗号 1）
+#: A6#4 的 704 面板条目（旗号 2 = ChangeSkillFlag2）。官方命名就是 ``change_skill_<code>_2``
+#: （``change_skill_wind_oracle_meteor23_2`` 等 11 行）。
+CAS_FLAG2 = f"change_skill_{CODE}_2"
 # 629 追击程序键：**不用完整 code**。`ability_skill_black_wolf_knight_moon_encore` 会让
 # 包内路径 `…/ability_skill/<键>$<键>.action.dsl.amf3.deflate` 超过 Windows 260 字符上限，
 # `--step inspect` 往临时目录复制时直接 WinError（20260921 实测）。长度对齐 kyle 的
@@ -74,7 +80,7 @@ SPEC = {
     # （两项本批 hibiki / kyle 都在用，已安装客户端具备）。
     "required_capabilities": ("dash-parameter-v1", "panel-description-override-v2"),
     "extra_keys": {
-        KL.CAS: (CAS_FLAG, CAS_ENCORE, CAS_LEADER,
+        KL.CAS: (CAS_FLAG, CAS_FLAG2, CAS_ENCORE, CAS_LEADER,
                  *(CAS_ABILITY[slot] for slot in range(1, 7))),
         KL.SWITCHED: (VOICE_KEY,),
     },
@@ -156,7 +162,8 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
         ("1411531#0", "official",
          {32: "6000000", 33: "6000000", 34: "(None)", 27: "246",
           47: "33", 48: "0", 49: "", 51: "50000", 52: "50000"}, None),
-        # ③a 强化技能开关（536）：开连击成长 + 速度固定 4 档／充能 0
+        # ③a 强化技能开关（536 = 旗号 1）：只开连击成长。速度固定 4 档搬到 A6#4 的 704（旗号 2），
+        #    由「队长 ∧ 风共鸣」独立控制（作者反馈第 3 轮：不在队长位时技能给 1 档）
         ("1411113#0", "official", {70: CAS_FLAG}, None),
         # ③b 每 500 连击 → 629 追击（donor 的 CT 就是 300 帧 = 5 秒）
         ("1611053#0", "official",
@@ -196,6 +203,11 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
         ("1299966#0", "store",
          {**_PRE_LEADER_A, **_PRE_RESONANCE_A2, **_DIRECT_100_A,
           48: "5", 49: ELEMENT_TOKEN, 51: "10000", 52: "10000"}, None),
+        # ④ 速度固定强化开关（704 = 旗号 2）：前置 42 Leader ＋ 风共鸣 ⇒ 只有他当队长且
+        #   风属性共鸣时，技能树的 ACFixedSpeed 才走 4 档／充能 0（面板队长技第 4 行）。
+        #   donor 是官方 11 行 704 里的风属性那行；官方全部 c1=true / c2=special，与本槽一致。
+        ("1411656#0", "official",
+         {**_PRE_LEADER_A, **_PRE_RESONANCE_A2, 70: CAS_FLAG2}, None),
     ),
 }
 
@@ -228,6 +240,8 @@ EXPECT: dict[str, str] = {
     "1499866#1": "队长 且 风·编成≥6 时: 持续·HP≤1 → 自身 冲刺参数(可调) -33%",
     "1499866#2": "队长 且 风·编成≥6 时: 持续·状态冲刺≥1 → 自身 冲刺参数(可调) 234.5%",
     "1499866#3": "队长 且 风·编成≥6 时: 编成直接攻击≥100 → 赋予全队(风) 独立乘区Direct伤害 10%",
+    "1499866#4": "队长 且 风·编成≥6 时: 自身 "
+                 "切换技能Flag2[change_skill_black_wolf_knight_moon_2]",
 }
 
 # ---------------------------------------------------------------- 面板文案
@@ -276,9 +290,12 @@ PANEL_ABILITY = {
 }
 
 CAS_TEXTS = {
-    # 536 条目：裁决 §3「技能强化条目不写数字与时间」⇒ 不许出现数字、秒、%
-    CAS_FLAG: "风属性共鸣时强化技能：威力随连击数提升，并把赋予的最大速度固定强化到最高档、"
-              "不衰减技能槽能量获取",
+    # 536 / 704 条目：裁决 §3「技能强化条目不写数字与时间」⇒ 不许出现数字、秒、%
+    CAS_FLAG: "风属性共鸣时强化技能：威力随连击数提升（按直接攻击伤害判定）",
+    # 704 是独立旗号，只在「担任队长 ∧ 风共鸣」时打开；「自身为队长时」是 desc_override 禁语，
+    # 这里写「担任队长」绕开（面板禁词表 FORBIDDEN_PANEL_WORDS）。
+    CAS_FLAG2: "担任队长并达成风属性共鸣时强化技能：把赋予的最大速度固定强化到最高档、"
+               "不衰减技能槽能量获取",
     CAS_ENCORE: "立即对最近的敌人发动自身技能的攻击效果",
     CAS_LEADER: PANEL_LEADER,
     **{CAS_ABILITY[slot]: PANEL_ABILITY[slot] for slot in range(1, 7)},
@@ -349,6 +366,17 @@ def _ban_kinds(kind: str, rows: list[list[str]], label: str) -> None:
                 raise KitError(f"{label}#{index}: 629 在副位不生效，该键必须 unisonable=false")
         if row[ABILITY_INSTANT_KIND] in KL.SKILL_FLAG_KINDS and not row[70]:
             raise KitError(f"{label}#{index}: {row[ABILITY_INSTANT_KIND]} 行必须带 c70 字符串键")
+        if row[ABILITY_INSTANT_KIND] == "704":
+            # 旗号 2 只喂技能树里的 ACFixedSpeed 4 档分支。丢了前置 42 = 主位非队长也吃 4 档
+            # （作者反馈第 3 轮点名要修的就是这个）；丢了风共鸣 = 与面板队长技第 4 行不符。
+            if row[6] != "42":
+                raise KitError(f"{label}#{index}: 704 行必须挂前置 42（持有者为队长），"
+                               "否则主位非队长也会拿到 4 档速度固定")
+            if (row[13], row[18]) != ("2", ELEMENT_TOKEN):
+                raise KitError(f"{label}#{index}: 704 行的前置 2 必须是风属性共鸣，"
+                               f"实为 kind={row[13]!r} group={row[18]!r}")
+            if row[70] != CAS_FLAG2:
+                raise KitError(f"{label}#{index}: 704 行的 c70 必须是 {CAS_FLAG2}")
 
 
 def _check_pullers(rows: list[list[str]], trigger_col: int, puller_col: int,
@@ -508,7 +536,7 @@ def write_strings(ctx) -> dict[str, str]:
     for key, text in CAS_TEXTS.items():
         for line in text.split("\n"):
             KL.check_panel(line.replace(MAIN_ICON, ""),
-                           skill_flag=(key == CAS_FLAG), label=key)
+                           skill_flag=(key in (CAS_FLAG, CAS_FLAG2)), label=key)
     for slot in range(1, 7):
         rendered = CAS_TEXTS[CAS_ABILITY[slot]].split("\n")
         wants_icon = _UNISONABLE[slot] == "false"
@@ -541,7 +569,13 @@ HIT_AREA_MAXHITS_SLOT = 14
 HIT_AREA_ONHIT_SLOT = 23
 CNA_MULTIPLIER_SLOT = 6
 CNA_COMBO_SLOT = 8      # tree[8] = enablesComboBonus ⇒ ×(1 + 连击×0.005)，无上限（卡 A §5.1）
-SKILL_FLAG_INDEX = 1    # ConditionalsChangeSkillFlag 的旗号（536 = 1，704 = 2；本套件只用 1）
+#: ``ConditionalsChangeSkillFlag`` 的旗号。词条 kind → 旗号：536=1、704=2、705=3、706=4、
+#: 707=5、708=6（``InstantAbilitySource.as`` 5018/5883-5903 实读）。引擎把旗号存进
+#: ``instantChangeSkillFlag[成员索引][旗号]``，DSL 侧 ``case 86: int(params[0]) →
+#: Environment.hasAbilityPower(旗号)``（``ActionEvaluationResolver.as:1118``）⇒ 按下标取，
+#: 两个旗号互不干扰。本套件用 1 = 连击成长（只限主位）、2 = 速度固定 4 档（队长 ∧ 风共鸣）。
+SKILL_FLAG_INDEX = 1
+SKILL_FLAG_INDEX_BOOST = 2
 
 FX_SRC_DIR = f"battle/effect/skill_unique/{TEMPLATE_CODE}"
 FX_SUBDIR = "moonlight"
@@ -583,13 +617,16 @@ def block(payloads) -> list:
     return ["Block", [cmd(p) for p in payloads]]
 
 
-def flag_branch(then_payloads, else_payloads) -> list:
-    """``["ConditionalsChangeSkillFlag", 1, Block[…], Block[…]]``（官方 silence_suzuka_2 实读形状）。
+def flag_branch(then_payloads, else_payloads, index: int = SKILL_FLAG_INDEX) -> list:
+    """``["ConditionalsChangeSkillFlag", 旗号, Block[…], Block[…]]``（官方 silence_suzuka_2 实读形状）。
 
     分支必须是完整 ``Block``；空分支写 ``["Block", []]``，**禁写 ``["DoNothing"]``**
     （那是 ``IfTargetNotFound`` 的枚举，进游戏 F1009，记忆卡 wf-dsl-donothing-enum-trap）。
+    ``index`` 只接受本套件用到的两个旗号，写错下标 = 分支永远走 else（静默失效）。
     """
-    return ["ConditionalsChangeSkillFlag", SKILL_FLAG_INDEX,
+    if index not in (SKILL_FLAG_INDEX, SKILL_FLAG_INDEX_BOOST):
+        raise KitError(f"unknown skill flag index {index!r}")
+    return ["ConditionalsChangeSkillFlag", index,
             block(then_payloads), block(else_payloads)]
 
 
@@ -709,10 +746,12 @@ def find_statement(tree, predicate):
 def make_team_block(ctx, values: dict[str, Any]):
     """铃鹿 ``silence_suzuka_2`` 的「主小队 → 贯通 ＋ 最大速度固定」整块，丢掉 ACFlying。
 
-    ``ACFixedSpeed`` 外包 ``ConditionalsChangeSkillFlag(1)``：then 支 = 强化档
-    ``[帧, 4, 0, 1]``（速度 4 档、充能 0 不衰减，面板队长技第 4 行）；else 支 = 常态档
-    ``[帧, 1, -0.1, 1]``（官方最轻档）。选择器 82 = 主小队，``CreateCondition`` 下标 10
-    （付与对象种类）= 3 Member，第 1 参必须等于所在 ``FindAllSubjects`` 的绑定 id。
+    ``ACFixedSpeed`` 外包 ``ConditionalsChangeSkillFlag(2)``（**旗号 2，不是 1**）：then 支 =
+    强化档 ``[帧, 4, 0, 1]``（速度 4 档、充能 0 不衰减，面板队长技第 4 行）；else 支 = 常态档
+    ``[帧, 1, -0.1, 1]``（官方最轻档）。旗号 2 由 A6#4 的 704 行打开，那行挂前置 42 Leader
+    ＋ 风共鸣 ⇒ 他不在队长位时永远走 else 支的 1 档（作者反馈第 3 轮）。
+    选择器 82 = 主小队，``CreateCondition`` 下标 10（付与对象种类）= 3 Member，
+    第 1 参必须等于所在 ``FindAllSubjects`` 的绑定 id。
     """
     donor = ctx.template_dsl(SUZUKA_PROGRAM)
 
@@ -754,7 +793,7 @@ def make_team_block(ctx, values: dict[str, Any]):
             boosted = copy.deepcopy(inner)
             boosted[2][0][2] = span(values["fixed_speed_speed_boost"])
             boosted[2][0][3] = span(values["fixed_speed_charge_boost"])
-            kept.append(cmd(flag_branch([boosted], [inner])))
+            kept.append(cmd(flag_branch([boosted], [inner], index=SKILL_FLAG_INDEX_BOOST)))
         else:
             raise KitError(f"unexpected condition {name} in the suzuka block")
         names.append(name)
@@ -1043,10 +1082,18 @@ def build(ctx) -> dict[str, Any]:
 
     energy = design["plan_rework1"]["skills"]["energy"]
     notes = [
-        "rework1（作者目标面板 rework1/panel/rolf.json）：队长 5 行 → 7 行、词条 12 条 → 18 条；"
+        "rework1（作者目标面板 rework1/panel/rolf.json）：队长 5 行 → 7 行、词条 12 条 → 19 条；"
         "新增 422×2（冲刺 CD −33% ＋ Swift 数值抵消 +234.5%，挂前置 42 只在当队长时成立）、"
-        "536 强化开关、629 连击追击、202 常驻 3 段、IT 246 速度固定读秒、IC 693 直击独立乘区。"
+        "536 强化开关（旗号 1）、704 速度固定开关（旗号 2，前置 42 Leader ＋ 风共鸣）、"
+        "629 连击追击、202 常驻 3 段、IT 246 速度固定读秒、IC 693 直击独立乘区。"
         "面板 7 块全部由 desc_override_* 接管；本轮不建固有状态 ⇒ 无 48×48 图标",
+        "反馈轮 3（作者原话「罗尔夫的最大速度固定效果不在队长位置也是最快的那档,应该是1档，"
+        "技能附加的最大速度固定效果时间缩短到4s」）：①「4 档／充能 0」从 536（只限主位）"
+        "拆到新的 704（旗号 2，前置 42 Leader ＋ 风共鸣），技能树的 ACFixedSpeed 分支改判旗号 2；"
+        "「强化技能：威力随连击数提升」仍留在 536 旗号 1，条件不变。"
+        f"②技能附加的最大速度固定基础时长 720/900 帧 → {values['1']['fixed_speed_frames']}/"
+        f"{values['2']['fixed_speed_frames']} 帧（4 秒）；贯穿保持 "
+        f"{values['1']['piercing_frames']}/{values['2']['piercing_frames']} 帧不动",
         "技能『月下独奏』：母本 141159 整树（FindNearSubjects → CreateReferencePoint → 停球 70 帧 → "
         "Wait 9 斩击 / Wait 49 爆击 10 连）；删母本 root[1] 的 PF 块；两处判定区 params[23] 0→4 "
         "⇒ 两段走**直接攻击伤害池**；两条 CreateNormalAttack 外包 ConditionalsChangeSkillFlag(1)，"
@@ -1059,18 +1106,21 @@ def build(ctx) -> dict[str, Any]:
         f"{energy['inner2']['c4']}/{energy['inner2']['c5']}（不改）",
         "嫁接两块官方状态：root[1] = 铃鹿 silence_suzuka_2 的 FindAllSubjects(82 主小队) 整块，"
         "丢掉 ACFlying，留 ACPiercing ＋ ACFixedSpeed（绑定 8）；ACFixedSpeed 再外包 "
-        "ConditionalsChangeSkillFlag(1)：then 支 "
-        f"[帧, {values['2']['fixed_speed_speed_boost']}, {values['2']['fixed_speed_charge_boost']}, 1]"
-        "（速度 4 档、充能不衰减 = 队长技第 4 行），else 支 "
-        f"[帧, {values['2']['fixed_speed_speed']}, {values['2']['fixed_speed_charge']}, 1]；"
+        "ConditionalsChangeSkillFlag(**2**)：then 支 "
+        f"[{values['2']['fixed_speed_frames']}, {values['2']['fixed_speed_speed_boost']}, "
+        f"{values['2']['fixed_speed_charge_boost']}, 1]"
+        "（速度 4 档、充能不衰减 = 队长技第 4 行，只在队长 ∧ 风共鸣时打开），else 支 "
+        f"[{values['2']['fixed_speed_frames']}, {values['2']['fixed_speed_speed']}, "
+        f"{values['2']['fixed_speed_charge']}, 1]（1 档）；"
         "root[2] = 画狂老人Z mob_jiguza_playable_2 的 FindAllSubjects(113,[4]) → ACDirectDamage（绑定 9）。"
         "付与对象种类照抄官方（82→3 Member、113→1），CreateCondition 第 1 参 == 所在 FindAllSubjects 绑定 id",
         f"629 追击树 {ENCORE_PROGRAM}：母本主块的伤害两段（判定区 params[23]=4、CNA tree[8]=true），"
         f"删掉 {encore_gates['stop_ball_removed']} 条 StopBall，不复刻团队增益（施工单偏离 R-D4）；"
         "根 buffTargetAs 保持 0。629 行 c70/c71 双写、CT 300 帧、该键 unisonable=false",
-        "队长 7 行 + 词条 18 条全部「官方/live donor 整行 + 逐格改」，每行过 client_legality 三件套"
+        "队长 7 行 + 词条 19 条全部「官方/live donor 整行 + 逐格改」，每行过 client_legality 三件套"
         "并与 EXPECT 里的 wf_describe 回读逐字比对；during 触发 puller 逐行断言："
-        "D214/D30/D34 留空、D204 写 9＋元素组（parseAt98 C7050）；422 行断言前置 42 与 c118 非空",
+        "D214/D30/D34 留空、D204 写 9＋元素组（parseAt98 C7050）；422 行断言前置 42 与 c118 非空；"
+        "704 行断言前置 42 ＋ 风共鸣 ＋ c70",
         "技能特效直接引用官方 battle/effect/skill_unique/black_wolf_knight_wt23/{_slash,_smash,_explosion}"
         "（风→风零染色、零图集增量）" + ("；已套用 B/pixel/rolf/fx_lut.json 克隆换色" if lut else
                                         "；B/pixel/rolf/fx_lut.json 不存在 ⇒ 不克隆不换色（设计默认）"),
@@ -1097,7 +1147,8 @@ def build(ctx) -> dict[str, Any]:
     return KL.report(
         ctx,
         summary="罗尔夫 rework1：风属性直击输出核心（冲刺 × 最大速度固定 × 连击三线，"
-                "536 强化档给 4 档速度固定与连击成长，629 每 500 连击追击）",
+                "536 旗号 1 给连击成长、704 旗号 2 只在队长 ∧ 风共鸣时给 4 档速度固定，"
+                "629 每 500 连击追击）",
         status=KL.READY if ready else KL.DRAFT, panel=panel, notes=notes, programs=programs,
         required_capabilities=sorted(rows["capabilities"]), deviations=deviations,
         extra={"kit_gate": gate, "voice_route": route,
