@@ -610,15 +610,35 @@ class _StubCtx:
 
 
 @unittest.skipUnless(_LIVE, "requires live store, repo assets and official baseline archives")
+def _published_keys(root):
+    """已由 flow 发布的角色：其键被自己占用是预期，不再参与「未占用」断言。"""
+    import json
+    ledger = root / ".cdn" / "cn" / "character-releases" / "active.json"
+    if not ledger.is_file():
+        return set()
+    data = json.loads(ledger.read_text(encoding="utf-8"))
+    owned = {r.get("package_id") for r in data.get("releases", [])}
+    # base_package_owners 的形状随账本版本变过（dict / list[dict] / list[list]），只取字符串
+    text = json.dumps(data.get("base_package_owners", []), ensure_ascii=False)
+    owned |= {MS.SPECS[k].pkg_id for k in MS.all_keys() if f'"{MS.SPECS[k].pkg_id}"' in text}
+    return {k for k in MS.all_keys() if MS.SPECS[k].pkg_id in owned}
+
+
 class LiveCheckTests(unittest.TestCase):
     def test_whole_roster_is_unoccupied(self):
-        specs = [MS.SPECS[k] for k in MS.all_keys()]
-        probe = MC.MAPack(specs[0])
+        probe = MC.MAPack(MS.SPECS[MS.all_keys()[0]])
+        published = _published_keys(probe.root)
+        specs = [MS.SPECS[k] for k in MS.all_keys() if k not in published]
+        if not specs:
+            self.skipTest("whole roster already published")
         problems = MS.occupancy_problems(specs, repo_root=probe.root, store=probe.store)
         self.assertEqual({k: v for k, v in problems.items() if v}, {})
 
     def test_check_step_is_clean_for_every_character(self):
+        published = _published_keys(MC.MAPack(MS.SPECS[MS.all_keys()[0]]).root)
         for key in MS.all_keys():
+            if key in published:
+                continue
             pack = MC.MAPack(MS.get_spec(key, with_kit=False, with_design=False))
             result = MB.step_check(pack)
             self.assertEqual(result["occupancy"], [], key)

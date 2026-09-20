@@ -639,12 +639,36 @@ def dsl_shape_problems(program: str, tree: Any) -> tuple[list[str], list[str], l
 _ASSET_REF_RE = re.compile(r"^(battle|character|sound|se|bgm)/[\w./$-]+$")
 
 
+def _resolve_by_element_bases(node: Any) -> Iterable[str]:
+    """树里所有 ``["ResolveByElement", "<基路径>", <属性码>]`` 的基路径。
+
+    基路径是客户端运行时按属性派生分色路径的模板，**本身不是资产**
+    （逐字同 ``wf_character_requirements.py`` 的 ``_iter_effect_nodes`` 结论；
+    按字面路径校验它必然误报缺失，见该文件 235 行注释与
+    ``resolve_effect_by_element``：真实路径是
+    ``f"{base}/{name}_{colour}/{name}_{colour}"``）。这里只需要把基路径从
+    字面资产扫描里摘掉，实际是否可解析已经由 ``flow inspect`` 的
+    ``master_reference`` 走正确派生逻辑核实过。
+    """
+    if isinstance(node, (list, tuple)):
+        if node and node[0] == "ResolveByElement" and len(node) > 1 and isinstance(node[1], str):
+            yield node[1]
+        for item in node:
+            yield from _resolve_by_element_bases(item)
+    elif isinstance(node, dict):
+        for value in node.values():
+            yield from _resolve_by_element_bases(value)
+
+
 def dsl_asset_problems(pack: Pack, program: str, tree: Any) -> tuple[list[str], list[str]]:
     """引用的特效/音效基名能否在包内或 live store 解析。返回 (硬错, 无法判定的 warning)。"""
     missing: list[str] = []
     undecided: list[str] = []
+    resolve_bases = set(_resolve_by_element_bases(tree))
     for value in sorted(set(_strings(tree))):
         if not _ASSET_REF_RE.match(value):
+            continue
+        if value in resolve_bases:
             continue
         candidates = [value + suffix for suffix in
                       (".parts.amf3.deflate", ".timeline.amf3.deflate", ".atlas.amf3.deflate",

@@ -283,7 +283,10 @@ def install_staged_assets(ctx, path: Path | None = None) -> dict[str, Any]:
 
     - ``file`` 相对 install.json 所在目录（也可写绝对路径，但必须在批目录下）；
     - 文件不存在 **静默跳过**（像素代理还没交付时 kit 照样能跑通）；
-    - ``owner`` 默认 ``pixel``；写进去的文件被登记所有权，assets 重跑不会覆盖。
+    - ``owner`` 默认 ``pixel``；写进去的文件被登记所有权，assets 重跑不会覆盖；
+    - ``.png`` 交付件若是标准 PNG（``\\x89PNG``），自动换成 WF 存储态魔数（``\\x89png``）。
+      这一步只改前 8 个字节，像素数据一位不动；不换会在 manifest 门禁报
+      「WF storage signature required」（20260920 magnus 实测）。
     """
     path = Path(path) if path is not None else pixel_dir(ctx) / "install.json"
     if not path.is_file():
@@ -313,10 +316,15 @@ def install_staged_assets(ctx, path: Path | None = None) -> dict[str, Any]:
             skipped.append({"logical": logical, "file": str(source), "reason": "missing"})
             continue
         data = source.read_bytes()
+        restored = False
+        if str(logical).lower().endswith(".png") and data[:8] == b"\x89PNG\r\n\x1a\n":
+            import wf_assets
+            data = wf_assets.png_encode(data)
+            restored = True
         ctx.write_asset(root, logical, data, owner=owner)
         installed.append({"root": root, "logical": logical, "owner": owner,
                           "sha256": hashlib.sha256(data).hexdigest(), "size": len(data),
-                          "source": str(source)})
+                          "source": str(source), "store_signature_applied": restored})
     return {"install_json": str(path), "present": True, "installed": installed, "skipped": skipped}
 
 
