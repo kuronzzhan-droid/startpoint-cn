@@ -4,7 +4,11 @@
 
     python mod-tools/wf_midautumn_verify.py --workspace work/character_packs/ma-kyle \
         [--design work/character_packs/midautumn-20260920/design/kyle.json] [--gbf] \
-        --out work/character_packs/midautumn-20260920/impl/kyle/verify.json
+        [--pixel-freeform] --out work/character_packs/midautumn-20260920/impl/kyle/verify.json
+
+``--pixel-freeform``：角色像素不是「母本 8 件套逐色映射直替」（例如索恩的三张静态图程序化合成
+全序列，裁决 §4／作者决定），sheet 尺寸天然不等于母本快照；同 ``--gbf`` 一样把
+``art/pixel-sheet-dims`` 降级为 warning 并登记，不放宽默认（逐色映射直替角色的）路径。
 
 退出码:0 = 全过(只剩 warning),1 = 有 blocking 项,2 = 工具本身出错。
 
@@ -865,7 +869,7 @@ def _canonical_slots() -> tuple[str, ...]:
 
 # ---------------------------------------------------------------- 5. 美术
 
-def check_art(pack: Pack, rep: Report, *, gbf: bool = False) -> None:
+def check_art(pack: Pack, rep: Report, *, gbf: bool = False, pixel_freeform: bool = False) -> None:
     ui: dict[str, set[str]] = {}
     for root in CLIENT_ROOTS:
         base = pack.roots / root / "character" / pack.code / "ui"
@@ -908,11 +912,15 @@ def check_art(pack: Pack, rep: Report, *, gbf: bool = False) -> None:
                         "(缩 PNG = 缩角色;记忆卡 wf-sprite-sheet-packer-dedup-fix)")
     # GBF 两人是原创角色、像素自绘,不是母本逐色映射直替 —— 尺寸本来就不同族,
     # 这一项对它们不适用,降级为 warning 并登记(裁决 §4 只对「有官方母本」的角色要求直替)。
-    rep.result(dims, "art/pixel-sheet-dims", WARNING if gbf else BLOCKING,
+    # pixel_freeform 同理:角色像素走「静态图程序化合成全序列」等非逐色映射直替路线
+    # (例如索恩,作者决定 + 裁决 §4),sheet 按内容去重打包,尺寸天然与母本快照不同。
+    freeform = gbf or pixel_freeform
+    rep.result(dims, "art/pixel-sheet-dims", WARNING if freeform else BLOCKING,
                None if dims else "ok")
-    if gbf and dims:
-        rep.checks[-1]["evidence"]["note"] = \
-            "GBF 原创角色像素自绘,与 donor 母本不同尺寸属批次差异,已降级登记"
+    if freeform and dims:
+        rep.checks[-1]["evidence"]["note"] = (
+            "GBF 原创角色像素自绘,与 donor 母本不同尺寸属批次差异,已降级登记" if gbf else
+            "非逐色映射直替(程序化合成/去重打包),与 donor 母本不同尺寸属预期差异,已降级登记")
 
     rep.add("art/pixel-alpha", True, WARNING, _alpha_report(pack))
 
@@ -1057,7 +1065,7 @@ def check_design(pack: Pack, rep: Report, design: Path | None) -> None:
 # ---------------------------------------------------------------- 入口
 
 def verify(workspace: Path, *, root: Path, design: Path | None = None,
-           gbf: bool = False, threshold: float | None = None,
+           gbf: bool = False, pixel_freeform: bool = False, threshold: float | None = None,
            skip_atlas: bool = False) -> dict[str, Any]:
     pack = Pack(workspace, root)
     rep = Report()
@@ -1066,7 +1074,7 @@ def verify(workspace: Path, *, root: Path, design: Path | None = None,
     check_capabilities(pack, rep)
     check_periods(pack, rep)
     check_voice(pack, rep, gbf=gbf)
-    check_art(pack, rep, gbf=gbf)
+    check_art(pack, rep, gbf=gbf, pixel_freeform=pixel_freeform)
     if not skip_atlas:
         check_atlas(pack, rep, gbf=gbf, threshold=threshold)
     check_panel(pack, rep)
@@ -1079,6 +1087,7 @@ def verify(workspace: Path, *, root: Path, design: Path | None = None,
         "character_id": pack.cid,
         "code_name": pack.code,
         "gbf": bool(gbf),
+        "pixel_freeform": bool(pixel_freeform),
         "status": "PASS" if not blocking else "BLOCKED",
         "exit_code": 0 if not blocking else 1,
         "counts": {
@@ -1100,6 +1109,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--design", help="B/design/<key>.json(可选,做覆盖对照)")
     parser.add_argument("--gbf", action="store_true",
                         help="GBF 两人包:图集阈值 5.0,不要求 22 个生成语音槽")
+    parser.add_argument("--pixel-freeform", action="store_true",
+                        help="像素非母本逐色映射直替(如程序化合成全序列):"
+                             "art/pixel-sheet-dims 降级为 warning")
     parser.add_argument("--threshold", type=float, help="覆盖图集 layer0_pct 阈值")
     parser.add_argument("--skip-atlas", action="store_true", help="跳过图集预算子进程")
     parser.add_argument("--out", required=True, help="verify.json 落点")
@@ -1120,6 +1132,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             design = root / design
     try:
         payload = verify(workspace.resolve(), root=root, design=design, gbf=args.gbf,
+                         pixel_freeform=args.pixel_freeform,
                          threshold=args.threshold, skip_atlas=args.skip_atlas)
     except Exception as exc:
         out = {"schema": SCHEMA, "status": "ERROR", "exit_code": 2, "error": str(exc)}
