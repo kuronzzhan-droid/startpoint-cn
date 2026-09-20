@@ -30,7 +30,8 @@ import wf_midautumn_specs as MS
 CID, CODE = 119990, "lion_swordman_moon"
 CID_S = str(CID)
 TEMPLATE_ID, TEMPLATE_CODE = 111129, "lion_swordman_playable"
-UID = MS.unique_condition_id(CID, 1)                       # "11999001"
+UID = MS.unique_condition_id(CID, 1)                       # "11999001" 引擎点火
+UID_AURA = MS.unique_condition_id(CID, 2)                  # "11999002" 烈焰光环（作者追加）
 
 PFA = "master/skill/power_flip_action.orderedmap"
 PF_KEY = f"{CODE}_pf"
@@ -55,6 +56,8 @@ VOICE_KEY = f"{CODE}_voice_ready"
 CHASE_PROGRAM = f"battle/action/skill/action/ability_skill/{CHASE_STRING}${CHASE_STRING}"
 UC_ICON_ROW = f"battle/common/unique_condition/unique_{CODE}_ignition"
 UC_ICON_LOGICAL = UC_ICON_ROW + ".png"
+UC_AURA_ICON_ROW = f"battle/common/unique_condition/unique_{CODE}_aura"
+UC_AURA_ICON_LOGICAL = UC_AURA_ICON_ROW + ".png"
 UC_ICON_FRAME_DONOR = "battle/common/unique_condition/unique_fire_dragon_zenith.png"
 
 # 母本特效：只引用、不改色 ⇒ 直接引用官方路径，不复制（裁决 §4 / 框架 §10.3）。
@@ -126,7 +129,7 @@ TEXTS = {
 SPEC = {
     "required_capabilities": ("dash-parameter-v1", "panel-description-override-v2"),
     "extra_keys": {
-        MS.UNIQUE_CONDITION_LOGICAL: (UID,),
+        MS.UNIQUE_CONDITION_LOGICAL: (UID, UID_AURA),
         KL.CAS: (CHASE_STRING, SWITCH_STRING, PF_STRING, LEADER_OVERRIDE,
                  *(SLOT_OVERRIDE[s] for s in SLOT_OVERRIDE_SLOTS)),
         KL.SWITCHED: (VOICE_KEY,),
@@ -148,7 +151,18 @@ UNIQUE_CELLS = {0: f"unique_{CODE}_ignition", 2: UC_ICON_ROW, 3: UNIQUE_FRAMES,
 FIRE_LEADER = {4: "2", 7: "600000", 8: "600000", 9: "Red"}     # leader 前置1 = 火编成≥6
 FIRE_ABILITY = {6: "2", 9: "600000", 10: "600000", 11: "Red"}  # ability 前置1 = 火编成≥6
 
-# 队长技 5 行（面板 6 行：2 条冲刺文案对应的 422 行在词条槽 5，见施工单偏离 D-1）
+# 「自身持有烈焰光环时」的队长表前置（作者追加行）。
+#
+# 语义上想要的是前置 187 `ConditionUnique`（「持有某固有状态」），但**官方 leader_ability
+# 1107 行里 187 出现 0 次**（用到的前置只有 2/8/38/186/188/205；187 的 7 行全在 ability 表）。
+# 队长表零先例的 kind ＝ 角色详情页 C7050 的老坑，所以这一行改用**前置 188
+# `ConditionCountUnique` 阈值 ≥1**：官方队长表 6 行先例（`111183#4/#5` 火龙「持有勇敢之焰时」、
+# `111165#3/#4`、`131152#2/#3`），其中 `131152#2/#3` 就是把 188 放在 precondition1 的写法。
+# 188 数的是固有状态**实例个数**（恒为 1，记忆卡 wf-unique-cap-none-trap）——阈值写 ≥2 永不成立，
+# 写 ≥1 就是「持有」，与 187 等价；本 kit 槽 3 的 629/525 对也是同一写法。
+HAS_AURA_LEADER = {4: "188", 5: "0", 7: "100000", 8: "100000", 9: "", 10: UID_AURA}
+
+# 队长技 6 行（面板 7 行：2 条冲刺文案对应的 422 行在词条槽 5，见施工单偏离 D-1）
 LEADER: tuple[tuple[str, str, dict[int, str], str], ...] = (
     ("141201#1", "official",
      {0: CODE, **FIRE_LEADER, 45: "722", 80: PF_KEY, 81: "1,2,3", 82: PF_STRING},
@@ -168,6 +182,15 @@ LEADER: tuple[tuple[str, str, dict[int, str], str], ...] = (
      {0: CODE, 25: "2", 26: "", 28: "500000", 29: "500000",
       49: "200000", 50: "200000", 66: UID},
      "火·编成≥6 时: 强化弹射≥5 → 自身 状态固有 200%×1次"),
+    # 作者追加（09-21 07:4x）「狮子队长技添加自身持有光环时，弹射时连击+35」。
+    # donor ＝ 官方 `131005#4`（雷电剑士，队长表里唯一一族「触发 6 BallFlip → 内容 226 AddCombo」
+    # 的现成行，另一条同形是 `221004#2`）。改四组：①c1/c2 去掉 donor 的觉醒标记（本角色其余
+    # 5 行都是 c1='0'/c2 空）；②前置 1 换成 HAS_AURA_LEADER；③阈值 5 次 → 1 次、CT 600 → 0；
+    # ④强度 6 连击 → 35 连击（连击类 ×100000）。**不加火共鸣门**：作者原话没写属性共鸣。
+    ("131005#4", "official",
+     {0: CODE, 1: "0", 2: "", **HAS_AURA_LEADER,
+      28: "100000", 29: "100000", 33: "0", 49: "3500000", 50: "3500000"},
+     f"状态计数固有≥1[固有{UID_AURA}] 时: 弹射≥1 → 自身 追加连击 35"),
 )
 
 _A = "action_skill"
@@ -281,6 +304,7 @@ CAS_TEXTS = {
         "火属性共鸣时，每发动3次强化弹射，火属性角色技能伤害＋100%、攻击力＋50%",
         "火属性共鸣时，每发动5次强化弹射，自身技能槽＋10%",
         "火属性共鸣时，每发动5次强化弹射，自身引擎点火＋2层",
+        "自身持有「烈焰光环」期间，每次弹射，连击＋35",
     )),
     SLOT_OVERRIDE[1]: "\n".join((
         "战斗开始时，自身技能槽＋50%",
@@ -309,6 +333,39 @@ VOICE_ROUTE = {"kind": 1, "condition_kind": "28", "condition_id": UID}
 
 # ---- DSL 旋钮 ----------------------------------------------------------------
 AURA_FRAMES = 600
+
+# 「烈焰光环」固有状态（作者追加 09-21）：光环本来只是「特效 + 判定区」，没有任何状态可供词条判定。
+# 技能树在创建光环的同一处给自身（-17）付一层这个固有，队长技那一行就以「持有它」为前置。
+#
+# donor 沿用 `unique_condition[19]`（与「引擎点火」同一母本，形状已验证）。逐格改：
+#   c3 1200 → AURA_FRAMES（600 帧 ＝ 10 秒，**与光环寿命同源**，不许另写魔数）；
+#   c4 3 → "1"（上限 1 层；官方同值先例 unique_ice_dragon/unique_tenjinin/unique_kinin/
+#            unique_devil_leader。写 "(None)" 也是上限 1，但 KL.unique_row 直接拒绝它）；
+#   c14 'fire_dragon_zenith' → "(None)"（c14 ＝ PF 语音替换角色，这个状态不碰 PF 语音）。
+# 保留 donor 的 c9=false（不可驱散）/ c10=true（无视弱体耐性）/ c11='0'（Good 方向，是增益）/
+# c12='0'（overwrite_mode）/ c13=true（入棺时移除）。
+#
+# **重复开技能＝刷新时长，不叠层、不被拒绝**【事实，客户端实读】：
+# `ConditionChangeCalculator.as:190` 在 overwrite_mode=0 且 maxAccumulation==1、目标非敌对时
+# 选 `ConditionOverwriteStrategy.ChooseOneWithLongerRemainingTime`；
+# `ConditionSlot.as:7521` 的 index 0 分支取 `max(剩余帧, 新帧)`，
+# 同函数 7601 行 `maxAccumulation > 1` 为假时走 `max(旧强度, 新强度)` ⇒ 层数恒为 1。
+AURA_UNIQUE_DONOR = "19"
+AURA_UNIQUE_NAME = "烈焰光环"
+AURA_UNIQUE_CAP = "1"
+AURA_UNIQUE_CELLS = {0: f"unique_{CODE}_aura", 2: UC_AURA_ICON_ROW,
+                     3: str(AURA_FRAMES), 4: AURA_UNIQUE_CAP, 14: "(None)"}
+
+# 付与节点的官方 donor：`psycho_reaper_meteor23` 的主技能根层就是一条
+# `CreateCondition(-17, [ACUnique(18, 3层)], …, 付与对象种类 3, …)`。
+# 全官方基线扫描（953 棵技能树）里「CreateCondition 携带 ACUnique」共 14 条，
+# 其中 `subject=-17 / 付与对象种类=3` 的 6 条来自 psycho_reaper_meteor23 与 megumin
+# —— 这是「给自身付一个固有状态」的唯一官方形状，直接整条克隆，只换固有 id 与层数。
+AURA_MARK_DONOR = ("battle/action/skill/action/rare5/"
+                   "psycho_reaper_meteor23$psycho_reaper_meteor23_2")
+AURA_MARK_DONOR_UID = 18          # 母本固有「抛掷捧花」；漂移即拒绝
+AURA_MARK_TARGET_KIND = 3         # 下标 10 ＝ 付与对象种类；自身/Member 写 3（错配 = 施法 C16102）
+AURA_MARK_STACKS = 1              # ACUnique 第二参 ＝ 层数（不是帧数）；上限 1 ⇒ 只能是 1
 # 光圈「画出来的环」与「判定圆」必须等大，否则玩家看到环压住敌人却不掉血
 # （反馈轮 1 作者原话「光环稍微小一点，而且没有碰撞到的技能伤害」）。
 # 实测（`_donor/anger_investigator/*`，脚本见 W/impl/magnus.md「反馈轮 1」）：
@@ -463,10 +520,18 @@ def _design_problems(design: dict[str, Any]) -> list[str]:
             cmp(f"ability {CID}{slot}#{index}", got, want)
 
     add = plan.get("unique_conditions", {}).get("add", [])
-    if len(add) != 1 or add[0].get("key") != UID:
+    want_unique = ((UID, UNIQUE_DONOR, UNIQUE_NAME, UNIQUE_CELLS),
+                   (UID_AURA, AURA_UNIQUE_DONOR, AURA_UNIQUE_NAME, AURA_UNIQUE_CELLS))
+    if [a.get("key") for a in add] != [key for key, _d, _n, _c in want_unique]:
         problems.append(f"unique_conditions design block unexpected: {[a.get('key') for a in add]}")
-    elif _norm_cells(add[0].get("cells")) != _norm_cells(UNIQUE_CELLS):
-        problems.append("unique cells differ from design")
+    else:
+        for got, (key, donor, name, cells) in zip(add, want_unique):
+            if got.get("donor") != donor:
+                problems.append(f"unique {key}: donor {got.get('donor')!r} != {donor!r}")
+            if got.get("name") != name:
+                problems.append(f"unique {key}: name {got.get('name')!r} != {name!r}")
+            if _norm_cells(got.get("cells")) != _norm_cells(cells):
+                problems.append(f"unique {key}: cells differ from design")
 
     energy = plan.get("skills", {}).get("energy", {})
     for level in ("1", "2"):
@@ -492,27 +557,42 @@ def _design_problems(design: dict[str, Any]) -> list[str]:
 
 # ---------------------------------------------------------------- 固有状态 + 图标
 
-def build_unique(ctx) -> tuple[str, list[str]]:
+def build_unique(ctx) -> dict[str, list[str]]:
+    """两个固有状态：「引擎点火」（99 层 / 无时限）与「烈焰光环」（1 层 / 与光环寿命同长）。"""
     key, row = KL.unique_row(ctx, ctx.spec, 1, UNIQUE_DONOR, UNIQUE_CELLS, name=UNIQUE_NAME)
     if key != UID:
         raise KitError(f"unique id {key} != {UID}")
     if row[3] != UNIQUE_FRAMES or row[4] != UNIQUE_CAP:
         raise KitError(f"unique duration/cap unexpected: c3={row[3]!r} c4={row[4]!r}")
-    KL.write_unique(ctx, ctx.spec, {key: row})
-    return key, row
+
+    aura_key, aura_row = KL.unique_row(ctx, ctx.spec, 2, AURA_UNIQUE_DONOR, AURA_UNIQUE_CELLS,
+                                       name=AURA_UNIQUE_NAME)
+    if aura_key != UID_AURA:
+        raise KitError(f"aura unique id {aura_key} != {UID_AURA}")
+    if aura_row[3] != str(AURA_FRAMES):
+        raise KitError(f"aura unique duration c3={aura_row[3]!r} != AURA_FRAMES {AURA_FRAMES}")
+    if aura_row[4] != AURA_UNIQUE_CAP or aura_row[4] in ("", "(None)"):
+        raise KitError(f"aura unique cap c4={aura_row[4]!r} must be the official '1'")
+    if aura_row[11] != "0":
+        raise KitError(f"aura unique direction c11={aura_row[11]!r} must be '0' (Good/增益)")
+    if aura_row[12] != "0":
+        raise KitError(f"aura unique overwrite_mode c12={aura_row[12]!r} must be '0' "
+                       "(刷新时长靠 ChooseOneWithLongerRemainingTime)")
+    if aura_row[14] != "(None)":
+        raise KitError(f"aura unique c14={aura_row[14]!r} must stay '(None)' (不碰 PF 语音)")
+
+    entries = {key: row, aura_key: aura_row}
+    KL.write_unique(ctx, ctx.spec, entries)
+    return entries
 
 
-def draw_icon(frame):
-    """48×48「引擎点火」：夜黑圆角底 + 金边，上弦月剪影，凹侧一簇火苗。
+ICON_K = 8                      # 8× 超采样画布（与 seasonal7 同工艺）
+ICON_N = 48 * ICON_K
 
-    与 seasonal7 同工艺：8× 画布绘制 → LANCZOS 缩回 48×48 → 用官方图标的 alpha 当外框
-    （alpha 一格不改，避免图集 alpha 门禁变红）。
-    """
+
+def _icon_plate(K: int, N: int):
+    """夜黑圆角底 + 金边，返回 ``(layer, inner_mask)``（本批 48×48 状态图标的统一底座）。"""
     from PIL import Image, ImageDraw
-    if frame.size != (48, 48):
-        raise KitError(f"icon frame donor must be 48x48, got {frame.size}")
-    K = 8
-    N = 48 * K
     layer = Image.new("RGBA", (N, N), (0, 0, 0, 0))
     inner = Image.new("L", (N, N), 0)
     ImageDraw.Draw(inner).rounded_rectangle((3 * K, 3 * K, 45 * K - 1, 45 * K - 1),
@@ -523,11 +603,39 @@ def draw_icon(frame):
         t = y / (N - 1)
         grad.putpixel((0, y), tuple(round(top[i] + (bot[i] - top[i]) * t) for i in range(3)) + (255,))
     layer.paste(grad.resize((N, N)), (0, 0), inner)
+    gold = (216, 150, 58, 255)
+    ImageDraw.Draw(layer).rounded_rectangle((4 * K, 4 * K, 44 * K - 1, 44 * K - 1),
+                                            radius=4 * K, outline=gold, width=2 * K)
+    return layer, inner
 
-    gold, moon = (216, 150, 58, 255), (242, 212, 121, 255)
-    d = ImageDraw.Draw(layer)
-    d.rounded_rectangle((4 * K, 4 * K, 44 * K - 1, 44 * K - 1), radius=4 * K,
-                        outline=gold, width=2 * K)
+
+def _icon_finish(frame, layer):
+    """LANCZOS 缩回 48×48，并用官方图标的 alpha 当外框（alpha 一格不改，图集门禁才不红）。"""
+    from PIL import Image
+    small = layer.resize((48, 48), Image.LANCZOS)
+    out = Image.new("RGBA", (48, 48), (255, 255, 255, 0))
+    fp, op, sp = frame.load(), out.load(), small.load()
+    for y in range(48):
+        for x in range(48):
+            r, g, b, a = sp[x, y]
+            fa = fp[x, y][3]
+            if a:
+                op[x, y] = (round((r * a + 255 * (255 - a)) / 255),
+                            round((g * a + 255 * (255 - a)) / 255),
+                            round((b * a + 255 * (255 - a)) / 255), fa)
+            else:
+                op[x, y] = (255, 255, 255, fa)
+    return out
+
+
+def draw_icon(frame):
+    """48×48「引擎点火」：夜黑圆角底 + 金边，上弦月剪影，凹侧一簇火苗。"""
+    from PIL import Image, ImageDraw
+    if frame.size != (48, 48):
+        raise KitError(f"icon frame donor must be 48x48, got {frame.size}")
+    K, N = ICON_K, ICON_N
+    layer, inner = _icon_plate(K, N)
+    moon = (242, 212, 121, 255)
 
     # 上弦月：大圆减去偏右上的小圆，凹侧朝右下
     disc = Image.new("L", (N, N), 0)
@@ -552,37 +660,99 @@ def draw_icon(frame):
                 Image.composite(flame, Image.new("L", (N, N), 0), inner))
     core = [(31.0, 27.0), (33.4, 31.4), (31.6, 35.8), (28.6, 34.4), (28.8, 30.4)]
     ImageDraw.Draw(layer).polygon([(x * K, y * K) for x, y in core], fill=(255, 240, 196, 255))
-
-    small = layer.resize((48, 48), Image.LANCZOS)
-    out = Image.new("RGBA", (48, 48), (255, 255, 255, 0))
-    fp, op, sp = frame.load(), out.load(), small.load()
-    for y in range(48):
-        for x in range(48):
-            r, g, b, a = sp[x, y]
-            fa = fp[x, y][3]
-            if a:
-                op[x, y] = (round((r * a + 255 * (255 - a)) / 255),
-                            round((g * a + 255 * (255 - a)) / 255),
-                            round((b * a + 255 * (255 - a)) / 255), fa)
-            else:
-                op[x, y] = (255, 255, 255, fa)
-    return out
+    return _icon_finish(frame, layer)
 
 
-def install_unique_icon(ctx) -> dict[str, Any]:
+# 「烈焰光环」图标几何（48 单位坐标系，中心 (24,25)）：一圈火环，外沿是连续的火舌波。
+# 外轮廓 r(θ) = 环身半径 + 振幅 × sin(π·u^SKEW)^SHARP，u ＝ 该火舌内的归一化角度。
+# SHARP > 1 ⇒ 尖端窄、谷底宽（写 <1 会把火舌拉成齿轮的方牙）；SKEW > 1 ⇒ 峰值后移，
+# 每条火舌朝同一侧倾，整圈看起来是在旋转燃烧，而不是一圈对称的齿。
+AURA_ICON_CENTER = (24.0, 25.0)
+AURA_ICON_R_OUT = 11.0                # 环身外半径（火舌谷底）
+AURA_ICON_R_IN = 8.6                  # 环心半径（挖空）
+AURA_ICON_TONGUES = 8                 # 火舌数
+AURA_ICON_AMP = 6.4                   # 火舌高度（尖端半径 = R_OUT + AMP）
+AURA_ICON_SHARP = 3.6                 # 尖端锐度（越大越尖）
+AURA_ICON_SKEW = 2.0                  # 火舌倾斜（峰值后移）
+AURA_ICON_TILT = 14.0                 # 整圈旋转（度）：避开正上方一根独苗
+AURA_ICON_HIGHLIGHT = 9.7             # 内侧高光环半径
+AURA_ICON_STEPS = 480                 # 外轮廓采样点数
+
+
+def draw_aura_icon(frame):
+    """48×48「烈焰光环」：同款夜黑底＋金边，中央一圈燃烧的光环。
+
+    与「引擎点火」共用 :func:`_icon_plate` / :func:`_icon_finish` 与同一套火焰渐变，
+    所以两枚图标的底座、金边宽度、配色与 alpha 外框完全一致（本批统一风格）。
+    """
+    import math
+    from PIL import Image, ImageDraw
+    if frame.size != (48, 48):
+        raise KitError(f"icon frame donor must be 48x48, got {frame.size}")
+    K, N = ICON_K, ICON_N
+    layer, inner = _icon_plate(K, N)
+    cx, cy = AURA_ICON_CENTER
+
+    def box(radius):
+        return ((cx - radius) * K, (cy - radius) * K, (cx + radius) * K, (cy + radius) * K)
+
+    # 火环本体：带火舌的外轮廓减掉中心圆（画布 y 向下 ⇒ 角度取负 sin）
+    points = []
+    for step in range(AURA_ICON_STEPS):
+        deg = step * 360.0 / AURA_ICON_STEPS
+        u = (((deg - AURA_ICON_TILT) * AURA_ICON_TONGUES) % 360.0) / 360.0
+        wave = math.sin(math.pi * (u ** AURA_ICON_SKEW)) ** AURA_ICON_SHARP
+        radius = AURA_ICON_R_OUT + AURA_ICON_AMP * wave
+        rad = math.radians(deg)
+        points.append(((cx + radius * math.cos(rad)) * K, (cy - radius * math.sin(rad)) * K))
+    ring = Image.new("L", (N, N), 0)
+    ImageDraw.Draw(ring).polygon(points, fill=255)
+    hole = Image.new("L", (N, N), 0)
+    ImageDraw.Draw(hole).ellipse(box(AURA_ICON_R_IN), fill=255)
+    mask = Image.composite(Image.new("L", (N, N), 0), ring, hole)
+
+    # 配色与「引擎点火」的火苗同一套渐变：外焰 #FF8A3C → 内焰 #FFE08A
+    fgrad = Image.new("RGBA", (1, N))
+    lo, hi = (255, 138, 60), (255, 224, 138)
+    for y in range(N):
+        t = max(0.0, min(1.0, (y / (N - 1) - 0.40) / 0.45))
+        fgrad.putpixel((0, y), tuple(round(lo[i] + (hi[i] - lo[i]) * (1 - t)) for i in range(3)) + (255,))
+    layer.paste(fgrad.resize((N, N)), (0, 0),
+                Image.composite(mask, Image.new("L", (N, N), 0), inner))
+
+    # 内侧高光：一圈细亮环，让 48px 下的环心不糊成一团
+    glow = Image.new("L", (N, N), 0)
+    ImageDraw.Draw(glow).ellipse(box(AURA_ICON_HIGHLIGHT), outline=255,
+                                 width=max(1, round(1.1 * K)))
+    layer.paste(Image.new("RGBA", (N, N), (255, 240, 196, 255)), (0, 0),
+                Image.composite(glow, Image.new("L", (N, N), 0), inner))
+    return _icon_finish(frame, layer)
+
+
+UNIQUE_ICONS = ((UID, UC_ICON_LOGICAL, "draw_icon"),
+                (UID_AURA, UC_AURA_ICON_LOGICAL, "draw_aura_icon"))
+
+
+def install_unique_icon(ctx) -> dict[str, dict[str, Any]]:
+    """两枚 48×48 状态图标：alpha 取同一个官方帧 donor，一格不改。"""
     raw = ctx.official_read(UC_ICON_FRAME_DONOR)
     if raw is None:
         _root, raw, _how = ctx.pack.template_asset(UC_ICON_FRAME_DONOR)
     frame = ctx.png_open(raw)
-    data = ctx.png_store_bytes(draw_icon(frame))
-    ctx.write_asset("common", UC_ICON_LOGICAL, data)
-    back = ctx.png_open(ctx.pack.pkg_path("common", UC_ICON_LOGICAL).read_bytes())
-    if back.size != (48, 48):
-        raise KitError(f"unique_condition icon must stay 48x48, got {back.size}")
-    if back.getchannel("A").tobytes() != frame.getchannel("A").tobytes():
-        raise KitError("unique_condition icon alpha differs from the official frame donor")
-    return {"logical": UC_ICON_LOGICAL, "frame_donor": UC_ICON_FRAME_DONOR,
-            "sha256": _sha256(data), "bytes": len(data)}
+    out: dict[str, dict[str, Any]] = {}
+    for key, logical, painter in UNIQUE_ICONS:
+        data = ctx.png_store_bytes(globals()[painter](frame))
+        ctx.write_asset("common", logical, data)
+        back = ctx.png_open(ctx.pack.pkg_path("common", logical).read_bytes())
+        if back.size != (48, 48):
+            raise KitError(f"unique_condition icon must stay 48x48, got {back.size}")
+        if back.getchannel("A").tobytes() != frame.getchannel("A").tobytes():
+            raise KitError(f"{logical}: icon alpha differs from the official frame donor")
+        out[key] = {"logical": logical, "frame_donor": UC_ICON_FRAME_DONOR,
+                    "painter": painter, "sha256": _sha256(data), "bytes": len(data)}
+    if len({v["sha256"] for v in out.values()}) != len(out):
+        raise KitError("the two unique_condition icons are pixel-identical")
+    return out
 
 
 # ---------------------------------------------------------------- 词条 / 队长技 / 面板串
@@ -1035,6 +1205,35 @@ def aura_block(ctx, level: str) -> tuple[list[list], dict[str, Any]]:
              "lifetime": AURA_FRAMES, "binds": list(AURA_BINDS)})
 
 
+def aura_mark(ctx) -> tuple[list, dict[str, Any]]:
+    """把「烈焰光环」固有付给自身：整条克隆官方 ``psycho_reaper_meteor23`` 的根层 CreateCondition。
+
+    只换两格——``ACUnique`` 的固有 id 与层数。母本的付与对象种类（下标 10 ＝ 3）、
+    主体（-17 自身）、命中演出、forceApply 一格不动（``ACUnique`` 在场时客户端本来就会
+    无条件覆盖 forceApply，改它没有意义）。状态时长**不在这条命令里**：``ACUnique`` 的
+    第二参是层数，时长只看 ``unique_condition`` 的 c3（＝ ``AURA_FRAMES``）。
+    """
+    donor = ctx.template_dsl(AURA_MARK_DONOR)
+    hits = [c for c in _commands(donor, "CreateCondition")
+            if c[2] and isinstance(c[2][0], list) and c[2][0][0] == "ACUnique"]
+    command = copy.deepcopy(_only(hits, f"{AURA_MARK_DONOR} ACUnique CreateCondition"))
+    if len(command) != 13:
+        raise KitError(f"CreateCondition donor has {len(command) - 1} params, expected 12")
+    if command[1] != -17:
+        raise KitError(f"aura mark donor subject {command[1]} != -17 (自身)")
+    if command[10] != AURA_MARK_TARGET_KIND:
+        raise KitError(f"aura mark donor target kind {command[10]} != {AURA_MARK_TARGET_KIND}")
+    node = command[2][0]
+    if node[1] != AURA_MARK_DONOR_UID:
+        raise KitError(f"aura mark donor ACUnique id {node[1]} != {AURA_MARK_DONOR_UID}")
+    node[1] = int(UID_AURA)
+    node[2] = _slv(AURA_MARK_STACKS)
+    return (["Command", command],
+            {"unique": UID_AURA, "subject": command[1], "target_kind": command[10],
+             "stacks": AURA_MARK_STACKS, "donor": AURA_MARK_DONOR,
+             "duration_frames": AURA_FRAMES, "duration_source": "unique_condition c3"})
+
+
 def build_main_tree(ctx, level: str, families) -> tuple[Any, dict[str, Any]]:
     template_program = ctx.program_path(level).replace(CODE, TEMPLATE_CODE)
     tree = copy.deepcopy(ctx.template_dsl(template_program))
@@ -1045,13 +1244,15 @@ def build_main_tree(ctx, level: str, families) -> tuple[Any, dict[str, Any]]:
         raise KitError(f"template root buffTargetAs {tree[10]} != 0 (skill-damage attribution)")
 
     block, meta = aura_block(ctx, level)
+    # 作者追加：光环出现的同一处给自身付「烈焰光环」固有（队长技那一行以它为前置）。
+    mark, mark_meta = aura_mark(ctx)
     root = tree[11]
     positions = [i for i, node in enumerate(root[1])
                  if isinstance(node, list) and node[0] == "Command"
                  and node[1][0] == "CreateReferencePoint"]
     if len(positions) != 1:
         raise KitError(f"template root has {len(positions)} CreateReferencePoint commands")
-    root[1][positions[0] + 1:positions[0] + 1] = block
+    root[1][positions[0] + 1:positions[0] + 1] = block + [mark]
 
     ids = _declared_ids(tree)
     if len(ids) != len(set(ids)):
@@ -1064,7 +1265,13 @@ def build_main_tree(ctx, level: str, families) -> tuple[Any, dict[str, Any]]:
     tree = _rewrite(ctx, tree, families)
     if AURA not in _effect_paths(tree):
         raise KitError("main tree lost the cloned aura reference after rewrite_effect_refs")
-    return tree, {"level": level, "aura": meta, "slash": dict(sword[0][6][0]),
+    marks = [c for c in _commands(tree, "CreateCondition")
+             if c[2] and isinstance(c[2][0], list) and c[2][0][0] == "ACUnique"]
+    if [c[2][0][1] for c in marks] != [int(UID_AURA)]:
+        raise KitError(f"main tree must carry exactly one 烈焰光环 ACUnique, got "
+                       f"{[c[2][0][1] for c in marks]}")
+    return tree, {"level": level, "aura": meta, "aura_mark": mark_meta,
+                  "slash": dict(sword[0][6][0]),
                   "root_commands": [n[1][0] if n[0] == "Command" else n[1][0]
                                     for n in tree[11][1]]}
 
@@ -1126,6 +1333,10 @@ def build_chase_tree(ctx, families) -> tuple[Any, dict[str, Any]]:
         raise KitError(f"chase burst hit-area lifetime {burst[13]} must stay at the donor "
                        f"{CHASE_BURST_HIT_LIFETIME} (改它就是改伤害节流)")
     rp = _retime_chase_burst_point(tree, burst_subject)
+    # 629 追击不创建光环 ⇒ 也不许刷新「烈焰光环」（否则 PF 命中就能无限续时长）。
+    if [c for c in _commands(tree, "CreateCondition")
+            if c[2] and isinstance(c[2][0], list) and c[2][0][0] == "ACUnique"]:
+        raise KitError("chase tree must not apply any unique condition (光环只由技能创建)")
     tree = _rewrite(ctx, tree, families)
     return tree, {"multiplier": CHASE_MULT, "burst_scale": BURST_SCALE,
                   "burst_radius": BURST_RADIUS, "burst_max_hits": BURST_MAX_HITS,
@@ -1465,6 +1676,12 @@ NOTES = [
     "再写同路径会撞 occupied_without_hash_bound_prior_path_ownership 且 rebase 清不掉（实测）",
     "反馈轮 2：爆炸音 se_clarisse（304 帧、峰值第 89 帧＝克拉莉丝整段技能的蓄力音）换成 "
     "se_fire_large_explosion（143 帧、峰值第 23 帧），实测数据见 impl/magnus.md §9.5",
+    "作者追加：新增固有「烈焰光环」11999002（600 帧＝AURA_FRAMES 同源、上限 1 层），"
+    "技能树在创建光环的同一处 CreateCondition(-17, ACUnique) 付给自身；629 追击树不付、不刷新",
+    "作者追加：队长技第 7 行落在**队长表**（前置 188 固有实例≥1 + 触发 6 BallFlip≥1 + 内容 226 "
+    "连击 35）——187 在官方队长表 0 先例，188 有 6 行（111183#4/#5、111165#3/#4、131152#2/#3）",
+    "作者追加：这一行**不带火共鸣门**（作者原话没写属性共鸣）；「弹射」＝ BallFlip（弹板弹球），"
+    "不是强化弹射，阈值 1 次 / 无次数上限 / 无冷却",
 ]
 
 DEVIATIONS = [
@@ -1525,6 +1742,15 @@ DEVIATIONS = [
      "got": "只缩画面（scale 3.75→3.01、5.00→4.07，−19.7%/−18.6%），判定半径 200/270 不动",
      "why": "环和判定本来差 24%（环 248.8 vs 判定 200）——那圈差值就是「碰到了没伤害」的来源；"
             "缩画面到刚好压在判定圆上，既是作者要的更小，也让看得见的部分全部生效，强度不变。"},
+    {"want": "「自身持有光环时」用前置 187 ConditionUnique（语义上最直白的「持有某固有状态」）",
+     "got": "队长表这一行改用前置 188 ConditionCountUnique，阈值 ≥1（＝固有实例数 1）",
+     "why": "官方 leader_ability 1107 行里 187 出现 0 次（用到的前置只有 2/8/38/186/188/205），"
+            "队长表零先例 kind ＝ 角色详情页 C7050；188 在队长表有 6 行先例，其中 111183#4/#5 "
+            "就是火龙的「持有勇敢之焰时」。上限 1 层的固有，188≥1 与 187 完全等价。"},
+    {"want": "光环只是「特效＋判定区」，词条直接判定它",
+     "got": "技能创建光环时同步给自身付一个新固有「烈焰光环」（600 帧 ＝ 光环寿命），词条判定这个固有",
+     "why": "引擎没有「判定某个判定区还在不在」的前置；状态是唯一可供词条读取的载体。"
+            "时长与画面同源（同一个 AURA_FRAMES），所以面板说的「持有期间」和玩家看到的环完全同步。"},
 ]
 
 
@@ -1544,7 +1770,7 @@ def build(ctx) -> dict[str, Any]:
         raise KitError(f"kit drifted from the design document: {design_problems}")
 
     voice_cols = write_voice_route(ctx)
-    unique_key, unique_row = build_unique(ctx)
+    uniques = build_unique(ctx)
     icon = install_unique_icon(ctx)
 
     rows = build_rows(ctx)
@@ -1562,7 +1788,7 @@ def build(ctx) -> dict[str, Any]:
     panel = [ev["describe"] for ev in rows["evidence"]] + list(strings.values())
     ctx.evidence_write("kit-rows.json", {
         "leader": rows["leader"], "ability": rows["ability"],
-        "unique_condition": {unique_key: unique_row},
+        "unique_condition": {key: list(row) for key, row in uniques.items()},
         "custom_ability_string": strings, "action_skill": action,
         "power_flip_action": {PF_KEY: list(PF_PROGRAMS)},
         "voice_route": voice_cols, "evidence": rows["evidence"], "effects": fx_report,
@@ -1576,9 +1802,9 @@ def build(ctx) -> dict[str, Any]:
                         "mirrors": mirrors, "design_checked": bool(design),
                         "effects": fx_report}],
         programs=skills["programs"],
-        unique_condition={unique_key: {"name": UNIQUE_NAME, "icon": UC_ICON_LOGICAL,
-                                       "duration_frames": int(unique_row[3]),
-                                       "cap": int(unique_row[4])}},
+        unique_condition={key: {"name": row[1], "icon": row[2],
+                                "duration_frames": int(row[3]), "cap": int(row[4])}
+                          for key, row in uniques.items()},
         required_capabilities=sorted(set(rows["capabilities"])
                                      | set(SPEC["required_capabilities"])),
         deviations=DEVIATIONS,

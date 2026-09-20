@@ -60,7 +60,9 @@ class PlanStaticTests(unittest.TestCase):
 
     def test_unique_id_is_eight_digits_under_cid(self):
         self.assertEqual(KM.UID, str(KM.CID * 100 + 1))
-        self.assertEqual(len(KM.UID), 8)
+        self.assertEqual(KM.UID_AURA, str(KM.CID * 100 + 2))
+        self.assertEqual({len(KM.UID), len(KM.UID_AURA)}, {8})
+        self.assertNotEqual(KM.UID, KM.UID_AURA)
 
     def test_unique_condition_is_unbounded_in_both_axes(self):
         self.assertNotIn(KM.UNIQUE_CAP, ("", "(None)"), "(None) 会被读成上限 1，叠层全死")
@@ -69,9 +71,22 @@ class PlanStaticTests(unittest.TestCase):
         self.assertEqual(KM.UNIQUE_CELLS[3], KM.UNIQUE_FRAMES)
         self.assertEqual(KM.UNIQUE_CELLS[4], KM.UNIQUE_CAP)
 
+    def test_aura_state_lives_exactly_as_long_as_the_ring(self):
+        """「烈焰光环」的时长必须与光环寿命同源——写死另一个数字＝面板与画面脱钩。"""
+        self.assertEqual(KM.AURA_UNIQUE_CELLS[3], str(KM.AURA_FRAMES))
+        self.assertEqual(KM.AURA_UNIQUE_CELLS[2], KM.UC_AURA_ICON_ROW)
+        self.assertEqual(KM.AURA_UNIQUE_CELLS[14], "(None)", "c14 是 PF 语音替换，这个状态不碰它")
+        self.assertEqual(KM.AURA_UNIQUE_CAP, "1", "上限 1 层（官方同值先例 unique_ice_dragon 等）")
+        self.assertNotIn(KM.AURA_UNIQUE_CAP, ("", "(None)"),
+                         "(None) 同样是上限 1，但 KL.unique_row 拒绝它")
+        self.assertEqual(KM.AURA_MARK_STACKS, 1, "ACUnique 第二参是层数；上限 1 ⇒ 只能是 1")
+        self.assertEqual(KM.AURA_MARK_TARGET_KIND, 3,
+                         "下标 10 付与对象种类：自身/Member 写 3，错配 = 施法 C16102")
+
     def test_every_self_owned_key_is_declared(self):
         declared = {logical: set(keys) for logical, keys in SPEC_KEYS().items()}
         self.assertIn(KM.UID, declared[MS.UNIQUE_CONDITION_LOGICAL])
+        self.assertIn(KM.UID_AURA, declared[MS.UNIQUE_CONDITION_LOGICAL])
         self.assertEqual(set(KM.CAS_TEXTS), declared[KL.CAS])
         self.assertIn(KM.VOICE_KEY, declared[KL.SWITCHED])
         self.assertEqual(declared[KM.PFA], {KM.PF_KEY})
@@ -176,6 +191,48 @@ class PlanStaticTests(unittest.TestCase):
         self.assertEqual(len(KM.PF_PROGRAMS), 3)
         self.assertTrue(all(KM.PF_KEY in p for p in KM.PF_PROGRAMS))
 
+    def test_ball_flip_combo_row_is_wired_cell_by_cell(self):
+        """作者追加行的逐格改：donor ＝ 官方唯一一族「BallFlip → AddCombo」的队长行。
+
+        触发/内容 kind 本身来自 donor（不在 cells 里），在集成层按**装配后的整行**复核。
+        """
+        donor, source, cells, expect = next(item for item in KM.LEADER if "追加连击" in item[3])
+        self.assertEqual((donor, source), ("131005#4", "official"))
+        self.assertEqual(cells[4], "188", "前置 kind：队长表里 187 零先例，188 有 6 行先例")
+        self.assertEqual(cells[5], "0", "前置 188 的 puller 列留空 = 角色页 C7050")
+        self.assertEqual((cells[7], cells[8]), ("100000", "100000"), "阈值 ≥1 个实例（≥2 永不成立）")
+        self.assertEqual(cells[9], "", "这一行不带属性组：作者原话没写属性共鸣")
+        self.assertEqual(cells[10], KM.UID_AURA, "前置的固有 id 列不能留空")
+        self.assertEqual((cells[28], cells[29]), ("100000", "100000"), "每 1 次弹射")
+        self.assertEqual(cells[33], "0", "无冷却（donor 是 CT10 秒）")
+        self.assertEqual((cells[49], cells[50]), ("3500000", "3500000"), "连击类 ×100000 ⇒ +35")
+        self.assertNotIn(46, cells, "226 的 target 列照官方 226 行留空（= 自身）")
+        self.assertEqual(cells[1], "0", "c1 觉醒标记：donor 是 [觉醒1追加]，本角色全部是 '0'")
+        self.assertEqual(cells[2], "", "c2 觉醒等级同上")
+        self.assertEqual(expect, f"状态计数固有≥1[固有{KM.UID_AURA}] 时: 弹射≥1 → 自身 追加连击 35")
+
+    def test_ball_flip_combo_row_carries_no_resonance_gate(self):
+        """其余 5 行都挂火共鸣门（自带或 FIRE_LEADER），这一行必须是唯一一条不挂门的。"""
+        gates = [cells.get(4) for _d, _s, cells, _e in KM.LEADER]
+        self.assertEqual(gates.count("188"), 1, "只有作者追加行用 188")
+        row = next(c for _d, _s, c, e in KM.LEADER if "追加连击" in e)
+        self.assertEqual(row[4], "188")
+        self.assertNotEqual(row[4], KM.FIRE_LEADER[4], "不是火共鸣门")
+        for col in (7, 8, 9):
+            self.assertNotEqual(row.get(col), KM.FIRE_LEADER[col], f"c{col} 不许写成火共鸣门的值")
+        for _d, _s, cells, expect in KM.LEADER:
+            if "追加连击" in expect:
+                self.assertNotIn("火·编成", expect)
+            else:
+                self.assertIn("火·编成≥6", expect, f"其余队长行仍是火共鸣门: {expect}")
+
+    def test_the_aura_state_is_only_gated_on_by_the_leader_row(self):
+        """新固有只服务队长技那一行；词条 6 键一条都不许引用它（引用 = 悄悄多一层效果）。"""
+        for slot, records in KM.PLAN.items():
+            for _d, _s, cells, expect in records:
+                self.assertNotIn(KM.UID_AURA, [str(v) for v in cells.values()],
+                                 f"slot {slot}: {expect}")
+
     def test_all_rows_are_flattened_to_the_max_level_value(self):
         """作者总口径「全部都按照满级的描述」⇒ 强度两端相等。"""
         pairs = ((51, 52), (49, 50), (113, 114))
@@ -205,10 +262,26 @@ class PlanStaticTests(unittest.TestCase):
                 self.assertEqual(line.startswith(KM.MAIN_ICON), wants, f"slot {slot}: {line}")
 
     def test_panel_override_line_counts_match_the_target_panel(self):
-        counts = {KM.LEADER_OVERRIDE: 6, KM.SLOT_OVERRIDE[1]: 2,
+        counts = {KM.LEADER_OVERRIDE: 7, KM.SLOT_OVERRIDE[1]: 2,
                   KM.SLOT_OVERRIDE[2]: 1, KM.SLOT_OVERRIDE[3]: 5, KM.SLOT_OVERRIDE[5]: 2}
         for key, want in counts.items():
             self.assertEqual(len(KM.CAS_TEXTS[key].split("\n")), want, key)
+
+    def test_the_new_leader_line_is_the_last_one_and_names_the_state(self):
+        lines = KM.CAS_TEXTS[KM.LEADER_OVERRIDE].split("\n")
+        self.assertEqual(lines[-1], "自身持有「烈焰光环」期间，每次弹射，连击＋35")
+        self.assertIn(KM.AURA_UNIQUE_NAME, lines[-1], "面板必须点名这个状态，玩家才对得上图标")
+        self.assertNotIn("强化弹射", lines[-1], "作者说的是弹射（BallFlip），不是强化弹射")
+        self.assertNotIn("共鸣", lines[-1], "这一行不带属性共鸣门，文案也不能写")
+
+    def test_target_panel_leader_block_matches_the_override_string(self):
+        """目标面板（作者过目的那一版）与实际写进表的覆盖串必须逐行逐字相同。"""
+        path = REPO / "work/character_packs/midautumn-20260920/rework1/panel/magnus.json"
+        if not path.is_file():
+            self.skipTest(f"panel target absent: {path}")
+        panel = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual([line["text"] for line in panel["leader"]["lines"]],
+                         KM.CAS_TEXTS[KM.LEADER_OVERRIDE].split("\n"))
 
     def test_energy_is_six_hundred_on_both_levels(self):
         self.assertEqual(KM.ENERGY["1"][:2], ("600", "600"))
@@ -330,6 +403,47 @@ class PlanStaticTests(unittest.TestCase):
         self.assertTrue(KM.DEVIATIONS)
         for item in KM.DEVIATIONS:
             self.assertEqual({"want", "got", "why"}, set(item))
+
+
+class UniqueIconTests(unittest.TestCase):
+    """两枚 48×48 状态图标：同一个 alpha 外框、不同画面（纯绘制，不碰任何表）。"""
+
+    def _frame(self):
+        from PIL import Image, ImageDraw
+        frame = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+        ImageDraw.Draw(frame).rounded_rectangle((2, 2, 45, 45), radius=6,
+                                                fill=(9, 9, 9, 137))
+        return frame
+
+    def test_both_icons_keep_the_donor_alpha_and_differ_visibly(self):
+        frame = self._frame()
+        alpha = frame.getchannel("A").tobytes()
+        painted = {}
+        for _key, logical, painter in KM.UNIQUE_ICONS:
+            image = getattr(KM, painter)(frame)
+            self.assertEqual(image.size, (48, 48), logical)
+            self.assertEqual(image.getchannel("A").tobytes(), alpha,
+                             f"{logical}: alpha 必须一格不改（图集 alpha 门禁）")
+            painted[logical] = image.convert("RGB").tobytes()
+        self.assertEqual(len(painted), 2)
+        a, b = painted[KM.UC_ICON_LOGICAL], painted[KM.UC_AURA_ICON_LOGICAL]
+        self.assertNotEqual(a, b, "两枚图标不能长一样")
+        differing = sum(1 for x, y in zip(a[::3], b[::3]) if x != y)
+        self.assertGreater(differing, 48 * 48 * 0.15, "差异太小，48px 下认不出是两个状态")
+
+    def test_icon_rows_and_painters_line_up(self):
+        self.assertEqual([key for key, _l, _p in KM.UNIQUE_ICONS], [KM.UID, KM.UID_AURA])
+        self.assertEqual(KM.UNIQUE_CELLS[2] + ".png", KM.UC_ICON_LOGICAL)
+        self.assertEqual(KM.AURA_UNIQUE_CELLS[2] + ".png", KM.UC_AURA_ICON_LOGICAL)
+        for _key, logical, painter in KM.UNIQUE_ICONS:
+            self.assertTrue(callable(getattr(KM, painter)), painter)
+            self.assertTrue(logical.startswith("battle/common/unique_condition/"), logical)
+
+    def test_icon_donor_frame_must_be_48(self):
+        from PIL import Image
+        for _key, _logical, painter in KM.UNIQUE_ICONS:
+            with self.assertRaises(KM.KitError):
+                getattr(KM, painter)(Image.new("RGBA", (64, 64), (0, 0, 0, 0)))
 
 
 def SPEC_KEYS() -> dict[str, tuple[str, ...]]:
@@ -581,6 +695,67 @@ class RowIntegrationTests(unittest.TestCase):
         self.assertEqual(row[4], KM.UNIQUE_CAP)
         self.assertEqual(row[14], KM.CODE, "PF 语音独占 code = 自身")
 
+    def test_aura_unique_condition_row(self):
+        """「烈焰光环」：600 帧 / 1 层 / Good 方向 / overwrite_mode 0（＝重开技能刷新时长）。"""
+        key, row = KL.unique_row(self.ctx, self.ctx.spec, 2, KM.AURA_UNIQUE_DONOR,
+                                 KM.AURA_UNIQUE_CELLS, name=KM.AURA_UNIQUE_NAME)
+        self.assertEqual(key, KM.UID_AURA)
+        self.assertEqual(len(row), KL.UNIQUE_NCOLS)
+        self.assertEqual(row[0], f"unique_{KM.CODE}_aura")
+        self.assertEqual(row[1], KM.AURA_UNIQUE_NAME)
+        self.assertEqual(row[2], KM.UC_AURA_ICON_ROW)
+        self.assertEqual(row[3], str(KM.AURA_FRAMES), "时长与光环寿命同源")
+        self.assertEqual(row[4], "1", "上限 1 层")
+        self.assertEqual(row[11], "0", "condition_direction 0 = Good（增益），写别的值直接 C7050")
+        self.assertEqual(row[12], "0",
+                         "overwrite_mode 0 + 上限 1 ⇒ ChooseOneWithLongerRemainingTime = 刷新时长")
+        self.assertEqual(row[14], "(None)", "不替换 PF 语音角色")
+
+    def test_the_new_leader_row_renders_and_is_legal(self):
+        donor, source, cells, expect = next(
+            item for item in KM.LEADER if "追加连击" in item[3])
+        row, evidence = KL.build_row(self.ctx, "leader_ability", donor, cells,
+                                     source=source, element=0, expect_describe=expect,
+                                     label="aura-combo")
+        self.assertEqual(evidence["describe"], expect)
+        self.assertEqual(evidence["capabilities"], [],
+                         "这一行不需要任何客户端补丁（前置/触发/内容都是官方已解析的 kind）")
+        self.assertEqual(row[3], "0", "触发模式 0 = 瞬发")
+        self.assertEqual(row[4], "188")
+        self.assertEqual(row[10], KM.UID_AURA)
+        self.assertEqual(row[25], "6", "触发 6 = BallFlip（弹板弹球），不是强化弹射")
+        self.assertEqual((row[28], row[29]), ("100000", "100000"))
+        self.assertEqual(row[32], "(None)", "无触发次数上限")
+        self.assertEqual(row[33], "0", "无冷却")
+        self.assertEqual(row[LEADER_CONTENT_COL], "226", "内容 226 AddCombo")
+        self.assertEqual((row[49], row[50]), ("3500000", "3500000"))
+        self.assertEqual(row[46], "", "226 的 target 列留空 = 自身（官方 221004#2/131005#4 同形）")
+        self.assertEqual(row[11], "0", "前置 2/3 不用")
+        self.assertEqual(row[18], "0")
+
+    def test_the_precondition_and_content_kinds_have_official_leader_precedents(self):
+        """落表判据：这一行用到的三个 kind 必须都能在官方**队长表**里找到先例。
+
+        对照组同时统计 187 —— 它在队长表是 0 行（所以前置才改用 188）。
+        """
+        official = self.ctx.official_flat(KL.LEADER)
+        pre = {"187": 0, "188": 0}
+        trigger6 = content226 = 0
+        for value in official.values():
+            for row in core.read_csv_lines(value):
+                cell = (lambda i: (row[i] if i < len(row) else "").strip())
+                if cell(3) != "0":
+                    continue
+                for col in (4, 11, 18):
+                    if cell(col) in pre:
+                        pre[cell(col)] += 1
+                trigger6 += cell(25) == "6"
+                content226 += cell(LEADER_CONTENT_COL) == "226"
+        self.assertEqual(pre["187"], 0, "若 187 在队长表出现了先例，可以把前置换回 187")
+        self.assertGreaterEqual(pre["188"], 6, "188 在队长表的先例")
+        self.assertGreaterEqual(trigger6, 5, "触发 6 BallFlip 在队长表的先例")
+        self.assertGreaterEqual(content226, 12, "内容 226 AddCombo 在队长表的先例")
+
     def test_only_the_dash_rows_need_a_client_patch(self):
         caps = set()
         for slot, records in KM.PLAN.items():
@@ -642,6 +817,62 @@ class SkillTreeIntegrationTests(unittest.TestCase):
                 self.assertEqual(wf_dsl.player_side_dsl_problems(tree), [])
                 self.assertEqual(wf_dsl.parse_dsl(wf_dsl.encode_amf3(tree))["tree"], tree)
                 self._assert_no_cd_coordsys(tree)
+
+    def _aura_marks(self, tree):
+        return [c for c in wf_dsl.iter_dsl_commands(tree, "CreateCondition")
+                if c[2] and isinstance(c[2][0], list) and c[2][0][0] == "ACUnique"]
+
+    def test_main_tree_marks_the_aura_state_on_self(self):
+        """光环出现时给自身付「烈焰光环」——队长技那一行就是靠它判定「持有光环」。"""
+        for level in ("1", "2"):
+            with self.subTest(level=level):
+                tree, meta = KM.build_main_tree(self.ctx, level, self.families)
+                marks = self._aura_marks(tree)
+                self.assertEqual(len(marks), 1, "整棵树只许有这一条固有付与")
+                mark = marks[0]
+                self.assertEqual(len(mark), 13, "CreateCondition 12 参，多一格少一格都是签名漂移")
+                self.assertEqual(mark[1], -17, "主体 -17 = 自身（内置绑定，不吃 lookup）")
+                self.assertEqual(mark[10], KM.AURA_MARK_TARGET_KIND,
+                                 "下标 10 付与对象种类；错配 = 施法 C16102")
+                node = mark[2][0]
+                self.assertEqual(node[0], "ACUnique")
+                self.assertEqual(node[1], int(KM.UID_AURA))
+                self.assertEqual(node[2], [{"min": KM.AURA_MARK_STACKS,
+                                            "max": KM.AURA_MARK_STACKS}],
+                                 "ACUnique 第二参是层数，不是帧数")
+                self.assertEqual(meta["aura_mark"]["duration_frames"], KM.AURA_FRAMES)
+                self.assertEqual(meta["aura_mark"]["duration_frames"],
+                                 meta["aura"]["lifetime"], "状态时长与光环寿命必须同源")
+
+    def test_the_aura_mark_sits_with_the_ring_not_somewhere_else(self):
+        """付与节点必须紧跟在光环判定区后面：搬走就会出现「环在、状态不在」的错位。"""
+        tree, _meta = KM.build_main_tree(self.ctx, "2", self.families)
+        root = tree[11][1]
+        names = [node[1][0] for node in root]
+        area_at = next(i for i, node in enumerate(root)
+                       if node[1][0] == "CreateHitArea" and node[1][19] == KM.AURA_BINDS[0])
+        self.assertEqual(names[area_at + 1], "CreateCondition", names)
+        self.assertEqual(root[area_at + 1][1][2][0][1], int(KM.UID_AURA))
+        self.assertEqual(names[area_at - 1], "ShowEffect")
+
+    def test_the_aura_mark_is_the_official_command_except_for_the_two_knobs(self):
+        """整条克隆官方 psycho_reaper_meteor23 的自身付与：除固有 id 与层数外一格不许漂。"""
+        donor = self.ctx.template_dsl(KM.AURA_MARK_DONOR)
+        official = next(c for c in wf_dsl.iter_dsl_commands(donor, "CreateCondition")
+                        if c[2] and isinstance(c[2][0], list) and c[2][0][0] == "ACUnique")
+        self.assertEqual(official[2][0][1], KM.AURA_MARK_DONOR_UID, "母本固有 id 漂了")
+        mark, _meta = KM.aura_mark(self.ctx)
+        command = mark[1]
+        self.assertEqual(len(command), len(official))
+        for index in range(len(official)):
+            if index == 2:
+                continue
+            self.assertEqual(command[index], official[index], f"p{index} 漂了")
+
+    def test_chase_tree_never_refreshes_the_aura_state(self):
+        """629 追击不创建光环 ⇒ 也不许刷新它，否则 PF 命中就能无限续时长。"""
+        tree, _meta = KM.build_chase_tree(self.ctx, self.families)
+        self.assertEqual(self._aura_marks(tree), [])
 
     def test_main_tree_keeps_the_template_slash_untouched(self):
         expected = {"1": 28.0, "2": 42.0}
@@ -1039,6 +1270,48 @@ class PackageIntegrationTests(unittest.TestCase):
                 kept += 1
         self.assertEqual(erased, len(KM.LANCE_HEX_LEAVES))
         self.assertGreaterEqual(kept, 19)
+
+    def test_package_carries_both_unique_rows_and_both_icons(self):
+        table = core.read_orderedmap_file_from_bytes(
+            (PKG_COMMON / MS.UNIQUE_CONDITION_LOGICAL).read_bytes())
+        self.assertEqual(sorted(k for k in table if k.startswith(str(KM.CID))),
+                         sorted((KM.UID, KM.UID_AURA)))
+        aura = list(core.read_csv_lines(table[KM.UID_AURA]))[0]
+        self.assertEqual(aura[1], KM.AURA_UNIQUE_NAME)
+        self.assertEqual(aura[3], str(KM.AURA_FRAMES))
+        self.assertEqual(aura[4], "1")
+        icons = {}
+        for _key, logical, _painter in KM.UNIQUE_ICONS:
+            path = PKG_COMMON / logical
+            self.assertTrue(path.is_file(), logical)
+            image = self.C.png_open(path.read_bytes())
+            self.assertEqual(image.size, (48, 48), logical)
+            icons[logical] = path.read_bytes()
+        self.assertEqual(len(set(icons.values())), 2, "两枚图标在包里不能是同一份字节")
+
+    def test_package_skill_trees_apply_the_aura_state_and_the_chase_tree_does_not(self):
+        def marks(tree):
+            return [c for c in wf_dsl.iter_dsl_commands(tree, "CreateCondition")
+                    if c[2] and isinstance(c[2][0], list) and c[2][0][0] == "ACUnique"]
+
+        for level in (1, 2):
+            tree = self._tree(f"battle/action/skill/action/rare5/{KM.CODE}${KM.CODE}_{level}")
+            found = marks(tree)
+            self.assertEqual([c[2][0][1] for c in found], [int(KM.UID_AURA)], f"level {level}")
+            self.assertEqual(found[0][1], -17)
+            self.assertEqual(found[0][10], KM.AURA_MARK_TARGET_KIND)
+        self.assertEqual(marks(self._tree(KM.CHASE_PROGRAM)), [])
+        for program in KM.PF_PROGRAMS:
+            self.assertEqual(marks(self._tree(program)), [], program)
+
+    def test_package_leader_table_carries_the_ball_flip_combo_row(self):
+        table = core.read_orderedmap_file_from_bytes(
+            (PKG_COMMON / KL.LEADER).read_bytes())
+        rows = list(core.read_csv_lines(table[str(KM.CID)]))
+        self.assertEqual(len(rows), len(KM.LEADER))
+        row = rows[-1]
+        self.assertEqual((row[4], row[10], row[25], row[45], row[49]),
+                         ("188", KM.UID_AURA, "6", "226", "3500000"))
 
     def test_package_trees_reference_only_paths_that_exist(self):
         for program in (f"battle/action/skill/action/rare5/{KM.CODE}${KM.CODE}_2",
