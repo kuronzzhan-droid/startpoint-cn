@@ -248,6 +248,57 @@ class Texts(unittest.TestCase):
 
 
 @unittest.skipUnless((PACKAGE / "manifest.json").is_file(), "candidate package absent")
+class Ability4(unittest.TestCase):
+    """作者 2026-09-21：能力 4 的条件由「浮游效果中」换成「持有贯穿效果期间」（c97 31 → 30）。"""
+
+    @staticmethod
+    def _row(during="31"):
+        row = [""] * 126
+        row[0], row[1], row[2] = "wind_oracle_yukata_4", "true", "attack_white"
+        row[R.DURING_COL] = during
+        for col, value in R.ABILITY4_SHAPE.items():
+            row[col] = value
+        return row
+
+    def test_flying_gate_becomes_piercing_and_nothing_else_moves(self):
+        before = [self._row()]
+        after = R.ability4_rows(before)
+        self.assertEqual(after[0][R.DURING_COL], R.DURING_PIERCING)
+        self.assertEqual([c for c in range(126) if before[0][c] != after[0][c]], [R.DURING_COL])
+        self.assertEqual(before[0][R.DURING_COL], R.DURING_FLYING)       # 入参不被原地改
+
+    def test_idempotent(self):
+        once = R.ability4_rows([self._row()])
+        self.assertEqual(R.ability4_rows(once), once)
+
+    def test_unknown_gate_or_shape_is_rejected(self):
+        with self.assertRaises(R.NoFlyingError):
+            R.ability4_rows([self._row(during="134")])
+        drifted = self._row()
+        drifted[113] = "99999"
+        with self.assertRaises(R.NoFlyingError):
+            R.ability4_rows([drifted])
+        with self.assertRaises(R.NoFlyingError):
+            R.ability4_rows([])
+        with self.assertRaises(R.NoFlyingError):
+            R.ability4_rows([self._row(), self._row()])                  # 第二条还挂着浮游门
+
+    def test_live_twin_row_has_the_same_shape(self):
+        """同形先例：澄波响 live 行 1699886#0（持有贯穿效果期间，暗属性角色攻击力＋50%）。"""
+        table = core.table_path(_store(), K.ABILITY)
+        if not table.is_file():
+            self.skipTest("live store not available")
+        rows = core.read_csv_lines(core.read_orderedmap_file_from_bytes(table.read_bytes()).get("1699886", ""))
+        if not rows:
+            self.skipTest("hibiki row not on this machine")
+        twin = rows[0]
+        self.assertEqual(twin[R.DURING_COL], R.DURING_PIERCING)
+        for col, value in R.ABILITY4_SHAPE.items():
+            if col != 111:                                               # 属性标记不同（Black / White）
+                self.assertEqual(twin[col], value, col)
+        self.assertEqual(twin[98], "")                                   # puller 列同样留空
+
+
 class CandidatePackage(unittest.TestCase):
     """--write-candidate 之后：候选包里零 ACFlying、零「浮游」，三处文案与常量逐字一致。"""
 
@@ -256,6 +307,12 @@ class CandidatePackage(unittest.TestCase):
         cls.manifest = json.loads((PACKAGE / "manifest.json").read_bytes())
         if R.SNAPSHOT_KEY not in cls.manifest.get("snapshot", {}):
             raise unittest.SkipTest("no-flying revision has not been written to the candidate yet")
+
+    def test_candidate_ability4_reads_the_piercing_gate(self):
+        raw = (PACKAGE / "roots/common" / K.ABILITY).read_bytes()
+        rows = core.read_csv_lines(core.read_orderedmap_file_from_bytes(raw)[R.CID + R.ABILITY4_SLOT])
+        self.assertEqual(rows[0][R.DURING_COL], R.DURING_PIERCING)
+        self.assertNotIn(R.DURING_FLYING, [row[R.DURING_COL] for row in rows])
 
     def test_candidate_dsl_has_no_flying(self):
         for logical in LOGICALS:

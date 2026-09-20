@@ -39,7 +39,7 @@ from wf_character_revision import RevisionCandidate, encode_tree  # noqa: E402
 
 CID = "159996"
 CODE = K.CODE
-PACKAGE_VERSION = "1.0.10"
+PACKAGE_VERSION = "1.0.11"
 SNAPSHOT_KEY = "no_flying_20260921"
 EVIDENCE_NAME = "no-flying-20260921.json"
 REVISION_DIR = "work/character_packs/seasonal7-20260916/revision6-no-flying"
@@ -193,6 +193,34 @@ def text_problems(where: str, text: str) -> list[str]:
     return problems + K.text_rule_problems({where: text})
 
 
+# ================================================================ 纯函数：能力 4 的持续条件
+
+#: 作者 2026-09-21：「把条件换成『持有贯穿效果期间』」。她自己的浮游来源删掉后，能力 4
+#: 「浮游效果中，光属性角色攻击力＋50%」基本不再触发；她的强化弹射仍然给贯穿，所以换成贯穿门。
+#: 持续触发列 c97：31 = ConditionFlying，30 = ConditionPiercing。
+#: 同形先例＝澄波响 live 行 1699886#0（c97=30 / c108=false / c110=5 / c111=Black / 50000）：
+#: 除属性标记外与这一行逐格同形，puller 列同样留空。
+ABILITY4_SLOT = "4"
+DURING_COL = 97
+DURING_FLYING, DURING_PIERCING = "31", "30"
+ABILITY4_SHAPE = {108: "false", 110: "5", 111: "White", 113: "50000", 114: "50000"}
+
+
+def ability4_rows(rows: list[list[str]]) -> list[list[str]]:
+    """能力 4 首条记录的持续条件 浮游 → 贯穿；幂等；形状不符即拒绝（别改到别的行上）。"""
+    out = copy.deepcopy(rows)
+    if not out:
+        raise NoFlyingError("ability 4 has no record")
+    row = out[0]
+    drift = {col: row[col] for col, want in ABILITY4_SHAPE.items() if row[col] != want}
+    if drift or row[DURING_COL] not in (DURING_FLYING, DURING_PIERCING):
+        raise NoFlyingError(f"ability 4 baseline drift: c97={row[DURING_COL]!r} {drift}")
+    if any(other[DURING_COL] == DURING_FLYING for other in out[1:]):
+        raise NoFlyingError("ability 4 carries a second ConditionFlying record")
+    row[DURING_COL] = DURING_PIERCING
+    return out
+
+
 # ================================================================ 候选包
 
 def _sha(raw: bytes) -> str:
@@ -289,6 +317,20 @@ def apply_candidate(repo: Path, *, apply: bool = False) -> dict:
                 if live_cas else cas_candidate),
         after=cas_after))
 
+    # 4) ability：能力 4 的持续条件 浮游 → 贯穿（作者 09-21 裁决）
+    ability_key = CID + ABILITY4_SLOT
+    ability_candidate = core.read_orderedmap_file_from_bytes(
+        candidate.read("common", K.ABILITY))[ability_key]
+    ability_after = ability4_rows(core.read_csv_lines(ability_candidate))
+    candidate.splice(K.ABILITY, {ability_key: ability_after})
+    live_ability = live_table(K.ABILITY)
+    table_plan.append(dict(
+        logical_path=K.ABILITY, outer_key=ability_key, codec="flat",
+        before=(core.read_orderedmap_file_from_bytes(live_ability)[ability_key]
+                if live_ability else ability_candidate),
+        after=core.write_csv_lines(ability_after).rstrip("\n"),
+        columns=[DURING_COL]))
+
     problems = [p for where, text in checks.items() for p in text_problems(where, text)]
     if problems:
         raise NoFlyingError(str(problems))
@@ -303,7 +345,8 @@ def apply_candidate(repo: Path, *, apply: bool = False) -> dict:
         pf_support_block_keeps=["ACAttackPoint", "ACPiercing"],
         empty_subject_search_pruned=True,
         damage_timing_and_art_unchanged=True,
-        ability_rows_unchanged=True,
+        ability_rows_unchanged=False,
+        ability4_during_trigger=dict(before="31 ConditionFlying", after="30 ConditionPiercing"),
         texts=dict(skill_description=SKILL_DESC_AFTER, pf_override=PF_TEXT_AFTER),
         visible_flying_text_left=0)
     evidence = candidate.finish(metadata, apply=apply)

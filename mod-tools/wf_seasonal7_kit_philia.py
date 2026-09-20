@@ -1862,6 +1862,10 @@ def build(ctx) -> dict[str, Any]:
     import wf_philia_combo_stock as stock
     ability_rows[spec.cid_s+'1'], ability_rows[spec.cid_s+'4'] = stock.revise_abilities(
         ability_rows[spec.cid_s+'1'], ability_rows[spec.cid_s+'4'])
+    # 作者 2026-09-21：能力 4 的条件由「浮游效果中」换成「持有贯穿效果期间」。放在 stock 之后，
+    # 因为 wf_philia_combo_stock.revise_abilities 的基线断言仍按首发形态（c97=31）把关。
+    import wf_philia_no_flying_revision as nofly_rows
+    ability_rows[spec.cid_s+'4'] = nofly_rows.ability4_rows(ability_rows[spec.cid_s+'4'])
     _write_checked_flat(ctx, stock.UNIQUE, {str(stock.UID): stock.unique_row()})
     stock_icon = ctx.workspace/'source/wind-stock-icon.png'
     # The revision candidate owns the generated source; rebuilds must not redraw it.
