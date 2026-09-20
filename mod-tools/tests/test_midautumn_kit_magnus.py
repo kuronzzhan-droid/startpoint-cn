@@ -237,6 +237,32 @@ class PlanStaticTests(unittest.TestCase):
         self.assertEqual(KM.CLARISSE_NEW_T, KM.CLARISSE_TOTAL - KM.CLARISSE_CUT)
         self.assertEqual(KM.CLARISSE_NEW_R >> 30, 1, "kind=1 播一次，末帧定格")
 
+    def test_burst_sequences_leave_a_tail_the_client_can_jump_to(self):
+        """反馈轮 2 根因：单段 `neutral`(once) ⇒ 终止时无段可跳＝立删（爆炸突然消失）。"""
+        seqs = [dict(s) for s in KM.CLARISSE_SEQUENCES]
+        KM._sequence_problems(seqs, KM.CLARISSE_NEW_T)          # 覆盖/末段/寿命落点全在这里判
+        self.assertEqual(seqs[0]["name"], "neutral", "首段名保持母本，别改成 start")
+        self.assertEqual(seqs[-1]["name"], "end")
+        self.assertEqual(seqs[-1]["kind"], "once")
+        self.assertGreaterEqual(int(seqs[-1]["end"]) - int(seqs[-1]["begin"]) + 1, 16,
+                                "收尾至少要有 16 帧过渡，作者要的是「补帧」")
+
+    def test_hit_window_is_one_number_for_all_three_knobs(self):
+        """suppress / Wait+2 / 参考点 / 演出寿命 官方恒等 —— 只抬一个就会又被连坐删掉。"""
+        self.assertEqual(KM.PF_HIT_WINDOW_DONOR, {1: 20, 2: 30, 3: 30}, "官方底座原值")
+        self.assertGreater(KM.PF_HIT_WINDOW, max(KM.PF_HIT_WINDOW_DONOR.values()),
+                           "原值放不下 79 帧的克拉莉丝末端")
+        self.assertLessEqual(KM.PF_HIT_WINDOW, 60,
+                             "官方 psycho_reaper 722 用 40；超过 1 秒会明显拖慢弹板归还")
+        self.assertLess(KM.PF_HIT_WINDOW, KM.CLARISSE_NEW_T, "寿命必须落在 loop 段里")
+
+    def test_burst_sound_matches_the_burst_length(self):
+        """`se_clarisse` 是 157 帧技能的蓄力音（5.07s、峰值第 89 帧），按在爆炸帧上必然错位。"""
+        self.assertEqual(KM.BURST_SOUND_DONOR, "sound_effect/unique/se_clarisse")
+        self.assertNotEqual(KM.BURST_SOUND, KM.BURST_SOUND_DONOR)
+        self.assertTrue(KM.BURST_SOUND.startswith("sound_effect/"), KM.BURST_SOUND)
+        self.assertNotIn(".mp3", KM.BURST_SOUND, "timeline 里写的是不带扩展名的逻辑路径")
+
     def test_power_flip_carries_no_chase_knobs_any_more(self):
         """反馈轮 1：作者要求去掉强化弹射追踪 ⇒ 常量与文案都不许再出现。"""
         for name in ("CHASE_TAG", "CHASE_STEP", "CHASE_SPEED", "CHASE_SELECTOR",
@@ -246,14 +272,38 @@ class PlanStaticTests(unittest.TestCase):
                      KM.TEXTS["desc1"], KM.TEXTS["desc2"]):
             self.assertNotIn("追击", text, "行为删了文案不能留")
 
-    def test_zeta_family_keeps_only_the_cone(self):
-        """「只要锥形的效果黄色的小方框不要」：黄色六边形来自 hit/end 两族。"""
-        lance = dict((sub, names) for sub, _src, names in KM.FX_CLONES)["lance"]
-        self.assertEqual(tuple(lance), ("zeta_lance",))
+    def test_zeta_family_is_the_cone_plus_its_hexagon_free_ending(self):
+        """反馈轮 1「只要锥形」＋反馈轮 2「收尾要补帧」：end 族回来，但六边形擦成全透明。"""
+        by_sub = dict((sub, names) for sub, _src, names in KM.FX_CLONES)
+        self.assertEqual(tuple(by_sub["lance"]), ("zeta_lance",))
+        self.assertEqual(tuple(by_sub[KM.LANCE_END_SUBDIR]), ("zeta_lance_end",))
+        for names in by_sub.values():
+            self.assertNotIn("zeta_lance_hit", names, "hit 族还是不要（26 颗方块的主场）")
+        self.assertEqual(tuple(KM.LANCE_HEX_LEAVES),
+                         ("zeta_lance_end/k", "zeta_lance_end/l"))
+        for leaf in KM.LANCE_HEX_LEAVES:
+            self.assertTrue(leaf.startswith("zeta_lance_end/"), leaf)
+        self.assertEqual(KM.LANCE_HEX_SOLID["zeta_lance_end/k"], (255, 255, 0))
         self.assertEqual(sorted(KM.PF_LANCE_SCALE), [1, 2, 3])
         tiers = [KM.PF_LANCE_SCALE[n] for n in (1, 2, 3)]
         self.assertEqual(tiers, sorted(tiers))
         self.assertLess(tiers[0], tiers[2], "三档靠锥形 scale 递增表达「逐渐增强」")
+
+    def test_lance_ending_lives_in_its_own_subdir(self):
+        """1.4.965 在 `lance/zeta_lance_end.*` 发过一次，反馈轮 1 删掉后 live 里成了孤儿路径。
+
+        再写回同一路径＝preflight 的 `occupied_without_hash_bound_prior_path_ownership`
+        （实测对 1.4.978 归档会多 2 条自有键冲突，`can_prepare` 直接 false，
+        而 `flow rebase` 只归位表行、清不掉资产路径冲突）。所以必须是新目录。
+        """
+        self.assertEqual(KM.LANCE_END_SUBDIR, "lance_end")
+        self.assertNotEqual(KM.LANCE_END_SUBDIR, "lance")
+        self.assertEqual(KM.ZETA_LANCE_END,
+                         f"{KM.FX_ROOT}/{KM.LANCE_END_SUBDIR}/zeta_lance_end")
+        self.assertTrue(KM.ZETA_LANCE_END.startswith(f"battle/effect/skill_unique/{KM.CODE}/"),
+                        "兄弟目录名会「进战斗数据不足」")
+        subdirs = [sub for sub, _src, _n in KM.FX_CLONES]
+        self.assertEqual(len(subdirs), len(set(subdirs)), "子目录名不许重复")
 
     def test_lance_points_along_the_ball(self):
         """EF = BallImpl.getDirEF() = 球的飞行角（官方 zeta$zeta_1 同写法）；AB 会恒定朝上。"""
@@ -374,11 +424,19 @@ class InstallStagedAssetsTests(unittest.TestCase):
 class _ReadOnlyPack:
     """DSL 构建用得到的包口：只读已重建的 workspace（不存在时按「文件缺失」处理）。"""
 
-    def __init__(self, batch_dir: Path):
+    def __init__(self, batch_dir: Path, ctx=None):
         self.batch_dir = batch_dir
+        self._ctx = ctx
 
     def pkg_path(self, root: str, logical: str) -> Path:
         return WORKSPACE / "package/roots" / root / logical
+
+    def template_asset(self, logical: str):
+        """(root, raw, source)：与 ``S7Pack.template_asset`` 同形，只读官方归档。"""
+        raw = self._ctx.official_read(logical)
+        if raw is None:
+            raise FileNotFoundError(logical)
+        return "common", raw, "official"
 
 
 class _ReadOnlyCtx:
@@ -396,8 +454,10 @@ class _ReadOnlyCtx:
         self._cache: dict = {}
         self.walk = C.walk
         self.csv_split = core.read_csv_lines
+        self.amf_parse = C.amf_parse
+        self.png_open = C.png_open
         self._C = C
-        self.pack = _ReadOnlyPack(self.root / "work/character_packs/midautumn-20260920")
+        self.pack = _ReadOnlyPack(self.root / "work/character_packs/midautumn-20260920", self)
 
     def official_read(self, logical: str, root: str | None = None):
         digest = core.sha1_path(logical)
@@ -677,7 +737,8 @@ class SkillTreeIntegrationTests(unittest.TestCase):
         self.assertEqual(aura[5], ["PlayOnlyFirstSequence"], "母本 _flame 是 once/70 帧")
         burst = next(s for s in self._effects(tree) if s[1] == "ignite_burst")
         self.assertEqual(burst[2][1], KM.CLARISSE)
-        self.assertEqual(burst[5], ["SpecifyEffectLifetimeDirectly", KM.CLARISSE_NEW_T])
+        # 反馈轮 2 复核补漏：爆炸素材只有一份，寿命必须与 722 那三棵树同一个数。
+        self.assertEqual(burst[5], ["SpecifyEffectLifetimeDirectly", KM.PF_HIT_WINDOW])
         self.assertEqual(burst[12], ["Some", [{"min": KM.BURST_SCALE, "max": KM.BURST_SCALE}]])
         self.assertEqual(meta["burst_radius"], KM.BURST_RADIUS)
         self.assertEqual(wf_dsl.player_side_dsl_problems(tree), [])
@@ -691,6 +752,77 @@ class SkillTreeIntegrationTests(unittest.TestCase):
         self.assertTrue(any(p[1] == -18 and p[2] == ["AB"] for p in points))
         radii = sorted(a[9][1][0]["max"] for a in wf_dsl.iter_dsl_commands(tree, "CreateHitArea"))
         self.assertIn(KM.BURST_RADIUS, radii)
+
+    def test_chase_burst_anchor_lives_exactly_as_long_as_the_burst(self):
+        """反馈轮 2 复核补漏的根因判定：官方母本「参考点 == 演出寿命」，反馈轮 1 只抬了后者。"""
+        tree, meta = KM.build_chase_tree(self.ctx, self.families)
+        donor = self.ctx.template_dsl(KM.CHASE_DONOR)
+        d_points = list(wf_dsl.iter_dsl_commands(donor, "CreateReferencePoint"))
+        self.assertEqual([p[9] for p in d_points], [KM.CHASE_BURST_RP_DONOR],
+                         "母本参考点寿命漂移 ⇒ 这一轮的判据要重算")
+        d_burst = next(s for s in wf_dsl.iter_dsl_commands(donor, "ShowEffect")
+                       if not str(s[2][1]).endswith("_player"))
+        self.assertEqual(d_burst[5], ["SpecifyEffectLifetimeDirectly", KM.CHASE_BURST_RP_DONOR],
+                         "官方这一组三个数恒等：参考点 / 演出 / 判定区都是 30")
+
+        burst = next(s for s in self._effects(tree) if s[1] == "ignite_burst")
+        point = next(p for p in wf_dsl.iter_dsl_commands(tree, "CreateReferencePoint")
+                     if p[10] == burst[3])
+        self.assertEqual(point[9], KM.PF_HIT_WINDOW, "锚点不抬 ⇒ 爆炸照样被连坐提前终止")
+        self.assertEqual(burst[5][1], point[9], "官方形状：参考点寿命 == 演出寿命")
+        self.assertEqual(meta["burst_window"],
+                         {"bind": burst[3], "donor": KM.CHASE_BURST_RP_DONOR,
+                          "frames": KM.PF_HIT_WINDOW,
+                          "hit_area": KM.CHASE_BURST_HIT_LIFETIME})
+
+        # 伤害闸不许跟着走：判定区寿命与每目标上限必须留在母本值上
+        area = next(a for a in wf_dsl.iter_dsl_commands(tree, "CreateHitArea")
+                    if a[2] == burst[3])
+        self.assertEqual(area[13],
+                         ["SpecifyHitAreaLifetimeDirectly", KM.CHASE_BURST_HIT_LIFETIME],
+                         "判定区寿命是伤害节流闸，改它就是改伤害")
+        self.assertEqual(area[14], ["CalculatedUsingMaxNumOfHits", KM.BURST_MAX_HITS])
+
+    def test_every_clarisse_user_shares_one_lifetime(self):
+        """切 `end` 段改的是**素材本身** ⇒ 判据必须覆盖全部使用者，不能只盯 PF 三棵树。
+
+        这条就是复核员抓到的那个漏网使用者的回归闸：629 追击树曾停在 79 帧没人发现。
+        """
+        trees = {"ignite": KM.build_chase_tree(self.ctx, self.families)[0]}
+        for level in (1, 2, 3):
+            trees[f"pf{level}"] = KM.build_pf_tree(self.ctx, level, self.families)[0]
+        for level in ("1", "2"):
+            trees[f"skill{level}"] = KM.build_main_tree(self.ctx, level, self.families)[0]
+        seen = 0
+        for name, tree in trees.items():
+            with self.subTest(tree=name):
+                KM.burst_window_problems(name, tree)          # 闸门本体
+                for use in KM.burst_users(tree):
+                    seen += 1
+                    self.assertEqual(use["lifetime"],
+                                     ["SpecifyEffectLifetimeDirectly", KM.PF_HIT_WINDOW])
+        self.assertEqual(seen, 4, "克拉莉丝共 4 个使用者：629 追击 + 三档 PF")
+        loop = next(s for s in KM.CLARISSE_SEQUENCES if s["kind"] == "loop")
+        self.assertLess(int(loop["begin"]), KM.PF_HIT_WINDOW)
+        self.assertLess(KM.PF_HIT_WINDOW, int(loop["end"]),
+                        "寿命必须落在 loop 段内部：到了 end 边界就会多播一遍尾巴")
+        self.assertLess(KM.PF_HIT_WINDOW, KM.CLARISSE_NEW_T,
+                        "写 CLARISSE_NEW_T(79) 就会绕回 loop 段重播 —— 复核员抓到的正是这个")
+
+    def test_burst_window_gate_rejects_a_stale_user(self):
+        """删判定断言：把任意一个使用者退回 79 帧，闸门必须报错。"""
+        tree, _meta = KM.build_chase_tree(self.ctx, self.families)
+        KM.burst_window_problems("ignite", tree)              # 基线绿
+        burst = next(s for s in self._effects(tree) if s[1] == "ignite_burst")
+        burst[5] = ["SpecifyEffectLifetimeDirectly", KM.CLARISSE_NEW_T]
+        with self.assertRaises(KM.KitError):
+            KM.burst_window_problems("ignite", tree)
+        burst[5] = ["SpecifyEffectLifetimeDirectly", KM.PF_HIT_WINDOW]
+        point = next(p for p in wf_dsl.iter_dsl_commands(tree, "CreateReferencePoint")
+                     if p[10] == burst[3])
+        point[9] = KM.CHASE_BURST_RP_DONOR
+        with self.assertRaises(KM.KitError):
+            KM.burst_window_problems("ignite", tree)
 
     def test_power_flip_trees(self):
         for level in (1, 2, 3):
@@ -749,9 +881,87 @@ class SkillTreeIntegrationTests(unittest.TestCase):
         self.assertEqual(fx[0], fx[1], "不再按档位叠加别的基名")
         self.assertEqual(fx[1], fx[2])
         for names in fx:
-            self.assertEqual(names, {KM.ZETA_LANCE, KM.CLARISSE},
-                             "黄色小方框（zeta_lance_hit/_end）不许再出现")
+            self.assertEqual(names, {KM.ZETA_LANCE, KM.ZETA_LANCE_END, KM.CLARISSE},
+                             "zeta_lance_hit（26 颗方块的主场）不许再出现")
         self.assertIn(KM.ZETA_LANCE, fx[0])
+
+    def test_hit_window_is_retimed_on_all_three_knobs(self):
+        """反馈轮 2 根因①：79 帧的爆炸塞进 20/30 帧的参考点 ⇒ 满强度那一帧被连坐删掉。"""
+        for level in (1, 2, 3):
+            with self.subTest(level=level):
+                tree, meta = KM.build_pf_tree(self.ctx, level, self.families)
+                body = KM._collision_body(tree)
+                suppress = [n[1][1] for n in body
+                            if n[0] == "Command" and n[1][0] == "SetPowerFilpSuppress"]
+                waits = [n[1][1] for n in body if n[0] == "Event" and n[1][0] == "Wait"]
+                points = list(wf_dsl.iter_dsl_commands(tree, "CreateReferencePoint"))
+                self.assertEqual(suppress, [KM.PF_HIT_WINDOW])
+                self.assertEqual(waits, [KM.PF_HIT_WINDOW - 2], "Wait 官方恒等 suppress−2")
+                self.assertEqual([p[9] for p in points], [KM.PF_HIT_WINDOW])
+                burst = [s for s in self._effects(tree) if str(s[2][1]) == KM.CLARISSE]
+                self.assertEqual(len(burst), 1)
+                self.assertEqual(burst[0][5], ["SpecifyEffectLifetimeDirectly", KM.PF_HIT_WINDOW],
+                                 "演出寿命必须和参考点寿命相等（官方 5/5 例都相等）")
+                self.assertEqual(burst[0][3], points[0][10], "爆炸挂的就是这个参考点")
+                self.assertEqual(meta["hit_window"],
+                                 {"donor": KM.PF_HIT_WINDOW_DONOR[level],
+                                  "frames": KM.PF_HIT_WINDOW, "wait": KM.PF_HIT_WINDOW - 2})
+                # 伤害窗口不许被这次改动挪动：两块判定区还是底座的 13+6 / 22+7
+                base = self.ctx.template_dsl(KM.SPECIAL_PROGRAMS[level])
+                self.assertEqual([a[13] for a in wf_dsl.iter_dsl_commands(tree, "CreateHitArea")],
+                                 [a[13] for a in wf_dsl.iter_dsl_commands(base, "CreateHitArea")],
+                                 "命中窗口只放长演出，不许顺手改判定区寿命")
+
+    def test_lance_gets_an_explicit_ending_right_after_hide_effect(self):
+        """反馈轮 2 根因②：HideEffect 把锥形硬删，而 zeta_lance 没有 `end` 段可跳＝立删。"""
+        for level in (1, 2, 3):
+            with self.subTest(level=level):
+                tree, meta = KM.build_pf_tree(self.ctx, level, self.families)
+                body = KM._collision_body(tree)
+                names = [n[1][1] if n[1][0] in ("HideEffect", "ShowEffect") else n[1][0]
+                         for n in body]
+                self.assertEqual(names[:2], [KM.LANCE_FX_NAME, KM.LANCE_END_FX_NAME],
+                                 "收尾必须紧跟在 HideEffect 后面，中间不许插别的命令")
+                end = [s for s in self._effects(tree) if str(s[2][1]) == KM.ZETA_LANCE_END]
+                self.assertEqual(len(end), 1)
+                show = end[0]
+                self.assertEqual(show[3], -18, "球的位置（官方赛达也是 -18）")
+                self.assertEqual(show[5], ["PlayOnlyFirstSequence"], "官方 zeta$zeta_1 同写法")
+                self.assertEqual(show[6], ["EF"], "收尾要和锥形同朝向")
+                self.assertEqual([show[10], show[11]], [False, False],
+                                 "tracking 两关＝创建帧快照；开着的话球一没这 32 帧就跟着没")
+                self.assertEqual(show[12][1][0]["max"], KM.PF_LANCE_SCALE[level],
+                                 "收尾要和本档锥形一样大")
+                self.assertEqual(meta["lance_end"]["frames"], KM.LANCE_END_FRAMES)
+
+    def test_lance_hex_rects_are_erased_and_nothing_else_is(self):
+        """黄/橙六边形按图集 rect 擦成全透明；擦之前先证明它不和保留的 rect 相交。"""
+        import wf_seasonal7_common as C
+        boxes = KM.lance_hex_boxes(self.ctx)
+        self.assertEqual(sorted(boxes), sorted(KM.LANCE_HEX_LEAVES))
+        src_dir = dict((sub, src) for sub, src, _n in KM.FX_CLONES)[KM.LANCE_END_SUBDIR]
+        sheet = self.ctx.png_open(
+            self.ctx.pack.template_asset(f"{src_dir}/zeta.png")[1]).convert("RGBA")
+        out = KM.lance_png_transform(self.ctx, None)(sheet)
+        self.assertEqual(out.size, sheet.size, "擦图不许改画布")
+        for leaf, box in boxes.items():
+            self.assertEqual(max(p[3] for p in out.crop(box).getdata()), 0, leaf)
+            self.assertGreater(max(p[3] for p in sheet.crop(box).getdata()), 0,
+                               f"{leaf} 母本本来就是空的？那断言没在判东西")
+        atlas = self.ctx.amf_parse(
+            self.ctx.pack.template_asset(f"{src_dir}/zeta.atlas.amf3.deflate")[1])
+        kept = 0
+        for item in atlas:
+            leaf = "/".join(str(item["n"]).split("/")[-2:])
+            base = leaf.split("/")[0]
+            if leaf in KM.LANCE_HEX_LEAVES or base not in ("zeta_lance", "zeta_lance_end"):
+                continue
+            box = (item["x"], item["y"], item["x"] + item["w"], item["y"] + item["h"])
+            self.assertEqual(list(out.crop(box).getdata()), list(sheet.crop(box).getdata()), leaf)
+            kept += 1
+        self.assertGreaterEqual(kept, 19, "保留的 rect 少了说明族名判错了")
+        self.assertEqual(C.sha256(C.png_store_bytes(out)) == C.sha256(C.png_store_bytes(sheet)),
+                         False, "擦了就必须和母本不同字节")
 
 
 @unittest.skipUnless(PKG_COMMON.is_dir(), "requires a rebuilt ma-magnus workspace")
@@ -794,9 +1004,41 @@ class PackageIntegrationTests(unittest.TestCase):
         self.assertEqual(int(keyframe["r"]), KM.CLARISSE_NEW_R)
         self.assertEqual(int(keyframe["t"]), KM.CLARISSE_NEW_T)
         self.assertEqual(int(parts["g"][0]["t"]), KM.CLARISSE_NEW_T)
-        self.assertEqual(int(timeline["sequences"][0]["end"]), KM.CLARISSE_NEW_T)
+        self.assertEqual(int(timeline["sequences"][-1]["end"]), KM.CLARISSE_NEW_T)
         self.assertEqual(timeline["sequences"][0]["begin"], 1)
         self.assertGreater(len(parts["g"]), 1, "g[1] 及以下一个字节都不许改")
+        # 反馈轮 2：包里必须真的是 start/loop/end 三段 + 换过的爆炸音
+        KM._sequence_problems(timeline["sequences"], KM.CLARISSE_NEW_T)
+        self.assertEqual([s["name"] for s in timeline["sequences"]],
+                         [s["name"] for s in KM.CLARISSE_SEQUENCES])
+        self.assertEqual([s["path"] for s in timeline["sounds"]], [KM.BURST_SOUND])
+
+    def test_lance_ending_is_in_the_package_without_the_yellow_hexagons(self):
+        sub = KM.LANCE_END_SUBDIR
+        base = PKG_COMMON / f"battle/effect/skill_unique/{KM.CODE}/{sub}"
+        for kind in ("parts", "timeline"):
+            self.assertTrue((base / f"zeta_lance_end.{kind}.amf3.deflate").is_file(), kind)
+        old = PKG_COMMON / f"battle/effect/skill_unique/{KM.CODE}/lance/zeta_lance_end.parts.amf3.deflate"
+        self.assertFalse(old.is_file(), "旧 lance/ 路径是 live 孤儿，包里不许再出现（会撞占用闸门）")
+        timeline = self.C.amf_parse((base / "zeta_lance_end.timeline.amf3.deflate").read_bytes())
+        parts = self.C.amf_parse((base / "zeta_lance_end.parts.amf3.deflate").read_bytes())
+        self.assertEqual(int(parts["g"][0]["t"]), KM.LANCE_END_FRAMES)
+        self.assertEqual(int(timeline["sequences"][-1]["end"]), KM.LANCE_END_FRAMES)
+        atlas = self.C.amf_parse((base / f"{sub}.atlas.amf3.deflate").read_bytes())
+        sheet = self.C.png_open((base / f"{sub}.png").read_bytes()).convert("RGBA")
+        erased, kept = 0, 0
+        for item in atlas:
+            leaf = "/".join(str(item["n"]).split("/")[-2:])
+            box = (item["x"], item["y"], item["x"] + item["w"], item["y"] + item["h"])
+            top = max(p[3] for p in sheet.crop(box).getdata())
+            if leaf in KM.LANCE_HEX_LEAVES:
+                self.assertEqual(top, 0, f"{leaf} 还有像素 ⇒ 黄色小方框会再出现")
+                erased += 1
+            elif leaf.split("/")[0] in ("zeta_lance", "zeta_lance_end"):
+                self.assertGreater(top, 0, f"{leaf} 被误擦了")
+                kept += 1
+        self.assertEqual(erased, len(KM.LANCE_HEX_LEAVES))
+        self.assertGreaterEqual(kept, 19)
 
     def test_package_trees_reference_only_paths_that_exist(self):
         for program in (f"battle/action/skill/action/rare5/{KM.CODE}${KM.CODE}_2",

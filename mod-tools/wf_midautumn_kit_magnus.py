@@ -64,18 +64,42 @@ FLAME = f"{DONOR_FX_DIR}/{TEMPLATE_CODE}_flame"
 # 克隆三族（调研卡 C §2）：赛达「锥形」枪体 / 克拉莉丝末端爆炸 / 魏虎光圈
 #
 # 反馈轮 1（作者原话「泽塔的只要锥形的效果黄色的小方框不要」）：`zeta_lance_hit` / `zeta_lance_end`
-# 的主体就是那两块实心黄色六边形（实测 atlas rect `zeta_lance_hit/n` 46×53、`zeta_lance_end/k`
-# 46×53 纯 #FFFF00，屏上读作「黄色小方框」）＋一颗橙色光球，**整族不再克隆也不再引用**；
-# 三档「逐渐增强」改由同一个锥形 `zeta_lance` 的 scale 递增承担（PF_LANCE_SCALE）。
+# 里那两块实心黄色六边形（实测 atlas rect `zeta_lance_hit/n` 46×53、`zeta_lance_end/k`
+# 46×53 纯 #FFFF00，屏上读作「黄色小方框」）＋一颗橙色光球，整族当时都不再克隆。
+#
+# 反馈轮 2（作者原话「强化弹射的动画效果也会突然消失，能不能补帧」）：锥形被
+# 底座的 `HideEffect("オーラ演出")` 在命中那一帧硬删，而 `zeta_lance` 的 timeline 只有
+# `start`(pass) + `start_loop`(loop)、没有 `end` 段 ⇒ 客户端终止时无段可跳，直接删。
+# 官方赛达 `zeta$zeta_1` 的做法是命中后另起一条 `終わりの演出` 播 `zeta_lance_end`（32 帧）。
+# 所以重新克隆回 `zeta_lance_end`，但把**黄/橙六边形那两块 rect 在图集里擦成全透明**
+# （LANCE_HEX_LEAVES）——编排保持官方原样，画面上那 26+26 颗小方框一颗都不出现。
+#
+# 它落在**自己的 `lance_end/` 子目录**而不是回 `lance/`：1.4.965 那版在 `lance/zeta_lance_end.*`
+# 发过一次，反馈轮 1 把它从包里删掉后 live store 里那两个文件成了孤儿（没人引用，但路径还占着）。
+# 再往同一路径写＝preflight 的 `occupied_without_hash_bound_prior_path_ownership`
+# （已实测：对 1.4.978 归档 inspect 会多出 2 条自有键冲突，`can_prepare` 直接 false，
+# 而 `flow rebase` 只归位表行、清不掉资产路径冲突）。换新目录＝全新路径，`create` 不撞闸门。
 FX_CLONES = (
     ("lance", "battle/effect/skill_unique/zeta", ("zeta_lance",)),
+    ("lance_end", "battle/effect/skill_unique/zeta", ("zeta_lance_end",)),
     ("burst", "battle/effect/skill_unique/clarisse", ("clarisse",)),
     ("aura", "battle/effect/skill_unique/anger_investigator", ("anger_investigator_aura",)),
 )
+LANCE_END_SUBDIR = "lance_end"
 FX_ROOT = f"battle/effect/skill_unique/{CODE}"
 ZETA_LANCE = f"{FX_ROOT}/lance/zeta_lance"
+ZETA_LANCE_END = f"{FX_ROOT}/{LANCE_END_SUBDIR}/zeta_lance_end"
 CLARISSE = f"{FX_ROOT}/burst/clarisse"
 AURA = f"{FX_ROOT}/aura/anger_investigator_aura"
+
+# 要擦掉的两块 rect（`<base>/<叶名>`）：k = 53×46 纯 #FFFF00 实心六边形（唯一颜色数 1），
+# l = 53×47 同形状的橙色版本。两块在官方 parts 里各有 26 个实例（`a[10]=a[11]=26`），
+# 就是作者看到的「黄色小方框」雨。擦图不动 parts ⇒ 零结构手术、帧数/容量/编排全不变。
+LANCE_HEX_LEAVES = ("zeta_lance_end/k", "zeta_lance_end/l")
+LANCE_HEX_SOLID = {"zeta_lance_end/k": (255, 255, 0)}   # 纯色断言（母本漂移就拒绝）
+LANCE_FX_NAME = "オーラ演出"                             # 底座给锥形那条 ShowEffect 的标签
+LANCE_END_FX_NAME = "終わりの演出"                       # 官方赛达 zeta$zeta_1 用的同名标签
+LANCE_END_FRAMES = 32                                   # zeta_lance_end 的 timeline 总帧数
 
 CHASE_DONOR = ("battle/action/skill/action/ability_skill/"
                "ability_skill_fire_dragon_zenith$ability_skill_fire_dragon_zenith")
@@ -325,12 +349,60 @@ PF_LANCE_SCALE = {1: 1.0, 2: 1.4, 3: 1.8}
 # オーラ演出写的是 AB（绝对坐标、角度恒 0）⇒ 枪体恒定朝上，这就是作者说的「现在恒定朝上」。
 PF_LANCE_COORD = ["EF"]
 
+# ---- 反馈轮 2：命中窗口 + 收尾 ------------------------------------------------
+#
+# 官方三个 722 底座把「命中后的窗口」写成一组联动值（全部相等，Wait 比 suppress 少 2）：
+#     special_lv1        suppress 20 / Wait 18 / 参考点 20 / 特殊演出寿命 20
+#     special_lv2,lv3    suppress 30 / Wait 28 / 参考点 30 / 特殊演出寿命 30
+#     psycho_reaper_23   suppress 40 / Wait 38 / 参考点 40 / 特殊演出寿命 40
+# 反馈轮 1 把「特殊演出」换成 79 帧的克拉莉丝末端，却没动这组值 ⇒ 爆炸在第 20/30 帧
+# （满强度那一帧，逐帧统计 n≈110 个绘制件）被参考点连坐删掉，而且克拉莉丝 timeline 只有
+# 一段 `neutral`(once)、没有 `end` 段 ⇒ 客户端终止时无段可跳 = 立删。这就是「爆炸突然消失」。
+#
+# 修法照 psycho_reaper 的官方形状把四个值一起抬到 48，并给克拉莉丝切出 `end` 段：
+# 寿命 48 落在 `loop` 段中间，终止时跳 `end`（55–79 = 官方原帧 132–156 的消散尾巴，
+# 绘制件 136 → 64 → 0），所以无论是寿命到期、参考点到期还是 PF 结束，都有 25 帧过渡。
+PF_HIT_WINDOW = 48                    # 命中后 suppress / Wait+2 / 参考点 / 特殊演出寿命
+PF_HIT_WINDOW_DONOR = {1: 20, 2: 30, 3: 30}
+
+# 反馈轮 2 复核补漏：克拉莉丝**不止 722 一个使用者**。能力 3「引擎之炎」的 629 追击树
+# （`ability_skill_lion_swordman_moon_ignite`）用的是同一个 `burst/clarisse`，反馈轮 1 把它的
+# 演出寿命写成了 `CLARISSE_NEW_T`(79)，而它所在的参考点寿命仍是官方火龙母本的 30。
+#
+# 官方母本 `fire_dragon_zenith` 的这一组是**三个数全相等**（实测官方 CDN 归档）：
+#     CreateReferencePoint bind=3 lifetime=30
+#       └ ShowEffect  …_special_attack  subject=3  lifetime=30
+#       └ CreateHitArea subject=3  Circle 250  lifetime=30  maxHits=4
+# 反馈轮 1 只抬了演出寿命（30 → 79）、没动参考点（30）⇒ 与 722 那边一模一样的失配。
+# 反馈轮 2 把 722 修成「参考点 == 演出寿命 == 48」之后，这个使用者被漏掉：
+#   · 单看寿命 79：1-20(pass) → 21-54(loop) → 回放 21-45 → 到点跳 end 55-79，共 104 帧，
+#     而 21-54 这段 loop 是本轮**人为切出来**的（母本从来不是为循环设计的）⇒ 回跳会 pop；
+#   · 按参考点 30 先到：第 30 帧就被连坐终止，body 只播 10 帧 loop。
+# 两种走法都不是想要的。修法＝把这一组也恢复成官方的「参考点 == 演出寿命」，取值沿用
+# 722 的 PF_HIT_WINDOW ⇒ 两处爆炸同形同长（48 帧 body + 25 帧 end 尾巴）。
+# **判定区寿命 30 与每目标上限 5 一格不动**（那是伤害节流闸：间隔 = 30/(5-0.5) ≈ 6.7 帧）。
+CHASE_BURST_RP_DONOR = 30             # 官方火龙母本的参考点寿命（漂移即拒绝）
+CHASE_BURST_HIT_LIFETIME = 30         # 判定区寿命＝伤害闸，跟着母本，不随视觉窗口走
+
 # 克拉莉丝末端裁段（调研卡 C §2.2 落法 A）：母本漂移即拒绝
 CLARISSE_TOTAL = 157
 CLARISSE_CUT = 78
 CLARISSE_ROOT_R = 1073741824
 CLARISSE_NEW_R = (1 << 30) | CLARISSE_CUT
 CLARISSE_NEW_T = CLARISSE_TOTAL - CLARISSE_CUT
+# 反馈轮 2：把单段 `neutral`(once) 切成官方 722 同形的 start/loop/end 三段。
+# 首段名保持 `neutral`（官方两种首段名都有先例，保持母本名最稳）。
+CLARISSE_SEQUENCES = (
+    {"begin": 1, "end": 20, "name": "neutral", "kind": "pass"},
+    {"begin": 21, "end": 54, "name": "loop", "kind": "loop"},
+    {"begin": 55, "end": CLARISSE_NEW_T, "name": "end", "kind": "once"},
+)
+# 爆炸音效：母本 `se_clarisse` 实测 5.068s＝304 帧、峰值在第 89 帧（它是克拉莉丝整段
+# 157 帧技能的蓄力音，我们却把它按在「爆炸已经发生」的那一帧上）⇒ 听到的轰鸣比画面晚 1.5s、
+# 长 4 倍，这就是「音效和动画不匹配」。换成 `se_fire_large_explosion`：2.377s＝143 帧，
+# 峰值第 23 帧（正好是火球最大的时候），衰到 10% 在第 89 帧（画面 73 帧结束）。
+BURST_SOUND = "sound_effect/fire/se_fire_large_explosion"
+BURST_SOUND_DONOR = "sound_effect/unique/se_clarisse"
 
 
 class KitError(KL.KitError):
@@ -708,14 +780,76 @@ def fx_transforms(ctx) -> tuple[Path | None, dict[str, Any]]:
     return lut, out
 
 
+def lance_hex_boxes(ctx) -> dict[str, tuple[int, int, int, int]]:
+    """官方 zeta 图集里两块六边形 rect 的存图区域（擦图用），带母本漂移断言。
+
+    判据全部从官方 atlas/PNG 现算，不写死坐标：
+    - 两个叶名必须都在图集里，且 `zeta_lance_end` 的 parts 确实引用它们；
+    - `k` 必须是**单一颜色** #FFFF00（实心黄六边形），形状漂移即拒绝；
+    - 两块 rect 不许与本族克隆的其它基名（`zeta_lance` / `zeta_lance_end` 的其余叶子）
+      的存图区域相交——相交就说明图集做了去重别名，擦一块会连坐（记忆卡「rect 别名污染」）。
+    """
+    src_dir = dict((sub, src) for sub, src, _n in FX_CLONES)[LANCE_END_SUBDIR]
+    donor = src_dir.rsplit("/", 1)[-1]
+    names = dict((sub, names) for sub, _src, names in FX_CLONES)[LANCE_END_SUBDIR]
+    # 用 clone_effect_family 同一条取件通路（template_asset：官方优先，缺失回落 live），
+    # 否则断言看的是一份、擦的是另一份。
+    atlas = ctx.amf_parse(ctx.pack.template_asset(f"{src_dir}/{donor}.atlas.amf3.deflate")[1])
+    sheet = ctx.png_open(ctx.pack.template_asset(f"{src_dir}/{donor}.png")[1]).convert("RGBA")
+    boxes: dict[str, tuple[int, int, int, int]] = {}
+    keep: list[tuple[int, int, int, int]] = []
+    for item in atlas:
+        if not isinstance(item, dict) or "n" not in item:
+            continue
+        parts = str(item["n"]).split("/")
+        if len(parts) < 2:
+            continue
+        base, leaf = parts[-2], parts[-1]
+        box = (int(item["x"]), int(item["y"]),
+               int(item["x"]) + int(item["w"]), int(item["y"]) + int(item["h"]))
+        if f"{base}/{leaf}" in LANCE_HEX_LEAVES:
+            boxes[f"{base}/{leaf}"] = box
+        elif base in names:
+            keep.append(box)
+    if sorted(boxes) != sorted(LANCE_HEX_LEAVES):
+        raise KitError(f"zeta atlas lost the hexagon rects: got {sorted(boxes)}")
+    for leaf, want in LANCE_HEX_SOLID.items():
+        colours = {p[:3] for p in sheet.crop(boxes[leaf]).getdata() if p[3] > 8}
+        if colours != {want}:
+            raise KitError(f"{leaf} is no longer the solid #{want} hexagon: {sorted(colours)[:6]}")
+    for leaf, box in boxes.items():
+        for other in keep:
+            if box[0] < other[2] and other[0] < box[2] and box[1] < other[3] and other[1] < box[3]:
+                raise KitError(f"{leaf} rect {box} overlaps a kept rect {other} "
+                               "(图集去重别名，擦一块会连坐)")
+    return boxes
+
+
+def lance_png_transform(ctx, base_transform):
+    """先跑染色 LUT，再把两块六边形 rect 擦成全透明。"""
+    boxes = lance_hex_boxes(ctx)
+
+    def transform(image):
+        out = base_transform(image) if base_transform is not None else image
+        out = out.convert("RGBA").copy()
+        for box in boxes.values():
+            out.paste((0, 0, 0, 0), box)
+        return out
+
+    return transform
+
+
 def clone_effects(ctx):
     lut, transforms = fx_transforms(ctx)
     families: dict[str, Any] = {}
     for subdir, src_dir, names in FX_CLONES:
         donor = src_dir.rsplit("/", 1)[-1]
+        png_transform = transforms.get(donor)
+        if subdir == LANCE_END_SUBDIR:
+            png_transform = lance_png_transform(ctx, png_transform)
         fam = ctx.clone_effect_family(src_dir, subdir, list(names),
                                       layout="codename",
-                                      png_transform=transforms.get(donor))
+                                      png_transform=png_transform)
         missing = list(fam.get("missing_effects") or ())
         if missing:
             raise KitError(f"effect family {src_dir} missing bases {missing}")
@@ -760,10 +894,20 @@ def cut_clarisse_tail(ctx, family) -> dict[str, Any]:
     if len(seq) != 1 or seq[0]["begin"] != 1 or int(seq[0]["end"]) != CLARISSE_TOTAL:
         raise KitError(f"clarisse timeline drift: {seq}")
 
+    sounds = timeline.get("sounds") or []
+    if len(sounds) != 1 or sounds[0].get("path") != BURST_SOUND_DONOR:
+        raise KitError(f"clarisse timeline sounds drift: {sounds}")
+
     keyframe["r"] = float(CLARISSE_NEW_R)      # kind=1（播一次），起始帧 78
     keyframe["t"] = CLARISSE_NEW_T
     g0["t"] = CLARISSE_NEW_T
     seq[0]["end"] = CLARISSE_NEW_T             # begin 保持 1
+
+    # 反馈轮 2：切出 start/loop/end 三段（官方 722 同形），并换掉对不上画面的爆炸音。
+    template = dict(seq[0])
+    timeline["sequences"] = [template | dict(s) for s in CLARISSE_SEQUENCES]
+    _sequence_problems(timeline["sequences"], CLARISSE_NEW_T)
+    sounds[0]["path"] = BURST_SOUND
 
     for logical, tree in ((parts_logical, parts), (timeline_logical, timeline)):
         data = ctx.amf_bytes(tree)
@@ -771,7 +915,31 @@ def cut_clarisse_tail(ctx, family) -> dict[str, Any]:
         if _pkg_amf(ctx, root, logical) != tree:
             raise KitError(f"{logical} readback differs from the written tree")
     return {"start_frame": CLARISSE_CUT, "frames": CLARISSE_NEW_T,
-            "r": CLARISSE_NEW_R, "files": [parts_logical, timeline_logical]}
+            "r": CLARISSE_NEW_R, "files": [parts_logical, timeline_logical],
+            "sequences": [dict(s) for s in timeline["sequences"]],
+            "sounds": [dict(s) for s in sounds],
+            "show_lifetime": PF_HIT_WINDOW}
+
+
+def _sequence_problems(sequences, total: int) -> None:
+    """序列表必须无缝覆盖 1..total、最后一段是 `end`(once)、寿命落点在 loop 段内。"""
+    cursor = 1
+    for item in sequences:
+        if int(item["begin"]) != cursor:
+            raise KitError(f"sequence gap at {item}: expected begin {cursor}")
+        if int(item["end"]) < int(item["begin"]):
+            raise KitError(f"sequence inverted: {item}")
+        cursor = int(item["end"]) + 1
+    if cursor != total + 1:
+        raise KitError(f"sequences cover 1..{cursor - 1}, parts total is {total}")
+    if sequences[-1]["name"] != "end" or sequences[-1]["kind"] != "once":
+        raise KitError("last sequence must be the `end`/`once` tail the client jumps to")
+    loop = [s for s in sequences if s["kind"] == "loop"]
+    if len(loop) != 1:
+        raise KitError("exactly one `loop` sequence is required")
+    if not int(loop[0]["begin"]) < PF_HIT_WINDOW < int(loop[0]["end"]):
+        raise KitError(f"ShowEffect lifetime {PF_HIT_WINDOW} must land strictly inside the loop "
+                       f"{loop[0]['begin']}..{loop[0]['end']} (落在边界会多播一次尾巴)")
 
 
 # ---------------------------------------------------------------- DSL 工具
@@ -916,6 +1084,7 @@ def build_chase_tree(ctx, families) -> tuple[Any, dict[str, Any]]:
     if len(effects) != 2:
         raise KitError(f"chase donor should carry 2 ShowEffect, got {len(effects)}")
     names = []
+    burst_subject = None
     for show in effects:
         aura = str(show[2][1]).endswith("_player")
         show[1] = "ignite_aura" if aura else "ignite_burst"
@@ -925,16 +1094,21 @@ def build_chase_tree(ctx, families) -> tuple[Any, dict[str, Any]]:
             show[2] = ["SpecifyEffectDirectly", FLAME]     # 母本件，直接引用官方路径
             show[5] = ["PlayOnlyFirstSequence"]            # _flame 是 once/70 帧
         else:
-            if show[5] != ["SpecifyEffectLifetimeDirectly", 30]:
+            if show[5] != ["SpecifyEffectLifetimeDirectly", CHASE_BURST_RP_DONOR]:
                 raise KitError(f"chase burst lifetime {show[5]} differs from the donor")
             show[2] = ["SpecifyEffectDirectly", CLARISSE]
-            show[5] = ["SpecifyEffectLifetimeDirectly", CLARISSE_NEW_T]
+            # 反馈轮 2 复核补漏：与 722 那边同一个数（见 CHASE_BURST_RP_DONOR 旁的长注释）。
+            # 写 CLARISSE_NEW_T(79) 会让寿命跑出本轮切出来的 loop 段（21-54）⇒ 回放 + pop。
+            show[5] = ["SpecifyEffectLifetimeDirectly", PF_HIT_WINDOW]
             show[12] = ["Some", _slv(BURST_SCALE)]
+            burst_subject = show[3]
         if show[6] not in (["AB"], ["GH"]):
             raise KitError(f"chase ShowEffect coord system {show[6]} must stay AB/GH")
         names.append(show[1])
     if sorted(names) != ["ignite_aura", "ignite_burst"]:
         raise KitError(f"chase effect names unexpected: {names}")
+    if burst_subject is None:
+        raise KitError("chase tree lost the ignite_burst ShowEffect")
     for hide in _commands(tree, "HideEffect"):
         hide[1] = "ignite_aura"
     cna = _only(_commands(tree, "CreateNormalAttack"), "chase CreateNormalAttack")
@@ -947,10 +1121,32 @@ def build_chase_tree(ctx, families) -> tuple[Any, dict[str, Any]]:
     if burst[14][0] != "CalculatedUsingMaxNumOfHits":
         raise KitError(f"chase burst hit accounting drift: {burst[14]}")
     burst[14] = ["CalculatedUsingMaxNumOfHits", BURST_MAX_HITS]
+    # 伤害闸不随视觉窗口走：判定区寿命必须留在母本的 30（间隔 = 30/(5-0.5) ≈ 6.7 帧）。
+    if burst[13] != ["SpecifyHitAreaLifetimeDirectly", CHASE_BURST_HIT_LIFETIME]:
+        raise KitError(f"chase burst hit-area lifetime {burst[13]} must stay at the donor "
+                       f"{CHASE_BURST_HIT_LIFETIME} (改它就是改伤害节流)")
+    rp = _retime_chase_burst_point(tree, burst_subject)
     tree = _rewrite(ctx, tree, families)
     return tree, {"multiplier": CHASE_MULT, "burst_scale": BURST_SCALE,
                   "burst_radius": BURST_RADIUS, "burst_max_hits": BURST_MAX_HITS,
+                  "burst_window": rp,
                   "hit_areas": [[a[9], a[13], a[14]] for a in _commands(tree, "CreateHitArea")]}
+
+
+def _retime_chase_burst_point(tree, subject) -> dict[str, Any]:
+    """把爆炸所挂参考点的寿命抬到 ``PF_HIT_WINDOW``，恢复官方的「参考点 == 演出寿命」。
+
+    母本漂移（不是唯一一条、绑定号对不上、寿命不是 ``CHASE_BURST_RP_DONOR``）一律拒绝。
+    参考点只是锚点：判定区自带 30 帧寿命，先到先死 ⇒ **伤害不变**，变的只是爆炸能播多久。
+    """
+    points = [p for p in _commands(tree, "CreateReferencePoint") if p[10] == subject]
+    point = _only(points, f"chase burst reference point (bind {subject})")
+    if point[9] != CHASE_BURST_RP_DONOR:
+        raise KitError(f"chase burst reference point lifetime {point[9]} "
+                       f"!= donor {CHASE_BURST_RP_DONOR}")
+    point[9] = PF_HIT_WINDOW
+    return {"bind": subject, "donor": CHASE_BURST_RP_DONOR, "frames": PF_HIT_WINDOW,
+            "hit_area": CHASE_BURST_HIT_LIFETIME}
 
 
 # ---------------------------------------------------------------- 722 特殊强化弹射
@@ -978,9 +1174,9 @@ def build_pf_tree(ctx, level: int, families) -> tuple[Any, dict[str, Any]]:
 
     root_body = tree[11][1]
     aura_at = [n for n, e in enumerate(root_body)
-               if e[0] == "Command" and e[1][0] == "ShowEffect" and e[1][1] == "オーラ演出"]
+               if e[0] == "Command" and e[1][0] == "ShowEffect" and e[1][1] == LANCE_FX_NAME]
     if len(aura_at) != 1:
-        raise KitError(f"special lv{level} オーラ演出 not unique ({len(aura_at)})")
+        raise KitError(f"special lv{level} {LANCE_FX_NAME} not unique ({len(aura_at)})")
     aura = root_body[aura_at[0]][1]
     if aura[6] != ["AB"] or aura[3] != -18:
         raise KitError(f"special lv{level} aura subject/coord drift: {aura[3]} {aura[6]}")
@@ -995,10 +1191,18 @@ def build_pf_tree(ctx, level: int, families) -> tuple[Any, dict[str, Any]]:
         raise KitError(f"special lv{level} lost the 特殊演出 burst ShowEffect")
     for show in bursts:
         show[2] = ["SpecifyEffectDirectly", CLARISSE]
-        show[5] = ["SpecifyEffectLifetimeDirectly", CLARISSE_NEW_T]
+        # 反馈轮 2：寿命跟命中窗口一起抬到 48（官方三个底座都是「寿命 == 参考点寿命」），
+        # 48 落在克拉莉丝 loop 段里 ⇒ 到点跳 end 段，25 帧消散尾巴。
+        show[5] = ["SpecifyEffectLifetimeDirectly", PF_HIT_WINDOW]
         show[12] = ["Some", _slv(BURST_SCALE)]
         if show[6] != ["AB"]:
             raise KitError(f"special lv{level} burst coord {show[6]} must stay AB")
+
+    # 反馈轮 2：命中后的窗口（suppress / Wait / 参考点）一起抬到 PF_HIT_WINDOW。
+    # 官方 psycho_reaper_meteor23 就是把这一组从 20/30 抬到 40 来放长自己的命中演出。
+    hit_window = _retime_hit_window(tree, level)
+    # 反馈轮 2：锥形收尾（官方赛达 zeta$zeta_1 的 `終わりの演出` 同写法）。
+    lance_end = _add_lance_end(tree, level)
     radii = []
     for area in _commands(tree, "CreateHitArea"):
         if area[24] != 0:
@@ -1044,7 +1248,63 @@ def build_pf_tree(ctx, level: int, families) -> tuple[Any, dict[str, Any]]:
     return tree, {"level": level, "multipliers": scaled, "total": round(sum(scaled), 6),
                   "lance_scale": PF_LANCE_SCALE[level],
                   "lance_coord": list(PF_LANCE_COORD), "extra_effects": [],
-                  "donor_radii": radii, "burst_radius": BURST_RADIUS, "chase": None}
+                  "donor_radii": radii, "burst_radius": BURST_RADIUS, "chase": None,
+                  "hit_window": hit_window, "lance_end": lance_end}
+
+
+def _retime_hit_window(tree, level: int) -> dict[str, Any]:
+    """把命中后的 suppress / Wait / 参考点三个值一起抬到 ``PF_HIT_WINDOW``。
+
+    底座三处原值必须逐一对上 ``PF_HIT_WINDOW_DONOR[level]``（Wait 比 suppress 少 2），
+    漂移就拒绝——这组值一动就会影响 PF 何时归还弹板，不能默默跟着母本走。
+    """
+    want = PF_HIT_WINDOW_DONOR[level]
+    body = _collision_body(tree)
+    suppress = [n[1] for n in body if n[0] == "Command" and n[1][0] == "SetPowerFilpSuppress"]
+    waits = [n[1] for n in body if n[0] == "Event" and n[1][0] == "Wait"]
+    points = [n[1] for n in body if n[0] == "Command" and n[1][0] == "CreateReferencePoint"]
+    before = {"suppress": _only(suppress, "post-hit SetPowerFilpSuppress")[1],
+              "wait": _only(waits, "post-hit Wait")[1],
+              "point": _only(points, "post-hit CreateReferencePoint")[9]}
+    if before != {"suppress": want, "wait": want - 2, "point": want}:
+        raise KitError(f"special lv{level} post-hit window drift: {before} (want {want})")
+    suppress[0][1] = PF_HIT_WINDOW
+    waits[0][1] = PF_HIT_WINDOW - 2
+    points[0][9] = PF_HIT_WINDOW
+    return {"donor": want, "frames": PF_HIT_WINDOW, "wait": PF_HIT_WINDOW - 2}
+
+
+def _collision_body(tree) -> list:
+    root_body = tree[11][1]
+    collision = _only([n for n in root_body
+                       if n[0] == "Event" and n[1][0] == "CollisionOfBallAndEnemy"],
+                      "root CollisionOfBallAndEnemy")
+    return collision[1][5][1]
+
+
+def _add_lance_end(tree, level: int) -> dict[str, Any]:
+    """在 ``HideEffect("オーラ演出")`` 后面补一条锥形收尾演出（官方赛达同写法）。
+
+    底座命中那一帧就把锥形硬删（``HideEffect``），而 ``zeta_lance`` 的 timeline 只有
+    ``start``/``start_loop`` 两段、没有 ``end`` 段 ⇒ 客户端无段可跳＝立删，这就是作者说的
+    「强化弹射的动画效果也会突然消失」。官方 ``zeta$zeta_1`` 的解法是另起一条
+    ``ShowEffect("終わりの演出", zeta_lance_end, PlayOnlyFirstSequence, tracking false/false)``；
+    tracking 两关＝创建帧快照，所以球没了、PF 结束了，这 32 帧照样播完。
+    """
+    body = _collision_body(tree)
+    hide_at = [n for n, e in enumerate(body)
+               if e[0] == "Command" and e[1][0] == "HideEffect" and e[1][1] == LANCE_FX_NAME]
+    if len(hide_at) != 1:
+        raise KitError(f"PF lv{level} HideEffect({LANCE_FX_NAME}) not unique ({len(hide_at)})")
+    command = ["ShowEffect", LANCE_END_FX_NAME,
+               ["SpecifyEffectDirectly", ZETA_LANCE_END], -18,
+               ["ForesideOfCharacter"], ["PlayOnlyFirstSequence"], list(PF_LANCE_COORD),
+               0, 0, 0, False, False, ["Some", _slv(PF_LANCE_SCALE[level])]]
+    body.insert(hide_at[0] + 1, ["Command", command])
+    return {"effect": ZETA_LANCE_END, "name": LANCE_END_FX_NAME, "after": LANCE_FX_NAME,
+            "subject": -18, "coord": list(PF_LANCE_COORD), "tracking": [False, False],
+            "lifetime": "PlayOnlyFirstSequence", "frames": LANCE_END_FRAMES,
+            "scale": PF_LANCE_SCALE[level]}
 
 
 # ---------------------------------------------------------------- DSL 闸门与落盘
@@ -1084,8 +1344,55 @@ def _effect_ref_problems(ctx, tree) -> list[str]:
     return missing
 
 
+def burst_users(tree, stack=(), out=None) -> list[dict[str, Any]]:
+    """列出树里所有引用克拉莉丝爆炸的 ShowEffect，连同**包住它的参考点**（绑定号，寿命）。
+
+    反馈轮 2 的复核事故就出在「只改了看得见的三棵 PF 树，漏了第四个使用者」。
+    切 `end` 段是**全局**动作（改的是特效素材本身），所以判据也必须是全局的：
+    凡是用这份素材的 ShowEffect，寿命都得落在同一个 loop 段里。
+    """
+    if out is None:
+        out = []
+    if isinstance(tree, list):
+        if len(tree) >= 2 and tree[0] == "Command" and isinstance(tree[1], list) and tree[1]:
+            body = tree[1]
+            if body[0] == "CreateReferencePoint":
+                stack = stack + ((body[10], body[9]),)
+            elif body[0] == "ShowEffect":
+                src = body[2]
+                if isinstance(src, list) and len(src) > 1 and src[1] == CLARISSE:
+                    out.append({"name": body[1], "subject": body[3], "lifetime": body[5],
+                                "points": [list(p) for p in stack]})
+        for child in tree:
+            burst_users(child, stack, out)
+    return out
+
+
+def burst_window_problems(program: str, tree) -> None:
+    """爆炸素材只有一份 ⇒ 每个使用者的寿命必须都是 ``PF_HIT_WINDOW``，锚点寿命必须跟上。"""
+    want = ["SpecifyEffectLifetimeDirectly", PF_HIT_WINDOW]
+    for use in burst_users(tree):
+        if use["lifetime"] != want:
+            raise KitError(
+                f"{program}: ShowEffect `{use['name']}` 的克拉莉丝寿命 {use['lifetime']} "
+                f"!= {want}；`end` 段是按 PF_HIT_WINDOW 切的，别的值会跑出 loop 段"
+                "（多播一遍 loop 或提前被截）")
+        subject = use["subject"]
+        if not isinstance(subject, int) or subject <= 0:
+            continue                       # 内置主体（-18 球等）没有可查的锚点寿命
+        anchors = [lt for bind, lt in use["points"] if bind == subject]
+        if len(anchors) != 1:
+            raise KitError(f"{program}: `{use['name']}` 主体 {subject} 找不到唯一的外层参考点 "
+                           f"（找到 {use['points']}）")
+        if anchors[0] != PF_HIT_WINDOW:
+            raise KitError(
+                f"{program}: `{use['name']}` 挂的参考点寿命 {anchors[0]} != {PF_HIT_WINDOW}；"
+                "官方母本这一组恒等，失配 ⇒ 爆炸会被锚点连坐提前终止")
+
+
 def _write_tree(ctx, program: str, tree) -> str:
     _dsl_problems(tree)
+    burst_window_problems(program, tree)
     refs = _effect_ref_problems(ctx, tree)
     if refs:
         raise KitError(f"{program} references effects absent from baseline and package: {refs}")
@@ -1146,6 +1453,18 @@ NOTES = [
     "三档改 scale 1.0/1.4/1.8；坐标系 AB→EF ⇒ 枪体朝球的飞行方向（官方 zeta$zeta_1 同写法）",
     "反馈轮 1：光圈环画出来是 132.71×scale px，scale 3.75 时半径 248.8 却只有 Circle 200 判定 ⇒ "
     "外圈 48.8px 碰到敌人不掉血；scale 改由判定半径反算（3.01/4.07），并把命中间隔从推导的 63 帧改显式 30 帧",
+    "反馈轮 2 根因：客户端终止特效时跳名为 `end` 的序列（官方 psycho_reaper 722 的 "
+    "se_power_flip_special_lv3_clear 写在第 102 帧、演出寿命只有 40 ⇒ 只能是跳段才播得到），"
+    "没有 end 段就是立删。79 帧的克拉莉丝塞进 20/30 帧的参考点 + 没有 end 段 = 满强度那帧凭空消失",
+    "反馈轮 2：命中窗口 suppress/Wait+2/参考点/演出寿命 四个数官方恒等，一起抬到 48（官方 "
+    "psycho_reaper 是 40）；判定区寿命与每目标上限一格没动 ⇒ 伤害不变，只放长演出",
+    "反馈轮 2：克拉莉丝切 neutral(pass)/loop/end 三段，寿命 48 落在 loop 里 ⇒ 终止时跳 end 段 25 帧消散",
+    "反馈轮 2：锥形收尾照官方赛达 zeta$zeta_1 的 `終わりの演出` 补一条（tracking false/false ＝ "
+    "创建帧快照，球没了也播得完）；黄/橙六边形按 atlas rect 擦成全透明，parts 零结构手术",
+    "反馈轮 2：收尾族放 lance_end/ 而不是回 lance/ —— 1.4.965 在旧路径发过，live 里是孤儿，"
+    "再写同路径会撞 occupied_without_hash_bound_prior_path_ownership 且 rebase 清不掉（实测）",
+    "反馈轮 2：爆炸音 se_clarisse（304 帧、峰值第 89 帧＝克拉莉丝整段技能的蓄力音）换成 "
+    "se_fire_large_explosion（143 帧、峰值第 23 帧），实测数据见 impl/magnus.md §9.5",
 ]
 
 DEVIATIONS = [
@@ -1187,6 +1506,21 @@ DEVIATIONS = [
     {"want": "赛达三档靠叠加 zeta_lance_hit / zeta_lance_end 表达「逐渐增强」",
      "got": "三档都只用锥形 zeta_lance，靠 scale 1.0/1.4/1.8 递增；两个 hit/end 族不再克隆",
      "why": "作者原话「只要锥形的效果黄色的小方框不要」——实测那两族的主体就是实心黄色六边形。"},
+    {"want": "命中后的爆炸按官方底座的 20/30 帧窗口播",
+     "got": "suppress / Wait+2 / 参考点 / 演出寿命 四个数一起抬到 48 帧（0.8 秒）",
+     "why": "反馈轮 2 作者原话「爆炸会有突然消失」＝79 帧的演出被 20/30 帧的参考点连坐删在满强度那一帧；"
+            "官方 psycho_reaper_meteor23 的 722 就是把这一组从 20/30 抬到 40 来放长自己的命中演出。"
+            "判定区寿命与每目标上限一格没动，伤害完全不变，代价只是弹板晚 0.3–0.5 秒归还。"},
+    {"want": "收尾族放回 `lance/`（和锥形同一目录、共用一张图集）",
+     "got": "放在自己的 `lance_end/` 子目录，同一张 zeta sheet 复制第二份（layer0 2.19%→2.74%）",
+     "why": "1.4.965 在 `lance/zeta_lance_end.*` 发过一次，反馈轮 1 删掉后 live 里成了孤儿路径；"
+            "再写同一路径＝preflight `occupied_without_hash_bound_prior_path_ownership`，"
+            "`can_prepare` 直接 false，而 flow rebase 只归位表行、清不掉资产路径冲突（实测）。"},
+    {"want": "爆炸继续用克拉莉丝自带的 `se_clarisse`",
+     "got": "换成官方 `sound_effect/fire/se_fire_large_explosion`",
+     "why": "`se_clarisse` 是她整段 157 帧技能的蓄力音：实测 304 帧、峰值在第 89 帧，"
+            "按在「爆炸已经发生」的第 0 帧上，轰鸣比画面晚 1.5 秒、长 10 倍——这就是作者说的"
+            "「音效和动画不匹配」。替代件峰值第 23 帧、衰到 10% 在第 89 帧，与 73 帧的画面对齐。"},
     {"want": "光圈「稍微小一点」＝ ShowEffect scale 与判定半径一起按 15–20% 缩",
      "got": "只缩画面（scale 3.75→3.01、5.00→4.07，−19.7%/−18.6%），判定半径 200/270 不动",
      "why": "环和判定本来差 24%（环 248.8 vs 判定 200）——那圈差值就是「碰到了没伤害」的来源；"
