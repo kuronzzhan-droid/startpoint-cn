@@ -24,9 +24,11 @@ def find(subject, kind, *nodes, elements=()):
     return cmd('FindAllSubjects', subject, kind, list(elements), [], [], [], [], ['DoNothing'], block(*nodes))
 
 
-def condition(subject, *conditions, key='', cancelable=True):
+def condition(subject, *conditions, key='', cancelable=True, target_kind=3):
+    # 下标 10 = 付与对象种类。FindAllSubjects 33/34/35/49/82 下官方一律 3（Member），
+    # 97（球）才是 2，113/145 才是 1；错配 = 施法 C16102（记忆卡 wf-createcondition-target-kind）。
     return cmd('CreateCondition', subject, list(conditions), v(1), ['GenericConditionHitEffect'],
-               cancelable, False, key, None, False, 1, v(1), False)
+               cancelable, False, key, None, False, target_kind, v(1), False)
 
 
 def buff(kind, amount, frames=900):
@@ -56,8 +58,9 @@ def ghandagoza_skill():
         cmd('DeleteCondition', 0, ['DCAll', 2], 3, 0, '', ['Default']),
         condition(0, ['ACParalysis', v(600)], ['ACToleranceOfElement', v(900), 2, v(-.3), v(1)]))
     def ally(enhanced):
+        # 35 = 「除自身外」的队伍角色；含自身的己方全体是 33（官方文案实证）。
         amount, chase = (2.5, .5) if enhanced else (1.5, .25)
-        return find(1, 35,
+        return find(1, 33,
             condition(1, buff('ACAttackPoint', amount), buff('ACPowerFlipDamage', amount),
                       ['ACAdversity', v(900), v(.5), v(1.5), v(1)],
                       ['ACDamageOfElement', v(900), 2, v(chase), v(1)]),
@@ -83,12 +86,13 @@ def soriz_skill(pack):
         find(0, 1, cmd('CreateRatioAttack', 0, 2, v(.25)),
              condition(0, buff('ACAttackPoint', 2), buff('ACPowerFlipDamage', 2)),
              condition(0, ['ACUnique', 12998601, v(3)], cancelable=False)),
-        find(1, 35, condition(1, ['ACPiercing', v(900)],
+        # 33 = 己方全体（含自身）；35 是「除自身外」，贯通/二连击必须包含索利兹本人。
+        find(1, 33, condition(1, ['ACPiercing', v(900)],
                             ['ACAdditionalDirectAttack', v(900), v(2), v(1), v(1)]), elements=(2,)),
         wait(15, hit))
 
 
 def ghandagoza_opening():
-    return tree(find(0, 35, cmd('CreateRatioAttack', 0, 1, v(1)),
+    return tree(find(0, 33, cmd('CreateRatioAttack', 0, 1, v(1)),
                      wait(1, cmd('CreateBarrier', 0, v(1), ['GenericBarrierHitEffect']),
                           condition(0, ['ACGuts', v(1)], cancelable=False))))

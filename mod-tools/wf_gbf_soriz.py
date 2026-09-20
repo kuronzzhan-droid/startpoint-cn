@@ -1,4 +1,8 @@
-"""Soriz native rows and state transfers; client-only mechanics stay release blockers."""
+"""索利兹的早期草稿行与状态搬运。
+
+**已被 ``wf_gbf_kit_soriz`` 取代**（完成态 kit 直接按 design/soriz.json 装配）。
+保留在这里只作为草稿证据与老契约测试的夹具；``transfer`` 已按 D15 修掉「同帧先删目标」。
+"""
 from wf_gbf_duo_rows import row, RESONANCE, unique_pre, set_fields
 import wf_gbf_duo_dsl as D
 
@@ -8,7 +12,9 @@ FEVER, NO_FEVER = ('Fever','','','',None), ('NotFever','','','',None)
 
 
 def transfer(source, destination, *, cap=10, clear_source=False):
-    body = [D.cmd('DeleteCondition',0,['DCUnique',destination],99,0,'',['Default'])]
+    # 同帧结算顺序固定「赋予(8) → 删除(9)」：先删目标会把本帧刚叠上的层数清零（D15 / 报告 08 §5-①）。
+    # 目标固有在上一段流程里已经删净，进来必然是 0 层，不需要也不允许先删。
+    body = []
     for count in range(1,cap+1):
         body.append(D.cmd('ConditionalsConditionAccumulationNumber',['DCUnique',source],count,
                          D.block(D.condition(0,['ACUnique',destination,D.v(1)],cancelable=False)),D.block()))

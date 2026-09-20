@@ -30,29 +30,31 @@ class DraftTests(unittest.TestCase):
         invalid = D.tree(D.cmd('CreateBarrier', 777, D.v(.5), ['GenericBarrierHitEffect']))
         self.assertTrue(check_draft([], {}, {'bad': invalid}))
 
-    def test_heat_transfer_consumes_only_after_snapshot(self):
+    def test_heat_transfer_never_clears_the_destination_first(self):
+        # 完成态契约（D15）：同帧结算顺序是「赋予(8) → 删除(9)」，先删目标 = 本帧叠的层数被自己清零，
+        # 余热永远 0 层。唯一允许的删除是最后那条清源。
         tree = D.tree(transfer(12998604, 12998605, clear_source=True))
         self.assertEqual(len(C.commands(tree, 'ConditionalsConditionAccumulationNumber')), 10)
         deletes = C.commands(tree, 'DeleteCondition')
-        self.assertEqual(deletes[0][2], ['DCUnique', 12998605])
-        self.assertEqual(deletes[-1][2], ['DCUnique', 12998604])
+        self.assertEqual([d[2] for d in deletes], [['DCUnique', 12998604]])
         self.assertEqual(check_draft([], {}, {'transfer': tree}), [])
 
-    def test_hp_percent_and_party_threshold_units(self):
+    def test_hp_percent_threshold_units(self):
+        # 队伍失血档位的完成态契约搬到 test_gbf_kit_soriz.py：官方零先例的 SumOfPartyHpLow 100 行
+        # 已改成 1 行 during 110 + 来源 9 SumOfParty（D9），这里只留「每失血 1%」的单位契约。
         own = R.row(129987, 1, 'AttackPoint', 2, during=True,
                     trigger='HpDecrease', threshold=.01, start=100000)
-        party = R.row(129987, 3, 'AttackPoint', 3, during=True,
-                      trigger='SumOfPartyHpLow', threshold=.99, limit=1)
         self.assertEqual(own[100:103], ['1000', '1000', '(None)'])
         self.assertEqual(own[105:107], ['100000', '100000'])
-        self.assertEqual(party[100:103], ['99000', '99000', '1'])
-        self.assertEqual(check_draft([], {1:[own], 3:[party]}, {}), [])
+        self.assertEqual(check_draft([], {1:[own]}, {}), [])
 
-    def test_draft_does_not_call_structural_checks_completion(self):
-        for code in ('ghandagoza', 'soriz'):
-            self.assertGreater(len(BLOCKERS[code]), 0)
-        self.assertTrue(any('150%' in item for item in BLOCKERS['ghandagoza']))
-        self.assertTrue(any('尚未接入' in item for item in BLOCKERS['soriz']))
+    def test_soriz_is_no_longer_a_blocked_draft(self):
+        # 索利兹的机制已装进包（见 tests/test_gbf_kit_soriz.py 的完成态契约）。
+        self.assertNotIn('soriz', BLOCKERS)
+
+    def test_ghandagoza_is_no_longer_a_blocked_draft(self):
+        # 冈达葛萨的机制已装进包（见 tests/test_gbf_kit_ghandagoza.py 的完成态契约）。
+        self.assertNotIn('ghandagoza', BLOCKERS)
 
 
 if __name__ == '__main__':
