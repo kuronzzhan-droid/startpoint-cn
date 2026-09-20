@@ -118,8 +118,11 @@ class DesignInterlockTests(unittest.TestCase):
         spec = MS.get_spec("thorn")
         self.assertEqual(spec.extra_keys.get(KL.SWITCHED), (K.VOICE_KEY,))
         self.assertEqual(K.SPEC["extra_keys"][KL.SWITCHED], (K.VOICE_KEY,))
-        # 零固有状态 / 零自定义串 ⇒ 不许有别的自有键。
-        self.assertEqual(set(spec.extra_keys), {KL.SWITCHED})
+        # rework1：零固有状态，但多了 536 的 c70 串与四个槽的面板覆盖串。
+        self.assertEqual(set(spec.extra_keys), {KL.SWITCHED, KL.CAS})
+        want = (K.CAS_CHANGE_SKILL, *(K.CAS_ABILITY[s] for s in K.OVERRIDE_SLOTS))
+        self.assertEqual(tuple(spec.extra_keys[KL.CAS]), want)
+        self.assertEqual(K.SPEC["required_capabilities"], (L.PANEL_OVERRIDE_V2,))
 
     def test_voice_route_matches_the_design(self):
         route = DESIGN["voice"]["route"]
@@ -156,12 +159,85 @@ class DesignSelfCheckTests(unittest.TestCase):
         with self.assertRaises(K.KitError):
             K.ban_forbidden_leader_kinds([row])
 
-    def test_no_unique_condition_and_no_panel_override(self):
+    def test_no_unique_condition_and_no_power_up_string(self):
         self.assertEqual(DESIGN["plan"]["unique_conditions"]["add"], [])
         texts = DESIGN["plan"]["texts"]
-        self.assertEqual(texts["custom_ability_string"]["rows"], [])
         self.assertEqual(texts["custom_ability_power_up_string"]["rows"], [])
         self.assertIsNone(texts["desc_override"]["value"])
+
+    def test_custom_ability_string_mirrors_the_module(self):
+        plan = {e["key"]: e["text"]
+                for e in DESIGN["plan"]["texts"]["custom_ability_string"]["rows"]}
+        want = {K.CAS_CHANGE_SKILL: K.CHANGE_SKILL_TEXT}
+        for slot in K.OVERRIDE_SLOTS:
+            uni = ABILITY_PLAN["keys"][f"{K.CID}{slot}"]["unisonable_per_record"][0]
+            want[K.CAS_ABILITY[slot]] = K.override_text(slot, uni)
+        self.assertEqual(plan, want)
+
+    def test_panel_override_keys_follow_the_string_id_rule(self):
+        for slot in K.OVERRIDE_SLOTS:
+            key = f"{K.CID}{slot}"
+            string_id = ABILITY_PLAN["keys"][key]["records"][0]["cells"]["c0"]
+            self.assertEqual(K.CAS_ABILITY[slot], L.PANEL_OVERRIDE_KEY_PREFIX + string_id)
+        # 能力 5／6 本轮未改，继续走客户端自渲染 ⇒ 不许偷偷多出覆盖串。
+        self.assertEqual(K.OVERRIDE_SLOTS, (1, 2, 3, 4))
+
+    def test_override_text_carries_the_main_only_mark(self):
+        # 主位限定槽（c1=false）的覆盖文案必须自己带 Ⓜ：客户端只给自动文案画角标。
+        self.assertTrue(K.override_text(3, "false").startswith(K.MAIN_ONLY_MARK))
+        self.assertFalse(K.override_text(1, "true").startswith(K.MAIN_ONLY_MARK))
+        for slot in K.OVERRIDE_SLOTS:
+            uni = ABILITY_PLAN["keys"][f"{K.CID}{slot}"]["unisonable_per_record"][0]
+            lines = K.override_text(slot, uni).split("\n")
+            self.assertEqual(len(lines), len(K.PANEL_ABILITY[slot]), slot)
+
+    def test_change_skill_string_is_a_skill_flag_entry(self):
+        # 裁决 §3：技能强化条目不写数字与时间。
+        self.assertEqual(KL.panel_problems(K.CHANGE_SKILL_TEXT, skill_flag=True), [])
+        rows = [K.design_row(r["cells"], KL.ABILITY_NCOLS, "x")
+                for key in K.ABILITY_KEYS for r in ABILITY_PLAN["keys"][key]["records"]]
+        flagged = [r for r in rows if r[47] == "536"]
+        self.assertEqual(len(flagged), 1)
+        self.assertEqual(flagged[0][70], K.CAS_CHANGE_SKILL)
+
+    def test_resonance_rows_really_carry_the_resonance_precondition(self):
+        ability = {key: [K.design_row(r["cells"], KL.ABILITY_NCOLS, key)
+                         for r in ABILITY_PLAN["keys"][key]["records"]] for key in K.ABILITY_KEYS}
+        checked = K.check_resonance_rows(ability)
+        self.assertEqual(len(checked), len(K.RESONANCE_ROWS))
+        bad = copy.deepcopy(ability)
+        key, index = K.RESONANCE_ROWS[0]
+        bad[key][index][6] = "0"
+        with self.assertRaises(K.KitError):
+            K.check_resonance_rows(bad)
+
+    def test_overridden_slots_are_flattened_to_the_max_level_value(self):
+        """覆盖文案写的是满级单值 ⇒ 对应行必须 min = max（记忆卡 wf-leader-override-text-rules）。"""
+        for slot in K.OVERRIDE_SLOTS:
+            key = f"{K.CID}{slot}"
+            for record in ABILITY_PLAN["keys"][key]["records"]:
+                row = K.design_row(record["cells"], KL.ABILITY_NCOLS, key)
+                for low, high in ((51, 52), (113, 114)):
+                    if row[low] or row[high]:
+                        self.assertEqual(row[low], row[high], f"{key} c{low}/c{high}")
+
+    def test_ability_4_uses_the_three_independent_multiplier_slayers(self):
+        rows = [K.design_row(r["cells"], KL.ABILITY_NCOLS, "4")
+                for r in ABILITY_PLAN["keys"][f"{K.CID}4"]["records"]]
+        # 118 麻痹 / 53 眩晕畏缩(气绝) / 119 冻结(迟缓)，都是 P4 独立乘区池（研究卡 B §6.6）
+        self.assertEqual([r[47] for r in rows], ["118", "53", "119"])
+        for row in rows:
+            self.assertEqual(row[48], "5")          # target 5 = 全队
+            self.assertEqual(row[49], "White")
+            self.assertEqual((row[51], row[52]), ("15000", "15000"))
+
+    def test_no_limit_rows_use_the_none_sentinel_not_an_empty_string(self):
+        """「不设置上限」= 上限列写 ``(None)``；留空串 ⇒ parseInt("") = 0 ⇒ 整行零收益。"""
+        for key, index in ((f"{K.CID}2", 0), (f"{K.CID}3", 3)):
+            row = K.design_row(ABILITY_PLAN["keys"][key]["records"][index]["cells"],
+                               KL.ABILITY_NCOLS, key)
+            self.assertEqual(row[97], K.DURING_DEBUFF_COUNT_KIND)
+            self.assertEqual(row[102], "(None)", f"{key}#{index}")
 
     def test_ability_c1_c2_are_single_valued_per_key(self):
         for key in K.ABILITY_KEYS:
@@ -180,7 +256,7 @@ class DesignSelfCheckTests(unittest.TestCase):
         ability = {key: [K.design_row(r["cells"], KL.ABILITY_NCOLS, key)
                          for r in ABILITY_PLAN["keys"][key]["records"]] for key in K.ABILITY_KEYS}
         checked = K.check_during_pullers(leader, ability)
-        self.assertEqual(len(checked), 3)          # 队长 L1/L2 + 词条 2#0
+        self.assertEqual(len(checked), 4)          # 队长 L1/L2 + 词条 2#0 + 词条 3#3
         bad = copy.deepcopy(leader)
         bad[1][K.LEADER_DURING_PULLER[0]] = "1"
         with self.assertRaises(K.KitError):
@@ -250,18 +326,50 @@ class DesignTreeShapeTests(unittest.TestCase):
             self.assertEqual(len(hit), K.HIT_AREA_NCOLS, level)
             onhit = hit[K.HIT_AREA_ONHIT_SLOT]
             self.assertEqual(onhit[0], "Block", level)
-            self.assertEqual(len(onhit[1]), K.ONHIT_DONOR_STATEMENTS + 3, level)
+            # rework1：震屏 + CNA + ConditionalsChangeSkillFlag + 抗性↓ = 4 条
+            self.assertEqual(len(onhit[1]), K.ONHIT_DONOR_STATEMENTS + 2, level)
 
     def test_three_debuffs_are_bound_to_the_cna_subject(self):
         for level, entry in PROGRAMS.items():
             tree = entry["tree"]
             cna = K._command(K._only(K.find_statements(tree, "CreateNormalAttack"), "CNA"))
             self.assertEqual(cna[4], [["DCParalysis"]], level)
-            for ac in ("ACParalysis", "ACFrozen", "ACToleranceOfElement"):
-                cmd = K._only(conditions_of(tree, ac), ac)
-                self.assertEqual(cmd[1], cna[1], f"{level} {ac}")
-                self.assertEqual(cmd[10], K.CONDITION_TARGET_KIND_ENEMY, f"{level} {ac}")
-                self.assertIs(cmd[12], K.CONDITION_FORCE_APPLY, f"{level} {ac}")
+            # 麻痹/迟缓各两条（536 长时长分支 + 基础分支），抗性↓ 一条。
+            for ac, count in (("ACParalysis", 2), ("ACFrozen", 2), ("ACToleranceOfElement", 1)):
+                cmds = conditions_of(tree, ac)
+                self.assertEqual(len(cmds), count, f"{level} {ac}")
+                for cmd in cmds:
+                    self.assertEqual(cmd[1], cna[1], f"{level} {ac}")
+                    self.assertEqual(cmd[10], K.CONDITION_TARGET_KIND_ENEMY, f"{level} {ac}")
+                    self.assertIs(cmd[12], K.CONDITION_FORCE_APPLY, f"{level} {ac}")
+
+    def test_skill_flag_branch_shape(self):
+        """536 开着走长时长分支；分支必须是完整 Block（禁 ``["DoNothing"]``）。"""
+        for level, entry in PROGRAMS.items():
+            branches = K.find_statements(entry["tree"], "ConditionalsChangeSkillFlag")
+            self.assertEqual(len(branches), 1, level)
+            cmd = K._command(branches[0])
+            self.assertEqual(cmd[1], K.SKILL_FLAG_INDEX, level)
+            values = K.SKILL_VALUES[level]
+            for side, para, froz in ((2, "paralysis_long", "frozen_long"),
+                                     (3, "paralysis", "frozen")):
+                block = cmd[side]
+                self.assertEqual(block[0], "Block", f"{level} side {side}")
+                self.assertEqual(len(block[1]), 2, f"{level} side {side}")
+                names = [K._command(s)[2][0][0] for s in block[1]]
+                self.assertEqual(names, ["ACParalysis", "ACFrozen"], f"{level} side {side}")
+                self.assertEqual(K._command(block[1][0])[2][0][1], K._range(values[para]))
+                self.assertEqual(K._command(block[1][1])[2][0][1], K._range(values[froz]))
+            # 强化档必须真的比基础档长，否则这条「大幅延长」就是空头支票。
+            self.assertGreater(values["paralysis_long"][1], values["paralysis"][1], level)
+            self.assertGreater(values["frozen_long"][1], values["frozen"][1], level)
+
+    def test_skill_multiplier_is_fifty(self):
+        self.assertEqual(K.SKILL_VALUES["2"]["cna"], (12.5, 12.5))
+        self.assertEqual(K.SKILL_VALUES["2"]["cna"][1] * K.SKILL_SEGMENTS, K.SKILL_TOTAL_LV2)
+        for level in ("1", "2"):
+            low, high = K.SKILL_VALUES[level]["cna"]
+            self.assertEqual(low, high, f"lv{level} 倍率未拉平成满级单值")
 
     def test_tolerance_uses_element_254(self):
         for level, entry in PROGRAMS.items():
@@ -287,10 +395,15 @@ class DesignTreeShapeTests(unittest.TestCase):
             tree = entry["tree"]
             cna = K._command(K._only(K.find_statements(tree, "CreateNormalAttack"), "CNA"))
             self.assertEqual(cna[6], K._range(values["cna"]), level)
-            self.assertEqual(K._only(conditions_of(tree, "ACParalysis"), "p")[2][0][1],
-                             K._range(values["paralysis"]), level)
-            self.assertEqual(K._only(conditions_of(tree, "ACFrozen"), "f")[2][0][1],
-                             K._range(values["frozen"]), level)
+            self.assertEqual(sorted([c[2][0][1] for c in conditions_of(tree, "ACParalysis")],
+                                    key=lambda v: v[0]["max"]),
+                             sorted([K._range(values["paralysis"]),
+                                     K._range(values["paralysis_long"])],
+                                    key=lambda v: v[0]["max"]), level)
+            self.assertEqual(sorted([c[2][0][1] for c in conditions_of(tree, "ACFrozen")],
+                                    key=lambda v: v[0]["max"]),
+                             sorted([K._range(values["frozen"]), K._range(values["frozen_long"])],
+                                    key=lambda v: v[0]["max"]), level)
 
     def test_effects_reference_the_official_family_only(self):
         for level, entry in PROGRAMS.items():
@@ -348,8 +461,12 @@ class BaselineSkillTreeTests(unittest.TestCase):
                 K.check_design_tree(DESIGN, level, tree)
                 self.assertEqual(K._dsl_problems(tree), [])
                 self.assertEqual(gates["buff_target_as"], 0)
-                self.assertEqual(gates["onhit_statements"], K.ONHIT_DONOR_STATEMENTS + 3)
+                self.assertEqual(gates["onhit_statements"], K.ONHIT_DONOR_STATEMENTS + 2)
                 self.assertEqual(len(gates["dropped_tail"]), 3)
+                self.assertEqual(gates["skill_flag"], K.SKILL_FLAG_INDEX)
+                self.assertAlmostEqual(gates["total_multiplier"],
+                                       K.SKILL_TOTAL_LV2 if level == "2"
+                                       else K.SKILL_TOTAL_LV2 * 2 / 3, places=1)
 
     def test_encoded_tree_round_trips_byte_for_byte(self):
         for level in ("1", "2"):
@@ -399,7 +516,22 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(self.claimed(KL.CHARACTER), {str(K.CID)})
         self.assertIn(K.VOICE_KEY, self.claimed(KL.SWITCHED))
         self.assertEqual(self.claimed(MS.UNIQUE_CONDITION_LOGICAL), set())
-        self.assertEqual(self.claimed(KL.CAS), set())
+        self.assertEqual(self.claimed(KL.CAS),
+                         {K.CAS_CHANGE_SKILL, *(K.CAS_ABILITY[s] for s in K.OVERRIDE_SLOTS)})
+
+    def test_package_custom_ability_strings(self):
+        rows = self.pack.pkg_flat(KL.CAS)
+        plan = {e["key"]: e["text"]
+                for e in DESIGN["plan"]["texts"]["custom_ability_string"]["rows"]}
+        # 包里的 CAS 是整表（含 live 的所有键）；这里只锁本角色自有的那 5 个。
+        self.assertEqual(set(plan), set(self.claimed(KL.CAS)))
+        for key, text in plan.items():
+            self.assertIn(key, rows, key)
+            self.assertEqual(C.csv_split(rows[key])[0][0], text, key)
+        for slot in K.OVERRIDE_SLOTS:
+            lines = plan[K.CAS_ABILITY[slot]].split("\n")
+            self.assertEqual([line.lstrip(K.MAIN_ONLY_MARK) for line in lines],
+                             list(K.PANEL_ABILITY[slot]), slot)
 
     def test_package_rows_match_the_design(self):
         rows = self.pack.pkg_flat(KL.ABILITY)
@@ -482,11 +614,13 @@ class PackageTests(unittest.TestCase):
             self.assertTrue(gate["reason"])
 
     def test_report_panel_and_capabilities(self):
+        overrides = sum(len(K.PANEL_ABILITY[s]) for s in K.OVERRIDE_SLOTS)
         self.assertEqual(self.report["cid"], K.CID)
-        self.assertEqual(len(self.report["panel"]), K.LEADER_ROWS + K.ABILITY_RECORDS)
+        self.assertEqual(len(self.report["panel"]),
+                         K.LEADER_ROWS + K.ABILITY_RECORDS + overrides)
         for text in self.report["panel"]:
             self.assertEqual(KL.panel_problems(text), [], text)
-        self.assertEqual(self.report["required_capabilities"], [])
+        self.assertEqual(self.report["required_capabilities"], [L.PANEL_OVERRIDE_V2])
         self.assertTrue(self.report["deviations"])
         self.assertIn("D-8", [d["id"] for d in self.report["deviations"]])
 

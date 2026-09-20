@@ -2,10 +2,22 @@
 """中秋批次 kit：索恩 159994 ``tweyen_light``（光属性技伤辅助·打异常状态，原创）。
 
 定位「二王弓」：一次施技给单体敌人挂满 **5 个弱体**（麻痹 1 ＋ 迟缓 1 ＋ 累积全属性抗性↓
-3 层），再由队长技与词条把「敌方弱体数」换算成全队光属性的攻击特攻与技能伤害，并叠
-麻痹技能特攻 / 减益技能特攻 / 冻结攻击特攻三条特攻。零固有状态、零独立乘区（裁决 §2 把
-独立乘区留给同批的丝缇涅尔）、零 629 / 722 / 422 / 724 / desc_override。设计与数值以
+3 层），再由队长技与词条把「敌方弱体数」换算成全队光属性的攻击力与技能伤害，并叠
+麻痹 / 气绝 / 迟缓三条独立乘区特攻。零固有状态、零 629 / 722 / 422 / 724。设计与数值以
 ``work/character_packs/midautumn-20260920/design/thorn.{md,json}`` 为准。
+
+**rework1（2026-09-21，作者 09-20 23:2x 原话 + 09-21「开做」）**：目标面板＝
+``rework1/panel/thorn.json``，落法＝``rework1/panel/_deviations.json``，施工单＝
+``rework1/impl/thorn.md``。本轮改动：
+
+- 词条 11 条 → **17 条**：能力 1 去掉「光·MySelf」前置改成开局 ＋50%、新增 536 技能强化开关；
+  能力 2 加光共鸣前置并改成 100%／层・不设上限；能力 3 整槽重排（状态技伤 200% 可叠加、
+  弱体阶梯技伤、光属性角色施技的技伤/攻击双阶梯、连击 ＋50）；能力 4 整槽换成
+  麻痹 / 气绝 / 迟缓三条 **独立乘区** 特攻各 15%；能力 5／6 与队长技 4 行一格不动。
+- **面板覆盖**：能力 1–4 四个槽走 ``desc_override_<string_id>``，逐行 ＝ ``panel/thorn.json``；
+  能力 5／6 与队长技继续走客户端自渲染（本轮未改，文案照旧）。
+- **技能**：倍率 42× → **50×**（4 段 × 12.5，两档都拉平成满级单值）；命中块的麻痹 / 迟缓
+  外包 ``ConditionalsChangeSkillFlag(1)``——536 开着（光共鸣）时走长时长分支。
 
 本模块是「设计 JSON 驱动」的薄壳：队长 4 行、词条 6 键 11 条记录的 donor／逐格改／预期
 ``wf_describe`` 全部从 ``design/thorn.json`` 的 ``plan`` 读出后交给
@@ -15,9 +27,10 @@
 
 本模块自己负责设计 JSON 管不到的部分：
 
-- 技能 DSL 两档「星之猎手」：官方朝户八重 ``psychic_gal_{lv}`` 箭雨整树 + 四处逐格改
+- 技能 DSL 两档「星之猎手」：官方朝户八重 ``psychic_gal_{lv}`` 箭雨整树 + 五处逐格改
   （S1 CNA 条件特攻 ``[["DCParalysis"]]``、S2 倍率、S3 命中块追加三条 ``CreateCondition``、
-  S4 换尾 → 光属性队友技伤状态），三条弱体与新尾巴**整句取自官方 donor 树**再改参数；
+  S4 换尾 → 光属性队友技伤状态、S5 麻痹 / 迟缓外包 ``ConditionalsChangeSkillFlag(1)``），
+  三条弱体与新尾巴**整句取自官方 donor 树**再改参数；
 - ``action_skill`` 两档：施法目标列换成箭雨骨架的 ``dynamic/skill/atk_nearest``、能量
   510→460 改 500→450（名称／描述由 tables 写 TEXTS，这里只核验）；
 - 技能特效：**默认零克隆直接引用官方 ``skill_unique/psychic_gal/*``**（裁决 §4／框架 §10.3，
@@ -55,10 +68,48 @@ PF_TYPE, STANCE = 2, "Jammer"                    # c6 射击（PF 走射击原�
 
 ABILITY_KEYS = tuple(f"{CID}{slot}" for slot in range(1, 7))
 LEADER_ROWS = 4
-ABILITY_RECORDS = 11
+ABILITY_RECORDS = 17                             # rework1：11 → 17
 
 VOICE_KEY = KL.switch_key(CODE)                  # tweyen_light_voice_ready
 VOICE_ROUTE: dict[str, Any] = {"kind": 0, "threshold": "0.5"}   # HpHigh（设计 D-3）
+
+# ---------------------------------------------------------------- rework1：面板与字符串
+#
+# 536「技能强化」的 c70 串（未注册 = C8601）；裁决 §3：技能强化条目不写数字与时间。
+CAS_CHANGE_SKILL = f"change_skill_{CODE}"
+CHANGE_SKILL_TEXT = "强化技能：自身技能赋予的麻痹效果、迟缓效果持续时间大幅延长"
+SKILL_FLAG_INDEX = 1                             # ConditionalsChangeSkillFlag 的开关号（536 ⇒ 1）
+
+#: 走面板覆盖的词条槽（能力 5／6 本轮未改，继续走客户端自渲染）。
+OVERRIDE_SLOTS = (1, 2, 3, 4)
+CAS_ABILITY = {slot: f"desc_override_{CODE}_{slot}" for slot in OVERRIDE_SLOTS}
+
+#: 逐行 ＝ ``rework1/panel/thorn.json``（作者已过目）。desc_override 会整块盖掉客户端
+#: 自动文案，所以这里必须是**满级单值**，对应的行也必须拉平（min = max）。
+PANEL_ABILITY: dict[int, tuple[str, ...]] = {
+    1: ("战斗开始时：自身技能槽立即＋50%",
+        "光属性共鸣时：强化技能，自身技能赋予的麻痹效果、迟缓效果持续时间大幅延长",
+        "光属性角色减益技能特攻＋40%"),
+    2: ("光属性共鸣时：敌人身上每有1个弱体效果，光属性角色对该敌人的攻击力＋100%",),
+    3: ("自身发动技能时：光属性角色状态技能伤害＋200%（持续10秒，可叠加）",
+        "自身发动技能时：自身技能伤害＋20%（最多叠加10次）",
+        "自身发动技能时：光属性角色技能充能速度＋1.5%（最多叠加10次）",
+        "光属性共鸣时：强化技能，敌方每有1个弱体效果，自身技能伤害＋40%，且连击＋50",
+        "光属性共鸣时：光属性角色发动技能时，光属性角色技能伤害＋50%（最多＋350%）、"
+        "攻击力＋50%（最多＋350%）"),
+    4: ("光属性角色对处于麻痹、气绝状态的敌人造成的伤害，额外乘区＋15%",
+        "光属性角色对处于迟缓状态的敌人造成的伤害，额外乘区＋15%"),
+}
+#: 主位限定的槽（c1 = false）在覆盖文案里要自己带 Ⓜ——客户端只给自动文案画这个角标。
+MAIN_ONLY_MARK = "Ⓜ"
+
+
+def override_text(slot: int, unisonable: str) -> str:
+    prefix = "" if str(unisonable).lower() == "true" else MAIN_ONLY_MARK
+    return "\n".join(prefix + line for line in PANEL_ABILITY[slot])
+
+
+CAS_TEXTS: dict[str, str] = {CAS_CHANGE_SKILL: CHANGE_SKILL_TEXT}
 
 # 队长表写 422/724/713 = C7050（裁决 §2／§8）。瞬发 kind 在 c45，持续 kind 在 c107。
 FORBIDDEN_LEADER_KINDS = ("422", "724", "713")
@@ -71,7 +122,14 @@ ABILITY_DURING_PULLER = (98, 99)
 DURING_DEBUFF_COUNT_KIND = "136"
 
 TEXTS: dict[str, str] = {}        # 10 个文本键在 design/thorn.json 的 texts 块（build 里核验）
-SPEC = {"extra_keys": {KL.SWITCHED: (VOICE_KEY,)}}
+SPEC = {
+    # desc_override_* 要生效需要 V14 APK（缺补丁不崩，只是面板回落到客户端自动文案）。
+    "required_capabilities": (L.PANEL_OVERRIDE_V2,),
+    "extra_keys": {
+        KL.SWITCHED: (VOICE_KEY,),
+        KL.CAS: (CAS_CHANGE_SKILL, *(CAS_ABILITY[slot] for slot in OVERRIDE_SLOTS)),
+    },
+}
 
 # ---------------------------------------------------------------- 行 donor 清单
 #
@@ -89,18 +147,31 @@ LEADER_DONORS: tuple[dict[str, Any], ...] = (
 )
 
 ABILITY_DONORS: dict[str, tuple[dict[str, Any], ...]] = {
-    f"{CID}1": ({"tag": "开局自身技能槽", "donor": "1510811#1", "changed": (0,)},
+    f"{CID}1": ({"tag": "开局自身技能槽 50%", "donor": "1510811#1", "changed": (0, 6, 11, 52)},
+                {"tag": "536 光共鸣→切换技能形态", "donor": "1411113#0",
+                 "changed": (0, 1, 2, 11, 70)},
                 {"tag": "全队(光)减益技能特攻", "donor": "2110446#0",
                  "changed": (0, 2, 48, 49, 51, 52)}),
-    f"{CID}2": ({"tag": "弱体数(限5)→全队(光)触发敌方攻击特攻", "donor": "1110932#0",
-                 "changed": (0, 2, 111, 113, 114)},),
-    f"{CID}3": ({"tag": "施技→全队(光)状态技能伤害 10 秒", "donor": "1510813#2",
-                 "changed": (0, 51, 52)},
+    f"{CID}2": ({"tag": "光共鸣+弱体数(无上限)→全队(光)触发敌方攻击特攻", "donor": "1110932#0",
+                 "changed": (0, 2, 6, 9, 10, 11, 102, 111, 113, 114)},),
+    f"{CID}3": ({"tag": "施技→全队(光)状态技能伤害 10 秒(可叠加)", "donor": "1510813#2",
+                 "changed": (0, 51, 52, 61)},
                 {"tag": "施技(限10)→自身技能伤害", "donor": "1510813#0", "changed": (0, 51, 52)},
                 {"tag": "施技(限10)→全队(光)技能槽充能", "donor": "1510813#1",
-                 "changed": (0, 51, 52)}),
-    f"{CID}4": ({"tag": "全队(光)麻痹技能特攻", "donor": "1310981#1", "changed": (0, 49, 51, 52)},
-                {"tag": "全队(光)冻结(迟缓)攻击特攻", "donor": "2510475#0",
+                 "changed": (0, 51, 52)},
+                {"tag": "光共鸣+弱体数(无上限)→自身技能伤害", "donor": "1110932#0",
+                 "changed": (0, 1, 2, 6, 9, 10, 11, 102, 109, 110, 111, 113, 114)},
+                {"tag": "光共鸣+光角色施技(限7)→全队(光)技能伤害", "donor": "1510813#0",
+                 "changed": (0, 6, 9, 10, 11, 34, 48, 49, 51, 52)},
+                {"tag": "光共鸣+光角色施技(限7)→全队(光)攻击力", "donor": "1510813#1",
+                 "changed": (0, 6, 9, 10, 11, 34, 47, 51, 52)},
+                {"tag": "光共鸣+施技→自身追加连击 50", "donor": "2310044#0",
+                 "changed": (0, 1, 2, 6, 9, 10, 11, 51, 52)}),
+    f"{CID}4": ({"tag": "全队(光)麻痹特攻(独立乘区)", "donor": "2310023#0",
+                 "changed": (0, 1, 2, 49, 51, 52)},
+                {"tag": "全队(光)眩晕畏缩(气绝)特攻(独立乘区)", "donor": "2310053#0",
+                 "changed": (0, 1, 2, 49, 51, 52)},
+                {"tag": "全队(光)冻结(迟缓)特攻(独立乘区)", "donor": "2510471#0",
                  "changed": (0, 2, 51, 52)}),
     f"{CID}5": ({"tag": "敌方麻痹(限5)→全队(光)技能伤害", "donor": "2310326#0",
                  "changed": (0, 2, 47, 48, 49, 51, 52)},),
@@ -108,6 +179,12 @@ ABILITY_DONORS: dict[str, tuple[dict[str, Any], ...]] = {
                  "changed": (0, 11, 49, 51, 52)},
                 {"tag": "自身麻痹无效", "donor": "1411533#3", "changed": (0, 1, 2)}),
 }
+
+#: 本轮新增/改写的行必须带的光共鸣前置列（作者 09-21 00:5x：门槛一律用属性共鸣）。
+RESONANCE_CELLS = {"c6": "2", "c9": "600000", "c10": "600000", "c11": "White"}
+#: 这些 (键, 记录号) 必须带光共鸣前置——面板上写了「光属性共鸣时」的那几条。
+RESONANCE_ROWS = ((f"{CID}1", 1), (f"{CID}2", 0), (f"{CID}3", 3), (f"{CID}3", 4),
+                  (f"{CID}3", 5), (f"{CID}3", 6))
 
 # ---------------------------------------------------------------- 技能 DSL
 
@@ -133,14 +210,22 @@ TOLERANCE_ELEMENT_ALL = 254                   # ALL：解析后 = 0 ⇒ 任何 b
 TOLERANCE_STACKS = 3
 
 #: 两档的数值（设计 §4.2；官方两档比例 = 倍率 ×2/3、帧数 ×0.8、比例值 ×0.75）。
+#:
+#: rework1：``cna`` 两档都拉平成满级单值（作者「技能倍率调整为 50 倍」＝ 4 段 × 12.5；
+#: SLv1 按官方两档 ×2/3 ＝ 8.33 ⇒ 33.3 倍）。``*_long`` 是 536 开着（光共鸣）时走的
+#: 长时长分支（研究卡 B §6.3 给的强化档：麻痹 900–1200、迟缓 1800–2400）。
 SKILL_VALUES: dict[str, dict[str, Any]] = {
-    "1": {"cna": (7.0, 7.0), "paralysis": (300, 300), "frozen": (600, 600),
+    "1": {"cna": (8.33, 8.33), "paralysis": (300, 300), "paralysis_long": (900, 900),
+          "frozen": (600, 600), "frozen_long": (1200, 1200),
           "tolerance_frames": (3000, 3000), "tolerance_value": (-0.04, -0.04),
           "tail_frames": (720, 720), "tail_value": (0.7, 0.7)},
-    "2": {"cna": (9.0, 10.5), "paralysis": (360, 480), "frozen": (750, 900),
+    "2": {"cna": (12.5, 12.5), "paralysis": (360, 480), "paralysis_long": (1080, 1200),
+          "frozen": (750, 900), "frozen_long": (1650, 1800),
           "tolerance_frames": (3300, 3300), "tolerance_value": (-0.05, -0.06),
           "tail_frames": (900, 900), "tail_value": (0.9, 1.1)},
 }
+SKILL_SEGMENTS = 4                 # 判定区最多 4 段 ⇒ SLv2 满级合计 4 × 12.5 = 50 倍
+SKILL_TOTAL_LV2 = 50.0
 
 # 特效：默认零克隆直接引用官方路径；交付 fx_lut.json 才克隆换色（deviations D-8）。
 FX_SRC_DIR = "battle/effect/skill_unique/psychic_gal"
@@ -277,6 +362,66 @@ def build_ability_rows(ctx, design: dict[str, Any]) -> tuple[dict[str, list[list
     if total != ABILITY_RECORDS:
         raise KitError(f"design ability carries {total} records, expected {ABILITY_RECORDS}")
     return rows_by_key, evidence
+
+
+def check_resonance_rows(ability_rows: dict[str, list[list[str]]]) -> list[str]:
+    """面板写了「光属性共鸣时」的行必须真的带官方共鸣前置（作者 09-21 00:5x）。"""
+    checked = []
+    for key, index in RESONANCE_ROWS:
+        row = ability_rows[key][index]
+        bad = {col: row[int(col[1:])] for col, want in RESONANCE_CELLS.items()
+               if row[int(col[1:])] != want}
+        if bad:
+            raise KitError(f"{key}#{index}: 缺光共鸣前置 {bad}（应为 {RESONANCE_CELLS}）")
+        checked.append(f"{key}#{index}")
+    return checked
+
+
+def write_strings(ctx, design: dict[str, Any],
+                  ability_rows: dict[str, list[list[str]]]) -> dict[str, str]:
+    """``custom_ability_string``：536 的 c70 串 ＋ 能力 1–4 的整槽面板覆盖串。
+
+    两个键的反查判据不同：536 的串必须被某条行的 c70 引用（否则是死串）；
+    ``desc_override_*`` 的串按键名反查——客户端查的是 ``desc_override_`` ＋ 该槽
+    **第 0 行的 c0（string_id）**。
+    """
+    strings = dict(CAS_TEXTS)
+    for slot in OVERRIDE_SLOTS:
+        rows = ability_rows[f"{CID}{slot}"]
+        want = L.PANEL_OVERRIDE_KEY_PREFIX + rows[0][0]
+        if want != CAS_ABILITY[slot]:
+            raise KitError(f"panel override key {CAS_ABILITY[slot]!r} != "
+                           f"desc_override_<string_id> {want!r}")
+        text = override_text(slot, rows[0][1])
+        if (rows[0][1] == "false") != text.startswith(MAIN_ONLY_MARK):
+            raise KitError(f"slot {slot}: 覆盖文案的主位角标与 c1={rows[0][1]!r} 不一致")
+        strings[CAS_ABILITY[slot]] = text
+
+    declared = set(ctx.spec.extra_keys.get(KL.CAS, ()))
+    missing = [k for k in strings if k not in declared]
+    if missing:
+        raise KitError(f"custom_ability_string keys not declared in SPEC['extra_keys']: {missing}")
+    official = set(ctx.official_flat(KL.CAS))
+    clashes = sorted(set(strings) & official)
+    if clashes:
+        raise KitError(f"custom_ability_string keys already exist officially: {clashes}")
+    # 裁决 §3：技能强化条目不写数字与时间；覆盖串只过通用禁词。
+    KL.check_panel(strings[CAS_CHANGE_SKILL], skill_flag=True, label=CAS_CHANGE_SKILL)
+    for key in CAS_ABILITY.values():
+        for line in strings[key].split("\n"):
+            KL.check_panel(line.lstrip(MAIN_ONLY_MARK), label=key)
+    referenced = {row[70] for rows in ability_rows.values() for row in rows if row[70]}
+    if CAS_CHANGE_SKILL not in referenced:
+        raise KitError(f"custom_ability_string {CAS_CHANGE_SKILL} not referenced by any ability c70")
+
+    plan = {entry["key"]: entry["text"]
+            for entry in design["plan"]["texts"]["custom_ability_string"]["rows"]}
+    if plan != strings:
+        drift = {k: (plan.get(k), strings.get(k)) for k in set(plan) | set(strings)
+                 if plan.get(k) != strings.get(k)}
+        raise KitError(f"design custom_ability_string 与本模块不一致（设计, 实际）: {drift}")
+    ctx.write_flat(KL.CAS, {k: [[v]] for k, v in strings.items()})
+    return strings
 
 
 def ban_forbidden_leader_kinds(rows: list[list[str]]) -> None:
@@ -443,20 +588,35 @@ def bind_condition(statement, subject: int, *, label: str):
     return statement
 
 
-def make_paralysis(ctx, level: str, subject: int):
+def make_paralysis(ctx, level: str, subject: int, *, key: str = "paralysis"):
     values = SKILL_VALUES[level]
     statement = pick_condition(ctx.template_dsl(PARALYSIS_DONOR.format(lv=level)), "ACParalysis")
     entry = _condition_of(statement)[2][0]
-    entry[1] = _range(values["paralysis"])
-    return bind_condition(statement, subject, label=f"麻痹 lv{level}")
+    entry[1] = _range(values[key])
+    return bind_condition(statement, subject, label=f"麻痹 lv{level} {key}")
 
 
-def make_frozen(ctx, level: str, subject: int):
+def make_frozen(ctx, level: str, subject: int, *, key: str = "frozen"):
     values = SKILL_VALUES[level]
     statement = pick_condition(ctx.template_dsl(FROZEN_DONOR.format(lv=level)), "ACFrozen")
     entry = _condition_of(statement)[2][0]
-    entry[1] = _range(values["frozen"])
-    return bind_condition(statement, subject, label=f"迟缓 lv{level}")
+    entry[1] = _range(values[key])
+    return bind_condition(statement, subject, label=f"迟缓 lv{level} {key}")
+
+
+def make_flag_branch(ctx, level: str, subject: int):
+    """536 开着（光共鸣）走长时长分支，没开走基础时长分支。
+
+    ``ConditionalsChangeSkillFlag(1, thenBlock, elseBlock)``——同批芙拉菲已在用的结构。
+    分支必须是完整 ``["Block", [...]]``；空分支写 ``["Block", []]``，**禁写
+    ``["DoNothing"]``**（那是 IfTargetNotFound 的枚举，进游戏 F1009，记忆卡
+    wf-dsl-donothing-enum-trap）。这里两支都非空，不涉及那个坑。
+    """
+    long_block = ["Block", [make_paralysis(ctx, level, subject, key="paralysis_long"),
+                            make_frozen(ctx, level, subject, key="frozen_long")]]
+    base_block = ["Block", [make_paralysis(ctx, level, subject),
+                            make_frozen(ctx, level, subject)]]
+    return ["Command", ["ConditionalsChangeSkillFlag", SKILL_FLAG_INDEX, long_block, base_block]]
 
 
 def make_tolerance(ctx, level: str, subject: int):
@@ -546,17 +706,34 @@ def build_skill_tree(ctx, level: str) -> tuple[Any, dict[str, Any]]:
         raise KitError(f"skill {level}: donor CNA already carries a condition slayer {cna[4]!r}")
     cna[4] = slayer_param(ctx)                       # S1
     cna[6] = _range(values["cna"])                   # S2
-    statements.append(make_paralysis(ctx, level, subject))      # S3
-    statements.append(make_frozen(ctx, level, subject))
+    statements.append(make_flag_branch(ctx, level, subject))     # S3 + S5
     statements.append(make_tolerance(ctx, level, subject))
-    if len(statements) != ONHIT_DONOR_STATEMENTS + 3:
+    if len(statements) != ONHIT_DONOR_STATEMENTS + 2:
         raise KitError(f"skill {level}: on-hit now carries {len(statements)} statements")
     if len(_statements(tree)) != KIT_ROOT_STATEMENTS:
         raise KitError(f"skill {level}: root carries {len(_statements(tree))} statements")
 
+    branches = [s for s in find_statements(tree, "ConditionalsChangeSkillFlag")]
+    if len(branches) != 1 or _command(branches[0])[1] != SKILL_FLAG_INDEX:
+        raise KitError(f"skill {level}: expected exactly one ConditionalsChangeSkillFlag"
+                       f"({SKILL_FLAG_INDEX}), found {len(branches)}")
+    for side in (2, 3):
+        block = _command(branches[0])[side]
+        if not (isinstance(block, list) and block and block[0] == "Block" and len(block[1]) == 2):
+            raise KitError(f"skill {level}: ConditionalsChangeSkillFlag branch {side} is not a "
+                           f"2-statement Block: {block!r}")
+    want_total = SKILL_TOTAL_LV2 if level == "2" else SKILL_TOTAL_LV2 * 2 / 3
+    total = values["cna"][1] * SKILL_SEGMENTS
+    if abs(total - want_total) > 0.05:
+        raise KitError(f"skill {level}: 合计倍率 {total} 与登记的「50 倍（SLv1 ×2/3）」对不上")
+    if values["cna"][0] != values["cna"][1]:
+        raise KitError(f"skill {level}: 倍率未拉平成满级单值 {values['cna']}")
+
     gates = {"level": level, "dropped_tail": dropped, "cna_subject": subject,
              "cna_multiplier": cna[6], "condition_slayer": cna[4],
-             "buff_target_as": tree[10], "onhit_statements": len(statements)}
+             "buff_target_as": tree[10], "onhit_statements": len(statements),
+             "skill_flag": SKILL_FLAG_INDEX,
+             "total_multiplier": round(values["cna"][1] * SKILL_SEGMENTS, 4)}
     return tree, gates
 
 
@@ -618,25 +795,29 @@ def build(ctx) -> dict[str, Any]:
 
     design = load_design(ctx.root)
     if design["plan"]["unique_conditions"]["add"]:
-        raise KitError("设计稿登记了固有状态，但本套件是零新件方案（设计 D-4）")
-    if design["plan"]["texts"]["custom_ability_string"]["rows"] \
-            or design["plan"]["texts"]["custom_ability_power_up_string"]["rows"] \
-            or design["plan"]["texts"]["desc_override"]["value"]:
-        raise KitError("设计稿登记了 desc_override / 自定义词条串，但本套件是零字符串方案（设计 §5）")
+        raise KitError("设计稿登记了固有状态，但本套件是零固有件方案（设计 D-4；rework1 未新增）")
+    if design["plan"]["texts"]["custom_ability_power_up_string"]["rows"]:
+        raise KitError("设计稿登记了 custom_ability_power_up_string，但本套件不用这条通路")
 
-    # ---- 1) 队长技 4 行 + 词条 6 键 11 条（design.json 驱动，逐行过 legality 与 wf_describe）
+    # ---- 1) 队长技 4 行 + 词条 6 键 17 条（design.json 驱动，逐行过 legality 与 wf_describe）
     leader_rows, leader_evidence = build_leader_rows(ctx, design)
     ban_forbidden_leader_kinds(leader_rows)
     ability_rows, ability_evidence = build_ability_rows(ctx, design)
     pullers = check_during_pullers(leader_rows, ability_rows)
+    resonance = check_resonance_rows(ability_rows)
     capabilities: set[str] = set()
     for ev in (*leader_evidence, *ability_evidence):
         capabilities.update(ev["capabilities"])
     ctx.write_flat(KL.LEADER, {str(CID): leader_rows})
     ctx.write_flat(KL.ABILITY, ability_rows)
 
-    # ---- 2) 面板文案规则（15 行渲染回读 + 10 个文本键）
+    # ---- 1b) custom_ability_string：536 的 c70 串 + 能力 1–4 的整槽面板覆盖
+    strings = write_strings(ctx, design, ability_rows)
+    capabilities.add(L.PANEL_OVERRIDE_V2)         # desc_override_* 惰性生效，缺 V14 不崩
+
+    # ---- 2) 面板文案规则（21 行渲染回读 + 覆盖串 + 10 个文本键）
     panel = [ev["panel"] for ev in (*leader_evidence, *ability_evidence)]
+    panel += [line for slot in OVERRIDE_SLOTS for line in PANEL_ABILITY[slot]]
     for name in ("title", "profile", "leader", "skill1", "desc1", "skill2", "desc2"):
         KL.check_panel(spec.texts[name], label=f"texts.{name}")
 
@@ -699,7 +880,8 @@ def build(ctx) -> dict[str, Any]:
     ctx.evidence_write("kit-gates.json", {
         "leader": {"rows": leader_rows, "evidence": leader_evidence},
         "ability": {"rows": ability_rows, "evidence": ability_evidence},
-        "during_puller_checked": pullers,
+        "during_puller_checked": pullers, "resonance_checked": resonance,
+        "custom_ability_string": strings,
         "skills": skill_gates, "action_skill": action_rows,
         "effects": {"mode": "clone+lut" if family else "official-reference",
                     "src_dir": FX_SRC_DIR, "dst_dir": FX_DST_DIR if family else None,
@@ -713,10 +895,13 @@ def build(ctx) -> dict[str, Any]:
         "技能『星之猎手』：官方朝户八重 psychic_gal 箭雨整树（停球 / FindNearSubjects(49) / "
         "6 支箭演出 / 移动矩形 300×200・寿命 120・最小间隔 3・最多 4 段全部不动）+ 四处逐格改："
         "S1 CNA 第 4 参 [[\"DCParalysis\"]]（对麻痹敌人 +25%，官方雷弓形状）、S2 倍率 "
-        f"lv1 {SKILL_VALUES['1']['cna'][0]} / lv2 {SKILL_VALUES['2']['cna']}（4 段封顶 ⇒ SLv2 满级 42×）、"
+        f"lv1 {SKILL_VALUES['1']['cna'][0]} / lv2 {SKILL_VALUES['2']['cna'][0]}"
+        f"（两档都拉平成满级单值，4 段封顶 ⇒ SLv2 满级 {SKILL_TOTAL_LV2:g}×）、"
         "S3 命中块追加麻痹 / 迟缓 / 累积全属性抗性↓ 三条 CreateCondition（整句取自官方 "
         "bee_girl・elf_archer・devil_clown_xm21，只改帧数/数值/绑定）、S4 换尾成母本 151081 的"
-        "「光属性队友技伤状态」；tree[10]=0 保持（自动档＝技能伤害归属）；能量 "
+        "「光属性队友技伤状态」、S5 麻痹 / 迟缓外包 ConditionalsChangeSkillFlag(1)（536 开着 ⇒ "
+        f"麻痹 {SKILL_VALUES['2']['paralysis_long'][1]} 帧 / 迟缓 "
+        f"{SKILL_VALUES['2']['frozen_long'][1]} 帧）；tree[10]=0 保持（自动档＝技能伤害归属）；能量 "
         f"{energy['donor']} → lv1 {energy['lv1']} / lv2 {energy['lv2']}",
         f"抗性↓ 元素码写 {TOLERANCE_ELEMENT_ALL}（ALL，解析后 = 0）而不是 5：带 "
         "resistElementResistance 旗的 boss 只放行「解析后 = 0」与「克制自身属性」的那一支，"
@@ -724,8 +909,12 @@ def build(ctx) -> dict[str, Any]:
         "麻痹/迟缓/抗性↓ 的 forceApply 一律 false（裁决 §2：不对 boss 强制付与）；"
         "付与对象种类 = 3（命中块内官方写法）；三条都绑在 CNA 同一主体位（判定区第三绑定位，"
         "写第二位必崩 U_34c3bb）。",
-        "面板：15 行全部按客户端渲染直出（desc_expected 逐字核对通过），无 desc_override、"
-        "无 629/722/422/724/713，required_capabilities 为空。",
+        "面板（rework1）：队长 4 行与能力 5／6 继续走客户端自渲染（desc_expected 逐字核对通过）；"
+        f"能力 {'/'.join(str(s) for s in OVERRIDE_SLOTS)} 四个槽走 desc_override_<string_id> 整块接管，"
+        "逐行 = rework1/panel/thorn.json（主位限定槽自带 Ⓜ）。无 629/722/422/724/713；"
+        f"required_capabilities = [{L.PANEL_OVERRIDE_V2}]（缺 V14 不崩，只是回落到自动文案）。",
+        f"「光属性共鸣时」一律用官方共鸣前置 {RESONANCE_CELLS}（作者 09-21 00:5x），"
+        f"覆盖 {len(RESONANCE_ROWS)} 条行：{resonance}。",
         {"pixel_install": pixel},
     ]
     deviations: list[dict[str, Any]] = []

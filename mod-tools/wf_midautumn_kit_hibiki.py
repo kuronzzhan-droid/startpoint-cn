@@ -1,26 +1,33 @@
 # -*- coding: utf-8 -*-
-"""中秋批次 kit：澄波响·满月混音 169988 ``psychic_teleport_moon``（暗属性 PF 主 C）。
+"""中秋批次 kit：澄波响 169988 ``psychic_teleport_moon``（暗 · 特殊型 PF 主 C）—— rework1。
 
-定位「贯通循环型」强化弹射主 C：贯通中 → PF 大幅增伤 → PF 再赋予长贯通并积一层「回响」→ 循环转起来；
-PF 之后立刻进入疾驰，冲刺参数被改造成「瞬间移动」。设计与数值以
-``work/character_packs/midautumn-20260920/design/hibiki.{md,json}`` 为准（本模块只放 donor 地址与
-装配逻辑，倍率/列值全部从设计 JSON 读，两边漂移即报错）。
+作者 2026-09-20/21 把她的队长技与能力 2/3/5 重写（``rework1/author-request.md`` 第 30 行
+＋ 09-21 答复），目标面板 = ``rework1/panel/hibiki.json``，引擎落法 = ``rework1/panel/_deviations.json``，
+逐行映射与零先例退路见施工单 ``rework1/impl/hibiki.md``。本轮三条轴线：
+
+- **贯通循环**（沿用）：722 专属 PF → 全队长贯通 → 贯通中 PF 大幅增伤 → 再 PF。
+- **回响成长**（本轮放开）：固有「回响」上限 5 → **99**（作者「不设置上限」的官方写法）；
+  每层给自身 PF 伤害 ＋25%（槽 3）与自身攻击力 ＋25%（槽 4，见偏离 D-13），
+  独立乘区 ＋5%／层（封顶 5 层，作者原话「最大 25%」）与全队暗攻 ＋15%／层（封顶 5 层）不变。
+- **PF 追击**（本轮新增）：「暗属性角色发动技能时」与「冲刺时（CT 5 秒）」各挂一行队长 629，
+  指向新建的 ``ability_skill_psychic_teleport_moon_pf`` 树 —— 官方 ``special_lv3`` 的命中块
+  整块搬出（去掉 ``SetPowerFilpSuppress`` / ``NotifyPowerflipEnd`` 两条 PF 生命周期命令，
+  斩铁 ``samurai_robot_plum`` 的现成做法），根头 ``tree[10]=3`` ⇒ 按 PF 伤害结算，
+  吃得到她自己那一池「强化弹射伤害 ＋X%」。
+
+面板：队长块与 6 个能力槽**全部**由 ``desc_override_*`` 接管（凯尔／罗尔夫 rework1 同款），
+逐行对齐 ``rework1/panel/hibiki.json``；作者要求「能力 5 的词条写在队长技里」＝冲刺 422 行
+物理留在能力表（写进队长表 ＝ C7050），文案挪进队长块。
 
 落地内容
-    - ``unique_condition[16998801]``「回响」（donor 官方 ``7``「加热」；c4 上限 **5**，禁 ``(None)``）
+    - ``unique_condition[16998801]``「回响」（donor 官方 ``7``「加热」；c4 上限 **99**，禁 ``(None)``）
       与它的 48×48 图标（alpha 取官方图标外框）；
-    - 队长 6 行（含 722 专属 PF）、词条 6 键 15 条：官方/live donor + 逐格改，每行过
-      ``wf_client_legality`` 三件套并与设计登记的 ``wf_describe`` 文案逐字核对；
-    - ``custom_ability_string``：722 的 c82 串 ``override_string_…_pf`` 与槽 5 的面板覆盖
-      ``desc_override_…_5``；
-    - ``action_skill`` 两档（名称/描述由 tables 写 TEXTS，这里改图标 c2 与能量 c4/c5）；
-    - 技能 DSL 两档：三个官方母本拼一棵（她自己 161183 的骨架/演出/回响 + 威隆 161153 的音场判定区
-      与自身攻击 + 荷莉 261083 的队伍块），特效只克隆 1 族 ``song``；
-    - 专属强化弹射 722 三档：官方 ``special_lv{n}`` 整树作底座（sha 锁定）+ 官方 supporter 辅助增益块
-      （复用 :func:`wf_seasonal7_kit_philia.pf_support_block`），倍率统一 ×4.8，贯通帧拉长到 240/300/360；
-      ``power_flip_action[psychic_teleport_moon_pf]`` 指向三档程序；
-    - character c9–c16 语音路由（kind 1 ConditionExist ← 固有 16998801）与
-      ``switched_action_skill[psychic_teleport_moon_voice_ready]``；
+    - 队长 9 行、词条 6 键 18 条：官方/live donor + 逐格改，每行过 ``wf_client_legality`` 三件套
+      并与本模块登记的 ``wf_describe`` 回读逐字核对；
+    - ``custom_ability_string`` 10 键：722 的 c82 串、两条 629 的条目串、队长块 + 6 槽面板接管；
+    - ``action_skill`` 两档（名称/描述由 tables 写 TEXTS，这里改图标 c2 与能量 c4/c5/c6）；
+    - 技能 DSL 两档（本轮未改）、722 三档、**新增 1 棵 629 PF 追击树**；
+    - character c9–c16 语音路由与 ``switched_action_skill[psychic_teleport_moon_voice_ready]``；
     - ``B/pixel/hibiki/install.json`` 里的像素/特效成品（缺文件静默跳过）。
 
 不碰：立绘、像素成品 PNG、语音音频、live store / ``assets/`` / ``.cdn`` / 设备 / 存档。
@@ -51,6 +58,7 @@ KitError = KL.KitError
 KEY = "hibiki"
 CID, CODE = 169988, "psychic_teleport_moon"
 ELEMENT = 5                                   # 暗（0 基内部编号）
+ELEMENT_TOKEN = "Black"
 TEMPLATE_ID, TEMPLATE_CODE = 161183, "psychic_teleport_playable"
 
 UID = MS.unique_condition_id(CID, 1)          # "16998801"
@@ -60,7 +68,9 @@ UNIQUE_NAME = "回响"
 UNIQUE_ICON_ROW = f"battle/common/unique_condition/{UNIQUE_STRING_ID}"
 UNIQUE_ICON_LOGICAL = UNIQUE_ICON_ROW + ".png"
 UNIQUE_ICON_FRAME = "battle/common/unique_condition/unique_combat_animal_xm21.png"
-UNIQUE_CAP = "5"                              # 禁 (None)：那是上限 1 层，三条 D134 按层加成会全死
+#: rework1：作者「不设置上限」⇒ 官方写法 99（禁 ``(None)``，那是上限 1 层，按层加成全死）。
+UNIQUE_CAP = "99"
+UNIQUE_FRAMES = "99999999"                    # 无时间限制
 
 PFA = "master/skill/power_flip_action.orderedmap"
 PF_KEY = f"{CODE}_pf"
@@ -77,8 +87,21 @@ PF_SCALE = 4.8                                # 三档统一的唯一缩放旋�
 PF_PIERCE_FRAMES = {1: 240, 2: 300, 3: 360}   # 官方 60/90/150 → 拉长（贯通是整套循环的命门）
 PF_SUPPORT_BIND = 400                         # 辅助增益块主体 id 段（philia.PF_SUPPORT_OFFSET）
 
-CAS_PF = f"override_string_{CODE}_pf"
-CAS_DASH = f"desc_override_{CODE}_5"
+# ---------------------------------------------------------------- 自有字符串键
+CAS_PF = f"override_string_{CODE}_pf"                  # 722 的 c82 串（缺键 = C8601）
+CAS_INVOKE_SKILL = f"ability_skill_{CODE}_pf_skill"    # 队长 629（暗属性角色发动技能时）
+CAS_INVOKE_DASH = f"ability_skill_{CODE}_pf_dash"      # 队长 629（冲刺时 CT5s）
+CAS_LEADER = f"desc_override_{CODE}"                   # 队长块整体接管
+CAS_ABILITY = {slot: f"desc_override_{CODE}_{slot}" for slot in range(1, 7)}
+
+#: 629 PF 追击树（官方 special_lv3 命中块整块搬出）。一棵树两行共用。
+INVOKE_BASE = f"ability_skill_{CODE}_pf"
+INVOKE_PROGRAM = f"battle/action/skill/action/ability_skill/{INVOKE_BASE}${INVOKE_BASE}"
+#: 629 载荷的倍率旋钮（1.0 ＝ 官方 special_lv3 原值 13×；她本体 722 lv3 是 62.4×）。
+INVOKE_SCALE = 1.0
+#: 629 载荷的伤害归属：3 ＝ 强化弹射伤害（吃「强化弹射伤害＋X%」这一池，不吃分档/独立乘区/PF 耐性）。
+INVOKE_BTA = 3
+
 VOICE_KEY = f"{CODE}_voice_ready"
 VOICE_ROUTE = {"kind": 1, "condition_kind": "28", "condition_id": UID}
 
@@ -101,46 +124,248 @@ FIELD_SUBJECT_BASE = 100                      # 音场块主体 id 段
 TEAM_SUBJECT_BASE = 200                       # 队伍块主体 id 段
 TEAM_PFDMG_FRAMES = 1200                      # 队伍 PF 伤害帧 900 → 1200
 
-# 两档的倍率/强度（设计 §4.2，单位 1.0 = 100%）
+# 两档的倍率/强度（设计 §4.2，单位 1.0 = 100%）。rework1 未改技能。
 SKILL_PARAMS = {
     "1": {"field": (2.4, 2.4), "self_atk": (1.2, 1.2), "team_pfdmg": (1.0, 1.0), "pierce": (720, 720)},
     "2": {"field": (2.6, 3.0), "self_atk": (1.5, 1.5), "team_pfdmg": (1.2, 1.2), "pierce": (810, 810)},
 }
+#: 两档技能能量（本轮不改；面板固定显示第一列 550）。
+SKILL_ENERGY = {"1": {"c4": 550, "c5": 550, "c6": 1},
+                "2": {"c4": 550, "c5": 500, "c6": 1}}
 
-# donor 地址（设计稿的 ``#N`` 是 1 基记录号，这里换成 kitlib 要的 0 基下标）
-LEADER_DONORS = (("live", "159996#3"),        # 菲莉亚 722 整行（无前置）
-                 ("official", "161153#0"),    # 威隆 3 周年：贯通中全队暗攻
-                 ("official", "161153#1"),    # 威隆：贯通中自身 PF 伤害
-                 ("official", "161153#2"),    # 威隆：暗共鸣 贯通延长
-                 ("official", "131182#3"),    # 莱特 4 周年：共鸣 + PF → 疾驰
-                 ("official", "131182#1"))    # 莱特：PF Lv1 命中≥4 → 全队暗攻
-ABILITY_DONORS = {
-    "1699881": (("official", "1611533#0"), ("official", "1611533#1")),
-    "1699882": (("official", "1611532#0"), ("official", "1611532#1")),
-    "1699883": (("official", "1410813#0"),          # 芙拉菲·圣诞：PF → 固有 +1 层
-                ("live", "1699942#0"),              # 白虎：每层 → PF 伤害
-                ("live", "1599971#4")),             # 泽赫尔：每层 → 独立乘区 PF 伤害
-    "1699884": (("official", "1611531#0"), ("official", "1611531#1")),
-    "1699885": (("live", "1699991#2"), ("live", "1699991#6"),   # 基诺维：422 冲刺参数
-                ("live", "1699991#4"), ("live", "1699991#3")),
-    "1699886": (("official", "1611472#0"), ("official", "2110026#0"),
-                ("live", "1699942#1")),             # 白虎：每层 → 全队暗攻（设计 D-9 从槽 3 迁来）
+# ---------------------------------------------------------------- 面板文案
+# 逐行抄 rework1/panel/hibiki.json（作者已过目的那一版）。分行用 "\n"：
+# live 已上线的队长块接管（desc_override_ginovi / _white_tiger_summer / _*_campus）全是 "\n"。
+
+PANEL_LEADER = "\n".join((
+    "特殊强化弹射：以特殊型的冲击波贯入敌阵，单次威力大幅提升／强化弹射时赋予参战角色攻击力提升、"
+    "贯穿、浮游效果，其中贯穿效果持续时间大幅延长",
+    "持有贯穿效果期间，暗属性角色攻击力＋300%",
+    "持有贯穿效果期间，强化弹射伤害＋200%",
+    "暗属性共鸣时，贯穿效果持续时间＋30%",
+    "暗属性共鸣时，强化弹射后获得冲刺效果（3秒）",
+    "强化弹射Lv1命中4次以上时，暗属性角色攻击力＋5%（最多10次）",
+    "暗属性共鸣时，暗属性角色发动技能时，自身立即获得强化弹射效果",
+    "强化弹射Lv1命中每达到4次，自身攻击力＋50%",
+    "冲刺时，立即获得强化弹射效果（冷却时间：5秒）",
+    "冲刺速度＋100%、冲刺冷却时间−30%、蓄力时间−35%，并可从更高的位置发动冲刺",
+))
+
+PANEL_ABILITY = {
+    1: "\n".join(("战斗开始时，自身技能槽＋100%",
+                  "持有贯穿效果期间，自身直接攻击变为3次")),
+    2: "\n".join(("持有贯穿效果时，每发动1次强化弹射，自身攻击力＋8%（最多25次）",
+                  "持有贯穿效果时，每发动1次强化弹射，强化弹射伤害＋12%（最多25次）")),
+    3: "\n".join(("暗属性共鸣时，每发动1次强化弹射，自身获得1层“回响”",
+                  "自身对“回响”每提升1层，强化弹射伤害＋25%、攻击力＋25%",
+                  "每1层“回响”，强化弹射伤害额外乘区＋5%（最多5层）")),
+    4: "\n".join(("持有贯穿效果期间，自身攻击力＋200%",
+                  "持有贯穿效果期间，强化弹射伤害＋150%")),
+    5: "强化弹射伤害额外乘区＋30%",
+    6: "\n".join(("持有贯穿效果期间，暗属性角色攻击力＋50%",
+                  "暗属性角色技能充能速度＋10%",
+                  "每1层“回响”，暗属性角色攻击力＋15%（最多5层）")),
 }
-ABILITY_KEYS = tuple(f"{CID}{slot}" for slot in range(1, 7))
 
-TEXTS: dict[str, str] = {}       # 10 个文本键在 design/hibiki.json 的 texts 块里（build 里核验）
+CAS_TEXTS = {
+    CAS_PF: "特殊强化弹射：以特殊型的冲击波贯入敌阵，单次威力大幅提升／强化弹射时赋予参战角色"
+            "攻击力提升、贯穿、浮游效果，其中贯穿效果持续时间大幅延长",
+    CAS_INVOKE_SKILL: "立即获得强化弹射效果",
+    CAS_INVOKE_DASH: "立即获得强化弹射效果（冷却时间：5秒）",
+    CAS_LEADER: PANEL_LEADER,
+    **{CAS_ABILITY[slot]: PANEL_ABILITY[slot] for slot in range(1, 7)},
+}
+
 SPEC = {
     "required_capabilities": ("dash-parameter-v1", "panel-description-override-v2"),
     "extra_keys": {
         MS.UNIQUE_CONDITION_LOGICAL: (UID,),
         PFA: (PF_KEY,),
-        KL.CAS: (CAS_PF, CAS_DASH),
+        KL.CAS: tuple(CAS_TEXTS),
         KL.SWITCHED: (VOICE_KEY,),
     },
 }
 
+# ---------------------------------------------------------------- 行计划
+# 形状：(donor 地址, donor 来源, {列号: 值}, 预期 wf_describe 回读)。列号与 ``#N`` 都是 0 基。
+# leader 124 列 / ability 126 列。describe 是「机器渲染回读」，面板上真正显示的是
+# PANEL_LEADER / PANEL_ABILITY（desc_override 接管），两者不必一致。
 
-# ---------------------------------------------------------------- 设计稿读取
+_PRE_RES_L = {4: "2", 7: "600000", 8: "600000", 9: ELEMENT_TOKEN}   # leader 前置 1：暗共鸣
+#: donor 自带的前置块残值（组列会留下别人的元素 token）一律清干净。
+_CLR_PRE_A = {6: "0", 9: "", 10: "", 11: "", 13: "0", 20: "0"}
+
+LEADER: tuple[tuple[str, str, dict[int, str], str | None], ...] = (
+    # L0 722 专属强化弹射（无前置：挂门 = 群友报的「PF 没实装」）
+    ("159996#3", "live",
+     {0: CODE, 1: "0", 3: "0", 4: "0", 11: "0", 18: "0", 25: "0", 37: "(None)", 44: "0",
+      45: "722", 80: PF_KEY, 81: "1,2,3", 82: CAS_PF},
+     "开局≥1 → 自身 强化弹射覆盖 50%"),
+    # L1 贯通中 → 全队(暗) 攻击力 300%
+    ("161153#0", "official",
+     {0: CODE, 1: "0", 3: "1", 4: "0", 11: "0", 18: "0", 83: "(None)", 95: "30",
+      106: "false", 107: "0", 108: "5", 109: ELEMENT_TOKEN, 111: "300000", 112: "300000"},
+     "持续·状态贯通 → 赋予全队(暗) 攻击力 300%"),
+    # L2 贯通中 → 自身 PF 伤害 200%
+    ("161153#1", "official",
+     {0: CODE, 1: "0", 3: "1", 4: "0", 11: "0", 18: "0", 83: "(None)", 95: "30",
+      106: "false", 107: "23", 111: "200000", 112: "200000"},
+     "持续·状态贯通 → 自身 强化弹射伤害 200%"),
+    # L3 暗共鸣 → 贯通延长 30%
+    ("161153#2", "official",
+     {0: CODE, 1: "0", 3: "0", 4: "0", 11: "2", 14: "600000", 15: "600000",
+      16: ELEMENT_TOKEN, 18: "0", 25: "0", 37: "(None)", 44: "0", 45: "190",
+      49: "30000", 50: "30000"},
+     "暗·编成≥6 时: 自身 贯通延长 30%"),
+    # L4 暗共鸣 + PF → 疾驰 3 秒
+    ("131182#3", "official",
+     {0: CODE, 1: "0", 3: "0", **_PRE_RES_L, 11: "0", 18: "0", 25: "2", 28: "100000",
+      29: "100000", 32: "(None)", 33: "0", 37: "(None)", 44: "0", 45: "31",
+      55: "18000000", 56: "18000000", 57: "100000", 58: "100000", 60: "(None)",
+      61: "(None)", 62: "1", 63: "11", 65: "0", 70: "false"},
+     "暗·编成≥6 时: 强化弹射≥1 → 自身 状态冲刺(3秒)×1次"),
+    # L5 PF Lv1 命中≥4（限 10 次）→ 全队(暗) 攻击力 5%
+    ("131182#1", "official",
+     {0: CODE, 1: "0", 3: "0", 4: "0", 11: "0", 18: "0", 25: "15", 28: "400000",
+      29: "400000", 32: "10", 33: "0", 37: "(None)", 44: "0", 45: "32", 46: "5",
+      47: ELEMENT_TOKEN, 49: "5000", 50: "5000"},
+     "强化弹射HitLv1≥4(限10次) → 赋予全队(暗) 攻击力 5%"),
+    # ---------------- rework1 新增 ----------------
+    # L6 暗共鸣 + 暗属性角色发动技能时 → 629 PF 追击（官方同形 141111#1：trig23 / puller5 / 组）
+    ("169999#4", "live",
+     {0: CODE, 1: "0", 2: "0", 3: "0", **_PRE_RES_L, 11: "0", 18: "0", 25: "23",
+      26: "5", 27: ELEMENT_TOKEN, 28: "100000", 29: "100000", 32: "(None)", 33: "0",
+      37: "(None)", 44: "0", 45: "629", 46: "0", 68: CAS_INVOKE_SKILL, 69: INVOKE_PROGRAM},
+     "暗·编成≥6 时: 技能发动≥1 → 自身 发动技能动作[%s]" % CAS_INVOKE_SKILL),
+    # L7 PF Lv1 命中每达到 4 次（无上限）→ 自身攻击力 50%
+    ("131182#1", "official",
+     {0: CODE, 1: "0", 3: "0", 4: "0", 11: "0", 18: "0", 25: "15", 28: "400000",
+      29: "400000", 32: "(None)", 33: "0", 37: "(None)", 44: "0", 45: "32", 46: "0",
+      47: "", 49: "50000", 50: "50000"},
+     "强化弹射HitLv1≥4 → 自身 攻击力 50%"),
+    # L8 冲刺时（CT 5 秒）→ 629 PF 追击（donor 原样就是 trig4+CT，只改 CT 与字符串键）
+    ("169999#4", "live",
+     {0: CODE, 1: "0", 2: "0", 3: "0", 4: "0", 11: "0", 18: "0", 25: "4", 26: "0",
+      28: "100000", 29: "100000", 32: "(None)", 33: "300", 37: "(None)", 44: "0",
+      45: "629", 46: "0", 68: CAS_INVOKE_DASH, 69: INVOKE_PROGRAM},
+     "冲刺≥1(CT5秒) → 自身 发动技能动作[%s]" % CAS_INVOKE_DASH),
+)
+LEADER_ROWS = len(LEADER)
+
+#: 每槽的 c1 主位限制与 c2 雕像组（一键单值；c2 只喂 ability_statue_group 的颜色/图标/形象三列）。
+_UNISONABLE = {1: "true", 2: "true", 3: "false", 4: "true", 5: "true", 6: "true"}
+_STATUE = {1: "action_skill", 2: "power_flip", 3: "power_flip",
+           4: "attack_common", 5: "attack_common", 6: "attack_black"}
+
+PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
+    1: (("1611533#0", "official",
+         {3: "0", 5: "0", **_CLR_PRE_A, 27: "0", 39: "(None)", 46: "0", 47: "211", 48: "0",
+          51: "100000", 52: "100000"},
+         "自身 技能槽 100%"),
+        ("1611533#1", "official",
+         {3: "0", 5: "1", **_CLR_PRE_A, 85: "(None)", 97: "30", 108: "false", 109: "46",
+          110: "0", 113: "0", 114: "0"},
+         "持续·状态贯通 → 自身 DirectAttack3 0%")),
+    # rework1：作者「能力 2 的数值翻倍」4%→8% / 6%→12%
+    2: (("1611532#0", "official",
+         {3: "0", 5: "0", 6: "38", 13: "0", 20: "0", 27: "2", 30: "100000", 31: "100000",
+          34: "25", 35: "0", 39: "(None)", 46: "0", 47: "32", 48: "0",
+          51: "8000", 52: "8000"},
+         "状态贯通 时: 强化弹射≥1(限25次) → 自身 攻击力 8%"),
+        ("1611532#1", "official",
+         {3: "0", 5: "0", 6: "38", 13: "0", 20: "0", 27: "2", 30: "100000", 31: "100000",
+          34: "25", 35: "0", 39: "(None)", 46: "0", 47: "55",
+          51: "12000", 52: "12000"},
+         "状态贯通 时: 强化弹射≥1(限25次) → 自身 强化弹射伤害 12%")),
+    # rework1：461 挂暗共鸣门；每层 PF 伤害的层数上限 5 → 99
+    3: (("1410813#0", "official",
+         {3: "0", 5: "0", 6: "2", 9: "600000", 10: "600000", 11: ELEMENT_TOKEN, 13: "0",
+          20: "0", 27: "2", 30: "100000", 31: "100000", 34: "(None)", 35: "0",
+          39: "(None)", 46: "0", 47: "461", 48: "0", 51: "100000", 52: "100000",
+          59: "100000", 60: "100000", 68: UID, 74: "1", 75: "0"},
+         "暗·编成≥6 时: 强化弹射≥1 → 自身 状态固有 100%×1次"),
+        ("1699942#0", "live",
+         {3: "0", 5: "1", **_CLR_PRE_A, 85: "(None)", 97: "134", 98: "0", 100: "100000",
+          101: "100000", 102: UNIQUE_CAP, 104: UID, 108: "false", 109: "23", 110: "0",
+          113: "25000", 114: "25000"},
+         "持续·状态累积计数固有≥1(限99次)[固有16998801] → 自身 强化弹射伤害 25%"),
+        ("1599971#4", "live",
+         {3: "0", 5: "1", **_CLR_PRE_A, 85: "(None)", 97: "134", 98: "0", 100: "100000",
+          101: "100000", 102: "5", 104: UID, 108: "false", 109: "413",
+          113: "5000", 114: "5000"},
+         "持续·状态累积计数固有≥1(限5次)[固有16998801] → 自身 独立乘区强化弹射伤害 5%")),
+    # rework1 新增第 3 条：每层回响 → 自身攻击力 25%（面板文案挂在槽 3，行落槽 4，见偏离 D-13）
+    4: (("1611531#0", "official",
+         {3: "0", 5: "1", **_CLR_PRE_A, 85: "(None)", 97: "30", 108: "false", 109: "0",
+          110: "0", 113: "200000", 114: "200000"},
+         "持续·状态贯通 → 自身 攻击力 200%"),
+        ("1611531#1", "official",
+         {3: "0", 5: "1", **_CLR_PRE_A, 85: "(None)", 97: "30", 108: "false", 109: "23",
+          113: "150000", 114: "150000"},
+         "持续·状态贯通 → 自身 强化弹射伤害 150%"),
+        ("1699942#0", "live",
+         {3: "0", 5: "1", **_CLR_PRE_A, 85: "(None)", 97: "134", 98: "0", 100: "100000",
+          101: "100000", 102: UNIQUE_CAP, 104: UID, 108: "false", 109: "0", 110: "0",
+          111: "", 113: "25000", 114: "25000"},
+         "持续·状态累积计数固有≥1(限99次)[固有16998801] → 自身 攻击力 25%")),
+    # rework1：新增常驻 413（＝作者「能力 5 替换为强化弹射伤害额外乘区 +30%」）；
+    # 原 4 条 422 冲刺参数行保留（效果不变），文案移进队长块。
+    5: (("1699991#2", "live",
+         {3: "0", 5: "1", **_CLR_PRE_A, 85: "(None)", 97: "1", 98: "0", 100: "100000",
+          101: "100000", 108: "false", 109: "413", 110: "0", 113: "30000", 114: "30000",
+          118: ""},
+         "持续·HP≤1 → 自身 独立乘区强化弹射伤害 30%"),
+        ("1699991#2", "live",
+         {3: "0", 5: "1", 6: "42", 13: "0", 20: "0", 85: "(None)", 97: "1", 98: "0",
+          100: "100000", 101: "100000", 108: "false", 109: "422", 110: "0",
+          113: "100000", 114: "100000", 118: "1"},
+         "队长 时: 持续·HP≤1 → 自身 冲刺参数(可调) 100%"),
+        ("1699991#6", "live",
+         {3: "0", 5: "1", 6: "42", 13: "0", 20: "0", 85: "(None)", 97: "1", 98: "0",
+          100: "100000", 101: "100000", 108: "false", 109: "422", 110: "0",
+          113: "-30000", 114: "-30000", 118: "0"},
+         "队长 时: 持续·HP≤1 → 自身 冲刺参数(可调) -30%"),
+        ("1699991#4", "live",
+         {3: "0", 5: "1", 6: "42", 13: "0", 20: "0", 85: "(None)", 97: "1", 98: "0",
+          100: "100000", 101: "100000", 108: "false", 109: "422", 110: "0",
+          113: "-35000", 114: "-35000", 118: "3"},
+         "队长 时: 持续·HP≤1 → 自身 冲刺参数(可调) -35%"),
+        ("1699991#3", "live",
+         {3: "0", 5: "1", 6: "42", 13: "0", 20: "0", 85: "(None)", 97: "1", 98: "0",
+          100: "100000", 101: "100000", 108: "false", 109: "422", 110: "0",
+          113: "40000", 114: "40000", 118: "6"},
+         "队长 时: 持续·HP≤1 → 自身 冲刺参数(可调) 40%")),
+    6: (("1611472#0", "official",
+         {3: "0", 5: "1", **_CLR_PRE_A, 85: "(None)", 97: "30", 108: "false", 109: "0",
+          110: "5", 111: ELEMENT_TOKEN, 113: "50000", 114: "50000"},
+         "持续·状态贯通 → 赋予全队(暗) 攻击力 50%"),
+        ("2110026#0", "official",
+         {3: "0", 5: "0", **_CLR_PRE_A, 27: "0", 39: "(None)", 46: "0", 47: "35",
+          48: "5", 49: ELEMENT_TOKEN, 51: "10000", 52: "10000"},
+         "赋予全队(暗) 技能槽充能 10%"),
+        ("1699942#1", "live",
+         {3: "0", 5: "1", **_CLR_PRE_A, 85: "(None)", 97: "134", 98: "0", 100: "100000",
+          101: "100000", 102: "5", 104: UID, 108: "false", 109: "0", 110: "5",
+          111: ELEMENT_TOKEN, 113: "15000", 114: "15000"},
+         "持续·状态累积计数固有≥1(限5次)[固有16998801] → 赋予全队(暗) 攻击力 15%")),
+}
+ABILITY_KEYS = tuple(f"{CID}{slot}" for slot in range(1, 7))
+ABILITY_RECORDS = sum(len(rows) for rows in PLAN.values())
+
+# ---------------------------------------------------------------- 行自检常量
+#: 写进队长表 = 角色页 C7050（记忆 wf-dash-parameter-leader-table-trap）。
+FORBIDDEN_LEADER_KINDS = ("422", "724", "713")
+#: 前置 kind 白名单（裁决 §8）：2 = 元素编成、38 = 状态贯通、42 = Leader。
+ALLOWED_PRECONDITION_KINDS = ("", "0", "2", "38", "42")
+LEADER_INSTANT_KIND, LEADER_DURING_KIND = 45, 107
+LEADER_DURING_TRIGGER, LEADER_DURING_PULLER = 95, 96
+LEADER_STRING_ID, LEADER_ACTION_PATH = 68, 69
+ABILITY_INSTANT_KIND, ABILITY_DURING_KIND = 47, 109
+ABILITY_DURING_TRIGGER, ABILITY_DURING_PULLER = 97, 98
+ABILITY_STRING_ID, ABILITY_ACTION_PATH = 70, 71
+
+
+# ---------------------------------------------------------------- 设计稿镜像
 
 def load_design(root: Path) -> dict[str, Any]:
     design = MS.load_design(Path(root), KEY)
@@ -151,24 +376,32 @@ def load_design(root: Path) -> dict[str, Any]:
     return design
 
 
-def _plan_rows(design: dict[str, Any]) -> tuple[list[dict], dict[str, dict]]:
-    plan = design["plan"]
-    leader = plan["leader_ability"]
-    if leader["key"] != str(CID) or leader["ncols"] != KL.LEADER_NCOLS:
-        raise KitError(f"design leader block drift: key={leader['key']} ncols={leader['ncols']}")
-    ability = plan["ability"]
-    if ability["ncols"] != KL.ABILITY_NCOLS or tuple(ability["keys"]) != ABILITY_KEYS:
-        raise KitError(f"design ability keys drift: {tuple(ability['keys'])}")
-    return list(leader["rows"]), dict(ability["keys"])
-
-
-def _check_donor(entry: dict[str, Any], source: str, donor: str, label: str) -> None:
-    """设计稿登记的 donor 地址与本模块常量必须一致（两边漂移即红）。"""
-    want = f"{source}:{donor}"
-    if entry.get("donor_address") != want:
-        raise KitError(f"{label}: design donor_address {entry.get('donor_address')!r} != {want!r}")
-    if not entry.get("describe"):
-        raise KitError(f"{label}: design lacks the wf_describe readback field 'describe'")
+def design_problems(design: dict[str, Any]) -> list[str]:
+    """设计稿的 ``plan_rework1`` 必须镜像本模块的计划（漂移当场报）。"""
+    plan = design.get("plan_rework1")
+    if not isinstance(plan, dict):
+        return ["design has no plan_rework1 block"]
+    problems: list[str] = []
+    if int(plan.get("leader_rows", -1)) != LEADER_ROWS:
+        problems.append(f"leader row count mirror drift: {plan.get('leader_rows')}")
+    if int(plan.get("ability_records", -1)) != ABILITY_RECORDS:
+        problems.append(f"ability record count mirror drift: {plan.get('ability_records')}")
+    want_slots = {str(slot): len(PLAN[slot]) for slot in range(1, 7)}
+    if {str(k): int(v) for k, v in (plan.get("ability_rows_by_slot") or {}).items()} != want_slots:
+        problems.append(f"per-slot mirror drift: {plan.get('ability_rows_by_slot')}")
+    if sorted(plan.get("custom_ability_string") or []) != sorted(CAS_TEXTS):
+        problems.append(f"custom_ability_string mirror drift: {plan.get('custom_ability_string')}")
+    if sorted(plan.get("ability_skill_programs") or []) != [INVOKE_PROGRAM]:
+        problems.append(f"ability_skill program mirror drift: {plan.get('ability_skill_programs')}")
+    unique = plan.get("unique_conditions") or {}
+    if str(unique.get("key")) != UID or str(unique.get("cap")) != UNIQUE_CAP:
+        problems.append(f"unique_condition mirror drift: {unique}")
+    if sorted(plan.get("required_capabilities") or []) != sorted(SPEC["required_capabilities"]):
+        problems.append(f"capability mirror drift: {plan.get('required_capabilities')}")
+    energy = plan.get("skills", {}).get("energy") or {}
+    if {k: dict(v) for k, v in energy.items()} != SKILL_ENERGY:
+        problems.append(f"skill energy mirror drift: {energy}")
+    return problems
 
 
 # ---------------------------------------------------------------- 树工具（philia 的纯函数 + 本地补洞）
@@ -464,6 +697,236 @@ def build_pf_tree(ctx, level: int):
                   "bound_ids": sorted(set(PH.bound_ids(tree)))}
 
 
+# ---------------------------------------------------------------- 629 PF 追击树（rework1 新增）
+
+def build_invoke_tree(ctx):
+    """队长两行 629 共用的「PF 载荷树」。
+
+    做法照斩铁 ``samurai_robot_plum``（作者 09-21 指定「沿用斩铁那一行的写法」）：官方 PF 底座里
+    **只留命中块**，把两条 PF 生命周期命令留在外面 —— ``SetPowerFilpSuppress`` 会压掉玩家真正的
+    拍板，``NotifyPowerflipEnd`` 在非 PF 上下文不计数（ActionEvaluator.as:5064-5078）。
+    这里的命中块 = 官方 ``special_lv3`` 里 ``CollisionOfBallAndEnemy`` 分支的 ``CreateReferencePoint``
+    整块（特殊演出 + 两段 ``CreateHitArea``，官方倍率 4 + 9 = 13×，锚 ``-18`` 球、坐标系 ``AB``）。
+
+    根头 ``tree[10] = INVOKE_BTA = 3`` ⇒ 按 **强化弹射伤害** 结算：吃得到她那一池「强化弹射伤害
+    ＋X%」（队长 200% ＋ 词条 425%+ ＋ 回响每层 25%），但拿不到 PF 分档乘区 / 独立乘区 / PF 耐性
+    （记忆卡 wf-invokeskill-629）。不叠 ``PF_SCALE``，也不接 248 CountUpPowerFlip
+    （不凭空加 PF 计数器 ⇒ 不会偷偷给「每 N 次强化弹射」类触发器与回响层数加速）。
+    """
+    base = copy.deepcopy(source_tree(ctx, SPECIAL_PROGRAMS[3], SPECIAL_SHA[3]))
+    body = base[11][1]
+    collision = body[3]
+    if not (collision[0] == "Event" and collision[1][0] == "CollisionOfBallAndEnemy"):
+        raise KitError(f"special lv3 body[3] is not CollisionOfBallAndEnemy: {collision[:2]}")
+    inner = collision[1][5][1]
+    ref = inner[4]
+    if not (ref[0] == "Command" and ref[1][0] == "CreateReferencePoint"):
+        raise KitError(f"special lv3 hit block drift: {ref[0]}/{ref[1][0] if ref[0] == 'Command' else ''}")
+    if ref[1][1] != -18 or ref[1][2] != ["AB"]:
+        raise KitError(f"hit block anchor drift: subject={ref[1][1]} coordsys={ref[1][2]}")
+
+    tree = ["ActionDsl", 1, ["None"], False, False, False, False, False, False, False,
+            INVOKE_BTA, ["Block", [ref]]]
+    for name in ("SetPowerFilpSuppress", "NotifyPowerflipEnd", "RemoveEvent", "HideEffect"):
+        if PH.cmds(tree, name):
+            raise KitError(f"629 载荷树残留 PF 生命周期命令 {name}")
+    scaled = []
+    for cna in PH.cmds(tree, "CreateNormalAttack"):
+        mult = cna[6]
+        if len(mult) != 1 or mult[0]["min"] != mult[0]["max"]:
+            raise KitError(f"invoke CNA multiplier shape drift: {mult}")
+        if cna[2] != 255:
+            raise KitError(f"invoke CNA 显式元素 {cna[2]}（应保留 255 继承角色属性）")
+        value = round(mult[0]["min"] * INVOKE_SCALE, 6)
+        cna[6] = PH.slv(value, value)
+        scaled.append(value)
+    if len(scaled) != 2:
+        raise KitError(f"invoke tree carries {len(scaled)} CreateNormalAttack (want 2)")
+    for cha in PH.cmds(tree, "CreateHitArea"):
+        if cha[24] != 0:
+            raise KitError("invoke CreateHitArea p23 must stay 0")
+    paths = sorted(set(PH.spec_paths(tree)))
+    stray = [p for p in paths if p.startswith("battle/effect/skill_unique/")]
+    if stray:
+        raise KitError(f"629 载荷树引用了角色特效（只许引用官方 powerflip 族）: {stray}")
+    problems = dsl_problems(tree, element=None)
+    if problems:
+        raise KitError(f"invoke tree DSL gates failed: {problems}")
+    return tree, {"program": INVOKE_PROGRAM, "buff_target_as": INVOKE_BTA,
+                  "multipliers": scaled, "total": round(sum(scaled), 6),
+                  "scale": INVOKE_SCALE, "official_effects": paths,
+                  "bound_ids": sorted(set(PH.bound_ids(tree)))}
+
+
+# ---------------------------------------------------------------- 行装配与自检
+
+def _pre_kinds(kind: str) -> tuple[int, ...]:
+    return (4, 11, 18) if kind == "leader_ability" else (6, 13, 20)
+
+
+def _row_self_check(kind: str, rows: list[list[str]], label: str) -> None:
+    """内容 kind 黑名单 + 前置白名单 + 629 / 422 / during puller 的硬规矩。"""
+    instant_col = LEADER_INSTANT_KIND if kind == "leader_ability" else ABILITY_INSTANT_KIND
+    during_col = LEADER_DURING_KIND if kind == "leader_ability" else ABILITY_DURING_KIND
+    trig_col = LEADER_DURING_TRIGGER if kind == "leader_ability" else ABILITY_DURING_TRIGGER
+    pull_col = LEADER_DURING_PULLER if kind == "leader_ability" else ABILITY_DURING_PULLER
+    sid_col = LEADER_STRING_ID if kind == "leader_ability" else ABILITY_STRING_ID
+    path_col = LEADER_ACTION_PATH if kind == "leader_ability" else ABILITY_ACTION_PATH
+    mode_col = 3 if kind == "leader_ability" else 5
+    for index, row in enumerate(rows):
+        tag = f"{label}#{index}"
+        for col in _pre_kinds(kind):
+            if row[col] not in ALLOWED_PRECONDITION_KINDS:
+                raise KitError(f"{tag}: 前置 kind c{col}={row[col]!r} 不在白名单 {ALLOWED_PRECONDITION_KINDS}")
+        if kind == "leader_ability":
+            for col in (instant_col, during_col):
+                if row[col] in FORBIDDEN_LEADER_KINDS:
+                    raise KitError(f"{tag}: 队长表禁止 c{col}={row[col]}（= C7050）")
+        if row[instant_col] == "629":
+            if not row[sid_col] or not row[path_col]:
+                raise KitError(f"{tag}: 629 行缺字符串键/动作路径（= 详情页 C8601）")
+            if row[mode_col] != "0":
+                raise KitError(f"{tag}: 629 只解析瞬发块，c{mode_col} 必须是 0")
+        elif row[sid_col] and row[instant_col] not in ("536", "704", "722"):
+            raise KitError(f"{tag}: 悬空字符串键 c{sid_col}={row[sid_col]!r}")
+        if row[mode_col] == "1":
+            # during 134 / during 1 的 puller 写 '0'；during 30 必须留空。写反 = 点「角色」C7050
+            want = "0" if row[trig_col] in ("134", "1") else ""
+            if row[pull_col] != want:
+                raise KitError(f"{tag}: during {row[trig_col]} puller c{pull_col}={row[pull_col]!r} "
+                               f"must be {want!r}")
+        if kind == "ability" and row[during_col] == "422" and row[6] != "42":
+            raise KitError(f"{tag}: 422 行必须挂前置 42（队长），否则与基诺维/泽赫尔的 422 相加")
+
+
+def statue_group_report(ctx, rows_by_key: dict[str, list[list[str]]]) -> list[dict[str, Any]]:
+    """c2 雕像组 × kind 的官方先例统计（裁决 §8 的自查，**记录而非阻断**）。
+
+    c2 只喂 ``ability_statue_group`` 的颜色/图标/形象三列，与 kind 的解析无关；本角色明知的
+    零先例项写在施工单「偏离」一节（422 是官方全表 0 行的补丁 kind，413×attack_common 零先例）。
+    """
+    instant: dict[tuple[str, str], int] = {}
+    during: dict[tuple[str, str], int] = {}
+    for blob in ctx.official_flat(KL.ABILITY).values():
+        for raw in ctx.csv_split(blob):
+            row = list(raw) + [""] * (KL.ABILITY_NCOLS - len(raw))
+            if row[ABILITY_INSTANT_KIND]:
+                pair = (row[2], row[ABILITY_INSTANT_KIND])
+                instant[pair] = instant.get(pair, 0) + 1
+            if row[ABILITY_DURING_KIND]:
+                pair = (row[2], row[ABILITY_DURING_KIND])
+                during[pair] = during.get(pair, 0) + 1
+    report = []
+    for key, rows in rows_by_key.items():
+        group = rows[0][2]
+        for n, row in enumerate(rows):
+            for kind_col, table, tag in ((ABILITY_INSTANT_KIND, instant, "instant"),
+                                         (ABILITY_DURING_KIND, during, "during")):
+                value = row[kind_col]
+                if not value:
+                    continue
+                report.append({"key": key, "record": n, "group": group, "trigger": tag,
+                               "kind": value, "official_rows": table.get((group, value), 0)})
+    return report
+
+
+def build_rows(ctx) -> dict[str, Any]:
+    evidence: list[dict[str, Any]] = []
+    caps: set[str] = set()
+
+    leader_rows: list[list[str]] = []
+    for index, (addr, source, cells, expect) in enumerate(LEADER):
+        label = f"leader#{index}"
+        row, ev = KL.build_row(ctx, "leader_ability", addr, cells, source=source,
+                               expect_describe=expect, label=label)
+        if row[0] != CODE:
+            raise KitError(f"{label}: c0 {row[0]!r} != {CODE}")
+        leader_rows.append(row)
+        evidence.append(ev)
+        caps.update(ev["capabilities"])
+    if len(leader_rows) != LEADER_ROWS:
+        raise KitError(f"leader plan carries {len(leader_rows)} rows, expected {LEADER_ROWS}")
+    _row_self_check("leader_ability", leader_rows, "leader")
+    # 722 行：三级程序键与 c82 串必须与 power_flip_action / custom_ability_string 对齐，且不许挂门
+    pf_row = leader_rows[0]
+    if pf_row[45] != "722" or pf_row[80] != PF_KEY or pf_row[82] != CAS_PF or pf_row[81] != "1,2,3":
+        raise KitError(f"leader 722 row drift: c45={pf_row[45]} c80={pf_row[80]} "
+                       f"c81={pf_row[81]} c82={pf_row[82]}")
+    if any(pf_row[col] not in ("", "0") for col in (4, 11, 18)):
+        raise KitError("leader 722 row must carry no precondition（挂门＝群友报的「PF 没实装」）")
+
+    ability: dict[str, list[list[str]]] = {}
+    total = 0
+    for slot in range(1, 7):
+        key = f"{CID}{slot}"
+        rows: list[list[str]] = []
+        for index, (addr, source, cells, expect) in enumerate(PLAN[slot]):
+            merged = {0: f"{CODE}_{slot}", 1: _UNISONABLE[slot], 2: _STATUE[slot], **cells}
+            label = f"{key}#{index}"
+            row, ev = KL.build_row(ctx, "ability", addr, merged, source=source, element=ELEMENT,
+                                   expect_describe=expect, label=label)
+            rows.append(row)
+            evidence.append(ev)
+            caps.update(ev["capabilities"])
+            total += 1
+        KL.check_ability_key(rows, key, CODE, slot)
+        _row_self_check("ability", rows, key)
+        ability[key] = rows
+    if total != ABILITY_RECORDS:
+        raise KitError(f"ability plan carries {total} records, expected {ABILITY_RECORDS}")
+
+    missing = sorted(caps - set(ctx.spec.required_capabilities))
+    if missing:
+        raise KitError(f"rows need client capabilities {missing} that SPEC does not declare")
+    return {"leader": leader_rows, "ability": ability, "evidence": evidence,
+            "capabilities": sorted(caps)}
+
+
+def write_strings(ctx) -> dict[str, str]:
+    """``custom_ability_string``：722 条目 + 两条 629 条目 + 队长块与 6 槽的面板接管。"""
+    declared = set(ctx.spec.extra_keys.get(KL.CAS, ()))
+    missing = [key for key in CAS_TEXTS if key not in declared]
+    if missing:
+        raise KitError(f"custom_ability_string keys not declared in SPEC['extra_keys']: {missing}")
+    official = ctx.official_flat(KL.CAS)
+    clashes = [key for key in CAS_TEXTS if key in official]
+    if clashes:
+        raise KitError(f"custom_ability_string keys already exist officially: {clashes}")
+    for key, text in CAS_TEXTS.items():
+        KL.check_panel(text, label=key)
+        if key.startswith(L.PANEL_OVERRIDE_KEY_PREFIX) \
+                and L.panel_override_capability(key) not in ctx.spec.required_capabilities:
+            raise KitError(f"{key} needs a panel-override capability that SPEC does not declare")
+    ctx.write_flat(KL.CAS, {key: [[text]] for key, text in CAS_TEXTS.items()})
+    back = ctx.pack.pkg_flat(KL.CAS)
+    for key, text in CAS_TEXTS.items():
+        if ctx.csv_split(back[key])[0][0] != text:
+            raise KitError(f"custom_ability_string readback mismatch: {key}")
+    return dict(CAS_TEXTS)
+
+
+def write_action_skill(ctx) -> dict[str, list[str]]:
+    """两档能量（本轮不改）；名称/描述由 tables 写 TEXTS，这里只改图标 c2 与能量 c4/c5/c6。"""
+    spec = ctx.spec
+    out: dict[str, list[str]] = {}
+    for level, raw in sorted(ctx.pkg_nested(CODE, KL.ACTION).items()):
+        if len(raw) != 24:
+            raise KitError(f"action_skill {level}: {len(raw)} columns, expected 24")
+        cells = list(raw)
+        block = SKILL_ENERGY[level]
+        cells[2] = SKILL_ICON
+        cells[4], cells[5], cells[6] = str(block["c4"]), str(block["c5"]), str(block["c6"])
+        cells[7] = ctx.program_path(level)
+        if cells[0] != spec.texts[f"skill{level}"] or cells[1] != spec.texts[f"desc{level}"]:
+            raise KitError(f"action_skill {level}: name/desc drift from design texts")
+        out[level] = cells
+    if sorted(out) != ["1", "2"]:
+        raise KitError(f"action_skill levels {sorted(out)}")
+    ctx.write_nested(KL.ACTION, CODE, {lv: [cells] for lv, cells in out.items()},
+                     replace_inner=True)
+    return out
+
+
 # ---------------------------------------------------------------- build
 
 def build(ctx) -> dict[str, Any]:
@@ -478,115 +941,32 @@ def build(ctx) -> dict[str, Any]:
         raise KitError(f"design texts still placeholders: {MS.text_placeholders(spec)}")
 
     design = load_design(ctx.root)
-    leader_plan, ability_plan = _plan_rows(design)
-    evidence: list[dict[str, Any]] = []
-    panel: list[str] = []
-    capabilities: set[str] = set()
+    problems = design_problems(design)
+    if problems:
+        raise KitError(f"design mirror rejected: {problems}")
 
-    # ---- 1) 固有状态「回响」+ 48×48 图标
+    # ---- 1) 固有状态「回响」（rework1：上限 99）+ 48×48 图标
     key, row = KL.unique_row(ctx, spec, 1, donor=UNIQUE_DONOR,
-                             cells={0: UNIQUE_STRING_ID, 3: "99999999", 4: UNIQUE_CAP,
+                             cells={0: UNIQUE_STRING_ID, 3: UNIQUE_FRAMES, 4: UNIQUE_CAP,
                                     9: "false", 10: "false", 13: "true"},
                              name=UNIQUE_NAME, icon=UNIQUE_ICON_ROW)
-    plan_unique = design["plan"]["unique_conditions"]["add"]
-    if len(plan_unique) != 1 or plan_unique[0]["key"] != key or list(plan_unique[0]["row"]) != row:
-        raise KitError(f"unique_condition row differs from the design plan: {row}")
     KL.write_unique(ctx, spec, {key: row})
     icon = install_unique_icon(ctx)
 
-    # ---- 2) 队长技 6 行
-    if len(leader_plan) != len(LEADER_DONORS):
-        raise KitError(f"design leader rows {len(leader_plan)} != donors {len(LEADER_DONORS)}")
-    leader_rows = []
-    for entry, (source, donor) in zip(leader_plan, LEADER_DONORS):
-        label = f"leader#{entry['index']}"
-        _check_donor(entry, source, donor, label)
-        row, ev = KL.build_row(ctx, "leader_ability", donor, entry["cells"], source=source,
-                               expect_describe=entry["describe"], label=label)
-        if row[0] != CODE:
-            raise KitError(f"{label}: c0 {row[0]!r} != {CODE}")
-        leader_rows.append(row)
-        evidence.append(ev)
-        capabilities.update(ev["capabilities"])
-        if entry["index"]:               # L0（722）的面板由 c82 串生成，见 custom_ability_string
-            panel.append(KL.check_panel(entry["desc_expected"], label=label))
-    # 722 行：三级程序键与 c82 串必须与 power_flip_action / custom_ability_string 对齐
-    pf_row = leader_rows[0]
-    if pf_row[45] != "722" or pf_row[80] != PF_KEY or pf_row[82] != CAS_PF or pf_row[81] != "1,2,3":
-        raise KitError(f"leader 722 row drift: c45={pf_row[45]} c80={pf_row[80]} c81={pf_row[81]} c82={pf_row[82]}")
-    if any(pf_row[col] not in ("", "0") for col in (4, 11, 18)):
-        raise KitError("leader 722 row must carry no precondition（挂门＝群友报的「PF 没实装」）")
-    # during 行的 puller 列：during 30 留空（写 '0' 点角色就 C7050）
-    for n, row in enumerate(leader_rows):
-        if row[3] == "1" and row[95] == "30" and row[96] != "":
-            raise KitError(f"leader#{n}: during 30 puller c96={row[96]!r} must stay empty")
-    ctx.write_flat(KL.LEADER, {str(CID): leader_rows})
+    # ---- 2) 队长 9 行 + 词条 6 键 18 条
+    rows = build_rows(ctx)
+    ctx.write_flat(KL.LEADER, {str(CID): rows["leader"]})
+    ctx.write_flat(KL.ABILITY, rows["ability"])
+    statue = statue_group_report(ctx, rows["ability"])
 
-    # ---- 3) 词条 6 键
-    ability_rows: dict[str, list[list[str]]] = {}
-    for slot, key_name in enumerate(ABILITY_KEYS, start=1):
-        plan = ability_plan[key_name]
-        donors = ABILITY_DONORS[key_name]
-        if len(plan["records"]) != len(donors):
-            raise KitError(f"ability {key_name}: design has {len(plan['records'])} records, "
-                           f"module has {len(donors)} donors")
-        rows = []
-        for entry, (source, donor) in zip(plan["records"], donors):
-            label = f"ability{slot}#{entry['index']}"
-            _check_donor(entry, source, donor, label)
-            row, ev = KL.build_row(ctx, "ability", donor, entry["cells"], source=source,
-                                   element=ELEMENT, expect_describe=entry["describe"], label=label)
-            rows.append(row)
-            evidence.append(ev)
-            capabilities.update(ev["capabilities"])
-            if key_name != f"{CID}5":    # 槽 5 整槽走 desc_override（恒真 HP 门是死文案）
-                panel.append(KL.check_panel(entry["desc_expected"], label=label))
-            # during 134 的 puller c98 必须 '0'；during 30 必须留空。两者不可互换
-            if row[5] == "1":
-                want = "0" if row[97] in ("134", "1") else ""
-                if row[98] != want:
-                    raise KitError(f"{label}: during {row[97]} puller c98={row[98]!r} must be {want!r}")
-            if row[109] == "422" and row[6] != "42":
-                raise KitError(f"{label}: 422 行必须挂前置 42（队长），否则与基诺维/泽赫尔的 422 相加")
-        KL.check_ability_key(rows, key_name, CODE, slot)
-        if rows[0][2] != plan["statue_group_c2"]:
-            raise KitError(f"ability {key_name}: c2 {rows[0][2]!r} != design {plan['statue_group_c2']!r}")
-        ability_rows[key_name] = rows
-    if any(row[109] in ("422", "724", "713") for row in leader_rows):
-        raise KitError("队长表禁止 422/724/713（= C7050）")
-    ctx.write_flat(KL.ABILITY, ability_rows)
+    # ---- 3) custom_ability_string：722 / 两条 629 / 队长块 + 6 槽面板接管
+    strings = write_strings(ctx)
+    panel = [PANEL_LEADER] + [PANEL_ABILITY[slot] for slot in range(1, 7)]
 
-    # ---- 4) 面板覆盖文案 / 722 的 c82 串
-    cas_plan = {entry["key"]: entry["value"] for entry in design["plan"]["texts"]["custom_ability_string"]["rows"]}
-    if set(cas_plan) != {CAS_PF, CAS_DASH}:
-        raise KitError(f"design custom_ability_string keys drift: {sorted(cas_plan)}")
-    for cas_key, value in cas_plan.items():
-        KL.check_panel(value, label=cas_key)
-        cap = L.panel_override_capability(cas_key)
-        if cap:
-            capabilities.add(cap)
-    ctx.write_flat(KL.CAS, {k: [[v]] for k, v in cas_plan.items()})
-    panel.extend(cas_plan[k] for k in (CAS_PF, CAS_DASH))
+    # ---- 4) action_skill 两档
+    action_rows = write_action_skill(ctx)
 
-    # ---- 5) action_skill 两档（名称/描述由 tables 写 TEXTS，这里改图标与能量）
-    energy = design["plan"]["skills"]["energy"]
-    action_rows = {}
-    for level, cells in sorted(ctx.pkg_nested(CODE, KL.ACTION).items()):
-        if len(cells) != 24:
-            raise KitError(f"action_skill {level}: {len(cells)} columns, expected 24")
-        cells = list(cells)
-        cells[2] = SKILL_ICON
-        cells[4], cells[5] = str(energy[level]["c4"]), str(energy[level]["c5"])
-        cells[6] = str(energy[level]["c6"])
-        cells[7] = ctx.program_path(level)
-        if cells[0] != spec.texts[f"skill{level}"] or cells[1] != spec.texts[f"desc{level}"]:
-            raise KitError(f"action_skill {level}: name/desc drift from design texts")
-        action_rows[level] = [cells]
-    if sorted(action_rows) != ["1", "2"]:
-        raise KitError(f"action_skill levels {sorted(action_rows)}")
-    ctx.write_nested(KL.ACTION, CODE, action_rows, replace_inner=True)
-
-    # ---- 6) 技能特效族（只克隆 1 族）与两档技能 DSL
+    # ---- 5) 技能特效族（只克隆 1 族）与两档技能 DSL
     lut = KL.png_transform_from_lut(KL.pixel_dir(ctx) / "fx_lut.json")
     family = ctx.clone_effect_family(FX_SRC_DIR, FX_SUBDIR, fx_names=[FX_BACK, FX_EF],
                                      png_transform=lut)
@@ -602,18 +982,21 @@ def build(ctx) -> dict[str, Any]:
         programs.append(write_dsl_checked(ctx, ctx.program_path(level), tree))
         skill_gates[level] = gates
 
-    # ---- 7) 专属强化弹射 722 三档
+    # ---- 6) 专属强化弹射 722 三档
     pf_gates = {}
     for level in (1, 2, 3):
         tree, gates = build_pf_tree(ctx, level)
         programs.append(write_dsl_checked(ctx, PF_PROGRAMS[level - 1], tree))
         pf_gates[str(level)] = gates
-    design_pf = design["plan"]["pf_override"]["power_flip_action"]
-    if design_pf["key"] != PF_KEY or design_pf["value"].split(",") != list(PF_PROGRAMS):
-        raise KitError("design power_flip_action drift")
-    if float(design["plan"]["pf_override"]["scale_scalar"]) != PF_SCALE:
-        raise KitError("design pf scale scalar drift")
     ctx.write_flat(PFA, {PF_KEY: [list(PF_PROGRAMS)]})
+
+    # ---- 7) rework1 新增：629 PF 追击树（队长两行共用）
+    invoke_tree, invoke_gates = build_invoke_tree(ctx)
+    programs.append(write_dsl_checked(ctx, INVOKE_PROGRAM, invoke_tree))
+    for n, leader_row in enumerate(rows["leader"]):
+        if leader_row[LEADER_INSTANT_KIND] == "629" and leader_row[LEADER_ACTION_PATH] != INVOKE_PROGRAM:
+            raise KitError(f"leader#{n}: 629 action_path {leader_row[LEADER_ACTION_PATH]!r} "
+                           f"!= {INVOKE_PROGRAM!r}")
 
     # ---- 8) 语音路由（kind 1 ConditionExist ← 固有 16998801）+ switched_action_skill
     route = KL.voice_route(CODE, VOICE_ROUTE)
@@ -621,8 +1004,6 @@ def build(ctx) -> dict[str, Any]:
     if (design_route["kind"], str(design_route["condition_kind"]), str(design_route["condition_id"])) \
             != (VOICE_ROUTE["kind"], VOICE_ROUTE["condition_kind"], VOICE_ROUTE["condition_id"]):
         raise KitError(f"design voice route drift: {design_route}")
-    if list(design["plan"]["kit_declarations"]["character_c9_c16"]) != list(route):
-        raise KitError(f"design character c9–c16 drift: {design['plan']['kit_declarations']['character_c9_c16']}")
     char_row = ctx.pack.pkg_character_row()
     char_row[9:17] = route
     if char_row[6] != "3" or char_row[26] != "Attacker" or char_row[27] != str(CID):
@@ -637,41 +1018,52 @@ def build(ctx) -> dict[str, Any]:
         raise KitError("character mirror lost the voice route")
 
     ctx.evidence_write("kit-gates.json", {
-        "rows": evidence, "skills": skill_gates, "power_flip": pf_gates,
+        "rows": rows["evidence"], "skills": skill_gates, "power_flip": pf_gates,
+        "invoke": invoke_gates, "statue_group_precedent": statue,
         "unique_condition": {key: {"row": row, "icon": icon}},
+        "custom_ability_string": sorted(strings),
+        "action_skill": action_rows,
         "effect_family": {k: family[k] for k in ("src_dir", "dst_dir", "layout", "copied_bases",
                                                  "complete_family", "missing_effects")},
         "fx_lut": bool(lut), "voice": voice, "pixel": pixel, "mirrors": mirrors})
 
     notes = [
-        f"技能：三母本拼树（{TEMPLATE_CODE} 骨架 + veteran_hunter_3anv 音场 + herbalist_xm22 队伍块）；"
-        f"内层1 {skill_gates['1']['multipliers']['field'][0]}×18＝"
+        "rework1（作者 09-20/21）：队长 6→9 行（新增 暗共鸣+暗属性角色发动技能时 629 / "
+        "PF Lv1命中每4次自身攻击+50%（无上限）/ 冲刺 629 CT5秒）；词条 15→18 条"
+        "（能力2 数值翻倍、能力3 加暗共鸣门且层数上限 5→99、能力4 新增每层回响自身攻击+25%、"
+        "能力5 新增常驻独立乘区 +30%）；固有「回响」上限 5→99",
+        f"629 PF 追击：官方 special_lv3 命中块 ×{INVOKE_SCALE} ＝ {invoke_gates['total']}×，"
+        f"tree[10]={INVOKE_BTA}（按 PF 伤害结算）；去掉 SetPowerFilpSuppress / NotifyPowerflipEnd；"
+        "不接 248，PF 计数器不被凭空推进",
+        f"技能（未改）：内层1 {skill_gates['1']['multipliers']['field'][0]}×18＝"
         f"{round(skill_gates['1']['multipliers']['field'][0] * 18, 2)}×，"
         f"内层2 满级 {skill_gates['2']['multipliers']['field'][1]}×18＝"
         f"{round(skill_gates['2']['multipliers']['field'][1] * 18, 2)}×；tree[10]=0（技能伤害归属，D-1）",
-        f"722：官方 special 底座 ×{PF_SCALE} ＝ "
+        f"722（未改）：官方 special 底座 ×{PF_SCALE} ＝ "
         + " / ".join(f"lv{n} {pf_gates[str(n)]['total']}×" for n in (1, 2, 3))
-        + "；辅助增益块贯通帧 " + "/".join(str(PF_PIERCE_FRAMES[n]) for n in (1, 2, 3))
-        + "（官方 60/90/150）；光剑单元不做",
-        f"特效只克隆 1 族 {FX_DST_DIR}（威隆族不克隆，领域演出复用 _back、命中演出改 [\"Fine\"]）"
-        + ("；已套用 B/pixel/hibiki/fx_lut.json 换色" if lut else "；无 fx_lut.json，按母本原色克隆"),
+        + "；辅助增益块贯通帧 " + "/".join(str(PF_PIERCE_FRAMES[n]) for n in (1, 2, 3)),
+        "面板：队长块与 6 槽全部走 desc_override_*，逐行对齐 rework1/panel/hibiki.json；"
+        "冲刺 422 行留在能力 5（写队长表 = C7050），文案在队长块第 10 行",
+        {"statue_group_zero_precedent":
+            [f"{e['key']}#{e['record']} {e['group']}×{e['trigger']}{e['kind']}"
+             for e in statue if e["official_rows"] == 0]},
         {"pixel_install": pixel},
     ]
     deviations = [{"want": item["intended"], "got": item["actual"], "why": item["reason"]}
                   for item in design.get("deviations", ())]
-    # 放行条件只看 kit 自己的产物：22 行 + 5 棵 DSL + 5 个自有键 + 语音路由 + 三层镜像都已过闸，
-    # 且像素/特效成品已装包（缺件时留 draft）。立绘与语音音频是另两条线，由主控在装配阶段补。
-    gate = {"rows": len(evidence), "programs": len(programs),
+    gate = {"rows": len(rows["evidence"]), "programs": len(programs),
             "pixel_present": pixel["present"], "pixel_missing": [e["logical"] for e in pixel["skipped"]]}
     ready = pixel["present"] and not pixel["skipped"]
     gate["reason"] = "kit 自有产物全部过闸" if ready else \
         f"像素/特效成品未就绪：{gate['pixel_missing'] or 'B/pixel/hibiki/install.json 不存在'}"
     return KL.report(
-        ctx, summary="澄波响：暗属性 PF 主 C（贯通循环型）——722 专属 PF ＋ 回响层数 ＋ 冲刺改造",
+        ctx, summary="澄波响 rework1：暗属性 PF 主 C —— 722 专属 PF ＋ 回响（上限 99）"
+                     "＋ 两行 629 PF 追击 ＋ 冲刺改造",
         status=KL.READY if ready else KL.DRAFT, panel=panel, notes=notes, programs=programs,
         unique_condition={key: {"name": UNIQUE_NAME, "cap": UNIQUE_CAP, "icon": UNIQUE_ICON_LOGICAL}},
-        required_capabilities=sorted(capabilities | set(SPEC["required_capabilities"])),
+        required_capabilities=sorted(set(rows["capabilities"]) | set(SPEC["required_capabilities"])),
         deviations=deviations,
         extra={"power_flip_action": {PF_KEY: list(PF_PROGRAMS)},
-               "custom_ability_string": sorted(cas_plan),
+               "custom_ability_string": sorted(strings),
+               "ability_skill_programs": [INVOKE_PROGRAM],
                "effect_families": [FX_DST_DIR], "kit_gate": gate})
