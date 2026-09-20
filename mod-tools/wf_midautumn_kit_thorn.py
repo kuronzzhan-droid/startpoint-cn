@@ -100,12 +100,14 @@ PANEL_ABILITY: dict[int, tuple[str, ...]] = {
     4: ("光属性角色对处于麻痹、气绝状态的敌人造成的伤害，额外乘区＋15%",
         "光属性角色对处于迟缓状态的敌人造成的伤害，额外乘区＋15%"),
 }
-#: 主位限定的槽（c1 = false）在覆盖文案里要自己带 Ⓜ——客户端只给自动文案画这个角标。
-MAIN_ONLY_MARK = "Ⓜ"
+#: 主位限定的槽（c1 = false）在覆盖文案里要自己带 <icon id='main'>——desc_override 会盖掉
+#: 客户端逐行画的 Ⓜ 角标，图标不许再写成字面字符「Ⓜ」（本批 magnus/fluffy/stinel/kuro/hibiki
+#: 同款做法，玩家反馈 09-21：写字面 Ⓜ 在客户端里渲成白色文字而不是红色主位图标）。
+MAIN_ICON = " <icon id='main'>  "
 
 
 def override_text(slot: int, unisonable: str) -> str:
-    prefix = "" if str(unisonable).lower() == "true" else MAIN_ONLY_MARK
+    prefix = "" if str(unisonable).lower() == "true" else MAIN_ICON
     return "\n".join(prefix + line for line in PANEL_ABILITY[slot])
 
 
@@ -393,8 +395,10 @@ def write_strings(ctx, design: dict[str, Any],
             raise KitError(f"panel override key {CAS_ABILITY[slot]!r} != "
                            f"desc_override_<string_id> {want!r}")
         text = override_text(slot, rows[0][1])
-        if (rows[0][1] == "false") != text.startswith(MAIN_ONLY_MARK):
-            raise KitError(f"slot {slot}: 覆盖文案的主位角标与 c1={rows[0][1]!r} 不一致")
+        wants_icon = rows[0][1] == "false"
+        for line in text.split("\n"):
+            if line.startswith(MAIN_ICON) != wants_icon:
+                raise KitError(f"slot {slot}: 覆盖文案的主位角标与 c1={rows[0][1]!r} 不一致")
         strings[CAS_ABILITY[slot]] = text
 
     declared = set(ctx.spec.extra_keys.get(KL.CAS, ()))
@@ -409,7 +413,7 @@ def write_strings(ctx, design: dict[str, Any],
     KL.check_panel(strings[CAS_CHANGE_SKILL], skill_flag=True, label=CAS_CHANGE_SKILL)
     for key in CAS_ABILITY.values():
         for line in strings[key].split("\n"):
-            KL.check_panel(line.lstrip(MAIN_ONLY_MARK), label=key)
+            KL.check_panel(line.replace(MAIN_ICON, ""), label=key)
     referenced = {row[70] for rows in ability_rows.values() for row in rows if row[70]}
     if CAS_CHANGE_SKILL not in referenced:
         raise KitError(f"custom_ability_string {CAS_CHANGE_SKILL} not referenced by any ability c70")
@@ -911,7 +915,7 @@ def build(ctx) -> dict[str, Any]:
         "写第二位必崩 U_34c3bb）。",
         "面板（rework1）：队长 4 行与能力 5／6 继续走客户端自渲染（desc_expected 逐字核对通过）；"
         f"能力 {'/'.join(str(s) for s in OVERRIDE_SLOTS)} 四个槽走 desc_override_<string_id> 整块接管，"
-        "逐行 = rework1/panel/thorn.json（主位限定槽自带 Ⓜ）。无 629/722/422/724/713；"
+        "逐行 = rework1/panel/thorn.json（主位限定槽每行自带 <icon id='main'>）。无 629/722/422/724/713；"
         f"required_capabilities = [{L.PANEL_OVERRIDE_V2}]（缺 V14 不崩，只是回落到自动文案）。",
         f"「光属性共鸣时」一律用官方共鸣前置 {RESONANCE_CELLS}（作者 09-21 00:5x），"
         f"覆盖 {len(RESONANCE_ROWS)} 条行：{resonance}。",

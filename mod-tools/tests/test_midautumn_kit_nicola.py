@@ -220,6 +220,30 @@ class DesignSelfCheckTests(unittest.TestCase):
         for line in want:
             self.assertEqual(KL.panel_problems(line), [], line)
 
+    def test_panel_override_carries_the_main_position_icon(self):
+        """09-21 真机反馈：能力 3 整键主位限制（c1 全键 "false"），覆盖串每行必须带
+        ``<icon id='main'>`` 才会显示主位限制图标；不许用字面「Ⓜ」字符替代。
+
+        设计稿 ``custom_ability_string`` 与 ``rework1/panel/nicola.json`` 只登记文案本身，
+        图标前缀是 :func:`wf_midautumn_kit_nicola._apply_main_icon` 在生成覆盖串时才补上的
+        格式细节（裁决：不改文案，只改格式）。
+        """
+        panel = json.loads((ROOT / "work/character_packs/midautumn-20260920/rework1"
+                            / "panel/nicola.json").read_text(encoding="utf-8"))
+        want_lines = [line["text"] for ability in panel["abilities"]
+                      if ability["index"] == K.OVERRIDE_SLOT for line in ability["lines"]]
+        raw_text = {r["key"]: r["text"] for r in
+                    DESIGN["plan"]["texts"]["custom_ability_string"]["rows"]}[K.CAS_OVERRIDE]
+        self.assertNotIn(K.MAIN_ICON, raw_text)          # 设计稿原文不带格式
+        self.assertNotIn("Ⓜ", raw_text)
+        rendered = K._apply_main_icon(raw_text).split("\n")
+        # 多记录槽（9 条记录）的覆盖串行数＝面板行数（4 行，一行可以覆盖多条记录）。
+        self.assertEqual(len(rendered), len(want_lines))
+        for line in rendered:
+            self.assertTrue(line.startswith(K.MAIN_ICON), line)
+            self.assertIn("<icon id='main'>", line)
+        self.assertNotIn("Ⓜ", "\n".join(rendered))
+
     def test_ability_slot3_consumes_after_the_beneficiaries(self):
         """行序契约：525 消耗行排在同触发的受益行之后，否则层数先被吃掉、前置 187 当场不成立。"""
         rows = [record["row_final"] for _k, _b, record in all_records()
@@ -464,9 +488,17 @@ class PackageTests(unittest.TestCase):
                                            skill_flag=True), [])
         self.assertIn(K.CAS_OVERRIDE, cas)
         override = self.ctx.csv_split(cas[K.CAS_OVERRIDE])[0][0]
-        self.assertEqual(len(override.split("\n")), 4)
+        panel = json.loads((ROOT / "work/character_packs/midautumn-20260920/rework1"
+                            / "panel/nicola.json").read_text(encoding="utf-8"))
+        want_lines = [line["text"] for ability in panel["abilities"]
+                      if ability["index"] == K.OVERRIDE_SLOT for line in ability["lines"]]
+        # 多记录槽（9 条记录）的覆盖串行数＝面板行数。
+        self.assertEqual(len(override.split("\n")), len(want_lines))
+        # 能力 3 整键主位限制 ⇒ 已构建包里的覆盖串每行都必须带主位限制图标，不许用字面「Ⓜ」。
         for line in override.split("\n"):
             self.assertEqual(KL.panel_problems(line), [], line)
+            self.assertTrue(line.startswith(K.MAIN_ICON), line)
+        self.assertNotIn("Ⓜ", override)
 
     def test_package_carries_the_unique_condition_and_its_icon(self):
         unique = self.ctx.pkg_flat(KL.UNIQUE)

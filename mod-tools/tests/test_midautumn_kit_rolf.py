@@ -34,6 +34,7 @@ import wf_midautumn_kitlib as KL  # noqa: E402
 import wf_midautumn_specs as MS  # noqa: E402
 import wf_mod_tool as core  # noqa: E402
 import wf_seasonal7_build as B  # noqa: E402
+import wf_seasonal7_common as C  # noqa: E402
 
 ROOT = core.project_root()
 DESIGN = MS.load_design(ROOT, "rolf")
@@ -266,25 +267,52 @@ class KindGuardTests(unittest.TestCase):
 class PanelTextTests(unittest.TestCase):
     def test_panel_text_obeys_the_project_rules(self):
         for key, text in K.CAS_TEXTS.items():
-            self.assertEqual(KL.panel_problems(text, skill_flag=(key == K.CAS_FLAG)), [],
-                             f"{key}: {text}")
+            for line in text.split("\n"):
+                self.assertEqual(
+                    KL.panel_problems(line.replace(K.MAIN_ICON, ""),
+                                      skill_flag=(key == K.CAS_FLAG)),
+                    [], f"{key}: {line}")
 
     def test_skill_flag_entry_carries_no_numbers_or_time(self):
         self.assertFalse(any(ch.isdigit() for ch in K.CAS_TEXTS[K.CAS_FLAG]))
 
     def test_panel_text_matches_the_author_approved_target(self):
+        """多条记录用换行分行（禁止「／」挤成一行）；每行文字以目标面板 lines[].text 为准。"""
         panel = panel_json()
-        joined = "／".join(line["text"] for line in panel["leader"]["lines"])
+        joined = "\n".join(line["text"] for line in panel["leader"]["lines"])
         self.assertEqual(joined, K.PANEL_LEADER)
         for block in panel["abilities"]:
-            joined = "／".join(line["text"] for line in block["lines"])
-            self.assertEqual(joined, K.PANEL_ABILITY[block["index"]], f"ability {block['index']}")
+            slot = block["index"]
+            texts = [line["text"] for line in block["lines"]]
+            if block["main_only"]:
+                joined = "\n".join(K.MAIN_ICON + text for text in texts)
+            else:
+                joined = "\n".join(texts)
+            self.assertEqual(joined, K.PANEL_ABILITY[slot], f"ability {slot}")
 
     def test_main_only_slot_matches_the_panel(self):
         for block in panel_json()["abilities"]:
             slot = block["index"]
             self.assertEqual(K._UNISONABLE[slot], "false" if block["main_only"] else "true",
                              f"ability {slot}")
+
+    def test_main_position_slots_carry_their_own_icon_and_no_literal_glyph(self):
+        """主位限制槽（能力3）覆盖串每行都要带 <icon id='main'>，全文不许出现字面「Ⓜ」；
+        非主位槽不带图标。多记录槽的覆盖串行数＝目标面板对应槽位的行数（不许「／」挤成一行）。
+        """
+        panel_by_slot = {block["index"]: block for block in panel_json()["abilities"]}
+        for slot in range(1, 7):
+            text = K.CAS_TEXTS[K.CAS_ABILITY[slot]]
+            self.assertNotIn("Ⓜ", text, f"ability {slot}")
+            lines = text.split("\n")
+            block = panel_by_slot[slot]
+            self.assertEqual(len(lines), len(block["lines"]), f"ability {slot} line count")
+            wants_icon = block["main_only"]
+            for line in lines:
+                self.assertEqual(line.startswith(K.MAIN_ICON), wants_icon,
+                                 f"ability {slot}: {line}")
+        self.assertNotIn("Ⓜ", K.PANEL_LEADER)
+        self.assertEqual(len(K.PANEL_LEADER.split("\n")), len(panel_json()["leader"]["lines"]))
 
     def test_panel_identity_matches_the_module(self):
         panel = panel_json()
@@ -550,12 +578,13 @@ class PackageTests(unittest.TestCase):
             self.assertTrue(path.is_file(), program)
 
     def test_custom_ability_string_carries_exactly_our_nine_keys(self):
+        """多行 desc_override 的 ``\\n`` 必须活过 orderedmap 的 CSV 编解码（同 hibiki 的等价用例）。"""
         blob = core.read_orderedmap_file_from_bytes(
             (self.pkg() / KL.CAS).read_bytes())
         ours = {k for k in blob if k in K.CAS_TEXTS}
         self.assertEqual(ours, set(K.CAS_TEXTS))
         for key, text in K.CAS_TEXTS.items():
-            self.assertIn(text.split("／")[0], blob[key])
+            self.assertEqual(C.csv_split(blob[key])[0][0], text, key)
         # 改键名前写出来的旧条目不许留在包里（否则 manifest 的 claimed_keys 会一直红）
         self.assertNotIn(f"ability_skill_{K.CODE}_encore", blob)
 

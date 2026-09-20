@@ -182,13 +182,23 @@ class DesignSelfCheckTests(unittest.TestCase):
         # 能力 5／6 本轮未改，继续走客户端自渲染 ⇒ 不许偷偷多出覆盖串。
         self.assertEqual(K.OVERRIDE_SLOTS, (1, 2, 3, 4))
 
-    def test_override_text_carries_the_main_only_mark(self):
-        # 主位限定槽（c1=false）的覆盖文案必须自己带 Ⓜ：客户端只给自动文案画角标。
-        self.assertTrue(K.override_text(3, "false").startswith(K.MAIN_ONLY_MARK))
-        self.assertFalse(K.override_text(1, "true").startswith(K.MAIN_ONLY_MARK))
+    def test_override_text_carries_the_main_only_icon(self):
+        # 主位限定槽（c1=false）的覆盖文案每行都要自带 <icon id='main'>：desc_override 会盖掉
+        # 客户端逐行画的角标，写成字面「Ⓜ」在客户端里只会渲成白色文字（作者 09-21 真机反馈）。
+        slot3_lines = K.override_text(3, "false").split("\n")
+        self.assertTrue(slot3_lines)
+        for line in slot3_lines:
+            self.assertTrue(line.startswith(K.MAIN_ICON), line)
+        self.assertNotIn("Ⓜ", K.override_text(3, "false"))
+        for line in K.override_text(1, "true").split("\n"):
+            self.assertFalse(line.startswith(K.MAIN_ICON), line)
+        self.assertNotIn("Ⓜ", K.override_text(1, "true"))
         for slot in K.OVERRIDE_SLOTS:
             uni = ABILITY_PLAN["keys"][f"{K.CID}{slot}"]["unisonable_per_record"][0]
-            lines = K.override_text(slot, uni).split("\n")
+            text = K.override_text(slot, uni)
+            self.assertNotIn("Ⓜ", text, slot)
+            lines = text.split("\n")
+            # 多记录槽的覆盖串行数必须等于面板行数（换行分行，不许挤成一行）。
             self.assertEqual(len(lines), len(K.PANEL_ABILITY[slot]), slot)
 
     def test_change_skill_string_is_a_skill_flag_entry(self):
@@ -529,8 +539,10 @@ class PackageTests(unittest.TestCase):
             self.assertIn(key, rows, key)
             self.assertEqual(C.csv_split(rows[key])[0][0], text, key)
         for slot in K.OVERRIDE_SLOTS:
-            lines = plan[K.CAS_ABILITY[slot]].split("\n")
-            self.assertEqual([line.lstrip(K.MAIN_ONLY_MARK) for line in lines],
+            text = plan[K.CAS_ABILITY[slot]]
+            self.assertNotIn("Ⓜ", text, slot)
+            lines = text.split("\n")
+            self.assertEqual([line.replace(K.MAIN_ICON, "") for line in lines],
                              list(K.PANEL_ABILITY[slot]), slot)
 
     def test_package_rows_match_the_design(self):

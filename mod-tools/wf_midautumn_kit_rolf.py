@@ -231,30 +231,47 @@ EXPECT: dict[str, str] = {
 }
 
 # ---------------------------------------------------------------- 面板文案
-# 逐行抄 rework1/panel/rolf.json（作者已过目那一版 + 本轮 dev:true 的回写），用「／」分行。
+# 逐行抄 rework1/panel/rolf.json（作者已过目那一版 + 本轮 dev:true 的回写）；一条记录一行，
+# 用换行符分行（禁止用「／」挤成一行）。能力 3 是主位限制槽，每行都要带 MAIN_ICON 前缀，
+# 格式照抄玛格诺斯 wf_midautumn_kit_magnus.py 的写法（记忆卡「覆盖文案规则」）。
 
-PANEL_LEADER = (
-    "风属性共鸣时：全体增益效果的持续时间＋100%（包括贯穿、最大速度固定）／风属性共鸣时："
-    "强化自身冲刺，冲刺冷却时间－33%／风属性共鸣时：冲刺间隔缩短效果不会让自身的冲刺冷却"
-    "时间进一步缩短／风属性共鸣时：自身发动技能时，技能所赋予的最大速度固定效果强化至4档，"
-    "且不衰减技能槽能量获取／风属性共鸣时：风属性角色每造成100次直接攻击，风属性角色攻击力"
-    "＋100%、直击伤害＋100%，直击伤害额外乘区＋10%／风属性共鸣时：战斗开始时，风属性角色"
-    "技能槽＋50%、技能槽最大值＋10%"
-)
+MAIN_ICON = " <icon id='main'>  "   # desc_override 会盖掉客户端逐行画的 Ⓜ，主位键必须自带
+
+PANEL_LEADER = "\n".join((
+    "风属性共鸣时：全体增益效果的持续时间＋100%（包括贯穿、最大速度固定）",
+    "风属性共鸣时：强化自身冲刺，冲刺冷却时间－33%",
+    "风属性共鸣时：冲刺间隔缩短效果不会让自身的冲刺冷却时间进一步缩短",
+    "风属性共鸣时：自身发动技能时，技能所赋予的最大速度固定效果强化至4档，且不衰减技能槽能量获取",
+    "风属性共鸣时：风属性角色每造成100次直接攻击，风属性角色攻击力＋100%、直击伤害＋100%，"
+    "直击伤害额外乘区＋10%",
+    "风属性共鸣时：战斗开始时，风属性角色技能槽＋50%、技能槽最大值＋10%",
+))
 
 PANEL_ABILITY = {
-    1: ("风属性共鸣时：冲刺时，自身直接攻击伤害＋50%（最多＋200%）／风属性共鸣时：自身处于"
-        "贯穿效果时，自身攻击力＋200%"),
-    2: ("自身处于最大速度固定状态时：赋予风属性角色直接攻击伤害＋120%／自身处于贯穿效果时："
-        "自身直接攻击伤害提升每达＋20%（最多叠加100层），自身攻击力＋1.5%"),
-    3: ("风属性共鸣时：风属性角色的直接攻击强化为3次（同类效果不叠加，取最大值），合计伤害"
-        "额外乘区＋200%／最大速度固定效果持续期间，每持续1秒，自身攻击力＋50%、直击伤害＋"
-        "50%／风属性共鸣时：强化技能，威力随连击数提升（按直接攻击伤害判定），每达成500连击"
-        " → 立即对最近的敌人发动自身技能的攻击效果（不消耗技能槽，冷却时间：5秒）／风属性"
-        "共鸣时：每达成100连击，连击数＋50"),
-    4: "风属性共鸣时：自身技能槽＋50%／风属性共鸣时：赋予风属性角色技能充能速度＋10%",
-    5: ("自身处于最大速度固定期间：风属性角色直击伤害额外乘区＋50%／风属性角色的最大速度"
-        "固定效果持续时间＋25%"),
+    1: "\n".join((
+        "风属性共鸣时：冲刺时，自身直接攻击伤害＋50%（最多＋200%）",
+        "风属性共鸣时：自身处于贯穿效果时，自身攻击力＋200%",
+    )),
+    2: "\n".join((
+        "自身处于最大速度固定状态时：赋予风属性角色直接攻击伤害＋120%",
+        "自身处于贯穿效果时：自身直接攻击伤害提升每达＋20%（最多叠加100层），自身攻击力＋1.5%",
+    )),
+    3: "\n".join(MAIN_ICON + line for line in (
+        "风属性共鸣时：风属性角色的直接攻击强化为3次（同类效果不叠加，取最大值），合计伤害"
+        "额外乘区＋200%",
+        "最大速度固定效果持续期间，每持续1秒，自身攻击力＋50%、直击伤害＋50%",
+        "风属性共鸣时：强化技能，威力随连击数提升（按直接攻击伤害判定），每达成500连击 → "
+        "立即对最近的敌人发动自身技能的攻击效果（不消耗技能槽，冷却时间：5秒）",
+        "风属性共鸣时：每达成100连击，连击数＋50",
+    )),
+    4: "\n".join((
+        "风属性共鸣时：自身技能槽＋50%",
+        "风属性共鸣时：赋予风属性角色技能充能速度＋10%",
+    )),
+    5: "\n".join((
+        "自身处于最大速度固定期间：风属性角色直击伤害额外乘区＋50%",
+        "风属性角色的最大速度固定效果持续时间＋25%",
+    )),
     6: "自身每与敌人碰撞8次 → 自身技能槽＋5%（冷却时间：5秒）",
 }
 
@@ -488,12 +505,19 @@ def write_strings(ctx) -> dict[str, str]:
     missing = [key for key in CAS_TEXTS if key not in declared]
     if missing:
         raise KitError(f"custom_ability_string keys not declared in SPEC['extra_keys']: {missing}")
+    for key, text in CAS_TEXTS.items():
+        for line in text.split("\n"):
+            KL.check_panel(line.replace(MAIN_ICON, ""),
+                           skill_flag=(key == CAS_FLAG), label=key)
+    for slot in range(1, 7):
+        rendered = CAS_TEXTS[CAS_ABILITY[slot]].split("\n")
+        wants_icon = _UNISONABLE[slot] == "false"
+        if any(line.startswith(MAIN_ICON) != wants_icon for line in rendered):
+            raise KitError(f"slot {slot} desc_override main-position icon does not match c1")
     official = ctx.official_flat(KL.CAS)
     clashes = [key for key in CAS_TEXTS if key in official]
     if clashes:
         raise KitError(f"custom_ability_string keys already exist officially: {clashes}")
-    for key, text in CAS_TEXTS.items():
-        KL.check_panel(text, skill_flag=(key == CAS_FLAG), label=key)
     ctx.write_flat(KL.CAS, {key: [[text]] for key, text in CAS_TEXTS.items()})
     return dict(CAS_TEXTS)
 

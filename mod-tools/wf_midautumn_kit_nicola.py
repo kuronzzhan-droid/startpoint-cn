@@ -15,7 +15,10 @@
     - ``custom_ability_string``：536「切换技能形态」的 c70 字符串键（未注册 = C8601）
       与 rework1 的 ``desc_override_<code>_3``（能力 3 整槽面板覆盖，键名 = ``desc_override_``
       ＋ 该槽第 0 行的 ``string_id``；需要 V14 APK 的 ``panel-description-override-v2``，
-      缺补丁不崩、只是回落到客户端自动文案）；
+      缺补丁不崩、只是回落到客户端自动文案）——能力 3 整键 c1（主位限制）＝``"false"``，
+      覆盖串每行必须自带 :data:`MAIN_ICON` 前缀才会显示主位限制图标（09-21 真机反馈：
+      4 行都没带这段前缀，看不到 Ⓜ；格式照抄玛格诺斯 ``desc_override_lion_swordman_moon_3``
+      的实际写法，不许用字面「Ⓜ」字符）；
     - rework1 的固有状态「月讲」（8 位 ID ``cid*100+1``）与它的 48×48 图标（程序绘制，
       alpha 逐格取官方 frame donor）；
     - ``action_skill`` 两档能量 500/500、500/450（名称/描述由 ``tables`` 写 TEXTS）；
@@ -68,6 +71,19 @@ OVERRIDE_SLOT = 3                               # 能力 3 整槽走面板覆盖
 CAS_OVERRIDE = f"desc_override_{CODE}_{OVERRIDE_SLOT}"
 VOICE_KEY = f"{CODE}_voice_ready"
 VOICE_ROUTE = {"kind": 3}                       # ChangeSkillFlag ← 能力1 #1 的 536
+
+#: desc_override 会盖掉客户端逐行画的原生「Ⓜ」；主位限制槽（c1 全键 "false"）必须自带这段
+#: 前缀才能在面板上显示主位限制图标——格式逐字照抄玛格诺斯（``lion_swordman_moon``）
+#: ``desc_override_lion_swordman_moon_3`` 的实际写法：前面 1 个空格、``<icon id='main'>``、
+#: 后面 2 个空格；不许出现字面「Ⓜ」字符（09-21 真机反馈：妮可拉能力 3 整键主位限制但覆盖串
+#: 4 行都没带这段前缀，游戏里看不到 Ⓜ）。
+MAIN_ICON = " <icon id='main'>  "
+
+
+def _apply_main_icon(text: str) -> str:
+    """给主位限制槽的覆盖串每一行补上 :data:`MAIN_ICON` 前缀，已带前缀的行不重复加。"""
+    return "\n".join(MAIN_ICON + line if line.strip() and MAIN_ICON not in line else line
+                     for line in text.split("\n"))
 
 #: rework1 的固有状态「月讲」：8 位 ``cid*100+n``（裁决 §1；7 位撞过基诺维 1699901/02）。
 UID = MS.unique_condition_id(CID, 1)
@@ -290,7 +306,8 @@ def write_strings(ctx, design: dict[str, Any], ability_rows: dict[str, list[list
     missing = [k for k in plan if k not in declared]
     if missing:
         raise KitError(f"custom_ability_string keys not declared in SPEC['extra_keys']: {missing}")
-    # 裁决 §3：能力里的「技能强化」条目不写数字与时间；覆盖串只过通用禁词。
+    # 裁决 §3：能力里的「技能强化」条目不写数字与时间；覆盖串只过通用禁词
+    # （按设计稿原文校验，此时还没有加主位图标前缀）。
     KL.check_panel(plan[CAS_CHANGE_SKILL], skill_flag=True, label=CAS_CHANGE_SKILL)
     for line in plan[CAS_OVERRIDE].split("\n"):
         KL.check_panel(line, label=CAS_OVERRIDE)
@@ -303,6 +320,21 @@ def write_strings(ctx, design: dict[str, Any], ability_rows: dict[str, list[list
     want = L.PANEL_OVERRIDE_KEY_PREFIX + slot_rows[0][0]
     if want != CAS_OVERRIDE:
         raise KitError(f"panel override key {CAS_OVERRIDE!r} != desc_override_<string_id> {want!r}")
+
+    # 整键 c1（主位限制）全键一致（check_ability_key 已判）；c1="false" ⇒ 主位限制槽，
+    # 覆盖串每行必须自带 <icon id='main'> 前缀（09-21 真机反馈：4 行都没带，看不到 Ⓜ）。
+    wants_icon = slot_rows[0][1] == "false"
+    before_lines = plan[CAS_OVERRIDE].split("\n")
+    if wants_icon:
+        plan[CAS_OVERRIDE] = _apply_main_icon(plan[CAS_OVERRIDE])
+    override_lines = plan[CAS_OVERRIDE].split("\n")
+    if len(override_lines) != len(before_lines):
+        raise KitError(f"{CAS_OVERRIDE}: main-position icon prefix changed the line count")
+    if wants_icon and any(not line.startswith(MAIN_ICON) for line in override_lines):
+        raise KitError(f"{CAS_OVERRIDE}: main-position icon prefix missing on some lines")
+    if "Ⓜ" in plan[CAS_OVERRIDE]:
+        raise KitError(f"{CAS_OVERRIDE}: literal 'Ⓜ' character forbidden")
+
     ctx.write_flat(KL.CAS, {k: [[v]] for k, v in plan.items()})
     return plan
 
@@ -733,8 +765,8 @@ def build(ctx) -> dict[str, Any]:
         raise KitError("character mirror lost the voice route")
 
     # 面板：队长 6 行与能力 1/2/4/5/6 按 wf_describe 原文显示（本套件零 422/724/629/722、零 during 行）；
-    # 能力 3 的 9 条记录整槽被 desc_override 覆盖（4 行，逐字＝rework1/panel/nicola.json）；
-    # 536 条目的文字来自 custom_ability_string。
+    # 能力 3 的 9 条记录整槽被 desc_override 覆盖（4 行，文字＝rework1/panel/nicola.json，
+    # 每行已由 write_strings 加上主位限制图标前缀 MAIN_ICON）；536 条目的文字来自 custom_ability_string。
     override_slot = f"{CID}{OVERRIDE_SLOT}"
     panel = [ev["describe"] for ev in leader_evidence]
     panel += [ev["describe"] for ev in ability_evidence
@@ -854,6 +886,13 @@ def build(ctx) -> dict[str, Any]:
          "got": "照写（IC 245）",
          "why": "改版前的设计稿明确不做 245，理由是抬高自己的槽上限会拖慢触发 24 的满月节奏；"
                 "作者本轮原话要求，按作者执行并在此登记这条设计张力"},
+        # ---- rework1 第二轮（2026-09-21，真机反馈）
+        {"want": "能力 3 整键主位限制（c1 全键 false），desc_override 4 行应显示主位限制图标",
+         "got": f"write_strings 给 {CAS_OVERRIDE} 每行自动加 MAIN_ICON（{MAIN_ICON!r}）前缀，"
+                "格式逐字照抄玛格诺斯 desc_override_lion_swordman_moon_3 的实际写法；不写字面「Ⓜ」字符",
+         "why": "作者真机反馈：妮可拉能力 3 整键主位限制但覆盖串 4 行都没带这段前缀，游戏里看不到 Ⓜ；"
+                "design/nicola.json 与 rework1/panel/nicola.json 的原文只登记文案本身，"
+                "图标前缀是面板覆盖串的格式细节，按裁决只在生成覆盖串时补上，不改设计稿文案"},
     ]
     for entry in design.get("deviations", ()):
         deviations.append({"want": entry.get("item") or entry.get("want"),
