@@ -192,6 +192,14 @@ class PlanTests(unittest.TestCase):
             self.assertEqual(ac[2], [{"min": 3, "max": 3}])
             self.assertLessEqual(ac[3][0]["max"], 1.0)
 
+    def test_ability_4_carries_a_three_second_cooldown(self):
+        """反馈轮 2：作者原话「黑的能力4带上ct3s」→ 两条记录的 c35（CT 列）都是 180 帧＝3 秒。"""
+        records = KIT.ABILITY["1399914"]
+        self.assertEqual(len(records), 2)
+        for _donor, cells, expect in records:
+            self.assertEqual(cells.get(35), "180", cells)
+            self.assertIn("(CT3秒)", expect)
+
 
 class UniqueConditionTests(unittest.TestCase):
     def test_caps_are_numbers_not_none(self):
