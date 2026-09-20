@@ -124,6 +124,41 @@ class ConstantTests(unittest.TestCase):
         self.assertEqual(K.INVOKE_BTA, 3)            # 629 载荷按 PF 伤害结算（偏离 D-15）
         self.assertEqual(K.INVOKE_SCALE, 1.0)        # 官方 special_lv3 原值，不叠 PF_SCALE（D-16）
 
+    def test_damage_attribution_switches_are_pinned(self):
+        """反馈轮 4：伤害归属的两个位，取值钉死在源码证明过的那一组。
+
+        根头 ``tree[10]=3`` 是 ``NormalAttackCalculator.as:422`` 唯一认的开关；判定区
+        ``params[23]`` 留 0 ＝ 不覆盖、回落到根头（``Environment.as:735-752``）。写 1 会退回
+        技能池，写 4 会变直击 —— 这条测试就是拦这两种改法。
+        """
+        self.assertEqual(K.INVOKE_BTA, 3)
+        self.assertNotIn(K.INVOKE_BTA, (0, 1, 2, 4))
+        self.assertEqual(K.INVOKE_HITAREA_BTA, 0)
+
+    def test_the_413_rows_that_the_629_hit_cannot_reach_are_pinned(self):
+        """返修轮：面板承诺、629 追击拿不到的那 ＋55%（两行 during kind 413）钉死。
+
+        ``NormalAttackCalculator.as:457`` 的 ``getStatModifierSeparatedTermPowerFlipDamage``
+        只在 ``as:446`` 的 ``if(createdByPowerFlipAction)`` 里 ⇒ 629 载荷恒读不到；
+        换成 during kind **23** 就读得到（``as:424``，在 ``as:422`` 的通用池 if 里），
+        但对她真拍板的 PF 是把 ×1.55 独立乘区降级为同池相加 ＝ 平衡改动
+        （施工单 §12.6 **方案 F**，需作者拍板）。
+
+        这条测试是那次改法的闸门：谁把 413 换成 23，必须同时改面板文案
+        （去掉「额外乘区」）、`damage_pools` 与施工单 —— 不能悄悄改掉。
+        """
+        rows = [(slot, cells) for slot in (3, 5)
+                for _a, _s, cells, _e in K.PLAN[slot] if cells.get(109) == "413"]
+        self.assertEqual([(slot, cells.get(113), cells.get(114), cells.get(102))
+                          for slot, cells in rows],
+                         [(3, "5000", "5000", "5"),        # 每层回响 ＋5%，封顶 5 层 ＝ ＋25%
+                          (5, "30000", "30000", None)])    # 常驻 ＋30%
+        for _slot, cells in rows:
+            self.assertEqual(cells.get(114), cells.get(113))   # 低/满级同值 ⇒ 面板出单值
+        # 面板那两行必须自称「额外乘区」（413 的语义）；改 kind 就得改这里
+        self.assertIn("额外乘区", K.PANEL_ABILITY[3])
+        self.assertIn("额外乘区", K.PANEL_ABILITY[5])
+
     def test_plan_counts(self):
         self.assertEqual(K.LEADER_ROWS, 9)
         self.assertEqual(K.ABILITY_RECORDS, 18)
@@ -654,10 +689,65 @@ class InvokeTreeTests(unittest.TestCase):
         tree, gates = K.build_invoke_tree(ctx())
         self.assertEqual(tree[0], "ActionDsl")
         self.assertEqual(tree[1], 1)
-        self.assertEqual(tree[10], K.INVOKE_BTA)           # 3 = 按强化弹射伤害结算
+        self.assertEqual(tree[10], K.INVOKE_BTA)           # 3 = 通用伤害池走强化弹射
         self.assertEqual(K.dsl_problems(tree, element=None), [])
         self.assertEqual(gates["total"], 13.0)             # 官方 special_lv3 原值 4 + 9
         self.assertEqual(gates["multipliers"], [4.0, 9.0])
+
+    def test_damage_attribution_is_on_the_root_not_the_hit_areas(self):
+        """反馈轮 4：归属开关只写根头，判定区归属位全部留 0（不覆盖、回落到根头）。
+
+        ``ActionEvaluator.as:3470`` 把 ``CreateHitArea`` 的 ``params[23]`` 读进 ``_loc17_``，
+        ``as:3498`` 交给 ``Environment.createLocalEnvironmentDetail``；
+        ``Environment.getBuffTargetAs`` 遇 0 才往上找 —— 所以 0 是「继承根头 3」，
+        4 会把这一下变成直击（本批罗尔夫/凯尔真机实证）。官方 **1731** 个玩家侧判定区里
+        这一位只有 0（1721）与 4（10），值 3 零先例（扫描脚本见 :data:`K.INVOKE_BTA` 注释）。
+        """
+        tree, gates = K.build_invoke_tree(ctx())
+        chas = PH.cmds(tree, "CreateHitArea")
+        self.assertEqual([c[24] for c in chas], [K.INVOKE_HITAREA_BTA] * len(chas))
+        self.assertEqual(gates["hit_area_buff_target_as"], [K.INVOKE_HITAREA_BTA] * len(chas))
+        self.assertEqual(gates["buff_target_as"], K.INVOKE_BTA)
+
+    def test_build_rejects_a_drifted_hit_area_attribution(self):
+        """判定区归属位漂移（donor 换版 / 有人手改命中块）必须当场炸，不能静默发出去。
+
+        喂一棵 ``params[23]`` 被改过的 donor 进 :func:`build_invoke_tree`，门禁没了就转绿。
+        """
+        real = K.source_tree
+
+        def patched(bad_value):
+            def fake(ctx_obj, program, sha=None):
+                tree = real(ctx_obj, program, sha)
+                if program == K.SPECIAL_PROGRAMS[3]:
+                    tree = copy.deepcopy(tree)
+                    for cha in PH.cmds(tree, "CreateHitArea"):
+                        cha[24] = bad_value
+                return tree
+            return fake
+
+        for bad_value in (3, 4):
+            K.source_tree = patched(bad_value)
+            try:
+                with self.assertRaises(K.KitError) as cm:
+                    K.build_invoke_tree(ctx())
+            finally:
+                K.source_tree = real
+            self.assertIn("p23", str(cm.exception))
+
+    def test_engine_boundary_is_recorded_in_the_gates(self):
+        """引擎硬限写进 kit-gates，面板/施工单与它对账（反馈轮 4 的「吃得到/吃不到」）。"""
+        _tree, gates = K.build_invoke_tree(ctx())
+        self.assertEqual(gates["damage_pools"], {
+            "power_flip_general": True,          # NormalAttackCalculator.as:422（bta==3）
+            "skill_general": False,              # as:477（bta==3 ⇒ 不进）
+            "power_flip_charge_tier": False,     # as:446 只看 createdByPowerFlipAction
+            "power_flip_separated_term": False,  # as:457（在 446 那条 if 里），413 两行吃不到
+            "power_flip_resistance": False,      # as:593
+            "skill_separated_term": True,        # as:499/521，甩不掉
+            "skill_resistance": True,            # as:611，甩不掉
+            "counts_as_power_flip_for_triggers": False,   # 不接 248，触发器 2/65 只认真拍板
+            "damage_label": "skill"})            # EffectManagerImpl.as:693-707，数据层无解
 
     def test_power_flip_lifecycle_commands_are_gone(self):
         # SetPowerFilpSuppress 会压掉玩家真正的拍板；NotifyPowerflipEnd 在非 PF 上下文不计数
@@ -762,6 +852,10 @@ class PackageTests(unittest.TestCase):
         invoke = C.amf_parse(self.pack.pkg_path("common", wf_dsl.dsl_logical(K.INVOKE_PROGRAM))
                              .read_bytes())
         self.assertEqual(invoke[10], K.INVOKE_BTA)
+        # 反馈轮 4：打进包里的那棵树，两个归属位都要是源码证明过的取值。
+        invoke_chas = PH.cmds(invoke, "CreateHitArea")
+        self.assertEqual(len(invoke_chas), 2)
+        self.assertEqual([c[24] for c in invoke_chas], [K.INVOKE_HITAREA_BTA] * 2)
 
     def test_character_row_routes_the_voice(self):
         row = self.pack.pkg_character_row()

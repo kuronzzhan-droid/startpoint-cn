@@ -12,8 +12,8 @@
 - **PF 追击**（本轮新增）：「暗属性角色发动技能时」与「冲刺时（CT 5 秒）」各挂一行队长 629，
   指向新建的 ``ability_skill_psychic_teleport_moon_pf`` 树 —— 官方 ``special_lv3`` 的命中块
   整块搬出（去掉 ``SetPowerFilpSuppress`` / ``NotifyPowerflipEnd`` 两条 PF 生命周期命令，
-  斩铁 ``samurai_robot_plum`` 的现成做法），根头 ``tree[10]=3`` ⇒ 按 PF 伤害结算，
-  吃得到她自己那一池「强化弹射伤害 ＋X%」。
+  斩铁 ``samurai_robot_plum`` 的现成做法），根头 ``tree[10]=3`` ⇒ **通用伤害池**取
+  「强化弹射伤害 ＋X%」而不是「技能伤害 ＋X%」。引擎能做到的边界见 :data:`INVOKE_BTA`。
 
 面板：队长块与 6 个能力槽**全部**由 ``desc_override_*`` 接管（凯尔／罗尔夫 rework1 同款），
 逐行对齐 ``rework1/panel/hibiki.json``；作者要求「能力 5 的词条写在队长技里」＝冲刺 422 行
@@ -114,8 +114,65 @@ INVOKE_BASE = f"ability_skill_{CODE}_pf"
 INVOKE_PROGRAM = f"battle/action/skill/action/ability_skill/{INVOKE_BASE}${INVOKE_BASE}"
 #: 629 载荷的倍率旋钮（1.0 ＝ 官方 special_lv3 原值 13×；她本体 722 lv3 是 62.4×）。
 INVOKE_SCALE = 1.0
-#: 629 载荷的伤害归属：3 ＝ 强化弹射伤害（吃「强化弹射伤害＋X%」这一池，不吃分档/独立乘区/PF 耐性）。
+#: 629 载荷的伤害归属开关 ＝ **ActionDsl 根头 params[9]**（树里 ``tree[10]``）。
+#:
+#: 逐行读客户端（反馈轮 4，作者真机「怎么是技能伤害」）确认的完整判定链：
+#:
+#: 1. ``MemberImpl.as:8158``（``applyInstantAbility`` case 19 ＝ 内容 kind 629）把 ActionKind
+#:    **硬编码**成 ``ActionKind.AbilitySkill``（``ActionKind.as:__constructs__`` index **4**）；
+#:    能产出 ``ActionKind.PowerFlip``（index 5）的只有 ``MemberImpl.as:1038``，它唯一的调用链是
+#:    ``BallImpl.as:846 → SquadImpl.as:387/419 → MemberImpl.startPowerFlip``＝球真的打在弹板上。
+#:    **没有任何数据通路能让 629 载荷变成 PF 上下文。**
+#: 2. ``ActionEvaluator.as:2443-2456``：ActionKind index 1/2/3/**4** 一律把
+#:    ``createdByMainSkillAction`` 置 true（originMemberKind 0/2；1 ＝ Unison）；
+#:    ``as:2773`` ``createdByPowerFlipAction = kind.index == 5`` ⇒ 对 629 恒 **false**；
+#:    ``as:2709-2721`` ``powerFlipChargeLv`` 对 index 4 恒 **0**。
+#: 3. 根头的值确实送得到攻击参数：``ActionManagerImpl.as:179`` → ``ActionEvaluationResolver.as:138``
+#:    ``buffTargetAs = int(dsl.params[9])`` → ``as:151 createGlobalEnvironment``；判定区那一层
+#:    （``ActionEvaluator.as:3470`` 把 ``params[23]`` 读进 ``_loc17_``，``as:3498``
+#:    ``Environment.createLocalEnvironmentDetail(param2, …, _loc17_, …)``）
+#:    与命中块那一层（``as:1467-1474 resolveCollisionOfHitArea``）都只是**子环境**，
+#:    ``Environment.as:735-752 getBuffTargetAs`` 遇 0 顺着 ``outerEnvironment`` 往上找
+#:    ⇒ 判定区留 0 不会挡住根头的 3，最后在 ``as:2877`` 写进 ``CreateNormalAttack`` 的攻击参数。
+#: 4. ``NormalAttackCalculator`` 的四个伤害池**各自一条独立 if**，不是互斥分支：
+#:    ``as:422`` 强化弹射池 ``buffTargetAs == 3 || (== 0 && createdByPowerFlipAction)`` ⇒ **进**
+#:    （池里读的是 ``as:424 getStatModifierPowerFlipDamage()`` ＝ during kind **23**）；
+#:    ``as:477`` 技能池 ``buffTargetAs == 1 || (== 0 && createdByMainSkillAction)`` ⇒ **不进**。
+#:    但 ``as:446``（PF 分档乘区，``as:457`` 的独立乘区 kind **413** 也挂在这个 if 的
+#:    switch ``case 1/2/3`` 里）、``as:467``（PF 场效果独立乘区）、``as:593``（PF 耐性）
+#:    只看 ``createdByPowerFlipAction``；``as:499``（技能独立乘区
+#:    ``getStatModifierSeparatedTermSkillDamage``）、``as:521``（技能场效果独立乘区
+#:    ``getModifierSeparatedTerm2ndSkillDamage``）、``as:611``（技能耐性）
+#:    只看 ``createdByMainSkillAction`` ⇒ 这六项对 629 载荷**写什么都改不了**。
+#:    注意 ``as:446`` 的 if 对 629 **整块跳过**（``createdByPowerFlipAction`` 恒 false），
+#:    所以 ``as:448`` 的 switch 根本到不了；``powerFlipChargeLv`` 对 index 4 恒 0 是另一条
+#:    独立事实（``ActionEvaluator.as:2706`` switch，``case 4`` 在 ``as:2720-2721`` 取 0），
+#:    即便进了 switch 也只会落 ``case 0`` ⇒ 加成置 0 后 break。两条都成立，别合并成一句。
+#: 5. 作者看到的「技能伤害」是**显示层**：``EnemyImpl.as:5807`` 把
+#:    ``createdBySkillAction = createdByMainSkillAction`` 直接喂给 ``showDamageFont``，
+#:    ``EffectManagerImpl.as:693-707 addTotalDamage`` 据此选 ``TotalSkillDamage``／
+#:    ``TotalPowerFlipDamage``，``DamageIndicatorManager.as:85-121`` 同源。
+#:    显示层**完全不读** ``buffTargetAs`` ⇒ 数值已经走 PF 池，弹出的标签仍然是技能。数据层无解。
+#:
+#: 官方全量正向对照（可重跑，脚本
+#: ``work/character_packs/ma-hibiki/evidence/scan_official_buff_target_as.py``，
+#: 2026-09-21 复核实跑）。语料 ＝ ``.cdn/cn/archive-common-full`` 的 322 个 1.4.0 全量 zip
+#: ∩ ``弹国服/restored/_manifest.csv`` 里 ``.action.dsl.amf3.deflate`` 的行；
+#: **按 hash_path 去重**（不是 logical_path），不含任何 charpkg／增量包／overlay／分享包。
+#: 账本里 7096 个 action.dsl hash_path，这批 zip 覆盖 **7051 棵**（玩家侧 **1119** ＋
+#: 敌侧 5932，另 45 行在该归档里没有对应边）：根头 params[9] **100% 是 0**，
+#: 三棵官方 ``ability_skill/`` 树（629 载荷 ＝ ``estateguild_leader`` /
+#: ``fire_dragon_zenith`` / ``resistance_princess_3halfanv``）也全是 0 ⇒ 写 3 是零先例。
+#: 同机制的**已验收**先例是值 2（深渊之兽改能力伤害，记忆卡 wf-dsl-damage-attribution-bufftargetas）
+#: 与判定区位的值 4（本批罗尔夫/凯尔技能写 ``params[23]=4``，真机确认按直击结算）。
 INVOKE_BTA = 3
+
+#: 判定区那一位（``CreateHitArea`` node[24] ＝ params[23]）保持 **0 ＝ 不覆盖**。
+#: 0 会顺着环境链落到根头的 :data:`INVOKE_BTA`（见上 §3），所以它**不是**这里的开关；
+#: 同一次扫描里官方 **1731** 个玩家侧判定区，这一位只出现过 0（**1721** 个）与 4
+#: （10 个，分布在 8 棵技能树的直击段），值 3 零先例，
+#: 且写进去与留 0 的运行时效果逐字相同 ⇒ 不写。
+INVOKE_HITAREA_BTA = 0
 
 VOICE_KEY = f"{CODE}_voice_ready"
 VOICE_ROUTE = {"kind": 1, "condition_kind": "28", "condition_id": UID}
@@ -812,10 +869,33 @@ def build_invoke_tree(ctx):
     这里的命中块 = 官方 ``special_lv3`` 里 ``CollisionOfBallAndEnemy`` 分支的 ``CreateReferencePoint``
     整块（特殊演出 + 两段 ``CreateHitArea``，官方倍率 4 + 9 = 13×，锚 ``-18`` 球、坐标系 ``AB``）。
 
-    根头 ``tree[10] = INVOKE_BTA = 3`` ⇒ 按 **强化弹射伤害** 结算：吃得到她那一池「强化弹射伤害
-    ＋X%」（队长 200% ＋ 词条 425%+ ＋ 回响每层 25%），但拿不到 PF 分档乘区 / 独立乘区 / PF 耐性
-    （记忆卡 wf-invokeskill-629）。不叠 ``PF_SCALE``，也不接 248 CountUpPowerFlip
-    （不凭空加 PF 计数器 ⇒ 不会偷偷给「每 N 次强化弹射」类触发器与回响层数加速）。
+    伤害归属（反馈轮 4，判定链与行号见 :data:`INVOKE_BTA`）：根头 ``tree[10] = INVOKE_BTA = 3``
+    只切**通用伤害池** —— ``NormalAttackCalculator.as:422`` 进「强化弹射伤害 ＋X%」，
+    ``as:477`` 不进「技能伤害 ＋X%」。她那一池 PF 通用增伤（队长 200% ＋ 贯通 150% ＋
+    每发 PF 12%×25 ＋ 回响每层 25%）因此全部吃得到。
+
+    引擎硬限（629 ＝ ``ActionKind.AbilitySkill``，``createdByPowerFlipAction`` 恒 false）：
+    PF 分档乘区（``NormalAttackCalculator.as:446``）、PF 独立乘区（``as:457``，她的 **413 两行**：
+    能力 3 第 3 条 5%／层×5 ＋ 能力 5 第 1 条常驻 30% ＝ 合计 **＋55%**）、PF 场效果独立乘区
+    （``as:467``）、敌方 PF 耐性（``as:593``）**一律吃不到**；技能独立乘区（``as:499/521``）
+    与敌方**技能**耐性（``as:611``）反过来**甩不掉**；屏幕上弹出的累计伤害标签
+    恒为「技能伤害」（``EffectManagerImpl.as:693-707``）。这三件事没有数据层开关。
+
+    那 ＋55% 是**面板向玩家承诺、这一下证明拿不到**的缺口。数据层唯一能补上它的写法是把那两行
+    从 during kind **413**（``SeparatedTermPowerFlipDamage``，
+    ``CommonAbilityContentMasterValue.as:1703``）换成 during kind **23**
+    （``PowerFlipDamage``，``as:963``）—— 23 走 ``DuringAbilitySource.as:1080`` →
+    ``CommonAbilityBattleContent.PowerFlipDamage`` → ``AbilitySummarizer.as:590`` →
+    ``ChangeContent`` index 10 → ``AbilityContentSummary.getStatModifierPowerFlipDamage``
+    → ``NormalAttackCalculator.as:424`` 的**通用池**（bta=3 读得到）；413 走
+    ``DuringAbilitySource.as:2530`` → ``ChangeContent`` index 17 → ``as:457``，
+    只在 ``as:446`` 那条 ``createdByPowerFlipAction`` 的 if 里，对 629 恒读不到。
+    代价：对她**真正拍板的强化弹射**而言，这两行会从独立乘区（×1.55）降级为与其它 PF% 同池
+    相加 —— 是一次实打实的平衡改动，必须作者拍板。列为施工单 §12.6 **方案 F**，本轮不动。
+
+    判定区那一位一律留 :data:`INVOKE_HITAREA_BTA` ``= 0``（它会回落到根头，不是开关）。
+    不叠 ``PF_SCALE``，也不接 248 CountUpPowerFlip（不凭空加 PF 计数器 ⇒ 不会偷偷给
+    「每 N 次强化弹射」类触发器与回响层数加速；触发器 2/65 只认真正的拍板）。
     """
     base = copy.deepcopy(source_tree(ctx, SPECIAL_PROGRAMS[3], SPECIAL_SHA[3]))
     body = base[11][1]
@@ -846,9 +926,15 @@ def build_invoke_tree(ctx):
         scaled.append(value)
     if len(scaled) != 2:
         raise KitError(f"invoke tree carries {len(scaled)} CreateNormalAttack (want 2)")
-    for cha in PH.cmds(tree, "CreateHitArea"):
-        if cha[24] != 0:
-            raise KitError("invoke CreateHitArea p23 must stay 0")
+    # 判定区归属位（node[24] ＝ params[23]）：0 ＝ 不覆盖，顺环境链回落到根头的 INVOKE_BTA
+    # （Environment.as:735-752）。写 4 会把这一下变成直击（官方仅有的非 0 先例，本批罗尔夫/凯尔
+    # 真机确认）；写 3 与留 0 运行时逐字相同且官方零先例 ⇒ 这里钉死 INVOKE_HITAREA_BTA。
+    # donor 换版或有人手改命中块时这条会炸（唯一能真正失败的归属门禁：根头是本函数自己拼的，
+    # 断言它等于 INVOKE_BTA 只是同义反复，所以根头的钉死放在测试与成品包校验里）。
+    hit_area_bta = [cha[24] for cha in PH.cmds(tree, "CreateHitArea")]
+    if any(v != INVOKE_HITAREA_BTA for v in hit_area_bta):
+        raise KitError(f"invoke CreateHitArea p23 must stay {INVOKE_HITAREA_BTA} "
+                       f"(不覆盖，回落到根头 buffTargetAs={INVOKE_BTA}), got {hit_area_bta}")
     paths = sorted(set(PH.spec_paths(tree)))
     stray = [p for p in paths if p.startswith("battle/effect/skill_unique/")]
     if stray:
@@ -862,6 +948,16 @@ def build_invoke_tree(ctx):
     if invoke_fly:
         raise KitError(f"629 载荷树残留 {invoke_fly} 条 ACFlying（浮游已撤，不该再出现）")
     return tree, {"program": INVOKE_PROGRAM, "buff_target_as": INVOKE_BTA,
+                  "hit_area_buff_target_as": hit_area_bta,
+                  # 反馈轮 4：引擎能给到的归属边界（源码行号见 INVOKE_BTA）。
+                  "damage_pools": {"power_flip_general": True, "skill_general": False,
+                                   "power_flip_charge_tier": False,
+                                   "power_flip_separated_term": False,
+                                   "power_flip_resistance": False,
+                                   "skill_separated_term": True,
+                                   "skill_resistance": True,
+                                   "counts_as_power_flip_for_triggers": False,
+                                   "damage_label": "skill"},
                   "multipliers": scaled, "total": round(sum(scaled), 6),
                   "scale": INVOKE_SCALE, "official_effects": paths,
                   "ac_flying_count": invoke_fly,
@@ -1167,8 +1263,12 @@ def build(ctx) -> dict[str, Any]:
         "（能力2 数值翻倍、能力3 加暗共鸣门且层数上限 5→99、能力4 新增每层回响自身攻击+25%、"
         "能力5 新增常驻独立乘区 +30%）；固有「回响」上限 5→99",
         f"629 PF 追击：官方 special_lv3 命中块 ×{INVOKE_SCALE} ＝ {invoke_gates['total']}×，"
-        f"tree[10]={INVOKE_BTA}（按 PF 伤害结算）；去掉 SetPowerFilpSuppress / NotifyPowerflipEnd；"
-        "不接 248，PF 计数器不被凭空推进",
+        f"tree[10]={INVOKE_BTA}、判定区 params[23]={INVOKE_HITAREA_BTA}（通用伤害池走"
+        "「强化弹射伤害+X%」、不走「技能伤害+X%」；PF 分档/独立乘区/PF 耐性与伤害标签是引擎硬限，"
+        "见 INVOKE_BTA 的判定链）；去掉 SetPowerFilpSuppress / NotifyPowerflipEnd；"
+        "不接 248，PF 计数器不被凭空推进；"
+        "她两行 413 独立乘区（能力3#3 5%/层×5 + 能力5#1 30% = +55%）这一下吃不到 —— "
+        "数据层唯一补法是改成 kind 23（施工单 §12.6 方案 F，待作者拍板，本轮未动）",
         f"技能（未改）：内层1 {skill_gates['1']['multipliers']['field'][0]}×18＝"
         f"{round(skill_gates['1']['multipliers']['field'][0] * 18, 2)}×，"
         f"内层2 满级 {skill_gates['2']['multipliers']['field'][1]}×18＝"
