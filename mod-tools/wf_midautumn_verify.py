@@ -640,6 +640,125 @@ def dsl_shape_problems(program: str, tree: Any) -> tuple[list[str], list[str], l
     return hard, sig, unknown
 
 
+# ---------------------------------------------------------------- DSL 坐标系取向
+#
+# 事故 U_4f5401(2026-09-20,作者真机):堆栈 Unit.getDirCD ← ActionEffect.calcDir ←
+# ActionEffect.stepPos ← ActionEffect.new ← ActionEffectManager.show ←
+# ActionEvaluator.evalCommand ← … ← resolveCollisionOfHitArea。
+#
+# 反编译判据(弹国服/scripts/pinball/…):
+#   * ``ActionEffect.as:165-166`` 构造函数**无条件**调 stepPos()/stepDir() → calcDir();
+#     ``ActionHitArea.as:490-491`` 与 ``ActionCollider.as:67-68`` 同构。
+#     所以坐标系一写错,节点一创建就抛,和 tracking 开关无关 = 必崩。
+#   * ``calcDir``(ActionEffect.as:496-515 / ActionHitArea.as:1189 / ActionCollider.as:144)
+#     switch CoordSys.index:0=AB 取常量 -π/2;1=CD 取 ``target.getDirCD()``;
+#     2=EF 取 ``target.getDirEF()``;3=GH 取指向 params[0] 的角度。
+#   * ``getDirCD()`` 在这些主体上是 ``throw "INTERNAL ERROR"``:
+#       enemy/Unit.as:957、enemy/EnemyImpl.as:3553、squad/ball/BallImpl.as:2049、
+#       squad/member/MemberImpl.as:6254、squad/SquadImpl.as:2384(转发给球)、
+#       zone/item/ExecutableInstantItem.as:694(转发给球)、
+#       battle/action/dsl/Mate.as:420(``getDirEF`` 414 行也抛)。
+#     安全的只有 ``ActionHitArea.as:1118``(返回 r)、``ActionCustomPosition.as:418``
+#     (-1/-2 场地固定点)、``Marker.as:421`` / ``ImaginaryTarget.as:418``(参照点)、
+#     CoffinImpl / AssistYakumonoImpl / SkillInvokerImpl(都返回 -π/2)。
+#
+# 官方正向对照(官方 CDN 归档,1069 棵与官方逐字节相同的玩家技能树):
+#   ShowEffect 主体=命中对象绑定 → AB 155 / GH 22 / **CD 0 / EF 0**;
+#   ShowEffect 主体=球 → AB 835 / EF 198 / GH 207 / CD 0;主体=自身 → AB 137 / CD 0;
+#   ShowEffect 主体=判定区绑定 → CD 548(这才是 CD 的唯一官方用法)。
+#
+# 主体绑定种类(取自 ActionEvaluator.as 的 lookup/bind 位):
+BUILTIN_SUBJECT_KINDS = {-1: "fixedpoint", -2: "fixedpoint",   # SpecialPointZoneBounds
+                         -17: "self", -18: "ball", -33: "mate"}
+# 玩家侧技能/PF 里这些主体的 getDirCD() 必抛:
+COORDSYS_CD_THROWS = frozenset({"self", "ball", "found", "hittarget", "mate"})
+COORDSYS_EF_THROWS = frozenset({"mate"})
+COORDSYS_SAFE = frozenset({"hitarea", "fixedpoint"})
+# 命令 → [(主体参下标, 坐标系参下标)](下标按命令参数,不含命令名)
+COORDSYS_USES: dict[str, tuple[tuple[int, int], ...]] = {
+    "ShowEffect": ((2, 5),),                    # ActionEvaluator case 10
+    "MoveBall": ((0, 1),),                      # case 13 → subject.applyMovement
+    "StopBall": ((0, 1),),                      # case 14
+    "CreateHitArea": ((1, 2),),                 # case 24
+    "MoveHitArea": ((0, 1),),                   # case 25
+    "CreateReferencePoint": ((0, 1),),          # case 32
+    "CreateShockWaveAttack": ((1, 2),),         # case 34
+    "CreateCollider": ((0, 4),),                # case 95
+}
+# 命令 → [(绑定 id 参下标, 绑定种类, 作用域 Block 参下标)]
+COORDSYS_BINDERS: dict[str, tuple[tuple[int, str, int], ...]] = {
+    "FindAllSubjects": ((0, "found", 8),),
+    "FindNearSubjects": ((4, "found", 5),),
+    "FindMultiballSubjects": ((0, "found", 4), (0, "found", 5)),
+    # p20 = 判定区自身,p21 = 被打中的对象(ActionHitAreaGroup.resolveCollision →
+    # ActionEvaluator.resolveCollisionOfHitArea:1469-1472 的两条 bind)
+    "CreateHitArea": ((18, "hitarea", 19), (20, "hitarea", 22), (21, "hittarget", 22)),
+    "CreateShockWaveAttack": ((10, "hitarea", 12), (11, "hittarget", 12)),
+    "CreateReferencePoint": ((9, "hitarea", 10),),
+    "CreateReferencePointAtSpecifiedPosition": ((3, "hitarea", 4),),
+}
+
+
+def _coordsys_tag(node: Any) -> str | None:
+    if isinstance(node, list) and node and isinstance(node[0], str):
+        return node[0]
+    return None
+
+
+def dsl_coordsys_problems(program: str, tree: Any) -> list[str]:
+    """坐标系取向落在会 ``throw`` 的主体上 = 客户端 U_4f5401 必崩。
+
+    只判**能确定种类**的主体(内建 id 与本文件建模过的绑定);种类未知的绑定不报,
+    以免把没建模的命令误伤成阻断项。
+    """
+    problems: list[str] = []
+
+    def visit(node: Any, env: dict[int, str]) -> None:
+        if isinstance(node, list):
+            if len(node) == 2 and node[0] == "Command" and isinstance(node[1], list) \
+                    and node[1] and isinstance(node[1][0], str):
+                command(node[1], env)
+                return
+            for item in node:
+                visit(item, env)
+        elif isinstance(node, dict):
+            for value in node.values():
+                visit(value, env)
+
+    def command(call: list, env: dict[int, str]) -> None:
+        name, params = call[0], call[1:]
+        for subject_at, coord_at in COORDSYS_USES.get(name, ()):
+            if subject_at >= len(params) or coord_at >= len(params):
+                continue
+            subject = params[subject_at]
+            tag = _coordsys_tag(params[coord_at])
+            if not isinstance(subject, int) or tag is None:
+                continue
+            kind = env.get(subject, BUILTIN_SUBJECT_KINDS.get(subject))
+            if kind is None or kind in COORDSYS_SAFE:
+                continue
+            if (tag == "CD" and kind in COORDSYS_CD_THROWS) or \
+                    (tag == "EF" and kind in COORDSYS_EF_THROWS):
+                problems.append(
+                    f"{program}: {name} 主体 {subject}({kind}) 的坐标系写了 {tag},"
+                    f"该主体 getDir{tag}() 是 throw \"INTERNAL ERROR\" —— 节点一创建就崩"
+                    f"(U_4f5401);官方惯例写 [\"AB\"],要朝向才用 [\"GH\", <合法目标>]")
+        binders = COORDSYS_BINDERS.get(name, ())
+        scoped = {block_at for _bind_at, _kind, block_at in binders if block_at < len(params)}
+        for block_at in sorted(scoped):
+            inner = dict(env)
+            for bind_at, kind, at in binders:
+                if at == block_at and bind_at < len(params) and isinstance(params[bind_at], int):
+                    inner[params[bind_at]] = kind
+            visit(params[block_at], inner)
+        for index, param in enumerate(params):
+            if index not in scoped:
+                visit(param, env)
+
+    visit(tree, {})
+    return problems
+
+
 _ASSET_REF_RE = re.compile(r"^(battle|character|sound|se|bgm)/[\w./$-]+$")
 
 
@@ -700,6 +819,7 @@ def check_dsl(pack: Pack, rep: Report) -> None:
     missing: list[str] = []
     undecided: list[str] = []
     parse_fail: list[str] = []
+    coordsys: list[str] = []
     for program in programs:
         try:
             tree, plain = pack.dsl_tree(program)
@@ -714,6 +834,7 @@ def check_dsl(pack: Pack, rep: Report) -> None:
         d, e = dsl_asset_problems(pack, program, tree)
         missing += d
         undecided += e
+        coordsys += dsl_coordsys_problems(program, tree)
     rep.result(parse_fail, "dsl/parse", BLOCKING, {"programs": programs})
     rep.result(roundtrip, "dsl/roundtrip", BLOCKING, {"programs": len(programs)})
     rep.result(hard, "dsl/forbidden-constructs", BLOCKING)
@@ -721,6 +842,8 @@ def check_dsl(pack: Pack, rep: Report) -> None:
     rep.result(unknown, "dsl/unknown-construct", WARNING)
     rep.result(missing, "dsl/asset-refs-resolve", BLOCKING)
     rep.result(undecided, "dsl/asset-refs-undecided", WARNING)
+    rep.result(coordsys, "dsl/coordsys-on-enemy-subject", BLOCKING,
+               {"programs": len(programs)})
 
     # 克隆的特效族必须挂在 code_name 目录下(记忆卡 wf-effect-family-under-codename)
     stray: list[str] = []

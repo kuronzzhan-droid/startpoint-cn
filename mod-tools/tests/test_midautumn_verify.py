@@ -196,6 +196,93 @@ class BadTreeTest(unittest.TestCase):
         self.assertEqual(V.dsl_roundtrip_problems("demo", tree, plain), [])
 
 
+# ---------------------------------------------------------------- 坐标系取向
+
+def show_effect(subject, coord, name="fx"):
+    """ShowEffect 13 参（官方签名；主体在第 3 位，坐标系在第 6 位）。"""
+    node = call("Command", "ShowEffect", name,
+                ["SpecifyEffectDirectly", "battle/effect/demo/demo"], subject,
+                ["ForesideOfCharacter"], ["SpecifyEffectLifetimeDirectly", 30],
+                [coord], 0, 0, 0, True, False, ["None"])
+    assert len(node[1]) - 1 == len(V.SIG.COMMANDS["ShowEffect"]), "ShowEffect 参数个数漂了"
+    return node
+
+
+def hit_area(on_hit, *, subject=-18, self_id=0, area_id=1, target_id=2):
+    """CreateHitArea 26 参：p18/p20 绑判定区、p21 绑命中对象、p22 是命中块。"""
+    node = call("Command", "CreateHitArea", "*", subject, ["AB"], 0, 0, 0, True, False,
+                ["Circle", [{"min": 100, "max": 100}]], ["Center"], ["Center"], ["Single"],
+                ["SpecifyHitAreaLifetimeDirectly", 60],
+                ["CalculatedUsingMaxNumOfHits", 1], ["Some", [{"min": 1, "max": 1}]],
+                False, True, ["None"], self_id, ["Block", []], area_id, target_id,
+                ["Block", list(on_hit)], 0, 0, ["None"])
+    assert len(node[1]) - 1 == len(V.SIG.COMMANDS["CreateHitArea"]), "CreateHitArea 参数个数漂了"
+    return node
+
+
+class CoordSysOnEnemySubjectTest(unittest.TestCase):
+    """``dsl/coordsys-on-enemy-subject``：CD/EF 落在 getDir*() 会 throw 的主体上 = U_4f5401。"""
+
+    def test_cd_on_hit_target_binding_is_blocking(self):
+        """事故原型：命中块里对着命中对象放 ShowEffect + ["CD"]。"""
+        tree = hit_area([show_effect(2, "CD", "着弾")])
+        problems = V.dsl_coordsys_problems("demo", tree)
+        self.assertEqual(len(problems), 1, problems)
+        self.assertIn("hittarget", problems[0])
+        self.assertIn("U_4f5401", problems[0])
+
+    def test_ab_on_hit_target_binding_is_clean(self):
+        """官方惯例：命中块里 ShowEffect 主体=命中对象时写 AB（官方 155/177）。"""
+        tree = hit_area([show_effect(2, "AB", "着弾")])
+        self.assertEqual(V.dsl_coordsys_problems("demo", tree), [])
+
+    def test_gh_on_hit_target_binding_is_clean(self):
+        """GH 走 atan2(指向 params[0])，不碰 getDirCD（官方 22/177）。"""
+        tree = hit_area([show_effect(2, "AB", "着弾")])
+        tree[1][23][1][0][1][6] = ["GH", -17]      # p22 命中块 → 首条命令 → ShowEffect p5
+        self.assertEqual(V.dsl_coordsys_problems("demo", tree), [])
+
+    def test_cd_on_hit_area_binding_is_clean(self):
+        """CD 的唯一官方用法：主体是判定区绑定（ActionHitArea.getDirCD 返回 r）。"""
+        tree = hit_area([show_effect(1, "CD")])
+        self.assertEqual(V.dsl_coordsys_problems("demo", tree), [])
+
+    def test_cd_on_ball_and_self_is_blocking(self):
+        """-18 球 = BallImpl、-17 自身 = MemberImpl，两者 getDirCD 都 throw。"""
+        for subject in (-18, -17):
+            with self.subTest(subject=subject):
+                problems = V.dsl_coordsys_problems("demo", show_effect(subject, "CD"))
+                self.assertEqual(len(problems), 1, problems)
+
+    def test_ef_on_ball_is_clean_but_on_mate_is_blocking(self):
+        """BallImpl.getDirEF 返回 angle（官方 198 例）；Mate.getDirEF 才是 throw。"""
+        self.assertEqual(V.dsl_coordsys_problems("demo", show_effect(-18, "EF")), [])
+        self.assertTrue(V.dsl_coordsys_problems("demo", show_effect(-33, "EF")))
+
+    def test_cd_on_found_subject_is_blocking(self):
+        """FindAllSubjects 绑到的是敌人/队友单位，同样 throw。"""
+        sig = V.SIG.COMMANDS["FindAllSubjects"]
+        args = [[] if t == "Array" else (["Block", []] if t == V.EXPRESSION_TYPE else 0)
+                for t in sig]
+        args[0] = 7
+        args[-1] = ["Block", [show_effect(7, "CD")]]
+        problems = V.dsl_coordsys_problems("demo", call("Command", "FindAllSubjects", *args))
+        self.assertEqual(len(problems), 1, problems)
+        self.assertIn("found", problems[0])
+
+    def test_unmodelled_binding_is_not_flagged(self):
+        """种类判不出来的绑定不报，避免把没建模的命令误伤成阻断项。"""
+        self.assertEqual(V.dsl_coordsys_problems("demo", show_effect(99, "CD")), [])
+
+    def test_hit_area_own_coordsys_on_ball_is_blocking(self):
+        """CreateHitArea 自己的坐标系参同样走 ActionHitArea.calcDir。"""
+        tree = hit_area([], subject=-18)
+        tree[1][3] = ["CD"]
+        problems = V.dsl_coordsys_problems("demo", tree)
+        self.assertEqual(len(problems), 1, problems)
+        self.assertIn("CreateHitArea", problems[0])
+
+
 # ---------------------------------------------------------------- 正向对照
 
 @unittest.skipUnless(REGIS.is_dir(), "s7-regis package not present on this machine")
@@ -223,6 +310,7 @@ class RegisControlTest(unittest.TestCase):
                        "unique/id-8-digits", "unique/stacking-cap-not-none",
                        "dsl/roundtrip", "dsl/forbidden-constructs", "dsl/official-signature",
                        "dsl/asset-refs-resolve", "dsl/effect-family-under-codename",
+                       "dsl/coordsys-on-enemy-subject",
                        "manifest/capability-names-real", "manifest/capability-covers-rows",
                        "period/server-clock", "voice/route-shape", "voice/speech-row",
                        "voice/slot-coverage", "voice/gate", "art/ui-slot-pairs",
