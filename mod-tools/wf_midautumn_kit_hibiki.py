@@ -19,6 +19,11 @@
 逐行对齐 ``rework1/panel/hibiki.json``；作者要求「能力 5 的词条写在队长技里」＝冲刺 422 行
 物理留在能力表（写进队长表 ＝ C7050），文案挪进队长块。
 
+反馈轮 1（作者 09-21 真机）：「能力 3 没带主位限制」。槽 3 的 c1 一直是 ``false``（整键单值，
+live 1.4.974 已是如此），缺的是**面板那个 Ⓜ**：``desc_override`` 会盖掉客户端逐行画的主位图标，
+所以主位键必须自己在每行前面写 ``MAIN_ICON``（本批 magnus / fluffy / kuro / stinel 同款做法，
+live 先例 ``desc_override_ginovi_3``）。本轮把 ``MAIN_ONLY_SLOTS`` 做成 c1 与图标的唯一真源。
+
 落地内容
     - ``unique_condition[16998801]``「回响」（donor 官方 ``7``「加热」；c4 上限 **99**，禁 ``(None)``）
       与它的 48×48 图标（alpha 取官方图标外框）；
@@ -137,6 +142,13 @@ SKILL_ENERGY = {"1": {"c4": 550, "c5": 550, "c6": 1},
 # 逐行抄 rework1/panel/hibiki.json（作者已过目的那一版）。分行用 "\n"：
 # live 已上线的队长块接管（desc_override_ginovi / _white_tiger_summer / _*_campus）全是 "\n"。
 
+#: 仅主位（c1 unisonable = false）的槽 —— 整键单值，`_UNISONABLE` 由它派生。
+#: 槽 3 是回响的唯一产出口，作者 09-21 反馈「能力 3 没带主位限制」指的就是它的面板没画 Ⓜ。
+MAIN_ONLY_SLOTS = (3,)
+#: desc_override 会盖掉客户端逐行画的 Ⓜ ⇒ 主位键的每一行必须自带图标。
+#: 字符串形状照 live 先例（desc_override_ginovi_3 / _white_tiger_summer_1/_3 / _*_campus_*）。
+MAIN_ICON = " <icon id='main'>  "
+
 PANEL_LEADER = "\n".join((
     "特殊强化弹射：以特殊型的冲击波贯入敌阵，单次威力大幅提升／强化弹射时赋予参战角色攻击力提升、"
     "贯穿、浮游效果，其中贯穿效果持续时间大幅延长",
@@ -167,13 +179,20 @@ PANEL_ABILITY = {
                   "每1层“回响”，暗属性角色攻击力＋15%（最多5层）")),
 }
 
+
+def slot_override_text(slot: int) -> str:
+    """槽的 ``desc_override`` 正文：仅主位的槽每行自带 Ⓜ（`PANEL_ABILITY` 保持作者原文）。"""
+    prefix = MAIN_ICON if slot in MAIN_ONLY_SLOTS else ""
+    return "\n".join(prefix + line for line in PANEL_ABILITY[slot].split("\n"))
+
+
 CAS_TEXTS = {
     CAS_PF: "特殊强化弹射：以特殊型的冲击波贯入敌阵，单次威力大幅提升／强化弹射时赋予参战角色"
             "攻击力提升、贯穿、浮游效果，其中贯穿效果持续时间大幅延长",
     CAS_INVOKE_SKILL: "立即获得强化弹射效果",
     CAS_INVOKE_DASH: "立即获得强化弹射效果（冷却时间：5秒）",
     CAS_LEADER: PANEL_LEADER,
-    **{CAS_ABILITY[slot]: PANEL_ABILITY[slot] for slot in range(1, 7)},
+    **{CAS_ABILITY[slot]: slot_override_text(slot) for slot in range(1, 7)},
 }
 
 SPEC = {
@@ -253,7 +272,8 @@ LEADER: tuple[tuple[str, str, dict[int, str], str | None], ...] = (
 LEADER_ROWS = len(LEADER)
 
 #: 每槽的 c1 主位限制与 c2 雕像组（一键单值；c2 只喂 ability_statue_group 的颜色/图标/形象三列）。
-_UNISONABLE = {1: "true", 2: "true", 3: "false", 4: "true", 5: "true", 6: "true"}
+#: c1 由 `MAIN_ONLY_SLOTS` 派生 ⇒ 整键单值，不会出现「有的行限、有的行不限」。
+_UNISONABLE = {slot: ("false" if slot in MAIN_ONLY_SLOTS else "true") for slot in range(1, 7)}
 _STATUE = {1: "action_skill", 2: "power_flip", 3: "power_flip",
            4: "attack_common", 5: "attack_common", 6: "attack_black"}
 
@@ -893,10 +913,17 @@ def write_strings(ctx) -> dict[str, str]:
     if clashes:
         raise KitError(f"custom_ability_string keys already exist officially: {clashes}")
     for key, text in CAS_TEXTS.items():
-        KL.check_panel(text, label=key)
+        KL.check_panel(text.replace(MAIN_ICON, ""), label=key)
         if key.startswith(L.PANEL_OVERRIDE_KEY_PREFIX) \
                 and L.panel_override_capability(key) not in ctx.spec.required_capabilities:
             raise KitError(f"{key} needs a panel-override capability that SPEC does not declare")
+    # 主位图标必须与 c1 一致：override 盖掉客户端逐行画的 Ⓜ，少一行都会让面板看着不限主位
+    for slot in range(1, 7):
+        wants_icon = _UNISONABLE[slot] == "false"
+        for line in CAS_TEXTS[CAS_ABILITY[slot]].split("\n"):
+            if line.startswith(MAIN_ICON) != wants_icon:
+                raise KitError(f"slot {slot} desc_override main-position icon does not match c1"
+                               f" (c1={_UNISONABLE[slot]}): {line!r}")
     ctx.write_flat(KL.CAS, {key: [[text]] for key, text in CAS_TEXTS.items()})
     back = ctx.pack.pkg_flat(KL.CAS)
     for key, text in CAS_TEXTS.items():

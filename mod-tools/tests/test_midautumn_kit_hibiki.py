@@ -176,6 +176,19 @@ class PlanSelfCheckTests(unittest.TestCase):
             self.assertEqual(cells[32], "(None)")    # 触发次数无上限
             self.assertEqual(cells[46], "0")         # target = 自身
 
+    def test_no_629_row_can_land_in_a_unisonable_key(self):
+        """629 在合击位零先例且演出者硬绑主位（记忆卡 wf-unison-slot-mechanics）。
+
+        她的两行 629 都在队长表（队长本来就只在主位生效）；词条表一条都没有，
+        所以能力 3 改成仅主位与 629 没有冲突，也不需要给槽 3 补 202。
+        """
+        for slot, rows in K.PLAN.items():
+            for index, (_a, _s, cells, _e) in enumerate(rows):
+                for col in (47, 109):                # 瞬发 kind / 持续 kind
+                    self.assertNotEqual(str(cells.get(col, "")), "629", f"{slot}#{index}")
+        self.assertEqual([n for n, (_a, _s, cells, _e) in enumerate(K.LEADER)
+                          if cells.get(45) == "629"], [6, 8])
+
     def test_uncapped_hit_row(self):
         """L7「强化弹射Lv1命中每达到4次，自身攻击力＋50%」与 L5 并行，且不设触发上限。"""
         l5, l7 = K.LEADER[5][2], K.LEADER[7][2]
@@ -219,7 +232,44 @@ class PlanSelfCheckTests(unittest.TestCase):
         self.assertEqual(sorted(K._STATUE), [1, 2, 3, 4, 5, 6])
         for group in K._STATUE.values():
             self.assertIn(group, L.ABILITY_STATUE_GROUPS)
-        self.assertEqual(K._UNISONABLE[3], "false")  # 槽 3 仅主位（面板 main_only）
+        self.assertEqual(K.MAIN_ONLY_SLOTS, (3,))    # 槽 3 仅主位（面板 main_only）
+        self.assertEqual(K._UNISONABLE,
+                         {slot: ("false" if slot in K.MAIN_ONLY_SLOTS else "true")
+                          for slot in range(1, 7)})
+
+    def test_slot_3_is_main_only_for_every_record_of_the_key(self):
+        """反馈轮 1：能力 3 必须整键仅主位 —— c1 一键单值，不能有的行限、有的行不限。
+
+        c1 由 ``MAIN_ONLY_SLOTS`` 派生，行计划里任何一格都不许再写 c1 盖掉它。
+        """
+        self.assertEqual(K._UNISONABLE[3], "false")
+        for slot, rows in K.PLAN.items():
+            for index, (_a, _s, cells, _e) in enumerate(rows):
+                self.assertNotIn(1, cells, f"{slot}#{index} 不许逐行改写 c1")
+        merged = [{0: f"{K.CODE}_3", 1: K._UNISONABLE[3], 2: K._STATUE[3], **cells}
+                  for _a, _s, cells, _e in K.PLAN[3]]
+        self.assertEqual(len(merged), 3)
+        self.assertEqual({row[1] for row in merged}, {"false"})
+
+    def test_the_echo_stack_has_no_source_outside_the_main_only_key(self):
+        """回响（16998801）只由槽 3 的 461 行产出 ⇒ 她在合击位时层数恒 0，
+
+        槽 4 #2「每层回响→自身攻击力＋25%」（面板显示在能力 3，偏离 D-13）与
+        槽 6 #2 都只是读层数（c104），不会另外加层。技能 DSL 也加 1 层，但副位不放技能。
+        """
+        givers, readers = [], []
+        for slot, rows in K.PLAN.items():
+            for index, (_a, _s, cells, _e) in enumerate(rows):
+                if cells.get(68) == K.UID:           # 461 的付与目标固有
+                    givers.append((slot, index))
+                if cells.get(104) == K.UID:          # during 134 的计数源
+                    readers.append((slot, index))
+        self.assertEqual(givers, [(3, 0)], "回响只能有一个产出口，且必须在仅主位的槽 3")
+        self.assertEqual(readers, [(3, 1), (3, 2), (4, 2), (6, 2)])
+        for slot, _index in givers:
+            self.assertIn(slot, K.MAIN_ONLY_SLOTS)
+        for _a, _s, cells, _e in K.LEADER:           # 队长行只在主位生效，也不许另加层
+            self.assertNotIn(K.UID, set(cells.values()))
 
     def test_precondition_kinds_are_whitelisted(self):
         for index, (_a, _s, cells, _e) in enumerate(K.LEADER):
@@ -264,7 +314,7 @@ class PlanSelfCheckTests(unittest.TestCase):
 class PanelTextTests(unittest.TestCase):
     def test_panel_obeys_the_batch_rules(self):
         for key, text in K.CAS_TEXTS.items():
-            self.assertEqual(KL.panel_problems(text), [], key)
+            self.assertEqual(KL.panel_problems(text.replace(K.MAIN_ICON, "")), [], key)
 
     def test_panel_is_transcribed_from_the_authors_sheet(self):
         """逐行等于 rework1/panel/hibiki.json（作者已过目的那一版）。"""
@@ -278,6 +328,23 @@ class PanelTextTests(unittest.TestCase):
             self.assertEqual(K.PANEL_ABILITY[slot].split("\n"),
                              [line["text"] for line in block["lines"]], slot)
             self.assertEqual(K._UNISONABLE[slot], "false" if block["main_only"] else "true", slot)
+            # 写进表的 override 正文＝作者原文 + 主位槽逐行的 Ⓜ
+            self.assertEqual(
+                [line.replace(K.MAIN_ICON, "")
+                 for line in K.CAS_TEXTS[K.CAS_ABILITY[slot]].split("\n")],
+                [line["text"] for line in block["lines"]], slot)
+
+    def test_main_only_slots_carry_the_icon_on_every_override_line(self):
+        """反馈轮 1：desc_override 盖掉客户端逐行画的 Ⓜ ⇒ 仅主位的槽每行必须自带图标。"""
+        for slot in range(1, 7):
+            wants = slot in K.MAIN_ONLY_SLOTS
+            lines = K.CAS_TEXTS[K.CAS_ABILITY[slot]].split("\n")
+            self.assertTrue(lines)
+            for line in lines:
+                self.assertEqual(line.startswith(K.MAIN_ICON), wants, f"slot {slot}: {line}")
+        # 队长块本身就在主位语境里，不画 Ⓜ
+        self.assertNotIn(K.MAIN_ICON, K.CAS_TEXTS[K.CAS_LEADER])
+        self.assertEqual(K.MAIN_ICON, " <icon id='main'>  ")   # live 先例 desc_override_ginovi_3
 
     def test_leader_and_slot_override_keys(self):
         # desc_override 的键 = 该块第 0 行的 string_id（队长块 = c0，能力槽 = <code>_<slot>）
