@@ -1153,6 +1153,145 @@ def action_dsl_subject_binding_problems(tree) -> list[str]:
     return probs
 
 
+# ------------------------------------------------- ActionDsl lookup 作用域(C16103 全量)
+#
+# 2026-09-21 新增(凯尔队伍战斗中 C16103 事故)。上面的 `DSL_SUBJECT_CONSUMERS` 是
+# **手抄的子集** —— 它漏了 `CreateReferencePoint` node[1](原点)、`ShowEffect` node[3]、
+# `CreateHitArea` node[2] 等一大批同样会走 `Environment.lookup` 的列。
+# 事故本体:`ability_skill_kyle_moon_thunder` 的强化分支从常态分支整块克隆后
+# 把**绑定位**平移了 +30(30/31/32/33/34),但上面这三个**引用位**留在母本的 0/1,
+# 于是 `CreateReferencePoint(0,…)` 在只绑了 30 的环境里 lookup 失败 —— 崩溃栈里
+# `Environment/lookup` ×3(当前环境 → ConditionalsChangeSkillFlag 环境 → 全局环境)
+# 与 `evalCommand←eval←evalBlock←eval←evalCommand←eval←evalBlock←eval←evalCommand`
+# 逐帧对得上。**同一张漏表既造出了缺陷,又让门禁看不见它**(`_remap_binds` 也读它)。
+#
+# 下表改为**从客户端源码机械提取**,不再手抄(复现脚本
+# `mod-tools/work/dsl_scope_check/build_table.py`):切出 `ActionEvaluator.evalCommand`
+# 的 `switch(param1.index)`,在每个 case 块里把 `_locN_ = param1.params[i]` 建成变量→列号
+# 映射,再收集 `.lookup(_locN_,` 以及三个内部 lookup 的助手
+# (`isSelfSubjectId` / `calculateImpactId` / `addImpactToSubject`)的实参;
+# 构造名取 `ActionDslCommand.__constructs__` 按 index 对号。得到 49 个构造。
+#
+# 正向对照(2026-09-21,官方 1.4.0 全量归档 `.cdn/cn/archive-common-full`
+# ∩ `弹国服/restored/_pathlist_restored.txt`,**7051 棵 .action.dsl**
+# = 玩家侧 1119 + 敌侧 5932):本函数报错 **0 棵**。
+# 反向对照:凯尔强化天雷树 4 处命中;把它修好后归零(见 tests/test_client_legality_lookup_scope.py)。
+DSL_SUBJECT_LOOKUPS: dict[str, tuple[int, ...]] = {
+    "FindNearSubjects": (1,),                 # 搜索原点
+    "AddSkillPoint": (1,), "SubtractSkillPoint": (1,),
+    "ShowEffect": (3,),                       # 特效锚点
+    "MoveBall": (1,), "StopBall": (1,),
+    "CreateNormalAttack": (1,), "CreateRatioAttack": (1,),
+    "CreateFixedAttack": (1,), "CreateOnlyHitAttack": (1,),
+    "CreateNormalHeal": (1,), "CreateRatioHeal": (1,),
+    "CreateCondition": (1,), "DeleteCondition": (1,), "ExtendCondition": (1,),
+    "CreateHitArea": (2,),                    # 判定区挂载主体
+    "MoveHitArea": (1,), "RotateHitArea": (1,), "EraseHitArea": (1,),
+    "SetHitAreaSomeHitsWithAnyTargetHandler": (1,),
+    "SetHitAreaSomeHitsWithSpecificTargetHandler": (1,),
+    "SetHitAreaTerminateHandler": (1,),
+    "CreateReferencePoint": (1,),             # 参考点原点
+    "CreateReferencePointAtSpecifiedPosition": (1, 2),   # X 取自 / Y 取自
+    "CreateShockWaveAttack": (2,),
+    "HideCharacter": (1,),
+    "CreateGravitationalField": (1,), "CreateTornado": (1,),
+    "CreateTargetAttack": (1,), "CreateOneWayWallGimmick": (1,),
+    "ConditionalsHealthPointRatioOf": (1,), "CreateBarrier": (1,),
+    "ConditionalsConditionExist": (1,),
+    "StartPiercing": (1,), "StopPiercing": (1,),
+    "CreateWallDistanceDetector": (1,), "CreatePointsDistanceDetector": (1, 2),
+    "RecoveryHitCountCheck": (1,), "ConditionalsCoffinCountSubject": (1,),
+    "ConsumeUniqueCondition": (1,), "SuppressBallActivity": (1,),
+    "CreateCollider": (1,), "SuppressSkill": (1,),
+    "BindConditionAccumulationVariable": (1,), "BindCoffinRevivalCountVariableOf": (1,),
+    "NotifyPowerflipEnd": (1,),
+    # 机械提取覆盖不到的两条(走 `decreaseCoffinCount` 助手,助手内部再 lookup);
+    # 与既有 DSL_SUBJECT_CONSUMERS 保持一致,不做收窄。
+    "Revive": (1,), "DecreaseCoffinCount": (1,),
+}
+
+
+def _dsl_lookup_slots(name: str) -> tuple[int, ...]:
+    """该构造所有会走 `Environment.lookup` 的 node 下标(机械表 ∪ 既有手抄表)。"""
+    return tuple(sorted(set(DSL_SUBJECT_LOOKUPS.get(name, ()))
+                        | set(DSL_SUBJECT_CONSUMERS.get(name, ()))))
+
+
+def action_dsl_lookup_scope_problems(tree) -> list[str]:
+    """ActionDsl 里**每一个** lookup 位都必须在当前作用域链上可见,否则 C16103。
+
+    与 `action_dsl_subject_binding_problems` 同一套作用域模型,区别只在引用位取
+    `DSL_SUBJECT_LOOKUPS`(客户端机械提取的全量表)而不是手抄子集;另外额外判
+    坐标系 ``["GH", n]``(`ActionEvaluator.as:1037` 同样 lookup 它)。
+
+    负数(-1 场地 / -17 自身 / -18 球 …)与 255 是引擎内建主体,不判。
+    返回可读问题串列表,空列表 = 通过。
+    """
+    probs: list[str] = []
+
+    def report(what: str, subject: int, bound: frozenset) -> None:
+        probs.append(
+            f"{what}={subject} 在当前作用域链上找不到"
+            f"(此处可见绑定 {sorted(bound) or '无'});"
+            "Environment.lookup 上溯到根仍未命中 = ClientError 16103"
+        )
+
+    def coordsys(node, bound: frozenset, owner: str) -> None:
+        if (isinstance(node, list) and len(node) == 2 and node[0] == "GH"
+                and isinstance(node[1], int) and not isinstance(node[1], bool)
+                and node[1] not in bound and node[1] not in DSL_BUILTIN_SUBJECTS):
+            report(f"{owner} 坐标系 GH 主体", node[1], bound)
+
+    def walk(node, bound: frozenset) -> None:
+        if _dsl_is_node(node):
+            name = node[0]
+            for index in _dsl_lookup_slots(name):
+                if index >= len(node):
+                    continue
+                subject = node[index]
+                if not isinstance(subject, int) or isinstance(subject, bool):
+                    continue
+                if subject in bound or subject in DSL_BUILTIN_SUBJECTS:
+                    continue
+                report(f"{name} 主体 node[{index}]", subject, bound)
+            for child in node[1:]:
+                coordsys(child, bound, name)
+            binders = DSL_SUBJECT_BINDERS.get(name)
+            if binders:
+                handled = {block for _, block in binders}
+                for ids, block in binders:
+                    if block >= len(node):
+                        continue
+                    inner = set(bound)
+                    for slot in ids:
+                        if slot < len(node) and isinstance(node[slot], int):
+                            inner.add(node[slot])
+                    walk(node[block], frozenset(inner))
+                for index, child in enumerate(node[1:], 1):
+                    if index not in handled:
+                        walk(child, bound)
+                return
+            for child in node[1:]:
+                walk(child, bound)
+            return
+        if isinstance(node, list):
+            scope = set(bound)
+            for child in node:
+                walk(child, frozenset(scope))
+                if (isinstance(child, list) and len(child) == 2 and child[0] == "Command"
+                        and _dsl_is_node(child[1]) and child[1][0] in DSL_STATEMENT_BINDERS):
+                    slot = DSL_STATEMENT_BINDERS[child[1][0]]
+                    if slot < len(child[1]) and isinstance(child[1][slot], int):
+                        scope.add(child[1][slot])
+            return
+        if isinstance(node, dict):
+            for child in node.values():
+                walk(child, bound)
+
+    walk(tree, frozenset())
+    return probs
+
+
 def action_dsl_hit_area_target_problems(tree) -> list[str]:
     """CreateHitArea 的 onHit 块里,伤害/状态应挂在 node[22](被击中的敌人)。
 

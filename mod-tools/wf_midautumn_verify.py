@@ -820,6 +820,7 @@ def check_dsl(pack: Pack, rep: Report) -> None:
     undecided: list[str] = []
     parse_fail: list[str] = []
     coordsys: list[str] = []
+    lookup_scope: list[str] = []
     for program in programs:
         try:
             tree, plain = pack.dsl_tree(program)
@@ -835,6 +836,8 @@ def check_dsl(pack: Pack, rep: Report) -> None:
         missing += d
         undecided += e
         coordsys += dsl_coordsys_problems(program, tree)
+        lookup_scope += [f"{program}: {p}"
+                         for p in L.action_dsl_lookup_scope_problems(tree)]
     rep.result(parse_fail, "dsl/parse", BLOCKING, {"programs": programs})
     rep.result(roundtrip, "dsl/roundtrip", BLOCKING, {"programs": len(programs)})
     rep.result(hard, "dsl/forbidden-constructs", BLOCKING)
@@ -844,6 +847,9 @@ def check_dsl(pack: Pack, rep: Report) -> None:
     rep.result(undecided, "dsl/asset-refs-undecided", WARNING)
     rep.result(coordsys, "dsl/coordsys-on-enemy-subject", BLOCKING,
                {"programs": len(programs)})
+    # 每个 lookup 位都要在当前作用域链上可见,否则战斗中 ClientError 16103
+    # (2026-09-21 凯尔强化天雷事故;官方 7051 棵树正向对照 0 误报)
+    rep.result(lookup_scope, "dsl/lookup-scope", BLOCKING, {"programs": len(programs)})
 
     # 克隆的特效族必须挂在 code_name 目录下(记忆卡 wf-effect-family-under-codename)
     stray: list[str] = []
