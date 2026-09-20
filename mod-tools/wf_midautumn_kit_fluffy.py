@@ -12,14 +12,15 @@
 
 本模块负责：
 
-* 队长 10 行 ＋ 词条 6 键 15 条（官方/live donor ＋ 逐格改 ＋ ``wf_client_legality`` ＋ ``wf_describe`` 回读）；
+* 队长 10 行 ＋ 词条 6 键 16 条（官方/live donor ＋ 逐格改 ＋ ``wf_client_legality`` ＋ ``wf_describe`` 回读）；
 * 8 条 ``custom_ability_string``：536/704 两条强化开关串、629 串、722 串、4 个 ``desc_override``；
 * ``power_flip_action`` 三档覆盖树（fighter ＋ supporter 增益块）；
 * 629 ``ability_skill`` 树（技能档 2 的深拷贝）；
 * ``action_skill`` 两档能量（580/580）；
 * 技能 DSL 两档：官方母本 141033 整树当底座，嫁接官方 141081 的重击段（4→**8 段**）与裂地演出；
   裂地一击外包 ``ConditionalsChangeSkillFlag(1)`` 开连击加成（536）；每个判定区 on-hit 挂
-  ``AddCombo`` 走 ``alv2`` 通道（704，没开时加 0）；
+  ``AddCombo`` 走 ``alv2`` 通道（704，没开时加 0）；除裂地一击外全部 ``incrementCombo=false``，
+  让词条 390（SetCombo 0，SkillHit≥1）刚好在最后一段伤害结算之后把连击清零（反馈轮 1）；
 * ``rush`` 特效族整族克隆 ＋ LUT 染色（``jab`` 族按图集预算直接引用官方路径）；
 * 语音路由 kind 3 ＋ ``switched_action_skill``；``B/pixel/fluffy/install.json`` 的像素成品。
 
@@ -57,7 +58,7 @@ GRAFT_CODE = "combat_animal_xm21"              # 141081（她的圣诞版）：�
 
 ABILITY_KEYS = tuple(f"{CID}{slot}" for slot in range(1, 7))
 LEADER_ROW_COUNT = 10
-ABILITY_RECORD_TOTAL = 15
+ABILITY_RECORD_TOTAL = 16
 
 # ---------------------------------------------------------------- 自有键
 
@@ -112,6 +113,29 @@ PF_LV3_THRESHOLD = "500000"     # 5 次 Lv3 强化弹射
 PF_LV3_COOLTIME = "600"         # 10 秒（帧）
 COMBO_INVOKE_THRESHOLD = "15000000"   # 150 连击
 COMBO_INVOKE_COOLTIME = "900"         # 15 秒（帧）
+
+# ---- 「技能打完最后一段后清空连击数」（作者反馈轮 1，2026-09-21）
+#
+# 落法调研（客户端实读）：
+#   * DSL 命令表（``ActionDslCommand.__constructs__``）里**没有**任何 Set/Reset 连击的构造，
+#     只有 ``AddCombo``（index 82）。``Combo_Impl_.add`` 只钳上限 9999、**没有下限**，
+#     所以「AddCombo 写负值」会把连击压成负数，不是清零 ⇒ DSL 侧无解。
+#   * 词条层有 kind **390 SetCombo**（``InstantAbilityContentMasterValue("SetCombo",390)``
+#     → ``AbilitySlotImpl.applyInstantBattle`` case 2 → ``ComboCalculatorImpl.setCombo``），
+#     强度写 0 就是清零。官方唯一先例 = ``1410151#1``（精灵公主：连击≥500 → Set连击 0）。
+#   * 触发器取 **107 SkillHit**：它由 ``EnemyImpl`` 在敌人真正吃到这一击之后才调
+#     ``squadManager.countUpSkillHit`` ⇒ 天然满足「先结算最后一段伤害再清空」。
+#     官方 11 行先例的 puller 都写 ``c28="0"``（Myself）、``c29=""``。
+#
+# 为了让阈值 1 精确落在**裂地一击**上：技能树里除裂地以外的 9 条 ``CreateNormalAttack``
+# （精准连击 1 条 ×10 命中 + 玉杵 8 条）把 ``p16 incrementCombo`` 写 ``false``——
+# 客户端 ``EnemyImpl`` 的守卫是 ``incrementCombo && !createdByPoison && …``，为假时
+# 既不自然 +1 连击、也**不记 SkillHit**，于是整棵技能树只有裂地一击会把计数推到 1。
+# 每段「命中连击＋50」走的是判定区 on-hit 块里的 ``AddCombo``，与这个标志无关，不受影响。
+COMBO_RESET_TRIGGER = "107"          # SkillHit
+COMBO_RESET_THRESHOLD = "100000"     # 1 次（整棵技能树只有裂地一击记 SkillHit）
+COMBO_RESET_KIND = "390"             # SetCombo
+COMBO_RESET_VALUE = "0"              # 置零
 
 # (donor, source, cells, expect_describe)
 LEADER: tuple[tuple[str, str, dict[int, str], str], ...] = (
@@ -206,6 +230,14 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str], ...]] = {
         ("1599983#6", "live",
          {0: f"{CODE}_3", 1: "false", 2: _A, 11: "Green", 70: CAS_FLAG2},
          f"风·编成≥6 时: 自身 切换技能Flag2[{CAS_FLAG2}]"),
+        # kind 390 SetCombo：官方唯一先例 1410151#1（精灵公主，连击≥500 → Set连击 0）。
+        # 触发器换成 107 SkillHit、阈值 1 ⇒ 裂地一击命中之后才清零（见上方 COMBO_RESET_* 注释）。
+        ("1410151#1", "official",
+         {0: f"{CODE}_3", 1: "false", 2: _A, **WIND_ABILITY,
+          27: COMBO_RESET_TRIGGER, 28: "0", 29: "",
+          30: COMBO_RESET_THRESHOLD, 31: COMBO_RESET_THRESHOLD,
+          34: "(None)", 35: "0", 51: COMBO_RESET_VALUE, 52: COMBO_RESET_VALUE},
+         "风·编成≥6 时: 技能Hit≥1 → 自身 Set连击 0"),
     ),
     4: (
         ("1511652#1", "official",
@@ -260,6 +292,7 @@ CAS_TEXTS: dict[str, str] = {
         "风属性共鸣时，每达成150连击，触发自身技能效果（不消耗技能槽，冷却时间：15秒）",
         "风属性共鸣时，自身对敌人的技能伤害额外乘区＋10%",
         "风属性共鸣时，强化『玉杵捣月·桂风连打』的连击效果，技能命中每次连击＋50",
+        "风属性共鸣时，自身技能的最后一击结束后，连击数归零",
     )),
 }
 
@@ -305,6 +338,9 @@ DUMMY_EFFECT_FRAMES = STOP_BALL_FRAMES             # donor 24
 FINISHER_RADIUS = 150          # donor Circle{100}
 ID_SHIFT = 10                  # xm21 子树主体 id 1..12 → 11..22
 ID_SHIFT_2 = 30                # 复制出的后四段 → 31..42（与底座 4/5/8 及 11..22 都不相交）
+
+CNA_COMBO_BONUS = 8            # CreateNormalAttack 节点下标（= p8 enablesComboBonus，536 开关用）
+CNA_INCREMENT_COMBO = 16       # CreateNormalAttack 节点下标（= p16 incrementCombo，末位 Boolean）
 
 BASE_RUSH_AREA_ID = 5          # 底座精准连击判定区 p19
 BASE_FINISH_AREA_ID = 8        # 底座终结判定区 p19（裂地演出挂在它身上）
@@ -439,6 +475,27 @@ def _order_problems(rows: Sequence[Sequence[str]]) -> None:
         raise KitError("629 does not work in the unison slot; the key must be c1=false")
     if "525" in kinds and kinds.index("629") > kinds.index("525"):
         raise KitError(f"629 must precede the 525 consume row, got {kinds}")
+    _combo_reset_problems(rows)
+
+
+def _combo_reset_problems(rows: Sequence[Sequence[str]]) -> None:
+    """「技能最后一段打完后清空连击」那一行的硬契约（作者反馈轮 1）。"""
+    kinds = [r[47] for r in rows]
+    if COMBO_RESET_KIND not in kinds:
+        raise KitError(f"ability slot 3 lost the {COMBO_RESET_KIND} SetCombo row: {kinds}")
+    row = rows[kinds.index(COMBO_RESET_KIND)]
+    if row[27] != COMBO_RESET_TRIGGER:
+        raise KitError(f"SetCombo row trigger {row[27]!r} != {COMBO_RESET_TRIGGER} (SkillHit); "
+                       f"别的触发器给不出「最后一段打完之后」的时序")
+    if (row[30], row[31]) != (COMBO_RESET_THRESHOLD, COMBO_RESET_THRESHOLD):
+        raise KitError(f"SetCombo row threshold {(row[30], row[31])} != {COMBO_RESET_THRESHOLD}")
+    if (row[51], row[52]) != (COMBO_RESET_VALUE, COMBO_RESET_VALUE):
+        raise KitError(f"SetCombo row value {(row[51], row[52])} != {COMBO_RESET_VALUE} "
+                       f"（非 0 就不是清空，而是把连击钉到某个数）")
+    if row[28] != "0":
+        raise KitError(f"SetCombo row puller c28 {row[28]!r} != '0'（官方 11 行 SkillHit 先例全是 Myself）")
+    if row[34] != "(None)":
+        raise KitError(f"SetCombo row trigger_limit {row[34]!r} != '(None)'（每次技能都要清）")
 
 
 def check_skill_flag_strings(rows: Iterable[Sequence[str]], keys: set[str]) -> list[str]:
@@ -546,6 +603,21 @@ def _assert_mult(cmd: list, expect: tuple[float, float], label: str) -> None:
     got = _slv(cmd[6])
     if abs(got[0] - expect[0]) > 1e-6 or abs(got[1] - expect[1]) > 1e-6:
         raise KitError(f"{label}: donor CNA multiplier drift {got} != {expect}")
+
+
+def _silence_skill_hit(cna: list, label: str) -> list:
+    """把一条 ``CreateNormalAttack`` 的 ``p16 incrementCombo`` 从官方的 ``true`` 改成 ``false``。
+
+    只影响客户端 ``EnemyImpl`` 里那道 ``incrementCombo && !createdByPoison && …`` 守卫：
+    这一击不再自然 +1 连击，也**不再记 SkillHit**（``squadManager.countUpSkillHit`` 被跳过）。
+    每段「命中连击＋50」走的是判定区 on-hit 块里的 ``AddCombo``，与本标志无关。
+    """
+    if len(cna) <= CNA_INCREMENT_COMBO:
+        raise KitError(f"{label}: CreateNormalAttack has {len(cna) - 1} params, expected 16")
+    if cna[CNA_INCREMENT_COMBO] is not True:
+        raise KitError(f"{label}: donor CNA p16 incrementCombo drift {cna[CNA_INCREMENT_COMBO]!r}")
+    cna[CNA_INCREMENT_COMBO] = False
+    return cna
 
 
 def signature_problems(tree) -> list[str]:
@@ -731,6 +803,7 @@ def graft_tree(base_tree, graft_source, level: str) -> tuple[list, dict[str, Any
                      "base rush CreateNormalAttack")
     _assert_mult(rush_cna, donor_mult["rush"], f"skill{level} rush")
     rush_cna[6] = [dict(mult["rush"])]
+    _silence_skill_hit(rush_cna, f"skill{level} rush")
     if rush_area[13] != ["SpecifyHitAreaLifetimeDirectly", 18] \
             or rush_area[14] != ["CalculatedUsingMaxNumOfHits", HITS["rush"]]:
         raise KitError(f"base rush area drift: {rush_area[13]} {rush_area[14]}")
@@ -742,6 +815,11 @@ def graft_tree(base_tree, graft_source, level: str) -> tuple[list, dict[str, Any
     finish_cna[6] = [dict(mult["finisher"])]
     if finish_cna[8] is not False:
         raise KitError(f"base finisher CNA p8 drift: {finish_cna[8]}")
+    # 裂地一击是整棵树里**唯一**保留 incrementCombo 的一击 ⇒ SkillHit 计数 1 只可能来自它，
+    # 词条 390（SetCombo 0，阈值 1）因此必然落在「最后一段打完之后」。
+    if finish_cna[CNA_INCREMENT_COMBO] is not True:
+        raise KitError(f"base finisher CNA p16 incrementCombo drift: "
+                       f"{finish_cna[CNA_INCREMENT_COMBO]!r}")
     shake_finish = _only(list(wf_dsl.iter_dsl_commands(finish_area[23], "ShakeCamera")),
                          "base finisher ShakeCamera")
 
@@ -775,6 +853,7 @@ def graft_tree(base_tree, graft_source, level: str) -> tuple[list, dict[str, Any
             area[2] = BASE_RP_ID
             _shift_area(area, cna, shift)
             cna[6] = [dict(mult["pestle"])]
+            _silence_skill_hit(cna, f"skill{level} pestle#{len(pestle_areas)}")
             area[23] = block([cna, add_combo_cmd()])
             pestle_areas.append(area)
     if len(pestle_areas) != HITS["pestle"]:
@@ -834,6 +913,14 @@ def graft_tree(base_tree, graft_source, level: str) -> tuple[list, dict[str, Any
     combo_areas = len(list(wf_dsl.iter_dsl_commands(tree, "AddCombo")))
     if combo_areas != want_combo_areas:
         raise KitError(f"AddCombo appears on {combo_areas} hit areas, expected {want_combo_areas}")
+    # 「清空连击」的落点保证：整棵树里只有裂地一击记 SkillHit（then/else 两条分支是同一击的副本）
+    all_cna = list(wf_dsl.iter_dsl_commands(tree, "CreateNormalAttack"))
+    counting = [c for c in all_cna if c[CNA_INCREMENT_COMBO] is True]
+    silent = [c for c in all_cna if c[CNA_INCREMENT_COMBO] is False]
+    if len(all_cna) != 1 + HITS["pestle"] + 2 or len(counting) != 2 or len(silent) != 9:
+        raise KitError(f"skill{level} incrementCombo layout drift: {len(all_cna)} CNA, "
+                       f"{len(counting)} counting / {len(silent)} silent —— "
+                       f"SkillHit 阈值 1 不再等价于「裂地一击打完」")
     evidence = {
         "level": level,
         "multipliers": {seg: dict(mult[seg]) for seg in HITS},
@@ -843,6 +930,9 @@ def graft_tree(base_tree, graft_source, level: str) -> tuple[list, dict[str, Any
         "total_with_flag1": round(total_no_flag + alv, 4),
         "combo_per_hit": dict(COMBO_PER_HIT),
         "combo_hits_per_cast": sum(HITS.values()),
+        "skill_hit_counting_cna": {"counting": len(counting), "silent": len(silent),
+                                   "note": "只有裂地一击 incrementCombo=true ⇒ 词条 390 "
+                                           "(SkillHit≥1) 必然在最后一段伤害结算之后清空连击"},
         "frames": {"jab": FRAME_JAB, "pestle": list(FRAMES_PESTLE),
                    "final": FRAME_FINAL, "finisher": FRAME_FINISHER},
         "stop_ball": STOP_BALL_FRAMES, "reference_point_lifetime": RP_LIFETIME,

@@ -246,10 +246,16 @@ class PanelTextTests(unittest.TestCase):
             self.assertAlmostEqual(total, K.SKILL_TOTAL_NO_FLAG, places=6)
 
     def test_rows_are_flattened_to_a_single_max_value(self):
-        """满级单值、行拉平（min=max）⇒ 面板文字与真实数值逐字一致。"""
-        pairs = ((49, 50), (51, 52), (113, 114), (28, 29), (30, 31))
-        for label, plan in [("leader", [e[2] for e in K.LEADER])] + \
-                [(f"slot{s}", [e[2] for e in K.PLAN[s]]) for s in range(1, 7)]:
+        """满级单值、行拉平（min=max）⇒ 面板文字与真实数值逐字一致。
+
+        队长表与词条表列位不同：队长的阈值 min/max 是 c28/c29，词条的是 c30/c31，
+        而词条的 c28/c29 是 **puller**（种类 + 组名，官方 SkillHit 行就是 ``'0'`` / ``''``），
+        拿它当 min/max 对比会误报。
+        """
+        common = ((49, 50), (51, 52), (113, 114))
+        for label, plan, pairs in [("leader", [e[2] for e in K.LEADER], common + ((28, 29),))] + \
+                [(f"slot{s}", [e[2] for e in K.PLAN[s]], common + ((30, 31),))
+                 for s in range(1, 7)]:
             for cells in plan:
                 for lo, hi in pairs:
                     if lo in cells and hi in cells:
@@ -357,13 +363,73 @@ class RowAssemblyTests(unittest.TestCase):
         self.assertEqual(len(K.PLAN[6]), 1)
 
     def test_slot3_was_replaced_wholesale(self):
-        """作者用「能力 3，…」整段给出新内容 ⇒ 5 条全新行。"""
-        self.assertEqual(len(K.PLAN[3]), 5)
-        # 五条的落点：during 技伤门 / PF 加连击 / 629 追击 / 694 独立乘区 / 704 换技能 Flag2
+        """作者用「能力 3，…」整段给出新内容 ⇒ 5 条全新行；反馈轮 1 再加 1 条清空连击。"""
+        self.assertEqual(len(K.PLAN[3]), 6)
+        # 六条的落点：during 技伤门 / PF 加连击 / 629 追击 / 694 独立乘区 / 704 换技能 Flag2 / 390 清空连击
         self.assertTrue(any(cells.get(70) == K.CAS_FLAG2 for _d, _s, cells, _e in K.PLAN[3]))
         self.assertTrue(any(71 in cells for _d, _s, cells, _e in K.PLAN[3]))
         descs = [desc for _d, _s, _c, desc in K.PLAN[3]]
         self.assertTrue(any("独立乘区技能伤害" in d for d in descs), descs)
+
+
+class ComboResetPlanTests(unittest.TestCase):
+    """反馈轮 1：「自身技能打完最后一段后会清空连击数」的行契约（不碰基线）。"""
+
+    def _reset_cells(self):
+        # kind 390 来自 donor（计划里不写 c47）⇒ 按 donor 名定位这一行
+        hits = [cells for donor, _s, cells, _e in K.PLAN[3] if donor == "1410151#1"]
+        self.assertEqual(len(hits), 1, "能力 3 应当只有一条 SetCombo 行")
+        return hits[0]
+
+    def test_row_uses_the_only_official_setcombo_donor(self):
+        donors = [donor for donor, _s, _c, _e in K.PLAN[3]]
+        self.assertIn("1410151#1", donors,
+                      "kind 390 SetCombo 官方全库只有精灵公主 1410151#1 一行先例")
+
+    def test_trigger_is_skill_hit_with_threshold_one(self):
+        cells = self._reset_cells()
+        self.assertEqual(cells[27], K.COMBO_RESET_TRIGGER, "必须是 107 SkillHit")
+        self.assertEqual((cells[30], cells[31]),
+                         (K.COMBO_RESET_THRESHOLD, K.COMBO_RESET_THRESHOLD))
+        self.assertEqual(cells[28], "0", "官方 11 行 SkillHit 先例的 puller 都是 Myself")
+        self.assertEqual(cells[34], "(None)", "每次技能都要清，不能设次数上限")
+
+    def test_value_is_zero_and_row_is_main_only(self):
+        cells = self._reset_cells()
+        self.assertEqual((cells[51], cells[52]), ("0", "0"), "非 0 就不是清空")
+        self.assertEqual(cells[1], "false", "落在 Ⓜ 能力 3：副位不清空（副位也没有 ＋50 连击）")
+        for col, want in K.WIND_ABILITY.items():
+            self.assertEqual(cells[col], want, "与同槽其余行同一道风共鸣门")
+
+    def test_checker_rejects_a_wrong_trigger(self):
+        rows = [[""] * KL.ABILITY_NCOLS for _ in range(2)]
+        rows[0][47], rows[0][70], rows[0][71], rows[0][1] = "629", K.INVOKE_STRING, \
+            K.INVOKE_PROGRAM, "false"
+        rows[1][47] = K.COMBO_RESET_KIND
+        rows[1][27] = "23"                       # SkillInvoke：技能开始时，不是最后一段之后
+        rows[1][30] = rows[1][31] = K.COMBO_RESET_THRESHOLD
+        rows[1][51] = rows[1][52] = K.COMBO_RESET_VALUE
+        rows[1][28], rows[1][34] = "0", "(None)"
+        with self.assertRaises(KL.KitError):
+            K._order_problems(rows)
+
+    def test_checker_rejects_a_nonzero_value(self):
+        rows = [[""] * KL.ABILITY_NCOLS for _ in range(2)]
+        rows[0][47], rows[0][70], rows[0][71], rows[0][1] = "629", K.INVOKE_STRING, \
+            K.INVOKE_PROGRAM, "false"
+        rows[1][47], rows[1][27] = K.COMBO_RESET_KIND, K.COMBO_RESET_TRIGGER
+        rows[1][30] = rows[1][31] = K.COMBO_RESET_THRESHOLD
+        rows[1][28], rows[1][34] = "0", "(None)"
+        rows[1][51] = rows[1][52] = "100000"     # 把连击钉到 1，不是清空
+        with self.assertRaises(KL.KitError):
+            K._order_problems(rows)
+
+    def test_panel_line_is_on_the_main_only_slot(self):
+        lines = K.CAS_TEXTS[K.SLOT_OVERRIDE[3]].split("\n")
+        self.assertTrue(lines[-1].endswith("自身技能的最后一击结束后，连击数归零"), lines[-1])
+        self.assertTrue(lines[-1].startswith(K.MAIN_ICON), "能力 3 每行都要带 Ⓜ 图标")
+        self.assertEqual([l["text"] for l in PANEL["abilities"][2]["lines"]],
+                         [l.replace(K.MAIN_ICON, "") for l in lines])
 
 
 @unittest.skipUnless(_BASELINE, "需要 .cdn/cn 官方归档与 live store")
@@ -420,6 +486,32 @@ class SkillTreeTests(unittest.TestCase):
             self.assertEqual(len(combos), 1 + K.HITS["pestle"] + 1, level)
             for cmd in combos:
                 self.assertEqual(cmd[1][0]["alv2_max"], 50.0)
+
+    def test_only_the_finisher_counts_as_a_skill_hit(self):
+        """反馈轮 1：整棵树里只有裂地一击 ``incrementCombo=true``。
+
+        这是「词条 390 阈值 1 ＝ 最后一段打完」的全部依据：客户端 ``EnemyImpl`` 只在
+        ``incrementCombo`` 为真时才调 ``countUpSkillHit``。若哪天前面的段又开回 true，
+        清空点会提前到技能中段，本断言必须先红。
+        """
+        for level, tree in self.trees.items():
+            cnas = list(wf_dsl.iter_dsl_commands(tree, "CreateNormalAttack"))
+            counting = [c for c in cnas if c[K.CNA_INCREMENT_COMBO] is True]
+            silent = [c for c in cnas if c[K.CNA_INCREMENT_COMBO] is False]
+            self.assertEqual(len(cnas), 1 + K.HITS["pestle"] + 2, level)
+            self.assertEqual(len(silent), 9, f"skill{level} 精准连击 + 八连重击应当全部静音")
+            # then/else 两支是同一击的副本 ⇒ 实际计数的只有裂地一击本身
+            self.assertEqual(len(counting), 2, level)
+            for cna in counting:
+                self.assertAlmostEqual(cna[6][0]["max"], K.SKILL_MULT[level]["finisher"]["max"])
+            self.assertEqual(self.gates[level]["skill_hit_counting_cna"]["silent"], 9)
+
+    def test_the_invoke_tree_inherits_the_same_counting_layout(self):
+        """629 追击版跑的是同一棵树 ⇒ 它打完最后一段同样清空（作者「自身技能」按字面两者都算）。"""
+        invoke, _ev = K.build_invoke_tree(self.trees["2"])
+        cnas = list(wf_dsl.iter_dsl_commands(invoke, "CreateNormalAttack"))
+        self.assertEqual(len([c for c in cnas if c[K.CNA_INCREMENT_COMBO] is True]), 2)
+        self.assertEqual(len([c for c in cnas if c[K.CNA_INCREMENT_COMBO] is False]), 9)
 
     def test_totals_match_the_panel(self):
         for level in ("1", "2"):
