@@ -460,6 +460,28 @@ class DesignIntegration(unittest.TestCase):
             rains = [c for c in attacks if c[1] >= K.PF_RAIN_BASE_ID]
             self.assertEqual(len(rains), K.PF_SWORDS)
 
+    def test_rebuilt_trees_grant_no_flying(self):
+        """作者 2026-09-21「去掉浮游效果」：kit 重建的五棵树里一条 ACFlying 都不许剩。
+
+        母本形态仍按官方校验（``fly block drift`` / ``supporter lv{n} ACFlying statement drift``），
+        所以官方母本哪天变了还是会变红——变的只是「不产出」。
+        """
+        registry = json.loads((WORKSPACE / "evidence/effect-families.json").read_text(encoding="utf-8"))
+        families = [registry[f"battle/effect/skill_unique/{K.CODE}/{sub}"] for sub in ("sword", "rain", "heal")]
+        hashes = K.design_source_hashes(self.design)
+        for level in ("1", "2"):
+            tree, _ = K.build_skill_tree(self.ctx, level, K.SKILL_PARAMS[level], families, hashes)
+            self.assertNotIn("ACFlying", json.dumps(tree, ensure_ascii=False), level)
+            self.assertEqual([c for c in K.cmds(tree, "FindAllSubjects") if c[2] == 33], [], level)
+        for level in (1, 2, 3):
+            block = K.pf_support_block(self.ctx.root, level, keep_flying=False)
+            self.assertEqual([c[2][0][0] for c in K.cmds(block, "CreateCondition")],
+                             ["ACAttackPoint", "ACPiercing"], level)
+            # 共享函数默认必须保留官方三件套：芙拉菲/丝缇涅尔的中秋 kit 借用它，作者没点名去掉她们的浮游
+            shared = K.pf_support_block(self.ctx.root, level)
+            self.assertEqual([c[2][0][0] for c in K.cmds(shared, "CreateCondition")],
+                             ["ACAttackPoint", "ACPiercing", "ACFlying"], level)
+
     def test_special_source_hashes_reject_non_official_base(self):
         plan = copy.deepcopy(self.plan)
         plan["pf_dsl"]["base"]["sources"]["special_lv2"]["official_baseline_identical"] = False

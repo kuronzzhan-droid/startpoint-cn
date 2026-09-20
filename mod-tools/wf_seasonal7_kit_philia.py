@@ -1297,6 +1297,10 @@ def build_skill_tree(ctx, level: str, params: dict, families: list[dict], hashes
     remap_subjects(heal145, {2: 112}.__getitem__)
     remap_subjects(pf_dmg, {1: 120}.__getitem__)
     remap_subjects(leader_atk, {0: 121}.__getitem__)
+    # 作者 2026-09-21 真机反馈第 3 轮：「之前做的菲莉亚也去掉浮游效果」。
+    # 母本 `wind_oracle` 的 FindAll(33) → ACFlying 整块**仍然逐项校验**（母本被改了要变红），
+    # 但不再进 body：去掉后这条搜索块会空掉、绑定 110 无人引用，等价于整条摘除。
+    # 与 live 侧的节点级删除（wf_philia_no_flying_revision.strip_flying）结果逐节点一致。
     fly_cc = cmds(fly, "CreateCondition")
     if len(fly_cc) != 1 or fly_cc[0][2][0][0] != "ACFlying":
         raise KitError("fly block drift")
@@ -1338,8 +1342,8 @@ def build_skill_tree(ctx, level: str, params: dict, families: list[dict], hashes
         raise KitError("sword+rain attack count drift")
 
     # ---- R3：原「球上方一次剑雨」整块删除（由 10 份命中点剑雨取代）
-    body = [stop, fx_all, charge, fly, heal113, heal145, heal_mate, pf_dmg, leader_atk, add_combo,
-            swords, self_atk]
+    body = [stop, fx_all, charge, heal113, heal145, heal_mate, pf_dmg, leader_atk, add_combo,
+            swords, self_atk]                               # `fly` 已按作者要求不再产出（见上）
     tree = head[:10] + [SKILL_BUFF_TARGET_AS] + [["Block", body]]   # R16：tree[10]=3 走强化弹射乘区
     from wf_philia_wind_revision import revise_skill
     rewritten, counts = rewrite_all(ctx, tree, families)
@@ -1366,11 +1370,17 @@ def supporter_raw(root: Path, level: int) -> bytes:
     raise KitError(f"official supporter PF lv{level} source not found in {SUPPORTER_SOURCES}")
 
 
-def pf_support_block(root: Path, level: int) -> list:
+def pf_support_block(root: Path, level: int, *, keep_flying: bool = True) -> list:
     """P1：从官方 supporter_lv{n} 克隆「FindAllSubjects(33) → ACAttackPoint / ACPiercing / ACFlying」整块。
 
     作者只说「改为特殊类型」，没说撤掉辅助增益；``override_string`` 一直写着这三件，而 special 底座本身不带，
     直接换底座 = 静默砍功能。要纯 special 就删这一块（一个开关）。
+
+    作者 2026-09-21 真机反馈第 3 轮「去掉浮游效果」只点名了菲莉亚与澄波响：donor 永远按官方三件校验
+    （母本变了要变红）；``keep_flying=False`` 时克隆出来的块只留 ACAttackPoint / ACPiercing，与 live 侧的
+    节点级删除（``wf_philia_no_flying_revision.strip_flying``）结果逐节点一致。**默认保留三件套**——
+    这个函数同时被芙拉菲、丝缇涅尔、澄波响的中秋 kit 借用，默认行为一变就会连坐没被点名的角色
+    （芙拉菲硬断言三件套会直接建包失败，丝缇涅尔会静默丢浮游）。
     """
     base = C.amf_parse(supporter_raw(root, level))
     if base[0] != "ActionDsl" or base[1] != 1 or base[10] != 0:
@@ -1389,6 +1399,16 @@ def pf_support_block(root: Path, level: int) -> list:
     if len(order) > 2:
         raise KitError(f"supporter buff block binds {len(order)} subjects (reserved 400/401 only)")
     remap_subjects(block, order.__getitem__)
+    if keep_flying:
+        return block
+    inner = block[1][9][1]
+    flying = [st for st in inner if st[0] == "Command" and st[1][0] == "CreateCondition"
+              and [kind[0] for kind in st[1][2]] == ["ACFlying"]]
+    if len(flying) != 1:
+        raise KitError(f"supporter lv{level} ACFlying statement drift: {len(flying)}")
+    inner.remove(flying[0])
+    if [c[2][0][0] for c in cmds(block, "CreateCondition")] != ["ACAttackPoint", "ACPiercing"]:
+        raise KitError(f"supporter lv{level} buff block must keep exactly attack + piercing")
     return block
 
 
@@ -1468,7 +1488,7 @@ def build_pf_tree(ctx, level: int, donor_1anv_2: list, rain_donor: list, familie
         raise KitError("special base CollisionOfBallAndEnemy not unique")
     if not cmds(tree, "SetPowerFilpSuppress") or not cmds(tree, "NotifyPowerflipEnd"):
         raise KitError("special base lost suppress / NotifyPowerflipEnd")
-    root_body.insert(aura[0] + 1, pf_support_block(ctx.root, level))
+    root_body.insert(aura[0] + 1, pf_support_block(ctx.root, level, keep_flying=False))
 
     burst = [c for c in cmds(tree, "CreateReferencePoint") if c[10] == PF_EXPLOSION_BIND and c[1] == -18]
     if len(burst) != 1:
@@ -1851,9 +1871,13 @@ def build(ctx) -> dict[str, Any]:
     _write_checked_flat(ctx, ABILITY, ability_rows)
     _write_checked_flat(ctx, LEADER, {spec.cid_s: leader_rows})
     from wf_philia_wind_revision import PF_TEXT, skill_description
+    # 作者 2026-09-21「去掉浮游效果」：链到最后再删「浮游」分句，
+    # 免得有人重跑 kit 把浮游文案带回来（wf_philia_wind_revision 的 PF_TEXT 仍是含浮游的旧常量）。
+    import wf_philia_no_flying_revision as nofly
     for index in (5, 7):
-        text_row[index] = stock.skill_description(skill_description(text_row[index]))
-    cas_rows[CAS_PF_OVERRIDE] = PF_TEXT
+        text_row[index] = nofly.skill_description(
+            stock.skill_description(skill_description(text_row[index])))
+    cas_rows[CAS_PF_OVERRIDE] = nofly.pf_override_text(PF_TEXT)
     cas_rows[CAS_CHANGE_SKILL] = stock.DESCRIPTION
     _write_checked_flat(ctx, CAS, {k: [[v]] for k, v in cas_rows.items()})
     unclaimed = []
