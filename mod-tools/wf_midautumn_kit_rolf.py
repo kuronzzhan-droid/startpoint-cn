@@ -15,7 +15,10 @@ rework1（2026-09-21，作者目标面板 ``rework1/panel/rolf.json``）把旧�
   自身攻击力/直击伤害；
 * **连击线**：``536``（旗号 1、只限主位）开的强化分支让 ``CreateNormalAttack tree[8]=true``
   吃连击成长；``IT 12`` 每 500 连击
-  用 ``629`` 调新建的 ``ability_skill_…_encore`` 追击树、每 100 连击 ``226`` 加 50 连击；
+  用 ``629`` 调新建的 ``ability_skill_…_encore`` 追击树（追击版把母本的 70 帧停球换成
+  铃鹿的 1 帧 ``MoveBall`` ⇒ 照样转向并冲向最近的敌人、但不长停；代价是那一帧球速被
+  **赋值**成 72 ⇒ 在速度固定两档下是可见的减速，真机待判，见 ``CHASE_MOVE_BALL``）、
+  每 100 连击 ``226`` 加 50 连击；
 * **段数线**：``IC 202 DirectAttack3`` t5＋风 常驻 ＋200%（全批统一 3 段，主 C 的 % ≥ 辅助）。
 
 本轮**不新建固有状态**（面板没有一条需要层数型状态）⇒ 不画 48×48 图标；
@@ -577,6 +580,71 @@ CNA_COMBO_SLOT = 8      # tree[8] = enablesComboBonus ⇒ ×(1 + 连击×0.005)�
 SKILL_FLAG_INDEX = 1
 SKILL_FLAG_INDEX_BOOST = 2
 
+#: 母本 141159 主块里那条 ``StopBall`` 的帧数（正常技能树两档必须保持它，见 build_skill_tree）。
+DONOR_STOP_BALL_FRAMES = 70
+#: 629 追击树里替掉那条 ``StopBall`` 的「转向冲向最近的敌人」。整条从铃鹿
+#: ``silence_suzuka_2`` 原样搬（本套件的 ``root[1]`` 团队块也出自同一棵树）：官方那块的
+#: ``FindNearSubjects`` 头与罗尔夫母本**逐格相同**（原点 -18／1 个／选择器 49／
+#: ``CreateImaginaryTarget(-100000)``／绑定 0）⇒ ``["GH", 0]`` 的作用域与「找不到目标」
+#: 的退路都不用新造。
+#:
+#: 为什么不是「把母本 StopBall 的帧数调小」（反馈轮 4 的方案 A）：``StopBall`` 在客户端
+#: ``ActionEvaluator.as`` case 14 里把**速度写死 0**、把「压制直击」写死 ``true``
+#: （``applyMovement(coordSys, 角度, 帧数, 0, ending, …, true, …)``），四个
+#: ``EndingSpeedKind`` 又只有 ``Stop``（收尾速度 0 ⇒ 球原地掉）和两个 ``Restore*``
+#: （恢复**命令执行前的速度矢量** ⇒ 转向被撤销）—— 它在引擎层就做不出「冲向敌人」，
+#: 而且每次都会掐掉罗尔夫赖以输出的直击。``MoveBall`` 的速度、收尾方式、是否压制直击
+#: 三样都是参数（case 13），才是这件事的正确原语。
+CHASE_FIND_HEAD = [-18, 1, 49, ["CreateImaginaryTarget", -100000], 0]
+#: 球的速度上限（``BallImpl.physicalMove``:1012-1031）：``maxLinearVelocity = 68×系数 + 68``。
+#: 「系数」= ``getSpeedupCorrectionFactor()``，而 ``_getSpeedupCorrectionFactor``:2865 在
+#: ``hasFixedSpeed()`` 分支**直接取 ``ACFixedSpeed`` 的速度格、不钳 1**（只有非固定速度那支
+#: 才 ``min(…, 1)``）⇒ **68 只是「系数 0 ＝ 没有最大速度固定」那一档**，不是球的通用上限。
+BALL_SPEED_CAP_BASE = 68
+
+
+def ball_speed_cap(grade) -> float:
+    """速度格 → ``BallImpl.physicalMove`` 给 ``body`` 设的 ``maxLinearVelocity``。
+
+    本套件两档：强化档 4 ⇒ 340、常态档 1 ⇒ 136；``grade == 0`` ⇒ 68。
+    """
+    return BALL_SPEED_CAP_BASE * float(grade) + BALL_SPEED_CAP_BASE
+
+
+#: ``[主体, 坐标系, 角度, 帧数, 速度, 收尾速度, 压制直击]``。整条 = 官方铃鹿
+#: ``silence_suzuka_1/_2`` 的逐格同形行；72 是官方全库 210 条 ``MoveBall`` 里**最高**的速度，
+#: 没有更快的官方先例。
+#:
+#: **速度 72 是「赋值」，不是「设上限」—— 在高速下它就是一次可见的减速。**
+#: （20260921 返修更正：此前这里写「72 ≥ 球基础速度上限 68 ⇒ 不会把最大速度固定的球改慢」，
+#: 与源码不符，已推翻。）``ActionEvaluator`` case 13 → ``BallImpl.applyMovement``:2742 算出
+#: ``vx = 速度·cosθ、vy = 速度·sinθ`` 塞进 ``BallState.SkillMoving``，``changeState`` 立刻调
+#: ``enterSkillMovingState``:2354 ⇒ ``body.set_vx/set_vy``（**赋值**）；``KeepGoing`` 收尾
+#: （``exitSkillMovingState``:2241 case 1）是空实现。所以不论球当时多快，追击触发的那一帧
+#: 球速都被按到正好 72。对照 :func:`ball_speed_cap`：强化档速度格 4 ⇒ 上限 340、
+#: 常态档 1 ⇒ 136；再加上弹板命中路径 ``resolveCollisionForPrimaryOrSummons``:891
+#: ``if(hasSpeedup()){ vx += vx×系数×0.5 }``（4 档 ⇒ ×3、1 档 ⇒ ×1.5），
+#: 球在罗尔夫自己的增益下常态就跑在 72 以上 ⇒ 追击会把它砸慢。
+#:
+#: 为什么仍然选它：引擎层**没有「只转向不改速」的原语**。能改球朝向的 DSL 命令只有
+#: ``MoveBall`` 与 ``StopBall``（``wf_dsl_sig.COMMANDS`` 里的全部球移动命令），两条都走
+#: ``applyMovement`` ⇒ 都对速度赋值；``StopBall`` 的速度被 case 14 写死 0、压制直击写死
+#: ``true``，两个 ``Restore*`` 收尾又会把转向一起撤销。72 是代价最小且有官方逐格先例的一档。
+#: **官方标定**：``silence_suzuka_1/_2`` **同一棵树里**既有这条 72，也有
+#: ``ACFixedSpeed [240/270-300, 4, -0.65, 1]``（速度格 4、上限 340）⇒ 官方就是在「4 档速度
+#: 固定」的角色身上这么赋值的；罗尔夫自己的官方母本 ``black_wolf_knight_1/_2`` 更慢
+#: （``[-18, ["GH",12], 0, 10, 68, ["KeepGoing"], true]``，还压制直击 10 帧）；本角色正常技能树
+#: 那条 ``StopBall 70 帧 ["Stop"]`` 干脆把球速打到 0 并压制直击 70 帧。
+#: **真机待判项**（作者拍板，见 ``rework1/impl/rolf.md`` §8.9）：接受这次减速 ／
+#: 换母本 68 档 ／ 回到 70 帧 ``StopBall``。
+#:
+#: 629 语境下的移动权：``MemberImpl.applyInstantAbility`` case 19 用
+#: ``executeAction(…, false, 1, …)`` 执行整棵树 ⇒ 这个 evaluator **不抢**球的移动权。
+#: ``BallImpl.applyMovement`` 首句 ``hasExclusiveRight(movementId)`` 在「没有别的技能动作
+#: 正在移动球」时放行；玩家刚手放技能、那 70 帧停球还没结束时会静默跳过这次转向
+#: （伤害两段照打）。这是引擎既有行为，对本改动有利：追击不会和手放技能打架。
+CHASE_MOVE_BALL = ["MoveBall", -18, ["GH", 0], 0, 1, 72, ["KeepGoing"], False]
+
 FX_SRC_DIR = f"battle/effect/skill_unique/{TEMPLATE_CODE}"
 FX_SUBDIR = "moonlight"
 FX_DST_DIR = f"battle/effect/skill_unique/{CODE}/{FX_SUBDIR}"
@@ -840,6 +908,9 @@ def effect_paths(tree) -> set[str]:
 def dsl_problems(tree) -> list[str]:
     problems = [f"direction: {p}" for p in wf_dsl.player_side_dsl_problems(tree)]
     problems += [f"subject: {p}" for p in L.action_dsl_subject_binding_problems(tree)]
+    # 每个 lookup 位（含 ["GH", n] 坐标系）都要在作用域链上可见，否则战斗中 C16103。
+    # 手抄的 DSL_SUBJECT_CONSUMERS 盖不到坐标系，追击树的 ["GH", 0] 就落在这一档。
+    problems += [f"lookup: {p}" for p in L.action_dsl_lookup_scope_problems(tree)]
     problems += [f"hit_target: {p}" for p in L.action_dsl_hit_area_target_problems(tree)]
     problems += [f"element: {p}" for p in L.action_dsl_element_problems(tree, ELEMENT)]
     return problems
@@ -896,40 +967,91 @@ def build_skill_tree(ctx, level: str, values: dict[str, Any],
         tree, rewrite = ctx.rewrite_effect_refs(tree, family, strict=True)
     paths = check_effects(tree, family, f"skill {level}")
 
+    # 正常技能树保留母本那条 70 帧停球（作者反馈轮 4 只动 629 追击树，这里是防回归闸）
+    stops = [node for node in wf_dsl.iter_dsl_commands(tree, "StopBall")]
+    if len(stops) != 1 or stops[0][2] != DONOR_STOP_BALL_FRAMES:
+        raise KitError(f"skill {level} StopBall drift: {[node[:3] for node in stops]} "
+                       f"(expected 1 × {DONOR_STOP_BALL_FRAMES} 帧)")
+    if list(wf_dsl.iter_dsl_commands(tree, "MoveBall")):
+        raise KitError(f"skill {level}: 正常技能树不许出现追击树的 MoveBall")
+
     problems = dsl_problems(tree)
     if problems:
         raise KitError(f"skill {level} DSL gates failed: {problems}")
     return tree, {"level": level, "removed_power_flip": removed, "attacks": attacks,
                   "team_conditions": team_names, "wind_direct_damage": wind_info,
+                  "stop_ball": {"count": len(stops), "frames": stops[0][2],
+                                "ending": stops[0][3], "coord": stops[0][4]},
                   "effect_paths": sorted(paths), "effect_rewrites": rewrite,
                   "buff_target_as": tree[10]}
 
 
-def strip_stop_ball(node) -> int:
-    """递归删掉所有 ``StopBall``（629 每 500 连击停球 70 帧会抢走玩家操作）。"""
-    removed = 0
+def chase_ball_command(ctx) -> list:
+    """铃鹿 ``silence_suzuka_2`` 的「转向冲向最近的敌人」整条 ``MoveBall``（逐格钉死）。
+
+    不手写：整条从官方树里原样搬，顺带核实它所在的 ``FindNearSubjects`` 头与罗尔夫母本
+    逐格相同 —— 这样 ``["GH", 0]`` 指的就是同一个「最近的敌人」绑定，
+    ``IfTargetNotFound`` 也照母本（找不到敌人时造一个头顶 100000 的假目标，
+    球直冲上方；官方铃鹿与罗尔夫母本就是这个退路，本轮不新造）。
+    """
+    donor = ctx.template_dsl(SUZUKA_PROGRAM)
+
+    def is_chase(node) -> bool:
+        if node[0] != "FindNearSubjects" or list(node[1:6]) != CHASE_FIND_HEAD:
+            return False
+        inner = block_commands(node, 6)
+        return bool(inner) and inner[0] is not None and inner[0][0] == "MoveBall"
+
+    node = find_statement(donor, is_chase)[1]
+    move = copy.deepcopy(block_commands(node, 6)[0])
+    if move != CHASE_MOVE_BALL:
+        raise KitError(f"suzuka chase MoveBall drift: {move}")
+    return cmd(move)
+
+
+def swap_stop_ball(node, replacement) -> int:
+    """递归把每条 ``StopBall`` **就地换成** ``replacement``（``None`` = 删掉）。返回条数。
+
+    反馈轮 4 之前这里叫 ``strip_stop_ball``、只删不换：作者真机反馈「额外触发的技能没有
+    追踪敌人的效果」＝ 母本那条 ``StopBall(-18, 70, Stop, ["GH", 0], 0)`` 顺手把球
+    对准了最近的敌人，删掉之后追击版就不再转向了。现在换成同位置的 ``MoveBall``
+    （``CHASE_MOVE_BALL``），既转向也不停 70 帧。
+    """
+    swapped = 0
     if isinstance(node, list):
         if node and node[0] == "Block" and isinstance(node[1], list):
             keep = []
             for child in node[1]:
                 inner = command(child)
                 if inner and inner[0] == "StopBall":
-                    removed += 1
+                    swapped += 1
+                    if replacement is not None:
+                        keep.append(copy.deepcopy(replacement))
                     continue
                 keep.append(child)
             node[1] = keep
         for child in node:
-            removed += strip_stop_ball(child)
-    return removed
+            swapped += swap_stop_ball(child, replacement)
+    return swapped
 
 
 def build_encore_tree(ctx, level: str, values: dict[str, Any],
                       family: dict[str, Any] | None) -> tuple[Any, dict[str, Any]]:
-    """629 追击树：母本主块的**伤害两段**，连击成长常开，不停球、不复刻团队增益。
+    """629 追击树：母本主块的**伤害两段**，连击成长常开，不复刻团队增益。
 
     施工单偏离 R-D4：复刻团队增益会让「速度固定 15 秒窗口」变成每 500 连击白嫖刷新的永续，
     远超作者写的「发动自身技能效果」。629 的伤害归属由判定区 ``params[23]=4`` 决定，
     根 ``buffTargetAs`` 保持 0（记忆卡 wf-dsl-damage-attribution-bufftargetas）。
+
+    反馈轮 4（作者真机「罗尔夫额外触发的技能没有追踪敌人的效果」）：母本那条
+    ``StopBall`` 不再整条删掉，而是**就地换成**铃鹿的 ``MoveBall``
+    （``CHASE_MOVE_BALL``）—— 球照样转向最近的敌人并冲过去，但只占 1 帧，
+    没有正常技能那 70 帧（约 1.2 秒）的长停顿，也不压制直击。
+
+    代价（20260921 返修更正，见 ``CHASE_MOVE_BALL`` 注释）：``MoveBall`` 的速度是**赋值**，
+    追击那一帧球速被按到 72，低于本套件两档速度固定的上限（4 档 340 / 1 档 136）
+    ⇒ **真机上是一次可见的减速**，作为待判项交作者拍板（``impl/rolf.md`` §8.9）。
+    gates 里回报 ``chase_speed`` / ``ball_speed_caps`` / ``chase_slows_ball_at_grades``。
     """
     tree = donor_tree(ctx, level)
     drop_power_flip_block(tree)
@@ -937,9 +1059,10 @@ def build_encore_tree(ctx, level: str, values: dict[str, Any],
     body = statements(tree)
     if len(body) != 1:
         raise KitError(f"encore donor body carries {len(body)} statements, expected 1")
-    stopped = strip_stop_ball(body[0])
-    if stopped != 1:
-        raise KitError(f"encore tree removed {stopped} StopBall commands, expected 1")
+    chase = chase_ball_command(ctx)
+    swapped = swap_stop_ball(body[0], chase)
+    if swapped != 1:
+        raise KitError(f"encore tree swapped {swapped} StopBall commands, expected 1")
     encore = list(copy.deepcopy(tree[:11])) + [["Block", [body[0]]]]
     if encore[10] != 0:
         raise KitError("encore root buffTargetAs must stay 0")
@@ -949,10 +1072,34 @@ def build_encore_tree(ctx, level: str, values: dict[str, Any],
         encore, rewrite = ctx.rewrite_effect_refs(encore, family, strict=True)
     paths = check_effects(encore, family, "encore")
 
+    if list(wf_dsl.iter_dsl_commands(encore, "StopBall")):
+        raise KitError("encore still carries a StopBall")
+    moves = list(wf_dsl.iter_dsl_commands(encore, "MoveBall"))
+    if len(moves) != 1 or moves[0] != CHASE_MOVE_BALL:
+        raise KitError(f"encore chase command drift: {moves}")
+    # ``["GH", 0]`` 必须落在绑定 0 的那个 FindNearSubjects 里，否则战斗中 C16103
+    finds = list(wf_dsl.iter_dsl_commands(encore, "FindNearSubjects"))
+    if len(finds) != 1 or list(finds[0][1:6]) != CHASE_FIND_HEAD:
+        raise KitError(f"encore FindNearSubjects head drift: "
+                       f"{[node[:6] for node in finds]}")
+
     problems = dsl_problems(encore)
     if problems:
         raise KitError(f"encore DSL gates failed: {problems}")
-    return encore, {"level": level, "attacks": attacks, "stop_ball_removed": stopped,
+    # 追击 MoveBall 的速度是**赋值**（见 CHASE_MOVE_BALL 注释）：把它与本套件两档速度固定的
+    # 上限一起回报，manifest 的证据串就不会再出现「72 ≥ 68 ⇒ 不会改慢」那种与源码不符的说法。
+    chase_speed = CHASE_MOVE_BALL[5]
+    grades = {"none": 0,
+              "normal": num(values["fixed_speed_speed"]),
+              "boost": num(values["fixed_speed_speed_boost"])}
+    caps = {name: num(ball_speed_cap(grade)) for name, grade in grades.items()}
+    return encore, {"level": level, "attacks": attacks, "stop_ball_swapped": swapped,
+                    "chase_command": copy.deepcopy(CHASE_MOVE_BALL),
+                    "chase_donor": SUZUKA_PROGRAM,
+                    "chase_speed": chase_speed,
+                    "fixed_speed_grades": grades, "ball_speed_caps": caps,
+                    "chase_slows_ball_at_grades":
+                        sorted(name for name, cap in caps.items() if chase_speed < cap),
                     "effect_paths": sorted(paths), "effect_rewrites": rewrite,
                     "team_blocks": 0, "buff_target_as": encore[10]}
 
@@ -1115,8 +1262,33 @@ def build(ctx) -> dict[str, Any]:
         "root[2] = 画狂老人Z mob_jiguza_playable_2 的 FindAllSubjects(113,[4]) → ACDirectDamage（绑定 9）。"
         "付与对象种类照抄官方（82→3 Member、113→1），CreateCondition 第 1 参 == 所在 FindAllSubjects 绑定 id",
         f"629 追击树 {ENCORE_PROGRAM}：母本主块的伤害两段（判定区 params[23]=4、CNA tree[8]=true），"
-        f"删掉 {encore_gates['stop_ball_removed']} 条 StopBall，不复刻团队增益（施工单偏离 R-D4）；"
-        "根 buffTargetAs 保持 0。629 行 c70/c71 双写、CT 300 帧、该键 unisonable=false",
+        "不复刻团队增益（施工单偏离 R-D4）；根 buffTargetAs 保持 0。"
+        "629 行 c70/c71 双写、CT 300 帧、该键 unisonable=false",
+        "反馈轮 4（作者真机原话「罗尔夫额外触发的技能没有追踪敌人的效果」）："
+        f"母本那条 StopBall(-18, {DONOR_STOP_BALL_FRAMES}, Stop, [\"GH\",0], 0) 顺手把球对准了"
+        "最近的敌人，追击树当初整条删掉 ⇒ 转向也一起没了。现在**就地换成**铃鹿 "
+        f"silence_suzuka_2 的整条 {encore_gates['chase_command']}"
+        f"（换掉 {encore_gates['stop_ball_swapped']} 条）：同一个 [\"GH\",0]（绑定 0 = 最近的敌人，"
+        "两棵树的 FindNearSubjects 头逐格相同）、只占 1 帧 ⇒ 没有 70 帧长停顿、"
+        "KeepGoing 收尾 ⇒ 转完继续朝敌人冲、压制直击 false ⇒ 不掐罗尔夫的直击。"
+        "正常技能树两档仍是 70 帧停球（build_skill_tree 有防回归断言）",
+        "反馈轮 4 返修（20260921，复核更正：此前证据串写的「速度 72 ≥ 球基础速度上限 68 ⇒ "
+        "不会把最大速度固定的球改慢」与客户端源码不符，已推翻）："
+        f"MoveBall 的速度是**赋值**不是设上限（applyMovement → enterSkillMovingState 直接 "
+        f"body.set_vx/set_vy，KeepGoing 收尾 exitSkillMovingState case 1 是空实现）⇒ 追击触发的"
+        f"那一帧球速被按到正好 {encore_gates['chase_speed']}；"
+        f"而 maxLinearVelocity = 68×速度格+68（_getSpeedupCorrectionFactor 在 hasFixedSpeed() "
+        f"时取 ACFixedSpeed 的速度格且不钳 1）⇒ 本套件上限 "
+        f"{encore_gates['ball_speed_caps']['boost']}（强化 {encore_gates['fixed_speed_grades']['boost']} 档）/ "
+        f"{encore_gates['ball_speed_caps']['normal']}（常态 {encore_gates['fixed_speed_grades']['normal']} 档），"
+        f"68 只是速度格 0 那档；弹板命中还有 vx += vx×速度格×0.5（4 档 ×3、1 档 ×1.5）⇒ "
+        f"球常态就跑在 {encore_gates['chase_speed']} 以上。"
+        f"所以追击在 {'/'.join(encore_gates['chase_slows_ball_at_grades'])} 档下是**可见的减速**。"
+        "仍选这条的理由：引擎层没有「只转向不改速」的原语（能改朝向的只有 MoveBall/StopBall，"
+        "都走 applyMovement 赋值；StopBall 速度写死 0、压制直击写死 true、Restore* 收尾会撤销转向），"
+        "72 是官方全库 210 条 MoveBall 的最高速度、且官方铃鹿 silence_suzuka_1/_2 同一棵树里"
+        "就是「72 + ACFixedSpeed 速度格 4」；罗尔夫自己的母本 black_wolf_knight_1/_2 是 68 且压制直击。"
+        "**真机待判项**（impl/rolf.md §8.9，作者拍板）：接受减速 / 换母本 68 档 / 回到 70 帧 StopBall",
         "队长 7 行 + 词条 19 条全部「官方/live donor 整行 + 逐格改」，每行过 client_legality 三件套"
         "并与 EXPECT 里的 wf_describe 回读逐字比对；during 触发 puller 逐行断言："
         "D214/D30/D34 留空、D204 写 9＋元素组（parseAt98 C7050）；422 行断言前置 42 与 c118 非空；"

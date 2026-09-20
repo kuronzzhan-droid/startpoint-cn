@@ -8,7 +8,8 @@
    前置 kind 白名单、201/202/521 必须 Initial 触发、629 必配字符串键且该键 unisonable=false、
    536/704 必带 c70、704 必挂前置 42 ＋ 风共鸣、during puller 契约）；面板文案逐块对齐
    ``rework1/panel/rolf.json``、面板禁词；以及本模块的小工具
-   （``ConditionalsChangeSkillFlag`` 形状与旗号、``StopBall`` 剥离、AMF3 数值壳）。
+   （``ConditionalsChangeSkillFlag`` 形状与旗号、``StopBall`` → 追击 ``MoveBall`` 的就地替换、
+   AMF3 数值壳）。
 2. **官方基线**（缺 ``.cdn/cn`` 或 live store 时跳过）：7＋19 行逐行装配并与 ``EXPECT`` 的
    ``wf_describe`` 回读逐字比对；两棵主技能树与一棵 629 追击树的装配与全部 DSL 门禁
    （元素、主体绑定、判定区归属、方向、坐标系），母本漂移断言。
@@ -29,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import wf_client_legality as L  # noqa: E402
 import wf_dsl  # noqa: E402
+import wf_dsl_sig  # noqa: E402
 import wf_midautumn_common as MC  # noqa: E402
 import wf_midautumn_kit_rolf as K  # noqa: E402
 import wf_midautumn_kitlib as KL  # noqa: E402
@@ -434,12 +436,88 @@ class DslHelperTests(unittest.TestCase):
         self.assertEqual(K.span(4), [{"min": 4, "max": 4}])
         self.assertEqual(K.span(1.13, 1.3), [{"min": 1.13, "max": 1.3}])
 
-    def test_strip_stop_ball_removes_only_stop_ball(self):
+    def test_swap_stop_ball_replaces_in_place_and_touches_nothing_else(self):
         tree = ["Block", [["Command", ["StopBall", -18, 70]],
                           ["Command", ["ShakeCamera", 1]]]]
-        removed = K.strip_stop_ball(tree)
-        self.assertEqual(removed, 1)
+        swapped = K.swap_stop_ball(tree, K.cmd(K.CHASE_MOVE_BALL))
+        self.assertEqual(swapped, 1)
+        self.assertEqual(tree, ["Block", [["Command", list(K.CHASE_MOVE_BALL)],
+                                          ["Command", ["ShakeCamera", 1]]]])
+
+    def test_swap_stop_ball_still_supports_plain_removal(self):
+        tree = ["Block", [["Command", ["StopBall", -18, 70]],
+                          ["Command", ["ShakeCamera", 1]]]]
+        self.assertEqual(K.swap_stop_ball(tree, None), 1)
         self.assertEqual(tree, ["Block", [["Command", ["ShakeCamera", 1]]]])
+
+    def test_swap_stop_ball_hands_each_site_its_own_copy(self):
+        """共享同一个 replacement 对象 = 后续逐树改参会串台，必须 deepcopy。"""
+        tree = ["Block", [["Command", ["StopBall", -18, 70]],
+                          ["Block", [["Command", ["StopBall", -18, 9]]]]]]
+        replacement = K.cmd(K.CHASE_MOVE_BALL)
+        self.assertEqual(K.swap_stop_ball(tree, replacement), 2)
+        first, second = tree[1][0], tree[1][1][1][0]
+        self.assertEqual(first, second)
+        self.assertIsNot(first, second)
+        self.assertIsNot(first, replacement)
+
+    def test_chase_move_ball_is_the_official_shape(self):
+        """逐格钉死：官方铃鹿 silence_suzuka_2 的原行；任何一格漂了都必须红。"""
+        self.assertEqual(K.CHASE_MOVE_BALL,
+                         ["MoveBall", -18, ["GH", 0], 0, 1, 72, ["KeepGoing"], False])
+        self.assertEqual(K.CHASE_MOVE_BALL[1], -18)          # 主体 = 球（引擎内建）
+        self.assertEqual(K.CHASE_MOVE_BALL[2], ["GH", 0])    # 目标 = FindNearSubjects 的 0 号
+        self.assertEqual(K.CHASE_MOVE_BALL[4], 1)            # 1 帧 ⇒ 没有长停顿
+        # 速度 = 官方全库 210 条 MoveBall 的最高值。**不是**「≥ 球速上限」——那是 20260921
+        # 返修推翻的旧说法，真实语义见 test_chase_speed_is_an_assignment_below_both_caps。
+        self.assertEqual(K.CHASE_MOVE_BALL[5], 72)
+        self.assertEqual(K.CHASE_MOVE_BALL[6], ["KeepGoing"])  # 收尾不动速度（空实现）
+        self.assertIs(K.CHASE_MOVE_BALL[7], False)           # 不压制直击（罗尔夫的主轴）
+        self.assertEqual(K.CHASE_FIND_HEAD,
+                         [-18, 1, 49, ["CreateImaginaryTarget", -100000], 0])
+        self.assertEqual(K.DONOR_STOP_BALL_FRAMES, 70)
+        self.assertEqual(wf_dsl_sig.COMMANDS["MoveBall"],
+                         ["int", "CoordSysSource", "Number", "int", "Number",
+                          "EndingSpeedKind", "Boolean"])
+        self.assertEqual(len(K.CHASE_MOVE_BALL) - 1,
+                         len(wf_dsl_sig.COMMANDS["MoveBall"]))
+
+    def test_ball_speed_cap_follows_the_fixed_speed_grade(self):
+        """``BallImpl.physicalMove``: ``maxLinearVelocity = 68×速度格 + 68``。
+
+        ``_getSpeedupCorrectionFactor`` 在 ``hasFixedSpeed()`` 分支取 ``ACFixedSpeed`` 的
+        速度格且**不钳 1** ⇒ 68 只是「速度格 0」那一档，不是球的通用上限。
+        """
+        self.assertEqual(K.BALL_SPEED_CAP_BASE, 68)
+        self.assertEqual(K.ball_speed_cap(0), 68)
+        self.assertEqual(K.ball_speed_cap(1), 136)
+        self.assertEqual(K.ball_speed_cap(4), 340)
+
+    def test_chase_speed_is_an_assignment_below_both_caps(self):
+        """20260921 返修：追击速度 72 **低于**本套件两档速度固定的上限 ⇒ 真机是减速。
+
+        ``MoveBall`` 走 ``applyMovement`` → ``enterSkillMovingState`` ⇒ ``body.set_vx/set_vy``
+        是**赋值**；``KeepGoing`` 收尾（``exitSkillMovingState`` case 1）是空实现。
+        旧说法「72 ≥ 球基础速度上限 68 ⇒ 不会把最大速度固定的球改慢」与源码不符，
+        本用例就是它的防回归闸：任何人把 72 重新说成「≥ 上限」都会红。
+        """
+        values = DESIGN["plan_rework1"]["skills"]["values"]
+        level = str(values["encore_level"])
+        speed = K.CHASE_MOVE_BALL[5]
+        for key in ("fixed_speed_speed", "fixed_speed_speed_boost"):
+            cap = K.ball_speed_cap(values[level][key])
+            self.assertLess(speed, cap, f"{key}: 追击速度必须低于该档上限（=减速）")
+        # 只有速度格 0（没有最大速度固定）那一档才是 68，追击在那档反而略快于上限
+        self.assertGreater(speed, K.ball_speed_cap(0))
+
+    def test_only_two_commands_can_re_aim_the_ball(self):
+        """引擎层没有「只转向不改速」的原语：球移动命令只有 MoveBall / StopBall 两条。"""
+        movers = sorted(name for name in wf_dsl_sig.COMMANDS
+                        if name in ("MoveBall", "StopBall"))
+        self.assertEqual(movers, ["MoveBall", "StopBall"])
+        # StopBall 的 DSL 签名里根本没有「速度」格（case 14 把它写死 0）
+        self.assertEqual(wf_dsl_sig.COMMANDS["StopBall"],
+                         ["int", "int", "EndingSpeedKind", "CoordSysSource", "Number"])
 
     def test_write_dsl_rejects_the_wrapper_shell(self):
         """``write_dsl`` 只吃裸树；喂 ``{tree, numbers}`` 包装 = 进战斗 F1034。"""
@@ -657,6 +735,18 @@ class SkillTreeTests(unittest.TestCase):
             tree, _ = self.tree(level)
             self.assertEqual(K.dsl_problems(tree), [], level)
 
+    def test_normal_trees_keep_the_donor_70_frame_stop_ball(self):
+        """反馈轮 4 只动 629 追击树：正常技能树两档的停球一格不动。"""
+        for level in ("1", "2"):
+            tree, gates = self.tree(level)
+            stops = list(wf_dsl.iter_dsl_commands(tree, "StopBall"))
+            self.assertEqual(len(stops), 1, level)
+            self.assertEqual(stops[0],
+                             ["StopBall", -18, K.DONOR_STOP_BALL_FRAMES,
+                              ["Stop"], ["GH", 0], 0], level)
+            self.assertEqual(gates["stop_ball"]["frames"], K.DONOR_STOP_BALL_FRAMES, level)
+            self.assertEqual(list(wf_dsl.iter_dsl_commands(tree, "MoveBall")), [], level)
+
     def test_a_drifted_donor_is_caught(self):
         tree = K.donor_tree(ctx(), "2")
         K.drop_power_flip_block(tree)
@@ -679,10 +769,75 @@ class EncoreTreeTests(unittest.TestCase):
         self.assertEqual(gates["team_blocks"], 0)
         self.assertEqual(list(wf_dsl.iter_dsl_commands(tree, "CreateCondition")), [])
 
-    def test_encore_never_stops_the_ball(self):
+    def test_encore_chases_the_enemy_without_the_long_stop(self):
+        """反馈轮 4：母本 70 帧 StopBall → 铃鹿 1 帧 MoveBall（转向照旧、长停顿没了）。"""
         tree, gates = self.build()
-        self.assertEqual(gates["stop_ball_removed"], 1)
+        self.assertEqual(gates["stop_ball_swapped"], 1)
         self.assertEqual(json.dumps(tree).count("StopBall"), 0)
+        moves = list(wf_dsl.iter_dsl_commands(tree, "MoveBall"))
+        self.assertEqual(len(moves), 1)
+        self.assertEqual(moves[0], K.CHASE_MOVE_BALL)
+        self.assertEqual(gates["chase_command"], K.CHASE_MOVE_BALL)
+        self.assertEqual(gates["chase_donor"], K.SUZUKA_PROGRAM)
+
+    def test_gates_report_the_slowdown_instead_of_denying_it(self):
+        """manifest 的证据串从 gates 取数：两档速度固定上限 + 「哪几档会被减速」。"""
+        _, gates = self.build()
+        values = DESIGN["plan_rework1"]["skills"]["values"]
+        level = str(values["encore_level"])
+        self.assertEqual(gates["chase_speed"], K.CHASE_MOVE_BALL[5])
+        self.assertEqual(gates["fixed_speed_grades"],
+                         {"none": 0,
+                          "normal": values[level]["fixed_speed_speed"],
+                          "boost": values[level]["fixed_speed_speed_boost"]})
+        self.assertEqual(gates["ball_speed_caps"],
+                         {"none": 68,
+                          "normal": K.ball_speed_cap(values[level]["fixed_speed_speed"]),
+                          "boost": K.ball_speed_cap(values[level]["fixed_speed_speed_boost"])})
+        # 强化档与常态档都会被砸慢；速度格 0 那档不会
+        self.assertEqual(gates["chase_slows_ball_at_grades"], ["boost", "normal"])
+
+    def test_encore_chase_target_is_the_findnearsubjects_binding(self):
+        """``["GH", 0]`` 必须落在绑定 0 的那个 FindNearSubjects 作用域内，否则战斗中 C16103。"""
+        tree, _ = self.build()
+        finds = list(wf_dsl.iter_dsl_commands(tree, "FindNearSubjects"))
+        self.assertEqual(len(finds), 1)
+        self.assertEqual(list(finds[0][1:6]), K.CHASE_FIND_HEAD)
+        self.assertEqual(finds[0][5], 0)                       # 绑定 id
+        self.assertEqual(K.CHASE_MOVE_BALL[2], ["GH", finds[0][5]])
+        self.assertEqual(L.action_dsl_lookup_scope_problems(tree), [])
+
+    def test_encore_chase_command_matches_the_official_donor_row(self):
+        """整条 MoveBall 是从官方铃鹿树里搬的，不是手写的。"""
+        self.assertEqual(K.chase_ball_command(ctx()), K.cmd(K.CHASE_MOVE_BALL))
+
+    def test_official_donor_slams_the_ball_while_itself_speed_fixed(self):
+        """官方标定：铃鹿**同一棵树**里既有这条 72，也给自己 ``ACFixedSpeed`` 速度格 4。
+
+        这是「把球速赋值到 72」在官方设计里的先例 —— 不是「不会减速」的证明，
+        而是「官方在 4 档速度固定的角色身上也这么赋值」的证明（返修待判项 §8.9 的依据）。
+        """
+        donor = ctx().template_dsl(K.SUZUKA_PROGRAM)
+        moves = list(wf_dsl.iter_dsl_commands(donor, "MoveBall"))
+        self.assertIn(K.CHASE_MOVE_BALL, moves)
+        grades = sorted(c[2][0][2][0]["min"]
+                        for c in wf_dsl.iter_dsl_commands(donor, "CreateCondition")
+                        if c[2][0][0] == "ACFixedSpeed")
+        self.assertEqual(grades, [1, 4])
+        self.assertLess(K.CHASE_MOVE_BALL[5], K.ball_speed_cap(4))
+
+    def test_encore_chase_sits_where_the_donor_stop_ball_was(self):
+        """就地替换：MoveBall 仍是参考点块的第一条，斩击特效还在它后面。"""
+        def head(tree):
+            points = [n for n in wf_dsl.iter_dsl_commands(tree, "CreateReferencePoint")]
+            self.assertEqual(len(points), 1)
+            # 块里混着 ["Event", ["Wait", …]]，command() 对它返回 None
+            return [c[0] if c else "Event" for c in K.block_commands(points[0], 11)][:2]
+
+        donor = K.donor_tree(ctx(), str(DESIGN["plan_rework1"]["skills"]["values"]["encore_level"]))
+        self.assertEqual(head(donor), ["StopBall", "ShowEffect"])
+        tree, _ = self.build()
+        self.assertEqual(head(tree), ["MoveBall", "ShowEffect"])
 
     def test_encore_combo_bonus_is_always_on_and_unbranched(self):
         tree, _ = self.build()
@@ -718,6 +873,26 @@ class PackageTests(unittest.TestCase):
             path = self.pkg() / wf_dsl.dsl_logical(program)
             self.assertTrue(path.is_file(), program)
 
+    def _packed_tree(self, program: str):
+        import zlib
+        data = (self.pkg() / wf_dsl.dsl_logical(program)).read_bytes()
+        return wf_dsl.parse_dsl(zlib.decompress(data, -15))["tree"]
+
+    def test_packed_encore_chases_and_the_packed_skills_still_stop(self):
+        """回读包内产物（不是内存树）：追击树转向、正常两档仍 70 帧停球。"""
+        encore = self._packed_tree(K.ENCORE_PROGRAM)
+        self.assertEqual(list(wf_dsl.iter_dsl_commands(encore, "StopBall")), [])
+        self.assertEqual(list(wf_dsl.iter_dsl_commands(encore, "MoveBall")),
+                         [K.CHASE_MOVE_BALL])
+        finds = list(wf_dsl.iter_dsl_commands(encore, "FindNearSubjects"))
+        self.assertEqual([list(n[1:6]) for n in finds], [K.CHASE_FIND_HEAD])
+        for level in ("1", "2"):
+            tree = self._packed_tree(f"battle/action/skill/action/rare5/{K.CODE}${K.CODE}_{level}")
+            self.assertEqual(list(wf_dsl.iter_dsl_commands(tree, "MoveBall")), [], level)
+            self.assertEqual(list(wf_dsl.iter_dsl_commands(tree, "StopBall")),
+                             [["StopBall", -18, K.DONOR_STOP_BALL_FRAMES,
+                               ["Stop"], ["GH", 0], 0]], level)
+
     def test_custom_ability_string_carries_exactly_our_ten_keys(self):
         """多行 desc_override 的 ``\\n`` 必须活过 orderedmap 的 CSV 编解码（同 hibiki 的等价用例）。"""
         blob = core.read_orderedmap_file_from_bytes(
@@ -736,6 +911,18 @@ class PackageTests(unittest.TestCase):
         manifest = json.loads((WORKSPACE / "package" / "manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(sorted(manifest["required_capabilities"]),
                          sorted(K.SPEC["required_capabilities"]))
+
+    def test_manifest_evidence_states_the_slowdown_and_the_pending_call(self):
+        """20260921 返修：manifest 的证据串必须写清「追击那一帧是减速」＋ 待判项，不能再声称不会改慢。"""
+        manifest = json.loads((WORKSPACE / "package" / "manifest.json").read_text(encoding="utf-8"))
+        notes = [n for n in manifest["snapshot"]["seasonal7"]["reports"]["kit"]["notes"]
+                 if isinstance(n, str)]
+        hit = [n for n in notes if "返修" in n and "MoveBall" in n]
+        self.assertEqual(len(hit), 1, "证据串里应恰好有一条返修更正")
+        note = hit[0]
+        for want in ("赋值", "可见的减速", "真机待判项",
+                     str(int(K.ball_speed_cap(4))), str(int(K.ball_speed_cap(1)))):
+            self.assertIn(want, note, want)
 
     def test_package_does_not_clone_any_effect_family(self):
         """裁决 §4：特效优先直接引用官方路径，零克隆零图集增量。"""
