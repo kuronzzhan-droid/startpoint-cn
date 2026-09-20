@@ -5,7 +5,7 @@
 ``B/rework1/impl/magnus.md``，原语配方 ``B/rework1/research/{A,B,C}``。
 
 - 队长位授予**特殊强化弹射**（722 + ``power_flip_action`` 三档覆盖树，火共鸣门）：
-  赛达三档特效逐档叠加、球追踪 boss（选择器 51）、命中点爆克拉莉丝末端圆形爆炸；
+  赛达「锥形」枪体三档 scale 递增、朝球的飞行方向（EF）、命中点爆克拉莉丝末端圆形爆炸；
 - 冲刺强化：422 param0 ``-30%`` 常驻 + ``+245%`` 疾走抵消行（**只写 ability 表**，前置 42 队长）；
 - 主技能把上一轮的情娅式骑行段换成**魏虎式光圈**（球上长寿命判定区，按技能伤害结算）；
 - 「引擎点火」固有改成 **99 层 / 99999999 帧**，靠 during 134 按层给技能伤害、攻击力与独立乘区；
@@ -61,17 +61,19 @@ UC_ICON_FRAME_DONOR = "battle/common/unique_condition/unique_fire_dragon_zenith.
 DONOR_FX_DIR = f"battle/effect/skill_unique/{TEMPLATE_CODE}"
 FLAME = f"{DONOR_FX_DIR}/{TEMPLATE_CODE}_flame"
 
-# 克隆三族（调研卡 C §2）：赛达三档 / 克拉莉丝末端爆炸 / 魏虎光圈
+# 克隆三族（调研卡 C §2）：赛达「锥形」枪体 / 克拉莉丝末端爆炸 / 魏虎光圈
+#
+# 反馈轮 1（作者原话「泽塔的只要锥形的效果黄色的小方框不要」）：`zeta_lance_hit` / `zeta_lance_end`
+# 的主体就是那两块实心黄色六边形（实测 atlas rect `zeta_lance_hit/n` 46×53、`zeta_lance_end/k`
+# 46×53 纯 #FFFF00，屏上读作「黄色小方框」）＋一颗橙色光球，**整族不再克隆也不再引用**；
+# 三档「逐渐增强」改由同一个锥形 `zeta_lance` 的 scale 递增承担（PF_LANCE_SCALE）。
 FX_CLONES = (
-    ("lance", "battle/effect/skill_unique/zeta",
-     ("zeta_lance", "zeta_lance_hit", "zeta_lance_end")),
+    ("lance", "battle/effect/skill_unique/zeta", ("zeta_lance",)),
     ("burst", "battle/effect/skill_unique/clarisse", ("clarisse",)),
     ("aura", "battle/effect/skill_unique/anger_investigator", ("anger_investigator_aura",)),
 )
 FX_ROOT = f"battle/effect/skill_unique/{CODE}"
 ZETA_LANCE = f"{FX_ROOT}/lance/zeta_lance"
-ZETA_HIT = f"{FX_ROOT}/lance/zeta_lance_hit"
-ZETA_END = f"{FX_ROOT}/lance/zeta_lance_end"
 CLARISSE = f"{FX_ROOT}/burst/clarisse"
 AURA = f"{FX_ROOT}/aura/anger_investigator_aura"
 
@@ -83,7 +85,7 @@ _SKILL_DESC = ("挥舞缠绕着火焰的剑向前方斩劈，对敌人造成火�
                "发动技能后的一段时间内，自身获得光圈效果，对与光圈碰撞到的敌人造成技能伤害／"
                "赋予火属性角色及火属性协力球攻击力提升效果／"
                "强化弹射变为特殊强化弹射时：火焰突进随发动次数分三档逐渐增强，"
-               "命中敌人后引爆大范围火焰，并可追击敌方boss目标")
+               "命中敌人后引爆大范围火焰")
 
 TEXTS = {
     "title": "月下归途的机车骑士",
@@ -216,11 +218,14 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str], ...]] = {
          {0: f"{CODE}_5", 1: "true", 2: _A, 51: "5000", 52: "5000"},
          "火·编成≥6 时: 强化弹射≥5(CT15秒) → 自身 技能槽 5%"),
         # 422 冲刺参数：只许 ability 表（队长表写 = C7050），前置 42 Leader ⇒ 只在他当队长时生效。
+        # c118 = param_id 必须逐格钉死 "0"：live 里这两个 donor 键各带 4~6 条 422，
+        # 记录号会随别的角色改动漂移（2026-09-21 实测 1699885#1 的 param_id 已从 0 漂成 1），
+        # 而 describe 回读看不出 param_id ⇒ 只有显式写 0 才不会被别人的改动带偏。
         ("1699885#1", "store",
-         {0: f"{CODE}_5", 1: "true", 2: _A, 113: "-30000", 114: "-30000"},
+         {0: f"{CODE}_5", 1: "true", 2: _A, 113: "-30000", 114: "-30000", 118: "0"},
          "队长 时: 持续·HP≤1 → 自身 冲刺参数(可调) -30%"),
         ("1699991#7", "store",
-         {0: f"{CODE}_5", 1: "true", 2: _A, 113: "245000", 114: "245000"},
+         {0: f"{CODE}_5", 1: "true", 2: _A, 113: "245000", 114: "245000", 118: "0"},
          "队长 时: 持续·状态冲刺 → 自身 冲刺参数(可调) 245%"),
     ),
     6: (
@@ -244,7 +249,7 @@ CAS_TEXTS = {
     CHASE_STRING: "发动技能「引擎之炎」：在命中点引爆积蓄的引擎火焰，造成火属性伤害（以技能伤害计算）",
     SWITCH_STRING: "强化『月下咆哮·烈焰甩尾』：光环的范围扩大",
     PF_STRING: "强化弹射变为特殊强化弹射时：火焰突进随发动次数分三档逐渐增强，"
-               "命中敌人后引爆大范围火焰，并可追击敌方boss目标",
+               "命中敌人后引爆大范围火焰",
     LEADER_OVERRIDE: "\n".join((
         "火属性共鸣时，自身的强化弹射变为特殊强化弹射",
         "火属性共鸣时，自身获得冲刺强化效果，冲刺冷却时间－30%",
@@ -280,10 +285,32 @@ VOICE_ROUTE = {"kind": 1, "condition_kind": "28", "condition_id": UID}
 
 # ---- DSL 旋钮 ----------------------------------------------------------------
 AURA_FRAMES = 600
+# 光圈「画出来的环」与「判定圆」必须等大，否则玩家看到环压住敌人却不掉血
+# （反馈轮 1 作者原话「光环稍微小一点，而且没有碰撞到的技能伤害」）。
+# 实测（`_donor/anger_investigator/*`，脚本见 W/impl/magnus.md「反馈轮 1」）：
+#   `anger_investigator_aura` 的 4 张子图最大 rect 宽 68px，parts 矩阵最大线性缩放 1.9517
+#   ⇒ 屏上直径 = 68 × 1.9517 × ShowEffect scale = 132.71 × scale。
+# 官方魏虎的 scale 3.75 ⇒ 环半径 248.8，而判定只有 Circle 200 —— 外圈 48.8px 是纯装饰。
+AURA_RING_PX_PER_SCALE = 68 * 1.9517  # 132.71 px/scale（母本 rect × parts 矩阵，实测）
+AURA_RADIUS = {"1": 200, "2": 270}    # 判定圆半径不动（缩的是画面，不是强度）
+
+
+def aura_scale(radius: int) -> float:
+    """把 ShowEffect scale 反算成「环刚好压在判定圆上」，禁止再手写魔数。"""
+    return round(2 * radius / AURA_RING_PX_PER_SCALE, 2)
+
+
+AURA_MULTIPLIER = {"1": 4.0, "2": 5.5}
 AURA_TUNING = {                       # 档 → (ShowEffect scale, 判定圆半径, 每跳倍率)
-    "1": (3.75, 200, 4.0),
-    "2": (5.00, 270, 5.5),
+    level: (aura_scale(AURA_RADIUS[level]), AURA_RADIUS[level], AURA_MULTIPLIER[level])
+    for level in ("1", "2")
 }
+# 母本把 p14 写成 CalculatedUsingMaxNumOfHits(10)，客户端据此推出的最小间隔是
+# lifetime/(N-0.5) = 600/9.5 ≈ 63 帧 —— 球只是擦过敌人时，第二跳往后几乎全被这道闸吃掉。
+# 改成显式 30 帧（live 杰拉德 149999 同族光环用的就是 SpecifyMinHitIntervalDirectly），
+# p15 的每目标硬上限仍是 10 跳 ⇒ 单次技能的总伤不变，只是更快打完、看得见。
+AURA_HIT_INTERVAL = 30
+AURA_MAX_HITS = 10
 AURA_BINDS = (10, 11, 12)             # 母本 111129 自己占 0–5
 CHASE_MULT = 3.0
 BURST_SCALE = 6.5                     # 克拉莉丝演出缩放（母本 clarisse_1 是 5，火龙树是 4）
@@ -291,14 +318,12 @@ BURST_RADIUS = 330                    # 「范围增大一些」：250/200 → 3
 BURST_MAX_HITS = 5
 PF_SCALE = 2.0                        # 官方 special 合计 5 / 7.667 / 13 ⇒ 10 / 15.33 / 26
 PF_SUPPRESS = 90                      # 底座 SetPowerFilpSuppress
-PF_LANCE_SCALE = {1: 1.0, 2: 1.3, 3: 1.6}
-PF_EXTRA_FX = {1: (), 2: (("lance_hit", ZETA_HIT),),
-               3: (("lance_hit", ZETA_HIT), ("lance_end", ZETA_END))}
-CHASE_TAG = f"{CODE}_chase"
-CHASE_STEP = 4
-CHASE_SPEED = 40
-CHASE_SELECTOR = 51                   # 49=全体 / 50=杂兵 / 51=BOSS / 52=漏斗
-CHASE_BIND = 1001                     # 底座占 0–7
+# 反馈轮 1：三档只留锥形本体，靠 scale 递增表达「逐渐增强」（不再叠 hit/end 的黄色六边形）。
+PF_LANCE_SCALE = {1: 1.0, 2: 1.4, 3: 1.8}
+# 锥形朝向：官方赛达 `zeta$zeta_1` 就是 `ShowEffect zeta_lance, 主体 -18(球), 坐标系 ["EF"]`；
+# `BallImpl.getDirEF()` 直接返回球的飞行角（`getDirCD()` 才是 throw）。底座 special 的
+# オーラ演出写的是 AB（绝对坐标、角度恒 0）⇒ 枪体恒定朝上，这就是作者说的「现在恒定朝上」。
+PF_LANCE_COORD = ["EF"]
 
 # 克拉莉丝末端裁段（调研卡 C §2.2 落法 A）：母本漂移即拒绝
 CLARISSE_TOTAL = 157
@@ -802,6 +827,11 @@ def aura_block(ctx, level: str) -> tuple[list[list], dict[str, Any]]:
         raise KitError(f"anger_investigator aura donor drift: subject={show[3]} coord={show[6]}/{area[3]}")
     if (area[19], area[21], area[22]) != (0, 1, 2) or area[24] != 0:
         raise KitError(f"anger_investigator hit-area binds drift: {area[19:25]}")
+    # 命中跳数/寿命/跟随球这三格是「碰到就打」的命门：母本漂移就别继续往下改
+    if area[7] is not True or area[13] != ["SpecifyHitAreaLifetimeDirectly", 600]:
+        raise KitError(f"anger_investigator hit-area tracking/lifetime drift: {area[7]} {area[13]}")
+    if area[14][0] != "CalculatedUsingMaxNumOfHits" or area[15][0] != "Some":
+        raise KitError(f"anger_investigator hit accounting drift: {area[14]} {area[15]}")
 
     show, area = copy.deepcopy(show), copy.deepcopy(area)
     scale, radius, mult = AURA_TUNING[level]
@@ -811,6 +841,10 @@ def aura_block(ctx, level: str) -> tuple[list[list], dict[str, Any]]:
 
     area[9] = ["Circle", _slv(radius)]
     area[13] = ["SpecifyHitAreaLifetimeDirectly", AURA_FRAMES]
+    # 母本的 CalculatedUsingMaxNumOfHits(10) 会被客户端换算成 600/9.5≈63 帧的最小间隔；
+    # 显式写 30 帧，每目标硬上限仍由 p15 管（总跳数不变，见 AURA_HIT_INTERVAL 注释）。
+    area[14] = ["SpecifyMinHitIntervalDirectly", AURA_HIT_INTERVAL]
+    area[15] = ["Some", _slv(AURA_MAX_HITS)]
     area[19], area[21], area[22] = AURA_BINDS
     body = area[23][1]
     keep = [n for n in body
@@ -824,8 +858,12 @@ def aura_block(ctx, level: str) -> tuple[list[list], dict[str, Any]]:
     cna[15] = ["Fine"]
     if area[24] != 0:
         raise KitError("aura hit area p24 must stay 0")
+    if cna[1] != area[22]:
+        raise KitError(f"aura CNA target {cna[1]} must be the hit-area p22 bind {area[22]}")
     return ([["Command", show], ["Command", area]],
             {"scale": scale, "radius": radius, "multiplier": mult,
+             "ring_diameter_px": round(AURA_RING_PX_PER_SCALE * scale, 1),
+             "hit_interval": AURA_HIT_INTERVAL, "max_hits": AURA_MAX_HITS,
              "lifetime": AURA_FRAMES, "binds": list(AURA_BINDS)})
 
 
@@ -917,16 +955,12 @@ def build_chase_tree(ctx, families) -> tuple[Any, dict[str, Any]]:
 
 # ---------------------------------------------------------------- 722 特殊强化弹射
 
-def _cmd(*values) -> list:
-    return ["Command", list(values)]
-
-
-def _block(*values) -> list:
-    return ["Block", list(values)]
-
-
 def build_pf_tree(ctx, level: int, families) -> tuple[Any, dict[str, Any]]:
-    """官方 ``special_lv{n}`` 整树作底座（sha 锁定）+ 赛达三档 + 追踪 boss + 克拉莉丝爆炸。"""
+    """官方 ``special_lv{n}`` 整树作底座（sha 锁定）+ 赛达锥形三档 + 克拉莉丝爆炸。
+
+    反馈轮 1：不再有「追踪 boss」那一套（Repeat/FindNearSubjects/MoveBall/RemoveEvent），
+    弹道完全是官方 special 底座的原生弹道。
+    """
     program = SPECIAL_PROGRAMS[level]
     raw = ctx.official_read(wf_dsl.dsl_logical(program))
     if raw is None:
@@ -948,18 +982,12 @@ def build_pf_tree(ctx, level: int, families) -> tuple[Any, dict[str, Any]]:
     if len(aura_at) != 1:
         raise KitError(f"special lv{level} オーラ演出 not unique ({len(aura_at)})")
     aura = root_body[aura_at[0]][1]
-    aura[2] = ["SpecifyEffectDirectly", ZETA_LANCE]
-    aura[12] = ["Some", _slv(PF_LANCE_SCALE[level])]
     if aura[6] != ["AB"] or aura[3] != -18:
         raise KitError(f"special lv{level} aura subject/coord drift: {aura[3]} {aura[6]}")
-
-    extras = []
-    for offset, (name, path) in enumerate(PF_EXTRA_FX[level], start=1):
-        extra = copy.deepcopy(aura)
-        extra[1] = name
-        extra[2] = ["SpecifyEffectDirectly", path]
-        root_body.insert(aura_at[0] + offset, ["Command", extra])
-        extras.append(name)
+    aura[2] = ["SpecifyEffectDirectly", ZETA_LANCE]
+    aura[12] = ["Some", _slv(PF_LANCE_SCALE[level])]
+    # 朝弹射方向：照抄官方赛达 zeta$zeta_1 的 (-18, ["EF"])。AB 是绝对坐标 ⇒ 恒定朝上。
+    aura[6] = list(PF_LANCE_COORD)
 
     # 命中爆炸：克拉莉丝末端 + 判定圆放大
     bursts = [c for c in _commands(tree, "ShowEffect") if c[1] == "特殊演出"]
@@ -991,30 +1019,32 @@ def build_pf_tree(ctx, level: int, families) -> tuple[Any, dict[str, Any]]:
     if not scaled:
         raise KitError(f"special lv{level} carries no CreateNormalAttack")
 
-    # 追踪 boss：Repeat 每 4 帧重新瞄一次；撞到就掐掉（否则球贴着敌人抖）
+    # 反馈轮 1：作者要求去掉「强化弹射追踪 boss」⇒ 底座的弹道原样保留，
+    # 不再往 root 挂 Repeat/FindNearSubjects/MoveBall，碰撞块里也没有 RemoveEvent 要清。
+    # 这里只留底座形状断言：收尾仍然靠 CollisionOfBallAndEnemy + NotifyPowerflipEnd。
+    # 底座自己就带一条 RemoveEvent("ヒット判定")，所以判据是「与底座逐条同名同数」，
+    # 不是「一条 RemoveEvent 都不许有」。
     collisions = [n for n in root_body
                   if n[0] == "Event" and n[1][0] == "CollisionOfBallAndEnemy"]
-    collision = _only(collisions, "root CollisionOfBallAndEnemy")
-    collision[1][5][1].insert(0, _cmd("RemoveEvent", CHASE_TAG))
-    for name in extras:
-        collision[1][5][1].insert(1, _cmd("HideEffect", name))
-    steer = _cmd("FindNearSubjects", -18, 1, CHASE_SELECTOR, ["DoNothing"], CHASE_BIND,
-                 _block(_cmd("MoveBall", -18, ["GH", CHASE_BIND], 0,
-                             CHASE_STEP, CHASE_SPEED, ["KeepGoing"], False)))
-    repeats = (PF_SUPPRESS - 2) // CHASE_STEP
-    root_body.append(["Event", ["Repeat", CHASE_STEP, repeats, CHASE_TAG, _block(steer)]])
+    _only(collisions, "root CollisionOfBallAndEnemy")
+    base = ctx.template_dsl(program)
+    for name in ("MoveBall", "FindNearSubjects", "RemoveEvent", "Repeat"):
+        here = len(_commands(tree, name))
+        there = len(_commands(base, name))
+        if here != there:
+            raise KitError(f"PF lv{level} {name} count {here} != official base {there} "
+                           "(反馈轮 1 已去掉追踪，弹道必须与底座一致)")
+    if any(n[0] == "Event" and n[1][0] == "Repeat" for n in root_body):
+        raise KitError(f"PF lv{level} still carries a Repeat steering event")
 
     ids = _declared_ids(tree)
     if len(ids) != len(set(ids)):
         raise KitError(f"PF lv{level} binding ids not unique: {sorted(ids)}")
-    if CHASE_BIND in ids:
-        raise KitError(f"PF lv{level} chase bind {CHASE_BIND} collides with a declared id")
     tree = _rewrite(ctx, tree, families)
     return tree, {"level": level, "multipliers": scaled, "total": round(sum(scaled), 6),
-                  "lance_scale": PF_LANCE_SCALE[level], "extra_effects": extras,
-                  "donor_radii": radii, "burst_radius": BURST_RADIUS,
-                  "chase": {"selector": CHASE_SELECTOR, "step": CHASE_STEP,
-                            "speed": CHASE_SPEED, "repeats": repeats, "bind": CHASE_BIND}}
+                  "lance_scale": PF_LANCE_SCALE[level],
+                  "lance_coord": list(PF_LANCE_COORD), "extra_effects": [],
+                  "donor_radii": radii, "burst_radius": BURST_RADIUS, "chase": None}
 
 
 # ---------------------------------------------------------------- DSL 闸门与落盘
@@ -1099,7 +1129,7 @@ def write_skills(ctx, families) -> dict[str, Any]:
 # ---------------------------------------------------------------- 入口
 
 SUMMARY = ("玛格诺斯 rework1：火 · 特殊强化弹射主C"
-           "（722 三档追踪 PF → 629「引擎之炎」→ 引擎点火按层堆技能伤害）")
+           "（722 三档锥形 PF → 629「引擎之炎」→ 引擎点火按层堆技能伤害）")
 
 NOTES = [
     "722 带火共鸣门（官方 141201#1 先例）：非共鸣队伍或他不当队长时是原生剑士 PF，面板已写明",
@@ -1111,6 +1141,11 @@ NOTES = [
     "三族特效克隆到 skill_unique/lion_swordman_moon/{lance,burst,aura}/，预算 0.44% → 约 2.19%",
     "克拉莉丝只播末端 79 帧（parts 根层 r=(1<<30)|78），手术在 clone 之后施加并带母本漂移断言",
     "像素交付件（sprite_sheet / special_sprite_sheet）若是标准 PNG，装包时由 kitlib 换成 WF 存储态魔数",
+    "反馈轮 1：去掉 PF 追踪 boss（Repeat/FindNearSubjects/MoveBall 整块删，弹道回官方 special 原生）",
+    "反馈轮 1：赛达只留锥形 zeta_lance（黄色六边形来自 zeta_lance_hit/_end，整族不再克隆），"
+    "三档改 scale 1.0/1.4/1.8；坐标系 AB→EF ⇒ 枪体朝球的飞行方向（官方 zeta$zeta_1 同写法）",
+    "反馈轮 1：光圈环画出来是 132.71×scale px，scale 3.75 时半径 248.8 却只有 Circle 200 判定 ⇒ "
+    "外圈 48.8px 碰到敌人不掉血；scale 改由判定半径反算（3.01/4.07），并把命中间隔从推导的 63 帧改显式 30 帧",
 ]
 
 DEVIATIONS = [
@@ -1146,6 +1181,16 @@ DEVIATIONS = [
     {"want": "像素件（小人 sprite_sheet 等）随 kit 一起装包",
      "got": "B/pixel/magnus/install.json 不存在时自动跳过，包内保持母本像素件",
      "why": "像素/立绘/语音不归本代理；像素代理交付后重跑 kit 即可装入。"},
+    {"want": "面板 / 技能描述里的「并可追击敌方boss目标」",
+     "got": "整句删除（PF_STRING 与 action_skill 描述第 4 段同步）",
+     "why": "反馈轮 1 作者要求去掉强化弹射的追踪，行为没了文案就不能留。"},
+    {"want": "赛达三档靠叠加 zeta_lance_hit / zeta_lance_end 表达「逐渐增强」",
+     "got": "三档都只用锥形 zeta_lance，靠 scale 1.0/1.4/1.8 递增；两个 hit/end 族不再克隆",
+     "why": "作者原话「只要锥形的效果黄色的小方框不要」——实测那两族的主体就是实心黄色六边形。"},
+    {"want": "光圈「稍微小一点」＝ ShowEffect scale 与判定半径一起按 15–20% 缩",
+     "got": "只缩画面（scale 3.75→3.01、5.00→4.07，−19.7%/−18.6%），判定半径 200/270 不动",
+     "why": "环和判定本来差 24%（环 248.8 vs 判定 200）——那圈差值就是「碰到了没伤害」的来源；"
+            "缩画面到刚好压在判定圆上，既是作者要的更小，也让看得见的部分全部生效，强度不变。"},
 ]
 
 

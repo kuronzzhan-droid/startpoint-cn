@@ -226,7 +226,7 @@ class PlanStaticTests(unittest.TestCase):
             self.assertTrue(src_dir.startswith("battle/effect/skill_unique/"), src_dir)
             self.assertNotIn(KM.CODE, src_dir, "克隆源必须是官方族")
             self.assertTrue(names)
-        for path in (KM.ZETA_LANCE, KM.ZETA_HIT, KM.ZETA_END, KM.CLARISSE, KM.AURA):
+        for path in (KM.ZETA_LANCE, KM.CLARISSE, KM.AURA):
             self.assertTrue(path.startswith(f"battle/effect/skill_unique/{KM.CODE}/"),
                             f"兄弟目录名会「进战斗数据不足」: {path}")
         self.assertTrue(KM.FLAME.startswith(f"battle/effect/skill_unique/{KM.TEMPLATE_CODE}/"),
@@ -237,9 +237,44 @@ class PlanStaticTests(unittest.TestCase):
         self.assertEqual(KM.CLARISSE_NEW_T, KM.CLARISSE_TOTAL - KM.CLARISSE_CUT)
         self.assertEqual(KM.CLARISSE_NEW_R >> 30, 1, "kind=1 播一次，末帧定格")
 
-    def test_chase_tracking_targets_the_boss_selector(self):
-        self.assertEqual(KM.CHASE_SELECTOR, 51, "49=全体 / 50=杂兵 / 51=BOSS / 52=漏斗")
-        self.assertGreaterEqual(KM.CHASE_BIND, 1000, "底座自己占 0–7")
+    def test_power_flip_carries_no_chase_knobs_any_more(self):
+        """反馈轮 1：作者要求去掉强化弹射追踪 ⇒ 常量与文案都不许再出现。"""
+        for name in ("CHASE_TAG", "CHASE_STEP", "CHASE_SPEED", "CHASE_SELECTOR",
+                     "CHASE_BIND", "PF_EXTRA_FX", "ZETA_HIT", "ZETA_END"):
+            self.assertFalse(hasattr(KM, name), f"{name} 应随追踪/方块特效一起删掉")
+        for text in (KM.CAS_TEXTS[KM.PF_STRING], KM._SKILL_DESC,
+                     KM.TEXTS["desc1"], KM.TEXTS["desc2"]):
+            self.assertNotIn("追击", text, "行为删了文案不能留")
+
+    def test_zeta_family_keeps_only_the_cone(self):
+        """「只要锥形的效果黄色的小方框不要」：黄色六边形来自 hit/end 两族。"""
+        lance = dict((sub, names) for sub, _src, names in KM.FX_CLONES)["lance"]
+        self.assertEqual(tuple(lance), ("zeta_lance",))
+        self.assertEqual(sorted(KM.PF_LANCE_SCALE), [1, 2, 3])
+        tiers = [KM.PF_LANCE_SCALE[n] for n in (1, 2, 3)]
+        self.assertEqual(tiers, sorted(tiers))
+        self.assertLess(tiers[0], tiers[2], "三档靠锥形 scale 递增表达「逐渐增强」")
+
+    def test_lance_points_along_the_ball(self):
+        """EF = BallImpl.getDirEF() = 球的飞行角（官方 zeta$zeta_1 同写法）；AB 会恒定朝上。"""
+        self.assertEqual(KM.PF_LANCE_COORD, ["EF"])
+
+    def test_aura_ring_is_drawn_exactly_on_the_judgement_circle(self):
+        """反馈轮 1「没有碰撞到的技能伤害」的根因：环比判定圆大 24%，外圈是纯装饰。"""
+        for level in ("1", "2"):
+            scale, radius, _mult = KM.AURA_TUNING[level]
+            drawn = KM.AURA_RING_PX_PER_SCALE * scale / 2
+            self.assertLess(abs(drawn - radius), 2.0,
+                            f"lv{level} 画出来的环半径 {drawn:.1f} 必须等于判定半径 {radius}")
+        self.assertLess(KM.AURA_TUNING["1"][0], 3.75, "作者要求「稍微小一点」")
+        self.assertLess(KM.AURA_TUNING["2"][0], 5.00)
+        for level in ("1", "2"):
+            shrink = 1 - KM.AURA_TUNING[level][0] / {"1": 3.75, "2": 5.00}[level]
+            self.assertTrue(0.10 <= shrink <= 0.25, f"lv{level} 缩了 {shrink:.1%}，越界就不是「稍微」")
+        self.assertEqual(KM.AURA_RADIUS, {"1": 200, "2": 270}, "缩的是画面，判定强度不动")
+        self.assertEqual(KM.AURA_MAX_HITS, 10, "每目标上限不动 ⇒ 单次技能总伤不变")
+        self.assertLess(KM.AURA_HIT_INTERVAL, 600 / (KM.AURA_MAX_HITS - 0.5),
+                        "母本 CalculatedUsingMaxNumOfHits(10) 推出来的 63 帧太稀，擦过就打不出第二跳")
 
     def test_deviations_are_registered(self):
         self.assertTrue(KM.DEVIATIONS)
@@ -518,10 +553,16 @@ class SkillTreeIntegrationTests(unittest.TestCase):
         return list(wf_dsl.iter_dsl_commands(tree, "ShowEffect"))
 
     def _assert_no_cd_coordsys(self, tree):
-        """挂在球/敌人/角色上的 ShowEffect 只能 AB 或 GH（CD 的 getDirCD 会 throw ⇒ U_4f5401）。"""
+        """CD 的 getDirCD() 在球/敌人/角色上都是 throw ⇒ U_4f5401。
+
+        EF 只有 Mate(-33) 会抛：``BallImpl.getDirEF()`` 返回球的飞行角，
+        官方赛达 ``zeta$zeta_1`` 就是 ``(-18, ["EF"])``，所以球上允许 EF。
+        """
         for show in self._effects(tree):
             self.assertIn(show[6][0], ("AB", "GH", "EF"), show[1])
             if show[3] in (-18,) or show[3] >= 0:
+                self.assertNotEqual(show[6][0], "CD", show[1])
+            if show[3] == -33:
                 self.assertIn(show[6][0], ("AB", "GH"), show[1])
 
     def test_main_tree_merges_the_aura_ring(self):
@@ -533,10 +574,11 @@ class SkillTreeIntegrationTests(unittest.TestCase):
                 self.assertEqual(len(ids), len(set(ids)))
                 self.assertEqual(sorted(ids), [0, 1, 2, 3, 4, 5, *KM.AURA_BINDS])
                 scale, radius, mult = KM.AURA_TUNING[level]
-                self.assertEqual(meta["aura"], {"scale": scale, "radius": radius,
-                                                "multiplier": mult,
-                                                "lifetime": KM.AURA_FRAMES,
-                                                "binds": list(KM.AURA_BINDS)})
+                self.assertEqual(meta["aura"], {
+                    "scale": scale, "radius": radius, "multiplier": mult,
+                    "ring_diameter_px": round(KM.AURA_RING_PX_PER_SCALE * scale, 1),
+                    "hit_interval": KM.AURA_HIT_INTERVAL, "max_hits": KM.AURA_MAX_HITS,
+                    "lifetime": KM.AURA_FRAMES, "binds": list(KM.AURA_BINDS)})
                 self.assertEqual(wf_dsl.player_side_dsl_problems(tree), [])
                 self.assertEqual(wf_dsl.parse_dsl(wf_dsl.encode_amf3(tree))["tree"], tree)
                 self._assert_no_cd_coordsys(tree)
@@ -566,6 +608,50 @@ class SkillTreeIntegrationTests(unittest.TestCase):
         cna = next(iter(wf_dsl.iter_dsl_commands(area[23], "CreateNormalAttack")))
         self.assertEqual(cna[15], ["Fine"], "命中特效用引擎内置件 ⇒ 只需克隆 _aura")
         self.assertEqual(cna[1], KM.AURA_BINDS[2])
+
+    def test_aura_block_is_the_official_block_except_for_the_listed_knobs(self):
+        """「碰到光圈不掉血」的排查基线：逐参对齐官方魏虎原块，只允许这几格不同。
+
+        允许不同的格（都写在 kit 常量里）：p9 判定圆、p13 寿命、p14 命中间隔、p15 每目标上限、
+        p19/p21/p22 绑定 id、p23 命中块（去掉火耐性行 + 换倍率/命中特效）。
+        其余 19 格（尤其是 p2 挂球、p7 跟随球、p24 伤害归属 0）一格都不许漂。
+        """
+        donor = self.ctx.template_dsl(KM.AURA_DONOR)
+        official = next(c for c in wf_dsl.iter_dsl_commands(donor, "CreateHitArea")
+                        if c[2] == -18)
+        tunable = {9, 13, 14, 15, 19, 21, 22, 23}
+        for level in ("1", "2"):
+            tree, _meta = KM.build_main_tree(self.ctx, level, self.families)
+            area = next(a for a in wf_dsl.iter_dsl_commands(tree, "CreateHitArea")
+                        if a[19] == KM.AURA_BINDS[0])
+            self.assertEqual(len(area), len(official), "26 参判定区的参数个数必须一致")
+            for index in range(len(official)):
+                if index in tunable:
+                    continue
+                self.assertEqual(area[index], official[index],
+                                 f"lv{level} 判定区 p{index} 漂了：{area[index]!r}")
+            self.assertEqual(area[2], -18, "判定区挂球")
+            self.assertEqual(area[3], ["AB"])
+            self.assertEqual(area[7], True, "trackingPos：每帧重取球的位置")
+            self.assertEqual(area[24], 0, "0 = 按 createdBy 标志算 ⇒ 技能伤害")
+            self.assertEqual(area[13], ["SpecifyHitAreaLifetimeDirectly", KM.AURA_FRAMES])
+            self.assertEqual(area[14], ["SpecifyMinHitIntervalDirectly", KM.AURA_HIT_INTERVAL])
+            self.assertEqual(area[15], ["Some", [{"min": KM.AURA_MAX_HITS,
+                                                  "max": KM.AURA_MAX_HITS}]])
+            self.assertEqual(area[9], ["Circle", [{"min": KM.AURA_RADIUS[level],
+                                                   "max": KM.AURA_RADIUS[level]}]])
+            hits = [c[1][0] for c in area[23][1]]
+            self.assertEqual(hits, ["ShakeCamera", "CreateNormalAttack"],
+                             "命中块只剩摄像机抖 + 一发技能伤害")
+            self.assertEqual(area[23][1][1][1][1], area[22],
+                             "CNA 的目标位必须是判定区 p22 绑定，否则 lookup 拿不到被打中的敌人")
+            ring = next(s for s in self._effects(tree) if s[1] == "aura_ring")
+            self.assertEqual((ring[3], ring[6]), (-18, ["AB"]), "光圈挂球、绝对坐标（官方原样）")
+            self.assertEqual(ring[5], ["SpecifyEffectLifetimeDirectly", KM.AURA_FRAMES],
+                             "演出寿命必须与判定区寿命同值，否则看得见的环比判定活得久")
+            drawn = KM.AURA_RING_PX_PER_SCALE * ring[12][1][0]["max"] / 2
+            self.assertLess(abs(drawn - KM.AURA_RADIUS[level]), 2.0,
+                            "环画出来的半径必须等于判定半径")
 
     def test_main_tree_only_references_official_or_cloned_effects(self):
         for level in ("1", "2"):
@@ -625,35 +711,47 @@ class SkillTreeIntegrationTests(unittest.TestCase):
                 self.assertEqual(wf_dsl.player_side_dsl_problems(tree), [])
                 self.assertEqual(wf_dsl.parse_dsl(wf_dsl.encode_amf3(tree))["tree"], tree)
                 self._assert_no_cd_coordsys(tree)
-                self.assertEqual(meta["chase"]["selector"], KM.CHASE_SELECTOR)
+                self.assertIsNone(meta["chase"], "反馈轮 1：不再追踪 boss")
 
-    def test_power_flip_tracks_the_boss_and_stops_on_impact(self):
-        tree, _meta = KM.build_pf_tree(self.ctx, 3, self.families)
-        moves = list(wf_dsl.iter_dsl_commands(tree, "MoveBall"))
-        self.assertEqual(moves, [["MoveBall", -18, ["GH", KM.CHASE_BIND], 0,
-                                  KM.CHASE_STEP, KM.CHASE_SPEED, ["KeepGoing"], False]])
-        finds = [c for c in wf_dsl.iter_dsl_commands(tree, "FindNearSubjects")]
-        self.assertEqual([c[3] for c in finds], [51], "51 = BOSS（boot_ffc6.as:1046-1049）")
-        self.assertEqual(finds[0][4], ["DoNothing"], "空场时内层不执行，球走原轨迹")
-        removes = {c[1] for c in wf_dsl.iter_dsl_commands(tree, "RemoveEvent")}
-        self.assertIn(KM.CHASE_TAG, removes, "撞到后必须掐掉追踪，否则球贴着敌人抖")
-        repeats = [n for n in tree[11][1] if n[0] == "Event" and n[1][0] == "Repeat"]
-        self.assertEqual(len(repeats), 1)
-        self.assertEqual(repeats[0][1][1], KM.CHASE_STEP)
-        self.assertEqual(repeats[0][1][2], (KM.PF_SUPPRESS - 2) // KM.CHASE_STEP)
+    def test_power_flip_keeps_the_native_trajectory(self):
+        """去追踪：弹道必须回到官方 special 底座（删判定用的反向断言）。"""
+        for level in (1, 2, 3):
+            tree, meta = KM.build_pf_tree(self.ctx, level, self.families)
+            base = self.ctx.template_dsl(KM.SPECIAL_PROGRAMS[level])
+            for name in ("MoveBall", "FindNearSubjects", "RemoveEvent", "Repeat"):
+                # 底座自带一条 RemoveEvent("ヒット判定") ⇒ 判据是与底座同名同数
+                self.assertEqual(len(list(wf_dsl.iter_dsl_commands(tree, name))),
+                                 len(list(wf_dsl.iter_dsl_commands(base, name))),
+                                 f"lv{level} 的 {name} 条数与官方底座不一致")
+            self.assertEqual([n for n in tree[11][1]
+                              if n[0] == "Event" and n[1][0] == "Repeat"], [])
+            self.assertEqual(meta["extra_effects"], [])
+            base = self.ctx.template_dsl(KM.SPECIAL_PROGRAMS[level])
+            self.assertEqual([n[1][0] if n[0] == "Command" else n[1][0] for n in tree[11][1]],
+                             [n[1][0] if n[0] == "Command" else n[1][0] for n in base[11][1]],
+                             f"lv{level} root 命令序列必须和官方底座逐条对齐")
 
-    def test_power_flip_tiers_get_progressively_more_zeta(self):
-        totals, fx = [], []
+    def test_power_flip_tiers_are_one_cone_that_grows(self):
+        totals, fx, scales = [], [], []
         for level in (1, 2, 3):
             tree, meta = KM.build_pf_tree(self.ctx, level, self.families)
             totals.append(meta["total"])
             fx.append({str(s[2][1]) for s in self._effects(tree)})
+            lance = [s for s in self._effects(tree) if str(s[2][1]) == KM.ZETA_LANCE]
+            self.assertEqual(len(lance), 1, "只留一层锥形")
+            self.assertEqual(lance[0][3], -18)
+            self.assertEqual(lance[0][6], ["EF"], "朝球的飞行方向，AB 会恒定朝上")
+            scales.append(lance[0][12][1][0]["max"])
             del tree
         self.assertEqual(totals, sorted(totals), "三档逐渐增强")
-        self.assertTrue(fx[0] <= fx[1] <= fx[2], "特效按档位叠加")
-        self.assertEqual(fx[2] - fx[0], {KM.ZETA_HIT, KM.ZETA_END})
+        self.assertEqual(scales, [KM.PF_LANCE_SCALE[n] for n in (1, 2, 3)])
+        self.assertEqual(scales, sorted(scales))
+        self.assertEqual(fx[0], fx[1], "不再按档位叠加别的基名")
+        self.assertEqual(fx[1], fx[2])
+        for names in fx:
+            self.assertEqual(names, {KM.ZETA_LANCE, KM.CLARISSE},
+                             "黄色小方框（zeta_lance_hit/_end）不许再出现")
         self.assertIn(KM.ZETA_LANCE, fx[0])
-        self.assertIn(KM.CLARISSE, fx[0])
 
 
 @unittest.skipUnless(PKG_COMMON.is_dir(), "requires a rebuilt ma-magnus workspace")
