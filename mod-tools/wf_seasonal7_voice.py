@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import contextmanager, ExitStack
 from copy import deepcopy
 from dataclasses import asdict
 import datetime as dt
@@ -24,6 +25,7 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
 import urllib.request
 import wave
@@ -72,11 +74,26 @@ SLOTS = ('ally/join', 'ally/evolution', *HOME_SLOTS,
          'battle/power_flip_0', 'battle/power_flip_1',
          'battle/outhole_0', 'battle/outhole_1',
          'battle/win_0', 'battle/win_1')
+# 引擎实际支持的全集（`CharacterShortVoiceLogic.generateVoicePaths` 扫到 511，这里只开到
+# 有台词稿先例的号段）。SLOTS 是它的子序列，所以用 ALL_SLOTS 排序不会改变旧的槽位次序。
+ALL_SLOTS = ('ally/join', 'ally/evolution',
+             *(f'home/home_{i}' for i in range(10)),
+             *(f'battle/battle_start_{i}' for i in range(4)),
+             'battle/skill_ready', 'battle/matched_skill_ready',
+             *(f'battle/skill_{i}' for i in range(8)),
+             *(f'battle/matched_skill_{i}' for i in range(4)),
+             'battle/power_flip_0', 'battle/power_flip_1',
+             'battle/outhole_0', 'battle/outhole_1',
+             'battle/win_0', 'battle/win_1')
+# 凯尔：标准 22 槽 + 技能发动 skill_4/skill_5（序号池均匀随机）
+# + battle_start_2/battle_start_3（技能准备引擎硬上限 2 条，多出的两条改投开战池）。
+KYLE_EXTRA_SLOTS = ('battle/skill_4', 'battle/skill_5', 'battle/battle_start_2', 'battle/battle_start_3')
+SLOTS_26 = tuple(s for s in ALL_SLOTS if s in set(SLOTS) | set(KYLE_EXTRA_SLOTS))
 SUBTITLE_SLOTS = (*HOME_SLOTS, 'ally/join', 'ally/evolution')
 SUBTITLE_MAX = 82          # 官方 home 字幕最长 82 字；气泡不缩字、不截断
 SUBTITLE_MAX_LINES = 4
 
-# 表演时长目标（官方 p50–p90，见 mech_voice.md §4.1）；拼进 direction。
+# 表演时长目标（官方 p50–p90，见 mech_voice.md §4.1）；拼进 direction。v1 专用。
 TIMING = {
     'join': '加入语音，从容完整，目标9至13秒',
     'evolution': '进化语音，情感完整，目标10至15秒',
@@ -89,6 +106,38 @@ TIMING = {
     'win_N': '胜利台词，自然清晰，目标3至5.4秒',
 }
 
+# v2 逐槽时长分位：官方 8891 条实测（D:/WF/角色语音 全量 ffprobe），
+# prompt 里写 **p25–p75**（第一轮写 p50–p90，实测中位偏长 +26%~+81%，准备音最离谱）。
+# chars = 按实测语速（战斗短槽 4.5–5.5 字/秒、长槽 3.5–4.5 字/秒）倒推的日文字数（不含标点）。
+SLOT_TARGETS = {
+    'home':           dict(p10=7.15, p25=8.88, p50=10.93, p75=13.22, p90=15.80, official_max=26.25, chars=(32, 52)),
+    'join':           dict(p10=6.70, p25=8.23, p50=10.01, p75=11.83, p90=13.85, official_max=21.68, chars=(30, 48)),
+    'evolution':      dict(p10=8.03, p25=9.46, p50=11.40, p75=13.54, p90=15.10, official_max=20.90, chars=(34, 54)),
+    'battle_start_N': dict(p10=1.18, p25=1.46, p50=1.83, p75=2.30, p90=2.61, official_max=5.85, chars=(7, 12)),
+    'skill_ready':    dict(p10=0.90, p25=1.15, p50=1.49, p75=1.88, p90=2.22, official_max=3.84, chars=(5, 9)),
+    'skill_N':        dict(p10=1.55, p25=2.01, p50=2.38, p75=2.82, p90=3.24, official_max=5.04, chars=(9, 14)),
+    'power_flip_N':   dict(p10=0.71, p25=0.86, p50=1.07, p75=1.41, p90=1.72, official_max=3.17, chars=(2, 6)),
+    'outhole_N':      dict(p10=0.65, p25=0.81, p50=1.02, p75=1.44, p90=1.91, official_max=3.40, chars=(3, 7)),
+    'win_N':          dict(p10=2.38, p25=2.98, p50=3.63, p75=4.47, p90=5.43, official_max=9.06, chars=(11, 18)),
+    'login':          dict(p10=1.82, p25=2.25, p50=2.93, p75=3.69, p90=4.26, official_max=5.51, chars=(8, 16)),
+}
+# 战斗短槽：句内停顿与拖长是第一轮「录得不好」的主因，`……` 在这些槽里一律不用。
+SHORT_BATTLE_FAMILIES = frozenset({'skill_ready', 'skill_N', 'power_flip_N', 'outhole_N', 'battle_start_N'})
+
+# 语速：本轮 v2 冒烟 4 条的实测（标准态时长 ÷ 去标点字数）
+#   battle_start_0 12 字 / 1.855s = 6.47、skill_ready 11 字 / 1.907s = 5.77、
+#   power_flip_0    4 字 / 0.862s = 4.64、home_0      58 字 / 13.218s = 4.39。
+# 预算取实测**下沿**（短槽 5.0、长槽 4.0）：字数 ÷ 语速 = 预估秒数，语速取小 ⇒ 预估秒数取大
+# ⇒ 预算偏紧，宁可让稿子短一点，也不要钱花完了才被 duration_band 毙掉。
+# 这两个数同时是 `take_score` 的语速基准，全工具只有这一处真源。
+CHARS_PER_SECOND_SHORT = 5.0
+CHARS_PER_SECOND_LONG = 4.0
+# 边缘裁剪只对战斗槽开：长槽的呼吸起手是表演的一部分。
+TRIM_FAMILIES = SHORT_BATTLE_FAMILIES | {'win_N'}
+TRIM_HEAD_SECONDS = 0.10
+TRIM_TAIL_SECONDS = 0.15
+TRIM_ACTIVE_DBFS = -48.0
+
 SPEECH_TABLE = 'master/character/character_speech.orderedmap'
 CHARACTER_TABLE = 'master/character/character.orderedmap'
 SWITCH_TABLE = 'master/skill/switched_action_skill.orderedmap'
@@ -100,8 +149,11 @@ VOICE_ACTOR = 'AI 合成配音'
 MAX_WORKERS = 2
 MAX_AUTO_RETRIES = 1            # 同一请求（同指纹）最多自动重试 1 次，跨续跑累计
 AUDIT_CODES = frozenset({'45001125'})
+REFERENCE_AUDIT_CODES = frozenset({'45001127'})   # tts_create_ref：被拒的是参考音，不是台词
 RETRY_BACKOFF = {429: 30.0}
 DEFAULT_BACKOFF = 10.0
+# 跨进程锁目录（mod-tools/work 已 gitignore）：同一角色只许一个进程在生成。
+LOCK_DIR = ROOT / 'mod-tools' / 'work' / 'voice-locks'
 
 # 后处理（杰拉德 -14 LUFS 方案：wf_gerald_voice_level_audio）
 TARGET_LUFS = -14.0
@@ -115,12 +167,81 @@ MASTER_PARAMS = dict(target_lufs=TARGET_LUFS, peak_ceiling_dbtp=PEAK_CEILING,
                      max_limiter_reduction_db=MAX_LIMITER_REDUCTION_DB,
                      limiter='alimiter attack=5 release=80 level=disabled latency=enabled @176.4k',
                      codec='libmp3lame 44100Hz mono 96k CBR xing no-id3')
+# v2：两遍 loudnorm（measured_* + linear=true），限幅只当安全网（削减 ≤2 dB）。
+LOUDNORM_TP = -1.5
+LOUDNORM_LRA = 11
+SAFETY_LIMITER_REDUCTION_DB = 2.0
+# 原始响度硬门：recipe 写 -20，本轮实测放宽到 -26（见 take_gates 的注释与 pipeline-v2.md）。
+RAW_LUFS_FLOOR = -26.0
+
+
+def limiter_bound(mode: str, max_limiter_reduction_db: float = MAX_LIMITER_REDUCTION_DB) -> float:
+    """限幅削减上界的唯一真源：两遍 loudnorm 下限幅只当安全网，钳到 2 dB。
+
+    钳位必须只写在这一处。`master_voice`（实际处理 + 写 QC 报告）与 `process_run`
+    （按策略重算期望参数判漂移）曾各自算一遍：前者钳到 2.0、后者留 4.0，于是
+    第二遍 `process` 的缓存分支恒判 `params != expected`，抛「QC drift…use a new
+    run directory」逼人重开 run 目录 = 按抽卡预算重复计费。
+    """
+    if mode == 'two_pass':
+        return min(max_limiter_reduction_db, SAFETY_LIMITER_REDUCTION_DB)
+    return max_limiter_reduction_db
+
+
+def master_params(*, mode: str = 'fixed_gain', trim: bool = False,
+                  max_limiter_reduction_db: float = MAX_LIMITER_REDUCTION_DB) -> dict:
+    """QC 报告里记的处理参数；`process_run` 用它判 QC 漂移，所以必须随策略变化。"""
+    max_limiter_reduction_db = limiter_bound(mode, max_limiter_reduction_db)
+    if mode == 'fixed_gain' and not trim and max_limiter_reduction_db == MAX_LIMITER_REDUCTION_DB:
+        return MASTER_PARAMS
+    params = dict(MASTER_PARAMS, mode=mode, max_limiter_reduction_db=max_limiter_reduction_db)
+    if mode == 'two_pass':
+        params['loudnorm'] = f'two-pass measured linear=true I={TARGET_LUFS} TP={LOUDNORM_TP} LRA={LOUDNORM_LRA}'
+    if trim:
+        params['edge_trim'] = (f'RMS {TRIM_ACTIVE_DBFS:g} dBFS/10ms, head {TRIM_HEAD_SECONDS:g}s, '
+                               f'tail {TRIM_TAIL_SECONDS:g}s')
+    return params
 
 # 参考音频（校园配方）
 REF_FILTERS = ('silenceremove=start_periods=1:start_duration=0.03:start_threshold=-55dB,'
                'areverse,silenceremove=start_periods=1:start_duration=0.03:start_threshold=-55dB,'
                'areverse,highpass=f=70,loudnorm=I=-20:TP=-2:LRA=11')
 REF_RANGES = {'battle': (1.5, 6.0), 'home': (10.0, 15.0)}
+
+# v2 参考音：归一目标从 I=-20 提到 I=-16（第一轮参考音 -20 ⇒ 接口原始输出中位 -24.8 LUFS
+# ⇒ 32% 成品达不到 -14、92 条顶满 4 dB 限幅；thorn 用未归一的 -15.9 原声，0/22 未达标）。
+REF_FILTERS_V2 = ('silenceremove=start_periods=1:start_duration=0.03:start_threshold=-55dB,'
+                  'areverse,silenceremove=start_periods=1:start_duration=0.03:start_threshold=-55dB,'
+                  'areverse,highpass=f=70,loudnorm=I=-16:TP=-1.5:LRA=11')
+# 本身就够响的源（索恩的 GBF 原声 -15.9/-17.6 LUFS）不再归一：第一轮全批只有它 0/22 未达标。
+REF_FILTERS_V2_KEEP_LEVEL = ('silenceremove=start_periods=1:start_duration=0.03:start_threshold=-55dB,'
+                             'areverse,silenceremove=start_periods=1:start_duration=0.03:start_threshold=-55dB,'
+                             'areverse,highpass=f=70')
+# 内部停顿也要去掉的配方（作者自带样本：停顿会被模型当节奏学走，recon §P0-4）。
+# `start_periods` 在本机 ffmpeg 里只接受 [0,9000]；去掉内部停顿靠 `stop_periods=-1`。
+REF_FILTERS_V2_GAPLESS = ('silenceremove=start_periods=1:start_duration=0.25:start_threshold=-45dB:'
+                          'stop_periods=-1:stop_duration=0.25:stop_threshold=-45dB,'
+                          'highpass=f=70,loudnorm=I=-16:TP=-1.5:LRA=11')
+# 按族给下限：官方 skill_ready p50 只有 1.49s、power_flip p50 只有 1.07s，
+# 第一轮的 battle 统一 1.5s 下限把 9/11 角色的官方短喊声全判成「太短」踢掉了。
+REF_RANGES_V2 = {'ready': (0.5, 2.5), 'pf': (0.5, 2.5), 'outhole': (0.5, 2.5),
+                 'skill': (1.2, 3.5), 'start': (0.8, 3.0), 'win': (2.0, 6.0),
+                 'home': (8.0, 15.0), 'join': (6.0, 15.0),
+                 'short': (0.5, 6.0), 'long': (4.0, 15.0)}
+
+# ---- 参考音电平：极短片段测不出整合响度，必须换一把尺 ----
+# EBU R128 的整合响度有 400ms 的块与 -70 LUFS 的绝对门；清洗后 <0.4s 的片段测出来恒是
+# -70，`loudnorm=I=-16` 拿不到有效测量值 ⇒ **一点增益都没加**。实测后果：refs-v2 里 5 条
+# 这样的参考音 RMS 在 -11.8～-16.7 dBFS、全部顶在 -1.5 dBFS，比其余 80 条热 3～5 dB，
+# 而索引里记的却是「-70.0 LUFS」这个假数。这些片段改走 RMS 归一（峰值封顶），
+# 索引如实记 `loudness_method`。
+LOUDNESS_UNMEASURABLE_LUFS = -69.0      # ffmpeg 在测不出时回报 -70.0
+SHORT_REFERENCE_SECONDS = 0.4           # R128 的整合窗；短于它就别信整合响度
+# 目标 RMS = 现有 80 条「整合响度可测」参考音的实测 RMS 中位数（-16.80 dBFS，
+# p25 -17.32 / p75 -16.26）。这样 RMS 归一的短片段与 loudnorm=I=-16 的长片段等响。
+REFERENCE_TARGET_RMS_DBFS = -16.8
+REFERENCE_PEAK_CEILING_DBFS = -1.5      # 与 loudnorm 的 TP=-1.5 对齐
+_LOUDNORM_COMPONENT = re.compile(r'(?:^|,)\s*loudnorm=[^,]*')
 # 按顺序取第一条清洗后时长落在区间内的官方语音。首选项与 mech_voice.md §3.4 一致；
 # 斩铁/勇希/普莉姆拉 skill_ready 太短，战斗参考用 battle_start/win。
 REF_CANDIDATES = {
@@ -179,25 +300,90 @@ def find_tool(name: str) -> Path:
 
 # ---------------------------------------------------------------- 槽位、字幕、路由
 
-def normalize_slot(name) -> str:
-    """`skill_0` / `battle/skill_0` → `battle/skill_0`；只接受本批 22 个官方槽。"""
+def role_slots(role: str | None = None) -> tuple[str, ...]:
+    """按角色取槽表：`ROLES[role]['slots']` 存在就用它，否则用全局 22 槽。
+
+    凯尔需要 26 槽（多 skill_4/5 与 battle_start_2/3）；其余 11 人仍是 22 槽 ——
+    以前 `SLOTS` 是全局常量、`validate_voice_plan` 要求精确相等，多开一个槽会把
+    所有角色都要求凑 26 条。
+    """
+    info = ROLES.get(role) if role else None
+    slots = (info or {}).get('slots')
+    if not slots:
+        return SLOTS
+    unknown = [s for s in slots if s not in ALL_SLOTS]
+    if unknown:
+        raise ValueError(f'role {role!r} declares slots outside the engine set: {unknown}')
+    return tuple(slots)
+
+
+def slot_order(slot: str) -> int:
+    """稳定排序键；SLOTS 是 ALL_SLOTS 的子序列，所以旧的 22 槽次序不变。"""
+    return ALL_SLOTS.index(slot)
+
+
+def normalize_slot(name, slots=None) -> str:
+    """`skill_0` / `battle/skill_0` → `battle/skill_0`；默认只接受 22 个官方槽。
+
+    `slots` 传角色槽表时按该表校验（凯尔 26 槽）。未知槽名报清楚的错并列出可用槽。
+    """
+    allowed = SLOTS if slots is None else tuple(slots)
     if not isinstance(name, str) or not name.strip():
         raise ValueError('voice slot must be a non-empty string')
     text = name.strip()
     if '/' not in text:
         group = 'ally' if text in ('join', 'evolution') else 'home' if text.startswith('home_') else 'battle'
         text = group + '/' + text
-    if text not in SLOTS:
-        raise ValueError(f'unsupported voice slot: {name!r}')
+    if text not in allowed:
+        raise ValueError(f'unsupported voice slot: {name!r}; this role accepts {", ".join(allowed)}')
     return text
 
 
 def family(slot: str) -> str:
-    """官方时长族；matched_skill_ready 共用 skill_ready 预算。"""
-    fam = 'skill_ready' if slot == 'battle/matched_skill_ready' else gate.slot_family(slot)
+    """官方时长族；matched_skill_ready 共用 skill_ready 预算、matched_skill_N 共用 skill_N。"""
+    if slot == 'battle/matched_skill_ready':
+        fam = 'skill_ready'
+    elif re.fullmatch(r'battle/matched_skill_\d+', slot):
+        fam = 'skill_N'
+    else:
+        fam = gate.slot_family(slot)
     if fam not in gate.OFFICIAL_DURATION:
         raise ValueError(f'slot has no official duration family: {slot}')
     return fam
+
+
+def prompt_band(slot: str) -> tuple[float, float]:
+    """v2 prompt 里写的时长目标 = 官方 p25–p75。"""
+    target = SLOT_TARGETS[family(slot)]
+    return target['p25'], target['p75']
+
+
+def chars_per_second(fam: str) -> float:
+    """该族的预算语速（字/秒）。短战斗槽与长槽两档，实测依据见常量注释。"""
+    return CHARS_PER_SECOND_SHORT if fam in SHORT_BATTLE_FAMILIES else CHARS_PER_SECOND_LONG
+
+
+def char_budget(fam: str) -> dict:
+    """字数预算的唯一真源，口径与 `take_gates` 的 duration_band 自洽。
+
+    两档：
+
+    * ``hard_max = floor(语速 × p90)``（**error**）—— 超过它，按实测语速这一条必然越过
+      duration_band 的上沿，无论抽几次全部 take 都会被 `select` 毙掉，钱是白花的。
+      例：outhole_N 的 p90=1.91s、语速 5.0 ⇒ 9 字；13 字 ÷ 5.0 ≈ 2.6s > 1.91s。
+    * ``target``（**warn**）= ``SLOT_TARGETS[fam]['chars']``，约等于语速 × p25–p75，
+      也就是 prompt 里写给模型的那条时长带。超出只是「大概率偏长」，不是必死。
+
+    ``hard_min = ceil(语速 × p10)`` 同理给出下沿，但只当 warn：模型会用长元音把短句
+    撑开，短句落在带内的概率比长句高得多。
+    """
+    target = SLOT_TARGETS[fam]
+    cps = chars_per_second(fam)
+    low, high = target['chars']
+    return dict(family=fam, chars_per_second=cps, target=(int(low), int(high)),
+                hard_max=int(cps * target['p90']), hard_min=int(math.ceil(cps * target['p10'])),
+                band_seconds=(target['p25'], target['p75']),
+                p10_seconds=target['p10'], p90_seconds=target['p90'])
 
 
 def compose_direction(direction, slot: str) -> str:
@@ -208,6 +394,172 @@ def compose_direction(direction, slot: str) -> str:
         if text:
             parts.append(text)
     return '；'.join(parts)
+
+
+# ---------------------------------------------------------------- v2 文本（表演指导 / 注音 / 台词规则）
+
+_RUBY = re.compile(r'[一-鿿々〆々]+[（(]([぀-ゟ゠-ヿー・]+)[）)]')
+_SENTENCE_END = '。！？!?'
+_CLAUSE_SPLIT = re.compile(r'[；;：:，,、。．.！!？?\n]')
+_KANA_ONLY = re.compile(r'^[぀-ゟ゠-ヿー・、。！？…\s]*$')
+
+
+def expand_ruby(text: str) -> str:
+    """`黒狼騎士（こくろうきし）` → `こくろうきし`：注音括号展开成读音本体。
+
+    实证：带 `（ ）` 的请求里注音会被念出来（kyle/skill_0、kyle/home_2），
+    所以 tts_text 必须是纯发音文本。这里做的是 ruby 语义的确定性替换 ——
+    紧贴括号前的汉字串是注音底字，括号里是读音。
+    """
+    return _RUBY.sub(lambda m: m.group(1), text)
+
+
+def strip_display_quotes(text: str) -> str:
+    """表演指导里的 `「」『』` 去掉：它们会随说明一起进 prompt，没必要冒险。"""
+    return text.translate(str.maketrans('', '', '「」『』'))
+
+
+def _clause(text: str, limit: int = 16) -> str:
+    head = next((p for p in _CLAUSE_SPLIT.split(text) if p.strip()), '').strip()
+    return head[:limit]
+
+
+def compose_performance(direction, slot: str) -> tuple[str, str]:
+    """design/台词稿的 direction → (performance, tone)。
+
+    direction 支持两种形状：字符串（整条当 performance，tone 取第一个分句），
+    或对象 {tone, pace, breath, volume, stress, ending}。
+    """
+    low, high = prompt_band(slot)
+    tail = f'整条目标 {low:g}–{high:g} 秒，不拖字、不逐字慢读'
+    if isinstance(direction, dict):
+        tone = strip_display_quotes(str(direction.get('tone') or '').strip())
+        pattern = (('语速', 'pace'), ('气息', 'breath'), ('音量', 'volume'),
+                   ('重音落在', 'stress'), ('收尾', 'ending'))
+        parts = [label + strip_display_quotes(str(direction[name]).strip())
+                 for label, name in pattern if str(direction.get(name) or '').strip()]
+        body = '；'.join(parts)
+        if not tone:
+            tone = _clause(body) or '自然'
+    else:
+        body = strip_display_quotes(str(direction or '').strip()).rstrip('。.；; ')
+        tone = _clause(body) or '自然'
+    performance = '；'.join(p for p in (body, tail) if p)
+    return performance, tone
+
+
+def speaker_label(voice: dict) -> tuple[str, str]:
+    """(persona_short, voice_tag)：显式字段优先，缺省时按句号切 persona。
+
+    persona 第一句 = 一句话定位，其余句子 = 音色括注（累计不超过 60 字）。
+    """
+    short = strip_display_quotes(str(voice.get('persona_short') or '').strip())
+    tag = strip_display_quotes(str(voice.get('voice_tag') or '').strip())
+    if short and tag:
+        return short, tag
+    persona = strip_display_quotes(str(voice.get('persona') or '').strip())
+    sentences = [s for s in re.split(f'(?<=[{_SENTENCE_END}])', persona) if s.strip()]
+    if not sentences:
+        raise ValueError('persona is required to derive the speaker label')
+    short = short or sentences[0].strip().rstrip(_SENTENCE_END)
+    if not tag:
+        picked, total = [], 0
+        for sentence in sentences[1:]:
+            body = sentence.strip().rstrip(_SENTENCE_END)
+            if total + len(body) > 60 and picked:
+                break
+            picked.append(body)
+            total += len(body)
+        tag = '；'.join(picked) or short
+    return short, tag
+
+
+_CONTENT_RUN = re.compile(r'[一-鿿ァ-ヶー]{2,}')
+
+
+def repeated_phrases(text: str) -> list[str]:
+    """一句话里出现两次以上的实词（汉字/片假名连串）。"""
+    counts = {}
+    for run in _CONTENT_RUN.findall(text or ''):
+        counts[run] = counts.get(run, 0) + 1
+    return sorted(word for word, count in counts.items() if count >= 2)
+
+
+def spoken_chars(text: str) -> int:
+    """去标点后的日文字数（字数预算与语速换算都用这一把尺）。"""
+    return len(re.sub(r'[^\w぀-ヿ一-鿿]', '', text or ''))
+
+
+def check_ja_rules(slot: str, ja: str, tts: str, *, has_tts_text: bool = False) -> list[dict]:
+    """台词硬规则的可机判部分；返回 findings（level='error' 的由调用方拦下）。
+
+    符号硬门只卡**实际发给接口的文本**（`tts`，缺省时就是 ja）。`ja` 里允许留装饰符号
+    （丝缇涅尔的 ♡ 是作者点名的「杂鱼」变奏，写进字幕/稿子没问题），但那时必须另写一条
+    不含这些符号的 `tts_text`；缺了就报错并指名要补哪一条。
+
+    `has_tts_text=False` 表示稿里没写 tts_text（管线会拿 ja 当发音文本）。
+    """
+    findings = []
+    fam = family(slot)
+    sent_bad = sorted({c for c in tts if c in api.FORBIDDEN_TTS_CHARS})
+    ja_bad = sorted({c for c in ja if c in api.FORBIDDEN_TTS_CHARS})
+    if sent_bad:
+        if has_tts_text:
+            fix = f'把 tts_text 里的 {"".join(sent_bad)} 删掉（ja 可以保留，字幕走 zh/ja）'
+        else:
+            fix = (f'这一条没写 tts_text，管线会把 ja 原样发给接口。'
+                   f'补一条不含 {"".join(sent_bad)} 的 tts_text（纯发音文本，不带注音括号）')
+        findings.append(dict(level='error', rule='forbidden_symbol', slot=slot, family=fam,
+                             field='tts_text', detail=''.join(sent_bad), chars=spoken_chars(tts),
+                             has_tts_text=has_tts_text, fix=fix,
+                             why='引号/装饰符号的内容会被抢到句首先念、原位只剩 ☃ 占位；'
+                                 '括号注音会被读出来'))
+    elif ja_bad:
+        findings.append(dict(level='warn', rule='decorative_symbol_in_ja', slot=slot, family=fam,
+                             field='ja', detail=''.join(ja_bad),
+                             why='ja 带装饰符号是允许的，但发给接口的是 tts_text —— '
+                                 '这一条已经另写了干净的 tts_text，保持这样'))
+    if fam in SHORT_BATTLE_FAMILIES and '…' in tts:
+        findings.append(dict(level='error', rule='ellipsis_in_short_slot', slot=slot, family=fam,
+                             field='tts_text', fix='把 …… 去掉，或者把这一条改成两句里的一句',
+                             why='带 …… 的句内最大间隔中位 0.84s vs 不带 0.32s，'
+                                 f'{fam} 的 p90 只有 {SLOT_TARGETS[fam]["p90"]:g}s，装不下'))
+    if '　' in tts:
+        findings.append(dict(level='error', rule='ideographic_space', slot=slot, family=fam,
+                             field='tts_text', fix='删掉全角空格；要停顿就断句',
+                             why='全角空格会被吞掉，停顿根本不会出现'))
+    # 注音展开后汉字会变成假名，重复词只在 ja 里看得见 ⇒ 两边取并集。
+    for phrase in sorted(set(repeated_phrases(tts)) | set(repeated_phrases(ja))):
+        findings.append(dict(level='warn', rule='repeated_phrase', slot=slot, family=fam,
+                             detail=phrase, fix=f'把重复的「{phrase}」改掉一处',
+                             why='重复的显眼词会被抢到句首当假起手（第一轮 11 例；'
+                                 '本轮冒烟 fluffy/home_0 的「整列」实证复现）'))
+    chars = spoken_chars(tts)
+    budget = char_budget(fam)
+    low, high = budget['target']
+    seconds = round(chars / budget['chars_per_second'], 2)
+    shared = dict(slot=slot, family=fam, field='tts_text', chars=chars,
+                  chars_per_second=budget['chars_per_second'], estimated_seconds=seconds,
+                  target_chars=[low, high], hard_max_chars=budget['hard_max'],
+                  band_seconds=list(budget['band_seconds']), p90_seconds=budget['p90_seconds'],
+                  p10_seconds=budget['p10_seconds'])
+    if chars > budget['hard_max']:
+        findings.append(dict(level='error', rule='over_char_budget', limit=budget['hard_max'],
+                             fix=f'删到 ≤{budget["hard_max"]} 字（理想 {low}–{high} 字）',
+                             why=f'{chars} 字 ÷ {budget["chars_per_second"]:g} 字/秒 ≈ {seconds:g}s '
+                                 f'> 官方 p90 {budget["p90_seconds"]:g}s，'
+                                 f'select 的 duration_band 会把这一条的全部 take 毙掉', **shared))
+    elif chars > high:
+        findings.append(dict(level='warn', rule='over_char_target', limit=high,
+                             fix=f'建议删到 ≤{high} 字（硬上限 {budget["hard_max"]} 字）',
+                             why=f'{chars} 字 ≈ {seconds:g}s，超出 prompt 写的目标带 '
+                                 f'{budget["band_seconds"][0]:g}–{budget["band_seconds"][1]:g}s', **shared))
+    elif chars < low:
+        findings.append(dict(level='warn', rule='under_char_budget', limit=low,
+                             fix=f'建议加到 ≥{low} 字',
+                             why=f'{chars} 字 ≈ {seconds:g}s，低于目标带下沿 '
+                                 f'{budget["band_seconds"][0]:g}s', **shared))
+    return findings
 
 
 def _clean_text(value, *, allow_newline: bool, label: str) -> str:
@@ -307,10 +659,73 @@ def load_refs_index(path=REFS_INDEX) -> dict:
     return json.loads(Path(path).read_text(encoding='utf-8'))
 
 
-def resolve_references(role: str, spec, refs_index: dict | None = None) -> list[dict]:
+def reference_defects(record: dict) -> list[str]:
+    """一条参考音记录的闸门判据：区间外 / 电平测不出且没换尺 ⇒ 不许用。
+
+    `range_ok=False` 与「整合响度是 -70 这个测不出的下限」都只在第一版里被打印成
+    warning，plan/generate 照用 —— 于是 9 个 group 超区间、其中 5 个响度是假数、
+    实际比其它参考音热 3～5 dB，全批 158 条请求就挂着它们出发。
+    """
+    defects = []
+    if record.get('range_ok') is False:
+        low, high = record.get('range_seconds') or (None, None)
+        defects.append(f'cleaned duration {record.get("seconds")}s outside {low}-{high}s')
+    method = record.get('loudness_method')
+    lufs = record.get('lufs_i')
+    unmeasurable = lufs is None or float(lufs) <= LOUDNESS_UNMEASURABLE_LUFS
+    if unmeasurable and method != 'rms':
+        defects.append(f'integrated loudness is unmeasurable (lufs_i={lufs}) and the record does '
+                       f'not say it was RMS-normalised (loudness_method={method!r})')
+    return defects
+
+
+def check_reference_record(role: str, slot: str, name: str, label: str, record: dict) -> None:
+    exempt = str(record.get('exempt_reason') or '').strip()
+    defects = reference_defects(record)
+    if not defects or exempt:
+        return
+    raise ValueError(
+        f'{role}:{slot} → reference group {name!r} ({label}) is not fit to send: '
+        + '; '.join(defects)
+        + f'. Fix it in the role reference policy (recipe.reference_policy.per_role.{role}) — '
+          f'swap in another official take from the same family and re-run `refs2`, or declare '
+          f'`exemptions: {{"{name}": "<理由>"}}` there if this really is the only usable source.')
+
+
+def group_references(role: str, slot: str, refs_index: dict) -> list[dict]:
+    """v2 逐槽参考音：slot → group → [@音频1 (+@音频2)]，绝不跨 group。
+
+    第一轮 11/12 角色的每一条请求都同时挂 battle+home 两条，0.6 秒的 PF 请求里
+    有一半条件音频是 10–13 秒的家常独白 ⇒ 模型对齐长参考的节奏，短槽系统性拖长。
+
+    区间/电平不合格的参考音在这里就报错（除非角色的参考音策略里显式豁免），
+    不再是「只记一条 warning 然后照样发出去」。
+    """
+    entry = refs_index['roles'][role]
+    groups = entry.get('groups')
+    if not groups:
+        raise ValueError(f'{role}: reference index has no per-slot groups; run refs with the v2 builder')
+    mapping = entry.get('slot_to_group') or {}
+    name = mapping.get(slot)
+    if name is None:
+        raise ValueError(f'{role}: no reference group mapped for {slot}')
+    group = groups.get(name)
+    if group is None:
+        raise ValueError(f'{role}: reference group {name!r} missing from the index')
+    check_reference_record(role, slot, name, 'primary', group)
+    items = [dict(path=group['path'], sha256=group['sha256'])]
+    second = group.get('second')
+    if second:
+        check_reference_record(role, slot, name, 'second', second)
+        items.append(dict(path=second['path'], sha256=second['sha256']))
+    return items
+
+
+def resolve_references(role: str, spec, refs_index: dict | None = None, *, slot: str | None = None) -> list[dict]:
     """design 的 references → [{path, sha256}]，读文件核对哈希。
 
-    spec：None/'refs'/'default' 取 refs.json；列表项可为 {path, sha256}、{kind}、'battle'/'home'。
+    spec：None/'refs'/'default' 取 refs.json（索引带 groups 且给了 slot 时按槽解析）；
+    列表项可为 {path, sha256}、{kind}、'battle'/'home'。
     """
     def indexed():
         index = refs_index if refs_index is not None else load_refs_index()
@@ -318,9 +733,13 @@ def resolve_references(role: str, spec, refs_index: dict | None = None) -> list[
         return {e['kind']: e for e in entries}, entries
 
     items = []
-    if spec in (None, '', 'refs', 'default') or spec == []:
-        _kinds, entries = indexed()
-        items = [dict(path=e['path'], sha256=e['sha256']) for e in entries]
+    if spec in (None, '', 'refs', 'default', 'groups') or spec == []:
+        index = refs_index if refs_index is not None else load_refs_index()
+        entry = index['roles'].get(role) or {}
+        if slot is not None and (entry.get('groups') or 'references' not in entry):
+            items = group_references(role, slot, index)
+        else:
+            items = [dict(path=e['path'], sha256=e['sha256']) for e in entry['references']]
     elif isinstance(spec, list):
         for item in spec:
             kind = item if isinstance(item, str) else item.get('kind') if isinstance(item, dict) else None
@@ -347,23 +766,37 @@ def resolve_references(role: str, spec, refs_index: dict | None = None) -> list[
 
 
 def request_lines(role: str, voice: dict, *, refs_index: dict | None = None,
-                  allow_partial: bool = False) -> list[dict]:
-    """design voice → wf_art_voice_api 同构的逐条请求（按 SLOTS 顺序）。"""
+                  allow_partial: bool = False, version: int | None = None,
+                  strict_text: bool = True) -> list[dict]:
+    """design voice → wf_art_voice_api 同构的逐条请求（按角色槽表顺序）。
+
+    version=2 时走本轮配方：逐槽参考音、performance/tone 拆分、台词全角引号封边、wav 返回。
+
+    `strict_text=False` 时台词硬规则的 error 不抛异常，只留在每条的 `findings` 里 ——
+    只给 `plan` 用：它要把 12 份台词稿的问题**逐条列全**给改稿的人看，而不是撞上第一条就
+    整个角色 plan 不出来。生成路径（`generate`）永远是 strict：错的稿子不许花钱。
+    """
     if role not in ROLES:
         raise ValueError(f'unknown role {role!r}')
     info = ROLES[role]
+    if version is None:
+        version = int(voice.get('prompt_version') or 1)
+    if version not in (1, 2):
+        raise ValueError(f'unsupported prompt template version: {version!r}')
     persona = _clean_text(voice.get('persona'), allow_newline=False, label='persona')
     if not persona:
         raise ValueError('persona is required')
-    references = resolve_references(role, voice.get('references'), refs_index)
+    slots = role_slots(role)
+    shared_references = None if version == 2 else resolve_references(role, voice.get('references'), refs_index)
+    persona_short, voice_tag = speaker_label(voice) if version == 2 else ('', '')
     raw_lines = voice.get('lines')
     if not isinstance(raw_lines, list) or not raw_lines:
         raise ValueError('voice.lines must be a non-empty list')
-    output, seen = [], set()
+    output, seen, findings = [], set(), []
     for item in raw_lines:
         if not isinstance(item, dict):
             raise ValueError('voice line must be an object')
-        slot = normalize_slot(item.get('slot'))
+        slot = normalize_slot(item.get('slot'), slots)
         if slot in seen:
             raise ValueError(f'duplicate voice slot {slot}')
         seen.add(slot)
@@ -377,23 +810,45 @@ def request_lines(role: str, voice: dict, *, refs_index: dict | None = None,
         line = dict(role=role, slot=slot, code=info['code'], character_id=info['cid'],
                     family=family(slot), persona=persona,
                     direction=compose_direction(design_direction, slot),
-                    design_direction=design_direction, ja=ja, zh=zh, references=references)
+                    design_direction=design_direction, ja=ja, zh=zh,
+                    references=shared_references)
         if item.get('tts_text'):
             line['tts_text'] = _clean_text(item['tts_text'], allow_newline=False, label=f'{slot}.tts_text')
+        if version == 2:
+            performance, tone = compose_performance(item.get('direction'), slot)
+            spoken = expand_ruby(line.get('tts_text') or ja)
+            line.update(prompt_version=2, audio_format='wav', tts_text=spoken,
+                        persona_short=persona_short, voice_tag=voice_tag,
+                        tone=strip_display_quotes(str(item.get('tone') or tone)),
+                        performance=performance, prompt_band=list(prompt_band(slot)),
+                        references=resolve_references(role, voice.get('references'), refs_index, slot=slot))
+            line['findings'] = check_ja_rules(slot, expand_ruby(ja), spoken,
+                                              has_tts_text=bool(item.get('tts_text')))
+            findings += [f for f in line['findings'] if f['level'] == 'error']
         output.append(line)
-    missing = [slot for slot in SLOTS if slot not in seen]
+    if findings and strict_text:
+        raise ValueError('voice lines break the hard text rules: ' +
+                         '; '.join(f'{f["slot"]}:{f["rule"]}' + (f'({f["detail"]})' if f.get('detail') else '')
+                                   for f in findings))
+    missing = [slot for slot in slots if slot not in seen]
     if missing and not allow_partial:
-        raise ValueError('incomplete 22-slot voice set; missing ' + ', '.join(missing))
-    output.sort(key=lambda x: SLOTS.index(x['slot']))
+        raise ValueError(f'incomplete {len(slots)}-slot voice set; missing ' + ', '.join(missing))
+    output.sort(key=lambda x: slot_order(x['slot']))
     return output
 
 
-def plan_role(role: str, design_path=None, *, refs_index=None, allow_partial=False) -> dict:
+def plan_role(role: str, design_path=None, *, refs_index=None, allow_partial=False,
+              version: int | None = None, strict_text: bool = True) -> dict:
     path = Path(design_path) if design_path else DESIGN_DIR / f'{role}.json'
     voice = load_design_voice(path)
-    lines = request_lines(role, voice, refs_index=refs_index, allow_partial=allow_partial)
+    lines = request_lines(role, voice, refs_index=refs_index, allow_partial=allow_partial,
+                          version=version, strict_text=strict_text)
     route = voice.get('route')
-    return dict(role=role, design=str(path), lines=lines,
+    findings = [f for line in lines for f in line.get('findings', [])]
+    warnings = [f for f in findings if f['level'] != 'error']
+    return dict(role=role, design=str(path), lines=lines, slots=list(role_slots(role)),
+                prompt_version=lines[0].get('prompt_version', 1) if lines else (version or 1),
+                text_warnings=warnings, text_errors=[f for f in findings if f['level'] == 'error'],
                 route=normalize_route(route, ROLES[role]['code']) if route is not None else None)
 
 
@@ -408,11 +863,120 @@ def classify_failure(meta: dict) -> str:
     status = meta.get('http_status')
     code = str(meta.get('api_code') or '')
     message = str(meta.get('api_message') or '').lower()
+    # 45001127 = `tts_create_ref` 审核拒了**参考音**，不是台词。第一轮它靠 message 里有 audit
+    # 落进 needs_rewrite，于是队列指引操作者去改台词 —— remedy 指错对象（charlene 22/22 全中）。
+    if status == 400 and (code in REFERENCE_AUDIT_CODES or 'tts_create_ref' in message):
+        return 'needs_new_reference'
     if status == 400 and (code in AUDIT_CODES or 'audit' in message):
         return 'needs_rewrite'
     if status is None or status == 429 or status >= 500 or 200 <= status < 300:
         return 'retryable'
     return 'fatal'
+
+
+# ---------------------------------------------------------------- 跨进程配额锁
+
+def _lock_handle(path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handle = path.open('a+b')
+    if handle.tell() == 0:
+        handle.write(b'0')
+        handle.flush()
+    handle.seek(0)
+    return handle
+
+
+def _try_lock(handle) -> bool:
+    try:
+        if os.name == 'nt':
+            import msvcrt
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.lockf(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB, 1)
+    except OSError:
+        return False
+    return True
+
+
+def _unlock(handle) -> None:
+    handle.seek(0)
+    try:
+        if os.name == 'nt':
+            import msvcrt
+            msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            fcntl.lockf(handle.fileno(), fcntl.LOCK_UN, 1)
+    finally:
+        handle.close()
+
+
+@contextmanager
+def exclusive_lock(name: str, *, lock_dir=None, timeout: float = 0.0, sleep=time.sleep):
+    """同名锁只允许一个持有者（跨进程）。timeout=0 表示抢不到立刻报错。
+
+    用途：同一角色同时被两个进程生成 = 重复计费（第一轮发生过）。
+    """
+    path = Path(lock_dir or LOCK_DIR) / f'{name}.lock'
+    deadline = time.monotonic() + max(0.0, timeout)
+    while True:
+        handle = _lock_handle(path)
+        if _try_lock(handle):
+            try:
+                yield path
+            finally:
+                _unlock(handle)
+            return
+        handle.close()
+        if time.monotonic() >= deadline:
+            raise RuntimeError(f'another process holds the voice lock {name!r} ({path})')
+        sleep(0.5)
+
+
+_QUOTA_HELD: set[tuple[str, int]] = set()
+_QUOTA_GUARD = threading.Lock()
+
+
+@contextmanager
+def quota_slot(*, slots: int = MAX_WORKERS, lock_dir=None, sleep=time.sleep, timeout: float = 900.0):
+    """全局 HTTP 配额槽：所有本机语音生成进程共用 `slots` 个并发位。
+
+    每个在途请求占一个位，`slots` 与 `--workers` 同语义 —— 一个进程自己跑满 2 个 worker
+    就占满全局配额，第二个进程只能等，不会两边一起打接口把配额（和钱）翻倍。
+
+    进程内还有一层 `_QUOTA_HELD`：POSIX 的 `fcntl.lockf` 是按进程记账的，同一进程的
+    第二个线程再锁同一个字节会「成功」，光靠文件锁数不准并发位。
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        for index in range(slots):
+            path = Path(lock_dir or LOCK_DIR) / f'slot-{index}.lock'
+            key = (str(path), index)
+            with _QUOTA_GUARD:
+                if key in _QUOTA_HELD:
+                    continue
+                _QUOTA_HELD.add(key)
+            try:
+                handle = _lock_handle(path)
+            except OSError:
+                with _QUOTA_GUARD:           # 开不了锁文件也要把占位放回去，否则这一位永久漏掉
+                    _QUOTA_HELD.discard(key)
+                raise
+            if _try_lock(handle):
+                try:
+                    yield index
+                finally:
+                    _unlock(handle)
+                    with _QUOTA_GUARD:
+                        _QUOTA_HELD.discard(key)
+                return
+            handle.close()
+            with _QUOTA_GUARD:
+                _QUOTA_HELD.discard(key)
+        if time.monotonic() >= deadline:
+            raise RuntimeError('no free Seed Audio quota slot')
+        sleep(1.0)
 
 
 def _attempt_records(base: Path, slot: str) -> list[tuple[Path, dict]]:
@@ -445,10 +1009,10 @@ def generate_line(line: dict, output, key: str, *, opener=urllib.request.urlopen
     if max_retries not in (0, 1):
         raise ValueError('automatic retries are capped at one')
     role, slot = line['role'], line['slot']
-    if role not in ROLES or slot not in SLOTS:
+    if role not in ROLES or slot not in role_slots(role):
         raise ValueError('unsafe or unknown recording path')
     base = Path(output) / role
-    target = base / 'raw' / (slot + '.mp3')
+    target = base / 'raw' / (slot + '.' + api.audio_format(line))
     receipt = base / 'receipts' / (slot + '.json')
     fingerprint = request_fingerprint(line)
     if receipt.is_file() and not target.exists():
@@ -459,8 +1023,10 @@ def generate_line(line: dict, output, key: str, *, opener=urllib.request.urlopen
     prior = [meta for _path, meta in _attempt_records(base, slot)
              if meta.get('request_fingerprint') == fingerprint]
     last = {k: prior[-1].get(k) for k in ('http_status', 'api_code', 'api_message', 'error')} if prior else {}
-    if any(classify_failure(meta) == 'needs_rewrite' for meta in prior):
-        return _outcome(line, 'needs_rewrite', attempts=len(prior), **last)
+    blocked = next((classify_failure(m) for m in prior
+                    if classify_failure(m) in ('needs_rewrite', 'needs_new_reference')), None)
+    if blocked:
+        return _outcome(line, blocked, attempts=len(prior), **last)
     budget = 1 + max_retries - len(prior)
     if budget <= 0:
         return _outcome(line, 'retry_exhausted', attempts=len(prior), **last)
@@ -478,8 +1044,8 @@ def generate_line(line: dict, output, key: str, *, opener=urllib.request.urlopen
         meta = json.loads(receipt.read_bytes())
         _archive_attempt(receipt, base, slot)
         kind = classify_failure(meta)
-        if kind == 'needs_rewrite':
-            return dict(result, status='needs_rewrite')
+        if kind in ('needs_rewrite', 'needs_new_reference'):
+            return dict(result, status=kind)
         if kind == 'fatal':
             return result
         if attempt + 1 < budget:
@@ -487,21 +1053,31 @@ def generate_line(line: dict, output, key: str, *, opener=urllib.request.urlopen
     return result
 
 
+REMEDY = {
+    'needs_rewrite': '改写 ja（避开审核敏感措辞）后重跑；台词变化即新指纹，自动放行',
+    'needs_new_reference': '换参考音（45001127 = tts_create_ref 拒的是参考音，不是台词）：'
+                           '取同 group 第二选或重新清洗后重跑；参考音变化即新指纹，自动放行',
+}
+
+
 def rewrite_queue(lines: list[dict], output) -> list[dict]:
-    """当前台词指纹下仍待改写（审核失败）的条目。"""
+    """当前指纹下仍被卡住的条目：needs_rewrite（改台词）与 needs_new_reference（换参考音）。"""
     queue = []
     for line in lines:
         base = Path(output) / line['role']
         fingerprint = request_fingerprint(line)
-        hits = [(p, m) for p, m in _attempt_records(base, line['slot'])
-                if m.get('request_fingerprint') == fingerprint and classify_failure(m) == 'needs_rewrite']
+        hits = [(p, m, classify_failure(m)) for p, m in _attempt_records(base, line['slot'])
+                if m.get('request_fingerprint') == fingerprint
+                and classify_failure(m) in REMEDY]
         if hits:
-            path, meta = hits[-1]
+            path, meta, kind = hits[-1]
             queue.append(dict(role=line['role'], slot=line['slot'], ja=line['ja'], zh=line['zh'],
+                              blocked_by=kind,
                               design_direction=line.get('design_direction', ''),
+                              references=[r['path'] for r in line.get('references') or []],
                               http_status=meta.get('http_status'), api_code=meta.get('api_code'),
                               api_message=meta.get('api_message'), receipt=str(path),
-                              action='改写 ja（避开审核敏感措辞）后重跑；台词变化即新指纹，自动放行'))
+                              action=REMEDY[kind]))
     return queue
 
 
@@ -520,33 +1096,60 @@ def scrub_secret(folder, key: str) -> list[str]:
 
 def run_generation(lines: list[dict], output, key: str, *, workers: int = MAX_WORKERS,
                    opener=urllib.request.urlopen, sleep=time.sleep,
-                   max_retries: int = MAX_AUTO_RETRIES, on_result=None) -> dict:
+                   max_retries: int = MAX_AUTO_RETRIES, on_result=None,
+                   lock_dir=None, role_locks: bool = True, lock_timeout: float = 0.0,
+                   quota_slots: int = MAX_WORKERS, quota_timeout: float = 900.0) -> dict:
+    """并发 ≤2、重试 ≤1、按指纹续跑。
+
+    两层跨进程保护，默认都开（防重复计费不能靠操作者记得加参数）：
+
+    * `role_locks=True`：同一角色只许一个进程在生成（第一轮发生过重复计费）。
+    * `quota_slots`：全局并发生成槽，与 `--workers` 同语义 —— 每个在途请求占一位，
+      本机所有语音进程共用这 `quota_slots` 位；`quota_slots=0` 关掉（只给单测用）。
+    """
     if workers not in range(1, MAX_WORKERS + 1):
         raise ValueError('Seed Audio concurrency is capped at 2')
     output = Path(output)
     started = time.monotonic()
     results = []
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = [pool.submit(generate_line, line, output, key, opener=opener, sleep=sleep,
-                               max_retries=max_retries) for line in lines]
-        for future in as_completed(futures):
-            result = future.result()
-            results.append(result)
-            if on_result:
-                on_result(result)
-    results.sort(key=lambda r: (r['role'], SLOTS.index(r['slot'])))
+
+    def one(line):
+        if not quota_slots:
+            return generate_line(line, output, key, opener=opener, sleep=sleep, max_retries=max_retries)
+        with quota_slot(slots=quota_slots, lock_dir=lock_dir, sleep=sleep, timeout=quota_timeout):
+            return generate_line(line, output, key, opener=opener, sleep=sleep, max_retries=max_retries)
+
+    with ExitStack() as stack:
+        held = []
+        if role_locks:
+            for role in sorted({line['role'] for line in lines}):
+                stack.enter_context(exclusive_lock(f'role-{role}', lock_dir=lock_dir,
+                                                   timeout=lock_timeout, sleep=sleep))
+                held.append(role)
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = [pool.submit(one, line) for line in lines]
+            for future in as_completed(futures):
+                result = future.result()
+                results.append(result)
+                if on_result:
+                    on_result(result)
+    results.sort(key=lambda r: (r['role'], slot_order(r['slot'])))
     queue_path = output / 'rewrite_queue.json'
     selected = {(line['role'], line['slot']) for line in lines}
     kept = [item for item in (json.loads(queue_path.read_bytes()) if queue_path.is_file() else [])
             if (item['role'], item['slot']) not in selected]     # --only 子集不清掉其他待改项
-    queue = sorted(kept + rewrite_queue(lines, output), key=lambda x: (x['role'], SLOTS.index(x['slot'])))
+    queue = sorted(kept + rewrite_queue(lines, output), key=lambda x: (x['role'], slot_order(x['slot'])))
     _write_json(queue_path, queue)
     counts = {}
     for result in results:
         counts[result['status']] = counts.get(result['status'], 0) + 1
     summary = dict(finished_at=_now(), requests=len(lines), workers=workers, max_auto_retries=max_retries,
                    elapsed_seconds=round(time.monotonic() - started, 2), counts=counts,
-                   rewrite_queue=len(queue), results=results)
+                   role_locks=held if role_locks else [], quota_slots=quota_slots,
+                   rewrite_queue=len(queue),
+                   needs_new_reference=[f'{x["role"]}:{x["slot"]}' for x in queue
+                                        if x.get('blocked_by') == 'needs_new_reference'],
+                   results=results)
     _write_json(output / 'generation-summary.json', summary)
     leaked = scrub_secret(output, key)
     if leaked:
@@ -571,9 +1174,18 @@ def _mono_filters(channels: int) -> list[str]:
     raise ValueError(f'unreviewed source channel layout: {channels}')
 
 
+def _trim_filters(trim) -> list[str]:
+    if not trim:
+        return []
+    start, end = trim
+    return [f'atrim=start={start:.4f}:end={end:.4f}', 'asetpts=PTS-STARTPTS']
+
+
 def encode_voice(source: Path, output: Path, *, ffmpeg, channels: int, gain_db: float = 0.0,
-                 limiter_ceiling_db: float | None = None) -> dict:
-    filters = _mono_filters(channels)
+                 limiter_ceiling_db: float | None = None, trim=None, loudnorm: str | None = None) -> dict:
+    filters = _trim_filters(trim) + _mono_filters(channels)
+    if loudnorm:
+        filters += [loudnorm]
     if limiter_ceiling_db is None:
         filters += ['aresample=44100', f'volume={gain_db:.8f}dB']
     else:
@@ -589,14 +1201,69 @@ def encode_voice(source: Path, output: Path, *, ffmpeg, channels: int, gain_db: 
     return measure(output, Path(ffmpeg))
 
 
-def oversampled_peak_db(source: Path, *, ffmpeg, channels: int) -> float:
-    filters = ','.join(_mono_filters(channels) + ['aresample=176400'])
+def oversampled_peak_db(source: Path, *, ffmpeg, channels: int, trim=None) -> float:
+    filters = ','.join(_trim_filters(trim) + _mono_filters(channels) + ['aresample=176400'])
     raw = _ffmpeg(ffmpeg, ['-v', 'error', '-i', str(source), '-map', '0:a:0', '-af', filters,
                            '-ac', '1', '-f', 'f32le', 'pipe:1']).stdout
     values = np.frombuffer(raw, dtype='<f4')
     if not len(values):
         raise ValueError('empty decoded audio')
     return 20 * math.log10(max(float(np.max(np.abs(values))), 1e-12))
+
+
+def decoded_pcm(source: Path, *, ffmpeg, trim=None, rate: int = 44100) -> np.ndarray:
+    """按 44.1k 单声道解码（可带 atrim），用于样本级对照。"""
+    args = ['-v', 'error', '-i', str(source), '-map', '0:a:0']
+    filters = _trim_filters(trim)
+    if filters:
+        args += ['-af', ','.join(filters)]
+    raw = _ffmpeg(ffmpeg, args + ['-f', 'f32le', '-ar', str(rate), '-ac', '1', 'pipe:1']).stdout
+    return np.frombuffer(raw, dtype='<f4')
+
+
+def edge_bounds(source: Path, *, ffmpeg, head: float = TRIM_HEAD_SECONDS, tail: float = TRIM_TAIL_SECONDS,
+                threshold_dbfs: float = TRIM_ACTIVE_DBFS) -> tuple[float, float]:
+    """10 ms 块 RMS 判活，头留 `head`、尾留 `tail` 的边缘裁剪区间。
+
+    第一轮不裁静音（`SAMPLE_DELTA_LIMIT=128` + no_trim），短战斗槽空气占比
+    p50=20% / p90=44% / 最大 81%（kyle power_flip_0 句首静音 1.28s）全部原样进了包。
+    同仓已验证先例：`_codex_voice_pipeline_20260910/prepare_delivery.py:edge_trim()`。
+    """
+    rate = 48000
+    block = rate // 100
+    samples = decoded_pcm(Path(source), ffmpeg=ffmpeg, rate=rate).astype(np.float64)
+    count = len(samples) // block
+    if count < 1:
+        raise ValueError('audio is shorter than one analysis block')
+    rms = np.sqrt(np.mean(samples[:count * block].reshape(-1, block) ** 2, axis=1))
+    active = np.flatnonzero(rms > 10 ** (threshold_dbfs / 20))
+    if not len(active):
+        raise ValueError('silent generated audio: nothing above the activity threshold')
+    duration = len(samples) / rate
+    start = max(0.0, float(active[0]) * block / rate - head)
+    end = min(duration, float(active[-1] + 1) * block / rate + tail)
+    if end - start < 0.05:
+        raise ValueError('edge trim would leave less than 50 ms of audio')
+    return round(start, 4), round(end, 4)
+
+
+def loudnorm_measure(source: Path, *, ffmpeg, target_lufs: float, trim=None, channels: int = 1) -> dict:
+    """第一遍：测量 loudnorm 需要的 measured_* 四个量。"""
+    filters = ','.join(_trim_filters(trim) + _mono_filters(channels) +
+                       [f'loudnorm=I={target_lufs}:TP={LOUDNORM_TP}:LRA={LOUDNORM_LRA}:print_format=json'])
+    text = _ffmpeg(ffmpeg, ['-i', str(source), '-map', '0:a:0', '-af', filters,
+                            '-f', 'null', os.devnull]).stderr.decode('utf-8', errors='replace')
+    blocks = re.findall(r'\{[^{}]+\}', text)
+    if not blocks:
+        raise ValueError('loudnorm did not report a measurement')
+    return json.loads(blocks[-1])
+
+
+def loudnorm_filter(measured: dict, *, target_lufs: float) -> str:
+    return (f'loudnorm=I={target_lufs}:TP={LOUDNORM_TP}:LRA={LOUDNORM_LRA}:'
+            f'measured_I={measured["input_i"]}:measured_TP={measured["input_tp"]}:'
+            f'measured_LRA={measured["input_lra"]}:measured_thresh={measured["input_thresh"]}:'
+            f'offset={measured["target_offset"]}:linear=true')
 
 
 def duration_findings(code: str, slot: str, seconds: float) -> list[dict]:
@@ -615,24 +1282,40 @@ def duration_findings(code: str, slot: str, seconds: float) -> list[dict]:
 def master_voice(source, target, *, slot: str, code: str, ffmpeg, ffprobe,
                  target_lufs: float = TARGET_LUFS, peak_ceiling: float = PEAK_CEILING,
                  limiter_ceiling: float = LIMITER_CEILING,
-                 max_limiter_reduction_db: float = MAX_LIMITER_REDUCTION_DB) -> tuple[bytes, dict]:
-    """整条表演定增益到 -14 LUFS；真峰超限时用有界 lookahead 限幅。不裁剪、不变速、不拼接。
+                 max_limiter_reduction_db: float = MAX_LIMITER_REDUCTION_DB,
+                 mode: str = 'fixed_gain', trim: bool = False, slots=None) -> tuple[bytes, dict]:
+    """把整条表演做到 -14 LUFS；真峰超限时用有界 lookahead 限幅。
 
+    `mode='fixed_gain'`（默认，旧行为）= 整条定增益 + 限幅。
+    `mode='two_pass'` = 两遍 loudnorm（measured_* + linear=true），限幅只当安全网。
+    `trim=True` 时按 RMS 判活做边缘裁剪（头 100ms / 尾 150ms），不变速、不拼接。
     返回 (存储态字节, QC 报告)；target 写标准态 MP3。时长超官方族最大值不抛错，写入 findings。
     """
     source, target = Path(source), Path(target)
-    if slot not in SLOTS:
+    if slot not in (SLOTS if slots is None else tuple(slots)):
         raise ValueError('unknown voice slot')
+    if mode not in ('fixed_gain', 'two_pass'):
+        raise ValueError(f'unsupported mastering mode: {mode!r}')
     source_raw = source.read_bytes()
     info = metadata(source, Path(ffprobe))
     channels = int(info['streams'][0]['channels'])
     _mono_filters(channels)
     temporary = target.with_name(target.stem + '.tmp.mp3')
+    bounds = edge_bounds(source, ffmpeg=ffmpeg) if trim else None
+    normalize = None
+    if mode == 'two_pass':
+        loud = loudnorm_measure(source, ffmpeg=ffmpeg, target_lufs=target_lufs, trim=bounds, channels=channels)
+        normalize = loudnorm_filter(loud, target_lufs=target_lufs)
+        max_limiter_reduction_db = limiter_bound(mode, max_limiter_reduction_db)
     try:
-        baseline = encode_voice(source, temporary, ffmpeg=ffmpeg, channels=channels)
+        baseline = encode_voice(source, temporary, ffmpeg=ffmpeg, channels=channels,
+                                trim=bounds, loudnorm=normalize)
         if baseline['lufs_i'] <= -69.0:
             raise ValueError('source too short or silent for integrated loudness')
-        source_peak = oversampled_peak_db(source, ffmpeg=ffmpeg, channels=channels)
+        source_peak = oversampled_peak_db(source, ffmpeg=ffmpeg, channels=channels, trim=bounds)
+        if normalize:
+            # 两遍 loudnorm 已经把电平定死；后面的定增益段只收残差，所以峰值要量归一之后的。
+            source_peak = oversampled_peak_db(temporary, ffmpeg=ffmpeg, channels=1)
         desired = target_lufs - baseline['lufs_i']
         if baseline['true_peak_dbtp'] + desired <= peak_ceiling:
             gain, ceiling = desired, None
@@ -642,7 +1325,8 @@ def master_voice(source, target, *, slot: str, code: str, ffmpeg, ffprobe,
         attempts = []
         for _ in range(6):
             measured = encode_voice(source, temporary, ffmpeg=ffmpeg, channels=channels,
-                                    gain_db=gain, limiter_ceiling_db=ceiling)
+                                    gain_db=gain, limiter_ceiling_db=ceiling,
+                                    trim=bounds, loudnorm=normalize)
             attempts.append(dict(gain_db=gain, limiter_ceiling_dbfs=ceiling, **measured))
             if measured['true_peak_dbtp'] <= peak_ceiling:
                 break
@@ -669,7 +1353,9 @@ def master_voice(source, target, *, slot: str, code: str, ffmpeg, ffprobe,
         if container or not codec['xing'] or codec['tail'] != 0:
             raise ValueError(f'native audio container validation failed: {container}')
         before, after = amplitude(pcm(source, Path(ffmpeg))), amplitude(pcm(temporary, Path(ffmpeg)))
-        delta = after['samples'] - before['samples']
+        # 裁边时与「同样裁过的源」逐样本对照：允许的只有这一刀，变速/拼接照样会被抓住。
+        reference = before if bounds is None else amplitude(decoded_pcm(source, ffmpeg=ffmpeg, trim=bounds))
+        delta = after['samples'] - reference['samples']
         if abs(delta) > SAMPLE_DELTA_LIMIT:
             raise ValueError(f'mastering changed performance length by {delta} samples')
         if after['clipped_fraction'] > 0 or after['peak'] >= 0.999:
@@ -687,27 +1373,44 @@ def master_voice(source, target, *, slot: str, code: str, ffmpeg, ffprobe,
         if temporary.exists():
             temporary.unlink()
     return stored, dict(
-        slot=slot, code=code, family=fam, params=MASTER_PARAMS,
+        slot=slot, code=code, family=fam,
+        params=master_params(mode=mode, trim=bool(bounds), max_limiter_reduction_db=max_limiter_reduction_db),
         source=str(source), source_sha256=sha(source_raw), source_metadata=info,
         standard=str(target), standard_sha256=sha(standard), storage_sha256=sha(stored),
         storage_roundtrip_equal=True, codec=codec, seconds=codec['duration'],
         official_seconds=dict(min=low, p50=p50, p90=p90, max=high),
         baseline_encoded=baseline, source_oversampled_peak_dbfs=source_peak,
+        raw_lufs_i=float(loud['input_i']) if normalize else baseline['lufs_i'],
         desired_gain_db=desired, gain_db=gain, limiter_ceiling_dbfs=ceiling,
         limiter_reduction_bound_db=reduction, attempts=attempts, final=final, loudness_status=loudness,
         source_pcm=before, mastered_pcm=after, sample_delta=delta, sample_delta_limit=SAMPLE_DELTA_LIMIT,
         findings=duration_findings(code, slot, codec['duration']),
-        no_trim_no_speed_no_concatenation=True)
+        mastering_mode=mode, loudnorm=normalize,
+        trim=None if bounds is None else dict(start_seconds=bounds[0], end_seconds=bounds[1],
+                                              removed_seconds=round(before['seconds'] - (bounds[1] - bounds[0]), 3),
+                                              head_pad=TRIM_HEAD_SECONDS, tail_pad=TRIM_TAIL_SECONDS,
+                                              threshold_dbfs=TRIM_ACTIVE_DBFS),
+        no_trim_no_speed_no_concatenation=bounds is None,
+        no_speed_no_concatenation=True)
 
 
-def process_run(lines: list[dict], run_dir, *, ffmpeg, ffprobe) -> dict:
+def master_policy(slot: str, version: int) -> dict:
+    """按槽的后处理策略：v1 保持定增益、不裁剪；v2 两遍 loudnorm + 战斗槽边缘裁剪。"""
+    if version < 2:
+        return dict(mode='fixed_gain', trim=False)
+    return dict(mode='two_pass', trim=family(slot) in TRIM_FAMILIES)
+
+
+def process_run(lines: list[dict], run_dir, *, ffmpeg, ffprobe, version: int | None = None) -> dict:
     """对已生成且回执校验通过的条目做后处理；qc 已存在且哈希一致即跳过（续跑）。"""
     run_dir = Path(run_dir)
     items = []
     for line in lines:
         role, slot = line['role'], line['slot']
+        mode = version if version is not None else int(line.get('prompt_version') or 1)
         base = run_dir / role
-        source, receipt = base / 'raw' / (slot + '.mp3'), base / 'receipts' / (slot + '.json')
+        source = base / 'raw' / (slot + '.' + api.audio_format(line))
+        receipt = base / 'receipts' / (slot + '.json')
         if not (source.is_file() and receipt.is_file()):
             items.append(dict(role=role, slot=slot, status='missing'))
             continue
@@ -719,17 +1422,22 @@ def process_run(lines: list[dict], run_dir, *, ffmpeg, ffprobe) -> dict:
             items.append(dict(role=role, slot=slot, status='stale_plan',
                               error='design changed after generation; regenerate in a new run'))
             continue
+        policy = master_policy(slot, mode)
+        # 期望参数与 master_voice 写进报告的那份必须逐字相同（限幅上界的钳位在
+        # `limiter_bound` 一处，两边都走它），否则第二遍 process 会假报 QC 漂移。
+        expected = master_params(**policy) if mode >= 2 else MASTER_PARAMS
         target, qc = base / 'standard' / (slot + '.mp3'), base / 'qc' / (slot + '.json')
         if qc.is_file() and target.is_file():
             report = json.loads(qc.read_bytes())
             if (report.get('source_sha256') != source_sha or report.get('standard_sha256') != sha(target.read_bytes())
-                    or report.get('params') != MASTER_PARAMS):
+                    or report.get('params') != expected):
                 raise ValueError(f'QC drift for {role}:{slot}; use a new run directory')
             status = 'cached'
         else:
             try:
                 _stored, report = master_voice(source, target, slot=slot, code=line['code'],
-                                               ffmpeg=ffmpeg, ffprobe=ffprobe)
+                                               ffmpeg=ffmpeg, ffprobe=ffprobe,
+                                               slots=role_slots(role), **policy)
             except (ValueError, RuntimeError) as exc:
                 items.append(dict(role=role, slot=slot, status='rejected', error=str(exc)[:500]))
                 continue
@@ -738,11 +1446,18 @@ def process_run(lines: list[dict], run_dir, *, ffmpeg, ffprobe) -> dict:
         items.append(dict(role=role, slot=slot, status=status, seconds=round(report['seconds'], 3),
                           lufs_i=report['final']['lufs_i'], true_peak_dbtp=report['final']['true_peak_dbtp'],
                           limiter=report['limiter_ceiling_dbfs'] is not None,
+                          trimmed=bool(report.get('trim')),
                           loudness_status=report['loudness_status'], findings=report['findings']))
     over_max = [x for x in items if any(f['level'] == 'error' for f in x.get('findings', []))]
     retake = [x for x in items if x['status'] in ('rejected', 'stale_plan') or x in over_max
               or x.get('loudness_status') not in (None, 'ok')]
-    summary = dict(finished_at=_now(), params=MASTER_PARAMS, items=items,
+    # 没显式传 --prompt-version 时，实际生效的版本来自每条 line；摘要里的 params 必须跟着它走，
+    # 否则 lines 自带 v2（逐条两遍 loudnorm）时摘要会写成 v1 的 MASTER_PARAMS，与逐条报告不符。
+    effective = version if version is not None else max(
+        (int(line.get('prompt_version') or 1) for line in lines), default=1)
+    summary = dict(finished_at=_now(), prompt_version=version, effective_prompt_version=effective,
+                   params=MASTER_PARAMS if effective < 2 else 'per-slot; see each qc report',
+                   items=items,
                    over_official_max=[f'{x["role"]}:{x["slot"]}' for x in over_max],
                    over_official_p90=[f'{x["role"]}:{x["slot"]}' for x in items
                                       if any(f['rule'] == 'over_official_p90' for f in x.get('findings', []))],
@@ -769,28 +1484,30 @@ def decode_flat_rows(raw: bytes) -> list[list[str]]:
 
 
 def validate_voice_plan(role: str, lines: list[dict]) -> dict[str, dict]:
+    slots = role_slots(role)
     by_slot = {}
     for line in lines:
         if line.get('role') != role:
             raise ValueError('voice plan mixes roles')
-        slot = normalize_slot(line.get('slot'))
+        slot = normalize_slot(line.get('slot'), slots)
         if slot in by_slot:
             raise ValueError(f'duplicate voice slot {slot}')
         if not line.get('ja') or not line.get('zh'):
             raise ValueError(f'{slot} requires ja and zh')
         by_slot[slot] = line
-    if set(by_slot) != set(SLOTS):
-        raise ValueError('pack requires the full 22-slot set; missing ' +
-                         ', '.join(s for s in SLOTS if s not in by_slot))
-    if any(gate.engine_reachable(list(SLOTS)).values()):
+    if set(by_slot) != set(slots):
+        raise ValueError(f'pack requires the full {len(slots)}-slot set; missing ' +
+                         ', '.join(s for s in slots if s not in by_slot))
+    if any(gate.engine_reachable(list(slots)).values()):
         raise AssertionError('slot table contains unreachable numbered voices')
     return by_slot
 
 
 def speech_rows(lines: list[dict]) -> list[list[str]]:
-    """character_speech 8 行：home_0..5（kind0 constraint 2）+ join（kind2）+ evolution（kind1 evo 1）。"""
+    """character_speech 8 行：home_N（kind0 constraint 2）+ join（kind2）+ evolution（kind1 evo 1）。"""
     by_slot = {line['slot']: line for line in lines}
-    rows = [['0', '2', '', by_slot[slot]['zh'], slot] for slot in HOME_SLOTS]
+    home_slots = [s for s in ALL_SLOTS if s.startswith('home/') and s in by_slot] or list(HOME_SLOTS)
+    rows = [['0', '2', '', by_slot[slot]['zh'], slot] for slot in home_slots]
     rows.append(['2', '', '', by_slot['ally/join']['zh'], 'ally/join'])
     rows.append(['1', '', '1', by_slot['ally/evolution']['zh'], 'ally/evolution'])
     for row in rows:
@@ -898,12 +1615,13 @@ def pack_voice(package, role: str, lines: list[dict], standard, *, route, charac
     if role not in ROLES:
         raise ValueError(f'unknown role {role!r}')
     cid, code = ROLES[role]['cid'], ROLES[role]['code']
+    slots = role_slots(role)
     by_slot = validate_voice_plan(role, lines)
     package = _package_dir(package, cid, code)
     if exclude_rules is not None:
         if any(not token for token in exclude_rules.split('|')):
             raise ValueError('empty character_voice_exclude token silences every voice')
-        blocked = [s for s in SLOTS if native_excluded(f'character/{code}/voice/{s}', exclude_rules)]
+        blocked = [s for s in slots if native_excluded(f'character/{code}/voice/{s}', exclude_rules)]
         if blocked:
             raise ValueError(f'character_voice_exclude blocks {code}: {blocked[:3]}')
     route_cols = normalize_route(route, code)
@@ -913,7 +1631,7 @@ def pack_voice(package, role: str, lines: list[dict], standard, *, route, charac
         action_rows = read_package_action_rows(package, code)
 
     voices, findings = [], []
-    for slot in SLOTS:
+    for slot in slots:
         standard_raw = _standard_bytes(standard, slot)
         stored = wf_assets.mp3_encode(standard_raw)
         if wf_assets.mp3_decode(stored) != standard_raw:
@@ -942,7 +1660,7 @@ def pack_voice(package, role: str, lines: list[dict], standard, *, route, charac
         if state != 'unchanged':
             pending.append((path, voice.data))
     voice_root = _safe_path(package, 'common', f'character/{code}/voice')
-    planned = {f'character/{code}/voice/{s}.mp3' for s in SLOTS}
+    planned = {f'character/{code}/voice/{s}.mp3' for s in slots}
     foreign = sorted(p.relative_to(package / 'roots' / 'common').as_posix() for p in voice_root.rglob('*')
                      if p.is_file()) if voice_root.is_dir() else []
     foreign = [p for p in foreign if p not in planned]
@@ -953,7 +1671,7 @@ def pack_voice(package, role: str, lines: list[dict], standard, *, route, charac
             if path.read_bytes() != data:
                 raise OSError(f'candidate voice readback failed: {path}')
 
-    speech = speech_rows([by_slot[s] for s in SLOTS])
+    speech = speech_rows([by_slot[s] for s in slots])
     character = route_character_row(character_row, route_cols, code)
     switched = switched_rows(action_rows)
     key = switch_key(code)
@@ -1115,6 +1833,366 @@ def build_references(roles, *, out_dir=REFS_DIR, ffmpeg=None, baseline=None) -> 
     return index
 
 
+def clean_reference_file(source, target: Path, *, ffmpeg, filters: str = REF_FILTERS_V2,
+                         trim=None) -> dict:
+    """本地任意音频 → 48 kHz 单声道 16-bit PCM 参考音。
+
+    `凯尔声音参考1.mp3` 实测是 **AAC 套着 .mp3 后缀**；`resolve_references` 只看后缀、
+    payload 直接 base64 原字节 ⇒ 必须先转码，不能直接当参考音送出去。
+    """
+    source, target = Path(source), Path(target)
+    if not source.is_file():
+        raise ValueError(f'reference source missing: {source}')
+    target.parent.mkdir(parents=True, exist_ok=True)
+    chain = ','.join(_trim_filters(trim) + ['aformat=channel_layouts=mono', 'aresample=48000', filters])
+    _ffmpeg(ffmpeg, ['-v', 'error', '-y', '-i', str(source), '-map', '0:a:0', '-map_metadata', '-1',
+                     '-af', chain, '-ac', '1', '-ar', '48000', '-c:a', 'pcm_s16le', str(target)])
+    with wave.open(str(target), 'rb') as handle:
+        info = dict(channels=handle.getnchannels(), sample_rate=handle.getframerate(),
+                    sample_width=handle.getsampwidth(), frames=handle.getnframes())
+    info['duration_seconds'] = round(info['frames'] / info['sample_rate'], 3)
+    if (info['channels'], info['sample_rate'], info['sample_width']) != (1, 48000, 2):
+        raise ValueError('reference is not 48 kHz mono 16-bit PCM')
+    return info
+
+
+def strip_loudnorm(filters: str) -> str:
+    """把滤镜链里的 `loudnorm=...` 摘掉（RMS 归一路径自己定增益）。"""
+    text = _LOUDNORM_COMPONENT.sub('', filters or '')
+    return ','.join(p for p in text.split(',') if p.strip())
+
+
+def pcm_levels(path, *, ffmpeg, rate: int = 48000) -> dict:
+    """解码后的 RMS / 峰值（dBFS）—— 极短片段唯一靠得住的电平尺。"""
+    values = decoded_pcm(Path(path), ffmpeg=ffmpeg, rate=rate).astype(np.float64)
+    if not len(values):
+        raise ValueError('empty decoded audio')
+    rms = float(np.sqrt(np.mean(values ** 2)))
+    peak = float(np.max(np.abs(values)))
+    return dict(rms_dbfs=round(20 * math.log10(max(rms, 1e-12)), 2),
+                peak_dbfs=round(20 * math.log10(max(peak, 1e-12)), 2))
+
+
+def rms_normalize_reference(source, target: Path, *, ffmpeg, filters: str, trim=None,
+                            target_rms_dbfs: float = REFERENCE_TARGET_RMS_DBFS,
+                            peak_ceiling_dbfs: float = REFERENCE_PEAK_CEILING_DBFS) -> dict:
+    """整合响度测不出的极短片段：去掉 loudnorm，改按 RMS 定增益（峰值封顶）。
+
+    目标 RMS 取的是「整合响度可测」那批参考音的实测 RMS 中位数，所以两条路子出来的
+    参考音等响；峰值天花板与 loudnorm 的 TP 对齐，不会因为定增益把短喊声推到削波。
+    """
+    bare = strip_loudnorm(filters)
+    info = clean_reference_file(source, target, ffmpeg=ffmpeg, filters=bare, trim=trim)
+    before = pcm_levels(target, ffmpeg=ffmpeg)
+    gain = min(target_rms_dbfs - before['rms_dbfs'], peak_ceiling_dbfs - before['peak_dbfs'])
+    chain = f'{bare},volume={gain:.4f}dB' if bare else f'volume={gain:.4f}dB'
+    info = clean_reference_file(source, target, ffmpeg=ffmpeg, filters=chain, trim=trim)
+    after = pcm_levels(target, ffmpeg=ffmpeg)
+    return dict(info=info, filters=chain, gain_db=round(gain, 3),
+                target_rms_dbfs=target_rms_dbfs, peak_ceiling_dbfs=peak_ceiling_dbfs,
+                before=before, levels=after)
+
+
+def build_references_v2(specs: dict, *, out_dir, ffmpeg=None, index_path=None) -> dict:
+    """逐角色逐 group 从显式源文件造参考音，写 `refs-v2.json`。
+
+    specs = {role: {'note', 'filters', 'slot_to_group': {...}, 'exemptions': {group: 理由},
+                    'groups': {name: {'source', 'filters'?, 'range'?, 'trim'?, 'second': {...}?}}}}
+    产物只写 out_dir 下；源文件只读，一个字节都不动。
+
+    电平：清洗后先按常规配方（loudnorm=I=-16）量一次整合响度；测不出（-70）或片段短于
+    `SHORT_REFERENCE_SECONDS` 时改走 RMS 归一，并在记录里如实写 `loudness_method`。
+    区间/电平不合格的 group 会进 `violations`；`group_references` 据此拦，
+    除非角色策略的 `exemptions` 里写了理由。
+    """
+    ffmpeg = ffmpeg or find_tool('ffmpeg')
+    out_dir = Path(out_dir)
+    index_path = Path(index_path) if index_path else out_dir / 'refs-v2.json'
+    index = json.loads(index_path.read_bytes()) if index_path.is_file() else dict(schema=2, roles={})
+    for role, spec in specs.items():
+        groups, warnings, violations = {}, [], []
+        default_filters = spec.get('filters') or REF_FILTERS_V2
+        exemptions = {k: str(v).strip() for k, v in (spec.get('exemptions') or {}).items() if str(v).strip()}
+        for name, item in (spec.get('groups') or {}).items():
+            entry = {}
+            for label, source_spec in (('', item), ('second', item.get('second'))):
+                if not source_spec:
+                    continue
+                suffix = name if not label else f'{name}.2'
+                final = out_dir / role / f'{suffix}.wav'
+                filters = source_spec.get('filters') or default_filters
+                wav = clean_reference_file(source_spec['source'], final, ffmpeg=ffmpeg,
+                                           filters=filters, trim=source_spec.get('trim'))
+                loudness = measure(final, Path(ffmpeg))
+                levels = pcm_levels(final, ffmpeg=ffmpeg)
+                method, normalized = 'ebu_r128', None
+                if (loudness['lufs_i'] <= LOUDNESS_UNMEASURABLE_LUFS
+                        or wav['duration_seconds'] < SHORT_REFERENCE_SECONDS):
+                    normalized = rms_normalize_reference(source_spec['source'], final, ffmpeg=ffmpeg,
+                                                         filters=filters, trim=source_spec.get('trim'))
+                    wav, levels = normalized['info'], normalized['levels']
+                    loudness = measure(final, Path(ffmpeg))
+                    method = 'rms'
+                low, high = item.get('range') or REF_RANGES_V2.get(name, (0.3, 20.0))
+                measurable = loudness['lufs_i'] > LOUDNESS_UNMEASURABLE_LUFS
+                record = dict(path=str(final), sha256=sha(final.read_bytes()),
+                              source=str(source_spec['source']), filters=filters,
+                              seconds=wav['duration_seconds'],
+                              # 测不出时不写 -70 这个假数；真实电平看 rms_dbfs。
+                              lufs_i=loudness['lufs_i'] if measurable else None,
+                              lufs_i_raw=loudness['lufs_i'], loudness_measurable=measurable,
+                              loudness_method=method, lra_lu=loudness['lra_lu'],
+                              rms_dbfs=levels['rms_dbfs'], peak_dbfs=levels['peak_dbfs'],
+                              range_seconds=[low, high],
+                              range_ok=low <= wav['duration_seconds'] <= high, **wav)
+                if normalized:
+                    record.update(filters=normalized['filters'], rms_gain_db=normalized['gain_db'],
+                                  rms_target_dbfs=normalized['target_rms_dbfs'],
+                                  rms_before=normalized['before'],
+                                  loudness_note='整合响度在这个长度上测不出（EBU R128 400ms 窗）；'
+                                                '电平按 RMS 归一，与其它参考音的实测 RMS 中位对齐')
+                if exemptions.get(name):
+                    record['exempt_reason'] = exemptions[name]
+                defects = reference_defects(record)
+                if not record['range_ok']:
+                    warnings.append(dict(group=name, slot_role=label or 'primary',
+                                         seconds=wav['duration_seconds'], range_seconds=[low, high],
+                                         rule='outside_group_duration_range'))
+                if defects:
+                    violations.append(dict(group=name, slot_role=label or 'primary', defects=defects,
+                                           seconds=wav['duration_seconds'], range_seconds=[low, high],
+                                           loudness_method=method, rms_dbfs=levels['rms_dbfs'],
+                                           exempt_reason=exemptions.get(name) or None,
+                                           exempted=bool(exemptions.get(name))))
+                if label:
+                    entry['second'] = record
+                else:
+                    entry.update(record, name=name)
+            groups[name] = entry
+        mapping = dict(spec.get('slot_to_group') or {})
+        missing = sorted({g for g in mapping.values() if g not in groups})
+        if missing:
+            raise ValueError(f'{role}: slot_to_group references unknown groups {missing}')
+        unused = sorted(set(exemptions) - set(groups))
+        if unused:
+            raise ValueError(f'{role}: reference exemptions name unknown groups {unused}')
+        index['roles'][role] = dict(kind=spec.get('kind', ''), note=spec.get('note', ''),
+                                    groups=groups, slot_to_group=mapping, warnings=warnings,
+                                    exemptions=exemptions, violations=violations,
+                                    blocking=[v for v in violations if not v['exempted']])
+    index.update(schema=2, updated_at=_now(),
+                 usage='官方声优原声做音色参考 = 克隆真人声纹；仅限本机自用，对外分发前须作者另行拍板')
+    _write_json(index_path, index)
+    return index
+
+
+# ---------------------------------------------------------------- 多 take 与自动选优
+
+def take_dir(run_dir, take: int) -> Path:
+    if not isinstance(take, int) or not 1 <= take <= 99:
+        raise ValueError('take index must be between 1 and 99')
+    return Path(run_dir) / 'takes' / f'{take:02d}'
+
+
+def take_numbers(run_dir) -> list[int]:
+    folder = Path(run_dir) / 'takes'
+    return sorted(int(p.name) for p in folder.glob('[0-9][0-9]') if p.is_dir()) if folder.is_dir() else []
+
+
+_KANA_DROP = '、。，．,.!！?？…‥・「」『』“”"\'（）()〜~ 　\n\r\t'
+
+
+def normalize_spoken(text: str) -> str:
+    """片假名→平假名、去标点空格：subtitle 与请求台词的可比形态。"""
+    out = []
+    for ch in text or '':
+        if ch in _KANA_DROP:
+            continue
+        code = ord(ch)
+        out.append(chr(code - 0x60) if 0x30A1 <= code <= 0x30F6 else ch)
+    return ''.join(out)
+
+
+def subtitle_metrics(receipt: dict, spoken: str) -> dict:
+    """接口回执的逐字时间戳 → 句首/句尾静音、句内最大间隔、文本一致性。"""
+    response = receipt.get('response') or {}
+    subtitle = response.get('subtitle') or {}
+    text = str(subtitle.get('text') or '').strip()
+    words = [w for s in (subtitle.get('sentences') or []) for w in (s.get('words') or [])]
+    duration = float(response.get('duration') or 0.0)
+    said, want = normalize_spoken(text), normalize_spoken(spoken)
+    metrics = dict(subtitle_text=text, subtitle_present=bool(text), duration=duration,
+                   text_exact=bool(text) and said == want,
+                   text_superset=bool(text) and want and want in said and said != want,
+                   words=len(words))
+    if words:
+        lead = float(words[0].get('start_time') or 0) / 1000.0
+        tail = max(0.0, duration - float(words[-1].get('end_time') or 0) / 1000.0)
+        gaps = [max(0.0, (float(b.get('start_time') or 0) - float(a.get('end_time') or 0)) / 1000.0)
+                for a, b in zip(words, words[1:])]
+        metrics.update(lead_in_seconds=round(lead, 3), tail_seconds=round(tail, 3),
+                       max_inner_gap_seconds=round(max(gaps) if gaps else 0.0, 3),
+                       dead_air_share=round((lead + tail) / duration, 4) if duration > 0 else None)
+    else:
+        metrics.update(lead_in_seconds=None, tail_seconds=None, max_inner_gap_seconds=None,
+                       dead_air_share=None)
+    return metrics
+
+
+def pcm_edges(qc: dict) -> tuple[float | None, float | None]:
+    """没有 subtitle 时的替代量：源 PCM 的首尾静音（与逐字时间戳同义）。"""
+    source = qc.get('source_pcm') or {}
+    lead, tail = source.get('leading_quiet_seconds'), source.get('trailing_quiet_seconds')
+    return (None if lead is None else round(float(lead), 3),
+            None if tail is None else round(float(tail), 3))
+
+
+def take_gates(line: dict, metrics: dict, qc: dict) -> list[str]:
+    """recipe.auto_select_metrics.hard_gates：任一不过即丢弃这一 take。
+
+    与 recipe 的两处偏差（都有本轮实测证据，见 pipeline-v2.md）：
+    1. subtitle 为空时不直接丢弃 —— 首尾静音改用源 PCM 量，只有「文本一致」这一项
+       变成不可验证（记 `text_unverified`，选优时排在可验证的 take 之后）。
+       实测：fluffy 的 skill_ready / battle_start_0 换成 mp3 返回同样空 subtitle
+       ⇒ 空 subtitle 是这几条台词的稳定属性，硬丢会让这两个槽的所有 take 全灭。
+    2. 原始响度下限由 -20 放宽到 -26 LUFS。两遍 loudnorm + 限幅 ≤2dB 已经直接约束了
+       真正要保的东西；实测 -25.58 LUFS 的 PF 依然做到 -14.3 / 限幅 1.16dB。
+    """
+    fam = family(line['slot'])
+    spoken = line.get('tts_text') or line['ja']
+    target = SLOT_TARGETS[fam]
+    failed = []
+    if metrics['subtitle_present'] and not metrics['text_exact']:
+        failed.append('text_superset' if metrics['text_superset'] else 'text_exact')
+    lead, tail = metrics['lead_in_seconds'], metrics['tail_seconds']
+    if lead is None or tail is None:
+        lead, tail = pcm_edges(qc)
+    if lead is None or lead > 0.60:
+        failed.append('lead_in')
+    if tail is None or tail > 0.50:
+        failed.append('tail')
+    if fam in SHORT_BATTLE_FAMILIES and metrics['max_inner_gap_seconds'] is not None:
+        limit = 0.90 if '…' in spoken else 0.35
+        if metrics['max_inner_gap_seconds'] > limit:
+            failed.append('inner_gap')
+    raw = qc.get('raw_lufs_i')
+    if raw is None or raw < RAW_LUFS_FLOOR:
+        failed.append('raw_loudness')
+    seconds = float(qc.get('seconds') or 0.0)
+    if seconds > target['official_max']:
+        failed.append('over_official_max')
+    elif not target['p10'] <= seconds <= target['p90']:
+        failed.append('duration_band')
+    final = qc.get('final') or {}
+    if abs(float(final.get('lufs_i', -99)) - TARGET_LUFS) > 0.5:
+        failed.append('master_loudness')
+    if float(qc.get('limiter_reduction_bound_db') or 0.0) > SAFETY_LIMITER_REDUCTION_DB:
+        failed.append('limiter_reduction')
+    if float(final.get('true_peak_dbtp', 0)) > PEAK_CEILING:
+        failed.append('true_peak')
+    if float((qc.get('mastered_pcm') or {}).get('clipped_fraction') or 0.0) > 0:
+        failed.append('clipping')
+    return failed
+
+
+def take_score(line: dict, metrics: dict, qc: dict) -> float:
+    """越小越好：时长偏差 + 空气占比 + 限幅 + 语速偏差 + 句内停顿。"""
+    fam = family(line['slot'])
+    target = SLOT_TARGETS[fam]
+    seconds = float(qc.get('seconds') or 0.0)
+    spoken = line.get('tts_text') or line['ja']
+    chars = spoken_chars(spoken)
+    cps_mid = chars_per_second(fam)
+    cps = chars / seconds if seconds > 0 else cps_mid
+    dead = metrics.get('dead_air_share')
+    if dead is None:
+        lead, tail = pcm_edges(qc)
+        raw_seconds = float((qc.get('source_pcm') or {}).get('seconds') or 0.0)
+        dead = ((lead or 0.0) + (tail or 0.0)) / raw_seconds if raw_seconds > 0 else 0.0
+    gap = metrics.get('max_inner_gap_seconds') or 0.0
+    return round(1.0 * abs(seconds - target['p50']) / target['p50']
+                 + 1.5 * dead
+                 + 1.0 * max(0.0, float(qc.get('limiter_reduction_bound_db') or 0.0) - 0.5)
+                 + 0.5 * abs(cps - cps_mid) / cps_mid
+                 + 0.5 * max(0.0, gap - 0.30), 4)
+
+
+def select_takes(lines: list[dict], run_dir, *, takes=None) -> dict:
+    """扫全部 take，按硬门 + 打分选优，写 selected.json。不联网、不改音频。"""
+    run_dir = Path(run_dir)
+    numbers = sorted(takes) if takes else take_numbers(run_dir)
+    if not numbers:
+        raise ValueError(f'no take directories under {run_dir / "takes"}')
+    roles, queue = {}, []
+    for line in lines:
+        role, slot = line['role'], line['slot']
+        spoken = line.get('tts_text') or line['ja']
+        candidates, rejected = [], []
+        for take in numbers:
+            base = take_dir(run_dir, take) / role
+            receipt_path = base / 'receipts' / (slot + '.json')
+            qc_path = base / 'qc' / (slot + '.json')
+            standard = base / 'standard' / (slot + '.mp3')
+            if not (receipt_path.is_file() and qc_path.is_file() and standard.is_file()):
+                rejected.append(dict(take=take, failed=['missing']))
+                continue
+            receipt = json.loads(receipt_path.read_bytes())
+            qc = json.loads(qc_path.read_bytes())
+            if qc.get('standard_sha256') != sha(standard.read_bytes()):
+                rejected.append(dict(take=take, failed=['standard_drift']))
+                continue
+            metrics = subtitle_metrics(receipt, spoken)
+            failed = take_gates(line, metrics, qc)
+            record = dict(take=take, score=take_score(line, metrics, qc), failed=failed,
+                          text_unverified=not metrics['subtitle_present'],
+                          standard=str(standard), qc=str(qc_path), receipt=str(receipt_path),
+                          seconds=qc.get('seconds'), lufs_i=(qc.get('final') or {}).get('lufs_i'),
+                          raw_lufs_i=qc.get('raw_lufs_i'), metrics=metrics)
+            (candidates if not failed else rejected).append(record)
+        if candidates:
+            # 文本可验证的 take 永远优先；同类里才比分数。
+            best = min(candidates, key=lambda r: (r['text_unverified'], r['score'], r['take']))
+            roles.setdefault(role, {})[slot] = dict(
+                best, alternatives=len(candidates) - 1,
+                # 落选原因留档：否则「为什么第 3 次没被选」只能靠重跑。
+                rejected=[{k: r[k] for k in ('take', 'failed', 'score', 'seconds', 'raw_lufs_i')}
+                          for r in rejected],
+                runners_up=[{k: r[k] for k in ('take', 'score', 'seconds')}
+                            for r in candidates if r['take'] != best['take']])
+        else:
+            reasons = sorted({f for r in rejected for f in r['failed']})
+            remedy = ('换参考音' if 'raw_loudness' in reasons else
+                      '改台词（插词/超长）' if {'text_exact', 'text_superset', 'over_official_max'} & set(reasons)
+                      else '加抽一次')
+            queue.append(dict(role=role, slot=slot, ja=line['ja'], reasons=reasons,
+                              action=remedy, takes=rejected))
+    summary = dict(schema=1, generated_at=_now(), run=str(run_dir), takes=numbers,
+                   selected=sum(len(v) for v in roles.values()), retake=len(queue),
+                   text_unverified=[f'{r}:{s}' for r, items in roles.items()
+                                    for s, v in items.items() if v['text_unverified']],
+                   roles=roles, retake_queue=queue)
+    _write_json(run_dir / 'selected.json', summary)
+    return summary
+
+
+def selected_standard(run_dir, role: str, slots) -> dict[str, bytes]:
+    """selected.json → {slot: 标准态 MP3 字节}，供 pack 使用。"""
+    data = json.loads((Path(run_dir) / 'selected.json').read_bytes())
+    chosen = (data.get('roles') or {}).get(role) or {}
+    missing = [s for s in slots if s not in chosen]
+    if missing:
+        raise ValueError(f'{role}: selected.json lacks {len(missing)} slot(s): ' + ', '.join(missing))
+    out = {}
+    for slot in slots:
+        path = Path(chosen[slot]['standard'])
+        qc = json.loads(Path(chosen[slot]['qc']).read_bytes())
+        raw = path.read_bytes()
+        if qc.get('standard_sha256') != sha(raw):
+            raise ValueError(f'{role}:{slot} selected recording drifted from its QC report')
+        out[slot] = raw
+    return out
+
+
 # ---------------------------------------------------------------- 冒烟
 
 class _CapturingResponse:
@@ -1161,7 +2239,13 @@ def capturing_opener(sink: dict, opener=urllib.request.urlopen):
 
 
 def run_smoke(key: str, *, out_dir=SMOKE_DIR, refs_index=None, opener=urllib.request.urlopen) -> dict:
-    """只发 1 个请求（不自动重试）：生成 → 后处理 → mp3_encode/voice_gate 全链路。"""
+    """只发 1 个请求（不自动重试）：生成 → 后处理 → mp3_encode/voice_gate 全链路。
+
+    **只冒烟 prompt 模板 v1**：`SMOKE_LINE` 走 `request_lines(..., version=None)` = v1，
+    raw 写死 `raw/<slot>.mp3`，后处理也是定增益。v2 的冒烟（逐槽参考音、wav、两遍
+    loudnorm）本轮是另写脚本做的，产物在 `rework2/voice/smoke/v2`；CLI 这条 `smoke`
+    子命令没有 v2 路径，帮助文本里已写明，别拿它当 v2 的验证手段。
+    """
     out_dir = Path(out_dir)
     ffmpeg, ffprobe = find_tool('ffmpeg'), find_tool('ffprobe')
     voice = dict(persona=SMOKE_LINE['persona'], references=None,
@@ -1262,10 +2346,23 @@ def _roles(values) -> list[str]:
 
 def _plans(args) -> list[dict]:
     plans = []
+    version = getattr(args, 'prompt_version', None)
     for role in _roles(args.roles):
         design = Path(args.design) if getattr(args, 'design', None) else None
-        plans.append(plan_role(role, design))
+        plans.append(plan_role(role, design, version=version))
     return plans
+
+
+def _take_dirs(run_dir: Path, args) -> list[Path]:
+    """`--take N`/`--takes N` → takes/NN 目录；都不给时用旧的扁平布局。"""
+    picked = getattr(args, 'take', None)
+    count = getattr(args, 'takes', None)
+    if picked:
+        return [take_dir(run_dir, int(picked))]
+    if count:
+        return [take_dir(run_dir, i) for i in range(1, int(count) + 1)]
+    existing = take_numbers(run_dir)
+    return [take_dir(run_dir, i) for i in existing] if existing else [run_dir]
 
 
 def main(argv=None):
@@ -1277,23 +2374,37 @@ def main(argv=None):
     p.add_argument('--roles', nargs='*')
 
     for name, text in (('plan', '校验 design 并写请求快照（不联网）'), ('generate', '调用 Seed Audio 生成'),
-                       ('process', '后处理到 -14 LUFS 标准 MP3 与 QC'), ('pack', '装包（默认 dry-run）')):
+                       ('process', '后处理到 -14 LUFS 标准 MP3 与 QC'),
+                       ('select', '多 take 按硬门+打分选优，写 selected.json（不联网）'),
+                       ('pack', '装包（默认 dry-run）')):
         p = sub.add_parser(name, help=text)
         p.add_argument('--roles', nargs='*')
         p.add_argument('--design', help='单角色时覆盖 design json 路径')
         p.add_argument('--run', default='take1', help='generation/<run> 目录；重录换新 run')
+        p.add_argument('--prompt-version', type=int, choices=(1, 2), default=None,
+                       help='2 = 本轮配方（逐槽参考音、引号封边、wav、两遍 loudnorm）')
+        p.add_argument('--take', type=int, default=None, help='只作用于 takes/NN 这一次抽卡')
+        p.add_argument('--takes', type=int, default=None, help='抽卡次数：takes/01..NN')
         if name == 'generate':
             p.add_argument('--only', action='append', default=[], help='role:slot，可重复')
             p.add_argument('--workers', type=int, choices=(1, 2), default=2)
             p.add_argument('--no-retry', action='store_true', help='本次不自动重试')
             p.add_argument('--key-file', help='读取后注入子进程环境变量')
+            p.add_argument('--role-lock', action=argparse.BooleanOptionalAction, default=True,
+                           help='角色级跨进程锁，默认开（防同一角色被两个进程重复计费）；'
+                                '--no-role-lock 是逃生口')
+            p.add_argument('--lock-timeout', type=float, default=0.0)
+            p.add_argument('--quota-slots', type=int, choices=(0, 1, 2), default=MAX_WORKERS,
+                           help='全局并发生成槽（与 --workers 同语义，本机所有语音进程共用）；0=关')
         if name == 'pack':
+            p.add_argument('--selected', action='store_true', help='标准态取自 selected.json')
             p.add_argument('--package', required=True, help='work/character_packs/<pkg>/package')
             p.add_argument('--write', action='store_true', help='写存储态 MP3')
             p.add_argument('--apply-tables', action='store_true', help='同时把表行拼进候选包已有表')
             p.add_argument('--replace', action='store_true')
 
-    p = sub.add_parser('smoke', help='单请求冒烟：生成 → 后处理 → mp3_encode')
+    p = sub.add_parser('smoke', help='单请求冒烟：生成 → 后处理 → mp3_encode（**只支持模板 v1**；'
+                                     'v2 的冒烟另走脚本，见 pipeline-v2.md）')
     p.add_argument('--key-file', help='读取后注入子进程环境变量')
     args = parser.parse_args(argv)
 
@@ -1315,15 +2426,37 @@ def main(argv=None):
         return 0 if report['generation']['status'] in ('generated', 'cached') else 1
 
     run_dir = _output_dir(GENERATION_DIR / args.run)
-    plans = _plans(args)
     if args.command == 'plan':
-        for plan in plans:
-            for line in plan['lines']:
-                api.payload(line)   # 引用哈希与 payload 可构造
-            _write_json(run_dir / 'plan' / f'{plan["role"]}.json',
-                        dict(plan, planned_at=_now(), fingerprints={l['slot']: request_fingerprint(l) for l in plan['lines']}))
-            print(json.dumps(dict(role=plan['role'], lines=len(plan['lines']), route=plan['route']), ensure_ascii=False))
-        return 0
+        # plan 是改稿的人唯一的反馈面：逐角色报到底，一条稿子的问题列全，不要撞上第一条就退出。
+        # 台词硬规则的 error 会让这个角色不写 plan 文件、整体 rc≠0（生成路径照样 strict）。
+        failed = 0
+        for role in _roles(args.roles):
+            design = Path(args.design) if getattr(args, 'design', None) else None
+            try:
+                plan = plan_role(role, design, version=getattr(args, 'prompt_version', None),
+                                 strict_text=False)
+            except (ValueError, KeyError, OSError) as exc:
+                failed += 1
+                print(json.dumps(dict(role=role, status='blocked', problem=str(exc)),
+                                 ensure_ascii=False), flush=True)
+                continue
+            errors, warnings = plan['text_errors'], plan['text_warnings']
+            if not errors:
+                for line in plan['lines']:
+                    api.payload(line)   # 引用哈希与 payload 可构造
+                _write_json(run_dir / 'plan' / f'{plan["role"]}.json',
+                            dict(plan, planned_at=_now(),
+                                 fingerprints={l['slot']: request_fingerprint(l) for l in plan['lines']}))
+            failed += bool(errors)
+            print(json.dumps(dict(role=plan['role'], status='ok' if not errors else 'text_rules_failed',
+                                  lines=len(plan['lines']), slots=len(plan['slots']),
+                                  prompt_version=plan['prompt_version'], route=plan['route'],
+                                  text_errors=len(errors), text_warnings=len(warnings),
+                                  plan_written=not errors), ensure_ascii=False), flush=True)
+            for finding in errors + warnings:
+                print(json.dumps(dict(role=plan['role'], **finding), ensure_ascii=False), flush=True)
+        return 1 if failed else 0
+    plans = _plans(args)
     if args.command == 'generate':
         key = _take_key()
         lines = [line for plan in plans for line in plan['lines']]
@@ -1333,27 +2466,62 @@ def main(argv=None):
             raise SystemExit('empty generation selection')
         for plan in plans:
             _write_json(run_dir / 'plan' / f'{plan["role"]}.json', dict(plan, planned_at=_now()))
-        summary = run_generation(lines, run_dir, key, workers=args.workers,
-                                 max_retries=0 if args.no_retry else MAX_AUTO_RETRIES,
-                                 on_result=lambda r: print(json.dumps(r, ensure_ascii=False), flush=True))
-        print(json.dumps(dict(counts=summary['counts'], rewrite_queue=summary['rewrite_queue']), ensure_ascii=False))
-        return 0 if set(summary['counts']) <= {'generated', 'cached'} else 1
+        failed = 0
+        for output in _take_dirs(run_dir, args):
+            summary = run_generation(lines, output, key, workers=args.workers,
+                                     max_retries=0 if args.no_retry else MAX_AUTO_RETRIES,
+                                     role_locks=args.role_lock, lock_timeout=args.lock_timeout,
+                                     quota_slots=args.quota_slots,
+                                     on_result=lambda r: print(json.dumps(r, ensure_ascii=False), flush=True))
+            print(json.dumps(dict(take=output.name, counts=summary['counts'],
+                                  rewrite_queue=summary['rewrite_queue'],
+                                  needs_new_reference=summary['needs_new_reference']), ensure_ascii=False))
+            # 「不是 {generated, cached} 的子集」才叫失败。写成真超集（`>`）会让
+            # {'generated':3,'fatal':1}、{'needs_rewrite':22} 全部 rc=0 —— 分波次驱动脚本据
+            # 退出码判断就全错，第一轮 charlene 22/22 全 45001127 正是这种形状。
+            failed += not (set(summary['counts']) <= {'generated', 'cached'})
+        return 1 if failed else 0
     if args.command == 'process':
         lines = [line for plan in plans for line in plan['lines']]
-        summary = process_run(lines, run_dir, ffmpeg=find_tool('ffmpeg'), ffprobe=find_tool('ffprobe'))
-        print(json.dumps({k: summary[k] for k in ('over_official_max', 'over_official_p90', 'retake_candidates')},
-                         ensure_ascii=False, indent=1))
-        return 0
+        version = getattr(args, 'prompt_version', None)
+        worst = 0
+        for output in _take_dirs(run_dir, args):
+            summary = process_run(lines, output, ffmpeg=find_tool('ffmpeg'), ffprobe=find_tool('ffprobe'),
+                                  version=version)
+            broken = sorted({f'{x["role"]}:{x["slot"]}' for x in summary['items']
+                             if x['status'] in ('rejected', 'stale_plan', 'missing')})
+            print(json.dumps(dict(take=output.name, failed_items=broken,
+                                  **{k: summary[k] for k in
+                                     ('over_official_max', 'over_official_p90', 'retake_candidates')}),
+                             ensure_ascii=False, indent=1))
+            worst += bool(summary['over_official_max']) + bool(broken)
+        return 1 if worst else 0
+    if args.command == 'select':
+        lines = [line for plan in plans for line in plan['lines']]
+        takes = [int(args.take)] if args.take else (list(range(1, int(args.takes) + 1)) if args.takes else None)
+        summary = select_takes(lines, run_dir, takes=takes)
+        print(json.dumps(dict(takes=summary['takes'], selected=summary['selected'], retake=summary['retake'],
+                              # 空 subtitle 的槽只能记 text_unverified（接口对短战斗槽常返回空字幕），
+                              # 这一批没有任何文本校验，必须在收口摘要里看得见条数。
+                              text_unverified=len(summary['text_unverified']),
+                              text_unverified_slots=summary['text_unverified'],
+                              retake_queue=[f'{x["role"]}:{x["slot"]}({",".join(x["reasons"])})'
+                                            for x in summary['retake_queue']]), ensure_ascii=False, indent=1))
+        return 0 if not summary['retake_queue'] else 1
     if args.command == 'pack':
         if len(plans) != 1:
             raise SystemExit('pack one role at a time')
         plan = plans[0]
         role = plan['role']
-        standard_dir = run_dir / role / 'standard'
-        for slot in SLOTS:
-            qc = json.loads((run_dir / role / 'qc' / (slot + '.json')).read_bytes())
-            if qc['standard_sha256'] != sha((standard_dir / (slot + '.mp3')).read_bytes()):
-                raise SystemExit(f'standard recording drifted from QC: {slot}')
+        slots = role_slots(role)
+        if args.selected:
+            standard_dir = selected_standard(run_dir, role, slots)
+        else:
+            standard_dir = run_dir / role / 'standard'
+            for slot in slots:
+                qc = json.loads((run_dir / role / 'qc' / (slot + '.json')).read_bytes())
+                if qc['standard_sha256'] != sha((standard_dir / (slot + '.mp3')).read_bytes()):
+                    raise SystemExit(f'standard recording drifted from QC: {slot}')
         package = Path(args.package)
         mirror_path = package / 'roots' / 'server' / SERVER_CHARACTER
         mirror = json.loads(mirror_path.read_bytes()).get(ROLES[role]['cid']) if mirror_path.is_file() else None

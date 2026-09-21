@@ -16,22 +16,83 @@ import uuid
 ENDPOINT='https://openspeech.bytedance.com/api/v3/tts/create'
 MODEL='seed-audio-1.0'
 
+# 模板版本：1 = 第一轮（默认，旧调用方原样保留）；2 = 中秋第二轮配方。
+# v2 骨架对齐接口官方范例：场景约束 → 参考音分工 → 不朗读说明 → 表演要求 →
+# 「{persona_short}（{voice_tag}）用{tone}的语气说道：“{tts_text}”」，台词永远在最后、
+# 用全角引号封边。第一轮把台词裸放在「只说以下日语台词：」之后，既没有把语气绑到这一句的
+# 结构，也没有引号封边 —— 实证后果是 11 例句首插词、2 例注音被念出（recon §P1-1/P1-2）。
+PROMPT_V2=('录音棚干声，只有这一位说话者；无背景音乐、无环境音、无战斗音效、无混响、无第二人声。\n'
+           '{reference_note}'
+           '不要朗读本段说明，不要添加台词以外的任何字、注音、旁白或解说；'
+           '台词一字不增不减，不重复其中任何词句。\n'
+           '表演要求：{performance}。\n'
+           '{persona_short}（{voice_tag}）用{tone}的语气说道：“{tts_text}”')
+REFERENCE_NOTE_2=('音色以@音频1为准；若有@音频2，只参考它的语气与短句力度。'
+                  '两段参考都是这位角色本人，不要复述参考里的任何台词。\n')
+REFERENCE_NOTE_1='音色以@音频1为准；这段参考就是这位角色本人，不要复述参考里的任何台词。\n'
+# 台词里出现这些符号的实证后果：引号内容被抢到句首先念、原位只剩 ☃ 占位；括号注音被读出来。
+# 这道门只卡**实际发给接口的文本**（tts_text，缺省时才是 ja）。稿子里的 ja 允许留装饰符号
+# （丝缇涅尔的 ♡ 是作者点名要的「杂鱼」变奏），但那时必须另写一条不含这些符号的 tts_text。
+# ♡♥ 与 ♪☆★ 同类：都是模型会抢到句首念出来、或换成 ☃ 占位的装饰符号。
+FORBIDDEN_TTS_CHARS='「」『』（）()〈〉《》【】〔〕×♪☆★♡♥“”"'
+V2_FIELDS=('persona_short','voice_tag','tone','performance')
+AUDIO_FORMATS=('mp3','wav')
+
 
 def sha(raw):return hashlib.sha256(raw).hexdigest()
 
 
-def payload(line):
-    direction=(line['persona']+'。'+('参考音频来自同一位虚构游戏角色，保持音色统一。' if line['references'] else '')+
+def audio_format(line):
+    value=str(line.get('audio_format') or 'mp3').lower()
+    if value not in AUDIO_FORMATS:raise ValueError('unsupported audio format: '+value)
+    return value
+
+
+def prompt_version(line):
+    value=line.get('prompt_version',1)
+    version=1 if value in (None,'') else int(value)
+    if version not in (1,2):raise ValueError('unsupported prompt template version: '+str(value))
+    return version
+
+
+def spoken_text(line):
+    text=(line.get('tts_text') or line['ja']).strip()
+    if not text:raise ValueError('empty spoken text')
+    return text
+
+
+def check_spoken_text(text):
+    bad=sorted({c for c in text if c in FORBIDDEN_TTS_CHARS})
+    if bad:
+        raise ValueError('spoken text carries symbols the model reads aloud or relocates: '+''.join(bad))
+    return text
+
+
+def prompt_v2(line,reference_count):
+    text=check_spoken_text(spoken_text(line))
+    fields={name:str(line.get(name) or '').strip() for name in V2_FIELDS}
+    missing=[name for name,value in fields.items() if not value]
+    if missing:raise ValueError('prompt template v2 requires '+', '.join(missing))
+    note=(REFERENCE_NOTE_2 if reference_count>=2 else REFERENCE_NOTE_1 if reference_count==1 else '')
+    return PROMPT_V2.format(reference_note=note,tts_text=text,**fields)
+
+
+def prompt_v1(line,reference_count):
+    return (line['persona']+'。'+('参考音频来自同一位虚构游戏角色，保持音色统一。' if reference_count else '')+
         '仅一位角色，用自然日语说指定台词。录音棚干声，无音乐、环境音、战斗音效或其他说话者。'
         '不要朗读说明，不复述参考音频中的台词，不添加文字。'+line['direction']+
         '。只说以下日语台词：'+line.get('tts_text',line['ja']))
+
+
+def payload(line):
     refs=[]
     for item in line['references']:
         path=Path(item['path']);raw=path.read_bytes()
         if sha(raw)!=item['sha256']:raise ValueError('reference hash drift')
         refs.append({'audio_data':base64.b64encode(raw).decode('ascii')})
-    result=dict(model=MODEL,text_prompt=direction,
-        audio_config=dict(format='mp3',sample_rate=48000,pitch_rate=0,speech_rate=0,
+    builder=prompt_v1 if prompt_version(line)==1 else prompt_v2
+    result=dict(model=MODEL,text_prompt=builder(line,len(refs)),
+        audio_config=dict(format=audio_format(line),sample_rate=48000,pitch_rate=0,speech_rate=0,
                           loudness_rate=0,enable_subtitle=True),watermark={})
     if refs:result['references']=refs
     return result
@@ -41,7 +102,8 @@ def generate(line,output,key,*,opener=urllib.request.urlopen):
     role,slot=line['role'],line['slot']
     if not re.fullmatch(r'[a-z]+', role) or not re.fullmatch(r'(ally|battle|home)/[a-z0-9_]+', slot):
         raise ValueError('unsafe recording path')
-    target=output/role/'raw'/(slot+'.mp3');receipt=output/role/'receipts'/(slot+'.json')
+    extension=audio_format(line)
+    target=output/role/'raw'/(slot+'.'+extension);receipt=output/role/'receipts'/(slot+'.json')
     request_payload=payload(line)
     fingerprint=sha(json.dumps(request_payload,ensure_ascii=False,sort_keys=True).encode())
     if target.exists() and receipt.exists():
@@ -52,8 +114,11 @@ def generate(line,output,key,*,opener=urllib.request.urlopen):
     if target.exists() or receipt.exists():raise ValueError('incomplete prior recording requires separate retake')
     rid=str(uuid.uuid4());started=time.monotonic()
     meta=dict(role=role,slot=slot,request_id=rid,model=MODEL,endpoint=ENDPOINT,
-        request_fingerprint=fingerprint,ja=line['ja'],zh=line['zh'],direction=line['direction'],
-        persona=line['persona'],references=line['references'])
+        request_fingerprint=fingerprint,ja=line['ja'],zh=line['zh'],direction=line.get('direction',''),
+        persona=line.get('persona',''),references=line['references'],
+        prompt_version=prompt_version(line),audio_format=extension)
+    for name in V2_FIELDS+('tts_text',):
+        if line.get(name):meta[name]=line[name]
     request=urllib.request.Request(ENDPOINT,data=json.dumps(request_payload).encode(),headers={
         'Content-Type':'application/json','X-Api-Key':key,'X-Api-Request-Id':rid},method='POST')
     try:

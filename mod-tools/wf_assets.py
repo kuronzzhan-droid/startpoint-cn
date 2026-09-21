@@ -235,10 +235,21 @@ _VOICE_FIXED = (
     "battle/normal_attack_0.mp3", "battle/normal_attack_1.mp3",
     "battle/outhole_0.mp3", "battle/outhole_1.mp3",
     "battle/power_flip_0.mp3", "battle/power_flip_1.mp3",
-    "battle/skill_0.mp3", "battle/skill_1.mp3",
-    "battle/skill_2.mp3", "battle/skill_3.mp3", "battle/skill_ready.mp3",
+    "battle/skill_ready.mp3",
     "battle/win_0.mp3", "battle/win_1.mp3",
     "login/login_0.mp3", "login/login_1.mp3", "login/login_2.mp3",
+    # 引擎序号池(`CharacterShortVoiceLogic.generateVoicePaths` 顺序探到缺号即停)与
+    # 切换态单文件槽:官方 553 个目录里 matched_skill_ready / matched_skill_N /
+    # skill_4+ / battle_start_2+ / exchange_power_flip_N 全是 0 例,所以四路发现都收不到,
+    # 但我们自己的角色已经在用(seasonal7 与中秋批的 matched_skill_ready 已上线,
+    # 凯尔还要 skill_4/5 与 battle_start_2/3)。不补齐就是 home_N 那次的同款坑:
+    # 经 GUI 导出/克隆/推设备一次,这些语音就没声了。
+    # 词表只做 store 探测(`locate` 过滤),多写名字不会误报缺件。
+    "battle/matched_skill_ready.mp3",
+    *(f"battle/skill_{i}.mp3" for i in range(8)),
+    *(f"battle/matched_skill_{i}.mp3" for i in range(4)),
+    "battle/battle_start_2.mp3", "battle/battle_start_3.mp3",
+    "battle/exchange_power_flip_0.mp3", "battle/exchange_power_flip_1.mp3",
     # home 语音靠 character_speech 表注册,官方一律用罗马音专属名,所以四路发现
     # (dump/词表/采集/路径清单)都收录不到自制角色的 home_N 命名。缺了它们,
     # char_asset_manifest 会同时"丢掉活文件 + 带上已不被表引用的旧孤儿",
