@@ -140,6 +140,27 @@ class PaperNoise(unittest.TestCase):
             M.matte(rgb, remove_regions=[{"polygon": [[0, 0], [9, 0], [9, 9]], "tol": 60}])
 
 
+class ProtectRegions(unittest.TestCase):
+    """浅到几乎和白纸同色、描边又很淡的内容（蕾贝卡的白花瓣）：保护区内纸面噪点规则一律不生效。"""
+
+    @staticmethod
+    def petal():
+        rgb = canvas(80)
+        rgb[30:50, 30:50] = (240, 236, 238)                  # 淡描边（离白 19）
+        rgb[32:48, 32:48] = (251, 250, 252)                  # 花瓣内部（离白 5）
+        return rgb
+
+    def test_pale_petal_is_hollowed_without_protection(self):
+        rgba, _bg, _p = M.matte(self.petal(), aa_radius=0, halo_tol=20, halo_depth=4)
+        self.assertLess(int((rgba[30:50, 30:50, 3] == 255).sum()), 400)   # 反例：不保护就被掏
+
+    def test_protected_petal_survives_the_same_settings(self):
+        region = [{"polygon": [[28, 28], [52, 28], [52, 52], [28, 52]]}]
+        rgba, _bg, _p = M.matte(self.petal(), aa_radius=0, halo_tol=20, halo_depth=4, protect_regions=region)
+        self.assertTrue((rgba[30:50, 30:50, 3] == 255).all())
+        self.assertEqual(int(rgba[0, 0, 3]), 0)                           # 圈外的白底照删
+
+
 class AuditCatchesTheOldFailure(unittest.TestCase):
     def test_deleted_effect_is_reported(self):
         rgb = scene()

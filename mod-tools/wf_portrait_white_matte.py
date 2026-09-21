@@ -21,6 +21,9 @@
    - ``remove_regions``：配置里圈多边形＋局部容差，只在圈内把近白并入背景（用于「同一条缝半透半白」）；
    - 「白纸上看不见的碎屑」：整块都近白（≤ speck_tol）、又小（≤ speck_max_px）、且几乎不挨着任何真内容的
      不透明碎块才删——它在原画白纸上本来就看不见，只会在深色底上变成白点。
+   - ``protect_regions``：上面三条在圈内一律不生效（只保留「连边纯白＋点名种子」这条基本规则）。用于
+     「浅到几乎和白纸同色、描边又很淡」的内容，例如蕾贝卡的白花瓣：内部离白 3–7、描边离白 15–30，
+     不保护就会被纸面噪点规则掏空，只剩几段描边悬在空中。
 
     python mod-tools/wf_portrait_white_matte.py --source 原画.png --out 母图.png \
         [--config cfg.json] [--report-dir 目录] [--rembg]
@@ -31,6 +34,7 @@
            "remove_seeds": [[x, y], ...],
            "remove_regions": [{"polygon": [[x, y], ...], "tol": 26}],
            "speck_tol": 30, "speck_max_px": 400, "speck_content_touch": 0.1,
+           "protect_regions": [{"polygon": [[x, y], ...]}],
            "soft_regions": [{"polygon": [[x, y], ...], "ref": 96}]}
 """
 from __future__ import annotations
@@ -81,8 +85,15 @@ def _polygon_mask(shape, polygon) -> np.ndarray:
     return np.asarray(mask) > 0
 
 
+def protect_mask(shape, protect_regions=()) -> np.ndarray:
+    mask = np.zeros(shape[:2], dtype=bool)
+    for region in protect_regions:
+        mask |= _polygon_mask(shape, region["polygon"])
+    return mask
+
+
 def background_mask(rgb: np.ndarray, *, core_tol: int = 4, remove_seeds=(), remove_regions=(),
-                    halo_tol: int = 12, halo_depth: int = 2) -> tuple[np.ndarray, list[dict]]:
+                    halo_tol: int = 12, halo_depth: int = 2, protect_regions=()) -> tuple[np.ndarray, list[dict]]:
     """返回 (背景掩码, 封闭白块清单)。种子必须落在白块上，否则报错（防止坐标写错删错东西）。"""
     labels, border = label_white(rgb, core_tol)
     background = np.isin(labels, border)
@@ -96,13 +107,14 @@ def background_mask(rgb: np.ndarray, *, core_tol: int = 4, remove_seeds=(), remo
     if removed:
         background |= np.isin(labels, list(removed))
     dist = white_distance(rgb)
+    protected = protect_mask(background.shape, protect_regions)
     for region in remove_regions:
         tol = int(region.get("tol", halo_tol))
         if tol >= SOLID_DIST:
             raise MatteError(f"remove_region tol {tol} would reach real content (>= {SOLID_DIST})")
-        background |= _polygon_mask(background.shape, region["polygon"]) & (dist <= tol)
+        background |= _polygon_mask(background.shape, region["polygon"]) & (dist <= tol) & ~protected
     if halo_depth > 0 and halo_tol > core_tol:
-        near_white = dist <= halo_tol                       # 纸面噪点/抗锯齿灰：只认近白
+        near_white = (dist <= halo_tol) & ~protected        # 纸面噪点/抗锯齿灰：只认近白；保护区内不生效
         for _ in range(int(halo_depth)):
             background = background | (ndimage.binary_dilation(background, structure=FOUR) & near_white)
     sizes = np.bincount(labels.ravel())
@@ -146,10 +158,12 @@ def invisible_specks(rgb: np.ndarray, alpha: np.ndarray, *, speck_tol: int = 30,
 
 def matte(rgb: np.ndarray, *, core_tol: int = 4, aa_radius: int = 2, remove_seeds=(), soft_regions=(),
           remove_regions=(), halo_tol: int = 12, halo_depth: int = 2,
-          speck_tol: int = 30, speck_max_px: int = 400, speck_content_touch: float = 0.1):
+          speck_tol: int = 30, speck_max_px: int = 400, speck_content_touch: float = 0.1,
+          protect_regions=()):
     """返回 (RGBA uint8, 背景掩码, 封闭白块清单)。"""
     background, pockets = background_mask(rgb, core_tol=core_tol, remove_seeds=remove_seeds,
-                                          remove_regions=remove_regions, halo_tol=halo_tol, halo_depth=halo_depth)
+                                          remove_regions=remove_regions, halo_tol=halo_tol, halo_depth=halo_depth,
+                                          protect_regions=protect_regions)
     height, width = background.shape
     alpha = np.where(background, 0, 255).astype(np.float64)
     color = rgb.astype(np.float64).copy()
@@ -193,6 +207,7 @@ def matte(rgb: np.ndarray, *, core_tol: int = 4, aa_radius: int = 2, remove_seed
     if speck_max_px > 0:
         specks = invisible_specks(rgb, alpha, speck_tol=speck_tol, speck_max_px=speck_max_px,
                                   content_touch=speck_content_touch)
+        specks &= ~protect_mask(background.shape, protect_regions)
         if specks.any():
             alpha[specks] = 0
             background = background | specks
@@ -319,7 +334,8 @@ def main(argv=None) -> int:
         _bg, pockets = background_mask(rgb, core_tol=core_tol, remove_seeds=config.get("remove_seeds", ()),
                                        remove_regions=config.get("remove_regions", ()),
                                        halo_tol=int(config.get("halo_tol", 12)),
-                                       halo_depth=int(config.get("halo_depth", 2)))
+                                       halo_depth=int(config.get("halo_depth", 2)),
+                                       protect_regions=config.get("protect_regions", ()))
         for pocket in pockets:
             x0, y0, x1, y1 = pocket["bbox"]
             pocket["master_alpha_mean"] = round(float(master[y0:y1 + 1, x0:x1 + 1, 3].mean()), 1)
@@ -334,7 +350,8 @@ def main(argv=None) -> int:
                                    halo_depth=int(config.get("halo_depth", 2)),
                                    speck_tol=int(config.get("speck_tol", 30)),
                                    speck_max_px=int(config.get("speck_max_px", 400)),
-                                   speck_content_touch=float(config.get("speck_content_touch", 0.1)))
+                                   speck_content_touch=float(config.get("speck_content_touch", 0.1)),
+                                   protect_regions=config.get("protect_regions", ()))
 
     if args.rembg and pockets:
         probability = rembg_probability(args.source)
