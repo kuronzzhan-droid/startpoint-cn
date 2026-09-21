@@ -2306,7 +2306,7 @@ def take_numbers(run_dir) -> list[int]:
     return sorted(int(p.name) for p in folder.glob('[0-9][0-9]') if p.is_dir()) if folder.is_dir() else []
 
 
-_KANA_DROP = '、。，．,.!！?？…‥・「」『』“”"\'（）()〜~ 　\n\r\t'
+_KANA_DROP = '、。，．,.!！?？…‥・「」『』“”"\'（）()〜~—―– 　\n\r\t'
 
 
 def normalize_spoken(text: str) -> str:
@@ -2386,9 +2386,8 @@ def take_gates(line: dict, metrics: dict, qc: dict) -> list[str]:
     failed = []
     if metrics['subtitle_present'] and not metrics['text_exact']:
         failed.append('text_superset' if metrics['text_superset'] else 'text_exact')
-    lead, tail = metrics['lead_in_seconds'], metrics['tail_seconds']
-    if lead is None or tail is None:
-        lead, tail = pcm_edges(qc)
+    from wf_voice_selection_timing import delivery_edges
+    lead, tail = delivery_edges(metrics, qc)
     if lead is None or lead > 0.60:
         failed.append('lead_in')
     if tail is None or tail > 0.50:
@@ -2431,11 +2430,8 @@ def take_score(line: dict, metrics: dict, qc: dict) -> float:
     chars = spoken_chars(spoken)
     cps_mid = chars_per_second(fam)
     cps = chars / seconds if seconds > 0 else cps_mid
-    dead = metrics.get('dead_air_share')
-    if dead is None:
-        lead, tail = pcm_edges(qc)
-        raw_seconds = float((qc.get('source_pcm') or {}).get('seconds') or 0.0)
-        dead = ((lead or 0.0) + (tail or 0.0)) / raw_seconds if raw_seconds > 0 else 0.0
+    from wf_voice_selection_timing import delivery_dead_air
+    dead = delivery_dead_air(metrics, qc)
     gap = metrics.get('max_inner_gap_seconds') or 0.0
     return round(1.0 * abs(seconds - target['p50']) / target['p50']
                  + 1.5 * dead
