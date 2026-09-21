@@ -87,7 +87,8 @@ SERVER_FILES = {'character.json', 'cdndata/character.json', 'cdndata/character_t
                 'mana_board.json', 'mana_node.json', 'gacha.json', 'cdndata/gacha.json',
                 'cdndata/gacha_feature_content.json', 'item_lookup.json', 'item_sale.json',
                 'abyss_endurance_degree_reward.json', 'character_degree_rewards.json',
-                'equipment_degree_rewards.json', 'abyss_shop_degree_reward.json'}
+                'equipment_degree_rewards.json', 'abyss_shop_degree_reward.json',
+                'abyss_spheal_degree_reward.json'}
 
 
 def patch_json(value, op, label):

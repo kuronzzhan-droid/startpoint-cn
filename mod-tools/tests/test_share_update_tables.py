@@ -86,6 +86,23 @@ class UpdateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'allowlist'):
             update.server_plan(self.root, payload)
 
+    def test_spheal_reward_config_preserves_receiver_fields_and_rejects_drift(self):
+        path = self.root/'abyss_spheal_degree_reward.json'
+        path.write_text(json.dumps({'receiver_only': 'keep'}), encoding='utf-8')
+        payload = dict(format='wf-scoped-update-server-1', target='1.4.1010', files={path.name: dict(
+            operations=[dict(path=['character_id'], before_exists=False, before=None, after=129990),
+                        dict(path=['degree_id'], before_exists=False, before=None, after=9911301)])})
+        plans, _ = update.server_plan(self.root, payload)
+        apply_plans(plans, self.root/'receipt')
+        self.assertEqual(json.loads(path.read_bytes()), {
+            'receiver_only': 'keep', 'character_id': 129990, 'degree_id': 9911301})
+        self.assertEqual(update.server_plan(self.root, payload)[0], [])
+        raw = json.dumps({'character_id': 123, 'receiver_only': 'keep'}).encode()
+        path.write_bytes(raw)
+        with self.assertRaisesRegex(ValueError, 'conflict'):
+            update.server_plan(self.root, payload)
+        self.assertEqual(path.read_bytes(), raw)
+
     def test_gacha_list_replaces_only_when_baseline_matches(self):
         old = [{'id': 1, 'odds': 100}, {'id': 2, 'odds': 200}]
         new = [{'id': 2, 'odds': 150}, {'id': 1, 'odds': 150}]
