@@ -502,17 +502,143 @@ def strip_display_quotes(text: str) -> str:
     return text.translate(str.maketrans('', '', '「」『』'))
 
 
+QUOTE_POLICIES = ('strip', 'positional', 'positional_inline')
+_DISPLAY_QUOTED = re.compile('[「『]([^「」『』]*)[」』]')
+_SENTENCE_SPLIT = re.compile('[。！？!?]+')
+_HAS_KANA = re.compile('[\u3040-\u30ff]')
+
+
+def _comparable(text: str) -> str:
+    """片假名→平假名、去标点空格（与 normalize_spoken 同形，定义在它之前所以自带一份）。"""
+    out = []
+    for ch in text or '':
+        if ch.isspace() or ch in '。、，,.！？!?…‥・ー〜～—―-「」『』':
+            continue
+        code = ord(ch)
+        out.append(chr(code - 0x60) if 0x30A1 <= code <= 0x30F6 else ch)
+    return ''.join(out)
+
+
+def quote_reference(fragment: str, spoken_forms) -> str | None:
+    """表演指导里引的一段台词 → 「第二句句尾」这类位置指代；不是台词里的话返回 None。"""
+    want = _comparable(fragment)
+    if not want:
+        return None
+    for spoken in spoken_forms:
+        sentences = [c for c in (_comparable(p) for p in _SENTENCE_SPLIT.split(spoken or '')) if c]
+        if not sentences:
+            continue
+        joined = ''.join(sentences)
+        at = joined.find(want)
+        if at < 0:
+            continue
+        starts, offset = [], 0
+        for sentence in sentences:
+            starts.append(offset)
+            offset += len(sentence)
+        first = max(i for i, start in enumerate(starts) if start <= at)
+        last = max(i for i, start in enumerate(starts) if start < at + len(want))
+        total = len(sentences)
+
+        def label(i):
+            if total == 1:
+                return '这句'
+            return '第一句' if i == 0 else '最后一句' if i == total - 1 else f'第{i + 1}句'
+
+        if last > first:
+            whole = at == starts[first] and at + len(want) == starts[last] + len(sentences[last])
+            return f'{label(first)}到{label(last)}' if whole else f'{label(first)}后半到{label(last)}'
+        sentence, local = sentences[first], at - starts[first]
+        if len(want) == len(sentence):
+            return label(first)
+        if local == 0:
+            return label(first) + '开头'
+        if local + len(want) == len(sentence):
+            return label(first) + '句尾'
+        return label(first) + '中段'
+    return None
+
+
+def neutralize_quotes(text: str, spoken_forms) -> str:
+    """`「台词片段」` → 位置指代。引的不是台词：含假名的换成「该处」，不含的只去括号。
+
+    实证（中秋第二轮 kyle/stinel/magnus）：performance 里只去括号留下的日语片段，会被模型抢到
+    句首念出来（回执 subtitle = 片段 + 整句），同一槽位连抽 4 次都复现 ⇒ 是 prompt 决定的，重抽无效。
+    """
+    def swap(match):
+        inner = match.group(1)
+        ref = quote_reference(inner, spoken_forms)
+        if ref:
+            return ref
+        return '该处' if _HAS_KANA.search(inner) else inner
+    return _DISPLAY_QUOTED.sub(swap, text)
+
+
+_CLAUSE_UNITS = re.compile('[。！？!?、，,…‥—―\\s]+')
+
+
+def _is_japanese_char(ch: str) -> bool:
+    code = ord(ch)
+    return 0x3040 <= code <= 0x30FF or 0x4E00 <= code <= 0x9FFF or ch in '々〆'
+
+
+def neutralize_inline(text: str, spoken_forms) -> str:
+    """没加「」直接写在说明里的台词片段（hibiki/charlene 的稿子）→ 位置指代。
+
+    从左到右贪心取「说明里从这里开始、能在台词里原样找到的最长一段」。只换两类，宁可漏不可错：
+    含假名的片段（单个假名也换：「重音在そ」照样会被抢到句首；中文说明里出现假名只可能是在引台词），以及恰好是台词里一整个分句的
+    纯汉字片段（`金木犀`、`報酬`）。纯汉字的半截词（`一口`、`一曲`）不换 —— 它和中文说明里的
+    「一口气」分不开，换错了会把指导本身改坏，而漏掉的代价只是那一条被 text 门拦下重抽。
+    只给全中文说明的稿子用：日文写的语气描述（「素っ気ない口調」）会和台词撞上两字假名。
+    """
+    forms = [f for f in spoken_forms if f]
+    clauses = {_comparable(c) for f in forms for c in _CLAUSE_UNITS.split(f) if _comparable(c)}
+    out, i = [], 0
+    while i < len(text):
+        best = 0
+        if _is_japanese_char(text[i]):
+            for form in forms:
+                size = 0
+                while i + size < len(text) and text[i:i + size + 1] in form:
+                    size += 1
+                best = max(best, size)
+        fragment = text[i:i + best].rstrip('。、，！？!?…—')
+        keep = bool(_HAS_KANA.search(fragment)) or (len(fragment) >= 2 and _comparable(fragment) in clauses)
+        ref = quote_reference(fragment, forms) if keep else None
+        if ref:
+            out.append(ref)
+            i += best                                        # 片段后面跟着的标点一起吃掉
+        else:
+            out.append(text[i])
+            i += 1
+    return ''.join(out)
+
+
 def _clause(text: str, limit: int = 16) -> str:
     head = next((p for p in _CLAUSE_SPLIT.split(text) if p.strip()), '').strip()
     return head[:limit]
 
 
-def compose_performance(direction, slot: str) -> tuple[str, str]:
+def compose_performance(direction, slot: str, *, quote_policy: str = 'strip',
+                        spoken_forms=()) -> tuple[str, str]:
     """design/台词稿的 direction → (performance, tone)。
 
     direction 支持两种形状：字符串（整条当 performance，tone 取第一个分句），
     或对象 {tone, pace, breath, volume, stress, ending}。
+
+    `quote_policy='positional'`（逐条 opt-in，稿里写 `quote_policy`）：引用的台词片段先换成位置指代
+    再去括号。默认 `strip` 保持原样 —— 改默认会让已生成 take 的请求指纹全部变 stale。
     """
+    if quote_policy not in QUOTE_POLICIES:
+        raise ValueError(f'unknown quote_policy {quote_policy!r}')
+    if quote_policy != 'strip':
+        def clean(value):
+            value = neutralize_quotes(str(value), spoken_forms)
+            return neutralize_inline(value, spoken_forms) if quote_policy == 'positional_inline' else value
+        if isinstance(direction, dict):
+            direction = {k: clean(v) if isinstance(v, str) else v for k, v in direction.items()}
+        else:
+            direction = clean(direction or '')
     low, high = prompt_band(slot)
     tail = f'整条目标 {low:g}–{high:g} 秒，不拖字、不逐字慢读'
     if isinstance(direction, dict):
@@ -898,11 +1024,19 @@ def request_lines(role: str, voice: dict, *, refs_index: dict | None = None,
         if item.get('tts_text'):
             line['tts_text'] = _clean_text(item['tts_text'], allow_newline=False, label=f'{slot}.tts_text')
         if version == 2:
-            performance, tone = compose_performance(item.get('direction'), slot)
             spoken = expand_ruby(line.get('tts_text') or ja)
+            quote_policy = str(item.get('quote_policy') or 'strip')
+            forms = (expand_ruby(ja), spoken)
+            performance, tone = compose_performance(item.get('direction'), slot,
+                                                    quote_policy=quote_policy, spoken_forms=forms)
+            explicit_tone = str(item.get('tone') or '')
+            if explicit_tone and quote_policy != 'strip':
+                explicit_tone = neutralize_quotes(explicit_tone, forms)
+                if quote_policy == 'positional_inline':
+                    explicit_tone = neutralize_inline(explicit_tone, forms)
             line.update(prompt_version=2, audio_format='wav', tts_text=spoken,
                         persona_short=persona_short, voice_tag=voice_tag,
-                        tone=strip_display_quotes(str(item.get('tone') or tone)),
+                        tone=strip_display_quotes(explicit_tone or tone),
                         performance=performance, prompt_band=list(prompt_band(slot)),
                         references=resolve_references(role, voice.get('references'), refs_index, slot=slot))
             line['findings'] = check_ja_rules(slot, expand_ruby(ja), spoken,
@@ -2220,6 +2354,21 @@ def pcm_edges(qc: dict) -> tuple[float | None, float | None]:
             None if tail is None else round(float(tail), 3))
 
 
+# 句内最长停顿的上限 = 官方同长度短战斗语音的 p90（rework2/voice/scratch/official_inner_gap.py，
+# 160 角色 skill_0..3 / battle_start / power_flip 共 944 条，-38dB 相对静音）：
+#   语音段 <1.6s p90=0.30 · 1.6–2.4s p90=0.45 · 2.4–3.6s p90=0.59（其中 35% 的官方条 >0.35s）。
+# 原先一刀切 0.35s：两句话的技能台词（「近寄るな。焦げても知らんぞ。」）四次抽卡全灭，而官方同长度
+# 的条有三分之一过不了这道门 —— 门比官方还严，不是音频的毛病。
+INNER_GAP_LIMITS = ((1.6, 0.35), (2.4, 0.45), (math.inf, 0.60))
+INNER_GAP_ELLIPSIS_LIMIT = 0.90
+
+
+def inner_gap_limit(seconds: float, spoken: str) -> float:
+    if '…' in spoken:
+        return INNER_GAP_ELLIPSIS_LIMIT
+    return next(limit for upper, limit in INNER_GAP_LIMITS if seconds < upper)
+
+
 def take_gates(line: dict, metrics: dict, qc: dict) -> list[str]:
     """recipe.auto_select_metrics.hard_gates：任一不过即丢弃这一 take。
 
@@ -2245,7 +2394,7 @@ def take_gates(line: dict, metrics: dict, qc: dict) -> list[str]:
     if tail is None or tail > 0.50:
         failed.append('tail')
     if fam in SHORT_BATTLE_FAMILIES and metrics['max_inner_gap_seconds'] is not None:
-        limit = 0.90 if '…' in spoken else 0.35
+        limit = inner_gap_limit(float(qc.get('seconds') or 0.0), spoken)
         if metrics['max_inner_gap_seconds'] > limit:
             failed.append('inner_gap')
     raw = qc.get('raw_lufs_i')
@@ -2333,12 +2482,15 @@ def select_takes(lines: list[dict], run_dir, *, takes=None) -> dict:
             roles.setdefault(role, {})[slot] = dict(
                 best, alternatives=len(candidates) - 1,
                 # 落选原因留档：否则「为什么第 3 次没被选」只能靠重跑。
-                rejected=[{k: r[k] for k in ('take', 'failed', 'score', 'seconds', 'raw_lufs_i')}
+                # 补抽轮（--only）只含被补抽的槽位：其余槽位在该 take 下是 missing，记录里没有分数。
+                rejected=[{k: r.get(k) for k in ('take', 'failed', 'score', 'seconds', 'raw_lufs_i')}
                           for r in rejected],
                 runners_up=[{k: r[k] for k in ('take', 'score', 'seconds')}
                             for r in candidates if r['take'] != best['take']])
         else:
             reasons = sorted({f for r in rejected for f in r['failed']})
+            if len(reasons) > 1:                              # 「该 take 没抽这个槽」不是音频的毛病
+                reasons = [f for f in reasons if f != 'missing']
             remedy = ('换参考音' if 'raw_loudness' in reasons else
                       '改台词（插词/超长）' if {'text_exact', 'text_superset', 'over_official_max'} & set(reasons)
                       else '加抽一次')

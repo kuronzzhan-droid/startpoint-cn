@@ -1099,6 +1099,53 @@ class ReferenceLevelTests(unittest.TestCase):
             self.build({'pf': (short, (0.5, 2.5))}, exemptions={'nope': '打错了'})
 
 
+class QuotePolicyTests(unittest.TestCase):
+    """表演指导里引的台词片段会被模型抢到句首念出来：逐条 opt-in 换成位置指代。"""
+
+    JA = '月が高い。積み荷を縛り直して、出る。'
+    TTS = '月が高い。積み荷をしばり直して、出る。'
+
+    def test_fragments_become_positions_and_no_line_text_survives(self):
+        direction = '低い声で。「月が高い」语速偏快。重音在「縛り」，「出る」短、平。引的不是台词的「ほかの言葉」和「重点」。'
+        out = s7.neutralize_quotes(direction, (self.JA, self.TTS))
+        self.assertEqual(out, '低い声で。第一句语速偏快。重音在最后一句中段，最后一句句尾短、平。引的不是台词的该处和重点。')
+        for fragment in ('月が高い', '縛り', 'しばり', '出る', 'ほかの言葉'):
+            self.assertNotIn(fragment, out)
+
+    def test_reading_override_is_matched_through_the_tts_form(self):
+        self.assertEqual(s7.quote_reference('しばり直して', (self.JA, self.TTS)), '最后一句中段')
+        self.assertEqual(s7.quote_reference('もう、ひとつ', ('モウヒトツ！',)), '这句')   # 片假名/标点不影响
+        self.assertEqual(s7.quote_reference('高い。積み荷', (self.JA,)), '第一句后半到最后一句')
+        self.assertEqual(s7.quote_reference('もう一つ', ('もう一つ！',)), '这句')
+        self.assertIsNone(s7.quote_reference('別の台詞', (self.JA,)))
+
+    def test_inline_fragments_without_brackets(self):
+        ja = '金木犀、気づきました？三日前から匂ってます。今日は、歩いて来ました。……遠回りして。'
+        direction = '开头金木犀像刚想起来一样轻轻抛出，気づきました？尾音上挑。今日は、歩いて来ました重音落在歩いて。最后遠回りして压到最轻。'
+        out = s7.neutralize_inline(direction, (ja,))
+        self.assertEqual(out, '开头第一句开头像刚想起来一样轻轻抛出，第一句句尾尾音上挑。第3句重音落在第3句中段。最后最后一句压到最轻。')
+        self.assertFalse(s7._HAS_KANA.search(out))
+
+    def test_inline_leaves_kanji_stubs_and_chinese_alone(self):
+        ja = '全員から一口、借りる。'
+        out = s7.neutralize_inline('一口气说完，重音落在一口，借りる尾音不落死。', (ja,))
+        self.assertEqual(out, '一口气说完，重音落在一口，这句句尾尾音不落死。')     # 「一口气」不能被换坏
+        performance, _tone = s7.compose_performance('重音落在一口，借りる轻收。', 'battle/skill_0',
+                                                    quote_policy='positional_inline', spoken_forms=(ja,))
+        self.assertNotIn('借りる', performance)
+
+    def test_policy_is_per_line_and_the_default_keeps_old_fingerprints(self):
+        direction = '重音在「縛り」。'
+        old, _tone = s7.compose_performance(direction, 'battle/win_1')
+        self.assertIn('縛り', old)                                            # 默认 = 本轮已生成 take 的原样
+        new, _tone = s7.compose_performance(direction, 'battle/win_1', quote_policy='positional',
+                                            spoken_forms=(self.JA, self.TTS))
+        self.assertNotIn('縛り', new)
+        self.assertIn('最后一句中段', new)
+        with self.assertRaisesRegex(ValueError, 'quote_policy'):
+            s7.compose_performance(direction, 'battle/win_1', quote_policy='nope')
+
+
 def take_fixture(root: Path, take: int, slot: str, *, subtitle, duration, seconds, raw_lufs,
                  lufs=-14.1, limiter=0.4, lead_ms=100, role='fluffy'):
     base = s7.take_dir(root, take) / role
@@ -1201,6 +1248,42 @@ class SelectTests(unittest.TestCase):
         by_take = {r['take']: r['failed'] for r in _all_records(summary, 'battle/power_flip_0')}
         self.assertIn('raw_loudness', by_take.get(2, []))
         self.assertIn('limiter_reduction', by_take.get(3, []))
+
+    def test_partial_retake_round_does_not_break_the_other_slots(self):
+        """补抽轮只有被补抽的槽位：别的槽位在该 take 下缺文件，select 不能崩，也不能把 missing 当成毛病。"""
+        other = dict(self.line, slot='battle/power_flip_1')
+        take_fixture(self.root, 1, 'battle/power_flip_0', subtitle='もう一つ！', duration=1.1,
+                     seconds=1.07, raw_lufs=-18.0)
+        take_fixture(self.root, 1, 'battle/power_flip_1', subtitle='散れもう一つ！', duration=1.2,
+                     seconds=1.05, raw_lufs=-18.0)             # 插词 -> 进补抽队列
+        take_fixture(self.root, 4, 'battle/power_flip_1', subtitle='散れもう一つ！', duration=1.2,
+                     seconds=1.05, raw_lufs=-18.0)             # 补抽了还是插词；take 4 没有 power_flip_0
+        summary = s7.select_takes([self.line, other], self.root)
+        chosen = summary['roles']['fluffy']['battle/power_flip_0']
+        self.assertEqual(chosen['take'], 1)
+        self.assertEqual(chosen['rejected'], [dict(take=4, failed=['missing'], score=None,
+                                                   seconds=None, raw_lufs_i=None)])
+        self.assertEqual(summary['retake_queue'][0]['reasons'], ['text_superset'])
+        take_fixture(self.root, 5, 'battle/power_flip_1', subtitle='もう一つ！', duration=1.1,
+                     seconds=1.07, raw_lufs=-18.0)
+        summary = s7.select_takes([self.line, other], self.root)
+        self.assertEqual(summary['retake'], 0)
+        self.assertEqual(summary['roles']['fluffy']['battle/power_flip_1']['take'], 5)
+
+    def test_inner_gap_limit_follows_the_official_p90_by_length(self):
+        self.assertEqual(s7.inner_gap_limit(1.2, 'そこだ。'), 0.35)
+        self.assertEqual(s7.inner_gap_limit(2.0, '間合いは、俺が詰める。'), 0.45)
+        self.assertEqual(s7.inner_gap_limit(2.8, '近寄るな。焦げても知らんぞ。'), 0.60)
+        self.assertEqual(s7.inner_gap_limit(1.2, '……そこだ。'), 0.90)
+        line = dict(self.line, slot='battle/skill_2', ja='近寄るな。焦げても知らんぞ。',
+                    tts_text='近寄るな。焦げても知らんぞ。')
+        metrics = dict(subtitle_present=True, text_exact=True, text_superset=False, lead_in_seconds=0.1,
+                       tail_seconds=0.06, max_inner_gap_seconds=0.56, dead_air_share=0.05)
+        qc = dict(seconds=2.82, raw_lufs_i=-20.0, final=dict(lufs_i=-14.0, true_peak_dbtp=-1.5),
+                  limiter_reduction_bound_db=0.4, mastered_pcm=dict(clipped_fraction=0.0))
+        self.assertNotIn('inner_gap', s7.take_gates(line, metrics, qc))
+        self.assertIn('inner_gap', s7.take_gates(line, dict(metrics, max_inner_gap_seconds=0.64), qc))
+        self.assertIn('inner_gap', s7.take_gates(line, metrics, dict(qc, seconds=2.2)))
 
     def test_over_official_max_is_always_fatal(self):
         take_fixture(self.root, 1, 'battle/power_flip_0', subtitle='もう一つ！', duration=3.4,

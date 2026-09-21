@@ -177,7 +177,7 @@ def synthesize_design(role: str, *, folder=None, out_dir=None, route=None) -> Pa
     lines = script.get("lines")
     if not isinstance(lines, list) or not lines:
         raise SystemExit(f"{source}: lines must be a non-empty list")
-    keep = ("slot", "ja", "tts_text", "zh", "direction", "tone")
+    keep = ("slot", "ja", "tts_text", "zh", "direction", "tone", "quote_policy")
     if route is None:
         design = V.DESIGN_DIR / f"{role}.json"
         route = (json.loads(design.read_text(encoding="utf-8")).get("voice") or {}).get("route") \
