@@ -38,6 +38,17 @@ class RevisionTests(unittest.TestCase):
         self.assertEqual((gains[0][30], gains[0][31], U.DICE_CAP),
                          ('100000000', '100000000', '6'))
 
+    def test_hibiki_removes_only_swift_grant_and_keeps_base_cooldown(self):
+        rows = H.build_rows(ctx())
+        self.assertFalse(any(r[45] == '31' for r in rows['leader']))
+        dash = [r for r in rows['ability']['1699885'] if r[109] == '422']
+        cooldown = [r for r in dash if r[118] == '0']
+        self.assertEqual(len(cooldown), 2)
+        self.assertEqual([(r[97], r[113]) for r in cooldown], [('1', '-30000'), ('34', '245000')])
+        self.assertEqual(sorted(r[118] for r in dash), ['0', '0', '1', '3', '6'])
+        self.assertNotIn('强化弹射后获得冲刺', H.PANEL_LEADER)
+        self.assertIn('冷却时间−30%', H.PANEL_LEADER)
+
     def test_swift_keeps_ground_dash_time_for_all_three_leaders(self):
         for kit, base in [(K, -.5), (H, -.3), (F, 0)]:
             guards = [c for _, _, c, _ in kit.PLAN[5] if c.get(97) == '34']

@@ -160,7 +160,7 @@ class ConstantTests(unittest.TestCase):
         self.assertIn("额外乘区", K.PANEL_ABILITY[5])
 
     def test_plan_counts(self):
-        self.assertEqual(K.LEADER_ROWS, 9)
+        self.assertEqual(K.LEADER_ROWS, 8)
         self.assertEqual(K.ABILITY_RECORDS, 19)
         self.assertEqual({slot: len(rows) for slot, rows in K.PLAN.items()},
                          {1: 2, 2: 2, 3: 3, 4: 3, 5: 6, 6: 3})
@@ -232,11 +232,11 @@ class PlanSelfCheckTests(unittest.TestCase):
                 for col in (47, 109):                # 瞬发 kind / 持续 kind
                     self.assertNotEqual(str(cells.get(col, "")), "629", f"{slot}#{index}")
         self.assertEqual([n for n, (_a, _s, cells, _e) in enumerate(K.LEADER)
-                          if cells.get(45) == "629"], [6, 8])
+                          if cells.get(45) == "629"], [5, 7])
 
     def test_uncapped_hit_row(self):
         """L7「强化弹射Lv1命中每达到4次，自身攻击力＋50%」与 L5 并行，且不设触发上限。"""
-        l5, l7 = K.LEADER[5][2], K.LEADER[7][2]
+        l5, l7 = K.LEADER[4][2], K.LEADER[6][2]
         self.assertEqual((l5[25], l7[25]), ("15", "15"))
         self.assertEqual((l5[28], l7[28]), ("400000", "400000"))
         self.assertEqual(l5[32], "10")               # 官方原行：限 10 次、赋全队
@@ -491,7 +491,7 @@ class RowAssemblyTests(unittest.TestCase):
             KL.check_ability_key(rows, key, K.CODE, slot)
             K._row_self_check("ability", rows, key)
         self.assertEqual(checked, K.LEADER_ROWS + K.ABILITY_RECORDS)
-        self.assertEqual(checked, 28)
+        self.assertEqual(checked, 27)
 
     def test_required_capabilities(self):
         leader, ability = assembled_rows()
@@ -807,7 +807,7 @@ class PackageTests(unittest.TestCase):
         cas = self.pack.pkg_flat(KL.CAS)
         for key, text in K.CAS_TEXTS.items():
             self.assertEqual(C.csv_split(cas[key])[0][0], text, key)
-        self.assertEqual(len(K.PANEL_LEADER.split("\n")), 11)
+        self.assertEqual(len(K.PANEL_LEADER.split("\n")), 10)
 
     def test_every_self_owned_key_is_claimed(self):
         # 漏认领 = rebase 静默回滚（记忆卡 wf-unison-slot-mechanics）
