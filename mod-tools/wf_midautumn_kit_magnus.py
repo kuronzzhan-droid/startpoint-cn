@@ -9,7 +9,7 @@
 - 冲刺强化：422 param0 ``-30%`` 常驻 + ``+245%`` 疾走抵消行（**只写 ability 表**，前置 42 队长）；
 - 主技能把上一轮的情娅式骑行段换成**魏虎式光圈**（球上长寿命判定区，按技能伤害结算）；
 - 「引擎点火」固有改成 **99 层 / 99999999 帧**，靠 during 134 按层给技能伤害、攻击力与独立乘区；
-- PF **命中敌人**（触发 180，CT 0.6 秒）→ 629 追击「引擎之炎」并消耗 1 层；629 行排在 525 之前。
+- 自身技能**命中敌人**（触发 136，CT 0.6 秒）→ 629 追击「引擎之炎」并消耗 1 层；629 行排在 525 之前。
 
 面板文案由 5 个 ``desc_override_*`` 接管（队长技 + 槽 1/2/3/5）；槽 4/6 用客户端自动文案。
 """
@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 import wf_dsl
+import wf_magnus_pf_skill as PF_SKILL
 import wf_midautumn_kitlib as KL
 import wf_midautumn_specs as MS
 
@@ -37,6 +38,7 @@ PFA = "master/skill/power_flip_action.orderedmap"
 PF_KEY = f"{CODE}_pf"
 PF_PROGRAMS = tuple(f"battle/action/power_flip/action/override/{PF_KEY}${PF_KEY}_lv{n}"
                     for n in (1, 2, 3))
+PF_SKILL_PROGRAMS = PF_SKILL.skill_programs(CODE)
 SPECIAL_PROGRAMS = {n: f"battle/action/power_flip/action/special$special_lv{n}" for n in (1, 2, 3)}
 # 官方 special 底座指纹（2026-09-21 实读 .cdn/cn 官方归档）。漂移 ⇒ 底座换了，倍率要重算。
 SPECIAL_SHA = {
@@ -193,6 +195,8 @@ LEADER: tuple[tuple[str, str, dict[int, str], str], ...] = (
      f"状态计数固有≥1[固有{UID_AURA}] 时: 弹射≥1 → 自身 追加连击 35"),
 )
 
+LEADER += PF_SKILL.leader_plans(CODE, PF_STRING)
+
 _A = "action_skill"
 
 # 六个词条键。每键 c1（主位限制）与 c2（雕像组）必须全键一致（kitlib.check_ability_key）。
@@ -227,15 +231,15 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str], ...]] = {
         # 629：字符串键 c70 + 程序路径 c71；必须排在下面的 525 消耗行之前。
         ("1611053#0", "official",
          {0: f"{CODE}_3", 1: "false", 2: _A, 6: "188", 7: "0", 9: "100000", 10: "100000",
-          12: UID, 27: "180", 28: "0", 30: "100000", 31: "100000", 34: "(None)", 35: "36",
+          12: UID, 27: "136", 28: "0", 30: "100000", 31: "100000", 34: "(None)", 35: "36",
           70: CHASE_STRING, 71: CHASE_PROGRAM},
-         f"状态计数固有≥1[固有{UID}] 时: 任一敌方强化弹射HitLv1≥1(CT0.6秒) → "
+         f"状态计数固有≥1[固有{UID}] 时: 任一敌方技能Hit≥1(CT0.6秒) → "
          f"自身 发动技能动作[{CHASE_STRING}]"),
         ("1111652#2", "official",
          {0: f"{CODE}_3", 1: "false", 2: _A, 6: "188", 7: "0", 9: "100000", 10: "100000",
-          12: UID, 27: "180", 28: "0", 30: "100000", 31: "100000", 34: "(None)", 35: "36",
+          12: UID, 27: "136", 28: "0", 30: "100000", 31: "100000", 34: "(None)", 35: "36",
           68: UID},
-         f"状态计数固有≥1[固有{UID}] 时: 任一敌方强化弹射HitLv1≥1(CT0.6秒) → 自身 消耗固有状态 100%"),
+         f"状态计数固有≥1[固有{UID}] 时: 任一敌方技能Hit≥1(CT0.6秒) → 自身 消耗固有状态 100%"),
         ("1310323#3", "official",
          {0: f"{CODE}_3", 1: "false", 2: _A, 6: "0", 7: "", 9: "", 10: "",
           98: "0", 100: "500000", 101: "500000", 102: "1", 104: UID,
@@ -296,9 +300,9 @@ CAS_TEXTS = {
     CHASE_STRING: "发动技能「引擎之炎」：在命中点引爆积蓄的引擎火焰，造成火属性伤害（以技能伤害计算）",
     SWITCH_STRING: "强化『月下咆哮·烈焰甩尾』：光环的范围扩大",
     PF_STRING: "强化弹射变为特殊强化弹射时：火焰突进随发动次数分三档逐渐增强，"
-               "命中敌人后引爆大范围火焰",
+               "命中敌人后引爆大范围火焰，按技能伤害结算",
     LEADER_OVERRIDE: "\n".join((
-        "火属性共鸣时，自身的强化弹射变为特殊强化弹射",
+        "火属性共鸣时，自身的强化弹射变为特殊强化弹射，造成的伤害按技能伤害结算",
         "火属性共鸣时，自身获得冲刺强化效果，冲刺冷却时间－30%",
         "火属性共鸣时，冲刺间隔缩短效果不会让自身的冲刺冷却时间进一步缩短",
         "火属性共鸣时，每发动3次强化弹射，火属性角色技能伤害＋100%、攻击力＋50%",
@@ -313,8 +317,8 @@ CAS_TEXTS = {
     SLOT_OVERRIDE[2]: "火属性共鸣时，引擎点火每提升1层，自身技能伤害＋50%、攻击力＋50%",
     SLOT_OVERRIDE[3]: "\n".join(MAIN_ICON + line for line in (
         "火属性共鸣时，火属性角色发动技能时，自身引擎点火＋3层",
-        "自身处于「引擎点火」期间，强化弹射命中敌人时，发动「引擎之炎」：造成技能伤害",
-        "自身处于「引擎点火」期间，强化弹射命中敌人时，消耗1层「引擎点火」",
+        "自身处于「引擎点火」期间，自身技能命中敌人时，发动「引擎之炎」：造成技能伤害",
+        "自身处于「引擎点火」期间，自身技能命中敌人时，消耗1层「引擎点火」",
         "自身引擎点火在5层以上时：自身技能伤害额外乘区＋100%",
         "自身引擎点火每提升1层，火属性角色技能伤害额外乘区＋5%",
     )),
@@ -1634,6 +1638,11 @@ def write_skills(ctx, families) -> dict[str, Any]:
     pf: dict[str, Any] = {}
     for level in (1, 2, 3):
         tree, meta = build_pf_tree(ctx, level, families)
+        tree, damage_tree, damage_meta = PF_SKILL.split_tree(tree)
+        damage_program = PF_SKILL_PROGRAMS[level - 1]
+        damage_meta["logical"] = _write_tree(ctx, damage_program, damage_tree)
+        meta.update(damage_meta)
+        programs.append(damage_program)
         program = PF_PROGRAMS[level - 1]
         logical = _write_tree(ctx, program, tree)
         meta["logical"] = logical

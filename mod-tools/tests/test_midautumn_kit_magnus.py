@@ -123,8 +123,8 @@ class PlanStaticTests(unittest.TestCase):
         self.assertEqual(invoke[6], "188", "前置 188 = 固有状态实例数")
         self.assertEqual(invoke[9], "100000",
                          "188 数的是实例数（恒为 1）：阈值只能写 ≥1，写 ≥2 永不成立")
-        self.assertEqual(invoke[27], "180",
-                         "面板原话「强化弹射命中敌人时」= 180 OneOfEnemyPowerFlipHitLv1")
+        self.assertEqual(invoke[27], "136",
+                         "作者确认自身技能命中 = 136 OneOfEnemySkillHit")
         self.assertEqual(invoke[35], "36", "多敌时一次 PF 触发多次 ⇒ 必须带 CT 限流")
 
     def test_629_row_carries_both_the_string_key_and_the_program(self):
@@ -1309,7 +1309,7 @@ class PackageIntegrationTests(unittest.TestCase):
             (PKG_COMMON / KL.LEADER).read_bytes())
         rows = list(core.read_csv_lines(table[str(KM.CID)]))
         self.assertEqual(len(rows), len(KM.LEADER))
-        row = rows[-1]
+        row = next(r for r in rows if r[45] == "226")
         self.assertEqual((row[4], row[10], row[25], row[45], row[49]),
                          ("188", KM.UID_AURA, "6", "226", "3500000"))
 
