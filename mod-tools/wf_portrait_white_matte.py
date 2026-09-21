@@ -14,13 +14,23 @@
 4. 柔光特效（颜色→白的长渐变）默认不处理；确需处理时在配置里圈 ``soft_regions`` 多边形，
    只在圈内对近白像素做颜色转 alpha。
 5. 小孤岛（花瓣、星星、碎屑）不清理；非白内容没有任何删除路径。
+6. v2（2026-09-21，全批 12 角色实战后补）：白底稿的「纸」并不处处纯白——轮廓外常有一圈 RGB 247–251
+   的纸面噪点/抗锯齿灰，``core_tol`` 收不进背景，就会在深色底上留下悬空白线、白麻点。三条补充，全部只作用于
+   **近白**像素，非白内容依旧没有删除路径：
+   - ``halo_tol``/``halo_depth``：紧贴背景、与白的距离 ≤ halo_tol 的像素，向内最多并入 halo_depth 像素；
+   - ``remove_regions``：配置里圈多边形＋局部容差，只在圈内把近白并入背景（用于「同一条缝半透半白」）；
+   - 「白纸上看不见的碎屑」：整块都近白（≤ speck_tol）、又小（≤ speck_max_px）、且几乎不挨着任何真内容的
+     不透明碎块才删——它在原画白纸上本来就看不见，只会在深色底上变成白点。
 
     python mod-tools/wf_portrait_white_matte.py --source 原画.png --out 母图.png \
         [--config cfg.json] [--report-dir 目录] [--rembg]
     python mod-tools/wf_portrait_white_matte.py --audit --source 原画.png --master 现有母图.png \
         [--report-dir 目录]
 
-配置 JSON：{"core_tol": 4, "aa_radius": 2, "remove_seeds": [[x, y], ...],
+配置 JSON：{"core_tol": 4, "aa_radius": 2, "halo_tol": 12, "halo_depth": 2,
+           "remove_seeds": [[x, y], ...],
+           "remove_regions": [{"polygon": [[x, y], ...], "tol": 26}],
+           "speck_tol": 30, "speck_max_px": 400, "speck_content_touch": 0.1,
            "soft_regions": [{"polygon": [[x, y], ...], "ref": 96}]}
 """
 from __future__ import annotations
@@ -65,7 +75,14 @@ def label_white(rgb: np.ndarray, core_tol: int):
     return labels, border[border != 0]
 
 
-def background_mask(rgb: np.ndarray, *, core_tol: int = 4, remove_seeds=()) -> tuple[np.ndarray, list[dict]]:
+def _polygon_mask(shape, polygon) -> np.ndarray:
+    mask = Image.new("L", (shape[1], shape[0]), 0)
+    ImageDraw.Draw(mask).polygon([tuple(map(float, point)) for point in polygon], fill=255)
+    return np.asarray(mask) > 0
+
+
+def background_mask(rgb: np.ndarray, *, core_tol: int = 4, remove_seeds=(), remove_regions=(),
+                    halo_tol: int = 12, halo_depth: int = 2) -> tuple[np.ndarray, list[dict]]:
     """返回 (背景掩码, 封闭白块清单)。种子必须落在白块上，否则报错（防止坐标写错删错东西）。"""
     labels, border = label_white(rgb, core_tol)
     background = np.isin(labels, border)
@@ -78,6 +95,16 @@ def background_mask(rgb: np.ndarray, *, core_tol: int = 4, remove_seeds=()) -> t
             removed.add(label)
     if removed:
         background |= np.isin(labels, list(removed))
+    dist = white_distance(rgb)
+    for region in remove_regions:
+        tol = int(region.get("tol", halo_tol))
+        if tol >= SOLID_DIST:
+            raise MatteError(f"remove_region tol {tol} would reach real content (>= {SOLID_DIST})")
+        background |= _polygon_mask(background.shape, region["polygon"]) & (dist <= tol)
+    if halo_depth > 0 and halo_tol > core_tol:
+        near_white = dist <= halo_tol                       # 纸面噪点/抗锯齿灰：只认近白
+        for _ in range(int(halo_depth)):
+            background = background | (ndimage.binary_dilation(background, structure=FOUR) & near_white)
     sizes = np.bincount(labels.ravel())
     pockets = []
     for label in np.flatnonzero(sizes >= POCKET_MIN_PX):
@@ -92,9 +119,37 @@ def background_mask(rgb: np.ndarray, *, core_tol: int = 4, remove_seeds=()) -> t
     return background, pockets
 
 
-def matte(rgb: np.ndarray, *, core_tol: int = 4, aa_radius: int = 2, remove_seeds=(), soft_regions=()):
+def invisible_specks(rgb: np.ndarray, alpha: np.ndarray, *, speck_tol: int = 30, speck_max_px: int = 400,
+                     content_touch: float = 0.1) -> np.ndarray:
+    """在原画白纸上本来就看不见、只会在深色底上变成白点/悬空白线的碎块。
+
+    判据（三条同时满足）：①碎块整块近白（与白的距离 ≤ speck_tol）；②面积 ≤ speck_max_px；
+    ③挨着真内容（距离 ≥ SOLID_DIST 的不透明像素）的像素占比 < content_touch ——
+    贴着墨线画的白色高光/白边几乎每个像素都挨着内容，不会中；悬在轮廓外的纸面噪点才会中。
+    """
+    dist = white_distance(rgb)
+    opaque = alpha > 0
+    near = opaque & (dist <= speck_tol)
+    content = opaque & (dist >= SOLID_DIST)
+    touches = ndimage.binary_dilation(content, structure=EIGHT)
+    labels, count = ndimage.label(near, structure=EIGHT)
+    if not count:
+        return np.zeros_like(opaque)
+    index = np.arange(1, count + 1)
+    sizes = ndimage.sum(near, labels, index)
+    touching = ndimage.sum(touches & near, labels, index)
+    transparent_near = ndimage.binary_dilation(~opaque, structure=EIGHT)
+    exposed = ndimage.sum(transparent_near & near, labels, index)      # 必须露在透明边上（悬空的才算）
+    doomed = index[(sizes <= speck_max_px) & (touching < content_touch * sizes) & (exposed > 0)]
+    return np.isin(labels, doomed)
+
+
+def matte(rgb: np.ndarray, *, core_tol: int = 4, aa_radius: int = 2, remove_seeds=(), soft_regions=(),
+          remove_regions=(), halo_tol: int = 12, halo_depth: int = 2,
+          speck_tol: int = 30, speck_max_px: int = 400, speck_content_touch: float = 0.1):
     """返回 (RGBA uint8, 背景掩码, 封闭白块清单)。"""
-    background, pockets = background_mask(rgb, core_tol=core_tol, remove_seeds=remove_seeds)
+    background, pockets = background_mask(rgb, core_tol=core_tol, remove_seeds=remove_seeds,
+                                          remove_regions=remove_regions, halo_tol=halo_tol, halo_depth=halo_depth)
     height, width = background.shape
     alpha = np.where(background, 0, 255).astype(np.float64)
     color = rgb.astype(np.float64).copy()
@@ -135,6 +190,13 @@ def matte(rgb: np.ndarray, *, core_tol: int = 4, aa_radius: int = 2, remove_seed
         safe = np.maximum(a, 1e-3)[:, None]
         color[soft] = np.clip((rgb[soft] - (1.0 - safe) * 255.0) / safe, 0, 255)
 
+    if speck_max_px > 0:
+        specks = invisible_specks(rgb, alpha, speck_tol=speck_tol, speck_max_px=speck_max_px,
+                                  content_touch=speck_content_touch)
+        if specks.any():
+            alpha[specks] = 0
+            background = background | specks
+
     # 背景像素的 RGB 填成最近的非背景颜色：后续缩放/滤波时不会把白色渗进边缘
     if background.any() and (~background).any():
         _dist, (iy, ix) = ndimage.distance_transform_edt(background, return_indices=True)
@@ -144,10 +206,14 @@ def matte(rgb: np.ndarray, *, core_tol: int = 4, aa_radius: int = 2, remove_seed
     return rgba, background, pockets
 
 
-def audit(rgb: np.ndarray, alpha: np.ndarray, *, core_tol: int = 4, aa_radius: int = 2) -> dict:
-    """母图对原画的审计：非白内容被吃掉多少、连边白底残留多少。AA 窄带内的半透明不算被吃。"""
+def audit(rgb: np.ndarray, alpha: np.ndarray, *, core_tol: int = 4, aa_radius: int = 2, background=None) -> dict:
+    """母图对原画的审计：非白内容被吃掉多少、连边白底残留多少。AA 窄带内的半透明不算被吃。
+
+    ``background``＝按配置算出的有效背景（含点名并入的封闭白块/局部容差区/纸面噪点带）；
+    不给就只认「与画面四边连通的纯白」。
+    """
     labels, border = label_white(rgb, core_tol)
-    connected = np.isin(labels, border)
+    connected = np.isin(labels, border) if background is None else background
     dist = white_distance(rgb)
     away = ndimage.distance_transform_edt(~connected) > (aa_radius + 1.5)
     solid = dist >= SOLID_DIST
@@ -163,7 +229,9 @@ def audit(rgb: np.ndarray, alpha: np.ndarray, *, core_tol: int = 4, aa_radius: i
         ys, xs = np.nonzero(blob_labels == label)
         blobs.append({"px": int(blob_sizes[label]),
                       "bbox": [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())]})
-    return {"solid_px": int(solid.sum()), "eaten_px": int(eaten.sum()), "eaten_hard_px": int(eaten_hard.sum()),
+    floating = invisible_specks(rgb, alpha)
+    return {"floating_white_px": int(floating.sum()),
+            "solid_px": int(solid.sum()), "eaten_px": int(eaten.sum()), "eaten_hard_px": int(eaten_hard.sum()),
             "eaten_pct_of_solid": round(100.0 * float(eaten.sum()) / max(1, int(solid.sum())), 4),
             "leftover_bg_px": int(leftover.sum()), "eaten_blobs": blobs,
             "_eaten_mask": eaten, "_leftover_mask": leftover}
@@ -248,7 +316,10 @@ def main(argv=None) -> int:
         if master.shape[:2] != rgb.shape[:2]:
             raise SystemExit(f"size differs: master {master.shape[:2]} vs source {rgb.shape[:2]}")
         rgba = master
-        _bg, pockets = background_mask(rgb, core_tol=core_tol)
+        _bg, pockets = background_mask(rgb, core_tol=core_tol, remove_seeds=config.get("remove_seeds", ()),
+                                       remove_regions=config.get("remove_regions", ()),
+                                       halo_tol=int(config.get("halo_tol", 12)),
+                                       halo_depth=int(config.get("halo_depth", 2)))
         for pocket in pockets:
             x0, y0, x1, y1 = pocket["bbox"]
             pocket["master_alpha_mean"] = round(float(master[y0:y1 + 1, x0:x1 + 1, 3].mean()), 1)
@@ -257,7 +328,13 @@ def main(argv=None) -> int:
             raise SystemExit("--out is required unless --audit")
         rgba, _bg, pockets = matte(rgb, core_tol=core_tol, aa_radius=aa_radius,
                                    remove_seeds=config.get("remove_seeds", ()),
-                                   soft_regions=config.get("soft_regions", ()))
+                                   soft_regions=config.get("soft_regions", ()),
+                                   remove_regions=config.get("remove_regions", ()),
+                                   halo_tol=int(config.get("halo_tol", 12)),
+                                   halo_depth=int(config.get("halo_depth", 2)),
+                                   speck_tol=int(config.get("speck_tol", 30)),
+                                   speck_max_px=int(config.get("speck_max_px", 400)),
+                                   speck_content_touch=float(config.get("speck_content_touch", 0.1)))
 
     if args.rembg and pockets:
         probability = rembg_probability(args.source)
@@ -266,7 +343,7 @@ def main(argv=None) -> int:
                 x0, y0, x1, y1 = pocket["bbox"]
                 pocket["rembg_foreground_mean"] = round(float(probability[y0:y1 + 1, x0:x1 + 1].mean()), 3)
 
-    result = audit(rgb, rgba[:, :, 3].astype(np.int32), core_tol=core_tol, aa_radius=aa_radius)
+    result = audit(rgb, rgba[:, :, 3].astype(np.int32), core_tol=core_tol, aa_radius=aa_radius, background=_bg)
     previews = write_previews(args.report_dir, stem, rgb, rgba, result, pockets) if args.report_dir else []
     report = {k: v for k, v in result.items() if not k.startswith("_")}
     report.update({"source": str(args.source), "source_sha256": sha256(args.source), "size": [int(rgb.shape[1]), int(rgb.shape[0])],
@@ -281,7 +358,7 @@ def main(argv=None) -> int:
         report["out_sha256"] = sha256(args.out)
     if args.report_dir:
         (args.report_dir / f"{stem}_report.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
-    print(json.dumps({k: report[k] for k in ("size", "solid_px", "eaten_px", "eaten_hard_px", "leftover_bg_px")}
+    print(json.dumps({k: report[k] for k in ("size", "solid_px", "eaten_px", "eaten_hard_px", "leftover_bg_px", "floating_white_px")}
                      | {"pockets": len(pockets), "out": report.get("out")}, ensure_ascii=False))
     return 0
 

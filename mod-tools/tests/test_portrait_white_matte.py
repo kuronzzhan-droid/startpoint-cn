@@ -88,6 +88,58 @@ class AntiAlias(unittest.TestCase):
         self.assertTrue((rgba[22:38, 22:38, 3] == 255).all())
 
 
+class PaperNoise(unittest.TestCase):
+    """v2：白纸并不处处纯白。三条补充规则只作用于近白像素。"""
+
+    @staticmethod
+    def page():
+        rgb = canvas(100)
+        rgb[30:70, 30:70] = (40, 60, 140)                   # 本体
+        rgb[29, 30:70] = rgb[70, 30:70] = (20, 20, 20)      # 上下墨线
+        return rgb
+
+    def test_near_white_halo_next_to_the_background_is_absorbed(self):
+        rgb = self.page()
+        rgb[26:28, 30:70] = (248, 248, 249)                  # 轮廓外 2px 的纸面灰（离白 7）
+        rgba, _bg, _p = M.matte(rgb, aa_radius=0)
+        self.assertTrue((rgba[26:28, 30:70, 3] == 0).all())
+        self.assertTrue((rgba[29, 30:70, 3] == 255).all())   # 墨线一根不少
+
+    def test_halo_absorption_is_depth_limited(self):
+        rgb = self.page()
+        rgb[5:25, 30:70] = (249, 249, 249)                   # 一大片近白（比如没描边的白物件）直接挨着背景
+        rgba, _bg, _p = M.matte(rgb, aa_radius=0, speck_max_px=0)
+        self.assertTrue((rgba[10:20, 35:65, 3] == 255).all())  # 只啃掉外沿 2px，里面保留
+
+    def test_floating_near_white_speck_is_dropped_but_colour_and_attached_white_stay(self):
+        rgb = self.page()
+        rgb[10:13, 10:14] = (236, 236, 238)                  # 悬空的近白噪点（离白 19，halo 收不进）
+        rgb[80:83, 80:84] = (250, 240, 200)                  # 暖色小花瓣（离白 55）——内容
+        rgb[31:33, 31:69] = (250, 250, 250)                  # 贴着墨线画的白色高光
+        rgba, _bg, _p = M.matte(rgb, aa_radius=0)
+        self.assertTrue((rgba[10:13, 10:14, 3] == 0).all())
+        self.assertTrue((rgba[80:83, 80:84, 3] == 255).all())
+        self.assertTrue((rgba[31:33, 31:69, 3] == 255).all())
+        report = M.audit(rgb, rgba[:, :, 3].astype(np.int32), aa_radius=0)
+        self.assertEqual(report["eaten_px"], 0)
+        self.assertEqual(report["floating_white_px"], 0)
+
+    def test_big_near_white_island_is_not_a_speck(self):
+        rgb = canvas(100)
+        rgb[20:60, 20:60] = (236, 236, 238)                  # 1600px 的近白物件：不是碎屑
+        rgba, _bg, _p = M.matte(rgb, aa_radius=0, halo_depth=0)
+        self.assertTrue((rgba[25:55, 25:55, 3] == 255).all())
+
+    def test_remove_region_uses_a_local_tolerance_and_refuses_content_level_tol(self):
+        rgb = self.page()
+        rgb[40:50, 40:50] = (240, 238, 246)                  # 本体里一块离白 17 的「缝隙背景」
+        rgba, _bg, _p = M.matte(rgb, aa_radius=0, remove_regions=[{"polygon": [[38, 38], [52, 38], [52, 52], [38, 52]], "tol": 20}])
+        self.assertTrue((rgba[41:49, 41:49, 3] == 0).all())
+        self.assertTrue((rgba[32:38, 32:38, 3] == 255).all())  # 圈外、以及圈内的非近白像素都不动
+        with self.assertRaises(M.MatteError):
+            M.matte(rgb, remove_regions=[{"polygon": [[0, 0], [9, 0], [9, 9]], "tol": 60}])
+
+
 class AuditCatchesTheOldFailure(unittest.TestCase):
     def test_deleted_effect_is_reported(self):
         rgb = scene()
