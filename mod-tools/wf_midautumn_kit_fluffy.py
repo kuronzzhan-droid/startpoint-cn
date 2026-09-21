@@ -24,7 +24,7 @@
 * ``rush`` 特效族整族克隆 ＋ LUT 染色（``jab`` 族按图集预算直接引用官方路径）；
 * 语音路由 kind 3 ＋ ``switched_action_skill``；``B/pixel/fluffy/install.json`` 的像素成品。
 
-不做：422 冲刺参数、724、**新固有状态（⇒ 本轮不需要 48×48 状态图标）**、觉醒替换行。
+不做：724、**新固有状态（⇒ 本轮不需要 48×48 状态图标）**、觉醒替换行。
 不碰：live store / ``assets/`` / ``.cdn`` / 设备 / 存档；不发布、不提交。
 由 ``python mod-tools/wf_midautumn_build.py --char fluffy --step kit`` 调用 :func:`build`。
 """
@@ -42,6 +42,7 @@ if str(HERE) not in sys.path:
 import wf_client_legality as L  # noqa: E402
 import wf_dsl  # noqa: E402
 import wf_dsl_sig as SIG  # noqa: E402
+from wf_midautumn_dash_guard import swift_guard_plan
 import wf_midautumn_kitlib as KL  # noqa: E402
 import wf_midautumn_specs as MS  # noqa: E402
 import wf_seasonal7_common as C  # noqa: E402
@@ -58,7 +59,7 @@ GRAFT_CODE = "combat_animal_xm21"              # 141081（她的圣诞版）：�
 
 ABILITY_KEYS = tuple(f"{CID}{slot}" for slot in range(1, 7))
 LEADER_ROW_COUNT = 10
-ABILITY_RECORD_TOTAL = 16
+ABILITY_RECORD_TOTAL = 17
 
 # ---------------------------------------------------------------- 自有键
 
@@ -73,7 +74,7 @@ PFA = "master/skill/power_flip_action.orderedmap"
 PF_PROGRAMS = tuple(f"battle/action/power_flip/action/override/{PF_KEY}${PF_KEY}_lv{n}"
                     for n in (1, 2, 3))
 LEADER_OVERRIDE = f"desc_override_{CODE}"
-SLOT_OVERRIDE_SLOTS = (1, 2, 3)
+SLOT_OVERRIDE_SLOTS = (1, 2, 3, 5)
 SLOT_OVERRIDE = {slot: f"desc_override_{CODE}_{slot}" for slot in SLOT_OVERRIDE_SLOTS}
 
 SKILL_FLAG_KINDS = ("536", "704")
@@ -93,7 +94,7 @@ TEXTS: dict[str, str] = {
 }
 SPEC = {
     # desc_override 需要客户端面板接管能力；722 的 override_string_* 不需要补丁
-    "required_capabilities": ("panel-description-override-v2",),
+    "required_capabilities": ("panel-description-override-v2", "dash-parameter-v1"),
     "pf_type": 3,                              # 作者 09-21：详情页显示「辅助」（原生 PF 也随之为 supporter）
     "extra_keys": {
         KL.CAS: (CAS_FLAG1, CAS_FLAG2, INVOKE_STRING, PF_STRING, LEADER_OVERRIDE,
@@ -254,6 +255,7 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str], ...]] = {
         ("1410332#0", "official",
          {0: f"{CODE}_5", 1: "true", 2: _AC, 51: "25000", 52: "25000"},
          "自身 眩晕畏缩特攻 25%"),
+        swift_guard_plan(CODE, 0, element="Green"),
     ),
     6: (
         ("1411835#0", "official",
@@ -276,6 +278,7 @@ CAS_TEXTS: dict[str, str] = {
         "风属性共鸣时，每发动1次强化弹射，风属性角色攻击力＋20%、技能伤害＋20%、连击＋5",
         "风属性共鸣时，每发动5次强化弹射Lv3时，连击＋500，并触发自身技能效果（不消耗技能槽，冷却时间：10秒）",
         "风属性共鸣时，每达到250连击，自身技能伤害＋100%",
+        "风属性共鸣时，冲刺间隔缩短效果不会让自身的冲刺冷却时间进一步缩短",
     )),
     SLOT_OVERRIDE[1]: "\n".join((
         "战斗开始时，自身技能槽＋50%",
@@ -293,6 +296,10 @@ CAS_TEXTS: dict[str, str] = {
         "风属性共鸣时，自身对敌人的技能伤害额外乘区＋10%",
         "风属性共鸣时，强化『玉杵捣月·桂风连打』的连击效果，技能命中每次连击＋50",
         "风属性共鸣时，自身技能的最后一击结束后，连击数归零",
+    )),
+    SLOT_OVERRIDE[5]: "\n".join((
+        "连击达到10时，自身攻击力＋50%",
+        "自身对陷入眩晕、畏缩状态的敌人攻击特攻＋25%",
     )),
 }
 

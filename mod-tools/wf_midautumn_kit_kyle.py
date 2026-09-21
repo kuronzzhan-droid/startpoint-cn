@@ -10,7 +10,7 @@
   ``desc_override_kyle_moon`` 在队长块整体接管（hibiki 能力 5 的同一条既判偏离）。
 - **贯通线**：每次获得贯通 → 固有「贯穿印」+1 层 → 629 追击树重新付与
   ``ACAdditionalDirectAttack``，**段数 = 1 + 层数（vlv 绑定，可超 3）**（杰拉德 v3 路线）。
-- **月牙线**：技能 / 每 50 次直击 → 月牙 +1（上限 99 ＝「不设置上限」）→ during 134
+- **月牙线**：技能 / 每 100 次直击 → 月牙 +1（上限 99 ＝「不设置上限」）→ during 134
   把层数翻成自身与全队的攻击力 / 直击伤害。
 
 技能本体：母本 ``black_wolf_knight_wt23`` 的三段斩 + ``MoveBall``（逐格抄官方
@@ -36,6 +36,7 @@ if str(HERE) not in sys.path:
 
 import wf_client_legality as L  # noqa: E402
 import wf_dsl  # noqa: E402
+from wf_midautumn_dash_guard import swift_guard_plan, ability_to_leader
 import wf_midautumn_kitlib as KL  # noqa: E402
 import wf_midautumn_specs as MS  # noqa: E402
 
@@ -132,19 +133,19 @@ _PRE_RESONANCE_L = {4: "2", 7: "600000", 8: "600000", 9: ELEMENT_TOKEN}     # le
 LEADER: tuple[tuple[str, str, dict[int, str], str | None], ...] = (
     ("161123#0", "official",
      {0: CODE, **_PRE_RESONANCE_L, 100: "(None)", 102: UID_CRESCENT, 107: "0", 108: "5",
-      109: ELEMENT_TOKEN, 111: "50000", 112: "50000"},
+      109: ELEMENT_TOKEN, 111: "12500", 112: "12500"},
      None),
     ("161063#2", "official",
      {0: CODE, **_PRE_RESONANCE_L, 98: "100000", 99: "100000", 100: "(None)",
-      102: UID_CRESCENT, 107: "0", 108: "0", 109: "", 111: "50000", 112: "50000"},
+      102: UID_CRESCENT, 107: "0", 108: "0", 109: "", 111: "12500", 112: "12500"},
      None),
     ("161123#0", "official",
      {0: CODE, **_PRE_RESONANCE_L, 100: "(None)", 102: UID_CRESCENT, 107: "1", 108: "5",
-      109: ELEMENT_TOKEN, 111: "100000", 112: "100000"},
+      109: ELEMENT_TOKEN, 111: "25000", 112: "25000"},
      None),
     ("161063#2", "official",
      {0: CODE, **_PRE_RESONANCE_L, 98: "100000", 99: "100000", 100: "(None)",
-      102: UID_CRESCENT, 107: "1", 108: "0", 109: "", 111: "100000", 112: "100000"},
+      102: UID_CRESCENT, 107: "1", 108: "0", 109: "", 111: "25000", 112: "25000"},
      None),
 )
 
@@ -178,10 +179,6 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
          {**_PRE_RESONANCE_A, 102: "(None)", 104: UID_CRESCENT, 109: "0", 110: "0",
           113: "50000", 114: "50000"},
          None),
-        ("2110012#0", "official",
-         {**_PRE_RESONANCE_A, 34: "(None)", 48: "5", 49: ELEMENT_TOKEN,
-          51: "50000", 52: "50000"},
-         None),
     ),
     # ---- 能力 3（Ⓜ）：月牙生产 + 直击段数 + 两棵 629 追击
     3: (
@@ -189,7 +186,7 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
          {**_PRE_RESONANCE_A, 51: "100000", 52: "100000", 68: UID_CRESCENT}, None),
         ("1611231#0", "official",
          {**_PRE_RESONANCE_A, 27: "20", 28: "7", 29: ELEMENT_TOKEN,
-          30: "5000000", 31: "5000000", 34: "(None)",
+          30: "10000000", 31: "10000000", 34: "(None)",
           51: "100000", 52: "100000", 68: UID_CRESCENT},
          None),
         # 贯通 → 2 秒后技能槽 +10%；作者反馈轮 2 要求 CT 10 秒（否则连续贯通时几乎白送满槽）
@@ -244,6 +241,7 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
         (DASH_DONOR, "store", {**_PRE_LEADER_A, 113: "100000", 114: "100000", 118: "1"}, None),
         (DASH_DONOR, "store", {**_PRE_LEADER_A, 113: "-50000", 114: "-50000", 118: "0"}, None),
         (DASH_DONOR, "store", {**_PRE_LEADER_A, 113: "40000", 114: "40000", 118: "6"}, None),
+        swift_guard_plan(CODE, -50000, statue="special"),
         # 冲刺 → 贯通 5.5 秒（330 帧 ×100000）
         ("1110023#0", "official",
          {**_PRE_LEADER_A, **_PRE_RESONANCE_A2, 27: "4", 28: "", 30: "100000", 31: "100000",
@@ -262,19 +260,19 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
 #: 都会在这里当场炸。面板上真正显示的是 ``desc_override_*``（PANEL_LEADER / PANEL_ABILITY），
 #: 这张表只管「表行本身渲染成什么」。
 EXPECT: dict[str, str] = {
-    "leader#0": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) 攻击力 50%",
-    "leader#1": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 攻击力 50%",
-    "leader#2": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) Direct伤害 100%",
-    "leader#3": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 Direct伤害 100%",
+    "leader#4": "雷·编成≥6 时: 状态贯通≥1 → 赋予全队(雷) 攻击力 50%",
+    "leader#0": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) 攻击力 12.5%",
+    "leader#1": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 攻击力 12.5%",
+    "leader#2": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) Direct伤害 25%",
+    "leader#3": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 Direct伤害 25%",
     "1399901#0": "赋予全队(雷) 技能槽 50%",
     "1399901#1": "雷·编成≥6 时: 自身 技能槽 50%",
     "1399901#2": "雷·编成≥6 时: 自身 切换技能形态[change_skill_kyle_moon]",
     "1399901#3": "雷·编成≥6 时: 自身 独立乘区技能伤害 100%",
     "1399902#0": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) Direct伤害 50%",
     "1399902#1": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 攻击力 50%",
-    "1399902#2": "雷·编成≥6 时: 状态贯通≥1 → 赋予全队(雷) 攻击力 50%",
     "1399903#0": "雷·编成≥6 时: 技能发动≥1 → 自身 状态固有 100%×1次",
-    "1399903#1": "雷·编成≥6 时: 编成直接攻击≥50 → 自身 状态固有 100%×1次",
+    "1399903#1": "雷·编成≥6 时: 编成直接攻击≥100 → 自身 状态固有 100%×1次",
     "1399903#2": "雷·编成≥6 时: 状态贯通≥1(CT10秒) → 自身 技能槽 10%(延迟2秒)",
     "1399903#3": "状态固有[固有13999001] 且 雷·编成≥6 时: 赋予全队(雷) DirectAttack3 300%",
     "1399903#4": "队长 且 雷·编成≥6 时: 状态贯通≥1 → 自身 状态固有 100%×1次",
@@ -287,7 +285,8 @@ EXPECT: dict[str, str] = {
     "1399905#2": "队长 时: 持续·HP≤1 → 自身 冲刺参数(可调) 100%",
     "1399905#3": "队长 时: 持续·HP≤1 → 自身 冲刺参数(可调) -50%",
     "1399905#4": "队长 时: 持续·HP≤1 → 自身 冲刺参数(可调) 40%",
-    "1399905#5": "队长 且 雷·编成≥6 时: 冲刺≥1 → 自身 状态贯通(5.5秒)×1次",
+    "1399905#5": "队长 时: 持续·状态冲刺 → 自身 冲刺参数(可调) 175%",
+    "1399905#6": "队长 且 雷·编成≥6 时: 冲刺≥1 → 自身 状态贯通(5.5秒)×1次",
     "1399906#0": "雷·编成≥6 时: 赋予全队(雷) 冻结特攻 15%",
 }
 
@@ -309,9 +308,11 @@ MAIN_ICON = " <icon id='main'>  "
 PANEL_LEADER = "\n".join((
     "雷属性共鸣时：自身冲刺获得强化，冲刺冷却时间－50%、附加贯穿效果、冲刺弹射速度提升，并"
     "可从更高的位置发动冲刺",
-    "雷属性共鸣时：自身“月牙”每上升1层，自身攻击力＋100%、直击伤害＋200%，除自身外雷属性"
-    "角色攻击力＋50%、直击伤害＋100%",
+    "雷属性共鸣时：自身“月牙”每上升1层，自身攻击力＋25%、直击伤害＋50%，除自身外雷属性"
+    "角色攻击力＋12.5%、直击伤害＋25%",
     "雷属性共鸣时：自身每获得一次贯穿效果，自身直击敌人的判定次数＋1",
+    "雷属性共鸣时：自身每获得一次贯穿效果，雷属性角色攻击力＋50%",
+    "冲刺间隔缩短效果不会让自身的冲刺冷却时间进一步缩短",
 ))
 
 _PANEL_ABILITY_LINES = {
@@ -320,9 +321,8 @@ _PANEL_ABILITY_LINES = {
         "技能的额外伤害乘区＋100%，技能额外附加贯穿效果（5.5秒）与加速效果（15秒），"
         "技能造成的雷击按直接攻击伤害结算，且威力随连击数大幅提升"),
     2: ("雷属性共鸣时：自身“月牙”每提升1层，自身直击伤害＋50%、攻击力＋50%，除自身外雷属"
-        "性角色直击伤害＋50%",
-        "雷属性共鸣时：自身每获得一次贯穿效果，雷属性角色攻击力＋50%"),
-    3: ("雷属性共鸣时：自身发动技能时，自身“月牙”＋1层；雷属性角色每造成50次直击，自身“月牙"
+        "性角色直击伤害＋50%",),
+    3: ("雷属性共鸣时：自身发动技能时，自身“月牙”＋1层；雷属性角色每造成100次直击，自身“月牙"
         "”＋1层",
         "雷属性共鸣时：自身每获得一次贯穿效果，2秒后自身技能槽＋10%（冷却时间：10秒）",
         "雷属性共鸣时：自身持有“月牙”时，强化雷属性角色的直接攻击为3次，合计伤害额外乘区＋300%"),
@@ -608,6 +608,20 @@ def build_rows(ctx) -> dict[str, Any]:
         leader_rows.append(row)
         evidence.append(ev)
         caps.update(ev["capabilities"])
+    # Move the former A2 piercing-trigger bonus to the actual leader table.
+    moved, ev = KL.build_row(ctx, "ability", "2110012#0",
+        {**_PRE_RESONANCE_A, 34: "(None)", 48: "5", 49: ELEMENT_TOKEN,
+         51: "50000", 52: "50000"}, element=ELEMENT,
+        expect_describe="雷·编成≥6 时: 状态贯通≥1 → 赋予全队(雷) 攻击力 50%")
+    moved = ability_to_leader(moved, CODE)
+    problems = KL.row_problems("leader_ability", moved, ELEMENT)
+    if problems:
+        raise KitError(f"moved piercing bonus: {problems}")
+    leader_rows.append(moved)
+    ev.update(label="leader#4", kind="leader_ability",
+              describe=KL.describe("leader_ability", moved))
+    evidence.append(ev)
+    caps.update(KL.capabilities("leader_ability", moved))
     _ban_kinds("leader_ability", leader_rows, "leader")
 
     ability: dict[str, list[list[str]]] = {}
@@ -1445,8 +1459,8 @@ def build(ctx) -> dict[str, Any]:
     ctx.sync_character_mirrors()
 
     ctx.evidence_write("kit-rows.json", {
-        "leader": built["evidence"][:len(LEADER)],
-        "ability": built["evidence"][len(LEADER):],
+        "leader": built["evidence"][:len(built["leader"])],
+        "ability": built["evidence"][len(built["leader"]):],
         "unique_condition": uniques, "icons": icons,
         "custom_ability_string": strings,
     })

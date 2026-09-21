@@ -143,9 +143,9 @@ class PlanSelfCheckTests(unittest.TestCase):
 
     def test_dash_rows_are_leader_gated_and_carry_a_param_id(self):
         dash = [cells for cells in self.ability_cells(5) if cells.get(118)]
-        self.assertEqual(len(dash), 3, "冲刺参数应当是 3 条（CD / 弹射速度 / 可发动高度）")
+        self.assertEqual(len(dash), 4, "CD / 速度 / 高度 / Swift 抵消")
         ids = sorted(cells["118"] if "118" in cells else cells[118] for cells in dash)
-        self.assertEqual(ids, ["0", "1", "6"])
+        self.assertEqual(ids, ["0", "0", "1", "6"])
         for cells in dash:
             self.assertEqual(cells.get(6), "42", "422 行必须挂前置 42（持有者为队长）")
 
@@ -525,7 +525,7 @@ class RowBuildTests(unittest.TestCase):
         cls.built = all_rows(ctx())
 
     def test_row_counts(self):
-        self.assertEqual(len(self.built["leader"]), 4)
+        self.assertEqual(len(self.built["leader"]), 5)
         self.assertEqual(sum(len(rows) for rows in self.built["ability"].values()), 23)
 
     def test_every_row_matches_the_baked_describe_readback(self):
@@ -536,19 +536,19 @@ class RowBuildTests(unittest.TestCase):
         self.assertTrue(set(self.built["capabilities"])
                         <= set(K.SPEC["required_capabilities"]))
 
-    def test_leader_rows_are_all_crescent_growth(self):
-        for row in self.built["leader"]:
+    def test_first_four_leader_rows_are_crescent_growth(self):
+        for row in self.built["leader"][:4]:
             self.assertEqual(row[95], "134")
             self.assertEqual(row[102], K.UID_CRESCENT)
             self.assertEqual(row[100], "(None)")
 
     def test_self_and_party_layers_sum_to_the_panel_numbers(self):
-        """面板：自身攻击 +100% / 直击 +200%，除自身外 +50% / +100%。"""
-        share = {(row[107], row[108]): int(row[111]) for row in self.built["leader"]}
-        self.assertEqual(share[("0", "5")] + share[("0", "0")], 100000)
-        self.assertEqual(share[("1", "5")] + share[("1", "0")], 200000)
-        self.assertEqual(share[("0", "5")], 50000)
-        self.assertEqual(share[("1", "5")], 100000)
+        """面板：自身攻击 +25% / 直击 +50%，除自身外 +12.5% / +25%。"""
+        share = {(row[107], row[108]): int(row[111]) for row in self.built["leader"] if row[95] == "134"}
+        self.assertEqual(share[("0", "5")] + share[("0", "0")], 25000)
+        self.assertEqual(share[("1", "5")] + share[("1", "0")], 50000)
+        self.assertEqual(share[("0", "5")], 12500)
+        self.assertEqual(share[("1", "5")], 25000)
 
     def test_direct_attack_stack_row_beats_the_batch_floor(self):
         row = next(r for r in self.built["ability"][f"{K.CID}3"] if r[47] == "202")
@@ -578,7 +578,7 @@ class RowBuildTests(unittest.TestCase):
 
     def test_dash_parameters_match_the_panel(self):
         dash = {row[118]: int(row[113]) for row in self.built["ability"][f"{K.CID}5"]
-                if row[109] == "422"}
+                if row[109] == "422" and row[97] != "34"}
         self.assertEqual(dash["0"], -50000, "冲刺冷却时间 −50%")
         self.assertGreater(dash["1"], 0, "冲刺弹射速度提升")
         self.assertGreater(dash["6"], 0, "可从更高的位置发动冲刺")

@@ -161,9 +161,9 @@ class ConstantTests(unittest.TestCase):
 
     def test_plan_counts(self):
         self.assertEqual(K.LEADER_ROWS, 9)
-        self.assertEqual(K.ABILITY_RECORDS, 18)
+        self.assertEqual(K.ABILITY_RECORDS, 19)
         self.assertEqual({slot: len(rows) for slot, rows in K.PLAN.items()},
-                         {1: 2, 2: 2, 3: 3, 4: 3, 5: 5, 6: 3})
+                         {1: 2, 2: 2, 3: 3, 4: 3, 5: 6, 6: 3})
         self.assertEqual(K.ABILITY_KEYS, tuple(f"{K.CID}{n}" for n in range(1, 7)))
 
     def test_design_mirror_is_in_sync(self):
@@ -189,10 +189,10 @@ class PlanSelfCheckTests(unittest.TestCase):
 
     def test_dash_rows_stay_in_the_ability_table_and_are_leader_scoped(self):
         dash = [cells for _a, _s, cells, _e in K.PLAN[5] if cells.get(109) == "422"]
-        self.assertEqual(len(dash), 4)               # 速度 / CD / 蓄力 / 发动高度
+        self.assertEqual(len(dash), 5)               # 速度 / CD / 蓄力 / 发动高度
         for cells in dash:
             self.assertEqual(cells[6], "42")         # 前置 42 = 队长，避免与基诺维/泽赫尔相加
-        self.assertEqual(sorted(c[118] for c in dash), ["0", "1", "3", "6"])
+        self.assertEqual(sorted(c[118] for c in dash), ["0", "0", "1", "3", "6"])
 
     def test_leader_722_row_has_no_precondition(self):
         cells = K.LEADER[0][2]
@@ -491,7 +491,7 @@ class RowAssemblyTests(unittest.TestCase):
             KL.check_ability_key(rows, key, K.CODE, slot)
             K._row_self_check("ability", rows, key)
         self.assertEqual(checked, K.LEADER_ROWS + K.ABILITY_RECORDS)
-        self.assertEqual(checked, 27)
+        self.assertEqual(checked, 28)
 
     def test_required_capabilities(self):
         leader, ability = assembled_rows()
@@ -807,7 +807,7 @@ class PackageTests(unittest.TestCase):
         cas = self.pack.pkg_flat(KL.CAS)
         for key, text in K.CAS_TEXTS.items():
             self.assertEqual(C.csv_split(cas[key])[0][0], text, key)
-        self.assertEqual(len(K.PANEL_LEADER.split("\n")), 10)
+        self.assertEqual(len(K.PANEL_LEADER.split("\n")), 11)
 
     def test_every_self_owned_key_is_claimed(self):
         # 漏认领 = rebase 静默回滚（记忆卡 wf-unison-slot-mechanics）

@@ -109,11 +109,13 @@ class PlanStaticTests(unittest.TestCase):
                 self.assertNotIn(str(cells.get(col, "")), ("422", "724", "713"),
                                  f"leader#{n} 写了禁用 kind")
 
-    def test_dash_and_fever_kinds_stay_out_of_the_kit(self):
-        """本套件不碰 422/724：整套行的 required_client_capabilities 只该有面板接管一项。"""
+    def test_fever_kind_stays_out_and_dash_is_leader_scoped(self):
+        """不引入724；新增422只允许队长位的Swift抵消。"""
         for slot in range(1, 7):
             for _donor, _src, cells, _desc in K.PLAN[slot]:
-                self.assertNotIn(str(cells.get(109, "")), ("422", "724"))
+                self.assertNotEqual(str(cells.get(109, "")), "724")
+                if cells.get(109) == "422":
+                    self.assertEqual((cells[6], cells[97], cells[118]), ("42", "34", "0"))
 
     def test_slot3_is_main_position_only(self):
         for _donor, _src, cells, _desc in K.PLAN[3]:
@@ -610,7 +612,7 @@ class WorkspaceTests(unittest.TestCase):
 
     def test_report_identity_and_capabilities(self):
         self.assertEqual((self.report["cid"], self.report["code"]), (K.CID, K.CODE))
-        self.assertEqual(self.report["required_capabilities"], ["panel-description-override-v2"])
+        self.assertEqual(set(self.report["required_capabilities"]), {"panel-description-override-v2", "dash-parameter-v1"})
 
     def test_every_program_is_written(self):
         programs = self.report["skills"]["programs"]

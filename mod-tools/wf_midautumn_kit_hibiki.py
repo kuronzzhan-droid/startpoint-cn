@@ -61,6 +61,7 @@ if str(HERE) not in sys.path:
 
 import wf_client_legality as L  # noqa: E402
 import wf_dsl  # noqa: E402
+from wf_midautumn_dash_guard import swift_guard_plan
 import wf_midautumn_kitlib as KL  # noqa: E402
 import wf_midautumn_specs as MS  # noqa: E402
 import wf_seasonal7_common as C  # noqa: E402
@@ -229,6 +230,7 @@ PANEL_LEADER = "\n".join((
     "强化弹射Lv1命中每达到4次，自身攻击力＋50%",
     "冲刺时，立即获得强化弹射效果（冷却时间：5秒）",
     "冲刺速度＋100%、冲刺冷却时间−30%、蓄力时间−35%，并可从更高的位置发动冲刺",
+    "冲刺间隔缩短效果不会让自身的冲刺冷却时间进一步缩短",
 ))
 
 PANEL_ABILITY = {
@@ -423,7 +425,8 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
          {3: "0", 5: "1", 6: "42", 13: "0", 20: "0", 85: "(None)", 97: "1", 98: "0",
           100: "100000", 101: "100000", 108: "false", 109: "422", 110: "0",
           113: "40000", 114: "40000", 118: "6"},
-         "队长 时: 持续·HP≤1 → 自身 冲刺参数(可调) 40%")),
+         "队长 时: 持续·HP≤1 → 自身 冲刺参数(可调) 40%"),
+        swift_guard_plan(CODE, -30000, metadata=False)),
     6: (("1611472#0", "official",
          {3: "0", 5: "1", **_CLR_PRE_A, 85: "(None)", 97: "30", 108: "false", 109: "0",
           110: "5", 111: ELEMENT_TOKEN, 113: "50000", 114: "50000"},
