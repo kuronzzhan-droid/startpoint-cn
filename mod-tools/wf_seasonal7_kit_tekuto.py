@@ -279,13 +279,19 @@ _R1_DESC = ("扫描并锁定周围的敌人，架设跟随自身移动的重炮�
 # 并补上 R-M4 新增的「发动即引擎启动 +1」（伤害倍率的真来源，玩家必须知道）。
 _DESC = ("锁定周围的敌人，架起跟随自身移动的重炮，朝锁定方向发射逐段变粗的充能激光；"
          "发动时「引擎启动」+1，威力随其层数提升；再次发动会以新的一发替换当前激光")
+# S18（作者 2026-09-21「取消技能释放后的后摇」）：根块的 StopBall 已整条删掉 ⇒ 面板追加一句。
+# 与本批黑 `outlaw_panther_moon` 的 live 文案逐字同一句，只是本角色整条说明用「；」分隔。
+# plan.json（revision-20260916/tekuto）不在本轮可写范围 ⇒ 沿用本 kit 既有做法：
+# 对 plan 的 `texts.action_skill_desc.new` 仍按 `_DESC` 断言，落表时用下面这条带后缀的。
+REV7_NO_ENDLAG_SUFFIX = "；释放技能后不再进入硬直，可立即行动"
+_DESC_NO_ENDLAG = _DESC + REV7_NO_ENDLAG_SUFFIX
 TEXTS = {
     "profile": ("被朋友们拉去参加舞会的机人青年，换上了黑黄配色的燕尾礼服，胸前别着系黄丝带的白玫瑰。"
                 "为了保护大家，他把重炮和导航无人机也带进了会场——虽然大家都说那样一点都不优雅。"),
     "skill1": "多重爆破·礼装重炮",
-    "desc1": _DESC,
+    "desc1": _DESC_NO_ENDLAG,
     "skill2": "多重爆破·礼装重炮＋",
-    "desc2": _DESC,
+    "desc2": _DESC_NO_ENDLAG,
     "cv": "AI 合成配音",
 }
 SPEC = {
@@ -367,6 +373,13 @@ GH = ["GH", E]                          # 朝 FindNearSubjects 命中的敌人�
 
 # 自身技能伤害（母本原值，template_derivation_problems 逐值核对；改版未动）
 SELF_SD = {"2": (600, 0.85, 1.0), "1": (480, 0.65, 0.65)}
+
+# ---- S18「取消后摇」（作者 2026-09-21）：本树不许有任何把球固定住的命令。
+#: 官方母本 ``super_robot_{1,2}`` 根块那条 StopBall 的原形态（140 帧 + ``Stop``＝球停住不再恢复，
+#: 且母本根头 ``tree[1]=2`` STOP 还会抢走球的移动权）。只作对照与漂移核对，**不再抄进我们的树**。
+TEMPLATE_STOPBALL = [-18, 140, ["Stop"], ["AB"], 0]
+#: 会把球固定住的 DSL 命令名；``ball_hold_problems`` 见到任意一条就红。
+BALL_HOLD_COMMANDS = ("StopBall", "SuppressBallActivity")
 
 # 事件名 / 特效名（改版 S9）：同名才能被 RemoveEventFromOwner / HideEffectFromOwner 一次清掉
 EV_CANNON = "tekuto_cannon"
@@ -702,7 +715,27 @@ def donor_tree(level: str, plan: dict | None = None) -> list:
         _C("RemoveEventFromOwner", EV_CANNON),
         _C("HideEffectFromOwner", FX_BEAM),
         _C("HideEffectFromOwner", FX_BEAM_MAIN),   # 第二轮 S14：大激光独立命名，再次发动一样要先收掉
-        _C("StopBall", -18, 10, ["RestoreToSpeedBeforeActionExecution"], ["EF"], 0),
+        # S18（作者 2026-09-21「取消技能释放后的后摇……去掉固定的这一段」）：根块**不再有 StopBall**。
+        # 首发写的是 `StopBall(-18, 10, RestoreToSpeedBeforeActionExecution, ["EF"], 0)`，
+        # 已经比母本 TEMPLATE_STOPBALL（140 帧 + Stop，球停住不再恢复）轻得多，这一轮整条删掉 ⇒
+        # DSL 侧一帧都不定住球，顺带少掉 10 帧 suppressDirectAttack 与 10 帧「全队按不出技能」
+        # （BallImpl.applyMovement 第 7 参对 StopBall 恒 true；_canInvokeActionSkill 在 SkillMoving 期间恒 false）。
+        #
+        # **别把这当成「取消了固定」**：玩家感知到的定住只从 70 帧降到 60 帧（-14%）。客户端在本树
+        # 开跑之前先冻 60 帧技能 cut-in（SquadManagerImpl.as:734-735，见 wf_tekuto_no_endlag_revision
+        # 的 lock_report），而 BallImpl 状态机 case 7 要等 stateFrame == 60 才 `innovation.invoke()`
+        # 启动本树 ⇒ 60 帧 cut-in 与本树 f0 的停球是**先后**关系、不重叠，删掉的是后面那 10 帧。
+        #
+        # 演出影响（**不可写成「位置不变」**）：本树 12 个 CreateHitArea 里 11 个主体是球 -18、
+        # 第 7 参 trackingPos=True、坐标系 ["GH", 0]（朝 f0 用 FindNearSubjects 锁定的那名敌人），
+        # trackingDir=false 只是把**朝向数值**冻在各自创建的那一帧。球不再被钉住 10 帧 ⇒ 此后每一帧
+        # 球都比原来多飞 10 帧的行程，f90/150/210/270/332 以及 5 个延长槽的**发射原点**（连带由原点
+        # 算出的那个角度数值）都会落在与原来不同的地方。不变的是：伤害倍率、段数、帧号时序，以及
+        # 「从球出发、指向 f0 锁定的那名敌人」这条语义。这是「不定住球」的应有后果，不是缺陷，
+        # 但它不能当免检牌用。（第 12 个判定区 = f94 导弹落点，挂参照点 23、两个跟随位都 false，
+        # 锚在锁定目标上 ⇒ 完全不受球位移影响。）
+        # 门禁 `ball_hold_problems()`（在 dsl_quick_problems 里调用）盯死它不许回来；
+        # 节点级改版工具与逐节点对照测试见 `wf_tekuto_no_endlag_revision.py`。
         _C("CreateCondition", -17, [["ACSkillDamage", _slv(sd[0]), _slv(sd[1], sd[2]), _slv(1)]], _slv(1),
            ["GenericConditionHitEffect"], True, False, "", None, False, 3, _slv(1), False),
         _C("CreateCondition", -17, [["ACUnique", int(UID_CANNON), _slv(1)]], _slv(1),
@@ -1374,6 +1407,35 @@ def damage_census(tree) -> dict[str, Any]:
                     "gate_always_open_without_ally=true 表示无队友续能也全触发（D2 的直接后果）"}
 
 
+def ball_hold_problems(tree) -> list[str]:
+    """S18 门禁：树里不许有任何把球固定住的命令（``StopBall`` / ``SuppressBallActivity``）。
+
+    作者 2026-09-21「取消技能释放后的后摇……去掉固定的这一段」。首发 kit 写过一条 10 帧的
+    ``StopBall``，已整条删掉；这条门禁保证重跑 ``--step kit`` / 改蓝图时带不回来。
+    根头 ``tree[1]`` 也必须是 1(NONE)——2/3(STOP/MOVE) 会通过 ``updateMovementId`` 抢走球的
+    移动权，即使没有 StopBall 也会互相打断队友的位移技能。
+    """
+    import wf_seasonal7_common as C
+    probs = [f"S18 树里仍有 {name}: {[c[1:] for c in C.commands(tree, name)]}"
+             for name in BALL_HOLD_COMMANDS if C.commands(tree, name)]
+    if isinstance(tree, list) and len(tree) > 1 and tree[1] != 1:
+        probs.append(f"S18 根头 movementPriority {tree[1]} != 1(NONE)")
+    return probs
+
+
+def template_stopball_drift(template) -> list[str]:
+    """母本 ``super_robot_<lv>`` 的 StopBall 原形态核对（只读对照，不改我们的树）。
+
+    我们的树已经没有 StopBall，所以 ``template_derivation_problems`` 没法再逐值比它；
+    这条单独保留，免得母本某天变了而我们毫无察觉。
+    """
+    import wf_seasonal7_common as C
+    stops = [c[1:] for c in C.commands(template, "StopBall")]
+    if stops != [TEMPLATE_STOPBALL]:
+        return [f"母本 StopBall {stops} != {TEMPLATE_STOPBALL}"]
+    return []
+
+
 def dsl_quick_problems(tree) -> list[str]:
     """kit 内快速门禁（完整签名差分在 impl/tekuto/gates.py）。"""
     import wf_client_legality as LG
@@ -1384,6 +1446,7 @@ def dsl_quick_problems(tree) -> list[str]:
     probs += LG.action_dsl_hit_area_target_problems(tree)
     probs += wf_dsl.player_side_dsl_problems(tree)
     probs += donothing_problems(tree)
+    probs += ball_hold_problems(tree)
     return probs
 
 
@@ -2665,7 +2728,8 @@ def build(ctx) -> dict[str, Any]:
         raise KitError("revision plan action_skill_desc does not match the kit's _DESIGN_DESC/_R1_DESC/_DESC")
     if [text_row[5], text_row[7]] != [_DESIGN_DESC, _DESIGN_DESC]:
         raise KitError("design character_text desc columns are no longer the pre-revision text")
-    text_row[5] = text_row[7] = _DESC                     # 改版：技能说明压到 60 字（作者要求 D8）
+    # 改版：技能说明压到 60 字（作者要求 D8）；S18 再追加「不再进入硬直」一句（2026-09-21）
+    text_row[5] = text_row[7] = _DESC_NO_ENDLAG
     want = {"profile": text_row[2], "skill1": text_row[4], "desc1": text_row[5], "skill2": text_row[6],
             "desc2": text_row[7], "cv": text_row[11]}
     for name, value in want.items():
@@ -2950,6 +3014,10 @@ def build(ctx) -> dict[str, Any]:
         qprobs = dsl_quick_problems(tree)
         if qprobs:
             raise KitError(f"level {lv}: DSL problems: {qprobs}")
+        # 作者 2026-09-21 确认 A+B；先验证原蓝图，再应用已验证的时间轴变换。
+        # 候选修订与重跑 kit 共用此入口，防止下一次构建带回 90 帧前摇。
+        from wf_tekuto_fast_release import final_tree
+        tree = final_tree(tree)
         logical = ctx.write_dsl(ctx.program_path(lv), tree)
         programs.append(logical)
         # 定稿树落盘到 revision 目录（gates 的漂移对照；只写 revision 目录，不进包）
@@ -2963,7 +3031,8 @@ def build(ctx) -> dict[str, Any]:
                           "final_tree_json": FINAL_TREE_REL.format(level=lv),
                           "diff_vs_previous_design": len(strict_diff(tree, old_tree, limit=10000)),
                           "cooldown_width_problems": wprobs, "beam_overlap_problems": bprobs,
-                          "template_derivation": tfacts, "quick_problems": qprobs}
+                          "template_derivation": tfacts, "quick_problems": qprobs,
+                          "final_windup_frames": 36, "extra_ball_hold_frames": 0}
 
     # ---- 详情页技能预览 end_frame
     _root, template_raw, source = pack.template_asset(TEMPLATE_PREVIEW)

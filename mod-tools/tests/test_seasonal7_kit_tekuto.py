@@ -771,7 +771,9 @@ class TreeAssemblyTest(unittest.TestCase):
         self.assertEqual(K.TEXTS["cv"], row[11])
         # 技能说明：设计稿仍是改版前的长文，TEXTS/常量是改版短文，plan 的 old/new 对得上
         self.assertEqual([row[5], row[7]], [K._DESIGN_DESC, K._DESIGN_DESC])
-        self.assertEqual((K.TEXTS["desc1"], K.TEXTS["desc2"]), (K._DESC, K._DESC))
+        # S18（2026-09-21 取消后摇）：落表文案 = plan 的 _DESC + 「不再进入硬直」一句
+        self.assertEqual((K.TEXTS["desc1"], K.TEXTS["desc2"]), (K._DESC_NO_ENDLAG, K._DESC_NO_ENDLAG))
+        self.assertEqual(K._DESC_NO_ENDLAG, K._DESC + K.REV7_NO_ENDLAG_SUFFIX)
         desc = self.plan["texts"]["action_skill_desc"]
         self.assertEqual((desc["old"], desc["r1_new"], desc["new"]), (K._DESIGN_DESC, K._R1_DESC, K._DESC))
         self.assertLess(len(K._DESC), len(K._DESIGN_DESC))
