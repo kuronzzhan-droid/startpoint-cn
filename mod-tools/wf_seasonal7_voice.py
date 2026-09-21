@@ -1663,6 +1663,8 @@ def master_voice(source, target, *, slot: str, code: str, ffmpeg, ffprobe,
             after=crest(chosen['pre_peak'], chosen['loud']),
             mastered_lufs_by_stage=[[None if r['stage'] is None else r['stage']['name'],
                                      r['final']['lufs_i']] for r in results])
+    from wf_voice_selection_timing import acoustic_timing
+    delivery_timing = acoustic_timing(pcm(target, Path(ffmpeg)))
     return stored, dict(
         slot=slot, code=code, family=fam,
         params=master_params(mode=mode, trim=bool(bounds), density=use_density,
@@ -1677,7 +1679,8 @@ def master_voice(source, target, *, slot: str, code: str, ffmpeg, ffprobe,
         limiter_ceiling_dbfs=chosen['ceiling'],
         limiter_reduction_bound_db=chosen['reduction'], attempts=chosen['attempts'], final=final,
         loudness_status=loudness, loudness_band=list(MASTER_LOUDNESS_BAND), density=density_report,
-        source_pcm=before, mastered_pcm=after, sample_delta=delta, sample_delta_limit=SAMPLE_DELTA_LIMIT,
+        source_pcm=before, mastered_pcm=after, delivery_timing=delivery_timing,
+        sample_delta=delta, sample_delta_limit=SAMPLE_DELTA_LIMIT,
         findings=duration_findings(code, slot, codec['duration']),
         mastering_mode=mode, loudnorm=chosen['normalize'],
         trim=None if bounds is None else dict(start_seconds=bounds[0], end_seconds=bounds[1],
@@ -2377,8 +2380,8 @@ def take_gates(line: dict, metrics: dict, qc: dict) -> list[str]:
        变成不可验证（记 `text_unverified`，选优时排在可验证的 take 之后）。
        实测：fluffy 的 skill_ready / battle_start_0 换成 mp3 返回同样空 subtitle
        ⇒ 空 subtitle 是这几条台词的稳定属性，硬丢会让这两个槽的所有 take 全灭。
-    2. 原始响度下限由 -20 放宽到 -26 LUFS。两遍 loudnorm + 限幅 ≤2dB 已经直接约束了
-       真正要保的东西；实测 -25.58 LUFS 的 PF 依然做到 -14.3 / 限幅 1.16dB。
+    2. 完整 two_pass QC 的源响度仅作诊断；成品响度、真峰、削波、样本数及限幅量仍为硬门。
+       旧报告仍保留 -26 LUFS 源下限；不能仅因源文件的整体增益不同丢弃同样合格的成品。
     """
     fam = family(line['slot'])
     spoken = line.get('tts_text') or line['ja']
@@ -2386,18 +2389,18 @@ def take_gates(line: dict, metrics: dict, qc: dict) -> list[str]:
     failed = []
     if metrics['subtitle_present'] and not metrics['text_exact']:
         failed.append('text_superset' if metrics['text_superset'] else 'text_exact')
-    from wf_voice_selection_timing import delivery_edges
+    from wf_voice_selection_timing import delivery_edges, delivery_gap, raw_level_is_blocking
     lead, tail = delivery_edges(metrics, qc)
     if lead is None or lead > 0.60:
         failed.append('lead_in')
     if tail is None or tail > 0.50:
         failed.append('tail')
-    if fam in SHORT_BATTLE_FAMILIES and metrics['max_inner_gap_seconds'] is not None:
-        limit = inner_gap_limit(float(qc.get('seconds') or 0.0), spoken)
-        if metrics['max_inner_gap_seconds'] > limit:
+    gap, span = delivery_gap(metrics, qc)
+    if fam in SHORT_BATTLE_FAMILIES and gap is not None:
+        limit = inner_gap_limit(span, spoken)
+        if gap > limit:
             failed.append('inner_gap')
-    raw = qc.get('raw_lufs_i')
-    if raw is None or raw < RAW_LUFS_FLOOR:
+    if raw_level_is_blocking(qc, RAW_LUFS_FLOOR):
         failed.append('raw_loudness')
     seconds = float(qc.get('seconds') or 0.0)
     if seconds > target['official_max']:
@@ -2430,9 +2433,9 @@ def take_score(line: dict, metrics: dict, qc: dict) -> float:
     chars = spoken_chars(spoken)
     cps_mid = chars_per_second(fam)
     cps = chars / seconds if seconds > 0 else cps_mid
-    from wf_voice_selection_timing import delivery_dead_air
+    from wf_voice_selection_timing import delivery_dead_air, delivery_gap
     dead = delivery_dead_air(metrics, qc)
-    gap = metrics.get('max_inner_gap_seconds') or 0.0
+    gap = delivery_gap(metrics, qc)[0] or 0.0
     return round(1.0 * abs(seconds - target['p50']) / target['p50']
                  + 1.5 * dead
                  + 1.0 * max(0.0, float(qc.get('limiter_reduction_bound_db') or 0.0) - 0.5)
