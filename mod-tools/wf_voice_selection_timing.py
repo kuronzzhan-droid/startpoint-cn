@@ -63,6 +63,11 @@ def raw_level_is_blocking(qc: dict, floor: float) -> bool:
 
 
 def delivery_edges(metrics: dict, qc: dict) -> tuple[float | None, float | None]:
+    timing = qc.get('delivery_timing') or {}
+    if timing.get('method') == 'rms-10ms-relative-38db':
+        # These values already describe the final audio. Provider word alignment
+        # may end early; applying source trim offsets again would also be wrong.
+        return timing['leading_quiet_seconds'], timing['trailing_quiet_seconds']
     lead, tail = metrics.get('lead_in_seconds'), metrics.get('tail_seconds')
     trim = qc.get('trim')
     if trim and lead is not None and tail is not None:

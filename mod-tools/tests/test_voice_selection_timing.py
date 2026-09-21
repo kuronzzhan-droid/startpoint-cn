@@ -47,6 +47,17 @@ class DeliveryTimingTests(unittest.TestCase):
                   mastered_pcm=dict(leading_quiet_seconds=0.1, trailing_quiet_seconds=0.15))
         self.assertEqual(delivery_edges({}, qc), (0.1, 0.15))
 
+    def test_aligned_words_do_not_override_measured_audio_edges(self):
+        # A provider ends its final word early even though speech continues.
+        # Silence gates must use the deliverable, like the internal-gap gate.
+        timing = acoustic_timing(np.r_[np.zeros(4410), np.full(44100, .2),
+                                      np.zeros(6615)])
+        qc = dict(seconds=1.25, delivery_timing=timing,
+                  trim=dict(start_seconds=.4, end_seconds=1.65))
+        self.assertEqual(delivery_edges(dict(lead_in_seconds=.8, tail_seconds=.9), qc),
+                         (.1, .15))
+        self.assertAlmostEqual(delivery_dead_air({}, qc), .2)
+
     def test_dash_is_not_a_spoken_word_but_inserted_words_still_fail(self):
         self.assertEqual(voice.normalize_spoken('——ひとつとっておけ。'),
                          voice.normalize_spoken('ひとつとっておけ'))
