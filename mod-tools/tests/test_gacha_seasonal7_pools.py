@@ -244,7 +244,11 @@ class LiveGachaMatchesRevisionTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.expected = rev.revise(load_baseline())
-        cls.live = json.loads(GACHA_JSON.read_text(encoding="utf-8"))
+        # 2026-09-21：live 已继续往前走（中秋 12 人以 0% 挂名入池，见 wf_gacha_midautumn_pools）。
+        # 这里改为核对「中秋那一轮的冻结起点」＝七角色修订落盘后的状态；
+        # live 文件本身的看门狗交给 test_gacha_midautumn_pools.LiveGachaStateTest。
+        after_s7 = FIXTURE.with_name("gacha_pools_before_midautumn.json.gz")
+        cls.live = json.loads(gzip.decompress(after_s7.read_bytes()).decode("utf-8"))
 
     def test_both_pools_match_the_expected_revision(self):
         for pool_id in (rev.ABYSS, rev.RACING):
