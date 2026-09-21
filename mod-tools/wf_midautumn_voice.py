@@ -300,6 +300,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--take", type=int, default=None, help="只作用于 takes/NN")
     parser.add_argument("--takes", type=int, default=None, help="抽卡次数 takes/01..NN")
     parser.add_argument("--selected", action="store_true", help="pack：标准态取自 selected.json")
+    parser.add_argument("--remaster", action="store_true",
+                        help="process：允许用新策略覆盖旧的 qc/standard（不给就照旧抛 QC drift）；"
+                             "raw 与 receipts 一个字节不动，也不会重新生成")
     parser.add_argument("--role-lock", action=argparse.BooleanOptionalAction, default=True,
                         help="generate：角色级跨进程锁，默认开（防同一角色被两个进程重复计费）；"
                              "--no-role-lock 是逃生口")
@@ -382,6 +385,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command in ("plan", "process", "select"):
         extra = ["--design", args.design] if args.design else []
+        # --remaster 只有 process 认；别的子命令带上它会被 argparse 直接顶回来。
+        if args.remaster and args.command == "process":
+            extra.append("--remaster")
         return V.main([args.command, "--roles", *role_keys, "--run", run, *extra, *passthrough])
 
     if args.command == "generate":

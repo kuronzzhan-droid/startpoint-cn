@@ -12,10 +12,12 @@ import inspect
 import io
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock
 import wave
 
 import numpy as np
@@ -1229,6 +1231,304 @@ def _all_records(summary, slot):
         if entry['slot'] == slot:
             out += entry['takes']
     return out
+
+
+def peaky(lead: float, body: float, tail: float, rate: int = 48000, level: float = 0.05,
+          spike: float = 0.9, spikes: int = 3, spike_ms: float = 20.0):
+    """安静的正文 + 几个短促强音节：峰均比高得像凯尔的原始音（实测 18~22 dB）。
+
+    凯尔 raw 中位 -20.1 LUFS、峰值 -1.8 dBFS ⇒ 峰均比约 18 dB，官方成品只有 12~13 dB。
+    两遍 loudnorm 的 linear=true 不做动态处理，增益被 TP 钉死 ⇒ 成品响度 ≈ TP目标 - 峰均比，
+    所以「轻」的根因是峰均比，不是限幅上界。
+
+    强音节要用加窗正弦（几十毫秒）而不是直流脉冲：1 ms 的方波尖峰任何压缩器都咬不住，
+    那种夹具测的是 ffmpeg 的起音极限，不是本管线的行为。
+    """
+    t = np.arange(int(body * rate)) / rate
+    tone = np.sin(2 * np.pi * 220 * t)
+    envelope = np.full(len(t), level)
+    width = max(2, int(spike_ms * rate / 1000))
+    for i in range(spikes):
+        at = int((i + 1) * len(t) / (spikes + 1))
+        envelope[at:at + width] = np.maximum(level, spike * np.hanning(width))
+    return np.concatenate([np.zeros(int(lead * rate)), tone * envelope, np.zeros(int(tail * rate))])
+
+
+class LoudnessBandTests(unittest.TestCase):
+    """成品响度闸门只许有一处数字：`loudness_verdict`。
+
+    以前 `master_voice` 用 ±LOUDNESS_TOLERANCE(1.0) 写 `loudness_status`、`take_gates` 用
+    ±0.5 判 `master_loudness`，于是 QC 报告写着 ok 的条目照样被选优丢掉。
+    """
+
+    def test_band_matches_the_measured_official_distribution(self):
+        low, high = s7.MASTER_LOUDNESS_BAND
+        self.assertEqual((low, high), (-15.0, -12.8))
+        # 官方各族 p10 最低 -14.9（join）、p90 最高 -12.0（power_flip_0）：带子必须把它们包住，
+        # 又不能宽到把 -16 这种听得出来的轻放进来。
+        self.assertLess(low, -14.9)
+        self.assertGreater(high, -13.2)
+        self.assertGreater(low, -16.0)
+        self.assertLess(s7.TARGET_LUFS, high)
+        self.assertGreater(s7.TARGET_LUFS, low)
+
+    def test_verdict_edges(self):
+        self.assertEqual(s7.loudness_verdict(-14.0), 'ok')
+        self.assertEqual(s7.loudness_verdict(-15.0), 'ok')
+        self.assertEqual(s7.loudness_verdict(-12.8), 'ok')
+        self.assertEqual(s7.loudness_verdict(-15.01), 'under_target')
+        self.assertEqual(s7.loudness_verdict(-12.79), 'over_target')
+        self.assertEqual(s7.loudness_verdict(None), 'unmeasured')
+
+    def test_take_gates_read_the_same_function_and_not_a_second_number(self):
+        line = dict(role='fluffy', slot='battle/power_flip_0', ja='もう一つ！', tts_text='もう一つ！')
+        metrics = dict(subtitle_present=True, text_exact=True, text_superset=False,
+                       lead_in_seconds=0.1, tail_seconds=0.1, max_inner_gap_seconds=0.0,
+                       dead_air_share=0.1)
+        for lufs in (-14.0, -14.6, -15.0, -15.3, -12.9, -12.5, -18.0):
+            qc = dict(seconds=1.07, raw_lufs_i=-18.0, final=dict(lufs_i=lufs, true_peak_dbtp=-1.8),
+                      limiter_reduction_bound_db=0.4, mastered_pcm=dict(clipped_fraction=0.0))
+            failed = s7.take_gates(line, metrics, qc)
+            with self.subTest(lufs=lufs):
+                self.assertEqual('master_loudness' in failed,
+                                 s7.loudness_verdict(lufs) != 'ok')
+        # 闸门不见了也要红：合格带外的一条必须仍然被拦。
+        self.assertIn('master_loudness', s7.take_gates(
+            line, metrics, dict(seconds=1.07, raw_lufs_i=-18.0,
+                                final=dict(lufs_i=-17.0, true_peak_dbtp=-1.8),
+                                limiter_reduction_bound_db=0.4,
+                                mastered_pcm=dict(clipped_fraction=0.0))))
+
+    def test_limiter_gate_uses_the_bound_the_report_was_made_under(self):
+        line = dict(role='fluffy', slot='battle/power_flip_0', ja='あ', tts_text='あ')
+        metrics = dict(subtitle_present=False, text_exact=False, text_superset=False,
+                       lead_in_seconds=0.1, tail_seconds=0.1, max_inner_gap_seconds=0.0,
+                       dead_air_share=0.1)
+
+        def gate_for(params, reduction):
+            qc = dict(seconds=1.07, raw_lufs_i=-18.0, final=dict(lufs_i=-14.0, true_peak_dbtp=-1.8),
+                      limiter_reduction_bound_db=reduction, mastered_pcm=dict(clipped_fraction=0.0),
+                      params=params)
+            return s7.take_gates(line, metrics, qc)
+
+        two_pass = s7.master_params(**s7.master_policy('battle/power_flip_0', 2))
+        self.assertNotIn('limiter_reduction', gate_for(two_pass, s7.SAFETY_LIMITER_REDUCTION_DB))
+        self.assertIn('limiter_reduction', gate_for(two_pass, s7.SAFETY_LIMITER_REDUCTION_DB + 0.2))
+        # v1 定增益的报告本来就允许 4 dB，不能套两遍 loudnorm 的安全网。
+        self.assertNotIn('limiter_reduction', gate_for(s7.MASTER_PARAMS, 3.5))
+        self.assertIn('limiter_reduction', gate_for(s7.MASTER_PARAMS, 4.2))
+        # 没记 params 的旧报告回落到最严的那个数。
+        self.assertIn('limiter_reduction', gate_for(None, 3.5))
+
+
+class DensityLadderTests(unittest.TestCase):
+    def test_ladder_is_monotone_from_light_to_firm(self):
+        names = [s['name'] for s in s7.DENSITY_STAGES]
+        self.assertEqual(names, ['light', 'medium', 'firm'])
+        ratios = [s['ratio'] for s in s7.DENSITY_STAGES]
+        thresholds = [s['threshold_below_peak_db'] for s in s7.DENSITY_STAGES]
+        attacks = [s['attack_ms'] for s in s7.DENSITY_STAGES]
+        self.assertEqual(ratios, sorted(ratios))
+        self.assertEqual(thresholds, sorted(thresholds, reverse=True))
+        self.assertEqual(attacks, sorted(attacks, reverse=True))
+        # 咬得住齿音/爆破音才压得下峰均比：慢起音（5 ms，主控实验的形状）几乎没用。
+        self.assertLessEqual(max(attacks), 1.0)
+
+    def test_filter_threshold_is_relative_to_the_normalised_peak(self):
+        stage = dict(s7.DENSITY_STAGES[0], threshold_below_peak_db=-20.0)
+        text = s7.density_filter(stage, normalize_peak_dbfs=-1.0)
+        self.assertIn('acompressor=', text)
+        self.assertIn(':makeup=1', text)          # 电平交给 loudnorm，密度级不做补偿增益
+        threshold = float(re.search(r'threshold=([0-9.]+)', text).group(1))
+        self.assertAlmostEqual(threshold, 10 ** (-21.0 / 20), places=6)
+        self.assertAlmostEqual(
+            float(re.search(r'threshold=([0-9.]+)',
+                            s7.density_filter(stage, normalize_peak_dbfs=-6.0)).group(1)),
+            10 ** (-26.0 / 20), places=6)
+
+    def test_strategy_params_carry_the_ladder_but_never_the_per_item_stage(self):
+        params = s7.master_params(**s7.master_policy('battle/power_flip_0', 2))
+        self.assertIn('density', params)
+        for name in ('light', 'medium', 'firm'):
+            self.assertIn(name, params['density'])
+        # 逐条自适应的结果绝不能进 params：否则续跑重算的期望值与报告必然不同 ⇒ 满屏假 QC drift。
+        for word in ('stage=', 'applied', 'crest'):
+            self.assertNotIn(word, params['density'])
+        self.assertEqual(params['density'], s7.density_ladder())
+
+    def test_v1_params_are_untouched_even_if_density_is_asked_for(self):
+        self.assertEqual(s7.master_params(density=True), s7.MASTER_PARAMS)
+        self.assertEqual(s7.master_params(mode='fixed_gain', trim=False, density=True),
+                         s7.MASTER_PARAMS)
+        self.assertNotIn('density', s7.master_params(**s7.master_policy('battle/power_flip_0', 1)))
+        self.assertEqual(s7.master_policy('battle/power_flip_0', 1), dict(mode='fixed_gain', trim=False))
+        self.assertTrue(s7.master_policy('battle/power_flip_0', 2)['density'])
+
+
+@unittest.skipUnless(HAVE_FFMPEG, 'local ffmpeg unavailable')
+class DensityMasteringTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def master(self, samples, **changes):
+        source = self.root / f'raw{len(list(self.root.glob("raw*.wav")))}.wav'
+        write_wav(source, samples)
+        options = dict(slot='battle/power_flip_0', code='fixture', ffmpeg=FFMPEG, ffprobe=FFPROBE,
+                       mode='two_pass', trim=True, density=True)
+        options.update(changes)
+        target = self.root / 'out' / f'{source.stem}.mp3'
+        return source, target, s7.master_voice(source, target, **options)
+
+    def test_peaky_quiet_take_is_pulled_into_band_without_density_only_at_a_cost(self):
+        samples = peaky(0.9, 1.0, 0.5)
+        _src, _tgt, (_stored, plain) = self.master(samples, density=False)
+        self.assertIsNone(plain['density'])
+        self.assertEqual(plain['loudness_status'], 'under_target')
+        self.assertLess(plain['final']['lufs_i'], s7.MASTER_LOUDNESS_BAND[0])
+
+        _src, target, (stored, dense) = self.master(samples)
+        self.assertEqual(dense['loudness_status'], 'ok')
+        self.assertGreaterEqual(dense['final']['lufs_i'], s7.MASTER_LOUDNESS_BAND[0])
+        self.assertGreater(dense['final']['lufs_i'], plain['final']['lufs_i'] + 1.0)
+        self.assertTrue(dense['density']['applied'])
+        self.assertIn(dense['density']['stage'], [s['name'] for s in s7.DENSITY_STAGES])
+        # 峰均比压下来了，这才是响度上得去的原因。
+        self.assertLess(dense['density']['after']['crest_db'], dense['density']['before']['crest_db'] - 3)
+        self.assertEqual(wf_assets.mp3_decode(stored), target.read_bytes())
+
+    def test_density_changes_neither_length_nor_headroom(self):
+        _src, _tgt, (_stored, report) = self.master(peaky(0.9, 1.0, 0.5))
+        self.assertTrue(report['density']['applied'])
+        self.assertLessEqual(abs(report['sample_delta']), s7.SAMPLE_DELTA_LIMIT)
+        self.assertEqual(report['mastered_pcm']['clipped_fraction'], 0.0)
+        self.assertLess(report['mastered_pcm']['peak'], 0.999)
+        self.assertLessEqual(report['final']['true_peak_dbtp'], s7.PEAK_CEILING)
+        # 密度级之后限幅仍然只是安全网。
+        self.assertLessEqual(report['limiter_reduction_bound_db'],
+                             s7.SAFETY_LIMITER_REDUCTION_DB + 1e-6)
+        self.assertEqual(report['params']['max_limiter_reduction_db'],
+                         s7.SAFETY_LIMITER_REDUCTION_DB)
+        # 时长按官方口径也没被动过：裁的只有边缘那一刀。
+        self.assertTrue(report['no_speed_no_concatenation'])
+
+    def test_a_take_that_already_lands_in_band_is_left_alone(self):
+        _src, _tgt, (_stored, report) = self.master(burst(0.9, 1.0, 0.5, level=0.02))
+        self.assertEqual(report['loudness_status'], 'ok')
+        self.assertFalse(report['density']['applied'])
+        self.assertIsNone(report['density']['stage'])
+        self.assertEqual(report['density']['stages_tried'], [None])
+
+    def test_stages_escalate_one_at_a_time_and_stop_as_soon_as_it_is_enough(self):
+        _src, _tgt, (_stored, report) = self.master(peaky(0.9, 1.0, 0.5))
+        # 这条夹具的峰均比 19.5 dB：light 还差一点（-15.8），medium 够了（-14.1）⇒
+        # 逐档升级，且够了就停 —— firm 一次都不该跑。
+        self.assertEqual(report['density']['stages_tried'], [None, 'light', 'medium'])
+        self.assertEqual(report['density']['stage'], 'medium')
+        self.assertEqual(report['loudness_status'], 'ok')
+        by_stage = dict((row[0], row[1]) for row in report['density']['mastered_lufs_by_stage'])
+        self.assertEqual(list(by_stage), [None, 'light', 'medium'])
+        self.assertLess(by_stage['light'], s7.MASTER_LOUDNESS_BAND[0])
+        self.assertGreater(by_stage['medium'], by_stage['light'])
+
+    def test_a_stage_that_does_not_help_is_climbed_past_rather_than_accepted(self):
+        # 第一档换成 ratio=1（acompressor 的恒等档）⇒ 它一定不够，必须自己爬到下一档。
+        noop = dict(s7.DENSITY_STAGES[0], ratio=1.0)
+        with unittest.mock.patch.object(s7, 'DENSITY_STAGES', (noop, s7.DENSITY_STAGES[2])):
+            _src, _tgt, (_stored, report) = self.master(peaky(0.9, 1.0, 0.5))
+        self.assertEqual(report['density']['stages_tried'], [None, 'light', 'firm'])
+        self.assertEqual(report['density']['stage'], 'firm')
+        self.assertEqual(report['loudness_status'], 'ok')
+
+    def test_the_per_item_stage_stays_out_of_the_drift_relevant_params(self):
+        _src, _tgt, (_stored, applied) = self.master(peaky(0.9, 1.0, 0.5))
+        _src, _tgt, (_stored, skipped) = self.master(burst(0.9, 1.0, 0.5, level=0.02))
+        self.assertNotEqual(applied['density']['stage'], skipped['density']['stage'])
+        self.assertEqual(applied['params'], skipped['params'])
+        self.assertEqual(applied['params'],
+                         s7.master_params(**s7.master_policy('battle/power_flip_0', 2)))
+
+    def test_v1_is_byte_identical_whatever_density_says(self):
+        samples = burst(0.9, 1.0, 0.5, level=0.05)
+        _s, _t, (off, report_off) = self.master(samples, mode='fixed_gain', trim=False, density=False)
+        _s, _t, (on, report_on) = self.master(samples, mode='fixed_gain', trim=False, density=True)
+        self.assertEqual(off, on)
+        self.assertEqual(report_off['params'], s7.MASTER_PARAMS)
+        self.assertEqual(report_on['params'], s7.MASTER_PARAMS)
+        self.assertIsNone(report_on['density'])
+        self.assertIsNone(report_on['loudnorm'])
+
+
+@unittest.skipUnless(HAVE_FFMPEG, 'local ffmpeg unavailable')
+class RemasterTests(unittest.TestCase):
+    """`--remaster`：允许用新策略覆盖旧的 qc/standard；raw 与 receipts 一个字节不动。"""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.run_dir = Path(self.temp.name) / 'takes' / '01'
+        self.line = v2_line(slot='battle/power_flip_0', code='fixture_code')
+        base = self.run_dir / self.line['role']
+        self.source = base / 'raw' / (self.line['slot'] + '.wav')
+        write_wav(self.source, peaky(0.9, 1.0, 0.5))
+        self.receipt = base / 'receipts' / (self.line['slot'] + '.json')
+        self.receipt.parent.mkdir(parents=True, exist_ok=True)
+        self.receipt.write_text(json.dumps(dict(status='generated', sha256=s7.sha(self.source.read_bytes()),
+                                                request_fingerprint=s7.request_fingerprint(self.line))),
+                                encoding='utf-8')
+        self.qc = base / 'qc' / (self.line['slot'] + '.json')
+        self.standard = base / 'standard' / (self.line['slot'] + '.mp3')
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def process(self, **changes):
+        return s7.process_run([self.line], self.run_dir, ffmpeg=FFMPEG, ffprobe=FFPROBE,
+                              version=2, **changes)
+
+    def test_resume_is_still_cached_and_remaster_is_a_no_op_when_nothing_changed(self):
+        self.assertEqual([x['status'] for x in self.process()['items']], ['mastered'])
+        self.assertEqual([x['status'] for x in self.process()['items']], ['cached'])
+        # 开关不是「无条件重做」：策略没变就仍然命中缓存，不白烧一遍 ffmpeg。
+        self.assertEqual([x['status'] for x in self.process(remaster=True)['items']], ['cached'])
+
+    def test_a_strategy_change_needs_the_switch_and_leaves_raw_alone(self):
+        self.process()
+        before = (self.source.read_bytes(), self.receipt.read_bytes())
+        stale = json.loads(self.qc.read_bytes())
+        self.assertEqual(stale['params'], s7.master_params(**s7.master_policy(self.line['slot'], 2)))
+        # 模拟「旧策略产物」：把报告改成没有密度级的那一版参数。
+        old_params = {k: v for k, v in stale['params'].items() if k != 'density'}
+        self.qc.write_text(json.dumps(dict(stale, params=old_params)), encoding='utf-8')
+        with self.assertRaisesRegex(ValueError, 'QC drift'):
+            self.process()
+        summary = self.process(remaster=True)
+        self.assertEqual([x['status'] for x in summary['items']], ['remastered'])
+        fresh = json.loads(self.qc.read_bytes())
+        self.assertEqual(fresh['params'], s7.master_params(**s7.master_policy(self.line['slot'], 2)))
+        self.assertEqual(fresh['standard_sha256'], s7.sha(self.standard.read_bytes()))
+        self.assertEqual((self.source.read_bytes(), self.receipt.read_bytes()), before)
+        self.assertEqual([x['status'] for x in self.process()['items']], ['cached'])
+
+    def test_remaster_reports_the_density_stage_in_the_run_summary(self):
+        summary = self.process()
+        self.assertEqual(summary['items'][0]['density'], 'medium')
+        self.assertEqual(summary['items'][0]['loudness_status'], 'ok')
+        self.assertEqual(summary['retake_candidates'], [])
+
+    def test_the_switch_is_only_on_process(self):
+        self.assertIn('--remaster', _cli_help(['process', '--help']))
+        for command in ('select', 'plan', 'generate'):
+            self.assertNotIn('--remaster', _cli_help([command, '--help']))
+
+
+def _cli_help(argv):
+    buffer = io.StringIO()
+    with contextlib.redirect_stdout(buffer), contextlib.suppress(SystemExit):
+        s7.main(argv)
+    return buffer.getvalue()
 
 
 class AssetVocabularyTests(unittest.TestCase):

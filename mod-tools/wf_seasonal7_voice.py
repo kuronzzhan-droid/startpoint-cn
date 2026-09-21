@@ -174,6 +174,81 @@ SAFETY_LIMITER_REDUCTION_DB = 2.0
 # 原始响度硬门：recipe 写 -20，本轮实测放宽到 -26（见 take_gates 的注释与 pipeline-v2.md）。
 RAW_LUFS_FLOOR = -26.0
 
+# 成品响度合格带（唯一真源）。数字来自官方原声实测，不是拍脑袋的 ±0.5：
+# `rework2/voice/scratch/official_loudness.py` 随机取 40 个角色逐槽族量整合响度 ——
+#   skill_ready p10 -14.4 / p50 -13.2 / p90 -12.3    outhole_0  p10 -18.3 / p50 -13.9 / p90 -12.2
+#   power_flip_0 p10 -13.9 / p50 -12.8 / p90 -12.0   skill_0    p10 -13.5 / p50 -13.0 / p90 -12.4
+#   battle_start_0 p10 -14.1 / p50 -13.0 / p90 -12.3 win_0      p10 -14.6 / p50 -13.5 / p90 -12.8
+#   join p10 -14.9 / p50 -13.9 / p90 -13.2           真峰 p50 -0.4 ~ -1.1 dBFS
+# 官方自己的离散度（p10→p90 约 2 dB）就比旧闸门 |final-(-14)|>0.5 的 1 dB 宽，
+# 于是「比官方还准」的条目照样被判不过。改成以官方为准的非对称带：下限压着 join/win 的
+# p10 再留一点，上限压着 power_flip 的 p50。TARGET_LUFS 仍是 -14（带内偏保守的一侧）。
+MASTER_LOUDNESS_BAND = (-15.0, -12.8)
+
+
+def loudness_verdict(lufs) -> str:
+    """成品响度判定的唯一真源。
+
+    `master_voice` 写进 QC 的 `loudness_status` 与 `take_gates` 的 `master_loudness`
+    以前各写各的数（前者 ±LOUDNESS_TOLERANCE=1.0、后者 ±0.5），于是 QC 说 ok 的条目
+    选优时照样被丢。两处都必须走这一个函数。
+    """
+    if lufs is None:
+        return 'unmeasured'
+    low, high = MASTER_LOUDNESS_BAND
+    lufs = float(lufs)
+    if lufs < low:
+        return 'under_target'
+    if lufs > high:
+        return 'over_target'
+    return 'ok'
+
+
+# ---- 自适应密度级（仅 v2 / two_pass；v1 定增益路径一字不动）-----------------------
+#
+# 为什么需要它：两遍 loudnorm 用 linear=true，增益是 min(I目标-I实测, TP目标-TP实测)，
+# 也就是 **成品响度被峰均比钉死**：final ≈ TP目标 - crest。凯尔原始音峰均比 18~22 dB
+# （raw 中位 -20.1 LUFS / 峰值 -1.8 dBFS），官方成品只有约 12~13 dB，所以成品中位卡在
+# -15.5、短句掉到 -18～-21.8。主控已验证放宽限幅上界无用（2/3/4/6 dB 四档 home_0 全是
+# -15.0）——限幅在定增益段之后，压根不改 loudnorm 那一步的峰均比。唯一的杠杆是压缩。
+#
+# 档位表由实测网格选出（`scratch/` 的 crest_grid 两轮，10 条凯尔样本）：
+#   仅压缩 thr-18dBFS/r2.5/attack5ms（=主控实验的形状） 峰均比中位 17.1，几乎没动；
+#   attack 快到 1 ms 以下才咬得住齿音/爆破音；纯 alimiter（峰均比中位 14.7）不如压缩。
+# 阈值写成「峰值以下多少 dB」而不是绝对 dBFS：先用纯增益把峰值归到
+# DENSITY_NORMALIZE_PEAK_DBFS（增益不改变峰均比，所以这一步不做任何动态处理），
+# 档位含义就与源的绝对电平无关，跨角色/跨 take 可复现。
+DENSITY_NORMALIZE_PEAK_DBFS = -1.0
+DENSITY_STAGES = (
+    dict(name='light', threshold_below_peak_db=-20.0, ratio=2.5, attack_ms=1.0,
+         release_ms=80.0, knee=4.0),
+    dict(name='medium', threshold_below_peak_db=-24.0, ratio=3.5, attack_ms=0.7,
+         release_ms=70.0, knee=4.0),
+    dict(name='firm', threshold_below_peak_db=-28.0, ratio=5.0, attack_ms=0.5,
+         release_ms=60.0, knee=4.0),
+)
+
+
+def density_filter(stage: dict, normalize_peak_dbfs: float = DENSITY_NORMALIZE_PEAK_DBFS) -> str:
+    """一档密度级的 ffmpeg 滤镜串（软拐点、无 makeup —— 电平交给后面的 loudnorm）。"""
+    threshold = 10 ** ((normalize_peak_dbfs + stage['threshold_below_peak_db']) / 20)
+    return (f'acompressor=level_in=1:threshold={threshold:.9f}:ratio={stage["ratio"]:g}'
+            f':attack={stage["attack_ms"]:g}:release={stage["release_ms"]:g}'
+            f':knee={stage["knee"]:g}:makeup=1:detection=peak:link=average')
+
+
+def density_ladder(normalize_peak_dbfs: float = DENSITY_NORMALIZE_PEAK_DBFS) -> str:
+    """策略参数里记的那一行：只描述档位表，**不含**逐条用了哪一档。
+
+    用了哪一档是逐条自适应的结果，写进 params 会让每条的 params 各不相同，
+    续跑时 `process_run` 拿策略重算的期望值必然对不上 ⇒ 满屏假「QC drift」。
+    """
+    return (f'adaptive acompressor before loudnorm; peak normalised to {normalize_peak_dbfs:g} dBFS; '
+            + '; '.join(f'{s["name"]}=thr {s["threshold_below_peak_db"]:g}dB below peak/'
+                        f'ratio {s["ratio"]:g}/attack {s["attack_ms"]:g}ms/'
+                        f'release {s["release_ms"]:g}ms/knee {s["knee"]:g}'
+                        for s in DENSITY_STAGES))
+
 
 def limiter_bound(mode: str, max_limiter_reduction_db: float = MAX_LIMITER_REDUCTION_DB) -> float:
     """限幅削减上界的唯一真源：两遍 loudnorm 下限幅只当安全网，钳到 2 dB。
@@ -189,14 +264,22 @@ def limiter_bound(mode: str, max_limiter_reduction_db: float = MAX_LIMITER_REDUC
 
 
 def master_params(*, mode: str = 'fixed_gain', trim: bool = False,
-                  max_limiter_reduction_db: float = MAX_LIMITER_REDUCTION_DB) -> dict:
-    """QC 报告里记的处理参数；`process_run` 用它判 QC 漂移，所以必须随策略变化。"""
+                  max_limiter_reduction_db: float = MAX_LIMITER_REDUCTION_DB,
+                  density: bool = False) -> dict:
+    """QC 报告里记的处理参数；`process_run` 用它判 QC 漂移，所以必须随策略变化。
+
+    `density` 记的是「本条允许上密度级 + 档位表」这个**策略**，不是逐条的结果。
+    """
     max_limiter_reduction_db = limiter_bound(mode, max_limiter_reduction_db)
-    if mode == 'fixed_gain' and not trim and max_limiter_reduction_db == MAX_LIMITER_REDUCTION_DB:
+    density = bool(density) and mode == 'two_pass'
+    if (mode == 'fixed_gain' and not trim and not density
+            and max_limiter_reduction_db == MAX_LIMITER_REDUCTION_DB):
         return MASTER_PARAMS
     params = dict(MASTER_PARAMS, mode=mode, max_limiter_reduction_db=max_limiter_reduction_db)
     if mode == 'two_pass':
         params['loudnorm'] = f'two-pass measured linear=true I={TARGET_LUFS} TP={LOUDNORM_TP} LRA={LOUDNORM_LRA}'
+    if density:
+        params['density'] = density_ladder()
     if trim:
         params['edge_trim'] = (f'RMS {TRIM_ACTIVE_DBFS:g} dBFS/10ms, head {TRIM_HEAD_SECONDS:g}s, '
                                f'tail {TRIM_TAIL_SECONDS:g}s')
@@ -1279,16 +1362,36 @@ def duration_findings(code: str, slot: str, seconds: float) -> list[dict]:
     return []
 
 
+def density_render(source: Path, target: Path, *, ffmpeg, channels: int, stage: dict,
+                   peak_dbfs: float,
+                   normalize_peak_dbfs: float = DENSITY_NORMALIZE_PEAK_DBFS) -> None:
+    """把源渲染成「压缩过的同长度单声道 WAV」，供后面原封不动地走同一条链。
+
+    两步：纯增益把峰值归到 `normalize_peak_dbfs`（增益不改变峰均比，纯粹是让档位阈值
+    有确定含义），再过一道 acompressor。不变速、不裁剪、不拼接，样本数与源逐样本对应，
+    所以 `master_voice` 的 `sample_delta` 仍然拿**原始源**做对照，这一刀照样抓得住。
+    输出 f32 WAV：中间态不会削波，削波判定仍在最终 MP3 上做。
+    """
+    filters = _mono_filters(channels) + [f'volume={normalize_peak_dbfs - peak_dbfs:.8f}dB',
+                                         density_filter(stage, normalize_peak_dbfs)]
+    target.parent.mkdir(parents=True, exist_ok=True)
+    _ffmpeg(ffmpeg, ['-y', '-v', 'error', '-i', str(source), '-map', '0:a:0', '-map_metadata', '-1',
+                     '-vn', '-af', ','.join(filters), '-c:a', 'pcm_f32le', '-ac', '1', str(target)])
+
+
 def master_voice(source, target, *, slot: str, code: str, ffmpeg, ffprobe,
                  target_lufs: float = TARGET_LUFS, peak_ceiling: float = PEAK_CEILING,
                  limiter_ceiling: float = LIMITER_CEILING,
                  max_limiter_reduction_db: float = MAX_LIMITER_REDUCTION_DB,
-                 mode: str = 'fixed_gain', trim: bool = False, slots=None) -> tuple[bytes, dict]:
+                 mode: str = 'fixed_gain', trim: bool = False, density: bool = False,
+                 slots=None) -> tuple[bytes, dict]:
     """把整条表演做到 -14 LUFS；真峰超限时用有界 lookahead 限幅。
 
     `mode='fixed_gain'`（默认，旧行为）= 整条定增益 + 限幅。
     `mode='two_pass'` = 两遍 loudnorm（measured_* + linear=true），限幅只当安全网。
     `trim=True` 时按 RMS 判活做边缘裁剪（头 100ms / 尾 150ms），不变速、不拼接。
+    `density=True`（只在 two_pass 下生效）= 先按现行流程做；成品仍低于合格带下限时，
+    逐档加一道温和压缩再走同一流程，够了就停。限幅在密度级之后仍然只是安全网。
     返回 (存储态字节, QC 报告)；target 写标准态 MP3。时长超官方族最大值不抛错，写入 findings。
     """
     source, target = Path(source), Path(target)
@@ -1301,18 +1404,32 @@ def master_voice(source, target, *, slot: str, code: str, ffmpeg, ffprobe,
     channels = int(info['streams'][0]['channels'])
     _mono_filters(channels)
     temporary = target.with_name(target.stem + '.tmp.mp3')
+    dense_path = target.with_name(target.stem + '.dense.wav')
     bounds = edge_bounds(source, ffmpeg=ffmpeg) if trim else None
-    normalize = None
     if mode == 'two_pass':
-        loud = loudnorm_measure(source, ffmpeg=ffmpeg, target_lufs=target_lufs, trim=bounds, channels=channels)
-        normalize = loudnorm_filter(loud, target_lufs=target_lufs)
         max_limiter_reduction_db = limiter_bound(mode, max_limiter_reduction_db)
-    try:
-        baseline = encode_voice(source, temporary, ffmpeg=ffmpeg, channels=channels,
+    use_density = bool(density) and mode == 'two_pass'
+    source_loud = (loudnorm_measure(source, ffmpeg=ffmpeg, target_lufs=target_lufs,
+                                    trim=bounds, channels=channels)
+                   if mode == 'two_pass' else None)
+
+    def render(stage):
+        """跑一遍完整的响度定型。`stage is None` = 原样源（与打密度级之前逐字相同）。"""
+        if stage is None:
+            work, work_channels, loud = source, channels, source_loud
+        else:
+            density_render(source, dense_path, ffmpeg=ffmpeg, channels=channels, stage=stage,
+                           peak_dbfs=base_peak)
+            work, work_channels = dense_path, 1
+            loud = loudnorm_measure(work, ffmpeg=ffmpeg, target_lufs=target_lufs,
+                                    trim=bounds, channels=work_channels)
+        normalize = loudnorm_filter(loud, target_lufs=target_lufs) if mode == 'two_pass' else None
+        baseline = encode_voice(work, temporary, ffmpeg=ffmpeg, channels=work_channels,
                                 trim=bounds, loudnorm=normalize)
         if baseline['lufs_i'] <= -69.0:
             raise ValueError('source too short or silent for integrated loudness')
-        source_peak = oversampled_peak_db(source, ffmpeg=ffmpeg, channels=channels, trim=bounds)
+        pre_peak = oversampled_peak_db(work, ffmpeg=ffmpeg, channels=work_channels, trim=bounds)
+        source_peak = pre_peak
         if normalize:
             # 两遍 loudnorm 已经把电平定死；后面的定增益段只收残差，所以峰值要量归一之后的。
             source_peak = oversampled_peak_db(temporary, ffmpeg=ffmpeg, channels=1)
@@ -1324,7 +1441,7 @@ def master_voice(source, target, *, slot: str, code: str, ffmpeg, ffprobe,
             gain = min(desired, ceiling - source_peak + max_limiter_reduction_db)
         attempts = []
         for _ in range(6):
-            measured = encode_voice(source, temporary, ffmpeg=ffmpeg, channels=channels,
+            measured = encode_voice(work, temporary, ffmpeg=ffmpeg, channels=work_channels,
                                     gain_db=gain, limiter_ceiling_db=ceiling,
                                     trim=bounds, loudnorm=normalize)
             attempts.append(dict(gain_db=gain, limiter_ceiling_dbfs=ceiling, **measured))
@@ -1344,7 +1461,33 @@ def master_voice(source, target, *, slot: str, code: str, ffmpeg, ffprobe,
         reduction = 0.0 if ceiling is None else max(0.0, source_peak + gain - ceiling)
         if reduction > max_limiter_reduction_db + 1e-6:
             raise ValueError('limiter reduction exceeds the approved bound')
-        standard = temporary.read_bytes()
+        return dict(stage=stage, loud=loud, normalize=normalize, baseline=baseline,
+                    pre_peak=pre_peak, source_peak=source_peak, desired=desired, gain=gain,
+                    ceiling=ceiling, attempts=attempts, reduction=reduction, final=attempts[-1],
+                    standard=temporary.read_bytes(),
+                    mastered=amplitude(pcm(temporary, Path(ffmpeg))))
+
+    def crest(peak_dbfs, loud) -> dict:
+        lufs = None if loud is None else float(loud['input_i'])
+        return dict(lufs_i=lufs, peak_dbfs=round(peak_dbfs, 3),
+                    crest_db=None if lufs is None else round(peak_dbfs - lufs, 3))
+
+    try:
+        results = [render(None)]
+        base_peak = results[0]['pre_peak']
+        if use_density:
+            for stage in DENSITY_STAGES:
+                if loudness_verdict(results[-1]['final']['lufs_i']) != 'under_target':
+                    break
+                try:
+                    results.append(render(stage))
+                except (ValueError, RuntimeError):
+                    # 密度级是加法：某一档收不了口就停在上一档，不能把本来能出的条目拖成失败。
+                    break
+        # 带内的永远优先；都不在带内时取最接近目标的那一遍（= 压得最实的那一档）。
+        chosen = max(results, key=lambda r: (loudness_verdict(r['final']['lufs_i']) == 'ok',
+                                             -abs(r['final']['lufs_i'] - target_lufs)))
+        standard = chosen['standard']
         stored = wf_assets.mp3_encode(standard)
         if wf_assets.mp3_decode(stored) != standard:
             raise ValueError('native MP3 storage roundtrip failed')
@@ -1352,40 +1495,57 @@ def master_voice(source, target, *, slot: str, code: str, ffmpeg, ffprobe,
         container = [asdict(x) for x in gate.check_container(gate.VoiceFile(code, slot, stored), codec)]
         if container or not codec['xing'] or codec['tail'] != 0:
             raise ValueError(f'native audio container validation failed: {container}')
-        before, after = amplitude(pcm(source, Path(ffmpeg))), amplitude(pcm(temporary, Path(ffmpeg)))
+        before, after = amplitude(pcm(source, Path(ffmpeg))), chosen['mastered']
         # 裁边时与「同样裁过的源」逐样本对照：允许的只有这一刀，变速/拼接照样会被抓住。
+        # 密度级是逐样本增益，不改样本数，所以对照的仍然是**原始源**。
         reference = before if bounds is None else amplitude(decoded_pcm(source, ffmpeg=ffmpeg, trim=bounds))
         delta = after['samples'] - reference['samples']
         if abs(delta) > SAMPLE_DELTA_LIMIT:
             raise ValueError(f'mastering changed performance length by {delta} samples')
         if after['clipped_fraction'] > 0 or after['peak'] >= 0.999:
             raise ValueError('mastered performance clips')
-        final = attempts[-1]
-        if abs(final['lufs_i'] - target_lufs) <= LOUDNESS_TOLERANCE:
-            loudness = 'ok'
-        else:
-            loudness = 'under_target' if final['lufs_i'] < target_lufs else 'over_target'
+        final = chosen['final']
+        loudness = loudness_verdict(final['lufs_i'])
         fam = family(slot)
         _n, low, p50, p90, _p95, _p99, high = gate.OFFICIAL_DURATION[fam]
         target.parent.mkdir(parents=True, exist_ok=True)
-        temporary.replace(target)
+        target.write_bytes(standard)
     finally:
-        if temporary.exists():
-            temporary.unlink()
+        for scratch in (temporary, dense_path):
+            if scratch.exists():
+                scratch.unlink()
+    density_report = None
+    if use_density:
+        stage = chosen['stage']
+        density_report = dict(
+            enabled=True, applied=stage is not None,
+            stage=None if stage is None else stage['name'],
+            settings=None if stage is None else dict(stage),
+            filter=None if stage is None else density_filter(stage),
+            normalize_peak_dbfs=DENSITY_NORMALIZE_PEAK_DBFS,
+            ladder=[s['name'] for s in DENSITY_STAGES],
+            stages_tried=[None if r['stage'] is None else r['stage']['name'] for r in results],
+            before=crest(results[0]['pre_peak'], results[0]['loud']),
+            after=crest(chosen['pre_peak'], chosen['loud']),
+            mastered_lufs_by_stage=[[None if r['stage'] is None else r['stage']['name'],
+                                     r['final']['lufs_i']] for r in results])
     return stored, dict(
         slot=slot, code=code, family=fam,
-        params=master_params(mode=mode, trim=bool(bounds), max_limiter_reduction_db=max_limiter_reduction_db),
+        params=master_params(mode=mode, trim=bool(bounds), density=use_density,
+                             max_limiter_reduction_db=max_limiter_reduction_db),
         source=str(source), source_sha256=sha(source_raw), source_metadata=info,
         standard=str(target), standard_sha256=sha(standard), storage_sha256=sha(stored),
         storage_roundtrip_equal=True, codec=codec, seconds=codec['duration'],
         official_seconds=dict(min=low, p50=p50, p90=p90, max=high),
-        baseline_encoded=baseline, source_oversampled_peak_dbfs=source_peak,
-        raw_lufs_i=float(loud['input_i']) if normalize else baseline['lufs_i'],
-        desired_gain_db=desired, gain_db=gain, limiter_ceiling_dbfs=ceiling,
-        limiter_reduction_bound_db=reduction, attempts=attempts, final=final, loudness_status=loudness,
+        baseline_encoded=chosen['baseline'], source_oversampled_peak_dbfs=chosen['source_peak'],
+        raw_lufs_i=float(source_loud['input_i']) if source_loud else chosen['baseline']['lufs_i'],
+        desired_gain_db=chosen['desired'], gain_db=chosen['gain'],
+        limiter_ceiling_dbfs=chosen['ceiling'],
+        limiter_reduction_bound_db=chosen['reduction'], attempts=chosen['attempts'], final=final,
+        loudness_status=loudness, loudness_band=list(MASTER_LOUDNESS_BAND), density=density_report,
         source_pcm=before, mastered_pcm=after, sample_delta=delta, sample_delta_limit=SAMPLE_DELTA_LIMIT,
         findings=duration_findings(code, slot, codec['duration']),
-        mastering_mode=mode, loudnorm=normalize,
+        mastering_mode=mode, loudnorm=chosen['normalize'],
         trim=None if bounds is None else dict(start_seconds=bounds[0], end_seconds=bounds[1],
                                               removed_seconds=round(before['seconds'] - (bounds[1] - bounds[0]), 3),
                                               head_pad=TRIM_HEAD_SECONDS, tail_pad=TRIM_TAIL_SECONDS,
@@ -1395,14 +1555,20 @@ def master_voice(source, target, *, slot: str, code: str, ffmpeg, ffprobe,
 
 
 def master_policy(slot: str, version: int) -> dict:
-    """按槽的后处理策略：v1 保持定增益、不裁剪；v2 两遍 loudnorm + 战斗槽边缘裁剪。"""
+    """按槽的后处理策略：v1 保持定增益、不裁剪；v2 两遍 loudnorm + 战斗槽边缘裁剪 + 密度级。"""
     if version < 2:
         return dict(mode='fixed_gain', trim=False)
-    return dict(mode='two_pass', trim=family(slot) in TRIM_FAMILIES)
+    return dict(mode='two_pass', trim=family(slot) in TRIM_FAMILIES, density=True)
 
 
-def process_run(lines: list[dict], run_dir, *, ffmpeg, ffprobe, version: int | None = None) -> dict:
-    """对已生成且回执校验通过的条目做后处理；qc 已存在且哈希一致即跳过（续跑）。"""
+def process_run(lines: list[dict], run_dir, *, ffmpeg, ffprobe, version: int | None = None,
+                remaster: bool = False) -> dict:
+    """对已生成且回执校验通过的条目做后处理；qc 已存在且哈希一致即跳过（续跑）。
+
+    `remaster=True`（CLI 的 `--remaster`）= 允许用**新策略**覆盖旧的 qc/standard。
+    不给这个开关时策略变了仍然抛 QC drift —— 默认绝不悄悄盖掉旧产物。
+    两种情况都只读 raw 与 receipts，一个字节不改，也不会触发任何重新生成。
+    """
     run_dir = Path(run_dir)
     items = []
     for line in lines:
@@ -1427,13 +1593,19 @@ def process_run(lines: list[dict], run_dir, *, ffmpeg, ffprobe, version: int | N
         # `limiter_bound` 一处，两边都走它），否则第二遍 process 会假报 QC 漂移。
         expected = master_params(**policy) if mode >= 2 else MASTER_PARAMS
         target, qc = base / 'standard' / (slot + '.mp3'), base / 'qc' / (slot + '.json')
+        report, status = None, None
         if qc.is_file() and target.is_file():
-            report = json.loads(qc.read_bytes())
-            if (report.get('source_sha256') != source_sha or report.get('standard_sha256') != sha(target.read_bytes())
-                    or report.get('params') != expected):
+            cached = json.loads(qc.read_bytes())
+            if (cached.get('source_sha256') == source_sha
+                    and cached.get('standard_sha256') == sha(target.read_bytes())
+                    and cached.get('params') == expected):
+                report, status = cached, 'cached'
+            elif not remaster:
                 raise ValueError(f'QC drift for {role}:{slot}; use a new run directory')
-            status = 'cached'
-        else:
+            else:
+                # 旧 take 的 qc/standard 是旧策略的产物；只有显式 --remaster 才许重做。
+                status = 'remastered'
+        if report is None:
             try:
                 _stored, report = master_voice(source, target, slot=slot, code=line['code'],
                                                ffmpeg=ffmpeg, ffprobe=ffprobe,
@@ -1442,11 +1614,12 @@ def process_run(lines: list[dict], run_dir, *, ffmpeg, ffprobe, version: int | N
                 items.append(dict(role=role, slot=slot, status='rejected', error=str(exc)[:500]))
                 continue
             _write_json(qc, report)
-            status = 'mastered'
+            status = status or 'mastered'
         items.append(dict(role=role, slot=slot, status=status, seconds=round(report['seconds'], 3),
                           lufs_i=report['final']['lufs_i'], true_peak_dbtp=report['final']['true_peak_dbtp'],
                           limiter=report['limiter_ceiling_dbfs'] is not None,
                           trimmed=bool(report.get('trim')),
+                          density=((report.get('density') or {}).get('stage')),
                           loudness_status=report['loudness_status'], findings=report['findings']))
     over_max = [x for x in items if any(f['level'] == 'error' for f in x.get('findings', []))]
     retake = [x for x in items if x['status'] in ('rejected', 'stale_plan') or x in over_max
@@ -2084,9 +2257,14 @@ def take_gates(line: dict, metrics: dict, qc: dict) -> list[str]:
     elif not target['p10'] <= seconds <= target['p90']:
         failed.append('duration_band')
     final = qc.get('final') or {}
-    if abs(float(final.get('lufs_i', -99)) - TARGET_LUFS) > 0.5:
+    if loudness_verdict(final.get('lufs_i')) != 'ok':
         failed.append('master_loudness')
-    if float(qc.get('limiter_reduction_bound_db') or 0.0) > SAFETY_LIMITER_REDUCTION_DB:
+    # 限幅仍然只是安全网：判据取这份报告**自己**是按哪个上界做出来的
+    # （two_pass = SAFETY_LIMITER_REDUCTION_DB，v1 定增益 = MAX_LIMITER_REDUCTION_DB），
+    # 不再对两种策略的报告套同一个数。密度级不放宽这一条。
+    bound = float((qc.get('params') or {}).get('max_limiter_reduction_db')
+                  or SAFETY_LIMITER_REDUCTION_DB)
+    if float(qc.get('limiter_reduction_bound_db') or 0.0) > bound + 1e-6:
         failed.append('limiter_reduction')
     if float(final.get('true_peak_dbtp', 0)) > PEAK_CEILING:
         failed.append('true_peak')
@@ -2385,6 +2563,10 @@ def main(argv=None):
                        help='2 = 本轮配方（逐槽参考音、引号封边、wav、两遍 loudnorm）')
         p.add_argument('--take', type=int, default=None, help='只作用于 takes/NN 这一次抽卡')
         p.add_argument('--takes', type=int, default=None, help='抽卡次数：takes/01..NN')
+        if name == 'process':
+            p.add_argument('--remaster', action='store_true',
+                           help='允许用新策略覆盖旧的 qc/standard（不给就照旧抛 QC drift）；'
+                                'raw 与 receipts 一个字节不动，也不会重新生成')
         if name == 'generate':
             p.add_argument('--only', action='append', default=[], help='role:slot，可重复')
             p.add_argument('--workers', type=int, choices=(1, 2), default=2)
@@ -2487,7 +2669,7 @@ def main(argv=None):
         worst = 0
         for output in _take_dirs(run_dir, args):
             summary = process_run(lines, output, ffmpeg=find_tool('ffmpeg'), ffprobe=find_tool('ffprobe'),
-                                  version=version)
+                                  version=version, remaster=getattr(args, 'remaster', False))
             broken = sorted({f'{x["role"]}:{x["slot"]}' for x in summary['items']
                              if x['status'] in ('rejected', 'stale_plan', 'missing')})
             print(json.dumps(dict(take=output.name, failed_items=broken,
