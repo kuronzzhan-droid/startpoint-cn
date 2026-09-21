@@ -84,7 +84,9 @@ class ConstantTests(unittest.TestCase):
 
     def test_spec_declares_every_self_owned_key(self):
         declared = {t: set(v) for t, v in K.SPEC["extra_keys"].items()}
-        self.assertEqual(declared[KL.CAS], set(K.CAS_TEXTS))
+        self.assertEqual(declared[KL.CAS], set(K.CAS_TEXTS) - K.BASE_STRING_KEYS)
+        self.assertEqual(K.BASE_STRING_KEYS, {K.SLOT_OVERRIDE[5]})
+        self.assertEqual(K.SPEC["requires_client_base"], "1.4.998")
         self.assertEqual(declared[KL.SWITCHED], {K.VOICE_KEY})
         self.assertEqual(declared[K.PFA], {K.PF_KEY})
         # 629 与 722 的查找键必须在声明里，否则详情页 C8601

@@ -76,6 +76,9 @@ PF_PROGRAMS = tuple(f"battle/action/power_flip/action/override/{PF_KEY}${PF_KEY}
 LEADER_OVERRIDE = f"desc_override_{CODE}"
 SLOT_OVERRIDE_SLOTS = (1, 2, 3, 5)
 SLOT_OVERRIDE = {slot: f"desc_override_{CODE}_{slot}" for slot in SLOT_OVERRIDE_SLOTS}
+# Added by the separately published 1.4.998 table revision, not by the
+# hash-bound 1.4.987 package. Keep it as an immutable base dependency.
+BASE_STRING_KEYS = frozenset({SLOT_OVERRIDE[5]})
 
 SKILL_FLAG_KINDS = ("536", "704")
 SKILL_FLAG_TEXT_KEYS = (CAS_FLAG1, CAS_FLAG2)
@@ -93,12 +96,13 @@ TEXTS: dict[str, str] = {
              "最后砸下裂地一击（无后摇），造成自身攻击力65倍的风属性伤害，并赋予自身攻击力提升效果",
 }
 SPEC = {
+    "requires_client_base": "1.4.998",
     # desc_override 需要客户端面板接管能力；722 的 override_string_* 不需要补丁
     "required_capabilities": ("panel-description-override-v2", "dash-parameter-v1"),
     "pf_type": 3,                              # 作者 09-21：详情页显示「辅助」（原生 PF 也随之为 supporter）
     "extra_keys": {
         KL.CAS: (CAS_FLAG1, CAS_FLAG2, INVOKE_STRING, PF_STRING, LEADER_OVERRIDE,
-                 *(SLOT_OVERRIDE[s] for s in SLOT_OVERRIDE_SLOTS)),
+                 *(SLOT_OVERRIDE[s] for s in SLOT_OVERRIDE_SLOTS if s != 5)),
         KL.SWITCHED: (VOICE_KEY,),
         PFA: (PF_KEY,),
     },
@@ -524,8 +528,10 @@ def check_skill_flag_strings(rows: Iterable[Sequence[str]], keys: set[str]) -> l
 
 def write_strings(ctx) -> dict[str, str]:
     """``custom_ability_string``：536/704/629/722 条目 + 4 个 ``desc_override``。"""
+    from wf_midautumn_base_strings import validate_base_strings
+    validate_base_strings(ctx, {k: CAS_TEXTS[k] for k in BASE_STRING_KEYS})
     declared = set(ctx.spec.extra_keys.get(KL.CAS, ()))
-    missing = [key for key in CAS_TEXTS if key not in declared]
+    missing = [key for key in CAS_TEXTS if key not in declared | BASE_STRING_KEYS]
     if missing:
         raise KitError(f"custom_ability_string keys not declared in SPEC['extra_keys']: {missing}")
     for key, text in CAS_TEXTS.items():
@@ -541,7 +547,11 @@ def write_strings(ctx) -> dict[str, str]:
     clashes = [key for key in CAS_TEXTS if key in official]
     if clashes:
         raise KitError(f"custom_ability_string keys already exist officially: {clashes}")
-    ctx.write_flat(KL.CAS, {key: [[text]] for key, text in CAS_TEXTS.items()})
+    ctx.write_flat(KL.CAS, {key: [[text]] for key, text in CAS_TEXTS.items()
+                          if key not in BASE_STRING_KEYS})
+    # Existing API restores only these rows from live and drops only their
+    # candidate claims. It does not edit the installed ownership manifest.
+    ctx.unclaim(KL.CAS, BASE_STRING_KEYS)
     return dict(CAS_TEXTS)
 
 
