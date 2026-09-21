@@ -2364,7 +2364,7 @@ INNER_GAP_ELLIPSIS_LIMIT = 0.90
 
 
 def inner_gap_limit(seconds: float, spoken: str) -> float:
-    if '…' in spoken:
+    if '…' in spoken or '—' in spoken:                    # 稿子里写明的停顿（省略号、破折号急刹）
         return INNER_GAP_ELLIPSIS_LIMIT
     return next(limit for upper, limit in INNER_GAP_LIMITS if seconds < upper)
 

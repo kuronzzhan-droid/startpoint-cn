@@ -1275,6 +1275,7 @@ class SelectTests(unittest.TestCase):
         self.assertEqual(s7.inner_gap_limit(2.0, '間合いは、俺が詰める。'), 0.45)
         self.assertEqual(s7.inner_gap_limit(2.8, '近寄るな。焦げても知らんぞ。'), 0.60)
         self.assertEqual(s7.inner_gap_limit(1.2, '……そこだ。'), 0.90)
+        self.assertEqual(s7.inner_gap_limit(2.2, 'ざ——いえ、後で。'), 0.90)
         line = dict(self.line, slot='battle/skill_2', ja='近寄るな。焦げても知らんぞ。',
                     tts_text='近寄るな。焦げても知らんぞ。')
         metrics = dict(subtitle_present=True, text_exact=True, text_superset=False, lead_in_seconds=0.1,
