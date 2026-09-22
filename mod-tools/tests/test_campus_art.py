@@ -18,6 +18,33 @@ import wf_quest_lib as tables
 
 
 class CampusArtTests(unittest.TestCase):
+    def test_skill_button_anchor_moves_face_up_without_changing_other_icons(self):
+        source = Image.new("RGBA", (900, 1200))
+        ImageDraw.Draw(source).rectangle((310, 160, 370, 220), fill="red")
+        mark = dict(face=[340, 190], eyes=[340, 180], square_height=240, head_height=180)
+        masks = {slot: np.full((height, width), 255, np.uint8)
+                 for slot, (width, height) in images.gate.OFFICIAL_ICON_SIZES.items()
+                 if slot in images.gate.SHAPE_SLOTS}
+        before = images.make_icons(source, mark, masks, "celtie", headshots=True)
+        mark["icon_anchors"] = {"battle_control_board": [.5, .31]}
+        after = images.make_icons(source, mark, masks, "celtie", headshots=True)
+        for slot, icon in after.items():
+            if slot != "battle_control_board":
+                self.assertEqual(icon.tobytes(), before[slot].tobytes(), slot)
+                continue
+            pixels = np.asarray(icon)
+            yy, xx = np.where((pixels[:, :, 0] > 220) & (pixels[:, :, 1] < 20)
+                              & (pixels[:, :, 2] < 20) & (pixels[:, :, 3] > 220))
+            self.assertGreater(len(xx), 10)
+            self.assertAlmostEqual(float(xx.mean()) / icon.width, .5, delta=.02)
+            self.assertAlmostEqual(float(yy.mean()) / icon.height, .31, delta=.02)
+            self.assertEqual(icon.size, before[slot].size)
+            np.testing.assert_array_equal(pixels[:, :, 3], np.asarray(before[slot])[:, :, 3])
+        for anchor in ([.5, 1.1], [True, .31], [float("nan"), .31], [.5], "center"):
+            mark["icon_anchors"]["battle_control_board"] = anchor
+            with self.assertRaises(ValueError):
+                images.make_icons(source, mark, masks, "celtie", headshots=True)
+
     def test_headshots_keep_off_center_face_centered_in_every_native_slot(self):
         source = Image.new("RGBA", (900, 1200))
         draw = ImageDraw.Draw(source)
