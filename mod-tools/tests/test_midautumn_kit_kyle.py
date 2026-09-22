@@ -406,14 +406,24 @@ class KindGuardTests(unittest.TestCase):
             K._ban_kinds("ability", [row], "1399903")
 
     def test_invoke_must_follow_the_counter_row(self):
-        add = self.blank(KL.ABILITY_NCOLS)
-        add[1], add[27], add[47] = "false", "51", "461"
-        invoke = self.blank(KL.ABILITY_NCOLS)
-        invoke[1], invoke[27], invoke[47] = "false", "51", "629"
-        invoke[35], invoke[70], invoke[71] = "0", K.CAS_PIERCE, K.PIERCE_PROGRAM
-        K._order_problems([add, invoke])
+        rows = []
+        for event in (("23", "0", "", "100000", "100000"),
+                      ("20", "7", "Yellow", "10000000", "10000000")):
+            add = self.blank(KL.ABILITY_NCOLS)
+            add[1], add[47], add[68] = "false", "461", K.UID_CRESCENT
+            add[27:32] = event
+            invoke = self.blank(KL.ABILITY_NCOLS)
+            invoke[1], invoke[47] = "false", "629"
+            invoke[27:32] = event
+            invoke[6], invoke[13], invoke[18] = "42", "2", "Yellow"
+            invoke[35], invoke[70], invoke[71] = "0", K.CAS_PIERCE, K.PIERCE_PROGRAM
+            rows.extend([add, invoke])
+        K._order_problems(rows)
         with self.assertRaises(KL.KitError):
-            K._order_problems([invoke, add])
+            K._order_problems([rows[1], rows[0], *rows[2:]])
+        rows[-1][30] = "5000000"
+        with self.assertRaises(KL.KitError):
+            K._order_problems(rows)
 
     def test_invoke_without_a_string_key_is_rejected(self):
         add = self.blank(KL.ABILITY_NCOLS)
@@ -525,7 +535,7 @@ class RowBuildTests(unittest.TestCase):
         cls.built = all_rows(ctx())
 
     def test_row_counts(self):
-        self.assertEqual(len(self.built["leader"]), 5)
+        self.assertEqual(len(self.built["leader"]), 7)
         self.assertEqual(sum(len(rows) for rows in self.built["ability"].values()), 23)
 
     def test_every_row_matches_the_baked_describe_readback(self):
@@ -705,7 +715,7 @@ class AbilitySkillTreeTests(unittest.TestCase):
         names = [node[1][0] for node in block[1] if K._is_command(node)]
         self.assertEqual(names, ["BindConditionAccumulationVariable", "CreateCondition"])
         bind = block[1][0][1]
-        self.assertEqual(bind[3], ["DCUnique", int(K.UID_PIERCE)])
+        self.assertEqual(bind[3], ["DCUnique", int(K.UID_CRESCENT)])
         ac = block[1][1][1][2][0]
         self.assertEqual(ac[0], "ACAdditionalDirectAttack")
         self.assertEqual(ac[2][0]["vlv"][0]["vid"], bind[2])

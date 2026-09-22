@@ -8,8 +8,8 @@
 - **冲刺线**：队长位 422 冲刺参数（CD −50% / 弹射速度 +100% / 可从更高位置发动）
   ＋「冲刺 → 付与贯通」；422 只许写 ability 表，全部挂前置 42（Leader），文案由
   ``desc_override_kyle_moon`` 在队长块整体接管（hibiki 能力 5 的同一条既判偏离）。
-- **贯通线**：每次获得贯通 → 固有「贯穿印」+1 层 → 629 追击树重新付与
-  ``ACAdditionalDirectAttack``，**段数 = 1 + 层数（vlv 绑定，可超 3）**（杰拉德 v3 路线）。
+- **直击线**：每次获得月牙后，629 追击树重新付与 ``ACAdditionalDirectAttack``，
+  **段数 = 1 + 月牙层数（vlv 绑定，可超 3）**（杰拉德 v3 路线）。
 - **月牙线**：技能 / 每 100 次直击 → 月牙 +1（上限 99 ＝「不设置上限」）→ during 134
   把层数翻成自身与全队的攻击力 / 直击伤害。
 
@@ -56,7 +56,7 @@ ABILITY_KEYS = tuple(f"{CID}{slot}" for slot in range(1, 7))
 # during 134 按层加成与 vlv 成长会全死（记忆 wf-unique-cap-none-trap）。
 
 UID_CRESCENT = MS.unique_condition_id(CID, 1)   # 「月牙」13999001
-UID_PIERCE = MS.unique_condition_id(CID, 2)     # 「贯穿印」13999002
+UID_PIERCE = MS.unique_condition_id(CID, 2)     # 旧「贯穿印」兼容资源；不再生产或读取
 UID_AWAKE = MS.unique_condition_id(CID, 3)      # 「月狼·觉」13999003
 
 ETERNAL_FRAMES = "99999999"                     # 官方 21 行里 13 行就是这个值 = 无时间限制
@@ -127,7 +127,7 @@ _PRE_RESONANCE_A2 = {13: "2", 16: "600000", 17: "600000", 18: ELEMENT_TOKEN}  # 
 _PRE_LEADER_A = {6: "42"}                                                   # ability 前置 1：持有者为队长
 _PRE_RESONANCE_L = {4: "2", 7: "600000", 8: "600000", 9: ELEMENT_TOKEN}     # leader 前置 1：雷共鸣
 
-#: 队长技 4 行：月牙每层 → 攻击力 / 直击伤害。
+#: 月牙每层 → 攻击力 / 直击伤害，雷共鸣 → 技能槽上限 / 充能速度。
 #: ⚠ during 134 × target 1（除自身全员）官方与 live 双零先例 ⇒ 不开首例，
 #: 改用「t5 全队(雷) 低值 + t0 自身补差」的等价拆分（施工单 R2），合计数值与面板逐字一致。
 LEADER: tuple[tuple[str, str, dict[int, str], str | None], ...] = (
@@ -147,6 +147,14 @@ LEADER: tuple[tuple[str, str, dict[int, str], str | None], ...] = (
      {0: CODE, **_PRE_RESONANCE_L, 98: "100000", 99: "100000", 100: "(None)",
       102: UID_CRESCENT, 107: "1", 108: "0", 109: "", 111: "25000", 112: "25000"},
      None),
+    ("131122#2", "official",
+     {0: CODE, **_PRE_RESONANCE_L, 46: "5", 47: ELEMENT_TOKEN,
+      49: "20000", 50: "20000"},
+     "雷·编成≥6 时: 赋予全队(雷) 2号位技能槽 20%"),
+    ("141165#2", "official",
+     {0: CODE, **_PRE_RESONANCE_L, 46: "5", 47: ELEMENT_TOKEN,
+      49: "20000", 50: "20000"},
+     "雷·编成≥6 时: 赋予全队(雷) 技能槽充能 20%"),
 )
 
 _STATUE = {1: "attack_common", 2: "attack_common", 3: "condition",
@@ -198,13 +206,16 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
          {6: "187", 7: "0", 12: UID_CRESCENT, **_PRE_RESONANCE_A2,
           48: "5", 49: ELEMENT_TOKEN, 51: "300000", 52: "300000"},
          None),
-        # 贯穿印 +1：必须排在下面的 629 之前，否则段数落后一拍。
-        ("1611231#0", "official",
-         {**_PRE_LEADER_A, **_PRE_RESONANCE_A2, 27: "51", 28: "", 34: "(None)",
-          51: "100000", 52: "100000", 68: UID_PIERCE},
+        # 两个生产月牙的事件都在上方先加层，再重算自身直击段数。
+        # 不再生产独立的贯穿印，也不需要等下一次获得贯穿才刷新。
+        ("1611053#0", "official",
+         {**_PRE_LEADER_A, **_PRE_RESONANCE_A2, 27: "23", 28: "0", 29: "",
+          30: "100000", 31: "100000", 34: "(None)", 35: "0",
+          70: CAS_PIERCE, 71: PIERCE_PROGRAM},
          None),
         ("1611053#0", "official",
-         {**_PRE_LEADER_A, **_PRE_RESONANCE_A2, 27: "51", 28: "", 34: "(None)", 35: "0",
+         {**_PRE_LEADER_A, **_PRE_RESONANCE_A2, 27: "20", 28: "7", 29: ELEMENT_TOKEN,
+          30: "10000000", 31: "10000000", 34: "(None)", 35: "0",
           70: CAS_PIERCE, 71: PIERCE_PROGRAM},
          None),
         # 强化状态中每 10 次自身直击 → 召唤天雷（trigger 20 传入被打的敌人，非 null）
@@ -260,7 +271,9 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
 #: 都会在这里当场炸。面板上真正显示的是 ``desc_override_*``（PANEL_LEADER / PANEL_ABILITY），
 #: 这张表只管「表行本身渲染成什么」。
 EXPECT: dict[str, str] = {
-    "leader#4": "雷·编成≥6 时: 状态贯通≥1 → 赋予全队(雷) 攻击力 50%",
+    "leader#4": "雷·编成≥6 时: 赋予全队(雷) 2号位技能槽 20%",
+    "leader#5": "雷·编成≥6 时: 赋予全队(雷) 技能槽充能 20%",
+    "leader#6": "雷·编成≥6 时: 状态贯通≥1 → 赋予全队(雷) 攻击力 50%",
     "leader#0": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) 攻击力 12.5%",
     "leader#1": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 攻击力 12.5%",
     "leader#2": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) Direct伤害 25%",
@@ -275,8 +288,8 @@ EXPECT: dict[str, str] = {
     "1399903#1": "雷·编成≥6 时: 编成直接攻击≥100 → 自身 状态固有 100%×1次",
     "1399903#2": "雷·编成≥6 时: 状态贯通≥1(CT10秒) → 自身 技能槽 10%(延迟2秒)",
     "1399903#3": "状态固有[固有13999001] 且 雷·编成≥6 时: 赋予全队(雷) DirectAttack3 300%",
-    "1399903#4": "队长 且 雷·编成≥6 时: 状态贯通≥1 → 自身 状态固有 100%×1次",
-    "1399903#5": "队长 且 雷·编成≥6 时: 状态贯通≥1 → 自身 发动技能动作[ability_skill_kyle_moon_pierce]",
+    "1399903#4": "队长 且 雷·编成≥6 时: 技能发动≥1 → 自身 发动技能动作[ability_skill_kyle_moon_pierce]",
+    "1399903#5": "队长 且 雷·编成≥6 时: 编成直接攻击≥100 → 自身 发动技能动作[ability_skill_kyle_moon_pierce]",
     "1399903#6": "状态固有[固有13999003] 且 雷·编成≥6 时: 编成直接攻击≥10(CT3秒) → 自身 发动技能动作[ability_skill_kyle_moon_thunder]",
     "1399904#0": "雷·编成≥6 时: 技能发动≥1 → 赋予全队 状态攻击力 100%(15秒)×1次",
     "1399904#1": "雷·编成≥6 时: 技能发动≥1 → 赋予全队 状态Direct伤害 100%(15秒)×1次",
@@ -310,9 +323,10 @@ PANEL_LEADER = "\n".join((
     "可从更高的位置发动冲刺",
     "雷属性共鸣时：自身“月牙”每上升1层，自身攻击力＋25%、直击伤害＋50%，除自身外雷属性"
     "角色攻击力＋12.5%、直击伤害＋25%",
-    "雷属性共鸣时：自身每获得一次贯穿效果，自身直击敌人的判定次数＋1",
+    "雷属性共鸣时：自身“月牙”每上升1层，自身直击敌人的判定次数＋1",
     "雷属性共鸣时：自身每获得一次贯穿效果，雷属性角色攻击力＋50%",
     "冲刺间隔缩短效果不会让自身的冲刺冷却时间进一步缩短",
+    "雷属性共鸣时：雷属性角色技能槽最大值＋20%、技能充能速度＋20%",
 ))
 
 _PANEL_ABILITY_LINES = {
@@ -448,7 +462,7 @@ FROZEN_FRAMES = 900                  # 迟缓 15 秒（官方带 900/1200）
 DISPEL_COUNT = 2                     # 驱散敌方 2 个增益
 ENEMY_BIND = 20                      # 强化档驱散/迟缓块的绑定号（与主树 1/4/7/8/9/10 不冲突）
 
-#: 段数成长：段数 = 1 + 贯穿印层数（vlv，绑定上限 99）；合计伤害 300% 与能力 3 的 202 等值，
+#: 段数成长：段数 = 1 + 月牙层数（vlv，绑定上限 99）；合计伤害 300% 与能力 3 的 202 等值，
 #: 使 ``AdditionalDirectAttackContent.getBetter``（段数多者胜，段数同比伤害%）在 ≥3 层时取本条。
 PIERCE_VAR_ID = 1
 PIERCE_VAR_CEIL = 99
@@ -530,17 +544,27 @@ def _ban_kinds(kind: str, rows: list[list[str]], label: str) -> None:
 
 
 def _order_problems(rows: list[list[str]]) -> None:
-    """能力 3 的硬顺序契约：贯穿印 +1（461）必须排在读它的 629 之前，否则段数落后一拍。"""
-    kinds = [row[47] for row in rows]
-    triggers = [row[27] for row in rows]
-    pierce_add = [i for i, (k, t) in enumerate(zip(kinds, triggers))
-                  if k == "461" and t == "51"]
-    pierce_invoke = [i for i, (k, t) in enumerate(zip(kinds, triggers))
-                     if k == "629" and t == "51"]
-    if not pierce_add or not pierce_invoke:
-        raise KitError(f"ability slot 3 lost the 461/629 piercing pair: {list(zip(triggers, kinds))}")
-    if min(pierce_add) > min(pierce_invoke):
-        raise KitError("ability slot 3: the 461 that feeds 贯穿印 must precede the 629 that reads it")
+    """两个月牙生产事件都必须先加层，再按同一事件刷新段数，防止落后一拍。"""
+    producers = {}
+    refreshers = {}
+    for index, row in enumerate(rows):
+        event = tuple(row[27:32])
+        if row[47] == "461" and row[68] == UID_PIERCE:
+            raise KitError("ability slot 3 must not produce the retired piercing counter")
+        target = (producers if row[47] == "461" and row[68] == UID_CRESCENT
+                  else refreshers if row[47] == "629" and row[70] == CAS_PIERCE else None)
+        if target is not None:
+            if event in target:
+                raise KitError(f"ability slot 3 has a duplicate crescent event: {event}")
+            target[event] = index
+    if len(producers) != 2 or producers.keys() != refreshers.keys():
+        raise KitError("ability slot 3 must refresh after both matching crescent production events")
+    for event, index in producers.items():
+        if index >= refreshers[event]:
+            raise KitError("ability slot 3: crescent production must precede its segment refresh")
+        row = rows[refreshers[event]]
+        if row[6] != "42" or row[13] != "2" or row[18] != ELEMENT_TOKEN:
+            raise KitError("ability slot 3 segment refresh must retain leader and thunder resonance gates")
     for index, row in enumerate(rows):
         if row[47] == "629":
             if not row[70] or not row[71]:
@@ -618,7 +642,7 @@ def build_rows(ctx) -> dict[str, Any]:
     if problems:
         raise KitError(f"moved piercing bonus: {problems}")
     leader_rows.append(moved)
-    ev.update(label="leader#4", kind="leader_ability",
+    ev.update(label=f"leader#{len(LEADER)}", kind="leader_ability",
               describe=KL.describe("leader_ability", moved))
     evidence.append(ev)
     caps.update(KL.capabilities("leader_ability", moved))
@@ -1076,7 +1100,7 @@ def _ability_skill_root(donor_tree, body_block: list) -> list:
 
 
 def build_pierce_tree(ctx, donor_tree) -> tuple[Any, dict[str, Any]]:
-    """段数成长：贯穿印层数 → ``ACAdditionalDirectAttack`` 段数（1 + 层数，可超 3）。
+    """段数成长：月牙层数 → ``ACAdditionalDirectAttack`` 段数（1 + 层数，可超 3）。
 
     三条硬纪律（卡 B §1.2 B 路）：① 绑定与使用必须在同一个 Block；
     ② 带 ``vlv`` 的 ``CreateCondition`` 必须有非空区分键；③ 段数在付与那一刻定格。
@@ -1094,9 +1118,9 @@ def build_pierce_tree(ctx, donor_tree) -> tuple[Any, dict[str, Any]]:
     body[1] = -17
     body[7] = PIERCE_CONDITION_KEY
     bind = _cmd("BindConditionAccumulationVariable", -17, PIERCE_VAR_ID,
-                ["DCUnique", int(UID_PIERCE)], 1, PIERCE_VAR_CEIL)
+                ["DCUnique", int(UID_CRESCENT)], 1, PIERCE_VAR_CEIL)
     tree = _ability_skill_root(donor_tree, _block(bind, condition))
-    return tree, {"unique": UID_PIERCE, "var": PIERCE_VAR_ID, "ceiling": PIERCE_VAR_CEIL,
+    return tree, {"unique": UID_CRESCENT, "var": PIERCE_VAR_ID, "ceiling": PIERCE_VAR_CEIL,
                   "base_times": PIERCE_BASE_TIMES, "per_layer": PIERCE_TIMES_PER_LAYER,
                   "damage": PIERCE_DAMAGE, "key": PIERCE_CONDITION_KEY}
 
@@ -1524,8 +1548,8 @@ def build(ctx) -> dict[str, Any]:
          "got": "落在 Ⓜ 的能力 3 槽",
          "why": "629 在副位不生效，只能进 unisonable=false 的键"},
         {"want": "不新增面板之外的状态",
-         "got": "新增固有「贯穿印」13999002 与「月狼·觉」13999003（战斗中会显示图标）",
-         "why": "段数成长需要可绑定的层数源（vlv 只认 DCUnique）；"
+         "got": "段数成长复用「月牙」；旧「贯穿印」资源仅保留兼容，不再生产；强化状态使用「月狼·觉」",
+         "why": "段数成长按作者 09-23 要求绑定月牙（vlv 读取 DCUnique）；"
                 "强化状态需要可当前置的门（前置只认 187 ConditionUnique）"},
     ]
 
@@ -1537,7 +1561,7 @@ def build(ctx) -> dict[str, Any]:
 
     return KL.report(
         ctx,
-        summary="凯尔（139990）：雷 · 冲刺型直击主C —— 队长位 422 冲刺强化 ＋ 贯通计数驱动的"
+        summary="凯尔（139990）：雷 · 冲刺型直击主C —— 队长位 422 冲刺强化 ＋ 月牙层数驱动的"
                 "可成长直击段数 ＋ 月牙层数换攻击力/直击；技能冲刺斩后进入 15 秒强化状态，"
                 "每 10 次直击召唤天雷（常态千岳／强化雷弓两档）",
         status=status,
