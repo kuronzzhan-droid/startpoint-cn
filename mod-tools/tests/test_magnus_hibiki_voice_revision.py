@@ -1,6 +1,6 @@
 import unittest
 
-from wf_magnus_hibiki_voice_revision import expected_slots, speech_rows
+from wf_magnus_hibiki_voice_revision import delivery_entries, expected_slots, speech_rows
 
 
 class VoiceRevisionTests(unittest.TestCase):
@@ -41,13 +41,27 @@ class VoiceRevisionTests(unittest.TestCase):
             speech_rows(self.before, self.lines)
 
     def test_exact_requested_pools(self):
-        for role, total, home, ready, skill, pf in [('magnus',46,12,6,8,10), ('hibiki',33,8,3,6,6)]:
+        for role, total, home, ready, skill, pf in [('magnus',46,12,6,8,10), ('hibiki',33,8,3,6,6), ('kyle',48,12,6,12,8)]:
             slots = expected_slots(role)
             self.assertEqual(len(slots), total)
             self.assertEqual(sum(s.startswith('home/') for s in slots), home)
             self.assertEqual(sum('ready' in s for s in slots), ready)
             self.assertTrue({f'battle/skill_{i}' for i in range(skill)} <= slots)
             self.assertTrue({f'battle/power_flip_{i}' for i in range(pf)} <= slots)
+
+    def test_delivery_formats_keep_their_role_scope(self):
+        old = [{'role': 'magnus'}] * 79
+        self.assertEqual(delivery_entries(old), (('magnus', 'hibiki'), old))
+        row = dict(slot='home/home_0', files={k:dict(path=k,sha256=k+'-hash')
+                                           for k in ('standard', 'native', 'qc')})
+        roles, rows = delivery_entries(dict(count=48, selection=[row] * 48))
+        self.assertEqual(roles, ('kyle',))
+        self.assertEqual(rows[0]['native_file'], 'native')
+        self.assertEqual(rows[0]['native_sha256'], 'native-hash')
+        self.assertNotIn('role', row)
+        for broken in (old[:-1], dict(count=48, selection=[row] * 47), dict(count=47)):
+            with self.assertRaises(ValueError):
+                delivery_entries(broken)
 
 
 if __name__ == '__main__':

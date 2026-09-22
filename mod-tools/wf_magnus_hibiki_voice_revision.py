@@ -1,4 +1,4 @@
-"""Install the reviewed 79-line Magnos/Hibiki delivery into their candidates only."""
+"""Install selected Magnos/Hibiki or Kyle recordings into their candidates only."""
 from __future__ import annotations
 
 import argparse
@@ -17,7 +17,8 @@ import wf_seasonal7_voice as voice
 import wf_voice_gate as gate
 
 ROLES = {'magnus': ('119990', 'lion_swordman_moon', 12, 6, 8, 10),
-         'hibiki': ('169988', 'psychic_teleport_moon', 8, 3, 6, 6)}
+         'hibiki': ('169988', 'psychic_teleport_moon', 8, 3, 6, 6),
+         'kyle': ('139990', 'kyle_moon', 12, 6, 12, 8)}
 SPEECH = 'master/character/character_speech.orderedmap'
 
 
@@ -31,12 +32,13 @@ def expected_slots(role):
     if ready == 6:
         prepared += ['battle/skill_ready_alt_2', 'battle/skill_ready_alt_3',
                      'battle/matched_skill_ready_alt_1']
+    starts, wins = (4, 2) if role == 'kyle' else (3, 3)
     return {'ally/join', 'ally/evolution', *prepared,
             *(f'home/home_{i}' for i in range(homes)),
             *(f'battle/skill_{i}' for i in range(skills)),
             *(f'battle/power_flip_{i}' for i in range(flips)),
-            *(f'battle/battle_start_{i}' for i in range(3)),
-            *(f'battle/win_{i}' for i in range(3)),
+            *(f'battle/battle_start_{i}' for i in range(starts)),
+            *(f'battle/win_{i}' for i in range(wins)),
             *(f'battle/outhole_{i}' for i in range(2))}
 
 
@@ -75,17 +77,36 @@ def safe_file(root, relative):
     return path
 
 
+def delivery_entries(document):
+    """Accept either saved delivery format without changing the selected audio."""
+    if isinstance(document, list):
+        if len(document) != 79:
+            raise ValueError('expected the complete 79-line Magnos/Hibiki delivery')
+        return ('magnus', 'hibiki'), document
+    if not isinstance(document, dict) or document.get('count') != 48:
+        raise ValueError('expected the complete 48-line Kyle delivery')
+    selected = document.get('selection', [])
+    if len(selected) != 48:
+        raise ValueError('Kyle selection is incomplete')
+    entries = []
+    for line in selected:
+        files = line['files']
+        entries.append({**line, 'role': 'kyle', 'code': ROLES['kyle'][1],
+                        'mp3': files['standard']['path'], 'sha256': files['standard']['sha256'],
+                        'native_file': files['native']['path'],
+                        'native_sha256': files['native']['sha256'], 'qc': files['qc']['path']})
+    return ('kyle',), entries
+
+
 def load_delivery(delivery):
     delivery = Path(delivery).resolve()
-    entries = json.loads((delivery/'交付清单.json').read_bytes())
-    if len(entries) != 79:
-        raise ValueError('expected the complete reviewed 79-line delivery')
-    grouped = {r: [] for r in ROLES}
-    assets = {r: {} for r in ROLES}
+    roles, entries = delivery_entries(json.loads((delivery/'交付清单.json').read_bytes()))
+    grouped = {r: [] for r in roles}
+    assets = {r: {} for r in roles}
     seen, recordings = set(), set()
     for entry in entries:
         role, slot = entry['role'], entry['slot']
-        if role not in ROLES or slot not in expected_slots(role) or (role, slot) in seen:
+        if role not in grouped or slot not in expected_slots(role) or (role, slot) in seen:
             raise ValueError('unexpected or duplicate role/voice slot')
         seen.add((role, slot))
         if not entry['ja'] or not entry['zh'] or entry['code'] != ROLES[role][1]:
@@ -94,6 +115,8 @@ def load_delivery(delivery):
         native = safe_file(delivery, entry['native_file']).read_bytes()
         if sha(standard) != entry['sha256'] or wf_assets.mp3_decode(native) != standard:
             raise ValueError('reviewed delivery digest or native roundtrip differs')
+        if entry.get('native_sha256', sha(native)) != sha(native):
+            raise ValueError('selected native recording changed')
         if sha(standard) in recordings:
             raise ValueError('distinct slots reuse the same recording')
         recordings.add(sha(standard))
@@ -121,8 +144,8 @@ def load_delivery(delivery):
 def install(delivery, *, apply=False, roles=None):
     delivery = Path(delivery).resolve()
     grouped, assets = load_delivery(delivery)
-    requested = set(ROLES if roles is None else roles)
-    if not requested or not requested <= set(ROLES):
+    requested = set(grouped if roles is None else roles)
+    if not requested or not requested <= set(grouped):
         raise ValueError('unknown or empty requested roles')
     plans = []
     for role, lines in grouped.items():
@@ -162,7 +185,8 @@ def install(delivery, *, apply=False, roles=None):
             # The regular --script pack command reloads this hash-bound delivery.
             script = pack.batch_dir/'rework2/voice/scripts'/(role+'.json')
             source = json.loads(script.read_bytes())
-            source['lines'] = [{k: x[k] for k in ('slot', 'ja', 'zh')} for x in lines]
+            source['lines'] = [{k: x[k] for k in ('slot', 'ja', 'zh', 'theme', 'tone', 'performance')
+                                if k in x} for x in lines]
             source['accepted_delivery'] = dict(path=str(delivery),
                                                manifest_sha256=report['source_manifest_sha256'],
                                                rebuild_command=report['rebuild_command'])
