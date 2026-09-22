@@ -18,7 +18,7 @@ DONOR = 'starbreak_hunter_meteor23'
 PARTS = DONOR + '_explosion.parts.amf3.deflate'
 PARTS_SHA = '247ecf7011bdddd9ec26b89b9964170ee4044467fbdbcf0c8487236172876afd'
 KEEP = frozenset(('a','b','c','d','e','f','g','h','r','s','t','w','x','y','aa','ab','ac'))
-LIFETIMES = (70, 90, 110)
+LIFETIMES = (48, 54, 60)
 # Native frames 0..12 charge the removed ball; the useful border fades by 60.
 BEGIN, END = 13, 60
 
@@ -59,7 +59,7 @@ def filtered_native(raw):
 def native_animation(frames, donor=None):
     """Retime native nested tweens, not rendered frames or a rotated still."""
     if frames not in LIFETIMES:
-        raise ValueError('unsupported native sword lifetime')
+        raise ValueError('unsupported Kyle PF lifetime')
     if donor is None:
         donor = (Path(__file__).resolve().parents[1] / SOURCE / PARTS).read_bytes()
     parts = filtered_native(donor)
@@ -126,9 +126,14 @@ def build_assets(root):
         parts, timeline = native_animation(lifetime, raw)
         assets[effect(level)+'.parts.amf3.deflate'] = common.amf_bytes(parts)
         assets[effect(level)+'.timeline.amf3.deflate'] = common.amf_bytes(timeline)
+    import wf_kyle_pf_hit as hit
+    parts, timeline = hit.animation(native, DIRECTORY)
+    assets[hit.effect(DIRECTORY)+'.parts.amf3.deflate'] = common.amf_bytes(parts)
+    assets[hit.effect(DIRECTORY)+'.timeline.amf3.deflate'] = common.amf_bytes(timeline)
     return assets, {'source': str(SOURCE), 'api': receipt, 'atlas_size': list(packed.size),
                     'lifetimes': list(LIFETIMES), 'native_groups': len(native['g']),
                     'native_matrices': len(native['t']), 'native_easing': len(native['c']),
                     'native_window': [BEGIN, END], 'whole_image_rotation': False,
                     'native_perspective_preserved': True, 'core_sprites_removed': True,
+                    'hit_residue_frames': hit.FRAMES, 'hit_residue_reuses_atlas': True,
                     'image_names': [i['p'].split('/')[-1] for i in native['i']]}

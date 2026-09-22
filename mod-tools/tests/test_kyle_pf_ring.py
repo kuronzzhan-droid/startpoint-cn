@@ -10,6 +10,8 @@ import wf_dsl
 import wf_client_legality as legality
 import wf_kyle_pf_effect as F
 import wf_kyle_pf_ring as P
+import wf_kyle_pf_quick as Q
+import wf_kyle_pf_hit as H
 import wf_mod_tool as core
 import wf_seasonal7_common as C
 from wf_seasonal7_kit_zehr import apk_pf_sources
@@ -52,7 +54,7 @@ class RingAnimationTests(unittest.TestCase):
                                      [k['t'] & ~65535 for k in b['l']])
 
     def test_orb_images_and_central_charge_are_removed(self):
-        parts,_=F.native_animation(110)
+        parts,_=F.native_animation(F.LIFETIMES[2])
         self.assertTrue({i['p'].split('/')[-1]for i in parts['i']} <= F.KEEP)
         self.assertEqual(len(parts['g'][1]['s']),1)
         self.assertEqual(parts['g'][1]['s'][0]['i'],11)
@@ -70,7 +72,7 @@ class RingAnimationTests(unittest.TestCase):
 
     def test_packed_atlas_is_closed_and_keeps_native_sprite_frames(self):
         assets,note=F.build_assets(core.project_root())
-        self.assertEqual(len(assets),8)
+        self.assertEqual(len(assets),10)
         atlas=C.amf_parse(assets[F.SHEET+'.atlas.amf3.deflate'])
         original=C.amf_parse((self.source/(F.DONOR+'.atlas.amf3.deflate')).read_bytes())
         old={i['n'].split('/')[-1]:i for i in original if '/.gen/starbreak_hunter_meteor23_explosion/' in i['n']}
@@ -103,13 +105,24 @@ class RingAnimationTests(unittest.TestCase):
         with self.assertRaises(ValueError): F.effect(4)
         with self.assertRaises(ValueError): F.filtered_native(b'corrupt')
 
+    def test_residue_is_a_finite_electric_layer_and_reuses_existing_sheet(self):
+        assets,note=F.build_assets(core.project_root())
+        parts=C.amf_parse(assets[H.effect(F.DIRECTORY)+'.parts.amf3.deflate'])
+        self.assertEqual(parts['g'][0]['t'],39)
+        self.assertEqual(parts['g'][0]['s'][0]['i'],57)
+        keys=parts['g'][0]['s'][0]['l']
+        self.assertEqual((keys[0]['m'] & 255,keys[-1]['m'] & 255),(0,0))
+        self.assertEqual(sum(k['t'] & 65535 for k in keys),39)
+        self.assertEqual(parts['a'],F.capacity.validate_image_capacities(parts))
+        self.assertEqual(sum(p.endswith('.png')for p in assets),1)
+
 
 class SwordMechanicsTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.sources, _ = apk_pf_sources(core.project_root())
 
-    def test_all_three_levels_preserve_native_lifecycle_and_geometry(self):
+    def test_all_three_levels_preserve_native_end_notification(self):
         for level in (1, 2, 3):
             raw = self.sources[f'knight_lv{level}']
             original = wf_dsl.parse_dsl(zlib.decompress(raw, -15))['tree']
@@ -118,6 +131,63 @@ class SwordMechanicsTests(unittest.TestCase):
             self.assertEqual(list(wf_dsl.iter_dsl_commands(tree,'SetPowerFilpSuppress')),
                              [['SetPowerFilpSuppress',F.LIFETIMES[level-1]]])
             self.assertEqual(len(list(wf_dsl.iter_dsl_commands(tree,'NotifyPowerflipEnd'))),1)
+
+    def test_outer_contact_triggers_only_once_per_target(self):
+        for level in (1,2,3):
+            tree=P.build_tree(self.sources[f'knight_lv{level}'],level)
+            outer,inner=Q.commands(tree,'CreateHitArea')
+            self.assertEqual(outer[14:16],[['CalculatedUsingMaxNumOfHits',1],['Some',[{'min':1,'max':1}]]])
+            self.assertEqual(inner[13],['SpecifyHitAreaLifetimeDirectly',10])
+            self.assertEqual(inner[14],['CalculatedUsingMaxNumOfHits',Q.HITS[level-1]])
+            self.assertEqual(inner[15],['Some',[{'min':Q.HITS[level-1],'max':Q.HITS[level-1]}]])
+            self.assertEqual((outer[24],inner[24]),(4,4))
+
+    def test_burst_keeps_original_per_hit_damage_and_number(self):
+        for level in (1,2,3):
+            raw=self.sources[f'knight_lv{level}']
+            old=wf_dsl.parse_dsl(zlib.decompress(raw,-15))['tree']
+            tree=P.build_tree(raw,level)
+            before=Q.commands(old,'CreateNormalAttack')[0]
+            after=copy.deepcopy(Q.commands(tree,'CreateNormalAttack')[0]);self.assertEqual(after[1],7)
+            after[1]=before[1];self.assertEqual(after,before)
+            self.assertEqual(Q.commands(old,'CreateHitArea')[0][14][1],Q.HITS[level-1])
+
+    def test_native_interval_accumulator_finishes_burst_within_ten_frames(self):
+        # ActionHitAreaGroup allows a hit when residual interval < 1, preserves
+        # fractional residual, then the manager decrements it once per frame.
+        for hits,want in [(3,[0,4,8]),(4,[0,2,5,8]),(5,[0,2,4,6,8])]:
+            remaining=0;actual=[]
+            for frame in range(10):
+                if remaining<1 and len(actual)<hits:
+                    actual.append(frame);remaining=max(0,remaining)+10/(hits-.5)
+                remaining-=1
+            self.assertEqual(actual,want)
+
+    def test_only_pf3_shrinks_and_perspective_plane_does_not_follow_heading(self):
+        for level,radius,scale in [(1,140,2.8),(2,160,3.2),(3,238,4.76)]:
+            tree=P.build_tree(self.sources[f'knight_lv{level}'],level)
+            outer=Q.commands(tree,'CreateHitArea')[0];show=Q.commands(outer[20],'ShowEffect')[0]
+            self.assertEqual(outer[9][1],[{'min':radius,'max':radius}])
+            self.assertEqual(show[12],['Some',[{'min':scale,'max':scale}]])
+            self.assertEqual(show[6],['AB']);self.assertEqual(show[10:12],[True,False])
+
+    def test_residue_is_on_enemy_collision_not_on_the_ball(self):
+        tree=P.build_tree(self.sources['knight_lv3'],3)
+        outer=Q.commands(tree,'CreateHitArea')[0]
+        residue=Q.commands(outer[23],'ShowEffect')
+        self.assertEqual(len(residue),1)
+        self.assertEqual(residue[0][3],outer[22])
+        self.assertEqual(residue[0][5],['PlayOnlyFirstSequence'])
+        self.assertEqual(residue[0][10:12],[True,False])
+        self.assertFalse(Q.commands(tree,'CreateCondition'))
+
+    def test_celtie_contact_reference_points_remain_stationary(self):
+        for level in (1,2,3):
+            tree=P.build_tree(self.sources[f'knight_lv{level}'],level)
+            first,second=Q.commands(tree,'CreateReferencePoint')
+            self.assertEqual(first[1:8],[-18,['GH',2],0,-Q.RADII[level-1],0,False,False])
+            self.assertEqual(first[9:11],[15,3])
+            self.assertEqual(second[1:11],[3,['AB'],0,0,0,False,False,['Single'],50,4])
 
     def test_native_donor_drift_is_not_silently_accepted(self):
         with self.assertRaises(ValueError): P.build_tree(b'corrupt', 1)
