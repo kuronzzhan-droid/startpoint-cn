@@ -718,6 +718,7 @@ class AbilitySkillTreeTests(unittest.TestCase):
         self.assertEqual(bind[3], ["DCUnique", int(K.UID_CRESCENT)])
         ac = block[1][1][1][2][0]
         self.assertEqual(ac[0], "ACAdditionalDirectAttack")
+        self.assertEqual(ac[1], [{"min": int(K.ETERNAL_FRAMES), "max": int(K.ETERNAL_FRAMES)}])
         self.assertEqual(ac[2][0]["vlv"][0]["vid"], bind[2])
         self.assertEqual(note["ceiling"], K.PIERCE_VAR_CEIL)
 

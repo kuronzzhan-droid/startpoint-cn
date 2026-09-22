@@ -466,7 +466,7 @@ ENEMY_BIND = 20                      # 强化档驱散/迟缓块的绑定号（�
 #: 使 ``AdditionalDirectAttackContent.getBetter``（段数多者胜，段数同比伤害%）在 ≥3 层时取本条。
 PIERCE_VAR_ID = 1
 PIERCE_VAR_CEIL = 99
-PIERCE_FRAMES = 1200
+PIERCE_FRAMES = int(ETERNAL_FRAMES)   # 跟随常驻月牙；不能在 20 秒后丢失已经取得的段数
 PIERCE_BASE_TIMES = 1
 PIERCE_TIMES_PER_LAYER = 1
 PIERCE_DAMAGE = 3.0
