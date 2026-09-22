@@ -1,8 +1,10 @@
-/** Reviewed 2026-09-13: 24 MOD characters, excluding bosses and the 15 minibosses. */
+/** Existing IDs retain their order; append new characters to keep awarded degree IDs stable. */
 export const CHARACTER_DEGREE_CHARACTER_IDS: readonly number[] = Object.freeze([
     119989, 119996, 119997, 129952, 129992, 129997, 129999, 139995,
     139997, 139998, 139999, 149988, 149989, 149990, 149995, 149996,
     149997, 149999, 169989, 169996, 169997, 169998, 169999, 179999,
+    119992, 119991, 119990, 139992, 139991, 139990,
+    149987, 149986, 159995, 159994, 169991, 169988,
 ]);
 
 export const CHARACTER_DEGREE_CATALOG = Object.freeze(

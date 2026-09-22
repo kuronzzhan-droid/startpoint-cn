@@ -20,7 +20,7 @@ interface RewardOptions {
     configPath?: string;
 }
 
-/** Deployment gate: publish/verify the 48 degree resources before enabling this file. */
+/** Deployment gate: publish/verify every catalog entry before enabling the matching file. */
 export function characterDegreeRewardsEnabled(configPath = CHARACTER_DEGREE_CONFIG_PATH): boolean {
     try {
         const value: unknown = JSON.parse(readFileSync(configPath, "utf8"));
