@@ -362,6 +362,14 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         return 0
 
+    if args.command == "pack" and args.script and not args.design and len(role_keys) == 1:
+        source = json.loads(script_path(role_keys[0], args.script_dir).read_bytes())
+        if source.get("accepted_delivery"):
+            from wf_magnus_hibiki_voice_revision import install_accepted
+            result = install_accepted(role_keys[0], source, apply=not args.dry_run)
+            print(json.dumps(result, ensure_ascii=False))
+            return 0
+
     if args.script:
         if args.design:
             parser.error("--script and --design are mutually exclusive")
