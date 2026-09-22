@@ -106,7 +106,8 @@ def make_icons(source, landmarks, masks, role, *, headshots=False):
                     or any(type(v) not in (int, float) or not 0 <= v <= 1 for v in anchor)):
                 raise ValueError(f"invalid icon anchor: {slots[0]}")
             fx, fy = anchor
-        base = background(size, role)
+        base = (Image.new("RGBA", size) if landmarks.get("transparent_icon_background", False)
+                else background(size, role))
         base.alpha_composite(crop_at(source, landmarks["face"], landmarks["square_height"] * factor,
                                     size, (fx, fy)))
         for slot in slots:

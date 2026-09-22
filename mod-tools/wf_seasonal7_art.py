@@ -199,6 +199,13 @@ def build(pack: C.S7Pack, landmarks: list[dict], *, source_dir: Path | None = No
         icons = images.make_icons(master, landmarks[level], masks, role, headshots=headshots)
         icons["skill_cutin"] = images.make_cutin(master, landmarks[level], headshots=headshots)
         problems = gate.derived_icon_problems(icons, masks, level=str(level))
+        if landmarks[level].get("transparent_icon_background", False):
+            # An explicit transparent backdrop intentionally differs from opaque
+            # official cards; keep size, mask, upper coverage and crop checks.
+            exceptions = [p for p in problems if "不透明占比" in p and "低于官方下界" in p
+                          and not p.startswith("skill_cutin:")]
+            report.setdefault("transparent_background_coverage", {})[str(level)] = exceptions
+            problems = [p for p in problems if p not in exceptions]
         report["gates"][str(level)] = problems
         if problems:
             images.preview(icons, output / f"failed-icons-{level}.png")

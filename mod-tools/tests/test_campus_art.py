@@ -18,6 +18,33 @@ import wf_quest_lib as tables
 
 
 class CampusArtTests(unittest.TestCase):
+    def test_transparent_icons_preserve_art_alpha_and_native_shape(self):
+        source = Image.new("RGBA", (900, 1200))
+        ImageDraw.Draw(source).rectangle((310, 160, 370, 400), fill=(210, 50, 20, 255))
+        mark = dict(face=[340, 190], eyes=[340, 180], square_height=240, head_height=180,
+                    transparent_icon_background=True,
+                    icon_anchors={"thumb_party_main": [.5, .29]})
+        masks = {}
+        for slot in images.gate.SHAPE_SLOTS:
+            width, height = images.gate.OFFICIAL_ICON_SIZES[slot]
+            mask = np.full((height, width), 255, np.uint8)
+            mask[:3] = 0
+            masks[slot] = mask
+        icons = images.make_icons(source, mark, masks, "celtie", headshots=True)
+        for slot, icon in icons.items():
+            pixels = np.asarray(icon)
+            self.assertGreater(float((pixels[:, :, 3] == 0).mean()), .3, slot)
+            solid = pixels[pixels[:, :, 3] == 255, :3]
+            self.assertGreater(len(solid), 10, slot)
+            # Lanczos creates edge ringing; the interior colour must remain intact.
+            np.testing.assert_array_equal(np.median(solid, axis=0), [210, 50, 20])
+            self.assertTrue(np.all(solid[:, 0].astype(float) > solid[:, 1] * 3), slot)
+            if slot in masks:
+                self.assertTrue(np.all(pixels[:, :, 3] <= masks[slot]), slot)
+        mark.pop("transparent_icon_background")
+        opaque = images.make_icons(source, mark, masks, "celtie", headshots=True)
+        self.assertEqual(opaque["square"].getchannel("A").getextrema(), (255, 255))
+
     def test_skill_button_anchor_moves_face_up_without_changing_other_icons(self):
         source = Image.new("RGBA", (900, 1200))
         ImageDraw.Draw(source).rectangle((310, 160, 370, 220), fill="red")
