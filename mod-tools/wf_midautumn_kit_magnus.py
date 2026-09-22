@@ -120,9 +120,9 @@ TEXTS = {
     "title": "月下归途的机车骑士",
     "profile": "中秋夜赶着回乡的狮族青年。后座绑着一大包月饼，说是给等门的家人带的。"
                "他把油门拧到底，说这样月亮就追不上他——其实只是怕团圆饭凉了。",
-    "leader": "月下全油门",
-    "skill1": "月下咆哮·烈焰甩尾",
-    "skill2": "月下咆哮·烈焰甩尾＋",
+    "leader": "疾风同路",
+    "skill1": "烈焰轰鸣",
+    "skill2": "烈焰轰鸣＋",
     "desc1": _SKILL_DESC,
     "desc2": _SKILL_DESC,
     "cv": "AI 合成配音",
@@ -298,7 +298,7 @@ MAIN_ICON = " <icon id='main'>  "   # desc_override 会盖掉客户端逐行画�
 # 面板字符串（custom_ability_string）。629 / 536 的条目不写数字与时间（裁决 §3）。
 CAS_TEXTS = {
     CHASE_STRING: "发动技能「引擎之炎」：在命中点引爆积蓄的引擎火焰，造成火属性伤害（以技能伤害计算）",
-    SWITCH_STRING: "强化『月下咆哮·烈焰甩尾』：光环的范围扩大",
+    SWITCH_STRING: "强化『烈焰轰鸣』：光环的范围扩大",
     PF_STRING: "强化弹射变为特殊强化弹射时：火焰突进随发动次数分三档逐渐增强，"
                "命中敌人后引爆大范围火焰，按技能伤害结算",
     LEADER_OVERRIDE: "\n".join((
