@@ -81,6 +81,11 @@ class CampusArtTests(unittest.TestCase):
                  for slot, (width, height) in images.gate.OFFICIAL_ICON_SIZES.items()
                  if slot in images.gate.SHAPE_SLOTS}
         icons = images.make_icons(source, mark, masks, "celtie", headshots=True)
+        # A per-form override must reproduce the headshot layout even when the
+        # other form keeps the default composition; cut-in framing is independent.
+        per_form = images.make_icons(source, dict(mark, headshot_icons=True), masks, "celtie")
+        self.assertEqual({k: v.tobytes() for k, v in icons.items()},
+                         {k: v.tobytes() for k, v in per_form.items()})
         icons["skill_cutin"] = images.make_cutin(source, mark, headshots=True)
         for slot, icon in icons.items():
             pixels = np.asarray(icon)

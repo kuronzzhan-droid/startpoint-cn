@@ -92,6 +92,7 @@ def background(size, role):
 
 
 def make_icons(source, landmarks, masks, role, *, headshots=False):
+    headshots = landmarks.get("headshot_icons", headshots)
     icons = {}
     for slots, (fx, fy, factor) in GROUPS:
         size = gate.OFFICIAL_ICON_SIZES[slots[0]]
