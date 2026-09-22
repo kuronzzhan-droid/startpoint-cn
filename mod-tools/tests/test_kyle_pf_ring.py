@@ -16,50 +16,92 @@ from wf_seasonal7_kit_zehr import apk_pf_sources
 
 
 class RingAnimationTests(unittest.TestCase):
-    def test_birth_loop_fade_fit_each_original_hit_window(self):
+    @classmethod
+    def setUpClass(cls):
+        cls.source = core.project_root() / F.SOURCE
+        cls.raw = (cls.source / F.PARTS).read_bytes()
+        cls.original = C.amf_parse(cls.raw)
+
+    def test_birth_fade_and_once_timeline_fit_all_hit_windows(self):
         for lifetime in F.LIFETIMES:
             parts, timeline = F.native_animation(lifetime)
             self.assertEqual(parts['g'][0]['t'], lifetime)
-            self.assertEqual(timeline['sequences'][0]['end'], lifetime)
-            self.assertEqual(timeline['sequences'][0]['kind'], 'once')
-            last = [s for s in parts['g'][0]['s'] if s['s'] == lifetime-1]
-            self.assertTrue(last)
-            self.assertTrue(all(k['m'] & 255 == 0 for s in last for k in s['l']))
+            self.assertEqual(timeline['sequences'], [dict(begin=1,end=lifetime,name='neutral',kind='once')])
+            keys = parts['g'][0]['s'][0]['l']
+            self.assertEqual(keys[0]['m'] & 255, 0)
+            self.assertEqual(keys[-1]['m'] & 255, 0)
+            self.assertEqual(sum(k['t'] & 65535 for k in keys), lifetime)
 
-    def test_rotation_is_continuous_during_sustain(self):
-        parts, _ = F.native_animation(110)
-        ring = {s['s']:parts['t'][s['l'][0]['m']>>12]
-                for s in parts['g'][0]['s'] if s['i']==1}
-        self.assertNotEqual(ring[15], ring[16])
-        self.assertEqual(ring[15], ring[45])
-        for frame in range(8, 97):
-            self.assertNotEqual(ring[frame], ring[frame+1])
-
-    def test_matrix_rotation_keeps_origin_fixed(self):
-        parts, _ = F.native_animation(90)
-        for matrix in parts['t']:
-            self.assertLessEqual(abs(64*matrix['a']+64*matrix['c']+matrix['x']), 65)
-            self.assertLessEqual(abs(64*matrix['b']+64*matrix['d']+matrix['y']), 65)
-
-    def test_no_unused_or_oversubscribed_pool(self):
+    def test_original_perspective_and_custom_curves_are_unchanged(self):
         for lifetime in F.LIFETIMES:
             parts, _ = F.native_animation(lifetime)
-            self.assertEqual(F.capacity.image_capacities(parts), [1, 1, 1])
+            self.assertEqual(parts['t'], self.original['t'])
+            self.assertEqual(parts['c'], self.original['c'])
+            self.assertEqual(len(parts['g']), len(self.original['g']))
+            self.assertEqual({k['m'] >> 12 for k in parts['g'][0]['s'][0]['l']}, {0})
 
-    def test_accepted_assets_have_closed_atlas_references(self):
-        assets, note = F.build_assets(core.project_root())
-        self.assertEqual(len(assets), 8)
-        atlas = C.amf_parse(assets[F.SHEET+'.atlas.amf3.deflate'])
-        names = {v['n'] for v in atlas}
-        for level in (1, 2, 3):
-            parts = C.amf_parse(assets[F.effect(level)+'.parts.amf3.deflate'])
-            self.assertEqual({v['p'] for v in parts['i']}, names)
-        self.assertTrue(note['center_empty'])
-        self.assertLessEqual(note['atlas_size'][0]*note['atlas_size'][1], 384*128)
+    def test_front_back_arcs_and_electric_layers_keep_independent_tweens(self):
+        for lifetime in F.LIFETIMES:
+            parts, _ = F.native_animation(lifetime)
+            for group in (37,38,45,46,48,50,57,58,63,65):
+                old=self.original['g'][group]['s']; new=parts['g'][group]['s']
+                self.assertEqual(len(old),len(new))
+                for a,b in zip(old,new):
+                    self.assertEqual([k['m'] for k in a['l']],[k['m'] for k in b['l']])
+                    self.assertEqual([int(k.get('t') or 1) & ~65535 for k in a['l']],
+                                     [k['t'] & ~65535 for k in b['l']])
 
-    def test_invalid_lifetime_and_level_are_rejected(self):
+    def test_orb_images_and_central_charge_are_removed(self):
+        parts,_=F.native_animation(110)
+        self.assertTrue({i['p'].split('/')[-1]for i in parts['i']} <= F.KEEP)
+        self.assertEqual(len(parts['g'][1]['s']),1)
+        self.assertEqual(parts['g'][1]['s'][0]['i'],11)
+        for group in (18,20,22,24,26,28,30,42,55):
+            # These official direct-image groups carried the removed orb layers.
+            for strip in parts['g'][group]['s']:
+                self.assertNotEqual((int(strip['s']) & 0xffffffff) >> 30, 0)
+
+    def test_native_pools_cover_every_live_nested_instance(self):
+        for lifetime in F.LIFETIMES:
+            parts,_=F.native_animation(lifetime)
+            self.assertEqual(parts['a'], F.capacity.validate_image_capacities(parts))
+            self.assertGreater(max(parts['a']), 1)
+            self.assertTrue(all(n > 0 for n in parts['a']))
+
+    def test_packed_atlas_is_closed_and_keeps_native_sprite_frames(self):
+        assets,note=F.build_assets(core.project_root())
+        self.assertEqual(len(assets),8)
+        atlas=C.amf_parse(assets[F.SHEET+'.atlas.amf3.deflate'])
+        original=C.amf_parse((self.source/(F.DONOR+'.atlas.amf3.deflate')).read_bytes())
+        old={i['n'].split('/')[-1]:i for i in original if '/.gen/starbreak_hunter_meteor23_explosion/' in i['n']}
+        for i in atlas:
+            source=old[i['n'].split('/')[-1]]
+            self.assertEqual((i['fw'],i['fh']),
+                             (source.get('fw',source['h' if source.get('r') else 'w']),
+                              source.get('fh',source['w' if source.get('r') else 'h'])))
+        for level in (1,2,3):
+            parts=C.amf_parse(assets[F.effect(level)+'.parts.amf3.deflate'])
+            self.assertEqual({i['p'] for i in parts['i']},{i['n'] for i in atlas})
+        self.assertFalse(note['whole_image_rotation'])
+        self.assertLess(note['atlas_size'][0]*note['atlas_size'][1],60000)
+
+    def test_source_alpha_and_brightness_are_preserved_after_api_palette_transfer(self):
+        import io
+        from PIL import Image, ImageChops
+        import wf_assets
+        old=Image.open(io.BytesIO(wf_assets.png_decode((self.source/(F.DONOR+'.png')).read_bytes()))).convert('RGBA')
+        new=Image.open(self.source/'palette-atlas.png').convert('RGBA')
+        self.assertEqual(old.size,new.size)
+        self.assertIsNone(ImageChops.difference(old.getchannel('A'),new.getchannel('A')).getbbox())
+        def value(im):
+            r,g,b,_=im.split()
+            return ImageChops.lighter(ImageChops.lighter(r,g),b)
+        self.assertIsNone(ImageChops.difference(value(old),value(new)).getbbox())
+
+    def test_invalid_lifetime_level_and_donor_are_rejected(self):
         with self.assertRaises(ValueError): F.native_animation(999)
         with self.assertRaises(ValueError): F.effect(4)
+        with self.assertRaises(ValueError): F.filtered_native(b'corrupt')
 
 
 class SwordMechanicsTests(unittest.TestCase):

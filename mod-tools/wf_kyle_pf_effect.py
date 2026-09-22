@@ -1,7 +1,8 @@
-"""Compile the accepted API ring into native Flatomo; no image generation here."""
+"""Kyle PF: native Targis layered tweens, original perspective, API palette."""
 from __future__ import annotations
 
-import math
+import hashlib
+import json
 from pathlib import Path
 
 from PIL import Image
@@ -12,9 +13,14 @@ import wf_seasonal7_common as common
 
 DIRECTORY = 'battle/effect/skill_unique/kyle_moon/pf_thunder_ring'
 SHEET = DIRECTORY + '/pf_thunder_ring'
-SOURCE = Path('work/character_packs/midautumn-20260920/rework3/fx/kyle_pf')
-NAMES = ('birth', 'ring', 'fade')
+SOURCE = Path('work/character_packs/midautumn-20260920/rework3/fx/kyle_pf_native')
+DONOR = 'starbreak_hunter_meteor23'
+PARTS = DONOR + '_explosion.parts.amf3.deflate'
+PARTS_SHA = '247ecf7011bdddd9ec26b89b9964170ee4044467fbdbcf0c8487236172876afd'
+KEEP = frozenset(('a','b','c','d','e','f','g','h','r','s','t','w','x','y','aa','ab','ac'))
 LIFETIMES = (70, 90, 110)
+# Native frames 0..12 charge the removed ball; the useful border fades by 60.
+BEGIN, END = 13, 60
 
 
 def effect(level):
@@ -23,62 +29,106 @@ def effect(level):
     return f'{DIRECTORY}/ring_lv{level}'
 
 
-def native_animation(frames):
-    """One rotation every 30 frames, with birth and fade inside hit-area life."""
+def _signed(value):
+    return value - 2**32 if value >= 2**31 else value
+
+
+def filtered_native(raw):
+    """Remove orb leaves/charge strips, retaining all native border transforms."""
+    if hashlib.sha256(raw).hexdigest() != PARTS_SHA:
+        raise ValueError('Targis animation donor changed')
+    parts = common.amf_parse(raw)
+    keep = {n for n, item in enumerate(parts['i']) if item['p'].split('/')[-1] in KEEP}
+    for group in parts['g']:
+        group['s'] = [s for s in group['s'] if (int(s['s']) & 0xffffffff) >> 30 or s['i'] in keep]
+    # The first child is the explosion graph; the other strips charge its core.
+    parts['g'][1]['s'] = parts['g'][1]['s'][:1]
+    need = capacity.image_capacities(parts)
+    used = [i for i, n in enumerate(need) if n]
+    remap = {old: new for new, old in enumerate(used)}
+    for group in parts['g']:
+        group['s'] = [s for s in group['s'] if (int(s['s']) & 0xffffffff) >> 30 or s['i'] in remap]
+        for strip in group['s']:
+            if (int(strip['s']) & 0xffffffff) >> 30 == 0:
+                strip['i'] = remap[strip['i']]
+    parts['i'] = [parts['i'][i] for i in used]
+    parts['a'] = [need[i] for i in used]
+    return parts
+
+
+def native_animation(frames, donor=None):
+    """Retime native nested tweens, not rendered frames or a rotated still."""
     if frames not in LIFETIMES:
         raise ValueError('unsupported native sword lifetime')
-    matrices, strips = [], []
-    for frame in range(frames):
-        end = max(0.0, (frame - (frames - 13)) / 12)
-        begin = min(1.0, (frame + 1) / 8)
-        angle = frame * math.tau / 30
-        layers = [(1, begin * (1-end), .82 + .18*begin + .08*end)]
-        if frame < 12:
-            layers.append((0, (1-frame/12)*begin, .8 + .2*begin))
-        if end > 0:
-            layers.append((2, math.sin(end*math.pi), 1 + .20*end))
-        for image, alpha, scale in layers:
-            a, b = math.cos(angle)*scale, math.sin(angle)*scale
-            matrix = dict(a=round(a*4096), b=round(b*4096),
-                          c=round(-b*4096), d=round(a*4096),
-                          x=round((-64*a + 64*b)*4096),
-                          y=round((-64*b - 64*a)*4096))
-            index = len(matrices)
-            matrices.append(matrix)
-            strips.append({'s': frame, 'i': image,
-                           'l': [{'m': (index << 12) | round(255*alpha), 't': 1}]})
-    parts = {'i': [{'s': False, 'p': f'{DIRECTORY}/.gen/ring/{name}'} for name in NAMES],
-             'g': [{'t': frames, 's': strips}], 'm': [], 'a': [1, 1, 1],
-             'o': [], 't': matrices, 'c': [], 's': 1}
+    if donor is None:
+        donor = (Path(__file__).resolve().parents[1] / SOURCE / PARTS).read_bytes()
+    parts = filtered_native(donor)
+    scale = lambda time: round(time * frames / (END - BEGIN))
+    for group in parts['g']:
+        group['t'] = scale(group['t'])
+        for strip in group['s']:
+            bits = int(strip['s']) & 0xffffffff
+            cursor = bits & 0x3fffffff
+            strip['s'] = _signed((bits & 0xc0000000) | scale(cursor))
+            for key in strip['l']:
+                timing = int(key.get('t') or 1)
+                end = cursor + (timing & 0xffff)
+                key['t'] = (timing & ~0xffff) | (scale(end) - scale(cursor))
+                if 'r' in key:
+                    ref = int(key['r']) & 0xffffffff
+                    key['r'] = _signed((ref & 0xc0000000) | scale(ref & 0x3fffffff))
+                cursor = end
+    # Same native uniform root matrix. No global spin, aspect correction, new
+    # perspective matrix or per-frame raster. The last key closes the once clip.
+    parts['g'][0] = {'t': frames, 's': [{'s': -2147483648, 'i': 1, 'l': [
+        {'m': 0, 't': 16646148, 'r': 0x40000000 | scale(BEGIN)},
+        {'m': 255, 't': frames-5, 'r': 0x40000000 | (scale(BEGIN)+4)},
+        {'m': 0, 't': 1, 'r': 0x40000000 | (scale(BEGIN)+frames-1)}]}]}
+    for item in parts['i']:
+        item['p'] = f"{DIRECTORY}/.gen/native/{item['p'].split('/')[-1]}"
+    parts['a'] = capacity.image_capacities(parts)
+    capacity.validate_image_capacities(parts)
     timeline = {'sequences': [{'begin': 1, 'end': frames, 'name': 'neutral', 'kind': 'once'}],
                 'sounds': [], 'points': [], 'circles': [], 'rectangles': [], 'matrices': []}
-    capacity.validate_image_capacities(parts)
     return parts, timeline
 
 
+def _sprites(source, names):
+    atlas = common.amf_parse((source/(DONOR+'.atlas.amf3.deflate')).read_bytes())
+    entries = {item['n']: item for item in atlas}
+    sheet = Image.open(source/'palette-atlas.png').convert('RGBA')
+    images = []
+    for name in names:
+        entry = entries[name]; x, y, w, h = (entry[k] for k in ('x','y','w','h'))
+        tile = sheet.crop((x, y, x+w, y+h))
+        if entry.get('r'): tile = tile.transpose(Image.Transpose.ROTATE_90)
+        frame = Image.new('RGBA', (entry.get('fw', tile.width), entry.get('fh', tile.height)))
+        frame.alpha_composite(tile, (-entry.get('fx', 0), -entry.get('fy', 0)))
+        images.append(frame)
+    return images
+
+
 def build_assets(root):
-    import hashlib
-    import json
     source = Path(root) / SOURCE
     receipt = json.loads((source/'accepted.json').read_bytes())
-    path = source/'sprites.png'
-    if hashlib.sha256(path.read_bytes()).hexdigest() != receipt['sprites_sha256']:
-        raise ValueError('accepted API sprites have changed')
-    sheet = Image.open(path).convert('RGBA')
-    if sheet.size != (384, 128) or sheet.getchannel('A').getextrema() != (0, 255):
-        raise ValueError('sprites must be three transparent 128px cells')
-    tiles = [sheet.crop((i*128, 0, (i+1)*128, 128)) for i in range(3)]
-    # The center stays empty, including birth/fade. Never pack an opaque orb.
-    if any(tile.getchannel('A').crop((51, 51, 77, 77)).getbbox() for tile in tiles):
-        raise ValueError('ring center is not empty')
-    names = [f'{DIRECTORY}/.gen/ring/{name}' for name in NAMES]
-    packed, atlas = vfx.pack_images(tiles, names, trim=True)
+    hashes = {**receipt['files'], 'palette-atlas.png': receipt['palette_atlas_sha256'],
+              'api-blue-white.png': receipt['api_sha256']}
+    for name, digest in hashes.items():
+        if hashlib.sha256((source/name).read_bytes()).hexdigest() != digest:
+            raise ValueError(f'native/API source changed: {name}')
+    raw = (source/PARTS).read_bytes()
+    native = filtered_native(raw)
+    names = [f"{DIRECTORY}/.gen/native/{i['p'].split('/')[-1]}" for i in native['i']]
+    packed, atlas = vfx.pack_images(_sprites(source, [i['p'] for i in native['i']]), names, trim=True)
     assets = {SHEET+'.png': common.png_store_bytes(packed),
               SHEET+'.atlas.amf3.deflate': common.amf_bytes(atlas)}
     for level, lifetime in enumerate(LIFETIMES, 1):
-        parts, timeline = native_animation(lifetime)
+        parts, timeline = native_animation(lifetime, raw)
         assets[effect(level)+'.parts.amf3.deflate'] = common.amf_bytes(parts)
         assets[effect(level)+'.timeline.amf3.deflate'] = common.amf_bytes(timeline)
     return assets, {'source': str(SOURCE), 'api': receipt, 'atlas_size': list(packed.size),
-                    'rotation_frames': 30, 'lifetimes': list(LIFETIMES),
-                    'birth_frames': 8, 'fade_frames': 12, 'center_empty': True}
+                    'lifetimes': list(LIFETIMES), 'native_groups': len(native['g']),
+                    'native_matrices': len(native['t']), 'native_easing': len(native['c']),
+                    'native_window': [BEGIN, END], 'whole_image_rotation': False,
+                    'native_perspective_preserved': True, 'core_sprites_removed': True,
+                    'image_names': [i['p'].split('/')[-1] for i in native['i']]}
