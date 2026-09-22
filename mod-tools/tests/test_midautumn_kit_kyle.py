@@ -118,7 +118,7 @@ class ConstantTests(unittest.TestCase):
         self.assertEqual(set(extra[MS.UNIQUE_CONDITION_LOGICAL]),
                          {key for key, *_ in K.UNIQUES})
         self.assertEqual(set(extra[KL.CAS]), set(K.CAS_TEXTS))
-        self.assertEqual(len(extra[KL.CAS]), 10)
+        self.assertEqual(len(extra[KL.CAS]), 11)
 
     def test_required_capabilities_cover_dash_and_panel_override(self):
         self.assertEqual(set(K.SPEC["required_capabilities"]),
@@ -535,7 +535,7 @@ class RowBuildTests(unittest.TestCase):
         cls.built = all_rows(ctx())
 
     def test_row_counts(self):
-        self.assertEqual(len(self.built["leader"]), 7)
+        self.assertEqual(len(self.built["leader"]), 8)
         self.assertEqual(sum(len(rows) for rows in self.built["ability"].values()), 23)
 
     def test_every_row_matches_the_baked_describe_readback(self):
@@ -830,8 +830,8 @@ class WorkspaceTests(unittest.TestCase):
         cls.rows = json.loads((WORKSPACE / "evidence" / "kit-rows.json").read_text("utf-8"))
         cls.skills = json.loads((WORKSPACE / "evidence" / "kit-skills.json").read_text("utf-8"))
 
-    def test_four_programs_are_written(self):
-        self.assertEqual(len(self.skills["programs"]), 4)
+    def test_skill_and_personal_pf_programs_are_written(self):
+        self.assertEqual(len(self.skills["programs"]), 7)
         self.assertIn(K.PIERCE_PROGRAM, self.skills["programs"])
         self.assertIn(K.THUNDER_PROGRAM, self.skills["programs"])
 

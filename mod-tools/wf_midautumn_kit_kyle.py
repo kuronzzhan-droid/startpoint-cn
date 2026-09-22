@@ -39,6 +39,7 @@ import wf_dsl  # noqa: E402
 from wf_midautumn_dash_guard import swift_guard_plan, ability_to_leader
 import wf_midautumn_kitlib as KL  # noqa: E402
 import wf_midautumn_specs as MS  # noqa: E402
+import wf_kyle_pf_ring as PF  # noqa: E402
 
 KitError = KL.KitError
 
@@ -93,7 +94,8 @@ SPEC = {
     "required_capabilities": ("dash-parameter-v1", "panel-description-override-v2"),
     "extra_keys": {
         MS.UNIQUE_CONDITION_LOGICAL: tuple(key for key, *_ in UNIQUES),
-        KL.CAS: (CAS_SWITCH, CAS_PIERCE, CAS_THUNDER, CAS_LEADER,
+        PF.TABLE: (PF.KEY,),
+        KL.CAS: (CAS_SWITCH, CAS_PIERCE, CAS_THUNDER, CAS_LEADER, PF.STRING,
                  *(CAS_ABILITY[slot] for slot in range(1, 7))),
         KL.SWITCHED: (VOICE_KEY,),
     },
@@ -271,6 +273,7 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
 #: 都会在这里当场炸。面板上真正显示的是 ``desc_override_*``（PANEL_LEADER / PANEL_ABILITY），
 #: 这张表只管「表行本身渲染成什么」。
 EXPECT: dict[str, str] = {
+    "kyle-native-pf": "自身 强化弹射覆盖",
     "leader#4": "雷·编成≥6 时: 赋予全队(雷) 2号位技能槽 20%",
     "leader#5": "雷·编成≥6 时: 赋予全队(雷) 技能槽充能 20%",
     "leader#6": "雷·编成≥6 时: 状态贯通≥1 → 赋予全队(雷) 攻击力 50%",
@@ -319,6 +322,7 @@ ALLOWED_PRECONDITION_KINDS = ("", "0", "2", "3", "38", "42", "187", "202")
 MAIN_ICON = " <icon id='main'>  "
 
 PANEL_LEADER = "\n".join((
+    PF.TEXT,
     "雷属性共鸣时：自身冲刺获得强化，冲刺冷却时间－50%、附加贯穿效果、冲刺弹射速度提升，并"
     "可从更高的位置发动冲刺",
     "雷属性共鸣时：自身“月牙”每上升1层，自身攻击力＋25%、直击伤害＋50%，除自身外雷属性"
@@ -356,6 +360,7 @@ PANEL_ABILITY = {
 }
 
 CAS_TEXTS = {
+    PF.STRING: PF.TEXT,
     CAS_SWITCH: "雷属性共鸣时强化技能：追加贯穿与加速效果，天雷按直接攻击伤害结算，"
                 "并驱散敌方增益、施加「迟缓」",
     CAS_PIERCE: "自身直击敌人的判定次数＋1",
@@ -646,6 +651,10 @@ def build_rows(ctx) -> dict[str, Any]:
               describe=KL.describe("leader_ability", moved))
     evidence.append(ev)
     caps.update(KL.capabilities("leader_ability", moved))
+    pf_row, pf_evidence = PF.leader_row(ctx)
+    leader_rows.append(pf_row)
+    evidence.append(pf_evidence)
+    caps.update(pf_evidence["capabilities"])
     _ban_kinds("leader_ability", leader_rows, "leader")
 
     ability: dict[str, list[list[str]]] = {}
@@ -1450,7 +1459,7 @@ def build(ctx) -> dict[str, Any]:
         raise KitError(f"spec template/rarity mismatch: {spec.template_id}/"
                        f"{spec.template_code}/{spec.rarity}")
     if spec.pf_type != 0:
-        raise KitError(f"spec pf_type {spec.pf_type} != 0（APK 原生剑型 PF，本角色不做 722）")
+        raise KitError(f"spec pf_type {spec.pf_type} != 0（剑型 PF 三档由原生 722 替换）")
 
     design = load_design(ctx.root)
     design_problems = _design_problems(design)
@@ -1475,6 +1484,9 @@ def build(ctx) -> dict[str, Any]:
     # ---- 5) 特效族（blade 保留 + bolt 新增）与 4 棵 DSL
     blade, bolt, trail, fx_note = clone_effects(ctx, design)
     programs, skill_evidence = write_skills(ctx, blade, bolt, trail)
+    pf_report = PF.install(ctx)
+    programs.extend(pf_report["programs"])
+    fx_note["power_flip"] = pf_report
 
     # ---- 6) 语音路由目标 + 像素交付件（本轮小人一格不改）
     switched = KL.write_voice_ready(ctx)
