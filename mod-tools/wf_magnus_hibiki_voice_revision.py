@@ -192,7 +192,7 @@ def install(delivery, *, apply=False, roles=None):
             # The regular --script pack command reloads this hash-bound delivery.
             script = pack.batch_dir/'rework2/voice/scripts'/(role+'.json')
             source = json.loads(script.read_bytes())
-            source['lines'] = [{k: x[k] for k in ('slot', 'ja', 'zh', 'theme', 'tone', 'performance')
+            source['lines'] = [{k: x[k] for k in ('slot', 'ja', 'zh', 'tts_text', 'theme', 'tone', 'direction', 'performance')
                                 if k in x} for x in lines]
             source['accepted_delivery'] = dict(path=str(delivery),
                                                manifest_sha256=report['source_manifest_sha256'],
