@@ -41,7 +41,7 @@ class VoiceRevisionTests(unittest.TestCase):
             speech_rows(self.before, self.lines)
 
     def test_exact_requested_pools(self):
-        for role, total, home, ready, skill, pf in [('magnus',46,12,6,8,10), ('hibiki',33,8,3,6,6), ('kyle',48,12,6,12,8)]:
+        for role, total, home, ready, skill, pf in [('magnus',46,12,6,8,10), ('hibiki',33,8,3,6,6), ('kyle',48,12,6,12,8), ('rolf',22,6,2,4,2)]:
             slots = expected_slots(role)
             self.assertEqual(len(slots), total)
             self.assertEqual(sum(s.startswith('home/') for s in slots), home)
@@ -59,6 +59,14 @@ class VoiceRevisionTests(unittest.TestCase):
         self.assertEqual(rows[0]['native_file'], 'native')
         self.assertEqual(rows[0]['native_sha256'], 'native-hash')
         self.assertNotIn('role', row)
+        roles, rows = delivery_entries(dict(role='rolf',count=22,selection=[row]*22))
+        self.assertEqual(roles, ('rolf',))
+        self.assertEqual(rows[0]['code'], 'black_wolf_knight_moon')
+        self.assertNotIn('battle/skill_ready_alt_1', expected_slots('rolf'))
+        with self.assertRaises(ValueError):
+            delivery_entries(dict(role='rolf',count=48,selection=[row]*48))
+        with self.assertRaises(ValueError):
+            delivery_entries(dict(role='unknown',count=22,selection=[row]*22))
         for broken in (old[:-1], dict(count=48, selection=[row] * 47), dict(count=47)):
             with self.assertRaises(ValueError):
                 delivery_entries(broken)

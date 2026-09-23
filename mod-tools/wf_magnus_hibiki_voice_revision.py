@@ -1,4 +1,4 @@
-"""Install selected Magnos/Hibiki or Kyle recordings into their candidates only."""
+"""Install selected character recordings into their candidates only."""
 from __future__ import annotations
 
 import argparse
@@ -18,7 +18,8 @@ import wf_voice_gate as gate
 
 ROLES = {'magnus': ('119990', 'lion_swordman_moon', 12, 6, 8, 10),
          'hibiki': ('169988', 'psychic_teleport_moon', 8, 3, 6, 6),
-         'kyle': ('139990', 'kyle_moon', 12, 6, 12, 8)}
+         'kyle': ('139990', 'kyle_moon', 12, 6, 12, 8),
+         'rolf': ('149986', 'black_wolf_knight_moon', 6, 2, 4, 2)}
 SPEECH = 'master/character/character_speech.orderedmap'
 
 
@@ -28,11 +29,13 @@ def sha(raw):
 
 def expected_slots(role):
     _, _, homes, ready, skills, flips = ROLES[role]
-    prepared = ['battle/skill_ready', 'battle/matched_skill_ready', 'battle/skill_ready_alt_1']
+    prepared = ['battle/skill_ready', 'battle/matched_skill_ready']
+    if ready >= 3:
+        prepared += ['battle/skill_ready_alt_1']
     if ready == 6:
         prepared += ['battle/skill_ready_alt_2', 'battle/skill_ready_alt_3',
                      'battle/matched_skill_ready_alt_1']
-    starts, wins = (4, 2) if role == 'kyle' else (3, 3)
+    starts, wins = {'kyle': (4, 2), 'rolf': (2, 2)}.get(role, (3, 3))
     return {'ally/join', 'ally/evolution', *prepared,
             *(f'home/home_{i}' for i in range(homes)),
             *(f'battle/skill_{i}' for i in range(skills)),
@@ -83,19 +86,23 @@ def delivery_entries(document):
         if len(document) != 79:
             raise ValueError('expected the complete 79-line Magnos/Hibiki delivery')
         return ('magnus', 'hibiki'), document
-    if not isinstance(document, dict) or document.get('count') != 48:
-        raise ValueError('expected the complete 48-line Kyle delivery')
+    if not isinstance(document, dict):
+        raise ValueError('expected a complete character delivery')
+    role = document.get('role', 'kyle')
+    totals = {'kyle': 48, 'rolf': 22}
+    if role not in totals or document.get('count') != totals[role]:
+        raise ValueError('unknown role or incomplete character delivery')
     selected = document.get('selection', [])
-    if len(selected) != 48:
-        raise ValueError('Kyle selection is incomplete')
+    if len(selected) != totals[role]:
+        raise ValueError('character selection is incomplete')
     entries = []
     for line in selected:
         files = line['files']
-        entries.append({**line, 'role': 'kyle', 'code': ROLES['kyle'][1],
+        entries.append({**line, 'role': role, 'code': ROLES[role][1],
                         'mp3': files['standard']['path'], 'sha256': files['standard']['sha256'],
                         'native_file': files['native']['path'],
                         'native_sha256': files['native']['sha256'], 'qc': files['qc']['path']})
-    return ('kyle',), entries
+    return (role,), entries
 
 
 def load_delivery(delivery):
