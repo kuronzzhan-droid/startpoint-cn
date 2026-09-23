@@ -28,7 +28,10 @@ def revise_rows(leader, third):
     engine = [leader[0][0], *deepcopy(source[3:])]
     engine[11:25] = ['9', '0', '', '50000', '50000', '', '', '0', '', '', '', '', '', '']
     engine[25:30] = ['23', '0', '', '100000', '100000']
-    engine[57:59] = ['200000']*2
+    # number=2 creates a second discrimination key; native stack readers take
+    # the maximum, not the sum. Add two layers to the shared instance instead.
+    engine[57:59] = ['100000']*2
+    engine[72] = '2'
     leader.append(engine)
     cannon = next(r for r in third if r[47] == '461' and r[68] == CANNON)
     cannon[13:27] = ['0','','','','','','','0','','','','','','']

@@ -33,7 +33,11 @@ class TekutoLowHpTest(unittest.TestCase):
         self.assertEqual((r[4],r[11],r[18],r[25],r[26]),('2','9','0','23','0'))
         self.assertEqual(r[14:16],['50000']*2)
         self.assertEqual((r[45],r[66]),('461',T.ENGINE))
-        self.assertEqual(r[57:59],['200000']*2)
+        # Native number creates separate discrimination keys, not stack count.
+        # One shared instance with magnification 2 adds both layers to the
+        # same counter used by the skill and DuringConditionAccumulation.
+        self.assertEqual(r[57:59],['100000']*2)
+        self.assertEqual(r[72],'2')
 
     def test_cannon_grant_is_self_skill_and_does_not_require_engine(self):
         _,third=T.revise_rows(self.data[T.CID],self.data[T.CID+'3'])
