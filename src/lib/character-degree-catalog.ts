@@ -10,7 +10,10 @@ export const CHARACTER_DEGREE_CHARACTER_IDS: readonly number[] = Object.freeze([
 export const CHARACTER_DEGREE_CATALOG = Object.freeze(
     CHARACTER_DEGREE_CHARACTER_IDS.map((characterId, index) => Object.freeze({
         character_id: characterId,
-        degree_ids: Object.freeze([9_910_001 + 2 * index, 9_910_002 + 2 * index]),
+        degree_ids: Object.freeze([
+            9_910_001 + 2 * index, 9_910_002 + 2 * index,
+            ...(characterId === 139990 ? [9_910_073, 9_910_074, 9_910_075] : []),
+        ]),
     })),
 );
 
@@ -31,7 +34,7 @@ export function isCharacterDegreeActivation(value: unknown): value is { enabled:
         const expected = CHARACTER_DEGREE_CATALOG[index];
         return Object.keys(entry).sort().join(",") === "character_id,degree_ids"
             && entry.character_id === expected.character_id
-            && Array.isArray(entry.degree_ids) && entry.degree_ids.length === 2
+            && Array.isArray(entry.degree_ids) && entry.degree_ids.length === expected.degree_ids.length
             && entry.degree_ids.every((id, variant) => id === expected.degree_ids[variant]);
     });
 }

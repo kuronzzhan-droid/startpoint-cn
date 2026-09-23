@@ -96,8 +96,10 @@ after(() => { mock.restoreAll(); db.close(); rmSync(tempRoot, { recursive: true,
 
 test("36-character catalog preserves earlier IDs and agrees with five-star level caps", () => {
     assert.equal(catalog.CHARACTER_DEGREE_CATALOG.length, 36);
-    assert.deepEqual(catalog.CHARACTER_DEGREE_CATALOG.flatMap(row => [...row.degree_ids]),
+    assert.deepEqual(catalog.CHARACTER_DEGREE_CATALOG.flatMap(row => [...row.degree_ids.slice(0, 2)]),
         Array.from({ length: 72 }, (_, index) => 9910001 + index));
+    assert.deepEqual(catalog.CHARACTER_DEGREE_CATALOG.find(row => row.character_id === 139990)?.degree_ids,
+        [9910059, 9910060, 9910073, 9910074, 9910075]);
     assert.equal(characterExpCaps[5][4], catalog.CHARACTER_DEGREE_LEVEL_100_EXP);
     for (const row of catalog.CHARACTER_DEGREE_CATALOG) {
         assert.equal(assets.getCharacterDataSync(row.character_id)?.rarity, 5);
@@ -106,14 +108,31 @@ test("36-character catalog preserves earlier IDs and agrees with five-star level
     assert.equal(catalog.CHARACTER_DEGREE_CHARACTER_IDS.includes(179981), false);
 });
 
-test("new twelve characters each grant two native degrees once after full training", () => {
+test("new twelve characters grant their reviewed degrees once after full training", () => {
     const ids = [119992, 119991, 119990, 139992, 139991, 139990,
         149987, 149986, 159995, 159994, 169991, 169988];
     for (const id of ids) own(id, 379987, 4);
     assert.deepEqual(grant(ids), []);
     for (const id of ids) characters.updatePlayerCharacterSync(1, id, { exp: 379988 });
-    assert.deepEqual(grant(ids), Array.from({ length: 24 }, (_, index) => 9910049 + index));
+    assert.deepEqual(grant(ids).sort((a, b) => a - b), Array.from({ length: 27 }, (_, index) => 9910049 + index));
     assert.deepEqual(grant(ids), []);
+});
+
+test("Kyle owners with the original pair receive only the three new plates from practice", () => {
+    own(139990);
+    for (const id of [9910059, 9910060]) {
+        db.prepare("INSERT INTO players_degrees (player_id, degree_id) VALUES (1, ?)").run(id);
+    }
+    assert.deepEqual(originalPracticeGrant(practice(), { configPath }), [9910073, 9910074, 9910075]);
+    assert.deepEqual(originalPracticeGrant(practice(), { configPath }), []);
+});
+
+test("the previous 36-character activation cannot grant unpublished Kyle extras", () => {
+    own(139990);
+    const old = JSON.parse(JSON.stringify(activation()));
+    old.characters.find((entry: { character_id: number }) => entry.character_id === 139990).degree_ids = [9910059, 9910060];
+    activate(old);
+    assert.deepEqual(grant([139990]), []);
 });
 
 test("previous deployment activation cannot enable newly added unpublished degrees", () => {
@@ -190,12 +209,12 @@ test("successful native practice backfills all eligible inventory, including cha
     assert.deepEqual(originalPracticeGrant(practice(), { configPath }), []);
 });
 
-test("one practice finish can grant all 72 reviewed variants and replay adds none", () => {
+test("one practice finish can grant all 75 reviewed variants and replay adds none", () => {
     for (const id of catalog.CHARACTER_DEGREE_CHARACTER_IDS) own(id);
-    assert.deepEqual(originalPracticeGrant(practice(), { configPath }),
-        Array.from({ length: 72 }, (_, index) => 9910001 + index));
+    assert.deepEqual(originalPracticeGrant(practice(), { configPath }).sort((a, b) => a - b),
+        Array.from({ length: 75 }, (_, index) => 9910001 + index));
     assert.deepEqual(originalPracticeGrant(practice(), { configPath }), []);
-    assert.equal(owned().length, 72);
+    assert.equal(owned().length, 75);
 });
 
 test("failed, unknown, wrong-category, malformed and multi practice events cannot backfill", () => {

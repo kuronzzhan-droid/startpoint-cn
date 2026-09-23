@@ -1,7 +1,13 @@
 import copy
+import hashlib
+import io
+import json
 from pathlib import Path
 import sys
+import tempfile
 import unittest
+
+from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import wf_midautumn_degrees as d
@@ -9,6 +15,31 @@ import wf_share_update_codec as codec
 
 
 class MidautumnDegreeTests(unittest.TestCase):
+    def test_reviewed_kyle_extras_load_with_existing_ids_and_reject_wrong_identity(self):
+        image = io.BytesIO()
+        plate = Image.new('RGBA', (320, 50), (0, 0, 0, 0))
+        plate.paste((80, 120, 220, 255), (20, 10, 300, 40))
+        plate.save(image, format='PNG')
+        raw = image.getvalue()
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root/'plate.png').write_bytes(raw)
+            plates = [dict(role=role, character_id=d.specs.get_spec(role).cid, state=state,
+                           degree_id=9910049+2*i+state, file='plate.png',
+                           sha256=hashlib.sha256(raw).hexdigest(), name=role, title='称号')
+                      for i, role in enumerate(d.specs.all_keys()) for state in (0, 1)]
+            plates += [dict(plates[0], role='kyle', character_id=139990, state=state,
+                            degree_id=9910071+state) for state in (2, 3, 4)]
+            manifest = root/'plate-manifest.json'
+            manifest.write_text(json.dumps(dict(plates=plates)), encoding='utf-8')
+            result = d.load_art(root)
+            self.assertEqual(len(result), 27)
+            self.assertEqual([x['item']['degree_id'] for x in result[-3:]], [9910073,9910074,9910075])
+            self.assertEqual(result[-1]['logical'], 'dynamic/degree/degree_mod_character_139990_awake4.png')
+            plates[-1]['character_id'] = 119990
+            manifest.write_text(json.dumps(dict(plates=plates)), encoding='utf-8')
+            with self.assertRaises(ValueError): d.load_art(root)
+
     def test_names_preserve_every_nontitle_cell(self):
         for logical, changes in [(d.CHARACTER, {18:d.LEADER}),
                                  (d.TEXT, {4:d.SKILL, 6:d.SKILL+'＋', 10:d.LEADER})]:

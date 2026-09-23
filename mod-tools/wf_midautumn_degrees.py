@@ -71,8 +71,10 @@ def load_art(folder):
     items = json.loads((folder/'plate-manifest.json').read_bytes())['plates']
     expected = {(specs.get_spec(role).cid, state): (role, 9910049+index*2+state)
                 for index, role in enumerate(specs.all_keys()) for state in (0, 1)}
-    if len(items) != len(expected):
-        raise ValueError('Expected 24 plate assets')
+    if len(items) == 27:
+        expected.update({(139990, state): ('kyle', 9910071+state) for state in (2, 3, 4)})
+    elif len(items) != len(expected):
+        raise ValueError('Expected 24 base plates, optionally with all three reviewed Kyle extras')
     seen, result = set(), []
     for item in items:
         identity = (item['character_id'], item['state'])
