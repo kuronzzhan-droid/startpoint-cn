@@ -5,9 +5,11 @@ V12 往两个内容块各塞了一个**非官方**枚举值:
 
     instant_content 724 AddFeverPointRatio  ← client-patch/kyubi-fever-ratio
     during_content  422 DashParameter       ← client-patch/dash-parameter
+    during_content  423 GaugeGainRestriction ← client-patch/battle-rules
+    during_content  424 DamageTypeConversion ← client-patch/battle-rules
 
 官方 `AbilityValues.parseAt47` / `parseAt109` 的 else 分支是
-`throw new ClientError(7050,"不存在的构造函数。")`,所以这两个值在没打补丁的客户端上
+`throw new ClientError(7050,"不存在的构造函数。")`,所以这些值在没打补丁的客户端上
 = 打开角色详情页即崩。风险不在「能不能写」,而在「写了之后有没有人记得先换 APK」。
 
 因此三处登记必须同时在场、且互相自洽:
@@ -19,7 +21,7 @@ V12 往两个内容块各塞了一个**非官方**枚举值:
      `required_client_capabilities()` 报出哪个 capability;
   4. `词条条件代码全表.md` 的对应小节 —— 人读的那一份。
 
-删掉这里任何一条断言都必须变红:这是唯一一处说「这两个 kind 不是官方的」的地方。
+登记须显式列举补丁 kind，不能把新增枚举误当成官方内容。
 
 本文件末尾另有一组用例管 `custom_ability_string` 的 `desc_override_*` 行:那条门禁
 与上面三条不同 —— **缺补丁不崩,只是不生效**(行是惰性的)。它要回答的是「这行要
@@ -52,6 +54,12 @@ EXPECTED = {
         "422": ("DashParameter", "dash-parameter-v1",
                 "CommonAbilityContentMasterValue",
                 {"unique_condition_id": "parseAt118", "strength": "parseAt113"}),
+        "423": ("GaugeGainRestriction", "gauge-gain-rules-v1",
+                "CommonAbilityContentMasterValue",
+                {"target": "parseAt110", "unique_condition_id": "parseAt118"}),
+        "424": ("DamageTypeConversion", "damage-type-rules-v1",
+                "CommonAbilityContentMasterValue",
+                {"target": "parseAt110", "unique_condition_id": "parseAt118"}),
     },
 }
 # 官方枚举的最后一个值(补丁值必须紧接其后,不能占用官方以后可能用的号)。
@@ -87,7 +95,7 @@ class ClientPatchKindTests(unittest.TestCase):
                 self.assertEqual(ctor, self.enum_map["enums"][cls][value])
 
     def test_no_official_kind_carries_a_capability_gate(self):
-        """反向:除了这两条,`cases` 里不许再冒出别的 requires_client_capability。"""
+        """反向：只有显式登记的补丁 kind 才能带 requires_client_capability。"""
         gated = []
         for block, cases in self.enum_map["cases"].items():
             for value, case in cases.items():
@@ -105,8 +113,8 @@ class ClientPatchKindTests(unittest.TestCase):
             values = sorted(int(v) for v in self.enum_map["enums"][cls])
             official = [v for v in values if str(v) not in expected]
             self.assertEqual(OFFICIAL_LAST[block], max(official), block)
-            for value in expected:
-                self.assertEqual(OFFICIAL_LAST[block] + 1, int(value), block)
+            self.assertEqual(list(range(OFFICIAL_LAST[block]+1, OFFICIAL_LAST[block]+1+len(expected))),
+                             sorted(map(int, expected)), block)
 
     def test_the_gate_reports_the_capability_for_the_parsed_block_only(self):
         # 瞬发行(mode 0)只读 instant_content
@@ -142,15 +150,19 @@ class ClientPatchKindTests(unittest.TestCase):
             row[int(blocks["during_content"])] = "422"
             self.assertEqual(["dash-parameter-v1"], required_client_capabilities(kind, row), kind)
 
-    def test_the_markdown_table_documents_both_kinds(self):
+    def test_the_markdown_table_documents_all_patch_kinds(self):
         text = TABLE_MD.read_text(encoding="utf-8")
         self.assertIn("| 724 | AddFeverPointRatio |", text)
         self.assertIn("kyubi-fever-ratio-v1", text)
         self.assertIn("| 422 | DashParameter |", text)
         self.assertIn("dash-parameter-v1", text)
+        self.assertIn("| 423 | GaugeGainRestriction |", text)
+        self.assertIn("gauge-gain-rules-v1", text)
+        self.assertIn("| 424 | DamageTypeConversion |", text)
+        self.assertIn("damage-type-rules-v1", text)
         # 小节标题必须说清「官方 N 种 + 客户端补丁 1 种」,别让人以为是官方枚举
         self.assertIn("### 6.4 瞬发效果 instant_content(官方 724 种 + 客户端补丁 1 种)", text)
-        self.assertIn("### 6.5 持续效果 during_content(官方 422 种 + 客户端补丁 1 种)", text)
+        self.assertIn("### 6.5 持续效果 during_content(官方 422 种 + 客户端补丁 3 种)", text)
 
     def test_the_dash_param_id_column_is_enforced_as_required(self):
         """422 借的是 unique_condition_id 列,「声明即必填」必须照样管得住它。"""

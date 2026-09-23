@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wf_describe  # noqa: E402  行级中文描述器(逆向布局+枚举直译)
 from wf_client_description_legality import description_compatibility_problems  # noqa: E402
 from wf_client_patch_scope import patch_parser_scope_problems, patch_parser_supported  # noqa: E402
+from wf_battle_rules import row_problems as battle_rule_problems  # noqa: E402
 
 
 # master/ability/ability_statue_group.orderedmap 的全部键(25 个,实测取自 store)。
@@ -68,7 +69,8 @@ PRECONDITION_KINDS_NEED_NEXT_COL = frozenset({
 #     只到 421,没打补丁读到 422 同样是 C7050。
 CLIENT_PATCH_CONTENT_KINDS = {
     "instant_content": {"724": "kyubi-fever-ratio-v1"},
-    "during_content": {"422": "dash-parameter-v1"},
+    "during_content": {"422": "dash-parameter-v1", "423": "gauge-gain-rules-v1",
+                       "424": "damage-type-rules-v1"},
 }
 
 # ────────── 面板文案覆盖行(master/string/custom_ability_string)的补丁门禁 ──────────
@@ -434,6 +436,7 @@ def client_legality_problems(kind: str, row: list[str]) -> list[str]:
     probs.extend(declared_block_field_problems(kind, row))
     probs.extend(description_compatibility_problems(kind, row))
     probs.extend(ability_element_column_problems(kind, row))
+    probs.extend(battle_rule_problems(kind, row, B))
     return probs
 
 

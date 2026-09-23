@@ -8,6 +8,8 @@ from collections.abc import Iterable, Mapping
 # 未列出的构造沿用原校验规则；不要据此扩大其他补丁的支持范围。
 PATCH_PARSER_TABLES = {
     ("instant_content", "724"): frozenset({"ability"}),
+    ("during_content", "423"): frozenset({"ability"}),
+    ("during_content", "424"): frozenset({"ability"}),
 }
 _PARSER_CLASSES = {
     "ability": "AbilityValues",

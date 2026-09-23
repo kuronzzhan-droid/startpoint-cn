@@ -2607,7 +2607,9 @@
    "317": "UniquePowerFlipSlayer",
    "287": "UniqueSkillSlayer",
    "81": "UniqueSlayer",
-   "422": "DashParameter"
+   "422": "DashParameter",
+   "423": "GaugeGainRestriction",
+   "424": "DamageTypeConversion"
   },
   "AbilityTargetMasterValue": {
    "2": "Leader",
@@ -18516,6 +18518,24 @@
      "strength": "parseAt113"
     },
     "requires_client_capability": "dash-parameter-v1"
+   },
+   "423": {
+    "ctor": "GaugeGainRestriction",
+    "cls": "CommonAbilityContentMasterValue",
+    "fields": {
+     "target": "parseAt110",
+     "unique_condition_id": "parseAt118"
+    },
+    "requires_client_capability": "gauge-gain-rules-v1"
+   },
+   "424": {
+    "ctor": "DamageTypeConversion",
+    "cls": "CommonAbilityContentMasterValue",
+    "fields": {
+     "target": "parseAt110",
+     "unique_condition_id": "parseAt118"
+    },
+    "requires_client_capability": "damage-type-rules-v1"
    }
   }
  },
