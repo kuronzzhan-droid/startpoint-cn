@@ -15,7 +15,7 @@ STRING = 'override_string_' + KEY
 TABLE = 'master/skill/power_flip_action.orderedmap'
 PROGRAMS = tuple(f'battle/action/power_flip/action/override/{KEY}${KEY}_lv{n}'
                  for n in (1, 2, 3))
-TEXT = '赋予自身特殊强化弹射（雷环）'
+TEXT = '赋予自身特殊强化弹射'
 
 
 def leader_row(ctx):
