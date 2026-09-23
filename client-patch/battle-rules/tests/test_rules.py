@@ -128,6 +128,22 @@ class RulesTest(unittest.TestCase):
         for method in (self.convert, self.resolve, self.filter, self.allows, self.address):
             self.assertTrue(all(x.target is None or x.target < len(method) for x in method))
 
+    def test_serialized_rule_loops_have_real_avm2_labels(self):
+        for method in (self.filter, self.resolve):
+            decoded = asm.decode(asm.encode(method)[0])
+            backward = [(i, x) for i, x in enumerate(decoded)
+                        if x.target is not None and x.target <= i]
+            self.assertTrue(backward)
+            for _, branch in backward:
+                self.assertEqual(0x09, decoded[branch.target].op)
+
+    def test_builder_rejects_symbolic_only_loop_before_serialization(self):
+        # The v2 bug passes stack simulation and decompiles normally, but AIR
+        # rejects it at first invocation even when no character has a rule.
+        broken = [row for row in gauge.filter_body(self.e) if row != ('avm_label',)]
+        with self.assertRaisesRegex(asm.AsmError, 'backward branch lacks AVM2 label'):
+            self.e.add_method(TOTALIZER, 'wfInvalidLoopTest', 'Boolean', ['int'], broken, 7)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -63,7 +63,7 @@ def resolver_body(e):
     q, slot = e.q, e.newq('wfDamageRules')
     code = [('getlocal_0',), ('pushscope',), ('getlocal_0',), ('getproperty', slot),
             ('setlocal_2',), ('getlocal_2',), ('iffalse', 'NONE'), ('pushbyte', 0), ('setlocal_3',),
-            ('label', 'LOOP'), ('getlocal_3',), ('getlocal_2',), ('getproperty', q('length')),
+            ('label', 'LOOP'), ('avm_label',), ('getlocal_3',), ('getlocal_2',), ('getproperty', q('length')),
             ('ifge', 'NONE'), ('getlocal_2',), ('getlocal_3',), ('getproperty', 14),
             ('coerce', q('pinball.scene.battle.battle.ability::DuringCheckerWithDecimal')),
             ('setlocal', 4), ('inclocal_i', 3), ('getlocal', 4), ('pushnull',),

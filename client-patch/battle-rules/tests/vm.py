@@ -21,7 +21,8 @@ def run(ins, abc, args, lex=None, stack=None):
         if steps > 10000: raise AssertionError('instruction loop')
         pc += 1
         op, a = x.name, x.args
-        if op.startswith('getlocal_'): stack.append(regs[int(op[-1])])
+        if op in ('avm_label', 'nop'): pass
+        elif op.startswith('getlocal_'): stack.append(regs[int(op[-1])])
         elif op == 'getlocal': stack.append(regs[a[0]])
         elif op.startswith('setlocal_'): regs[int(op[-1])] = stack.pop()
         elif op == 'setlocal': regs[a[0]] = stack.pop()

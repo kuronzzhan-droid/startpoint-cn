@@ -88,6 +88,11 @@ class Editor:
         ins = asm.assemble(code)
         if any(x.target is not None and x.target >= len(ins) for x in ins):
             raise asm.AsmError('generated method branches past return: ' + name)
+        # Symbolic assembler labels emit no byte. AVM2 requires a real label
+        # opcode at loop entries, even when the rules array is empty at runtime.
+        if any(x.target is not None and x.target <= i and ins[x.target].op != 0x09
+               for i, x in enumerate(ins)):
+            raise asm.AsmError('generated backward branch lacks AVM2 label: ' + name)
         metrics = asm.simulate(ins, 1, self.abc.multinames)
         if metrics[2] or asm.block_locals(ins) > locals_:
             raise asm.AsmError(f'invalid generated method: {name}: {metrics}')

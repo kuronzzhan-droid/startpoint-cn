@@ -55,7 +55,7 @@ class AsmError(RuntimeError):
 # ---------------------------------------------------------------------------
 # 助记符表(AVM2 指令集官方编号)。写错名字会当场报错,不会静默变成别的指令。
 MNEMONICS = {
-    "bkpt": 0x01, "nop": 0x02, "throw": 0x03,
+    "bkpt": 0x01, "nop": 0x02, "throw": 0x03, "avm_label": 0x09,
     "ifnlt": 0x0C, "ifnle": 0x0D, "ifngt": 0x0E, "ifnge": 0x0F,
     "jump": 0x10, "iftrue": 0x11, "iffalse": 0x12, "ifeq": 0x13, "ifne": 0x14,
     "iflt": 0x15, "ifle": 0x16, "ifgt": 0x17, "ifge": 0x18,
