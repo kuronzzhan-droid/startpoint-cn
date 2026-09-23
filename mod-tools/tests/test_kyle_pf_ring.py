@@ -118,6 +118,15 @@ class RingAnimationTests(unittest.TestCase):
 
 
 class SwordMechanicsTests(unittest.TestCase):
+    def test_extended_contact_window_keeps_the_ten_frame_damage_burst(self):
+        for level, lifetime in enumerate((60, 68, 75), 1):
+            tree = P.build_tree(self.sources[f'knight_lv{level}'], level)
+            outer, inner = Q.commands(tree, 'CreateHitArea')
+            self.assertEqual(outer[13][1], lifetime)
+            self.assertEqual(Q.commands(tree, 'SetPowerFilpSuppress')[0][1], lifetime)
+            self.assertEqual(inner[13][1], 10)
+            self.assertEqual(inner[15][1][0]['min'], (3, 4, 5)[level-1])
+
     @classmethod
     def setUpClass(cls):
         cls.sources, _ = apk_pf_sources(core.project_root())

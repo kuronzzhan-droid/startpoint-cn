@@ -531,6 +531,16 @@ class IconTests(unittest.TestCase):
 
 @unittest.skipUnless(_BASELINE, "需要 .cdn/cn 官方基线与 live store")
 class RowBuildTests(unittest.TestCase):
+    def test_thunder_ally_skills_add_own_crescent_before_matching_hit_refresh(self):
+        rows = self.built['ability']['1399903']
+        producer, refresh = rows[0], rows[4]
+        self.assertEqual(producer[27:32], ['23', '5', 'Yellow', '100000', '100000'])
+        self.assertEqual(refresh[27:32], producer[27:32])
+        self.assertEqual((producer[1], producer[6], producer[11]), ('false', '2', 'Yellow'))
+        self.assertEqual((producer[47], producer[48], producer[51], producer[68]),
+                         ('461', '0', '100000', K.UID_CRESCENT))
+        self.assertEqual((refresh[6], refresh[13], refresh[18]), ('42', '2', 'Yellow'))
+
     @classmethod
     def setUpClass(cls):
         cls.built = all_rows(ctx())

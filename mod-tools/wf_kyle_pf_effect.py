@@ -18,7 +18,7 @@ DONOR = 'starbreak_hunter_meteor23'
 PARTS = DONOR + '_explosion.parts.amf3.deflate'
 PARTS_SHA = '247ecf7011bdddd9ec26b89b9964170ee4044467fbdbcf0c8487236172876afd'
 KEEP = frozenset(('a','b','c','d','e','f','g','h','r','s','t','w','x','y','aa','ab','ac'))
-LIFETIMES = (48, 54, 60)
+LIFETIMES = (60, 68, 75)
 # Native frames 0..12 charge the removed ball; the useful border fades by 60.
 BEGIN, END = 13, 60
 
