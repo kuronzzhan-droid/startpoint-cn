@@ -807,7 +807,7 @@ class PackageTests(unittest.TestCase):
         cas = self.pack.pkg_flat(KL.CAS)
         for key, text in K.CAS_TEXTS.items():
             self.assertEqual(C.csv_split(cas[key])[0][0], text, key)
-        self.assertEqual(len(K.PANEL_LEADER.split("\n")), 7)
+        self.assertEqual(len(K.PANEL_LEADER.split("\n")), 8)
 
     def test_every_self_owned_key_is_claimed(self):
         # 漏认领 = rebase 静默回滚（记忆卡 wf-unison-slot-mechanics）
