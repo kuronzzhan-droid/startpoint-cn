@@ -51,7 +51,7 @@ def audio_format(line):
 def prompt_version(line):
     value=line.get('prompt_version',1)
     version=1 if value in (None,'') else int(value)
-    if version not in (1,2):raise ValueError('unsupported prompt template version: '+str(value))
+    if version not in (1,2,3):raise ValueError('unsupported prompt template version: '+str(value))
     return version
 
 
@@ -84,13 +84,23 @@ def prompt_v1(line,reference_count):
         '。只说以下日语台词：'+line.get('tts_text',line['ja']))
 
 
+def prompt_v3(line,reference_count):
+    """Brief positive direction for a single, already-cleaned voice reference."""
+    if reference_count > 1:raise ValueError('brief prompt accepts at most one reference')
+    text=check_spoken_text(spoken_text(line))
+    tone=str(line.get('tone') or '').strip()
+    if not tone:raise ValueError('brief prompt requires tone')
+    reference='保持@音频1的本人音色。' if reference_count else ''
+    return reference+'录音棚单人近讲干声。用'+tone+'的语气说日语：“'+text+'”'
+
+
 def payload(line):
     refs=[]
     for item in line['references']:
         path=Path(item['path']);raw=path.read_bytes()
         if sha(raw)!=item['sha256']:raise ValueError('reference hash drift')
         refs.append({'audio_data':base64.b64encode(raw).decode('ascii')})
-    builder=prompt_v1 if prompt_version(line)==1 else prompt_v2
+    builder={1:prompt_v1,2:prompt_v2,3:prompt_v3}[prompt_version(line)]
     result=dict(model=MODEL,text_prompt=builder(line,len(refs)),
         audio_config=dict(format=audio_format(line),sample_rate=48000,pitch_rate=0,speech_rate=0,
                           loudness_rate=0,enable_subtitle=True),watermark={})

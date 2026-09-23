@@ -24,6 +24,18 @@ class Response:
 
 
 class ArtVoiceApiTests(unittest.TestCase):
+    def test_brief_prompt_keeps_script_and_one_reference_without_legacy_directions(self):
+        value=dict(line(),prompt_version=3,tone='沉稳自然',performance='unused',voice_tag='unused')
+        text=api.prompt_v3(value,1)
+        self.assertIn('@音频1',text)
+        self.assertTrue(text.endswith('“準備できたわ。”'))
+        self.assertNotIn('unused',text)
+        self.assertNotIn('无背景音乐',text)
+        self.assertLess(len(text),100)
+        self.assertEqual(api.payload(dict(value,references=[]))['text_prompt'],api.prompt_v3(value,0))
+        with self.assertRaisesRegex(ValueError,'one reference'):api.prompt_v3(value,2)
+        with self.assertRaises(ValueError):api.prompt_v3(dict(value,tts_text='準備（できた）'),1)
+
     def test_success_and_cache_never_persist_key(self):
         calls=[];key='test-secret-credential-12345678'
         def opener(request,**kw):
