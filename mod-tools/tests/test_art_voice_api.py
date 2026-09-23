@@ -24,6 +24,28 @@ class Response:
 
 
 class ArtVoiceApiTests(unittest.TestCase):
+    def test_anchored_prompt_carries_normal_speech_first_and_short_acting_second(self):
+        with tempfile.TemporaryDirectory() as temp:
+            refs=[]
+            for purpose in ('normal_timbre','performance'):
+                raw=purpose.encode();path=Path(temp)/(purpose+'.wav');path.write_bytes(raw)
+                refs.append(dict(path=str(path),sha256=api.sha(raw),purpose=purpose))
+            value=dict(line(),prompt_version=4,tone='有力高呼',references=refs)
+            request=api.payload(value)
+            self.assertEqual([base64.b64decode(x['audio_data']) for x in request['references']],
+                             [b'normal_timbre',b'performance'])
+            self.assertIn('@音频2仅参考发力和语气',request['text_prompt'])
+            self.assertTrue(request['text_prompt'].endswith('“準備できたわ。”'))
+            self.assertNotIn(value['zh'],request['text_prompt'])
+            self.assertNotIn('无背景音乐',request['text_prompt'])
+            with self.assertRaisesRegex(ValueError,'first reference'):
+                api.payload(dict(value,references=list(reversed(refs))))
+            with self.assertRaisesRegex(ValueError,'one or two'):
+                api.payload(dict(value,references=[]))
+            with self.assertRaisesRegex(ValueError,'second reference'):
+                api.payload(dict(value,references=[refs[0],refs[0]]))
+            self.assertNotIn('@音频2',api.payload(dict(value,references=refs[:1]))['text_prompt'])
+
     def test_brief_prompt_keeps_script_and_one_reference_without_legacy_directions(self):
         value=dict(line(),prompt_version=3,tone='沉稳自然',performance='unused',voice_tag='unused')
         text=api.prompt_v3(value,1)

@@ -51,7 +51,7 @@ def audio_format(line):
 def prompt_version(line):
     value=line.get('prompt_version',1)
     version=1 if value in (None,'') else int(value)
-    if version not in (1,2,3):raise ValueError('unsupported prompt template version: '+str(value))
+    if version not in (1,2,3,4):raise ValueError('unsupported prompt template version: '+str(value))
     return version
 
 
@@ -94,13 +94,34 @@ def prompt_v3(line,reference_count):
     return reference+'录音棚单人近讲干声。用'+tone+'的语气说日语：“'+text+'”'
 
 
+def prompt_v4(line,reference_count):
+    """Brief direction with a required speaking anchor and optional acting sample.
+
+    The first reference must contain normal speech; a short combat shout alone
+    cannot anchor this mode. Explicit roles prevent an accidental ref reorder.
+    """
+    refs=line['references']
+    if reference_count not in (1,2) or len(refs)!=reference_count:
+        raise ValueError('anchored prompt requires one or two references')
+    if refs[0].get('purpose')!='normal_timbre':
+        raise ValueError('first reference must be normal_timbre')
+    if reference_count==2 and refs[1].get('purpose')!='performance':
+        raise ValueError('second reference must be performance')
+    text=check_spoken_text(spoken_text(line))
+    tone=str(line.get('tone') or '').strip()
+    if not tone:raise ValueError('anchored prompt requires tone')
+    note='说话音色始终以@音频1为准。'
+    if reference_count==2:note+='@音频2仅参考发力和语气。'
+    return note+'录音棚单人近讲干声。用'+tone+'的语气说日语：“'+text+'”'
+
+
 def payload(line):
     refs=[]
     for item in line['references']:
         path=Path(item['path']);raw=path.read_bytes()
         if sha(raw)!=item['sha256']:raise ValueError('reference hash drift')
         refs.append({'audio_data':base64.b64encode(raw).decode('ascii')})
-    builder={1:prompt_v1,2:prompt_v2,3:prompt_v3}[prompt_version(line)]
+    builder={1:prompt_v1,2:prompt_v2,3:prompt_v3,4:prompt_v4}[prompt_version(line)]
     result=dict(model=MODEL,text_prompt=builder(line,len(refs)),
         audio_config=dict(format=audio_format(line),sample_rate=48000,pitch_rate=0,speech_rate=0,
                           loudness_rate=0,enable_subtitle=True),watermark={})
