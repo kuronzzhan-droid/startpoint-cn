@@ -213,7 +213,7 @@ SKILL_ENERGY = {"1": {"c4": 550, "c5": 550, "c6": 1},
 # live 已上线的队长块接管（desc_override_ginovi / _white_tiger_summer / _*_campus）全是 "\n"。
 
 #: 仅主位（c1 unisonable = false）的槽 —— 整键单值，`_UNISONABLE` 由它派生。
-#: 槽 3 是回响的唯一产出口，作者 09-21 反馈「能力 3 没带主位限制」指的就是它的面板没画 Ⓜ。
+#: 能力侧回响仅槽 3 产出；队长侧另有每 3 PF +2，均不让合击位单独产层。
 MAIN_ONLY_SLOTS = (3,)
 #: desc_override 会盖掉客户端逐行画的 Ⓜ ⇒ 主位键的每一行必须自带图标。
 #: 字符串形状照 live 先例（desc_override_ginovi_3 / _white_tiger_summer_1/_3 / _*_campus_*）。
@@ -226,7 +226,7 @@ PANEL_LEADER = "\n".join((
     "自身冲刺间隔无法进一步缩短",
     "持有贯穿效果时，暗属性角色攻击力＋300%、强化弹射伤害＋200%",
     "暗属性共鸣时，贯穿效果持续时间＋30%；暗属性角色发动技能时，自身立即获得强化弹射效果",
-    "强化弹射每累计命中4次，暗属性角色攻击力＋5%（最多10次）",
+    "每发动3次强化弹射（含额外触发），自身“回响”＋2层",
     "强化弹射每累计命中4次，自身攻击力＋50%",
     "冲刺时，立即获得强化弹射效果（冷却时间：1.5秒）",
 ))
@@ -303,14 +303,13 @@ LEADER: tuple[tuple[str, str, dict[int, str], str | None], ...] = (
       16: ELEMENT_TOKEN, 18: "0", 25: "0", 37: "(None)", 44: "0", 45: "190",
       49: "30000", 50: "30000"},
      "暗·编成≥6 时: 自身 贯通延长 30%"),
-    # L5 全等级 PF 累计命中4次（限10次）→ 全队(暗)攻击力5%。原生 trigger15 的
-    # Lv1High 指 level >= 1：EnemyImpl.countUpPowerFlipHitLvHighAbilityTrigger
-    # 对三档均递增共享计数15，不能误换成发动次数2或按单个敌人计数183。
-    ("131182#1", "official",
-     {0: CODE, 1: "0", 3: "0", 4: "0", 11: "0", 18: "0", 25: "15", 28: "400000",
-      29: "400000", 32: "10", 33: "0", 37: "(None)", 44: "0", 45: "32", 46: "5",
-      47: ELEMENT_TOKEN, 49: "5000", 50: "5000"},
-     "强化弹射HitLv1≥4(限10次) → 赋予全队(暗) 攻击力 5%"),
+    # 每 3 次 PF → 同一回响计数 +2。number=1、initial_multiply=2，避免分裂成两枚图标。
+    ("111183#3", "official",
+     {0: CODE, 1: "0", 3: "0", 4: "0", 11: "0", 18: "0", 25: "2", 26: "0",
+      28: "300000", 29: "300000", 32: "(None)", 33: "0", 37: "(None)", 44: "0",
+      45: "461", 46: "0", 49: "100000", 50: "100000", 57: "100000", 58: "100000",
+      66: UID, 72: "2", 73: "0"},
+     "强化弹射≥3 → 自身 状态固有 100%×1次"),
     # ---------------- rework1 新增 ----------------
     # L6 暗共鸣 + 暗属性角色发动技能时 → 629 PF 追击（官方同形 141111#1：trig23 / puller5 / 组）
     ("169999#4", "live",
@@ -330,6 +329,18 @@ LEADER: tuple[tuple[str, str, dict[int, str], str | None], ...] = (
       28: "100000", 29: "100000", 32: "(None)", 33: "90", 37: "(None)", 44: "0",
       45: "629", 46: "0", 68: CAS_INVOKE_DASH, 69: INVOKE_PROGRAM},
      "冲刺≥1(CT1.5秒) → 自身 发动技能动作[%s]" % CAS_INVOKE_DASH),
+    # 与两条 629 的门槛/拉取目标/冷却完全相同，每次追加只向公共 PF 次数池加 1。
+    # 原生 248 -> CountUp(0)；trigger2 读取 Count(0)，不是多段命中的 trigger15。
+    ("141147#1", "official",
+     {0: CODE, 1: "0", 2: "0", 3: "0", **_PRE_RES_L, 11: "0", 18: "0", 25: "23",
+      26: "5", 27: ELEMENT_TOKEN, 28: "100000", 29: "100000", 32: "(None)", 33: "0",
+      37: "(None)", 44: "0", 45: "248", 49: "100000", 50: "100000"},
+     "暗·编成≥6 时: 技能发动≥1 → 自身 计数+强化弹射 100%"),
+    ("141147#1", "official",
+     {0: CODE, 1: "0", 2: "0", 3: "0", 4: "0", 11: "0", 18: "0", 25: "4", 26: "0",
+      28: "100000", 29: "100000", 32: "(None)", 33: "90", 37: "(None)", 44: "0",
+      45: "248", 49: "100000", 50: "100000"},
+     "冲刺≥1(CT1.5秒) → 自身 计数+强化弹射 100%"),
 )
 LEADER_ROWS = len(LEADER)
 
@@ -863,33 +874,10 @@ def build_invoke_tree(ctx):
     这里的命中块 = 官方 ``special_lv3`` 里 ``CollisionOfBallAndEnemy`` 分支的 ``CreateReferencePoint``
     整块（特殊演出 + 两段 ``CreateHitArea``，官方倍率 4 + 9 = 13×，锚 ``-18`` 球、坐标系 ``AB``）。
 
-    伤害归属（反馈轮 4，判定链与行号见 :data:`INVOKE_BTA`）：根头 ``tree[10] = INVOKE_BTA = 3``
-    只切**通用伤害池** —— ``NormalAttackCalculator.as:422`` 进「强化弹射伤害 ＋X%」，
-    ``as:477`` 不进「技能伤害 ＋X%」。她那一池 PF 通用增伤（队长 200% ＋ 贯通 150% ＋
-    每发 PF 12%×25 ＋ 回响每层 25%）因此全部吃得到。
-
-    引擎硬限（629 ＝ ``ActionKind.AbilitySkill``，``createdByPowerFlipAction`` 恒 false）：
-    PF 分档乘区（``NormalAttackCalculator.as:446``）、PF 独立乘区（``as:457``，她的 **413 两行**：
-    能力 3 第 3 条 5%／层×5 ＋ 能力 5 第 1 条常驻 30% ＝ 合计 **＋55%**）、PF 场效果独立乘区
-    （``as:467``）、敌方 PF 耐性（``as:593``）**一律吃不到**；技能独立乘区（``as:499/521``）
-    与敌方**技能**耐性（``as:611``）反过来**甩不掉**；屏幕上弹出的累计伤害标签
-    恒为「技能伤害」（``EffectManagerImpl.as:693-707``）。这三件事没有数据层开关。
-
-    那 ＋55% 是**面板向玩家承诺、这一下证明拿不到**的缺口。数据层唯一能补上它的写法是把那两行
-    从 during kind **413**（``SeparatedTermPowerFlipDamage``，
-    ``CommonAbilityContentMasterValue.as:1703``）换成 during kind **23**
-    （``PowerFlipDamage``，``as:963``）—— 23 走 ``DuringAbilitySource.as:1080`` →
-    ``CommonAbilityBattleContent.PowerFlipDamage`` → ``AbilitySummarizer.as:590`` →
-    ``ChangeContent`` index 10 → ``AbilityContentSummary.getStatModifierPowerFlipDamage``
-    → ``NormalAttackCalculator.as:424`` 的**通用池**（bta=3 读得到）；413 走
-    ``DuringAbilitySource.as:2530`` → ``ChangeContent`` index 17 → ``as:457``，
-    只在 ``as:446`` 那条 ``createdByPowerFlipAction`` 的 if 里，对 629 恒读不到。
-    代价：对她**真正拍板的强化弹射**而言，这两行会从独立乘区（×1.55）降级为与其它 PF% 同池
-    相加 —— 是一次实打实的平衡改动，必须作者拍板。列为施工单 §12.6 **方案 F**，本轮不动。
-
+    2026-09-24：根头 133 由 damage-type-rules-v1 按 PF3 完整结算，保留原生 413 乘区。
     判定区那一位一律留 :data:`INVOKE_HITAREA_BTA` ``= 0``（它会回落到根头，不是开关）。
-    不叠 ``PF_SCALE``，也不接 248 CountUpPowerFlip（不凭空加 PF 计数器 ⇒ 不会偷偷给
-    「每 N 次强化弹射」类触发器与回响层数加速；触发器 2/65 只认真正的拍板）。
+    不叠 ``PF_SCALE``。两条队长 248 与 629 同门槛、同冷却，每次追加只计一次公共 PF 发动，
+    不按此树的多段命中重复计数，也不伪造分档拍板事件（trigger65）。
     """
     base = copy.deepcopy(source_tree(ctx, SPECIAL_PROGRAMS[3], SPECIAL_SHA[3]))
     body = base[11][1]
@@ -943,15 +931,15 @@ def build_invoke_tree(ctx):
         raise KitError(f"629 载荷树残留 {invoke_fly} 条 ACFlying（浮游已撤，不该再出现）")
     return tree, {"program": INVOKE_PROGRAM, "buff_target_as": INVOKE_BTA,
                   "hit_area_buff_target_as": hit_area_bta,
-                  # 反馈轮 4：引擎能给到的归属边界（源码行号见 INVOKE_BTA）。
+                  # 需已声明的 damage-type-rules-v1；公共发动次数由队长248配对行提供。
                   "damage_pools": {"power_flip_general": True, "skill_general": False,
-                                   "power_flip_charge_tier": False,
-                                   "power_flip_separated_term": False,
-                                   "power_flip_resistance": False,
-                                   "skill_separated_term": True,
-                                   "skill_resistance": True,
-                                   "counts_as_power_flip_for_triggers": False,
-                                   "damage_label": "skill"},
+                                   "power_flip_charge_tier": True,
+                                   "power_flip_separated_term": True,
+                                   "power_flip_resistance": True,
+                                   "skill_separated_term": False,
+                                   "skill_resistance": False,
+                                   "counts_as_power_flip_for_triggers": True,
+                                   "damage_label": "power_flip"},
                   "multipliers": scaled, "total": round(sum(scaled), 6),
                   "scale": INVOKE_SCALE, "official_effects": paths,
                   "ac_flying_count": invoke_fly,
@@ -1257,12 +1245,10 @@ def build(ctx) -> dict[str, Any]:
         "（能力2 数值翻倍、能力3 加暗共鸣门且层数上限 5→99、能力4 新增每层回响自身攻击+25%、"
         "能力5 新增常驻独立乘区 +30%）；固有「回响」上限 5→99",
         f"629 PF 追击：官方 special_lv3 命中块 ×{INVOKE_SCALE} ＝ {invoke_gates['total']}×，"
-        f"tree[10]={INVOKE_BTA}、判定区 params[23]={INVOKE_HITAREA_BTA}（通用伤害池走"
-        "「强化弹射伤害+X%」、不走「技能伤害+X%」；PF 分档/独立乘区/PF 耐性与伤害标签是引擎硬限，"
-        "见 INVOKE_BTA 的判定链）；去掉 SetPowerFilpSuppress / NotifyPowerflipEnd；"
-        "不接 248，PF 计数器不被凭空推进；"
-        "她两行 413 独立乘区（能力3#3 5%/层×5 + 能力5#1 30% = +55%）这一下吃不到 —— "
-        "数据层唯一补法是改成 kind 23（施工单 §12.6 方案 F，待作者拍板，本轮未动）",
+        f"tree[10]={INVOKE_BTA}、判定区 params[23]={INVOKE_HITAREA_BTA}，"
+        "由 damage-type-rules-v1 按 PF3 结算；保留原生413乘区。"
+        "两条队长248与629配对，每次追加计1次公共PF发动；不按命中数重复计数，"
+        "不触发分档拍板事件；每3次PF给同一回响计数+2层。",
         f"技能（未改）：内层1 {skill_gates['1']['multipliers']['field'][0]}×18＝"
         f"{round(skill_gates['1']['multipliers']['field'][0] * 18, 2)}×，"
         f"内层2 满级 {skill_gates['2']['multipliers']['field'][1]}×18＝"

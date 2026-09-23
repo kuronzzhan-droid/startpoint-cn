@@ -160,7 +160,7 @@ class ConstantTests(unittest.TestCase):
         self.assertIn("额外乘区", K.PANEL_ABILITY[5])
 
     def test_plan_counts(self):
-        self.assertEqual(K.LEADER_ROWS, 8)
+        self.assertEqual(K.LEADER_ROWS, 10)
         self.assertEqual(K.ABILITY_RECORDS, 19)
         self.assertEqual({slot: len(rows) for slot, rows in K.PLAN.items()},
                          {1: 2, 2: 2, 3: 3, 4: 3, 5: 6, 6: 3})
@@ -235,11 +235,10 @@ class PlanSelfCheckTests(unittest.TestCase):
                           if cells.get(45) == "629"], [5, 7])
 
     def test_uncapped_hit_row(self):
-        """L7「强化弹射Lv1命中每达到4次，自身攻击力＋50%」与 L5 并行，且不设触发上限。"""
-        l5, l7 = K.LEADER[4][2], K.LEADER[6][2]
-        self.assertEqual((l5[25], l7[25]), ("15", "15"))
-        self.assertEqual((l5[28], l7[28]), ("400000", "400000"))
-        self.assertEqual(l5[32], "10")               # 官方原行：限 10 次、赋全队
+        """任意等级PF累计命中4次自身攻击＋50%保持无上限。"""
+        l7 = K.LEADER[6][2]
+        self.assertEqual(l7[25], "15")
+        self.assertEqual(l7[28], "400000")
         self.assertEqual(l7[32], "(None)")           # 新行：无上限、只给自身
         self.assertEqual((l7[46], l7[47]), ("0", ""))
         self.assertEqual((l7[49], l7[50]), ("50000", "50000"))
@@ -313,8 +312,10 @@ class PlanSelfCheckTests(unittest.TestCase):
         self.assertEqual(readers, [(3, 1), (3, 2), (4, 2), (6, 2)])
         for slot, _index in givers:
             self.assertIn(slot, K.MAIN_ONLY_SLOTS)
-        for _a, _s, cells, _e in K.LEADER:           # 队长行只在主位生效，也不许另加层
-            self.assertNotIn(K.UID, set(cells.values()))
+        # 2026-09-24 作者增加队长每3PF回响+2；队长位仍不让合击位单独产层。
+        leader_givers = [cells for _a, _s, cells, _e in K.LEADER if cells.get(66) == K.UID]
+        self.assertEqual(len(leader_givers), 1)
+        self.assertEqual(leader_givers[0][72], "2")
 
     def test_precondition_kinds_are_whitelisted(self):
         for index, (_a, _s, cells, _e) in enumerate(K.LEADER):
@@ -491,7 +492,7 @@ class RowAssemblyTests(unittest.TestCase):
             KL.check_ability_key(rows, key, K.CODE, slot)
             K._row_self_check("ability", rows, key)
         self.assertEqual(checked, K.LEADER_ROWS + K.ABILITY_RECORDS)
-        self.assertEqual(checked, 27)
+        self.assertEqual(checked, 29)
 
     def test_required_capabilities(self):
         leader, ability = assembled_rows()
@@ -741,13 +742,13 @@ class InvokeTreeTests(unittest.TestCase):
         self.assertEqual(gates["damage_pools"], {
             "power_flip_general": True,          # NormalAttackCalculator.as:422（bta==3）
             "skill_general": False,              # as:477（bta==3 ⇒ 不进）
-            "power_flip_charge_tier": False,     # as:446 只看 createdByPowerFlipAction
-            "power_flip_separated_term": False,  # as:457（在 446 那条 if 里），413 两行吃不到
-            "power_flip_resistance": False,      # as:593
-            "skill_separated_term": True,        # as:499/521，甩不掉
-            "skill_resistance": True,            # as:611，甩不掉
-            "counts_as_power_flip_for_triggers": False,   # 不接 248，触发器 2/65 只认真拍板
-            "damage_label": "skill"})            # EffectManagerImpl.as:693-707，数据层无解
+            "power_flip_charge_tier": True,      # damage-type-rules-v1，固定PF3
+            "power_flip_separated_term": True,
+            "power_flip_resistance": True,
+            "skill_separated_term": False,
+            "skill_resistance": False,
+            "counts_as_power_flip_for_triggers": True,    # 队长248行合并普通发动计数
+            "damage_label": "power_flip"})
 
     def test_power_flip_lifecycle_commands_are_gone(self):
         # SetPowerFilpSuppress 会压掉玩家真正的拍板；NotifyPowerflipEnd 在非 PF 上下文不计数
@@ -875,7 +876,7 @@ class PackageTests(unittest.TestCase):
 
     def test_report_status_gate_only_covers_kit_owned_work(self):
         gate = self.report["kit_gate"]
-        self.assertEqual(gate["rows"], 27)
+        self.assertEqual(gate["rows"], 29)
         self.assertEqual(gate["programs"], 6)               # 技能 2 档 + 722 三档 + 629 追击
         expected = KL.READY if gate["pixel_present"] and not gate["pixel_missing"] else KL.DRAFT
         self.assertEqual(self.report["status"], expected)
