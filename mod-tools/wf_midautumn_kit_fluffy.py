@@ -7,12 +7,12 @@
 
 一句话：队长位授予**双类型强化弹射**（722 ＝ 官方 ``fighter`` 底座 ＋ 官方 ``supporter`` 辅助增益块）；
 队长技换成「开局铺垫 → 每次 PF 滚雪球 → 每 5 次 PF Lv3 触发技能 → 每 250 连击自身技伤翻倍」；
-技能四连重击改**八连重击＋无后摇**、满级单值 **65×**；两处「立即发动自身技能」统一落成
+技能四连重击改**八连重击＋无后摇**、基础前段 **25×**＋裂地 **65×**；两处「立即发动自身技能」统一落成
 **一棵 629 ``ability_skill`` 树**（``_deviations.json›fluffy[1]`` 的追击等价）。
 
 本模块负责：
 
-* 队长 10 行 ＋ 词条 6 键 16 条（官方/live donor ＋ 逐格改 ＋ ``wf_client_legality`` ＋ ``wf_describe`` 回读）；
+* 队长 13 行 ＋ 词条 6 键 18 条（官方/live donor ＋ 逐格改 ＋ ``wf_client_legality`` ＋ ``wf_describe`` 回读）；
 * 8 条 ``custom_ability_string``：536/704 两条强化开关串、629 串、722 串、4 个 ``desc_override``；
 * ``power_flip_action`` 三档覆盖树（fighter ＋ supporter 增益块）；
 * 629 ``ability_skill`` 树（技能档 2 的深拷贝）；
@@ -58,7 +58,7 @@ TEMPLATE_ID, TEMPLATE_CODE = 141033, "combat_animal"
 GRAFT_CODE = "combat_animal_xm21"              # 141081（她的圣诞版）：重击段 + 裂地演出的血统
 
 ABILITY_KEYS = tuple(f"{CID}{slot}" for slot in range(1, 7))
-LEADER_ROW_COUNT = 10
+LEADER_ROW_COUNT = 13
 ABILITY_RECORD_TOTAL = 18
 
 # ---------------------------------------------------------------- 自有键
@@ -90,10 +90,10 @@ MAIN_ICON = " <icon id='main'>  "              # desc_override 会盖掉客户�
 TEXTS: dict[str, str] = {
     "skill1": "玉杵捣月·桂风连打",
     "skill2": "玉杵捣月·桂风连打",
-    "desc1": "向距离最近的敌人突进，对接触到的敌人使出精准连击，随后以玉杵般的八连重击追打，"
-             "最后砸下裂地一击（无后摇），造成自身攻击力65倍的风属性伤害，并赋予自身攻击力提升效果",
-    "desc2": "向距离最近的敌人突进，对接触到的敌人使出精准连击，随后以玉杵般的八连重击追打，"
-             "最后砸下裂地一击（无后摇），造成自身攻击力65倍的风属性伤害，并赋予自身攻击力提升效果",
+    "desc1": "向距离最近的敌人突进，使出精准连击与八连重击，合计造成自身攻击力25倍的风属性伤害／"
+             "最后砸下裂地一击（无后摇），造成自身攻击力65倍的风属性伤害／赋予自身攻击力提升效果",
+    "desc2": "向距离最近的敌人突进，使出精准连击与八连重击，合计造成自身攻击力25倍的风属性伤害／"
+             "最后砸下裂地一击（无后摇），造成自身攻击力65倍的风属性伤害／赋予自身攻击力提升效果",
 }
 SPEC = {
     "requires_client_base": "1.4.998",
@@ -115,9 +115,9 @@ WIND_LEADER = {4: "2", 7: "600000", 8: "600000", 9: "Green"}
 WIND_ABILITY = {6: "2", 9: "600000", 10: "600000", 11: "Green"}
 
 PF_LV3_THRESHOLD = "500000"     # 5 次 Lv3 强化弹射
-PF_LV3_COOLTIME = "600"         # 10 秒（帧）
+PF_LV3_COOLTIME = "360"         # 6 秒（帧）
 COMBO_INVOKE_THRESHOLD = "15000000"   # 150 连击
-COMBO_INVOKE_COOLTIME = "900"         # 15 秒（帧）
+COMBO_INVOKE_COOLTIME = "720"         # 12 秒（帧）
 
 # ---- 「技能打完最后一段后清空连击数」（作者反馈轮 1，2026-09-21）
 #
@@ -136,7 +136,7 @@ COMBO_INVOKE_COOLTIME = "900"         # 15 秒（帧）
 # （精准连击 1 条 ×10 命中 + 玉杵 8 条）把 ``p16 incrementCombo`` 写 ``false``——
 # 客户端 ``EnemyImpl`` 的守卫是 ``incrementCombo && !createdByPoison && …``，为假时
 # 既不自然 +1 连击、也**不记 SkillHit**，于是整棵技能树只有裂地一击会把计数推到 1。
-# 每段「命中连击＋50」走的是判定区 on-hit 块里的 ``AddCombo``，与这个标志无关，不受影响。
+# 每段「命中连击＋55」走的是判定区 on-hit 块里的 ``AddCombo``，与这个标志无关，不受影响。
 COMBO_RESET_TRIGGER = "107"          # SkillHit
 COMBO_RESET_THRESHOLD = "100000"     # 1 次（整棵技能树只有裂地一击记 SkillHit）
 COMBO_RESET_KIND = "390"             # SetCombo
@@ -177,17 +177,23 @@ LEADER: tuple[tuple[str, str, dict[int, str], str], ...] = (
     ("121177#5", "official",
      {0: CODE, 9: "Green", 25: "65", 28: PF_LV3_THRESHOLD, 29: PF_LV3_THRESHOLD,
       33: PF_LV3_COOLTIME, 49: "50000000", 50: "50000000"},
-     "风·编成≥6 时: 强化弹射Lv3≥5(CT10秒) → 自身 追加连击 500"),
+     "风·编成≥6 时: 强化弹射Lv3≥5(CT6秒) → 自身 追加连击 500"),
     ("111165#4", "official",
      {0: CODE, 9: "Green", 11: "0", 12: "", 14: "", 15: "", 17: "",
       28: PF_LV3_THRESHOLD, 29: PF_LV3_THRESHOLD, 33: PF_LV3_COOLTIME,
       68: INVOKE_STRING, 69: INVOKE_PROGRAM},
-     f"风·编成≥6 时: 强化弹射Lv3≥5(CT10秒) → 自身 发动技能动作[{INVOKE_STRING}]"),
+     f"风·编成≥6 时: 强化弹射Lv3≥5(CT6秒) → 自身 发动技能动作[{INVOKE_STRING}]"),
     # L#9 每 250 连击 → 自身技能伤害
     ("241004#1", "official",
      {0: CODE, **WIND_LEADER, 28: "25000000", 29: "25000000", 32: "(None)",
       45: "34", 46: "0", 47: "", 49: "100000", 50: "100000"},
      "风·编成≥6 时: 连击≥250 → 自身 技能伤害 100%"),
+) + tuple(
+    ("111183#1", "official",
+     {0: CODE, **WIND_LEADER, 25: "2", 28: "300000", 29: "300000", 32: "(None)",
+      33: "0", 45: kind, 46: "5", 47: "Green", 49: "5000", 50: "5000"},
+     f"风·编成≥6 时: 强化弹射≥3 → 赋予全队(风) {name} 5%")
+    for kind, name in (("35", "技能槽充能"), ("245", "2号位技能槽"), ("694", "独立乘区技能伤害"))
 )
 
 _A, _AC = "action_skill", "attack_common"
@@ -216,8 +222,8 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str], ...]] = {
         ("1510031#0", "official",
          {0: f"{CODE}_2", 1: "true", 2: _AC, 3: "0", 4: "",
           98: "0", 99: "", 100: "0", 101: "0", 108: "false",
-          109: "423", 110: "0", 111: "", 113: "0", 114: "0", 118: "12"},
-         "持续·HP≥ → 自身 限制技能槽增加 0%"),
+          109: "423", 110: "5", 111: "", 113: "0", 114: "0", 118: "12"},
+         "持续·HP≥ → 赋予全队 限制技能槽增加 0%"),
     ),
     3: (
         ("1410333#1", "official",
@@ -233,7 +239,7 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str], ...]] = {
           27: "12", 28: "", 30: COMBO_INVOKE_THRESHOLD, 31: COMBO_INVOKE_THRESHOLD,
           34: "(None)", 35: COMBO_INVOKE_COOLTIME,
           70: INVOKE_STRING, 71: INVOKE_PROGRAM},
-         f"风·编成≥6 时: 连击≥150(CT15秒) → 自身 发动技能动作[{INVOKE_STRING}]"),
+         f"风·编成≥6 时: 连击≥150(CT12秒) → 自身 发动技能动作[{INVOKE_STRING}]"),
         # kind 694（瞬发独立乘区技能伤害）官方 0 行，只有 live 先例 ⇒ 取 store（同玛格诺斯 A5#0）
         ("1299925#1", "live",
          {0: f"{CODE}_3", 1: "false", 2: _A, **WIND_ABILITY, 51: "10000", 52: "10000"},
@@ -285,8 +291,9 @@ CAS_TEXTS: dict[str, str] = {
     LEADER_OVERRIDE: "\n".join((
         "风属性共鸣时，自身的强化弹射同时具备辅助与格斗两种类型",
         "风属性共鸣时，战斗开始时风属性角色技能槽最大值＋20%、技能充能速度＋20%、技能槽＋50%",
+        "风属性共鸣时，每发动3次强化弹射，风属性角色技能充能速度＋5%、技能槽最大值＋5%、技能伤害额外乘区＋5%",
         "风属性共鸣时，每发动1次强化弹射，风属性角色攻击力＋20%、技能伤害＋20%、连击＋5",
-        "风属性共鸣时，每发动5次强化弹射Lv3时，连击＋500，并触发自身技能效果（不消耗技能槽，冷却时间：10秒）",
+        "风属性共鸣时，每发动5次强化弹射Lv3时，连击＋500，并触发自身技能效果（不消耗技能槽，冷却时间：6秒）",
         "风属性共鸣时，每达到250连击，自身技能伤害＋100%",
         "风属性共鸣时，冲刺间隔缩短效果不会让自身的冲刺冷却时间进一步缩短",
     )),
@@ -298,14 +305,14 @@ CAS_TEXTS: dict[str, str] = {
         "风属性共鸣时，冲刺时自身攻击力＋25%（6秒，最多累积4次）",
         "风属性共鸣时，冲刺时连击＋5",
         "风属性共鸣时，发动技能时自身技能伤害＋40%（最多5层）",
-        "自身无法因技能或能力效果增加技能槽（战斗开始时除外）",
+        "全队无法因技能或能力效果增加技能槽（战斗开始时除外）",
     )),
     SLOT_OVERRIDE[3]: "\n".join(MAIN_ICON + line for line in (
         "风属性共鸣时，连击达到50以上时，自身技能伤害＋200%",
         "风属性共鸣时，发动强化弹射时，连击＋10",
-        "风属性共鸣时，每达成150连击，触发自身技能效果（不消耗技能槽，冷却时间：15秒）",
+        "风属性共鸣时，每达成150连击，触发自身技能效果（不消耗技能槽，冷却时间：12秒）",
         "风属性共鸣时，自身对敌人的技能伤害额外乘区＋10%",
-        "风属性共鸣时，强化『玉杵捣月·桂风连打』的连击效果，技能命中每次连击＋50",
+        "风属性共鸣时，强化『玉杵捣月·桂风连打』的连击效果，技能命中每次连击＋55",
         "风属性共鸣时，自身技能的最后一击结束后，连击数归零",
     )),
     SLOT_OVERRIDE[5]: "\n".join((
@@ -374,17 +381,17 @@ EFFECT_DUMMY = "ダミー演出"
 EFFECT_CRACK_LABEL = "裂地演出"
 
 # 倍率：两档同值、min=max 拉平（施工单偏离 D-4）。
-# 满级无开关合计 = 10×1.2 + 8×2.5 + 33.0 = 65.0×（作者「技能倍率为 65 倍」）；
-# 536 开关再给玉杵每段 +0.75 ⇒ 71.0×。
+# 2026-09-24：前段按原 12:20 比例分配 25 倍，裂地 65 倍，基础合计 90 倍。
+# 536 开关保留玉杵每段 +0.75，以及裂地随连击数提升的原生乘区。
 SKILL_MULT: dict[str, dict[str, dict[str, float]]] = {
     level: {
-        "rush": {"min": 1.2, "max": 1.2},
-        "pestle": {"min": 2.5, "max": 2.5, "alv_min": 0.75, "alv_max": 0.75},
-        "finisher": {"min": 33.0, "max": 33.0},
+        "rush": {"min": 0.9375, "max": 0.9375},
+        "pestle": {"min": 1.953125, "max": 1.953125, "alv_min": 0.75, "alv_max": 0.75},
+        "finisher": {"min": 65.0, "max": 65.0},
     } for level in ("1", "2")
 }
 # 704（alv2）驱动的每段命中追加连击：没开 704 时 ALv 项返回 0 ⇒ 加 0
-COMBO_PER_HIT = {"min": 0.0, "max": 0.0, "alv2_min": 50.0, "alv2_max": 50.0}
+COMBO_PER_HIT = {"min": 0.0, "max": 0.0, "alv2_min": 55.0, "alv2_max": 55.0}
 
 # donor 现值（防母本漂移；只比 min/max，容差 1e-6）
 DONOR_MULT = {
@@ -392,7 +399,7 @@ DONOR_MULT = {
     "2": {"rush": (0.429, 0.5), "pestle": (2.1775, 2.5), "finisher": (21.71, 25.0)},
 }
 HITS = {"rush": 10, "pestle": 8, "finisher": 1}
-SKILL_TOTAL_NO_FLAG = 65.0
+SKILL_TOTAL_NO_FLAG = 90.0
 MIN_ENCODED_BYTES = 2000
 
 # 722：官方 fighter 底座（实读 2026-09-21，官方基线）
@@ -634,7 +641,7 @@ def _silence_skill_hit(cna: list, label: str) -> list:
 
     只影响客户端 ``EnemyImpl`` 里那道 ``incrementCombo && !createdByPoison && …`` 守卫：
     这一击不再自然 +1 连击，也**不再记 SkillHit**（``squadManager.countUpSkillHit`` 被跳过）。
-    每段「命中连击＋50」走的是判定区 on-hit 块里的 ``AddCombo``，与本标志无关。
+    每段「命中连击＋55」走的是判定区 on-hit 块里的 ``AddCombo``，与本标志无关。
     """
     if len(cna) <= CNA_INCREMENT_COMBO:
         raise KitError(f"{label}: CreateNormalAttack has {len(cna) - 1} params, expected 16")
@@ -1090,7 +1097,7 @@ def build(ctx) -> dict[str, Any]:
     if MS.text_placeholders(spec):
         raise KitError(f"design texts still placeholders: {MS.text_placeholders(spec)}")
 
-    # ---- 1) 队长技 10 行（含队长表禁 kind 与 trigger-65 配对检查）
+    # ---- 1) 队长技 13 行（含队长表禁 kind 与 trigger-65 配对检查）
     leader_rows, leader_evidence = build_leader_rows(ctx)
     capabilities: set[str] = set()
     for ev in leader_evidence:
@@ -1230,7 +1237,7 @@ def build(ctx) -> dict[str, Any]:
                 "玩家在游戏里没有任何途径知道格斗那一半存在。722 行自己的 c82 串在 desc_override "
                 "接管队长面板后不会显示，只能写进 override 正文"},
         {"want": "作者的 4 条队长技 = 4 行",
-         "got": "10 行（722 + 开局 3 + 每次 PF 3 + 每 5 次 PF Lv3 2 + 每 250 连击 1），"
+         "got": "13 行（722 + 开局 3 + 每次 PF 3 + 每 5 次 PF Lv3 2 + 每 250 连击 1 + 每 3 PF 成长 3），"
                 "面板靠 desc_override 合并回 5 行",
          "why": "一条面板文案里并列的多个效果在数据层是不同 kind，必须分行"},
         {"want": "队长全队主轴合计落在裁决 §2 的 490–650% 带内",
@@ -1238,7 +1245,7 @@ def build(ctx) -> dict[str, Any]:
          "why": "作者原话逐条都没写上限，裁决 §3 又规定「无上限的成长写到效果为止」；"
                 "对冲＝技能倍率从 78× 砍到 65×、能力 3 的独立乘区从 20% 砍到 10%"},
         {"want": "技能两档保持觉醒前/后的 2/3 梯度与 SLv1→满级渐进",
-         "got": "两档同值、min=max 拉平（都是 65×、能量都 580）",
+         "got": "两档同值、min=max 拉平（前段25倍＋裂地65倍、能量都580）",
          "why": "目标面板只有一行技能描述、一个能量值与一个倍率；作者放行 #5 对同批角色已定"
                 "「觉醒前后两档都写这个数」"},
         {"want": "能力 3 第 4 条「技能伤害额外乘区＋10%」用持续 411",

@@ -149,12 +149,12 @@ class PlanStaticTests(unittest.TestCase):
 
     def test_trigger65_pair_shares_threshold_and_cooltime(self):
         """L#7（226 连击＋500）与 L#8（629）是同触发两行，阈值/CT 必须逐格一致（A 卡 §3.4）。"""
-        pair = [cells for _d, _s, cells, _e in K.LEADER if 33 in cells]
+        pair = [cells for _d, _s, cells, _e in K.LEADER if cells.get(25) == "65" or 68 in cells]
         self.assertEqual(len(pair), 2)
         a, b = pair
         for col in (28, 29, 33):
             self.assertEqual(a[col], b[col], f"c{col} 不一致会出现「加了连击没放技能」")
-        self.assertEqual(a[33], "600", "CT 10 秒 = 600 帧")
+        self.assertEqual(a[33], "360", "CT 6 秒 = 360 帧")
 
     def test_lv3_pair_checker_catches_drift(self):
         rows = [[""] * 124 for _ in range(2)]
@@ -243,7 +243,7 @@ class PanelTextTests(unittest.TestCase):
         self.assertIn("65", K.TEXTS["desc1"])
 
     def test_skill_total_matches_the_number_written_on_the_panel(self):
-        self.assertEqual(K.SKILL_TOTAL_NO_FLAG, 65.0)
+        self.assertEqual(K.SKILL_TOTAL_NO_FLAG, 90.0)
         for level in ("1", "2"):
             mult = K.SKILL_MULT[level]
             total = sum(mult[seg]["max"] * K.HITS[seg] for seg in K.HITS)
@@ -309,7 +309,7 @@ class DslToolTests(unittest.TestCase):
         self.assertEqual(K.signature_problems(["Command", cmd]), [])
         value = cmd[1][0]
         self.assertEqual((value["min"], value["max"]), (0.0, 0.0))
-        self.assertEqual((value["alv2_min"], value["alv2_max"]), (50.0, 50.0))
+        self.assertEqual((value["alv2_min"], value["alv2_max"]), (55.0, 55.0))
 
     def test_roundtrip_gate_rejects_the_wrapper_shell(self):
         """``encode_amf3`` 只吃裸树；喂 ``{tree, numbers}`` 壳 = 进战斗 F1034。"""
@@ -349,7 +349,7 @@ class RowAssemblyTests(unittest.TestCase):
         rule, = [row for row in rows[f"{K.CID}2"] if row[109] == "423"]
         self.assertEqual([rule[i] for i in (6, 13, 20)], ["0"] * 3)
         self.assertEqual(rule[97:102], ["0", "0", "", "0", "0"])
-        self.assertEqual((rule[110], rule[118]), ("0", "12"))
+        self.assertEqual((rule[110], rule[118]), ("5", "12"))
         self.assertEqual(rule[1], "true")  # Both main and unison share the restriction.
 
     def test_leader_rows_render_exactly_as_planned(self):
@@ -497,7 +497,7 @@ class SkillTreeTests(unittest.TestCase):
             combos = list(wf_dsl.iter_dsl_commands(tree, "AddCombo"))
             self.assertEqual(len(combos), 1 + K.HITS["pestle"] + 1, level)
             for cmd in combos:
-                self.assertEqual(cmd[1][0]["alv2_max"], 50.0)
+                self.assertEqual(cmd[1][0]["alv2_max"], 55.0)
 
     def test_only_the_finisher_counts_as_a_skill_hit(self):
         """反馈轮 1：整棵树里只有裂地一击 ``incrementCombo=true``。
@@ -527,8 +527,8 @@ class SkillTreeTests(unittest.TestCase):
 
     def test_totals_match_the_panel(self):
         for level in ("1", "2"):
-            self.assertAlmostEqual(self.gates[level]["total_no_flag"], 65.0, places=4)
-            self.assertAlmostEqual(self.gates[level]["total_with_flag1"], 71.0, places=4)
+            self.assertAlmostEqual(self.gates[level]["total_no_flag"], 90.0, places=4)
+            self.assertAlmostEqual(self.gates[level]["total_with_flag1"], 96.0, places=4)
 
     def test_finisher_branches_are_complete_blocks(self):
         """536 开关：then 支 p8=true 吃连击加成，else 支 p8=false；禁 ["DoNothing"]。"""
