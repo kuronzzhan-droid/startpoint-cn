@@ -288,5 +288,15 @@
       1,
       2
     ]
+  },
+  "Environment/getBuffTargetAs": {
+    "index": 52711,
+    "sha": "e8878e63d9cb9ec2adcf20a2a60a17bf94801ac7e7dbf24c16dd9dffd4c0d1d4",
+    "header": [
+      2,
+      2,
+      1,
+      2
+    ]
   }
 }

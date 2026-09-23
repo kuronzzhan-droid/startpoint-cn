@@ -78,6 +78,16 @@ def resolver_body(e):
 
 
 def install(e):
+    # Environment.getBuffTargetAs only accepts native 0..4. Preserve explicit
+    # conversion markers through every nested DSL environment before attacks
+    # reach NormalAttack; zero still inherits the outer environment natively.
+    marker = []
+    for kind in KINDS:
+        marker += [('getlocal_0',), ('getproperty', e.q('buffTargetAs')),
+                   e.number(100+kind), ('ifne', f'NEXT_MARKER{kind}'),
+                   ('getlocal_0',), ('getproperty', e.q('buffTargetAs')),
+                   ('returnvalue',), ('label', f'NEXT_MARKER{kind}')]
+    e.insert('Environment/getBuffTargetAs', 2, marker)
     e.add_method(TOTALIZER, 'wfResolveDamageType', 'int', ['int'], resolver_body(e), 7)
     mn = e.add_method(MEMBER, 'wfConvertNormalAttack', 'Object', ['Object'], conversion_body(e), 5, True)
     e.insert('ImpactSourceContent$/NormalAttack', 0,

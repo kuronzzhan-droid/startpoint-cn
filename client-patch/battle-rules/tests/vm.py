@@ -81,6 +81,9 @@ def run(ins, abc, args, lex=None, stack=None):
                       'ifngt': lambda: not c > b}[op]()
             if result: pc = x.target
         elif op == 'jump': pc = x.target
+        elif op == 'lookupswitch':
+            index = int(stack.pop())
+            pc = x.cases[index] if 0 <= index < len(x.cases) else x.default
         elif op == 'returnvalue': return stack.pop()
         elif op == 'returnvoid': return None
         else: raise AssertionError('unsupported instruction: ' + op)
