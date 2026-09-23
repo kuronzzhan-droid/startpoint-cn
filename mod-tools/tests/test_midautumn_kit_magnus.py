@@ -262,7 +262,7 @@ class PlanStaticTests(unittest.TestCase):
                 self.assertEqual(line.startswith(KM.MAIN_ICON), wants, f"slot {slot}: {line}")
 
     def test_panel_override_line_counts_match_the_target_panel(self):
-        counts = {KM.LEADER_OVERRIDE: 7, KM.SLOT_OVERRIDE[1]: 2,
+        counts = {KM.LEADER_OVERRIDE: 7, KM.SLOT_OVERRIDE[1]: 3,
                   KM.SLOT_OVERRIDE[2]: 1, KM.SLOT_OVERRIDE[3]: 5, KM.SLOT_OVERRIDE[5]: 2}
         for key, want in counts.items():
             self.assertEqual(len(KM.CAS_TEXTS[key].split("\n")), want, key)

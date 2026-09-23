@@ -23,6 +23,7 @@ from typing import Any
 
 import wf_dsl
 import wf_magnus_pf_skill as PF_SKILL
+from wf_magnus_ignition_growth import with_ignition_growth
 import wf_midautumn_kitlib as KL
 import wf_midautumn_specs as MS
 
@@ -315,6 +316,7 @@ CAS_TEXTS = {
     SLOT_OVERRIDE[1]: "\n".join((
         "战斗开始时，自身技能槽＋50%",
         "火属性共鸣时，强化自身技能：光环范围扩大，自身技能伤害随强化弹射次数按层叠加提升",
+        "自身引擎点火每提升1层，技能基础总倍率＋5倍（含引擎之炎及特殊强化弹射）",
     )),
     SLOT_OVERRIDE[2]: "火属性共鸣时，引擎点火每提升1层，自身技能伤害＋50%、攻击力＋50%",
     SLOT_OVERRIDE[3]: "\n".join(MAIN_ICON + line for line in (
@@ -403,7 +405,7 @@ CHASE_MULT = 3.0
 BURST_SCALE = 6.5                     # 克拉莉丝演出缩放（母本 clarisse_1 是 5，火龙树是 4）
 BURST_RADIUS = 330                    # 「范围增大一些」：250/200 → 330
 BURST_MAX_HITS = 5
-PF_SCALE = 2.0                        # 官方 special 合计 5 / 7.667 / 13 ⇒ 10 / 15.33 / 26
+PF_SCALE = 2.0                        # 含全部命中段：官方 special 合计 6 / 11 / 21 ⇒ 12 / 22 / 42
 PF_SUPPRESS = 90                      # 底座 SetPowerFilpSuppress
 # 反馈轮 1：三档只留锥形本体，靠 scale 递增表达「逐渐增强」（不再叠 hit/end 的黄色六边形）。
 PF_LANCE_SCALE = {1: 1.0, 2: 1.4, 3: 1.8}
@@ -1276,7 +1278,8 @@ def build_main_tree(ctx, level: str, families) -> tuple[Any, dict[str, Any]]:
     if [c[2][0][1] for c in marks] != [int(UID_AURA)]:
         raise KitError(f"main tree must carry exactly one 烈焰光环 ACUnique, got "
                        f"{[c[2][0][1] for c in marks]}")
-    return tree, {"level": level, "aura": meta, "aura_mark": mark_meta,
+    tree, growth = with_ignition_growth(tree, (1, AURA_MAX_HITS))
+    return tree, {"level": level, "aura": meta, "aura_mark": mark_meta, "ignition_growth": growth,
                   "slash": dict(sword[0][6][0]),
                   "root_commands": [n[1][0] if n[0] == "Command" else n[1][0]
                                     for n in tree[11][1]]}
@@ -1344,7 +1347,8 @@ def build_chase_tree(ctx, families) -> tuple[Any, dict[str, Any]]:
             if c[2] and isinstance(c[2][0], list) and c[2][0][0] == "ACUnique"]:
         raise KitError("chase tree must not apply any unique condition (光环只由技能创建)")
     tree = _rewrite(ctx, tree, families)
-    return tree, {"multiplier": CHASE_MULT, "burst_scale": BURST_SCALE,
+    tree, growth = with_ignition_growth(tree, (BURST_MAX_HITS,))
+    return tree, {"multiplier": CHASE_MULT, "burst_scale": BURST_SCALE, "ignition_growth": growth,
                   "burst_radius": BURST_RADIUS, "burst_max_hits": BURST_MAX_HITS,
                   "burst_window": rp,
                   "hit_areas": [[a[9], a[13], a[14]] for a in _commands(tree, "CreateHitArea")]}
@@ -1641,6 +1645,8 @@ def write_skills(ctx, families) -> dict[str, Any]:
     for level in (1, 2, 3):
         tree, meta = build_pf_tree(ctx, level, families)
         tree, damage_tree, damage_meta = PF_SKILL.split_tree(tree)
+        damage_tree, damage_meta["ignition_growth"] = with_ignition_growth(
+            damage_tree, tuple(damage_meta["hits"]))
         damage_program = PF_SKILL_PROGRAMS[level - 1]
         damage_meta["logical"] = _write_tree(ctx, damage_program, damage_tree)
         meta.update(damage_meta)
@@ -1705,8 +1711,9 @@ DEVIATIONS = [
      "why": "引擎没有「拒绝某一个具体增益」的 kind（ACBuffRejection 是拒绝全部）；"
             "Swift 把 CD 基数 90 换成 20，补回 3.5×(1+s0) 即等价。"},
     {"want": "「技能倍率随强化弹射次数提升」",
-     "got": "词条「火共鸣时，每发动 3 次强化弹射，自身技能伤害 +25%」（无上限叠加）",
-     "why": "DSL 没有表达式求值，倍率槽是静态两端值；_deviations.magnus[2] 原样。"},
+     "got": "按作者确认的替代方案：引擎点火每层使每次完整技能基础总倍率＋5倍；原有PF次数技伤加成保留",
+     "why": "没有直接读取全局PF次数的变量命令；原生BindConditionAccumulationVariable与vlv支持层数倍率。"
+            "入口快照层数，斩击与光环合计＋5倍，追击及三档PF技能各自整招＋5倍，按原伤害占比分摊。"},
     {"want": "「引擎点火在5层以上时，自身技能伤害额外乘区＋25%」",
      "got": "during 134 阈值 5 层 + limit 1 的平坦门槛 → 自身独立乘区技能伤害 +25%",
      "why": "前置 188 / during 194 数的是实例个数（461 叠层恒为 1），「≥5 层」永不成立。"},
