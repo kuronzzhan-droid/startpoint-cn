@@ -15,7 +15,7 @@ STRING = 'override_string_' + KEY
 TABLE = 'master/skill/power_flip_action.orderedmap'
 PROGRAMS = tuple(f'battle/action/power_flip/action/override/{KEY}${KEY}_lv{n}'
                  for n in (1, 2, 3))
-TEXT = '自身的强化弹射变为雷环，使用直击伤害加成，并保留强化弹射独立乘区'
+TEXT = '赋予自身特殊强化弹射（雷环）'
 
 
 def leader_row(ctx):

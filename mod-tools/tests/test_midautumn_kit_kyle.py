@@ -342,7 +342,8 @@ class PanelTextTests(unittest.TestCase):
             self.skipTest("rework1/panel/kyle.json missing")
         panel = json.loads(PANEL.read_text(encoding="utf-8"))
         thunder = panel["skill"]["lines"][1]["text"]
-        self.assertIn(f"（冷却时间：{int(K.THUNDER_COOLTIME) // 60}秒）", thunder)
+        self.assertIn("召唤天雷", thunder)
+        self.assertNotIn("秒", thunder)
         gauge = next(e for e in panel["abilities"] if e["index"] == 3)["lines"][1]["text"]
         self.assertIn(f"（冷却时间：{int(K.PIERCE_GAUGE_COOLTIME) // 60}秒）", gauge)
         self.assertIn(f"（冷却时间：{int(K.PIERCE_GAUGE_COOLTIME) // 60}秒）",
@@ -535,8 +536,39 @@ class RowBuildTests(unittest.TestCase):
         cls.built = all_rows(ctx())
 
     def test_row_counts(self):
-        self.assertEqual(len(self.built["leader"]), 8)
-        self.assertEqual(sum(len(rows) for rows in self.built["ability"].values()), 23)
+        self.assertEqual(len(self.built["leader"]), 10)
+        self.assertEqual(sum(len(rows) for rows in self.built["ability"].values()), 22)
+
+    def test_piercing_growth_uses_native_down_slayer_and_retains_trigger(self):
+        rows = [r for r in self.built["leader"] if r[25] == "51"]
+        self.assertEqual(len(rows), 2)
+        self.assertEqual({r[45]: r[49:51] for r in rows},
+                         {"32": ["25000", "25000"], "53": ["5000", "5000"]})
+        for row in rows:
+            self.assertEqual(row[4], "2")
+            self.assertEqual(row[7:10], ["600000", "600000", "Yellow"])
+            self.assertEqual(row[26], "")  # Native ConditionPiercing has no puller field.
+            self.assertEqual(row[28:30], ["100000", "100000"])
+            self.assertEqual(row[32], "(None)")
+            self.assertEqual(row[46:48], ["5", "Yellow"])
+
+    def test_ability_one_removes_only_separate_skill_damage_bonus(self):
+        rows = self.built["ability"]["1399901"]
+        self.assertEqual([r[47] for r in rows], ["211", "211", "536"])
+        self.assertTrue(all(r[1] == "false" for r in rows))
+
+    def test_crescent_stunify_grows_by_current_layers_for_self_only(self):
+        rows = [r for r in self.built["leader"] if r[107] == "19"]
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row[4], "2")
+        self.assertEqual(row[7:10], ["600000", "600000", "Yellow"])
+        self.assertEqual(row[95:97], ["134", "0"])
+        self.assertEqual(row[98:101], ["100000", "100000", "(None)"])
+        self.assertEqual(row[102], K.UID_CRESCENT)
+        self.assertEqual(row[108], "0")
+        self.assertEqual(row[111:113], ["25000", "25000"])
+        self.assertNotIn("状态持续时间", K.PANEL_LEADER)
 
     def test_every_row_matches_the_baked_describe_readback(self):
         for ev in self.built["evidence"]:

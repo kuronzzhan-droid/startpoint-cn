@@ -149,6 +149,10 @@ LEADER: tuple[tuple[str, str, dict[int, str], str | None], ...] = (
      {0: CODE, **_PRE_RESONANCE_L, 98: "100000", 99: "100000", 100: "(None)",
       102: UID_CRESCENT, 107: "1", 108: "0", 109: "", 111: "25000", 112: "25000"},
      None),
+    ("161063#2", "official",
+     {0: CODE, **_PRE_RESONANCE_L, 98: "100000", 99: "100000", 100: "(None)",
+      102: UID_CRESCENT, 107: "19", 108: "0", 109: "", 111: "25000", 112: "25000"},
+     None),
     ("131122#2", "official",
      {0: CODE, **_PRE_RESONANCE_L, 46: "5", 47: ELEMENT_TOKEN,
       49: "20000", 50: "20000"},
@@ -175,8 +179,6 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
         ("2310933#0", "official", {51: "50000", 52: "50000"}, None),
         ("1110014#0", "official", {**_PRE_RESONANCE_A, 51: "50000", 52: "50000"}, None),
         ("1411113#0", "official", {11: ELEMENT_TOKEN, 70: CAS_SWITCH}, None),
-        # kind 694（独立乘区技能伤害）官方 0 行，只有 live 先例 ⇒ 这一行取 store（同 magnus）。
-        ("1299925#1", "store", {**_PRE_RESONANCE_A, 51: "100000", 52: "100000"}, None),
     ),
     # ---- 能力 2：月牙每层 + 贯通计数
     2: (
@@ -274,9 +276,11 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
 #: 这张表只管「表行本身渲染成什么」。
 EXPECT: dict[str, str] = {
     "kyle-native-pf": "自身 强化弹射覆盖",
-    "leader#4": "雷·编成≥6 时: 赋予全队(雷) 2号位技能槽 20%",
-    "leader#5": "雷·编成≥6 时: 赋予全队(雷) 技能槽充能 20%",
-    "leader#6": "雷·编成≥6 时: 状态贯通≥1 → 赋予全队(雷) 攻击力 50%",
+    "leader#4": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 眩晕蓄积 25%",
+    "leader#5": "雷·编成≥6 时: 赋予全队(雷) 2号位技能槽 20%",
+    "leader#6": "雷·编成≥6 时: 赋予全队(雷) 技能槽充能 20%",
+    "leader#7": "雷·编成≥6 时: 状态贯通≥1 → 赋予全队(雷) 攻击力 25%",
+    "leader#8": "雷·编成≥6 时: 状态贯通≥1 → 赋予全队(雷) 眩晕畏缩特攻 5%",
     "leader#0": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) 攻击力 12.5%",
     "leader#1": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 攻击力 12.5%",
     "leader#2": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) Direct伤害 25%",
@@ -284,7 +288,6 @@ EXPECT: dict[str, str] = {
     "1399901#0": "赋予全队(雷) 技能槽 50%",
     "1399901#1": "雷·编成≥6 时: 自身 技能槽 50%",
     "1399901#2": "雷·编成≥6 时: 自身 切换技能形态[change_skill_kyle_moon]",
-    "1399901#3": "雷·编成≥6 时: 自身 独立乘区技能伤害 100%",
     "1399902#0": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) Direct伤害 50%",
     "1399902#1": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 攻击力 50%",
     "1399903#0": "雷·编成≥6 时: 技能发动≥1 → 自身 状态固有 100%×1次",
@@ -323,21 +326,17 @@ MAIN_ICON = " <icon id='main'>  "
 
 PANEL_LEADER = "\n".join((
     PF.TEXT,
-    "雷属性共鸣时：自身冲刺获得强化，冲刺冷却时间－50%、附加贯穿效果、冲刺弹射速度提升，并"
-    "可从更高的位置发动冲刺",
-    "雷属性共鸣时：自身“月牙”每上升1层，自身攻击力＋25%、直击伤害＋50%，除自身外雷属性"
+    "雷属性共鸣时：强化自身冲刺",
+    "雷属性共鸣时：自身“月牙”每上升1层，自身攻击力＋25%、直击伤害＋50%、使敌人进入Down状态的能力＋25%，除自身外雷属性"
     "角色攻击力＋12.5%、直击伤害＋25%",
     "雷属性共鸣时：自身“月牙”每上升1层，自身直击敌人的判定次数＋1",
-    "雷属性共鸣时：自身每获得一次贯穿效果，雷属性角色攻击力＋50%",
-    "冲刺间隔缩短效果不会让自身的冲刺冷却时间进一步缩短",
+    "雷属性共鸣时：自身每获得一次贯穿效果，雷属性角色攻击力＋25%、追击伤害＋5%",
     "雷属性共鸣时：雷属性角色技能槽最大值＋20%、技能充能速度＋20%",
 ))
 
 _PANEL_ABILITY_LINES = {
     1: ("战斗开始时：雷属性角色技能槽＋50%",
-        "雷属性共鸣时：自身技能槽＋50%，并强化技能效果——额外赋予雷属性角色直击效果强化、"
-        "技能的额外伤害乘区＋100%，技能额外附加贯穿效果（5.5秒）与加速效果（15秒），"
-        "技能造成的雷击按直接攻击伤害结算，且威力随连击数大幅提升"),
+        "雷属性共鸣时：自身技能槽＋50%，并强化技能效果"),
     2: ("雷属性共鸣时：自身“月牙”每提升1层，自身直击伤害＋50%、攻击力＋50%，除自身外雷属"
         "性角色直击伤害＋50%",),
     3: ("雷属性共鸣时：自身发动技能时，自身“月牙”＋1层；雷属性角色每造成100次直击，自身“月牙"
@@ -348,7 +347,7 @@ _PANEL_ABILITY_LINES = {
         "5秒，每名触发该效果的角色分别独立生效）",),
     5: ("雷属性共鸣时：雷属性角色每造成50次直击，雷属性角色技能充能速度＋5%，敌人进入击倒状态"
         "的几率＋100%",),
-    6: ("雷属性共鸣时：强化技能效果——驱散敌方2个增益效果，并对敌人施加“迟缓”效果",
+    6: ("雷属性共鸣时：强化技能效果，追加驱散与迟缓效果",
         "雷属性共鸣时：雷属性角色对处于“迟缓”状态的敌人造成伤害，额外乘区＋15%"),
 }
 
@@ -637,20 +636,23 @@ def build_rows(ctx) -> dict[str, Any]:
         leader_rows.append(row)
         evidence.append(ev)
         caps.update(ev["capabilities"])
-    # Move the former A2 piercing-trigger bonus to the actual leader table.
-    moved, ev = KL.build_row(ctx, "ability", "2110012#0",
-        {**_PRE_RESONANCE_A, 34: "(None)", 48: "5", 49: ELEMENT_TOKEN,
-         51: "50000", 52: "50000"}, element=ELEMENT,
-        expect_describe="雷·编成≥6 时: 状态贯通≥1 → 赋予全队(雷) 攻击力 50%")
-    moved = ability_to_leader(moved, CODE)
-    problems = KL.row_problems("leader_ability", moved, ELEMENT)
-    if problems:
-        raise KitError(f"moved piercing bonus: {problems}")
-    leader_rows.append(moved)
-    ev.update(label=f"leader#{len(LEADER)}", kind="leader_ability",
-              describe=KL.describe("leader_ability", moved))
-    evidence.append(ev)
-    caps.update(KL.capabilities("leader_ability", moved))
+    # Native StunWinceSlayer maps to the separate PinchSlayer multiplier when
+    # the enemy is Down. Both growth rows share the original piercing trigger.
+    for content, strength in (("32", "25000"), ("53", "5000")):
+        label = f"leader#{len(leader_rows)}"
+        moved, ev = KL.build_row(ctx, "ability", "2110012#0",
+            {**_PRE_RESONANCE_A, 34: "(None)", 47: content, 48: "5", 49: ELEMENT_TOKEN,
+             51: strength, 52: strength}, element=ELEMENT,
+            expect_describe=EXPECT[label])
+        moved = ability_to_leader(moved, CODE)
+        problems = KL.row_problems("leader_ability", moved, ELEMENT)
+        if problems:
+            raise KitError(f"piercing growth {content}: {problems}")
+        leader_rows.append(moved)
+        ev.update(label=label, kind="leader_ability",
+                  describe=KL.describe("leader_ability", moved))
+        evidence.append(ev)
+        caps.update(KL.capabilities("leader_ability", moved))
     pf_row, pf_evidence = PF.leader_row(ctx)
     leader_rows.append(pf_row)
     evidence.append(pf_evidence)
@@ -1472,7 +1474,7 @@ def build(ctx) -> dict[str, Any]:
     uniques = build_uniques(ctx)
     icons = install_unique_icons(ctx)
 
-    # ---- 3) 队长 4 行 + 词条 6 键 23 条
+    # ---- 3) 队长与六个能力槽；行数由当前方案生成
     built = build_rows(ctx)
     ctx.write_flat(KL.LEADER, {CID_S: built["leader"]})
     ctx.write_flat(KL.ABILITY, built["ability"])
@@ -1547,9 +1549,6 @@ def build(ctx) -> dict[str, Any]:
          "got": f"MoveBall 逐格抄官方 dog_slasher_proud_2，替换母本 StopBall"
                 f"（开关 DASH_REPLACES_STOPBALL={DASH_REPLACES_STOPBALL}）",
          "why": "引擎没有「冲刺」语义命令；MoveBall 无权威参数卡，只能整组抄官方同形树"},
-        {"want": "能力 1「技能的额外伤害乘区 +100%」",
-         "got": "kind 694（独立乘区技能伤害）t0，donor 取 live 1299925#1",
-         "why": "官方无同义 kind；694 是本服已上线的独立乘区通道（与 magnus 同源）"},
         {"want": "两档天雷都做 API 染色",
          "got": "常态档直接引用官方千岳十织、不染色（作者 09-21 已同意）",
          "why": "全克隆千岳会让单角色 layer0 到 3.44% 且 fits=False（卡 C §3.4 出路 1）"},
