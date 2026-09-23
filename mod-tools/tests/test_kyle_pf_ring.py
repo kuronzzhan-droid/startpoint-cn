@@ -171,15 +171,15 @@ class SwordMechanicsTests(unittest.TestCase):
             self.assertEqual(show[12],['Some',[{'min':scale,'max':scale}]])
             self.assertEqual(show[6],['AB']);self.assertEqual(show[10:12],[True,False])
 
-    def test_residue_is_on_enemy_collision_not_on_the_ball(self):
-        tree=P.build_tree(self.sources['knight_lv3'],3)
-        outer=Q.commands(tree,'CreateHitArea')[0]
-        residue=Q.commands(outer[23],'ShowEffect')
-        self.assertEqual(len(residue),1)
-        self.assertEqual(residue[0][3],outer[22])
-        self.assertEqual(residue[0][5],['PlayOnlyFirstSequence'])
-        self.assertEqual(residue[0][10:12],[True,False])
-        self.assertFalse(Q.commands(tree,'CreateCondition'))
+    def test_all_levels_have_only_the_ring_and_no_impact_residue(self):
+        for level in (1,2,3):
+            tree=P.build_tree(self.sources[f'knight_lv{level}'],level)
+            outer=Q.commands(tree,'CreateHitArea')[0]
+            self.assertEqual(Q.commands(outer[23],'ShowEffect'),[])
+            effects=Q.commands(tree,'ShowEffect')
+            self.assertEqual(len(effects),1)
+            self.assertEqual(effects[0][2],['SpecifyEffectDirectly',F.effect(level)])
+            self.assertFalse(Q.commands(tree,'CreateCondition'))
 
     def test_celtie_contact_reference_points_remain_stationary(self):
         for level in (1,2,3):

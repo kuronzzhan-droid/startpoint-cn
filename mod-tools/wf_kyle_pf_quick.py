@@ -4,7 +4,6 @@ import hashlib
 
 import wf_dsl
 import wf_kyle_pf_effect as fx
-import wf_kyle_pf_hit as hit
 import wf_seasonal7_common as common
 
 SOURCE_HASHES = (
@@ -47,10 +46,9 @@ def build(knight, level):
     point, anchor = commands(outer[23], 'CreateReferencePoint')
     point[4] = -RADII[level-1]
     # Replace only Celtie's random slash visuals; keep both native reference
-    # points and the stationary contact burst. Residue follows enemy 2 instead.
+    # points and the stationary contact burst. No additional impact visual.
     anchor[11][1] = [node for node in anchor[11][1]
                      if not (node[0] == 'Command' and node[1][0] == 'ConditionalsProbability')]
-    outer[23][1].insert(0, hit.command(fx.DIRECTORY))
     inner[14][1] = HITS[level-1]
     inner[15] = ['Some', [{'min': HITS[level-1], 'max': HITS[level-1]}]]
     attack = copy.deepcopy(commands(knight, 'CreateNormalAttack')[0])

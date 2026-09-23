@@ -60,6 +60,7 @@ def install(ctx):
                   native_ranges=list(quick.RADII), native_hits=list(quick.HITS),
                   quick_source='141201 wind_spgirl_4anv', burst_frames=quick.BURST_FRAMES,
                   contact_behavior='one trigger per enemy, fixed contact-point burst; native proximity limits remain',
+                  hit_residue_enabled=False,
                   native_multipliers=[3.25, 4.75, 6.3])
     ctx.evidence_write('pf-ring-20260923.json', report)
     return report
