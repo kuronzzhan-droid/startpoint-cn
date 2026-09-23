@@ -9,7 +9,7 @@
 - **回响成长**（本轮放开）：固有「回响」上限 5 → **99**（作者「不设置上限」的官方写法）；
   每层给自身 PF 伤害 ＋25%（槽 3）与自身攻击力 ＋25%（槽 4，见偏离 D-13），
   独立乘区 ＋5%／层（封顶 5 层，作者原话「最大 25%」）与全队暗攻 ＋15%／层（封顶 5 层）不变。
-- **PF 追击**（本轮新增）：「暗属性角色发动技能时」与「冲刺时（CT 5 秒）」各挂一行队长 629，
+- **PF 追击**（本轮新增）：「暗属性角色发动技能时」与「冲刺时（CT 1.5 秒）」各挂一行队长 629，
   指向新建的 ``ability_skill_psychic_teleport_moon_pf`` 树 —— 官方 ``special_lv3`` 的命中块
   整块搬出（去掉 ``SetPowerFilpSuppress`` / ``NotifyPowerflipEnd`` 两条 PF 生命周期命令，
   斩铁 ``samurai_robot_plum`` 的现成做法），根头 ``tree[10]=3`` ⇒ **通用伤害池**取
@@ -106,7 +106,7 @@ PF_SUPPORT_BIND = 400                         # 辅助增益块主体 id 段（p
 # ---------------------------------------------------------------- 自有字符串键
 CAS_PF = f"override_string_{CODE}_pf"                  # 722 的 c82 串（缺键 = C8601）
 CAS_INVOKE_SKILL = f"ability_skill_{CODE}_pf_skill"    # 队长 629（暗属性角色发动技能时）
-CAS_INVOKE_DASH = f"ability_skill_{CODE}_pf_dash"      # 队长 629（冲刺时 CT5s）
+CAS_INVOKE_DASH = f"ability_skill_{CODE}_pf_dash"      # 队长 629（冲刺时 CT1.5s）
 CAS_LEADER = f"desc_override_{CODE}"                   # 队长块整体接管
 CAS_ABILITY = {slot: f"desc_override_{CODE}_{slot}" for slot in range(1, 7)}
 
@@ -226,7 +226,7 @@ PANEL_LEADER = "\n".join((
     "暗属性共鸣时，贯穿效果持续时间＋30%；暗属性角色发动技能时，自身立即获得强化弹射效果",
     "强化弹射每累计命中4次，暗属性角色攻击力＋5%（最多10次）",
     "强化弹射每累计命中4次，自身攻击力＋50%",
-    "冲刺时，立即获得强化弹射效果（冷却时间：5秒）",
+    "冲刺时，立即获得强化弹射效果（冷却时间：1.5秒）",
 ))
 
 PANEL_ABILITY = {
@@ -255,7 +255,7 @@ def slot_override_text(slot: int) -> str:
 CAS_TEXTS = {
     CAS_PF: "赋予自身特殊强化弹射",
     CAS_INVOKE_SKILL: "立即获得强化弹射效果",
-    CAS_INVOKE_DASH: "立即获得强化弹射效果（冷却时间：5秒）",
+    CAS_INVOKE_DASH: "立即获得强化弹射效果（冷却时间：1.5秒）",
     CAS_LEADER: PANEL_LEADER,
     **{CAS_ABILITY[slot]: slot_override_text(slot) for slot in range(1, 7)},
 }
@@ -322,12 +322,12 @@ LEADER: tuple[tuple[str, str, dict[int, str], str | None], ...] = (
       29: "400000", 32: "(None)", 33: "0", 37: "(None)", 44: "0", 45: "32", 46: "0",
       47: "", 49: "50000", 50: "50000"},
      "强化弹射HitLv1≥4 → 自身 攻击力 50%"),
-    # L8 冲刺时（CT 5 秒）→ 629 PF 追击（donor 原样就是 trig4+CT，只改 CT 与字符串键）
+    # L8 冲刺时（CT 1.5 秒）→ 629 PF 追击（donor 原样就是 trig4+CT，只改 CT 与字符串键）
     ("169999#4", "live",
      {0: CODE, 1: "0", 2: "0", 3: "0", 4: "0", 11: "0", 18: "0", 25: "4", 26: "0",
-      28: "100000", 29: "100000", 32: "(None)", 33: "300", 37: "(None)", 44: "0",
+      28: "100000", 29: "100000", 32: "(None)", 33: "90", 37: "(None)", 44: "0",
       45: "629", 46: "0", 68: CAS_INVOKE_DASH, 69: INVOKE_PROGRAM},
-     "冲刺≥1(CT5秒) → 自身 发动技能动作[%s]" % CAS_INVOKE_DASH),
+     "冲刺≥1(CT1.5秒) → 自身 发动技能动作[%s]" % CAS_INVOKE_DASH),
 )
 LEADER_ROWS = len(LEADER)
 
@@ -1251,7 +1251,7 @@ def build(ctx) -> dict[str, Any]:
 
     notes = [
         "rework1（作者 09-20/21）：队长 6→9 行（新增 暗共鸣+暗属性角色发动技能时 629 / "
-        "全等级PF累计命中每4次自身攻击+50%（无上限）/ 冲刺 629 CT5秒）；词条 15→18 条"
+        "全等级PF累计命中每4次自身攻击+50%（无上限）/ 冲刺 629 CT1.5秒）；词条 15→18 条"
         "（能力2 数值翻倍、能力3 加暗共鸣门且层数上限 5→99、能力4 新增每层回响自身攻击+25%、"
         "能力5 新增常驻独立乘区 +30%）；固有「回响」上限 5→99",
         f"629 PF 追击：官方 special_lv3 命中块 ×{INVOKE_SCALE} ＝ {invoke_gates['total']}×，"

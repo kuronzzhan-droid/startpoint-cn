@@ -214,7 +214,7 @@ class PlanSelfCheckTests(unittest.TestCase):
         self.assertEqual(skill_row[4], "2")          # 暗共鸣门
         self.assertEqual(skill_row[68], K.CAS_INVOKE_SKILL)
         dash_row = by_trigger["4"]                   # 冲刺时 CT 5 秒
-        self.assertEqual(dash_row[33], "300")
+        self.assertEqual(dash_row[33], "90")  # 1.5 seconds; skill-triggered row stays unchanged.
         self.assertEqual(dash_row[68], K.CAS_INVOKE_DASH)
         for _n, cells in invoke:
             self.assertEqual(cells[69], K.INVOKE_PROGRAM)

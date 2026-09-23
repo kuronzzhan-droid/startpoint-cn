@@ -14,7 +14,7 @@ rework1（2026-09-21，作者目标面板 ``rework1/panel/rolf.json``）把旧�
   不在队长位时走常态档 ``[帧, 1, -0.1, 1]``（官方最轻档）。``IT 246`` 每持续 1 秒叠
   自身攻击力/直击伤害；
 * **连击线**：``536``（旗号 1、只限主位）开的强化分支让 ``CreateNormalAttack tree[8]=true``
-  吃连击成长；``IT 12`` 每 500 连击
+  吃连击成长；``IT 12`` 每 100 连击
   用 ``629`` 调新建的 ``ability_skill_…_encore`` 追击树（追击版把母本的 70 帧停球换成
   铃鹿的 1 帧 ``MoveBall`` ⇒ 照样转向并冲向最近的敌人、但不长停；代价是那一帧球速被
   **赋值**成 72 ⇒ 在速度固定两档下是可见的减速，真机待判，见 ``CHASE_MOVE_BALL``）、
@@ -168,9 +168,9 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
         # ③a 强化技能开关（536 = 旗号 1）：只开连击成长。速度固定 4 档搬到 A6#4 的 704（旗号 2），
         #    由「队长 ∧ 风共鸣」独立控制（作者反馈第 3 轮：不在队长位时技能给 1 档）
         ("1411113#0", "official", {70: CAS_FLAG}, None),
-        # ③b 每 500 连击 → 629 追击（donor 的 CT 就是 300 帧 = 5 秒）
+        # ③b 每 100 连击 → 629 追击（donor 的 CT 就是 300 帧 = 5 秒）
         ("1611053#0", "official",
-         {**_PRE_RESONANCE_A, 27: "12", 28: "", 30: "50000000", 31: "50000000",
+         {**_PRE_RESONANCE_A, 27: "12", 28: "", 30: "10000000", 31: "10000000",
           34: "(None)", 70: CAS_ENCORE, 71: ENCORE_PROGRAM}, None),
         # ④ 每 100 连击 → 连击 ＋50（226 的 target 列官方全留空：连击是全局量）
         ("2410015#0", "official",
@@ -232,7 +232,7 @@ EXPECT: dict[str, str] = {
     "1499863#1": "状态KeepFrameFixed速度↑≥1 → 自身 攻击力 50%",
     "1499863#2": "状态KeepFrameFixed速度↑≥1 → 自身 Direct伤害 50%",
     "1499863#3": "风·编成≥6 时: 自身 切换技能形态[change_skill_black_wolf_knight_moon]",
-    "1499863#4": "风·编成≥6 时: 连击≥500(CT5秒) → 自身 "
+    "1499863#4": "风·编成≥6 时: 连击≥100(CT5秒) → 自身 "
                  "发动技能动作[ability_skill_wolf_moon_encore]",
     "1499863#5": "风·编成≥6 时: 连击≥100 → 自身 追加连击 50",
     "1499864#0": "风·编成≥6 时: 自身 技能槽 50%",
@@ -277,7 +277,7 @@ PANEL_ABILITY = {
         "风属性共鸣时：风属性角色的直接攻击强化为3次（同类效果不叠加，取最大值），合计伤害"
         "额外乘区＋200%",
         "最大速度固定效果持续期间，每持续1秒，自身攻击力＋50%、直击伤害＋50%",
-        "风属性共鸣时：强化技能，威力随连击数提升（按直接攻击伤害判定），每达成500连击 → "
+        "风属性共鸣时：强化技能，威力随连击数提升（按直接攻击伤害判定），每达成100连击 → "
         "立即对最近的敌人发动自身技能的攻击效果（不消耗技能槽，冷却时间：5秒）",
         "风属性共鸣时：每达成100连击，连击数＋50",
     )),
@@ -1039,7 +1039,7 @@ def build_encore_tree(ctx, level: str, values: dict[str, Any],
                       family: dict[str, Any] | None) -> tuple[Any, dict[str, Any]]:
     """629 追击树：母本主块的**伤害两段**，连击成长常开，不复刻团队增益。
 
-    施工单偏离 R-D4：复刻团队增益会让「速度固定 15 秒窗口」变成每 500 连击白嫖刷新的永续，
+    施工单偏离 R-D4：复刻团队增益会让「速度固定 15 秒窗口」变成每 100 连击白嫖刷新的永续，
     远超作者写的「发动自身技能效果」。629 的伤害归属由判定区 ``params[23]=4`` 决定，
     根 ``buffTargetAs`` 保持 0（记忆卡 wf-dsl-damage-attribution-bufftargetas）。
 
@@ -1320,7 +1320,7 @@ def build(ctx) -> dict[str, Any]:
         ctx,
         summary="罗尔夫 rework1：风属性直击输出核心（冲刺 × 最大速度固定 × 连击三线，"
                 "536 旗号 1 给连击成长、704 旗号 2 只在队长 ∧ 风共鸣时给 4 档速度固定，"
-                "629 每 500 连击追击）",
+                "629 每 100 连击追击）",
         status=KL.READY if ready else KL.DRAFT, panel=panel, notes=notes, programs=programs,
         required_capabilities=sorted(rows["capabilities"]), deviations=deviations,
         extra={"kit_gate": gate, "voice_route": route,
