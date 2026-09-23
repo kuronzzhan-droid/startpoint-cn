@@ -59,7 +59,7 @@ GRAFT_CODE = "combat_animal_xm21"              # 141081（她的圣诞版）：�
 
 ABILITY_KEYS = tuple(f"{CID}{slot}" for slot in range(1, 7))
 LEADER_ROW_COUNT = 10
-ABILITY_RECORD_TOTAL = 17
+ABILITY_RECORD_TOTAL = 18
 
 # ---------------------------------------------------------------- 自有键
 
@@ -98,7 +98,7 @@ TEXTS: dict[str, str] = {
 SPEC = {
     "requires_client_base": "1.4.998",
     # desc_override 需要客户端面板接管能力；722 的 override_string_* 不需要补丁
-    "required_capabilities": ("panel-description-override-v2", "dash-parameter-v1"),
+    "required_capabilities": ("panel-description-override-v2", "dash-parameter-v1", "gauge-gain-rules-v1"),
     "pf_type": 3,                              # 作者 09-21：详情页显示「辅助」（原生 PF 也随之为 supporter）
     "extra_keys": {
         KL.CAS: (CAS_FLAG1, CAS_FLAG2, INVOKE_STRING, PF_STRING, LEADER_OVERRIDE,
@@ -212,6 +212,12 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str], ...]] = {
          {0: f"{CODE}_2", 1: "true", 2: _AC, 11: "Green", 29: "Green",
           51: "40000", 52: "40000"},
          "风·编成≥6 时: 技能发动≥1(限5次) → 自身 技能伤害 40%"),
+        # 423 consumes integer c118. During 0 is HP>=, so both thresholds must be zero.
+        ("1510031#0", "official",
+         {0: f"{CODE}_2", 1: "true", 2: _AC, 3: "0", 4: "",
+          98: "0", 99: "", 100: "0", 101: "0", 108: "false",
+          109: "423", 110: "0", 111: "", 113: "0", 114: "0", 118: "12"},
+         "持续·HP≥ → 自身 限制技能槽增加 0%"),
     ),
     3: (
         ("1410333#1", "official",
@@ -292,6 +298,7 @@ CAS_TEXTS: dict[str, str] = {
         "风属性共鸣时，冲刺时自身攻击力＋25%（6秒，最多累积4次）",
         "风属性共鸣时，冲刺时连击＋5",
         "风属性共鸣时，发动技能时自身技能伤害＋40%（最多5层）",
+        "自身无法因技能或能力效果增加技能槽（战斗开始时除外）",
     )),
     SLOT_OVERRIDE[3]: "\n".join(MAIN_ICON + line for line in (
         "风属性共鸣时，连击达到50以上时，自身技能伤害＋200%",

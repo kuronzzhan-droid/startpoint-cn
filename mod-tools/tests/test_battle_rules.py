@@ -39,10 +39,12 @@ class BattleRulesTest(unittest.TestCase):
 
     def test_supported_targets_and_no_mutation(self):
         donor = _base_row('ability', '1')
+        donor[100], donor[101] = '80000', '80000'
         old = copy.deepcopy(donor)
         for target in rules.TARGETS:
             row = rules.make_row(donor, 'battle_rule', 423, 12, target=target, groups='Green')
             self.assertEqual('Green', row[111])
+            self.assertEqual(['0', '0'], row[100:102])
             self.assertEqual([], legality.client_legality_problems('ability', row))
             self.assertEqual([rules.GAUGE_CAP], legality.required_client_capabilities('ability', row))
         self.assertEqual(old, donor)

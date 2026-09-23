@@ -166,7 +166,9 @@ INVOKE_SCALE = 1.0
 #: ``fire_dragon_zenith`` / ``resistance_princess_3halfanv``）也全是 0 ⇒ 写 3 是零先例。
 #: 同机制的**已验收**先例是值 2（深渊之兽改能力伤害，记忆卡 wf-dsl-damage-attribution-bufftargetas）
 #: 与判定区位的值 4（本批罗尔夫/凯尔技能写 ``params[23]=4``，真机确认按直击结算）。
-INVOKE_BTA = 3
+# The native limitations documented above describe the pre-patch baseline.
+# battle-rules-v1 converts category flags, independent buffs and PF level together.
+INVOKE_BTA = 133
 
 #: 判定区那一位（``CreateHitArea`` node[24] ＝ params[23]）保持 **0 ＝ 不覆盖**。
 #: 0 会顺着环境链落到根头的 :data:`INVOKE_BTA`（见上 §3），所以它**不是**这里的开关；
@@ -261,7 +263,7 @@ CAS_TEXTS = {
 }
 
 SPEC = {
-    "required_capabilities": ("dash-parameter-v1", "panel-description-override-v2"),
+    "required_capabilities": ("dash-parameter-v1", "panel-description-override-v2", "damage-type-rules-v1"),
     "extra_keys": {
         MS.UNIQUE_CONDITION_LOGICAL: (UID,),
         PFA: (PF_KEY,),

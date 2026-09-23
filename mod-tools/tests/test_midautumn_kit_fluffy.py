@@ -344,6 +344,14 @@ class DslToolTests(unittest.TestCase):
 
 @unittest.skipUnless(_BASELINE, "需要 .cdn/cn 官方归档与 live store")
 class RowAssemblyTests(unittest.TestCase):
+    def test_gauge_restriction_is_independent_of_hp_and_resonance(self):
+        rows, _ = K.build_ability_rows(ctx())
+        rule, = [row for row in rows[f"{K.CID}2"] if row[109] == "423"]
+        self.assertEqual([rule[i] for i in (6, 13, 20)], ["0"] * 3)
+        self.assertEqual(rule[97:102], ["0", "0", "", "0", "0"])
+        self.assertEqual((rule[110], rule[118]), ("0", "12"))
+        self.assertEqual(rule[1], "true")  # Both main and unison share the restriction.
+
     def test_leader_rows_render_exactly_as_planned(self):
         for n, (donor, source, cells, expect) in enumerate(K.LEADER):
             row, ev = KL.build_row(ctx(), "leader_ability", donor, cells, source=source,
@@ -614,7 +622,7 @@ class WorkspaceTests(unittest.TestCase):
 
     def test_report_identity_and_capabilities(self):
         self.assertEqual((self.report["cid"], self.report["code"]), (K.CID, K.CODE))
-        self.assertEqual(set(self.report["required_capabilities"]), {"panel-description-override-v2", "dash-parameter-v1"})
+        self.assertEqual(set(self.report["required_capabilities"]), {"panel-description-override-v2", "dash-parameter-v1", "gauge-gain-rules-v1"})
 
     def test_every_program_is_written(self):
         programs = self.report["skills"]["programs"]

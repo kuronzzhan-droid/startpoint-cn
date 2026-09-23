@@ -77,13 +77,16 @@ def row_problems(table, row, blocks):
 
 
 def make_row(donor, string_id, content, code, *, target='self', groups=''):
-    """复用已核实的常驻能力母行；只在 ability 表写入新词条。"""
+    """复用持续能力母行，清除 HP 门槛；只在 ability 表写入新词条。"""
     validate_code(content, code)
     if len(donor) != 126 or donor[5] != '1' or donor[85] != '(None)' or donor[97] != '0':
         raise ValueError('需要 126 列、无累积触发、始终生效的 ability 母行')
     if any(donor[i] != '0' for i in (6, 13, 20)) or target not in TARGETS:
         raise ValueError('母行不能带前置条件；目标必须为受支持的成员范围')
     row = list(donor)
+    # During kind 0 is HpHigh, not Always: discard the donor's HP threshold.
+    row[98], row[99], row[100], row[101] = '0', '', '0', '0'
+    row[113], row[114] = '0', '0'
     row[0], row[109], row[110], row[111], row[118] = (
         string_id, str(content), str(TARGETS[target]), groups, str(code))
     row[108] = 'false'

@@ -121,7 +121,7 @@ class ConstantTests(unittest.TestCase):
         self.assertEqual(sorted(K.SPECIAL_SHA), [1, 2, 3])
         self.assertEqual(len(K.PF_PROGRAMS), 3)
         self.assertTrue(K.INVOKE_PROGRAM.startswith("battle/action/skill/action/ability_skill/"))
-        self.assertEqual(K.INVOKE_BTA, 3)            # 629 载荷按 PF 伤害结算（偏离 D-15）
+        self.assertEqual(K.INVOKE_BTA, 133)            # 629 载荷按 PF 伤害结算（偏离 D-15）
         self.assertEqual(K.INVOKE_SCALE, 1.0)        # 官方 special_lv3 原值，不叠 PF_SCALE（D-16）
 
     def test_damage_attribution_switches_are_pinned(self):
@@ -131,7 +131,7 @@ class ConstantTests(unittest.TestCase):
         ``params[23]`` 留 0 ＝ 不覆盖、回落到根头（``Environment.as:735-752``）。写 1 会退回
         技能池，写 4 会变直击 —— 这条测试就是拦这两种改法。
         """
-        self.assertEqual(K.INVOKE_BTA, 3)
+        self.assertEqual(K.INVOKE_BTA, 133)
         self.assertNotIn(K.INVOKE_BTA, (0, 1, 2, 4))
         self.assertEqual(K.INVOKE_HITAREA_BTA, 0)
 
