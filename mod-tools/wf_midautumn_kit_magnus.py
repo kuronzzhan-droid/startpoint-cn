@@ -228,8 +228,8 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str], ...]] = {
     3: (
         ("1111652#0", "official",
          {0: f"{CODE}_3", 1: "false", 2: _A, **FIRE_ABILITY,
-          28: "5", 29: "Red", 51: "500000", 52: "500000", 68: UID},
-         "火·编成≥6 时: 技能发动≥1 → 自身 状态固有 500%×1次"),
+          28: "5", 29: "Red", 51: "100000", 52: "100000", 68: UID},
+         "火·编成≥6 时: 技能发动≥1 → 自身 状态固有 100%×1次"),
         # 629：字符串键 c70 + 程序路径 c71；必须排在下面的 525 消耗行之前。
         ("1611053#0", "official",
          {0: f"{CODE}_3", 1: "false", 2: _A, 6: "188", 7: "0", 9: "100000", 10: "100000",
@@ -320,7 +320,7 @@ CAS_TEXTS = {
     )),
     SLOT_OVERRIDE[2]: "火属性共鸣时，引擎点火每提升1层，自身技能伤害＋50%、攻击力＋50%",
     SLOT_OVERRIDE[3]: "\n".join(MAIN_ICON + line for line in (
-        "火属性共鸣时，火属性角色发动技能时，自身引擎点火＋5层",
+        "火属性共鸣时，火属性角色发动技能时，自身引擎点火＋1层",
         "自身处于「引擎点火」期间，自身技能命中敌人时，发动「引擎之炎」：造成技能伤害",
         "自身处于「引擎点火」期间，自身技能命中敌人时，消耗1层「引擎点火」",
         "自身引擎点火在5层以上时：自身技能伤害额外乘区＋25%",
@@ -402,8 +402,8 @@ AURA_HIT_INTERVAL = 30
 AURA_MAX_HITS = 10
 AURA_BINDS = (10, 11, 12)             # 母本 111129 自己占 0–5
 CHASE_MULT = 3.0
-BURST_SCALE = 6.5                     # 克拉莉丝演出缩放（母本 clarisse_1 是 5，火龙树是 4）
-BURST_RADIUS = 330                    # 「范围增大一些」：250/200 → 330
+BURST_SCALE = 3.25                    # 09-24：爆炸视觉直径减半
+BURST_RADIUS = 165                    # 同步将实际爆炸判定半径减半
 BURST_MAX_HITS = 5
 PF_SCALE = 2.0                        # 含全部命中段：官方 special 合计 6 / 11 / 21 ⇒ 12 / 22 / 42
 PF_SUPPRESS = 90                      # 底座 SetPowerFilpSuppress
@@ -1035,13 +1035,18 @@ def clone_effects(ctx):
             raise KitError(f"effect family {src_dir} copied {fam.get('copied_bases')} != {names}")
         families[subdir] = fam
     surgery = cut_clarisse_tail(ctx, families["burst"])
+    from wf_magnus_fx_cleanup import apply_cloned
+    cleanup = apply_cloned(ctx)
+    from wf_magnus_pf_orbit import assets
+    for logical, data in assets(lambda p: ctx.official_read(p, 'common')).items():
+        ctx.write_asset('common', logical, data)
     return {"lut": str(lut) if lut is not None else None,
             "recolored": sorted(transforms),
             "families": {k: {"src_dir": v["src_dir"], "dst_dir": v["dst_dir"],
                              "copied_bases": v["copied_bases"],
                              "files": [f["target"] for f in v["files"]]}
                          for k, v in families.items()},
-            "clarisse_tail": surgery}, families
+            "clarisse_tail": surgery, "visual_cleanup": cleanup}, families
 
 
 def _pkg_amf(ctx, root: str, logical: str):
@@ -1466,6 +1471,8 @@ def build_pf_tree(ctx, level: int, families) -> tuple[Any, dict[str, Any]]:
     if len(ids) != len(set(ids)):
         raise KitError(f"PF lv{level} binding ids not unique: {sorted(ids)}")
     tree = _rewrite(ctx, tree, families)
+    from wf_magnus_pf_orbit import attach
+    tree = attach(tree)
     return tree, {"level": level, "multipliers": scaled, "total": round(sum(scaled), 6),
                   "lance_scale": PF_LANCE_SCALE[level],
                   "lance_coord": list(PF_LANCE_COORD), "extra_effects": [],
@@ -1671,7 +1678,7 @@ NOTES = [
     "422 冲刺两行在词条槽 5（前置 42 队长），队长表写 422 = 角色页 C7050；文案挪到队长技 desc_override",
     "Swift 抵消 +245% 只对非飞行形态精确（飞行基数 60 而非 90）⇒ 面板不写「完全无法获得」",
     "629 触发改成 180（PF 命中敌人）并带 CT 0.6 秒：空挥不触发，多敌时靠 CT 限流；629 排在 525 之前",
-    "「引擎点火」固有 99999999 帧 / 99 层：能力 3 每次火属性技能 +5 层，队长技每 3 次 PF 再 +7 层",
+    "「引擎点火」固有 99999999 帧 / 99 层：能力 3 每次火属性技能 +1 层，队长技每 3 次 PF 再 +7 层",
     "引擎点火的「≥5 层」用 during 134 + limit 1 的平坦门槛（前置 188 数实例恒为 1，写 ≥5 永不成立）",
     "三族特效克隆到 skill_unique/lion_swordman_moon/{lance,burst,aura}/，预算 0.44% → 约 2.19%",
     "克拉莉丝只播末端 79 帧（parts 根层 r=(1<<30)|78），手术在 clone 之后施加并带母本漂移断言",

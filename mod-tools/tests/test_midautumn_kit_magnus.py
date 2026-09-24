@@ -1083,14 +1083,19 @@ class SkillTreeIntegrationTests(unittest.TestCase):
             base = self.ctx.template_dsl(KM.SPECIAL_PROGRAMS[level])
             for name in ("MoveBall", "FindNearSubjects", "RemoveEvent", "Repeat"):
                 # 底座自带一条 RemoveEvent("ヒット判定") ⇒ 判据是与底座同名同数
-                self.assertEqual(len(list(wf_dsl.iter_dsl_commands(tree, name))),
+                actual = [c for c in wf_dsl.iter_dsl_commands(tree, name)
+                          if not (name == 'RemoveEvent' and str(c[1]).startswith('magnus_kyon_orbit_'))]
+                self.assertEqual(len(actual),
                                  len(list(wf_dsl.iter_dsl_commands(base, name))),
                                  f"lv{level} 的 {name} 条数与官方底座不一致")
             self.assertEqual([n for n in tree[11][1]
                               if n[0] == "Event" and n[1][0] == "Repeat"], [])
             self.assertEqual(meta["extra_effects"], [])
             base = self.ctx.template_dsl(KM.SPECIAL_PROGRAMS[level])
-            self.assertEqual([n[1][0] if n[0] == "Command" else n[1][0] for n in tree[11][1]],
+            from wf_magnus_pf_orbit import NAME
+            self.assertEqual([n[1][0] for n in tree[11][1]
+                              if not (n[0] == 'Command' and n[1][0] == 'ShowEffect' and str(n[1][1]).startswith(NAME))
+                              and not (n[0] == 'Event' and n[1][0] == 'Wait' and str(n[1][2]).startswith(NAME))],
                              [n[1][0] if n[0] == "Command" else n[1][0] for n in base[11][1]],
                              f"lv{level} root 命令序列必须和官方底座逐条对齐")
 
@@ -1112,7 +1117,8 @@ class SkillTreeIntegrationTests(unittest.TestCase):
         self.assertEqual(fx[0], fx[1], "不再按档位叠加别的基名")
         self.assertEqual(fx[1], fx[2])
         for names in fx:
-            self.assertEqual(names, {KM.ZETA_LANCE, KM.ZETA_LANCE_END, KM.CLARISSE},
+            from wf_magnus_pf_orbit import EFFECT
+            self.assertEqual(names, {KM.ZETA_LANCE, KM.ZETA_LANCE_END, KM.CLARISSE, EFFECT},
                              "zeta_lance_hit（26 颗方块的主场）不许再出现")
         self.assertIn(KM.ZETA_LANCE, fx[0])
 
