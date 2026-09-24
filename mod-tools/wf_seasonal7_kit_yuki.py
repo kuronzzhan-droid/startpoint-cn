@@ -2196,6 +2196,8 @@ def build(ctx) -> dict[str, Any]:
 
     # ---- 1 词条 / 队长
     leader, abilities = _build_rows(ctx, _locked_rows(revision, revision5), notes)
+    from wf_water_balance_20260924 import yuki_rows
+    abilities[f"{CID}2"] = yuki_rows(abilities[f"{CID}2"])
     ctx.write_flat(LD, {CID: leader})
     ctx.write_flat(AB, abilities)
 
@@ -2378,10 +2380,12 @@ def build(ctx) -> dict[str, Any]:
                              f"{rows_report['required_capabilities']}")
     if revision is not None:
         want_counts = record_counts_lock(revision, revision5)
+        want_counts[f"{CID}2"] += 1
         got_counts = {"leader": len(leader), **{k: len(v) for k, v in abilities.items()}}
         if got_counts != want_counts:
             gate_failures.append(f"record counts {got_counts} != revision plan {want_counts}")
         locked = _locked_rows(revision, revision5)
+        locked[f"{CID}2"] = yuki_rows(locked[f"{CID}2"])
         drift = ([f"leader#{i}" for i, r in enumerate(leader)
                   if locked["leader"][i] is not None and r != locked["leader"][i]]
                  + [f"{k}#{i}" for k, rows in abilities.items()
