@@ -38,7 +38,9 @@ def build(knight, level):
     tree[11][1][1][1][1] = life
     outer[9][1] = [{'min': RADII[level-1], 'max': RADII[level-1]}]
     outer[13][1] = life
-    outer[24] = inner[24] = 4
+    # Existing battle-rules v4: explicit conversion marks real direct damage,
+    # including native direct-hit counters, separated modifiers and statistics.
+    outer[24] = inner[24] = 104
     aura = commands(outer[20], 'ShowEffect')[0]
     aura[2] = ['SpecifyEffectDirectly', fx.effect(level)]
     aura[4:7] = [['ForesideOfCharacter'], ['PlayOnlyFirstSequence'], ['AB']]

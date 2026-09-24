@@ -149,7 +149,7 @@ class SwordMechanicsTests(unittest.TestCase):
             self.assertEqual(inner[13],['SpecifyHitAreaLifetimeDirectly',10])
             self.assertEqual(inner[14],['CalculatedUsingMaxNumOfHits',Q.HITS[level-1]])
             self.assertEqual(inner[15],['Some',[{'min':Q.HITS[level-1],'max':Q.HITS[level-1]}]])
-            self.assertEqual((outer[24],inner[24]),(4,4))
+            self.assertEqual((outer[24],inner[24]),(104,104))
 
     def test_burst_keeps_original_per_hit_damage_and_number(self):
         for level in (1,2,3):

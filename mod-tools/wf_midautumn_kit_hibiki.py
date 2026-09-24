@@ -113,8 +113,8 @@ CAS_ABILITY = {slot: f"desc_override_{CODE}_{slot}" for slot in range(1, 7)}
 #: 629 PF 追击树（官方 special_lv3 命中块整块搬出）。一棵树两行共用。
 INVOKE_BASE = f"ability_skill_{CODE}_pf"
 INVOKE_PROGRAM = f"battle/action/skill/action/ability_skill/{INVOKE_BASE}${INVOKE_BASE}"
-#: 629 载荷的倍率旋钮（1.0 ＝ 官方 special_lv3 原值 13×；她本体 722 lv3 是 62.4×）。
-INVOKE_SCALE = 1.0
+#: 作者 2026-09-24：冲刺/施技追加与本体 PF3 同倍率 62.4×。
+INVOKE_SCALE = PF_SCALE
 #: 629 载荷的伤害归属开关 ＝ **ActionDsl 根头 params[9]**（树里 ``tree[10]``）。
 #:
 #: 逐行读客户端（反馈轮 4，作者真机「怎么是技能伤害」）确认的完整判定链：
@@ -876,7 +876,7 @@ def build_invoke_tree(ctx):
 
     2026-09-24：根头 133 由 damage-type-rules-v1 按 PF3 完整结算，保留原生 413 乘区。
     判定区那一位一律留 :data:`INVOKE_HITAREA_BTA` ``= 0``（它会回落到根头，不是开关）。
-    不叠 ``PF_SCALE``。两条队长 248 与 629 同门槛、同冷却，每次追加只计一次公共 PF 发动，
+    作者 2026-09-24 指定倍率同本体 PF3，统一 ×4.8。两条队长 248 与 629 同门槛、同冷却，每次追加只计一次公共 PF 发动，
     不按此树的多段命中重复计数，也不伪造分档拍板事件（trigger65）。
     """
     base = copy.deepcopy(source_tree(ctx, SPECIAL_PROGRAMS[3], SPECIAL_SHA[3]))

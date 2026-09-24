@@ -122,7 +122,7 @@ class ConstantTests(unittest.TestCase):
         self.assertEqual(len(K.PF_PROGRAMS), 3)
         self.assertTrue(K.INVOKE_PROGRAM.startswith("battle/action/skill/action/ability_skill/"))
         self.assertEqual(K.INVOKE_BTA, 133)            # 629 载荷按 PF 伤害结算（偏离 D-15）
-        self.assertEqual(K.INVOKE_SCALE, 1.0)        # 官方 special_lv3 原值，不叠 PF_SCALE（D-16）
+        self.assertEqual(K.INVOKE_SCALE, K.PF_SCALE)  # 作者指定追加与本体 PF3 同倍率
 
     def test_damage_attribution_switches_are_pinned(self):
         """反馈轮 4：伤害归属的两个位，取值钉死在源码证明过的那一组。
@@ -692,8 +692,8 @@ class InvokeTreeTests(unittest.TestCase):
         self.assertEqual(tree[1], 1)
         self.assertEqual(tree[10], K.INVOKE_BTA)           # 3 = 通用伤害池走强化弹射
         self.assertEqual(K.dsl_problems(tree, element=None), [])
-        self.assertEqual(gates["total"], 13.0)             # 官方 special_lv3 原值 4 + 9
-        self.assertEqual(gates["multipliers"], [4.0, 9.0])
+        self.assertEqual(gates["total"], 62.4)             # (4 + 9) × 4.8
+        self.assertEqual(gates["multipliers"], [19.2, 43.2])
 
     def test_damage_attribution_is_on_the_root_not_the_hit_areas(self):
         """反馈轮 4：归属开关只写根头，判定区归属位全部留 0（不覆盖、回落到根头）。

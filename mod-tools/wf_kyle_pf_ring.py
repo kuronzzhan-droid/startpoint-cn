@@ -54,9 +54,10 @@ def install(ctx):
     assets, report = fx.build_assets(ctx.root)
     for logical, raw in assets.items():
         ctx.write_asset('common', logical, raw, owner='kyle-pf-ring')
-    report.update(apk=apk, table_key=KEY, programs=programs, buff_target_as=4,
-                  regular_damage_bonus='DirectAttack', source_context='PowerFlip',
-                  limitation='PF events and PF separated multipliers remain; author accepted no-client-change scope on 2026-09-23',
+    report.update(apk=apk, table_key=KEY, programs=programs, buff_target_as=104,
+                  regular_damage_bonus='DirectAttack', source_context='DirectAttack',
+                  requires_capability='damage-type-rules-v1',
+                  direct_hit_counter='one per actual damage hit; missed contacts do not count',
                   native_ranges=list(quick.RADII), native_hits=list(quick.HITS),
                   quick_source='141201 wind_spgirl_4anv', burst_frames=quick.BURST_FRAMES,
                   contact_behavior='one trigger per enemy, fixed contact-point burst; native proximity limits remain',
