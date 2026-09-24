@@ -17,33 +17,36 @@ def select(pool, path):
             ('callproperty', 241, 1), ('coerce', 79), ('setlocal', 4)]
 
 
-def ready_block(pool, slot):
+def ready_block(pool, slot, count=4):
+    if not 2 <= count <= 16:
+        raise ValueError('ready pool must contain 2..16 recordings')
+    paths = [BASE_PATH + f'_alt_{i}' for i in range(1, count)]
     code = [('getlocal_0',), ('getproperty', 9733), ('getproperty', 15727),
             ('pushstring', pool.string(CODE)), ('ifne', 'END')]
     # If the base asset is unavailable, retain the original Option and counter.
     code += exists(pool, BASE_PATH) + [('iffalse', 'END')]
     # Canonical base is also the fallback when the requested alternate is absent.
     code += select(pool, BASE_PATH)
-    for index in range(3):
+    for index in range(count - 1):
         code += [('getlocal_0',), ('getproperty', slot), ('pushbyte', index),
                  ('ifeq', f'PICK{index}')]
-    code += [('jump', 'PICK3')]
-    for index in range(4):
+    code += [('jump', f'PICK{count - 1}')]
+    for index in range(count):
         code += [('label', f'PICK{index}'), ('getlocal_0',),
-                 ('pushbyte', (index + 1) % 4), ('setproperty', slot)]
+                 ('pushbyte', (index + 1) % count), ('setproperty', slot)]
         if index:
-            path = ALT_PATHS[index - 1]
+            path = paths[index - 1]
             code += exists(pool, path) + [('iffalse', 'END')]
             code += select(pool, path)
         code += [('jump', 'END')]
     return code + [('label', 'END')]
 
 
-def preload_block(pool):
+def preload_block(pool, count=4):
     # Native main-character + playsSoundEffect + playsSkillReady branch remains.
     code = [('getlocal', 5), ('getproperty', 7439),
             ('pushint', pool.integer(CID)), ('ifne', 'END')]
-    for index, path in enumerate(ALT_PATHS):
+    for index, path in enumerate(BASE_PATH + f'_alt_{i}' for i in range(1, count)):
         code += [('getlocal', 5), ('getproperty', 7746),
                  ('pushstring', pool.string(path)), ('callproperty', 8215, 1),
                  ('iffalse', f'NEXT{index}'), ('getlocal_1',),

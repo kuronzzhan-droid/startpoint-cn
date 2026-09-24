@@ -1109,6 +1109,7 @@ class SkillTreeIntegrationTests(unittest.TestCase):
             self.assertEqual(len(lance), 1, "只留一层锥形")
             self.assertEqual(lance[0][3], -18)
             self.assertEqual(lance[0][6], ["EF"], "朝球的飞行方向，AB 会恒定朝上")
+            self.assertEqual(lance[0][10:12], [True, True], "位置和朝向都必须持续跟随小人")
             scales.append(lance[0][12][1][0]["max"])
             del tree
         self.assertEqual(totals, sorted(totals), "三档逐渐增强")
