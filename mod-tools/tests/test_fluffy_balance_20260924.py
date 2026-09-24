@@ -33,7 +33,7 @@ class FluffyBalanceTests(unittest.TestCase):
     def test_party_block_preserves_opening_movement_and_all_elements(self):
         ability, _ = K.build_ability_rows(fixtures.ctx())
         rule, = [r for r in ability['1499872'] if r[109] == '423']
-        self.assertEqual((rule[1], rule[110], rule[111]), ('true', '5', ''))
+        self.assertEqual((rule[1], rule[110], rule[111]), ('true', '5', '(None)'))
         mask = int(rule[118])
         self.assertEqual(mask, GAINS['skill'] | GAINS['ability'])
         self.assertEqual(mask & (GAINS['opening'] | GAINS['movement']), 0)

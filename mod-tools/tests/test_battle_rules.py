@@ -65,6 +65,15 @@ class BattleRulesTest(unittest.TestCase):
                 row[wf_describe.layout(table)['blocks']['precondition1']-1] = '0'
                 self.assertEqual([], legality.required_client_capabilities(table, row))
 
+    def test_unfiltered_party_uses_native_none_sentinel(self):
+        donor = _base_row('ability', '1')
+        for content, code in ((423, 12), (424, 104)):
+            for target in ('party', 'others'):
+                for kwargs in ({}, {'groups': ''}, {'groups': '(None)'}):
+                    row = rules.make_row(donor, 'rule', content, code,
+                                         target=target, **kwargs)
+                    self.assertEqual('(None)', row[111])
+
     def test_table_invalid_code_is_not_only_an_enum_check(self):
         for content, code in ((423, '0'), (423, '12.0'), (423, '-1'), (424, '103')):
             row = _base_row('ability', '1')
