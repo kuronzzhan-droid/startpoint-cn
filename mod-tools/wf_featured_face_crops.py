@@ -59,7 +59,7 @@ def _box(box, size):
     return ((left + right) / 2, (top + bottom) / 2), right - left
 
 
-def make_images(code, source, square_box, masks):
+def make_images(code, source, square_box, masks, *, transparent_background=False):
     """头像留出头部空间，编队和弹射板按各自竖框保留头肩与上身。"""
     if code not in CODES:
         raise ValueError("unassigned character")
@@ -76,7 +76,7 @@ def make_images(code, source, square_box, masks):
             height, anchor = 2.85 * side, (.5, .23)
         elif slots[0] == "thumb_level_up":
             height, anchor = 1.57 * side, (.5, .38)
-        image = _background(size, code)
+        image = Image.new("RGBA", size) if transparent_background else _background(size, code)
         image.alpha_composite(images.crop_at(source, center, height, size, anchor))
         for slot in slots:
             target = image.resize(gate.OFFICIAL_ICON_SIZES[slot], Image.Resampling.LANCZOS)
@@ -84,6 +84,10 @@ def make_images(code, source, square_box, masks):
                 alpha = np.asarray(masks[slot])
                 if alpha.shape != (target.height, target.width) or alpha.dtype != np.uint8:
                     raise ValueError("wrong native alpha mask for " + slot)
+                # The native frame is a ceiling, not a replacement for the
+                # artwork silhouette. Replacing alpha fills empty art regions.
+                if transparent_background:
+                    alpha = np.minimum(np.asarray(target.getchannel("A")), alpha)
                 target.putalpha(Image.fromarray(alpha))
             result[slot] = target
     cutin = images.crop_at(source, center, 1.13 * side, (1024, 512), (.5, .5))
