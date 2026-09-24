@@ -267,7 +267,7 @@ class PanelTests(unittest.TestCase):
 
     def test_panel_lines_cover_every_slot(self):
         self.assertEqual(sorted(KIT.PANEL_ABILITY), list(range(1, 7)))
-        self.assertEqual(PANEL_LINES, 17)
+        self.assertEqual(PANEL_LINES, 18)
 
     def test_the_skill_flag_entry_has_no_numbers_or_time(self):
         """裁决 §3：能力里的「技能强化」条目不写数字与时间。"""

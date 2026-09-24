@@ -35,6 +35,7 @@ from typing import Any
 import wf_client_legality as L
 import wf_midautumn_kitlib as KL
 import wf_midautumn_specs as MS
+import wf_kuro_full_dice as full_dice
 
 KEY = "kuro"
 CID = 139991
@@ -325,6 +326,7 @@ PANEL_ABILITY: dict[int, tuple[str, ...]] = {
         "强化技能：释放技能后，从下列效果中随机抽取一项（抽取次数随「骰运」层数提升，最多6次，"
         "每次独立判定，可能抽到重复效果）：攻击力＋500%（持续15秒）、Fever槽大幅上升、"
         "贯穿效果（持续15秒）、直击伤害＋500%（持续15秒）、连击＋500、队长技能槽＋15%",
+        full_dice.TEXT,
     ),
     4: ("雷属性共鸣时：每次获得贯穿效果，自身技能槽＋5%、连击＋50（冷却时间：3秒）",),
     5: ("击败敌人时：雷属性角色技能槽＋25%、连击＋50",),
@@ -1129,6 +1131,8 @@ def build(ctx) -> dict[str, Any]:
     for level in ("1", "2"):
         source = donor_program(ctx, level)
         tree, ev = mutate_tree(ctx.template_dsl(source), level)
+        tree = full_dice.apply(tree)
+        ev['full_dice_rewards'] = 'six rewards doubled at six layers; same six draws'
         logical = ctx.write_dsl(ctx.program_path(level), tree)
         back = ctx.amf_parse(ctx.pack.pkg_path("common", logical).read_bytes())
         if back != tree:
