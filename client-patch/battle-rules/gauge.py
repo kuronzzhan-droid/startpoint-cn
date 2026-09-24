@@ -13,8 +13,7 @@ def filter_body(e):
             ('label', 'LOOP'), ('avm_label',), ('getlocal_3',), ('getlocal_2',), ('getproperty', q('length')),
             ('ifge', 'NO'), ('getlocal_2',), ('getlocal_3',), ('getproperty', 14),
             ('coerce', q('pinball.scene.battle.battle.ability::DuringCheckerWithDecimal')),
-            ('setlocal', 4), ('inclocal_i', 3), ('getlocal', 4), ('pushnull',),
-            ('callproperty', q('getActiveCount'), 1), ('pushbyte', 0), ('ifle', 'LOOP'),
+            ('setlocal', 4), ('inclocal_i', 3),
             ('getlocal', 4), ('getproperty', q('value')), ('convert_i',), ('setlocal', 5)]
     for mask in GROUPS:
         code += [('getlocal', 5), e.number(mask), ('bitand',), ('setlocal', 6),
@@ -22,6 +21,8 @@ def filter_body(e):
                  ('getlocal_1',), ('bitand',), ('iffalse', 'LOOP'), ('label', f'NEXT{mask}')]
     # Invalid zero rules are no-ops, not accidental universal blockers.
     code += [('getlocal', 5), ('pushbyte', 127), ('bitand',), ('iffalse', 'LOOP'),
+             ('getlocal', 4), ('pushnull',), ('callproperty', q('getActiveCount'), 1),
+             ('pushbyte', 0), ('ifle', 'LOOP'),
              ('pushtrue',), ('returnvalue',), ('label', 'NO'), ('pushfalse',), ('returnvalue',)]
     return code
 
@@ -54,9 +55,11 @@ def guard(e, kind):
 
 
 def install(e):
+    from gauge_effect_guard import guard as effect_guard, insertion_point
     e.add_slot(MEMBER, CONTEXT, 'Object', True)
     e.add_method(TOTALIZER, 'wfBlocksGauge', 'Boolean', ['int'], filter_body(e), 7)
     e.add_method(MEMBER, 'wfAllowsGauge', 'Boolean', ['int'], allows_body(e), 5)
+    e.insert('MemberImpl/applyInstantAbility', insertion_point(e), effect_guard(e))
     for method, kind in (('addSkillPoint', 4), ('reserveSkillPoint', 8),
                          ('reserveFixedSkillPoint', 8), ('applyInitialSkillPointRatio', 1)):
         e.insert('MemberImpl/' + method, 2, guard(e, kind))

@@ -63,11 +63,13 @@ def run(ins, abc, args, lex=None, stack=None):
             for _ in range(a[0]):
                 v, k = stack.pop(), stack.pop(); obj[k] = v
             stack.append(obj)
-        elif op in ('strictequals', 'equals', 'subtract_i', 'subtract', 'add', 'divide', 'modulo', 'bitand', 'bitor'):
+        elif op in ('strictequals', 'equals', 'subtract_i', 'subtract', 'add', 'multiply', 'multiply_i', 'divide', 'modulo', 'bitand', 'bitor'):
             b, c = stack.pop(), stack.pop()
             stack.append({'strictequals': lambda: type(c) is type(b) and c == b,
                           'equals': lambda: c == b, 'subtract_i': lambda: c-b,
                           'subtract': lambda: c-b, 'add': lambda: c+b,
+                          'multiply': lambda: c*b,
+                          'multiply_i': lambda: ((int(c)*int(b)+2**31) % 2**32)-2**31,
                           'divide': lambda: c/b, 'modulo': lambda: c%b,
                           'bitand': lambda: int(c)&int(b), 'bitor': lambda: int(c)|int(b)}[op]())
         elif op == 'not': stack.append(not stack.pop())
