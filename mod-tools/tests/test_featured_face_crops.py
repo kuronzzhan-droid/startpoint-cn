@@ -67,6 +67,18 @@ class FeaturedFaceCropsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'both evolution states'):
             face.assets('white_tiger_summer', {0: b''}, {0: (0, 0, 10, 10)}, lambda *_: b'', native_masks=self.masks)
 
+    def test_skill_banner_includes_chest_below_face_crop(self):
+        source = Image.new('RGBA', (600, 800))
+        source.paste((220, 170, 100, 255), (200, 90, 360, 230))
+        source.paste((30, 90, 210, 255), (180, 250, 390, 490))
+        result = face.make_images('wind_spgirl_campus', source,
+                                  (170, 60, 390, 280), self.masks,
+                                  transparent_background=True)
+        rgba = np.asarray(result['skill_cutin'])
+        chest = (rgba[:, :, 2] > 180) & (rgba[:, :, 0] < 70) & (rgba[:, :, 3] > 200)
+        self.assertGreater(int(chest.sum()), 20000)
+        self.assertGreater(int(np.nonzero(chest)[0].max()), 450)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -90,7 +90,9 @@ def make_images(code, source, square_box, masks, *, transparent_background=False
                     alpha = np.minimum(np.asarray(target.getchannel("A")), alpha)
                 target.putalpha(Image.fromarray(alpha))
             result[slot] = target
-    cutin = images.crop_at(source, center, 1.13 * side, (1024, 512), (.5, .5))
+    # The horizontal skill banner shows the upper body. Reusing the square
+    # portrait scale here turns the animation into a face-only close-up.
+    cutin = images.crop_at(source, center, 2.4 * side, (1024, 512), (.5, .32))
     pixels = np.array(cutin)
     alpha = pixels[:, :, 3].astype(float)
     # Tight portraits can fill the entire banner. Keep transparent side padding
