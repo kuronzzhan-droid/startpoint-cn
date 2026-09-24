@@ -50,6 +50,8 @@ def apply(source, output, report):
     before = [b[:] for b in ABC.bodies]
     G = load('gerald_blocks_add', 'client-patch/gerald-ready-voice-router/router_blocks.py')
     T = load('tekuto_blocks_add', 'client-patch/voice-pool-additions/blocks.py')
+    Z = load('zantetsu_blocks_add', 'client-patch/voice-pool-additions/zantetsu.py')
+    U = load('ready_ui_add', 'client-patch/voice-pool-additions/ui.py')
     slot, = [t.name for i in ABC.instances if ABC.mn_name(i[0]).endswith('::HudMemberStatus')
              for t in i[6] if ABC.mn_name(t.name) == G.READY_NEXT]
     targets = ['HudMemberStatus/update', 'BattleCharacterLogic/resolveFollowingPathCollection']
@@ -64,16 +66,31 @@ def apply(source, output, report):
         # the new path has no _alt alias and passes through unchanged.
         temp = [0, 0, 0, 0, 0, asm.encode(new)[0], []]
         _, _, new = asm.splice(temp, len(new), extra, asm.ENTER)
+        temp[5] = asm.encode(new)[0]
+        extra = asm.assemble(Z.ready(pool, slot, G) if name == targets[0] else Z.preload(pool))
+        _, _, new = asm.splice(temp, len(new), extra, asm.ENTER)
         body = ABC.bodies[ids[name]]
         if body[6]:raise ValueError('voice target unexpectedly has exception handlers')
         edits.append(dict(method=name, **replace(body, old, new)))
+    ui_id = bodies.resolve(ABC, U.TARGET);body = ABC.bodies[ui_id]
+    if sha(body[5]) != U.BASE_SHA or body[6]:
+        raise ValueError('ready list baseline differs')
+    code, exceptions, instructions = asm.splice(body, U.INSERT_AT, asm.assemble(U.block(pool)), asm.ENTER)
+    if asm.unsplice(code, U.INSERT_AT, len(asm.assemble(U.block(pool)))) != body[5]:
+        raise ValueError('ready list original cannot be recovered')
+    stack, scope, _ = asm.simulate(instructions, body[3], ABC.multinames)
+    body[1], body[4] = max(body[1], stack), max(body[4], scope)
+    body[5], body[6] = code, exceptions
+    edits.append(dict(method=U.TARGET, at=U.INSERT_AT, old_count=0,
+                      new_count=len(asm.assemble(U.block(pool))), reversible=True))
+    ids[U.TARGET] = ui_id
     changed = [i for i,(a,b) in enumerate(zip(before,ABC.bodies)) if a != b]
     if set(changed) != set(ids.values()) or len(before) != len(ABC.bodies):
         raise ValueError('non-voice method changed')
     output.parent.mkdir(parents=True,exist_ok=True);swf.save(output)
     data = dict(status='static_candidate_runtime_pending', source_sha256=BASE_SHA,
         output_sha256=sha(output.read_bytes()), source=str(source), output=str(output),
-        edits=edits, changed_bodies=changed, unchanged_bodies=len(before)-2,
+        edits=edits, changed_bodies=changed, unchanged_bodies=len(before)-3,
         new_traits=0, gameplay_methods_unchanged=True, pool=pool.report())
     report.write_text(json.dumps(data,ensure_ascii=False,indent=2),'utf8')
     return data

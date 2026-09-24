@@ -12,10 +12,10 @@ class VoicePoolAdditionsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         out=R.parent/'out/夏勇希与杰拉尔调整-20260924'
-        if not (out/'voice-pools.swf').exists():raise unittest.SkipTest('local v4 voice candidate absent')
+        if not (out/'voice-pools-ui.swf').exists():raise unittest.SkipTest('local v4 voice candidate absent')
         cls.before=SwfAbc(R.parent/'out/战斗黑屏修复-20260924/rules-v4.swf')
-        cls.after=SwfAbc(out/'voice-pools.swf')
-        cls.report=json.loads((out/'voice-pools-report.json').read_bytes())
+        cls.after=SwfAbc(out/'voice-pools-ui.swf')
+        cls.report=json.loads((out/'voice-pools-ui-report.json').read_bytes())
         cls.blocks={}
         for edit in cls.report['edits']:
             idx=bodies.resolve(cls.after.abc,edit['method']);at=edit['at']
@@ -70,6 +70,47 @@ class VoicePoolAdditionsTest(unittest.TestCase):
         self.assertEqual(self.before.body[:self.before._offset],self.after.body[:self.after._offset])
         self.assertEqual(self.before.body[self.before._offset+self.before._length:],
                          self.after.body[self.after._offset+self.after._length:])
+
+    def test_ready_ui_lists_each_recording_and_omits_missing_assets(self):
+        def load(name, path):
+            spec=importlib.util.spec_from_file_location(name,R/path)
+            mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod);return mod
+        ui=load('voice_ui_test', 'client-patch/voice-pool-additions/ui.py')
+        sys.path.insert(0,str(R/'client-patch/lion-skill-voice-selection'))
+        vm=load('voice_ui_vm_test','client-patch/lion-skill-voice-selection/ui_verify.py')
+        code=self.blocks[ui.TARGET]
+        for cid,(role,leaves) in ui.ROSTER.items():
+            paths=[f'character/{role}/voice/battle/{leaf}'for leaf in leaves]
+            for mask in range(1<<len(paths)):
+                available={p for i,p in enumerate(paths)if mask&(1<<i)}
+                for actual in (cid,119996,10):
+                    original=['native-old'];actor=Obj(characterId=actual,logicAssets=Obj(existsVoiceFileReader=lambda p:p in available))
+                    regs={2:actor,21:original}
+                    vm.execute(code,self.after.abc,regs)
+                    self.assertEqual(regs[21],[p for p in paths if p in available]if actual==cid else original)
+                    if actual!=cid:self.assertIs(regs[21],original)
+        edit=next(x for x in self.report['edits']if x['method']==ui.TARGET)
+        idx=bodies.resolve(self.after.abc,ui.TARGET)
+        self.assertEqual(asm.unsplice(self.after.abc.bodies[idx][5],edit['at'],edit['new_count']),
+                         self.before.abc.bodies[idx][5])
+
+    def test_zantetsu_ready_cycle_keeps_native_states_and_preloads_additions(self):
+        paths=[f'character/samurai_robot_plum/voice/battle/skill_ready_alt_{i}'for i in (2,3)]
+        for mask in range(4):
+            available={p for i,p in enumerate(paths)if mask&(1<<i)}
+            for native_path in ('skill_ready','matched_skill_ready'):
+                hud=Obj(character=Obj(mainCharacterStringId='samurai_robot_plum',logic=Obj(logicAssets=Obj(existsVoiceFileReader=lambda p:p in available))),geraldReadyNext=0)
+                heard=[]
+                for _ in range(8):
+                    regs={0:hud,4:Obj(index=0,params=[native_path])}
+                    self.execute('HudMemberStatus/update',regs);heard.append(regs[4].params[0])
+                self.assertEqual(heard,([native_path,native_path]+[p if p in available else native_path for p in paths])*2)
+                regs={0:hud,4:Obj(index=1,params=[])}
+                self.execute('HudMemberStatus/update',regs);self.assertEqual(hud.geraldReadyNext,0)
+            collected=[]
+            self.execute('BattleCharacterLogic/resolveFollowingPathCollection',
+                         {1:Obj(addSoundEffect=collected.append),5:Obj(characterId=159998,logicAssets=Obj(existsVoiceFileReader=lambda p:p in available))})
+            self.assertEqual(collected,[p for p in paths if p in available])
 
 
 if __name__=='__main__':unittest.main()
