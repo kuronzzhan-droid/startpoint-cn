@@ -88,6 +88,17 @@ def install(repo, pack_name, delivery, *, apply=False):
             entry = dict(logical_path=logical);entries.append(entry)
         entry.update(sha256=sha(raw), size=len(raw))
         entries.sort(key=lambda e: e['logical_path'])
+    # Keep earlier additions reproducible when the same character receives
+    # another delivery. The latest report alone loses the older rebuild input.
+    history = manifest['snapshot'].setdefault('voice_addition_history', [])
+    previous = manifest['snapshot'].get('voice_additions_20260924')
+    if previous and previous['delivery_sha256'] == report['delivery_sha256']:
+        prior_outputs = {(x['root'], x['logical_path']): x['after_sha256'] for x in previous['changed']}
+        if prior_outputs == {(tier, logical): sha(raw) for (tier, logical), raw in outputs.items()}:
+            report = {**previous, 'applied': apply}
+    for item in (previous, report):
+        if item and not any(x['delivery_sha256'] == item['delivery_sha256'] for x in history):
+            history.append(item)
     manifest['snapshot']['voice_additions_20260924'] = report
     manifest['qa'].update(release_ready=False, workspace_input_sha256='')
     if apply:
@@ -95,6 +106,7 @@ def install(repo, pack_name, delivery, *, apply=False):
             p = ws.package_dir/'roots'/tier/logical;p.parent.mkdir(parents=True, exist_ok=True);p.write_bytes(raw)
         (ws.package_dir/'manifest.json').write_bytes(package.canonical_manifest_bytes(manifest))
         (ws.evidence_dir/'voice-additions-20260924.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf8')
+        (ws.evidence_dir/'voice-addition-history.json').write_text(json.dumps(history,ensure_ascii=False,indent=2),'utf8')
         assert all((ws.package_dir/'roots'/tier/logical).read_bytes() == raw
                    for (tier, logical), raw in original.items() if (tier, logical) not in outputs)
     return report
