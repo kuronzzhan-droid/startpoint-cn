@@ -46,7 +46,7 @@ class NephtimFeverLeaderTest(unittest.TestCase):
                           maximum[109], maximum[111], maximum[112]))
 
     def test_dark_resonance_grants_one_constant_party_extension(self):
-        self.assertEqual(8, len(self.rows))
+        self.assertEqual(9, len(self.rows))
         row = self.rows[4]
         self.assertEqual(("0", "0", "0", "190", "", "20000", "20000"),
                          (row[3], row[11], row[25], row[45], row[46], row[49], row[50]))

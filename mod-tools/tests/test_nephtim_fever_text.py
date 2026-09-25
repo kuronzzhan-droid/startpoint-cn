@@ -137,7 +137,8 @@ class NephtimFeverTextTest(unittest.TestCase):
 
     def test_leader_uses_only_the_confirmed_constant_dark_resonance_piercing(self):
         permanent = self.panels()["leader"].splitlines()
-        self.assertEqual("暗属性共鸣时，全队贯穿效果时间+20%。", permanent[-1])
+        self.assertIn("暗属性共鸣时，全队贯穿效果时间+20%。", permanent)
+        self.assertEqual("暗属性共鸣时，每有1个协力球存在，自身直击判定次数+1。", permanent[-1])
         self.assertNotIn("Fever", permanent[-1])
         self.assertTrue(all(line.startswith("暗属性共鸣时，") for line in permanent))
         self.assertNotIn("每直接攻击50次", "\n".join(permanent))

@@ -74,9 +74,9 @@ class NephtimSkillTests(unittest.TestCase):
         for level in (1, 2):
             conditions = nodes(skill.build_skill(level), "CreateCondition")
             ball = [node for node in conditions if node[1] == 71]
-            self.assertEqual(len(ball), 2)
+            self.assertEqual(len(ball), 1)
             self.assertEqual({node[2][0][0] for node in ball},
-                             {"ACAdditionalDirectAttack", "ACAttackPoint"})
+                             {"ACAttackPoint"})
             self.assertTrue(all(node[12] is False for node in ball))
             self.assertTrue(all(node[12] is True for node in conditions if node[1] != 71))
         for kind in ("light", "dark"):
@@ -129,13 +129,11 @@ class NephtimSkillTests(unittest.TestCase):
                              [["ACAttackPoint", skill.value(1200), skill.value(2.5), skill.value(1)]])
             self.assertTrue(nodes(callback, "ACDirectDamage"))
             self.assertTrue(nodes(callback, "ACPiercing"))
-            extra = nodes(callback, "ACAdditionalDirectAttack")[0]
-            hits, bonus = extra[2][0]["max"], extra[3][0]["max"]
-            self.assertEqual((hits, hits * ((1 + bonus) / hits)), (2, 2))
+            self.assertFalse(nodes(callback, "ACAdditionalDirectAttack"))
             self.assertFalse(nodes(callback, "ACUnique"), "callbacks must not extend tea expiry")
             self.assertEqual(nodes(callback, "ACHealRejection"),
                              [["ACHealRejection", skill.value(1500)]])
-            for name in ("ACAttackPoint", "ACDirectDamage", "ACPiercing", "ACAdditionalDirectAttack"):
+            for name in ("ACAttackPoint", "ACDirectDamage", "ACPiercing"):
                 self.assertEqual(nodes(callback, name)[0][1], skill.value(1200),
                                  "25s ball lifetime must not extend the 20s newborn buffs")
         self.assertEqual(skill.metadata()["each_ball_lifetime_frames"], 1500)

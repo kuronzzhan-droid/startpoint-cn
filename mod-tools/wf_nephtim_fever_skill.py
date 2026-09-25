@@ -82,7 +82,8 @@ def build_skill(level):
         raise ValueError("skill level must be 1 or 2")
     piercing = ["ACPiercing", value(DURATION)]
     fever = command("ConditionalsFeverMode", block(
-        dark_and_balls(split_buff()), show(CODE + "_fever_2yellow")),
+        find(70, 82, [split_buff()], (6,)),
+        show(CODE + "_fever_2yellow")),
         block(show(CODE + "_fever_1blue")))
     enhanced = command("ConditionalsChangeSkillFlag", 1, block(
         dark_and_balls(attack_buff()),
@@ -122,7 +123,7 @@ def summon(kind):
         ["E2", effect("_ready_generation"), effect("_ready_left"), effect("_ready_right")],
         effect("_appear"), disappear, 0, False,
         "campus_nephtim_" + kind + "_spawn", 74, 75, block(
-            condition(75, direct_buff(), attack_buff(), split_buff(), ["ACPiercing", value(DURATION)],
+            condition(75, direct_buff(), attack_buff(), ["ACPiercing", value(DURATION)],
                       ["ACHealRejection", value(BALL_LIFETIME)]),
             _advance_phase(kind)), None)
 
@@ -196,7 +197,7 @@ def metadata():
             "overflow_count_origin_filtered": False,
             "ball_base_stats_unchanged": True, "ball_growth_curves_unchanged": True,
             "enhanced_fever_shield": shield.metadata(),
-            "new_ball_buffs": "activated callback grants the same 20s skill effects to each newborn ball",
+            "new_ball_buffs": "20s direct/attack/piercing and heal rejection; no multiple-hit buff",
             "light_appearance": "native ruin_girl_meteor; author-approved Summons conversion",
             "remote_piercing": "native TargetMate channel to primary members",
             "local_targets": "all primary members and all skill-targetable multiballs"}

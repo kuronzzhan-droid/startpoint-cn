@@ -1,5 +1,6 @@
 """校园奈芙提姆队长原生表行；特殊PF程序与文本由PF模块提供。"""
 from copy import deepcopy
+import wf_nephtim_ball_hit_count as ball_hit_count
 
 from wf_nephtim_fever_abilities import CODE, _during, _instant, _set
 
@@ -28,7 +29,7 @@ def leader_rows(source, *, piercing_extension="dark_resonance",
     removal_charge = _instant(source, 211, 5_000, pre="dark", target=5,
                               trigger=194, threshold=1)
     rows = [pf, direct, attack, maximum, piercing, growth, duration, removal_charge]
-    return [[CODE, "0", ""] + deepcopy(row[5:]) for row in rows]
+    return [[CODE, "0", ""] + deepcopy(row[5:]) for row in rows] + [ball_hit_count.leader_row(source)]
 
 
 def flat_string_rows():

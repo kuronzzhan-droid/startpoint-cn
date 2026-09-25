@@ -9,6 +9,7 @@ from wf_nephtim_fever_abilities import (CID, CODE, CHANGE_SKILL_DESCRIPTION,
 from wf_nephtim_fever_leader import PF_STRING_ID
 import wf_nephtim_fever_skill as skill
 import wf_nephtim_multiball_direct as multiball_direct
+import wf_nephtim_ball_hit_count as ball_hit_count
 
 REQUIRED_CAPABILITY = "panel-description-override-v2"
 FLAT_STRING_TABLE = "master/string/custom_ability_string.orderedmap"
@@ -23,7 +24,7 @@ OVERFLOW_PERCENT = skill.overflow_attack_percent()
 _TEXTS = {
     "active": (
         "赋予参战者及协力球贯穿效果，提升队伍内角色及协力球的直接攻击伤害。\n"
-        "Fever 模式中，使暗属性角色及协力球的直接攻击分为多次，并提高总伤害。"
+        "Fever 模式中，使暗属性角色的直接攻击分为多次，并提高总伤害。"
     ),
     "leader": (
         "暗属性共鸣时，强化弹射变为特殊型与辅助型组合。\n"
@@ -73,6 +74,7 @@ def panel_descriptions(*, piercing_extension="dark_resonance"):
     texts = deepcopy(_TEXTS)
     texts["a1"] = main_description(texts["a1"])
     texts["leader"] += "\n" + _piercing_line(piercing_extension)
+    texts["leader"] += "\n" + ball_hit_count.DESCRIPTION
     return texts
 
 
