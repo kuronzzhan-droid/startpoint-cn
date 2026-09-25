@@ -65,6 +65,13 @@ def inspect(package: Path, store: Path) -> dict:
             if (row['classification'] != 'dependency' or not isinstance(approved, str)
                     or not re.fullmatch('[0-9a-f]{64}', approved)):
                 raise ValueError('Invalid approved dependency preimage digest')
+        if 'approved_before_sha256s' in row:
+            approved = row['approved_before_sha256s']
+            if (row['classification'] != 'dependency' or not isinstance(approved, list)
+                    or not approved or any(not isinstance(value, str)
+                    or not re.fullmatch('[0-9a-f]{64}', value) for value in approved)
+                    or len(set(approved)) != len(approved)):
+                raise ValueError('Invalid approved dependency preimage digests')
         expected[member] = row
     seen, source_members = set(), {}
     for part in parts:
@@ -98,7 +105,8 @@ def inspect(package: Path, store: Path) -> dict:
         dest = target(roots, row)
         before = digest_file(dest)
         if (row['classification'] == 'dependency'
-                and before not in (None, row['sha256'], row.get('approved_before_sha256'))):
+                and before not in (None, row['sha256'], row.get('approved_before_sha256'),
+                                   *row.get('approved_before_sha256s', []))):
             conflicts.append(dict(logical=row['logical'], current_sha256=before,
                                   incoming_sha256=row['sha256']))
         entries.append(dict(row, destination=str(dest), before_sha256=before,

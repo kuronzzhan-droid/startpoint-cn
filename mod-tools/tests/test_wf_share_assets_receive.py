@@ -161,6 +161,36 @@ class ReceiveTests(unittest.TestCase):
         self.assertEqual(first.read_bytes(), b'old-first')
         self.assertEqual(last.read_bytes(), b'concurrent-edit')
 
+    def test_cumulative_update_accepts_only_enumerated_prior_media(self):
+        row, = self.fixture(('dependency',))
+        versions = (b'1045', b'1046')
+        row['approved_before_sha256s'] = [hashlib.sha256(v).hexdigest() for v in versions]
+        self.save_manifest()
+        for number, raw in enumerate(versions):
+            target = self.install(row, raw)
+            plan = inspect(self.package, self.store)
+            self.assertEqual([], plan['conflicts'])
+            receipt = apply_plan(plan, self.root / str(number))
+            self.assertTrue(receipt['complete'])
+            self.assertEqual(b'audio-0', target.read_bytes())
+        self.assertEqual([], inspect(self.package, self.store)['conflicts'])
+        self.install(row, b'receiver edit')
+        self.assertEqual(1, len(inspect(self.package, self.store)['conflicts']))
+
+    def test_malformed_preimage_list_is_rejected(self):
+        row, = self.fixture(('dependency',))
+        valid = hashlib.sha256(b'old').hexdigest()
+        for value in (None, '', valid, [], [None], [valid, valid], ['g'*64], [valid+'\n']):
+            with self.subTest(value=value):
+                row['approved_before_sha256s'] = value
+                self.save_manifest()
+                with self.assertRaisesRegex(ValueError, 'approved dependency preimage'):
+                    inspect(self.package, self.store)
+        row.update(classification='owned', approved_before_sha256s=[valid])
+        self.save_manifest()
+        with self.assertRaisesRegex(ValueError, 'approved dependency preimage'):
+            inspect(self.package, self.store)
+
     def test_archive_drift_after_plan_prevents_any_write(self):
         self.fixture()
         plan = inspect(self.package, self.store)
