@@ -115,6 +115,7 @@ def ability_rows(source: dict) -> dict:
                       trigger=12, threshold=7, target=5, limit=10)
     charge = _instant(source, 211, 700, pre="wind", fever="fever",
                       trigger=12, threshold=7, target=5)
+    charge[35] = '42'  # 0.7 seconds; only gauge reward is throttled.
     stock = _instant(source, 629, pre="wind", fever="fever",
                      trigger=23, wind_counter=True)
     stock[70:72] = [ABILITY_STOCK_STRING_ID, ABILITY_STOCK_ACTION_PATH]
@@ -185,6 +186,7 @@ def metadata() -> dict:
             "attack_max_percent": 700,
             "attack_persists_after_fever": True,
             "skill_gauge_gain_percent": 0.7,
+            "skill_gauge_cooldown_seconds": 0.7,
             "skill_gauge_trigger_limit": None,
         },
         "a3_stock": {

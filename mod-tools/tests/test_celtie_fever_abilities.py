@@ -104,6 +104,8 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
         self.assertEqual(("32", "70000", "10"), (attack[47], attack[51], attack[34]))
         self.assertEqual(700_000, int(attack[51]) * int(attack[34]))
         self.assertEqual(("211", "700", "(None)"), (charge[47], charge[51], charge[34]))
+        self.assertEqual('42', charge[35])
+        self.assertEqual('0', attack[35])
 
     def test_a3_stock_grant_and_consume_are_main_only_wind_fever_and_unlimited(self):
         grant, consume = self.rows["1499893"][4:6]

@@ -142,7 +142,7 @@ def _landing(slash_donor):
     return body
 
 
-def build_skill(level, official_bytes_loader):
+def build_skill(level, official_bytes_loader, *, boss_target=True):
     """返回两档原生 DSL；按能力主加成计算，保留技能来源规则。"""
     if level not in (1, 2):
         raise ValueError("skill evolution must be 1 or 2")
@@ -166,6 +166,9 @@ def build_skill(level, official_bytes_loader):
     result = deepcopy(dash)
     result[11] = block(buffs, with_starwind_growth(near))
     result = ability_damage_reference(remap(result))
+    if boss_target:
+        from wf_celtie_boss_lock import boss_lock
+        result = boss_lock(result)
     validate(result)
     return result
 
@@ -173,6 +176,7 @@ def build_skill(level, official_bytes_loader):
 def validate(tree):
     problems = (legality.action_dsl_element_problems(tree, character_element=3)
         + legality.action_dsl_subject_binding_problems(tree)
+        + legality.action_dsl_lookup_scope_problems(tree)
         + legality.action_dsl_hit_area_target_problems(tree))
     for node in walk(tree):
         if not (isinstance(node, list) and len(node) == 2 and node[0] in ("Command", "Event")):

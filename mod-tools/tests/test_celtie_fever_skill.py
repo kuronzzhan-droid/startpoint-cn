@@ -67,7 +67,8 @@ class CeltieOfficialSkillTests(unittest.TestCase):
             raise unittest.SkipTest("official CN archive required; set WF_CELTIE_OFFICIAL_CDN")
         cls.baseline = OfficialBaseline(cdn, write_cache=False)
         cls.cache = {}
-        cls.trees = {lv: skill.build_skill(lv, cls.read) for lv in (1, 2)}
+        # Frozen donor/geometry contract; boss tracking is verified separately.
+        cls.trees = {lv: skill.build_skill(lv, cls.read, boss_target=False) for lv in (1, 2)}
 
     @classmethod
     def read(cls, logical):
@@ -85,7 +86,7 @@ class CeltieOfficialSkillTests(unittest.TestCase):
             skill.validate(tree)
             self.assertEqual(skill.parse(skill.encode(tree)), tree)
             self.assertEqual(tree[10], 2)
-            self.assertEqual(skill.build_skill(lv, self.read), tree)
+            self.assertEqual(skill.build_skill(lv, self.read, boss_target=False), tree)
         self.assertEqual(before, self.cache)
 
     def test_only_bonus_selectors_and_authorized_multiplier_differ_from_frozen_cross_skill(self):
