@@ -124,7 +124,14 @@ def make_icons(source, landmarks, masks, role, *, headshots=False):
 
 
 def make_cutin(source, landmarks, *, headshots=False):
-    if headshots:
+    framing = landmarks.get("cutin_framing")
+    if framing is not None:
+        # Creature heads can sit far above their torso; retain explicit upper-body framing.
+        if framing["height"] <= 0 or len(framing["center"]) != 2:
+            raise ValueError("invalid cutin framing")
+        result = crop_at(source, framing["center"], framing["height"],
+                         (1024, 512), framing.get("anchor", (.5, .32)))
+    elif headshots:
         result = crop_at(source, landmarks["face"], landmarks["head_height"] * 1.35,
                          (1024, 512), (.5, .5))
     else:
