@@ -6,6 +6,43 @@ from wf_battle_rules import make_row, gauge_mask, segment_override, TARGETS
 CID = '149998'
 CODE = 'land_dragon_wind_playable'
 BLOCK_TEXT = '作为合击角色编成时，全队无法因技能或能力效果增加技能槽（战斗开始时除外）'
+ABILITY_TOTAL_EFFECT = 'battle/common/layer1/total_ability_damage_effect'
+
+
+def main_only(rows):
+    """原生可合击开关负责主位限制；移除重复/互斥的槽位前提。"""
+    result = deepcopy(rows)
+    for row in result:
+        if len(row) != 126:
+            raise ValueError('unexpected ability row width')
+        row[1] = 'false'
+        for col in (6, 13, 20):
+            if row[col] in ('202', '203'):  # OwnerIsMain / OwnerIsUnison
+                if any(row[col + 1:col + 7]):
+                    raise ValueError('unexpected slot precondition arguments')
+                row[col] = '0'
+    return result
+
+
+def _preload_ability_total(result):
+    # ActionDslAssetResolver visits both IfThisCharacterIsBoss branches while
+    # loading. MemberImpl.isBoss() is false, so this declaration never plays or
+    # creates an effect in battle. It adds the native timeline AND view assets
+    # absent from the default battle preload (only skill/PF totals are common).
+    if result[11][0] != 'Block':
+        raise ValueError('expected root Block')
+    marker = 'wf/preload/ability_total'
+    show = ['ShowEffect', marker, ['SpecifyEffectDirectly', ABILITY_TOTAL_EFFECT],
+            0, ['ForesideOfCharacter'], ['SpecifyEffectLifetimeDirectly', 1],
+            ['AB'], 0, 0, 0, False, False, ['None']]
+    declaration = ['Command', ['IfThisCharacterIsBoss', -18,
+                              ['Command', show], ['Block', []]]]
+    existing = [x for x in nodes(result, 'ShowEffect') if x[1] == marker]
+    if existing:
+        if existing != [show] or result[11][1].count(declaration) != 1:
+            raise ValueError('invalid ability damage preload declaration')
+    else:
+        result[11][1].insert(0, declaration)
 
 
 def bonus_rows(rows, *, leader=False):
@@ -58,6 +95,7 @@ def ability_skill(tree):
             area[24] = segment_override('ability')
     for condition in nodes(result, 'ACSkillDamage'):
         condition[0] = 'ACAbilityDamage'
+    _preload_ability_total(result)
     return result
 
 

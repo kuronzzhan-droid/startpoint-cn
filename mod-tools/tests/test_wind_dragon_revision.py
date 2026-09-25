@@ -60,8 +60,40 @@ class RevisionTests(unittest.TestCase):
             self.assertEqual(25,len(areas))
             self.assertTrue(all(a[24]==102 for a in areas))
             restored=deepcopy(after);restored[10]=before[10]
+            if after[11][1][0] != before[11][1][0]:
+                restored[11][1].pop(0)
             for a,b in zip(r.nodes(restored,'CreateHitArea'),r.nodes(before,'CreateHitArea')):a[24]=b[24]
             self.assertEqual(before,restored)
+
+    def test_ability_total_dependency_is_loaded_but_not_played_for_member(self):
+        tree = ['ActionDsl', 2, ['None'], False, False, False, False,
+                False, False, False, 0, ['Block', [
+                    ['Command', ['CreateNormalAttack', 'untouched']]]]]
+        after = r.ability_skill(tree)
+        command = after[11][1][0][1]
+        self.assertEqual(['IfThisCharacterIsBoss', -18], command[:2])
+        # Native resolver scans both branches; runtime member chooses empty else.
+        effect = command[2][1]
+        self.assertEqual(['SpecifyEffectDirectly', r.ABILITY_TOTAL_EFFECT], effect[2])
+        self.assertEqual(['Block', []], command[3])
+        self.assertEqual(tree[11][1], after[11][1][1:])
+        self.assertEqual(after, r.ability_skill(after))
+        after[11][1][0][1][0] = 'IfThisCharacterIsLeader'
+        with self.assertRaisesRegex(ValueError, 'invalid.*preload'):
+            r.ability_skill(after)
+
+    def test_main_only_removes_duplicate_and_contradictory_slot_conditions(self):
+        rows = [['']*126 for _ in range(3)]
+        for row, flag, cond in zip(rows, ('false','true','true'), ('202','203','0')):
+            row[1] = flag; row[6] = cond; row[13] = '12'; row[109] = '412'
+            row[114:116] = ['15000', '30000']
+        after = r.main_only(rows)
+        for before, result in zip(rows, after):
+            self.assertEqual('false', result[1])
+            self.assertEqual('0', result[6])
+            restored = deepcopy(result); restored[1], restored[6] = before[1], before[6]
+            self.assertEqual(before, restored)
+        self.assertEqual(after, r.main_only(after))
 
     def test_fox_removes_only_direct_combo_reward(self):
         row=['']*126
