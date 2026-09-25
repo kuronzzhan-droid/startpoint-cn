@@ -35,7 +35,7 @@ class RevisionCandidate:
     def __init__(self, repo_root: Path, candidate_root: Path, *,
                  character_id: str, code_name: str, package_version: str,
                  snapshot_key: str, evidence_name="revision.json",
-                 baseline_factory=OfficialBaseline):
+                 baseline_factory=OfficialBaseline, reviewed_input_drift=None):
         self.cid, self.code = character_id, code_name
         self.package_version, self.snapshot_key = package_version, snapshot_key
         self.evidence_name = evidence_name
@@ -58,11 +58,18 @@ class RevisionCandidate:
         self.index = {(tier, entry["logical_path"]): entry
                       for tier, entries in self.manifest["roots"].items() for entry in entries}
         self.original = {}
+        self.reviewed_input_drift = reviewed_input_drift or {}
+        seen_drift = set()
         for key, entry in self.index.items():
             raw = self.path(*key).read_bytes()
             if digest(raw) != entry["sha256"] or len(raw) != entry["size"]:
-                raise ValueError(f"candidate drift: {key}")
+                # Explicit hashes acknowledge reviewed existing WIP, never silently reseal it.
+                if self.reviewed_input_drift.get(key) != digest(raw):
+                    raise ValueError(f"candidate drift: {key}")
+                seen_drift.add(key)
             self.original[key] = raw
+        if seen_drift != set(self.reviewed_input_drift):
+            raise ValueError("reviewed candidate drift changed or contains unrelated entries")
         self.outputs = {}
         self.sources = {}
 
@@ -174,6 +181,8 @@ class RevisionCandidate:
         for entries in self.manifest["roots"].values():
             entries.sort(key=lambda item: item["logical_path"])
         evidence = dict(writes_live=False, applied=apply, metadata=metadata,
+                        reviewed_input_drift=[dict(root=k[0], logical_path=k[1], sha256=v)
+                                              for k, v in self.reviewed_input_drift.items()],
                         changed_files=[dict(root=tier, logical_path=logical,
                                             before_sha256=digest(self.original[tier, logical])
                                             if (tier, logical) in self.original else None,
