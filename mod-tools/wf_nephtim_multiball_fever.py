@@ -16,7 +16,11 @@ STRING_ID = CODE + "_multiball_direct_a4"
 ACTION_PATH = "battle/action/skill/action/ability_skill/" + CODE + "$" + STRING_ID
 LOGICAL_PATH = ACTION_PATH + ".action.dsl.amf3.deflate"
 CONDITION_KEY = STRING_ID
-TTL_FRAMES = 2
+# 作者 2026-09-27 多人卡顿修复（方案1，K=10）：能力4 T77 行由每 1 帧改为每 10 帧执行本程序；
+# 隐形状态持续帧 = 2 × 周期（原 1 帧/2 帧），相邻两次刷新之间留一个周期余量不断档。
+UPDATE_PERIOD_FRAMES = 10
+TTL_FRAMES = 2 * UPDATE_PERIOD_FRAMES
+UPDATE_PERIOD = str(UPDATE_PERIOD_FRAMES * 100_000)   # 阈值列单位：帧 × 100000
 
 
 def action_tree():
@@ -37,7 +41,9 @@ def flat_string_rows():
 
 
 def replace_ball_row(rows):
-    """只替换A4失效的target8 During行，主成员行和既有前置条件原样保留。"""
+    """只替换A4失效的target8 During行，主成员行和既有前置条件原样保留。
+
+    已转换的行（T77 → 629 本程序）只把刷新周期改写为 UPDATE_PERIOD，其余格不动。"""
     result = deepcopy(rows)
     if len(result) != 2 or any(len(row) != 126 or row[0] != CODE + "_4" for row in result):
         raise ValueError("unexpected Nephtim ability4 identity or shape")
@@ -45,24 +51,26 @@ def replace_ball_row(rows):
            if row[5] == "1" and row[109:111] == ["410", "8"]]
     if not old:
         ready = [row for row in result if row[47] == "629" and row[70:72] == [STRING_ID, ACTION_PATH]]
-        if len(ready) == 1 and ready[0][27] == "77":
-            return result
-        raise ValueError("expected exactly one original multiball During row")
-    if len(old) != 1:
+        if len(ready) != 1 or ready[0][27] != "77":
+            raise ValueError("expected exactly one original multiball During row")
+        row = ready[0]
+        if row[30] != row[31] or not row[30].isdigit() or int(row[30]) <= 0:
+            raise ValueError("unexpected A4 refresh period")
+    elif len(old) != 1:
         raise ValueError("ambiguous multiball During rows")
-    index = old[0]
-    row = result[index]
-    if (row[1] != "true" or row[6] != "2" or row[9:12] != ["600000", "600000", "Black"]
-            or row[13] != "12" or row[20] != "0" or row[97] != "4"
-            or row[113:115] != ["50000", "50000"]):
-        raise ValueError("A4 strength, resonance, Fever or unison policy changed")
-    row[5] = "0"
-    row[27:85] = [""] * 58
-    row[97:] = [""] * 29
-    for column, content in {27: "77", 30: "100000", 31: "100000", 34: "(None)",
-                            35: "0", 39: "(None)", 46: "0", 47: "629",
-                            70: STRING_ID, 71: ACTION_PATH}.items():
-        row[column] = content
+    else:
+        row = result[old[0]]
+        if (row[1] != "true" or row[6] != "2" or row[9:12] != ["600000", "600000", "Black"]
+                or row[13] != "12" or row[20] != "0" or row[97] != "4"
+                or row[113:115] != ["50000", "50000"]):
+            raise ValueError("A4 strength, resonance, Fever or unison policy changed")
+        row[5] = "0"
+        row[27:85] = [""] * 58
+        row[97:] = [""] * 29
+        for column, content in {27: "77", 34: "(None)", 35: "0", 39: "(None)", 46: "0",
+                                47: "629", 70: STRING_ID, 71: ACTION_PATH}.items():
+            row[column] = content
+    row[30:32] = [UPDATE_PERIOD] * 2
     problems = client_legality_problems("ability", row) + declared_block_field_problems("ability", row)
     if problems:
         raise ValueError("invalid replacement row: " + repr(problems))
@@ -72,11 +80,13 @@ def replace_ball_row(rows):
 def metadata():
     return dict(ability_slot=4, percent=50, requires_dark_resonance=True,
         requires_fever=True, unisonable=True, target="all local multiball members",
-        element_filter=None, summoner_filter=None, update_period_frames=1,
+        element_filter=None, summoner_filter=None, update_period_frames=UPDATE_PERIOD_FRAMES,
         condition_duration_ball_updates=TTL_FRAMES, condition_key=CONDITION_KEY,
         invisible=True, force_apply=False, maximum_accumulation=1,
         fixed_magnification=1, party_row_unchanged=True, panel_unchanged=True,
-        timing="Last queued write can apply in impact phase; expires after two ball updates.",
+        timing=(f"Refreshed every {UPDATE_PERIOD_FRAMES} frames; last queued write can apply in impact "
+                f"phase; expires after {TTL_FRAMES} ball updates."),
+        refresh_delay_frames_max=UPDATE_PERIOD_FRAMES,
         inactive_ball_timing="Native inactive/ghost ball update cadence governs expiration.",
         new_client_patch_required=False)
 

@@ -4,8 +4,10 @@ from wf_featured_main_ability import main_description
 
 from wf_nephtim_fever_abilities import (CID, CODE, CHANGE_SKILL_DESCRIPTION,
                                         CHANGE_SKILL_STRING_ID, COMBO_STRENGTH,
-                                        PIERCING_GROWTH_STRENGTH, SKILL_NAME,
-                                        SPAWN_DESCRIPTION, SPAWN_STRING_ID, _percent)
+                                        PIERCING_EXTENSION_STRENGTH, PIERCING_GROWTH_STRENGTH,
+                                        SKILL_GAUGE_MAXIMUM_STRENGTH, SKILL_NAME,
+                                        SPAWN_DESCRIPTION, SPAWN_STRING_ID,
+                                        SUMMON_PERIOD_FRAMES, _percent)
 from wf_nephtim_fever_leader import PF_STRING_ID
 import wf_nephtim_fever_skill as skill
 import wf_nephtim_multiball_direct as multiball_direct
@@ -20,32 +22,42 @@ COMBO_PERCENT = _percent(COMBO_STRENGTH)
 PIERCING_PERCENT = _percent(PIERCING_GROWTH_STRENGTH)
 BALL_PERCENT = multiball_direct.per_ball_percent()
 OVERFLOW_PERCENT = skill.overflow_attack_percent()
+PIERCING_EXTENSION_PERCENT = _percent(PIERCING_EXTENSION_STRENGTH)
+SKILL_GAUGE_MAXIMUM_PERCENT = _percent(SKILL_GAUGE_MAXIMUM_STRENGTH)
+_PERIOD = SUMMON_PERIOD_FRAMES / 60
+SUMMON_PERIOD_SECONDS = int(_PERIOD) if _PERIOD.is_integer() else _PERIOD
+# I536「技能强化」条目：作者 2026-09-27 起随强化开关移入队长。
+# 文案规则2：只写强化了什么，不写数字与时间。
+ENHANCEMENT_LINES = (
+    f"暗属性共鸣时，强化『{SKILL_NAME}』：额外赋予暗属性角色及协力球攻击力提升效果。",
+    "暗属性共鸣时，Fever 模式中，强化后的技能发动时，自身获得或刷新「星夜茶会」，并赋予暗属性角色及协力球护盾。",
+)
 
 _TEXTS = {
     "active": (
         "赋予参战者及协力球贯穿效果，提升队伍内角色及协力球的直接攻击伤害。\n"
         "Fever 模式中，使暗属性角色的直接攻击分为多次，并提高总伤害。"
     ),
-    "leader": (
-        "暗属性共鸣时，强化弹射变为特殊型与辅助型组合。\n"
-        "暗属性共鸣时，暗属性角色攻击力+200%、直接攻击伤害+400%。\n"
-        "暗属性共鸣时，Fever 模式中，暗属性角色技能槽上限+10%。\n"
-        "暗属性共鸣时，每达成35连击，暗属性角色获得的 Fever 槽上升量+20%。\n"
-        "暗属性共鸣时，Fever 时间+100%。\n"
-        "暗属性共鸣时，每有1个协力球消失时，暗属性角色技能槽+5%。"
-    ),
-    # 第2、3 行是同一条 I536「技能强化」条目：按文案规则2 只写强化了什么，不写数字与时间。
+    # 第2、3 行是同一条 I536「技能强化」条目（2026-09-27 起由队长承载）。
+    "leader": "\n".join((
+        "暗属性共鸣时，强化弹射变为特殊型与辅助型组合。",
+        *ENHANCEMENT_LINES,
+        "暗属性共鸣时，暗属性角色攻击力+200%、直接攻击伤害+400%。",
+        "暗属性共鸣时，每达成35连击，暗属性角色获得的 Fever 槽上升量+20%。",
+        "暗属性共鸣时，Fever 时间+100%。",
+        "暗属性共鸣时，每有1个协力球消失时，暗属性角色技能槽+5%。",
+    )),
+    # 召唤/溢出/清理仍在主位限制的能力1；强化开关已移入队长。
     "a1": (
         "战斗开始时，自身技能槽+50%。\n"
-        f"暗属性共鸣时，强化『{SKILL_NAME}』：额外赋予暗属性角色及协力球攻击力提升效果。\n"
-        "暗属性共鸣时，Fever 模式中，强化后的技能发动时，自身获得或刷新「星夜茶会」，并赋予暗属性角色及协力球护盾。\n"
-        "暗属性共鸣时，Fever 模式中，持有「星夜茶会」时，每经过1.5秒交替召唤1个光、暗属性协力球，各持续25秒且无法回复生命值，协力球最多同时存在9个；再次发动技能不会延长已有协力球的存在时间。\n"
+        f"暗属性共鸣时，Fever 模式中，持有「星夜茶会」时，每经过{SUMMON_PERIOD_SECONDS}秒交替召唤1个光、暗属性协力球，各持续25秒且无法回复生命值，协力球最多同时存在9个；再次发动技能不会延长已有协力球的存在时间。\n"
         f"暗属性共鸣时，Fever 模式中，持有「星夜茶会」时，协力球已达9个时，该次召唤改为自身攻击力+{OVERFLOW_PERCENT}%，持续20秒，可叠加。\n"
         "Fever 结束或自身倒下时，「星夜茶会」解除。"
     ),
+    # 首行贯穿延时由 panel_descriptions 按已确认策略补上（2026-09-27 起在能力2）。
     "a2": (
-        "暗属性共鸣时，全队贯穿效果时间+20%。\n"
-        "暗属性共鸣时，暗属性角色直接攻击伤害+250%。"
+        "暗属性共鸣时，暗属性角色直接攻击伤害+250%。\n"
+        f"暗属性共鸣时，Fever 模式中，暗属性角色技能槽上限+{SKILL_GAUGE_MAXIMUM_PERCENT}%。"
     ),
     # 文案规则1：没有上限的成长写到效果为止，后面什么都不跟（不写「无上限」）。
     "a3": "\n".join(MAIN_ICON + line for line in (
@@ -65,15 +77,15 @@ _TEXTS = {
 
 def _piercing_line(policy):
     if policy == "dark_resonance":
-        return "暗属性共鸣时，全队贯穿效果时间+20%。"
+        return f"暗属性共鸣时，全队贯穿效果时间+{PIERCING_EXTENSION_PERCENT}%。"
     raise ValueError(f"piercing_extension must be one of {PIERCING_POLICIES}: {policy!r}")
 
 
 def panel_descriptions(*, piercing_extension="dark_resonance"):
-    """返回主动、队长和六能力；队长贯穿使用已确认的常驻暗共鸣条件。"""
+    """返回主动、队长和六能力；贯穿延时使用已确认的常驻暗共鸣条件（2026-09-27 起在能力2）。"""
     texts = deepcopy(_TEXTS)
     texts["a1"] = main_description(texts["a1"])
-    texts["leader"] += "\n" + _piercing_line(piercing_extension)
+    texts["a2"] = _piercing_line(piercing_extension) + "\n" + texts["a2"]
     texts["leader"] += "\n" + ball_hit_count.DESCRIPTION
     return texts
 
@@ -113,6 +125,7 @@ def metadata(*, piercing_extension="dark_resonance"):
         "character_id": CID,
         "required_client_capabilities": [REQUIRED_CAPABILITY],
         "leader_piercing_extension": piercing_extension,
+        "piercing_extension_panel": "a2",
         "override_key_source": "first ability/leader row c0 (string_id)",
         "combat_rows_modified": False,
         "numeric_text": "fixed authored values at all ability levels",

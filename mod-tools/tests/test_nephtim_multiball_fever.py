@@ -39,13 +39,33 @@ class NephtimMultiballFeverTests(unittest.TestCase):
         self.assertEqual(revised[1][6:27], original[1][6:27])
         self.assertEqual(revised[1][85:97], original[1][85:97])
         row = revised[1]
-        self.assertEqual(("true", "0", "77", "100000", "100000", "0", "629"),
+        # 作者 2026-09-27 多人卡顿修复：T77 每 1 帧 → 每 10 帧（帧 × 100000）。
+        self.assertEqual(("true", "0", "77", "1000000", "1000000", "0", "629"),
                          (row[1], row[5], row[27], row[30], row[31], row[35], row[47]))
         self.assertEqual(row[70:72], [a4.STRING_ID, a4.ACTION_PATH])
         self.assertEqual(row[97:], [""] * 29)
         self.assertEqual([], legality.client_legality_problems("ability", row))
         self.assertEqual([], legality.declared_block_field_problems("ability", row))
         self.assertEqual(a4.replace_ball_row(revised), revised)
+
+    def test_already_converted_every_frame_row_only_gets_the_new_period(self):
+        # live 2026-09-27 之前的形态：已是 T77→629，但周期 100000（每 1 帧）。
+        revised = a4.replace_ball_row(self.original())
+        live = deepcopy(revised)
+        live[1][30:32] = ["100000", "100000"]
+        before = deepcopy(live)
+        slowed = a4.replace_ball_row(live)
+        self.assertEqual(before, live)
+        self.assertEqual(revised, slowed)
+        self.assertEqual([30, 31], [i for i in range(126) if slowed[1][i] != live[1][i]])
+        self.assertEqual(["1000000", "1000000"], slowed[1][30:32])
+        self.assertEqual(live[0], slowed[0])
+        self.assertEqual((10, 20, "1000000"), (a4.UPDATE_PERIOD_FRAMES, a4.TTL_FRAMES, a4.UPDATE_PERIOD))
+        for bad in (["100000", "1000000"], ["", ""], ["0", "0"]):
+            rows = deepcopy(live)
+            rows[1][30:32] = bad
+            with self.subTest(bad=bad), self.assertRaisesRegex(ValueError, "refresh period"):
+                a4.replace_ball_row(rows)
 
     def test_existing_during_party_row_is_still_dark_and_fever_fifty_percent(self):
         row = a4.replace_ball_row(self.original())[0]
@@ -62,8 +82,12 @@ class NephtimMultiballFeverTests(unittest.TestCase):
         find, condition = nodes
         self.assertEqual([80, 81, False, [], ["Block", []]], find[1:6])
         self.assertEqual(condition[1], 81)
+        # 持续帧 = 2 × 刷新周期（2026-09-27 起 20 帧，原 2 帧）。
         self.assertEqual(condition[2], [["ACSeparatedTermDirectDamage",
-            [{"min": 2, "max": 2}], [{"min": .5, "max": .5}], [{"min": 1, "max": 1}]]])
+            [{"min": 20, "max": 20}], [{"min": .5, "max": .5}], [{"min": 1, "max": 1}]]])
+        meta = a4.metadata()
+        self.assertEqual((10, 20, 10), (meta["update_period_frames"], meta["condition_duration_ball_updates"],
+                                        meta["refresh_delay_frames_max"]))
         self.assertEqual(condition[3:], [[{"min": 1, "max": 1}], ["None"], False, False,
             a4.CONDITION_KEY, None, True, 3, [{"min": 1, "max": 1}], False])
 

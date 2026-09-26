@@ -11,6 +11,9 @@ import wf_dsl
 import wf_dsl_sig
 import wf_nephtim_fever_shield as shield
 import wf_nephtim_fever_skill as skill
+import wf_nephtim_fever_abilities as abilities
+import wf_nephtim_fever_leader as leader
+from test_bianca_dragon_abilities import official_sources
 from wf_character_revision import encode_tree
 
 
@@ -109,6 +112,19 @@ class NephtimFeverShieldTests(unittest.TestCase):
         self.assertIsNone(meta["duration_frames"])
         tree[1].clear()
         self.assertEqual(len(shield.grant_barriers()[1]), 2)
+
+    def test_gate_metadata_names_the_leader_flag_where_generators_place_it(self):
+        # 作者 2026-09-27（方案B）：I536 强化开关由能力1搬入队长；护盾门的元数据须随之指向队长。
+        source, _ = official_sources()
+        leader_flags = [row for row in leader.leader_rows(source) if row[45] == "536"]
+        ability_flags = [row for rows in abilities.ability_rows(source).values()
+                         for row in rows if row[47] == "536"]
+        self.assertEqual(1, len(leader_flags))
+        self.assertEqual([], ability_flags)
+        gates = shield.metadata()["gates"]
+        self.assertTrue(gates.startswith("leader I536 flag"), gates)
+        self.assertNotIn("A1", gates)
+        self.assertEqual(gates, skill.metadata()["enhanced_fever_shield"]["gates"])
 
 
 if __name__ == "__main__":

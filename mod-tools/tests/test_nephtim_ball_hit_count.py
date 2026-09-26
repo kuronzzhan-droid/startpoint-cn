@@ -4,6 +4,8 @@ from pathlib import Path
 import unittest
 sys.path.insert(0, str(Path(__file__).parents[1]))
 import wf_nephtim_ball_hit_count as H
+import wf_nephtim_fever_leader as leader
+from test_bianca_dragon_abilities import official_sources
 from wf_nephtim_fever import validate_program
 from test_nephtim_fever_skill import nodes
 import wf_client_legality as L
@@ -30,7 +32,20 @@ class BallHitCountTest(unittest.TestCase):
                 total = 1 + content[3][0]['min']
                 self.assertEqual(times, n + (2 if ordinary_split else 1))
                 self.assertEqual(total, 2 if ordinary_split else 1)
-            self.assertEqual(content[1][0]['min'], 2)
+            # 作者 2026-09-27 多人卡顿修复：持续帧 2 → 20（= 2 × 刷新周期 10 帧）。
+            self.assertEqual(content[1], [{'min': 20, 'max': 20}])
+        self.assertEqual((10, 20), (H.UPDATE_PERIOD_FRAMES, H.TTL_FRAMES))
+
+    def test_leader_row_refreshes_every_ten_frames(self):
+        row = H.leader_row(official_sources()[0])
+        self.assertEqual(124, len(row))
+        # 队长表列位 = 能力表 −2：T77 在 c25，阈值 c28/c29（帧 × 100000）。
+        self.assertEqual(('77', '1000000', '1000000', '(None)', '0', '629', H.STRING_ID, H.ACTION_PATH),
+                         (row[25], row[28], row[29], row[32], row[33], row[45], row[68], row[69]))
+        self.assertEqual(row, leader.leader_rows(official_sources()[0])[-1])
+        meta = leader.metadata()['ball_hit_count']
+        self.assertEqual((77, 10, 20), (meta['trigger'], meta['update_period_frames'],
+                                        meta['condition_duration_frames']))
 
 
 if __name__ == '__main__':

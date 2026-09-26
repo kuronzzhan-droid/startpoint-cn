@@ -35,34 +35,39 @@ class NephtimFeverLeaderTest(unittest.TestCase):
         custom = kit.leader_rows(self.source, power_flip_id="custom_pf", power_flip_string_id="custom_text")
         self.assertEqual(["custom_pf", "1,2,3", "custom_text"], custom[0][80:83])
 
-    def test_dark_base_direct_attack_and_fever_only_skill_gauge_maximum(self):
-        direct, attack, maximum = self.rows[1:4]
+    def test_skill_enhancement_flag_follows_pf_then_dark_base_direct_and_attack(self):
+        # 作者 2026-09-27（方案B）：I536 从能力1搬进队长，紧跟 I722；与官方队长 121189#3 同形。
+        flag, direct, attack = self.rows[1:4]
+        self.assertEqual(["ruin_girl_campus", "0", ""] + abilities.enhance_row(self.source)[5:], flag)
+        self.assertEqual(("0", "0", "0", "536", abilities.CHANGE_SKILL_STRING_ID),
+                         (flag[3], flag[11], flag[25], flag[45], flag[68]))
+        self.assertEqual([0, 1, 3, 4, 7, 8, 9, 11, 18, 25, 37, 44, 45, 68],
+                         [i for i, value in enumerate(flag) if value != ""])
+        self.assertEqual(536, kit.metadata()["skill_enhancement_flag"]["content"])
         self.assertEqual(("33", "400000", "5", "Black", "0"),
                          (direct[45], direct[49], direct[46], direct[47], direct[11]))
         self.assertEqual(("32", "200000", "5", "Black", "0"),
                          (attack[45], attack[49], attack[46], attack[47], attack[11]))
-        self.assertEqual(("1", "12", "4", "124", "5", "Black", "10000", "10000"),
-                         (maximum[3], maximum[11], maximum[95], maximum[107], maximum[108],
-                          maximum[109], maximum[111], maximum[112]))
+        # Fever 中技能槽上限+10%（during 124，前置12）已移入能力2。
+        self.assertFalse(any(r[3] == "1" or r[107] == "124" for r in self.rows))
+        self.assertNotIn("12", [r[c] for r in self.rows for c in (4, 11, 18)])
 
-    def test_dark_resonance_grants_one_constant_party_extension(self):
-        self.assertEqual(9, len(self.rows))
-        row = self.rows[4]
-        self.assertEqual(("0", "0", "0", "190", "", "20000", "20000"),
-                         (row[3], row[11], row[25], row[45], row[46], row[49], row[50]))
+    def test_dark_resonance_piercing_extension_is_carried_by_ability2(self):
+        self.assertEqual(8, len(self.rows))
+        self.assertEqual(["722", "536", "33", "32", "50", "56", "211", "629"], [r[45] for r in self.rows])
         extension = kit.metadata()["piercing_extension"]
         self.assertFalse(extension["requires_fever"])
         self.assertEqual("dark_resonance", extension["strategy"])
+        self.assertEqual((0, "ability2"), (extension["leader_rows"], extension["location"]))
 
-    def test_piercing_stacks_with_ability2_without_transition_increments(self):
-        extension_rows = [row for row in self.rows if row[45] == "190"]
-        self.assertEqual(1, len(extension_rows))
-        self.assertEqual({"0"}, {row[25] for row in extension_rows})
+    def test_piercing_is_one_merged_ability2_row_without_transition_increments(self):
+        self.assertEqual([], [row for row in self.rows if row[45] == "190"])
         self.assertFalse({"8", "184", "139", "18"} & {row[25] for row in self.rows})
-        a2 = abilities.ability_rows(self.source)["1699892"][0]
-        self.assertEqual(("0", "190", "20000"), (a2[27], a2[47], a2[51]))
-        self.assertEqual(40000, int(extension_rows[0][49]) + int(a2[51]))
-        self.assertEqual(40, kit.metadata()["piercing_extension"]["with_ability2_percent"])
+        a2 = [row for row in abilities.ability_rows(self.source)["1699892"] if row[47] == "190"]
+        self.assertEqual(1, len(a2))
+        # 原队长 20000 + 能力2 20000 按行相加 = 合并后的单行 40000。
+        self.assertEqual(("0", "190", "40000", "true"), (a2[0][27], a2[0][47], a2[0][51], a2[0][1]))
+        self.assertEqual(40, kit.metadata()["piercing_extension"]["ability2_percent"])
 
     def test_only_the_approved_piercing_strategy_is_accepted(self):
         self.assertEqual(self.rows, kit.leader_rows(self.source, piercing_extension="dark_resonance"))

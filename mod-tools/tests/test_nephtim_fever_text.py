@@ -82,16 +82,24 @@ class NephtimFeverTextTest(unittest.TestCase):
         panel = self.panels()["a1"]
         self.assertEqual(text.MAIN_ICON + "战斗开始时，自身技能槽+50%。", panel.splitlines()[0])
         self.assertNotIn("技能槽上限+50%", panel)
-        # 文案规则2：「技能强化」条目改成「强化『技能名』…」，不写数字与时间。
-        enhancement = panel.splitlines()[1:3]
+        # 作者 2026-09-27（方案B）：I536 强化条目随开关移入队长，能力1只留开局、召唤三行。
+        self.assertEqual(4, len(panel.splitlines()))
+        self.assertNotIn("强化『", panel)
+        self.assertNotIn("强化后的技能发动时", panel)
+        enhancement = self.panels()["leader"].splitlines()[1:3]
+        self.assertEqual(list(text.ENHANCEMENT_LINES), enhancement)
         self.assertIn("强化『" + abilities.SKILL_NAME + "』", enhancement[0])
         self.assertIn("额外赋予暗属性角色及协力球攻击力提升效果", enhancement[0])
         self.assertIn("暗属性共鸣时，Fever 模式中，强化后的技能发动时", enhancement[1])
         self.assertIn("自身获得或刷新「星夜茶会」，并赋予暗属性角色及协力球护盾", enhancement[1])
         for line in enhancement:
-            self.assertNotRegex(line.replace(text.MAIN_ICON, ""), r"[0-9０-９]")
+            # 文案规则2：「技能强化」条目只写强化了什么，不写数字与时间。
+            self.assertNotRegex(line, r"[0-9０-９]")
             self.assertNotIn("秒", line)
-        self.assertIn("每经过1.5秒交替召唤1个光、暗属性协力球，各持续25秒且无法回复生命值", panel)
+        # 作者 2026-09-27：召唤间隔 1.5 秒 → 2 秒。
+        self.assertEqual(2, text.SUMMON_PERIOD_SECONDS)
+        self.assertNotIn("1.5秒", panel)
+        self.assertIn("每经过2秒交替召唤1个光、暗属性协力球，各持续25秒且无法回复生命值", panel.splitlines()[1])
         # 作者 2026-09-17 减半：溢出攻击力 +50% → +25%，时长与「可叠加」不动。
         self.assertEqual(25, skill.overflow_attack_percent())
         self.assertIn("该次召唤改为自身攻击力+25%，持续20秒，可叠加", panel)
@@ -122,8 +130,13 @@ class NephtimFeverTextTest(unittest.TestCase):
 
     def test_non_main_bonuses_keep_their_actual_targets_and_a5_has_no_resonance_gate(self):
         panels = self.panels()
-        self.assertIn("暗属性共鸣时，全队贯穿效果时间+20%", panels["a2"])
-        self.assertIn("暗属性角色直接攻击伤害+250%", panels["a2"])
+        # 作者 2026-09-27：贯穿合并为能力2 +40%，并承载 Fever 中技能槽上限+10%。
+        self.assertEqual(["暗属性共鸣时，全队贯穿效果时间+40%。",
+                          "暗属性共鸣时，暗属性角色直接攻击伤害+250%。",
+                          "暗属性共鸣时，Fever 模式中，暗属性角色技能槽上限+10%。"],
+                         panels["a2"].splitlines())
+        maximum = self.abilities["1699892"][2]
+        self.assertEqual(("1", "124", "5", "10000"), (maximum[5], maximum[109], maximum[110], maximum[113]))
         self.assertEqual("暗属性共鸣时，Fever 模式中，暗属性角色及协力球直接攻击造成的伤害+50%（独立乘区）。", panels["a4"])
         members, balls = self.abilities["1699894"]
         self.assertEqual("5", members[110])
@@ -137,14 +150,18 @@ class NephtimFeverTextTest(unittest.TestCase):
 
     def test_leader_uses_only_the_confirmed_constant_dark_resonance_piercing(self):
         permanent = self.panels()["leader"].splitlines()
-        self.assertIn("暗属性共鸣时，全队贯穿效果时间+20%。", permanent)
+        # 作者 2026-09-27：贯穿延时与技能槽上限两句移出队长（改由能力2承载）。
+        self.assertEqual(8, len(permanent))
+        self.assertNotIn("贯穿", "\n".join(permanent))
+        self.assertNotIn("技能槽上限", "\n".join(permanent))
+        self.assertIn("暗属性共鸣时，全队贯穿效果时间+40%。", self.panels()["a2"].splitlines())
         self.assertEqual("暗属性共鸣时，每有1个协力球存在，自身直击判定次数+1。", permanent[-1])
         self.assertNotIn("Fever", permanent[-1])
         self.assertTrue(all(line.startswith("暗属性共鸣时，") for line in permanent))
         self.assertNotIn("每直接攻击50次", "\n".join(permanent))
-        self.assertIn("攻击力+200%、直接攻击伤害+400%", permanent[1])
-        self.assertNotIn("Fever 模式中", permanent[1])
-        self.assertIn("Fever 模式中，暗属性角色技能槽上限+10%", permanent[2])
+        self.assertIn("强化『" + abilities.SKILL_NAME + "』", permanent[1])
+        self.assertIn("攻击力+200%、直接攻击伤害+400%", permanent[3])
+        self.assertNotIn("Fever 模式中", permanent[3])
         self.assertEqual(self.panels(), text.panel_descriptions())
         self.assertEqual(("dark_resonance",), text.PIERCING_POLICIES)
         for policy in ("self_source", "unbalanced_fever_edges"):

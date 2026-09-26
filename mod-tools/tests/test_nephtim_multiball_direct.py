@@ -30,8 +30,11 @@ class NephtimMultiballDirectTest(unittest.TestCase):
                              (row[1], row[6], row[9], row[10], row[11], row[20]))
             self.assertEqual([], legality.client_legality_problems("ability", row))
             self.assertEqual([], legality.declared_block_field_problems("ability", row))
-        self.assertEqual(("0", "", "", "77", "100000", "(None)", "0", "629"),
-                         (pulse[13], pulse[16], pulse[17], pulse[27], pulse[30], pulse[34], pulse[35], pulse[47]))
+        # 作者 2026-09-27 多人卡顿修复：T77 每 1 帧 → 每 10 帧（帧 × 100000）。
+        self.assertEqual(("0", "", "", "77", "1000000", "1000000", "(None)", "0", "629"),
+                         (pulse[13], pulse[16], pulse[17], pulse[27], pulse[30], pulse[31],
+                          pulse[34], pulse[35], pulse[47]))
+        self.assertEqual((10, 20), (bonus.UPDATE_PERIOD_FRAMES, bonus.TTL_FRAMES))
         self.assertEqual([bonus.STRING_ID, bonus.ACTION_PATH], pulse[70:72])
         self.assertFalse(any(row[97] == "208" for row in rows))
         line = text.panel_descriptions()["a3"].splitlines()[-1]
@@ -72,7 +75,7 @@ class NephtimMultiballDirectTest(unittest.TestCase):
         self.assertIs(condition[12], False)
         ac = condition[2][0]
         self.assertEqual("ACSeparatedTermDirectDamage", ac[0])
-        self.assertEqual([{"min": 2, "max": 2}], ac[1])
+        self.assertEqual([{"min": 20, "max": 20}], ac[1])  # 持续帧 = 2 × 刷新周期
         self.assertEqual([{"min": 0.25, "max": 0.25, "mul": 1}], ac[2])
         self.assertEqual(0.25, bonus.PER_BALL_STRENGTH)
         self.assertEqual([{"min": 1, "max": 1}], ac[3])
@@ -107,32 +110,60 @@ class NephtimMultiballDirectTest(unittest.TestCase):
         self.assertNotIn(Fraction(native_parameter_count, 4), effects)
 
     def test_gates_stop_new_pulses_and_last_in_flight_write_has_bounded_tail(self):
+        ttl = bonus.TTL_FRAMES
         for main, unlocked, resonance, alive in ((False, True, True, True),
                 (True, False, True, True), (True, True, False, True), (True, True, True, False)):
             gate = main and unlocked and resonance and alive
             for in_flight in (False, True):
                 remaining = 1
                 history = []
-                for frame in range(4):
+                for frame in range(ttl + 2):
                     remaining = max(0, remaining - 1)
                     if gate or (frame == 0 and in_flight):
-                        remaining = bonus.TTL_FRAMES
+                        remaining = ttl
                     history.append(remaining)
-                self.assertEqual([2, 1, 0, 0] if in_flight else [0, 0, 0, 0], history)
+                # 最后一次写入后最多残留 TTL（20）帧，之后归零。
+                self.assertEqual(list(range(ttl, 0, -1)) + [0, 0] if in_flight else [0] * (ttl + 2),
+                                 history)
+
+    def test_ten_frame_refresh_never_lets_the_twenty_frame_state_lapse(self):
+        period, ttl = bonus.UPDATE_PERIOD_FRAMES, bonus.TTL_FRAMES
+        self.assertEqual(2 * period, ttl)
+        for phase in range(period):  # 战斗帧与 T77 边界的任意相位
+            remaining, lapsed, since_refresh, worst_delay = 0, [], None, 0
+            for frame in range(phase, phase + 60 * 30):
+                remaining = max(0, remaining - 1)
+                if frame % period == 0:  # ThresholdElapsedTimeListener: floor(rawFrame / period) 跨界
+                    remaining, since_refresh = ttl, 0
+                elif since_refresh is not None:
+                    since_refresh += 1
+                    worst_delay = max(worst_delay, since_refresh)
+                if since_refresh is not None and remaining == 0:
+                    lapsed.append(frame)
+            self.assertEqual([], lapsed)
+            # 协力球数变化最迟在下一个边界反映：最多晚 period 帧。
+            self.assertLess(worst_delay, period)
 
     def test_five_minute_twenty_ball_cost_is_bounded_not_an_accumulated_action_list(self):
         active_evaluators, max_evaluators, overwrites = 0, 0, 0
         current_conditions = {}
-        for _ in range(5 * 60 * 60):
+        for frame in range(5 * 60 * 60):
+            if frame % bonus.UPDATE_PERIOD_FRAMES:
+                continue  # 2026-09-27 起每 10 帧执行一次（原每帧）
             active_evaluators += 1
             max_evaluators = max(max_evaluators, active_evaluators)
             for ball in range(23):  # 20 multiballs and three primary members.
-                current_conditions[ball] = (bonus.CONDITION_KEY, Fraction(10), 2)
+                current_conditions[ball] = (bonus.CONDITION_KEY, Fraction(10), bonus.TTL_FRAMES)
                 overwrites += 1
             # The helper registers no events, effects, hit areas or subprocedures.
             active_evaluators -= 1
-        self.assertEqual((0, 1, 23, 414000),
+        # 原每帧 414000 次覆盖写 → 每 10 帧 41400 次（1/10）。
+        self.assertEqual((0, 1, 23, 41400),
                          (active_evaluators, max_evaluators, len(current_conditions), overwrites))
+        rate = bonus.metadata()["twenty_balls_at_60_hz"]
+        self.assertEqual({"helper_invocations_per_second": 6, "maximum_condition_overwrites_per_second": 138},
+                         rate)
+        self.assertEqual(overwrites, rate["maximum_condition_overwrites_per_second"] * 5 * 60)
 
     @unittest.skipUnless(AS3.is_dir(), "native sources unavailable")
     def test_native_chain_reads_local_hidden_slot_and_removes_finished_evaluator(self):

@@ -7,7 +7,11 @@ ACTION_PATH = "battle/action/skill/action/ability_skill/ruin_girl_campus$" + STR
 LOGICAL_PATH = ACTION_PATH + ".action.dsl.amf3.deflate"
 COUNT_VARIABLE = 1
 CONDITION_KEY = STRING_ID
-TTL_FRAMES = 2
+# 作者 2026-09-27 多人卡顿修复（方案1，K=10）：能力3 T77 行由每 1 帧改为每 10 帧执行本程序；
+# 隐形状态持续帧 = 2 × 周期（原 1 帧/2 帧），相邻两次刷新之间留一个周期余量不断档。
+UPDATE_PERIOD_FRAMES = 10
+TTL_FRAMES = 2 * UPDATE_PERIOD_FRAMES
+FRAMES_PER_SECOND = 60
 NATIVE_COUNT_MAX = 2_147_483_647
 # 每存续 1 个协力球给出的独立乘区直击增益。
 # 作者 2026-09-17：能力3 提供的乘区减半（原 0.5 = 每球 +50%），计数与目标机制不动。
@@ -56,15 +60,17 @@ def metadata():
         "party_and_multiballs": "same N, each member's invisible ConditionSlot",
         "count_scope": "native surviving count, including inactive and ectoplasmic squads",
         "count_filters": {"element": None, "summoner": None, "multiball_ids": None},
-        "update_period_frames": 1, "requires_at_least_one_ball_to_invoke": False,
+        "update_period_frames": UPDATE_PERIOD_FRAMES, "requires_at_least_one_ball_to_invoke": False,
         "zero_count": "overwrite party strength with zero; one zero-valued hidden record may remain until refresh stops",
         "condition_duration_frames": TTL_FRAMES, "condition_key": CONDITION_KEY,
         "quantity_changes_strength_only": True, "maximum_conditions_per_ball": 1,
         "expires_after_last_successful_write_ball_updates": TTL_FRAMES,
         "in_flight_write": "an already queued condition may apply in the current impact phase",
-        "new_ball_refresh": "next living owner update and native impact phase",
+        "new_ball_refresh": "next T77 boundary (<= update period) and native impact phase",
+        "refresh_delay_frames_max": UPDATE_PERIOD_FRAMES,
         "lifetime": "immediate commands only; evaluator removed at frame-end removal phase",
-        "twenty_balls_at_60_hz": {"helper_invocations_per_second": 60,
-                                  "maximum_condition_overwrites_per_second": 1380},
+        "twenty_balls_at_60_hz": {
+            "helper_invocations_per_second": FRAMES_PER_SECOND // UPDATE_PERIOD_FRAMES,
+            "maximum_condition_overwrites_per_second": (20 + 3) * FRAMES_PER_SECOND // UPDATE_PERIOD_FRAMES},
         "new_client_patch_required": False,
     }

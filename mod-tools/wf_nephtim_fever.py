@@ -69,7 +69,7 @@ def validate_rows(ability_rows, leaders, strings):
 
 def assemble(repo: Path, workspace: Path, *, piercing_extension, apply=False):
     if piercing_extension != "dark_resonance":
-        raise ValueError("采用暗属性共鸣时队伍贯穿时间常驻 +20%")
+        raise ValueError("采用暗属性共鸣时队伍贯穿时间常驻方案（2026-09-27 起能力2 +40%）")
     candidate = Candidate(repo, workspace)
     ability_path, leader_path = "master/ability/ability.orderedmap", "master/ability/leader_ability.orderedmap"
     source = candidate.official_rows(ability_path)

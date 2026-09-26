@@ -42,7 +42,8 @@ class FeaturedMainAbilityTests(unittest.TestCase):
     def test_exact_five_ids_and_all_builder_a1_rows_including_bianca_bridge(self):
         self.assertEqual(set(patch.CODES), {"149990", "119989", "149989", "169989", "149988"})
         kits = native_kits()
-        self.assertEqual([len(kits[cid][cid + "1"]) for cid in kits], [4, 2, 5, 5])
+        # 奈芙 A1 自 2026-09-27 起 4 行（I536 强化开关移入队长）。
+        self.assertEqual([len(kits[cid][cid + "1"]) for cid in kits], [4, 2, 4, 5])
         for cid, abilities in kits.items():
             for slot, rows in abilities.items():
                 self.assertEqual({r[1] for r in rows},

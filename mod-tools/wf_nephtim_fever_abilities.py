@@ -15,6 +15,12 @@ SPAWN_ACTION_PATH = "battle/action/skill/action/ability_skill/" + CODE + "$" + S
 # 千分之一为单位的强度列：2_500 = 2.5%，10_000 = 10%。
 COMBO_STRENGTH = 2_500          # 每 1 连击的独立乘区直击与攻击力（原 5_000）
 PIERCING_GROWTH_STRENGTH = 10_000  # 贯穿每累计 2 秒的攻击力与直击伤害（原 20_000）
+# 作者 2026-09-27：持有「星夜茶会」时的召唤间隔 1.5 秒 → 2 秒（T232 threshold2，单位帧）。
+SUMMON_PERIOD_FRAMES = 120
+# 作者 2026-09-27：队长的 I190 贯穿延时并入能力2，合计 +40%（原队长 20% + 能力2 20%，按行相加）。
+PIERCING_EXTENSION_STRENGTH = 40_000
+# 作者 2026-09-27：「Fever 中暗属性角色技能槽上限+10%」由队长移入能力2，不加主位限制。
+SKILL_GAUGE_MAXIMUM_STRENGTH = 10_000
 # I629 说明的唯一真源：面板模块也引用这一份，避免两处文案漂移。
 SPAWN_DESCRIPTION = (
     "交替召唤1个光、暗属性协力球，持续25秒且无法回复生命值，协力球最多同时存在9个；"
@@ -112,20 +118,30 @@ def _piercing(source, *, trigger, frames, fever):
 def _multiball_direct_rows(source):
     # One native surviving count feeds both party and balls. P13/D208 use a
     # different inactive-ball filter, so neither belongs to this added effect.
-    pulse = _instant(source, 629, pre="dark", trigger=77)
+    # 作者 2026-09-27 多人卡顿修复：T77 周期 1 帧 → multiball_direct.UPDATE_PERIOD_FRAMES（10 帧）。
+    pulse = _instant(source, 629, pre="dark", trigger=77,
+                     threshold=multiball_direct.UPDATE_PERIOD_FRAMES)
     _set(pulse, {70: multiball_direct.STRING_ID, 71: multiball_direct.ACTION_PATH})
     return [pulse]
+
+
+def enhance_row(source):
+    """I536 技能强化开关（能力表126列形）。
+
+    作者 2026-09-27 起由队长承载（队长模块按列−2 搬迁，与官方队长 121189#3 同形）；
+    召唤、溢出与清理三行仍留在主位限制的能力1。"""
+    enhance = _instant(source, 536, pre="dark")
+    enhance[70] = CHANGE_SKILL_STRING_ID
+    return enhance
 
 
 def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
                  spawn_action_path=SPAWN_ACTION_PATH):
     """返回1699891..6；主动技能里的强化分支/召唤状态由DSL模块装配。"""
     opening_charge = _instant(source, 211, 50_000, target=0)
-    enhance = _instant(source, 536, pre="dark")
-    enhance[70] = CHANGE_SKILL_STRING_ID
     # ConditionKeepFrame counts only frames actually holding at least one UID.
     summon = _instant(source, 629, pre="dark", fever="fever", trigger=232,
-                      threshold=1, threshold2=90, puller=0)
+                      threshold=1, threshold2=SUMMON_PERIOD_FRAMES, puller=0)
     _set(summon, {37: summon_unique_id, 70: SPAWN_STRING_ID, 71: spawn_action_path})
     clear = _instant(source, 528, trigger=184, target=0)
     clear[68] = str(summon_unique_id)
@@ -135,8 +151,10 @@ def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
     _set(reconcile, {6: 187, 7: 0, 12: summon_unique_id, 68: summon_unique_id})
 
     # Piercing is a party state: I190 is natively Party(None), not a character target.
-    a2 = [_instant(source, 190, 20_000, pre="dark"),
-          _instant(source, 33, 250_000, pre="dark", target=5)]
+    # The Fever-only dark skill-gauge maximum (during 124) is a native member effect.
+    a2 = [_instant(source, 190, PIERCING_EXTENSION_STRENGTH, pre="dark"),
+          _instant(source, 33, 250_000, pre="dark", target=5),
+          _during(source, 124, SKILL_GAUGE_MAXIMUM_STRENGTH, target=5)]
     combo = _during(source, 410, COMBO_STRENGTH, combo=True)
     combo_attack = _during(source, 0, COMBO_STRENGTH, combo=True)
     piercing_attack = _instant(source, 32, PIERCING_GROWTH_STRENGTH, pre="dark", fever="fever",
@@ -153,7 +171,7 @@ def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
           _piercing(source, trigger=248, frames=300, fever="fever")]
     a6 = [_instant(source, 33, 100_000, pre="dark", target=5)]
     result = {}
-    for number, rows in enumerate(([opening_charge, enhance, summon, clear, reconcile], a2, a3, a4, a5, a6), 1):
+    for number, rows in enumerate(([opening_charge, summon, clear, reconcile], a2, a3, a4, a5, a6), 1):
         for row in rows:
             row[0] = f"{CODE}_{number}"
             row[1] = "false" if number in (1, 3) else "true"
@@ -188,9 +206,12 @@ def metadata():
         },
         "skill_enhancement": {
             "string_id": CHANGE_SKILL_STRING_ID, "summon_unique_id": SUMMON_UNIQUE_ID,
+            "flag_location": "leader_ability (I536, official leader precedent 121189#3)",
+            "summon_location": "ability1 (main-only; idles unless the leader flag granted the state)",
             "spawn_action_path": SPAWN_ACTION_PATH, "attack_buff_percent": 250,
             "duration_frames": 1200, "per_ball_duration_frames": 1500,
-            "period_frames": 90, "timer": "T232 holding-Unique frames; fractional period retained",
+            "period_frames": SUMMON_PERIOD_FRAMES,
+            "timer": "T232 holding-Unique frames; fractional period retained",
             "fever_end_removes_only_summon_state": True,
             "state_remove_if_encoffin": True,
             "zone_transition_cleanup": {
@@ -198,7 +219,17 @@ def metadata():
                 "only_outside_fever": True, "native_timing": "next living owner update and impact phase",
             },
         },
-        "piercing_extension": "native party state under dark resonance; no per-character filter",
+        "piercing_extension": {
+            "ability_slot": 2, "content": 190, "increase_percent": _percent(PIERCING_EXTENSION_STRENGTH),
+            "target": "party", "requires_dark_resonance": True, "requires_self_leader": False,
+            "main_only": False, "note": "native party state; leader share merged into one row 2026-09-27",
+        },
+        "skill_gauge_maximum": {
+            "ability_slot": 2, "content": 124, "during_trigger": 4,
+            "increase_percent": _percent(SKILL_GAUGE_MAXIMUM_STRENGTH),
+            "target": "dark party", "requires_dark_resonance": True, "requires_fever": True,
+            "requires_self_leader": False, "main_only": False, "moved_from": "leader 2026-09-27",
+        },
         "combo_bonus": {
             "source": "current combo", "per_combo_percent": _percent(COMBO_STRENGTH),
             "attack_percent_per_combo": _percent(COMBO_STRENGTH),

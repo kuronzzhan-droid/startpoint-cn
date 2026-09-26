@@ -38,7 +38,7 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
             self.assertEqual({"false" if sid in ("1699891", "1699893") else "true"}, {r[1] for r in rows})
 
     def test_a1_initially_charges_self_without_increasing_the_maximum(self):
-        opening, flag = self.rows["1699891"][:2]
+        opening = self.rows["1699891"][0]
         self.assertEqual(("false", "0", "0", "211", "0", "50000", "50000"),
                          (opening[1], opening[6], opening[27], opening[47], opening[48], opening[51], opening[52]))
         self.assertFalse(any(r[47] == "245" for rows in self.rows.values() for r in rows))
@@ -48,6 +48,9 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
         meta = kit.metadata()["opening_skill_charge"]
         self.assertEqual((50, 0, False), (meta["initial_charge_percent"],
                          meta["gauge_maximum_increase_percent"], meta["requires_resonance"]))
+        # 作者 2026-09-27（方案B）：I536 强化开关移入队长，六能力里不再有 I536。
+        self.assertFalse(any(r[47] == "536" for rows in self.rows.values() for r in rows))
+        flag = kit.enhance_row(self.source)
         self.assertEqual(("2", "600000", "600000", "Black", "0", "536"),
                          (flag[6], flag[9], flag[10], flag[11], flag[13], flag[47]))
         self.assertEqual(kit.CHANGE_SKILL_STRING_ID, flag[70])
@@ -60,26 +63,30 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
         self.assertEqual(250, kit.metadata()["skill_enhancement"]["attack_buff_percent"])
 
     def test_summoning_counts_only_state_frames_and_fever_end_clears_only_that_state(self):
-        summon, clear = self.rows["1699891"][2:4]
+        self.assertEqual(4, len(self.rows["1699891"]))
+        summon, clear = self.rows["1699891"][1:3]
         self.assertEqual(("2", "Black", "12", "232", "0", "100000", "100000"),
                          (summon[6], summon[11], summon[13], summon[27], summon[28], summon[30], summon[31]))
-        self.assertEqual(("9000000", "9000000", "(None)", "0", "16998901", "629"),
+        # 作者 2026-09-27：召唤间隔 1.5 秒 → 2 秒（120 帧 × 100000）。
+        self.assertEqual(("12000000", "12000000", "(None)", "0", "16998901", "629"),
                          (summon[32], summon[33], summon[34], summon[35], summon[37], summon[47]))
+        self.assertEqual(120, kit.SUMMON_PERIOD_FRAMES)
+        self.assertEqual(120, kit.metadata()["skill_enhancement"]["period_frames"])
         self.assertEqual([kit.SPAWN_STRING_ID, kit.SPAWN_ACTION_PATH], summon[70:72])
         self.assertEqual(("0", "0", "184", "528", "0", "16998901"),
                          (clear[6], clear[13], clear[27], clear[47], clear[48], clear[68]))
         self.assertEqual(1500, kit.metadata()["skill_enhancement"]["per_ball_duration_frames"])
         custom = kit.ability_rows(self.source, summon_unique_id=12345, spawn_action_path="custom/action")
-        self.assertEqual("12345", custom["1699891"][2][37])
-        self.assertEqual("12345", custom["1699891"][3][68])
-        self.assertEqual("custom/action", custom["1699891"][2][71])
+        self.assertEqual("12345", custom["1699891"][1][37])
+        self.assertEqual("12345", custom["1699891"][2][68])
+        self.assertEqual("custom/action", custom["1699891"][1][71])
 
     def test_silent_zone_exit_cleanup_requires_existing_self_state_and_non_fever(self):
-        row = self.rows["1699891"][4]
+        row = self.rows["1699891"][3]
         self.assertEqual(["187", "0", "", "", "", "", "16998901"], row[6:13])
         self.assertEqual(("186", "77", "100000", "100000", "528", "0", "16998901"),
                          (row[13], row[27], row[30], row[31], row[47], row[48], row[68]))
-        custom = kit.ability_rows(self.source, summon_unique_id=12345)["1699891"][4]
+        custom = kit.ability_rows(self.source, summon_unique_id=12345)["1699891"][3]
         self.assertEqual(("12345", "12345"), (custom[12], custom[68]))
         for fever in (False, True):
             for own_state in (False, True):
@@ -109,12 +116,24 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
         self.assertIn("ConditionTargetKind.Unique(int(_loc4_.unique_condition_id)),1,Option.Some(1)", unique)
 
     def test_a2_and_a6_dark_gates_and_native_party_piercing_extension(self):
-        extension, direct = self.rows["1699892"]
+        extension, direct, maximum = self.rows["1699892"]
         final = self.rows["1699896"][0]
         for row in (extension, direct, final):
             self.assertEqual(("2", "600000", "600000", "Black", "0"),
                              (row[6], row[9], row[10], row[11], row[13]))
-        self.assertEqual(("190", "20000", ""), (extension[47], extension[51], extension[48]))
+        # 作者 2026-09-27：队长那份 20% 并入能力2，单行合计 40%。
+        self.assertEqual(("190", "40000", ""), (extension[47], extension[51], extension[48]))
+        self.assertEqual(40, kit.metadata()["piercing_extension"]["increase_percent"])
+        # 作者 2026-09-27：Fever 中暗属性技能槽上限+10% 由队长移入能力2（c1=true，不加主位限制）。
+        self.assertEqual(("true", "1", "2", "600000", "600000", "Black", "12"),
+                         (maximum[1], maximum[5], maximum[6], maximum[9], maximum[10], maximum[11], maximum[13]))
+        self.assertEqual(("4", "false", "124", "5", "Black", "10000", "10000"),
+                         (maximum[97], maximum[108], maximum[109], maximum[110], maximum[111],
+                          maximum[113], maximum[114]))
+        expected = kit._during(self.source, 124, 10_000, target=5)
+        expected[0] = "ruin_girl_campus_2"
+        self.assertEqual(expected, maximum)
+        self.assertEqual(10, kit.metadata()["skill_gauge_maximum"]["increase_percent"])
         self.assertEqual(("33", "250000", "5", "Black"),
                          (direct[47], direct[51], direct[48], direct[49]))
         self.assertEqual(("33", "100000", "5", "Black"),
@@ -163,10 +182,25 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
         self.assertEqual(("4", "410", "50000", "50000"),
                          (members[97], members[109], members[113], members[114]))
         self.assertEqual(("5", "Black"), (members[110], members[111]))
-        self.assertEqual(("77", "100000", "100000", "629"),
+        # 作者 2026-09-27 多人卡顿修复：T77 每 1 帧 → 每 10 帧（帧 × 100000）。
+        self.assertEqual(("77", "1000000", "1000000", "629"),
                          (balls[27], balls[30], balls[31], balls[47]))
         self.assertEqual(kit.multiball_fever.ACTION_PATH, balls[71])
         self.assertEqual([""] * 29, balls[97:])
+
+    def test_only_the_two_invoke_skill_pulses_move_to_a_ten_frame_period(self):
+        # 多人卡顿修复只动能力3/4 的 T77→629 行；能力1 的 T77 I528 清理行不调 DSL，仍每帧。
+        pulses = {(sid, i): row for sid, rows in self.rows.items()
+                  for i, row in enumerate(rows) if row[27] == "77" and row[47] == "629"}
+        self.assertEqual({("1699893", 5), ("1699894", 1)}, set(pulses))
+        for row in pulses.values():
+            self.assertEqual(["1000000", "1000000"], row[30:32])
+        self.assertEqual(10, kit.multiball_direct.UPDATE_PERIOD_FRAMES)
+        self.assertEqual(10, kit.metadata()["current_multiball_direct_bonus"]["update_period_frames"])
+        self.assertEqual(10, kit.metadata()["fever_multiball_direct_bonus"]["update_period_frames"])
+        reconcile = self.rows["1699891"][3]
+        self.assertEqual(("77", "100000", "100000", "528"),
+                         (reconcile[27], reconcile[30], reconcile[31], reconcile[47]))
 
     def test_a5_has_no_resonance_gate_and_uses_native_timers_and_three_second_status(self):
         for row, gate, trigger, threshold in zip(self.rows["1699895"],
