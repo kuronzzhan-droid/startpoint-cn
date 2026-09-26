@@ -9,7 +9,8 @@
   ＋「冲刺 → 付与贯通」；422 只许写 ability 表，全部挂前置 42（Leader），文案由
   ``desc_override_kyle_moon`` 在队长块整体接管（hibiki 能力 5 的同一条既判偏离）。
 - **直击线**：每次获得月牙后，629 追击树重新付与 ``ACAdditionalDirectAttack``，
-  **段数 = 1 + 月牙层数（vlv 绑定，可超 3）**（杰拉德 v3 路线）。
+  **段数 = 1 + 月牙层数（vlv 绑定，可超 3）**（杰拉德 v3 路线）；2026-09-27 第二批起
+  层数贡献封顶 10（``PIERCE_VAR_CEIL``），无上限部分由队长月牙逐层成长承担。
 - **月牙线**：技能 / 每 100 次直击 → 月牙 +1（上限 99 ＝「不设置上限」）→ during 134
   把层数翻成自身与全队的攻击力 / 直击伤害。
 
@@ -135,22 +136,37 @@ _PRE_RESONANCE_L = {4: "2", 7: "600000", 8: "600000", 9: ELEMENT_TOKEN}     # le
 #: 2026-09-27 作者平衡批次（方案A）：删去「月牙每层 → 自身眩晕蓄积(Stunify 19) +25%」那一项
 #: （09-23 追加的 Down 成长）；贯穿 → 雷队眩晕畏缩特攻 5%（面板「追击伤害」）保留。
 #: 修订模块 wf_balance_20260927_kyle 断言本表输出 == 其 revise() 输出。
+#:
+#: 2026-09-27 第二批（口径 A：无上限成长移队长并放缓，wf_balance_20260927b_kyle）：
+#: 月牙 3 分钟约 35–60 层（队长位约 60）、贯穿约 30–60 次 ⇒ 都 ≥30 次 ⇒ 每步 ×1/10；
+#: 能力 2 两条逐层成长（各 50%）按 ×1/10 搬进同触发/同 kind/同目标/同前置的队长行（合并）。
+#: 下面四个值 = 原值/10（＋搬入值/10），修订模块断言本表输出 == 其 revise() 输出。
+CRESCENT_TEAM_ATTACK = "1250"       # 12.5% → 1.25%
+CRESCENT_SELF_ATTACK = "6250"       # 12.5% → 1.25% ＋ 能力2#1 自身攻击 50%/10 = 5%
+CRESCENT_TEAM_DIRECT = "7500"       # 25% → 2.5% ＋ 能力2#0 雷队直击 50%/10 = 5%
+CRESCENT_SELF_DIRECT = "2500"       # 25% → 2.5%
+#: 能力 2 两条逐层成长的层数上限（原 (None) = 不限）；段数成长的 DSL 上限同为 10（PIERCE_VAR_CEIL）。
+CRESCENT_ABILITY_LIMIT = "10"
+#: 贯穿 → 雷队攻击力 / 眩晕畏缩特攻（面板「追击伤害」）：25% → 2.5%、5% → 0.5%（×1/10）。
+PIERCING_GROWTH = (("32", "2500"), ("53", "500"))
 LEADER: tuple[tuple[str, str, dict[int, str], str | None], ...] = (
     ("161123#0", "official",
      {0: CODE, **_PRE_RESONANCE_L, 100: "(None)", 102: UID_CRESCENT, 107: "0", 108: "5",
-      109: ELEMENT_TOKEN, 111: "12500", 112: "12500"},
+      109: ELEMENT_TOKEN, 111: CRESCENT_TEAM_ATTACK, 112: CRESCENT_TEAM_ATTACK},
      None),
     ("161063#2", "official",
      {0: CODE, **_PRE_RESONANCE_L, 98: "100000", 99: "100000", 100: "(None)",
-      102: UID_CRESCENT, 107: "0", 108: "0", 109: "", 111: "12500", 112: "12500"},
+      102: UID_CRESCENT, 107: "0", 108: "0", 109: "",
+      111: CRESCENT_SELF_ATTACK, 112: CRESCENT_SELF_ATTACK},
      None),
     ("161123#0", "official",
      {0: CODE, **_PRE_RESONANCE_L, 100: "(None)", 102: UID_CRESCENT, 107: "1", 108: "5",
-      109: ELEMENT_TOKEN, 111: "25000", 112: "25000"},
+      109: ELEMENT_TOKEN, 111: CRESCENT_TEAM_DIRECT, 112: CRESCENT_TEAM_DIRECT},
      None),
     ("161063#2", "official",
      {0: CODE, **_PRE_RESONANCE_L, 98: "100000", 99: "100000", 100: "(None)",
-      102: UID_CRESCENT, 107: "1", 108: "0", 109: "", 111: "25000", 112: "25000"},
+      102: UID_CRESCENT, 107: "1", 108: "0", 109: "",
+      111: CRESCENT_SELF_DIRECT, 112: CRESCENT_SELF_DIRECT},
      None),
     ("131122#2", "official",
      {0: CODE, **_PRE_RESONANCE_L, 46: "5", 47: ELEMENT_TOKEN,
@@ -179,16 +195,18 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
         ("1110014#0", "official", {**_PRE_RESONANCE_A, 51: "50000", 52: "50000"}, None),
         ("1411113#0", "official", {11: ELEMENT_TOKEN, 70: CAS_SWITCH}, None),
     ),
-    # ---- 能力 2：月牙每层 + 贯通计数
+    # ---- 能力 2：月牙每层（2026-09-27 第二批：无上限部分已按 ×1/10 并入队长行 #2/#1，
+    #      这里换成有上限的弱化版：限 10 层（c102=10，官方 134 限次族 1611231–1611236 同写法），
+    #      雷队直击每层 +10%（满 +100%）、自身攻击每层 +16%（满 +160%），数值按设计稿）
     2: (
         ("1610633#0", "official",
-         {**_PRE_RESONANCE_A, 100: "100000", 101: "100000", 102: "(None)",
+         {**_PRE_RESONANCE_A, 100: "100000", 101: "100000", 102: CRESCENT_ABILITY_LIMIT,
           104: UID_CRESCENT, 109: "1", 110: "5", 111: ELEMENT_TOKEN,
-          113: "50000", 114: "50000"},
+          113: "10000", 114: "10000"},
          None),
         ("1611233#2", "official",
-         {**_PRE_RESONANCE_A, 102: "(None)", 104: UID_CRESCENT, 109: "0", 110: "0",
-          113: "50000", 114: "50000"},
+         {**_PRE_RESONANCE_A, 102: CRESCENT_ABILITY_LIMIT, 104: UID_CRESCENT, 109: "0", 110: "0",
+          113: "16000", 114: "16000"},
          None),
     ),
     # ---- 能力 3（Ⓜ）：月牙生产 + 直击段数 + 两棵 629 追击
@@ -274,17 +292,17 @@ EXPECT: dict[str, str] = {
     "kyle-native-pf": "自身 强化弹射覆盖",
     "leader#4": "雷·编成≥6 时: 赋予全队(雷) 2号位技能槽 20%",
     "leader#5": "雷·编成≥6 时: 赋予全队(雷) 技能槽充能 20%",
-    "leader#6": "雷·编成≥6 时: 状态贯通≥1 → 赋予全队(雷) 攻击力 25%",
-    "leader#7": "雷·编成≥6 时: 状态贯通≥1 → 赋予全队(雷) 眩晕畏缩特攻 5%",
-    "leader#0": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) 攻击力 12.5%",
-    "leader#1": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 攻击力 12.5%",
-    "leader#2": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) Direct伤害 25%",
-    "leader#3": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 Direct伤害 25%",
+    "leader#6": "雷·编成≥6 时: 状态贯通≥1 → 赋予全队(雷) 攻击力 2.5%",
+    "leader#7": "雷·编成≥6 时: 状态贯通≥1 → 赋予全队(雷) 眩晕畏缩特攻 0.5%",
+    "leader#0": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) 攻击力 1.25%",
+    "leader#1": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 攻击力 6.25%",
+    "leader#2": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) Direct伤害 7.5%",
+    "leader#3": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 Direct伤害 2.5%",
     "1399901#0": "赋予全队(雷) 技能槽 50%",
     "1399901#1": "雷·编成≥6 时: 自身 技能槽 50%",
     "1399901#2": "雷·编成≥6 时: 自身 切换技能形态[change_skill_kyle_moon]",
-    "1399902#0": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 赋予全队(雷) Direct伤害 50%",
-    "1399902#1": "雷·编成≥6 时: 持续·状态累积计数固有≥1[固有13999001] → 自身 攻击力 50%",
+    "1399902#0": "雷·编成≥6 时: 持续·状态累积计数固有≥1(限10次)[固有13999001] → 赋予全队(雷) Direct伤害 10%",
+    "1399902#1": "雷·编成≥6 时: 持续·状态累积计数固有≥1(限10次)[固有13999001] → 自身 攻击力 16%",
     "1399903#0": "雷·编成≥6 时: 技能发动≥1 → 自身 状态固有 100%×1次",
     "1399903#1": "雷·编成≥6 时: 编成直接攻击≥100 → 自身 状态固有 100%×1次",
     "1399903#2": "雷·编成≥6 时: 状态贯通≥1(CT10秒) → 自身 技能槽 10%(延迟2秒)",
@@ -318,21 +336,25 @@ ALLOWED_PRECONDITION_KINDS = ("", "0", "2", "3", "38", "42", "187", "202")
 
 MAIN_ICON = " <icon id='main'>  "
 
+#: 2026-09-27 第二批：月牙逐层 / 贯穿成长 ×1/10（含能力 2 搬入部分），自身 = 全队(雷)行 + 自身行合计；
+#: 直击判定次数的段数成长在 DSL 里封顶 10 层（PIERCE_VAR_CEIL），单列一行写上限，
+#: 其余逐层成长没有上限 ⇒ 按裁决 §3 写到效果为止。
 PANEL_LEADER = "\n".join((
     PF.TEXT,
     "雷属性共鸣时：强化自身冲刺",
     "自身冲刺间隔无法进一步缩短",
-    "雷属性共鸣时：自身“月牙”每上升1层，自身攻击力＋25%、直击伤害＋50%、直击判定次数＋1；"
-    "除自身外雷属性角色攻击力＋12.5%、直击伤害＋25%",
-    "雷属性共鸣时：自身每获得一次贯穿效果，雷属性角色攻击力＋25%、追击伤害＋5%",
+    "雷属性共鸣时：自身“月牙”每上升1层，自身攻击力＋7.5%、直击伤害＋10%；"
+    "除自身外雷属性角色攻击力＋1.25%、直击伤害＋7.5%",
+    "雷属性共鸣时：自身“月牙”每上升1层，自身直击判定次数＋1（最多10层）",
+    "雷属性共鸣时：自身每获得一次贯穿效果，雷属性角色攻击力＋2.5%、追击伤害＋0.5%",
     "雷属性共鸣时：雷属性角色技能槽最大值＋20%、技能充能速度＋20%",
 ))
 
 _PANEL_ABILITY_LINES = {
     1: ("战斗开始时：雷属性角色技能槽＋50%",
         "雷属性共鸣时：自身技能槽＋50%，并进一步强化技能「月华·狼牙连斩」的效果"),
-    2: ("雷属性共鸣时：自身“月牙”每提升1层，自身直击伤害＋50%、攻击力＋50%，除自身外雷属"
-        "性角色直击伤害＋50%",),
+    2: ("雷属性共鸣时：自身“月牙”每提升1层，自身攻击力＋16%、雷属性角色直击伤害＋10%"
+        "（最多10层）",),
     3: ("雷属性共鸣时：雷属性角色发动技能时，自身“月牙”＋1层；雷属性角色每造成100次直击，自身“月牙"
         "”＋1层",
         "雷属性共鸣时：自身每获得一次贯穿效果，2秒后自身技能槽＋10%（冷却时间：10秒）",
@@ -437,10 +459,13 @@ HITAREA_EDITS = {
 FINISH_HITAREA = {"radius": 320, "lifetime": 20, "max_hits": 1, "break_weak_point": True}
 BUFF_TARGET_AS_DIRECT = 4
 
+#: ⚠ 键名沿用 0 基参数号：``p12`` 写 node[13] = **削韧**（参数卡 p13），``p13`` 写 node[14] = Fever 点。
+#: 2026-09-27 第二批（口径 B1：技能每次施放单目标总削韧 ≤30）：首斩 10→8、终斩 12→8，
+#: 连斩 1×14 不动 ⇒ 8 + 14 + 8 = 30（原 10 + 14 + 12 = 36）；Fever 点不动。
 CNA_SHAPE = {
-    0: {"subject": 4, "base": 200, "p12": 10, "p13": 5},
+    0: {"subject": 4, "base": 200, "p12": 8, "p13": 5},
     1: {"subject": 7, "base": 3, "p12": 1, "p13": 0.5},
-    2: {"subject": 10, "base": 200, "p12": 12, "p13": 6},
+    2: {"subject": 10, "base": 200, "p12": 8, "p13": 6},
 }
 CNA_MULT = {
     "1": ({"min": 26, "max": 30}, {"min": 0.429, "max": 0.5}, {"min": 30, "max": 34}),
@@ -458,10 +483,14 @@ FROZEN_FRAMES = 900                  # 迟缓 15 秒（官方带 900/1200）
 DISPEL_COUNT = 2                     # 驱散敌方 2 个增益
 ENEMY_BIND = 20                      # 强化档驱散/迟缓块的绑定号（与主树 1/4/7/8/9/10 不冲突）
 
-#: 段数成长：段数 = 1 + 月牙层数（vlv，绑定上限 99）；合计伤害 300% 与能力 3 的 202 等值，
+#: 段数成长：段数 = 1 + min(月牙层数, 上限)（vlv）；合计伤害 300% 与能力 3 的 202 等值，
 #: 使 ``AdditionalDirectAttackContent.getBetter``（段数多者胜，段数同比伤害%）在 ≥3 层时取本条。
+#: 上限 = ``BindConditionAccumulationVariable`` 第 5 参（客户端 ActionEvaluator case 101：
+#: ``bind(vid, min(累积层数 / 第4参, 第5参))``）。2026-09-27 第二批（口径 A5）99 → 10：
+#: 段数成长封顶 10 层，无上限部分由队长的月牙逐层成长行承担（视为已合并）；
+#: 同写法 live 先例：索利兹 wf_gbf_kit_soriz（上限 10）、普莉姆拉 wf_seasonal7_kit_primula（上限 20）。
 PIERCE_VAR_ID = 1
-PIERCE_VAR_CEIL = 99
+PIERCE_VAR_CEIL = 10
 PIERCE_FRAMES = int(ETERNAL_FRAMES)   # 跟随常驻月牙；不能在 20 秒后丢失已经取得的段数
 PIERCE_BASE_TIMES = 1
 PIERCE_TIMES_PER_LAYER = 1
@@ -471,6 +500,11 @@ PIERCE_CONDITION_KEY = "月牙貫通追撃"
 #: 天雷倍率（连击成长开关只在强化档打开 ⇒ 基础倍率按 500 连击 ×3.5 反推压低）。
 THUNDER_MULT_NORMAL = {"min": 14.0, "max": 16.0}
 THUNDER_MULT_BOOST = {"min": 5.0, "max": 6.0}
+#: 天雷削韧（CreateNormalAttack node[13]）。触发 CT 3 秒（THUNDER_COOLTIME）⇒ 口径 B3「CT ≤3 秒的
+#: 629 每次 ≤1」：常态单段 20 → 1；强化 5 段（CalculatedUsingMaxNumOfHits 5、Some 5）3.6 → 0.2 ＝ 1。
+#: 母本（千岳十织 20 / 梅媞斯雷弓 3.6）只有这一格被覆盖。
+THUNDER_DETOUGHNESS_NORMAL = 1
+THUNDER_DETOUGHNESS_BOOST = 0.2
 THUNDER_BOOST_BIND_OFFSET = 30       # 强化分支整体重映射，避免与常态分支重号
 
 
@@ -630,7 +664,7 @@ def build_rows(ctx) -> dict[str, Any]:
         caps.update(ev["capabilities"])
     # Native StunWinceSlayer maps to the separate PinchSlayer multiplier when
     # the enemy is Down. Both growth rows share the original piercing trigger.
-    for content, strength in (("32", "25000"), ("53", "5000")):
+    for content, strength in PIERCING_GROWTH:
         label = f"leader#{len(leader_rows)}"
         moved, ev = KL.build_row(ctx, "ability", "2110012#0",
             {**_PRE_RESONANCE_A, 34: "(None)", 47: content, 48: "5", 49: ELEMENT_TOKEN,
@@ -1129,7 +1163,7 @@ def build_pierce_tree(ctx, donor_tree) -> tuple[Any, dict[str, Any]]:
 
 
 def _thunder_branch(ctx, program: str, mult: dict[str, float], *, direct: bool,
-                    offset: int = 0) -> tuple[list, dict[str, Any]]:
+                    detoughness: float, offset: int = 0) -> tuple[list, dict[str, Any]]:
     """从官方天雷树里取 ``FindNearSubjects`` 整块（含特效 / 判定区 / 伤害），只改参数。"""
     tree = ctx.template_dsl(program)
     hits = [node for node in _walk(tree) if _is_command(node, "FindNearSubjects")]
@@ -1146,9 +1180,12 @@ def _thunder_branch(ctx, program: str, mult: dict[str, float], *, direct: bool,
         areas[0][24] = BUFF_TARGET_AS_DIRECT
         attacks[0][8] = True
     attacks[0][6] = [dict(mult)]
+    donor_detoughness = copy.deepcopy(attacks[0][13])
+    attacks[0][13] = [{"min": detoughness, "max": detoughness}]
     if offset:
         _remap_binds(command, offset)
     note = {"donor": program, "multiplier": dict(mult), "direct": direct,
+            "detoughness": {"donor": donor_detoughness, "value": detoughness},
             "effects": effect_paths(command)}
     return command, note
 
@@ -1156,9 +1193,10 @@ def _thunder_branch(ctx, program: str, mult: dict[str, float], *, direct: bool,
 def build_thunder_tree(ctx, donor_tree, bolt_family) -> tuple[Any, dict[str, Any]]:
     """天雷两档：常态 = 官方千岳（零克隆零染色）；强化 = 本包克隆的雷弓（冷蓝白）。"""
     normal, normal_note = _thunder_branch(ctx, THUNDER_NORMAL_DONOR, THUNDER_MULT_NORMAL,
-                                          direct=False)
+                                          direct=False, detoughness=THUNDER_DETOUGHNESS_NORMAL)
     boost, boost_note = _thunder_branch(ctx, THUNDER_BOOST_DONOR, THUNDER_MULT_BOOST,
-                                        direct=True, offset=THUNDER_BOOST_BIND_OFFSET)
+                                        direct=True, detoughness=THUNDER_DETOUGHNESS_BOOST,
+                                        offset=THUNDER_BOOST_BIND_OFFSET)
     boost, rewrite = ctx.rewrite_effect_refs(boost, bolt_family)
     boost_note["effects"] = effect_paths(boost)
     boost_note["rewrite"] = rewrite

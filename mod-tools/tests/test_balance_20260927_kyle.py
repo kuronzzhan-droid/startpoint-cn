@@ -196,16 +196,34 @@ class ReviseTests(unittest.TestCase):
             M.ability5_rows(ability)
 
 
+def batch2_overlay(out: dict) -> dict:
+    """第一批输出 + 第二批覆盖：生成器现在产出的是两批依次施工后的结果（第二批 wf_balance_20260927b_kyle
+    的 BEFORE 锁定的正是第一批输出，见其 ChainTests），第一批只核对自己那部分仍由第二批原样继承。"""
+    import wf_balance_20260927b_kyle as M2
+    fixture = Path(__file__).parent / "fixtures/balance_20260927b_kyle.json"
+    live2 = {k: v for k, v in json.loads(fixture.read_text(encoding="utf-8")).items() if not k.startswith("_")}
+    assert live2["leader"][M.CID] == out["leader"][M.CID] and live2["cas"][M.CAS_LEADER] == out["cas"][M.CAS_LEADER]
+    return M2.revise(reader(live2))
+
+
 class GeneratorSyncTests(unittest.TestCase):
-    """生成器 wf_midautumn_kit_kyle 重跑不能把本次删掉的行/文案加回去。"""
+    """生成器 wf_midautumn_kit_kyle 重跑不能把本次删掉的行/文案加回去。
+
+    2026-09-27 第二批改了同一生成器（队长月牙/贯穿成长数值、队长面板）：相关断言改为
+    「第一批输出 + 第二批覆盖」（:func:`batch2_overlay`）；能力 5 第二批不动，仍直接比第一批输出。
+    """
 
     @classmethod
     def setUpClass(cls):
         cls.live = load_fixture()
         cls.out = M.revise(reader(deepcopy(cls.live)))
+        cls.out2 = batch2_overlay(cls.out)
 
     def test_panel_constants_equal_revise_output(self):
-        self.assertEqual([[K.PANEL_LEADER]], self.out["cas"][M.CAS_LEADER])
+        # 第二批覆盖队长面板；第一批删去的 Down 文案在覆盖后仍不存在
+        self.assertEqual([[K.PANEL_LEADER]], self.out2["cas"][M.CAS_LEADER])
+        self.assertNotIn(M.REMOVED_LEADER_PHRASE, K.PANEL_LEADER)
+        self.assertNotIn("Down", K.PANEL_LEADER)
         self.assertEqual([[K.PANEL_ABILITY[5]]], self.out["cas"][M.CAS_ABILITY5])
         self.assertEqual(K.CAS_TEXTS[M.CAS_LEADER], K.PANEL_LEADER)
         self.assertEqual(K.CAS_TEXTS[M.CAS_ABILITY5], K.PANEL_ABILITY[5])
@@ -220,7 +238,8 @@ class GeneratorSyncTests(unittest.TestCase):
                          [f"leader#{i}" for i in range(8)])
         self.assertEqual(sorted(k for k in K.EXPECT if k.startswith(M.ABILITY_KEY)),
                          [f"{M.ABILITY_KEY}#{i}" for i in range(6)])
-        self.assertIn("眩晕畏缩特攻 5%", K.EXPECT["leader#7"])
+        # 第二批把贯穿成长 ×1/10（5% → 0.5%）；第一批的「保留这一行」仍成立
+        self.assertIn("眩晕畏缩特攻 0.5%", K.EXPECT["leader#7"])
 
     @unittest.skipUnless(_baseline_available(), "需要 .cdn/cn 官方基线与 live store")
     def test_generator_rows_equal_revise_output(self):
@@ -228,7 +247,7 @@ class GeneratorSyncTests(unittest.TestCase):
         import wf_midautumn_specs as MS
         import wf_seasonal7_build as B
         built = K.build_rows(B.KitContext(MC.MAPack(MS.get_spec("kyle"), record_sources=False)))
-        self.assertEqual(built["leader"], self.out["leader"][M.CID])
+        self.assertEqual(built["leader"], self.out2["leader"][M.CID])          # 第一批输出 + 第二批覆盖
         self.assertEqual(built["ability"][M.ABILITY_KEY], self.out["ability"][M.ABILITY_KEY])
 
 

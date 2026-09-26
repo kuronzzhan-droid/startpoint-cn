@@ -253,10 +253,14 @@ class PlanSelfCheckTests(unittest.TestCase):
         for _addr, _src, cells, _expect in K.LEADER:
             if cells.get(95) == "134" or cells.get(102):
                 self.assertNotEqual(cells.get(100), "")
+        # 2026-09-27 第二批：能力 2 两条逐层成长换成有上限的弱化版（c102=10，官方 134 限次族同写法）；
+        # 其余读月牙的持续行仍是 (None)。无论哪种都不许留空串（= 上限 0）。
         for slot, rows in K.PLAN.items():
             for addr, _src, cells, _expect in rows:
                 if cells.get(104):
-                    self.assertEqual(cells.get(102), "(None)", f"{slot} {addr}")
+                    want = K.CRESCENT_ABILITY_LIMIT if slot == 2 else "(None)"
+                    self.assertEqual(cells.get(102), want, f"{slot} {addr}")
+                    self.assertTrue(want == "(None)" or int(want) > 0)
 
     def test_unique_references_point_at_our_own_ids(self):
         owned = {key for key, *_ in K.UNIQUES}
@@ -484,6 +488,8 @@ class DslHelperTests(unittest.TestCase):
 
     def test_pierce_growth_is_not_capped_at_three(self):
         self.assertGreater(K.PIERCE_VAR_CEIL, 3)
+        # 2026-09-27 第二批（口径 A5）：层数贡献封顶 10，无上限部分由队长月牙逐层成长承担
+        self.assertEqual(K.PIERCE_VAR_CEIL, 10)
         self.assertEqual(K.PIERCE_BASE_TIMES, 1)
         self.assertEqual(K.PIERCE_TIMES_PER_LAYER, 1)
         # 段数取优不相加：同段数时比伤害% ⇒ 不得低于词条层的 3 段 +300%
@@ -553,8 +559,9 @@ class RowBuildTests(unittest.TestCase):
     def test_piercing_growth_uses_native_down_slayer_and_retains_trigger(self):
         rows = [r for r in self.built["leader"] if r[25] == "51"]
         self.assertEqual(len(rows), 2)
+        # 2026-09-27 第二批：每获得贯穿的两条成长 ×1/10（25%→2.5%、5%→0.5%）
         self.assertEqual({r[45]: r[49:51] for r in rows},
-                         {"32": ["25000", "25000"], "53": ["5000", "5000"]})
+                         {"32": ["2500", "2500"], "53": ["500", "500"]})
         for row in rows:
             self.assertEqual(row[4], "2")
             self.assertEqual(row[7:10], ["600000", "600000", "Yellow"])
@@ -593,12 +600,22 @@ class RowBuildTests(unittest.TestCase):
             self.assertEqual(row[100], "(None)")
 
     def test_self_and_party_layers_sum_to_the_panel_numbers(self):
-        """面板：自身攻击 +25% / 直击 +50%，除自身外 +12.5% / +25%。"""
+        """面板（2026-09-27 第二批 ×1/10 并入能力 2）：自身攻击 +7.5% / 直击 +10%，除自身外 +1.25% / +7.5%。"""
         share = {(row[107], row[108]): int(row[111]) for row in self.built["leader"] if row[95] == "134"}
-        self.assertEqual(share[("0", "5")] + share[("0", "0")], 25000)
-        self.assertEqual(share[("1", "5")] + share[("1", "0")], 50000)
-        self.assertEqual(share[("0", "5")], 12500)
-        self.assertEqual(share[("1", "5")], 25000)
+        self.assertEqual(share[("0", "5")] + share[("0", "0")], 7500)
+        self.assertEqual(share[("1", "5")] + share[("1", "0")], 10000)
+        self.assertEqual(share[("0", "5")], 1250)
+        self.assertEqual(share[("1", "5")], 7500)
+        line = K.PANEL_LEADER.split("\n")[3]
+        self.assertIn("自身攻击力＋7.5%、直击伤害＋10%", line)
+        self.assertIn("除自身外雷属性角色攻击力＋1.25%、直击伤害＋7.5%", line)
+
+    def test_crescent_ability_rows_are_capped_at_ten_layers(self):
+        """能力 2：月牙每层 雷队直击 +10%、自身攻击 +16%，限 10 层（2026-09-27 第二批）。"""
+        rows = self.built["ability"][f"{K.CID}2"]
+        self.assertEqual([(r[97], r[102], r[109], r[110], r[113]) for r in rows],
+                         [("134", "10", "1", "5", "10000"), ("134", "10", "0", "0", "16000")])
+        self.assertIn("（最多10层）", K.PANEL_ABILITY[2])
 
     def test_direct_attack_stack_row_beats_the_batch_floor(self):
         row = next(r for r in self.built["ability"][f"{K.CID}3"] if r[47] == "202")
@@ -717,6 +734,21 @@ class SkillTreeTests(unittest.TestCase):
         self.assertEqual(dispel[0][2], ["DCAll", 2])
         self.assertEqual(dispel[0][3], K.DISPEL_COUNT)
 
+    def test_skill_detoughness_totals_thirty(self):
+        """口径 B1（2026-09-27 第二批）：单目标每次施放 首斩 8 + 连斩 1×14 + 终斩 8 = 30（原 36）。"""
+        for level in ("1", "2"):
+            tree, _ = self.mutated(level)
+            attacks = [node[1] for node in K._walk(tree) if K._is_command(node, "CreateNormalAttack")]
+            areas = [node[1] for node in K._walk(tree) if K._is_command(node, "CreateHitArea")]
+            self.assertEqual([a[13] for a in attacks],
+                             [[{"min": 8, "max": 8}], [{"min": 1, "max": 1}], [{"min": 8, "max": 8}]])
+            self.assertEqual([a[14] for a in attacks],
+                             [[{"min": 5, "max": 5}], [{"min": 0.5, "max": 0.5}], [{"min": 6, "max": 6}]],
+                             "Fever 点不动")
+            hits = [a[14][1] for a in areas]
+            self.assertEqual(hits, [1, 14, 1])
+            self.assertEqual(sum(h * a[13][0]["max"] for h, a in zip(hits, attacks)), 30)
+
     def test_boost_durations_match_the_panel(self):
         tree, evidence = self.mutated()
         self.assertEqual(evidence["boost"]["piercing_frames"], 330)   # 5.5 秒
@@ -761,6 +793,29 @@ class AbilitySkillTreeTests(unittest.TestCase):
         self.assertEqual(ac[1], [{"min": int(K.ETERNAL_FRAMES), "max": int(K.ETERNAL_FRAMES)}])
         self.assertEqual(ac[2][0]["vlv"][0]["vid"], bind[2])
         self.assertEqual(note["ceiling"], K.PIERCE_VAR_CEIL)
+
+    def test_pierce_variable_is_capped_at_ten_layers(self):
+        """``BindConditionAccumulationVariable`` 第 5 参 = 上限（ActionEvaluator case 101 取 min）。"""
+        tree, note = K.build_pierce_tree(self.context, self.donor)
+        bind = tree[11][1][0][1]
+        self.assertEqual(bind, ["BindConditionAccumulationVariable", -17, K.PIERCE_VAR_ID,
+                                ["DCUnique", int(K.UID_CRESCENT)], 1, 10])
+        self.assertEqual(note["ceiling"], 10)
+
+    def test_thunder_detoughness_is_at_most_one_per_invoke(self):
+        """口径 B3（2026-09-27 第二批）：天雷 CT 3 秒 ⇒ 每次 ≤1：常态 20→1、强化 5 段 3.6→0.2。"""
+        tree, note = K.build_thunder_tree(self.context, self.donor, bolt_family())
+        flag = [node[1] for node in K._walk(tree)
+                if K._is_command(node, "ConditionalsChangeSkillFlag")][0]
+        for slot, value, hits in ((2, 0.2, 5), (3, 1, 1)):
+            area = [n[1] for n in K._walk(flag[slot]) if K._is_command(n, "CreateHitArea")][0]
+            attack = [n[1] for n in K._walk(flag[slot]) if K._is_command(n, "CreateNormalAttack")][0]
+            self.assertEqual(attack[13], [{"min": value, "max": value}])
+            self.assertEqual(area[14], ["CalculatedUsingMaxNumOfHits", hits])
+            self.assertAlmostEqual(hits * value, 1.0)
+        self.assertEqual(note["boost"]["detoughness"]["donor"], [{"min": 3.6, "max": 3.6}])
+        self.assertEqual(note["normal"]["detoughness"]["donor"], [{"min": 20, "max": 20}])
+        self.assertEqual(K.THUNDER_COOLTIME, "180")
 
     def test_pierce_condition_has_a_non_empty_discriminator(self):
         tree, _ = K.build_pierce_tree(self.context, self.donor)
