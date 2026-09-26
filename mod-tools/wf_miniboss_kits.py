@@ -40,7 +40,7 @@ def build_abilities(character_id):
     abilities, _ = BUILDERS[char.cid](Kit(char.code, char.group, char.uid, char.layers))
     metadata = audit(abilities)
     metadata.update(character_id=char.cid, code_name=char.code, role=char.role,
-                    revision="abilities-v2", main_only_slots=[3],
+                    revision="abilities-v2-gauge-20260927", main_only_slots=[3],
                     unique_id=char.uid, unique_master_unchanged=True,
                     source_skill_and_leader_unchanged=True)
     return {char.cid + str(slot): rows for slot, rows in abilities.items()}, metadata

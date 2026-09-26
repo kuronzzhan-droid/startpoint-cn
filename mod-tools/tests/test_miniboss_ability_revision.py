@@ -45,12 +45,12 @@ class MinibossMechanicsTests(unittest.TestCase):
     def test_blue_buff_acquisition_charges_only_actual_holder_with_own_cooldown(self):
         row = self.row("129994", 2, 1)
         self.assertEqual(row[27:30], ["30", "5", "Blue"])
-        self.assertEqual((row[48], row[51:53], row[35]), ("7", ["5000", "5000"], "120"))
+        self.assertEqual((row[48], row[51:53], row[35]), ("7", ["5000", "5000"], "900"))
         # Native setupConditionForEachMember creates one handler per matching member.
         # Three simultaneous buffs on A give one refill; B has its own cooldown.
         cooldown, gauge = {}, {"A": 0, "B": 0, "red": 0}
         for frame, actor, element in [(0, "A", "Blue")] * 3 + [
-                (0, "B", "Blue"), (0, "red", "Red"), (119, "A", "Blue"), (120, "A", "Blue")]:
+                (0, "B", "Blue"), (0, "red", "Red"), (899, "A", "Blue"), (900, "A", "Blue")]:
             if element != row[29] or frame < cooldown.get(actor, -1):
                 continue
             cooldown[actor] = frame + int(row[35])

@@ -12,8 +12,8 @@ def cube(k):
         [k.d(23, 50, drones), k.i(696, 15),
          k.i(483, 30, extra={"character_groups": k.group}),
          k.i(484, 30, extra={"character_groups": k.group})],
-        [k.i(35, 15), k.i(211, 25, trigger=e(23, ct=2))],
-        [k.i(226, 600, trigger=e(2)), k.i(200, 300), k.i(211, 15, trigger=e(65, ct=2))],
+        [k.i(35, 5), k.i(211, 5, trigger=e(23, ct=15))],
+        [k.i(226, 600, trigger=e(2)), k.i(200, 300), k.i(211, 5, trigger=e(65, ct=15))],
         [k.i(227, 12, trigger=e(23, ct=5)), k.i(205, 25)],
     ]
     leader = [k.team(32, 100), k.i(55, 120), k.team(565, 60, extra=tag),
@@ -26,10 +26,10 @@ def security(k):
         [k.i(51, 150), k.team(53, 60)],
         [k.i(462, 40, target=1), k.i(205, 35), k.i(36, 20)],
         [k.i(34, 100), k.d(411, 15, o(72)), k.team(227, 10, trigger=e(23, ct=5))],
-        [k.team(491, 75), k.i(211, 75), k.i(35, 15)],
+        [k.team(491, 75), k.i(211, 75), k.i(35, 5)],
         [k.team(203, 100), k.team(206, 3, trigger=e(21, every=5, ct=3)),
-         k.i(211, 10, trigger=e(21, every=5, ct=3))],
-        [k.gain(trigger=e(23)), k.d(23, 50), k.i(211, 50, trigger=e(18, limit=2))],
+         k.i(211, 5, trigger=e(21, every=5, ct=15))],
+        [k.gain(trigger=e(23)), k.d(23, 50), k.i(211, 5, trigger=e(18, limit=2, ct=15))],
     ]
     leader = [k.team(32, 100), k.team(34, 120), k.team(53, 30), k.team(205, 20)]
     return k.finish(slots, leader)
@@ -45,7 +45,7 @@ def genin(k):
         [k.helper("shadow_slash", pre=shadows(3), trigger=e(4, ct=2)),
          k.helper("five_shadow", pre=shadows(5), trigger=e(23)),
          k.i(525, 500, pre=shadows(5), trigger=e(23), extra={"unique_condition_id": k.uid})],
-        [k.i(211, 75), k.i(35, 20), k.i(211, 20, trigger=e(23, ct=2))],
+        [k.i(211, 75), k.i(35, 5), k.i(211, 5, trigger=e(23, ct=15))],
         [k.team(559, 50), k.i(205, 20)],
         [k.team(694, 15), k.i(206, 5, trigger=e(4, ct=5))],
     ]
