@@ -7,6 +7,12 @@
 ``ConditionalsChangeSkillFlag``）接管，并追加「随机两种异常」轮盘；
 技能本体换成「抽血 ＋ 护盾 ＋ 贯穿弹命中爆炸」。
 
+**平衡批次 2026-09-27**（作者确认；live 侧键级修订见 ``wf_balance_20260927_charlene.py``，
+测试断言本模块输出与之逐字一致）：技能两档顶层追加自身护盾（-17，自身最大 HP 10%）；
+轮盘删掉死格 ``ACStun``（Stunify 只能挂成员，挂敌人被 ``fit()`` 静默丢弃），剩 3 选 1；
+词条 1 追加 kind 53 眩晕畏缩特攻（对虚弱敌人的独立乘区）全队雷 20%，挂雷共鸣门；
+强化条目文案去掉「使敌人更容易进入DOWN」，技能描述补自身护盾。
+
 由 ``python mod-tools/wf_midautumn_build.py --char charlene --step kit`` 调用 :func:`build`。
 只经 ``KitContext`` 写 ``work/character_packs/ma-charlene/``；live store / ``assets/`` /
 ``.cdn`` / 设备 / 存档 一律不碰，不发布、不 git。
@@ -21,13 +27,14 @@
 - character 行 c9–c16 语音路由（kind 1 ConditionExist / 3 AttackPointUp → ``<code>_voice_ready``）
   ＋ c18 队长技名；character_text 12 列与 action_skill 两档文案由 ``tables`` 依 :data:`TEXTS` 写，
   本模块只断言不漂移。
-- 队长技 5 行（**本轮一格不动**）、词条 6 键 11 条：官方 donor 行 + 逐格改，逐行过
+- 队长技 5 行（**本轮一格不动**）、词条 6 键 12 条：官方 donor 行 + 逐格改，逐行过
   ``wf_client_legality``（合法性 / 声明块字段 / 元素列）并与登记的面板文案逐字比对。
 - action_skill 两档能量 c4/c5 两档统一 500/500（作者放行 §5），名称/描述同 :data:`TEXTS`。
 - 两棵技能 DSL：官方母本 ``artificialeye_sniper$_1/_2`` 整树 + 三处官方蓝本移植：
   ① 顶层插「抽血」``FindAllSubjects(33) → ConditionalsHealthPointRatioOf → CreateRatioAttack``
-  （蓝本 ``rector_sorcerer_playable``）与「护盾」``FindAllSubjects(35,[3]) → CreateBarrier``
-  （蓝本 ``priest_prince_playable``）；② 贯穿弹 on-hit 里把母本那条 ``CreateCondition`` 换成
+  （蓝本 ``rector_sorcerer_playable``）、「护盾」``FindAllSubjects(35,[3]) → CreateBarrier``
+  （蓝本 ``priest_prince_playable``）与「自身护盾」``CreateBarrier(-17)``（蓝本 ``alice_smr20`` /
+  ``woman_knight_1anv`` 顶层写法，09-27 平衡批次）；② 贯穿弹 on-hit 里把母本那条 ``CreateCondition`` 换成
   ``ConditionalsChangeSkillFlag``（蓝本 ``amulet_bosslady``）分流的强化块；③ on-hit 末尾接
   「命中爆炸」``CreateReferencePoint → CreateHitArea(Circle) → CreateNormalAttack``
   （蓝本 ``blindness_gunner``，官方 82 棵树有同形嵌套）。
@@ -70,13 +77,15 @@ CAS_SWITCH = "change_skill_" + CODE
 
 #: 技能强化条目的文案。裁决 §3：「技能强化」条目不写数字与时间
 #: （``KL.check_panel(skill_flag=True)`` 硬卡数字 / 秒 / %）。
+#: 09-27 平衡批次：轮盘删掉 ``ACStun`` 死格 ⇒ 文案去掉「使敌人更容易进入DOWN」。
 CAS_TEXTS = {
     CAS_SWITCH: "雷属性共鸣时强化技能：命中敌人时赋予其累积全属性抗性降低与累积攻击力降低效果"
-                "（无视弱体抗性），并随机追加赋予麻痹、中毒、迟缓、使敌人更容易进入DOWN中的两种效果",
+                "（无视弱体抗性），并随机追加赋予麻痹、中毒、迟缓中的两种效果",
 }
 
 _SKILL_DESC = ("抽取全体队伍成员生命值55%（若该成员当前生命值低于50%，则改为抽取其生命值20%），"
-               "并为除自身外的雷属性角色赋予护盾，护盾值为其最大生命值25% ＋ "
+               "并为除自身外的雷属性角色赋予护盾，护盾值为其最大生命值25%，"
+               "同时为自身赋予护盾，护盾值为自身最大生命值10% ＋ "
                "瞄准敌人射出月华贯穿弹，命中后爆炸，对范围内的敌人造成雷属性伤害")
 
 TEXTS = {
@@ -145,6 +154,14 @@ ABILITY: dict[str, tuple[tuple[str, dict[int, str], str], ...]] = {
         ("1311763#4", {0: CODE + "_1", 1: "true", 2: STATUE_GROUP, 70: CAS_SWITCH,
                        **PRE_RESONANCE, **NO_TRIGGER},
          f"雷·编成≥6 时: 自身 切换技能形态[{CAS_SWITCH}]"),
+        # 09-27 平衡批次：雷共鸣时全队雷「对虚弱（Down）中的敌人」独立乘区 +20%。
+        # kind 53 StunWinceSlayer → PinchSlayer（InstantAbilitySource.as:953-956），伤害式
+        # NormalAttackCalculator.as:647-660 对 hasPinched 目标单独乘 (1+Σ)；不含比例/定值伤害与毒。
+        # donor 官方 fox_oracle_4 1310014#0（常驻、target 5 全队、c49 Yellow），与 536 共用同一道共鸣门；
+        # 面板由客户端按 stun_wince_slayer + 「（独立乘区）」自动生成，不写 desc_override。
+        ("1310014#0", {0: CODE + "_1", 2: STATUE_GROUP, 51: "20000", 52: "20000",
+                       **PRE_RESONANCE},
+         "雷·编成≥6 时: 赋予全队(雷) 眩晕畏缩特攻 20%"),
     ),
     # 2 对「弱体中的敌人」三池：P1 攻击力 / P6 直击伤害 / P4 独立乘区（调研卡 B §6.6）
     "1399922": (
@@ -220,6 +237,12 @@ BARRIER_SELECTOR = 35        # 除自身外的队友（82 含自身，裁决 §8
 BARRIER_ELEMENT_FILTER = 3   # FindAllSubjects 元素过滤槽 = 内部元素码 + 1（雷 2 → 3）
 BARRIER_RATIO = 0.25
 
+#: 自身护盾（09-27 平衡批次：「自身最大生命值 10%」）。官方顶层 ``CreateBarrier(-17, …)`` 先例
+#: ``alice_smr20`` / ``woman_knight_1anv``；BarrierCalculator 按受盾者自己的最大 HP 取整。
+#: 不经 FindAllSubjects、不受 ChangeSkillFlag 门控；抽血是友伤、不被护盾吸收，放在队友护盾之后。
+SELF_BARRIER_SUBJECT = -17   # 内建主体：自身
+SELF_BARRIER_RATIO = 0.1
+
 #: 爆炸段（贯穿弹 on-hit → 参照点 → 圆形判定区 → CNA）。蓝本 ``blindness_gunner_2``
 #: （同为枪手母本；官方 1052 棵可解技能树里 82 棵有「on-hit 块里再开 CreateHitArea」）。
 EXPLOSION_RADIUS = 300       # Circle 上限 600（判定区参数卡）
@@ -251,9 +274,16 @@ BOOST_CONDITIONS: tuple[tuple[str, list, bool], ...] = (
      True),
 )
 
-#: 强化档的随机池：4 选 1 轮盘 × :data:`ROULETTE_DRAWS` 次（每次独立掷点，可能重复——
+#: 强化档的随机池：3 选 1 轮盘 × :data:`ROULETTE_DRAWS` 次（每次独立掷点，可能重复——
 #: 作者原话是「随机追加两种」，没要求互斥；调研卡 B §4.2 建议接受可重复）。
-#: 权重相等 ⇒ 每格 25%。名称 / AC / forceApply / 权重。
+#: 权重写 25：ProbabilityWeight 按相对权重（ActionEvaluator.as:4940-5016 case 105 先求和再按累积阈值命中）
+#: ⇒ 和 75、每格 1/3。名称 / AC / forceApply / 权重。
+#:
+#: 09-27 平衡批次删掉第 4 格 ``("stun_accum", ACStun 900f/0.2/1)``：ACStun 转成
+#: ``ConditionChangeContent.Stunify``（AdditionalConditionKindTools.as:241-243），而 ``fit()`` 规定
+#: Stunify(17) 只能挂在 xMember 上（ConditionChangeContentTools.as:1059-1071），挂到敌人身上在
+#: ConditionSlot.as:7454 直接 return——原先是死格，面板「使敌人更容易进入DOWN」也与实际不符。
+#: 「对虚弱敌人」的加成改由词条 1 的 kind 53（独立乘区）承担。
 ROULETTE_DRAWS = 2
 ROULETTE: tuple[tuple[str, list, bool, int], ...] = (
     # 麻痹 3 秒（官方带 180/240/480/600 帧）。**不强制付与**（裁决 §2 口径）。
@@ -263,10 +293,6 @@ ROULETTE: tuple[tuple[str, list, bool, int], ...] = (
                 [{"min": 1, "max": 1}]], False, 25),
     # 「迟缓」＝引擎枚举 Frozen（国服面板作「迟缓」）。官方带 900 / 1200 帧。
     ("frozen", ["ACFrozen", [{"min": 900, "max": 900}], True], False, 25),
-    # 「气绝」无付与口：``ACStun`` 实为 Stunify＝**眩晕蓄积**（使敌人更容易进入 DOWN）。
-    # 作者 09-21 已定案把这一格换成这个说法。DSL 侧官方零先例 ⇒ 金丝雀 Z1。
-    ("stun_accum", ["ACStun", [{"min": 900, "max": 900}], [{"min": 0.2, "max": 0.2}],
-                    [{"min": 1, "max": 1}]], False, 25),
 )
 
 #: 技能特效全部直接引用官方母本路径（零克隆、零图集增量，裁决 §4）。
@@ -381,6 +407,13 @@ def barrier_block() -> list:
                     ["GenericBarrierHitEffect"])))
 
 
+def self_barrier_block() -> list:
+    """自身护盾：顶层直接对 -17（自身）加盾，自身最大生命值比例（蓝本 ``alice_smr20``）。"""
+    return _cmd("CreateBarrier", SELF_BARRIER_SUBJECT,
+                [{"min": SELF_BARRIER_RATIO, "max": SELF_BARRIER_RATIO}],
+                ["GenericBarrierHitEffect"])
+
+
 def explosion_block(donor_cna: list, level: str) -> list:
     """命中爆炸：参照点 → 圆形判定区 → CNA（蓝本 ``blindness_gunner_2`` 的嵌套段）。"""
     low, high = SKILL_MULTIPLIER[level]
@@ -465,11 +498,11 @@ def mutate_tree(tree, level: str):
     cna_parent.pop(cna_index)
     cc_parent.append(blast)
 
-    # --- 顶层：抽血 + 护盾排在母本的瞄准/射击块之前
+    # --- 顶层：抽血 + 队友护盾 + 自身护盾排在母本的瞄准/射击块之前
     top = tree[11]
     if not (isinstance(top, list) and top[0] == "Block" and len(top[1]) == 1):
         raise CharleneError(f"donor top block {level}: expected a single command, got {len(top[1])}")
-    top[1][0:0] = [drain_block(), barrier_block()]
+    top[1][0:0] = [drain_block(), barrier_block(), self_barrier_block()]
 
     # --- 特效：全部还是官方母本路径（零克隆、零图集增量）
     paths = effect_paths(tree)
@@ -491,7 +524,7 @@ def mutate_tree(tree, level: str):
     expect_after = dict(
         DONOR_COMMAND_COUNTS, CreateCondition=n_cond, CreateNormalAttack=1,
         FindAllSubjects=2, ConditionalsHealthPointRatioOf=1, CreateRatioAttack=2,
-        CreateBarrier=1, ConditionalsChangeSkillFlag=1,
+        CreateBarrier=2, ConditionalsChangeSkillFlag=1,
         ConditionalsProbability=ROULETTE_DRAWS,
         ProbabilityWeight=ROULETTE_DRAWS * len(ROULETTE),
         CreateReferencePoint=1, CreateHitArea=2)
@@ -507,6 +540,7 @@ def mutate_tree(tree, level: str):
                   "ratio_high": DRAIN_RATIO_HIGH, "ratio_low": DRAIN_RATIO_LOW},
         "barrier": {"selector": BARRIER_SELECTOR, "element_filter": BARRIER_ELEMENT_FILTER,
                     "ratio": BARRIER_RATIO},
+        "self_barrier": {"subject": SELF_BARRIER_SUBJECT, "ratio": SELF_BARRIER_RATIO},
         "explosion": {"radius": EXPLOSION_RADIUS, "lifetime": EXPLOSION_LIFETIME,
                       "reference_point_lifetime": REFERENCE_POINT_LIFETIME,
                       "multiplier": list(SKILL_MULTIPLIER[level])},
@@ -661,7 +695,7 @@ def build(ctx) -> dict[str, Any]:
         evidence.append(ev)
     ctx.write_flat(KL.LEADER, {CID_S: leader_rows})
 
-    # ---- 3) 词条 6 键 11 条
+    # ---- 3) 词条 6 键 12 条
     ability_rows: dict[str, list[list[str]]] = {}
     for key, records in ABILITY.items():
         built = []
@@ -761,8 +795,16 @@ def build(ctx) -> dict[str, Any]:
          "roulette_draws": ROULETTE_DRAWS,
          "force_apply": [name for name, _ac, force in BOOST_CONDITIONS if force],
          "why": "弱体全部移进「雷共鸣强化档」：常驻 2 条（全属性抗性↓ / 攻击力↓，forceApply 穿"
-                "boss 弱体耐性）＋ 4 选 1 轮盘掷 2 次；非共鸣队伍技能只有抽血/护盾/爆炸伤害。"
+                "boss 弱体耐性）＋ 3 选 1 轮盘掷 2 次（09-27 删掉挂不上敌人的 ACStun 死格）；"
+                "非共鸣队伍技能只有抽血/护盾/爆炸伤害。"
                 "队长技与词条 D136 的层数来源随之只在共鸣时满额（金丝雀 Z4）"},
+        {"balance_20260927": {
+            "self_barrier": {"subject": SELF_BARRIER_SUBJECT, "ratio": SELF_BARRIER_RATIO},
+            "roulette_dropped": "ACStun",
+            "ability_1_appended": "1310014#0 kind 53 全队(雷) 20%（雷共鸣门）",
+            "live_revision": "wf_balance_20260927_charlene.py"},
+         "why": "作者 2026-09-27 确认：自身护盾 10%；删掉挂不上敌人的 ACStun 死格；"
+                "对虚弱敌人的加成改由 kind 53 独立乘区承担"},
         {"unique_condition": "无。层数来源是敌人身上的弱体条数（D136），不需要自身固有状态，"
                              "不占 8 位固有 ID、不需要 48×48 图标"},
     ])
@@ -774,10 +816,19 @@ def build(ctx) -> dict[str, Any]:
                 "``KL.check_ability_key`` 也硬卡这条。kind 211 × attack_yellow 官方 2 条先例；"
                 "母本 131176 自己就把 1311763 的 5 条混 kind 记录统一挂 attack_yellow"},
         {"want": "作者原话「随机追加赋予麻痹气绝中毒迟缓两种效果」",
-         "got": "「气绝」这一格落成 ``ACStun``＝眩晕蓄积（使敌人更容易进入 DOWN），"
-                "面板文案随之改写（作者 09-21 已定案，_deviations.json charlene[0]）",
-         "why": "数据层没有「付与气绝」的口：``ACStun`` 实际返回 ``ConditionChangeContent.Stunify``，"
-                "气绝是 down 槽满了自然进入的状态（调研卡 B §4.4）"},
+         "got": "轮盘只剩麻痹 / 中毒 / 迟缓三格（各 1/3）；09-21 落成的「气绝→ACStun 眩晕蓄积」一格"
+                "已在 09-27 平衡批次移除，改由词条 1 的 kind 53 眩晕畏缩特攻（对虚弱敌人的独立乘区）"
+                "全队雷 +20% 替代（_deviations.json charlene[0]）",
+         "why": "数据层没有「付与气绝」的口；``ACStun`` 转成 ``ConditionChangeContent.Stunify``，"
+                "``fit()`` 只允许它挂成员（ConditionChangeContentTools.as:1059-1071），挂到敌人身上被"
+                "ConditionSlot.as:7454 静默丢弃，削韧也只读攻击方自己的 Stunify ⇒ 原分支是死格，"
+                "「使敌人更容易进入DOWN」与实际不符"},
+        {"want": "作者 09-27「对处于虚弱状态的敌人造成伤害，额外乘区＋20%」",
+         "got": "词条 1 第 3 条 kind 53（donor 官方 1310014#0）全队雷 20%，雷共鸣门；"
+                "面板由客户端按 stun_wince_slayer ＋「（独立乘区）」自动生成，wf_describe 渲染"
+                "「雷·编成≥6 时: 赋予全队(雷) 眩晕畏缩特攻 20%」",
+         "why": "不写 desc_override：本角色刻意保持零客户端补丁依赖（required_capabilities 为空）。"
+                "PinchSlayer 只作用于 NormalAttackCalculator，比例/定值伤害与毒不吃"},
         {"want": "目标面板「雷属性角色对处于减益状态的敌人：攻击力＋200%、直击伤害＋100%」写成一行",
          "got": "拆成 491 与 124 两条记录（面板两行），第三行是 96 的独立乘区 10%",
          "why": "攻击力池与直击伤害池是两个 kind，一条记录只能渲染一条效果。本角色不引入"

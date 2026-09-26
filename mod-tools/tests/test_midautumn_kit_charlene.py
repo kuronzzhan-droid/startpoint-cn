@@ -81,7 +81,8 @@ class PlanTests(unittest.TestCase):
     def test_ability_keys_are_the_six_character_slots(self):
         self.assertEqual(sorted(KIT.ABILITY), [f"{KIT.CID_S}{n}" for n in range(1, 7)])
         self.assertEqual(len(KIT.LEADER), 5)
-        self.assertEqual(sum(len(v) for v in KIT.ABILITY.values()), 11)
+        # 09-27 平衡批次：词条 1 追加 kind 53 眩晕畏缩特攻 ⇒ 11 → 12 条
+        self.assertEqual(sum(len(v) for v in KIT.ABILITY.values()), 12)
 
     def test_skill_flag_row_points_at_the_declared_string(self):
         """536 的 c70 必须指向 SPEC 里声明过的 custom_ability_string 键。"""
@@ -174,15 +175,18 @@ class PanelTextTests(unittest.TestCase):
         """
         for level in ("1", "2"):
             desc = KIT.TEXTS[f"desc{level}"]
-            for token in ("抽取", "55%", "50%", "20%", "护盾", "25%", "贯穿", "爆炸", "雷属性伤害"):
+            for token in ("抽取", "55%", "50%", "20%", "护盾", "25%", "自身最大生命值10%",
+                          "贯穿", "爆炸", "雷属性伤害"):
                 self.assertIn(token, desc, level)
             for token in ("抗性降低", "攻击力降低", "麻痹", "中毒", "迟缓"):
                 self.assertNotIn(token, desc, level)
 
     def test_skill_flag_string_mentions_every_boost_family(self):
         text = KIT.CAS_TEXTS[KIT.CAS_SWITCH]
-        for token in ("抗性降低", "攻击力降低", "无视弱体抗性", "麻痹", "中毒", "迟缓", "DOWN"):
+        for token in ("抗性降低", "攻击力降低", "无视弱体抗性", "麻痹", "中毒", "迟缓"):
             self.assertIn(token, text)
+        # 09-27 平衡批次：ACStun 死格已删 ⇒ 面板不再写「使敌人更容易进入DOWN」
+        self.assertNotIn("DOWN", text)
 
 
 # ---------------------------------------------------------------- 静态：语音路由
@@ -278,12 +282,15 @@ class MutateTreeTests(unittest.TestCase):
         tree, _ev = KIT.mutate_tree(_fake_donor_tree(), "1")
         top = tree[11][1]
         self.assertEqual([c[1][0] for c in top],
-                         ["FindAllSubjects", "FindAllSubjects", "FindNearSubjects"])
-        drain, barrier = top[0][1], top[1][1]
+                         ["FindAllSubjects", "FindAllSubjects", "CreateBarrier", "FindNearSubjects"])
+        drain, barrier, self_barrier = top[0][1], top[1][1], top[2][1]
         self.assertEqual((drain[1], drain[2]), (KIT.BIND_DRAIN, KIT.DRAIN_SELECTOR))
         self.assertEqual(drain[3], [])                       # 抽血不挑属性
         self.assertEqual((barrier[1], barrier[2]), (KIT.BIND_BARRIER, KIT.BARRIER_SELECTOR))
         self.assertEqual(barrier[3], [KIT.BARRIER_ELEMENT_FILTER])
+        # 09-27 平衡批次：队友护盾之后给自身（-17）加盾，自身最大生命值 10%
+        self.assertEqual(self_barrier, ["CreateBarrier", -17, [{"min": 0.1, "max": 0.1}],
+                                        ["GenericBarrierHitEffect"]])
 
     def test_drain_branches_follow_the_official_semantics(self):
         """官方两例互证：then ＝ HP ≥ 阈值，else ＝ HP < 阈值 ⇒ 低血成员抽得少。"""
@@ -349,26 +356,34 @@ class MutateTreeTests(unittest.TestCase):
         self.assertLess(tolerance[3][0]["max"], 0)           # 负值 = 抗性降低
 
     def test_force_apply_only_on_the_two_stat_debuffs(self):
-        """裁决 §2：麻痹不对 boss 强制付与；毒 / 迟缓 / 眩晕蓄积同理。"""
+        """裁决 §2：麻痹不对 boss 强制付与；毒 / 迟缓同理。"""
         forced = {name for name, _ac, force in self._all_conditions() if force}
         self.assertEqual(forced, {"tolerance_all", "attack_down"})
 
-    def test_roulette_has_four_distinct_families(self):
-        """作者要的四选二：四格必须是四种不同的 AC，且常驻两条不与随机池重复。"""
+    def test_roulette_has_three_distinct_families(self):
+        """09-27 平衡批次后三选二：三格是三种不同的 AC，且常驻两条不与随机池重复。"""
         families = [ac[0] for _name, ac, _f, _w in KIT.ROULETTE]
-        self.assertEqual(len(families), 4)
-        self.assertEqual(len(set(families)), 4)
+        self.assertEqual(families, ["ACParalysis", "ACPoison", "ACFrozen"])
+        self.assertEqual(len(set(families)), 3)
         self.assertEqual(KIT.ROULETTE_DRAWS, 2)
         self.assertEqual({w for _n, _a, _f, w in KIT.ROULETTE}, {25})
         boost = {ac[0] for _name, ac, _f in KIT.BOOST_CONDITIONS}
         self.assertFalse(boost & set(families))
 
-    def test_stun_slot_is_the_stunify_substitute(self):
-        """「气绝」无付与口：ACStun 实为 Stunify＝眩晕蓄积（作者 09-21 定案）。"""
-        names = {name: ac for name, ac, _f, _w in KIT.ROULETTE}
-        self.assertEqual(names["stun_accum"][0], "ACStun")
-        self.assertNotIn("ACParalysis", [names["stun_accum"][0]])
-        self.assertIn("DOWN", KIT.CAS_TEXTS[KIT.CAS_SWITCH])
+    def test_roulette_drops_the_dead_stunify_slot(self):
+        """ACStun→Stunify 只能挂成员（fit），挂敌人被静默丢弃 ⇒ 09-27 删掉这一格与「DOWN」文案。"""
+        tree, _ev = KIT.mutate_tree(_fake_donor_tree(), "1")
+        self.assertNotIn("ACStun", json.dumps(tree))
+        self.assertNotIn("stun_accum", {name for name, _ac, _f, _w in KIT.ROULETTE})
+        self.assertNotIn("DOWN", KIT.CAS_TEXTS[KIT.CAS_SWITCH])
+
+    def test_ability_1_carries_the_stun_wince_slayer_record(self):
+        """09-27 平衡批次：词条 1 第 3 条＝kind 53 donor 1310014#0，全队雷 20%，雷共鸣门。"""
+        donor, cells, expect = KIT.ABILITY[f"{KIT.CID_S}1"][2]
+        self.assertEqual(donor, "1310014#0")
+        self.assertEqual((cells[51], cells[52]), ("20000", "20000"))
+        self.assertEqual({k: cells[k] for k in (6, 9, 10, 11)}, KIT.PRE_RESONANCE)
+        self.assertEqual(expect, "雷·编成≥6 时: 赋予全队(雷) 眩晕畏缩特攻 20%")
 
     def test_effect_refs_stay_on_official_paths(self):
         tree, ev = KIT.mutate_tree(_fake_donor_tree(), "1")
@@ -513,7 +528,7 @@ class OfficialSkillTreeTests(unittest.TestCase):
             self.assertEqual(counts["CreateCondition"], want, level)
             self.assertEqual(counts["ConditionalsChangeSkillFlag"], 1, level)
             self.assertEqual(counts["CreateHitArea"], 2, level)
-            self.assertEqual(counts["CreateBarrier"], 1, level)
+            self.assertEqual(counts["CreateBarrier"], 2, level)          # 队友护盾 + 自身护盾（09-27）
             (parent, index), = KIT._command_slots(tree, "CreateNormalAttack")
             self.assertEqual(parent[index][1][6], [{"min": low, "max": high}])
             for path in ev["effect_refs"]:
@@ -651,7 +666,7 @@ class PackageTests(unittest.TestCase):
             self.assertEqual(counts["ConditionalsChangeSkillFlag"], 1, level)
             self.assertEqual(counts["ConditionalsProbability"], KIT.ROULETTE_DRAWS, level)
             self.assertEqual(counts["CreateRatioAttack"], 2, level)
-            self.assertEqual(counts["CreateBarrier"], 1, level)
+            self.assertEqual(counts["CreateBarrier"], 2, level)          # 队友护盾 + 自身护盾（09-27）
             self.assertEqual(counts["CreateReferencePoint"], 1, level)
             for path in KIT.effect_paths(tree):
                 self.assertTrue(path.startswith(KIT.OFFICIAL_EFFECT_PREFIX), path)
