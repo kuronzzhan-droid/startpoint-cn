@@ -1,4 +1,10 @@
-"""浪涌充能三档技能；复用已染色的四星光束、五星激光和Fever光柱。"""
+"""浪涌充能三档技能；复用已染色的四星光束、五星激光和Fever光柱。
+
+伤害归属已被 2026-09-27 平衡批次取代（``wf_balance_20260927_regis``：能力相关都换成技能伤害）。
+本模块保持 0917 行为不变（``tests/test_surge_anchor_revision.py`` 依赖它），kit 在它之后叠加新修订；
+不要为了重跑一次性脚本（``wf_surge_anchor_candidate.py`` / ``wf_regis_philia_pf_candidate.py``）
+而放宽 :func:`validate` 或 412 查找——对已转换的候选重跑会在这里响亮失败，放宽就会把改动写回能力伤害版。
+"""
 from copy import deepcopy
 
 from wf_seasonal7_kit_philia import cmds, dsl_gates, dsl_gate_failures, row_problems

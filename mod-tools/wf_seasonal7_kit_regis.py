@@ -22,8 +22,13 @@
   词条 1399941#2 产（461 每次进 Fever +1 层），队长 L0/L1、词条 1399943#3/#4（during 134）
   与两棵技能树的 ``BindConditionAccumulationVariable`` + ``vlv`` 消费；
 - custom_ability_string 7 条 ``desc_override_*``（panel-description-override-v2）；
-- action_skill 两档（名称/描述/能量 c4–c6）；upskill ``skill_damage_up``→``ability_damage_up``
-  （技能删 ACSkillDamage、加 ACAbilityDamage，与官方夏日莉莉丝 151045 同写法）；
+- action_skill 两档（名称/描述/能量 c4–c6）；upskill 09-16 版曾把 ``skill_damage_up`` 换成
+  ``ability_damage_up``（技能删 ACSkillDamage、加 ACAbilityDamage，与官方夏日莉莉丝 151045 同写法），
+  2026-09-27 平衡批次恢复母本 ``skill_damage_up``；
+- **2026-09-27 平衡批次**（作者确认「能力相关都换成技能伤害」）：浪涌修订之后调用
+  ``wf_balance_20260927_regis``（:func:`balance_rows` / :func:`balance_panel` / ``balance.skill_tree``），
+  另写能力 2 的 629 全体追击 DSL 与文案键 ``rec_android_seaside_skill_strike``；批次暂存脚本的
+  ``revise()`` 用同一组函数，kit 重跑与候选一致；
 - 两棵技能 DSL：官方 131020 骨架 + ★4 231003 光束 + 151045 雷队能力伤害状态（移植
   design/_tmp/regis/d09_compose_final.py），特效引用经 ``rewrite_effect_refs`` 改写，
   先与上一轮定稿树逐节点严格比对；再叠改版增量 D1–D5（两分支各一条 Bind、
@@ -64,6 +69,8 @@ from typing import Any
 HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
+
+import wf_balance_20260927_regis as balance  # noqa: E402  纯函数、只依赖标准库
 
 KEY = "regis"
 CID = "139994"
@@ -184,6 +191,9 @@ SKILL_DESC_EFFECTS = {
     "ACAbilityDamage": ("能力伤害", "ability_damage_up"),
     "ACAttackPoint": ("攻击力", "condition_attack_up"),
     "AddFeverPoint": ("FEVER槽", "condition_add_fever_point_up"),
+    # 2026-09-27 平衡批次（wf_balance_20260927_regis）：雷队增益改为 ACSkillDamage。
+    # 旧项保留，老树/旧说明的三方核对仍然成立。
+    "ACSkillDamage": ("技能伤害", "skill_damage_up"),
 }
 # upskill 行里与技能效果无关、不参与上面三方核对的标签（倍率强化 / 空槽）
 UPSKILL_IGNORED_TAGS = ("common_attack_up", "(None)", "")
@@ -203,7 +213,8 @@ TEXTS = {
 
 SPEC = {
     "required_capabilities": CAPABILITIES,
-    "extra_keys": {CAS: CAS_KEYS, SW: (VOICE_KEY,), UNIQUE: (UID,)},
+    # 2026-09-27：能力 2 的 629 文案键（balance.STRIKE_KEY）也由本包认领，漏认领 = rebase 静默回滚 + C8601
+    "extra_keys": {CAS: (*CAS_KEYS, balance.STRIKE_KEY), SW: (VOICE_KEY,), UNIQUE: (UID,)},
 }
 
 
@@ -386,6 +397,41 @@ def main_slot_panel_problems(ability_rows: dict[str, list[list[str]]],
         if not main_only and any(tagged):
             probs.append(f"{cas_key}: not a main-slot ability but carries {MAIN_ICON!r}")
     return probs
+
+
+# ─────────── 2026-09-27 平衡批次：能力相关换成技能伤害（叠在浪涌修订之后） ───────────
+#
+# 转换本体在 ``wf_balance_20260927_regis``（批次暂存脚本的 revise() 用同一组函数），
+# kit 只按固定顺序调用：plan → 第二轮 → 浪涌（wf_regis_surge_stages）→ 本批。
+# 所以 kit 重跑的产物 == revise() 的产物，不会把候选退回能力伤害版。
+
+def balance_rows(leader: list[list[str]], ability: dict[str, list[list[str]]]):
+    """队长 154→2、144→23；能力 2 253→629、能力 3 412→411/144→23/154→2/删自身 411、能力 5 388→34。"""
+    ability = dict(ability)
+    ability[CID + "2"] = balance.strike_rows(ability[CID + "2"])
+    ability[CID + "3"] = balance.third_rows(ability[CID + "3"])
+    ability[CID + "5"] = balance.fifth_rows(ability[CID + "5"])
+    leader = balance.leader_rows(leader)
+    probs = balance.row_problems("leader_ability", leader)
+    for key in (CID + "2", CID + "3", CID + "5"):
+        probs += [f"{key}: {p}" for p in balance.row_problems("ability", ability[key])]
+    if probs:
+        raise KitError(f"balance 20260927 row legality problems: {probs}")
+    return leader, ability
+
+
+def balance_panel(cas_rows: dict[str, list[list[str]]]) -> dict[str, list[list[str]]]:
+    """4 个覆盖键换成技能伤害口径；追加能力 2 的 629 文案键。"""
+    out = {key: ([[balance.panel_text(key, cells[0][0])]] if key in balance.PANEL_BEFORE else cells)
+           for key, cells in cas_rows.items()}
+    missing = sorted(set(balance.PANEL_BEFORE) - set(out))
+    if missing:
+        raise KitError(f"balance 20260927 panel keys missing: {missing}")
+    out[balance.STRIKE_KEY] = [[balance.STRIKE_TEXT]]
+    probs = [f"{key}: {p}" for key, cells in out.items() for p in panel_text_problems(cells[0][0])]
+    if probs:
+        raise KitError(f"balance 20260927 panel text has forbidden words: {probs}")
+    return out
 
 
 def revision_rows(plan: dict) -> dict:
@@ -1461,6 +1507,7 @@ def kit_fingerprint(ctx) -> tuple[str, dict]:
     parts["leader"] = ctx.pkg_flat(LEADER)[CID]
     cas = ctx.pkg_flat(CAS)
     parts["custom_ability_string"] = {k: cas[k] for k in CAS_KEYS}
+    parts["custom_ability_string"][balance.STRIKE_KEY] = cas.get(balance.STRIKE_KEY)
     parts["upskill"] = ctx.pkg_flat(UPSKILL)[CID]
     parts["unique_condition"] = ctx.pkg_flat(UNIQUE)[UID]
     parts["unique_icon"] = sha256(ctx.pack.pkg_path("common", ICON_LOGICAL).read_bytes()) \
@@ -1472,6 +1519,9 @@ def kit_fingerprint(ctx) -> tuple[str, dict]:
     for level in ("1", "2"):
         logical = wf_dsl.dsl_logical(ctx.program_path(level))
         progs[logical] = sha256(ctx.pack.pkg_path("common", logical).read_bytes())
+    strike = wf_dsl.dsl_logical(balance.STRIKE_PROGRAM)
+    progs[strike] = sha256(ctx.pack.pkg_path("common", strike).read_bytes()) \
+        if ctx.pack.pkg_has("common", strike) else None
     parts["dsl"] = progs
     fx = {}
     for src_dir, sub, _bases in EFFECT_FAMILIES:
@@ -1562,9 +1612,12 @@ def build(ctx) -> dict[str, Any]:
     import wf_regis_surge_stages as surge
     rows['leader'], rows['ability'][CID+'3'] = surge.revise_rows(
         rows['leader'], rows['ability'][CID+'3'], rows['ability'][CID+'1'])
-    texts['character_text'][5] = texts['character_text'][7] = surge.DESCRIPTION
+    # 2026-09-27 平衡批次：浪涌之后再换成技能伤害口径（顺序固定，见 balance_rows）
+    rows['leader'], rows['ability'] = balance_rows(rows['leader'], rows['ability'])
+    description = balance.description(surge.DESCRIPTION)
+    texts['character_text'][5] = texts['character_text'][7] = description
     for level in ('1', '2'):
-        texts['action'][level][1] = surge.DESCRIPTION
+        texts['action'][level][1] = description
     ctx.write_flat(TEXT, {CID: [texts['character_text']]})
     ctx.write_flat(LEADER, {CID: rows["leader"]})
     ctx.write_flat(ABILITY, rows["ability"])
@@ -1596,6 +1649,10 @@ def build(ctx) -> dict[str, Any]:
         raise KitError(f"main-slot marker mismatch: {ms_probs}")
     for slot, key in ((0, 'desc_override_'+CODE), (3, 'desc_override_'+CODE+'_3')):
         cas_rows[key][0][0] = surge.revise_text(slot, cas_rows[key][0][0])
+    cas_rows = balance_panel(cas_rows)
+    ms_probs = main_slot_panel_problems(rows["ability"], cas_rows)
+    if ms_probs:
+        raise KitError(f"main-slot marker mismatch after balance 20260927: {ms_probs}")
     ctx.write_flat(CAS, cas_rows)
 
     # ---- action_skill：名称 / 描述 / 能量
@@ -1622,13 +1679,18 @@ def build(ctx) -> dict[str, Any]:
     template_up = ctx.csv_split(ctx.template_flat(UPSKILL)[str(spec.template_id)])
     if len(template_up) != 1 or template_up[0].count("skill_damage_up") != 2:
         raise KitError(f"template upskill row unexpected: {template_up}")
-    new_up = [["ability_damage_up" if c == "skill_damage_up" else c for c in template_up[0]]]
+    # 2026-09-16 版把母本 skill_damage_up 换成 ability_damage_up；2026-09-27 平衡批次技能树改回
+    # ACSkillDamage，标签随之恢复母本写法。旧形态（ability_damage_up）仍接受为包内现值。
+    old_up = [["ability_damage_up" if c == "skill_damage_up" else c for c in template_up[0]]]
+    new_up = balance.upskill_rows(old_up)
+    if new_up != template_up:
+        raise KitError(f"balance upskill row differs from template: {new_up}")
     current_up = ctx.csv_split(ctx.pkg_flat(UPSKILL)[CID])
-    if current_up not in (template_up, new_up):
+    if current_up not in (template_up, old_up):
         raise KitError(f"package upskill row edited by someone else: {current_up}")
     ctx.write_flat(UPSKILL, {CID: new_up})
-    notes.append("upskill: skill_damage_up→ability_damage_up（技能删 ACSkillDamage、加 ACAbilityDamage；"
-                 "官方 151045 同写法；设计未单列，kit 按技能改动同步）")
+    notes.append("upskill: 恢复母本 skill_damage_up（2026-09-27 技能树雷队增益改回 ACSkillDamage；"
+                 "09-16 版曾换成 ability_damage_up）")
 
     # ---- 特效族 + 技能 DSL
     families, recolor_log, fx_info = clone_families(ctx)
@@ -1637,6 +1699,7 @@ def build(ctx) -> dict[str, Any]:
     for level in ("1", "2"):
         tree, info = compose_skill(ctx, level, families)   # 内部已与定稿树 + 改版参考树逐节点比对
         tree = surge.revise_skill(tree)
+        tree = balance.skill_tree(tree)                     # 2026-09-27：bta 2→0、ACSkillDamage
         built_trees.append(tree)
         checks = dsl_problems(ctx.root, tree)
         if not checks["all_empty"] or not checks["roundtrip"]:
@@ -1649,11 +1712,24 @@ def build(ctx) -> dict[str, Any]:
                     sha256=sha256(ctx.pack.pkg_path("common", logical).read_bytes()))
         skills_report[level] = info
 
+    # ---- 2026-09-27：能力 2 的 629 全体追击（20 倍雷属性技能伤害，复用包内光束命中特效）
+    strike = balance.strike_tree()
+    strike_checks = dsl_problems(ctx.root, strike)
+    strike_probs = balance.dsl_problems(strike)
+    if not strike_checks["all_empty"] or not strike_checks["roundtrip"] or strike_probs:
+        raise KitError(f"strike DSL static checks failed: {strike_checks} {strike_probs}")
+    strike_refs = effect_ref_problems(ctx, strike)
+    if strike_refs:
+        raise KitError(f"strike DSL effect refs unresolved: {strike_refs}")
+    strike_logical = ctx.write_dsl(balance.STRIKE_PROGRAM, strike)
+    strike_report = {"logical": strike_logical, "string_key": balance.STRIKE_KEY, "checks": strike_checks,
+                     "sha256": sha256(ctx.pack.pkg_path("common", strike_logical).read_bytes())}
+
     # ---- 技能说明 / 技能树 / upskill 预览标签三方一致（审查 20260916 minor 7）
     desc_probs = skill_desc_coverage_problems(built_trees, texts["action"]["1"][1], new_up[0])
     if desc_probs:
         raise KitError(f"skill description / tree / upskill mismatch: {desc_probs}")
-    notes.append("技能说明覆盖树里三个增益（能力伤害 / 自身攻击力 / FEVER槽）并与 upskill 预览标签对齐")
+    notes.append("技能说明覆盖树里三个增益（技能伤害 / 自身攻击力 / FEVER槽）并与 upskill 预览标签对齐")
 
     # ---- switched_action_skill（语音 matched_skill_ready 路由的目标技能）
     action_now = {lv: list(c) for lv, c in ctx.pkg_nested(CODE).items()}
@@ -1682,7 +1758,7 @@ def build(ctx) -> dict[str, Any]:
     fingerprint, _parts = kit_fingerprint(ctx)
     recolor_blockers = recolor_problems(ctx)
     status, status_reason = gates_status(ctx.root, fingerprint, recolor_blockers)
-    programs = [wf_dsl.dsl_logical(ctx.program_path(lv)) for lv in ("1", "2")]
+    programs = [wf_dsl.dsl_logical(ctx.program_path(lv)) for lv in ("1", "2")] + [strike_logical]
     panel = [f"{e['table'].rsplit('/', 1)[-1].split('.')[0]} {e['key']}"
              f"#{e.get('record', e.get('id'))}: {e['describe']}" for e in row_evidence]
     if fx_info is None:
@@ -1716,12 +1792,17 @@ def build(ctx) -> dict[str, Any]:
                  "<icon id='main'>，不加前置 202 以免双 Ⓜ）；面板文案按新规则①删掉全部「（无上限）」——"
                  f"机制不动（固有上限仍是 {unique_row[4]} 层）；规则②（技能强化条目不写数字与时间）本角色"
                  "无 ChangeSkillFlag 行，空过并已由门禁钉死")
-    notes.append("待作者拍板（取设计默认）：光束能力伤害轴放大效应（退路 A/B）、c27=自身 cid、语音参考 A/B")
+    notes.append("待作者拍板（取设计默认）：c27=自身 cid、语音参考 A/B")
+    notes.append("2026-09-27 平衡批次（作者确认「能力相关都换成技能伤害」，wf_balance_20260927_regis）："
+                 "技能树 bta 2→0、判定区 node[24] 2→0、雷队 ACAbilityDamage→ACSkillDamage；队长 154→2、"
+                 "144→23（1 次）；能力 2 253→629 全体 20 倍雷属性技能伤害（不加 202，保留副位）；"
+                 "能力 3 412→411、144→23（1 次）、154→2、删除自身 411；能力 5 388→34；upskill 恢复 "
+                 "skill_damage_up；面板 4 键与技能描述同步。未经真机验收")
     report = {
         "summary": f"雷吉斯·海滨 kit（改版 2026-09-16）：6 队长行 / "
                    f"{sum(len(v) for v in rows['ability'].values())} 词条行 / 7 覆盖文案 / "
                    f"固有状态「{UNIQUE_NAME}」+ 48×48 图标 / "
-                   f"两档技能（能力伤害轴 55/75 倍 + 按层数 +10 倍）/ 两特效族克隆 / 语音路由",
+                   f"两档技能（技能伤害 55/75 倍 + 按层数 +10 倍）/ 能力 2 全体追击 629 / 两特效族克隆 / 语音路由",
         "status": status,
         "status_reason": status_reason,
         "kit_fingerprint": fingerprint,
@@ -1739,6 +1820,7 @@ def build(ctx) -> dict[str, Any]:
         "notes": notes,
         "rows": row_evidence,
         "skill_trees": skills_report,
+        "strike_skill": strike_report,
         "effects": {"families": [{k: f[k] for k in ("src_dir", "dst_dir", "copied_bases", "missing_effects")}
                                  | {"files": len(f["files"])} for f in families],
                     "fx_manifest": fx_info, "recolor": recolor_log, "recolor_problems": recolor_blockers},
