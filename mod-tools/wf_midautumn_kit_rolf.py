@@ -12,7 +12,8 @@ rework1（2026-09-21，作者目标面板 ``rework1/panel/rolf.json``）把旧�
 * **速度固定线**：``704``（ChangeSkillFlag2 = 旗号 2）**只在「队长 ∧ 风共鸣」时**打开，
   技能树的 ``ACFixedSpeed`` 据此写成 ``[帧, 4, 0, 1]``（速度 4 档、充能不衰减）；
   不在队长位时走常态档 ``[帧, 1, -0.1, 1]``（官方最轻档）。``IT 246`` 每持续 1 秒叠
-  自身攻击力/直击伤害；
+  自身攻击力/直击伤害（2026-09-27 第二批：搬到能力 6 的队长承载行、前置 42，每步 ＋5%；
+  能力 3 原位换成「持有最大速度固定时 自身攻击力/直击伤害 ＋100%」的 D214 常驻，见 ``BALANCE_B``）；
 * **连击线**：``536``（旗号 1、只限主位）开的强化分支让 ``CreateNormalAttack tree[8]=true``
   吃连击成长；``IT 12`` 每 100 连击
   用 ``629`` 调新建的 ``ability_skill_…_encore`` 追击树（追击版把母本的 70 帧停球换成
@@ -57,7 +58,25 @@ PF_TYPE, STANCE = 0, "Attacker"                  # c6 母本原值；c26 直击�
 
 ABILITY_KEYS = tuple(f"{CID}{slot}" for slot in range(1, 7))
 LEADER_ROWS = 7
-ABILITY_RECORDS = 19
+#: 2026-09-27 第二批：能力 6 多两条 IT 246 队长承载行（19 → 21）。
+ABILITY_RECORDS = 21
+
+#: 2026-09-27 平衡第二批（``wf_balance_20260927b_rolfmoon``，口径 A/B 节）的数值。
+#: 队长表不加行（IT 246 在官方与 live 自制队长表都是 0 行 ⇒ C08：能力行 ＋ 前置 42 承载）。
+BALANCE_B = {
+    # 每 100 次直击（3 分钟约 20 次，区间 10–30 ⇒ 15–30 档取 1/5）：队长 L#3/L#4 与 A6#3 的 693
+    "direct_growth": "20000",          # 队长 32/33 全队(风) 100% → 20%
+    "direct_growth_ic693": "2000",     # A6#3 693 直击独立乘区 10% → 2%
+    # 速度固定每持续 60 帧（IT 246，3 分钟约 70–110 次 ⇒ ≥30 取 1/10）：50% → 5%，搬到 A6 承载
+    "keep_frame_growth": "5000",
+    # A3 原位换成的有上限版本：D214 持有最大速度固定时 自身攻击力/直击伤害（官方自身持续带 160/150）
+    "hold_fixed_speed": "100000",
+}
+#: 629 追击树（CT 300 帧 = 5 秒 > 3 秒 ⇒ 每次 ≤3）的 CreateNormalAttack p13 削韧：母本值 → 新值。
+#: 每次 = 斩击 1 段 × 1.5 ＋ 爆击 10 段 × 0.1 = 2.5（原 10 ＋ 10 × 1 = 20）；正常技能两档不动。
+ENCORE_DETOUGHNESS_DONOR = {"slash": 10, "burst": 1}
+ENCORE_DETOUGHNESS = {"slash": 1.5, "burst": 0.1}
+CNA_DETOUGHNESS_SLOT = 13
 
 # ---------------------------------------------------------------- 自有字符串键
 CAS_FLAG = f"change_skill_{CODE}"                      # A3#3 的 536 面板条目（旗号 1）
@@ -115,13 +134,14 @@ LEADER: tuple[tuple[str, str, dict[int, str], str | None], ...] = (
      {0: CODE, 9: ELEMENT_TOKEN, 46: "5", 47: ELEMENT_TOKEN, 49: "100000", 50: "100000"}, None),
     ("141135#2", "official",
      {0: CODE, 46: "5", 47: ELEMENT_TOKEN, 49: "100000", 50: "100000"}, None),
-    # ⑤ 风属性角色每造成 100 次直击 → 攻击力 ＋100% / 直击伤害 ＋100%（额外乘区那条在 A6#3）
+    # ⑤ 风属性角色每造成 100 次直击 → 攻击力 ＋20% / 直击伤害 ＋20%（额外乘区那条在 A6#3）
+    #   2026-09-27 第二批：无上限成长放缓 100% → 20%（BALANCE_B["direct_growth"]）
     ("261053#1", "official",
      {0: CODE, **_PRE_RESONANCE_L, **_DIRECT_100, 45: "32", 46: "5", 47: ELEMENT_TOKEN,
-      49: "100000", 50: "100000"}, None),
+      49: BALANCE_B["direct_growth"], 50: BALANCE_B["direct_growth"]}, None),
     ("261053#1", "official",
      {0: CODE, **_PRE_RESONANCE_L, **_DIRECT_100, 45: "33", 46: "5", 47: ELEMENT_TOKEN,
-      49: "100000", 50: "100000"}, None),
+      49: BALANCE_B["direct_growth"], 50: BALANCE_B["direct_growth"]}, None),
     # ⑥ 战斗开始时：技能槽 ＋50%、技能槽最大值 ＋10%
     ("141177#0", "official",
      {0: CODE, **_PRE_RESONANCE_L, 49: "50000", 50: "50000"}, None),
@@ -158,13 +178,15 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
         ("1412012#2", "official",
          {**_PRE_RESONANCE_A, 48: "5", 49: ELEMENT_TOKEN,
           51: "200000", 52: "200000"}, None),
-        # ② 速度固定每持续 1 秒（60 帧）→ 攻击力/直击各 ＋50%（IT 246，卡 B §5.3）
-        ("1411531#0", "official",
-         {32: "6000000", 33: "6000000", 34: "(None)", 27: "246",
-          47: "32", 48: "0", 49: "", 51: "50000", 52: "50000"}, None),
-        ("1411531#0", "official",
-         {32: "6000000", 33: "6000000", 34: "(None)", 27: "246",
-          47: "33", 48: "0", 49: "", 51: "50000", 52: "50000"}, None),
+        # ② 持有最大速度固定时 → 自身攻击力/直击伤害 ＋100%（D214，持有即生效、不叠层）。
+        #    2026-09-27 第二批：原「速度固定每持续 1 秒 ＋50%（IT 246，无上限）」搬到 A6#5/#6
+        #    的队长承载行（前置 42），这里换成有上限版本；行形同 A2#0（官方 D214 donor）。
+        ("1411892#0", "official",
+         {5: "1", 6: "0", 85: "(None)", 97: "214", 108: "false", 109: "0", 110: "0", 111: "",
+          113: BALANCE_B["hold_fixed_speed"], 114: BALANCE_B["hold_fixed_speed"]}, None),
+        ("1411892#0", "official",
+         {5: "1", 6: "0", 85: "(None)", 97: "214", 108: "false", 109: "1", 110: "0", 111: "",
+          113: BALANCE_B["hold_fixed_speed"], 114: BALANCE_B["hold_fixed_speed"]}, None),
         # ③a 强化技能开关（536 = 旗号 1）：只开连击成长。速度固定 4 档搬到 A6#4 的 704（旗号 2），
         #    由「队长 ∧ 风共鸣」独立控制（作者反馈第 3 轮：不在队长位时技能给 1 档）
         ("1411113#0", "official", {70: CAS_FLAG}, None),
@@ -192,7 +214,7 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
         ("1411893#3", "official",
          {48: "5", 49: ELEMENT_TOKEN, 51: "25000", 52: "25000"}, None),
     ),
-    # ---- 能力 6：碰撞回槽 + 队长位的三条承载行（422×2 / 693，不进本能力面板）
+    # ---- 能力 6：碰撞回槽 + 队长位的承载行（422×2 / 693 / 704 / 246×2，不进本能力面板）
     6: (
         ("1411115#0", "official",
          {6: "0", 11: "", 34: "(None)", 35: "300", 47: "211", 48: "0",
@@ -203,14 +225,28 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str | None], ...]] = {
         ("1699885#1", "store",
          {**_PRE_LEADER_A, **_PRE_RESONANCE_A2, 97: "34", 98: "",
           113: "234500", 114: "234500", 118: "0"}, None),
+        # 2026-09-27 第二批：693 直击独立乘区每步 10% → 2%（BALANCE_B["direct_growth_ic693"]）
         ("1299966#0", "store",
          {**_PRE_LEADER_A, **_PRE_RESONANCE_A2, **_DIRECT_100_A,
-          48: "5", 49: ELEMENT_TOKEN, 51: "10000", 52: "10000"}, None),
+          48: "5", 49: ELEMENT_TOKEN,
+          51: BALANCE_B["direct_growth_ic693"], 52: BALANCE_B["direct_growth_ic693"]}, None),
         # ④ 速度固定强化开关（704 = 旗号 2）：前置 42 Leader ＋ 风共鸣 ⇒ 只有他当队长且
         #   风属性共鸣时，技能树的 ACFixedSpeed 才走 4 档／充能 0（面板队长技第 4 行）。
         #   donor 是官方 11 行 704 里的风属性那行；官方全部 c1=true / c2=special，与本槽一致。
         ("1411656#0", "official",
          {**_PRE_LEADER_A, **_PRE_RESONANCE_A2, 70: CAS_FLAG2}, None),
+        # ⑤ 2026-09-27 第二批（口径 A.4 / 复核 C08）：速度固定每持续 1 秒（60 帧，IT 246）→
+        #   自身攻击力/直击伤害 ＋5%，无上限成长只给队长。IT 246 在官方与 live 自制队长表都是
+        #   0 行 ⇒ 不进队长表，改由本槽（c1=true）挂前置 42（持有者为队长）承载，文案写在队长面板。
+        #   与原能力 3 行同形（不带风共鸣前置，原行也没有），只加前置 42、强度 50% → 5%。
+        ("1411531#0", "official",
+         {**_PRE_LEADER_A, 32: "6000000", 33: "6000000", 34: "(None)", 27: "246",
+          47: "32", 48: "0", 49: "",
+          51: BALANCE_B["keep_frame_growth"], 52: BALANCE_B["keep_frame_growth"]}, None),
+        ("1411531#0", "official",
+         {**_PRE_LEADER_A, 32: "6000000", 33: "6000000", 34: "(None)", 27: "246",
+          47: "33", 48: "0", 49: "",
+          51: BALANCE_B["keep_frame_growth"], 52: BALANCE_B["keep_frame_growth"]}, None),
     ),
 }
 
@@ -220,8 +256,8 @@ EXPECT: dict[str, str] = {
     "leader#0": "风·编成≥6 时: 赋予全队(风) 增益延长 100%",
     "leader#1": "风·编成≥6 时: 赋予全队(风) 贯通延长 100%",
     "leader#2": "风·编成≥6 时: 赋予全队(风) Fixed速度↑延长 100%",
-    "leader#3": "风·编成≥6 时: 编成直接攻击≥100 → 赋予全队(风) 攻击力 100%",
-    "leader#4": "风·编成≥6 时: 编成直接攻击≥100 → 赋予全队(风) Direct伤害 100%",
+    "leader#3": "风·编成≥6 时: 编成直接攻击≥100 → 赋予全队(风) 攻击力 20%",
+    "leader#4": "风·编成≥6 时: 编成直接攻击≥100 → 赋予全队(风) Direct伤害 20%",
     "leader#5": "风·编成≥6 时: 赋予全队(风) 技能槽 50%",
     "leader#6": "风·编成≥6 时: 赋予全队(风) 2号位技能槽 10%",
     "1499861#0": "风·编成≥6 时: 冲刺≥1(限4次) → 自身 Direct伤害 50%",
@@ -229,8 +265,8 @@ EXPECT: dict[str, str] = {
     "1499862#0": "持续·状态Fixed速度↑ → 赋予全队(风) Direct伤害 120%",
     "1499862#1": "状态贯通 时: 持续·计数直接攻击伤害↑≥20%(限100次) → 自身 攻击力 1.5%",
     "1499863#0": "风·编成≥6 时: 赋予全队(风) DirectAttack3 200%",
-    "1499863#1": "状态KeepFrameFixed速度↑≥1 → 自身 攻击力 50%",
-    "1499863#2": "状态KeepFrameFixed速度↑≥1 → 自身 Direct伤害 50%",
+    "1499863#1": "持续·状态Fixed速度↑ → 自身 攻击力 100%",
+    "1499863#2": "持续·状态Fixed速度↑ → 自身 Direct伤害 100%",
     "1499863#3": "风·编成≥6 时: 自身 切换技能形态[change_skill_black_wolf_knight_moon]",
     "1499863#4": "风·编成≥6 时: 连击≥100(CT5秒) → 自身 "
                  "发动技能动作[ability_skill_wolf_moon_encore]",
@@ -242,9 +278,11 @@ EXPECT: dict[str, str] = {
     "1499866#0": "Collision编成&敌方≥8(CT5秒) → 自身 技能槽 5%",
     "1499866#1": "队长 且 风·编成≥6 时: 持续·HP≤1 → 自身 冲刺参数(可调) -33%",
     "1499866#2": "队长 且 风·编成≥6 时: 持续·状态冲刺≥1 → 自身 冲刺参数(可调) 234.5%",
-    "1499866#3": "队长 且 风·编成≥6 时: 编成直接攻击≥100 → 赋予全队(风) 独立乘区Direct伤害 10%",
+    "1499866#3": "队长 且 风·编成≥6 时: 编成直接攻击≥100 → 赋予全队(风) 独立乘区Direct伤害 2%",
     "1499866#4": "队长 且 风·编成≥6 时: 自身 "
                  "切换技能Flag2[change_skill_black_wolf_knight_moon_2]",
+    "1499866#5": "队长 时: 状态KeepFrameFixed速度↑≥1 → 自身 攻击力 5%",
+    "1499866#6": "队长 时: 状态KeepFrameFixed速度↑≥1 → 自身 Direct伤害 5%",
 }
 
 # ---------------------------------------------------------------- 面板文案
@@ -259,8 +297,11 @@ PANEL_LEADER = "\n".join((
     "风属性共鸣时：强化自身冲刺，冲刺冷却时间－33%",
     "风属性共鸣时：冲刺间隔缩短效果不会让自身的冲刺冷却时间进一步缩短",
     "风属性共鸣时：自身发动技能时，技能所赋予的最大速度固定效果强化至4档，且不衰减技能槽能量获取",
-    "风属性共鸣时：风属性角色每造成100次直接攻击，风属性角色攻击力＋100%、直击伤害＋100%，"
-    "直击伤害额外乘区＋10%",
+    # 2026-09-27 第二批：每 100 直击的三项成长 100%/100%/10% → 20%/20%/2%；
+    # 速度固定读秒那条从能力 3 移入（A6#5/#6 前置 42 承载），每步 50% → 5%
+    "风属性共鸣时：风属性角色每造成100次直接攻击，风属性角色攻击力＋20%、直击伤害＋20%，"
+    "直击伤害额外乘区＋2%",
+    "最大速度固定效果持续期间，每持续1秒，自身攻击力＋5%、直击伤害＋5%",
     "风属性共鸣时：战斗开始时，风属性角色技能槽＋50%、技能槽最大值＋10%",
 ))
 
@@ -276,7 +317,7 @@ PANEL_ABILITY = {
     3: "\n".join(MAIN_ICON + line for line in (
         "风属性共鸣时：风属性角色的直接攻击强化为3次（同类效果不叠加，取最大值），合计伤害"
         "额外乘区＋200%",
-        "最大速度固定效果持续期间，每持续1秒，自身攻击力＋50%、直击伤害＋50%",
+        "自身处于最大速度固定状态时：自身攻击力＋100%、直击伤害＋100%",   # 2026-09-27 第二批
         "风属性共鸣时：强化技能，威力随连击数提升（按直接攻击伤害判定），每达成100连击 → "
         "立即对最近的敌人发动自身技能的攻击效果（不消耗技能槽，冷却时间：5秒）",
         "风属性共鸣时：每达成100连击，连击数＋50",
@@ -1035,6 +1076,41 @@ def swap_stop_ball(node, replacement) -> int:
     return swapped
 
 
+def retune_encore_detoughness(tree) -> dict[str, Any]:
+    """629 追击树两段 ``CreateNormalAttack`` 的 p13 削韧：母本 10 / 1 → 1.5 / 0.1（第二批口径 B.3）。
+
+    追击 CT 300 帧（5 秒 > 3 秒）⇒ 每次调用 ≤3：斩击 1 段 × 1.5 ＋ 爆击 10 段 × 0.1 = 2.5。
+    只动 p13（SLv 的 min/max 同改），倍率 / Fever / 连击成长等其余参数一格不动；正常技能两档不走这里。
+    追击树 ``retune_attacks(combo="always")`` 不外包旗号分支 ⇒ 每个判定区的 on-hit 块恰好一条 CNA。
+    """
+    by_hits: dict[int, list] = {}
+    for area in wf_dsl.iter_dsl_commands(tree, "CreateHitArea"):
+        hits = area[HIT_AREA_MAXHITS_SLOT]
+        if not (isinstance(hits, list) and hits[0] == "CalculatedUsingMaxNumOfHits"):
+            raise KitError(f"encore hit area lifetime/hits drift: {hits!r}")
+        by_hits[int(hits[1])] = area
+    if sorted(by_hits) != [1, 10]:
+        raise KitError(f"encore hit counts {sorted(by_hits)} != [1, 10]")
+    out: dict[str, Any] = {"per_hit": {}, "hits": {}, "per_cast": 0.0}
+    for tag, hits in (("slash", 1), ("burst", 10)):
+        attacks = list(wf_dsl.iter_dsl_commands(by_hits[hits][HIT_AREA_ONHIT_SLOT], "CreateNormalAttack"))
+        if len(attacks) != 1:
+            raise KitError(f"encore {tag} hit area carries {len(attacks)} CreateNormalAttack")
+        attack = attacks[0]
+        donor = ENCORE_DETOUGHNESS_DONOR[tag]
+        if attack[CNA_DETOUGHNESS_SLOT] != span(donor):
+            raise KitError(f"encore {tag} p13 detoughness drift: {attack[CNA_DETOUGHNESS_SLOT]!r} "
+                           f"!= {span(donor)!r}")
+        attack[CNA_DETOUGHNESS_SLOT] = span(ENCORE_DETOUGHNESS[tag])
+        out["per_hit"][tag] = [num(donor), num(ENCORE_DETOUGHNESS[tag])]
+        out["hits"][tag] = hits
+        out["per_cast"] += hits * ENCORE_DETOUGHNESS[tag]
+    out["per_cast"] = round(out["per_cast"], 6)
+    if out["per_cast"] > 3:
+        raise KitError(f"encore detoughness per cast {out['per_cast']} > 3（629 CT > 3 秒的上限）")
+    return out
+
+
 def build_encore_tree(ctx, level: str, values: dict[str, Any],
                       family: dict[str, Any] | None) -> tuple[Any, dict[str, Any]]:
     """629 追击树：母本主块的**伤害两段**，连击成长常开，不复刻团队增益。
@@ -1056,6 +1132,7 @@ def build_encore_tree(ctx, level: str, values: dict[str, Any],
     tree = donor_tree(ctx, level)
     drop_power_flip_block(tree)
     attacks = retune_attacks(tree, values, combo="always")
+    detoughness = retune_encore_detoughness(tree)
     body = statements(tree)
     if len(body) != 1:
         raise KitError(f"encore donor body carries {len(body)} statements, expected 1")
@@ -1101,7 +1178,8 @@ def build_encore_tree(ctx, level: str, values: dict[str, Any],
                     "chase_slows_ball_at_grades":
                         sorted(name for name, cap in caps.items() if chase_speed < cap),
                     "effect_paths": sorted(paths), "effect_rewrites": rewrite,
-                    "team_blocks": 0, "buff_target_as": encore[10]}
+                    "team_blocks": 0, "buff_target_as": encore[10],
+                    "detoughness": detoughness}
 
 
 # ---------------------------------------------------------------- 设计镜像
@@ -1296,6 +1374,13 @@ def build(ctx) -> dict[str, Any]:
         "技能特效直接引用官方 battle/effect/skill_unique/black_wolf_knight_wt23/{_slash,_smash,_explosion}"
         "（风→风零染色、零图集增量）" + ("；已套用 B/pixel/rolf/fx_lut.json 克隆换色" if lut else
                                         "；B/pixel/rolf/fx_lut.json 不存在 ⇒ 不克隆不换色（设计默认）"),
+        "2026-09-27 平衡第二批（wf_balance_20260927b_rolfmoon，口径 A/B）：队长⑤每 100 直击 "
+        f"攻击力/直击伤害 100% → {int(BALANCE_B['direct_growth']) // 1000}%、A6#3 693 直击独立乘区 10% → "
+        f"{int(BALANCE_B['direct_growth_ic693']) // 1000}%（3 分钟约 20 次 ⇒ 1/5）；能力3 两条 IT 246 读秒"
+        f"（无上限）搬到 A6#5/#6 前置 42 队长承载、50% → {int(BALANCE_B['keep_frame_growth']) // 1000}%"
+        "（约 90 次 ⇒ 1/10；IT 246 队长表零先例，C08），能力3 原位换成 D214「持有最大速度固定时」"
+        f"自身攻击力/直击伤害 ＋{int(BALANCE_B['hold_fixed_speed']) // 1000}%；629 追击树 p13 削韧 "
+        f"{encore_gates['detoughness']['per_hit']} ⇒ 每次 {encore_gates['detoughness']['per_cast']}（原 20）",
         {"pixel_install": pixel},
     ]
 

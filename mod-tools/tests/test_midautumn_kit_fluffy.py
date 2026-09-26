@@ -560,9 +560,24 @@ class SkillTreeTests(unittest.TestCase):
             K.graft_tree(base, xm, "2")
 
     def test_invoke_tree_is_a_faithful_copy_of_the_skill(self):
+        """629 树 = 技能档 2 深拷贝（rework1）＋ 2026-09-27 平衡第二批覆盖：全部 CNA p13 → 0.15。"""
         tree, gates = K.build_invoke_tree(self.trees["2"])
-        self.assertEqual(tree, self.trees["2"])
+        expected = copy.deepcopy(self.trees["2"])
+        for cna in wf_dsl.iter_dsl_commands(expected, "CreateNormalAttack"):
+            cna[K.CNA_DETOUGHNESS] = [{"min": K.INVOKE_DETOUGHNESS, "max": K.INVOKE_DETOUGHNESS}]
+        self.assertEqual(tree, expected)
         self.assertEqual(gates["damage_attribution"], 0)
+        self.assertEqual(gates["detoughness"]["per_call"], 2.85)   # 19 段 × 0.15 ≤ 3（CT 6/12 秒）
+
+    def test_pestle_detoughness_keeps_the_skill_within_thirty(self):
+        """2026-09-27 平衡第二批（口径 B.1）：八连重击 p13 6.25 → 1.5，每次施放 65 → 27；其余段不动。"""
+        for level, tree in self.trees.items():
+            p13 = [cna[K.CNA_DETOUGHNESS][0]["max"]
+                   for cna in wf_dsl.iter_dsl_commands(tree, "CreateNormalAttack")]
+            self.assertEqual(p13[1:9], [K.PESTLE_DETOUGHNESS] * 8, level)
+            self.assertAlmostEqual(p13[0], 15 / 11, places=9)      # 精准连击 ×10
+            self.assertAlmostEqual(p13[9], 15 / 11, places=9)      # 裂地（then/else 副本）
+            self.assertEqual(self.gates[level]["detoughness"]["per_cast"], 27.0)
 
 
 @unittest.skipUnless(_BASELINE, "需要 .cdn/cn 官方归档与 live store")

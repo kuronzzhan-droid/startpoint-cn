@@ -61,6 +61,22 @@ ABILITY_KEYS = tuple(f"{CID}{slot}" for slot in range(1, 7))
 LEADER_ROW_COUNT = 13
 ABILITY_RECORD_TOTAL = 18
 
+#: 2026-09-27 平衡第二批（``wf_balance_20260927b_fluffy``，口径 A/B 节）。
+#: 无上限成长按 3 分钟实际触发次数放缓（≤15 次 1/5、15–30 次 1/5、≥30 次 1/10）：
+#: 每 1 次 PF（约 35 次，30–45）⇒ 1/10；每 250 连击（约 20 次）⇒ 1/5；每 3 次 PF 的 694（约 12 次）⇒ 1/5。
+#: 每 3 次 PF 的 35（充能速度）/245（技能槽上限）属于「充能」，作者「其他充能的都暂时不动」⇒ 保持 5%。
+BALANCE_B = {
+    "pf_growth": "2000",          # L#4/L#5 全队(风) 攻击力 / 技能伤害 每次 PF 20% → 2%
+    "combo_growth": "20000",      # L#9 每 250 连击 自身技能伤害 100% → 20%
+    "pf3_growth": {"35": "5000", "245": "5000", "694": "1000"},   # L#10..L#12（694 5% → 1%）
+}
+#: 技能两档：八连重击每段 ``CreateNormalAttack`` p13 削韧 6.25 → 1.5（每次施放 65 → 27；精准连击与裂地不动）。
+PESTLE_DETOUGHNESS_DONOR = 6.25
+PESTLE_DETOUGHNESS = 1.5
+#: 629 ``ability_skill`` 树（队长 CT 6 秒、能力3 CT 12 秒，均 > 3 秒 ⇒ 每次 ≤3）：全部 19 段 p13 → 0.15（65 → 2.85）。
+INVOKE_DETOUGHNESS = 0.15
+CNA_DETOUGHNESS = 13            # CreateNormalAttack 节点下标（= p13 basicDetoughness，按 SLv 的 min/max）
+
 # ---------------------------------------------------------------- 自有键
 
 CAS_FLAG1 = f"change_skill_{CODE}"                  # 536（A1#1，主位＋风共鸣）→ alv
@@ -160,15 +176,15 @@ LEADER: tuple[tuple[str, str, dict[int, str], str], ...] = (
     ("141033#0", "official",
      {0: CODE, **WIND_LEADER, 49: "50000", 50: "50000"},
      "风·编成≥6 时: 赋予全队(风) 技能槽 50%"),
-    # L#4..L#6 每 1 次强化弹射
+    # L#4..L#6 每 1 次强化弹射（2026-09-27 第二批：攻击力/技能伤害 20% → 2%，连击＋5 不动）
     ("111183#1", "official",
      {0: CODE, **WIND_LEADER, 28: "100000", 29: "100000", 32: "(None)",
-      45: "32", 47: "Green", 49: "20000", 50: "20000"},
-     "风·编成≥6 时: 强化弹射≥1 → 赋予全队(风) 攻击力 20%"),
+      45: "32", 47: "Green", 49: BALANCE_B["pf_growth"], 50: BALANCE_B["pf_growth"]},
+     "风·编成≥6 时: 强化弹射≥1 → 赋予全队(风) 攻击力 2%"),
     ("111183#1", "official",
      {0: CODE, **WIND_LEADER, 28: "100000", 29: "100000", 32: "(None)",
-      45: "34", 47: "Green", 49: "20000", 50: "20000"},
-     "风·编成≥6 时: 强化弹射≥1 → 赋予全队(风) 技能伤害 20%"),
+      45: "34", 47: "Green", 49: BALANCE_B["pf_growth"], 50: BALANCE_B["pf_growth"]},
+     "风·编成≥6 时: 强化弹射≥1 → 赋予全队(风) 技能伤害 2%"),
     ("121177#5", "official",
      {0: CODE, 9: "Green", 25: "2", 28: "100000", 29: "100000",
       49: "500000", 50: "500000"},
@@ -183,16 +199,18 @@ LEADER: tuple[tuple[str, str, dict[int, str], str], ...] = (
       28: PF_LV3_THRESHOLD, 29: PF_LV3_THRESHOLD, 33: PF_LV3_COOLTIME,
       68: INVOKE_STRING, 69: INVOKE_PROGRAM},
      f"风·编成≥6 时: 强化弹射Lv3≥5(CT6秒) → 自身 发动技能动作[{INVOKE_STRING}]"),
-    # L#9 每 250 连击 → 自身技能伤害
+    # L#9 每 250 连击 → 自身技能伤害（2026-09-27 第二批：100% → 20%）
     ("241004#1", "official",
      {0: CODE, **WIND_LEADER, 28: "25000000", 29: "25000000", 32: "(None)",
-      45: "34", 46: "0", 47: "", 49: "100000", 50: "100000"},
-     "风·编成≥6 时: 连击≥250 → 自身 技能伤害 100%"),
+      45: "34", 46: "0", 47: "", 49: BALANCE_B["combo_growth"], 50: BALANCE_B["combo_growth"]},
+     "风·编成≥6 时: 连击≥250 → 自身 技能伤害 20%"),
 ) + tuple(
+    # L#10..L#12 每 3 次强化弹射（2026-09-27 第二批：694 5% → 1%；35/245 是充能，本批不动）
     ("111183#1", "official",
      {0: CODE, **WIND_LEADER, 25: "2", 28: "300000", 29: "300000", 32: "(None)",
-      33: "0", 45: kind, 46: "5", 47: "Green", 49: "5000", 50: "5000"},
-     f"风·编成≥6 时: 强化弹射≥3 → 赋予全队(风) {name} 5%")
+      33: "0", 45: kind, 46: "5", 47: "Green",
+      49: BALANCE_B["pf3_growth"][kind], 50: BALANCE_B["pf3_growth"][kind]},
+     f"风·编成≥6 时: 强化弹射≥3 → 赋予全队(风) {name} {int(BALANCE_B['pf3_growth'][kind]) // 1000}%")
     for kind, name in (("35", "技能槽充能"), ("245", "2号位技能槽"), ("694", "独立乘区技能伤害"))
 )
 
@@ -292,10 +310,11 @@ CAS_TEXTS: dict[str, str] = {
     LEADER_OVERRIDE: "\n".join((
         "风属性共鸣时，自身的强化弹射同时具备辅助与格斗两种类型",
         "风属性共鸣时，战斗开始时风属性角色技能槽最大值＋20%、技能充能速度＋20%、技能槽＋50%",
-        "风属性共鸣时，每发动3次强化弹射，风属性角色技能充能速度＋5%、技能槽最大值＋5%、技能伤害额外乘区＋5%",
-        "风属性共鸣时，每发动1次强化弹射，风属性角色攻击力＋20%、技能伤害＋20%、连击＋5",
+        # 2026-09-27 第二批：额外乘区 5% → 1%、每次 PF 攻击力/技能伤害 20% → 2%、每 250 连击 100% → 20%
+        "风属性共鸣时，每发动3次强化弹射，风属性角色技能充能速度＋5%、技能槽最大值＋5%、技能伤害额外乘区＋1%",
+        "风属性共鸣时，每发动1次强化弹射，风属性角色攻击力＋2%、技能伤害＋2%、连击＋5",
         "风属性共鸣时，每发动5次强化弹射Lv3时，连击＋500，并触发自身技能效果（不消耗技能槽，冷却时间：6秒）",
-        "风属性共鸣时，每达到250连击，自身技能伤害＋100%",
+        "风属性共鸣时，每达到250连击，自身技能伤害＋20%",
         "风属性共鸣时，冲刺间隔缩短效果不会让自身的冲刺冷却时间进一步缩短",
     )),
     SLOT_OVERRIDE[1]: "\n".join((
@@ -885,6 +904,11 @@ def graft_tree(base_tree, graft_source, level: str) -> tuple[list, dict[str, Any
             area[2] = BASE_RP_ID
             _shift_area(area, cna, shift)
             cna[6] = [dict(mult["pestle"])]
+            # 2026-09-27 第二批（口径 B.1，技能每次施放单目标总削韧 ≤30）：只动 p13 6.25 → 1.5
+            if _slv(cna[CNA_DETOUGHNESS]) != (PESTLE_DETOUGHNESS_DONOR, PESTLE_DETOUGHNESS_DONOR):
+                raise KitError(f"skill{level} pestle: donor CNA p13 detoughness drift "
+                               f"{cna[CNA_DETOUGHNESS]!r}")
+            cna[CNA_DETOUGHNESS] = [{"min": PESTLE_DETOUGHNESS, "max": PESTLE_DETOUGHNESS}]
             _silence_skill_hit(cna, f"skill{level} pestle#{len(pestle_areas)}")
             area[23] = block([cna, add_combo_cmd()])
             pestle_areas.append(area)
@@ -940,6 +964,13 @@ def graft_tree(base_tree, graft_source, level: str) -> tuple[list, dict[str, Any
     total_no_flag = round(sum(totals.values()), 4)
     if abs(total_no_flag - SKILL_TOTAL_NO_FLAG) > 1e-6:
         raise KitError(f"skill{level} total {total_no_flag}× != the panel's {SKILL_TOTAL_NO_FLAG}×")
+    # 每次施放单目标总削韧（第二批口径 B.1 ≤30）：精准连击 10 段 ＋ 八连重击 8 段 ＋ 裂地 1 段
+    detoughness = {"rush": _slv(rush_cna[CNA_DETOUGHNESS])[1] * HITS["rush"],
+                   "pestle": PESTLE_DETOUGHNESS * HITS["pestle"],
+                   "finisher": _slv(finish_cna[CNA_DETOUGHNESS])[1] * HITS["finisher"]}
+    detoughness_total = round(sum(detoughness.values()), 6)
+    if detoughness_total > 30:
+        raise KitError(f"skill{level} detoughness per cast {detoughness_total} > 30")
     # 每个判定区的 on-hit 块各挂一条：精准连击 1 + 玉杵 8 + 裂地 1
     want_combo_areas = 1 + HITS["pestle"] + 1
     combo_areas = len(list(wf_dsl.iter_dsl_commands(tree, "AddCombo")))
@@ -971,6 +1002,9 @@ def graft_tree(base_tree, graft_source, level: str) -> tuple[list, dict[str, Any
         "subject_ids": {"base_rush": BASE_RUSH_AREA_ID, "base_finisher": BASE_FINISH_AREA_ID,
                         "grafted": [a[19] for a in pestle_areas]},
         "combo_bonus_branch": {"then_p8": True, "else_p8": False},
+        "detoughness": {"segments": {seg: round(v, 6) for seg, v in detoughness.items()},
+                        "per_cast": detoughness_total,
+                        "pestle_per_hit": [PESTLE_DETOUGHNESS_DONOR, PESTLE_DETOUGHNESS]},
     }
     return tree, evidence
 
@@ -1012,16 +1046,36 @@ def build_invoke_tree(skill_tree_2) -> tuple[list, dict[str, Any]]:
     ``_deviations.json›fluffy[1]`` 的落法：伤害、段数、连击效果与真正发动技能完全相同，
     但不消耗技能槽、不播 cut-in／技能语音、不触发别人的「发动技能时」（trigger 23）。
     ``tree[10]`` 保持 0（自动档＝AbilitySkill＝技能伤害）；写 3 只拿 PF 通用乘区、丢技能增伤。
+
+    2026-09-27 平衡第二批（口径 B.3，能力调用技能每次 ≤3）：唯一的差别是全部
+    ``CreateNormalAttack`` 的 p13 削韧改成 ``INVOKE_DETOUGHNESS``（0.15；19 段 ⇒ 每次 2.85，原 65）。
+    两个触发源 CT 分别 6 秒（队长 L#8）/ 12 秒（能力3 #2），都 > 3 秒 ⇒ 上限 3。
     """
     tree = copy.deepcopy(skill_tree_2)
     if tree[10] != 0:
         raise KitError(f"629 tree must keep the automatic damage attribution, got {tree[10]}")
+    allowed = {PESTLE_DETOUGHNESS, PESTLE_DETOUGHNESS_DONOR}
+    seen: list[float] = []
+    for cna in wf_dsl.iter_dsl_commands(tree, "CreateNormalAttack"):
+        low, high = _slv(cna[CNA_DETOUGHNESS])
+        if low != high:
+            raise KitError(f"629 tree CNA p13 is not flattened: {cna[CNA_DETOUGHNESS]!r}")
+        seen.append(high)
+        cna[CNA_DETOUGHNESS] = [{"min": INVOKE_DETOUGHNESS, "max": INVOKE_DETOUGHNESS}]
+    if len(seen) != 1 + HITS["pestle"] + 2 or not allowed & set(seen):
+        raise KitError(f"629 tree CNA layout drift: {len(seen)} CNA, p13 {sorted(set(seen))}")
+    # then/else 两条裂地副本只会执行一条 ⇒ 每次调用 = 精准连击 10 ＋ 八连 8 ＋ 裂地 1 = 19 段
+    per_cast = round(INVOKE_DETOUGHNESS * sum(HITS.values()), 6)
+    if per_cast > 3:
+        raise KitError(f"629 tree detoughness per call {per_cast} > 3")
     problems = roundtrip_problems(tree)
     if problems:
         raise KitError(f"629 ability_skill tree gates failed: {problems}")
-    return tree, {"source": "skill level 2 (deep copy)",
+    return tree, {"source": "skill level 2 (deep copy) + p13 detoughness override",
                   "encoded_bytes": encoded_size(tree),
-                  "damage_attribution": tree[10]}
+                  "damage_attribution": tree[10],
+                  "detoughness": {"per_hit": INVOKE_DETOUGHNESS, "per_call": per_cast,
+                                  "source_p13": sorted(set(seen))}}
 
 
 # ---------------------------------------------------------------- 722 双类型强化弹射
@@ -1227,6 +1281,13 @@ def build(ctx) -> dict[str, Any]:
         "槽 4/5/6 用客户端自动文案；722 行自己的 c82 说明串在 desc_override 接管后不显示",
         "本轮不新增固有状态 ⇒ 不需要 48×48 状态图标（能力 2 的「最多累积 4 次」是母本 141033 "
         "ACAttackPoint 自带的累积上限，不是自定义固有）",
+        "2026-09-27 平衡第二批（wf_balance_20260927b_fluffy，口径 A/B）：队长每次 PF 攻击力/技能伤害 "
+        f"20% → {int(BALANCE_B['pf_growth']) // 1000}%（3 分钟约 35 次 ⇒ 1/10）、每 250 连击自身技能伤害 "
+        f"100% → {int(BALANCE_B['combo_growth']) // 1000}%（约 20 次 ⇒ 1/5）、每 3 次 PF 技能伤害额外乘区 "
+        f"5% → {int(BALANCE_B['pf3_growth']['694']) // 1000}%（约 12 次 ⇒ 1/5）；同触发的 35/245 属充能，本批不动。"
+        f"技能八连重击 p13 {PESTLE_DETOUGHNESS_DONOR} → {PESTLE_DETOUGHNESS}（每次施放 "
+        f"{skill_gates['2']['detoughness']['per_cast']}，原 65）；629 树全部 p13 → {INVOKE_DETOUGHNESS}"
+        f"（每次 {invoke_gates['detoughness']['per_call']}，原 65）。每 5 次 PF Lv3 的 CT 按作者原话不动",
         {"pixel_install": pixel},
     ]
 
@@ -1242,7 +1303,9 @@ def build(ctx) -> dict[str, Any]:
                 "面板靠 desc_override 合并回 5 行",
          "why": "一条面板文案里并列的多个效果在数据层是不同 kind，必须分行"},
         {"want": "队长全队主轴合计落在裁决 §2 的 490–650% 带内",
-         "got": "超带：每次 PF ＋20%/＋20% 与每 250 连击 ＋100% 都不设上限（trigger_limit=(None)）",
+         "got": f"超带：每次 PF ＋{int(BALANCE_B['pf_growth']) // 1000}%/＋{int(BALANCE_B['pf_growth']) // 1000}% "
+                f"与每 250 连击 ＋{int(BALANCE_B['combo_growth']) // 1000}% 都不设上限（trigger_limit=(None)；"
+                "2026-09-27 第二批已按 3 分钟触发次数放缓，原 20%/20%/100%）",
          "why": "作者原话逐条都没写上限，裁决 §3 又规定「无上限的成长写到效果为止」；"
                 "对冲＝技能倍率从 78× 砍到 65×、能力 3 的独立乘区从 20% 砍到 10%"},
         {"want": "技能两档保持觉醒前/后的 2/3 梯度与 SLv1→满级渐进",

@@ -207,7 +207,8 @@ class PlanSelfCheckTests(unittest.TestCase):
 
     def test_unlimited_growth_rows_write_none_not_an_empty_limit(self):
         """trigger_limit 留空 = 上限 0（词条全程零收益）；无上限的官方写法是 ``(None)``。"""
-        wanted = {("3", 1), ("3", 2), ("3", 4), ("3", 5), ("6", 0), ("6", 3)}
+        # 2026-09-27 平衡第二批：3#1/#2 改成 D214 持有型（无 c34），IT 246 读秒搬到 6#5/#6
+        wanted = {("3", 1), ("3", 2), ("3", 4), ("3", 5), ("6", 0), ("6", 3), ("6", 5), ("6", 6)}
         for slot, index in wanted:
             cells = self.cells(int(slot))[index]
             if 34 in cells:
@@ -538,7 +539,7 @@ class OfficialRowTests(unittest.TestCase):
             self.assertEqual(rendered[label], want, label)
 
     def test_every_row_is_covered_by_the_expect_gate(self):
-        """EXPECT 必须盖满 25 行：漏一行就等于那一行没有 describe 门禁。"""
+        """EXPECT 必须盖满 28 行（第二批 A6 +2）：漏一行就等于那一行没有 describe 门禁。"""
         built = all_rows(ctx())
         self.assertEqual(sorted(K.EXPECT), sorted(ev["label"] for ev in built["evidence"]))
 
@@ -622,8 +623,9 @@ class OfficialRowTests(unittest.TestCase):
         report = K.statue_group_report(ctx(), built["ability"])
         zero = {f"{e['key']}#{e['record']} {e['kind']}" for e in report if e["official_rows"] == 0}
         # 422/693 官方全表 0 行；629 官方唯一一行的组是 special。c2 是纯面板外观。
+        # 2026-09-27 平衡第二批：A6#6（IT 246 队长承载行，瞬发 33）× special 也是官方 0 行（A6#5 的 32 有先例）
         self.assertEqual(zero, {f"{K.CID}3#4 629", f"{K.CID}6#1 422",
-                                f"{K.CID}6#2 422", f"{K.CID}6#3 693"})
+                                f"{K.CID}6#2 422", f"{K.CID}6#3 693", f"{K.CID}6#6 33"})
 
 
 @unittest.skipUnless(_BASELINE, "需要 .cdn/cn 官方归档与 live store")
@@ -856,6 +858,28 @@ class EncoreTreeTests(unittest.TestCase):
         tree, gates = self.build()
         self.assertEqual(K.dsl_problems(tree), [])
         self.assertEqual(set(gates["effect_paths"]), set(K.OFFICIAL_FX_PATHS))
+
+    def test_encore_detoughness_is_capped_for_a_629_call(self):
+        """2026-09-27 平衡第二批（口径 B.3）：629 CT 5 秒 ⇒ 每次 ≤3；斩击 10→1.5、爆击 1→0.1（×10）＝ 2.5。"""
+        tree, gates = self.build()
+        by_hits = {int(a[K.HIT_AREA_MAXHITS_SLOT][1]): a for a in wf_dsl.iter_dsl_commands(tree, "CreateHitArea")}
+        slash = next(iter(wf_dsl.iter_dsl_commands(by_hits[1][K.HIT_AREA_ONHIT_SLOT], "CreateNormalAttack")))
+        burst = next(iter(wf_dsl.iter_dsl_commands(by_hits[10][K.HIT_AREA_ONHIT_SLOT], "CreateNormalAttack")))
+        self.assertEqual(slash[K.CNA_DETOUGHNESS_SLOT], [{"min": 1.5, "max": 1.5}])
+        self.assertEqual(burst[K.CNA_DETOUGHNESS_SLOT], [{"min": 0.1, "max": 0.1}])
+        self.assertEqual(gates["detoughness"]["per_cast"], 2.5)
+        self.assertLessEqual(gates["detoughness"]["per_cast"], 3)
+
+    def test_normal_skill_detoughness_is_untouched(self):
+        """第二批只改 629 追击树；正常技能两档每次 10 ＋ 10×1 = 20 不动。"""
+        values = DESIGN["plan_rework1"]["skills"]["values"]
+        for level in ("1", "2"):
+            level_values = dict(values[level])
+            level_values["hit_area_damage_kind"] = values["hit_area_damage_kind"]
+            tree, _ = K.build_skill_tree(ctx(), level, level_values, None)
+            p13 = sorted({a[K.CNA_DETOUGHNESS_SLOT][0]["max"]
+                          for a in wf_dsl.iter_dsl_commands(tree, "CreateNormalAttack")})
+            self.assertEqual(p13, [1, 10], level)
 
 
 # ---------------------------------------------------------------- 3. 已构建的包

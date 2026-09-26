@@ -16,8 +16,10 @@ class FluffyBalanceTests(unittest.TestCase):
         self.assertEqual(len(growth), 3)
         for row in growth:
             self.assertEqual([row[i] for i in (4, 7, 8, 9)], ['2', '600000', '600000', 'Green'])
+            # 09-24 输出各 5%；2026-09-27 平衡第二批覆盖：694（技能伤害额外乘区）5% → 1%，35/245 充能类不动
+            value = {'35': '5000', '245': '5000', '694': '1000'}[row[45]]
             self.assertEqual([row[i] for i in (29, 32, 33, 46, 47, 49, 50)],
-                             ['300000', '(None)', '0', '5', 'Green', '5000', '5000'])
+                             ['300000', '(None)', '0', '5', 'Green', value, value])
 
     def test_cooldowns_keep_pair_order_and_distinct_trigger_thresholds(self):
         leader, _ = K.build_leader_rows(fixtures.ctx())
