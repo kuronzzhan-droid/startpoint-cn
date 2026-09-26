@@ -2096,8 +2096,9 @@ def _rev3_during(trigger: str, uid: str, limit: str, kind: str, target: str,
 #   同函数 3393/3475 的 ``stats.maxStatModifierSkillGaugeCharging`` 是「记录见过的最大值」（3475 行
 #   直接 ``= _loc8_``），不是第二道钳位。记忆卡 wf-skill-gauge-max-exists 里的「上限 50%」
 #   自己就标着「用户真机实测；反编译常量 MAX=1.0 是 100%」——那是**一次未复核的实测**，不是代码事实。
-#   按 100% 算，自身 45%（队长 #8 的 25% + 能力6 的 20%）+ 每层 5% 一路到第 11 层才顶格，D4 是有效的。
-#   真机顺手测一次（自身 45%+1 层 vs +3 层 的充能速度差）再决定要不要改写法。
+#   按 100% 算，自身 35%（队长 #8 的 25% + 能力6 满级 10%；2026-09-27 平衡批次由 20% 下调，原合计 45%）
+#   + 每层 5% 一路到第 13 层才顶格，D4 是有效的。
+#   真机顺手测一次（自身 35%+1 层 vs +3 层 的充能速度差）再决定要不要改写法。
 REV3_LEADER_NEW = (
     {"id": "D4_charge", "req": "D4",
      "donor": "live leader_ability[139993] #0（during 134 同形）改 during_content 3 + target 0",
