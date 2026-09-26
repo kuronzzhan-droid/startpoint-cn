@@ -285,13 +285,21 @@ _DESC = ("锁定周围的敌人，架起跟随自身移动的重炮，朝锁定�
 # 对 plan 的 `texts.action_skill_desc.new` 仍按 `_DESC` 断言，落表时用下面这条带后缀的。
 REV7_NO_ENDLAG_SUFFIX = "；释放技能后不再进入硬直，可立即行动"
 _DESC_NO_ENDLAG = _DESC + REV7_NO_ENDLAG_SUFFIX
+# 2026-09-27 平衡第二批：技能 DSL 的「引擎启动」层数贡献封顶 10 层（下方 ENGINE_CAP）⇒ 说明写出上限
+# （seasonal7 第二轮文案规则 1 第三条「有上限的才写上限」；第二批口径 D「上限写（最多N层）」）。
+# _DESC_NO_ENDLAG 保留为改前文案（wf_tekuto_no_endlag_revision 的对照锚点）；落表用 _DESC_BALANCE_B。
+BALANCE_B_DESC_ANCHOR = "威力随其层数提升"
+BALANCE_B_DESC_CAP = "（最多10层）"
+if _DESC_NO_ENDLAG.count(BALANCE_B_DESC_ANCHOR) != 1:        # 锚点必须唯一，替换才不会漏/叠
+    raise RuntimeError("tekuto skill description anchor for the batch-b cap clause is not unique")
+_DESC_BALANCE_B = _DESC_NO_ENDLAG.replace(BALANCE_B_DESC_ANCHOR, BALANCE_B_DESC_ANCHOR + BALANCE_B_DESC_CAP)
 TEXTS = {
     "profile": ("被朋友们拉去参加舞会的机人青年，换上了黑黄配色的燕尾礼服，胸前别着系黄丝带的白玫瑰。"
                 "为了保护大家，他把重炮和导航无人机也带进了会场——虽然大家都说那样一点都不优雅。"),
     "skill1": "多重爆破·礼装重炮",
-    "desc1": _DESC_NO_ENDLAG,
+    "desc1": _DESC_BALANCE_B,
     "skill2": "多重爆破·礼装重炮＋",
-    "desc2": _DESC_NO_ENDLAG,
+    "desc2": _DESC_BALANCE_B,
     "cv": "AI 合成配音",
 }
 SPEC = {
@@ -480,7 +488,18 @@ BIG_BEAM_FRAME = STAGES[3][1]                             # 270：LLL 段起点�
 BIG_BEAM_LIFETIME = EXT_FRAMES[-1] + EXT_LIFETIME - BIG_BEAM_FRAME   # 612+70-270 = 412
 BEAM_END_FRAME = BIG_BEAM_FRAME + BIG_BEAM_LIFETIME                  # 682：大激光真正消失那一帧
 VID_ENGINE = 1                          # vlv 变量号（BindConditionAccumulationVariable 绑「引擎启动」层数）
-ENGINE_DIVISOR, ENGINE_CAP = 1, 99      # var = min(层数/1, 99)，与 unique_condition c4=99 同值
+# 2026-09-27 平衡第二批（作者口径 A5「技能程序里随层数无上限增长的倍率 → 带上限的弱化版，一般 10 层」）：
+# 第 5 参 99 → 10 ⇒ var = min(层数/1, 10)，技能倍率的层数贡献封顶 10 层（客户端 ActionEvaluator case 101：
+# ``Math.min(count / params[3], params[4])``）。官方同构先例 ``blackflower_wiz_smr22_1/_2``
+# ``Bind(-17, 2, [DCUnique, 11], 1, 10)``。固有「引擎启动」本身仍叠到 99（unique_condition c4 不动），
+# 无上限的逐层部分由队长 during-134 行承担（已有同一层数的逐层行 ⇒ 视为已合并）。
+ENGINE_DIVISOR, ENGINE_CAP = 1, 10      # var = min(层数/1, 10)；改前 99（= unique_condition c4）
+ENGINE_CAP_BEFORE_BALANCE_B = 99
+# 2026-09-27 平衡第二批（作者口径 B1「技能每次施放单目标总削韧 ≤30」）：四段光束 + 5 个延长槽共 9 组
+# 判定区（寿命 60/70、最小命中间隔 10、上限 Some(6)）的 CNA p13 1 → 0.3；导弹 p13=2、终幕 p13=4 不动。
+# 单目标满打：基础 4×2 + 24×1 + 4 = 36 → 4×2 + 24×0.3 + 4 = 19.2；带「重炮展开」再 +30 → +9，66 → 28.2。
+BEAM_BREAK = 0.3
+BEAM_BREAK_BEFORE_BALANCE_B = 1
 
 
 def _slv(a, b=None, alv=None):
@@ -530,7 +549,8 @@ def _HA(subj, coord, ang, shape, va, life, interval, cap, ids, on_create, on_hit
 
 
 def _bind_engine():
-    """每段开火前重新取「引擎启动」层数 ⇒ var[1] = min(层数/1, 99)；CNA p6 的 vlv 读它（改版 A6）。
+    """每段开火前重新取「引擎启动」层数 ⇒ var[1] = min(层数/1, ENGINE_CAP=10)；CNA p6 的 vlv 读它（改版 A6；
+    2026-09-27 平衡第二批把封顶从 99 收到 10）。
 
     官方玩家侧先例 ``blackflower_wiz_smr22_1/_2``：``Bind(-17, 2, [DCUnique, 11], 1, 10)`` 配
     ``CreateNormalAttack p6 = [{"min":…,"max":…,"vlv":[{"vid":2,"min":0,"max":2.5}]}]``。
@@ -660,7 +680,7 @@ def donor_tree(level: str, plan: dict | None = None) -> list:
         if big:
             body.append(main_beam())
         body.append(beam_ha(width, ids, fam, shake, 6, BEAM_LIFETIME, ["SpecifyMinHitIntervalDirectly", 10],
-                            m(name), 1, 0.6, "ThunderSmall", fx=[] if big else None))
+                            m(name), BEAM_BREAK, 0.6, "ThunderSmall", fx=[] if big else None))
         return _W(frame, EV_CANNON, *body)
 
     body_items = [
@@ -706,7 +726,7 @@ def donor_tree(level: str, plan: dict | None = None) -> list:
         *[_W(frame, EV_CANNON, _if_cannon(
             [_bind_engine(),
              beam_ha(LLL_RECT_WIDTH, (base, base + 1, base + 2), "lll", 3, 6, EXT_LIFETIME,
-                     ["SpecifyMinHitIntervalDirectly", 10], m("lll"), 1, 0.6, "ThunderSmall", fx=[])],
+                     ["SpecifyMinHitIntervalDirectly", 10], m("lll"), BEAM_BREAK, 0.6, "ThunderSmall", fx=[])],
             [_C("HideEffectFromOwner", FX_BEAM_MAIN)]))
           for frame, base in zip(EXT_FRAMES, EXT_IDS_BASE)],
     ]
@@ -2350,6 +2370,10 @@ def apply_rev5_ability2(rows: list[list[str]]) -> list[list[str]]:
     built = rev5_ability2_rows(head)
     if [list(r) for r in rows] == built:                   # 幂等：已经是新形（kit 重跑 / 包已回写）
         return built
+    # 2026-09-27 平衡第二批回写候选后，包内是第二批的封顶行（c102=10、16%/15%）：认出来并交回第五轮形态，
+    # 由 build() 末尾的 apply_balance_b 再统一改到第二批 ⇒ 重跑 kit 结果不变、也不会叠改两次。
+    if [list(r) for r in rows] == balance_b_ability2_rows(built):
+        return built
     shape = tuple((r[27], r[34], r[47], r[51], r[52]) for r in rows)
     if shape != REV5_REPLACED_SHAPE:
         raise KitError(f"rev5 T3: {REV5_ABILITY_KEY} 现行两条既不是改版前的瞬发行也不是改后的 during 行"
@@ -2425,6 +2449,116 @@ def revision_ability_rows(plan: dict, current: dict[str, list[list[str]]]) -> tu
                   "records": len(out[REV5_ABILITY_KEY]), "donor": REV5_DONOR,
                   "rows": [spec["id"] for spec in REV5_ROWS]})
     return out, trace
+
+
+# ================================================================ 第六轮（2026-09-27 平衡第二批）
+#
+# 作者 2026-09-27 口径（D:/WF/out/平衡调整批次-20260927/batch2/第二批施工口径.md）A 节：
+#   「无上限成长全部移到队长技并大幅放缓；能力栏给正常的、有上限的数值」；放缓倍率按 3 分钟实际触发次数
+#   （≤15 次 ×1/5；≥30 次 ×1/10；之间取 1/5）；充能（kind 3/35）与技能槽上限（124/245）的成长行本批不动。
+# 修订模块 ``wf_balance_20260927b_tekuto`` 对 live 做同一组改动；本段让重跑 kit 得到同一张表（测试断言相等）。
+# 叠在第五轮 + wf_tekuto_low_hp 之后（build() 里 low_hp.revise_rows 之后调用），不改前几轮的常量与断言。
+#
+# 频率（3 分钟，特克托当队长 = 主位，Ⓜ能力3 生效；口径 A2 按实际次数、不按事件名称）：引擎层数 ≈
+# 自身技能 11–14 发 × (DSL +1，间隔 <15 秒〔重炮 900 帧〕时能力3#2 再 +1) + 持重炮时 2 名雷队友技能 20–28 次 × 1
+# ≈ 40–55 层；HP≤50%（背水玩法）队长行每发再 +2 ⇒ 60–80 层（设计稿保守估计也有 20–25 / 半血 35–45）⇒ ≥30 ⇒
+# 引擎逐层行每步 ×1/10（与同批 kyle/celtie/hibiki/magnus 按层数取 1/10 一致；设计稿按「低频」标签的 1/5 不采用）；
+# 半血持重炮每 120 帧一跳 ≈ 20–60 跳（按 40）⇒ ≥30 取 1/10。
+BALANCE_B_LEADER_SCALE = (
+    # (选择器 {列: 值}, 强度列, 旧, 新, 说明)
+    ({3: "1", 95: "134", 102: UID_ENGINE, 107: "0", 108: "5"}, (111, 112), "100000", "10000",
+     "引擎每层 雷队攻击力 100% → 10%（1/10）"),
+    ({3: "1", 95: "134", 102: UID_ENGINE, 107: "2", 108: "5"}, (111, 112), "200000", "20000",
+     "引擎每层 雷队技能伤害 200% → 20%（1/10）"),
+    ({3: "1", 95: "134", 102: UID_ENGINE, 107: "411", 108: "0"}, (111, 112), "5000", "500",
+     "引擎每层 自身独立乘区技能伤害 5% → 0.5%（1/10；与 magnus 411 同精度，口径 A7）"),
+    ({3: "0", 25: "77", 45: "34", 46: "0"}, (49, 50), "100000", "10000",
+     "雷共鸣＋持重炮＋HP≤50%：每 120 帧 自身技能伤害 100% → 10%（1/10）"),
+)
+#: 口径 A6：引擎每层的充能（during 3）/ 技能槽上限（during 124）行本批不动（锁在这里，防止误改）。
+BALANCE_B_LEADER_UNTOUCHED_KINDS = ("3", "124")
+#: 能力2（非Ⓜ、无共鸣）原位换成有上限的弱化版：引擎每层 攻 +16% / 技伤 +15%，最多 10 层
+#: （满层 160% / 150% = 官方自身攻持续 160% / 自身技伤 150%）。c102 写数字 = TriggerLimitTools.limit 钳层数，
+#: 官方 ability during-134 共 24 行全部带数字上限（如 1611231–1611236 限 10）。
+BALANCE_B_ABILITY2_CAP = "10"
+BALANCE_B_ABILITY2_STRENGTH = {REV5_ATTACK_KIND: "16000", REV5_SKILL_KIND: "15000"}
+#: 能力2 的无上限部分搬进队长（行 = [c0, '0', ''] + 能力行[5:]，能力 c≥5 → 队长 c−2），每层 50% → 5%（1/10）。
+#: 队长 #0/#1 是全队(雷)＋雷共鸣前置，目标与前置都不同 ⇒ 不合并，新起两行（队长 10 → 12 行）。
+BALANCE_B_LEADER_FROM_ABILITY2 = "5000"
+
+
+def _balance_b_match(row: list[str], selector: dict[int, str]) -> bool:
+    return all(row[col] == value for col, value in selector.items())
+
+
+def balance_b_ability2_rows(rev5_rows: list[list[str]]) -> list[list[str]]:
+    """第五轮的两条无上限 during-134 行 → 第二批封顶版（c102 (None)→10；强度 50% → 16% / 15%）。"""
+    out = [list(r) for r in rev5_rows]
+    if [r[109] for r in out] != [REV5_ATTACK_KIND, REV5_SKILL_KIND]:
+        raise KitError(f"balance-b: {REV5_ABILITY_KEY} 内容 kind {[r[109] for r in out]} 不是第五轮的 0/2")
+    for row in out:
+        if (row[97], row[102], row[104], row[113], row[114]) != \
+                ("134", REV5_NO_CAP, UID_ENGINE, REV5_STRENGTH, REV5_STRENGTH):
+            raise KitError(f"balance-b: {REV5_ABILITY_KEY} 行不是第五轮形态 "
+                           f"{(row[97], row[102], row[104], row[113], row[114])}")
+        row[102] = BALANCE_B_ABILITY2_CAP
+        row[113] = row[114] = BALANCE_B_ABILITY2_STRENGTH[row[109]]
+    return out
+
+
+def balance_b_moved_leader_rows(rev5_rows: list[list[str]]) -> list[list[str]]:
+    """能力2 第五轮两行的无上限部分 → 队长两行（列号能力 c≥5 → 队长 c−2，强度 1/10）。"""
+    out = []
+    for row in rev5_rows:
+        if len(row) != 126 or row[5] != "1" or row[102] != REV5_NO_CAP:
+            raise KitError("balance-b: 搬进队长的必须是第五轮的无上限 during 行")
+        moved = [CODE, "0", ""] + list(row[5:])
+        if len(moved) != 124:
+            raise KitError(f"balance-b: moved leader row width {len(moved)}")
+        moved[111] = moved[112] = BALANCE_B_LEADER_FROM_ABILITY2
+        out.append(moved)
+    return out
+
+
+def apply_balance_b(leader_rows: list[list[str]], ability2_rows: list[list[str]]
+                    ) -> tuple[list[list[str]], list[list[str]], list[dict]]:
+    """第六轮：队长 4 处放缓 + 能力2 两行封顶 + 能力2 无上限部分搬进队长。输入是第五轮/low_hp 之后的行。"""
+    import wf_client_legality as LG
+    leader = [list(r) for r in leader_rows]
+    trace: list[dict] = []
+    for selector, cols, old, new, what in BALANCE_B_LEADER_SCALE:
+        hits = [i for i, row in enumerate(leader) if _balance_b_match(row, selector)]
+        if len(hits) != 1:
+            raise KitError(f"balance-b: 队长行选择器 {selector} 命中 {hits}（期望恰好 1 行）")
+        row = leader[hits[0]]
+        if [row[c] for c in cols] != [old] * len(cols):
+            raise KitError(f"balance-b: 队长#{hits[0]} c{cols} 现值 {[row[c] for c in cols]} != 改前 {old}")
+        for col in cols:
+            row[col] = new
+        trace.append({"leader": hits[0], "cols": list(cols), "old": old, "new": new, "what": what})
+    kept = [row for row in leader if row[3] == "1" and row[95] == "134"
+            and row[107] in BALANCE_B_LEADER_UNTOUCHED_KINDS]
+    if [(r[107], r[111], r[112]) for r in kept] != [("3", "5000", "5000"), ("124", "5000", "5000")]:
+        raise KitError("balance-b: 引擎每层的充能/技能槽上限行不是改前形态（口径 A6：本批不动）")
+    ability2 = balance_b_ability2_rows(ability2_rows)
+    moved = balance_b_moved_leader_rows(ability2_rows)
+    leader.extend(moved)
+    trace.append({"leader_appended": [len(leader) - 2, len(leader) - 1],
+                  "from": f"ability:{REV5_ABILITY_KEY}（第五轮两行）", "strength": BALANCE_B_LEADER_FROM_ABILITY2})
+    trace.append({"ability": REV5_ABILITY_KEY, "cap": BALANCE_B_ABILITY2_CAP,
+                  "strength": dict(BALANCE_B_ABILITY2_STRENGTH)})
+    problems = []
+    for i, row in enumerate(leader):
+        problems += [f"leader#{i}: {p}" for p in LG.client_legality_problems("leader_ability", row)
+                     + LG.declared_block_field_problems("leader_ability", row)
+                     + LG.ability_element_column_problems("leader_ability", row, ELEMENT)]
+    for i, row in enumerate(ability2):
+        problems += [f"{REV5_ABILITY_KEY}#{i}: {p}" for p in LG.client_legality_problems("ability", row)
+                     + LG.declared_block_field_problems("ability", row)
+                     + LG.ability_element_column_problems("ability", row, ELEMENT)]
+    if problems:
+        raise KitError(f"balance-b rows rejected: {problems}")
+    return leader, ability2, trace
 
 
 def revision_record_counts(rows: dict[str, list[list[str]]], leader: list[list[str]]) -> dict[str, int]:
@@ -2729,8 +2863,9 @@ def build(ctx) -> dict[str, Any]:
         raise KitError("revision plan action_skill_desc does not match the kit's _DESIGN_DESC/_R1_DESC/_DESC")
     if [text_row[5], text_row[7]] != [_DESIGN_DESC, _DESIGN_DESC]:
         raise KitError("design character_text desc columns are no longer the pre-revision text")
-    # 改版：技能说明压到 60 字（作者要求 D8）；S18 再追加「不再进入硬直」一句（2026-09-21）
-    text_row[5] = text_row[7] = _DESC_NO_ENDLAG
+    # 改版：技能说明压到 60 字（作者要求 D8）；S18 再追加「不再进入硬直」一句（2026-09-21）；
+    # 2026-09-27 平衡第二批再写出技能倍率的层数上限「（最多10层）」
+    text_row[5] = text_row[7] = _DESC_BALANCE_B
     want = {"profile": text_row[2], "skill1": text_row[4], "desc1": text_row[5], "skill2": text_row[6],
             "desc2": text_row[7], "cv": text_row[11]}
     for name, value in want.items():
@@ -2780,6 +2915,10 @@ def build(ctx) -> dict[str, Any]:
         raise KitError(f"tekuto rows unexpectedly need client capabilities {caps} (plan: none)")
     import wf_tekuto_low_hp as low_hp
     leader_rows, ability_rows[CID+'3'] = low_hp.revise_rows(leader_rows, ability_rows[CID+'3'])
+    # 第六轮（2026-09-27 平衡第二批）：叠在 low_hp 之后；与 wf_balance_20260927b_tekuto.revise() 同表
+    leader_rows, ability_rows[REV5_ABILITY_KEY], balance_b_trace = apply_balance_b(
+        leader_rows, ability_rows[REV5_ABILITY_KEY])
+    derivation["balance_20260927b"] = balance_b_trace
     ctx.write_flat(LEADER, {CID: leader_rows})
     ctx.write_flat(ABILITY, ability_rows)
 

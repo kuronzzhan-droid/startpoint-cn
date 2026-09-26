@@ -15,6 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import wf_balance_20260927b_kuro as B2  # noqa: E402
 import wf_client_legality as L  # noqa: E402
 import wf_midautumn_common as MC  # noqa: E402
 import wf_midautumn_kit_kuro as KIT  # noqa: E402
@@ -34,9 +35,18 @@ def _live_available() -> bool:
 _LIVE = _live_available()
 _CTX = None
 
-#: 面板行数 = 队长 4 ＋ 词条 2+2+5+1+1+2（desc_override 整块接管，与行数无关）。
+#: 面板行数 = 队长 6 ＋ 词条 2+2+6+1+1+2（desc_override 整块接管，与行数无关）。
+#: 2026-09-27 平衡第二批：队长面板 4 → 6 行（wf_balance_20260927b_kuro.LEADER_ADDED_LINES）。
 PANEL_LINES = len(KIT.PANEL_LEADER) + sum(len(v) for v in KIT.PANEL_ABILITY.values())
 ABILITY_ROWS = sum(len(v) for v in KIT.ABILITY.values())
+
+
+def panel_before_balance_b(panel: list[str]) -> list[str]:
+    """第一批 kit 产物的面板（2026-09-27 第二批由修订候选回写、不重跑 kit，workspace 的 kit-report
+    可能仍是这一版）：去掉队长追加的两行，能力2 第1行、能力3 第2行换回改前文案。"""
+    swap = {B2.NEW_ABILITY2_LINE: B2.OLD_ABILITY2_LINE,
+            B2.NEW_ABILITY3_LINE.replace(KIT.MAIN_ICON, ""): B2.OLD_ABILITY3_LINE.replace(KIT.MAIN_ICON, "")}
+    return [swap.get(line, line) for line in panel if line not in B2.LEADER_ADDED_LINES]
 
 
 def ctx():
@@ -267,7 +277,7 @@ class PanelTests(unittest.TestCase):
 
     def test_panel_lines_cover_every_slot(self):
         self.assertEqual(sorted(KIT.PANEL_ABILITY), list(range(1, 7)))
-        self.assertEqual(PANEL_LINES, 18)
+        self.assertEqual(PANEL_LINES, 20)       # 2026-09-27 第二批：18 + 队长追加 2 行
 
     def test_the_skill_flag_entry_has_no_numbers_or_time(self):
         """裁决 §3：能力里的「技能强化」条目不写数字与时间。"""
@@ -799,6 +809,12 @@ class WorkspaceTests(unittest.TestCase):
         if not self.report.is_file():
             self.skipTest("work/character_packs/ma-kuro 还没跑过 --step kit")
         self.value = json.loads(self.report.read_text(encoding="utf-8"))
+        # 2026-09-27 平衡第二批（第一批输出 + 第二批覆盖）：第二批经修订候选回写、不重跑 kit，
+        # kit-report 可能仍是第一批产物 ⇒ 期望面板/行数取两态之一，但必须整体落在其中一态。
+        self.want_panel = [line.replace(KIT.MAIN_ICON, "")
+                           for key in (KIT.CAS_LEADER, *KIT.CAS_ABILITY.values())
+                           for line in KIT.CAS_TEXTS[key].split("\n")]
+        self.before_b = self.value["panel"] == panel_before_balance_b(self.want_panel)
 
     def test_report_identity_and_capabilities(self):
         self.assertEqual((self.value["cid"], self.value["code"]), (KIT.CID, KIT.CODE))
@@ -813,14 +829,13 @@ class WorkspaceTests(unittest.TestCase):
             self.assertIn(f"rare5/{KIT.CODE}", program)
 
     def test_report_panel_text_obeys_the_rules(self):
-        self.assertEqual(len(self.value["panel"]), PANEL_LINES)
+        self.assertEqual(len(self.value["panel"]),
+                         PANEL_LINES - (len(B2.LEADER_ADDED_LINES) if self.before_b else 0))
         for text in self.value["panel"]:
             self.assertEqual(KL.panel_problems(text), [], text)
 
     def test_report_panel_matches_the_registered_override_text(self):
-        want = [line.replace(KIT.MAIN_ICON, "")
-                for key in (KIT.CAS_LEADER, *KIT.CAS_ABILITY.values())
-                for line in KIT.CAS_TEXTS[key].split("\n")]
+        want = panel_before_balance_b(self.want_panel) if self.before_b else self.want_panel
         self.assertEqual(self.value["panel"], want)
 
     def test_report_guards_and_statue_groups(self):
@@ -829,8 +844,9 @@ class WorkspaceTests(unittest.TestCase):
 
     def test_written_rows_match_the_plan(self):
         rows = json.loads((self.report.parent / "kit-rows.json").read_text(encoding="utf-8"))
-        self.assertEqual(len(rows["leader"]), len(KIT.LEADER))
-        self.assertEqual(sum(len(v["records"]) for v in rows["ability"].values()), ABILITY_ROWS)
+        added = 1 if self.before_b else 0        # 第二批：队长 +L5、能力2 +#3
+        self.assertEqual(len(rows["leader"]), len(KIT.LEADER) - added)
+        self.assertEqual(sum(len(v["records"]) for v in rows["ability"].values()), ABILITY_ROWS - added)
         self.assertEqual(rows["unique_condition"][KIT.UID_DICE][4], KIT.DICE_CAP)
         self.assertEqual(rows["unique_condition"][KIT.UID_STEP][4], KIT.STEP_CAP)
         self.assertEqual(sorted(rows["custom_ability_string"]), sorted(KIT.CAS_TEXTS))

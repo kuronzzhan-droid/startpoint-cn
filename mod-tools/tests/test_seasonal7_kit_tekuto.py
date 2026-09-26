@@ -771,9 +771,14 @@ class TreeAssemblyTest(unittest.TestCase):
         self.assertEqual(K.TEXTS["cv"], row[11])
         # 技能说明：设计稿仍是改版前的长文，TEXTS/常量是改版短文，plan 的 old/new 对得上
         self.assertEqual([row[5], row[7]], [K._DESIGN_DESC, K._DESIGN_DESC])
-        # S18（2026-09-21 取消后摇）：落表文案 = plan 的 _DESC + 「不再进入硬直」一句
-        self.assertEqual((K.TEXTS["desc1"], K.TEXTS["desc2"]), (K._DESC_NO_ENDLAG, K._DESC_NO_ENDLAG))
+        # S18（2026-09-21 取消后摇）：落表文案 = plan 的 _DESC + 「不再进入硬直」一句；
+        # 2026-09-27 平衡第二批（第一批输出 + 第二批覆盖）：技能倍率的层数贡献封顶 ENGINE_CAP=10 ⇒
+        # 「威力随其层数提升」后面写出「（最多10层）」（wf_balance_20260927b_tekuto 同一句）。
+        self.assertEqual((K.TEXTS["desc1"], K.TEXTS["desc2"]), (K._DESC_BALANCE_B, K._DESC_BALANCE_B))
         self.assertEqual(K._DESC_NO_ENDLAG, K._DESC + K.REV7_NO_ENDLAG_SUFFIX)
+        self.assertEqual(K._DESC_BALANCE_B, K._DESC_NO_ENDLAG.replace(
+            K.BALANCE_B_DESC_ANCHOR, K.BALANCE_B_DESC_ANCHOR + K.BALANCE_B_DESC_CAP))
+        self.assertEqual(K.BALANCE_B_DESC_CAP, f"（最多{K.ENGINE_CAP}层）")
         desc = self.plan["texts"]["action_skill_desc"]
         self.assertEqual((desc["old"], desc["r1_new"], desc["new"]), (K._DESIGN_DESC, K._R1_DESC, K._DESC))
         self.assertLess(len(K._DESC), len(K._DESIGN_DESC))

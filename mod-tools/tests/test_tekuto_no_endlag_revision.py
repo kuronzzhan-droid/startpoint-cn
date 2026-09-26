@@ -25,6 +25,8 @@ ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = ROOT / "work/character_packs/s7-tekuto/package"
 FIXTURE = Path(__file__).resolve().parent / "fixtures/tekuto_no_endlag_before.json"
 LOGICALS = tuple(wf_dsl.dsl_logical(p) for p in R.SKILL_PROGRAMS)
+#: 2026-09-27 平衡第二批暂存脚本（D:/WF/out/平衡调整批次-20260927/batch2/stage_batch.py SNAPSHOT）回写候选时的快照键。
+BALANCE_B_SNAPSHOT = "revision_20260927b"
 
 
 def _store() -> Path:
@@ -668,9 +670,19 @@ class Texts(unittest.TestCase):
             R.skill_description("别的技能说明")
 
     def test_kit_generator_produces_the_same_final_text(self):
-        """重跑 kit 不会把文案退回改前（也不会把这句话叠两遍）。"""
-        self.assertEqual(K.TEXTS["desc1"], R.SKILL_DESC_AFTER)
-        self.assertEqual(K.TEXTS["desc2"], R.SKILL_DESC_AFTER)
+        """重跑 kit 不会把文案退回改前（也不会把这句话叠两遍）。
+
+        2026-09-27 平衡第二批（第一批输出 + 第二批覆盖）：kit 落表文案在本工具的 ``SKILL_DESC_AFTER``
+        之上再写出技能倍率的层数上限「（最多10层）」（``wf_balance_20260927b_tekuto``），
+        「不再进入硬直」一句仍只出现一次、仍在句尾。
+        """
+        want = R.SKILL_DESC_AFTER.replace(K.BALANCE_B_DESC_ANCHOR,
+                                          K.BALANCE_B_DESC_ANCHOR + K.BALANCE_B_DESC_CAP)
+        self.assertNotEqual(want, R.SKILL_DESC_AFTER)
+        self.assertEqual(K.TEXTS["desc1"], want)
+        self.assertEqual(K.TEXTS["desc2"], want)
+        self.assertEqual(K._DESC_NO_ENDLAG, R.SKILL_DESC_AFTER)
+        self.assertEqual(R.text_problems("skill", want), [])
         self.assertEqual(K._DESC, R.SKILL_DESC_BEFORE)
         self.assertEqual(K.REV7_NO_ENDLAG_SUFFIX, R.SEPARATOR + R.NO_ENDLAG_CLAUSE)
 
@@ -731,22 +743,30 @@ class CandidatePackage(unittest.TestCase):
             self.assertEqual(R.hold_statements(tree), [], logical)
             self.assertEqual(tree[1], R.MOVEMENT_PRIORITY_NONE, logical)
 
+    def _want_desc(self) -> str:
+        """2026-09-27 平衡第二批（第一批输出 + 第二批覆盖）：批次暂存脚本回写候选后 manifest 带
+        ``revision_20260927b`` 快照，技能说明在本工具的 SKILL_DESC_AFTER 之上多了「（最多10层）」。"""
+        if BALANCE_B_SNAPSHOT in self.manifest.get("snapshot", {}):
+            return K._DESC_BALANCE_B
+        return R.SKILL_DESC_AFTER
+
     def test_candidate_texts_match_the_pinned_strings(self):
         if not self.manifest["snapshot"][R.SNAPSHOT_KEY]["texts"]["applied"]:
             self.skipTest("candidate was written with --no-text")
+        want = self._want_desc()
         action = core.load_nested_table_bytes(
             (PACKAGE / "roots/common" / K.ACTION).read_bytes(), K.ACTION).rows[R.CODE]
         for level, text in action.text_rows().items():
-            self.assertEqual(core.read_csv_lines(text)[0][1], R.SKILL_DESC_AFTER, level)
+            self.assertEqual(core.read_csv_lines(text)[0][1], want, level)
         rows = core.read_csv_lines(core.read_orderedmap_file_from_bytes(
             (PACKAGE / "roots/common" / K.TEXT).read_bytes())[R.CID])
-        self.assertEqual([rows[0][5], rows[0][7]], [R.SKILL_DESC_AFTER] * 2)
+        self.assertEqual([rows[0][5], rows[0][7]], [want] * 2)
 
     def test_candidate_server_mirror_follows_character_text(self):
         if not self.manifest["snapshot"][R.SNAPSHOT_KEY]["texts"]["applied"]:
             self.skipTest("candidate was written with --no-text")
         mirror = json.loads((PACKAGE / "roots/server/cdndata/character_text.json").read_bytes())
-        self.assertEqual([mirror[R.CID][0][5], mirror[R.CID][0][7]], [R.SKILL_DESC_AFTER] * 2)
+        self.assertEqual([mirror[R.CID][0][5], mirror[R.CID][0][7]], [self._want_desc()] * 2)
 
     def test_gameplay_rows_are_untouched_by_this_revision(self):
         """本轮不动 ability / leader / unique —— 候选包里这三张表仍与 live 逐字节相同。"""
