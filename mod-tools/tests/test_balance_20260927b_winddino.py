@@ -491,7 +491,14 @@ class CandidateTests(unittest.TestCase):
                 rows = X.unpack(candidate.read("common", logical))
                 for key, value in out[part].items():
                     self.assertEqual(X.csv_read(rows[key]), value, key)
+            # tag_boss 两层同步也已回写：角色表 c5 与服务端 cdndata/character.json [0][5]。
+            for (logical, key), value in out["table"].items():
+                self.assertEqual(X.csv_read(X.unpack(candidate.read("common", logical))[key]), value, key)
+            server = json.loads(candidate.read("server", "cdndata/character.json"))
+            for key, value in out["server_character"].items():
+                self.assertEqual(server[key], value, key)
             self.assertLessEqual(set(M.CAPABILITIES), set(current["required_capabilities"]))
+            self.assertEqual(before, manifest.read_bytes())
             return
         claims = {t["logical_path"]: set(t["outer_keys"]) for t in current["tables"]}
         self.assertLessEqual(set(out["ability"]), claims[ABILITY_LOGICAL])
