@@ -38,6 +38,12 @@
 503·550 对降抗敌特攻 / 694 独立乘区）、能力 6 #0 加 CT15s、新增固有状态「月讲」与图标、
 能力 3 整槽 ``desc_override``。队长技 6 行、两档技能 DSL、能力 1/2/4/5、能力 6 #1 一格不动。
 施工单：``rework1/impl/nicola.md``。
+
+**平衡第二批（2026-09-27，作者：「妮可拉……让生效不限制次数」）**：能力 3 行 2–6（0 基 #1–#5，
+四条受益行 + 525 消耗行）的限次 c34 由 ``"0"``（= 限 0 次、从未触发）改成 ``(None)``；数值与面板不动。
+改动落在 ``design/nicola.json`` 的 ``cells["34"]``/``row_final``（由
+``wf_balance_20260927b_nicola.sync_mirrors`` 同步），本模块加 :func:`dead_trigger_limit_problems`
+门禁防止再写回 ``"0"``/空串。
 """
 from __future__ import annotations
 
@@ -446,6 +452,18 @@ def install_unique_icon(ctx) -> dict[str, Any]:
             "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
 
 
+def dead_trigger_limit_problems(rows_by_key: dict[str, list[list[str]]]) -> list[str]:
+    """有瞬发触发（c27 非空非 0）的行，限次 c34 写 ``""`` 或 ``"0"`` = 限 0 次 = 永不触发。
+
+    ``AbilityValues.parseAt34`` 把 ``"0"`` 读成 ``Some(0)``，``AbilityTriggerHandler`` 在
+    ``restTriggerLimit<=0`` 时直接 return；「不限次」只能写字面量 ``(None)``。能力 3 行 2–6 曾写 ``"0"``，
+    面板写着生效、游戏里从未触发（2026-09-27 平衡第二批复核 C11，作者：「让生效不限制次数」）。
+    """
+    return [f"{key}#{index}: instant trigger {row[27]} has trigger_limit {row[34]!r} (= 0 次, never fires)"
+            for key, rows in rows_by_key.items() for index, row in enumerate(rows)
+            if row[27] not in ("", "0") and row[34] in ("", "0")]
+
+
 def consume_order_problems(rows: list[list[str]]) -> list[str]:
     """能力 3 的行序契约：525 消耗行排在同触发的受益行之后，且两者前置/触发完全同形。
 
@@ -715,6 +733,9 @@ def build(ctx) -> dict[str, Any]:
     order = consume_order_problems(ability_rows[f"{CID}{OVERRIDE_SLOT}"])
     if order:
         raise KitError(f"ability {CID}{OVERRIDE_SLOT} order contract failed: {order}")
+    dead = dead_trigger_limit_problems(ability_rows)
+    if dead:
+        raise KitError(f"ability rows carry dead trigger limits: {dead}")
     referenced = {row[68] for rows in ability_rows.values() for row in rows
                   if row[47] in ("461", "525") and row[68]}
     if referenced != {unique_key}:
@@ -798,7 +819,8 @@ def build(ctx) -> dict[str, Any]:
         "during puller 契约与「生命值100%以下」恒真文案三类坑。",
         "rework1 能力 3（9 条，整槽主位限定）：461 在「自身技能槽充满」(触发 24) 加 1 层「月讲」；"
         "211/32 在「除自身外的火属性角色发动技能」(puller 4 + 组 Red) 给**触发者**(target 7) "
-        "技能槽 10%／攻击力 50%；245/35 同触发给自身 槽上限 5%／充能 5%（不设 trigger_limit ⇒ 可叠加）；"
+        "技能槽 10%／攻击力 50%；245/35 同触发给自身 槽上限 5%／充能 5%（c34 写字面量 (None) ⇒ 不限次、"
+        "可叠加；2026-09-27 前误写 \"0\" = 限 0 次、从未触发，平衡第二批按作者「让生效不限制次数」更正）；"
         "525 排在四条受益行之后消耗 1 层；503/550 对已挂火抗降低的敌人各 300% 特攻；694 独立乘区技伤 15%。",
         f"固有状态「月讲」{UID}：c3=99999999（无时间限制）、c4=99（不设上限，写 (None) 等于上限 1 会把 "
         "461 叠层弄死）；48×48 图标程序绘制，alpha 逐格取官方 unique_fire_dragon_zenith.png。",

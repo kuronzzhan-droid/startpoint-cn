@@ -278,6 +278,18 @@ class DesignSelfCheckTests(unittest.TestCase):
                 self.assertEqual(row[28], "4")        # puller 4 OneOfExceptMyself
                 self.assertEqual(row[29], "Red")
 
+    def test_no_trigger_row_carries_a_dead_limit(self):
+        """平衡第二批（2026-09-27）：有瞬发触发的行 c34 写 "0"/空串 = 限 0 次、永不触发；
+        能力 3 #1–#5 已按作者「让生效不限制次数」改成 (None)。"""
+        rows = {key: [[str(x) for x in r["row_final"]] for r in ABILITY_PLAN["keys"][key]["records"]]
+                for key in K.ABILITY_KEYS}
+        self.assertEqual(K.dead_trigger_limit_problems(rows), [])
+        slot3 = rows[f"{K.CID}{K.OVERRIDE_SLOT}"]
+        self.assertEqual([r[34] for r in slot3[1:6]], ["(None)"] * 5)
+        tampered = copy.deepcopy(rows)
+        tampered[f"{K.CID}{K.OVERRIDE_SLOT}"][1][34] = "0"
+        self.assertEqual(len(K.dead_trigger_limit_problems(tampered)), 1)
+
     def test_precondition_188_is_never_used(self):
         """前置 188 数的是实例数（恒为 1）；层数门只能走前置 187 或 during 134（裁决 §8）。"""
         for key, _block, record in all_records():

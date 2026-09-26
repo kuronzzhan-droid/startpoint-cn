@@ -221,6 +221,24 @@ class DesignSelfCheckTests(unittest.TestCase):
         with self.assertRaises(K.KitError):
             K.check_resonance_rows(bad)
 
+    def test_self_skill_panel_rows_trigger_on_self(self):
+        """平衡第二批（2026-09-27，作者「索恩改成自身发动技能」）：面板写「自身发动技能时」的
+        能力 3 #0–#2 触发方必须是自身（c27=23、c28=0、c29 空）；#4/#5「光属性角色发动技能时」保持 7+White。"""
+        ability = {key: [K.design_row(r["cells"], KL.ABILITY_NCOLS, key)
+                         for r in ABILITY_PLAN["keys"][key]["records"]] for key in K.ABILITY_KEYS}
+        checked = K.check_self_trigger_rows(ability)
+        self.assertEqual(checked, [f"{key}#{index}" for key, index in K.SELF_TRIGGER_ROWS])
+        for _key, index in K.SELF_TRIGGER_ROWS:
+            self.assertTrue(K.PANEL_ABILITY[3][index].startswith("自身发动技能时："), index)
+        slot3 = ability[f"{K.CID}3"]
+        for index in (4, 5):
+            self.assertEqual(slot3[index][27:30], ["23", "7", "White"], index)
+            self.assertIn("光属性角色发动技能时", K.PANEL_ABILITY[3][4])
+        bad = copy.deepcopy(ability)
+        bad[f"{K.CID}3"][1][28], bad[f"{K.CID}3"][1][29] = "7", "White"
+        with self.assertRaises(K.KitError):
+            K.check_self_trigger_rows(bad)
+
     def test_overridden_slots_are_flattened_to_the_max_level_value(self):
         """覆盖文案写的是满级单值 ⇒ 对应行必须 min = max（记忆卡 wf-leader-override-text-rules）。"""
         for slot in K.OVERRIDE_SLOTS:
@@ -547,6 +565,11 @@ class PackageTests(unittest.TestCase):
 
     def test_package_rows_match_the_design(self):
         rows = self.pack.pkg_flat(KL.ABILITY)
+        # 平衡第二批（2026-09-27，wf_balance_20260927b_thorn）：design 已把能力3 #1/#2 的触发方改成自身
+        # （c28 7→0、c29 White→空）；主会话暂存回写候选（manifest.snapshot.revision_20260927b）之前，
+        # 包里仍是改前两格 ⇒ 期望 = 设计行 + 第二批改前覆盖；回写后期望 = 设计行本身。
+        manifest = json.loads((WORKSPACE / "package/manifest.json").read_text("utf-8"))
+        pending_b = manifest.get("snapshot", {}).get("revision_20260927b") is None
         total = 0
         for key in K.ABILITY_KEYS:
             records = C.csv_split(rows[key])
@@ -555,6 +578,9 @@ class PackageTests(unittest.TestCase):
             for index, record in enumerate(records):
                 want = K.design_row(ABILITY_PLAN["keys"][key]["records"][index]["cells"],
                                     KL.ABILITY_NCOLS, key)
+                if pending_b and key == f"{K.CID}3" and index in (1, 2):
+                    self.assertEqual((want[28], want[29]), ("0", ""), f"{key}#{index}")
+                    want[28], want[29] = "7", "White"
                 self.assertEqual(list(record), want, f"{key}#{index}")
         self.assertEqual(total, K.ABILITY_RECORDS)
         leader = C.csv_split(self.pack.pkg_flat(KL.LEADER)[str(K.CID)])

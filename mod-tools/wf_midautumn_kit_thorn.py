@@ -19,6 +19,11 @@
 - **技能**：倍率 42× → **50×**（4 段 × 12.5，两档都拉平成满级单值）；命中块的麻痹 / 迟缓
   外包 ``ConditionalsChangeSkillFlag(1)``——536 开着（光共鸣）时走长时长分支。
 
+**平衡第二批（2026-09-27，作者：「索恩改成自身发动技能」）**：能力 3 #1（自身技伤 20%，限 10）与
+#2（光队充能 1.5%，限 10）的触发方由 donor 带来的 c28=7 全队合计 + c29=White（光属性角色施技）改成
+自身 c28=0、c29 空，与面板「自身发动技能时」一致；数值、限次、面板不动。``design/thorn.json`` 由
+``wf_balance_20260927b_thorn.sync_mirrors`` 同步；``ABILITY_DONORS`` 两行的 ``changed`` 加 28/29。
+
 本模块是「设计 JSON 驱动」的薄壳：队长 4 行、词条 6 键 11 条记录的 donor／逐格改／预期
 ``wf_describe`` 全部从 ``design/thorn.json`` 的 ``plan`` 读出后交给
 :func:`wf_midautumn_kitlib.build_row` 装配 —— 本文件只登记「每行该用哪条官方 donor、
@@ -158,9 +163,13 @@ ABILITY_DONORS: dict[str, tuple[dict[str, Any], ...]] = {
                  "changed": (0, 2, 6, 9, 10, 11, 102, 111, 113, 114)},),
     f"{CID}3": ({"tag": "施技→全队(光)状态技能伤害 10 秒(可叠加)", "donor": "1510813#2",
                  "changed": (0, 51, 52, 61)},
-                {"tag": "施技(限10)→自身技能伤害", "donor": "1510813#0", "changed": (0, 51, 52)},
+                # 平衡第二批（2026-09-27）：donor 1510813#0/#1 的触发方是 c28=7 全队合计 + c29=White
+                # （光属性角色施技），面板写「自身发动技能时」⇒ 触发方改成自身 c28=0、c29 空
+                # （官方自身施技写法，同母本 1510813#2 与本键 #0/#6）。
+                {"tag": "施技(限10)→自身技能伤害", "donor": "1510813#0",
+                 "changed": (0, 28, 29, 51, 52)},
                 {"tag": "施技(限10)→全队(光)技能槽充能", "donor": "1510813#1",
-                 "changed": (0, 51, 52)},
+                 "changed": (0, 28, 29, 51, 52)},
                 {"tag": "光共鸣+弱体数(无上限)→自身技能伤害", "donor": "1110932#0",
                  "changed": (0, 1, 2, 6, 9, 10, 11, 102, 109, 110, 111, 113, 114)},
                 {"tag": "光共鸣+光角色施技(限7)→全队(光)技能伤害", "donor": "1510813#0",
@@ -187,6 +196,10 @@ RESONANCE_CELLS = {"c6": "2", "c9": "600000", "c10": "600000", "c11": "White"}
 #: 这些 (键, 记录号) 必须带光共鸣前置——面板上写了「光属性共鸣时」的那几条。
 RESONANCE_ROWS = ((f"{CID}1", 1), (f"{CID}2", 0), (f"{CID}3", 3), (f"{CID}3", 4),
                   (f"{CID}3", 5), (f"{CID}3", 6))
+#: 面板写「自身发动技能时」的行：触发 23 的 puller 必须是自身（c28=0、c29 空；官方自身施技写法，
+#: 469/569 条官方 I23 行即此形）。平衡第二批（2026-09-27）把 #1/#2 从 7+White 改成自身。
+SELF_TRIGGER_CELLS = {"c27": "23", "c28": "0", "c29": ""}
+SELF_TRIGGER_ROWS = ((f"{CID}3", 0), (f"{CID}3", 1), (f"{CID}3", 2))
 
 # ---------------------------------------------------------------- 技能 DSL
 
@@ -375,6 +388,20 @@ def check_resonance_rows(ability_rows: dict[str, list[list[str]]]) -> list[str]:
                if row[int(col[1:])] != want}
         if bad:
             raise KitError(f"{key}#{index}: 缺光共鸣前置 {bad}（应为 {RESONANCE_CELLS}）")
+        checked.append(f"{key}#{index}")
+    return checked
+
+
+def check_self_trigger_rows(ability_rows: dict[str, list[list[str]]]) -> list[str]:
+    """面板写「自身发动技能时」的行，触发方必须真的是自身（平衡第二批，作者「索恩改成自身发动技能」）。"""
+    checked = []
+    for key, index in SELF_TRIGGER_ROWS:
+        row = ability_rows[key][index]
+        bad = {col: row[int(col[1:])] for col, want in SELF_TRIGGER_CELLS.items()
+               if row[int(col[1:])] != want}
+        if bad:
+            raise KitError(f"{key}#{index}: 面板写「自身发动技能时」，触发方却是 {bad}"
+                           f"（应为 {SELF_TRIGGER_CELLS}）")
         checked.append(f"{key}#{index}")
     return checked
 
@@ -809,6 +836,7 @@ def build(ctx) -> dict[str, Any]:
     ability_rows, ability_evidence = build_ability_rows(ctx, design)
     pullers = check_during_pullers(leader_rows, ability_rows)
     resonance = check_resonance_rows(ability_rows)
+    self_trigger = check_self_trigger_rows(ability_rows)
     capabilities: set[str] = set()
     for ev in (*leader_evidence, *ability_evidence):
         capabilities.update(ev["capabilities"])
@@ -885,6 +913,7 @@ def build(ctx) -> dict[str, Any]:
         "leader": {"rows": leader_rows, "evidence": leader_evidence},
         "ability": {"rows": ability_rows, "evidence": ability_evidence},
         "during_puller_checked": pullers, "resonance_checked": resonance,
+        "self_trigger_checked": self_trigger,
         "custom_ability_string": strings,
         "skills": skill_gates, "action_skill": action_rows,
         "effects": {"mode": "clone+lut" if family else "official-reference",
@@ -919,6 +948,8 @@ def build(ctx) -> dict[str, Any]:
         f"required_capabilities = [{L.PANEL_OVERRIDE_V2}]（缺 V14 不崩，只是回落到自动文案）。",
         f"「光属性共鸣时」一律用官方共鸣前置 {RESONANCE_CELLS}（作者 09-21 00:5x），"
         f"覆盖 {len(RESONANCE_ROWS)} 条行：{resonance}。",
+        f"「自身发动技能时」三行触发方一律自身 {SELF_TRIGGER_CELLS}（平衡第二批 2026-09-27：#1/#2 由 "
+        f"donor 的 c28=7 全队合计 + White 改成自身，同母本 1510813#2 写法）：{self_trigger}。",
         {"pixel_install": pixel},
     ]
     deviations: list[dict[str, Any]] = []
