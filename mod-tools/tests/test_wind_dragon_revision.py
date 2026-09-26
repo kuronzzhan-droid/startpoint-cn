@@ -101,5 +101,41 @@ class RevisionTests(unittest.TestCase):
         other=deepcopy(row);other[27]='4'
         self.assertEqual([other],r.remove_fox_direct_combo([row,other]))
 
+    def test_20260927b_helpers_on_synthetic_rows(self):
+        """09-27 第二批：去 202、风共鸣进第一个空闲槽、锁槽跳过、自身能伤→风队、213→724；重跑空操作。"""
+        def ability(**cells):
+            row = [''] * 126
+            for i, v in {5: '0', 6: '0', 13: '0', 20: '0', 27: '0', 47: '211', 48: '0'}.items():
+                row[i] = v
+            for i, v in cells.items():
+                row[int(i[1:])] = v
+            return row
+        main = ability(c1='true', c6='202', c47='388')
+        not_fever = ability(c1='true', c6='186', c47='213', c27='12')
+        fever = ability(c1='false', c13='12', c27='23', c28='0', c35='600', c47='213',
+                        c51='22500000', c52='45000000')
+        lock = ability(c1='true', c5='1', c6='203', c109='423', c110='5', c111='(None)', c118='12')
+        rows = r.open_slot([main, not_fever])
+        self.assertEqual([(x[1], x[6]) for x in rows], [('true', '0'), ('true', '186')])
+        rows = r.add_wind_resonance(rows + [lock], skip=r.is_unison_lock)
+        self.assertEqual([(x[6], x[9], x[10], x[11]) for x in rows[:1]], [('2', '600000', '600000', 'Green')])
+        self.assertEqual((rows[1][6], rows[1][13], rows[1][16], rows[1][18]), ('186', '2', '600000', 'Green'))
+        self.assertEqual(rows[2], lock)
+        rows = r.party_bonus(rows)
+        self.assertEqual((rows[0][48], rows[0][49]), ('5', 'Green'))
+        self.assertEqual((rows[1][48], rows[1][49]), ('0', ''))                  # 213 不是攻击/能伤
+        after = r.fever_ratio([fever, not_fever])
+        self.assertEqual([after[0][i] for i in (47, 48, 51, 52, 35, 13)], ['724', '', '30000', '30000', '600', '12'])
+        self.assertEqual(after[1], not_fever)                                   # 非 Fever 连击 213 不动
+        for fn in (r.party_bonus, r.fever_ratio):
+            self.assertEqual(fn(after), after)
+        self.assertEqual(r.open_slot(rows[:2]), rows[:2])
+        self.assertEqual(r.add_wind_resonance(rows, skip=r.is_unison_lock), rows)
+        leader = [''] * 124
+        leader[3] = leader[4] = leader[11] = leader[18] = '0'
+        self.assertEqual(r.add_wind_resonance([leader], leader=True)[0][4:10],
+                         ['2', '', '', '600000', '600000', 'Green'])
+        self.assertEqual(r.drop_boss_limit([main, ['cnmod_boss_limit'] + [''] * 125]), [main])
+
 
 if __name__ == '__main__':unittest.main()
