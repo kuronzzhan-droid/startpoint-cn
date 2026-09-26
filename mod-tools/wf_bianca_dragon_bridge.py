@@ -46,9 +46,10 @@ def support_damage_rows(source):
 def a1_enhancement_rows(source):
     """追加到 A1：火共鸣强化旗、吐息自充和队长限时攻击力。"""
     flag = _row(source, "1111773", 1, c70=CHANGE_SKILL_STRING_ID)
+    # 2026-09-27 作者平衡第二批：吐息自充 50% → 20%（wf_balance_20260927b_bianca）。
     charge = _row(source, "1110211", c6=2, c9=600000, c10=600000, c11="Red",
                   c27=185, c28=0, c30=100000, c31=100000, c34="(None)",
-                  c35=0, c37=BREATH_UNIQUE_ID, c51=50000, c52=50000)
+                  c35=0, c37=BREATH_UNIQUE_ID, c51=20000, c52=20000)
     attack = _row(source, "1110211", 1, c6=2, c9=600000, c10=600000, c11="Red",
                   c27=185, c37=BREATH_UNIQUE_ID, c51=200000, c52=200000,
                   c57=90000000, c58=90000000)

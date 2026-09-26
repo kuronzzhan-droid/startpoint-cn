@@ -16,6 +16,8 @@ FEVER_TICK_ACTION_PATH = ("battle/action/skill/action/ability_skill/"
                           + CODE + "$" + CODE + "_fever_tick")
 UNIQUE_MAX_ACCUMULATION = 2_147_483_647
 SCALE = 100_000
+#: 整键 c1="false" 的主位限制槽；wf_campus_panel_text 覆盖串的主位图标须与之一致（test_campus_panel_text 校验）。
+MAIN_ONLY_SLOTS = (1, 3)
 
 
 def _set(row, values):
@@ -140,7 +142,8 @@ def fever_tick_string_rows():
 
 def ability_rows(source, *, fever_stack_unique_id=FEVER_STACK_UNIQUE_ID):
     """返回 1199891…1199896；不修改输入，不包含另模块的 A1 强化桥。"""
-    opening = [_instant(source, 211, 75_000, target=0)]
+    # 2026-09-27 作者平衡第二批：开局自身技能槽 75% → 50%（wf_balance_20260927b_bianca）。
+    opening = [_instant(source, 211, 50_000, target=0)]
     nearest = _skill(source, 352, 1_000_000, target=0,
                      pre="fire", cooldown=60)
     nearest[69] = "(None)"
@@ -153,9 +156,10 @@ def ability_rows(source, *, fever_stack_unique_id=FEVER_STACK_UNIQUE_ID):
           _skill(source, 32, 10_000, target=5, target_group="Red",
                  fever=True, limit=10)]
     result = {}
+    # 2026-09-27 作者平衡第二批：能力5 去主位限制，只剩能力1、3 主位（wf_balance_20260927b_bianca）。
     for slot, rows in enumerate((opening, a2, a3, a4, a5, a6), 1):
         for row in rows:
-            row[:5] = [f"{CODE}_{slot}", "false" if slot in (1, 3, 5) else "true",
+            row[:5] = [f"{CODE}_{slot}", "false" if slot in MAIN_ONLY_SLOTS else "true",
                        "attack_red", "0", ""]
         result[f"{CID}{slot}"] = rows
     return result
@@ -187,7 +191,7 @@ def metadata(*, summon_unique_id=SUMMON_UNIQUE_ID,
              fever_stack_unique_id=FEVER_STACK_UNIQUE_ID):
     return {
         "required_client_capabilities": ["kyubi-fever-ratio-v1"],
-        "main_only_slots": [1, 3, 5],
+        "main_only_slots": list(MAIN_ONLY_SLOTS),
         "resonance": "all resonance gates use fire pre2 Member(Red,6)",
         "summon_event": {"unique_id": summon_unique_id, "trigger": 185, "puller": 0,
                          "contract": "owner marker granted only after successful own-dragon summon"},

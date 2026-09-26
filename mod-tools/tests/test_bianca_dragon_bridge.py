@@ -57,7 +57,8 @@ class BiancaDragonBridgeTests(unittest.TestCase):
                          ("0", "536", bridge.CHANGE_SKILL_STRING_ID))
         self.assertEqual((charge[27], charge[28], charge[37], charge[47], charge[48]),
                          ("185", "0", str(bridge.BREATH_UNIQUE_ID), "211", "0"))
-        self.assertEqual(charge[51:53], ["50000", "50000"])
+        # 2026-09-27 平衡第二批（wf_balance_20260927b_bianca）：吐息自充 50% → 20%。
+        self.assertEqual(charge[51:53], ["20000", "20000"])
         self.assertEqual((attack[47], attack[48]), ("0", "2"))
         self.assertEqual(attack[51:53], ["200000", "200000"])
         self.assertEqual(attack[57:59], ["90000000", "90000000"])

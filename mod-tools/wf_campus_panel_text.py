@@ -25,10 +25,11 @@ _BIANCA = {
         "火属性共鸣时，每次获得「幼龙回应」：Fever槽+500，火属性角色技能槽+25%。\n"
         "火属性角色发动技能时：对全场敌人造成50倍火属性能力伤害。"
     ),
+    # 2026-09-27 第二批（wf_balance_20260927b_bianca）：开局自充 75%→50%、吐息自充 50%→20%；a5 去主位后不带图标。
     "a1": (
-        "战斗开始时：自身技能槽+75%。\n"
+        "战斗开始时：自身技能槽+50%。\n"
         "火属性共鸣时，强化幼龙吐息，赋予全场敌人能力伤害抗性降低20%效果，持续15秒。\n"
-        "火属性共鸣时，每次获得「幼龙吐息」，自身技能槽+50%，赋予队长攻击力提升200%效果，持续15秒。"
+        "火属性共鸣时，每次获得「幼龙吐息」，自身技能槽+20%，赋予队长攻击力提升200%效果，持续15秒。"
     ),
     "a2": (
         "火属性共鸣时，火属性角色发动技能时，对最近敌人造成10倍火属性能力伤害，冷却1秒。\n"
@@ -94,8 +95,7 @@ def panel_descriptions(character_id):
         raise ValueError(f"unsupported campus character: {cid}")
     texts = deepcopy(_BIANCA if cid == "119989" else _CELTIE)
     texts["a1"] = main_description(texts["a1"])
-    if cid == "119989":
-        texts["a5"] = main_description(texts["a5"])
+    # 2026-09-27 作者平衡第二批：碧安卡能力5 去主位限制，面板不再加主位图标（wf_balance_20260927b_bianca）。
     return texts
 
 

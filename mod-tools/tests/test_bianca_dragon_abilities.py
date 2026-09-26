@@ -47,10 +47,11 @@ class BiancaDragonAbilitiesTest(unittest.TestCase):
                 self.assertEqual([], legality.declared_block_field_problems(table, row))
                 self.assertEqual([], legality.ability_element_column_problems(table, row, 1))
 
-    def test_abilities_one_three_and_five_are_main_position_restricted(self):
+    def test_abilities_one_and_three_are_main_position_restricted(self):
+        # 2026-09-27 平衡第二批（wf_balance_20260927b_bianca）：能力5 去主位限制、开局自充 75% → 50%。
         for slot, rows in self.abilities.items():
-            self.assertEqual({"false" if slot.endswith(("1", "3", "5")) else "true"}, {r[1] for r in rows})
-        self.assertEqual("75000", self.abilities["1199891"][0][51])
+            self.assertEqual({"false" if slot.endswith(("1", "3")) else "true"}, {r[1] for r in rows})
+        self.assertEqual("50000", self.abilities["1199891"][0][51])
 
     def test_leader_and_ability_two_require_fire_resonance(self):
         for row in self.leader[:5]:
@@ -130,13 +131,14 @@ class BiancaDragonAbilitiesTest(unittest.TestCase):
         self.assertEqual(("3", "10000", "4", "0"),
                          (charging[109], charging[113], charging[97], charging[6]))
         ratio = self.abilities["1199895"][0]
-        self.assertEqual(("false", "2", "600000", "600000", "Red"),
+        # 2026-09-27 平衡第二批（wf_balance_20260927b_bianca）：能力5 去主位限制 c1 false → true、面板不带主位图标。
+        self.assertEqual(("true", "2", "600000", "600000", "Red"),
                          (ratio[1], ratio[6], ratio[9], ratio[10], ratio[11]))
         self.assertEqual(("724", "15000", "23", "7", "Red"),
                          (ratio[47], ratio[51], ratio[27], ratio[28], ratio[29]))
         self.assertEqual(["kyubi-fever-ratio-v1"], legality.required_client_capabilities("ability", ratio))
         from wf_campus_panel_text import panel_descriptions
-        self.assertEqual(" <icon id='main'>  火属性共鸣时，火属性角色发动技能：Fever槽+15%。",
+        self.assertEqual("火属性共鸣时，火属性角色发动技能：Fever槽+15%。",
                          panel_descriptions("119989")["a5"])
 
     def test_ability_six_caps_at_ten_triggers_and_fever_only_gates_attack_gain(self):
