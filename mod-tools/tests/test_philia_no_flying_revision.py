@@ -35,10 +35,15 @@ def _read(path: Path):
 
 
 def _current(logical: str):
-    """当前那棵树：先 workspace 候选，缺了再 live store。"""
+    """当前那棵树：先 workspace 候选，缺了再 live store。
+
+    2026-09-27 平衡第二批（``wf_balance_20260927b_philia``）在去浮游之后又改了这五棵树的 CNA p13；
+    暂存/发布后先按其精确逆变换还原成本修订的产物再比（暂存前原样返回）。
+    """
+    import wf_balance_20260927b_philia as B2
     for path in (PACKAGE / "roots/common" / logical, core.table_path(_store(), logical)):
         if path.is_file():
-            return _read(path)
+            return B2.before_batch2(BASELINE[logical]["program"], _read(path))
     return None
 
 

@@ -29,6 +29,10 @@
   ``wf_balance_20260927_regis``（:func:`balance_rows` / :func:`balance_panel` / ``balance.skill_tree``），
   另写能力 2 的 629 全体追击 DSL 与文案键 ``rec_android_seaside_skill_strike``；批次暂存脚本的
   ``revise()`` 用同一组函数，kit 重跑与候选一致；
+- **2026-09-27 平衡第二批**（口径 A：无上限成长）：第一批之后再调用 ``wf_balance_20260927b_regis``
+  （:func:`balance_b_rows` / :func:`balance_b_panel` / ``balance_b.skill_tree`` / ``balance_b.description``）：
+  队长每层成长放缓 1/5 并收下能力 3 的两条自身逐层行（7→9 行），能力 3 两行改为每层 30%、最多 5 层，
+  两棵技能树的浪涌层数绑定上限 99→5，技能描述加「（最多5层）」；
 - 两棵技能 DSL：官方 131020 骨架 + ★4 231003 光束 + 151045 雷队能力伤害状态（移植
   design/_tmp/regis/d09_compose_final.py），特效引用经 ``rewrite_effect_refs`` 改写，
   先与上一轮定稿树逐节点严格比对；再叠改版增量 D1–D5（两分支各一条 Bind、
@@ -71,6 +75,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 import wf_balance_20260927_regis as balance  # noqa: E402  纯函数、只依赖标准库
+import wf_balance_20260927b_regis as balance_b  # noqa: E402  第二批（无上限成长），叠在第一批之后
 
 KEY = "regis"
 CID = "139994"
@@ -418,6 +423,30 @@ def balance_rows(leader: list[list[str]], ability: dict[str, list[list[str]]]):
     if probs:
         raise KitError(f"balance 20260927 row legality problems: {probs}")
     return leader, ability
+
+
+def balance_b_rows(leader: list[list[str]], ability: dict[str, list[list[str]]]):
+    """第二批：队长 #0/#1 每层 1/5、能力 3#3/#4 搬入队长（#7/#8，1/5）并原位改为最多 5 层。
+    只接受第一批输出（:func:`balance_rows` 之后调用）；门禁在 ``balance_b.growth_rows`` 内部。"""
+    ability = dict(ability)
+    try:
+        leader, ability[CID + "3"] = balance_b.growth_rows(leader, ability[CID + "3"])
+    except ValueError as exc:
+        raise KitError(f"balance 20260927b rows: {exc}") from exc
+    return leader, ability
+
+
+def balance_b_panel(cas_rows: dict[str, list[list[str]]]) -> dict[str, list[list[str]]]:
+    """第二批：队长 / 能力 3 覆盖文案换成放缓后的数值（:func:`balance_panel` 之后调用）。"""
+    missing = sorted(set(balance_b.PANEL_BEFORE) - set(cas_rows))
+    if missing:
+        raise KitError(f"balance 20260927b panel keys missing: {missing}")
+    out = {key: ([[balance_b.panel_text(key, cells[0][0])]] if key in balance_b.PANEL_BEFORE else cells)
+           for key, cells in cas_rows.items()}
+    probs = [f"{key}: {p}" for key, cells in out.items() for p in panel_text_problems(cells[0][0])]
+    if probs:
+        raise KitError(f"balance 20260927b panel text has forbidden words: {probs}")
+    return out
 
 
 def balance_panel(cas_rows: dict[str, list[list[str]]]) -> dict[str, list[list[str]]]:
@@ -1614,7 +1643,9 @@ def build(ctx) -> dict[str, Any]:
         rows['leader'], rows['ability'][CID+'3'], rows['ability'][CID+'1'])
     # 2026-09-27 平衡批次：浪涌之后再换成技能伤害口径（顺序固定，见 balance_rows）
     rows['leader'], rows['ability'] = balance_rows(rows['leader'], rows['ability'])
-    description = balance.description(surge.DESCRIPTION)
+    # 2026-09-27 平衡第二批：第一批之后再叠无上限成长修订（队长 7→9 行、能力 3 最多 5 层）
+    rows['leader'], rows['ability'] = balance_b_rows(rows['leader'], rows['ability'])
+    description = balance_b.description(balance.description(surge.DESCRIPTION))
     texts['character_text'][5] = texts['character_text'][7] = description
     for level in ('1', '2'):
         texts['action'][level][1] = description
@@ -1650,6 +1681,7 @@ def build(ctx) -> dict[str, Any]:
     for slot, key in ((0, 'desc_override_'+CODE), (3, 'desc_override_'+CODE+'_3')):
         cas_rows[key][0][0] = surge.revise_text(slot, cas_rows[key][0][0])
     cas_rows = balance_panel(cas_rows)
+    cas_rows = balance_b_panel(cas_rows)
     ms_probs = main_slot_panel_problems(rows["ability"], cas_rows)
     if ms_probs:
         raise KitError(f"main-slot marker mismatch after balance 20260927: {ms_probs}")
@@ -1700,6 +1732,7 @@ def build(ctx) -> dict[str, Any]:
         tree, info = compose_skill(ctx, level, families)   # 内部已与定稿树 + 改版参考树逐节点比对
         tree = surge.revise_skill(tree)
         tree = balance.skill_tree(tree)                     # 2026-09-27：bta 2→0、ACSkillDamage
+        tree = balance_b.skill_tree(tree)                   # 2026-09-27 第二批：浪涌层数绑定上限 99→5
         built_trees.append(tree)
         checks = dsl_problems(ctx.root, tree)
         if not checks["all_empty"] or not checks["roundtrip"]:
@@ -1798,8 +1831,12 @@ def build(ctx) -> dict[str, Any]:
                  "144→23（1 次）；能力 2 253→629 全体 20 倍雷属性技能伤害（不加 202，保留副位）；"
                  "能力 3 412→411、144→23（1 次）、154→2、删除自身 411；能力 5 388→34；upskill 恢复 "
                  "skill_damage_up；面板 4 键与技能描述同步。未经真机验收")
+    notes.append("2026-09-27 平衡第二批（口径 A 无上限成长，wf_balance_20260927b_regis）：队长每层雷队技伤 "
+                 "150→30%、攻击 100→20%，新增自身每层攻/技伤 30%（由能力 3 搬入，7→9 行）；能力 3 两行改为每层 "
+                 "30%、最多 5 层（c102=5）；技能树浪涌层数绑定上限 99→5（每层 +15 倍最多 5 层）；"
+                 "面板 2 键与技能描述同步。未经真机验收")
     report = {
-        "summary": f"雷吉斯·海滨 kit（改版 2026-09-16）：6 队长行 / "
+        "summary": f"雷吉斯·海滨 kit（改版 2026-09-16）：{len(rows['leader'])} 队长行 / "
                    f"{sum(len(v) for v in rows['ability'].values())} 词条行 / 7 覆盖文案 / "
                    f"固有状态「{UNIQUE_NAME}」+ 48×48 图标 / "
                    f"两档技能（技能伤害 55/75 倍 + 按层数 +10 倍）/ 能力 2 全体追击 629 / 两特效族克隆 / 语音路由",

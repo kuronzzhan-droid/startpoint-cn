@@ -33,6 +33,9 @@
   ``pixel/_review/verify_all.json`` 复核全过且 sha 一致时，以存储态写入 ``character/<code>/pixelart/``
   （owner=pixel），写后核对尺寸/alpha = 母本、元数据 = 母本（仅路径前缀）。语音由
   ``wf_seasonal7_voice pack`` + ``impl/philia/voice_merge.py`` 装包，kit 只读记录 ``voice_state``。
+- **2026-09-27 平衡第二批**（``wf_balance_20260927b_philia``）：行在 stock / nofly 之后先补 0917 的
+  ``wf_seasonal_pf_revision``（能力 3 +2 行），再叠无上限成长修订（队长 6→8 行、能力 3 三行有上限）；
+  技能树剑雨 p13 2.5→1、PF 随机选项风刃/剑雨 p13→0。
 - kit-report：离线门禁（``impl/philia/run_gates.py`` → ``impl/philia/gates.json``）全过、且其
   ``kit_digest`` 与本次产物摘要一致时写 ``ready-for-review``，否则 ``draft``。
 """
@@ -1866,6 +1869,18 @@ def build(ctx) -> dict[str, Any]:
     # 因为 wf_philia_combo_stock.revise_abilities 的基线断言仍按首发形态（c97=31）把关。
     import wf_philia_no_flying_revision as nofly_rows
     ability_rows[spec.cid_s+'4'] = nofly_rows.ability4_rows(ability_rows[spec.cid_s+'4'])
+    # 2026-09-17 PF 修订（``wf_seasonal_pf_revision``：能力 3 追加「每 5 次 PF → 队长攻击力 / 自身 PF 伤害」
+    # 两行；原为 kit 重建后手动再套的一次性候选，不补就少两行）→ 2026-09-27 平衡第二批
+    # （``wf_balance_20260927b_philia``：队长每次 PF 成长 1/10、施放 / 每 5 次 PF 两行搬入队长 1/5，能力 3
+    # 三行换成有上限的弱化版）。两者都只接受上一步的精确形态，kit 重跑产物 == 暂存候选。
+    import wf_seasonal_pf_revision as pf_revision
+    import wf_balance_20260927b_philia as balance_b
+    try:
+        ability_rows[spec.cid_s+'3'] = pf_revision.revise_rows('philia', ability_rows[spec.cid_s+'3'])
+        leader_rows, ability_rows[spec.cid_s+'3'] = balance_b.growth_rows(
+            leader_rows, ability_rows[spec.cid_s+'3'])
+    except ValueError as exc:
+        raise KitError(f"0917 PF revision / balance 20260927b rows: {exc}") from exc
     _write_checked_flat(ctx, stock.UNIQUE, {str(stock.UID): stock.unique_row()})
     stock_icon = ctx.workspace/'source/wind-stock-icon.png'
     # The revision candidate owns the generated source; rebuilds must not redraw it.
@@ -1953,6 +1968,12 @@ def build(ctx) -> dict[str, Any]:
             bad.append(f"fx refs outside cloned families: {stray}")
         if bad:
             raise KitError(f"skill {level} DSL gates failed: {bad}")
+        # 2026-09-27 平衡第二批（Down）：剑雨爆发段 p13 2.5→1（单体每次施放 57.5→27.5），其余节点不动
+        tree = balance_b.skill_tree(tree)
+        gates = dsl_gates(tree)
+        bad = dsl_gate_failures(gates) + [f"batch 20260927b: {p}" for p in balance_b.dsl_problems(tree)]
+        if bad:
+            raise KitError(f"skill {level} DSL gates failed after balance 20260927b: {bad}")
         gates["effect_rewrites"] = counts
         skill_gates[level] = gates
         programs.append(ctx.write_dsl(ctx.program_path(level), tree))
@@ -1991,6 +2012,11 @@ def build(ctx) -> dict[str, Any]:
             raise KitError(f"PF lv{level} DSL gates failed: {bad}")
         from wf_philia_random_pf import revise_pf as random_pf
         tree = random_pf(tree)
+        # 2026-09-27 平衡第二批（Down）：随机选项风刃 p13 0.75→0、剑雨 2.5→0（单体 43.75/48.75/53.75→15/20/25）
+        tree = balance_b.pf_tree(tree)
+        bad = [f"batch 20260927b: {p}" for p in balance_b.dsl_problems(tree)]
+        if bad:
+            raise KitError(f"PF lv{level} DSL gates failed after balance 20260927b: {bad}")
         gates = dsl_gates(tree)
         gates["effect_rewrites"] = counts
         gates["attacks_per_execution_path"] = want_attacks
@@ -2084,11 +2110,16 @@ def build(ctx) -> dict[str, Any]:
         "零先例两处（真机不生效按 requirements.md §8 降级）：技能 tree[10]=3 走强化弹射乘区；"
         "ACPowerFlipDamageResistance 在官方技能 DSL 无用例",
         "PF 换族副作用：suppress 90→20/30/30（触发变慢），且 special 族要球撞到敌人才结算",
+        "2026-09-27 平衡第二批（wf_balance_20260927b_philia）：队长每次 PF 光队攻 25→2.5%、自身 PF 伤 50→7%"
+        "（并入每 5 次 PF 行），新增施放→光队攻 20%、每 5 次 PF→自身攻 10%；能力 3 施放/每 5 次 PF 两行"
+        "最多 8 次、每 5 次 PF 伤害行改为持有「风刃余势」期间 PF 伤害 +50%；技能单体削韧 57.5→27.5、"
+        "PF 43.75/48.75/53.75→15/20/25。未经真机验收",
         "静态门禁通过不等于真机验收；金丝雀清单见 design/philia.md §10 + revision-20260916/philia/verify.md",
         f"status={status}：{reason}",
     ]
     ctx.report({
-        "summary": "菲莉亚·夏祭浴衣 kit（改版 revision-20260916）：六词条16条/队长6行/技能两档/"
+        "summary": f"菲莉亚·夏祭浴衣 kit（改版 revision-20260916）：六词条{sum(len(v) for v in ability_rows.values())}条/"
+                   f"队长{len(leader_rows)}行/技能两档/"
                    "PF special 覆盖三档/语音路由/特效三族",
         "status": status,
         "skills": {"programs": sorted(programs)},

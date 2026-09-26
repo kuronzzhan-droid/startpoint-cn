@@ -433,11 +433,16 @@ class DesignIntegration(unittest.TestCase):
         def package_tree(program):
             return wf_dsl.parse_dsl(zlib.decompress((pkg / wf_dsl.dsl_logical(program)).read_bytes(), -15))["tree"]
 
+        import wf_balance_20260927b_philia as B2
+
+        # 2026-09-27 平衡第二批：kit.build 在 build_skill_tree / random_pf 之后再叠
+        # wf_balance_20260927b_philia（只改 CNA p13）。候选暂存前 = 此前产物，暂存后 = 再叠第二批，两者都算一致。
         for level in ("1", "2"):
             tree, _ = K.build_skill_tree(self.ctx, level, K.SKILL_PARAMS[level], families, hashes)
             self.assertEqual(K.dsl_gate_failures(K.dsl_gates(tree)), [])
             program = f"battle/action/skill/action/rare5/{K.CODE}${K.CODE}_{level}"
-            self.assertEqual(tree, package_tree(program), level)
+            package = package_tree(program)
+            self.assertTrue(package == tree or package == B2.skill_tree(tree), level)
             self.assertEqual(tree[10], K.SKILL_BUFF_TARGET_AS)
         donor = K._source_tree(self.ctx, f"{K.SKILL_SRC}wind_oracle_1anv$wind_oracle_1anv_2",
                                hashes[f"{K.SKILL_SRC}wind_oracle_1anv$wind_oracle_1anv_2"])
@@ -450,7 +455,9 @@ class DesignIntegration(unittest.TestCase):
             tree, _ = K.build_pf_tree(self.ctx, level, donor, rain_donor, families, special)
             self.assertEqual(K.dsl_gate_failures(K.dsl_gates(tree)), [])
             from wf_philia_random_pf import revise_pf as random_pf
-            self.assertEqual(random_pf(tree), package_tree(K.PF_PROGRAMS[level - 1]), level)
+            volley = random_pf(tree)
+            package = package_tree(K.PF_PROGRAMS[level - 1])
+            self.assertTrue(package == volley or package == B2.pf_tree(volley), level)
             attacks = K.cmds(tree, "CreateNormalAttack")
             swords = [c for c in attacks if K.PF_SUBJECT_OFFSET <= c[1] < K.PF_RAIN_BASE_ID]
             self.assertEqual(len(swords), K.PF_SWORDS)
