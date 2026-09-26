@@ -46,6 +46,27 @@ def program(name: str):
     return C.amf_parse(path.read_bytes())
 
 
+def batch2_written_back() -> bool:
+    """2026-09-27 平衡第二批（wf_balance_20260927b_gbf）：design/soriz.json 与生成器已是改后形态，
+    候选包要等 stage_batch 回写（manifest.snapshot 出现 revision_20260927b）后才是改后形态。"""
+    manifest = json.loads((PACK / "package/manifest.json").read_text(encoding="utf-8"))
+    return "revision_20260927b" in (manifest.get("snapshot") or {})
+
+
+def expected_plan() -> dict:
+    """包内行应有的设计格子：回写后 = 设计稿；回写前 = 设计稿去掉第二批覆盖（队长 #9-#11、能力3 #1-#3 改前值）。"""
+    from copy import deepcopy
+    plan = deepcopy(design()["plan"])
+    if batch2_written_back():
+        return plan
+    import wf_balance_20260927b_gbf as B2
+    del plan["leader_ability"]["rows"][9:]
+    records = plan["ability"]["keys"][B2.SORIZ_ABILITY3]["records"]
+    for index, *_rest in B2.CROWS_ROWS:
+        records[index]["cells"] = {str(c): v for c, v in B2.crows_cells(index, capped=False).items()}
+    return plan
+
+
 def find_nodes(tree, name: str) -> list[list]:
     out: list[list] = []
 
@@ -62,7 +83,8 @@ def find_nodes(tree, name: str) -> list[list]:
 class RowContracts(unittest.TestCase):
     def test_row_counts_and_single_value_head_columns(self):
         leader = rows(KIT.LEADER, KIT.CID_S)
-        self.assertEqual(len(leader), 9)
+        # 第二批把能力3 三羽乌逐层成长搬进队长 #9-#11（9 → 12 行）；候选回写前仍是 9 行。
+        self.assertEqual(len(leader), 12 if batch2_written_back() else 9)
         counts = {key: len(rows(KIT.ABILITY, key)) for key in
                   (f"{KIT.CID}{i}" for i in range(1, 7))}
         self.assertEqual(counts, {"1299861": 6, "1299862": 8, "1299863": 11,
@@ -105,8 +127,9 @@ class RowContracts(unittest.TestCase):
                 self.assertEqual(L.invoke_skill_string_problems(row, keys, table), [])
 
     def test_rows_match_the_design_plan_cells(self):
-        plan = design()["plan"]
+        plan = expected_plan()              # 第一批/中秋定稿 + 第二批覆盖（按候选是否已回写）
         got = rows(KIT.LEADER, KIT.CID_S)
+        self.assertEqual(len(got), len(plan["leader_ability"]["rows"]))
         for want, row in zip(plan["leader_ability"]["rows"], got):
             cells = {str(i): c for i, c in enumerate(row) if c != ""}
             self.assertEqual(cells, want["cells"], want["req"])
@@ -208,6 +231,20 @@ class DslContracts(unittest.TestCase):
             self.assertAlmostEqual(multipliers[0] * 11 + multipliers[1], total, places=4)
             normal = find_nodes(fever[0][2], "CreateHitArea")     # 第二分支 = 非 FEVER 原版
             self.assertEqual([area[14][1] for area in normal], [3 if level > 1 else 2, 1])
+
+    def test_batch2_toughness_follows_the_candidate_state(self):
+        """第二批削韧：援护 629 p13 30→3；Fever 特殊 PF 分支 60/60/75 → 15/20/25（回写前仍是改前值）。"""
+        done = batch2_written_back()
+        for name in ("soriz_assist_eugen", "soriz_assist_jin", "soriz_assist_duo"):
+            attacks = find_nodes(program(KIT.AP.format(name)), "CreateNormalAttack")
+            self.assertEqual([a[13] for a in attacks], [[{"min": 3 if done else 30, "max": 3 if done else 30}]])
+        for level, (before, after) in {1: (60, 15), 2: (60, 20), 3: (75, 25)}.items():
+            tree = program(KIT.PF_PATH.format(k=KIT.PF_KEY, n=level))
+            fever = find_nodes(tree, "ConditionalsFeverMode")[0]
+            for branch, want in ((fever[1], after if done else before), (fever[2], after)):
+                total = sum(area[14][1] * find_nodes(area, "CreateNormalAttack")[0][13][0]["max"]
+                            for area in find_nodes(branch, "CreateHitArea"))
+                self.assertEqual(total, want, f"lv{level}")
 
     def test_skill_hurts_self_and_stacks_three_crows(self):
         tree = program(KIT.SKILL_PATH.format(KIT.CODE, "1"))

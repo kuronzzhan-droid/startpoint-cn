@@ -98,6 +98,21 @@ CAPABILITIES = ("kyubi-fever-ratio-v1", "panel-description-override-v2")
 STATUE = {1: "action_skill", 2: "special", 3: "special", 4: "special",
           5: "attack_common", 6: "special"}
 
+# ---- 2026-09-27 平衡调整第二批（作者口径 A/B，修订模块 ``wf_balance_20260927b_gbf.py``；
+# 本 kit 输出必须 == 修订模块 revise() 输出，测试 test_balance_20260927b_gbf 断言）。
+#: 三羽乌逐层成长：(内容 kind, 名称, 改前每层, 能力3 封顶版每层, 队长每层)。强度单位 1000 = 1%。
+#: 能力3 #1-#3 原为「每层、不设上限」→ 能力侧改为最多计 CROWS_CAP 层；原行（无上限）搬进队长并放缓 1/5
+#: （3 分钟约 23–27 次触发，落 15–30 档 ⇒ 1/5；413 的 0.6% 按复核 C09 取 0.5%）。
+CROWS_CAP = 10
+CROWS_GROWTH = ((0, "攻击力", 100000, 15000, 20000),
+                (23, "PF伤害", 100000, 10000, 20000),
+                (413, "独立乘区PF伤害", 3000, 1000, 500))
+#: 三棵援护 629 的 CreateNormalAttack p13（削韧）：口径 B3 每次 ≤3（CT 15 秒 / 每次 Fever 至多 1 次）。
+ASSIST_TOUGHNESS = 3
+#: Fever 特殊 PF 分支的 p13：(第一判定区每段, 终结段)。11 段 + 1 段 = 15 / 20 / 25（口径 B2 顶到每级上限）；
+#: 非 Fever 分支是官方 special 原树副本（5/5/6.25 × 3–4 段 = 15/20/25），不动。
+PF_FEVER_TOUGHNESS = {1: (1.25, 1.25), 2: (1.5, 3.5), 3: (2, 3)}
+
 SPEC = {
     "required_capabilities": CAPABILITIES,
     "extra_keys": {
@@ -144,7 +159,11 @@ def rinfo(row: Sequence[str], table: str) -> dict[str, str]:
 
 class Rows:
     """官方 / store 表的行索引；donor 一律先官方（``.cdn/cn`` 归档），store 只用于
-    官方零先例的 kind（629 / 724 / 189）。"""
+    官方零先例的 kind（629 / 724 / 189）。
+
+    2026-09-27：store donor 一律按设计稿记录的键#行钉死（``key=``/``idx=``）。按「store 里第一条
+    ck=724」检索会随 live 变动漂移——1.4.1050 风巨蜥能力3 #4 改成 724 后排在前面，把它的持续块残值
+    带进了本角色 A3#8。"""
 
     def __init__(self, ctx) -> None:
         self.ctx = ctx
@@ -257,6 +276,22 @@ class Composer:
             row[col] = str(value)
         while len(row) < NCOLS[table]:
             row.append("")
+        return self._record(tag, table, row, cname, tname)
+
+    def derive(self, tag: str, table: str, row: Sequence[str], cells: Mapping[int, Any],
+               source: str) -> list[str]:
+        """不搜 donor：在已装配好的行上逐格改（例：能力行搬进队长），同样过闸门并登记。"""
+        row = list(row)
+        for col, value in cells.items():
+            col = int(col)
+            while len(row) <= col:
+                row.append("")
+            row[col] = str(value)
+        if len(row) != NCOLS[table]:
+            raise KitError(f"{tag}: {len(row)} columns, expected {NCOLS[table]}")
+        return self._record(tag, table, row, source, "")
+
+    def _record(self, tag: str, table: str, row: list[str], cname: str, tname: str) -> list[str]:
         problems = (L.client_legality_problems(table, row)
                     + L.declared_block_field_problems(table, row)
                     + L.invoke_skill_string_problems(row, set(CAS_KEYS), table)
@@ -271,6 +306,32 @@ class Composer:
             "cells": {str(i): c for i, c in enumerate(row) if c != ""},
         })
         return row
+
+
+def leader_from_ability(row: Sequence[str], leader_c0: str) -> list[str]:
+    """口径 A3：能力行搬进队长 = ``[队长 c0, '0', ''] + 能力行[5:]``（能力 c≥5 → 队长 c−2）。"""
+    if len(row) != NCOLS["ability"]:
+        raise KitError(f"ability row has {len(row)} columns")
+    return [leader_c0, "0", ""] + list(row[5:])
+
+
+def crows_row(co: "Composer", tag: str, ck: int, val: int, limit: Any) -> list[str]:
+    """能力3「三羽乌每层 → 自身 X」during 134 行（``limit`` = c102 最多计层数，``(None)`` = 不设上限）。"""
+    T = "ability"
+    B = LAY[T]
+    DC, DT = B["during_content"], B["during_trigger"]
+    cells = {0: f"{CODE}_3", 1: "false", 2: STATUE[3], 3: "0",
+             DT: 134, DT + 1: 0, DT + 2: "", DT + 3: 100000, DT + 4: 100000,
+             DT + 5: limit, DT + 6: "", DT + 7: CROWS, DT + 8: "", DT + 9: "",
+             DC: ck, DC + 4: val, DC + 5: val}
+    if ck == 0:
+        cells[DC + 1] = 0
+        cells[DC + 2] = ""
+    return co.compose(
+        tag, T,
+        dict(src="official", mode="D", ck=ck, puller=9) if ck != 413
+        else dict(src="official", mode="D", ck=413),
+        dict(src="official", mode="D", tk=134), [P0, P0, P0], cells)
 
 
 # ------------------------------------------------------------------ 行装配
@@ -330,6 +391,19 @@ def build_rows(ctx, design) -> tuple[list[list[str]], dict[str, list[list[str]]]
         leader.append(co.compose(
             tag, T, dict(src="official", mode="D", ck=ck, puller=9),
             dict(src="official", mode="D", tk=110, puller=9), [P0, P0, P0], cells))
+
+    # 2026-09-27b：能力3 原「三羽乌每层 → 自身 X（不设上限）」三行原样搬进队长，只把每层强度放缓 1/5。
+    # 队长原本没有同触发（during 134 / 三羽乌）的行 ⇒ 不合并、新起三行。母本行用临时 Composer 装配
+    # （与搬入前的 live 行逐字相同），不登记进本 kit 的 records。
+    scratch = Composer(ctx, design)
+    scratch.rows = co.rows
+    LD = LAY[T]["during_content"]
+    for n, (ck, name, legacy, _capped, per_layer) in enumerate(CROWS_GROWTH, start=1):
+        moved = crows_row(scratch, f"A3#{n} 搬入前", ck, legacy, "(None)")
+        leader.append(co.derive(
+            f"L#{8 + n} 每层三羽乌 {name}+{per_layer / 1000:g}%", T,
+            leader_from_ability(moved, SID[0]), {LD + 4: per_layer, LD + 5: per_layer},
+            f"move:ability[{CID}3]#{n}"))
 
     # ---------------------------------------------------------------- 词条表
     T = "ability"
@@ -416,7 +490,7 @@ def build_rows(ctx, design) -> tuple[list[list[str]], dict[str, list[list[str]]]
          DC: 23, DC + 4: 20000, DC + 5: 20000}))
     ab["1299862"].append(co.compose(
         "A2#6 Lv4 每5秒 629 给全队(水)逆境25~50%", T,
-        dict(src="store", mode="I", ck=629),
+        dict(src="store", key="1611053", idx=0),
         dict(src="official", mode="I", tk=77), [UNI(VET, 4), P0, P0],
         {**head(2), IT: 77, IT + 3: 30000000, IT + 4: 30000000,
          IT + 7: "(None)", IT + 8: 0, IC: 629, IC + 23: "soriz_adversity_tick",
@@ -436,33 +510,22 @@ def build_rows(ctx, design) -> tuple[list[list[str]], dict[str, list[list[str]]]
         {**head(3, main=True), IT: 8, IT + 3: 100000, IT + 4: 100000,
          IT + 7: "(None)", IT + 8: 0, IC: 461, IC + 1: 0, IC + 4: 100000,
          IC + 5: 100000, IC + 12: 100000, IC + 13: 100000, IC + 21: CROWS}))
-    for tag, ck, val in (("A3#1 每层三羽乌 攻击力+100%", 0, 100000),
-                         ("A3#2 每层三羽乌 PF伤害+100%", 23, 100000),
-                         ("A3#3 每层三羽乌 独立乘区PF伤害+3%", 413, 3000)):
-        cells = {**head(3, main=True),
-                 DT: 134, DT + 1: 0, DT + 2: "", DT + 3: 100000, DT + 4: 100000,
-                 DT + 5: "(None)", DT + 6: "", DT + 7: CROWS, DT + 8: "", DT + 9: "",
-                 DC: ck, DC + 4: val, DC + 5: val}
-        if ck == 0:
-            cells[DC + 1] = 0
-            cells[DC + 2] = ""
-        ab["1299863"].append(co.compose(
-            tag, T,
-            dict(src="official", mode="D", ck=ck, puller=9) if ck != 413
-            else dict(src="official", mode="D", ck=413),
-            dict(src="official", mode="D", tk=134), [P0, P0, P0], cells))
+    # 2026-09-27b：封顶版——每层强度按 CROWS_GROWTH，最多计 CROWS_CAP 层（c102）；无上限部分已搬进队长。
+    for n, (ck, name, _legacy, capped, _per_layer) in enumerate(CROWS_GROWTH, start=1):
+        ab["1299863"].append(crows_row(
+            co, f"A3#{n} 每层三羽乌 {name}+{capped / 1000:g}%(最多{CROWS_CAP}层)", ck, capped, CROWS_CAP))
     for tag, name, pres in (
             ("A3#4 Fever中 每次PF 欧根援护(CT15秒)", "soriz_assist_eugen", [FEV, P0, P0]),
             ("A3#5 非Fever 每次PF 仁援护(CT15秒)", "soriz_assist_jin", [NOF, P0, P0])):
         ab["1299863"].append(co.compose(
-            tag, T, dict(src="store", mode="I", ck=629),
+            tag, T, dict(src="store", key="1611053", idx=0),
             dict(src="official", mode="I", tk=2), pres,
             {**head(3, main=True), IT: 2, IT + 1: "", IT + 2: "",
              IT + 3: 100000, IT + 4: 100000, IT + 7: "(None)", IT + 8: 900,
              IC: 629, IC + 23: name, IC + 24: AP.format(name)}))
     ab["1299863"].append(co.compose(
         "A3#6 Fever中 首次PF3 双人援护(消耗合击预备)", T,
-        dict(src="store", mode="I", ck=629),
+        dict(src="store", key="1611053", idx=0),
         dict(src="official", mode="I", tk=65), [FEV, HAS(DUO), P0],
         {**head(3, main=True), IT: 65, IT + 3: 100000, IT + 4: 100000,
          IT + 7: "(None)", IT + 8: 0,
@@ -477,21 +540,21 @@ def build_rows(ctx, design) -> tuple[list[list[str]], dict[str, list[list[str]]]
          IC + 4: 15000, IC + 5: 15000}))
     ab["1299863"].append(co.compose(
         "A3#8 水共鸣+Fever+队长 每次PF Fever槽-20%", T,
-        dict(src="store", mode="I", ck=724),
+        dict(src="store", key="1399951", idx=4),
         dict(src="official", mode="I", tk=2), [RES, FEV, LDR],
         {**head(3, main=True), IT: 2, IT + 1: "", IT + 3: 100000, IT + 4: 100000,
          IT + 7: "(None)", IT + 8: 0, IC: 724, IC + 1: "", IC + 4: -20000, IC + 5: -20000}))
     ab["1299863"].append(co.compose(
         "A3#9 队长 队友致死 消耗3层不死不休", T,
         dict(src="official", mode="I", ck=525),
-        dict(src="store", mode="I", tk=189), [LDR, P0, P0],
+        dict(src="store", key="1699976", idx=1), [LDR, P0, P0],
         {**head(3, main=True), IT: 189, IT + 1: 5, IT + 2: "",
          IT + 3: 100000, IT + 4: 100000, IT + 7: "(None)", IT + 8: 0,
          IC: 525, IC + 1: 0, IC + 4: 300000, IC + 5: 300000, IC + 21: GUTS}))
     ab["1299863"].append(co.compose(
         "A3#10 队长 队友致死 触发者4秒无敌", T,
         dict(src="official", mode="I", ck=16),
-        dict(src="store", mode="I", tk=189), [LDR, P0, P0],
+        dict(src="store", key="1699976", idx=1), [LDR, P0, P0],
         {**head(3, main=True), IT: 189, IT + 1: 5, IT + 2: "",
          IT + 3: 100000, IT + 4: 100000, IT + 7: "(None)", IT + 8: 0,
          IC: 16, IC + 1: 7, IC + 2: "", IC + 10: 24000000, IC + 11: 24000000,
@@ -515,7 +578,7 @@ def build_rows(ctx, design) -> tuple[list[list[str]], dict[str, list[list[str]]]
          DC: 3, DC + 1: 5, DC + 2: "Blue", DC + 4: 10000, DC + 5: 10000}))
     ab["1299864"].append(co.compose(
         "A4#10 自身HP<20%+Fever 每次PF 压敌方PF抗性至 -15%", T,
-        dict(src="store", mode="I", ck=629),
+        dict(src="store", key="1611053", idx=0),
         dict(src="official", mode="I", tk=2), [HPLOW(20), FEV, P0],
         {**head(4), IT: 2, IT + 1: "", IT + 3: 100000, IT + 4: 100000,
          IT + 7: "(None)", IT + 8: 0, IC: 629, IC + 23: "soriz_pf_resist",
@@ -544,7 +607,7 @@ def build_rows(ctx, design) -> tuple[list[list[str]], dict[str, list[list[str]]]
     for tag, trig, name in (("A6#0 Fever结束 → 三羽乌换余热", 184, "soriz_heat_end"),
                             ("A6#1 进Fever → 余热换余热·燃", 8, "soriz_heat_begin")):
         ab["1299866"].append(co.compose(
-            tag, T, dict(src="store", mode="I", ck=629),
+            tag, T, dict(src="store", key="1611053", idx=0),
             dict(src="official", mode="I", tk=trig), [P0, P0, P0],
             {**head(6), IT: trig, IT + 1: "", IT + 2: "", IT + 3: 100000,
              IT + 4: 100000, IT + 7: "(None)", IT + 8: 0,
@@ -690,12 +753,15 @@ def hit_area(ctx, body: Sequence[list], *, radius: int = 150, life: int = 10,
 
 
 def normal_attack(ctx, subject: int, multiplier: float, *, vid: int | None = None,
-                  grown: float | None = None) -> list:
+                  grown: float | None = None, toughness: float | None = None) -> list:
+    """``toughness`` 给了就改 p13（削韧，SLv 单格 {min,max} 同值）；不给沿用官方 donor 的 30。"""
     donor = ctx.template_dsl(DONOR_SKILL)
     node = deepcopy(_commands(donor, "CreateNormalAttack")[0])
     node[1] = subject
     node[2] = 255                      # 元素位：继承角色元素（wf-dsl-element-code-offset）
     node[6] = SLV(multiplier, vid, grown)
+    if toughness is not None:
+        node[13] = V(toughness)
     return ["Command", node]
 
 
@@ -748,7 +814,8 @@ def build_programs(ctx) -> dict[str, Any]:
     programs["soriz_assist_eugen"] = TREE(
         CMD("BindConditionAccumulationVariable", -17, 2, ["DCUnique", BURN], 1, 10),
         hit_area(ctx, [EFFECT(FX_EUGEN, subject=11, scale=1.0),
-                       normal_attack(ctx, 11, 15.0, vid=2, grown=30.0)],
+                       normal_attack(ctx, 11, 15.0, vid=2, grown=30.0,
+                                     toughness=ASSIST_TOUGHNESS)],
                  radius=200, life=12, hits=1),
         FIND(0, FIND_ENEMY,
              COND(0, ["ACToleranceOfElement", V(900), DSL_ELEMENT, V(-0.3), V(1)])),
@@ -758,7 +825,8 @@ def build_programs(ctx) -> dict[str, Any]:
     programs["soriz_assist_jin"] = TREE(
         CMD("BindConditionAccumulationVariable", -17, 2, ["DCUnique", HEAT], 1, 10),
         hit_area(ctx, [EFFECT(FX_JIN, subject=11, scale=0.8),
-                       normal_attack(ctx, 11, 20.0, vid=2, grown=20.0)],
+                       normal_attack(ctx, 11, 20.0, vid=2, grown=20.0,
+                                     toughness=ASSIST_TOUGHNESS)],
                  radius=250, life=14, hits=1),
         CMD("AddFeverPoint", V(650)),
         COND(-17, ["ACUnique", CROWS, V(1)], cancelable=False), bta=3)
@@ -766,7 +834,7 @@ def build_programs(ctx) -> dict[str, Any]:
     # --- 双人援护：两张单人特效同播 + 大范围一击 60 倍
     programs["soriz_assist_duo"] = TREE(
         hit_area(ctx, [EFFECT(FX_EUGEN, subject=11, scale=1.4),
-                       normal_attack(ctx, 11, 60.0)],
+                       normal_attack(ctx, 11, 60.0, toughness=ASSIST_TOUGHNESS)],
                  radius=900, life=20, hits=1),
         WAIT(8, EFFECT(FX_JIN, subject=-18, scale=1.4)), bta=3)
 
@@ -835,6 +903,10 @@ def build_programs(ctx) -> dict[str, Any]:
         first[14] = ["CalculatedUsingMaxNumOfHits", 11]
         cna = _commands(first, "CreateNormalAttack")[0]
         cna[6] = SLV(round(per_hit, 6))
+        # 2026-09-27b：p13（削韧）11 段 + 终结段 = 15/20/25（改前沿用官方每段 5/5/6.25 ⇒ 60/60/75）。
+        per_segment, finisher = PF_FEVER_TOUGHNESS[level]
+        cna[13] = V(per_segment)
+        _commands(final, "CreateNormalAttack")[0][13] = V(finisher)
         root = deepcopy(official)
         root[11] = BLOCK(CMD("ConditionalsFeverMode", fever_body, normal_body))
         out[PF_PATH.format(k=PF_KEY, n=level)] = root
@@ -1184,12 +1256,12 @@ def build(pack, source=None) -> dict[str, Any]:
     panel = [strings[key][0][0].splitlines()[0] for key in DESC_KEYS]
     report = K.report(
         ctx,
-        summary="索利兹 129986 完成态 kit：队长 9 行 + 词条 44 行 + 6 固有状态 + 14 棵 DSL"
+        summary="索利兹 129986 完成态 kit：队长 12 行 + 词条 44 行 + 6 固有状态 + 14 棵 DSL"
                 "（9×629 / 2 技能 / 3×722 覆盖）+ 17 条面板文案，图集已按裁决瘦身。",
         status=K.READY,
         panel=panel,
         notes=notes + [
-            "行装配：官方 donor 行 + 逐格改；53 行逐行过 client_legality / declared_block_fields /"
+            "行装配：官方 donor 行 + 逐格改（第二批搬入队长的 3 行为能力行派生）；56 行逐行过 client_legality / declared_block_fields /"
             " invoke_skill_string / element_columns，并与 design/soriz.json 的 cells·donor·describe 逐字核对。",
             "CreateCondition 下标 10（付与对象种类）按官方 rare5 语料取值（496 棵树统计："
             "FindAll 33→3 共 195 处、49→3、97→2、自身 -17→3 共 198 处）；写错 = 施法 C16102。",
@@ -1213,6 +1285,10 @@ def build(pack, source=None) -> dict[str, Any]:
             "『requires_client_base 1.4.933 cannot reach validated tail 1.4.928』——"
             "这是全批共用的 wf_midautumn_specs.REQUIRES_CLIENT_BASE，发布前由主控复核链尾，不是本包的缺陷。",
             "语音：按裁决 §5 用包内已有的 19 条原声，本轮不生成。",
+            "2026-09-27 平衡调整第二批（wf_balance_20260927b_gbf.py）：能力3「三羽乌每层 攻/PF伤/PF独立」"
+            "原样搬进队长并放缓 1/5（20%/20%/0.5%，队长 9→12 行），能力侧换最多计 10 层的"
+            " 15%/10%/1%；三棵援护 629 的 p13 30→3；Fever 特殊 PF 分支 p13 改为 11 段+终结段"
+            " = 15/20/25（改前 60/60/75）。",
         ],
         programs=written_programs,
         unique_condition={uid: {**icons[uid], "name": uniques[uid][1], "cap": uniques[uid][4]}
