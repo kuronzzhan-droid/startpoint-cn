@@ -27,7 +27,7 @@ class WaterBalanceTest(unittest.TestCase):
         self.assertEqual(['5000']*2, out[1][51:53])
         self.assertEqual(['7500000']*2, out[2][30:32])
         self.assertEqual(['252', '0', ''], out[2][47:50])
-        self.assertEqual(['1000000']*2, out[2][51:53])
+        self.assertEqual(['800000']*2, out[2][51:53])  # 2026-09-27：10 → 8 倍（×0.8）
         for row in out:
             self.assertEqual('Blue', row[11])
             self.assertEqual('600000', row[9])
@@ -47,7 +47,10 @@ class WaterBalanceTest(unittest.TestCase):
         self.assertEqual(['388', '5', 'Blue'], a2[-1][47:50])
         self.assertEqual(['200000']*2, a2[-1][51:53])
         a5 = B.gerald_rows('1299925', self.rows['1299925'])
-        self.assertEqual(self.rows['1299925'][0], a5[0])
+        # 2026-09-27：行1 全体 252 只改 c51/c52 15 → 12 倍（×0.8），其余逐字保留。
+        self.assertEqual([51, 52], [i for i, (x, y) in enumerate(zip(self.rows['1299925'][0], a5[0])) if x != y])
+        self.assertEqual(['252', '1500000'], [self.rows['1299925'][0][47], self.rows['1299925'][0][51]])
+        self.assertEqual(['1200000']*2, a5[0][51:53])
         self.assertEqual(['694', '695'], [r[47] for r in a5[1:]])
         for r in a5[1:]:
             self.assertEqual('0', r[48])
@@ -76,7 +79,8 @@ class WaterBalanceTest(unittest.TestCase):
         hits = list(wf_dsl.iter_dsl_commands(tree, 'CreateNormalAttack'))
         self.assertEqual(1, len(hits))
         self.assertEqual(0, hits[0][1])
-        self.assertEqual([{'min': 45, 'max': 45}], hits[0][6])
+        self.assertEqual([{'min': 36, 'max': 36}], hits[0][6])  # 2026-09-27：45 → 36（×0.8）
+        self.assertIn('36倍', B.STRIKE_TEXT)
         self.assertTrue(hits[0][8])
         self.assertEqual([], dsl_problems(tree, element=None))
         B.encode_tree(tree)

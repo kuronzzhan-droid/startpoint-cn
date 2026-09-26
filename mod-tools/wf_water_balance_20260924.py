@@ -1,4 +1,9 @@
-"""泳装勇希与水杰拉尔：2026-09-24 作者指定的键级修订。"""
+"""泳装勇希与水杰拉尔：2026-09-24 作者指定的键级修订。
+
+2026-09-27 作者「能力伤害倍率都降低一些」：能力伤害攻击倍率 ×0.8 同步进本生成器——
+杰拉尔 629 追击 45→36 倍（STRIKE_MULTIPLIER / STRIKE_TEXT）、能力5 行1 kind252 15→12 倍，
+勇希能力2 行3 kind252 10→8 倍；产物 == wf_balance_20260927_waterab 的 revise()（测试断言）。
+"""
 from copy import deepcopy
 import hashlib
 
@@ -13,7 +18,8 @@ CAS = 'master/string/custom_ability_string.orderedmap'
 CODE = 'unicorn_lancer_rose'
 STRIKE_KEY = 'change_skill_' + CODE + '_oath_strike'
 STRIKE_PROGRAM = f'battle/action/skill/action/ability_skill/{CODE}_oath_strike${CODE}_oath_strike'
-STRIKE_TEXT = '对距离最近的敌人造成45倍水属性能力伤害，威力随连击数提升'
+STRIKE_MULTIPLIER = 36  # 2026-09-27：45 → 36（×0.8）
+STRIKE_TEXT = f'对距离最近的敌人造成{STRIKE_MULTIPLIER}倍水属性能力伤害，威力随连击数提升'
 BEFORE = {
     '1299912': 'e68125300303eb3daa454950800ae8e2de93269c8af00991a1f2b8f582beba96',
     '1299921': '13e85317214957e3b0c76e35fe7c99fde18ed372a29cc93967459d00968629cf',
@@ -39,7 +45,7 @@ def yuki_rows(rows):
     attack = list(out[1])
     attack[30:32] = ['7500000']*2
     attack[47:50] = ['252', '0', '']  # EnemyDamageByAttackBlue, all enemies.
-    attack[51:53] = ['1000000']*2
+    attack[51:53] = ['800000']*2  # 2026-09-27：10 → 8 倍（×0.8）
     attack[69] = '(None)'
     out.append(attack)
     return out
@@ -59,6 +65,7 @@ def gerald_rows(key, rows):
         added = list(out[1])
         added[47] = '388'  # AbilityDamage, party Blue, +200%.
     elif key == '1299925':
+        out[0][51:53] = ['1200000']*2  # 2026-09-27：全体 252 15 → 12 倍（×0.8）
         out[1][51:53] = ['20000']*2
         added = list(out[1])
         added[47] = '695'  # SeparatedTermAbilityDamage, self +20%.
@@ -71,7 +78,7 @@ def gerald_rows(key, rows):
 def strike_tree():
     """One nearest enemy, no hit area, no skill invoke event, native combo bonus."""
     slv = lambda v: [{'min': v, 'max': v}]
-    attack = ['CreateNormalAttack', 0, 255, [], [], 12, slv(45), slv(0),
+    attack = ['CreateNormalAttack', 0, 255, [], [], 12, slv(STRIKE_MULTIPLIER), slv(0),
               True, False, False, False, False, slv(1), slv(1), ['Fine'], True]
     # FindNearSubjects: origin=-18 (ball), count=1, selector=49 (enemy), bind=0.
     find = ['FindNearSubjects', -18, 1, 49, ['DoNothing'], 0,
