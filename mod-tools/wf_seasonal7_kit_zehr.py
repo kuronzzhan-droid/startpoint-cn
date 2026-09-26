@@ -4,6 +4,11 @@
 由 ``python mod-tools/wf_seasonal7_build.py --char zehr --step kit`` 调用 :func:`build`。
 只写 ``work/character_packs/s7-zehr/``（经 KitContext）；live store / assets / .cdn / src / APK 只读。
 
+2026-09-27 平衡调整第二批：:func:`build` 在 09-17 灯火修订（``wf_zehr_lamp_revision`` 纯函数）之后再套
+``wf_balance_20260927b_zehr.balance_rows`` / ``panel_texts``（队长 #3 #4 放缓、灯芯 / 灯火正旺成长搬进队长
+#6–#8、能力1/3 限次；队长覆盖文案以 09-17 ``wf_seasonal_pf_revision.ZEHR_LEADER_TEXT`` 为底稿），
+重建不回退该批改动。下方各轮常量与门禁仍描述改版计划那一层，不含 09-17 之后的收口。
+
 2026-09-16 第四轮作者改版（revision3-20260916 续）：作者原话「能力 3 的 50% 降到 30%、灯芯每层 5% 降到 3%」
 （= 上一轮 ``timing.md``「如果要收一点」的第 1、2 档）。声明式增量见 :data:`REV4_VALUE_ROWS` /
 :data:`REV4_KEEP_ROWS` / :data:`REV4_TEXT_REWRITES` 一段注释：能力3#0/#3 的数值列 50000→30000、
@@ -2565,9 +2570,27 @@ def build(ctx) -> dict[str, Any]:
     for slot in (1, 3):
         key = f'desc_override_{CODE}_{slot}'
         cas_rows[key] = [[revise_text(slot, cas_rows[key][0][0])]]
+    # 2026-09-27 平衡调整第二批（wf_balance_20260927b_zehr）同样在灯火修订之后收口：队长 #3 #4 放缓、
+    # 灯芯 / 灯火正旺成长搬进队长 #6–#8、能力1/3 限次，三条覆盖文案同步。队长覆盖文案的底稿是 09-17
+    # wf_seasonal_pf_revision 写进包里的那一版（该脚本改完 kit 产物后被能力3 sha 锁住、不可重跑），在此一并收口。
+    import wf_balance_20260927b_zehr as balance_b
+    from wf_seasonal_pf_revision import ZEHR_LEADER_TEXT
+    rows["leader"], rows["ability"][CID+'1'], rows["ability"][CID+'3'] = balance_b.balance_rows(
+        rows["leader"], rows["ability"][CID+'1'], rows["ability"][CID+'3'])
+    balance_texts = balance_b.panel_texts({
+        balance_b.CAS_LEADER: ZEHR_LEADER_TEXT,
+        **{key: cas_rows[key][0][0] for key in (balance_b.CAS_A1, balance_b.CAS_A3)}})
+    balance_probs = (balance_b.row_problems("leader_ability", rows["leader"])
+                     + balance_b.row_problems("ability", rows["ability"][CID+'1'] + rows["ability"][CID+'3'])
+                     + balance_b.panel_problems(balance_texts))
+    if balance_probs:
+        raise KitError(f"2026-09-27 balance batch 2: {balance_probs}")
+    for key, text in balance_texts.items():
+        cas_rows[key] = [[text]]
+    ctx.write_flat(LEADER, {CID: rows["leader"]})
     ctx.write_flat(ABILITY, {CID+'1': rows['ability'][CID+'1'], CID+'3': rows['ability'][CID+'3']})
     ctx.write_flat(UC, {UC_ID: uc_rows[UC_ID]})
-    ctx.write_flat(CAS, {f'desc_override_{CODE}_{s}': cas_rows[f'desc_override_{CODE}_{s}'] for s in (1, 3)})
+    ctx.write_flat(CAS, {key: cas_rows[key] for key in (balance_b.CAS_LEADER, balance_b.CAS_A1, balance_b.CAS_A3)})
     import wf_seasonal7_tables as T
     caps_blob = ctx.pack.template_raw(CAPS)[f"change_skill_{TEMPLATE_CODE}"]     # 官方原行字节（5 档文本不含技能名）
     if T.decode_blob(caps_blob) != strings[(CAPS, CHANGE_SKILL_KEY)]["value"]:

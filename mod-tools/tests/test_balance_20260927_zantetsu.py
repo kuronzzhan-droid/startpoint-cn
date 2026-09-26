@@ -23,6 +23,7 @@ import wf_describe as D  # noqa: E402
 import wf_midautumn_kitlib as KL  # noqa: E402
 import wf_seasonal7_kit_zantetsu as K  # noqa: E402
 import wf_zantetsu_fever_revision as F  # noqa: E402
+import wf_balance_20260927b_zantetsu as MB  # noqa: E402  （第二批：Fever 修订链尾追加）
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
@@ -192,7 +193,9 @@ class GeneratorConsistencyTest(unittest.TestCase):
     def test_fever_apply_candidate_runs_balance_after_its_revision(self):
         src = inspect.getsource(F.apply_candidate)
         self.assertLess(src.index("revise_rows("), src.index("balance.balance_rows("))
-        self.assertIn("balance.PACKAGE_VERSION['s7-zantetsu']", src)
+        # 第二批（wf_balance_20260927b_zantetsu）接在本批之后，候选版本号取第二批的。
+        self.assertIn("balance_b.PACKAGE_VERSION['s7-zantetsu']", src)
+        self.assertLess(src.index("balance.balance_rows("), src.index("balance_b.balance_rows("))
         self.assertIn("{CID+'1': first, CID+'3': ab}", src)
         self.assertIn("balance.row_problems(", src)
         self.assertLess(src.index("balance.balance_rows("), src.index("candidate.splice(LEADER"))
@@ -227,9 +230,11 @@ class GeneratorConsistencyTest(unittest.TestCase):
                 mock.patch.object(F.core, "read_orderedmap_file_from_bytes", fake_orderedmap):
             with self.assertRaises(Stop):
                 F.apply_candidate(ROOT, ROOT / "work/character_packs/s7-zantetsu")
-        self.assertEqual(created["package_version"], M.PACKAGE_VERSION["s7-zantetsu"])
-        self.assertEqual(spliced[F.LEADER], self.out["leader"])
-        self.assertEqual(spliced[F.ABILITY], self.out["ability"])
+        # 第二批接在本批之后：期望 = 本批输出 + 第二批覆盖（队长追加 #7–#9、能力3 #1–#3 限次；能力1 不动）。
+        self.assertEqual(created["package_version"], MB.PACKAGE_VERSION["s7-zantetsu"])
+        leader_b, third_b = MB.balance_rows(self.out["leader"][M.CID], self.out["ability"][M.A3])
+        self.assertEqual(spliced[F.LEADER], {M.CID: leader_b})
+        self.assertEqual(spliced[F.ABILITY], {M.A1: self.out["ability"][M.A1], M.A3: third_b})
         self.assertEqual(set(spliced[F.CAS]), {F.FEVER_TEXT})
 
     def test_fever_revision_docstring_names_the_chain(self):

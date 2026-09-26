@@ -3,7 +3,9 @@
 生成器链（重建后固定顺序）：``wf_seasonal7_kit_zantetsu`` → 本模块 :func:`apply_candidate`。
 :func:`apply_candidate` 在本修订的 :func:`revise_rows` 之后再套 2026-09-27 平衡批次
 ``wf_balance_20260927_zantetsu.balance_rows``（队长 / 能力3 回槽改「除自身外的光属性角色」、
-能力3 连击 25→50、能力1 去 202），重跑不会回退该批改动。:func:`revise_rows` 本身仍只做 09-17 修订。
+能力3 连击 25→50、能力1 去 202），然后套第二批 ``wf_balance_20260927b_zantetsu.balance_rows``
+（能力3 三条 250 连击成长限次 + 搬进队长 #7–#9）与 ``pf_tree``（629 剑 PF 树 p13 3→0.5），
+重跑不会回退这两批改动。:func:`revise_rows` / :func:`revise_tree` 本身仍只做 09-17 修订。
 """
 from copy import deepcopy
 import hashlib
@@ -117,15 +119,17 @@ def revise_tree(tree):
 
 def apply_candidate(repo, workspace, *, apply=False):
     import wf_balance_20260927_zantetsu as balance
+    import wf_balance_20260927b_zantetsu as balance_b
     candidate = RevisionCandidate(repo, workspace, character_id=CID, code_name=CODE,
-        package_version=balance.PACKAGE_VERSION['s7-zantetsu'], snapshot_key='fever_revision_20260917',
+        package_version=balance_b.PACKAGE_VERSION['s7-zantetsu'], snapshot_key='fever_revision_20260917',
         evidence_name='fever-revision-20260917.json')
     old = {lg: core.read_orderedmap_file_from_bytes(candidate.read('common', lg))
            for lg in (LEADER, ABILITY)}
     lead, ab = revise_rows(core.read_csv_lines(old[LEADER][CID]),
                           core.read_csv_lines(old[ABILITY][CID+'3']))
-    # 2026-09-27 平衡批次：固定在本修订之后套用（kit 重建 → 09-17 → 09-27）。
+    # 2026-09-27 平衡批次：固定在本修订之后套用（kit 重建 → 09-17 → 09-27 1.5 批 → 09-27 第二批）。
     lead, first, ab = balance.balance_rows(lead, core.read_csv_lines(old[ABILITY][CID+'1']), ab)
+    lead, ab = balance_b.balance_rows(lead, ab)
     strings = {balance.CAS_CHANGE_SKILL, balance.CAS_PF}
     errors = (balance.row_problems('leader_ability', lead, strings)
               + balance.row_problems('ability', first, strings) + balance.row_problems('ability', ab, strings))
@@ -154,11 +158,21 @@ def apply_candidate(repo, workspace, *, apply=False):
         candidate.emit('common', logical, encode_tree(tree))
         checks.append(dict(level=level, roundtrip=True, dsl_errors=errors,
                            penetration_frames=900, native_combo_bonus='1 + combo * 0.005'))
+    # 2026-09-27 第二批：kit 产出的 629 剑 PF 树 p13 3→0.5（5 段 15→2.5），其余节点逐字保留。
+    pf_logical = wf_dsl.dsl_logical(balance_b.PF_PROGRAM)
+    pf = balance_b.pf_tree(wf_dsl.parse_dsl(zlib.decompress(candidate.read('common', pf_logical), -15))['tree'])
+    errors = (balance_b.dsl_problems(pf) + kit.sig_problems(pf) + kit.lookup_scope_problems(pf))
+    if errors:
+        raise ValueError(str(errors))
+    candidate.emit('common', pf_logical, encode_tree(pf))
     return candidate.finish(dict(checks=checks, light_resonance=True,
         leader_recharge_max=5, ability3_recharge=5, ability3_combo=50,
         existing_ability3_preserved=True, fever_penetration_seconds=15,
         balance_20260927=dict(module='wf_balance_20260927_zantetsu', recharge_trigger='除自身外的光属性角色',
-                              ability1_main_only=False)), apply=apply)
+                              ability1_main_only=False),
+        balance_20260927b=dict(module='wf_balance_20260927b_zantetsu', combo250_leader_rows=[7, 8, 9],
+                               ability3_trigger_limits=[4, 4, 5],
+                               pf_down_per_invoke=balance_b.down_per_invoke(pf))), apply=apply)
 
 
 if __name__ == '__main__':
