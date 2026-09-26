@@ -389,7 +389,11 @@ class OfficialBaselineTests(unittest.TestCase):
         import wf_seasonal7_common as C
         for level in ("1", "2"):
             tree, log = K.compose_tree(PACK, level)
-            self.assertEqual(len(log), 35)
+            # 35 条改版编辑 + 2026-09-27 平衡第二批 1 条（烟花削韧 p12 20→14，wf_balance_20260927b_primula）
+            self.assertEqual(len(log), 36)
+            self.assertEqual([e for e in log if e["param"] == "p12"],
+                             [dict(block="B3_hanabi.HA_F.CNA", command="CreateNormalAttack", param="p12",
+                                   old=[{"min": 20, "max": 20}], new=[{"min": 14, "max": 14}])])
             self.assertEqual(len(tree[11][1]), 2)                    # 改版：根块只剩 [B0 扇舞, B2 花园]
             # 烟花倍率变量的 cap 必须跟随夜百合新上限
             bind2 = tree[11][1][1][1][6][1][0][1][11][1][-1][1][3][1][0][1]

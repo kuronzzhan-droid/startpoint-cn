@@ -317,6 +317,9 @@ TREE_VALUES = {
     "1": dict(garden_mul=_slv(2.0), fin_mul=_slv(6.7, vlv=[{"vid": 2, "min": 0, "max": 0.6}])),
     "2": dict(garden_mul=_slv(2.6, 3.0), fin_mul=_slv(8.7, 10, vlv=[{"vid": 2, "min": 0, "max": 0.6}])),
 }
+# 2026-09-27 平衡第二批（口径 B.1 技能单目标总削韧 ≤30）：烟花 CNA p12（削韧，数组下标 13）
+# 官方 smr22 继承值 20 → 14，花园 8 段×2 不动 ⇒ 36 → 30。两档同值；== wf_balance_20260927b_primula。
+FINALE_DETOUGHNESS = (_slv(20), _slv(14))
 
 # ---------------------------------------------------------------- 迁移源（R1「移动」的原块）
 #
@@ -827,6 +830,7 @@ def compose_tree(pack, level: str) -> tuple[list, list[dict]]:
     log.setp("B3_hanabi.HA_F.CNA", fcna, 0, 5, 20)
     log.setp("B3_hanabi.HA_F.CNA", fcna, 4, 167, 100)
     log.setp("B3_hanabi.HA_F.CNA", fcna, 5, _cmd(fcna)[6], v["fin_mul"])
+    log.setp("B3_hanabi.HA_F.CNA", fcna, 12, *FINALE_DETOUGHNESS)     # 2026-09-27 第二批：削韧 20→14
     w60b[:] = [bind2, ha_f]
     log.note("B3_hanabi.wait_hit", "Wait", "p2 body", "[Bind vid2, HA, IfThisCharacterIsLeader(heal)]", "[Bind vid2, HA]")
     rpb.extend([w38, w60])
