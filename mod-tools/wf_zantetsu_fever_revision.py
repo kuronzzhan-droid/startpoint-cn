@@ -1,4 +1,10 @@
-"""白梅斩铁 2026-09-17 增量修订；在 kit 重建后应用，保留语音和展示资产。"""
+"""白梅斩铁 2026-09-17 增量修订；在 kit 重建后应用，保留语音和展示资产。
+
+生成器链（重建后固定顺序）：``wf_seasonal7_kit_zantetsu`` → 本模块 :func:`apply_candidate`。
+:func:`apply_candidate` 在本修订的 :func:`revise_rows` 之后再套 2026-09-27 平衡批次
+``wf_balance_20260927_zantetsu.balance_rows``（队长 / 能力3 回槽改「除自身外的光属性角色」、
+能力3 连击 25→50、能力1 去 202），重跑不会回退该批改动。:func:`revise_rows` 本身仍只做 09-17 修订。
+"""
 from copy import deepcopy
 import hashlib
 import zlib
@@ -110,15 +116,23 @@ def revise_tree(tree):
 
 
 def apply_candidate(repo, workspace, *, apply=False):
+    import wf_balance_20260927_zantetsu as balance
     candidate = RevisionCandidate(repo, workspace, character_id=CID, code_name=CODE,
-        package_version='1.0.1', snapshot_key='fever_revision_20260917',
+        package_version=balance.PACKAGE_VERSION['s7-zantetsu'], snapshot_key='fever_revision_20260917',
         evidence_name='fever-revision-20260917.json')
     old = {lg: core.read_orderedmap_file_from_bytes(candidate.read('common', lg))
            for lg in (LEADER, ABILITY)}
     lead, ab = revise_rows(core.read_csv_lines(old[LEADER][CID]),
                           core.read_csv_lines(old[ABILITY][CID+'3']))
+    # 2026-09-27 平衡批次：固定在本修订之后套用（kit 重建 → 09-17 → 09-27）。
+    lead, first, ab = balance.balance_rows(lead, core.read_csv_lines(old[ABILITY][CID+'1']), ab)
+    strings = {balance.CAS_CHANGE_SKILL, balance.CAS_PF}
+    errors = (balance.row_problems('leader_ability', lead, strings)
+              + balance.row_problems('ability', first, strings) + balance.row_problems('ability', ab, strings))
+    if errors:
+        raise ValueError('; '.join(errors))
     candidate.splice(LEADER, {CID: lead})
-    candidate.splice(ABILITY, {CID+'3': ab})
+    candidate.splice(ABILITY, {CID+'1': first, CID+'3': ab})
     candidate.splice(CAS, {FEVER_TEXT: [[
         'Fever模式中，强化『超振动斩铁剑·寒梅一闪』，追加随连击数提升的威力，并赋予贯穿效果']]})
     checks = []
@@ -141,8 +155,10 @@ def apply_candidate(repo, workspace, *, apply=False):
         checks.append(dict(level=level, roundtrip=True, dsl_errors=errors,
                            penetration_frames=900, native_combo_bonus='1 + combo * 0.005'))
     return candidate.finish(dict(checks=checks, light_resonance=True,
-        leader_recharge_max=5, ability3_recharge=5, ability3_combo=25,
-        existing_ability3_preserved=True, fever_penetration_seconds=15), apply=apply)
+        leader_recharge_max=5, ability3_recharge=5, ability3_combo=50,
+        existing_ability3_preserved=True, fever_penetration_seconds=15,
+        balance_20260927=dict(module='wf_balance_20260927_zantetsu', recharge_trigger='除自身外的光属性角色',
+                              ability1_main_only=False)), apply=apply)
 
 
 if __name__ == '__main__':

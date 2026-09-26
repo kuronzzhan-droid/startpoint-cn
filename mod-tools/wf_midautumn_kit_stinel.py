@@ -183,7 +183,8 @@ ABILITY: dict[int, tuple[str, str, tuple[tuple[str, str, str, dict[int, str], st
     1: ("true", "attack_common", (
         ("开局回槽", "1599981#0", "live", {51: "50000", 52: "50000"},
          "自身 技能槽 50%"),
-        ("536强化", "1599981#1", "live", {18: "White", 70: CAS_CHANGE_SKILL},
+        # c6=202 显式钉住：donor 斩铁 1599981#1 在 2026-09-27 平衡批次去掉了 202（主位限制），本行保留。
+        ("536强化", "1599981#1", "live", {6: "202", 18: "White", 70: CAS_CHANGE_SKILL},
          f"持有者为主位 且 光·编成≥6 时: 自身 切换技能形态[{CAS_CHANGE_SKILL}]"),
     )),
     2: ("true", "action_skill", (
