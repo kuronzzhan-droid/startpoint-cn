@@ -266,7 +266,12 @@ class LilithBalanceTest(unittest.TestCase):
         manifest = WORKSPACE / 'package/manifest.json'
         before = manifest.read_bytes()
         current = json.loads(before)['package_version']
-        self.assertGreaterEqual(tuple(map(int, M.PACKAGE_VERSION[M.PACKAGES[0]].split('.'))),
+        # 第二批（wf_balance_20260927b_lilith，突袭树 p13 3→0.5）经主会话暂存回写（snapshot
+        # revision_20260927b）后，候选 = 第一批输出 + 第二批覆盖，版本随第二批递增；回写前不走这条。
+        import wf_balance_20260927b_lilith as B2
+        batch2 = json.loads(before).get('snapshot', {}).get('revision_20260927b') is not None
+        owner = B2 if batch2 else M
+        self.assertGreaterEqual(tuple(map(int, owner.PACKAGE_VERSION[M.PACKAGES[0]].split('.'))),
                                 tuple(map(int, current.split('.'))))
         kwargs = dict(character_id=M.CID, code_name=M.CODE, snapshot_key='revision_20260927',
                       package_version=M.PACKAGE_VERSION[M.PACKAGES[0]],
@@ -274,12 +279,15 @@ class LilithBalanceTest(unittest.TestCase):
         written_back = json.loads(before).get('snapshot', {}).get('revision_20260927') is not None
         if written_back:
             # 回写后：两档技能树已与 manifest 一致（live 改雷后与候选相同），不再需要已审漂移。
-            self.assertEqual(M.PACKAGE_VERSION[M.PACKAGES[0]], current)
+            self.assertEqual(owner.PACKAGE_VERSION[M.PACKAGES[0]], current)
             candidate = RevisionCandidate(ROOT, WORKSPACE, **kwargs)
             common = X.unpack(candidate.read('common', 'master/ability/ability.orderedmap'))
             for key, rows in self.out['ability'].items():
                 self.assertEqual(X.csv_write(rows), common[key], key)
-            for program, tree in self.out['dsl'].items():
+            expected = dict(self.out['dsl'])
+            if batch2:
+                expected[M.BURST_PROGRAM] = B2.revise_burst_tree(self.out['dsl'][M.BURST_PROGRAM])
+            for program, tree in expected.items():
                 raw = candidate.read('common', wf_dsl.dsl_logical(program))
                 self.assertEqual(tree, wf_dsl.parse_dsl(zlib.decompress(raw, -15))['tree'], program)
             self.assertEqual(before, manifest.read_bytes())
