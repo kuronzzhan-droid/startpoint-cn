@@ -165,6 +165,39 @@ FIRE_ABILITY = {6: "2", 9: "600000", 10: "600000", 11: "Red"}  # ability 前置1
 # 写 ≥1 就是「持有」，与 187 等价；本 kit 槽 3 的 629/525 对也是同一写法。
 HAS_AURA_LEADER = {4: "188", 5: "0", 7: "100000", 8: "100000", 9: "", 10: UID_AURA}
 
+# ---- 2026-09-27 平衡第二批（口径 A：无上限成长移队长并放缓，能力栏换有上限弱化版）----------
+# 修订模块 ``wf_balance_20260927b_magnus`` 断言本 kit 的行/面板/DSL 输出 == 其 revise() 输出。
+# 放缓倍率按 3 分钟实际次数（口径 A2，不按事件名称）：
+#   · 「每 3 次强化弹射」：光环期（技能后 10 秒，约占 50–60% 时间）每次弹射 +35 连击 ⇒ 几乎每次弹射都是
+#     Lv3 PF，3 分钟约 45–70 次 PF ⇒ 触发 15–23 次（≤30）⇒ 每步 ×1/5；
+#   · 「引擎点火每 1 层」：3 分钟获得约 175–230 层（火技能 +1、每 3PF +10），命中每 0.6 秒消耗 1 层，
+#     常驻 20–60 层、PF 密集时顶到 99 ⇒ ≥30 ⇒ 每步 ×1/10（设计稿按「每层属低频事件」取 1/5，
+#     与口径 A2「不按事件名称」冲突，本批按实际层数改判）。
+# 复核 C06：能力 1#2（每 3PF 自身技伤）与队长行 2（全队技伤）目标不同 ⇒ 不合并，另起自身行。
+PF3_TEAM_SKILL_DAMAGE = "20000"          # 队长行 2：全队(火)技能伤害 100% → 20%（×1/5）
+PF3_TEAM_ATTACK = "10000"                # 队长行 3：全队(火)攻击力 50% → 10%（×1/5）
+PF3_SELF_SKILL_DAMAGE_LEADER = "5000"    # 能力 1#2 搬入队长：自身技能伤害 25% → 5%（×1/5）
+LAYER_SELF_LEADER = "5000"               # 能力 2 两行搬入队长：每层自身技伤/攻 50% → 5%（×1/10）
+LAYER_TEAM_411_LEADER = "500"            # 能力 3#4 搬入队长：每层全队独立乘区 5% → 0.5%（×1/10）
+PF3_SELF_SKILL_DAMAGE_LIMIT = "4"        # 能力 1#2 就地：限 4 次（25%×4 = 100%，设计稿值）
+LAYER_ABILITY_LIMIT = "10"               # 能力 2 / 能力 3#4 就地：最多计 10 层（c102，官方 1611231–1611236 同写法）
+LAYER_ABILITY_SELF = "15000"             # 能力 2 每层自身技伤/攻 15%（满 150%）
+LAYER_ABILITY_TEAM_411 = "1000"          # 能力 3#4 每层全队独立乘区 1%（满 10%）
+# 技能 DSL「点火每层 +5 倍」：BindConditionAccumulationVariable 第 5 参是变量上限
+# （ActionEvaluator.as case 101：``bindFloatVariable(vid, min(层数 / 第4参, 第5参))``）⇒ 99 → 10，
+# 层数对倍率的贡献封顶 10 层；live 先例 wf_gbf_kit_soriz（…, 1, 10）、wf_seasonal7_kit_primula（…, 1, 20）。
+# 无上限部分由队长技「点火每层自身技能伤害」承担（口径 A5：队长已有同一层数的逐层成长行 ⇒ 视为已合并）。
+IGNITION_DSL_CAP = 10
+# 2026-09-27 第二批（口径 B3/B6，复核补漏）：「引擎之炎」629 追击 = 能力 3#1 触发 136 自身技能命中、
+# CT c35 = 36 帧（0.6 秒 ≤3 秒）⇒ 每次发动单目标削韧必须 ≤1。追击树的爆炸判定区寿命 30 帧、
+# CalculatedUsingMaxNumOfHits(5)、p15 None（无每目标硬上限）⇒ 同一个 boss 吃满 5 段。
+# 官方母本火龙 ability_skill_fire_dragon_zenith 是 4 段 × 0.25 = 1.0；rework 把段数抬到 5 后变 1.25。
+# 口径 B6 只改 CreateNormalAttack p13：0.25 → 0.2 ⇒ 5 × 0.2 = 1.0（回到母本每次总量），
+# 段数、倍率、Fever 点（p14）一格不动。疾风同路 PF（队长 #6–#8 的 629，15/20/25 顶格）按口径 B5 保留。
+CHASE_DOWN_DONOR = 0.25                  # 母本 CNA p13（漂移即拒绝）
+CHASE_DOWN = 0.2                         # 每段削韧；× BURST_MAX_HITS(5) = 每次 1.0
+CHASE_DOWN_CAP = 1.0                     # 口径 B3：触发 CT ≤3 秒的 629 每次 ≤1
+
 # 队长技 6 行（面板 7 行：2 条冲刺文案对应的 422 行在词条槽 5，见施工单偏离 D-1）
 LEADER: tuple[tuple[str, str, dict[int, str], str], ...] = (
     ("141201#1", "official",
@@ -172,12 +205,12 @@ LEADER: tuple[tuple[str, str, dict[int, str], str], ...] = (
      "火·编成≥6 时: 自身 强化弹射覆盖"),
     ("111183#1", "official",
      {0: CODE, **FIRE_LEADER, 32: "(None)", 45: "34", 46: "5", 47: "Red",
-      49: "100000", 50: "100000"},
-     "火·编成≥6 时: 强化弹射≥3 → 赋予全队(火) 技能伤害 100%"),
+      49: PF3_TEAM_SKILL_DAMAGE, 50: PF3_TEAM_SKILL_DAMAGE},
+     "火·编成≥6 时: 强化弹射≥3 → 赋予全队(火) 技能伤害 20%"),
     ("111183#1", "official",
      {0: CODE, **FIRE_LEADER, 32: "(None)", 45: "32", 46: "5", 47: "Red",
-      49: "50000", 50: "50000"},
-     "火·编成≥6 时: 强化弹射≥3 → 赋予全队(火) 攻击力 50%"),
+      49: PF3_TEAM_ATTACK, 50: PF3_TEAM_ATTACK},
+     "火·编成≥6 时: 强化弹射≥3 → 赋予全队(火) 攻击力 10%"),
     ("111183#2", "official",
      {0: CODE, 28: "300000", 29: "300000", 46: "5", 47: "Red",
       49: "5000", 50: "5000"},
@@ -199,6 +232,34 @@ LEADER: tuple[tuple[str, str, dict[int, str], str], ...] = (
 
 LEADER += PF_SKILL.leader_plans(CODE, PF_STRING)
 
+# 2026-09-27 第二批：从能力栏搬进队长的无上限部分（行 = [CODE, '0', ''] + 能力行[5:]，能力 c≥5 → 队长 c−2），
+# 追加在末尾，已有 9 行的下标不动。donor 只提供形状，逐格改后与转置行逐字相同（修订模块测试断言）。
+#   #9  能力 1#2  → 每 3PF 自身技能伤害 5%（官方 111183#1 同形，target 0）
+#   #10 能力 2#0  → 点火每层自身技能伤害 5%（官方 161063#3：队长 during 134 → 2 / target 0）
+#   #11 能力 2#1  → 点火每层自身攻击力 5%（官方 161063#2：队长 during 134 → 0 / target 0）
+#   #12 能力 3#4  → 点火每层全队(火)独立乘区技能伤害 0.5%（形状取官方 161123#0 队长 during 134 → target 5；
+#       内容 411 队长表官方 0 行，live 先例特克托 139993 队长 134→411；LeaderAbilityValues.parseAt107
+#       原生 case "411" = SeparatedTermSkillDamage{target: parseAt108, strength: parseAt111}）。
+#       原能力行无前置（c6=0）⇒ 转置后 c4=0，不加火共鸣门。
+LEADER += (
+    ("111183#1", "official",
+     {0: CODE, **FIRE_LEADER, 32: "(None)", 45: "34", 46: "0", 47: "",
+      49: PF3_SELF_SKILL_DAMAGE_LEADER, 50: PF3_SELF_SKILL_DAMAGE_LEADER},
+     "火·编成≥6 时: 强化弹射≥3 → 自身 技能伤害 5%"),
+    ("161063#3", "official",
+     {0: CODE, **FIRE_LEADER, 98: "100000", 99: "100000", 100: "(None)", 102: UID,
+      107: "2", 108: "0", 111: LAYER_SELF_LEADER, 112: LAYER_SELF_LEADER},
+     f"火·编成≥6 时: 持续·状态累积计数固有≥1[固有{UID}] → 自身 技能伤害 5%"),
+    ("161063#2", "official",
+     {0: CODE, **FIRE_LEADER, 98: "100000", 99: "100000", 100: "(None)", 102: UID,
+      107: "0", 108: "0", 111: LAYER_SELF_LEADER, 112: LAYER_SELF_LEADER},
+     f"火·编成≥6 时: 持续·状态累积计数固有≥1[固有{UID}] → 自身 攻击力 5%"),
+    ("161123#0", "official",
+     {0: CODE, 100: "(None)", 102: UID, 107: "411", 108: "5", 109: "Red",
+      111: LAYER_TEAM_411_LEADER, 112: LAYER_TEAM_411_LEADER},
+     f"持续·状态累积计数固有≥1[固有{UID}] → 赋予全队(火) 独立乘区技能伤害 0.5%"),
+)
+
 _A = "action_skill"
 
 # 六个词条键。每键 c1（主位限制）与 c2（雕像组）必须全键一致（kitlib.check_ability_key）。
@@ -210,20 +271,26 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str], ...]] = {
         ("1111296#0", "official",
          {0: f"{CODE}_1", 1: "true", 2: _A, **FIRE_ABILITY, 70: SWITCH_STRING},
          f"火·编成≥6 时: 自身 切换技能形态[{SWITCH_STRING}]"),
+        # 2026-09-27 第二批：限次 (None) → 4（无上限部分已搬进队长 #9，×1/5）。
         ("1111833#1", "official",
          {0: f"{CODE}_1", 1: "true", 2: _A, **FIRE_ABILITY,
-          30: "300000", 31: "300000", 34: "(None)", 47: "34", 51: "25000", 52: "25000"},
-         "火·编成≥6 时: 强化弹射≥3 → 自身 技能伤害 25%"),
+          30: "300000", 31: "300000", 34: PF3_SELF_SKILL_DAMAGE_LIMIT, 47: "34",
+          51: "25000", 52: "25000"},
+         f"火·编成≥6 时: 强化弹射≥3(限{PF3_SELF_SKILL_DAMAGE_LIMIT}次) → 自身 技能伤害 25%"),
     ),
+    # 2026-09-27 第二批：每层 50%/不限层 → 每层 15%、最多计 10 层（c102 = 官方 donor 原值 10）；
+    # 无上限部分已搬进队长 #10/#11（×1/10）。
     2: (
         ("1611232#0", "official",
          {0: f"{CODE}_2", 1: "true", 2: _A, **FIRE_ABILITY,
-          102: "(None)", 104: UID, 109: "2", 110: "0", 113: "50000", 114: "50000"},
-         f"火·编成≥6 时: 持续·状态累积计数固有≥1[固有{UID}] → 自身 技能伤害 50%"),
+          102: LAYER_ABILITY_LIMIT, 104: UID, 109: "2", 110: "0",
+          113: LAYER_ABILITY_SELF, 114: LAYER_ABILITY_SELF},
+         f"火·编成≥6 时: 持续·状态累积计数固有≥1(限{LAYER_ABILITY_LIMIT}次)[固有{UID}] → 自身 技能伤害 15%"),
         ("1611231#1", "official",
          {0: f"{CODE}_2", 1: "true", 2: _A, **FIRE_ABILITY,
-          102: "(None)", 104: UID, 109: "0", 110: "0", 113: "50000", 114: "50000"},
-         f"火·编成≥6 时: 持续·状态累积计数固有≥1[固有{UID}] → 自身 攻击力 50%"),
+          102: LAYER_ABILITY_LIMIT, 104: UID, 109: "0", 110: "0",
+          113: LAYER_ABILITY_SELF, 114: LAYER_ABILITY_SELF},
+         f"火·编成≥6 时: 持续·状态累积计数固有≥1(限{LAYER_ABILITY_LIMIT}次)[固有{UID}] → 自身 攻击力 15%"),
     ),
     3: (
         ("1111652#0", "official",
@@ -247,11 +314,13 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str], ...]] = {
           98: "0", 100: "500000", 101: "500000", 102: "1", 104: UID,
           109: "411", 110: "0", 111: "", 113: "25000", 114: "25000"},
          f"持续·状态累积计数固有≥5(限1次)[固有{UID}] → 自身 独立乘区技能伤害 25%"),
+        # 2026-09-27 第二批：每层 5%/不限层 → 每层 1%、最多计 10 层；无上限部分已搬进队长 #12（×1/10）。
         ("1310323#2", "official",
          {0: f"{CODE}_3", 1: "false", 2: _A, 6: "0", 7: "", 9: "", 10: "",
-          98: "0", 100: "100000", 101: "100000", 102: "(None)", 104: UID,
-          109: "411", 110: "5", 111: "Red", 113: "5000", 114: "5000"},
-         f"持续·状态累积计数固有≥1[固有{UID}] → 赋予全队(火) 独立乘区技能伤害 5%"),
+          98: "0", 100: "100000", 101: "100000", 102: LAYER_ABILITY_LIMIT, 104: UID,
+          109: "411", 110: "5", 111: "Red",
+          113: LAYER_ABILITY_TEAM_411, 114: LAYER_ABILITY_TEAM_411},
+         f"持续·状态累积计数固有≥1(限{LAYER_ABILITY_LIMIT}次)[固有{UID}] → 赋予全队(火) 独立乘区技能伤害 1%"),
         # number 保持 1，以 initial_multiply=3 累计进同一固有状态；
         # number=3 会改变状态 discrimination key，形成独立图标。
         ("1111652#0", "official",
@@ -312,27 +381,36 @@ CAS_TEXTS = {
     SWITCH_STRING: "强化『烈焰轰鸣』：光环的范围扩大",
     PF_STRING: "强化弹射变为特殊强化弹射时：火焰突进随发动次数分三档逐渐增强，"
                "命中敌人后引爆大范围火焰，按技能伤害结算",
+    # 2026-09-27 第二批：第 4 行数值放缓；按复核 C06 拆出「自身技能伤害＋5%」（紧跟同触发的第 4 行）；
+    # 引擎点火逐层两行（从能力 2/3 搬入的无上限部分）排在「烈焰光环」行之前，光环行仍是最后一行。
+    # 无上限就写到效果为止（不写「可无限」等禁语）。
     LEADER_OVERRIDE: "\n".join((
         "火属性共鸣时，自身的强化弹射变为特殊强化弹射，造成的伤害按技能伤害结算",
         "火属性共鸣时，自身获得冲刺强化效果，冲刺冷却时间－30%",
         "火属性共鸣时，冲刺间隔缩短效果不会让自身的冲刺冷却时间进一步缩短",
-        "火属性共鸣时，每发动3次强化弹射，火属性角色技能伤害＋100%、攻击力＋50%",
+        "火属性共鸣时，每发动3次强化弹射，火属性角色技能伤害＋20%、攻击力＋10%",
+        "火属性共鸣时，每发动3次强化弹射，自身技能伤害＋5%",
         "火属性共鸣时，每发动3次强化弹射，火属性角色技能槽＋5%",
         "火属性共鸣时，每发动3次强化弹射，自身引擎点火＋7层",
+        "火属性共鸣时，引擎点火每提升1层，自身技能伤害＋5%、攻击力＋5%",
+        "自身引擎点火每提升1层，火属性角色技能伤害额外乘区＋0.5%",
         "自身持有「烈焰光环」期间，每次弹射，连击＋35",
     )),
+    # 2026-09-27 第二批：536 条目只留「光环范围扩大」（不写数字）；每 3PF 自身技伤单列并写上限；
+    # 技能 DSL 点火倍率封顶 10 层。
     SLOT_OVERRIDE[1]: "\n".join((
         "战斗开始时，自身技能槽＋50%",
-        "火属性共鸣时，强化自身技能：光环范围扩大，自身技能伤害随强化弹射次数按层叠加提升",
-        "自身引擎点火每提升1层，技能基础总倍率＋5倍（含引擎之炎及特殊强化弹射）",
+        "火属性共鸣时，强化自身技能：光环范围扩大",
+        "火属性共鸣时，每发动3次强化弹射，自身技能伤害＋25%（最多4次）",
+        "自身引擎点火每提升1层，技能基础总倍率＋5倍（含引擎之炎及特殊强化弹射，最多10层）",
     )),
-    SLOT_OVERRIDE[2]: "火属性共鸣时，引擎点火每提升1层，自身技能伤害＋50%、攻击力＋50%",
+    SLOT_OVERRIDE[2]: "火属性共鸣时，引擎点火每提升1层，自身技能伤害＋15%、攻击力＋15%（最多10层）",
     SLOT_OVERRIDE[3]: "\n".join(MAIN_ICON + line for line in (
         "火属性共鸣时，火属性角色发动技能时，自身引擎点火＋1层",
         "自身处于「引擎点火」期间，自身技能命中敌人时，发动「引擎之炎」：造成技能伤害",
         "自身处于「引擎点火」期间，自身技能命中敌人时，消耗1层「引擎点火」",
         "自身引擎点火在5层以上时：自身技能伤害额外乘区＋25%",
-        "自身引擎点火每提升1层，火属性角色技能伤害额外乘区＋5%",
+        "自身引擎点火每提升1层，火属性角色技能伤害额外乘区＋1%（最多10层）",
         "火属性共鸣时，每发动3次强化弹射，自身引擎点火＋3层",
     )),
     SLOT_OVERRIDE[5]: "\n".join((
@@ -485,6 +563,23 @@ class KitError(KL.KitError):
 
 def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def ignition_growth(tree, expected_hits) -> tuple[Any, dict[str, Any]]:
+    """``with_ignition_growth`` ＋ 第二批封顶：把入口绑定的层数上限 99 → :data:`IGNITION_DSL_CAP`。
+
+    只改 ``BindConditionAccumulationVariable`` 第 5 参（变量上限）；vlv 每层增量、段数分摊、
+    伤害归属一格不动 ⇒ 点火 ≤10 层时倍率与改前逐层相同，>10 层后不再增长。
+    """
+    tree, meta = with_ignition_growth(tree, expected_hits)
+    head = tree[11][1][0]
+    binds = list(wf_dsl.iter_dsl_commands(tree, "BindConditionAccumulationVariable"))
+    if (len(binds) != 1 or head[0] != "Command" or head[1] is not binds[0]
+            or binds[0][:5] != ["BindConditionAccumulationVariable", -17, 11999005,
+                                ["DCUnique", int(UID)], 1] or binds[0][5] != 99):
+        raise KitError(f"ignition binding drifted: {binds}")
+    binds[0][5] = IGNITION_DSL_CAP
+    return tree, dict(meta, max_layers=IGNITION_DSL_CAP)
 
 
 # ---------------------------------------------------------------- 设计稿对账
@@ -1292,7 +1387,7 @@ def build_main_tree(ctx, level: str, families) -> tuple[Any, dict[str, Any]]:
     if [c[2][0][1] for c in marks] != [int(UID_AURA)]:
         raise KitError(f"main tree must carry exactly one 烈焰光环 ACUnique, got "
                        f"{[c[2][0][1] for c in marks]}")
-    tree, growth = with_ignition_growth(tree, (1, AURA_MAX_HITS))
+    tree, growth = ignition_growth(tree, (1, AURA_MAX_HITS))
     return tree, {"level": level, "aura": meta, "aura_mark": mark_meta, "ignition_growth": growth,
                   "slash": dict(sword[0][6][0]),
                   "root_commands": [n[1][0] if n[0] == "Command" else n[1][0]
@@ -1343,6 +1438,12 @@ def build_chase_tree(ctx, families) -> tuple[Any, dict[str, Any]]:
         hide[1] = "ignite_aura"
     cna = _only(_commands(tree, "CreateNormalAttack"), "chase CreateNormalAttack")
     cna[6] = _slv(CHASE_MULT)
+    # 2026-09-27 第二批（口径 B3/B6）：每段削韧 0.25 → 0.2，5 段合计 1.0（见 CHASE_DOWN 旁注释）。
+    if cna[13] != _slv(CHASE_DOWN_DONOR):
+        raise KitError(f"chase donor CreateNormalAttack p13 {cna[13]} != {CHASE_DOWN_DONOR}")
+    cna[13] = _slv(CHASE_DOWN)
+    if CHASE_DOWN * BURST_MAX_HITS > CHASE_DOWN_CAP:
+        raise KitError(f"chase detoughness per activation {CHASE_DOWN * BURST_MAX_HITS} > {CHASE_DOWN_CAP}")
     areas = _commands(tree, "CreateHitArea")
     if len(areas) != 2:
         raise KitError(f"chase donor should carry 2 CreateHitArea, got {len(areas)}")
@@ -1361,10 +1462,12 @@ def build_chase_tree(ctx, families) -> tuple[Any, dict[str, Any]]:
             if c[2] and isinstance(c[2][0], list) and c[2][0][0] == "ACUnique"]:
         raise KitError("chase tree must not apply any unique condition (光环只由技能创建)")
     tree = _rewrite(ctx, tree, families)
-    tree, growth = with_ignition_growth(tree, (BURST_MAX_HITS,))
+    tree, growth = ignition_growth(tree, (BURST_MAX_HITS,))
     return tree, {"multiplier": CHASE_MULT, "burst_scale": BURST_SCALE, "ignition_growth": growth,
                   "burst_radius": BURST_RADIUS, "burst_max_hits": BURST_MAX_HITS,
                   "burst_window": rp,
+                  "down": {"per_hit": CHASE_DOWN, "hits": BURST_MAX_HITS,
+                           "per_activation": CHASE_DOWN * BURST_MAX_HITS},
                   "hit_areas": [[a[9], a[13], a[14]] for a in _commands(tree, "CreateHitArea")]}
 
 
@@ -1661,7 +1764,7 @@ def write_skills(ctx, families) -> dict[str, Any]:
     for level in (1, 2, 3):
         tree, meta = build_pf_tree(ctx, level, families)
         tree, damage_tree, damage_meta = PF_SKILL.split_tree(tree)
-        damage_tree, damage_meta["ignition_growth"] = with_ignition_growth(
+        damage_tree, damage_meta["ignition_growth"] = ignition_growth(
             damage_tree, tuple(damage_meta["hits"]))
         damage_program = PF_SKILL_PROGRAMS[level - 1]
         damage_meta["logical"] = _write_tree(ctx, damage_program, damage_tree)
@@ -1715,6 +1818,13 @@ NOTES = [
     "连击 35）——187 在官方队长表 0 先例，188 有 6 行（111183#4/#5、111165#3/#4、131152#2/#3）",
     "作者追加：这一行**不带火共鸣门**（作者原话没写属性共鸣）；「弹射」＝ BallFlip（弹板弹球），"
     "不是强化弹射，阈值 1 次 / 无次数上限 / 无冷却",
+    "2026-09-27 第二批（口径 A，修订模块 wf_balance_20260927b_magnus）：每 3PF 队长全队技伤/攻 "
+    "100%/50% → 20%/10%（×1/5）；能力 1#2 自身技伤限 4 次，无上限部分搬队长 #9（5%）；能力 2 两行每层 "
+    "50% → 15% 最多 10 层，无上限部分搬队长 #10/#11（每层 5%，×1/10）；能力 3#4 每层全队独立乘区 5% → 1% "
+    "最多 10 层，无上限部分搬队长 #12（每层 0.5%）；技能 DSL 点火绑定上限 99 → 10（每层 +5 倍封顶 10 层）",
+    "2026-09-27 第二批（口径 B3/B6，复核补漏）：「引擎之炎」629 追击触发 CT 0.6 秒 ≤3 秒 ⇒ 每次削韧 ≤1；"
+    "爆炸 5 段 × p13 0.25 = 1.25 → p13 0.2（5 × 0.2 = 1.0，回到官方火龙母本 4 × 0.25 的每次总量），"
+    "段数/倍率/Fever 点不动；疾风同路 PF（629 代打 15/20/25 顶格）按口径 B5 保留",
 ]
 
 DEVIATIONS = [

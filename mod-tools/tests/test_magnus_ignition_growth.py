@@ -27,23 +27,29 @@ class NativeGrowthTests(unittest.TestCase):
             tree, _ = K.build_pf_tree(ctx, level, families)
             shell, skill, meta = K.PF_SKILL.split_tree(tree)
             assert not list(wf_dsl.iter_dsl_commands(shell, 'CreateNormalAttack'))
-            cls.casts.append(G.with_ignition_growth(skill, meta['hits']))
+            cls.casts.append(K.ignition_growth(skill, meta['hits']))
 
     def test_whole_cast_budget_at_zero_one_five_and_cap(self):
         self.assertEqual([m['hits'] for _, m in self.casts],
                          [[1, 10], [1, 10], [5], [2, 1], [3, 1], [3, 1]])
         for tree, meta in self.casts:
             attacks = list(wf_dsl.iter_dsl_commands(tree, 'CreateNormalAttack'))
-            for layers in (0, 1, 5, 35, 99):
-                extra = sum(a[6][0]['vlv'][0]['max'] * hits * layers
+            bind = tree[11][1][0][1]
+            for layers in (0, 1, 5, 10, 35, 99):
+                # 第一批输出：每层整招 +5 倍 ＋ 2026-09-27 第二批覆盖：绑定上限 10
+                # （变量 = min(层数 / 第4参, 第5参)，ActionEvaluator.as case 101）。
+                variable = min(layers / bind[4], bind[5])
+                extra = sum(a[6][0]['vlv'][0]['max'] * hits * variable
                             for a, hits in zip(attacks, meta['hits']))
-                self.assertAlmostEqual(extra, layers * 5, places=10)
+                self.assertAlmostEqual(extra, min(layers, K.IGNITION_DSL_CAP) * 5, places=10)
 
     def test_snapshot_precedes_events_and_only_binds_once(self):
         for tree, _ in self.casts:
             binds = list(wf_dsl.iter_dsl_commands(tree, 'BindConditionAccumulationVariable'))
+            # 第一批输出 上限 99（= G.MAX_LAYERS）＋ 2026-09-27 第二批覆盖：kit 封顶 IGNITION_DSL_CAP=10。
             self.assertEqual(binds, [['BindConditionAccumulationVariable',
-                -17, G.VARIABLE, ['DCUnique', G.UID], 1, 99]])
+                -17, G.VARIABLE, ['DCUnique', G.UID], 1, K.IGNITION_DSL_CAP]])
+            self.assertEqual((G.MAX_LAYERS, K.IGNITION_DSL_CAP), (99, 10))
             self.assertEqual(tree[11][1][0], ['Command', binds[0]])
             self.assertEqual(tree[10], 0)
 
@@ -66,11 +72,17 @@ class NativeGrowthTests(unittest.TestCase):
         for final, meta in self.casts:
             source = self._without_growth(final)
             before = deepcopy(source)
-            rebuilt, _ = G.with_ignition_growth(source, meta['hits'])
+            rebuilt, _ = K.ignition_growth(source, meta['hits'])
             self.assertEqual(source, before)
             self.assertEqual(rebuilt, final)
+            # 第一批的原生增长（上限 99）与 kit 输出只差绑定上限一格（第二批覆盖）。
+            native, _ = G.with_ignition_growth(source, meta['hits'])
+            native[11][1][0][1][5] = K.IGNITION_DSL_CAP
+            self.assertEqual(native, final)
             with self.assertRaisesRegex(ValueError, 'existing condition binding'):
                 G.with_ignition_growth(rebuilt, meta['hits'])
+            with self.assertRaisesRegex(ValueError, 'existing condition binding'):
+                K.ignition_growth(rebuilt, meta['hits'])
 
     @staticmethod
     def _without_growth(tree):

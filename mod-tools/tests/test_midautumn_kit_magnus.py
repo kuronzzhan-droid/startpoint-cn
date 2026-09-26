@@ -140,8 +140,12 @@ class PlanStaticTests(unittest.TestCase):
         gate = next(c for _d, _s, c, e in KM.PLAN[3] if "≥5(限1次)" in e)
         self.assertEqual(gate[100], "500000", "阈值 = 5 层")
         self.assertEqual(gate[102], "1", "limit 1 ⇒ 平坦门槛（写 (None) 才是按层成长）")
-        grow = next(c for _d, _s, c, e in KM.PLAN[3] if "≥1[固有" in e and "全队(火)" in e)
-        self.assertEqual(grow[102], "(None)", "按层无上限成长；留空串 = 上限 0，全程零收益")
+        # 第一批输出 c102=(None)（按层无上限）＋ 2026-09-27 第二批覆盖：能力栏改为最多计 10 层，
+        # 无上限部分搬进队长（wf_balance_20260927b_magnus）。留空串 = 上限 0，全程零收益，仍禁止。
+        grow = next(c for _d, _s, c, e in KM.PLAN[3] if c.get(109) == "411" and c.get(110) == "5")
+        self.assertEqual(grow[100], "100000", "每 1 层")
+        self.assertEqual(grow[102], KM.LAYER_ABILITY_LIMIT)
+        self.assertEqual(grow[102], "10")
         self.assertEqual(grow[104], KM.UID)
         del layered
 
@@ -223,6 +227,11 @@ class PlanStaticTests(unittest.TestCase):
         for _d, _s, cells, expect in KM.LEADER:
             if "追加连击" in expect:
                 self.assertNotIn("火·编成", expect)
+            elif cells.get(107) == "411":
+                # 2026-09-27 第二批覆盖：从能力 3#4 搬入的「点火每层全队独立乘区」原行就没有前置（c6=0），
+                # 转置后照旧不挂门（wf_balance_20260927b_magnus）。
+                self.assertNotIn("火·编成", expect)
+                self.assertNotIn(4, cells, "前置取 donor 161123#0 的 0")
             else:
                 self.assertIn("火·编成≥6", expect, f"其余队长行仍是火共鸣门: {expect}")
 
@@ -262,7 +271,9 @@ class PlanStaticTests(unittest.TestCase):
                 self.assertEqual(line.startswith(KM.MAIN_ICON), wants, f"slot {slot}: {line}")
 
     def test_panel_override_line_counts_match_the_target_panel(self):
-        counts = {KM.LEADER_OVERRIDE: 7, KM.SLOT_OVERRIDE[1]: 3,
+        # 第一批输出 队长 7 / 槽1 3 行 ＋ 2026-09-27 第二批覆盖：队长 +3（自身技伤、点火逐层两行）、
+        # 槽1 +1（每 3PF 自身技伤单列），见 wf_balance_20260927b_magnus。
+        counts = {KM.LEADER_OVERRIDE: 10, KM.SLOT_OVERRIDE[1]: 4,
                   KM.SLOT_OVERRIDE[2]: 1, KM.SLOT_OVERRIDE[3]: 6, KM.SLOT_OVERRIDE[5]: 2}
         for key, want in counts.items():
             self.assertEqual(len(KM.CAS_TEXTS[key].split("\n")), want, key)
@@ -975,6 +986,31 @@ class SkillTreeIntegrationTests(unittest.TestCase):
         self.assertEqual(wf_dsl.player_side_dsl_problems(tree), [])
         self.assertEqual(wf_dsl.parse_dsl(wf_dsl.encode_amf3(tree))["tree"], tree)
         self._assert_no_cd_coordsys(tree)
+
+    def test_chase_down_per_activation_is_at_most_one(self):
+        """2026-09-27 第二批覆盖（口径 B3/B6，wf_balance_20260927b_magnus）：追击 CT 0.6 秒 ⇒ 每次削韧 ≤1。
+
+        第一批输出 = 母本 p13 0.25 × 5 段 = 1.25；只改 p13 → 0.2（5 × 0.2 = 1.0 = 母本 4 × 0.25），
+        p14 Fever 点、倍率、段数一格不动。
+        """
+        tree, meta = KM.build_chase_tree(self.ctx, self.families)
+        cna = next(wf_dsl.iter_dsl_commands(tree, "CreateNormalAttack"))
+        donor = self.ctx.template_dsl(KM.CHASE_DONOR)
+        d_cna = next(wf_dsl.iter_dsl_commands(donor, "CreateNormalAttack"))
+        self.assertEqual(d_cna[13], [{"min": KM.CHASE_DOWN_DONOR, "max": KM.CHASE_DOWN_DONOR}], "母本 p13 漂了")
+        self.assertEqual(cna[13], [{"min": KM.CHASE_DOWN, "max": KM.CHASE_DOWN}])
+        self.assertEqual(cna[14], d_cna[14], "p14 Fever 点跟母本")
+        self.assertEqual(meta["down"], {"per_hit": 0.2, "hits": 5, "per_activation": 1.0})
+        self.assertLessEqual(meta["down"]["per_activation"], KM.CHASE_DOWN_CAP)
+        chase_row = next(c for _d, _s, c, _e in KM.PLAN[3] if c.get(71) == KM.CHASE_PROGRAM)
+        self.assertLessEqual(int(chase_row[35]), 180, "触发 CT ≤3 秒 ⇒ 口径 B3 的 ≤1 档")
+        from unittest import mock
+        with mock.patch.object(KM, "CHASE_DOWN_DONOR", 0.3):
+            with self.assertRaises(KM.KitError):
+                KM.build_chase_tree(self.ctx, self.families)
+        with mock.patch.object(KM, "CHASE_DOWN", 0.25):
+            with self.assertRaises(KM.KitError):
+                KM.build_chase_tree(self.ctx, self.families)
 
     def test_chase_burst_is_pinned_to_the_hit_point(self):
         tree, _meta = KM.build_chase_tree(self.ctx, self.families)
