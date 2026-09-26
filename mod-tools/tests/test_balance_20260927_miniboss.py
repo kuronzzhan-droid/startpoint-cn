@@ -10,6 +10,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'mod-tools'))
 import wf_balance_20260927_miniboss as M
+import wf_balance_20260927b_miniboss as M2
 from wf_client_legality import (client_legality_problems, declared_block_field_problems,
                                 invoke_skill_string_problems)
 from wf_miniboss_kits import build, build_abilities
@@ -17,6 +18,7 @@ from wf_miniboss_roster import ROSTER
 from wf_miniboss_text import MAIN, ability_panel_rows
 
 FIXTURE = Path(__file__).parent / 'fixtures/balance_20260927_miniboss.json'
+FIXTURE_2 = Path(__file__).parent / 'fixtures/balance_20260927b_miniboss.json'   # 第二批覆盖层
 OPENING = {  # 开局加槽（c27=0）：键, 行(1 基), 强度 —— 规则 3 不动
     ('1299981', 1, '75000'), ('1399961', 1, '75000'), ('1299964', 1, '60000'),
     ('1499941', 1, '75000'), ('1599994', 2, '75000'), ('1299951', 1, '70000'),
@@ -76,6 +78,9 @@ class MinibossGaugeBalanceTest(unittest.TestCase):
         self.assertEqual(M.BEFORE, {k: v for u in M.UNITS for k, v in u['BEFORE'].items()})
 
     def test_package_version_never_downgrades_the_candidate(self):
+        # 第二批覆盖：wf_balance_20260927b_miniboss 把其中 5 个候选再升一版（1.0.1→1.0.2）并写入
+        # snapshot revision_20260927b；这些包的版本上限取第二批的版本，回写后须恰好等于它。
+        second = {p: (u['CID'], v) for u in M2.UNITS for p, v in u['PACKAGE_VERSION'].items()}
         for u in M.UNITS:
             package = u['PACKAGES'][0]
             ws = ROOT / 'work/character_packs' / package
@@ -85,8 +90,16 @@ class MinibossGaugeBalanceTest(unittest.TestCase):
             identity = json.loads((ws / 'workspace.json').read_bytes())
             self.assertEqual((int(u['CID']), u['CODE']),
                              (identity['character_id'], identity['code_name']), package)
-            self.assertLessEqual(version(manifest['package_version']),
-                                 version(u['PACKAGE_VERSION'][package]), package)
+            ceiling = u['PACKAGE_VERSION'][package]
+            if package in second:
+                self.assertEqual(u['CID'], second[package][0], package)
+                self.assertGreaterEqual(version(second[package][1]), version(ceiling), package)
+                ceiling = second[package][1]
+                if manifest.get('snapshot', {}).get('revision_20260927b') is not None:
+                    self.assertEqual(ceiling, manifest['package_version'], package)
+            else:
+                self.assertIsNone(manifest.get('snapshot', {}).get('revision_20260927b'), package)
+            self.assertLessEqual(version(manifest['package_version']), version(ceiling), package)
 
     # ---- 改动范围 -------------------------------------------------------------
 
@@ -164,7 +177,21 @@ class MinibossGaugeBalanceTest(unittest.TestCase):
     # ---- 生成器一致性 ---------------------------------------------------------
 
     def test_generator_equals_live_after_revision(self):
+        # 期望 = 第一批输出 + 第二批覆盖（2026-09-27 第二批 wf_balance_20260927b_miniboss：
+        # Sec 能力1 行1 自身眩晕蓄积 150%→100% 与面板1；down 复核 T2）。第二批只覆盖第一批没动过的键。
         ability, cas = self.after('ability'), self.after('cas')
+        second = json.loads(FIXTURE_2.read_bytes())['inputs']
+        first_keys = {k for out in self.outs.values() for kind in ('ability', 'cas') for k in out[kind]}
+        overlaid = set()
+        for u in M2.UNITS:
+            out = u['revise'](lambda kind, key: second[kind].get(key))
+            for kind, merged in (('ability', ability), ('cas', cas)):
+                for key, rows in out[kind].items():
+                    self.assertNotIn(key, first_keys)
+                    self.assertEqual(self.inputs[kind][key], second[kind][key], key)
+                    merged[key] = rows
+                    overlaid.add(key)
+        self.assertEqual({'1599991', 'desc_override_security_robot_playable_1'}, overlaid)
         for char in ROSTER:
             leader = self.inputs['leader'][char.cid]
             kit, meta = build_abilities(char.cid)

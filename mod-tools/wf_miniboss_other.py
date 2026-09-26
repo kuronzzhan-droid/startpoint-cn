@@ -23,7 +23,8 @@ def cube(k):
 
 def security(k):
     slots = [
-        [k.i(51, 150), k.team(53, 60)],
+        # 自身眩晕蓄积 150%→100%：2026-09-27 第二批口径 B4（wf_balance_20260927b_miniboss）。
+        [k.i(51, 100), k.team(53, 60)],
         [k.i(462, 40, target=1), k.i(205, 35), k.i(36, 20)],
         [k.i(34, 100), k.d(411, 15, o(72)), k.team(227, 10, trigger=e(23, ct=5))],
         [k.team(491, 75), k.i(211, 75), k.i(35, 5)],
