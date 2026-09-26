@@ -53,9 +53,20 @@ def native_reference(tree):
     return result
 
 
+PACKAGE_VERSION_FLOOR = "1.0.2"
+
+
+def package_version(current: str) -> str:
+    """首次修订升到 1.0.2；候选已更高（如 2026-09-27b 平衡批次写回 1.0.3）时保持现值，重跑不降级。"""
+    parse = lambda value: tuple(int(part) for part in value.split("."))
+    return current if parse(current) >= parse(PACKAGE_VERSION_FLOOR) else PACKAGE_VERSION_FLOOR
+
+
 def assemble(repo: Path, workspace: Path, *, apply=False):
+    manifest = json.loads((Path(workspace) / "package/manifest.json").read_bytes())
     candidate = RevisionCandidate(
-        repo, workspace, character_id=CID, code_name=CODE, package_version="1.0.2",
+        repo, workspace, character_id=CID, code_name=CODE,
+        package_version=package_version(manifest["package_version"]),
         snapshot_key="summer_bai_native_ability_reference",
         evidence_name="native-ability-reference.json")
     action_path = "master/skill/action_skill.orderedmap"

@@ -36,6 +36,13 @@ class NativeReferenceTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             ability.native_reference(["ActionDsl"])
 
+    def test_rerun_never_downgrades_candidate_version(self):
+        # 2026-09-27b 平衡批次把候选写回 1.0.3；重跑本修订只保持现值，不回退到 1.0.2。
+        self.assertEqual("1.0.2", ability.package_version("1.0.1"))
+        self.assertEqual("1.0.2", ability.package_version("1.0.2"))
+        self.assertEqual("1.0.3", ability.package_version("1.0.3"))
+        self.assertEqual("1.0.10", ability.package_version("1.0.10"))
+
 
 if __name__ == "__main__":
     unittest.main()
