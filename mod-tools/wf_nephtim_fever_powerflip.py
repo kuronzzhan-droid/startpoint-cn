@@ -38,6 +38,21 @@ _SUBJECT_SLOTS = {
     "FindAllSubjects": (1,), "ShowEffect": (3,), "CreateCondition": (1,),
     "CreateNormalAttack": (1,), "CreateHitArea": (2, 19, 21, 22),
 }
+# 作者 2026-09-27 第二批 Down 口径 B.2：强化弹射每级削韧上限 15/20/25。Lv3 = 特殊型 6.25×3 + 6.25×1
+# + 辅助型末段 1×1 = 26，超上限 1 → 辅助型末段 CreateNormalAttack 的削韧 p13 1 → 0（= 25）；
+# 其余参数与 Lv1/Lv2（15/20，正好顶格）逐字不动。
+SUPPORTER_TOUGHNESS = {3: (1, 0)}   # 档位 -> (原削韧, 新削韧)
+
+
+def _supporter_toughness(donor, level):
+    """只改辅助型载荷里 CreateNormalAttack 的 p13（按 SLv 的 {min,max} 都改）。"""
+    if level not in SUPPORTER_TOUGHNESS:
+        return
+    old, new = SUPPORTER_TOUGHNESS[level]
+    attacks = list(wf_dsl.iter_dsl_commands(donor, "CreateNormalAttack"))
+    if len(attacks) != 1 or attacks[0][13] != [{"min": old, "max": old}]:
+        raise ValueError(f"supporter PF level {level} toughness preimage drift")
+    attacks[0][13] = [{"min": new, "max": new}]
 
 
 def source_path(kind, level):
@@ -151,6 +166,7 @@ def build_power_flip(level, official_bytes_loader):
     base = _load_source(official_bytes_loader, "special", level)
     donor = deepcopy(_load_source(official_bytes_loader, "supporter", level)[11])
     _supporter_payload(donor)
+    _supporter_toughness(donor, level)
     base[11][1].extend(donor[1])
     tree = _private_references(base)
     problems = (action_dsl_element_problems(tree, character_element=5)
@@ -211,6 +227,9 @@ def metadata():
         "lifecycle": "native special collision/timeout, supporter end notification removed",
         "damage_source": "native power flip",
         "original_damage_geometry_hit_counts_and_buffs_preserved": True,
+        "toughness_per_level": {"1": 15, "2": 20, "3": 25},
+        "supporter_toughness_override": {"level": 3, "before": 1, "after": 0,
+                                         "reason": "2026-09-27 batch 2 Down cap 15/20/25 (Lv3 26 -> 25)"},
         "private_effect_families": list(_FAMILIES),
         "native_source_sha256": {
             source_path(kind, level): digest

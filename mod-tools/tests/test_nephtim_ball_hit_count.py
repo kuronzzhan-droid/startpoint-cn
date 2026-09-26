@@ -42,7 +42,8 @@ class BallHitCountTest(unittest.TestCase):
         # 队长表列位 = 能力表 −2：T77 在 c25，阈值 c28/c29（帧 × 100000）。
         self.assertEqual(('77', '1000000', '1000000', '(None)', '0', '629', H.STRING_ID, H.ACTION_PATH),
                          (row[25], row[28], row[29], row[32], row[33], row[45], row[68], row[69]))
-        self.assertEqual(row, leader.leader_rows(official_sources()[0])[-1])
+        # 作者 2026-09-27 第二批：队长末尾追加两条贯穿成长（第9、10行），本行固定在第8行。
+        self.assertEqual(row, leader.leader_rows(official_sources()[0])[7])
         meta = leader.metadata()['ball_hit_count']
         self.assertEqual((77, 10, 20), (meta['trigger'], meta['update_period_frames'],
                                         meta['condition_duration_frames']))

@@ -50,11 +50,15 @@ class NephtimFeverLeaderTest(unittest.TestCase):
                          (attack[45], attack[49], attack[46], attack[47], attack[11]))
         # Fever 中技能槽上限+10%（during 124，前置12）已移入能力2。
         self.assertFalse(any(r[3] == "1" or r[107] == "124" for r in self.rows))
-        self.assertNotIn("12", [r[c] for r in self.rows for c in (4, 11, 18)])
+        # 作者 2026-09-27 第二批：前置12（Fever）只出现在从能力3 搬来的两条 T235 贯穿成长行（第9、10行）。
+        self.assertEqual([8, 9], [i for i, r in enumerate(self.rows) if "12" in (r[4], r[11], r[18])])
+        self.assertEqual({"235"}, {self.rows[i][25] for i in (8, 9)})
 
     def test_dark_resonance_piercing_extension_is_carried_by_ability2(self):
-        self.assertEqual(8, len(self.rows))
-        self.assertEqual(["722", "536", "33", "32", "50", "56", "211", "629"], [r[45] for r in self.rows])
+        # 第一批 8 行 + 2026-09-27 第二批追加的两条贯穿成长（I32/I33）= 10 行。
+        self.assertEqual(10, len(self.rows))
+        self.assertEqual(["722", "536", "33", "32", "50", "56", "211", "629", "32", "33"],
+                         [r[45] for r in self.rows])
         extension = kit.metadata()["piercing_extension"]
         self.assertFalse(extension["requires_fever"])
         self.assertEqual("dark_resonance", extension["strategy"])

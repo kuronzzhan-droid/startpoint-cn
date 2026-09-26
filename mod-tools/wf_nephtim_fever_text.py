@@ -4,11 +4,14 @@ from wf_featured_main_ability import main_description
 
 from wf_nephtim_fever_abilities import (CID, CODE, CHANGE_SKILL_DESCRIPTION,
                                         CHANGE_SKILL_STRING_ID, COMBO_STRENGTH,
-                                        PIERCING_EXTENSION_STRENGTH, PIERCING_GROWTH_STRENGTH,
+                                        LEADER_PIERCING_GROWTH_STRENGTH,
+                                        PIERCING_CAPPED_ATTACK_STRENGTH, PIERCING_CAPPED_DIRECT_STRENGTH,
+                                        PIERCING_CAPPED_LIMIT, PIERCING_EXTENSION_STRENGTH,
+                                        PIERCING_PERIOD_FRAMES,
                                         SKILL_GAUGE_MAXIMUM_STRENGTH, SKILL_NAME,
                                         SPAWN_DESCRIPTION, SPAWN_STRING_ID,
                                         SUMMON_PERIOD_FRAMES, _percent)
-from wf_nephtim_fever_leader import PF_STRING_ID
+from wf_nephtim_fever_leader import FEVER_GAIN_GROWTH_STRENGTH, PF_STRING_ID
 import wf_nephtim_fever_skill as skill
 import wf_nephtim_multiball_direct as multiball_direct
 import wf_nephtim_ball_hit_count as ball_hit_count
@@ -19,7 +22,17 @@ PIERCING_POLICIES = ("dark_resonance",)
 MAIN_ICON = " <icon id='main'>  "
 # 面板数字一律从战斗侧真源取，避免文案与实际强度漂移。
 COMBO_PERCENT = _percent(COMBO_STRENGTH)
-PIERCING_PERCENT = _percent(PIERCING_GROWTH_STRENGTH)
+# 作者 2026-09-27 第二批：贯穿成长能力3 为有上限弱化版，无上限部分在队长（文案只写到效果为止）。
+PIERCING_ATTACK_PERCENT = _percent(PIERCING_CAPPED_ATTACK_STRENGTH)
+PIERCING_DIRECT_PERCENT = _percent(PIERCING_CAPPED_DIRECT_STRENGTH)
+LEADER_PIERCING_PERCENT = _percent(LEADER_PIERCING_GROWTH_STRENGTH)
+FEVER_GAIN_PERCENT = _percent(FEVER_GAIN_GROWTH_STRENGTH)
+_PIERCING_PERIOD = PIERCING_PERIOD_FRAMES / 60
+PIERCING_PERIOD_SECONDS = int(_PIERCING_PERIOD) if _PIERCING_PERIOD.is_integer() else _PIERCING_PERIOD
+LEADER_PIERCING_LINE = (
+    f"暗属性共鸣时，Fever 模式中，处于贯穿效果的时间每累计{PIERCING_PERIOD_SECONDS}秒，"
+    f"暗属性角色攻击力+{LEADER_PIERCING_PERCENT}%、直接攻击伤害+{LEADER_PIERCING_PERCENT}%。"
+)
 BALL_PERCENT = multiball_direct.per_ball_percent()
 OVERFLOW_PERCENT = skill.overflow_attack_percent()
 PIERCING_EXTENSION_PERCENT = _percent(PIERCING_EXTENSION_STRENGTH)
@@ -43,7 +56,7 @@ _TEXTS = {
         "暗属性共鸣时，强化弹射变为特殊型与辅助型组合。",
         *ENHANCEMENT_LINES,
         "暗属性共鸣时，暗属性角色攻击力+200%、直接攻击伤害+400%。",
-        "暗属性共鸣时，每达成35连击，暗属性角色获得的 Fever 槽上升量+20%。",
+        f"暗属性共鸣时，每达成35连击，暗属性角色获得的 Fever 槽上升量+{FEVER_GAIN_PERCENT}%。",
         "暗属性共鸣时，Fever 时间+100%。",
         "暗属性共鸣时，每有1个协力球消失时，暗属性角色技能槽+5%。",
     )),
@@ -59,10 +72,10 @@ _TEXTS = {
         "暗属性共鸣时，暗属性角色直接攻击伤害+250%。\n"
         f"暗属性共鸣时，Fever 模式中，暗属性角色技能槽上限+{SKILL_GAUGE_MAXIMUM_PERCENT}%。"
     ),
-    # 文案规则1：没有上限的成长写到效果为止，后面什么都不跟（不写「无上限」）。
+    # 文案规则1：没有上限的成长写到效果为止，后面什么都不跟（不写「无上限」）；有上限写「（最多N次）」。
     "a3": "\n".join(MAIN_ICON + line for line in (
         f"暗属性共鸣时，Fever 模式中，当前每有1连击，暗属性角色直接攻击造成的伤害+{COMBO_PERCENT}%（独立乘区）、攻击力+{COMBO_PERCENT}%。",
-        f"暗属性共鸣时，Fever 模式中，处于贯穿效果的时间每累计2秒，暗属性角色攻击力+{PIERCING_PERCENT}%、直接攻击伤害+{PIERCING_PERCENT}%。",
+        f"暗属性共鸣时，Fever 模式中，处于贯穿效果的时间每累计{PIERCING_PERIOD_SECONDS}秒，暗属性角色攻击力+{PIERCING_ATTACK_PERCENT}%、直接攻击伤害+{PIERCING_DIRECT_PERCENT}%（最多{PIERCING_CAPPED_LIMIT}次）。",
         "暗属性共鸣时，暗属性角色合计每直接攻击45次，Fever 槽+15%。",
         f"暗属性共鸣时，每有1个协力球存在时，全队及协力球对敌人造成的直接攻击伤害+{BALL_PERCENT}%（独立乘区）。",
     )),
@@ -86,7 +99,8 @@ def panel_descriptions(*, piercing_extension="dark_resonance"):
     texts = deepcopy(_TEXTS)
     texts["a1"] = main_description(texts["a1"])
     texts["a2"] = _piercing_line(piercing_extension) + "\n" + texts["a2"]
-    texts["leader"] += "\n" + ball_hit_count.DESCRIPTION
+    # 行序与队长表一致：9/25 的 ball_hit_count 行之后是 2026-09-27 第二批搬来的贯穿成长（第9、10行合一句）。
+    texts["leader"] += "\n" + ball_hit_count.DESCRIPTION + "\n" + LEADER_PIERCING_LINE
     return texts
 
 

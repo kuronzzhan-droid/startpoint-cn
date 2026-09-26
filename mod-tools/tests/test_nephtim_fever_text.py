@@ -121,12 +121,14 @@ class NephtimFeverTextTest(unittest.TestCase):
         self.assertIn("直接攻击造成的伤害+2.5%（独立乘区）、攻击力+2.5%。", lines[0])
         self.assertNotIn("无上限", lines[0])
         self.assertIn("Fever 模式中，处于贯穿效果的时间每累计2秒", lines[1])
-        self.assertIn("攻击力+10%、直接攻击伤害+10%", lines[1])
+        # 作者 2026-09-27 第二批：能力3 贯穿成长改成有上限的弱化版（攻击力 +5%、直击 +10%，各最多 10 次）。
+        self.assertIn("攻击力+5%、直接攻击伤害+10%（最多10次）。", lines[1])
         self.assertIn("Fever 槽+15%", lines[2])
         combo = self.abilities["1699893"][0]
         self.assertEqual(("2", "410", "2500"), (combo[97], combo[109], combo[113]))
-        piercing = self.abilities["1699893"][2]
-        self.assertEqual(("32", "10000"), (piercing[47], piercing[51]))
+        attack, direct = self.abilities["1699893"][2:4]
+        self.assertEqual(("32", "5000", "10"), (attack[47], attack[51], attack[34]))
+        self.assertEqual(("33", "10000", "10"), (direct[47], direct[51], direct[34]))
 
     def test_non_main_bonuses_keep_their_actual_targets_and_a5_has_no_resonance_gate(self):
         panels = self.panels()
@@ -151,12 +153,17 @@ class NephtimFeverTextTest(unittest.TestCase):
     def test_leader_uses_only_the_confirmed_constant_dark_resonance_piercing(self):
         permanent = self.panels()["leader"].splitlines()
         # 作者 2026-09-27：贯穿延时与技能槽上限两句移出队长（改由能力2承载）。
-        self.assertEqual(8, len(permanent))
-        self.assertNotIn("贯穿", "\n".join(permanent))
+        # 同日第二批：末尾追加从能力3 搬来的贯穿成长（+1%，写到效果为止）→ 9 行。
+        self.assertEqual(9, len(permanent))
+        self.assertNotIn("贯穿效果时间", "\n".join(permanent))
         self.assertNotIn("技能槽上限", "\n".join(permanent))
         self.assertIn("暗属性共鸣时，全队贯穿效果时间+40%。", self.panels()["a2"].splitlines())
-        self.assertEqual("暗属性共鸣时，每有1个协力球存在，自身直击判定次数+1。", permanent[-1])
-        self.assertNotIn("Fever", permanent[-1])
+        self.assertEqual("暗属性共鸣时，每有1个协力球存在，自身直击判定次数+1。", permanent[-2])
+        self.assertNotIn("Fever", permanent[-2])
+        self.assertEqual("暗属性共鸣时，Fever 模式中，处于贯穿效果的时间每累计2秒，"
+                         "暗属性角色攻击力+1%、直接攻击伤害+1%。", permanent[-1])
+        self.assertEqual(text.LEADER_PIERCING_LINE, permanent[-1])
+        self.assertIn("Fever 槽上升量+2%", permanent[4])
         self.assertTrue(all(line.startswith("暗属性共鸣时，") for line in permanent))
         self.assertNotIn("每直接攻击50次", "\n".join(permanent))
         self.assertIn("强化『" + abilities.SKILL_NAME + "』", permanent[1])

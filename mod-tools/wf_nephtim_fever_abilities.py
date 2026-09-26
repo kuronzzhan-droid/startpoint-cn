@@ -14,7 +14,14 @@ SPAWN_ACTION_PATH = "battle/action/skill/action/ability_skill/" + CODE + "$" + S
 # 作者 2026-09-17：能力1/能力3 提供的攻击力、直击伤害与独立乘区一律减半，机制不动。
 # 千分之一为单位的强度列：2_500 = 2.5%，10_000 = 10%。
 COMBO_STRENGTH = 2_500          # 每 1 连击的独立乘区直击与攻击力（原 5_000）
-PIERCING_GROWTH_STRENGTH = 10_000  # 贯穿每累计 2 秒的攻击力与直击伤害（原 20_000）
+# 贯穿每累计 2 秒（T235，暗共鸣 + Fever）的攻击力/直击伤害成长：2026-09-17 减半 20% → 10%；
+# 作者 2026-09-27 第二批（无上限成长搬队长）：能力3 两行原位改成有上限的弱化版（各限 10 次），
+# 无上限部分搬进队长并按 3 分钟实际触发次数（≥30 次）放缓 1/10：10% → 1%。
+PIERCING_PERIOD_FRAMES = 120
+PIERCING_CAPPED_ATTACK_STRENGTH = 5_000    # 能力3：暗队攻击力 +5%/次（最多 10 次 = +50%）
+PIERCING_CAPPED_DIRECT_STRENGTH = 10_000   # 能力3：暗队直击伤害 +10%/次（最多 10 次 = +100%）
+PIERCING_CAPPED_LIMIT = 10                 # 能力3 两行 c34 trigger_limit（原 (None)）
+LEADER_PIERCING_GROWTH_STRENGTH = 1_000    # 队长：暗队攻击力/直击伤害 各 +1%/次（无上限）
 # 作者 2026-09-27：持有「星夜茶会」时的召唤间隔 1.5 秒 → 2 秒（T232 threshold2，单位帧）。
 SUMMON_PERIOD_FRAMES = 120
 # 作者 2026-09-27：队长的 I190 贯穿延时并入能力2，合计 +40%（原队长 20% + 能力2 20%，按行相加）。
@@ -59,7 +66,7 @@ def _pre(row, kind=None, *, offset=6):
 
 def _instant(source, content, strength=None, *, pre=None, fever=None,
              target=None, trigger=0, threshold=1, threshold2=None,
-             puller=None, group=None):
+             puller=None, group=None, limit=None):
     row = deepcopy(source["1110211"][0])
     if len(row) != 126:
         raise ValueError("official ability rows must have 126 columns")
@@ -72,7 +79,7 @@ def _instant(source, content, strength=None, *, pre=None, fever=None,
     _set(row, {27: trigger, 47: content})
     if trigger:
         _set(row, {30: threshold * SCALE, 31: threshold * SCALE,
-                   34: "(None)", 35: 0})
+                   34: "(None)" if limit is None else limit, 35: 0})
     if threshold2 is not None:
         _set(row, {32: threshold2 * SCALE, 33: threshold2 * SCALE})
     if puller is not None:
@@ -125,6 +132,16 @@ def _multiball_direct_rows(source):
     return [pulse]
 
 
+def piercing_growth_rows(source, attack_strength, direct_strength, *, limit=None):
+    """贯穿每累计 2 秒（T235，暗共鸣 + Fever）→ 暗队攻击力（I32）、直击伤害（I33）两行（能力表126列形）。
+
+    能力3 用带上限的弱化版（limit=PIERCING_CAPPED_LIMIT）；队长用同形无上限行
+    （队长模块按 [CODE,'0',''] + row[5:] 转换，列号 −2；队长 T235 先例 live 169999#7-9，前置12 先例 live 149989#4-6）。"""
+    return [_instant(source, content, strength, pre="dark", fever="fever", target=5,
+                     trigger=235, threshold=1, threshold2=PIERCING_PERIOD_FRAMES, limit=limit)
+            for content, strength in ((32, attack_strength), (33, direct_strength))]
+
+
 def enhance_row(source):
     """I536 技能强化开关（能力表126列形）。
 
@@ -157,10 +174,10 @@ def ability_rows(source, *, summon_unique_id=SUMMON_UNIQUE_ID,
           _during(source, 124, SKILL_GAUGE_MAXIMUM_STRENGTH, target=5)]
     combo = _during(source, 410, COMBO_STRENGTH, combo=True)
     combo_attack = _during(source, 0, COMBO_STRENGTH, combo=True)
-    piercing_attack = _instant(source, 32, PIERCING_GROWTH_STRENGTH, pre="dark", fever="fever",
-                               target=5, trigger=235, threshold=1, threshold2=120)
-    piercing_direct = _instant(source, 33, PIERCING_GROWTH_STRENGTH, pre="dark", fever="fever",
-                               target=5, trigger=235, threshold=1, threshold2=120)
+    # 作者 2026-09-27 第二批：有上限的弱化版（攻击力 +5%、直击 +10%，各最多 10 次）；无上限部分在队长。
+    piercing_attack, piercing_direct = piercing_growth_rows(
+        source, PIERCING_CAPPED_ATTACK_STRENGTH, PIERCING_CAPPED_DIRECT_STRENGTH,
+        limit=PIERCING_CAPPED_LIMIT)
     # Only AbilityValues parses I724 on the installed ratio-capable client.
     charge = _instant(source, 724, 15_000, pre="dark", trigger=20,
                       threshold=45, puller=7, group="Black")
@@ -238,10 +255,12 @@ def metadata():
             "trigger_limit": None, "falls_when_combo_falls": True,
         },
         "piercing_growth": {
-            "period_frames": 120,
-            "attack_percent": _percent(PIERCING_GROWTH_STRENGTH),
-            "direct_damage_percent": _percent(PIERCING_GROWTH_STRENGTH),
-            "trigger_limit": None, "persists_after_fever": True,
+            "period_frames": PIERCING_PERIOD_FRAMES,
+            "attack_percent": _percent(PIERCING_CAPPED_ATTACK_STRENGTH),
+            "direct_damage_percent": _percent(PIERCING_CAPPED_DIRECT_STRENGTH),
+            "trigger_limit": PIERCING_CAPPED_LIMIT, "persists_after_fever": True,
+            "uncapped_share": {"location": "leader", "percent_each": _percent(LEADER_PIERCING_GROWTH_STRENGTH),
+                               "trigger_limit": None, "since": "2026-09-27 batch 2"},
             "timer": "T235 piercing frames admitted only during dark resonance and Fever; fractional period retained",
         },
         "periodic_piercing": {

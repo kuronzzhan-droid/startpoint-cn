@@ -2,11 +2,15 @@
 from copy import deepcopy
 import wf_nephtim_ball_hit_count as ball_hit_count
 
-from wf_nephtim_fever_abilities import (CHANGE_SKILL_STRING_ID, CODE, PIERCING_EXTENSION_STRENGTH,
-                                        _instant, _percent, _set, enhance_row)
+from wf_nephtim_fever_abilities import (CHANGE_SKILL_STRING_ID, CODE, LEADER_PIERCING_GROWTH_STRENGTH,
+                                        PIERCING_EXTENSION_STRENGTH, PIERCING_PERIOD_FRAMES,
+                                        _instant, _percent, _set, enhance_row, piercing_growth_rows)
 
 PF_ID = CODE + "_fever"
 PF_STRING_ID = PF_ID + "_powerflip"
+# 每 35 连击暗队 Fever 获得量（I50）的永久成长：原 20_000（+20%）；作者 2026-09-27 第二批
+# 无上限成长原位放缓，3 分钟实际触发 ≥30 次 → 1/10：+2%。
+FEVER_GAIN_GROWTH_STRENGTH = 2_000
 
 
 def leader_rows(source, *, piercing_extension="dark_resonance",
@@ -25,13 +29,17 @@ def leader_rows(source, *, piercing_extension="dark_resonance",
     # 由能力2承载（贯穿合并为单行 40%）。
     # Native T12 crosses multiples of the current combo; I50 permanently adds
     # the general Fever gain modifier. Both I50/I56 exist in LeaderAbilityValues.
-    growth = _instant(source, 50, 20_000, pre="dark", target=5,
+    growth = _instant(source, 50, FEVER_GAIN_GROWTH_STRENGTH, pre="dark", target=5,
                       trigger=12, threshold=35)
     duration = _instant(source, 56, 100_000, pre="dark")
     removal_charge = _instant(source, 211, 5_000, pre="dark", target=5,
                               trigger=194, threshold=1)
     rows = [pf, enhance, direct, attack, growth, duration, removal_charge]
-    return [[CODE, "0", ""] + deepcopy(row[5:]) for row in rows] + [ball_hit_count.leader_row(source)]
+    # 作者 2026-09-27 第二批：能力3「贯穿每累计2秒 → 暗队攻击力/直击伤害」的无上限部分搬进队长，
+    # 追加在 9/25 的 ball_hit_count 行之后（第9、10行），强度 1%/次、不限次；能力3 保留有上限的弱化版。
+    moved = piercing_growth_rows(source, LEADER_PIERCING_GROWTH_STRENGTH, LEADER_PIERCING_GROWTH_STRENGTH)
+    convert = lambda row: [CODE, "0", ""] + deepcopy(row[5:])
+    return [convert(row) for row in rows] + [ball_hit_count.leader_row(source)] + [convert(row) for row in moved]
 
 
 def flat_string_rows():
@@ -48,10 +56,18 @@ def metadata():
                                    "requires_dark_resonance": True, "position": "after I722",
                                    "official_leader_precedent": "121189#3",
                                    "moved_from": "ability1 2026-09-27"},
-        "fever_gain_growth": {"combo_step": 35, "increase_percent": 20,
+        "fever_gain_growth": {"combo_step": 35, "increase_percent": _percent(FEVER_GAIN_GROWTH_STRENGTH),
                               "target": "dark party", "requires_fever": False,
                               "trigger_limit": None, "persists_after_combo_reset": True,
-                              "counter": "native T12 current-combo multiples; remainder resets on combo reset"},
+                              "counter": "native T12 current-combo multiples; remainder resets on combo reset",
+                              "slowed": "2026-09-27 batch 2: 20% -> 2% (>=30 triggers per 3 minutes)"},
+        "piercing_growth": {"trigger": 235, "period_frames": PIERCING_PERIOD_FRAMES,
+                            "attack_percent": _percent(LEADER_PIERCING_GROWTH_STRENGTH),
+                            "direct_damage_percent": _percent(LEADER_PIERCING_GROWTH_STRENGTH),
+                            "target": "dark party", "requires_dark_resonance": True, "requires_fever": True,
+                            "trigger_limit": None, "rows": [9, 10],
+                            "moved_from": "ability3 rows 3-4 (2026-09-27 batch 2; ability3 keeps a capped copy)",
+                            "leader_precedents": {"T235": "live 169999#7-9", "pre12": "live 149989#4-6"}},
         "fever_duration_percent": 100,
         "multiball_removal_charge": {"trigger": 194, "content": 211,
             "per_multiball_percent": 5, "target": "dark party",

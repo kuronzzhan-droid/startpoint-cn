@@ -24,7 +24,10 @@ class NephtimLeaderGrowthTest(unittest.TestCase):
         self.assertEqual(["12", "", "", "3500000", "3500000"], rate[25:30])
         self.assertEqual(["(None)", "0"], rate[32:34])
         self.assertEqual(["5", "Black"], rate[46:48])
-        self.assertEqual(["20000", "20000"], rate[49:51])
+        # 作者 2026-09-27 第二批：无上限成长原位放缓 1/10（3 分钟 ≥30 次），+20% → +2%。
+        self.assertEqual(["2000", "2000"], rate[49:51])
+        self.assertEqual(2_000, leader.FEVER_GAIN_GROWTH_STRENGTH)
+        self.assertEqual(2, leader.metadata()["fever_gain_growth"]["increase_percent"])
         self.assertEqual("0", duration[25])
         self.assertEqual(["100000", "100000"], duration[49:51])
         for row in (rate, duration):
@@ -32,6 +35,36 @@ class NephtimLeaderGrowthTest(unittest.TestCase):
             self.assertEqual(("0", "0"), (row[11], row[18]))
             self.assertEqual([], legality.client_legality_problems("leader_ability", row))
             self.assertEqual([], legality.required_client_capabilities("leader_ability", row))
+
+    def test_uncapped_piercing_growth_moves_to_the_leader_slowed_to_a_tenth(self):
+        # 作者 2026-09-27 第二批（growth critic C01）：能力3 T235 贯穿成长无上限部分搬队长，
+        # 行 = [CODE,'0',''] + 能力行[5:]（列号 −2），强度 10% → 1%，不限次；能力3 原位封顶 10 次。
+        moved = self.leader[8:]
+        self.assertEqual(10, len(self.leader))
+        a3 = self.abilities["1699893"][2:4]
+        for row, capped, content in zip(moved, a3, ("32", "33")):
+            self.assertEqual(124, len(row))
+            self.assertEqual(["ruin_girl_campus", "0", ""], row[:3])
+            expected = ["ruin_girl_campus", "0", ""] + capped[5:]
+            self.assertEqual([32, 49, 50], [i for i in range(124) if row[i] != expected[i]])  # 限次、强度
+            self.assertEqual(("2", "Black", "12", "235", "100000", "12000000", "(None)", "0"),
+                             (row[4], row[9], row[11], row[25], row[28], row[30], row[32], row[33]))
+            self.assertEqual([content, "5", "Black", "", "1000", "1000"], row[45:51])
+            self.assertEqual([], legality.client_legality_problems("leader_ability", row))
+            self.assertEqual([], legality.declared_block_field_problems("leader_ability", row))
+            self.assertEqual([], legality.ability_element_column_problems("leader_ability", row, 5))
+            self.assertEqual([], legality.required_client_capabilities("leader_ability", row))
+            self.assertEqual(("10", "0"), (capped[34], capped[35]))
+        self.assertEqual(["5000", "10000"], [r[51] for r in a3])
+        meta = leader.metadata()["piercing_growth"]
+        self.assertEqual((235, 120, 1, 1, None), (meta["trigger"], meta["period_frames"], meta["attack_percent"],
+                                                  meta["direct_damage_percent"], meta["trigger_limit"]))
+        panels = text.panel_descriptions()
+        self.assertEqual(text.LEADER_PIERCING_LINE, panels["leader"].splitlines()[-1])
+        self.assertIn("（最多10次）", panels["a3"].splitlines()[1])
+        for value in (panels["leader"], panels["a3"]):
+            for phrase in ("可无限", "无上限", "无限叠加", "不设上限"):
+                self.assertNotIn(phrase, value)
 
     def test_a3_keeps_the_direct_ratio_and_no_longer_grants_rate_or_duration(self):
         rows = self.abilities["1699893"]
@@ -78,7 +111,8 @@ class NephtimLeaderGrowthTest(unittest.TestCase):
         self.assertNotIn("强化『", panels["a1"])
         self.assertIn("星夜茶会", panels["a1"])
         self.assertIn("35", panels["leader"])
-        self.assertIn("Fever 槽上升量+20%", panels["leader"])
+        self.assertIn("Fever 槽上升量+2%", panels["leader"])
+        self.assertNotIn("Fever 槽上升量+20%", panels["leader"])
         self.assertIn("暗属性共鸣时，Fever 时间+100%", panels["leader"])
         self.assertNotIn("Fever 槽上升量", panels["a3"])
         self.assertNotIn("Fever 时间", panels["a3"])

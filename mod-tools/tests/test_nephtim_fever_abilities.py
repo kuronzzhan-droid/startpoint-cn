@@ -161,19 +161,31 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
         self.assertIsNone(kit.metadata()["combo_bonus"]["trigger_limit"])
         self.assertTrue(kit.metadata()["combo_bonus"]["falls_when_combo_falls"])
 
-    def test_a3_piercing_growth_is_gated_per_frame_and_keeps_permanent_uncapped_gains(self):
-        for row, content in zip(self.rows["1699893"][2:4], ("32", "33")):
-            self.assertEqual(("2", "Black", "12", "235", "100000", "12000000", "(None)"),
+    def test_a3_piercing_growth_is_gated_per_frame_and_capped_at_ten_triggers(self):
+        # 作者 2026-09-17 减半：贯穿成长 20% → 10%；2026-09-27 第二批：能力3 改成有上限的弱化版
+        # （攻击力 +5%、直击 +10%，各最多 10 次），无上限部分搬进队长（+1%/次，见 test_nephtim_leader_growth）。
+        for row, content, strength in zip(self.rows["1699893"][2:4], ("32", "33"), ("5000", "10000")):
+            self.assertEqual(("2", "Black", "12", "235", "100000", "12000000", "10"),
                              (row[6], row[11], row[13], row[27], row[30], row[32], row[34]))
-            # 作者 2026-09-17 减半：贯穿成长 20% → 10%，周期/次数/目标不动。
-            self.assertEqual((content, "5", "Black", "10000", "10000", "", ""),
+            self.assertEqual((content, "5", "Black", strength, strength, "", ""),
                              (row[47], row[48], row[49], row[51], row[52], row[57], row[58]))
-        self.assertEqual(10_000, kit.PIERCING_GROWTH_STRENGTH)
+            self.assertEqual("0", row[35])  # 无 CT
+        self.assertEqual((5_000, 10_000, 10, 120),
+                         (kit.PIERCING_CAPPED_ATTACK_STRENGTH, kit.PIERCING_CAPPED_DIRECT_STRENGTH,
+                          kit.PIERCING_CAPPED_LIMIT, kit.PIERCING_PERIOD_FRAMES))
         growth = kit.metadata()["piercing_growth"]
-        self.assertEqual((10, 10, 120), (growth["attack_percent"],
-                                         growth["direct_damage_percent"], growth["period_frames"]))
-        self.assertIsNone(growth["trigger_limit"])
+        self.assertEqual((5, 10, 120), (growth["attack_percent"],
+                                        growth["direct_damage_percent"], growth["period_frames"]))
+        self.assertEqual(10, growth["trigger_limit"])
         self.assertTrue(growth["persists_after_fever"])
+        self.assertEqual(("leader", 1, None), (growth["uncapped_share"]["location"],
+                                               growth["uncapped_share"]["percent_each"],
+                                               growth["uncapped_share"]["trigger_limit"]))
+        # 队长同形无上限行与能力3两行除限次/强度外逐格相同（队长按列 −2 转换）。
+        uncapped = kit.piercing_growth_rows(self.source, 1_000, 1_000)
+        for capped, free in zip(self.rows["1699893"][2:4], uncapped):
+            self.assertEqual([34, 51, 52], [i for i in range(5, 126) if capped[i] != free[i]])
+            self.assertEqual(("(None)", "1000"), (free[34], free[51]))
 
     def test_a4_covers_dark_members_and_all_cooperative_balls_with_distinct_targets(self):
         members, balls = self.rows["1699894"]

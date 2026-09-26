@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from test_bianca_dragon_abilities import official_sources
 import wf_balance_20260927_nephtim as B
+import wf_balance_20260927b_nephtim as B2  # 第二批覆盖（生成器已同步到第二批）
 import wf_client_legality as legality
 import wf_dsl
 import wf_mod_tool as core
@@ -217,14 +218,26 @@ class NephtimBalance20260927Test(unittest.TestCase):
                 self.assertTrue(B.validate(self.result, strings - {missing}))
 
     def test_generators_produce_exactly_the_revised_values(self):
+        # 生成器已同步到 2026-09-27 第二批（wf_balance_20260927b_nephtim）：能力3 贯穿成长封顶、队长 Fever
+        # 获得量放缓并追加两条贯穿成长、队长面板对应两句。期望 = 第一批输出 + 第二批覆盖（第二批函数以第一批
+        # 发布后的值为原像，原像不符会直接抛错）；第二批未触及的键仍与第一批输出逐字相同。
         source, _ = official_sources()
         rows = abilities.ability_rows(source)
         leaders = leader.leader_rows(source)
-        for key, value in self.result["ability"].items():
+        expected = deepcopy(self.result["ability"])
+        expected["1699893"] = B2.ability3_rows(self.result["ability"]["1699893"])
+        for key, value in expected.items():
             self.assertEqual(value, rows[key], key)
-        self.assertEqual(self.result["leader"]["169989"], leaders)
+        self.assertEqual(B2.leader_rows(self.result["leader"]["169989"], self.result["ability"]["1699893"]),
+                         leaders)
+        # 第一批 8 行中只有第5行（Fever 获得量成长）的强度两格被第二批改。
+        first = self.result["leader"]["169989"]
+        self.assertEqual([(4, 49), (4, 50)], [(i, c) for i in range(8) for c in range(124)
+                                              if leaders[i][c] != first[i][c]])
         panels = text.panel_rows(rows, leaders, piercing_extension="dark_resonance")
-        for key, value in self.result["cas"].items():
+        expected_cas = deepcopy(self.result["cas"])
+        expected_cas[B.TEXT_LEADER] = [[B2.leader_text(self.result["cas"][B.TEXT_LEADER][0][0])]]
+        for key, value in expected_cas.items():
             self.assertEqual(value, panels[key], key)
         self.assertEqual(120, abilities.SUMMON_PERIOD_FRAMES)
         self.assertEqual(120, abilities.metadata()["skill_enhancement"]["period_frames"])
@@ -333,12 +346,21 @@ class NephtimBalance20260927Test(unittest.TestCase):
         previous = {"nephtim-summon-cap-20260916/ruin_girl_campus": "0.2.2",
                     "campus-nephtim-20260911": "0.20260925"}
         version = lambda text: tuple(int(part) for part in text.split("."))
+        # 第二批覆盖：wf_balance_20260927b_nephtim 对同两个候选再升一版并写 snapshot revision_20260927b；
+        # 回写后候选现值 = 第二批版本（> 第一批版本），上限改取第二批版本。
+        self.assertEqual(B.PACKAGES, B2.PACKAGES)
         for package, new in B.PACKAGE_VERSION.items():
             self.assertGreater(version(new), version(previous[package]), package)
+            second = B2.PACKAGE_VERSION[package]
+            self.assertGreater(version(second), version(new), package)
             manifest = ROOT / "work/character_packs" / package / "package/manifest.json"
             if manifest.is_file():
-                current = json.loads(manifest.read_bytes())["package_version"]
-                self.assertGreaterEqual(version(new), version(current), package)
+                meta = json.loads(manifest.read_bytes())
+                current = meta["package_version"]
+                if meta.get("snapshot", {}).get("revision_20260927b") is not None:
+                    self.assertEqual(second, current, package)
+                else:
+                    self.assertGreaterEqual(version(new), version(current), package)
 
     def test_relocated_flag_matches_the_official_leader_precedent(self):
         cdn = ROOT / ".cdn/cn"
