@@ -17,6 +17,12 @@ CID = "149989"
 CODE = "wind_spgirl_campus"
 CHANGE_SKILL_STRING_ID = "change_skill_wind_spgirl_campus_fever"
 SCALE = 100_000
+#: 2026-09-27 第二批（口径 A3）：能力3「每层星风心得」换成有上限的弱化版——during 134
+#: 限次 c102 = 10（官方 1611231..6 blackflower_wiz_smr22 同为 D134 + 限 10），
+#: 能力伤害 25%→8%/层、攻击力 25%→5%/层；无上限的逐层成长搬进队长
+#: （wf_celtie_fever_leader.GAIN_GROWTH_STRENGTH，每层 2.5%）。
+GAIN_BONUS_LIMIT = 10
+GAIN_BONUS_STRENGTH = {154: 8_000, 0: 5_000}
 
 
 def _pre(row, kind=None, *, offset=6):
@@ -71,8 +77,11 @@ def _fever_status(source, content, strength=None):
     return row
 
 
-def _stock_gain_bonus(source, content=154):
+def _stock_gain_bonus(source, content=154, strength=None, limit=GAIN_BONUS_LIMIT):
+    """每层星风心得（D134）→ 风队 content；limit=None 即 c102 (None) 不设限（仅队长行用）。"""
     # Official 1610633 counts Unique layers through native During D134.
+    if strength is None:
+        strength = GAIN_BONUS_STRENGTH[content]
     row = deepcopy(source["1610633"][0])
     if len(row) != 126:
         raise ValueError("official ability rows must have 126 columns")
@@ -81,8 +90,9 @@ def _stock_gain_bonus(source, content=154):
     _pre(row, "fever", offset=13)
     _pre(row, offset=20)
     for column, value in {97: 134, 98: 0, 100: SCALE, 101: SCALE,
-                          102: "(None)", 104: GAIN_UID, 109: content, 110: 5,
-                          111: "Green", 113: 25_000, 114: 25_000}.items():
+                          102: "(None)" if limit is None else limit, 104: GAIN_UID,
+                          109: content, 110: 5, 111: "Green",
+                          113: strength, 114: strength}.items():
         row[column] = str(value)
     return row
 
@@ -213,14 +223,15 @@ def metadata() -> dict:
         },
         "stock_gain_bonus": {
             "gain_unique_id": GAIN_UID,
-            "per_layer_percent": 25,
-            "attack_per_layer_percent": 25,
+            "per_layer_percent": GAIN_BONUS_STRENGTH[154] * 100 // SCALE,
+            "attack_per_layer_percent": GAIN_BONUS_STRENGTH[0] * 100 // SCALE,
             "target": "wind party",
             "only_fever": True,
             "retain_after_fever": True,
             "stock_consume_preserves_bonus": True,
             "bonus_uses_cumulative_gained_layers": True,
-            "during_trigger_limit": None,
+            "during_trigger_limit": GAIN_BONUS_LIMIT,
+            "uncapped_growth_moved_to_leader": "balance 2026-09-27 batch 2 (A3)",
         },
         "fever_ratio": "outside Fever add 15% per 35 wind direct hits; successful stock consumption adds 5%; neither raises maximum",
         "periodic_status": {

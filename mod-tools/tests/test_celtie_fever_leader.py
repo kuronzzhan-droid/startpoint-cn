@@ -45,7 +45,9 @@ class CeltieFeverLeaderTest(unittest.TestCase):
             self.assertEqual([], legality.ability_element_column_problems("leader_ability", row, 3))
 
     def test_wind_base_stats_are_unconditional_and_special_rows_require_six_wind_members(self):
-        attack, damage, special, hit, acquire, consume = self.rows
+        # 2026-09-27 第二批追加 #6/#7（心得逐层成长），前 6 行不变。
+        self.assertEqual(8, len(self.rows))
+        attack, damage, special, hit, acquire, consume = self.rows[:6]
         self.assertEqual(("32", "200000", "5", "Green", "0"),
                          (attack[45], attack[49], attack[46], attack[47], attack[4]))
         self.assertEqual(("388", "400000", "5", "Green", "0"),
@@ -60,8 +62,27 @@ class CeltieFeverLeaderTest(unittest.TestCase):
         self.assertEqual(("2", "254", "0", "1000000", "(None)"),
                          (row[25], row[45], row[46], row[49], row[67]))
 
+    def test_starwind_insight_growth_moved_from_ability_three_is_uncapped_and_slowed(self):
+        """2026-09-27 第二批（口径 A2/A3）：能力3 心得两行的无上限成长搬进队长，2.5%/层（1/10），不设限。"""
+        import wf_celtie_fever_abilities as abilities
+        growth = self.rows[6:]
+        self.assertEqual(2, len(growth))
+        for row, content in zip(growth, ("154", "0")):
+            source = abilities._stock_gain_bonus(self.abilities, int(content), 2_500, limit=None)
+            self.assertEqual([leader.CODE, "0", ""] + source[5:], row)   # 能力 c≥5 → 队长 c−2
+            self.assertEqual(("1", "134", "0", "100000", "100000", "(None)", str(leader.GAIN_UID)),
+                             (row[3], row[95], row[96], row[98], row[99], row[100], row[102]))
+            self.assertEqual((content, "5", "Green", "2500", "2500", "false", "(None)"),
+                             (row[107], row[108], row[109], row[111], row[112], row[106], row[83]))
+            self.assertEqual((["2", "", "", "600000", "600000", "Green", ""], "12"),
+                             (row[4:11], row[11]))
+            self.assertEqual(("", ""), (row[25], row[45]))
+        info = leader.metadata()["gain_growth"]
+        self.assertEqual((2.5, 2.5, None), (info["ability_damage_per_layer_percent"],
+                                        info["attack_per_layer_percent"], info["limit"]))
+
     def test_stock_consumption_is_one_layer_and_fixed_seven_combo(self):
-        acquire, consume = self.rows[4:]
+        acquire, consume = self.rows[4:6]
         self.assertEqual(("23", "7", "Green", "629", leader.STOCK_STRING_ID,
                           leader.STOCK_ACTION_PATH),
                          (acquire[25], acquire[26], acquire[27], acquire[45], acquire[68], acquire[69]))

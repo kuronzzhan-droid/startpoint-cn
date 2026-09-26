@@ -136,18 +136,23 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
             "with_leader_max_combo_per_flip")))
         self.assertTrue(info["empty_stock_grants_no_combo"])
 
-    def test_a3_bonus_counts_all_earned_layers_only_in_wind_fever_without_a_cap(self):
+    def test_a3_bonus_counts_earned_layers_only_in_wind_fever_capped_at_ten(self):
+        # 2026-09-27 第二批（口径 A3）覆盖：c102 (None)→10，能力伤害 25%→8%/层、攻击力 25%→5%/层；
+        # 无上限的逐层成长搬进队长（test_celtie_fever_leader）。其余格保持第一批/原生成器输出。
         row = self.rows["1499893"][6]
         attack = self.rows["1499893"][7]
         expected_attack = copy.deepcopy(row)
         expected_attack[109] = "0"  # Native During AttackPointUp; same counter/target/gates.
+        expected_attack[113:115] = ["5000", "5000"]
         self.assertEqual(expected_attack, attack)
         self.assertEqual(("false", "1", "2", "Green", "12"),
                          (row[1], row[5], row[6], row[11], row[13]))
-        self.assertEqual(("134", "0", "100000", "100000", "(None)", "14998902"),
+        self.assertEqual(("134", "0", "100000", "100000", "10", "14998902"),
                          (row[97], row[98], row[100], row[101], row[102], row[104]))
-        self.assertEqual(("154", "5", "Green", "25000", "25000"),
+        self.assertEqual(("154", "5", "Green", "8000", "8000"),
                          (row[109], row[110], row[111], row[113], row[114]))
+        self.assertEqual(80_000, int(row[113]) * int(row[102]))       # 能力伤害最多 +80%
+        self.assertEqual(50_000, int(attack[113]) * int(attack[102]))  # 攻击力最多 +50%
         self.assertEqual(("", "", "", ""), (row[27], row[47], row[57], row[58]))
         # Consumption addresses spendable stock; no instant ability can clear
         # or consume the separate lifetime-earned counter.
@@ -156,12 +161,19 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
         self.assertNotEqual(consume[45], row[104])
         self.assertFalse(any(r[47] == "528" for rows in self.rows.values() for r in rows))
         info = kit.metadata()["stock_gain_bonus"]
-        self.assertEqual(25, info["per_layer_percent"])
+        self.assertEqual((8, 5), (info["per_layer_percent"], info["attack_per_layer_percent"]))
         self.assertEqual(14998902, info["gain_unique_id"])
         for key in ("only_fever", "retain_after_fever", "stock_consume_preserves_bonus",
                     "bonus_uses_cumulative_gained_layers"):
             self.assertTrue(info[key])
-        self.assertIsNone(info["during_trigger_limit"])
+        self.assertEqual(10, info["during_trigger_limit"])
+
+    def test_uncapped_gain_row_shape_is_still_available_for_the_leader(self):
+        capped = kit._stock_gain_bonus(self.source)
+        uncapped = kit._stock_gain_bonus(self.source, 154, 2_500, limit=None)
+        self.assertEqual(("(None)", "2500", "2500"), (uncapped[102], uncapped[113], uncapped[114]))
+        uncapped[102], uncapped[113:115] = capped[102], capped[113:115]
+        self.assertEqual(capped, uncapped, "only limit and strength may differ")
 
     def test_periodic_party_states_use_300_fever_frames_and_60_frame_duration(self):
         for slot, content in ((4, "26"), (5, "27"), (6, "688")):

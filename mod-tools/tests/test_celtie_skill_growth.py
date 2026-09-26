@@ -56,7 +56,8 @@ class CeltieSkillGrowthTests(unittest.TestCase):
         self.assertEqual(self.before, self.near)
         self.assertEqual(3, len(skill.nodes(tree, 'FindNearSubjects')))
         bindings = skill.nodes(tree, 'BindConditionAccumulationVariable')
-        self.assertEqual([2147483647, 0, 0], [b[5] for b in bindings])
+        # 2026-09-27 第二批（口径 A5）：共鸣∧Fever 支上限 2147483647→10（官方 blackflower_wiz_smr22 同为 10）。
+        self.assertEqual([10, 0, 0], [b[5] for b in bindings])
         for binding in bindings:
             self.assertEqual([-17, 14998905, ['DCUnique', 14998902], 1], binding[1:5])
         for near in skill.nodes(tree, 'FindNearSubjects'):
@@ -65,14 +66,15 @@ class CeltieSkillGrowthTests(unittest.TestCase):
                 attack[6][0].pop('vlv')
             self.assertEqual(self.before, restored)
 
-    def test_seventy_five_plus_ten_per_layer_only_inside_resonant_fever(self):
+    def test_seventy_five_plus_ten_per_layer_up_to_ten_layers_only_inside_resonant_fever(self):
+        # 2026-09-27 第二批（口径 A5）：层数贡献封顶 10 层 ⇒ 最多 75+100 倍。
         tree = growth.with_starwind_growth(self.near)
         for fever, winds in ((True, 6), (True, 5), (False, 6), (False, 5)):
-            for layers in (0, 1, 7, 100, 2147483647):
+            for layers in (0, 1, 7, 10, 11, 100, 2147483647):
                 with self.subTest(fever=fever, winds=winds, layers=layers):
                     near, variables = active_scope(tree, fever=fever,
                         wind_members=winds, layers=layers)
-                    expected = 75 + (10 * layers if fever and winds == 6 else 0)
+                    expected = 75 + (10 * min(layers, 10) if fever and winds == 6 else 0)
                     for branch in near[1:]:
                         actual = sum(evaluated_multiplier(a, variables)
                                      for a in skill.nodes(branch, 'CreateNormalAttack'))

@@ -134,8 +134,13 @@ class CampusPanelTextTest(unittest.TestCase):
             self.assertIn(term, panels["leader"])
         for term in ("分为3次", "+200%", "每消耗1层", "+5%"):
             self.assertIn(term, panels["a2"])
-        for term in ("<icon id='main'>", "风属性共鸣时", "35次", "非Fever", "25倍", "7的倍数", "+700%", "+0.7%", "+15%", "星风心得", "能力伤害+25%、攻击力+25%"):
+        # 2026-09-27 第二批覆盖：能力3 心得改为有上限（+8%/+5%，最多10层），无上限逐层成长搬进队长（+2.5%/+2.5%）。
+        for term in ("<icon id='main'>", "风属性共鸣时", "35次", "非Fever", "25倍", "7的倍数", "+700%", "+0.7%", "+15%", "星风心得", "能力伤害+8%、攻击力+5%（最多10层）"):
             self.assertIn(term, panels["a3"])
+        self.assertEqual(panels["leader"].splitlines()[-1],
+                         "风属性共鸣时，Fever模式中，每层「星风心得」使风属性角色能力伤害+2.5%、攻击力+2.5%。")
+        self.assertIn("2层「星风快门」与2层「星风心得」", panels["leader"])
+        self.assertIn("每层额外增加10倍（最多10层）", panels["active"])
         self.assertNotIn("星风快门累积", "".join(panels.values()))
         self.assertIn("命中敌人", panels["a1"])
         self.assertNotIn("全场敌人", panels["a1"])

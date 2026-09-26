@@ -6,6 +6,7 @@ import zlib
 
 import wf_dsl
 from wf_campus_bianca_data import validate_row
+from wf_celtie_fever_abilities import _stock_gain_bonus
 from wf_celtie_fever_icons import gain_icon_bytes, stock_icon_bytes
 from wf_celtie_fever_skill import ability_damage_reference
 from wf_celtie_fever_stock import (
@@ -27,6 +28,12 @@ PF_SOURCE_PATHS = tuple(
     for level in (1, 2, 3))
 PF_SOURCE_EFFECT = "wind_spgirl_4anv"
 PF_EFFECT = "campus_celtie_fever"
+#: 2026-09-27 第二批（口径 A2/A3/A5）：能力3「每层星风心得」原为无上限 25%/层，搬进队长并放缓
+#: 到 1/10（口径 A2 按实际步数：每层一步，3 分钟 Fever 中风队施技约 13–20 次、每次 +3 层 ⇒
+#: 约 40–60 层 ≥30）：风队能力伤害、攻击力各 2.5%/层，不设限（c100 (None)）。
+#: 队长里没有同触发/同 kind 的行，按口径另起两行（第 7、8 行）；
+#: 技能 DSL 心得倍率封顶 10 层后，超出部分的逐层成长也由这两行承担（视为已合并）。
+GAIN_GROWTH_STRENGTH = {154: 2_500, 0: 2_500}
 
 
 def _set(row, values):
@@ -61,6 +68,12 @@ def _trigger(row, trigger, *, wind=False):
     return row
 
 
+def gain_growth_row(ability_source, content):
+    """能力3 心得行按口径 A3 转成队长行：``[CODE, '0', ''] + 能力行[5:]``（列号 −2），不设限。"""
+    row = _stock_gain_bonus(ability_source, content, GAIN_GROWTH_STRENGTH[content], limit=None)
+    return [CODE, "0", ""] + row[5:]
+
+
 def leader_rows(ability_source, leader_source):
     """库存加2；主球发射时同步消费1，倍率固定1，因此连击始终+7。"""
     attack = _set(_base(ability_source, 32, 200000), {46: 5, 47: "Green"})
@@ -78,7 +91,8 @@ def leader_rows(ability_source, leader_source):
     consume = _trigger(_resonance(_base(ability_source, 629), True), 26)
     _set(consume, {37: 2, 38: 0, 40: 100000, 41: 100000, 43: STOCK_UID})
     _set(consume, {68: LEADER_SPEND_STRING_ID, 69: LEADER_SPEND_ACTION_PATH})
-    result = [attack, damage, special_pf, pf_hit, acquire, consume]
+    growth = [gain_growth_row(ability_source, content) for content in (154, 0)]
+    result = [attack, damage, special_pf, pf_hit, acquire, consume, *growth]
     for row in result:
         validate_row(row, "leader_ability")
     return result
@@ -171,4 +185,9 @@ def metadata():
             "combo_per_flip": 7, "stock_pauses_outside_fever_or_resonance": True,
             "stock_retained_until_battle_end": True, "stock_trigger": "T26 MySelfFlip",
             "spend_marker_lifetime": "created and deleted in the same impact phase",
-            "spend_feedback": "native buff_reset effect; no persistent HUD marker"}
+            "spend_feedback": "native buff_reset effect; no persistent HUD marker",
+            "gain_growth": {"rows": [6, 7], "trigger": "During D134 Starwind Insight layers",
+                            "ability_damage_per_layer_percent": GAIN_GROWTH_STRENGTH[154] / 1000,
+                            "attack_per_layer_percent": GAIN_GROWTH_STRENGTH[0] / 1000,
+                            "target": "wind party", "only_fever": True, "limit": None,
+                            "source": "balance 2026-09-27 batch 2: moved from ability 3 (A3)"}}

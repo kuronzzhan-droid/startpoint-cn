@@ -4,7 +4,11 @@ from copy import deepcopy
 from wf_celtie_fever_stock import GAIN_UID
 
 GAIN_FLOAT_ID = 14998905
-GAIN_MAX_LAYERS = 2147483647  # Same limit as the existing UniqueCondition master.
+# 2026-09-27 第二批（口径 A5）：技能倍率只随前 10 层心得成长。原生 Bind 取
+# min(层数/1, 上限)（ActionEvaluator.as case 101），官方 blackflower_wiz_smr22
+# 两档技能即 Bind(-17, vid, DCUnique, 1, 10)。心得本身仍按固有上限 2147483647
+# 累积，超过 10 层的逐层成长由队长「每层心得」两行承担。
+GAIN_MAX_LAYERS = 10
 MULTIPLIER_PER_LAYER = 10
 
 
@@ -27,9 +31,9 @@ def _block(*children):
 def with_starwind_growth(near):
     """在施技入口取心得快照，三个互斥子作用域各自绑定并执行动作。
 
-    官方 blackflower_wiz_smr22 使用相同 Bind + SLvValue.vlv 写法。
+    官方 blackflower_wiz_smr22 使用相同 Bind + SLvValue.vlv 写法（上限同为 10）。
     条件分支内绑定不会写回父 Environment，因此不能把 near 放在门槛外。
-    无共鸣/非Fever用零上限绑定；没有心得时原生层数为零。
+    无共鸣/非Fever用零上限绑定；没有心得时原生层数为零；共鸣且Fever时最多计 10 层。
     """
     template = deepcopy(near)
     attacks = list(_nodes(template, 'CreateNormalAttack'))
