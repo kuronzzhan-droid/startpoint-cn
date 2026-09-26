@@ -29,8 +29,9 @@ class RevisionTests(unittest.TestCase):
                 if r[27] == '20' and r[68] == K.UID_CRESCENT]
         self.assertEqual(len(gain), 1)
         self.assertEqual(gain[0][30:32], ['10000000', '10000000'])
+        # 2026-09-27 平衡批次删去同触发的雷队 Stunify 行，只剩充能 +5%
         self.assertEqual([r[30] for r in self.rows['ability']['1399905'] if r[27] == '20'],
-                         ['5000000', '5000000'])
+                         ['5000000'])
 
     def test_dice_threshold_and_cap(self):
         gains = [c for _, c, _ in U.ABILITY['1399913'] if c.get(68) == U.UID_DICE]
