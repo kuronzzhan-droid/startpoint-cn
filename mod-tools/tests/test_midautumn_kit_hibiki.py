@@ -24,6 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import wf_balance_20260927b_hibiki as B2  # noqa: E402  2026-09-27 第二批平衡修订模块
 import wf_client_legality as L  # noqa: E402
 import wf_midautumn_common as MC  # noqa: E402
 import wf_midautumn_kit_hibiki as K  # noqa: E402
@@ -56,6 +57,17 @@ def ctx():
     if _CTX is None:
         _CTX = B.KitContext(MC.MAPack(MS.get_spec("hibiki"), record_sources=False))
     return _CTX
+
+
+def _batch2(fn, value):
+    """「第一批输出 + 第二批覆盖」：候选包 / kit-report 还停在第二批之前时，套上第二批修订
+    （``wf_balance_20260927b_hibiki`` 的纯函数）再与本模块常量比；主会话暂存脚本回写候选后
+    候选本身就是第二批输出，修订函数对自身输出拒绝（ValueError）⇒ 原样返回。
+    kit-report.json 是 rework1 构建证据，第二批不重建 kit（禁止重跑写包脚本），所以一直走覆盖分支。"""
+    try:
+        return fn(value)
+    except ValueError:
+        return value
 
 
 def fake_family() -> dict:
@@ -160,7 +172,8 @@ class ConstantTests(unittest.TestCase):
         self.assertIn("额外乘区", K.PANEL_ABILITY[5])
 
     def test_plan_counts(self):
-        self.assertEqual(K.LEADER_ROWS, 10)
+        # 2026-09-27 第二批平衡：回响每层的两条无上限成长从槽 3/槽 4 搬进队长（10 → 12 行）
+        self.assertEqual(K.LEADER_ROWS, 12)
         self.assertEqual(K.ABILITY_RECORDS, 19)
         self.assertEqual({slot: len(rows) for slot, rows in K.PLAN.items()},
                          {1: 2, 2: 2, 3: 3, 4: 3, 5: 6, 6: 3})
@@ -235,16 +248,17 @@ class PlanSelfCheckTests(unittest.TestCase):
                           if cells.get(45) == "629"], [5, 7])
 
     def test_uncapped_hit_row(self):
-        """任意等级PF累计命中4次自身攻击＋50%保持无上限。"""
+        """任意等级PF累计命中4次自身攻击保持无上限（2026-09-27 第二批平衡：50% → 5%）。"""
         l7 = K.LEADER[6][2]
         self.assertEqual(l7[25], "15")
         self.assertEqual(l7[28], "400000")
         self.assertEqual(l7[32], "(None)")           # 新行：无上限、只给自身
         self.assertEqual((l7[46], l7[47]), ("0", ""))
-        self.assertEqual((l7[49], l7[50]), ("50000", "50000"))
+        self.assertEqual((l7[49], l7[50]), ("5000", "5000"))
 
     def test_echo_rows(self):
-        """回响：461 挂暗共鸣门；PF 伤害/攻击力按 99 层，独立乘区与全队暗攻仍封顶 5 层。"""
+        """回响：461 挂暗共鸣门；能力侧 PF 伤害/攻击力封顶 10 层（2026-09-27 第二批平衡，原 99 层），
+        无上限部分在队长两条 during 134（上限照抄 99 ＝ 固有上限，每层 2.5%）；独立乘区与全队暗攻仍封顶 5 层。"""
         gain = K.PLAN[3][0][2]
         self.assertEqual(gain[47], "461")
         self.assertEqual((gain[6], gain[11]), ("2", K.ELEMENT_TOKEN))
@@ -254,8 +268,14 @@ class PlanSelfCheckTests(unittest.TestCase):
             for _a, _s, cells, _e in K.PLAN[slot]:
                 if cells.get(97) == "134":
                     caps[(slot, cells[109])] = cells[102]
-        self.assertEqual(caps[(3, "23")], K.UNIQUE_CAP)      # PF 伤害 +25%/层，99 层
-        self.assertEqual(caps[(4, "0")], K.UNIQUE_CAP)       # 自身攻击力 +25%/层，99 层（D-13）
+        self.assertEqual(caps[(3, "23")], K.ECHO_ABILITY_CAP)   # PF 伤害 +10%/层，10 层（第二批）
+        self.assertEqual(caps[(4, "0")], K.ECHO_ABILITY_CAP)    # 自身攻击力 +5%/层，10 层（第二批）
+        self.assertEqual(K.ECHO_ABILITY_CAP, "10")
+        leader = {cells[107]: cells for _a, _s, cells, _e in K.LEADER if cells.get(95) == "134"}
+        self.assertEqual(sorted(leader), ["0", "23"])            # 队长：每层攻击力 / PF 伤害
+        for cells in leader.values():
+            self.assertEqual((cells[100], cells[102], cells[111], cells[112]),
+                             (K.UNIQUE_CAP, K.UID, "2500", "2500"))
         self.assertEqual(caps[(3, "413")], "5")              # 独立乘区 +5%/层，作者「最大 25%」
         self.assertEqual(caps[(6, "0")], "5")                # 全队暗攻 +15%/层
         for cells in (K.PLAN[3][1][2], K.PLAN[3][2][2], K.PLAN[4][2][2], K.PLAN[6][2][2]):
@@ -298,7 +318,7 @@ class PlanSelfCheckTests(unittest.TestCase):
     def test_the_echo_stack_has_no_source_outside_the_main_only_key(self):
         """回响（16998801）只由槽 3 的 461 行产出 ⇒ 她在合击位时层数恒 0，
 
-        槽 4 #2「每层回响→自身攻击力＋25%」（面板显示在能力 3，偏离 D-13）与
+        槽 4 #2「每层回响→自身攻击力」（2026-09-27 第二批起封顶 10 层，文案回到能力 4）与
         槽 6 #2 都只是读层数（c104），不会另外加层。技能 DSL 也加 1 层，但副位不放技能。
         """
         givers, readers = [], []
@@ -492,7 +512,7 @@ class RowAssemblyTests(unittest.TestCase):
             KL.check_ability_key(rows, key, K.CODE, slot)
             K._row_self_check("ability", rows, key)
         self.assertEqual(checked, K.LEADER_ROWS + K.ABILITY_RECORDS)
-        self.assertEqual(checked, 29)
+        self.assertEqual(checked, 31)                     # 2026-09-27 第二批平衡：队长 +2 行
 
     def test_required_capabilities(self):
         leader, ability = assembled_rows()
@@ -695,6 +715,16 @@ class InvokeTreeTests(unittest.TestCase):
         self.assertEqual(gates["total"], 62.4)             # (4 + 9) × 4.8
         self.assertEqual(gates["multipliers"], [19.2, 43.2])
 
+    def test_detoughness_is_one_per_call(self):
+        """2026-09-27 第二批平衡（口径 B.3）：触发 CT ≤3 秒的 629 每次削韧 ≤1 ⇒ 每段 p13 6.25 → 0.25。"""
+        tree, gates = K.build_invoke_tree(ctx())
+        self.assertEqual([c[13] for c in PH.cmds(tree, "CreateNormalAttack")],
+                         [[{"min": 0.25, "max": 0.25}]] * 2)
+        self.assertEqual(gates["detoughness"], {"per_segment": 0.25, "segments": [3, 1],
+                                                "per_call": 1.0, "official_per_segment": 6.25})
+        invokes = [cells for _a, _s, cells, _e in K.LEADER if cells.get(45) == "629"]
+        self.assertTrue(all(int(cells[33]) <= 180 for cells in invokes))   # 两行 CT 都 ≤3 秒
+
     def test_damage_attribution_is_on_the_root_not_the_hit_areas(self):
         """反馈轮 4：归属开关只写根头，判定区归属位全部留 0（不覆盖、回落到根头）。
 
@@ -806,9 +836,14 @@ class PackageTests(unittest.TestCase):
     def test_panel_override_survives_the_csv_round_trip(self):
         """多行 desc_override 的 ``\\n`` 必须活过 orderedmap 的 CSV 编解码。"""
         cas = self.pack.pkg_flat(KL.CAS)
+        overlay = {B2.CAS_LEADER: B2.leader_panel, B2.CAS_SLOT3: B2.slot3_panel,
+                   B2.CAS_SLOT4: B2.slot4_panel}
         for key, text in K.CAS_TEXTS.items():
-            self.assertEqual(C.csv_split(cas[key])[0][0], text, key)
-        self.assertEqual(len(K.PANEL_LEADER.split("\n")), 8)
+            got = C.csv_split(cas[key])[0][0]
+            if key in overlay:                            # 第一批输出 + 第二批覆盖
+                got = _batch2(overlay[key], got)
+            self.assertEqual(got, text, key)
+        self.assertEqual(len(K.PANEL_LEADER.split("\n")), 9)   # 第二批：+1 行回响每层
 
     def test_every_self_owned_key_is_claimed(self):
         # 漏认领 = rebase 静默回滚（记忆卡 wf-unison-slot-mechanics）
@@ -821,8 +856,10 @@ class PackageTests(unittest.TestCase):
 
     def test_written_tables_match_the_plan(self):
         leader = C.csv_split(self.pack.pkg_flat(KL.LEADER)[str(K.CID)])
-        self.assertEqual(len(leader), K.LEADER_ROWS)
         ability = self.pack.pkg_flat(KL.ABILITY)
+        a3, a4 = (C.csv_split(ability[key]) for key in (B2.ABILITY3, B2.ABILITY4))
+        leader = _batch2(lambda rows: B2.leader_rows(rows, a3, a4), leader)   # 第一批输出 + 第二批覆盖
+        self.assertEqual(len(leader), K.LEADER_ROWS)
         for slot in range(1, 7):
             rows = C.csv_split(ability[f"{K.CID}{slot}"])
             self.assertEqual(len(rows), len(K.PLAN[slot]), slot)
@@ -883,8 +920,11 @@ class PackageTests(unittest.TestCase):
 
     def test_report_panel_and_deviations(self):
         self.assertEqual(self.report["cid"], K.CID)
-        self.assertEqual(self.report["panel"],
-                         [K.PANEL_LEADER] + [K.PANEL_ABILITY[s] for s in range(1, 7)])
+        panel = list(self.report["panel"])                # rework1 构建证据 + 第二批覆盖
+        panel[0] = _batch2(B2.leader_panel, panel[0])
+        panel[3] = _batch2(lambda text: B2.slot3_panel(text, icon=""), panel[3])
+        panel[4] = _batch2(B2.slot4_panel, panel[4])
+        self.assertEqual(panel, [K.PANEL_LEADER] + [K.PANEL_ABILITY[s] for s in range(1, 7)])
         for text in self.report["panel"]:
             self.assertEqual(KL.panel_problems(text), [], text)
         self.assertEqual(len(self.report["deviations"]), len(DESIGN["deviations"]))

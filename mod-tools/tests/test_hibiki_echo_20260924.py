@@ -36,8 +36,9 @@ class EchoActivationTests(unittest.TestCase):
         leader, _ = assembled_rows()
         hits = [r for r in leader if r[25] == "15"]
         self.assertEqual(len(hits), 1)
+        # 2026-09-27 第二批平衡：仍不限次（c32=(None)），强度 50% → 5%（3 分钟约 30–75 次 ⇒ ×1/10）。
         self.assertEqual([hits[0][c] for c in (28, 29, 32, 45, 46, 49, 50)],
-                         ["400000", "400000", "(None)", "32", "0", "50000", "50000"])
+                         ["400000", "400000", "(None)", "32", "0", "5000", "5000"])
         self.assertNotIn("最多10次", K.PANEL_LEADER)
         self.assertIn("每发动3次强化弹射（含额外触发）", K.PANEL_LEADER)
 
