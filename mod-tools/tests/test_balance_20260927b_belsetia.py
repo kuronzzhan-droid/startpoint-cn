@@ -260,7 +260,10 @@ class BelsetiaBatch2Test(unittest.TestCase):
         in_candidate = wf_dsl.parse_dsl(zlib.decompress(candidate.read('common', logical), -15))['tree']
         if meta['snapshot'].get('revision_20260927b') is not None:
             # 主会话暂存回写之后：候选穿刺树 = 本模块输出。
-            self.assertEqual(B.PACKAGE_VERSION[B.PACKAGES[0]], meta['package_version'])
+            # 作者 09-27 小重做（wf_balance_20260927b_witch_move：环爆移到能力3、能力4/6 去主位；只改 ability 表）
+            # 会在同一候选上再升一版（0.1.2）且不碰穿刺树 ⇒ 版本号只要求不低于第二批。
+            self.assertGreaterEqual(tuple(map(int, meta['package_version'].split('.'))),
+                                    tuple(map(int, B.PACKAGE_VERSION[B.PACKAGES[0]].split('.'))))
             self.assertEqual(json.dumps(self.out['dsl'][PIERCE]), json.dumps(in_candidate))
             return
         self.assertLess(tuple(map(int, meta['package_version'].split('.'))),
