@@ -323,7 +323,10 @@ class ReviseTests(unittest.TestCase):
         # 作者 09-27 追加（wf_balance_20260927b_gerald2）：生成器文案改为无数字的「固定伤害 + 斩杀」版。
         import wf_balance_20260927b_gerald2 as M2
         self.assertEqual(self.context["cas"]["change_skill_white_wolf_gerald"][0][0], M2.OLD_CAS_TEXT)
-        self.assertEqual(G.ENHANCEMENT_TEXT, M2.NEW_CAS_TEXT)
+        # 第三轮（wf_balance_20260927c_gerald_wolf）：以 gerald2 文案为输入点明技能名，生成器常量跟第三轮走。
+        import wf_balance_20260927c_gerald_wolf as M3
+        self.assertEqual(M3.OLD_CAS_FLAG_TEXT, M2.NEW_CAS_TEXT)
+        self.assertEqual(G.ENHANCEMENT_TEXT, M3.NEW_CAS_FLAG_TEXT)
 
     # ------------------------------------------------------------ 保留项现值（口径 B.1 / B.3）
 
@@ -571,7 +574,12 @@ class CandidateTests(unittest.TestCase):
                 self.assertEqual(M.PACKAGE_VERSION[M.PACKAGES[0]], current)
             candidate = RevisionCandidate(ROOT, WORKSPACE, **self._kwargs())
             leader = X.unpack(candidate.read("common", "master/ability/leader_ability.orderedmap"))
-            self.assertEqual(X.csv_read(leader[M.CID]), self.out["leader"][M.CID])
+            # 第三轮（wf_balance_20260927c_gerald_wolf，以本模块输出为输入把 #6–#8 5%→40%）回写后候选 = 第三轮输出。
+            import wf_balance_20260927c_gerald_wolf as M3
+            want_leader = self.out["leader"][M.CID]
+            if version(current) >= version(M3.PACKAGE_VERSION[M3.PACKAGES[0]]):
+                want_leader = M3.leader_rows(want_leader)
+            self.assertEqual(X.csv_read(leader[M.CID]), want_leader)
             for program in programs:
                 want = self.inputs["dsl"][program] if appended and program in SKILLS else self.out["dsl"][program]
                 self.assertEqual(tree_diff(self._tree(candidate, program), want), [], program)

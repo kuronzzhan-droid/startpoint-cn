@@ -387,7 +387,11 @@ class GeneratorTests(unittest.TestCase):
         self.assertIs(type(G.COUNTER_CAP), float)
         self.assertEqual((G.COUNTER_UID, G.COUNTER_VARIABLE, G.CONDITION_KEY),
                          (B2.COUNTER_UID, B2.COUNTER_VARIABLE, B2.COUNTER_KEY))
-        self.assertEqual(G.ENHANCEMENT_TEXT, M.NEW_CAS_TEXT)
+        # 第三轮（wf_balance_20260927c_gerald_wolf，作者「技能里面不要重复描述强化后的效果」）以本模块的强化条目为输入
+        # 点明技能名；生成器常量跟第三轮走。
+        import wf_balance_20260927c_gerald_wolf as M3
+        self.assertEqual(M3.OLD_CAS_FLAG_TEXT, M.NEW_CAS_TEXT)
+        self.assertEqual(G.ENHANCEMENT_TEXT, M3.NEW_CAS_FLAG_TEXT)
         self.assertEqual(G.counter_row(), M.COUNTER_ROW)
 
     def test_cast_growth_rewrite_equals_revise_output(self):
@@ -455,6 +459,13 @@ class CandidateTests(unittest.TestCase):
         candidate = self._candidate()
         state = "inputs" if version(mine) > version(current) else "out"
         want = self.inputs if state == "inputs" else self.out
+        # 第三轮（wf_balance_20260927c_gerald_wolf）回写后：强化条目与技能说明 = 第三轮以本模块输出为输入的结果。
+        import wf_balance_20260927c_gerald_wolf as M3
+        if version(current) >= version(M3.PACKAGE_VERSION[M3.PACKAGES[0]]):
+            state = "c"
+            want = dict(self.out, **M3.skill_text_outputs({
+                ("cas", M.CAS_KEY): self.out["cas"][M.CAS_KEY], ("action", M.CODE): self.out["action"][M.CODE],
+                ("text", M.CID): self.out["text"][M.CID], ("server_text", M.CID): self.out["server_text"][M.CID]}))
         for program in SKILLS:
             self.assertEqual(tree_diff(self._tree(candidate, program), want["dsl"][program]), [], (state, program))
         cas = X.unpack(candidate.read("common", self.TABLES["cas"]))
@@ -471,7 +482,7 @@ class CandidateTests(unittest.TestCase):
                              list(M.CANDIDATE_STALE_SERVER_MIRROR["differing_columns"]))
             self.assertEqual(server[0][6], M.CANDIDATE_STALE_SERVER_MIRROR["cells"]["6"][0])
         else:
-            self.assertEqual(server, self.out["server_text"][M.CID])
+            self.assertEqual(server, want["server_text"][M.CID])
         # 干跑拼接：只动这 5 个文件，manifest 不落盘。
         candidate = self._candidate()
         for kind, logical in self.TABLES.items():
