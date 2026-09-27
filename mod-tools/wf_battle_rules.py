@@ -1,6 +1,8 @@
 """通用战斗补丁的配置编码；纯函数，不登记设备能力、不发布数据。"""
 from __future__ import annotations
 
+from wf_client_patch_scope import patch_parser_supported
+
 GAUGE_CAP = 'gauge-gain-rules-v1'
 DAMAGE_CAP = 'damage-type-rules-v1'
 GAINS = {'opening': 1, 'movement': 2, 'skill': 4, 'ability': 8,
@@ -61,10 +63,12 @@ def validate_code(content, code):
 
 
 def row_problems(table, row, blocks):
+    """规则码列 = during_content 块起点 +9：ability/EA c118、ability_soul c115。"""
     col = blocks.get('during_content')
     if col is None or len(row) <= col or row[blocks['precondition1']-1] != '1':
         return []
-    if row[col] not in ('423', '424') or table != 'ability':
+    # 表范围以解析器补丁为准（423 含装备两表，424 仅 ability）；越界由 patch_parser_scope_problems 报 C7050
+    if row[col] not in ('423', '424') or not patch_parser_supported(table, 'during_content', row[col]):
         return []
     try:
         text = row[col+9]

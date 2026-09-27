@@ -16,7 +16,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wf_describe  # noqa: E402  行级中文描述器(逆向布局+枚举直译)
 from wf_client_description_legality import description_compatibility_problems  # noqa: E402
-from wf_client_patch_scope import patch_parser_scope_problems, patch_parser_supported  # noqa: E402
+from wf_client_patch_scope import (  # noqa: E402
+    patch_parser_capabilities, patch_parser_scope_problems, patch_parser_supported,
+)
 from wf_battle_rules import row_problems as battle_rule_problems  # noqa: E402
 
 
@@ -134,6 +136,10 @@ def required_client_capabilities(kind: str, row: list[str]) -> list[str]:
             continue
         capability = gated.get(value)
         if capability is not None and capability not in needed:
+            needed.append(capability)
+    # 解析器扩展本身也是依赖：装备两表的 423 只有 equipment-rules 补丁认，1047 读到仍 C7050
+    for capability in patch_parser_capabilities(kind, row, blocks, parsed):
+        if capability not in needed:
             needed.append(capability)
     return needed
 

@@ -41,6 +41,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 import wf_client_legality as L  # noqa: E402
+import wf_client_patch_scope as SCOPE  # noqa: E402
 import wf_describe  # noqa: E402
 import wf_dsl  # noqa: E402
 import wf_dsl_sig as SIG  # noqa: E402
@@ -91,6 +92,7 @@ DATE_RE = re.compile(r"(20\d{2})[-/](\d{1,2})[-/](\d{1,2})")
 # 真实存在的客户端补丁 capability 全集(wf_client_legality 的能力表)。
 KNOWN_CAPABILITIES = frozenset(
     {name for gated in L.CLIENT_PATCH_CONTENT_KINDS.values() for name in gated.values()}
+    | {name for by_table in SCOPE.PATCH_PARSER_CAPABILITIES.values() for name in by_table.values()}
     | {L.PANEL_OVERRIDE_V1, L.PANEL_OVERRIDE_V2}
 )
 
