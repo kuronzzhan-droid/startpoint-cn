@@ -164,7 +164,7 @@ class Eff:
     trig: tuple = (IT_INITIAL, {})              # 瞬发触发或持续触发 (kind, {字段: 值})
     pre: tuple = ()                             # ((kind, {字段: 值}), ...) 最多 3 个
     pc: tuple | None = None                     # 瞬发前置 (kind, {字段: 值})
-    delay: int = 0                              # instant_delay（原始帧）
+    delay: int = 0                              # instant_delay（秒；客户端 ×60 帧。三重咒钥说明即「1秒后」）
     even_if_dead: bool = False
     learn: int = 1
     maxlvl: int = 1                             # 仅强化表
