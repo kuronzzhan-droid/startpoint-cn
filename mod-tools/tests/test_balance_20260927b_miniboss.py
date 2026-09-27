@@ -105,10 +105,12 @@ class MinibossDownBalanceTest(unittest.TestCase):
             identity = json.loads((ws / 'workspace.json').read_bytes())
             self.assertEqual((int(u['CID']), u['CODE']),
                              (identity['character_id'], identity['code_name']), package)
-            self.assertLessEqual(version(manifest['package_version']),
-                                 version(u['PACKAGE_VERSION'][package]), package)
+            # 第三轮面板合并（wf_balance_20260927c_panels）暂存回写后候选再升一版（队长面板合并），上限取那一版。
+            import wf_balance_20260927c_panels as P3
+            ceiling = P3.staged_version(manifest, package) or u['PACKAGE_VERSION'][package]
+            self.assertLessEqual(version(manifest['package_version']), version(ceiling), package)
             if manifest.get('snapshot', {}).get('revision_20260927b') is not None:   # 已回写 ⇒ 恰好等于
-                self.assertEqual(u['PACKAGE_VERSION'][package], manifest['package_version'], package)
+                self.assertEqual(ceiling, manifest['package_version'], package)
 
     def test_outputs_follow_the_contract_shape(self):
         keys = {'ability', 'leader', 'cas', 'text', 'table', 'action', 'dsl', 'server_text',
@@ -371,7 +373,9 @@ class MinibossDownBalanceTest(unittest.TestCase):
             if written_back:
                 # 已回写：版本 == 本模块版本，能力行/面板串也 == revise() 输出（树已在上面逐棵比对）。
                 import wf_share_update_codec as X
-                self.assertEqual(u['PACKAGE_VERSION'][package], json.loads(before)['package_version'])
+                import wf_balance_20260927c_panels as P3   # 第三轮面板合并回写后再升一版
+                self.assertEqual(P3.staged_version(json.loads(before), package) or u['PACKAGE_VERSION'][package],
+                                 json.loads(before)['package_version'])
                 for logical, part in (('master/ability/ability.orderedmap', 'ability'),
                                       ('master/string/custom_ability_string.orderedmap', 'cas')):
                     if out[part]:

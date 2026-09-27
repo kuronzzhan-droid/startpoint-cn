@@ -489,6 +489,16 @@ def _converge(value, old, new, label: str):
     return new
 
 
+def later_cas_text() -> str:
+    """第三轮（wf_balance_20260927c_panels FLAG_TEXT，主会话 R2）改写后的强化条目：本批不再改它，镜像里原样保留。"""
+    import wf_balance_20260927c_panels as P3
+    return P3.FLAG_TEXT[CID]["after"]
+
+
+def _converge_cas(value, label: str):
+    return value if value == later_cas_text() else _converge(value, OLD_CAS_TEXT, NEW_CAS_TEXT, label)
+
+
 def design_update(design: dict) -> dict:
     out = copy.deepcopy(design)
     texts = out["texts"]
@@ -501,7 +511,7 @@ def design_update(design: dict) -> dict:
     rows = [row for row in plan_texts["custom_ability_string"]["rows"] if row.get("key") == CAS_KEY]
     if len(rows) != 1:
         raise CharleneBalanceError(f"mirror design: {CAS_KEY} row count {len(rows)}")
-    rows[0]["text"] = _converge(rows[0]["text"], OLD_CAS_TEXT, NEW_CAS_TEXT, "custom_ability_string")
+    rows[0]["text"] = _converge_cas(rows[0]["text"], "custom_ability_string")
 
     entry = out["plan"]["ability"]["keys"][ABILITY_KEY]
     entry["role"] = _converge(entry["role"], DESIGN_ROLE_OLD, DESIGN_ROLE, "ability role")
@@ -578,7 +588,7 @@ def panel_update(panel: dict) -> dict:
     if len(ability) != 1:
         raise CharleneBalanceError("mirror panel: ability 1 missing")
     lines = ability[0]["lines"]
-    lines[1]["text"] = _converge(lines[1]["text"], OLD_CAS_TEXT, NEW_CAS_TEXT, "panel ability 1 line 2")
+    lines[1]["text"] = _converge_cas(lines[1]["text"], "panel ability 1 line 2")
     if PANEL_DEV_WHY_OLD in lines[1]["dev_why"]:
         lines[1]["dev_why"] = lines[1]["dev_why"].replace(PANEL_DEV_WHY_OLD, PANEL_DEV_WHY_NEW)
     elif PANEL_DEV_WHY_NEW not in lines[1]["dev_why"]:

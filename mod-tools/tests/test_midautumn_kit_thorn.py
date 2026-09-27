@@ -228,12 +228,14 @@ class DesignSelfCheckTests(unittest.TestCase):
                          for r in ABILITY_PLAN["keys"][key]["records"]] for key in K.ABILITY_KEYS}
         checked = K.check_self_trigger_rows(ability)
         self.assertEqual(checked, [f"{key}#{index}" for key, index in K.SELF_TRIGGER_ROWS])
+        # 2026-09-27 第三轮面板合并（wf_balance_20260927c_panels）：#1/#2 同条件并入面板第2行 ⇒ 记录→面板行映射。
+        panel_line = {0: 0, 1: 1, 2: 1}
         for _key, index in K.SELF_TRIGGER_ROWS:
-            self.assertTrue(K.PANEL_ABILITY[3][index].startswith("自身发动技能时："), index)
+            self.assertTrue(K.PANEL_ABILITY[3][panel_line[index]].startswith("自身发动技能时："), index)
         slot3 = ability[f"{K.CID}3"]
         for index in (4, 5):
             self.assertEqual(slot3[index][27:30], ["23", "7", "White"], index)
-            self.assertIn("光属性角色发动技能时", K.PANEL_ABILITY[3][4])
+            self.assertIn("光属性角色发动技能时", K.PANEL_ABILITY[3][-1])
         bad = copy.deepcopy(ability)
         bad[f"{K.CID}3"][1][28], bad[f"{K.CID}3"][1][29] = "7", "White"
         with self.assertRaises(K.KitError):
@@ -548,13 +550,27 @@ class PackageTests(unittest.TestCase):
                          {K.CAS_CHANGE_SKILL, *(K.CAS_ABILITY[s] for s in K.OVERRIDE_SLOTS)})
 
     def test_package_custom_ability_strings(self):
+        import wf_balance_20260927c_panels as P3
         rows = self.pack.pkg_flat(KL.CAS)
         plan = {e["key"]: e["text"]
                 for e in DESIGN["plan"]["texts"]["custom_ability_string"]["rows"]}
         # 包里的 CAS 是整表（含 live 的所有键）；这里只锁本角色自有的那 5 个。
         self.assertEqual(set(plan), set(self.claimed(KL.CAS)))
+        # 第三轮面板合并（2026-09-27，wf_balance_20260927c_panels）：设计稿 / PANEL_ABILITY 已是合并稿；
+        # 主会话暂存回写候选（manifest.snapshot.revision_20260927d.source == 该模块）之前，包里能力3 仍是改前 5 行。
+        manifest = json.loads((WORKSPACE / "package/manifest.json").read_text("utf-8"))
+        pending_c = (manifest.get("snapshot", {}).get("revision_20260927d") or {}).get("source") != P3.SOURCE
+        # 同一轮主会话 C：技能强化条目「迟缓」→「冻结」（P3.SKILL_TEXT），再按技能强化文案 R2 改官方格式
+        # （P3.FLAG_TEXT）；P3.cas_changes = (live 改前, 最终改后)，同样等暂存回写。
+        flag_edits = P3.cas_changes(str(K.CID))
         for key, text in plan.items():
             self.assertIn(key, rows, key)
+            if pending_c and key in P3.PANELS_BY_CAS:
+                self.assertEqual(text, "\n".join(P3.PANELS_BY_CAS[key]["after"]), key)
+                text = "\n".join(P3.PANELS_BY_CAS[key]["before"])
+            elif pending_c and key in flag_edits:
+                self.assertEqual(text, flag_edits[key][1], key)
+                text = flag_edits[key][0]
             self.assertEqual(C.csv_split(rows[key])[0][0], text, key)
         for slot in K.OVERRIDE_SLOTS:
             text = plan[K.CAS_ABILITY[slot]]
@@ -599,6 +615,25 @@ class PackageTests(unittest.TestCase):
             self.assertEqual(cells[2], "dynamic/skill/atk_nearest", level)
             self.assertEqual((cells[4], cells[5]), (str(design["c4"]), str(design["c5"])), level)
             self.assertEqual(cells[0], MS.get_spec("thorn").texts[f"skill{level}"])
+
+    def test_skill_description_matches_the_design_or_the_pending_revision(self):
+        # 2026-09-27 第三轮（wf_balance_20260927c_panels，主会话 C）：技能说明「迟缓」→「冻结」。design 顶层 texts 已是改后；
+        # 主会话暂存回写候选（manifest.snapshot.revision_20260927d.source == 该模块）之前，包里 action c1 / character_text
+        # c5/c7 / 服务端镜像仍是改前文字。
+        import wf_balance_20260927c_panels as P3
+        before, after = P3.SKILL_TEXT[str(K.CID)]["desc"]
+        texts = MS.get_spec("thorn").texts
+        self.assertEqual((texts["desc1"], texts["desc2"]), (after, after))
+        manifest = json.loads((WORKSPACE / "package/manifest.json").read_text("utf-8"))
+        pending_c = (manifest.get("snapshot", {}).get("revision_20260927d") or {}).get("source") != P3.SOURCE
+        want = before if pending_c else after
+        rows = B.KitContext(self.pack).pkg_nested(K.CODE)
+        self.assertEqual({level: list(rows[level])[1] for level in ("1", "2")}, {"1": want, "2": want})
+        text_row = self.pack.pkg_character_text_row()
+        self.assertEqual((text_row[5], text_row[7]), (want, want))
+        server = json.loads(self.pack.pkg_path("server", "cdndata/character_text.json").read_text("utf-8"))
+        self.assertEqual(server[str(K.CID)], [text_row])                 # 服务端镜像随 character_text 同步
+        self.assertNotIn("迟缓", after)
 
     def test_written_dsl_equals_the_design_tree(self):
         # 设计稿登记的是零克隆基线树（D-8 默认项）；一旦 B/pixel/thorn/fx_lut.json 交付，
@@ -652,10 +687,22 @@ class PackageTests(unittest.TestCase):
             self.assertTrue(gate["reason"])
 
     def test_report_panel_and_capabilities(self):
-        overrides = sum(len(K.PANEL_ABILITY[s]) for s in K.OVERRIDE_SLOTS)
+        import wf_balance_20260927c_panels as P3
         self.assertEqual(self.report["cid"], K.CID)
-        self.assertEqual(len(self.report["panel"]),
-                         K.LEADER_ROWS + K.ABILITY_RECORDS + overrides)
+        # kit-report 是 rework1 构建证据（第三轮之前的面板）；第三轮（wf_balance_20260927c_panels）改了能力1–4
+        # （能力3 合并、能力4 合成一句、迟缓→冻结、口径3 冒号，能力2 只改冒号）。覆盖段应逐字 == 按槽取第三轮改前文字
+        # （未重跑 kit）或 == 当前 PANEL_ABILITY（重跑 kit 后）。
+        panel = list(self.report["panel"])
+        head = K.LEADER_ROWS + K.ABILITY_RECORDS
+        now = [line for s in K.OVERRIDE_SLOTS for line in K.PANEL_ABILITY[s]]
+        before = []
+        for slot in K.OVERRIDE_SLOTS:
+            entry = P3.PANELS_BY_CAS.get(K.CAS_ABILITY[slot])
+            before += ([P3._strip_icon(line) for line in entry["before"]] if entry else list(K.PANEL_ABILITY[slot]))
+        for slot in (1, 2, 3, 4):
+            entry = P3.PANELS_BY_CAS[K.CAS_ABILITY[slot]]
+            self.assertEqual([P3._strip_icon(line) for line in entry["after"]], list(K.PANEL_ABILITY[slot]), slot)
+        self.assertIn(panel[head:], (before, now))
         for text in self.report["panel"]:
             self.assertEqual(KL.panel_problems(text), [], text)
         self.assertEqual(self.report["required_capabilities"], [L.PANEL_OVERRIDE_V2])

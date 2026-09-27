@@ -115,7 +115,8 @@ class CampusPanelTextTest(unittest.TestCase):
         self.assertIn("冷却1秒", panels["a2"].splitlines()[0])
         self.assertNotIn("冷却", panels["a2"].splitlines()[1])
         self.assertIn("火属性共鸣时，Fever模式中，每经过2秒", panels["a3"].splitlines()[1])
-        self.assertIn("每层「焰域研修」使火属性角色能力伤害额外乘区+1%", panels["a3"])
+        # 2026-09-27 第三轮面板合并（wf_balance_20260927c_panels）：能力伤害与额外乘区两行同条件并为一行。
+        self.assertIn("每层「焰域研修」使火属性角色能力伤害+50%、能力伤害额外乘区+1%", panels["a3"])
         separate = [row for row in abilities["1199893"] if row[109] == "412"]
         self.assertEqual(len(separate), 1)
         self.assertEqual(separate[0][113:115], ["1000", "1000"])

@@ -80,7 +80,13 @@ class ContractTests(unittest.TestCase):
         self.assertGreater(version, PRE_REVISION_VERSION)
         manifest = core.project_root() / "work/character_packs/ma-charlene/package/manifest.json"
         if manifest.is_file():
-            current = json.loads(manifest.read_text(encoding="utf-8"))["package_version"]
+            data = json.loads(manifest.read_text(encoding="utf-8"))
+            current = data["package_version"]
+            # 第三轮（wf_balance_20260927c_panels，技能强化条目规范）暂存回写后候选再升一版，上限取那一版。
+            import wf_balance_20260927c_panels as P3
+            ceiling = P3.staged_version(data, "ma-charlene")
+            if ceiling is not None:
+                version = tuple(int(x) for x in ceiling.split("."))
             self.assertLessEqual(tuple(int(x) for x in current.split(".")), version)
 
     def test_fixture_matches_the_reviewed_digests(self):
@@ -320,7 +326,12 @@ class GeneratorConsistencyTests(unittest.TestCase):
         self.assertEqual(KIT.ABILITY["1399921"][2][2], M.STUN_WINCE_DESCRIBE)
 
     def test_generator_texts_equal_the_revised_texts(self):
-        self.assertEqual(KIT.CAS_TEXTS[KIT.CAS_SWITCH], self.out["cas"][M.CAS_KEY][0][0])
+        # 第三轮（wf_balance_20260927c_panels FLAG_TEXT，主会话 R2）在本批输出上再改写强化条目：生成器 == 该改写稿，
+        # 其改前 == 本批输出（链式一致）。
+        import wf_balance_20260927c_panels as P3
+        spec = P3.FLAG_TEXT[M.CID]
+        self.assertEqual((spec["string"], spec["before"]), (M.CAS_KEY, self.out["cas"][M.CAS_KEY][0][0]))
+        self.assertEqual(KIT.CAS_TEXTS[KIT.CAS_SWITCH], spec["after"])
         text = self.out["text"]["139992"][0]
         self.assertEqual((KIT.TEXTS["desc1"], KIT.TEXTS["desc2"]), (text[5], text[7]))
         self.assertEqual((KIT.TEXTS["skill1"], KIT.TEXTS["skill2"]), (text[4], text[6]))
@@ -376,6 +387,27 @@ def _pre_batch_design(design: dict) -> dict:
     return pre
 
 
+def _this_batch_cas(doc: dict) -> dict:
+    """第三轮（wf_balance_20260927c_panels FLAG_TEXT，主会话 R2）同步镜像后，强化条目是改写稿；本批的变换把改前
+    收敛到本批文字、改写稿原样保留 ⇒ 从改前收敛的期望 = 当前镜像里改写稿换回本批文字。"""
+    out = copy.deepcopy(doc)
+    later = M.later_cas_text()
+
+    def walk(node):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key == "text" and value == later:
+                    node[key] = M.NEW_CAS_TEXT
+                else:
+                    walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(out)
+    return out
+
+
 def _pre_batch_panel(panel: dict) -> dict:
     pre = copy.deepcopy(panel)
     pre["skill"]["lines"][0]["text"] = M.PANEL_SKILL_OLD
@@ -405,7 +437,7 @@ class MirrorTests(unittest.TestCase):
 
     def test_design_update_converges_and_is_idempotent(self):
         design = self._require(M.DESIGN_REL)
-        self.assertEqual(M.design_update(_pre_batch_design(design)), design)
+        self.assertEqual(M.design_update(_pre_batch_design(design)), _this_batch_cas(design))
         self.assertEqual(M.design_update(design), design)
         self.assertEqual((design["texts"]["desc1"], design["texts"]["desc2"]), (M.NEW_DESC, M.NEW_DESC))
         records = design["plan"]["ability"]["keys"][M.ABILITY_KEY]["records"]
@@ -442,7 +474,7 @@ class MirrorTests(unittest.TestCase):
 
     def test_panel_update_converges_and_is_idempotent(self):
         panel = self._require(M.PANEL_REL)
-        self.assertEqual(M.panel_update(_pre_batch_panel(panel)), panel)
+        self.assertEqual(M.panel_update(_pre_batch_panel(panel)), _this_batch_cas(panel))
         self.assertEqual(M.panel_update(panel), panel)
         lines = [a for a in panel["abilities"] if a["index"] == 1][0]["lines"]
         self.assertNotIn("DOWN", lines[1]["text"])

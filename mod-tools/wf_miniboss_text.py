@@ -27,7 +27,11 @@ TEXTS = {
  "149994": (
   "战斗开始时，自身技能槽+75%；发动Lv3强化弹射时，赋予队伍贯穿效果，持续8秒；自身发动技能、Lv3强化弹射时，分别获得2层、1层岚痕（最大8层）。",
   "贯穿效果中，风属性角色攻击力、直接攻击伤害+80%。",
-  "Lv1／Lv2／Lv3强化弹射时，追加对应等级的爪刃追击；贯穿效果中，风属性角色直接攻击造成的伤害+15%（独立乘区）、强化弹射伤害+100%。",
+  # 2026-09-27 第三轮（wf_balance_20260927c_panels）：口径5「／」按等级拆行；口径1「强化弹射伤害」不补对象、与前项用「，」隔开。
+  "Lv1强化弹射时，追加Lv1爪刃追击。\n"
+  "Lv2强化弹射时，追加Lv2爪刃追击。\n"
+  "Lv3强化弹射时，追加Lv3爪刃追击。\n"
+  "贯穿效果中，风属性角色直接攻击造成的伤害+15%（独立乘区），强化弹射伤害+100%。",
   "队伍贯穿效果时间+25%；每持有1层岚痕，自身技能充能速度+2.5%（最大+20%）。",
   "风属性角色对眩晕敌人的伤害+25%；自身眩晕积蓄+50%、生命值+20%。",
   "持有8层岚痕时，强化弹射使自身技能槽+5%（CT：15秒）；风属性角色合计每直接攻击20次，自身技能槽+5%（CT：15秒）。"),
@@ -88,7 +92,11 @@ TEXTS = {
   "水属性角色对冻结敌人的伤害+75%；强化弹射时，获得1层涨潮（CT：3秒）。",
   "自身发动技能时，自身技能槽+5%（CT：15秒）；自身生命值+25%。"),
  "169993": (
-  "Lv1／Lv2／Lv3强化弹射时，分别获得1／2／3层影；自身发动技能时，获得2层影（最大5层）。",
+  # 2026-09-27 第三轮（wf_balance_20260927c_panels）：口径5「／」按等级拆行。
+  "Lv1强化弹射时，获得1层影。\n"
+  "Lv2强化弹射时，获得2层影。\n"
+  "Lv3强化弹射时，获得3层影。\n"
+  "自身发动技能时，获得2层影（最大5层）。",
   "每持有1层影，自身技能伤害+30%、攻击力+17%（最大分别+150%、+85%）。",
   "持有至少3层影时，冲刺追加影刃追击（CT：2秒）；持有5层影时，自身发动技能追加五影追击，并消耗5层影。",
   "战斗开始时，自身技能槽+75%；自身技能充能速度+5%；自身发动技能时，自身技能槽+5%（CT：15秒）。",
@@ -136,13 +144,19 @@ def panel_rows(cid, abilities, leader, describe_leader):
     return result
 
 
+def ability_panel_text(cid, slot):
+    """第 slot 个能力的面板文字；多行面板按行分开，主位槽（3）每一行都以主位图标开头。"""
+    prefix = MAIN if slot == 3 else ""
+    return "\n".join(prefix + line for line in TEXTS[str(cid)][slot - 1].split("\n"))
+
+
 def ability_panel_rows(cid, abilities):
     """仅六能力面板，绝不覆盖队长或主动说明。"""
     char = BY_ID[str(cid)]
     result = {}
-    for slot, text in enumerate(TEXTS[char.cid], 1):
+    for slot in range(1, len(TEXTS[char.cid]) + 1):
         rows = abilities[char.cid + str(slot)]
         if rows[0][0] != char.code + f"_{slot}":
             raise ValueError("panel string_id differs from battle rows")
-        result["desc_override_" + rows[0][0]] = [[(MAIN if slot == 3 else "") + text]]
+        result["desc_override_" + rows[0][0]] = [[ability_panel_text(char.cid, slot)]]
     return result

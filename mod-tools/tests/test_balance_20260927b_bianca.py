@@ -397,11 +397,21 @@ class GeneratorSyncTests(unittest.TestCase):
         source = campus.Builder().official_rows(ABILITY)
         self.assertEqual(self._kit(source), self.out["ability"])
 
+    def _a1_allowed(self) -> tuple[str, str]:
+        """能力1 面板：本批输出，或技能强化文案（wf_balance_20260927c_panels R2：第2行强化条目改官方格式）作用于本批输出
+        之后的现稿；第三轮的改前 == 本批输出，R2 的一致性由 test_balance_20260927c_panels 断言。"""
+        import wf_balance_20260927c_panels as P3
+        a1 = self.out["cas"][M.CAS_A1][0][0]
+        third = P3.PANELS_BY_CAS[M.CAS_A1]
+        self.assertEqual("\n".join(third["before"]), a1)
+        return a1, "\n".join(third["after"])
+
     def test_panel_generator_equals_revise_output(self):
         texts = panel.panel_descriptions(M.CID)
-        self.assertEqual(texts["a1"], self.out["cas"][M.CAS_A1][0][0])
+        allowed = self._a1_allowed()
+        self.assertIn(texts["a1"], allowed)
         self.assertEqual(texts["a5"], self.out["cas"][M.CAS_A5][0][0])
-        self.assertEqual(tuple(texts["a1"].split("\n")), M.PANEL_A1_AFTER)
+        self.assertIn(tuple(texts["a1"].split("\n")), (M.PANEL_A1_AFTER, tuple(allowed[1].split("\n"))))
         self.assertEqual(tuple(texts["a5"].split("\n")), M.PANEL_A5_AFTER)
 
     def test_full_assemble_splices_the_revised_abilities_and_panels(self):
@@ -413,8 +423,8 @@ class GeneratorSyncTests(unittest.TestCase):
             tables = build.assemble(Path("unused-repo"), Path("unused-candidate"))
         for key in (M.ABILITY_KEY, M.A5_KEY):
             self.assertEqual(tables[ABILITY][key], self.out["ability"][key], key)
-        for key in (M.CAS_A1, M.CAS_A5):
-            self.assertEqual(tables[FLAT][key], self.out["cas"][key], key)
+        self.assertIn(tables[FLAT][M.CAS_A1], [[[text]] for text in self._a1_allowed()])
+        self.assertEqual(tables[FLAT][M.CAS_A5], self.out["cas"][M.CAS_A5], M.CAS_A5)
 
 
 @unittest.skipUnless((WORKSPACE / "package/manifest.json").is_file()
@@ -428,7 +438,10 @@ class CandidateTests(unittest.TestCase):
         manifest = WORKSPACE / "package/manifest.json"
         before = manifest.read_bytes()
         current = json.loads(before)
-        self.assertGreaterEqual(tuple(map(int, M.PACKAGE_VERSION[M.PACKAGES[0]].split("."))),
+        # 第三轮面板合并（wf_balance_20260927c_panels）暂存回写后，候选再升一版；本批改过的键不受其影响。
+        import wf_balance_20260927c_panels as P3
+        want = P3.staged_version(current, M.PACKAGES[0]) or M.PACKAGE_VERSION[M.PACKAGES[0]]
+        self.assertGreaterEqual(tuple(map(int, want.split("."))),
                                 tuple(map(int, current["package_version"].split("."))))
         candidate = RevisionCandidate(ROOT, WORKSPACE, character_id=M.CID, code_name=M.CODE,
                                       snapshot_key="revision_20260927b",
@@ -437,12 +450,16 @@ class CandidateTests(unittest.TestCase):
                                       reviewed_input_drift=M.REVIEWED_DRIFT)
         if current.get("snapshot", {}).get("revision_20260927b") is not None:
             # 主会话暂存回写后：候选 = 本批输出。
-            self.assertEqual(current["package_version"], M.PACKAGE_VERSION[M.PACKAGES[0]])
+            self.assertEqual(current["package_version"], want)
             rows = X.unpack(candidate.read("common", ABILITY))
             for key, value in out["ability"].items():
                 self.assertEqual(X.csv_read(rows[key]), value, key)
             strings = X.unpack(candidate.read("common", FLAT))
+            staged_c = P3.staged_version(current, M.PACKAGES[0]) is not None
             for key, value in out["cas"].items():
+                if staged_c and key in P3.PANELS_BY_CAS:     # 第三轮（技能强化文案 R2）改过能力1 第2行
+                    self.assertEqual(value, [["\n".join(P3.PANELS_BY_CAS[key]["before"])]], key)
+                    value = [["\n".join(P3.PANELS_BY_CAS[key]["after"])]]
                 self.assertEqual(X.csv_read(strings[key]), value, key)
             self.assertLessEqual(set(M.CAPABILITIES), set(current["required_capabilities"]))
             return

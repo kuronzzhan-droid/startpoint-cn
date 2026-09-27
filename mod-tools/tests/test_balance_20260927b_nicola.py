@@ -327,12 +327,15 @@ class MirrorTests(unittest.TestCase):
         block = design["rework1"][M.MIRROR_TAG]
         self.assertEqual(block["module"], "mod-tools/wf_balance_20260927b_nicola.py")
         three = next(entry for entry in panel["abilities"] if entry["index"] == 3)
+        # 第三轮面板合并（wf_balance_20260927c_panels）同步镜像后，能力3 是合并稿；本批（面板不改）两种形态都接受。
+        import wf_balance_20260927c_panels as P3
+        lines = (P3.PANELS_BY_CAS[M.CAS_SLOT3]["after"] if P3.MODULE_TAG in panel else M.PANEL_LINES)
         self.assertEqual([line["text"] for line in three["lines"]],
-                         [line.replace(M.MAIN_ICON, "") for line in M.PANEL_LINES])
+                         [line.replace(M.MAIN_ICON, "") for line in lines])
         self.assertEqual(panel["notes"][-1], M.MIRROR_NOTE)
-        # 设计稿覆盖串（不带主位图标）＝ live 面板去掉图标（面板不改）
+        # 设计稿覆盖串（不带主位图标）＝ live 面板去掉图标（本批面板不改；第三轮合并后 = 合并稿）
         rows = {r["key"]: r["text"] for r in design["plan"]["texts"]["custom_ability_string"]["rows"]}
-        self.assertEqual(K._apply_main_icon(rows[M.CAS_SLOT3]), "\n".join(M.PANEL_LINES))
+        self.assertEqual(K._apply_main_icon(rows[M.CAS_SLOT3]), "\n".join(lines))
 
     def test_mirror_update_is_idempotent_and_pure(self):
         before = deepcopy(self.docs)
@@ -352,7 +355,10 @@ class CandidateTests(unittest.TestCase):
         manifest = WORKSPACE / "package/manifest.json"
         before = manifest.read_bytes()
         current = json.loads(before)
-        self.assertGreaterEqual(tuple(map(int, M.PACKAGE_VERSION[M.PACKAGES[0]].split("."))),
+        # 第三轮面板合并（wf_balance_20260927c_panels）暂存回写后，候选再升一版；本批改过的键不受其影响。
+        import wf_balance_20260927c_panels as P3
+        want = P3.staged_version(current, M.PACKAGES[0]) or M.PACKAGE_VERSION[M.PACKAGES[0]]
+        self.assertGreaterEqual(tuple(map(int, want.split("."))),
                                 tuple(map(int, current["package_version"].split("."))))
         candidate = RevisionCandidate(ROOT, WORKSPACE, character_id=M.CID, code_name=M.CODE,
                                       snapshot_key="revision_20260927b",
@@ -362,7 +368,7 @@ class CandidateTests(unittest.TestCase):
         logical = "master/ability/ability.orderedmap"
         if current.get("snapshot", {}).get("revision_20260927b") is not None:
             # 主会话暂存回写后：候选 = 本批输出。
-            self.assertEqual(current["package_version"], M.PACKAGE_VERSION[M.PACKAGES[0]])
+            self.assertEqual(current["package_version"], want)
             rows = X.unpack(candidate.read("common", logical))
             self.assertEqual(X.csv_read(rows[M.ABILITY_KEY]), out["ability"][M.ABILITY_KEY])
             return

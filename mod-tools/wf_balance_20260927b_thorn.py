@@ -212,6 +212,12 @@ DONOR_SUFFIX = ("；2026-09-27 平衡第二批：触发方 c28/c29 7/White→0/�
                 "1510813 #2，作者「索恩改成自身发动技能」）")
 
 
+def merged_panel_lines() -> list[str]:
+    """第三轮面板合并（wf_balance_20260927c_panels）后能力3 镜像的形态：本批不改面板文字，两种形态都接受。"""
+    import wf_balance_20260927c_panels as P3
+    return [line.replace(MAIN_ICON, "") for line in P3.PANELS_BY_CAS[CAS_SLOT3]["after"]]
+
+
 def mirror_updates(design: dict, panel: dict) -> tuple[dict, dict]:
     """按本批改动重算两份设计镜像（纯函数、幂等）。"""
     design, panel = deepcopy(design), deepcopy(panel)
@@ -237,8 +243,8 @@ def mirror_updates(design: dict, panel: dict) -> tuple[dict, dict]:
         module="mod-tools/wf_balance_20260927b_thorn.py",
     )
     three = [entry for entry in panel["abilities"] if int(entry["index"]) == 3]
-    if len(three) != 1 or [line["text"] for line in three[0]["lines"]] != \
-            [line.replace(MAIN_ICON, "") for line in PANEL_LINES]:
+    if len(three) != 1 or [line["text"] for line in three[0]["lines"]] not in (
+            [line.replace(MAIN_ICON, "") for line in PANEL_LINES], merged_panel_lines()):
         raise ValueError("panel mirror ability 3 differs from the live panel")
     notes = [note for note in panel.get("notes", []) if not note.startswith("2026-09-27：作者平衡第二批")]
     panel["notes"] = notes + [MIRROR_NOTE]

@@ -450,7 +450,13 @@ class GeneratorSyncTests(Base):
         _leader, abilities, _evidence = KG.build_tables(self.ctx_g, design)
         self.assertEqual(self.ghand["ability"]["1299874"], abilities["1299874"])
         texts = {r["key"]: r["text"] for r in design["plan"]["texts"]["custom_ability_string"]["rows"]}
-        self.assertEqual(self.ghand["cas"][M.CAS_GHAND_4], [[texts[M.CAS_GHAND_4]]])
+        expected = self.ghand["cas"][M.CAS_GHAND_4]
+        import wf_balance_20260927c_panels as P3
+        if P3.MODULE_TAG in design:     # 第三轮面板合并（wf_balance_20260927c_panels）已同步设计镜像：两行并一行、去「的」
+            panel = P3.PANELS_BY_CAS[M.CAS_GHAND_4]
+            self.assertEqual(expected, [["\n".join(panel["before"])]])
+            expected = [["\n".join(panel["after"])]]
+        self.assertEqual(expected, [[texts[M.CAS_GHAND_4]]])
 
 
 class MirrorTests(unittest.TestCase):
@@ -500,6 +506,13 @@ class CandidateDryRunTests(Base):
                 out = deepcopy(out)
                 out["leader"]["129986"] = C3.soriz_leader(out["leader"]["129986"], out["ability"]["1299863"])
                 out["cas"][C3.CAS_LEADER] = C3.soriz_leader_text(out["cas"][C3.CAS_LEADER])
+        if unit is GHAND:
+            # 第三轮面板合并（wf_balance_20260927c_panels）回写后：候选再升一版，能力4 面板 = 合并稿，能力4 行不变。
+            import wf_balance_20260927c_panels as P3
+            if P3.staged_version(json.loads(before), unit["PACKAGES"][0]) == current:
+                version = current
+                out = deepcopy(out)
+                out["cas"][M.CAS_GHAND_4] = [["\n".join(P3.PANELS_BY_CAS[M.CAS_GHAND_4]["after"])]]
         self.assertGreaterEqual(tuple(map(int, version.split("."))), tuple(map(int, current.split("."))))
         kwargs = dict(character_id=unit["CID"], code_name=unit["CODE"], snapshot_key="revision_20260927b",
                       package_version=version, baseline_factory=lambda *a, **k: None)

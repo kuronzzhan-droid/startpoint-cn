@@ -105,7 +105,13 @@ class ContractTests(unittest.TestCase):
         self.assertGreater(version, PRE_REVISION_VERSION)
         manifest = core.project_root() / "work/character_packs/black_wolf_knight_wt26/package/manifest.json"
         if manifest.is_file():
-            current = json.loads(manifest.read_text(encoding="utf-8"))["package_version"]
+            data = json.loads(manifest.read_text(encoding="utf-8"))
+            current = data["package_version"]
+            # 第三轮（wf_balance_20260927c_panels，技能强化条目规范）暂存回写后候选再升一版，上限取那一版。
+            import wf_balance_20260927c_panels as P3
+            ceiling = P3.staged_version(data, "black_wolf_knight_wt26")
+            if ceiling is not None:
+                version = tuple(int(x) for x in ceiling.split("."))
             self.assertLessEqual(tuple(int(x) for x in current.split(".")), version)
 
     def test_fixture_matches_the_reviewed_digests(self):

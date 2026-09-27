@@ -253,7 +253,10 @@ class GeralWaterBatch2Test(unittest.TestCase):
             return wf_dsl.parse_dsl(zlib.decompress(raw, -15))['tree']
 
         if meta['snapshot'].get('revision_20260927b') is not None:
-            self.assertEqual(B.PACKAGE_VERSION[B.PACKAGES[0]], meta['package_version'])
+            # 第三轮（wf_balance_20260927c_panels，技能强化条目规范）暂存回写后候选再升一版；本批的 DSL 不受其影响。
+            import wf_balance_20260927c_panels as P3
+            want = P3.staged_version(meta, B.PACKAGES[0]) or B.PACKAGE_VERSION[B.PACKAGES[0]]
+            self.assertEqual(want, meta['package_version'])
             for program, tree in self.out['dsl'].items():
                 self.assertEqual(json.dumps(tree), json.dumps(tree_in_candidate(program)), program)
             return

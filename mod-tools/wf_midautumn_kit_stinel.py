@@ -265,8 +265,9 @@ PANEL_SLOT3 = (
     "光属性共鸣时：光属性角色发动技能时，自身Fever槽＋10%",
 )
 CAS_TEXTS: dict[str, str] = {
-    # 536：裁决 §3「技能强化条目不写数字与时间」
-    CAS_CHANGE_SKILL: "强化「月相仪·满月调律」的威力与技能伤害提升效果",
+    # 536：裁决 §3「技能强化条目不写数字与时间」；09-27 第三轮（wf_balance_20260927c_panels FLAG_TEXT，主会话 R2）
+    # 按官方格式：技能名用『』、效果名用「」（官方先例 change_skill_samurai_robot_plum）
+    CAS_CHANGE_SKILL: "强化『月相仪·满月调律』的威力与「技能伤害提升效果」",
     # 722 的 c82（被 desc_override 盖住，玩家看不到；留着是为了没打面板补丁的客户端）
     PF_STRING: "自身的强化弹射同时具备辅助与特殊两种类型",
     LEADER_OVERRIDE: "\n".join(PANEL_LEADER),

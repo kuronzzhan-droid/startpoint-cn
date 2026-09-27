@@ -504,6 +504,16 @@ class PackageTests(unittest.TestCase):
                             / "panel/nicola.json").read_text(encoding="utf-8"))
         want_lines = [line["text"] for ability in panel["abilities"]
                       if ability["index"] == K.OVERRIDE_SLOT for line in ability["lines"]]
+        # 第三轮面板合并（2026-09-27，wf_balance_20260927c_panels）：面板镜像已是合并稿（3 行）；主会话暂存回写候选
+        # （manifest.snapshot.revision_20260927d.source == 该模块）之前，包里仍是改前 4 行。
+        import wf_balance_20260927c_panels as P3
+        slot = P3.PANELS_BY_CAS[K.CAS_OVERRIDE]
+        manifest = json.loads((WORKSPACE / "package/manifest.json").read_text(encoding="utf-8"))
+        pending_c = (manifest.get("snapshot", {}).get("revision_20260927d") or {}).get("source") != P3.SOURCE
+        self.assertEqual(want_lines, [P3._strip_icon(line) for line in slot["after"]])
+        self.assertEqual(override, "\n".join(slot["before"] if pending_c else slot["after"]))
+        if pending_c:
+            want_lines = [P3._strip_icon(line) for line in slot["before"]]
         # 多记录槽（9 条记录）的覆盖串行数＝面板行数。
         self.assertEqual(len(override.split("\n")), len(want_lines))
         # 能力 3 整键主位限制 ⇒ 已构建包里的覆盖串每行都必须带主位限制图标，不许用字面「Ⓜ」。

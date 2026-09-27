@@ -188,7 +188,11 @@ class ReviseTests(unittest.TestCase):
             self.assertTrue(line.startswith(M.MAIN_ICON), line)       # 主位限制槽每行带 Ⓜ
             self.assertEqual(KL.panel_problems(line.replace(M.MAIN_ICON, "")), [], line)
         self.assertEqual(L.panel_override_capability(M.CAS_SLOT3), "panel-description-override-v2")
-        self.assertEqual([line.replace(M.MAIN_ICON, "") for line in self.panel], list(K.PANEL_ABILITY[3]))
+        # 本批面板不改；第三轮面板合并（wf_balance_20260927c_panels）后生成器是合并稿，本批面板 = 合并稿的改前文字。
+        import wf_balance_20260927c_panels as P3
+        slot3 = P3.PANELS_BY_CAS[M.CAS_SLOT3]
+        self.assertEqual(tuple(self.panel), slot3["before"])
+        self.assertEqual([line.replace(M.MAIN_ICON, "") for line in slot3["after"]], list(K.PANEL_ABILITY[3]))
 
     def test_native_legality_gates_are_empty(self):
         cas_keys = {K.CAS_CHANGE_SKILL, *K.CAS_ABILITY.values()}
@@ -320,11 +324,14 @@ class MirrorTests(unittest.TestCase):
         design, panel = self.docs
         self.assertEqual(design[M.MIRROR_TAG]["module"], "mod-tools/wf_balance_20260927b_thorn.py")
         three = next(entry for entry in panel["abilities"] if entry["index"] == 3)
+        # 第三轮面板合并（wf_balance_20260927c_panels）同步镜像后，能力3 是合并稿；本批（面板不改）两种形态都接受。
+        import wf_balance_20260927c_panels as P3
+        lines = (P3.PANELS_BY_CAS[M.CAS_SLOT3]["after"] if P3.MODULE_TAG in panel else M.PANEL_LINES)
         self.assertEqual([line["text"] for line in three["lines"]],
-                         [line.replace(M.MAIN_ICON, "") for line in M.PANEL_LINES])
+                         [line.replace(M.MAIN_ICON, "") for line in lines])
         self.assertEqual(panel["notes"][-1], M.MIRROR_NOTE)
         rows = {r["key"]: r["text"] for r in design["plan"]["texts"]["custom_ability_string"]["rows"]}
-        self.assertEqual(rows[M.CAS_SLOT3], "\n".join(M.PANEL_LINES))   # 面板不改
+        self.assertEqual(rows[M.CAS_SLOT3], "\n".join(lines))   # 本批面板不改
 
     def test_mirror_update_is_idempotent_and_pure(self):
         before = deepcopy(self.docs)
@@ -344,7 +351,10 @@ class CandidateTests(unittest.TestCase):
         manifest = WORKSPACE / "package/manifest.json"
         before = manifest.read_bytes()
         current = json.loads(before)
-        self.assertGreaterEqual(tuple(map(int, M.PACKAGE_VERSION[M.PACKAGES[0]].split("."))),
+        # 第三轮面板合并（wf_balance_20260927c_panels）暂存回写后，候选再升一版；本批改过的键不受其影响。
+        import wf_balance_20260927c_panels as P3
+        want = P3.staged_version(current, M.PACKAGES[0]) or M.PACKAGE_VERSION[M.PACKAGES[0]]
+        self.assertGreaterEqual(tuple(map(int, want.split("."))),
                                 tuple(map(int, current["package_version"].split("."))))
         candidate = RevisionCandidate(ROOT, WORKSPACE, character_id=M.CID, code_name=M.CODE,
                                       snapshot_key="revision_20260927b",
@@ -354,7 +364,7 @@ class CandidateTests(unittest.TestCase):
         logical = "master/ability/ability.orderedmap"
         if current.get("snapshot", {}).get("revision_20260927b") is not None:
             # 主会话暂存回写后：候选 = 本批输出。
-            self.assertEqual(current["package_version"], M.PACKAGE_VERSION[M.PACKAGES[0]])
+            self.assertEqual(current["package_version"], want)
             rows = X.unpack(candidate.read("common", logical))
             self.assertEqual(X.csv_read(rows[M.ABILITY_KEY]), out["ability"][M.ABILITY_KEY])
             return

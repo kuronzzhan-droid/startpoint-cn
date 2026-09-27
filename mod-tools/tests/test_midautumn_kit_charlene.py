@@ -178,15 +178,21 @@ class PanelTextTests(unittest.TestCase):
             for token in ("抽取", "55%", "50%", "20%", "护盾", "25%", "自身最大生命值10%",
                           "贯穿", "爆炸", "雷属性伤害"):
                 self.assertIn(token, desc, level)
-            for token in ("抗性降低", "攻击力降低", "麻痹", "中毒", "迟缓"):
+            for token in ("抗性降低", "攻击力降低", "麻痹", "中毒", "迟缓", "冻结"):
                 self.assertNotIn(token, desc, level)
 
     def test_skill_flag_string_mentions_every_boost_family(self):
         text = KIT.CAS_TEXTS[KIT.CAS_SWITCH]
-        for token in ("抗性降低", "攻击力降低", "无视弱体抗性", "麻痹", "中毒", "迟缓"):
+        for token in ("抗性降低", "攻击力降低", "无视弱体抗性", "麻痹", "中毒", "冻结"):
             self.assertIn(token, text)
         # 09-27 平衡批次：ACStun 死格已删 ⇒ 面板不再写「使敌人更容易进入DOWN」
         self.assertNotIn("DOWN", text)
+        # 09-27 第三轮（wf_balance_20260927c_panels FLAG_TEXT，主会话 R2 / 口径C）：点明技能名；自动面板由客户端按
+        # 536 行的雷共鸣前置拼条件 ⇒ 串里不写共鸣；轮盘第三格是 ACFrozen ⇒「冻结」而非「迟缓」。
+        self.assertTrue(text.startswith(f"强化『{KIT.TEXTS['skill1']}』："), text)
+        self.assertNotIn("共鸣", text)
+        self.assertNotIn("迟缓", text)
+        self.assertEqual([ac[0] for _n, ac, _f, _w in KIT.ROULETTE], ["ACParalysis", "ACPoison", "ACFrozen"])
 
 
 # ---------------------------------------------------------------- 静态：语音路由
@@ -703,10 +709,17 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(sorted(entry["outer_keys"]), [KIT.CAS_SWITCH])
 
     def test_package_change_skill_string_matches_the_kit(self):
+        # 09-27 第三轮（wf_balance_20260927c_panels FLAG_TEXT，主会话 R2）：kit 已是改写稿；主会话暂存回写候选
+        # （manifest.snapshot.revision_20260927d.source == 该模块）之前，包里仍是改前文字。
+        import wf_balance_20260927c_panels as P3
+        spec = P3.FLAG_TEXT[KIT.CID_S]
+        self.assertEqual((spec["string"], spec["after"]), (KIT.CAS_SWITCH, KIT.CAS_TEXTS[KIT.CAS_SWITCH]))
+        manifest = json.loads((self.ctx.pack.package / "manifest.json").read_text("utf-8"))
+        staged = (manifest.get("snapshot", {}).get("revision_20260927d") or {}).get("source") == P3.SOURCE
         rows = self.ctx.pkg_flat(KL.CAS)
         self.assertIn(KIT.CAS_SWITCH, rows)
         self.assertEqual(self.ctx.csv_split(rows[KIT.CAS_SWITCH])[0][0],
-                         KIT.CAS_TEXTS[KIT.CAS_SWITCH])
+                         spec["after"] if staged else spec["before"])
 
     def test_package_skill_flag_row_references_the_string(self):
         """536 行的 c70 与包里的 custom_ability_string 键必须对得上，否则面板空白。"""

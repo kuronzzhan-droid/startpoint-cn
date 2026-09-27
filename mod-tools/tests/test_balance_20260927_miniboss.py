@@ -91,14 +91,18 @@ class MinibossGaugeBalanceTest(unittest.TestCase):
             self.assertEqual((int(u['CID']), u['CODE']),
                              (identity['character_id'], identity['code_name']), package)
             ceiling = u['PACKAGE_VERSION'][package]
+            # 第三轮面板合并（wf_balance_20260927c_panels）暂存回写后，15 个候选各再升一版（队长面板合并）。
+            import wf_balance_20260927c_panels as P3
+            third = P3.staged_version(manifest, package)
             if package in second:
                 self.assertEqual(u['CID'], second[package][0], package)
                 self.assertGreaterEqual(version(second[package][1]), version(ceiling), package)
                 ceiling = second[package][1]
                 if manifest.get('snapshot', {}).get('revision_20260927b') is not None:
-                    self.assertEqual(ceiling, manifest['package_version'], package)
+                    self.assertEqual(third or ceiling, manifest['package_version'], package)
             else:
                 self.assertIsNone(manifest.get('snapshot', {}).get('revision_20260927b'), package)
+            ceiling = third or ceiling
             self.assertLessEqual(version(manifest['package_version']), version(ceiling), package)
 
     # ---- 改动范围 -------------------------------------------------------------
@@ -192,6 +196,15 @@ class MinibossGaugeBalanceTest(unittest.TestCase):
                     merged[key] = rows
                     overlaid.add(key)
         self.assertEqual({'1599991', 'desc_override_security_robot_playable_1'}, overlaid)
+        # 第三轮（wf_balance_20260927c_panels，主会话口径5「／」按等级拆行）：149994 能力3、169993 能力1 两块能力面板
+        # 由 c 覆盖（改前 == 本批 live，本批没动过这两个键）；生成器 wf_miniboss_text.TEXTS 已同步为拆行稿。
+        import wf_balance_20260927c_panels as P3
+        third = {p['cas']: p for p in P3.PANELS if p['kind'] == 'ability' and p['cid'] in {c.cid for c in ROSTER}}
+        self.assertEqual({'desc_override_one_eyed_rabbit_playable_3', 'desc_override_genin_playable_1'}, set(third))
+        for key, panel in third.items():
+            self.assertNotIn(key, first_keys | overlaid)
+            self.assertEqual(cas[key], [['\n'.join(panel['before'])]], key)
+            cas[key] = [['\n'.join(panel['after'])]]
         for char in ROSTER:
             leader = self.inputs['leader'][char.cid]
             kit, meta = build_abilities(char.cid)
