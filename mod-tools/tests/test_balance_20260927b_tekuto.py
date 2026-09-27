@@ -17,6 +17,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import wf_balance_20260927b_tekuto as M  # noqa: E402
+import wf_balance_20260927c_tekuto as C3  # noqa: E402  第三批（叠在本批之上）
 import wf_client_legality as L  # noqa: E402
 import wf_describe as D  # noqa: E402
 import wf_dsl  # noqa: E402
@@ -360,7 +361,10 @@ def fake_families():
 
 @unittest.skipUnless(DESIGN.is_file() and PLAN.is_file(), "seasonal7 design/revision json not present")
 class GeneratorSyncTests(unittest.TestCase):
-    """生成器 wf_seasonal7_kit_tekuto（+ wf_tekuto_low_hp / wf_tekuto_fast_release）重跑 == revise() 输出。"""
+    """生成器 wf_seasonal7_kit_tekuto（+ wf_tekuto_low_hp / wf_tekuto_fast_release）重跑 == revise() 输出。
+
+    第三批（wf_balance_20260927c_tekuto）在第六轮之后叠第七轮 apply_balance_c / balance_c_skill_tree 与新文案；
+    这里只核对到第六轮为止的同一串，全链一致性（含 TEXTS）由 test_balance_20260927c_tekuto 断言。"""
 
     @classmethod
     def setUpClass(cls):
@@ -423,8 +427,12 @@ class GeneratorSyncTests(unittest.TestCase):
                          (M.BIND_BEFORE[5], M.BEAM_BREAK_BEFORE[0]["max"]))
 
     def test_generator_texts_equal_revise_output(self):
+        # 第三批落表入口是 _DESC_BALANCE_C（== 本批文案：强化后效果只写在强化条目，技能说明不重复），
+        # TEXTS 的一致性移交 c 测试；本批的文案常量仍钉在 _DESC_BALANCE_B。
+        self.assertEqual(K._DESC_BALANCE_B, M.NEW_DESC)
         for level in ("1", "2"):
-            self.assertEqual(K.TEXTS[f"desc{level}"], M.NEW_DESC)
+            self.assertEqual(K.TEXTS[f"desc{level}"], C3.NEW_DESC)
+        self.assertEqual(C3.OLD_DESC, M.NEW_DESC)
         self.assertEqual(K._DESC_NO_ENDLAG, M.OLD_DESC)
 
 
@@ -462,10 +470,13 @@ class CandidateTests(unittest.TestCase):
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         current = manifest["package_version"]
         as_tuple = lambda v: tuple(int(x) for x in v.split("."))        # noqa: E731
-        self.assertGreaterEqual(as_tuple(M.PACKAGE_VERSION["s7-tekuto"]), as_tuple(current))
+        # 第三批（wf_balance_20260927c_tekuto）在本批之上再升一号：回写后候选现值是其中较新的那个
+        latest = max(as_tuple(M.PACKAGE_VERSION["s7-tekuto"]), as_tuple(C3.PACKAGE_VERSION["s7-tekuto"]))
+        self.assertGreaterEqual(latest, as_tuple(current))
         self.assertGreater(as_tuple(M.PACKAGE_VERSION["s7-tekuto"]), (1, 0, 8))
         if manifest.get("snapshot", {}).get("revision_20260927b") is not None:
-            self.assertEqual(M.PACKAGE_VERSION["s7-tekuto"], current)   # 已回写：候选现值 == 本模块版本
+            # 已回写：候选现值 == 本模块版本（或已被第三批覆盖成第三批版本）
+            self.assertIn(current, (M.PACKAGE_VERSION["s7-tekuto"], C3.PACKAGE_VERSION["s7-tekuto"]))
 
 
 if __name__ == "__main__":

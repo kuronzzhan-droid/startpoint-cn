@@ -75,7 +75,8 @@ FORBIDDEN_PANEL_WORDS = (
     "无上限", "无限叠加", "不设上限", "可无限",                          # 无上限就写到效果为止
 )
 # 能力里的「技能强化」条目不写数字与时间（裁决 §3）。
-SKILL_FLAG_KINDS = ("536", "704")
+# 705 = 切换技能旗号 3（2026-09-27 平衡第三批：特克托队长专用撤封顶开关，能力 1399931#2）。
+SKILL_FLAG_KINDS = ("536", "704", "705")
 
 
 def panel_problems(text: str, *, skill_flag: bool = False) -> list[str]:

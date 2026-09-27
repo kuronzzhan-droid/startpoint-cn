@@ -212,7 +212,11 @@ class RealTrees(unittest.TestCase):
                 after = R.strip_ball_hold(tree)
                 self.assertEqual(R.strip_ball_hold(after), after)
                 self.assertEqual(R.strip_ball_hold(after, expected=None), after)
-                self.assertEqual(PH.dsl_gate_failures(PH.dsl_gates(after, element=K.ELEMENT)), [])
+                # 平衡第三批（wf_balance_20260927c_tekuto）回写后，树里 11 个旗号 3 分支两侧各带一份同一判定区
+                # 绑定号（只会走其中一侧）；全树计数的 dup_bind_ids 改为按分支判断，其余 philia 门禁照旧必须为空。
+                failures = PH.dsl_gate_failures(PH.dsl_gates(after, element=K.ELEMENT))
+                self.assertEqual([f for f in failures if not f.startswith("dup_bind_ids=")], [])
+                self.assertEqual(K.balance_c_dup_bound_ids(after), [])
                 self.assertEqual(K.dsl_quick_problems(after), [])
                 encode_tree(after)
 
@@ -675,10 +679,16 @@ class Texts(unittest.TestCase):
         2026-09-27 平衡第二批（第一批输出 + 第二批覆盖）：kit 落表文案在本工具的 ``SKILL_DESC_AFTER``
         之上再写出技能倍率的层数上限「（最多10层）」（``wf_balance_20260927b_tekuto``），
         「不再进入硬直」一句仍只出现一次、仍在句尾。
+        平衡第三批（``wf_balance_20260927c_tekuto``）不再改技能说明：强化后的不封顶只写在强化条目里
+        （主会话 2026-09-27 口径），落表文案 == 第二批。
         """
-        want = R.SKILL_DESC_AFTER.replace(K.BALANCE_B_DESC_ANCHOR,
-                                          K.BALANCE_B_DESC_ANCHOR + K.BALANCE_B_DESC_CAP)
+        want_b = R.SKILL_DESC_AFTER.replace(K.BALANCE_B_DESC_ANCHOR,
+                                            K.BALANCE_B_DESC_ANCHOR + K.BALANCE_B_DESC_CAP)
+        want = want_b
         self.assertNotEqual(want, R.SKILL_DESC_AFTER)
+        self.assertEqual(K._DESC_BALANCE_B, want_b)
+        self.assertEqual(K._DESC_BALANCE_C, want_b)
+        self.assertNotIn("不受此限", want)
         self.assertEqual(K.TEXTS["desc1"], want)
         self.assertEqual(K.TEXTS["desc2"], want)
         self.assertEqual(K._DESC_NO_ENDLAG, R.SKILL_DESC_AFTER)
@@ -745,7 +755,13 @@ class CandidatePackage(unittest.TestCase):
 
     def _want_desc(self) -> str:
         """2026-09-27 平衡第二批（第一批输出 + 第二批覆盖）：批次暂存脚本回写候选后 manifest 带
-        ``revision_20260927b`` 快照，技能说明在本工具的 SKILL_DESC_AFTER 之上多了「（最多10层）」。"""
+        ``revision_20260927b`` 快照，技能说明在本工具的 SKILL_DESC_AFTER 之上多了「（最多10层）」。
+        平衡第三批回写后 package_version 升到 ``wf_balance_20260927c_tekuto.PACKAGE_VERSION``（快照键由第三批
+        暂存脚本定，这里按版本号判断），技能说明不变（_DESC_BALANCE_C == _DESC_BALANCE_B，强化后效果只写在强化条目）。"""
+        import wf_balance_20260927c_tekuto as balance_c
+        as_tuple = lambda v: tuple(int(x) for x in str(v).split("."))        # noqa: E731
+        if as_tuple(self.manifest.get("package_version", "0")) >= as_tuple(balance_c.PACKAGE_VERSION[balance_c.PACKAGES[0]]):
+            return K._DESC_BALANCE_C
         if BALANCE_B_SNAPSHOT in self.manifest.get("snapshot", {}):
             return K._DESC_BALANCE_B
         return R.SKILL_DESC_AFTER

@@ -773,12 +773,19 @@ class TreeAssemblyTest(unittest.TestCase):
         self.assertEqual([row[5], row[7]], [K._DESIGN_DESC, K._DESIGN_DESC])
         # S18（2026-09-21 取消后摇）：落表文案 = plan 的 _DESC + 「不再进入硬直」一句；
         # 2026-09-27 平衡第二批（第一批输出 + 第二批覆盖）：技能倍率的层数贡献封顶 ENGINE_CAP=10 ⇒
-        # 「威力随其层数提升」后面写出「（最多10层）」（wf_balance_20260927b_tekuto 同一句）。
-        self.assertEqual((K.TEXTS["desc1"], K.TEXTS["desc2"]), (K._DESC_BALANCE_B, K._DESC_BALANCE_B))
+        # 「威力随其层数提升」后面写出「（最多10层）」（wf_balance_20260927b_tekuto 同一句）；
+        # 平衡第三批（wf_balance_20260927c_tekuto）：担任队长且雷共鸣时旗号 3 分支不封顶，但技能说明只写本体
+        # （主会话 2026-09-27 口径：强化后效果只写在强化条目 CHANGE_SKILL_LEADER_TEXT）⇒ 落表文案 == 第二批。
+        self.assertEqual((K.TEXTS["desc1"], K.TEXTS["desc2"]), (K._DESC_BALANCE_C, K._DESC_BALANCE_C))
         self.assertEqual(K._DESC_NO_ENDLAG, K._DESC + K.REV7_NO_ENDLAG_SUFFIX)
         self.assertEqual(K._DESC_BALANCE_B, K._DESC_NO_ENDLAG.replace(
             K.BALANCE_B_DESC_ANCHOR, K.BALANCE_B_DESC_ANCHOR + K.BALANCE_B_DESC_CAP))
         self.assertEqual(K.BALANCE_B_DESC_CAP, f"（最多{K.ENGINE_CAP}层）")
+        self.assertEqual(K._DESC_BALANCE_C, K._DESC_BALANCE_B)
+        self.assertFalse(hasattr(K, "BALANCE_C_DESC_CAP"))
+        for mark in ("不受此限", "担任队长", "强化后"):
+            self.assertNotIn(mark, K._DESC_BALANCE_C)
+        self.assertTrue(K.CHANGE_SKILL_LEADER_TEXT.startswith(f"强化『{K.TEXTS['skill1']}』："))
         desc = self.plan["texts"]["action_skill_desc"]
         self.assertEqual((desc["old"], desc["r1_new"], desc["new"]), (K._DESIGN_DESC, K._R1_DESC, K._DESC))
         self.assertLess(len(K._DESC), len(K._DESIGN_DESC))
@@ -809,7 +816,8 @@ class TreeAssemblyTest(unittest.TestCase):
 
     def test_spec_merge_extra_keys(self):
         spec = S.get_spec("tekuto")
-        self.assertEqual(spec.extra_keys[K.CAS], (K.CHANGE_SKILL_KEY, K.CHANGE_SKILL2_KEY))
+        # 平衡第三批：旗号 3 开关行（能力1 kind 705）的文案键也由本包认领；它没有潜能文案（官方 705 行同样没有）
+        self.assertEqual(spec.extra_keys[K.CAS], (K.CHANGE_SKILL_KEY, K.CHANGE_SKILL2_KEY, K.CHANGE_SKILL_LEADER_KEY))
         self.assertEqual(spec.extra_keys[K.CAPS], (K.CHANGE_SKILL_KEY, K.CHANGE_SKILL2_KEY))
         self.assertEqual(spec.extra_keys[K.SWITCHED], (K.VOICE_READY_KEY,))
         self.assertEqual(spec.extra_keys[K.UNIQUE], (K.UID_ENGINE, K.UID_CANNON))

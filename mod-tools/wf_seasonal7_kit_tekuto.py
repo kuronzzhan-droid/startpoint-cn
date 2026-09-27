@@ -158,6 +158,16 @@
   ability 的模式列是 ``c5``（``c3`` 是 awake_kind）。到第四轮为止本 kit 只产瞬发行
   （``c3`` 与 ``c5`` 同为 ``'0'``）所以一直没暴露；第五轮的 during 行 ``c3='0'`` 而 ``c5='1'``，
   照旧读 ``c3`` 会把哨兵补到 ``c39`` 而不是 ``c85``，出一个 live 里零先例的行形。
+
+2026-09-27 第七轮（平衡第三批，``wf_balance_20260927c_tekuto``；落在 ``BALANCE_C_*``）：
+
+- 成长复核：队长引擎逐层行从第二批的 1/10 改回 4/5（#0 雷队攻 80%、#1 雷队技伤 160%）、
+  2/3（#2 独立乘区 3.5%、#10/#11 自身攻/技伤 35%）、7/10（#8 半血持重炮每 120 帧 70%）；
+- 技能倍率撤封顶（担任队长且雷共鸣时）：能力1 追加旗号 3 开关行（kind 705，前置 42 仅队长 + 雷≥6，
+  c70 = ``CHANGE_SKILL_LEADER_KEY``）；两档技能树 11 处「Bind 起到块尾」整段包进
+  ``ConditionalsChangeSkillFlag(3, 开支 Bind 上限 99, 关支 = 第二批原段)``（:func:`balance_c_skill_tree`，
+  叠在 ``final_tree`` 之后）；强化条目 ``CHANGE_SKILL_LEADER_TEXT`` 点名『多重爆破·礼装重炮』。技能说明保持第二批
+  「（最多10层）」（主会话 2026-09-27 口径：强化后的效果只写在强化条目里，技能说明不重复）。
 """
 from __future__ import annotations
 
@@ -191,6 +201,10 @@ TEMPLATE_PREVIEW = f"character/{TEMPLATE_CODE}/battle/character_detail_skill_pre
 
 CHANGE_SKILL_KEY = f"change_skill_{CODE}"                 # 开关槽 1（能力1 kind 536）＝锁定 debuff
 CHANGE_SKILL2_KEY = f"change_skill_2_{CODE}"              # 开关槽 2（能力3 kind 704）＝扫描范围 + 过载终幕
+# 2026-09-27 平衡第三批：开关槽 3（能力1 kind 705，仅队长 + 雷共鸣）＝技能倍率的「引擎启动」层数不封顶。
+# 键名必须以 change_skill_<code> 开头（批次暂存脚本 splice 的命名空间断言），所以不用 change_skill_3_<code>。
+CHANGE_SKILL_LEADER_KEY = f"change_skill_{CODE}_leader"
+CHANGE_SKILL_LEADER_TEXT = "强化『多重爆破·礼装重炮』：威力随「引擎启动」层数持续提升"
 # 潜能 2–6 文案：槽1 的潜能插值吃在雷抗/技伤抗性降低上 ⇒ 用官方 change_skill_2_super_robot
 # 「对敌人的雷属性抗性降低效果强化」；槽2 追加的是过载终幕伤害 ⇒ 用官方 change_skill_super_robot「伤害强化」。
 # 槽1 的潜能插值（alv_）全落在雷抗降低 / 技伤抗性降低的时长与强度上 ⇒ 克隆官方 change_skill_2_super_robot 的原行字节。
@@ -293,18 +307,25 @@ BALANCE_B_DESC_CAP = "（最多10层）"
 if _DESC_NO_ENDLAG.count(BALANCE_B_DESC_ANCHOR) != 1:        # 锚点必须唯一，替换才不会漏/叠
     raise RuntimeError("tekuto skill description anchor for the batch-b cap clause is not unique")
 _DESC_BALANCE_B = _DESC_NO_ENDLAG.replace(BALANCE_B_DESC_ANCHOR, BALANCE_B_DESC_ANCHOR + BALANCE_B_DESC_CAP)
+# 2026-09-27 平衡第三批（U8）：担任队长且雷共鸣时技能倍率不封顶（旗号 3 分支，见 balance_c_skill_tree）。
+# 主会话 2026-09-27 技能强化文案口径（作者「技能都强化效果只在队长技或者能力里面按照格式写就行,技能里面不要重复描述
+# 强化后的效果」）：强化后的不封顶只写在强化条目 CHANGE_SKILL_LEADER_TEXT（能力 1 面板），技能说明只写技能本体
+# ⇒ 第三批落表文案 == 第二批 _DESC_BALANCE_B（本体上限「（最多10层）」照写）。_DESC_BALANCE_C 保留为落表入口名。
+if _DESC_BALANCE_B.count(BALANCE_B_DESC_CAP) != 1:
+    raise RuntimeError("tekuto skill description cap clause is not unique")
+_DESC_BALANCE_C = _DESC_BALANCE_B
 TEXTS = {
     "profile": ("被朋友们拉去参加舞会的机人青年，换上了黑黄配色的燕尾礼服，胸前别着系黄丝带的白玫瑰。"
                 "为了保护大家，他把重炮和导航无人机也带进了会场——虽然大家都说那样一点都不优雅。"),
     "skill1": "多重爆破·礼装重炮",
-    "desc1": _DESC_BALANCE_B,
+    "desc1": _DESC_BALANCE_C,
     "skill2": "多重爆破·礼装重炮＋",
-    "desc2": _DESC_BALANCE_B,
+    "desc2": _DESC_BALANCE_C,
     "cv": "AI 合成配音",
 }
 SPEC = {
     "extra_keys": {
-        CAS: (CHANGE_SKILL_KEY, CHANGE_SKILL2_KEY),
+        CAS: (CHANGE_SKILL_KEY, CHANGE_SKILL2_KEY, CHANGE_SKILL_LEADER_KEY),
         CAPS: (CHANGE_SKILL_KEY, CHANGE_SKILL2_KEY),
         SWITCHED: (VOICE_READY_KEY,),
         UNIQUE: (UID_ENGINE, UID_CANNON),
@@ -495,6 +516,10 @@ VID_ENGINE = 1                          # vlv 变量号（BindConditionAccumulat
 # 无上限的逐层部分由队长 during-134 行承担（已有同一层数的逐层行 ⇒ 视为已合并）。
 ENGINE_DIVISOR, ENGINE_CAP = 1, 10      # var = min(层数/1, 10)；改前 99（= unique_condition c4）
 ENGINE_CAP_BEFORE_BALANCE_B = 99
+# 2026-09-27 平衡第三批（U4/U7）：担任队长且雷共鸣时（能力1 kind 705 开旗号 3）走开支，Bind 上限回到第二批前的
+# int 99（= 固有「引擎启动」c4 叠层上限）；其余情况走关支，仍是上面的 ENGINE_CAP=10。旗号 1/2 已被 536/704 占用。
+LEADER_SKILL_FLAG = 3
+ENGINE_CAP_LEADER = ENGINE_CAP_BEFORE_BALANCE_B
 # 2026-09-27 平衡第二批（作者口径 B1「技能每次施放单目标总削韧 ≤30」）：四段光束 + 5 个延长槽共 9 组
 # 判定区（寿命 60/70、最小命中间隔 10、上限 Some(6)）的 CNA p13 1 → 0.3；导弹 p13=2、终幕 p13=4 不动。
 # 单目标满打：基础 4×2 + 24×1 + 4 = 36 → 4×2 + 24×0.3 + 4 = 19.2；带「重炮展开」再 +30 → +9，66 → 28.2。
@@ -557,6 +582,12 @@ def _bind_engine():
     """
     return _C("BindConditionAccumulationVariable", -17, VID_ENGINE, ["DCUnique", int(UID_ENGINE)],
               ENGINE_DIVISOR, ENGINE_CAP)
+
+
+def _bind_engine_leader():
+    """平衡第三批：旗号 3 开支里的同一条 Bind，只有上限是 ENGINE_CAP_LEADER（int 99）。"""
+    return _C("BindConditionAccumulationVariable", -17, VID_ENGINE, ["DCUnique", int(UID_ENGINE)],
+              ENGINE_DIVISOR, ENGINE_CAP_LEADER)
 
 
 def _if_cannon(then_items, else_items):
@@ -2561,6 +2592,208 @@ def apply_balance_b(leader_rows: list[list[str]], ability2_rows: list[list[str]]
     return leader, ability2, trace
 
 
+# ================================================================ 第七轮（2026-09-27 平衡第三批）
+#
+# 主会话口径 growth_c_spec.md（作者原话：「成长速度砍到1/10不合理」「砍到4/5，或者7/10这样吧」「可以砍到2/3」
+# 「数值尽量取5的倍数」；「部分角色技能都倍率成长也要无限成长,成长条件放到队长技里面带上对应共鸣条件」）。
+# 修订模块 ``wf_balance_20260927c_tekuto`` 对 live 做同一组改动；本段让重跑 kit 得到同一张表/同一棵树（测试断言相等）。
+# 叠在第六轮之后（build() 里 apply_balance_b 之后调用行、final_tree 之后调用树），不改前几轮的常量与断言。
+#
+# 档位（原值 × 档位，原值 ≥20% 取 5 的倍数、≤10% 取 0.5 的倍数，2/3 档向上取）：
+BALANCE_C_LEADER_SCALE = (
+    # (选择器 {列: 值}, 强度列, 第二批值, 第三批值, 说明)
+    ({3: "1", 95: "134", 102: UID_ENGINE, 107: "0", 108: "5"}, (111, 112), "10000", "80000",
+     "引擎每层 雷队攻击力 原 100% ×4/5 → 80%"),
+    ({3: "1", 95: "134", 102: UID_ENGINE, 107: "2", 108: "5"}, (111, 112), "20000", "160000",
+     "引擎每层 雷队技能伤害 原 200% ×4/5 → 160%"),
+    ({3: "1", 95: "134", 102: UID_ENGINE, 107: "411", 108: "0"}, (111, 112), "500", "3500",
+     "引擎每层 自身独立乘区技能伤害 原 5% ×2/3 = 3.33 → 3.5%"),
+    ({3: "0", 25: "77", 45: "34", 46: "0"}, (49, 50), "10000", "70000",
+     "雷共鸣＋持重炮＋HP≤50%：每 120 帧 自身技能伤害 原 100% ×7/10 → 70%"),
+    ({3: "1", 4: "0", 95: "134", 102: UID_ENGINE, 107: "0", 108: "0"}, (111, 112), "5000", "35000",
+     "引擎每层 自身攻击力（第二批自能力2 搬入）原 50% ×2/3 = 33.3 → 35%"),
+    ({3: "1", 4: "0", 95: "134", 102: UID_ENGINE, 107: "2", 108: "0"}, (111, 112), "5000", "35000",
+     "引擎每层 自身技能伤害（第二批自能力2 搬入）原 50% ×2/3 = 33.3 → 35%"),
+)
+#: 旗号 3 开关行落点（U6：技能强化所在的能力 1，c1='true'；零先例的队长表 705 行不做）。
+BALANCE_C_SWITCH_ABILITY_KEY = f"{CID}1"
+BALANCE_C_SWITCH_KIND = "705"                 # 切换技能旗号 3（InstantAbilitySource 704–708 → 旗号 2–6）
+BALANCE_C_LEADER_ONLY = "42"                  # 前置 1 kind 42 = 仅队长（live 先例 罗尔夫中秋 1499866#4）
+BALANCE_C_SEGMENTS = 11                       # 每档技能树里「Bind 起到块尾」的段数
+
+
+def balance_c_switch_row(flag1_row: list[str]) -> list[str]:
+    """能力1 的 536 开关行（前置 202 主位 + 雷≥6）→ 旗号 3 开关行：只换 c6 202→42、c47 536→705、c70。"""
+    if (len(flag1_row), flag1_row[6], flag1_row[47], flag1_row[70]) != (126, "202", "536", CHANGE_SKILL_KEY):
+        raise KitError(f"balance-c: {BALANCE_C_SWITCH_ABILITY_KEY} 的 536 开关行不是改版形态")
+    row = list(flag1_row)
+    row[6], row[47], row[70] = BALANCE_C_LEADER_ONLY, BALANCE_C_SWITCH_KIND, CHANGE_SKILL_LEADER_KEY
+    return row
+
+
+def apply_balance_c(leader_rows: list[list[str]], ability1_rows: list[list[str]]
+                    ) -> tuple[list[list[str]], list[list[str]], list[dict]]:
+    """第七轮：队长 6 行按第三批档位改强度 + 能力1 追加旗号 3 开关行。输入是第六轮（apply_balance_b）之后的行。"""
+    import wf_client_legality as LG
+    leader = [list(r) for r in leader_rows]
+    trace: list[dict] = []
+    for selector, cols, old, new, what in BALANCE_C_LEADER_SCALE:
+        hits = [i for i, row in enumerate(leader) if _balance_b_match(row, selector)]
+        if len(hits) != 1:
+            raise KitError(f"balance-c: 队长行选择器 {selector} 命中 {hits}（期望恰好 1 行）")
+        row = leader[hits[0]]
+        if [row[c] for c in cols] != [old] * len(cols):
+            raise KitError(f"balance-c: 队长#{hits[0]} c{cols} 现值 {[row[c] for c in cols]} != 第二批 {old}")
+        for col in cols:
+            row[col] = new
+        trace.append({"leader": hits[0], "cols": list(cols), "old": old, "new": new, "what": what})
+    kept = [row for row in leader if row[3] == "1" and row[95] == "134"
+            and row[107] in BALANCE_B_LEADER_UNTOUCHED_KINDS]
+    if [(r[107], r[111], r[112]) for r in kept] != [("3", "5000", "5000"), ("124", "5000", "5000")]:
+        raise KitError("balance-c: 引擎每层的充能/技能槽上限行不是改前形态（本批不动）")
+    ability1 = [list(r) for r in ability1_rows]
+    if len(ability1) != 2 or ability1[1][47] != "536":
+        raise KitError(f"balance-c: {BALANCE_C_SWITCH_ABILITY_KEY} 期望 2 条（211 + 536），实际 "
+                       f"{[r[47] for r in ability1]}")
+    switch = balance_c_switch_row(ability1[1])
+    ability1.append(switch)
+    trace.append({"ability": BALANCE_C_SWITCH_ABILITY_KEY, "appended": len(ability1) - 1,
+                  "kind": BALANCE_C_SWITCH_KIND, "flag": LEADER_SKILL_FLAG,
+                  "precondition": BALANCE_C_LEADER_ONLY, "string": CHANGE_SKILL_LEADER_KEY})
+    problems = []
+    for i, row in enumerate(leader):
+        problems += [f"leader#{i}: {p}" for p in LG.client_legality_problems("leader_ability", row)
+                     + LG.declared_block_field_problems("leader_ability", row)
+                     + LG.ability_element_column_problems("leader_ability", row, ELEMENT)]
+    for i, row in enumerate(ability1):
+        problems += [f"{BALANCE_C_SWITCH_ABILITY_KEY}#{i}: {p}" for p in LG.client_legality_problems("ability", row)
+                     + LG.declared_block_field_problems("ability", row)
+                     + LG.invoke_skill_string_problems(row, {CHANGE_SKILL_LEADER_KEY}, kind="ability")
+                     + LG.ability_element_column_problems("ability", row, ELEMENT)
+                     + LG.required_client_capabilities("ability", row)]
+    if any(ch.isdigit() for ch in CHANGE_SKILL_LEADER_TEXT) or any(w in CHANGE_SKILL_LEADER_TEXT
+                                                                   for w in ("秒", "%", "％", "无上限")):
+        problems.append(f"{CHANGE_SKILL_LEADER_KEY}: 技能强化条目不写数字/时长/无上限")
+    if problems:
+        raise KitError(f"balance-c rows rejected: {problems}")
+    return leader, ability1, trace
+
+
+def _statement_blocks(node, out: list | None = None) -> list[list]:
+    """树里所有 ``["Block", [语句…]]`` 节点本身。"""
+    out = [] if out is None else out
+    if isinstance(node, list):
+        if len(node) == 2 and node[0] == "Block" and isinstance(node[1], list):
+            out.append(node)
+        for child in node:
+            _statement_blocks(child, out)
+    elif isinstance(node, dict):
+        for child in node.values():
+            _statement_blocks(child, out)
+    return out
+
+
+def balance_c_vid_scope_problems(tree) -> list[str]:
+    """vlv 读的变量号必须被同一 Block 里排在前面的 Bind（或外层 Block 的 Bind）绑定过。
+
+    ConditionalsChangeSkillFlag 的分支在新的局部环境执行（ActionEvaluator.as:4509-4526），局部环境只向外查找
+    ⇒ 包进分支的 Bind 只对同一分支里它后面的判定区可见；wf_client_legality 的四道门只查主体 lookup，不查 vlv。
+    """
+    problems: list[str] = []
+
+    def walk(node, visible: frozenset):
+        if isinstance(node, dict):
+            for term in node.get("vlv") or []:
+                if term.get("vid") not in visible:
+                    problems.append(f"vlv vid {term.get('vid')} unbound")
+            for child in node.values():
+                walk(child, visible)
+        elif isinstance(node, list):
+            if len(node) == 2 and node[0] == "Block" and isinstance(node[1], list):
+                bound = set(visible)
+                for statement in node[1]:
+                    walk(statement, frozenset(bound))
+                    if (isinstance(statement, list) and len(statement) == 2 and statement[0] == "Command"
+                            and statement[1][:1] == ["BindConditionAccumulationVariable"]):
+                        bound.add(statement[1][2])
+                return
+            for child in node:
+                walk(child, visible)
+
+    walk(tree, frozenset())
+    return problems
+
+
+def balance_c_dup_bound_ids(tree) -> list[int]:
+    """按分支判断的「绑定号唯一」：旗号分支两侧互斥，同一绑定号两侧各一份不算重复。"""
+    from collections import Counter
+    slots = {"FindAllSubjects": (1,), "FindNearSubjects": (5,), "CreateReferencePoint": (10,),
+             "CreateHitArea": (19, 21, 22)}
+
+    def count(node) -> Counter:
+        found: Counter = Counter()
+        if isinstance(node, dict):
+            for child in node.values():
+                found += count(child)
+        elif isinstance(node, list):
+            if len(node) == 2 and node[0] == "Command" and isinstance(node[1], list) and node[1]:
+                c = node[1]
+                if c[0] == "ConditionalsChangeSkillFlag":
+                    return count(c[2]) | count(c[3])
+                for slot in slots.get(c[0], ()):
+                    found[c[slot]] += 1
+                for child in c[1:]:
+                    found += count(child)
+                return found
+            for child in node:
+                found += count(child)
+        return found
+
+    return sorted(i for i, n in count(tree).items() if n > 1)
+
+
+def balance_c_tree_problems(tree) -> list[str]:
+    """包裹之后的门禁：fast_release.final_tree 用的 philia 门禁（绑定号唯一改为按分支判断）+ kit 快速门禁
+    + lookup 作用域 + vlv 作用域。"""
+    import wf_client_legality as LG
+    import wf_seasonal7_kit_philia as PH
+    problems = [f for f in PH.dsl_gate_failures(PH.dsl_gates(tree, element=ELEMENT))
+                if not f.startswith("dup_bind_ids=")]
+    problems += dsl_quick_problems(tree)
+    problems += LG.action_dsl_lookup_scope_problems(tree)
+    problems += balance_c_vid_scope_problems(tree)
+    problems += [f"dup bind id {i} on one execution path" for i in balance_c_dup_bound_ids(tree)]
+    return problems
+
+
+def balance_c_skill_tree(tree: list) -> list:
+    """第七轮：每处「Bind 起到块尾」整段 → ConditionalsChangeSkillFlag(3, 开支 Bind 上限 99, 关支 原段)。
+
+    本树 11 个 Bind 都是所在 Block 的第 0 句（导弹落点、四段光束、终幕、5 个延长槽），整块语句表就是这一段；
+    关支逐字保留第六轮（第二批）的段 ⇒ 非队长/不共鸣时与第二批完全相同；开支只把 Bind[5] 换成 int 99。
+    事件名 / RemoveEventFromOwner / HideEffectFromOwner 用的名字都在分支外，根部旗号 2 护盾分支不动。
+    """
+    out = copy.deepcopy(tree)
+    if [c for c in _command_nodes(out, "ConditionalsChangeSkillFlag") if c[1] == LEADER_SKILL_FLAG]:
+        raise KitError("balance-c: 树里已经有旗号 3 分支（不可重复包裹）")
+    capped = _bind_engine()
+    blocks = _statement_blocks(out)
+    targets = [b for b in blocks if b[1] and b[1][0] == capped]
+    stray = [b for b in blocks for st in b[1][1:] if isinstance(st, list) and st[:1] == ["Command"]
+             and st[1][:1] == ["BindConditionAccumulationVariable"]]
+    if len(targets) != BALANCE_C_SEGMENTS or stray:
+        raise KitError(f"balance-c: 期望 {BALANCE_C_SEGMENTS} 段以封顶 Bind 开头的块，实际 {len(targets)}"
+                       f"（块中段 Bind {len(stray)} 个）")
+    for block in targets:
+        closed = copy.deepcopy(block[1])
+        opened = [_bind_engine_leader(), *copy.deepcopy(block[1][1:])]
+        block[1] = [_C("ConditionalsChangeSkillFlag", LEADER_SKILL_FLAG, _B(*opened), _B(*closed))]
+    problems = balance_c_tree_problems(out)
+    if problems:
+        raise KitError(f"balance-c skill tree rejected: {problems[:5]}")
+    return out
+
+
 def revision_record_counts(rows: dict[str, list[list[str]]], leader: list[list[str]]) -> dict[str, int]:
     return {"leader": len(leader), "abilities": sum(len(v) for v in rows.values())}
 
@@ -2864,8 +3097,8 @@ def build(ctx) -> dict[str, Any]:
     if [text_row[5], text_row[7]] != [_DESIGN_DESC, _DESIGN_DESC]:
         raise KitError("design character_text desc columns are no longer the pre-revision text")
     # 改版：技能说明压到 60 字（作者要求 D8）；S18 再追加「不再进入硬直」一句（2026-09-21）；
-    # 2026-09-27 平衡第二批再写出技能倍率的层数上限「（最多10层）」
-    text_row[5] = text_row[7] = _DESC_BALANCE_B
+    # 2026-09-27 平衡第二批再写出技能倍率的层数上限「（最多10层）」；第三批不在技能说明里写强化后的不封顶（只写在强化条目）
+    text_row[5] = text_row[7] = _DESC_BALANCE_C
     want = {"profile": text_row[2], "skill1": text_row[4], "desc1": text_row[5], "skill2": text_row[6],
             "desc2": text_row[7], "cv": text_row[11]}
     for name, value in want.items():
@@ -2919,6 +3152,10 @@ def build(ctx) -> dict[str, Any]:
     leader_rows, ability_rows[REV5_ABILITY_KEY], balance_b_trace = apply_balance_b(
         leader_rows, ability_rows[REV5_ABILITY_KEY])
     derivation["balance_20260927b"] = balance_b_trace
+    # 第七轮（2026-09-27 平衡第三批）：叠在第六轮之后；与 wf_balance_20260927c_tekuto.revise() 同表
+    leader_rows, ability_rows[BALANCE_C_SWITCH_ABILITY_KEY], balance_c_trace = apply_balance_c(
+        leader_rows, ability_rows[BALANCE_C_SWITCH_ABILITY_KEY])
+    derivation["balance_20260927c"] = balance_c_trace
     ctx.write_flat(LEADER, {CID: leader_rows})
     ctx.write_flat(ABILITY, ability_rows)
 
@@ -2981,6 +3218,11 @@ def build(ctx) -> dict[str, Any]:
     if referenced != cas_slots or extra:
         raise KitError(f"ability string refs {referenced} (+{extra}) != plan slots {cas_slots}")
     cas_rows[CHANGE_SKILL2_KEY] = low_hp.SHIELD_TEXT
+    # 第七轮：旗号 3（705）开关行的「技能强化」条目（不写数字/共鸣前缀；特克托无 desc_override，显示在能力 1 面板）
+    switch_refs = [row[70] for rows in ability_rows.values() for row in rows if row[47] == BALANCE_C_SWITCH_KIND]
+    if switch_refs != [CHANGE_SKILL_LEADER_KEY]:
+        raise KitError(f"705 switch rows reference {switch_refs}, expected [{CHANGE_SKILL_LEADER_KEY}]")
+    cas_rows[CHANGE_SKILL_LEADER_KEY] = CHANGE_SKILL_LEADER_TEXT
     ctx.write_flat(CAS, cas_rows)
     derivation["rev2_text_fixes"] = cas_fixes
     unclaimed: list[str] = []
@@ -3158,6 +3400,9 @@ def build(ctx) -> dict[str, Any]:
         # 候选修订与重跑 kit 共用此入口，防止下一次构建带回 90 帧前摇。
         from wf_tekuto_fast_release import final_tree
         tree = final_tree(tree)
+        # 第七轮（2026-09-27 平衡第三批）：担任队长且雷共鸣（旗号 3）时 Bind 上限回到 99；必须在 final_tree 之后
+        # （final_tree 的 philia 门禁按全树判绑定号唯一，分支两侧各一份会被它拦下；这里改为按分支判断）。
+        tree = balance_c_skill_tree(tree)
         logical = ctx.write_dsl(ctx.program_path(lv), tree)
         programs.append(logical)
         # 定稿树落盘到 revision 目录（gates 的漂移对照；只写 revision 目录，不进包）
@@ -3172,7 +3417,9 @@ def build(ctx) -> dict[str, Any]:
                           "diff_vs_previous_design": len(strict_diff(tree, old_tree, limit=10000)),
                           "cooldown_width_problems": wprobs, "beam_overlap_problems": bprobs,
                           "template_derivation": tfacts, "quick_problems": qprobs,
-                          "final_windup_frames": 36, "extra_ball_hold_frames": 0}
+                          "final_windup_frames": 36, "extra_ball_hold_frames": 0,
+                          "leader_uncap_flag": {"flag": LEADER_SKILL_FLAG, "segments": BALANCE_C_SEGMENTS,
+                                                "cap_closed": ENGINE_CAP, "cap_open": ENGINE_CAP_LEADER}}
 
     # ---- 详情页技能预览 end_frame
     _root, template_raw, source = pack.template_asset(TEMPLATE_PREVIEW)
