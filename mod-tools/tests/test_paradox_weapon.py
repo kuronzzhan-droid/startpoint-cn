@@ -187,6 +187,45 @@ class ParadoxTests(unittest.TestCase):
                  if self._ea(r, "instant_content", "kind") == "629"]
         self.assertEqual(paths, [P.HITS_FINAL])
 
+    def test_decay_tiers_mirror_full_rows(self):
+        # client-patch/equipment-rules 按 ID+1000·n 选档：分档行与满档逐行同构，只许强度 / 629 段数 / 连击数不同
+        flat = self.out["flat"]
+        for logical, table in ((P.SOUL, W.SOUL_T), (P.EA, W.EA_T)):
+            full = flat[logical][P.ID]
+            strength = {W._col(table, "instant_content", c) for c in ("strength.power1", "strength.first_max")}
+            invoke = {W._col(table, "instant_content", c) for c in ("string_id", "action_path")}
+            for n, ratio in P.TIERS.items():
+                tier = flat[logical][P.tier_id(n)]
+                self.assertEqual(len(tier), len(full), (logical, n))
+                for a, b in zip(full, tier):
+                    diff = {j for j, (x, y) in enumerate(zip(a, b)) if x != y}
+                    kind = a[W._col(table, "instant_content", "kind")]
+                    allowed = invoke if kind == "629" else strength
+                    self.assertLessEqual(diff, allowed, (logical, n, kind))
+                    curse = kind == "209" or a[W._col(table, "instant_content", "target")] == W.T_EXCEPT
+                    if curse or kind == "58":
+                        self.assertEqual(a, b, (logical, n, kind))        # 诅咒不缩放、弱体无效保留
+                    elif kind not in ("629", "226"):
+                        col = W._col(table, "instant_content", "strength.first_max")
+                        self.assertAlmostEqual(float(b[col]), float(a[col]) * ratio, delta=1, msg=(logical, n, kind))
+        self.assertFalse({P.tier_id(n) for n in P.TIERS} & (set(flat[P.EQUIPMENT]) | set(flat[P.ITEM])))
+
+    def test_decay_tier_discrete_rounding(self):
+        self.assertEqual([P.hits_segments(n, False) for n in (0, 1, 2, 3)], [6, 5, 4, 2])
+        self.assertEqual([P.hits_segments(n, True) for n in (0, 1, 2, 3)], [8, 6, 5, 3])
+        combos = []
+        for n in (0, 1, 2, 3):
+            rows = self.out["flat"][P.SOUL][P.tier_id(n) if n else P.ID]
+            combos.append(next(_cell(r, "instant_content", "strength.power1") for r in rows
+                               if _cell(r, "instant_content", "kind") == "226"))
+        self.assertEqual(combos, [W.times(x) for x in (35, 26, 18, 9)])
+        for n in (0, 1, 2, 3):
+            for final in (False, True):
+                tree = self.out["dsl"][P.hits_program(n, final)]
+                seg = P.hits_segments(n, final)
+                self.assertIn(f'{{"min": {seg}, "max": {seg}}}', json.dumps(tree))
+                self.assertEqual(self.out["flat"][P.CAS][P.hits_key(n, final)], [[P.hits_text(n, final)]])
+
     def test_deterministic(self):
         again = P.build(fixture_reader())
         self.assertEqual(json.dumps(again["flat"], sort_keys=True), json.dumps(self.out["flat"], sort_keys=True))

@@ -20,8 +20,11 @@
 充能 30%、槽上限 100%、合击攻击 150%、三人专属 250%）。120 级解放诅咒「孤立」（自身以外队员攻击 -50%、技能充能 -30%）与
 「代价」（自身放技能时受最大 HP 15% 伤害，不致死）——都是数值/伤害而非状态，自身弱体无效挡不住。
 
-未含：「每多装备一件武器/魂珠效果衰减 25%」需要客户端补丁（client-patch/equipment-rules，另行实现）；
-三人放技能时的 25% 技能复刻另行设计。
+衰减（作者要求「每多装备一件武器/魂珠效果衰减 25%」）：客户端补丁 client-patch/equipment-rules 在开战装配时数同队其他
+武器/魂珠件数 n，n=1..3 把本体魂与强化词条换成分档键 ID+1000·n（75/50/25%），n≥4 整件失效。分档键由本生成器产出：
+增益按比例缩放（离散的段数/连击四舍五入），弱体无效保留，**诅咒不缩放**（代价不随衰减减轻）；分档键不进 equipment/item 表。
+
+未含：三人放技能时的 25% 技能复刻另行设计。
 """
 from __future__ import annotations
 
@@ -64,32 +67,69 @@ TAGS = (
 )
 
 
+TIER_STRIDE = 1000
+TIERS = {1: 0.75, 2: 0.5, 3: 0.25}          # 同队其他武器/魂珠件数 n → 效果比例
+
+
 def _count(n: int) -> str:
     return W.times(n)
 
 
-def abilities() -> list[Eff]:
+def _half_up(x: float) -> int:
+    return int(x + 0.5)
+
+
+def tier_id(n: int) -> str:
+    return str(int(ID) + TIER_STRIDE * n)
+
+
+def _suffix(n: int) -> str:
+    return f"_t{n}" if n else ""
+
+
+def hits_program(n: int, final: bool) -> str:
+    return f"{HITS_FINAL if final else HITS}{_suffix(n)}"
+
+
+def hits_segments(n: int, final: bool) -> int:
+    extra = 7 if final else 5
+    return 1 + _half_up(extra * TIERS[n]) if n else 1 + extra
+
+
+def hits_text(n: int, final: bool) -> str:
+    seg = hits_segments(n, final)
+    return f"自身的直接攻击判定额外+{seg - 1}次（共{seg}段）"
+
+
+def hits_key(n: int, final: bool) -> str:
+    return ("paradox_hits_final" if final else "paradox_hits") + _suffix(n)
+
+
+def abilities(n: int = 0) -> list[Eff]:
+    """本体词条；n=1..3 为衰减分档（比例 TIERS[n]），行形状与满档逐行一致，只换数值与段数 DSL。"""
     self_ = W.T_SELF
+    r = TIERS[n] if n else 1.0
     chosen = (PRE_MY_SELF, {"character_groups": ",".join(tag for _, tag, _ in TAGS)})
+    combo = _half_up(35 * r)
     return [
-        Eff("0", W.stat("32", self_, 550), note="自身攻击力 +550%"),
-        Eff("0", W.stat("33", self_, 550), note="自身直接攻击伤害 +550%"),
-        Eff("0", W.stat("34", self_, 550), note="自身技能伤害 +550%"),
-        Eff("0", W.stat("55", None, 550), note="强化弹射伤害 +550%"),
-        Eff("0", W.stat("388", self_, 550), note="自身能力伤害 +550%"),
-        Eff("0", W.stat("723", self_, 10), note="自身全伤害独立乘区 +10%"),
-        Eff("0", W.stat("693", self_, 10), note="自身直接攻击伤害独立乘区 +10%"),
-        Eff("0", W.stat("694", self_, 10), note="自身技能伤害独立乘区 +10%"),
-        Eff("0", W.stat("695", self_, 10), note="自身能力伤害独立乘区 +10%"),
-        Eff("0", W.stat("696", None, 10), note="强化弹射伤害独立乘区 +10%"),
-        Eff("0", W.invoke("paradox_hits", HITS), note="开局：自身直接攻击变为 6 段（判定额外 +5）"),
-        Eff("0", ("226", {"strength": (_count(35), _count(35))}), trig=W.trig("6", threshold=_count(1)),
+        Eff("0", W.stat("32", self_, 550 * r), note="自身攻击力 +550%"),
+        Eff("0", W.stat("33", self_, 550 * r), note="自身直接攻击伤害 +550%"),
+        Eff("0", W.stat("34", self_, 550 * r), note="自身技能伤害 +550%"),
+        Eff("0", W.stat("55", None, 550 * r), note="强化弹射伤害 +550%"),
+        Eff("0", W.stat("388", self_, 550 * r), note="自身能力伤害 +550%"),
+        Eff("0", W.stat("723", self_, 10 * r), note="自身全伤害独立乘区 +10%"),
+        Eff("0", W.stat("693", self_, 10 * r), note="自身直接攻击伤害独立乘区 +10%"),
+        Eff("0", W.stat("694", self_, 10 * r), note="自身技能伤害独立乘区 +10%"),
+        Eff("0", W.stat("695", self_, 10 * r), note="自身能力伤害独立乘区 +10%"),
+        Eff("0", W.stat("696", None, 10 * r), note="强化弹射伤害独立乘区 +10%"),
+        Eff("0", W.invoke(hits_key(n, False), hits_program(n, False)), note="开局：自身直接攻击变为 6 段（判定额外 +5）"),
+        Eff("0", ("226", {"strength": (_count(combo), _count(combo))}), trig=W.trig("6", threshold=_count(1)),
             note="每次弹射连击 +35"),
-        Eff("0", W.stat("35", self_, 20), note="自身技能充能速度 +20%"),
-        Eff("0", W.stat("245", self_, 50), note="自身技能槽上限 +50%"),
+        Eff("0", W.stat("35", self_, 20 * r), note="自身技能充能速度 +20%"),
+        Eff("0", W.stat("245", self_, 50 * r), note="自身技能槽上限 +50%"),
         Eff("0", ("58", {"target": self_}), note="自身弱体无效（异常状态与数值降低全部无效）"),
-        Eff("0", W.stat("717", self_, 100), note="自身攻击力再加上 100% 合击角色攻击力"),
-        Eff("0", W.stat("32", self_, 150), pre=(chosen,), note="自身为基诺维/杰拉德/凯尔时攻击力再 +150%"),
+        Eff("0", W.stat("717", self_, 100 * r), note="自身攻击力再加上 100% 合击角色攻击力"),
+        Eff("0", W.stat("32", self_, 150 * r), pre=(chosen,), note="自身为基诺维/杰拉德/凯尔时攻击力再 +150%"),
     ]
 
 
@@ -100,9 +140,11 @@ def hits_dsl(segments: int = 6) -> list:
                              "paradox_hits", cancelable=False))
 
 
-def enhancement_abilities() -> list[Eff]:
-    """强化词条：1→119 成长 + 120 补足到终值；120 级再加直击 8 段、弹射连击 +15（合计 50）与诅咒。"""
+def enhancement_abilities(n: int = 0) -> list[Eff]:
+    """强化词条：1→119 成长 + 120 补足到终值；120 级再加直击 8 段、弹射连击 +15（合计 50）与诅咒。
+    n=1..3 为衰减分档：增益按比例缩放，诅咒三行原样（代价不随衰减减轻）。"""
     self_ = W.T_SELF
+    r = TIERS[n] if n else 1.0
     chosen = (PRE_MY_SELF, {"character_groups": ",".join(tag for _, tag, _ in TAGS)})
     rows: list[Eff] = []
     for kind, target, total, base in (("32", self_, 800, 550), ("33", self_, 800, 550), ("34", self_, 800, 550),
@@ -110,12 +152,13 @@ def enhancement_abilities() -> list[Eff]:
                                       ("723", self_, 20, 10), ("693", self_, 20, 10), ("694", self_, 20, 10),
                                       ("695", self_, 20, 10), ("696", None, 20, 10),
                                       ("35", self_, 30, 20), ("245", self_, 100, 50), ("717", self_, 150, 100)):
-        rows += W.growth_pair(kind, target, total, base)
-    rows += W.growth_pair("32", self_, 250, 150, pre=(chosen,))
+        rows += W.growth_pair(kind, target, total * r, base * r)
+    rows += W.growth_pair("32", self_, 250 * r, 150 * r, pre=(chosen,))
     final = dict(learn=120, maxlvl=120)
+    combo = _half_up(15 * r)
     rows += [
-        Eff("0", W.invoke("paradox_hits_final", HITS_FINAL), **final, note="120 级：直接攻击变为 8 段（判定额外 +7）"),
-        Eff("0", ("226", {"strength": (_count(15), _count(15))}), trig=W.trig("6", threshold=_count(1)), **final,
+        Eff("0", W.invoke(hits_key(n, True), hits_program(n, True)), **final, note="120 级：直接攻击变为 8 段（判定额外 +7）"),
+        Eff("0", ("226", {"strength": (_count(combo), _count(combo))}), trig=W.trig("6", threshold=_count(1)), **final,
             note="120 级：每次弹射连击再 +15（合计 +50）"),
         Eff("0", W.stat("32", W.T_EXCEPT, -50), **final, note="【诅咒·孤立】自身以外的队员攻击力 -50%"),
         Eff("0", W.stat("35", W.T_EXCEPT, -30), **final, note="【诅咒·孤立】自身以外的队员技能充能速度 -30%"),
@@ -161,12 +204,22 @@ def build(read: W.LiveReader, *, allow_existing: bool = False) -> dict[str, Any]
             problems += [f"{table}#{index}: {p}" for p in L.client_legality_problems(table, r)]
     flat[SOUL][ID] = soul_rows
     flat[EA][ID] = ea_rows
-    flat[CAS]["paradox_hits"] = [[HITS_TEXT]]
-    flat[CAS]["paradox_hits_final"] = [[HITS_FINAL_TEXT]]
+    for n in (0, *TIERS):
+        for final in (False, True):
+            flat[CAS][hits_key(n, final)] = [[hits_text(n, final)]]
+    # 衰减分档键（补丁按 ID+1000·n 选档）：与满档逐行同构，只换数值 / 629 段数
+    for n in TIERS:
+        tid = tier_id(n)
+        flat[SOUL][tid] = [W.build_row(W.SOUL_T, slot, eff) for slot, eff in enumerate(abilities(n))]
+        flat[EA][tid] = [W.build_row(W.EA_T, slot, eff) for slot, eff in enumerate(enhancement_abilities(n))]
+        for table, rows in ((W.SOUL_T, flat[SOUL][tid]), (W.EA_T, flat[EA][tid])):
+            for index, r in enumerate(rows):
+                problems += [f"{table}[{tid}]#{index}: {p}" for p in L.client_legality_problems(table, r)]
     cas_keys = set(read.flat(CAS)) | set(flat[CAS])
-    for table, rows in ((W.SOUL_T, soul_rows), (W.EA_T, ea_rows)):
-        for index, r in enumerate(rows):
-            problems += [f"{table}#{index}: {p}" for p in L.invoke_skill_string_problems(r, cas_keys, table)]
+    for table, logical in ((W.SOUL_T, SOUL), (W.EA_T, EA)):
+        for key, rows in flat[logical].items():
+            for index, r in enumerate(rows):
+                problems += [f"{table}[{key}]#{index}: {p}" for p in L.invoke_skill_string_problems(r, cas_keys, table)]
 
     # 强化：名/图/描述 120 级切换；强化 status 照诅咒武器；商店 6 阶挂诅咒武器类目 6、五重材料
     W._require(len(ENH_DESCRIPTION) <= W.DESC_LIMITS["enhancement"] and "," not in ENH_DESCRIPTION, "强化说明超长或含逗号")
@@ -192,10 +245,12 @@ def build(read: W.LiveReader, *, allow_existing: bool = False) -> dict[str, Any]
             flat[CHARACTER][cid] = [retag(row, designated.get(cid))]
     delete = {CHARACTER_TAG: sorted(k for k in live_tags if k.startswith(TAG_PREFIX) and k not in flat[CHARACTER_TAG])}
 
-    dsl = {HITS: hits_dsl(6), HITS_FINAL: hits_dsl(8)}
-    programs = {r[W._col(t, "instant_content", "action_path")] for t, rows in ((W.SOUL_T, soul_rows), (W.EA_T, ea_rows))
-                for r in rows if r[W._col(t, "instant_content", "kind")] == "629"}
+    dsl = {hits_program(n, final): hits_dsl(hits_segments(n, final)) for n in (0, *TIERS) for final in (False, True)}
+    programs = {r[W._col(t, "instant_content", "action_path")] for t, logical in ((W.SOUL_T, SOUL), (W.EA_T, EA))
+                for rows in flat[logical].values() for r in rows if r[W._col(t, "instant_content", "kind")] == "629"}
     W._require(programs == set(dsl), f"629 行引用的 DSL 与生成的 DSL 不一致：{programs ^ set(dsl)}")
+    tiers = {tier_id(n) for n in TIERS}
+    W._require(not tiers & (set(flat[EQUIPMENT]) | set(flat[ITEM])), "分档键不得进 equipment/item 表")
     for program, tree in dsl.items():
         for check in (W.dsl_signature_problems, W.colorless_hit_effect_problems, L.action_dsl_element_problems,
                       L.action_dsl_subject_binding_problems, L.action_dsl_lookup_scope_problems,
