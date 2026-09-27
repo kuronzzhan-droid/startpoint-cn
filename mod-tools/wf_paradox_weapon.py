@@ -19,11 +19,17 @@
 五重决战材料 6 阶、需满破；1→119 线性成长 + 120 级补足到终值（攻击/四类伤害 800%、独立乘区 20%、直击 8 段、弹射连击 50、
 充能 30%、槽上限 100%、合击攻击 150%、三人专属 250%）。120 级解放诅咒（作者 0928 定稿）：自身以外的角色攻击力 -800%
 （引擎攻击加成总和下限 -50%：实际 = 抹掉其攻击增益并减半）、技能充能速度 -40%；「自身以外的角色无法获得能力与装备的技能槽增加」
-要客户端补丁把回槽筛选 423 扩到装备强化表（equipment-rules），数据行等补丁 APK 就绪再加。诅咒是数值不是状态，自身弱体无效挡不住。
+走客户端补丁 equipment-rules R3（423 扩到装备强化表 parseAt109）：持续 423 目标 ExceptMyself、规则码 8（只拦「能力」类回槽，
+技能直接回槽 / 移动 / 开局 / PF 与协力球照常；开局触发的 629 DSL 加槽不拦，作者已接受），触发 = 自身持有固有状态「诅咒」
+（134），由同为 120 级的开局 461 给自己刻上（永续、不可驱散、强制付与：c10=true 短路 ConditionPrevent，自身弱体无效挡不住）。
+不用 HpHigh 0 恒真触发——面板会显示「生命值0%以上时」。423 行在未打补丁的客户端 = C7050，全员装上补丁 APK 后才能上 live：
+``build`` 默认按 1047 基线（client_capabilities）把 423 行报成缺 equipment-gauge-gain-rules-v1 的 problems，调用方显式声明后才放行。
+攻击 / 充能两条诅咒是数值不是状态，自身弱体无效同样挡不住。
 
 衰减（作者要求「每多装备一件武器/魂珠效果衰减 25%」）：客户端补丁 client-patch/equipment-rules 在开战装配时数同队其他
-武器/魂珠件数 n，n=1..3 把本体魂与强化词条换成分档键 ID+1000·n（75/50/25%），n≥4 整件失效。分档键由本生成器产出：
-增益按比例缩放（离散的段数/连击四舍五入），弱体无效保留，**诅咒不缩放**（代价不随衰减减轻）；分档键不进 equipment/item 表。
+武器/魂珠件数 n，n=1..3 把本体魂与强化词条换成分档键 ID+1000·n（75/50/25%），n≥4 整件失效（诅咒一起失效，作者已接受）。
+分档键由本生成器产出：增益按比例缩放（离散的段数/连击四舍五入），弱体无效保留，**诅咒不缩放**（代价不随衰减减轻，
+含 R3 的 423 行与刻「诅咒」的 461 行）；分档键不进 equipment/item 表。装备详情页仍显示满档，规则写进装备说明 c7。
 
 技能回响（作者 0928：「放技能时额外放一次 25% 效果、不耗槽」无通用原语 → 只给三人做专属复刻）：三人各一行
 「自身发动技能时 + 自身是该角色」→ 629 调用 assets/paradox/echo/<code>.json（由同目录 derive_echo.py 从 live
@@ -34,17 +40,20 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
+import wf_battle_rules as BR
 import wf_client_legality as L
+import wf_client_patch_scope as S
 import wf_cursed_weapons as W
+import wf_describe
 from wf_cursed_weapons import Eff
 
 ITEM, EQUIPMENT, EQUIPMENT_STATUS, SOUL, CAS = W.ITEM, W.EQUIPMENT, W.EQUIPMENT_STATUS, W.SOUL, W.CAS
-ENH, EA, ENH_STATUS, ENH_SHOP = W.ENH, W.EA, W.ENH_STATUS, W.ENH_SHOP
+ENH, EA, ENH_STATUS, ENH_SHOP, UNIQUE = W.ENH, W.EA, W.ENH_STATUS, W.ENH_SHOP, W.UNIQUE
 CHARACTER = "master/character/character.orderedmap"
 CHARACTER_TAG = "master/character/character_tag.orderedmap"
-FLAT_TABLES = (ITEM, EQUIPMENT, SOUL, ENH, EA, ENH_SHOP, CAS, CHARACTER_TAG, CHARACTER)
+FLAT_TABLES = (ITEM, EQUIPMENT, SOUL, ENH, EA, ENH_SHOP, UNIQUE, CAS, CHARACTER_TAG, CHARACTER)
 
 ID = "5920001"
 NAME = "PARADOX"
@@ -53,15 +62,34 @@ CATEGORY = "剑"                                  # 服务端 equipment_lookup �
 ICON = "item/equipment/mod/paradox/paradox"
 ICON120 = "item/equipment/mod/paradox/paradox_lv120"
 NAME120 = f"{NAME}·终式"
-ENH_DESCRIPTION = "强化至120级进入终式：数值全面提升，同时解放诅咒。效果见能力说明。"
+#: 面板上 423 只显示 battle-rules 的通用文字「限制技能槽增加」，作者原话写进强化说明（≤54 字）。
+ENH_DESCRIPTION = "强化至120级进入终式：数值全面提升并解放诅咒，除自身外的角色无法获得能力和装备的技能槽增加效果。"
 DSL_DIR = "battle/action/skill/action/ability_skill/paradox"
 HITS = f"{DSL_DIR}$hits"
 HITS_TEXT = "自身的直接攻击判定额外+5次（共6段）"
 HITS_FINAL = f"{DSL_DIR}$hits_final"
 HITS_FINAL_TEXT = "自身的直接攻击判定额外+7次（共8段）"
 FLAVOR = "莫比乌斯环扭成的双色长剑。握着它的人越是孤身一人，就越是无可匹敌。"
+#: 衰减规则（装备详情页与「发动可能能力」弹窗仍显示满档，玩家只能从说明里看到）；n≥4 = 其他武器/魂珠 4 件及以上。
+DECAY_RULE = "同队每多1件其他武器或魂珠效果-25%，4件失效"
 EQUIPMENT_STATUS_ROWS = {"1": "330,148", "5": "495,221"}
-TAG_COLUMN = 5                                   # character 表 c5 = 角色标签列表（逗号分隔）
+#: 固有状态 ID = 59200000 +（ID−5920000）×10 + k，照诅咒武器 59100000 + 行号×10 + k 的形状另起一段：
+#: 诅咒段 5910101–5910199 的固有状态最多到 59100999，衰减段 5920001–5920999 落在 59200010–59209999，互不相交。
+UNIQUE_BASE = 59200000
+CURSE_UID = str(UNIQUE_BASE + (int(ID) - 5920000) * 10 + 1)       # 59200011「诅咒」
+CURSE_UNIQUE_NAME = "诅咒"
+#: R3 规则码：只拦「能力」类回槽（8；连击触发 24、施技触发 40 同样命中），来源不限。
+GAUGE_MASK = BR.gauge_mask(["ability"])
+#: 客户端 capability 门禁：R3 的 423 行在未装 equipment-rules 的客户端 = C7050（EA parseAt109 / 魂 parseAt106）。
+#: 基线 = 1047 客户端已有能力（与 client-patch/equipment-rules/rules.py INHERITED_CAPABILITIES 同步，测试互证）；
+#: 补丁 APK 再加 R1/R2 的 equipment-rules-v1 与 R3 的 equipment-gauge-gain-rules-v1（package_apk.py 写进 candidate_capabilities）。
+EQUIPMENT_RULES_CAP = "equipment-rules-v1"
+BASE_CLIENT_CAPABILITIES = frozenset({
+    "damage-type-rules-v1", "dash-parameter-v1", "gauge-gain-rules-v1", "kyubi-fever-ratio-v1",
+    "kyubi-panel-description-override-v1", "kyubi-pf-initial-combo-v1", "panel-description-override-v2",
+})
+PATCHED_CLIENT_CAPABILITIES = BASE_CLIENT_CAPABILITIES | {EQUIPMENT_RULES_CAP, S.EQUIPMENT_GAUGE_CAP}
+TAG_COLUMN = 5                                  # character 表 c5 = 角色标签列表（逗号分隔）
 PRE_MY_SELF = "3"                                # 前置 MySelf：自身属于角色组
 TAG_PREFIX = "tag_paradox_"
 ECHO_DIR = Path(__file__).resolve().parent / "assets/paradox/echo"
@@ -173,9 +201,46 @@ def hits_dsl(segments: int = 6) -> list:
                              "paradox_hits", cancelable=False))
 
 
+def _growth_pair(kind: str, target: str | None, total: float, base: float, **kw) -> list[Eff]:
+    """PARADOX 本体是满额（不走诅咒武器的 BASE_SCALE 弱化）。W.growth_pair 自 d63896fd 起按「设计值 × BASE_SCALE」
+    扣本体实际值，这里把本体实际值折回设计值，使成长 + 补足 = 终值 − 本体（与 live 1.4.1064 一致：攻击 1→119 成长到
+    +230%、120 级补足 +20%，加本体 550% = 800%）。"""
+    return W.growth_pair(kind, target, total, base / W.BASE_SCALE, **kw)
+
+
+def curse_unique_row() -> list[str]:
+    """「诅咒」：永续、1 层、坏状态、不可驱散、强制付与（短路自身 58 弱体无效）、阵亡不移除。"""
+    return W.unique_row(f"paradox_curse_{CURSE_UID}", CURSE_UNIQUE_NAME, W.ICON_CURSE, "99999999", "1", bad=True)
+
+
+def unique_ref_problems(table: str, row: list[str], unique_keys: set[str]) -> list[str]:
+    """词条行（含分档）引用的固有状态必须存在：461 付与看瞬发内容列、134 持有门控看持续触发列。
+    423 的同名列（unique_condition_id）装的是规则码，不是固有状态，不查。"""
+    refs = []
+    if row[W._col(table, "instant_content", "kind")] == "461":
+        refs.append(row[W._col(table, "instant_content", "unique_condition_id")])
+    if row[W._col(table, "during_trigger", "kind")] == W.DT_UNIQUE:
+        refs.append(row[W._col(table, "during_trigger", "unique_condition_id")])
+    return [f"固有状态 {u} 不存在" for u in refs if u not in unique_keys]
+
+
+def row_capabilities(table: str, row: list[str]) -> list[str]:
+    """该行在客户端不 C7050 所需的 capability = 构造运行时（L.required_client_capabilities）∪ 表解析器扩展
+    （S.patch_parser_capabilities，只看当前触发模式会解析的块）。wf_client_legality 尚未合并后者：装备两表的 423
+    它只报 1047 已有的 gauge-gain-rules-v1、漏掉 equipment-gauge-gain-rules-v1，这里补齐；接线后去重，结果不变。"""
+    blocks = wf_describe.layout(table)["blocks"]
+    mode_col = int(blocks["precondition1"]) - 1
+    mode = (row[mode_col] if mode_col < len(row) else "").strip()
+    needed = list(L.required_client_capabilities(table, row))
+    for capability in S.patch_parser_capabilities(table, row, blocks, L.TRIGGER_MODE_BLOCKS.get(mode, ())):
+        if capability not in needed:
+            needed.append(capability)
+    return needed
+
+
 def enhancement_abilities(n: int = 0) -> list[Eff]:
     """强化词条：1→119 成长 + 120 补足到终值；120 级再加直击 8 段、弹射连击 +15（合计 50）与诅咒。
-    n=1..3 为衰减分档：增益按比例缩放，诅咒三行原样（代价不随衰减减轻）。"""
+    n=1..3 为衰减分档：增益按比例缩放，诅咒四行原样（代价不随衰减减轻）。"""
     self_ = W.T_SELF
     r = TIERS[n] if n else 1.0
     chosen = (PRE_MY_SELF, {"character_groups": ",".join(tag for _, tag, _ in TAGS)})
@@ -185,8 +250,8 @@ def enhancement_abilities(n: int = 0) -> list[Eff]:
                                       ("723", self_, 20, 10), ("693", self_, 20, 10), ("694", self_, 20, 10),
                                       ("695", self_, 20, 10), ("696", None, 20, 10),
                                       ("35", self_, 30, 20), ("245", self_, 100, 50), ("717", self_, 150, 100)):
-        rows += W.growth_pair(kind, target, total * r, base * r)
-    rows += W.growth_pair("32", self_, 250 * r, 150 * r, pre=(chosen,))
+        rows += _growth_pair(kind, target, total * r, base * r)
+    rows += _growth_pair("32", self_, 250 * r, 150 * r, pre=(chosen,))
     final = dict(learn=120, maxlvl=120)
     combo = _half_up(15 * r)
     rows += [
@@ -195,12 +260,16 @@ def enhancement_abilities(n: int = 0) -> list[Eff]:
             note="120 级：每次弹射连击再 +15（合计 +50）"),
         Eff("0", W.stat("32", W.T_EXCEPT, -800), **final, note="【诅咒】自身以外的角色攻击力 -800%（引擎下限 -50%）"),
         Eff("0", W.stat("35", W.T_EXCEPT, -40), **final, note="【诅咒】自身以外的角色技能充能速度 -40%"),
+        # R3（equipment-rules）：开局刻「诅咒」→ 持有期间 423 拦掉自身以外角色的能力类回槽；新行只追加在末尾，已发布行的 slot 不动
+        Eff("0", W.unique(CURSE_UID), **final, note="【诅咒】120 级：开局给自身刻上「诅咒」（永续、不可驱散）"),
+        Eff("1", ("423", {"target": W.T_EXCEPT, "unique_condition_id": str(GAUGE_MASK)}), trig=W.gate_unique(CURSE_UID),
+            **final, note="【诅咒】自身持有「诅咒」时，自身以外的角色无法获得能力和装备的技能槽增加效果（423，规则码 8）"),
     ]
     return rows
 
 
 def description() -> str:
-    return FLAVOR
+    return f"{FLAVOR}{DECAY_RULE}"
 
 
 def retag(row: list[str], tag: str | None) -> list[str]:
@@ -211,12 +280,23 @@ def retag(row: list[str], tag: str | None) -> list[str]:
     return out
 
 
-def build(read: W.LiveReader, *, allow_existing: bool = False) -> dict[str, Any]:
-    """allow_existing=True 供补丁边同步暂存：自有键（5920001 / paradox_hits / tag_paradox_*）已在 live 时不算撞键。"""
+def build(read: W.LiveReader, *, allow_existing: bool = False,
+          client_capabilities: Iterable[str] = BASE_CLIENT_CAPABILITIES) -> dict[str, Any]:
+    """allow_existing=True 供补丁边同步暂存：自有键（5920001 / paradox_hits / tag_paradox_*）已在 live 时不算撞键。
+
+    client_capabilities = 接收这批数据的**全部**客户端共有的 capability。默认 1047 基线（未装 equipment-rules）：
+    R3 的 423 行（满档与三个分档各一行）报缺 equipment-gauge-gain-rules-v1 进 problems，暂存脚本的 problems == [] 断言即拦下；
+    确认所有接收端（含灰服、分享包）都装上补丁 APK 后才传 PATCHED_CLIENT_CAPABILITIES。输出 capabilities = 全部行的需求并集。"""
+    W._require(not isinstance(client_capabilities, str), "client_capabilities 须是 capability 名的集合，不是单个字符串")
+    have = frozenset(client_capabilities)
     flat: dict[str, dict[str, list[list[str]]]] = {t: {} for t in FLAT_TABLES}
     problems: list[str] = []
+    capabilities: list[str] = []
     text = description()
     W._require(len(text) <= W.DESC_LIMITS["equipment"] and "," not in text and "\n" not in text, "装备说明超长或含逗号/换行")
+    W._require(GAUGE_MASK == 8, f"R3 规则码应为 8（只拦能力类回槽），实际 {GAUGE_MASK}")
+    W._require(not W.UNIQUE_BASE <= int(CURSE_UID) < W.UNIQUE_BASE + 1000, f"「诅咒」固有状态 {CURSE_UID} 落进诅咒武器段")
+    flat[UNIQUE][CURSE_UID] = [curse_unique_row()]
 
     row = W._template(read, ITEM, "8000101", 23)
     row[0], row[1], row[2], row[3] = f"mod_{SLUG}_{ID}", ID, f"{NAME}魂珠", ICON
@@ -250,10 +330,17 @@ def build(read: W.LiveReader, *, allow_existing: bool = False) -> dict[str, Any]
             for index, r in enumerate(rows):
                 problems += [f"{table}[{tid}]#{index}: {p}" for p in L.client_legality_problems(table, r)]
     cas_keys = set(read.flat(CAS)) | set(flat[CAS])
+    unique_keys = set(read.flat(UNIQUE)) | set(flat[UNIQUE])
     for table, logical in ((W.SOUL_T, SOUL), (W.EA_T, EA)):
         for key, rows in flat[logical].items():
             for index, r in enumerate(rows):
                 problems += [f"{table}[{key}]#{index}: {p}" for p in L.invoke_skill_string_problems(r, cas_keys, table)]
+                problems += [f"{table}[{key}]#{index}: {p}" for p in unique_ref_problems(table, r, unique_keys)]
+                # capability 门禁：legality 放行装备表 423 后，只有这里挡住它流向未打补丁的客户端
+                needed = row_capabilities(table, r)
+                capabilities += [c for c in needed if c not in capabilities]
+                problems += [f"{table}[{key}]#{index}: 目标客户端缺 capability {c}（未打补丁读到即 C7050）"
+                             for c in needed if c not in have]
 
     # 强化：名/图/描述 120 级切换；强化 status 照诅咒武器；商店 6 阶挂诅咒武器类目 6、五重材料
     W._require(len(ENH_DESCRIPTION) <= W.DESC_LIMITS["enhancement"] and "," not in ENH_DESCRIPTION, "强化说明超长或含逗号")
@@ -293,7 +380,7 @@ def build(read: W.LiveReader, *, allow_existing: bool = False) -> dict[str, Any]
             problems += [f"DSL {program}: {p}" for p in check(tree)]
 
     if not allow_existing:
-        for logical in (ITEM, EQUIPMENT, SOUL, ENH, EA, ENH_SHOP, CAS, CHARACTER_TAG):
+        for logical in (ITEM, EQUIPMENT, SOUL, ENH, EA, ENH_SHOP, UNIQUE, CAS, CHARACTER_TAG):
             clash = sorted(set(flat[logical]) & set(read.flat(logical)))
             W._require(not clash, f"{logical} 键已存在：{clash}")
         for logical in (EQUIPMENT_STATUS, ENH_STATUS):
@@ -306,6 +393,7 @@ def build(read: W.LiveReader, *, allow_existing: bool = False) -> dict[str, Any]
         "server": _server_delta(flat),
         "delete": delete,
         "problems": problems,
+        "capabilities": sorted(capabilities),
         "abilities": effs,
         "enhancement": enh,
     }
