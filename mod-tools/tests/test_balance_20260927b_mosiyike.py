@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'mod-tools'))
 sys.setrecursionlimit(10000)
 import wf_balance_20260927b_mosiyike as B
+import wf_balance_20260927b_gray3 as G3
 import wf_dsl
 from wf_character_revision import encode_tree
 from wf_midautumn_kit_hibiki import dsl_problems as kit_dsl_problems
@@ -244,7 +245,10 @@ class MosiyikeBatch2Test(unittest.TestCase):
 
         if meta['snapshot'].get('revision_20260927b') is not None:
             # 主会话暂存回写之后：候选 PF 树 = 本模块输出，Lv1 不变。
-            self.assertEqual(B.PACKAGE_VERSION[B.PACKAGES[0]], meta['package_version'])
+            # 作者 09-27 用灰服版替换本角色（wf_balance_20260927b_gray3，同一 snapshot 键）会把候选再升一版；
+            # 本模块改的树不在灰服压缩包里，候选里仍是本模块输出。
+            self.assertIn(meta['package_version'],
+                          {B.PACKAGE_VERSION[B.PACKAGES[0]], G3.SPECS['149997']['version']['mosiyike']})
             for program, tree in self.out['dsl'].items():
                 self.assertEqual(json.dumps(tree), json.dumps(tree_in_candidate(program)), program)
             self.assertEqual(json.dumps(self.tree(PF1)), json.dumps(tree_in_candidate(PF1)))

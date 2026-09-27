@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'mod-tools'))
 sys.setrecursionlimit(10000)
 import wf_balance_20260927b_siete as B
+import wf_balance_20260927b_gray3 as G3
 import wf_client_legality as legality
 import wf_dsl
 from wf_character_revision import encode_tree
@@ -253,7 +254,10 @@ class SieteBatch2Test(unittest.TestCase):
         logical = wf_dsl.dsl_logical(ECHO)
         in_candidate = wf_dsl.parse_dsl(zlib.decompress(candidate.read('common', logical), -15))['tree']
         if meta['snapshot'].get('revision_20260927b') is not None:
-            self.assertEqual(B.PACKAGE_VERSION[B.PACKAGES[0]], meta['package_version'])
+            # 作者 09-27 用灰服版替换本角色（wf_balance_20260927b_gray3，同一 snapshot 键）会把候选再升一版；
+            # 本模块改的树不在灰服压缩包里，候选里仍是本模块输出。
+            self.assertIn(meta['package_version'],
+                          {B.PACKAGE_VERSION[B.PACKAGES[0]], G3.SPECS['149995']['version']['seofon_wind']})
             self.assertEqual(json.dumps(self.out['dsl'][ECHO]), json.dumps(in_candidate))
             return
         self.assertLess(tuple(map(int, meta['package_version'].split('.'))),
