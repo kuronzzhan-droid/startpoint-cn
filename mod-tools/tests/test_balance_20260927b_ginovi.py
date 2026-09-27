@@ -114,6 +114,28 @@ def load_generator():
     return module
 
 
+C_FIXTURE = Path(__file__).parent / "fixtures/balance_20260927c_ginovi.json"
+
+
+def batch3_output(out: dict) -> dict:
+    """第三轮（``wf_balance_20260927c_ginovi``，成长复核）在第二批输出上继续改的结果（b → c 链；c fixture ==
+    第二批输出，见 c 测试）：被第三轮改写的键换成第三轮输出，其余原样。"""
+    import wf_balance_20260927c_ginovi as C
+    data = {k: v for k, v in json.loads(C_FIXTURE.read_text(encoding="utf-8")).items() if not k.startswith("_")}
+    c_out = C.revise(lambda kind, key: data[kind][key])
+    merged = deepcopy(out)
+    for kind, table in c_out.items():
+        if kind != "notes" and isinstance(table, dict):
+            merged.setdefault(kind, {}).update(deepcopy(table))
+    return merged
+
+
+def generator_target(gen, out: dict) -> dict:
+    """生成器当前应等于的输出：第三轮已把 PIERCING_BUFF 推进到 c 值时 = 第二批输出 + 第三轮覆盖
+    （b → c 两种状态都接受；逐格断言由 c 测试接管）。"""
+    return out if gen.PIERCING_BUFF == M.NEW_TICK else batch3_output(out)
+
+
 class ReviseTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -393,7 +415,8 @@ class GeneratorTests(unittest.TestCase):
 
     def test_generator_constants_equal_revise_output(self):
         gen = self.gen
-        self.assertEqual(gen.PIERCING_BUFF, M.NEW_TICK)
+        target = generator_target(gen, self.out)["leader"][M.LEADER]
+        self.assertEqual({gen.PIERCING_BUFF}, {target[i][c] for i in M.PIERCING_ROWS for c in M.TICK_COLS})
         self.assertEqual(gen.PIERCING_TICK_FRAMES, M.TICK_FRAMES)
         self.assertEqual(gen.PIERCING_STACK_LIMIT, "(None)")
         self.assertEqual(gen.SKILL_AURA_DETOUGHNESS, M.SKILL_SPEC[2])
@@ -403,7 +426,7 @@ class GeneratorTests(unittest.TestCase):
 
     def test_generator_panel_equals_revise_output(self):
         text = "\n".join(self.gen.DESC_OVERRIDE_LINES[M.CAS_LEADER])
-        self.assertEqual([[text]], self.out["cas"][M.CAS_LEADER])
+        self.assertEqual([[text]], generator_target(self.gen, self.out)["cas"][M.CAS_LEADER])
 
     def test_generator_dsl_bodies_equal_revise_output(self):
         gen, dsl = self.gen, self.out["dsl"]
@@ -427,7 +450,7 @@ class GeneratorTests(unittest.TestCase):
             result = gen.write_m3_leader_rows()
         self.assertEqual(write_table.call_count, 1)
         self.assertEqual(Path(write_table.call_args[0][1]), Path(gen.SHADOW_STORE))
-        rows, want = result["rows"], self.out["leader"][M.LEADER]
+        rows, want = result["rows"], generator_target(gen, self.out)["leader"][M.LEADER]
         self.assertEqual(len(rows), len(want))
         for index in range(5, 11):            # 疾走 / 贯穿×3（本批）/ 开局技能槽 / 死印乘区
             self.assertEqual(rows[index], want[index], index)
@@ -465,13 +488,14 @@ class CandidateTests(unittest.TestCase):
         current = tuple(map(int, data["package_version"].split(".")))
         candidate = RevisionCandidate(ROOT, WORKSPACE, **kwargs)
         if data.get("snapshot", {}).get("revision_20260927b") is not None:
-            # 主会话暂存回写后：候选 = live + 本修订。
-            self.assertEqual(version, current)
+            # 主会话暂存回写后：候选 = live + 本修订（第三轮回写后 = 再加第三轮覆盖，版本号只升不降）。
+            self.assertLessEqual(version, current)
             import wf_share_update_codec as X
+            later = batch3_output(out)
             leader = X.unpack(candidate.read("common", "master/ability/leader_ability.orderedmap"))
-            self.assertEqual(X.csv_read(leader[M.LEADER]), out["leader"][M.LEADER])
+            self.assertIn(X.csv_read(leader[M.LEADER]), (out["leader"][M.LEADER], later["leader"][M.LEADER]))
             cas = X.unpack(candidate.read("common", "master/string/custom_ability_string.orderedmap"))
-            self.assertEqual(X.csv_read(cas[M.CAS_LEADER]), out["cas"][M.CAS_LEADER])
+            self.assertIn(X.csv_read(cas[M.CAS_LEADER]), (out["cas"][M.CAS_LEADER], later["cas"][M.CAS_LEADER]))
             for program, tree in out["dsl"].items():
                 raw = candidate.read("common", wf_dsl.dsl_logical(program))
                 self.assertEqual(wf_dsl.parse_dsl(zlib.decompress(raw, -15))["tree"], tree, program)
