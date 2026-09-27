@@ -36,6 +36,8 @@
 - **2026-09-27 平衡第二批**（``wf_balance_20260927b_philia``）：行在 stock / nofly 之后先补 0917 的
   ``wf_seasonal_pf_revision``（能力 3 +2 行），再叠无上限成长修订（队长 6→8 行、能力 3 三行有上限）；
   技能树剑雨 p13 2.5→1、PF 随机选项风刃/剑雨 p13→0。
+- **2026-09-27 平衡第三轮**（``wf_balance_20260927c_philia``）：接在第二批 ``growth_rows`` 之后，队长四条成长
+  c49/c50 回调（每次 PF 光队攻 2.5→20%、自身 PF 伤 7→40%、施放光队攻 20→80%、每 5 次 PF 自身攻 10→35%）。
 - kit-report：离线门禁（``impl/philia/run_gates.py`` → ``impl/philia/gates.json``）全过、且其
   ``kit_digest`` 与本次产物摘要一致时写 ``ready-for-review``，否则 ``draft``。
 """
@@ -1872,15 +1874,18 @@ def build(ctx) -> dict[str, Any]:
     # 2026-09-17 PF 修订（``wf_seasonal_pf_revision``：能力 3 追加「每 5 次 PF → 队长攻击力 / 自身 PF 伤害」
     # 两行；原为 kit 重建后手动再套的一次性候选，不补就少两行）→ 2026-09-27 平衡第二批
     # （``wf_balance_20260927b_philia``：队长每次 PF 成长 1/10、施放 / 每 5 次 PF 两行搬入队长 1/5，能力 3
-    # 三行换成有上限的弱化版）。两者都只接受上一步的精确形态，kit 重跑产物 == 暂存候选。
+    # 三行换成有上限的弱化版）→ 2026-09-27 平衡第三轮（``wf_balance_20260927c_philia``：队长四条成长回调到
+    # 原值 2/3–4/5）。三者都只接受上一步的精确形态，kit 重跑产物 == 暂存候选。
     import wf_seasonal_pf_revision as pf_revision
     import wf_balance_20260927b_philia as balance_b
+    import wf_balance_20260927c_philia as balance_c
     try:
         ability_rows[spec.cid_s+'3'] = pf_revision.revise_rows('philia', ability_rows[spec.cid_s+'3'])
         leader_rows, ability_rows[spec.cid_s+'3'] = balance_b.growth_rows(
             leader_rows, ability_rows[spec.cid_s+'3'])
+        leader_rows = balance_c.growth_rows(leader_rows)
     except ValueError as exc:
-        raise KitError(f"0917 PF revision / balance 20260927b rows: {exc}") from exc
+        raise KitError(f"0917 PF revision / balance 20260927b/c rows: {exc}") from exc
     _write_checked_flat(ctx, stock.UNIQUE, {str(stock.UID): stock.unique_row()})
     stock_icon = ctx.workspace/'source/wind-stock-icon.png'
     # The revision candidate owns the generated source; rebuilds must not redraw it.
@@ -2114,6 +2119,8 @@ def build(ctx) -> dict[str, Any]:
         "（并入每 5 次 PF 行），新增施放→光队攻 20%、每 5 次 PF→自身攻 10%；能力 3 施放/每 5 次 PF 两行"
         "最多 8 次、每 5 次 PF 伤害行改为持有「风刃余势」期间 PF 伤害 +50%；技能单体削韧 57.5→27.5、"
         "PF 43.75/48.75/53.75→15/20/25。未经真机验收",
+        "2026-09-27 平衡第三轮（wf_balance_20260927c_philia）：队长每次 PF 光队攻 2.5→20%、自身 PF 伤 7→40%、"
+        "施放→光队攻 20→80%、每 5 次 PF→自身攻 10→35%；能力 3 封顶版不动。未经真机验收",
         "静态门禁通过不等于真机验收；金丝雀清单见 design/philia.md §10 + revision-20260916/philia/verify.md",
         f"status={status}：{reason}",
     ]
