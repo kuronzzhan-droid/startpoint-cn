@@ -42,7 +42,6 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
-import wf_battle_rules as BR
 import wf_client_legality as L
 import wf_client_patch_scope as S
 import wf_cursed_weapons as W
@@ -79,16 +78,13 @@ UNIQUE_BASE = 59200000
 CURSE_UID = str(UNIQUE_BASE + (int(ID) - 5920000) * 10 + 1)       # 59200011「诅咒」
 CURSE_UNIQUE_NAME = "诅咒"
 #: R3 规则码：只拦「能力」类回槽（8；连击触发 24、施技触发 40 同样命中），来源不限。
-GAUGE_MASK = BR.gauge_mask(["ability"])
+GAUGE_MASK = W.GAUGE_MASK
 #: 客户端 capability 门禁：R3 的 423 行在未装 equipment-rules 的客户端 = C7050（EA parseAt109 / 魂 parseAt106）。
 #: 基线 = 1047 客户端已有能力（与 client-patch/equipment-rules/rules.py INHERITED_CAPABILITIES 同步，测试互证）；
 #: 补丁 APK 再加 R1/R2 的 equipment-rules-v1 与 R3 的 equipment-gauge-gain-rules-v1（package_apk.py 写进 candidate_capabilities）。
-EQUIPMENT_RULES_CAP = "equipment-rules-v1"
-BASE_CLIENT_CAPABILITIES = frozenset({
-    "damage-type-rules-v1", "dash-parameter-v1", "gauge-gain-rules-v1", "kyubi-fever-ratio-v1",
-    "kyubi-panel-description-override-v1", "kyubi-pf-initial-combo-v1", "panel-description-override-v2",
-})
-PATCHED_CLIENT_CAPABILITIES = BASE_CLIENT_CAPABILITIES | {EQUIPMENT_RULES_CAP, S.EQUIPMENT_GAUGE_CAP}
+EQUIPMENT_RULES_CAP = W.EQUIPMENT_RULES_CAP
+BASE_CLIENT_CAPABILITIES = W.BASE_CLIENT_CAPABILITIES
+PATCHED_CLIENT_CAPABILITIES = W.PATCHED_CLIENT_CAPABILITIES
 TAG_COLUMN = 5                                  # character 表 c5 = 角色标签列表（逗号分隔）
 PRE_MY_SELF = "3"                                # 前置 MySelf：自身属于角色组
 TAG_PREFIX = "tag_paradox_"

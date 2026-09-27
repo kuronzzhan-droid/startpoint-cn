@@ -29,7 +29,8 @@
    string_id 必须写进 custom_ability_string（缺键 C8601）。DSL 不带任何特效路径（杜绝 C8016）。
 4. 玩家侧 DSL 的 CreateWindAttack / CreateGravitationalField / CreateFlood 在 MemberImpl 直接 throw ⇒ 风场推人、重力、
    淹水物理做不了（第 12、15 条按偏差记录）。
-5. 装备表没有「能力/被动回槽禁止」解析（423 GaugeGainRestriction 只有 ability 解析器认）⇒ 第 13 条该半句按偏差记录。
+5. 「能力/被动回槽禁止」= 持续 423 GaugeGainRestriction：装备两表的解析只有客户端补丁 equipment-rules 认（1047 读到 C7050），
+   ``build`` 按 ``client_capabilities`` 拦截（默认 1047 基线），本机已装补丁时显式传 ``PATCHED_CLIENT_CAPABILITIES``。
 6. 带 mul 的 CreateCondition 必须带非空唯一键串（基诺维吞噬同款坑）。
 
 接口：:func:`build` 只经 ``read`` 读 live（见 :class:`LiveReader`），返回全部新增内容；不写盘、不发布、不 git。
@@ -43,7 +44,9 @@ import re
 from dataclasses import dataclass, field, replace
 from typing import Any, Callable, Iterable
 
+import wf_battle_rules as BR
 import wf_client_legality as L
+import wf_client_patch_scope as SCOPE
 import wf_describe as D
 import wf_balance_20260927d_ginovi as GINOVI
 
@@ -111,6 +114,17 @@ EQUIPMENT_STATUS_ROWS = {"1": "330,148", "5": "495,221"}
 ENH_STATUS_ROWS = {"98": "0,0", "99": "50,10", "120": "50,10"}
 
 INF_FRAMES = "9.999999E11"             # 「永续」帧（×100000），照 cnmod_boss_limit 实机在役写法
+
+#: 回槽限制规则码：只拦「能力」类回槽（角色/队长/武器/魂珠/EX 的能力加槽，含连击与施技触发；来源不限）。
+GAUGE_MASK = BR.gauge_mask(["ability"])
+#: 客户端 capability 门禁。基线 = 1047 客户端已有能力（与 client-patch/equipment-rules/rules.py INHERITED_CAPABILITIES
+#: 同步，PARADOX 测试互证）；equipment-rules 补丁 APK 再加 R1/R2 的 equipment-rules-v1 与 R3 的 equipment-gauge-gain-rules-v1。
+EQUIPMENT_RULES_CAP = "equipment-rules-v1"
+BASE_CLIENT_CAPABILITIES = frozenset({
+    "damage-type-rules-v1", "dash-parameter-v1", "gauge-gain-rules-v1", "kyubi-fever-ratio-v1",
+    "kyubi-panel-description-override-v1", "kyubi-pf-initial-combo-v1", "panel-description-override-v2",
+})
+PATCHED_CLIENT_CAPABILITIES = BASE_CLIENT_CAPABILITIES | {EQUIPMENT_RULES_CAP, SCOPE.EQUIPMENT_GAUGE_CAP}
 
 # 目标 / 来源 枚举
 T_SELF, T_EXCEPT, T_LEADER, T_SECOND, T_THIRD, T_PARTY, T_TRIGGER, T_MULTIBALL = "0", "1", "2", "3", "4", "5", "7", "8"
@@ -1034,6 +1048,8 @@ def w13() -> Weapon:
     w.dsl[drain] = dsl_root(party(0, C("SubtractSkillPoint", 0, P(2.0))))
     w.cas["cursed_flute_drain"] = "清空全队技能槽"
     full = trig(IT_SKILL_MAX, trigger_puller=P_ONE_OF_PARTY, cooltime="1200")
+    u_seal = w.uid(1)
+    w.uniques[u_seal] = unique_row(f"cursed_flute_{u_seal}", "封能", ICON_CURSE, "99999999", "1", bad=True)
     w.soul = [Eff("0", stat("35", T_PARTY, 15, 30), pre=wind, note="风属性共鸣时：全队技能充能速度 +15%→30%")]
     w.ea = [
         *growth_pair("35", T_PARTY, 100, 30, pre=wind),
@@ -1043,8 +1059,13 @@ def w13() -> Weapon:
             **FINAL, note="角色技能槽满时，该角色攻击力 +500%（20 秒，每人各自 CT20 秒）"),
         Eff("0", condition("1", T_TRIGGER, 500, 1200, by_each_trigger_puller="true"), trig=full, pre=wind,
             **FINAL, note="角色技能槽满时，该角色技能伤害 +500%（20 秒，每人各自 CT20 秒）"),
+        Eff("0", unique(u_seal), pre=wind, **CURSE, note="开局给自身刻上「封能」（永续、不可驱散）"),
+        Eff("1", ("423", {"target": T_PARTY, "unique_condition_id": str(GAUGE_MASK)}), trig=gate_unique(u_seal),
+            pre=wind, even_if_dead=True, **CURSE,
+            note="【诅咒】持有「封能」时全队无法因能力和装备获得技能槽（423，规则码 8；持有者阵亡后仍生效）"),
     ]
-    w.deviations.append("「无法因能力和被动得到充能」：回槽来源筛选（423）只有角色词条解析器认，写进装备表会崩，未实现；"
+    w.deviations.append("「无法因能力和被动得到充能」按回槽来源限制（423，规则码 8）实现：拦下能力/装备带来的加槽，"
+                        "技能自身回槽、移动跑条与开局槽不受影响；需要 equipment-rules 客户端补丁（未装读到 C7050）。"
                         "充能速度 +100% 受引擎充能上限约束")
     return w
 
@@ -1563,7 +1584,17 @@ def _cost_cells(costs: Iterable[tuple[str, int]]) -> list[str]:
     return cells
 
 
-def build(read: LiveReader) -> dict[str, Any]:
+def row_capabilities(table: str, row: list[str]) -> list[str]:
+    """该行在客户端不 C7050 所需的 capability（wf_client_legality 已合并运行时与表解析器扩展两部分）。"""
+    return list(L.required_client_capabilities(table, row))
+
+
+def build(read: LiveReader, *, client_capabilities: Iterable[str] = BASE_CLIENT_CAPABILITIES) -> dict[str, Any]:
+    """client_capabilities = 接收这批数据的**全部**客户端共有的 capability；默认 1047 基线，
+    装备表 423 行（封能风笛）会作为缺 equipment-gauge-gain-rules-v1 进 problems。"""
+    _require(not isinstance(client_capabilities, str), "client_capabilities 须是 capability 名的集合，不是单个字符串")
+    have = frozenset(client_capabilities)
+    capabilities: list[str] = []
     ws = weapons()
     flat: dict[str, dict[str, list[list[str]]]] = {t: {} for t in FLAT_TABLES}
     nested: dict[str, dict[str, dict]] = {t: {} for t in NESTED_TABLES}
@@ -1600,6 +1631,10 @@ def build(read: LiveReader) -> dict[str, Any]:
             for index, r in enumerate(rows):
                 for p in L.client_legality_problems(table, r):
                     problems.append(f"{w.row:02d} {w.name} {table}#{index}: {p}")
+                needed = row_capabilities(table, r)
+                capabilities += [c for c in needed if c not in capabilities]
+                problems += [f"{w.row:02d} {w.name} {table}#{index}: 目标客户端缺 capability {c}（未打补丁读到即 C7050）"
+                             for c in needed if c not in have]
         flat[SOUL][wid] = soul_rows
         flat[EA][wid] = ea_rows
         # equipment_enhancement：名/图/描述/发光全部 120 级（最终形态）才切换
@@ -1657,7 +1692,7 @@ def build(read: LiveReader) -> dict[str, Any]:
     _check_collisions(read, flat, nested)
     return {
         "flat": flat, "nested": nested, "dsl": dsl, "server": _server_delta(read, ws, flat),
-        "problems": problems, "weapons": ws,
+        "problems": problems, "weapons": ws, "capabilities": capabilities,
     }
 
 

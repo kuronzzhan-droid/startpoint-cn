@@ -72,7 +72,8 @@ def _dsl_is_curse(tree) -> bool:
 class CursedWeaponTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.out = W.build(fixture_reader())
+        # 本机已装 equipment-rules 补丁（封能风笛的装备表 423 行需要它）；默认 1047 基线的拦截见 test_capability_gate
+        cls.out = W.build(fixture_reader(), client_capabilities=W.PATCHED_CLIENT_CAPABILITIES)
         cls.ws = cls.out["weapons"]
 
     def test_no_legality_or_dsl_problems(self):
@@ -281,8 +282,33 @@ class CursedWeaponTests(unittest.TestCase):
                         if r[col] not in ("", "(None)"):
                             self.assertIn(r[col], uniques, (block, r[col]))
 
+    def test_capability_gate(self):
+        # 默认目标 = 1047 基线：只有封能风笛的 423 行缺 equipment-gauge-gain-rules-v1；声明补丁后放行
+        default = W.build(fixture_reader())["problems"]
+        self.assertEqual(len(default), 1)
+        self.assertTrue(default[0].startswith("13 封能风笛 equipment_enhancement_ability#"), default)
+        self.assertIn("equipment-gauge-gain-rules-v1", default[0])
+        self.assertEqual(self.out["capabilities"], ["gauge-gain-rules-v1", "equipment-gauge-gain-rules-v1"])
+        with self.assertRaises(W.CursedWeaponError):
+            W.build(fixture_reader(), client_capabilities="equipment-gauge-gain-rules-v1")
+
+    def test_flute_seals_ability_gauge_gain(self):
+        # 作者 0928「补」：封能风笛「无法因能力和被动得到充能」= 全队 423 规则码 8，强化 1 级起、持有者阵亡后仍生效
+        w13 = next(w for w in self.ws if w.row == 13)
+        rows = self.out["flat"][W.EA][w13.id]
+        seal = [r for r in rows if _kind(W.EA_T, r) == "423"]
+        self.assertEqual(len(seal), 1)
+        r = seal[0]
+        self.assertEqual((r[1], r[2]), ("1", "120"))
+        self.assertEqual(r[_col(W.EA_T, "during_content", "target")], W.T_PARTY)
+        self.assertEqual(r[_col(W.EA_T, "during_content", "unique_condition_id")], "8")
+        self.assertEqual(r[_col(W.EA_T, "even_if_owner_dead", "even_if_owner_dead")], "true")
+        uid = r[_col(W.EA_T, "during_trigger", "unique_condition_id")]
+        self.assertEqual(uid, w13.uid(1))
+        self.assertEqual(self.out["flat"][W.UNIQUE][uid][0][1], "封能")
+
     def test_deterministic(self):
-        again = W.build(fixture_reader())
+        again = W.build(fixture_reader(), client_capabilities=W.PATCHED_CLIENT_CAPABILITIES)
         self.assertEqual(again["flat"], self.out["flat"])
         self.assertEqual(again["dsl"], self.out["dsl"])
         self.assertEqual(again["server"], self.out["server"])
