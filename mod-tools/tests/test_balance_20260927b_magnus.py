@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import wf_balance_20260927b_magnus as M  # noqa: E402
+import wf_balance_20260927c_magnus as MC  # noqa: E402
 import wf_client_legality as L  # noqa: E402
 import wf_describe  # noqa: E402
 import wf_dsl  # noqa: E402
@@ -58,6 +59,12 @@ def nonempty(row) -> dict[int, str]:
 
 def changed_cells(old, new) -> dict[int, tuple[str, str]]:
     return {col: (a, b) for col, (a, b) in enumerate(zip(old, new)) if a != b}
+
+
+#: 第三轮（wf_balance_20260927c_magnus）接管的键：队长成长 6 行强度、能力 1 末尾旗号 2 行、队长 / 槽 1 / 槽 2 面板
+#: （槽 2 = 面板合并轮删共鸣前缀）、6 棵 DSL。这些键的「生成器 == 修订输出」「候选 == 修订输出」由 test_balance_20260927c_magnus 断言。
+C_TAKEN_CAS = {MC.CAS_LEADER, MC.CAS_SLOT1, MC.CAS_SLOT2}
+C_TAKEN_LEADER_CELLS = {index: set(cols) for index, (cols, *_rest) in MC.LEADER_GROWTH.items()}
 
 
 def tree_diff(a, b, path=()):
@@ -496,16 +503,22 @@ class GeneratorSyncTests(unittest.TestCase):
         cls.out = M.revise(reader(deepcopy(cls.live)))
 
     def test_panel_constants_equal_revise_output(self):
+        # 第三轮（wf_balance_20260927c_magnus）改了队长 / 槽 1 面板：这两键的一致性移交 c 测试。
         for key, rows in self.out["cas"].items():
+            if key in C_TAKEN_CAS:
+                continue
             self.assertEqual([[K.CAS_TEXTS[key]]], rows, key)
 
     def test_plan_constants_carry_the_batch2_values(self):
         self.assertEqual(len(K.LEADER), 13)
+        # 第三轮（wf_balance_20260927c_magnus）回调了队长 #1/#2/#9–#12 的强度：生成器现值 = 第三轮值
+        # （与 revise() 一致由 c 测试断言）；行形状、donor、描述结构仍是第二批的，只差末尾百分数。
         self.assertEqual([(K.LEADER[i][2][49], K.LEADER[i][2][50]) for i in (1, 2)],
-                         [("20000", "20000"), ("10000", "10000")])
+                         [(MC.LEADER_GROWTH[i][3],) * 2 for i in (1, 2)])
         self.assertEqual([item[0] for item in K.LEADER[9:]],
                          ["111183#1", "161063#3", "161063#2", "161123#0"])
-        self.assertEqual([item[3] for item in K.LEADER[9:]], list(NEW_LEADER_DESCRIBE))
+        self.assertEqual([item[3].rsplit(" ", 1)[0] for item in K.LEADER[9:]],
+                         [text.rsplit(" ", 1)[0] for text in NEW_LEADER_DESCRIBE])
         self.assertEqual(K.PLAN[1][2][2][34], "4")
         self.assertEqual([(c[102], c[113]) for _d, _s, c, _e in K.PLAN[2]], [("10", "15000")] * 2)
         self.assertEqual((K.PLAN[3][4][2][102], K.PLAN[3][4][2][113]), ("10", "1000"))
@@ -535,15 +548,24 @@ class GeneratorSyncTests(unittest.TestCase):
     def test_generator_rows_equal_revise_output(self):
         from test_midautumn_kit_magnus import _ReadOnlyCtx
         built = K.build_rows(_ReadOnlyCtx())
-        self.assertEqual(built["leader"], self.out["leader"][M.CID])
+        # 第三轮（wf_balance_20260927c_magnus）只改了队长成长 6 行的强度两列、在能力 1 末尾追加旗号 2 行：
+        # 这些格移交 c 测试，其余格仍 == 第二批输出。
+        self.assertEqual(len(built["leader"]), len(self.out["leader"][M.CID]))
+        for index, (got, want) in enumerate(zip(built["leader"], self.out["leader"][M.CID])):
+            taken = C_TAKEN_LEADER_CELLS.get(index, set())
+            self.assertEqual([v for c, v in enumerate(got) if c not in taken],
+                             [v for c, v in enumerate(want) if c not in taken], f"leader#{index}")
         for key, rows in self.out["ability"].items():
-            self.assertEqual(built["ability"][key], rows, key)
+            self.assertEqual(built["ability"][key][:len(rows)], rows, key)
+            self.assertEqual(len(built["ability"][key]), len(rows) + (key == MC.A1), key)
         for key in (f"{M.CID}4", f"{M.CID}5", f"{M.CID}6"):
             self.assertNotIn(key, self.out["ability"])
         self.assertEqual(sorted(built["capabilities"]), ["dash-parameter-v1"])
 
     @unittest.skipUnless(_LIVE, "需要 .cdn/cn 官方基线与 live store")
     def test_generator_trees_equal_revise_output(self):
+        # 第三轮（wf_balance_20260927c_magnus）后这些是封顶 10 层的中间树（= 旗号 2 关支）；最终落盘树
+        # （K.build_skill_trees：技能/追击包进旗号 2 分支、特殊 PF 三档上限 99）== c 输出由 c 测试断言。
         from test_midautumn_kit_magnus import _ReadOnlyCtx, _stub_families
         ctx, families = _ReadOnlyCtx(), _stub_families()
         built = {M.PROGRAMS[int(level) - 1]: K.build_main_tree(ctx, level, families)[0]
@@ -611,18 +633,28 @@ class CandidateTests(unittest.TestCase):
                                           "cas": live["cas"], "dsl": live["dsl"]}
         version = tuple(int(x) for x in current["package_version"].split("."))
         target = tuple(int(x) for x in M.PACKAGE_VERSION[M.PACKAGES[0]].split("."))
-        if written_back:
+        # 第三轮（wf_balance_20260927c_magnus）回写后版本再升一档；它改过的键（队长、能力 1、队长 / 槽 1 面板、
+        # 6 棵 DSL）由 c 的 CandidateTests 断言，这里只核对第二批改过而第三轮没动的键。
+        c_applied = version >= tuple(int(x) for x in MC.PACKAGE_VERSION[MC.PACKAGES[0]].split("."))
+        if written_back and c_applied:
+            self.assertGreater(version, target)
+        elif written_back:
             self.assertEqual(version, target)
         else:
             self.assertLess(version, target)
+        c_taken = {("leader", MC.CID), ("ability", MC.A1), *(("cas", key) for key in C_TAKEN_CAS)}
         tables = {"leader": "master/ability/leader_ability.orderedmap",
                   "ability": "master/ability/ability.orderedmap",
                   "cas": "master/string/custom_ability_string.orderedmap"}
         for kind, logical in tables.items():
             rows = X.unpack(candidate.read("common", logical))
             for key, value in want[kind].items():
+                if c_applied and (kind, key) in c_taken:
+                    continue
                 self.assertEqual(X.csv_read(rows[key]), value, f"{kind}:{key}")
         for program, tree in want["dsl"].items():
+            if c_applied:
+                continue
             raw = candidate.read("common", wf_dsl.dsl_logical(program))
             self.assertEqual(wf_dsl.parse_dsl(zlib.decompress(raw, -15))["tree"], tree, program)
         self.assertEqual(before, manifest.read_bytes())
@@ -634,6 +666,10 @@ class MirrorTests(unittest.TestCase):
     def setUp(self):
         if not all(path.is_file() for path in self.PATHS):
             self.skipTest("midautumn design mirrors missing")
+        # 第三轮（wf_balance_20260927c_magnus）在能力 1 末尾追加了旗号 2 行、新增面板串：生成器已越过第二批，
+        # 本模块的 mirror_updates 按第二批记录数重算会拒绝 ⇒ 镜像同步移交 c（test_balance_20260927c_magnus.MirrorTests）。
+        if K.SWITCH_LEADER_STRING in K.CAS_TEXTS:
+            self.skipTest("第三轮 c 接管设计镜像同步（wf_balance_20260927c_magnus.sync_mirrors）")
         self.docs = [json.loads(path.read_text(encoding="utf-8")) for path in self.PATHS]
 
     def test_mirrors_are_already_synced(self):

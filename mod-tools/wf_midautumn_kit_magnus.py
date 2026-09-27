@@ -50,6 +50,9 @@ SPECIAL_SHA = {
 
 CHASE_STRING = f"ability_skill_{CODE}_ignite"
 SWITCH_STRING = f"change_skill_{CODE}"
+# 2026-09-27 第三轮（wf_balance_20260927c_magnus，口径 U2/U6）：旗号 2（704）开关行的面板串。
+# 键名必须以 change_skill_<code> 开头（RevisionCandidate / stage_batch.splice 命名空间）。
+SWITCH_LEADER_STRING = f"change_skill_{CODE}_leader"
 PF_STRING = f"override_string_{CODE}_pf"
 LEADER_OVERRIDE = f"desc_override_{CODE}"
 SLOT_OVERRIDE_SLOTS = (1, 2, 3, 5)
@@ -133,7 +136,7 @@ SPEC = {
     "required_capabilities": ("dash-parameter-v1", "panel-description-override-v2"),
     "extra_keys": {
         MS.UNIQUE_CONDITION_LOGICAL: (UID, UID_AURA),
-        KL.CAS: (CHASE_STRING, SWITCH_STRING, PF_STRING, LEADER_OVERRIDE,
+        KL.CAS: (CHASE_STRING, SWITCH_STRING, SWITCH_LEADER_STRING, PF_STRING, LEADER_OVERRIDE,
                  *(SLOT_OVERRIDE[s] for s in SLOT_OVERRIDE_SLOTS)),
         KL.SWITCHED: (VOICE_KEY,),
         PFA: (PF_KEY,),
@@ -174,11 +177,19 @@ HAS_AURA_LEADER = {4: "188", 5: "0", 7: "100000", 8: "100000", 9: "", 10: UID_AU
 #     常驻 20–60 层、PF 密集时顶到 99 ⇒ ≥30 ⇒ 每步 ×1/10（设计稿按「每层属低频事件」取 1/5，
 #     与口径 A2「不按事件名称」冲突，本批按实际层数改判）。
 # 复核 C06：能力 1#2（每 3PF 自身技伤）与队长行 2（全队技伤）目标不同 ⇒ 不合并，另起自身行。
-PF3_TEAM_SKILL_DAMAGE = "20000"          # 队长行 2：全队(火)技能伤害 100% → 20%（×1/5）
-PF3_TEAM_ATTACK = "10000"                # 队长行 3：全队(火)攻击力 50% → 10%（×1/5）
-PF3_SELF_SKILL_DAMAGE_LEADER = "5000"    # 能力 1#2 搬入队长：自身技能伤害 25% → 5%（×1/5）
-LAYER_SELF_LEADER = "5000"               # 能力 2 两行搬入队长：每层自身技伤/攻 50% → 5%（×1/10）
-LAYER_TEAM_411_LEADER = "500"            # 能力 3#4 搬入队长：每层全队独立乘区 5% → 0.5%（×1/10）
+#
+# ---- 2026-09-27 第三轮（修订模块 ``wf_balance_20260927c_magnus``，作者「砍到 4/5 或 7/10」「可以砍到 2/3」
+# 「数值尽量取 5 的倍数」）：队长成长行放缓倍率从第二批的 ×1/5、×1/10 回调，基数一律是第二批前的原值：
+#   · 全队(火)技伤/攻（火队只能靠这条成长）取 4/5：100% → 80%、50% → 40%；
+#   · 每 3PF 自身技伤：7/10 档 25×0.7 = 17.5，按 5 的倍数取 20%（口径 D1，实际 4/5）；
+#   · 点火每层自身技伤/攻（层数极多、自身基础充足）取 2/3：50×2/3 = 33.3，向上取 35%（实际 0.7）；
+#   · 点火每层全队(火)独立乘区（给全队、只能靠成长）取 4/5：5% → 4%（<10% 按整数取，口径 D2）。
+# 能力栏的封顶版（能力 1#2 限 4 次、能力 2 / 能力 3#4 最多 10 层）按口径 D4 保持第二批的值。
+PF3_TEAM_SKILL_DAMAGE = "80000"          # 队长行 2：全队(火)技能伤害 原 100% → 80%（×4/5；第二批 20%）
+PF3_TEAM_ATTACK = "40000"                # 队长行 3：全队(火)攻击力 原 50% → 40%（×4/5；第二批 10%）
+PF3_SELF_SKILL_DAMAGE_LEADER = "20000"   # 能力 1#2 搬入队长：自身技能伤害 原 25% → 20%（第二批 5%）
+LAYER_SELF_LEADER = "35000"              # 能力 2 两行搬入队长：每层自身技伤/攻 原 50% → 35%（×2/3 取整；第二批 5%）
+LAYER_TEAM_411_LEADER = "4000"           # 能力 3#4 搬入队长：每层全队独立乘区 原 5% → 4%（×4/5；第二批 0.5%）
 PF3_SELF_SKILL_DAMAGE_LIMIT = "4"        # 能力 1#2 就地：限 4 次（25%×4 = 100%，设计稿值）
 LAYER_ABILITY_LIMIT = "10"               # 能力 2 / 能力 3#4 就地：最多计 10 层（c102，官方 1611231–1611236 同写法）
 LAYER_ABILITY_SELF = "15000"             # 能力 2 每层自身技伤/攻 15%（满 150%）
@@ -188,6 +199,17 @@ LAYER_ABILITY_TEAM_411 = "1000"          # 能力 3#4 每层全队独立乘区 1
 # 层数对倍率的贡献封顶 10 层；live 先例 wf_gbf_kit_soriz（…, 1, 10）、wf_seasonal7_kit_primula（…, 1, 20）。
 # 无上限部分由队长技「点火每层自身技能伤害」承担（口径 A5：队长已有同一层数的逐层成长行 ⇒ 视为已合并）。
 IGNITION_DSL_CAP = 10
+# ---- 2026-09-27 第三轮（wf_balance_20260927c_magnus，口径 U2/U6/U7：「当队长且共鸣时不封顶，其他情况保留第二批封顶」）：
+#   · 特殊强化弹射三档 pf_skill_lv1/2/3 只由队长 #6–#8（火共鸣）的 629 调起 ⇒ 上限直接恢复第二批前的 int 99；
+#   · 技能两档与「引擎之炎」追击：根块 [点火绑定 … 块尾] 整段包进 ConditionalsChangeSkillFlag(2, 开支, 关支)，
+#     开支 = 同一段只把绑定上限改回 99，关支 = 第二批封顶 10 层原段（:func:`leader_gate`）；
+#   · 旗号 2（kind 704）由能力 1 末尾追加的瞬发行打开：前置 42（仅队长）+ 火编成≥6，无触发
+#     （live 先例罗尔夫中秋 1499866#4；旗号 1 已被 1199901#1 的 536 常驻占用，不当队长也开着，不能复用）。
+# 分支在新的局部环境里执行（ActionEvaluator.as case 86），分支里的 Bind 分支外看不到 ⇒ 绑定起到块尾整段入支。
+IGNITION_LEADER_CAP = 99                 # = wf_magnus_ignition_growth.MAX_LAYERS（第二批前逐字，int）
+LEADER_SKILL_FLAG = 2                    # ConditionalsChangeSkillFlag 旗号号
+LEADER_SKILL_FLAG_KIND = "704"           # 旗号 2 = kind 704（536 = 旗号 1，704–708 = 旗号 2–6）
+LEADER_FIRE_ABILITY = {6: "42", 13: "2", 16: "600000", 17: "600000", 18: "Red"}  # 队长 且 火编成≥6
 # 2026-09-27 第二批（口径 B3/B6，复核补漏）：「引擎之炎」629 追击 = 能力 3#1 触发 136 自身技能命中、
 # CT c35 = 36 帧（0.6 秒 ≤3 秒）⇒ 每次发动单目标削韧必须 ≤1。追击树的爆炸判定区寿命 30 帧、
 # CalculatedUsingMaxNumOfHits(5)、p15 None（无每目标硬上限）⇒ 同一个 boss 吃满 5 段。
@@ -206,11 +228,11 @@ LEADER: tuple[tuple[str, str, dict[int, str], str], ...] = (
     ("111183#1", "official",
      {0: CODE, **FIRE_LEADER, 32: "(None)", 45: "34", 46: "5", 47: "Red",
       49: PF3_TEAM_SKILL_DAMAGE, 50: PF3_TEAM_SKILL_DAMAGE},
-     "火·编成≥6 时: 强化弹射≥3 → 赋予全队(火) 技能伤害 20%"),
+     "火·编成≥6 时: 强化弹射≥3 → 赋予全队(火) 技能伤害 80%"),
     ("111183#1", "official",
      {0: CODE, **FIRE_LEADER, 32: "(None)", 45: "32", 46: "5", 47: "Red",
       49: PF3_TEAM_ATTACK, 50: PF3_TEAM_ATTACK},
-     "火·编成≥6 时: 强化弹射≥3 → 赋予全队(火) 攻击力 10%"),
+     "火·编成≥6 时: 强化弹射≥3 → 赋予全队(火) 攻击力 40%"),
     ("111183#2", "official",
      {0: CODE, 28: "300000", 29: "300000", 46: "5", 47: "Red",
       49: "5000", 50: "5000"},
@@ -245,19 +267,19 @@ LEADER += (
     ("111183#1", "official",
      {0: CODE, **FIRE_LEADER, 32: "(None)", 45: "34", 46: "0", 47: "",
       49: PF3_SELF_SKILL_DAMAGE_LEADER, 50: PF3_SELF_SKILL_DAMAGE_LEADER},
-     "火·编成≥6 时: 强化弹射≥3 → 自身 技能伤害 5%"),
+     "火·编成≥6 时: 强化弹射≥3 → 自身 技能伤害 20%"),
     ("161063#3", "official",
      {0: CODE, **FIRE_LEADER, 98: "100000", 99: "100000", 100: "(None)", 102: UID,
       107: "2", 108: "0", 111: LAYER_SELF_LEADER, 112: LAYER_SELF_LEADER},
-     f"火·编成≥6 时: 持续·状态累积计数固有≥1[固有{UID}] → 自身 技能伤害 5%"),
+     f"火·编成≥6 时: 持续·状态累积计数固有≥1[固有{UID}] → 自身 技能伤害 35%"),
     ("161063#2", "official",
      {0: CODE, **FIRE_LEADER, 98: "100000", 99: "100000", 100: "(None)", 102: UID,
       107: "0", 108: "0", 111: LAYER_SELF_LEADER, 112: LAYER_SELF_LEADER},
-     f"火·编成≥6 时: 持续·状态累积计数固有≥1[固有{UID}] → 自身 攻击力 5%"),
+     f"火·编成≥6 时: 持续·状态累积计数固有≥1[固有{UID}] → 自身 攻击力 35%"),
     ("161123#0", "official",
      {0: CODE, 100: "(None)", 102: UID, 107: "411", 108: "5", 109: "Red",
       111: LAYER_TEAM_411_LEADER, 112: LAYER_TEAM_411_LEADER},
-     f"持续·状态累积计数固有≥1[固有{UID}] → 赋予全队(火) 独立乘区技能伤害 0.5%"),
+     f"持续·状态累积计数固有≥1[固有{UID}] → 赋予全队(火) 独立乘区技能伤害 4%"),
 )
 
 _A = "action_skill"
@@ -277,6 +299,12 @@ PLAN: dict[int, tuple[tuple[str, str, dict[int, str], str], ...]] = {
           30: "300000", 31: "300000", 34: PF3_SELF_SKILL_DAMAGE_LIMIT, 47: "34",
           51: "25000", 52: "25000"},
          f"火·编成≥6 时: 强化弹射≥3(限{PF3_SELF_SKILL_DAMAGE_LIMIT}次) → 自身 技能伤害 25%"),
+        # 2026-09-27 第三轮（口径 U6）：旗号 2 开关行——当队长且火共鸣时技能 / 引擎之炎的点火倍率不封顶。
+        # donor = 官方 1111776#0（wirfled_playable_6，瞬发无触发 704，无前置）；逐格补前置 42 队长 + 火编成≥6，
+        # 整行与 live 罗尔夫中秋 1499866#4 同形（只换 c0/c2/c18/c70）。零先例的「队长表 704 行」不做。
+        ("1111776#0", "official",
+         {0: f"{CODE}_1", 1: "true", 2: _A, **LEADER_FIRE_ABILITY, 70: SWITCH_LEADER_STRING},
+         f"队长 且 火·编成≥6 时: 自身 切换技能Flag{LEADER_SKILL_FLAG}[{SWITCH_LEADER_STRING}]"),
     ),
     # 2026-09-27 第二批：每层 50%/不限层 → 每层 15%、最多计 10 层（c102 = 官方 donor 原值 10）；
     # 无上限部分已搬进队长 #10/#11（×1/10）。
@@ -378,33 +406,53 @@ MAIN_ICON = " <icon id='main'>  "   # desc_override 会盖掉客户端逐行画�
 # 面板字符串（custom_ability_string）。629 / 536 的条目不写数字与时间（裁决 §3）。
 CAS_TEXTS = {
     CHASE_STRING: "发动技能「引擎之炎」：在命中点引爆积蓄的引擎火焰，造成火属性伤害（以技能伤害计算）",
-    SWITCH_STRING: "强化『烈焰轰鸣』：光环的范围扩大",
+    # 2026-09-27 第三轮（口径 U9）：旗号 1（1199901#1 的 536）在数据里只给主斩劈的倍率加 alv 1.75～3.5
+    # （技能两档的斩劈 CreateNormalAttack 数值项），光环半径 200/270 来自技能/技能+两档，与旗号无关
+    # ⇒ 原文「光环的范围扩大」改成实际效果；536 条目不写数字。
+    SWITCH_STRING: "强化『烈焰轰鸣』：斩劈的技能倍率提升",
+    # 2026-09-27 第三轮（口径 U2/U6）：旗号 2（704，能力 1 末行，前置 42 队长 + 火共鸣）条目；不写数字。
+    # 同轮技能强化文案规范（作者「技能里面不要重复描述强化后的效果,规范并简化描述」）：与队长面板强化条目同文，
+    # 补「（含引擎之炎）」（旗号 2 同时包住技能两档与引擎之炎），见 wf_balance_20260927c_magnus.skill_flag_entry_problems。
+    SWITCH_LEADER_STRING: "强化『烈焰轰鸣』：技能倍率随引擎点火层数持续提升（含引擎之炎）",
     PF_STRING: "强化弹射变为特殊强化弹射时：火焰突进随发动次数分三档逐渐增强，"
                "命中敌人后引爆大范围火焰，按技能伤害结算",
     # 2026-09-27 第二批：第 4 行数值放缓；按复核 C06 拆出「自身技能伤害＋5%」（紧跟同触发的第 4 行）；
     # 引擎点火逐层两行（从能力 2/3 搬入的无上限部分）排在「烈焰光环」行之前，光环行仍是最后一行。
     # 无上限就写到效果为止（不写「可无限」等禁语）。
+    # 2026-09-27 第三轮：四处成长数值回调（80/40、20、35/35、4）；「自身点火逐层」行后插入旗号 2 的
+    # 强化条目「强化『烈焰轰鸣』：…」（不写数字，与 SWITCH_LEADER_STRING 同文）。光环行仍是最后一行。
+    # 同轮面板合并（作者「同一个条件的提升能不能写到一起来简化描述」「引擎点火的获取带火属性共鸣,引擎点火提供的效果
+    # 就不用写火属性共鸣」）：队长 #1/#2/#3/#4/#9（火编成≥6 + 每 3 次强化弹射）四行并一行；引擎点火的获取来源全带
+    # 火共鸣 ⇒ 点火逐层行删「火属性共鸣时，」后与火队独立乘区行（#10–#12 同条件）并一行。11 → 7 行。
+    # 逐字与依据见 wf_balance_20260927c_magnus.LEADER_MERGE_GROUPS / resonance_omission_problems。
+    # 同轮按数据改文字（主会话口径 4）：冲刺两行的数据是槽 5 的两条 422（前置只有 42 队长、没有火共鸣）
+    # ⇒ 删「火属性共鸣时，」；依据见 wf_balance_20260927c_magnus.dash_row_problems。
+    # 同轮：特殊强化弹射三档（队长 #6–#8 的 629）每段倍率带引擎点火逐层加法项、上限 99 不经旗号 ⇒ 这是队长强化弹射
+    # 本体的效果（不属于技能强化），写在第 1 行末尾「，威力随引擎点火层数提升」（不写数字）；
+    # 依据见 wf_balance_20260927c_magnus.special_pf_growth_problems。
     LEADER_OVERRIDE: "\n".join((
-        "火属性共鸣时，自身的强化弹射变为特殊强化弹射，造成的伤害按技能伤害结算",
-        "火属性共鸣时，自身获得冲刺强化效果，冲刺冷却时间－30%",
-        "火属性共鸣时，冲刺间隔缩短效果不会让自身的冲刺冷却时间进一步缩短",
-        "火属性共鸣时，每发动3次强化弹射，火属性角色技能伤害＋20%、攻击力＋10%",
-        "火属性共鸣时，每发动3次强化弹射，自身技能伤害＋5%",
-        "火属性共鸣时，每发动3次强化弹射，火属性角色技能槽＋5%",
-        "火属性共鸣时，每发动3次强化弹射，自身引擎点火＋7层",
-        "火属性共鸣时，引擎点火每提升1层，自身技能伤害＋5%、攻击力＋5%",
-        "自身引擎点火每提升1层，火属性角色技能伤害额外乘区＋0.5%",
+        "火属性共鸣时，自身的强化弹射变为特殊强化弹射，造成的伤害按技能伤害结算，威力随引擎点火层数提升",
+        "自身获得冲刺强化效果，冲刺冷却时间－30%",
+        "冲刺间隔缩短效果不会让自身的冲刺冷却时间进一步缩短",
+        "火属性共鸣时，每发动3次强化弹射，火属性角色技能伤害＋80%、攻击力＋40%、技能槽＋5%，"
+        "自身技能伤害＋20%、引擎点火＋7层",
+        "自身引擎点火每提升1层，自身技能伤害＋35%、攻击力＋35%，火属性角色技能伤害额外乘区＋4%",
+        "火属性共鸣时，强化『烈焰轰鸣』：技能倍率随引擎点火层数持续提升（含引擎之炎）",
         "自身持有「烈焰光环」期间，每次弹射，连击＋35",
     )),
     # 2026-09-27 第二批：536 条目只留「光环范围扩大」（不写数字）；每 3PF 自身技伤单列并写上限；
     # 技能 DSL 点火倍率封顶 10 层。
+    # 2026-09-27 第三轮：536 条目改成实际效果（口径 U9）。同轮技能强化文案规范：强化条目点名『烈焰轰鸣』、与 CAS 同文；
+    # 点火倍率行只写技能本体（最多10层），不写旗号 2 的「不受此限」（强化效果只在队长强化条目），并去「及特殊强化弹射」
+    # （特殊强化弹射三档点火上限 99、不经旗号）。
     SLOT_OVERRIDE[1]: "\n".join((
         "战斗开始时，自身技能槽＋50%",
-        "火属性共鸣时，强化自身技能：光环范围扩大",
+        "火属性共鸣时，强化『烈焰轰鸣』：斩劈的技能倍率提升",
         "火属性共鸣时，每发动3次强化弹射，自身技能伤害＋25%（最多4次）",
-        "自身引擎点火每提升1层，技能基础总倍率＋5倍（含引擎之炎及特殊强化弹射，最多10层）",
+        "自身引擎点火每提升1层，技能基础总倍率＋5倍（含引擎之炎，最多10层）",
     )),
-    SLOT_OVERRIDE[2]: "火属性共鸣时，引擎点火每提升1层，自身技能伤害＋15%、攻击力＋15%（最多10层）",
+    # 2026-09-27 第三轮面板合并：按引擎点火层数生效 ⇒ 不写「火属性共鸣时，」（数据前置不动）。
+    SLOT_OVERRIDE[2]: "引擎点火每提升1层，自身技能伤害＋15%、攻击力＋15%（最多10层）",
     SLOT_OVERRIDE[3]: "\n".join(MAIN_ICON + line for line in (
         "火属性共鸣时，火属性角色发动技能时，自身引擎点火＋1层",
         "自身处于「引擎点火」期间，自身技能命中敌人时，发动「引擎之炎」：造成技能伤害",
@@ -418,7 +466,7 @@ CAS_TEXTS = {
         "火属性共鸣时，每发动3次强化弹射，自身技能槽＋5%（冷却时间：5秒）",
     )),
 }
-SKILL_FLAG_TEXT_KEYS = (CHASE_STRING, SWITCH_STRING)
+SKILL_FLAG_TEXT_KEYS = (CHASE_STRING, SWITCH_STRING, SWITCH_LEADER_STRING)
 
 # action_skill c4/c5/c6（作者放行第 5 条：两档都写 600）
 ENERGY = {"1": ("600", "600", "1"), "2": ("600", "600", "1")}
@@ -580,6 +628,61 @@ def ignition_growth(tree, expected_hits) -> tuple[Any, dict[str, Any]]:
         raise KitError(f"ignition binding drifted: {binds}")
     binds[0][5] = IGNITION_DSL_CAP
     return tree, dict(meta, max_layers=IGNITION_DSL_CAP)
+
+
+_IGNITION_BIND_HEAD = ["BindConditionAccumulationVariable", -17, 11999005, ["DCUnique", int(UID)], 1]
+
+
+def pf_ignition_growth(tree, expected_hits) -> tuple[Any, dict[str, Any]]:
+    """特殊强化弹射三档技能树：``with_ignition_growth`` 原样（上限 :data:`IGNITION_LEADER_CAP`）。
+
+    2026-09-27 第三轮（口径 U2）：这三棵树只由队长 #6–#8（火共鸣）的 629 调起，本来就只在「当队长且火共鸣」
+    时存在 ⇒ 撤回第二批的 10 层封顶，不加旗号；输出与第二批前 live 逐字节相同。
+    """
+    tree, meta = with_ignition_growth(tree, expected_hits)
+    binds = list(wf_dsl.iter_dsl_commands(tree, "BindConditionAccumulationVariable"))
+    if (len(binds) != 1 or tree[11][1][0] != ["Command", binds[0]]
+            or binds[0] != [*_IGNITION_BIND_HEAD, IGNITION_LEADER_CAP]):
+        raise KitError(f"PF ignition binding drifted: {binds}")
+    return tree, dict(meta, max_layers=IGNITION_LEADER_CAP)
+
+
+def leader_gate(tree) -> tuple[Any, dict[str, Any]]:
+    """技能两档 / 引擎之炎：根块整段包进 ``ConditionalsChangeSkillFlag(LEADER_SKILL_FLAG, 开支, 关支)``。
+
+    输入 = :func:`ignition_growth` 的输出（点火绑定在根块首条、上限 :data:`IGNITION_DSL_CAP`，vlv 消费点全在其后）。
+    关支 = 输入根块逐字；开支 = 同一段只把绑定上限改回 :data:`IGNITION_LEADER_CAP`（第二批前 int 99）。
+    绑定起到块尾整段入支：分支在局部环境执行，分支里的变量分支外看不到（ActionEvaluator.as case 86）。
+    两侧复用同一组绑定号（live 先例杰拉德 149999 技能根部同形）；每侧内部仍唯一（:func:`gate_branches` 可取出逐支核对）。
+    """
+    out = copy.deepcopy(tree)
+    if out[0] != "ActionDsl" or out[10] != 0 or out[11][0] != "Block":
+        raise KitError("leader gate expects a skill-damage ActionDsl root")
+    if list(wf_dsl.iter_dsl_commands(out, "ConditionalsChangeSkillFlag")):
+        raise KitError("tree already carries a ConditionalsChangeSkillFlag (leader gate applied twice?)")
+    body = out[11][1]
+    binds = list(wf_dsl.iter_dsl_commands(out, "BindConditionAccumulationVariable"))
+    if (len(binds) != 1 or not body or body[0] != ["Command", binds[0]]
+            or binds[0] != [*_IGNITION_BIND_HEAD, IGNITION_DSL_CAP]):
+        raise KitError(f"leader gate: ignition binding must be the root's first command capped at "
+                       f"{IGNITION_DSL_CAP}: {binds}")
+    closed = copy.deepcopy(body)
+    opened = copy.deepcopy(body)
+    opened[0][1][5] = IGNITION_LEADER_CAP
+    out[11][1] = [["Command", ["ConditionalsChangeSkillFlag", LEADER_SKILL_FLAG,
+                               ["Block", opened], ["Block", closed]]]]
+    return out, {"flag": LEADER_SKILL_FLAG, "flag_kind": LEADER_SKILL_FLAG_KIND,
+                 "open_cap": IGNITION_LEADER_CAP, "closed_cap": IGNITION_DSL_CAP,
+                 "wrapped_root_commands": len(body)}
+
+
+def gate_branches(tree) -> list[list]:
+    """根块若是唯一一条旗号 2 分支 ⇒ ``[开支块, 关支块]``；否则（第二批及以前的包）⇒ ``[根块]``。"""
+    body = tree[11][1]
+    if (len(body) == 1 and body[0][0] == "Command"
+            and body[0][1][0] == "ConditionalsChangeSkillFlag" and body[0][1][1] == LEADER_SKILL_FLAG):
+        return [body[0][1][2], body[0][1][3]]
+    return [tree[11]]
 
 
 # ---------------------------------------------------------------- 设计稿对账
@@ -1742,40 +1845,55 @@ def _write_tree(ctx, program: str, tree) -> str:
     return logical
 
 
-def write_skills(ctx, families) -> dict[str, Any]:
-    info: dict[str, Any] = {}
-    programs = []
+def build_skill_trees(ctx, families) -> list[tuple[str, str, str, Any, dict[str, Any]]]:
+    """:func:`write_skills` 落盘的全部 DSL，按落盘顺序：``(类别, 档, 程序路径, 树, meta)``。
+
+    类别：``skill``（技能两档）/ ``ignite``（629 引擎之炎）/ ``pf_skill``（特殊强化弹射三档的 629 伤害树）/
+    ``pf``（722 覆盖树）。2026-09-27 第三轮：技能两档与引擎之炎过 :func:`leader_gate`（旗号 2 分支），
+    三档伤害树走 :func:`pf_ignition_growth`（撤回 10 层封顶）；修订模块测试断言本函数输出 == revise() 输出。
+    """
+    out: list[tuple[str, str, str, Any, dict[str, Any]]] = []
     for level in ("1", "2"):
         tree, meta = build_main_tree(ctx, level, families)
-        logical = _write_tree(ctx, ctx.program_path(level), tree)
-        meta["logical"] = logical
-        meta["sha256"] = _sha256(ctx.pack.pkg_path("common", logical).read_bytes())
-        info[level] = meta
-        programs.append(ctx.program_path(level))
+        tree, meta["leader_gate"] = leader_gate(tree)
+        out.append(("skill", level, ctx.program_path(level), tree, meta))
 
     tree, meta = build_chase_tree(ctx, families)
-    logical = _write_tree(ctx, CHASE_PROGRAM, tree)
-    meta["logical"] = logical
-    meta["sha256"] = _sha256(ctx.pack.pkg_path("common", logical).read_bytes())
-    info["ignite"] = meta
-    programs.append(CHASE_PROGRAM)
+    tree, meta["leader_gate"] = leader_gate(tree)
+    out.append(("ignite", "ignite", CHASE_PROGRAM, tree, meta))
 
-    pf: dict[str, Any] = {}
     for level in (1, 2, 3):
         tree, meta = build_pf_tree(ctx, level, families)
         tree, damage_tree, damage_meta = PF_SKILL.split_tree(tree)
-        damage_tree, damage_meta["ignition_growth"] = ignition_growth(
+        damage_tree, damage_meta["ignition_growth"] = pf_ignition_growth(
             damage_tree, tuple(damage_meta["hits"]))
-        damage_program = PF_SKILL_PROGRAMS[level - 1]
-        damage_meta["logical"] = _write_tree(ctx, damage_program, damage_tree)
-        meta.update(damage_meta)
-        programs.append(damage_program)
-        program = PF_PROGRAMS[level - 1]
+        out.append(("pf_skill", str(level), PF_SKILL_PROGRAMS[level - 1], damage_tree, damage_meta))
+        out.append(("pf", str(level), PF_PROGRAMS[level - 1], tree, meta))
+    return out
+
+
+def write_skills(ctx, families) -> dict[str, Any]:
+    info: dict[str, Any] = {}
+    pf: dict[str, Any] = {}
+    programs = []
+    damage: dict[str, dict[str, Any]] = {}
+    for kind, level, program, tree, meta in build_skill_trees(ctx, families):
         logical = _write_tree(ctx, program, tree)
+        programs.append(program)
+        if kind == "pf_skill":
+            meta["logical"] = logical
+            damage[level] = meta
+            continue
+        if kind == "pf":
+            meta.update(damage.pop(level))
         meta["logical"] = logical
         meta["sha256"] = _sha256(ctx.pack.pkg_path("common", logical).read_bytes())
-        pf[str(level)] = meta
-        programs.append(program)
+        if kind == "pf":
+            pf[level] = meta
+        else:
+            info[level] = meta
+    if damage:
+        raise KitError(f"PF damage trees without their override tree: {sorted(damage)}")
     ctx.write_flat(PFA, {PF_KEY: [list(PF_PROGRAMS)]})
     return {"skills": info, "power_flip": pf, "programs": programs}
 
@@ -1825,6 +1943,17 @@ NOTES = [
     "2026-09-27 第二批（口径 B3/B6，复核补漏）：「引擎之炎」629 追击触发 CT 0.6 秒 ≤3 秒 ⇒ 每次削韧 ≤1；"
     "爆炸 5 段 × p13 0.25 = 1.25 → p13 0.2（5 × 0.2 = 1.0，回到官方火龙母本 4 × 0.25 的每次总量），"
     "段数/倍率/Fever 点不动；疾风同路 PF（629 代打 15/20/25 顶格）按口径 B5 保留",
+    "2026-09-27 第三轮（修订模块 wf_balance_20260927c_magnus，作者「砍到 4/5 或 7/10」「可以砍到 2/3」「取 5 的倍数」）："
+    "队长 #1/#2 每 3PF 火队技伤/攻 20%/10% → 80%/40%（原值 ×4/5）；#9 每 3PF 自身技伤 5% → 20%（口径 D1）；"
+    "#10/#11 点火每层自身技伤/攻 5% → 35%（原值 ×2/3 取 5 的倍数）；#12 点火每层火队独立乘区 0.5% → 4%（×4/5）；"
+    "能力栏封顶版按口径 D4 不动",
+    "2026-09-27 第三轮（口径 U2/U6/U7）：特殊强化弹射三档伤害树点火上限 10 → 99（只由队长 #6–#8 火共鸣调起）；"
+    "技能两档与引擎之炎根块包进 ConditionalsChangeSkillFlag(2)：开支上限 99、关支保留第二批 10 层；"
+    "旗号 2 由能力 1 末行 704（前置 42 队长 + 火编成≥6，瞬发无触发，先例 live 罗尔夫中秋 1499866#4）打开",
+    "2026-09-27 第三轮（口径 U9）：旗号 1（536）实际只给主斩劈倍率加 alv 1.75～3.5，"
+    "技能强化条目与能力 1 面板第 2 行由「光环的范围扩大」改为「斩劈的技能倍率提升」",
+    "2026-09-27 第三轮（技能强化文案规范后补）：特殊强化弹射三档随引擎点火成长（上限 99、不经旗号）是队长强化弹射"
+    "本体的效果，写在队长面板第 1 行末尾「，威力随引擎点火层数提升」（不写数字）",
 ]
 
 DEVIATIONS = [

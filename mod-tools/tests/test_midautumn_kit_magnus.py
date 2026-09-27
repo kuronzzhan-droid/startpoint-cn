@@ -272,8 +272,10 @@ class PlanStaticTests(unittest.TestCase):
 
     def test_panel_override_line_counts_match_the_target_panel(self):
         # 第一批输出 队长 7 / 槽1 3 行 ＋ 2026-09-27 第二批覆盖：队长 +3（自身技伤、点火逐层两行）、
-        # 槽1 +1（每 3PF 自身技伤单列），见 wf_balance_20260927b_magnus。
-        counts = {KM.LEADER_OVERRIDE: 10, KM.SLOT_OVERRIDE[1]: 4,
+        # 槽1 +1（每 3PF 自身技伤单列），见 wf_balance_20260927b_magnus；
+        # ＋ 第三轮覆盖：队长 +1（旗号 2「强化自身技能」行），同轮面板同条件合并 −4（L4–L7 并一行、
+        # L8+L9 删共鸣后并一行），见 wf_balance_20260927c_magnus。
+        counts = {KM.LEADER_OVERRIDE: 7, KM.SLOT_OVERRIDE[1]: 4,
                   KM.SLOT_OVERRIDE[2]: 1, KM.SLOT_OVERRIDE[3]: 6, KM.SLOT_OVERRIDE[5]: 2}
         for key, want in counts.items():
             self.assertEqual(len(KM.CAS_TEXTS[key].split("\n")), want, key)
@@ -1339,10 +1341,13 @@ class PackageIntegrationTests(unittest.TestCase):
 
         for level in (1, 2):
             tree = self._tree(f"battle/action/skill/action/rare5/{KM.CODE}${KM.CODE}_{level}")
-            found = marks(tree)
-            self.assertEqual([c[2][0][1] for c in found], [int(KM.UID_AURA)], f"level {level}")
-            self.assertEqual(found[0][1], -17)
-            self.assertEqual(found[0][10], KM.AURA_MARK_TARGET_KIND)
+            # 2026-09-27 第三轮（wf_balance_20260927c_magnus）：根块包进旗号 2 分支后两侧各执行其一 ⇒ 逐支判
+            # （第二批及以前的包没有分支 ⇒ gate_branches 返回整个根块，判据不变）。
+            for branch in KM.gate_branches(tree):
+                found = marks(branch)
+                self.assertEqual([c[2][0][1] for c in found], [int(KM.UID_AURA)], f"level {level}")
+                self.assertEqual(found[0][1], -17)
+                self.assertEqual(found[0][10], KM.AURA_MARK_TARGET_KIND)
         self.assertEqual(marks(self._tree(KM.CHASE_PROGRAM)), [])
         for program in KM.PF_PROGRAMS:
             self.assertEqual(marks(self._tree(program)), [], program)
