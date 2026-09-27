@@ -357,12 +357,23 @@ class PanelTextTests(unittest.TestCase):
         self.assertNotIn("最大速度固定", K.CAS_TEXTS[K.CAS_FLAG])
         self.assertIn("连击", K.CAS_TEXTS[K.CAS_FLAG])
         self.assertIn("最大速度固定", K.CAS_TEXTS[K.CAS_FLAG2])
-        self.assertIn("队长", K.CAS_TEXTS[K.CAS_FLAG2])
+        # 2026-09-27 第三轮（wf_balance_20260927c_rolfmoon）：条件（前置 42 仅队长 + 风共鸣）不再写进条目，
+        # 由 704 行前置承载、面板行写「风属性共鸣时，」；条目只写官方格式「强化『月下独奏』：…」。
+        self.assertNotIn("队长", K.CAS_TEXTS[K.CAS_FLAG2])
+        for key in (K.CAS_FLAG, K.CAS_FLAG2):
+            self.assertTrue(K.CAS_TEXTS[key].startswith("强化『月下独奏』："), key)
 
     def test_panel_text_matches_the_author_approved_target(self):
         """多条记录用换行分行（禁止「／」挤成一行）；每行文字以目标面板 lines[].text 为准。"""
         panel = panel_json()
         joined = "\n".join(line["text"] for line in panel["leader"]["lines"])
+        if joined != K.PANEL_LEADER:
+            # 2026-09-27 第三轮（wf_balance_20260927c_rolfmoon）：镜像由主会话 --write 落盘前逐字停在第二批，
+            # 只允许这一种过渡态，并且按第三轮模块补齐后必须逐字等于生成器。
+            import wf_balance_20260927c_rolfmoon as RC
+            self.assertEqual(joined, RC.B_PANEL_LEADER)
+            _design, panel = RC.mirror_updates(DESIGN, panel)
+            joined = "\n".join(line["text"] for line in panel["leader"]["lines"])
         self.assertEqual(joined, K.PANEL_LEADER)
         for block in panel["abilities"]:
             slot = block["index"]
@@ -923,8 +934,26 @@ class PackageTests(unittest.TestCase):
             (self.pkg() / KL.CAS).read_bytes())
         ours = {k for k in blob if k in K.CAS_TEXTS}
         self.assertEqual(ours, set(K.CAS_TEXTS))
+        import wf_balance_20260927c_rolfmoon as RC
         for key, text in K.CAS_TEXTS.items():
-            self.assertEqual(C.csv_split(blob[key])[0][0], text, key)
+            packed = C.csv_split(blob[key])[0][0]
+            if key == K.CAS_LEADER and packed == RC.B_PANEL_LEADER:
+                # 2026-09-27 第三轮成长复核：候选由主会话暂存脚本回写，回写前包内仍是第二批队长面板（唯一允许的过渡态）。
+                self.assertEqual(RC.leader_text([[packed]]), [[text]])
+                continue
+            if key == K.CAS_ABILITY[4] and packed == "\n".join(RC.OLD_A4_LINES):
+                # 同上：第三轮面板同条件合并回写前，包内仍是合并前两行。
+                self.assertEqual(RC.ability4_text([[packed]]), [[text]])
+                continue
+            if key == K.CAS_ABILITY[3] and packed == "\n".join(RC.OLD_A3_LINES):
+                # 同上：第三轮技能强化文案（能力3 第3行拆行）回写前，包内仍是 live 旧文。
+                self.assertEqual(RC.ability3_text([[packed]]), [[text]])
+                continue
+            if key in RC.FLAG_TEXTS and packed == RC.FLAG_TEXTS[key][0]:
+                # 同上：两条强化条目改官方格式回写前，包内仍是旧写法。
+                self.assertEqual(RC.flag_text(key, [[packed]]), [[text]])
+                continue
+            self.assertEqual(packed, text, key)
         # 改键名前写出来的旧条目不许留在包里（否则 manifest 的 claimed_keys 会一直红）
         self.assertNotIn(f"ability_skill_{K.CODE}_encore", blob)
 

@@ -364,13 +364,32 @@ class ReviseTests(unittest.TestCase):
             M.encore_tree(tree)
 
 
+def after_batch3(live: dict, out: dict) -> dict:
+    """第三轮（wf_balance_20260927c_rolfmoon，以本模块输出为输入回调成长数值与队长面板）之后的终态：
+    本模块输出 + 第三轮覆盖。生成器现在对齐这个终态（第三轮测试另行断言生成器 == 第三轮输出）。"""
+    import wf_balance_20260927c_rolfmoon as C
+    data = deepcopy(live)
+    for kind in ("leader", "ability", "cas", "dsl"):
+        data[kind].update(deepcopy(out[kind]))
+    # 第三轮另读的只读键（面板合并：能力4 行与覆盖串，本批不碰）取第三轮 fixture。
+    c_fixture = json.loads((FIXTURE.parent / "balance_20260927c_rolfmoon.json").read_text(encoding="utf-8"))
+    for kind, key in C.BEFORE:
+        data.setdefault(kind, {}).setdefault(key, deepcopy(c_fixture[kind][key]))
+    batch3 = C.revise(reader(data))
+    final = deepcopy(out)
+    for kind in ("leader", "ability", "cas"):
+        final[kind].update(batch3[kind])
+    return final
+
+
 class GeneratorSyncTests(unittest.TestCase):
-    """生成器 wf_midautumn_kit_rolf 重跑不能把旧值带回来。"""
+    """生成器 wf_midautumn_kit_rolf 重跑不能把旧值带回来（第三轮后对齐「本模块输出 + 第三轮覆盖」）。"""
 
     @classmethod
     def setUpClass(cls):
         cls.live = load_fixture()
         cls.out = M.revise(reader(deepcopy(cls.live)))
+        cls.final = after_batch3(cls.live, cls.out)
 
     def test_constants_mirror_the_module(self):
         self.assertEqual(K.BALANCE_B, {"direct_growth": M.DIRECT_GROWTH[1],
@@ -382,23 +401,26 @@ class GeneratorSyncTests(unittest.TestCase):
         self.assertEqual((K.LEADER_ROWS, K.ABILITY_RECORDS, len(K.PLAN[6])), (7, 21, 7))
 
     def test_panel_constants_equal_revise_output(self):
-        self.assertEqual([[K.CAS_TEXTS[K.CAS_LEADER]]], self.out["cas"][M.CAS_LEADER])
-        self.assertEqual([[K.CAS_TEXTS[K.CAS_ABILITY[3]]]], self.out["cas"][M.CAS_A3])
+        self.assertEqual([[K.CAS_TEXTS[K.CAS_LEADER]]], self.final["cas"][M.CAS_LEADER])
+        # 第三轮技能强化文案（wf_balance_20260927c_rolfmoon）以本模块的能力3 面板为输入拆行 ⇒ 生成器对齐终态。
+        self.assertEqual([[K.CAS_TEXTS[K.CAS_ABILITY[3]]]], self.final["cas"][M.CAS_A3])
+        import wf_balance_20260927c_rolfmoon as C
+        self.assertEqual(C.ability3_text(self.out["cas"][M.CAS_A3]), self.final["cas"][M.CAS_A3])
 
     def test_expect_gate_matches_the_revised_rows(self):
-        leader = self.out["leader"][M.LEADER_KEY]
+        leader = self.final["leader"][M.LEADER_KEY]
         for index, row in enumerate(leader):
             self.assertEqual(D.describe_line(row, "leader_ability"), K.EXPECT[f"leader#{index}"], index)
         for key in (M.A3_KEY, M.A6_KEY):
-            for index, row in enumerate(self.out["ability"][key]):
+            for index, row in enumerate(self.final["ability"][key]):
                 self.assertEqual(D.describe_line(row, "ability"), K.EXPECT[f"{key}#{index}"], f"{key}#{index}")
 
     @unittest.skipUnless(_baseline_available(), "需要 .cdn/cn 官方基线与 live store")
     def test_generator_rows_equal_revise_output(self):
         built = K.build_rows(_kit_ctx())
-        self.assertEqual(built["leader"], self.out["leader"][M.LEADER_KEY])
-        self.assertEqual(built["ability"][M.A3_KEY], self.out["ability"][M.A3_KEY])
-        self.assertEqual(built["ability"][M.A6_KEY], self.out["ability"][M.A6_KEY])
+        self.assertEqual(built["leader"], self.final["leader"][M.LEADER_KEY])
+        self.assertEqual(built["ability"][M.A3_KEY], self.out["ability"][M.A3_KEY])       # 第三轮不动能力3
+        self.assertEqual(built["ability"][M.A6_KEY], self.final["ability"][M.A6_KEY])
 
     @unittest.skipUnless(_baseline_available(), "需要 .cdn/cn 官方基线与 live store")
     def test_generator_encore_tree_equals_revise_output(self):
@@ -412,6 +434,8 @@ class GeneratorSyncTests(unittest.TestCase):
 
 
 class MirrorTests(unittest.TestCase):
+    """第三轮起镜像同步移交 wf_balance_20260927c_rolfmoon（其测试断言「已同步」或「待 --write」两态）；
+    本模块的 mirror_updates 只认第二批两行（镜像停在第二批时对第三轮生成器拒绝）。这里只核对第二批记录仍在镜像里。"""
     PATHS = (ROOT / M.DESIGN_REL, ROOT / M.PANEL_REL)
 
     def setUp(self):
@@ -419,24 +443,28 @@ class MirrorTests(unittest.TestCase):
             self.skipTest("midautumn design mirrors missing (work/ is gitignored)")
         self.docs = [json.loads(path.read_text(encoding="utf-8")) for path in self.PATHS]
 
-    def test_mirrors_are_already_synced(self):
-        self.assertEqual(M.sync_mirrors(ROOT, write=False), [])
+    def test_batch2_record_stays_in_the_mirrors(self):
         design, panel = self.docs
         self.assertEqual(K.design_problems(design), [])
         self.assertEqual(design["plan_rework1"]["ability_records"], 21)
         self.assertEqual(design["plan_rework1"]["ability_rows_by_slot"]["6"], 7)
         block = design["rework1"][M.MIRROR_TAG]
         self.assertEqual(block["module"], "mod-tools/wf_balance_20260927b_rolfmoon.py")
-        self.assertEqual("\n".join(line["text"] for line in panel["leader"]["lines"]), K.PANEL_LEADER)
         three = next(entry for entry in panel["abilities"] if entry["index"] == 3)
         self.assertEqual("\n".join(K.MAIN_ICON + line["text"] for line in three["lines"]), K.PANEL_ABILITY[3])
-        self.assertEqual(panel["notes"][-1], M.MIRROR_NOTE)
+        self.assertIn(M.MIRROR_NOTE, panel["notes"])
 
-    def test_mirror_update_is_idempotent_and_pure(self):
+    def test_batch2_mirror_update_cannot_restore_batch2_numbers(self):
+        """本模块的镜像同步对第三轮生成器：镜像停在第二批时放不下第三轮队长行 ⇒ 拒绝；镜像已同步时队长行保持
+        第三轮（不会改回第二批数值）。两种情况都不改输入。"""
         before = deepcopy(self.docs)
-        once = M.mirror_updates(*self.docs)
+        try:
+            _design, panel = M.mirror_updates(*self.docs)
+        except ValueError:
+            panel = None
         self.assertEqual(self.docs, before)
-        self.assertEqual(M.mirror_updates(*once), once)
+        if panel is not None:
+            self.assertEqual("\n".join(line["text"] for line in panel["leader"]["lines"]), K.PANEL_LEADER)
 
 
 if __name__ == "__main__":
