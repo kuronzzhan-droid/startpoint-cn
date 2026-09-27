@@ -1,4 +1,7 @@
-"""PARADOX 图标：以诅咒武器「孤注一掷」20×20 剑为底，程序化改色（莫比乌斯黑白对剖 + 紫金护手）。"""
+"""PARADOX 图标：以诅咒武器「孤注一掷」20×20 剑为底，程序化改色。
+
+paradox.png = 本体（莫比乌斯黑白对剖 + 紫金护手）；paradox_lv120.png = 终式（黑白互换 + 猩红环与护手，诅咒解放）。
+"""
 from PIL import Image
 
 SRC = str(__import__("pathlib").Path(__file__).resolve().parents[1] / "cursed-weapons/all_in_blade_lv0.png")
@@ -17,24 +20,43 @@ DARK = {(228, 237, 247): (92, 84, 124), (208, 227, 241): (80, 72, 112), (202, 20
 PURPLE = {(250, 60, 70): (190, 130, 255), (200, 16, 48): (140, 70, 220), (130, 8, 40): (92, 40, 160),
           (177, 1, 42): (110, 50, 180), (108, 26, 44): (70, 30, 120), (140, 41, 62): (96, 50, 150),
           (223, 46, 41): (160, 100, 240), (255, 210, 220): (230, 210, 255)}
-RING = (10, 11)     # 刃中段一圈金环（x+y 为常数的一条斜线 = 垂直于刃）：莫比乌斯扭转的提示
+RING = (10, 11)     # 刃中段一圈环（x+y 为常数的一条斜线 = 垂直于刃）：莫比乌斯扭转的提示
 GOLD = {10: (245, 193, 57), 11: (207, 131, 30)}
-for y in range(20):
-    for x in range(20):
-        r, g, b, a = px[x, y]
-        if a == 0:
-            continue
-        c = (r, g, b)
-        if c in BLADE and x + y <= 22:           # 刃体（护手以上）
-            if x + y in RING:
-                px[x, y] = GOLD[x + y] + (255,)
-            elif y < x:
-                px[x, y] = LIGHT[c] + (255,)
-            elif y > x:
-                px[x, y] = DARK[c] + (255,)
-            else:                                  # 刃脊
-                px[x, y] = (196, 192, 220, 255)
-        elif c in PURPLE:
-            px[x, y] = PURPLE[c] + (255,)
+CRIMSON_RING = {10: (255, 70, 90), 11: (170, 20, 50)}
+CRIMSON = {(250, 60, 70): (255, 90, 110), (200, 16, 48): (200, 20, 60), (130, 8, 40): (120, 10, 36),
+           (177, 1, 42): (160, 8, 44), (108, 26, 44): (90, 14, 30), (140, 41, 62): (130, 30, 50),
+           (223, 46, 41): (235, 60, 80), (255, 210, 220): (255, 200, 210)}
+GOLD_TO_CRIMSON = {(245, 193, 57): (235, 70, 90), (232, 174, 46): (205, 50, 70), (207, 131, 30): (165, 30, 50),
+                   (217, 158, 61): (190, 45, 65), (239, 209, 87): (250, 110, 120), (184, 115, 28): (140, 20, 40),
+                   (157, 96, 32): (110, 14, 32)}
+
+
+def paint(final: bool) -> Image.Image:
+    base = Image.open(SRC).convert("RGBA")
+    src, out = base.load(), base.copy()
+    px = out.load()
+    for y in range(20):
+        for x in range(20):
+            r, g, b, a = src[x, y]
+            if a == 0:
+                continue
+            c = (r, g, b)
+            if c in BLADE and x + y <= 22:           # 刃体（护手以上）
+                if x + y in RING:
+                    px[x, y] = (CRIMSON_RING if final else GOLD)[x + y] + (255,)
+                elif x == y:                           # 刃脊
+                    px[x, y] = (196, 192, 220, 255)
+                else:
+                    light = (y < x) != final           # 终式黑白互换
+                    px[x, y] = (LIGHT if light else DARK)[c] + (255,)
+            elif c in PURPLE:
+                px[x, y] = (CRIMSON if final else PURPLE)[c] + (255,)
+            elif final and c in GOLD_TO_CRIMSON:
+                px[x, y] = GOLD_TO_CRIMSON[c] + (255,)
+    return out
+
+
+im = paint(False)
+paint(True).save(OUT.replace("paradox.png", "paradox_lv120.png"))
 im.save(OUT)
 print("ok")
