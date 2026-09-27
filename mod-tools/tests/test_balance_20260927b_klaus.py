@@ -53,6 +53,15 @@ def slv(value):
     return [{'min': value, 'max': value}]
 
 
+def rework_output():
+    """作者 09-27 小重做（wf_balance_20260927b_claus_rework，在本批 1.4.1051 之上）又改了 PF 三档：
+    live 与候选在它暂存/发布后是它的输出，而不是本模块的输出。按它的夹具重算，供本机断言放行。"""
+    import wf_balance_20260927b_claus_rework as R
+    data = json.loads((Path(__file__).parent / 'fixtures/balance_20260927b_claus_rework.json').read_bytes())
+    inputs = data['inputs']
+    return R, R.revise(lambda kind, key: inputs[kind]['|'.join(key) if kind == 'table' else key])
+
+
 class KlausBatch2Test(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -222,6 +231,20 @@ class KlausBatch2Test(unittest.TestCase):
         manifest = WORKSPACE / 'package/manifest.json'
         before = manifest.read_bytes()
         meta = json.loads(before)
+        R, rework = rework_output()
+        if meta['package_version'] == R.PACKAGE_VERSION[R.PACKAGES[0]]:
+            # 作者 09-27 小重做已回写候选：技能两档 DSL 已重封（无既有漂移），PF 三档是小重做的输出。
+            candidate = RevisionCandidate(ROOT, WORKSPACE, reviewed_input_drift={},
+                                          character_id=B.CID, code_name=B.CODE,
+                                          snapshot_key='revision_20260927b',
+                                          package_version=R.PACKAGE_VERSION[R.PACKAGES[0]],
+                                          baseline_factory=lambda *a, **k: None)
+            for program in (PF1, PF2, PF3):
+                raw = candidate.read('common', wf_dsl.dsl_logical(program))
+                tree = wf_dsl.parse_dsl(zlib.decompress(raw, -15))['tree']
+                self.assertEqual(json.dumps(rework['dsl'][program]), json.dumps(tree), program)
+            self.assertEqual(before, manifest.read_bytes())
+            return
         candidate = RevisionCandidate(ROOT, WORKSPACE, reviewed_input_drift=B.REVIEWED_DRIFT,
                                       character_id=B.CID, code_name=B.CODE,
                                       snapshot_key='revision_20260927b',
@@ -269,7 +292,9 @@ class KlausBatch2Test(unittest.TestCase):
             if not path.is_file():
                 self.skipTest('live store DSL not present')
             live = wf_dsl.parse_dsl(zlib.decompress(path.read_bytes(), -15))['tree']
-            self.assertIn(B.digest(live), {B.BEFORE['dsl', program], B.digest(tree)}, program)
+            # 作者 09-27 小重做发布后，live 是 wf_balance_20260927b_claus_rework 的输出。
+            allowed = {B.BEFORE['dsl', program], B.digest(tree), B.digest(rework_output()[1]['dsl'][program])}
+            self.assertIn(B.digest(live), allowed, program)
 
 
 if __name__ == '__main__':
