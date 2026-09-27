@@ -33,6 +33,15 @@
   （:func:`balance_b_rows` / :func:`balance_b_panel` / ``balance_b.skill_tree`` / ``balance_b.description``）：
   队长每层成长放缓 1/5 并收下能力 3 的两条自身逐层行（7→9 行），能力 3 两行改为每层 30%、最多 5 层，
   两棵技能树的浪涌层数绑定上限 99→5，技能描述加「（最多5层）」；
+- **2026-09-27 平衡第三轮（c）**（成长复核 + 技能倍率撤封顶）：第二批之后再调用 ``wf_balance_20260927c_regis``
+  （:func:`balance_c_rows` / :func:`balance_c_panel` / ``balance_c.skill_tree`` / ``balance_c.description``）：
+  队长四条每层成长改为原值 4/5（120/80/120/120%），队长追加 536 旗号 1 行（雷共鸣，9→10 行）与文案键
+  ``change_skill_rec_android_seaside_leader``；两棵技能树 ≥5 层档按 ``ConditionalsChangeSkillFlag(1)`` 分两支
+  （开支上限 99.0、关支保留第二批 5.0）；队长面板同步（强化条目「强化『浪花爆破』：…」= ``balance_c.FLAG_TEXT``；
+  技能描述保持第二批「（最多5层）」，强化后的不封顶只写在队长面板，``balance_c.description`` 只核对不改；暂存前最后一轮：
+  队长面板「非FEVER / FEVER 冲刺时FEVER槽」一行按数据条件拆两行，``balance_c.SPLIT_LINES_AFTER``，
+  由 ``balance_c.panel_text`` 带出）。两支复用同一组绑定号（互斥执行），
+  :func:`blueprint_check_with_sig` 的「绑定 id 重复」对旗号两支按分支计数；
 - 两棵技能 DSL：官方 131020 骨架 + ★4 231003 光束 + 151045 雷队能力伤害状态（移植
   design/_tmp/regis/d09_compose_final.py），特效引用经 ``rewrite_effect_refs`` 改写，
   先与上一轮定稿树逐节点严格比对；再叠改版增量 D1–D5（两分支各一条 Bind、
@@ -76,6 +85,7 @@ if str(HERE) not in sys.path:
 
 import wf_balance_20260927_regis as balance  # noqa: E402  纯函数、只依赖标准库
 import wf_balance_20260927b_regis as balance_b  # noqa: E402  第二批（无上限成长），叠在第一批之后
+import wf_balance_20260927c_regis as balance_c  # noqa: E402  第三轮（成长 4/5 + 技能撤封顶），叠在第二批之后
 
 KEY = "regis"
 CID = "139994"
@@ -174,8 +184,9 @@ FORBIDDEN_PANEL_WORDS = ("自身为队长时", "觉醒后", "生命值100%以下
 #     ``<icon id='main'>``，与本来就是主位键的能力 3 同写法。
 # (2) 文案规则（revision2-20260916/文案规则-补充.md）：
 #     ① 没有上限就什么都不跟 —— 删「（无上限）」，句子写到效果为止（机制不动：固有上限仍是 99）；
-#     ② 能力里的「技能强化」条目不写数字与时间 —— 本角色没有 ChangeSkillFlag(536/704) 行，
-#        规则②在雷吉斯身上空过（断言见 :func:`rev2_skill_flag_problems`）。
+#     ② 能力里的「技能强化」条目不写数字与时间 —— plan 行里没有 ChangeSkillFlag(536/704) 行，
+#        规则②在 plan 层空过（断言见 :func:`rev2_skill_flag_problems`）；2026-09-27 第三轮 c 层在队长表
+#        追加的 536 行，其文案键由 ``balance_c.panel_problems``（skill_flag=True）按规则②把关。
 MAIN_ICON = " <icon id='main'>  "
 REV2_MAIN_SLOT_SLOTS = (1, 3)          # 主位限制的词条槽（3 是上一轮就有的，1 是本轮新加）
 REV2_TEXT_DROPS = ("（无上限）",)       # 规则①：整段删掉，不替换成别的说法
@@ -218,8 +229,9 @@ TEXTS = {
 
 SPEC = {
     "required_capabilities": CAPABILITIES,
-    # 2026-09-27：能力 2 的 629 文案键（balance.STRIKE_KEY）也由本包认领，漏认领 = rebase 静默回滚 + C8601
-    "extra_keys": {CAS: (*CAS_KEYS, balance.STRIKE_KEY), SW: (VOICE_KEY,), UNIQUE: (UID,)},
+    # 2026-09-27：能力 2 的 629 文案键（balance.STRIKE_KEY）也由本包认领，漏认领 = rebase 静默回滚 + C8601；
+    # 第三轮 c：队长 536 行的文案键（balance_c.FLAG_KEY）同理
+    "extra_keys": {CAS: (*CAS_KEYS, balance.STRIKE_KEY, balance_c.FLAG_KEY), SW: (VOICE_KEY,), UNIQUE: (UID,)},
 }
 
 
@@ -446,6 +458,38 @@ def balance_b_panel(cas_rows: dict[str, list[list[str]]]) -> dict[str, list[list
     probs = [f"{key}: {p}" for key, cells in out.items() for p in panel_text_problems(cells[0][0])]
     if probs:
         raise KitError(f"balance 20260927b panel text has forbidden words: {probs}")
+    return out
+
+
+def balance_c_rows(leader: list[list[str]], ability: dict[str, list[list[str]]]):
+    """第三轮 c：队长四条逐层成长 → 原值 4/5，追加 536 旗号 1 行（雷共鸣）。只接受第二批输出
+    （:func:`balance_b_rows` 之后调用）；旗号 1 空闲核对（``ability`` 各键无 536/704–708）与门禁在
+    ``balance_c.leader_rows`` 内部。能力行不动（口径 D4）。"""
+    try:
+        leader = balance_c.leader_rows(leader, ability)
+    except ValueError as exc:
+        raise KitError(f"balance 20260927c rows: {exc}") from exc
+    return leader, dict(ability)
+
+
+def balance_c_panel(cas_rows: dict[str, list[list[str]]]) -> dict[str, list[list[str]]]:
+    """第三轮 c：队长覆盖文案换成 4/5 数值、插入技能强化行，并把「；」挤两种数据条件的冲刺 FEVER 槽行拆成两行（口径 5）；
+    追加 536 行文案键（:func:`balance_b_panel` 之后调用）。技能强化文案按规则②不写数字与时间。"""
+    key = balance_c.PANEL_LEADER
+    if key not in cas_rows:
+        raise KitError(f"balance 20260927c panel key missing: {key}")
+    if balance_c.FLAG_KEY in cas_rows:
+        raise KitError(f"balance 20260927c flag text key already present: {balance_c.FLAG_KEY}")
+    out = dict(cas_rows)
+    try:
+        out[key] = [[balance_c.panel_text(key, cas_rows[key][0][0])]]
+    except ValueError as exc:
+        raise KitError(f"balance 20260927c panel: {exc}") from exc
+    out[balance_c.FLAG_KEY] = [[balance_c.FLAG_TEXT]]
+    probs = [f"{k}: {p}" for k, cells in out.items() for p in panel_text_problems(cells[0][0])]
+    probs += [f"{k}: {p}" for k in (key, balance_c.FLAG_KEY) for p in balance_c.panel_problems(k, out[k][0][0])]
+    if probs:
+        raise KitError(f"balance 20260927c panel text problems: {probs}")
     return out
 
 
@@ -715,6 +759,20 @@ def blueprint_check_with_sig(tree, off: dict[str, list[str]]) -> tuple[list[str]
                 sh = c[9]
                 if _bp_tag(sh) == "Rectangle" and len(sh) != 3:
                     probs.append("Rectangle 非三元组(F1009)")
+            elif nm == "ConditionalsChangeSkillFlag":
+                # 2026-09-27 第三轮 c：旗号两支互斥（一次施放只执行一支，各在新的局部环境里，
+                # ActionEvaluator.as:4509-4526），同一绑定号可在两支各出现一次（live 杰拉德先例）
+                # ⇒ 两支各自计数、合并取大；支内重复与支外重复照旧报。其余树不含本构造，结果不变。
+                outer = dict(ids_seen)
+                branch_counts = []
+                for branch in c[2:4]:
+                    ids_seen.clear()
+                    walk(branch, scope)
+                    branch_counts.append(dict(ids_seen))
+                ids_seen.clear()
+                ids_seen.update(outer)
+                for x in {k for counts in branch_counts for k in counts}:
+                    ids_seen[x] = ids_seen.get(x, 0) + max(counts.get(x, 0) for counts in branch_counts)
             else:
                 for x in c[1:]:
                     if _bp_tag(x) in ("Block", "Command", "Event"):
@@ -1537,6 +1595,7 @@ def kit_fingerprint(ctx) -> tuple[str, dict]:
     cas = ctx.pkg_flat(CAS)
     parts["custom_ability_string"] = {k: cas[k] for k in CAS_KEYS}
     parts["custom_ability_string"][balance.STRIKE_KEY] = cas.get(balance.STRIKE_KEY)
+    parts["custom_ability_string"][balance_c.FLAG_KEY] = cas.get(balance_c.FLAG_KEY)
     parts["upskill"] = ctx.pkg_flat(UPSKILL)[CID]
     parts["unique_condition"] = ctx.pkg_flat(UNIQUE)[UID]
     parts["unique_icon"] = sha256(ctx.pack.pkg_path("common", ICON_LOGICAL).read_bytes()) \
@@ -1633,7 +1692,8 @@ def build(ctx) -> dict[str, Any]:
                     for e in row_evidence if e["problems"]}
     if row_problems:
         raise KitError(f"row legality problems: {row_problems}")
-    # 规则②的空过断言：本角色没有 ChangeSkillFlag「技能强化」条目（有就必须按规则②改文案）
+    # 规则②的空过断言：plan 行没有 ChangeSkillFlag「技能强化」条目（有就必须按规则②改文案）；
+    # 第三轮 c 层追加的队长 536 行，其文案在 balance_c_panel 里按规则②（skill_flag=True）把关
     flag_probs = [f"{e['key']}#{e.get('record', e.get('id'))}: {p}" for e in row_evidence
                   for p in rev2_skill_flag_problems("leader_ability" if e["table"] == LEADER else "ability", e["row"])]
     if flag_probs:
@@ -1645,7 +1705,9 @@ def build(ctx) -> dict[str, Any]:
     rows['leader'], rows['ability'] = balance_rows(rows['leader'], rows['ability'])
     # 2026-09-27 平衡第二批：第一批之后再叠无上限成长修订（队长 7→9 行、能力 3 最多 5 层）
     rows['leader'], rows['ability'] = balance_b_rows(rows['leader'], rows['ability'])
-    description = balance_b.description(balance.description(surge.DESCRIPTION))
+    # 2026-09-27 平衡第三轮 c：第二批之后再叠成长 4/5 + 队长 536 旗号 1 行（9→10 行，能力不动）
+    rows['leader'], rows['ability'] = balance_c_rows(rows['leader'], rows['ability'])
+    description = balance_c.description(balance_b.description(balance.description(surge.DESCRIPTION)))
     texts['character_text'][5] = texts['character_text'][7] = description
     for level in ('1', '2'):
         texts['action'][level][1] = description
@@ -1682,6 +1744,7 @@ def build(ctx) -> dict[str, Any]:
         cas_rows[key][0][0] = surge.revise_text(slot, cas_rows[key][0][0])
     cas_rows = balance_panel(cas_rows)
     cas_rows = balance_b_panel(cas_rows)
+    cas_rows = balance_c_panel(cas_rows)
     ms_probs = main_slot_panel_problems(rows["ability"], cas_rows)
     if ms_probs:
         raise KitError(f"main-slot marker mismatch after balance 20260927: {ms_probs}")
@@ -1733,6 +1796,7 @@ def build(ctx) -> dict[str, Any]:
         tree = surge.revise_skill(tree)
         tree = balance.skill_tree(tree)                     # 2026-09-27：bta 2→0、ACSkillDamage
         tree = balance_b.skill_tree(tree)                   # 2026-09-27 第二批：浪涌层数绑定上限 99→5
+        tree = balance_c.skill_tree(tree)                   # 2026-09-27 第三轮 c：≥5 层档按旗号 1 分支（开支 99）
         built_trees.append(tree)
         checks = dsl_problems(ctx.root, tree)
         if not checks["all_empty"] or not checks["roundtrip"]:
@@ -1835,6 +1899,11 @@ def build(ctx) -> dict[str, Any]:
                  "150→30%、攻击 100→20%，新增自身每层攻/技伤 30%（由能力 3 搬入，7→9 行）；能力 3 两行改为每层 "
                  "30%、最多 5 层（c102=5）；技能树浪涌层数绑定上限 99→5（每层 +15 倍最多 5 层）；"
                  "面板 2 键与技能描述同步。未经真机验收")
+    notes.append("2026-09-27 平衡第三轮 c（成长复核 + 技能倍率撤封顶，wf_balance_20260927c_regis）：队长每层雷队技伤 "
+                 "30→120%、攻击 20→80%、自身攻/技伤 30→120%（原值 4/5）；队长追加 536 旗号 1 行（雷共鸣，9→10 行，"
+                 f"文案键 {balance_c.FLAG_KEY}）；两棵技能树 ≥5 层档按 ConditionalsChangeSkillFlag(1) 分两支（开支 Bind "
+                 "上限 99.0、关支保留 5.0）；队长面板同步（强化条目点名『浪花爆破』），技能描述保持第二批（不写强化后效果）；"
+                 "能力 3 封顶版不动。未经真机验收")
     report = {
         "summary": f"雷吉斯·海滨 kit（改版 2026-09-16）：{len(rows['leader'])} 队长行 / "
                    f"{sum(len(v) for v in rows['ability'].values())} 词条行 / 7 覆盖文案 / "
