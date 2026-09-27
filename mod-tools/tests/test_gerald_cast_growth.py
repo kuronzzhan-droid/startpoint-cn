@@ -35,8 +35,17 @@ class GeraldCastGrowthTest(unittest.TestCase):
             ratios=list(nodes(new,'CreateRatioAttack'))
             strike=next(x for x in ratios if len(x[3])==2)
             self.assertEqual(strike[2],1)  # remaining HP, never max HP
-            for prior_casts,expected in [(0,.05),(1,.06),(2,.07),(20,.25)]:
-                actual=sum(v['min']*(prior_casts if v.get('mul') else 1) for v in strike[3])
+            # Bind 第 5 参 = 变量上限；客户端取 min(层数/1, 上限)。第二批曾封到 10（最多 15%），
+            # 作者 09-27 追加撤回：成长只在当队长时强化 ⇒ 恢复 2147483647.0（浮点，与 live 解码同类型）。
+            binds=list(nodes(new,'BindConditionAccumulationVariable'))
+            self.assertEqual(binds,[['BindConditionAccumulationVariable',-17,G.COUNTER_VARIABLE,
+                                     ['DCUnique',G.COUNTER_UID],1,G.COUNTER_CAP]])
+            self.assertEqual(G.COUNTER_CAP,2147483647.0)
+            self.assertIs(type(G.COUNTER_CAP),float)
+            self.assertIs(type(binds[0][5]),float)
+            for prior_casts,expected in [(0,.05),(1,.06),(2,.07),(10,.15),(20,.25)]:
+                bound=min(prior_casts/binds[0][4],binds[0][5])
+                actual=sum(v['min']*(bound if v.get('mul') else 1) for v in strike[3])
                 self.assertAlmostEqual(actual,expected)
             branch=list(nodes(new,'ConditionalsHealthPointRatioOf'))[0]
             self.assertEqual(branch[2],5)

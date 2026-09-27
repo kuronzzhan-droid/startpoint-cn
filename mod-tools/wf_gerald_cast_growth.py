@@ -1,4 +1,4 @@
-"""光狼队长的施技成长：起手快照，每次强化技能递增当前HP比例。"""
+"""光狼队长的施技成长：起手快照，每次强化技能递增当前HP比例（不封顶，强化只在当队长时打开）。"""
 from copy import deepcopy
 from wf_bianca_dragon_skill import block, command, value
 from wf_wind_dragon_revision import nodes
@@ -6,8 +6,17 @@ from wf_wind_dragon_revision import nodes
 CODE = 'white_wolf_gerald'
 COUNTER_UID = 14999903
 COUNTER_VARIABLE = 360
+#: BindConditionAccumulationVariable 第 5 参 = 变量上限（ActionEvaluator case 101：
+#: ``bindFloatVariable(vid, min(层数 / 第4参, 第5参))``）。2026-09-27 第二批（口径 A.5）
+#: 曾把它 2147483647 → 10（最多 15%）；作者 09-27：成长移入队长技（只在当队长时强化）后不再封顶
+#: ⇒ 撤回（wf_balance_20260927b_gerald2）。写成浮点：AMF3 29 位整数放不下 2147483647，编码本来就是
+#: double、解码回 2147483647.0；浮点与整数字节相同，但浮点让输出与 live 解码树连类型一致。
+#: 计数固有 14999903 本身的上限（counter_row c4）一直未封。
+COUNTER_CAP = 2147483647.0
 CONDITION_KEY = CODE + '_cast_growth'
-ENHANCEMENT_TEXT = '强化自身技能效果，额外造成一定固定伤害。'
+#: 技能强化条目（队长 536 行 c68 文案）：不写数字与秒数，不写共鸣前缀（客户端按前置拼「光属性共鸣」）；
+#: 比例伤害称「固定伤害」（作者 09-27）。数字写在技能描述里。
+ENHANCEMENT_TEXT = '强化自身技能：追加按敌人当前生命值计算的固定伤害（随技能发动次数提高），并斩杀低生命值的敌人'
 
 
 def relocate(a2, a3, leaders):
@@ -46,7 +55,7 @@ def rewrite(tree):
         raise ValueError('unexpected existing variable binding')
     strike[3] = [{'min': .05, 'max': .05}, {'min': .01, 'max': .01, 'mul': COUNTER_VARIABLE}]
     bind = command('BindConditionAccumulationVariable', -17, COUNTER_VARIABLE,
-                   ['DCUnique', COUNTER_UID], 1, 2147483647)
+                   ['DCUnique', COUNTER_UID], 1, COUNTER_CAP)
     increment = command('CreateCondition', -17, [['ACUnique', COUNTER_UID, value(1)]],
                         value(1), ['None'], False, False, CONDITION_KEY, None, False, 3, value(1), True)
     # Snapshot before the increment; each evaluator retains its own prior-cast count.
