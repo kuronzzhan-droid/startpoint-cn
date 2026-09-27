@@ -65,10 +65,32 @@ SKILL_DSLS = {
 }
 
 
+#: 2026-09-27 平衡轮次回写候选时登记的 snapshot 键 → RevisionCandidate 写入的 package_version(由旧到新)。
+PACKAGE_VERSIONS = {
+    "revision_20260927": "0.20260927",      # 第一批 wf_balance_20260927_inaho
+    "revision_20260927b": "0.20260927.1",   # 第二批 wf_balance_20260927b_inaho
+    "revision_20260927c": "0.20260927.2",   # 第二批追加 wf_balance_20260927b_inaho2
+    "revision_20260927d": "0.20260927.3",   # 第三轮 wf_balance_20260927c_inaho(extra5 stage_batch.SNAPSHOT)
+}
+BATCH2_SNAPSHOT, BATCH3_SNAPSHOT = "revision_20260927b", "revision_20260927d"
+#: 余辉每层队长 #1(雷队 Fever 获得量)c111/c112:原 40%;第二批 ×1/5 = 8%;第三轮回调到 40% × 4/5 就近取 30%。
+ORIGINAL_FEVER_GAIN, BATCH2_FEVER_GAIN, BATCH3_FEVER_GAIN = "40000", "8000", "30000"
+
+
 def _records(logical: str, key: str) -> list[list[str]]:
     table = core.read_orderedmap_file_raw_rows(PACKAGE / "roots/common" / logical, logical)
     raw = table.rows[table.keys.index(key)]
     return core.read_csv_lines(zlib.decompress(raw).decode("utf-8"))
+
+
+def _revision_rounds() -> tuple[bool, bool]:
+    """(第二批已回写, 第三轮已回写)。第三轮按快照键或候选队长 #1 的值判定,任一成立即按第三轮核对
+    (stage_batch 回写后二者同时成立;只认值是为了不依赖暂存脚本的快照键命名)。"""
+    snapshot = json.loads((PACKAGE / "manifest.json").read_bytes()).get("snapshot", {})
+    batch2 = BATCH2_SNAPSHOT in snapshot
+    batch3 = batch2 and (BATCH3_SNAPSHOT in snapshot
+                         or _records(LEADER, "139995")[1][111] == BATCH3_FEVER_GAIN)
+    return batch2, batch3
 
 
 class InahoV12PackageTest(unittest.TestCase):
@@ -146,8 +168,11 @@ class InahoV12PackageTest(unittest.TestCase):
         rows = _records(LEADER, "139995")
         # 2026-09-27 第二批(wf_balance_20260927b_inaho)回写后:整键取 live 11 行(1.4.864 删了原行1
         # 「雷队员放技能→雷队技能槽4%」),余辉每层行 ×1/5(Fever 获得量 40%→8%)。回写前仍是旧候选 12 行。
-        batch2 = "revision_20260927b" in json.loads((PACKAGE / "manifest.json").read_bytes()).get("snapshot", {})
-        shift, fever_gain = (1, "8000") if batch2 else (0, "40000")
+        # 第三轮(wf_balance_20260927c_inaho)回写后:行数、行位不变,余辉每层 5 行回调(Fever 获得量 8%→30%)。
+        batch2, batch3 = _revision_rounds()
+        shift = 1 if batch2 else 0
+        fever_gain = (BATCH3_FEVER_GAIN if batch3 else BATCH2_FEVER_GAIN if batch2
+                      else ORIGINAL_FEVER_GAIN)
         self.assertEqual(len(rows), 12 - shift)   # 2026-09-09 +during 413 每层;2026-09-10 +Fever→461 余辉+1
         growth = rows[2 - shift]
         self.assertEqual(growth[3], "1")                       # During
@@ -197,7 +222,12 @@ class InahoV12PackageTest(unittest.TestCase):
                 self.assertNotIn(STATE, json.dumps(tree))
 
     def test_dead_strings_and_dsls_left_the_package_and_the_manifest(self):
-        self.assertEqual(self.manifest["package_version"], "1.1.1")
+        # V12 = 1.1.1;2026-09-27 起每轮平衡修订(RevisionCandidate)把版本换成该轮的日期式版本并登记快照键。
+        batch2, batch3 = _revision_rounds()
+        snapshot = self.manifest.get("snapshot", {})
+        dated = [version for key, version in PACKAGE_VERSIONS.items()
+                 if key in snapshot or (batch3 and key == BATCH3_SNAPSHOT)]
+        self.assertEqual(self.manifest["package_version"], dated[-1] if dated else "1.1.1")
         # V9 (kyubi-pf-damage) was dropped on 2026-09-07: the FFDec whole-class
         # recompile crashed evalCommand (F1069) and the author no longer wants
         # skills classified as PF damage.
@@ -211,12 +241,17 @@ class InahoV12PackageTest(unittest.TestCase):
         for key in PRESENT_STRING_KEYS:
             with self.subTest(key=key):
                 self.assertIn(key, self.strings)
-        self.assertEqual(claim["outer_keys"], [
+        claimed = {
             "ability_skill_fox_oracle_autumn_fever_pf",
             "override_string_fox_oracle_autumn_dual_pf",
             # 1.1.1: V11 panel override for ability 2 (「Fever模式中，无法获得Fever」).
             "desc_override_fox_oracle_autumn_2",
-        ])
+        }
+        if batch2:   # 第二批 stage_batch.Plan.splice 认领队长面板(claim 按键排序)
+            claimed.add("desc_override_fox_oracle_autumn")
+        if batch3:   # 第三轮认领能力6 面板(共鸣冒号换行 → 一行)
+            claimed.add("desc_override_fox_oracle_autumn_6")
+        self.assertEqual(sorted(claim["outer_keys"]), sorted(claimed))
         for logical in REMOVED_DSLS:
             with self.subTest(logical=logical):
                 self.assertNotIn(logical, root_paths)

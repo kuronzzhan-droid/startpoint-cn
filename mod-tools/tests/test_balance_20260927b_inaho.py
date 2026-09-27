@@ -369,8 +369,9 @@ class InahoBalance20260927bTest(unittest.TestCase):
             for variant in (text, text.rstrip('\n'), text.replace('\n', '\r\n')):
                 self.assertNotIn(hashlib.sha256(variant.encode()).hexdigest(), locked)
         # 队长覆盖文案在 mod-tools 下没有生成源（唯一登记是 offline_content 的键名门禁）。
+        # 第三轮 wf_balance_20260927c_inaho 以本模块输出为输入改末行数值，是其后的现行写入源（其测试核对）。
         for path in (ROOT / 'mod-tools').glob('*.py'):
-            if path.name == 'wf_balance_20260927b_inaho.py':
+            if path.name in ('wf_balance_20260927b_inaho.py', 'wf_balance_20260927c_inaho.py'):
                 continue
             self.assertNotIn('「余辉」每1层', path.read_text(encoding='utf-8', errors='ignore'), path.name)
 
@@ -407,9 +408,16 @@ class InahoBalance20260927bTest(unittest.TestCase):
             self.assertLessEqual(tuple(map(int, mine.split('.'))),
                                  tuple(map(int, current['package_version'].split('.'))))
             self.assertLessEqual(set(M.CAPABILITIES), set(current['required_capabilities']))
-            self.assertEqual(self.new_leader, X.csv_read(common[LEADER_TABLE][M.LEADER]))
+            # 第三轮（wf_balance_20260927c_inaho，以本模块输出为输入回调余辉每层 5 行与面板末行）回写后候选 = 第三轮输出。
+            import wf_balance_20260927c_inaho as M3
+            want_leader, want_panel = self.new_leader, self.out['cas'][M.PANEL]
+            if X.csv_read(common[LEADER_TABLE][M.LEADER]) == M3.leader_rows(self.new_leader):
+                want_leader, want_panel = M3.leader_rows(self.new_leader), M3.panel_rows(want_panel)
+                self.assertLessEqual(tuple(map(int, M3.PACKAGE_VERSION[M.PACKAGES[0]].split('.'))),
+                                     tuple(map(int, current['package_version'].split('.'))))
+            self.assertEqual(want_leader, X.csv_read(common[LEADER_TABLE][M.LEADER]))
             self.assertEqual(self.new_a4, X.csv_read(common[ABILITY_TABLE][M.ABILITY4]))
-            self.assertEqual(self.out['cas'][M.PANEL], X.csv_read(common[CAS_TABLE][M.PANEL]))
+            self.assertEqual(want_panel, X.csv_read(common[CAS_TABLE][M.PANEL]))
             for program, tree in self.out['dsl'].items():
                 raw = candidate.read('common', wf_dsl.dsl_logical(program))
                 self.assertEqual(_json_sha(tree),
