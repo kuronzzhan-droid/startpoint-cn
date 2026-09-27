@@ -92,7 +92,10 @@ class BaiBalanceTest(unittest.TestCase):
         manifest = WORKSPACE / "package/manifest.json"
         if manifest.is_file():
             current = json.loads(manifest.read_bytes())["package_version"]
-            self.assertLessEqual(tuple(int(x) for x in current.split(".")), version)
+            # 第三轮（c）回写后候选前进到 wf_balance_20260927c_bai 声明值；第二批 / 第三轮两种状态都合法。
+            import wf_balance_20260927c_bai as C3
+            batch3 = tuple(int(x) for x in C3.PACKAGE_VERSION[M.PACKAGES[0]].split("."))
+            self.assertLessEqual(tuple(int(x) for x in current.split(".")), max(version, batch3))
         self.assertFalse(self.out["notes"]["runtime_verified"])
         json.dumps(self.out["notes"], ensure_ascii=False)
 
@@ -286,6 +289,9 @@ class BaiBalanceTest(unittest.TestCase):
         before = manifest_path.read_bytes()
         manifest = json.loads(before)
         current = manifest["package_version"]
+        as_tuple = lambda v: tuple(int(x) for x in v.split("."))        # noqa: E731
+        if as_tuple(current) > as_tuple(M.PACKAGE_VERSION[M.PACKAGES[0]]):
+            self.skipTest("候选已前进到第三轮（c）；回写一致性见 test_balance_20260927c_bai")
         kwargs = dict(character_id=M.CID, code_name=M.CODE, snapshot_key=SNAPSHOT_KEY,
                       package_version=M.PACKAGE_VERSION[M.PACKAGES[0]],
                       baseline_factory=lambda *a, **k: None)
