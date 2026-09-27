@@ -7,8 +7,9 @@
 - ``other_character_diff``：压缩包整表 vs 我方 live 的「其他角色」差异键——整表替换会带入的行；
 - ``png_dims``：压缩包 PNG 的实际尺寸。
 本机专属用例（原始 zip、解出目录、灰链归档、live store、候选包）缺件时跳过。
-希耶提美术默认不导入（``ART_DECISION`` pending，待作者看对比图拍板）：``self.out`` 是默认输出，
-``self.full`` 是三人都接受美术时的输出（ART_UNITS / accepted 路径）。
+希耶提美术：作者 2026-09-27 看过对比图后接受灰版美术（``ART_DECISION`` 三人均 accepted；核心导入已发布，美术由
+``wf_balance_20260927c_seofonart`` 包装 ``ART_UNITS`` 另行暂存）。``self.out`` 是默认输出（= 作者决定），``self.full``
+是三人都接受美术时的输出；pending 路径（延后机制）用 ``run(cid, art=M.ART_PENDING)`` 单独覆盖。
 """
 from __future__ import annotations
 
@@ -162,7 +163,8 @@ class ImportTests(unittest.TestCase):
             notes = self.out[unit["CID"]]["notes"]
             json.dumps(notes, ensure_ascii=False)
             self.assertFalse(notes["runtime_verified"])
-        self.assertEqual(M.ART_DECISION, {"149997": M.ART_ACCEPTED, "149995": M.ART_PENDING,
+        # 作者 2026-09-27 接受希耶提灰版美术（原话见模块 ART_DECISION 注释）；改回 pending 必红。
+        self.assertEqual(M.ART_DECISION, {"149997": M.ART_ACCEPTED, "149995": M.ART_ACCEPTED,
                                           "149996": M.ART_ACCEPTED})
         (art,) = M.ART_UNITS                                       # 作者接受美术后才暂存，不在 UNITS 里
         self.assertEqual((art["CID"], art["CODE"], art["PACKAGES"], art["PACKAGE_VERSION"]),
@@ -346,28 +348,40 @@ class ImportTests(unittest.TestCase):
                 self.assertEqual(M.PRESENTATION_ROWS[M.FSA, cid][evo][0][:3], ["1000", "1000", "1"])
         self.assertEqual(sorted(k[1] for k in self.full["149995"]["presentation_table"] if k[0] != M.TRIM),
                          ["149995", "149995"])
-        self.assertEqual(self.out["149995"]["presentation_table"], {})   # 默认：随美术一起待拍板
+        self.assertEqual(self.out["149995"]["presentation_table"],       # 作者 09-27 接受：定位行随美术导入
+                         self.full["149995"]["presentation_table"])
+        self.assertEqual(run("149995", art=M.ART_PENDING)["presentation_table"], {})   # pending：随美术一起延后
         self.assertEqual(self.full["149996"]["presentation_table"], {})
         self.assertEqual(self.full["149997"]["presentation_table"], {})
         live_cimg = DATA["live"][live_key("nested_table", (M.CIMG, "149995"))]
         self.assertEqual(live_cimg["0"][0][2:], ["1774", "1769"])   # 旧立绘尺寸，新 PNG 放进去会拉伸
 
-    # ------------------------------------------------------------ 希耶提美术：默认不导入，等作者拍板
+    # ------------------------------------------------------------ 希耶提美术：作者 09-27 接受；pending 机制仍可用
 
-    def test_seofon_art_is_deferred_by_default(self):
+    def test_seofon_art_follows_the_author_decision(self):
+        """默认输出 = 作者决定（accepted，美术与定位行随导入）；pending 路径仍只延后、清单与接受时导入的相同。"""
         out, full = self.out["149995"], self.full["149995"]
-        self.assertEqual(out["files"], {})
-        self.assertEqual(out["presentation_table"], {})
+        self.assertEqual(M.digest(out["files"]), M.digest(full["files"]))
+        self.assertEqual(out["presentation_table"], full["presentation_table"])
+        self.assertEqual(len(out["files"]), 27)
         art = out["notes"]["art"]
-        self.assertEqual(art["decision"], M.ART_PENDING)
-        self.assertIn("deferred", art["status"])
-        self.assertEqual(art["files"], sorted(full["files"]))                      # 延后的正是接受时会导入的
-        self.assertEqual(art["presentation_table"], sorted(f"{a}|{b}" for a, b in full["presentation_table"]))
-        self.assertEqual(len(art["files"]), 27)
-        self.assertTrue(all(M.is_art(member, "seofon_wind") for member in art["files"]))
+        self.assertEqual((art["decision"], art["status"]), (M.ART_ACCEPTED, "imported"))
+        self.assertEqual(art["files"], sorted(full["files"]))
         self.assertIs(art["review"], M.ART_REVIEW["149995"])
+        self.assertIn("2026-09-27", art["review"]["decision"])
         self.assertEqual(len(art["review"]["package_tests_red_if_accepted"]), 4)
-        for key in ("text", "action", "dsl", "server_text"):                         # 非美术部分照常导入
+        pending = run("149995", art=M.ART_PENDING)
+        self.assertEqual(pending["files"], {})
+        self.assertEqual(pending["presentation_table"], {})
+        deferred = pending["notes"]["art"]
+        self.assertEqual(deferred["decision"], M.ART_PENDING)
+        self.assertIn("deferred", deferred["status"])
+        self.assertEqual(deferred["files"], sorted(full["files"]))                 # 延后的正是接受时会导入的
+        self.assertEqual(deferred["presentation_table"],
+                         sorted(f"{a}|{b}" for a, b in full["presentation_table"]))
+        self.assertTrue(all(M.is_art(member, "seofon_wind") for member in deferred["files"]))
+        for key in ("text", "action", "dsl", "server_text"):                         # 非美术部分两条路径相同
+            self.assertEqual(M.digest(pending[key]), M.digest(full[key]), key)
             self.assertEqual(M.digest(out[key]), M.digest(full[key]), key)
         # 泳装：新特效族是 DSL 依赖（不算美术），即使美术待定也必须随 DSL 导入。
         swim_pending = run("149996", art=M.ART_PENDING)
@@ -479,7 +493,8 @@ class ImportTests(unittest.TestCase):
 
     def test_files_mapping(self):
         counts = {cid: {} for cid in CIDS}
-        self.assertEqual(self.out["149995"]["files"], {})                            # 默认：希耶提美术待拍板
+        self.assertEqual(self.out["149995"]["files"], self.full["149995"]["files"])   # 作者 09-27 接受希耶提美术
+        self.assertEqual(run("149995", art=M.ART_PENDING)["files"], {})               # pending：美术延后
         self.assertEqual(self.out["149996"]["files"], self.full["149996"]["files"])
         for cid in CIDS:
             for member, path in self.full[cid]["files"].items():
@@ -523,12 +538,14 @@ class ImportTests(unittest.TestCase):
         gray["tables"][M.ABIL]["1499966"][3][70] = "ability_skill_wind_spgirl_swim_typo"
         with self.assertRaisesRegex(ValueError, "custom_ability_string"):
             run("149996", gray=gray)
-        # 美术待定时，延后清单同样钉住：灰方定位行变了（这里让一行与 live 相同）即拒绝，哪怕输出本身不含美术。
+        # 美术清单钉住：灰方定位行变了（这里让一行与 live 相同）即拒绝——接受路径如此，pending 路径哪怕输出不含美术也如此。
         key = (M.TRIM, "character/seofon_wind/ui/skill_cutin_0")
         live_rows = DATA["live"][live_key(*M.before_key(*key))]
         with mock.patch.dict(M.PRESENTATION_ROWS, {key: live_rows}):
             with self.assertRaisesRegex(ValueError, "art change set drifted"):
                 run("149995")
+            with self.assertRaisesRegex(ValueError, "art change set drifted"):
+                run("149995", art=M.ART_PENDING)
             with self.assertRaisesRegex(ValueError, "art change set drifted"):
                 M.revise_art("149995", reader(deepcopy(DATA["live"])), FixtureSource(DATA["gray"]))
 
@@ -701,7 +718,7 @@ class ImportTests(unittest.TestCase):
                 oob += [(logical, r["n"]) for r in atlas if r["x"] + r["w"] > w or r["y"] + r["h"] > h]
         # 唯一越界：希耶提插画图集（灰我同字节，按 363×781 打包）配灰版 361×789 PNG——两个矩形宽 362/363 越出右缘 1-2 px，
         # PNG 又比图集高 8 px（y 781-788 不在任何矩形里）。下面钉住：这 8 行与 x≥361 全透明、两幅画内容都在矩形内，
-        # 所以没有可见像素被裁（灰服自 1.4.90 起如此；只在作者接受希耶提美术时才会进 live，见 RISKS）。
+        # 所以没有可见像素被裁（灰服自 1.4.90 起如此；作者 09-27 接受希耶提美术后随 seofonart 进 live，见 RISKS）。
         self.assertEqual(oob, [("character/seofon_wind/ui/illustration_setting_sprite_sheet.atlas.amf3.deflate",
                                 "character/seofon_wind/ui/full_shot_illustration_setting_0"),
                                ("character/seofon_wind/ui/illustration_setting_sprite_sheet.atlas.amf3.deflate",
@@ -817,11 +834,31 @@ class ImportTests(unittest.TestCase):
                 return M.GRAY_FILES.get(":".join(key)) if ":".join(key) in out["files"] else None
             return None
 
+        # gray3 之后，同一批次里又各自跑了一轮的两个角色（墨斯伊克、泳装希尔媞）：real live 已推进到那一轮的输出，
+        # 这里从各自模块的 c 测试夹具重放同一 revise()，把结果也算作合法落点（不改变 self.out/self.full 本身）。
+        import wf_balance_20260927c_mosiyike as C_MOSIYIKE
+        import wf_balance_20260927c_swimceltie as C_SWIMCELTIE
+        mosiyike_inputs = json.loads((Path(__file__).parent /
+                                     "fixtures/balance_20260927c_mosiyike.json").read_bytes())["inputs"]
+        mosiyike_layer = C_MOSIYIKE.revise(
+            lambda kind, key: mosiyike_inputs[kind]["|".join(key) if kind == "table" else key])
+        swim_reads = {(k, key): deepcopy(v) for k, key, v in json.loads(
+            (Path(__file__).parent / "fixtures/balance_20260927c_swimceltie.json").read_bytes())["reads"]}
+        swimceltie_layer = C_SWIMCELTIE.revise(lambda kind, key: swim_reads[kind, key])
+        later_layers = {"149997": mosiyike_layer, "149996": swimceltie_layer}
+
         for cid in CIDS:
+            layer = later_layers.get(cid, {})
             for (kind, key), want in M.BEFORE_BY_CID[cid].items():
                 got = M.digest(live_value(kind, key))
+                allowed = {want}
                 after = imported(cid, kind, key)
-                allowed = {want} | ({M.digest(after)} if after is not None else set())
+                if after is not None:
+                    allowed.add(M.digest(after))
+                table = layer.get(kind)
+                later = table.get(key) if isinstance(table, dict) else None
+                if later is not None:
+                    allowed.add(M.digest(later))
                 self.assertIn(got, allowed, (cid, kind, key))
 
     @unittest.skipUnless(LOCAL_STORE and (ROOT / "work/character_packs/mosiyike/package/manifest.json").is_file()
@@ -840,7 +877,14 @@ class ImportTests(unittest.TestCase):
                                   package_version=unit["PACKAGE_VERSION"][pkg],
                                   baseline_factory=lambda *a, **k: None)
                 version = tuple(map(int, meta["package_version"].split(".")))
-                self.assertLessEqual(version, tuple(map(int, unit["PACKAGE_VERSION"][pkg].split("."))), pkg)
+                # 不降级：候选现值不得高于 gray3 及其后续轮次为该包声明的最高版本（希耶提：UNITS 1.0.3 →
+                # ART_UNITS / seofonart 1.0.4；墨斯伊克：UNITS 0.1.2 → wf_balance_20260927c_mosiyike 0.1.3）。
+                import wf_balance_20260927c_mosiyike as C_MOSIYIKE
+                import wf_balance_20260927c_seofonart as C_SEOFONART
+                later = [dict(PACKAGE_VERSION=C_MOSIYIKE.PACKAGE_VERSION)] + list(C_SEOFONART.UNITS)
+                declared = max(tuple(map(int, u["PACKAGE_VERSION"][pkg].split(".")))
+                               for u in M.UNITS + M.ART_UNITS + later if pkg in u["PACKAGE_VERSION"])
+                self.assertLessEqual(version, declared, pkg)
                 self.assertEqual(before, (workspace / "package/manifest.json").read_bytes())
 
     @unittest.skipUnless(LOCAL_STORE, "local live store required")

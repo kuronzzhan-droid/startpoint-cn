@@ -31,7 +31,7 @@ root：upload=common、medium_upload=medium、android_upload=android、ios_uploa
 读取另需两个 read 种类（暂存脚本扩展）：``nested_table``：(logical, outer) → {inner: csv rows}；
 ``file_sha256``：(tier, logical) → live 文件 sha256（缺失为 None）。
 
-## 美术分两步：希耶提灰版美术待作者拍板（``ART_DECISION``）
+## 美术分两步：希耶提灰版美术单独拍板（``ART_DECISION``；作者 2026-09-27 已接受）
 美术 = medium/android 层与 ``character/<code>/`` 下的文件 + 立绘定位三表（``is_art``）；``battle/effect`` 特效是
 DSL 依赖，不算美术。希耶提灰版觉醒立绘脸锚 y=874（官方 p10-p90 418-646）、两槽脸锚不同高、cut-in 上/左边不透明——
 正是作者 1.4.447 实机否决过的构图（``ART_REVIEW``，对比图在 ``work/gray3/review/``），而且会让希耶提包内 4 条
@@ -39,6 +39,10 @@ DSL 依赖，不算美术。希耶提灰版觉醒立绘脸锚 y=874（官方 p10
 ``notes.art``（status = deferred，列出延后的文件与定位行）；作者看图接受后，暂存单独的 ``ART_UNITS``
 （只查美术输入基线，核心导入之后仍可跑），并在同一单元按作者签字改/退役那 4 条包测试。泳装希尔媞的灰版美术
 沿用我方定位行、脸锚落在脸上，cut-in 边缘与我方同样不透明（非回退），随核心一起导入；墨斯伊克美术与我方逐字节相同。
+
+**作者 2026-09-27 已拍板接受希耶提灰版美术**（``ART_DECISION["149995"]`` = accepted，原话见该处注释）。核心导入
+已在 1.4.1054 发布，本模块的 ``UNITS`` 因此不能再跑（BEFORE fail closed）；美术由第三轮 extra5 批次的
+``wf_balance_20260927c_seofonart``（包装 ``ART_UNITS``）单独暂存，包内 4 条测试按作者决定对灰版 27 个文件的 sha256 豁免。
 
 ## 压缩包之外、被压缩包内容引用的依赖（从灰链归档补齐）
 压缩包只带表、技能 DSL、UI/像素/特效资产；不带 ability_skill DSL、custom_ability_string、立绘定位三表、
@@ -50,7 +54,7 @@ PF 覆盖树、语音。其中两处是压缩包内容的硬依赖，从本地�
   灰版 149996 的表行自 1.4.93 起未变（与压缩包逐格相同），CT 60 帧 = 灰方审计 ``invoke_cooldown_frames``。
 - 希耶提立绘换成灰版后 PNG 尺寸变了（_0 1774×1769→1659×1535，_1 1741×1772→1632×1681）：character_image
   的 pngW/pngH 必须等于 PNG 实际尺寸。灰链 1.4.91→1.4.92 的定位行 W/H 与压缩包 PNG 逐一相等（同一批美术），
-  连同 trimmed_image（含 skill_cutin_0 显示偏移）与 full_shot_image_attribute 脸锚一起取回（只随希耶提美术导入，美术待拍板时不动）。泳装/墨斯伊克的定位行灰版与我方相同。
+  连同 trimmed_image（含 skill_cutin_0 显示偏移）与 full_shot_image_attribute 脸锚一起取回（只随希耶提美术导入；作者 09-27 接受后由 seofonart 暂存）。泳装/墨斯伊克的定位行灰版与我方相同。
 其余压缩包外差异不导入，只报告（notes.not_in_archive）：墨斯伊克 PF 覆盖树（灰链 1.4.85 把倍率 12.5/8.28/6.44
 降到 7.5/6.0/4.5，p13 仍为 5；我方 live 还叠了第二批 p13 5/4/2.5）、泳装希尔媞 19 条语音（灰链 1.4.88 重编码）、
 希耶提「剑界回响」629 树（灰链 = 我方第二批之前的 p13 2.0）。
@@ -1082,15 +1086,21 @@ REVIEWED_ART = {
 }
 
 ART_PENDING, ART_ACCEPTED = "pending", "accepted"
-#: 美术是否随 UNITS 导入。希耶提：待作者看对比图拍板（见 ART_REVIEW）；接受后暂存 ART_UNITS，或改成 ART_ACCEPTED
-#: 并在同一单元按作者签字改/退役 ART_REVIEW["149995"]["package_tests_red_if_accepted"]。
-ART_DECISION = {"149997": ART_ACCEPTED, "149995": ART_PENDING, "149996": ART_ACCEPTED}
+#: 美术是否随 UNITS 导入。希耶提：作者 2026-09-27 看过对比图后拍板接受灰版美术（AskUserQuestion 答复，主会话逐字转述）：
+#:   问题「希耶提的灰版美术要不要换进来？灰版觉醒立绘人物偏小偏下，脸在官方脸部区间之外，跟你在 1.4.447 实机否掉的构图
+#:   一样；cut-in 上边和左边不透明。技能倍率和文案已经换成灰版了。」
+#:   作者选「换成灰版美术」（27 个美术文件和 5 条定位行按灰版导入，包测试里 4 条构图检查按作者决定放宽）。
+#: 核心导入已发布（1.4.1054），UNITS 里的希耶提按 BEFORE fail closed；美术由 wf_balance_20260927c_seofonart（包装
+#: ART_UNITS）在第三轮 extra5 批次暂存；ART_REVIEW["149995"]["package_tests_red_if_accepted"] 那 4 条包测试已同单元
+#: 改为按灰版 27 个文件的 sha256 豁免（work/character_packs/seofon_wind/gray_art_20260927.py）。
+ART_DECISION = {"149997": ART_ACCEPTED, "149995": ART_ACCEPTED, "149996": ART_ACCEPTED}
 
 #: 美术审查结论（数值由本机测试从压缩包 + live 复算；对比图 REVIEW_DIR）。
 ART_REVIEW = {
     "149995": {
-        "decision": "待作者拍板：看 work/gray3/review/seofon_full_shot_compare.png 与 skill_cutin_edges_compare.png "
-                    "后决定是否接受灰版美术；未拍板前只导入表/DSL/文案",
+        "decision": "作者 2026-09-27 拍板接受灰版美术（「换成灰版美术」：27 个美术文件和 5 条定位行按灰版导入，"
+                    "包测试里 4 条构图检查按作者决定放宽）；下列 findings 是作者知情接受的风险，不是阻断项。"
+                    "暂存走 wf_balance_20260927c_seofonart（ART_UNITS）",
         "compare_images": [f"{REVIEW_DIR}/seofon_full_shot_compare.png", f"{REVIEW_DIR}/skill_cutin_edges_compare.png"],
         "official_face_y_p10_p90": [418, 646],
         "face_anchor": {"ours": {"0": [973, 505], "1": [1000, 505]}, "gray": {"0": [1003, 545], "1": [1003, 874]}},
@@ -1576,7 +1586,7 @@ UNIT_CHANGES = {
         "dsl:seofon_wind_1": "灵剑每刃倍率按剑神层数 1-2/3-5/6-8/9-11/12 级：25/35/50/70/90 → 25/30/40/50/70",
         "dsl:seofon_wind_2": "进化后：30/40/55/75/90 → 30/35/45/55/80（只改 CreateNormalAttack 倍率，结构不变）",
         "text": "技能文案三处（action_skill×2、character_text c5/c7/c9、服务端 character_text）改为按级列倍率的新文案",
-        "art（待作者拍板，默认不导入）": ("立绘/图标/cut-in 等 25 张 medium PNG + 2 个 android cut-in ATF 换成灰版美术"
+        "art（作者 09-27 接受；核心导入时未带，extra5 seofonart 暂存）": ("立绘/图标/cut-in 等 25 张 medium PNG + 2 个 android cut-in ATF 换成灰版美术"
                                 "（灰链 1.4.89→1.4.90 同批）"),
         "presentation_table（随美术）": "character_image/trimmed_image/full_shot_image_attribute 跟新立绘尺寸（灰链 1.4.92）",
     },
@@ -1617,9 +1627,9 @@ NOT_IN_ARCHIVE = {
 RISKS = {
     "149997": [],
     "149995": [
-        "美术待拍板（ART_REVIEW['149995']）：灰版觉醒立绘脸锚 y=874 出官方带 418-646、两槽脸锚不同高（545/874），"
+        "美术（作者 2026-09-27 知情接受，ART_REVIEW['149995']）：灰版觉醒立绘脸锚 y=874 出官方带 418-646、两槽脸锚不同高（545/874），"
         "即作者 1.4.447 实机否决的「偏下、偏小」构图；cut-in _0 上边 alpha 29、_1 上边 75/左边 255（我方三边均 0）；"
-        "接受则希耶提包内 4 条测试（27 个子用例）变红。默认只导入表/DSL/文案，美术与定位行不动",
+        "接受后希耶提包内 4 条测试（27 个子用例）按作者决定对灰版 27 个文件的 sha256 豁免，其余检查照旧",
         "（仅在接受美术时）灰版 illustration_setting_sprite_sheet.png 为 361×789，图集（灰我同字节）按 363×781 打包："
         "两个矩形宽 362/363 越出右缘 1-2 px，PNG 又比图集高 8 px（y 781-788 不在任何矩形里）。实测灰版这 8 行与 x≥361 "
         "全透明（alpha 0），两幅画内容在 x 1-360、y 31-360 / 425-780，分别落在矩形 0（y 0-409）与矩形 1（y 411-780）内，"
@@ -1645,8 +1655,8 @@ GENERATORS = {
                "1499973#0 无 CT、1499975 四行）——灰版是新真源，不得直接重跑；build_pf.py 只管 PF 树（第二批已同步，本次不涉及）"),
     "149995": ("work/character_packs/seofon_wind：seofon_dsl.py 第 81-82 行的每层倍率表（lv1 90/70/50/35/25、lv2 90/75/55/40/30）"
                "会重建我方旧技能树；seofon_tables.py 重建旧技能文案（character_text/action_skill）——灰版是新真源，不得直接重跑。"
-               "美术待拍板：默认不导入时 seofon_art.py / build_workspace.py 的立绘/图标/cut-in 与定位行仍是真源；"
-               "若作者接受灰版美术，它们也失效，并须在同一单元改/退役包测试 test_runtime_regressions.py"
+               "美术：作者 2026-09-27 接受灰版美术后，seofon_art.py / build_workspace.py 的立绘/图标/cut-in 与定位行不再是真源"
+               "（不得重跑覆盖灰版美术）；同一单元已按灰版 27 个文件的 sha256 豁免包测试 test_runtime_regressions.py"
                "::test_skill_cutin_respects_the_official_transparent_edges、"
                "::test_trimmed_image_declares_the_2000_canvas_and_matches_character_image，test_build_workspace.py"
                "::test_full_shots_land_on_the_official_face_and_foot_anchors、"
@@ -1665,7 +1675,9 @@ STAGE_INTEGRATION = [
     "默认 UNITS 只有泳装希尔媞带 files（35 个：特效 4 + 像素 4 + medium 25 + android 2），没有 presentation_table",
     "presentation_table（只在暂存 ART_UNITS 或 ART_DECISION 改 accepted 时出现）：平表 trimmed_image 走 splice(logical, {key: rows})；"
     "嵌套表 character_image / full_shot_image_attribute 走 splice(logical, {key: encode_presentation(logical, value)}, "
-    "codec='raw_outer')——内层行不带尾换行（旧写法 X.csv_write 会带 \\n，希耶提包测试按 split(',') 读会读出 '2000\\n'）",
+    "codec='raw_outer')——内层行不带尾换行（旧写法 X.csv_write 会带 \\n，希耶提包测试按 split(',') 读会读出 '2000\\n'）。"
+    "平表同理：extra5 暂存脚本的 flat splice 用 X.csv_write（带尾换行），所以 trimmed_image 也先 encode_presentation"
+    "（= encode_row_text，无尾换行）再按已有 flat claim 原样写入（extra5 stage_batch.splice_presentation）",
     "BarePlan（149996）的命名空间断言需放行 ability_skill_wind_spgirl_swim_whirlwind（灰方命名；先例 ability_skill_seofon_wind_echo）",
     "Plan（seofon_wind）默认只回写表/DSL/文案，RevisionCandidate.finish 可过；ART_UNITS 回写美术时 finish 会以 protected "
     "presentation asset changed 拒绝，需主会话提供允许呈现改动的回写路径（本模块不改共享库）",
@@ -1687,10 +1699,11 @@ def _unit(cid: str) -> dict:
                 revise=lambda read, _cid=cid: revise_unit(_cid, read))
 
 
-#: 暂存顺序：墨斯伊克（只有表行）→ 希耶提（表/DSL/文案；美术待拍板）→ 泳装希尔媞（无包，含美术与新特效族）。
+#: 暂存顺序：墨斯伊克（只有表行）→ 希耶提（表/DSL/文案；美术当时待拍板；作者 09-27 接受后经 ART_UNITS / seofonart 另行暂存）→ 泳装希尔媞（无包，含美术与新特效族）。
 UNITS = [_unit(cid) for cid in ("149997", "149995", "149996")]
 
-#: 作者接受灰版美术之后才暂存（不在 UNITS 里）：希耶提美术与立绘定位行。
+#: 作者接受灰版美术之后才暂存（不在 UNITS 里）：希耶提美术与立绘定位行。作者 2026-09-27 已接受；第三轮 extra5 批次经
+#: wf_balance_20260927c_seofonart 暂存（候选 1.0.3 → 1.0.4）。
 ART_UNITS = [dict(CID="149995", CODE="seofon_wind", PACKAGES=["seofon_wind"],
                   PACKAGE_VERSION={"seofon_wind": "1.0.4"}, CAPABILITIES=[], REVIEWED_DRIFT={},
                   BEFORE=ART_BEFORE_BY_CID["149995"], REQUIRES_AUTHOR_SIGNOFF=True,
