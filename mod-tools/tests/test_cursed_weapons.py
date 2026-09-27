@@ -164,6 +164,15 @@ class CursedWeaponTests(unittest.TestCase):
             self.assertEqual((r[32], r[34]), ("4", "1"))
             self.assertEqual({r[17], r[19]}, {W.BLUEPRINT, W.CRYSTAL})
 
+    def test_descriptions_credit_the_proposer(self):
+        # 作者 0928：武器介绍带上提案表里的提案人（本体说明 / 120 解咒说明 / 五重商店说明三处）
+        for w in self.ws:
+            credit = f"提案：{w.author}"
+            self.assertTrue(self.out["flat"][W.EQUIPMENT][w.id][0][7].endswith(credit), w.name)
+            self.assertTrue(self.out["flat"][W.ENH][w.id][0][6].endswith(credit), w.name)
+            key = str(W.BOSS_SHOP_BASE + 2 + self.ws.index(w) + 1)
+            self.assertTrue(self.out["flat"][W.BOSS_COIN_SHOP][key][0][10].endswith(credit), w.name)
+
     def test_server_delta_mirrors_client(self):
         srv = self.out["server"]
         ids = sorted(int(w.id) for w in self.ws)

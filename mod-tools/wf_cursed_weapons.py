@@ -1313,7 +1313,11 @@ SHOP_DESCRIPTION = "诅咒武器：未强化只有正面效果，强化至120级
 
 
 def _description(w: Weapon) -> str:
-    return f"{w.flavor}【诅咒武器】"
+    return f"{w.flavor}【诅咒武器】提案：{w.author}"
+
+
+def _shop_description(w: Weapon) -> str:
+    return f"{SHOP_DESCRIPTION}提案：{w.author}"
 
 
 def _enh_description(w: Weapon) -> str:
@@ -1346,7 +1350,7 @@ def build(read: LiveReader) -> dict[str, Any]:
     for w in ws:
         wid = w.id
         for kind, text in (("equipment", _description(w)), ("enhancement", _enh_description(w)),
-                           ("shop", SHOP_DESCRIPTION)):
+                           ("shop", _shop_description(w))):
             _require(len(text) <= DESC_LIMITS[kind], f"{w.name} {kind} 文案 {len(text)} 字超出官方上限 {DESC_LIMITS[kind]}")
             _require("," not in text and "\n" not in text, f"{w.name} {kind} 文案含半角逗号/换行")
         # item（同键魂珠物品行，缺了 ItemLogic 取空崩）
@@ -1386,7 +1390,7 @@ def build(read: LiveReader) -> dict[str, Any]:
         # c9 list_order：客户端默认按 list_order 倒序、同序再按商品 ID 升序（BossCoinExchangeSorter
         # orderDirection 0）。写 0（官方已有 13 行先例）让原有 990099002/001 留在顶部，诅咒武器按编号排其后。
         row[6], row[9] = w.name, "0"
-        row[10] = SHOP_DESCRIPTION
+        row[10] = _shop_description(w)
         row[12] = w.icon
         row[17:25] = _cost_cells(BODY_COSTS)
         row[25], row[26], row[28] = START_TIME, END_TIME, str(BODY_STOCK)
