@@ -21,14 +21,15 @@ class BossLockTests(unittest.TestCase):
             s.validate(tree)
             self.assertEqual(tree,s.parse(s.encode(tree)))
             near=s.nodes(tree,'FindNearSubjects')
-            self.assertEqual([49,51]*3,[n[3] for n in near])
+            # 2026-09-27 第三轮（c）：共鸣∧Fever 路线按旗号 2 复制一份，3 → 4 条路线。
+            self.assertEqual([49,51]*4,[n[3] for n in near])
             self.assertTrue(all(n[5]==90 for n in near))
             self.assertEqual([],s.nodes(tree,'IfThisCharacterIsBoss'))
             for boss in (n for n in near if n[3] == 51):
                 self.assertEqual(['DoNothing'],boss[4])
                 self.assertEqual(['Command',['RemoveEvent','campus_celtie_boss_fallback']],boss[6][1][0])
             waits=[w for w in s.nodes(tree,'Wait') if w[2]=='campus_celtie_boss_fallback']
-            self.assertEqual(3,len(waits))
+            self.assertEqual(4,len(waits))
             self.assertTrue(all(w[1]==1 for w in waits))
             self.assertTrue(all(n[2]==['GH',90] for n in s.nodes(tree,'MoveBall')))
             self.assertTrue(all(n[1]==90 for n in s.nodes(tree,'CollisionOfBallAndSpecificEnemy')))

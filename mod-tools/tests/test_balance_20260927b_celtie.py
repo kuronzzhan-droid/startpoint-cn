@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.setrecursionlimit(10000)
 
 import wf_balance_20260927b_celtie as M  # noqa: E402
+import wf_balance_20260927c_celtie as C3  # noqa: E402  第三轮（c）接管队长成长 / 面板 / 技能树
 import wf_campus_panel_text as P  # noqa: E402
 import wf_celtie_fever_abilities as A  # noqa: E402
 import wf_celtie_fever_leader as LD  # noqa: E402
@@ -334,7 +335,13 @@ class ReviseTests(unittest.TestCase):
 
 
 class GeneratorSyncTests(unittest.TestCase):
-    """生成器重跑不能回退本批改动：常量 / 纯函数输出 == revise() 输出。"""
+    """生成器重跑不能回退本批改动：常量 / 纯函数输出 == revise() 输出。
+
+    2026-09-27 第三轮（c）改了队长 #6/#7 强度、队长面板、技能描述和技能树（旗号 2 撤封顶）：
+    这些项的生成器输出允许是第二批或「第三轮作用于第二批输出」两种状态，第三轮一致性由
+    test_balance_20260927c_celtie 断言；第三轮未碰的项（能力3、GAIN_MAX_LAYERS）仍严格等于第二批。
+    a3 面板第三轮只删共鸣前缀（面板共鸣省略，数值不变），同样允许两种状态。
+    """
 
     @classmethod
     def setUpClass(cls):
@@ -343,9 +350,12 @@ class GeneratorSyncTests(unittest.TestCase):
 
     def test_panel_generator_equals_revise_output(self):
         texts = P.panel_descriptions(M.CID)
-        self.assertEqual([[texts["leader"]]], self.out["cas"][M.CAS_LEADER])
-        self.assertEqual([[texts["a3"]]], self.out["cas"][M.CAS_A3])
-        self.assertEqual(P.active_description(M.CID), M.NEW_DESC)
+        leader = self.out["cas"][M.CAS_LEADER]
+        self.assertIn([[texts["leader"]]], (leader, C3.leader_text(leader)))
+        a3 = self.out["cas"][M.CAS_A3]
+        self.assertIn([[texts["a3"]]], (a3, C3.a3_text(a3)))
+        # 第三轮技能强化文案规范：技能描述只写本体，保持第二批原文（C3.SKILL_DESC == 第二批 NEW_DESC）。
+        self.assertIn(P.active_description(M.CID), (M.NEW_DESC, C3.SKILL_DESC))
         for slot in ("a1", "a2", "a4", "a5", "a6"):
             self.assertNotIn("星风心得", texts[slot])
 
@@ -359,8 +369,9 @@ class GeneratorSyncTests(unittest.TestCase):
         import test_celtie_fever_leader as fixture
         case = fixture.CeltieFeverLeaderTest()
         case.setUp()
-        self.assertEqual(case.rows[6:], self.out["leader"][M.CID][6:])
-        self.assertEqual(LD.GAIN_GROWTH_STRENGTH, {154: 2_500, 0: 2_500})
+        leader = self.out["leader"][M.CID]
+        self.assertIn(case.rows[6:], (leader[6:], C3.leader_rows(leader)[6:]))
+        self.assertIn(LD.GAIN_GROWTH_STRENGTH, ({154: 2_500, 0: 2_500}, {154: 20_000, 0: 20_000}))
 
     def test_skill_growth_constant_equals_revise_cap(self):
         self.assertEqual(G.GAIN_MAX_LAYERS, M.NEW_SKILL_CAP)
@@ -396,12 +407,15 @@ class GeneratorSyncTests(unittest.TestCase):
         built = A.ability_rows(ability)
         self.assertEqual(built[M.ABILITY_KEY], self.out["ability"][M.ABILITY_KEY])
         led = LD.leader_rows(ability, leaders)
-        self.assertEqual(led, self.out["leader"][M.CID])
+        self.assertIn(led, (self.out["leader"][M.CID], C3.leader_rows(self.out["leader"][M.CID])))
         overrides = P.override_string_rows(M.CID, built, led)
-        for key in self.out["cas"]:
-            self.assertEqual(overrides[key], self.out["cas"][key], key)
+        for key, value in self.out["cas"].items():
+            third = {M.CAS_LEADER: C3.leader_text, M.CAS_A3: C3.a3_text}
+            allowed = (value, third[key](value)) if key in third else (value,)
+            self.assertIn(overrides[key], allowed, key)
         for level, program in M.PROGRAMS.items():
-            self.assertEqual(S.build_skill(int(level), official), self.out["dsl"][program], program)
+            tree = self.out["dsl"][program]
+            self.assertIn(S.build_skill(int(level), official), (tree, C3.revise_tree(tree, level)[0]), program)
 
 
 class CandidateTests(unittest.TestCase):
@@ -414,6 +428,9 @@ class CandidateTests(unittest.TestCase):
         manifest = WORKSPACE / "package/manifest.json"
         before = manifest.read_bytes()
         current = json.loads(before)
+        as_tuple = lambda v: tuple(int(x) for x in v.split("."))        # noqa: E731
+        if as_tuple(current["package_version"]) > as_tuple(M.PACKAGE_VERSION[M.PACKAGES[0]]):
+            self.skipTest("候选已前进到第三轮（c）；回写一致性见 test_balance_20260927c_celtie")
         candidate = RevisionCandidate(ROOT, WORKSPACE, character_id=M.CID, code_name=M.CODE,
                                       package_version=M.PACKAGE_VERSION[M.PACKAGES[0]],
                                       snapshot_key="revision_20260927b",
@@ -421,7 +438,6 @@ class CandidateTests(unittest.TestCase):
                                       baseline_factory=lambda *a, **k: None)
         out = M.revise(reader(load_fixture()))
         written_back = current.get("snapshot", {}).get("revision_20260927b") is not None
-        as_tuple = lambda v: tuple(int(x) for x in v.split("."))        # noqa: E731
         if written_back:
             # 主会话暂存回写后：候选 = live + 本批，版本等于本模块声明。revise() 的每一类输出
             # （能力/队长/面板/角色文案/技能表/两档技能树/服务端文案）都已进候选。

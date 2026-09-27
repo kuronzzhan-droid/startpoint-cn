@@ -24,10 +24,13 @@ def landing(tree):
 
 
 def ungrown_tree(tree):
-    """三个互斥路线的动作必须一致；移除本轮成长后复核旧演出哈希。"""
+    """四个互斥路线的动作必须一致；移除本轮成长后复核旧演出哈希。
+
+    2026-09-27 第三轮（c）：共鸣∧Fever 路线按技能旗号 2 复制一份（队长不封顶 / 10 层），3 → 4。
+    """
     result = deepcopy(tree)
     routes = skill.nodes(result, "FindNearSubjects")
-    assert len(routes) == 3 and routes[0] == routes[1] == routes[2]
+    assert len(routes) == 4 and routes[0] == routes[1] == routes[2] == routes[3]
     result[11][1][1] = ["Command", routes[0]]
     for attack in skill.nodes(result, "CreateNormalAttack"):
         assert len(attack[6][0].pop("vlv")) == 1

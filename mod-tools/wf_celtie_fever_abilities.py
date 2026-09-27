@@ -16,6 +16,9 @@ from wf_celtie_fever_stock import (
 CID = "149989"
 CODE = "wind_spgirl_campus"
 CHANGE_SKILL_STRING_ID = "change_skill_wind_spgirl_campus_fever"
+#: 2026-09-27 第三轮（c，口径 U5/U6）：能力1 末尾追加 I704 开关（技能旗号 2），前置42 仅队长 + 风共鸣，
+#: 瞬发无触发（同形 live 先例罗尔夫中秋 1499866#4）；行级 c1='false'，与能力1 其余行一致（kitlib 一键 c1 一致约束）。技能树按旗号 2 撤掉心得 10 层封顶（wf_celtie_skill_growth）。
+LEADER_UNCAP_STRING_ID = "change_skill_wind_spgirl_campus_leader"
 SCALE = 100_000
 #: 2026-09-27 第二批（口径 A3）：能力3「每层星风心得」换成有上限的弱化版——during 134
 #: 限次 c102 = 10（官方 1611231..6 blackflower_wiz_smr22 同为 D134 + 限 10），
@@ -33,6 +36,8 @@ def _pre(row, kind=None, *, offset=6):
         row[offset + 5] = "Green"
     elif kind in ("fever", "not_fever"):
         row[offset] = "12" if kind == "fever" else "186"
+    elif kind == "leader":
+        row[offset] = "42"
     elif kind is not None:
         raise ValueError(f"unsupported precondition: {kind}")
 
@@ -104,11 +109,21 @@ def _consumed_stock_fever(source, marker_uid):
     return row
 
 
+def _leader_uncap_switch(source):
+    """I704（技能旗号 2）：仅队长（前置42）且风共鸣时打开，瞬发无触发。"""
+    row = _instant(source, 704)
+    _pre(row, "leader")
+    _pre(row, "wind", offset=13)
+    row[70] = LEADER_UNCAP_STRING_ID
+    return row
+
+
 def ability_rows(source: dict) -> dict:
     """返回 1499891..6；source 是只读的官方 ability 表解码结果。"""
     opening = _instant(source, 211, 50_000, target=0)
     enhance = _instant(source, 536, pre="wind")
     enhance[70] = CHANGE_SKILL_STRING_ID
+    leader_uncap = _leader_uncap_switch(source)
     # 原版 1412012[2]：DirectAttack3 强度 0，三段分伤而非总伤害三倍。
     triple = _instant(source, 202, 0, pre="wind", target=5)
     ability_damage = _instant(source, 388, 200_000,
@@ -138,7 +153,7 @@ def ability_rows(source: dict) -> dict:
     consume[70:72] = [ABILITY_SPEND_STRING_ID, ABILITY_SPEND_ACTION_PATH]
 
     slots = [
-        [opening, enhance],
+        [opening, enhance, leader_uncap],
         [triple, ability_damage,
          *[_consumed_stock_fever(source, uid) for uid, _, _ in SPEND_MARKERS]],
         [all_enemy, fever_charge, attack, charge, stock, consume,
@@ -165,7 +180,9 @@ def flat_string_rows() -> dict:
     ]], ABILITY_STOCK_STRING_ID: [[
         "获得1次「星风快门」（次数可累积；每次自身弹射消耗1次并增加7连击；"
         "非风属性共鸣或非Fever期间保留剩余次数）"
-    ]], ABILITY_SPEND_STRING_ID: [["成功消耗1层星风快门时，增加7连击"]]}
+    ]], ABILITY_SPEND_STRING_ID: [["成功消耗1层星风快门时，增加7连击"]],
+        # 技能强化条目不写数字、不写共鸣前缀（口径 U8）；官方格式点名技能（2026-09-27 技能强化文案规范）。
+        LEADER_UNCAP_STRING_ID: [["强化『风中快门·十字双空牙』：技能倍率随「星风心得」层数持续提升"]]}
 
 
 def metadata() -> dict:
@@ -181,6 +198,14 @@ def metadata() -> dict:
             "piercing": True,
             "wind_party_ability_damage_percent": 100,
             "hit_enemy_wind_resistance_down_percent": 25,
+        },
+        "a1_leader_uncap": {
+            "string_id": LEADER_UNCAP_STRING_ID,
+            "content": 704, "skill_flag": 2,
+            "preconditions": ["42 leader only", "wind resonance (6 members)"],
+            "row_unisonable": True,
+            "effect": "Starwind Insight skill multiplier layers uncapped (otherwise 10)",
+            "source": "balance 2026-09-27 batch 3 (U5/U6)",
         },
         "direct_attack": {
             "times": 3,

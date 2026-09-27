@@ -137,12 +137,20 @@ class CampusPanelTextTest(unittest.TestCase):
         # 2026-09-27 第二批覆盖：能力3 心得改为有上限（+8%/+5%，最多10层），无上限逐层成长搬进队长（+2.5%/+2.5%）。
         for term in ("<icon id='main'>", "风属性共鸣时", "35次", "非Fever", "25倍", "7的倍数", "+700%", "+0.7%", "+15%", "星风心得", "能力伤害+8%、攻击力+5%（最多10层）"):
             self.assertIn(term, panels["a3"])
+        # 2026-09-27 第三轮（c）：队长每层 +20%/+20%（口径 D1），末行追加队长撤技能倍率封顶（口径 U8）；
+        # 「星风心得」只由带风共鸣的 629 授予，其效果行不写「风属性共鸣时，」（面板共鸣省略）；
+        # 末行是能力1 I704 开关行（前置 仅队长 + 风共鸣），共鸣是真实条件，保留。
+        self.assertEqual(panels["leader"].splitlines()[-2],
+                         "Fever模式中，每层「星风心得」使风属性角色能力伤害+20%、攻击力+20%。")
+        # 2026-09-27 技能强化文案规范：强化条目点名技能、定性不写数字与秒数；技能描述只写本体（不写「不受此限」）。
         self.assertEqual(panels["leader"].splitlines()[-1],
-                         "风属性共鸣时，Fever模式中，每层「星风心得」使风属性角色能力伤害+2.5%、攻击力+2.5%。")
+                         "风属性共鸣时，强化『风中快门·十字双空牙』：技能倍率随「星风心得」层数持续提升。")
         self.assertIn("2层「星风快门」与2层「星风心得」", panels["leader"])
-        self.assertIn("每层额外增加10倍（最多10层）", panels["active"])
+        self.assertTrue(panels["active"].endswith("每层额外增加10倍（最多10层）。"))
+        self.assertNotIn("不受此限", "".join(panels.values()))
         self.assertNotIn("星风快门累积", "".join(panels.values()))
-        self.assertIn("命中敌人", panels["a1"])
+        self.assertIn("命中的敌人风属性抗性降低", panels["a1"])
+        self.assertIn("为『风中快门·十字双空牙』追加", panels["a1"])
         self.assertNotIn("全场敌人", panels["a1"])
         for slot, effect in (("a4", "贯穿"), ("a5", "浮游"), ("a6", "最大速度固定效果")):
             for term in ("风属性共鸣时", "Fever模式中", "每经过5秒", "1秒", effect):

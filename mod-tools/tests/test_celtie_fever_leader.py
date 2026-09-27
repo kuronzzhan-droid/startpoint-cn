@@ -63,22 +63,23 @@ class CeltieFeverLeaderTest(unittest.TestCase):
                          (row[25], row[45], row[46], row[49], row[67]))
 
     def test_starwind_insight_growth_moved_from_ability_three_is_uncapped_and_slowed(self):
-        """2026-09-27 第二批（口径 A2/A3）：能力3 心得两行的无上限成长搬进队长，2.5%/层（1/10），不设限。"""
+        """2026-09-27 第二批（口径 A2/A3）：能力3 心得两行的无上限成长搬进队长，不设限；
+        第三轮（c，口径 D1）每层 2.5% → 20%（原 25% 的 2/3 档取 5 的倍数）。"""
         import wf_celtie_fever_abilities as abilities
         growth = self.rows[6:]
         self.assertEqual(2, len(growth))
         for row, content in zip(growth, ("154", "0")):
-            source = abilities._stock_gain_bonus(self.abilities, int(content), 2_500, limit=None)
+            source = abilities._stock_gain_bonus(self.abilities, int(content), 20_000, limit=None)
             self.assertEqual([leader.CODE, "0", ""] + source[5:], row)   # 能力 c≥5 → 队长 c−2
             self.assertEqual(("1", "134", "0", "100000", "100000", "(None)", str(leader.GAIN_UID)),
                              (row[3], row[95], row[96], row[98], row[99], row[100], row[102]))
-            self.assertEqual((content, "5", "Green", "2500", "2500", "false", "(None)"),
+            self.assertEqual((content, "5", "Green", "20000", "20000", "false", "(None)"),
                              (row[107], row[108], row[109], row[111], row[112], row[106], row[83]))
             self.assertEqual((["2", "", "", "600000", "600000", "Green", ""], "12"),
                              (row[4:11], row[11]))
             self.assertEqual(("", ""), (row[25], row[45]))
         info = leader.metadata()["gain_growth"]
-        self.assertEqual((2.5, 2.5, None), (info["ability_damage_per_layer_percent"],
+        self.assertEqual((20.0, 20.0, None), (info["ability_damage_per_layer_percent"],
                                         info["attack_per_layer_percent"], info["limit"]))
 
     def test_stock_consumption_is_one_layer_and_fixed_seven_combo(self):

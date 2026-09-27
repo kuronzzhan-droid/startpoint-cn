@@ -12,7 +12,7 @@ import zlib
 import wf_dsl
 import wf_dsl_sig
 import wf_client_legality as legality
-from wf_celtie_skill_growth import with_starwind_growth
+from wf_celtie_skill_growth import with_leader_uncapped_growth, with_starwind_growth
 
 CODE = "wind_spgirl_campus"
 PROGRAM_PATHS = tuple(f"battle/action/skill/action/rare5/{CODE}${CODE}_{lv}" for lv in (1, 2))
@@ -169,6 +169,8 @@ def build_skill(level, official_bytes_loader, *, boss_target=True):
     if boss_target:
         from wf_celtie_boss_lock import boss_lock
         result = boss_lock(result)
+    # 2026-09-27 第三轮（c）：当队长且风共鸣（能力1 I704 → 旗号 2）时心得层数不封顶。
+    result = with_leader_uncapped_growth(result)
     validate(result)
     return result
 

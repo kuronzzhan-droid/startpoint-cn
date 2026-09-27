@@ -36,12 +36,15 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
                 self.assertEqual([], legality.ability_element_column_problems("ability", row, 3))
 
     def test_first_and_third_abilities_are_main_restricted(self):
+        # 2026-09-27 第三轮（c，口径 U6）：能力1 末尾加 I704 仅队长开关（前置42），c1 与键一致。
         for sid, rows in self.rows.items():
             self.assertEqual({"false" if sid.endswith(("1", "3")) else "true"},
                              {r[1] for r in rows})
+        switch = [r for r in self.rows["1499891"] if r[47] == "704"]
+        self.assertEqual([(r[1], r[6]) for r in switch], [("false", "42")])
 
     def test_opening_charge_and_learned_wind_resonance_flag_are_separate(self):
-        charge, flag = self.rows["1499891"]
+        charge, flag = self.rows["1499891"][:2]
         self.assertEqual(("0", "0", "211", "0", "50000", "50000"),
                          (charge[6], charge[27], charge[47], charge[48], charge[51], charge[52]))
         self.assertEqual(("2", "600000", "600000", "Green", "0", "536"),
@@ -52,7 +55,7 @@ class CeltieFeverAbilitiesTest(unittest.TestCase):
         flag = self.rows["1499891"][1]
         strings = kit.flat_string_rows()
         self.assertEqual({flag[70], kit.ABILITY_STOCK_STRING_ID,
-                          kit.ABILITY_SPEND_STRING_ID}, set(strings))
+                          kit.ABILITY_SPEND_STRING_ID, kit.LEADER_UNCAP_STRING_ID}, set(strings))
         self.assertEqual(1, len(strings[flag[70]]))
         text = strings[flag[70]][0][0]
         for term in ("贯穿", "15秒", "风属性角色能力伤害提升100%", "风属性抗性降低25%"):

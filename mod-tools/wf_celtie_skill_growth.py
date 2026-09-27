@@ -10,6 +10,12 @@ GAIN_FLOAT_ID = 14998905
 # 累积，超过 10 层的逐层成长由队长「每层心得」两行承担。
 GAIN_MAX_LAYERS = 10
 MULTIPLIER_PER_LAYER = 10
+# 2026-09-27 第三轮（c，作者「成长条件放到队长技里面带上对应共鸣条件」，口径 U5/U7）：
+# 能力1 的 I704 开关行（前置42 仅队长 + 风共鸣）打开技能旗号 2；共鸣∧Fever 支按旗号 2
+# 分两支——开支上限恢复第二批前的 2147483647（写成 float：AMF3 29 位整数装不下，
+# 同 gerald2），关支保留第二批 10 层。旗号 1 已被能力1 的 I536 技能强化占用。
+LEADER_FLAG = 2
+LEADER_MAX_LAYERS = 2147483647.0
 
 
 def _nodes(tree, kind):
@@ -54,3 +60,28 @@ def with_starwind_growth(near):
     return _command('ConditionalsFeverMode',
         _block(_command('ConditionalsUnifyElement', 4, 6,
             branch(GAIN_MAX_LAYERS), branch(0))), branch(0))
+
+
+def with_leader_uncapped_growth(tree):
+    """整棵技能树（Boss 锁定之后）→ 共鸣∧Fever 支按技能旗号 2 分成不封顶 / 10 层两支。
+
+    分支在新的局部环境里执行（ActionEvaluator.as case 86），Bind 写进当前环境、
+    查找只向外层，所以整段「Bind + 其后路线」一起复制进开支；关支是原段本身，逐字不变。
+    """
+    result = deepcopy(tree)
+    fever = result[11][1][1][1]
+    if fever[0] != 'ConditionalsFeverMode':
+        raise ValueError('second top command must be ConditionalsFeverMode')
+    unify = fever[1][1][0][1]
+    if unify[:3] != ['ConditionalsUnifyElement', 4, 6]:
+        raise ValueError('Fever branch must gate wind resonance first')
+    capped = unify[3]
+    binding = capped[1][0][1]
+    if (binding[:5] != ['BindConditionAccumulationVariable', -17, GAIN_FLOAT_ID,
+                        ['DCUnique', GAIN_UID], 1] or binding[5] != GAIN_MAX_LAYERS
+            or isinstance(binding[5], float)):
+        raise ValueError('resonant branch must start with the capped Starwind binding')
+    uncapped = deepcopy(capped)
+    uncapped[1][0][1][5] = LEADER_MAX_LAYERS
+    unify[3] = _block(_command('ConditionalsChangeSkillFlag', LEADER_FLAG, uncapped, capped))
+    return result

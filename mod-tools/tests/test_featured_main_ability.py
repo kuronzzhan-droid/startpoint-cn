@@ -43,7 +43,8 @@ class FeaturedMainAbilityTests(unittest.TestCase):
         self.assertEqual(set(patch.CODES), {"149990", "119989", "149989", "169989", "149988"})
         kits = native_kits()
         # 奈芙 A1 自 2026-09-27 起 4 行（I536 强化开关移入队长）。
-        self.assertEqual([len(kits[cid][cid + "1"]) for cid in kits], [4, 2, 4, 5])
+        # 希尔媞 A1 自 2026-09-27 第三轮起 3 行：末尾 I704 仅队长开关（前置42），c1 与键一致。
+        self.assertEqual([len(kits[cid][cid + "1"]) for cid in kits], [4, 3, 4, 5])
         for cid, abilities in kits.items():
             for slot, rows in abilities.items():
                 self.assertEqual({r[1] for r in rows},
