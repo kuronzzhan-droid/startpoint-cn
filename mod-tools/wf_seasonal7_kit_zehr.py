@@ -7,7 +7,10 @@
 2026-09-27 平衡调整第二批：:func:`build` 在 09-17 灯火修订（``wf_zehr_lamp_revision`` 纯函数）之后再套
 ``wf_balance_20260927b_zehr.balance_rows`` / ``panel_texts``（队长 #3 #4 放缓、灯芯 / 灯火正旺成长搬进队长
 #6–#8、能力1/3 限次；队长覆盖文案以 09-17 ``wf_seasonal_pf_revision.ZEHR_LEADER_TEXT`` 为底稿），
-重建不回退该批改动。下方各轮常量与门禁仍描述改版计划那一层，不含 09-17 之后的收口。
+重建不回退该批改动。随后套第三轮 ``wf_balance_20260927c_zehr.leader_rows`` / ``leader_text``（队长 #3 #4 #6 #7 #8
+成长回调到原值 2/3–7/10，队长覆盖文案四处数字同步；L1 / L7 按主会话口径 1 把「、强化弹射伤害」改「，强化弹射伤害」）
+与 ``ability6_text``（能力6 两行同条件合并为一行）。
+下方各轮常量与门禁仍描述改版计划那一层，不含 09-17 之后的收口。
 
 2026-09-16 第四轮作者改版（revision3-20260916 续）：作者原话「能力 3 的 50% 降到 30%、灯芯每层 5% 降到 3%」
 （= 上一轮 ``timing.md``「如果要收一点」的第 1、2 档）。声明式增量见 :data:`REV4_VALUE_ROWS` /
@@ -170,6 +173,9 @@ PANEL_REQUIRED_PHRASES = {
                                 f"强化弹射伤害＋{A3_LAMP_GAIN_PCT}%"),
 }
 # R6：kind 55 / 696 / 413 是战斗（小队）级，不读 target 列，面板不许写成「自身强化弹射伤害」。
+#     2026-09-27 第三轮（主会话口径 1）：也不许用「、」把它接在带对象的效果后面（会读成同一对象），写「，强化弹射伤害」。
+#     队长覆盖文案的这把锁在 ``wf_balance_20260927c_zehr.problems``（第三轮收口送检）；改版计划层的队长底稿仍是
+#     「、」写法，由 ``leader_text`` 在第三轮改掉，所以不放进下面的 PANEL_FORBIDDEN_PHRASES（那里检的是计划层文本）。
 # 第三轮：两条覆盖文案里不许再留上一轮的节奏（10 秒）——CT 与状态时长都变了。
 # 第四轮：这两条覆盖文案里不许再留上一轮的强度数字。**只按键禁**：别的键里的「＋50%」是别的效果
 #        （能力1#1 开局技能槽、能力2 / 能力6 / 队长的强化弹射伤害），一刀切全局禁会误伤。
@@ -2635,12 +2641,25 @@ def build(ctx) -> dict[str, Any]:
                      + balance_b.panel_problems(balance_texts))
     if balance_probs:
         raise KitError(f"2026-09-27 balance batch 2: {balance_probs}")
+    # 2026-09-27 平衡第三轮（wf_balance_20260927c_zehr）接在第二批之后：队长 #3 #4 #6 #7 #8 成长回调到
+    # 原值 2/3–7/10，队长覆盖文案四处数字同步、L1 / L7「、强化弹射伤害」→「，」（口径 1，R6 续）；能力1/3 封顶版与其文案不动。
+    import wf_balance_20260927c_zehr as balance_c
+    rows["leader"] = balance_c.leader_rows(rows["leader"])
+    balance_texts[balance_c.CAS_LEADER] = balance_c.leader_text(balance_texts[balance_c.CAS_LEADER])
+    balance_probs = balance_c.problems(rows["leader"], balance_texts[balance_c.CAS_LEADER])
+    # 第三轮面板同条件合并：能力6 两行（光共鸣、无触发，数据条件逐格相同）并为一行；kind 55 战斗级 ⇒ 不补「自身」（R6）。
+    balance_texts[balance_c.CAS_A6] = balance_c.ability6_text(cas_rows[balance_c.CAS_A6][0][0])
+    balance_probs += balance_c.ability6_problems(rows["ability"][balance_c.A6], balance_texts[balance_c.CAS_A6])
+    balance_probs += panel_text_problems(balance_texts[balance_c.CAS_A6], balance_c.CAS_A6)
+    if balance_probs:
+        raise KitError(f"2026-09-27 balance round 3: {balance_probs}")
     for key, text in balance_texts.items():
         cas_rows[key] = [[text]]
     ctx.write_flat(LEADER, {CID: rows["leader"]})
     ctx.write_flat(ABILITY, {CID+'1': rows['ability'][CID+'1'], CID+'3': rows['ability'][CID+'3']})
     ctx.write_flat(UC, {UC_ID: uc_rows[UC_ID]})
     ctx.write_flat(CAS, {key: cas_rows[key] for key in (balance_b.CAS_LEADER, balance_b.CAS_A1, balance_b.CAS_A3)})
+    ctx.write_flat(CAS, {balance_c.CAS_A6: cas_rows[balance_c.CAS_A6]})       # 第三轮能力6 同条件合并行
     import wf_seasonal7_tables as T
     caps_blob = ctx.pack.template_raw(CAPS)[f"change_skill_{TEMPLATE_CODE}"]     # 官方原行字节（5 档文本不含技能名）
     if T.decode_blob(caps_blob) != strings[(CAPS, CHANGE_SKILL_KEY)]["value"]:
