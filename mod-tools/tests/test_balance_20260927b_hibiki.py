@@ -52,6 +52,28 @@ def _baseline_available() -> bool:
     return profile is not None and profile.store.is_dir() and (ROOT / ".cdn" / "cn").is_dir()
 
 
+C_FIXTURE = Path(__file__).parent / "fixtures/balance_20260927c_hibiki.json"
+#: 第三轮（``wf_balance_20260927c_hibiki``，成长复核）已把生成器的队长成长推进到 c 值：生成器一致性按
+#: 「第二批输出 + 第三轮覆盖」核对（b → c 两种状态都接受；逐格断言与设计镜像同步由 c 测试接管）。
+GENERATOR_AT_C = K.ECHO_LEADER_STEP != M.ECHO_LEADER
+
+
+def batch3_output(out: dict) -> dict:
+    """第二批输出里被第三轮改写的键换成第三轮输出（c fixture == 第二批输出，见 c 测试），其余原样。"""
+    import wf_balance_20260927c_hibiki as C
+    data = {k: v for k, v in json.loads(C_FIXTURE.read_text(encoding="utf-8")).items() if not k.startswith("_")}
+    c_out = C.revise(lambda kind, key: data[kind][key])
+    merged = deepcopy(out)
+    for kind, table in c_out.items():
+        if kind != "notes" and isinstance(table, dict):
+            merged.setdefault(kind, {}).update(deepcopy(table))
+    return merged
+
+
+def generator_target(out: dict) -> dict:
+    return batch3_output(out) if GENERATOR_AT_C else out
+
+
 _CTX = None
 
 
@@ -158,7 +180,8 @@ class ReviseTests(unittest.TestCase):
         self.assertEqual(describe[6], "强化弹射HitLv1≥4 → 自身 攻击力 5%")
         self.assertEqual(describe[10], "持续·状态累积计数固有≥1(限99次)[固有16998801] → 自身 强化弹射伤害 2.5%")
         self.assertEqual(describe[11], "持续·状态累积计数固有≥1(限99次)[固有16998801] → 自身 攻击力 2.5%")
-        self.assertEqual(describe, [expect for _a, _s, _c, expect in K.LEADER])
+        target = generator_target(self.out)["leader"][M.LEADER_KEY]       # 生成器跟随最新一轮
+        self.assertEqual(D.describe_rows(target, "leader_ability"), [expect for _a, _s, _c, expect in K.LEADER])
 
     # ------------------------------------------------------------ 能力
     def test_ability3_caps_the_echo_pf_damage_row(self):
@@ -397,19 +420,24 @@ class GeneratorSyncTests(unittest.TestCase):
         cls.out = M.revise(reader(deepcopy(cls.live)))
 
     def test_panel_constants_equal_revise_output(self):
+        target = generator_target(self.out)
         for key in (M.CAS_LEADER, M.CAS_SLOT3, M.CAS_SLOT4):
-            self.assertEqual([[K.CAS_TEXTS[key]]], self.out["cas"][key], key)
-        self.assertEqual(tuple(K.PANEL_LEADER.split("\n")), M.NEW_LEADER_LINES)
+            self.assertEqual([[K.CAS_TEXTS[key]]], target["cas"][key], key)
+        self.assertEqual(K.PANEL_LEADER, target["cas"][M.CAS_LEADER][0][0])
         self.assertEqual(tuple(K.PANEL_ABILITY[3].split("\n")), M.NEW_SLOT3_LINES)
-        self.assertEqual(tuple(K.PANEL_ABILITY[4].split("\n")), M.NEW_SLOT4_LINES)
+        # 第三轮（c）面板同条件合并把槽 4 前两行并成一行：生成器 = 目标输出（c 前 = 第二批 NEW_SLOT4_LINES）
+        self.assertEqual(tuple(K.PANEL_ABILITY[4].split("\n")),
+                         tuple(target["cas"][M.CAS_SLOT4][0][0].split("\n")))
 
     def test_plan_cells_carry_the_new_values(self):
         self.assertEqual(K.LEADER_ROWS, 12)
         hit = K.LEADER[M.HIT_ROW][2]
-        self.assertEqual((hit[25], hit[32], hit[49], hit[50]), ("15", "(None)", "5000", "5000"))
-        for (_addr, _src, cells, _expect), kind in zip(K.LEADER[10:], ("23", "0")):
+        target = generator_target(self.out)["leader"][M.LEADER_KEY]       # 第三轮后 = 第二批 + 第三轮覆盖
+        self.assertEqual((hit[25], hit[32], hit[49], hit[50]),
+                         ("15", "(None)", target[M.HIT_ROW][49], target[M.HIT_ROW][50]))
+        for (_addr, _src, cells, _expect), kind, row in zip(K.LEADER[10:], ("23", "0"), target[10:]):
             self.assertEqual((cells[95], cells[100], cells[102], cells[107], cells[111], cells[112]),
-                             ("134", K.UNIQUE_CAP, K.UID, kind, "2500", "2500"))
+                             ("134", K.UNIQUE_CAP, K.UID, kind, row[111], row[112]))
         pfdmg, atk = K.PLAN[3][M.PFDMG_ROW][2], K.PLAN[4][M.ATK_ROW][2]
         self.assertEqual((pfdmg[102], pfdmg[113], pfdmg[114]), ("10", "10000", "10000"))
         self.assertEqual((atk[102], atk[113], atk[114]), ("10", "5000", "5000"))
@@ -418,7 +446,7 @@ class GeneratorSyncTests(unittest.TestCase):
     @unittest.skipUnless(_baseline_available(), "需要 .cdn/cn 官方基线与 live store")
     def test_generator_rows_equal_revise_output(self):
         rows = K.build_rows(_kit_ctx())
-        self.assertEqual(rows["leader"], self.out["leader"][M.LEADER_KEY])
+        self.assertEqual(rows["leader"], generator_target(self.out)["leader"][M.LEADER_KEY])
         for key in (M.ABILITY3, M.ABILITY4):
             self.assertEqual(rows["ability"][key], self.out["ability"][key], key)
         described = [ev["describe"] for ev in rows["evidence"] if ev["kind"] == "leader_ability"]
@@ -508,7 +536,7 @@ class DonorPinTest(unittest.TestCase):
         with mock.patch.object(KL, "donor_row", donor_row):
             rows = K.build_rows(_kit_ctx())
         self.assertEqual(seen, [self.addr])
-        out = M.revise(reader(load_fixture()))
+        out = generator_target(M.revise(reader(load_fixture())))
         self.assertEqual(rows["leader"], out["leader"][M.LEADER_KEY])
         self.assertEqual(rows["leader"][0], self.live_l0)
 
@@ -521,6 +549,7 @@ class MirrorTests(unittest.TestCase):
             self.skipTest("midautumn design mirrors missing")
         self.docs = [json.loads(path.read_text(encoding="utf-8")) for path in self.PATHS]
 
+    @unittest.skipIf(GENERATOR_AT_C, "生成器已前进到第三轮：设计镜像同步由 test_balance_20260927c_hibiki.MirrorTests 接管")
     def test_mirrors_are_already_synced(self):
         self.assertEqual(M.sync_mirrors(ROOT, write=False), [])
         design, panel = self.docs
@@ -554,21 +583,27 @@ class CandidateTests(unittest.TestCase):
         manifest = WORKSPACE / "package/manifest.json"
         before = manifest.read_bytes()
         current = json.loads(before)
-        self.assertGreaterEqual(tuple(map(int, M.PACKAGE_VERSION[M.PACKAGES[0]].split("."))),
-                                tuple(map(int, current["package_version"].split("."))))
+        # 第三轮（wf_balance_20260927c_hibiki）回写后候选版本号可能已推进到它的 PACKAGE_VERSION（高于本批）；
+        # 这里只是「候选不能领先于任何一批已知版本」的哨兵检查，取两批版本号的较大者作上限。
+        import wf_balance_20260927c_hibiki as _C3
+        ceiling = max(tuple(map(int, M.PACKAGE_VERSION[M.PACKAGES[0]].split("."))),
+                     tuple(map(int, _C3.PACKAGE_VERSION[_C3.PACKAGES[0]].split("."))))
+        self.assertGreaterEqual(ceiling, tuple(map(int, current["package_version"].split("."))))
         kwargs = dict(character_id=M.CID, code_name=M.CODE, snapshot_key="revision_20260927b",
                       package_version=M.PACKAGE_VERSION[M.PACKAGES[0]],
                       baseline_factory=lambda *a, **k: None, reviewed_input_drift=M.REVIEWED_DRIFT)
         candidate = RevisionCandidate(ROOT, WORKSPACE, **kwargs)
         if current.get("snapshot", {}).get("revision_20260927b") is not None:
-            # 主会话暂存回写后：候选 = 本批输出。
-            self.assertEqual(current["package_version"], M.PACKAGE_VERSION[M.PACKAGES[0]])
-            for logical, table in (("master/ability/ability.orderedmap", out["ability"]),
-                                   ("master/ability/leader_ability.orderedmap", out["leader"]),
-                                   ("master/string/custom_ability_string.orderedmap", out["cas"])):
+            # 主会话暂存回写后：候选 = 本批输出（第三轮回写后 = 再加第三轮覆盖，版本号只升不降）。
+            self.assertGreaterEqual(tuple(map(int, current["package_version"].split("."))),
+                                    tuple(map(int, M.PACKAGE_VERSION[M.PACKAGES[0]].split("."))))
+            later = batch3_output(out)
+            for kind, logical in (("ability", "master/ability/ability.orderedmap"),
+                                  ("leader", "master/ability/leader_ability.orderedmap"),
+                                  ("cas", "master/string/custom_ability_string.orderedmap")):
                 rows = X.unpack(candidate.read("common", logical))
-                for key, value in table.items():
-                    self.assertEqual(X.csv_read(rows[key]), value, key)
+                for key, value in out[kind].items():
+                    self.assertIn(X.csv_read(rows[key]), (value, later[kind][key]), key)
             raw = candidate.read("common", wf_dsl.dsl_logical(M.INVOKE_PROGRAM))
             self.assertEqual(wf_dsl.parse_dsl(zlib.decompress(raw, -15))["tree"], out["dsl"][M.INVOKE_PROGRAM])
             return
