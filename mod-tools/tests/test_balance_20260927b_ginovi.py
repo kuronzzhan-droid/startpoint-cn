@@ -429,9 +429,11 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual([[text]], generator_target(self.gen, self.out)["cas"][M.CAS_LEADER])
 
     def test_generator_dsl_bodies_equal_revise_output(self):
+        import wf_balance_20260927d_ginovi as D
         gen, dsl = self.gen, self.out["dsl"]
-        self.assertEqual(gen.m4_skill_root(), dsl[M.SKILL_PROGRAMS[1]][11])
-        self.assertEqual(gen.m4_skill_root(), dsl[M.SKILL_PROGRAMS[2]][11])
+        # 第四轮（d）在两档技能根上插入吞噬协力球节点；生成器 == 本修订 + d 插入。
+        self.assertEqual(gen.m4_skill_root(), D.insert_devour(dsl[M.SKILL_PROGRAMS[1]])[11])
+        self.assertEqual(gen.m4_skill_root(), D.insert_devour(dsl[M.SKILL_PROGRAMS[2]])[11])
         self.assertEqual(gen.m5_dash_root(), dsl[M.DASH_PROGRAM][11])
         for level in (1, 2, 3):
             self.assertEqual(gen.blackfeather_root(level), dsl[M.PF_INVOKE_PROGRAMS[level]][11], level)
@@ -496,9 +498,12 @@ class CandidateTests(unittest.TestCase):
             self.assertIn(X.csv_read(leader[M.LEADER]), (out["leader"][M.LEADER], later["leader"][M.LEADER]))
             cas = X.unpack(candidate.read("common", "master/string/custom_ability_string.orderedmap"))
             self.assertIn(X.csv_read(cas[M.CAS_LEADER]), (out["cas"][M.CAS_LEADER], later["cas"][M.CAS_LEADER]))
+            import wf_balance_20260927d_ginovi as D
+            devoured = {M.SKILL_PROGRAMS[1], M.SKILL_PROGRAMS[2]}
             for program, tree in out["dsl"].items():
                 raw = candidate.read("common", wf_dsl.dsl_logical(program))
-                self.assertEqual(wf_dsl.parse_dsl(zlib.decompress(raw, -15))["tree"], tree, program)
+                accepted = [tree] + ([D.insert_devour(tree)] if program in devoured else [])   # d 回写后技能两档带吞噬
+                self.assertIn(wf_dsl.parse_dsl(zlib.decompress(raw, -15))["tree"], accepted, program)
             self.assertEqual(before, manifest.read_bytes())
             return
         self.assertGreater(version, current)
