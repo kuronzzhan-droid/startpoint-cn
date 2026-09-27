@@ -194,6 +194,23 @@ class CursedWeaponTests(unittest.TestCase):
             self.assertEqual(wf_dsl.parse_dsl(wf_dsl.encode_amf3(tree))["tree"], tree, program)
             self.assertEqual(W.dsl_signature_problems(tree), [], program)
 
+    def test_hit_effects_load_for_colorless_owner(self):
+        # 1.4.1057 实机：终焉拳套 255 属性 + Fine 命中特效 → 进战斗 C10013。正向对照：旧写法必须被拦下。
+        for program, tree in self.out["dsl"].items():
+            self.assertEqual(W.colorless_hit_effect_problems(tree), [], program)
+        old = json.loads(json.dumps(W._full_screen_attack(5.0)).replace('"Explosion"', '"Fine"'))
+        self.assertEqual(len(W.colorless_hit_effect_problems(old)), 1)
+
+    def test_group_pullers_carry_character_groups(self):
+        # 1.4.1057 实机：协力球来源（puller 9）角色组空串 → 说明显示「null角色」
+        for table, logical in ((W.SOUL_T, W.SOUL), (W.EA_T, W.EA)):
+            puller = _col(table, "instant_trigger", "trigger_puller")
+            groups = _col(table, "instant_trigger", "trigger_puller.character_groups")
+            for key, rows in self.out["flat"][logical].items():
+                for r in rows:
+                    if r[puller] in ("4", "5", "6", "7", "9"):
+                        self.assertNotEqual(r[groups], "", (logical, key))
+
     def test_mul_conditions_have_unique_keys(self):
         for program, tree in self.out["dsl"].items():
             for node in _walk(tree):

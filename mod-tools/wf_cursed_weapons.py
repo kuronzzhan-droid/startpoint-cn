@@ -216,7 +216,8 @@ def _trigger_values(kind: str, block: str, given: dict[str, str]) -> dict[str, s
     if "trigger_puller" in fields:
         puller = given.pop("trigger_puller", P_SELF)
         out["trigger_puller"] = puller
-        if puller in ("5", "6", "7"):
+        # 4/5/6/7/9（含 OneOfMultiball）都带角色组参数；空串会被读成空组，说明里显示「null角色」（1.4.1057 叛乱军旗）
+        if puller in ("4", "5", "6", "7", "9"):
             out["trigger_puller.character_groups"] = given.pop("trigger_puller.character_groups", "(None)")
     if "threshold" in fields:
         lo = given.pop("threshold", times(1))
@@ -478,6 +479,31 @@ def dsl_signature_problems(tree: list) -> list[str]:
     return probs
 
 
+#: 按属性取素材的命中特效；无属性没有这几套素材（ActionDslAssetResolver.resolveNormalAttackHitEffect 抛 10013）。
+ELEMENT_COLORED_HIT_EFFECTS = frozenset({"Fine", "Coarse", "Slash", "CriticalSlash"})
+
+
+def colorless_hit_effect_problems(tree: list) -> list[str]:
+    """装备词条的 DSL 以装备为主体，主体属性恒为无属性（AbilitySoulAbilityLogic ownerElement=6）。
+    继承属性(255)/无属性(7) 的 CreateNormalAttack 配上按属性取素材的命中特效，进战斗预载即 C10013
+    （1.4.1057 终焉拳套实机）。"""
+    probs: list[str] = []
+
+    def walk(node: Any) -> None:
+        if not isinstance(node, list):
+            return
+        if node and node[0] == "Command" and isinstance(node[1], list) and node[1][0] == "CreateNormalAttack":
+            params = node[1][1:]
+            element, effect = params[1], params[14]
+            if element in (255, 7) and isinstance(effect, list) and effect and effect[0] in ELEMENT_COLORED_HIT_EFFECTS:
+                probs.append(f"CreateNormalAttack 属性 {element} 配命中特效 {effect[0]}：装备主体无属性，预载抛 C10013")
+        for child in node:
+            walk(child)
+
+    walk(tree)
+    return probs
+
+
 # ---------------------------------------------------------------------------
 # 武器规格
 # ---------------------------------------------------------------------------
@@ -709,7 +735,11 @@ def w06() -> Weapon:
 
 
 def _full_screen_attack(multiplier: float) -> list:
-    """对全体敌人造成自身攻击力 multiplier 倍的技能伤害（无特效）。"""
+    """对全体敌人造成自身攻击力 multiplier 倍的技能伤害。
+
+    装备 DSL 的主体属性恒为无属性，命中特效只能用不按属性取素材的构造（见 colorless_hit_effect_problems）；
+    这里用官方通用的 Explosion。伤害按无属性结算：不吃克制，也不会走到 10014（forceUncolorless 只在炸弹球里）。
+    """
     # 26 参照 work/codex_out/hitarea_params.md：全屏 = 3600×3600 矩形（官方 8 例）；p15 每目标硬帽 1；
     # p16 eliminatedOnHit 必须 False（True 会命中第一个敌人就移除，打不到其余目标）。
     return dsl_root(C("CreateHitArea", "*", -18, ["AB"], 0, 0, 0, False, False,
@@ -717,7 +747,7 @@ def _full_screen_attack(multiplier: float) -> list:
                       ["Single"], ["SpecifyHitAreaLifetimeDirectly", 2], ["CalculatedUsingMaxNumOfHits", 1],
                       ["Some", P(1)], False, True, ["None"], 0, B(), 1, 2,
                       B(C("CreateNormalAttack", 2, 255, [], [], 0, P(multiplier), P(0), False, False, False, False,
-                          False, P(0.25), P(0.25), ["Fine"], True)),
+                          False, P(0.25), P(0.25), ["Explosion"], True)),
                       0, 0, ["None"]))
 
 
@@ -1385,8 +1415,9 @@ def build(read: LiveReader) -> dict[str, Any]:
     flat[ENH_CATEGORY][ENH_CATEGORY_KEY] = [row]
 
     for program, tree in dsl.items():
-        for check in (dsl_signature_problems, L.action_dsl_element_problems, L.action_dsl_subject_binding_problems,
-                      L.action_dsl_lookup_scope_problems, L.action_dsl_hit_area_target_problems):
+        for check in (dsl_signature_problems, colorless_hit_effect_problems, L.action_dsl_element_problems,
+                      L.action_dsl_subject_binding_problems, L.action_dsl_lookup_scope_problems,
+                      L.action_dsl_hit_area_target_problems):
             problems += [f"DSL {program}: {p}" for p in check(tree)]
 
     _check_collisions(read, flat, nested)
