@@ -41,17 +41,25 @@ class ParadoxTests(unittest.TestCase):
         expect = {("32", ""): "550000", ("33", ""): "550000", ("34", ""): "550000", ("55", ""): "550000",
                   ("388", ""): "550000", ("723", ""): "10000", ("693", ""): "10000", ("694", ""): "10000",
                   ("695", ""): "10000", ("696", ""): "10000", ("35", ""): "20000", ("245", ""): "50000",
-                  ("32", P.PRE_MY_SELF): "150000"}
+                  ("717", ""): "100000", ("32", P.PRE_MY_SELF): "150000"}
         seen = {}
         for r in self.rows:
             kind = _cell(r, "instant_content", "kind")
-            if kind in ("629", "226"):
+            if kind in ("629", "226", "58"):
                 continue
             lo, hi = _cell(r, "instant_content", "strength.power1"), _cell(r, "instant_content", "strength.first_max")
             self.assertEqual(lo, hi, kind)                      # 觉醒 1→5 不变
             pre = _cell(r, "precondition1", "kind")
             seen[(kind, "" if pre == "0" else pre)] = lo
         self.assertEqual(seen, expect)
+
+    def test_debuff_immunity_uses_bad_direction_only(self):
+        # 58 DebuffPrevent = ConditionPrevent(All(1))；57 是 All(2)（好坏都挡，会挡掉自身增益）——不许用
+        kinds = [_cell(r, "instant_content", "kind") for r in self.rows]
+        self.assertEqual(kinds.count("58"), 1)
+        self.assertNotIn("57", kinds)
+        row = next(r for r in self.rows if _cell(r, "instant_content", "kind") == "58")
+        self.assertEqual(_cell(row, "instant_content", "target"), W.T_SELF)
 
     def test_combo_on_every_flip(self):
         row = next(r for r in self.rows if _cell(r, "instant_content", "kind") == "226")
