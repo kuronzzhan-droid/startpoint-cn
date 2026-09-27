@@ -407,17 +407,21 @@ class GeneratorSyncTests(Base):
         cls.ctx_g = B.KitContext(G.context("ghandagoza"))
 
     def test_soriz_rows_equal_revise_output_and_match_the_design(self):
+        # 生成器已同步到第三轮（wf_balance_20260927c_soriz）：队长 #9-#11 每层强度按 c 回调，设计镜像按 c 重算
+        # （c 的镜像函数接受第二批/第三轮两种磁盘形态）。期望 = 第二批输出 + 第三轮覆盖；能力3 不变。
         import wf_gbf_kit_soriz as KIT
-        design = KIT.load_design(self.ctx_s.root)
+        import wf_balance_20260927c_soriz as C3
+        design = C3.soriz_mirror(KIT.load_design(self.ctx_s.root))
         leader, ability, composer = KIT.build_rows(self.ctx_s, design)
-        self.assertEqual(self.soriz["leader"]["129986"], leader)
+        self.assertEqual(C3.soriz_leader(self.soriz["leader"]["129986"], self.soriz["ability"]["1299863"]), leader)
         self.assertEqual(self.soriz["ability"]["1299863"], ability["1299863"])
         self.assertEqual([], KIT.design_drift(composer, design))
         self.assertEqual(sorted(KIT.CAPABILITIES),
                          sorted({c for r in composer.records for c in r["capabilities"]}
                                 | {"panel-description-override-v2"}))
-        self.assertEqual([(ck, legacy, capped, per_layer) for ck, _n, legacy, capped, per_layer in KIT.CROWS_GROWTH],
-                         [(int(k), int(o), int(n), int(p)) for _i, k, _t, o, n, p in M.CROWS_ROWS])
+        self.assertEqual([(ck, legacy, capped) for ck, _n, legacy, capped, _per_layer in KIT.CROWS_GROWTH],
+                         [(int(k), int(o), int(n)) for _i, k, _t, o, n, _p in M.CROWS_ROWS])
+        self.assertEqual([per_layer for *_rest, per_layer in KIT.CROWS_GROWTH], [g[5] for g in C3.GROWTH])
         self.assertEqual(int(M.CROWS_CAP), KIT.CROWS_CAP)
 
     def test_soriz_programs_equal_revise_output(self):
@@ -433,8 +437,11 @@ class GeneratorSyncTests(Base):
 
     def test_soriz_panel_strings_equal_revise_output(self):
         import wf_gbf_kit_soriz as KIT
-        strings = KIT.cas_rows(KIT.load_design(self.ctx_s.root))
-        for key, rows in self.soriz["cas"].items():
+        import wf_balance_20260927c_soriz as C3
+        strings = KIT.cas_rows(C3.soriz_mirror(KIT.load_design(self.ctx_s.root)))
+        expected = deepcopy(self.soriz["cas"])
+        expected[C3.CAS_LEADER] = C3.soriz_leader_text(expected[C3.CAS_LEADER])   # 第三轮只改队长面板（数字 + 面板口径 A/B/D）
+        for key, rows in expected.items():
             self.assertEqual(rows, strings[key], key)
 
     def test_ghandagoza_rows_and_panel_equal_revise_output(self):
@@ -455,8 +462,11 @@ class MirrorTests(unittest.TestCase):
         self.docs = [json.loads(path.read_text(encoding="utf-8")) for path in self.PATHS]
 
     def test_mirrors_are_already_synced(self):
-        self.assertEqual([], M.sync_mirrors(ROOT, write=False))
+        import wf_balance_20260927c_soriz as C3
         soriz, ghand = self.docs
+        # 第三轮镜像已同步时，本批镜像函数会把队长 #9-#11 改回第二批值 ⇒ 只允许 soriz 镜像报差，一致性由 c 测试接管。
+        expected = [M.SORIZ_DESIGN_REL.as_posix()] if C3.MIRROR_TAG in soriz else []
+        self.assertEqual(expected, M.sync_mirrors(ROOT, write=False))
         self.assertEqual(12, len(soriz["plan"]["leader_ability"]["rows"]))
         self.assertIn(M.MIRROR_TAG, soriz)
         self.assertIn(M.MIRROR_TAG, ghand)
@@ -482,6 +492,14 @@ class CandidateDryRunTests(Base):
         before = manifest.read_bytes()
         current = json.loads(before)["package_version"]
         version = unit["PACKAGE_VERSION"][unit["PACKAGES"][0]]
+        if unit is SORIZ:
+            # 第三轮（wf_balance_20260927c_soriz）回写后：候选现值 = c 版本，内容 = 第二批输出 + 第三轮覆盖。
+            import wf_balance_20260927c_soriz as C3
+            if current == C3.PACKAGE_VERSION[unit["PACKAGES"][0]]:
+                version = current
+                out = deepcopy(out)
+                out["leader"]["129986"] = C3.soriz_leader(out["leader"]["129986"], out["ability"]["1299863"])
+                out["cas"][C3.CAS_LEADER] = C3.soriz_leader_text(out["cas"][C3.CAS_LEADER])
         self.assertGreaterEqual(tuple(map(int, version.split("."))), tuple(map(int, current.split("."))))
         kwargs = dict(character_id=unit["CID"], code_name=unit["CODE"], snapshot_key="revision_20260927b",
                       package_version=version, baseline_factory=lambda *a, **k: None)

@@ -53,11 +53,25 @@ def batch2_written_back() -> bool:
     return "revision_20260927b" in (manifest.get("snapshot") or {})
 
 
+def batch3_written_back() -> bool:
+    """2026-09-27 平衡第三轮（wf_balance_20260927c_soriz，extra5 快照键 revision_20260927d）：
+    设计镜像 --write 后即为第三轮值，候选包要等 stage_batch 回写后才是。"""
+    manifest = json.loads((PACK / "package/manifest.json").read_text(encoding="utf-8"))
+    return "revision_20260927d" in (manifest.get("snapshot") or {})
+
+
 def expected_plan() -> dict:
-    """包内行应有的设计格子：回写后 = 设计稿；回写前 = 设计稿去掉第二批覆盖（队长 #9-#11、能力3 #1-#3 改前值）。"""
+    """包内行应有的设计格子：回写后 = 设计稿；回写前 = 设计稿去掉第二批覆盖（队长 #9-#11、能力3 #1-#3 改前值）。
+    第三轮（c）镜像已写、候选未回写时，队长 #9-#11 强度两格取第二批值。"""
     from copy import deepcopy
     plan = deepcopy(design()["plan"])
     if batch2_written_back():
+        if not batch3_written_back() and "balance_20260927c" in design():
+            import wf_balance_20260927c_soriz as B3
+            for index, _kind, _name, _original, before, _after, _rounding in B3.GROWTH:
+                cells = plan["leader_ability"]["rows"][index]["cells"]
+                for col in B3.L_STRENGTH:
+                    cells[str(col)] = str(before)
         return plan
     import wf_balance_20260927b_gbf as B2
     del plan["leader_ability"]["rows"][9:]
