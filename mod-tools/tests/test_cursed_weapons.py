@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-"""诅咒武器 23 把生成器（wf_cursed_weapons）的离线测试。
+"""诅咒武器 29 把生成器（wf_cursed_weapons）的离线测试。
 
 fixture 只含模板行（live 1.4.1056 快照）；与 live 的撞键检查在暂存脚本里对真 store 做。
-锁定：口径（本体只正面、诅咒只在 120 级）、强化/商店/上架形状、客户端合法性与 DSL 签名、服务端镜像与客户端行一致。
+锁定：口径（本体只正面且很弱、诅咒强化 1 级起全额、120 级终值）、强化/商店/上架形状、客户端合法性与 DSL 签名、
+服务端镜像与客户端行一致。
 """
 from __future__ import annotations
 
@@ -78,8 +79,8 @@ class CursedWeaponTests(unittest.TestCase):
         self.assertEqual(self.out["problems"], [])
 
     def test_weapon_set_matches_sheet(self):
-        self.assertEqual([w.row for w in self.ws], [*range(1, 22), 23, 24])
-        self.assertEqual([w.id for w in self.ws], [str(5910100 + r) for r in [*range(1, 22), 23, 24]])
+        self.assertEqual([w.row for w in self.ws], list(range(1, 30)))
+        self.assertEqual([w.id for w in self.ws], [str(5910100 + r) for r in range(1, 30)])
         for logical in (W.ITEM, W.EQUIPMENT, W.SOUL, W.ENH, W.EA):
             self.assertEqual(sorted(self.out["flat"][logical]), sorted(w.id for w in self.ws), logical)
 
@@ -94,7 +95,8 @@ class CursedWeaponTests(unittest.TestCase):
                     program = row[_col(W.SOUL_T, "instant_content", "action_path")]
                     self.assertFalse(_dsl_is_curse(dsl[program]), where)
 
-    def test_curses_only_at_120(self):
+    def test_curses_full_from_level_1(self):
+        # 作者 0928：强化 1 级后诅咒直接给满 ⇒ 负面行一律 learn=1、max=120、两端同值（不随等级成长）
         dsl = self.out["dsl"]
         for w in self.ws:
             for index, row in enumerate(self.out["flat"][W.EA][w.id]):
@@ -104,7 +106,32 @@ class CursedWeaponTests(unittest.TestCase):
                 if kind == "629":
                     negative = negative or _dsl_is_curse(dsl[row[_col(W.EA_T, "instant_content", "action_path")]])
                 if negative:
-                    self.assertEqual((learn, maxlvl), (120, 120), f"{w.name} E{index}")
+                    self.assertEqual((learn, maxlvl), (1, 120), f"{w.name} E{index}")
+                    self.assertLessEqual(len(set(_strengths(W.EA_T, row))), 1, f"{w.name} E{index}")
+
+    def test_base_is_weak(self):
+        # 作者 0928「要的就是强化前非常弱」：本体数值 = 设计值 × BASE_SCALE，成长行补回，120 级终值不变
+        w01 = next(w for w in self.ws if w.row == 1)
+        soul = self.out["flat"][W.SOUL][w01.id][0]
+        self.assertEqual(soul[_col(W.SOUL_T, "instant_content", "strength.first_max")], "8000")      # 设计 40% × 0.2
+        ea = [r for r in self.out["flat"][W.EA][w01.id] if _kind(W.EA_T, r) == "32"]
+        self.assertAlmostEqual(8000 + sum(float(r[_col(W.EA_T, "instant_content", "strength.first_max")]) for r in ea),
+                               100000)
+        eff = W.Eff("0", W.stat("32", W.T_SELF, 20, 40), note="HP≥50% 时自身攻击力 +20%→40%")
+        weak = W._weaken(eff)
+        self.assertEqual(weak.content[1]["strength"], ("4000", "8000"))
+        self.assertEqual(weak.note, "HP≥50% 时自身攻击力 +4%→8%")
+        mech = W.Eff("0", W.stat("245", W.T_SELF, 100, 100))
+        self.assertIs(W._weaken(mech), mech)                    # 机制类不缩
+
+    def test_lone_wolf_cancels_exactly_at_120(self):
+        w26 = next(w for w in self.ws if w.row == 26)
+        soul = self.out["flat"][W.SOUL][w26.id]
+        ea = self.out["flat"][W.EA][w26.id]
+        hi = lambda t, r: float(r[_col(t, "instant_content", "strength.first_max")])
+        atk_pos = sum(hi(W.SOUL_T, r) for r in soul if _kind(W.SOUL_T, r) == "32")             + sum(hi(W.EA_T, r) for r in ea if _kind(W.EA_T, r) == "32" and hi(W.EA_T, r) > 0)
+        atk_neg = [hi(W.EA_T, r) for r in ea if _kind(W.EA_T, r) == "32" and hi(W.EA_T, r) < 0]
+        self.assertEqual((atk_pos, atk_neg), (1000000, [-1000000]))
 
     def test_enhancement_rows_shape(self):
         for w in self.ws:
@@ -121,8 +148,8 @@ class CursedWeaponTests(unittest.TestCase):
             self.assertTrue(all(r[1] == "1" for r in soul), w.name)
 
     def test_growth_pairs_reach_totals(self):
-        self.assertAlmostEqual(W._grow(500, 240) + W._topup(500, 240) + 240, 500)
-        self.assertAlmostEqual(W._grow(1000, 50) + W._topup(1000, 50) + 50, 1000)
+        self.assertAlmostEqual(W._grow(500, 240) + W._topup(500, 240) + W.weak(240), 500)
+        self.assertAlmostEqual(W._grow(1000, 50) + W._topup(1000, 50) + W.weak(50), 1000)
         w20 = next(w for w in self.ws if w.row == 20)
         rows = [r for r in self.out["flat"][W.EA][w20.id] if r[_col(W.EA_T, "instant_content", "target")] == W.T_SECOND
                 and _kind(W.EA_T, r) == "32"]
@@ -156,7 +183,13 @@ class CursedWeaponTests(unittest.TestCase):
                 used = {r[i] for i in (14, 16, 18, 20) if r[i] not in ("", "(None)")}
                 self.assertTrue(used and used <= FIVE_BOSS_MATERIALS, (k, used))
         body = self.out["flat"][W.BOSS_COIN_SHOP]
-        self.assertEqual(sorted(body), [str(990099003 + i) for i in range(23)])
+        self.assertEqual(sorted(body), [str(990099003 + i) for i in range(29)])
+        # 首轮 23 把（行 1..21,23,24）的上架键已上线，第二轮新武器只能接在 990099026 之后
+        first_round = [*range(1, 22), 23, 24]
+        for w in self.ws:
+            expected = 990099003 + (first_round.index(w.row) if w.row in first_round
+                                    else 23 + [22, 25, 26, 27, 28, 29].index(w.row))
+            self.assertEqual(W.shop_key(w), str(expected), w.name)
         for r in (v[0] for v in body.values()):
             self.assertEqual(r[0], "99")
             # 客户端 list_order 倒序：0 = 排在原有凭证(2)/死亡使者(1)之后，同序按商品 ID 升序
@@ -165,12 +198,12 @@ class CursedWeaponTests(unittest.TestCase):
             self.assertEqual({r[17], r[19]}, {W.BLUEPRINT, W.CRYSTAL})
 
     def test_descriptions_credit_the_proposer(self):
-        # 作者 0928：武器介绍带上提案表里的提案人（本体说明 / 120 解咒说明 / 五重商店说明三处）
+        # 作者 0928：武器介绍带上提案表里的提案人（本体说明 / 强化说明 / 五重商店说明三处）
         for w in self.ws:
             credit = f"提案：{w.author}"
             self.assertTrue(self.out["flat"][W.EQUIPMENT][w.id][0][7].endswith(credit), w.name)
             self.assertTrue(self.out["flat"][W.ENH][w.id][0][6].endswith(credit), w.name)
-            key = str(W.BOSS_SHOP_BASE + 2 + self.ws.index(w) + 1)
+            key = W.shop_key(w)
             self.assertTrue(self.out["flat"][W.BOSS_COIN_SHOP][key][0][10].endswith(credit), w.name)
 
     def test_server_delta_mirrors_client(self):

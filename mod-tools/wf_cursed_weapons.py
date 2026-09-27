@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-"""诅咒武器 23 把：腾讯文档「诅咒武器专题意见征集」提案 → 武器数据（纯函数生成器）。
+"""诅咒武器 29 把：腾讯文档「诅咒武器专题意见征集」提案 → 武器数据（纯函数生成器）。
 
-作者口径（2026-09-27）：
+作者口径（2026-09-27 首轮，0928 修订）：
 - 把表里的武器全部做出来，图标仿官方 20×20 像素风；
-- **未强化（本体，含满破）只有正面数值**；**强化到 120 级为最终数值**（提案里的诅咒/代价在 120 级解放）；
+- **未强化（本体，含满破）只有正面数值，而且很弱**（设计值 × BASE_SCALE）；
+- **强化 1 级起诅咒全额生效**；**强化到 120 级为最终数值**；
 - 强化材料来自五重决战（深界结晶 10000145 / 五王心核 10000147 / 终式武装图纸 10000144）。
 
 数据面（全部新键，不改任何已有键）：
@@ -21,7 +22,8 @@
    单次伤害最终 ``max(floor(dmg), 1)``。所以「攻击 -9999% / 伤害归零」用 **独立乘区伤害 -100%**（723/421）表达，
    「输出 -99%」同理用独立乘区 -99%。
 2. 装备词条 = 本体 concat 强化；同 slot 取 learn ≤ 当前等级最高一行 ⇒ 每行独占一个 slot；
-   「只在 120 级生效」= learn=max=120 的行。本体行随觉醒等级 1→5 在 power1→first_max 线性插值。
+   「只在 120 级生效」= learn=max=120 的行；「强化 1 级起全额」= learn=1、max=120、两端同值。
+   本体行随觉醒等级 1→5 在 power1→first_max 线性插值。
 3. 629 InvokeSkill 在 ability_soul（c67/c68）与强化表（c70/c71）解析器里都有分支；装备词条的 DSL 走
    ``BattleCharacterLogic.resolvePathCollection`` → ``equipment.getCurrentAbility()`` 正式预载。
    string_id 必须写进 custom_ability_string（缺键 C8601）。DSL 不带任何特效路径（杜绝 C8016）。
@@ -37,7 +39,8 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-from dataclasses import dataclass, field
+import re
+from dataclasses import dataclass, field, replace
 from typing import Any, Callable, Iterable
 
 import wf_client_legality as L
@@ -94,6 +97,15 @@ BODY_COSTS = ((BLUEPRINT, 2), (CRYSTAL, 10))
 BODY_STOCK = 5
 REQUIRE_AWAKENING = 5
 
+#: 作者 0928 口径：强化前（本体含满破）非常弱且只有正面；强化 1 级诅咒全额生效；强化 120 级为最终数值。
+#: 诅咒行与其配套机制行用 CURSE（learn=1、全额常量）；正面终值行用 FINAL（120 级）；成长行 1→119 + 120 补足。
+CURSE = dict(learn=1, maxlvl=120)
+FINAL = dict(learn=120, maxlvl=120)
+#: 作者 0928「要的就是强化前非常弱」：本体（含满破）按设计值的 20% 生效，强化 1→119 成长行补回差额，120 级终值不变。
+#: 只缩数值类效果；机制类（技能槽上限 245、连击、贯通、固有状态、629 调用、扣血回血等）保持设计值。
+BASE_SCALE = 0.2
+WEAK_KINDS = frozenset({"0", "1", "2", "28", "32", "33", "34", "35", "55", "156", "202", "205", "211", "227", "388", "470",
+                        "486", "693", "694", "701", "717", "723"})
 #: 官方 5★ 武器 HP/ATK 成长（照 5020042 哈尔波曼 / 5900101）与强化 status（照官方 120 级武器）。
 EQUIPMENT_STATUS_ROWS = {"1": "330,148", "5": "495,221"}
 ENH_STATUS_ROWS = {"98": "0,0", "99": "50,10", "120": "50,10"}
@@ -106,10 +118,12 @@ P_SELF, P_LEADER, P_ONE_OF_PARTY, P_ONE_OF_MULTIBALL = "0", "1", "5", "9"
 # 触发 kind
 IT_INITIAL, IT_PF, IT_FEVER, IT_DIRECT, IT_SKILL, IT_SKILL_MAX, IT_HP_LOW, IT_ELAPSED, IT_REVIVAL, IT_MB_REMOVE = (
     "0", "2", "8", "20", "23", "24", "25", "77", "18", "194")
+IT_SKILL_HIT, IT_PF_HIT = "107", "183"   # SkillHit（带来源）/ OneOfEnemyPowerFlipHitLvAny（官方 139998 队长技同款）
 # 持续触发 kind
 DT_HP_HIGH, DT_FEVER, DT_POISON, DT_UNIQUE, DT_HP_LOW_EX = "0", "4", "18", "134", "227"
 # 前置 kind
 PRE_MEMBER, PRE_HP_HIGH, PRE_UNIQUE_GE, PRE_HAS_UNIQUE, PRE_UNIQUE_LE, PRE_SAME_ELEMENT = "2", "8", "144", "187", "199", "208"
+PRE_MY_SELF = "3"
 
 ELEMENT_GROUP = {"fire": "Red", "water": "Blue", "thunder": "Yellow", "wind": "Green", "light": "White", "dark": "Black"}
 ELEMENT_CODE = {"fire": 0, "water": 1, "thunder": 2, "wind": 3, "light": 4, "dark": 5}   # equipment_element.json（0 基）
@@ -300,6 +314,15 @@ def res(element: str) -> tuple:
 SAME_ELEMENT = (PRE_SAME_ELEMENT, {"threshold": times(6)})
 
 
+def my_element(*elements: str) -> tuple:
+    """自身为某属性（官方先例：魂珠 5040010「风·MySelf」）；多属性逗号并列 = 任一。"""
+    return (PRE_MY_SELF, {"character_groups": ",".join(ELEMENT_GROUP[e] for e in elements)})
+
+
+#: 队伍中除自身外还有其他角色（主位或合击位）：编成人数 ≥ 2（六属性并列 = 不限属性）。
+HAS_TEAMMATE = (PRE_MEMBER, {"threshold": times(2), "character_groups": ",".join(ELEMENT_GROUP.values())})
+
+
 def has_unique(uid: str) -> tuple:
     return (PRE_HAS_UNIQUE, {"trigger_puller": P_SELF, "unique_condition_id": uid})
 
@@ -357,9 +380,9 @@ def elapsed(frame_count: int, limit: str = "(None)") -> tuple:
     return (IT_ELAPSED, {"threshold": frames(frame_count), "trigger_limit": limit})
 
 
-def gate_unique(uid: str, limit: str = "1") -> tuple:
-    """持续触发：自身持有固有状态 uid（≥1 层）；limit=倍乘上限（1 = 不随层数倍乘）。"""
-    return (DT_UNIQUE, {"trigger_puller": P_SELF, "threshold": times(1), "trigger_limit": limit,
+def gate_unique(uid: str, limit: str = "1", at_least: int = 1) -> tuple:
+    """持续触发：自身持有固有状态 uid（≥at_least 层）；limit=倍乘上限（1 = 不随层数倍乘）。"""
+    return (DT_UNIQUE, {"trigger_puller": P_SELF, "threshold": times(at_least), "trigger_limit": limit,
                         "unique_condition_id": uid})
 
 
@@ -510,7 +533,7 @@ def colorless_hit_effect_problems(tree: list) -> list[str]:
 
 @dataclass
 class Weapon:
-    row: int                   # 提案表行号（1..24，缺 22）
+    row: int                   # 提案表行号（1..29）
     slug: str
     name: str
     category: str              # 服务端 equipment_lookup 类别
@@ -561,18 +584,41 @@ ICON_STACK = "unique_wind_spgirl_1anv"      # 神速剑技（叠层类）
 
 KIND_LABEL = {"32": "攻击力", "0": "攻击力", "34": "技能伤害", "2": "技能伤害", "33": "直接攻击伤害", "1": "直接攻击伤害",
               "55": "强化弹射伤害", "23": "强化弹射伤害", "28": "强化弹射伤害", "388": "能力伤害", "35": "技能充能速度",
-              "156": "增益持续时间"}
+              "156": "增益持续时间", "227": "护盾", "211": "技能槽", "470": "逆境", "701": "技能充能速度",
+              "694": "技能伤害独立乘区", "723": "伤害独立乘区", "717": "合击角色攻击力白值"}
+#: 瞬发「状态」类 kind 的名字（与持续类同号不同义：瞬发 1 = ConditionSkillDamage，持续 1 = 直击）。
+COND_LABEL = {"0": "攻击力", "1": "技能伤害", "28": "强化弹射伤害", "470": "逆境", "701": "技能充能速度"}
 TARGET_LABEL = {T_SELF: "自身", T_PARTY: "全队", T_LEADER: "队长", T_SECOND: "2号位", T_THIRD: "3号位",
                 T_MULTIBALL: "协力球", T_TRIGGER: "触发者"}
 
 
+def weak(x: float) -> float:
+    """本体实际生效值（设计值 × BASE_SCALE）。"""
+    return round(x * BASE_SCALE, 3)
+
+
 def _grow(total: float, base: float) -> float:
-    """强化 1→119 线性成长的满值：最终值 - 本体满破值 - 120 级补足（最终值的 2.5%）。"""
-    return round(total - base - total * 0.025, 3)
+    """强化 1→119 线性成长的满值：最终值 - 本体满破实际值 - 120 级补足（最终值的 2.5%）。base 为本体设计值。"""
+    return round(total - weak(base) - total * 0.025, 3)
 
 
 def _topup(total: float, base: float) -> float:
-    return round(total - base - _grow(total, base), 3)
+    return round(total - weak(base) - _grow(total, base), 3)
+
+
+_PCT_IN_NOTE = re.compile(r"(?<=[+→])(\d+(?:\.\d+)?)(?=%)")
+
+
+def _weaken(eff: Eff) -> Eff:
+    """本体行按 BASE_SCALE 缩放（只缩 WEAK_KINDS 的强度；说明里「+N%」「→N%」同步改写）。"""
+    kind, given = eff.content
+    if kind not in WEAK_KINDS or "strength" not in given:
+        return eff
+    scale = lambda v: str(int(round(int(v) * BASE_SCALE)))
+    s_ = given["strength"]
+    strength = tuple(scale(v) for v in s_) if isinstance(s_, tuple) else scale(s_)
+    note = _PCT_IN_NOTE.sub(lambda m: f"{float(m.group(1)) * BASE_SCALE:g}", eff.note)
+    return replace(eff, content=(kind, {**given, "strength": strength}), note=note)
 
 
 def growth_pair(kind: str, target: str | None, total: float, base: float, *, mode: str = "0",
@@ -582,9 +628,9 @@ def growth_pair(kind: str, target: str | None, total: float, base: float, *, mod
     grow = _grow(total, base)
     top = _topup(total, base)
     rows = []
-    label = KIND_LABEL.get(kind, kind)
+    label = (COND_LABEL if cond_frames is not None else KIND_LABEL).get(kind, kind)
     who = TARGET_LABEL.get(target, "") if target is not None else ""
-    notes = (f"{who}{label}再 +{grow / 119:.3g}%→{grow:g}%（强化成长）",
+    notes = (f"{who}{label}再 +{grow / 119:.3g}%→{grow:g}%（强化成长；本体实际 +{weak(base):g}%）",
              f"{who}{label}再 +{top:g}%（120 级补足，合计 +{total:g}%）")
     for (lo, hi, learn, maxlvl), note in zip(((grow / 119, grow, 1, 119), (top, top, 120, 120)), notes):
         if mode == "1":
@@ -622,7 +668,7 @@ def w01() -> Weapon:
     w.ea = [
         *growth_pair("32", T_SELF, 100, 40),
         Eff("0", invoke("cursed_gluttony_devour", program), trig=trig(IT_SKILL, trigger_puller=P_SELF),
-            learn=120, maxlvl=120, note="【诅咒】发动技能时吞噬己方全部召唤协力球，每个 +50% 攻击/技伤（最多 9 个，15 秒）"),
+            **CURSE, note="【诅咒】发动技能时吞噬己方全部召唤协力球，每个 +50% 攻击/技伤（最多 9 个，15 秒）"),
     ]
     return w
 
@@ -644,7 +690,7 @@ def w02() -> Weapon:
         *growth_pair("2", T_PARTY, 200, 40, mode="1", trig_=fever),
         *growth_pair("23", None, 200, 0, mode="1", trig_=fever),
         Eff("0", invoke("cursed_feast_drain", program), trig=trig(IT_FEVER, threshold=times(1)),
-            learn=120, maxlvl=120, note="【诅咒】进入 Fever 时全队技能槽 -50%"),
+            **CURSE, note="【诅咒】进入 Fever 时全队技能槽 -50%"),
     ]
     return w
 
@@ -660,9 +706,9 @@ def w03() -> Weapon:
     ]
     w.ea = [
         *growth_pair("34", T_SELF, 160, 60, pre=wind),
-        Eff("0", stat("35", T_SELF, -50), pre=wind, learn=120, maxlvl=120,
+        Eff("0", stat("35", T_SELF, -50), pre=wind, **CURSE,
             note="【诅咒】风属性共鸣时：自身技能充能速度 -50%"),
-        Eff("0", stat("694", T_SELF, 100), pre=wind, learn=120, maxlvl=120,
+        Eff("0", stat("694", T_SELF, 100), pre=wind, **FINAL,
             note="风属性共鸣时：自身技能伤害独立乘区 +100%"),
     ]
     w.deviations.append("「技能条锁定 200% 才能用」客户端硬编码（槽满 100% 即可施放）；改为「充能速度 -50%」表达两倍攒槽，"
@@ -681,7 +727,7 @@ def w04() -> Weapon:
     w.ea = [
         *growth_pair("32", T_MULTIBALL, 260, 60),
         Eff("0", stat("209", T_PARTY, 3), trig=trig(IT_DIRECT, trigger_puller=P_ONE_OF_MULTIBALL, cooltime="60"),
-            learn=120, maxlvl=120, note="【诅咒】协力球直接攻击时，全队受到最大 HP 3% 的伤害（CT1 秒，不致死）"),
+            **CURSE, note="【诅咒】协力球直接攻击时，全队受到最大 HP 3% 的伤害（CT1 秒，不致死）"),
     ]
     w.deviations.append("「面包攻击改为可伤害队友」是碰撞层行为；改为协力球每次撞击时对全队造成最大 HP 3% 的友伤（玩家侧伤害钳到 1HP）")
     return w
@@ -704,8 +750,8 @@ def w05() -> Weapon:
     w.soul = [Eff("0", stat("156", T_PARTY, 25, 50), note="全队增益效果持续时间 +25%→50%")]
     w.ea = [
         *growth_pair("156", T_PARTY, 1000, 50),
-        Eff("0", stat("155", T_PARTY, 1000), learn=120, maxlvl=120, note="【诅咒】全队减益效果持续时间 +1000%"),
-        Eff("0", invoke("cursed_watch_curse", program), trig=elapsed(600), learn=120, maxlvl=120,
+        Eff("0", stat("155", T_PARTY, 1000), **CURSE, note="【诅咒】全队减益效果持续时间 +1000%"),
+        Eff("0", invoke("cursed_watch_curse", program), trig=elapsed(600), **CURSE,
             note="【诅咒】每 10 秒随机赋予全队 1 种减益（10 秒）"),
     ]
     w.deviations.append("「无视时间无限延长」改为持续时间 +1000%（次数型/消耗型效果照常结束，也不附带防驱散）")
@@ -724,11 +770,11 @@ def w06() -> Weapon:
     w.ea = [
         *growth_pair("32", T_SELF, 500, 200),
         *growth_pair("34", T_SELF, 500, 200),
-        Eff("0", stat("32", T_SELF, -100), trig=skill, learn=120, maxlvl=120,
+        Eff("0", stat("32", T_SELF, -100), trig=skill, **CURSE,
             note="【诅咒】发动技能时自身攻击力 -100%（最多 5 次）"),
-        Eff("0", stat("34", T_SELF, -100), trig=skill, learn=120, maxlvl=120,
+        Eff("0", stat("34", T_SELF, -100), trig=skill, **CURSE,
             note="【诅咒】发动技能时自身技能伤害 -100%（最多 5 次）"),
-        Eff("0", stat("35", T_SELF, -15), learn=120, maxlvl=120, note="【诅咒】自身技能充能速度 -15%"),
+        Eff("0", stat("35", T_SELF, -15), **CURSE, note="【诅咒】自身技能充能速度 -15%"),
     ]
     w.deviations.append("「技能槽最大值 -15%」：引擎的槽容量不能低于 100%，改为技能充能速度 -15%")
     return w
@@ -752,54 +798,54 @@ def _full_screen_attack(multiplier: float) -> list:
 
 
 def w07() -> Weapon:
-    w = Weapon(7, "finality_gauntlet", "终焉拳套", "拳", (), "P.P.P.P",
+    w = Weapon(7, "finality_gauntlet", "终焉拳套", "拳", ("fire", "water"), "P.P.P.P",
                "镶着彩色宝石的黄金拳套", "一拳之后，世界与你一同静止。",
-               "开局全队攻击 +150%、技能伤害 +350%、能力伤害 +130%；发动技能时全场 25 倍技能伤害（CT0.8 秒）；"
-               "10 秒后全队永续麻痹、封印，攻击力与技能伤害 -800%（不可驱散）")
+               "火/水属性共鸣时：全队攻击、技能伤害、能力伤害 +600%；发动技能时全场 6 倍 + 10 倍技能伤害（各 CT0.5 秒）；"
+               "8 秒后全队永续麻痹、封印，攻击力/技能伤害/能力伤害 -886%（不可驱散）")
     uid_end = w.uid(1)
     w.uniques[uid_end] = unique_row(f"cursed_finality_{uid_end}", "终焉", ICON_CURSE, "99999999", "1", bad=True)
-    fist_a, fist_b = dsl_program("finality_fist_a"), dsl_program("finality_fist_b")
-    w.dsl[fist_a] = _full_screen_attack(5.0)
-    w.dsl[fist_b] = _full_screen_attack(20.0)
-    w.cas["cursed_finality_fist_a"] = "对全体敌人造成5倍技能伤害"
-    w.cas["cursed_finality_fist_b"] = "对全体敌人造成20倍技能伤害"
-    skill_ct = trig(IT_SKILL, trigger_puller=P_SELF, cooltime="48")
-    w.soul = [
-        Eff("0", stat("32", T_PARTY, 30, 72), note="全队攻击力 +30%→72%"),
-        Eff("0", stat("34", T_PARTY, 70, 168), note="全队技能伤害 +70%→168%"),
-        Eff("0", stat("388", T_PARTY, 26, 62), note="全队能力伤害 +26%→62%"),
-        Eff("0", invoke("cursed_finality_fist_a", fist_a), trig=skill_ct, note="发动技能时对全体敌人造成 5 倍技能伤害（CT0.8 秒）"),
-    ]
-    ten_s = elapsed(600, "1")
+    fist_a, fist_b, fist_c = (dsl_program(f"finality_fist_{k}") for k in "abc")
+    w.dsl[fist_a], w.dsl[fist_b], w.dsl[fist_c] = (_full_screen_attack(x) for x in (1.0, 5.0, 10.0))
+    w.cas["cursed_finality_fist_a"] = "对全体敌人造成1倍技能伤害"
+    w.cas["cursed_finality_fist_b"] = "对全体敌人造成5倍技能伤害"
+    w.cas["cursed_finality_fist_c"] = "对全体敌人造成10倍技能伤害"
+    skill_ct = trig(IT_SKILL, trigger_puller=P_SELF, cooltime="30")
+    eight_s = elapsed(480, "1")
     curse = dict(cancelable=False)
     revive = trig(IT_REVIVAL, trigger_puller=P_ONE_OF_PARTY)
-    after = (has_unique(uid_end),)
-    w.ea = [
-        *growth_pair("32", T_PARTY, 150, 72),
-        *growth_pair("34", T_PARTY, 350, 168),
-        *growth_pair("388", T_PARTY, 130, 62),
-        Eff("0", invoke("cursed_finality_fist_b", fist_b), trig=skill_ct, learn=120, maxlvl=120,
-            note="发动技能时再对全体敌人造成 20 倍技能伤害（合计 25 倍，CT0.8 秒）"),
-        Eff("0", unique(uid_end), trig=ten_s, learn=120, maxlvl=120, note="10 秒后刻下「终焉」"),
-        Eff("0", condition("19", T_PARTY, None, INF_FRAMES, **curse), trig=ten_s, learn=120, maxlvl=120,
-            note="【诅咒】10 秒后全队永续麻痹（不可驱散）"),
-        Eff("0", condition("219", T_PARTY, None, INF_FRAMES, **curse), trig=ten_s, learn=120, maxlvl=120,
-            note="【诅咒】10 秒后全队永续封印（不可驱散）"),
-        Eff("0", condition("0", T_PARTY, -800, INF_FRAMES, **curse), trig=ten_s, learn=120, maxlvl=120,
-            note="【诅咒】10 秒后全队攻击力 -800%（虚弱，不可驱散；引擎攻击加成下限 -50%）"),
-        Eff("0", condition("1", T_PARTY, -800, INF_FRAMES, **curse), trig=ten_s, learn=120, maxlvl=120,
-            note="【诅咒】10 秒后全队技能伤害 -800%（不可驱散）"),
-        Eff("0", condition("19", T_PARTY, None, INF_FRAMES, **curse), trig=revive, pre=after, learn=120, maxlvl=120,
-            note="「终焉」后复活时重新附加麻痹"),
-        Eff("0", condition("219", T_PARTY, None, INF_FRAMES, **curse), trig=revive, pre=after, learn=120, maxlvl=120,
-            note="「终焉」后复活时重新附加封印"),
-        Eff("0", condition("0", T_PARTY, -800, INF_FRAMES, **curse), trig=revive, pre=after, learn=120, maxlvl=120,
-            note="「终焉」后复活时重新附加攻击力 -800%"),
-        Eff("0", condition("1", T_PARTY, -800, INF_FRAMES, **curse), trig=revive, pre=after, learn=120, maxlvl=120,
-            note="「终焉」后复活时重新附加技能伤害 -800%"),
-    ]
-    w.deviations.append("「攻刃 -800%」引擎攻击加成总和下限 -50%（STAT_MODIFIER_ATTACK_POINT_MIN），技能伤害 -800% 会压到单次 1 伤害；"
-                        "「虚弱」按攻击力降低实现")
+    after = has_unique(uid_end)
+    rows_s, rows_e = [], []
+    for element in ("fire", "water"):
+        gate = (res(element),)
+        cn = "火" if element == "fire" else "水"
+        rows_s += [
+            Eff("0", stat("32", T_PARTY, 150, 300), pre=gate, note=f"{cn}属性共鸣时：全队攻击力 +150%→300%"),
+            Eff("0", stat("34", T_PARTY, 150, 300), pre=gate, note=f"{cn}属性共鸣时：全队技能伤害 +150%→300%"),
+            Eff("0", stat("388", T_PARTY, 150, 300), pre=gate, note=f"{cn}属性共鸣时：全队能力伤害 +150%→300%"),
+            Eff("0", invoke("cursed_finality_fist_a", fist_a), trig=skill_ct, pre=gate,
+                note=f"{cn}属性共鸣时：发动技能时对全体敌人造成 1 倍技能伤害（CT0.5 秒）"),
+        ]
+        rows_e += [
+            *growth_pair("32", T_PARTY, 600, 300, pre=gate),
+            *growth_pair("34", T_PARTY, 600, 300, pre=gate),
+            *growth_pair("388", T_PARTY, 600, 300, pre=gate),
+            Eff("0", invoke("cursed_finality_fist_b", fist_b), trig=skill_ct, pre=gate, **FINAL,
+                note="发动技能时再对全体敌人造成 5 倍技能伤害（与本体合计 6 倍，CT0.5 秒）"),
+            Eff("0", invoke("cursed_finality_fist_c", fist_c), trig=skill_ct, pre=gate, **FINAL,
+                note="发动技能时再对全体敌人造成 10 倍技能伤害（CT0.5 秒）"),
+            Eff("0", unique(uid_end), trig=eight_s, pre=gate, **CURSE, note="8 秒后刻下「终焉」"),
+        ]
+        for kind, strength, text in (("19", None, "麻痹"), ("219", None, "封印"), ("0", -886, "攻击力 -886%"),
+                                     ("1", -886, "技能伤害 -886%"), ("486", -886, "能力伤害 -886%")):
+            rows_e += [
+                Eff("0", condition(kind, T_PARTY, strength, INF_FRAMES, **curse), trig=eight_s, pre=gate, **CURSE,
+                    note=f"【诅咒】8 秒后全队永续{text}（不可驱散）"),
+                Eff("0", condition(kind, T_PARTY, strength, INF_FRAMES, **curse), trig=revive, pre=(*gate, after),
+                    **CURSE, note=f"「终焉」后复活时重新附加{text}"),
+            ]
+    w.soul, w.ea = rows_s, rows_e
+    w.deviations.append("「攻刃 -886%」引擎攻击加成总和下限 -50%（STAT_MODIFIER_ATTACK_POINT_MIN），技能/能力伤害 -886% 会压到单次 1 伤害；"
+                        "「无法接触的麻痹」按不可驱散的麻痹实现")
     return w
 
 
@@ -817,11 +863,11 @@ def w08() -> Weapon:
     w.ea = [
         *growth_pair("0", T_SELF, 150, 60, mode="1", trig_=hp50),
         *growth_pair("2", T_SELF, 150, 60, mode="1", trig_=hp50),
-        Eff("1", during("0", T_SELF, -50), trig=low50, learn=120, maxlvl=120, note="【诅咒】HP<50% 时自身攻击力 -50%"),
-        Eff("1", during("2", T_SELF, -50), trig=low50, learn=120, maxlvl=120, note="【诅咒】HP<50% 时自身技能伤害 -50%"),
-        Eff("0", stat("209", T_SELF, 99.9), trig=full[0], pre=full[1], learn=120, maxlvl=120,
+        Eff("1", during("0", T_SELF, -50), trig=low50, **CURSE, note="【诅咒】HP<50% 时自身攻击力 -50%"),
+        Eff("1", during("2", T_SELF, -50), trig=low50, **CURSE, note="【诅咒】HP<50% 时自身技能伤害 -50%"),
+        Eff("0", stat("209", T_SELF, 99.9), trig=full[0], pre=full[1], **CURSE,
             note="【诅咒】HP 为 100% 时（每 0.5 秒检查）失去最大 HP 的 99.9%"),
-        Eff("0", stat("227", T_SELF, 30), trig=full[0], pre=full[1], delay=1, learn=120, maxlvl=120,
+        Eff("0", stat("227", T_SELF, 30), trig=full[0], pre=full[1], delay=1, **CURSE,
             note="随后获得最大 HP 30% 的护盾"),
     ]
     return w
@@ -843,25 +889,24 @@ def w09() -> Weapon:
         w.soul.append(Eff("0", stat("32", T_PARTY, 4, 8), trig=tick, pre=gate,
                           note=f"{'火' if element == 'fire' else '雷'}属性共鸣时：每 10 秒全队攻击力 +4%→8%（最多 12 次）"))
         w.ea += [
-            Eff("0", stat("32", T_PARTY, 0.1, 12), trig=tick, pre=gate, learn=1, maxlvl=119,
-                note="每 10 秒全队攻击力再 +0.1%→12%（最多 12 次）"),
-            Eff("0", unique(u_dorm), pre=gate, learn=120, maxlvl=120, note="开局「蛰伏」49 秒"),
-            Eff("0", unique(u_wake1), trig=elapsed(3000, "1"), pre=gate, learn=120, maxlvl=120, note="第 50 秒「苏醒」10 秒"),
-            Eff("0", unique(u_dorm), trig=elapsed(3660, "1"), pre=gate, learn=120, maxlvl=120, note="第 61 秒再度「蛰伏」49 秒"),
-            Eff("0", unique(u_wake2), trig=elapsed(6600, "1"), pre=gate, learn=120, maxlvl=120, note="第 110 秒「龙怒」10 秒"),
-            Eff("0", unique(u_dry), trig=elapsed(7260, "1"), pre=gate, learn=120, maxlvl=120, note="第 121 秒「枯竭」（永久）"),
+            *growth_pair("32", T_PARTY, 20, 8, trig_=tick, pre=gate),
+            Eff("0", unique(u_dorm), pre=gate, **CURSE, note="开局「蛰伏」49 秒"),
+            Eff("0", unique(u_wake1), trig=elapsed(3000, "1"), pre=gate, **CURSE, note="第 50 秒「苏醒」10 秒"),
+            Eff("0", unique(u_dorm), trig=elapsed(3660, "1"), pre=gate, **CURSE, note="第 61 秒再度「蛰伏」49 秒"),
+            Eff("0", unique(u_wake2), trig=elapsed(6600, "1"), pre=gate, **CURSE, note="第 110 秒「龙怒」10 秒"),
+            Eff("0", unique(u_dry), trig=elapsed(7260, "1"), pre=gate, **CURSE, note="第 121 秒「枯竭」（永久）"),
             Eff("1", during("421", T_PARTY, -99), trig=gate_unique(u_dorm), pre=gate, even_if_dead=True,
-                learn=120, maxlvl=120, note="【诅咒】「蛰伏」期间全队伤害独立乘区 -99%"),
-            Eff("1", during("0", T_PARTY, 500), trig=gate_unique(u_wake1), pre=gate, even_if_dead=True,
-                learn=120, maxlvl=120, note="「苏醒」期间全队攻击力 +500%"),
-            Eff("1", during("421", T_PARTY, 300), trig=gate_unique(u_wake1), pre=gate, even_if_dead=True,
-                learn=120, maxlvl=120, note="「苏醒」期间全队伤害独立乘区 +300%"),
-            Eff("1", during("0", T_PARTY, 1000), trig=gate_unique(u_wake2), pre=gate, even_if_dead=True,
-                learn=120, maxlvl=120, note="「龙怒」期间全队攻击力 +1000%"),
-            Eff("1", during("421", T_PARTY, 500), trig=gate_unique(u_wake2), pre=gate, even_if_dead=True,
-                learn=120, maxlvl=120, note="「龙怒」期间全队伤害独立乘区 +500%"),
+                **CURSE, note="【诅咒】「蛰伏」期间全队伤害独立乘区 -99%"),
+            Eff("1", during("0", T_PARTY, 50, 500), trig=gate_unique(u_wake1), pre=gate, even_if_dead=True,
+                **CURSE, note="「苏醒」期间全队攻击力 +500%"),
+            Eff("1", during("421", T_PARTY, 30, 300), trig=gate_unique(u_wake1), pre=gate, even_if_dead=True,
+                **CURSE, note="「苏醒」期间全队伤害独立乘区 +300%"),
+            Eff("1", during("0", T_PARTY, 100, 1000), trig=gate_unique(u_wake2), pre=gate, even_if_dead=True,
+                **CURSE, note="「龙怒」期间全队攻击力 +1000%"),
+            Eff("1", during("421", T_PARTY, 50, 500), trig=gate_unique(u_wake2), pre=gate, even_if_dead=True,
+                **CURSE, note="「龙怒」期间全队伤害独立乘区 +500%"),
             Eff("1", during("421", T_PARTY, -90), trig=gate_unique(u_dry), pre=gate, even_if_dead=True,
-                learn=120, maxlvl=120, note="【诅咒】「枯竭」后全队伤害独立乘区 -90%"),
+                **CURSE, note="【诅咒】「枯竭」后全队伤害独立乘区 -90%"),
         ]
     w.deviations.append("时间点按战斗计时（ElapsedTime）；「输出 -99% / -90%」用伤害独立乘区实现（固定伤害等少数来源不经过该乘区）")
     return w
@@ -875,11 +920,11 @@ def w10() -> Weapon:
     w.uniques[u_mark] = unique_row(f"cursed_dice_{u_mark}", "命运之骰", ICON_STACK, "99999999", "1", bad=False)
     lite, full = dsl_program("fate_roll_lite"), dsl_program("fate_roll")
     w.dsl[lite] = dsl_root(party(0, roulette(
-        (1, [give(0, [ac("ACDirectDamage", 600, P(0.6), P(1))])]),
-        (1, [give(0, [ac("ACPowerFlipDamage", 600, P(0.8), P(1))])]),
-        (1, [give(0, [ac("ACSkillDamage", 600, P(0.6), P(1))])]),
+        (1, [give(0, [ac("ACDirectDamage", 600, P(0.12), P(1))])]),
+        (1, [give(0, [ac("ACPowerFlipDamage", 600, P(0.16), P(1))])]),
+        (1, [give(0, [ac("ACSkillDamage", 600, P(0.12), P(1))])]),
     )))
-    w.cas["cursed_fate_roll_lite"] = "随机赋予全队1种增益（直接攻击伤害+60%/强化弹射伤害+80%/技能伤害+60%，10秒）"
+    w.cas["cursed_fate_roll_lite"] = "随机赋予全队1种增益（直接攻击伤害+12%/强化弹射伤害+16%/技能伤害+12%，10秒）"
     w.dsl[full] = dsl_root(roulette(
         (1, [party(0, give(0, [ac("ACFlying", 600)]), give(0, [ac("ACDirectDamage", 600, P(1.9), P(1))]),
                    give(0, [ac("ACSpeedup", 600, P(0.35), P(1))]))]),
@@ -908,8 +953,8 @@ def w10() -> Weapon:
                   note="每 25 秒随机赋予全队 1 种增益（10 秒）")]
     w.ea = [
         *growth_pair("32", T_PARTY, 60, 0),
-        Eff("0", unique(u_mark), learn=120, maxlvl=120, note="「命运之骰」：本体的温和掷骰换成完整命运骰"),
-        Eff("0", invoke("cursed_fate_roll", full), trig=every25, learn=120, maxlvl=120,
+        Eff("0", unique(u_mark), **CURSE, note="「命运之骰」：本体的温和掷骰换成完整命运骰"),
+        Eff("0", invoke("cursed_fate_roll", full), trig=every25, **CURSE,
             note="【诅咒】每 25 秒掷骰：三种增益或三种诅咒（10 秒，诅咒不可驱散）"),
     ]
     w.deviations.append("「冲刺 CD 缩短 35%」无对应原生效果，改为球速 +35%；「对应属性的强化 PF」形态替换不做，保留伤害/连击/贯通部分；"
@@ -932,11 +977,11 @@ def w11() -> Weapon:
     hit100 = trig(IT_DIRECT, trigger_puller=P_SELF, threshold=times(100))
     w.ea = [
         *growth_pair("33", T_SELF, 150, 60),
-        Eff("0", invoke("cursed_hokuto_hundred", hundred), learn=120, maxlvl=120,
+        Eff("0", invoke("cursed_hokuto_hundred", hundred), **CURSE,
             note="【诅咒】直接攻击变为 10 段、每段原伤害 5%（覆盖本体的 3 段）"),
-        Eff("0", condition("0", T_PARTY, 100, 1200), trig=hit100, learn=120, maxlvl=120,
+        Eff("0", condition("0", T_PARTY, 100, 1200), trig=hit100, **FINAL,
             note="每累计 100 次直接攻击，全队攻击力 +100%（20 秒）"),
-        Eff("0", condition("1", T_PARTY, 100, 1200), trig=hit100, learn=120, maxlvl=120,
+        Eff("0", condition("1", T_PARTY, 100, 1200), trig=hit100, **FINAL,
             note="每累计 100 次直接攻击，全队技能伤害 +100%（20 秒）"),
     ]
     w.deviations.append("「触发队里一个角色的技能」没有通用原语（每个角色技能 DSL 不同），按提案备选改为全队增伤")
@@ -964,16 +1009,16 @@ def w12() -> Weapon:
     w.soul = [
         Eff("0", condition("28", None, 50, 900), trig=pf10, note="每 10 次强化弹射：强化弹射伤害 +50%（15 秒）"),
         Eff("0", condition("26", None, None, 900), trig=pf10, note="每 10 次强化弹射：贯通（15 秒）"),
-        Eff("0", ("226", {"strength": (times(20), times(20))}), trig=pf10, note="每 10 次强化弹射：连击 +20"),
+        Eff("0", ("226", {"strength": (times(4), times(4))}), trig=pf10, note="每 10 次强化弹射：连击 +4"),
     ]
     w.ea = [
         *growth_pair("28", None, 200, 50, trig_=pf10, cond_frames=900),
-        Eff("0", ("226", {"strength": (times(20), times(20))}), trig=pf10, learn=120, maxlvl=120,
-            note="每 10 次强化弹射：连击再 +20（合计 +40）"),
-        Eff("0", invoke("cursed_dance_lock", init), learn=120, maxlvl=120, note="【诅咒】开局连击上限 9、进入「剑舞未成」"),
-        Eff("0", invoke("cursed_dance_release", release), trig=pf10, learn=120, maxlvl=120,
+        Eff("0", ("226", {"strength": (times(36), times(36))}), trig=pf10, **FINAL,
+            note="每 10 次强化弹射：连击再 +36（合计 +40）"),
+        Eff("0", invoke("cursed_dance_lock", init), **CURSE, note="【诅咒】开局连击上限 9、进入「剑舞未成」"),
+        Eff("0", invoke("cursed_dance_release", release), trig=pf10, **CURSE,
             note="每 10 次强化弹射解除限制 15 秒"),
-        Eff("1", during("413", None, -100), trig=gate_unique(u_lock), even_if_dead=True, learn=120, maxlvl=120,
+        Eff("1", during("413", None, -100), trig=gate_unique(u_lock), even_if_dead=True, **CURSE,
             note="【诅咒】「剑舞未成」期间强化弹射伤害独立乘区 -100%（伤害降为 1）"),
     ]
     w.deviations.append("「场地变成有风的 boss 场地、把人往左右推」：玩家侧 DSL 的 CreateWindAttack 在 MemberImpl 直接 throw，不做")
@@ -992,12 +1037,12 @@ def w13() -> Weapon:
     w.soul = [Eff("0", stat("35", T_PARTY, 15, 30), pre=wind, note="风属性共鸣时：全队技能充能速度 +15%→30%")]
     w.ea = [
         *growth_pair("35", T_PARTY, 100, 30, pre=wind),
-        Eff("0", invoke("cursed_flute_drain", drain), trig=elapsed(30, "1"), pre=wind, learn=120, maxlvl=120,
+        Eff("0", invoke("cursed_flute_drain", drain), trig=elapsed(30, "1"), pre=wind, **CURSE,
             note="【诅咒】开局（0.5 秒后）清空全队技能槽"),
         Eff("0", condition("0", T_TRIGGER, 500, 1200, by_each_trigger_puller="true"), trig=full, pre=wind,
-            learn=120, maxlvl=120, note="角色技能槽满时，该角色攻击力 +500%（20 秒，每人各自 CT20 秒）"),
+            **FINAL, note="角色技能槽满时，该角色攻击力 +500%（20 秒，每人各自 CT20 秒）"),
         Eff("0", condition("1", T_TRIGGER, 500, 1200, by_each_trigger_puller="true"), trig=full, pre=wind,
-            learn=120, maxlvl=120, note="角色技能槽满时，该角色技能伤害 +500%（20 秒，每人各自 CT20 秒）"),
+            **FINAL, note="角色技能槽满时，该角色技能伤害 +500%（20 秒，每人各自 CT20 秒）"),
     ]
     w.deviations.append("「无法因能力和被动得到充能」：回槽来源筛选（423）只有角色词条解析器认，写进装备表会崩，未实现；"
                         "充能速度 +100% 受引擎充能上限约束")
@@ -1023,11 +1068,11 @@ def w14() -> Weapon:
     w.ea = [
         *growth_pair("0", T_SELF, 1500, 300, trig_=skill, cond_frames=600),
         Eff("0", ("211", {"target": T_SELF, "strength": (pct(100), pct(100))}), trig=skill, pc=consume,
-            learn=120, maxlvl=120, note="发动技能时消耗 1 层「咒钥」回复 100% 技能槽"),
+            **CURSE, note="发动技能时消耗 1 层「咒钥」回复 100% 技能槽"),
         Eff("0", unique(u_key, 2), trig=trig(IT_SKILL, trigger_puller=P_SELF, trigger_limit="1"), delay=1,
-            learn=120, maxlvl=120, note="首次发动技能后获得「咒钥」2 层"),
-        Eff("0", stat("35", T_PARTY, -66), learn=120, maxlvl=120, note="【诅咒】全队技能充能速度 -66%"),
-        Eff("0", invoke("cursed_key_drain", drain), trig=elapsed(30, "1"), learn=120, maxlvl=120,
+            **CURSE, note="首次发动技能后获得「咒钥」2 层"),
+        Eff("0", stat("35", T_PARTY, -66), **CURSE, note="【诅咒】全队技能充能速度 -66%"),
+        Eff("0", invoke("cursed_key_drain", drain), trig=elapsed(30, "1"), **CURSE,
             note="【诅咒】开局（0.5 秒后）清空全队技能槽"),
     ]
     w.deviations.append("「需要三倍充能」：槽容量不能调，改为全队充能速度 -66%（约三倍时间）；回充只给装备者")
@@ -1037,20 +1082,21 @@ def w14() -> Weapon:
 def w15() -> Weapon:
     w = Weapon(15, "expired_gasoline", "过期汽油", "饰品", ("fire",), "脆脆鲨",
                "漏油的红色油桶", "油是过期了，火还是会点着。",
-               "火属性共鸣时：队长攻击 +500%、强化弹射伤害 +1500%、强化弹射独立乘区 +30%；全队弹球速度 -30%（不可驱散）")
+               "火属性共鸣时：队长攻击 +250%、强化弹射伤害 +750%、强化弹射独立乘区 +15%；全队弹球速度 -30%（不可驱散）")
     fire = (res("fire"),)
     w.soul = [
-        Eff("0", stat("32", T_LEADER, 100, 240), pre=fire, note="火属性共鸣时：队长攻击力 +100%→240%"),
-        Eff("0", stat("55", None, 300, 720), pre=fire, note="火属性共鸣时：强化弹射伤害 +300%→720%"),
+        Eff("0", stat("32", T_LEADER, 50, 120), pre=fire, note="火属性共鸣时：队长攻击力 +50%→120%"),
+        Eff("0", stat("55", None, 150, 360), pre=fire, note="火属性共鸣时：强化弹射伤害 +150%→360%"),
     ]
     w.ea = [
-        *growth_pair("32", T_LEADER, 500, 240, pre=fire),
-        *growth_pair("55", None, 1500, 720, pre=fire),
-        Eff("0", ("696", {"strength": (pct(30), pct(30))}), pre=fire, learn=120, maxlvl=120,
-            note="火属性共鸣时：强化弹射伤害独立乘区 +30%"),
+        *growth_pair("32", T_LEADER, 250, 120, pre=fire),
+        *growth_pair("55", None, 750, 360, pre=fire),
+        Eff("0", ("696", {"strength": (pct(15), pct(15))}), pre=fire, **FINAL,
+            note="火属性共鸣时：强化弹射伤害独立乘区 +15%"),
         Eff("0", ("228", {"strength": (pct(-30), pct(-30)), "frame": INF_FRAMES, "number": times(1), "cancelable": "1"}),
-            pre=fire, learn=120, maxlvl=120, note="【诅咒】火属性共鸣时：全队弹球速度 -30%（永续，不可驱散）"),
+            pre=fire, **CURSE, note="【诅咒】火属性共鸣时：全队弹球速度 -30%（永续，不可驱散）"),
     ]
+    w.deviations.append("第二轮反馈「刃值和乘区减半」：队长攻击 500→250%、强化弹射伤害 1500→750%、独立乘区 30→15%")
     w.deviations.append("「冲刺冷却 +50%」没有原生能力（冲刺参数补丁只认角色表）；「重力」「溺水」是 boss 场地物理，"
                         "玩家侧 DSL 会 throw；统一改为弹球减速 -30%")
     return w
@@ -1070,9 +1116,9 @@ def w16() -> Weapon:
         *growth_pair("35", T_PARTY, 100, 30, pre=same),
         *growth_pair("32", T_PARTY, 1000, 480, pre=same),
         *growth_pair("34", T_PARTY, 1000, 480, pre=same),
-        Eff("0", stat("694", T_PARTY, 20), pre=same, learn=120, maxlvl=120, note="同属性编成时：全队技能伤害独立乘区 +20%"),
+        Eff("0", stat("694", T_PARTY, 20), pre=same, **FINAL, note="同属性编成时：全队技能伤害独立乘区 +20%"),
         Eff("0", condition("219", T_TRIGGER, None, 1800, cancelable=False),
-            trig=trig(IT_SKILL, trigger_puller=P_ONE_OF_PARTY), pre=same, learn=120, maxlvl=120,
+            trig=trig(IT_SKILL, trigger_puller=P_ONE_OF_PARTY), pre=same, **CURSE,
             note="【诅咒】任一角色发动技能后，该角色封印 30 秒（不可驱散）"),
     ]
     return w
@@ -1087,63 +1133,69 @@ def w17() -> Weapon:
     w.ea = [
         *growth_pair("34", T_PARTY, 600, 250, pre=thunder),
         Eff("0", condition("19", T_TRIGGER, None, 600, cancelable=False, by_each_trigger_puller="true"),
-            trig=trig(IT_SKILL, trigger_puller=P_ONE_OF_PARTY, threshold=times(2)), pre=thunder, learn=120, maxlvl=120,
+            trig=trig(IT_SKILL, trigger_puller=P_ONE_OF_PARTY, threshold=times(2)), pre=thunder, **CURSE,
             note="【诅咒】每名角色每发动 2 次技能，该角色麻痹 10 秒（不可驱散；麻痹期间不能施放技能与直接攻击）"),
     ]
     return w
 
 
-def _heal_pulses(ratio: float, count: int, interval: int) -> list:
-    body = [C("CreateRatioHeal", 0, 2, P(ratio), [], P(0), ["GenericHealHitEffect"])]
-    return [party(0, *body)] + [wait(interval * i, party(0, *body)) for i in range(1, count)]
+def _persona_dark_heal() -> list:
+    """暗诅咒：每秒回复全队 50%，队长额外 20%（5 秒）。"""
+    pulse = lambda: [party(0, C("CreateRatioHeal", 0, 2, P(0.5), [], P(0), ["GenericHealHitEffect"])),
+                     slot_member(1, 83, C("CreateRatioHeal", 1, 2, P(0.2), [], P(0), ["GenericHealHitEffect"]))]
+    return [*pulse()] + [wait(60 * i, *pulse()) for i in range(1, 5)]
 
 
 def w18() -> Weapon:
     w = Weapon(18, "persona_pistol", "人格召唤枪", "铳", ("dark", "thunder"), "P.P.P.P",
                "萦绕面具幻影的银色小手枪", "扣下扳机，唤醒的是另一个自己。",
-               "暗属性共鸣：开局全队 HP -15%，濒死（HP≤1%）时护盾 50%、攻击 +250%、逆境 +30%、全队充能 +5%（2 秒，限 2 次）；"
-               "诅咒：施放技能后每秒回复全队 80% HP（5 秒）。雷属性共鸣：开局队长 HP -10%，HP≤30% 时护盾 30%、攻击与技能伤害 +200%；"
-               "队长施放技能时自身槽 +100%、全队 +8%（限 3 次）；诅咒：队长施放技能后其余两人技能槽 -30%，全队充能 -3%")
+               "暗属性共鸣：开局全队 HP -25%；角色 HP 为 1% 时护盾 100%、攻击 +700%×2、逆境 +20%（2 秒）、全队充能 +40%（3 秒）；"
+               "诅咒：任一角色施放技能后每秒回复全队 50%、队长再 +20%（5 秒）。雷属性共鸣：开局队长 HP -15%；队长 HP<20% 时"
+               "护盾 80%、攻击 +500%×2、技能伤害 +600%（6 秒）、技能槽 +100%（限 2 次）；诅咒：队长施放技能后全队回复 20%、"
+               "3 秒后再回复 80%，2、3 号位技能槽 -30%")
     dark, thunder = (res("dark"),), (res("thunder"),)
-    near_death = trig(IT_HP_LOW, trigger_puller=P_ONE_OF_PARTY, threshold=pct(1), trigger_limit="2")
-    leader30 = trig(IT_HP_LOW, trigger_puller=P_LEADER, threshold=pct(30), trigger_limit="1")
-    leader_skill = trig(IT_SKILL, trigger_puller=P_LEADER, trigger_limit="3")
+    near_death = trig(IT_HP_LOW, trigger_puller=P_ONE_OF_PARTY, threshold=pct(1), cooltime="60")
+    leader20 = trig(IT_HP_LOW, trigger_puller=P_LEADER, threshold=pct(20), trigger_limit="2")
     heal = dsl_program("persona_heal")
-    w.dsl[heal] = dsl_root(*_heal_pulses(0.8, 5, 60))
-    w.cas["cursed_persona_heal"] = "每秒回复全队最大HP的80%（5秒）"
-    drain = dsl_program("persona_drain")
-    w.dsl[drain] = dsl_root(slot_member(0, 84, C("SubtractSkillPoint", 0, P(0.3))),
-                            slot_member(1, 85, C("SubtractSkillPoint", 1, P(0.3))))
-    w.cas["cursed_persona_drain"] = "2号位与3号位角色技能槽减少30%"
+    w.dsl[heal] = dsl_root(*_persona_dark_heal())
+    w.cas["cursed_persona_heal"] = "每秒回复全队最大HP的50%，队长额外回复20%（5秒）"
+    echo = dsl_program("persona_echo")
+    w.dsl[echo] = dsl_root(
+        party(0, C("CreateRatioHeal", 0, 2, P(0.2), [], P(0), ["GenericHealHitEffect"])),
+        wait(180, party(1, C("CreateRatioHeal", 1, 2, P(0.8), [], P(0), ["GenericHealHitEffect"]))),
+        slot_member(2, 84, C("SubtractSkillPoint", 2, P(0.3))),
+        slot_member(3, 85, C("SubtractSkillPoint", 3, P(0.3))))
+    w.cas["cursed_persona_echo"] = "回复全队最大HP的20%，3秒后再回复80%；2号位与3号位角色技能槽减少30%"
     w.soul = [
-        Eff("0", stat("227", T_TRIGGER, 25, 50), trig=near_death, pre=dark, note="暗属性共鸣：角色 HP≤1% 时获得最大 HP 25%→50% 的护盾（限 2 次）"),
-        Eff("0", condition("0", T_TRIGGER, 125, 120), trig=near_death, pre=dark, note="同上时攻击力 +125%（2 秒）"),
-        Eff("0", stat("227", T_LEADER, 15, 30), trig=leader30, pre=thunder, note="雷属性共鸣：队长 HP≤30% 时获得护盾 15%→30%"),
-        Eff("0", condition("0", T_LEADER, 100, 600), trig=leader30, pre=thunder, note="同上时队长攻击力 +100%（10 秒）"),
-        Eff("0", stat("211", T_LEADER, 50, 100), trig=leader_skill, pre=thunder, note="雷属性共鸣：队长发动技能时自身技能槽 +50%→100%（限 3 次）"),
+        Eff("0", stat("227", T_TRIGGER, 50, 100), trig=near_death, pre=dark,
+            note="暗属性共鸣：角色 HP 为 1% 时获得最大 HP +50%→100% 的护盾"),
+        Eff("0", condition("0", T_TRIGGER, 700, 120), trig=near_death, pre=dark, note="同上时攻击力 +700%（2 秒）"),
+        Eff("0", condition("470", T_TRIGGER, 20, 120), trig=near_death, pre=dark, note="同上时逆境 +20%（2 秒）"),
+        Eff("0", condition("701", T_PARTY, 40, 180), trig=near_death, pre=dark, note="同上时全队技能充能速度 +40%（3 秒）"),
+        Eff("0", stat("227", T_LEADER, 40, 80), trig=leader20, pre=thunder,
+            note="雷属性共鸣：队长 HP<20% 时获得最大 HP +40%→80% 的护盾（限 2 次）"),
+        Eff("0", condition("0", T_LEADER, 500, 360), trig=leader20, pre=thunder, note="同上时队长攻击力 +500%（6 秒）"),
+        Eff("0", condition("1", T_LEADER, 600, 360), trig=leader20, pre=thunder, note="同上时队长技能伤害 +600%（6 秒）"),
+        Eff("0", stat("211", T_LEADER, 50, 100), trig=leader20, pre=thunder, note="同上时队长技能槽 +50%→100%"),
     ]
     w.ea = [
-        Eff("0", condition("0", T_TRIGGER, 125, 120), trig=near_death, pre=dark, learn=120, maxlvl=120,
-            note="暗：濒死时攻击力再 +125%（合计 +250%，2 秒）"),
-        Eff("0", condition("470", T_TRIGGER, 30, 120), trig=near_death, pre=dark, learn=120, maxlvl=120,
-            note="暗：濒死时逆境 +30%（2 秒）"),
-        Eff("0", condition("701", T_PARTY, 5, 120), trig=near_death, pre=dark, learn=120, maxlvl=120,
-            note="暗：濒死时全队技能充能速度 +5%（2 秒）"),
-        Eff("0", stat("209", T_PARTY, 15), pre=dark, learn=120, maxlvl=120, note="【诅咒】暗：开局全队失去最大 HP 的 15%"),
+        *growth_pair("227", T_TRIGGER, 100, 100, trig_=near_death, pre=dark),
+        *growth_pair("0", T_TRIGGER, 1400, 700, trig_=near_death, pre=dark, cond_frames=120),
+        *growth_pair("470", T_TRIGGER, 20, 20, trig_=near_death, pre=dark, cond_frames=120),
+        *growth_pair("701", T_PARTY, 40, 40, trig_=near_death, pre=dark, cond_frames=180),
+        Eff("0", stat("209", T_PARTY, 25), pre=dark, **CURSE, note="【诅咒】暗：开局全队失去最大 HP 的 25%"),
         Eff("0", invoke("cursed_persona_heal", heal), trig=trig(IT_SKILL, trigger_puller=P_ONE_OF_PARTY), pre=dark,
-            learn=120, maxlvl=120, note="【诅咒】暗：任一角色施放技能后每秒回复全队 80% HP（5 秒）"),
-        Eff("0", condition("0", T_LEADER, 100, 600), trig=leader30, pre=thunder, learn=120, maxlvl=120,
-            note="雷：队长 HP≤30% 时攻击力再 +100%（合计 +200%，10 秒）"),
-        Eff("0", condition("1", T_LEADER, 200, 600), trig=leader30, pre=thunder, learn=120, maxlvl=120,
-            note="雷：队长 HP≤30% 时技能伤害 +200%（10 秒）"),
-        Eff("0", stat("211", T_PARTY, 8), trig=leader_skill, pre=thunder, learn=120, maxlvl=120,
-            note="雷：队长发动技能时全队技能槽 +8%（限 3 次）"),
-        Eff("0", stat("209", T_LEADER, 10), pre=thunder, learn=120, maxlvl=120, note="【诅咒】雷：开局队长失去最大 HP 的 10%"),
-        Eff("0", invoke("cursed_persona_drain", drain), trig=trig(IT_SKILL, trigger_puller=P_LEADER), pre=thunder,
-            learn=120, maxlvl=120, note="【诅咒】雷：队长施放技能后 2、3 号位技能槽 -30%"),
-        Eff("0", stat("35", T_PARTY, -3), pre=thunder, learn=120, maxlvl=120, note="【诅咒】雷：全队技能充能速度 -3%"),
+            **CURSE, note="【诅咒】暗：任一角色施放技能后每秒回复全队 50%、队长再 +20%（5 秒）"),
+        *growth_pair("227", T_LEADER, 80, 80, trig_=leader20, pre=thunder),
+        *growth_pair("0", T_LEADER, 1000, 500, trig_=leader20, pre=thunder, cond_frames=360),
+        *growth_pair("1", T_LEADER, 600, 600, trig_=leader20, pre=thunder, cond_frames=360),
+        *growth_pair("211", T_LEADER, 100, 100, trig_=leader20, pre=thunder),
+        Eff("0", stat("209", T_LEADER, 15), pre=thunder, **CURSE, note="【诅咒】雷：开局队长失去最大 HP 的 15%"),
+        Eff("0", invoke("cursed_persona_echo", echo), trig=trig(IT_SKILL, trigger_puller=P_LEADER), pre=thunder,
+            **CURSE, note="【诅咒】雷：队长施放技能后全队回复 20%、3 秒后再回复 80%，2、3 号位技能槽 -30%"),
     ]
-    w.deviations.append("本体只放两套机制的正面部分（护盾/增伤/回槽），扣血与回血、扣槽等代价在 120 级解放")
+    w.deviations.append("第二轮 v2：两套都取消次数上限（雷的濒死爆发保留提案写明的上限 2 次）；「攻击 +700%&+700%」按两段合计 +1400% 实现")
+    w.deviations.append("「类似响的 buff」：没有可复用的状态外观，按「立刻回复 20%、3 秒后回复 80%」实现（原版暗响特殊 buff 持续 3 秒）")
     return w
 
 
@@ -1161,7 +1213,7 @@ def w19() -> Weapon:
     w.ea = [
         *growth_pair("32", T_LEADER, 500, 240),
         *growth_pair("55", None, 1000, 480),
-        Eff("0", invoke("cursed_lonestar_lock", lock), trig=trig(IT_PF, threshold=times(1)), learn=120, maxlvl=120,
+        Eff("0", invoke("cursed_lonestar_lock", lock), trig=trig(IT_PF, threshold=times(1)), **CURSE,
             note="【诅咒】强化弹射后 3 秒内连击上限 10"),
     ]
     w.deviations.append("「PF 后 3 秒无法通过技能增加连击」没有按来源屏蔽连击的原语，改为 3 秒内连击上限 10（技能刷连击同样被压住）")
@@ -1179,13 +1231,12 @@ def w20() -> Weapon:
     rows = []
     for target in (T_SECOND, T_THIRD):
         rows += [
-            Eff("0", stat("32", target, 2.5, 297.5), learn=1, maxlvl=119, note="强化 1→119：每级 +2.5%（合计 +297.5%）"),
-            Eff("0", stat("32", target, 12.5), learn=120, maxlvl=120, note="120 级补足至 +550%"),
-            Eff("0", stat("717", target, 100), learn=120, maxlvl=120, note="获得协力角色攻击力 100% 的白值"),
+            *growth_pair("32", target, 550, 240),
+            Eff("0", stat("717", target, 100), **FINAL, note="获得协力角色攻击力 100% 的白值"),
         ]
     w.ea = rows + [
-        Eff("0", stat("32", T_LEADER, -9999), learn=120, maxlvl=120, note="【诅咒】队长攻击力 -9999%（引擎下限 -50%）"),
-        Eff("0", stat("723", T_LEADER, -100), learn=120, maxlvl=120, note="【诅咒】队长伤害独立乘区 -100%（伤害降为 1）"),
+        Eff("0", stat("32", T_LEADER, -9999), **CURSE, note="【诅咒】队长攻击力 -9999%（引擎下限 -50%）"),
+        Eff("0", stat("723", T_LEADER, -100), **CURSE, note="【诅咒】队长伤害独立乘区 -100%（伤害降为 1）"),
     ]
     w.deviations.append("「除队长外」按 2、3 号位实现；攻击 -9999% 受 -50% 下限，另加伤害独立乘区 -100% 让队长伤害归零")
     return w
@@ -1201,13 +1252,12 @@ def w21() -> Weapon:
         cn = "风" if element == "wind" else "暗"
         rows_s.append(Eff("0", stat("34", T_PARTY, 120, 240), pre=gate, note=f"{cn}属性共鸣时：全队技能伤害 +120%→240%"))
         rows_e += [
-            Eff("0", stat("34", T_PARTY, 2, 238), pre=gate, learn=1, maxlvl=119, note="强化 1→119：每级 +2%（合计 +238%）"),
-            Eff("0", stat("34", T_PARTY, 22), pre=gate, learn=120, maxlvl=120, note="120 级补足至 +500%"),
-            Eff("0", stat("694", T_PARTY, 100), pre=gate, learn=120, maxlvl=120, note="全队技能伤害独立乘区 +100%"),
-            Eff("0", condition("219", T_PARTY, None, INF_FRAMES, cancelable=False), pre=gate, learn=120, maxlvl=120,
+            *growth_pair("34", T_PARTY, 500, 240, pre=gate),
+            Eff("0", stat("694", T_PARTY, 100), pre=gate, **FINAL, note="全队技能伤害独立乘区 +100%"),
+            Eff("0", condition("219", T_PARTY, None, INF_FRAMES, cancelable=False), pre=gate, **CURSE,
                 note="【诅咒】全队永续封印（不可驱散）"),
             Eff("0", condition("219", T_PARTY, None, INF_FRAMES, cancelable=False),
-                trig=trig(IT_REVIVAL, trigger_puller=P_ONE_OF_PARTY), pre=gate, learn=120, maxlvl=120,
+                trig=trig(IT_REVIVAL, trigger_puller=P_ONE_OF_PARTY), pre=gate, **CURSE,
                 note="【诅咒】复活后重新附加封印"),
         ]
     w.soul, w.ea = rows_s, rows_e
@@ -1217,71 +1267,245 @@ def w21() -> Weapon:
 def w23() -> Weapon:
     w = Weapon(23, "coral_venom_claw", "珊瑚毒爪", "拳", ("water",), "阿关",
                "珊瑚与鱼骨组成的指刃", "毒是它的饵——没有毒的时候，爪子什么也抓不住。",
-               "水属性共鸣时：强化弹射使自身中毒 10 秒，并叠加攻击 +40%、直接攻击伤害 +15%、技能伤害 +40%（各最多 4 次）；"
-               "未中毒时自身直接攻击伤害 -99%")
+               "水属性共鸣时：强化弹射使自身中毒 10 秒，并叠加攻击 +100%（最多 +500%）、技能伤害 +120%（最多 +480%）；"
+               "未中毒时自身直接攻击与技能伤害 -99%")
     water = (res("water"),)
     poison = dsl_program("coral_poison")
     w.dsl[poison] = dsl_root(give(-17, [["ACPoison", P(600), P(50), P(1)]], "cursed_coral_poison", cancelable=True))
     w.cas["cursed_coral_poison"] = "使自身中毒（10秒）"
+    pf5 = trig(IT_PF, threshold=times(1), trigger_limit="5")
     pf4 = trig(IT_PF, threshold=times(1), trigger_limit="4")
+    poisoned = (DT_POISON, {"trigger_puller": P_SELF})
     w.soul = [
-        Eff("0", stat("32", T_SELF, 5, 10), trig=pf4, pre=water, note="水属性共鸣时：强化弹射时自身攻击力 +5%→10%（最多 4 次）"),
-        Eff("0", stat("33", T_SELF, 2, 4), trig=pf4, pre=water, note="水属性共鸣时：强化弹射时自身直接攻击伤害 +2%→4%（最多 4 次）"),
-        Eff("0", stat("34", T_SELF, 5, 10), trig=pf4, pre=water, note="水属性共鸣时：强化弹射时自身技能伤害 +5%→10%（最多 4 次）"),
+        Eff("0", stat("32", T_SELF, 25, 50), trig=pf5, pre=water, note="水属性共鸣时：强化弹射时自身攻击力 +25%→50%（最多 5 次）"),
+        Eff("0", stat("34", T_SELF, 30, 60), trig=pf4, pre=water, note="水属性共鸣时：强化弹射时自身技能伤害 +30%→60%（最多 4 次）"),
     ]
     w.ea = [
-        *growth_pair("32", T_SELF, 40, 10, trig_=pf4, pre=water),
-        *growth_pair("33", T_SELF, 15, 4, trig_=pf4, pre=water),
-        *growth_pair("34", T_SELF, 40, 10, trig_=pf4, pre=water),
+        *growth_pair("32", T_SELF, 100, 50, trig_=pf5, pre=water),
+        *growth_pair("34", T_SELF, 120, 60, trig_=pf4, pre=water),
         Eff("0", invoke("cursed_coral_poison", poison), trig=trig(IT_PF, threshold=times(1)), pre=water,
-            learn=120, maxlvl=120, note="【诅咒】强化弹射时自身中毒（10 秒）"),
-        Eff("0", stat("693", T_SELF, -99), pre=water, learn=120, maxlvl=120,
-            note="【诅咒】自身直接攻击伤害独立乘区 -99%"),
-        Eff("1", during("410", T_SELF, 99), trig=(DT_POISON, {"trigger_puller": P_SELF}), pre=water,
-            learn=120, maxlvl=120, note="中毒期间抵消上条（净效果：只有未中毒时直击 -99%）"),
+            **CURSE, note="【诅咒】强化弹射时自身中毒（10 秒）"),
+        Eff("0", stat("693", T_SELF, -99), pre=water, **CURSE, note="【诅咒】自身直接攻击伤害独立乘区 -99%"),
+        Eff("0", stat("694", T_SELF, -99), pre=water, **CURSE, note="【诅咒】自身技能伤害独立乘区 -99%"),
+        Eff("1", during("410", T_SELF, 99), trig=poisoned, pre=water, **CURSE,
+            note="中毒期间抵消直接攻击 -99%（净效果：只有未中毒时 -99%）"),
+        Eff("1", during("411", T_SELF, 99), trig=poisoned, pre=water, **CURSE,
+            note="中毒期间抵消技能伤害 -99%（净效果：只有未中毒时 -99%）"),
     ]
-    w.deviations.append("「未中毒时直击 -99%」拆成常驻 -99% + 中毒期间 +99%（独立乘区相加抵消）")
+    w.deviations.append("第二轮：攻击 +100%×5 次、技能伤害 +120%×4 次，删去直击叠加行；「未中毒时 -99%」扩到直击与技能伤害")
+    w.deviations.append("「未中毒时 -99%」拆成常驻 -99% + 中毒期间 +99%（独立乘区相加抵消）")
     return w
 
 
 def w24() -> Weapon:
     w = Weapon(24, "reverse_hourglass", "倒流沙漏", "饰品", ("thunder", "wind"), "阿关",
                "沙粒向上流的金框沙漏", "沙子往上流时，你的技能也慢了下来。",
-               "雷/风属性共鸣时：发动技能或强化弹射时叠「逆沙」（最多 4 层），每层自身攻击与技能伤害 +30%；"
-               "自身技能充能速度 -20%、全队 -5%")
+               "雷/风属性共鸣时：发动技能或强化弹射时叠「逆沙」（最多 5 层），每层自身攻击 +160%（最多 +800%）、"
+               "技能伤害 +150%（最多 +700%）；自身技能充能速度 -20%、全队 -5%")
     u_sand = w.uid(1)
-    w.uniques[u_sand] = unique_row(f"cursed_sand_{u_sand}", "逆沙", ICON_TIME, "99999999", "4", bad=False)
+    w.uniques[u_sand] = unique_row(f"cursed_sand_{u_sand}", "逆沙", ICON_TIME, "99999999", "5", bad=False)
     rows_s, rows_e = [], []
     for element in ("thunder", "wind"):
         gate = (res(element),)
         cn = "雷" if element == "thunder" else "风"
-        stack = gate_unique(u_sand, "4")
+        stack5, stack4, fifth = gate_unique(u_sand, "5"), gate_unique(u_sand, "4"), gate_unique(u_sand, "1", at_least=5)
         rows_s += [
             Eff("0", unique(u_sand), trig=trig(IT_SKILL, trigger_puller=P_SELF), pre=gate, note=f"{cn}属性共鸣时：发动技能叠 1 层「逆沙」"),
             Eff("0", unique(u_sand), trig=trig(IT_PF, threshold=times(1)), pre=gate, note=f"{cn}属性共鸣时：强化弹射叠 1 层「逆沙」"),
-            Eff("1", during("0", T_SELF, 3.75, 7.5), trig=stack, pre=gate, note="每层「逆沙」自身攻击力 +3.75%→7.5%（最多 4 层）"),
-            Eff("1", during("2", T_SELF, 3.75, 7.5), trig=stack, pre=gate, note="每层「逆沙」自身技能伤害 +3.75%→7.5%（最多 4 层）"),
+            Eff("1", during("0", T_SELF, 40, 80), trig=stack5, pre=gate, note="每层「逆沙」自身攻击力 +40%→80%（最多 5 层）"),
+            Eff("1", during("2", T_SELF, 37.5, 75), trig=stack4, pre=gate, note="每层「逆沙」自身技能伤害 +37.5%→75%（按 4 层计）"),
         ]
         rows_e += [
-            *growth_pair("0", T_SELF, 30, 7.5, mode="1", trig_=stack, pre=gate),
-            *growth_pair("2", T_SELF, 30, 7.5, mode="1", trig_=stack, pre=gate),
-            Eff("0", stat("35", T_SELF, -20), pre=gate, learn=120, maxlvl=120, note="【诅咒】自身技能充能速度 -20%"),
-            Eff("0", stat("35", T_PARTY, -5), pre=gate, learn=120, maxlvl=120, note="【诅咒】全队技能充能速度 -5%"),
+            *growth_pair("0", T_SELF, 160, 80, mode="1", trig_=stack5, pre=gate),
+            *growth_pair("2", T_SELF, 150, 75, mode="1", trig_=stack4, pre=gate),
+            *growth_pair("2", T_SELF, 100, 0, mode="1", trig_=fifth, pre=gate),
+            Eff("0", stat("35", T_SELF, -20), pre=gate, **CURSE, note="【诅咒】自身技能充能速度 -20%"),
+            Eff("0", stat("35", T_PARTY, -5), pre=gate, **CURSE, note="【诅咒】全队技能充能速度 -5%"),
         ]
     w.soul, w.ea = rows_s, rows_e
-    w.deviations.append("「PF 命中敌人时」按强化弹射发动计；两种触发共用「逆沙」4 层上限")
+    w.deviations.append("第二轮：「逆沙」上限 5 层；技能伤害「+150%（最多 +700%）」= 前 4 层每层 +150%、第 5 层 +100%")
+    w.deviations.append("「PF 命中敌人时」按强化弹射发动计；两种触发共用「逆沙」上限")
+    return w
+
+
+def w22() -> Weapon:
+    w = Weapon(22, "diesel_engine", "柴油引擎", "饰品", ("fire",), "脆脆鲨",
+               "冒着黑烟的铸铁柴油引擎", "引擎一响，后排的油就被抽干了。",
+               "火属性共鸣时：队长攻击与技能伤害 +500%，伤害/技能伤害独立乘区各 +10%，获得合击角色攻击力 20% 的白值；"
+               "队长每次发动技能，2、3 号位攻击力 -200%、技能槽 -50%")
+    fire = (res("fire"),)
+    drain = dsl_program("diesel_drain")
+    w.dsl[drain] = dsl_root(slot_member(0, 84, C("SubtractSkillPoint", 0, P(0.5))),
+                            slot_member(1, 85, C("SubtractSkillPoint", 1, P(0.5))))
+    w.cas["cursed_diesel_drain"] = "2号位与3号位角色技能槽减少50%"
+    leader_skill = trig(IT_SKILL, trigger_puller=P_LEADER)
+    w.soul = [
+        Eff("0", stat("32", T_LEADER, 125, 250), pre=fire, note="火属性共鸣时：队长攻击力 +125%→250%"),
+        Eff("0", stat("34", T_LEADER, 125, 250), pre=fire, note="火属性共鸣时：队长技能伤害 +125%→250%"),
+    ]
+    w.ea = [
+        *growth_pair("32", T_LEADER, 500, 250, pre=fire),
+        *growth_pair("34", T_LEADER, 500, 250, pre=fire),
+        Eff("0", stat("723", T_LEADER, 10), pre=fire, **FINAL, note="火属性共鸣时：队长伤害独立乘区 +10%"),
+        Eff("0", stat("694", T_LEADER, 10), pre=fire, **FINAL, note="火属性共鸣时：队长技能伤害独立乘区 +10%"),
+        Eff("0", stat("717", T_LEADER, 20), pre=fire, **FINAL, note="火属性共鸣时：队长获得合击角色攻击力 20% 的白值"),
+        Eff("0", stat("32", T_SECOND, -200), trig=leader_skill, pre=fire, **CURSE,
+            note="【诅咒】队长发动技能时 2 号位攻击力 -200%（每次叠加）"),
+        Eff("0", stat("32", T_THIRD, -200), trig=leader_skill, pre=fire, **CURSE,
+            note="【诅咒】队长发动技能时 3 号位攻击力 -200%（每次叠加）"),
+        Eff("0", invoke("cursed_diesel_drain", drain), trig=leader_skill, pre=fire, **CURSE,
+            note="【诅咒】队长发动技能时 2、3 号位技能槽 -50%"),
+    ]
+    w.deviations.append("「10% 火属性伤害乘区」在火属性共鸣下等价于伤害独立乘区 +10%；「50% 的充能」按技能槽 -50% 实现；"
+                        "攻击力 -200% 叠加受引擎攻击加成下限 -50% 约束")
+    return w
+
+
+def w25() -> Weapon:
+    w = Weapon(25, "overclock_chip", "超频芯片", "饰品", ("thunder",), "不要脸",
+               "迸着蓝白电弧的限制解除核心", "解除限制的代价，是核心过热的二十秒。",
+               "自身为雷属性时：技能伤害独立乘区 +400%；自身发动技能后进入「过载」20 秒，期间技能充能速度 -100%")
+    thunder = (my_element("thunder"),)
+    w.soul = [Eff("0", stat("694", T_SELF, 50, 100), pre=thunder, note="自身为雷属性时：技能伤害独立乘区 +50%→100%")]
+    w.ea = [
+        *growth_pair("694", T_SELF, 400, 100, pre=thunder),
+        Eff("0", condition("701", T_SELF, -100, 1200, cancelable=False), trig=trig(IT_SKILL, trigger_puller=P_SELF),
+            pre=thunder, **CURSE, note="【诅咒】自身发动技能后「过载」：20 秒内技能充能速度 -100%（不可驱散）"),
+    ]
+    w.deviations.append("「乘区 7」按技能伤害独立乘区；「无法获得任何充能」按充能速度 -100%（引擎钳到 0）实现，"
+                        "技能槽直接增加类效果（如队友回槽）不受影响")
+    return w
+
+
+def w26() -> Weapon:
+    w = Weapon(26, "lone_wolf_crown", "孤狼王冠", "饰品", (), "不要脸",
+               "狼首造型的银色王冠", "王座只容得下一个人——多一个都不行。",
+               "自身攻击、技能伤害、直击伤害、能力伤害、强化弹射伤害 +1000%，技能充能速度 +100%，伤害独立乘区 +100%；"
+               "队伍中有其他角色时以上全部抵消")
+    stats = (("32", T_SELF, 1000), ("34", T_SELF, 1000), ("33", T_SELF, 1000), ("388", T_SELF, 1000),
+             ("55", None, 1000), ("35", T_SELF, 100), ("723", T_SELF, 100))
+    w.soul = [Eff("0", stat(kind, target, total / 4, total / 2),
+                  note=f"自身{KIND_LABEL.get(kind, '伤害独立乘区')} +{total / 4:g}%→{total / 2:g}%")
+              for kind, target, total in stats]
+    w.ea = [row for kind, target, total in stats for row in growth_pair(kind, target, total, total / 2)]
+    w.ea += [Eff("0", stat(kind, target, -total), pre=(HAS_TEAMMATE,), **CURSE,
+                 note=f"【诅咒】队伍中有其他角色时：{KIND_LABEL.get(kind, '伤害独立乘区')} -{total:g}%")
+             for kind, target, total in stats]
+    w.deviations.append("「除自身外没有队友」无直接前置：改为「编成 ≥2 人时」逐项抵消（强化 1 级起按终值扣，120 级正好归零）；"
+                        "「乘区 9」按伤害独立乘区")
+    return w
+
+
+def w27() -> Weapon:
+    w = Weapon(27, "triphase_prism", "三相之力", "饰品", ("wind", "water", "fire"), "不要脸",
+               "三色棱面的三角晶体", "三角形最稳定——可力量从不在一个角停留。",
+               "自身为风/水/火属性时：直击、技能、强化弹射伤害 +500%；强化弹射命中时强化弹射伤害 -20%、直击 +25%；"
+               "直击时直击 -20%、技能伤害 +25%；技能命中时技能伤害 -20%、强化弹射伤害 +25%（各 CT1 秒，最多 20 次）")
+    gate = (my_element("wind", "water", "fire"),)
+    w.soul = [
+        Eff("0", stat("33", T_SELF, 125, 250), pre=gate, note="自身为风/水/火属性时：直接攻击伤害 +125%→250%"),
+        Eff("0", stat("34", T_SELF, 125, 250), pre=gate, note="自身为风/水/火属性时：技能伤害 +125%→250%"),
+        Eff("0", stat("55", None, 125, 250), pre=gate, note="自身为风/水/火属性时：强化弹射伤害 +125%→250%"),
+    ]
+    pf_hit = trig(IT_PF_HIT, threshold=times(1), cooltime="60", trigger_limit="20")
+    direct = trig(IT_DIRECT, trigger_puller=P_SELF, threshold=times(1), cooltime="60", trigger_limit="20")
+    skill_hit = trig(IT_SKILL_HIT, trigger_puller=P_SELF, threshold=times(1), cooltime="60", trigger_limit="20")
+    w.ea = [
+        *growth_pair("33", T_SELF, 500, 250, pre=gate),
+        *growth_pair("34", T_SELF, 500, 250, pre=gate),
+        *growth_pair("55", None, 500, 250, pre=gate),
+        Eff("0", stat("55", None, -20), trig=pf_hit, pre=gate, **CURSE, note="【诅咒】强化弹射命中时强化弹射伤害 -20%"),
+        Eff("0", stat("33", T_SELF, 25), trig=pf_hit, pre=gate, **CURSE, note="同时自身直接攻击伤害 +25%"),
+        Eff("0", stat("33", T_SELF, -20), trig=direct, pre=gate, **CURSE, note="【诅咒】自身直接攻击时直接攻击伤害 -20%"),
+        Eff("0", stat("34", T_SELF, 25), trig=direct, pre=gate, **CURSE, note="同时自身技能伤害 +25%"),
+        Eff("0", stat("34", T_SELF, -20), trig=skill_hit, pre=gate, **CURSE, note="【诅咒】自身技能命中时技能伤害 -20%"),
+        Eff("0", stat("55", None, 25), trig=skill_hit, pre=gate, **CURSE, note="同时强化弹射伤害 +25%"),
+    ]
+    w.deviations.append("「若该伤害加成 >100%」：技能/强化弹射伤害提升量前置官方零用例、直击没有此类前置；改为每种转移 CT1 秒、"
+                        "最多 20 次（120 级 +500% 起步最多降到 +100%）")
+    return w
+
+
+def w28() -> Weapon:
+    w = Weapon(28, "flesh_for_bone", "肉斩骨断", "剑", ("wind",), "脆脆鲨",
+               "刃口带血槽的厚背斩骨刀", "先斩自己的肉，才能断敌人的骨。",
+               "风属性共鸣时：全队直击伤害 +1000%，获得合击角色攻击力 20% 的白值，伤害独立乘区 +10%；"
+               "每次对敌人造成伤害时全队受到最大 HP 5% 的伤害、连击 +5（CT2 秒）")
+    wind = (res("wind"),)
+    u_cd = w.uid(1)
+    w.uniques[u_cd] = unique_row(f"cursed_bone_{u_cd}", "骨断", ICON_CURSE, "120", "1", bad=True)
+    w.soul = [Eff("0", stat("33", T_PARTY, 250, 500), pre=wind, note="风属性共鸣时：全队直接攻击伤害 +250%→500%")]
+    w.ea = [
+        *growth_pair("33", T_PARTY, 1000, 500, pre=wind),
+        Eff("0", stat("717", T_PARTY, 20), pre=wind, **FINAL, note="风属性共鸣时：全队获得合击角色攻击力 20% 的白值"),
+        Eff("0", stat("723", T_PARTY, 10), pre=wind, **FINAL, note="风属性共鸣时：全队伤害独立乘区 +10%"),
+    ]
+    ready = (*wind, lacks_unique(u_cd))
+    for source, trigger in (("直接攻击", trig(IT_DIRECT, trigger_puller=P_ONE_OF_PARTY, threshold=times(1))),
+                            ("技能命中", trig(IT_SKILL_HIT, trigger_puller=P_ONE_OF_PARTY, threshold=times(1))),
+                            ("强化弹射命中", trig(IT_PF_HIT, threshold=times(1)))):
+        w.ea += [
+            Eff("0", stat("209", T_PARTY, 5), trig=trigger, pre=ready, **CURSE,
+                note=f"【诅咒】{source}时全队受到最大 HP 5% 的伤害（CT2 秒）"),
+            Eff("0", ("226", {"strength": (times(5), times(5))}), trig=trigger, pre=ready, **CURSE,
+                note=f"{source}时连击 +5（CT2 秒）"),
+            Eff("0", unique(u_cd), trig=trigger, pre=ready, **CURSE, note="进入「骨断」2 秒（共用冷却）"),
+        ]
+    w.deviations.append("「每次对敌人造成伤害」：官方「敌人受伤次数」触发只接场地系统、能力表零用例；按直击/技能命中/强化弹射命中三路触发，"
+                        "以固有状态「骨断」2 秒做共用冷却；「10% 风属性伤害乘区」在风属性共鸣下等价于伤害独立乘区 +10%")
+    return w
+
+
+def w29() -> Weapon:
+    w = Weapon(29, "cursed_mask", "被诅咒的面具", "饰品", ("dark",), "不要脸",
+               "淌着血的鬼形面具", "戴上它就说不出咒语——但你已经不需要了。",
+               "自身为暗属性时：伤害独立乘区 +100%，造成伤害时回复最大 HP 1%（CT0.5 秒）；永久封印且弹球速度固定为最大"
+               "（复活后重新附加）；每 5 秒若 HP>30%，失去最大 HP 的 10%")
+    dark = (my_element("dark"),)
+    revive = trig(IT_REVIVAL, trigger_puller=P_SELF)
+    speed = ("688", {"strength": (pct(200), pct(200)), "frame": INF_FRAMES, "number": times(1), "cancelable": "1"})
+    silence = condition("219", T_SELF, None, INF_FRAMES, cancelable=False)
+    w.soul = [
+        Eff("0", stat("723", T_SELF, 15, 30), pre=dark, note="自身为暗属性时：伤害独立乘区 +15%→30%"),
+        Eff("0", stat("206", T_SELF, 0.5, 1), trig=trig(IT_DIRECT, trigger_puller=P_SELF, threshold=times(1), cooltime="30"),
+            pre=dark, note="自身为暗属性时：直接攻击时回复最大 HP 的 0.5%→1%（CT0.5 秒）"),
+        Eff("0", stat("206", T_SELF, 0.5, 1), trig=trig(IT_PF_HIT, threshold=times(1), cooltime="30"),
+            pre=dark, note="自身为暗属性时：强化弹射命中时回复最大 HP 的 0.5%→1%（CT0.5 秒）"),
+    ]
+    w.ea = [
+        *growth_pair("723", T_SELF, 100, 30, pre=dark),
+        Eff("0", silence, pre=dark, **CURSE, note="【诅咒】自身永久封印（不能施放技能，不可驱散）"),
+        Eff("0", silence, trig=revive, pre=dark, **CURSE, note="【诅咒】复活后重新附加封印"),
+        Eff("0", speed, pre=dark, **CURSE, note="弹球速度固定为 200%（永续）"),
+        Eff("0", speed, trig=revive, pre=dark, **CURSE, note="复活后重新固定弹球速度"),
+        Eff("0", stat("209", T_SELF, 10), trig=elapsed(300),
+            pre=(*dark, (PRE_HP_HIGH, {"trigger_puller": P_SELF, "threshold": pct(30)})), **CURSE,
+            note="【诅咒】每 5 秒若自身 HP ≥30%，失去最大 HP 的 10%"),
+    ]
+    w.deviations.append("「速度最大化」按官方速度固定 200%（ConditionFixedSpeed，风属性角色 1499896 同值）；「乘区 9」按伤害独立乘区；"
+                        "「造成伤害时」按直击与强化弹射命中两路（本身已被封印，不会有技能伤害）")
     return w
 
 
 WEAPON_BUILDERS: tuple[Callable[[], Weapon], ...] = (
-    w01, w02, w03, w04, w05, w06, w07, w08, w09, w10, w11, w12, w13, w14, w15, w16, w17, w18, w19, w20, w21, w23, w24)
+    w01, w02, w03, w04, w05, w06, w07, w08, w09, w10, w11, w12, w13, w14, w15, w16, w17, w18, w19, w20, w21, w22, w23,
+    w24, w25, w26, w27, w28, w29)
+#: 五重商店上架顺序（= 商品键 990099003 起的偏移）。首轮 23 把的键已经上线，新武器只能接在后面，不能按行号重排。
+SHOP_ORDER = (*range(1, 22), 23, 24, 22, 25, 26, 27, 28, 29)
 
 
 def weapons() -> list[Weapon]:
     out = [builder() for builder in WEAPON_BUILDERS]
-    _require([w.row for w in out] == [*range(1, 22), 23, 24], "提案行号必须是 1..21,23,24")
+    _require([w.row for w in out] == list(range(1, 30)), "提案行号必须是 1..29")
+    _require(sorted(SHOP_ORDER) == list(range(1, 30)), "SHOP_ORDER 必须覆盖 1..29")
     _require(len({w.slug for w in out}) == len(out), "slug 重复")
+    for w in out:
+        w.soul = [_weaken(e) for e in w.soul]
     return out
+
+
+def shop_key(w: Weapon) -> str:
+    return str(BOSS_SHOP_BASE + 3 + SHOP_ORDER.index(w.row))
 
 
 # ---------------------------------------------------------------------------
@@ -1309,7 +1533,7 @@ def _template(read: LiveReader, logical: str, key: str, width: int) -> list[str]
 #: 官方文案长度上限（live 实测）：equipment c7 ≤ 57、equipment_enhancement c6 ≤ 54、boss_coin_shop c10 ≤ 60。
 #: 详细效果由客户端按词条行自动生成，文案只放风味与口径，超长会溢出详情框。
 DESC_LIMITS = {"equipment": 57, "enhancement": 54, "shop": 60}
-SHOP_DESCRIPTION = "诅咒武器：未强化只有正面效果，强化至120级解放诅咒。共五把，重复本体用于突破。"
+SHOP_DESCRIPTION = "诅咒武器：未强化只有微弱的正面效果，强化1级起诅咒全额生效，120级为最终数值。"
 
 
 def _description(w: Weapon) -> str:
@@ -1321,7 +1545,7 @@ def _shop_description(w: Weapon) -> str:
 
 
 def _enh_description(w: Weapon) -> str:
-    return f"强化至120级解放诅咒，效果见能力说明。提案：{w.author}"
+    return f"强化1级起诅咒生效，120级为最终数值。提案：{w.author}"
 
 
 def _cost_cells(costs: Iterable[tuple[str, int]]) -> list[str]:
@@ -1372,7 +1596,7 @@ def build(read: LiveReader) -> dict[str, Any]:
                     problems.append(f"{w.row:02d} {w.name} {table}#{index}: {p}")
         flat[SOUL][wid] = soul_rows
         flat[EA][wid] = ea_rows
-        # equipment_enhancement：名/图/描述/发光全部 120 级才切换（诅咒在 120 解放）
+        # equipment_enhancement：名/图/描述/发光全部 120 级（最终形态）才切换
         row = list(enh_tpl)
         row[0:9] = ["120", "120", f"{w.name}·解咒", "120", w.icon120, "120", _enh_description(w), "120", START_TIME]
         flat[ENH][wid] = [row]
@@ -1385,7 +1609,7 @@ def build(read: LiveReader) -> dict[str, Any]:
             row[22], row[23], row[29], row[30], row[31] = START_TIME, "(None)", wid, str(cap), str(REQUIRE_AWAKENING)
             flat[ENH_SHOP][f"{wid}{stage:02d}"] = [row]
         # 五重分类 99 上架本体
-        key = str(BOSS_SHOP_BASE + 2 + ws.index(w) + 1)
+        key = shop_key(w)
         row = list(body_tpl)
         # c9 list_order：客户端默认按 list_order 倒序、同序再按商品 ID 升序（BossCoinExchangeSorter
         # orderDirection 0）。写 0（官方已有 13 行先例）让原有 990099002/001 留在顶部，诅咒武器按编号排其后。
@@ -1475,9 +1699,16 @@ def _server_delta(read: LiveReader, ws: list[Weapon], flat: dict) -> dict[str, A
 # 设计文档（由同一份规格生成，防止文档与数据漂移）
 # ---------------------------------------------------------------------------
 
+def _level_label(e: Eff) -> str:
+    if e.learn == e.maxlvl:
+        return f"Lv{e.learn}"
+    return "Lv1 起" if e.maxlvl == 120 else f"Lv{e.learn}→{e.maxlvl}"
+
+
 def design_markdown(ws: list[Weapon]) -> str:
-    lines = ["# 诅咒武器 23 把 · 设计与实现", "",
-             "口径：未强化（本体/满破）只有正面效果；强化 120 级为最终数值（诅咒在 120 级解放）；强化材料全部来自五重决战。",
+    lines = [f"# 诅咒武器 {len(ws)} 把 · 设计与实现", "",
+             f"口径（作者 0928）：未强化（本体/满破）只有正面效果且很弱（设计值 × {BASE_SCALE:g}）；强化 1 级起诅咒全额生效；"
+             "强化 120 级为最终数值；强化材料全部来自五重决战。",
              f"获取：领主币商店「五重决战」分类，每把 {BODY_COSTS[0][1]} 终式武装图纸 + {BODY_COSTS[1][1]} 深界结晶，库存 {BODY_STOCK}（满破需 5 把）。",
              "强化：装备强化「诅咒武器·觉醒」分类，6 阶（→69 每级 1 结晶 / 70：10 结晶+1 心核 / →98 每级 2 结晶 / 99：10 结晶+2 心核 / "
              "→119 每级 3 结晶+1 心核 / 120：3 心核+2 图纸），需满破。", ""]
@@ -1488,7 +1719,7 @@ def design_markdown(ws: list[Weapon]) -> str:
                   f"- 外形：{w.look}", f"- 120 级解放：{w.summary_120}", "- 本体（满破为箭头右值）："]
         lines += [f"  - {e.note}" for e in w.soul]
         lines.append("- 强化：")
-        lines += [f"  - {'Lv1→119' if e.learn < e.maxlvl else 'Lv120'}：{e.note or '（成长/补足）'}" for e in w.ea]
+        lines += [f"  - {_level_label(e)}：{e.note or '（成长/补足）'}" for e in w.ea]
         if w.deviations:
             lines.append("- 与提案原文的偏差：")
             lines += [f"  - {d}" for d in w.deviations]
