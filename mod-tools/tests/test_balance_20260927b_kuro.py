@@ -44,6 +44,26 @@ def _baseline_available() -> bool:
     return profile is not None and profile.store.is_dir() and (ROOT / ".cdn" / "cn").is_dir()
 
 
+def batch3_overlay(live: dict, out: dict) -> dict:
+    """第二批输出 + 第三轮覆盖（wf_balance_20260927c_kuro：能力2#3 5%→35%、队长#4 30%→105%、队长面板两行；
+    第 6 节作者追加：能力2#0 封顶版 2%×25 → 5%×25、能力2 面板第 1 行）。
+    生成器现在产出的是两批依次施工后的结果（第三轮 BEFORE 锁定的正是第二批输出，见其 ChainTests），
+    第二批的生成器一致性断言改比这份叠加结果；第三轮没碰的键仍直接等于第二批输出。"""
+    import wf_balance_20260927c_kuro as M3
+    live3 = deepcopy(live)
+    for kind in ("leader", "ability", "cas"):
+        live3[kind].update(deepcopy(out[kind]))
+    # 第三轮面板合并补读、第二批不涉及的键（能力6 行 / 能力6 面板）取第三轮 fixture（= live）
+    fixture3 = json.loads((Path(__file__).parent / "fixtures/balance_20260927c_kuro.json").read_text(encoding="utf-8"))
+    for kind, key in M3.BEFORE:
+        live3.setdefault(kind, {}).setdefault(key, deepcopy(fixture3[kind][key]))
+    out3 = M3.revise(reader(live3))
+    merged = deepcopy(out)
+    for kind in ("leader", "ability", "cas"):
+        merged[kind].update(deepcopy(out3[kind]))
+    return merged
+
+
 _CTX = None
 
 
@@ -287,11 +307,16 @@ class ReviseTests(unittest.TestCase):
 
 @unittest.skipUnless(_baseline_available(), "需要 .cdn/cn 官方基线与 live store")
 class GeneratorSyncTests(unittest.TestCase):
-    """生成器 wf_midautumn_kit_kuro 的行装配（官方 donor + 逐格改）== revise() 输出。"""
+    """生成器 wf_midautumn_kit_kuro 的行装配（官方 donor + 逐格改）== revise() 输出。
+
+    2026-09-27 第三轮（wf_balance_20260927c_kuro）改了同一生成器的队长#4 / 能力2#0、#3 / 队长面板 / 能力2 面板：
+    改比「第二批输出 + 第三轮覆盖」（:func:`batch3_overlay`）；第三轮没碰的键仍等于第二批输出。
+    """
 
     @classmethod
     def setUpClass(cls):
-        cls.out = M.revise(reader(load_fixture()))
+        live = load_fixture()
+        cls.out = batch3_overlay(live, M.revise(reader(deepcopy(live))))
 
     def test_generator_rows_equal_revise_output(self):
         leader = [KL.build_row(ctx(), "leader_ability", donor, cells, expect_describe=expect)[0]
@@ -309,7 +334,11 @@ class GeneratorSyncTests(unittest.TestCase):
     def test_generator_panel_equals_revise_output(self):
         for key, rows in self.out["cas"].items():
             self.assertEqual(K.CAS_TEXTS[key], rows[0][0], key)
-        self.assertEqual(K.PANEL_LEADER, M.LEADER_PANEL_BEFORE + M.LEADER_ADDED_LINES)
+        # 队长面板前 4 行 + 追加 2 行（第三轮改追加两行的数字，并把前两行同条件合并成一行：拆回后比）
+        import wf_balance_20260927c_kuro as M3
+        unmerged = tuple(x for line in K.PANEL_LEADER for x in M3.MERGED_LINES.get(line, (line,)))
+        self.assertEqual(unmerged[:len(M.LEADER_PANEL_BEFORE)], M.LEADER_PANEL_BEFORE)
+        self.assertEqual(len(unmerged), len(M.LEADER_PANEL_BEFORE) + len(M.LEADER_ADDED_LINES))
 
     def test_leader_precedents(self):
         """队长 trigger 8 / 瞬发 kind 33 target 5 各有官方先例（逐列）；二者组合在官方队长/能力表都是 0 行
@@ -346,11 +375,18 @@ class GeneratorSyncTests(unittest.TestCase):
                      "midautumn design mirrors not present")
 class MirrorTests(unittest.TestCase):
     def test_mirrors_are_synced_and_the_sync_is_idempotent(self):
-        self.assertEqual(M.sync_mirrors(ROOT), [])
+        # 2026-09-27 第三轮（wf_balance_20260927c_kuro）改了生成器的队长面板追加两行：第二批 mirror_updates
+        # 按设计拒绝在第三轮生成器上重跑（不会把镜像回退到第二批数字）；镜像同步与幂等移交第三轮
+        # （主会话 --write 落盘前在内存里补上，已落盘时为恒等），这里核对第二批的记录仍在、其余与生成器一致。
+        import wf_balance_20260927c_kuro as M3
         design = json.loads((ROOT / M.DESIGN_REL).read_text(encoding="utf-8"))
         panel = json.loads((ROOT / M.PANEL_REL).read_text(encoding="utf-8"))
-        again = M.mirror_updates(design, panel)
-        self.assertEqual(again, (design, panel))
+        # 第三轮镜像落盘前拒绝在「生成器面板」处，落盘后（队长面板已合并成 5 行）拒绝在「镜像布局」处
+        with self.assertRaisesRegex(ValueError, "batch-b leader panel|leader layout drifted"):
+            M.mirror_updates(design, panel)
+        design, panel = M3.mirror_updates(design, panel)
+        self.assertEqual(design[M.MIRROR_TAG]["module"], "mod-tools/wf_balance_20260927b_kuro.py")
+        self.assertIn(M.MIRROR_NOTE, panel["notes"])
         rows = design["plan"]["leader_ability"]["rows"]
         self.assertEqual([r["desc_expected"] for r in rows], [e for _d, _c, e in K.LEADER])
         texts = {r["key"]: r["text"] for r in design["plan"]["texts"]["custom_ability_string"]["rows"]}
@@ -364,6 +400,11 @@ class CandidateTests(unittest.TestCase):
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         current = manifest["package_version"]
         as_tuple = lambda v: tuple(int(x) for x in v.split("."))        # noqa: E731
+        import wf_balance_20260927c_kuro as M3
+        if as_tuple(current) >= as_tuple(M3.PACKAGE_VERSION["ma-kuro"]):
+            # 第三轮已回写：候选再升号，本批版本在其之前
+            self.assertLess(as_tuple(M.PACKAGE_VERSION["ma-kuro"]), as_tuple(current))
+            return
         self.assertGreaterEqual(as_tuple(M.PACKAGE_VERSION["ma-kuro"]), as_tuple(current))
         self.assertGreater(as_tuple(M.PACKAGE_VERSION["ma-kuro"]), (1, 0, 1))
         if manifest.get("snapshot", {}).get("revision_20260927b") is not None:

@@ -35,18 +35,32 @@ def _live_available() -> bool:
 _LIVE = _live_available()
 _CTX = None
 
-#: 面板行数 = 队长 6 ＋ 词条 2+2+6+1+1+2（desc_override 整块接管，与行数无关）。
-#: 2026-09-27 平衡第二批：队长面板 4 → 6 行（wf_balance_20260927b_kuro.LEADER_ADDED_LINES）。
+#: 面板行数 = 队长 5 ＋ 词条 2+2+6+1+1+1（desc_override 整块接管，与行数无关）。
+#: 2026-09-27 平衡第二批：队长面板 4 → 6 行（wf_balance_20260927b_kuro.LEADER_ADDED_LINES）；
+#: 第三轮面板同条件合并（wf_balance_20260927c_kuro）：队长第 1、2 行、能力6 两行各并为一行 ⇒ 20 → 18；
+#: 第三轮技能强化条目 R2（同模块第 7 节）：能力3 第 5、6 行（强化分支的抽取表 / 翻倍表）删除 ⇒ 18 → 16。
 PANEL_LINES = len(KIT.PANEL_LEADER) + sum(len(v) for v in KIT.PANEL_ABILITY.values())
 ABILITY_ROWS = sum(len(v) for v in KIT.ABILITY.values())
 
 
 def panel_before_balance_b(panel: list[str]) -> list[str]:
     """第一批 kit 产物的面板（2026-09-27 第二批由修订候选回写、不重跑 kit，workspace 的 kit-report
-    可能仍是这一版）：去掉队长追加的两行，能力2 第1行、能力3 第2行换回改前文案。"""
+    可能仍是这一版）：去掉队长追加的两行，能力2 第1行、能力3 第2行换回改前文案，第三轮合并的行拆回原两行，
+    第三轮口径 3 改过的能力3 第 4 行与第 6 节改过的能力2 第 1 行换回改前文案，第 7 节（R2）改写的能力1 第 2 行换回
+    改前文案、能力3 骰运行之后补回删掉的两行（C3.PANEL_LINE_ORIGINS）。"""
+    import wf_balance_20260927c_kuro as C3
     swap = {B2.NEW_ABILITY2_LINE: B2.OLD_ABILITY2_LINE,
             B2.NEW_ABILITY3_LINE.replace(KIT.MAIN_ICON, ""): B2.OLD_ABILITY3_LINE.replace(KIT.MAIN_ICON, "")}
-    return [swap.get(line, line) for line in panel if line not in B2.LEADER_ADDED_LINES]
+    # 第三轮面板统一口径（口径 3 冒号改逗号）改过的能力3 行换回改前文案
+    swap.update({C3.NEW_ABILITY3_LINES[i].replace(KIT.MAIN_ICON, ""): C3.OLD_ABILITY3_LINES[i].replace(KIT.MAIN_ICON, "")
+                 for i in C3.ABILITY3_FIXES})
+    # 第三轮第 6 节（作者追加 5%×25）改过的能力2 第 1 行换回第一批文案（第二批 2%×25 行本身已在 swap 里）
+    swap[C3.NEW_ABILITY2_LINES[0]] = B2.OLD_ABILITY2_LINE
+    # 队长追加的两行：第二批的数字或第三轮（wf_balance_20260927c_kuro）改后的数字
+    added = set(B2.LEADER_ADDED_LINES) | set(C3.LEADER_ADDED_LINES)
+    # 第三轮第 7 节（R2）：能力1 强化条目行、能力3 骰运行（其后两行被删）展开回改前原文
+    return [x for line in panel if line not in added
+            for x in C3.MERGED_LINES.get(line) or C3.PANEL_LINE_ORIGINS.get(line) or (swap.get(line, line),)]
 
 
 def ctx():
@@ -277,7 +291,7 @@ class PanelTests(unittest.TestCase):
 
     def test_panel_lines_cover_every_slot(self):
         self.assertEqual(sorted(KIT.PANEL_ABILITY), list(range(1, 7)))
-        self.assertEqual(PANEL_LINES, 20)       # 2026-09-27 第二批：18 + 队长追加 2 行
+        self.assertEqual(PANEL_LINES, 16)       # 2026-09-27 第二批：18 + 队长追加 2 行；第三轮合并 −2、R2 删能力3 两行 −2
 
     def test_the_skill_flag_entry_has_no_numbers_or_time(self):
         """裁决 §3：能力里的「技能强化」条目不写数字与时间。"""
@@ -285,6 +299,23 @@ class PanelTests(unittest.TestCase):
         self.assertFalse(any(ch.isdigit() for ch in text))
         for unit in ("秒", "%", "％"):
             self.assertNotIn(unit, text)
+
+    def test_the_skill_flag_entry_is_the_only_enhancement_text(self):
+        """2026-09-27 第三轮 R2（wf_balance_20260927c_kuro 第 7 节）：强化条目官方格式点名技能；面板里只有开关行（能力1 第 2 行
+        = 「雷属性共鸣时，」＋ 条目，开关行 c1=true 不带图标）写强化，其余面板与技能说明不写强化后效果。"""
+        entry = KIT.CAS_TEXTS[KIT.CAS_CHANGE_SKILL]
+        self.assertTrue(entry.startswith(f"强化『{KIT.TEXTS['skill1']}』："))
+        self.assertEqual(KIT.PANEL_ABILITY[1][1], "雷属性共鸣时，" + entry)
+        self.assertEqual(KIT.ABILITY[KIT.ability_key(1)][1][1][47], "536")
+        for slot, lines in KIT.PANEL_ABILITY.items():
+            for index, line in enumerate(lines):
+                if (slot, index) != (1, 1):
+                    self.assertNotIn("强化", line, (slot, index))
+        for line in KIT.PANEL_LEADER:
+            self.assertNotIn("强化", line)
+        for name in ("desc1", "desc2"):
+            for word in ("强化", "骰运", "随机", "抽取"):
+                self.assertNotIn(word, KIT.TEXTS[name])
 
     def test_capabilities_include_the_panel_override_patch(self):
         self.assertIn(L.PANEL_OVERRIDE_V2, KIT.SPEC["required_capabilities"])
@@ -761,7 +792,23 @@ class DesignCrosscheckTests(unittest.TestCase):
         path = MS.design_path(ctx().root, KIT.KEY)
         if not path.is_file():
             self.skipTest("设计稿不在（work/ 未恢复）")
-        result = KIT.design_crosscheck(ctx())
+        # 2026-09-27 第三轮（wf_balance_20260927c_kuro）改了生成器的队长#4 / 能力2#3 / 队长面板；设计镜像由
+        # 主会话 --write 落盘，落盘前用其内存同步结果互校（mirror_updates 幂等，已落盘时为恒等）。
+        import tempfile
+        import wf_balance_20260927c_kuro as C3
+        design = json.loads(path.read_text(encoding="utf-8"))
+        panel = json.loads((ctx().root / C3.PANEL_REL).read_text(encoding="utf-8"))
+        design = C3.mirror_updates(design, panel)[0]
+
+        class _Probe:
+            spec = ctx().spec
+
+        with tempfile.TemporaryDirectory() as tmp:
+            target = MS.design_path(Path(tmp), KIT.KEY)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(json.dumps(design, ensure_ascii=False), encoding="utf-8")
+            _Probe.root = Path(tmp)
+            result = KIT.design_crosscheck(_Probe())
         self.assertTrue(result["present"])
         self.assertIn("statue_group", result["checked"])
         self.assertIn("custom_ability_string", result["checked"])
@@ -830,7 +877,7 @@ class WorkspaceTests(unittest.TestCase):
 
     def test_report_panel_text_obeys_the_rules(self):
         self.assertEqual(len(self.value["panel"]),
-                         PANEL_LINES - (len(B2.LEADER_ADDED_LINES) if self.before_b else 0))
+                         len(panel_before_balance_b(self.want_panel)) if self.before_b else PANEL_LINES)
         for text in self.value["panel"]:
             self.assertEqual(KL.panel_problems(text), [], text)
 
