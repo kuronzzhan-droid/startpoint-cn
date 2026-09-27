@@ -284,7 +284,8 @@ class GeneratorConsistencyTest(unittest.TestCase):
         self.assertLess(src.index("revise_rows("), src.index("balance.balance_rows("))
         self.assertLess(src.index("balance.balance_rows("), src.index("balance_b.balance_rows("))
         self.assertLess(src.index("balance_b.balance_rows("), src.index("candidate.splice(LEADER"))
-        self.assertIn("balance_b.PACKAGE_VERSION['s7-zantetsu']", src)
+        # 第三轮（wf_balance_20260927c_zantetsu）接在本批之后时，候选版本号取第三轮的。
+        self.assertTrue(any(f"{m}.PACKAGE_VERSION['s7-zantetsu']" in src for m in ("balance_b", "balance_c")))
         self.assertIn("balance_b.pf_tree(", src)
         self.assertIn("wf_balance_20260927b_zantetsu", F.__doc__)
 
@@ -332,8 +333,11 @@ class GeneratorConsistencyTest(unittest.TestCase):
                 mock.patch.object(F, "TREE_SHA", levels), \
                 mock.patch.object(F, "revise_tree", lambda tree: tree):
             F.apply_candidate(ROOT, ROOT / "work/character_packs/s7-zantetsu")
-        self.assertEqual(created["package_version"], M.PACKAGE_VERSION["s7-zantetsu"])
-        self.assertEqual(spliced[F.LEADER], self.out["leader"])
+        # 第三轮只再改队长 250 连击三行（链尾 == c 的断言在 test_balance_20260927c_zantetsu）：兼容 b / b→c 两种状态。
+        import wf_balance_20260927c_zantetsu as MC
+        self.assertIn(created["package_version"], (M.PACKAGE_VERSION["s7-zantetsu"], MC.PACKAGE_VERSION["s7-zantetsu"]))
+        self.assertEqual(set(spliced[F.LEADER]), {M.CID})
+        self.assertIn(spliced[F.LEADER][M.CID], (self.out["leader"][M.CID], MC.leader_rows(self.out["leader"][M.CID])))
         self.assertEqual(spliced[F.ABILITY][M.A3], self.out["ability"][M.A3])
         self.assertEqual(spliced[F.ABILITY][M.A1], self.data["ability", M.A1])   # 1.5 批产物，本批不动
         pf = wf_dsl.parse_dsl(zlib.decompress(emitted[pf_logical], -15))["tree"]
@@ -342,7 +346,8 @@ class GeneratorConsistencyTest(unittest.TestCase):
         self.assertIs(finished["apply"], False)
 
     def test_kit_source_is_untouched(self):
-        # kit 源码不引用第二批：gates.json 的 kit_source_sha256 保持有效，链路只写在 Fever 修订模块。
+        # kit 源码不引用第二批，链路只写在 Fever 修订模块（kit 已钉冻结 donor 1499963#1（FROZEN_DONORS），
+        # gates.json 的 kit_source_sha256 登记为已知过期、待按步序重跑）。
         self.assertNotIn("wf_balance_20260927b_zantetsu", inspect.getsource(K))
         self.assertEqual((K.CID, K.CODE, K.ELEMENT, K.PF_PROGRAM), (M.CID, M.CODE, M.ELEMENT, M.PF_PROGRAM))
 

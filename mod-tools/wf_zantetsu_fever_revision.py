@@ -5,7 +5,8 @@
 ``wf_balance_20260927_zantetsu.balance_rows``（队长 / 能力3 回槽改「除自身外的光属性角色」、
 能力3 连击 25→50、能力1 去 202），然后套第二批 ``wf_balance_20260927b_zantetsu.balance_rows``
 （能力3 三条 250 连击成长限次 + 搬进队长 #7–#9）与 ``pf_tree``（629 剑 PF 树 p13 3→0.5），
-重跑不会回退这两批改动。:func:`revise_rows` / :func:`revise_tree` 本身仍只做 09-17 修订。
+最后套第三轮 ``wf_balance_20260927c_zantetsu.leader_rows``（队长 250 连击三行 ×1/5 → ×4/5），
+重跑不会回退这三批改动。:func:`revise_rows` / :func:`revise_tree` 本身仍只做 09-17 修订。
 """
 from copy import deepcopy
 import hashlib
@@ -120,16 +121,18 @@ def revise_tree(tree):
 def apply_candidate(repo, workspace, *, apply=False):
     import wf_balance_20260927_zantetsu as balance
     import wf_balance_20260927b_zantetsu as balance_b
+    import wf_balance_20260927c_zantetsu as balance_c
     candidate = RevisionCandidate(repo, workspace, character_id=CID, code_name=CODE,
-        package_version=balance_b.PACKAGE_VERSION['s7-zantetsu'], snapshot_key='fever_revision_20260917',
+        package_version=balance_c.PACKAGE_VERSION['s7-zantetsu'], snapshot_key='fever_revision_20260917',
         evidence_name='fever-revision-20260917.json')
     old = {lg: core.read_orderedmap_file_from_bytes(candidate.read('common', lg))
            for lg in (LEADER, ABILITY)}
     lead, ab = revise_rows(core.read_csv_lines(old[LEADER][CID]),
                           core.read_csv_lines(old[ABILITY][CID+'3']))
-    # 2026-09-27 平衡批次：固定在本修订之后套用（kit 重建 → 09-17 → 09-27 1.5 批 → 09-27 第二批）。
+    # 2026-09-27 平衡批次：固定在本修订之后套用（kit 重建 → 09-17 → 09-27 1.5 批 → 09-27 第二批 → 第三轮）。
     lead, first, ab = balance.balance_rows(lead, core.read_csv_lines(old[ABILITY][CID+'1']), ab)
     lead, ab = balance_b.balance_rows(lead, ab)
+    lead = balance_c.leader_rows(lead)          # 2026-09-27 第三轮：队长 250 连击三行 ×4/5
     strings = {balance.CAS_CHANGE_SKILL, balance.CAS_PF}
     errors = (balance.row_problems('leader_ability', lead, strings)
               + balance.row_problems('ability', first, strings) + balance.row_problems('ability', ab, strings))
@@ -137,8 +140,9 @@ def apply_candidate(repo, workspace, *, apply=False):
         raise ValueError('; '.join(errors))
     candidate.splice(LEADER, {CID: lead})
     candidate.splice(ABILITY, {CID+'1': first, CID+'3': ab})
-    candidate.splice(CAS, {FEVER_TEXT: [[
-        'Fever模式中，强化『超振动斩铁剑·寒梅一闪』，追加随连击数提升的威力，并赋予贯穿效果']]})
+    # 2026-09-27 第三轮（wf_balance_20260927c_zantetsu，作者「技能都强化效果只在队长技或者能力里面按照格式写」）：
+    # 强化条目改官方格式「强化『超振动斩铁剑·寒梅一闪』：Fever模式中…」，真源在第三轮模块。
+    candidate.splice(CAS, {FEVER_TEXT: [[balance_c.NEW_FEVER_TEXT]]})
     checks = []
     import wf_seasonal7_kit_zantetsu as kit
     import wf_client_legality as legality
@@ -172,7 +176,10 @@ def apply_candidate(repo, workspace, *, apply=False):
                               ability1_main_only=False),
         balance_20260927b=dict(module='wf_balance_20260927b_zantetsu', combo250_leader_rows=[7, 8, 9],
                                ability3_trigger_limits=[4, 4, 5],
-                               pf_down_per_invoke=balance_b.down_per_invoke(pf))), apply=apply)
+                               pf_down_per_invoke=balance_b.down_per_invoke(pf)),
+        balance_20260927c=dict(module='wf_balance_20260927c_zantetsu',
+                               combo250_leader_steps={str(i): list(v) for i, v in balance_c.C_VALUES.items()})),
+        apply=apply)
 
 
 if __name__ == '__main__':

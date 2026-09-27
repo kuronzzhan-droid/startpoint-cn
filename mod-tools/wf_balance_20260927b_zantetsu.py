@@ -32,7 +32,8 @@ B3「能力调用技能（kind 629）每次 ≤3」；设计稿 ``growth/growth_
 
 生成器链（kit 重建后固定顺序）：``wf_seasonal7_kit_zantetsu`` → ``wf_zantetsu_fever_revision.apply_candidate``
 （09-17 修订 → 1.5 批 ``wf_balance_20260927_zantetsu.balance_rows`` → 本模块 :func:`balance_rows` 与
-:func:`pf_tree`）。kit 源码不动（其 ``gates.json`` 绑定 ``kit_source_sha256``）；测试断言链尾 == :func:`revise`。
+:func:`pf_tree`）。kit 源码不引用本批；kit 已钉冻结 donor 1499963#1（FROZEN_DONORS），源码 sha 已变，
+``gates.json`` 的 ``kit_source_sha256`` 登记为已知过期、待按 tables→kit→…→gates 步序重跑；测试断言链尾 == :func:`revise`。
 
 跨角色 donor：mod-tools 与 midautumn 设计稿里借斩铁的只有 1599981#0/#1、1599982#0/#2、1599983#4/#6、
 1599985#0、1599986#0/#1、leader 159998#1/#6（1 基 #2/#7），本批改的 1599983#1–#3 与队长新增行都不在其中。
@@ -352,7 +353,7 @@ def revise(read: Callable[[str, Any], Any]) -> dict[str, Any]:
             "describe_after": DESCRIBE_AFTER,
             "kept": "技能两档削韧 32（口径 B1 保留）；充能/回槽行（口径 A6）；1.5 批改动",
             "panel": "无 desc_override，客户端按行自动生成；技能描述无相关数值",
-            "generator": "wf_seasonal7_kit_zantetsu（不动）→ wf_zantetsu_fever_revision.apply_candidate"
+            "generator": "wf_seasonal7_kit_zantetsu（kit 已钉冻结 donor 1499963#1（FROZEN_DONORS））→ wf_zantetsu_fever_revision.apply_candidate"
                          "（09-17 → 1.5 批 balance_rows → 本批 balance_rows + pf_tree）",
             "leader_precedents": "trig12→32 自身 官方 341001#4；trig12→34 自身 live 129992#1/149987#9；"
                                  "694 live 149987#12（口径 A4）",

@@ -24,7 +24,8 @@
 CreateNormalAttack + 震屏，伤害按执行者即主位的面板结算）；536 会打开主位角色的
 技能 Flag1（live 带 536 的 14 名光角色，其 Flag1 条件都是无条件或光共鸣 / 主位，光共鸣队里本已为真）。
 
-生成器链（重建后固定顺序）：``wf_seasonal7_kit_zantetsu``（改版施工单回放，本批不动）→
+生成器链（重建后固定顺序）：``wf_seasonal7_kit_zantetsu``（改版施工单回放；kit 已钉冻结 donor 1499963#1（FROZEN_DONORS），
+源码 sha 已变，``gates.json`` 的 ``kit_source_sha256`` 登记为已知过期、待按 tables→kit→…→gates 步序重跑）→
 ``wf_zantetsu_fever_revision.apply_candidate``（09-17 Fever 修订之后调用本模块 :func:`balance_rows`）。
 测试断言「kit 行 → Fever 修订 → 本批」== :func:`revise` 输出。
 
@@ -262,7 +263,7 @@ def revise(read: Callable[[str, Any], Any]) -> dict[str, Any]:
             },
             "describe_after": DESCRIBE_AFTER,
             "panel": "队长/能力1/能力3 均无 desc_override，客户端按行自动生成；不新增覆盖文案",
-            "generator": "wf_seasonal7_kit_zantetsu（不动）→ wf_zantetsu_fever_revision.apply_candidate"
+            "generator": "wf_seasonal7_kit_zantetsu（kit 已钉冻结 donor 1499963#1（FROZEN_DONORS））→ wf_zantetsu_fever_revision.apply_candidate"
                          "（09-17 修订后调用 balance_rows，并回写 1599981）",
             "donor_pins": "丝缇涅尔/芙拉菲 kit 与妮可拉设计稿的 1599981#1 donor 已钉 c6=202",
             "needs_device": [

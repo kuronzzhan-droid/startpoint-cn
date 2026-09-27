@@ -4,7 +4,8 @@
 设计真源：``work/character_packs/seasonal7-20260916/design/zantetsu.json``（status=final）；
 **行清单与技能 DSL 的现行真源是改版施工单** ``…/revision-20260916/zantetsu/plan.json``
 （作者 2026-09-16 真机试玩后的一轮要求），design 只再提供 identity / text 骨架 / effects / energy。
-本模块按设计逐行回放 donor 行 + 列级 edits（donor 取官方基线 1.4.54，live 自制行取 live），
+本模块按设计逐行回放 donor 行 + 列级 edits（donor 取官方基线 1.4.54，live 自制行取 live；
+live 行被别的单元改掉的钉成冻结行，见 :data:`FROZEN_DONORS`），
 逐格断言与设计 ``row_final`` 相同后落包；两棵技能树从官方 131044 + 151117 两棵树重新拼装
 （不直接吃设计里的 composed_tree，只拿它做逐节点对照），并自行复跑静态门禁。
 
@@ -421,20 +422,66 @@ class _Donors:
         return self.ctx.csv_split(self._cache[cache_key][key])
 
 
+# 2026-09-27 冻结 donor（泳装希尔媞 149996 在 1.4.1054 换成灰服版）：plan.json
+# /tables/ability/keys/1599983/records[3]（A3#4「光共鸣：每 250 连击 → 自身技能伤害独立乘区 5%→10%」）
+# 的 donor 是泳装希尔媞能力3 在 live 的第 1 行（694 行）。灰服版换掉了整个 1499963：第 1 行不再是
+# 694 行，c27 等列都变了 ⇒ 按行号取，edits_before 对不上（KitError）。plan.json 是第一轮证据（只读），
+# 所以在 kit 里把这个 donor 钉成 1.4.1054 发布前的 live 行（extra4/before 快照，= live 1.4.1053）：
+# 回放不读 live，按下表还原整行并核对 sha256（= csv 单行文本），发布前后回放结果逐字相同。
+# 键 = (donor_source, 表, donor_key, row_index)，即 plan 记录的四个 donor 字段；值只列非空格。
+FROZEN_DONORS: dict[tuple[str, str, str, int], dict[str, Any]] = {
+    ("live", "ability", "1499963", 1): {
+        "frozen_from": "live 1.4.1053，泳装希尔媞灰服版（1.4.1054）替换前",
+        "width": 126,
+        "cells": {0: "wind_spgirl_swim_3", 1: "true", 2: "attack_green", 3: "0", 5: "0", 6: "202",
+                  13: "0", 20: "0", 27: "12", 30: "7700000", 31: "7700000", 34: "5", 35: "0",
+                  39: "(None)", 46: "0", 47: "694", 48: "0", 51: "2500", 52: "2500"},
+        "sha256": "4ef336b15ba8241f51f8c5676568d664865f43d73f4ac91c49f067d228ea78ac",
+    },
+}
+
+
+def donor_pin(rec: dict, kind: str) -> tuple[str, str, str, Any]:
+    """plan 记录的 donor 定位四元组（:data:`FROZEN_DONORS` 的键形）。"""
+    return rec["donor_source"], kind, rec["donor_key"], rec["row_index"]
+
+
+def frozen_donor_row(spec: dict[str, Any], donor: str) -> list[str]:
+    """由 :data:`FROZEN_DONORS` 的一项还原整行；sha256 不符即 KitError（冻结行被改动）。"""
+    import wf_mod_tool as core
+    row = [""] * spec["width"]
+    for col, value in spec["cells"].items():
+        row[col] = value
+    got = _sha(core.write_csv_lines([row]).rstrip("\n").encode("utf-8"))
+    if got != spec["sha256"]:
+        raise KitError(f"frozen donor {donor} sha256 {got} != pin {spec['sha256']}")
+    return row
+
+
+def donor_evidence(rec: dict, kind: str) -> dict[str, str]:
+    """证据里标明冻结 donor（donor 字符串仍写 plan 原文）。"""
+    spec = FROZEN_DONORS.get(donor_pin(rec, kind))
+    return {"donor_frozen": f"{spec['frozen_from']}，sha256 {spec['sha256']}"} if spec else {}
+
+
 def replay_row(donors: _Donors, rec: dict, kind: str) -> list[str]:
     """donor 行 + edits + copy_cells；断言 donor 原值（edits_before）与最终行（row_final）都和设计一致。
 
     ``row_index`` 写 ``"match_row_final"`` 时按内容在 donor 表里唯一定位（第一轮发布后自引用 donor 的
-    行序会随每次发布顺延，序号写死会越发越错；这类记录 edits 为空，donor 本就等于 row_final）。"""
-    table = donors.rows(rec["donor_source"], kind, rec["donor_key"])
-    if rec["row_index"] == MATCH_ROW_FINAL:
+    行序会随每次发布顺延，序号写死会越发越错；这类记录 edits 为空，donor 本就等于 row_final）。
+    :data:`FROZEN_DONORS` 里登记的 donor 不读表，用冻结行（edits_before / row_final 照样逐格核对）。"""
+    frozen = FROZEN_DONORS.get(donor_pin(rec, kind))
+    if frozen is not None:
+        donor = frozen_donor_row(frozen, rec["donor"])
+    elif rec["row_index"] == MATCH_ROW_FINAL:
+        table = donors.rows(rec["donor_source"], kind, rec["donor_key"])
         matches = [r for r in table if r == rec["row_final"]]
         if len(matches) != 1:
             raise KitError(f"{rec['donor']}: match_row_final found {len(matches)} rows in "
                            f"{rec['donor_source']} {rec['donor_key']} (need exactly 1)")
         donor = matches[0]
     else:
-        donor = table[rec["row_index"] - 1]
+        donor = donors.rows(rec["donor_source"], kind, rec["donor_key"])[rec["row_index"] - 1]
     row = list(donor)
     width = 124 if kind == "leader_ability" else 126
     if len(row) != width:
@@ -522,12 +569,14 @@ def revision_rows(ctx, plan: dict) -> dict[str, Any]:
             if (row[1], row[2]) != (rows[0][1], rows[0][2]):
                 raise KitError(f"{key} record{i} c1/c2 {row[1]}/{row[2]} differs from record1")
         abilities[key] = rows
-        records += [{"key": key, "record": i, "id": rec["id"], "donor": rec["donor"], "intent": rec["intent"]}
+        records += [{"key": key, "record": i, "id": rec["id"], "donor": rec["donor"], "intent": rec["intent"],
+                     **donor_evidence(rec, "ability")}
                     for i, rec in enumerate(entry["records"], 1)]
     if sum(len(v) for v in abilities.values()) != sum(k["record_count_new"] for k in keys.values()):
         raise KitError("ability record count differs from revision plan")
     return {"leader": leader, "abilities": abilities, "records": records,
-            "leader_records": [{"record": i, "id": r["id"], "donor": r["donor"], "intent": r["intent"]}
+            "leader_records": [{"record": i, "id": r["id"], "donor": r["donor"], "intent": r["intent"],
+                                **donor_evidence(r, "leader_ability")}
                                for i, r in enumerate(lead["records"], 1)]}
 
 

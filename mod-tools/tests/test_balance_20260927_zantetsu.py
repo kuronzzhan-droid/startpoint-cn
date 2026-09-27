@@ -193,8 +193,8 @@ class GeneratorConsistencyTest(unittest.TestCase):
     def test_fever_apply_candidate_runs_balance_after_its_revision(self):
         src = inspect.getsource(F.apply_candidate)
         self.assertLess(src.index("revise_rows("), src.index("balance.balance_rows("))
-        # 第二批（wf_balance_20260927b_zantetsu）接在本批之后，候选版本号取第二批的。
-        self.assertIn("balance_b.PACKAGE_VERSION['s7-zantetsu']", src)
+        # 第二批（wf_balance_20260927b_zantetsu）接在本批之后，候选版本号取第二批的（第三轮接上后取第三轮的）。
+        self.assertTrue(any(f"{m}.PACKAGE_VERSION['s7-zantetsu']" in src for m in ("balance_b", "balance_c")))
         self.assertLess(src.index("balance.balance_rows("), src.index("balance_b.balance_rows("))
         self.assertIn("{CID+'1': first, CID+'3': ab}", src)
         self.assertIn("balance.row_problems(", src)
@@ -231,14 +231,17 @@ class GeneratorConsistencyTest(unittest.TestCase):
             with self.assertRaises(Stop):
                 F.apply_candidate(ROOT, ROOT / "work/character_packs/s7-zantetsu")
         # 第二批接在本批之后：期望 = 本批输出 + 第二批覆盖（队长追加 #7–#9、能力3 #1–#3 限次；能力1 不动）。
-        self.assertEqual(created["package_version"], MB.PACKAGE_VERSION["s7-zantetsu"])
+        # 第三轮（wf_balance_20260927c_zantetsu）只再改队长 250 连击三行：兼容 b / b→c 两种状态。
+        import wf_balance_20260927c_zantetsu as MC
+        self.assertIn(created["package_version"], (MB.PACKAGE_VERSION["s7-zantetsu"], MC.PACKAGE_VERSION["s7-zantetsu"]))
         leader_b, third_b = MB.balance_rows(self.out["leader"][M.CID], self.out["ability"][M.A3])
-        self.assertEqual(spliced[F.LEADER], {M.CID: leader_b})
+        self.assertIn(spliced[F.LEADER], ({M.CID: leader_b}, {M.CID: MC.leader_rows(leader_b)}))
         self.assertEqual(spliced[F.ABILITY], {M.A1: self.out["ability"][M.A1], M.A3: third_b})
         self.assertEqual(set(spliced[F.CAS]), {F.FEVER_TEXT})
 
     def test_fever_revision_docstring_names_the_chain(self):
-        # 链路说明只写在 Fever 修订模块：kit 源码不动，gates.json 的 kit_source_sha256 保持有效。
+        # 链路说明只写在 Fever 修订模块：kit 源码不引用本批（kit 已钉冻结 donor 1499963#1（FROZEN_DONORS），
+        # gates.json 的 kit_source_sha256 登记为已知过期、待按步序重跑）。
         self.assertIn("wf_seasonal7_kit_zantetsu", F.__doc__)
         self.assertIn("wf_balance_20260927_zantetsu.balance_rows", F.__doc__)
         self.assertNotIn("wf_balance_20260927_zantetsu", inspect.getsource(K))

@@ -17,6 +17,11 @@ sys.path.insert(0, str(HERE.parent))
 
 import wf_seasonal7_kit_zantetsu as K  # noqa: E402
 
+#: 泳装希尔媞灰服版（1.4.1054）发布前的 live 快照（平衡第三轮暂存 extra4/before）；本机没有时跳过对应测试。
+PRE_1054_LIVE = HERE.parents[2] / "out" / "平衡调整批次-20260927" / "extra4" / "before" / "live" / "common"
+PRE_1054_ABILITY = PRE_1054_LIVE / K.ABILITY
+PRE_1054_LEADER = PRE_1054_LIVE / K.LEADER
+
 
 def _context():
     import wf_seasonal7_build as B
@@ -201,6 +206,80 @@ class ZantetsuKitTest(unittest.TestCase):
         for rec in merged["tables"][K.ABILITY]["keys"]["1599986"]["records"]:
             with self.assertRaises(K.KitError):
                 K.replay_row(donors, K._revision_record(rec), "ability")
+
+    def test_frozen_donor_replays_without_reading_live(self):
+        """泳装希尔媞 1.4.1054 换成灰服版后 live 1499963 第 1 行不再是 694 行：A3#4 的 donor 钉成冻结行，回放不随 live 变。"""
+        abilities = self.plan["tables"][K.ABILITY]["keys"]
+        frozen = [(key, rec["id"]) for key, entry in abilities.items() for rec in entry["records"]
+                  if K.donor_pin(rec, "ability") in K.FROZEN_DONORS]
+        frozen += [(K.CID, rec["id"]) for rec in self.plan["tables"][K.LEADER]["records"]
+                   if K.donor_pin(rec, "leader_ability") in K.FROZEN_DONORS]
+        self.assertEqual([("1599983", "A3#4")], frozen)
+        rec = abilities["1599983"]["records"][3]
+        self.assertEqual(rec["donor"], "live:ability:1499963#1")
+        row = K.frozen_donor_row(K.FROZEN_DONORS[K.donor_pin(rec, "ability")], rec["donor"])
+        for col, before in rec["edits_before_on_donor"].items():      # 冻结行就是 plan 记下的改前 donor
+            self.assertEqual(row[int(col)], before, col)
+        rows = K.revision_rows(self.ctx, self.plan)
+        self.assertEqual(rows["abilities"]["1599983"][3], rec["row_final"])
+        self.assertEqual([("1599983", 4)], [(r["key"], r["record"]) for r in rows["records"] if "donor_frozen" in r])
+        self.assertFalse([r for r in rows["leader_records"] if "donor_frozen" in r])
+
+        ctx = self.ctx
+
+        class NoSwimLive:                                   # live 里干脆没有泳装希尔媞能力3：冻结 donor 不受影响
+            def __getattr__(self, name):
+                return getattr(ctx, name)
+
+            def live_flat(self, logical):
+                flat = dict(ctx.live_flat(logical))
+                if logical == K.ABILITY:
+                    flat.pop("1499963", None)
+                return flat
+        self.assertEqual({k: rows[k] for k in ("leader", "abilities")},
+                         {k: K.revision_rows(NoSwimLive(), self.plan)[k] for k in ("leader", "abilities")})
+
+        # 阴性对照：去掉冻结 → 按行号读当前 live（灰服版）必红；未冻结的 live donor 仍照常读表。
+        saved = dict(K.FROZEN_DONORS)
+        try:
+            K.FROZEN_DONORS.clear()
+            live = self.ctx.live_flat(K.ABILITY).get("1499963")
+            if live is not None and self.ctx.csv_split(live)[0] != row:
+                with self.assertRaises(K.KitError):
+                    K.replay_row(K._Donors(self.ctx), K._revision_record(rec), "ability")
+        finally:
+            K.FROZEN_DONORS.update(saved)
+
+    def test_frozen_donor_pin_rejects_a_tampered_row(self):
+        for key, spec in K.FROZEN_DONORS.items():
+            self.assertEqual(spec["width"], len(K.frozen_donor_row(spec, "pin")))
+            self.assertEqual(spec["width"], 124 if key[1] == "leader_ability" else 126)
+            bad = copy.deepcopy(spec)
+            bad["cells"][27] = "13"
+            with self.assertRaises(K.KitError):
+                K.frozen_donor_row(bad, "tampered")
+
+    @unittest.skipUnless(PRE_1054_ABILITY.is_file(), "1.4.1054 发布前 live 快照（extra4/before）不在本机")
+    def test_frozen_donor_equals_pre_1054_live(self):
+        """冻结行 == 1.4.1054 发布前 live 1499963 第 1 行；词条/队长表换成该快照回放，产物与当前逐字相同。"""
+        import wf_mod_tool as core
+        snapshot = {K.ABILITY: core.read_orderedmap_file_from_bytes(PRE_1054_ABILITY.read_bytes())}
+        if PRE_1054_LEADER.is_file():
+            snapshot[K.LEADER] = core.read_orderedmap_file_from_bytes(PRE_1054_LEADER.read_bytes())
+        spec = K.FROZEN_DONORS[("live", "ability", "1499963", 1)]
+        self.assertEqual(self.ctx.csv_split(snapshot[K.ABILITY]["1499963"])[0], K.frozen_donor_row(spec, "snapshot"))
+        ctx = self.ctx
+
+        class Pre1054Live:
+            def __getattr__(self, name):
+                return getattr(ctx, name)
+
+            def live_flat(self, logical):
+                return snapshot[logical] if logical in snapshot else ctx.live_flat(logical)
+        before = K.revision_rows(Pre1054Live(), self.plan)
+        now = K.revision_rows(self.ctx, self.plan)
+        self.assertEqual(before["leader"], now["leader"])
+        self.assertEqual(before["abilities"], now["abilities"])
 
     def test_panel_text_rules(self):
         """作者 2026-09-16 晚补充的两条面板文案规则，带阴性对照。"""
