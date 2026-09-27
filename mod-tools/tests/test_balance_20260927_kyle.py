@@ -198,12 +198,24 @@ class ReviseTests(unittest.TestCase):
 
 def batch2_overlay(out: dict) -> dict:
     """第一批输出 + 第二批覆盖：生成器现在产出的是两批依次施工后的结果（第二批 wf_balance_20260927b_kyle
-    的 BEFORE 锁定的正是第一批输出，见其 ChainTests），第一批只核对自己那部分仍由第二批原样继承。"""
+    的 BEFORE 锁定的正是第一批输出，见其 ChainTests），第一批只核对自己那部分仍由第二批原样继承。
+    2026-09-27 第三轮（wf_balance_20260927c_kyle，BEFORE 锁定第二批输出）再覆盖队长 / 队长面板 / 追击树。"""
     import wf_balance_20260927b_kyle as M2
+    import wf_balance_20260927c_kyle as M3
     fixture = Path(__file__).parent / "fixtures/balance_20260927b_kyle.json"
     live2 = {k: v for k, v in json.loads(fixture.read_text(encoding="utf-8")).items() if not k.startswith("_")}
     assert live2["leader"][M.CID] == out["leader"][M.CID] and live2["cas"][M.CAS_LEADER] == out["cas"][M.CAS_LEADER]
-    return M2.revise(reader(live2))
+    out2 = M2.revise(reader(deepcopy(live2)))
+    for kind in ("leader", "ability", "cas", "dsl"):
+        live2[kind].update(deepcopy(out2[kind]))
+    # 第三轮面板合并补读、前两批不涉及的键（desc_override_kyle_moon_3）取第三轮 fixture（= live）
+    fixture3 = json.loads((Path(__file__).parent / "fixtures/balance_20260927c_kyle.json").read_text(encoding="utf-8"))
+    for kind, key in M3.BEFORE:
+        live2.setdefault(kind, {}).setdefault(key, deepcopy(fixture3[kind][key]))
+    out3 = M3.revise(reader(live2))
+    for kind in ("leader", "ability", "cas", "dsl"):
+        out2[kind].update(out3[kind])
+    return out2
 
 
 class GeneratorSyncTests(unittest.TestCase):
@@ -238,8 +250,8 @@ class GeneratorSyncTests(unittest.TestCase):
                          [f"leader#{i}" for i in range(8)])
         self.assertEqual(sorted(k for k in K.EXPECT if k.startswith(M.ABILITY_KEY)),
                          [f"{M.ABILITY_KEY}#{i}" for i in range(6)])
-        # 第二批把贯穿成长 ×1/10（5% → 0.5%）；第一批的「保留这一行」仍成立
-        self.assertIn("眩晕畏缩特攻 0.5%", K.EXPECT["leader#7"])
+        # 第二批把贯穿成长 ×1/10（5% → 0.5%），第三轮改为 ×4/5（→ 4%）；第一批的「保留这一行」仍成立
+        self.assertIn("眩晕畏缩特攻 4%", K.EXPECT["leader#7"])
 
     @unittest.skipUnless(_baseline_available(), "需要 .cdn/cn 官方基线与 live store")
     def test_generator_rows_equal_revise_output(self):
@@ -247,7 +259,7 @@ class GeneratorSyncTests(unittest.TestCase):
         import wf_midautumn_specs as MS
         import wf_seasonal7_build as B
         built = K.build_rows(B.KitContext(MC.MAPack(MS.get_spec("kyle"), record_sources=False)))
-        self.assertEqual(built["leader"], self.out2["leader"][M.CID])          # 第一批输出 + 第二批覆盖
+        self.assertEqual(built["leader"], self.out2["leader"][M.CID])          # 第一批输出 + 第二批 / 第三轮覆盖
         self.assertEqual(built["ability"][M.ABILITY_KEY], self.out["ability"][M.ABILITY_KEY])
 
 
@@ -258,9 +270,13 @@ class MirrorTests(unittest.TestCase):
         if not all(path.is_file() for path in self.PATHS):
             self.skipTest("midautumn design mirrors missing")
         self.docs = [json.loads(path.read_text(encoding="utf-8")) for path in self.PATHS]
+        # 第三轮（wf_balance_20260927c_kyle）改了同一生成器的队长面板；镜像由主会话 --write 落盘，
+        # 落盘前在内存里补上（第三轮 mirror_updates 幂等，已落盘时为恒等）。
+        import wf_balance_20260927c_kyle as M3
+        self.docs[:2] = M3.mirror_updates(*self.docs[:2])
 
     def test_mirrors_are_already_synced(self):
-        self.assertEqual(M.sync_mirrors(ROOT, write=False), [])
+        self.assertEqual(M.mirror_updates(*self.docs), tuple(self.docs))
         design, panel, deviations = self.docs
         self.assertEqual(K._design_problems(design), [])
         self.assertEqual([line["text"] for line in panel["leader"]["lines"]],

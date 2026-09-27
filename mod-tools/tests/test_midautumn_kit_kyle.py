@@ -286,6 +286,11 @@ class PanelTextTests(unittest.TestCase):
         if not PANEL.is_file():
             self.skipTest("rework1/panel/kyle.json missing")
         panel = json.loads(PANEL.read_text(encoding="utf-8"))
+        # 2026-09-27 第三轮（wf_balance_20260927c_kyle）改了队长面板；镜像由主会话 --write 落盘，
+        # 落盘前按其同步结果比对（mirror_updates 幂等，已落盘时为恒等）
+        import wf_balance_20260927c_kyle as C3
+        design = json.loads((ROOT / C3.DESIGN_REL).read_text(encoding="utf-8"))
+        panel = C3.mirror_updates(design, panel)[1]
         want_leader = [line["text"] for line in panel["leader"]["lines"]]
         self.assertEqual(K.PANEL_LEADER.split("\n"), want_leader)
         for entry in panel["abilities"]:
@@ -348,7 +353,9 @@ class PanelTextTests(unittest.TestCase):
         thunder = panel["skill"]["lines"][1]["text"]
         self.assertIn("召唤天雷", thunder)
         self.assertNotIn("秒", thunder)
-        gauge = next(e for e in panel["abilities"] if e["index"] == 3)["lines"][1]["text"]
+        # 能力 3 第 1 行 2026-09-27 按数据条件拆成两行（口径 5）⇒ 按内容找贯穿回槽那一行，不按行号
+        gauge, = [line["text"] for line in next(e for e in panel["abilities"] if e["index"] == 3)["lines"]
+                  if "贯穿效果" in line["text"]]
         self.assertIn(f"（冷却时间：{int(K.PIERCE_GAUGE_COOLTIME) // 60}秒）", gauge)
         self.assertIn(f"（冷却时间：{int(K.PIERCE_GAUGE_COOLTIME) // 60}秒）",
                       K.PANEL_ABILITY[3])
@@ -488,8 +495,8 @@ class DslHelperTests(unittest.TestCase):
 
     def test_pierce_growth_is_not_capped_at_three(self):
         self.assertGreater(K.PIERCE_VAR_CEIL, 3)
-        # 2026-09-27 第二批（口径 A5）：层数贡献封顶 10，无上限部分由队长月牙逐层成长承担
-        self.assertEqual(K.PIERCE_VAR_CEIL, 10)
+        # 2026-09-27 第二批（口径 A5）曾封顶 10；第三轮（口径 U1）恢复 99 = 月牙上限
+        self.assertEqual(K.PIERCE_VAR_CEIL, 99)
         self.assertEqual(K.PIERCE_BASE_TIMES, 1)
         self.assertEqual(K.PIERCE_TIMES_PER_LAYER, 1)
         # 段数取优不相加：同段数时比伤害% ⇒ 不得低于词条层的 3 段 +300%
@@ -559,9 +566,9 @@ class RowBuildTests(unittest.TestCase):
     def test_piercing_growth_uses_native_down_slayer_and_retains_trigger(self):
         rows = [r for r in self.built["leader"] if r[25] == "51"]
         self.assertEqual(len(rows), 2)
-        # 2026-09-27 第二批：每获得贯穿的两条成长 ×1/10（25%→2.5%、5%→0.5%）
+        # 2026-09-27 第二批 ×1/10（25%→2.5%、5%→0.5%）；第三轮改为原值 ×4/5（25%→20%、5%→4%）
         self.assertEqual({r[45]: r[49:51] for r in rows},
-                         {"32": ["2500", "2500"], "53": ["500", "500"]})
+                         {"32": ["20000", "20000"], "53": ["4000", "4000"]})
         for row in rows:
             self.assertEqual(row[4], "2")
             self.assertEqual(row[7:10], ["600000", "600000", "Yellow"])
@@ -600,15 +607,15 @@ class RowBuildTests(unittest.TestCase):
             self.assertEqual(row[100], "(None)")
 
     def test_self_and_party_layers_sum_to_the_panel_numbers(self):
-        """面板（2026-09-27 第二批 ×1/10 并入能力 2）：自身攻击 +7.5% / 直击 +10%，除自身外 +1.25% / +7.5%。"""
+        """面板（2026-09-27 第三轮 原值×4/5，含能力 2 并入部分）：自身攻击 +60% / 直击 +80%，除自身外 +10% / +60%。"""
         share = {(row[107], row[108]): int(row[111]) for row in self.built["leader"] if row[95] == "134"}
-        self.assertEqual(share[("0", "5")] + share[("0", "0")], 7500)
-        self.assertEqual(share[("1", "5")] + share[("1", "0")], 10000)
-        self.assertEqual(share[("0", "5")], 1250)
-        self.assertEqual(share[("1", "5")], 7500)
+        self.assertEqual(share[("0", "5")] + share[("0", "0")], 60000)
+        self.assertEqual(share[("1", "5")] + share[("1", "0")], 80000)
+        self.assertEqual(share[("0", "5")], 10000)
+        self.assertEqual(share[("1", "5")], 60000)
         line = K.PANEL_LEADER.split("\n")[3]
-        self.assertIn("自身攻击力＋7.5%、直击伤害＋10%", line)
-        self.assertIn("除自身外雷属性角色攻击力＋1.25%、直击伤害＋7.5%", line)
+        self.assertIn("自身攻击力＋60%、直击伤害＋80%", line)
+        self.assertIn("除自身外雷属性角色攻击力＋10%、直击伤害＋60%", line)
 
     def test_crescent_ability_rows_are_capped_at_ten_layers(self):
         """能力 2：月牙每层 雷队直击 +10%、自身攻击 +16%，限 10 层（2026-09-27 第二批）。"""
@@ -794,13 +801,14 @@ class AbilitySkillTreeTests(unittest.TestCase):
         self.assertEqual(ac[2][0]["vlv"][0]["vid"], bind[2])
         self.assertEqual(note["ceiling"], K.PIERCE_VAR_CEIL)
 
-    def test_pierce_variable_is_capped_at_ten_layers(self):
-        """``BindConditionAccumulationVariable`` 第 5 参 = 上限（ActionEvaluator case 101 取 min）。"""
+    def test_pierce_variable_ceiling_is_the_crescent_cap(self):
+        """``BindConditionAccumulationVariable`` 第 5 参 = 上限（ActionEvaluator case 101 取 min）。
+        2026-09-27 第二批封顶 10，第三轮（wf_balance_20260927c_kyle，口径 U1）恢复 99（int）= 月牙上限。"""
         tree, note = K.build_pierce_tree(self.context, self.donor)
         bind = tree[11][1][0][1]
         self.assertEqual(bind, ["BindConditionAccumulationVariable", -17, K.PIERCE_VAR_ID,
-                                ["DCUnique", int(K.UID_CRESCENT)], 1, 10])
-        self.assertEqual(note["ceiling"], 10)
+                                ["DCUnique", int(K.UID_CRESCENT)], 1, 99])
+        self.assertEqual(note["ceiling"], 99)
 
     def test_thunder_detoughness_is_at_most_one_per_invoke(self):
         """口径 B3（2026-09-27 第二批）：天雷 CT 3 秒 ⇒ 每次 ≤1：常态 20→1、强化 5 段 3.6→0.2。"""

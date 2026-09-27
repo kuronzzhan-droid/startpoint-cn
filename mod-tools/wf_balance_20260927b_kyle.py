@@ -515,7 +515,8 @@ def mirror_updates(design: dict, panel: dict) -> tuple[dict, dict]:
         leader={f"#{i}": why for i, (*_x, why) in LEADER_EDITS.items()},
         ability={f"{ABILITY2}#{i}": why for i, (*_x, why) in ABILITY2_EDITS.items()},
         crescent_ability_limit=int(K.CRESCENT_ABILITY_LIMIT),
-        direct_hit_count=f"1 + min(月牙层数, {K.PIERCE_VAR_CEIL})（DSL 封顶，原 99）",
+        # 记第二批自己的封顶值（第三轮 wf_balance_20260927c_kyle 把生成器恢复到 99，不能回写本块历史）
+        direct_hit_count=f"1 + min(月牙层数, {PIERCE_CEIL_AFTER})（DSL 封顶，原 99）",
         skill_detoughness={"before": [10, 1, 12], "after": [K.CNA_SHAPE[i]["p12"] for i in (0, 1, 2)],
                            "hits": [1, 14, 1], "total": [36, 30]},
         thunder_detoughness={"normal": [20, K.THUNDER_DETOUGHNESS_NORMAL],

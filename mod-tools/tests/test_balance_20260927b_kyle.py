@@ -66,6 +66,33 @@ def _percent(value: str) -> float:
     return int(value) / 1000          # 100000 = 100%
 
 
+def batch3_overlay(live: dict, out: dict) -> dict:
+    """第二批输出 + 第三轮覆盖（wf_balance_20260927c_kyle：队长月牙/贯穿成长 4/5、队长面板、追击段数上限 99）。
+    生成器现在产出的是两批依次施工后的结果（第三轮 BEFORE 锁定的正是第二批输出，见其 ChainTests），
+    第二批的生成器一致性断言改比这份叠加结果；第三轮没碰的键仍直接等于第二批输出。"""
+    import wf_balance_20260927c_kyle as M3
+    live3 = deepcopy(live)
+    for kind in ("leader", "ability", "cas", "dsl"):
+        live3[kind].update(deepcopy(out[kind]))
+    # 第三轮面板合并补读、第二批不涉及的键（desc_override_kyle_moon_3）取第三轮 fixture（= live）
+    fixture3 = json.loads((Path(__file__).parent / "fixtures/balance_20260927c_kyle.json").read_text(encoding="utf-8"))
+    for kind, key in M3.BEFORE:
+        live3.setdefault(kind, {}).setdefault(key, deepcopy(fixture3[kind][key]))
+    out3 = M3.revise(reader(live3))
+    merged = deepcopy(out)
+    for kind in ("leader", "ability", "cas", "dsl"):
+        merged[kind].update(deepcopy(out3[kind]))
+    return merged
+
+
+def batch3_written_back() -> bool:
+    """第三轮已由主会话回写候选（package_version 升到第三轮模块版本）。"""
+    import wf_balance_20260927c_kyle as M3
+    manifest = json.loads((CANDIDATE / "package/manifest.json").read_text(encoding="utf-8"))
+    as_tuple = lambda v: tuple(int(x) for x in v.split("."))  # noqa: E731
+    return as_tuple(manifest["package_version"]) >= as_tuple(M3.PACKAGE_VERSION["ma-kyle"])
+
+
 class ContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -91,9 +118,9 @@ class ContractTests(unittest.TestCase):
         current = tuple(int(x) for x in manifest["package_version"].split("."))
         new = tuple(int(x) for x in M.PACKAGE_VERSION["ma-kyle"].split("."))
         if candidate_written_back():
-            # 已回写：候选现值 == 本模块版本（新版本 ≥ 候选现值，相等即已回写）。
+            # 已回写：候选现值 == 本模块版本；第三轮（wf_balance_20260927c_kyle）回写后候选再升号 ⇒ ≤。
             self.assertIsNotNone(manifest["snapshot"].get("revision_20260927b"))
-            self.assertEqual(new, current)
+            self.assertLessEqual(new, current)
         else:
             self.assertGreater(new, current)
         self.assertTrue(set(M.CAPABILITIES) <= set(manifest["required_capabilities"]))
@@ -399,7 +426,8 @@ class GateTests(unittest.TestCase):
                     self.assertEqual(M.row_problems(table, row), [], label)
 
     def test_changed_rows_render_the_baked_describe(self):
-        leader = self.out["leader"][M.CID]
+        # 队长 #0–#3/#6/#7 的 EXPECT 已随第三轮（wf_balance_20260927c_kyle）改为 4/5 值 ⇒ 比第二批 + 第三轮叠加结果
+        leader = batch3_overlay(self.live, self.out)["leader"][M.CID]
         for index in (0, 1, 2, 3, 6, 7):
             self.assertEqual(KL.describe("leader_ability", leader[index]), K.EXPECT[f"leader#{index}"])
         for index, row in enumerate(self.out["ability"][M.ABILITY2]):
@@ -478,6 +506,16 @@ class ChainTests(unittest.TestCase):
         live = load_fixture()
         if candidate_written_back():
             out = M.revise(reader(deepcopy(live)))
+            if batch3_written_back():                      # 第三轮回写后：再叠加第三轮输出
+                # 第三轮 BEFORE 里点名的键（如 desc_override_kyle_moon_1/_3/_6、change_skill_kyle_moon）
+                # 本来就已在 live（第三轮只读核对，不是本批新增），只是第二批 fixture 没收录；
+                # 补进 live 后续等式判定才成立，取值与 wf_balance_20260927c_kyle.BEFORE 锁的哈希对应的快照一致。
+                import wf_balance_20260927c_kyle as M3
+                fixture3 = json.loads((Path(__file__).parent /
+                                       "fixtures/balance_20260927c_kyle.json").read_text(encoding="utf-8"))
+                for kind, key in M3.BEFORE:
+                    live.setdefault(kind, {}).setdefault(key, deepcopy(fixture3[kind][key]))
+                out = batch3_overlay(live, out)
             for kind in ("leader", "ability", "cas", "dsl"):
                 self.assertLessEqual(set(out[kind]), set(live[kind]), kind)
                 live[kind].update(deepcopy(out[kind]))
@@ -494,28 +532,34 @@ class ChainTests(unittest.TestCase):
 
 
 class GeneratorSyncTests(unittest.TestCase):
-    """生成器 wf_midautumn_kit_kyle 重跑不能回退本次改动。"""
+    """生成器 wf_midautumn_kit_kyle 重跑不能回退本次改动。
+
+    2026-09-27 第三轮（wf_balance_20260927c_kyle）改了同一生成器（队长月牙/贯穿成长数值、队长面板、
+    PIERCE_VAR_CEIL）：这几处改比「第二批输出 + 第三轮覆盖」（:func:`batch3_overlay`）；其余仍直接比第二批输出。
+    """
 
     @classmethod
     def setUpClass(cls):
         cls.live = load_fixture()
         cls.out = M.revise(reader(deepcopy(cls.live)))
+        cls.out3 = batch3_overlay(cls.live, cls.out)
 
     def test_panel_constants_equal_revise_output(self):
-        self.assertEqual([[K.PANEL_LEADER]], self.out["cas"][M.CAS_LEADER])
-        self.assertEqual([[K.PANEL_ABILITY[2]]], self.out["cas"][M.CAS_ABILITY2])
+        self.assertEqual([[K.PANEL_LEADER]], self.out3["cas"][M.CAS_LEADER])
+        # 第三轮（C 节）把能力2 面板的「雷属性共鸣时：」省略了（数值仍是第二批的）⇒ 比叠加结果
+        self.assertEqual([[K.PANEL_ABILITY[2]]], self.out3["cas"][M.CAS_ABILITY2])
         self.assertEqual(K.CAS_TEXTS[M.CAS_LEADER], K.PANEL_LEADER)
         self.assertEqual(K.CAS_TEXTS[M.CAS_ABILITY2], K.PANEL_ABILITY[2])
 
     def test_plan_constants_equal_revise_output(self):
-        leader = self.out["leader"][M.CID]
+        leader = self.out3["leader"][M.CID]
         for index, (_addr, _src, cells, _e) in enumerate(K.LEADER[:4]):
             self.assertEqual([cells[111], cells[112]], leader[index][111:113], f"leader#{index}")
         self.assertEqual(dict(K.PIERCING_GROWTH), {r[45]: r[49] for r in leader if r[25] == "51"})
         for index, (_addr, _src, cells, _e) in enumerate(K.PLAN[2]):
             row = self.out["ability"][M.ABILITY2][index]
             self.assertEqual((cells[102], cells[113], cells[114]), (row[102], row[113], row[114]))
-        self.assertEqual(K.PIERCE_VAR_CEIL, self.out["dsl"][M.PIERCE_PROGRAM][11][1][0][1][5])
+        self.assertEqual(K.PIERCE_VAR_CEIL, self.out3["dsl"][M.PIERCE_PROGRAM][11][1][0][1][5])
         self.assertEqual([K.CNA_SHAPE[i]["p12"] for i in (0, 1, 2)],
                          [a[13][0]["max"] for a in _cna(self.out["dsl"][M.SKILL_PROGRAMS["1"]])])
         flag = M.commands(self.out["dsl"][M.THUNDER_PROGRAM], "ConditionalsChangeSkillFlag")[0]
@@ -533,13 +577,13 @@ class GeneratorSyncTests(unittest.TestCase):
         import test_midautumn_kit_kyle as T   # 只借用 fake_family 三件（与 kit 测试同一口径）
         ctx = B.KitContext(MC.MAPack(MS.get_spec("kyle"), record_sources=False))
         built = K.build_rows(ctx)
-        self.assertEqual(built["leader"], self.out["leader"][M.CID])
+        self.assertEqual(built["leader"], self.out3["leader"][M.CID])
         self.assertEqual(built["ability"][M.ABILITY2], self.out["ability"][M.ABILITY2])
         self.assertEqual(built["ability"][M.ABILITY3], self.live["ability"][M.ABILITY3])
         blade, bolt, trail = T.blade_family(), T.bolt_family(), T.trail_family()
         donor = ctx.template_dsl(f"battle/action/skill/action/rare5/{K.TEMPLATE_CODE}${K.TEMPLATE_CODE}_1")
         pierce, _ = K.build_pierce_tree(ctx, donor)
-        self.assertEqual(pierce, self.out["dsl"][M.PIERCE_PROGRAM])
+        self.assertEqual(pierce, self.out3["dsl"][M.PIERCE_PROGRAM])
         thunder, _ = K.build_thunder_tree(ctx, donor, bolt)
         self.assertEqual(thunder, self.out["dsl"][M.THUNDER_PROGRAM])
         for level, program in M.SKILL_PROGRAMS.items():
@@ -557,16 +601,22 @@ class MirrorTests(unittest.TestCase):
         if not all(path.is_file() for path in self.PATHS):
             self.skipTest("midautumn design mirrors missing")
         self.docs = [json.loads(path.read_text(encoding="utf-8")) for path in self.PATHS]
+        # 第三轮（wf_balance_20260927c_kyle）改了同一生成器的队长面板 / 段数上限；镜像由主会话 --write 落盘，
+        # 落盘前在内存里补上（第三轮 mirror_updates 幂等，已落盘时为恒等），再核对本批 / 第一批同步仍是恒等。
+        import wf_balance_20260927c_kyle as M3
+        self.docs = list(M3.mirror_updates(*self.docs))
 
     def test_mirrors_are_already_synced(self):
-        self.assertEqual(M.sync_mirrors(ROOT, write=False), [])
-        self.assertEqual(M1.sync_mirrors(ROOT, write=False), [])      # 第一批的镜像同步仍是恒等
+        self.assertEqual(M.mirror_updates(*self.docs), tuple(self.docs))
+        deviations = json.loads((ROOT / M1.DEVIATIONS_REL).read_text(encoding="utf-8"))
+        self.assertEqual(M1.mirror_updates(*self.docs, deviations), (*self.docs, deviations))   # 第一批仍是恒等
         design, panel = self.docs
         self.assertEqual(K._design_problems(design), [])
         self.assertEqual([line["text"] for line in panel["leader"]["lines"]], K.PANEL_LEADER.split("\n"))
         two = next(entry for entry in panel["abilities"] if entry["index"] == 2)
+        # 第三轮（C 节）省略了本行的「雷属性共鸣时：」，其余与第二批逐字相同
         self.assertEqual([line["text"] for line in two["lines"]],
-                         [M.NEW_ABILITY2_TEXT.replace(M.MAIN_ICON, "")])
+                         [M.NEW_ABILITY2_TEXT.replace(M.MAIN_ICON, "").replace("雷属性共鸣时：", "", 1)])
         block = design["plan"]["rework1"][M.MIRROR_KEY]
         self.assertEqual(block["crescent_ability_limit"], 10)
         self.assertEqual(block["skill_detoughness"]["total"], [36, 30])
