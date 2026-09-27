@@ -219,6 +219,44 @@ class ZehrKitTest(unittest.TestCase):
         with self.assertRaises(K.KitError):
             K.build_rows(self.ctx, plan)
 
+    def test_frozen_donor_replays_without_reading_live(self):
+        """稻穗 inaho2 发布后 live 1399951 第 2 行换成 724 行：A5#1 的 donor 钉成冻结行，回放不随 live 变。"""
+        plan_ability = self.plan["tables"]["ability"]["keys"]
+        frozen = [(key, j) for key, records in plan_ability.items() for j, entry in enumerate(records)
+                  if K.parse_donor(entry["donor"]) in K.FROZEN_DONORS]
+        self.assertEqual([(f"{K.CID}5", 1)], frozen)
+        donor = plan_ability[f"{K.CID}5"][1]["donor"]
+        spec = K.FROZEN_DONORS[K.parse_donor(donor)]
+        row = K.frozen_donor_row(spec, donor)
+        # 发布前（live 仍是 6 行）冻结行必须就是 live 那一行。
+        live = self.ctx.csv_split(self.ctx.live_flat(K.ABILITY)["1399951"])
+        if len(live) == 6:
+            self.assertEqual(live[2], row)
+        rows, evidence = K.build_rows(self.ctx, self.plan)
+        self.assertEqual([(f"{K.CID}5", 1)], [(e["key"], e["record"]) for e in evidence if "donor_frozen" in e])
+
+        ctx = self.ctx
+
+        class NoInahoLive:                                   # live 里干脆没有稻穗能力1/3：冻结 donor 不受影响
+            def __getattr__(self, name):
+                return getattr(ctx, name)
+
+            def live_flat(self, logical):
+                flat = dict(ctx.live_flat(logical))
+                if logical == K.ABILITY:
+                    flat.pop("1399951", None)
+                    flat.pop("1399953", None)
+                return flat
+        self.assertEqual(rows, K.build_rows(NoInahoLive(), self.plan)[0])
+
+    def test_frozen_donor_pin_rejects_a_tampered_row(self):
+        for spec in K.FROZEN_DONORS.values():
+            self.assertEqual(spec["width"], len(K.frozen_donor_row(spec, "pin")))
+            bad = copy.deepcopy(spec)
+            bad["cells"][52] = "9999"
+            with self.assertRaises(K.KitError):
+                K.frozen_donor_row(bad, "tampered")
+
     def test_legality_negative_control(self):
         import wf_client_legality as L
         import wf_describe

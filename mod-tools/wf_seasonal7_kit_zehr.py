@@ -35,7 +35,8 @@
 落地内容（以改版计划 + 设计 JSON 为准，逐项断言；主控拍板的覆盖见 ``OVERRIDES``）：
 - character 行 c9–c16 语音路由（ConditionExist + Unique 159997）、c18 队长名；character_text 12 列
   （c5/c7 换成改版后的短技能说明）；三层镜像；
-- 队长 6 行、词条 6 键 20 条：donor（官方基线 / live）+ 声明编辑重建，与计划 ``row`` 逐格核对；
+- 队长 6 行、词条 6 键 20 条：donor（官方基线 / live；live 行号会被别的单元改掉的钉成冻结行，
+  见 :data:`FROZEN_DONORS`）+ 声明编辑重建，与计划 ``row`` 逐格核对；
   「无上限」一律写字面量 ``(None)``（空串会被 Std.parseInt 吃成 0 次）；
 - unique_condition 159997「灯火正旺」+ 1599971「灯芯」（99 层永续）+ 两张 48×48 官方风固有图标
   （kit 绘制，WF 小写魔数）；
@@ -965,13 +966,60 @@ def apply_text_override(text: str, label: str) -> str:
 
 # ---------------------------------------------------------------- 行构建
 
-def donor_row(ctx, donor: str, index: int) -> tuple[list[str], str]:
-    """design donor 写法 ``"<table> OFF:<key>#<i>"`` / ``"<table> LIVE:<key>#<i>"``。"""
+# 2026-09-27 冻结 donor（稻穗 139995 第二批追加 wf_balance_20260927b_inaho2）：plan.json
+# /tables/ability/keys/1599975[1]（A5#1「PF Lv3 → 全队(光)技能槽 5%」）的 donor 是稻穗能力1 在 live 的第 2 行。
+# 该单元发布后 1399951 从 6 行删到 4 行，第 2 行换成 724 行 ⇒ 按行号取，old_values 对不上（KitError）；
+# 原行搬去的 1399953 第 7 行加了雷共鸣，c0/c6/c9–c11/c13 都变了，也不能改指。plan.json 是第一轮证据
+# （不改写，其 sha 进 kit_fingerprint），所以在 kit 里把这个 donor 钉成发布前的 live 行：回放不读 live，
+# 按下表还原整行并核对 sha256（= csv 单行文本），发布前后回放结果逐字相同。
+# 键 = donor 字符串拆出的 (表, 来源, 键, 行号)；值只列非空格。
+FROZEN_DONORS: dict[tuple[str, str, str, int], dict[str, Any]] = {
+    ("ability", "LIVE", "1399951", 2): {
+        "frozen_from": "live 1.4.1051，稻穗 inaho2 发布前",
+        "width": 126,
+        "cells": {0: "fox_oracle_autumn_1", 1: "true", 2: "attack_yellow", 3: "0", 5: "0", 6: "12",
+                  13: "0", 20: "0", 27: "65", 30: "100000", 31: "100000", 34: "(None)", 35: "0",
+                  39: "(None)", 46: "0", 47: "211", 48: "5", 49: "Yellow", 51: "2500", 52: "5000"},
+        "sha256": "9b03a6b2f90c96d49384c5965f02ef00e7fdfb1d4362428a522480635c7f9fbf",
+    },
+}
+
+
+def parse_donor(donor: str) -> tuple[str, str, str, int]:
+    """``"<table> <来源>:<key>#<i>"`` → (table, 来源, key, i)。"""
     table, rest = donor.split(" ", 1)
     source, key_idx = rest.split(":", 1)
     key, idx = key_idx.split("#", 1)
-    if int(idx) != index:
+    return table, source, key, int(idx)
+
+
+def frozen_donor_row(spec: dict[str, Any], donor: str) -> list[str]:
+    """由 :data:`FROZEN_DONORS` 的一项还原整行；sha256 不符即 KitError（冻结行被改动）。"""
+    import wf_mod_tool as core
+    row = [""] * spec["width"]
+    for col, value in spec["cells"].items():
+        row[col] = value
+    got = sha256(core.write_csv_lines([row]).rstrip("\n").encode("utf-8"))
+    if got != spec["sha256"]:
+        raise KitError(f"frozen donor {donor} sha256 {got} != pin {spec['sha256']}")
+    return row
+
+
+def donor_evidence(donor: str) -> dict[str, str]:
+    """证据里标明冻结 donor（donor 字符串仍写 plan 原文）。"""
+    spec = FROZEN_DONORS.get(parse_donor(donor))
+    return {"donor_frozen": f"{spec['frozen_from']}，sha256 {spec['sha256']}"} if spec else {}
+
+
+def donor_row(ctx, donor: str, index: int) -> tuple[list[str], str]:
+    """design donor 写法 ``"<table> OFF:<key>#<i>"`` / ``"<table> LIVE:<key>#<i>"``；
+    :data:`FROZEN_DONORS` 里登记的 donor 不读表，用冻结行。"""
+    table, source, key, idx = parse_donor(donor)
+    if idx != index:
         raise KitError(f"donor index mismatch {donor} vs row_index {index}")
+    frozen = FROZEN_DONORS.get((table, source, key, idx))
+    if frozen is not None:
+        return frozen_donor_row(frozen, donor), table
     logical = f"master/ability/{table}.orderedmap"
     if source == "OFF":
         rows = ctx.official_flat(logical)
@@ -1060,7 +1108,8 @@ def build_rows(ctx, plan: dict) -> tuple[dict, list[dict]]:
         if row[0] != CODE:
             raise KitError(f"leader#{i} c0 {row[0]}")
         leader_rows.append(row)
-        evidence.append({"table": "leader_ability", "key": CID, "record": i, "donor": entry["donor"], "row": row})
+        evidence.append({"table": "leader_ability", "key": CID, "record": i, "donor": entry["donor"], "row": row,
+                         **donor_evidence(entry["donor"])})
     ability_block = plan["tables"]["ability"]
     if ability_block["logical_path"] != ABILITY:
         raise KitError(f"plan ability logical_path {ability_block['logical_path']}")
@@ -1079,7 +1128,8 @@ def build_rows(ctx, plan: dict) -> tuple[dict, list[dict]]:
             row = apply_rev3_cooldown(key, j, row, f"ability {key}#{j}")    # 第三轮 T3-b：CT 10 秒 → 5 秒
             row = apply_rev4_values(key, j, row, f"ability {key}#{j}")      # 第四轮 T4-a/b：50%→30% / 5%→3%
             lines.append(row)
-            evidence.append({"table": "ability", "key": key, "record": j, "donor": entry["donor"], "row": row})
+            evidence.append({"table": "ability", "key": key, "record": j, "donor": entry["donor"], "row": row,
+                             **donor_evidence(entry["donor"])})
         ability_rows[key] = lines
     total = sum(len(v) for v in ability_rows.values())
     if total != ability_block["record_count"] or len(leader_rows) != leader_block["record_count"]:
