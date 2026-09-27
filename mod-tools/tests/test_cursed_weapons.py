@@ -202,6 +202,10 @@ class CursedWeaponTests(unittest.TestCase):
         for w in self.ws:
             credit = f"提案：{w.author}"
             self.assertTrue(self.out["flat"][W.EQUIPMENT][w.id][0][7].endswith(credit), w.name)
+            # 客户端补丁 R2（同队 ≥2 件诅咒装备全部失效）只能写在本体说明里：风味 + 规则 + 提案人，≤57 字
+            self.assertEqual(self.out["flat"][W.EQUIPMENT][w.id][0][7], f"{w.flavor}{W.CURSE_RULE}{credit}", w.name)
+            self.assertIn("同队两件以上（含魂珠）全部失效", W.CURSE_RULE)     # R2 连魂珠槽一起数，不能只写「两把」
+            self.assertLessEqual(len(self.out["flat"][W.EQUIPMENT][w.id][0][7]), W.DESC_LIMITS["equipment"], w.name)
             self.assertTrue(self.out["flat"][W.ENH][w.id][0][6].endswith(credit), w.name)
             key = W.shop_key(w)
             self.assertTrue(self.out["flat"][W.BOSS_COIN_SHOP][key][0][10].endswith(credit), w.name)

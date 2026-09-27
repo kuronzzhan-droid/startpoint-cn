@@ -1536,8 +1536,14 @@ DESC_LIMITS = {"equipment": 57, "enhancement": 54, "shop": 60}
 SHOP_DESCRIPTION = "诅咒武器：未强化只有微弱的正面效果，强化1级起诅咒全额生效，120级为最终数值。"
 
 
+#: 客户端补丁 equipment-rules R2：本方（主位武器槽 + 魂珠槽）诅咒段装备 ≥2 件时全部整件失效（本体 + 强化）。
+#: 装备详情页仍显示满档，玩家只能从说明里看到这条规则；PARADOX 不计入（作者确认）。
+#: 魂珠槽同样计数（一把诅咒武器 + 另一把的魂珠也会两件都失效），所以写「两件（含魂珠）」不写「两把」，与 PARADOX 衰减说明口径一致。
+CURSE_RULE = "【诅咒武器·同队两件以上（含魂珠）全部失效】"
+
+
 def _description(w: Weapon) -> str:
-    return f"{w.flavor}【诅咒武器】提案：{w.author}"
+    return f"{w.flavor}{CURSE_RULE}提案：{w.author}"
 
 
 def _shop_description(w: Weapon) -> str:
