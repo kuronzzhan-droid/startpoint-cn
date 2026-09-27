@@ -1353,7 +1353,9 @@ def build(read: LiveReader) -> dict[str, Any]:
         # 五重分类 99 上架本体
         key = str(BOSS_SHOP_BASE + 2 + ws.index(w) + 1)
         row = list(body_tpl)
-        row[6], row[9] = w.name, str(ws.index(w) + 3)
+        # c9 list_order：客户端默认按 list_order 倒序、同序再按商品 ID 升序（BossCoinExchangeSorter
+        # orderDirection 0）。写 0（官方已有 13 行先例）让原有 990099002/001 留在顶部，诅咒武器按编号排其后。
+        row[6], row[9] = w.name, "0"
         row[10] = SHOP_DESCRIPTION
         row[12] = w.icon
         row[17:25] = _cost_cells(BODY_COSTS)

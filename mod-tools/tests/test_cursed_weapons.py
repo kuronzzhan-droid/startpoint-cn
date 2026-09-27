@@ -159,6 +159,8 @@ class CursedWeaponTests(unittest.TestCase):
         self.assertEqual(sorted(body), [str(990099003 + i) for i in range(23)])
         for r in (v[0] for v in body.values()):
             self.assertEqual(r[0], "99")
+            # 客户端 list_order 倒序：0 = 排在原有凭证(2)/死亡使者(1)之后，同序按商品 ID 升序
+            self.assertEqual(r[9], "0")
             self.assertEqual((r[32], r[34]), ("4", "1"))
             self.assertEqual({r[17], r[19]}, {W.BLUEPRINT, W.CRYSTAL})
 
