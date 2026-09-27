@@ -39,6 +39,7 @@ ITEM = "master/item/item.orderedmap"
 # stance_detail_character_roll：1=attacker 2=healer 3=tank 4=supporter 5=jammer（Balance 无单一 roll）
 STANCE_ROLLS = {"Attacker": "1", "Healer": "2", "Tank": "3", "Supporter": "4", "Jammer": "5"}
 STANCE_ROLL_COLS = (2, 6)                  # character_stance_detail：主位 / 合击位 roll 列
+STANCE_ROLL_MAX = 2                        # live 581 行 roll 列最多 2 个值（1 个 374 行，2 个 207 行）
 ACTION = core.ACTION_SKILL_LOGICAL
 SERVER_TIME_CUTOFF = datetime(2025, 8, 5, 0, 0, 0)
 SAFE_OPEN_START = "2015-03-01 12:00:00"      # live 已有 4 个母本行的修正值
@@ -260,6 +261,8 @@ def stance_detail_rows(rows: list[list[str]], template_stance: str, new_stance: 
 
     新 stance 的 roll 放首位，母本 stance 的 roll 去掉，其余副 roll 保留顺序；空格保持空。
     官方 489 行全是单行 8 列。新 stance 为 Balance（无单一 roll）时保留母本并记 note。
+    每格最多 STANCE_ROLL_MAX 个 roll：live 581 行里没有超过 2 个的先例；母本是 Balance
+    （没有可去掉的主 roll）时会多出一个，按顺序截掉末尾的副 roll。
     """
     if template_stance == new_stance:
         return rows
@@ -278,7 +281,7 @@ def stance_detail_rows(rows: list[list[str]], template_stance: str, new_stance: 
             if not before:
                 continue
             rest = [r for r in before.split(",") if r not in (new_roll, old_roll)]
-            row[col] = ",".join([new_roll, *rest])
+            row[col] = ",".join([new_roll, *rest][:STANCE_ROLL_MAX])
             if row[col] != before:
                 notes.append({"table": STANCE_DETAIL, "col": col, "before": before, "after": row[col],
                               "reason": f"stance {template_stance} -> {new_stance}"})

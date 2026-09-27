@@ -476,6 +476,13 @@ class TableWriteTests(unittest.TestCase):
         self.assertEqual(T.stance_detail_rows([["", "1", "", "2", "", "1", "", "2"]], "Attacker", "Healer", []),
                          [["", "1", "", "2", "", "1", "", "2"]])
 
+    def test_stance_detail_rolls_capped_at_live_maximum(self):
+        # 母本 Balance 没有可去掉的主 roll：131001 fox_oracle 的 "5,1" 不能变成无先例的 "4,5,1"
+        rows = [["", "1,2,3,4", "5,1", "1", "", "1,2,3,4", "5,4", "1"]]
+        out = T.stance_detail_rows(rows, "Balance", "Supporter", [])
+        self.assertEqual(out, [["", "1,2,3,4", "4,5", "1", "", "1,2,3,4", "4,5", "1"]])
+        self.assertTrue(all(len(c.split(",")) <= T.STANCE_ROLL_MAX for c in (out[0][2], out[0][6])))
+
     def test_element_material_map_by_kind_and_tier(self):
         def item(iid, el, kind, tier):
             cells = [f"ability_material_{iid}", str(iid), "n", "", "", "", "0", "", "", "", "", "", el, "",
