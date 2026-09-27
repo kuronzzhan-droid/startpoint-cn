@@ -9,8 +9,9 @@
 - 自身直接攻击判定额外 +5（629 → ACAdditionalDirectAttack 共 6 段；引擎把一次直击的伤害均分到各段，
   段数本身不加总伤，加的是连击与命中次数）；
 - 每次弹射连击 +35；自身技能充能速度 +20%；技能槽上限 +50%；
-- 自身为基诺维 / 杰拉德 / 凯尔 / 赛瑞斯时攻击力再 +150%。角色组只认属性/类型/性别/种族/角色标签，
-  所以新增 4 个角色标签（character_tag）并写进这四人 character 表 c5（逗号列表，保留原有标签）。
+- 自身为基诺维 / 杰拉德 / 凯尔时攻击力再 +150%。角色组只认属性/类型/性别/种族/角色标签，
+  所以新增 3 个角色标签（character_tag）并写进这三人 character 表 c5（逗号列表，保留原有标签）。
+  赛瑞斯按作者 0928 要求移出（之后重做）；生成器会把不在名单里的 tag_paradox_* 从角色行与标签表清掉。
 
 未含：「每多装备一件武器/魂珠效果衰减 25%」需要客户端补丁（client-patch/equipment-rules，另行实现）；
 四人放技能时的 25% 技能复刻另行设计。
@@ -40,13 +41,13 @@ FLAVOR = "莫比乌斯环扭成的双色长剑。握着它的人越是孤身一�
 EQUIPMENT_STATUS_ROWS = {"1": "330,148", "5": "495,221"}
 TAG_COLUMN = 5                                   # character 表 c5 = 角色标签列表（逗号分隔）
 PRE_MY_SELF = "3"                                # 前置 MySelf：自身属于角色组
+TAG_PREFIX = "tag_paradox_"
 
 #: (角色 ID, 标签, 标签显示名)。标签显示名进词条说明「自身为…时」。
 TAGS = (
     ("169999", "tag_paradox_ginovi", "基诺维"),
     ("149999", "tag_paradox_gerald", "杰拉德"),
     ("139990", "tag_paradox_kyle", "凯尔"),
-    ("129999", "tag_paradox_seris", "赛瑞斯"),
 )
 
 
@@ -73,7 +74,7 @@ def abilities() -> list[Eff]:
             note="每次弹射连击 +35"),
         Eff("0", W.stat("35", self_, 20), note="自身技能充能速度 +20%"),
         Eff("0", W.stat("245", self_, 50), note="自身技能槽上限 +50%"),
-        Eff("0", W.stat("32", self_, 150), pre=(chosen,), note="自身为基诺维/杰拉德/凯尔/赛瑞斯时攻击力再 +150%"),
+        Eff("0", W.stat("32", self_, 150), pre=(chosen,), note="自身为基诺维/杰拉德/凯尔时攻击力再 +150%"),
     ]
 
 
@@ -87,16 +88,16 @@ def description() -> str:
     return FLAVOR
 
 
-def with_tag(row: list[str], tag: str) -> list[str]:
+def retag(row: list[str], tag: str | None) -> list[str]:
+    """c5 去掉所有 tag_paradox_*，再按名单补上本角色的标签（保留其它标签与顺序）。"""
     out = list(row)
-    tags = [t for t in out[TAG_COLUMN].split(",") if t]
-    if tag not in tags:
-        tags.append(tag)
-    out[TAG_COLUMN] = ",".join(tags)
+    tags = [t for t in out[TAG_COLUMN].split(",") if t and not t.startswith(TAG_PREFIX)]
+    out[TAG_COLUMN] = ",".join(tags + ([tag] if tag else []))
     return out
 
 
-def build(read: W.LiveReader) -> dict[str, Any]:
+def build(read: W.LiveReader, *, allow_existing: bool = False) -> dict[str, Any]:
+    """allow_existing=True 供补丁边同步暂存：自有键（5920001 / paradox_hits / tag_paradox_*）已在 live 时不算撞键。"""
     flat: dict[str, dict[str, list[list[str]]]] = {t: {} for t in FLAT_TABLES}
     problems: list[str] = []
     text = description()
@@ -122,10 +123,15 @@ def build(read: W.LiveReader) -> dict[str, Any]:
 
     live_tags = read.flat(CHARACTER_TAG)
     live_chars = read.flat(CHARACTER)
+    designated = {cid: tag for cid, tag, _ in TAGS}
     for cid, tag, label in TAGS:
         flat[CHARACTER_TAG][tag] = [[label]]
         W._require(cid in live_chars, f"character 表缺 {cid}")
-        flat[CHARACTER][cid] = [with_tag(live_chars[cid][0], tag)]
+    for cid, rows in live_chars.items():
+        row = rows[0]
+        if cid in designated or any(t.startswith(TAG_PREFIX) for t in row[TAG_COLUMN].split(",")):
+            flat[CHARACTER][cid] = [retag(row, designated.get(cid))]
+    delete = {CHARACTER_TAG: sorted(k for k in live_tags if k.startswith(TAG_PREFIX) and k not in flat[CHARACTER_TAG])}
 
     dsl = {HITS: hits_dsl()}
     for program, tree in dsl.items():
@@ -134,18 +140,19 @@ def build(read: W.LiveReader) -> dict[str, Any]:
                       L.action_dsl_hit_area_target_problems):
             problems += [f"DSL {program}: {p}" for p in check(tree)]
 
-    for logical, key_sets in ((ITEM, [ID]), (EQUIPMENT, [ID]), (SOUL, [ID]), (CAS, ["paradox_hits"]),
-                              (CHARACTER_TAG, [t for _, t, _ in TAGS])):
-        clash = sorted(set(key_sets) & set(read.flat(logical)))
-        W._require(not clash, f"{logical} 键已存在：{clash}")
-    W._require(ID not in read.nested(EQUIPMENT_STATUS), f"{EQUIPMENT_STATUS} 键已存在：{ID}")
-    W._require(not (set(t for _, t, _ in TAGS) & set(live_tags)), "character_tag 键已存在")
+    if not allow_existing:
+        for logical, key_sets in ((ITEM, [ID]), (EQUIPMENT, [ID]), (SOUL, [ID]), (CAS, ["paradox_hits"]),
+                                  (CHARACTER_TAG, [t for _, t, _ in TAGS])):
+            clash = sorted(set(key_sets) & set(read.flat(logical)))
+            W._require(not clash, f"{logical} 键已存在：{clash}")
+        W._require(ID not in read.nested(EQUIPMENT_STATUS), f"{EQUIPMENT_STATUS} 键已存在：{ID}")
 
     return {
         "flat": flat,
         "nested": {EQUIPMENT_STATUS: {ID: dict(EQUIPMENT_STATUS_ROWS)}},
         "dsl": dsl,
         "server": _server_delta(),
+        "delete": delete,
         "problems": problems,
         "abilities": effs,
     }

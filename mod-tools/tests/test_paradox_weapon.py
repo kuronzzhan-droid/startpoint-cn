@@ -59,7 +59,7 @@ class ParadoxTests(unittest.TestCase):
         self.assertEqual(_cell(row, "instant_trigger", "threshold.power1"), W.times(1))
         self.assertEqual(_cell(row, "instant_content", "strength.power1"), W.times(35))
 
-    def test_chosen_four_gate(self):
+    def test_chosen_three_gate(self):
         row = next(r for r in self.rows if _cell(r, "precondition1", "kind") == P.PRE_MY_SELF)
         self.assertEqual(_cell(row, "precondition1", "character_groups").split(","), [t for _, t, _ in P.TAGS])
         self.assertEqual(set(self.out["flat"][P.CHARACTER_TAG]), {t for _, t, _ in P.TAGS})
@@ -72,7 +72,27 @@ class ParadoxTests(unittest.TestCase):
             self.assertEqual((len(before), diff), (len(after), [P.TAG_COLUMN]), cid)
             old = [t for t in before[P.TAG_COLUMN].split(",") if t]
             self.assertEqual(after[P.TAG_COLUMN].split(","), old + [tag], cid)
-        self.assertIn("ModDualForm", self.out["flat"][P.CHARACTER]["129999"][0][P.TAG_COLUMN].split(","))
+        self.assertEqual(len(P.TAGS), 3)
+        self.assertNotIn("129999", self.out["flat"][P.CHARACTER])        # 赛瑞斯按作者 0928 要求移出
+        self.assertEqual(self.out["delete"], {P.CHARACTER_TAG: []})
+
+    def test_stale_tags_are_cleaned_after_1060(self):
+        # 1.4.1060 曾给赛瑞斯发过 tag_paradox_seris：同步时要把它从角色行和标签表清掉，其余三人不动
+        data = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        chars = data["flat"][P.CHARACTER]
+        for cid, tag, label in P.TAGS:
+            chars[cid][0][P.TAG_COLUMN] = P.retag(chars[cid][0], tag)[P.TAG_COLUMN]
+            data["flat"][P.CHARACTER_TAG][tag] = [[label]]
+        chars["129999"][0][P.TAG_COLUMN] = "ModDualForm,tag_paradox_seris"
+        data["flat"][P.CHARACTER_TAG]["tag_paradox_seris"] = [["赛瑞斯"]]
+        read = W.LiveReader(lambda lg: data["flat"].get(lg, {}), lambda lg: data["nested"].get(lg, {}), lambda n: {})
+        out = P.build(read, allow_existing=True)
+        self.assertEqual(out["flat"][P.CHARACTER]["129999"][0][P.TAG_COLUMN], "ModDualForm")
+        self.assertEqual(out["delete"], {P.CHARACTER_TAG: ["tag_paradox_seris"]})
+        for cid, tag, _ in P.TAGS:
+            self.assertEqual(out["flat"][P.CHARACTER][cid], chars[cid])
+        with self.assertRaises(W.CursedWeaponError):
+            P.build(read)                                                    # 首发口径：已存在即撞键
 
     def test_hits_dsl(self):
         tree = self.out["dsl"][P.HITS]
