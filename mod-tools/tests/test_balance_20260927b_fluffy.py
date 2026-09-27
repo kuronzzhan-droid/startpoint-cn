@@ -37,6 +37,28 @@ def load_fixture() -> dict:
     return {kind: value for kind, value in data.items() if not kind.startswith("_")}
 
 
+C_FIXTURE = Path(__file__).parent / "fixtures/balance_20260927c_fluffy.json"
+#: 第三轮（``wf_balance_20260927c_fluffy``，成长复核）已把生成器的队长成长推进到 c 值：生成器一致性按
+#: 「第二批输出 + 第三轮覆盖」核对（b → c 两种状态都接受；逐格断言与设计镜像同步由 c 测试接管）。
+GENERATOR_AT_C = K.LEADER[4][2][49] != M.LEADER_CHANGES[4][1]
+
+
+def batch3_output(out: dict) -> dict:
+    """第二批输出里被第三轮改写的键换成第三轮输出（c fixture == 第二批输出，见 c 测试），其余原样。"""
+    import wf_balance_20260927c_fluffy as C
+    data = {k: v for k, v in json.loads(C_FIXTURE.read_text(encoding="utf-8")).items() if not k.startswith("_")}
+    c_out = C.revise(lambda kind, key: data[kind][key])
+    merged = deepcopy(out)
+    for kind, table in c_out.items():
+        if kind != "notes" and isinstance(table, dict):
+            merged.setdefault(kind, {}).update(deepcopy(table))
+    return merged
+
+
+def generator_target(out: dict) -> dict:
+    return batch3_output(out) if GENERATOR_AT_C else out
+
+
 def reader(data: dict):
     def read(kind, key):
         return data[kind][key]
@@ -323,16 +345,17 @@ class GeneratorSyncTests(unittest.TestCase):
         self.assertEqual(K.LEADER_ROW_COUNT, 13)
 
     def test_panel_constant_equals_revise_output(self):
-        self.assertEqual([[K.CAS_TEXTS[K.LEADER_OVERRIDE]]], self.out["cas"][M.CAS_LEADER])
+        target = generator_target(self.out)                    # 第三轮后 = 第二批输出 + 第三轮覆盖
+        self.assertEqual([[K.CAS_TEXTS[K.LEADER_OVERRIDE]]], target["cas"][M.CAS_LEADER])
 
     def test_leader_plan_describes_the_revised_rows(self):
-        for index, row in enumerate(self.out["leader"][M.LEADER_KEY]):
+        for index, row in enumerate(generator_target(self.out)["leader"][M.LEADER_KEY]):
             self.assertEqual(D.describe_line(row, "leader_ability"), K.LEADER[index][3], index)
 
     @unittest.skipUnless(_baseline_available(), "需要 .cdn/cn 官方基线与 live store")
     def test_generator_leader_rows_equal_revise_output(self):
         rows, _evidence = K.build_leader_rows(_kit_ctx())
-        self.assertEqual(rows, self.out["leader"][M.LEADER_KEY])
+        self.assertEqual(rows, generator_target(self.out)["leader"][M.LEADER_KEY])
 
     @unittest.skipUnless(_baseline_available(), "需要 .cdn/cn 官方基线与 live store")
     def test_generator_trees_equal_revise_output(self):
@@ -356,6 +379,7 @@ class MirrorTests(unittest.TestCase):
             self.skipTest("midautumn design mirrors missing (work/ is gitignored)")
         self.docs = [json.loads(path.read_text(encoding="utf-8")) for path in self.PATHS]
 
+    @unittest.skipIf(GENERATOR_AT_C, "生成器已前进到第三轮：设计镜像同步由 test_balance_20260927c_fluffy.MirrorTests 接管")
     def test_mirrors_are_already_synced(self):
         self.assertEqual(M.sync_mirrors(ROOT, write=False), [])
         design, panel = self.docs

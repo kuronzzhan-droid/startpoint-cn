@@ -16,8 +16,9 @@ class FluffyBalanceTests(unittest.TestCase):
         self.assertEqual(len(growth), 3)
         for row in growth:
             self.assertEqual([row[i] for i in (4, 7, 8, 9)], ['2', '600000', '600000', 'Green'])
-            # 09-24 输出各 5%；2026-09-27 平衡第二批覆盖：694（技能伤害额外乘区）5% → 1%，35/245 充能类不动
-            value = {'35': '5000', '245': '5000', '694': '1000'}[row[45]]
+            # 09-24 输出各 5%；2026-09-27 平衡第二批覆盖：694（技能伤害额外乘区）5% → 1%，35/245 充能类不动；
+            # 第三轮（成长复核）694 回调到 4%
+            value = {'35': '5000', '245': '5000', '694': '4000'}[row[45]]
             self.assertEqual([row[i] for i in (29, 32, 33, 46, 47, 49, 50)],
                              ['300000', '(None)', '0', '5', 'Green', value, value])
 
