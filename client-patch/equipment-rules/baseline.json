@@ -1,0 +1,42 @@
+{
+  "BattleCharacterLogic/getAvailableAbilities": {
+    "index": 92380,
+    "sha": "594553d75864566d448c27dd395a573c329ab484dbf22211448914093c5e6e6f",
+    "header": [
+      7,
+      21,
+      6,
+      7
+    ]
+  },
+  "BattleCharacterLogic/resolvePathCollection": {
+    "index": 92289,
+    "sha": "8ff812d46b41c5d672305778523390f470cf8c3224da6837d977a668eed67399",
+    "header": [
+      7,
+      8,
+      7,
+      9
+    ]
+  },
+  "EquipmentEnhancementAbilityValues$/parseAt109": {
+    "index": 40764,
+    "sha": "e3319c4e2be87e5621bbfe599e1daa512691f04881994582581217b03ad33edb",
+    "header": [
+      10,
+      3,
+      1,
+      1
+    ]
+  },
+  "AbilitySoulValues$/parseAt106": {
+    "index": 39042,
+    "sha": "5c8b9e9ea52424f98056d4ab098cd2a87f2fe19628eb2051631ddeac848cf18f",
+    "header": [
+      10,
+      3,
+      1,
+      1
+    ]
+  }
+}
