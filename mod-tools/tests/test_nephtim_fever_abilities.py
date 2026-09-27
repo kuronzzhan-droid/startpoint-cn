@@ -178,7 +178,8 @@ class NephtimFeverAbilitiesTest(unittest.TestCase):
                                         growth["direct_damage_percent"], growth["period_frames"]))
         self.assertEqual(10, growth["trigger_limit"])
         self.assertTrue(growth["persists_after_fever"])
-        self.assertEqual(("leader", 1, None), (growth["uncapped_share"]["location"],
+        # 队长无上限部分：第二批 1%/次，第三轮（2026-09-27c）回调到 7%/次。
+        self.assertEqual(("leader", 7, None), (growth["uncapped_share"]["location"],
                                                growth["uncapped_share"]["percent_each"],
                                                growth["uncapped_share"]["trigger_limit"]))
         # 队长同形无上限行与能力3两行除限次/强度外逐格相同（队长按列 −2 转换）。

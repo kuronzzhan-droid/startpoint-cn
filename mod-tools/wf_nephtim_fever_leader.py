@@ -10,7 +10,9 @@ PF_ID = CODE + "_fever"
 PF_STRING_ID = PF_ID + "_powerflip"
 # 每 35 连击暗队 Fever 获得量（I50）的永久成长：原 20_000（+20%）；作者 2026-09-27 第二批
 # 无上限成长原位放缓，3 分钟实际触发 ≥30 次 → 1/10：+2%。
-FEVER_GAIN_GROWTH_STRENGTH = 2_000
+# 作者 2026-09-27 第三轮（c，成长复核：「1/10 砍太多了」→「砍到4/5」「数值尽量取5的倍数」）：暗队 Fever
+# 获得量只能靠这条成长 → 4/5 档，20×4/5=16 就近取 15%（wf_balance_20260927c_nephtim）。
+FEVER_GAIN_GROWTH_STRENGTH = 15_000
 
 
 def leader_rows(source, *, piercing_extension="dark_resonance",
@@ -37,6 +39,7 @@ def leader_rows(source, *, piercing_extension="dark_resonance",
     rows = [pf, enhance, direct, attack, growth, duration, removal_charge]
     # 作者 2026-09-27 第二批：能力3「贯穿每累计2秒 → 暗队攻击力/直击伤害」的无上限部分搬进队长，
     # 追加在 9/25 的 ball_hit_count 行之后（第9、10行），强度 1%/次、不限次；能力3 保留有上限的弱化版。
+    # 同日第三轮（c）：强度回调到 7%/次（LEADER_PIERCING_GROWTH_STRENGTH）。
     moved = piercing_growth_rows(source, LEADER_PIERCING_GROWTH_STRENGTH, LEADER_PIERCING_GROWTH_STRENGTH)
     convert = lambda row: [CODE, "0", ""] + deepcopy(row[5:])
     return [convert(row) for row in rows] + [ball_hit_count.leader_row(source)] + [convert(row) for row in moved]
@@ -60,7 +63,8 @@ def metadata():
                               "target": "dark party", "requires_fever": False,
                               "trigger_limit": None, "persists_after_combo_reset": True,
                               "counter": "native T12 current-combo multiples; remainder resets on combo reset",
-                              "slowed": "2026-09-27 batch 2: 20% -> 2% (>=30 triggers per 3 minutes)"},
+                              "slowed": "2026-09-27 batch 2: 20% -> 2% (>=30 triggers per 3 minutes)",
+                              "revised": "2026-09-27 batch c: 2% -> 15% (4/5 of the original 20%, rounded to 5)"},
         "piercing_growth": {"trigger": 235, "period_frames": PIERCING_PERIOD_FRAMES,
                             "attack_percent": _percent(LEADER_PIERCING_GROWTH_STRENGTH),
                             "direct_damage_percent": _percent(LEADER_PIERCING_GROWTH_STRENGTH),

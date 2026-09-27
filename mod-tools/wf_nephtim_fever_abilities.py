@@ -17,11 +17,13 @@ COMBO_STRENGTH = 2_500          # 每 1 连击的独立乘区直击与攻击力�
 # 贯穿每累计 2 秒（T235，暗共鸣 + Fever）的攻击力/直击伤害成长：2026-09-17 减半 20% → 10%；
 # 作者 2026-09-27 第二批（无上限成长搬队长）：能力3 两行原位改成有上限的弱化版（各限 10 次），
 # 无上限部分搬进队长并按 3 分钟实际触发次数（≥30 次）放缓 1/10：10% → 1%。
+# 作者 2026-09-27 第三轮（c，成长复核：「1/10 砍太多了」→「可以砍到2/3」「数值尽量取5的倍数」）：
+# 队长两行回调到 2/3 档，10×2/3=6.67 向上取 7%（wf_balance_20260927c_nephtim）；能力3 封顶版不动。
 PIERCING_PERIOD_FRAMES = 120
 PIERCING_CAPPED_ATTACK_STRENGTH = 5_000    # 能力3：暗队攻击力 +5%/次（最多 10 次 = +50%）
 PIERCING_CAPPED_DIRECT_STRENGTH = 10_000   # 能力3：暗队直击伤害 +10%/次（最多 10 次 = +100%）
 PIERCING_CAPPED_LIMIT = 10                 # 能力3 两行 c34 trigger_limit（原 (None)）
-LEADER_PIERCING_GROWTH_STRENGTH = 1_000    # 队长：暗队攻击力/直击伤害 各 +1%/次（无上限）
+LEADER_PIERCING_GROWTH_STRENGTH = 7_000    # 队长：暗队攻击力/直击伤害 各 +7%/次（无上限；第二批 1%）
 # 作者 2026-09-27：持有「星夜茶会」时的召唤间隔 1.5 秒 → 2 秒（T232 threshold2，单位帧）。
 SUMMON_PERIOD_FRAMES = 120
 # 作者 2026-09-27：队长的 I190 贯穿延时并入能力2，合计 +40%（原队长 20% + 能力2 20%，按行相加）。
@@ -260,7 +262,8 @@ def metadata():
             "direct_damage_percent": _percent(PIERCING_CAPPED_DIRECT_STRENGTH),
             "trigger_limit": PIERCING_CAPPED_LIMIT, "persists_after_fever": True,
             "uncapped_share": {"location": "leader", "percent_each": _percent(LEADER_PIERCING_GROWTH_STRENGTH),
-                               "trigger_limit": None, "since": "2026-09-27 batch 2"},
+                               "trigger_limit": None, "since": "2026-09-27 batch 2",
+                               "revised": "2026-09-27 batch c: 1% -> 7% (2/3 of the original 10%)"},
             "timer": "T235 piercing frames admitted only during dark resonance and Fever; fractional period retained",
         },
         "periodic_piercing": {

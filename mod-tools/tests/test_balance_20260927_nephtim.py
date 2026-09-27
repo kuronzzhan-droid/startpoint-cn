@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from test_bianca_dragon_abilities import official_sources
 import wf_balance_20260927_nephtim as B
 import wf_balance_20260927b_nephtim as B2  # 第二批覆盖（生成器已同步到第二批）
+import wf_balance_20260927c_nephtim as C3  # 第三轮覆盖（生成器已同步到第三轮）
 import wf_client_legality as legality
 import wf_dsl
 import wf_mod_tool as core
@@ -228,15 +229,21 @@ class NephtimBalance20260927Test(unittest.TestCase):
         expected["1699893"] = B2.ability3_rows(self.result["ability"]["1699893"])
         for key, value in expected.items():
             self.assertEqual(value, rows[key], key)
-        self.assertEqual(B2.leader_rows(self.result["leader"]["169989"], self.result["ability"]["1699893"]),
+        second_a3 = B2.ability3_rows(self.result["ability"]["1699893"])
+        self.assertEqual(C3.leader_rows(B2.leader_rows(self.result["leader"]["169989"],
+                                                       self.result["ability"]["1699893"]), second_a3),
                          leaders)
-        # 第一批 8 行中只有第5行（Fever 获得量成长）的强度两格被第二批改。
+        # 第一批 8 行中只有第5行（Fever 获得量成长）的强度两格被第二批（及第三轮）改。
         first = self.result["leader"]["169989"]
         self.assertEqual([(4, 49), (4, 50)], [(i, c) for i in range(8) for c in range(124)
                                               if leaders[i][c] != first[i][c]])
         panels = text.panel_rows(rows, leaders, piercing_extension="dark_resonance")
         expected_cas = deepcopy(self.result["cas"])
-        expected_cas[B.TEXT_LEADER] = [[B2.leader_text(self.result["cas"][B.TEXT_LEADER][0][0])]]
+        expected_cas[B.TEXT_LEADER] = [[C3.leader_text(B2.leader_text(self.result["cas"][B.TEXT_LEADER][0][0]))]]
+        # 第三轮面板同条件合并：能力2 第1/2行并成一行（C3.ability2_text 以第一批输出为原像）。
+        expected_cas[B.TEXT_A2] = [[C3.ability2_text(self.result["cas"][B.TEXT_A2][0][0])]]
+        # 第三轮共鸣省略（口径 6）：能力1 第2/3行删「暗属性共鸣时，」（C3.ability1_text 以第一批输出为原像）。
+        expected_cas[C3.TEXT_A1] = [[C3.ability1_text(self.result["cas"][C3.TEXT_A1][0][0])]]
         for key, value in expected_cas.items():
             self.assertEqual(value, panels[key], key)
         self.assertEqual(120, abilities.SUMMON_PERIOD_FRAMES)
@@ -358,7 +365,8 @@ class NephtimBalance20260927Test(unittest.TestCase):
                 meta = json.loads(manifest.read_bytes())
                 current = meta["package_version"]
                 if meta.get("snapshot", {}).get("revision_20260927b") is not None:
-                    self.assertEqual(second, current, package)
+                    # 第三轮（wf_balance_20260927c_nephtim）回写后候选现值 = c 版本。
+                    self.assertIn(current, {second, C3.PACKAGE_VERSION[package]}, package)
                 else:
                     self.assertGreaterEqual(version(new), version(current), package)
 

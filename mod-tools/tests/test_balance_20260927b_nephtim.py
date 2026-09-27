@@ -316,18 +316,23 @@ class NephtimBalance20260927bTest(unittest.TestCase):
     # ------------------------------------------------------------------ 生成器一致性
 
     def test_generators_produce_exactly_the_revised_values(self):
+        # 生成器已同步到第三轮（wf_balance_20260927c_nephtim）：队长三处成长强度与队长面板两句按 c 回调。
+        # 期望 = 第二批输出 + 第三轮覆盖（c 的函数以第二批输出为原像，原像不符直接抛错）；能力3 与能力3 面板不变。
+        import wf_balance_20260927c_nephtim as C3
         source, _ = official_sources()
         rows = abilities.ability_rows(source)
         leaders = leader.leader_rows(source)
         self.assertEqual(self.result["ability"][A3_KEY], rows[A3_KEY])
-        self.assertEqual(self.result["leader"][LEADER_KEY], leaders)
+        self.assertEqual(C3.leader_rows(self.result["leader"][LEADER_KEY], self.result["ability"][A3_KEY]),
+                         leaders)
         panels = text.panel_rows(rows, leaders, piercing_extension="dark_resonance")
-        for key, value in self.result["cas"].items():
+        expected_cas = deepcopy(self.result["cas"])
+        expected_cas[B.TEXT_LEADER] = [[C3.leader_text(self.result["cas"][B.TEXT_LEADER][0][0])]]
+        for key, value in expected_cas.items():
             self.assertEqual(value, panels[key], key)
-        self.assertEqual((5_000, 10_000, 10, 1_000),
+        self.assertEqual((5_000, 10_000, 10),
                          (abilities.PIERCING_CAPPED_ATTACK_STRENGTH, abilities.PIERCING_CAPPED_DIRECT_STRENGTH,
-                          abilities.PIERCING_CAPPED_LIMIT, abilities.LEADER_PIERCING_GROWTH_STRENGTH))
-        self.assertEqual(B.NEW_FEVER_GAIN, leader.FEVER_GAIN_GROWTH_STRENGTH)
+                          abilities.PIERCING_CAPPED_LIMIT))
         self.assertEqual({3: (1, 0)}, powerflip.SUPPORTER_TOUGHNESS)
 
     @unittest.skipUnless(APK.is_file() and CDN.is_dir(), "official CDN archive / native PF bundle unavailable")
@@ -356,9 +361,14 @@ class NephtimBalance20260927bTest(unittest.TestCase):
             if manifest.is_file():
                 meta = json.loads(manifest.read_bytes())
                 current = meta["package_version"]
-                self.assertGreaterEqual(version(new), version(current), package)
+                # 候选不能领先于任何一批已知版本；第三轮（wf_balance_20260927c_nephtim）回写后候选现值可能已是
+                # 它的 PACKAGE_VERSION（高于本批），取两批版本号的较大者作上限。
+                import wf_balance_20260927c_nephtim as C3
+                ceiling = max(version(new), version(C3.PACKAGE_VERSION[package]))
+                self.assertGreaterEqual(ceiling, version(current), package)
                 if meta.get("snapshot", {}).get("revision_20260927b") is not None:
-                    self.assertEqual(new, current, package)             # 已回写：候选现值 == 本模块版本
+                    # 已回写：候选现值 == 本模块版本；第三轮（wf_balance_20260927c_nephtim）回写后 == c 版本。
+                    self.assertIn(current, {new, C3.PACKAGE_VERSION[package]}, package)
 
 
 if __name__ == "__main__":

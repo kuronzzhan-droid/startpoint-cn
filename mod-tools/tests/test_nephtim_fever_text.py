@@ -86,12 +86,14 @@ class NephtimFeverTextTest(unittest.TestCase):
         self.assertEqual(4, len(panel.splitlines()))
         self.assertNotIn("强化『", panel)
         self.assertNotIn("强化后的技能发动时", panel)
-        enhancement = self.panels()["leader"].splitlines()[1:3]
+        # 2026-09-27 第三轮技能强化文案：同一条 I536 强化只写一行 =「暗属性共鸣时，」+ 条目原文（不写「强化后的技能」）。
+        enhancement = self.panels()["leader"].splitlines()[1:2]
         self.assertEqual(list(text.ENHANCEMENT_LINES), enhancement)
+        self.assertEqual("暗属性共鸣时，" + abilities.CHANGE_SKILL_DESCRIPTION + "。", enhancement[0])
         self.assertIn("强化『" + abilities.SKILL_NAME + "』", enhancement[0])
         self.assertIn("额外赋予暗属性角色及协力球攻击力提升效果", enhancement[0])
-        self.assertIn("暗属性共鸣时，Fever 模式中，强化后的技能发动时", enhancement[1])
-        self.assertIn("自身获得或刷新「星夜茶会」，并赋予暗属性角色及协力球护盾", enhancement[1])
+        self.assertIn("Fever 模式中发动时，自身获得或刷新「星夜茶会」，并赋予暗属性角色及协力球护盾", enhancement[0])
+        self.assertNotIn("强化后", self.panels()["leader"])
         for line in enhancement:
             # 文案规则2：「技能强化」条目只写强化了什么，不写数字与时间。
             self.assertNotRegex(line, r"[0-9０-９]")
@@ -133,8 +135,8 @@ class NephtimFeverTextTest(unittest.TestCase):
     def test_non_main_bonuses_keep_their_actual_targets_and_a5_has_no_resonance_gate(self):
         panels = self.panels()
         # 作者 2026-09-27：贯穿合并为能力2 +40%，并承载 Fever 中技能槽上限+10%。
-        self.assertEqual(["暗属性共鸣时，全队贯穿效果时间+40%。",
-                          "暗属性共鸣时，暗属性角色直接攻击伤害+250%。",
+        # 第三轮面板同条件合并：贯穿延时与直击同为暗共鸣常驻 ⇒ 并成第1行。
+        self.assertEqual(["暗属性共鸣时，全队贯穿效果时间+40%，暗属性角色直接攻击伤害+250%。",
                           "暗属性共鸣时，Fever 模式中，暗属性角色技能槽上限+10%。"],
                          panels["a2"].splitlines())
         maximum = self.abilities["1699892"][2]
@@ -153,22 +155,24 @@ class NephtimFeverTextTest(unittest.TestCase):
     def test_leader_uses_only_the_confirmed_constant_dark_resonance_piercing(self):
         permanent = self.panels()["leader"].splitlines()
         # 作者 2026-09-27：贯穿延时与技能槽上限两句移出队长（改由能力2承载）。
-        # 同日第二批：末尾追加从能力3 搬来的贯穿成长（+1%，写到效果为止）→ 9 行。
-        self.assertEqual(9, len(permanent))
+        # 同日第二批：末尾追加从能力3 搬来的贯穿成长（写到效果为止）→ 9 行；第三轮 +1% → +7%、Fever 槽 +2% → +15%；
+        # 第三轮面板同条件合并：第4行（攻击/直击）与第6行（Fever 时间）并成一行 → 8 行；
+        # 第三轮技能强化文案：同一条 I536 强化的第2、3行并成一行 → 7 行。
+        self.assertEqual(7, len(permanent))
         self.assertNotIn("贯穿效果时间", "\n".join(permanent))
         self.assertNotIn("技能槽上限", "\n".join(permanent))
-        self.assertIn("暗属性共鸣时，全队贯穿效果时间+40%。", self.panels()["a2"].splitlines())
+        self.assertIn("暗属性共鸣时，全队贯穿效果时间+40%，暗属性角色直接攻击伤害+250%。", self.panels()["a2"].splitlines())
         self.assertEqual("暗属性共鸣时，每有1个协力球存在，自身直击判定次数+1。", permanent[-2])
         self.assertNotIn("Fever", permanent[-2])
         self.assertEqual("暗属性共鸣时，Fever 模式中，处于贯穿效果的时间每累计2秒，"
-                         "暗属性角色攻击力+1%、直接攻击伤害+1%。", permanent[-1])
+                         "暗属性角色攻击力+7%、直接攻击伤害+7%。", permanent[-1])
         self.assertEqual(text.LEADER_PIERCING_LINE, permanent[-1])
-        self.assertIn("Fever 槽上升量+2%", permanent[4])
+        self.assertIn("Fever 槽上升量+15%", permanent[3])
         self.assertTrue(all(line.startswith("暗属性共鸣时，") for line in permanent))
         self.assertNotIn("每直接攻击50次", "\n".join(permanent))
         self.assertIn("强化『" + abilities.SKILL_NAME + "』", permanent[1])
-        self.assertIn("攻击力+200%、直接攻击伤害+400%", permanent[3])
-        self.assertNotIn("Fever 模式中", permanent[3])
+        self.assertIn("攻击力+200%、直接攻击伤害+400%", permanent[2])
+        self.assertNotIn("Fever 模式中", permanent[2])
         self.assertEqual(self.panels(), text.panel_descriptions())
         self.assertEqual(("dark_resonance",), text.PIERCING_POLICIES)
         for policy in ("self_source", "unbalanced_fever_edges"):
