@@ -17,17 +17,23 @@
 
 强化（作者 0928：「觉醒 120 级满级属性、数值高一点、添加诅咒」）：照诅咒武器的强化体系——强化类目 6「诅咒武器·觉醒」、
 五重决战材料 6 阶、需满破；1→119 线性成长 + 120 级补足到终值（攻击/四类伤害 800%、独立乘区 20%、直击 8 段、弹射连击 50、
-充能 30%、槽上限 100%、合击攻击 150%、三人专属 250%）。120 级解放诅咒「孤立」（自身以外队员攻击 -50%、技能充能 -30%）与
-「代价」（自身放技能时受最大 HP 15% 伤害，不致死）——都是数值/伤害而非状态，自身弱体无效挡不住。
+充能 30%、槽上限 100%、合击攻击 150%、三人专属 250%）。120 级解放诅咒（作者 0928 定稿）：自身以外的角色攻击力 -800%
+（引擎攻击加成总和下限 -50%：实际 = 抹掉其攻击增益并减半）、技能充能速度 -40%；「自身以外的角色无法获得能力与装备的技能槽增加」
+要客户端补丁把回槽筛选 423 扩到装备强化表（equipment-rules），数据行等补丁 APK 就绪再加。诅咒是数值不是状态，自身弱体无效挡不住。
 
 衰减（作者要求「每多装备一件武器/魂珠效果衰减 25%」）：客户端补丁 client-patch/equipment-rules 在开战装配时数同队其他
 武器/魂珠件数 n，n=1..3 把本体魂与强化词条换成分档键 ID+1000·n（75/50/25%），n≥4 整件失效。分档键由本生成器产出：
 增益按比例缩放（离散的段数/连击四舍五入），弱体无效保留，**诅咒不缩放**（代价不随衰减减轻）；分档键不进 equipment/item 表。
 
-未含：三人放技能时的 25% 技能复刻另行设计。
+技能回响（作者 0928：「放技能时额外放一次 25% 效果、不耗槽」无通用原语 → 只给三人做专属复刻）：三人各一行
+「自身发动技能时 + 自身是该角色」→ 629 调用 assets/paradox/echo/<code>.json（由同目录 derive_echo.py 从 live
+＋版技能推导：数值 ×0.25 满级常数、删状态机/吞噬/扣血/贯穿/冻结等、显式属性码、零特效、削韧 0、开头 Wait 60/90/100 帧）。
+629 不计「技能发动」，不会自触发；回响状态与本体来源不同、数值相加不覆盖。回响行在各衰减分档里原样保留。
 """
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any
 
 import wf_client_legality as L
@@ -58,6 +64,15 @@ EQUIPMENT_STATUS_ROWS = {"1": "330,148", "5": "495,221"}
 TAG_COLUMN = 5                                   # character 表 c5 = 角色标签列表（逗号分隔）
 PRE_MY_SELF = "3"                                # 前置 MySelf：自身属于角色组
 TAG_PREFIX = "tag_paradox_"
+ECHO_DIR = Path(__file__).resolve().parent / "assets/paradox/echo"
+#: (角色 ID, 技能 code, 回响说明)。说明进 custom_ability_string（629 缺键=C8601）；只用全角标点。
+ECHOES = (
+    ("169999", "ginovi", "「掠影协奏」回响：1秒后以25%的效果再次施放（不吞噬协力球、不消耗生命值、不附加贯穿与固有状态）"),
+    ("149999", "white_wolf_gerald",
+     "「月耀一闪」回响：1.5秒后以25%的效果再次施放（不突进、不驱散、不附加贯穿／浮游／速度固定与时空侵蚀）"),
+    ("139990", "kyle_moon",
+     "「月华·狼牙连斩」回响：约1.7秒后以25%的效果斩向最近的敌人（不冲刺、不驱散、不冻结、不附加贯穿／加速与月狼·觉）"),
+)
 
 #: (角色 ID, 标签, 标签显示名)。标签显示名进词条说明「自身为…时」。
 TAGS = (
@@ -105,6 +120,23 @@ def hits_key(n: int, final: bool) -> str:
     return ("paradox_hits_final" if final else "paradox_hits") + _suffix(n)
 
 
+def echo_program(code: str) -> str:
+    return f"{DSL_DIR}$echo_{code}"
+
+
+def echo_tree(code: str) -> list:
+    return json.loads((ECHO_DIR / f"{code}.json").read_text(encoding="utf-8"))
+
+
+def echo_rows() -> list[Eff]:
+    tag_of = {cid: tag for cid, tag, _ in TAGS}
+    return [Eff("0", W.invoke(f"paradox_echo_{code}", echo_program(code)),
+                trig=W.trig(W.IT_SKILL, trigger_puller=W.P_SELF),
+                pre=((PRE_MY_SELF, {"character_groups": tag_of[cid]}),),
+                note=f"自身为 {cid} 时，发动技能后以 25% 效果回响一次")
+            for cid, code, _ in ECHOES]
+
+
 def abilities(n: int = 0) -> list[Eff]:
     """本体词条；n=1..3 为衰减分档（比例 TIERS[n]），行形状与满档逐行一致，只换数值与段数 DSL。"""
     self_ = W.T_SELF
@@ -130,6 +162,7 @@ def abilities(n: int = 0) -> list[Eff]:
         Eff("0", ("58", {"target": self_}), note="自身弱体无效（异常状态与数值降低全部无效）"),
         Eff("0", W.stat("717", self_, 100 * r), note="自身攻击力再加上 100% 合击角色攻击力"),
         Eff("0", W.stat("32", self_, 150 * r), pre=(chosen,), note="自身为基诺维/杰拉德/凯尔时攻击力再 +150%"),
+        *echo_rows(),                                          # 回响固定 25%，不随衰减分档缩放
     ]
 
 
@@ -160,10 +193,8 @@ def enhancement_abilities(n: int = 0) -> list[Eff]:
         Eff("0", W.invoke(hits_key(n, True), hits_program(n, True)), **final, note="120 级：直接攻击变为 8 段（判定额外 +7）"),
         Eff("0", ("226", {"strength": (_count(combo), _count(combo))}), trig=W.trig("6", threshold=_count(1)), **final,
             note="120 级：每次弹射连击再 +15（合计 +50）"),
-        Eff("0", W.stat("32", W.T_EXCEPT, -50), **final, note="【诅咒·孤立】自身以外的队员攻击力 -50%"),
-        Eff("0", W.stat("35", W.T_EXCEPT, -30), **final, note="【诅咒·孤立】自身以外的队员技能充能速度 -30%"),
-        Eff("0", W.stat("209", self_, 15), trig=W.trig(W.IT_SKILL, trigger_puller=W.P_SELF), **final,
-            note="【诅咒·代价】自身发动技能时受到最大 HP 15% 的伤害（不致死）"),
+        Eff("0", W.stat("32", W.T_EXCEPT, -800), **final, note="【诅咒】自身以外的角色攻击力 -800%（引擎下限 -50%）"),
+        Eff("0", W.stat("35", W.T_EXCEPT, -40), **final, note="【诅咒】自身以外的角色技能充能速度 -40%"),
     ]
     return rows
 
@@ -207,6 +238,9 @@ def build(read: W.LiveReader, *, allow_existing: bool = False) -> dict[str, Any]
     for n in (0, *TIERS):
         for final in (False, True):
             flat[CAS][hits_key(n, final)] = [[hits_text(n, final)]]
+    for _, code, text in ECHOES:
+        W._require("," not in text and "\n" not in text, f"回响说明含半角逗号/换行：{code}")
+        flat[CAS][f"paradox_echo_{code}"] = [[text]]
     # 衰减分档键（补丁按 ID+1000·n 选档）：与满档逐行同构，只换数值 / 629 段数
     for n in TIERS:
         tid = tier_id(n)
@@ -246,6 +280,7 @@ def build(read: W.LiveReader, *, allow_existing: bool = False) -> dict[str, Any]
     delete = {CHARACTER_TAG: sorted(k for k in live_tags if k.startswith(TAG_PREFIX) and k not in flat[CHARACTER_TAG])}
 
     dsl = {hits_program(n, final): hits_dsl(hits_segments(n, final)) for n in (0, *TIERS) for final in (False, True)}
+    dsl.update({echo_program(code): echo_tree(code) for _, code, _ in ECHOES})
     programs = {r[W._col(t, "instant_content", "action_path")] for t, logical in ((W.SOUL_T, SOUL), (W.EA_T, EA))
                 for rows in flat[logical].values() for r in rows if r[W._col(t, "instant_content", "kind")] == "629"}
     W._require(programs == set(dsl), f"629 行引用的 DSL 与生成的 DSL 不一致：{programs ^ set(dsl)}")

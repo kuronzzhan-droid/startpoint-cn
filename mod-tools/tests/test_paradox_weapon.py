@@ -139,7 +139,7 @@ class ParadoxTests(unittest.TestCase):
             if negative or kind == "209":
                 curses.append(kind)
                 self.assertEqual((r[1], r[2]), ("120", "120"), kind)      # learn = max = 120
-        self.assertEqual(sorted(curses), ["209", "32", "35"])
+        self.assertEqual(sorted(curses), ["32", "35"])                 # 作者 0928 定稿：-800% 攻击、-40% 充能
 
     def test_enhancement_reaches_final_values(self):
         final = {("32", ""): 800, ("33", ""): 800, ("34", ""): 800, ("55", ""): 800, ("388", ""): 800,
@@ -225,6 +225,27 @@ class ParadoxTests(unittest.TestCase):
                 seg = P.hits_segments(n, final)
                 self.assertIn(f'{{"min": {seg}, "max": {seg}}}', json.dumps(tree))
                 self.assertEqual(self.out["flat"][P.CAS][P.hits_key(n, final)], [[P.hits_text(n, final)]])
+
+    def test_skill_echoes(self):
+        # 三人专属 25% 回响：自身发动技能 + 自身是该角色（标签）→ 629；分档里原样；DSL 过全部门禁
+        tag_of = {cid: tag for cid, tag, _ in P.TAGS}
+        for key in (P.ID, *(P.tier_id(n) for n in P.TIERS)):
+            rows = [r for r in self.out["flat"][P.SOUL][key]
+                    if _cell(r, "instant_content", "kind") == "629" and "echo" in _cell(r, "instant_content", "action_path")]
+            self.assertEqual(len(rows), len(P.ECHOES), key)
+            for r, (cid, code, _) in zip(rows, P.ECHOES):
+                self.assertEqual(_cell(r, "instant_trigger", "kind"), W.IT_SKILL)
+                self.assertEqual(_cell(r, "instant_trigger", "trigger_puller"), W.P_SELF)
+                self.assertEqual((_cell(r, "precondition1", "kind"), _cell(r, "precondition1", "character_groups")),
+                                 (P.PRE_MY_SELF, tag_of[cid]))
+                self.assertEqual(_cell(r, "instant_content", "action_path"), P.echo_program(code))
+        for cid, code, text in P.ECHOES:
+            tree = self.out["dsl"][P.echo_program(code)]
+            self.assertEqual(wf_dsl.parse_dsl(wf_dsl.encode_amf3(tree))["tree"], tree)
+            self.assertEqual(W.dsl_signature_problems(tree), [])
+            self.assertEqual(W.colorless_hit_effect_problems(tree), [])
+            self.assertEqual(self.out["flat"][P.CAS][f"paradox_echo_{code}"], [[text]])
+            self.assertNotIn(",", text)
 
     def test_deterministic(self):
         again = P.build(fixture_reader())
