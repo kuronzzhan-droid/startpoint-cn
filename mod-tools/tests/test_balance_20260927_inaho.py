@@ -227,15 +227,34 @@ class InahoBalance20260927Test(unittest.TestCase):
         manifest = WORKSPACE / 'package/manifest.json'
         before = manifest.read_bytes()
         current = json.loads(before)['package_version']
-        self.assertGreaterEqual(tuple(map(int, M.PACKAGE_VERSION[M.PACKAGES[0]].split('.'))),
-                                tuple(map(int, current.split('.'))))
+        mine = tuple(map(int, M.PACKAGE_VERSION[M.PACKAGES[0]].split('.')))
+        if 'revision_20260927b' in json.loads(before).get('snapshot', {}):
+            # 第一批输出 + 第二批覆盖：wf_balance_20260927b_inaho 回写后版本在第一批之上递增
+            # （0.20260927 → 0.20260927.1）；第二批不动 1399953，下方 A3 断言照旧。
+            import wf_balance_20260927b_inaho as M2
+            self.assertLess(mine, tuple(map(int, current.split('.'))))
+            # 作者 09-27 追加（wf_balance_20260927b_inaho2）同快照键继续回写，版本在第二批之上递增（.1 → .2）。
+            self.assertLessEqual(tuple(map(int, M2.PACKAGE_VERSION[M.PACKAGES[0]].split('.'))),
+                                 tuple(map(int, current.split('.'))))
+        else:
+            self.assertGreaterEqual(mine, tuple(map(int, current.split('.'))))
         candidate = RevisionCandidate(
             ROOT, WORKSPACE, character_id=M.CID, code_name=M.CODE,
             snapshot_key='revision_20260927', package_version=M.PACKAGE_VERSION[M.PACKAGES[0]],
             reviewed_input_drift=M.REVIEWED_DRIFT, baseline_factory=lambda *a, **k: None)
         old_table = X.unpack(candidate.read('common', ABILITY_TABLE))
-        # 暂存前候选 1399953 与 live 前像一致；暂存后应已等于本模块输出。
-        self.assertIn(X.csv_read(old_table[A3]), (self.old, self.new))
+        # 暂存前候选 1399953 与 live 前像一致；暂存后（snapshot revision_20260927）必须已等于本模块输出。
+        cand_a3 = X.csv_read(old_table[A3])
+        if len(cand_a3) == 9:
+            # 作者 09-27 追加（wf_balance_20260927b_inaho2）回写后：本模块 7 行在前逐字不变，
+            # 末尾追加原能力1 #2（PF Lv3 → 雷队技能槽，加雷共鸣）与 #3（进 Fever 余辉 +1）。
+            self.assertEqual(['211', '461'], [r[47] for r in cand_a3[7:]])
+            self.assertEqual({(f'{M.CODE}_3', 'false')}, {(r[0], r[1]) for r in cand_a3[7:]})
+            cand_a3 = cand_a3[:7]
+        if json.loads(before).get('snapshot', {}).get('revision_20260927') is not None:
+            self.assertEqual(self.new, cand_a3)
+        else:
+            self.assertIn(cand_a3, (self.old, self.new))
         candidate.splice(ABILITY_TABLE, self.out['ability'])
         new_table = X.unpack(candidate.read('common', ABILITY_TABLE))
         self.assertEqual(self.new, X.csv_read(new_table[A3]))

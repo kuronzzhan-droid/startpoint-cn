@@ -92,8 +92,14 @@ class InahoV12PackageTest(unittest.TestCase):
 
     def test_ability_1_seeds_nothing_and_gains_one_layer_per_fever(self):
         rows = _records(ABILITY, "1399951")
-        self.assertEqual(len(rows), 6)
-        seed = rows[3]
+        # 作者 09-27 追加(wf_balance_20260927b_inaho2)回写后:余辉 +1 行(原能力1 #3)逐格搬到能力3 末尾
+        # (#8,c0/c1 跟能力3 整键仅主位),能力1 6 → 4 行;回写前仍是 6 行。
+        moved = len(rows) == 4
+        self.assertEqual(len(rows), 4 if moved else 6)
+        seed = _records(ABILITY, "1399953")[8] if moved else rows[3]
+        if moved:
+            self.assertEqual((seed[0], seed[1]), ("fox_oracle_autumn_3", "false"))
+            self.assertNotIn("461", [row[47] for row in rows])
         # trigger 8 Fever, content 461 ConditionUnique, initial_multiply 1:
         # +1 layer whenever Fever starts, and no battle-start seed at all.
         self.assertEqual((seed[27], seed[47], seed[68], seed[74]), ("8", "461", STATE, "1"))
@@ -107,7 +113,11 @@ class InahoV12PackageTest(unittest.TestCase):
             self.assertEqual(row[71], "")
 
     def test_ability_1_fever_skill_ratio_and_ally_gauge_rows(self):
-        drain, ally = _records(ABILITY, "1399951")[4:6]
+        rows = _records(ABILITY, "1399951")
+        # 作者 09-27 追加(wf_balance_20260927b_inaho2)回写后:能力1 删原 #2/#3,drain/ally 前移到 #2/#3;
+        # ally 整键取 live 5%(1.4.864 改的,回写前候选仍是 10%)并加 CT 5 秒(300 帧)。
+        moved = len(rows) == 4
+        drain, ally = rows[2:4] if moved else rows[4:6]
         # 1.1.1: Fever + own PowerFlip (trigger 2, every PF) -> 724 AddFeverPointRatio, -10% of cap.
         self.assertEqual((drain[6], drain[27], drain[28]), ("12", "2", "0"))
         self.assertEqual((drain[47], drain[51], drain[52]), ("724", "-10000", "-10000"))
@@ -115,7 +125,8 @@ class InahoV12PackageTest(unittest.TestCase):
         self.assertEqual((ally[6], ally[9], ally[11], ally[13]), ("2", "600000", "Yellow", "12"))
         self.assertEqual((ally[27], ally[28]), ("23", "0"))
         self.assertEqual((ally[47], ally[48], ally[51], ally[52]),
-                         ("211", "1", "10000", "10000"))
+                         ("211", "1") + (("5000", "5000") if moved else ("10000", "10000")))
+        self.assertEqual(ally[35], "300" if moved else "0")
 
     def test_ability_6_has_no_skill_fever_gain_row(self):
         # 1.1.0 (author, 2026-09-07): "去掉雷属性角色放技能获得fever的词条" -- the 213
@@ -133,8 +144,12 @@ class InahoV12PackageTest(unittest.TestCase):
 
     def test_leader_scales_the_fever_rate_per_layer_and_keeps_the_i722_slot(self):
         rows = _records(LEADER, "139995")
-        self.assertEqual(len(rows), 12)   # 2026-09-09 +during 413 每层;2026-09-10 +Fever→461 余辉+1
-        growth = rows[2]
+        # 2026-09-27 第二批(wf_balance_20260927b_inaho)回写后:整键取 live 11 行(1.4.864 删了原行1
+        # 「雷队员放技能→雷队技能槽4%」),余辉每层行 ×1/5(Fever 获得量 40%→8%)。回写前仍是旧候选 12 行。
+        batch2 = "revision_20260927b" in json.loads((PACKAGE / "manifest.json").read_bytes()).get("snapshot", {})
+        shift, fever_gain = (1, "8000") if batch2 else (0, "40000")
+        self.assertEqual(len(rows), 12 - shift)   # 2026-09-09 +during 413 每层;2026-09-10 +Fever→461 余辉+1
+        growth = rows[2 - shift]
         self.assertEqual(growth[3], "1")                       # During
         self.assertEqual(growth[83], "(None)")                 # accumulation trigger
         self.assertEqual((growth[95], growth[96]), ("134", "0"))
@@ -142,10 +157,11 @@ class InahoV12PackageTest(unittest.TestCase):
         self.assertEqual((growth[100], growth[102]), ("(None)", STATE))   # 层数不封顶
         # 2026-09-10: target 自身→雷属性全队(引擎乘区只放大攻击者本人的 Fever 点),两列拉平 40%
         self.assertEqual((growth[106], growth[107], growth[108], growth[109]), ("false", "18", "5", "Yellow"))
-        self.assertEqual((growth[111], growth[112]), ("40000", "40000"))
-        # wf_dual_pf_contract.bind_native_programs pins the I722 override to row index 8.
-        self.assertEqual(rows[8][45], "722")
-        self.assertEqual(rows[8][80], "override_fox_oracle_autumn_dual_pf")
+        self.assertEqual((growth[111], growth[112]), (fever_gain, fever_gain))
+        # wf_dual_pf_contract.bind_native_programs pins the I722 override to row index 8
+        # (live 自 1.4.864 起在 index 7;第二批回写后候选同 live,契约待同步)。
+        self.assertEqual(rows[8 - shift][45], "722")
+        self.assertEqual(rows[8 - shift][80], "override_fox_oracle_autumn_dual_pf")
         # The 213 rows that produced 每等级280 / 余辉等级在0以下 are gone.
         for row in rows:
             self.assertNotEqual(row[45], "213")
@@ -164,7 +180,9 @@ class InahoV12PackageTest(unittest.TestCase):
             self.assertEqual(description_compatibility_problems("leader_ability", row), [])
             gated += [(f"139995#{index}", cap)
                       for cap in required_client_capabilities("leader_ability", row)]
-        self.assertEqual(gated, [("1399951#4", FEVER_RATIO_CAPABILITY),
+        # 作者 09-27 追加(wf_balance_20260927b_inaho2)回写后:能力1 删原 #2/#3,724 行由 #4 前移到 #2。
+        drain_index = 2 if len(_records(ABILITY, "1399951")) == 4 else 4
+        self.assertEqual(gated, [(f"1399951#{drain_index}", FEVER_RATIO_CAPABILITY),
                                  ("1399956#1", FEVER_RATIO_CAPABILITY)])
 
     def test_skill_dsls_are_plain_add_fever_point_again(self):

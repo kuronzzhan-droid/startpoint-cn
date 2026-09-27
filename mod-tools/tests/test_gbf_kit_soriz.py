@@ -320,6 +320,65 @@ class PanelAndTableContracts(unittest.TestCase):
         self.assertEqual(text_row[10], texts["leader"])
 
 
+class DonorLookupContracts(unittest.TestCase):
+    """store donor 取法（2026-09-27）：键内按内容取第一条匹配，标签不带行号。
+
+    全表「第一条 ck=724」会被别的键抢先（1.4.1050 风巨蜥能力3 改成 724 的事故）；键#行又会随该键增删行漂移
+    （稻穗 inaho2 把 1399951 从 6 行删到 4 行，724 行从第 4 行挪到第 2 行）。"""
+
+    @staticmethod
+    def _row(ck: str, tk: str, marker: str = "") -> list[str]:
+        lay = KIT.LAY["ability"]
+        row = [""] * KIT.NCOLS["ability"]
+        row[0] = marker
+        row[KIT.MODE_COL["ability"]] = "0"                 # 瞬发
+        row[lay["instant_trigger"]] = tk
+        row[lay["instant_content"]] = ck
+        return row
+
+    @staticmethod
+    def _rows(store: dict) -> "KIT.Rows":
+        class Ctx:
+            def live_flat(self, _logical):
+                return {key: C.csv_join(rows) for key, rows in store.items()}
+
+            official_flat = live_flat
+
+            def csv_split(self, text):
+                return C.csv_split(text)
+        return KIT.Rows(Ctx())
+
+    def test_key_scoped_content_lookup_survives_row_moves_in_that_key(self):
+        other = self._row("724", "2", "wind_lizard_724")   # 别的键更早出现的 724
+        before = {"1499983": [other],
+                  "1399951": [self._row("211", "0"), self._row("226", "4"), self._row("211", "65"),
+                              self._row("461", "8"), self._row("724", "2", "inaho_724"), self._row("211", "23")]}
+        after = {"1499983": [other],
+                 "1399951": [self._row("211", "0"), self._row("226", "4"), self._row("724", "2", "inaho_724"),
+                             self._row("211", "23")]}
+        for store in (before, after):
+            name, row = self._rows(store).find("ability", src="store", key="1399951", mode="I", ck=724)
+            self.assertEqual(("store:ability[1399951]{mode=I,ck=724}", "inaho_724"), (name, row[0]))
+        # 对照：全表检索被别的键抢先；键#行在删行后取不到（或取到别的行）。
+        name, row = self._rows(before).find("ability", src="store", mode="I", ck=724)
+        self.assertEqual(("store:ability[1499983]#0", "wind_lizard_724"), (name, row[0]))
+        self.assertEqual("inaho_724", self._rows(before).find("ability", src="store", key="1399951", idx=4)[1][0])
+        with self.assertRaises(KIT.KitError):
+            self._rows(after).find("ability", src="store", key="1399951", idx=4)
+        # 键内无匹配 / 只给键不给行号也不给条件：拒绝。
+        with self.assertRaises(KIT.KitError):
+            self._rows(after).find("ability", src="store", key="1399951", mode="I", ck=629)
+        with self.assertRaises(KIT.KitError):
+            self._rows(after).find("ability", src="store", key="1399951")
+
+    @unittest.skipUnless(DESIGN.is_file(), "design/soriz.json (gitignored work/) absent")
+    def test_fever_drain_row_donor_is_recorded_without_a_row_number(self):
+        records = design()["plan"]["ability"]["keys"]["1299863"]["records"]
+        record = next(r for r in records if r["req"].startswith("A3#8 "))
+        self.assertEqual("store:ability[1399951]{mode=I,ck=724}", record["donor"])
+        self.assertEqual("724", record["cells"]["47"])
+
+
 class PackageContracts(unittest.TestCase):
     def test_manifest_declares_the_real_capabilities_and_new_tables(self):
         manifest = json.loads((PACK / "package/manifest.json").read_text(encoding="utf-8"))

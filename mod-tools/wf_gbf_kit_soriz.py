@@ -161,9 +161,11 @@ class Rows:
     """官方 / store 表的行索引；donor 一律先官方（``.cdn/cn`` 归档），store 只用于
     官方零先例的 kind（629 / 724 / 189）。
 
-    2026-09-27：store donor 一律按设计稿记录的键#行钉死（``key=``/``idx=``）。按「store 里第一条
-    ck=724」检索会随 live 变动漂移——1.4.1050 风巨蜥能力3 #4 改成 724 后排在前面，把它的持续块残值
-    带进了本角色 A3#8。"""
+    2026-09-27：store donor 一律按设计稿记录的键钉死。按「store 里第一条 ck=724」全表检索会随 live
+    变动漂移——1.4.1050 风巨蜥能力3 #4 改成 724 后排在前面，把它的持续块残值带进了本角色 A3#8。
+    键内再按行号钉（``key=``/``idx=``）也会漂：别的单元在该键增删行时行号就换了内容（稻穗 inaho2 把
+    1399951 从 6 行删到 4 行，724 行从第 4 行挪到第 2 行）。所以键内行号会变的 donor 用 ``key=`` + 内容条件
+    （键内第一条匹配，标签 ``{src}:{table}[{key}]{mode=…,ck=…}`` 不带行号）；``idx=`` 只留给行号稳定的键。"""
 
     def __init__(self, ctx) -> None:
         self.ctx = ctx
@@ -181,13 +183,23 @@ class Rows:
 
     def find(self, table: str, *, src: str, mode: str | None = None, tk: Any = None,
              ck: Any = None, target: Any = None, puller: Any = None,
-             key: str | None = None, idx: int = 0) -> tuple[str, list[str]]:
+             key: str | None = None, idx: int | None = None) -> tuple[str, list[str]]:
+        """``key`` + ``idx``：钉死键#行；``key`` + 条件：该键内第一条满足条件的行（标签不带行号）；
+        只给条件：全表第一条。"""
         b = LAY[table]
+        query = [(name, value) for name, value in (("mode", mode or None), ("tk", tk), ("ck", ck),
+                                                   ("target", target), ("puller", puller))
+                 if value is not None]
+        if key is not None and idx is None and not query:
+            raise KitError(f"donor {src}/{table}[{key}] needs idx= or a content condition")
         for k, i, row, info in self.index(src, table):
             if key is not None:
-                if k == key and i == idx:
-                    return f"{src}:{table}[{k}]#{i}", list(row)
-                continue
+                if k != key:
+                    continue
+                if idx is not None:
+                    if i == idx:
+                        return f"{src}:{table}[{k}]#{i}", list(row)
+                    continue
             if mode and info["mode"] != mode:
                 continue
             if tk is not None and info["tk"] != str(tk):
@@ -200,8 +212,10 @@ class Rows:
                 base = b["during_trigger"] if info["mode"] == "D" else b["instant_trigger"]
                 if g(row, base + 1) != str(puller):
                     continue
+            if key is not None:
+                return f"{src}:{table}[{k}]{{{','.join(f'{n}={v}' for n, v in query)}}}", list(row)
             return f"{src}:{table}[{k}]#{i}", list(row)
-        raise KitError(f"no donor {src}/{table} mode={mode} tk={tk} ck={ck} "
+        raise KitError(f"no donor {src}/{table} key={key} idx={idx} mode={mode} tk={tk} ck={ck} "
                        f"target={target} puller={puller}")
 
 
@@ -540,7 +554,7 @@ def build_rows(ctx, design) -> tuple[list[list[str]], dict[str, list[list[str]]]
          IC + 4: 15000, IC + 5: 15000}))
     ab["1299863"].append(co.compose(
         "A3#8 水共鸣+Fever+队长 每次PF Fever槽-20%", T,
-        dict(src="store", key="1399951", idx=4),
+        dict(src="store", key="1399951", mode="I", ck=724),     # 稻穗能力1 的 724 行；行号随稻穗改版漂移，按内容取
         dict(src="official", mode="I", tk=2), [RES, FEV, LDR],
         {**head(3, main=True), IT: 2, IT + 1: "", IT + 3: 100000, IT + 4: 100000,
          IT + 7: "(None)", IT + 8: 0, IC: 724, IC + 1: "", IC + 4: -20000, IC + 5: -20000}))
