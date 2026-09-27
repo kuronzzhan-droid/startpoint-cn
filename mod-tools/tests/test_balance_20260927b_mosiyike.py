@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT / 'mod-tools'))
 sys.setrecursionlimit(10000)
 import wf_balance_20260927b_mosiyike as B
 import wf_balance_20260927b_gray3 as G3
+import wf_balance_20260927c_mosiyike as C3
 import wf_dsl
 from wf_character_revision import encode_tree
 from wf_midautumn_kit_hibiki import dsl_problems as kit_dsl_problems
@@ -217,6 +218,9 @@ class MosiyikeBatch2Test(unittest.TestCase):
         finally:
             sys.dont_write_bytecode = saved
         self.assertEqual({1: 5, 2: 4, 3: 2.5}, kit.DETOUGHNESS)
+        # 第三轮（wf_balance_20260927c_mosiyike）把生成器倍率同步为灰服 15/30/45，由 c 测试断言；
+        # 这里用第二批时的倍率重建，核对第二批输出。
+        kit.TOTALS = {1: 25.0, 2: 41.4, 3: 64.4}
         for level in B.PF_LEVELS:
             want = self.out['dsl'].get(B.PF_PROGRAMS[level], self.tree(B.PF_PROGRAMS[level]))
             self.assertEqual(json.dumps(want), json.dumps(kit.build_level(level)), level)
@@ -248,7 +252,10 @@ class MosiyikeBatch2Test(unittest.TestCase):
             # 作者 09-27 用灰服版替换本角色（wf_balance_20260927b_gray3，同一 snapshot 键）会把候选再升一版；
             # 本模块改的树不在灰服压缩包里，候选里仍是本模块输出。
             self.assertIn(meta['package_version'],
-                          {B.PACKAGE_VERSION[B.PACKAGES[0]], G3.SPECS['149997']['version']['mosiyike']})
+                          {B.PACKAGE_VERSION[B.PACKAGES[0]], G3.SPECS['149997']['version']['mosiyike'],
+                           C3.PACKAGE_VERSION[C3.PACKAGES[0]]})
+            if {p: B.digest(tree_in_candidate(p)) for p in (PF1, PF2, PF3)} == C3.AFTER:
+                return      # 第三轮 wf_balance_20260927c_mosiyike（灰服倍率）回写后；精确相等由其测试断言
             for program, tree in self.out['dsl'].items():
                 self.assertEqual(json.dumps(tree), json.dumps(tree_in_candidate(program)), program)
             self.assertEqual(json.dumps(self.tree(PF1)), json.dumps(tree_in_candidate(PF1)))
@@ -274,7 +281,7 @@ class MosiyikeBatch2Test(unittest.TestCase):
             if not path.is_file():
                 self.skipTest('live store DSL not present')
             live = wf_dsl.parse_dsl(zlib.decompress(path.read_bytes(), -15))['tree']
-            self.assertIn(B.digest(live), {B.BEFORE['dsl', program], B.digest(tree)}, program)
+            self.assertIn(B.digest(live), {B.BEFORE['dsl', program], B.digest(tree), C3.AFTER[program]}, program)
 
 
 if __name__ == '__main__':
