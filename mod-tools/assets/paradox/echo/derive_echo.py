@@ -739,7 +739,7 @@ def main() -> int:
             failed |= not same
         else:
             OUT_DIR.mkdir(parents=True, exist_ok=True)
-            path.write_text(text, "utf8")
+            path.write_bytes(text.encode("utf8"))      # 仓库全 LF：Windows 文本模式会写成 CRLF
             print(f"    写出 {path}  ({len(wf_dsl.encode_amf3(echo))} 字节 AMF3)")
     print("\n结果:", "FAIL" if failed else "全部通过")
     return 1 if failed else 0
