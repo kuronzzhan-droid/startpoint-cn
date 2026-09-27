@@ -1276,12 +1276,18 @@ def _template(read: LiveReader, logical: str, key: str, width: int) -> list[str]
 # 组装
 # ---------------------------------------------------------------------------
 
+#: 官方文案长度上限（live 实测）：equipment c7 ≤ 57、equipment_enhancement c6 ≤ 54、boss_coin_shop c10 ≤ 60。
+#: 详细效果由客户端按词条行自动生成，文案只放风味与口径，超长会溢出详情框。
+DESC_LIMITS = {"equipment": 57, "enhancement": 54, "shop": 60}
+SHOP_DESCRIPTION = "诅咒武器：未强化只有正面效果，强化至120级解放诅咒。共五把，重复本体用于突破。"
+
+
 def _description(w: Weapon) -> str:
-    return f"{w.flavor}【诅咒武器】未强化时只有正面效果，强化至120级解放诅咒。（提案：{w.author}）"
+    return f"{w.flavor}【诅咒武器】"
 
 
 def _enh_description(w: Weapon) -> str:
-    return f"诅咒解放：{w.summary_120}。"
+    return f"强化至120级解放诅咒，效果见能力说明。提案：{w.author}"
 
 
 def _cost_cells(costs: Iterable[tuple[str, int]]) -> list[str]:
@@ -1309,6 +1315,10 @@ def build(read: LiveReader) -> dict[str, Any]:
 
     for w in ws:
         wid = w.id
+        for kind, text in (("equipment", _description(w)), ("enhancement", _enh_description(w)),
+                           ("shop", SHOP_DESCRIPTION)):
+            _require(len(text) <= DESC_LIMITS[kind], f"{w.name} {kind} 文案 {len(text)} 字超出官方上限 {DESC_LIMITS[kind]}")
+            _require("," not in text and "\n" not in text, f"{w.name} {kind} 文案含半角逗号/换行")
         # item（同键魂珠物品行，缺了 ItemLogic 取空崩）
         row = list(item_tpl)
         row[0], row[1], row[2], row[3] = f"mod_cursed_{wid}", wid, f"{w.name}魂珠", w.icon
@@ -1344,7 +1354,7 @@ def build(read: LiveReader) -> dict[str, Any]:
         key = str(BOSS_SHOP_BASE + 2 + ws.index(w) + 1)
         row = list(body_tpl)
         row[6], row[9] = w.name, str(ws.index(w) + 3)
-        row[10] = f"【诅咒武器】{w.summary_120}。共五把，重复本体用于突破。"
+        row[10] = SHOP_DESCRIPTION
         row[12] = w.icon
         row[17:25] = _cost_cells(BODY_COSTS)
         row[25], row[26], row[28] = START_TIME, END_TIME, str(BODY_STOCK)
