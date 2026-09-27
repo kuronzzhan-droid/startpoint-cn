@@ -6748,5 +6748,10 @@
     "category": 5,
     "sale_price": 500,
     "sellable": true
+  },
+  "5920001": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
   }
 }
