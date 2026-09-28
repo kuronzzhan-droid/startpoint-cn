@@ -35,10 +35,17 @@
 「自身发动技能时 + 自身是该角色」→ 629 调用 assets/paradox/echo/<code>.json（由同目录 derive_echo.py 从 live
 ＋版技能推导：数值 ×0.25 满级常数、删状态机/吞噬/扣血/贯穿/冻结等、显式属性码、零特效、削韧 0、开头 Wait 60/90/100 帧）。
 629 不计「技能发动」，不会自触发；回响状态与本体来源不同、数值相加不覆盖。回响行在各衰减分档里原样保留。
+
+装备详情覆盖（作者 0928：「攻击与全部伤害类型、全部独立乘区写在一起」，生成文案做不到）：custom_ability_string 三键
+desc_override_equipment_<ID> / _enhancement_<ID> / _enhancement_<ID>_final，由 override_texts() 按出行用的同一批数值常量
+渲染、"\\n" 分行；客户端补丁 client-patch/equipment-description-override（capability equipment-description-override-v1）
+命中即整段替换本体说明与两个强化块。行为型：未装补丁的客户端不读这些键、照旧显示生成文案，不崩，所以只报 capability、
+不进 problems，数据可先于 APK 上线。分档 ID 不出覆盖键（详情页永远拿满档对象）。
 """
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -104,6 +111,49 @@ TAGS = (
     ("149999", "tag_paradox_gerald", "杰拉德"),
     ("139990", "tag_paradox_kyle", "凯尔"),
 )
+#: 回响技能短名（装备详情覆盖文案用；回响延迟从 DSL 根 Wait 帧读，不手抄）。
+ECHO_SKILL = {"ginovi": "掠影协奏", "white_wolf_gerald": "月耀一闪", "kyle_moon": "月华·狼牙连斩"}
+ECHO_PERCENT = 25                                 # 回响效果比例 = derive_echo.SCALE（测试互证）
+
+# 数值单一来源（设计值，%）：abilities() / enhancement_abilities() 按它们出行，override_texts() 按它们出装备详情覆盖文案，
+# 改一个数 = 行与文案一起变（测试另按行重新求和核对文案里的每个数字）。
+#: 攻击力 32 与直击 33 / 技能 34 / 强化弹射 55 / 能力 388 伤害；元组顺序 = 已发布行的 slot 顺序，不许改
+DAMAGE_KINDS = ("32", "33", "34", "55", "388")
+#: 独立乘区：全伤害 723 / 直击 693 / 技能 694 / 能力 695 / 强化弹射 696
+MULT_KINDS = ("723", "693", "694", "695", "696")
+#: 强化弹射两行是队伍级（target 留空）：行不写目标，文案不许写「自身」
+TEAM_KINDS = frozenset({"55", "696"})
+DAMAGE_LABEL = {"32": "攻击力", "33": "直接攻击伤害", "34": "技能伤害", "55": "强化弹射伤害", "388": "能力伤害"}
+MULT_LABEL = {"723": "全伤害", "693": "直接攻击伤害", "694": "技能伤害", "695": "能力伤害", "696": "强化弹射伤害"}
+#: 覆盖文案「全部伤害类型（…）」括号里的顺序
+DAMAGE_TYPE_TEXT = (("33", "直接攻击"), ("34", "技能"), ("388", "能力"), ("55", "强化弹射"))
+ATK_BASE, ATK_TOTAL = 550, 800                    # 攻击力与四类伤害
+MULT_BASE, MULT_TOTAL = 10, 20                    # 独立乘区
+CHARGE_BASE, CHARGE_TOTAL = 20, 30                # 35 技能充能速度
+GAUGE_BASE, GAUGE_TOTAL = 50, 100                 # 245 技能槽上限
+UNISON_BASE, UNISON_TOTAL = 100, 150              # 717 攻击力追加合击角色攻击力
+CHOSEN_BASE, CHOSEN_TOTAL = 150, 250              # 32 + 三人标签前置
+HITS_EXTRA_BASE, HITS_EXTRA_FINAL = 5, 7          # 直接攻击判定额外次数（629 段数 = 1 + 额外）
+COMBO_BASE, COMBO_TOTAL = 35, 50                  # 226 每次弹射连击（120 级补 COMBO_TOTAL − COMBO_BASE）
+CURSE_ATK, CURSE_CHARGE = -800, -40               # 120 级诅咒：自身以外的角色攻击力 / 技能充能速度
+FINAL_LEVEL = 120                                 # 终式 = 强化满级；W.growth_pair 的成长行 1→119、补足行 120（测试互证）
+
+# 装备详情覆盖（client-patch/equipment-description-override，capability equipment-description-override-v1）：
+# 键由装备 ID 派生，补丁在 AbilitySoulAbilityLogic 与 EquipmentEnhancementAbilityLogic 的详情方法前置查表，
+# 命中即按 "\n" 分行显示、整段替换生成文案；键缺 / 空串 / 未装补丁 = 原文案、不崩（行为型，不进 problems）。
+# 强化成长键是开关，_final 键可缺；衰减分档 ID（5921001 起）只在战斗装配出现，不得有覆盖键。
+OVERRIDE_BASE = f"desc_override_equipment_{ID}"
+OVERRIDE_GROWTH = f"desc_override_equipment_enhancement_{ID}"
+OVERRIDE_FINAL = f"{OVERRIDE_GROWTH}_final"
+OVERRIDE_KEYS = (OVERRIDE_BASE, OVERRIDE_GROWTH, OVERRIDE_FINAL)
+OVERRIDE_SEPARATOR = "\n"
+#: 单行字数上限：覆盖文案与装备说明 c7 显示在同一详情框，单行不超过官方 c7 实测最长（57 字）
+OVERRIDE_LINE_LIMIT = W.DESC_LIMITS["equipment"]
+OVERRIDE_FORBIDDEN = (
+    (re.compile(r"生命值[^\n]*(?:以上|以下)"), "HP 恒真文本（生命值…以上/以下）"),
+    (re.compile(r"自身为队长时"), "「自身为队长时」（覆盖文案禁写）"),
+    (re.compile(r"自身[^\n]*强化弹射|强化弹射[^\n]*自身"), "「自身」修饰强化弹射（55/696 是队伍级）"),
+)
 
 
 TIER_STRIDE = 1000
@@ -131,7 +181,7 @@ def hits_program(n: int, final: bool) -> str:
 
 
 def hits_segments(n: int, final: bool) -> int:
-    extra = 7 if final else 5
+    extra = HITS_EXTRA_FINAL if final else HITS_EXTRA_BASE
     return 1 + _half_up(extra * TIERS[n]) if n else 1 + extra
 
 
@@ -161,31 +211,36 @@ def echo_rows() -> list[Eff]:
             for cid, code, _ in ECHOES]
 
 
+def _target(kind: str) -> str | None:
+    return None if kind in TEAM_KINDS else W.T_SELF
+
+
+def _who(kind: str) -> str:
+    return "" if kind in TEAM_KINDS else "自身"
+
+
 def abilities(n: int = 0) -> list[Eff]:
     """本体词条；n=1..3 为衰减分档（比例 TIERS[n]），行形状与满档逐行一致，只换数值与段数 DSL。"""
     self_ = W.T_SELF
     r = TIERS[n] if n else 1.0
     chosen = (PRE_MY_SELF, {"character_groups": ",".join(tag for _, tag, _ in TAGS)})
-    combo = _half_up(35 * r)
+    combo = _half_up(COMBO_BASE * r)
+    seg = hits_segments(0, False)
     return [
-        Eff("0", W.stat("32", self_, 550 * r), note="自身攻击力 +550%"),
-        Eff("0", W.stat("33", self_, 550 * r), note="自身直接攻击伤害 +550%"),
-        Eff("0", W.stat("34", self_, 550 * r), note="自身技能伤害 +550%"),
-        Eff("0", W.stat("55", None, 550 * r), note="强化弹射伤害 +550%"),
-        Eff("0", W.stat("388", self_, 550 * r), note="自身能力伤害 +550%"),
-        Eff("0", W.stat("723", self_, 10 * r), note="自身全伤害独立乘区 +10%"),
-        Eff("0", W.stat("693", self_, 10 * r), note="自身直接攻击伤害独立乘区 +10%"),
-        Eff("0", W.stat("694", self_, 10 * r), note="自身技能伤害独立乘区 +10%"),
-        Eff("0", W.stat("695", self_, 10 * r), note="自身能力伤害独立乘区 +10%"),
-        Eff("0", W.stat("696", None, 10 * r), note="强化弹射伤害独立乘区 +10%"),
-        Eff("0", W.invoke(hits_key(n, False), hits_program(n, False)), note="开局：自身直接攻击变为 6 段（判定额外 +5）"),
+        *(Eff("0", W.stat(k, _target(k), ATK_BASE * r), note=f"{_who(k)}{DAMAGE_LABEL[k]} +{ATK_BASE}%")
+          for k in DAMAGE_KINDS),
+        *(Eff("0", W.stat(k, _target(k), MULT_BASE * r), note=f"{_who(k)}{MULT_LABEL[k]}独立乘区 +{MULT_BASE}%")
+          for k in MULT_KINDS),
+        Eff("0", W.invoke(hits_key(n, False), hits_program(n, False)),
+            note=f"开局：自身直接攻击变为 {seg} 段（判定额外 +{seg - 1}）"),
         Eff("0", ("226", {"strength": (_count(combo), _count(combo))}), trig=W.trig("6", threshold=_count(1)),
-            note="每次弹射连击 +35"),
-        Eff("0", W.stat("35", self_, 20 * r), note="自身技能充能速度 +20%"),
-        Eff("0", W.stat("245", self_, 50 * r), note="自身技能槽上限 +50%"),
+            note=f"每次弹射连击 +{COMBO_BASE}"),
+        Eff("0", W.stat("35", self_, CHARGE_BASE * r), note=f"自身技能充能速度 +{CHARGE_BASE}%"),
+        Eff("0", W.stat("245", self_, GAUGE_BASE * r), note=f"自身技能槽上限 +{GAUGE_BASE}%"),
         Eff("0", ("58", {"target": self_}), note="自身弱体无效（异常状态与数值降低全部无效）"),
-        Eff("0", W.stat("717", self_, 100 * r), note="自身攻击力再加上 100% 合击角色攻击力"),
-        Eff("0", W.stat("32", self_, 150 * r), pre=(chosen,), note="自身为基诺维/杰拉德/凯尔时攻击力再 +150%"),
+        Eff("0", W.stat("717", self_, UNISON_BASE * r), note=f"自身攻击力再加上 {UNISON_BASE}% 合击角色攻击力"),
+        Eff("0", W.stat("32", self_, CHOSEN_BASE * r), pre=(chosen,),
+            note=f"自身为基诺维/杰拉德/凯尔时攻击力再 +{CHOSEN_BASE}%"),
         *echo_rows(),                                          # 回响固定 25%，不随衰减分档缩放
     ]
 
@@ -205,8 +260,11 @@ def _growth_pair(kind: str, target: str | None, total: float, base: float, **kw)
 
 
 def curse_unique_row() -> list[str]:
-    """「诅咒」：永续、1 层、坏状态、不可驱散、强制付与（短路自身 58 弱体无效）、阵亡不移除。"""
-    return W.unique_row(f"paradox_curse_{CURSE_UID}", CURSE_UNIQUE_NAME, W.ICON_CURSE, "99999999", "1", bad=True)
+    """「诅咒」：永续、坏状态、不可驱散、强制付与（短路自身 58 弱体无效）、阵亡不移除。
+
+    叠层上限写 2：持续触发 134 按层数读，上限 1 时 Condition.get_accumulatable() 为 false、层数恒 0，
+    R3 的 423 行永远不生效（1.4.1067 首发即如此）。每场只刻 1 层，134 limit=1，不会翻倍。"""
+    return W.unique_row(f"paradox_curse_{CURSE_UID}", CURSE_UNIQUE_NAME, W.ICON_CURSE, "99999999", "2", bad=True)
 
 
 def unique_ref_problems(table: str, row: list[str], unique_keys: set[str]) -> list[str]:
@@ -241,21 +299,24 @@ def enhancement_abilities(n: int = 0) -> list[Eff]:
     r = TIERS[n] if n else 1.0
     chosen = (PRE_MY_SELF, {"character_groups": ",".join(tag for _, tag, _ in TAGS)})
     rows: list[Eff] = []
-    for kind, target, total, base in (("32", self_, 800, 550), ("33", self_, 800, 550), ("34", self_, 800, 550),
-                                      ("55", None, 800, 550), ("388", self_, 800, 550),
-                                      ("723", self_, 20, 10), ("693", self_, 20, 10), ("694", self_, 20, 10),
-                                      ("695", self_, 20, 10), ("696", None, 20, 10),
-                                      ("35", self_, 30, 20), ("245", self_, 100, 50), ("717", self_, 150, 100)):
-        rows += _growth_pair(kind, target, total * r, base * r)
-    rows += _growth_pair("32", self_, 250 * r, 150 * r, pre=(chosen,))
-    final = dict(learn=120, maxlvl=120)
-    combo = _half_up(15 * r)
+    for kind, total, base in ((*((k, ATK_TOTAL, ATK_BASE) for k in DAMAGE_KINDS),
+                               *((k, MULT_TOTAL, MULT_BASE) for k in MULT_KINDS),
+                               ("35", CHARGE_TOTAL, CHARGE_BASE), ("245", GAUGE_TOTAL, GAUGE_BASE),
+                               ("717", UNISON_TOTAL, UNISON_BASE))):
+        rows += _growth_pair(kind, _target(kind), total * r, base * r)
+    rows += _growth_pair("32", self_, CHOSEN_TOTAL * r, CHOSEN_BASE * r, pre=(chosen,))
+    final = dict(learn=FINAL_LEVEL, maxlvl=FINAL_LEVEL)
+    topup = COMBO_TOTAL - COMBO_BASE
+    combo = _half_up(topup * r)
+    seg = hits_segments(0, True)
     rows += [
-        Eff("0", W.invoke(hits_key(n, True), hits_program(n, True)), **final, note="120 级：直接攻击变为 8 段（判定额外 +7）"),
+        Eff("0", W.invoke(hits_key(n, True), hits_program(n, True)), **final,
+            note=f"{FINAL_LEVEL} 级：直接攻击变为 {seg} 段（判定额外 +{seg - 1}）"),
         Eff("0", ("226", {"strength": (_count(combo), _count(combo))}), trig=W.trig("6", threshold=_count(1)), **final,
-            note="120 级：每次弹射连击再 +15（合计 +50）"),
-        Eff("0", W.stat("32", W.T_EXCEPT, -800), **final, note="【诅咒】自身以外的角色攻击力 -800%（引擎下限 -50%）"),
-        Eff("0", W.stat("35", W.T_EXCEPT, -40), **final, note="【诅咒】自身以外的角色技能充能速度 -40%"),
+            note=f"{FINAL_LEVEL} 级：每次弹射连击再 +{topup}（合计 +{COMBO_TOTAL}）"),
+        Eff("0", W.stat("32", W.T_EXCEPT, CURSE_ATK), **final,
+            note=f"【诅咒】自身以外的角色攻击力 {CURSE_ATK}%（引擎下限 -50%）"),
+        Eff("0", W.stat("35", W.T_EXCEPT, CURSE_CHARGE), **final, note=f"【诅咒】自身以外的角色技能充能速度 {CURSE_CHARGE}%"),
         # R3（equipment-rules）：开局刻「诅咒」→ 持有期间 423 拦掉自身以外角色的能力类回槽；新行只追加在末尾，已发布行的 slot 不动
         Eff("0", W.unique(CURSE_UID), **final, note="【诅咒】120 级：开局给自身刻上「诅咒」（永续、不可驱散）"),
         Eff("1", ("423", {"target": W.T_EXCEPT, "unique_condition_id": str(GAUGE_MASK)}), trig=W.gate_unique(CURSE_UID),
@@ -266,6 +327,107 @@ def enhancement_abilities(n: int = 0) -> list[Eff]:
 
 def description() -> str:
     return f"{FLAVOR}{DECAY_RULE}"
+
+
+def _num(x: float) -> str:
+    """文案数字：去掉浮点尾巴（230.0 → 230、9.25 → 9.25、-800 → -800）。"""
+    return format(round(float(x), 3), "g")
+
+
+def grow_value(total: float, base: float) -> float:
+    """强化成长行在 Lv119 的满值：与 _growth_pair 写进行里的是同一算式（W.growth_pair 以 base/BASE_SCALE 调 W._grow）。"""
+    return W._grow(total, base / W.BASE_SCALE)
+
+
+def echo_delay_frames(code: str) -> int:
+    """回响 DSL 根 = 单个 Event Wait(N 帧)（derive_echo 的形状）；覆盖文案里的延迟从这里读。"""
+    tree = echo_tree(code)
+    top = tree[11][1] if len(tree) == 12 and isinstance(tree[11], list) else []
+    W._require(len(top) == 1 and top[0][0] == "Event" and top[0][1][0] == "Wait", f"回响 DSL 根形状漂移：{code}")
+    return int(top[0][1][1])
+
+
+def seconds_text(frame_count: int) -> str:
+    """60 帧 = 1 秒；整 0.5 秒写准数（60 → 1秒、90 → 1.5秒），否则「约」+ 一位小数（100 → 约1.7秒）。"""
+    if frame_count % 30 == 0:
+        return f"{frame_count / 60:g}秒"
+    return f"约{frame_count / 60:.1f}秒"
+
+
+def override_texts() -> dict[str, str]:
+    """装备详情覆盖三段文案（本体 / 强化成长 / 终式），数字全部取自出行用的同一批常量与 DSL，不手抄。
+    本体段 = 满破魂（觉醒 1→5 不变）；成长段 = 强化 Lv119 时成长行的满值（静态，取代原生逐级数字）；
+    终式段 = 本体 + 强化 Lv120 的合计与诅咒。衰减规则只在装备说明 c7（风味文字）里，不在这里重复。"""
+    who = "／".join(label for _, _, label in TAGS)
+    label_of = {cid: label for cid, _, label in TAGS}
+    types = "／".join(text for _, text in DAMAGE_TYPE_TEXT)
+    seg, seg_final = hits_segments(0, False), hits_segments(0, True)
+    base = [
+        f"攻击力与全部伤害类型（{types}）+{_num(ATK_BASE)}%＆全部独立乘区+{_num(MULT_BASE)}%",
+        f"直接攻击判定额外+{seg - 1}次（共{seg}段）",
+        f"每次弹射时连击数+{_num(COMBO_BASE)}",
+        f"技能充能速度+{_num(CHARGE_BASE)}%＆技能槽上限+{_num(GAUGE_BASE)}%",
+        "弱体无效（异常状态与数值降低全部无效）",
+        f"攻击力追加合击角色攻击力的{_num(UNISON_BASE)}%",
+        f"自身为{who}时攻击力再+{_num(CHOSEN_BASE)}%",
+        *(f"自身为{label_of[cid]}时：发动技能{seconds_text(echo_delay_frames(code))}后"
+          f"以{ECHO_PERCENT}%的效果回响「{ECHO_SKILL[code]}」" for cid, code, _ in ECHOES),
+    ]
+    growth = [
+        f"随强化等级逐级提升，强化Lv{FINAL_LEVEL - 1}时追加：",
+        f"攻击力与全部伤害类型+{_num(grow_value(ATK_TOTAL, ATK_BASE))}%"
+        f"＆全部独立乘区+{_num(grow_value(MULT_TOTAL, MULT_BASE))}%",
+        f"技能充能速度+{_num(grow_value(CHARGE_TOTAL, CHARGE_BASE))}%"
+        f"＆技能槽上限+{_num(grow_value(GAUGE_TOTAL, GAUGE_BASE))}%",
+        f"合击角色攻击力的追加比例+{_num(grow_value(UNISON_TOTAL, UNISON_BASE))}%",
+        f"自身为{who}时攻击力再+{_num(grow_value(CHOSEN_TOTAL, CHOSEN_BASE))}%",
+    ]
+    final = [
+        f"终式合计（含本体）：攻击力与全部伤害类型+{_num(ATK_TOTAL)}%＆全部独立乘区+{_num(MULT_TOTAL)}%",
+        f"直接攻击判定额外+{seg_final - 1}次（共{seg_final}段）",
+        f"每次弹射时连击数合计+{_num(COMBO_TOTAL)}",
+        f"技能充能速度合计+{_num(CHARGE_TOTAL)}%＆技能槽上限合计+{_num(GAUGE_TOTAL)}%",
+        f"攻击力追加合击角色攻击力的{_num(UNISON_TOTAL)}%",
+        f"自身为{who}时攻击力合计+{_num(CHOSEN_TOTAL)}%",
+        f"【诅咒】自身以外的角色攻击力{_num(CURSE_ATK)}%＆技能充能速度{_num(CURSE_CHARGE)}%",
+        f"【诅咒】战斗开始时自身获得「{CURSE_UNIQUE_NAME}」（永续、无法驱散）：自身以外的角色无法获得能力和装备的技能槽增加效果",
+    ]
+    return {OVERRIDE_BASE: OVERRIDE_SEPARATOR.join(base), OVERRIDE_GROWTH: OVERRIDE_SEPARATOR.join(growth),
+            OVERRIDE_FINAL: OVERRIDE_SEPARATOR.join(final)}
+
+
+_OVERRIDE_ID = re.compile(r"desc_override_equipment_(?:enhancement_)?([0-9]+)(?:_final)?")
+
+
+def override_text_problems(texts: dict[str, str], equipment_row: list[str]) -> list[str]:
+    """装备详情覆盖的数据门禁（与 629 说明的「无换行」门禁分开：这里 "\\n" 是行分隔符）。"""
+    probs: list[str] = []
+    if len(equipment_row) <= 10 or equipment_row[10] != ID:
+        probs.append(f"equipment[{ID}] c10（ability_soul_id）须等于 {ID}：本体覆盖键按魂 ID 派生")
+    tiers = {tier_id(n) for n in (*TIERS, 4)}
+    for key, text in texts.items():
+        probs += [f"{key}: {p}" for p in L.equipment_desc_override_key_problems(key)]
+        match = _OVERRIDE_ID.fullmatch(key)
+        if match and match.group(1) in tiers:
+            probs.append(f"{key}: 衰减分档 ID 不得有覆盖键（分档只在战斗装配出现）")
+        elif key not in OVERRIDE_KEYS:
+            probs.append(f"{key}: 不是 PARADOX 的覆盖键 {OVERRIDE_KEYS}")
+        if not isinstance(text, str) or not text:
+            probs.append(f"{key}: 文案为空（客户端按未覆盖处理）")
+            continue
+        for bad, label in ((",", "半角逗号（CSV 分列）"), ("\r", "回车符")):
+            if bad in text:
+                probs.append(f"{key}: 含{label}")
+        lines = text.split(OVERRIDE_SEPARATOR)
+        for index, line in enumerate(lines, start=1):
+            if not line.strip() or line != line.strip():
+                probs.append(f"{key} 第{index}行: 空行或首尾空白")
+            if len(line) > OVERRIDE_LINE_LIMIT:
+                probs.append(f"{key} 第{index}行: {len(line)} 字超过 {OVERRIDE_LINE_LIMIT}")
+            for pattern, label in OVERRIDE_FORBIDDEN:
+                if pattern.search(line):
+                    probs.append(f"{key} 第{index}行: 含{label}")
+    return probs
 
 
 def retag(row: list[str], tag: str | None) -> list[str]:
@@ -282,7 +444,8 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
 
     client_capabilities = 接收这批数据的**全部**客户端共有的 capability。默认 1047 基线（未装 equipment-rules）：
     R3 的 423 行（满档与三个分档各一行）报缺 equipment-gauge-gain-rules-v1 进 problems，暂存脚本的 problems == [] 断言即拦下；
-    确认所有接收端（含灰服、分享包）都装上补丁 APK 后才传 PATCHED_CLIENT_CAPABILITIES。输出 capabilities = 全部行的需求并集。"""
+    确认所有接收端（含灰服、分享包）都装上补丁 APK 后才传 PATCHED_CLIENT_CAPABILITIES。输出 capabilities = 全部行的需求并集，
+    含装备详情覆盖三键的 equipment-description-override-v1（行为型：缺它只是显示原文案，永不进 problems）。"""
     W._require(not isinstance(client_capabilities, str), "client_capabilities 须是 capability 名的集合，不是单个字符串")
     have = frozenset(client_capabilities)
     flat: dict[str, dict[str, list[list[str]]]] = {t: {} for t in FLAT_TABLES}
@@ -317,6 +480,12 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
     for _, code, text in ECHOES:
         W._require("," not in text and "\n" not in text, f"回响说明含半角逗号/换行：{code}")
         flat[CAS][f"paradox_echo_{code}"] = [[text]]
+    # 装备详情覆盖三键（本体 / 强化成长 / 终式）；只按满档 ID 出，分档 ID 不出
+    overrides = override_texts()
+    bad = override_text_problems(overrides, flat[EQUIPMENT][ID][0])
+    W._require(not bad, "装备详情覆盖文案不合规：" + "；".join(bad))
+    for key, text in overrides.items():
+        flat[CAS][key] = [[text]]
     # 衰减分档键（补丁按 ID+1000·n 选档）：与满档逐行同构，只换数值 / 629 段数
     for n in TIERS:
         tid = tier_id(n)
@@ -337,6 +506,12 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
                 capabilities += [c for c in needed if c not in capabilities]
                 problems += [f"{table}[{key}]#{index}: 目标客户端缺 capability {c}（未打补丁读到即 C7050）"
                              for c in needed if c not in have]
+    # 装备详情覆盖是行为型：未装补丁的客户端不读这三键、照旧显示生成文案、不崩 —— 只报 capability，不对照 have、不进 problems
+    for key in flat[CAS]:
+        for c in L.required_client_capabilities(L.CUSTOM_ABILITY_STRING_KIND, [key]):
+            W._require(c == L.EQUIPMENT_DESC_OVERRIDE, f"custom_ability_string {key} 落进面板覆盖 {c}（本生成器只出装备覆盖）")
+            if c not in capabilities:
+                capabilities.append(c)
 
     # 强化：名/图/描述 120 级切换；强化 status 照诅咒武器；商店 6 阶挂诅咒武器类目 6、五重材料
     W._require(len(ENH_DESCRIPTION) <= W.DESC_LIMITS["enhancement"] and "," not in ENH_DESCRIPTION, "强化说明超长或含逗号")
@@ -367,6 +542,10 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
     programs = {r[W._col(t, "instant_content", "action_path")] for t, logical in ((W.SOUL_T, SOUL), (W.EA_T, EA))
                 for rows in flat[logical].values() for r in rows if r[W._col(t, "instant_content", "kind")] == "629"}
     W._require(programs == set(dsl), f"629 行引用的 DSL 与生成的 DSL 不一致：{programs ^ set(dsl)}")
+    # 叠层上限门禁（同诅咒武器）：按层数读的本批固有 c4 必须 >1，否则门控静默失效
+    acc_rows = [(f"{table}[{key}]#{i}", table, r) for table, logical in ((W.SOUL_T, SOUL), (W.EA_T, EA))
+                for key, rows in flat[logical].items() for i, r in enumerate(rows)]
+    problems += [p for _, p in W.unique_accumulation_problems(acc_rows, dsl, flat[UNIQUE])]
     tiers = {tier_id(n) for n in TIERS}
     W._require(not tiers & (set(flat[EQUIPMENT]) | set(flat[ITEM])), "分档键不得进 equipment/item 表")
     for program, tree in dsl.items():
