@@ -923,25 +923,31 @@ def w02() -> Weapon:
 
 def w03() -> Weapon:
     w = Weapon(3, "salted_fish_crown", "咸鱼王冠", "饰品", ("wind",), "百合色彩虹桥",
-               "戴着小王冠的咸鱼", "躺平的咸鱼也有王冠——只是要攒满两倍才肯翻身。",
-               "风属性共鸣时：技能槽 200% 时发动技能，该次技能伤害 +800%、技能伤害独立乘区 +30%（10 秒内；"
-               "下次非 200% 发动即失效）；自身技能充能速度 -50%")
+               "戴着小王冠的咸鱼", "躺平的咸鱼也有王冠——只是要攒满两层才肯翻身。",
+               "风属性共鸣时：发动技能获得「咸鱼蓄力」（最多 2 层）；满 2 层时发动技能，消耗 2 层并获得「咸鱼翻身」"
+               "10 秒：技能伤害 +800%、技能伤害独立乘区 +30%；自身技能充能速度 -50%")
     wind = res("wind")
-    u_flip = w.uid(1)
-    # 叠层上限必须 >1：134 按层数计、525 只消耗可叠层状态（上限 1 时两者都静默失效）。
-    # 10 秒内再次 200% 发动叠到 2 层并刷新时长；134 倍乘上限 1，加成不翻倍
+    u_flip, u_charge = w.uid(1), w.uid(2)
+    # 叠层上限必须 >1：134 按层数计（翻身）、144/199/525 按层数读与消耗（蓄力）；上限 1 时全部静默失效。
+    # 翻身 10 秒内再次获得只刷新时长（134 倍乘上限 1，加成不翻倍）
     w.uniques[u_flip] = unique_row(f"cursed_saltfish_{u_flip}", "咸鱼翻身", "cursed_saltfish_flip", "600", "2", bad=False)
+    w.uniques[u_charge] = unique_row(f"cursed_saltfish_{u_charge}", "咸鱼蓄力", "cursed_saltfish_charge", "99999999", "2",
+                                     bad=False)
     cast = trig(IT_SKILL, trigger_puller=P_SELF)
-    # 施放先扣 100% 基准槽再判前置：施放后仍 ≥100% ⇔ 施放前 200%；≤99.999% ⇔ 不是 200% 施放（两行互斥，行序无关）
-    from_full = (PRE_GAUGE_HIGH, {"trigger_puller": P_SELF, "threshold": times(1)})
-    not_full = (PRE_GAUGE_LOW, {"trigger_puller": P_SELF, "threshold": "99999"})
+    # 三行同一触发，按施放前的「咸鱼蓄力」层数分流：≤1 层（199）+1 层；≥2 层（144）获得翻身并消耗 2 层。
+    # 行序固定为 +1 → 翻身 → 消耗：固有状态的获得排队生效，若消耗当场生效，排在它前面的 +1 行已经按 2 层判定为不满足，
+    # 不会在同一次施放里补回 1 层；翻身行也在消耗之前判定（按 2 层满足）。
+    below_two = (PRE_UNIQUE_LE, {"trigger_puller": P_SELF, "threshold": times(1), "unique_condition_id": u_charge})
+    at_two = (PRE_UNIQUE_GE, {"trigger_puller": P_SELF, "threshold": times(2), "unique_condition_id": u_charge})
     flipped = gate_unique(u_flip)
     w.soul = [
         Eff("0", stat("245", T_SELF, 100, 100), pre=(wind,), note="风属性共鸣时：自身技能槽上限 +100%（可蓄至 200%）"),
-        Eff("0", unique(u_flip), trig=cast, pre=(wind, from_full),
-            note="风属性共鸣时：技能槽 200% 时发动技能，获得「咸鱼翻身」10 秒"),
-        Eff("0", ("525", {"target": T_SELF, "strength": times(2), "unique_condition_id": u_flip}), trig=cast,
-            pre=(wind, not_full), note="技能槽未满 200% 时发动技能，移除「咸鱼翻身」（最多消耗 2 层 = 全部）"),
+        Eff("0", unique(u_charge), trig=cast, pre=(wind, below_two),
+            note="风属性共鸣时：「咸鱼蓄力」不满 2 层时发动技能，获得 1 层「咸鱼蓄力」"),
+        Eff("0", unique(u_flip), trig=cast, pre=(wind, at_two),
+            note="风属性共鸣时：「咸鱼蓄力」满 2 层时发动技能，获得「咸鱼翻身」10 秒"),
+        Eff("0", ("525", {"target": T_SELF, "strength": times(2), "unique_condition_id": u_charge}), trig=cast,
+            pre=(wind, at_two), note="「咸鱼蓄力」满 2 层时发动技能，消耗 2 层「咸鱼蓄力」"),
         Eff("1", during("2", T_SELF, 50, 100), trig=flipped, pre=(wind,), note="「咸鱼翻身」期间：自身技能伤害 +50%→100%"),
     ]
     w.ea = [
@@ -951,17 +957,18 @@ def w03() -> Weapon:
         Eff("1", during("411", T_SELF, 30), trig=flipped, pre=(wind,), **FINAL,
             note="「咸鱼翻身」期间：自身技能伤害独立乘区 +30%"),
     ]
-    w.deviations.append("第三轮方案 B：加成挂在「200% 时发动的那次技能」上，不是「槽 ≥200% 期间」——施放先扣 100% 基准槽，"
-                        "技能伤害按命中时结算，槽位条件已经失效。施放瞬间判定剩余槽 ≥100%（前置 119）则挂 10 秒「咸鱼翻身」，"
-                        "不是 200% 的施放（前置 120 ≤99.999%）立即移除；去掉常驻技能伤害与技能伤害独立乘区 +100%")
-    w.deviations.append("「咸鱼翻身」叠层上限写 2：客户端只对上限 >1 的状态计层（Condition.get_accumulatable），上限 1 时 134 读层恒 0、"
-                        "525 消耗为空操作，整套加成静默失效（只剩槽上限与充能 -50%）；10 秒内连续 200% 发动叠到 2 层，"
-                        "加成按 1 层计不翻倍，非 200% 发动一次消耗 2 层全部移除")
-    w.deviations.append("风险：前置 119/120 官方零先例需真机验证；固有状态排队生效，施放当帧就结算的第一击可能吃不到加成；"
-                        "队友的 CountUp 瞬发内容也会让施放计数，可能误授予/误移除；施放 10 秒后才落下的命中拿不到加成；"
+    w.deviations.append("作者 0928「只有 2 层才触发消耗增伤」：不再看技能槽是否 200%，改为每次发动技能叠 1 层「咸鱼蓄力」"
+                        "（上限 2、永续、不可驱散），满 2 层的那次施放消耗 2 层并获得 10 秒「咸鱼翻身」（施放前 0/1/2 层 → "
+                        "+1/+1/翻身），即每 3 次施放翻身 1 次；翻身期间再发动技能不再清掉翻身。去掉前置 119/120")
+    w.deviations.append("技能槽上限 +100% 保留：蓄到 200% 时翻身那次与紧接的下一次都在 10 秒窗口内，最好情况 3 次施放里 2 次吃到"
+                        "加成（旧版最好是连放两次里 1 次），平均翻身频率 1/3–1/2 次施放，与旧版 200% 施放相当；数值不变")
+    w.deviations.append("「咸鱼翻身」「咸鱼蓄力」叠层上限都写 2：客户端只对上限 >1 的状态计层（Condition.get_accumulatable），"
+                        "上限 1 时 134/144 读层恒 0、199 恒真、525 消耗为空操作，整套静默失效")
+    w.deviations.append("风险：同一施放三行的执行顺序与消耗是否排队需真机验证（行序已排成最坏情况也不串层）；固有状态排队生效，"
+                        "翻身那次施放当帧结算的第一击可能吃不到加成；队友的 CountUp 瞬发内容也会让施放计数；"
                         "411 与其他技能伤害独立乘区相加不相乘")
     w.deviations.append("评分审查 0928（作者「按表改」）：「咸鱼翻身」期间技能伤害终值 +500% → +800%（机制简介「技能伤害变为 2 倍以上」）；"
-                        "技能伤害独立乘区 +30%、充能 -50%、槽上限 +100% 与翻身的授予/移除判定都不动")
+                        "技能伤害独立乘区 +30%、充能 -50%、槽上限 +100% 不动")
     return w
 
 

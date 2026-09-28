@@ -219,7 +219,7 @@ class CursedWeaponTests(unittest.TestCase):
                     if (w.row, index, blk) == (10, 0, "instant_trigger"):
                         continue
                     self.assertEqual(lo, hi, (where, blk))
-        self.assertEqual(mechanism, 16)                           # 245/461/525、629×3、26/226×2、461×4、206×2
+        self.assertEqual(mechanism, 17)                           # 245/461×2/525（咸鱼 0928 两层）、629×3、26/226×2、461×4、206×2
 
     def test_wager_body_period_ladder(self):
         # 赌注已下本体只有 629（无强度）：用 ElapsedTime 周期分级 45/40/35/30/25 秒；强化表的完整老虎机仍 25 秒
@@ -520,34 +520,58 @@ class CursedWeaponTests(unittest.TestCase):
         self.assertEqual([(r[1], r[2]) for r in fever], [("1", "119"), ("120", "120")])
         self.assertEqual(self.total(2, "56"), 100000)
 
-    def test_salted_fish_crown_bonus_only_on_200_percent_cast(self):
+    def test_salted_fish_crown_flips_on_two_charge_stacks(self):
+        """作者 0928「只有 2 层才触发消耗增伤」：每次施放 +1 层蓄力，满 2 层的那次施放消耗 2 层并获得翻身。"""
         w03 = self.weapon(3)
-        uid = w03.uid(1)
-        # 叠层上限 2：134 计层、525 消耗都要求可叠层（上限 1 = 整套静默失效）
-        self.assertEqual(self.out["flat"][W.UNIQUE][uid][0][1:5],
-                         ["咸鱼翻身", "battle/common/unique_condition/cursed_saltfish_flip", "600", "2"])
-        grant, consume = self.soul(3)[1], self.soul(3)[2]
-        self.assertEqual((_kind(W.SOUL_T, grant), _kind(W.SOUL_T, consume)), ("461", "525"))
-        # 一次消耗 2 层 = 全部（10 秒内连续两次 200% 发动叠到 2 层也不留残层）
-        self.assertEqual(self.cell(W.SOUL_T, consume, "instant_content", "strength.power1"), W.times(2))
-        self.assertEqual(self.cell(W.SOUL_T, grant, "instant_content", "strength.power1"), W.times(1))
-        # 施放后剩余 ≥100%（119）⇔ 200% 施放；≤99.999%（120）⇔ 非 200% 施放：两个前置互斥
-        self.assertEqual((self.cell(W.SOUL_T, grant, "precondition2", "kind"),
-                          self.cell(W.SOUL_T, grant, "precondition2", "threshold.power1")), ("119", "100000"))
-        self.assertEqual((self.cell(W.SOUL_T, consume, "precondition2", "kind"),
-                          self.cell(W.SOUL_T, consume, "precondition2", "threshold.power1")), ("120", "99999"))
-        for r in (grant, consume):
+        flip, charge = w03.uid(1), w03.uid(2)
+        uniques = self.out["flat"][W.UNIQUE]
+        # 叠层上限 2：134 计层（翻身）、144/199/525 读层与消耗（蓄力）都要求可叠层（上限 1 = 整套静默失效）
+        self.assertEqual(uniques[flip][0][1:5], ["咸鱼翻身", "battle/common/unique_condition/cursed_saltfish_flip", "600", "2"])
+        self.assertEqual(uniques[charge][0][1:5],
+                         ["咸鱼蓄力", "battle/common/unique_condition/cursed_saltfish_charge", "99999999", "2"])
+        self.assertEqual(uniques[charge][0][9:12], ["false", "true", "0"])      # 不可驱散、强制、非负面
+        soul = self.soul(3)
+        self.assertEqual([_kind(W.SOUL_T, r) for r in soul], ["245", "461", "461", "525", "2"])
+        add, grant, consume = soul[1], soul[2], soul[3]
+        # 行序：+1 → 翻身 → 消耗（消耗若当场生效，前两行已按施放前层数判定完）
+        for r in (add, grant, consume):
             self.assertEqual(self.cell(W.SOUL_T, r, "instant_trigger", "kind"), W.IT_SKILL)
-            self.assertEqual(self.cell(W.SOUL_T, r, "instant_content", "unique_condition_id"), uid)
+            self.assertEqual(self.cell(W.SOUL_T, r, "instant_trigger", "trigger_puller"), W.P_SELF)
+            self.assertEqual(self.cell(W.SOUL_T, r, "precondition2", "unique_condition_id"), charge)
+            self.assertEqual(self.cell(W.SOUL_T, r, "precondition2", "trigger_puller"), W.P_SELF)
+        self.assertEqual(self.cell(W.SOUL_T, add, "instant_content", "unique_condition_id"), charge)
+        self.assertEqual(self.cell(W.SOUL_T, add, "instant_content", "strength.power1"), W.times(1))
+        self.assertEqual(self.cell(W.SOUL_T, grant, "instant_content", "unique_condition_id"), flip)
+        self.assertEqual(self.cell(W.SOUL_T, consume, "instant_content", "unique_condition_id"), charge)
+        self.assertEqual(self.cell(W.SOUL_T, consume, "instant_content", "strength.power1"), W.times(2))
+        # 两组前置互斥且覆盖：≤1 层（199）/ ≥2 层（144）
+        pre = lambda r: (self.cell(W.SOUL_T, r, "precondition2", "kind"),  # noqa: E731
+                         self.cell(W.SOUL_T, r, "precondition2", "threshold.power1"))
+        self.assertEqual(pre(add), (W.PRE_UNIQUE_LE, W.times(1)))
+        self.assertEqual(pre(grant), (W.PRE_UNIQUE_GE, W.times(2)))
+        self.assertEqual(pre(consume), (W.PRE_UNIQUE_GE, W.times(2)))
+        # 不再看技能槽 200%（前置 119/120 全部去掉）
+        for table, rows in ((W.SOUL_T, soul), (W.EA_T, self.ea(3))):
+            for r in rows:
+                for block in ("precondition1", "precondition2", "precondition3"):
+                    self.assertNotIn(self.cell(table, r, block, "kind"), ("119", "120"))
+        # 施放前 0/1/2 层 → +1/+1/翻身并清空：每 3 次施放翻身 1 次
+        stacks, flips = 0, []
+        for _ in range(9):
+            fired = {r_i for r_i, r in enumerate((add, grant, consume))
+                     if (stacks <= 1) == (pre(r)[0] == W.PRE_UNIQUE_LE)}
+            flips.append(1 in fired)
+            stacks = 0 if 2 in fired else min(2, stacks + (1 if 0 in fired else 0))
+        self.assertEqual(flips, [False, False, True] * 3)
         kinds = [_kind(W.EA_T, r) for r in self.ea(3)]
         self.assertNotIn("34", kinds)
         self.assertNotIn("694", kinds)
         sep = [r for r in self.ea(3) if _kind(W.EA_T, r) == "411"]
         self.assertEqual(len(sep), 1)
         self.assertEqual((sep[0][1], sep[0][2]), ("120", "120"))
-        self.assertEqual(self.cell(W.EA_T, sep[0], "during_trigger", "unique_condition_id"), uid)
+        self.assertEqual(self.cell(W.EA_T, sep[0], "during_trigger", "unique_condition_id"), flip)
         self.assertEqual(self.total(3, "2", W.T_SELF), 800000)                 # 评分审查 0928：+500% → +800%
-        self.assertEqual(_kind(W.SOUL_T, self.soul(3)[0]), "245")
+        self.assertEqual(_kind(W.SOUL_T, soul[0]), "245")
 
     def test_rebel_banner_shared_one_second_gate(self):
         w04 = self.weapon(4)
@@ -821,7 +845,8 @@ class CursedWeaponTests(unittest.TestCase):
         self.assertEqual(W.ACCUMULATION_CAP_PENDING, {})
         self.assertEqual(self.out["accumulation_pending"], [])
         # 负对照：把本轮修过的固有改回上限 1，每一种读法都必须被拦下
-        cases = {self.weapon(3).uid(1): {"持续触发 134", "瞬发 525"},                 # 咸鱼翻身
+        cases = {self.weapon(3).uid(1): {"持续触发 134"},                             # 咸鱼翻身
+                 self.weapon(3).uid(2): {"前置 144", "前置 199", "瞬发 525"},       # 咸鱼蓄力
                  self.weapon(4).uid(1): {"前置 199"},                                   # 叛旗
                  self.weapon(10).uid(2): {"持续触发 134"},                              # 开局赌注
                  self.weapon(12).uid(1): {"持续触发 134", "ConsumeUniqueCondition"},    # 伶俐准备（含 DSL 消耗）
