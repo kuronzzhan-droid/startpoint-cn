@@ -124,9 +124,75 @@
    }
   }
  },
+ "art": {
+  "_doc": "UI 图原位替换（尺寸须与 live 相同，新路径写 size）；field 行从母本行克隆背景四件套只换 PNG；图集只追加。道具 c3/c4 在图集那条边上线后才会进入暂存（C8004 顺序约束）。",
+  "files": [
+   {
+    "src": "assets/five-boss-v2/header.png",
+    "logical": "quest/event/background/story_event/mod/five_boss/five_boss.png"
+   },
+   {
+    "src": "assets/five-boss-v2/banner.png",
+    "logical": "quest/event/banner/story_event/mod/five_boss/five_boss.png"
+   },
+   {
+    "src": "assets/five-boss-v2/thumbnail.png",
+    "logical": "quest/thumbnail/multi_battle/mod_five_boss.png"
+   },
+   {
+    "src": "assets/five-boss-v2/ticket_icon_20.png",
+    "logical": "item/materials/mod/five_boss/deep_realm_ticket.png",
+    "size": [
+     20,
+     20
+    ]
+   }
+  ],
+  "node_thumbnail": {
+   "path": [
+    "1",
+    "99"
+   ],
+   "col": 11,
+   "value": "quest/thumbnail/multi_battle/mod_five_boss"
+  },
+  "atlas_icons": [
+   {
+    "src": "assets/five-boss-v2/ticket_icon_41.png",
+    "name": "item_icon/materials/mod/five_boss/deep_realm_ticket"
+   }
+  ],
+  "item_icons": {
+   "10000143": {
+    "thumbnail": "item/materials/mod/five_boss/deep_realm_ticket",
+    "small": "item_icon/materials/mod/five_boss/deep_realm_ticket"
+   }
+  },
+  "fields": {
+   "mod_fb2_trial_hall": {
+    "_doc": "试炼回廊：白虎 expert 同地形；added 置空（白虎侧墙紫色 ADD 光会染紫五色晶石），multiply 保留共享专家档压暗",
+    "from": "beast_ruins_expert",
+    "background": {
+     "src": "assets/five-boss-v2/field_trial_hall.png",
+     "out": "battle/field/mod/five_boss_v2/trial_hall/background/background"
+    },
+    "set": {
+     "2": "(None)"
+    }
+   },
+   "mod_fb2_throne_hall": {
+    "_doc": "深界王座：沙漠 hell 同地形；门/传送舱/Fever 条沿用水晶神殿行",
+    "from": "mod_five_boss_crystal_hall",
+    "background": {
+     "src": "assets/five-boss-v2/field_throne_hall.png",
+     "out": "battle/field/mod/five_boss_v2/throne_hall/background/background"
+    }
+   }
+  }
+ },
  "rounds": {
   "r0": {
-   "field": "beast_ruins_expert",
+   "field": "mod_fb2_trial_hall",
    "zone_template": [
     "mod_five_boss_coop_v1_zone_1",
     "0"
@@ -146,7 +212,7 @@
    "tp_target": 5000
   },
   "r1": {
-   "field": "mod_five_boss_crystal_hall",
+   "field": "mod_fb2_throne_hall",
    "zone_template": [
     "mod_five_boss_var_s2_ability_a",
     "0"

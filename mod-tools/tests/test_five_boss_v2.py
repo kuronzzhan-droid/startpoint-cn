@@ -68,6 +68,74 @@ class PureFunctionTests(unittest.TestCase):
         self.assertEqual(got[("2", "f", "f", "1", "c")], {"c": "rows2"})
         self.assertEqual(len(got), 2)
 
+    def test_extrude_replicates_edge_pixels(self):
+        from PIL import Image
+        im = Image.new("RGB", (3, 2))
+        im.putdata([(1, 0, 0), (2, 0, 0), (3, 0, 0), (4, 0, 0), (5, 0, 0), (6, 0, 0)])
+        out = F.extrude(im)
+        self.assertEqual(out.size, (5, 4))
+        self.assertEqual(out.crop((1, 1, 4, 3)).tobytes(), im.tobytes())
+        self.assertEqual(out.getpixel((0, 0)), (1, 0, 0))
+        self.assertEqual(out.getpixel((4, 3)), (6, 0, 0))
+        self.assertEqual(out.getpixel((2, 0)), (2, 0, 0))
+        self.assertEqual(out.getpixel((0, 2)), (4, 0, 0))
+
+    def test_region_name_follows_flatomo_gen_layout(self):
+        self.assertEqual(F.gen_region_name("battle/field/mod/x/background/background"),
+                         "battle/field/mod/x/background/.gen/background/a")
+
+    def test_atlas_slot_keeps_gap_and_grows_downward(self):
+        from PIL import Image
+        sheet = Image.new("RGBA", (20, 10), (0, 0, 0, 0))
+        a = {"n": "a", "w": 8, "h": 8, "x": 1, "y": 1}
+        x, y, same = F.find_atlas_slot([a], sheet, (8, 8))
+        self.assertEqual((x, y, same.size), (1 + 8 + F.ATLAS_GAP, 1, (20, 10)))
+        b = {"n": "b", "w": 8, "h": 8, "x": x, "y": y}
+        x2, y2, grown = F.find_atlas_slot([a, b], sheet, (8, 8))
+        self.assertEqual((x2, y2), (1, 9 + F.ATLAS_GAP))
+        self.assertEqual(grown.size, (20, y2 + 8 + 1))
+        self.assertEqual(grown.crop((0, 0, 20, 10)).tobytes(), sheet.tobytes())   # 既有像素不动
+        # 画布里有非透明残留的位置不能用
+        dirty = sheet.copy()
+        dirty.putpixel((12, 3), (255, 0, 0, 255))
+        x3, y3, _ = F.find_atlas_slot([a], dirty, (8, 8))
+        self.assertNotEqual((x3, y3), (11, 1))
+
+    def test_item_icon_row_waits_for_live_atlas(self):
+        import io as _io
+        import wf_assets
+        from PIL import Image
+        buf = _io.BytesIO()
+        Image.new("RGBA", (16, 16), (0, 0, 0, 0)).save(buf, format="PNG")
+        sheet = wf_assets.png_encode(buf.getvalue())
+        spec = {"art": {"item_icons": {"10000143": {"thumbnail": "t/new", "small": "i/new"}}}}
+        item_table = q.build_node({"10000143": "x,10000143,n,t/old,i/old,d"})
+
+        def live_with(entries, thumb_exists):
+            files = {F.ITEM_ATLAS_FILES[0]: sheet, F.ITEM_ATLAS_FILES[1]: F.encode_amf(entries), F.T_ITEM: item_table}
+            if thumb_exists:
+                files["t/new.png"] = sheet
+
+            def loader(lg):
+                if lg not in files:
+                    raise FileNotFoundError(lg)
+                return files[lg]
+            return F.Live(loader)
+
+        region = {"n": "i/new", "w": 4, "h": 4, "x": 1, "y": 1}
+        for entries, thumb, expect_edit in (([], True, False), ([region], False, False), ([region], True, True)):
+            with self.subTest(entries=len(entries), thumb=thumb):
+                plan = F.Plan()
+                F.plan_item_icons(live_with(entries, thumb), spec, plan)
+                edits = plan.edits.get(F.T_ITEM, [])
+                self.assertEqual(bool(edits), expect_edit)
+                self.assertNotIn(F.ITEM_ATLAS_FILES[0], plan.files)
+                if expect_edit:
+                    row = F.one_row(edits[0][1])
+                    self.assertEqual((row[F.ITEM_THUMB_COL], row[F.ITEM_SMALL_COL]), ("t/new", "i/new"))
+                else:
+                    self.assertTrue(plan.warnings)
+
 
 STORE_OK = True
 try:
@@ -166,9 +234,32 @@ class LiveBuildTests(unittest.TestCase):
         self.assertEqual(node, official)
 
     def test_own_prefixes(self):
-        for table in (F.T_ZONE, F.T_FD, F.T_GB, F.T_BL):
+        for table in (F.T_ZONE, F.T_FD, F.T_GB, F.T_BL, F.T_FIELD):
             for (key, *_rest) in self.edits(table):
                 self.assertTrue(key.startswith(F.OWN_CODE_PREFIX), (table, key))
+
+    def test_fields_and_ui_art(self):
+        art = self.spec["art"]
+        fields = self.edits(F.T_FIELD)
+        self.assertEqual({k for (k,) in fields}, set(art["fields"]))
+        for fid, fdef in art["fields"].items():
+            row = F.one_row(fields[(fid,)])
+            base = fdef["background"]["out"]
+            self.assertEqual(row[F.FIELD_BG_COL], base)
+            self.assertTrue(base.startswith(F.OWN_FIELD_DIR))
+            region = F.decode_amf(self.plan.files[base + ".atlas.amf3.deflate"])[0]
+            sheet = F.open_png(self.plan.files[base + ".png"])
+            self.assertEqual(sheet.size, (region["w"] + 2, region["h"] + 2))
+            self.assertEqual(F.decode_amf(self.plan.files[base + ".parts.amf3.deflate"])["i"][0]["p"], region["n"])
+        round_fields = {r["field"] for r in self.spec["rounds"].values()}
+        for (_fd,), text in self.edits(F.T_FD).items():
+            self.assertIn(F.one_row(text)[0], round_fields)
+        for item in art["files"]:
+            self.assertIn(item["logical"], self.plan.files)
+        # 道具行只能指向 live 图集里已有的子纹理（C8004 顺序）
+        names = {e["n"] for e in F.decode_amf(self.live.file(F.ITEM_ATLAS_FILES[1]))}
+        for (_iid,), text in self.edits(F.T_ITEM).items():
+            self.assertIn(F.one_row(text)[F.ITEM_SMALL_COL], names)
 
 
 if __name__ == "__main__":

@@ -15,11 +15,15 @@
 - 血量/眩晕：每个克隆有自己的 boss_level 行 ⇒ 按目标血量反算段数 c2，眩晕基数改用 tp_normal 曲线后反算 c12；
   quest c99/c105 固定为 1。
 - 修复：还原 1.4.802 在官方共用 routine 上做的嫉妒试炼 ×3（外溢官方 1033001–04）。
+- 美术（spec.art）：事件页头图/横幅/缩略图同尺寸原位替换；两轮各一行自有 field（背景四件套从母本行克隆，
+  只换 PNG 与子纹理名）；入场券图标追加进 item_icon 共享图集（既有条目不动），道具行 c3/c4 要等图集那条边
+  上线后的下一次暂存才出现（c4 不在已加载图集 ⇒ C8004）。
 
 ## 门禁（任一不过 ⇒ 拒绝暂存）
 站位名 ⊆ 地形 CUSTOM_POSITION；召唤组 ⊆ 地形 FUNNEL_SPAWNn；DSL 构造名只用官方先例；
 每个隐藏关的 boss 贴图并集（含出招 DSL 特效闭包与属性色替弹幕）≤ 6.0 Mpx（≤5.5 通过，之间警告）；
-克隆代号不得与非自有代号冲突；路由行全部指向本次生成的隐藏关。
+克隆代号不得与非自有代号冲突；路由行全部指向本次生成的隐藏关；文件只落自有目录或 spec 点名的路径，
+图集 PNG 与 atlas 同边；共享表（stage_node、item）只改 spec 点名的键；field_data 指向的 field 行必须存在。
 """
 from __future__ import annotations
 
@@ -43,6 +47,7 @@ ROOT = TOOLS.parent
 if str(TOOLS) not in sys.path:
     sys.path.insert(0, str(TOOLS))
 
+import wf_assets  # noqa: E402
 import wf_dsl  # noqa: E402
 import wf_mod_tool as core  # noqa: E402
 import wf_quest_lib as q  # noqa: E402
@@ -61,14 +66,25 @@ T_GBS = "master/battle/boss/general_boss_state.orderedmap"
 T_GBV = "master/battle/boss/general_boss_variable.orderedmap"
 T_GEW = "master/battle/boss/general_enemy_watch.orderedmap"
 T_AR = "master/reward/event/additional_reward.orderedmap"
+T_FIELD = "master/battle/field.orderedmap"
+T_NODE = "master/quest/boss_battle_stage_node.orderedmap"
+T_ITEM = "master/item/item.orderedmap"
 
-TABLES = (T_BBQ, T_BBG, T_BBM, T_FD, T_ZONE, T_GB, T_BL, T_GBS, T_GBV, T_GEW, T_AR)
+TABLES = (T_BBQ, T_BBG, T_BBM, T_FD, T_ZONE, T_GB, T_BL, T_GBS, T_GBV, T_GEW, T_AR, T_FIELD, T_NODE, T_ITEM)
 
 DSL_SUFFIX = ".action.dsl.amf3.deflate"
 TERRAIN_SUFFIX = ".amf3.deflate"
 OWN_CODE_PREFIX = "mod_fb2_"
 OWN_DSL_DIR = "battle/action/enemy/action/mod/five_boss_v2/"
 OWN_TERRAIN_DIR = "battle/terrain/mod/five_boss_v2/"
+OWN_FIELD_DIR = "battle/field/mod/five_boss_v2/"
+# 美术：field 背景 = PartsAnimation 四件套；item_icon 是共享 TextureAtlas（item 表 c4 只能指它的子纹理）
+PARTS_SUFFIXES = (".parts.amf3.deflate", ".atlas.amf3.deflate", ".timeline.amf3.deflate")
+FIELD_BG_COL = 0
+ITEM_ATLAS = "item_icon/sprite_sheet"
+ITEM_ATLAS_FILES = (ITEM_ATLAS + ".png", ITEM_ATLAS + ".atlas.amf3.deflate")
+ITEM_THUMB_COL, ITEM_SMALL_COL = 3, 4
+ATLAS_GAP = 2                       # 子纹理之间留 2px（与既有条目 x=1/44/87 的间距一致）
 LEVEL = 80
 GENERAL_HP_K_LV80 = 2250.0          # 375·partyAtk·hitHpBasic @lv80（wf_rogue_build.GENERAL_HP_LEVEL_SCALE）
 TP_NORMAL_LV80 = 2.0                # tp_normal 曲线 lv80（取 89 档）；现网 sand c12=100×c105=36 → 7200 反推
@@ -775,6 +791,218 @@ def official_table_loader(logical: str) -> Callable[[], bytes]:
     return load
 
 
+# ============================================================ 美术（UI 图、场地背景、道具图标）
+
+def decode_amf(raw: bytes):
+    return wf_dsl.parse_dsl(zlib.decompress(raw, -15))["tree"]
+
+
+def encode_amf(tree) -> bytes:
+    """atlas/parts/timeline 与 DSL 同一容器（AMF3 + raw deflate），写前往返自检。"""
+    raw = wf_dsl.encode_amf3(tree)
+    if wf_dsl.parse_dsl(raw)["tree"] != tree:
+        raise BuildError("AMF3 encode round-trip mismatch")
+    comp = zlib.compressobj(9, zlib.DEFLATED, -15)
+    return comp.compress(raw) + comp.flush()
+
+
+def open_png(raw: bytes):
+    from PIL import Image
+    im = Image.open(io.BytesIO(wf_assets.png_decode(raw)))
+    im.load()
+    return im
+
+
+def store_png_bytes(im) -> bytes:
+    """PIL 重存一遍（去掉非常规块、调色板转 RGBA）后换成 store 的混淆魔数。"""
+    if im.mode not in ("RGB", "RGBA"):
+        im = im.convert("RGBA")
+    buf = io.BytesIO()
+    im.save(buf, format="PNG", optimize=True)
+    return wf_assets.png_encode(buf.getvalue())
+
+
+def extrude(im, pad: int = 1):
+    """官方背景图集四周 1px 是边缘像素外扩（不是透明），防止缩放采样时边缘渗黑。"""
+    from PIL import Image
+    w, h = im.size
+    out = Image.new(im.mode, (w + 2 * pad, h + 2 * pad))
+    out.paste(im, (pad, pad))
+    for i in range(pad):
+        out.paste(im.crop((0, 0, w, 1)), (pad, i))
+        out.paste(im.crop((0, h - 1, w, h)), (pad, h + pad + i))
+    left = out.crop((pad, 0, pad + 1, h + 2 * pad))
+    right = out.crop((w + pad - 1, 0, w + pad, h + 2 * pad))
+    for i in range(pad):
+        out.paste(left, (i, 0))
+        out.paste(right, (w + pad + i, 0))
+    return out
+
+
+def gen_region_name(base: str) -> str:
+    """flatomo 背景的子纹理名：<目录>/.gen/<文件名>/a（官方 beast_ruins/水晶神殿同式）。"""
+    head, tail = base.rsplit("/", 1)
+    return f"{head}/.gen/{tail}/a"
+
+
+def plan_ui_files(live: Live, spec: dict, plan: Plan) -> None:
+    """事件页头图、商店横幅、缩略图、道具小图：同尺寸原位替换；新路径须在 spec 写明尺寸。"""
+    from PIL import Image
+    for item in spec.get("art", {}).get("files", []):
+        logical = item["logical"]
+        im = Image.open(TOOLS / item["src"])
+        im.load()
+        cur = live.file(logical)
+        if "size" in item:
+            want = tuple(item["size"])
+        elif cur is not None:
+            want = open_png(cur).size
+        else:
+            plan.problems.append(f"art {logical}: new path needs an explicit size")
+            continue
+        if im.size != want:
+            plan.problems.append(f"art {logical}: {im.size[0]}x{im.size[1]} != {want[0]}x{want[1]}")
+            continue
+        plan.files[logical] = store_png_bytes(im)
+
+
+def plan_fields(live: Live, spec: dict, plan: Plan) -> None:
+    """新建自有 field 行：背景四件套从母本行克隆，只换 PNG 与子纹理名；其余列沿用母本，可按列覆盖。
+    背景像素即地形坐标（官方白虎/水晶神殿平移均为 0,0）⇒ 新图尺寸必须与母本子纹理相同。"""
+    from PIL import Image
+    fld = live.table(T_FIELD)
+    for fid, fdef in spec.get("art", {}).get("fields", {}).items():
+        mother_text = fld.get(fdef["from"])
+        if not isinstance(mother_text, str):
+            raise BuildError(f"field row missing: {fdef['from']}")
+        row = one_row(mother_text)
+        old_base, new_base = row[FIELD_BG_COL], fdef["background"]["out"]
+        raws = {suf: live.file(old_base + suf) for suf in PARTS_SUFFIXES}
+        if any(v is None for v in raws.values()):
+            raise BuildError(f"{old_base}: background parts incomplete")
+        parts = decode_amf(raws[".parts.amf3.deflate"])
+        atlas = decode_amf(raws[".atlas.amf3.deflate"])
+        if len(atlas) != 1 or len(parts.get("i", [])) != 1 or atlas[0]["n"] != gen_region_name(old_base) \
+                or parts["i"][0]["p"] != atlas[0]["n"]:
+            raise BuildError(f"{old_base}: not a single-region flatomo background")
+        region = atlas[0]
+        src = Image.open(TOOLS / fdef["background"]["src"])
+        src.load()
+        if src.size != (region["w"], region["h"]):
+            plan.problems.append(f"field {fid}: background {src.size[0]}x{src.size[1]} != "
+                                 f"{region['w']}x{region['h']} of {fdef['from']} (terrain alignment)")
+            continue
+        name = gen_region_name(new_base)
+        new_parts = copy.deepcopy(parts)
+        new_parts["i"][0]["p"] = name
+        new_region = dict(region)
+        new_region["n"] = name
+        pad = region["x"]
+        plan.files[new_base + ".png"] = store_png_bytes(extrude(src, pad))
+        plan.files[new_base + ".parts.amf3.deflate"] = encode_amf(new_parts)
+        plan.files[new_base + ".atlas.amf3.deflate"] = encode_amf([new_region])
+        plan.files[new_base + ".timeline.amf3.deflate"] = raws[".timeline.amf3.deflate"]
+        row[FIELD_BG_COL] = new_base
+        for col, val in fdef.get("set", {}).items():
+            row[int(col)] = val
+        plan.put(T_FIELD, [fid], write_rows([row]))
+    plan.report["fields"] = sorted(spec.get("art", {}).get("fields", {}))
+
+
+def atlas_rect(e: dict) -> tuple[int, int, int, int]:
+    # r=true 时 w/h 的含义两种说法都有，按外接正方形保守占位
+    w, h = (max(e["w"], e["h"]),) * 2 if e.get("r") else (e["w"], e["h"])
+    return e["x"], e["y"], e["x"] + w, e["y"] + h
+
+
+def find_atlas_slot(entries: list[dict], sheet, size: tuple[int, int]):
+    """在现有画布里找一块不与任何条目（含间隔）重叠、且连同 1px 外圈全透明的位置；
+    没有就向下扩画布。既有条目的 x/y/w/h 一律不动。返回 (x, y, sheet)。"""
+    from PIL import Image
+    w, h = size
+    W, H = sheet.size
+    rects = [atlas_rect(e) for e in entries]
+    xs = sorted({1} | {r[2] + ATLAS_GAP for r in rects})
+    ys = sorted({1} | {r[3] + ATLAS_GAP for r in rects})
+    for y in ys:
+        for x in xs:
+            if x + w + 1 > W or y + h + 1 > H:
+                continue
+            if any(x < r[2] + ATLAS_GAP and r[0] < x + w + ATLAS_GAP and
+                   y < r[3] + ATLAS_GAP and r[1] < y + h + ATLAS_GAP for r in rects):
+                continue
+            if sheet.crop((x - 1, y - 1, x + w + 1, y + h + 1)).getextrema()[3] == (0, 0):
+                return x, y, sheet
+    y = max(r[3] for r in rects) + ATLAS_GAP
+    grown = Image.new("RGBA", (W, y + h + 1), (0, 0, 0, 0))
+    grown.paste(sheet, (0, 0))
+    return 1, y, grown
+
+
+def plan_item_icons(live: Live, spec: dict, plan: Plan) -> None:
+    """item_icon 共享图集追加子纹理；道具行 c3/c4 只在 live 已有对应资源时才改。
+    顺序是硬约束：c4 指向的子纹理不在已加载图集 ⇒ 掉落展示/商店同步取图当场 C8004
+    （memory wf-c8004-small-icon-atlas-rule）。所以同一次暂存里图集和道具行不会同时出现：
+    先发图集这条边，下一次重暂存时道具行自动进来。图集 PNG 与 atlas 两个文件必须同边。"""
+    from PIL import Image
+    art = spec.get("art", {})
+    entries = decode_amf(live.file(ITEM_ATLAS_FILES[1]))
+    live_names = {e["n"] for e in entries}
+    sheet = open_png(live.file(ITEM_ATLAS_FILES[0])).convert("RGBA")
+    new_entries = copy.deepcopy(entries)
+    changed = False
+    for icon in art.get("atlas_icons", []):
+        im = Image.open(TOOLS / icon["src"]).convert("RGBA")
+        hit = next((e for e in new_entries if e["n"] == icon["name"]), None)
+        if hit is not None:
+            if hit.get("r") or (hit["w"], hit["h"]) != im.size:
+                plan.problems.append(f"atlas {icon['name']}: existing region shape differs; refusing to repack")
+                continue
+            box = (hit["x"], hit["y"])
+            if sheet.crop(box + (box[0] + im.size[0], box[1] + im.size[1])).tobytes() == im.tobytes():
+                continue
+            sheet.paste(im, box)
+        else:
+            x, y, sheet = find_atlas_slot(new_entries, sheet, im.size)
+            sheet.paste(im, (x, y))
+            new_entries.append({"n": icon["name"], "w": im.size[0], "h": im.size[1], "x": x, "y": y})
+        changed = True
+    if changed:
+        plan.files[ITEM_ATLAS_FILES[0]] = store_png_bytes(sheet)
+        plan.files[ITEM_ATLAS_FILES[1]] = encode_amf(new_entries)
+        plan.report["item_atlas"] = {"entries": len(new_entries), "size": list(sheet.size)}
+    items = live.table(T_ITEM)
+    for iid, cols in art.get("item_icons", {}).items():
+        text = items.get(iid)
+        if not isinstance(text, str):
+            raise BuildError(f"item row missing: {iid}")
+        if cols["small"] not in live_names or live.file(cols["thumbnail"] + ".png") is None:
+            plan.warnings.append(f"item {iid}: icon not live yet, c3/c4 deferred to the next edge")
+            continue
+        row = one_row(text)
+        want = list(row)
+        want[ITEM_THUMB_COL], want[ITEM_SMALL_COL] = cols["thumbnail"], cols["small"]
+        if want != row:
+            plan.put(T_ITEM, [iid], write_rows([want]))
+
+
+def plan_node_thumbnail(live: Live, spec: dict, plan: Plan) -> None:
+    cfg = spec.get("art", {}).get("node_thumbnail")
+    if not cfg:
+        return
+    text = get_path(live.table(T_NODE), cfg["path"])
+    if not isinstance(text, str):
+        raise BuildError(f"stage node missing: {cfg['path']}")
+    thumb = cfg["value"]
+    if live.file(thumb + ".png") is None and thumb + ".png" not in plan.files:
+        plan.problems.append(f"stage node thumbnail {thumb} does not exist")
+        return
+    row = one_row(text)
+    if row[cfg["col"]] != thumb:
+        row[cfg["col"]] = thumb
+        plan.put(T_NODE, list(cfg["path"]), write_rows([row]))
+
+
 # ============================================================ 门禁
 
 def routine_positions(live: Live, routine: str) -> set[str]:
@@ -975,7 +1203,7 @@ def gate_codes(live: Live, spec: dict, plan: Plan) -> None:
         code = path[0]
         if code in gb and not code.startswith(owned_prefix):
             plan.problems.append(f"would overwrite non-owned general_boss {code}")
-    for table in (T_ZONE, T_FD):
+    for table in (T_ZONE, T_FD, T_FIELD):
         for path, _ in plan.edits.get(table, []):
             if not path[0].startswith(owned_prefix):
                 plan.problems.append(f"{table}: non-owned key {path[0]}")
@@ -985,6 +1213,28 @@ def gate_codes(live: Live, spec: dict, plan: Plan) -> None:
         if prog_logical.endswith(TERRAIN_SUFFIX) and prog_logical.startswith("battle/terrain/") \
                 and not prog_logical.startswith(OWN_TERRAIN_DIR):
             plan.problems.append(f"terrain outside own dir: {prog_logical}")
+    # 文件白名单：自有目录 + spec 点名的 UI 图 + item_icon 图集两件
+    art = spec.get("art", {})
+    named = {f["logical"] for f in art.get("files", [])} | set(ITEM_ATLAS_FILES)
+    for logical in plan.files:
+        if not logical.startswith((OWN_DSL_DIR, OWN_TERRAIN_DIR, OWN_FIELD_DIR)) and logical not in named:
+            plan.problems.append(f"file outside owned paths: {logical}")
+    if (ITEM_ATLAS_FILES[0] in plan.files) != (ITEM_ATLAS_FILES[1] in plan.files):
+        plan.problems.append("item_icon atlas png/atlas must ship in the same edge")
+    # 共享表只许改点名的键
+    node_path = (art.get("node_thumbnail") or {}).get("path")
+    for path, _ in plan.edits.get(T_NODE, []):
+        if path != node_path:
+            plan.problems.append(f"{T_NODE}: unexpected key {path}")
+    for path, _ in plan.edits.get(T_ITEM, []):
+        if path[0] not in art.get("item_icons", {}):
+            plan.problems.append(f"{T_ITEM}: unexpected key {path}")
+    # field_data 指向的 field 行必须存在（live 或本次新建）
+    fields = set(live.table(T_FIELD)) | {p[0] for p, _ in plan.edits.get(T_FIELD, [])}
+    for path, node in plan.edits.get(T_FD, []):
+        fid = one_row(node)[0]
+        if fid not in fields:
+            plan.problems.append(f"field_data {path[0]} -> missing field row {fid}")
 
 
 # ============================================================ 汇总
@@ -1018,6 +1268,10 @@ def build(spec: dict | None = None, live: Live | None = None, *, official_gbs: C
         plan_variant(live, spec, plan, v, terrains)
     plan_routes(live, spec, plan)
     plan_reward_display(spec, plan)
+    plan_ui_files(live, spec, plan)
+    plan_fields(live, spec, plan)
+    plan_item_icons(live, spec, plan)
+    plan_node_thumbnail(live, spec, plan)
     if with_envy_revert:
         plan_envy_revert(live, official_gbs or official_table_loader(T_GBS), plan)
     # 门禁
