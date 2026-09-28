@@ -4,12 +4,13 @@
   "default_publish_profile": "local-mumu",
   "profiles": {
     "local-mumu": {
-      "description": "本机 MuMu 实例 1：APK 7056f7dc（equipment-enhanced-look L1，叠在说明覆盖 cf91b29b 上），运行 SWF 45ca9985",
+      "description": "本机 MuMu 实例 1：APK 14396ce0（equipment-enhanced-party-frame L1，叠在 enhanced-look 7056f7dc 上），运行 SWF 9986dea3",
       "capabilities": [
         "damage-type-rules-v1",
         "dash-parameter-v1",
         "equipment-description-override-v1",
         "equipment-enhanced-look-v1",
+        "equipment-enhanced-party-frame-v1",
         "equipment-gauge-gain-rules-v1",
         "equipment-rules-v1",
         "gauge-gain-rules-v1",
@@ -19,10 +20,10 @@
         "panel-description-override-v2"
       ],
       "evidence": {
-        "apk_sha256": "7056f7dc072cb5d4c01f03557085dc09131c62a8c85467ca1766d5d197072ebc",
-        "swf_sha256": "45ca9985a896b644f35fa3328286ad86dfdcd1146b6d723e499fb79c674be420",
-        "build_summary": "D:/WF/out/PARADOX-20260928/apk/enhanced-look-20260928/build-summary.json（candidate_capabilities）",
-        "install_receipt": "D:/WF/out/PARADOX-20260928/apk/enhanced-look-20260928/install-receipt.json",
+        "apk_sha256": "14396ce09a4cf23624be570677ddc93b8e284ea8414836112dd7e78db6c056b6",
+        "swf_sha256": "9986dea39831608e44a405619cf234c8cccdcdbc476939bb9b5c53d689d67177",
+        "build_summary": "D:/WF/out/PARADOX-20260928/apk/enhanced-look-party-20260928/build-summary.json（candidate_capabilities）",
+        "install_receipt": "D:/WF/out/PARADOX-20260928/apk/enhanced-look-party-20260928/install-receipt.json",
         "installed_on": "2026-09-28"
       },
       "update_rule": "本机装新补丁 APK 后，按其 build-summary 的 candidate_capabilities 与安装回执重写本档案"

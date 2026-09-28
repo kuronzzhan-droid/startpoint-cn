@@ -262,16 +262,16 @@ class ClientProfileTests(unittest.TestCase):
         self.assertEqual("local-mumu", wfx_gate.default_publish_profile())
         self.assertEqual(frozenset(), self.profiles["official"].capabilities)
 
-    def test_local_mumu_equals_the_installed_7056f7dc_capabilities(self):
-        """7056f7dc = equipment-enhanced-look 叠在说明覆盖 cf91b29b 上:继承 10 项 + 本层 1 项(2026-09-28 装本机)。"""
-        rules = load_patch_module("equipment-enhanced-look/rules.py", "_wfx_profile_look_rules")
+    def test_local_mumu_equals_the_installed_14396ce0_capabilities(self):
+        """14396ce0 = equipment-enhanced-party-frame 叠在 enhanced-look 7056f7dc 上:继承 11 项 + 本层 1 项(2026-09-28 装本机)。"""
+        rules = load_patch_module("equipment-enhanced-party-frame/rules.py", "_wfx_profile_party_rules")
         self.assertEqual(frozenset(rules.INHERITED_CAPABILITIES) | {rules.CAPABILITY},
                          self.profiles["local-mumu"].capabilities)
-        self.assertEqual(11, len(self.profiles["local-mumu"].capabilities))
+        self.assertEqual(12, len(self.profiles["local-mumu"].capabilities))
         data = json.loads(wfx_gate.PROFILES_PATH.read_text(encoding="utf-8"))
         evidence = data["profiles"]["local-mumu"]["evidence"]
-        self.assertTrue(evidence["apk_sha256"].startswith("7056f7dc"))
-        self.assertTrue(evidence["swf_sha256"].startswith("45ca9985"))
+        self.assertTrue(evidence["apk_sha256"].startswith("14396ce0"))
+        self.assertTrue(evidence["swf_sha256"].startswith("9986dea3"))
 
     def test_gray_1047_is_the_1047_base_without_equipment_layers(self):
         rules = load_patch_module("equipment-rules/rules.py", "_wfx_profile_equipment_rules")
