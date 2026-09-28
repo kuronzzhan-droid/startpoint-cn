@@ -21,13 +21,67 @@ import wf_dsl  # noqa: E402
 import wf_paradox_weapon as P  # noqa: E402
 
 FIXTURE = Path(__file__).parent / "fixtures/paradox_templates.json"
+#: 新材料的克隆模板（live 1.4.1067 的五重材料行原样；fixture 文件是 1.4.1059 快照，不含它们）
+MATERIAL_TEMPLATES = {
+    "10000145": [["five_boss_10000145", "10000145", "深界结晶", "item/materials/mod/five_boss/deep_crystal",
+                  "item_icon/materials/mod/five_boss/deep_crystal", "在五重决战深处凝结的强化素材。", "1", "", "", "",
+                  "", "", "", "", "9", "(None)", "300", "4", "9999", "2025-06-19 12:00:00", "(None)", "true", ""]],
+    "10000147": [["five_boss_10000147", "10000147", "五王心核", "item/materials/mod/five_boss/five_king_core",
+                  "item_icon/materials/mod/five_boss/five_king_core", "五名强敌力量汇聚而成的稀有强化核心。", "1", "", "",
+                  "", "", "", "", "", "9", "(None)", "500", "5", "9999", "2025-06-19 12:00:00", "(None)", "true", ""]],
+}
+#: live 1.4.1064 起的强化 Lv120 合计（含本体）——Lv200 续涨不许改动它们（已有存档零变化）
+LV120_TOTALS = {("32", "0"): 800, ("33", "0"): 800, ("34", "0"): 800, ("55", "0"): 800, ("388", "0"): 800,
+                ("723", "0"): 20, ("693", "0"): 20, ("694", "0"): 20, ("695", "0"): 20, ("696", "0"): 20,
+                ("35", "0"): 30, ("245", "0"): 100, ("717", "0"): 150, ("32", P.PRE_MY_SELF): 250, ("226", "0"): 50}
+#: 作者 0928 方案甲：强化 Lv200 合计（含本体）；槽上限已顶 +100% 钳制、弹射连击与直击段数不续涨
+LV200_TOTALS = {**LV120_TOTALS, **{(k, "0"): 1000 for k in ("32", "33", "34", "55", "388")},
+                **{(k, "0"): 30 for k in ("723", "693", "694", "695", "696")},
+                ("35", "0"): 50, ("717", "0"): 200, ("32", P.PRE_MY_SELF): 350}
+
+
+def fixture_data() -> dict:
+    data = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    data["flat"][P.ITEM].update(copy.deepcopy(MATERIAL_TEMPLATES))
+    return data
 
 
 def fixture_reader() -> W.LiveReader:
-    data = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    data = fixture_data()
     return W.LiveReader(lambda logical: data["flat"].get(logical, {}),
                         lambda logical: data["nested"].get(logical, {}),
                         lambda name: {})
+
+
+def value_at(row: list[str], table: str, level: int) -> float | None:
+    """客户端 MinToMaxLevelScale（AbilityPowerValue.resolve case 1）：未习得 None；≤learn 取 power1、≥max 取 first_max、
+    其间线性（只用于端点核对）。强化表 c1 = learn、c2 = max。"""
+    learn, top = int(row[1]), int(row[2])
+    if level < learn:
+        return None
+    lo = float(row[W._col(table, "instant_content", "strength.power1")])
+    hi = float(row[W._col(table, "instant_content", "strength.first_max")])
+    if lo == hi or level >= top:
+        return hi
+    if level <= learn:
+        return lo
+    return lo + (hi - lo) * (level - learn) / (top - learn)
+
+
+def status_at(table: dict[str, str], level: int) -> tuple[int, int] | None:
+    """客户端 EquipmentEnhancementStatusLogic.getParameterAt：键排序；低于首键从 0 插值；落在最后一个键的下标时
+    按等级精确取（取不到 = null → 空引用崩，这里返回 None）；否则相邻两键间 ceil 插值。"""
+    import math
+    keys = sorted(int(k) for k in table)
+    pairs = {k: tuple(int(x) for x in table[str(k)].split(",")) for k in keys}
+    if level < keys[0]:
+        return tuple(math.ceil(v * level / keys[0]) for v in pairs[keys[0]])
+    index = max(i for i, k in enumerate(keys) if k <= level)
+    if index == len(keys) - 1:
+        return pairs.get(level)
+    a, b = keys[index], keys[index + 1]
+    t = (level - a) / (b - a)
+    return tuple(y if x == y else math.ceil(x * (1 - t) + y * t) for x, y in zip(pairs[a], pairs[b]))
 
 
 def _cell(row: list[str], block: str, name: str) -> str:
@@ -94,7 +148,7 @@ class ParadoxTests(unittest.TestCase):
 
     def test_stale_tags_are_cleaned_after_1060(self):
         # 1.4.1060 曾给赛瑞斯发过 tag_paradox_seris：同步时要把它从角色行和标签表清掉，其余三人不动
-        data = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        data = fixture_data()
         chars = data["flat"][P.CHARACTER]
         for cid, tag, label in P.TAGS:
             chars[cid][0][P.TAG_COLUMN] = P.retag(chars[cid][0], tag)[P.TAG_COLUMN]
@@ -234,11 +288,14 @@ class ParadoxTests(unittest.TestCase):
         base = P.build(fixture_reader())
         self.assertEqual(base["problems"], [f"{W.EA_T}[{k}]#{index}: {miss.format(S.EQUIPMENT_GAUGE_CAP)}" for k in keys])
         # 需求并集：legality 只报运行时 gauge-gain-rules-v1，解析器的 equipment-gauge-gain-rules-v1 由生成器补齐；
-        # 另加装备详情覆盖三键的 equipment-description-override-v1 —— 行为型，两个目标客户端都没有它，却不进 problems
-        want = sorted([BR.GAUGE_CAP, S.EQUIPMENT_GAUGE_CAP, L.EQUIPMENT_DESC_OVERRIDE])
+        # 另加装备详情覆盖三键的 equipment-description-override-v1 与 200 级外观两键的 equipment-enhanced-look-v1 ——
+        # 都是行为型，两个目标客户端都没有它们，却不进 problems
+        want = sorted([BR.GAUGE_CAP, S.EQUIPMENT_GAUGE_CAP, L.EQUIPMENT_DESC_OVERRIDE, P.ENHANCED_LOOK_CAP])
         self.assertEqual(base["capabilities"], want)
         self.assertEqual(self.out["capabilities"], want)
         self.assertNotIn(L.EQUIPMENT_DESC_OVERRIDE, P.PATCHED_CLIENT_CAPABILITIES)
+        self.assertNotIn(P.ENHANCED_LOOK_CAP, P.PATCHED_CLIENT_CAPABILITIES)
+        self.assertEqual(P.ENHANCED_LOOK_CAP, "equipment-enhanced-look-v1")
         self.assertEqual(self.out["problems"], [])
         self.assertEqual(P.row_capabilities(W.EA_T, gauge), [BR.GAUGE_CAP, S.EQUIPMENT_GAUGE_CAP])
         # 没有任何补丁的客户端：423 行两项都缺，仍只有这 4 行
@@ -265,51 +322,240 @@ class ParadoxTests(unittest.TestCase):
                          {rules.CAPABILITY_RULES, rules.CAPABILITY_GAUGE})
         self.assertNotIn(rules.CAPABILITY_GAUGE, P.BASE_CLIENT_CAPABILITIES)
 
-    def test_enhancement_reaches_final_values(self):
-        final = {("32", ""): 800, ("33", ""): 800, ("34", ""): 800, ("55", ""): 800, ("388", ""): 800,
-                 ("723", ""): 20, ("693", ""): 20, ("694", ""): 20, ("695", ""): 20, ("696", ""): 20,
-                 ("35", ""): 30, ("245", ""): 100, ("717", ""): 150, ("32", P.PRE_MY_SELF): 250}
+    def _totals_at(self, key: str, level: int) -> dict:
+        """本体（满破）+ 强化 Lv<level> 已习得行按客户端插值的合计（%；226 为次数）；诅咒（自身以外）不计。"""
         total: dict = {}
-        for r in self.rows:
-            kind = _cell(r, "instant_content", "kind")
-            key = (kind, "" if _cell(r, "precondition1", "kind") == "0" else _cell(r, "precondition1", "kind"))
-            if key in final:
-                total[key] = total.get(key, 0) + float(_cell(r, "instant_content", "strength.first_max")) / 1000
-        for r in self.out["flat"][P.EA][P.ID]:
-            kind = self._ea(r, "instant_content", "kind")
-            if self._ea(r, "instant_content", "target") == W.T_EXCEPT:
-                continue
-            key = (kind, "" if self._ea(r, "precondition1", "kind") == "0" else self._ea(r, "precondition1", "kind"))
-            if key in final:
-                total[key] = total.get(key, 0) + float(self._ea(r, "instant_content", "strength.first_max")) / 1000
-        self.assertEqual({k: round(v, 6) for k, v in total.items()}, final)
-        # W.growth_pair 自 d63896fd 起按诅咒武器口径扣「设计值 × 0.2」；PARADOX 本体满额，须折回（= live 1.4.1064 的形状）
+        for table, logical in ((W.SOUL_T, P.SOUL), (W.EA_T, P.EA)):
+            for r in self.out["flat"][logical][key]:
+                mode = r[2] if table == W.SOUL_T else r[5]
+                kind = r[W._col(table, "instant_content", "kind")]
+                if mode != "0" or r[W._col(table, "instant_content", "target")] == W.T_EXCEPT:
+                    continue
+                if kind in ("629", "58", "461"):
+                    continue
+                value = (float(r[W._col(table, "instant_content", "strength.first_max")]) if table == W.SOUL_T
+                         else value_at(r, table, level))
+                if value is None:
+                    continue
+                pk = (kind, r[W._col(table, "precondition1", "kind")])
+                total[pk] = total.get(pk, 0) + value / (100000 if kind == "226" else 1000)
+        return {k: round(v, 6) for k, v in total.items()}
+
+    def test_enhancement_reaches_lv200_totals(self):
+        # 方案甲：Lv200 合计 攻击/四类伤害 1000%、独立乘区 30%、充能 50%、槽上限 100%（钳制不涨）、合击 200%、三人 350%
+        self.assertEqual(self._totals_at(P.ID, P.MAX_LEVEL), LV200_TOTALS)
+        # W.growth_pair 自 d63896fd 起按诅咒武器口径扣「设计值 × 0.2」；PARADOX 本体满额，须折回（= live 1.4.1064 的形状）；
+        # 补足行 power1 不动、first_max 抬到 Lv200（20% + 200%）
         first = [(self._ea(r, "instant_content", "strength.power1"), self._ea(r, "instant_content", "strength.first_max"))
                  for r in self.out["flat"][P.EA][P.ID][:2]]
-        self.assertEqual(first, [("1933", "230000"), ("20000", "20000")])
+        self.assertEqual(first, [("1933", "230000"), ("20000", "220000")])
         combo = [r for r in self.out["flat"][P.EA][P.ID] if self._ea(r, "instant_content", "kind") == "226"]
-        self.assertEqual([self._ea(r, "instant_content", "strength.power1") for r in combo], [W.times(15)])
+        self.assertEqual([(self._ea(r, "instant_content", "strength.power1"), r[1], r[2]) for r in combo],
+                         [(W.times(15), "120", "120")])
+
+    def test_lv120_totals_unchanged_regression_lock(self):
+        # 已有存档零变化：Lv119 / Lv120 按客户端插值的合计与 live 1.4.1064 起完全一致；满档与三个分档都锁
+        self.assertEqual(self._totals_at(P.ID, P.FINAL_LEVEL), LV120_TOTALS)
+        for n, ratio in P.TIERS.items():
+            got = self._totals_at(P.tier_id(n), P.FINAL_LEVEL)
+            for key, want in LV120_TOTALS.items():
+                if key == ("226", "0"):
+                    continue                                          # 连击按 _half_up 取整，见 test_decay_tier_discrete_rounding
+                self.assertAlmostEqual(got[key], want * ratio, delta=0.01, msg=(n, key))
+        # 续涨行 = live 的补足行只把 c2 120→200、c4 战力 48→96、first_max 抬高；power1（Lv120 取值）逐字节是 live 值
+        topups = {"32": "20000", "33": "20000", "34": "20000", "55": "20000", "388": "20000", "723": "500",
+                  "693": "500", "694": "500", "695": "500", "696": "500", "35": "750", "717": "3750"}
+        ea = self.out["flat"][P.EA][P.ID]
+        continued = [r for r in ea if (r[1], r[2]) == (str(P.FINAL_LEVEL), str(P.MAX_LEVEL))]
+        self.assertEqual([r[0] for r in continued], [str(s) for s in (1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 25, 27)])
+        for r in continued:
+            kind = self._ea(r, "instant_content", "kind")
+            want = "6250" if self._ea(r, "precondition1", "kind") == P.PRE_MY_SELF else topups[kind]
+            self.assertEqual((self._ea(r, "instant_content", "strength.power1"), r[3], r[4], r[5]),
+                             (want, "48", "96", "0"), r[0])
+        # 槽上限补足行（slot 23）与直击 / 连击 / 诅咒（slot 28–33）仍是 learn = max = 120
+        fixed = [r for r in ea if (r[1], r[2]) == (str(P.FINAL_LEVEL), str(P.FINAL_LEVEL))]
+        self.assertEqual([r[0] for r in fixed], ["23", "28", "29", "30", "31", "32", "33"])
+        self.assertEqual(self._ea(ea[23], "instant_content", "kind"), "245")
+
+    def test_one_row_per_slot(self):
+        # C2324 只在同一 slot 多行时检查成长次序：满档与分档每个 slot 都只一行，续涨不新增行
+        for key, rows in self.out["flat"][P.EA].items():
+            self.assertEqual([r[0] for r in rows], [str(i) for i in range(34)], key)
+            for r in rows:
+                self.assertLessEqual(int(r[1]), int(r[2]))
+                self.assertLessEqual(int(r[2]), P.MAX_LEVEL)
 
     def test_enhancement_entry_shop_and_server(self):
         enh = self.out["flat"][P.ENH][P.ID][0]
-        self.assertEqual((enh[2], enh[4], enh[6]), (P.NAME120, P.ICON120, P.ENH_DESCRIPTION))
+        # c0 = 200；名字 / 图标 / 说明 / 框仍在 120 级切换（200 级图标与蓝金框走外观两键）
+        self.assertEqual(enh[:8], [str(P.MAX_LEVEL), "120", P.NAME120, "120", P.ICON120, "120", P.ENH_DESCRIPTION, "120"])
         self.assertLessEqual(len(enh[6]), W.DESC_LIMITS["enhancement"])
         # 面板上 423 只有通用的「限制技能槽增加」：作者原话写在强化说明里
         self.assertIn("除自身外的角色无法获得能力和装备的技能槽增加效果", enh[6])
         self.assertNotIn(",", enh[6])
         self.assertNotIn("\n", enh[6])
         shop = self.out["flat"][P.ENH_SHOP]
-        self.assertEqual(sorted(shop), [f"{P.ID}{s:02d}" for s in range(1, 7)])
-        caps = [int(shop[f"{P.ID}{s:02d}"][0][30]) for s in range(1, 7)]
-        self.assertEqual(caps, [69, 70, 98, 99, 119, 120])
-        for r in (v[0] for v in shop.values()):
-            self.assertEqual((r[0], r[2], r[29], r[31]), (W.ENH_CATEGORY_KEY, P.ID, P.ID, "5"))
-            used = {r[i] for i in (14, 16, 18, 20) if r[i] not in ("", "(None)")}
-            self.assertTrue(used and used <= {W.BLUEPRINT, W.CRYSTAL, W.CORE})
+        self.assertEqual(sorted(shop), [f"{P.ID}{s:02d}" for s in range(1, 11)])
+        caps = [int(shop[f"{P.ID}{s:02d}"][0][30]) for s in range(1, 11)]
+        self.assertEqual(caps, [69, 70, 98, 99, 119, 120, 159, 160, 199, 200])
+        self.assertEqual(caps[-1], int(enh[0]))                           # 最后一阶上限 = c0（服务端上限来自末阶）
+        costs = {}
+        for s in range(1, 11):
+            r = shop[f"{P.ID}{s:02d}"][0]
+            self.assertEqual((r[0], r[2], r[3], r[29], r[31]), (W.ENH_CATEGORY_KEY, P.ID, str(s), P.ID, "5"))
+            costs[s] = tuple((r[i], int(r[i + 1])) for i in (14, 16, 18, 20) if r[i] not in ("", "(None)"))
+        # 1–6 阶与 live 1.4.1063 一致（五重材料）；7–10 阶只收新材料
+        crystal, core, blueprint = "10000145", "10000147", "10000144"
+        self.assertEqual([costs[s] for s in range(1, 7)],
+                         [((crystal, 1),), ((crystal, 10), (core, 1)), ((crystal, 2),), ((crystal, 10), (core, 2)),
+                          ((crystal, 3), (core, 1)), ((core, 3), (blueprint, 2))])
+        self.assertEqual([costs[s] for s in range(7, 11)],
+                         [((P.SHARD, 3),), ((P.SHARD, 10), (P.PARADOX_CORE, 1)), ((P.SHARD, 5),), ((P.PARADOX_CORE, 3),)])
+        # 7–10 阶用第 6 阶模板：与第 6 阶行只差阶段号 / 费用 / 上限
+        template = shop[f"{P.ID}06"][0]
+        for s in range(7, 11):
+            row = shop[f"{P.ID}{s:02d}"][0]
+            self.assertEqual(len(row), len(template))
+            self.assertLessEqual({i for i, (a, b) in enumerate(zip(template, row)) if a != b}, {3, *range(14, 22), 30})
+        self.assertEqual(self.out["nested"][P.ENH_STATUS], {P.ID: dict(P.PARADOX_ENH_STATUS_ROWS)})
+
+    def test_server_shop_mirrors_client(self):
+        # 服务端 equipment_enhancement_shop.json 与客户端商店行一一对应（上限 / 阶段 / 费用 / 分组）
+        shop = self.out["flat"][P.ENH_SHOP]
         srv = self.out["server"]["equipment_enhancement_shop.json"]
         self.assertEqual(sorted(srv), sorted(shop))
-        self.assertEqual({v["enhancementMaxLevel"] for v in srv.values()}, {69, 70, 98, 99, 119, 120})
-        self.assertEqual(self.out["nested"][P.ENH_STATUS], {P.ID: dict(W.ENH_STATUS_ROWS)})
+        for key, rows in shop.items():
+            r, v = rows[0], srv[key]
+            self.assertEqual((v["enhancementMaxLevel"], v["stage"], v["groupId"], v["equipmentId"], v["shopCategoryId"],
+                              v["requireAwakeningLevel"], v["stock"], v["rewards"], v["availableFrom"]),
+                             (int(r[30]), int(r[3]), int(P.ID), int(P.ID), 6, 5, -1, [], W.START_TIME), key)
+            self.assertEqual([(c["id"], c["amount"]) for c in v["costs"]],
+                             [(int(r[i]), int(r[i + 1])) for i in (14, 16, 18, 20) if r[i] not in ("", "(None)")], key)
+        self.assertEqual(max(v["enhancementMaxLevel"] for v in srv.values()), P.MAX_LEVEL)
+        # 与 live 592000106 的服务端行同形（键序无关）
+        self.assertEqual(srv[f"{P.ID}06"], {"availableFrom": W.START_TIME, "availableUntil": None,
+                                             "costs": [{"id": 10000147, "amount": 3}, {"id": 10000144, "amount": 2}],
+                                             "enhancementMaxLevel": 120, "equipmentId": 5920001, "groupId": 5920001,
+                                             "requireAwakeningLevel": 5, "rewards": [], "shopCategoryId": 6,
+                                             "stage": 6, "stock": -1})
+
+    def test_status_table_covers_lv200(self):
+        # 缺 200 键时 Lv121+ 按等级精确取到 null（客户端空引用崩）；有 200 键时 121 / 160 / 200 插值非空
+        table = self.out["nested"][P.ENH_STATUS][P.ID]
+        self.assertEqual(table, {"98": "0,0", "99": "50,10", "120": "50,10", "200": "100,40"})
+        got = {lv: status_at(table, lv) for lv in (1, 98, 99, 120, 121, 160, 199, 200)}
+        self.assertEqual(got, {1: (0, 0), 98: (0, 0), 99: (50, 10), 120: (50, 10), 121: (51, 11), 160: (75, 25),
+                               199: (100, 40), 200: (100, 40)})
+        self.assertEqual(max(map(int, table)), int(self.out["flat"][P.ENH][P.ID][0][0]))
+        old = {k: v for k, v in table.items() if k != "200"}
+        self.assertIsNone(status_at(old, 121))                            # 负对照：旧表在 121 级取不到
+        with mock.patch.object(P, "PARADOX_ENH_STATUS_ROWS", old), self.assertRaises(W.CursedWeaponError):
+            P.build(fixture_reader(), client_capabilities=P.PATCHED_CLIENT_CAPABILITIES)
+
+    def test_paradox_uses_own_copies_of_cursed_constants(self):
+        # PARADOX 的阶段 / 数值表是自己的副本：诅咒武器共用常量（29 把在用）改动不连带 PARADOX，反之亦然
+        self.assertIsNot(P.PARADOX_ENH_STAGES, W.ENH_STAGES)
+        self.assertIsNot(P.PARADOX_ENH_STATUS_ROWS, W.ENH_STATUS_ROWS)
+        with mock.patch.object(W, "ENH_STAGES", ((1, ((W.CRYSTAL, 1),)),)), \
+                mock.patch.object(W, "ENH_STATUS_ROWS", {"1": "0,0"}):
+            again = P.build(fixture_reader(), client_capabilities=P.PATCHED_CLIENT_CAPABILITIES)
+        self.assertEqual(again["flat"][P.ENH_SHOP], self.out["flat"][P.ENH_SHOP])
+        self.assertEqual(again["nested"], self.out["nested"])
+        # 共用 growth_pair 仍写死 119/120（诅咒武器口径）；PARADOX 的续涨只在本模块里改补足行
+        rows = W.growth_pair("32", W.T_SELF, 100, 50)
+        self.assertEqual([(e.learn, e.maxlvl) for e in rows], [(1, 119), (120, 120)])
+
+    def test_materials(self):
+        # 新材料照五重材料行克隆：只换 c0–c5 与开始时间；c4 复用已上线的 item_icon 图集子纹理（独立路径 = C8004）
+        items = self.out["flat"][P.ITEM]
+        self.assertEqual(sorted(items), sorted([P.ID, P.SHARD, P.PARADOX_CORE]))
+        for iid, template, name, text, thumb, src, small in P.MATERIALS:
+            row, base = items[iid][0], MATERIAL_TEMPLATES[template][0]
+            self.assertEqual(row[:6], [f"mod_paradox_{iid}", iid, name, thumb, small, text])
+            self.assertEqual({i for i, (a, b) in enumerate(zip(base, row)) if a != b}, {0, 1, 2, 3, 5, 19})
+            self.assertEqual(row[19], W.START_TIME)
+            self.assertEqual(small, base[4])                                # 模板的图集子纹理
+            self.assertTrue(small.startswith("item_icon/"))
+            self.assertNotIn(",", text)
+            self.assertLessEqual(len(text), P.MATERIAL_DESC_LIMIT)
+            self.assertIn(thumb + ".png", self.out["files"])
+            self.assertTrue((P.ASSET_DIR / src).is_file())
+        self.assertEqual((P.SHARD, P.PARADOX_CORE), ("10000301", "10000302"))
+        # 远离五重 v2 正在用的 10000143–10000147 与武器卡池 999019/999020
+        for iid in (P.SHARD, P.PARADOX_CORE):
+            self.assertNotIn(int(iid), range(10000140, 10000200))
+        srv = self.out["server"]
+        self.assertEqual(srv["item_ids.json"], [int(P.ID), 10000301, 10000302])
+        self.assertEqual(srv["item_lookup.json"], {"10000301": "矛盾结晶", "10000302": "悖论之核"})
+        self.assertEqual({k: v for k, v in srv["item_sale.json"].items() if k != P.ID},
+                         {"10000301": {"category": 9, "sale_price": 300, "sellable": True},
+                          "10000302": {"category": 9, "sale_price": 500, "sellable": True}})
+        # 商店 7–10 阶只用这两种材料
+        used = {r[0][i] for k, r in self.out["flat"][P.ENH_SHOP].items() if int(k[-2:]) >= 7
+                for i in (14, 16, 18, 20) if r[0][i] not in ("", "(None)")}
+        self.assertEqual(used, {P.SHARD, P.PARADOX_CORE})
+
+    def test_lv200_look_keys(self):
+        cas = self.out["flat"][P.CAS]
+        self.assertEqual(cas[P.LOOK_TIER2_KEY], [["200,item/equipment/mod/paradox/paradox_lv200"]])
+        self.assertEqual(cas[P.LOOK_FRAME_KEY], [["item/equipment/mod/paradox/paradox_frame_bluegold"]])
+        self.assertEqual(P.LOOK_TIER2_KEY, "enhanced_pixelart_tier2_item/equipment/mod/paradox/paradox_lv120")
+        self.assertEqual(P.LOOK_FRAME_KEY, "enhanced_frame_override_item/equipment/mod/paradox/paradox_lv200")
+        enh = self.out["flat"][P.ENH][P.ID][0]
+        self.assertEqual(P.look_problems(P.look_texts(), enh, self.out["files"]), [])
+        # 单元格里的半角逗号靠 CSV 引号保住一格（客户端 format.csv.Reader 认引号）
+        import csv
+        import io
+        import wf_share_update_codec as X
+        raw = X.csv_write(cas[P.LOOK_TIER2_KEY])
+        self.assertEqual(X.csv_read(raw), cas[P.LOOK_TIER2_KEY])
+        self.assertEqual(next(csv.reader(io.StringIO(__import__("zlib").decompress(raw).decode()))),
+                         ["200,item/equipment/mod/paradox/paradox_lv200"])
+        files = self.out["files"]
+        self.assertEqual(files[P.ICON200 + ".png"]["size"], [20, 20])
+        self.assertEqual(files[P.FRAME_BLUEGOLD + ".png"]["size"], [144, 144])
+        self.assertFalse(files[P.FRAME_BLUEGOLD + ".png"]["required"])     # 另一执行者在画，缺图时暂存跳过
+        bad = {
+            "level at c3": {**P.look_texts(), P.LOOK_TIER2_KEY: f"120,{P.ICON200}"},
+            "level above c0": {**P.look_texts(), P.LOOK_TIER2_KEY: f"201,{P.ICON200}"},
+            "no level": {**P.look_texts(), P.LOOK_TIER2_KEY: P.ICON200},
+            "png suffix": {**P.look_texts(), P.LOOK_FRAME_KEY: P.FRAME_BLUEGOLD + ".png"},
+            "foreign path": {**P.look_texts(), P.LOOK_FRAME_KEY: "item/equipment/mod/cursed/x"},
+            "newline": {**P.look_texts(), P.LOOK_FRAME_KEY: P.FRAME_BLUEGOLD + "\n"},
+            "missing key": {P.LOOK_TIER2_KEY: P.look_texts()[P.LOOK_TIER2_KEY]},
+        }
+        for label, texts in bad.items():
+            with self.subTest(label):
+                self.assertTrue(P.look_problems(texts, enh, files), label)
+        wrong_icon = list(enh)
+        wrong_icon[4] = P.ICON
+        self.assertTrue(P.look_problems(P.look_texts(), wrong_icon, files))
+        # legality 登记前后都只能报 equipment-enhanced-look-v1，不许落进面板覆盖
+        for key in P.LOOK_KEYS:
+            self.assertLessEqual(set(L.required_client_capabilities(L.CUSTOM_ABILITY_STRING_KIND, [key])),
+                                 {P.ENHANCED_LOOK_CAP})
+
+    def test_look_keys_match_client_patch(self):
+        # 键前缀 / capability / 第二档值格式以 client-patch/equipment-enhanced-look/rules.py 为准
+        path = Path(__file__).resolve().parents[2] / "client-patch/equipment-enhanced-look/rules.py"
+        if not path.exists():
+            self.skipTest("client-patch/equipment-enhanced-look 尚未落地")
+        name = "_equipment_enhanced_look_rules_for_paradox_test"
+        spec = importlib.util.spec_from_file_location(name, path)
+        rules = importlib.util.module_from_spec(spec)
+        sys.modules[name] = rules
+        try:
+            spec.loader.exec_module(rules)
+        finally:
+            sys.modules.pop(name, None)
+        self.assertEqual((rules.CAPABILITY, rules.TIER2_PREFIX, rules.FRAME_PREFIX),
+                         (P.ENHANCED_LOOK_CAP, P.LOOK_TIER2_PREFIX, P.LOOK_FRAME_PREFIX))
+        value = P.look_texts()[P.LOOK_TIER2_KEY]
+        level, path_ = value.split(rules.TIER2_SEPARATOR)                  # 补丁要求恰好一个逗号
+        self.assertEqual(str(int(level)), level)                            # 规范十进制整数
+        self.assertTrue(path_)
+        self.assertEqual(int(level), P.MAX_LEVEL)
 
     def test_final_hits_dsl(self):
         tree = self.out["dsl"][P.HITS_FINAL]
@@ -431,21 +677,24 @@ GOLDEN = {
         "自身为凯尔时：发动技能约1.7秒后以25%的效果回响「月华·狼牙连斩」",
     )),
     P.OVERRIDE_GROWTH: "\n".join((
-        "随强化等级逐级提升，强化Lv119时追加：",
+        "强化Lv1→119逐级提升，强化Lv119时追加：",
         "攻击力与全部伤害类型+230%＆全部独立乘区+9.5%",
         "技能充能速度+9.25%＆技能槽上限+47.5%",
         "合击角色攻击力的追加比例+46.25%",
         "自身为基诺维／杰拉德／凯尔时攻击力再+93.75%",
+        "强化Lv120进入终式：数值补足、直接攻击共8段、每次弹射连击合计+50，并解放【诅咒】",
+        "强化Lv121→200继续逐级提升，强化Lv200时达到下方合计值",
     )),
+    # 补丁把终式块放在「强化Lv<c0>」下：c0 = 200，所以这里是 Lv200 合计（作者 0928 方案甲，只续涨成长行）
     P.OVERRIDE_FINAL: "\n".join((
-        "终式合计（含本体）：攻击力与全部伤害类型+800%＆全部独立乘区+20%",
+        "终式合计（含本体）：攻击力与全部伤害类型+1000%＆全部独立乘区+30%",
         "直接攻击判定额外+7次（共8段）",
         "每次弹射时连击数合计+50",
-        "技能充能速度合计+30%＆技能槽上限合计+100%",
-        "攻击力追加合击角色攻击力的150%",
-        "自身为基诺维／杰拉德／凯尔时攻击力合计+250%",
-        "【诅咒】自身以外的角色攻击力-800%＆技能充能速度-40%",
-        "【诅咒】战斗开始时自身获得「诅咒」（永续、无法驱散）：自身以外的角色无法获得能力和装备的技能槽增加效果",
+        "技能充能速度合计+50%＆技能槽上限合计+100%",
+        "攻击力追加合击角色攻击力的200%",
+        "自身为基诺维／杰拉德／凯尔时攻击力合计+350%",
+        "【诅咒·Lv120起】自身以外的角色攻击力-800%＆技能充能速度-40%",
+        "【诅咒·Lv120起】开局自身获得「诅咒」（永续、无法驱散）：自身以外的角色无法获得能力和装备的技能槽增加效果",
     )),
 }
 
@@ -464,8 +713,8 @@ def _find(node, name: str) -> list:
 
 def _row_totals(out: dict, level: int | None) -> dict:
     """按行重新求和（与生成器常量无关）：键 = (kind, 前置1, 是否「自身以外」)，值 = %（226 为次数）。
-    level=None 只算魂表（满破，觉醒 1→5 不变）；否则只算该强化等级已习得的强化行，且要求已成长到上限
-    （MinToMaxLevelScale 在 max_power_level 钳到 first_max，Lv119 / Lv120 都不落在插值段）。"""
+    level=None 只算魂表（满破，觉醒 1→5 不变）；否则只算该强化等级已习得的强化行，按客户端 MinToMaxLevelScale 取值
+    （≤learn 取 power1、≥max 取 first_max）；要求落在端点上（Lv119 / Lv120 / Lv200 都不落在插值段）。"""
     tables = ((W.SOUL_T, P.SOUL),) if level is None else ((W.EA_T, P.EA),)
     totals: dict = {}
     for table, logical in tables:
@@ -479,8 +728,10 @@ def _row_totals(out: dict, level: int | None) -> dict:
             if table == W.EA_T:
                 if int(r[1]) > level:
                     continue
-                assert level >= int(r[2]), (kind, r[1], r[2], level)
-            hi = float(r[W._col(table, "instant_content", "strength.first_max")])
+                assert level == int(r[1]) or level >= int(r[2]), (kind, r[1], r[2], level)
+                hi = value_at(r, table, level)
+            else:
+                hi = float(r[W._col(table, "instant_content", "strength.first_max")])
             value = hi / 100000 if kind == "226" else hi / 1000
             key = (kind, r[W._col(table, "precondition1", "kind")],
                    r[W._col(table, "instant_content", "target")] == W.T_EXCEPT)
@@ -504,22 +755,33 @@ def _echo_scale() -> float:
 
 
 def _expected_numbers(out: dict) -> dict[str, list[float]]:
-    """三段文案里应出现的每个数字，全部按生成出的行 / DSL 重新求出（不读生成器的数值常量）。"""
-    soul, ea119, ea120 = _row_totals(out, None), _row_totals(out, 119), _row_totals(out, 120)
+    """三段文案里应出现的每个数字，全部按生成出的行 / DSL 重新求出（不读生成器的数值常量）。
+    终式块由补丁放在「强化Lv<c0>」下，所以它的合计按 c0（强化主表）级取值。"""
+    ea = out["flat"][P.EA][P.ID]
+    max_lv = int(out["flat"][P.ENH][P.ID][0][0])
+    growth_learn = {int(r[1]) for r in ea if int(r[1]) < int(r[2]) and r[5] == "0" and int(r[2]) < max_lv}
+    growth_max = {int(r[2]) for r in ea if r[1] == "1" and r[5] == "0"}
+    final_learn = {int(r[1]) for r in ea if r[W._col(W.EA_T, "instant_content", "kind")] == "629"}
+    continued = {(int(r[1]), int(r[2])) for r in ea if int(r[1]) > 1 and int(r[1]) < int(r[2])}
+    curse_learn = {int(r[1]) for r in ea if r[W._col(W.EA_T, "instant_content", "target")] == W.T_EXCEPT}
+    assert len(growth_learn) == len(growth_max) == len(final_learn) == len(continued) == len(curse_learn) == 1, \
+        (growth_learn, growth_max, final_learn, continued, curse_learn)
+    assert continued == {(next(iter(final_learn)), max_lv)}, (continued, max_lv)
+    soul, ea119 = _row_totals(out, None), _row_totals(out, growth_max.copy().pop())
+    ea120, ea200 = _row_totals(out, next(iter(final_learn))), _row_totals(out, max_lv)
 
     def same(totals: dict, kinds: tuple, pre: str = "0") -> float:
         values = {round(totals.get((k, pre, False), 0.0), 6) for k in kinds}
         assert len(values) == 1, (kinds, values)
         return values.pop()
 
-    def total(key: tuple) -> float:
-        return soul.get(key, 0.0) + ea120.get(key, 0.0)
+    def total(key: tuple, ea_at: dict | None = None) -> float:
+        return soul.get(key, 0.0) + (ea200 if ea_at is None else ea_at).get(key, 0.0)
 
     damage, mult = ("32", "33", "34", "55", "388"), ("723", "693", "694", "695", "696")
     chosen = ("32", P.PRE_MY_SELF, False)
     seg, seg_final = _segments(out, W.SOUL_T, P.SOUL, final=False), _segments(out, W.EA_T, P.EA, final=True)
-    growth_max = {int(r[2]) for r in out["flat"][P.EA][P.ID] if r[1] == "1" and r[5] == "0"}
-    assert len(growth_max) == 1, growth_max
+    at200 = {k: total(k) for k in set(soul) | set(ea200)}
     echoes = []
     for r in out["flat"][P.SOUL][P.ID]:
         path = r[W._col(W.SOUL_T, "instant_content", "action_path")]
@@ -531,13 +793,16 @@ def _expected_numbers(out: dict) -> dict[str, list[float]]:
         P.OVERRIDE_BASE: [same(soul, damage), same(soul, mult), seg - 1, seg, soul[("226", "0", False)],
                           soul[("35", "0", False)], soul[("245", "0", False)], soul[("717", "0", False)],
                           soul[chosen], *echoes],
-        P.OVERRIDE_GROWTH: [growth_max.pop(), same(ea119, damage), same(ea119, mult), ea119[("35", "0", False)],
-                            ea119[("245", "0", False)], ea119[("717", "0", False)], ea119[chosen]],
-        P.OVERRIDE_FINAL: [same({k: total(k) for k in set(soul) | set(ea120)}, damage),
-                           same({k: total(k) for k in set(soul) | set(ea120)}, mult), seg_final - 1, seg_final,
+        P.OVERRIDE_GROWTH: [growth_learn.pop(), *(growth_max.copy().pop(),) * 2,
+                            same(ea119, damage), same(ea119, mult), ea119[("35", "0", False)],
+                            ea119[("245", "0", False)], ea119[("717", "0", False)], ea119[chosen],
+                            next(iter(final_learn)), seg_final, total(("226", "0", False), ea120),
+                            next(iter(final_learn)) + 1, max_lv, max_lv],
+        P.OVERRIDE_FINAL: [same(at200, damage), same(at200, mult), seg_final - 1, seg_final,
                            total(("226", "0", False)), total(("35", "0", False)), total(("245", "0", False)),
                            total(("717", "0", False)), total(chosen),
-                           ea120[("32", "0", True)], ea120[("35", "0", True)]],
+                           next(iter(curse_learn)), ea200[("32", "0", True)], ea200[("35", "0", True)],
+                           next(iter(curse_learn))],
     }
 
 
@@ -570,9 +835,11 @@ class ParadoxDescriptionOverrideTests(unittest.TestCase):
         self.assertEqual(self.out["flat"][P.EQUIPMENT][P.ID][0][10], P.ID)
         self.assertEqual(set(self.out["flat"][P.ENH]), {P.ID})
         self.assertIn(P.ID, self.out["flat"][P.SOUL])
-        # 其余 CAS 键（段数 / 回响说明）不属于任何面板覆盖
+        # 其余 CAS 键（段数 / 回响说明 / 200 级外观）不属于任何面板覆盖
         for key in set(self.cas) - set(P.OVERRIDE_KEYS):
-            self.assertIsNone(L.panel_override_capability(key), key)
+            self.assertIn(L.panel_override_capability(key), (None, P.ENHANCED_LOOK_CAP), key)
+            if key not in P.LOOK_KEYS:
+                self.assertIsNone(L.panel_override_capability(key), key)
 
     def test_golden_texts(self):
         self.assertEqual(P.override_texts(), GOLDEN)
@@ -604,7 +871,12 @@ class ParadoxDescriptionOverrideTests(unittest.TestCase):
         cases = (
             ("ATK_BASE", 600, P.OVERRIDE_BASE, "+600%"),
             ("ATK_BASE", 600, P.OVERRIDE_GROWTH, "攻击力与全部伤害类型+180%"),
-            ("MULT_TOTAL", 30, P.OVERRIDE_FINAL, "全部独立乘区+30%"),
+            ("MULT_TOTAL", 25, P.OVERRIDE_GROWTH, "全部独立乘区+14.375%"),
+            ("MULT_TOTAL200", 40, P.OVERRIDE_FINAL, "全部独立乘区+40%"),
+            ("ATK_TOTAL200", 1200, P.OVERRIDE_FINAL, "攻击力与全部伤害类型+1200%"),
+            ("CHARGE_TOTAL200", 60, P.OVERRIDE_FINAL, "技能充能速度合计+60%"),
+            ("UNISON_TOTAL200", 250, P.OVERRIDE_FINAL, "合击角色攻击力的250%"),
+            ("CHOSEN_TOTAL200", 400, P.OVERRIDE_FINAL, "攻击力合计+400%"),
             ("CHARGE_BASE", 25, P.OVERRIDE_GROWTH, "技能充能速度+4.25%"),
             ("GAUGE_TOTAL", 120, P.OVERRIDE_FINAL, "技能槽上限合计+120%"),
             ("UNISON_BASE", 80, P.OVERRIDE_BASE, "合击角色攻击力的80%"),
@@ -625,11 +897,20 @@ class ParadoxDescriptionOverrideTests(unittest.TestCase):
                 assert_texts_follow_rows(self, out)                   # 行跟着变，文案仍与行一致
 
     def test_constants_match_the_row_machinery(self):
-        # 成长行 1→FINAL_LEVEL−1、补足/终式行 FINAL_LEVEL（W.growth_pair 写死 119/120）；强化 c0 = maxLevel
+        # 成长行 1→FINAL_LEVEL−1、终式 / 诅咒行 FINAL_LEVEL（W.growth_pair 写死 119/120）、续涨行 FINAL_LEVEL→MAX_LEVEL；
+        # 强化 c0 = MAX_LEVEL，名/图/说明/框仍在 FINAL_LEVEL 切换
         ea = self.out["flat"][P.EA][P.ID]
         self.assertEqual({(r[1], r[2]) for r in ea}, {("1", str(P.FINAL_LEVEL - 1)),
-                                                        (str(P.FINAL_LEVEL), str(P.FINAL_LEVEL))})
-        self.assertEqual(self.out["flat"][P.ENH][P.ID][0][0], str(P.FINAL_LEVEL))
+                                                        (str(P.FINAL_LEVEL), str(P.FINAL_LEVEL)),
+                                                        (str(P.FINAL_LEVEL), str(P.MAX_LEVEL))})
+        enh = self.out["flat"][P.ENH][P.ID][0]
+        self.assertEqual((enh[0], enh[1], enh[3], enh[5], enh[7]),
+                         (str(P.MAX_LEVEL), *(str(P.FINAL_LEVEL),) * 4))
+        self.assertEqual(P.PARADOX_ENH_STAGES[-1][0], P.MAX_LEVEL)
+        self.assertIn(str(P.MAX_LEVEL), P.PARADOX_ENH_STATUS_ROWS)
+        # 只改 c0 不配套加阶段 / 数值表键 = build 硬拦（Lv121+ 空引用崩 / 服务端上限对不上）
+        with mock.patch.object(P, "MAX_LEVEL", 180), self.assertRaises(W.CursedWeaponError):
+            P.build(fixture_reader(), client_capabilities=P.PATCHED_CLIENT_CAPABILITIES)
         self.assertEqual(set(P.DAMAGE_KINDS), {"32", *(k for k, _ in P.DAMAGE_TYPE_TEXT)})
         self.assertEqual(len(P.MULT_KINDS), 5)
         # 回响比例 = derive_echo.SCALE；回响短名与延迟和已发布的 629 说明一致

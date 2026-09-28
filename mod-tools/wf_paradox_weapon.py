@@ -41,11 +41,22 @@ desc_override_equipment_<ID> / _enhancement_<ID> / _enhancement_<ID>_final，由
 渲染、"\\n" 分行；客户端补丁 client-patch/equipment-description-override（capability equipment-description-override-v1）
 命中即整段替换本体说明与两个强化块。行为型：未装补丁的客户端不读这些键、照旧显示生成文案，不崩，所以只报 capability、
 不进 problems，数据可先于 APK 上线。分档 ID 不出覆盖键（详情页永远拿满档对象）。
+
+强化 Lv200（作者 0928 定稿，设计稿 D:/WF/out/PARADOX-20260928/lv200-frame/设计.md 方案甲）：强化主表 c0 = 200；
+名字 / 图标 / 说明 / 框仍在 120 级切换（c1 / c3 / c5 / c7 = 120）。成长项的 120 级补足行从 learn 120 / max 120 改成
+learn 120 / max 200：power1 不动（Lv120 数值与 live 逐字节相同），first_max 抬到 Lv200 合计（攻击与四类伤害 1000%、
+独立乘区 30%、充能 50%、合击攻击 200%、三人专属 350%；槽上限已顶 +100% 钳制不涨）。直击段数、弹射连击与诅咒四行不动
+（learn = max = 120）。强化数值表加 200 键（缺它 Lv121+ 空引用崩）。商店第 7–10 阶（159 / 160 / 199 / 200）只收
+新材料「矛盾结晶」「悖论之核」（暂无掉落来源）。这些常量是 PARADOX 专属副本，不动 wf_cursed_weapons 的共用
+ENH_STAGES / ENH_STATUS_ROWS / growth_pair（它们服务 29 把诅咒武器）。
+200 级外观走 custom_ability_string 两键（capability equipment-enhanced-look-v1，行为型：未装补丁 = 仍显示 lv120 图标 + 粉框）：
+``enhanced_pixelart_tier2_<lv120 图标>`` = "200,<lv200 图标>"（第二图标档）、``enhanced_frame_override_<lv200 图标>`` = 蓝金框底图。
 """
 from __future__ import annotations
 
 import json
 import re
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -67,6 +78,9 @@ SLUG = "paradox"
 CATEGORY = "剑"                                  # 服务端 equipment_lookup 类别
 ICON = "item/equipment/mod/paradox/paradox"
 ICON120 = "item/equipment/mod/paradox/paradox_lv120"
+#: Lv200 图标（第二图标档，经 enhanced_pixelart_tier2_ 键由补丁切换；c3/c4 仍是 120 / lv120）与蓝金强化框底图
+ICON200 = "item/equipment/mod/paradox/paradox_lv200"
+FRAME_BLUEGOLD = "item/equipment/mod/paradox/paradox_frame_bluegold"
 NAME120 = f"{NAME}·终式"
 #: 面板上 423 只显示 battle-rules 的通用文字「限制技能槽增加」，作者原话写进强化说明（≤54 字）。
 ENH_DESCRIPTION = "强化至120级进入终式：数值全面提升并解放诅咒，除自身外的角色无法获得能力和装备的技能槽增加效果。"
@@ -130,16 +144,79 @@ DAMAGE_LABEL = {"32": "攻击力", "33": "直接攻击伤害", "34": "技能伤�
 MULT_LABEL = {"723": "全伤害", "693": "直接攻击伤害", "694": "技能伤害", "695": "能力伤害", "696": "强化弹射伤害"}
 #: 覆盖文案「全部伤害类型（…）」括号里的顺序
 DAMAGE_TYPE_TEXT = (("33", "直接攻击"), ("34", "技能"), ("388", "能力"), ("55", "强化弹射"))
-ATK_BASE, ATK_TOTAL = 550, 800                    # 攻击力与四类伤害
-MULT_BASE, MULT_TOTAL = 10, 20                    # 独立乘区
-CHARGE_BASE, CHARGE_TOTAL = 20, 30                # 35 技能充能速度
-GAUGE_BASE, GAUGE_TOTAL = 50, 100                 # 245 技能槽上限
-UNISON_BASE, UNISON_TOTAL = 100, 150              # 717 攻击力追加合击角色攻击力
-CHOSEN_BASE, CHOSEN_TOTAL = 150, 250              # 32 + 三人标签前置
+# *_TOTAL = 强化 Lv120（终式）合计，与 live 1.4.1064 起逐字节一致；*_TOTAL200 = 强化 Lv200 合计（作者 0928 方案甲）。
+ATK_BASE, ATK_TOTAL, ATK_TOTAL200 = 550, 800, 1000             # 攻击力与四类伤害
+MULT_BASE, MULT_TOTAL, MULT_TOTAL200 = 10, 20, 30              # 独立乘区
+CHARGE_BASE, CHARGE_TOTAL, CHARGE_TOTAL200 = 20, 30, 50        # 35 技能充能速度（全员来源合计钳 [-100%, +100%]）
+GAUGE_BASE, GAUGE_TOTAL = 50, 100                              # 245 技能槽上限（已顶 +100% 钳制，Lv200 不涨）
+UNISON_BASE, UNISON_TOTAL, UNISON_TOTAL200 = 100, 150, 200     # 717 攻击力追加合击角色攻击力
+CHOSEN_BASE, CHOSEN_TOTAL, CHOSEN_TOTAL200 = 150, 250, 350     # 32 + 三人标签前置
 HITS_EXTRA_BASE, HITS_EXTRA_FINAL = 5, 7          # 直接攻击判定额外次数（629 段数 = 1 + 额外）
 COMBO_BASE, COMBO_TOTAL = 35, 50                  # 226 每次弹射连击（120 级补 COMBO_TOTAL − COMBO_BASE）
 CURSE_ATK, CURSE_CHARGE = -800, -40               # 120 级诅咒：自身以外的角色攻击力 / 技能充能速度
-FINAL_LEVEL = 120                                 # 终式 = 强化满级；W.growth_pair 的成长行 1→119、补足行 120（测试互证）
+FINAL_LEVEL = 120                                 # 终式 / 诅咒解放；W.growth_pair 的成长行 1→119、补足行 learn 120（测试互证）
+MAX_LEVEL = 200                                   # 强化满级（强化主表 c0）；补足行 max_power_level 续到这里
+
+#: 新材料（作者 0928：暂无掉落来源，只能后台发放）。ID 避开五重 v2 正在用的 10000143–10000147 一带与
+#: event_item_shop 的 100002xx 商品键：客户端 item 表、服务端 item_ids / item_lookup / item_sale 与全仓都未引用。
+SHARD = "10000301"                                # 矛盾结晶（逐级）
+PARADOX_CORE = "10000302"                         # 悖论之核（突破）
+ASSET_DIR = Path(__file__).resolve().parent / "assets/paradox"
+#: (道具 ID, 克隆模板, 名, 说明, c3 缩略图（独立 PNG，异步 setTexture）, 源图, c4 小图标)。
+#: c4 只能是已加载图集（item_icon/sprite_sheet）的子纹理：独立新路径在掉落展示 / 图鉴同步 getImage 当场 C8004
+#: （memory wf-c8004-small-icon-atlas-rule）。追加图集是整文件替换，五重 v2 的 plan_item_icons 正在同一图集上追加，
+#: 两边各自暂存会互相覆盖；材料又暂无掉落来源（c4 只在掉落条 / 图鉴 / 箱蛋 / 编成消耗里出现），
+#: 所以先复用图集里已上线的五重同类子纹理（结晶↔深界结晶、核心↔五王心核），给掉落来源时再按五重的做法追加专属子纹理。
+MATERIALS = (
+    (SHARD, "10000145", "矛盾结晶", "光与影在同一晶面上互相否定而凝成的结晶。用于将PARADOX强化至121级以上。",
+     "item/materials/mod/paradox/contradiction_crystal", "paradox_shard.png",
+     "item_icon/materials/mod/five_boss/deep_crystal"),
+    (PARADOX_CORE, "10000147", "悖论之核", "首尾相接、永无终点的悖论之环的核心。用于突破PARADOX的强化上限。",
+     "item/materials/mod/paradox/paradox_core", "paradox_core.png",
+     "item_icon/materials/mod/five_boss/five_king_core"),
+)
+MATERIAL_DESC_LIMIT = 57                          # 与装备说明同一详情框量级；官方 item c5 p90 = 43 字
+#: 强化商店 10 阶（阶段上限, [(材料, 数量), ...]），每份 = 1 级。1–6 阶是 wf_cursed_weapons.ENH_STAGES 在 live 1.4.1063
+#: 的副本（不引用：共用常量改了不许连带改 PARADOX）；7–10 阶只收新材料，形状照 1–6 阶：逐级阶每级少量，突破阶一次大额。
+#: 全程新材料合计：矛盾结晶 39×3 + 10 + 39×5 = 322、悖论之核 1 + 3 = 4。
+PARADOX_ENH_STAGES = (
+    (69, ((W.CRYSTAL, 1),)),
+    (70, ((W.CRYSTAL, 10), (W.CORE, 1))),
+    (98, ((W.CRYSTAL, 2),)),
+    (99, ((W.CRYSTAL, 10), (W.CORE, 2))),
+    (119, ((W.CRYSTAL, 3), (W.CORE, 1))),
+    (120, ((W.CORE, 3), (W.BLUEPRINT, 2))),
+    (159, ((SHARD, 3),)),
+    (160, ((SHARD, 10), (PARADOX_CORE, 1))),
+    (199, ((SHARD, 5),)),
+    (MAX_LEVEL, ((PARADOX_CORE, 3),)),
+)
+#: 强化数值表（HP, ATK）：照官方 120 级武器的 {98, 99, 120}，另加 200 键——客户端按等级精确取最后一个键，
+#: 缺 200 键时 Lv121–200 取到 null 空引用崩（EquipmentEnhancementStatusLogic.getParameterAt）。121 → 51/11、200 → 100/40。
+PARADOX_ENH_STATUS_ROWS = {"98": "0,0", "99": "50,10", "120": "50,10", str(MAX_LEVEL): "100,40"}
+#: 商店行模板：诅咒武器同款的 5900110<阶>（官方只有 1–6 阶；7–10 阶用第 6 阶，被覆写的列以外六行逐格相同）
+SHOP_TEMPLATE_STAGES = 6
+
+# 200 级外观（client-patch 由另一执行者实现，capability equipment-enhanced-look-v1，行为型：未装补丁不读、不崩）。
+# 补丁在缩略图里只拿得到图标路径，拿不到等级，所以两键都按图标路径派生。
+LOOK_TIER2_PREFIX = "enhanced_pixelart_tier2_"
+LOOK_FRAME_PREFIX = "enhanced_frame_override_"
+LOOK_TIER2_KEY = LOOK_TIER2_PREFIX + ICON120      # 值 = "<等级>,<图标>"：强化 ≥ 该等级时把 lv120 图标换成 lv200
+LOOK_FRAME_KEY = LOOK_FRAME_PREFIX + ICON200      # 值 = 框底图路径：显示 lv200 图标的强化态缩略图换蓝金底
+LOOK_KEYS = (LOOK_TIER2_KEY, LOOK_FRAME_KEY)
+#: TODO(equipment-enhanced-look-v1)：另一执行者正在 wf_client_legality 登记这两个键前缀的 capability；
+#: 登记了就用它的常量，没登记前用本地同名字面量（build 在 legality 不认这两键时自行补报）。
+ENHANCED_LOOK_CAP = getattr(L, "EQUIPMENT_ENHANCED_LOOK", "equipment-enhanced-look-v1")
+
+#: 本武器全部图片（逻辑路径 → 源图、尺寸、是否必需）。蓝金框由另一执行者在画：缺图时暂存跳过它与框键，不报错。
+ASSET_FILES = (
+    (ICON + ".png", ASSET_DIR / "paradox.png", (20, 20), True),
+    (ICON120 + ".png", ASSET_DIR / "paradox_lv120.png", (20, 20), True),
+    (ICON200 + ".png", ASSET_DIR / "paradox_lv200.png", (20, 20), True),
+    (FRAME_BLUEGOLD + ".png", ASSET_DIR / "paradox_frame_bluegold.png", (144, 144), False),
+    ("battle/common/unique_condition/" + CURSE_ICON + ".png", CURSE_ICON_SRC, (48, 48), True),
+    *((thumb + ".png", ASSET_DIR / src, (20, 20), True) for _, _, _, _, thumb, src, _ in MATERIALS),
+)
 
 # 装备详情覆盖（client-patch/equipment-description-override，capability equipment-description-override-v1）：
 # 键由装备 ID 派生，补丁在 AbilitySoulAbilityLogic 与 EquipmentEnhancementAbilityLogic 的详情方法前置查表，
@@ -255,11 +332,37 @@ def hits_dsl(segments: int = 6) -> list:
                              "paradox_hits", cancelable=False))
 
 
-def _growth_pair(kind: str, target: str | None, total: float, base: float, **kw) -> list[Eff]:
+def _growth_pair(kind: str, target: str | None, total: float, base: float, *, lift: float | None = None,
+                 **kw) -> list[Eff]:
     """PARADOX 本体是满额（不走诅咒武器的 BASE_SCALE 弱化）。W.growth_pair 自 d63896fd 起按「设计值 × BASE_SCALE」
     扣本体实际值，这里把本体实际值折回设计值，使成长 + 补足 = 终值 − 本体（与 live 1.4.1064 一致：攻击 1→119 成长到
-    +230%、120 级补足 +20%，加本体 550% = 800%）。"""
-    return W.growth_pair(kind, target, total, base / W.BASE_SCALE, **kw)
+    +230%、120 级补足 +20%，加本体 550% = 800%）。
+
+    lift = Lv200 合计 − Lv120 合计（%）：补足行续成 learn 120 → max MAX_LEVEL 的成长，power1 原样（Lv120 取 power1，
+    与 live 逐字节相同），first_max = power1 + lift（整数存储值相加，分档缩放后不引入二次取整）。None = 不续（槽上限）。
+    共用的 W.growth_pair 不改：它写死 119/120，同时服务 29 把诅咒武器。"""
+    grow, top = W.growth_pair(kind, target, total, base / W.BASE_SCALE, **kw)
+    if lift is None:
+        return [grow, top]
+    W._require(lift >= 0, f"{kind}: Lv200 合计低于 Lv120 合计（lift={lift}）")
+    content_kind, given = top.content
+    lo, _ = given["strength"]
+    hi = str(int(lo) + int(W.pct(lift)))
+    note = f"{top.note}；Lv{FINAL_LEVEL}→{MAX_LEVEL} 再 +{lift:g}%"
+    return [grow, replace(top, content=(content_kind, {**given, "strength": (lo, hi)}), maxlvl=MAX_LEVEL, note=note)]
+
+
+def _continues(eff: Eff) -> bool:
+    return eff.learn == FINAL_LEVEL and eff.maxlvl == MAX_LEVEL
+
+
+def ea_row(slot: int, eff: Eff) -> list[str]:
+    """强化词条行。续涨的补足行战力列照成长行形状写（power1 48 → first_max 96）：战力按 learn→c0 插值，
+    Lv120 仍取 48（面板战力不变），Lv200 翻倍；只影响面板战力，不影响战斗。"""
+    row = W.build_row(W.EA_T, slot, eff)
+    if _continues(eff):
+        row[3], row[4] = "48", "96"
+    return row
 
 
 def curse_unique_row() -> list[str]:
@@ -296,18 +399,22 @@ def row_capabilities(table: str, row: list[str]) -> list[str]:
 
 
 def enhancement_abilities(n: int = 0) -> list[Eff]:
-    """强化词条：1→119 成长 + 120 补足到终值；120 级再加直击 8 段、弹射连击 +15（合计 50）与诅咒。
-    n=1..3 为衰减分档：增益按比例缩放，诅咒四行原样（代价不随衰减减轻）。"""
+    """强化词条：1→119 成长 + 120 补足到终值，补足行再续涨到 Lv200 合计（槽上限除外）；
+    120 级再加直击 8 段、弹射连击 +15（合计 50）与诅咒（这些 learn = max = 120，不续）。
+    n=1..3 为衰减分档：增益按比例缩放（含续涨量），诅咒四行原样（代价不随衰减减轻）。"""
     self_ = W.T_SELF
     r = TIERS[n] if n else 1.0
     chosen = (PRE_MY_SELF, {"character_groups": ",".join(tag for _, tag, _ in TAGS)})
     rows: list[Eff] = []
-    for kind, total, base in ((*((k, ATK_TOTAL, ATK_BASE) for k in DAMAGE_KINDS),
-                               *((k, MULT_TOTAL, MULT_BASE) for k in MULT_KINDS),
-                               ("35", CHARGE_TOTAL, CHARGE_BASE), ("245", GAUGE_TOTAL, GAUGE_BASE),
-                               ("717", UNISON_TOTAL, UNISON_BASE))):
-        rows += _growth_pair(kind, _target(kind), total * r, base * r)
-    rows += _growth_pair("32", self_, CHOSEN_TOTAL * r, CHOSEN_BASE * r, pre=(chosen,))
+    for kind, total, total200, base in ((*((k, ATK_TOTAL, ATK_TOTAL200, ATK_BASE) for k in DAMAGE_KINDS),
+                                         *((k, MULT_TOTAL, MULT_TOTAL200, MULT_BASE) for k in MULT_KINDS),
+                                         ("35", CHARGE_TOTAL, CHARGE_TOTAL200, CHARGE_BASE),
+                                         ("245", GAUGE_TOTAL, None, GAUGE_BASE),
+                                         ("717", UNISON_TOTAL, UNISON_TOTAL200, UNISON_BASE))):
+        lift = None if total200 is None else (total200 - total) * r
+        rows += _growth_pair(kind, _target(kind), total * r, base * r, lift=lift)
+    rows += _growth_pair("32", self_, CHOSEN_TOTAL * r, CHOSEN_BASE * r, lift=(CHOSEN_TOTAL200 - CHOSEN_TOTAL) * r,
+                         pre=(chosen,))
     final = dict(learn=FINAL_LEVEL, maxlvl=FINAL_LEVEL)
     topup = COMBO_TOTAL - COMBO_BASE
     combo = _half_up(topup * r)
@@ -359,8 +466,9 @@ def seconds_text(frame_count: int) -> str:
 
 def override_texts() -> dict[str, str]:
     """装备详情覆盖三段文案（本体 / 强化成长 / 终式），数字全部取自出行用的同一批常量与 DSL，不手抄。
-    本体段 = 满破魂（觉醒 1→5 不变）；成长段 = 强化 Lv119 时成长行的满值（静态，取代原生逐级数字）；
-    终式段 = 本体 + 强化 Lv120 的合计与诅咒。衰减规则只在装备说明 c7（风味文字）里，不在这里重复。"""
+    本体段 = 满破魂（觉醒 1→5 不变）；成长段 = 强化 Lv119 时成长行的满值（静态，取代原生逐级数字）+ Lv120 终式与
+    Lv121→200 续涨的说明；终式段（补丁放在「强化Lv<c0>」块下，c0 = MAX_LEVEL）= 本体 + 强化 Lv200 的合计与诅咒。
+    衰减规则只在装备说明 c7（风味文字）里，不在这里重复。"""
     who = "／".join(label for _, _, label in TAGS)
     label_of = {cid: label for cid, _, label in TAGS}
     types = "／".join(text for _, text in DAMAGE_TYPE_TEXT)
@@ -377,23 +485,28 @@ def override_texts() -> dict[str, str]:
           f"以{ECHO_PERCENT}%的效果回响「{ECHO_SKILL[code]}」" for cid, code, _ in ECHOES),
     ]
     growth = [
-        f"随强化等级逐级提升，强化Lv{FINAL_LEVEL - 1}时追加：",
+        f"强化Lv1→{FINAL_LEVEL - 1}逐级提升，强化Lv{FINAL_LEVEL - 1}时追加：",
         f"攻击力与全部伤害类型+{_num(grow_value(ATK_TOTAL, ATK_BASE))}%"
         f"＆全部独立乘区+{_num(grow_value(MULT_TOTAL, MULT_BASE))}%",
         f"技能充能速度+{_num(grow_value(CHARGE_TOTAL, CHARGE_BASE))}%"
         f"＆技能槽上限+{_num(grow_value(GAUGE_TOTAL, GAUGE_BASE))}%",
         f"合击角色攻击力的追加比例+{_num(grow_value(UNISON_TOTAL, UNISON_BASE))}%",
         f"自身为{who}时攻击力再+{_num(grow_value(CHOSEN_TOTAL, CHOSEN_BASE))}%",
+        f"强化Lv{FINAL_LEVEL}进入终式：数值补足、直接攻击共{seg_final}段、"
+        f"每次弹射连击合计+{_num(COMBO_TOTAL)}，并解放【诅咒】",
+        f"强化Lv{FINAL_LEVEL + 1}→{MAX_LEVEL}继续逐级提升，强化Lv{MAX_LEVEL}时达到下方合计值",
     ]
     final = [
-        f"终式合计（含本体）：攻击力与全部伤害类型+{_num(ATK_TOTAL)}%＆全部独立乘区+{_num(MULT_TOTAL)}%",
+        f"终式合计（含本体）：攻击力与全部伤害类型+{_num(ATK_TOTAL200)}%＆全部独立乘区+{_num(MULT_TOTAL200)}%",
         f"直接攻击判定额外+{seg_final - 1}次（共{seg_final}段）",
         f"每次弹射时连击数合计+{_num(COMBO_TOTAL)}",
-        f"技能充能速度合计+{_num(CHARGE_TOTAL)}%＆技能槽上限合计+{_num(GAUGE_TOTAL)}%",
-        f"攻击力追加合击角色攻击力的{_num(UNISON_TOTAL)}%",
-        f"自身为{who}时攻击力合计+{_num(CHOSEN_TOTAL)}%",
-        f"【诅咒】自身以外的角色攻击力{_num(CURSE_ATK)}%＆技能充能速度{_num(CURSE_CHARGE)}%",
-        f"【诅咒】战斗开始时自身获得「{CURSE_UNIQUE_NAME}」（永续、无法驱散）：自身以外的角色无法获得能力和装备的技能槽增加效果",
+        f"技能充能速度合计+{_num(CHARGE_TOTAL200)}%＆技能槽上限合计+{_num(GAUGE_TOTAL)}%",
+        f"攻击力追加合击角色攻击力的{_num(UNISON_TOTAL200)}%",
+        f"自身为{who}时攻击力合计+{_num(CHOSEN_TOTAL200)}%",
+        f"【诅咒·Lv{FINAL_LEVEL}起】自身以外的角色攻击力{_num(CURSE_ATK)}%＆技能充能速度{_num(CURSE_CHARGE)}%",
+        # 「战斗开始时」会让这行 58 字超出 57 字上限，用「开局」
+        f"【诅咒·Lv{FINAL_LEVEL}起】开局自身获得「{CURSE_UNIQUE_NAME}」（永续、无法驱散）："
+        "自身以外的角色无法获得能力和装备的技能槽增加效果",
     ]
     return {OVERRIDE_BASE: OVERRIDE_SEPARATOR.join(base), OVERRIDE_GROWTH: OVERRIDE_SEPARATOR.join(growth),
             OVERRIDE_FINAL: OVERRIDE_SEPARATOR.join(final)}
@@ -441,6 +554,53 @@ def retag(row: list[str], tag: str | None) -> list[str]:
     return out
 
 
+def look_texts() -> dict[str, str]:
+    """200 级外观两键：第二图标档（"<等级>,<图标>"，单元格内的半角逗号由 CSV 引号包住，客户端 format.csv.Reader
+    按引号读成一格——live 的覆盖文案已靠同一机制在单元格里带换行）与蓝金框底图路径。"""
+    return {LOOK_TIER2_KEY: f"{MAX_LEVEL},{ICON200}", LOOK_FRAME_KEY: FRAME_BLUEGOLD}
+
+
+def look_problems(texts: dict[str, str], enh_row: list[str], files: Iterable[str]) -> list[str]:
+    """外观键数据门禁：键由图标路径派生（第二档键挂在强化主表 c4 的图标上）；第二档等级须高于 c3 且不超过 c0；
+    值里的路径不带扩展名、不含换行，且对应 PNG 由本武器产出。"""
+    probs: list[str] = []
+    files = set(files)
+    if set(texts) != set(LOOK_KEYS):
+        probs.append(f"外观键应恰为 {LOOK_KEYS}，实际 {sorted(texts)}")
+    if LOOK_TIER2_KEY != LOOK_TIER2_PREFIX + enh_row[4]:
+        probs.append(f"{LOOK_TIER2_KEY}: 键须按强化主表 c4 图标 {enh_row[4]} 派生")
+    for key, text in texts.items():
+        if not isinstance(text, str) or not text or text != text.strip() or "\n" in text or "\r" in text:
+            probs.append(f"{key}: 值为空、带首尾空白或换行")
+            continue
+        if key.startswith(LOOK_TIER2_PREFIX):
+            level, _, path = text.partition(",")
+            if not level.isdigit() or not int(enh_row[3]) < int(level) <= int(enh_row[0]):
+                probs.append(f"{key}: 第二图标档等级 {level!r} 须在 (c3={enh_row[3]}, c0={enh_row[0]}] 内")
+        else:
+            path = text
+            if "," in path:
+                probs.append(f"{key}: 框底图路径含半角逗号")
+        if path.endswith(".png") or path + ".png" not in files:
+            probs.append(f"{key}: 路径 {path!r} 不是本武器产出的 PNG（逻辑路径不带 .png）")
+    if LOOK_FRAME_KEY != LOOK_FRAME_PREFIX + texts.get(LOOK_TIER2_KEY, ",").partition(",")[2]:
+        probs.append(f"{LOOK_FRAME_KEY}: 框键须挂在第二档图标上（补丁按缩略图的图标路径查）")
+    return probs
+
+
+def material_rows(read: W.LiveReader) -> dict[str, list[list[str]]]:
+    """新材料道具行：克隆五重材料行（10000145 / 10000147），换 c0–c5 与开始时间；c14 类目、c16 售价、c17 稀有度照模板。"""
+    out = {}
+    for iid, template, name, text, thumb, _src, small in MATERIALS:
+        W._require(len(text) <= MATERIAL_DESC_LIMIT and "," not in text and "\n" not in text, f"{name} 说明超长或含逗号/换行")
+        row = W._template(read, ITEM, template, 23)
+        W._require(row[6] == "1" and row[14] == "9", f"item[{template}] 模板列义漂移（c6 强化素材 / c14 类目 9）")
+        row[0:6] = [f"mod_{SLUG}_{iid}", iid, name, thumb, small, text]
+        row[19] = W.START_TIME
+        out[iid] = [row]
+    return out
+
+
 def build(read: W.LiveReader, *, allow_existing: bool = False,
           client_capabilities: Iterable[str] = BASE_CLIENT_CAPABILITIES) -> dict[str, Any]:
     """allow_existing=True 供补丁边同步暂存：自有键（5920001 / paradox_hits / tag_paradox_*）已在 live 时不算撞键。
@@ -467,11 +627,30 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
     W._require(row[2] == "0" and row[8] == "5" and row[11] == "5", "equipment 模板列义漂移")
     row[0], row[1], row[6], row[7], row[9], row[10] = f"mod_{SLUG}", NAME, ICON, text, "false", ID
     flat[EQUIPMENT][ID] = [row]
+    flat[ITEM].update(material_rows(read))
+
+    # 强化：c0 = 200；名/图/描述/框仍在 120 级切换（200 级图标与蓝金框走下面的外观两键）；强化 status 加 200 键；
+    # 商店 10 阶挂诅咒武器类目 6：1–6 阶五重材料、7–10 阶新材料
+    W._require(len(ENH_DESCRIPTION) <= W.DESC_LIMITS["enhancement"] and "," not in ENH_DESCRIPTION, "强化说明超长或含逗号")
+    row = W._template(read, ENH, "5900101", 9)
+    row[0:9] = [str(MAX_LEVEL), str(FINAL_LEVEL), NAME120, str(FINAL_LEVEL), ICON120, str(FINAL_LEVEL), ENH_DESCRIPTION,
+                str(FINAL_LEVEL), W.START_TIME]
+    flat[ENH][ID] = [row]
+    caps = [cap for cap, _ in PARADOX_ENH_STAGES]
+    W._require(caps == sorted(set(caps)) and caps[-1] == MAX_LEVEL and FINAL_LEVEL in caps,
+               f"商店阶段上限须严格递增、含 {FINAL_LEVEL}、末阶 = c0 {MAX_LEVEL}：{caps}")
+    W._require(max(map(int, PARADOX_ENH_STATUS_ROWS)) == MAX_LEVEL, "强化数值表缺 c0 键（Lv121+ 空引用崩）")
+    for stage, (cap, costs) in enumerate(PARADOX_ENH_STAGES, start=1):
+        row = W._template(read, ENH_SHOP, f"5900110{min(stage, SHOP_TEMPLATE_STAGES)}", 50)
+        row[0], row[2], row[3] = W.ENH_CATEGORY_KEY, ID, str(stage)
+        row[14:22] = W._cost_cells(costs)
+        row[22], row[23], row[29], row[30], row[31] = W.START_TIME, "(None)", ID, str(cap), str(W.REQUIRE_AWAKENING)
+        flat[ENH_SHOP][f"{ID}{stage:02d}"] = [row]
 
     effs = abilities()
     soul_rows = [W.build_row(W.SOUL_T, slot, eff) for slot, eff in enumerate(effs)]
     enh = enhancement_abilities()
-    ea_rows = [W.build_row(W.EA_T, slot, eff) for slot, eff in enumerate(enh)]
+    ea_rows = [ea_row(slot, eff) for slot, eff in enumerate(enh)]
     for table, rows in ((W.SOUL_T, soul_rows), (W.EA_T, ea_rows)):
         for index, r in enumerate(rows):
             problems += [f"{table}#{index}: {p}" for p in L.client_legality_problems(table, r)]
@@ -489,11 +668,21 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
     W._require(not bad, "装备详情覆盖文案不合规：" + "；".join(bad))
     for key, text in overrides.items():
         flat[CAS][key] = [[text]]
+    # 200 级外观两键（第二图标档 / 蓝金框）：键按图标路径派生，值指向本武器产出的 PNG
+    files = {logical: {"src": str(src), "size": list(size), "required": required}
+             for logical, src, size, required in ASSET_FILES}
+    for logical, info in files.items():
+        W._require(not info["required"] or Path(info["src"]).is_file(), f"缺源图 {info['src']}（{logical}）")
+    looks = look_texts()
+    bad = look_problems(looks, flat[ENH][ID][0], files)
+    W._require(not bad, "200 级外观键不合规：" + "；".join(bad))
+    for key, text in looks.items():
+        flat[CAS][key] = [[text]]
     # 衰减分档键（补丁按 ID+1000·n 选档）：与满档逐行同构，只换数值 / 629 段数
     for n in TIERS:
         tid = tier_id(n)
         flat[SOUL][tid] = [W.build_row(W.SOUL_T, slot, eff) for slot, eff in enumerate(abilities(n))]
-        flat[EA][tid] = [W.build_row(W.EA_T, slot, eff) for slot, eff in enumerate(enhancement_abilities(n))]
+        flat[EA][tid] = [ea_row(slot, eff) for slot, eff in enumerate(enhancement_abilities(n))]
         for table, rows in ((W.SOUL_T, flat[SOUL][tid]), (W.EA_T, flat[EA][tid])):
             for index, r in enumerate(rows):
                 problems += [f"{table}[{tid}]#{index}: {p}" for p in L.client_legality_problems(table, r)]
@@ -509,24 +698,18 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
                 capabilities += [c for c in needed if c not in capabilities]
                 problems += [f"{table}[{key}]#{index}: 目标客户端缺 capability {c}（未打补丁读到即 C7050）"
                              for c in needed if c not in have]
-    # 装备详情覆盖是行为型：未装补丁的客户端不读这三键、照旧显示生成文案、不崩 —— 只报 capability，不对照 have、不进 problems
+    # 装备详情覆盖与 200 级外观都是行为型：未装补丁的客户端不读这些键、照旧显示生成文案 / lv120 图标 + 粉框、不崩 ——
+    # 只报 capability，不对照 have、不进 problems
     for key in flat[CAS]:
-        for c in L.required_client_capabilities(L.CUSTOM_ABILITY_STRING_KIND, [key]):
-            W._require(c == L.EQUIPMENT_DESC_OVERRIDE, f"custom_ability_string {key} 落进面板覆盖 {c}（本生成器只出装备覆盖）")
+        needed = list(L.required_client_capabilities(L.CUSTOM_ABILITY_STRING_KIND, [key]))
+        look = key.startswith((LOOK_TIER2_PREFIX, LOOK_FRAME_PREFIX))
+        if look and not needed:
+            needed = [ENHANCED_LOOK_CAP]         # TODO(equipment-enhanced-look-v1)：legality 登记前由这里补报
+        for c in needed:
+            W._require(c == (ENHANCED_LOOK_CAP if look else L.EQUIPMENT_DESC_OVERRIDE),
+                       f"custom_ability_string {key} 落进 {c}（本生成器只出装备覆盖与 200 级外观）")
             if c not in capabilities:
                 capabilities.append(c)
-
-    # 强化：名/图/描述 120 级切换；强化 status 照诅咒武器；商店 6 阶挂诅咒武器类目 6、五重材料
-    W._require(len(ENH_DESCRIPTION) <= W.DESC_LIMITS["enhancement"] and "," not in ENH_DESCRIPTION, "强化说明超长或含逗号")
-    row = W._template(read, ENH, "5900101", 9)
-    row[0:9] = ["120", "120", NAME120, "120", ICON120, "120", ENH_DESCRIPTION, "120", W.START_TIME]
-    flat[ENH][ID] = [row]
-    for stage, (cap, costs) in enumerate(W.ENH_STAGES, start=1):
-        row = W._template(read, ENH_SHOP, f"5900110{stage}", 50)
-        row[0], row[2], row[3] = W.ENH_CATEGORY_KEY, ID, str(stage)
-        row[14:22] = W._cost_cells(costs)
-        row[22], row[23], row[29], row[30], row[31] = W.START_TIME, "(None)", ID, str(cap), str(W.REQUIRE_AWAKENING)
-        flat[ENH_SHOP][f"{ID}{stage:02d}"] = [row]
 
     live_tags = read.flat(CHARACTER_TAG)
     live_chars = read.flat(CHARACTER)
@@ -551,6 +734,11 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
     problems += [p for _, p in W.unique_accumulation_problems(acc_rows, dsl, flat[UNIQUE])]
     tiers = {tier_id(n) for n in TIERS}
     W._require(not tiers & (set(flat[EQUIPMENT]) | set(flat[ITEM])), "分档键不得进 equipment/item 表")
+    # C2324：同一 slot 内多行时「成长行后面还有更高 learn」会抛；PARADOX 每个 slot 只一行，续涨也只改行内 max
+    for key, rows in flat[EA].items():
+        slots = [r[0] for r in rows]
+        W._require(slots == [str(i) for i in range(len(rows))], f"{EA}[{key}] slot 须 0..n-1 各一行：{slots}")
+        W._require(all(int(r[1]) <= int(r[2]) <= MAX_LEVEL for r in rows), f"{EA}[{key}] learn/max 越界")
     for program, tree in dsl.items():
         for check in (W.dsl_signature_problems, W.colorless_hit_effect_problems, L.action_dsl_element_problems,
                       L.action_dsl_subject_binding_problems, L.action_dsl_lookup_scope_problems,
@@ -566,8 +754,9 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
 
     return {
         "flat": flat,
-        "nested": {EQUIPMENT_STATUS: {ID: dict(EQUIPMENT_STATUS_ROWS)}, ENH_STATUS: {ID: dict(W.ENH_STATUS_ROWS)}},
+        "nested": {EQUIPMENT_STATUS: {ID: dict(EQUIPMENT_STATUS_ROWS)}, ENH_STATUS: {ID: dict(PARADOX_ENH_STATUS_ROWS)}},
         "dsl": dsl,
+        "files": files,
         "server": _server_delta(flat),
         "delete": delete,
         "problems": problems,
@@ -586,12 +775,17 @@ def _server_delta(flat: dict) -> dict[str, Any]:
                      "enhancementMaxLevel": int(r[30]), "equipmentId": int(r[29]), "groupId": int(r[2]),
                      "requireAwakeningLevel": int(r[31]), "rewards": [], "shopCategoryId": int(r[0]),
                      "stage": int(r[3]), "stock": -1}
+    materials = {iid: flat[ITEM][iid][0] for iid, *_ in MATERIALS}
     return {
         "equipment_enhancement_shop.json": shop,
         "equipment_ids.json": [int(ID)],
         "equipment_lookup.json": {ID: {"name": NAME, "rarity": "5", "category": CATEGORY}},
         "equipment_max_level.json": {ID: 5},
         "equipment_element.json": {ID: -1},
-        "item_ids.json": [int(ID)],
-        "item_sale.json": {ID: {"category": 5, "sale_price": 500, "sellable": True}},
+        "item_ids.json": [int(ID), *(int(iid) for iid in materials)],
+        "item_lookup.json": {iid: r[2] for iid, r in materials.items()},
+        # 材料照客户端行：c14 类目、c16 售价、c21 可出售（与五重材料 10000145 / 10000147 的服务端行同形）
+        "item_sale.json": {ID: {"category": 5, "sale_price": 500, "sellable": True},
+                           **{iid: {"category": int(r[14]), "sale_price": int(r[16]), "sellable": r[21] == "true"}
+                              for iid, r in materials.items()}},
     }
