@@ -46,6 +46,9 @@
 | `equipment-description-override/` | `AbilitySoulAbilityLogic`、`EquipmentEnhancementAbilityLogic` | 叠在 equipment-rules 上的指令级前缀：装备详情本体说明 / 觉醒最大行 / 强化块先查 `custom_ability_string` 的 `desc_override_equipment_<id>`、`_enhancement_<id>`、`_enhancement_<id>_final`，查不到走原方法体。能力 `equipment-description-override-v1`（惰性，旧客户端显示原生文案不崩） | — |
 | `equipment-enhanced-look/` | `EquipmentEnhancementLogic`、`ItemThumbnailView` | 叠在说明覆盖上：`enhanced_pixelart_tier2_*` 第二图标档 + `enhanced_frame_override_*` 列表缩略图强化框换底。能力 `equipment-enhanced-look-v1`（惰性） | 不含编成装备槽 |
 | `equipment-enhanced-party-frame/` | `PartyItemThumbnailView` | 叠在 equipment-enhanced-look 上：`enhanced_party_frame_override_*` 编成装备槽强化框换图（隐藏 rarity 容器、图标下方显示框图，格子复用时恢复）。能力 `equipment-enhanced-party-frame-v1`（惰性，只装 v1 的客户端仍是粉框） | — |
+| `equipment-awakening-material/` | `OwnedEquipmentLogic` | 叠在 equipment-enhanced-party-frame b 版（APK 2f085757；a 版 14396ce0 作废）上：`awakening_material_<装备ID>` 存在时，没有重复本体的觉醒只提供该道具（禁忌星铁），缺货 / 值坏返回 None，绝不回落星铁钢；没有这一行的装备原生不变。能力 `equipment-awakening-material-v1`（**semantic**：旧客户端仍提供星铁钢、服务端白名单 400，发布门禁拒绝） | — |
+| `equipment-sort-pin/` | `EquipmentListScene`、`EquipmentSelectThumbnailListRepository` | 叠在 equipment-awakening-material 上：`equipment_sort_pin_<装备ID>` 序号小的排在装备一览 / 编成选武器最前（先于 stack 与稀有度），其余原生顺序。能力 `equipment-sort-pin-v1`（惰性）。与觉醒专属素材由 `equipment-sort-pin/package_apk.py --stack-report` 叠成一个 APK | — |
+| `item-rarity-frame-override/` | `ItemThumbnailView` | 叠在 v1 打过补丁的 `setRarity` 上（登记底包：编成槽框 a / b、觉醒专属素材、最终合成链 71f420a8）：**非强化态**缩略图查 `rarity_frame_override_<图标路径>`，命中时隐藏品质底、改显示该底图（禁忌星铁 → PARADOX Lv200 蓝金底）；`replace` 入口先写 `itemImagePath`，商店格复用不串色。能力 `item-rarity-frame-override-v1`（惰性） | 不含 `ItemShortThumbnailView` 小图、编成装备槽 |
 | `abcasm/` | (不是补丁) | V12 / V13 补丁共用的 AVM2 汇编器 / 拼接器 / 重定位器 / 方法体按名字定位（`bodies.py`） | — |
 
 `five-boss-multi-only` 与 `five-boss-single-allowed` 改的是**同一个方法**

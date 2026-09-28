@@ -1,0 +1,22 @@
+{
+  "ItemThumbnailView/setRarity": {
+    "index": 85197,
+    "sha": "cb8893ee6b1ad16bf16dbab92962d4c5245521c827b648a880d4824449f46298",
+    "header": [
+      3,
+      13,
+      1,
+      2
+    ]
+  },
+  "ItemThumbnailView/replace": {
+    "index": 85210,
+    "sha": "2013bdeb65924f15ff89625504eace5be3b94f96be250ff61a420e92ca3331a4",
+    "header": [
+      3,
+      3,
+      1,
+      2
+    ]
+  }
+}
