@@ -80,7 +80,9 @@ GB_NAME, GB_ANIM, GB_POS, GB_ROUTINE, GB_PRE, GB_PRE_RERUN = 1, 2, 41, 42, 109, 
 GB_ACTION_FIRST, GB_ACTION_LAST = 111, 160
 GB_ANIM_COLS = list(range(2, 15)) + [25, 26]
 # boss_level 列位
-BL_HP_HITS, BL_HP_MUL, BL_HP_CORR, BL_TP_CURVE, BL_TP_BASE = 2, 3, 4, 11, 12
+BL_HP_HITS, BL_HP_MUL, BL_HP_CORR, BL_ATK_CORR, BL_TP_CURVE, BL_TP_BASE = 2, 3, 4, 10, 11, 12
+# 克隆统一用 store 里有数值的曲线（部分官方 boss 用客户端内置曲线，无法按目标反算）
+HP_CURVE_NORM, ATK_CURVE_NORM = "hit_hp_boss", "atk_multi"
 # boss_battle_quest 列位（BossBattleQuestValues.as；0928 盘点 A §1）
 Q_NAME = 2
 Q_ENEMY_STATE = range(74, 84)       # 5 槽 (kind, strength)
@@ -608,6 +610,11 @@ def plan_clone(live: Live, spec: dict, plan: Plan, variant: Variant, wave: int, 
     bl = one_row(bl_text)
     if bl[0] != "0":
         raise BuildError(f"boss_level of {mother} is not Hit mode")
+    # 曲线归一：hit_hp_correction_normal / atk_correction_normal / tp_basic_normal 是客户端内置曲线，
+    # store 无数值 ⇒ 克隆统一改用已知曲线（lv80 下 atk_multi 与 atk_single 同值 1.992375），
+    # 血量/眩晕随后按目标值重算；攻击差异由 c8 除数与 quest c102 承担。
+    bl[BL_HP_CORR] = HP_CURVE_NORM
+    bl[BL_ATK_CORR] = ATK_CURVE_NORM
     bl[BL_HP_HITS] = num(hits_for_hp(bl, bs.hp_e8))
     tp_target = spec["rounds"][variant.round]["tp_target"] * bdef.get("tp_scale", 1.0)
     bl[BL_TP_CURVE] = TP_CURVE
