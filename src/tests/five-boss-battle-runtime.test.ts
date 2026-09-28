@@ -370,8 +370,8 @@ test("cursed-weapon drops are rolled alongside materials, granted via the inject
         },
     })
 
-    // 材料两次判定都 miss/base-only,武器唯一一次掷骰(Auto=倍率1)命中并抽到 index0。
-    const values = [0.9, 0.9, 0.05, 0]
+    // 材料两次判定都 miss/base-only,武器唯一一次掷骰(Auto=倍率1)命中(掉率 5%)并抽到 index0。
+    const values = [0.9, 0.9, 0.01, 0]
     const finish = weaponRuntime.finish(finishInput(room, host, "weapon-play", {
         randomFloat: () => values.shift() as number,
     }))

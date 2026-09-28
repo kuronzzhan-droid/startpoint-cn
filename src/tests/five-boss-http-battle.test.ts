@@ -468,10 +468,10 @@ test("HTTP finish resolves the room from the active quest when the client omits 
     playerDomain.updatePlayerSync({ id: run.playerId, rankPoint: 90_012_553 })
 
     const { room_number: _omitted, ...payloadWithoutRoom } = finishPayload(run)
-    // 图纸 60%/诅咒武器每次掷骰 15% 都是概率掉,HTTP 路径没有 randomFloat 注入口:
-    // 钉住 Math.random 让本条断言确定(0.1 同时落在两个概率之内,材料与武器都必定命中)。
+    // 图纸 60%/诅咒武器每次掷骰 5% 都是概率掉,HTTP 路径没有 randomFloat 注入口:
+    // 钉住 Math.random 让本条断言确定(0.01 同时落在两个概率之内,材料与武器都必定命中)。
     const originalRandom = Math.random
-    Math.random = () => 0.1
+    Math.random = () => 0.01
     let finish
     try {
         finish = await app.inject({ method: "POST", url: "/finish", payload: payloadWithoutRoom })
@@ -490,7 +490,7 @@ test("HTTP finish resolves the room from the active quest when the client omits 
     // 夹具冻结的是 Auto=false ⇒ 2 倍结算,深界结晶 10×2。
     assert.deepEqual(materialDrops.slice(0, 2).map(d => [d.index, d.number]), [[1, 1], [2, 20]])
     assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 20)
-    // Math.random 钉在 0.1 < 15% 掉率,诅咒武器必定命中一把,走独立展示组 590010001。
+    // Math.random 钉在 0.01 < 5% 掉率,诅咒武器必定命中一把,走独立展示组 590010001。
     assert.ok(drops.some(d => d.group_id === 590010001 && d.number === 1), JSON.stringify(drops))
     assert.ok(Array.isArray(data.equipment_list) && data.equipment_list.length >= 1, JSON.stringify(data.equipment_list))
     // 结算页经验卡按队伍逐角色查 add_exp_list,缺条目就 C2620(真机 2026-09-04)。

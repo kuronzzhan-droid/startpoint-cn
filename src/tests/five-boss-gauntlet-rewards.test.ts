@@ -134,7 +134,7 @@ test("the gauntlet weapon rejects awakening substitution items", () => {
 
 
 test("the cursed-weapon pool is the 29 ids 5910101..5910129, filtered live against equipment_ids.json", () => {
-    assert.equal(FIVE_BOSS_CURSED_WEAPON_DROP_RATE, 0.15)
+    assert.equal(FIVE_BOSS_CURSED_WEAPON_DROP_RATE, 0.05)
     assert.equal(FIVE_BOSS_CURSED_WEAPON_ID_BASE, 5910100)
     assert.equal(FIVE_BOSS_CURSED_WEAPON_POOL_SIZE, 29)
 
@@ -148,34 +148,34 @@ test("the cursed-weapon pool is the 29 ids 5910101..5910129, filtered live again
 })
 
 
-test("cursed-weapon rolls: multiplier is the roll count, each roll independently hits at 15%", () => {
+test("cursed-weapon rolls: multiplier is the roll count, each roll independently hits at 5%", () => {
     const pool = [5910101, 5910102, 5910103]
 
     const noHits = buildFiveBossCursedWeaponDropPlan({
         rewardMultiplier: 1,
         availableEquipmentIds: pool,
-        randomFloat: queueRandom([0.15]), // exactly the rate = miss (strict <)
+        randomFloat: queueRandom([0.05]), // exactly the rate = miss (strict <)
     })
     assert.deepEqual(noHits.equipmentIds, [])
 
     const oneRollOneHit = buildFiveBossCursedWeaponDropPlan({
         rewardMultiplier: 1,
         availableEquipmentIds: pool,
-        randomFloat: queueRandom([0.1, 0.5]), // hit, then pick index floor(0.5*3)=1
+        randomFloat: queueRandom([0.01, 0.5]), // hit, then pick index floor(0.5*3)=1
     })
     assert.deepEqual(oneRollOneHit.equipmentIds, [5910102])
 
     const twoRollsTwoHits = buildFiveBossCursedWeaponDropPlan({
         rewardMultiplier: 2,
         availableEquipmentIds: pool,
-        randomFloat: queueRandom([0, 0, 0.1, 0.999999]), // hit+pick(0), hit+pick(2)
+        randomFloat: queueRandom([0, 0, 0.04, 0.999999]), // hit+pick(0), hit+pick(2)
     })
     assert.deepEqual(twoRollsTwoHits.equipmentIds, [5910101, 5910103])
 
     const twoRollsOneHit = buildFiveBossCursedWeaponDropPlan({
         rewardMultiplier: 2,
         availableEquipmentIds: pool,
-        randomFloat: queueRandom([0.5, 0.05, 0.9]), // roll 1 miss, roll 2 hit+pick(2)
+        randomFloat: queueRandom([0.5, 0.01, 0.9]), // roll 1 miss, roll 2 hit+pick(2)
     })
     assert.deepEqual(twoRollsOneHit.equipmentIds, [5910103])
 })

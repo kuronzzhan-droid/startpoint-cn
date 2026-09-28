@@ -94,8 +94,8 @@ test("solo clear rolls and grants distinct cursed weapons, with one display row 
     const values = [
         0.9, // blueprint check: miss (rate 0.6)
         0.9, // five-king-core bonus check: miss -> base only
-        0.05, 0, // weapon roll 1: hit, pick index 0 -> 5910101
-        0.05, 0.999999, // weapon roll 2: hit, pick index 2 -> 5910103
+        0.01, 0, // weapon roll 1: hit (rate 0.05), pick index 0 -> 5910101
+        0.01, 0.999999, // weapon roll 2: hit, pick index 2 -> 5910103
     ]
     const result = soloModule.grantFiveBossSoloRewardsSync({
         playerId,
@@ -122,7 +122,7 @@ test("a repeated weapon hit collapses into one equipment_list entry but keeps tw
     const values = [
         0.9, 0.9, // material rolls: both miss/base-only, irrelevant to this test
         0, 0,       // weapon roll 1: hit, pick the only pool entry
-        0.1, 0.5,   // weapon roll 2: hit, pick the only pool entry again
+        0.01, 0.5,  // weapon roll 2: hit (rate 0.05), pick the only pool entry again
     ]
     const result = soloModule.grantFiveBossSoloRewardsSync({
         playerId,

@@ -149,7 +149,7 @@ test("solo start with the ticket deducts it and finish grants the 2x mode materi
     assert.ok(materialDrops.some(drop => drop.index === 2 && drop.number === 20), JSON.stringify(drops))
     assert.ok(materialDrops.some(drop => drop.index === 3 && drop.number === 1), JSON.stringify(drops))
     assert.ok(materialDrops.some(drop => drop.index === 4 && drop.number === 2), JSON.stringify(drops))
-    // 诅咒武器 15% 掉率,0.9 是稳定的 miss,这条不应产生 590010001 展示行。
+    // 诅咒武器 5% 掉率,0.9 是稳定的 miss,这条不应产生 590010001 展示行。
     assert.ok(drops.every(drop => drop.group_id === 590010000), JSON.stringify(drops))
 
     const progress = questDomain.getPlayerSingleQuestProgressSync(

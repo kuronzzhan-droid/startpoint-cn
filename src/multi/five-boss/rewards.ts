@@ -52,8 +52,11 @@ export function buildFiveBossAdditionalRewardDrops(
  */
 export const FIVE_BOSS_BLUEPRINT_DROP_RATE = 0.6
 
-/** 诅咒武器本体随机掉落命中率(每次掷骰独立判定,掷骰次数 = rewardMultiplier)。 */
-export const FIVE_BOSS_CURSED_WEAPON_DROP_RATE = 0.15
+/**
+ * 诅咒武器本体随机掉落命中率(每次掷骰独立判定,掷骰次数 = rewardMultiplier)。
+ * 2026-09-28 设计稿定 15%;同日作者裁定诅咒武器以武器扭蛋 990003 为主,五重直掉降到 5%。
+ */
+export const FIVE_BOSS_CURSED_WEAPON_DROP_RATE = 0.05
 
 /** 诅咒武器池 id 区间:5910101..5910129(29 把),index = equipmentId - base。 */
 export const FIVE_BOSS_CURSED_WEAPON_ID_BASE = 5910100
