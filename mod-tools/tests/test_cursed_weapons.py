@@ -3,7 +3,7 @@
 
 fixture 只含模板行（live 1.4.1056 快照）；与 live 的撞键检查在暂存脚本里对真 store 做。
 锁定：口径（本体只正面且很弱、诅咒强化 1 级起全额、120 级终值）、强化/商店/上架形状、客户端合法性与 DSL 签名、
-服务端镜像与客户端行一致。
+服务端镜像与客户端行一致；作者 0928 数值预算（刃 ≤1000%、乘区 ≤50%、不要脸的提案 ≤600%）及其负对照。
 """
 from __future__ import annotations
 
@@ -117,8 +117,9 @@ class CursedWeaponTests(unittest.TestCase):
         soul = self.out["flat"][W.SOUL][w01.id][0]
         self.assertEqual(soul[_col(W.SOUL_T, "instant_content", "strength.first_max")], "8000")      # 设计 40% × 0.2
         ea = [r for r in self.out["flat"][W.EA][w01.id] if _kind(W.EA_T, r) == "32"]
+        # 作者 0928 预算：常驻攻击力终值 100% → 80%（吞噬每球 +100% 保留提案原值）
         self.assertAlmostEqual(8000 + sum(float(r[_col(W.EA_T, "instant_content", "strength.first_max")]) for r in ea),
-                               100000)
+                               80000)
         eff = W.Eff("0", W.stat("32", W.T_SELF, 20, 40), note="HP≥50% 时自身攻击力 +20%→40%")
         weak = W._weaken(eff)
         self.assertEqual(weak.content[1]["strength"], ("4000", "8000"))
@@ -133,7 +134,8 @@ class CursedWeaponTests(unittest.TestCase):
         hi = lambda t, r: float(r[_col(t, "instant_content", "strength.first_max")])
         atk_pos = sum(hi(W.SOUL_T, r) for r in soul if _kind(W.SOUL_T, r) == "32")             + sum(hi(W.EA_T, r) for r in ea if _kind(W.EA_T, r) == "32" and hi(W.EA_T, r) > 0)
         atk_neg = [hi(W.EA_T, r) for r in ea if _kind(W.EA_T, r) == "32" and hi(W.EA_T, r) < 0]
-        self.assertEqual((atk_pos, atk_neg), (1000000, [-1000000]))
+        # 作者 0928「不要脸写的数值都太高了」：五项刃值 1000% → 100%，抵消仍在 120 级正好归零
+        self.assertEqual((atk_pos, atk_neg), (100000, [-100000]))
 
     def test_enhancement_rows_shape(self):
         for w in self.ws:
@@ -382,7 +384,7 @@ class CursedWeaponTests(unittest.TestCase):
         uid = w03.uid(1)
         # 叠层上限 2：134 计层、525 消耗都要求可叠层（上限 1 = 整套静默失效）
         self.assertEqual(self.out["flat"][W.UNIQUE][uid][0][1:5],
-                         ["咸鱼翻身", "battle/common/unique_condition/unique_fire_dragon_zenith", "600", "2"])
+                         ["咸鱼翻身", "battle/common/unique_condition/cursed_saltfish_flip", "600", "2"])
         grant, consume = self.soul(3)[1], self.soul(3)[2]
         self.assertEqual((_kind(W.SOUL_T, grant), _kind(W.SOUL_T, consume)), ("461", "525"))
         # 一次消耗 2 层 = 全部（10 秒内连续两次 200% 发动叠到 2 层也不留残层）
@@ -632,6 +634,8 @@ class CursedWeaponTests(unittest.TestCase):
             self.assertEqual((r[1], r[2], self.cell(W.EA_T, r, "instant_content", "strength.power1"),
                               self.cell(W.EA_T, r, "instant_content", "strength.first_max")), ("1", "120", "20000", "30000"))
             self.assertEqual(self.cell(W.EA_T, r, "instant_trigger", "cooltime"), "60")
+        for r in transfers:
+            self.assertEqual(self.cell(W.EA_T, r, "instant_trigger", "trigger_limit"), "6")    # 0928 预算：20 → 2
         for r in losses:
             self.assertEqual((r[1], r[2], self.cell(W.EA_T, r, "instant_content", "strength.first_max")), ("1", "120", "-20000"))
 
@@ -706,6 +710,219 @@ class CursedWeaponTests(unittest.TestCase):
                                original(sid, name, icon, duration, "1" if name == "封能" else cap, **kw)):
             probs = W.build(fixture_reader(), client_capabilities=W.PATCHED_CLIENT_CAPABILITIES)["problems"]
         self.assertEqual({p.split("按层数读固有 ")[1][:8] for p in probs}, {uid})
+
+    # ------------------------------------------------------------------
+    # 数值预算（作者 0928：基线死亡使者 500% 刃；刃合计 ≤1000%、乘区 ≤50%；不要脸的提案压到常规深渊水准）
+    # ------------------------------------------------------------------
+
+    #: 120 级 + 满破时单个角色能同时拿到的最大值（刃 %, 乘区 %），与人工对账表一致
+    EXPECTED_BUDGETS = {
+        1: (992, 0), 2: (1000, 0), 3: (500, 30), 4: (700, 0), 5: (0, 0), 6: (1000, 0), 7: (900, 0), 8: (700, 0),
+        9: (990, 50), 10: (560, 2), 11: (350, 0), 12: (510, 0), 13: (1000, 0), 14: (1000, 0), 15: (1000, 15),
+        16: (1000, 10), 17: (600, 0), 18: (1000, 20), 19: (1000, 30), 20: (550, 0), 21: (500, 50), 22: (1000, 20),
+        23: (490, 0), 24: (1000, 0), 25: (0, 50), 26: (500, 10), 27: (582, 0), 28: (0, 20), 29: (0, 50)}
+
+    def budget(self, row: int, *, soul=None, ea=None, dsl=None) -> dict:
+        return W.weapon_budget(self.soul(row) if soul is None else soul, self.ea(row) if ea is None else ea,
+                               self.out["flat"][W.UNIQUE], self.out["dsl"] if dsl is None else dsl)
+
+    def test_every_weapon_within_budget(self):
+        self.assertEqual(sorted(self.out["budgets"]), list(range(1, 30)))
+        got = {row: (b["blades"], b["multipliers"]) for row, b in self.out["budgets"].items()}
+        self.assertEqual(got, self.EXPECTED_BUDGETS)
+        for row, b in self.out["budgets"].items():
+            self.assertLessEqual(b["blades"], W.BLADE_CAP, row)
+            self.assertLessEqual(b["multipliers"], W.MULTIPLIER_CAP, row)
+            self.assertEqual(b["unbounded"], [], row)
+        self.assertEqual((W.BLADE_CAP, W.MULTIPLIER_CAP), (1000, 50))
+
+    def test_regular_abyss_rows_for_buyaolian(self):
+        # 作者 0928「不要脸写的数值都太高了，降低到其他深渊武器的常规水准」
+        rows = sorted(w.row for w in self.ws if w.author in W.REGULAR_ABYSS_AUTHORS)
+        self.assertEqual(rows, [25, 26, 27, 29])
+        for row in rows:
+            b = self.out["budgets"][row]
+            self.assertLessEqual(b["blades"], W.REGULAR_ABYSS_BLADE_CAP, row)
+            self.assertLessEqual(b["multipliers"], W.MULTIPLIER_CAP, row)
+        self.assertEqual(W.budget_caps("不要脸"), (600, 50))
+        self.assertEqual(W.budget_caps("脆脆鲨"), (1000, 50))
+        # 诅咒与机制保留：孤狼的抵消、超频的过载、三相的转出、面具的封印
+        self.assertEqual(sorted(_kind(W.EA_T, r) for r in self.ea(26) if min(_strengths(W.EA_T, r) or [0]) < 0),
+                         sorted(["32", "34", "33", "388", "55", "35", "723"]))
+        self.assertIn("701", [_kind(W.EA_T, r) for r in self.ea(25)])
+        self.assertIn("219", [_kind(W.EA_T, r) for r in self.ea(29)])
+        self.assertEqual(sum(1 for r in self.ea(27) if min(_strengths(W.EA_T, r) or [0]) < 0), 3)
+
+    def test_budget_counts_exclusive_windows_and_single_roulette_branch(self):
+        # 蛰龙之心「苏醒」50–59 秒与「龙怒」110–119 秒不重叠：取较大的龙怒窗口（240 + 750），不是两窗相加
+        b9 = self.out["budgets"][9]
+        self.assertEqual((b9["blades"], b9["multipliers"]), (990, 50))
+        # 赌注已下：开局赌注（0–15 秒）与第一次转盘（25 秒）不重叠；转盘每次只中一支（+500%）
+        self.assertEqual(self.out["budgets"][10]["blades"], 560)
+        # 负对照：把「龙怒」挪到第 50 秒与「苏醒」同时，两窗必须相加（窗口不是漏洞）
+        w09 = self.weapon(9)
+        ea = json.loads(json.dumps(self.ea(9)))
+        moved = 0
+        for r in ea:
+            if (_kind(W.EA_T, r) == "461" and self.cell(W.EA_T, r, "instant_content", "unique_condition_id") == w09.uid(3)):
+                for name in ("threshold.power1", "threshold.first_max"):
+                    r[_col(W.EA_T, "instant_trigger", name)] = W.frames(3000)
+                moved += 1
+        self.assertEqual(moved, 2)                                               # 火/雷共鸣各一行
+        b = self.budget(9, ea=ea)
+        self.assertEqual((b["blades"], b["multipliers"]), (240 + 500 + 750, 30 + 50))
+        self.assertEqual(len(W.budget_problems("09", w09.author, b)), 2)
+        # 门禁窗口只约束触发时刻，触发后的计时效果不随门禁结束截断（保守）
+        self.assertEqual(W._gated(((600, 1200),), ((0, 700),), 600), ((600, 1200),))
+        self.assertEqual(W._gated(((800, 1400),), ((0, 700),), 600), ())
+        self.assertEqual(W._gated(None, ((0, 100),), 600), ((0, 700),))
+        self.assertIsNone(W._gated(None, None, 600))
+
+    def test_budget_guard_negative_controls(self):
+        top = lambda r: _col(W.EA_T, "during_content" if r[5] == "1" else "instant_content", "strength.first_max")
+        # 1) 刃值抬 1%：狂宴战鼓 1000% → 1001% 必须报
+        ea = json.loads(json.dumps(self.ea(2)))
+        row = next(r for r in ea if _kind(W.EA_T, r) == "0" and r[1] == "120")
+        row[top(row)] = str(int(row[top(row)]) + 1000)
+        b = self.budget(2, ea=ea)
+        self.assertEqual(b["blades"], 1001)
+        probs = W.budget_problems("02", self.weapon(2).author, b)
+        self.assertEqual(len(probs), 1)
+        self.assertIn("刃合计 1001% 超过上限 1000%", probs[0])
+        # 2) 加一行乘区：失声之钟已在 50%，再加 723 +1% 必须报；停摆怀表 0% 加 51% 也必须报
+        for row_no, extra in ((21, 1), (5, 51)):
+            ea = json.loads(json.dumps(self.ea(row_no)))
+            ea.append(W.build_row(W.EA_T, len(ea), W.Eff("0", W.stat("723", W.T_SELF, extra), **W.FINAL)))
+            b = self.budget(row_no, ea=ea)
+            self.assertEqual(b["multipliers"], self.EXPECTED_BUDGETS[row_no][1] + extra)
+            self.assertTrue(any("乘区合计" in p for p in W.budget_problems(str(row_no), "x", b)), row_no)
+        # 3) DSL 数值：饕餮吞噬上限 9 → 10 个球（每球 +100%）必须报
+        dsl = json.loads(json.dumps(self.out["dsl"]))
+        node = next(n for n in _walk(dsl[W.dsl_program("gluttony_devour")])
+                    if isinstance(n, list) and n and n[0] == "MultiballNumberVariable")
+        node[-1] = 10
+        b = self.budget(1, dsl=dsl)
+        self.assertEqual(b["blades"], 1092)
+        self.assertTrue(W.budget_problems("01", self.weapon(1).author, b))
+        # 4) 不要脸的常规水准上限 600%：孤狼攻击 +101% → 601% 对不要脸报，对一般提案不报
+        ea = json.loads(json.dumps(self.ea(26)))
+        row = next(r for r in ea if _kind(W.EA_T, r) == "32" and r[1] == "120")
+        row[top(row)] = str(int(row[top(row)]) + 101000)
+        b = self.budget(26, ea=ea)
+        self.assertEqual(b["blades"], 601)
+        self.assertEqual(len(W.budget_problems("26", "不要脸", b)), 1)
+        self.assertEqual(W.budget_problems("26", "脆脆鲨", b), [])
+        # 5) 永久叠加去掉次数上限：珊瑚毒爪每次强化弹射 +50% 无封顶必须报
+        ea = json.loads(json.dumps(self.ea(23)))
+        for r in ea:
+            if _kind(W.EA_T, r) == "32":
+                r[_col(W.EA_T, "instant_trigger", "trigger_limit")] = "(None)"
+        b = self.budget(23, ea=ea)
+        self.assertTrue(b["unbounded"])
+        self.assertTrue(any("无次数上限" in p for p in W.budget_problems("23", "阿关", b)))
+        # 6) 随机分支：赌注已下的转盘三支增益都给 +500%，按单支计；把某支抬到 +600% 必须看到 660
+        dsl = json.loads(json.dumps(self.out["dsl"]))
+        ac = next(n for n in _walk(dsl[W.dsl_program("fate_roll")])
+                  if isinstance(n, list) and n and n[0] == "ACSkillDamage")
+        ac[2] = W.P(6.0)
+        self.assertEqual(self.budget(10, dsl=dsl)["blades"], 660)
+
+    def test_budget_counts_counting_during_triggers(self):
+        # 倒流沙漏的「逆沙」按层 134 读；换成别的计数型持续触发（202 CountAttackUp）也必须按倍乘上限 × 数值计，不能只算 1 次
+        kind_at = _col(W.EA_T, "during_trigger", "kind")
+        limit_at = _col(W.EA_T, "during_trigger", "trigger_limit")
+        ea = json.loads(json.dumps(self.ea(24)))
+        swapped = [r for r in ea if r[5] == "1" and r[kind_at] == W.DT_UNIQUE]
+        self.assertEqual(len(swapped), 12)                                      # 雷/风 × (攻击 2 + 技能 2 + 第 5 层 2)
+        for r in swapped:
+            r[kind_at] = "202"
+        b = self.budget(24, ea=ea)
+        self.assertEqual((b["blades"], b["unbounded"]), (1000, []))
+        # 负对照：倍乘上限写 (None) = 不封顶，必须报
+        for r in swapped:
+            r[limit_at] = "(None)"
+        b = self.budget(24, ea=ea)
+        self.assertTrue(b["unbounded"])
+        self.assertTrue(any("没有倍乘上限" in p for p in W.budget_problems("24", "阿关", b)))
+
+    def test_budget_reads_dsl_ac_by_signature(self):
+        import wf_dsl_sig
+        sig = wf_dsl_sig.ENUMS["AdditionalConditionKind"]
+        counted = {n for n in sig if n in W.BLADE_ACS or W._is_mult_ac(n)}
+        self.assertEqual(set(W._AC_SHAPES), counted)
+        for name, (value_at, stacks_at) in W._AC_SHAPES.items():
+            self.assertEqual(stacks_at, len(sig[name]), name)                   # 层数总在最后一个数组
+            self.assertTrue(all(1 < i < stacks_at for i in value_at), name)
+        # 逆境是 帧 / 最小 / 最大 / 层数 四数组：按最大值计，不能把最大值当层数
+        dsl = json.loads(json.dumps(self.out["dsl"]))
+        acs = next(n for n in _walk(dsl[W.dsl_program("gluttony_devour")])
+                   if isinstance(n, list) and n and n[0] == "Command" and n[1][0] == "CreateCondition")[1][2]
+        acs.append(["ACAdversity", W.P(900), W.P(0.2), W.P(0.6), W.P(1)])
+        self.assertEqual(self.budget(1, dsl=dsl)["multipliers"], 60)
+        acs[-1] = ["ACAdversity", W.P(900), W.P(0.2), W.P(0.6), W.P(2)]
+        self.assertEqual(self.budget(1, dsl=dsl)["multipliers"], 120)
+        # 没登记形状的刃/乘区 AC 不猜，报 unbounded
+        acs[-1] = ["ACSeparatedTermUnknown", W.P(900), W.P(0.2), W.P(1)]
+        b = self.budget(1, dsl=dsl)
+        self.assertTrue(any("形状未登记" in u for u in b["unbounded"]), b["unbounded"])
+
+    def test_budget_flags_overlapping_roulette_firings(self):
+        # 赌注已下每 25 秒转一次、每支 10 秒：两次不重叠，按单支计是准的
+        w10 = self.weapon(10)
+        ea = json.loads(json.dumps(self.ea(10)))
+        roll = next(r for r in ea if _kind(W.EA_T, r) == "629"
+                    and self.cell(W.EA_T, r, "instant_content", "action_path") == W.dsl_program("fate_roll"))
+        self.assertEqual(self.cell(W.EA_T, roll, "instant_trigger", "threshold.first_max"), W.frames(1500))
+        self.assertEqual(self.budget(10, ea=ea)["unbounded"], [])
+        # 负对照：周期缩到 5 秒，前一支还没结束又转出另一支，必须报
+        for name in ("threshold.power1", "threshold.first_max"):
+            roll[_col(W.EA_T, "instant_trigger", name)] = W.frames(300)
+        b = self.budget(10, ea=ea)
+        self.assertTrue(any("同时存活" in u for u in b["unbounded"]), b["unbounded"])
+        self.assertTrue(W.budget_problems("10", w10.author, b))
+        # 时机由战斗决定的触发：只触发 1 次或 CT 不短于持续时间才不重叠
+        base = {"trig": W.IT_SKILL, "threshold": W.times(1), "delay": 0}
+        self.assertTrue(W._refires_while_live({**base, "limit": "(None)", "cooltime": "0"}, 600))
+        self.assertFalse(W._refires_while_live({**base, "limit": "1", "cooltime": "0"}, 600))
+        self.assertFalse(W._refires_while_live({**base, "limit": "(None)", "cooltime": "600"}, 600))
+
+    def test_budget_is_wired_into_build(self):
+        from unittest import mock
+        with mock.patch.object(W, "BLADE_CAP", 999), mock.patch.object(W, "MULTIPLIER_CAP", 49):
+            probs = W.build(fixture_reader(), client_capabilities=W.PATCHED_CLIENT_CAPABILITIES)["problems"]
+        blade_rows = {row for row, (blades, _m) in self.EXPECTED_BUDGETS.items() if blades > 999}
+        mult_rows = {row for row, (_b, mults) in self.EXPECTED_BUDGETS.items() if mults > 49}
+        self.assertEqual({int(p[:2]) for p in probs if "刃合计" in p}, blade_rows)
+        self.assertEqual({int(p[:2]) for p in probs if "乘区合计" in p}, mult_rows)
+        self.assertEqual(len(probs), len(blade_rows) + len(mult_rows))
+
+    def test_rebalanced_summaries_match_values(self):
+        # 0928 改过数值的武器：强化 120 说明里的数字要跟着改（旧数字不能残留）
+        stale = {1: [], 7: ["+600%"], 9: ["+1000%", "+300%", "伤害独立 +500%"], 14: ["+1500%"], 18: ["+700%", "×2"],
+                 19: ["+500%", "+1000%"], 21: ["+100%"], 24: ["+160%", "+800%", "+150%", "+700%"], 25: ["+400%"],
+                 26: ["+1000%", "伤害独立乘区 +100%"], 27: ["+500%", "20 次"], 29: ["+100%"]}
+        fresh = {1: ["+80%", "+100%"], 7: ["+300%"], 9: ["+750%", "+30%", "+50%"], 14: ["+1000%"],
+                 18: ["+1000%", "+600%", "+400%"], 19: ["+350%", "+650%", "+30%"], 21: ["+50%"],
+                 24: ["+100%（最多 +500%）"], 25: ["+50%"], 26: ["+100%", "+10%"], 27: ["最多 6 次"], 29: ["+50%"]}
+        for row in stale:
+            text = self.weapon(row).summary_120
+            for old in stale[row]:
+                self.assertNotIn(old, text, row)
+            for new in fresh[row]:
+                self.assertIn(new, text, row)
+            self.assertTrue(any("0928" in d for d in self.weapon(row).deviations), row)
+
+    def test_uniques_use_dedicated_status_icons(self):
+        # 作者 0928「武器专属效果的图标做了吗」：每个诅咒武器固有状态都用自己的 48×48 图标，源图在仓库里
+        from PIL import Image
+        for w in self.ws:
+            for uid, row in w.uniques.items():
+                name = row[2].rsplit("/", 1)[1]
+                self.assertTrue(row[2].startswith("battle/common/unique_condition/cursed_"), (w.name, uid, row[2]))
+                src = W.STATUS_ICON_DIR / f"{name}.png"
+                self.assertTrue(src.is_file(), src)
+                with Image.open(src) as im:
+                    self.assertEqual((im.size, im.mode), ((48, 48), "RGBA"), src)
 
     def test_deterministic(self):
         again = W.build(fixture_reader(), client_capabilities=W.PATCHED_CLIENT_CAPABILITIES)
