@@ -1,4 +1,4 @@
-import { Gacha } from "./types";
+import { Gacha, GachaType } from "./types";
 import { GACHA_EXEC_TYPES, getTicketDrawKind, ticketExecMatchesGachaType } from "./gacha-rules";
 
 export const GACHA_TICKET_ITEM_IDS = {
@@ -16,6 +16,20 @@ export interface GachaTicketCost {
 
 function getFallbackTicketItemId(gacha: Gacha | undefined, type: number): number | null {
     if (gacha && !gacha.wildcardTicketAvailable) return null;
+
+    // 武器池的 CN 券抽(3/4)回落到装备通用券,不能扣角色券
+    if (gacha?.type === GachaType.WEAPON) {
+        switch (type) {
+            case GACHA_EXEC_TYPES.SINGLE_WEAPON_TICKET:
+            case GACHA_EXEC_TYPES.CN_SINGLE_TICKET:
+                return GACHA_TICKET_ITEM_IDS.equipmentSingle;
+            case GACHA_EXEC_TYPES.MULTI_WEAPON_TICKET:
+            case GACHA_EXEC_TYPES.CN_MULTI_TICKET:
+                return GACHA_TICKET_ITEM_IDS.equipmentMulti;
+            default:
+                return null;
+        }
+    }
 
     switch (type) {
         case GACHA_EXEC_TYPES.MULTI_TICKET:

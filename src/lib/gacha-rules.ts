@@ -54,8 +54,11 @@ export function getTicketDrawKind(type: number): TicketDrawKind | null {
 
 export function ticketExecMatchesGachaType(type: number, gacha: Pick<Gacha, "type">): boolean {
     if (gacha.type === GachaType.WEAPON) {
+        // CN 客户端用卡池专用券抽武器池时同样发 3/4(与角色池一致,由 drawKind 决定,不看 prize_kind)
         return type === GACHA_EXEC_TYPES.SINGLE_WEAPON_TICKET ||
-            type === GACHA_EXEC_TYPES.MULTI_WEAPON_TICKET;
+            type === GACHA_EXEC_TYPES.MULTI_WEAPON_TICKET ||
+            type === GACHA_EXEC_TYPES.CN_SINGLE_TICKET ||
+            type === GACHA_EXEC_TYPES.CN_MULTI_TICKET;
     }
     return type === GACHA_EXEC_TYPES.SINGLE_TICKET ||
         type === GACHA_EXEC_TYPES.CN_SINGLE_TICKET ||
