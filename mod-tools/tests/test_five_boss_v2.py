@@ -155,6 +155,17 @@ class PureFunctionTests(unittest.TestCase):
         self.assertEqual(F.fired_action_slots(live, "(None)"), set(range(1, 51)))
         self.assertEqual(F.spawned_funnels(live, [prog], {}), {"dog"})
 
+    def test_endless_loop_needs_remover_in_kit(self):
+        loop = F._root([F._repeat(120, 9999, "floor", [F._cmd(["DoNothing"])])])
+        remover = F._root([F._cmd(["RemoveEventFromOwner", "floor"])])
+        files = {wf_dsl.dsl_logical("a/x$loop"): F.encode_dsl(loop), wf_dsl.dsl_logical("a/x$rm"): F.encode_dsl(remover)}
+        live = F.Live(lambda lg: files[lg] if lg in files else (_ for _ in ()).throw(FileNotFoundError(lg)))
+        row = [""] * 162
+        row[F.GB_ACTION_FIRST] = "a/x$loop"
+        self.assertEqual(F.orphan_endless_loops(live, row, {}), ["floor"])       # 借来的循环没人撤
+        row[F.GB_ACTION_FIRST + 5] = "a/x$rm"
+        self.assertEqual(F.orphan_endless_loops(live, row, {}), [])               # 招式组里有撤除者就放行
+
     def test_resolve_action_passthrough_and_variant_path(self):
         self.assertEqual(F.resolve_action(None, "a/b$c"), "a/b$c")
         self.assertEqual(F.element_variant_anim("battle/effect/g/shot", "black"), "battle/effect/g/shot/shot_black/shot_black")

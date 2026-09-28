@@ -671,6 +671,27 @@ def resolve_by_element_nodes(tree) -> list[tuple[str, int]]:
     return out
 
 
+def orphan_endless_loops(live: Live, row: list[str], extra: dict[str, bytes]) -> list[str]:
+    """无限循环要有人收：招式槽程序里次数 ≥1000 的 Repeat 靠同一钥匙的 RemoveEventFromOwner/RemoveEvent 撤除。
+    借来的招式离开原主就没人撤，每放一次多一套循环，越打越卡（深界王借「暗影领域」，1.4.1097–1102 实机卡顿）。
+    返回招式组里没有撤除者的循环钥匙。出场动作（词缀，登场只跑一次）不在此列。"""
+    roots = [row[c] for c in range(GB_ACTION_FIRST, GB_ACTION_LAST + 1) if c < len(row) and row[c] not in ("", "(None)")]
+    endless, removed = set(), set()
+    for prog in dsl_closure(live, roots, extra)[0]:
+        stack = [dsl_tree(live, prog, extra)]
+        while stack:
+            n = stack.pop()
+            if isinstance(n, list):
+                if len(n) > 3 and n[0] == "Repeat" and isinstance(n[2], (int, float)) and n[2] >= 1000:
+                    endless.add(str(n[3]))
+                if len(n) > 1 and n[0] in ("RemoveEventFromOwner", "RemoveEvent") and isinstance(n[1], str):
+                    removed.add(n[1])
+                stack.extend(n)
+            elif isinstance(n, dict):
+                stack.extend(n.values())
+    return sorted(endless - removed)
+
+
 def element_variant_anim(base: str, suffix: str) -> str:
     name = base.rsplit("/", 1)[-1]
     return f"{base}/{name}_{suffix}/{name}_{suffix}"
@@ -1612,6 +1633,9 @@ def gate_variant(live: Live, spec: dict, plan: Plan, variant: Variant, terrain_t
                         unverifiable.add(base)
         if lacking:
             plan.problems.append(f"{variant.quest} {code}: element variants missing {sorted(lacking)[:3]}")
+        orphan = orphan_endless_loops(live, row, plan.files)
+        if orphan:
+            plan.problems.append(f"{variant.quest} {code}: endless action loops with no remover in the kit {orphan}")
         if unverifiable:
             plan.report.setdefault("element_variants_in_apk", set()).update(unverifiable)
     sheets = boss_sheets(live, rows, plan.files)
