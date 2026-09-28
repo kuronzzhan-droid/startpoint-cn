@@ -11,6 +11,7 @@ import {
     addPlayerShopPurchaseSync,
     getPlayerShopPurchaseCountSync,
 } from "../data/domains/shopPurchase";
+import { getGenericShopItemsSync } from "./assets";
 import { givePlayerRewardsSync } from "./quest";
 import { clientSerializeEquipment } from "./equipment";
 import { grantEquipmentDegreeRewardsSync } from "./equipment-degree-rewards";
@@ -42,6 +43,11 @@ export interface ExecuteShopPurchasesInput {
     shopType: number
     purchases: ShopPurchaseSelection[]
     resolveShopItem(shopType: number, shopItemId: number): ShopItem | null
+    /**
+     * Enhancement shop only: every stage of the enhancement group that `item` belongs to.
+     * Defaults to the loaded equipment_enhancement_shop.json.
+     */
+    resolveEnhancementStages?(shopType: number, item: ShopItem): ShopItem[]
     now?: Date
 }
 
@@ -75,6 +81,32 @@ function safeTotal(value: number, count: number, label: string): number {
 function safeRewardTotal(value: number, count: number, label: string): number {
     safePositiveInteger(value, label);
     return safeTotal(value, count, label);
+}
+
+function defaultEnhancementStages(shopType: number, item: ShopItem): ShopItem[] {
+    if (item.groupId === undefined) return [item];
+    const items = getGenericShopItemsSync(shopType) ?? {};
+    return Object.values(items).filter(stage => stage.groupId === item.groupId);
+}
+
+/**
+ * The level range one enhancement stage covers: (previous stage cap, this stage cap].
+ * The previous cap is the highest cap in the same group below this one (0 for the first stage),
+ * so it does not depend on stage numbers being contiguous.
+ */
+export function getEnhancementStageRange(
+    item: ShopItem,
+    stages: readonly ShopItem[],
+): { from: number, to: number } {
+    const to = item.enhancementMaxLevel ?? 0;
+    let from = 0;
+    for (const stage of stages) {
+        if (stage.equipmentId !== item.equipmentId) continue;
+        const cap = stage.enhancementMaxLevel;
+        if (cap === undefined || !Number.isSafeInteger(cap)) continue;
+        if (cap < to && cap > from) from = cap;
+    }
+    return { from, to };
 }
 
 export function isShopItemAvailable(item: ShopItem, now: Date): boolean {
@@ -213,18 +245,28 @@ export function executeShopPurchasesSync(
             }
 
             if (input.shopType === ShopType.TREASURE_EQUIPMENT) {
+                // One purchased unit = one enhancement level, and only the stage the equipment is
+                // currently in can be bought: previous stage cap <= current < this stage cap.
                 const equipmentId = item.equipmentId;
-                const targetLevel = item.enhancementMaxLevel;
+                const stageMaxLevel = item.enhancementMaxLevel;
                 safePositiveInteger(equipmentId ?? 0, `Enhancement equipment id for ${shopItemId}`);
-                safePositiveInteger(targetLevel ?? 0, `Enhancement target level for ${shopItemId}`);
+                safePositiveInteger(stageMaxLevel ?? 0, `Enhancement target level for ${shopItemId}`);
                 const current = getPlayerEquipmentSync(input.playerId, equipmentId!);
                 if (current === null) validation("Player does not own the target equipment.");
                 const prior = enhancementUpdates.get(equipmentId!);
                 const currentLevel = prior?.targetLevel ?? current.enhancementLevel;
-                if (targetLevel! <= currentLevel) {
+                if (stageMaxLevel! <= currentLevel) {
                     validation("Target equipment is already enhanced to this level.");
                 }
-                enhancementUpdates.set(equipmentId!, { targetLevel: targetLevel!, current });
+                const stages = (input.resolveEnhancementStages ?? defaultEnhancementStages)(input.shopType, item);
+                const { from } = getEnhancementStageRange(item, stages);
+                if (currentLevel < from) {
+                    validation(`Shop item ${shopItemId} is not the current enhancement stage.`);
+                }
+                if (count > stageMaxLevel! - currentLevel) {
+                    validation(`Purchase count exceeds the remaining levels of enhancement stage ${shopItemId}.`);
+                }
+                enhancementUpdates.set(equipmentId!, { targetLevel: currentLevel + count, current });
             }
 
             if (item.userCost !== undefined) {

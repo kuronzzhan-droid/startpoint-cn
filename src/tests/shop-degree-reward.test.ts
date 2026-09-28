@@ -300,12 +300,12 @@ test("treasure equipment purchase keeps its enhancement update atomic", () => {
     assert.equal(db.prepare("SELECT free_mana FROM players WHERE id = ?").pluck().get(PLAYER_ID), 900);
     assert.equal(db.prepare(
         "SELECT enhancement_level FROM players_equipment WHERE player_id = ? AND id = 5020042"
-    ).pluck().get(PLAYER_ID), 20);
+    ).pluck().get(PLAYER_ID), 11);   // 买 1 份 = 升 1 级（旧实现直接跳到本阶上限 20）
     assert.deepEqual(result.equipmentList, [{
         equipment_id: 5020042,
         protection: false,
         level: 1,
-        enhancement_level: 20,
+        enhancement_level: 11,
         stack: 0,
     }]);
 });
