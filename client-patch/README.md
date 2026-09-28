@@ -44,6 +44,8 @@
 | `kyubi-pf-damage/` | `MemberImpl`、`ActionEvaluator`、`AbilityDamageShot`、`SquadManagerImpl` | 九尾狐两档主技 / 常态特殊 PF / 能力 2 追击按**强化弹射**结算。⚠ 目录里的 `patch.py`（整类 AS3 回编）**已废弃**——它产出的包在战斗中抛 `ReferenceError #1069`；现在的入口是 `abcpatch.py`（指令级插入）+ `patch_squad_pcode.py` | — |
 | `equipment-rules/` | `BattleCharacterLogic`、`EquipmentEnhancementAbilityValues`、`AbilitySoulValues` | 1047 客户端上的指令级追加：PARADOX 按其他装备件数分档衰减（本体 + 强化同换）、诅咒武器同队 ≥2 件全部失效、装备两表解析 during 423（限制技能槽增加）。能力 `equipment-rules-v1` + `equipment-gauge-gain-rules-v1`；后者的数据须全员装包后再发 | — |
 | `equipment-description-override/` | `AbilitySoulAbilityLogic`、`EquipmentEnhancementAbilityLogic` | 叠在 equipment-rules 上的指令级前缀：装备详情本体说明 / 觉醒最大行 / 强化块先查 `custom_ability_string` 的 `desc_override_equipment_<id>`、`_enhancement_<id>`、`_enhancement_<id>_final`，查不到走原方法体。能力 `equipment-description-override-v1`（惰性，旧客户端显示原生文案不崩） | — |
+| `equipment-enhanced-look/` | `EquipmentEnhancementLogic`、`ItemThumbnailView` | 叠在说明覆盖上：`enhanced_pixelart_tier2_*` 第二图标档 + `enhanced_frame_override_*` 列表缩略图强化框换底。能力 `equipment-enhanced-look-v1`（惰性） | 不含编成装备槽 |
+| `equipment-enhanced-party-frame/` | `PartyItemThumbnailView` | 叠在 equipment-enhanced-look 上：`enhanced_party_frame_override_*` 编成装备槽强化框换图（隐藏 rarity 容器、图标下方显示框图，格子复用时恢复）。能力 `equipment-enhanced-party-frame-v1`（惰性，只装 v1 的客户端仍是粉框） | — |
 | `abcasm/` | (不是补丁) | V12 / V13 补丁共用的 AVM2 汇编器 / 拼接器 / 重定位器 / 方法体按名字定位（`bodies.py`） | — |
 
 `five-boss-multi-only` 与 `five-boss-single-allowed` 改的是**同一个方法**

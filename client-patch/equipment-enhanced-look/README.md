@@ -100,12 +100,11 @@ enhanced_frame_override_item/equipment/mod/paradox/paradox_lv200  →  item/equi
 
 ## 不覆盖（v1）
 
-- **编成装备槽**（`PartyItemThumbnailView/setRarity`，体 85273，header `[10,5,1,2]`，sha `61d6b104…`）：图标会跟着第二档变，框仍是粉框。
-  那个布局（`common_ui/item_thumbnail` 的 `party_equipment_thumbnail`）没有 background 容器；`setRarity` 只做
-  `layout.getContainer("rarity").goto(getRarityFrameIndex(rarity, isEnableEnhancedEffect))`，而且方法里拿不到图标路径
-  （路径在 `imagePath` 字段，由 `replaceEquipment` 先写入）。做 v2 需要在同一方法里：读 `imagePath` 查键 → 命中时
-  `new TextureReplaceableImage()` 挂到 rarity 容器下（或盖在上面）、异步载 146×146 圆角图、载入完成时按路径比对丢弃过期回调，
-  未命中时把这张图藏起来（格子复用），并隐藏 rarity 帧——新增字段或要借用已有字段存图像引用，复杂度明显高于 v1。
+- **编成装备槽**（`PartyItemThumbnailView`）：v1 只让图标跟着第二档变，框仍是粉框（作者 0928 真机确认）。
+  那个布局（`common_ui/item_thumbnail` 的 `party_equipment_thumbnail`）没有 background 容器，`setRarity` 只做
+  `rarity.goto(帧号)`、拿不到图标路径。**已由叠在本补丁之上的 `client-patch/equipment-enhanced-party-frame/` 补上**
+  （宿主 `updateEnhancedEffectAnimation`，键 `enhanced_party_frame_override_<图标路径>`，独立能力 `equipment-enhanced-party-frame-v1`）。
+  本目录不改。
 - 不经过 `ItemThumbnailView.setRarity` 的其他缩略图组件保持原生外观（第二图标档仍然生效，因为它在数据层）。
 
 ## 用法（换一个 APK 时照做）
