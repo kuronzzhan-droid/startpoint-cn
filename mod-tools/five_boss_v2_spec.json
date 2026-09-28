@@ -121,6 +121,22 @@
       15
      ]
     ]
+   },
+   "position_overrides": {
+    "1": {
+     "p0": [
+      89,
+      138
+     ],
+     "p1": [
+      62,
+      132.2
+     ],
+     "p2": [
+      116,
+      132.2
+     ]
+    }
    }
   }
  },
@@ -435,6 +451,128 @@
    "signature": [
     "sig_blood_tide"
    ]
+  },
+  "deep_king": {
+   "_doc": "自制第二步（作者 0928：全新造型、放最后一张图、限制技能、清空 buff、带试炼）：骨架=不死王专家档（动作/碰撞/骷髅犬+超级蓄力机制），本体 51 帧重画（金冠/象牙面具/紫金王袍/紫晶权杖）；暗属性；16 个招式槽借五王招牌招式；射击3蓄力挂强化弹射命中 25、大招2蓄力挂技能命中 12（10 秒倒数，达成跳过大招）；签名：每 25 秒强制沉默 6 秒并扣 30% 技能槽，登场及每 30 秒强制驱散全部增益。召唤物属性不同由构建器自动补 C8016 预载垫片。",
+   "mother": "lich_wind_expert_100",
+   "name": "深界王",
+   "body": {
+    "from": "battle/boss/lich/lich_wind/lich_wind",
+    "out": "battle/boss/mod/five_boss_v2/deep_king/deep_king",
+    "frames": "assets/five-boss-v2/deep_king/frames"
+   },
+   "routine": {
+    "out": "mod_fb2_deep_king",
+    "trials": {
+     "skill2_charge1": {
+      "kind": "skill",
+      "count": 12,
+      "frames": 600
+     },
+     "skill2_charge2": {
+      "kind": "skill",
+      "count": 12,
+      "frames": 600
+     },
+     "skill2_charge3": {
+      "kind": "skill",
+      "count": 12,
+      "frames": 600
+     },
+     "shot3_charge1": {
+      "kind": "pf",
+      "count": 25,
+      "frames": 600
+     },
+     "shot3_charge2": {
+      "kind": "pf",
+      "count": 25,
+      "frames": 600
+     },
+     "shot3_charge3": {
+      "kind": "pf",
+      "count": 25,
+      "frames": 600
+     }
+    }
+   },
+   "signature": [
+    "sig_king_seal",
+    "sig_king_purge"
+   ],
+   "element": 6,
+   "actions": {
+    "1": {
+     "from": "mod_fb_thunder_s1",
+     "slot": 8
+    },
+    "11": {
+     "from": "mod_fb_water_s1",
+     "slot": 10
+    },
+    "21": {
+     "from": "mod_fb_yokai_s1",
+     "slot": 2
+    },
+    "2": {
+     "from": "devil_commander_evil_envy_80",
+     "slot": 7
+    },
+    "12": {
+     "from": "devil_commander_evil_envy_80",
+     "slot": 4
+    },
+    "22": {
+     "from": "mod_fb_sand_s1",
+     "slot": 8
+    },
+    "3": {
+     "from": "spirit_beast_water",
+     "slot": 2
+    },
+    "13": {
+     "from": "simon_golem_g_multi",
+     "slot": 2
+    },
+    "23": {
+     "from": "mod_fb_hero_s1",
+     "slot": 12
+    },
+    "4": {
+     "from": "simon_golem_g_multi",
+     "slot": 4
+    },
+    "5": {
+     "from": "spirit_beast_water",
+     "slot": 6
+    },
+    "6": {
+     "from": "spirit_beast_water",
+     "slot": 3
+    },
+    "7": {
+     "from": "mod_fb_yokai_s1",
+     "slot": 3
+    },
+    "10": {
+     "from": "mod_fb_thunder_s1",
+     "slot": 11
+    },
+    "16": {
+     "from": "devil_commander_evil_envy_80",
+     "slot": 12
+    },
+    "17": {
+     "from": "mod_fb_sand_s1",
+     "slot": 9
+    }
+   },
+   "texts": {
+    "100": "深渊瘴气变浓了",
+    "101": "王之守护消失了",
+    "102": "王之低语消失了",
+    "103": "深渊之力不足"
+   }
   }
  },
  "affix_params": {
@@ -518,6 +656,20 @@
     ]
    ],
    "drain": 0.25
+  },
+  "sig_king_seal": {
+   "interval": 1500,
+   "count": 999,
+   "key": "mod_fb2_sig_king_seal",
+   "silence": 360,
+   "drain": 0.3
+  },
+  "sig_king_purge": {
+   "interval": 1800,
+   "count": 999,
+   "key": "mod_fb2_sig_king_purge",
+   "purge": 99,
+   "on_entry": true
   }
  },
  "variants": [
@@ -881,7 +1033,7 @@
     ],
     [
      {
-      "alias": "sand",
+      "alias": "deep_king",
       "hp_e8": 4200,
       "position": "p0"
      }
@@ -926,7 +1078,7 @@
     ],
     [
      {
-      "alias": "thunder",
+      "alias": "deep_king",
       "hp_e8": 4200,
       "position": "p0"
      }
@@ -975,7 +1127,7 @@
     ],
     [
      {
-      "alias": "spirit_water",
+      "alias": "deep_king",
       "hp_e8": 4200,
       "position": "p0"
      }
@@ -1020,7 +1172,7 @@
     ],
     [
      {
-      "alias": "golem_g",
+      "alias": "deep_king",
       "hp_e8": 4200,
       "position": "p0"
      }
@@ -1065,7 +1217,7 @@
     ],
     [
      {
-      "alias": "hero",
+      "alias": "deep_king",
       "hp_e8": 4200,
       "position": "p0"
      }
@@ -1110,7 +1262,7 @@
     ],
     [
      {
-      "alias": "thunder",
+      "alias": "deep_king",
       "hp_e8": 4200,
       "position": "p0"
      }
@@ -1155,7 +1307,7 @@
     ],
     [
      {
-      "alias": "spirit_water",
+      "alias": "deep_king",
       "hp_e8": 4200,
       "position": "p0"
      }
