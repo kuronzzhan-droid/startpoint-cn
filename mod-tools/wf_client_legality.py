@@ -142,6 +142,66 @@ def equipment_desc_override_key_problems(key: str) -> list[str]:
             "desc_override_equipment_<id> / _enhancement_<id> / _enhancement_<id>_final(客户端永远读不到)"]
 
 
+# ────────── 装备强化外观(client-patch/equipment-enhanced-look)的键与值门禁 ──────────
+#
+# 补丁在两个单方法里查 custom_ability_string,键尾都是**图标路径**(客户端逐字拼接):
+#   enhanced_pixelart_tier2_<pixelart0 图标路径>   值 "<等级>,<路径>"
+#     EquipmentEnhancementLogic.getPixelart 在原方法已给出 Some(pixelart0) 时,强化等级 >= <等级>
+#     改给 Some(<路径>)(第二图标档;唯一消费方 getPixelArtPathWithEnhancement,约 30 处视图跟随)。
+#     客户端判据:恰好一个逗号;等级满足 String(int(s)) === s;路径非空;否则静默落回 pixelart0。
+#     值含逗号:写表时这一格必须带引号(csv.writer 的 QUOTE_MINIMAL 自动加,客户端 format.csv.Reader
+#     按引号读、逗号保留)。没加引号 = 客户端只读到 "<等级>" 一格 → 静默不生效,所以门禁按「一行一格」判。
+#   enhanced_frame_override_<缩略图图标路径>        值 "<背景图路径>"
+#     ItemThumbnailView.setRarity 在强化态(enhanced=true)hideRarity + replaceBackgroundImage(值)
+#     (与称号缩略图同一通路,144×144 不透明 PNG 原尺寸显示)。编成装备槽(PartyItemThumbnailView)不覆盖。
+# 行为型(cosmetic):没打补丁的客户端根本不读这些键,显示原图标与粉框、不崩,数据可以先于 APK 发布。
+# 所以 required_client_capabilities 只报 capability;键/值形状错误由 enhanced_look_problems 报。
+# 值指向的 PNG 必须随同一条发布边下发(缺图 = 客户端取图失败)—— 本模块不碰 store,由发布方核对。
+EQUIPMENT_ENHANCED_LOOK = "equipment-enhanced-look-v1"
+ENHANCED_PIXELART_TIER2_KEY_PREFIX = "enhanced_pixelart_tier2_"
+ENHANCED_FRAME_OVERRIDE_KEY_PREFIX = "enhanced_frame_override_"
+ENHANCED_LOOK_KEY_PREFIXES = (ENHANCED_PIXELART_TIER2_KEY_PREFIX, ENHANCED_FRAME_OVERRIDE_KEY_PREFIX)
+#: 客户端资源路径:ASCII 段以 "/" 相连;无空白、逗号、引号、换行、扩展名,无首尾 "/"。
+ENHANCED_LOOK_PATH_RE = re.compile(r"[A-Za-z0-9_\-]+(?:/[A-Za-z0-9_\-]+)*")
+#: 第二图标档的值:规范十进制正整数(1–999999999,远小于 int32 上限,客户端 int() 不回绕)+ 逗号 + 路径。
+ENHANCED_TIER2_VALUE_RE = re.compile(r"([1-9][0-9]{0,8}),(" + ENHANCED_LOOK_PATH_RE.pattern + r")")
+
+
+def enhanced_look_capability(key: str) -> str | None:
+    """custom_ability_string 的这个键是否是装备强化外观键(是则返回 equipment-enhanced-look-v1)。"""
+    return EQUIPMENT_ENHANCED_LOOK if (key or "").strip().startswith(ENHANCED_LOOK_KEY_PREFIXES) else None
+
+
+def enhanced_look_problems(key: str, value: str | None = None) -> list[str]:
+    """外观键的键形与值形(value=None 只查键)。其他键不归这里管,返回空。
+
+    键尾必须是合法图标路径(客户端按 itemImagePath / pixelart0.value 逐字拼接,带空白的键永远查不到);
+    值必须非空、无换行;第二图标档的值必须是 "<正整数>,<路径>",强化框的值必须是一个路径。
+    """
+    raw = key or ""
+    prefix = next((p for p in ENHANCED_LOOK_KEY_PREFIXES if raw.strip().startswith(p)), None)
+    if prefix is None:
+        return []
+    problems = []
+    tail = raw[len(prefix):] if raw.startswith(prefix) else None
+    if tail is None or not ENHANCED_LOOK_PATH_RE.fullmatch(tail):
+        problems.append(f"custom_ability_string 键 {key!r} 的键尾不是图标路径 {ENHANCED_LOOK_PATH_RE.pattern}"
+                        "(客户端按图标路径逐字拼键,永远读不到)")
+    if value is None:
+        return problems
+    if not isinstance(value, str) or value == "":
+        problems.append(f"custom_ability_string[{key!r}] 的值为空(客户端当作未设置)")
+    elif "\n" in value or "\r" in value:
+        problems.append(f"custom_ability_string[{key!r}] 的值含换行: {value!r}")
+    elif prefix == ENHANCED_PIXELART_TIER2_KEY_PREFIX:
+        if not ENHANCED_TIER2_VALUE_RE.fullmatch(value):
+            problems.append(f"custom_ability_string[{key!r}] 的值 {value!r} 不是 \"<正整数等级>,<图标路径>\""
+                            "(客户端要求恰好一个逗号、等级是规范十进制整数、路径非空,否则静默不生效)")
+    elif not ENHANCED_LOOK_PATH_RE.fullmatch(value):
+        problems.append(f"custom_ability_string[{key!r}] 的值 {value!r} 不是一个图标路径 {ENHANCED_LOOK_PATH_RE.pattern}")
+    return problems
+
+
 def required_client_capabilities(kind: str, row: list[str]) -> list[str]:
     """这一行需要哪些客户端补丁 capability 才不会 C7050(官方 APK 上为空)。
 
@@ -153,11 +213,13 @@ def required_client_capabilities(kind: str, row: list[str]) -> list[str]:
     `kind == "custom_ability_string"` 走另一条判据:row[0] 是外层键,报出让
     `desc_override_*` 行真正生效所需的面板覆盖 capability(缺补丁不崩,只是不生效):
     `desc_override_equipment_*` → equipment-description-override-v1(装备详情覆盖),
-    `desc_override_fox_oracle_autumn*` → v1,其余 `desc_override_*` → v2。
-    键形是否合法另由 equipment_desc_override_key_problems 判。
+    `desc_override_fox_oracle_autumn*` → v1,其余 `desc_override_*` → v2;
+    `enhanced_pixelart_tier2_*` / `enhanced_frame_override_*` → equipment-enhanced-look-v1(装备强化外观)。
+    键形是否合法另由 equipment_desc_override_key_problems / enhanced_look_problems 判。
     """
     if kind == CUSTOM_ABILITY_STRING_KIND:
-        capability = panel_override_capability(row[0] if row else "")
+        key = row[0] if row else ""
+        capability = panel_override_capability(key) or enhanced_look_capability(key)
         return [capability] if capability else []
     blocks = wf_describe.layout(kind)["blocks"]
     mode_col = int(blocks["precondition1"]) - 1

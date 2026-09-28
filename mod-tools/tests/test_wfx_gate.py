@@ -261,6 +261,25 @@ class CheckTests(unittest.TestCase):
         self.assertTrue(G.check({}, {}, ["desc_override_equipment_5920001"], "local-mumu").ok)
         self.assertEqual([], G.check({}, {}, ["desc_override_equipment_5920001"], "local-mumu").warnings)
 
+    def test_enhanced_look_keys_are_cosmetic(self):
+        """装备强化外观键(第二图标档 / 强化框换底):缺 equipment-enhanced-look-v1 只警告不拒绝;装了就安静。"""
+        keys = ["enhanced_pixelart_tier2_item/equipment/mod/paradox/paradox_lv120",
+                "enhanced_frame_override_item/equipment/mod/paradox/paradox_lv200"]
+        for profile in ("gray-1047", "official"):
+            with self.subTest(profile=profile):
+                report = G.check({}, {}, keys, profile)
+                self.assertTrue(report.ok, report.problems)
+                self.assertEqual(["equipment-enhanced-look-v1"], report.required_capabilities())
+                self.assertEqual(1, len(report.warnings))
+                self.assertIn("equipment-enhanced-look-v1", report.warnings[0])
+        patched = G.ClientProfile("look", G.load_profiles()["local-mumu"].capabilities | {"equipment-enhanced-look-v1"})
+        report = G.check({}, {}, keys, patched)
+        self.assertTrue(report.ok)
+        self.assertEqual([], report.warnings)
+        # 近名不归外观规则:没有下划线结尾的前缀、大小写不同
+        self.assertEqual([], G.check({}, {}, ["enhanced_pixelart_tier2", "Enhanced_frame_override_x"],
+                                     "official").required_capabilities())
+
 
 class ParserScopeTests(unittest.TestCase):
     """设计稿 4.9 第 1 条:表 × 补丁构造是否在补丁扩展过的解析器范围。

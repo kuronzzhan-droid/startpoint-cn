@@ -93,7 +93,7 @@ DATE_RE = re.compile(r"(20\d{2})[-/](\d{1,2})[-/](\d{1,2})")
 KNOWN_CAPABILITIES = frozenset(
     {name for gated in L.CLIENT_PATCH_CONTENT_KINDS.values() for name in gated.values()}
     | {name for by_table in SCOPE.PATCH_PARSER_CAPABILITIES.values() for name in by_table.values()}
-    | {L.PANEL_OVERRIDE_V1, L.PANEL_OVERRIDE_V2, L.EQUIPMENT_DESC_OVERRIDE}
+    | {L.PANEL_OVERRIDE_V1, L.PANEL_OVERRIDE_V2, L.EQUIPMENT_DESC_OVERRIDE, L.EQUIPMENT_ENHANCED_LOOK}
 )
 
 # 详情页/编成必需的 UI 双槽件(每个都要 _0 与 _1 两份)。
@@ -892,6 +892,18 @@ def check_capabilities(pack: Pack, rep: Report) -> None:
                "cas/equipment-desc-override-key-shape", BLOCKING,
                {"equipment_override_keys": sorted(k for k in cas_keys
                                                   if L.panel_override_capability(k) == L.EQUIPMENT_DESC_OVERRIDE)})
+    # 装备强化外观键(enhanced_pixelart_tier2_* / enhanced_frame_override_*):键尾是图标路径、值一行一格,
+    # 第二图标档的值 "<等级>,<路径>" 含逗号,没加引号会被 CSV 拆成两格 → 客户端静默不生效
+    look_keys = sorted(k for k in cas_keys if L.enhanced_look_capability(k))
+    look_problems: list[str] = []
+    for key in look_keys:
+        rows = pack.rows(CAS, key)
+        if len(rows) != 1 or len(rows[0]) != 1:
+            look_problems.append(f"custom_ability_string[{key!r}] 必须恰好一行一格(值含逗号时整格加引号),"
+                                 f"实际 {rows!r}")
+            continue
+        look_problems += L.enhanced_look_problems(key, rows[0][0])
+    rep.result(look_problems, "cas/equipment-enhanced-look-shape", BLOCKING, {"enhanced_look_keys": look_keys})
 
     declared_set = set(declared)
     problems = []

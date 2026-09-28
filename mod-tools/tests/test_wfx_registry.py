@@ -169,11 +169,28 @@ class RegistryDerivationTests(unittest.TestCase):
                  | {capability for by_table in scope.PATCH_PARSER_CAPABILITIES.values()
                     for capability in by_table.values()}
                  | {legality.PANEL_OVERRIDE_V1, legality.PANEL_OVERRIDE_V2,
-                    legality.EQUIPMENT_DESC_OVERRIDE})
+                    legality.EQUIPMENT_DESC_OVERRIDE, legality.EQUIPMENT_ENHANCED_LOOK})
         for capability in named:
             self.assertEqual("shipped", catalog[capability]["status"], capability)
         self.assertEqual("cosmetic", catalog[legality.EQUIPMENT_DESC_OVERRIDE]["level"])
+        self.assertEqual("cosmetic", catalog[legality.EQUIPMENT_ENHANCED_LOOK]["level"])
         self.assertEqual("crash", catalog[scope.EQUIPMENT_GAUGE_CAP]["level"])
+
+    def test_enhanced_look_string_keys_track_the_legality_prefixes(self):
+        """注册表 string_keys 里的两个外观前缀 = wf_client_legality 的前缀,且都指向同一 capability(cosmetic)。"""
+        rules = wfx_registry.load()["string_keys"]
+        look = {prefix: rule for prefix, rule in rules.items()
+                if rule["capability"] == legality.EQUIPMENT_ENHANCED_LOOK}
+        self.assertEqual(set(legality.ENHANCED_LOOK_KEY_PREFIXES), set(look))
+        for prefix, rule in look.items():
+            self.assertEqual("cosmetic", rule["level"], prefix)
+        for prefix, rule in rules.items():
+            self.assertIn(rule["capability"], wfx_registry.capabilities(), prefix)
+            self.assertIn(rule["level"], wfx_registry.LEVELS, prefix)
+        # 面板覆盖前缀与外观前缀互不包含:同一个键不会被两条规则同时认领
+        for prefix in legality.ENHANCED_LOOK_KEY_PREFIXES:
+            self.assertIsNone(legality.panel_override_capability(prefix + "item/x"))
+            self.assertFalse(prefix.startswith(legality.PANEL_OVERRIDE_KEY_PREFIX))
 
 
 class ClientPatchConstantTests(unittest.TestCase):
@@ -190,6 +207,19 @@ class ClientPatchConstantTests(unittest.TestCase):
         self.assertEqual(legality.EQUIPMENT_DESC_OVERRIDE, rules.CAPABILITY)
         for capability in (rules.CAPABILITY, *rules.INHERITED_CAPABILITIES):
             self.assertEqual("shipped", catalog[capability]["status"], capability)
+
+    def test_enhanced_look_capabilities_are_registered(self):
+        rules = load_patch_module("equipment-enhanced-look/rules.py", "_wfx_registry_look_rules")
+        desc = load_patch_module("equipment-description-override/rules.py", "_wfx_registry_look_desc_rules")
+        catalog = wfx_registry.capabilities()
+        self.assertEqual(legality.EQUIPMENT_ENHANCED_LOOK, rules.CAPABILITY)
+        self.assertEqual((legality.ENHANCED_PIXELART_TIER2_KEY_PREFIX, legality.ENHANCED_FRAME_OVERRIDE_KEY_PREFIX),
+                         (rules.TIER2_PREFIX, rules.FRAME_PREFIX))
+        # 叠在 cf91b29b 上:继承层 = 说明覆盖 APK 的 10 项
+        self.assertEqual(set(desc.INHERITED_CAPABILITIES) | {desc.CAPABILITY}, set(rules.INHERITED_CAPABILITIES))
+        for capability in (rules.CAPABILITY, *rules.INHERITED_CAPABILITIES):
+            self.assertEqual("shipped", catalog[capability]["status"], capability)
+        self.assertEqual("cosmetic", catalog[rules.CAPABILITY]["level"])
 
 
 class ClientProfileTests(unittest.TestCase):

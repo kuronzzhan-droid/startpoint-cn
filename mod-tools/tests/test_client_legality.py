@@ -1201,5 +1201,79 @@ class EquipmentDescriptionOverrideGateTests(unittest.TestCase):
         for key in self.PARADOX:
             self.assertIn(self.L.panel_override_capability(key), V.KNOWN_CAPABILITIES)
 
+
+class EquipmentEnhancedLookGateTests(unittest.TestCase):
+    """`enhanced_pixelart_tier2_*` / `enhanced_frame_override_*` = 装备强化外观(client-patch/equipment-enhanced-look)。
+
+    行为型:缺补丁只是显示原图标与粉框。门禁要守的是键尾是图标路径、值是客户端真会接受的形状
+    (第二图标档 "<正整数>,<路径>"),以及不串进面板覆盖的分类。
+    """
+
+    L = wf_client_legality
+    TIER2 = "enhanced_pixelart_tier2_item/equipment/mod/paradox/paradox_lv120"
+    FRAME = "enhanced_frame_override_item/equipment/mod/paradox/paradox_lv200"
+    LV200 = "item/equipment/mod/paradox/paradox_lv200"
+    BLUEGOLD = "item/equipment/mod/paradox/paradox_frame_bluegold"
+
+    def test_names(self) -> None:
+        self.assertEqual("equipment-enhanced-look-v1", self.L.EQUIPMENT_ENHANCED_LOOK)
+        self.assertEqual(("enhanced_pixelart_tier2_", "enhanced_frame_override_"), self.L.ENHANCED_LOOK_KEY_PREFIXES)
+        self.assertNotIn(self.L.EQUIPMENT_ENHANCED_LOOK, (self.L.PANEL_OVERRIDE_V1, self.L.PANEL_OVERRIDE_V2,
+                                                          self.L.EQUIPMENT_DESC_OVERRIDE))
+
+    def test_paradox_keys_need_the_enhanced_look_patch(self) -> None:
+        for key, value in ((self.TIER2, "200," + self.LV200), (self.FRAME, self.BLUEGOLD)):
+            self.assertEqual(self.L.EQUIPMENT_ENHANCED_LOOK, self.L.enhanced_look_capability(key), key)
+            self.assertIsNone(self.L.panel_override_capability(key), key)
+            self.assertEqual([self.L.EQUIPMENT_ENHANCED_LOOK], self.L.required_client_capabilities(
+                self.L.CUSTOM_ABILITY_STRING_KIND, [key, value]), key)
+            self.assertEqual([], self.L.enhanced_look_problems(key), key)
+            self.assertEqual([], self.L.enhanced_look_problems(key, value), key)
+
+    def test_other_keys_are_not_this_gates_business(self) -> None:
+        for key in ("desc_override_equipment_5920001", "desc_override_ginovi", "paradox_hits",
+                    "enhanced_pixelart_tier2", "Enhanced_frame_override_x", "xenhanced_frame_override_a", ""):
+            self.assertIsNone(self.L.enhanced_look_capability(key), key)
+            self.assertEqual([], self.L.enhanced_look_problems(key, "whatever,value\n"), key)
+        # 面板覆盖键的分类不变
+        self.assertEqual([self.L.EQUIPMENT_DESC_OVERRIDE], self.L.required_client_capabilities(
+            self.L.CUSTOM_ABILITY_STRING_KIND, ["desc_override_equipment_5920001"]))
+
+    def test_malformed_keys_are_problems(self) -> None:
+        for key in ("enhanced_pixelart_tier2_", "enhanced_frame_override_", " enhanced_frame_override_item/a",
+                    "enhanced_frame_override_item/a ", "enhanced_frame_override_item/a\n",
+                    "enhanced_frame_override_/item/a", "enhanced_frame_override_item/a/",
+                    "enhanced_frame_override_item//a", "enhanced_frame_override_item/a,b",
+                    "enhanced_pixelart_tier2_item/a.png", "enhanced_pixelart_tier2_道具/a"):
+            problems = self.L.enhanced_look_problems(key)
+            self.assertEqual(1, len(problems), key)
+            self.assertIn(repr(key), problems[0])
+            self.assertEqual(self.L.EQUIPMENT_ENHANCED_LOOK, self.L.enhanced_look_capability(key), key)
+
+    def test_tier2_values(self) -> None:
+        good = ("200," + self.LV200, "1,a", "999999999,a/b_c-d")
+        bad = ("", None, "200", self.LV200, "," + self.LV200, "200,", "abc," + self.LV200, "200.5," + self.LV200,
+               "0200," + self.LV200, "0," + self.LV200, "-1," + self.LV200, "+200," + self.LV200,
+               " 200," + self.LV200, "200 ," + self.LV200, "2e2," + self.LV200, "0xC8," + self.LV200,
+               "1000000000," + self.LV200, "4294967496," + self.LV200, "200," + self.LV200 + ",x",
+               "200;" + self.LV200, "200|" + self.LV200, "200," + self.LV200 + "\n", "２００," + self.LV200)
+        for value in good:
+            self.assertEqual([], self.L.enhanced_look_problems(self.TIER2, value), value)
+        for value in bad:
+            if value is None:
+                continue                                   # None = 只查键
+            problems = self.L.enhanced_look_problems(self.TIER2, value)
+            self.assertEqual(1, len(problems), value)
+
+    def test_frame_values(self) -> None:
+        self.assertEqual([], self.L.enhanced_look_problems(self.FRAME, self.BLUEGOLD))
+        for value in ("", "a\nb", "a,b", " a", "a/", "a.png", "200," + self.BLUEGOLD):
+            self.assertEqual(1, len(self.L.enhanced_look_problems(self.FRAME, value)), value)
+
+    def test_pack_verifier_knows_the_capability(self) -> None:
+        import wf_midautumn_verify as V
+        self.assertIn(self.L.EQUIPMENT_ENHANCED_LOOK, V.KNOWN_CAPABILITIES)
+
+
 if __name__ == "__main__":
     unittest.main()

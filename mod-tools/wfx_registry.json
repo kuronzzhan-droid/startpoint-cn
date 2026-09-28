@@ -49,6 +49,10 @@
       "level": "cosmetic", "layer": "L1", "status": "shipped",
       "summary": "desc_override_equipment_* 装备详情覆盖"
     },
+    "equipment-enhanced-look-v1": {
+      "level": "cosmetic", "layer": "L1", "status": "shipped",
+      "summary": "装备强化外观：enhanced_pixelart_tier2_* 第二图标档（getPixelart）+ enhanced_frame_override_* 强化框换底（ItemThumbnailView.setRarity）；client-patch/equipment-enhanced-look，叠在 cf91b29b 上"
+    },
     "wfx-core-v1": {
       "level": "semantic", "layer": "L2", "status": "planned",
       "summary": "规格缓存、查询层、pin（flags bit0）；缺失时效果状态全部惰性"
@@ -231,7 +235,11 @@
   },
   "string_keys": {
     "wfx_text_": {"capability": "wfx-effect-during-v1", "level": "cosmetic",
-                  "note": "批 2 持续行 425 的面板正文 wfx_text_<uid>；未装补丁时不被读取"}
+                  "note": "批 2 持续行 425 的面板正文 wfx_text_<uid>；未装补丁时不被读取"},
+    "enhanced_pixelart_tier2_": {"capability": "equipment-enhanced-look-v1", "level": "cosmetic",
+                                 "note": "装备第二图标档 enhanced_pixelart_tier2_<pixelart0 图标路径> = \"<等级>,<路径>\"；未装补丁时不被读取，显示 pixelart0"},
+    "enhanced_frame_override_": {"capability": "equipment-enhanced-look-v1", "level": "cosmetic",
+                                 "note": "装备强化框换底 enhanced_frame_override_<图标路径> = <背景图路径>；未装补丁时不被读取，显示粉框"}
   },
   "effect_codes": [
     {

@@ -1,0 +1,22 @@
+{
+  "EquipmentEnhancementLogic/getPixelart": {
+    "index": 18609,
+    "sha": "81063a84f4e3392ed84a2ce60d54be4245a7ddd5c5e2c077723522873ce85ad5",
+    "header": [
+      2,
+      4,
+      1,
+      2
+    ]
+  },
+  "ItemThumbnailView/setRarity": {
+    "index": 85197,
+    "sha": "b28fb2b90c53fabc6af523ae349b2a3700489df2ee7210cfe27f61db7436ba68",
+    "header": [
+      3,
+      4,
+      1,
+      2
+    ]
+  }
+}
