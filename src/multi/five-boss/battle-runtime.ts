@@ -108,6 +108,8 @@ export interface FiveBossBattleRewardReceipt {
      * 读回,不重新掷骰、不重新发放——http 层据此序列化 equipment_list 与展示行。
      */
     grantedEquipment: number[]
+    /** 见 RewardContext.proofComplete;随 receipt 落盘,重放时也是当年那次结算的真实值。 */
+    proofComplete: boolean
 }
 
 export interface SuccessfulFiveBossBattleFinish {
@@ -475,6 +477,7 @@ export function createFiveBossBattleRuntime(
                     grantedItems: [],
                     itemTotals: {},
                     grantedEquipment: [],
+                    proofComplete: context.proofComplete,
                 }
             }
             const previous = getPlayerSingleQuestProgressSync(
@@ -513,6 +516,7 @@ export function createFiveBossBattleRuntime(
                 grantedItems,
                 itemTotals,
                 grantedEquipment: weaponPlan.equipmentIds,
+                proofComplete: context.proofComplete,
             }
         })
         assertRunIdentity(result.run, input)

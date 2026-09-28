@@ -385,6 +385,13 @@ export async function handleFiveBossFinish(
         console.log(`[MULTI] five-boss finish: no rewards (host started without a ticket)`
             + ` player=${playerId} run=${result.runId} receipt=${result.receiptStatus}`)
     }
+    if (result.kind === "success" && result.receiptStatus === "settled" && !result.reward.proofComplete) {
+        // 设计稿 2026-09-28 第 6 节(a):战斗信号证据不全(仍在 R0 就被隔离、之后单机打完
+        // 才发 finish,或 finalize 丢在已关闭的战斗通道上)不再拒绝,按其自身倍率正常结算,
+        // 只留一条日志说明这是宽容结算。
+        console.log(`[MULTI] five-boss finish: lenient settlement (missing BothBoss level-next/`
+            + `finalize proof) player=${playerId} run=${result.runId} multiplier=${result.rewardMultiplier}`)
+    }
 
     const matePlayerResult = body.mate_player_result ?? []
     const followInfo = await buildFollowInfo(

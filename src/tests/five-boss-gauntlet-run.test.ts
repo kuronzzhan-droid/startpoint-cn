@@ -166,18 +166,17 @@ test("initializer creates the v2 server-run schema and partial client-play looku
 });
 
 
-test("settlement requires an ordered BothBoss level-next then finalize proof", () => {
+test("battle signal order still rejects a finalize that arrives before level-next", () => {
+    // 拆分自旧版"settlement requires an ordered BothBoss level-next then finalize proof":
+    // 信号顺序校验(recordMemberBattleSignalSync)与结算是否拒绝证据不全是两件事,
+    // 2026-09-28 设计稿第 6 节只改后者(见下面两条宽容结算测试),前者原样保留。
     const hostPlayerId = createPlayer(1);
-    const runId = "run-battle-proof";
+    const runId = "run-battle-signal-order";
     runDomain.startMemberSync(
-        startInput(runId, hostPlayerId, [hostPlayerId], hostPlayerId, "host-proof"),
+        startInput(runId, hostPlayerId, [hostPlayerId], hostPlayerId, "host-order"),
         persistActiveQuest,
     );
 
-    assertRunError("battle_proof_missing", () => runDomain.settleMemberSync(
-        { playerId: hostPlayerId, clientPlayId: "host-proof" },
-        () => ({ impossible: true }),
-    ));
     assertRunError("battle_signal_order", () => runDomain.recordMemberBattleSignalSync({
         runId,
         playerId: hostPlayerId,
@@ -199,10 +198,6 @@ test("settlement requires an ordered BothBoss level-next then finalize proof", (
     });
     assert.equal(levelNext.levelNextAt, levelNextReplay.levelNextAt);
     assert.equal(levelNext.finalizedAt, null);
-    assertRunError("battle_proof_missing", () => runDomain.settleMemberSync(
-        { playerId: hostPlayerId, clientPlayId: "host-proof" },
-        () => ({ impossible: true }),
-    ));
 
     const finalized = runDomain.recordMemberBattleSignalSync({
         runId,
@@ -217,10 +212,45 @@ test("settlement requires an ordered BothBoss level-next then finalize proof", (
         signal: "finalize",
     });
     assert.equal(finalized.finalizedAt, finalizeReplay.finalizedAt);
-    assert.equal(runDomain.settleMemberSync(
-        { playerId: hostPlayerId, clientPlayId: "host-proof" },
-        () => ({ allowed: true }),
-    ).status, "settled");
+});
+
+
+test("settlement is lenient when no BothBoss battle signal ever arrived, but flags it via proofComplete", () => {
+    // 设计稿第 6 节(a):仍在 R0 就被隔离、之后单机打完才发 finish——不再 battle_proof_missing
+    // 拒绝(H400),按该成员自身倍率正常结算;proofComplete=false 只是把事实报给调用方记日志。
+    const hostPlayerId = createPlayer(1);
+    const runId = "run-lenient-no-proof";
+    runDomain.startMemberSync(
+        startInput(runId, hostPlayerId, [hostPlayerId], hostPlayerId, "host-no-proof"),
+        persistActiveQuest,
+    );
+
+    const settled = runDomain.settleMemberSync(
+        { playerId: hostPlayerId, clientPlayId: "host-no-proof" },
+        context => ({ proofComplete: context.proofComplete }),
+    );
+    assert.equal(settled.status, "settled");
+    assert.equal(settled.reward.proofComplete, false);
+    // 单人 roster:这一次结算就是最后一人落定,run 收口为 settled。
+    assert.equal(settled.run.status, "settled");
+    assert.equal(runStatus(runId), "settled");
+});
+
+
+test("settlement reports proofComplete=true once both BothBoss signals are recorded before finish", () => {
+    const hostPlayerId = createPlayer(1);
+    const runId = "run-complete-proof";
+    runDomain.startMemberSync(
+        startInput(runId, hostPlayerId, [hostPlayerId], hostPlayerId, "host-complete-proof"),
+        persistActiveQuest,
+    );
+    completeBattleProof(runId, hostPlayerId);
+
+    const settled = runDomain.settleMemberSync(
+        { playerId: hostPlayerId, clientPlayId: "host-complete-proof" },
+        context => ({ proofComplete: context.proofComplete }),
+    );
+    assert.equal(settled.reward.proofComplete, true);
 });
 
 
@@ -588,7 +618,9 @@ test("guest abort clears only its active quest and is idempotent", () => {
 });
 
 
-test("host abort terminates the run without refund while guests may still clear active state", () => {
+test("host abort no longer ends the run while a teammate is still active; it settles once everyone is done", () => {
+    // 2026-09-28 设计稿第 6 节(b):房主放弃只作废房主本人这一行,不再把整局 run 置 aborted、
+    // 不再让仍在战斗的队友 finish 命中 run_not_active。票已在开局扣掉,放弃不退。
     const hostPlayerId = createPlayer(2);
     const guestPlayerId = createPlayer(0);
     const roster = [hostPlayerId, guestPlayerId];
@@ -597,21 +629,80 @@ test("host abort terminates the run without refund while guests may still clear 
     runDomain.startMemberSync(hostInput, persistActiveQuest);
     runDomain.startMemberSync(startInput(runId, hostPlayerId, roster, guestPlayerId, "guest-after-host-abort"), persistActiveQuest);
 
-    assert.equal(runDomain.abortMemberSync({ playerId: hostPlayerId, clientPlayId: "host-abort" }, deletePersistentActive).status, "run_aborted");
-    assert.equal(runDomain.abortMemberSync({ playerId: hostPlayerId, clientPlayId: "host-abort" }, deletePersistentActive).status, "already_aborted");
-    assert.equal(runStatus(runId), "aborted");
+    const hostAbort = runDomain.abortMemberSync({ playerId: hostPlayerId, clientPlayId: "host-abort" }, deletePersistentActive);
+    assert.equal(hostAbort.status, "member_aborted");
+    assert.equal(hostAbort.run.status, "active");
+    assert.equal(runStatus(runId), "active");
     assert.equal(itemDomain.getPlayerItemSync(hostPlayerId, TICKET_ITEM_ID), 1);
-    assertRunError("run_not_active", () => runDomain.startMemberSync(hostInput, persistActiveQuest));
-    assertRunError("run_not_active", () => runDomain.settleMemberSync(
-        { playerId: guestPlayerId, clientPlayId: "guest-after-host-abort" },
-        () => ({ impossible: true }),
-    ));
+    assert.equal(
+        runDomain.abortMemberSync({ playerId: hostPlayerId, clientPlayId: "host-abort" }, deletePersistentActive).status,
+        "already_aborted",
+    );
 
-    assert.equal(runDomain.abortMemberSync(
+    // 队友完全不受房主放弃影响:proof 齐了照常结算,不再 400。
+    completeBattleProof(runId, guestPlayerId);
+    const guestSettled = runDomain.settleMemberSync(
         { playerId: guestPlayerId, clientPlayId: "guest-after-host-abort" },
-        deletePersistentActive,
-    ).status, "member_aborted");
-    assert.equal(activePlayId(guestPlayerId), null);
+        () => ({ who: "guest" }),
+    );
+    assert.equal(guestSettled.status, "settled");
+    // 房主已放弃 + 队友已结算 = 全员落定;存在至少一条 receipt ⇒ 终态是 settled 不是 aborted。
+    assert.equal(guestSettled.run.status, "settled");
+    assert.equal(runStatus(runId), "settled");
+});
+
+
+test("a three-member run stays active until every member has settled or given up, and favors settled over aborted", () => {
+    const hostPlayerId = createPlayer(1);
+    const guestA = createPlayer(0);
+    const guestB = createPlayer(0);
+    const roster = [hostPlayerId, guestA, guestB];
+    const runId = "run-mixed-terminal";
+    runDomain.startMemberSync(startInput(runId, hostPlayerId, roster, hostPlayerId, "host-mixed"), persistActiveQuest);
+    runDomain.startMemberSync(startInput(runId, hostPlayerId, roster, guestA, "guestA-mixed"), persistActiveQuest);
+    runDomain.startMemberSync(startInput(runId, hostPlayerId, roster, guestB, "guestB-mixed"), persistActiveQuest);
+
+    assert.equal(
+        runDomain.abortMemberSync({ playerId: hostPlayerId, clientPlayId: "host-mixed" }, deletePersistentActive).status,
+        "member_aborted",
+    );
+    assert.equal(runStatus(runId), "active"); // guestA/guestB 都还没落定
+
+    assert.equal(
+        runDomain.abortMemberSync({ playerId: guestA, clientPlayId: "guestA-mixed" }, deletePersistentActive).status,
+        "member_aborted",
+    );
+    assert.equal(runStatus(runId), "active"); // guestB 还没落定
+
+    completeBattleProof(runId, guestB);
+    const finalReceipt = runDomain.settleMemberSync(
+        { playerId: guestB, clientPlayId: "guestB-mixed" },
+        () => ({ who: "guestB" }),
+    );
+    assert.equal(finalReceipt.status, "settled");
+    assert.equal(finalReceipt.run.status, "settled");
+    assert.equal(runStatus(runId), "settled");
+});
+
+
+test("a run where every member gives up without anyone settling reaches the aborted terminal state", () => {
+    const hostPlayerId = createPlayer(1);
+    const guestA = createPlayer(0);
+    const roster = [hostPlayerId, guestA];
+    const runId = "run-all-abandoned";
+    runDomain.startMemberSync(startInput(runId, hostPlayerId, roster, hostPlayerId, "host-give-up"), persistActiveQuest);
+    runDomain.startMemberSync(startInput(runId, hostPlayerId, roster, guestA, "guestA-give-up"), persistActiveQuest);
+
+    assert.equal(
+        runDomain.abortMemberSync({ playerId: hostPlayerId, clientPlayId: "host-give-up" }, deletePersistentActive).status,
+        "member_aborted",
+    );
+    assert.equal(runStatus(runId), "active");
+
+    const last = runDomain.abortMemberSync({ playerId: guestA, clientPlayId: "guestA-give-up" }, deletePersistentActive);
+    assert.equal(last.status, "run_aborted");
+    assert.equal(last.run.status, "aborted");
+    assert.equal(runStatus(runId), "aborted");
 });
 
 

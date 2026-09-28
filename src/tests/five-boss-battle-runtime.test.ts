@@ -390,6 +390,68 @@ test("cursed-weapon drops are rolled alongside materials, granted via the inject
 })
 
 
+test("finish leniently settles a member whose BothBoss level-next/finalize proof never arrived", () => {
+    // 2026-09-28 设计稿第 6 节(a):仍在 R0 就被隔离、之后单机打完才发 finish——不再 400。
+    const host = createPlayer(1)
+    const room = roomFor("runtime-lenient-no-proof", host, [host], { [host]: false })
+    runtimeModule.startFiveBossBattle(startInput(room, host, "lenient-no-proof"))
+    // 故意不调用 completeBattleProof。
+
+    const finish = runtimeModule.finishFiveBossBattle(finishInput(room, host, "lenient-no-proof"))
+    assert.equal(finish.kind, "success")
+    if (finish.kind !== "success") throw new Error("expected a lenient success")
+    assert.equal(finish.reward.proofComplete, false)
+    assert.equal(finish.runStatus, "settled")
+    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 20)
+})
+
+
+test("finish leniently settles a member who reached level-next but never finalize", () => {
+    const host = createPlayer(1)
+    const room = roomFor("runtime-lenient-partial-proof", host, [host], { [host]: true })
+    runtimeModule.startFiveBossBattle(startInput(room, host, "lenient-partial-proof"))
+    runDomain.recordMemberBattleSignalSync({
+        runId: room.five_boss_runtime!.runId,
+        playerId: host,
+        roomNumber: room.room_number,
+        signal: "level_next",
+    })
+
+    const finish = runtimeModule.finishFiveBossBattle(finishInput(room, host, "lenient-partial-proof"))
+    assert.equal(finish.kind, "success")
+    if (finish.kind !== "success") throw new Error("expected a lenient success")
+    assert.equal(finish.reward.proofComplete, false)
+    assert.equal(finish.rewardMultiplier, 1)
+})
+
+
+test("host abort no longer blocks a teammate's normal settlement; the run stays active until both are done", () => {
+    // 2026-09-28 设计稿第 6 节(b):房主放弃只作废房主本人,不再让队友 finish 命中 run_not_active。
+    const host = createPlayer(1)
+    const guest = createPlayer()
+    const room = roomFor("runtime-host-abort-lenient", host, [host, guest], { [host]: false, [guest]: false })
+    runtimeModule.startFiveBossBattle(startInput(room, host, "abort-lenient-host"))
+    runtimeModule.startFiveBossBattle(startInput(room, guest, "abort-lenient-guest"))
+
+    const hostAbort = runtimeModule.abortFiveBossBattle({
+        playerId: host,
+        clientPlayId: "abort-lenient-host",
+        requestRoomNumber: room.room_number,
+        requestCategory: room.category,
+        requestQuestId: room.quest_id,
+    })
+    assert.equal(hostAbort.abortStatus, "member_aborted")
+    assert.equal(hostAbort.runStatus, "active")
+
+    completeBattleProof(room, guest)
+    const guestFinish = runtimeModule.finishFiveBossBattle(finishInput(room, guest, "abort-lenient-guest"))
+    assert.equal(guestFinish.kind, "success")
+    if (guestFinish.kind !== "success") throw new Error("expected guest settlement to succeed")
+    assert.equal(guestFinish.runStatus, "settled")
+    assert.equal(itemDomain.getPlayerItemSync(guest, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 20)
+})
+
+
 test("reward callback failure rolls back items, progress, active deletion, and receipt", () => {
     const host = createPlayer(1)
     const room = roomFor("runtime-callback-rollback", host, [host], { [host]: false })

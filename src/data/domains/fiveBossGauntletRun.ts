@@ -14,7 +14,6 @@ export type FiveBossGauntletRunErrorCode =
     | "client_play_not_found"
     | "run_not_active"
     | "battle_signal_order"
-    | "battle_proof_missing"
     | "reward_not_serializable";
 
 export class FiveBossGauntletRunError extends Error {
@@ -98,6 +97,14 @@ export interface RewardContext {
     rewardMultiplier: 1 | 2;
     /** 与 run.rewardsEnabled 相同;false 时回调必须一件奖励都不发。 */
     rewardsEnabled: boolean;
+    /**
+     * true = 该成员的 BothBoss level-next/finalize 战斗信号证据链完整。
+     * false = 证据不全(2026-09-28 设计稿第 6 节「结算宽容」(a)):可能是仍在 R0 就被隔离、
+     * 单机打完才补发 finish,也可能是 finalize 信号丢在已关闭的战斗通道上且未被
+     * backfillMissingFinalizeSync 补上。这里不再 fail-closed 拒绝结算,只把事实报给调用方
+     * (battle-runtime.ts / 上层 HTTP 日志),按其自身倍率正常发奖。
+     */
+    proofComplete: boolean;
 }
 
 export interface AbortMemberContext {
@@ -531,10 +538,13 @@ export interface BackfillFinalizeResult {
 
 /**
  * 真机 2026-09-05:CN 客户端在打完第 5 只 boss 后有时只把 LevelNext 送到了 TCP 战斗通道,
- * Finalize 没到(通道早已被客户端合上),随后的 HTTP finish 被 battle_proof_missing 拒成 H400,
- * 玩家白打一局。finish 请求本身带会话鉴权,且 level_next 已证明第二场景确实进入过,
- * 所以对「有 level_next、缺 finalize、成员未放弃、run 仍 active」这一种情况把 finalize
- * 记成 finish 到达时刻;其余情况原样 fail-closed。
+ * Finalize 没到(通道早已被客户端合上),随后的 HTTP finish 曾被拒成 H400,玩家白打一局。
+ * finish 请求本身带会话鉴权,且 level_next 已证明第二场景确实进入过,所以对
+ * 「有 level_next、缺 finalize、成员未放弃、run 仍 active」这一种情况把 finalize
+ * 记成 finish 到达时刻;其余情况原样跳过(不 backfill,不报错)。
+ * 2026-09-28 设计稿第 6 节起,settleMemberSync 对缺证据已改为宽容结算而不是拒绝,
+ * 这个 backfill 不再是"不然就 400"的救命步骤,但仍值得做:补上的 finalized_at 让
+ * proofComplete 真实反映战斗信号,而不是让一个其实到过第二场景的成员被记成"宽容结算"。
  */
 export function backfillMissingFinalizeSync(input: MemberClientKey): BackfillFinalizeResult {
     const key = validateClientKey(input);
@@ -550,6 +560,39 @@ export function backfillMissingFinalizeSync(input: MemberClientKey): BackfillFin
         signal: "finalize",
     });
     return { backfilled: true, runId: rawRun.run_id, roomNumber: rawRun.room_number };
+}
+
+
+/**
+ * 收口判定(2026-09-28 设计稿第 6 节「结算宽容」(b)):run 仅当每个成员都已结算(有 receipt)
+ * 或已放弃(aborted_at 非空)时才转终态,不再是"房主一放弃就整局 aborted"的特判。
+ * 终态取值:只要 run 里存在任意一条 receipt 就是 settled(哪怕其他人是放弃的),
+ * 全员放弃、无人结算才是 aborted。调用方(settleMemberSync/abortMemberSync)各自的事务里、
+ * 写完自己那一步(插入 receipt / 标记 aborted_at)之后调用;run 已是终态或还有成员未落定时
+ * 是空操作。
+ */
+function finalizeRunIfEveryoneIsDoneSync(db: ReturnType<typeof getDb>, runId: string, now: string): void {
+    const pendingMember = db.prepare(`
+        SELECT 1
+        FROM five_boss_gauntlet_members AS member
+        LEFT JOIN five_boss_gauntlet_receipts AS receipt
+          ON receipt.run_id = member.run_id AND receipt.player_id = member.player_id
+        WHERE member.run_id = ?
+          AND receipt.player_id IS NULL
+          AND member.aborted_at IS NULL
+        LIMIT 1
+    `).get(runId);
+    if (pendingMember) return;
+
+    const hasAnyReceipt = db.prepare(`
+        SELECT 1 FROM five_boss_gauntlet_receipts WHERE run_id = ? LIMIT 1
+    `).get(runId) !== undefined;
+
+    db.prepare(`
+        UPDATE five_boss_gauntlet_runs
+        SET status = ?, updated_at = ?
+        WHERE run_id = ? AND status = 'active'
+    `).run(hasAnyReceipt ? "settled" : "aborted", now, runId);
 }
 
 
@@ -592,9 +635,10 @@ export function settleMemberSync<T>(
         if (!rawRun) fail("run_conflict", "member points to a missing run");
         if (rawRun.status !== "active") fail("run_not_active", `run is ${rawRun.status}`);
         if (rawMember.aborted_at !== null) fail("member_not_active", "member has aborted this run");
-        if (rawMember.level_next_at === null || rawMember.finalized_at === null) {
-            fail("battle_proof_missing", "BothBoss level-next/finalize proof is incomplete");
-        }
+        // 2026-09-28 设计稿第 6 节「结算宽容」(a):战斗信号证据不全(仍在 R0 就被隔离、
+        // 之后单机打完才发 finish)不再 fail-closed 拒绝,只把事实(proofComplete)报给调用方,
+        // 按该成员自身倍率正常结算——由上层(battle-runtime.ts/HTTP 日志)决定要不要打「宽容结算」日志。
+        const proofComplete = rawMember.level_next_at !== null && rawMember.finalized_at !== null;
         const member = boundMemberFromRaw(rawMember);
         const rewardMultiplier: 1 | 2 = member.isAutoMode ? 1 : 2;
         const reward = grantRewards({
@@ -603,6 +647,7 @@ export function settleMemberSync<T>(
             playerId: normalized.playerId,
             rewardMultiplier,
             rewardsEnabled: rawRun.rewards_enabled === 1,
+            proofComplete,
         });
         let rewardJson: string | undefined;
         try {
@@ -620,20 +665,7 @@ export function settleMemberSync<T>(
                 run_id, player_id, reward_multiplier, reward_json, settled_at
             ) VALUES (?, ?, ?, ?, ?)
         `).run(rawRun.run_id, normalized.playerId, rewardMultiplier, rewardJson, now);
-        db.prepare(`
-            UPDATE five_boss_gauntlet_runs
-            SET status = 'settled', updated_at = ?
-            WHERE run_id = ? AND status = 'active'
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM five_boss_gauntlet_members AS member
-                  LEFT JOIN five_boss_gauntlet_receipts AS receipt
-                    ON receipt.run_id = member.run_id
-                   AND receipt.player_id = member.player_id
-                  WHERE member.run_id = five_boss_gauntlet_runs.run_id
-                    AND receipt.player_id IS NULL
-              )
-        `).run(now, rawRun.run_id);
+        finalizeRunIfEveryoneIsDoneSync(db, rawRun.run_id, now);
 
         const latestRun = selectRun(rawRun.run_id);
         if (!latestRun) fail("run_conflict", "settled run could not be read back");
@@ -647,7 +679,12 @@ export function settleMemberSync<T>(
 }
 
 
-/** Clears one member's persisted active quest; only the host aborts the shared run. */
+/**
+ * Clears one member's persisted active quest and marks only that member's row aborted.
+ * 2026-09-28 设计稿第 6 节「结算宽容」(b):不再是"房主放弃 = 整局 aborted、当场解散仍在
+ * 战斗的房间";房主放弃只作废房主本人这一行,不影响其他人的奖励(票已在开局扣掉)。
+ * run 是否收口、收口成什么终态,统一交给 finalizeRunIfEveryoneIsDoneSync 判定。
+ */
 export function abortMemberSync<T>(
     input: MemberClientKey,
     deletePersistentActive: (context: AbortMemberContext) => T,
@@ -697,20 +734,17 @@ export function abortMemberSync<T>(
             SET aborted_at = ?
             WHERE run_id = ? AND player_id = ? AND aborted_at IS NULL
         `).run(now, rawMember.run_id, normalized.playerId);
-        const isHost = rawRun.host_player_id === normalized.playerId;
-        if (isHost && rawRun.status === "active") {
-            db.prepare(`
-                UPDATE five_boss_gauntlet_runs
-                SET status = 'aborted', updated_at = ?
-                WHERE run_id = ? AND status = 'active'
-            `).run(now, rawRun.run_id);
-        }
+        // 不再特判"是不是房主":任何成员放弃都只标记自己这一行;是否让 run 收口统一看
+        // 是否所有成员都已结算或放弃(finalizeRunIfEveryoneIsDoneSync),与是否房主无关。
+        finalizeRunIfEveryoneIsDoneSync(db, rawRun.run_id, now);
 
         rawMember = selectMember(rawRun.run_id, normalized.playerId);
         rawRun = selectRun(rawRun.run_id);
         if (!rawMember || !rawRun) fail("run_conflict", "abort state could not be read back");
         return {
-            status: isHost ? "run_aborted" as const : "member_aborted" as const,
+            // run_aborted = 这次放弃让 run 收口了(不再 active);具体终态看 run.status
+            // (全员放弃是 aborted,只要有人已结算过就是 settled)。
+            status: rawRun.status === "active" ? "member_aborted" as const : "run_aborted" as const,
             run: runFromRaw(rawRun),
             member: boundMemberFromRaw(rawMember),
             deleted,

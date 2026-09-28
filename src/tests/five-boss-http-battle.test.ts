@@ -173,21 +173,8 @@ test("HTTP start and finish use the custom ledger without a donor quest row", as
     assert.equal(activeQuests[run.playerId]?.playId, run.playId)
     assert.equal(run.room.raising_state, 4)
 
-    const premature = await app.inject({
-        method: "POST",
-        url: "/finish",
-        payload: finishPayload(run),
-    })
-    assert.equal(premature.statusCode, 400, premature.body)
-    assert.equal(itemDomain.getPlayerItemSync(
-        run.playerId,
-        FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal,
-    ), null)
-    assert.equal(activeQuests[run.playerId]?.playId, run.playId)
-    assert.equal(run.room.raising_state, 4)
-
-    completeBattleProof(run)
-
+    // 2026-09-28 设计稿第 6 节(a):战斗通道没送 level_next/finalize 也按宽容结算,不再 400
+    // (这条曾经专门验证"没证据就 400",现改为验证"没证据也照常结算并落一条宽容日志")。
     const finish = await app.inject({ method: "POST", url: "/finish", payload: finishPayload(run) })
     assert.equal(finish.statusCode, 200, finish.body)
     const data = JSON.parse(finish.body).data
@@ -335,6 +322,126 @@ test("HTTP keeps a three-player room in battle until the last frozen real receip
 })
 
 
+function abortPayload(run: { viewerId: number, room: { room_number: string }, playId: string }) {
+    return {
+        viewer_id: run.viewerId,
+        quest_id: FIVE_BOSS_GAUNTLET.visibleQuestId,
+        category: FIVE_BOSS_GAUNTLET.category,
+        room_number: run.room.room_number,
+        play_id: run.playId,
+        api_count: 2,
+    }
+}
+
+
+test("HTTP: host abort mid-fight no longer 400s the teammates; the room disbands only once the last one is done", async () => {
+    // 2026-09-28 设计稿第 6 节(b):房主放弃只作废房主本人,不整局 aborted、不当场解散仍在
+    // 战斗的房间;票已在开局扣掉,放弃不退;房间只在最后一个成员落定后解散。
+    const host = await createMember(1)
+    const guestA = await createMember()
+    const guestB = await createMember()
+    const members = [host, guestA, guestB]
+    const room = createRoom(
+        host.viewerId,
+        host.playerId,
+        1,
+        FIVE_BOSS_GAUNTLET.category,
+        FIVE_BOSS_GAUNTLET.visibleQuestId,
+        0,
+        1,
+    )
+    room.raising_state = 4
+    room.mates = members.map(member => ({
+        viewer_id: member.viewerId,
+        com_id: 0,
+        player_id: member.playerId,
+    }))
+    room.five_boss_runtime = {
+        runId: `http-run-${identity}-host-abort`,
+        expectedRealPlayerIds: members.map(member => member.playerId),
+        autoplayModeByPlayerId: Object.fromEntries(
+            members.map(member => [String(member.playerId), false]),
+        ),
+        battleIdentityByConnectionId: {},
+    }
+    const runs = members.map(member => ({ ...member, room }))
+    const [hostRun, guestARun, guestBRun] = runs
+
+    for (const run of runs) {
+        const started = await app.inject({ method: "POST", url: "/start", payload: startPayload(run) })
+        assert.equal(started.statusCode, 200, started.body)
+    }
+    assert.equal(itemDomain.getPlayerItemSync(host.playerId, FIVE_BOSS_GAUNTLET.ticketItemId), 0)
+
+    const hostAbort = await app.inject({ method: "POST", url: "/abort", payload: abortPayload(hostRun) })
+    assert.equal(hostAbort.statusCode, 200, hostAbort.body)
+    // 房主放弃不解散、不终结:房间与 run 都还在,队友能继续。
+    assert.ok(getRoom(room.room_number))
+    assert.ok(room.five_boss_runtime)
+    assert.equal(itemDomain.getPlayerItemSync(host.playerId, FIVE_BOSS_GAUNTLET.ticketItemId), 0) // 放弃不退票
+
+    completeBattleProof(guestARun)
+    const guestAFinish = await app.inject({ method: "POST", url: "/finish", payload: finishPayload(guestARun) })
+    assert.equal(guestAFinish.statusCode, 200, guestAFinish.body)
+    const guestAData = JSON.parse(guestAFinish.body).data
+    assert.equal(guestAData.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 20)
+    // guestB 还没落定,房间不解散。
+    assert.ok(getRoom(room.room_number))
+    assert.ok(room.five_boss_runtime)
+
+    completeBattleProof(guestBRun)
+    const guestBFinish = await app.inject({ method: "POST", url: "/finish", payload: finishPayload(guestBRun) })
+    assert.equal(guestBFinish.statusCode, 200, guestBFinish.body)
+    const guestBData = JSON.parse(guestBFinish.body).data
+    assert.equal(guestBData.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 20)
+    // 最后一人(guestB)落定:房间才解散。
+    assert.equal(room.five_boss_runtime, undefined)
+    assert.equal(getRoom(room.room_number), undefined)
+})
+
+
+test("HTTP: a room where every member aborts (nobody settles) still disbands once the last one gives up", async () => {
+    const host = await createMember(1)
+    const guest = await createMember()
+    const members = [host, guest]
+    const room = createRoom(
+        host.viewerId,
+        host.playerId,
+        1,
+        FIVE_BOSS_GAUNTLET.category,
+        FIVE_BOSS_GAUNTLET.visibleQuestId,
+        0,
+        1,
+    )
+    room.raising_state = 4
+    room.mates = members.map(member => ({ viewer_id: member.viewerId, com_id: 0, player_id: member.playerId }))
+    room.five_boss_runtime = {
+        runId: `http-run-${identity}-all-abandoned`,
+        expectedRealPlayerIds: members.map(member => member.playerId),
+        autoplayModeByPlayerId: Object.fromEntries(members.map(member => [String(member.playerId), false])),
+        battleIdentityByConnectionId: {},
+    }
+    const runs = members.map(member => ({ ...member, room }))
+
+    for (const run of runs) {
+        const started = await app.inject({ method: "POST", url: "/start", payload: startPayload(run) })
+        assert.equal(started.statusCode, 200, started.body)
+    }
+
+    const hostAbort = await app.inject({ method: "POST", url: "/abort", payload: abortPayload(runs[0]) })
+    assert.equal(hostAbort.statusCode, 200, hostAbort.body)
+    assert.ok(getRoom(room.room_number))
+
+    const guestAbort = await app.inject({ method: "POST", url: "/abort", payload: abortPayload(runs[1]) })
+    assert.equal(guestAbort.statusCode, 200, guestAbort.body)
+    // 全员放弃、无人结算:房间在最后一人放弃后也照样解散。
+    // (注:aborted 分支的 terminalRoomTransition 只 disbandRoom,不像 settled 分支那样先
+    // delete room.five_boss_runtime——这是既有行为,不在本次改动范围,这里只断言真正生效的
+    // 信号 getRoom() === undefined,不依赖那个不做保证的字段。)
+    assert.equal(getRoom(room.room_number), undefined)
+})
+
+
 test("HTTP start ignores client boost flags instead of rejecting the run (2026-09-04 H400 regression)", async () => {
     const run = await createSoloRun()
     const payload = { ...startPayload(run), use_boss_boost_point: true, use_boost_point: true }
@@ -451,13 +558,19 @@ test("HTTP finish backfills a missing finalize signal when level_next was record
 })
 
 
-test("HTTP finish still rejects a run that never reached the second scene", async () => {
+test("HTTP finish is lenient (200, normal rewards) for a run that never reached the second scene", async () => {
+    // 2026-09-28 设计稿第 6 节(a):仍在 R0 就被隔离(甚至从未送出过 level_next)、之后单机
+    // 打完直接 finish——曾经拒成 400 白打 + 弹回登录,现改为按自身倍率正常结算。
     const run = await createSoloRun()
     const start = await app.inject({ method: "POST", url: "/start", payload: startPayload(run) })
     assert.equal(start.statusCode, 200, start.body)
     const finish = await app.inject({ method: "POST", url: "/finish", payload: finishPayload(run) })
-    assert.equal(finish.statusCode, 400, finish.body)
-    assert.equal(activeQuests[run.playerId]?.playId, run.playId)
+    assert.equal(finish.statusCode, 200, finish.body)
+    const data = JSON.parse(finish.body).data
+    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 20)
+    assert.equal(activeQuests[run.playerId], undefined)
+    // 单人 roster 的这一次结算就是最后一人落定,房间随之解散。
+    assert.equal(getRoom(run.room.room_number), undefined)
 })
 
 
