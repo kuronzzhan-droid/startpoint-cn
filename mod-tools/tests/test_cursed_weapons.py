@@ -14,6 +14,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import wf_battle_rules as BR  # noqa: E402
 import wf_cursed_weapons as W  # noqa: E402
 import wf_dsl  # noqa: E402
 
@@ -274,7 +275,7 @@ class CursedWeaponTests(unittest.TestCase):
         for table, logical in ((W.SOUL_T, W.SOUL), (W.EA_T, W.EA)):
             for rows in self.out["flat"][logical].values():
                 for r in rows:
-                    for block in ("instant_content", "during_trigger", "precondition1"):
+                    for block in ("instant_content", "during_trigger", "precondition1", "precondition2", "precondition3"):
                         try:
                             col = _col(table, block, "unique_condition_id")
                         except KeyError:
@@ -288,9 +289,14 @@ class CursedWeaponTests(unittest.TestCase):
         self.assertEqual(len(default), 1)
         self.assertTrue(default[0].startswith("13 封能风笛 equipment_enhancement_ability#"), default)
         self.assertIn("equipment-gauge-gain-rules-v1", default[0])
-        self.assertEqual(self.out["capabilities"], ["gauge-gain-rules-v1", "equipment-gauge-gain-rules-v1"])
+        self.assertEqual(self.out["capabilities"],
+                         ["gauge-gain-rules-v1", "equipment-gauge-gain-rules-v1", BR.DAMAGE_CAP])
         with self.assertRaises(W.CursedWeaponError):
             W.build(fixture_reader(), client_capabilities="equipment-gauge-gain-rules-v1")
+        # 第三轮：赌注已下的复读、像素城之环刃的 30 倍终结技根头 133（PF3），目标客户端没有 damage-type-rules 时报出
+        no_damage = W.build(fixture_reader(), client_capabilities=W.PATCHED_CLIENT_CAPABILITIES - {BR.DAMAGE_CAP})
+        self.assertEqual(sorted(p.split(":")[0] for p in no_damage["problems"]),
+                         [f"DSL {W.dsl_program('dance_finale')}", f"DSL {W.dsl_program('fate_echo')}"])
 
     def test_flute_seals_ability_gauge_gain(self):
         # 作者 0928「补」：封能风笛「无法因能力和被动得到充能」= 全队 423 规则码 8，强化 1 级起、持有者阵亡后仍生效
@@ -306,6 +312,400 @@ class CursedWeaponTests(unittest.TestCase):
         uid = r[_col(W.EA_T, "during_trigger", "unique_condition_id")]
         self.assertEqual(uid, w13.uid(1))
         self.assertEqual(self.out["flat"][W.UNIQUE][uid][0][1], "封能")
+
+    # ------------------------------------------------------------------
+    # 第三轮修订（提案表「修改建议」「建议」两列，2026-09-28）
+    # ------------------------------------------------------------------
+
+    def weapon(self, row: int) -> W.Weapon:
+        return next(w for w in self.ws if w.row == row)
+
+    def ea(self, row: int) -> list[list[str]]:
+        return self.out["flat"][W.EA][self.weapon(row).id]
+
+    def soul(self, row: int) -> list[list[str]]:
+        return self.out["flat"][W.SOUL][self.weapon(row).id]
+
+    def dsl_of(self, name: str) -> list:
+        return self.out["dsl"][W.dsl_program(name)]
+
+    @staticmethod
+    def cell(table: str, row: list[str], block: str, name: str) -> str:
+        return row[_col(table, block, name)]
+
+    def total(self, row: int, kind: str, target: str | None = None) -> float:
+        """本体满破 + 强化（正值行）的终值合计（存储值，1000 = 1%）。"""
+        out = 0.0
+        for table, rows in ((W.SOUL_T, self.soul(row)), (W.EA_T, self.ea(row))):
+            for r in rows:
+                if _kind(table, r) != kind:
+                    continue
+                mode = r[W._LAYOUT[table]["blocks"]["precondition1"] - 1]
+                block = "instant_content" if mode == "0" else "during_content"
+                if target is not None and self.cell(table, r, block, "target") != target:
+                    continue
+                hi = float(self.cell(table, r, block, "strength.first_max"))
+                out += hi if hi > 0 else 0
+        return out
+
+    def test_round3_renames_keep_ids_and_slugs(self):
+        expect = {7: ("氪金的力量", "finality_gauntlet", "镶有星导石的拳套"),
+                  10: ("赌注已下", "fate_dice", "黑色的老虎机，屏幕上停着头奖"),
+                  12: ("像素城之环刃", "dancer_chakram", "金色的像素环刃")}
+        for row, (name, slug, look) in expect.items():
+            w = self.weapon(row)
+            self.assertEqual((w.name, w.slug, w.look, w.id), (name, slug, look, str(W.ID_BASE + row)))
+            self.assertEqual(self.out["flat"][W.EQUIPMENT][w.id][0][1], name)
+            self.assertEqual(self.out["flat"][W.ENH][w.id][0][2], f"{name}·解咒")
+            self.assertEqual(self.out["flat"][W.BOSS_COIN_SHOP][W.shop_key(w)][0][6], name)
+            self.assertEqual(self.out["server"]["equipment_lookup.json"][w.id]["name"], name)
+            self.assertEqual(w.icon, f"{W.IMAGE_DIR}/{slug}_lv0")
+        self.assertNotIn("骰", self.weapon(10).flavor)
+        self.assertEqual(self.weapon(12).elements, ("light", "dark"))
+
+    def test_gluttony_devours_for_attack_only(self):
+        tree = self.dsl_of("gluttony_devour")
+        self.assertEqual(len(list(W._commands(tree, "RemoveMultiball"))), 1)
+        acs = [ac for params in W._commands(tree, "CreateCondition") for ac in params[1]]
+        self.assertEqual([ac[0] for ac in acs], ["ACAttackPoint"])            # 技能伤害半边去掉
+        self.assertEqual(acs[0][2], [{"min": 1.0, "max": 1.0, "mul": 1}])     # 每个球 +100%
+
+    def test_feast_drum_drains_full_gauge_and_only_buffs_attack(self):
+        drain = list(W._commands(self.dsl_of("feast_drain"), "SubtractSkillPoint"))
+        self.assertEqual(drain, [[0, W.P(1.0)]])
+        kinds = {_kind(W.EA_T, r) for r in self.ea(2)}
+        self.assertEqual(kinds, {"0", "629"})                                  # 技伤/PF 两项去掉
+        self.assertEqual(self.total(2, "0", W.T_PARTY), 1000000)
+
+    def test_salted_fish_crown_bonus_only_on_200_percent_cast(self):
+        w03 = self.weapon(3)
+        uid = w03.uid(1)
+        # 叠层上限 2：134 计层、525 消耗都要求可叠层（上限 1 = 整套静默失效）
+        self.assertEqual(self.out["flat"][W.UNIQUE][uid][0][1:5],
+                         ["咸鱼翻身", "battle/common/unique_condition/unique_fire_dragon_zenith", "600", "2"])
+        grant, consume = self.soul(3)[1], self.soul(3)[2]
+        self.assertEqual((_kind(W.SOUL_T, grant), _kind(W.SOUL_T, consume)), ("461", "525"))
+        # 一次消耗 2 层 = 全部（10 秒内连续两次 200% 发动叠到 2 层也不留残层）
+        self.assertEqual(self.cell(W.SOUL_T, consume, "instant_content", "strength.power1"), W.times(2))
+        self.assertEqual(self.cell(W.SOUL_T, grant, "instant_content", "strength.power1"), W.times(1))
+        # 施放后剩余 ≥100%（119）⇔ 200% 施放；≤99.999%（120）⇔ 非 200% 施放：两个前置互斥
+        self.assertEqual((self.cell(W.SOUL_T, grant, "precondition2", "kind"),
+                          self.cell(W.SOUL_T, grant, "precondition2", "threshold.power1")), ("119", "100000"))
+        self.assertEqual((self.cell(W.SOUL_T, consume, "precondition2", "kind"),
+                          self.cell(W.SOUL_T, consume, "precondition2", "threshold.power1")), ("120", "99999"))
+        for r in (grant, consume):
+            self.assertEqual(self.cell(W.SOUL_T, r, "instant_trigger", "kind"), W.IT_SKILL)
+            self.assertEqual(self.cell(W.SOUL_T, r, "instant_content", "unique_condition_id"), uid)
+        kinds = [_kind(W.EA_T, r) for r in self.ea(3)]
+        self.assertNotIn("34", kinds)
+        self.assertNotIn("694", kinds)
+        sep = [r for r in self.ea(3) if _kind(W.EA_T, r) == "411"]
+        self.assertEqual(len(sep), 1)
+        self.assertEqual((sep[0][1], sep[0][2]), ("120", "120"))
+        self.assertEqual(self.cell(W.EA_T, sep[0], "during_trigger", "unique_condition_id"), uid)
+        self.assertEqual(self.total(3, "2", W.T_SELF), 500000)
+        self.assertEqual(_kind(W.SOUL_T, self.soul(3)[0]), "245")
+
+    def test_rebel_banner_shared_one_second_gate(self):
+        w04 = self.weapon(4)
+        self.assertEqual(self.total(4, "32", W.T_MULTIBALL), 350000)
+        self.assertEqual(self.total(4, "33", W.T_MULTIBALL), 350000)
+        rows = self.ea(4)
+        kinds = [_kind(W.EA_T, r) for r in rows]
+        self.assertEqual(kinds[-2:], ["209", "461"])                          # 上锁行排在扣血行之后
+        for r in rows[-2:]:
+            self.assertEqual(self.cell(W.EA_T, r, "instant_trigger", "trigger_puller"), W.P_ONE_OF_MULTIBALL)
+            self.assertEqual((self.cell(W.EA_T, r, "precondition1", "kind"),
+                              self.cell(W.EA_T, r, "precondition1", "unique_condition_id")), (W.PRE_UNIQUE_LE, w04.uid(1)))
+        self.assertEqual(self.cell(W.EA_T, rows[-2], "instant_content", "strength.first_max"), "2000")
+        # 1 秒锁；叠层上限 2（199「层数 ≤0」在上限 1 时恒真，共用 CT 形同虚设）
+        self.assertEqual(self.out["flat"][W.UNIQUE][w04.uid(1)][0][3:5], ["60", "2"])
+
+    def test_sisyphus_curse_is_party_wide_and_survives_death(self):
+        curses = [r for r in self.ea(8) if r[5] == "1" and float(self.cell(W.EA_T, r, "during_content", "strength.power1")) < 0]
+        self.assertEqual(sorted(_kind(W.EA_T, r) for r in curses), ["0", "2"])
+        for r in curses:
+            self.assertEqual(self.cell(W.EA_T, r, "during_content", "target"), W.T_PARTY)
+            self.assertEqual(self.cell(W.EA_T, r, "during_content", "strength.power1"), "-100000")
+            self.assertEqual(self.cell(W.EA_T, r, "during_trigger", "kind"), W.DT_HP_LOW_EX)
+            self.assertEqual(self.cell(W.EA_T, r, "during_trigger", "trigger_puller"), W.P_SELF)
+            self.assertEqual(self.cell(W.EA_T, r, "even_if_owner_dead", "even_if_owner_dead"), "true")
+        self.assertEqual(self.total(8, "0", W.T_SELF), 350000)
+        self.assertEqual(self.total(8, "2", W.T_SELF), 350000)
+        self.assertEqual(sum(1 for r in self.ea(8) if _kind(W.EA_T, r) in ("209", "227")), 2)   # 满血 99.9% + 护盾保留
+
+    def test_wager_echo_uses_pf_invocation_not_pf_hit(self):
+        w10 = self.weapon(10)
+        echo = W.dsl_program("fate_echo")
+        rows = [r for r in self.ea(10) if _kind(W.EA_T, r) == "629"
+                and self.cell(W.EA_T, r, "instant_content", "action_path") == echo]
+        self.assertEqual(len(rows), 1)
+        r = rows[0]
+        self.assertEqual(self.cell(W.EA_T, r, "instant_trigger", "kind"), W.IT_PF)      # 2，不是 183
+        self.assertEqual(self.cell(W.EA_T, r, "precondition1", "unique_condition_id"), w10.uid(3))
+        tree = self.out["dsl"][echo]
+        self.assertEqual(tree[10], W.PF3_BTA)
+        self.assertEqual(W.pf_echo_trigger_problems(W.EA_T, r, self.out["dsl"]), [])
+        # 负对照：换成强化弹射命中(183)必须被拦下（复读命中按 PF Lv3 计，会自我连锁）
+        bad = list(r)
+        bad[_col(W.EA_T, "instant_trigger", "kind")] = W.IT_PF_HIT
+        self.assertEqual(len(W.pf_echo_trigger_problems(W.EA_T, bad, self.out["dsl"])), 1)
+        # 同一行若树按技能伤害结算（根头 0），183 不构成自我触发
+        plain = {**self.out["dsl"], echo: [*tree[:10], 0, tree[11]]}
+        self.assertEqual(W.pf_echo_trigger_problems(W.EA_T, bad, plain), [])
+
+    def test_wager_branches(self):
+        w10 = self.weapon(10)
+        full = self.dsl_of("fate_roll")
+        acs = {ac[0]: ac for params in W._commands(full, "CreateCondition") for ac in params[1]}
+        for name in ("ACDirectDamage", "ACPowerFlipDamage", "ACSkillDamage"):
+            self.assertEqual(acs[name][2], W.P(5.0), name)                       # 三种增益刃值 +500%
+        self.assertIn("ACSwift", acs)                                           # 冲刺冷却
+        self.assertIn("ACFlying", acs)
+        self.assertIn("ACBuffRejection", acs)
+        self.assertEqual(acs["ACComboRestriction"][2], W.P(1))
+        self.assertEqual(list(W._commands(full, "AddCombo")), [])               # 强化弹射增益不再 +40 连击
+        speeds = sorted(ac[2][0]["min"] for params in W._commands(full, "CreateCondition")
+                        for ac in params[1] if ac[0] == "ACSpeedup")
+        self.assertEqual(speeds, [-0.35, 0.3])
+        self.assertEqual([p[1] for p in W._commands(full, "SubtractSkillPoint")], [W.P(0.8)])
+        self.assertEqual([p[1] for p in W._commands(full, "AddSkillPoint")], [W.P(1.0)])
+        uniques = sorted(ac[1] for params in W._commands(full, "CreateCondition") for ac in params[1] if ac[0] == "ACUnique")
+        self.assertEqual(uniques, [int(w10.uid(3)), int(w10.uid(4))])
+        bust = [r for r in self.ea(10) if _kind(W.EA_T, r) == "411"]
+        self.assertEqual(len(bust), 1)
+        self.assertEqual((self.cell(W.EA_T, bust[0], "during_content", "target"),
+                          self.cell(W.EA_T, bust[0], "during_content", "strength.power1"),
+                          self.cell(W.EA_T, bust[0], "during_trigger", "unique_condition_id")),
+                         (W.T_PARTY, "-100000", w10.uid(4)))
+        opening = [r for r in self.ea(10) if r[5] == "1"
+                   and self.cell(W.EA_T, r, "during_trigger", "unique_condition_id") == w10.uid(2)]
+        self.assertEqual(sorted((_kind(W.EA_T, r), self.cell(W.EA_T, r, "during_content", "strength.power1"))
+                                for r in opening), [("0", "20000"), ("421", "2000")])
+        self.assertEqual(self.out["flat"][W.UNIQUE][w10.uid(2)][0][1:4:2], ["开局赌注", "900"])
+        # 被 134/199 读层数的三个固有上限 2；「复读弹射」只被 187（按个数）读，保持 1
+        caps = {self.out["flat"][W.UNIQUE][w10.uid(k)][0][1]: self.out["flat"][W.UNIQUE][w10.uid(k)][0][4] for k in (1, 2, 3, 4)}
+        self.assertEqual(caps, {"赌局": "2", "开局赌注": "2", "复读弹射": "1", "血本无归": "2"})
+        echo_gate = [r for r in self.ea(10) if self.cell(W.EA_T, r, "precondition1", "unique_condition_id") == w10.uid(3)]
+        self.assertEqual([self.cell(W.EA_T, r, "precondition1", "kind") for r in echo_gate], [W.PRE_HAS_UNIQUE])
+        # 设计文档：直击诅咒的麻痹与不受控制是 5 秒（数据 300 帧），不能写成统一 10 秒
+        paralysis = [ac for params in W._commands(full, "CreateCondition") for ac in params[1] if ac[0] == "ACParalysis"]
+        self.assertTrue(paralysis and all(ac[1] == W.P(300) for ac in paralysis))
+        self.assertEqual([p[1] for p in W._commands(full, "SuppressBallActivity")], [W.P(300)])
+        self.assertIn("麻痹与弹球不受控制为 5 秒", w10.summary_120)
+        roll = next(e for e in w10.ea if e.content[0] == "629" and e.content[1]["string_id"] == "cursed_fate_roll")
+        self.assertIn("麻痹与弹球不受控制 5 秒", roll.note)
+        # 周期与本体温和转轮不变
+        self.assertIn(W.dsl_program("fate_roll_lite"), self.out["dsl"])
+        every25 = [r for r in self.ea(10) if self.cell(W.EA_T, r, "instant_trigger", "kind") == W.IT_ELAPSED]
+        self.assertEqual([self.cell(W.EA_T, r, "instant_trigger", "threshold.power1") for r in every25], [W.frames(1500)])
+
+    def test_chakram_unlock_deletes_only_its_own_lock(self):
+        lock_key = "cursed_dance_lock"
+        locks = [p for p in W._commands(self.dsl_of("dance_lock"), "CreateCondition") if p[1][0][0] == "ACComboRestriction"]
+        self.assertEqual(len(locks), 1)
+        lock = locks[0]
+        self.assertEqual((lock[1][0][2], lock[4], lock[6], lock[11]), (W.P(9), False, lock_key, True))
+        deletes = list(W._commands(self.dsl_of("dance_awaken"), "DeleteCondition"))
+        self.assertEqual(deletes, [[-17, ["DCComboRestriction"], 99, W.DELETE_NON_CANCELABLE_ONLY, lock_key, ["Default"]]])
+        self.assertEqual(W.own_lock_delete_problems(self.out["dsl"]), [])
+        # 负对照：旧 dance_release 写法（cancelableKind 0 / 空键）必须被拦下
+        for kind, key in ((0, lock_key), (1, ""), (1, "cursed_dance_typo")):
+            mutated = json.loads(json.dumps(self.out["dsl"]))
+            node = next(n for n in _walk(mutated[W.dsl_program("dance_awaken")])
+                        if isinstance(n, list) and n and n[0] == "DeleteCondition")
+            node[4], node[5] = kind, key                                        # [名, 主体, DC, 次数, cancelableKind, 键串, 同步]
+            self.assertEqual(len(W.own_lock_delete_problems(mutated)), 1, (kind, key))
+        # AddCombo 必须等删锁处理完（Wait）；否则被还在的上限 9 钳住
+        waits = [n for n in _walk(self.dsl_of("dance_awaken")) if isinstance(n, list) and n and n[0] == "Wait"]
+        self.assertEqual(len(waits), 1)
+        self.assertEqual(len(list(W._commands(waits[0], "AddCombo"))), 1)
+
+    def test_chakram_states_and_rows(self):
+        w12 = self.weapon(12)
+        u_clever, u_dance = w12.uid(1), w12.uid(2)
+        uniques = self.out["flat"][W.UNIQUE]
+        # c4 叠层上限 2：-666%/+500% 的 134 门禁与 ConsumeUniqueCondition 都只认可叠层状态
+        self.assertEqual([uniques[u_clever][0][i] for i in (1, 3, 4, 11)], ["伶俐准备", "99999999", "2", "1"])
+        self.assertEqual([uniques[u_dance][0][i] for i in (1, 3, 4, 11)], ["剑舞准备", "99999999", "2", "0"])
+        consume = list(W._commands(self.dsl_of("dance_awaken"), "ConsumeUniqueCondition"))
+        self.assertEqual(consume, [[-17, int(u_clever), ["Some", 1]]])
+        finale = self.dsl_of("dance_finale")
+        self.assertEqual(finale[10], W.PF3_BTA)
+        attacks = list(W._commands(finale, "CreateNormalAttack"))
+        self.assertEqual([(a[5], a[14]) for a in attacks], [(W.P(30.0), ["Explosion"])])
+        rows = self.ea(12)
+        for group in ("White", "Black"):                                         # 光/暗共鸣各一套
+            mine = [r for r in rows if self.cell(W.EA_T, r, "precondition1", "character_groups") == group]
+            sep = [r for r in mine if _kind(W.EA_T, r) == "413"]
+            self.assertEqual(len(sep), 1, group)
+            self.assertEqual((self.cell(W.EA_T, sep[0], "during_content", "strength.power1"),
+                              self.cell(W.EA_T, sep[0], "during_trigger", "unique_condition_id"),
+                              self.cell(W.EA_T, sep[0], "even_if_owner_dead", "even_if_owner_dead")),
+                             ("-666000", u_clever, "true"))
+            convert = [r for r in mine if _kind(W.EA_T, r) == "629"
+                       and self.cell(W.EA_T, r, "instant_trigger", "kind") == W.IT_PF]
+            self.assertEqual(len(convert), 2, group)
+            for r in convert:
+                self.assertEqual((self.cell(W.EA_T, r, "instant_trigger", "threshold.power1"),
+                                  self.cell(W.EA_T, r, "instant_trigger", "trigger_limit"),
+                                  self.cell(W.EA_T, r, "precondition2", "unique_condition_id")),
+                                 (W.times(10), "1", u_clever))
+            pf = [r for r in mine if _kind(W.EA_T, r) == "23"]
+            self.assertEqual(sum(float(self.cell(W.EA_T, r, "during_content", "strength.first_max")) for r in pf), 500000)
+            self.assertTrue(all(self.cell(W.EA_T, r, "during_trigger", "unique_condition_id") == u_dance for r in pf))
+
+    def test_all_in_silence_is_forced_per_slot(self):
+        rows = [r for r in self.ea(16) if _kind(W.EA_T, r) == "629"]
+        self.assertEqual([self.cell(W.EA_T, r, "instant_trigger", "trigger_puller") for r in rows],
+                         [W.P_LEADER, W.P_SECOND, W.P_THIRD])
+        self.assertNotIn("219", [_kind(W.EA_T, r) for r in self.ea(16)])        # 普通封印行删除
+        for tag, selector in (("1", 83), ("2", 84), ("3", 85)):
+            tree = self.dsl_of(f"allin_silence_{tag}")
+            finds = list(W._commands(tree, "FindAllSubjects"))
+            self.assertEqual([f[1] for f in finds], [selector])
+            (cc,) = W._commands(tree, "CreateCondition")
+            self.assertEqual((cc[1], cc[4], cc[11]), ([["ACSilence", W.P(1800)]], False, True))
+            self.assertIn(f"cursed_allin_silence_{tag}", self.out["flat"][W.CAS])
+        self.assertEqual(self.total(16, "35", W.T_PARTY), 50000)
+        self.assertEqual(self.total(16, "32", W.T_PARTY), 500000)
+        self.assertEqual(self.total(16, "34", W.T_PARTY), 500000)
+        self.assertEqual(self.total(16, "694", W.T_PARTY), 10000)
+
+    def test_lone_star_permanent_forced_cap(self):
+        w19 = self.weapon(19)
+        (cc,) = W._commands(self.dsl_of("lonestar_lock"), "CreateCondition")
+        self.assertEqual((cc[1], cc[4], cc[6], cc[11]),
+                         ([["ACComboRestriction", W.P(9999999), W.P(15)]], False, "cursed_lonestar", True))
+        lock = W.dsl_program("lonestar_lock")
+        triggers = sorted(self.cell(W.EA_T, r, "instant_trigger", "kind") for r in self.ea(19)
+                          if _kind(W.EA_T, r) == "629" and self.cell(W.EA_T, r, "instant_content", "action_path") == lock)
+        self.assertEqual(triggers, sorted([W.IT_INITIAL, W.IT_PF, W.IT_REVIVAL]))
+        pf_row = next(r for r in self.ea(19) if _kind(W.EA_T, r) == "696")
+        self.assertEqual((pf_row[1], pf_row[2], self.cell(W.EA_T, pf_row, "instant_content", "strength.power1")),
+                         ("120", "120", "30000"))
+        self.assertNotIn("三秒", w19.flavor)
+        self.assertNotIn("3 秒", w19.summary_120)
+
+    def test_master_eater_unison_only_for_owner(self):
+        unison = [r for r in self.ea(20) if _kind(W.EA_T, r) == "717"]
+        self.assertEqual(len(unison), 1)
+        r = unison[0]
+        self.assertEqual((self.cell(W.EA_T, r, "instant_content", "target"),
+                          self.cell(W.EA_T, r, "instant_content", "strength.power1"), r[1], r[2]),
+                         (W.T_SELF, "50000", "120", "120"))
+        self.assertEqual(self.total(20, "32", W.T_THIRD), 550000)
+
+    def test_coral_venom_is_a_forced_unique_switch(self):
+        w23 = self.weapon(23)
+        uid = w23.uid(1)
+        u = self.out["flat"][W.UNIQUE][uid][0]
+        # c4 必须 >1：207「层数 ≤0」在上限 1 时层数恒 0 ⇒ 恒真，持有珊瑚毒也照样 -99%
+        self.assertEqual([u[i] for i in (1, 3, 4, 9, 10, 11, 13)], ["珊瑚毒", "600", "2", "false", "true", "1", "true"])
+        for tree in self.out["dsl"].values():                                  # 中毒 DSL 整条去掉
+            self.assertFalse(any(isinstance(n, list) and n and n[0] == "ACPoison" for n in _walk(tree)))
+        gated = [r for r in self.ea(23) if r[5] == "1"]
+        self.assertEqual(sorted(_kind(W.EA_T, r) for r in gated), ["410", "411"])
+        for r in gated:
+            self.assertEqual([self.cell(W.EA_T, r, "during_trigger", k) for k in
+                              ("kind", "trigger_puller", "threshold.power1", "unique_condition_id")],
+                             [W.DT_UNIQUE_LOW, W.P_SELF, "0", uid])              # 阈值必须 0（≤0 层 = 没有）
+            self.assertEqual(self.cell(W.EA_T, r, "during_content", "strength.power1"), "-99000")
+        self.assertNotIn("693", [_kind(W.EA_T, r) for r in self.ea(23)])        # 旧「常驻 -99% + 中毒 +99%」拆写去掉
+        self.assertEqual(self.total(23, "32", W.T_SELF), 50000)                  # 每次 +50%（5 次共 +250%）
+        self.assertEqual(self.total(23, "34", W.T_SELF), 60000)                  # 每次 +60%（4 次共 +240%）
+
+    def test_reverse_hourglass_curse_split(self):
+        charging = sorted((self.cell(W.EA_T, r, "instant_content", "target"),
+                           self.cell(W.EA_T, r, "instant_content", "strength.power1"))
+                          for r in self.ea(24) if _kind(W.EA_T, r) == "35")
+        self.assertEqual(charging, [(W.T_SELF, "-90000")] * 2 + [(W.T_EXCEPT, "-45000")] * 2)
+
+    def test_triphase_transfer_grows_to_30(self):
+        transfers = [r for r in self.ea(27) if r[5] == "0"
+                     and self.cell(W.EA_T, r, "instant_trigger", "kind") in (W.IT_PF_HIT, W.IT_DIRECT, W.IT_SKILL_HIT)]
+        gains = [r for r in transfers if float(self.cell(W.EA_T, r, "instant_content", "strength.power1")) > 0]
+        losses = [r for r in transfers if float(self.cell(W.EA_T, r, "instant_content", "strength.power1")) < 0]
+        self.assertEqual(len(gains), 3)
+        self.assertEqual(len(losses), 3)
+        for r in gains:
+            self.assertEqual((r[1], r[2], self.cell(W.EA_T, r, "instant_content", "strength.power1"),
+                              self.cell(W.EA_T, r, "instant_content", "strength.first_max")), ("1", "120", "20000", "30000"))
+            self.assertEqual(self.cell(W.EA_T, r, "instant_trigger", "cooltime"), "60")
+        for r in losses:
+            self.assertEqual((r[1], r[2], self.cell(W.EA_T, r, "instant_content", "strength.first_max")), ("1", "120", "-20000"))
+
+    def test_flesh_for_bone_round3(self):
+        kinds = [_kind(W.EA_T, r) for r in self.ea(28)] + [_kind(W.SOUL_T, r) for r in self.soul(28)]
+        self.assertNotIn("33", kinds)                                           # 直击 +1000% 去掉
+        self.assertEqual(self.total(28, "717", W.T_PARTY), 100000)
+        self.assertEqual(self.total(28, "723", W.T_PARTY), 10000)
+        self.assertEqual(self.total(28, "693", W.T_PARTY), 10000)
+        cursed = [r for r in self.ea(28) if _kind(W.EA_T, r) in ("209", "226", "461")]
+        self.assertEqual([_kind(W.EA_T, r) for r in cursed], ["209", "226", "461"] * 3)   # 上锁行在每组最后
+        self.assertEqual({self.cell(W.EA_T, r, "instant_content", "strength.power1") for r in cursed},
+                         {"8000", W.times(10), W.times(1)})
+        uid = self.weapon(28).uid(1)
+        self.assertEqual(self.out["flat"][W.UNIQUE][uid][0][3:5], ["120", "2"])     # 2 秒锁，上限 2 才能被 199 读到
+        for r in cursed:
+            self.assertEqual((self.cell(W.EA_T, r, "precondition2", "kind"),
+                              self.cell(W.EA_T, r, "precondition2", "unique_condition_id")), (W.PRE_UNIQUE_LE, uid))
+
+    def test_accumulation_cap_gate(self):
+        # 客户端 Condition.get_accumulatable() = maxAccumulation > 1：按层数读/消耗的固有上限 1 时静默失效
+        uniques = self.out["flat"][W.UNIQUE]
+        rows = [(f"{w.row:02d} {table}#{i}", table, r) for w in self.ws
+                for table, logical in ((W.SOUL_T, W.SOUL), (W.EA_T, W.EA))
+                for i, r in enumerate(self.out["flat"][logical][w.id])]
+        flagged = {uid for uid, _ in W.unique_accumulation_problems(rows, self.out["dsl"], uniques)}
+        # 全部修好（09 蛰龙之心 / 13 封能风笛在第三轮一并改为上限 2），不再有待决条目
+        self.assertEqual(flagged, set())
+        self.assertEqual(W.ACCUMULATION_CAP_PENDING, {})
+        self.assertEqual(self.out["accumulation_pending"], [])
+        # 负对照：把本轮修过的固有改回上限 1，每一种读法都必须被拦下
+        cases = {self.weapon(3).uid(1): {"持续触发 134", "瞬发 525"},                 # 咸鱼翻身
+                 self.weapon(4).uid(1): {"前置 199"},                                   # 叛旗
+                 self.weapon(10).uid(2): {"持续触发 134"},                              # 开局赌注
+                 self.weapon(12).uid(1): {"持续触发 134", "ConsumeUniqueCondition"},    # 伶俐准备（含 DSL 消耗）
+                 self.weapon(23).uid(1): {"持续触发 207"},                              # 珊瑚毒
+                 self.weapon(28).uid(1): {"前置 199"},                                  # 骨断
+                 self.weapon(9).uid(1): {"持续触发 134"},                               # 蛰伏
+                 self.weapon(9).uid(4): {"持续触发 134"},                               # 枯竭
+                 self.weapon(13).uid(1): {"持续触发 134"}}                              # 封能
+        for uid, kinds in cases.items():
+            mutated = {**uniques, uid: [[*uniques[uid][0][:4], "1", *uniques[uid][0][5:]]]}
+            probs = [p for u, p in W.unique_accumulation_problems(rows, self.out["dsl"], mutated) if u == uid]
+            self.assertTrue(probs, uid)
+            for kind in kinds:
+                self.assertTrue(any(kind in p for p in probs), (uid, kind, probs))
+            # 写 (None) 同样是上限 1（记忆卡 wf-unique-cap-none-trap）
+            none = {**uniques, uid: [[*uniques[uid][0][:4], "(None)", *uniques[uid][0][5:]]]}
+            self.assertTrue(any(u == uid for u, _ in W.unique_accumulation_problems(rows, self.out["dsl"], none)), uid)
+        # 只按个数读（前置 187）的固有不受上限约束：复读弹射 / 终焉保持 1 不报
+        for uid in (self.weapon(10).uid(3), self.weapon(7).uid(1)):
+            self.assertEqual(uniques[uid][0][4], "1")
+            self.assertNotIn(uid, flagged)
+        # 瞬发前置消耗（三重咒钥 2 层咒钥）同样在门禁里：改成上限 1 必须报
+        key = self.weapon(14).uid(1)
+        mutated = {**uniques, key: [[*uniques[key][0][:4], "1", *uniques[key][0][5:]]]}
+        self.assertTrue(any(u == key and "瞬发前置 2" in p
+                            for u, p in W.unique_accumulation_problems(rows, self.out["dsl"], mutated)))
+
+    def test_accumulation_pending_must_be_pruned(self):
+        # 登记在 ACCUMULATION_CAP_PENDING 里但已经不触发门禁的条目，build 报出来要求删掉（防止白名单掩盖新问题）
+        from unittest import mock
+        fixed = self.weapon(23).uid(1)
+        with mock.patch.dict(W.ACCUMULATION_CAP_PENDING, {fixed: "23 珊瑚毒爪「珊瑚毒」"}):
+            probs = W.build(fixture_reader(), client_capabilities=W.PATCHED_CLIENT_CAPABILITIES)["problems"]
+        self.assertEqual(len(probs), 1)
+        self.assertIn(f"ACCUMULATION_CAP_PENDING 残留：{fixed}", probs[0])
+        # 反过来：把某个固有改回上限 1（不登记待决），死行进 problems
+        uid = self.weapon(13).uid(1)
+        original = W.unique_row
+        with mock.patch.object(W, "unique_row", lambda sid, name, icon, duration, cap, **kw:
+                               original(sid, name, icon, duration, "1" if name == "封能" else cap, **kw)):
+            probs = W.build(fixture_reader(), client_capabilities=W.PATCHED_CLIENT_CAPABILITIES)["problems"]
+        self.assertEqual({p.split("按层数读固有 ")[1][:8] for p in probs}, {uid})
 
     def test_deterministic(self):
         again = W.build(fixture_reader(), client_capabilities=W.PATCHED_CLIENT_CAPABILITIES)

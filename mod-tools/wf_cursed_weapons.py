@@ -32,6 +32,13 @@
 5. 「能力/被动回槽禁止」= 持续 423 GaugeGainRestriction：装备两表的解析只有客户端补丁 equipment-rules 认（1047 读到 C7050），
    ``build`` 按 ``client_capabilities`` 拦截（默认 1047 基线），本机已装补丁时显式传 ``PATCHED_CLIENT_CAPABILITIES``。
 6. 带 mul 的 CreateCondition 必须带非空唯一键串（基诺维吞噬同款坑）。
+7. DSL 解自己挂的锁：DeleteCondition 必须带锁的键串，cancelableKind 选得中锁（不可驱散的锁写 1；写 0 删不掉，
+   1.4.1057 剑舞圆环连击上限从未解除），``own_lock_delete_problems`` 拦截。
+8. 根头 buffTargetAs ≥100（133 = 按强化弹射 Lv3 结算）需要 damage-type-rules-v1，``dsl_capabilities`` 进 capability 门禁；
+   按强化弹射段结算的 629 命中算真实 PF 命中，不能再用「强化弹射命中」(183) 触发（自我连锁），``pf_echo_trigger_problems`` 拦截。
+9. 按层数读/消耗固有状态（持续 134/207、前置 144/199、瞬发 525/526、瞬发前置 1/2/3、DSL ConsumeUniqueCondition）
+   要求该固有叠层上限 c4 >1：``Condition.get_accumulatable() = maxAccumulation > 1``，上限 1 时层数恒 0、消耗为空操作
+   （第三轮复审：6 把武器的门禁因此静默失效）。``unique_accumulation_problems`` 拦截；已知未修的在 ``ACCUMULATION_CAP_PENDING``。
 
 接口：:func:`build` 只经 ``read`` 读 live（见 :class:`LiveReader`），返回全部新增内容；不写盘、不发布、不 git。
 """
@@ -128,16 +135,22 @@ PATCHED_CLIENT_CAPABILITIES = BASE_CLIENT_CAPABILITIES | {EQUIPMENT_RULES_CAP, S
 
 # 目标 / 来源 枚举
 T_SELF, T_EXCEPT, T_LEADER, T_SECOND, T_THIRD, T_PARTY, T_TRIGGER, T_MULTIBALL = "0", "1", "2", "3", "4", "5", "7", "8"
-P_SELF, P_LEADER, P_ONE_OF_PARTY, P_ONE_OF_MULTIBALL = "0", "1", "5", "9"
+P_SELF, P_LEADER, P_SECOND, P_THIRD, P_ONE_OF_PARTY, P_ONE_OF_MULTIBALL = "0", "1", "2", "3", "5", "9"
 # 触发 kind
 IT_INITIAL, IT_PF, IT_FEVER, IT_DIRECT, IT_SKILL, IT_SKILL_MAX, IT_HP_LOW, IT_ELAPSED, IT_REVIVAL, IT_MB_REMOVE = (
     "0", "2", "8", "20", "23", "24", "25", "77", "18", "194")
 IT_SKILL_HIT, IT_PF_HIT = "107", "183"   # SkillHit（带来源）/ OneOfEnemyPowerFlipHitLvAny（官方 139998 队长技同款）
-# 持续触发 kind
-DT_HP_HIGH, DT_FEVER, DT_POISON, DT_UNIQUE, DT_HP_LOW_EX = "0", "4", "18", "134", "227"
+# 持续触发 kind（207 = 固有状态层数 ≤ 阈值，官方 1111172「缺固有」同形）
+DT_HP_HIGH, DT_FEVER, DT_UNIQUE, DT_UNIQUE_LOW, DT_HP_LOW_EX = "0", "4", "134", "207", "227"
 # 前置 kind
 PRE_MEMBER, PRE_HP_HIGH, PRE_UNIQUE_GE, PRE_HAS_UNIQUE, PRE_UNIQUE_LE, PRE_SAME_ELEMENT = "2", "8", "144", "187", "199", "208"
 PRE_MY_SELF = "3"
+#: SkillGaugeHigh / SkillGaugeLow（阈值 Decimal，100000 = 100% 基准槽；官方零先例，运行时对象同 1110153 的 107）
+PRE_GAUGE_HIGH, PRE_GAUGE_LOW = "119", "120"
+#: DSL 根头 buffTargetAs 覆盖（damage-type-rules-v1）：133 = 按强化弹射 Lv3 完整结算（通用池、分档、413、PF 显示）。
+#: 未装补丁的客户端读成 0，按技能伤害结算，不崩。
+PF3_BTA = BR.segment_override("pf3")
+PF_SEGMENT_BTAS = frozenset(BR.segment_override(d) for d in ("pf1", "pf2", "pf3"))
 
 ELEMENT_GROUP = {"fire": "Red", "water": "Blue", "thunder": "Yellow", "wind": "Green", "light": "White", "dark": "Black"}
 ELEMENT_CODE = {"fire": 0, "water": 1, "thunder": 2, "wind": 3, "light": 4, "dark": 5}   # equipment_element.json（0 基）
@@ -342,7 +355,14 @@ def has_unique(uid: str) -> tuple:
 
 
 def lacks_unique(uid: str) -> tuple:
+    """前置：自身没有固有状态 uid（199「层数 ≤0」）。uid 的叠层上限必须 >1，否则层数恒 0、前置恒真。"""
     return (PRE_UNIQUE_LE, {"trigger_puller": P_SELF, "threshold": "0", "unique_condition_id": uid})
+
+
+def lacks_unique_during(uid: str) -> tuple:
+    """持续触发：自身没有固有状态 uid（207「层数 ≤ 阈值」，阈值必须写 "0"；写 times(1) 会把 1 层也算作「没有」）。
+    uid 的叠层上限必须 >1，否则层数恒 0、触发恒真。"""
+    return (DT_UNIQUE_LOW, {"trigger_puller": P_SELF, "threshold": "0", "unique_condition_id": uid})
 
 
 def stat(kind: str, target: str, lo: float, hi: float | None = None, **kw) -> tuple:
@@ -395,7 +415,8 @@ def elapsed(frame_count: int, limit: str = "(None)") -> tuple:
 
 
 def gate_unique(uid: str, limit: str = "1", at_least: int = 1) -> tuple:
-    """持续触发：自身持有固有状态 uid（≥at_least 层）；limit=倍乘上限（1 = 不随层数倍乘）。"""
+    """持续触发：自身持有固有状态 uid（≥at_least 层）；limit=倍乘上限（1 = 不随层数倍乘）。
+    134 按层数计：uid 的叠层上限必须 >1，否则层数恒 0、永不生效（只看有没有用 has_unique / 前置 187）。"""
     return (DT_UNIQUE, {"trigger_puller": P_SELF, "threshold": times(at_least), "trigger_limit": limit,
                         "unique_condition_id": uid})
 
@@ -424,10 +445,13 @@ def ac(name: str, frame_count: int, *params) -> list:
     return [name, P(frame_count), *params]
 
 
-def give(subject: int, acs: list, key: str = "", cancelable: bool = True) -> list:
-    """CreateCondition(对象, AC 列表, 命中率 1, 通用演出, 可驱散, 去重, 键串, None, False, 付与种类 3, 层 1, False)。"""
+def give(subject: int, acs: list, key: str = "", cancelable: bool = True, force: bool = False) -> list:
+    """CreateCondition(对象, AC 列表, 命中率 1, 通用演出, 可驱散, 去重, 键串, None, False, 付与种类 3, 层 1, 强制付与)。
+
+    force = params[11] forceApply：绕过弱体耐性、各类 ConditionPrevent（DebuffPrevent 58 等）与增益无效；
+    不跳过持续时间伸缩（「弱体时间缩短」仍会缩短）。键串 params[6] 即 discriminationKey，DeleteCondition 按它定点删除。"""
     return C("CreateCondition", subject, acs, P(1), ["GenericConditionHitEffect"], cancelable, False, key, None,
-             False, 3, P(1), False)
+             False, 3, P(1), force)
 
 
 def party(bind: int, *body) -> list:
@@ -541,6 +565,123 @@ def colorless_hit_effect_problems(tree: list) -> list[str]:
     return probs
 
 
+def _commands(node: Any, name: str) -> Iterable[list]:
+    """树里所有名为 name 的 Command 的参数列表（不含命令名）。"""
+    if not isinstance(node, list):
+        return
+    if node and node[0] == "Command" and isinstance(node[1], list) and node[1] and node[1][0] == name:
+        yield node[1][1:]
+    for child in node:
+        yield from _commands(child, name)
+
+
+#: DeleteCondition params[3] cancelableKind（ConditionSlot.as:7246-7255）：0 只删可驱散、1 只删不可驱散、2 全删。
+DELETE_CANCELABLE_ONLY, DELETE_NON_CANCELABLE_ONLY, DELETE_ALL = 0, 1, 2
+
+
+def own_lock_delete_problems(dsl: dict[str, list]) -> list[str]:
+    """DeleteCondition 只允许删自己挂的状态：必须带键串（空键连敌方给的同类状态一起删），键串要对得上本批某个
+    CreateCondition，cancelableKind 要选得中那个状态——不可驱散（params[4]=False）的锁用 0 永远删不掉
+    （1.4.1057 剑舞圆环 dance_release 实证：连击上限 9 从未解除）。"""
+    created: dict[str, set[bool]] = {}
+    for tree in dsl.values():
+        for params in _commands(tree, "CreateCondition"):
+            created.setdefault(params[6], set()).add(bool(params[4]))
+    probs: list[str] = []
+    for program, tree in dsl.items():
+        for params in _commands(tree, "DeleteCondition"):
+            kind, key = params[3], params[4]
+            if not key:
+                probs.append(f"{program}: DeleteCondition 空键串会连敌方给的同类状态一起删")
+            elif key not in created:
+                probs.append(f"{program}: DeleteCondition 键串 {key!r} 找不到本批的 CreateCondition")
+            elif False in created[key] and kind == DELETE_CANCELABLE_ONLY:
+                probs.append(f"{program}: DeleteCondition 键串 {key!r} 的状态不可驱散，cancelableKind 0 删不掉")
+            elif True in created[key] and kind == DELETE_NON_CANCELABLE_ONLY:
+                probs.append(f"{program}: DeleteCondition 键串 {key!r} 的状态可驱散，cancelableKind 1 删不掉")
+    return probs
+
+
+#: 按「层数」读固有状态的位置（反编译实证）：持续触发 134（层数 ≥ 阈值）/207（层数 ≤ 阈值）、前置 144/199、
+#: 瞬发 525/526（消耗）、瞬发前置 1/2/3（消耗/判层，都走 consumeUniqueCondition）、DSL ConsumeUniqueCondition。
+#: 前置 187/188 按状态个数计，不受叠层上限影响。
+ACC_DURING_KINDS = frozenset({DT_UNIQUE, DT_UNIQUE_LOW})
+ACC_PRE_KINDS = frozenset({PRE_UNIQUE_GE, PRE_UNIQUE_LE})
+ACC_CONTENT_KINDS = frozenset({"525", "526"})
+ACC_PRECONTENT_KINDS = frozenset({"1", "2", "3"})
+
+#: 已知的层数门禁死行：不在本轮改动范围内（作者 0928「不动」），等作者决定后单独修复、单独重发。
+#: 修好后必须从这里删掉（build 会把不再触发门禁的残留条目报出来）。
+ACCUMULATION_CAP_PENDING: dict[str, str] = {}    # 09 蛰龙之心 / 13 封能风笛已于第三轮一并修复（上限 2）
+
+
+def accumulated_unique_reads(table: str, row: list[str]) -> list[tuple[str, str]]:
+    """该词条行里按层数读取的固有状态 [(位置, uid), ...]。"""
+    reads: list[tuple[str, str]] = []
+    for block in ("precondition1", "precondition2", "precondition3"):
+        kind = row[_col(table, block, "kind")]
+        if kind in ACC_PRE_KINDS:
+            reads.append((f"前置 {kind}", row[_col(table, block, "unique_condition_id")]))
+    if row[int(_LAYOUT[table]["blocks"]["precondition1"]) - 1] == "0":
+        kind = row[_col(table, "instant_content", "kind")]
+        if kind in ACC_CONTENT_KINDS:
+            reads.append((f"瞬发 {kind}", row[_col(table, "instant_content", "unique_condition_id")]))
+        kind = row[_col(table, "instant_precontent", "kind")]
+        if kind in ACC_PRECONTENT_KINDS:
+            reads.append((f"瞬发前置 {kind}", row[_col(table, "instant_precontent", "unique_condition_id")]))
+    else:
+        kind = row[_col(table, "during_trigger", "kind")]
+        if kind in ACC_DURING_KINDS:
+            reads.append((f"持续触发 {kind}", row[_col(table, "during_trigger", "unique_condition_id")]))
+    return reads
+
+
+def unique_accumulation_problems(rows: Iterable[tuple[str, str, list[str]]], dsl: dict[str, list],
+                                 uniques: dict[str, list[list[str]]]) -> list[tuple[str, str]]:
+    """被按层数读取/消耗的固有状态，叠层上限 c4 必须是 >1 的整数 ⇒ [(uid, 问题), ...]。
+
+    客户端 ``Condition.get_accumulatable() = maxAccumulation > 1``（Condition.as:291-294）；为 false 时
+    ``ConditionSlot._getConditionAccumulationCount`` 恒 0（134/144 永不生效、199/207 恒真），
+    ``consumeUniqueCondition`` 三种模式都跳过（525/526/瞬发前置/DSL 消耗全是空操作）。
+    ACUnique / 461 给 1 层照常，只有「按层数读」这一侧静默失效（第三轮复审：像素城之环刃/咸鱼王冠等 6 把实证）。
+    rows = [(位置说明, 表, 行)]；只查本批 uniques 里的固有（官方固有不归这里管）。"""
+    reads: list[tuple[str, str]] = []
+    for where, table, row in rows:
+        reads += [(f"{where} {what}", uid) for what, uid in accumulated_unique_reads(table, row)]
+    for program, tree in dsl.items():
+        reads += [(f"DSL {program} ConsumeUniqueCondition", str(params[1]))
+                  for params in _commands(tree, "ConsumeUniqueCondition")]
+    probs: list[tuple[str, str]] = []
+    for where, uid in reads:
+        if uid not in uniques:
+            continue
+        cap = uniques[uid][0][4]
+        if not (cap.isdigit() and int(cap) > 1):
+            probs.append((uid, f"{where} 按层数读固有 {uid}（{uniques[uid][0][1]}），但叠层上限 c4={cap!r} 不是 >1 的整数："
+                               "get_accumulatable() 为 false，层数恒 0、消耗为空操作，词条静默失效"))
+    return probs
+
+
+def dsl_capabilities(tree: list) -> list[str]:
+    """DSL 需要的客户端 capability：根头 tree[10] 或 CreateHitArea params[23] 的 buffTargetAs ≥100
+    是 damage-type-rules 的段覆盖（未装补丁读成 0 按技能伤害结算，不崩，但归属不对）。"""
+    btas = [tree[10], *(params[23] for params in _commands(tree, "CreateHitArea"))]
+    return [BR.DAMAGE_CAP] if any(isinstance(b, int) and b >= 100 for b in btas) else []
+
+
+def pf_echo_trigger_problems(table: str, row: list[str], dsl: dict[str, list]) -> list[str]:
+    """按强化弹射段结算（根头 131-133）的 629 树，其命中会被计为真实的 PF 命中，驱动「强化弹射命中」(183)；
+    用 183 触发它 = 自己的命中再次触发自己（复读弹射期间约每 60 帧连锁一次）。只能用强化弹射发动 (2) 触发。"""
+    if row[int(_LAYOUT[table]["blocks"]["precondition1"]) - 1] != "0" or row[_col(table, "instant_content", "kind")] != "629":
+        return []
+    tree = dsl.get(row[_col(table, "instant_content", "action_path")])
+    if tree is None or tree[10] not in PF_SEGMENT_BTAS:
+        return []
+    if row[_col(table, "instant_trigger", "kind")] == IT_PF_HIT:
+        return [f"629 按强化弹射段结算（buffTargetAs {tree[10]}）却由强化弹射命中(183)触发：会被自己的命中连锁触发"]
+    return []
+
+
 # ---------------------------------------------------------------------------
 # 武器规格
 # ---------------------------------------------------------------------------
@@ -599,7 +740,9 @@ ICON_STACK = "unique_wind_spgirl_1anv"      # 神速剑技（叠层类）
 KIND_LABEL = {"32": "攻击力", "0": "攻击力", "34": "技能伤害", "2": "技能伤害", "33": "直接攻击伤害", "1": "直接攻击伤害",
               "55": "强化弹射伤害", "23": "强化弹射伤害", "28": "强化弹射伤害", "388": "能力伤害", "35": "技能充能速度",
               "156": "增益持续时间", "227": "护盾", "211": "技能槽", "470": "逆境", "701": "技能充能速度",
-              "694": "技能伤害独立乘区", "723": "伤害独立乘区", "717": "合击角色攻击力白值"}
+              "694": "技能伤害独立乘区", "723": "伤害独立乘区", "717": "合击角色攻击力白值", "411": "技能伤害独立乘区",
+              "410": "直接攻击伤害独立乘区", "413": "强化弹射伤害独立乘区", "421": "伤害独立乘区",
+              "693": "直接攻击伤害独立乘区", "696": "强化弹射伤害独立乘区"}
 #: 瞬发「状态」类 kind 的名字（与持续类同号不同义：瞬发 1 = ConditionSkillDamage，持续 1 = 直击）。
 COND_LABEL = {"0": "攻击力", "1": "技能伤害", "28": "强化弹射伤害", "470": "逆境", "701": "技能充能速度"}
 TARGET_LABEL = {T_SELF: "自身", T_PARTY: "全队", T_LEADER: "队长", T_SECOND: "2号位", T_THIRD: "3号位",
@@ -663,7 +806,7 @@ def growth_pair(kind: str, target: str | None, total: float, base: float, *, mod
 def w01() -> Weapon:
     w = Weapon(1, "gluttony_knife", "饕餮餐刀", "剑", (), "神秘小罐头",
                "锯齿切肉刀，刃口带咬痕", "据说用它切过的面包，会连同主人的饥饿一起被吞下。",
-               "发动技能时吞噬己方全部召唤协力球，每吞 1 个自身攻击力与技能伤害各 +50%（最多 9 个）")
+               "发动技能时吞噬己方全部召唤协力球，每吞 1 个自身攻击力 +100%（15 秒，最多 9 个）")
     ids = list(GINOVI.DEVOUR_IDS)
     w.soul = [
         Eff("0", stat("32", T_SELF, 20, 40), note="自身攻击力 +20%→40%"),
@@ -671,79 +814,115 @@ def w01() -> Weapon:
             note="己方协力球消失时，自身攻击力 +5%→10%（最多 6 次）"),
     ]
     program = dsl_program("gluttony_devour")
+    # 计数在移除之前取（V = min(存活数, 9)）；带 mul 的 CreateCondition 必须带非空键串（gid 合并不看 mul）
     w.dsl[program] = dsl_root(
         C("ConditionalsMultiballNumber", ids, [], 1, B(
             C("MultiballNumberVariable", 1, False, ids, [], 1, 9),
             C("RemoveMultiball", False, ids),
-            give(-17, [["ACAttackPoint", P(900), [{"min": 0.5, "max": 0.5, "mul": 1}], P(1)]], "cursed_gluttony_atk"),
-            give(-17, [["ACSkillDamage", P(900), [{"min": 0.5, "max": 0.5, "mul": 1}], P(1)]], "cursed_gluttony_skd"),
+            give(-17, [["ACAttackPoint", P(900), [{"min": 1.0, "max": 1.0, "mul": 1}], P(1)]], "cursed_gluttony_atk"),
         ), B()))
-    w.cas["cursed_gluttony_devour"] = "吞噬场上所有被召唤的协力球，每吞噬1个，自身攻击力与技能伤害各提升50%（15秒，最多9个）"
+    w.cas["cursed_gluttony_devour"] = "吞噬场上所有被召唤的协力球，每吞噬1个，自身攻击力提升100%（15秒，最多9个）"
     w.ea = [
         *growth_pair("32", T_SELF, 100, 40),
         Eff("0", invoke("cursed_gluttony_devour", program), trig=trig(IT_SKILL, trigger_puller=P_SELF),
-            **CURSE, note="【诅咒】发动技能时吞噬己方全部召唤协力球，每个 +50% 攻击/技伤（最多 9 个，15 秒）"),
+            **CURSE, note="【诅咒】发动技能时吞噬己方全部召唤协力球，每个 +100% 攻击力（最多 9 个，15 秒）"),
     ]
+    w.deviations.append("第三轮「扣除协力球 100% 生命值」：玩家侧扣血钳到 1HP 消灭不了协力球，按 RemoveMultiball 真移除实现"
+                        "（原生消失演出，计入协力球消失）；只覆盖 48 种存活的召唤协力球（不含炸弹球与关卡 NPC 助战），"
+                        "正在出场/排队中的球会被静默移除且不计数；技能伤害半边按提案去掉")
+    w.deviations.append("施放时场上没有可吞噬的协力球：否则分支为空，上一次的加成照常持续到结束（不刷新也不清除）")
     return w
 
 
 def w02() -> Weapon:
     w = Weapon(2, "feast_drum", "狂宴战鼓", "饰品", (), "神秘小罐头",
                "红边战鼓与交叉鼓槌", "鼓声越狂，技能之力越被献给狂欢。",
-               "进入 Fever 时全队技能槽 -50%；Fever 中全队攻击、技能伤害、强化弹射伤害 +200%")
+               "进入 Fever 时全队技能槽 -100%；Fever 中全队攻击力 +1000%")
     program = dsl_program("feast_drain")
-    w.dsl[program] = dsl_root(party(0, C("SubtractSkillPoint", 0, P(0.5))))
-    w.cas["cursed_feast_drain"] = "全队技能槽减少50%"
+    w.dsl[program] = dsl_root(party(0, C("SubtractSkillPoint", 0, P(1.0))))
+    w.cas["cursed_feast_drain"] = "全队技能槽减少100%"
     fever = (DT_FEVER, {})
-    w.soul = [
-        Eff("1", during("0", T_PARTY, 20, 40), trig=fever, note="Fever 中全队攻击力 +20%→40%"),
-        Eff("1", during("2", T_PARTY, 20, 40), trig=fever, note="Fever 中全队技能伤害 +20%→40%"),
-    ]
+    w.soul = [Eff("1", during("0", T_PARTY, 100, 200), trig=fever, note="Fever 中全队攻击力 +100%→200%")]
     w.ea = [
-        *growth_pair("0", T_PARTY, 200, 40, mode="1", trig_=fever),
-        *growth_pair("2", T_PARTY, 200, 40, mode="1", trig_=fever),
-        *growth_pair("23", None, 200, 0, mode="1", trig_=fever),
+        *growth_pair("0", T_PARTY, 1000, 200, mode="1", trig_=fever),
         Eff("0", invoke("cursed_feast_drain", program), trig=trig(IT_FEVER, threshold=times(1)),
-            **CURSE, note="【诅咒】进入 Fever 时全队技能槽 -50%"),
+            **CURSE, note="【诅咒】进入 Fever 时全队技能槽 -100%"),
     ]
+    w.deviations.append("第三轮：诅咒 -50% → -100%；正面只留 Fever 中全队攻击力（终值 +1000%），去掉技能伤害与强化弹射伤害两项；"
+                        "扣槽按技能槽容量的 100% 计（技能槽上限提高的角色扣得更多）")
     return w
 
 
 def w03() -> Weapon:
     w = Weapon(3, "salted_fish_crown", "咸鱼王冠", "饰品", ("wind",), "百合色彩虹桥",
                "戴着小王冠的咸鱼", "躺平的咸鱼也有王冠——只是要攒满两倍才肯翻身。",
-               "风属性共鸣时：自身技能充能速度 -50%（攒满需要约两倍时间），技能伤害独立乘区 +100%（伤害翻倍）")
-    wind = (res("wind"),)
+               "风属性共鸣时：技能槽 200% 时发动技能，该次技能伤害 +500%、技能伤害独立乘区 +30%（10 秒内；"
+               "下次非 200% 发动即失效）；自身技能充能速度 -50%")
+    wind = res("wind")
+    u_flip = w.uid(1)
+    # 叠层上限必须 >1：134 按层数计、525 只消耗可叠层状态（上限 1 时两者都静默失效）。
+    # 10 秒内再次 200% 发动叠到 2 层并刷新时长；134 倍乘上限 1，加成不翻倍
+    w.uniques[u_flip] = unique_row(f"cursed_saltfish_{u_flip}", "咸鱼翻身", ICON_BUFF, "600", "2", bad=False)
+    cast = trig(IT_SKILL, trigger_puller=P_SELF)
+    # 施放先扣 100% 基准槽再判前置：施放后仍 ≥100% ⇔ 施放前 200%；≤99.999% ⇔ 不是 200% 施放（两行互斥，行序无关）
+    from_full = (PRE_GAUGE_HIGH, {"trigger_puller": P_SELF, "threshold": times(1)})
+    not_full = (PRE_GAUGE_LOW, {"trigger_puller": P_SELF, "threshold": "99999"})
+    flipped = gate_unique(u_flip)
     w.soul = [
-        Eff("0", stat("245", T_SELF, 100, 100), pre=wind, note="风属性共鸣时：自身技能槽上限 +100%（可蓄至 200%）"),
-        Eff("0", stat("34", T_SELF, 30, 60), pre=wind, note="风属性共鸣时：自身技能伤害 +30%→60%"),
+        Eff("0", stat("245", T_SELF, 100, 100), pre=(wind,), note="风属性共鸣时：自身技能槽上限 +100%（可蓄至 200%）"),
+        Eff("0", unique(u_flip), trig=cast, pre=(wind, from_full),
+            note="风属性共鸣时：技能槽 200% 时发动技能，获得「咸鱼翻身」10 秒"),
+        Eff("0", ("525", {"target": T_SELF, "strength": times(2), "unique_condition_id": u_flip}), trig=cast,
+            pre=(wind, not_full), note="技能槽未满 200% 时发动技能，移除「咸鱼翻身」（最多消耗 2 层 = 全部）"),
+        Eff("1", during("2", T_SELF, 50, 100), trig=flipped, pre=(wind,), note="「咸鱼翻身」期间：自身技能伤害 +50%→100%"),
     ]
     w.ea = [
-        *growth_pair("34", T_SELF, 160, 60, pre=wind),
-        Eff("0", stat("35", T_SELF, -50), pre=wind, **CURSE,
+        *growth_pair("2", T_SELF, 500, 100, mode="1", trig_=flipped, pre=(wind,)),
+        Eff("0", stat("35", T_SELF, -50), pre=(wind,), **CURSE,
             note="【诅咒】风属性共鸣时：自身技能充能速度 -50%"),
-        Eff("0", stat("694", T_SELF, 100), pre=wind, **FINAL,
-            note="风属性共鸣时：自身技能伤害独立乘区 +100%"),
+        Eff("1", during("411", T_SELF, 30), trig=flipped, pre=(wind,), **FINAL,
+            note="「咸鱼翻身」期间：自身技能伤害独立乘区 +30%"),
     ]
-    w.deviations.append("「技能条锁定 200% 才能用」客户端硬编码（槽满 100% 即可施放）；改为「充能速度 -50%」表达两倍攒槽，"
-                        "配合本体技能槽上限 200% 与技能伤害独立乘区 ×2")
+    w.deviations.append("第三轮方案 B：加成挂在「200% 时发动的那次技能」上，不是「槽 ≥200% 期间」——施放先扣 100% 基准槽，"
+                        "技能伤害按命中时结算，槽位条件已经失效。施放瞬间判定剩余槽 ≥100%（前置 119）则挂 10 秒「咸鱼翻身」，"
+                        "不是 200% 的施放（前置 120 ≤99.999%）立即移除；去掉常驻技能伤害与技能伤害独立乘区 +100%")
+    w.deviations.append("「咸鱼翻身」叠层上限写 2：客户端只对上限 >1 的状态计层（Condition.get_accumulatable），上限 1 时 134 读层恒 0、"
+                        "525 消耗为空操作，整套加成静默失效（只剩槽上限与充能 -50%）；10 秒内连续 200% 发动叠到 2 层，"
+                        "加成按 1 层计不翻倍，非 200% 发动一次消耗 2 层全部移除")
+    w.deviations.append("风险：前置 119/120 官方零先例需真机验证；固有状态排队生效，施放当帧就结算的第一击可能吃不到加成；"
+                        "队友的 CountUp 瞬发内容也会让施放计数，可能误授予/误移除；施放 10 秒后才落下的命中拿不到加成；"
+                        "411 与其他技能伤害独立乘区相加不相乘")
     return w
 
 
 def w04() -> Weapon:
     w = Weapon(4, "rebel_banner", "叛乱军旗", "枪", (), "百合色彩虹桥",
                "破损的深红战旗", "面包们举起了叛旗——冲锋时不分敌我。",
-               "协力球撞击敌人时，全队受到最大 HP 3% 的伤害（不致死，间隔 1 秒）；协力球攻击力 +200%")
+               "协力球攻击力 +350%、直接攻击伤害 +350%；协力球每次直接攻击时全队受到最大 HP 2% 的伤害（不致死，共用 CT1 秒）")
+    u_ct = w.uid(1)
+    # 叠层上限必须 >1：前置 199「层数 ≤0」在上限 1 时层数恒 0 ⇒ 恒真，共用 CT 失效。只在 0 层时上锁，实际只有 1 层
+    w.uniques[u_ct] = unique_row(f"cursed_rebel_{u_ct}", "叛旗", ICON_CURSE, "60", "2", bad=True)
     w.soul = [
         Eff("0", stat("32", T_MULTIBALL, 30, 60), note="协力球攻击力 +30%→60%"),
+        Eff("0", stat("33", T_MULTIBALL, 30, 60), note="协力球直接攻击伤害 +30%→60%"),
         Eff("0", stat("205", T_MULTIBALL, 20, 40), note="协力球最大 HP +20%→40%"),
     ]
+    hit = trig(IT_DIRECT, trigger_puller=P_ONE_OF_MULTIBALL, cooltime="60")
+    ready = (lacks_unique(u_ct),)
     w.ea = [
-        *growth_pair("32", T_MULTIBALL, 260, 60),
-        Eff("0", stat("209", T_PARTY, 3), trig=trig(IT_DIRECT, trigger_puller=P_ONE_OF_MULTIBALL, cooltime="60"),
-            **CURSE, note="【诅咒】协力球直接攻击时，全队受到最大 HP 3% 的伤害（CT1 秒，不致死）"),
+        *growth_pair("32", T_MULTIBALL, 350, 60),
+        *growth_pair("33", T_MULTIBALL, 350, 60),
+        # 固有状态行必须排在扣血行之后：同一次派发内先判前置再上锁
+        Eff("0", stat("209", T_PARTY, 2), trig=hit, pre=ready, **CURSE,
+            note="【诅咒】协力球直接攻击时，全队受到最大 HP 2% 的伤害（共用 CT1 秒，不致死）"),
+        Eff("0", unique(u_ct), trig=hit, pre=ready, **CURSE, note="进入「叛旗」1 秒（共用冷却）"),
     ]
-    w.deviations.append("「面包攻击改为可伤害队友」是碰撞层行为；改为协力球每次撞击时对全队造成最大 HP 3% 的友伤（玩家侧伤害钳到 1HP）")
+    w.deviations.append("「面包攻击改为可伤害队友」是碰撞层行为；改为协力球每次撞击时对全队造成最大 HP 2% 的友伤（玩家侧伤害钳到 1HP）")
+    w.deviations.append("第三轮「CT1s」：触发自带冷却按协力球各算，N 个球 = 每秒 N 次；改用 1 秒固有状态「叛旗」做全队共用冷却"
+                        "（肉斩骨断同款）。风险：两个球同帧命中可能都先于上锁通过；持有者阵亡期间诅咒停止；"
+                        "来源「协力球之一」官方零先例，需真机确认")
+    w.deviations.append("「叛旗」叠层上限写 2：前置 199 按层数判「没有」，上限 1 的状态层数恒读 0，锁永远判为没有、共用 CT 失效"
+                        "（N 个球 = 每秒 N 次）；只在 0 层时上锁，实际只挂 1 层")
     return w
 
 
@@ -794,26 +973,45 @@ def w06() -> Weapon:
     return w
 
 
-def _full_screen_attack(multiplier: float) -> list:
-    """对全体敌人造成自身攻击力 multiplier 倍的技能伤害。
+def _full_screen_attack(multiplier: float, *, buff_target_as: int = 0, delay: int = 0) -> list:
+    """对全体敌人造成自身攻击力 multiplier 倍的伤害（默认按技能伤害结算）。
 
     装备 DSL 的主体属性恒为无属性，命中特效只能用不按属性取素材的构造（见 colorless_hit_effect_problems）；
     这里用官方通用的 Explosion。伤害按无属性结算：不吃克制，也不会走到 10014（forceUncolorless 只在炸弹球里）。
+    buff_target_as 写进根头 tree[10]（PF3_BTA = 按强化弹射 Lv3 结算，需要 damage-type-rules-v1）；delay>0 时包一层 Wait。
     """
     # 26 参照 work/codex_out/hitarea_params.md：全屏 = 3600×3600 矩形（官方 8 例）；p15 每目标硬帽 1；
     # p16 eliminatedOnHit 必须 False（True 会命中第一个敌人就移除，打不到其余目标）。
-    return dsl_root(C("CreateHitArea", "*", -18, ["AB"], 0, 0, 0, False, False,
-                      ["Rectangle", P(3600), P(3600)], ["Center"], ["Center"],
-                      ["Single"], ["SpecifyHitAreaLifetimeDirectly", 2], ["CalculatedUsingMaxNumOfHits", 1],
-                      ["Some", P(1)], False, True, ["None"], 0, B(), 1, 2,
+    area = C("CreateHitArea", "*", -18, ["AB"], 0, 0, 0, False, False,
+             ["Rectangle", P(3600), P(3600)], ["Center"], ["Center"],
+             ["Single"], ["SpecifyHitAreaLifetimeDirectly", 2], ["CalculatedUsingMaxNumOfHits", 1],
+             ["Some", P(1)], False, True, ["None"], 0, B(), 1, 2,
+             B(C("CreateNormalAttack", 2, 255, [], [], 0, P(multiplier), P(0), False, False, False, False,
+                 False, P(0.25), P(0.25), ["Explosion"], True)),
+             0, 0, ["None"])
+    tree = dsl_root(wait(delay, area) if delay > 0 else area)
+    tree[10] = buff_target_as
+    return tree
+
+
+def _echo_hit(multiplier: float, *, buff_target_as: int = PF3_BTA) -> list:
+    """跟球的小判定区（半径 60、100 帧、命中第一个敌人即移除）：追加 1 次 multiplier 倍伤害。
+
+    外形照官方瓦格纳 629 追击的外层判定区；命中特效同样只能用 Explosion。根头 133 按强化弹射 Lv3 结算——
+    这些命中会被计为真实的 PF Lv3 命中，**不能**再用「强化弹射命中」(183) 触发本树，否则会被自己的命中再次触发。"""
+    tree = dsl_root(C("CreateHitArea", "*", -18, ["AB"], 0, 0, 0, True, False, ["Circle", P(60)], ["Center"], ["Center"],
+                      ["Single"], ["SpecifyHitAreaLifetimeDirectly", 100], ["CalculatedUsingMaxNumOfHits", 1],
+                      ["Some", P(1)], True, True, ["None"], 0, B(), 1, 2,
                       B(C("CreateNormalAttack", 2, 255, [], [], 0, P(multiplier), P(0), False, False, False, False,
                           False, P(0.25), P(0.25), ["Explosion"], True)),
                       0, 0, ["None"]))
+    tree[10] = buff_target_as
+    return tree
 
 
 def w07() -> Weapon:
-    w = Weapon(7, "finality_gauntlet", "终焉拳套", "拳", ("fire", "water"), "P.P.P.P",
-               "镶着彩色宝石的黄金拳套", "一拳之后，世界与你一同静止。",
+    w = Weapon(7, "finality_gauntlet", "氪金的力量", "拳", ("fire", "water"), "P.P.P.P",
+               "镶有星导石的拳套", "一拳之后，世界与你一同静止。",
                "火/水属性共鸣时：全队攻击、技能伤害、能力伤害 +600%；发动技能时全场 6 倍 + 10 倍技能伤害（各 CT0.5 秒）；"
                "8 秒后全队永续麻痹、封印，攻击力/技能伤害/能力伤害 -886%（不可驱散）")
     uid_end = w.uid(1)
@@ -860,13 +1058,15 @@ def w07() -> Weapon:
     w.soul, w.ea = rows_s, rows_e
     w.deviations.append("「攻刃 -886%」引擎攻击加成总和下限 -50%（STAT_MODIFIER_ATTACK_POINT_MIN），技能/能力伤害 -886% 会压到单次 1 伤害；"
                         "「无法接触的麻痹」按不可驱散的麻痹实现")
+    w.deviations.append("第三轮：改名「氪金的力量」、外形「镶有星导石的拳套」（沿用 slug 与图标路径）；数值与第二轮一致")
     return w
 
 
 def w08() -> Weapon:
     w = Weapon(8, "sisyphus_stone", "西西弗斯的石头", "盾", (), "百合色彩虹桥",
                "被锁链缠住的巨石", "推到山顶的那一刻，石头总会滚落。",
-               "HP≥50% 时自身攻击与技能伤害 +150%；HP<50% 时两者 -50%；HP 回满时 HP 降至 0.1% 并获得最大 HP 30% 的护盾")
+               "HP≥50% 时自身攻击与技能伤害 +350%；自身 HP<50% 时全队攻击与技能伤害 -100%（攻击力受引擎下限 -50%）；"
+               "HP 回满时 HP 降至 0.1% 并获得最大 HP 30% 的护盾")
     hp50 = (DT_HP_HIGH, {"trigger_puller": P_SELF, "threshold": pct(50)})
     low50 = (DT_HP_LOW_EX, {"trigger_puller": P_SELF, "threshold": pct(50)})
     w.soul = [
@@ -875,15 +1075,21 @@ def w08() -> Weapon:
     ]
     full = (elapsed(30), ((PRE_HP_HIGH, {"trigger_puller": P_SELF, "threshold": pct(100)}),))
     w.ea = [
-        *growth_pair("0", T_SELF, 150, 60, mode="1", trig_=hp50),
-        *growth_pair("2", T_SELF, 150, 60, mode="1", trig_=hp50),
-        Eff("1", during("0", T_SELF, -50), trig=low50, **CURSE, note="【诅咒】HP<50% 时自身攻击力 -50%"),
-        Eff("1", during("2", T_SELF, -50), trig=low50, **CURSE, note="【诅咒】HP<50% 时自身技能伤害 -50%"),
+        *growth_pair("0", T_SELF, 350, 60, mode="1", trig_=hp50),
+        *growth_pair("2", T_SELF, 350, 60, mode="1", trig_=hp50),
+        # 判定看持有者 HP、作用全队；持有者阵亡时 HP=0 仍 <50%，even_if_dead 让诅咒不因阵亡解除
+        Eff("1", during("0", T_PARTY, -100), trig=low50, even_if_dead=True, **CURSE,
+            note="【诅咒】自身 HP<50% 时全队攻击力 -100%（引擎下限 -50%）"),
+        Eff("1", during("2", T_PARTY, -100), trig=low50, even_if_dead=True, **CURSE,
+            note="【诅咒】自身 HP<50% 时全队技能伤害 -100%"),
         Eff("0", stat("209", T_SELF, 99.9), trig=full[0], pre=full[1], **CURSE,
             note="【诅咒】HP 为 100% 时（每 0.5 秒检查）失去最大 HP 的 99.9%"),
         Eff("0", stat("227", T_SELF, 30), trig=full[0], pre=full[1], delay=1, **CURSE,
             note="随后获得最大 HP 30% 的护盾"),
     ]
+    w.deviations.append("第三轮：正面终值 +150% → +350%；诅咒由自身 -50% 改为持有者 HP<50% 时全队 -100%。"
+                        "攻击力 -100% 实际是「先抵消最多 +50% 的其他攻击加成，再到引擎下限 -50%」；技能伤害 -100% 真实生效"
+                        "（队伍没有其他技能伤害加成时单次伤害为 1）；持有者阵亡后诅咒仍生效")
     return w
 
 
@@ -893,10 +1099,11 @@ def w09() -> Weapon:
                "火/雷属性共鸣时：0–49 秒全队伤害 -99%；50–59 秒攻击 +500%、伤害独立 +300%；61–109 秒再度 -99%；"
                "110–119 秒攻击 +1000%、伤害独立 +500%；121 秒起永久伤害 -90%（均不可驱散）")
     u_dorm, u_wake1, u_wake2, u_dry = w.uid(1), w.uid(2), w.uid(3), w.uid(4)
-    w.uniques[u_dorm] = unique_row(f"cursed_dragon_{u_dorm}", "蛰伏", ICON_TIME, "2940", "1", bad=True)
-    w.uniques[u_wake1] = unique_row(f"cursed_dragon_{u_wake1}", "苏醒", ICON_BUFF, "600", "1", bad=False)
-    w.uniques[u_wake2] = unique_row(f"cursed_dragon_{u_wake2}", "龙怒", ICON_BUFF, "600", "1", bad=False)
-    w.uniques[u_dry] = unique_row(f"cursed_dragon_{u_dry}", "枯竭", ICON_CURSE, "99999999", "1", bad=True)
+    # 四个阶段都被持续触发 134（按层数）读：叠层上限必须 >1（上限 1 时层数恒 0，1.4.1057–1069 期间阶段效果从未生效）
+    w.uniques[u_dorm] = unique_row(f"cursed_dragon_{u_dorm}", "蛰伏", ICON_TIME, "2940", "2", bad=True)
+    w.uniques[u_wake1] = unique_row(f"cursed_dragon_{u_wake1}", "苏醒", ICON_BUFF, "600", "2", bad=False)
+    w.uniques[u_wake2] = unique_row(f"cursed_dragon_{u_wake2}", "龙怒", ICON_BUFF, "600", "2", bad=False)
+    w.uniques[u_dry] = unique_row(f"cursed_dragon_{u_dry}", "枯竭", ICON_CURSE, "99999999", "2", bad=True)
     tick = elapsed(600, "12")
     for element in ("fire", "thunder"):
         gate = (res(element),)
@@ -927,52 +1134,93 @@ def w09() -> Weapon:
 
 
 def w10() -> Weapon:
-    w = Weapon(10, "fate_dice", "命运骰子", "饰品", (), "P.P.P.P",
-               "一黑一白的两枚骰子", "骰子不在乎你的队伍——它只在乎点数。",
-               "每 25 秒掷骰（直击/强化弹射/技能 × 增益/诅咒 六种结果，持续 10 秒）")
-    u_mark = w.uid(1)
-    w.uniques[u_mark] = unique_row(f"cursed_dice_{u_mark}", "命运之骰", ICON_STACK, "99999999", "1", bad=False)
-    lite, full = dsl_program("fate_roll_lite"), dsl_program("fate_roll")
+    w = Weapon(10, "fate_dice", "赌注已下", "饰品", (), "P.P.P.P",
+               "黑色的老虎机，屏幕上停着头奖", "拉杆落下的那一刻，赌注就再也收不回来了。",
+               "开局 15 秒全队伤害独立乘区 +2%、攻击力 +20%；每 25 秒转一次（直击/强化弹射/技能 × 增益/诅咒 六种结果，"
+               "持续 10 秒；直击诅咒的麻痹与弹球不受控制为 5 秒）：增益——直击=浮游+迅捷+直击伤害 +500%，"
+               "强化弹射=贯通+加速+强化弹射伤害 +500%+「复读弹射」，技能=技能槽 +100%+技能伤害 +500%+充能速度 +20%；"
+               "诅咒——直击=弹球不受控制 5 秒+随机两名主位麻痹 5 秒+全队减速 10 秒，"
+               "强化弹射=连击上限 1+增益无效，技能=技能槽 -80%+技能伤害独立乘区 -100%")
+    u_mark, u_open, u_echo, u_bust = w.uid(1), w.uid(2), w.uid(3), w.uid(4)
+    # 被 134（层数 ≥）/199（层数 ≤0）读的固有叠层上限必须 >1（上限 1 时层数恒 0）；「复读弹射」只被 187（按个数）读，保持 1
+    w.uniques[u_mark] = unique_row(f"cursed_dice_{u_mark}", "赌局", ICON_STACK, "99999999", "2", bad=False)
+    w.uniques[u_open] = unique_row(f"cursed_dice_{u_open}", "开局赌注", ICON_BUFF, "900", "2", bad=False)
+    w.uniques[u_echo] = unique_row(f"cursed_dice_{u_echo}", "复读弹射", ICON_BUFF, "600", "1", bad=False)
+    w.uniques[u_bust] = unique_row(f"cursed_dice_{u_bust}", "血本无归", ICON_CURSE, "600", "2", bad=True)
+    lite, full, echo = dsl_program("fate_roll_lite"), dsl_program("fate_roll"), dsl_program("fate_echo")
     w.dsl[lite] = dsl_root(party(0, roulette(
         (1, [give(0, [ac("ACDirectDamage", 600, P(0.12), P(1))])]),
         (1, [give(0, [ac("ACPowerFlipDamage", 600, P(0.16), P(1))])]),
         (1, [give(0, [ac("ACSkillDamage", 600, P(0.12), P(1))])]),
     )))
     w.cas["cursed_fate_roll_lite"] = "随机赋予全队1种增益（直接攻击伤害+12%/强化弹射伤害+16%/技能伤害+12%，10秒）"
+
+    def paralyse(bind: int, selector: int) -> list:
+        return slot_member(bind, selector, give(bind, [ac("ACParalysis", 300, True)], cancelable=False, force=True))
+
+    # ACUnique 单独一条 CreateCondition（可驱散/强制由 unique_condition 表决定）
     w.dsl[full] = dsl_root(roulette(
-        (1, [party(0, give(0, [ac("ACFlying", 600)]), give(0, [ac("ACDirectDamage", 600, P(1.9), P(1))]),
-                   give(0, [ac("ACSpeedup", 600, P(0.35), P(1))]))]),
-        (1, [C("AddCombo", P(40)), party(0, give(0, [ac("ACPiercing", 600)]),
-                                         give(0, [ac("ACPowerFlipDamage", 600, P(2.5), P(1))]))]),
-        (1, [party(0, C("AddSkillPoint", 0, P(1.0)), give(0, [ac("ACSkillDamage", 600, P(2.0), P(1))]),
-                   give(0, [ac("ACSkillGaugeCharging", 600, P(0.05), P(1))]))]),
-        (1, [party(0, give(0, [ac("ACComboRestriction", 600, P(15))], cancelable=False),
-                   give(0, [ac("ACPowerFlipDamage", 600, P(-1.5), P(1))], cancelable=False))]),
-        (1, [roulette(
-            (1, [slot_member(0, 83, give(0, [ac("ACParalysis", 300, True)], cancelable=False)),
-                 slot_member(1, 84, give(1, [ac("ACParalysis", 300, True)], cancelable=False))]),
-            (1, [slot_member(0, 83, give(0, [ac("ACParalysis", 300, True)], cancelable=False)),
-                 slot_member(1, 85, give(1, [ac("ACParalysis", 300, True)], cancelable=False))]),
-            (1, [slot_member(0, 84, give(0, [ac("ACParalysis", 300, True)], cancelable=False)),
-                 slot_member(1, 85, give(1, [ac("ACParalysis", 300, True)], cancelable=False))]),
-        ), C("SuppressBallActivity", -18, P(300))]),
-        (1, [party(0, C("SubtractSkillPoint", 0, P(0.4)),
-                   give(0, [ac("ACAttackPoint", 300, P(-0.5), P(1))], cancelable=False))]),
+        (1, [party(0, give(0, [ac("ACFlying", 600)]), give(0, [ac("ACSwift", 600)]),
+                   give(0, [ac("ACDirectDamage", 600, P(5.0), P(1))]))]),
+        (1, [party(0, give(0, [ac("ACPiercing", 600)]), give(0, [ac("ACSpeedup", 600, P(0.3), P(1))]),
+                   give(0, [ac("ACPowerFlipDamage", 600, P(5.0), P(1))])),
+             give(-17, [["ACUnique", int(u_echo), P(1)]], "cursed_dice_echo", cancelable=False)]),
+        (1, [party(0, C("AddSkillPoint", 0, P(1.0)), give(0, [ac("ACSkillDamage", 600, P(5.0), P(1))]),
+                   give(0, [ac("ACSkillGaugeCharging", 600, P(0.2), P(1))]))]),
+        (1, [party(0, give(0, [ac("ACComboRestriction", 600, P(1))], cancelable=False, force=True),
+                   give(0, [ac("ACBuffRejection", 600)], cancelable=False, force=True))]),
+        (1, [roulette((1, [paralyse(0, 83), paralyse(1, 84)]),
+                      (1, [paralyse(0, 83), paralyse(1, 85)]),
+                      (1, [paralyse(0, 84), paralyse(1, 85)])),
+             C("SuppressBallActivity", -18, P(300)),
+             party(0, give(0, [ac("ACSpeedup", 600, P(-0.35), P(1))], cancelable=False, force=True))]),
+        (1, [party(0, C("SubtractSkillPoint", 0, P(0.8))),
+             give(-17, [["ACUnique", int(u_bust), P(1)]], "cursed_dice_bust", cancelable=False)]),
     ))
-    w.cas["cursed_fate_roll"] = ("掷骰：直击（浮游、直接攻击伤害+190%、球速+35%）／强化弹射（连击+40、贯通、强化弹射伤害+250%）／"
-                                 "技能（技能槽+100%、技能伤害+200%、充能速度+5%）三种增益，或对应诅咒：连击上限15且强化弹射伤害-150%／"
-                                 "随机两名主位麻痹且弹球不受控制5秒／全队技能槽-40%且攻击力-50%（5秒）")
+    w.cas["cursed_fate_roll"] = ("转动老虎机：直击（浮游、迅捷、直接攻击伤害+500%）／强化弹射（贯通、加速、强化弹射伤害+500%、"
+                                 "「复读弹射」）／技能（技能槽+100%、技能伤害+500%、充能速度+20%）三种增益（10秒），或对应诅咒："
+                                 "随机两名主位麻痹且弹球不受控制5秒、全队减速10秒／连击上限1且增益无效10秒／"
+                                 "全队技能槽-80%且「血本无归」10秒")
+    w.dsl[echo] = _echo_hit(7.0)
+    w.cas["cursed_fate_echo"] = "强化弹射命中敌人时追加1次强化弹射伤害（7倍）"
     every25 = elapsed(1500)
+    opening = gate_unique(u_open)
     w.soul = [Eff("0", invoke("cursed_fate_roll_lite", lite), trig=every25, pre=(lacks_unique(u_mark),),
                   note="每 25 秒随机赋予全队 1 种增益（10 秒）")]
     w.ea = [
         *growth_pair("32", T_PARTY, 60, 0),
-        Eff("0", unique(u_mark), **CURSE, note="「命运之骰」：本体的温和掷骰换成完整命运骰"),
+        Eff("0", unique(u_mark), **CURSE, note="「赌局」：本体的温和转轮换成完整老虎机"),
+        Eff("0", unique(u_open), **CURSE, note="开局获得「开局赌注」15 秒"),
+        Eff("1", during("421", T_PARTY, 2), trig=opening, even_if_dead=True, **CURSE,
+            note="「开局赌注」期间全队伤害独立乘区 +2%"),
+        Eff("1", during("0", T_PARTY, 20), trig=opening, even_if_dead=True, **CURSE,
+            note="「开局赌注」期间全队攻击力 +20%"),
         Eff("0", invoke("cursed_fate_roll", full), trig=every25, **CURSE,
-            note="【诅咒】每 25 秒掷骰：三种增益或三种诅咒（10 秒，诅咒不可驱散）"),
+            note="【诅咒】每 25 秒转一次：三种增益或三种诅咒（10 秒；直击诅咒的麻痹与弹球不受控制 5 秒；诅咒强制付与、不可驱散）"),
+        # 只能用强化弹射发动(2)触发：复读命中按 PF Lv3 计，用强化弹射命中(183)会被自己的命中连锁触发
+        Eff("0", invoke("cursed_fate_echo", echo), trig=trig(IT_PF, threshold=times(1)), pre=(has_unique(u_echo),),
+            **CURSE, note="「复读弹射」期间打出强化弹射：命中敌人时追加 1 次 7 倍强化弹射伤害"),
+        Eff("1", during("411", T_PARTY, -100), trig=gate_unique(u_bust), even_if_dead=True, **CURSE,
+            note="【诅咒】「血本无归」期间全队技能伤害独立乘区 -100%"),
     ]
-    w.deviations.append("「冲刺 CD 缩短 35%」无对应原生效果，改为球速 +35%；「对应属性的强化 PF」形态替换不做，保留伤害/连击/贯通部分；"
-                        "PF 诅咒「消耗 5 次的 -150%」改为 10 秒内 -150%")
+    w.deviations.append("第三轮：改名「赌注已下」、外形黑色老虎机（沿用 slug 与图标路径）；开局「开局赌注」15 秒 = 全队伤害独立乘区 +2% "
+                        "与攻击力 +20%（提案未给攻刃数值，暂定 +20%）；三种增益刃值全部 +500%；强化弹射增益去掉连击 +40")
+    w.deviations.append("直击「冲刺 CD 缩短为 30%」：原生有冲刺冷却效果——迅捷（ACSwift）把冲刺恢复压到 20 帧（约 22%，比 30% 略强），"
+                        "浮游单独只到 60 帧；去掉旧的「球速 +35%」替代。迅捷/浮游是弹球级状态，作用全队")
+    w.deviations.append("强化弹射「复读一次 PF 伤害」：DSL 读不到上一次伤害，改为「复读弹射」10 秒内每次强化弹射追加 1 次"
+                        "持有者攻击力 7 倍的无属性命中（约一段 Lv3 PF）；根头 133 按强化弹射 Lv3 结算，需要 damage-type-rules-v1，"
+                        "未装补丁按技能伤害结算（不崩）。复读命中会被计为真实 PF Lv3 命中，喂给全队的强化弹射命中类触发；"
+                        "因此只用强化弹射发动(2)触发，不用强化弹射命中(183)（后者会被自己的命中约每 60 帧连锁一次）")
+    w.deviations.append("诅咒：直击「不受控制」= 弹球不受控制 5 秒（不能冲刺/施放技能，弹板仍可用）+ 随机两名主位麻痹 5 秒 + "
+                        "全队减速 10 秒（引擎减速下限 35%，速度固定类增益无视减速）；强化弹射「无法获取强化 buff」= 增益无效"
+                        "（拦截所有新增增益 10 秒，强制付与的来源除外）；技能「技能伤害为 1」= 「血本无归」10 秒内全队技能伤害"
+                        "独立乘区 -100%（与队伍其他技能伤害独立乘区相加，有正向加成时不会完全归 1）")
+    w.deviations.append("风险：迅捷、增益无效、负值加速、根头 133 的 629 复读在玩家侧官方零先例，六个分支都需真机冒烟；"
+                        "同队诅咒互斥只在装了 equipment-rules-v1 补丁的客户端生效，1047 基线客户端上与停摆怀表（减益持续 +1000%）"
+                        "同队时 10 秒诅咒会被拉长到超过 25 秒周期")
+    w.deviations.append("「赌局」「开局赌注」「血本无归」叠层上限写 2：134/199 按层数读，上限 1 时层数恒 0——开局赌注与血本无归"
+                        "的持续行永不生效、本体温和转轮的「没有赌局」恒真（与完整老虎机同时转）；各自只给 1 层，134 倍乘上限 1 不翻倍。"
+                        "「复读弹射」只被前置 187（按状态个数）读，保持上限 1")
     return w
 
 
@@ -1003,39 +1251,75 @@ def w11() -> Weapon:
 
 
 def w12() -> Weapon:
-    w = Weapon(12, "dancer_chakram", "剑舞圆环", "饰品", (), "P.P.P.P",
-               "系着飘带的双刃圆环", "舞步未完成之前，观众只看见跌倒。",
-               "未完成「剑舞」时：连击上限 9（强化弹射只能 Lv1）、强化弹射伤害降为 1；每 10 次强化弹射完成剑舞，"
-               "15 秒内解除限制并获得强化弹射伤害 +200%、连击 +40、贯通")
-    u_lock = w.uid(1)
-    w.uniques[u_lock] = unique_row(f"cursed_dance_{u_lock}", "剑舞未成", ICON_CURSE, "99999999", "1", bad=True)
-    init, release = dsl_program("dance_lock"), dsl_program("dance_release")
-    lock = give(-17, [["ACComboRestriction", P(9999999), P(9)]], "cursed_dance_lock", cancelable=False)
-    w.dsl[init] = dsl_root(lock, give(-17, [["ACUnique", int(u_lock), P(1)]], "cursed_dance_mark", cancelable=False))
-    w.dsl[release] = dsl_root(
-        C("DeleteCondition", -17, ["DCComboRestriction"], 99, 0, "", ["Default"]),
-        C("ConsumeUniqueCondition", -17, int(u_lock), ["Some", 1]),
-        wait(900, lock, give(-17, [["ACUnique", int(u_lock), P(1)]], "cursed_dance_mark", cancelable=False)),
-    )
-    w.cas["cursed_dance_lock"] = "连击上限变为9，并处于「剑舞未成」状态"
-    w.cas["cursed_dance_release"] = "解除连击上限与「剑舞未成」15秒"
-    pf10 = trig(IT_PF, threshold=times(10))
-    w.soul = [
-        Eff("0", condition("28", None, 50, 900), trig=pf10, note="每 10 次强化弹射：强化弹射伤害 +50%（15 秒）"),
-        Eff("0", condition("26", None, None, 900), trig=pf10, note="每 10 次强化弹射：贯通（15 秒）"),
-        Eff("0", ("226", {"strength": (times(4), times(4))}), trig=pf10, note="每 10 次强化弹射：连击 +4"),
-    ]
-    w.ea = [
-        *growth_pair("28", None, 200, 50, trig_=pf10, cond_frames=900),
-        Eff("0", ("226", {"strength": (times(36), times(36))}), trig=pf10, **FINAL,
-            note="每 10 次强化弹射：连击再 +36（合计 +40）"),
-        Eff("0", invoke("cursed_dance_lock", init), **CURSE, note="【诅咒】开局连击上限 9、进入「剑舞未成」"),
-        Eff("0", invoke("cursed_dance_release", release), trig=pf10, **CURSE,
-            note="每 10 次强化弹射解除限制 15 秒"),
-        Eff("1", during("413", None, -100), trig=gate_unique(u_lock), even_if_dead=True, **CURSE,
-            note="【诅咒】「剑舞未成」期间强化弹射伤害独立乘区 -100%（伤害降为 1）"),
-    ]
+    w = Weapon(12, "dancer_chakram", "像素城之环刃", "饰品", ("light", "dark"), "P.P.P.P",
+               "金色的像素环刃", "舞步未完成之前，观众只看见跌倒。",
+               "光/暗属性共鸣时：开局进入「伶俐准备」（连击上限 9、强化弹射伤害独立乘区 -666%）；「伶俐准备」期间打出 10 次"
+               "强化弹射后转为永久「剑舞准备」：解除连击上限、连击 +40、强化弹射伤害 +500%、贯通与加速（永续），"
+               "并对全体敌人造成 1 次 30 倍强化弹射伤害")
+    u_clever, u_dance = w.uid(1), w.uid(2)
+    # 叠层上限必须 >1：134 按层数计、ConsumeUniqueCondition 只消耗可叠层状态；上限 1 时 -666%、+500% 与消耗全部静默失效。
+    # 两者每场只给 1 层（开局 / 转换各一次），134 倍乘上限 1 不翻倍
+    w.uniques[u_clever] = unique_row(f"cursed_dance_{u_clever}", "伶俐准备", ICON_CURSE, "99999999", "2", bad=True)
+    w.uniques[u_dance] = unique_row(f"cursed_dance_{u_dance}", "剑舞准备", ICON_BUFF, "99999999", "2", bad=False)
+    lock_key = "cursed_dance_lock"
+    init, awaken, finale = (dsl_program(f"dance_{k}") for k in ("lock", "awaken", "finale"))
+    # 锁：不可驱散 + 强制付与（DebuffPrevent/弱体耐性挡不住）；解锁按同一键串、cancelableKind 1（只删不可驱散）定点删，
+    # 敌方给的连击限制不受影响。AddCombo 立即生效、删锁排队处理，必须 Wait 之后再加连击，否则被还在的上限 9 钳住。
+    w.dsl[init] = dsl_root(
+        give(-17, [["ACComboRestriction", P(9999999), P(9)]], lock_key, cancelable=False, force=True),
+        give(-17, [["ACUnique", int(u_clever), P(1)]], "cursed_dance_clever", cancelable=False))
+    w.dsl[awaken] = dsl_root(
+        C("DeleteCondition", -17, ["DCComboRestriction"], 99, DELETE_NON_CANCELABLE_ONLY, lock_key, ["Default"]),
+        C("ConsumeUniqueCondition", -17, int(u_clever), ["Some", 1]),
+        give(-17, [["ACUnique", int(u_dance), P(1)]], "cursed_dance_sword", cancelable=False),
+        give(-17, [ac("ACPiercing", 9999999)], "cursed_dance_pierce", cancelable=False),
+        give(-17, [ac("ACSpeedup", 9999999, P(0.2), P(1))], "cursed_dance_speed", cancelable=False),
+        wait(6, C("AddCombo", P(40))))
+    w.dsl[finale] = _full_screen_attack(30.0, buff_target_as=PF3_BTA, delay=6)
+    w.cas["cursed_dance_lock"] = "连击上限变为9，并处于「伶俐准备」状态"
+    w.cas["cursed_dance_awaken"] = "解除连击上限与「伶俐准备」，获得「剑舞准备」、贯通与加速状态（永续），连击+40"
+    w.cas["cursed_dance_finale"] = "对全体敌人造成30倍强化弹射伤害"
+    every10 = trig(IT_PF, threshold=times(10))
+    once10 = trig(IT_PF, threshold=times(10), trigger_limit="1")
+    rows_s, rows_e = [], []
+    for element in ("light", "dark"):
+        gate = (res(element),)
+        cn = "光" if element == "light" else "暗"
+        clever = (*gate, has_unique(u_clever))
+        rows_s += [
+            Eff("0", condition("28", None, 50, 900), trig=every10, pre=gate,
+                note=f"{cn}属性共鸣时：每 10 次强化弹射，强化弹射伤害 +50%（15 秒）"),
+            Eff("0", condition("26", None, None, 900), trig=every10, pre=gate,
+                note=f"{cn}属性共鸣时：每 10 次强化弹射，贯通（15 秒）"),
+            Eff("0", ("226", {"strength": (times(4), times(4))}), trig=every10, pre=gate,
+                note=f"{cn}属性共鸣时：每 10 次强化弹射，连击 +4"),
+        ]
+        rows_e += [
+            Eff("0", invoke("cursed_dance_lock", init), pre=gate, **CURSE,
+                note="【诅咒】开局进入「伶俐准备」：连击上限 9（强制付与、不可驱散）"),
+            Eff("1", during("413", None, -666), trig=gate_unique(u_clever), pre=gate, even_if_dead=True, **CURSE,
+                note="【诅咒】「伶俐准备」期间强化弹射伤害独立乘区 -666%"),
+            # 终结技排在转换之前：两行都在「伶俐准备」还在时判前置；命中晚 6 帧落下，那时消耗已处理，-666% 不再生效
+            Eff("0", invoke("cursed_dance_finale", finale), trig=once10, pre=clever, **FINAL,
+                note="转为「剑舞准备」时对全体敌人造成 1 次 30 倍强化弹射伤害"),
+            Eff("0", invoke("cursed_dance_awaken", awaken), trig=once10, pre=clever, **CURSE,
+                note="「伶俐准备」期间第 10 次强化弹射：转为永久「剑舞准备」，解除连击上限、连击 +40、贯通与加速 +20%（永续）"),
+            *growth_pair("23", None, 500, 0, mode="1", trig_=gate_unique(u_dance), pre=gate, even_if_dead=True),
+        ]
+    w.soul, w.ea = rows_s, rows_e
+    w.deviations.append("第三轮：改名「像素城之环刃」、外形金色像素环刃（沿用 slug 与图标路径）、光/暗属性共鸣；"
+                        "单向转换：「剑舞准备」永久（提案未给时长），每场一次；加速取官方常见值 +20%")
+    w.deviations.append("-666% 保留原值，不等于 -100%：413 与强化弹射分档/独立乘区类加成在同一个 (1+x) 括号里，"
+                        "-666% 要等这些加成超过 +566% 才会漏出伤害；若队伍里还有其他负向因子（强化弹射伤害减益合计低于 -100%、"
+                        "敌方强化弹射抗性超过 100%）乘积会变号")
+    w.deviations.append("30 倍全屏 = 持有者攻击力 30 倍的无属性命中（Explosion）；根头 133 按强化弹射 Lv3 完整结算"
+                        "（通用池 +500%、分档、413），需要 damage-type-rules-v1，未装补丁按技能伤害结算（不崩）")
+    w.deviations.append("解锁 DeleteCondition 按锁的键串、cancelableKind 1 定点删（旧版 dance_release 写 0 删不掉不可驱散的锁，"
+                        "连击上限 9 从未解除）；持有者阵亡期间的强化弹射不计数，但诅咒照常生效；第 10 次强化弹射本身的命中"
+                        "落在转换之后；永续贯通/加速/「剑舞准备」仍会被敌方全删（cancelableKind 2）类效果清掉")
     w.deviations.append("「场地变成有风的 boss 场地、把人往左右推」：玩家侧 DSL 的 CreateWindAttack 在 MemberImpl 直接 throw，不做")
+    w.deviations.append("「伶俐准备」「剑舞准备」叠层上限写 2：134 按层数读、ConsumeUniqueCondition 只消耗可叠层状态，上限 1 时"
+                        "-666%、+500% 永不生效，「伶俐准备」也消耗不掉；两者每场只给 1 层")
     return w
 
 
@@ -1049,7 +1333,8 @@ def w13() -> Weapon:
     w.cas["cursed_flute_drain"] = "清空全队技能槽"
     full = trig(IT_SKILL_MAX, trigger_puller=P_ONE_OF_PARTY, cooltime="1200")
     u_seal = w.uid(1)
-    w.uniques[u_seal] = unique_row(f"cursed_flute_{u_seal}", "封能", ICON_CURSE, "99999999", "1", bad=True)
+    # 被持续触发 134（按层数）读：叠层上限必须 >1（1.4.1069 首发写 1，封印未生效）
+    w.uniques[u_seal] = unique_row(f"cursed_flute_{u_seal}", "封能", ICON_CURSE, "99999999", "2", bad=True)
     w.soul = [Eff("0", stat("35", T_PARTY, 15, 30), pre=wind, note="风属性共鸣时：全队技能充能速度 +15%→30%")]
     w.ea = [
         *growth_pair("35", T_PARTY, 100, 30, pre=wind),
@@ -1126,22 +1411,32 @@ def w15() -> Weapon:
 def w16() -> Weapon:
     w = Weapon(16, "all_in_blade", "孤注一掷", "剑", (), "脆脆鲨",
                "剑柄嵌着独颗宝石的大剑", "只出一拳——之后就是太空垃圾的时间。",
-               "同属性编成时：全队充能速度 +100%、攻击与技能伤害 +1000%、技能伤害独立乘区 +20%；任一角色发动技能后自身封印 30 秒（不可驱散）")
+               "同属性编成时：全队充能速度 +50%、攻击与技能伤害 +500%、技能伤害独立乘区 +10%；"
+               "任一角色发动技能后自身封印 30 秒（强制付与、无视免疫、不可驱散）")
     same = (SAME_ELEMENT,)
     w.soul = [
-        Eff("0", stat("35", T_PARTY, 15, 30), pre=same, note="同属性编成时：全队技能充能速度 +15%→30%"),
-        Eff("0", stat("32", T_PARTY, 120, 480), pre=same, note="同属性编成时：全队攻击力 +120%→480%"),
-        Eff("0", stat("34", T_PARTY, 120, 480), pre=same, note="同属性编成时：全队技能伤害 +120%→480%"),
+        Eff("0", stat("35", T_PARTY, 7.5, 15), pre=same, note="同属性编成时：全队技能充能速度 +7.5%→15%"),
+        Eff("0", stat("32", T_PARTY, 60, 240), pre=same, note="同属性编成时：全队攻击力 +60%→240%"),
+        Eff("0", stat("34", T_PARTY, 60, 240), pre=same, note="同属性编成时：全队技能伤害 +60%→240%"),
     ]
     w.ea = [
-        *growth_pair("35", T_PARTY, 100, 30, pre=same),
-        *growth_pair("32", T_PARTY, 1000, 480, pre=same),
-        *growth_pair("34", T_PARTY, 1000, 480, pre=same),
-        Eff("0", stat("694", T_PARTY, 20), pre=same, **FINAL, note="同属性编成时：全队技能伤害独立乘区 +20%"),
-        Eff("0", condition("219", T_TRIGGER, None, 1800, cancelable=False),
-            trig=trig(IT_SKILL, trigger_puller=P_ONE_OF_PARTY), pre=same, **CURSE,
-            note="【诅咒】任一角色发动技能后，该角色封印 30 秒（不可驱散）"),
+        *growth_pair("35", T_PARTY, 50, 15, pre=same),
+        *growth_pair("32", T_PARTY, 500, 240, pre=same),
+        *growth_pair("34", T_PARTY, 500, 240, pre=same),
+        Eff("0", stat("694", T_PARTY, 10), pre=same, **FINAL, note="同属性编成时：全队技能伤害独立乘区 +10%"),
     ]
+    # 能力行没有强制付与列，只能走 629 DSL 的 forceApply；DSL 里没有「触发者」主体 ⇒ 按槽位拆 3 行（触发者 1/2/3 × 点名 83/84/85）
+    for puller, selector, tag, cn in ((P_LEADER, 83, "1", "队长"), (P_SECOND, 84, "2", "2号位"), (P_THIRD, 85, "3", "3号位")):
+        program = dsl_program(f"allin_silence_{tag}")
+        w.dsl[program] = dsl_root(slot_member(0, selector, give(0, [ac("ACSilence", 1800)], "cursed_allin_silence",
+                                                               cancelable=False, force=True)))
+        w.cas[f"cursed_allin_silence_{tag}"] = f"使{cn}角色封印30秒（强制付与，无视免疫与弱体无效，不可驱散）"
+        w.ea.append(Eff("0", invoke(f"cursed_allin_silence_{tag}", program), trig=trig(IT_SKILL, trigger_puller=puller),
+                        pre=same, **CURSE, note=f"【诅咒】{cn}发动技能后，该角色封印 30 秒（强制付与、无视免疫、不可驱散）"))
+    w.deviations.append("第三轮「数值太高减半」：全队充能 100→50%、攻击/技能伤害 1000→500%、技能伤害独立乘区 20→10%（本体同比减半）")
+    w.deviations.append("第三轮「沉默强制赋予无视免疫」：能力行不能强制付与，改为 629 DSL 的 CreateCondition forceApply；"
+                        "DSL 没有「触发者」主体，拆成队长/2 号位/3 号位三行（面板显示 3 条），时机不变。forceApply 不跳过持续时间伸缩"
+                        "（「弱体时间缩短」仍会缩短 30 秒）；玩家侧对己方强制付与弱体官方零先例，点名 83/84/85 是否只取单人需真机金丝雀确认")
     return w
 
 
@@ -1222,11 +1517,14 @@ def w18() -> Weapon:
 
 def w19() -> Weapon:
     w = Weapon(19, "lone_star", "孤星", "剑", (), "苍氿兮曰",
-               "剑尖缀着一颗星的细剑", "星光照不到的三秒里，连击不会增长。",
-               "队长攻击 +500%、强化弹射伤害 +1000%；强化弹射后 3 秒内连击上限 10")
+               "剑尖缀着一颗星的细剑", "孤星只照得亮十五步，再远的连击都落在黑暗里。",
+               "队长攻击 +500%、强化弹射伤害 +1000%、强化弹射伤害独立乘区 +30%；战斗开始起连击上限 15"
+               "（强化弹射最高 Lv2，打不出 Lv3）")
     lock = dsl_program("lonestar_lock")
-    w.dsl[lock] = dsl_root(give(-17, [["ACComboRestriction", P(180), P(10)]], "cursed_lonestar", cancelable=False))
-    w.cas["cursed_lonestar_lock"] = "3秒内连击上限变为10"
+    # 不可驱散 + 强制付与（弱体无效挡不住）；同一键串重挂只刷新、上限取小，幂等
+    w.dsl[lock] = dsl_root(give(-17, [["ACComboRestriction", P(9999999), P(15)]], "cursed_lonestar",
+                                cancelable=False, force=True))
+    w.cas["cursed_lonestar_lock"] = "连击上限变为15"
     w.soul = [
         Eff("0", stat("32", T_LEADER, 100, 240), note="队长攻击力 +100%→240%"),
         Eff("0", stat("55", None, 200, 480), note="强化弹射伤害 +200%→480%"),
@@ -1234,32 +1532,38 @@ def w19() -> Weapon:
     w.ea = [
         *growth_pair("32", T_LEADER, 500, 240),
         *growth_pair("55", None, 1000, 480),
+        Eff("0", ("696", {"strength": (pct(30), pct(30))}), **FINAL, note="强化弹射伤害独立乘区 +30%"),
+        Eff("0", invoke("cursed_lonestar_lock", lock), **CURSE, note="【诅咒】战斗开始起连击上限 15（强化弹射最高 Lv2）"),
         Eff("0", invoke("cursed_lonestar_lock", lock), trig=trig(IT_PF, threshold=times(1)), **CURSE,
-            note="【诅咒】强化弹射后 3 秒内连击上限 10"),
+            note="每次强化弹射时重挂连击上限 15（幂等）"),
+        Eff("0", invoke("cursed_lonestar_lock", lock), trig=trig(IT_REVIVAL, trigger_puller=P_ONE_OF_PARTY), **CURSE,
+            note="复活时重挂连击上限 15（幂等）"),
     ]
-    w.deviations.append("「PF 后 3 秒无法通过技能增加连击」没有按来源屏蔽连击的原语，改为 3 秒内连击上限 10（技能刷连击同样被压住）")
+    w.deviations.append("第三轮「常驻锁 15 连击上限」：开局 DSL 强制付与连击上限 15（永续、不可驱散），每次强化弹射与复活时同键幂等重挂"
+                        "（全灭/超时会清掉队伍槽，官方少数 cancelableKind 2 全删效果也会清掉）；上限 15 低于 Lv3 阈值，"
+                        "强化弹射最高 Lv2；连击上限作用全队，与谁装备无关；「PF 后 3 秒」的旧写法删除")
+    w.deviations.append("第三轮「加强化弹射伤害乘区」：120 级强化弹射伤害独立乘区 +30%（官方最高 5–6%）")
     return w
 
 
 def w20() -> Weapon:
     w = Weapon(20, "master_eater_sword", "噬主魔剑", "剑", (), "来点关注谢谢喵",
                "锁链缠绕、剑柄带刺的暗紫魔剑", "剑认可所有人，唯独不认握着它的队长。",
-               "除队长外攻击力 +550%，并额外获得协力角色攻击力 100% 的白值；队长攻击力 -9999%（伤害归零）")
+               "2、3 号位攻击力 +550%；装备者额外获得合击角色攻击力 50% 的白值；队长攻击力 -9999%（伤害归零）")
     w.soul = [
         Eff("0", stat("32", T_SECOND, 120, 240), note="2 号位攻击力 +120%→240%"),
         Eff("0", stat("32", T_THIRD, 120, 240), note="3 号位攻击力 +120%→240%"),
     ]
-    rows = []
-    for target in (T_SECOND, T_THIRD):
-        rows += [
-            *growth_pair("32", target, 550, 240),
-            Eff("0", stat("717", target, 100), **FINAL, note="获得协力角色攻击力 100% 的白值"),
-        ]
-    w.ea = rows + [
+    w.ea = [
+        *growth_pair("32", T_SECOND, 550, 240),
+        *growth_pair("32", T_THIRD, 550, 240),
+        Eff("0", stat("717", T_SELF, 50), **FINAL, note="装备者攻击力再加上 50% 合击角色攻击力"),
         Eff("0", stat("32", T_LEADER, -9999), **CURSE, note="【诅咒】队长攻击力 -9999%（引擎下限 -50%）"),
         Eff("0", stat("723", T_LEADER, -100), **CURSE, note="【诅咒】队长伤害独立乘区 -100%（伤害降为 1）"),
     ]
     w.deviations.append("「除队长外」按 2、3 号位实现；攻击 -9999% 受 -50% 下限，另加伤害独立乘区 -100% 让队长伤害归零")
+    w.deviations.append("第三轮「非装备者带不了合击、装备者带 50%」：去掉 2/3 号位的合击白值 +100%，改为装备者合击白值 +50%"
+                        "（引擎另有固定 25% 合击份额，不做负值抵消）；队长装备时加成落在伤害归零的队长身上，等于作废")
     return w
 
 
@@ -1288,33 +1592,40 @@ def w21() -> Weapon:
 def w23() -> Weapon:
     w = Weapon(23, "coral_venom_claw", "珊瑚毒爪", "拳", ("water",), "阿关",
                "珊瑚与鱼骨组成的指刃", "毒是它的饵——没有毒的时候，爪子什么也抓不住。",
-               "水属性共鸣时：强化弹射使自身中毒 10 秒，并叠加攻击 +100%（最多 +500%）、技能伤害 +120%（最多 +480%）；"
-               "未中毒时自身直接攻击与技能伤害 -99%")
+               "水属性共鸣时：强化弹射时获得「珊瑚毒」10 秒，并叠加攻击 +50%（最多 +250%）、技能伤害 +60%（最多 +240%）；"
+               "没有「珊瑚毒」时自身直接攻击与技能伤害 -99%")
     water = (res("water"),)
-    poison = dsl_program("coral_poison")
-    w.dsl[poison] = dsl_root(give(-17, [["ACPoison", P(600), P(50), P(1)]], "cursed_coral_poison", cancelable=True))
-    w.cas["cursed_coral_poison"] = "使自身中毒（10秒）"
+    u_venom = w.uid(1)
+    # 强制、不可驱散、弱体方向、入棺移除；再次强化弹射刷新到 10 秒。只当开关用：不掉血、不吃毒强化。
+    # 叠层上限必须 >1：207「层数 ≤0」在上限 1 时层数恒 0 ⇒ 恒真，持有「珊瑚毒」也照样 -99%；上限 2 = 最多显示 2 层
+    w.uniques[u_venom] = unique_row(f"cursed_coral_{u_venom}", "珊瑚毒", ICON_TIME, "600", "2", bad=True,
+                                    cancelable=False, force=True, keep_on_death=False)
     pf5 = trig(IT_PF, threshold=times(1), trigger_limit="5")
     pf4 = trig(IT_PF, threshold=times(1), trigger_limit="4")
-    poisoned = (DT_POISON, {"trigger_puller": P_SELF})
+    no_venom = lacks_unique_during(u_venom)
     w.soul = [
-        Eff("0", stat("32", T_SELF, 25, 50), trig=pf5, pre=water, note="水属性共鸣时：强化弹射时自身攻击力 +25%→50%（最多 5 次）"),
-        Eff("0", stat("34", T_SELF, 30, 60), trig=pf4, pre=water, note="水属性共鸣时：强化弹射时自身技能伤害 +30%→60%（最多 4 次）"),
+        Eff("0", stat("32", T_SELF, 12.5, 25), trig=pf5, pre=water,
+            note="水属性共鸣时：强化弹射时自身攻击力 +12.5%→25%（最多 5 次）"),
+        Eff("0", stat("34", T_SELF, 15, 30), trig=pf4, pre=water,
+            note="水属性共鸣时：强化弹射时自身技能伤害 +15%→30%（最多 4 次）"),
     ]
     w.ea = [
-        *growth_pair("32", T_SELF, 100, 50, trig_=pf5, pre=water),
-        *growth_pair("34", T_SELF, 120, 60, trig_=pf4, pre=water),
-        Eff("0", invoke("cursed_coral_poison", poison), trig=trig(IT_PF, threshold=times(1)), pre=water,
-            **CURSE, note="【诅咒】强化弹射时自身中毒（10 秒）"),
-        Eff("0", stat("693", T_SELF, -99), pre=water, **CURSE, note="【诅咒】自身直接攻击伤害独立乘区 -99%"),
-        Eff("0", stat("694", T_SELF, -99), pre=water, **CURSE, note="【诅咒】自身技能伤害独立乘区 -99%"),
-        Eff("1", during("410", T_SELF, 99), trig=poisoned, pre=water, **CURSE,
-            note="中毒期间抵消直接攻击 -99%（净效果：只有未中毒时 -99%）"),
-        Eff("1", during("411", T_SELF, 99), trig=poisoned, pre=water, **CURSE,
-            note="中毒期间抵消技能伤害 -99%（净效果：只有未中毒时 -99%）"),
+        *growth_pair("32", T_SELF, 50, 25, trig_=pf5, pre=water),
+        *growth_pair("34", T_SELF, 60, 30, trig_=pf4, pre=water),
+        Eff("0", unique(u_venom), trig=trig(IT_PF, threshold=times(1)), pre=water, **CURSE,
+            note="【诅咒】强化弹射时自身获得「珊瑚毒」10 秒（强制付与、不可驱散）"),
+        Eff("1", during("410", T_SELF, -99), trig=no_venom, pre=water, **CURSE,
+            note="【诅咒】没有「珊瑚毒」时自身直接攻击伤害独立乘区 -99%"),
+        Eff("1", during("411", T_SELF, -99), trig=no_venom, pre=water, **CURSE,
+            note="【诅咒】没有「珊瑚毒」时自身技能伤害独立乘区 -99%"),
     ]
-    w.deviations.append("第二轮：攻击 +100%×5 次、技能伤害 +120%×4 次，删去直击叠加行；「未中毒时 -99%」扩到直击与技能伤害")
-    w.deviations.append("「未中毒时 -99%」拆成常驻 -99% + 中毒期间 +99%（独立乘区相加抵消）")
+    w.deviations.append("第三轮「赋予自身中毒做不了」：中毒改为自制固有状态「珊瑚毒」（10 秒，强制付与、不可驱散、不掉血，入棺移除，"
+                        "复活后要再次强化弹射才解除 -99%）；「没有珊瑚毒时 -99%」用持续触发 207（固有层数 ≤0）一行直接生效，"
+                        "不再用常驻 -99% + 中毒期间 +99% 抵消")
+    w.deviations.append("第三轮「数值太高」：每次强化弹射攻击 +100→50%（5 次共 +250%）、技能伤害 +120→60%（4 次共 +240%），本体同比减半；"
+                        "「珊瑚毒」是弱体方向，会被弱体计数类效果读到，持续时间也会被「弱体时间缩短」缩短")
+    w.deviations.append("「珊瑚毒」叠层上限写 2：207 按层数判「没有」，上限 1 的状态层数恒读 0，-99% 永远生效、解除条件失效；"
+                        "连续强化弹射叠到 2 层（只当开关用，层数不影响数值）")
     return w
 
 
@@ -1322,7 +1633,7 @@ def w24() -> Weapon:
     w = Weapon(24, "reverse_hourglass", "倒流沙漏", "饰品", ("thunder", "wind"), "阿关",
                "沙粒向上流的金框沙漏", "沙子往上流时，你的技能也慢了下来。",
                "雷/风属性共鸣时：发动技能或强化弹射时叠「逆沙」（最多 5 层），每层自身攻击 +160%（最多 +800%）、"
-               "技能伤害 +150%（最多 +700%）；自身技能充能速度 -20%、全队 -5%")
+               "技能伤害 +150%（最多 +700%）；自身技能充能速度 -90%、其他角色 -45%")
     u_sand = w.uid(1)
     w.uniques[u_sand] = unique_row(f"cursed_sand_{u_sand}", "逆沙", ICON_TIME, "99999999", "5", bad=False)
     rows_s, rows_e = [], []
@@ -1340,12 +1651,15 @@ def w24() -> Weapon:
             *growth_pair("0", T_SELF, 160, 80, mode="1", trig_=stack5, pre=gate),
             *growth_pair("2", T_SELF, 150, 75, mode="1", trig_=stack4, pre=gate),
             *growth_pair("2", T_SELF, 100, 0, mode="1", trig_=fifth, pre=gate),
-            Eff("0", stat("35", T_SELF, -20), pre=gate, **CURSE, note="【诅咒】自身技能充能速度 -20%"),
-            Eff("0", stat("35", T_PARTY, -5), pre=gate, **CURSE, note="【诅咒】全队技能充能速度 -5%"),
+            Eff("0", stat("35", T_SELF, -90), pre=gate, **CURSE, note="【诅咒】自身技能充能速度 -90%"),
+            Eff("0", stat("35", T_EXCEPT, -45), pre=gate, **CURSE, note="【诅咒】自身以外的角色技能充能速度 -45%"),
         ]
     w.soul, w.ea = rows_s, rows_e
     w.deviations.append("第二轮：「逆沙」上限 5 层；技能伤害「+150%（最多 +700%）」= 前 4 层每层 +150%、第 5 层 +100%")
     w.deviations.append("「PF 命中敌人时」按强化弹射发动计；两种触发共用「逆沙」上限")
+    w.deviations.append("第三轮「负面太少」：自身充能 -90%、队伍 -45%。队伍一项按「自身以外」实现——照字面全队 -45% 会让持有者合计 -135%，"
+                        "充能先求和再钳到 -100%，持有者移动完全不充能、充能增益要先补满 35% 才有用、施放叠「逆沙」半边几乎失效；"
+                        "瞬发 35 目标「自身以外」官方零先例（PARADOX 同形）")
     return w
 
 
@@ -1420,14 +1734,16 @@ def w26() -> Weapon:
 def w27() -> Weapon:
     w = Weapon(27, "triphase_prism", "三相之力", "饰品", ("wind", "water", "fire"), "不要脸",
                "三色棱面的三角晶体", "三角形最稳定——可力量从不在一个角停留。",
-               "自身为风/水/火属性时：直击、技能、强化弹射伤害 +500%；强化弹射命中时强化弹射伤害 -20%、直击 +25%；"
-               "直击时直击 -20%、技能伤害 +25%；技能命中时技能伤害 -20%、强化弹射伤害 +25%（各 CT1 秒，最多 20 次）")
+               "自身为风/水/火属性时：直击、技能、强化弹射伤害 +500%；强化弹射命中时强化弹射伤害 -20%、直击 +20%；"
+               "直击时直击 -20%、技能伤害 +20%；技能命中时技能伤害 -20%、强化弹射伤害 +20%"
+               "（转入量随强化 +20%→120 级 +30%；各 CT1 秒，最多 20 次）")
     gate = (my_element("wind", "water", "fire"),)
     w.soul = [
         Eff("0", stat("33", T_SELF, 125, 250), pre=gate, note="自身为风/水/火属性时：直接攻击伤害 +125%→250%"),
         Eff("0", stat("34", T_SELF, 125, 250), pre=gate, note="自身为风/水/火属性时：技能伤害 +125%→250%"),
         Eff("0", stat("55", None, 125, 250), pre=gate, note="自身为风/水/火属性时：强化弹射伤害 +125%→250%"),
     ]
+    TRANSFER = dict(learn=1, maxlvl=120)      # 转入量：强化 1 级 +20% → 120 级 +30%（同一行两端插值，不是诅咒常量）
     pf_hit = trig(IT_PF_HIT, threshold=times(1), cooltime="60", trigger_limit="20")
     direct = trig(IT_DIRECT, trigger_puller=P_SELF, threshold=times(1), cooltime="60", trigger_limit="20")
     skill_hit = trig(IT_SKILL_HIT, trigger_puller=P_SELF, threshold=times(1), cooltime="60", trigger_limit="20")
@@ -1436,44 +1752,54 @@ def w27() -> Weapon:
         *growth_pair("34", T_SELF, 500, 250, pre=gate),
         *growth_pair("55", None, 500, 250, pre=gate),
         Eff("0", stat("55", None, -20), trig=pf_hit, pre=gate, **CURSE, note="【诅咒】强化弹射命中时强化弹射伤害 -20%"),
-        Eff("0", stat("33", T_SELF, 25), trig=pf_hit, pre=gate, **CURSE, note="同时自身直接攻击伤害 +25%"),
+        Eff("0", stat("33", T_SELF, 20, 30), trig=pf_hit, pre=gate, **TRANSFER,
+            note="同时自身直接攻击伤害 +20%（随强化成长，120 级 +30%）"),
         Eff("0", stat("33", T_SELF, -20), trig=direct, pre=gate, **CURSE, note="【诅咒】自身直接攻击时直接攻击伤害 -20%"),
-        Eff("0", stat("34", T_SELF, 25), trig=direct, pre=gate, **CURSE, note="同时自身技能伤害 +25%"),
+        Eff("0", stat("34", T_SELF, 20, 30), trig=direct, pre=gate, **TRANSFER,
+            note="同时自身技能伤害 +20%（随强化成长，120 级 +30%）"),
         Eff("0", stat("34", T_SELF, -20), trig=skill_hit, pre=gate, **CURSE, note="【诅咒】自身技能命中时技能伤害 -20%"),
-        Eff("0", stat("55", None, 25), trig=skill_hit, pre=gate, **CURSE, note="同时强化弹射伤害 +25%"),
+        Eff("0", stat("55", None, 20, 30), trig=skill_hit, pre=gate, **TRANSFER,
+            note="同时强化弹射伤害 +20%（随强化成长，120 级 +30%）"),
     ]
     w.deviations.append("「若该伤害加成 >100%」：技能/强化弹射伤害提升量前置官方零用例、直击没有此类前置；改为每种转移 CT1 秒、"
                         "最多 20 次（120 级 +500% 起步最多降到 +100%）")
+    w.deviations.append("第三轮「转移量 +20%（满级 30%）」：三路转入改为强化 1 级 +20% 线性成长到 120 级 +30%；-20% 仍是强化 1 级起全额")
     return w
 
 
 def w28() -> Weapon:
     w = Weapon(28, "flesh_for_bone", "肉斩骨断", "剑", ("wind",), "脆脆鲨",
                "刃口带血槽的厚背斩骨刀", "先斩自己的肉，才能断敌人的骨。",
-               "风属性共鸣时：全队直击伤害 +1000%，获得合击角色攻击力 20% 的白值，伤害独立乘区 +10%；"
-               "每次对敌人造成伤害时全队受到最大 HP 5% 的伤害、连击 +5（CT2 秒）")
+               "风属性共鸣时：全队获得合击角色攻击力 100% 的白值，伤害独立乘区 +10%、直接攻击伤害独立乘区 +10%；"
+               "每次对敌人造成伤害时全队受到最大 HP 8% 的伤害、连击 +10（共用 CT2 秒）")
     wind = (res("wind"),)
     u_cd = w.uid(1)
-    w.uniques[u_cd] = unique_row(f"cursed_bone_{u_cd}", "骨断", ICON_CURSE, "120", "1", bad=True)
-    w.soul = [Eff("0", stat("33", T_PARTY, 250, 500), pre=wind, note="风属性共鸣时：全队直接攻击伤害 +250%→500%")]
+    # 叠层上限必须 >1：前置 199「层数 ≤0」在上限 1 时层数恒 0 ⇒ 恒真，三路触发都没有冷却。只在 0 层时上锁，实际只有 1 层
+    w.uniques[u_cd] = unique_row(f"cursed_bone_{u_cd}", "骨断", ICON_CURSE, "120", "2", bad=True)
+    w.soul = [Eff("0", stat("717", T_PARTY, 25, 50), pre=wind, note="风属性共鸣时：全队合击角色攻击力白值 +25%→50%")]
     w.ea = [
-        *growth_pair("33", T_PARTY, 1000, 500, pre=wind),
-        Eff("0", stat("717", T_PARTY, 20), pre=wind, **FINAL, note="风属性共鸣时：全队获得合击角色攻击力 20% 的白值"),
+        *growth_pair("717", T_PARTY, 100, 50, pre=wind),
         Eff("0", stat("723", T_PARTY, 10), pre=wind, **FINAL, note="风属性共鸣时：全队伤害独立乘区 +10%"),
+        Eff("0", stat("693", T_PARTY, 10), pre=wind, **FINAL, note="风属性共鸣时：全队直接攻击伤害独立乘区 +10%"),
     ]
     ready = (*wind, lacks_unique(u_cd))
     for source, trigger in (("直接攻击", trig(IT_DIRECT, trigger_puller=P_ONE_OF_PARTY, threshold=times(1))),
                             ("技能命中", trig(IT_SKILL_HIT, trigger_puller=P_ONE_OF_PARTY, threshold=times(1))),
                             ("强化弹射命中", trig(IT_PF_HIT, threshold=times(1)))):
+        # 固有状态行排最后：同一次派发内先判前置再上锁
         w.ea += [
-            Eff("0", stat("209", T_PARTY, 5), trig=trigger, pre=ready, **CURSE,
-                note=f"【诅咒】{source}时全队受到最大 HP 5% 的伤害（CT2 秒）"),
-            Eff("0", ("226", {"strength": (times(5), times(5))}), trig=trigger, pre=ready, **CURSE,
-                note=f"{source}时连击 +5（CT2 秒）"),
+            Eff("0", stat("209", T_PARTY, 8), trig=trigger, pre=ready, **CURSE,
+                note=f"【诅咒】{source}时全队受到最大 HP 8% 的伤害（共用 CT2 秒）"),
+            Eff("0", ("226", {"strength": (times(10), times(10))}), trig=trigger, pre=ready, **CURSE,
+                note=f"{source}时连击 +10（共用 CT2 秒）"),
             Eff("0", unique(u_cd), trig=trigger, pre=ready, **CURSE, note="进入「骨断」2 秒（共用冷却）"),
         ]
     w.deviations.append("「每次对敌人造成伤害」：官方「敌人受伤次数」触发只接场地系统、能力表零用例；按直击/技能命中/强化弹射命中三路触发，"
-                        "以固有状态「骨断」2 秒做共用冷却；「10% 风属性伤害乘区」在风属性共鸣下等价于伤害独立乘区 +10%")
+                        "以固有状态「骨断」2 秒做共用冷却（叠层上限写 2：前置 199 按层数判「没有」，上限 1 时层数恒读 0、"
+                        "冷却从未生效——已上线版本即如此）；「10% 风属性伤害乘区」在风属性共鸣下等价于伤害独立乘区 +10%")
+    w.deviations.append("第三轮按机制简介重做：自伤 5→8%、连击 +5→+10；去掉全队直击伤害 +1000%；正面改为全队合击角色攻击力白值"
+                        "（终值 100%，按各自的合击角色计）、伤害独立乘区 +10%、直接攻击伤害独立乘区 +10%。"
+                        "风险：瞬发 693 作用全队官方零先例；717 +100% 对三名主位同时生效，攻击力跳幅较大")
     return w
 
 
@@ -1665,6 +1991,7 @@ def build(read: LiveReader, *, client_capabilities: Iterable[str] = BASE_CLIENT_
         for uid, urow in w.uniques.items():
             flat[UNIQUE][uid] = [urow]
         for sid, text in w.cas.items():
+            _require("," not in text and "\n" not in text, f"{w.name} 文案 {sid} 含半角逗号/换行")
             flat[CAS][sid] = [[text]]
         dsl.update(w.dsl)
 
@@ -1674,6 +2001,9 @@ def build(read: LiveReader, *, client_capabilities: Iterable[str] = BASE_CLIENT_
             for index, r in enumerate(flat[logical][w.id]):
                 problems += [f"{w.row:02d} {w.name} {table}#{index}: {p}"
                              for p in L.invoke_skill_string_problems(r, cas_keys, table)]
+        for table, logical in ((SOUL_T, SOUL), (EA_T, EA)):
+            for index, r in enumerate(flat[logical][w.id]):
+                problems += [f"{w.row:02d} {w.name} {table}#{index}: {p}" for p in pf_echo_trigger_problems(table, r, dsl)]
         programs = {r[_col(t, "instant_content", "action_path")]
                     for t, logical in ((SOUL_T, SOUL), (EA_T, EA)) for r in flat[logical][w.id]
                     if r[_col(t, "instant_content", "kind")] == "629"}
@@ -1688,11 +2018,31 @@ def build(read: LiveReader, *, client_capabilities: Iterable[str] = BASE_CLIENT_
                       L.action_dsl_subject_binding_problems, L.action_dsl_lookup_scope_problems,
                       L.action_dsl_hit_area_target_problems):
             problems += [f"DSL {program}: {p}" for p in check(tree)]
+        # 根头 buffTargetAs 段覆盖（133 = PF3）：未装 damage-type-rules 读成 0 按技能伤害结算，不崩但归属不对
+        needed = dsl_capabilities(tree)
+        capabilities += [c for c in needed if c not in capabilities]
+        problems += [f"DSL {program}: 目标客户端缺 capability {c}（伤害归属退回技能伤害）" for c in needed if c not in have]
+    problems += [f"DSL {p}" for p in own_lock_delete_problems(dsl)]
+
+    # 叠层上限门禁：按层数读/消耗的固有 c4 必须 >1；已知死行（ACCUMULATION_CAP_PENDING）单列，修好后必须删条目
+    rows = [(f"{w.row:02d} {w.name} {table}#{index}", table, r)
+            for w in ws for table, logical in ((SOUL_T, SOUL), (EA_T, EA))
+            for index, r in enumerate(flat[logical][w.id])]
+    pending: list[str] = []
+    seen_pending: set[str] = set()
+    for uid, message in unique_accumulation_problems(rows, dsl, flat[UNIQUE]):
+        if uid in ACCUMULATION_CAP_PENDING:
+            seen_pending.add(uid)
+            pending.append(message)
+        else:
+            problems.append(message)
+    problems += [f"ACCUMULATION_CAP_PENDING 残留：{uid}（{ACCUMULATION_CAP_PENDING[uid]}）已不再触发叠层上限门禁，删掉这一条"
+                 for uid in sorted(set(ACCUMULATION_CAP_PENDING) - seen_pending)]
 
     _check_collisions(read, flat, nested)
     return {
         "flat": flat, "nested": nested, "dsl": dsl, "server": _server_delta(read, ws, flat),
-        "problems": problems, "weapons": ws, "capabilities": capabilities,
+        "problems": problems, "weapons": ws, "capabilities": capabilities, "accumulation_pending": pending,
     }
 
 
