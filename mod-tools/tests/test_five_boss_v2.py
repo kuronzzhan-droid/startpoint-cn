@@ -137,6 +137,7 @@ class LiveBuildTests(unittest.TestCase):
             tiers = gb[(code,)]
             row = F.one_row(tiers[F.tier_for_level(tiers)])
             pre = F.split_programs(row[F.GB_PRE])
+            self.assertNotEqual(row[F.GB_PRE], "(None)", code)   # 官方写空串；(None) 会被当文件名加载
             self.assertFalse(any("/mod/five_boss/" in p for p in pre), code)   # v1 诅咒已剥离
             v = next(x for x in self.spec["_variants"] if x.quest == info["quest"])
             carrier = v.group_kind == 1 or info["slot"] == 0

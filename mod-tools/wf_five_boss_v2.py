@@ -592,7 +592,9 @@ def plan_clone(live: Live, spec: dict, plan: Plan, variant: Variant, wave: int, 
         if bs.position:
             r[GB_POS] = bs.position
         pre = strip_v1_curse(split_programs(r[GB_PRE])) + list(bdef.get("pre", [])) + programs
-        r[GB_PRE] = ",".join(dict.fromkeys(pre)) if pre else "(None)"
+        # 官方 749 行：无出场动作一律写空串（681 行）；写 "(None)" 客户端会去加载
+        # "(None).action.dsl.amf3.deflate" → 转阶段「数据不足」（2026-09-28 实机）
+        r[GB_PRE] = ",".join(dict.fromkeys(pre)) if pre else ""
         if rerun is not None and pre:
             r[GB_PRE_RERUN] = "true" if rerun else "false"
         if bdef.get("name"):
@@ -931,6 +933,8 @@ def gate_variant(live: Live, spec: dict, plan: Plan, variant: Variant, terrain_t
         missing = sorted(need - pos_layers[layer])
         if missing:
             plan.problems.append(f"{variant.quest} {code}: positions {missing} not in terrain layer {layer}")
+        if row[GB_PRE].strip() == "(None)":
+            plan.problems.append(f"{variant.quest} {code}: c109 '(None)' is loaded as a file name by the client")
         roots = split_programs(row[GB_PRE])
         for c in range(GB_ACTION_FIRST, GB_ACTION_LAST + 1):
             roots += PROGRAM_RE.findall(row[c] or "")
