@@ -137,15 +137,20 @@ test("solo start with the ticket deducts it and finish grants the 2x mode materi
     assert.equal(finish.statusCode, 200, finish.body)
     const data = JSON.parse(finish.body).data
 
-    // deep crystal: 5 * 2x solo multiplier (manual start)
-    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 10)
+    // deep crystal: 2026-09-28 设计稿改为 10 * 2x solo multiplier (manual start)
+    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 20)
     // first-clear emblem: fixed amount 1, only on first clear
     assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.firstClearEmblem)], 1)
+    // five-king-core: 保底 1x倍率 = 2(0.9 错过 25% 加成roll)
+    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore)], 2)
 
     const drops = data.drop_additional_reward_ids as Array<{ group_id: number, index: number, number: number }>
-    assert.ok(drops.every(drop => drop.group_id === 590010000))
-    assert.ok(drops.some(drop => drop.index === 2 && drop.number === 10), JSON.stringify(drops))
-    assert.ok(drops.some(drop => drop.index === 3 && drop.number === 1), JSON.stringify(drops))
+    const materialDrops = drops.filter(drop => drop.group_id === 590010000)
+    assert.ok(materialDrops.some(drop => drop.index === 2 && drop.number === 20), JSON.stringify(drops))
+    assert.ok(materialDrops.some(drop => drop.index === 3 && drop.number === 1), JSON.stringify(drops))
+    assert.ok(materialDrops.some(drop => drop.index === 4 && drop.number === 2), JSON.stringify(drops))
+    // 诅咒武器 15% 掉率,0.9 是稳定的 miss,这条不应产生 590010001 展示行。
+    assert.ok(drops.every(drop => drop.group_id === 590010000), JSON.stringify(drops))
 
     const progress = questDomain.getPlayerSingleQuestProgressSync(
         player.playerId,
@@ -176,11 +181,11 @@ test("solo start with AUTO already on (players_options.auto_play) settles at 1x;
         app.inject({ method: "POST", url: "/finish", payload: finishPayload(player) }))
     assert.equal(finish.statusCode, 200, finish.body)
     const data = JSON.parse(finish.body).data
-    // deep crystal: 5 * 1x (AUTO on at start), emblem still 1 on first clear
-    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 5)
+    // deep crystal: 2026-09-28 设计稿改为 10 * 1x (AUTO on at start), emblem still 1 on first clear
+    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 10)
     assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.firstClearEmblem)], 1)
     const drops = data.drop_additional_reward_ids as Array<{ group_id: number, index: number, number: number }>
-    assert.ok(drops.some(drop => drop.index === 2 && drop.number === 5), JSON.stringify(drops))
+    assert.ok(drops.some(drop => drop.index === 2 && drop.number === 10), JSON.stringify(drops))
     assert.equal(activeQuests[player.playerId], undefined)
 })
 
@@ -203,7 +208,7 @@ test("solo manual start that switches AUTO on mid-battle (option/update_in_battl
         app.inject({ method: "POST", url: "/finish", payload: finishPayload(player) }))
     assert.equal(finish.statusCode, 200, finish.body)
     const data = JSON.parse(finish.body).data
-    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 5)
+    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 10)
     assert.equal(activeQuests[player.playerId], undefined)
 })
 
@@ -214,7 +219,8 @@ test("an unrelated option update after a manual solo finish does not leak into t
     const firstFinish = await withPinnedRandom(0.9, () =>
         app.inject({ method: "POST", url: "/finish", payload: finishPayload(player) }))
     assert.equal(firstFinish.statusCode, 200, firstFinish.body)
-    assert.equal(JSON.parse(firstFinish.body).data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 10)
+    // 2026-09-28 设计稿:结晶 10×倍率(手动 2 倍)。
+    assert.equal(JSON.parse(firstFinish.body).data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 20)
 
     // AUTO 在两局之间开了又关:第二局开局快照是关,且没有在途行可被污染。
     optionDomain.updatePlayerOptionsSync(player.playerId, { auto_play: true })
@@ -228,7 +234,8 @@ test("an unrelated option update after a manual solo finish does not leak into t
     const secondFinish = await withPinnedRandom(0.9, () =>
         app.inject({ method: "POST", url: "/finish", payload: finishPayload(player, { play_id: `${player.playId}-second` }) }))
     assert.equal(secondFinish.statusCode, 200, secondFinish.body)
-    assert.equal(JSON.parse(secondFinish.body).data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 20)
+    // item_list 是发放后的持有总数(非本次增量):第一局 20 + 第二局再 20 = 40。
+    assert.equal(JSON.parse(secondFinish.body).data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 40)
 })
 
 test("solo start without the ticket still returns 200 and finish grants no mode materials or progress row", async () => {

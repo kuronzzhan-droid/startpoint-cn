@@ -5,9 +5,11 @@ import type { MultiAbortBody, MultiFinishBody, MultiStartBody } from "../types"
 import { getPlayerActiveQuestSync } from "../../data/domains/quest_active"
 import { FiveBossGauntletRunError, backfillMissingFinalizeSync } from "../../data/domains/fiveBossGauntletRun"
 import { getPlayerItemSync } from "../../data/domains/item"
+import { getPlayerEquipmentSync } from "../../data/domains/equipment"
 import { getPlayerSync, updatePlayerSync } from "../../data/domains/player"
 import { getQuestFromCategorySync } from "../../lib/assets"
 import { givePlayerCharactersExpSync } from "../../lib/character"
+import { clientSerializeEquipment } from "../../lib/equipment"
 import type { RewardPlayerCharacterExpResult } from "../../lib/types/character"
 import { getRankDegree } from "../../lib/stamina"
 import { generateDataHeaders, getServerTime, realToVirtual } from "../../utils"
@@ -22,7 +24,7 @@ import {
     type FinishFiveBossBattleResult,
 } from "../five-boss/battle-runtime"
 import { isFiveBossGauntletQuest } from "../five-boss/contract"
-import { buildFiveBossAdditionalRewardDrops } from "../five-boss/rewards"
+import { buildFiveBossAdditionalRewardDrops, buildFiveBossWeaponAdditionalRewardDrops } from "../five-boss/rewards"
 
 
 type FollowInfoBuilder = (
@@ -181,6 +183,30 @@ function finishItemList(
 
 
 /**
+ * 诅咒武器掉落序列化,镜像 finishItemList 的现查作风:receipt 里只留 grantedEquipment
+ * (id 列表,重放时原样读回),equipment_list 的每一条状态(level/stack/护佑)在响应组装时
+ * 现查数据库——重放遇到期间被其它途径改动过的持有状态,与 item_list 表现一致。
+ * 按 id 去重(同一把命中两次只需一条最终状态)。
+ */
+function finishEquipmentList(
+    result: FinishFiveBossBattleResult,
+    playerId: number,
+): Object[] {
+    if (result.kind !== "success") return []
+
+    const seen = new Set<number>()
+    const list: Object[] = []
+    for (const equipmentId of result.reward.grantedEquipment) {
+        if (seen.has(equipmentId)) continue
+        seen.add(equipmentId)
+        const owned = getPlayerEquipmentSync(playerId, equipmentId)
+        if (owned) list.push(clientSerializeEquipment(equipmentId, owned))
+    }
+    return list
+}
+
+
+/**
  * 结算页的经验卡(ExperienceCardPartyCharacter)会对**队伍里每个角色**调
  * QuestClearResult.getExperienceVariation(id),add_exp_list 里没有这个 id 就抛 C2620
  * 「キャラの経験値不明」(真机 2026-09-04,第二场景打完即崩)。所以哪怕五重的奖励走
@@ -249,10 +275,13 @@ function buildFinishData(
         drop_score_reward_ids: [],
         drop_rare_reward_ids: [],
         drop_additional_reward_ids: result.kind === "success"
-            ? buildFiveBossAdditionalRewardDrops(result.reward.grantedItems)
+            ? [
+                ...buildFiveBossAdditionalRewardDrops(result.reward.grantedItems),
+                ...buildFiveBossWeaponAdditionalRewardDrops(result.reward.grantedEquipment),
+            ]
             : [],
         drop_periodic_reward_ids: [],
-        equipment_list: [],
+        equipment_list: finishEquipmentList(result, player.id),
         category_id: body.category,
         start_time: dataHeaders.servertime,
         is_multi: "multi",

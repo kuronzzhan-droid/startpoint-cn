@@ -38,35 +38,103 @@ test("solo multiplier is 2x only for a run that stayed manual from start to fini
 })
 
 test("manual solo clear grants the mode materials at 2x and reports display drops", () => {
+    // 2026-09-28 设计稿:结晶 10×倍率;心核保底 1×倍率(0.99 只错过 25% 加成roll)。
+    // cursedWeaponPool:[] 让武器掷骰直接短路,不消耗额外 randomFloat 调用,这条测试只看材料口径。
     const playerId = createPlayer()
-    const result = soloModule.grantFiveBossSoloRewardsSync({ playerId, firstClear: true, rewardMultiplier: 2, randomFloat: () => 0.99 })
+    const result = soloModule.grantFiveBossSoloRewardsSync({
+        playerId, firstClear: true, rewardMultiplier: 2, randomFloat: () => 0.99, cursedWeaponPool: [],
+    })
     assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.blueprintFragment) ?? 0, 0)
-    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 10)
+    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 20)
     assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.firstClearEmblem), 1)
-    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore) ?? 0, 0)
+    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore), 2)
     assert.deepEqual(result.items, {
-        [FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal]: 10,
+        [FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal]: 20,
         [FIVE_BOSS_GAUNTLET_REWARD_IDS.firstClearEmblem]: 1,
+        [FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore]: 2,
     })
     assert.deepEqual(result.dropAdditionalRewardIds.map(d => [d.group_id, d.index, d.number]), [
-        [FIVE_BOSS_GAUNTLET_REWARD_DISPLAY.additionalRewardGroupId, 2, 10],
+        [FIVE_BOSS_GAUNTLET_REWARD_DISPLAY.additionalRewardGroupId, 2, 20],
         [FIVE_BOSS_GAUNTLET_REWARD_DISPLAY.additionalRewardGroupId, 3, 1],
+        [FIVE_BOSS_GAUNTLET_REWARD_DISPLAY.additionalRewardGroupId, 4, 2],
     ])
+    assert.deepEqual(result.equipment_list, [])
+    assert.deepEqual(result.grantedEquipment, [])
 })
 
 test("repeat solo clear skips the first-clear emblem and rolls blueprint and core at 2x", () => {
     const playerId = createPlayer()
-    const result = soloModule.grantFiveBossSoloRewardsSync({ playerId, firstClear: false, rewardMultiplier: 2, randomFloat: () => 0.1 })
+    const result = soloModule.grantFiveBossSoloRewardsSync({
+        playerId, firstClear: false, rewardMultiplier: 2, randomFloat: () => 0.1, cursedWeaponPool: [],
+    })
     assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.firstClearEmblem) ?? 0, 0)
     assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.blueprintFragment), 1)
-    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 10)
-    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore), 2)
+    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 20)
+    // 2026-09-28 设计稿:心核必掉 1×倍率(=2)+ 0.1<25% 命中额外 1×倍率(=2)= 4。
+    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore), 4)
     assert.equal(result.granted.length, 3)
+    assert.deepEqual(result.grantedEquipment, [])
 })
 
 test("an Auto-start solo clear grants the mode materials at 1x", () => {
     const playerId = createPlayer()
-    const result = soloModule.grantFiveBossSoloRewardsSync({ playerId, firstClear: false, rewardMultiplier: 1, randomFloat: () => 0.99 })
-    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 5)
-    assert.deepEqual(result.items, { [FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal]: 5 })
+    const result = soloModule.grantFiveBossSoloRewardsSync({
+        playerId, firstClear: false, rewardMultiplier: 1, randomFloat: () => 0.99, cursedWeaponPool: [],
+    })
+    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 10)
+    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore), 1)
+    assert.deepEqual(result.items, {
+        [FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal]: 10,
+        [FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore]: 1,
+    })
+})
+
+test("solo clear rolls and grants distinct cursed weapons, with one display row per hit", () => {
+    const playerId = createPlayer()
+    const values = [
+        0.9, // blueprint check: miss (rate 0.6)
+        0.9, // five-king-core bonus check: miss -> base only
+        0.05, 0, // weapon roll 1: hit, pick index 0 -> 5910101
+        0.05, 0.999999, // weapon roll 2: hit, pick index 2 -> 5910103
+    ]
+    const result = soloModule.grantFiveBossSoloRewardsSync({
+        playerId,
+        firstClear: true,
+        rewardMultiplier: 2,
+        randomFloat: () => values.shift() as number,
+        cursedWeaponPool: [5910101, 5910102, 5910103],
+    })
+
+    assert.deepEqual(result.grantedEquipment, [5910101, 5910103])
+    assert.deepEqual(
+        result.equipment_list.map(e => (e as { equipment_id: number, stack: number }).equipment_id).sort(),
+        [5910101, 5910103],
+    )
+    for (const equipment of result.equipment_list as Array<{ stack: number }>) {
+        assert.equal(equipment.stack, 0) // 首次持有,stack 从 0 起
+    }
+    const weaponDrops = result.dropAdditionalRewardIds.filter(d => d.group_id === 590010001)
+    assert.deepEqual(weaponDrops.map(d => [d.index, d.number]), [[1, 1], [3, 1]])
+})
+
+test("a repeated weapon hit collapses into one equipment_list entry but keeps two display rows", () => {
+    const playerId = createPlayer()
+    const values = [
+        0.9, 0.9, // material rolls: both miss/base-only, irrelevant to this test
+        0, 0,       // weapon roll 1: hit, pick the only pool entry
+        0.1, 0.5,   // weapon roll 2: hit, pick the only pool entry again
+    ]
+    const result = soloModule.grantFiveBossSoloRewardsSync({
+        playerId,
+        firstClear: false,
+        rewardMultiplier: 2,
+        randomFloat: () => values.shift() as number,
+        cursedWeaponPool: [5910101],
+    })
+
+    assert.deepEqual(result.grantedEquipment, [5910101, 5910101])
+    assert.equal(result.equipment_list.length, 1)
+    assert.equal((result.equipment_list[0] as { stack: number }).stack, 1) // 两次 +1 命中,最终 stack=1
+    const weaponDrops = result.dropAdditionalRewardIds.filter(d => d.group_id === 590010001)
+    assert.deepEqual(weaponDrops.map(d => [d.index, d.number]), [[1, 1], [1, 1]])
 })

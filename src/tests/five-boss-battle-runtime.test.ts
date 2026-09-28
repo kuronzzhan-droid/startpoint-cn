@@ -290,8 +290,9 @@ test("manual rewards are 2x, auto rewards are 1x, and only the last real receipt
     assert.equal(autoFinish.runStatus, "active")
     assert.equal(hostFinish.rewardMultiplier, 2)
     assert.equal(autoFinish.rewardMultiplier, 1)
-    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 10)
-    assert.equal(itemDomain.getPlayerItemSync(autoGuest, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 5)
+    // 2026-09-28 设计稿第 5 节:深界结晶 5→10 × 倍率。
+    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 20)
+    assert.equal(itemDomain.getPlayerItemSync(autoGuest, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 10)
 
     const final = runtimeModule.finishFiveBossBattle(finishInput(room, manualGuest, "manual-play"))
     assert.equal(final.kind, "success")
@@ -351,6 +352,41 @@ test("reward multiplier stays bound to battle-start Auto after later lobby or cl
     assert.equal(autoFinish.kind, "success")
     assert.equal(manualFinish.rewardMultiplier, 2)
     assert.equal(autoFinish.rewardMultiplier, 1)
+})
+
+
+test("cursed-weapon drops are rolled alongside materials, granted via the injectable dependency, and replay without re-rolling", () => {
+    const host = createPlayer(1)
+    const room = roomFor("runtime-weapon-drop", host, [host], { [host]: true }) // Auto -> 1 次掷骰
+    runtimeModule.startFiveBossBattle(startInput(room, host, "weapon-play"))
+    completeBattleProof(room, host)
+
+    const grantedEquipmentCalls: Array<[number, number, number]> = []
+    const weaponRuntime = runtimeModule.createFiveBossBattleRuntime({
+        cursedWeaponPool: [5910101, 5910102],
+        givePlayerEquipmentSync(playerId, equipmentId, amount) {
+            grantedEquipmentCalls.push([playerId, equipmentId, amount])
+            return { equipment_id: equipmentId, protection: false, level: 1, enhancement_level: 0, stack: 0 }
+        },
+    })
+
+    // 材料两次判定都 miss/base-only,武器唯一一次掷骰(Auto=倍率1)命中并抽到 index0。
+    const values = [0.9, 0.9, 0.05, 0]
+    const finish = weaponRuntime.finish(finishInput(room, host, "weapon-play", {
+        randomFloat: () => values.shift() as number,
+    }))
+    assert.equal(finish.kind, "success")
+    if (finish.kind !== "success") throw new Error("expected success")
+    assert.deepEqual(finish.reward.grantedEquipment, [5910101])
+    assert.deepEqual(grantedEquipmentCalls, [[host, 5910101, 1]])
+
+    const replay = weaponRuntime.finish(finishInput(room, host, "weapon-play"))
+    assert.equal(replay.kind, "success")
+    if (replay.kind !== "success") throw new Error("expected success")
+    assert.equal(replay.receiptStatus, "already_settled")
+    assert.deepEqual(replay.reward.grantedEquipment, [5910101])
+    // 重放走 already_settled 快速路径,不重新掷骰、不重新发放。
+    assert.equal(grantedEquipmentCalls.length, 1)
 })
 
 
@@ -471,7 +507,7 @@ test("host without a ticket: everyone plays, nobody is rewarded, and the first t
     assert.equal(rematchFinish.rewardsEnabled, true)
     assert.equal(rematchFinish.reward.firstClear, true)
     assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET_REWARD_IDS.firstClearEmblem), 1)
-    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 10)
+    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 20)
     assert.equal(questDomain.getPlayerSingleQuestProgressSync(
         host,
         FIVE_BOSS_GAUNTLET.category,

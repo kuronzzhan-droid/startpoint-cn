@@ -171,6 +171,7 @@ test("HTTP start and finish use the custom ledger without a donor quest row", as
         FIVE_BOSS_GAUNTLET.ticketItemId,
     ), 0)
     assert.equal(activeQuests[run.playerId]?.playId, run.playId)
+    assert.equal(run.room.raising_state, 4)
 
     const premature = await app.inject({
         method: "POST",
@@ -190,7 +191,7 @@ test("HTTP start and finish use the custom ledger without a donor quest row", as
     const finish = await app.inject({ method: "POST", url: "/finish", payload: finishPayload(run) })
     assert.equal(finish.statusCode, 200, finish.body)
     const data = JSON.parse(finish.body).data
-    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 10)
+    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 20)
     assert.equal(data.drop_score_reward_ids.length, 0)
     assert.equal(data.drop_rare_reward_ids.length, 0)
     // 结算后房间直接解散(随机选图种子=房号,复用房间会抽到同一套变体)。
@@ -334,7 +335,6 @@ test("HTTP keeps a three-player room in battle until the last frozen real receip
 })
 
 
-
 test("HTTP start ignores client boost flags instead of rejecting the run (2026-09-04 H400 regression)", async () => {
     const run = await createSoloRun()
     const payload = { ...startPayload(run), use_boss_boost_point: true, use_boost_point: true }
@@ -361,7 +361,8 @@ test("HTTP finish resolves the room from the active quest when the client omits 
     playerDomain.updatePlayerSync({ id: run.playerId, rankPoint: 90_012_553 })
 
     const { room_number: _omitted, ...payloadWithoutRoom } = finishPayload(run)
-    // 图纸是 50% 概率掉(2026-09-06),HTTP 路径没有 randomFloat 注入口:钉住 Math.random 让本条断言确定。
+    // 图纸 60%/诅咒武器每次掷骰 15% 都是概率掉,HTTP 路径没有 randomFloat 注入口:
+    // 钉住 Math.random 让本条断言确定(0.1 同时落在两个概率之内,材料与武器都必定命中)。
     const originalRandom = Math.random
     Math.random = () => 0.1
     let finish
@@ -374,13 +375,17 @@ test("HTTP finish resolves the room from the active quest when the client omits 
     const data = JSON.parse(finish.body).data
     assert.equal(data.user_info.degree_id, playerDomain.getPlayerSync(run.playerId)?.degreeId ?? 1)
     assert.notEqual(data.user_info.degree_id, 250)
-    // 结算页展示走 additional_reward 组 590010000:图纸(1)与深界结晶(2)必在,顺序与账本一致。
+    // 结算页展示走 additional_reward 组 590010000(材料):图纸(1)与深界结晶(2)必在,顺序与账本一致。
     const drops = data.drop_additional_reward_ids as Array<{ group_id: number, index: number, number: number }>
-    assert.ok(drops.length >= 2, JSON.stringify(drops))
-    assert.ok(drops.every(d => d.group_id === 590010000 && d.number > 0))
-    // 夹具冻结的是 Auto=false ⇒ 2 倍结算,深界结晶 5×2。
-    assert.deepEqual(drops.slice(0, 2).map(d => [d.index, d.number]), [[1, 1], [2, 10]])
-    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 10)
+    const materialDrops = drops.filter(d => d.group_id === 590010000)
+    assert.ok(materialDrops.length >= 2, JSON.stringify(drops))
+    assert.ok(materialDrops.every(d => d.number > 0))
+    // 夹具冻结的是 Auto=false ⇒ 2 倍结算,深界结晶 10×2。
+    assert.deepEqual(materialDrops.slice(0, 2).map(d => [d.index, d.number]), [[1, 1], [2, 20]])
+    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 20)
+    // Math.random 钉在 0.1 < 15% 掉率,诅咒武器必定命中一把,走独立展示组 590010001。
+    assert.ok(drops.some(d => d.group_id === 590010001 && d.number === 1), JSON.stringify(drops))
+    assert.ok(Array.isArray(data.equipment_list) && data.equipment_list.length >= 1, JSON.stringify(data.equipment_list))
     // 结算页经验卡按队伍逐角色查 add_exp_list,缺条目就 C2620(真机 2026-09-04)。
     assert.equal(data.add_exp_list.length, 1)
     assert.equal(data.add_exp_list[0].character_id, 1)
@@ -441,7 +446,7 @@ test("HTTP finish backfills a missing finalize signal when level_next was record
     const finish = await app.inject({ method: "POST", url: "/finish", payload: finishPayload(run) })
     assert.equal(finish.statusCode, 200, finish.body)
     const data = JSON.parse(finish.body).data
-    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 10)
+    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], 20)
     assert.equal(activeQuests[run.playerId], undefined)
 })
 
