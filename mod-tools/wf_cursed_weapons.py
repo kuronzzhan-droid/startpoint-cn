@@ -45,8 +45,9 @@
 6. 带 mul 的 CreateCondition 必须带非空唯一键串（基诺维吞噬同款坑）。
 7. DSL 解自己挂的锁：DeleteCondition 必须带锁的键串，cancelableKind 选得中锁（不可驱散的锁写 1；写 0 删不掉，
    1.4.1057 剑舞圆环连击上限从未解除），``own_lock_delete_problems`` 拦截。
-8. 根头 buffTargetAs ≥100（133 = 按强化弹射 Lv3 结算）需要 damage-type-rules-v1，``dsl_capabilities`` 进 capability 门禁；
-   按强化弹射段结算的 629 命中算真实 PF 命中，不能再用「强化弹射命中」(183) 触发（自我连锁），``pf_echo_trigger_problems`` 拦截。
+8. 根头或判定区 buffTargetAs ≥100（133 = 按强化弹射 Lv3 结算）需要 damage-type-rules-v1，``dsl_capabilities`` 进 capability 门禁；
+   按强化弹射段结算的 629 命中算真实 PF 命中，不能再用「强化弹射命中」类触发（183 与对应等级的 180-182、15-17，
+   见 wf_battle_rules.PF_SEGMENT_HIT_TRIGGERS）触发（自我连锁），``pf_echo_trigger_problems`` 拦截。
 9. 按层数读/消耗固有状态（持续 134/207、前置 144/199、瞬发 525/526、瞬发前置 1/2/3、DSL ConsumeUniqueCondition）
    要求该固有叠层上限 c4 >1：``Condition.get_accumulatable() = maxAccumulation > 1``，上限 1 时层数恒 0、消耗为空操作
    （第三轮复审：6 把武器的门禁因此静默失效）。``unique_accumulation_problems`` 拦截；已知未修的在 ``ACCUMULATION_CAP_PENDING``。
@@ -167,7 +168,6 @@ PRE_GAUGE_HIGH, PRE_GAUGE_LOW = "119", "120"
 #: DSL 根头 buffTargetAs 覆盖（damage-type-rules-v1）：133 = 按强化弹射 Lv3 完整结算（通用池、分档、413、PF 显示）。
 #: 未装补丁的客户端读成 0，按技能伤害结算，不崩。
 PF3_BTA = BR.segment_override("pf3")
-PF_SEGMENT_BTAS = frozenset(BR.segment_override(d) for d in ("pf1", "pf2", "pf3"))
 
 ELEMENT_GROUP = {"fire": "Red", "water": "Blue", "thunder": "Yellow", "wind": "Green", "light": "White", "dark": "Black"}
 ELEMENT_CODE = {"fire": 0, "water": 1, "thunder": 2, "wind": 3, "light": 4, "dark": 5}   # equipment_element.json（0 基）
@@ -704,21 +704,25 @@ def unique_accumulation_problems(rows: Iterable[tuple[str, str, list[str]]], dsl
 
 def dsl_capabilities(tree: list) -> list[str]:
     """DSL 需要的客户端 capability：根头 tree[10] 或 CreateHitArea params[23] 的 buffTargetAs ≥100
-    是 damage-type-rules 的段覆盖（未装补丁读成 0 按技能伤害结算，不崩，但归属不对）。"""
-    btas = [tree[10], *(params[23] for params in _commands(tree, "CreateHitArea"))]
-    return [BR.DAMAGE_CAP] if any(isinstance(b, int) and b >= 100 for b in btas) else []
+    是 damage-type-rules 的段覆盖（未装补丁读成 0 按技能伤害结算，不崩，但归属不对）。
+    判据与 wfx_gate 的 DSL 扫描共用 wf_battle_rules.dsl_capabilities。"""
+    return BR.dsl_capabilities(tree)
 
 
 def pf_echo_trigger_problems(table: str, row: list[str], dsl: dict[str, list]) -> list[str]:
-    """按强化弹射段结算（根头 131-133）的 629 树，其命中会被计为真实的 PF 命中，驱动「强化弹射命中」(183)；
-    用 183 触发它 = 自己的命中再次触发自己（复读弹射期间约每 60 帧连锁一次）。只能用强化弹射发动 (2) 触发。"""
+    """按强化弹射段结算（131-133）的 629 树，其命中会被计为真实的 PF 命中，驱动「强化弹射命中」类触发
+    （183 LvAny、对应等级 180-182、PowerFlipHitLvNHigh 15-17，见 wf_battle_rules.PF_SEGMENT_HIT_TRIGGERS）；
+    用这些触发去触发它 = 自己的命中再次触发自己（复读弹射期间约每 60 帧连锁一次）。只能用强化弹射发动 (2) 等触发。"""
     if row[int(_LAYOUT[table]["blocks"]["precondition1"]) - 1] != "0" or row[_col(table, "instant_content", "kind")] != "629":
         return []
     tree = dsl.get(row[_col(table, "instant_content", "action_path")])
-    if tree is None or tree[10] not in PF_SEGMENT_BTAS:
+    if tree is None:
         return []
-    if row[_col(table, "instant_trigger", "kind")] == IT_PF_HIT:
-        return [f"629 按强化弹射段结算（buffTargetAs {tree[10]}）却由强化弹射命中(183)触发：会被自己的命中连锁触发"]
+    trigger = row[_col(table, "instant_trigger", "kind")]
+    if trigger in BR.pf_hit_triggers_driven_by(tree):
+        segments = sorted(set(BR.dsl_segment_overrides(tree)) & set(BR.PF_SEGMENT_HIT_TRIGGERS))
+        return [f"629 按强化弹射段结算（buffTargetAs {segments}）却由强化弹射命中类触发 {trigger} 触发："
+                "会被自己的命中连锁触发"]
     return []
 
 

@@ -47,15 +47,33 @@ def _leaf(rows: list[list[str]]) -> str:
     return core.write_csv_lines(rows)
 
 
-def _ability_template(kinds_by_line: dict[int, str], template_id: str) -> str:
+def _ability_template(
+    kinds_by_line: dict[int, str], template_id: str,
+    during_lines: frozenset[int] = frozenset(),
+) -> str:
     """按 donor_line 补齐模板行:3e5ae0d 起 build_soul_leaf 逐行取捐赠行,
-    同一模板键可被多个 effect 以不同 donor_line 引用,只造一行会越界。"""
+    同一模板键可被多个 effect 以不同 donor_line 引用,只造一行会越界。
+    持续词条(EffectSpec.during)的捐赠行必须本身是持续行(c2=1)。"""
     return _leaf([
-        _ability_template_row(
+        (_during_template_row if line in during_lines else _ability_template_row)(
             kinds_by_line.get(line, "999"), template_id, donor_line=line,
         )
         for line in range(max(kinds_by_line) + 1)
     ])
+
+
+def _during_template_row(
+    effect_kind: str, template_id: str, *, donor_line: int,
+) -> list[str]:
+    """官方 5030030#0 / 5040033#0 形状的最小合法持续行(Fever 中、pre1 = 光属性 ≥6)。"""
+    row = [""] * 123
+    row[0], row[1], row[2] = "9", "9", "1"
+    row[3], row[6], row[7], row[8] = "2", "600000", "600000", "White"
+    row[10], row[17] = "0", "0"
+    row[82], row[94], row[105] = "(None)", "4", "false"
+    row[106], row[107], row[108] = effect_kind, "5", "White"
+    row[110], row[111] = "100", "200"
+    return row
 
 
 # build_soul_leaf 会把 c44 换成发射 kind,而新 kind 往往比捐赠 kind 多声明几列;
@@ -159,12 +177,19 @@ def _base_master_tables() -> rewards.MasterTables:
         }
 
     template_kinds: dict[str, dict[int, str]] = {}
+    during_lines: dict[str, set[int]] = {}
     for spec in rewards.WEAPONS:
         for effect in spec.effects:
             template_kinds.setdefault(effect.template_id, {})[
                 effect.donor_line] = effect.effect_kind
+            if effect.during:
+                during_lines.setdefault(effect.template_id, set()).add(
+                    effect.donor_line)
     ability_soul = {
-        template_id: _ability_template(kinds_by_line, template_id)
+        template_id: _ability_template(
+            kinds_by_line, template_id,
+            frozenset(during_lines.get(template_id, ())),
+        )
         for template_id, kinds_by_line in template_kinds.items()
     }
     rush_row = [f"rush-{index}" for index in range(18)]

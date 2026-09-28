@@ -73,7 +73,7 @@ TASK3_API = (
 MISSING_TASK3_API = tuple(name for name in TASK3_API if not hasattr(rewards, name))
 
 
-# v3.3 canonical metadata and all 74 uplift slots are deliberately static.  Do not
+# v3.3 canonical metadata and all 75 uplift slots are deliberately static.  Do not
 # derive these oracles from WEAPONS/resolve_effect_strength: the test must catch a
 # production declaration and its resolver drifting together.
 EXPECTED_WEAPON_METADATA = [
@@ -94,7 +94,8 @@ EXPECTED_WEAPON_METADATA = [
     ("8000115", "深渊·万象铳", "5090045", -1, "(None)", "item/equipment/mod/abyss/universal_03", (3, 2)),
 ]
 
-# (template_id, donor_line, emitted_kind, v3.3 strength, expected c48/c49 after uplift)
+# (template_id, donor_line, emitted_kind, v3.3 strength, expected strength after uplift)
+# 强度列:瞬发行 c48/c49,持续行(EffectSpec.during)c110/c111;×1 规则的行写的就是满级合计。
 EXPECTED_EFFECT_ROWS = {
     "8000101": (
         ("3020011", 0, "51", 150000, "225000"),
@@ -134,11 +135,12 @@ EXPECTED_EFFECT_ROWS = {
         ("5090027", 0, "33", 300000, "450000"),
         ("300001", 0, "32", 300000, "450000"),
     ),
+    # 作者 2026-09-28 重做:数值 = 游戏内满级合计(本体 + 强化 120),觉醒拆分再对半拆。
     "8000106": (
-        ("4030004", 0, "190", 25000, "37500"),
-        ("5070040", 0, "38", 15000, "22500"),
-        ("3010035", 0, "35", 15000, "16000"),
-        ("300001", 0, "32", 250000, "375000"),
+        ("5050009", 0, "55", 200000, "300000"),
+        ("300001", 0, "32", 200000, "300000"),
+        ("5070040", 1, "253", 500000, "500000"),     # ×1 规则:5 倍
+        ("4010014", 0, "629", "", ""),
     ),
     "8000107": (
         ("300001", 8, "226", 600000, "900000"),
@@ -163,8 +165,9 @@ EXPECTED_EFFECT_ROWS = {
     "8000110": (
         ("5050017", 2, "203", 1500000, "2250000"),
         ("4080015", 1, "206", 25000, "37500"),
-        ("5040019", 2, "245", 50000, "75000"),
-        ("300001", 0, "32", 200000, "300000"),
+        ("5040019", 2, "245", 50000, "50000"),       # ×1 规则:合计 +50%
+        ("5030030", 0, "0", 250000, "250000"),       # 持续·Fever 队伍攻击力(c110/c111)
+        ("5040033", 0, "1", 250000, "250000"),       # 持续·Fever 队伍直接攻击伤害
     ),
     "8000111": (
         ("4080016", 2, "67", "", ""),
@@ -252,6 +255,8 @@ EXPECTED_CONQUEROR_SURVIVAL_COLUMNS = (
 
 
 DONOR_KIND_OVERRIDES = {("5050022", 1): "32"}
+# 持续(during, c2=1)捐赠行:官方 5030030#0 / 5040033#0 的形状(pre1 = 光属性 ≥6 门、Fever 持续触发)。
+DURING_DONORS = frozenset({("5030030", 0), ("5040033", 0)})
 DONOR_RUNTIME_COLUMNS = {
     ("5030021", 1): {69: "false"},
     ("5090024", 2): {69: "false"},
@@ -347,6 +352,26 @@ def template_row(
     return row
 
 
+def during_template_row(
+    effect_kind: str, *, template_id: str, donor_line: int,
+) -> list[str]:
+    """Minimal client-legal during row shaped like official 5030030#0 / 5040033#0."""
+    row = [""] * 123
+    row[0], row[1], row[2] = "9", "9", "1"
+    row[3], row[6], row[7], row[8] = "2", "600000", "600000", "White"
+    row[10], row[17] = "0", "0"
+    row[82], row[94], row[105] = "(None)", "4", "false"
+    row[106], row[107], row[108] = effect_kind, "5", "White"
+    row[110], row[111] = "100", "200"
+    row[122] = f"{template_id}#{donor_line}"
+    return row
+
+
+def strength_cells(row: list[str]) -> tuple[str, str]:
+    """Instant rows keep strength in c48/c49, during rows in c110/c111."""
+    return (row[110], row[111]) if row[2] == "1" else (row[48], row[49])
+
+
 def build_template_fixtures(
     effect_rows: list[tuple[str, int, str]] | tuple[tuple[str, int, str], ...],
 ) -> dict[str, str]:
@@ -361,7 +386,11 @@ def build_template_fixtures(
         donor_kind = DONOR_KIND_OVERRIDES.get(
             (template_id, donor_line), emitted_kind,
         )
-        rows[donor_line] = template_row(
+        make_row = (
+            during_template_row if (template_id, donor_line) in DURING_DONORS
+            else template_row
+        )
+        rows[donor_line] = make_row(
             donor_kind, template_id=template_id, donor_line=donor_line,
         )
     return {
@@ -832,6 +861,8 @@ class TestCnProfilePreflight(unittest.TestCase):
             mock.patch.object(rewards.q, "save_table", side_effect=save_table),
             mock.patch.object(rewards, "load_json", side_effect=load_json),
             mock.patch.object(rewards, "save_json", side_effect=save_json),
+            # 写盘/发布机制本身的测试:失败关闭条件由 TestLegacyWriteBlockers 单测
+            mock.patch.object(rewards, "legacy_write_blockers", return_value=[]),
             mock.patch.object(
                 rewards,
                 "validate_source_assets",
@@ -912,6 +943,7 @@ class TestCnProfilePreflight(unittest.TestCase):
                 mock.patch.object(rewards.q, "save_table", side_effect=save_table),
                 mock.patch.object(rewards, "load_json", side_effect=load_json),
                 mock.patch.object(rewards, "save_json", side_effect=save_json),
+                mock.patch.object(rewards, "legacy_write_blockers", return_value=[]),
                 mock.patch.object(
                     rewards, "validate_source_assets", return_value=sources
                 ) as validate,
@@ -990,6 +1022,7 @@ class TestCnProfilePreflight(unittest.TestCase):
                 mock.patch.object(rewards.q, "save_table", side_effect=save_table),
                 mock.patch.object(rewards, "load_json", side_effect=load_json),
                 mock.patch.object(rewards, "save_json", side_effect=save_json),
+                mock.patch.object(rewards, "legacy_write_blockers", return_value=[]),
                 mock.patch.object(
                     rewards, "validate_source_assets", return_value=sources
                 ),
@@ -1191,6 +1224,7 @@ class TestReleaseGate(unittest.TestCase):
             mock.patch.object(rewards.q, "save_table", side_effect=save_table),
             mock.patch.object(rewards, "load_json", side_effect=load_json),
             mock.patch.object(rewards, "save_json", side_effect=save_json),
+            mock.patch.object(rewards, "legacy_write_blockers", return_value=[]),
             mock.patch.object(rewards, "validate_source_assets", return_value=sources),
             mock.patch.object(rewards, "install_source_assets", side_effect=install),
             mock.patch.object(rewards, "_print_asset_validation"),
@@ -1342,8 +1376,8 @@ class TestWeaponContract(unittest.TestCase):
             for expected_rows in EXPECTED_EFFECT_ROWS.values()
             for template_id, donor_line, effect_kind, _old, _new in expected_rows
         }
-        self.assertEqual(74, sum(map(len, EXPECTED_EFFECT_ROWS.values())))
-        self.assertEqual(45, len(expected_rule_keys))
+        self.assertEqual(75, sum(map(len, EXPECTED_EFFECT_ROWS.values())))
+        self.assertEqual(48, len(expected_rule_keys))
         self.assertEqual(expected_rule_keys, set(rewards.EFFECT_STRENGTH_RULES))
         with self.assertRaises(TypeError):
             rewards.EFFECT_STRENGTH_RULES[("x", 0, "0")] = object()
@@ -1356,11 +1390,22 @@ class TestWeaponContract(unittest.TestCase):
                 )
                 expected_rows = EXPECTED_EFFECT_ROWS[spec.id]
                 expected_strengths = [expected[4] for expected in expected_rows]
-                self.assertEqual(expected_strengths, [row[48] for row in rows])
-                self.assertEqual([row[48] for row in rows], [row[49] for row in rows])
+                self.assertEqual(
+                    expected_strengths, [strength_cells(row)[0] for row in rows]
+                )
+                self.assertEqual(
+                    [strength_cells(row)[0] for row in rows],
+                    [strength_cells(row)[1] for row in rows],
+                )
                 expected_durations = []
-                for slot, expected in enumerate(expected_rows, start=1):
+                for slot, (expected, effect) in enumerate(
+                    zip(expected_rows, spec.effects), start=1,
+                ):
                     template_id, donor_line = expected[:2]
+                    if effect.during:
+                        # 持续行不带瞬发块:c54/c55 维持捐赠行的空值
+                        expected_durations.append(("", ""))
+                        continue
                     expected_durations.append(EXPECTED_DURATION_OVERRIDES.get(
                         (spec.id, slot),
                         (
@@ -1380,8 +1425,9 @@ class TestWeaponContract(unittest.TestCase):
             rewards.resolve_effect_strength(legacy_spec, legacy_effect)
 
         max_gauge_spec = next(spec for spec in rewards.WEAPONS if spec.id == "8000110")
+        # 2026-09-28:245 改为 ×1 满额规则(作者给的是合计 +50%),上限 100% 照旧。
         max_gauge_probe = dataclasses.replace(
-            max_gauge_spec.effects[2], strength=80000
+            max_gauge_spec.effects[2], strength=120000
         )
         resolution = rewards.resolve_effect_strength(max_gauge_spec, max_gauge_probe)
         self.assertEqual((100000, 120000, True), (
@@ -1559,19 +1605,29 @@ class TestSoulGeneration(unittest.TestCase):
                     zip(rows, spec.effects, expected_rows), start=1,
                 ):
                     template_id, donor_line, effect_kind, _old, uplift = expected
+                    kind_col, target_col, group_col, (low, high) = (
+                        rewards.SOUL_DURING_CONTENT if effect.during
+                        else rewards.SOUL_INSTANT_CONTENT
+                    )
                     self.assertEqual(123, len(row))
-                    self.assertEqual([str(slot), "1", "0"], row[:3])
+                    self.assertEqual(
+                        [str(slot), "1", "1" if effect.during else "0"], row[:3]
+                    )
                     self.assertEqual(f"{template_id}#{donor_line}", row[122])
-                    self.assertEqual(effect_kind, row[44])
-                    self.assertEqual(effect.target if effect.target is not None else "1", row[45])
+                    self.assertEqual(effect_kind, row[kind_col])
+                    donor_target = "5" if effect.during else "1"
+                    self.assertEqual(
+                        effect.target if effect.target is not None else donor_target,
+                        row[target_col],
+                    )
                     expected_group = (
                         spec.group if effect.target_groups is rewards.WEAPON_GROUP
                         else effect.target_groups if effect.target_groups is not None
                         else ""
                     )
-                    self.assertEqual(expected_group, row[46])
-                    self.assertEqual(uplift, row[48])
-                    self.assertEqual(row[48], row[49])
+                    self.assertEqual(expected_group, row[group_col])
+                    self.assertEqual(uplift, row[low])
+                    self.assertEqual(row[low], row[high])
                     expected_bool = EXPECTED_BY_EACH_TRIGGER_PULLER.get(
                         (spec.id, slot)
                     )

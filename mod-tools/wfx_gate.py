@@ -10,7 +10,9 @@
      装参数/规则码，不算）→ 该 uid 的 string_id 以 ``wfx:`` 开头 → 效果码 → capability；
      uid 按「本批 unique_condition ⊕ 出口给的上下文（源 store / 链尾 / 同批其他边）」解析；
      以 wfx 开头却不是登记前缀的 sid（写错、首尾空白）按静默失效拒绝；
-  3. DSL 里的 ``ACUnique(uid)`` 与 ``Trace("wfx:…")``；
+  3. DSL 里的 ``ACUnique(uid)`` 与 ``Trace("wfx:…")``；以及伤害段覆盖（根头 / CreateHitArea 的
+     buffTargetAs ≥100 → damage-type-rules-v1，语义级：未装补丁读成 0，按技能伤害结算，不崩，
+     判据 = wf_battle_rules.dsl_capabilities，与诅咒武器生成器共用）；
   4. custom_ability_string 键：desc_override_*（面板覆盖）、wfx_text_<uid>；
   5. unique_condition 的 wfx 行本身（没被引用也报，避免孤儿）。
 再与接收方档案（client_profiles.json）比对：缺崩溃级 / 语义必需级 → 拒绝；外观级 → 警告。
@@ -36,6 +38,7 @@ from typing import Any, Callable, Iterable, Mapping
 
 MOD_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(MOD_DIR))
+import wf_battle_rules  # noqa: E402
 import wf_wfx  # noqa: E402
 import wfx_registry  # noqa: E402
 
@@ -533,6 +536,14 @@ def check(rows: Mapping[str, Mapping[str, str]] | None = None,
                     collector.requirements.append(Requirement(
                         capability, wfx_registry.capability_level(capability) or "crash",
                         f"DSL {label}", f"Trace({value!r})"))
+        # 伤害段覆盖:Environment.getBuffTargetAs 原生只认 0-4,≥100 走 default 分支返回空值(读成 0)
+        # → 按技能伤害结算,不崩但伤害归属丢失 ⇒ 语义级(注册表里该能力的 crash 级指 424 行的解析器)
+        segments = wf_battle_rules.dsl_segment_overrides(tree)
+        if segments:
+            for capability in wfx_registry.capability_closure(wf_battle_rules.dsl_capabilities(tree)):
+                collector.requirements.append(Requirement(
+                    capability, "semantic", f"DSL {label}",
+                    f"buffTargetAs 段覆盖 {sorted(set(segments))}(未装补丁按技能伤害结算,归属丢失)"))
 
     # 4. custom_ability_string 键
     from wf_client_legality import panel_override_capability
@@ -647,11 +658,9 @@ def check_entries(entries: Iterable[PayloadEntry], profile: str | ClientProfile 
         data = _inflate(raw) if raw is not None else None
         if data is not None:
             candidates.append((entry.label, data, entry.logical is not None))
-    index = _wfx_index(rows.get("unique_condition"), unique_context)
     dsl: dict[str, Any] = {}
+    # 不再按「有无 wfx」预筛:伤害段覆盖(buffTargetAs ≥100)不带 wfx 字样,也要解析才能判定
     for label, data, known in candidates:
-        if not index and b"wfx" not in data:
-            continue
         try:
             dsl[label] = _parse_dsl(data)
         except Exception as exc:

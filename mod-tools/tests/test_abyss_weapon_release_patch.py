@@ -287,11 +287,11 @@ class AbyssWeaponReleasePatchTests(unittest.TestCase):
         self.assertTrue(CURRENT_STATUS.is_file(), CURRENT_STATUS)
         status = json.loads(CURRENT_STATUS.read_text(encoding="utf-8"))
         self.assertEqual(1, status["schema_version"])
-        self.assertEqual("abyss-weapons-v3.5-fire-multiball", status["id"])
+        self.assertEqual("abyss-weapons-v3.6-thunder-light-rework", status["id"])
         self.assertEqual("pending", status["status"])
         self.assertEqual("mod-tools/wf_rogue_rewards.py", status["source"])
         self.assertEqual(
-            "3178a648a5dd54876995a1612a305e7349b87c28",
+            "539c23b51f00231cf83ea96239ec5df7705e8c08",
             status["source_revision"],
         )
         self.assertIsNone(status["artifact"])

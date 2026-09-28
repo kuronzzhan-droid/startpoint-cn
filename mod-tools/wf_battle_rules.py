@@ -47,6 +47,54 @@ def segment_override(destination):
     return 100 + DESTINATIONS[destination]
 
 
+#: 强化弹射段覆盖 131-133（segment_override pf1..pf3）的命中会驱动哪些瞬发触发。
+#: 依据（静态）：damage.py 的 wfConvertNormalAttack 挂在 ImpactSourceContent.NormalAttack 构造入口，
+#: 早于命中计数，把 buffTargetAs 131-133 改写成 createdByPowerFlipAction=true、powerFlipChargeLv=1..3；
+#: EnemyImpl.as:5655-5664 随之计 OneOfEnemyBattle LvAny 与对应等级（瞬发触发 183 与 180/181/182，
+#: InstantAbilityTriggerMasterValueTools.as:553-564），countUpPowerFlipHitLvHighAbilityTrigger(lv)
+#: （EnemyImpl.as:4466-4480）计 battle Count 15..14+lv（瞬发触发 15/16/17 PowerFlipHitLv1/2/3High，
+#: InstantAbilityTriggerMasterValueTools.as:65-72）。用这些触发去触发打出这类命中的 629 树 = 自我连锁。
+PF_SEGMENT_HIT_TRIGGERS = {
+    100 + DESTINATIONS['pf1']: frozenset({'183', '180', '15'}),
+    100 + DESTINATIONS['pf2']: frozenset({'183', '181', '15', '16'}),
+    100 + DESTINATIONS['pf3']: frozenset({'183', '182', '15', '16', '17'}),
+}
+
+
+def dsl_segment_overrides(tree):
+    """DSL 里显式写的伤害段覆盖（buffTargetAs ≥100）：根头 tree[10] 与每个 CreateHitArea 的
+    buffTargetAs（命令名之后第 23 个参数）。0 = 继承外层，不算覆盖。"""
+    found = []
+    if isinstance(tree, list) and len(tree) > 10 and type(tree[10]) is int and tree[10] >= 100:
+        found.append(tree[10])
+    stack = [tree]
+    while stack:
+        node = stack.pop()
+        if not isinstance(node, list):
+            continue
+        if (len(node) > 1 and node[0] == 'Command' and isinstance(node[1], list)
+                and node[1] and node[1][0] == 'CreateHitArea' and len(node[1]) > 24):
+            value = node[1][24]
+            if type(value) is int and value >= 100:
+                found.append(value)
+        stack.extend(reversed(node))
+    return found
+
+
+def dsl_capabilities(tree):
+    """段覆盖需要 damage-type-rules-v1；未装补丁时 Environment.getBuffTargetAs 的 default 分支
+    返回空值（读成 0），按技能伤害结算，不崩，但伤害归属不对（语义级）。"""
+    return [DAMAGE_CAP] if dsl_segment_overrides(tree) else []
+
+
+def pf_hit_triggers_driven_by(tree):
+    """这棵 DSL 的命中会驱动的「强化弹射命中」类瞬发触发（见 PF_SEGMENT_HIT_TRIGGERS）。"""
+    out = set()
+    for value in dsl_segment_overrides(tree):
+        out |= PF_SEGMENT_HIT_TRIGGERS.get(value, frozenset())
+    return frozenset(out)
+
+
 def validate_code(content, code):
     if type(code) is not int or code < 0:
         raise ValueError('规则必须为非负整数，不能使用 Decimal 倍率')

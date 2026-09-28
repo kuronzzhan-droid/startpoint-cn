@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "id": "abyss-weapons-v3.5-fire-multiball",
+  "id": "abyss-weapons-v3.6-thunder-light-rework",
   "status": "pending",
   "source": "mod-tools/wf_rogue_rewards.py",
-  "source_revision": "3178a648a5dd54876995a1612a305e7349b87c28",
-  "semantic_sha256": "3cf1ae93cbe583fd04d5576de93fc69b6479aca15d0fc622eb12283f60137f78",
+  "source_revision": "539c23b51f00231cf83ea96239ec5df7705e8c08",
+  "semantic_sha256": "e9d5edae65099976bcdc191bd65914d8fe69bef5568e4816b355b5e74a30aafc",
   "artifact": null,
-  "source_revision_note": "Parent revision at staging of the 2026-09-28 fire multiball change (8000101/8000102 attack and direct bonuses mirrored to target 8). mod-tools/wf_rogue_rewards.py at this revision is byte-identical to 8b93b7dc (its last change), so this is a generator-content-equivalent base; re-pin to the real parent if HEAD moves before commit. Semantic hash describes the current generator, not the live incremental patch."
+  "source_revision_note": "Parent revision at staging of the 2026-09-28 thunder/light rework (8000106: PF damage +300%, party attack +300%, 5x thunder damage to all enemies on Power Flip, skill-invoke 629 PF payload; 8000110: 245 max skill gauge 50%, Fever-gated party attack/direct +250% during rows). Re-pin to the real parent if HEAD moves before commit. Semantic hash describes the current full-strength generator output (equipment, equipment_status, unsplit ability_soul) only; the awakening split, the 629 DSL program and its custom_ability_string key are not covered."
 }
