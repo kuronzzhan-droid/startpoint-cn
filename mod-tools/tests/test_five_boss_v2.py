@@ -95,6 +95,57 @@ class PureFunctionTests(unittest.TestCase):
                          {"i": [{"p": "m/.gen/y/k"}, {"p": "b/other"}], "n": 3})
         self.assertEqual(F.gen_prefix("battle/boss/mod/v/n/n"), "battle/boss/mod/v/n/.gen/n/")
 
+    def test_pack_frames_trims_and_keeps_canvas(self):
+        from PIL import Image
+        a = Image.new("RGBA", (10, 8), (0, 0, 0, 0))
+        a.paste(Image.new("RGBA", (3, 2), (255, 0, 0, 255)), (4, 5))
+        empty = Image.new("RGBA", (6, 6), (0, 0, 0, 0))
+        sheet, entries = F.pack_frames([("x/.gen/n/a", a), ("x/.gen/n/b", empty)])
+        ea, eb = entries
+        self.assertEqual((ea["w"], ea["h"], ea["fx"], ea["fy"], ea["fw"], ea["fh"]), (3, 2, -4, -5, 10, 8))
+        self.assertEqual(sheet.crop((ea["x"], ea["y"], ea["x"] + 3, ea["y"] + 2)).tobytes(), Image.new("RGBA", (3, 2), (255, 0, 0, 255)).tobytes())
+        self.assertEqual((eb["w"], eb["h"], eb["fw"], eb["fh"]), (1, 1, 6, 6))
+        self.assertEqual(list(ea), ["n", "w", "h", "x", "y", "fx", "fy", "fw", "fh"])
+
+    def test_signature_shapes_stay_whitelisted(self):
+        tree = F.dsl_signature(1500, 999, "k", silence=360, drain=0.3, purge=99, on_entry=True)
+        self.assertEqual(F.dsl_constructor_problems(tree), [])
+        cmds = list(wf_dsl.iter_dsl_commands(tree))
+        self.assertTrue(any(c[0] == "DeleteCondition" and c[2] == ["DCAll", 2] for c in cmds))
+        self.assertTrue(any(c[0] == "CreateCondition" and c[2][0][0] == "ACSilence" and c[-1] is True for c in cmds))
+        block = tree[-1][1]
+        self.assertEqual(block[0][0], "Command")                       # 登场先执行一次
+        self.assertEqual(block[1][1][0], "Repeat")
+
+    def test_routine_trial_patch(self):
+        def row(name, nxt, dur="180"):
+            r = ["(None)"] * 53
+            r[0], r[1], r[2], r[3] = name, "1", "shot_charge", name
+            r[22], r[23], r[24], r[25], r[26] = "(None)", "", "", "", ""
+            r[29], r[30], r[31], r[32] = "0", "", nxt, ""
+            r[46], r[47] = "2", dur
+            return F.write_rows([r])
+        routine = {"1": {"charge": row("charge", "fire"), "fire": row("fire", "after"), "after": row("after", "charge")}}
+        gb = {"mother": {"100": F.write_rows([["4"] + [""] * 41 + ["src_routine"] + [""] * 119])}}
+        files = {F.T_GBS: q.build_node({"src_routine": routine}), F.T_GB: q.build_node(gb)}
+        live = F.Live(lambda lg: files[lg] if lg in files else (_ for _ in ()).throw(FileNotFoundError(lg)))
+        spec = {"bosses": {"k": {"mother": "mother", "routine": {"out": "mod_fb2_r", "trials": {"charge": {"kind": "skill", "count": 12, "frames": 600}}}}},
+                "_variants": [F.Variant(1, "r1", "n", [[F.BossSlot("k", 1)]], 0)]}
+        plan = F.Plan()
+        F.plan_routines(live, spec, plan)
+        (path, node), = plan.edits[F.T_GBS]
+        self.assertEqual(path, ["mod_fb2_r"])
+        r = F.one_row(node["1"]["charge"])
+        self.assertEqual((r[22], r[23], r[24], r[25]), ("1", "12", "true", "true"))
+        self.assertEqual((r[29], r[30], r[31], r[32]), ("12", "0", "after", "fire"))   # 达成跳过大招，未达成照放
+        self.assertEqual((r[46], r[47]), ("2", "600"))
+        self.assertEqual(node["1"]["fire"], routine["1"]["fire"])                     # 其余状态原样
+        self.assertEqual(plan.routine_sources, {"mod_fb2_r": "src_routine"})
+
+    def test_resolve_action_passthrough_and_variant_path(self):
+        self.assertEqual(F.resolve_action(None, "a/b$c"), "a/b$c")
+        self.assertEqual(F.element_variant_anim("battle/effect/g/shot", "black"), "battle/effect/g/shot/shot_black/shot_black")
+
     def test_region_name_follows_flatomo_gen_layout(self):
         self.assertEqual(F.gen_region_name("battle/field/mod/x/background/background"),
                          "battle/field/mod/x/background/.gen/background/a")

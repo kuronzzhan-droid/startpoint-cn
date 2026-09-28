@@ -369,13 +369,21 @@ def dsl_purge(buff_reject_frames: int, periodic_interval: int, periodic_count: i
     return _root([purge_now, reject, periodic])
 
 
-def dsl_signature(interval: int, count: int, key: str, effects: list, drain: float | None = None) -> list:
-    """换色 boss 的签名招式：周期对全体成员施加一组减益（weaken_rotation 同形），可附带扣技能槽
-    （purge 的 SubtractSkillPoint 同形）。只拼实机验证过的形状，不引入新构造。"""
-    block = [_cond(0, _ac_value(kind, frames, value, 1)) for kind, frames, value in effects]
+def dsl_signature(interval: int, count: int, key: str, effects: list | None = None, drain: float | None = None,
+                  silence: int | None = None, purge: int | None = None, on_entry: bool = False) -> list:
+    """自制 boss 的签名招式：周期对全体成员施加一组效果。只拼已有形状，不引入新构造：
+    减益 = weaken_rotation 同形；沉默 = silence_waves 的强制 ACSilence（技能封印）；扣槽 = purge 的
+    SubtractSkillPoint；驱散 = purge 的强制 DeleteCondition DCAll（kind 2，可摘不可驱散层）。
+    on_entry=True 时登场先执行一次，再按周期重复。"""
+    block = [_cond(0, _ac_value(kind, frames, value, 1)) for kind, frames, value in (effects or [])]
+    if silence:
+        block.append(_cond(0, ["ACSilence", _range(silence)], force=True))
     if drain:
         block.append(_cmd(["SubtractSkillPoint", 0, _range(drain)]))
-    return _root([_repeat(interval, count, key, [_find_all(33, block)])])
+    if purge:
+        block.append(_cmd(["DeleteCondition", 0, ["DCAll", 2], purge, 2, "", ["Default"]]))
+    loop = _repeat(interval, count, key, [_find_all(33, copy.deepcopy(block))])
+    return _root(([_find_all(33, block)] if on_entry else []) + [loop])
 
 
 def affix_library(params: dict) -> dict[str, list]:
@@ -503,6 +511,36 @@ def build_terrain(live: Live, spec_t: dict) -> tuple[dict, dict]:
                     report["added"] += 1
         if "nextobjectid" in tree:
             tree["nextobjectid"] = max(int(tree["nextobjectid"]), next_id)
+    pos_over = spec_t.get("position_overrides") or {}
+    if pos_over:
+        # 按层重设站位（相对本层 BOUNDS）：站位名的语义随 boss 母本地形（memory wf-terrain-position-name-collision），
+        # 某层只给一只 boss 用时，把该层站位对齐到它的原生地形，避免整体偏向一侧
+        next_id = max([int(o.get("id", 0)) for L in layers for o in L.get("objects", [])] + [0]) + 1
+        for li_str, names in pos_over.items():
+            li = int(li_str)
+            if li >= len(layers):
+                raise BuildError(f"position_overrides: terrain has no layer {li}")
+            L = layers[li]
+            bounds = next((o for o in L["objects"] if o.get("type") == "BOUNDS"), None)
+            template = next((o for o in L["objects"] if o.get("type") == "CUSTOM_POSITION"), None)
+            if bounds is None or template is None:
+                raise BuildError(f"layer {li} lacks BOUNDS or CUSTOM_POSITION")
+            bx, by = float(bounds["x"]), float(bounds["y"])
+            for name, (rx, ry) in names.items():
+                hits = [o for o in L["objects"] if o.get("type") == "CUSTOM_POSITION" and o.get("name") == name]
+                if not hits:
+                    c = copy.deepcopy(template)
+                    c["name"] = name
+                    if "id" in c:
+                        c["id"] = next_id
+                        next_id += 1
+                    L["objects"].append(c)
+                    hits = [c]
+                for o in hits:
+                    o["x"], o["y"] = bx + rx, by + ry
+                report["moved"] = report.get("moved", 0) + len(hits)
+        if "nextobjectid" in tree:
+            tree["nextobjectid"] = max(int(tree["nextobjectid"]), next_id)
     return tree, report
 
 
@@ -602,9 +640,46 @@ class Plan:
     report: dict = field(default_factory=dict)
     problems: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    routine_sources: dict[str, str] = field(default_factory=dict)                # 自有 routine → 官方母本 routine
 
     def put(self, table: str, path: list[str], node) -> None:
         self.edits.setdefault(table, []).append((list(path), node))
+
+
+def resolve_action(live: Live, src) -> str:
+    """招式槽来源：直接给程序路径，或 {"from": 官方 boss 代号, "slot": 1..50} 取其 lv80 档该槽的程序
+    （marker 时间轴里的 enemy_actionNN 标记按槽号触发，所以换槽内程序 = 同一时机放别的招）。"""
+    if isinstance(src, str):
+        return src
+    tiers = gb_tiers(live, src["from"])
+    prog = tiers[tier_for_level(tiers)][GB_ACTION_FIRST + int(src["slot"]) - 1]
+    if not prog or prog == "(None)":
+        raise BuildError(f"action donor {src['from']} slot {src['slot']} is empty")
+    return prog
+
+
+def resolve_by_element_nodes(tree) -> list[tuple[str, int]]:
+    out, stack = [], [tree]
+    while stack:
+        n = stack.pop()
+        if isinstance(n, list):
+            if len(n) >= 3 and n[0] == "ResolveByElement" and isinstance(n[1], str):
+                out.append((n[1], int(n[2])))
+            stack.extend(n)
+        elif isinstance(n, dict):
+            stack.extend(n.values())
+    return out
+
+
+def element_variant_anim(base: str, suffix: str) -> str:
+    name = base.rsplit("/", 1)[-1]
+    return f"{base}/{name}_{suffix}/{name}_{suffix}"
+
+
+def element_variant_live(live: Live, base: str, suffix: str) -> bool:
+    anim = element_variant_anim(base, suffix)
+    sheet = sheet_of(anim)
+    return live.file(anim + ".timeline.amf3.deflate") is not None and bool(sheet and png_dims(live, sheet + ".png"))
 
 
 def clone_code(variant: Variant, alias: str, wave: int, slot: int) -> str:
@@ -618,18 +693,27 @@ def plan_clone(live: Live, spec: dict, plan: Plan, variant: Variant, wave: int, 
     code = clone_code(variant, bs.alias, wave, slot)
     tiers = gb_tiers(live, mother)
     new_node = {}
-    rc = bdef.get("recolor")
+    rc = bdef.get("recolor") or bdef.get("body")
+    routine = (bdef.get("routine") or {}).get("out")
     for tier, row in tiers.items():
         r = list(row)
         if bs.position:
             r[GB_POS] = bs.position
+        if routine:
+            r[GB_ROUTINE] = routine
         if rc:
-            # 换色克隆：本体动画列改指新贴图（marker/影子等其余图集仍用官方件）
+            # 换色/新造型：本体动画列改指新贴图（marker/影子等其余图集仍用官方件）
             for c in GB_ANIM_COLS:
                 if c < len(r) and r[c] not in ("", "(None)") and sheet_of(r[c]) == rc["from"]:
                     if r[c] != rc["from"]:
-                        raise BuildError(f"{mother} c{c}: {r[c]} is a sub-path of {rc['from']}; recolor unsupported")
+                        raise BuildError(f"{mother} c{c}: {r[c]} is a sub-path of {rc['from']}; body swap unsupported")
                     r[c] = rc["out"]
+        if bdef.get("element") is not None:
+            r[0] = str(bdef["element"])            # 显式属性码（暗=6）；按属性取图的特效随之换色
+        for slot, src in (bdef.get("actions") or {}).items():
+            r[GB_ACTION_FIRST + int(slot) - 1] = resolve_action(live, src)
+        for col, text in (bdef.get("texts") or {}).items():
+            r[int(col)] = text
         signature = [affix_program(s) for s in bdef.get("signature", [])]
         pre = strip_v1_curse(split_programs(r[GB_PRE])) + list(bdef.get("pre", [])) + signature + programs
         # 官方 749 行：无出场动作一律写空串（681 行）；写 "(None)" 客户端会去加载
@@ -937,6 +1021,136 @@ def plan_recolors(live: Live, spec: dict, plan: Plan) -> None:
             plan.files[new + suf] = raws[suf] if suf.startswith(".timeline") else encode_amf(tree)
         changed = sum(1 for i in range(0, len(pal), 3) if tuple(pal[i:i + 3]) != tuple(new_pal[i:i + 3]))
         plan.report.setdefault("recolors", {})[alias] = {"from": old, "out": new, "palette_changed": changed}
+
+
+TRIAL_KINDS = {"direct": "0", "skill": "1", "pf": "2", "skill_chain": "3"}   # general_boss_state c22
+
+
+def plan_routines(live: Live, spec: dict, plan: Plan) -> None:
+    """带试炼的 routine：官方母本整棵复制到自有键，只在点名的蓄力状态上挂命中检定（统领 AI 试炼
+    mod_fb_hero_trial/shot3_fb_charge 同形，实机已见试炼条）：c22 种类、c23 次数、c24 倒数、c25 破条硬直；
+    下一状态判定改 c29=12（HitCountCheck）：达成 → 跳到大招之后的状态（大招取消），未达成 → 原大招；
+    c46/c47 把蓄力拉长为倒数时长。"""
+    used = {bs.alias for v in spec["_variants"] for wave in v.waves for bs in wave}
+    gbs = live.table(T_GBS)
+    for alias, bdef in spec["bosses"].items():
+        rt = bdef.get("routine")
+        if not rt or alias not in used:
+            continue
+        tiers = gb_tiers(live, bdef["mother"])
+        src = tiers[tier_for_level(tiers)][GB_ROUTINE]
+        node = gbs.get(src)
+        if not isinstance(node, dict):
+            raise BuildError(f"routine missing: {src}")
+        out = rt["out"]
+        if not out.startswith(OWN_CODE_PREFIX):
+            plan.problems.append(f"routine {out} lacks own prefix")
+            continue
+        new_node = copy.deepcopy(node)
+        for tier, states in new_node.items():
+            for state, cfg in rt.get("trials", {}).items():
+                if state not in states:
+                    raise BuildError(f"{src}/{tier}: no state {state}")
+                r = one_row(states[state])
+                fail = r[31]
+                if r[29] != "0" or fail not in states:
+                    raise BuildError(f"{src}/{tier}/{state}: expected an Always transition into the attack")
+                success = cfg.get("success") or one_row(states[fail])[31]
+                if success not in states:
+                    raise BuildError(f"{src}/{tier}/{state}: success state {success} missing")
+                r[22], r[23], r[24], r[25], r[26] = TRIAL_KINDS[cfg["kind"]], str(cfg["count"]), "true", \
+                    "true" if cfg.get("wince", True) else "false", "(None)"
+                r[29], r[30], r[31], r[32] = "12", "0", success, fail
+                r[46], r[47] = "2", str(cfg["frames"])
+                states[state] = write_rows([r])
+        plan.put(T_GBS, [out], new_node)
+        plan.routine_sources[out] = src
+        plan.report.setdefault("routines", {})[out] = {"from": src, "trials": sorted(rt.get("trials", {}))}
+
+
+def pack_frames(frames: list, margin: int = 1, gap: int = 2):
+    """整帧画布（fw×fh）→ 裁掉透明边 → 行式打包。返回 (sheet, entries)；entries 与 frames 同序，
+    键序照官方 atlas（n,w,h,x,y,fx,fy,fw,fh；fx/fy = 负的裁切偏移）。全透明帧占 1×1。"""
+    from PIL import Image
+    cuts = []
+    for name, im in frames:
+        bb = im.getchannel("A").getbbox() or (0, 0, 1, 1)
+        cuts.append((name, im.crop(bb), bb, im.size))
+    best = None
+    for width in (128, 256, 384, 512, 768, 1024):
+        if max(c[1].width for c in cuts) + 2 * margin > width:
+            continue
+        order = sorted(range(len(cuts)), key=lambda i: -cuts[i][1].height)
+        pos, x, y, shelf = {}, margin, margin, 0
+        for i in order:
+            w, h = cuts[i][1].size
+            if x + w + margin > width:
+                x, y, shelf = margin, y + shelf + gap, 0
+            pos[i] = (x, y)
+            x += w + gap
+            shelf = max(shelf, h)
+        height = y + shelf + margin
+        if best is None or width * height < best[0] * best[1]:
+            best = (width, height, pos)
+    width, height, pos = best
+    sheet = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    entries = []
+    for i, (name, reg, bb, (fw, fh)) in enumerate(cuts):
+        x, y = pos[i]
+        sheet.paste(reg, (x, y))
+        entries.append({"n": name, "w": reg.width, "h": reg.height, "x": x, "y": y,
+                        "fx": -bb[0], "fy": -bb[1], "fw": fw, "fh": fh})
+    return sheet, entries
+
+
+def plan_bodies(live: Live, spec: dict, plan: Plan) -> None:
+    """全新造型本体：沿用官方母本的 parts/timeline（动作序列、变换矩阵、碰撞圆不变），51 张图换成新画的
+    整帧（imgNN_<短名>.png，画布尺寸必须与母本一致），重新打包成自有目录的图集；子纹理名换成新目录。"""
+    from PIL import Image
+    used = {bs.alias for v in spec["_variants"] for wave in v.waves for bs in wave}
+    for alias, bdef in spec["bosses"].items():
+        body = bdef.get("body")
+        if not body or alias not in used:
+            continue
+        old, new = body["from"], body["out"]
+        if not new.startswith(OWN_BOSS_DIR) or sheet_of(new) != new:
+            plan.problems.append(f"body {alias}: out must be {OWN_BOSS_DIR}<name>/<name>")
+            continue
+        raws = {suf: live.file(old + suf) for suf in (".png",) + PARTS_SUFFIXES}
+        if any(v is None for v in raws.values()):
+            raise BuildError(f"body {alias}: {old} is not a complete PartsAnimation")
+        parts = decode_amf(raws[".parts.amf3.deflate"])
+        atlas = {e["n"]: e for e in decode_amf(raws[".atlas.amf3.deflate"])}
+        frames_dir = Path(body["frames"]) if Path(body["frames"]).is_absolute() else TOOLS / body["frames"]
+        frames = []
+        for i, it in enumerate(parts["i"]):
+            src = atlas[it["p"]]
+            short = it["p"].rsplit("/", 1)[-1]
+            p = frames_dir / f"img{i:02d}_{short}.png"
+            if not p.exists():
+                plan.problems.append(f"body {alias}: missing frame {p.name}")
+                continue
+            im = Image.open(p).convert("RGBA")
+            want = (src.get("fw", src["w"]), src.get("fh", src["h"]))
+            if im.size != want:
+                plan.problems.append(f"body {alias}: {p.name} is {im.size[0]}x{im.size[1]}, canvas {want[0]}x{want[1]}")
+                continue
+            if sum(im.getchannel("A").histogram()[1:255]):
+                # 官方本体也有少量半透明（发光/残影）；新画的帧应为二值 alpha，这里只提醒不拦
+                plan.warnings.append(f"body {alias}: {p.name} has semi-transparent pixels")
+            frames.append((rename_prefix(it["p"], gen_prefix(old), gen_prefix(new)), im))
+        if len(frames) != len(parts["i"]):
+            continue
+        sheet, entries = pack_frames(frames)
+        new_parts = rename_prefix(parts, gen_prefix(old), gen_prefix(new))
+        if {i["p"] for i in new_parts["i"]} != {e["n"] for e in entries}:
+            raise BuildError(f"body {alias}: parts/atlas names diverged")
+        plan.files[new + ".png"] = store_png_bytes(sheet)
+        plan.files[new + ".atlas.amf3.deflate"] = encode_amf(entries)
+        plan.files[new + ".parts.amf3.deflate"] = encode_amf(new_parts)
+        plan.files[new + ".timeline.amf3.deflate"] = raws[".timeline.amf3.deflate"]
+        plan.report.setdefault("bodies", {})[alias] = {"from": old, "out": new, "frames": len(frames),
+                                                       "sheet": list(sheet.size)}
 
 
 def plan_ui_files(live: Live, spec: dict, plan: Plan) -> None:
@@ -1274,7 +1488,8 @@ def gate_variant(live: Live, spec: dict, plan: Plan, variant: Variant, terrain_t
         rows[code] = row
         w = info["wave"]
         layer = min(w, len(pos_layers) - 1)
-        need = {info["position"]} | routine_positions(live, row[GB_ROUTINE])
+        routine = plan.routine_sources.get(row[GB_ROUTINE], row[GB_ROUTINE])   # 自有试炼 routine 按母本查站位
+        need = {info["position"]} | routine_positions(live, routine)
         need.discard("(None)")
         missing = sorted(need - pos_layers[layer])
         if missing:
@@ -1292,6 +1507,25 @@ def gate_variant(live: Live, spec: dict, plan: Plan, variant: Variant, terrain_t
         for prog in roots:
             if dsl_tree(live, prog, plan.files) is None:
                 plan.problems.append(f"{variant.quest} {code}: missing DSL {prog}")
+        # 按属性取图（ResolveByElement，255=施法者属性）：换属性/借招式后变体必须存在，否则进战斗「数据不足」。
+        # 一族变体在 store 里一个都没有 = 随 APK 资源包下发（客户端回落 APK），这里核不了，只记警告。
+        own = ELEMENT_SUFFIX.get(int(row[0]) - 1) if row[0].isdigit() else None
+        lacking, unverifiable = set(), set()
+        for prog in progs:
+            tree = dsl_tree(live, prog, plan.files)
+            for base, el in (resolve_by_element_nodes(tree) if tree is not None else []):
+                suffix = own if el == 255 else ELEMENT_SUFFIX.get(el - 1)
+                if suffix is None:
+                    lacking.add(f"{base} (element {el})")
+                elif not element_variant_live(live, base, suffix):
+                    if any(element_variant_live(live, base, s) for s in ELEMENT_SUFFIX.values()):
+                        lacking.add(element_variant_anim(base, suffix))
+                    else:
+                        unverifiable.add(base)
+        if lacking:
+            plan.problems.append(f"{variant.quest} {code}: element variants missing {sorted(lacking)[:3]}")
+        if unverifiable:
+            plan.report.setdefault("element_variants_in_apk", set()).update(unverifiable)
     sheets = boss_sheets(live, rows, plan.files)
     m = mpx(sheets)
     lim = spec["budget"]
@@ -1318,6 +1552,9 @@ def gate_codes(live: Live, spec: dict, plan: Plan) -> None:
         for path, _ in plan.edits.get(table, []):
             if not path[0].startswith(owned_prefix):
                 plan.problems.append(f"{table}: non-owned key {path[0]}")
+    for path, _ in plan.edits.get(T_GBS, []):
+        if not path[0].startswith(owned_prefix) and path[0] != "devil_commander_evil_envy_80":   # 唯一例外：嫉妒还原
+            plan.problems.append(f"{T_GBS}: non-owned routine {path[0]}")
     for prog_logical in plan.files:
         if prog_logical.endswith(DSL_SUFFIX) and not prog_logical.startswith(OWN_DSL_DIR):
             plan.problems.append(f"DSL outside own dir: {prog_logical}")
@@ -1379,8 +1616,10 @@ def build(spec: dict | None = None, live: Live | None = None, *, official_gbs: C
         terrains[rnd] = spec_t
         trees[rnd] = tree
         plan.report.setdefault("terrains", {})[rnd] = rep
-    # 换色 boss 本体（先生成文件，预算门禁要读到新贴图尺寸）
+    # 换色 / 新造型 boss 本体与试炼 routine（先生成文件，预算门禁要读到新贴图尺寸）
     plan_recolors(live, spec, plan)
+    plan_bodies(live, spec, plan)
+    plan_routines(live, spec, plan)
     # 变体 + 克隆
     for v in spec["_variants"]:
         plan_variant(live, spec, plan, v, terrains)
@@ -1399,6 +1638,8 @@ def build(spec: dict | None = None, live: Live | None = None, *, official_gbs: C
     for v in spec["_variants"]:
         budgets[v.quest] = gate_variant(live, spec, plan, v, trees[v.round])
     plan.report["budget"] = budgets
+    if "element_variants_in_apk" in plan.report:
+        plan.report["element_variants_in_apk"] = sorted(plan.report["element_variants_in_apk"])
     plan.report["clones"] = len(plan.clones)
     plan.report["variants"] = {v.quest: v.name for v in spec["_variants"]}
     return plan
