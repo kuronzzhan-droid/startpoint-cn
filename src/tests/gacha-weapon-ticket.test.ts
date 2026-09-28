@@ -1,8 +1,13 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import test from "node:test";
 
+import { selectWeightedIndexByRoll } from "../lib/gacha";
 import { buildGachaExecPlan } from "../lib/gacha-exec-plan";
-import { GACHA_EXEC_TYPES, GACHA_PAGE_KINDS, GACHA_PAYMENT_TYPES, isGachaExecAllowed } from "../lib/gacha-rules";
+import {
+    GACHA_EXEC_TYPES, GACHA_PAGE_KINDS, GACHA_PAYMENT_TYPES, getExchangeableGachaItem, isGachaExecAllowed,
+} from "../lib/gacha-rules";
 import { GACHA_TICKET_ITEM_IDS, getGachaTicketCost } from "../lib/gacha-ticket";
 import { Gacha, GachaType } from "../lib/types";
 
@@ -90,4 +95,79 @@ test("wildcard weapon pools fall back to equipment tickets, never character tick
         GACHA_TICKET_ITEM_IDS.characterSingle);
     assert.equal(getGachaTicketCost(GACHA_EXEC_TYPES.CN_MULTI_TICKET, 1, character)?.itemId,
         GACHA_TICKET_ITEM_IDS.characterMulti);
+});
+
+
+// ---- 990003 池不变量(读 assets/gacha.json;作者 0928 口径) ----
+
+const CURSED_IDS = Array.from({ length: 29 }, (_, i) => 5910101 + i);
+const DEATHBRINGER = 5900101;
+const PARADOX = 5920001;
+
+function weaponGacha(): Gacha {
+    const all = JSON.parse(readFileSync(join(process.cwd(), "assets", "gacha.json"), "utf-8")) as Record<string, Gacha>;
+    const gacha = all["990003"];
+    assert.ok(gacha, "assets/gacha.json must contain 990003");
+    return gacha;
+}
+
+test("990003 is a ticket-only weapon pool with 15% ★5 and its own tickets", () => {
+    const gacha = weaponGacha();
+    assert.equal(gacha.type, GachaType.WEAPON);
+    assert.equal(gacha.pageKind, GACHA_PAGE_KINDS.TICKET_ONLY);
+    assert.equal(gacha.onceTicketItemId, ONCE_TICKET);
+    assert.equal(gacha.tenTicketItemId, TEN_TICKET);
+    assert.equal(gacha.wildcardTicketAvailable, false);
+    assert.deepEqual(gacha.rankRates, { normal: [150, 250, 600], multiGuarantee: [150, 850] });
+    for (const [key, rank] of [["1", 5], ["2", 4], ["3", 3]] as const) {
+        for (const row of gacha.pool[key]) assert.equal(row.rank, rank, `${row.id} in pool ${key}`);
+    }
+    const ids = Object.values(gacha.pool).flat().map(row => row.id);
+    assert.equal(new Set(ids).size, ids.length, "duplicate pool rows");
+});
+
+test("990003 ★5 weights give exactly 0.3% per cursed weapon, 0.1% Deathbringer and 0% PARADOX", () => {
+    const five = weaponGacha().pool["1"];
+    const weights = five.map(row => Number(row.odds));
+    const total = weights.reduce((a, b) => a + b, 0);
+    assert.equal(total, 22800);
+    // 穷举全部 roll,逐行命中次数必须恰好等于权重(确定性证明,不依赖随机数)
+    const hits = new Map<number, number>();
+    for (let roll = 1; roll <= total; roll += 1) {
+        const index = selectWeightedIndexByRoll(weights, roll);
+        assert.notEqual(index, null);
+        const id = five[index as number].id;
+        hits.set(id, (hits.get(id) ?? 0) + 1);
+    }
+    for (const row of five) assert.equal(hits.get(row.id) ?? 0, Number(row.odds), `row ${row.id}`);
+    // ★5 档 15% × 档内占比:诅咒 456/22800 × 15% = 0.3%,死亡使者 152/22800 × 15% = 0.1%
+    for (const id of CURSED_IDS) assert.equal(hits.get(id), 456, `cursed ${id}`);
+    assert.equal(hits.get(DEATHBRINGER), 152);
+    assert.equal(hits.get(PARADOX) ?? 0, 0);
+    assert.ok(five.find(row => row.id === DEATHBRINGER)?.isRateUp);
+});
+
+test("990003 exchange accepts only the 29 cursed weapons", () => {
+    const gacha = weaponGacha();
+    const rows = Object.values(gacha.pool).flat();
+    const exchangeable = rows.filter(row => row.isExchangeable).map(row => row.id).sort((a, b) => a - b);
+    assert.deepEqual(exchangeable, CURSED_IDS);
+    for (const id of CURSED_IDS) assert.equal(getExchangeableGachaItem(gacha, id)?.id, id);
+    for (const id of [DEATHBRINGER, PARADOX, 8000101, 8000115]) assert.equal(getExchangeableGachaItem(gacha, id), null);
+    assert.ok(rows.some(row => row.id === PARADOX), "PARADOX stays listed at 0%");
+});
+
+test("five-boss shop no longer sells cursed bodies and sells the two tickets", () => {
+    const shop = JSON.parse(readFileSync(join(process.cwd(), "assets", "boss_coin_shop.json"), "utf-8"))["99"] as
+        Record<string, { rewards: { type: number, id: number, count: number }[] }>;
+    const categoryMap = JSON.parse(readFileSync(join(process.cwd(), "assets",
+        "boss_coin_shop_item_category_map.json"), "utf-8")) as Record<string, number>;
+    for (const [key, item] of Object.entries(shop)) {
+        for (const reward of item.rewards) assert.ok(!CURSED_IDS.includes(reward.id), `${key} still sells ${reward.id}`);
+    }
+    for (let key = 990099003; key <= 990099031; key += 1) assert.equal(categoryMap[String(key)], undefined, `${key}`);
+    assert.deepEqual(shop["990099032"].rewards, [{ type: 0, id: ONCE_TICKET, count: 1 }]);
+    assert.deepEqual(shop["990099033"].rewards, [{ type: 0, id: TEN_TICKET, count: 1 }]);
+    assert.equal(categoryMap["990099032"], 99);
+    assert.equal(categoryMap["990099033"], 99);
 });
