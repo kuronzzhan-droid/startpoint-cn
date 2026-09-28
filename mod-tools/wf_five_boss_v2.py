@@ -790,13 +790,13 @@ def plan_clone(live: Live, spec: dict, plan: Plan, variant: Variant, wave: int, 
                     r[c] = rc["out"]
         if bdef.get("element") is not None:
             r[0] = str(bdef["element"])            # 显式属性码（暗=6）；按属性取图的特效随之换色
-        for slot, src in (bdef.get("actions") or {}).items():
-            r[GB_ACTION_FIRST + int(slot) - 1] = resolve_action(live, src)
+        for action_slot, src in (bdef.get("actions") or {}).items():
+            r[GB_ACTION_FIRST + int(action_slot) - 1] = resolve_action(live, src)
         for col, text in (bdef.get("texts") or {}).items():
             r[int(col)] = text
         if bdef.get("element") is not None:
-            for slot, prog in plan_funnel_preload_shims(live, plan, bs.alias, r).items():
-                r[GB_ACTION_FIRST + slot - 1] = prog
+            for action_slot, prog in plan_funnel_preload_shims(live, plan, bs.alias, r).items():
+                r[GB_ACTION_FIRST + action_slot - 1] = prog
         signature = [affix_program(s) for s in bdef.get("signature", [])]
         pre = strip_v1_curse(split_programs(r[GB_PRE])) + list(bdef.get("pre", [])) + signature + programs
         # 官方 749 行：无出场动作一律写空串（681 行）；写 "(None)" 客户端会去加载
