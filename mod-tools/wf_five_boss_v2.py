@@ -682,6 +682,86 @@ def element_variant_live(live: Live, base: str, suffix: str) -> bool:
     return live.file(anim + ".timeline.amf3.deflate") is not None and bool(sheet and png_dims(live, sheet + ".png"))
 
 
+T_FUNNEL = "master/battle/boss/funnel/general_funnel.orderedmap"
+SHIM_ELEMENT_CTORS = {"ResolveByElement": 2, "CreateNormalAttack": 2}   # 节点内「255=施法者属性」所在下标
+
+
+def fired_action_slots(live: Live, marker_anim: str) -> set[int]:
+    """marker 时间轴里出现过的 enemy_actionNN 点 = 会被触发的招式槽。"""
+    raw = live.file(marker_anim + ".timeline.amf3.deflate") if marker_anim and marker_anim != "(None)" else None
+    if raw is None:
+        return set(range(1, 51))                       # 读不到就当全部会触发（不放垫片）
+    out = set()
+    for p in decode_amf(raw).get("points", []):
+        m = re.match(r"enemy_action(\d+)$", p.get("path", ""))
+        if m and any(fr.get("data") for fr in p.get("frames", [])):
+            out.add(int(m.group(1)))
+    return out
+
+
+def spawned_funnels(live: Live, programs: Iterable[str], extra: dict[str, bytes]) -> set[str]:
+    out = set()
+    for prog in programs:
+        stack = [dsl_tree(live, prog, extra)]
+        while stack:
+            n = stack.pop()
+            if isinstance(n, list):
+                if len(n) > 1 and n[0] == "SpawnFunnel" and isinstance(n[1], list) and n[1][:1] == ["Funnel"]:
+                    out.add(n[1][1])
+                stack.extend(n)
+            elif isinstance(n, dict):
+                stack.extend(n.values())
+    return out
+
+
+def plan_funnel_preload_shims(live: Live, plan: Plan, alias: str, row: list[str]) -> dict[int, str]:
+    """C8016 垫片（2026-09-28 实机）：boss 改了属性后，它召唤的固定属性召唤物运行时按自身属性取图，
+    预载却按 boss 属性登记 ⇒ 召唤物特效变体没预载。把召唤物招式程序各复制一份、属性码写死为召唤物属性，
+    放进 marker 从不触发的空招式槽：客户端按全部 50 槽预载（ZoneSourceValues.resolveGeneralBosssAction），
+    写死的属性码直接解析（ActionDslAssetResolver.resolveElement），程序本身永不执行。返回 {槽号: 程序}。"""
+    cached = plan.report.setdefault("preload_shims", {}).get(alias)
+    if cached is not None:
+        return {int(k): v for k, v in cached.items()}
+    own = int(row[0]) if row[0].isdigit() else None
+    roots = split_programs(row[GB_PRE]) + [row[c] for c in range(GB_ACTION_FIRST, GB_ACTION_LAST + 1)
+                                           if c < len(row) and row[c] not in ("", "(None)")]
+    progs, _ = dsl_closure(live, roots, plan.files)
+    funnels = live.table(T_FUNNEL)
+    shims: list[str] = []
+    for code in sorted(spawned_funnels(live, progs, plan.files)):
+        node = funnels.get(code)
+        if not isinstance(node, dict):
+            continue
+        frow = one_row(node[tier_for_level(node)])
+        fel = int(frow[0]) if frow[0].isdigit() else None
+        if fel is None or fel == own:
+            continue
+        fprogs, _ = dsl_closure(live, [c for c in frow if c.startswith("battle/action/")], plan.files)
+        for i, prog in enumerate(sorted(fprogs)):
+            tree = copy.deepcopy(dsl_tree(live, prog, plan.files))
+            stack = [tree]
+            while stack:
+                n = stack.pop()
+                if isinstance(n, list):
+                    idx = SHIM_ELEMENT_CTORS.get(n[0]) if n and isinstance(n[0], str) else None
+                    if idx is not None and len(n) > idx and n[idx] == 255:
+                        n[idx] = fel
+                    stack.extend(n)
+                elif isinstance(n, dict):
+                    stack.extend(n.values())
+            path = f"{OWN_DSL_DIR}fb2_preload${alias}_{code}_{i}"
+            plan.files[wf_dsl.dsl_logical(path)] = encode_dsl(tree)
+            shims.append(path)
+    free = [s for s in range(50, 0, -1) if s not in fired_action_slots(live, row[25] if len(row) > 25 else "")
+            and row[GB_ACTION_FIRST + s - 1] in ("", "(None)")]
+    if len(free) < len(shims):
+        plan.problems.append(f"{alias}: {len(shims)} preload shims but only {len(free)} idle action slots")
+        shims = shims[:len(free)]
+    placed = dict(zip(free, shims))
+    plan.report["preload_shims"][alias] = {str(k): v for k, v in placed.items()}
+    return placed
+
+
 def clone_code(variant: Variant, alias: str, wave: int, slot: int) -> str:
     return f"{OWN_CODE_PREFIX}{variant.quest % 1000:03d}_{alias}_w{wave}{slot}"
 
@@ -714,6 +794,9 @@ def plan_clone(live: Live, spec: dict, plan: Plan, variant: Variant, wave: int, 
             r[GB_ACTION_FIRST + int(slot) - 1] = resolve_action(live, src)
         for col, text in (bdef.get("texts") or {}).items():
             r[int(col)] = text
+        if bdef.get("element") is not None:
+            for slot, prog in plan_funnel_preload_shims(live, plan, bs.alias, r).items():
+                r[GB_ACTION_FIRST + slot - 1] = prog
         signature = [affix_program(s) for s in bdef.get("signature", [])]
         pre = strip_v1_curse(split_programs(r[GB_PRE])) + list(bdef.get("pre", [])) + signature + programs
         # 官方 749 行：无出场动作一律写空串（681 行）；写 "(None)" 客户端会去加载
@@ -1454,12 +1537,17 @@ def boss_sheets(live: Live, code_rows: dict[str, list[str]], extra: dict[str, by
             suf = ELEMENT_SUFFIX.get(int(row[0]) - 1)
         except ValueError:
             suf = None
-        _, strings = dsl_closure(live, roots, extra)
+        progs, strings = dsl_closure(live, roots, extra)
         for s in strings:
             anims.add(s)
             if suf:
                 name = s.rsplit("/", 1)[-1]
                 anims.add(f"{s}/{name}_{suf}/{name}_{suf}")
+        for prog in progs:                      # 写死属性码的色替（含 C8016 垫片）也要计入
+            tree = dsl_tree(live, prog, extra)
+            for base, el in (resolve_by_element_nodes(tree) if tree is not None else []):
+                if el != 255 and ELEMENT_SUFFIX.get(el - 1):
+                    anims.add(element_variant_anim(base, ELEMENT_SUFFIX[el - 1]))
     out = {}
     for a in sorted(anims):
         sh = sheet_of(a)

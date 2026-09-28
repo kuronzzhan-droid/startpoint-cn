@@ -142,6 +142,19 @@ class PureFunctionTests(unittest.TestCase):
         self.assertEqual(node["1"]["fire"], routine["1"]["fire"])                     # 其余状态原样
         self.assertEqual(plan.routine_sources, {"mod_fb2_r": "src_routine"})
 
+    def test_fired_slots_and_spawned_funnels(self):
+        timeline = {"sequences": [], "sounds": [], "rectangles": [], "matrices": [], "circles": [],
+                    "points": [{"path": "enemy_action03", "frames": [{"begin": 1, "data": []}, {"begin": 9, "data": [{"x": 0, "y": 0}]}]},
+                               {"path": "enemy_action07", "frames": [{"begin": 1, "data": []}]},
+                               {"path": "center", "frames": [{"begin": 1, "data": [{"x": 0, "y": 0}]}]}]}
+        prog = "battle/action/enemy/action/x/y$z"
+        dsl = F._root([F._cmd(["SpawnFunnel", ["Funnel", "dog"], 3, ["FunnelGroup", 1], []])])
+        files = {"m.timeline.amf3.deflate": F.encode_amf(timeline), wf_dsl.dsl_logical(prog): F.encode_dsl(dsl)}
+        live = F.Live(lambda lg: files[lg] if lg in files else (_ for _ in ()).throw(FileNotFoundError(lg)))
+        self.assertEqual(F.fired_action_slots(live, "m"), {3})          # 只有带坐标数据的帧算触发
+        self.assertEqual(F.fired_action_slots(live, "(None)"), set(range(1, 51)))
+        self.assertEqual(F.spawned_funnels(live, [prog], {}), {"dog"})
+
     def test_resolve_action_passthrough_and_variant_path(self):
         self.assertEqual(F.resolve_action(None, "a/b$c"), "a/b$c")
         self.assertEqual(F.element_variant_anim("battle/effect/g/shot", "black"), "battle/effect/g/shot/shot_black/shot_black")
