@@ -215,6 +215,38 @@ test("HTTP start and finish use the custom ledger without a donor quest row", as
 })
 
 
+test("HTTP replay of a receipt settled before the weapon drop (no grantedEquipment) still answers 200", async () => {
+    // 升级前(lens0909 / 347efb99)落盘的 receipt 只有 firstClear/grantedItems/itemTotals,
+    // settleMemberSync 重放时原样 JSON.parse 读回、不补默认值。部署新代码时正好卡在
+    // "已结算但客户端没收到响应"的玩家重发 finish,必须按"没掉武器"处理,不能抛 TypeError 变 500。
+    const run = await createSoloRun()
+    const start = await app.inject({ method: "POST", url: "/start", payload: startPayload(run) })
+    assert.equal(start.statusCode, 200, start.body)
+    const finish = await app.inject({ method: "POST", url: "/finish", payload: finishPayload(run) })
+    assert.equal(finish.statusCode, 200, finish.body)
+    const settledCrystal = JSON.parse(finish.body).data
+        .item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)]
+
+    const receipt = getDb().prepare(`
+        SELECT run_id, reward_json FROM five_boss_gauntlet_receipts WHERE player_id = ?
+    `).get(run.playerId) as { run_id: string, reward_json: string }
+    const legacy = JSON.parse(receipt.reward_json) as Record<string, unknown>
+    delete legacy.grantedEquipment
+    delete legacy.proofComplete
+    assert.deepEqual(Object.keys(legacy).sort(), ["firstClear", "grantedItems", "itemTotals"])
+    getDb().prepare(`
+        UPDATE five_boss_gauntlet_receipts SET reward_json = ? WHERE run_id = ? AND player_id = ?
+    `).run(JSON.stringify(legacy), receipt.run_id, run.playerId)
+
+    const replay = await app.inject({ method: "POST", url: "/finish", payload: finishPayload(run) })
+    assert.equal(replay.statusCode, 200, replay.body)
+    const data = JSON.parse(replay.body).data
+    assert.deepEqual(data.equipment_list, [])
+    assert.equal(data.item_list[String(FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal)], settledCrystal)
+    assert.ok(data.drop_additional_reward_ids.length > 0, "material drops are still shown on replay")
+})
+
+
 test("HTTP start without a host ticket still plays and finishes with an empty reward list", async () => {
     const run = await createSoloRun(0)
     const start = await app.inject({ method: "POST", url: "/start", payload: startPayload(run) })

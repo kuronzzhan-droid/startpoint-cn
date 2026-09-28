@@ -183,6 +183,18 @@ function finishItemList(
 
 
 /**
+ * receipt 里的诅咒武器 id 列表。升级前(lens0909 / 347efb99)落盘的 receipt 没有
+ * grantedEquipment 字段,而 settleMemberSync 重放时是原样 JSON.parse 读回、不补默认值;
+ * 这类 receipt 按"当年没有掉武器"处理,否则 for…of / map 会抛 TypeError,finish 变 500。
+ */
+function receiptGrantedEquipment(result: FinishFiveBossBattleResult): number[] {
+    if (result.kind !== "success") return []
+    const granted: unknown = result.reward.grantedEquipment
+    return Array.isArray(granted) ? granted : []
+}
+
+
+/**
  * 诅咒武器掉落序列化,镜像 finishItemList 的现查作风:receipt 里只留 grantedEquipment
  * (id 列表,重放时原样读回),equipment_list 的每一条状态(level/stack/护佑)在响应组装时
  * 现查数据库——重放遇到期间被其它途径改动过的持有状态,与 item_list 表现一致。
@@ -196,7 +208,7 @@ function finishEquipmentList(
 
     const seen = new Set<number>()
     const list: Object[] = []
-    for (const equipmentId of result.reward.grantedEquipment) {
+    for (const equipmentId of receiptGrantedEquipment(result)) {
         if (seen.has(equipmentId)) continue
         seen.add(equipmentId)
         const owned = getPlayerEquipmentSync(playerId, equipmentId)
@@ -277,7 +289,7 @@ function buildFinishData(
         drop_additional_reward_ids: result.kind === "success"
             ? [
                 ...buildFiveBossAdditionalRewardDrops(result.reward.grantedItems),
-                ...buildFiveBossWeaponAdditionalRewardDrops(result.reward.grantedEquipment),
+                ...buildFiveBossWeaponAdditionalRewardDrops(receiptGrantedEquipment(result)),
             ]
             : [],
         drop_periodic_reward_ids: [],
