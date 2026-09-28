@@ -12,7 +12,10 @@ import { getPlayerSync } from "../../data/domains/player";
 import { getSession } from "../../data/domains/session";
 import { generateDataHeaders } from "../../utils";
 import { clientSerializeEquipment, buildFullEquipmentList } from "../../lib/equipment";
-import { getEquipmentDissolveSync, getConfigSync, getEquipmentCraftSync } from "../../lib/assets";
+import {
+    getEquipmentDissolveSync, getConfigSync, getEquipmentCraftSync, getEquipmentAwakeningRulesSync,
+} from "../../lib/assets";
+import { checkAwakeningItem } from "../../lib/equipment-awakening-rules";
 import { AccountId, PlayerId } from "../../lib/types";
 import { resolvePlayerIdSync } from "../../data/activeAccount";
 
@@ -44,6 +47,8 @@ const wrightpieceItemId = () => getConfigSync().craft_point_item_id || 100000
 const getUpgradeCost = (rarity: number): number => getEquipmentCraftSync(rarity)?.awakening_craft ?? 25
 
 const routes = async (fastify: FastifyInstance) => {
+    // Parsed at registration so a malformed assets/equipment_awakening_material.json stops startup.
+    const awakeningRules = getEquipmentAwakeningRulesSync()
 
     // ── upgrade (single equipment awakening) ───────────────────────────
     fastify.post("/upgrade", async (request: FastifyRequest, reply: FastifyReply) => {
@@ -67,6 +72,11 @@ const routes = async (fastify: FastifyInstance) => {
 
         const equipment = getPlayerEquipmentSync(playerId, equipmentId)
         if (!equipment) return reply.status(400).send({ "error": "Bad Request", "message": "Player does not own equipment." })
+
+        // Without duplicates the item must be the equipment's own material (cursed weapons, PARADOX) or an
+        // official crystal that fits its rarity; the client picks crystals by rarity only.
+        const itemCheck = checkAwakeningItem(awakeningRules, { equipmentId, useStack, itemId })
+        if (!itemCheck.ok) return reply.status(400).send({ "error": "Bad Request", "message": itemCheck.message })
 
         const cdnInfo = getEquipmentDissolveSync(equipmentId)
         const maxLevel = cdnInfo?.max_level ?? 5
@@ -122,6 +132,7 @@ const routes = async (fastify: FastifyInstance) => {
     })
 
     // ── bulk_upgrade (one-click awakening) ─────────────────────────────
+    // Duplicates only (no item), so the awakening-item whitelist does not apply here.
     fastify.post("/bulk_upgrade", async (request: FastifyRequest, reply: FastifyReply) => {
         const body = request.body as BulkUpgradeBody
 
