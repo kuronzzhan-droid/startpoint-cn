@@ -5,7 +5,6 @@ export type FiveBossGauntletRunStatus = "active" | "settled" | "aborted";
 
 export type FiveBossGauntletRunErrorCode =
     | "invalid_argument"
-    | "insufficient_ticket"
     | "run_conflict"
     | "roster_conflict"
     | "participant_not_in_roster"
@@ -36,6 +35,11 @@ export interface FiveBossGauntletRun {
     ticketItemId: number;
     expectedMemberCount: number;
     status: FiveBossGauntletRunStatus;
+    /**
+     * 房主在 run 创建时是否真的扣掉了一张凭证。false = 房主没票也照样开局
+     * (2026-09-09 作者规则),全员结算时不发任何模式奖励、不记通关。
+     */
+    rewardsEnabled: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -92,6 +96,8 @@ export interface RewardContext {
     member: BoundFiveBossGauntletMember;
     playerId: number;
     rewardMultiplier: 1 | 2;
+    /** 与 run.rewardsEnabled 相同;false 时回调必须一件奖励都不发。 */
+    rewardsEnabled: boolean;
 }
 
 export interface AbortMemberContext {
@@ -107,6 +113,7 @@ interface RawRun {
     ticket_item_id: number;
     expected_member_count: number;
     status: FiveBossGauntletRunStatus;
+    rewards_enabled: number;
     created_at: string;
     updated_at: string;
 }
@@ -194,9 +201,34 @@ function runFromRaw(row: RawRun): FiveBossGauntletRun {
         ticketItemId: row.ticket_item_id,
         expectedMemberCount: row.expected_member_count,
         status: row.status,
+        rewardsEnabled: row.rewards_enabled === 1,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
     };
+}
+
+
+let rewardsEnabledColumnEnsured = false;
+
+/**
+ * 灰的服务端只按整文件覆盖装 five-boss 模块,不一定会同步换 wdfpData.ts 的建表/迁移;
+ * 这里再兜一道:老库缺 rewards_enabled 就现场补列(默认 1 = 历史 run 都算有奖励)。
+ * 每进程只查一次 pragma。
+ */
+function ensureRewardsEnabledColumn(): void {
+    if (rewardsEnabledColumnEnsured) return;
+    const db = getDb();
+    const columns = db.prepare("PRAGMA table_info(five_boss_gauntlet_runs)").all() as Array<{ name: string }>;
+    if (columns.length === 0) return; // 表还没建(wdfpData 尚未跑),下次再看
+    if (columns.some(column => column.name === "rewards_enabled")) {
+        rewardsEnabledColumnEnsured = true;
+        return;
+    }
+    // 只在"列确实存在"时才记住;ALTER 若发生在某个随后回滚的事务里会被一起回滚,
+    // 这里不置旗标,下一次调用重新查 pragma、重新补列。
+    db.prepare(
+        "ALTER TABLE five_boss_gauntlet_runs ADD COLUMN rewards_enabled INTEGER NOT NULL DEFAULT 1 CHECK (rewards_enabled IN (0, 1))",
+    ).run();
 }
 
 
@@ -228,9 +260,10 @@ function boundMemberFromRaw(row: RawMember): BoundFiveBossGauntletMember {
 
 
 function selectRun(runId: string): RawRun | undefined {
+    ensureRewardsEnabledColumn();
     return getDb().prepare(`
         SELECT run_id, host_player_id, route_id, room_number, ticket_item_id,
-               expected_member_count, status, created_at, updated_at
+               expected_member_count, status, rewards_enabled, created_at, updated_at
         FROM five_boss_gauntlet_runs
         WHERE run_id = ?
     `).get(runId) as RawRun | undefined;
@@ -327,6 +360,7 @@ export function startMemberSync<T>(
     if (typeof persistActiveQuest !== "function") {
         fail("invalid_argument", "persistActiveQuest must be a function");
     }
+    ensureRewardsEnabledColumn();
     const db = getDb();
 
     return db.transaction(() => {
@@ -347,21 +381,21 @@ export function startMemberSync<T>(
                 fail("run_conflict", "room already belongs to a different active server run");
             }
 
+            // 2026-09-09 作者规则:只从房主身上扣一张凭证;房主没票也照样建 run、照样开局,
+            // 只是整局 rewards_enabled=0 —— 三个人谁有票都不扣、谁也不发模式奖励。
             const ticketUpdate = db.prepare(`
                 UPDATE players_items
                 SET amount = amount - 1
                 WHERE player_id = ? AND id = ? AND amount >= 1
             `).run(normalized.hostPlayerId, normalized.ticketItemId);
-            if (ticketUpdate.changes !== 1) {
-                fail("insufficient_ticket", "host does not own the required ticket");
-            }
+            const rewardsEnabled = ticketUpdate.changes === 1;
 
             const now = new Date().toISOString();
             db.prepare(`
                 INSERT INTO five_boss_gauntlet_runs (
                     run_id, host_player_id, route_id, room_number, ticket_item_id,
-                    expected_member_count, status, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)
+                    expected_member_count, status, rewards_enabled, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)
             `).run(
                 normalized.runId,
                 normalized.hostPlayerId,
@@ -369,6 +403,7 @@ export function startMemberSync<T>(
                 normalized.roomNumber,
                 normalized.ticketItemId,
                 normalized.rosterPlayerIds.length,
+                rewardsEnabled ? 1 : 0,
                 now,
                 now,
             );
@@ -530,6 +565,7 @@ export function settleMemberSync<T>(
 } {
     const normalized = validateClientKey(input);
     if (typeof grantRewards !== "function") fail("invalid_argument", "grantRewards must be a function");
+    ensureRewardsEnabledColumn();
     const db = getDb();
 
     return db.transaction(() => {
@@ -566,6 +602,7 @@ export function settleMemberSync<T>(
             member,
             playerId: normalized.playerId,
             rewardMultiplier,
+            rewardsEnabled: rawRun.rewards_enabled === 1,
         });
         let rewardJson: string | undefined;
         try {
@@ -624,6 +661,7 @@ export function abortMemberSync<T>(
     if (typeof deletePersistentActive !== "function") {
         fail("invalid_argument", "deletePersistentActive must be a function");
     }
+    ensureRewardsEnabledColumn();
     const db = getDb();
 
     return db.transaction(() => {

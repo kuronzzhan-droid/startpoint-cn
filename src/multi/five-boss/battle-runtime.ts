@@ -68,6 +68,8 @@ export interface StartFiveBossBattleResult {
     startStatus: "started" | "already_started" | "resumed"
     runId: string
     runStatus: "active" | "settled" | "aborted"
+    /** false = 房主开局时没有凭证:本局照打,但全员无模式奖励、不记通关。 */
+    rewardsEnabled: boolean
     activeQuest: ActiveQuest
 }
 
@@ -105,6 +107,8 @@ export interface SuccessfulFiveBossBattleFinish {
     runId: string
     runStatus: "active" | "settled" | "aborted"
     rewardMultiplier: 1 | 2
+    /** false = 房主无票局:reward.grantedItems 为空,通关记录也没写。 */
+    rewardsEnabled: boolean
     reward: FiveBossBattleRewardReceipt
 }
 
@@ -407,6 +411,7 @@ export function createFiveBossBattleRuntime(
             startStatus: result.status,
             runId: result.run.runId,
             runStatus: result.run.status,
+            rewardsEnabled: result.run.rewardsEnabled,
             activeQuest: result.persisted,
         }
     }
@@ -447,6 +452,12 @@ export function createFiveBossBattleRuntime(
             clientPlayId: input.clientPlayId,
         }, context => {
             assertPersistentActiveQuest(context.run, context.member, input)
+            if (!context.rewardsEnabled) {
+                // 房主无票局(2026-09-09 作者规则):不发任何模式材料,也不写通关记录 ——
+                // 首通之证留给第一次"有票"的通关;只清掉 active quest 让玩家能开下一局。
+                deletePlayerActiveQuestSync(input.playerId)
+                return { firstClear: false, grantedItems: [], itemTotals: {} }
+            }
             const previous = getPlayerSingleQuestProgressSync(
                 input.playerId,
                 FIVE_BOSS_GAUNTLET.category,
@@ -476,6 +487,7 @@ export function createFiveBossBattleRuntime(
             runId: result.run.runId,
             runStatus: result.run.status,
             rewardMultiplier: result.rewardMultiplier,
+            rewardsEnabled: result.run.rewardsEnabled,
             reward: result.reward,
         }
     }

@@ -28,27 +28,45 @@ after(() => {
     rmSync(databaseDir, { recursive: true, force: true })
 })
 
-test("solo clear grants the mode materials at multiplier 1 and reports display drops", () => {
+test("solo multiplier is 2x only for a run that stayed manual from start to finish", () => {
+    // 2026-09-09 作者:「auto 锁开启也双倍奖励」—— 与多人同口径:全程手动 2 倍,AUTO 局 1 倍。
+    assert.equal(soloModule.fiveBossSoloRewardMultiplier({ autoAtStart: false, autoUsed: false }), 2)
+    assert.equal(soloModule.fiveBossSoloRewardMultiplier({ autoAtStart: true, autoUsed: false }), 1)
+    assert.equal(soloModule.fiveBossSoloRewardMultiplier({ autoAtStart: false, autoUsed: true }), 1)
+    // 快照缺失(重建的 active quest / 陈旧行)fail-closed 到 1 倍
+    assert.equal(soloModule.fiveBossSoloRewardMultiplier(null), 1)
+})
+
+test("manual solo clear grants the mode materials at 2x and reports display drops", () => {
     const playerId = createPlayer()
-    const result = soloModule.grantFiveBossSoloRewardsSync({ playerId, firstClear: true, randomFloat: () => 0.99 })
+    const result = soloModule.grantFiveBossSoloRewardsSync({ playerId, firstClear: true, rewardMultiplier: 2, randomFloat: () => 0.99 })
     assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.blueprintFragment) ?? 0, 0)
-    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 5)
+    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 10)
     assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.firstClearEmblem), 1)
     assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore) ?? 0, 0)
     assert.deepEqual(result.items, {
-        [FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal]: 5,
+        [FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal]: 10,
         [FIVE_BOSS_GAUNTLET_REWARD_IDS.firstClearEmblem]: 1,
     })
     assert.deepEqual(result.dropAdditionalRewardIds.map(d => [d.group_id, d.index, d.number]), [
-        [FIVE_BOSS_GAUNTLET_REWARD_DISPLAY.additionalRewardGroupId, 2, 5],
+        [FIVE_BOSS_GAUNTLET_REWARD_DISPLAY.additionalRewardGroupId, 2, 10],
         [FIVE_BOSS_GAUNTLET_REWARD_DISPLAY.additionalRewardGroupId, 3, 1],
     ])
 })
 
-test("repeat solo clear skips the first-clear emblem and can roll the core", () => {
+test("repeat solo clear skips the first-clear emblem and rolls blueprint and core at 2x", () => {
     const playerId = createPlayer()
-    const result = soloModule.grantFiveBossSoloRewardsSync({ playerId, firstClear: false, randomFloat: () => 0.1 })
+    const result = soloModule.grantFiveBossSoloRewardsSync({ playerId, firstClear: false, rewardMultiplier: 2, randomFloat: () => 0.1 })
     assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.firstClearEmblem) ?? 0, 0)
-    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore), 1)
+    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.blueprintFragment), 1)
+    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 10)
+    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore), 2)
     assert.equal(result.granted.length, 3)
+})
+
+test("an Auto-start solo clear grants the mode materials at 1x", () => {
+    const playerId = createPlayer()
+    const result = soloModule.grantFiveBossSoloRewardsSync({ playerId, firstClear: false, rewardMultiplier: 1, randomFloat: () => 0.99 })
+    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 5)
+    assert.deepEqual(result.items, { [FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal]: 5 })
 })

@@ -192,6 +192,7 @@ function rewardFiveBossPartyExp(
     party: { characters?: Array<{ id?: unknown } | null>, unison_characters?: Array<{ id?: unknown } | null> } | undefined,
     body: MultiFinishBody,
     accomplished: boolean,
+    rewardsEnabled: boolean,
 ): RewardPlayerCharacterExpResult | null {
     const ids: number[] = []
     for (const entry of [...(party?.characters ?? []), ...(party?.unison_characters ?? [])]) {
@@ -200,7 +201,8 @@ function rewardFiveBossPartyExp(
     }
     if (ids.length === 0) return null
     const questRow = getQuestFromCategorySync(body.category, body.quest_id) as { characterExpReward?: number } | null
-    const expReward = accomplished ? (questRow?.characterExpReward ?? 0) : 0
+    // 房主无票局(rewardsEnabled=false)角色经验也归零,但占位条目必须保留(C2620)。
+    const expReward = accomplished && rewardsEnabled ? (questRow?.characterExpReward ?? 0) : 0
     return givePlayerCharactersExpSync(playerId, ids, expReward, false)
 }
 
@@ -305,6 +307,10 @@ export function handleFiveBossStart(
     })
     activeQuests[playerId] = result.activeQuest
     updatePlayerSync({ id: playerId, partySlot: body.party_id })
+    if (!result.rewardsEnabled) {
+        console.log(`[MULTI] five-boss start: host had no ticket, run ${result.runId} plays without rewards`
+            + ` viewer=${body.viewer_id} room=${body.room_number} status=${result.startStatus}`)
+    }
 
     reply.header("content-type", "application/x-msgpack")
     return reply.status(200).send({
@@ -346,6 +352,10 @@ export async function handleFiveBossFinish(
     })
     clearMatchingMemoryActive(playerId, body.play_id)
     terminalRoomTransition(roomNumber, result.runId, result.runStatus)
+    if (result.kind === "success" && !result.rewardsEnabled) {
+        console.log(`[MULTI] five-boss finish: no rewards (host started without a ticket)`
+            + ` player=${playerId} run=${result.runId} receipt=${result.receiptStatus}`)
+    }
 
     const matePlayerResult = body.mate_player_result ?? []
     const followInfo = await buildFollowInfo(
@@ -354,7 +364,13 @@ export async function handleFiveBossFinish(
         memoryBeforeFinish?.matePlayerIds ?? body.mate_player_ids ?? [],
     )
     const dataHeaders = generateDataHeaders({ viewer_id: body.viewer_id })
-    const exp = rewardFiveBossPartyExp(playerId, party, body, result.kind === "success")
+    const exp = rewardFiveBossPartyExp(
+        playerId,
+        party,
+        body,
+        result.kind === "success",
+        result.kind === "success" && result.rewardsEnabled,
+    )
     const player = requirePlayer(playerId)
     reply.header("content-type", "application/x-msgpack")
     return reply.status(200).send({

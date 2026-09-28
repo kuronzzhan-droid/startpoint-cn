@@ -24,3 +24,15 @@ export function isFiveBossGauntletQuest(
     return category === FIVE_BOSS_GAUNTLET.category
         && questId === FIVE_BOSS_GAUNTLET.visibleQuestId
 }
+
+
+/** 可见入口 1099001 加两个 BothBoss 隐藏关:凡属这一家的关卡,入场凭证都按"可选"处理。 */
+export function isFiveBossGauntletFamilyQuest(
+    category: number,
+    questId: number | string,
+): boolean {
+    if (category !== FIVE_BOSS_GAUNTLET.category) return false
+    const id = Number(questId)
+    return id === FIVE_BOSS_GAUNTLET.visibleQuestId
+        || (FIVE_BOSS_GAUNTLET.hiddenQuestIds as readonly number[]).includes(id)
+}

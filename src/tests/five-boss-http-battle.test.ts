@@ -227,6 +227,31 @@ test("HTTP start and finish use the custom ledger without a donor quest row", as
 })
 
 
+test("HTTP start without a host ticket still plays and finishes with an empty reward list", async () => {
+    const run = await createSoloRun(0)
+    const start = await app.inject({ method: "POST", url: "/start", payload: startPayload(run) })
+    assert.equal(start.statusCode, 200, start.body)
+    assert.equal(itemDomain.getPlayerItemSync(run.playerId, FIVE_BOSS_GAUNTLET.ticketItemId) ?? 0, 0)
+    assert.equal(activeQuests[run.playerId]?.playId, run.playId)
+    completeBattleProof(run)
+
+    const finish = await app.inject({ method: "POST", url: "/finish", payload: finishPayload(run) })
+    assert.equal(finish.statusCode, 200, finish.body)
+    const data = JSON.parse(finish.body).data
+    assert.deepEqual(data.drop_additional_reward_ids, [])
+    assert.deepEqual(data.item_list, {})
+    assert.equal(data.clear_rank, 5)
+    assert.equal(itemDomain.getPlayerItemSync(run.playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), null)
+    assert.equal(questDomain.getPlayerSingleQuestProgressSync(
+        run.playerId,
+        FIVE_BOSS_GAUNTLET.category,
+        FIVE_BOSS_GAUNTLET.visibleQuestId,
+    ), null)
+    assert.equal(getRoom(run.room.room_number), undefined)
+    assert.equal(activeQuests[run.playerId], undefined)
+})
+
+
 test("HTTP abort ends a host run without rewards or a ticket refund", async () => {
     const run = await createSoloRun(2)
     const start = await app.inject({ method: "POST", url: "/start", payload: startPayload(run) })
@@ -336,7 +361,15 @@ test("HTTP finish resolves the room from the active quest when the client omits 
     playerDomain.updatePlayerSync({ id: run.playerId, rankPoint: 90_012_553 })
 
     const { room_number: _omitted, ...payloadWithoutRoom } = finishPayload(run)
-    const finish = await app.inject({ method: "POST", url: "/finish", payload: payloadWithoutRoom })
+    // 图纸是 50% 概率掉(2026-09-06),HTTP 路径没有 randomFloat 注入口:钉住 Math.random 让本条断言确定。
+    const originalRandom = Math.random
+    Math.random = () => 0.1
+    let finish
+    try {
+        finish = await app.inject({ method: "POST", url: "/finish", payload: payloadWithoutRoom })
+    } finally {
+        Math.random = originalRandom
+    }
     assert.equal(finish.statusCode, 200, finish.body)
     const data = JSON.parse(finish.body).data
     assert.equal(data.user_info.degree_id, playerDomain.getPlayerSync(run.playerId)?.degreeId ?? 1)

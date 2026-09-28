@@ -333,18 +333,43 @@ test("active-quest callback failure rolls back host ticket, run, roster, and bin
 });
 
 
-test("insufficient host ticket rejects a guest-first start without partial rows", () => {
+test("a host without a ticket still starts the run, spends nothing, and settles everyone without rewards", () => {
+    // 2026-09-09 作者规则:房主没票也能开局;客人有票也绝不代扣;整局 rewardsEnabled=false。
     const hostPlayerId = createPlayer(0);
-    const guestPlayerId = createPlayer(0);
-    const runId = "run-insufficient-ticket";
+    const guestPlayerId = createPlayer(2);
+    const runId = "run-host-no-ticket";
+    const roster = [hostPlayerId, guestPlayerId];
 
-    assertRunError("insufficient_ticket", () => runDomain.startMemberSync(
-        startInput(runId, hostPlayerId, [hostPlayerId, guestPlayerId], guestPlayerId, "guest-no-ticket"),
+    const guestStart = runDomain.startMemberSync(
+        startInput(runId, hostPlayerId, roster, guestPlayerId, "guest-no-ticket"),
         persistActiveQuest,
-    ));
+    );
+    const hostStart = runDomain.startMemberSync(
+        startInput(runId, hostPlayerId, roster, hostPlayerId, "host-no-ticket"),
+        persistActiveQuest,
+    );
+    assert.equal(guestStart.status, "started");
+    assert.equal(guestStart.run.rewardsEnabled, false);
+    assert.equal(hostStart.run.rewardsEnabled, false);
+    assert.equal(runStatus(runId), "active");
+    assert.equal(activePlayId(guestPlayerId), "guest-no-ticket");
+    assert.equal(itemDomain.getPlayerItemSync(hostPlayerId, TICKET_ITEM_ID) ?? 0, 0);
+    assert.equal(itemDomain.getPlayerItemSync(guestPlayerId, TICKET_ITEM_ID), 2);
 
-    assert.equal(runStatus(runId), null);
-    assert.equal(activePlayId(guestPlayerId), null);
+    completeBattleProof(runId, hostPlayerId);
+    completeBattleProof(runId, guestPlayerId);
+    const seen: boolean[] = [];
+    for (const [playerId, clientPlayId] of [[guestPlayerId, "guest-no-ticket"], [hostPlayerId, "host-no-ticket"]] as const) {
+        const settled = runDomain.settleMemberSync({ playerId, clientPlayId }, context => {
+            seen.push(context.rewardsEnabled);
+            return { rewardsEnabled: context.rewardsEnabled };
+        });
+        assert.equal(settled.run.rewardsEnabled, false);
+        assert.deepEqual(settled.reward, { rewardsEnabled: false });
+    }
+    assert.deepEqual(seen, [false, false]);
+    assert.equal(runStatus(runId), "settled");
+    assert.equal(itemDomain.getPlayerItemSync(guestPlayerId, TICKET_ITEM_ID), 2);
 });
 
 
@@ -497,6 +522,7 @@ test("settlement derives manual 2x and auto 1x and replays receipts exactly once
     );
 
     assert.equal(guest.rewardMultiplier, 2);
+    assert.equal(guest.run.rewardsEnabled, true);
     assert.deepEqual(guest.reward, { amount: 6 });
     assert.equal(replay.status, "already_settled");
     assert.deepEqual(replay.reward, guest.reward);

@@ -417,6 +417,69 @@ test("failed finish and explicit abort grant nothing, delete only exact active s
 })
 
 
+test("host without a ticket: everyone plays, nobody is rewarded, and the first ticketed clear still counts as first clear", () => {
+    const host = createPlayer(0)
+    const guest = createPlayer(5)
+    const room = roomFor("runtime-host-no-ticket", host, [host, guest], { [host]: false, [guest]: false })
+
+    const guestStart = runtimeModule.startFiveBossBattle(startInput(room, guest, "nt-guest"))
+    const hostStart = runtimeModule.startFiveBossBattle(startInput(room, host, "nt-host"))
+    assert.equal(guestStart.rewardsEnabled, false)
+    assert.equal(hostStart.rewardsEnabled, false)
+    assert.equal(hostStart.runStatus, "active")
+    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET.ticketItemId) ?? 0, 0)
+    assert.equal(itemDomain.getPlayerItemSync(guest, FIVE_BOSS_GAUNTLET.ticketItemId), 5)
+    for (const playerId of [host, guest]) completeBattleProof(room, playerId)
+
+    const guestFinish = runtimeModule.finishFiveBossBattle(finishInput(room, guest, "nt-guest", { randomFloat: () => 0 }))
+    const hostFinish = runtimeModule.finishFiveBossBattle(finishInput(room, host, "nt-host", { randomFloat: () => 0 }))
+    for (const finish of [guestFinish, hostFinish]) {
+        assert.equal(finish.kind, "success")
+        if (finish.kind !== "success") throw new Error("expected a successful finish")
+        assert.equal(finish.rewardsEnabled, false)
+        assert.deepEqual(finish.reward.grantedItems, [])
+        assert.deepEqual(finish.reward.itemTotals, {})
+        assert.equal(finish.reward.firstClear, false)
+    }
+    assert.equal(hostFinish.runStatus, "settled")
+    assert.equal(receiptCount(room.five_boss_runtime!.runId), 2)
+    for (const playerId of [host, guest]) {
+        assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), null)
+        assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.blueprintFragment), null)
+        assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.firstClearEmblem), null)
+        assert.equal(questDomain.getPlayerSingleQuestProgressSync(
+            playerId,
+            FIVE_BOSS_GAUNTLET.category,
+            FIVE_BOSS_GAUNTLET.visibleQuestId,
+        ), null)
+        assert.equal(activeQuestDomain.getPlayerActiveQuestSync(playerId), null)
+    }
+    assert.equal(itemDomain.getPlayerItemSync(guest, FIVE_BOSS_GAUNTLET.ticketItemId), 5)
+
+    // 同一房主随后拿到票再开一局:这次扣票、发奖,而且仍按首通发证。
+    itemDomain.setPlayerItemSync(host, FIVE_BOSS_GAUNTLET.ticketItemId, 1)
+    const rematch = roomFor("runtime-host-ticket-rematch", host, [host, guest], { [host]: false, [guest]: false })
+    const rematchStart = runtimeModule.startFiveBossBattle(startInput(rematch, host, "rt-host"))
+    runtimeModule.startFiveBossBattle(startInput(rematch, guest, "rt-guest"))
+    assert.equal(rematchStart.rewardsEnabled, true)
+    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET.ticketItemId), 0)
+    assert.equal(itemDomain.getPlayerItemSync(guest, FIVE_BOSS_GAUNTLET.ticketItemId), 5)
+    for (const playerId of [host, guest]) completeBattleProof(rematch, playerId)
+    const rematchFinish = runtimeModule.finishFiveBossBattle(finishInput(rematch, host, "rt-host"))
+    assert.equal(rematchFinish.kind, "success")
+    if (rematchFinish.kind !== "success") throw new Error("expected a successful rematch finish")
+    assert.equal(rematchFinish.rewardsEnabled, true)
+    assert.equal(rematchFinish.reward.firstClear, true)
+    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET_REWARD_IDS.firstClearEmblem), 1)
+    assert.equal(itemDomain.getPlayerItemSync(host, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 10)
+    assert.equal(questDomain.getPlayerSingleQuestProgressSync(
+        host,
+        FIVE_BOSS_GAUNTLET.category,
+        FIVE_BOSS_GAUNTLET.visibleQuestId,
+    )?.finished, true)
+})
+
+
 test("finish fails closed on request or persistent-active identity mismatch", () => {
     const host = createPlayer(2)
     const room = roomFor("runtime-identity-mismatch", host, [host], { [host]: false })

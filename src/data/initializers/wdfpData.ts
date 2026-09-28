@@ -739,10 +739,19 @@ export default function init(
         ticket_item_id INTEGER NOT NULL,
         expected_member_count INTEGER NOT NULL CHECK (expected_member_count BETWEEN 1 AND 3),
         status TEXT NOT NULL CHECK (status IN ('active', 'settled', 'aborted')),
+        rewards_enabled INTEGER NOT NULL DEFAULT 1 CHECK (rewards_enabled IN (0, 1)),
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         FOREIGN KEY (host_player_id) REFERENCES players (id) ON DELETE CASCADE
     )`).run()
+
+    // 2026-09-09 作者:房主没有凭证也能开局,只是全员无奖励。老库补这一列;
+    // 默认 1 = 历史 run 全部按"已扣票、有奖励"看待。
+    if (!hasColumn(database, "five_boss_gauntlet_runs", "rewards_enabled")) {
+        database.prepare(
+            "ALTER TABLE five_boss_gauntlet_runs ADD COLUMN rewards_enabled INTEGER NOT NULL DEFAULT 1 CHECK (rewards_enabled IN (0, 1))",
+        ).run()
+    }
 
     database.prepare(`CREATE TABLE IF NOT EXISTS five_boss_gauntlet_members (
         run_id TEXT NOT NULL,

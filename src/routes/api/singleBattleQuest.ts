@@ -24,8 +24,14 @@ import { isRushBoardRankingQuest } from "../../lib/rush-leaderboard-ranking-even
 import { buildRushEndlessCardFields } from "../../lib/rush-endless-card";
 import { handleRoguePerRoundDrops } from "../../lib/quest/finish/rogue-drops";
 import { handleRaidEventFinish } from "../../lib/quest/finish/raid-handler";
-import { isFiveBossGauntletQuest } from "../../multi/five-boss/contract";
-import { grantFiveBossSoloRewardsSync } from "../../multi/five-boss/solo-rewards";
+import { FIVE_BOSS_GAUNTLET, isFiveBossGauntletFamilyQuest, isFiveBossGauntletQuest } from "../../multi/five-boss/contract";
+import { fiveBossSoloRewardMultiplier, grantFiveBossSoloRewardsSync } from "../../multi/five-boss/solo-rewards";
+import {
+    clearFiveBossSoloStartSync,
+    readFiveBossSoloStartSync,
+    recordFiveBossSoloStartSync,
+} from "../../multi/five-boss/solo-ledger";
+import { getPlayerOptionsSync } from "../../data/domains/option";
 import { calculateClearRank } from "../../lib/quest/finish/quest-calc";
 import { validateSessionAndPlayer } from "../../lib/quest/finish/session-validator";
 import { resolveActiveQuest } from "../../lib/quest/finish/active-quest-resolver";
@@ -184,6 +190,19 @@ export function insertActiveQuest(playerId: number, quest: ActiveQuest) {
     })
 }
 
+/** 与 givePlayerScoreRewardsSync 同形的"什么都没发"结果,给五重无票局用。 */
+function emptyScoreRewardsResult(): ReturnType<typeof givePlayerScoreRewardsSync> {
+    return {
+        drop_score_reward_ids: [],
+        drop_rare_reward_ids: [],
+        user_info: { free_mana: 0, free_vmoney: 0, exp_pool: 0 },
+        character_list: [],
+        joined_character_id_list: [],
+        equipment_list: [],
+        items: {},
+    }
+}
+
 const routes = async (fastify: FastifyInstance) => {
 
     fastify.post("/finish", async (request: FastifyRequest, reply: FastifyReply) => {
@@ -232,12 +251,27 @@ const routes = async (fastify: FastifyInstance) => {
         const clearTime = body.elapsed_time_ms
         const clearRank = calculateClearRank(clearTime, questData)
 
+        // 五重决战单人(2026-09-09 作者规则):开局时没扣到凭证(entryItemId 为空)= 本局零奖励 ——
+        // 模式材料、首通/S+ 通关奖励、通关记录、关卡基础魔那/池经验/rank、score reward 组、角色经验一律不给,
+        // 只留结算页需要的占位条目。体力已在开局扣掉,不退。
+        // 从请求体重建的 active quest(内存与持久化都丢了)不带 entryItemId,按无票处理(fail-closed,天然幂等)。
+        const isFiveBossSoloQuest = !activeQuestData.isMulti && isFiveBossGauntletQuest(questCategory, questId)
+        const fiveBossTicketConsumed = activeQuestData.entryItemId === FIVE_BOSS_GAUNTLET.ticketItemId
+        const fiveBossUnrewarded = isFiveBossSoloQuest && !fiveBossTicketConsumed
+        if (isFiveBossSoloQuest && resolved.source === "rebuilt") {
+            console.warn(`[FIVE-BOSS] solo finish on a rebuilt active quest: treating as ticketless (no rewards) player=${playerId}`)
+        }
+        const questPoolExpReward = fiveBossUnrewarded ? 0 : questData.poolExpReward
+        const questRankPointReward = fiveBossUnrewarded ? 0 : questData.rankPointReward
+        const questManaReward = fiveBossUnrewarded ? 0 : questData.manaReward
+        const fieldMana = fiveBossUnrewarded ? 0 : body.add_mana
+
         // calculate player rewards
-        const newExpPool = playerData.expPool + questData.poolExpReward
+        const newExpPool = playerData.expPool + questPoolExpReward
         const beforeRankPoint = playerData.rankPoint
-        const newRankPoint = beforeRankPoint + questData.rankPointReward
-        let newMana = playerData.freeMana + questData.manaReward + body.add_mana
-        const manaObtained = questData.manaReward + body.add_mana
+        const newRankPoint = beforeRankPoint + questRankPointReward
+        let newMana = playerData.freeMana + questManaReward + fieldMana
+        const manaObtained = questManaReward + fieldMana
 
         // calculate boost point
         let newBoostPoint = playerData.boostPoint - (activeQuestData.useBoostPoint ? 1 : 0)
@@ -262,14 +296,32 @@ const routes = async (fastify: FastifyInstance) => {
         }
 
         // 五重决战单人通关:模式材料(图纸/结晶/证/心核)不走 five-boss runtime,在这里按同一张
-        // reward plan 发(倍率 1)。多人房的 finish 早在 multi_battle_quest 那条路上被拦走,这里只会是单人。
-        const fiveBossSolo = questAccomplished && !activeQuestData.isMulti && isFiveBossGauntletQuest(questCategory, questId)
-            ? grantFiveBossSoloRewardsSync({ playerId, firstClear: !questPreviouslyCompleted })
+        // reward plan 发(倍率与多人同口径:开战 Auto 关闭=2 倍、开启=1 倍)。多人房的 finish 早在
+        // multi_battle_quest 那条路上被拦走,这里只会是单人。无票局(fiveBossUnrewarded)一件不发。
+        if (fiveBossUnrewarded && questAccomplished) {
+            console.log(`[FIVE-BOSS] solo finish without ticket: no mode rewards / no clear record player=${playerId}`)
+        }
+        const fiveBossSoloSnapshot = isFiveBossSoloQuest
+            ? readFiveBossSoloStartSync(playerId, activeQuestData.playId)
             : null
-        const clearReward = !questPreviouslyCompleted && questData.clearReward !== undefined ? givePlayerRewardSync(playerId, questData.clearReward) : null
-        const sPlusClearReward = (clearRank === 5) && (questProgress?.clearRank !== 5) && (questData.sPlusReward !== undefined) ? givePlayerRewardSync(playerId, questData.sPlusReward) : null
+        if (isFiveBossSoloQuest) {
+            clearFiveBossSoloStartSync(playerId)
+            if (fiveBossTicketConsumed && questAccomplished) {
+                console.log(`[FIVE-BOSS] solo finish: player=${playerId} autoAtStart=${fiveBossSoloSnapshot?.autoAtStart ?? "n/a"}`
+                    + ` autoUsed=${fiveBossSoloSnapshot?.autoUsed ?? "n/a"} multiplier=${fiveBossSoloRewardMultiplier(fiveBossSoloSnapshot)}`)
+            }
+        }
+        const fiveBossSolo = questAccomplished && isFiveBossSoloQuest && fiveBossTicketConsumed
+            ? grantFiveBossSoloRewardsSync({
+                playerId,
+                firstClear: !questPreviouslyCompleted,
+                rewardMultiplier: fiveBossSoloRewardMultiplier(fiveBossSoloSnapshot),
+            })
+            : null
+        const clearReward = !fiveBossUnrewarded && !questPreviouslyCompleted && questData.clearReward !== undefined ? givePlayerRewardSync(playerId, questData.clearReward) : null
+        const sPlusClearReward = !fiveBossUnrewarded && (clearRank === 5) && (questProgress?.clearRank !== 5) && (questData.sPlusReward !== undefined) ? givePlayerRewardSync(playerId, questData.sPlusReward) : null
         const leaderId = body.statistics.party.characters[0]?.id
-        if (questAccomplished) {
+        if (questAccomplished && !fiveBossUnrewarded) {
             // update quest progress
             if (questPreviouslyCompleted) {
                 // simply update the quest progress if it already exists.
@@ -335,7 +387,7 @@ const routes = async (fastify: FastifyInstance) => {
             console.log(`[SCORE_ATTACK] questData={groupId:${questData.scoreRewardGroupId}, groupLen:${questData.scoreRewardGroup?.length ?? 'null'}, bRank:${questData.bRankTime}, aRank:${questData.aRankTime}, sRank:${questData.sRankTime}, sPlus:${questData.sPlusRankTime}, rankPt:${questData.rankPointReward}, charExp:${questData.characterExpReward}, mana:${questData.manaReward}, poolExp:${questData.poolExpReward}, clearReward:${questData.clearReward?.id ?? 'none'}}`)
         }
         console.log(`[BATTLE] scoreReward groupId=${questData.scoreRewardGroupId} groupLen=${questData.scoreRewardGroup?.length ?? 'null'} questId=${questId} category=${questCategory}`)
-        const scoreRewardsResult = givePlayerScoreRewardsSync(playerId, questData.scoreRewardGroupId, questData.scoreRewardGroup, useBoostPoint, questData.element, {
+        const scoreRewardsResult = fiveBossUnrewarded ? emptyScoreRewardsResult() : givePlayerScoreRewardsSync(playerId, questData.scoreRewardGroupId, questData.scoreRewardGroup, useBoostPoint, questData.element, {
             clearRank,
             rankItemCounts: questData.rankItemCounts,
         })
@@ -409,7 +461,7 @@ const routes = async (fastify: FastifyInstance) => {
         for (const value of partyCharacterIds.values()) {
             if (value !== null && value.id !== null) partyCharacterIdsArray.push(value.id);
         }
-        const addExpAmount = questData.characterExpReward
+        const addExpAmount = fiveBossUnrewarded ? 0 : questData.characterExpReward
 
         const rewardCharacterExpResult = givePlayerCharactersExpSync(
             playerId,
@@ -608,8 +660,8 @@ const routes = async (fastify: FastifyInstance) => {
                 "rewards": {
                     "overflow_pool_exp": 0,
                     "converted_pool_exp": 0,
-                    "reward_pool_exp": questData.poolExpReward,
-                    "reward_mana": questData.manaReward,
+                    "reward_pool_exp": questPoolExpReward,
+                    "reward_mana": questManaReward,
                     "field_mana": body.add_mana
                 },
                 "old_high_score": questProgress === null ? 0 : questProgress.highScore || 0,
@@ -669,6 +721,7 @@ const routes = async (fastify: FastifyInstance) => {
         // delete existing active quest
         delete activeQuests[playerId]
         deletePlayerActiveQuestSync(playerId)
+        clearFiveBossSoloStartSync(playerId)
 
         return reply.status(200).send({
             "data_headers": headers,
@@ -767,16 +820,25 @@ const routes = async (fastify: FastifyInstance) => {
         const staminaInfo = getStaminaCost(questKey)
         const entryCost = resolveBattleStartEntryCost(questData, configuredEntryCost)
         console.log(`[BATTLE] start entry: questId=${questId} questKey=${questKey} entryCost=${JSON.stringify(entryCost)} discountRate=${staminaInfo.rate} baseStamina=${staminaInfo.baseCost}→${staminaInfo.cost}`)
+        // 五重决战(2026-09-09 作者规则):凭证是"可选"的 —— 没票也能开局,只是本局不发模式奖励。
+        // 多人房同款规则在 fiveBossGauntletRun.startMemberSync(只扣房主、扣不到就 rewards_enabled=0)。
+        const entryItemOptional = isFiveBossGauntletFamilyQuest(category, questId)
+        let entryItemConsumed = false
         if (entryCost && entryCost.itemId > 0) {
             const playerItemCount = getPlayerItemSync(playerId, entryCost.itemId) ?? 0
             console.log(`[BATTLE] start deduct: itemId=${entryCost.itemId} playerHas=${playerItemCount} need=${entryCost.itemCount}`)
             if (playerItemCount < entryCost.itemCount) {
-                return reply.status(400).send({
-                    "error": "Bad Request",
-                    "message": `Not enough entry items (need ${entryCost.itemCount} of ${entryCost.itemId}, have ${playerItemCount}).`
-                })
+                if (!entryItemOptional) {
+                    return reply.status(400).send({
+                        "error": "Bad Request",
+                        "message": `Not enough entry items (need ${entryCost.itemCount} of ${entryCost.itemId}, have ${playerItemCount}).`
+                    })
+                }
+                console.log(`[FIVE-BOSS] solo start without ticket: playing for no rewards player=${playerId} questId=${questId}`)
+            } else {
+                updatePlayerItemSync(playerId, entryCost.itemId, playerItemCount - entryCost.itemCount)
+                entryItemConsumed = true
             }
-            updatePlayerItemSync(playerId, entryCost.itemId, playerItemCount - entryCost.itemCount)
         }
 
         // Deduct stamina cost
@@ -814,10 +876,22 @@ const routes = async (fastify: FastifyInstance) => {
             useBossBoostPoint: useBossBoostPoint,
             isAutoStartMode: isAutoStartMode,
             isMulti: false,
-            entryItemId: entryCost?.itemId,
+            entryItemId: entryItemConsumed ? entryCost?.itemId : undefined,
             playId: body.play_id,
             continueCount: 0
         })
+
+        // 单人五重:记开战 AUTO 快照(players_options.auto_play,编成页开关会先 option/update 同步上来)。
+        // 只在真扣了票时才记;没票的局本来就不发奖,不需要倍率。
+        if (isFiveBossGauntletQuest(category, questId)) {
+            if (entryItemConsumed) {
+                const autoAtStart = getPlayerOptionsSync(playerId)["auto_play"] === true
+                recordFiveBossSoloStartSync(playerId, body.play_id, autoAtStart)
+                console.log(`[FIVE-BOSS] solo start: player=${playerId} autoAtStart=${autoAtStart}`)
+            } else {
+                clearFiveBossSoloStartSync(playerId)
+            }
+        }
 
         // update player last party slot
         if (questData.fixedParty === undefined) {
@@ -831,10 +905,17 @@ const routes = async (fastify: FastifyInstance) => {
             viewer_id: viewerId
         })
 
+        // 扣了入场道具就把新总数带回去:客户端 RealRemoteService 会读可选的 item_list 刷背包数字,
+        // 否则门票数字要到 finish 才更新(结算前中途退出会一直显示旧数)。
+        const startItemList = entryItemConsumed && entryCost
+            ? { [String(entryCost.itemId)]: getPlayerItemSync(playerId, entryCost.itemId) ?? 0 }
+            : undefined
+
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
             "data_headers": dataHeaders,
             "data": {
+                ...(startItemList ? { "item_list": startItemList } : {}),
                 "user_info": {
                     "last_main_quest_id": body.quest_id,
                     "stamina": afterStamina,
