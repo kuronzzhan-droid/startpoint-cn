@@ -812,7 +812,7 @@ def growth_pair(kind: str, target: str | None, total: float, base: float, *, mod
 def w01() -> Weapon:
     w = Weapon(1, "gluttony_knife", "饕餮餐刀", "剑", (), "神秘小罐头",
                "锯齿切肉刀，刃口带咬痕", "据说用它切过的面包，会连同主人的饥饿一起被吞下。",
-               "自身攻击力 +80%；发动技能时吞噬己方全部召唤协力球，每吞 1 个自身攻击力 +100%（15 秒，最多 9 个）")
+               "发动技能时吞噬己方全部召唤协力球，每吞 1 个自身攻击力 +100%（15 秒，最多 9 个）")
     ids = list(GINOVI.DEVOUR_IDS)
     w.soul = [
         Eff("0", stat("32", T_SELF, 20, 40), note="自身攻击力 +20%→40%"),
@@ -829,7 +829,6 @@ def w01() -> Weapon:
         ), B()))
     w.cas["cursed_gluttony_devour"] = "吞噬场上所有被召唤的协力球，每吞噬1个，自身攻击力提升100%（15秒，最多9个）"
     w.ea = [
-        *growth_pair("32", T_SELF, 80, 40),
         Eff("0", invoke("cursed_gluttony_devour", program), trig=trig(IT_SKILL, trigger_puller=P_SELF),
             **CURSE, note="【诅咒】发动技能时吞噬己方全部召唤协力球，每个 +100% 攻击力（最多 9 个，15 秒）"),
     ]
@@ -837,8 +836,8 @@ def w01() -> Weapon:
                         "（原生消失演出，计入协力球消失）；只覆盖 48 种存活的召唤协力球（不含炸弹球与关卡 NPC 助战），"
                         "正在出场/排队中的球会被静默移除且不计数；技能伤害半边按提案去掉")
     w.deviations.append("施放时场上没有可吞噬的协力球：否则分支为空，上一次的加成照常持续到结束（不刷新也不清除）")
-    w.deviations.append("作者 0928 数值预算（刃合计 ≤1000%）：常驻自身攻击力终值 +100% → +80%；每吞 1 个 +100% 是提案原值保留，"
-                        "吞满 9 个时刃合计约 992%")
+    w.deviations.append("作者 0928「尽量还原原本设计」：去掉实现方加的常驻攻击力强化成长，只留提案的每吞 1 个 +100%"
+                        "（强化 1 级起全额）；本体保留弱正面（常驻攻击与协力球消失叠攻），吞满 9 个时刃合计 920%")
     return w
 
 
@@ -1109,22 +1108,20 @@ def w08() -> Weapon:
 def w09() -> Weapon:
     w = Weapon(9, "dormant_dragon_heart", "蛰龙之心", "饰品", ("fire", "thunder"), "脆脆鲨",
                "余烬与电光交织的龙心结晶", "沉睡的龙心只在两个时刻苏醒。",
-               "火/雷属性共鸣时：每 10 秒全队攻击 +20%（最多 12 次）；0–49 秒全队伤害 -99%；50–59 秒攻击 +500%、伤害独立 +30%；"
-               "61–109 秒再度 -99%；"
-               "110–119 秒攻击 +750%、伤害独立 +50%；121 秒起永久伤害 -90%（均不可驱散）")
+               "火/雷属性共鸣时：0–49 秒全队伤害 -99%；50–59 秒攻击 +500%、伤害独立 +30%；61–109 秒再度 -99%；"
+               "110–119 秒攻击 +1000%、伤害独立 +50%；121 秒起永久伤害 -90%（均不可驱散）")
     u_dorm, u_wake1, u_wake2, u_dry = w.uid(1), w.uid(2), w.uid(3), w.uid(4)
     # 四个阶段都被持续触发 134（按层数）读：叠层上限必须 >1（上限 1 时层数恒 0，1.4.1057–1069 期间阶段效果从未生效）
     w.uniques[u_dorm] = unique_row(f"cursed_dragon_{u_dorm}", "蛰伏", "cursed_dragon_dormant", "2940", "2", bad=True)
     w.uniques[u_wake1] = unique_row(f"cursed_dragon_{u_wake1}", "苏醒", "cursed_dragon_awaken", "600", "2", bad=False)
     w.uniques[u_wake2] = unique_row(f"cursed_dragon_{u_wake2}", "龙怒", "cursed_dragon_wrath", "600", "2", bad=False)
     w.uniques[u_dry] = unique_row(f"cursed_dragon_{u_dry}", "枯竭", "cursed_dragon_dry", "99999999", "2", bad=True)
-    tick = elapsed(600, "12")
     for element in ("fire", "thunder"):
         gate = (res(element),)
-        w.soul.append(Eff("0", stat("32", T_PARTY, 4, 8), trig=tick, pre=gate,
-                          note=f"{'火' if element == 'fire' else '雷'}属性共鸣时：每 10 秒全队攻击力 +4%→8%（最多 12 次）"))
+        # 本体弱正面：只在「苏醒」同一时刻（第 50 秒，10 秒），与「龙怒」窗口不重叠，刃上限按「龙怒」+1000% 计
+        w.soul.append(Eff("0", condition("0", T_PARTY, 100, 600), trig=elapsed(3000, "1"), pre=gate,
+                          note=f"{'火' if element == 'fire' else '雷'}属性共鸣时：第 50 秒起全队攻击力 +100%（10 秒）"))
         w.ea += [
-            *growth_pair("32", T_PARTY, 20, 8, trig_=tick, pre=gate),
             Eff("0", unique(u_dorm), pre=gate, **CURSE, note="开局「蛰伏」49 秒"),
             Eff("0", unique(u_wake1), trig=elapsed(3000, "1"), pre=gate, **CURSE, note="第 50 秒「苏醒」10 秒"),
             Eff("0", unique(u_dorm), trig=elapsed(3660, "1"), pre=gate, **CURSE, note="第 61 秒再度「蛰伏」49 秒"),
@@ -1136,17 +1133,17 @@ def w09() -> Weapon:
                 **CURSE, note="「苏醒」期间全队攻击力 +500%"),
             Eff("1", during("421", T_PARTY, 3, 30), trig=gate_unique(u_wake1), pre=gate, even_if_dead=True,
                 **CURSE, note="「苏醒」期间全队伤害独立乘区 +30%"),
-            Eff("1", during("0", T_PARTY, 75, 750), trig=gate_unique(u_wake2), pre=gate, even_if_dead=True,
-                **CURSE, note="「龙怒」期间全队攻击力 +750%"),
+            Eff("1", during("0", T_PARTY, 100, 1000), trig=gate_unique(u_wake2), pre=gate, even_if_dead=True,
+                **CURSE, note="「龙怒」期间全队攻击力 +1000%"),
             Eff("1", during("421", T_PARTY, 5, 50), trig=gate_unique(u_wake2), pre=gate, even_if_dead=True,
                 **CURSE, note="「龙怒」期间全队伤害独立乘区 +50%"),
             Eff("1", during("421", T_PARTY, -90), trig=gate_unique(u_dry), pre=gate, even_if_dead=True,
                 **CURSE, note="【诅咒】「枯竭」后全队伤害独立乘区 -90%"),
         ]
     w.deviations.append("时间点按战斗计时（ElapsedTime）；「输出 -99% / -90%」用伤害独立乘区实现（固定伤害等少数来源不经过该乘区）")
-    w.deviations.append("作者 0928 数值预算（刃 ≤1000%、乘区 ≤50%）：「龙怒」攻击 +1000% → +750%，伤害独立乘区「苏醒」+300% → +30%、"
-                        "「龙怒」+500% → +50%（保持 3:5）；两个窗口时间上不重叠，按较大的「龙怒」窗口计：每 10 秒 +20% × 12 次 = 240% "
-                        "+ 750% = 990%（门禁口径；第 12 次落在第 120 秒「龙怒」结束时，实战约 11 次 = 970%）")
+    w.deviations.append("作者 0928 数值预算（刃 ≤1000%、乘区 ≤50%）+「尽量还原原本设计」：攻击恢复提案「苏醒」+500%、「龙怒」+1000%，"
+                        "伤害独立乘区「苏醒」+300% → +30%、「龙怒」+500% → +50%（保持 3:5）；去掉实现方加的每 10 秒叠攻；"
+                        "两个窗口时间上不重叠，按「龙怒」计刃 1000%")
     return w
 
 
@@ -1205,7 +1202,6 @@ def w10() -> Weapon:
     w.soul = [Eff("0", invoke("cursed_fate_roll_lite", lite), trig=every25, pre=(lacks_unique(u_mark),),
                   note="每 25 秒随机赋予全队 1 种增益（10 秒）")]
     w.ea = [
-        *growth_pair("32", T_PARTY, 60, 0),
         Eff("0", unique(u_mark), **CURSE, note="「赌局」：本体的温和转轮换成完整老虎机"),
         Eff("0", unique(u_open), **CURSE, note="开局获得「开局赌注」15 秒"),
         Eff("1", during("421", T_PARTY, 2), trig=opening, even_if_dead=True, **CURSE,

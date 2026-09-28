@@ -117,9 +117,8 @@ class CursedWeaponTests(unittest.TestCase):
         soul = self.out["flat"][W.SOUL][w01.id][0]
         self.assertEqual(soul[_col(W.SOUL_T, "instant_content", "strength.first_max")], "8000")      # 设计 40% × 0.2
         ea = [r for r in self.out["flat"][W.EA][w01.id] if _kind(W.EA_T, r) == "32"]
-        # 作者 0928 预算：常驻攻击力终值 100% → 80%（吞噬每球 +100% 保留提案原值）
-        self.assertAlmostEqual(8000 + sum(float(r[_col(W.EA_T, "instant_content", "strength.first_max")]) for r in ea),
-                               80000)
+        # 作者 0928「尽量还原原本设计」：去掉实现方加的常驻攻击力强化成长，强化表不再有 32 行（只剩吞噬 629）
+        self.assertEqual(ea, [])
         eff = W.Eff("0", W.stat("32", W.T_SELF, 20, 40), note="HP≥50% 时自身攻击力 +20%→40%")
         weak = W._weaken(eff)
         self.assertEqual(weak.content[1]["strength"], ("4000", "8000"))
@@ -717,8 +716,8 @@ class CursedWeaponTests(unittest.TestCase):
 
     #: 120 级 + 满破时单个角色能同时拿到的最大值（刃 %, 乘区 %），与人工对账表一致
     EXPECTED_BUDGETS = {
-        1: (992, 0), 2: (1000, 0), 3: (500, 30), 4: (700, 0), 5: (0, 0), 6: (1000, 0), 7: (900, 0), 8: (700, 0),
-        9: (990, 50), 10: (560, 2), 11: (350, 0), 12: (510, 0), 13: (1000, 0), 14: (1000, 0), 15: (1000, 15),
+        1: (920, 0), 2: (1000, 0), 3: (500, 30), 4: (700, 0), 5: (0, 0), 6: (1000, 0), 7: (900, 0), 8: (700, 0),
+        9: (1000, 50), 10: (500, 2), 11: (350, 0), 12: (510, 0), 13: (1000, 0), 14: (1000, 0), 15: (1000, 15),
         16: (1000, 10), 17: (600, 0), 18: (1000, 20), 19: (1000, 30), 20: (550, 0), 21: (500, 50), 22: (1000, 20),
         23: (490, 0), 24: (1000, 0), 25: (0, 50), 26: (500, 10), 27: (582, 0), 28: (0, 20), 29: (0, 50)}
 
@@ -754,11 +753,11 @@ class CursedWeaponTests(unittest.TestCase):
         self.assertEqual(sum(1 for r in self.ea(27) if min(_strengths(W.EA_T, r) or [0]) < 0), 3)
 
     def test_budget_counts_exclusive_windows_and_single_roulette_branch(self):
-        # 蛰龙之心「苏醒」50–59 秒与「龙怒」110–119 秒不重叠：取较大的龙怒窗口（240 + 750），不是两窗相加
+        # 蛰龙之心「苏醒」50–59 秒（+本体第 50 秒的弱加成）与「龙怒」110–119 秒不重叠：取较大的龙怒窗口 +1000%，不是两窗相加
         b9 = self.out["budgets"][9]
-        self.assertEqual((b9["blades"], b9["multipliers"]), (990, 50))
+        self.assertEqual((b9["blades"], b9["multipliers"]), (1000, 50))
         # 赌注已下：开局赌注（0–15 秒）与第一次转盘（25 秒）不重叠；转盘每次只中一支（+500%）
-        self.assertEqual(self.out["budgets"][10]["blades"], 560)
+        self.assertEqual(self.out["budgets"][10]["blades"], 500)
         # 负对照：把「龙怒」挪到第 50 秒与「苏醒」同时，两窗必须相加（窗口不是漏洞）
         w09 = self.weapon(9)
         ea = json.loads(json.dumps(self.ea(9)))
@@ -802,7 +801,7 @@ class CursedWeaponTests(unittest.TestCase):
                     if isinstance(n, list) and n and n[0] == "MultiballNumberVariable")
         node[-1] = 10
         b = self.budget(1, dsl=dsl)
-        self.assertEqual(b["blades"], 1092)
+        self.assertEqual(b["blades"], 1020)
         self.assertTrue(W.budget_problems("01", self.weapon(1).author, b))
         # 4) 不要脸的常规水准上限 600%：孤狼攻击 +101% → 601% 对不要脸报，对一般提案不报
         ea = json.loads(json.dumps(self.ea(26)))
@@ -820,12 +819,12 @@ class CursedWeaponTests(unittest.TestCase):
         b = self.budget(23, ea=ea)
         self.assertTrue(b["unbounded"])
         self.assertTrue(any("无次数上限" in p for p in W.budget_problems("23", "阿关", b)))
-        # 6) 随机分支：赌注已下的转盘三支增益都给 +500%，按单支计；把某支抬到 +600% 必须看到 660
+        # 6) 随机分支：赌注已下的转盘三支增益都给 +500%，按单支计；把某支抬到 +600% 必须看到 600
         dsl = json.loads(json.dumps(self.out["dsl"]))
         ac = next(n for n in _walk(dsl[W.dsl_program("fate_roll")])
                   if isinstance(n, list) and n and n[0] == "ACSkillDamage")
         ac[2] = W.P(6.0)
-        self.assertEqual(self.budget(10, dsl=dsl)["blades"], 660)
+        self.assertEqual(self.budget(10, dsl=dsl)["blades"], 600)
 
     def test_budget_counts_counting_during_triggers(self):
         # 倒流沙漏的「逆沙」按层 134 读；换成别的计数型持续触发（202 CountAttackUp）也必须按倍乘上限 × 数值计，不能只算 1 次
@@ -898,10 +897,10 @@ class CursedWeaponTests(unittest.TestCase):
 
     def test_rebalanced_summaries_match_values(self):
         # 0928 改过数值的武器：强化 120 说明里的数字要跟着改（旧数字不能残留）
-        stale = {1: [], 7: ["+600%"], 9: ["+1000%", "+300%", "伤害独立 +500%"], 14: ["+1500%"], 18: ["+700%", "×2"],
+        stale = {1: ["+80%"], 7: ["+600%"], 9: ["+750%", "每 10 秒", "+300%", "伤害独立 +500%"], 14: ["+1500%"], 18: ["+700%", "×2"],
                  19: ["+500%", "+1000%"], 21: ["+100%"], 24: ["+160%", "+800%", "+150%", "+700%"], 25: ["+400%"],
                  26: ["+1000%", "伤害独立乘区 +100%"], 27: ["+500%", "20 次"], 29: ["+100%"]}
-        fresh = {1: ["+80%", "+100%"], 7: ["+300%"], 9: ["+750%", "+30%", "+50%"], 14: ["+1000%"],
+        fresh = {1: ["+100%"], 7: ["+300%"], 9: ["+1000%", "+500%", "+30%", "+50%"], 14: ["+1000%"],
                  18: ["+1000%", "+600%", "+400%"], 19: ["+350%", "+650%", "+30%"], 21: ["+50%"],
                  24: ["+100%（最多 +500%）"], 25: ["+50%"], 26: ["+100%", "+10%"], 27: ["最多 6 次"], 29: ["+50%"]}
         for row in stale:
