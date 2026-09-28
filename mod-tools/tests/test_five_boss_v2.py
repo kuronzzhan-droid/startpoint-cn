@@ -80,6 +80,21 @@ class PureFunctionTests(unittest.TestCase):
         self.assertEqual(out.getpixel((2, 0)), (2, 0, 0))
         self.assertEqual(out.getpixel((0, 2)), (4, 0, 0))
 
+    def test_recolor_rules_first_match_and_hue_wrap(self):
+        rules = [{"h": [340, 20], "s_min": 0.3, "to_h": 120},        # 跨 0° 的红 → 绿
+                 {"h": [0, 360], "to_h": 240}]
+        r, g, b = F.recolor_rgb((200, 20, 30), rules)
+        self.assertTrue(g > r and g > b)
+        self.assertEqual(F.recolor_rgb((0, 0, 0), rules[:1]), (0, 0, 0))   # 不命中保持原色
+        r2, g2, b2 = F.recolor_rgb((30, 200, 30), rules)                   # 落到第二条
+        self.assertTrue(b2 > r2 and b2 > g2)
+
+    def test_rename_prefix_only_touches_matching_strings(self):
+        tree = {"i": [{"p": "a/.gen/x/k"}, {"p": "b/other"}], "n": 3}
+        self.assertEqual(F.rename_prefix(tree, "a/.gen/x/", "m/.gen/y/"),
+                         {"i": [{"p": "m/.gen/y/k"}, {"p": "b/other"}], "n": 3})
+        self.assertEqual(F.gen_prefix("battle/boss/mod/v/n/n"), "battle/boss/mod/v/n/.gen/n/")
+
     def test_region_name_follows_flatomo_gen_layout(self):
         self.assertEqual(F.gen_region_name("battle/field/mod/x/background/background"),
                          "battle/field/mod/x/background/.gen/background/a")
@@ -227,7 +242,9 @@ class LiveBuildTests(unittest.TestCase):
             self.assertFalse(any("/mod/five_boss/" in p for p in pre), code)   # v1 诅咒已剥离
             v = next(x for x in self.spec["_variants"] if x.quest == info["quest"])
             carrier = v.group_kind == 1 or info["slot"] == 0
-            has_affix = any(p.startswith(F.OWN_DSL_DIR) for p in pre)
+            sigs = {F.affix_program(s) for s in self.spec["bosses"][info["alias"]].get("signature", [])}
+            self.assertTrue(sigs <= set(pre), code)                         # 签名招式每只都挂
+            has_affix = any(p.startswith(F.OWN_DSL_DIR) and p not in sigs for p in pre)
             self.assertEqual(has_affix, carrier and bool(v.affixes or v.entry_affixes), code)
             if purge in pre:
                 self.assertEqual((info["wave"], row[F.GB_PRE_RERUN]), (0, "false"), code)
@@ -255,6 +272,27 @@ class LiveBuildTests(unittest.TestCase):
         for table in (F.T_ZONE, F.T_FD, F.T_GB, F.T_BL, F.T_FIELD):
             for (key, *_rest) in self.edits(table):
                 self.assertTrue(key.startswith(F.OWN_CODE_PREFIX), (table, key))
+
+    def test_recolored_bosses_keep_layout_and_point_clones_at_new_sheet(self):
+        gb = self.edits(F.T_GB)
+        recolored = {a: b["recolor"] for a, b in self.spec["bosses"].items() if "recolor" in b}
+        used = {info["alias"] for info in self.plan.clones.values()}
+        for alias, rc in recolored.items():
+            if alias not in used:
+                continue
+            old = F.open_png(self.live.file(rc["from"] + ".png"))
+            new = F.open_png(self.plan.files[rc["out"] + ".png"])
+            self.assertEqual((new.mode, new.size), (old.mode, old.size), alias)
+            self.assertEqual(new.tobytes(), old.tobytes(), alias)            # 调色板索引一个不动
+            self.assertNotEqual(new.getpalette(), old.getpalette(), alias)
+            names = [e["n"] for e in F.decode_amf(self.plan.files[rc["out"] + ".atlas.amf3.deflate"])]
+            self.assertTrue(names and all(n.startswith(F.gen_prefix(rc["out"])) for n in names), alias)
+            parts = F.decode_amf(self.plan.files[rc["out"] + ".parts.amf3.deflate"])
+            self.assertEqual({i["p"] for i in parts["i"]} - set(names), set(), alias)
+            for code, info in self.plan.clones.items():
+                if info["alias"] == alias:
+                    tiers = gb[(code,)]
+                    self.assertEqual(F.one_row(tiers[F.tier_for_level(tiers)])[2], rc["out"], code)
 
     def test_fields_and_ui_art(self):
         art = self.spec["art"]

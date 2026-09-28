@@ -28,6 +28,7 @@
 from __future__ import annotations
 
 import argparse
+import colorsys
 import copy
 import csv
 import hashlib
@@ -79,6 +80,7 @@ OWN_CODE_PREFIX = "mod_fb2_"
 OWN_DSL_DIR = "battle/action/enemy/action/mod/five_boss_v2/"
 OWN_TERRAIN_DIR = "battle/terrain/mod/five_boss_v2/"
 OWN_FIELD_DIR = "battle/field/mod/five_boss_v2/"
+OWN_BOSS_DIR = "battle/boss/mod/five_boss_v2/"
 # 美术：field 背景 = PartsAnimation 四件套；item_icon 是共享 TextureAtlas（item 表 c4 只能指它的子纹理）
 PARTS_SUFFIXES = (".parts.amf3.deflate", ".atlas.amf3.deflate", ".timeline.amf3.deflate")
 FIELD_BG_COL = 0
@@ -367,10 +369,20 @@ def dsl_purge(buff_reject_frames: int, periodic_interval: int, periodic_count: i
     return _root([purge_now, reject, periodic])
 
 
+def dsl_signature(interval: int, count: int, key: str, effects: list, drain: float | None = None) -> list:
+    """换色 boss 的签名招式：周期对全体成员施加一组减益（weaken_rotation 同形），可附带扣技能槽
+    （purge 的 SubtractSkillPoint 同形）。只拼实机验证过的形状，不引入新构造。"""
+    block = [_cond(0, _ac_value(kind, frames, value, 1)) for kind, frames, value in effects]
+    if drain:
+        block.append(_cmd(["SubtractSkillPoint", 0, _range(drain)]))
+    return _root([_repeat(interval, count, key, [_find_all(33, block)])])
+
+
 def affix_library(params: dict) -> dict[str, list]:
     """词缀名 → DSL 树。数值来自 spec['affix_params']，便于作者调参。"""
     p = params
-    return {
+    sigs = {name: dsl_signature(**cfg) for name, cfg in p.items() if name.startswith("sig_")}
+    return sigs | {
         "enrage_r0": dsl_enrage(**p["enrage_r0"]),
         "enrage_r1": dsl_enrage(**p["enrage_r1"]),
         "weaken_rotation": dsl_weaken_rotation(**p["weaken_rotation"]),
@@ -606,11 +618,20 @@ def plan_clone(live: Live, spec: dict, plan: Plan, variant: Variant, wave: int, 
     code = clone_code(variant, bs.alias, wave, slot)
     tiers = gb_tiers(live, mother)
     new_node = {}
+    rc = bdef.get("recolor")
     for tier, row in tiers.items():
         r = list(row)
         if bs.position:
             r[GB_POS] = bs.position
-        pre = strip_v1_curse(split_programs(r[GB_PRE])) + list(bdef.get("pre", [])) + programs
+        if rc:
+            # 换色克隆：本体动画列改指新贴图（marker/影子等其余图集仍用官方件）
+            for c in GB_ANIM_COLS:
+                if c < len(r) and r[c] not in ("", "(None)") and sheet_of(r[c]) == rc["from"]:
+                    if r[c] != rc["from"]:
+                        raise BuildError(f"{mother} c{c}: {r[c]} is a sub-path of {rc['from']}; recolor unsupported")
+                    r[c] = rc["out"]
+        signature = [affix_program(s) for s in bdef.get("signature", [])]
+        pre = strip_v1_curse(split_programs(r[GB_PRE])) + list(bdef.get("pre", [])) + signature + programs
         # 官方 749 行：无出场动作一律写空串（681 行）；写 "(None)" 客户端会去加载
         # "(None).action.dsl.amf3.deflate" → 转阶段「数据不足」（2026-09-28 实机）
         r[GB_PRE] = ",".join(dict.fromkeys(pre)) if pre else ""
@@ -844,6 +865,78 @@ def gen_region_name(base: str) -> str:
     """flatomo 背景的子纹理名：<目录>/.gen/<文件名>/a（官方 beast_ruins/水晶神殿同式）。"""
     head, tail = base.rsplit("/", 1)
     return f"{head}/.gen/{tail}/a"
+
+
+def recolor_rgb(rgb: tuple, rules: list[dict]) -> tuple:
+    """按色相带逐色映射（第一条命中的规则生效）：h 区间可跨 0°，to_h 定新色相，s/v 乘加微调。"""
+    h, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in rgb))
+    hd = h * 360
+    for r in rules:
+        lo, hi = r.get("h", [0, 360])
+        in_h = (lo <= hd <= hi) if lo <= hi else (hd >= lo or hd <= hi)
+        if not in_h or not r.get("s_min", 0) <= s <= r.get("s_max", 1) \
+                or not r.get("v_min", 0) <= v <= r.get("v_max", 1):
+            continue
+        nh = r["to_h"] / 360 if "to_h" in r else (h + r.get("rot", 0) / 360) % 1
+        ns = min(1.0, max(0.0, s * r.get("s_mul", 1) + r.get("s_add", 0)))
+        nv = min(1.0, max(0.0, v * r.get("v_mul", 1) + r.get("v_add", 0)))
+        return tuple(round(c * 255) for c in colorsys.hsv_to_rgb(nh, ns, nv))
+    return tuple(rgb)
+
+
+def gen_prefix(base: str) -> str:
+    head, tail = base.rsplit("/", 1)
+    return f"{head}/.gen/{tail}/"
+
+
+def rename_prefix(node, old: str, new: str):
+    if isinstance(node, str):
+        return new + node[len(old):] if node.startswith(old) else node
+    if isinstance(node, list):
+        return [rename_prefix(x, old, new) for x in node]
+    if isinstance(node, dict):
+        return {k: rename_prefix(v, old, new) for k, v in node.items()}
+    return node
+
+
+def plan_recolors(live: Live, spec: dict, plan: Plan) -> None:
+    """换色克隆 boss 的本体贴图：官方本体是调色板 PNG ⇒ 只改调色板条目、索引不动（像素排布、透明、
+    子纹理坐标全保持）；atlas/parts 里的子纹理名换成新目录，timeline 原样。
+    general 没有 ColorMatrix 字段（research D §5），换色只能出新贴图。"""
+    used = {bs.alias for v in spec["_variants"] for wave in v.waves for bs in wave}
+    for alias, bdef in spec["bosses"].items():
+        rc = bdef.get("recolor")
+        if not rc or alias not in used:
+            continue
+        old, new = rc["from"], rc["out"]
+        if not new.startswith(OWN_BOSS_DIR) or sheet_of(new) != new:
+            plan.problems.append(f"recolor {alias}: out must be {OWN_BOSS_DIR}<name>/<name>")
+            continue
+        raws = {suf: live.file(old + suf) for suf in (".png",) + PARTS_SUFFIXES}
+        if any(v is None for v in raws.values()):
+            raise BuildError(f"recolor {alias}: {old} is not a complete PartsAnimation")
+        sheet = open_png(raws[".png"])
+        if sheet.mode != "P":
+            plan.problems.append(f"recolor {alias}: {old} is {sheet.mode}, palette sheet expected")
+            continue
+        pal = sheet.getpalette()
+        new_pal = []
+        for i in range(0, len(pal), 3):
+            new_pal += recolor_rgb(tuple(pal[i:i + 3]), rc["rules"])
+        out = sheet.copy()
+        out.putpalette(new_pal)
+        buf = io.BytesIO()
+        kw = {"transparency": sheet.info["transparency"]} if "transparency" in sheet.info else {}
+        out.save(buf, format="PNG", **kw)
+        plan.files[new + ".png"] = wf_assets.png_encode(buf.getvalue())
+        old_dir = old.rsplit("/", 1)[0] + "/"
+        for suf in (".atlas.amf3.deflate", ".parts.amf3.deflate", ".timeline.amf3.deflate"):
+            tree = rename_prefix(decode_amf(raws[suf]), gen_prefix(old), gen_prefix(new))
+            if old_dir in json.dumps(tree, ensure_ascii=False):
+                plan.problems.append(f"recolor {alias}: {suf} still references {old_dir}")
+            plan.files[new + suf] = raws[suf] if suf.startswith(".timeline") else encode_amf(tree)
+        changed = sum(1 for i in range(0, len(pal), 3) if tuple(pal[i:i + 3]) != tuple(new_pal[i:i + 3]))
+        plan.report.setdefault("recolors", {})[alias] = {"from": old, "out": new, "palette_changed": changed}
 
 
 def plan_ui_files(live: Live, spec: dict, plan: Plan) -> None:
@@ -1158,7 +1251,8 @@ def boss_sheets(live: Live, code_rows: dict[str, list[str]], extra: dict[str, by
         sh = sheet_of(a)
         if not sh or not is_layer0(sh) or sh in out:
             continue
-        d = png_dims(live, sh + ".png")
+        staged = extra.get(sh + ".png")          # 本次新生成（换色本体等）尚未上线的贴图也要计入
+        d = open_png(staged).size if staged is not None else png_dims(live, sh + ".png")
         if d:
             out[sh] = d
     return out
@@ -1234,7 +1328,7 @@ def gate_codes(live: Live, spec: dict, plan: Plan) -> None:
     art = spec.get("art", {})
     named = {f["logical"] for f in art.get("files", [])} | set(ITEM_ATLAS_FILES)
     for logical in plan.files:
-        if not logical.startswith((OWN_DSL_DIR, OWN_TERRAIN_DIR, OWN_FIELD_DIR)) and logical not in named:
+        if not logical.startswith((OWN_DSL_DIR, OWN_TERRAIN_DIR, OWN_FIELD_DIR, OWN_BOSS_DIR)) and logical not in named:
             plan.problems.append(f"file outside owned paths: {logical}")
     if (ITEM_ATLAS_FILES[0] in plan.files) != (ITEM_ATLAS_FILES[1] in plan.files):
         plan.problems.append("item_icon atlas png/atlas must ship in the same edge")
@@ -1266,7 +1360,9 @@ def build(spec: dict | None = None, live: Live | None = None, *, official_gbs: C
     plan = Plan()
     # 词缀 DSL
     lib = affix_library(spec["affix_params"])
-    used = sorted({a for v in spec["_variants"] for a in v.affixes + v.entry_affixes})
+    used_bosses = {bs.alias for v in spec["_variants"] for wave in v.waves for bs in wave}
+    signatures = {s for a in used_bosses for s in spec["bosses"][a].get("signature", [])}
+    used = sorted({a for v in spec["_variants"] for a in v.affixes + v.entry_affixes} | signatures)
     for name in used:
         if name not in lib:
             raise BuildError(f"unknown affix {name}")
@@ -1283,6 +1379,8 @@ def build(spec: dict | None = None, live: Live | None = None, *, official_gbs: C
         terrains[rnd] = spec_t
         trees[rnd] = tree
         plan.report.setdefault("terrains", {})[rnd] = rep
+    # 换色 boss 本体（先生成文件，预算门禁要读到新贴图尺寸）
+    plan_recolors(live, spec, plan)
     # 变体 + 克隆
     for v in spec["_variants"]:
         plan_variant(live, spec, plan, v, terrains)

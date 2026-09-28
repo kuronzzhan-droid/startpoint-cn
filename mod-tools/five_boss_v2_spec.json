@@ -283,6 +283,158 @@
   },
   "lich": {
    "mother": "lich_wind_multi"
+  },
+  "abyss_lich": {
+   "_doc": "自制第一步：不死王专家档（26 招）换色——紫袍、品红法冠、青白骨面、青色宝石，保留金饰；签名「亡者诅咒」",
+   "mother": "lich_wind_expert_100",
+   "name": "深渊不死王",
+   "recolor": {
+    "from": "battle/boss/lich/lich_wind/lich_wind",
+    "out": "battle/boss/mod/five_boss_v2/abyss_lich/abyss_lich",
+    "rules": [
+     {
+      "h": [
+       95,
+       160
+      ],
+      "s_min": 0.5,
+      "v_min": 0.45,
+      "to_h": 182,
+      "s_mul": 0.9,
+      "v_mul": 1.05
+     },
+     {
+      "h": [
+       50,
+       130
+      ],
+      "s_max": 0.7,
+      "to_h": 272,
+      "s_mul": 1.35,
+      "s_add": 0.08,
+      "v_mul": 0.95
+     },
+     {
+      "h": [
+       325,
+       360
+      ],
+      "s_min": 0.35,
+      "to_h": 312,
+      "s_mul": 1.0,
+      "v_mul": 1.0
+     },
+     {
+      "h": [
+       0,
+       18
+      ],
+      "s_min": 0.35,
+      "to_h": 312,
+      "s_mul": 1.0,
+      "v_mul": 1.0
+     },
+     {
+      "h": [
+       195,
+       250
+      ],
+      "to_h": 188,
+      "s_mul": 0.55,
+      "v_mul": 1.08
+     },
+     {
+      "h": [
+       18,
+       50
+      ],
+      "s_max": 0.3,
+      "v_max": 0.6,
+      "to_h": 262,
+      "s_mul": 1.2,
+      "s_add": 0.06
+     }
+    ]
+   },
+   "signature": [
+    "sig_abyss_curse"
+   ]
+  },
+  "blood_crab": {
+   "_doc": "自制第一步：寄居蟹船长专家 100 档（23 招，站位 p0–p3）换色——暗红身、焦铜壳、骨金骷髅、金橙光效；签名「血潮侵蚀」",
+   "mother": "hermit_crab_water_expert_100",
+   "name": "血潮船长",
+   "recolor": {
+    "from": "battle/boss/hermit_crab/hermit_crab_water/hermit_crab_water",
+    "out": "battle/boss/mod/five_boss_v2/blood_crab/blood_crab",
+    "rules": [
+     {
+      "h": [
+       150,
+       215
+      ],
+      "s_min": 0.9,
+      "v_min": 0.9,
+      "to_h": 36,
+      "s_mul": 0.95
+     },
+     {
+      "h": [
+       225,
+       300
+      ],
+      "s_min": 0.4,
+      "to_h": 352,
+      "s_mul": 1.05,
+      "v_mul": 0.92
+     },
+     {
+      "h": [
+       255,
+       300
+      ],
+      "s_max": 0.4,
+      "v_min": 0.85,
+      "to_h": 18,
+      "s_mul": 1.1
+     },
+     {
+      "h": [
+       200,
+       225
+      ],
+      "s_min": 0.35,
+      "to_h": 28,
+      "s_mul": 0.75,
+      "v_mul": 0.85
+     },
+     {
+      "h": [
+       185,
+       200
+      ],
+      "s_max": 0.25,
+      "v_min": 0.5,
+      "to_h": 42,
+      "s_add": 0.18,
+      "v_mul": 1.02
+     },
+     {
+      "h": [
+       205,
+       245
+      ],
+      "s_min": 0.35,
+      "v_max": 0.4,
+      "to_h": 350,
+      "s_mul": 0.8,
+      "v_mul": 0.9
+     }
+    ]
+   },
+   "signature": [
+    "sig_blood_tide"
+   ]
   }
  },
  "affix_params": {
@@ -336,6 +488,36 @@
    "periodic_interval": 1200,
    "periodic_count": 999,
    "periodic_limit": 2
+  },
+  "sig_abyss_curse": {
+   "interval": 1200,
+   "count": 999,
+   "key": "mod_fb2_sig_abyss_curse",
+   "effects": [
+    [
+     "ACSkillDamage",
+     480,
+     -0.35
+    ],
+    [
+     "ACFeverPoint",
+     480,
+     -0.5
+    ]
+   ]
+  },
+  "sig_blood_tide": {
+   "interval": 1500,
+   "count": 999,
+   "key": "mod_fb2_sig_blood_tide",
+   "effects": [
+    [
+     "ACDirectDamage",
+     480,
+     -0.3
+    ]
+   ],
+   "drain": 0.25
   }
  },
  "variants": [
@@ -643,6 +825,43 @@
    ]
   },
   {
+   "quest": 1099039,
+   "round": "r0",
+   "name": "五重决战·试炼回廊「深渊」 ::quest_rank::",
+   "group_kind": 1,
+   "waves": [
+    [
+     {
+      "alias": "abyss_lich",
+      "hp_e8": 1000
+     },
+     {
+      "alias": "blood_crab",
+      "hp_e8": 1000
+     },
+     {
+      "alias": "evil",
+      "hp_e8": 1000
+     }
+    ]
+   ],
+   "enemy_states": [
+    [
+     2,
+     0.5
+    ],
+    [
+     0,
+     -0.3
+    ]
+   ],
+   "affixes": [
+    "enrage_r0",
+    "combo_cap",
+    "weaken_rotation"
+   ]
+  },
+  {
    "quest": 1099051,
    "round": "r1",
    "name": "五重决战·深界王座「星辰」 ::quest_rank::",
@@ -914,6 +1133,51 @@
     "enrage_r1",
     "slow_charge",
     "weaken_rotation"
+   ]
+  },
+  {
+   "quest": 1099057,
+   "round": "r1",
+   "name": "五重决战·深界王座「血潮」 ::quest_rank::",
+   "group_kind": 0,
+   "waves": [
+    [
+     {
+      "alias": "blood_crab",
+      "hp_e8": 1400,
+      "position": "p0"
+     },
+     {
+      "alias": "envy",
+      "hp_e8": 1400,
+      "position": "p_r"
+     }
+    ],
+    [
+     {
+      "alias": "spirit_water",
+      "hp_e8": 4200,
+      "position": "p0"
+     }
+    ]
+   ],
+   "enemy_states": [
+    [
+     0,
+     0.5
+    ],
+    [
+     2,
+     -0.3
+    ]
+   ],
+   "entry_affixes": [
+    "purge_r1"
+   ],
+   "affixes": [
+    "enrage_r1",
+    "fever_drain",
+    "heal_seal"
    ]
   }
  ]
