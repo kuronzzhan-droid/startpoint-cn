@@ -15,8 +15,14 @@
   - ``master/rich_text/rich_text_html.orderedmap`` 键 ``rich_text/cnmod_weapon_gacha_note``（空值）+
     正文 ``rich_text/cnmod_weapon_gacha_note.html.deflate``（raw deflate，照 990001/990002 先例）；
   - ``master/item/item.orderedmap`` 券 999019/999020（23 列，图标复用图集里官方装备券的子纹理）；
-  - ``master/shop/boss_coin_shop.orderedmap`` 新增 990099032/033（50 列，模板 990099002），
-    删除诅咒本体 990099003–031（发布时要 ``--allow-key-deletion``）；
+  - ``master/shop/boss_coin_shop.orderedmap`` 990099032/033（50 列，模板 990099002）与 990099034
+    （禁忌星铁），删除诅咒本体 990099003–031（发布时要 ``--allow-key-deletion``）。
+    **价格（武器觉醒与新掉落 0928，设计 D:/WF/out/武器觉醒与新掉落-20260928/设计.md §5.4/§5.5）**：
+    032 = 深界王币 ×1、033 = 深界王币 ×10、034 = 深界王币 ×500 → 禁忌星铁 ×1；c9 = 6/5/4。
+    王币 10000310 / 禁忌星铁 10000311 的道具行与图标由 ``wf_weapon_awaken.py`` 的边 E1/E2 上线；
+    它们还没上线、或五重掉落还没发王币（设计 §7 第 7 步；``five_boss_drop_live``，核实后可传 ``--drop-live``）时，
+    本构建器**暂缓**这三个商品（既不写回旧价，也不提前写新价），摘要里报出原因。
+    ``wf_weapon_awaken.py stage-e3`` 用同一组函数产出同样的目标行；
   - 横幅 ``dynamic/gacha_list_banner/cnmod_weapon_gacha.png``（common）与封面
     ``dynamic/gacha_banner/cnmod_weapon_gacha.png``（**medium 层**），源图在 ``mod-tools/assets/weapon-gacha/``，
     缺图时照样暂存其余内容并在摘要里报出。
@@ -37,6 +43,7 @@
 
     python mod-tools/wf_weapon_gacha.py check            # 只读体检：摘要 + problems
     python mod-tools/wf_weapon_gacha.py stage <workdir>  # problems 非空时拒绝
+    （两者都可加 ``--drop-live``：已核实五重掉落发王币，032–034 才会上架）
 """
 from __future__ import annotations
 
@@ -88,8 +95,11 @@ TEN_TICKET_ID = 999020
 ITEM_START = GACHA_START
 ITEM_END = GACHA_END
 
-BLUEPRINT_ID = 10000144                   # 终式武装图纸
-CRYSTAL_ID = 10000145                     # 深界结晶
+KING_COIN_ID = 10000310                   # 深界王币（五重掉落；道具行由 wf_weapon_awaken 边 E2 上线）
+STAR_STEEL_ID = 10000311                  # 禁忌星铁（通用突破材料；同上）
+STAR_STEEL_THUMB = "item/materials/mod/cursed/forbidden_star_steel"   # 禁忌星铁 c3（设计 §5.2/§6.4；边 E1 上线）
+#: 五重掉落（设计 §4.3、§7 第 6 步，五重线实现）：源码与编译产物（服务端跑的是 out/）都出现王币 ID 才算上线。
+FIVE_BOSS_DROP_SOURCES = (REPO / "src" / "multi" / "five-boss", REPO / "out" / "multi" / "five-boss")
 SHOP_CATEGORY = "99"
 SHOP_TEMPLATE_KEY = "990099002"
 SHOP_START = "2000-01-01 00:00:00"
@@ -119,14 +129,86 @@ TICKETS = (
     Ticket(ONCE_TICKET_ID, "mod_weapon_gacha_once", "武器扭蛋券",
            "item/spends/tickets/ticket_equipment_001",
            "可进行1次「武器扭蛋」抽取的专用扭蛋券（五重决战兑换）。", "3", "20005",
-           "990099032", "4", ((CRYSTAL_ID, 10),),
-           "消耗深界结晶兑换「武器扭蛋」单抽券。持有武器扭蛋券时才会显示该卡池；兑换点数不会丢失。"),
+           "990099032", "6", ((KING_COIN_ID, 1),),
+           "消耗深界王币兑换「武器扭蛋」单抽券。持有武器扭蛋券时才会显示该卡池；兑换点数不会丢失。"),
     Ticket(TEN_TICKET_ID, "mod_weapon_gacha_ten", "武器扭蛋十连券",
            "item/spends/tickets/ticket_equipment_002",
            "可进行1次「武器扭蛋」10连抽取的专用扭蛋券（五重决战兑换）。", "4", "20006",
-           "990099033", "3", ((BLUEPRINT_ID, 2), (CRYSTAL_ID, 10)),
-           "消耗终式武装图纸与深界结晶兑换「武器扭蛋」十连券。持有武器扭蛋券时才会显示该卡池；兑换点数不会丢失。"),
+           "990099033", "5", ((KING_COIN_ID, 10),),
+           "消耗深界王币兑换「武器扭蛋」十连券。持有武器扭蛋券时才会显示该卡池；兑换点数不会丢失。"),
 )
+
+
+@dataclass(frozen=True)
+class ShopProduct:
+    """五重商店（类目 99）的一件商品：c6 名称、c9 排序、c10 说明、c12 商品图、c13 框、c17–c24 成本、c33 奖励道具。"""
+
+    shop_key: str
+    name: str
+    icon: str
+    shop_order: str
+    costs: tuple                    # ((item_id, amount), ...)
+    shop_description: str
+    reward_item_id: int
+    frame: str = "5"                # c13
+
+
+def ticket_product(ticket: Ticket) -> ShopProduct:
+    return ShopProduct(ticket.shop_key, ticket.name, ticket.icon, ticket.shop_order, ticket.costs,
+                       ticket.shop_description, ticket.item_id)
+
+
+#: 990099034：500 王币 → 1 禁忌星铁（设计 §5.4）。c12 是禁忌星铁的 c3 独立 PNG（边 E1）。
+STAR_STEEL_PRODUCT = ShopProduct(
+    "990099034", "禁忌星铁", STAR_STEEL_THUMB, "4", ((KING_COIN_ID, 500),),
+    "消耗深界王币兑换禁忌星铁。可代替本体突破诅咒武器与PARADOX（每次突破1个）。", STAR_STEEL_ID)
+
+
+def shop_products() -> tuple:
+    """五重商店自有商品，按 c9 倒序即界面自上而下：单抽券 6、十连券 5、禁忌星铁 4（设计 §5.4）。"""
+    return tuple(ticket_product(t) for t in TICKETS) + (STAR_STEEL_PRODUCT,)
+
+
+def five_boss_drop_live(sources: Iterable = FIVE_BOSS_DROP_SOURCES) -> bool:
+    """只读：五重掉落是否已经发王币。``sources`` 里每一项（目录则扫其下 .ts/.js，测试文件除外）都要
+    出现 ``KING_COIN_ID``——源码写了但没 tsc，服务端跑的仍是旧 out/，不算上线。"""
+    pattern = re.compile(rf"(?<![0-9]){KING_COIN_ID}(?![0-9])")
+    for source in sources:
+        source = Path(source)
+        files = sorted(f for ext in ("*.ts", "*.js") for f in source.glob(ext)) if source.is_dir() else [source]
+        hit = False
+        for path in files:
+            if ".test." in path.name:
+                continue
+            try:
+                if pattern.search(path.read_text(encoding="utf-8")):
+                    hit = True
+                    break
+            except OSError:
+                continue
+        if not hit:
+            return False
+    return True
+
+
+def shop_prerequisites(item_rows: dict, has_file: Callable[[str], bool], *, drop_live: bool) -> list:
+    """032–034 能否上架。-> 未满足的原因（空 = 可上架）。
+
+    ``item_rows`` 是 item 表的 {键: 行}，``has_file(逻辑路径)`` 判断 store 里有没有该文件（缺行 C8601、缺图）；
+    ``drop_live`` = 五重掉落已发王币（设计 §7 第 7 步：否则券不再收结晶、王币却没有来源）。
+    wf_weapon_awaken 的 ``--after`` 叠加视图也走这个函数；掉落不能靠叠加满足。"""
+    waiting: list = []
+    if not drop_live:
+        waiting.append(f"五重掉落还没有深界王币 {KING_COIN_ID}（src/ 与 out/multi/five-boss；五重线发布后重跑，"
+                       f"或核实后传 --drop-live）")
+    needed = sorted({i for p in shop_products() for i, _ in p.costs} | {p.reward_item_id for p in shop_products()})
+    for item_id in needed:
+        if str(item_id) not in item_rows:
+            waiting.append(f"道具 {item_id} 不在 live item 表（先发 wf_weapon_awaken 边 E2）")
+    for product in shop_products()[len(TICKETS):]:      # 券的商品图是 item/sprite_sheet 图集子纹理，另查
+        if not has_file(product.icon + ".png"):
+            waiting.append(f"商品 {product.shop_key} 的商品图 {product.icon}.png 不在 store（先发 wf_weapon_awaken 边 E1）")
+    return waiting
 
 # ---- 池子 ------------------------------------------------------------------
 DEATHBRINGER = 5900101
@@ -491,16 +573,16 @@ def item_row(ticket: Ticket) -> list:
             ITEM_START, ITEM_END, "false", ""]
 
 
-def shop_row(ticket: Ticket, template: list) -> list:
-    """50 列，以 990099002 为模板，只改本商品自有列（设计 §5.1）。"""
+def shop_row(product: ShopProduct, template: list) -> list:
+    """50 列，以 990099002 为模板，只改本商品自有列（设计 §5.1；武器觉醒设计 §5.4）。"""
     row = list(template)
-    row[6] = ticket.name
-    row[9] = ticket.shop_order
-    row[10] = ticket.shop_description
-    row[12] = ticket.icon
-    row[13] = "5"
+    row[6] = product.name
+    row[9] = product.shop_order
+    row[10] = product.shop_description
+    row[12] = product.icon
+    row[13] = product.frame
     cells: list = []
-    for item_id, amount in ticket.costs:
+    for item_id, amount in product.costs:
         cells += [str(item_id), str(amount)]
     while len(cells) < 8:
         cells += ["(None)", ""]
@@ -508,14 +590,47 @@ def shop_row(ticket: Ticket, template: list) -> list:
     row[25], row[26] = SHOP_START, SHOP_END
     row[27], row[28] = "1", SHOP_PER_PURCHASE
     row[29], row[30], row[31] = "(None)", "(None)", "(None)"
-    row[32], row[33], row[34] = "0", str(ticket.item_id), "1"          # c32=0 Item
+    row[32], row[33], row[34] = "0", str(product.reward_item_id), "1"          # c32=0 Item
     return row
 
 
-def server_shop_entry(ticket: Ticket) -> dict:
-    return {"costs": [{"id": i, "amount": a} for i, a in ticket.costs],
-            "rewards": [{"type": 0, "id": ticket.item_id, "count": 1}],     # ShopItemRewardType 0 = ITEM
+def server_shop_entry(product: ShopProduct) -> dict:
+    return {"costs": [{"id": i, "amount": a} for i, a in product.costs],
+            "rewards": [{"type": 0, "id": product.reward_item_id, "count": 1}],   # ShopItemRewardType 0 = ITEM
             "availableFrom": SHOP_START, "availableUntil": SHOP_END, "stock": SHOP_STOCK}
+
+
+def shop_targets(template: list) -> tuple:
+    """-> ({商店键: 50 列行}, {商店键: 服务端条目}, problems)。wf_weapon_awaken stage-e3 共用。"""
+    problems: list = []
+    rows: dict = {}
+    if len(template) != 50 or template[0] != SHOP_CATEGORY:
+        return {}, {}, [f"商店模板 {SHOP_TEMPLATE_KEY} 形状漂移: {len(template)} 列"]
+    for product in shop_products():
+        rows[product.shop_key] = shop_row(product, template)
+        if len(rows[product.shop_key]) != 50:
+            problems.append(f"商店 {product.shop_key} {len(rows[product.shop_key])} 列 != 50")
+        if len(product.shop_description) > SHOP_DESC_LIMIT or "," in product.shop_description \
+                or "\n" in product.shop_description:
+            problems.append(f"商店 {product.shop_key} 说明超 {SHOP_DESC_LIMIT} 字或含半角逗号/换行")
+    orders = [int(p.shop_order) for p in shop_products()]
+    if orders != sorted(orders, reverse=True) or len(set(orders)) != len(orders):
+        problems.append(f"商店 c9 不是严格倒序: {orders}")
+    return rows, {p.shop_key: server_shop_entry(p) for p in shop_products()}, problems
+
+
+def shop_occupancy_problems(live_shop: dict, live_shop_server: dict) -> list:
+    """同一商店键在 live 里若奖励的不是本商品（客户端 c33 / 服务端 rewards），视为被占用。"""
+    problems: list = []
+    for product in shop_products():
+        current = live_shop.get(product.shop_key)
+        if current and current[33:34] != [str(product.reward_item_id)]:
+            problems.append(f"商店 {product.shop_key} 已被占用: {current[6:7]}")
+        have = live_shop_server.get(product.shop_key)
+        want = server_shop_entry(product)["rewards"]
+        if have is not None and have.get("rewards") != want:
+            problems.append(f"服务端商店 {product.shop_key} 已被占用: {have.get('rewards')}")
+    return problems
 
 
 def _pct(value: Fraction) -> str:
@@ -606,8 +721,10 @@ class ServerEdit:
     siblings: tuple = ()
 
 
-def build(live: Live) -> dict:
-    """只读 live，返回目标态。``problems`` 非空时 stage 拒绝。"""
+def build(live: Live, *, drop_live: bool | None = None) -> dict:
+    """只读 live，返回目标态。``problems`` 非空时 stage 拒绝。
+
+    ``drop_live``：None = 按 ``five_boss_drop_live()`` 检测；True = 调用方已核实五重掉落上线（``--drop-live``）。"""
     problems: list = []
     report: dict = {}
 
@@ -713,25 +830,23 @@ def build(live: Live) -> dict:
             problems.append(f"官方装备券模板 {ticket.template_item} 形状漂移: {template[:4]}")
         if "," in ticket.description or "\n" in ticket.description:
             problems.append(f"item {key} 说明含半角逗号/换行")
-    for material in (BLUEPRINT_ID, CRYSTAL_ID):
-        if str(material) not in live_items:
-            problems.append(f"材料 {material} 不在 live item 表")
 
     live_shop = live.flat(SHOP_LOGICAL)
     template = live_shop.get(SHOP_TEMPLATE_KEY, [])
-    shop: dict = {}
-    if len(template) != 50 or template[0] != SHOP_CATEGORY:
-        problems.append(f"商店模板 {SHOP_TEMPLATE_KEY} 形状漂移: {len(template)} 列")
-    else:
-        for ticket in TICKETS:
-            shop[ticket.shop_key] = shop_row(ticket, template)
-            if len(shop[ticket.shop_key]) != 50:
-                problems.append(f"商店 {ticket.shop_key} {len(shop[ticket.shop_key])} 列 != 50")
-            current = live_shop.get(ticket.shop_key)
-            if current and current[33:34] != [str(ticket.item_id)]:
-                problems.append(f"商店 {ticket.shop_key} 已被占用: {current[6:7]}")
-            if len(ticket.shop_description) > SHOP_DESC_LIMIT or "," in ticket.shop_description:
-                problems.append(f"商店 {ticket.shop_key} 说明超 {SHOP_DESC_LIMIT} 字或含半角逗号")
+    shop_target, shop_server_target, shop_problems = shop_targets(template)
+    problems += shop_problems
+    live_shop_server = (live.server_json(SERVER_SHOP) or {}).get(SHOP_CATEGORY)
+    if live_shop_server is None:
+        problems.append(f"服务端 {SERVER_SHOP} 缺分类 {SHOP_CATEGORY}")
+        live_shop_server = {}
+    problems += shop_occupancy_problems(live_shop, live_shop_server)
+    # 王币/禁忌星铁的道具行与商品图没上线前，032–034 整组暂缓：不写回旧价，也不提前写新价
+    if drop_live is None:
+        drop_live = five_boss_drop_live()
+    shop_waiting = shop_prerequisites(live_items, lambda logical: live.raw(logical) is not None, drop_live=drop_live)
+    shop = {} if shop_waiting else dict(shop_target)
+    shop_server = {} if shop_waiting else dict(shop_server_target)
+    warnings = [f"五重商店 032–034 暂缓：{reason}" for reason in shop_waiting]
     for key in DELETED_SHOP_KEYS:
         cells = live_shop.get(key)
         if cells is not None and (len(cells) < 34 or cells[0] != SHOP_CATEGORY or cells[32] != "4"
@@ -758,21 +873,12 @@ def build(live: Live) -> dict:
     current = live_server_gacha.get(GACHA_KEY)
     if current is not None and current.get("rarityOddsId") != RARITY_ODDS_ID:
         problems.append(f"服务端 {SERVER_GACHA} {GACHA_KEY} 已被占用: {current.get('name')}")
-    shop_server = {t.shop_key: server_shop_entry(t) for t in TICKETS}
-    live_shop_server = (live.server_json(SERVER_SHOP) or {}).get(SHOP_CATEGORY)
-    if live_shop_server is None:
-        problems.append(f"服务端 {SERVER_SHOP} 缺分类 {SHOP_CATEGORY}")
-        live_shop_server = {}
     for key in DELETED_SHOP_KEYS:
         entry = live_shop_server.get(key)
         if entry is not None:
             rewards = entry.get("rewards") or []
             if len(rewards) != 1 or rewards[0].get("type") != 4 or rewards[0].get("id") not in CURSED:
                 problems.append(f"服务端待删 {key} 不是诅咒本体: {rewards}")
-    for key, want in shop_server.items():
-        have = live_shop_server.get(key)
-        if have is not None and have.get("rewards") != want["rewards"]:
-            problems.append(f"服务端商店 {key} 已被占用: {have.get('rewards')}")
     shop_map = live.server_json(SERVER_SHOP_MAP) or {}
     for key in DELETED_SHOP_KEYS:
         if key in shop_map and shop_map[key] != int(SHOP_CATEGORY):
@@ -806,6 +912,7 @@ def build(live: Live) -> dict:
         "counts": {"5": len(tiers[5]), "4": len(tiers[4]), "3": len(tiers[3]),
                    "official_5": len(tiers[5]) - 2 - len(CURSED) - len(ABYSS), "abyss": len(ABYSS),
                    "cursed": len(CURSED), "max_level_1": capped},
+        "shop_deferred": shop_waiting,
         "weights_5": dict(zip(("cursed_each", "deathbringer", "other_each", "total"),
                               five_star_weights(len(tiers[5]) - 2 - len(CURSED)))),
         "display": {k: display[i] + "%" for k, i in (("deathbringer", DEATHBRINGER), ("cursed", CURSED[0]),
@@ -819,7 +926,9 @@ def build(live: Live) -> dict:
         "tiers": tiers, "server_gacha": gacha_value, "odds": odds_lines, "html": html,
         "rows": rows, "flat_delete": {SHOP_LOGICAL: DELETED_SHOP_KEYS},
         "feature": {GACHA_KEY: {"1": feature}},
-        "files": files, "server": server, "problems": problems, "report": report,
+        "shop_target": {"rows": shop_target, "server": shop_server_target,
+                        "map": {k: int(SHOP_CATEGORY) for k in shop_server_target}},
+        "files": files, "server": server, "problems": problems, "warnings": warnings, "report": report,
     }
 
 
@@ -1165,7 +1274,7 @@ def _refuse_live_workdir(live: Live, workdir: Path) -> None:
 
 
 def stage(workdir: Path, live: Live | None = None, *, art_dir: Path = ART_DIR,
-          out: dict | None = None) -> dict:
+          out: dict | None = None, drop_live: bool | None = None) -> dict:
     """写 <workdir>/stage/{common,medium,server}/** 与 <workdir>/plan.json；problems 非空时拒绝。
 
     medium 层文件写在 ``stage/medium/<逻辑路径>``，plan["files"] 的键带 ``medium:`` 前缀
@@ -1174,7 +1283,7 @@ def stage(workdir: Path, live: Live | None = None, *, art_dir: Path = ART_DIR,
     live = live or Live()
     workdir = Path(workdir)
     _refuse_live_workdir(live, workdir)
-    out = out or build(live)
+    out = out or build(live, drop_live=drop_live)
     if out["problems"]:
         return {"refused": True, "problems": list(out["problems"])}
     payloads = stage_payloads(live, out, art_dir=art_dir)
@@ -1206,7 +1315,7 @@ def stage(workdir: Path, live: Live | None = None, *, art_dir: Path = ART_DIR,
             "sizes": {**{k: len(v[0]) for k, v in payloads["tables"].items()},
                       **{k: len(v["payload"]) for k, v in payloads["files"].items()},
                       **{f"assets/{k}": len(v[0]) for k, v in payloads["server"].items()}},
-            "report": out["report"]}
+            "report": out["report"], "warnings": out["warnings"]}
 
 
 def _write(path: Path, payload: bytes) -> None:
@@ -1218,11 +1327,12 @@ def _write(path: Path, payload: bytes) -> None:
 # CLI
 # ---------------------------------------------------------------------------
 
-def check(live: Live | None = None) -> dict:
+def check(live: Live | None = None, *, drop_live: bool | None = None) -> dict:
     live = live or Live()
-    out = build(live)
+    out = build(live, drop_live=drop_live)
     payloads = stage_payloads(live, out)
     return {"store": str(live.store), "report": out["report"], "problems": payloads["problems"],
+            "warnings": out["warnings"],
             "would_stage": {"tables": {k: {"changed": len(v[1]), "deleted": len(v[2])}
                                        for k, v in payloads["tables"].items()},
                             "files": sorted(payloads["files"]),
@@ -1240,15 +1350,19 @@ def main(argv: list | None = None) -> int:
             pass
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("check", help="只读体检：摘要与 problems")
+    check_parser = sub.add_parser("check", help="只读体检：摘要与 problems")
     stage_parser = sub.add_parser("stage", help="写 <workdir>/stage/** 与 plan.json")
     stage_parser.add_argument("workdir", type=Path)
+    for p in (check_parser, stage_parser):
+        p.add_argument("--drop-live", action="store_true",
+                       help="已核实五重掉落上线（发王币）；不传则按 src/、out/multi/five-boss 检测，未上线时 032–034 暂缓")
     args = parser.parse_args(argv)
+    drop_live = True if args.drop_live else None
     if args.command == "check":
-        result = check()
+        result = check(drop_live=drop_live)
         print(json.dumps(result, ensure_ascii=False, indent=1))
         return 0 if not result["problems"] else 2
-    result = stage(args.workdir)
+    result = stage(args.workdir, drop_live=drop_live)
     if result["refused"]:
         print(json.dumps({"refused": True, "problems": result["problems"]}, ensure_ascii=False, indent=1))
         return 2
@@ -1264,6 +1378,7 @@ def main(argv: list | None = None) -> int:
         "missing_art": result["missing_art"],
         "publish_tables": ",".join(result["publish_tables"]),
         "report": result["report"],
+        "warnings": result["warnings"],
     }, ensure_ascii=False, indent=1))
     return 0
 
