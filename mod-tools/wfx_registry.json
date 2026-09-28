@@ -49,6 +49,10 @@
       "level": "cosmetic", "layer": "L1", "status": "shipped",
       "summary": "desc_override_equipment_* 装备详情覆盖"
     },
+    "item-rarity-frame-override-v1": {
+      "level": "cosmetic", "layer": "L1", "status": "shipped",
+      "summary": "物品品质底色覆盖：rarity_frame_override_<缩略图图标路径> = <底色图路径>（ItemThumbnailView.setRarity 在非强化态 hideRarity + replaceBackgroundImage；replace 入口先写 itemImagePath，商店格复用不串色）；client-patch/item-rarity-frame-override，叠在 v1 之后的 setRarity 上（登记底包：编成槽框 a 016cd927 / b 2a9583cd、觉醒专属素材 22292c21、最终合成链 c39746e0）；强化态仍归 v1，只装 v1 / 编成槽框的客户端不读这个键"
+    },
     "equipment-enhanced-look-v1": {
       "level": "cosmetic", "layer": "L1", "status": "shipped",
       "summary": "装备强化外观：enhanced_pixelart_tier2_* 第二图标档（getPixelart）+ enhanced_frame_override_* 强化框换底（ItemThumbnailView.setRarity）；client-patch/equipment-enhanced-look，叠在 cf91b29b 上"
@@ -56,6 +60,14 @@
     "equipment-enhanced-party-frame-v1": {
       "level": "cosmetic", "layer": "L1", "status": "shipped",
       "summary": "编成装备槽强化框换图：enhanced_party_frame_override_*（PartyItemThumbnailView.updateEnhancedEffectAnimation，隐藏 rarity 容器、在 image 容器第 0 位显示框图）；client-patch/equipment-enhanced-party-frame，叠在 7056f7dc 上；与 v1 是两个 capability，只装 v1 的客户端不读这个键"
+    },
+    "equipment-awakening-material-v1": {
+      "level": "semantic", "layer": "L1", "status": "shipped",
+      "summary": "觉醒专属素材：awakening_material_<装备ID> = <道具ID>（OwnedEquipmentLogic.getUseableAwakingCrystal 在没有重复本体时，行存在就只提供该道具或 None，绝不回落星铁钢）；client-patch/equipment-awakening-material，叠在编成槽框 b 版 2f085757 上；旧客户端不读，受限装备仍提供星铁钢、服务端白名单返回 400 = 静默失效"
+    },
+    "equipment-sort-pin-v1": {
+      "level": "cosmetic", "layer": "L1", "status": "shipped",
+      "summary": "装备列表置顶：equipment_sort_pin_<装备ID> = <序号>（EquipmentListScene.compareByEquipmentStatus 与 EquipmentSelectThumbnailListRepository.sortByRarity 入口，有序号的按序号升序排在最前，其余原生顺序）；client-patch/equipment-sort-pin，叠在 equipment-awakening-material 上；旧客户端不读，显示原生顺序"
     },
     "wfx-core-v1": {
       "level": "semantic", "layer": "L2", "status": "planned",
@@ -238,6 +250,8 @@
     "trace_capability": "wfx-dsl-v1"
   },
   "string_keys": {
+    "rarity_frame_override_": {"capability": "item-rarity-frame-override-v1", "level": "cosmetic",
+                               "note": "物品品质底色覆盖 rarity_frame_override_<缩略图图标路径> = <底色图路径>（144×144 不透明 PNG，原尺寸显示在 background 层）；只在非强化态生效；未装补丁时不被读取，显示原生稀有度底色"},
     "wfx_text_": {"capability": "wfx-effect-during-v1", "level": "cosmetic",
                   "note": "批 2 持续行 425 的面板正文 wfx_text_<uid>；未装补丁时不被读取"},
     "enhanced_pixelart_tier2_": {"capability": "equipment-enhanced-look-v1", "level": "cosmetic",
@@ -245,7 +259,11 @@
     "enhanced_frame_override_": {"capability": "equipment-enhanced-look-v1", "level": "cosmetic",
                                  "note": "装备强化框换底 enhanced_frame_override_<图标路径> = <背景图路径>；未装补丁时不被读取，显示粉框"},
     "enhanced_party_frame_override_": {"capability": "equipment-enhanced-party-frame-v1", "level": "cosmetic",
-                                       "note": "编成装备槽强化框换图 enhanced_party_frame_override_<编成槽图标路径> = <框图路径>（72×72 RGBA，套 rarity 容器矩阵显示为 146×146）；未装补丁时不被读取，显示粉框"}
+                                       "note": "编成装备槽强化框换图 enhanced_party_frame_override_<编成槽图标路径> = <框图路径>（72×72 RGBA，套 rarity 容器矩阵显示为 146×146）；未装补丁时不被读取，显示粉框"},
+    "awakening_material_": {"capability": "equipment-awakening-material-v1", "level": "semantic",
+                            "note": "觉醒专属素材 awakening_material_<装备ID> = <道具ID>（规范十进制正整数）；未装补丁时不被读取，重复数为 0 仍提供星铁钢，被服务端白名单拒绝（400）"},
+    "equipment_sort_pin_": {"capability": "equipment-sort-pin-v1", "level": "cosmetic",
+                            "note": "装备列表置顶 equipment_sort_pin_<装备ID> = <序号>（规范十进制正整数，小者在前）；未装补丁时不被读取，显示原生顺序"}
   },
   "effect_codes": [
     {

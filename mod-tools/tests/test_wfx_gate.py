@@ -280,6 +280,29 @@ class CheckTests(unittest.TestCase):
         self.assertEqual([], G.check({}, {}, ["enhanced_pixelart_tier2", "Enhanced_frame_override_x"],
                                      "official").required_capabilities())
 
+    def test_item_rarity_frame_key_is_cosmetic_and_not_covered_by_v1_or_party_frame(self):
+        """品质底色键:缺 item-rarity-frame-override-v1 只警告不拒绝;只装 v1 与编成槽框的客户端(旧装 14396ce0)也要警告
+        (它们不读这个键);补上这一项就安静(现装 b0b13112 已含)。近名不归这条规则。"""
+        key = "rarity_frame_override_item/materials/mod/cursed/forbidden_star_steel"
+        installed = G.load_profiles()["local-mumu"]
+        self.assertIn("equipment-enhanced-look-v1", installed.capabilities)
+        self.assertIn("equipment-enhanced-party-frame-v1", installed.capabilities)
+        self.assertIn("item-rarity-frame-override-v1", installed.capabilities)
+        without = G.ClientProfile("look+party", installed.capabilities - {"item-rarity-frame-override-v1"})
+        for profile in ("gray-1047", "official", without):
+            with self.subTest(profile=getattr(profile, "name", profile)):
+                report = G.check({}, {}, [key], profile)
+                self.assertTrue(report.ok, report.problems)
+                self.assertEqual(["item-rarity-frame-override-v1"], report.required_capabilities())
+                self.assertEqual(1, len(report.warnings))
+                self.assertIn("item-rarity-frame-override-v1", report.warnings[0])
+        for profile in (installed, G.ClientProfile("rarity", without.capabilities | {"item-rarity-frame-override-v1"})):
+            report = G.check({}, {}, [key], profile)
+            self.assertTrue(report.ok)
+            self.assertEqual([], report.warnings)
+        self.assertEqual([], G.check({}, {}, ["rarity_frame_override", "Rarity_frame_override_x",
+                                              "item_rarity_frame_override_x"], "official").required_capabilities())
+
     def test_enhanced_party_frame_key_is_cosmetic_and_not_covered_by_v1(self):
         """编成槽框键:缺 equipment-enhanced-party-frame-v1 只警告不拒绝;只装 v1 的客户端也要警告(v1 不读它)。"""
         key = "enhanced_party_frame_override_item/equipment/mod/paradox/paradox_lv200"
@@ -295,6 +318,65 @@ class CheckTests(unittest.TestCase):
         patched = G.ClientProfile("party", v1_only.capabilities | {"equipment-enhanced-party-frame-v1"})
         self.assertEqual([], G.check({}, {}, [key], patched).warnings)
         self.assertEqual([], G.check({}, {}, ["enhanced_party_frame_override"], "official").required_capabilities())
+
+    def test_awakening_material_key_is_semantic_and_refused_without_the_patch(self):
+        """觉醒专属素材键:没打补丁的接收端仍按稀有度提供星铁钢、服务端 400 = 静默失效 → 门禁拒绝(不是警告)。"""
+        key = "awakening_material_5910101"
+        without = G.ClientProfile("party-frame", G.load_profiles()["local-mumu"].capabilities
+                                  - {"equipment-awakening-material-v1"})
+        for profile in ("gray-1047", "official", without):
+            with self.subTest(profile=getattr(profile, "name", profile)):
+                report = G.check({}, {}, [key], profile)
+                self.assertFalse(report.ok)
+                self.assertEqual(["equipment-awakening-material-v1"], report.required_capabilities())
+                self.assertIn("equipment-awakening-material-v1", report.problems[0])
+                self.assertIn("会静默失效", report.problems[0])
+        patched = G.ClientProfile("awaken", without.capabilities | {"equipment-awakening-material-v1"})
+        report = G.check({}, {}, [key], patched)
+        self.assertTrue(report.ok, report.problems)
+        self.assertEqual([], report.warnings)
+        self.assertEqual([], G.check({}, {}, ["awakening_material"], "official").required_capabilities())
+
+    def test_sort_pin_key_is_cosmetic_and_not_covered_by_the_awakening_patch(self):
+        """置顶键:缺 equipment-sort-pin-v1 只警告不拒绝;只装觉醒专属素材的客户端也要警告(它不读置顶键)。"""
+        key = "equipment_sort_pin_5920001"
+        awaken_only = G.ClientProfile("awaken", (G.load_profiles()["local-mumu"].capabilities
+                                                 | {"equipment-awakening-material-v1"}) - {"equipment-sort-pin-v1"})
+        for profile in ("gray-1047", "official", awaken_only):
+            with self.subTest(profile=getattr(profile, "name", profile)):
+                report = G.check({}, {}, [key], profile)
+                self.assertTrue(report.ok, report.problems)
+                self.assertEqual(["equipment-sort-pin-v1"], report.required_capabilities())
+                self.assertIn("equipment-sort-pin-v1", report.warnings[0])
+        self.assertEqual(1, len(G.check({}, {}, [key], awaken_only).warnings))
+        both = G.ClientProfile("both", awaken_only.capabilities | {"equipment-sort-pin-v1"})
+        self.assertEqual([], G.check({}, {}, [key], both).warnings)
+
+    def test_weapon_data_tools_pass_the_gate_on_the_candidate_profile(self):
+        """wf_weapon_awaken 的 30 键 + wf_weapon_sort_pin 的 46 键:候选 APK(14 项)零问题零警告;
+        现装 14396ce0(12 项)上觉醒键被拒、置顶键只警告。"""
+        import wf_weapon_awaken
+        import wf_weapon_sort_pin
+        keys = list(wf_weapon_awaken.cas_rows()) + list(wf_weapon_sort_pin.cas_rows())
+        self.assertEqual(76, len(keys))
+        import importlib.util
+        path = Path(__file__).resolve().parents[2] / "client-patch/equipment-awakening-material/rules.py"
+        spec = importlib.util.spec_from_file_location("_wfx_gate_awaken_rules_probe", path)
+        awaken = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(awaken)
+        installed = G.ClientProfile("14396ce0", frozenset(awaken.INHERITED_CAPABILITIES))   # 编成槽框 APK 的 12 项
+        self.assertEqual(12, len(installed.capabilities))
+        candidate = G.ClientProfile("candidate", installed.capabilities
+                                    | {"equipment-awakening-material-v1", "equipment-sort-pin-v1"})
+        self.assertEqual(14, len(candidate.capabilities))
+        report = G.check({}, {}, keys, candidate)
+        self.assertEqual(([], []), (report.problems, report.warnings))
+        report = G.check({}, {}, keys, installed)
+        self.assertFalse(report.ok)
+        self.assertEqual(1, len(report.problems))
+        self.assertIn("equipment-awakening-material-v1", report.problems[0])
+        self.assertEqual(1, len(report.warnings))
+        self.assertIn("equipment-sort-pin-v1", report.warnings[0])
 
 
 class ParserScopeTests(unittest.TestCase):

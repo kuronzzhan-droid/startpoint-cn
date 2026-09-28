@@ -159,6 +159,11 @@ def equipment_desc_override_key_problems(key: str) -> list[str]:
 #     PartyItemThumbnailView.updateEnhancedEffectAnimation 在强化态把该图(72×72 RGBA,套 rarity 容器的矩阵)
 #     放到 image 容器第 0 位并隐藏 rarity 容器(粉框);未命中 / 格子复用时恢复。只装 v1 的客户端不读这个键,
 #     所以它不能归到 equipment-enhanced-look-v1,否则只装 v1 的接收端会被误判为支持。
+#   rarity_frame_override_<缩略图图标路径>          值 "<底色图路径>"
+#     (client-patch/item-rarity-frame-override,**独立** capability item-rarity-frame-override-v1,叠在 v1 之上)
+#     ItemThumbnailView.setRarity 在**非**强化态(enhanced=false)hideRarity + replaceBackgroundImage(值),
+#     任何物品(不限装备)的品质底色换成该图;强化态仍归 v1 的 enhanced_frame_override_,两键互不回退。
+#     只装 v1 / 编成槽框的客户端不读这个键,所以它不能归到那两个 capability。
 # 行为型(cosmetic):没打补丁的客户端根本不读这些键,显示原图标与粉框、不崩,数据可以先于 APK 发布。
 # 所以 required_client_capabilities 只报 capability;键/值形状错误由 enhanced_look_problems 报。
 # 值指向的 PNG 必须随同一条发布边下发(缺图 = 客户端取图失败)—— 本模块不碰 store,由发布方核对。
@@ -167,13 +172,16 @@ EQUIPMENT_ENHANCED_PARTY_FRAME = "equipment-enhanced-party-frame-v1"
 ENHANCED_PIXELART_TIER2_KEY_PREFIX = "enhanced_pixelart_tier2_"
 ENHANCED_FRAME_OVERRIDE_KEY_PREFIX = "enhanced_frame_override_"
 ENHANCED_PARTY_FRAME_OVERRIDE_KEY_PREFIX = "enhanced_party_frame_override_"
+ITEM_RARITY_FRAME_OVERRIDE = "item-rarity-frame-override-v1"
+ITEM_RARITY_FRAME_OVERRIDE_KEY_PREFIX = "rarity_frame_override_"
 #: equipment-enhanced-look-v1 的两个前缀(v1 补丁读的键)。
 ENHANCED_LOOK_KEY_PREFIXES = (ENHANCED_PIXELART_TIER2_KEY_PREFIX, ENHANCED_FRAME_OVERRIDE_KEY_PREFIX)
-#: 装备外观族全部前缀 → capability(三个前缀互不为前缀,一个键至多归一个补丁)。
+#: 外观族全部前缀 → capability(四个前缀互不为前缀,一个键至多归一个补丁)。
 ENHANCED_LOOK_PREFIX_CAPABILITIES = {
     ENHANCED_PIXELART_TIER2_KEY_PREFIX: EQUIPMENT_ENHANCED_LOOK,
     ENHANCED_FRAME_OVERRIDE_KEY_PREFIX: EQUIPMENT_ENHANCED_LOOK,
     ENHANCED_PARTY_FRAME_OVERRIDE_KEY_PREFIX: EQUIPMENT_ENHANCED_PARTY_FRAME,
+    ITEM_RARITY_FRAME_OVERRIDE_KEY_PREFIX: ITEM_RARITY_FRAME_OVERRIDE,
 }
 #: 客户端资源路径:ASCII 段以 "/" 相连;无空白、逗号、引号、换行、扩展名,无首尾 "/"。
 ENHANCED_LOOK_PATH_RE = re.compile(r"[A-Za-z0-9_\-]+(?:/[A-Za-z0-9_\-]+)*")
@@ -187,9 +195,10 @@ def _enhanced_look_prefix(key: str) -> str | None:
 
 
 def enhanced_look_capability(key: str) -> str | None:
-    """custom_ability_string 的这个键是否是装备外观族的键:是则返回它需要的 capability
+    """custom_ability_string 的这个键是否是外观族的键:是则返回它需要的 capability
     (enhanced_pixelart_tier2_* / enhanced_frame_override_* → equipment-enhanced-look-v1,
-    enhanced_party_frame_override_* → equipment-enhanced-party-frame-v1)。"""
+    enhanced_party_frame_override_* → equipment-enhanced-party-frame-v1,
+    rarity_frame_override_* → item-rarity-frame-override-v1)。"""
     prefix = _enhanced_look_prefix(key)
     return ENHANCED_LOOK_PREFIX_CAPABILITIES[prefix] if prefix else None
 
@@ -199,7 +208,7 @@ def enhanced_look_problems(key: str, value: str | None = None) -> list[str]:
 
     键尾必须是合法图标路径(客户端按 itemImagePath / pixelart0.value / 编成槽 imagePath 逐字拼接,
     带空白的键永远查不到);值必须非空、无换行;第二图标档的值必须是 "<正整数>,<路径>",
-    强化框与编成槽框的值必须是一个路径。
+    强化框、编成槽框与品质底色的值必须是一个路径。
     """
     raw = key or ""
     prefix = _enhanced_look_prefix(raw)
@@ -225,6 +234,73 @@ def enhanced_look_problems(key: str, value: str | None = None) -> list[str]:
     return problems
 
 
+# ────────── 装备行为键(觉醒专属素材 / 装备列表置顶)的键与值门禁 ──────────
+#
+# 两个补丁都按装备 ID 查 custom_ability_string,键尾是 int 的十进制串(客户端 "前缀" + id 逐字拼接,
+# 无前导 0、无符号、无空白):
+#   awakening_material_<装备ID>   值 "<道具ID>"
+#     (client-patch/equipment-awakening-material,capability equipment-awakening-material-v1)
+#     OwnedEquipmentLogic.getUseableAwakingCrystal 在没有重复本体时:行存在 = 这件装备受限,只提供值所指的道具
+#     (规范十进制正整数、道具表有行、持有 > 0、在有效期内),否则 None,**绝不回落星铁钢**;表没加载 / 没有这一行
+#     = 原生(按稀有度提供星铁钢)。没打补丁的客户端不读这些行,受限装备重复数为 0 时仍提供星铁钢,
+#     服务端白名单(assets/equipment_awakening_material.json)返回 400 —— 静默失效(semantic),发布门禁拒绝。
+#   equipment_sort_pin_<装备ID>   值 "<置顶序号>"
+#     (client-patch/equipment-sort-pin,capability equipment-sort-pin-v1)
+#     EquipmentListScene.compareByEquipmentStatus / EquipmentSelectThumbnailListRepository.sortByRarity 入口:
+#     两件都有合法序号且不等 → 序号升序;只有一件有 → 它在前;其余(含序号相等、值不合法)原生顺序。
+#     没打补丁的客户端不读,显示原生顺序、不崩 —— 行为型(cosmetic),数据可以先于 APK 发布。
+# 值都必须是规范十进制正整数(客户端判据 String(int(s)) === s 且 int(s) > 0;门禁收紧到 1–999999999,
+# 9 位以内不触 int32 回绕)。键尾装备 ID 是否存在、道具 ID 是否存在由数据构建器对照 live 表判定(本模块不碰 store)。
+EQUIPMENT_AWAKENING_MATERIAL = "equipment-awakening-material-v1"
+EQUIPMENT_SORT_PIN = "equipment-sort-pin-v1"
+AWAKENING_MATERIAL_KEY_PREFIX = "awakening_material_"
+EQUIPMENT_SORT_PIN_KEY_PREFIX = "equipment_sort_pin_"
+#: 装备行为键前缀 → capability(两个前缀互不为前缀,也不与面板覆盖 / 外观族前缀相互包含)。
+EQUIPMENT_KEY_PREFIX_CAPABILITIES = {
+    AWAKENING_MATERIAL_KEY_PREFIX: EQUIPMENT_AWAKENING_MATERIAL,
+    EQUIPMENT_SORT_PIN_KEY_PREFIX: EQUIPMENT_SORT_PIN,
+}
+#: 规范十进制正整数 1–999999999(ASCII 数字;fullmatch 不放过尾部换行)。
+CANONICAL_POSITIVE_INT_RE = re.compile(r"[1-9][0-9]{0,8}")
+
+
+def _equipment_key_prefix(key: str) -> str | None:
+    raw = (key or "").strip()
+    return next((p for p in EQUIPMENT_KEY_PREFIX_CAPABILITIES if raw.startswith(p)), None)
+
+
+def equipment_key_capability(key: str) -> str | None:
+    """custom_ability_string 的这个键是否是装备行为键:是则返回它需要的 capability
+    (awakening_material_* → equipment-awakening-material-v1,equipment_sort_pin_* → equipment-sort-pin-v1)。"""
+    prefix = _equipment_key_prefix(key)
+    return EQUIPMENT_KEY_PREFIX_CAPABILITIES[prefix] if prefix else None
+
+
+def equipment_key_problems(key: str, value: str | None = None) -> list[str]:
+    """装备行为键的键形与值形(value=None 只查键)。其他键不归这里管,返回空。
+
+    键尾必须是装备 ID 的规范十进制串(客户端按 int 拼键,带前导 0 / 空白 / 符号的键永远查不到);
+    值必须是规范十进制正整数 1–999999999(觉醒素材:客户端判「受限但值坏」→ 不提供任何道具;
+    置顶:值坏 → 这件不置顶,都不崩,但都不是作者要的效果)。
+    """
+    raw = key or ""
+    prefix = _equipment_key_prefix(raw)
+    if prefix is None:
+        return []
+    problems = []
+    tail = raw[len(prefix):] if raw.startswith(prefix) else None
+    if tail is None or not CANONICAL_POSITIVE_INT_RE.fullmatch(tail):
+        problems.append(f"custom_ability_string 键 {key!r} 的键尾不是装备 ID 的规范十进制串 "
+                        f"{CANONICAL_POSITIVE_INT_RE.pattern}(客户端按 int 逐字拼键,永远读不到)")
+    if value is None:
+        return problems
+    if not isinstance(value, str) or not CANONICAL_POSITIVE_INT_RE.fullmatch(value):
+        what = "道具 ID" if prefix == AWAKENING_MATERIAL_KEY_PREFIX else "置顶序号"
+        problems.append(f"custom_ability_string[{key!r}] 的值 {value!r} 不是规范十进制正整数{what} "
+                        f"{CANONICAL_POSITIVE_INT_RE.pattern}(客户端 String(int(s)) === s 且 > 0 才认)")
+    return problems
+
+
 def required_client_capabilities(kind: str, row: list[str]) -> list[str]:
     """这一行需要哪些客户端补丁 capability 才不会 C7050(官方 APK 上为空)。
 
@@ -238,12 +314,16 @@ def required_client_capabilities(kind: str, row: list[str]) -> list[str]:
     `desc_override_equipment_*` → equipment-description-override-v1(装备详情覆盖),
     `desc_override_fox_oracle_autumn*` → v1,其余 `desc_override_*` → v2;
     `enhanced_pixelart_tier2_*` / `enhanced_frame_override_*` → equipment-enhanced-look-v1(装备强化外观),
-    `enhanced_party_frame_override_*` → equipment-enhanced-party-frame-v1(编成装备槽强化框)。
-    键形是否合法另由 equipment_desc_override_key_problems / enhanced_look_problems 判。
+    `enhanced_party_frame_override_*` → equipment-enhanced-party-frame-v1(编成装备槽强化框);
+    `rarity_frame_override_*` → item-rarity-frame-override-v1(物品品质底色覆盖,非强化态);
+    `awakening_material_*` → equipment-awakening-material-v1(觉醒专属素材,缺补丁 = 静默失效),
+    `equipment_sort_pin_*` → equipment-sort-pin-v1(装备列表置顶)。
+    键形是否合法另由 equipment_desc_override_key_problems / enhanced_look_problems / equipment_key_problems 判。
     """
     if kind == CUSTOM_ABILITY_STRING_KIND:
         key = row[0] if row else ""
-        capability = panel_override_capability(key) or enhanced_look_capability(key)
+        capability = (panel_override_capability(key) or enhanced_look_capability(key)
+                      or equipment_key_capability(key))
         return [capability] if capability else []
     blocks = wf_describe.layout(kind)["blocks"]
     mode_col = int(blocks["precondition1"]) - 1

@@ -1275,6 +1275,69 @@ class EquipmentEnhancedLookGateTests(unittest.TestCase):
         self.assertIn(self.L.EQUIPMENT_ENHANCED_LOOK, V.KNOWN_CAPABILITIES)
 
 
+class ItemRarityFrameOverrideGateTests(unittest.TestCase):
+    """`rarity_frame_override_*` = 物品品质底色覆盖(client-patch/item-rarity-frame-override)。
+
+    独立 capability:补丁只在非强化态读这个键(强化态仍归 v1 的 enhanced_frame_override_),只装 v1 / 编成槽框的
+    客户端不读它。门禁要守的是:它不被归到 v1 / 编成槽框、键尾是缩略图图标路径、值是一个路径,
+    以及原有三个外观前缀的分类不变。缺补丁只显示原生稀有度底色 = cosmetic。
+    """
+
+    L = wf_client_legality
+    STEEL = "rarity_frame_override_item/materials/mod/cursed/forbidden_star_steel"
+    BLUEGOLD = "item/equipment/mod/paradox/paradox_frame_bluegold"
+
+    def test_names(self) -> None:
+        self.assertEqual("item-rarity-frame-override-v1", self.L.ITEM_RARITY_FRAME_OVERRIDE)
+        self.assertEqual("rarity_frame_override_", self.L.ITEM_RARITY_FRAME_OVERRIDE_KEY_PREFIX)
+        self.assertNotIn(self.L.ITEM_RARITY_FRAME_OVERRIDE_KEY_PREFIX, self.L.ENHANCED_LOOK_KEY_PREFIXES)
+        self.assertEqual(self.L.ITEM_RARITY_FRAME_OVERRIDE, self.L.ENHANCED_LOOK_PREFIX_CAPABILITIES[
+            self.L.ITEM_RARITY_FRAME_OVERRIDE_KEY_PREFIX])
+        self.assertNotIn(self.L.ITEM_RARITY_FRAME_OVERRIDE, (
+            self.L.EQUIPMENT_ENHANCED_LOOK, self.L.EQUIPMENT_ENHANCED_PARTY_FRAME, self.L.EQUIPMENT_DESC_OVERRIDE,
+            self.L.PANEL_OVERRIDE_V1, self.L.PANEL_OVERRIDE_V2))
+
+    def test_forbidden_star_steel_key_needs_its_own_patch(self) -> None:
+        cas = self.L.CUSTOM_ABILITY_STRING_KIND
+        self.assertEqual(self.L.ITEM_RARITY_FRAME_OVERRIDE, self.L.enhanced_look_capability(self.STEEL))
+        self.assertIsNone(self.L.panel_override_capability(self.STEEL))
+        self.assertEqual([self.L.ITEM_RARITY_FRAME_OVERRIDE],
+                         self.L.required_client_capabilities(cas, [self.STEEL, self.BLUEGOLD]))
+        self.assertEqual([], self.L.enhanced_look_problems(self.STEEL))
+        self.assertEqual([], self.L.enhanced_look_problems(self.STEEL, self.BLUEGOLD))
+        # 同一个图标路径的强化框键仍归 v1,编成槽框键仍归编成槽框:互不回退
+        tail = self.STEEL[len(self.L.ITEM_RARITY_FRAME_OVERRIDE_KEY_PREFIX):]
+        self.assertEqual([self.L.EQUIPMENT_ENHANCED_LOOK], self.L.required_client_capabilities(
+            cas, [self.L.ENHANCED_FRAME_OVERRIDE_KEY_PREFIX + tail]))
+        self.assertEqual([self.L.EQUIPMENT_ENHANCED_PARTY_FRAME], self.L.required_client_capabilities(
+            cas, [self.L.ENHANCED_PARTY_FRAME_OVERRIDE_KEY_PREFIX + tail]))
+
+    def test_near_names_are_not_rarity_keys(self) -> None:
+        for key in ("rarity_frame_override", "Rarity_frame_override_x", "xrarity_frame_override_a",
+                    "rarity_frame_x", "item_rarity_frame_override_a", ""):
+            self.assertNotEqual(self.L.ITEM_RARITY_FRAME_OVERRIDE, self.L.enhanced_look_capability(key), key)
+
+    def test_malformed_keys_are_problems(self) -> None:
+        for key in ("rarity_frame_override_", " rarity_frame_override_item/a", "rarity_frame_override_item/a ",
+                    "rarity_frame_override_/item/a", "rarity_frame_override_item/a/", "rarity_frame_override_item//a",
+                    "rarity_frame_override_item/a,b", "rarity_frame_override_item/a.png", "rarity_frame_override_道具/a"):
+            problems = self.L.enhanced_look_problems(key)
+            self.assertEqual(1, len(problems), key)
+            self.assertIn(repr(key), problems[0])
+            self.assertEqual(self.L.ITEM_RARITY_FRAME_OVERRIDE, self.L.enhanced_look_capability(key), key)
+
+    def test_values(self) -> None:
+        for value in ("", "a\nb", "a,b", " a", "a/", "a.png", "200," + self.BLUEGOLD):
+            self.assertEqual(1, len(self.L.enhanced_look_problems(self.STEEL, value)), value)
+
+    def test_pack_verifier_knows_the_capability(self) -> None:
+        """整包核验器认得这个 capability(声明它不会被当成伪造能力);外观族四个 capability 都在全集里。"""
+        import wf_midautumn_verify as V
+        self.assertIn(self.L.ITEM_RARITY_FRAME_OVERRIDE, V.KNOWN_CAPABILITIES)
+        for capability in self.L.ENHANCED_LOOK_PREFIX_CAPABILITIES.values():
+            self.assertIn(capability, V.KNOWN_CAPABILITIES)
+
+
 class EquipmentEnhancedPartyFrameGateTests(unittest.TestCase):
     """`enhanced_party_frame_override_*` = 编成装备槽强化框(client-patch/equipment-enhanced-party-frame)。
 
@@ -1292,9 +1355,10 @@ class EquipmentEnhancedPartyFrameGateTests(unittest.TestCase):
         self.assertNotIn(self.L.ENHANCED_PARTY_FRAME_OVERRIDE_KEY_PREFIX, self.L.ENHANCED_LOOK_KEY_PREFIXES)
         self.assertEqual({"enhanced_pixelart_tier2_": "equipment-enhanced-look-v1",
                           "enhanced_frame_override_": "equipment-enhanced-look-v1",
-                          "enhanced_party_frame_override_": "equipment-enhanced-party-frame-v1"},
+                          "enhanced_party_frame_override_": "equipment-enhanced-party-frame-v1",
+                          "rarity_frame_override_": "item-rarity-frame-override-v1"},
                          self.L.ENHANCED_LOOK_PREFIX_CAPABILITIES)
-        # 三个前缀互不为前缀:一个键至多归一个补丁
+        # 四个前缀互不为前缀:一个键至多归一个补丁
         prefixes = list(self.L.ENHANCED_LOOK_PREFIX_CAPABILITIES)
         for a in prefixes:
             for b in prefixes:
@@ -1338,6 +1402,75 @@ class EquipmentEnhancedPartyFrameGateTests(unittest.TestCase):
     def test_pack_verifier_knows_the_capability(self) -> None:
         import wf_midautumn_verify as V
         self.assertIn(self.L.EQUIPMENT_ENHANCED_PARTY_FRAME, V.KNOWN_CAPABILITIES)
+
+
+class EquipmentBehaviourKeyGateTests(unittest.TestCase):
+    """`awakening_material_*` = 觉醒专属素材(client-patch/equipment-awakening-material,semantic);
+    `equipment_sort_pin_*` = 装备列表置顶(client-patch/equipment-sort-pin,cosmetic)。
+
+    两个补丁都按 int 装备 ID 逐字拼键、按 String(int(s)) === s 且 > 0 认值;门禁要守的是:两个前缀各归自己的
+    capability、不与面板覆盖 / 外观族前缀互相认领,键尾与值都是规范十进制正整数(门禁可以比客户端更严,不能更松)。
+    """
+
+    L = wf_client_legality
+    AWAKEN = "awakening_material_5910101"
+    PIN = "equipment_sort_pin_5920001"
+
+    def test_names(self) -> None:
+        self.assertEqual("equipment-awakening-material-v1", self.L.EQUIPMENT_AWAKENING_MATERIAL)
+        self.assertEqual("equipment-sort-pin-v1", self.L.EQUIPMENT_SORT_PIN)
+        self.assertEqual({"awakening_material_": "equipment-awakening-material-v1",
+                          "equipment_sort_pin_": "equipment-sort-pin-v1"},
+                         self.L.EQUIPMENT_KEY_PREFIX_CAPABILITIES)
+        # 与面板覆盖、外观族所有前缀互不为前缀:一个键至多归一个补丁
+        prefixes = [*self.L.EQUIPMENT_KEY_PREFIX_CAPABILITIES, *self.L.ENHANCED_LOOK_PREFIX_CAPABILITIES,
+                    self.L.PANEL_OVERRIDE_KEY_PREFIX]
+        for a in prefixes:
+            for b in prefixes:
+                self.assertTrue(a == b or not a.startswith(b), (a, b))
+
+    def test_each_prefix_needs_its_own_patch(self) -> None:
+        cas = self.L.CUSTOM_ABILITY_STRING_KIND
+        self.assertEqual([self.L.EQUIPMENT_AWAKENING_MATERIAL],
+                         self.L.required_client_capabilities(cas, [self.AWAKEN, "10000311"]))
+        self.assertEqual([self.L.EQUIPMENT_SORT_PIN], self.L.required_client_capabilities(cas, [self.PIN, "1000"]))
+        for key in (self.AWAKEN, self.PIN):
+            self.assertIsNone(self.L.panel_override_capability(key))
+            self.assertIsNone(self.L.enhanced_look_capability(key))
+        self.assertEqual([], self.L.equipment_key_problems(self.AWAKEN, "10000311"))
+        self.assertEqual([], self.L.equipment_key_problems(self.PIN, "1000"))
+        self.assertEqual([], self.L.equipment_key_problems(self.PIN, "999999999"))
+        # 其他键不归这里管
+        self.assertEqual([], self.L.equipment_key_problems("enhanced_frame_override_item/a", "x"))
+        self.assertIsNone(self.L.equipment_key_capability("desc_override_equipment_5910101"))
+
+    def test_near_names_are_not_behaviour_keys(self) -> None:
+        for key in ("awakening_material", "Awakening_material_1", "xawakening_material_1", "awakening_materials_1",
+                    "equipment_sort_pin", "equipment_sort_pins_1", "Equipment_sort_pin_1", ""):
+            self.assertIsNone(self.L.equipment_key_capability(key), key)
+            self.assertEqual([], self.L.required_client_capabilities(self.L.CUSTOM_ABILITY_STRING_KIND, [key]), key)
+
+    def test_malformed_keys_are_problems(self) -> None:
+        for prefix in self.L.EQUIPMENT_KEY_PREFIX_CAPABILITIES:
+            for tail in ("", "0", "05910101", "+5910101", "5910101 ", "-1", "5910101.0", "1e6", "0x10",
+                         "12345678901", "abc", "5910101/x"):
+                key = prefix + tail
+                problems = self.L.equipment_key_problems(key)
+                self.assertEqual(1, len(problems), key)
+                self.assertIn(repr(key), problems[0])
+                self.assertEqual(self.L.EQUIPMENT_KEY_PREFIX_CAPABILITIES[prefix],
+                                 self.L.equipment_key_capability(key), key)
+
+    def test_values_the_client_would_not_accept_are_problems(self) -> None:
+        for key in (self.AWAKEN, self.PIN):
+            for value in ("", "0", "-5", "+1", "01000", " 1000", "1000 ", "1.5", "2e3", "0x3e8", "1000,1",
+                          "abc", "1000000000", "2147483648", "99999999999", "1000\n"):
+                self.assertEqual(1, len(self.L.equipment_key_problems(key, value)), (key, value))
+
+    def test_pack_verifier_knows_both_capabilities(self) -> None:
+        import wf_midautumn_verify as V
+        self.assertIn(self.L.EQUIPMENT_AWAKENING_MATERIAL, V.KNOWN_CAPABILITIES)
+        self.assertIn(self.L.EQUIPMENT_SORT_PIN, V.KNOWN_CAPABILITIES)
 
 
 if __name__ == "__main__":

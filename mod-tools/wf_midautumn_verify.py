@@ -95,6 +95,8 @@ KNOWN_CAPABILITIES = frozenset(
     | {name for by_table in SCOPE.PATCH_PARSER_CAPABILITIES.values() for name in by_table.values()}
     | {L.PANEL_OVERRIDE_V1, L.PANEL_OVERRIDE_V2, L.EQUIPMENT_DESC_OVERRIDE, L.EQUIPMENT_ENHANCED_LOOK,
        L.EQUIPMENT_ENHANCED_PARTY_FRAME}
+    | set(L.ENHANCED_LOOK_PREFIX_CAPABILITIES.values())
+    | set(L.EQUIPMENT_KEY_PREFIX_CAPABILITIES.values())
 )
 
 # 详情页/编成必需的 UI 双槽件(每个都要 _0 与 _1 两份)。
@@ -893,8 +895,8 @@ def check_capabilities(pack: Pack, rep: Report) -> None:
                "cas/equipment-desc-override-key-shape", BLOCKING,
                {"equipment_override_keys": sorted(k for k in cas_keys
                                                   if L.panel_override_capability(k) == L.EQUIPMENT_DESC_OVERRIDE)})
-    # 装备外观族键(enhanced_pixelart_tier2_* / enhanced_frame_override_* / enhanced_party_frame_override_*):
-    # 键尾是图标路径、值一行一格,
+    # 装备外观族键(enhanced_pixelart_tier2_* / enhanced_frame_override_* / enhanced_party_frame_override_* /
+    # rarity_frame_override_*):键尾是图标路径、值一行一格,
     # 第二图标档的值 "<等级>,<路径>" 含逗号,没加引号会被 CSV 拆成两格 → 客户端静默不生效
     look_keys = sorted(k for k in cas_keys if L.enhanced_look_capability(k))
     look_problems: list[str] = []
@@ -906,6 +908,17 @@ def check_capabilities(pack: Pack, rep: Report) -> None:
             continue
         look_problems += L.enhanced_look_problems(key, rows[0][0])
     rep.result(look_problems, "cas/equipment-enhanced-look-shape", BLOCKING, {"enhanced_look_keys": look_keys})
+    # 装备行为键(awakening_material_* / equipment_sort_pin_*):键尾是装备 ID 的规范十进制串,值是规范正整数,一行一格
+    behaviour_keys = sorted(k for k in cas_keys if L.equipment_key_capability(k))
+    behaviour_problems: list[str] = []
+    for key in behaviour_keys:
+        rows = pack.rows(CAS, key)
+        if len(rows) != 1 or len(rows[0]) != 1:
+            behaviour_problems.append(f"custom_ability_string[{key!r}] 必须恰好一行一格,实际 {rows!r}")
+            continue
+        behaviour_problems += L.equipment_key_problems(key, rows[0][0])
+    rep.result(behaviour_problems, "cas/equipment-behaviour-key-shape", BLOCKING,
+               {"equipment_behaviour_keys": behaviour_keys})
 
     declared_set = set(declared)
     problems = []
