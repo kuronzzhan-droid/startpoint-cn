@@ -205,6 +205,17 @@ WEAPONS: tuple[WeaponSpec, ...] = (
                    target_groups="(None)", overrides=_INIT),
         EffectSpec("5020041", "33", 200000, donor_line=0, target="5",
                    target_groups="(None)", overrides=_INIT),
+        # 作者 2026-09-28「火属性深渊武器加强,直击和攻击力加成也给协力球」:
+        # 同捐赠行/同强度/同门控,只把 target 换成 8 Multiball(全体协力球)。
+        # 解析器 target=8 不读 c46(soul parseAt45 "8"→Multiball,32/33 共用该解析)→ 写空串。
+        # 先例(1.4.0 官方全量):soul 32/8 共 4 行(4030008#0/100003#1/5060017#0/100012#7),c46 皆空;
+        # soul 无 33/8,33/8 先例在官方 ability 表(1110061#0/3510046#0 等 6 行,c46 皆空)
+        # 与自家 wf_cursed_weapons 叛乱军旗。
+        # 追加在末尾:旧 4 槽逐列不动。202 DirectAttack3 官方 soul/ability 表 target 只用过 0,不镜像。
+        EffectSpec("300001", "32", 200000, donor_line=0, target="8",
+                   target_groups="", overrides=_INIT),
+        EffectSpec("5020041", "33", 200000, donor_line=0, target="8",
+                   target_groups="", overrides=_INIT),
     )),
     # 用户:技能槽+100%、火队要风抗性、贯通时间延长这种词条
     WeaponSpec("8000102", "深渊·熔核法杖", "5020042", 0, "Red", "fire_02", (
@@ -218,6 +229,9 @@ WEAPONS: tuple[WeaponSpec, ...] = (
                    target_groups=None, overrides=_INIT),
         EffectSpec("300001", "32", 200000, donor_line=0, target="5",
                    target_groups="(None)", overrides=_INIT),
+        # 作者 2026-09-28:攻击力加成也给协力球(同 8000101 注释;157 是攻击力↑延长,不是加成)
+        EffectSpec("300001", "32", 200000, donor_line=0, target="8",
+                   target_groups="", overrides=_INIT),
     )),
     # ---- 水 --------------------------------------------------------------
     # 用户:FEVER获得量+150%;直击/攻击力/强弹 各 +200%

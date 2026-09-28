@@ -73,7 +73,7 @@ TASK3_API = (
 MISSING_TASK3_API = tuple(name for name in TASK3_API if not hasattr(rewards, name))
 
 
-# v3.3 canonical metadata and all 71 uplift slots are deliberately static.  Do not
+# v3.3 canonical metadata and all 74 uplift slots are deliberately static.  Do not
 # derive these oracles from WEAPONS/resolve_effect_strength: the test must catch a
 # production declaration and its resolver drifting together.
 EXPECTED_WEAPON_METADATA = [
@@ -101,12 +101,16 @@ EXPECTED_EFFECT_ROWS = {
         ("300001", 4, "202", 50000, "75000"),
         ("300001", 0, "32", 200000, "300000"),
         ("5020041", 0, "33", 200000, "300000"),
+        # 作者 2026-09-28:同值镜像给协力球(target 8)
+        ("300001", 0, "32", 200000, "300000"),
+        ("5020041", 0, "33", 200000, "300000"),
     ),
     "8000102": (
         ("3050010", 0, "211", 100000, "100000"),
         ("5050037", 0, "40", 15000, "22500"),
         ("4030004", 0, "190", 20000, "30000"),
         ("5100004", 1, "157", 30000, "45000"),
+        ("300001", 0, "32", 200000, "300000"),
         ("300001", 0, "32", 200000, "300000"),
     ),
     "8000103": (
@@ -1338,7 +1342,7 @@ class TestWeaponContract(unittest.TestCase):
             for expected_rows in EXPECTED_EFFECT_ROWS.values()
             for template_id, donor_line, effect_kind, _old, _new in expected_rows
         }
-        self.assertEqual(71, sum(map(len, EXPECTED_EFFECT_ROWS.values())))
+        self.assertEqual(74, sum(map(len, EXPECTED_EFFECT_ROWS.values())))
         self.assertEqual(45, len(expected_rule_keys))
         self.assertEqual(expected_rule_keys, set(rewards.EFFECT_STRENGTH_RULES))
         with self.assertRaises(TypeError):
@@ -1503,12 +1507,46 @@ class TestSoulGeneration(unittest.TestCase):
 
         leaf = rewards.build_soul_leaf(templates, rewards.WEAPONS[0])
         rows = core.read_csv_lines(leaf)
-        self.assertEqual(4, len(rows))
-        self.assertEqual(["51", "202", "32", "33"], [row[44] for row in rows])
-        self.assertEqual(["5", "0", "5", "5"], [row[45] for row in rows])
-        self.assertEqual(["(None)", "", "(None)", "(None)"], [row[46] for row in rows])
-        self.assertEqual(["225000", "75000", "300000", "300000"], [row[48] for row in rows])
+        self.assertEqual(6, len(rows))
+        self.assertEqual(["51", "202", "32", "33", "32", "33"], [row[44] for row in rows])
+        self.assertEqual(["5", "0", "5", "5", "8", "8"], [row[45] for row in rows])
+        self.assertEqual(
+            ["(None)", "", "(None)", "(None)", "", ""], [row[46] for row in rows]
+        )
+        self.assertEqual(
+            ["225000", "75000", "300000", "300000", "300000", "300000"],
+            [row[48] for row in rows],
+        )
         self.assertEqual([row[48] for row in rows], [row[49] for row in rows])
+
+    def test_fire_weapons_mirror_attack_and_direct_to_multiballs(self):
+        """作者 2026-09-28:火深渊武器的攻击力/直击加成同值给协力球。
+
+        协力球行必须是全队行的逐列镜像,只允许槽号 c0、target c45(5→8)、组 c46((None)→空)不同;
+        target=8 Multiball 解析器(soul parseAt45,32/33 共用)不读 c46。先例:官方 soul 32/8
+        4 行(4030008#0 等)c46 皆空;soul 无 33/8,33/8 先例在官方 ability 表(1110061#0 等)
+        与自家诅咒武器。
+        """
+        templates = fake_templates()
+        expected_kinds = {"8000101": ["32", "33"], "8000102": ["32"]}
+        for spec in rewards.WEAPONS:
+            rows = core.read_csv_lines(rewards.build_soul_leaf(templates, spec))
+            multiball = [row for row in rows if row[45] == "8"]
+            with self.subTest(weapon=spec.id):
+                self.assertEqual(
+                    expected_kinds.get(spec.id, []), [row[44] for row in multiball]
+                )
+                for row in multiball:
+                    twins = [t for t in rows if t[44] == row[44] and t[45] == "5"]
+                    self.assertEqual(1, len(twins))
+                    diff = {
+                        column for column, (a, b) in enumerate(zip(twins[0], row))
+                        if a != b
+                    }
+                    self.assertEqual({0, 45, 46}, diff)
+                    self.assertEqual(("(None)", ""), (twins[0][46], row[46]))
+                    self.assertEqual(rows[-len(multiball):], multiball,
+                                     "协力球行追加在末尾,旧槽号不动")
 
     def test_each_effect_uses_its_templates_first_line_and_fixed_columns(self):
         templates = fake_templates()

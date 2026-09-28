@@ -287,11 +287,11 @@ class AbyssWeaponReleasePatchTests(unittest.TestCase):
         self.assertTrue(CURRENT_STATUS.is_file(), CURRENT_STATUS)
         status = json.loads(CURRENT_STATUS.read_text(encoding="utf-8"))
         self.assertEqual(1, status["schema_version"])
-        self.assertEqual("abyss-weapons-v3.4-resonance", status["id"])
+        self.assertEqual("abyss-weapons-v3.5-fire-multiball", status["id"])
         self.assertEqual("pending", status["status"])
         self.assertEqual("mod-tools/wf_rogue_rewards.py", status["source"])
         self.assertEqual(
-            "dd00ca9573424b6b664b3c992ca82593f3b8f3cd",
+            "3178a648a5dd54876995a1612a305e7349b87c28",
             status["source_revision"],
         )
         self.assertIsNone(status["artifact"])

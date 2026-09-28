@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "id": "abyss-weapons-v3.4-resonance",
+  "id": "abyss-weapons-v3.5-fire-multiball",
   "status": "pending",
   "source": "mod-tools/wf_rogue_rewards.py",
-  "source_revision": "dd00ca9573424b6b664b3c992ca82593f3b8f3cd",
-  "semantic_sha256": "6c53e6aed5bcec5d1abaeed62c2af72b315fd0b592470b81ef56d3450e1ffed9",
+  "source_revision": "3178a648a5dd54876995a1612a305e7349b87c28",
+  "semantic_sha256": "3cf1ae93cbe583fd04d5576de93fc69b6479aca15d0fc622eb12283f60137f78",
   "artifact": null,
-  "source_revision_note": "Base revision before the 2026-09-17 resonance change; semantic hash describes the current generator, not the live incremental patch."
+  "source_revision_note": "Parent revision at staging of the 2026-09-28 fire multiball change (8000101/8000102 attack and direct bonuses mirrored to target 8). mod-tools/wf_rogue_rewards.py at this revision is byte-identical to 8b93b7dc (its last change), so this is a generator-content-equivalent base; re-pin to the real parent if HEAD moves before commit. Semantic hash describes the current generator, not the live incremental patch."
 }
