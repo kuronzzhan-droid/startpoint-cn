@@ -171,12 +171,16 @@ class RegistryDerivationTests(unittest.TestCase):
                  | {legality.PANEL_OVERRIDE_V1, legality.PANEL_OVERRIDE_V2,
                     legality.EQUIPMENT_DESC_OVERRIDE, legality.EQUIPMENT_ENHANCED_LOOK,
                     legality.EQUIPMENT_ENHANCED_PARTY_FRAME}
-                 | set(legality.ENHANCED_LOOK_PREFIX_CAPABILITIES.values()))
+                 | set(legality.ENHANCED_LOOK_PREFIX_CAPABILITIES.values())
+                 | set(legality.EQUIPMENT_KEY_PREFIX_CAPABILITIES.values()))
         for capability in named:
             self.assertEqual("shipped", catalog[capability]["status"], capability)
         self.assertEqual("cosmetic", catalog[legality.EQUIPMENT_DESC_OVERRIDE]["level"])
         self.assertEqual("cosmetic", catalog[legality.EQUIPMENT_ENHANCED_LOOK]["level"])
         self.assertEqual("cosmetic", catalog[legality.EQUIPMENT_ENHANCED_PARTY_FRAME]["level"])
+        # 觉醒专属素材缺补丁 = 受限装备仍被提供星铁钢、服务端 400(静默失效);置顶缺补丁 = 原生顺序
+        self.assertEqual("semantic", catalog[legality.EQUIPMENT_AWAKENING_MATERIAL]["level"])
+        self.assertEqual("cosmetic", catalog[legality.EQUIPMENT_SORT_PIN]["level"])
         self.assertEqual("crash", catalog[scope.EQUIPMENT_GAUGE_CAP]["level"])
 
     def test_enhanced_look_string_keys_track_the_legality_prefixes(self):
@@ -209,6 +213,19 @@ class RegistryDerivationTests(unittest.TestCase):
             for b in rules:
                 self.assertTrue(a == b or not a.startswith(b), (a, b))
 
+    def test_equipment_behaviour_string_keys_track_the_legality_mapping(self):
+        """注册表 string_keys 与 legality 的装备行为键「前缀 → capability」逐项相同,且 string_keys 的 level
+        就是 capability 自己的 level(awakening_material_ 是 semantic:门禁拒绝把它发给没打补丁的接收端)。"""
+        rules = wfx_registry.load()["string_keys"]
+        family = legality.EQUIPMENT_KEY_PREFIX_CAPABILITIES
+        self.assertEqual(family, {prefix: rule["capability"] for prefix, rule in rules.items() if prefix in family})
+        self.assertEqual(set(family), {prefix for prefix, rule in rules.items()
+                                       if rule["capability"] in set(family.values())})
+        for prefix, capability in family.items():
+            self.assertEqual(wfx_registry.capability_level(capability), rules[prefix]["level"], prefix)
+        self.assertEqual("semantic", rules[legality.AWAKENING_MATERIAL_KEY_PREFIX]["level"])
+        self.assertEqual("cosmetic", rules[legality.EQUIPMENT_SORT_PIN_KEY_PREFIX]["level"])
+
 
 class ClientPatchConstantTests(unittest.TestCase):
     def test_equipment_rules_capabilities_are_registered(self):
@@ -238,6 +255,21 @@ class ClientPatchConstantTests(unittest.TestCase):
             self.assertEqual("shipped", catalog[capability]["status"], capability)
         self.assertEqual("cosmetic", catalog[rules.CAPABILITY]["level"])
 
+    def test_item_rarity_frame_override_capabilities_are_registered(self):
+        rules = load_patch_module("item-rarity-frame-override/rules.py", "_wfx_registry_rarity_frame_rules")
+        catalog = wfx_registry.capabilities()
+        self.assertEqual(legality.ITEM_RARITY_FRAME_OVERRIDE, rules.CAPABILITY)
+        self.assertEqual(legality.ITEM_RARITY_FRAME_OVERRIDE_KEY_PREFIX, rules.PREFIX)
+        self.assertEqual(("cosmetic", "shipped"), (catalog[rules.CAPABILITY]["level"],
+                                                   catalog[rules.CAPABILITY]["status"]))
+        rule = wfx_registry.load()["string_keys"][rules.PREFIX]
+        self.assertEqual((rules.CAPABILITY, "cosmetic"), (rule["capability"], rule["level"]))
+        # 每个登记底包声明的能力都已登记,且都不含本补丁(候选 APK = 底包 + 1)
+        for base, entry in rules.KNOWN_BASES.items():
+            self.assertNotIn(rules.CAPABILITY, entry["capabilities"], base[:8])
+            for capability in entry["capabilities"]:
+                self.assertEqual("shipped", catalog[capability]["status"], (base[:8], capability))
+
     def test_enhanced_party_frame_capabilities_are_registered(self):
         rules = load_patch_module("equipment-enhanced-party-frame/rules.py", "_wfx_registry_party_rules")
         look = load_patch_module("equipment-enhanced-look/rules.py", "_wfx_registry_party_look_rules")
@@ -247,6 +279,32 @@ class ClientPatchConstantTests(unittest.TestCase):
         self.assertNotEqual(look.CAPABILITY, rules.CAPABILITY)
         # 叠在 7056f7dc 上:继承层 = v1 APK 的 11 项
         self.assertEqual(set(look.INHERITED_CAPABILITIES) | {look.CAPABILITY}, set(rules.INHERITED_CAPABILITIES))
+        for capability in (rules.CAPABILITY, *rules.INHERITED_CAPABILITIES):
+            self.assertEqual("shipped", catalog[capability]["status"], capability)
+        self.assertEqual("cosmetic", catalog[rules.CAPABILITY]["level"])
+        self.assertIn(rules.PREFIX, wfx_registry.load()["string_keys"])
+
+    def test_awakening_material_capabilities_are_registered(self):
+        rules = load_patch_module("equipment-awakening-material/rules.py", "_wfx_registry_awaken_rules")
+        party = load_patch_module("equipment-enhanced-party-frame/rules.py", "_wfx_registry_awaken_party_rules")
+        catalog = wfx_registry.capabilities()
+        self.assertEqual(legality.EQUIPMENT_AWAKENING_MATERIAL, rules.CAPABILITY)
+        self.assertEqual(legality.AWAKENING_MATERIAL_KEY_PREFIX, rules.PREFIX)
+        # 叠在编成槽框 b 版 2f085757 上:继承层 = 编成槽框 APK 的 12 项(与现装 a 版 14396ce0 相同)
+        self.assertEqual(set(party.INHERITED_CAPABILITIES) | {party.CAPABILITY}, set(rules.INHERITED_CAPABILITIES))
+        for capability in (rules.CAPABILITY, *rules.INHERITED_CAPABILITIES):
+            self.assertEqual("shipped", catalog[capability]["status"], capability)
+        self.assertEqual("semantic", catalog[rules.CAPABILITY]["level"])
+        self.assertIn(rules.PREFIX, wfx_registry.load()["string_keys"])
+
+    def test_sort_pin_capabilities_are_registered(self):
+        rules = load_patch_module("equipment-sort-pin/rules.py", "_wfx_registry_sort_pin_rules")
+        awaken = load_patch_module("equipment-awakening-material/rules.py", "_wfx_registry_sort_pin_awaken_rules")
+        catalog = wfx_registry.capabilities()
+        self.assertEqual(legality.EQUIPMENT_SORT_PIN, rules.CAPABILITY)
+        self.assertEqual(legality.EQUIPMENT_SORT_PIN_KEY_PREFIX, rules.PREFIX)
+        # 叠在觉醒专属素材上:继承层 = 编成槽框的 12 项 + 觉醒专属素材
+        self.assertEqual(set(awaken.INHERITED_CAPABILITIES) | {awaken.CAPABILITY}, set(rules.INHERITED_CAPABILITIES))
         for capability in (rules.CAPABILITY, *rules.INHERITED_CAPABILITIES):
             self.assertEqual("shipped", catalog[capability]["status"], capability)
         self.assertEqual("cosmetic", catalog[rules.CAPABILITY]["level"])
@@ -262,16 +320,17 @@ class ClientProfileTests(unittest.TestCase):
         self.assertEqual("local-mumu", wfx_gate.default_publish_profile())
         self.assertEqual(frozenset(), self.profiles["official"].capabilities)
 
-    def test_local_mumu_equals_the_installed_14396ce0_capabilities(self):
-        """14396ce0 = equipment-enhanced-party-frame 叠在 enhanced-look 7056f7dc 上:继承 11 项 + 本层 1 项(2026-09-28 装本机)。"""
-        rules = load_patch_module("equipment-enhanced-party-frame/rules.py", "_wfx_profile_party_rules")
-        self.assertEqual(frozenset(rules.INHERITED_CAPABILITIES) | {rules.CAPABILITY},
+    def test_local_mumu_equals_the_installed_b0b13112_capabilities(self):
+        """b0b13112 = 编成槽框 b → 觉醒专属素材 → 装备置顶 → 物品底色覆盖(2026-09-28 装本机):置顶 APK 的 14 项 + 本层 1 项。"""
+        sort_pin = load_patch_module("equipment-sort-pin/rules.py", "_wfx_profile_sort_pin_rules")
+        rarity = load_patch_module("item-rarity-frame-override/rules.py", "_wfx_profile_rarity_rules")
+        self.assertEqual(frozenset(sort_pin.INHERITED_CAPABILITIES) | {sort_pin.CAPABILITY, rarity.CAPABILITY},
                          self.profiles["local-mumu"].capabilities)
-        self.assertEqual(12, len(self.profiles["local-mumu"].capabilities))
+        self.assertEqual(15, len(self.profiles["local-mumu"].capabilities))
         data = json.loads(wfx_gate.PROFILES_PATH.read_text(encoding="utf-8"))
         evidence = data["profiles"]["local-mumu"]["evidence"]
-        self.assertTrue(evidence["apk_sha256"].startswith("14396ce0"))
-        self.assertTrue(evidence["swf_sha256"].startswith("9986dea3"))
+        self.assertTrue(evidence["apk_sha256"].startswith("b0b13112"))
+        self.assertTrue(evidence["swf_sha256"].startswith("b4a22c8a"))
 
     def test_gray_1047_is_the_1047_base_without_equipment_layers(self):
         rules = load_patch_module("equipment-rules/rules.py", "_wfx_profile_equipment_rules")
