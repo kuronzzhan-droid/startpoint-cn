@@ -76,9 +76,9 @@ export const FIVE_BOSS_CURSED_WEAPON_REWARD_DISPLAY = Object.freeze({
 })
 
 /**
- * 运行时按服务端 equipment_ids.json 白名单过滤诅咒武器候选池:诅咒武器/PARADOX 施工会话
- * 会增删 assets/*.json 里的武器登记,这里不缓存候选池、每次现读现过滤,防止掉出一个
- * 服务端根本不认的装备 id(不存在会在 givePlayerEquipmentSync 里静默建一条脏记录)。
+ * 按服务端 equipment_ids.json 白名单过滤诅咒武器候选池(该 JSON 随服务端启动静态导入,
+ * 诅咒武器/PARADOX 施工会话增删武器登记后需重启服务端才生效),防止掉出一个服务端
+ * 根本不认的装备 id(不存在会在 givePlayerEquipmentSync 里静默建一条脏记录)。
  * 池为空(例如全部武器暂时下架)时调用方应直接跳过掉落,不抛错。
  */
 export function getFiveBossCursedWeaponPool(): number[] {
