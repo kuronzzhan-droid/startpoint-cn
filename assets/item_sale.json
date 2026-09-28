@@ -6793,5 +6793,25 @@
     "category": 4,
     "sale_price": 100,
     "sellable": false
+  },
+  "10000301": {
+    "category": 9,
+    "sale_price": 300,
+    "sellable": true
+  },
+  "10000302": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000310": {
+    "category": 6,
+    "sale_price": 1,
+    "sellable": false
+  },
+  "10000311": {
+    "category": 2,
+    "sale_price": 50,
+    "sellable": false
   }
 }
