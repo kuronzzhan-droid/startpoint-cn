@@ -1,0 +1,112 @@
+{
+  "_doc": "五重决战 v2 阵容与数值（wf_five_boss_v2.py 读取）。设计见 mod-tools/docs/五重决战重做设计-20260928.md。hp_e8=目标血量（亿，多人；单人客户端自动×0.55）。",
+  "schema": 1,
+  "entry_quest": 1099001,
+  "map_id_base": 1099001100,
+  "fallback_map_id": 1099001999,
+  "time_limit_frames": 108000,
+  "budget": {"pass_mpx": 5.5, "fail_mpx": 6.0},
+  "reward_display": {"group": 590010001, "first_equipment": 5910101, "last_equipment": 5910129},
+  "terrains": {
+    "r0": {
+      "base": "battle/terrain/mod/five_boss/expert_white_tiger_100_coffin9",
+      "out": "battle/terrain/mod/five_boss_v2/r0_trial_hall",
+      "_object_overrides_doc": "管理者召唤锚：照官方原生地形 boss_battle_administrator_80（BOUNDS 46,0），坐标相对本层 BOUNDS 左上角",
+      "object_overrides": {
+        "FUNNEL_SPAWN6": [[56, 116.5, 15, 15], [109, 116.5, 15, 15], [83, 126.833, 15, 15]],
+        "FUNNEL_SPAWN8": [[114.25, 79.75, 15, 15], [153.25, 77.25, 15, 15], [50.5, 78.75, 15, 15], [12.5, 76.5, 15, 15]]
+      }
+    },
+    "r1": {
+      "base": "battle/terrain/mod/five_boss/desert_bonds_01_big_boss_single_hell_coffin9",
+      "out": "battle/terrain/mod/five_boss_v2/r1_throne",
+      "remove_types": ["DIRECT_INSTANT_ITEM#ACCUMULATION_ATTACK_POWER_UP_25_500_FEVER"],
+      "object_overrides": {
+        "FUNNEL_SPAWN6": [[56, 116.5, 15, 15], [109, 116.5, 15, 15], [83, 126.833, 15, 15]],
+        "FUNNEL_SPAWN8": [[114.25, 79.75, 15, 15], [153.25, 77.25, 15, 15], [50.5, 78.75, 15, 15], [12.5, 76.5, 15, 15]]
+      }
+    }
+  },
+  "rounds": {
+    "r0": {
+      "field": "beast_ruins_expert",
+      "zone_template": ["mod_five_boss_coop_v1_zone_1", "0"],
+      "quest_template": "2",
+      "hp_mult": [40, 6, 1],
+      "atk_mult": [1, 1, 1.5],
+      "fever_cap": 5000,
+      "tp_target": 5000
+    },
+    "r1": {
+      "field": "mod_five_boss_crystal_hall",
+      "zone_template": ["mod_five_boss_var_s2_ability_a", "0"],
+      "quest_template": "3",
+      "hp_mult": [40, 6, 1],
+      "atk_mult": [1, 1, 2.0],
+      "fever_cap": 7500,
+      "tp_target": 15000
+    }
+  },
+  "bosses": {
+    "sand":    {"mother": "mod_fb_sand_s1"},
+    "thunder": {"mother": "mod_fb_thunder_s1"},
+    "water":   {"mother": "mod_fb_water_s1"},
+    "hero":    {"mother": "mod_fb_hero_s1"},
+    "admin":   {"mother": "mod_fb_admin_s1"},
+    "yokai":   {"mother": "mod_fb_yokai_s1"},
+    "eye":     {"mother": "mod_fb_eye_s1"},
+    "envy":    {"mother": "devil_commander_evil_envy_80"}
+  },
+  "affix_params": {
+    "enrage_r0": {"interval": 480, "atk": 0.15, "atk_layers": 8, "res": 0.1, "res_layers": 5, "count": 999},
+    "enrage_r1": {"interval": 360, "atk": 0.15, "atk_layers": 12, "res": 0.1, "res_layers": 5, "count": 999},
+    "weaken_rotation": {"period": 1800, "frames": 900, "value": -0.2, "count": 999},
+    "heal_seal": {"cancel_direct_hits": 250},
+    "combo_cap": {"cap": 30, "cancel_powerflips": 10},
+    "slow_charge": {"value": -0.3, "cancel_direct_hits": 300},
+    "slip": {"value": 20, "cancel_conditions": 50},
+    "silence_waves": {"interval": 2400, "frames": 300, "count": 999},
+    "fever_drain": {"value": -0.5},
+    "purge_r1": {"buff_reject_frames": 900, "periodic_interval": 1200, "periodic_count": 999, "periodic_limit": 2}
+  },
+  "variants": [
+    {
+      "quest": 1099031, "round": "r0", "name": "五重决战·试炼回廊「炎沙」 ::quest_rank::", "group_kind": 1,
+      "waves": [[{"alias": "sand", "hp_e8": 1100}, {"alias": "water", "hp_e8": 1000}, {"alias": "admin", "hp_e8": 900}]],
+      "enemy_states": [[0, 0.5], [1, -0.3]],
+      "affixes": ["enrage_r0", "weaken_rotation", "heal_seal"]
+    },
+    {
+      "quest": 1099032, "round": "r0", "name": "五重决战·试炼回廊「雷霆」 ::quest_rank::", "group_kind": 1,
+      "waves": [[{"alias": "thunder", "hp_e8": 1100}, {"alias": "admin", "hp_e8": 1000}, {"alias": "yokai", "hp_e8": 900}]],
+      "enemy_states": [[1, 0.5], [0, -0.3]],
+      "affixes": ["enrage_r0", "silence_waves", "combo_cap"]
+    },
+    {
+      "quest": 1099033, "round": "r0", "name": "五重决战·试炼回廊「寒渊」 ::quest_rank::", "group_kind": 1,
+      "waves": [[{"alias": "water", "hp_e8": 1000}, {"alias": "yokai", "hp_e8": 900}, {"alias": "sand", "hp_e8": 1100}]],
+      "enemy_states": [[1, 0.5], [3, -0.3], [4, null]],
+      "affixes": ["enrage_r0", "slow_charge", "weaken_rotation"]
+    },
+    {
+      "quest": 1099051, "round": "r1", "name": "五重决战·深界王座「星辰」 ::quest_rank::", "group_kind": 0,
+      "waves": [
+        [{"alias": "admin", "hp_e8": 1400, "position": "p0"}, {"alias": "yokai", "hp_e8": 1400, "position": "p_r"}],
+        [{"alias": "sand", "hp_e8": 4200, "position": "p0"}]
+      ],
+      "enemy_states": [[2, 0.5], [0, -0.3]],
+      "entry_affixes": ["purge_r1"],
+      "affixes": ["enrage_r1", "fever_drain", "heal_seal"]
+    },
+    {
+      "quest": 1099052, "round": "r1", "name": "五重决战·深界王座「雷霆」 ::quest_rank::", "group_kind": 0,
+      "waves": [
+        [{"alias": "envy", "hp_e8": 1400, "position": "p0"}, {"alias": "admin", "hp_e8": 1400, "position": "p_r"}],
+        [{"alias": "thunder", "hp_e8": 4200, "position": "p0"}]
+      ],
+      "enemy_states": [[0, 0.4], [1, 0.4], [3, -0.3]],
+      "entry_affixes": ["purge_r1"],
+      "affixes": ["enrage_r1", "silence_waves", "slip"]
+    }
+  ]
+}
