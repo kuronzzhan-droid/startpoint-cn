@@ -53,6 +53,10 @@
       "level": "cosmetic", "layer": "L1", "status": "shipped",
       "summary": "装备强化外观：enhanced_pixelart_tier2_* 第二图标档（getPixelart）+ enhanced_frame_override_* 强化框换底（ItemThumbnailView.setRarity）；client-patch/equipment-enhanced-look，叠在 cf91b29b 上"
     },
+    "equipment-enhanced-party-frame-v1": {
+      "level": "cosmetic", "layer": "L1", "status": "shipped",
+      "summary": "编成装备槽强化框换图：enhanced_party_frame_override_*（PartyItemThumbnailView.updateEnhancedEffectAnimation，隐藏 rarity 容器、在 image 容器第 0 位显示框图）；client-patch/equipment-enhanced-party-frame，叠在 7056f7dc 上；与 v1 是两个 capability，只装 v1 的客户端不读这个键"
+    },
     "wfx-core-v1": {
       "level": "semantic", "layer": "L2", "status": "planned",
       "summary": "规格缓存、查询层、pin（flags bit0）；缺失时效果状态全部惰性"
@@ -239,7 +243,9 @@
     "enhanced_pixelart_tier2_": {"capability": "equipment-enhanced-look-v1", "level": "cosmetic",
                                  "note": "装备第二图标档 enhanced_pixelart_tier2_<pixelart0 图标路径> = \"<等级>,<路径>\"；未装补丁时不被读取，显示 pixelart0"},
     "enhanced_frame_override_": {"capability": "equipment-enhanced-look-v1", "level": "cosmetic",
-                                 "note": "装备强化框换底 enhanced_frame_override_<图标路径> = <背景图路径>；未装补丁时不被读取，显示粉框"}
+                                 "note": "装备强化框换底 enhanced_frame_override_<图标路径> = <背景图路径>；未装补丁时不被读取，显示粉框"},
+    "enhanced_party_frame_override_": {"capability": "equipment-enhanced-party-frame-v1", "level": "cosmetic",
+                                       "note": "编成装备槽强化框换图 enhanced_party_frame_override_<编成槽图标路径> = <框图路径>（72×72 RGBA，套 rarity 容器矩阵显示为 146×146）；未装补丁时不被读取，显示粉框"}
   },
   "effect_codes": [
     {

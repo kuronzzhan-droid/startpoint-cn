@@ -280,6 +280,22 @@ class CheckTests(unittest.TestCase):
         self.assertEqual([], G.check({}, {}, ["enhanced_pixelart_tier2", "Enhanced_frame_override_x"],
                                      "official").required_capabilities())
 
+    def test_enhanced_party_frame_key_is_cosmetic_and_not_covered_by_v1(self):
+        """编成槽框键:缺 equipment-enhanced-party-frame-v1 只警告不拒绝;只装 v1 的客户端也要警告(v1 不读它)。"""
+        key = "enhanced_party_frame_override_item/equipment/mod/paradox/paradox_lv200"
+        for profile in ("gray-1047", "official"):
+            with self.subTest(profile=profile):
+                report = G.check({}, {}, [key], profile)
+                self.assertTrue(report.ok, report.problems)
+                self.assertEqual(["equipment-enhanced-party-frame-v1"], report.required_capabilities())
+                self.assertIn("equipment-enhanced-party-frame-v1", report.warnings[0])
+        v1_only = G.ClientProfile("v1", (G.load_profiles()["local-mumu"].capabilities
+                                         | {"equipment-enhanced-look-v1"}) - {"equipment-enhanced-party-frame-v1"})
+        self.assertEqual(1, len(G.check({}, {}, [key], v1_only).warnings))
+        patched = G.ClientProfile("party", v1_only.capabilities | {"equipment-enhanced-party-frame-v1"})
+        self.assertEqual([], G.check({}, {}, [key], patched).warnings)
+        self.assertEqual([], G.check({}, {}, ["enhanced_party_frame_override"], "official").required_capabilities())
+
 
 class ParserScopeTests(unittest.TestCase):
     """设计稿 4.9 第 1 条:表 × 补丁构造是否在补丁扩展过的解析器范围。

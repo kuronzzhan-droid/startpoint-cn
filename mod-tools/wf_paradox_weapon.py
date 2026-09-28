@@ -49,8 +49,10 @@ learn 120 / max 200：power1 不动（Lv120 数值与 live 逐字节相同），
 （learn = max = 120）。强化数值表加 200 键（缺它 Lv121+ 空引用崩）。商店第 7–10 阶（159 / 160 / 199 / 200）只收
 新材料「矛盾结晶」「悖论之核」（暂无掉落来源）。这些常量是 PARADOX 专属副本，不动 wf_cursed_weapons 的共用
 ENH_STAGES / ENH_STATUS_ROWS / growth_pair（它们服务 29 把诅咒武器）。
-200 级外观走 custom_ability_string 两键（capability equipment-enhanced-look-v1，行为型：未装补丁 = 仍显示 lv120 图标 + 粉框）：
-``enhanced_pixelart_tier2_<lv120 图标>`` = "200,<lv200 图标>"（第二图标档）、``enhanced_frame_override_<lv200 图标>`` = 蓝金框底图。
+200 级外观走 custom_ability_string 三键（行为型：未装补丁 = 仍显示 lv120 图标 + 粉框）：
+``enhanced_pixelart_tier2_<lv120 图标>`` = "200,<lv200 图标>"（第二图标档）、``enhanced_frame_override_<lv200 图标>`` = 蓝金框底图
+（这两键 capability equipment-enhanced-look-v1）；``enhanced_party_frame_override_<lv200 图标>`` = 编成装备槽蓝金框
+（72×72 圆角 RGBA，独立 capability equipment-enhanced-party-frame-v1：只装 v1 的客户端编成槽仍是粉框）。
 """
 from __future__ import annotations
 
@@ -78,9 +80,11 @@ SLUG = "paradox"
 CATEGORY = "剑"                                  # 服务端 equipment_lookup 类别
 ICON = "item/equipment/mod/paradox/paradox"
 ICON120 = "item/equipment/mod/paradox/paradox_lv120"
-#: Lv200 图标（第二图标档，经 enhanced_pixelart_tier2_ 键由补丁切换；c3/c4 仍是 120 / lv120）与蓝金强化框底图
+#: Lv200 图标（第二图标档，经 enhanced_pixelart_tier2_ 键由补丁切换；c3/c4 仍是 120 / lv120）、蓝金强化框底图
+#: 与编成装备槽蓝金框（官方 party_equipment_rainbow_enhanced 同一套换色，α 照抄官方圆角）
 ICON200 = "item/equipment/mod/paradox/paradox_lv200"
 FRAME_BLUEGOLD = "item/equipment/mod/paradox/paradox_frame_bluegold"
+PARTY_FRAME_BLUEGOLD = "item/equipment/mod/paradox/paradox_party_frame_bluegold"
 NAME120 = f"{NAME}·终式"
 #: 面板上 423 只显示 battle-rules 的通用文字「限制技能槽增加」，作者原话写进强化说明（≤54 字）。
 ENH_DESCRIPTION = "强化至120级进入终式：数值全面提升并解放诅咒，除自身外的角色无法获得能力和装备的技能槽增加效果。"
@@ -197,14 +201,21 @@ PARADOX_ENH_STATUS_ROWS = {"98": "0,0", "99": "50,10", "120": "50,10", str(MAX_L
 #: 商店行模板：诅咒武器同款的 5900110<阶>（官方只有 1–6 阶；7–10 阶用第 6 阶，被覆写的列以外六行逐格相同）
 SHOP_TEMPLATE_STAGES = 6
 
-# 200 级外观（client-patch/equipment-enhanced-look，capability equipment-enhanced-look-v1，行为型：未装补丁不读、不崩）。
-# 补丁在缩略图里只拿得到图标路径，拿不到等级，所以两键都按图标路径派生。
+# 200 级外观（行为型：未装补丁不读、不崩）。补丁在缩略图 / 编成槽里只拿得到图标路径，拿不到等级，所以三键都按图标路径派生。
+# 前两键 = client-patch/equipment-enhanced-look（equipment-enhanced-look-v1）；
+# 编成槽框 = client-patch/equipment-enhanced-party-frame（equipment-enhanced-party-frame-v1，叠在 v1 APK 上的独立补丁）。
 LOOK_TIER2_PREFIX = "enhanced_pixelart_tier2_"
 LOOK_FRAME_PREFIX = "enhanced_frame_override_"
+LOOK_PARTY_FRAME_PREFIX = "enhanced_party_frame_override_"
 LOOK_TIER2_KEY = LOOK_TIER2_PREFIX + ICON120      # 值 = "<等级>,<图标>"：强化 ≥ 该等级时把 lv120 图标换成 lv200
 LOOK_FRAME_KEY = LOOK_FRAME_PREFIX + ICON200      # 值 = 框底图路径：显示 lv200 图标的强化态缩略图换蓝金底
-LOOK_KEYS = (LOOK_TIER2_KEY, LOOK_FRAME_KEY)
+LOOK_PARTY_FRAME_KEY = LOOK_PARTY_FRAME_PREFIX + ICON200   # 值 = 编成槽框图路径：编成装备槽显示 lv200 图标的强化态换蓝金框
+LOOK_KEYS = (LOOK_TIER2_KEY, LOOK_FRAME_KEY, LOOK_PARTY_FRAME_KEY)
+LOOK_PREFIXES = (LOOK_TIER2_PREFIX, LOOK_FRAME_PREFIX, LOOK_PARTY_FRAME_PREFIX)
 ENHANCED_LOOK_CAP = L.EQUIPMENT_ENHANCED_LOOK
+PARTY_FRAME_CAP = L.EQUIPMENT_ENHANCED_PARTY_FRAME
+#: 每个外观键需要的 capability（编成槽框单独一个：只装 v1 的接收端读不到它）
+LOOK_CAPS = {LOOK_TIER2_KEY: ENHANCED_LOOK_CAP, LOOK_FRAME_KEY: ENHANCED_LOOK_CAP, LOOK_PARTY_FRAME_KEY: PARTY_FRAME_CAP}
 
 #: 本武器全部图片（逻辑路径 → 源图、尺寸、是否必需）。蓝金框由另一执行者在画：缺图时暂存跳过它与框键，不报错。
 ASSET_FILES = (
@@ -212,6 +223,7 @@ ASSET_FILES = (
     (ICON120 + ".png", ASSET_DIR / "paradox_lv120.png", (20, 20), True),
     (ICON200 + ".png", ASSET_DIR / "paradox_lv200.png", (20, 20), True),
     (FRAME_BLUEGOLD + ".png", ASSET_DIR / "paradox_frame_bluegold.png", (144, 144), False),
+    (PARTY_FRAME_BLUEGOLD + ".png", ASSET_DIR / "paradox_party_frame_bluegold.png", (72, 72), True),
     ("battle/common/unique_condition/" + CURSE_ICON + ".png", CURSE_ICON_SRC, (48, 48), True),
     *((thumb + ".png", ASSET_DIR / src, (20, 20), True) for _, _, _, _, thumb, src, _ in MATERIALS),
 )
@@ -553,9 +565,10 @@ def retag(row: list[str], tag: str | None) -> list[str]:
 
 
 def look_texts() -> dict[str, str]:
-    """200 级外观两键：第二图标档（"<等级>,<图标>"，单元格内的半角逗号由 CSV 引号包住，客户端 format.csv.Reader
-    按引号读成一格——live 的覆盖文案已靠同一机制在单元格里带换行）与蓝金框底图路径。"""
-    return {LOOK_TIER2_KEY: f"{MAX_LEVEL},{ICON200}", LOOK_FRAME_KEY: FRAME_BLUEGOLD}
+    """200 级外观三键：第二图标档（"<等级>,<图标>"，单元格内的半角逗号由 CSV 引号包住，客户端 format.csv.Reader
+    按引号读成一格——live 的覆盖文案已靠同一机制在单元格里带换行）、蓝金框底图路径与编成槽蓝金框路径。"""
+    return {LOOK_TIER2_KEY: f"{MAX_LEVEL},{ICON200}", LOOK_FRAME_KEY: FRAME_BLUEGOLD,
+            LOOK_PARTY_FRAME_KEY: PARTY_FRAME_BLUEGOLD}
 
 
 def look_problems(texts: dict[str, str], enh_row: list[str], files: Iterable[str]) -> list[str]:
@@ -581,8 +594,13 @@ def look_problems(texts: dict[str, str], enh_row: list[str], files: Iterable[str
                 probs.append(f"{key}: 框底图路径含半角逗号")
         if path.endswith(".png") or path + ".png" not in files:
             probs.append(f"{key}: 路径 {path!r} 不是本武器产出的 PNG（逻辑路径不带 .png）")
-    if LOOK_FRAME_KEY != LOOK_FRAME_PREFIX + texts.get(LOOK_TIER2_KEY, ",").partition(",")[2]:
+    tier2_icon = texts.get(LOOK_TIER2_KEY, ",").partition(",")[2]
+    if LOOK_FRAME_KEY != LOOK_FRAME_PREFIX + tier2_icon:
         probs.append(f"{LOOK_FRAME_KEY}: 框键须挂在第二档图标上（补丁按缩略图的图标路径查）")
+    if LOOK_PARTY_FRAME_KEY != LOOK_PARTY_FRAME_PREFIX + tier2_icon:
+        probs.append(f"{LOOK_PARTY_FRAME_KEY}: 编成槽框键须挂在第二档图标上（补丁按编成槽 imagePath 查）")
+    if texts.get(LOOK_PARTY_FRAME_KEY) == texts.get(LOOK_FRAME_KEY):
+        probs.append(f"{LOOK_PARTY_FRAME_KEY}: 编成槽框须用圆角 72×72 的专用图，不能复用列表框底图（方角不透明）")
     return probs
 
 
@@ -666,7 +684,7 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
     W._require(not bad, "装备详情覆盖文案不合规：" + "；".join(bad))
     for key, text in overrides.items():
         flat[CAS][key] = [[text]]
-    # 200 级外观两键（第二图标档 / 蓝金框）：键按图标路径派生，值指向本武器产出的 PNG
+    # 200 级外观三键（第二图标档 / 蓝金框 / 编成槽蓝金框）：键按图标路径派生，值指向本武器产出的 PNG
     files = {logical: {"src": str(src), "size": list(size), "required": required}
              for logical, src, size, required in ASSET_FILES}
     for logical, info in files.items():
@@ -700,10 +718,10 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
     # 只报 capability，不对照 have、不进 problems
     for key in flat[CAS]:
         needed = list(L.required_client_capabilities(L.CUSTOM_ABILITY_STRING_KIND, [key]))
-        look = key.startswith((LOOK_TIER2_PREFIX, LOOK_FRAME_PREFIX))
-        W._require(not look or needed == [ENHANCED_LOOK_CAP], f"legality 未把外观键 {key} 判为 {ENHANCED_LOOK_CAP}")
+        look = key.startswith(LOOK_PREFIXES)
+        W._require(not look or needed == [LOOK_CAPS.get(key)], f"legality 未把外观键 {key} 判为 {LOOK_CAPS.get(key)}")
         for c in needed:
-            W._require(c == (ENHANCED_LOOK_CAP if look else L.EQUIPMENT_DESC_OVERRIDE),
+            W._require(c == (LOOK_CAPS.get(key) if look else L.EQUIPMENT_DESC_OVERRIDE),
                        f"custom_ability_string {key} 落进 {c}（本生成器只出装备覆盖与 200 级外观）")
             if c not in capabilities:
                 capabilities.append(c)

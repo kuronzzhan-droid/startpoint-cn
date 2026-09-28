@@ -169,11 +169,14 @@ class RegistryDerivationTests(unittest.TestCase):
                  | {capability for by_table in scope.PATCH_PARSER_CAPABILITIES.values()
                     for capability in by_table.values()}
                  | {legality.PANEL_OVERRIDE_V1, legality.PANEL_OVERRIDE_V2,
-                    legality.EQUIPMENT_DESC_OVERRIDE, legality.EQUIPMENT_ENHANCED_LOOK})
+                    legality.EQUIPMENT_DESC_OVERRIDE, legality.EQUIPMENT_ENHANCED_LOOK,
+                    legality.EQUIPMENT_ENHANCED_PARTY_FRAME}
+                 | set(legality.ENHANCED_LOOK_PREFIX_CAPABILITIES.values()))
         for capability in named:
             self.assertEqual("shipped", catalog[capability]["status"], capability)
         self.assertEqual("cosmetic", catalog[legality.EQUIPMENT_DESC_OVERRIDE]["level"])
         self.assertEqual("cosmetic", catalog[legality.EQUIPMENT_ENHANCED_LOOK]["level"])
+        self.assertEqual("cosmetic", catalog[legality.EQUIPMENT_ENHANCED_PARTY_FRAME]["level"])
         self.assertEqual("crash", catalog[scope.EQUIPMENT_GAUGE_CAP]["level"])
 
     def test_enhanced_look_string_keys_track_the_legality_prefixes(self):
@@ -191,6 +194,20 @@ class RegistryDerivationTests(unittest.TestCase):
         for prefix in legality.ENHANCED_LOOK_KEY_PREFIXES:
             self.assertIsNone(legality.panel_override_capability(prefix + "item/x"))
             self.assertFalse(prefix.startswith(legality.PANEL_OVERRIDE_KEY_PREFIX))
+
+    def test_every_look_family_string_key_tracks_the_legality_mapping(self):
+        """注册表 string_keys 与 legality 的外观族「前缀 → capability」逐项相同;编成槽框归自己的 capability。"""
+        rules = wfx_registry.load()["string_keys"]
+        family = legality.ENHANCED_LOOK_PREFIX_CAPABILITIES
+        self.assertEqual(family, {prefix: rule["capability"] for prefix, rule in rules.items() if prefix in family})
+        self.assertEqual(set(family), {prefix for prefix, rule in rules.items()
+                                       if rule["capability"] in set(family.values())})
+        party = rules[legality.ENHANCED_PARTY_FRAME_OVERRIDE_KEY_PREFIX]
+        self.assertEqual((legality.EQUIPMENT_ENHANCED_PARTY_FRAME, "cosmetic"), (party["capability"], party["level"]))
+        # 任意两个 string_keys 前缀互不为前缀:wfx_gate 按 startswith 认领,一个键只归一条规则
+        for a in rules:
+            for b in rules:
+                self.assertTrue(a == b or not a.startswith(b), (a, b))
 
 
 class ClientPatchConstantTests(unittest.TestCase):
@@ -220,6 +237,20 @@ class ClientPatchConstantTests(unittest.TestCase):
         for capability in (rules.CAPABILITY, *rules.INHERITED_CAPABILITIES):
             self.assertEqual("shipped", catalog[capability]["status"], capability)
         self.assertEqual("cosmetic", catalog[rules.CAPABILITY]["level"])
+
+    def test_enhanced_party_frame_capabilities_are_registered(self):
+        rules = load_patch_module("equipment-enhanced-party-frame/rules.py", "_wfx_registry_party_rules")
+        look = load_patch_module("equipment-enhanced-look/rules.py", "_wfx_registry_party_look_rules")
+        catalog = wfx_registry.capabilities()
+        self.assertEqual(legality.EQUIPMENT_ENHANCED_PARTY_FRAME, rules.CAPABILITY)
+        self.assertEqual(legality.ENHANCED_PARTY_FRAME_OVERRIDE_KEY_PREFIX, rules.PREFIX)
+        self.assertNotEqual(look.CAPABILITY, rules.CAPABILITY)
+        # 叠在 7056f7dc 上:继承层 = v1 APK 的 11 项
+        self.assertEqual(set(look.INHERITED_CAPABILITIES) | {look.CAPABILITY}, set(rules.INHERITED_CAPABILITIES))
+        for capability in (rules.CAPABILITY, *rules.INHERITED_CAPABILITIES):
+            self.assertEqual("shipped", catalog[capability]["status"], capability)
+        self.assertEqual("cosmetic", catalog[rules.CAPABILITY]["level"])
+        self.assertIn(rules.PREFIX, wfx_registry.load()["string_keys"])
 
 
 class ClientProfileTests(unittest.TestCase):

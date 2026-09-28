@@ -153,33 +153,56 @@ def equipment_desc_override_key_problems(key: str) -> list[str]:
 #     按引号读、逗号保留)。没加引号 = 客户端只读到 "<等级>" 一格 → 静默不生效,所以门禁按「一行一格」判。
 #   enhanced_frame_override_<缩略图图标路径>        值 "<背景图路径>"
 #     ItemThumbnailView.setRarity 在强化态(enhanced=true)hideRarity + replaceBackgroundImage(值)
-#     (与称号缩略图同一通路,144×144 不透明 PNG 原尺寸显示)。编成装备槽(PartyItemThumbnailView)不覆盖。
+#     (与称号缩略图同一通路,144×144 不透明 PNG 原尺寸显示)。编成装备槽不走这里,见下一个键。
+#   enhanced_party_frame_override_<编成槽图标路径>  值 "<框图路径>"
+#     (client-patch/equipment-enhanced-party-frame,**独立** capability equipment-enhanced-party-frame-v1)
+#     PartyItemThumbnailView.updateEnhancedEffectAnimation 在强化态把该图(72×72 RGBA,套 rarity 容器的矩阵)
+#     放到 image 容器第 0 位并隐藏 rarity 容器(粉框);未命中 / 格子复用时恢复。只装 v1 的客户端不读这个键,
+#     所以它不能归到 equipment-enhanced-look-v1,否则只装 v1 的接收端会被误判为支持。
 # 行为型(cosmetic):没打补丁的客户端根本不读这些键,显示原图标与粉框、不崩,数据可以先于 APK 发布。
 # 所以 required_client_capabilities 只报 capability;键/值形状错误由 enhanced_look_problems 报。
 # 值指向的 PNG 必须随同一条发布边下发(缺图 = 客户端取图失败)—— 本模块不碰 store,由发布方核对。
 EQUIPMENT_ENHANCED_LOOK = "equipment-enhanced-look-v1"
+EQUIPMENT_ENHANCED_PARTY_FRAME = "equipment-enhanced-party-frame-v1"
 ENHANCED_PIXELART_TIER2_KEY_PREFIX = "enhanced_pixelart_tier2_"
 ENHANCED_FRAME_OVERRIDE_KEY_PREFIX = "enhanced_frame_override_"
+ENHANCED_PARTY_FRAME_OVERRIDE_KEY_PREFIX = "enhanced_party_frame_override_"
+#: equipment-enhanced-look-v1 的两个前缀(v1 补丁读的键)。
 ENHANCED_LOOK_KEY_PREFIXES = (ENHANCED_PIXELART_TIER2_KEY_PREFIX, ENHANCED_FRAME_OVERRIDE_KEY_PREFIX)
+#: 装备外观族全部前缀 → capability(三个前缀互不为前缀,一个键至多归一个补丁)。
+ENHANCED_LOOK_PREFIX_CAPABILITIES = {
+    ENHANCED_PIXELART_TIER2_KEY_PREFIX: EQUIPMENT_ENHANCED_LOOK,
+    ENHANCED_FRAME_OVERRIDE_KEY_PREFIX: EQUIPMENT_ENHANCED_LOOK,
+    ENHANCED_PARTY_FRAME_OVERRIDE_KEY_PREFIX: EQUIPMENT_ENHANCED_PARTY_FRAME,
+}
 #: 客户端资源路径:ASCII 段以 "/" 相连;无空白、逗号、引号、换行、扩展名,无首尾 "/"。
 ENHANCED_LOOK_PATH_RE = re.compile(r"[A-Za-z0-9_\-]+(?:/[A-Za-z0-9_\-]+)*")
 #: 第二图标档的值:规范十进制正整数(1–999999999,远小于 int32 上限,客户端 int() 不回绕)+ 逗号 + 路径。
 ENHANCED_TIER2_VALUE_RE = re.compile(r"([1-9][0-9]{0,8}),(" + ENHANCED_LOOK_PATH_RE.pattern + r")")
 
 
+def _enhanced_look_prefix(key: str) -> str | None:
+    raw = (key or "").strip()
+    return next((p for p in ENHANCED_LOOK_PREFIX_CAPABILITIES if raw.startswith(p)), None)
+
+
 def enhanced_look_capability(key: str) -> str | None:
-    """custom_ability_string 的这个键是否是装备强化外观键(是则返回 equipment-enhanced-look-v1)。"""
-    return EQUIPMENT_ENHANCED_LOOK if (key or "").strip().startswith(ENHANCED_LOOK_KEY_PREFIXES) else None
+    """custom_ability_string 的这个键是否是装备外观族的键:是则返回它需要的 capability
+    (enhanced_pixelart_tier2_* / enhanced_frame_override_* → equipment-enhanced-look-v1,
+    enhanced_party_frame_override_* → equipment-enhanced-party-frame-v1)。"""
+    prefix = _enhanced_look_prefix(key)
+    return ENHANCED_LOOK_PREFIX_CAPABILITIES[prefix] if prefix else None
 
 
 def enhanced_look_problems(key: str, value: str | None = None) -> list[str]:
-    """外观键的键形与值形(value=None 只查键)。其他键不归这里管,返回空。
+    """外观族键的键形与值形(value=None 只查键)。其他键不归这里管,返回空。
 
-    键尾必须是合法图标路径(客户端按 itemImagePath / pixelart0.value 逐字拼接,带空白的键永远查不到);
-    值必须非空、无换行;第二图标档的值必须是 "<正整数>,<路径>",强化框的值必须是一个路径。
+    键尾必须是合法图标路径(客户端按 itemImagePath / pixelart0.value / 编成槽 imagePath 逐字拼接,
+    带空白的键永远查不到);值必须非空、无换行;第二图标档的值必须是 "<正整数>,<路径>",
+    强化框与编成槽框的值必须是一个路径。
     """
     raw = key or ""
-    prefix = next((p for p in ENHANCED_LOOK_KEY_PREFIXES if raw.strip().startswith(p)), None)
+    prefix = _enhanced_look_prefix(raw)
     if prefix is None:
         return []
     problems = []
@@ -214,7 +237,8 @@ def required_client_capabilities(kind: str, row: list[str]) -> list[str]:
     `desc_override_*` 行真正生效所需的面板覆盖 capability(缺补丁不崩,只是不生效):
     `desc_override_equipment_*` → equipment-description-override-v1(装备详情覆盖),
     `desc_override_fox_oracle_autumn*` → v1,其余 `desc_override_*` → v2;
-    `enhanced_pixelart_tier2_*` / `enhanced_frame_override_*` → equipment-enhanced-look-v1(装备强化外观)。
+    `enhanced_pixelart_tier2_*` / `enhanced_frame_override_*` → equipment-enhanced-look-v1(装备强化外观),
+    `enhanced_party_frame_override_*` → equipment-enhanced-party-frame-v1(编成装备槽强化框)。
     键形是否合法另由 equipment_desc_override_key_problems / enhanced_look_problems 判。
     """
     if kind == CUSTOM_ABILITY_STRING_KIND:

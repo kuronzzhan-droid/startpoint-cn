@@ -1275,5 +1275,70 @@ class EquipmentEnhancedLookGateTests(unittest.TestCase):
         self.assertIn(self.L.EQUIPMENT_ENHANCED_LOOK, V.KNOWN_CAPABILITIES)
 
 
+class EquipmentEnhancedPartyFrameGateTests(unittest.TestCase):
+    """`enhanced_party_frame_override_*` = 编成装备槽强化框(client-patch/equipment-enhanced-party-frame)。
+
+    独立 capability:只装 v1(equipment-enhanced-look-v1)的客户端不读这个键,编成槽仍是粉框。门禁要守的是
+    它不被归到 v1、键尾是图标路径、值是一个路径,以及 v1 两个前缀的分类不变。
+    """
+
+    L = wf_client_legality
+    PARTY = "enhanced_party_frame_override_item/equipment/mod/paradox/paradox_lv200"
+    PARTY_FRAME = "item/equipment/mod/paradox/paradox_party_frame_bluegold"
+
+    def test_names(self) -> None:
+        self.assertEqual("equipment-enhanced-party-frame-v1", self.L.EQUIPMENT_ENHANCED_PARTY_FRAME)
+        self.assertEqual("enhanced_party_frame_override_", self.L.ENHANCED_PARTY_FRAME_OVERRIDE_KEY_PREFIX)
+        self.assertNotIn(self.L.ENHANCED_PARTY_FRAME_OVERRIDE_KEY_PREFIX, self.L.ENHANCED_LOOK_KEY_PREFIXES)
+        self.assertEqual({"enhanced_pixelart_tier2_": "equipment-enhanced-look-v1",
+                          "enhanced_frame_override_": "equipment-enhanced-look-v1",
+                          "enhanced_party_frame_override_": "equipment-enhanced-party-frame-v1"},
+                         self.L.ENHANCED_LOOK_PREFIX_CAPABILITIES)
+        # 三个前缀互不为前缀:一个键至多归一个补丁
+        prefixes = list(self.L.ENHANCED_LOOK_PREFIX_CAPABILITIES)
+        for a in prefixes:
+            for b in prefixes:
+                self.assertTrue(a == b or not a.startswith(b), (a, b))
+
+    def test_party_key_needs_its_own_patch_not_v1(self) -> None:
+        self.assertEqual(self.L.EQUIPMENT_ENHANCED_PARTY_FRAME, self.L.enhanced_look_capability(self.PARTY))
+        self.assertIsNone(self.L.panel_override_capability(self.PARTY))
+        self.assertEqual([self.L.EQUIPMENT_ENHANCED_PARTY_FRAME], self.L.required_client_capabilities(
+            self.L.CUSTOM_ABILITY_STRING_KIND, [self.PARTY, self.PARTY_FRAME]))
+        self.assertNotIn(self.L.EQUIPMENT_ENHANCED_LOOK, self.L.required_client_capabilities(
+            self.L.CUSTOM_ABILITY_STRING_KIND, [self.PARTY]))
+        self.assertEqual([], self.L.enhanced_look_problems(self.PARTY))
+        self.assertEqual([], self.L.enhanced_look_problems(self.PARTY, self.PARTY_FRAME))
+        # v1 两键的分类不变
+        for key in ("enhanced_frame_override_item/equipment/mod/paradox/paradox_lv200",
+                    "enhanced_pixelart_tier2_item/equipment/mod/paradox/paradox_lv120"):
+            self.assertEqual([self.L.EQUIPMENT_ENHANCED_LOOK], self.L.required_client_capabilities(
+                self.L.CUSTOM_ABILITY_STRING_KIND, [key]), key)
+
+    def test_near_names_are_not_party_keys(self) -> None:
+        for key in ("enhanced_party_frame_override", "Enhanced_party_frame_override_x", "xenhanced_party_frame_override_a",
+                    "enhanced_party_frame_x", ""):
+            self.assertNotEqual(self.L.EQUIPMENT_ENHANCED_PARTY_FRAME, self.L.enhanced_look_capability(key), key)
+
+    def test_malformed_keys_are_problems(self) -> None:
+        for key in ("enhanced_party_frame_override_", " enhanced_party_frame_override_item/a",
+                    "enhanced_party_frame_override_item/a ", "enhanced_party_frame_override_/item/a",
+                    "enhanced_party_frame_override_item/a/", "enhanced_party_frame_override_item//a",
+                    "enhanced_party_frame_override_item/a,b", "enhanced_party_frame_override_item/a.png",
+                    "enhanced_party_frame_override_道具/a"):
+            problems = self.L.enhanced_look_problems(key)
+            self.assertEqual(1, len(problems), key)
+            self.assertIn(repr(key), problems[0])
+            self.assertEqual(self.L.EQUIPMENT_ENHANCED_PARTY_FRAME, self.L.enhanced_look_capability(key), key)
+
+    def test_values(self) -> None:
+        for value in ("", "a\nb", "a,b", " a", "a/", "a.png", "200," + self.PARTY_FRAME):
+            self.assertEqual(1, len(self.L.enhanced_look_problems(self.PARTY, value)), value)
+
+    def test_pack_verifier_knows_the_capability(self) -> None:
+        import wf_midautumn_verify as V
+        self.assertIn(self.L.EQUIPMENT_ENHANCED_PARTY_FRAME, V.KNOWN_CAPABILITIES)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -288,14 +288,17 @@ class ParadoxTests(unittest.TestCase):
         base = P.build(fixture_reader())
         self.assertEqual(base["problems"], [f"{W.EA_T}[{k}]#{index}: {miss.format(S.EQUIPMENT_GAUGE_CAP)}" for k in keys])
         # 需求并集：legality 只报运行时 gauge-gain-rules-v1，解析器的 equipment-gauge-gain-rules-v1 由生成器补齐；
-        # 另加装备详情覆盖三键的 equipment-description-override-v1 与 200 级外观两键的 equipment-enhanced-look-v1 ——
-        # 都是行为型，两个目标客户端都没有它们，却不进 problems
-        want = sorted([BR.GAUGE_CAP, S.EQUIPMENT_GAUGE_CAP, L.EQUIPMENT_DESC_OVERRIDE, P.ENHANCED_LOOK_CAP])
+        # 另加装备详情覆盖三键的 equipment-description-override-v1、200 级外观两键的 equipment-enhanced-look-v1
+        # 与编成槽框键的 equipment-enhanced-party-frame-v1 —— 都是行为型，两个目标客户端都没有它们，却不进 problems
+        want = sorted([BR.GAUGE_CAP, S.EQUIPMENT_GAUGE_CAP, L.EQUIPMENT_DESC_OVERRIDE, P.ENHANCED_LOOK_CAP,
+                       P.PARTY_FRAME_CAP])
         self.assertEqual(base["capabilities"], want)
         self.assertEqual(self.out["capabilities"], want)
         self.assertNotIn(L.EQUIPMENT_DESC_OVERRIDE, P.PATCHED_CLIENT_CAPABILITIES)
         self.assertNotIn(P.ENHANCED_LOOK_CAP, P.PATCHED_CLIENT_CAPABILITIES)
+        self.assertNotIn(P.PARTY_FRAME_CAP, P.PATCHED_CLIENT_CAPABILITIES)
         self.assertEqual(P.ENHANCED_LOOK_CAP, "equipment-enhanced-look-v1")
+        self.assertEqual(P.PARTY_FRAME_CAP, "equipment-enhanced-party-frame-v1")
         self.assertEqual(self.out["problems"], [])
         self.assertEqual(P.row_capabilities(W.EA_T, gauge), [BR.GAUGE_CAP, S.EQUIPMENT_GAUGE_CAP])
         # 没有任何补丁的客户端：423 行两项都缺，仍只有这 4 行
@@ -500,8 +503,11 @@ class ParadoxTests(unittest.TestCase):
         cas = self.out["flat"][P.CAS]
         self.assertEqual(cas[P.LOOK_TIER2_KEY], [["200,item/equipment/mod/paradox/paradox_lv200"]])
         self.assertEqual(cas[P.LOOK_FRAME_KEY], [["item/equipment/mod/paradox/paradox_frame_bluegold"]])
+        self.assertEqual(cas[P.LOOK_PARTY_FRAME_KEY], [["item/equipment/mod/paradox/paradox_party_frame_bluegold"]])
         self.assertEqual(P.LOOK_TIER2_KEY, "enhanced_pixelart_tier2_item/equipment/mod/paradox/paradox_lv120")
         self.assertEqual(P.LOOK_FRAME_KEY, "enhanced_frame_override_item/equipment/mod/paradox/paradox_lv200")
+        self.assertEqual(P.LOOK_PARTY_FRAME_KEY,
+                         "enhanced_party_frame_override_item/equipment/mod/paradox/paradox_lv200")
         enh = self.out["flat"][P.ENH][P.ID][0]
         self.assertEqual(P.look_problems(P.look_texts(), enh, self.out["files"]), [])
         # 单元格里的半角逗号靠 CSV 引号保住一格（客户端 format.csv.Reader 认引号）
@@ -516,6 +522,8 @@ class ParadoxTests(unittest.TestCase):
         self.assertEqual(files[P.ICON200 + ".png"]["size"], [20, 20])
         self.assertEqual(files[P.FRAME_BLUEGOLD + ".png"]["size"], [144, 144])
         self.assertFalse(files[P.FRAME_BLUEGOLD + ".png"]["required"])     # 另一执行者在画，缺图时暂存跳过
+        self.assertEqual(files[P.PARTY_FRAME_BLUEGOLD + ".png"]["size"], [72, 72])   # 官方 party 框原尺寸
+        self.assertTrue(files[P.PARTY_FRAME_BLUEGOLD + ".png"]["required"])
         bad = {
             "level at c3": {**P.look_texts(), P.LOOK_TIER2_KEY: f"120,{P.ICON200}"},
             "level above c0": {**P.look_texts(), P.LOOK_TIER2_KEY: f"201,{P.ICON200}"},
@@ -524,6 +532,10 @@ class ParadoxTests(unittest.TestCase):
             "foreign path": {**P.look_texts(), P.LOOK_FRAME_KEY: "item/equipment/mod/cursed/x"},
             "newline": {**P.look_texts(), P.LOOK_FRAME_KEY: P.FRAME_BLUEGOLD + "\n"},
             "missing key": {P.LOOK_TIER2_KEY: P.look_texts()[P.LOOK_TIER2_KEY]},
+            "missing party key": {k: v for k, v in P.look_texts().items() if k != P.LOOK_PARTY_FRAME_KEY},
+            "party reuses list frame": {**P.look_texts(), P.LOOK_PARTY_FRAME_KEY: P.FRAME_BLUEGOLD},
+            "party png suffix": {**P.look_texts(), P.LOOK_PARTY_FRAME_KEY: P.PARTY_FRAME_BLUEGOLD + ".png"},
+            "party foreign path": {**P.look_texts(), P.LOOK_PARTY_FRAME_KEY: "item/equipment/mod/cursed/x"},
         }
         for label, texts in bad.items():
             with self.subTest(label):
@@ -531,10 +543,11 @@ class ParadoxTests(unittest.TestCase):
         wrong_icon = list(enh)
         wrong_icon[4] = P.ICON
         self.assertTrue(P.look_problems(P.look_texts(), wrong_icon, files))
-        # legality 登记前后都只能报 equipment-enhanced-look-v1，不许落进面板覆盖
+        # legality 只能报各键自己的补丁 capability，不许落进面板覆盖；编成槽框不许归到 v1
         for key in P.LOOK_KEYS:
-            self.assertLessEqual(set(L.required_client_capabilities(L.CUSTOM_ABILITY_STRING_KIND, [key])),
-                                 {P.ENHANCED_LOOK_CAP})
+            self.assertEqual(L.required_client_capabilities(L.CUSTOM_ABILITY_STRING_KIND, [key]), [P.LOOK_CAPS[key]])
+        self.assertEqual({P.LOOK_TIER2_KEY: P.ENHANCED_LOOK_CAP, P.LOOK_FRAME_KEY: P.ENHANCED_LOOK_CAP,
+                          P.LOOK_PARTY_FRAME_KEY: P.PARTY_FRAME_CAP}, P.LOOK_CAPS)
 
     def test_look_keys_match_client_patch(self):
         # 键前缀 / capability / 第二档值格式以 client-patch/equipment-enhanced-look/rules.py 为准
@@ -556,6 +569,39 @@ class ParadoxTests(unittest.TestCase):
         self.assertEqual(str(int(level)), level)                            # 规范十进制整数
         self.assertTrue(path_)
         self.assertEqual(int(level), P.MAX_LEVEL)
+
+    def test_party_frame_key_matches_client_patch(self):
+        # 编成槽框键前缀 / capability 以 client-patch/equipment-enhanced-party-frame/rules.py 为准，叠在 v1 之上
+        root = Path(__file__).resolve().parents[2] / "client-patch"
+        path = root / "equipment-enhanced-party-frame/rules.py"
+        if not path.exists():
+            self.skipTest("client-patch/equipment-enhanced-party-frame 尚未落地")
+        name = "_equipment_enhanced_party_frame_rules_for_paradox_test"
+        spec = importlib.util.spec_from_file_location(name, path)
+        rules = importlib.util.module_from_spec(spec)
+        sys.modules[name] = rules
+        try:
+            spec.loader.exec_module(rules)
+        finally:
+            sys.modules.pop(name, None)
+        self.assertEqual((rules.CAPABILITY, rules.PREFIX), (P.PARTY_FRAME_CAP, P.LOOK_PARTY_FRAME_PREFIX))
+        self.assertEqual(rules.party_frame_key(P.ICON200), P.LOOK_PARTY_FRAME_KEY)
+        self.assertIn(P.ENHANCED_LOOK_CAP, rules.INHERITED_CAPABILITIES)         # 底包 = v1 APK
+        # 补丁把框图归一到 72×72 再套 rarity 容器矩阵：PNG 按这个尺寸交付
+        size = next(s for logical, _src, s, _req in P.ASSET_FILES if logical == P.PARTY_FRAME_BLUEGOLD + ".png")
+        self.assertEqual((rules.FRAME_SIZE, rules.FRAME_SIZE), tuple(size))
+
+    def test_asset_files_have_the_declared_size(self):
+        from PIL import Image
+        for logical, src, size, required in P.ASSET_FILES:
+            if not src.is_file():
+                self.assertFalse(required, logical)
+                continue
+            with Image.open(src) as image:
+                self.assertEqual((tuple(size), "RGBA"), (image.size, image.mode), logical)
+        with Image.open(P.ASSET_DIR / "paradox_party_frame_bluegold.png") as image:
+            corners = [image.getpixel(xy)[3] for xy in ((0, 0), (71, 0), (0, 71), (71, 71))]
+        self.assertEqual([0, 0, 0, 0], corners)                                # 圆角透明（α 照抄官方）
 
     def test_final_hits_dsl(self):
         tree = self.out["dsl"][P.HITS_FINAL]

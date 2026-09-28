@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 """PARADOX Lv200 蓝金强化框：把官方粉色强化框逐像素染成蓝金（作者 0928「粉色框染色成蓝金色」）。
 
-输出 mod-tools/assets/paradox/paradox_frame_bluegold.png（144×144 不透明，72×72 结果 ×2 最近邻），
-由补丁 equipment-enhanced-look 的 enhanced_frame_override_ 键在 Lv200 缩略图上替换粉框。
+输出两张图，同一个 recolor()：
+- mod-tools/assets/paradox/paradox_frame_bluegold.png（144×144 不透明，72×72 结果 ×2 最近邻），
+  由补丁 equipment-enhanced-look 的 enhanced_frame_override_ 键在 Lv200 缩略图上替换粉框；
+- mod-tools/assets/paradox/paradox_party_frame_bluegold.png（72×72 RGBA，原尺寸），
+  由补丁 equipment-enhanced-party-frame 的 enhanced_party_frame_override_ 键在编成装备槽替换粉框。
+  源图是官方 party_equipment_rainbow_enhanced（图集 (2008,3771) 72×72，圆角：24 个 α=0、46 个半透明），
+  α 逐像素照抄官方；补丁把它归一到 72×72 再套 rarity 容器的矩阵（≈2.028 倍 = 146×146，双线性），与粉图同样柔和。
 结构（边框明暗、内缘、菱格）逐像素保留，每个像素保持原 OKLab 亮度，只换色相/彩度。
-官方原图 item_rainbow_enhanced 取自 APK 图集（坐标见 D:/WF/out/PARADOX-20260928/lv200-frame/official/manifest.json），
+官方原图 item_rainbow_enhanced / party_equipment_rainbow_enhanced 取自 APK 图集
+（坐标见 D:/WF/out/PARADOX-20260928/lv200-frame/official/manifest.json），
 不入仓库；三版换色对比与评审在 D:/WF/out/PARADOX-20260928/lv200-frame/v2/。
 用法：python mod-tools/assets/paradox/build_frame_bluegold.py [--preview]
 
@@ -54,6 +60,7 @@ HERE = Path(__file__).resolve().parent            # mod-tools/assets/paradox
 PREVIEW_DIR = Path(r"D:/WF/out/PARADOX-20260928/lv200-frame/v2/huemap")
 OFF = PREVIEW_DIR.parent.parent / "official"
 SRC = OFF / "item_rainbow_enhanced.png"
+PARTY_SRC = OFF / "party_equipment_rainbow_enhanced.png"
 ICON_120 = OFF / "paradox_icon_lv120_20x20.png"
 ICON_200 = Path(r"D:\WF\startpoint-cn\mod-tools\assets\paradox\paradox_lv200.png")
 
@@ -337,6 +344,57 @@ def sha(p: Path) -> str:
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
 
+# ---------------------------------------------------------------- party slot frame
+PARTY_OUT = HERE / "paradox_party_frame_bluegold.png"
+PARTY_PREVIEW = Path(r"D:/WF/out/PARADOX-20260928/apk/enhanced-look-party-20260928/preview_party_frame.png")
+PARTY_TRANSPARENT, PARTY_SEMI = 24, 46      # official rounded corners: alpha 0 / 0 < alpha < 255
+PARTY_OPAQUE_RGB_TOLERANCE = 7              # official item vs party texture on opaque pixels
+PARTY_SCALE = 2.02777099609375              # rarity container matrix in item_thumbnail.ui (72 -> 146)
+
+
+def party_frame(item: np.ndarray, party: np.ndarray) -> np.ndarray:
+    """Party-slot frame (72x72 RGBA): same recolor() as the list frame, alpha copied from the official texture.
+
+    The official party texture is the list texture plus rounded corners (opaque RGB differs by <= 7). The
+    corner pixels (alpha < 255) come out of the atlas un-premultiplied, so at low alpha their RGB is distorted
+    (G channel ~60-100 instead of ~150), and recolouring them would give dark gold edges once the device scales
+    the frame 2.03x bilinearly. Their RGB is therefore taken from the list texture at the same position before
+    recolouring (not premultiplied: the PNG keeps straight alpha), then the official alpha is put back."""
+    assert item.shape == party.shape == (72, 72, 4) and item[..., 3].min() == 255
+    alpha = party[..., 3]
+    opaque = alpha == 255
+    assert int((alpha == 0).sum()) == PARTY_TRANSPARENT and int((~opaque & (alpha > 0)).sum()) == PARTY_SEMI, \
+        "party_equipment_rainbow_enhanced corners changed: re-extract the official texture"
+    diff = np.abs(item[..., :3].astype(int) - party[..., :3].astype(int))[opaque].max()
+    assert diff <= PARTY_OPAQUE_RGB_TOLERANCE, f"party texture no longer matches the list texture ({diff})"
+    source = np.where(opaque[..., None], party[..., :3], item[..., :3])
+    return np.dstack([recolor(source), alpha]).astype(np.uint8)
+
+
+def party_preview(frame: Image.Image) -> Image.Image:
+    """Official pink vs dyed party frame at the device size (bilinear 2.03x) with the Lv200 icon at 6x."""
+    size = int(round(72 * PARTY_SCALE))
+    pink = Image.open(PARTY_SRC).convert("RGBA")
+    ic120 = Image.open(ICON_120).convert("RGBA").resize((120, 120), Image.NEAREST)
+    ic200 = Image.open(ICON_200).convert("RGBA").resize((120, 120), Image.NEAREST)
+    font = _font()
+    pad, lab = 16, 22
+    cells = [("official + lv120", pink, ic120), ("dyed + lv200", frame, ic200), ("dyed frame", frame, None)]
+    img = Image.new("RGBA", (pad + len(cells) * (size + pad), 2 * (lab + size + pad) + pad), LIGHT_BG)
+    d = ImageDraw.Draw(img)
+    for row, (bg, fg) in enumerate(((LIGHT_BG, (40, 40, 48)), (DARK_BG, (214, 218, 232)))):
+        y = pad + row * (lab + size + pad)
+        d.rectangle((0, y - pad // 2, img.width, y + lab + size + pad // 2), fill=bg)
+        for i, (name, fr, icon) in enumerate(cells):
+            x = pad + i * (size + pad)
+            d.text((x, y), name, fill=fg, font=font)
+            cell = fr.resize((size, size), Image.BILINEAR)
+            if icon is not None:
+                cell.alpha_composite(icon, ((size - 120) // 2, (size - 120) // 2))
+            img.alpha_composite(cell, (x, y + lab))
+    return img.convert("RGB")
+
+
 def main():
     src = np.array(Image.open(SRC).convert("RGBA"))
     assert src.shape == (72, 72, 4) and src[..., 3].min() == 255
@@ -345,13 +403,23 @@ def main():
     f144 = f72.resize((144, 144), Image.NEAREST)
     out = HERE / "paradox_frame_bluegold.png"
     f144.save(out, optimize=False)
+    party_src = np.array(Image.open(PARTY_SRC).convert("RGBA"))
+    party = party_frame(src, party_src)
+    Image.fromarray(party, "RGBA").save(PARTY_OUT, optimize=False)
     if "--preview" in sys.argv[1:]:
         preview(f144).save(PREVIEW_DIR / "preview.png", optimize=False)
+        party_preview(Image.fromarray(party, "RGBA")).save(PARTY_PREVIEW, optimize=False)
     # lightness check: every pixel keeps its source OKLab L
     dL = np.abs(rgb_to_oklab(rgb.astype(float))[..., 0]
                 - rgb_to_oklab(src[..., :3].astype(float))[..., 0])
     print(f"max |dL| = {dL.max():.4f}  mean |dL| = {dL.mean():.5f}")
     print(out.name, sha(out))
+    opaque = party_src[..., 3] == 255
+    dLp = np.abs(rgb_to_oklab(party[..., :3].astype(float))[..., 0]
+                 - rgb_to_oklab(party_src[..., :3].astype(float))[..., 0])[opaque]
+    assert (party[..., 3] == party_src[..., 3]).all()
+    print(f"party: alpha copied, opaque max |dL| = {dLp.max():.4f}  mean |dL| = {dLp.mean():.5f}")
+    print(PARTY_OUT.name, sha(PARTY_OUT))
 
 
 if __name__ == "__main__":
