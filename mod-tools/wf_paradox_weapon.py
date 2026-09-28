@@ -197,16 +197,14 @@ PARADOX_ENH_STATUS_ROWS = {"98": "0,0", "99": "50,10", "120": "50,10", str(MAX_L
 #: 商店行模板：诅咒武器同款的 5900110<阶>（官方只有 1–6 阶；7–10 阶用第 6 阶，被覆写的列以外六行逐格相同）
 SHOP_TEMPLATE_STAGES = 6
 
-# 200 级外观（client-patch 由另一执行者实现，capability equipment-enhanced-look-v1，行为型：未装补丁不读、不崩）。
+# 200 级外观（client-patch/equipment-enhanced-look，capability equipment-enhanced-look-v1，行为型：未装补丁不读、不崩）。
 # 补丁在缩略图里只拿得到图标路径，拿不到等级，所以两键都按图标路径派生。
 LOOK_TIER2_PREFIX = "enhanced_pixelart_tier2_"
 LOOK_FRAME_PREFIX = "enhanced_frame_override_"
 LOOK_TIER2_KEY = LOOK_TIER2_PREFIX + ICON120      # 值 = "<等级>,<图标>"：强化 ≥ 该等级时把 lv120 图标换成 lv200
 LOOK_FRAME_KEY = LOOK_FRAME_PREFIX + ICON200      # 值 = 框底图路径：显示 lv200 图标的强化态缩略图换蓝金底
 LOOK_KEYS = (LOOK_TIER2_KEY, LOOK_FRAME_KEY)
-#: TODO(equipment-enhanced-look-v1)：另一执行者正在 wf_client_legality 登记这两个键前缀的 capability；
-#: 登记了就用它的常量，没登记前用本地同名字面量（build 在 legality 不认这两键时自行补报）。
-ENHANCED_LOOK_CAP = getattr(L, "EQUIPMENT_ENHANCED_LOOK", "equipment-enhanced-look-v1")
+ENHANCED_LOOK_CAP = L.EQUIPMENT_ENHANCED_LOOK
 
 #: 本武器全部图片（逻辑路径 → 源图、尺寸、是否必需）。蓝金框由另一执行者在画：缺图时暂存跳过它与框键，不报错。
 ASSET_FILES = (
@@ -703,8 +701,7 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
     for key in flat[CAS]:
         needed = list(L.required_client_capabilities(L.CUSTOM_ABILITY_STRING_KIND, [key]))
         look = key.startswith((LOOK_TIER2_PREFIX, LOOK_FRAME_PREFIX))
-        if look and not needed:
-            needed = [ENHANCED_LOOK_CAP]         # TODO(equipment-enhanced-look-v1)：legality 登记前由这里补报
+        W._require(not look or needed == [ENHANCED_LOOK_CAP], f"legality 未把外观键 {key} 判为 {ENHANCED_LOOK_CAP}")
         for c in needed:
             W._require(c == (ENHANCED_LOOK_CAP if look else L.EQUIPMENT_DESC_OVERRIDE),
                        f"custom_ability_string {key} 落进 {c}（本生成器只出装备覆盖与 200 级外观）")
