@@ -131,10 +131,13 @@ class CursedWeaponTests(unittest.TestCase):
         soul = self.out["flat"][W.SOUL][w26.id]
         ea = self.out["flat"][W.EA][w26.id]
         hi = lambda t, r: float(r[_col(t, "instant_content", "strength.first_max")])
-        atk_pos = sum(hi(W.SOUL_T, r) for r in soul if _kind(W.SOUL_T, r) == "32")             + sum(hi(W.EA_T, r) for r in ea if _kind(W.EA_T, r) == "32" and hi(W.EA_T, r) > 0)
-        atk_neg = [hi(W.EA_T, r) for r in ea if _kind(W.EA_T, r) == "32" and hi(W.EA_T, r) < 0]
-        # 作者 0928「不要脸写的数值都太高了」：五项刃值 1000% → 100%，抵消仍在 120 级正好归零
-        self.assertEqual((atk_pos, atk_neg), (100000, [-100000]))
+        def pos_neg(kind):
+            pos = sum(hi(W.SOUL_T, r) for r in soul if _kind(W.SOUL_T, r) == kind)                 + sum(hi(W.EA_T, r) for r in ea if _kind(W.EA_T, r) == kind and hi(W.EA_T, r) > 0)
+            return pos, [hi(W.EA_T, r) for r in ea if _kind(W.EA_T, r) == kind and hi(W.EA_T, r) < 0]
+        # 提案表「建议」0928：删去全部刃值，只留充能 +100% 与增伤乘区（按作者上限 50%）；抵消仍在 120 级正好归零
+        self.assertEqual(pos_neg("35"), (100000, [-100000]))
+        self.assertEqual(pos_neg("723"), (50000, [-50000]))
+        self.assertFalse({_kind(W.EA_T, r) for r in ea} & {"32", "33", "34", "388", "55"})
 
     def test_enhancement_rows_shape(self):
         for w in self.ws:
@@ -719,7 +722,7 @@ class CursedWeaponTests(unittest.TestCase):
         1: (920, 0), 2: (1000, 0), 3: (500, 30), 4: (700, 0), 5: (0, 0), 6: (1000, 0), 7: (900, 0), 8: (700, 0),
         9: (1000, 50), 10: (500, 2), 11: (350, 0), 12: (510, 0), 13: (1000, 0), 14: (1000, 0), 15: (1000, 15),
         16: (1000, 10), 17: (600, 0), 18: (1000, 20), 19: (1000, 30), 20: (550, 0), 21: (500, 50), 22: (1000, 20),
-        23: (490, 0), 24: (1000, 0), 25: (0, 50), 26: (500, 10), 27: (582, 0), 28: (0, 20), 29: (0, 50)}
+        23: (490, 0), 24: (1000, 0), 25: (0, 50), 26: (0, 50), 27: (582, 0), 28: (0, 20), 29: (0, 50)}
 
     def budget(self, row: int, *, soul=None, ea=None, dsl=None) -> dict:
         return W.weapon_budget(self.soul(row) if soul is None else soul, self.ea(row) if ea is None else ea,
@@ -747,7 +750,7 @@ class CursedWeaponTests(unittest.TestCase):
         self.assertEqual(W.budget_caps("脆脆鲨"), (1000, 50))
         # 诅咒与机制保留：孤狼的抵消、超频的过载、三相的转出、面具的封印
         self.assertEqual(sorted(_kind(W.EA_T, r) for r in self.ea(26) if min(_strengths(W.EA_T, r) or [0]) < 0),
-                         sorted(["32", "34", "33", "388", "55", "35", "723"]))
+                         sorted(["35", "723"]))
         self.assertIn("701", [_kind(W.EA_T, r) for r in self.ea(25)])
         self.assertIn("219", [_kind(W.EA_T, r) for r in self.ea(29)])
         self.assertEqual(sum(1 for r in self.ea(27) if min(_strengths(W.EA_T, r) or [0]) < 0), 3)
@@ -803,10 +806,9 @@ class CursedWeaponTests(unittest.TestCase):
         b = self.budget(1, dsl=dsl)
         self.assertEqual(b["blades"], 1020)
         self.assertTrue(W.budget_problems("01", self.weapon(1).author, b))
-        # 4) 不要脸的常规水准上限 600%：孤狼攻击 +101% → 601% 对不要脸报，对一般提案不报
+        # 4) 不要脸的常规水准上限 600%：孤狼加一行攻击 +601% 对不要脸报，对一般提案不报
         ea = json.loads(json.dumps(self.ea(26)))
-        row = next(r for r in ea if _kind(W.EA_T, r) == "32" and r[1] == "120")
-        row[top(row)] = str(int(row[top(row)]) + 101000)
+        ea.append(W.build_row(W.EA_T, len(ea), W.Eff("0", W.stat("32", W.T_SELF, 601), **W.FINAL)))
         b = self.budget(26, ea=ea)
         self.assertEqual(b["blades"], 601)
         self.assertEqual(len(W.budget_problems("26", "不要脸", b)), 1)
@@ -902,7 +904,7 @@ class CursedWeaponTests(unittest.TestCase):
                  26: ["+1000%", "伤害独立乘区 +100%"], 27: ["+500%", "20 次"], 29: ["+100%"]}
         fresh = {1: ["+100%"], 7: ["+300%"], 9: ["+1000%", "+500%", "+30%", "+50%"], 14: ["+1000%"],
                  18: ["+1000%", "+600%", "+400%"], 19: ["+350%", "+650%", "+30%"], 21: ["+50%"],
-                 24: ["+100%（最多 +500%）"], 25: ["+50%"], 26: ["+100%", "+10%"], 27: ["最多 6 次"], 29: ["+50%"]}
+                 24: ["+100%（最多 +500%）"], 25: ["+50%"], 26: ["+100%", "+50%"], 27: ["最多 6 次"], 29: ["+50%"]}
         for row in stale:
             text = self.weapon(row).summary_120
             for old in stale[row]:
