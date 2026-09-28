@@ -769,7 +769,7 @@ class CursedWeaponTests(unittest.TestCase):
                 moved += 1
         self.assertEqual(moved, 2)                                               # 火/雷共鸣各一行
         b = self.budget(9, ea=ea)
-        self.assertEqual((b["blades"], b["multipliers"]), (240 + 500 + 750, 30 + 50))
+        self.assertEqual((b["blades"], b["multipliers"]), (20 + 500 + 1000, 30 + 50))   # 本体第 50 秒弱加成 + 苏醒 + 龙怒
         self.assertEqual(len(W.budget_problems("09", w09.author, b)), 2)
         # 门禁窗口只约束触发时刻，触发后的计时效果不随门禁结束截断（保守）
         self.assertEqual(W._gated(((600, 1200),), ((0, 700),), 600), ((600, 1200),))
