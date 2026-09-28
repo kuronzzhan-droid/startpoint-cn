@@ -40,6 +40,9 @@ import wf_cursed_weapon_banner as cursed  # noqa: E402  backdrop() 暗红紫底�
 OUT = TOOLS / "assets" / "weapon-gacha"
 LIST_SIZE = (510, 180)
 COVER_SIZE = (1440, 1789)
+#: 封面内容整体下移量（作者 0928 真机反馈「图稍微往下挪一点」：卡池页顶部的横幅列表压住了宝箱与法阵上半）。
+#: 真机约按 0.92 倍显示、顶部裁掉约 54px；下移 120 后说明块下沿 ≈ y1382，仍在抽取按钮（≈ y1550 起）之上。
+COVER_SHIFT = 120
 SS = 2  # 线稿超采样倍数（PIL 画线不抗锯齿，先画 2 倍再 BOX 缩回）
 SEED = 990003
 
@@ -709,19 +712,20 @@ def make_cover() -> Image.Image:
     rnd = random.Random(SEED + 7)
     alphabet = rune_alphabet(random.Random(SEED + 1))
     W, H = COVER_SIZE
+    oy = COVER_SHIFT  # 上部与文字区整体下移；底部按钮区装饰仍贴底
     img = cursed.backdrop(COVER_SIZE)
-    img.alpha_composite(radial(COVER_SIZE, (W / 2, 360), (900, 760), (140, 26, 90), 150, 1.5))
-    img.alpha_composite(radial(COVER_SIZE, (W / 2, 420), (520, 420), (255, 160, 70), 46, 2.0))
-    img.alpha_composite(vramp(COVER_SIZE, 1150, 1789, (6, 2, 8), 0, 150))
+    img.alpha_composite(radial(COVER_SIZE, (W / 2, 360 + oy), (900, 760), (140, 26, 90), 150, 1.5))
+    img.alpha_composite(radial(COVER_SIZE, (W / 2, 420 + oy), (520, 420), (255, 160, 70), 46, 2.0))
+    img.alpha_composite(vramp(COVER_SIZE, 1150 + oy, 1789, (6, 2, 8), 0, 150))
 
-    seal_c, seal_r = (W / 2, 350), 316
+    seal_c, seal_r = (W / 2, 350 + oy), 316
     segs = []
-    base = (W / 2, 640)
+    base = (W / 2, 640 + oy)
     for a in (-2.95, -2.6, -0.5, -0.18, 2.75, 2.35, 0.45, 0.8, 1.35, 1.8):
         segs += crack_segments(rnd, base[0] + rnd.uniform(-160, 160), base[1] + rnd.uniform(-10, 20), a,
                                rnd.uniform(420, 760), 16, 6.5)
     for sx, sy, a in ((0, 140, 0.3), (W, 90, math.pi - 0.25), (0, 560, -0.15), (W, 620, math.pi + 0.1)):
-        segs += crack_segments(rnd, sx, sy, a, 380, 14, 5.0)
+        segs += crack_segments(rnd, sx, sy + oy, a, 380, 14, 5.0)
     img.alpha_composite(render_cracks(COVER_SIZE, segs, 2.2, 1.0))
     # 底部按钮区：只放极淡的大法阵弧和血色雾，不抢按钮
     deep = Art(COVER_SIZE)
@@ -737,13 +741,13 @@ def make_cover() -> Image.Image:
     img.alpha_composite(glow(sl, 4, (255, 190, 90, 200), 1.0))
     img.alpha_composite(sl)
     floor = Art(COVER_SIZE)
-    draw_seal(floor, rnd, alphabet, W / 2, 648, 430, gold=GOLD + (200,), red=BLOOD_HOT + (210,), squash=0.23,
+    draw_seal(floor, rnd, alphabet, W / 2, 648 + oy, 430, gold=GOLD + (200,), red=BLOOD_HOT + (210,), squash=0.23,
               rot=0.3)
     fl = floor.done()
     img.alpha_composite(glow(fl, 8, (255, 90, 60, 150), 1.3))
     img.alpha_composite(fl)
 
-    chest_base, chest_w, gap = 628, 400, 18
+    chest_base, chest_w, gap = 628 + oy, 400, 18
     g = chest_geometry(W / 2, chest_base, chest_w, gap)
     slit_y = g["top"] - gap / 2
     img.alpha_composite(radial(COVER_SIZE, (W / 2, slit_y), (560, 300), (255, 200, 110), 90, 2.2))
@@ -752,10 +756,10 @@ def make_cover() -> Image.Image:
 
     chains = Art(COVER_SIZE)
     lock = (W / 2, g["top"] + g["hb"] * 0.4)
-    draw_chain(chains, (-70, 150), (lock[0] + 30, lock[1] + 12), 28, 46)
-    draw_chain(chains, (W + 70, 150), (lock[0] - 30, lock[1] + 12), 28, 46)
-    draw_chain(chains, (-70, 690), (lock[0] + 20, lock[1] - 4), -24, 46)
-    draw_chain(chains, (W + 70, 690), (lock[0] - 20, lock[1] - 4), -24, 46)
+    draw_chain(chains, (-70, 150 + oy), (lock[0] + 30, lock[1] + 12), 28, 46)
+    draw_chain(chains, (W + 70, 150 + oy), (lock[0] - 30, lock[1] + 12), 28, 46)
+    draw_chain(chains, (-70, 690 + oy), (lock[0] + 20, lock[1] - 4), -24, 46)
+    draw_chain(chains, (W + 70, 690 + oy), (lock[0] - 20, lock[1] - 4), -24, 46)
     body, slit, _ = render_chest(COVER_SIZE, W / 2, chest_base, chest_w, gap, lw=6.5, lock_plate=False)
     img.alpha_composite(glow(body, 18, (0, 0, 0, 230), 1.4))
     img.alpha_composite(body)
@@ -778,22 +782,22 @@ def make_cover() -> Image.Image:
     img.alpha_composite(glow(ml, 12, (220, 30, 50, 220), 1.6))
     img.alpha_composite(ml)
 
-    text_zone = (160, 700, W - 160, 1290)
-    img.alpha_composite(render_particles(COVER_SIZE, rnd, alphabet, 64, (30, 30, W - 30, 740), (14, 30),
-                                         avoid=[(W / 2 - 250, 200, W / 2 + 250, 660)]))
-    img.alpha_composite(render_particles(COVER_SIZE, rnd, alphabet, 22, (30, 740, W - 30, H - 40), (12, 24),
+    text_zone = (160, 700 + oy, W - 160, 1290 + oy)
+    img.alpha_composite(render_particles(COVER_SIZE, rnd, alphabet, 64, (30, 30, W - 30, 740 + oy), (14, 30),
+                                         avoid=[(W / 2 - 250, 200 + oy, W / 2 + 250, 660 + oy)]))
+    img.alpha_composite(render_particles(COVER_SIZE, rnd, alphabet, 22, (30, 740 + oy, W - 30, H - 40), (12, 24),
                                          alpha_rng=(50, 120), avoid=[text_zone]))
     img.alpha_composite(render_embers(COVER_SIZE, rnd, 150, (0, 0, W, H), (1.2, 3.4), avoid=[text_zone]))
 
     # 文字区压暗，保证可读
-    img.alpha_composite(radial(COVER_SIZE, (W / 2, 1000), (860, 330), (6, 2, 10), 205, 0.9))
+    img.alpha_composite(radial(COVER_SIZE, (W / 2, 1000 + oy), (860, 330), (6, 2, 10), 205, 0.9))
     img.alpha_composite(vignette(COVER_SIZE, 190, 2.4))
 
     f_en = load_font(LATIN_FONTS, 46)
     assert_glyphs(f_en, COVER_EN)
     tr = 12
     ew = tracked_width(f_en, COVER_EN, tr)
-    en_y = 778
+    en_y = 778 + oy
     draw_tracked(img, W / 2 - ew / 2, en_y, COVER_EN, f_en, tr, GOLD_HI + (255,), stroke=0,
                  glow_color=(255, 150, 50, 220), glow_r=5)
     fla = Art(COVER_SIZE)
@@ -803,9 +807,9 @@ def make_cover() -> Image.Image:
 
     f_title = load_font(TITLE_FONTS, 196)
     assert_glyphs(f_title, TITLE)
-    gold_title(img, W / 2, 810, TITLE, f_title, 22, outline_w=8)
+    gold_title(img, W / 2, 810 + oy, TITLE, f_title, 22, outline_w=8)
 
-    rib_y, rib_h = 1072, 58
+    rib_y, rib_h = 1072 + oy, 58
     img.alpha_composite(render_ribbon(COVER_SIZE, 250, W - 250, rib_y, rib_h, tail=46, notch=16, border=3))
     f_rib = load_font(BODY_FONTS, 38)
     parts = runs(COVER_RIBBON, CREAM + (255,), GOLD + (255,), GOLD_MID + (255,))
@@ -820,7 +824,7 @@ def make_cover() -> Image.Image:
     for i, parts in enumerate(notes):
         full = "".join(t for t, _ in parts)
         assert_glyphs(f_note, full)
-        y = 1136 + i * 37
+        y = 1136 + oy + i * 37
         draw_runs(img, bx + 30 + f_note.getlength(full) / 2, y, parts, f_note, stroke=2)
         d = 6.5
         bullets.poly([(bx + 8, y - d), (bx + 8 + d * 0.8, y), (bx + 8, y + d), (bx + 8 - d * 0.8, y)], GOLD + (255,))
