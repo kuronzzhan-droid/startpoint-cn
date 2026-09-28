@@ -1117,5 +1117,89 @@ class ActionDslElementTests(unittest.TestCase):
         self.assertEqual(
             wf_client_legality.action_dsl_element_problems(tree), [])
 
+
+class EquipmentDescriptionOverrideGateTests(unittest.TestCase):
+    """`desc_override_equipment_*` = 装备详情覆盖(client-patch/equipment-description-override)。
+
+    同样是惰性行:缺补丁只是显示生成文案、不崩。要守的是分类不串线 —— 这些键以
+    `desc_override_` 开头,旧判据会把它们全归 V2,可 V14 的 AbilityLogic 探针永远不读它们;
+    反过来,新分支也不许吃掉任何 V1/V2 键。
+    """
+
+    L = wf_client_legality
+    PARADOX = ("desc_override_equipment_5920001",
+               "desc_override_equipment_enhancement_5920001",
+               "desc_override_equipment_enhancement_5920001_final")
+
+    def test_names(self) -> None:
+        self.assertEqual("desc_override_equipment_", self.L.EQUIPMENT_DESC_OVERRIDE_KEY_PREFIX)
+        self.assertEqual("equipment-description-override-v1", self.L.EQUIPMENT_DESC_OVERRIDE)
+        self.assertNotIn(self.L.EQUIPMENT_DESC_OVERRIDE, (self.L.PANEL_OVERRIDE_V1, self.L.PANEL_OVERRIDE_V2))
+        self.assertTrue(self.L.EQUIPMENT_DESC_OVERRIDE_KEY_PREFIX.startswith(self.L.PANEL_OVERRIDE_KEY_PREFIX))
+
+    def test_paradox_keys_need_the_equipment_patch(self) -> None:
+        for key in self.PARADOX:
+            self.assertEqual(self.L.EQUIPMENT_DESC_OVERRIDE, self.L.panel_override_capability(key), key)
+            self.assertEqual([self.L.EQUIPMENT_DESC_OVERRIDE], self.L.required_client_capabilities(
+                self.L.CUSTOM_ABILITY_STRING_KIND, [key, "文案"]), key)
+            self.assertEqual([], self.L.equipment_desc_override_key_problems(key), key)
+
+    def test_v1_and_v2_keys_are_unchanged(self) -> None:
+        """负对照:新分支之前归 V1/V2 的键一个都不许改判;没有尾部下划线的近名仍是 V2。"""
+        v1 = ("desc_override_fox_oracle_autumn", "desc_override_fox_oracle_autumn_1",
+              "desc_override_fox_oracle_autumn_6")
+        v2 = ("desc_override_ginovi", "desc_override_ginovi_3", "desc_override_seris_dragon_king",
+              "desc_override_null", "desc_override_", "desc_override_equipment", "desc_override_equipmentx_5920001",
+              "desc_override_equip_5920001", "desc_override_enhancement_5920001", "desc_override_Equipment_5920001")
+        for key in v1:
+            self.assertEqual([self.L.PANEL_OVERRIDE_V1], self.L.required_client_capabilities(
+                self.L.CUSTOM_ABILITY_STRING_KIND, [key]), key)
+        for key in v2:
+            self.assertEqual([self.L.PANEL_OVERRIDE_V2], self.L.required_client_capabilities(
+                self.L.CUSTOM_ABILITY_STRING_KIND, [key]), key)
+        for key in v1 + v2:
+            self.assertEqual([], self.L.equipment_desc_override_key_problems(key), key)
+        for key in ("equipment_5920001", "adesc_override_equipment_5920001", "paradox_hits", ""):
+            self.assertIsNone(self.L.panel_override_capability(key), key)
+            self.assertEqual([], self.L.required_client_capabilities(self.L.CUSTOM_ABILITY_STRING_KIND, [key]), key)
+            self.assertEqual([], self.L.equipment_desc_override_key_problems(key), key)
+
+    def test_malformed_equipment_keys_are_problems(self) -> None:
+        """补丁只拼 <id> / enhancement_<id> / enhancement_<id>_final;其余带前缀的键是读不到的死行。
+        分类仍按前缀归装备覆盖(V14 不读它们),键形错误由 problems 报。"""
+        bad = ("desc_override_equipment_", "desc_override_equipment_0", "desc_override_equipment_05920001",
+               "desc_override_equipment_abc", "desc_override_equipment_5920001_final",
+               "desc_override_equipment_enhancement_", "desc_override_equipment_enhancement_5920001_final_x",
+               "desc_override_equipment_enhancement_5920001_", "desc_override_equipment_-5920001",
+               "desc_override_equipment_5920001\n", " desc_override_equipment_5920001",
+               "desc_override_equipment_５９２")                # 全角数字
+        for key in bad:
+            problems = self.L.equipment_desc_override_key_problems(key)
+            self.assertEqual(1, len(problems), key)
+            self.assertIn(repr(key), problems[0])
+            self.assertEqual(self.L.EQUIPMENT_DESC_OVERRIDE, self.L.panel_override_capability(key), key)
+
+    def test_ability_string_ids_may_not_enter_the_equipment_namespace(self) -> None:
+        """V14 探测 desc_override_ + c0;c0 以 equipment_ 开头会与装备覆盖键相撞。"""
+        for kind in ("ability", "leader_ability"):
+            row = _base_row(kind, "0")
+            row[0] = "fox_oracle_autumn_1"
+            clean = wf_client_legality.client_legality_problems(kind, row)
+            self.assertFalse(any("string_id" in p for p in clean), (kind, clean))
+            row[0] = "equipment_5920001"
+            dirty = wf_client_legality.client_legality_problems(kind, row)
+            self.assertEqual([p for p in dirty if p not in clean],
+                             [p for p in dirty if "c0 string_id='equipment_5920001'" in p], kind)
+            self.assertEqual(1, len(dirty) - len(clean), (kind, dirty))
+        # ability_soul 的 c0 是 slot,不查
+        row = _base_row("ability_soul", "0")
+        self.assertEqual(wf_client_legality.client_legality_problems("ability_soul", row),
+                         wf_client_legality.client_legality_problems("ability_soul", ["0", *row[1:]]))
+
+    def test_pack_verifier_knows_the_capability(self) -> None:
+        import wf_midautumn_verify as V
+        for key in self.PARADOX:
+            self.assertIn(self.L.panel_override_capability(key), V.KNOWN_CAPABILITIES)
+
 if __name__ == "__main__":
     unittest.main()

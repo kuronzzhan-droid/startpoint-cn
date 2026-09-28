@@ -93,7 +93,7 @@ DATE_RE = re.compile(r"(20\d{2})[-/](\d{1,2})[-/](\d{1,2})")
 KNOWN_CAPABILITIES = frozenset(
     {name for gated in L.CLIENT_PATCH_CONTENT_KINDS.values() for name in gated.values()}
     | {name for by_table in SCOPE.PATCH_PARSER_CAPABILITIES.values() for name in by_table.values()}
-    | {L.PANEL_OVERRIDE_V1, L.PANEL_OVERRIDE_V2}
+    | {L.PANEL_OVERRIDE_V1, L.PANEL_OVERRIDE_V2, L.EQUIPMENT_DESC_OVERRIDE}
 )
 
 # 详情页/编成必需的 UI 双槽件(每个都要 _0 与 _1 两份)。
@@ -884,8 +884,14 @@ def check_capabilities(pack: Pack, rep: Report) -> None:
         for key in pack.owned_keys(logical):
             for row in pack.rows(logical, key):
                 needed.update(L.required_client_capabilities(kind, list(row)))
-    for key in pack.owned_keys(CAS):
+    cas_keys = pack.owned_keys(CAS)
+    for key in cas_keys:
         needed.update(L.required_client_capabilities(L.CUSTOM_ABILITY_STRING_KIND, [key]))
+    # 带装备详情覆盖前缀却不是补丁会拼出的三种键形:能力照报,但客户端永远读不到这一行(惰性死行)
+    rep.result([p for key in cas_keys for p in L.equipment_desc_override_key_problems(key)],
+               "cas/equipment-desc-override-key-shape", BLOCKING,
+               {"equipment_override_keys": sorted(k for k in cas_keys
+                                                  if L.panel_override_capability(k) == L.EQUIPMENT_DESC_OVERRIDE)})
 
     declared_set = set(declared)
     problems = []

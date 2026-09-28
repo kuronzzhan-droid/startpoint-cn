@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -90,11 +91,29 @@ CLIENT_PATCH_CONTENT_KINDS = {
 #
 # 判据只看键:string_id 落在 V11 守卫内的行报 v1(V11 与 V14 都能显示),
 # 其余 desc_override_* 行报 v2(只有 V14 起作用)。
+#
+# 例外:`desc_override_equipment_*` 是装备详情覆盖的命名空间,不归 V11/V14。
+# `client-patch/equipment-description-override` 在 AbilitySoulAbilityLogic 的
+# getDescriptionsWithoutAdditional / getDescriptionWithoutAdditional 与
+# EquipmentEnhancementAbilityLogic.getAllDescriptionsToMapForDialog 前置查表,键由装备 ID 派生:
+#   desc_override_equipment_<id>                        本体(魂)说明,"\n" 分行
+#   desc_override_equipment_enhancement_<id>            强化成长块(开关键)
+#   desc_override_equipment_enhancement_<id>_final      强化满级块(可缺)
+# 同样是惰性的:没打补丁的客户端不读这些键,照旧显示生成文案、不崩(行为型 capability,
+# 只报在 capabilities,不进 problems)。V14 的 AbilityLogic 探针是 "desc_override_" +
+# 词条 string_id,只要词条/队长技 string_id 不以 "equipment_" 开头(client_legality_problems
+# 拦),两个命名空间就不相撞,所以装备前缀必须先于 V1/V2 判定。
 CUSTOM_ABILITY_STRING_KIND = "custom_ability_string"
 PANEL_OVERRIDE_KEY_PREFIX = "desc_override_"
 PANEL_OVERRIDE_V1_STRING_ID_PREFIX = "fox_oracle_autumn"
 PANEL_OVERRIDE_V1 = "kyubi-panel-description-override-v1"
 PANEL_OVERRIDE_V2 = "panel-description-override-v2"
+EQUIPMENT_DESC_OVERRIDE_STRING_ID_PREFIX = "equipment_"
+EQUIPMENT_DESC_OVERRIDE_KEY_PREFIX = PANEL_OVERRIDE_KEY_PREFIX + EQUIPMENT_DESC_OVERRIDE_STRING_ID_PREFIX
+EQUIPMENT_DESC_OVERRIDE = "equipment-description-override-v1"
+#: 补丁只会拼出这三种键(ID 是 int 的十进制串,无前导 0);ASCII 数字,fullmatch 不放过尾部换行。
+EQUIPMENT_DESC_OVERRIDE_KEY_RE = re.compile(
+    r"desc_override_equipment_(?:[1-9][0-9]*|enhancement_[1-9][0-9]*(?:_final)?)")
 
 
 def panel_override_capability(key: str) -> str | None:
@@ -102,10 +121,22 @@ def panel_override_capability(key: str) -> str | None:
     key = (key or "").strip()
     if not key.startswith(PANEL_OVERRIDE_KEY_PREFIX):
         return None
+    if key.startswith(EQUIPMENT_DESC_OVERRIDE_KEY_PREFIX):
+        return EQUIPMENT_DESC_OVERRIDE
     string_id = key[len(PANEL_OVERRIDE_KEY_PREFIX):]
     if string_id.startswith(PANEL_OVERRIDE_V1_STRING_ID_PREFIX):
         return PANEL_OVERRIDE_V1
     return PANEL_OVERRIDE_V2
+
+
+def equipment_desc_override_key_problems(key: str) -> list[str]:
+    """带装备覆盖前缀、却不是补丁会拼出的键形 → 永远读不到(惰性死行)。其他键不归这里管。"""
+    if not (key or "").strip().startswith(EQUIPMENT_DESC_OVERRIDE_KEY_PREFIX):
+        return []
+    if EQUIPMENT_DESC_OVERRIDE_KEY_RE.fullmatch(key):
+        return []
+    return [f"custom_ability_string 键 {key!r} 带装备覆盖前缀但不合键形 "
+            "desc_override_equipment_<id> / _enhancement_<id> / _enhancement_<id>_final(客户端永远读不到)"]
 
 
 def required_client_capabilities(kind: str, row: list[str]) -> list[str]:
@@ -117,7 +148,10 @@ def required_client_capabilities(kind: str, row: list[str]) -> list[str]:
     capability 误报成可修复它的依赖；本函数返回空不代表这一行合法。
 
     `kind == "custom_ability_string"` 走另一条判据:row[0] 是外层键,报出让
-    `desc_override_*` 行真正生效所需的面板覆盖 capability(缺补丁不崩,只是不生效)。
+    `desc_override_*` 行真正生效所需的面板覆盖 capability(缺补丁不崩,只是不生效):
+    `desc_override_equipment_*` → equipment-description-override-v1(装备详情覆盖),
+    `desc_override_fox_oracle_autumn*` → v1,其余 `desc_override_*` → v2。
+    键形是否合法另由 equipment_desc_override_key_problems 判。
     """
     if kind == CUSTOM_ABILITY_STRING_KIND:
         capability = panel_override_capability(row[0] if row else "")
@@ -301,6 +335,14 @@ def client_legality_problems(kind: str, row: list[str]) -> list[str]:
             probs.append(
                 f"c2 雕像组={statue!r} 不属于 ability_statue_group 的 25 个键"
                 "(玛纳板 C8601)"
+            )
+    if kind in ("ability", "leader_ability"):
+        # V14 面板覆盖探测 "desc_override_" + c0;以 equipment_ 开头会落进装备详情覆盖的命名空间
+        string_id = cell(0)
+        if string_id.startswith(EQUIPMENT_DESC_OVERRIDE_STRING_ID_PREFIX):
+            probs.append(
+                f"c0 string_id={string_id!r} 以 {EQUIPMENT_DESC_OVERRIDE_STRING_ID_PREFIX!r} 开头:"
+                f"面板覆盖键会与装备详情覆盖 {EQUIPMENT_DESC_OVERRIDE_KEY_PREFIX}* 相撞"
             )
     tmode = cell(tcol)
     if tmode not in ("0", "1", "2"):
