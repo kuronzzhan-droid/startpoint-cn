@@ -59,8 +59,10 @@ Fastify + TypeScript，CN 服务入口 `src/cn-server.ts`（端口 8001），国
   - **本地发布**（`wf_publish.py` 铸边到本机 `.cdn`、`./start-cn.bat -RestartOwned`、`reload_assets`、重启本机 MuMu 里的游戏）
     是改数据任务的一部分，默认做，回复附 `wf_publish.py --list` 摘要（版本边、键数）；作者说「先别发」「只改不发」时停在 pending。
     本机 8001 仅作者自用，改了 `out/` 或静态 JSON 后直接 `-RestartOwned`；禁止的仍是清理陌生端口占用者。
+  - **本机 MuMu 装补丁 APK**（作者 2026-09-28「APK你直接装就行，我这里是本地测试服务器」）：客户端补丁构建通过验收后直接装到本机 MuMu，
+    按 `kill -9 → pm install -r → 清 cache/app → 启动 → 回读缓存 SWF 哈希` 执行并留回执；作者正在对局时等对局结束。仅限本机，不含灰服/分享包收方。
   - 下列动作每次都要作者在当次请求里明确说，不得从「改一下 X」推断：整包 `flow publish`（已有 `--confirm` 口令）、
-    公开链/overlay/Release/分享包投递、发给灰服、APK 安装到设备、设备直推、`purge`、push 到任何远端、
+    公开链/overlay/Release/分享包投递、发给灰服、APK 安装到本机以外的设备、设备直推、`purge`、push 到任何远端、
     `active.json` 之外的链回退。
 - **提交**：完成一个可独立描述的单元即 commit（作者纪律第 3 条，视为常设授权，不必再问）。只暂存自己改的文件或 hunk
   （`git add <file>` / `git add -p`），禁止 `git add -A`。文件同时含用户 WIP 与自己的改动时，用 `git add -p` 只提交自己的 hunk；
