@@ -13,10 +13,12 @@
 
 - 客户端：``item`` / ``equipment`` / ``equipment_status``（嵌套）/ ``ability_soul`` / ``equipment_enhancement`` /
   ``equipment_enhancement_ability`` / ``equipment_enhancement_status``（嵌套）/ ``equipment_enhancement_shop``（每把 6 阶）/
-  ``equipment_enhancement_shop_category``（新类目 6「诅咒武器·觉醒」）/ ``boss_coin_shop``（五重分类 99 上架本体）/
+  ``equipment_enhancement_shop_category``（新类目 6「诅咒武器·觉醒」）/
   ``unique_condition``（诅咒与计时用固有状态）/ ``custom_ability_string``（629 行文案）+ 新 ability_skill DSL。
 - 服务端：``equipment_ids`` / ``equipment_lookup`` / ``equipment_max_level`` / ``equipment_element`` / ``item_ids`` /
-  ``item_sale`` / ``equipment_enhancement_shop`` / ``boss_coin_shop``（分类 99）/ ``boss_coin_shop_item_category_map``。
+  ``item_sale`` / ``equipment_enhancement_shop``。
+- 获取：作者 0928 起诅咒武器不可兑换，本体只从武器扭蛋 990003 抽取（每把 0.3%，250 点可兑换），
+  **不再**上架五重商店（原 990099003–031 已撤下，见 wf_weapon_gacha.py）；本生成器不产出任何 boss_coin_shop 行。
 
 机制约束（反编译实证，写在这里防回退）：
 
@@ -74,24 +76,21 @@ EA = "master/equipment_enhancement/equipment_enhancement_ability.orderedmap"
 ENH_STATUS = "master/equipment_enhancement/equipment_enhancement_status.orderedmap"   # 嵌套
 ENH_SHOP = "master/equipment_enhancement/equipment_enhancement_shop.orderedmap"
 ENH_CATEGORY = "master/equipment_enhancement/equipment_enhancement_shop_category.orderedmap"
-BOSS_COIN_SHOP = "master/shop/boss_coin_shop.orderedmap"
+BOSS_COIN_SHOP = "master/shop/boss_coin_shop.orderedmap"   # 只用于断言「不产出」：本体已撤出五重商店（作者 0928）
 UNIQUE = "master/character/unique_condition.orderedmap"
 CAS = "master/string/custom_ability_string.orderedmap"
 
-FLAT_TABLES = (ITEM, EQUIPMENT, SOUL, ENH, EA, ENH_SHOP, ENH_CATEGORY, BOSS_COIN_SHOP, UNIQUE, CAS)
+FLAT_TABLES = (ITEM, EQUIPMENT, SOUL, ENH, EA, ENH_SHOP, ENH_CATEGORY, UNIQUE, CAS)
 NESTED_TABLES = (EQUIPMENT_STATUS, ENH_STATUS)
 
 ID_BASE = 5910100                      # 武器 / 魂珠 / 强化 / 强化组 ID = 5910100 + 提案表行号
 UNIQUE_BASE = 59100000                 # 固有状态 ID = 59100000 + 行号×10 + k
-BOSS_SHOP_BASE = 990099000             # 领主币商店五重分类 99：990099003 起
-BOSS_SHOP_CATEGORY = "99"
 ENH_CATEGORY_KEY = "6"
 IMAGE_DIR = "item/equipment/mod/cursed"
 BANNER = "dynamic/equipment_enhancement/cursed_weapon_banner"
 HEADER = "dynamic/equipment_enhancement/cursed_weapon_header"
 DSL_DIR = "battle/action/skill/action/ability_skill/cursed_weapon"
 START_TIME = "2000-01-01 00:00:00"     # 服务器时钟偏移，自制内容一律写 2000-01-01（见 wf-custom-server-time-trap）
-END_TIME = "2099-12-31 23:59:59"
 
 BLUEPRINT = "10000144"                 # 终式武装图纸（五重：每局 50% 掉 1）
 CRYSTAL = "10000145"                   # 深界结晶（五重：5×倍率）
@@ -106,9 +105,6 @@ ENH_STAGES = (
     (119, ((CRYSTAL, 3), (CORE, 1))),
     (120, ((CORE, 3), (BLUEPRINT, 2))),
 )
-#: 五重分类 99 上架本体：每把 2 图纸 + 10 结晶，库存 5（满破需 5 把）。
-BODY_COSTS = ((BLUEPRINT, 2), (CRYSTAL, 10))
-BODY_STOCK = 5
 REQUIRE_AWAKENING = 5
 
 #: 作者 0928 口径：强化前（本体含满破）非常弱且只有正面；强化 1 级诅咒全额生效；强化 120 级为最终数值。
@@ -1865,22 +1861,15 @@ def w29() -> Weapon:
 WEAPON_BUILDERS: tuple[Callable[[], Weapon], ...] = (
     w01, w02, w03, w04, w05, w06, w07, w08, w09, w10, w11, w12, w13, w14, w15, w16, w17, w18, w19, w20, w21, w22, w23,
     w24, w25, w26, w27, w28, w29)
-#: 五重商店上架顺序（= 商品键 990099003 起的偏移）。首轮 23 把的键已经上线，新武器只能接在后面，不能按行号重排。
-SHOP_ORDER = (*range(1, 22), 23, 24, 22, 25, 26, 27, 28, 29)
 
 
 def weapons() -> list[Weapon]:
     out = [builder() for builder in WEAPON_BUILDERS]
     _require([w.row for w in out] == list(range(1, 30)), "提案行号必须是 1..29")
-    _require(sorted(SHOP_ORDER) == list(range(1, 30)), "SHOP_ORDER 必须覆盖 1..29")
     _require(len({w.slug for w in out}) == len(out), "slug 重复")
     for w in out:
         w.soul = [_weaken(e) for e in w.soul]
     return out
-
-
-def shop_key(w: Weapon) -> str:
-    return str(BOSS_SHOP_BASE + 3 + SHOP_ORDER.index(w.row))
 
 
 # ---------------------------------------------------------------------------
@@ -2311,10 +2300,9 @@ def _template(read: LiveReader, logical: str, key: str, width: int) -> list[str]
 # 组装
 # ---------------------------------------------------------------------------
 
-#: 官方文案长度上限（live 实测）：equipment c7 ≤ 57、equipment_enhancement c6 ≤ 54、boss_coin_shop c10 ≤ 60。
+#: 官方文案长度上限（live 实测）：equipment c7 ≤ 57、equipment_enhancement c6 ≤ 54。
 #: 详细效果由客户端按词条行自动生成，文案只放风味与口径，超长会溢出详情框。
-DESC_LIMITS = {"equipment": 57, "enhancement": 54, "shop": 60}
-SHOP_DESCRIPTION = "诅咒武器：未强化只有微弱的正面效果，强化1级起诅咒全额生效，120级为最终数值。"
+DESC_LIMITS = {"equipment": 57, "enhancement": 54}
 
 
 #: 客户端补丁 equipment-rules R2：本方（主位武器槽 + 魂珠槽）诅咒段装备 ≥2 件时全部整件失效（本体 + 强化）。
@@ -2325,10 +2313,6 @@ CURSE_RULE = "【诅咒武器·同队两件以上（含魂珠）全部失效】"
 
 def _description(w: Weapon) -> str:
     return f"{w.flavor}{CURSE_RULE}提案：{w.author}"
-
-
-def _shop_description(w: Weapon) -> str:
-    return f"{SHOP_DESCRIPTION}提案：{w.author}"
 
 
 def _enh_description(w: Weapon) -> str:
@@ -2366,12 +2350,10 @@ def build(read: LiveReader, *, client_capabilities: Iterable[str] = BASE_CLIENT_
     enh_tpl = _template(read, ENH, "5900101", 9)
     shop_tpls = [_template(read, ENH_SHOP, f"5900110{i}", 50) for i in range(1, 7)]
     cat_tpl = _template(read, ENH_CATEGORY, "5", 10)
-    body_tpl = _template(read, BOSS_COIN_SHOP, "990099001", 50)
 
     for w in ws:
         wid = w.id
-        for kind, text in (("equipment", _description(w)), ("enhancement", _enh_description(w)),
-                           ("shop", _shop_description(w))):
+        for kind, text in (("equipment", _description(w)), ("enhancement", _enh_description(w))):
             _require(len(text) <= DESC_LIMITS[kind], f"{w.name} {kind} 文案 {len(text)} 字超出官方上限 {DESC_LIMITS[kind]}")
             _require("," not in text and "\n" not in text, f"{w.name} {kind} 文案含半角逗号/换行")
         # item（同键魂珠物品行，缺了 ItemLogic 取空崩）
@@ -2409,18 +2391,6 @@ def build(read: LiveReader, *, client_capabilities: Iterable[str] = BASE_CLIENT_
             row[14:22] = _cost_cells(costs)
             row[22], row[23], row[29], row[30], row[31] = START_TIME, "(None)", wid, str(cap), str(REQUIRE_AWAKENING)
             flat[ENH_SHOP][f"{wid}{stage:02d}"] = [row]
-        # 五重分类 99 上架本体
-        key = shop_key(w)
-        row = list(body_tpl)
-        # c9 list_order：客户端默认按 list_order 倒序、同序再按商品 ID 升序（BossCoinExchangeSorter
-        # orderDirection 0）。写 0（官方已有 13 行先例）让原有 990099002/001 留在顶部，诅咒武器按编号排其后。
-        row[6], row[9] = w.name, "0"
-        row[10] = _shop_description(w)
-        row[12] = w.icon
-        row[17:25] = _cost_cells(BODY_COSTS)
-        row[25], row[26], row[28] = START_TIME, END_TIME, str(BODY_STOCK)
-        row[32], row[33], row[34] = "4", wid, "1"
-        flat[BOSS_COIN_SHOP][key] = [row]
         # 固有状态 / 文案 / DSL
         for uid, urow in w.uniques.items():
             flat[UNIQUE][uid] = [urow]
@@ -2508,12 +2478,6 @@ def _server_delta(read: LiveReader, ws: list[Weapon], flat: dict) -> dict[str, A
                      "enhancementMaxLevel": int(r[30]), "equipmentId": int(r[29]), "groupId": int(r[2]),
                      "requireAwakeningLevel": int(r[31]), "rewards": [], "shopCategoryId": int(r[0]),
                      "stage": int(r[3]), "stock": -1}
-    body = {}
-    for key, rows in flat[BOSS_COIN_SHOP].items():
-        r = rows[0]
-        body[key] = {"costs": [{"id": int(r[i]), "amount": int(r[i + 1])} for i in (17, 19) if r[i] not in ("", "(None)")],
-                     "rewards": [{"type": 4, "id": int(r[33]), "count": 1}],
-                     "availableFrom": START_TIME, "availableUntil": END_TIME, "stock": BODY_STOCK}
     return {
         "equipment_ids.json": ids,
         "equipment_lookup.json": {w.id: {"name": w.name, "rarity": "5", "category": w.category} for w in ws},
@@ -2522,8 +2486,6 @@ def _server_delta(read: LiveReader, ws: list[Weapon], flat: dict) -> dict[str, A
         "item_ids.json": ids,
         "item_sale.json": {w.id: {"category": 5, "sale_price": 500, "sellable": True} for w in ws},
         "equipment_enhancement_shop.json": shop,
-        "boss_coin_shop.json": {BOSS_SHOP_CATEGORY: body},
-        "boss_coin_shop_item_category_map.json": {key: int(BOSS_SHOP_CATEGORY) for key in body},
     }
 
 
@@ -2541,7 +2503,8 @@ def design_markdown(ws: list[Weapon]) -> str:
     lines = [f"# 诅咒武器 {len(ws)} 把 · 设计与实现", "",
              f"口径（作者 0928）：未强化（本体/满破）只有正面效果且很弱（设计值 × {BASE_SCALE:g}）；强化 1 级起诅咒全额生效；"
              "强化 120 级为最终数值；强化材料全部来自五重决战。",
-             f"获取：领主币商店「五重决战」分类，每把 {BODY_COSTS[0][1]} 终式武装图纸 + {BODY_COSTS[1][1]} 深界结晶，库存 {BODY_STOCK}（满破需 5 把）。",
+             "获取：武器扭蛋（只能用五重决战兑换的专用券抽取；每把 0.3%，250 点可兑换任选 1 把；满破需 5 把）。"
+             "作者 0928 起不再在五重商店兑换。",
              "强化：装备强化「诅咒武器·觉醒」分类，6 阶（→69 每级 1 结晶 / 70：10 结晶+1 心核 / →98 每级 2 结晶 / 99：10 结晶+2 心核 / "
              "→119 每级 3 结晶+1 心核 / 120：3 心核+2 图纸），需满破。", ""]
     for w in ws:

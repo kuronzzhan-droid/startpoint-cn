@@ -188,23 +188,13 @@ class CursedWeaponTests(unittest.TestCase):
                 self.assertEqual((r[0], r[2], r[29], r[31]), ("6", w.id, w.id, "5"))
                 used = {r[i] for i in (14, 16, 18, 20) if r[i] not in ("", "(None)")}
                 self.assertTrue(used and used <= FIVE_BOSS_MATERIALS, (k, used))
-        body = self.out["flat"][W.BOSS_COIN_SHOP]
-        self.assertEqual(sorted(body), [str(990099003 + i) for i in range(29)])
-        # 首轮 23 把（行 1..21,23,24）的上架键已上线，第二轮新武器只能接在 990099026 之后
-        first_round = [*range(1, 22), 23, 24]
-        for w in self.ws:
-            expected = 990099003 + (first_round.index(w.row) if w.row in first_round
-                                    else 23 + [22, 25, 26, 27, 28, 29].index(w.row))
-            self.assertEqual(W.shop_key(w), str(expected), w.name)
-        for r in (v[0] for v in body.values()):
-            self.assertEqual(r[0], "99")
-            # 客户端 list_order 倒序：0 = 排在原有凭证(2)/死亡使者(1)之后，同序按商品 ID 升序
-            self.assertEqual(r[9], "0")
-            self.assertEqual((r[32], r[34]), ("4", "1"))
-            self.assertEqual({r[17], r[19]}, {W.BLUEPRINT, W.CRYSTAL})
+        # 作者 0928：诅咒武器不可兑换，本体从五重商店撤下（改由武器扭蛋 990003 获取）——生成器不得再产出商店行，
+        # 否则下一条诅咒补丁边会把 990099003–031 悄悄重新上架
+        self.assertNotIn(W.BOSS_COIN_SHOP, self.out["flat"])
+        self.assertNotIn(W.BOSS_COIN_SHOP, W.FLAT_TABLES)
 
     def test_descriptions_credit_the_proposer(self):
-        # 作者 0928：武器介绍带上提案表里的提案人（本体说明 / 强化说明 / 五重商店说明三处）
+        # 作者 0928：武器介绍带上提案表里的提案人（本体说明 / 强化说明两处；五重商店本体已撤下）
         for w in self.ws:
             credit = f"提案：{w.author}"
             self.assertTrue(self.out["flat"][W.EQUIPMENT][w.id][0][7].endswith(credit), w.name)
@@ -213,8 +203,6 @@ class CursedWeaponTests(unittest.TestCase):
             self.assertIn("同队两件以上（含魂珠）全部失效", W.CURSE_RULE)     # R2 连魂珠槽一起数，不能只写「两把」
             self.assertLessEqual(len(self.out["flat"][W.EQUIPMENT][w.id][0][7]), W.DESC_LIMITS["equipment"], w.name)
             self.assertTrue(self.out["flat"][W.ENH][w.id][0][6].endswith(credit), w.name)
-            key = W.shop_key(w)
-            self.assertTrue(self.out["flat"][W.BOSS_COIN_SHOP][key][0][10].endswith(credit), w.name)
 
     def test_server_delta_mirrors_client(self):
         srv = self.out["server"]
@@ -226,11 +214,9 @@ class CursedWeaponTests(unittest.TestCase):
             self.assertEqual(v["enhancementMaxLevel"], int(r[30]))
             self.assertEqual([c["id"] for c in v["costs"]], [int(r[i]) for i in (14, 16, 18, 20) if r[i] != "(None)"])
             self.assertEqual(v["shopCategoryId"], 6)
-        body = srv["boss_coin_shop.json"]["99"]
-        self.assertEqual(sorted(body), sorted(self.out["flat"][W.BOSS_COIN_SHOP]))
-        self.assertEqual(set(srv["boss_coin_shop_item_category_map.json"].values()), {99})
-        for key, v in body.items():
-            self.assertEqual(v["rewards"][0]["id"], int(self.out["flat"][W.BOSS_COIN_SHOP][key][0][33]))
+        # 本体不再上架五重商店：服务端片段里不得出现商店/类目映射
+        self.assertNotIn("boss_coin_shop.json", srv)
+        self.assertNotIn("boss_coin_shop_item_category_map.json", srv)
 
     def test_dsl_roundtrip_and_references(self):
         referenced = set()
@@ -361,7 +347,6 @@ class CursedWeaponTests(unittest.TestCase):
             self.assertEqual((w.name, w.slug, w.look, w.id), (name, slug, look, str(W.ID_BASE + row)))
             self.assertEqual(self.out["flat"][W.EQUIPMENT][w.id][0][1], name)
             self.assertEqual(self.out["flat"][W.ENH][w.id][0][2], f"{name}·解咒")
-            self.assertEqual(self.out["flat"][W.BOSS_COIN_SHOP][W.shop_key(w)][0][6], name)
             self.assertEqual(self.out["server"]["equipment_lookup.json"][w.id]["name"], name)
             self.assertEqual(w.icon, f"{W.IMAGE_DIR}/{slug}_lv0")
         self.assertNotIn("骰", self.weapon(10).flavor)
