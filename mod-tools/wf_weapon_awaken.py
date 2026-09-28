@@ -169,8 +169,8 @@ PARADOX_DIR = "materials/mod/paradox"
 # 逻辑路径 = 设计 §5.2/§6.4（王币 five_boss/、禁忌星铁 cursed/），与图标单元 manifest.json 逐项核对。
 ICONS = (
     _icon("10000310", "king_coin", f"{FIVE_BOSS_DIR}/king_coin", 19, True),
-    # 禁忌星铁按暗紫锭画（≤17 色、描边压暗），不是彩虹件，门禁全口径适用
-    _icon("10000311", "forbidden_star_steel", G.STAR_STEEL_THUMB, 19, True),
+    # 禁忌星铁是 ★5 彩虹件（作者 0928「禁忌星铁要彩虹」：照官方 ★5 星铁钢的锥形彩虹渐变），免色数与描边集中度/色相门禁
+    _icon("10000311", "forbidden_star_steel", G.STAR_STEEL_THUMB, 19, True, rainbow=True),
     _icon("10000144", "deathbringer_blueprint_v2", f"{FIVE_BOSS_DIR}/deathbringer_blueprint_v2", 14, False),
     _icon("10000145", "deep_crystal_v2", f"{FIVE_BOSS_DIR}/deep_crystal_v2", 16, False),
     _icon("10000146", "fivefold_clear_badge_v2", f"{FIVE_BOSS_DIR}/fivefold_clear_badge_v2", 14, False),
@@ -571,11 +571,14 @@ def load_manifest(art_dir: Path) -> tuple:
 
 
 def manifest_problems(icon: Icon, entry: dict) -> list:
-    """manifest 条目与本构建器合同逐项对齐（键名、c3/c4 逻辑路径）。"""
+    """manifest 条目与本构建器合同逐项对齐（键名、c3/c4 逻辑路径；manifest 写了 rainbow 时彩虹口径也要一致）。"""
     problems = []
     for field_name, want in (("key", icon.stem), ("c3_logical", icon.c3), ("c4_logical", icon.c4)):
         if entry.get(field_name) != want:
             problems.append(f"manifest {icon.item_id} {field_name}={entry.get(field_name)!r}，构建器合同是 {want!r}")
+    if "rainbow" in entry and entry["rainbow"] is not icon.rainbow:
+        problems.append(f"manifest {icon.item_id} rainbow={entry['rainbow']!r}，构建器合同是 {icon.rainbow!r}"
+                        "（两边门禁口径会分叉）")
     return problems
 
 

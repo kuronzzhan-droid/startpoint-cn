@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -29,6 +30,18 @@ MATERIAL_TEMPLATES = {
     "10000147": [["five_boss_10000147", "10000147", "五王心核", "item/materials/mod/five_boss/five_king_core",
                   "item_icon/materials/mod/five_boss/five_king_core", "五名强敌力量汇聚而成的稀有强化核心。", "1", "", "",
                   "", "", "", "", "", "9", "(None)", "500", "5", "9999", "2025-06-19 12:00:00", "(None)", "true", ""]],
+}
+#: live 图集 item_icon/sprite_sheet 在 wf_weapon_awaken 边 E1 之前 / 之后含的材料子纹理（1.4.1067 实测前者只有五重两件）
+PRE_E1_ATLAS = frozenset(rows[0][4] for rows in MATERIAL_TEMPLATES.values())
+E1_ATLAS = PRE_E1_ATLAS | {small for *_, small in P.MATERIALS}
+#: live 1.4.1067 的两行材料（E1 之前：c3 旧独立 PNG、c4 借五重子纹理）
+LIVE_MATERIAL_ROWS = {
+    P.SHARD: [["mod_paradox_10000301", "10000301", "矛盾结晶", "item/materials/mod/paradox/contradiction_crystal",
+               "item_icon/materials/mod/five_boss/deep_crystal", P.MATERIALS[0][3], "1", "", "", "", "", "", "", "",
+               "9", "(None)", "300", "4", "9999", W.START_TIME, "(None)", "true", ""]],
+    P.PARADOX_CORE: [["mod_paradox_10000302", "10000302", "悖论之核", "item/materials/mod/paradox/paradox_core",
+                      "item_icon/materials/mod/five_boss/five_king_core", P.MATERIALS[1][3], "1", "", "", "", "", "", "",
+                      "", "9", "(None)", "500", "5", "9999", W.START_TIME, "(None)", "true", ""]],
 }
 #: live 1.4.1064 起的强化 Lv120 合计（含本体）——Lv200 续涨不许改动它们（已有存档零变化）
 LV120_TOTALS = {("32", "0"): 800, ("33", "0"): 800, ("34", "0"): 800, ("55", "0"): 800, ("388", "0"): 800,
@@ -92,8 +105,9 @@ class ParadoxTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.fx = json.loads(FIXTURE.read_text(encoding="utf-8"))
-        # 目标客户端 = 装了 equipment-rules 补丁 APK；默认 1047 基线的拦截见 test_capability_gate_blocks_unpatched_clients
-        cls.out = P.build(fixture_reader(), client_capabilities=P.PATCHED_CLIENT_CAPABILITIES)
+        # 目标客户端 = 装了 equipment-rules 补丁 APK；默认 1047 基线的拦截见 test_capability_gate_blocks_unpatched_clients。
+        # 图集 = E1 已上线（材料改指重画版）；E1 之前的暂缓见 test_material_icons_wait_for_e1_atlas
+        cls.out = P.build(fixture_reader(), client_capabilities=P.PATCHED_CLIENT_CAPABILITIES, atlas_names=E1_ATLAS)
         cls.rows = cls.out["flat"][P.SOUL][P.ID]
 
     def test_no_problems(self):
@@ -470,20 +484,25 @@ class ParadoxTests(unittest.TestCase):
         self.assertEqual([(e.learn, e.maxlvl) for e in rows], [(1, 119), (120, 120)])
 
     def test_materials(self):
-        # 新材料照五重材料行克隆：只换 c0–c5 与开始时间；c4 复用已上线的 item_icon 图集子纹理（独立路径 = C8004）
+        # 新材料照五重材料行克隆：只换 c0–c5 与开始时间；c3/c4 是重画版（c4 = 图集里 PARADOX 专属子纹理，由 wf_weapon_awaken E1 追加）
         items = self.out["flat"][P.ITEM]
         self.assertEqual(sorted(items), sorted([P.ID, P.SHARD, P.PARADOX_CORE]))
         for iid, template, name, text, thumb, src, small in P.MATERIALS:
             row, base = items[iid][0], MATERIAL_TEMPLATES[template][0]
             self.assertEqual(row[:6], [f"mod_paradox_{iid}", iid, name, thumb, small, text])
-            self.assertEqual({i for i, (a, b) in enumerate(zip(base, row)) if a != b}, {0, 1, 2, 3, 5, 19})
+            self.assertEqual({i for i, (a, b) in enumerate(zip(base, row)) if a != b}, {0, 1, 2, 3, 4, 5, 19})
             self.assertEqual(row[19], W.START_TIME)
-            self.assertEqual(small, base[4])                                # 模板的图集子纹理
-            self.assertTrue(small.startswith("item_icon/"))
+            self.assertNotEqual(small, base[4])                             # 不再借五重的子纹理
+            self.assertTrue(small.startswith("item_icon/materials/mod/paradox/"))
+            self.assertTrue(thumb.startswith("item/materials/mod/paradox/") and thumb.endswith("_v2"))
             self.assertNotIn(",", text)
             self.assertLessEqual(len(text), P.MATERIAL_DESC_LIMIT)
             self.assertIn(thumb + ".png", self.out["files"])
-            self.assertTrue((P.ASSET_DIR / src).is_file())
+            self.assertEqual(self.out["files"][thumb + ".png"]["src"], str(src))
+            self.assertTrue(Path(src).is_file())
+            self.assertEqual(Path(src).parent, P.AWAKEN_ICON_DIR)
+        self.assertEqual(self.out["atlas_requires"], sorted(small for *_, small in P.MATERIALS))
+        self.assertEqual(self.out["icons_deferred"], {})
         self.assertEqual((P.SHARD, P.PARADOX_CORE), ("10000301", "10000302"))
         # 远离五重 v2 正在用的 10000143–10000147 与武器卡池 999019/999020
         for iid in (P.SHARD, P.PARADOX_CORE):
@@ -591,6 +610,82 @@ class ParadoxTests(unittest.TestCase):
         size = next(s for logical, _src, s, _req in P.ASSET_FILES if logical == P.PARTY_FRAME_BLUEGOLD + ".png")
         self.assertEqual((rules.FRAME_SIZE, rules.FRAME_SIZE), tuple(size))
 
+    def test_material_icons_wait_for_e1_atlas(self):
+        """c4 子纹理不在 live 图集时绝不改指（否则掉落展示 / 图鉴 C8004）：沿用 live 行、不出 c3 图、记 icons_deferred。"""
+        smalls = {iid: small for iid, *_, small in P.MATERIALS}
+        thumbs = {iid: thumb + ".png" for iid, *_, thumb, _src, _small in P.MATERIALS}
+
+        def with_live_rows():
+            data = fixture_data()
+            data["flat"][P.ITEM].update(copy.deepcopy(LIVE_MATERIAL_ROWS))
+            return W.LiveReader(lambda lg: data["flat"].get(lg, {}), lambda lg: data["nested"].get(lg, {}),
+                                lambda n: {})
+
+        # live 1.4.1067 口径（E1 未上线，行已在 live）：不传图集 / 传 E1 前的图集 → 行与 live 逐格相同，stage 零差异
+        for atlas in (None, PRE_E1_ATLAS):
+            with self.subTest(atlas=atlas):
+                out = P.build(with_live_rows(), allow_existing=True, client_capabilities=P.PATCHED_CLIENT_CAPABILITIES,
+                              atlas_names=atlas)
+                self.assertEqual(out["problems"], [])
+                for iid in smalls:
+                    self.assertEqual(out["flat"][P.ITEM][iid], LIVE_MATERIAL_ROWS[iid])
+                    self.assertNotIn(thumbs[iid], out["files"])
+                self.assertEqual(sorted(out["icons_deferred"]), sorted(smalls))
+                self.assertTrue(all("沿用 live 行" in r for r in out["icons_deferred"].values()))
+        # 首发口径（live 无该行）：沿用模板五重材料行的 c3/c4（已上线子纹理）
+        first = P.build(fixture_reader(), client_capabilities=P.PATCHED_CLIENT_CAPABILITIES, atlas_names=PRE_E1_ATLAS)
+        self.assertEqual(first["problems"], [])
+        for iid, template, *_ in P.MATERIALS:
+            self.assertEqual(first["flat"][P.ITEM][iid][0][3:5], MATERIAL_TEMPLATES[template][0][3:5])
+        # 只上线一件：只改指那一件
+        one = P.build(with_live_rows(), allow_existing=True, client_capabilities=P.PATCHED_CLIENT_CAPABILITIES,
+                      atlas_names=PRE_E1_ATLAS | {smalls[P.SHARD]})
+        self.assertEqual(one["problems"], [])
+        self.assertEqual(one["flat"][P.ITEM][P.SHARD][0][4], smalls[P.SHARD])
+        self.assertIn(thumbs[P.SHARD], one["files"])
+        self.assertEqual(one["flat"][P.ITEM][P.PARADOX_CORE], LIVE_MATERIAL_ROWS[P.PARADOX_CORE])
+        self.assertEqual(list(one["icons_deferred"]), [P.PARADOX_CORE])
+        # E1 上线后：改指重画版
+        done = P.build(with_live_rows(), allow_existing=True, client_capabilities=P.PATCHED_CLIENT_CAPABILITIES,
+                       atlas_names=E1_ATLAS)
+        self.assertEqual((done["problems"], done["icons_deferred"]), ([], {}))
+        for iid, *_, thumb, _src, small in P.MATERIALS:
+            self.assertEqual(done["flat"][P.ITEM][iid][0][3:5], [thumb, small])
+        # 给了图集、沿用的 c4 也不在其中（live 本身就坏）→ 报红，暂存的 problems == [] 断言拦下
+        bad = P.build(fixture_reader(), client_capabilities=P.PATCHED_CLIENT_CAPABILITIES, atlas_names=())
+        self.assertEqual(len([p for p in bad["problems"] if "C8004" in p]), len(P.MATERIALS))
+        # 单个字符串会被拆成字符集合：直接拒绝
+        with self.assertRaises(W.CursedWeaponError):
+            P.build(fixture_reader(), atlas_names=smalls[P.SHARD])
+
+    def test_atlas_names_from_raw(self):
+        # 与图集的唯一写入方 wf_weapon_awaken（边 E1）同一逻辑路径、同一编码
+        import wf_weapon_awaken as WA
+        self.assertEqual(P.MATERIAL_ATLAS_MAP, WA.ATLAS_MAP)
+        entries = [{"n": name, "x": 1 + 20 * i, "y": 1, "w": 16, "h": 16} for i, name in enumerate(sorted(E1_ATLAS))]
+        raw = WA.encode_atlas(entries)
+        self.assertEqual(P.atlas_names_from_raw(raw), E1_ATLAS)
+        self.assertEqual(P.atlas_names_from_raw(raw), {str(e["n"]) for e in WA.decode_atlas(raw)})
+        self.assertEqual(P.atlas_names_from_raw(None), frozenset())
+
+    def test_materials_track_the_weapon_awaken_redraw(self):
+        """材料 c3/c4 与源图跟图标单元的交付合同（manifest.json）逐项一致：下一次暂存不会把道具行改回旧图。"""
+        from PIL import Image
+        manifest = json.loads((P.AWAKEN_ICON_DIR.parent / "manifest.json").read_text(encoding="utf-8"))
+        entries = {e["item_id"]: e for e in manifest["icons"]}
+        for iid, _template, _name, _text, thumb, src, small in P.MATERIALS:
+            with self.subTest(iid):
+                entry = entries[iid]
+                self.assertEqual((thumb, small), (entry["c3_logical"], entry["c4_logical"]))
+                self.assertEqual(Path(src), P.AWAKEN_ICON_DIR.parent / entry["c3_file"])
+                with Image.open(src) as image:
+                    pixels = image.convert("RGBA").tobytes()
+                self.assertEqual(hashlib.sha256(pixels).hexdigest(), entry["c3_rgba_sha256"])
+        # 旧图不再被引用（旧逻辑名留作 live 孤儿；源图文件本身不删）
+        sources = {Path(src).name for *_, src, _ in P.MATERIALS}
+        self.assertFalse({"paradox_shard.png"} & sources)
+        self.assertFalse(any("five_boss" in small for *_, small in P.MATERIALS))
+
     def test_asset_files_have_the_declared_size(self):
         from PIL import Image
         for logical, src, size, required in P.ASSET_FILES:
@@ -695,7 +790,7 @@ class ParadoxTests(unittest.TestCase):
             self.assertNotIn(",", text)
 
     def test_deterministic(self):
-        again = P.build(fixture_reader())
+        again = P.build(fixture_reader(), atlas_names=E1_ATLAS)
         self.assertEqual(json.dumps(again["flat"], sort_keys=True), json.dumps(self.out["flat"], sort_keys=True))
         self.assertEqual(again["dsl"], self.out["dsl"])
 

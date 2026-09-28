@@ -30,8 +30,8 @@ ITEM_SHEET, ICON_SHEET, SCENE_SHEET = "item/sprite_sheet", "item_icon/sprite_she
 #: key → ((官方同类子纹理, 说明), 第二个官方参照或 None, 现 c3 逻辑路径, 现 c4 子纹理)
 ROWS = {
     "king_coin": (("item/materials/boss_coin/owl_3", "领主币(紫)"), ("item/materials/boss_coin/owl_2", "领主币(金)"), None, None),
-    "forbidden_star_steel": (("item/materials/awaking_crystal/general/equipment_awaking_crystal_5", "★5星铁钢"),
-                             ("item/materials/awaking_crystal/general/equipment_awaking_crystal_4", "★4星铁钢(映射源)"), None, None),
+    "forbidden_star_steel": (("item/materials/awaking_crystal/general/equipment_awaking_crystal_5", "★5星铁钢(彩虹母本)"),
+                             ("item/materials/awaking_crystal/general/equipment_awaking_crystal_4", "★4星铁钢(同轮廓)"), None, None),
     "deathbringer_blueprint_v2": (("item/materials/event/side_story_event/side_story_event_quest_unlock_certificate", "解锁证书"),
                                   ("item/materials/elements/blue/item_aether_blue_03", "卷轴"),
                                   "item/materials/mod/five_boss/deathbringer_blueprint",
@@ -203,6 +203,8 @@ def build(out_path: Path) -> Path:
             d.text((4, 86), "交五重线：ticket_icon_20/41", font=FS, fill=DIM)
             d.text((4, 102), "41 = 40×40 贴 (0,1)", font=FS, fill=DIM)
         cur_note = "现 c4 借五重子纹理" if key in ("contradiction_crystal", "paradox_core") else ""
+        if icon.get("rainbow"):
+            cur_note = "彩虹件：锥形渐变 × 面亮度"
         if cur_note:
             d.text((4, 86), cur_note, font=FS, fill=DIM)
         cols.append(lab)
@@ -260,7 +262,8 @@ def build(out_path: Path) -> Path:
             x += widths[i] + gap
         y += row_h
     d.text((gap, H - 24), "新图门禁（build_icons.gate，描边阈值同构建器）：20×20、alpha 仅 0/255、包围盒达稀有度下限、"
-           "描边为主色压暗（最大通道≥40、s≥0.4、v 0.2–0.5、色相随物件）、色数≤17、孤立杂色≤0.10、c4 = c3×2。",
+           "描边为主色压暗（最大通道≥40、s≥0.4、v 0.2–0.5、色相随物件）、色数≤17、孤立杂色≤0.10、c4 = c3×2；"
+           "★5 彩虹件免色数与描边集中度，改为描边逐像素压暗。",
            font=FS, fill=DIM)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     sheet.convert("RGB").save(out_path)

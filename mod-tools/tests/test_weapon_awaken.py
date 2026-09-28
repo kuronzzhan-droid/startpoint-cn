@@ -224,6 +224,13 @@ class ContractTests(unittest.TestCase):
         for icon in A.ICONS:
             self.assertIn(icon.item_id, manifest)
             self.assertEqual([], A.manifest_problems(icon, manifest[icon.item_id]), icon.stem)
+            self.assertIs(icon.rainbow, manifest[icon.item_id].get("rainbow"), icon.stem)   # 彩虹口径两边一致
+        # 彩虹口径分叉（一边按彩虹豁免、另一边按全口径）必须报红；manifest 没写 rainbow 的旧合同不报
+        steel = A.ICON_BY_ITEM["10000311"]
+        flipped = dict(manifest["10000311"], rainbow=False)
+        self.assertTrue(any("rainbow" in p for p in A.manifest_problems(steel, flipped)))
+        legacy = {k: v for k, v in manifest["10000311"].items() if k != "rainbow"}
+        self.assertEqual([], A.manifest_problems(steel, legacy))
 
     def test_reward_row_and_ui_renames(self):
         self.assertEqual("five_boss_king_coin,0,10000310,1,1", G.core.write_csv_lines([A.REWARD_ROW]))
@@ -297,8 +304,9 @@ class IconGateTests(unittest.TestCase):
         rainbow = good_icon((20, 17))
         for x in range(20):
             rainbow.putpixel((x, 1 + 1), (40 + x * 9, 80, 200 - x * 5, 255))
-        # 彩虹豁免只作用于 rainbow=True 的件；禁忌星铁实际按暗紫锭画，走全口径门禁
-        self.assertFalse(A.ICON_BY_ITEM["10000311"].rainbow)
+        # 彩虹豁免只作用于 rainbow=True 的件：禁忌星铁是 ★5 彩虹锭（作者 0928「禁忌星铁要彩虹」），只有它
+        self.assertTrue(A.ICON_BY_ITEM["10000311"].rainbow)
+        self.assertEqual(["10000311"], [i.item_id for i in A.ICONS if i.rainbow])
         steel = A.Icon("x", "x", "item/x", "item_icon/x", 19, True, rainbow=True)
         self.assertFalse(any("色数" in p or "描边前两色" in p for p in self.problems(rainbow, steel)))
         plain = A.Icon("x", "x", "item/x", "item_icon/x", 19, True)
@@ -636,6 +644,10 @@ class EdgeE2Tests(unittest.TestCase):
             self.assertFalse(A.paradox_tool_synced(icon, Path(tmp) / "missing.py"))
         if {"10000301", "10000302"} & set(E2["report"]["repointed"]) and not A.paradox_tool_synced(icon):
             self.assertTrue(any("wf_paradox_weapon.py" in w for w in E2["warnings"]))
+        # 真 PARADOX 生成器已同步到重画版（它下次暂存不会把道具行改回旧图）
+        for item_id in ("10000301", "10000302"):
+            self.assertTrue(A.paradox_tool_synced(A.ICON_BY_ITEM[item_id]), item_id)
+        self.assertFalse(any("wf_paradox_weapon.py" in w for w in E2["warnings"]))
 
     def test_awakening_item_gates(self):
         items = staged_rows(E2, A.ITEM_LOGICAL)

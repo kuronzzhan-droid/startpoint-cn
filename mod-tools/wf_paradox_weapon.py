@@ -58,6 +58,7 @@ from __future__ import annotations
 
 import json
 import re
+import zlib
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Iterable
@@ -66,6 +67,7 @@ import wf_client_legality as L
 import wf_client_patch_scope as S
 import wf_cursed_weapons as W
 import wf_describe
+import wf_dsl
 from wf_cursed_weapons import Eff
 
 ITEM, EQUIPMENT, EQUIPMENT_STATUS, SOUL, CAS = W.ITEM, W.EQUIPMENT, W.EQUIPMENT_STATUS, W.SOUL, W.CAS
@@ -166,18 +168,25 @@ MAX_LEVEL = 200                                   # 强化满级（强化主表 
 SHARD = "10000301"                                # 矛盾结晶（逐级）
 PARADOX_CORE = "10000302"                         # 悖论之核（突破）
 ASSET_DIR = Path(__file__).resolve().parent / "assets/paradox"
+#: 两件材料的图由「武器觉醒与新掉落」图标单元重画（assets/weapon-awaken/build_icons.py 生成，manifest.json 记像素 sha；
+#: 设计 D:/WF/out/武器觉醒与新掉落-20260928/设计.md §6.3/§6.4，作者 0928 确认预览）。本生成器直接取那里的源图，
+#: 不再用 assets/paradox 下的旧图（旧图描边近黑、矛盾结晶杂色超标）——否则下一次暂存会把道具行改回旧图。
+AWAKEN_ICON_DIR = Path(__file__).resolve().parent / "assets/weapon-awaken/icons"
 #: (道具 ID, 克隆模板, 名, 说明, c3 缩略图（独立 PNG，异步 setTexture）, 源图, c4 小图标)。
-#: c4 只能是已加载图集（item_icon/sprite_sheet）的子纹理：独立新路径在掉落展示 / 图鉴同步 getImage 当场 C8004
-#: （memory wf-c8004-small-icon-atlas-rule）。追加图集是整文件替换，五重 v2 的 plan_item_icons 正在同一图集上追加，
-#: 两边各自暂存会互相覆盖；材料又暂无掉落来源（c4 只在掉落条 / 图鉴 / 箱蛋 / 编成消耗里出现），
-#: 所以先复用图集里已上线的五重同类子纹理（结晶↔深界结晶、核心↔五王心核），给掉落来源时再按五重的做法追加专属子纹理。
+#: c3 用重画版新逻辑名 *_v2（旧名 contradiction_crystal / paradox_core 的独立 PNG 已在 live，留作孤儿，不原位覆盖）。
+#: c4 是图集 item_icon/sprite_sheet 里的 PARADOX 专属子纹理，由 wf_weapon_awaken 边 E1 追加（图集整文件替换只归那一条边，
+#: 本生成器不写图集）。c4 只能是已加载图集的子纹理：子纹理没上线就让道具行指过去，掉落展示 / 图鉴 getImage 当场 C8004
+#: （memory wf-c8004-small-icon-atlas-rule）。所以改指在 build 里硬门控（与 wf_weapon_awaken 边 E2 的 _icon_ready 同口径）：
+#: 只有调用方传入 live 图集子纹理名（build(atlas_names=atlas_names_from_raw(<ATLAS_MAP 原始字节>))）且含该 c4 时才改指；
+#: 否则沿用 live 行现有的 c3/c4（live 无该行时沿用模板五重材料行的），连带不出该件的 c3 图，并记进输出的 icons_deferred。
+MATERIAL_ATLAS_MAP = "item_icon/sprite_sheet.atlas.amf3.deflate"   # 与 wf_weapon_awaken.ATLAS_MAP 同一逻辑路径
 MATERIALS = (
     (SHARD, "10000145", "矛盾结晶", "光与影在同一晶面上互相否定而凝成的结晶。用于将PARADOX强化至121级以上。",
-     "item/materials/mod/paradox/contradiction_crystal", "paradox_shard.png",
-     "item_icon/materials/mod/five_boss/deep_crystal"),
+     "item/materials/mod/paradox/contradiction_crystal_v2", AWAKEN_ICON_DIR / "contradiction_crystal.png",
+     "item_icon/materials/mod/paradox/contradiction_crystal"),
     (PARADOX_CORE, "10000147", "悖论之核", "首尾相接、永无终点的悖论之环的核心。用于突破PARADOX的强化上限。",
-     "item/materials/mod/paradox/paradox_core", "paradox_core.png",
-     "item_icon/materials/mod/five_boss/five_king_core"),
+     "item/materials/mod/paradox/paradox_core_v2", AWAKEN_ICON_DIR / "paradox_core.png",
+     "item_icon/materials/mod/paradox/paradox_core"),
 )
 MATERIAL_DESC_LIMIT = 57                          # 与装备说明同一详情框量级；官方 item c5 p90 = 43 字
 #: 强化商店 10 阶（阶段上限, [(材料, 数量), ...]），每份 = 1 级。1–6 阶是 wf_cursed_weapons.ENH_STAGES 在 live 1.4.1063
@@ -225,7 +234,7 @@ ASSET_FILES = (
     (FRAME_BLUEGOLD + ".png", ASSET_DIR / "paradox_frame_bluegold.png", (144, 144), False),
     (PARTY_FRAME_BLUEGOLD + ".png", ASSET_DIR / "paradox_party_frame_bluegold.png", (72, 72), True),
     ("battle/common/unique_condition/" + CURSE_ICON + ".png", CURSE_ICON_SRC, (48, 48), True),
-    *((thumb + ".png", ASSET_DIR / src, (20, 20), True) for _, _, _, _, thumb, src, _ in MATERIALS),
+    *((thumb + ".png", src, (20, 20), True) for _, _, _, _, thumb, src, _ in MATERIALS),
 )
 
 # 装备详情覆盖（client-patch/equipment-description-override，capability equipment-description-override-v1）：
@@ -604,22 +613,56 @@ def look_problems(texts: dict[str, str], enh_row: list[str], files: Iterable[str
     return probs
 
 
-def material_rows(read: W.LiveReader) -> dict[str, list[list[str]]]:
-    """新材料道具行：克隆五重材料行（10000145 / 10000147），换 c0–c5 与开始时间；c14 类目、c16 售价、c17 稀有度照模板。"""
-    out = {}
+def atlas_names_from_raw(raw: bytes | None) -> frozenset[str]:
+    """``MATERIAL_ATLAS_MAP``（raw deflate 的 AMF3 条目数组，与 wf_weapon_awaken.decode_atlas 同格式）→ 子纹理名集合；
+    缺文件 = 空集（任何 c4 都不算已上线）。"""
+    if raw is None:
+        return frozenset()
+    return frozenset(str(entry["n"]) for entry in wf_dsl.parse_dsl(zlib.decompress(raw, -15))["tree"])
+
+
+def material_rows(read: W.LiveReader, atlas_names: Iterable[str] | None = None
+                  ) -> tuple[dict[str, list[list[str]]], dict[str, str], list[str]]:
+    """新材料道具行：克隆五重材料行（10000145 / 10000147），换 c0–c5 与开始时间；c14 类目、c16 售价、c17 稀有度照模板。
+
+    c3/c4 改指 MATERIALS 的重画版只在 c4 已在 live 图集（atlas_names 含它）时做；否则沿用 live 行现有的 c3/c4
+    （已上线的行原样，不回退、也不提前指向未上线的子纹理），live 无该行时沿用模板行的（五重材料，已上线）。
+    -> (行, {暂缓改指的道具 ID: 原因}, problems)。给了 atlas_names 时，出行的每个 c4 都必须在其中（否则 C8004）。"""
+    W._require(not isinstance(atlas_names, (str, bytes)), "atlas_names 须是子纹理名的集合，不是单个字符串")
+    ready = None if atlas_names is None else frozenset(atlas_names)
+    live_items = read.flat(ITEM)
+    out: dict[str, list[list[str]]] = {}
+    deferred: dict[str, str] = {}
+    problems: list[str] = []
     for iid, template, name, text, thumb, _src, small in MATERIALS:
         W._require(len(text) <= MATERIAL_DESC_LIMIT and "," not in text and "\n" not in text, f"{name} 说明超长或含逗号/换行")
         row = W._template(read, ITEM, template, 23)
         W._require(row[6] == "1" and row[14] == "9", f"item[{template}] 模板列义漂移（c6 强化素材 / c14 类目 9）")
-        row[0:6] = [f"mod_{SLUG}_{iid}", iid, name, thumb, small, text]
+        c3, c4 = thumb, small
+        if ready is None or small not in ready:
+            current = live_items.get(iid)
+            if current:
+                W._require(len(current[0]) == 23, f"live item[{iid}] 形状漂移（{len(current[0])} 列 != 23）")
+            source = current[0] if current else row
+            c3, c4 = source[3], source[4]
+            deferred[iid] = ("未提供 live 图集子纹理名（atlas_names）" if ready is None
+                             else f"子纹理 {small} 不在 live 图集（先发 wf_weapon_awaken 边 E1）") + \
+                ("，沿用 live 行的 c3/c4" if current else f"，沿用模板 item[{template}] 的 c3/c4")
+        if ready is not None and c4 not in ready:
+            problems.append(f"item[{iid}] c4 {c4} 不在 live 图集 item_icon/sprite_sheet（掉落展示 / 图鉴 C8004）")
+        row[0:6] = [f"mod_{SLUG}_{iid}", iid, name, c3, c4, text]
         row[19] = W.START_TIME
         out[iid] = [row]
-    return out
+    return out, deferred, problems
 
 
 def build(read: W.LiveReader, *, allow_existing: bool = False,
-          client_capabilities: Iterable[str] = BASE_CLIENT_CAPABILITIES) -> dict[str, Any]:
+          client_capabilities: Iterable[str] = BASE_CLIENT_CAPABILITIES,
+          atlas_names: Iterable[str] | None = None) -> dict[str, Any]:
     """allow_existing=True 供补丁边同步暂存：自有键（5920001 / paradox_hits / tag_paradox_*）已在 live 时不算撞键。
+
+    atlas_names = live item_icon/sprite_sheet 的子纹理名（atlas_names_from_raw）。两件材料的 c3/c4 只在其 c4 已在其中时
+    改指重画版；None / 不含 = 沿用 live 行（见 material_rows），该件 c3 图也不出，icons_deferred 列出原因。
 
     client_capabilities = 接收这批数据的**全部**客户端共有的 capability。默认 1047 基线（未装 equipment-rules）：
     R3 的 423 行（满档与三个分档各一行）报缺 equipment-gauge-gain-rules-v1 进 problems，暂存脚本的 problems == [] 断言即拦下；
@@ -643,7 +686,9 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
     W._require(row[2] == "0" and row[8] == "5" and row[11] == "5", "equipment 模板列义漂移")
     row[0], row[1], row[6], row[7], row[9], row[10] = f"mod_{SLUG}", NAME, ICON, text, "false", ID
     flat[EQUIPMENT][ID] = [row]
-    flat[ITEM].update(material_rows(read))
+    materials, icons_deferred, material_problems = material_rows(read, atlas_names)
+    flat[ITEM].update(materials)
+    problems += material_problems
 
     # 强化：c0 = 200；名/图/描述/框仍在 120 级切换（200 级图标与蓝金框走下面的外观两键）；强化 status 加 200 键；
     # 商店 10 阶挂诅咒武器类目 6：1–6 阶五重材料、7–10 阶新材料
@@ -689,6 +734,10 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
              for logical, src, size, required in ASSET_FILES}
     for logical, info in files.items():
         W._require(not info["required"] or Path(info["src"]).is_file(), f"缺源图 {info['src']}（{logical}）")
+    # 暂缓改指的材料不出它的 c3 图：图与改指同一条边（E2 口径），也不绕过 E1 的作者预览门先写一张没人引用的图
+    for iid, *_, thumb, _src, _small in MATERIALS:
+        if iid in icons_deferred:
+            files.pop(thumb + ".png")
     looks = look_texts()
     bad = look_problems(looks, flat[ENH][ID][0], files)
     W._require(not bad, "200 级外观键不合规：" + "；".join(bad))
@@ -772,6 +821,9 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
         "nested": {EQUIPMENT_STATUS: {ID: dict(EQUIPMENT_STATUS_ROWS)}, ENH_STATUS: {ID: dict(PARADOX_ENH_STATUS_ROWS)}},
         "dsl": dsl,
         "files": files,
+        # 材料改指重画版所需的图集子纹理（wf_weapon_awaken 边 E1 追加）；不在 atlas_names 里的那件已在 build 内暂缓改指
+        "atlas_requires": sorted(small for *_, small in MATERIALS),
+        "icons_deferred": icons_deferred,
         "server": _server_delta(flat),
         "delete": delete,
         "problems": problems,

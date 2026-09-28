@@ -6,8 +6,10 @@
 本文件不读 store；只核对源码里的像素格、仓库里的 PNG 与 manifest.json 三者一致。
 
 负向对照：每条门禁配一条「把图弄坏必须变红」的用例，证明门禁在测东西。
-两套门禁一致性：交付件必须同时过构建器 wf_weapon_awaken.icon_problems 的全部非彩虹门禁，描边阈值逐项相同，
-负向样本两边都报红（否则图能过 build_icons --check、到 E1 才被构建器拒掉）。
+两套门禁一致性：非彩虹交付件必须同时过构建器 wf_weapon_awaken.icon_problems 的全部非彩虹门禁，彩虹件（★5，
+目前只有禁忌星铁）按两边一致的 rainbow 标记过门禁；描边阈值逐项相同，负向样本两边都报红
+（否则图能过 build_icons --check、到 E1 才被构建器拒掉）。
+彩虹件只豁免色数与描边集中度（前两色占比、描边色相占比），alpha、包围盒、杂色、描边压暗（逐像素）、受光、c4 照常。
 """
 from __future__ import annotations
 
@@ -151,6 +153,48 @@ class IconSpecTest(unittest.TestCase):
         self.assertEqual({px[xy][3] for xy in ((0, 0), (19, 0), (0, 19), (19, 19))}, {0})
         self.assertIn("extreme_multi_battle_token", icon(B.TICKET_KEY)["mother"])
 
+    def test_rainbow_is_only_the_star_steel_and_only_five_star(self):
+        self.assertEqual(["forbidden_star_steel"], [i["key"] for i in B.ICONS if i.get("rainbow")])
+        for i in B.ICONS:
+            with self.subTest(i["key"]):
+                self.assertEqual(bool(i.get("faces")), bool(i.get("rainbow")))     # 渐变面只给彩虹件
+                if i.get("rainbow"):
+                    self.assertEqual(i["rarity"], B.RAINBOW_RARITY)
+        m = B.metrics(rendered("forbidden_star_steel"))
+        self.assertEqual(m["bbox"], [20, 17])                                     # 与 ★5 星铁钢同一轮廓
+        # 豁免确实在用：渐变件色数与描边集中度都超非彩虹口径（官方 ★5 星铁钢 183 色、前两色占比 0.04）
+        self.assertGreater(m["colors"], B.MAX_COLORS)
+        self.assertLess(m["outline_top2"], B.MIN_OUTLINE_TOP2)
+
+    def test_rainbow_gradient_follows_official_direction(self):
+        """官方 ★5 星铁钢实测：色相绕 (10,10) 顺时针递减（左绿、上橙、右紫、下青蓝），面内亮度恒定。"""
+        self.assertEqual((B.RAINBOW_CENTRE, B.RAINBOW_PHASE), ((10, 10), 290))
+        self.assertEqual({"left": B.rainbow_hue(0, 10), "top": B.rainbow_hue(10, 2), "right": B.rainbow_hue(19, 10),
+                          "bottom": B.rainbow_hue(10, 18)}, {"left": 110, "top": 20, "right": 290, "bottom": 200})
+        i = icon("forbidden_star_steel")
+        c3 = rendered("forbidden_star_steel")
+
+        def luma(rgb):
+            return sum(w * v / 255 for w, v in zip(B.RAINBOW_LUMA, rgb))
+
+        for ch, (want, _chroma) in i["faces"].items():
+            with self.subTest(face=ch):
+                cells = [(x, y) for y, row in enumerate(i["grid"]) for x, c in enumerate(row) if c == ch]
+                self.assertTrue(cells)
+                self.assertLess(max(abs(luma(c3.getpixel(xy)[:3]) - want) for xy in cells), 0.005)   # 取整误差以内
+                # 色相随位置变（渐变不是平涂）；棱下列 k 在渐变中心正下方一列，方位角恒为 90°，官方这一列也是同一色
+                if len({x for x, _ in cells}) > 1:
+                    self.assertGreater(len({B.rainbow_hue(*xy) for xy in cells}), 1)
+        # 顶面（亮 .675）比左侧面（.533）亮、左侧面比右侧面（.41）亮：光从左上
+        self.assertGreater(i["faces"]["t"][0], i["faces"]["l"][0])
+        self.assertGreater(i["faces"]["l"][0], i["faces"]["q"][0])
+
+    def test_rainbow_faces_rejected_on_plain_icons(self):
+        bad = dict(icon("king_coin"), faces={"0": (0.225, 0.27)})
+        bad["palette"] = {k: v for k, v in bad["palette"].items() if k != "0"}
+        with self.assertRaises(ValueError):
+            B.render(bad)
+
     def test_builder_writes_only_its_own_directory(self):
         for rel in B.outputs():
             self.assertFalse(Path(rel).is_absolute())
@@ -221,6 +265,45 @@ class GateNegativeControlTest(unittest.TestCase):
         c3 = rendered("forbidden_star_steel").rotate(180)
         self.assertTrue(any(p.startswith("light") for p in self.gate_of("forbidden_star_steel", c3)))
 
+    def test_rainbow_exempt_only_from_colour_count_and_outline_concentration(self):
+        """彩虹件：去掉 rainbow 标记只多出色数 / 描边集中度两类红，其余门禁对它照常生效。"""
+        key = "forbidden_star_steel"
+        c3 = rendered(key)
+        self.assertEqual(self.gate_of(key, c3), [])
+        plain = dict(icon(key), rainbow=False)
+        extra = B.gate(plain, c3, B.to_c4(c3))
+        self.assertTrue(any(p.startswith("colors") for p in extra))
+        self.assertTrue(any(p.startswith("outline top2") for p in extra))
+        self.assertTrue(all(p.startswith(("colors", "outline top2", "outline hue off")) for p in extra), extra)
+
+    def test_rainbow_still_gated_on_alpha_bbox_c4(self):
+        key = "forbidden_star_steel"
+        c3 = rendered(key)
+        r, g, b, _ = c3.getpixel((6, 12))
+        c3.putpixel((6, 12), (r, g, b, 128))
+        self.assertTrue(any(p.startswith("alpha") for p in self.gate_of(key, c3)))
+        small = Image.new("RGBA", (20, 20), (0, 0, 0, 0))
+        small.paste(rendered(key).resize((10, 10), Image.NEAREST), (5, 5))
+        self.assertTrue(any(p.startswith("bbox") for p in self.gate_of(key, small)))
+        c3 = rendered(key)
+        self.assertIn("c4 != c3 x2 nearest", self.gate_of(key, c3, c3.resize((40, 40), Image.BILINEAR)))
+
+    def test_rainbow_outline_checked_pixel_by_pixel(self):
+        """彩虹件的描边主色是并列里随便挑的一个，所以逐像素查：任何一个描边像素近黑 / 灰 / 过亮都报红。"""
+        key = "forbidden_star_steel"
+        for label, rgb in (("near-black violet", (20, 14, 40)), ("grey", (70, 70, 70)), ("too bright", (200, 150, 40))):
+            with self.subTest(label):
+                c3 = rendered(key)
+                c3.putpixel((0, 10), rgb + (255,))                  # 左描边中段的一个像素
+                self.assertTrue(any(p.startswith("outline pixels") for p in self.gate_of(key, c3)))
+        self.assertEqual(B.outline_pixel_problems(rendered(key)), [])
+
+    def test_rainbow_only_on_five_star(self):
+        key = "forbidden_star_steel"
+        c3 = rendered(key)
+        four = dict(icon(key), rarity=4)
+        self.assertTrue(any(p.startswith("rainbow only") for p in B.gate(four, c3, B.to_c4(c3))))
+
     def test_unknown_palette_char_rejected(self):
         bad = dict(icon("king_coin"))
         bad["grid"] = ("?" + bad["grid"][0][1:],) + tuple(bad["grid"][1:])
@@ -237,12 +320,21 @@ class BuilderGateAgreementTest(unittest.TestCase):
         cls.W = W
 
     def strict(self, i: dict):
-        """构建器里的同一件、强制按非彩虹件跑（交付件没有彩虹配色，全部非彩虹门禁都要过）。"""
+        """构建器里的同一件：彩虹件按它的彩虹口径，其余强制按非彩虹件跑（全部非彩虹门禁都要过）。"""
         W = self.W
         found = W.ICON_BY_ITEM.get(i["item_id"])
         if found is None:       # 凭证归五重线，构建器不登记；按同样的合同造一件
             found = W.Icon(i["item_id"], i["key"], i["c3"], i["c4"], B.TOKEN_FLOOR, False)
-        return dataclasses.replace(found, rainbow=False)
+        return dataclasses.replace(found, rainbow=bool(i.get("rainbow")))
+
+    def test_rainbow_flags_match(self):
+        """彩虹标记两边一致：图标单元按彩虹豁免、构建器按全口径（或反过来），图会在 E1 才被拒或漏审。"""
+        for i in B.ICONS:
+            found = self.W.ICON_BY_ITEM.get(i["item_id"])
+            if found is None:
+                continue
+            with self.subTest(i["key"]):
+                self.assertIs(found.rainbow, bool(i.get("rainbow")))
 
     def test_thresholds_match(self):
         W = self.W
@@ -257,14 +349,27 @@ class BuilderGateAgreementTest(unittest.TestCase):
                 self.assertEqual(getattr(B, mine), getattr(W, theirs))
         self.assertEqual((B.SIZE, B.SIZE), W.ICON_SIZE)
 
-    def test_deliverables_pass_builder_non_rainbow_gates(self):
+    def test_deliverables_pass_builder_gates(self):
         for i in B.ICONS:
             with self.subTest(i["key"]):
                 c3 = B.render(i)
                 self.assertEqual(self.W.icon_problems(self.strict(i), self.W.icon_metrics(c3)), [])
                 m, wm = B.metrics(c3), self.W.icon_metrics(c3)
-                self.assertEqual((m["outline_sat"], m["outline_val"], m["outline_hue_share"], m["colors"], m["speckle"]),
-                                 (wm["outline_sat"], wm["outline_val"], wm["outline_hue_share"], wm["colors"], wm["speckle"]))
+                self.assertEqual((m["colors"], m["speckle"]), (wm["colors"], wm["speckle"]))
+                if i.get("rainbow"):
+                    # 渐变描边几十色各 1–2 像素，「描边主色」是并列里的任意一个，两边挑到的可以不同；改由逐像素门禁兜底
+                    self.assertEqual(B.outline_pixel_problems(c3), [])
+                    continue
+                self.assertEqual((m["outline_sat"], m["outline_val"], m["outline_hue_share"]),
+                                 (wm["outline_sat"], wm["outline_val"], wm["outline_hue_share"]))
+
+    def test_rainbow_deliverable_fails_builder_without_the_flag(self):
+        i = icon("forbidden_star_steel")
+        c3 = B.render(i)
+        plain = dataclasses.replace(self.W.ICON_BY_ITEM[i["item_id"]], rainbow=False)
+        problems = self.W.icon_problems(plain, self.W.icon_metrics(c3))
+        self.assertTrue(any("色数" in p for p in problems))
+        self.assertTrue(any("描边前两色" in p for p in problems))
 
     def test_bad_outlines_red_in_both(self):
         for label, key, char, rgb in BAD_OUTLINES:

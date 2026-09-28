@@ -2,13 +2,19 @@
 """武器觉醒与新掉落：官方风格材料图标（设计稿 D:/WF/out/武器觉醒与新掉落-20260928/设计.md §6）。
 
 每张 c3 缩略图是下面手摆的 20×20 像素格（字符 → 调色板），c4 小图标 = c3 ×2 最近邻（40×40）。
+★5 彩虹件（rainbow=True，目前只有禁忌星铁）的像素格摆的是「面」：面字符的颜色由锥形彩虹渐变算出
+（照官方 ★5 星铁钢实测：色相绕 (10,10) 转、亮度只由面决定，见 RAINBOW_* 与 rainbow_rgb），其余字符仍是定色。
 不读网络、不读 store、无随机数：同一份源码跑几次，输出像素逐字节相同（--check 回读核对）。
 
 规范（§6.2，门禁在 gate() 里，测试 mod-tools/tests/test_weapon_awaken_icons.py 固化）：
   20×20 透明画布；alpha 只有 0/255；包围盒长边不小于稀有度下限（★3 14 / ★4 16 / ★5 19，代币与券 19）；
   主体外描边 = 物件主色压暗（不是纯黑）：最大通道 ≥40、饱和度 ≥0.4、明度 0.2–0.5，主体有彩像素至少 20% 落在
   描边色相 ±45° 内；前两种描边色占比 ≥ 0.9；色数 ≤ 17；孤立杂色 ≤ 0.10；左上受光；c4 恰好等于 c3 ×2 最近邻。
-  描边各阈值与构建器 wf_weapon_awaken.py 的 icon_problems（非彩虹件）逐项相同，测试核对两边一致。
+  描边各阈值与构建器 wf_weapon_awaken.py 的 icon_problems 逐项相同，测试核对两边一致。
+  彩虹件（只许 ★5）与构建器同口径豁免三项：色数、描边前两色占比、描边色相占比（渐变描边几十种颜色、各 1–2 像素，
+  「最常见的描边色」只是并列里随便挑的一个，这两项对它没有意义；官方 ★5 星铁钢本身 183 色、占比 0.04）。
+  代替它们的是更严的逐像素门禁：彩虹件描边的每一个像素都必须是主色相压暗（最大通道 ≥40、饱和度 ≥0.4、明度 0.2–0.5）。
+  其余门禁（alpha、包围盒、杂色、描边主色压暗、受光、c4）照常。
 
 用法：
   python mod-tools/assets/weapon-awaken/build_icons.py            # 写 icons/ 与 manifest.json
@@ -21,6 +27,7 @@ import argparse
 import colorsys
 import hashlib
 import json
+import math
 import sys
 from collections import Counter
 from pathlib import Path
@@ -48,6 +55,14 @@ HUE_SAMPLE = (0.25, 0.2)            # 「有彩像素」：饱和度 ≥0.25 且
 #: 包围盒长边下限（§6.2 表：★3 约 14–16，★4 约 16–18，★5 约 19–20；代币、券、凭证撑满到 19–20）
 BBOX_FLOOR = {3: 14, 4: 16, 5: 19}
 TOKEN_FLOOR = 19
+#: ★5 彩虹渐变（实测 live 官方 item/materials/awaking_crystal/general/equipment_awaking_crystal_5）：
+#: 183 色全部落在 hue = 290° − θ（θ = 像素绕 (10,10) 的屏幕方位角，y 朝下、顺时针为正；残差 rms 3.3°），
+#: 同一个面内 Rec.601 亮度恒定（描边 .225、右侧面 .41、左侧面 .533、左棱 .60、顶面 .675、受光带 .88）。
+#: 即把彩虹锥形渐变以「颜色」混合模式叠在灰度锭上：色相随方位转、明暗只由面决定。rainbow_rgb 照这个算。
+RAINBOW_CENTRE = (10, 10)
+RAINBOW_PHASE = 290
+RAINBOW_LUMA = (0.3, 0.59, 0.11)    # W3C Compositing「color」混合的亮度系数（SetLum / ClipColor）
+RAINBOW_RARITY = 5                  # 彩虹底框 = ★5；其他稀有度不许走彩虹豁免
 
 # ---------------------------------------------------------------- icons
 # 每项：key（输出文件名）、道具 ID、名、稀有度 c17、kind（token = 代币/券，包围盒按 19 算）、
@@ -85,35 +100,43 @@ ICONS: list[dict] = [
                  'w': (255, 255, 255)},
     ),
     dict(
-        key="forbidden_star_steel", item_id="10000311", name="禁忌星铁", rarity=5, kind="material",
+        key="forbidden_star_steel", item_id="10000311", name="禁忌星铁", rarity=5, kind="material", rainbow=True,
         c3="item/materials/mod/cursed/forbidden_star_steel", c4="item_icon/materials/mod/cursed/forbidden_star_steel",
-        mother="★4 星铁钢 equipment_awaking_crystal_4 的锭形逐色映射（与 ★5 星铁钢同一轮廓 20×17），"
-               "左侧面嵌金色星纹、右侧面一道绯红禁纹",
+        mother="★5 星铁钢 equipment_awaking_crystal_5 的彩虹锭（作者 0928「禁忌星铁要彩虹」）：同一轮廓 20×17、同一面分区，"
+               "各面亮度与色相走向照官方实测（锥形渐变 hue = 290° − θ、绕 (10,10) 顺时针递减，面内亮度恒定）；"
+               "左侧面嵌金色星纹（橙色压暗下半）、右侧面一道绯红禁纹",
+        # 面字符 → faces（渐变色），其余字符 → palette（定色）。面分区逐格照官方 ★5 星铁钢：
+        # o 描边  t 顶面  p 顶面前沿受光带  w 高光  r 左棱亮边  d 左侧面上部  l 左侧面  k 棱下列  b 棱  h 棱高光
+        # m 右侧面上沿  q 右侧面；g/G/a 星纹（金 / 压暗 / 星心），c 禁纹
         grid=(
             '....................',
             '....................',
-            '.......000..........',
-            '.....0066600........',
-            '...00666666600......',
-            '..06666666666600....',
-            '.05477777777777700..',
-            '.054337777777777880.',
-            '.054433388777788110.',
-            '0544a43333888811c10.',
-            '05bbbbb333336111c110',
-            '054bbb4433336111cc10',
-            '055b4b4443336111c120',
-            '.0055444443361111c20',
-            '...0054444436111c220',
-            '.....00554436112200.',
-            '.......0055461100...',
-            '.........005500.....',
-            '...........00.......',
+            '.......ooo..........',
+            '.....ootttoo........',
+            '...ootttttttoo......',
+            '..otttttttttttoo....',
+            '.ordppppppppppppoo..',
+            '.ordddppppppppppwwo.',
+            '.ordddddwwppppwwmmo.',
+            'orddgdddddwwwwmmcmo.',
+            'orggagglllbbhqqqcqqo',
+            'orlggGllllkbhqqqccqo',
+            'orlGlGllllkbhqqqcqqo',
+            '.oolllllllkbhqqqccqo',
+            '...oolllllkbhqqqcqqo',
+            '.....oolllkbhqqqqoo.',
+            '.......oolkbhqqoo...',
+            '.........oobhoo.....',
+            '...........oo.......',
             '....................',
         ),
-        palette={'0': (44, 16, 60), '1': (70, 30, 96), '2': (96, 44, 120), '3': (104, 52, 140),
-                 '4': (122, 66, 162), '5': (152, 98, 192), '6': (180, 130, 222), '7': (216, 180, 246),
-                 '8': (255, 246, 255), 'a': (255, 250, 200), 'b': (255, 206, 72), 'c': (214, 36, 84)},
+        #: 面 → (Rec.601 亮度, 色度)。亮度 = 官方该面实测（面内各像素相同）；色度按官方逐面最小二乘拟合（rms 4–13/255）。
+        #: 描边色度 0.27：全色相明度都落在 0.25–0.47（蓝紫描边也不超 0.5），逐像素都是「主色相压暗」。
+        faces={'o': (0.225, 0.27), 'q': (0.41, 0.39), 'm': (0.41, 0.50), 'l': (0.533, 0.43), 'd': (0.533, 0.36),
+               'k': (0.533, 0.49), 'b': (0.533, 0.36), 'r': (0.60, 0.46), 'h': (0.675, 0.23), 't': (0.675, 0.38),
+               'p': (0.88, 0.44)},
+        palette={'w': (255, 255, 255), 'a': (255, 250, 200), 'g': (255, 206, 72), 'G': (222, 146, 32),
+                 'c': (214, 36, 84)},
     ),
     dict(
         key="deathbringer_blueprint_v2", item_id="10000144", name="终式武装图纸", rarity=3, kind="material",
@@ -271,7 +294,8 @@ ICONS: list[dict] = [
     ),
     dict(
         key="contradiction_crystal", item_id="10000301", name="矛盾结晶", rarity=4, kind="material",
-        # c3 现为 mod-tools/assets/paradox/paradox_shard.png（PARADOX 线所有，本单元不改）；换用本图时 c3 与 c4 须同一条边一起换
+        # wf_paradox_weapon.py MATERIALS 直接取本图（c3 = _v2 新名、c4 = paradox 专属子纹理，同一条边一起换）；
+        # 旧图 mod-tools/assets/paradox/paradox_shard.png 不再被引用
         c3="item/materials/mod/paradox/contradiction_crystal_v2",
         c4="item_icon/materials/mod/paradox/contradiction_crystal",
         mother="旧图 paradox_shard.png 的「光影各半 + 金缝」菱晶，按规范重画：加宽到 12×17、上下晶面分明、杂色 0.188→≤0.10",
@@ -345,20 +369,50 @@ N4 = ((1, 0), (-1, 0), (0, 1), (0, -1))
 
 
 # ---------------------------------------------------------------- render
+def rainbow_hue(x: int, y: int) -> int:
+    """锥形渐变的色相（整数度）：绕 RAINBOW_CENTRE 顺时针递减。取整后 atan2 的末位误差影响不到像素。"""
+    cx, cy = RAINBOW_CENTRE
+    return round(RAINBOW_PHASE - math.degrees(math.atan2(y - cy, x - cx))) % 360
+
+
+def _rainbow_luma(c) -> float:
+    return sum(w * v for w, v in zip(RAINBOW_LUMA, c))
+
+
+def rainbow_rgb(hue: int, luma: float, chroma: float) -> tuple:
+    """「颜色」混合：色相取渐变、色度取面、亮度取面（W3C SetLum + ClipColor），之后只有四则运算。"""
+    c = [v * chroma for v in colorsys.hsv_to_rgb(hue / 360, 1.0, 1.0)]
+    d = luma - _rainbow_luma(c)
+    c = [v + d for v in c]
+    lum, lo, hi = _rainbow_luma(c), min(c), max(c)
+    if lo < 0:
+        c = [lum + (v - lum) * lum / (lum - lo) for v in c]
+    if hi > 1:
+        c = [lum + (v - lum) * (1 - lum) / (hi - lum) for v in c]
+    return tuple(min(255, max(0, int(v * 255 + 0.5))) for v in c)
+
+
 def render(icon: dict) -> Image.Image:
-    grid, pal = icon["grid"], icon["palette"]
+    grid, pal, faces = icon["grid"], icon["palette"], icon.get("faces", {})
     if len(grid) != SIZE or any(len(r) != SIZE for r in grid):
         raise ValueError(f"{icon['key']}: grid must be {SIZE}x{SIZE}")
+    if faces and not icon.get("rainbow"):
+        raise ValueError(f"{icon['key']}: gradient faces are only for rainbow icons")
+    if set(pal) & set(faces):
+        raise ValueError(f"{icon['key']}: chars both in palette and faces {sorted(set(pal) & set(faces))}")
     img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     px = img.load()
     for y, row in enumerate(grid):
         for x, ch in enumerate(row):
             if ch == ".":
                 continue
-            if ch not in pal:
+            if ch in faces:
+                px[x, y] = rainbow_rgb(rainbow_hue(x, y), *faces[ch]) + (255,)
+            elif ch in pal:
+                px[x, y] = tuple(pal[ch]) + (255,)
+            else:
                 raise ValueError(f"{icon['key']}: char {ch!r} at ({x},{y}) not in palette")
-            px[x, y] = tuple(pal[ch]) + (255,)
-    unused = set(pal) - {c for r in grid for c in r}
+    unused = (set(pal) | set(faces)) - {c for r in grid for c in r}
     if unused:
         raise ValueError(f"{icon['key']}: unused palette entries {sorted(unused)}")
     return img
@@ -451,9 +505,41 @@ def metrics(img: Image.Image) -> dict:
     }
 
 
+def _darkened_hue_problem(rgb) -> str | None:
+    """一个描边色是不是「主色相压暗」：不近黑、有彩度、明度 0.2–0.5（口径同构建器 icon_problems 对描边主色的要求）。"""
+    if max(rgb) < OUTLINE_MIN_CHANNEL:
+        return f"near black (max channel < {OUTLINE_MIN_CHANNEL})"
+    _, s, v = colorsys.rgb_to_hsv(*[c / 255 for c in rgb])
+    low, high = OUTLINE_VAL_RANGE
+    if not (round(s, 2) >= OUTLINE_SAT_MIN and low <= round(v, 2) <= high):
+        return f"not a darkened hue (s={round(s, 2)} v={round(v, 2)}; need s>={OUTLINE_SAT_MIN}, v in {low}-{high})"
+    return None
+
+
+def outline_pixel_problems(img: Image.Image) -> list[str]:
+    """彩虹件的逐像素描边门禁：主体（最大 8 连通块）贴透明的每一个像素都得是主色相压暗。"""
+    px = img.load()
+    w, h = img.size
+    op = {(x, y) for y in range(h) for x in range(w) if px[x, y][3] > 0}
+    if not op:
+        return []
+    main = _main_component(op)
+    out = []
+    for p in sorted(main, key=lambda q: (q[1], q[0])):
+        if all((p[0] + dx, p[1] + dy) in op for dx, dy in N4):
+            continue
+        why = _darkened_hue_problem(px[p][:3])
+        if why:
+            out.append(f"{p} {px[p][:3]} {why}")
+    return out
+
+
 def gate(icon: dict, c3: Image.Image, c4: Image.Image) -> list[str]:
     m = metrics(c3)
+    rainbow = bool(icon.get("rainbow"))
     bad = []
+    if rainbow and icon["rarity"] != RAINBOW_RARITY:
+        bad.append(f"rainbow only for ★{RAINBOW_RARITY} (rarity plate item_rainbow), got ★{icon['rarity']}")
     if m["size"] != [SIZE, SIZE]:
         bad.append(f"size {m['size']}")
     if not set(m["alphas"]) <= {0, 255}:
@@ -461,11 +547,11 @@ def gate(icon: dict, c3: Image.Image, c4: Image.Image) -> list[str]:
     floor = TOKEN_FLOOR if icon["kind"] == "token" else BBOX_FLOOR[icon["rarity"]]
     if max(m["bbox"]) < floor:
         bad.append(f"bbox {m['bbox']} < {floor}")
-    if m["colors"] > MAX_COLORS:
+    if not rainbow and m["colors"] > MAX_COLORS:                  # 彩虹件豁免（同构建器）
         bad.append(f"colors {m['colors']} > {MAX_COLORS}")
     if m["speckle"] > MAX_SPECKLE:
         bad.append(f"speckle {m['speckle']} > {MAX_SPECKLE}")
-    if m["outline_top2"] < MIN_OUTLINE_TOP2:
+    if not rainbow and m["outline_top2"] < MIN_OUTLINE_TOP2:      # 彩虹件豁免（同构建器）
         bad.append(f"outline top2 {m['outline_top2']} < {MIN_OUTLINE_TOP2}")
     # 描边是主色相压暗：不是近纯黑、有彩度、明度 0.2–0.5，且色相跟着物件走（口径同构建器 icon_problems）
     if max(m["outline"]) < OUTLINE_MIN_CHANNEL:
@@ -475,8 +561,12 @@ def gate(icon: dict, c3: Image.Image, c4: Image.Image) -> list[str]:
         bad.append(f"outline {m['outline']} not a darkened hue (got s={m['outline_sat']} v={m['outline_val']}; "
                    f"need s>={OUTLINE_SAT_MIN}, v in {low}-{high})")
     share = m["outline_hue_share"]
-    if share is not None and share < OUTLINE_HUE_SHARE_MIN:
+    if not rainbow and share is not None and share < OUTLINE_HUE_SHARE_MIN:   # 彩虹件豁免（同构建器）
         bad.append(f"outline hue off the object: share {share} < {OUTLINE_HUE_SHARE_MIN} within ±{OUTLINE_HUE_TOL}°")
+    if rainbow:
+        pixels = outline_pixel_problems(c3)
+        if pixels:
+            bad.append(f"outline pixels not a darkened hue: {len(pixels)}, e.g. {pixels[:3]}")
     if m["light_ul_minus_lr"] < -30:
         bad.append(f"light {m['light_ul_minus_lr']}: lit from lower-right")
     if c4.size != (SIZE * C4_SCALE, SIZE * C4_SCALE) or c4.tobytes() != to_c4(c3).tobytes():
@@ -510,7 +600,8 @@ def manifest() -> dict:
         c4 = to_c4(c3)
         entry = {
             "key": icon["key"], "item_id": icon["item_id"], "name": icon["name"], "rarity": icon["rarity"],
-            "kind": icon["kind"], "c3_logical": icon["c3"], "c4_logical": icon["c4"], "mother": icon["mother"],
+            "kind": icon["kind"], "rainbow": bool(icon.get("rainbow")),
+            "c3_logical": icon["c3"], "c4_logical": icon["c4"], "mother": icon["mother"],
             "metrics": metrics(c3), "c3_rgba_sha256": rgba_sha(c3), "c4_rgba_sha256": rgba_sha(c4),
         }
         if icon["key"] == TICKET_KEY:
