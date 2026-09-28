@@ -168,6 +168,12 @@
     "small": "item_icon/materials/mod/five_boss/deep_realm_ticket"
    }
   },
+  "shop_icons": {
+   "990099002": {
+    "col": 12,
+    "value": "item/materials/mod/five_boss/deep_realm_ticket"
+   }
+  },
   "fields": {
    "mod_fb2_trial_hall": {
     "_doc": "试炼回廊：白虎 expert 同地形；added 置空（白虎侧墙紫色 ADD 光会染紫五色晶石），multiply 保留共享专家档压暗",

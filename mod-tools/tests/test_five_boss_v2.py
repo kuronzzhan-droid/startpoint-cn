@@ -136,6 +136,24 @@ class PureFunctionTests(unittest.TestCase):
                 else:
                     self.assertTrue(plan.warnings)
 
+    def test_shop_icon_waits_for_live_png(self):
+        spec = {"art": {"shop_icons": {"990099002": {"col": 2, "value": "t/new"}}}}
+        shop = q.build_node({"990099002": "99,(None),t/old,x", "990099003": "99,(None),t/old,y"})
+        for exists in (False, True):
+            files = {F.T_SHOP: shop}
+            if exists:
+                files["t/new.png"] = b"png"
+            plan = F.Plan()
+            F.plan_shop_icons(F.Live(lambda lg, files=files: files[lg] if lg in files else
+                                     (_ for _ in ()).throw(FileNotFoundError(lg))), spec, plan)
+            edits = plan.edits.get(F.T_SHOP, [])
+            if exists:
+                self.assertEqual([p for p, _ in edits], [["990099002"]])
+                self.assertEqual(F.one_row(edits[0][1])[2], "t/new")
+            else:
+                self.assertEqual(edits, [])
+                self.assertTrue(plan.warnings)
+
 
 STORE_OK = True
 try:

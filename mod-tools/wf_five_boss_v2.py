@@ -69,8 +69,9 @@ T_AR = "master/reward/event/additional_reward.orderedmap"
 T_FIELD = "master/battle/field.orderedmap"
 T_NODE = "master/quest/boss_battle_stage_node.orderedmap"
 T_ITEM = "master/item/item.orderedmap"
+T_SHOP = "master/shop/boss_coin_shop.orderedmap"
 
-TABLES = (T_BBQ, T_BBG, T_BBM, T_FD, T_ZONE, T_GB, T_BL, T_GBS, T_GBV, T_GEW, T_AR, T_FIELD, T_NODE, T_ITEM)
+TABLES = (T_BBQ, T_BBG, T_BBM, T_FD, T_ZONE, T_GB, T_BL, T_GBS, T_GBV, T_GEW, T_AR, T_FIELD, T_NODE, T_ITEM, T_SHOP)
 
 DSL_SUFFIX = ".action.dsl.amf3.deflate"
 TERRAIN_SUFFIX = ".amf3.deflate"
@@ -986,6 +987,22 @@ def plan_item_icons(live: Live, spec: dict, plan: Plan) -> None:
             plan.put(T_ITEM, [iid], write_rows([want]))
 
 
+def plan_shop_icons(live: Live, spec: dict, plan: Plan) -> None:
+    """领主币商店商品自带商品图列（独立 PNG，与道具 c3 同通道）；同样等图上线后才改。"""
+    shop = live.table(T_SHOP)
+    for key, cfg in spec.get("art", {}).get("shop_icons", {}).items():
+        text = shop.get(key)
+        if not isinstance(text, str):
+            raise BuildError(f"shop row missing: {key}")
+        if live.file(cfg["value"] + ".png") is None:
+            plan.warnings.append(f"shop {key}: icon not live yet, deferred to the next edge")
+            continue
+        row = one_row(text)
+        if row[cfg["col"]] != cfg["value"]:
+            row[cfg["col"]] = cfg["value"]
+            plan.put(T_SHOP, [key], write_rows([row]))
+
+
 def plan_node_thumbnail(live: Live, spec: dict, plan: Plan) -> None:
     cfg = spec.get("art", {}).get("node_thumbnail")
     if not cfg:
@@ -1229,6 +1246,9 @@ def gate_codes(live: Live, spec: dict, plan: Plan) -> None:
     for path, _ in plan.edits.get(T_ITEM, []):
         if path[0] not in art.get("item_icons", {}):
             plan.problems.append(f"{T_ITEM}: unexpected key {path}")
+    for path, _ in plan.edits.get(T_SHOP, []):
+        if path[0] not in art.get("shop_icons", {}):
+            plan.problems.append(f"{T_SHOP}: unexpected key {path}")
     # field_data 指向的 field 行必须存在（live 或本次新建）
     fields = set(live.table(T_FIELD)) | {p[0] for p, _ in plan.edits.get(T_FIELD, [])}
     for path, node in plan.edits.get(T_FD, []):
@@ -1271,6 +1291,7 @@ def build(spec: dict | None = None, live: Live | None = None, *, official_gbs: C
     plan_ui_files(live, spec, plan)
     plan_fields(live, spec, plan)
     plan_item_icons(live, spec, plan)
+    plan_shop_icons(live, spec, plan)
     plan_node_thumbnail(live, spec, plan)
     if with_envy_revert:
         plan_envy_revert(live, official_gbs or official_table_loader(T_GBS), plan)
