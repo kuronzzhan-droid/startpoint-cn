@@ -518,6 +518,26 @@ class ParadoxTests(unittest.TestCase):
                 for i in (14, 16, 18, 20) if r[0][i] not in ("", "(None)")}
         self.assertEqual(used, {P.SHARD, P.PARADOX_CORE})
 
+    def test_english_name_only_in_name_cells(self):
+        """作者 0928「武器PARADOX归类为悖论武器，除了武器名字，其他地方都不要英文的，写悖论」。"""
+        self.assertEqual("悖论武器", P.CLASS_NAME)
+        texts = {iid: text for iid, _t, _n, text, *_ in P.MATERIALS}
+        self.assertEqual({P.SHARD: "光与影在同一晶面上互相否定而凝成的结晶。用于将悖论武器强化至121级以上。",
+                          P.PARADOX_CORE: "首尾相接、永无终点的悖论之环的核心。用于突破悖论武器的强化上限。"}, texts)
+        self.assertEqual([], P.english_name_problems(self.out["flat"]))
+        hits = sorted((logical, key, col) for logical, rows in self.out["flat"].items() for key, rs in rows.items()
+                      for r in rs for col, cell in enumerate(r) if P.NAME in cell)
+        # 英文只剩名字格：装备名、强化名（PARADOX·终式）、魂珠名（PARADOX魂珠）
+        self.assertEqual([(P.ENH, P.ID, 2), (P.EQUIPMENT, P.ID, 1), (P.ITEM, P.ID, 2)], hits)
+        self.assertEqual((P.NAME, P.NAME120), ("PARADOX", "PARADOX·终式"))
+        # 负对照：说明 / 覆盖文案 / 材料说明里写回英文都报红
+        for logical, key, col in ((P.ITEM, P.SHARD, 5), (P.EQUIPMENT, P.ID, 7), (P.ENH, P.ID, 6),
+                                  (P.CAS, P.OVERRIDE_BASE, 0)):
+            with self.subTest(table=logical, key=key, col=col):
+                flat = {logical: {key: [list(self.out["flat"][logical][key][0])]}}
+                flat[logical][key][0][col] += "PARADOX"
+                self.assertTrue(P.english_name_problems(flat))
+
     def test_lv200_look_keys(self):
         cas = self.out["flat"][P.CAS]
         self.assertEqual(cas[P.LOOK_TIER2_KEY], [["200,item/equipment/mod/paradox/paradox_lv200"]])

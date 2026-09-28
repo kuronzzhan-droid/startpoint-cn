@@ -30,8 +30,8 @@ ITEM_SHEET, ICON_SHEET, SCENE_SHEET = "item/sprite_sheet", "item_icon/sprite_she
 #: key → ((官方同类子纹理, 说明), 第二个官方参照或 None, 现 c3 逻辑路径, 现 c4 子纹理)
 ROWS = {
     "king_coin": (("item/materials/boss_coin/owl_3", "领主币(紫)"), ("item/materials/boss_coin/owl_2", "领主币(金)"), None, None),
-    "forbidden_star_steel": (("item/materials/awaking_crystal/general/equipment_awaking_crystal_5", "★5星铁钢(彩虹母本)"),
-                             ("item/materials/awaking_crystal/general/equipment_awaking_crystal_4", "★4星铁钢(同轮廓)"), None, None),
+    "forbidden_star_steel": (("item/materials/awaking_crystal/general/equipment_awaking_crystal_5", "★5星铁钢"),
+                             ("item/materials/awaking_crystal/general/equipment_awaking_crystal_4", "★4星铁钢(映射源)"), None, None),
     "deathbringer_blueprint_v2": (("item/materials/event/side_story_event/side_story_event_quest_unlock_certificate", "解锁证书"),
                                   ("item/materials/elements/blue/item_aether_blue_03", "卷轴"),
                                   "item/materials/mod/five_boss/deathbringer_blueprint",

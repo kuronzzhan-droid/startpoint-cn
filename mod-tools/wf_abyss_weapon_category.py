@@ -42,6 +42,9 @@ BANNER_LOGICAL = "dynamic/equipment_enhancement/abyss_weapon_banner.png"
 HEADER_LOGICAL = "dynamic/equipment_enhancement/abyss_weapon_header.png"
 
 NEW_KEY = "5"
+#: c1 display_order（升序，负数合法且须全表互异）。作者 0928 横幅顺序 诅咒(-2) → 深渊(-1) → 官方 1–4；
+#: 本脚本只在键不存在时新增，live 已有的行由 wf_enhancement_category_order 暂存改序。
+DISPLAY_ORDER = "-1"
 # 16 把:15 把深渊觉醒 + 死亡使者(五重决战商店那把)。作者要求强化页 16 把在一起。
 WEAPONS = {f"80001{i:02d}" for i in range(1, 16)} | {"5900101"}
 OLD_CATEGORY = "3"
@@ -103,7 +106,7 @@ def run(art_dir: Path, apply: bool) -> dict:
         raise CategoryError(f"分类表列数变了: {len(template)}")
     new_row = [
         "abyss_weapon",              # c0 string_id
-        NEW_KEY,                     # c1 display_order
+        DISPLAY_ORDER,               # c1 display_order
         template[2],                 # c2 照抄 '(None)'
         "深渊武装·觉醒",              # c3 名称
         BANNER_LOGICAL[:-4],         # c4 banner(逻辑路径不带 .png)

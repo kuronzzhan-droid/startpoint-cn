@@ -53,10 +53,10 @@
    "name": "禁忌星铁",
    "rarity": 5,
    "kind": "material",
-   "rainbow": true,
+   "rainbow": false,
    "c3_logical": "item/materials/mod/cursed/forbidden_star_steel",
    "c4_logical": "item_icon/materials/mod/cursed/forbidden_star_steel",
-   "mother": "★5 星铁钢 equipment_awaking_crystal_5 的彩虹锭（作者 0928「禁忌星铁要彩虹」）：同一轮廓 20×17、同一面分区，各面亮度与色相走向照官方实测（锥形渐变 hue = 290° − θ、绕 (10,10) 顺时针递减，面内亮度恒定）；左侧面嵌金色星纹（橙色压暗下半）、右侧面一道绯红禁纹",
+   "mother": "★4 星铁钢 equipment_awaking_crystal_4 的锭形逐色映射（与 ★5 星铁钢同一轮廓 20×17），左侧面嵌金色星纹、右侧面一道绯红禁纹",
    "metrics": {
     "size": [
      20,
@@ -70,22 +70,22 @@
      20,
      17
     ],
-    "colors": 177,
-    "speckle": 0.013,
+    "colors": 12,
+    "speckle": 0.03,
     "outline": [
-     104,
-     38,
-     35
+     44,
+     16,
+     60
     ],
-    "outline_colors": 49,
-    "outline_top2": 0.041,
-    "outline_sat": 0.66,
-    "outline_val": 0.41,
-    "outline_hue_share": 0.22,
-    "light_ul_minus_lr": 34
+    "outline_colors": 1,
+    "outline_top2": 1.0,
+    "outline_sat": 0.73,
+    "outline_val": 0.24,
+    "outline_hue_share": 0.9,
+    "light_ul_minus_lr": 47
    },
-   "c3_rgba_sha256": "55b861756c8c9b431c5576fc9f4652b38fe94811c5f4b8829c0f882e87b5981e",
-   "c4_rgba_sha256": "21e7364d8a22c0a99a1696c2ca59e1805632b067998ba7d6ffde1beb0101cd11",
+   "c3_rgba_sha256": "11539376bdf9e4194967efb516171c1fed971c372341df080bd51c993396a7d5",
+   "c4_rgba_sha256": "e9f2f2a74587b0e3d9738e68ca9b3b9c88e4440eb45af8448079db6e7a560b3a",
    "c3_file": "icons/forbidden_star_steel.png",
    "c4_file": "icons/forbidden_star_steel_c4.png",
    "c4_size": [

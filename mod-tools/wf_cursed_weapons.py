@@ -93,6 +93,8 @@ NESTED_TABLES = (EQUIPMENT_STATUS, ENH_STATUS)
 ID_BASE = 5910100                      # 武器 / 魂珠 / 强化 / 强化组 ID = 5910100 + 提案表行号
 UNIQUE_BASE = 59100000                 # 固有状态 ID = 59100000 + 行号×10 + k
 ENH_CATEGORY_KEY = "6"
+#: 类目表 c1 display_order（升序，负数合法且须全表互异；作者 0928 横幅顺序 诅咒 → 深渊 → 官方 1–4，见 wf_enhancement_category_order）
+ENH_CATEGORY_DISPLAY_ORDER = "-2"
 IMAGE_DIR = "item/equipment/mod/cursed"
 BANNER = "dynamic/equipment_enhancement/cursed_weapon_banner"
 HEADER = "dynamic/equipment_enhancement/cursed_weapon_header"
@@ -2648,7 +2650,8 @@ def build(read: LiveReader, *, client_capabilities: Iterable[str] = BASE_CLIENT_
         problems += budget_problems(f"{w.row:02d} {w.name}", w.author, budgets[w.row])
 
     row = list(cat_tpl)
-    row[0], row[1], row[3], row[4], row[5], row[8] = "cursed_weapon", ENH_CATEGORY_KEY, "诅咒武器·觉醒", BANNER, HEADER, START_TIME
+    row[0], row[1], row[3], row[4], row[5], row[8] = ("cursed_weapon", ENH_CATEGORY_DISPLAY_ORDER, "诅咒武器·觉醒", BANNER,
+                                                      HEADER, START_TIME)
     flat[ENH_CATEGORY][ENH_CATEGORY_KEY] = [row]
 
     for program, tree in dsl.items():

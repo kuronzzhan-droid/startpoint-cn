@@ -34,6 +34,14 @@ E3 五重商店（``stage-e3``）
   或核实后传 ``--drop-live``），未上线 = blocked，``wf_weapon_gacha`` 同样暂缓 032–034；
   ``--stage-node-c9`` 时另改 ``boss_battle_stage_node[1][99]`` c9 10000146→10000310（须五重线同意）。
 
+E4 作者 0928 晚修订（``stage-e4``，E1–E3 上线之后）
+  E1/E2/E3 按 live 重算的差集合成一条边，外加武器扭蛋注意事项正文（``wf_weapon_gacha`` 的 rich text）：
+  禁忌星铁图回到紫灰锭（37a2d165 的像素，非彩虹件；图集子纹理原位换像素 + c3 独立 PNG）；
+  ``custom_ability_string`` 的 ``rarity_frame_override_<星铁 c3>`` = PARADOX Lv200 蓝金框（客户端补丁换 ★5 彩虹底框）；
+  「PARADOX」只留在武器名里，其余文案写「悖论武器」（禁忌星铁说明、034 说明、扭蛋说明）；
+  034 = 王币 ×500 + 五王心核 ×5 + 深渊觉醒核 ×10，每人限购 60（c28/c29 与服务端 stock）；
+  990099002 深界连战凭证 c13 4 → 5（金框 → 彩虹框，与道具 c17 一致）。
+
 ## 纪律
 
 1. **只读 live**：从不写 store、``.cdn``、``assets/``，不调用 wf_publish。暂存只写
@@ -56,6 +64,7 @@ E3 五重商店（``stage-e3``）
     python mod-tools/wf_weapon_awaken.py stage-e2 <workdir> [--after <E1 workdir>]
     python mod-tools/wf_weapon_awaken.py stage-e3 <workdir> [--after <E1 workdir> --after <E2 workdir>] [--stage-node-c9]
         [--drop-live]
+    python mod-tools/wf_weapon_awaken.py stage-e4 <workdir> [--art-dir DIR] [--drop-live]
 
 ``approve`` 只在作者看过预览并确认后运行：它把当前通过门禁、且与 manifest 一致的图的 c3 sha 写进
 ``approved.json``；图再改就要重新确认。
@@ -124,6 +133,21 @@ UI_RENAMES = {   # 键: (live 官方值, 目标值)；只改这两键（设计 �
         ("无可用于此装备的重复数或星铁钢", "无可用于此装备的重复数或觉醒素材"),
 }
 
+#: 缩略图底框换图（作者 0928「保持那个和现在的200级悖论武器品质底色」）：禁忌星铁的 ★5 彩虹底框换成 PARADOX Lv200 的
+#: 蓝金框（144×144，已随 PARADOX Lv200 上线；= wf_paradox_weapon.FRAME_BLUEGOLD）。客户端补丁按缩略图**显示的图标路径**
+#: 查 ``rarity_frame_override_<图标路径>``：道具缩略图 = item c3，五重商店 034 的商品图 c12 也是同一路径，一键两处。
+#: 行为型：未装补丁的客户端不读这个键，照旧显示 ★5 彩虹底框、不崩。
+RARITY_FRAME_PREFIX = "rarity_frame_override_"      # client-patch/item-rarity-frame-override rules.PREFIX
+RARITY_FRAME_CAP = "item-rarity-frame-override-v1"  # 同上 rules.CAPABILITY（cosmetic：缺补丁只是不换框）
+RARITY_FRAME_BLUEGOLD = "item/equipment/mod/paradox/paradox_frame_bluegold"
+RARITY_FRAME_KEYS = {RARITY_FRAME_PREFIX + G.STAR_STEEL_THUMB: RARITY_FRAME_BLUEGOLD}
+
+#: 五重商店里不归本线的商品只修底框（c13 稀有度 = 缩略图底框）：键 → (live 旧值, 目标值, 奖励道具)。
+#: 作者 0928「连战凭证也有底图变成金色的情况，应该是彩色」：990099002 深界连战凭证 c13=4（金框），道具 10000143 c17=5（彩虹）。
+SHOP_FRAME_COL = 13
+SHOP_FRAME_FIXES = {"990099002": ("4", "5", "10000143")}
+ITEM_RARITY_COL = 17
+
 NODE_PATH = ("1", "99")                             # boss_battle_stage_node[1][99]
 NODE_HOLDING_COL = 9                                # 五重页/多人房/商店头部显示持有数的第 4 格
 NODE_HOLDING_OLD = "10000146"                       # 五重决战之证（终身 1 个）
@@ -169,8 +193,9 @@ PARADOX_DIR = "materials/mod/paradox"
 # 逻辑路径 = 设计 §5.2/§6.4（王币 five_boss/、禁忌星铁 cursed/），与图标单元 manifest.json 逐项核对。
 ICONS = (
     _icon("10000310", "king_coin", f"{FIVE_BOSS_DIR}/king_coin", 19, True),
-    # 禁忌星铁是 ★5 彩虹件（作者 0928「禁忌星铁要彩虹」：照官方 ★5 星铁钢的锥形彩虹渐变），免色数与描边集中度/色相门禁
-    _icon("10000311", "forbidden_star_steel", G.STAR_STEEL_THUMB, 19, True, rainbow=True),
+    # 禁忌星铁按暗紫锭画（≤17 色、描边压暗），不是彩虹件，门禁全口径适用。作者 0928 撤回彩虹重画
+    # （「禁忌星铁上版那个紫灰挺好的」，回到 37a2d165 的像素）；缩略图底框改走 RARITY_FRAME_KEYS 的蓝金框（客户端补丁）。
+    _icon("10000311", "forbidden_star_steel", G.STAR_STEEL_THUMB, 19, True),
     _icon("10000144", "deathbringer_blueprint_v2", f"{FIVE_BOSS_DIR}/deathbringer_blueprint_v2", 14, False),
     _icon("10000145", "deep_crystal_v2", f"{FIVE_BOSS_DIR}/deep_crystal_v2", 16, False),
     _icon("10000146", "fivefold_clear_badge_v2", f"{FIVE_BOSS_DIR}/fivefold_clear_badge_v2", 14, False),
@@ -213,7 +238,7 @@ def item_rows() -> dict:
             ITEM_START, "(None)", "false", ""],          # c21=false 不可出售（1 个 = 1 次单抽）
         str(STAR_STEEL_ID): [
             "mod_forbidden_star_steel", str(STAR_STEEL_ID), "禁忌星铁", steel.c3, steel.c4,
-            "只回应诅咒与悖论之力的星铁。可代替本体突破诅咒武器与PARADOX。",
+            f"只回应诅咒与悖论之力的星铁。可代替本体突破诅咒武器与{G.PARADOX_CLASS}。",
             "1", "", "", "", "", "", "", "",           # c6=1（绝不能是 6：会被原生逻辑提供给所有 ★5）；c10/c11 空
             "2", "(None)", "50", "5", "9999",            # c14=2 与星铁钢同页；★5；上限 9999
             ITEM_START, "(None)", "false", ""],
@@ -232,6 +257,11 @@ def cas_rows() -> dict:
 def material_map() -> dict:
     """服务端 ``materialByEquipment``：与 CAS 键同源。"""
     return {str(eid): STAR_STEEL_ID for eid in RESTRICTED_EQUIPMENT}
+
+
+def rarity_frame_rows() -> dict:
+    """``rarity_frame_override_<缩略图图标路径>`` = 框底图路径（单列行，补丁读 row.string）。"""
+    return {key: [value] for key, value in RARITY_FRAME_KEYS.items()}
 
 
 def rarity_overrides(equipment: dict) -> tuple:
@@ -927,7 +957,9 @@ def paradox_tool_synced(icon: Icon, path: Path = PARADOX_TOOL) -> bool:
     return f'"{icon.c3}"' in text and f'"{icon.c4}"' in text
 
 
-def build_e2(live: G.Live, overlay: Overlay | None = None) -> dict:
+def build_e2(live: G.Live, overlay: Overlay | None = None, *, awakening_cas: bool = True) -> dict:
+    """``awakening_cas=False``：CAS 只暂存底框换图键，不带 30 条 ``awakening_material_*``（它们等客户端补丁
+    equipment-awakening-material 就绪后另发；E2a 1.4.1100 起就是这样拆的）。合同门禁照跑。"""
     out = _edge("E2")
     problems, blocked, warnings, reqs = out["problems"], out["blocked"], out["warnings"], out["requires"]
     view = View(live, overlay)
@@ -997,6 +1029,11 @@ def build_e2(live: G.Live, overlay: Overlay | None = None) -> dict:
     stray = sorted(k for k in live_cas if k.startswith(CAS_PREFIX) and k not in cas)
     if stray:
         problems.append(f"live 有合同外的 {CAS_PREFIX}* 键: {stray[:5]}")
+    frames = rarity_frame_rows()
+    for key, (value,) in frames.items():
+        if not live.raw(value + ".png"):
+            blocked.append(f"底框换图 {key} 指向的 {value}.png 不在 store（先发 PARADOX Lv200 蓝金框）")
+        reqs.files_present.add(value + ".png")
 
     # -- UI 字符串 --------------------------------------------------------------
     ui_live = live.flat(UI_LOGICAL)
@@ -1031,7 +1068,8 @@ def build_e2(live: G.Live, overlay: Overlay | None = None) -> dict:
     problems += reward_problems
 
     # -- 客户端暂存 ---------------------------------------------------------------
-    for logical, upsert in ((ITEM_LOGICAL, item_upsert), (CAS_LOGICAL, cas), (UI_LOGICAL, ui_upsert)):
+    cas_upsert = {**(cas if awakening_cas else {}), **frames}
+    for logical, upsert in ((ITEM_LOGICAL, item_upsert), (CAS_LOGICAL, cas_upsert), (UI_LOGICAL, ui_upsert)):
         raw = live.raw(logical)
         if raw is None:
             problems.append(f"store 里没有 {logical}")
@@ -1132,7 +1170,9 @@ def build_e2(live: G.Live, overlay: Overlay | None = None) -> dict:
 
     out["publish"] = [lg for lg in (ITEM_LOGICAL, REWARD_LOGICAL, CAS_LOGICAL, UI_LOGICAL) if lg in out["tables"]]
     out["report"] = {"new_items": sorted(rows), "repointed": repointed, "repoint_deferred": deferred,
-                     "cas_keys": len(cas), "ui_keys": sorted(ui_upsert), "rarity_overrides": len(want_rarity),
+                     "capabilities": {key: RARITY_FRAME_CAP for key in frames},
+                     "cas_keys": len(cas) if awakening_cas else 0, "rarity_frame_keys": sorted(frames),
+                     "ui_keys": sorted(ui_upsert), "rarity_overrides": len(want_rarity),
                      "reward_row": f"[{REWARD_GROUP}][{REWARD_INDEX}] = {reward_text}"}
     return out
 
@@ -1140,6 +1180,31 @@ def build_e2(live: G.Live, overlay: Overlay | None = None) -> dict:
 # ---------------------------------------------------------------------------
 # 边 E3：五重商店
 # ---------------------------------------------------------------------------
+
+def shop_frame_fixes(live_shop: dict, items: dict) -> tuple:
+    """SHOP_FRAME_FIXES 的目标行（只改 c13，其余列逐格 = live）-> ({键: 行}, problems)。
+
+    奖励道具必须对得上、live c13 只能是旧值或目标值（别的值 = 有人改过，拒绝），目标值须与道具表 c17 一致
+    （商店缩略图底框与背包里同一道具的底框相同）。"""
+    rows: dict = {}
+    problems: list = []
+    for key, (old, new, reward) in SHOP_FRAME_FIXES.items():
+        row = live_shop.get(key)
+        if not row or len(row) != 50 or row[33:34] != [reward]:
+            problems.append(f"五重商店 {key} 不是奖励 {reward} 的 50 列行: {(row or [])[6:7]} c33={(row or [])[33:34]}")
+            continue
+        if row[SHOP_FRAME_COL] not in (old, new):
+            problems.append(f"五重商店 {key} c{SHOP_FRAME_COL}={row[SHOP_FRAME_COL]} 漂移（期望 {old} 或 {new}）")
+            continue
+        item = items.get(reward) or []
+        if item[ITEM_RARITY_COL:ITEM_RARITY_COL + 1] != [new]:
+            problems.append(f"道具 {reward} c{ITEM_RARITY_COL}={item[ITEM_RARITY_COL:ITEM_RARITY_COL + 1]}，"
+                            f"与商店底框目标 {new} 不一致")
+        want = list(row)
+        want[SHOP_FRAME_COL] = new
+        rows[key] = want
+    return rows, problems
+
 
 def build_e3(live: G.Live, overlay: Overlay | None = None, *, stage_node_c9: bool = False,
              drop_live: bool | None = None) -> dict:
@@ -1173,9 +1238,12 @@ def build_e3(live: G.Live, overlay: Overlay | None = None, *, stage_node_c9: boo
         problems.append(f"服务端 {SERVER_SHOP} 缺分类 {G.SHOP_CATEGORY}")
         live_shop_server = {}
     problems += G.shop_occupancy_problems(live_shop, live_shop_server)
+    frame_rows, frame_problems = shop_frame_fixes(live_shop, live.flat(ITEM_LOGICAL))
+    problems += frame_problems
     shop_raw = live.raw(SHOP_LOGICAL)
-    if shop_raw is not None and rows:
-        staged, changed, deleted = G.repack(shop_raw, {k: core.write_csv_lines([v]) for k, v in rows.items()})
+    upsert = {**rows, **frame_rows} if rows else {}
+    if shop_raw is not None and upsert:
+        staged, changed, deleted = G.repack(shop_raw, {k: core.write_csv_lines([v]) for k, v in upsert.items()})
         if changed:
             out["tables"][SHOP_LOGICAL] = (staged, changed, deleted)
 
@@ -1207,8 +1275,80 @@ def build_e3(live: G.Live, overlay: Overlay | None = None, *, stage_node_c9: boo
     problems += server_problems
     out["server"] = staged_server
     out["publish"] = [lg for lg in (SHOP_LOGICAL, NODE_LOGICAL) if lg in out["tables"]]
-    out["report"] = {"shop": {k: {"order": v[9], "costs": v[17:21], "reward": v[33]} for k, v in rows.items()},
+    out["report"] = {"shop": {k: {"order": v[9], "costs": v[17:25], "buy_max": v[28], "max_frequency": v[29],
+                                  "reward": v[33]} for k, v in rows.items()},
+                     "server_stock": {k: v["stock"] for k, v in server_entries.items()},
+                     "frame_fixes": {k: f"c{SHOP_FRAME_COL} {live_shop[k][SHOP_FRAME_COL]} -> {v[SHOP_FRAME_COL]}"
+                                     for k, v in frame_rows.items()},
                      "stage_node_c9": stage_node_c9, "five_boss_drop_live": drop_live}
+    return out
+
+
+# ---------------------------------------------------------------------------
+# 边 E4：作者 0928 晚修订（E1/E2/E3 在 live 上重算的差集 + 武器扭蛋说明）
+# ---------------------------------------------------------------------------
+
+def merge_edges(name: str, parts: Iterable[dict]) -> dict:
+    """把几条边的暂存合成一条（同一文件只许一条边改，撞了进 problems）。requires 取并集，report 按原边名分开。"""
+    out = _edge(name)
+    reqs = out["requires"]
+    for part in parts:
+        for key in ("problems", "blocked", "warnings"):
+            out[key] += [f"{part['edge']}: {x}" for x in part[key]]
+        for section in ("tables", "files", "server"):
+            clash = sorted(set(out[section]) & set(part[section]))
+            if clash:
+                out["problems"].append(f"{part['edge']} 与前面的边改了同一文件: {clash}")
+            out[section].update(part[section])
+        theirs = part["requires"]
+        reqs.sha256.update(theirs.sha256)
+        reqs.atlas_names |= theirs.atlas_names
+        reqs.files_present |= theirs.files_present
+        for logical, keys in theirs.table_keys.items():
+            reqs.table_keys.setdefault(logical, set()).update(keys)
+        reqs.conditional |= theirs.conditional
+        out["publish"] += [p for p in part["publish"] if p not in out["publish"]]
+        out["report"][part["edge"]] = part["report"]
+    return out
+
+
+def build_e4(live: G.Live, art_dir: Path = ART_DIR, *, drop_live: bool | None = None,
+             approval_path: Path | None = None, gacha: dict | None = None) -> dict:
+    """作者 0928 晚的修订合成一条边：禁忌星铁紫灰图回退（E1 的图集与 c3）、底框换图键与「悖论武器」文案（E2）、
+    034 改价限购与凭证 002 彩虹框（E3）、武器扭蛋说明里的「悖论武器」（wf_weapon_gacha 的注意事项正文）。
+
+    三条旧边都按 live 重算（已上线的内容自然是空差），所以 E4 = 当前源码与 live 的全部差异；任何一条旧边若还有
+    本次修订以外的差异，也会一并进来——报告里按原边名列出，发布前核对。例外：30 条 ``awakening_material_*``
+    （E2a 起就等 equipment-awakening-material 补丁另发）不进 E4，只在 warnings 里报。``gacha`` = 已算好的 ``G.build`` 结果（测试注入）。"""
+    parts = [build_e1(live, art_dir, approval_path), build_e2(live, awakening_cas=False),
+             build_e3(live, drop_live=drop_live)]
+    out = merge_edges("E4", parts)
+    pending = sorted(k for k in cas_rows() if k not in live.flat(CAS_LOGICAL))
+    if pending:
+        out["warnings"].append(f"{len(pending)} 条 {CAS_PREFIX}* 不在本边（等客户端补丁 equipment-awakening-material 就绪后另发）")
+    try:
+        gacha = gacha if gacha is not None else G.build(live, drop_live=drop_live)
+    except (OSError, ValueError, KeyError) as exc:     # 官方 1.4.0 档缺失等：扭蛋说明算不出来就拒绝整条边
+        out["problems"].append(f"武器扭蛋构建失败: {exc!r}")
+        return out
+    out["problems"] += [f"武器扭蛋: {p}" for p in gacha["problems"]]
+    payload = gacha["files"][G.RICH_TEXT_BODY_LOGICAL]
+    current = live.raw(G.RICH_TEXT_BODY_LOGICAL)
+    if current is None:
+        out["problems"].append(f"store 里没有 {G.RICH_TEXT_BODY_LOGICAL}（武器扭蛋未上线，E4 只改正文不新建）")
+    elif G.inflate_raw(current) != G.inflate_raw(payload):
+        out["files"][G.RICH_TEXT_BODY_LOGICAL] = {"root": "upload", "logical": G.RICH_TEXT_BODY_LOGICAL,
+                                                  "payload": payload, "live_sha256": G.sha256(current)}
+        out["publish"].append(G.RICH_TEXT_BODY_LOGICAL)
+    # 武器扭蛋自己的五重商店目标行与 E3 同源：两边算出来必须逐行相同，否则两个生成器会互相改回
+    e3_shop = out["tables"].get(SHOP_LOGICAL)
+    staged_shop = flat_rows(e3_shop[0]) if e3_shop is not None else live.flat(SHOP_LOGICAL)
+    for key, row in gacha["rows"][SHOP_LOGICAL].items():     # 扭蛋暂缓 032–034 时为空
+        if staged_shop.get(key) != row:
+            out["problems"].append(f"五重商店 {key}: E3 与 wf_weapon_gacha 的目标行不一致（两个生成器会互相改回）")
+    out["report"]["gacha_note"] = {"changed": G.RICH_TEXT_BODY_LOGICAL in out["files"],
+                                   "paradox_lines": [line.strip() for line in gacha["html"].splitlines()
+                                                     if G.PARADOX_CLASS in line or "PARADOX" in line]}
     return out
 
 
@@ -1313,6 +1453,10 @@ def main(argv: list | None = None) -> int:
     e3.add_argument("--stage-node-c9", action="store_true", help="五重线同意后才加：stage_node[1][99] c9 换王币")
     e3.add_argument("--drop-live", action="store_true",
                     help="已核实五重掉落发王币（不传则检测 src/、out/multi/five-boss；未上线 = blocked）")
+    e4 = sub.add_parser("stage-e4", help="边 E4：作者 0928 晚修订（星铁紫灰图、底框键、悖论文案、034 改价限购、凭证彩框、扭蛋说明）")
+    e4.add_argument("workdir", type=Path)
+    e4.add_argument("--art-dir", type=Path, default=ART_DIR)
+    e4.add_argument("--drop-live", action="store_true", help="同 stage-e3")
     args = parser.parse_args(argv)
 
     if args.command == "approve":
@@ -1325,14 +1469,17 @@ def main(argv: list | None = None) -> int:
         result = {"store": str(live.store),
                   "E1": summarize(build_e1(live, args.art_dir)),
                   "E2": summarize(build_e2(live)),
-                  "E3": summarize(build_e3(live, drop_live=drop_live))}
+                  "E3": summarize(build_e3(live, drop_live=drop_live)),
+                  "E4": summarize(build_e4(live, args.art_dir, drop_live=drop_live))}
         print(json.dumps(result, ensure_ascii=False, indent=1, default=str))
-        return 0 if not any(result[e]["problems"] for e in ("E1", "E2", "E3")) else 2
+        return 0 if not any(result[e]["problems"] for e in ("E1", "E2", "E3", "E4")) else 2
     overlay = Overlay(getattr(args, "after", []) or [])
     if args.command == "stage-e1":
         out = build_e1(live, args.art_dir)
     elif args.command == "stage-e2":
         out = build_e2(live, overlay)
+    elif args.command == "stage-e4":
+        out = build_e4(live, args.art_dir, drop_live=drop_live)
     else:
         out = build_e3(live, overlay, stage_node_c9=args.stage_node_c9, drop_live=drop_live)
     result = write_stage(args.workdir, live, out, overlay)

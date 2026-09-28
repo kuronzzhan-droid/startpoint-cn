@@ -185,8 +185,12 @@ class ClientRowTests(unittest.TestCase):
         html = W.inflate_raw(OUT["files"][W.RICH_TEXT_BODY_LOGICAL])
         self.assertEqual(OUT["html"], html)
         for needle in ("武器扭蛋券", "五重决战", "★5武器总出现概率为15%", "0.3%", "死亡使者·终式概率UP",
-                       "PARADOX", "0%", "第10次必定获得★4以上", "250点", "诅咒武器", "突破", "兑换点数不会丢失"):
+                       "悖论武器登记于本扭蛋但出现概率为0%", "第10次必定获得★4以上", "250点", "诅咒武器", "突破",
+                       "兑换点数不会丢失"):
             self.assertIn(needle, html)
+        # 作者 0928「除了武器名字，其他地方都不要英文的，写悖论」：说明正文不写 PARADOX
+        self.assertNotIn("PARADOX", html)
+        self.assertEqual("悖论武器", W.PARADOX_CLASS)
 
     def test_ticket_rows_and_icons(self):
         atlas = LIVE.atlas_names()
@@ -200,7 +204,8 @@ class ClientRowTests(unittest.TestCase):
             self.assertEqual(("2000-01-01 00:00:00", "2199-12-31 23:59:59"), (row[19], row[20]))
 
     def test_shop_rows_prices_and_deletions(self):
-        """武器觉醒与新掉落设计 §5.4：032=王币×1、033=王币×10、034=王币×500→禁忌星铁；c9 6/5/4。"""
+        """武器觉醒与新掉落设计 §5.4：032=王币×1、033=王币×10；034=王币×500+五王心核×5+深渊觉醒核×10→禁忌星铁，
+        每人限购 60（作者 0928 晚）；c9 6/5/4。"""
         self.assertEqual(tuple(str(k) for k in range(990099003, 990099032)), W.DELETED_SHOP_KEYS)
         self.assertEqual(29, len(W.DELETED_SHOP_KEYS))
         self.assertEqual({W.SHOP_LOGICAL: W.DELETED_SHOP_KEYS}, OUT["flat_delete"])
@@ -210,14 +215,21 @@ class ClientRowTests(unittest.TestCase):
         once, ten, steel = (rows[k] for k in SHOP_KEYS)
         self.assertEqual(["10000310", "1", "(None)", "", "(None)", "", "(None)", ""], once[17:25])
         self.assertEqual(["10000310", "10", "(None)", "", "(None)", "", "(None)", ""], ten[17:25])
-        self.assertEqual(["10000310", "500", "(None)", "", "(None)", "", "(None)", ""], steel[17:25])
-        for row, reward, order in ((once, "999019", "6"), (ten, "999020", "5"), (steel, "10000311", "4")):
+        self.assertEqual(["10000310", "500", "10000147", "5", "2370100", "10", "(None)", ""], steel[17:25])
+        self.assertEqual((10000147, 2370100), (W.FIVE_KING_CORE_ID, W.ABYSS_CORE_ID))
+        for row, reward, order, limit in ((once, "999019", "6", None), (ten, "999020", "5", None),
+                                          (steel, "10000311", "4", "60")):
             self.assertEqual(("99", order, "5", "0", reward, "1"), (row[0], row[9], row[13], row[32], row[33], row[34]))
-            self.assertEqual(("2000-01-01 00:00:00", "2099-12-31 23:59:59", "1", "99"), tuple(row[25:29]))
-            self.assertEqual(("(None)", "(None)", "(None)"), tuple(row[29:32]))
+            # c28 单次上限 = min(99, 限购)、c29 max_frequency = 限购（先例 990099001：5/5）
+            self.assertEqual(("2000-01-01 00:00:00", "2099-12-31 23:59:59", "1", limit or "99"), tuple(row[25:29]))
+            self.assertEqual((limit or "(None)", "(None)", "(None)"), tuple(row[29:32]))
             self.assertLessEqual(len(row[10]), 60)
             self.assertNotIn(",", row[10])
+            self.assertNotIn("PARADOX", row[10])
             self.assertIn("深界王币", row[10])
+        self.assertIn("五王心核", steel[10])
+        self.assertIn("深渊觉醒核", steel[10])
+        self.assertIn("悖论武器", steel[10])
         self.assertEqual(("禁忌星铁", "item/materials/mod/cursed/forbidden_star_steel"), (steel[6], steel[12]))
         self.assertEqual(("item/spends/tickets/ticket_equipment_001", "item/spends/tickets/ticket_equipment_002"),
                          (once[12], ten[12]))
@@ -230,10 +242,12 @@ class ClientRowTests(unittest.TestCase):
                           "availableFrom": "2000-01-01 00:00:00", "availableUntil": "2099-12-31 23:59:59",
                           "stock": 9999}, server["990099033"])
         self.assertEqual([{"id": 10000310, "amount": 1}], server["990099032"]["costs"])
-        self.assertEqual({"costs": [{"id": 10000310, "amount": 500}],
+        self.assertEqual({"costs": [{"id": 10000310, "amount": 500}, {"id": 10000147, "amount": 5},
+                                    {"id": 2370100, "amount": 10}],
                           "rewards": [{"type": 0, "id": 10000311, "count": 1}],
                           "availableFrom": "2000-01-01 00:00:00", "availableUntil": "2099-12-31 23:59:59",
-                          "stock": 9999}, server["990099034"])
+                          "stock": 60}, server["990099034"])
+        self.assertEqual((None, None, 60), tuple(p.limit for p in W.shop_products()))
         self.assertEqual({k: 99 for k in SHOP_KEYS}, OUT["shop_target"]["map"])
         shop = OUT["server"][W.SERVER_SHOP]
         self.assertEqual(("99",), shop.path)
@@ -241,7 +255,7 @@ class ClientRowTests(unittest.TestCase):
         self.assertEqual(W.DELETED_SHOP_KEYS, OUT["server"][W.SERVER_SHOP_MAP].delete)
 
     def test_old_prices_are_never_written_back(self):
-        """暂缓时不碰 032–034；上架时只写新价。无论哪种，暂存里 032–034 都不出现结晶/图纸成本。"""
+        """暂缓时不碰 032–034；上架时只写新价。无论哪种，暂存里 032–034 都不出现结晶/图纸成本（旧价），且都收王币。"""
         shop = OUT["server"][W.SERVER_SHOP]
         if OUT["report"]["shop_deferred"]:
             self.assertEqual({}, OUT["rows"][W.SHOP_LOGICAL])
@@ -256,13 +270,16 @@ class ClientRowTests(unittest.TestCase):
             staged = json.loads(PAYLOADS["server"][W.SERVER_SHOP][0].decode("utf-8"))["99"]
             for key in SHOP_KEYS:
                 if key in staged:
-                    self.assertEqual({10000310}, {c["id"] for c in staged[key]["costs"]}, key)
+                    ids = {c["id"] for c in staged[key]["costs"]}
+                    self.assertIn(10000310, ids, key)
+                    self.assertFalse(ids & {10000144, 10000145}, key)
         if W.SHOP_LOGICAL in PAYLOADS["tables"]:
             staged = codec.unpack(PAYLOADS["tables"][W.SHOP_LOGICAL][0])
             for key in SHOP_KEYS:
                 if key in staged:
                     cells = W.core.read_csv_lines(zlib.decompress(staged[key]).decode("utf-8"))[0]
-                    self.assertEqual(("10000310", "(None)"), (cells[17], cells[19]), key)
+                    self.assertEqual("10000310", cells[17], key)
+                    self.assertFalse({"10000144", "10000145"} & set(cells[17:25:2]), key)
 
 
 class ReadyLive(W.Live):
@@ -285,12 +302,12 @@ class ReadyLive(W.Live):
 class ShopReadinessTests(unittest.TestCase):
     def test_prerequisites(self):
         waiting = W.shop_prerequisites({}, lambda _: False, drop_live=True)
-        self.assertEqual(5, len(waiting))          # 王币、禁忌星铁、两张券各 1 条 + 商品图 1 条
-        self.assertTrue(any("10000310" in w for w in waiting))
-        self.assertTrue(any("10000311" in w for w in waiting))
+        self.assertEqual(7, len(waiting))          # 王币、五王心核、深渊觉醒核、禁忌星铁、两张券各 1 条 + 商品图 1 条
+        for item_id in ("10000310", "10000311", "10000147", "2370100"):
+            self.assertTrue(any(item_id in w for w in waiting), item_id)
         self.assertTrue(any("forbidden_star_steel.png" in w for w in waiting))
-        self.assertEqual(6, len(W.shop_prerequisites({}, lambda _: False, drop_live=False)))
-        items = {"10000310": [], "10000311": [], "999019": [], "999020": []}
+        self.assertEqual(8, len(W.shop_prerequisites({}, lambda _: False, drop_live=False)))
+        items = {"10000310": [], "10000311": [], "10000147": [], "2370100": [], "999019": [], "999020": []}
         has_thumb = lambda logical: logical == W.STAR_STEEL_THUMB + ".png"  # noqa: E731
         self.assertEqual([], W.shop_prerequisites(items, has_thumb, drop_live=True))
         # 设计 §7 第 7 步：道具行与图都上线了，五重掉落没发王币也不上架（否则券不收结晶、王币无来源）
@@ -316,6 +333,14 @@ class ShopReadinessTests(unittest.TestCase):
         _, _, problems = W.shop_targets(template)
         self.assertEqual([], problems)
         self.assertTrue(W.shop_targets(template[:49])[2])
+        from dataclasses import replace
+        from unittest import mock
+        bad = (replace(W.STAR_STEEL_PRODUCT, shop_description="可代替本体突破诅咒武器与PARADOX。"),      # 英文名只许在武器名里
+               replace(W.STAR_STEEL_PRODUCT, costs=W.STAR_STEEL_PRODUCT.costs + ((10000145, 1), (10000144, 1))),
+               replace(W.STAR_STEEL_PRODUCT, limit=0))
+        for product in bad:
+            with self.subTest(product=product), mock.patch.object(W, "STAR_STEEL_PRODUCT", product):
+                self.assertTrue(W.shop_targets(template)[2])
 
     def test_ready_live_stages_new_prices_only_on_owned_keys(self):
         live = ReadyLive()
@@ -327,22 +352,39 @@ class ShopReadinessTests(unittest.TestCase):
         self.assertEqual({k: 99 for k in SHOP_KEYS}, out["server"][W.SERVER_SHOP_MAP].upsert)
         payloads = W.stage_payloads(live, out, art_dir=Path(EMPTY_ART.name))
         self.assertEqual([], payloads["problems"])
-        staged, changed, deleted = payloads["tables"][W.SHOP_LOGICAL]
-        self.assertEqual([], deleted)
-        self.assertEqual(set(SHOP_KEYS), set(changed))
-        rows = codec.unpack(staged)
+        # live 已上线过某一版价格时只暂存差异（幂等）：改动键 ⊆ 本池三键，改后三键逐格等于目标行
         old = codec.unpack(LIVE.raw(W.SHOP_LOGICAL))
-        self.assertEqual(list(old), [k for k in rows if k in old])
-        for key in old:
-            if key not in changed:
-                self.assertEqual(old[key], rows[key])
-        text, added, deleted, updated = payloads["server"][W.SERVER_SHOP]
-        self.assertEqual((["990099034"], []), (added, deleted))
-        self.assertEqual({"990099032", "990099033"}, set(updated))
-        server = json.loads(text.decode("utf-8"))["99"]
-        self.assertEqual([{"id": 10000310, "amount": 500}], server["990099034"]["costs"])
+        if W.SHOP_LOGICAL in payloads["tables"]:
+            staged, changed, deleted = payloads["tables"][W.SHOP_LOGICAL]
+            self.assertEqual([], deleted)
+            self.assertLessEqual(set(changed), set(SHOP_KEYS))
+            rows = codec.unpack(staged)
+            self.assertEqual(list(old), [k for k in rows if k in old])
+            for key in old:
+                if key not in changed:
+                    self.assertEqual(old[key], rows[key])
+        else:
+            rows = old
+        for key in SHOP_KEYS:
+            cells = W.core.read_csv_lines(zlib.decompress(rows[key]).decode("utf-8"))[0]
+            self.assertEqual(out["shop_target"]["rows"][key], cells, key)
+        if W.SERVER_SHOP in payloads["server"]:
+            text, added, deleted, updated = payloads["server"][W.SERVER_SHOP]
+            self.assertLessEqual(set(added) | set(updated), set(SHOP_KEYS))
+            self.assertEqual([], [d for d in deleted if d not in W.DELETED_SHOP_KEYS])
+            server = json.loads(text.decode("utf-8"))["99"]
+        else:
+            server = LIVE.server_json(W.SERVER_SHOP)["99"]
+        self.assertEqual({k: out["shop_target"]["server"][k] for k in SHOP_KEYS}, {k: server[k] for k in SHOP_KEYS})
+        self.assertEqual([{"id": 10000310, "amount": 500}, {"id": 10000147, "amount": 5}, {"id": 2370100, "amount": 10}],
+                         server["990099034"]["costs"])
+        self.assertEqual(60, server["990099034"]["stock"])
         self.assertEqual({"990099001", "990099002"} | set(SHOP_KEYS), set(server))
-        self.assertEqual(["990099034"], payloads["server"][W.SERVER_SHOP_MAP][1])
+        if W.SERVER_SHOP_MAP in payloads["server"]:
+            shop_map = json.loads(payloads["server"][W.SERVER_SHOP_MAP][0])
+        else:
+            shop_map = LIVE.server_json(W.SERVER_SHOP_MAP)
+        self.assertEqual({k: 99 for k in SHOP_KEYS}, {k: shop_map[k] for k in SHOP_KEYS})
 
 
 class StagedLiveTests(unittest.TestCase):

@@ -88,6 +88,9 @@ ICON200 = "item/equipment/mod/paradox/paradox_lv200"
 FRAME_BLUEGOLD = "item/equipment/mod/paradox/paradox_frame_bluegold"
 PARTY_FRAME_BLUEGOLD = "item/equipment/mod/paradox/paradox_party_frame_bluegold"
 NAME120 = f"{NAME}·终式"
+#: 类别称呼（作者 0928「武器PARADOX归类为悖论武器，除了武器名字，其他地方都不要英文的，写悖论」）：英文只留在
+#: 武器名 NAME / 强化名 NAME120（魂珠名「<武器名>魂珠」同属名字），其余玩家可见文案写它；build 里有门禁。
+CLASS_NAME = "悖论武器"
 #: 面板上 423 只显示 battle-rules 的通用文字「限制技能槽增加」，作者原话写进强化说明（≤54 字）。
 ENH_DESCRIPTION = "强化至120级进入终式：数值全面提升并解放诅咒，除自身外的角色无法获得能力和装备的技能槽增加效果。"
 DSL_DIR = "battle/action/skill/action/ability_skill/paradox"
@@ -181,10 +184,10 @@ AWAKEN_ICON_DIR = Path(__file__).resolve().parent / "assets/weapon-awaken/icons"
 #: 否则沿用 live 行现有的 c3/c4（live 无该行时沿用模板五重材料行的），连带不出该件的 c3 图，并记进输出的 icons_deferred。
 MATERIAL_ATLAS_MAP = "item_icon/sprite_sheet.atlas.amf3.deflate"   # 与 wf_weapon_awaken.ATLAS_MAP 同一逻辑路径
 MATERIALS = (
-    (SHARD, "10000145", "矛盾结晶", "光与影在同一晶面上互相否定而凝成的结晶。用于将PARADOX强化至121级以上。",
+    (SHARD, "10000145", "矛盾结晶", f"光与影在同一晶面上互相否定而凝成的结晶。用于将{CLASS_NAME}强化至121级以上。",
      "item/materials/mod/paradox/contradiction_crystal_v2", AWAKEN_ICON_DIR / "contradiction_crystal.png",
      "item_icon/materials/mod/paradox/contradiction_crystal"),
-    (PARADOX_CORE, "10000147", "悖论之核", "首尾相接、永无终点的悖论之环的核心。用于突破PARADOX的强化上限。",
+    (PARADOX_CORE, "10000147", "悖论之核", f"首尾相接、永无终点的悖论之环的核心。用于突破{CLASS_NAME}的强化上限。",
      "item/materials/mod/paradox/paradox_core_v2", AWAKEN_ICON_DIR / "paradox_core.png",
      "item_icon/materials/mod/paradox/paradox_core"),
 )
@@ -565,6 +568,19 @@ def override_text_problems(texts: dict[str, str], equipment_row: list[str]) -> l
     return probs
 
 
+#: 允许出现英文武器名的格：(表, 列) = 装备名 c1、强化名 c2、魂珠名 c2（「<武器名>魂珠」）。
+NAME_CELLS = frozenset({(EQUIPMENT, 1), (ENH, 2), (ITEM, 2)})
+
+
+def english_name_problems(flat: dict[str, dict[str, list[list[str]]]]) -> list[str]:
+    """作者 0928「除了武器名字，其他地方都不要英文的，写悖论」：本生成器产出的格里，英文武器名 NAME 只许出现在
+    NAME_CELLS（名字格），说明 / 覆盖文案 / 标签 / 固有状态名等其余格一律写 CLASS_NAME。逻辑路径与 string_id 是小写
+    paradox，不受影响。"""
+    return [f"{logical.rsplit('/', 1)[-1]}[{key}] c{col}: 名字以外写了英文「{NAME}」，应写「{CLASS_NAME}」：{cell[:40]}"
+            for logical, rows_by_key in flat.items() for key, rows in rows_by_key.items() for row in rows
+            for col, cell in enumerate(row) if NAME in cell and (logical, col) not in NAME_CELLS]
+
+
 def retag(row: list[str], tag: str | None) -> list[str]:
     """c5 去掉所有 tag_paradox_*，再按名单补上本角色的标签（保留其它标签与顺序）。"""
     out = list(row)
@@ -691,7 +707,7 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
     problems += material_problems
 
     # 强化：c0 = 200；名/图/描述/框仍在 120 级切换（200 级图标与蓝金框走下面的外观两键）；强化 status 加 200 键；
-    # 商店 10 阶挂诅咒武器类目 6：1–6 阶五重材料、7–10 阶新材料
+    # 商店 10 阶挂诅咒武器类目 6：1–6 阶五重材料、7–10 阶新材料（作者 0928「悖论武器不单独开强化商店」「强化正常有」）
     W._require(len(ENH_DESCRIPTION) <= W.DESC_LIMITS["enhancement"] and "," not in ENH_DESCRIPTION, "强化说明超长或含逗号")
     row = W._template(read, ENH, "5900101", 9)
     row[0:9] = [str(MAX_LEVEL), str(FINAL_LEVEL), NAME120, str(FINAL_LEVEL), ICON120, str(FINAL_LEVEL), ENH_DESCRIPTION,
@@ -786,6 +802,8 @@ def build(read: W.LiveReader, *, allow_existing: bool = False,
         if cid in designated or any(t.startswith(TAG_PREFIX) for t in row[TAG_COLUMN].split(",")):
             flat[CHARACTER][cid] = [retag(row, designated.get(cid))]
     delete = {CHARACTER_TAG: sorted(k for k in live_tags if k.startswith(TAG_PREFIX) and k not in flat[CHARACTER_TAG])}
+
+    problems += english_name_problems(flat)
 
     dsl = {hits_program(n, final): hits_dsl(hits_segments(n, final)) for n in (0, *TIERS) for final in (False, True)}
     dsl.update({echo_program(code): echo_tree(code) for _, code, _ in ECHOES})

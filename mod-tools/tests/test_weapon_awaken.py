@@ -183,7 +183,7 @@ class ContractTests(unittest.TestCase):
             G.core.write_csv_lines([rows["10000310"]]))
         self.assertEqual(
             "mod_forbidden_star_steel,10000311,禁忌星铁,item/materials/mod/cursed/forbidden_star_steel,"
-            "item_icon/materials/mod/cursed/forbidden_star_steel,只回应诅咒与悖论之力的星铁。可代替本体突破诅咒武器与PARADOX。"
+            "item_icon/materials/mod/cursed/forbidden_star_steel,只回应诅咒与悖论之力的星铁。可代替本体突破诅咒武器与悖论武器。"
             ",1,,,,,,,,2,(None),50,5,9999,2000-01-01 00:00:00,(None),false,",
             G.core.write_csv_lines([rows["10000311"]]))
         for row in rows.values():
@@ -227,7 +227,8 @@ class ContractTests(unittest.TestCase):
             self.assertIs(icon.rainbow, manifest[icon.item_id].get("rainbow"), icon.stem)   # 彩虹口径两边一致
         # 彩虹口径分叉（一边按彩虹豁免、另一边按全口径）必须报红；manifest 没写 rainbow 的旧合同不报
         steel = A.ICON_BY_ITEM["10000311"]
-        flipped = dict(manifest["10000311"], rainbow=False)
+        self.assertFalse(steel.rainbow)             # 作者 0928 撤回彩虹重画：禁忌星铁回到紫灰锭，全口径门禁
+        flipped = dict(manifest["10000311"], rainbow=True)
         self.assertTrue(any("rainbow" in p for p in A.manifest_problems(steel, flipped)))
         legacy = {k: v for k, v in manifest["10000311"].items() if k != "rainbow"}
         self.assertEqual([], A.manifest_problems(steel, legacy))
@@ -304,9 +305,9 @@ class IconGateTests(unittest.TestCase):
         rainbow = good_icon((20, 17))
         for x in range(20):
             rainbow.putpixel((x, 1 + 1), (40 + x * 9, 80, 200 - x * 5, 255))
-        # 彩虹豁免只作用于 rainbow=True 的件：禁忌星铁是 ★5 彩虹锭（作者 0928「禁忌星铁要彩虹」），只有它
-        self.assertTrue(A.ICON_BY_ITEM["10000311"].rainbow)
-        self.assertEqual(["10000311"], [i.item_id for i in A.ICONS if i.rainbow])
+        # 彩虹豁免只作用于 rainbow=True 的件：作者 0928 撤回彩虹重画（「禁忌星铁上版那个紫灰挺好的」），交付件里没有彩虹件
+        self.assertFalse(A.ICON_BY_ITEM["10000311"].rainbow)
+        self.assertEqual([], [i.item_id for i in A.ICONS if i.rainbow])
         steel = A.Icon("x", "x", "item/x", "item_icon/x", 19, True, rainbow=True)
         self.assertFalse(any("色数" in p or "描边前两色" in p for p in self.problems(rainbow, steel)))
         plain = A.Icon("x", "x", "item/x", "item_icon/x", 19, True)
@@ -876,9 +877,12 @@ class EdgeE3Tests(unittest.TestCase):
         if G.SHOP_LOGICAL in E3["tables"]:
             staged, changed, deleted = E3["tables"][G.SHOP_LOGICAL]
             self.assertEqual([], deleted)
-            self.assertLessEqual(set(changed), {"990099032", "990099033", "990099034"})
+            self.assertLessEqual(set(changed), {"990099032", "990099033", "990099034", *A.SHOP_FRAME_FIXES})
             old, new = codec.unpack(LIVE.raw(G.SHOP_LOGICAL)), codec.unpack(staged)
             self.assertTrue(all(old[k] == new[k] for k in old if k not in changed))
+        for key, (_old, want, _reward) in A.SHOP_FRAME_FIXES.items():     # 凭证底框：只动 c13
+            live_row = LIVE.flat(G.SHOP_LOGICAL)[key]
+            self.assertEqual(live_row[:A.SHOP_FRAME_COL] + [want] + live_row[A.SHOP_FRAME_COL + 1:], shop[key])
         server_shop = json.loads(E3["server"][A.SERVER_SHOP][0])["99"] if A.SERVER_SHOP in E3["server"] \
             else LIVE.server_json(A.SERVER_SHOP)["99"]
         self.assertEqual(server, {k: server_shop[k] for k in server})
@@ -1024,6 +1028,188 @@ class StageContractTests(unittest.TestCase):
             self.assertEqual("blocked", A.edge_status(e2))
             self.assertTrue(any("本身是 blocked" in b for b in e2["blocked"]))
 
+
+
+# ---------------------------------------------------------------------------
+# 边 E4：作者 0928 晚修订（紫灰星铁 + 底框换图键 + 悖论文案 + 034 改价限购 + 凭证彩框 + 扭蛋说明）
+# ---------------------------------------------------------------------------
+
+E4_CACHE: dict = {}
+
+
+def e4() -> dict:
+    """真交付件（mod-tools/assets/weapon-awaken）+ 真 approved.json 上的 E4；一个模块只算一次（G.build 读官方档）。"""
+    if "out" not in E4_CACHE:
+        E4_CACHE["gacha"] = G.build(LIVE, drop_live=True)
+        E4_CACHE["out"] = A.build_e4(LIVE, A.ART_DIR, drop_live=True, gacha=E4_CACHE["gacha"])
+    return E4_CACHE["out"]
+
+
+def load_rarity_frame_rules():
+    """client-patch/item-rarity-frame-override/rules.py（补丁线在途；不在本检出时返回 None）。"""
+    import importlib.util
+    path = TOOLS.parent / "client-patch" / "item-rarity-frame-override" / "rules.py"
+    if not path.is_file():
+        return None
+    spec = importlib.util.spec_from_file_location("item_rarity_frame_override_rules_for_test", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class RarityFrameKeyTests(unittest.TestCase):
+    def test_key_is_prefix_plus_displayed_icon_path(self):
+        """补丁按缩略图显示的图标路径拼键：道具 c3 与五重商店 034 的商品图 c12 是同一路径，一键两处。"""
+        self.assertEqual({"rarity_frame_override_item/materials/mod/cursed/forbidden_star_steel":
+                          ["item/equipment/mod/paradox/paradox_frame_bluegold"]}, A.rarity_frame_rows())
+        steel = A.item_rows()[str(A.STAR_STEEL_ID)]
+        self.assertEqual({A.RARITY_FRAME_PREFIX + steel[3]}, set(A.RARITY_FRAME_KEYS))
+        self.assertEqual(G.STAR_STEEL_PRODUCT.icon, steel[3])
+        import wf_paradox_weapon as P
+        self.assertEqual(P.FRAME_BLUEGOLD, A.RARITY_FRAME_BLUEGOLD)      # 与 PARADOX Lv200 同一张蓝金框
+        for key, value in A.RARITY_FRAME_KEYS.items():
+            self.assertNotIn(",", value)
+            self.assertFalse(value.endswith(".png") or key.endswith(".png"))
+
+    def test_key_format_matches_patch_rules(self):
+        rules = load_rarity_frame_rules()
+        if rules is None:
+            self.skipTest("client-patch/item-rarity-frame-override 不在本检出")
+        self.assertEqual(rules.PREFIX, A.RARITY_FRAME_PREFIX)
+        self.assertEqual(rules.CAPABILITY, A.RARITY_FRAME_CAP)
+
+    def test_e2_stages_the_key_and_requires_the_frame_png(self):
+        cas = staged_rows(E2, A.CAS_LOGICAL)
+        for key, row in A.rarity_frame_rows().items():
+            self.assertEqual(row, cas[key])
+        self.assertLessEqual({v + ".png" for v in A.RARITY_FRAME_KEYS.values()}, E2["requires"].files_present)
+        self.assertEqual({k: A.RARITY_FRAME_CAP for k in A.RARITY_FRAME_KEYS}, E2["report"]["capabilities"])
+
+    def test_missing_frame_png_blocks(self):
+        class NoFrame(G.Live):
+            def raw(self, logical, root="upload"):
+                if logical == A.RARITY_FRAME_BLUEGOLD + ".png":
+                    return None
+                return super().raw(logical, root)
+        out = A.build_e2(NoFrame())
+        self.assertTrue(any("底框换图" in b for b in out["blocked"]))
+
+    def test_e2_without_awakening_cas_keeps_only_the_frame_key(self):
+        out = A.build_e2(LIVE, awakening_cas=False)
+        self.assertEqual([], out["problems"])
+        if A.CAS_LOGICAL in out["tables"]:
+            _staged, changed, deleted = out["tables"][A.CAS_LOGICAL]
+            self.assertEqual([], deleted)
+            self.assertLessEqual(set(changed), set(A.RARITY_FRAME_KEYS))
+
+
+class ShopFrameFixTests(unittest.TestCase):
+    def shop(self, c13="4", reward="10000143"):
+        row = list(LIVE.flat(G.SHOP_LOGICAL)["990099002"])
+        row[A.SHOP_FRAME_COL], row[33] = c13, reward
+        return {"990099002": row}
+
+    def items(self, c17="5"):
+        row = list(LIVE.flat(A.ITEM_LOGICAL)["10000143"])
+        row[A.ITEM_RARITY_COL] = c17
+        return {"10000143": row}
+
+    def test_ticket_frame_goes_rainbow_only_c13(self):
+        self.assertEqual({"990099002": ("4", "5", "10000143")}, A.SHOP_FRAME_FIXES)
+        for have in ("4", "5"):
+            with self.subTest(live_c13=have):
+                rows, problems = A.shop_frame_fixes(self.shop(have), self.items())
+                self.assertEqual([], problems)
+                live_row = self.shop(have)["990099002"]
+                want = rows["990099002"]
+                self.assertEqual("5", want[A.SHOP_FRAME_COL])
+                self.assertEqual([i for i, (a, b) in enumerate(zip(live_row, want)) if a != b],
+                                 [] if have == "5" else [A.SHOP_FRAME_COL])
+
+    def test_drift_wrong_reward_and_item_rarity_mismatch_refused(self):
+        self.assertTrue(A.shop_frame_fixes(self.shop("3"), self.items())[1])          # 别人改过 c13
+        self.assertTrue(A.shop_frame_fixes(self.shop(reward="999019"), self.items())[1])
+        self.assertTrue(A.shop_frame_fixes(self.shop(), self.items("4"))[1])          # 道具底框不是彩虹
+        self.assertTrue(A.shop_frame_fixes({}, self.items())[1])
+
+    def test_live_ticket_item_is_rainbow(self):
+        """道具表里的凭证已经是 ★5 彩虹底框（c17=5）；只有商店缩略图 c13 是金框。"""
+        self.assertEqual("5", LIVE.flat(A.ITEM_LOGICAL)["10000143"][A.ITEM_RARITY_COL])
+        self.assertEqual("5", staged_rows(E3, G.SHOP_LOGICAL)["990099002"][A.SHOP_FRAME_COL])
+
+
+class EdgeE4Tests(unittest.TestCase):
+    def test_no_problems_and_only_revision_keys(self):
+        out = e4()
+        self.assertEqual([], out["problems"])
+        self.assertEqual([], out["blocked"])
+        allowed = {A.ITEM_LOGICAL: {"10000311"}, A.CAS_LOGICAL: set(A.RARITY_FRAME_KEYS),
+                   G.SHOP_LOGICAL: {"990099032", "990099033", "990099034", *A.SHOP_FRAME_FIXES}}
+        for logical, (_staged, changed, deleted) in out["tables"].items():
+            self.assertIn(logical, allowed)
+            self.assertLessEqual(set(changed), allowed[logical], logical)
+            self.assertEqual([], deleted)
+        self.assertFalse(any(k.startswith(A.CAS_PREFIX) for k in out["tables"].get(A.CAS_LOGICAL, (b"", [], []))[1]))
+        self.assertLessEqual(set(out["files"]), {A.ATLAS_PNG, A.ATLAS_MAP, G.STAR_STEEL_THUMB + ".png",
+                                                 G.RICH_TEXT_BODY_LOGICAL})
+        self.assertIn(set(out["files"]) & {A.ATLAS_PNG, A.ATLAS_MAP}, (set(), {A.ATLAS_PNG, A.ATLAS_MAP}))
+        self.assertLessEqual(set(out["server"]), {A.SERVER_SHOP})
+
+    def test_staged_values(self):
+        out = e4()
+        items = staged_rows(out, A.ITEM_LOGICAL)
+        self.assertEqual("只回应诅咒与悖论之力的星铁。可代替本体突破诅咒武器与悖论武器。", items["10000311"][5])
+        shop = staged_rows(out, G.SHOP_LOGICAL)
+        steel = shop["990099034"]
+        self.assertEqual(["10000310", "500", "10000147", "5", "2370100", "10", "(None)", ""], steel[17:25])
+        self.assertEqual(("60", "60"), (steel[28], steel[29]))                        # 单次上限 / 每人限购
+        self.assertNotIn("PARADOX", steel[10])
+        self.assertEqual("5", shop["990099002"][A.SHOP_FRAME_COL])
+        cas = staged_rows(out, A.CAS_LOGICAL)
+        for key, row in A.rarity_frame_rows().items():
+            self.assertEqual(row, cas[key])
+        server = json.loads(out["server"][A.SERVER_SHOP][0])["99"] if A.SERVER_SHOP in out["server"] \
+            else LIVE.server_json(A.SERVER_SHOP)["99"]
+        self.assertEqual(60, server["990099034"]["stock"])
+        self.assertEqual([{"id": 10000310, "amount": 500}, {"id": 10000147, "amount": 5}, {"id": 2370100, "amount": 10}],
+                         server["990099034"]["costs"])
+
+    def test_star_steel_art_is_the_approved_purple_grey(self):
+        out = e4()
+        approved = json.loads((A.ART_DIR / A.APPROVAL_NAME).read_text(encoding="utf-8"))["c3_rgba_sha256"]
+        self.assertEqual("11539376bdf9e4194967efb516171c1fed971c372341df080bd51c993396a7d5",
+                         approved["forbidden_star_steel"])
+        self.assertEqual([], out["report"]["E1"]["approval"]["unapproved"])
+        thumb = G.STAR_STEEL_THUMB + ".png"
+        image = A.open_png(out["files"][thumb]["payload"]) if thumb in out["files"] else A.open_png(LIVE.raw(thumb))
+        self.assertEqual(approved["forbidden_star_steel"], A.rgba_sha256(image))
+
+    def test_gacha_note_says_paradox_class(self):
+        out = e4()
+        html = E4_CACHE["gacha"]["html"]
+        self.assertNotIn("PARADOX", html)
+        self.assertIn(f"{G.PARADOX_CLASS}登记于本扭蛋但出现概率为0%", html)
+        if G.RICH_TEXT_BODY_LOGICAL in out["files"]:
+            self.assertEqual(html, G.inflate_raw(out["files"][G.RICH_TEXT_BODY_LOGICAL]["payload"]))
+
+    def test_stage_writes_one_ready_plan(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result = A.write_stage(Path(tmp) / "e4", LIVE, e4())
+            self.assertFalse(result["refused"])
+            self.assertEqual("ready", result["status"])
+            plan = result["plan"]
+            self.assertEqual("E4", plan["edge"])
+            for logical, info in plan["tables"].items():
+                self.assertEqual(G.sha256(LIVE.raw(logical)), info["live_sha256"])
+
+    def test_merge_refuses_two_edges_on_one_file(self):
+        one = A._edge("X")
+        one["tables"][A.ITEM_LOGICAL] = (b"", ["1"], [])
+        two = A._edge("Y")
+        two["tables"][A.ITEM_LOGICAL] = (b"", ["2"], [])
+        merged = A.merge_edges("Z", [one, two])
+        self.assertTrue(any("同一文件" in p for p in merged["problems"]))
+        self.assertEqual({"X": {}, "Y": {}}, merged["report"])
 
 if __name__ == "__main__":
     unittest.main()

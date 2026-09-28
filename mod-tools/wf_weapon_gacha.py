@@ -18,7 +18,8 @@
   - ``master/shop/boss_coin_shop.orderedmap`` 990099032/033（50 列，模板 990099002）与 990099034
     （禁忌星铁），删除诅咒本体 990099003–031（发布时要 ``--allow-key-deletion``）。
     **价格（武器觉醒与新掉落 0928，设计 D:/WF/out/武器觉醒与新掉落-20260928/设计.md §5.4/§5.5）**：
-    032 = 深界王币 ×1、033 = 深界王币 ×10、034 = 深界王币 ×500 → 禁忌星铁 ×1；c9 = 6/5/4。
+    032 = 深界王币 ×1、033 = 深界王币 ×10、034 = 深界王币 ×500 + 五王心核 ×5 + 深渊觉醒核 ×10 → 禁忌星铁 ×1
+    （作者 0928 晚改价，每人限购 60：客户端 c29 max_frequency / c28 单次上限、服务端 stock 同值）；c9 = 6/5/4。
     王币 10000310 / 禁忌星铁 10000311 的道具行与图标由 ``wf_weapon_awaken.py`` 的边 E1/E2 上线；
     它们还没上线、或五重掉落还没发王币（设计 §7 第 7 步；``five_boss_drop_live``，核实后可传 ``--drop-live``）时，
     本构建器**暂缓**这三个商品（既不写回旧价，也不提前写新价），摘要里报出原因。
@@ -98,14 +99,19 @@ ITEM_END = GACHA_END
 KING_COIN_ID = 10000310                   # 深界王币（五重掉落；道具行由 wf_weapon_awaken 边 E2 上线）
 STAR_STEEL_ID = 10000311                  # 禁忌星铁（通用突破材料；同上）
 STAR_STEEL_THUMB = "item/materials/mod/cursed/forbidden_star_steel"   # 禁忌星铁 c3（设计 §5.2/§6.4；边 E1 上线）
+FIVE_KING_CORE_ID = 10000147              # 五王心核（五重材料，已上线）
+ABYSS_CORE_ID = 2370100                   # 深渊觉醒核（深渊连战材料，已上线）
+#: PARADOX 的类别称呼。作者 0928「武器PARADOX归类为悖论武器，除了武器名字，其他地方都不要英文的，写悖论」：
+#: 装备名「PARADOX」、强化名「PARADOX·终式」以外的玩家可见文字一律写「悖论武器」。
+PARADOX_CLASS = "悖论武器"
 #: 五重掉落（设计 §4.3、§7 第 6 步，五重线实现）：源码与编译产物（服务端跑的是 out/）都出现王币 ID 才算上线。
 FIVE_BOSS_DROP_SOURCES = (REPO / "src" / "multi" / "five-boss", REPO / "out" / "multi" / "five-boss")
 SHOP_CATEGORY = "99"
 SHOP_TEMPLATE_KEY = "990099002"
 SHOP_START = "2000-01-01 00:00:00"
 SHOP_END = "2099-12-31 23:59:59"
-SHOP_STOCK = 9999
-SHOP_PER_PURCHASE = "99"                  # c28
+SHOP_STOCK = 9999                         # 服务端 stock：不限购的商品
+SHOP_PER_PURCHASE = "99"                  # c28 buy_max_count：单次购买上限
 SHOP_DESC_LIMIT = 60                      # 官方 boss_coin_shop c10 实测上限
 DELETED_SHOP_KEYS = tuple(str(k) for k in range(990099003, 990099032))   # 诅咒本体 29 键
 
@@ -151,6 +157,9 @@ class ShopProduct:
     shop_description: str
     reward_item_id: int
     frame: str = "5"                # c13
+    #: 每人限购（None = 不限）：客户端 c29 max_frequency、c28 单次上限取 min(99, 限购)、服务端 stock 同值
+    #: （先例：五重商店 990099001 死亡使者 c28 = c29 = 5、服务端 stock 5）
+    limit: int | None = None
 
 
 def ticket_product(ticket: Ticket) -> ShopProduct:
@@ -158,10 +167,13 @@ def ticket_product(ticket: Ticket) -> ShopProduct:
                        ticket.shop_description, ticket.item_id)
 
 
-#: 990099034：500 王币 → 1 禁忌星铁（设计 §5.4）。c12 是禁忌星铁的 c3 独立 PNG（边 E1）。
+#: 990099034：500 王币 + 5 五王心核 + 10 深渊觉醒核 → 1 禁忌星铁，每人限购 60（作者 0928「一个钢要500个币5个五王核心
+#: 10个深渊觉醒核，限购60个」；设计 §5.4 原价 500 王币）。c12 是禁忌星铁的 c3 独立 PNG（边 E1）。
+STAR_STEEL_LIMIT = 60
 STAR_STEEL_PRODUCT = ShopProduct(
-    "990099034", "禁忌星铁", STAR_STEEL_THUMB, "4", ((KING_COIN_ID, 500),),
-    "消耗深界王币兑换禁忌星铁。可代替本体突破诅咒武器与PARADOX（每次突破1个）。", STAR_STEEL_ID)
+    "990099034", "禁忌星铁", STAR_STEEL_THUMB, "4", ((KING_COIN_ID, 500), (FIVE_KING_CORE_ID, 5), (ABYSS_CORE_ID, 10)),
+    f"消耗深界王币、五王心核与深渊觉醒核兑换禁忌星铁。可代替本体突破诅咒武器与{PARADOX_CLASS}（每次突破1个）。",
+    STAR_STEEL_ID, limit=STAR_STEEL_LIMIT)
 
 
 def shop_products() -> tuple:
@@ -590,6 +602,8 @@ def shop_row(product: ShopProduct, template: list) -> list:
     row[25], row[26] = SHOP_START, SHOP_END
     row[27], row[28] = "1", SHOP_PER_PURCHASE
     row[29], row[30], row[31] = "(None)", "(None)", "(None)"
+    if product.limit is not None:                                               # c28 单次上限 / c29 max_frequency
+        row[28], row[29] = str(min(int(SHOP_PER_PURCHASE), product.limit)), str(product.limit)
     row[32], row[33], row[34] = "0", str(product.reward_item_id), "1"          # c32=0 Item
     return row
 
@@ -597,7 +611,8 @@ def shop_row(product: ShopProduct, template: list) -> list:
 def server_shop_entry(product: ShopProduct) -> dict:
     return {"costs": [{"id": i, "amount": a} for i, a in product.costs],
             "rewards": [{"type": 0, "id": product.reward_item_id, "count": 1}],   # ShopItemRewardType 0 = ITEM
-            "availableFrom": SHOP_START, "availableUntil": SHOP_END, "stock": SHOP_STOCK}
+            "availableFrom": SHOP_START, "availableUntil": SHOP_END,
+            "stock": SHOP_STOCK if product.limit is None else product.limit}
 
 
 def shop_targets(template: list) -> tuple:
@@ -613,6 +628,12 @@ def shop_targets(template: list) -> tuple:
         if len(product.shop_description) > SHOP_DESC_LIMIT or "," in product.shop_description \
                 or "\n" in product.shop_description:
             problems.append(f"商店 {product.shop_key} 说明超 {SHOP_DESC_LIMIT} 字或含半角逗号/换行")
+        if "PARADOX" in product.shop_description:
+            problems.append(f"商店 {product.shop_key} 说明写了英文 PARADOX（作者 0928：武器名以外写「{PARADOX_CLASS}」）")
+        if not 1 <= len(product.costs) <= 4:
+            problems.append(f"商店 {product.shop_key} 成本 {len(product.costs)} 项，客户端只有 c17–c24 四格")
+        if product.limit is not None and not 1 <= product.limit <= SHOP_STOCK:
+            problems.append(f"商店 {product.shop_key} 限购 {product.limit} 须在 1–{SHOP_STOCK}")
     orders = [int(p.shop_order) for p in shop_products()]
     if orders != sorted(orders, reverse=True) or len(set(orders)) != len(orders):
         problems.append(f"商店 c9 不是严格倒序: {orders}")
@@ -665,7 +686,7 @@ def rich_text_html(tiers: dict, names: dict, capped: int) -> str:
         f"★5武器总出现概率为{_pct(p5)}，★4武器为{_pct(p4)}，★3武器为{_pct(p3)}。",
         f"{names[DEATHBRINGER]}概率UP，出现概率为{_pct(rates[DEATHBRINGER])}。",
         f"{len(CURSED)}把诅咒武器各为{_pct(cursed_each)}，合计{_pct(cursed_each * len(CURSED))}。",
-        f"{names[PARADOX]}登记于本扭蛋但出现概率为{_pct(rates[PARADOX])}，不会被抽出，且不可兑换。",
+        f"{PARADOX_CLASS}登记于本扭蛋但出现概率为{_pct(rates[PARADOX])}，不会被抽出，且不可兑换。",
         f"其余{len(others)}把★5武器（深渊武器{n_abyss}把、常规★5武器{len(others) - n_abyss}把）"
         f"各{_pct(next(iter(other_each)))}，合计{_pct(sum(rates[r.id] for r in others))}。",
         f"★4武器{len(tiers[4])}把各{_pct(next(iter(four_each)))}；"
