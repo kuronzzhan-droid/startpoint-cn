@@ -191,7 +191,8 @@ class ParadoxTests(unittest.TestCase):
         u = self.out["flat"][P.UNIQUE][P.CURSE_UID][0]
         self.assertEqual(len(u), 15)
         self.assertEqual(u[:5], [f"paradox_curse_{P.CURSE_UID}", "诅咒",
-                                 f"battle/common/unique_condition/{W.ICON_CURSE}", "99999999", "2"])
+                                 "battle/common/unique_condition/paradox_curse", "99999999", "2"])
+        self.assertTrue(P.CURSE_ICON_SRC.is_file())
         # 负对照：上限改回 1，build 必须报出 R3 门禁读不到层数
         from unittest import mock
         original = W.unique_row

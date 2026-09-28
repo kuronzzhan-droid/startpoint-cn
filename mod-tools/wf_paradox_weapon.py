@@ -84,6 +84,9 @@ EQUIPMENT_STATUS_ROWS = {"1": "330,148", "5": "495,221"}
 UNIQUE_BASE = 59200000
 CURSE_UID = str(UNIQUE_BASE + (int(ID) - 5920000) * 10 + 1)       # 59200011「诅咒」
 CURSE_UNIQUE_NAME = "诅咒"
+#: 「诅咒」专属状态图标（48×48，源 assets/paradox/paradox_curse.png → battle/common/unique_condition/paradox_curse.png）
+CURSE_ICON = "paradox_curse"
+CURSE_ICON_SRC = Path(__file__).resolve().parent / "assets/paradox/paradox_curse.png"
 #: R3 规则码：只拦「能力」类回槽（8；连击触发 24、施技触发 40 同样命中），来源不限。
 GAUGE_MASK = W.GAUGE_MASK
 #: 客户端 capability 门禁：R3 的 423 行在未装 equipment-rules 的客户端 = C7050（EA parseAt109 / 魂 parseAt106）。
@@ -264,7 +267,7 @@ def curse_unique_row() -> list[str]:
 
     叠层上限写 2：持续触发 134 按层数读，上限 1 时 Condition.get_accumulatable() 为 false、层数恒 0，
     R3 的 423 行永远不生效（1.4.1067 首发即如此）。每场只刻 1 层，134 limit=1，不会翻倍。"""
-    return W.unique_row(f"paradox_curse_{CURSE_UID}", CURSE_UNIQUE_NAME, W.ICON_CURSE, "99999999", "2", bad=True)
+    return W.unique_row(f"paradox_curse_{CURSE_UID}", CURSE_UNIQUE_NAME, CURSE_ICON, "99999999", "2", bad=True)
 
 
 def unique_ref_problems(table: str, row: list[str], unique_keys: set[str]) -> list[str]:
