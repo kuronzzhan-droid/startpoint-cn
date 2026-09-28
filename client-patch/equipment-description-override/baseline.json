@@ -1,0 +1,32 @@
+{
+  "AbilitySoulAbilityLogic/getDescriptionsWithoutAdditional": {
+    "index": 7492,
+    "sha": "248f080bcd32bba71fd5bced4ba226481a5c488ddc3e3ea18a378278e738e2d6",
+    "header": [
+      2,
+      6,
+      1,
+      2
+    ]
+  },
+  "AbilitySoulAbilityLogic/getDescriptionWithoutAdditional": {
+    "index": 7494,
+    "sha": "9b2f7be7d3ab9ffec203faf774beb0e788a8a5f0d735f09f1aee76fccc2cc249",
+    "header": [
+      3,
+      3,
+      1,
+      2
+    ]
+  },
+  "EquipmentEnhancementAbilityLogic/getAllDescriptionsToMapForDialog": {
+    "index": 7700,
+    "sha": "0439a25f01ada406c317e5dddfa8abd67e94980b37745dc285b7918b9d1bb16e",
+    "header": [
+      6,
+      26,
+      1,
+      2
+    ]
+  }
+}
