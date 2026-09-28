@@ -3,7 +3,9 @@
 
 作者口径（2026-09-27 首轮，0928 修订）：
 - 把表里的武器全部做出来，图标仿官方 20×20 像素风；
-- **未强化（本体，含满破）只有正面数值，而且很弱**（设计值 × BASE_SCALE）；
+- **未强化（本体，含满破）只有正面数值，而且很弱**（满破值 = 设计值 × BASE_SCALE）；
+- **觉醒分级（0928「每个等级也要设计区分数值」，满破锚定）**：本体数值行觉醒 0 = 满破值 × AWAKEN_FLOOR（20%），
+  每觉醒 1 级 +20% 满破值，觉醒 4（满破）不变 ⇒ 预算、强化行、DSL、120 级终值都不动；
 - **强化 1 级起诅咒全额生效**；**强化到 120 级为最终数值**；
 - 强化材料来自五重决战（深界结晶 10000145 / 五王心核 10000147 / 终式武装图纸 10000144）；
 - **数值预算（0928 追加）**：基线 = 死亡使者合计 500% 刃；有诅咒也不能让刃合计超过 1000%，乘区不超过 50%；
@@ -27,7 +29,8 @@
    「输出 -99%」同理用独立乘区 -99%。
 2. 装备词条 = 本体 concat 强化；同 slot 取 learn ≤ 当前等级最高一行 ⇒ 每行独占一个 slot；
    「只在 120 级生效」= learn=max=120 的行；「强化 1 级起全额」= learn=1、max=120、两端同值。
-   本体行随觉醒等级 1→5 在 power1→first_max 线性插值。
+   本体行随觉醒等级 1→5 在 power1→first_max 线性插值（``AbilityPowerValue.resolve``：觉醒 N = p1 + (fm − p1) × N/4；
+   ElapsedTime 等触发阈值同样插值）。
 3. 629 InvokeSkill 在 ability_soul（c67/c68）与强化表（c70/c71）解析器里都有分支；装备词条的 DSL 走
    ``BattleCharacterLogic.resolvePathCollection`` → ``equipment.getCurrentAbility()`` 正式预载。
    string_id 必须写进 custom_ability_string（缺键 C8601）。DSL 不带任何特效路径（杜绝 C8016）。
@@ -114,6 +117,10 @@ FINAL = dict(learn=120, maxlvl=120)
 #: 作者 0928「要的就是强化前非常弱」：本体（含满破）按设计值的 20% 生效，强化 1→119 成长行补回差额，120 级终值不变。
 #: 只缩数值类效果；机制类（技能槽上限 245、连击、贯通、固有状态、629 调用、扣血回血等）保持设计值。
 BASE_SCALE = 0.2
+#: 作者 0928「每个等级也要设计区分数值」（设计 武器觉醒与新掉落-20260928 §3.3，满破锚定 + 等差）：WEAK_KINDS 本体行
+#: power1 = round(first_max × AWAKEN_FLOOR)，first_max（满破）逐字节不变 ⇒ 觉醒 0/1/2/3/4 = 满破的 20/40/60/80/100%。
+#: 满破值 fm 都是 500 的倍数（0.5%），所以五级都是整数或一位小数。机制行（245/461/525/26/226/58/629、已分级的 206）不动。
+AWAKEN_FLOOR = 0.2
 WEAK_KINDS = frozenset({"0", "1", "2", "28", "32", "33", "34", "35", "55", "156", "202", "205", "211", "227", "388", "470",
                         "486", "693", "694", "701", "717", "723"})
 #: 官方 5★ 武器 HP/ATK 成长（照 5020042 哈尔波曼 / 5900101）与强化 status（照官方 120 级武器）。
@@ -375,12 +382,15 @@ def stat(kind: str, target: str, lo: float, hi: float | None = None, **kw) -> tu
     return (kind, given)
 
 
-def condition(kind: str, target: str | None, strength: float | None, frame_count: int | str,
+def condition(kind: str, target: str | None, strength: float | tuple[float, float] | None, frame_count: int | str,
               *, cancelable: bool = True, number: float = 1, **kw) -> tuple:
+    """计时状态；strength 为单值或 (觉醒 0, 满破) 区间。"""
     given: dict[str, Any] = {}
     if target is not None:
         given["target"] = target
-    if strength is not None:
+    if isinstance(strength, tuple):
+        given["strength"] = (pct(strength[0]), pct(strength[1]))
+    elif strength is not None:
         given["strength"] = pct(strength)
     given["frame"] = frame_count if isinstance(frame_count, str) else frames(frame_count)
     if "number" in _CASES["instant_content"][kind]["fields"]:
@@ -752,7 +762,7 @@ TARGET_LABEL = {T_SELF: "自身", T_PARTY: "全队", T_LEADER: "队长", T_SECON
 
 
 def weak(x: float) -> float:
-    """本体实际生效值（设计值 × BASE_SCALE）。"""
+    """本体满破实际生效值（设计值 × BASE_SCALE）；觉醒 0 另乘 AWAKEN_FLOOR，见 :func:`_weaken`。"""
     return round(x * BASE_SCALE, 3)
 
 
@@ -765,18 +775,37 @@ def _topup(total: float, base: float) -> float:
     return round(total - weak(base) - _grow(total, base), 3)
 
 
-_PCT_IN_NOTE = re.compile(r"(?<=[+→])(\d+(?:\.\d+)?)(?=%)")
+#: 说明里的强度写法：「+N%」（单值）或「+N%→M%」（区间）；每条本体数值行的说明恰好一处。
+_STRENGTH_IN_NOTE = re.compile(r"\+(\d+(?:\.\d+)?)%(?:→(\d+(?:\.\d+)?)%)?")
+
+
+def awaken_floor(first_max: str) -> str:
+    """觉醒 0 的存储值：round(满破 × AWAKEN_FLOOR)（设计 §3.3 的取整口径）。"""
+    return str(int(round(int(first_max) * AWAKEN_FLOOR)))
+
+
+def _pct_text(stored: str) -> str:
+    return f"{int(stored) / 1000:g}"
 
 
 def _weaken(eff: Eff) -> Eff:
-    """本体行按 BASE_SCALE 缩放（只缩 WEAK_KINDS 的强度；说明里「+N%」「→N%」同步改写）。"""
+    """本体数值行（WEAK_KINDS 且有强度）：满破 = 设计满值 × BASE_SCALE，觉醒 0 = 满破 × AWAKEN_FLOOR（满破锚定）。
+
+    设计里的区间下限（原 power1）不再使用：觉醒 0→4 = 满破的 20/40/60/80/100%，单值的计时状态也一样分级。
+    说明里的「+N%」「+N%→M%」改写成「+觉醒0%→满破%」。机制类 kind 原样返回。"""
     kind, given = eff.content
     if kind not in WEAK_KINDS or "strength" not in given:
         return eff
-    scale = lambda v: str(int(round(int(v) * BASE_SCALE)))
     s_ = given["strength"]
-    strength = tuple(scale(v) for v in s_) if isinstance(s_, tuple) else scale(s_)
-    note = _PCT_IN_NOTE.sub(lambda m: f"{float(m.group(1)) * BASE_SCALE:g}", eff.note)
+    top = str(int(round(int(s_[1] if isinstance(s_, tuple) else s_) * BASE_SCALE)))
+    strength = (awaken_floor(top), top)
+    _require(int(strength[0]) < int(top), f"本体数值行满破值过小，觉醒分级后五级不可区分：{eff.note or eff.content}")
+    # 觉醒 N = 满破 × (N+1)/5；满破须是 500（0.5%）的倍数，五级才都是整数或一位小数（设计 §1 Q4），且觉醒 0 恰为满破的 20%
+    _require(int(top) % 500 == 0 and int(strength[0]) * 5 == int(top),
+             f"本体数值行满破值 {_pct_text(top)}% 不是 0.5% 的倍数，觉醒分级会出现两位小数：{eff.note or eff.content}")
+    found =_STRENGTH_IN_NOTE.findall(eff.note)
+    _require(len(found) <= 1, f"本体说明里有多处强度，无法改写：{eff.note}")
+    note = _STRENGTH_IN_NOTE.sub(f"+{_pct_text(strength[0])}%→{_pct_text(top)}%", eff.note)
     return replace(eff, content=(kind, {**given, "strength": strength}), note=note)
 
 
@@ -1194,9 +1223,12 @@ def w10() -> Weapon:
     w.dsl[echo] = _echo_hit(7.0)
     w.cas["cursed_fate_echo"] = "强化弹射命中敌人时追加1次强化弹射伤害（7倍）"
     every25 = elapsed(1500)
+    # 本体只有 629 一行、没有强度可分级：用触发周期分级（设计 §3.3），ElapsedTime 阈值随觉醒插值 45/40/35/30/25 秒。
+    # 强化表的完整老虎机仍每 25 秒（强化要求满破，且不碰 EA）。
+    awaken_period = trig(IT_ELAPSED, threshold=(frames(2700), frames(1500)), trigger_limit="(None)")
     opening = gate_unique(u_open)
-    w.soul = [Eff("0", invoke("cursed_fate_roll_lite", lite), trig=every25, pre=(lacks_unique(u_mark),),
-                  note="每 25 秒随机赋予全队 1 种增益（10 秒）")]
+    w.soul = [Eff("0", invoke("cursed_fate_roll_lite", lite), trig=awaken_period, pre=(lacks_unique(u_mark),),
+                  note="每 45→25 秒（每觉醒 1 级缩短 5 秒）随机赋予全队 1 种增益（10 秒）")]
     w.ea = [
         Eff("0", unique(u_mark), **CURSE, note="「赌局」：本体的温和转轮换成完整老虎机"),
         Eff("0", unique(u_open), **CURSE, note="开局获得「开局赌注」15 秒"),
@@ -2501,7 +2533,8 @@ def _level_label(e: Eff) -> str:
 
 def design_markdown(ws: list[Weapon]) -> str:
     lines = [f"# 诅咒武器 {len(ws)} 把 · 设计与实现", "",
-             f"口径（作者 0928）：未强化（本体/满破）只有正面效果且很弱（设计值 × {BASE_SCALE:g}）；强化 1 级起诅咒全额生效；"
+             f"口径（作者 0928）：未强化（本体/满破）只有正面效果且很弱（设计值 × {BASE_SCALE:g}）；"
+             f"本体数值行觉醒 0 = 满破的 {AWAKEN_FLOOR:.0%}，每觉醒 1 级 +{AWAKEN_FLOOR:.0%}（满破值不变）；强化 1 级起诅咒全额生效；"
              "强化 120 级为最终数值；强化材料全部来自五重决战。",
              "获取：武器扭蛋（只能用五重决战兑换的专用券抽取；每把 0.3%，250 点可兑换任选 1 把；满破需 5 把）。"
              "作者 0928 起不再在五重商店兑换。",
@@ -2511,7 +2544,7 @@ def design_markdown(ws: list[Weapon]) -> str:
         el = "/".join({"fire": "火", "water": "水", "thunder": "雷", "wind": "风", "dark": "暗", "light": "光"}[e]
                       for e in w.elements) or "通用"
         lines += [f"## {w.row:02d}. {w.name}（{w.id}，{w.category}，{el}，提案：{w.author}）", "",
-                  f"- 外形：{w.look}", f"- 120 级解放：{w.summary_120}", "- 本体（满破为箭头右值）："]
+                  f"- 外形：{w.look}", f"- 120 级解放：{w.summary_120}", "- 本体（箭头左值 = 觉醒 0，右值 = 满破）："]
         lines += [f"  - {e.note}" for e in w.soul]
         lines.append("- 强化：")
         lines += [f"  - {_level_label(e)}：{e.note or '（成长/补足）'}" for e in w.ea]

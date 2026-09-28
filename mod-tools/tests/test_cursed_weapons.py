@@ -7,6 +7,7 @@ fixture 只含模板行（live 1.4.1056 快照）；与 live 的撞键检查在�
 """
 from __future__ import annotations
 
+from fractions import Fraction
 import json
 from pathlib import Path
 import sys
@@ -112,19 +113,159 @@ class CursedWeaponTests(unittest.TestCase):
                     self.assertLessEqual(len(set(_strengths(W.EA_T, row))), 1, f"{w.name} E{index}")
 
     def test_base_is_weak(self):
-        # 作者 0928「要的就是强化前非常弱」：本体数值 = 设计值 × BASE_SCALE，成长行补回，120 级终值不变
+        # 作者 0928「要的就是强化前非常弱」：本体满破 = 设计值 × BASE_SCALE，成长行补回，120 级终值不变；
+        # 觉醒分级（满破锚定）：觉醒 0 = 满破 × AWAKEN_FLOOR，设计区间下限不再使用
         w01 = next(w for w in self.ws if w.row == 1)
         soul = self.out["flat"][W.SOUL][w01.id][0]
         self.assertEqual(soul[_col(W.SOUL_T, "instant_content", "strength.first_max")], "8000")      # 设计 40% × 0.2
+        self.assertEqual(soul[_col(W.SOUL_T, "instant_content", "strength.power1")], "1600")         # 满破 8% × 0.2
         ea = [r for r in self.out["flat"][W.EA][w01.id] if _kind(W.EA_T, r) == "32"]
         # 作者 0928「尽量还原原本设计」：去掉实现方加的常驻攻击力强化成长，强化表不再有 32 行（只剩吞噬 629）
         self.assertEqual(ea, [])
         eff = W.Eff("0", W.stat("32", W.T_SELF, 20, 40), note="HP≥50% 时自身攻击力 +20%→40%")
         weak = W._weaken(eff)
-        self.assertEqual(weak.content[1]["strength"], ("4000", "8000"))
-        self.assertEqual(weak.note, "HP≥50% 时自身攻击力 +4%→8%")
+        self.assertEqual(weak.content[1]["strength"], ("1600", "8000"))
+        self.assertEqual(weak.note, "HP≥50% 时自身攻击力 +1.6%→8%")
+        # 单值计时状态（蛰龙之心、人格召唤枪的写法）同样分级：单值 → (觉醒 0, 满破) 区间
+        timed = W.Eff("0", W.condition("0", W.T_PARTY, 100, 600), note="第 50 秒起全队攻击力 +100%（10 秒）")
+        weak = W._weaken(timed)
+        self.assertEqual(weak.content[1]["strength"], ("4000", "20000"))
+        self.assertEqual(weak.note, "第 50 秒起全队攻击力 +4%→20%（10 秒）")
+        self.assertEqual(W.condition("0", W.T_PARTY, (4, 20), 600)[1]["strength"], ("4000", "20000"))
         mech = W.Eff("0", W.stat("245", W.T_SELF, 100, 100))
         self.assertIs(W._weaken(mech), mech)                    # 机制类不缩
+        # 负对照：满破值小到觉醒 0 取整后五级不可区分、说明里两处强度（改写有歧义）必须拦下
+        with self.assertRaises(W.CursedWeaponError):
+            W._weaken(W.Eff("0", ("32", {"target": W.T_SELF, "strength": ("1", "1")})))
+        with self.assertRaises(W.CursedWeaponError):
+            W._weaken(W.Eff("0", W.stat("32", W.T_SELF, 20, 40), note="攻击力 +20%→40%，技能伤害 +10%"))
+        # 负对照：满破不是 0.5% 的倍数（设计 41.25% × 0.2 = 8.25% ⇒ 1.65/3.3/4.95/6.6/8.25%）必须在生成器里拦下
+        with self.assertRaises(W.CursedWeaponError):
+            W._weaken(W.Eff("0", W.stat("32", W.T_SELF, 20, 41.25), note="攻击力 +20%→41.25%"))
+
+    # ------------------------------------------------------------------
+    # 觉醒分级（作者 0928「每个等级也要设计区分数值」；设计 武器觉醒与新掉落-20260928 §3.3 / 附录 A）
+    # ------------------------------------------------------------------
+
+    #: 满破（觉醒 4）值，单位 %，按本体行序只列数值行（WEAK_KINDS）。满破锚定：与改前逐字节相同，预算不变。
+    FULL_AWAKENING_PCT = {
+        1: (8, 2), 2: (40,), 3: (20,), 4: (12, 12, 8), 5: (10,), 6: (40, 40), 7: (30,) * 6, 8: (12, 12), 9: (20, 20),
+        10: (), 11: (12, 10), 12: (10, 10), 13: (6,), 14: (60,), 15: (24, 72), 16: (3, 48, 48), 17: (50,),
+        18: (20, 100, 4, 8, 16, 60, 40, 20), 19: (35, 65), 20: (48, 48), 21: (48, 48), 22: (50, 50), 23: (5, 6),
+        24: (10,) * 4, 25: (5,), 26: (10, 5), 27: (14,) * 3, 28: (10,), 29: (5,)}
+    #: 机制行：不随觉醒变化（206 被诅咒的面具回血本来就 0.5%→1% 分级，保持原样）
+    MECHANISM_KINDS = {"245", "461", "525", "26", "226", "58", "629", "206"}
+
+    def _numeric_soul_rows(self):
+        for w in self.ws:
+            for index, row in enumerate(self.out["flat"][W.SOUL][w.id]):
+                if _kind(W.SOUL_T, row) in W.WEAK_KINDS and _strengths(W.SOUL_T, row):
+                    yield w, index, row
+
+    @staticmethod
+    def _content_block(row: list[str]) -> str:
+        return "instant_content" if row[2] == "0" else "during_content"
+
+    def test_awakening_ladder_numeric_rows(self):
+        # 每条本体数值行：power1 = round(0.2 × first_max) < first_max；觉醒 0–4 五级互不相同、显示不超过 1 位小数
+        self.assertEqual(W.AWAKEN_FLOOR, 0.2)
+        count = 0
+        for w, index, row in self._numeric_soul_rows():
+            where = f"{w.name} S{index}"
+            block = self._content_block(row)
+            p1 = int(row[_col(W.SOUL_T, block, "strength.power1")])
+            fm = int(row[_col(W.SOUL_T, block, "strength.first_max")])
+            self.assertLess(p1, fm, where)
+            self.assertEqual(p1, round(0.2 * fm), where)
+            self.assertEqual(p1 * 5, fm, where)                  # 满破都是 0.5% 的倍数 ⇒ 取整无损
+            # 客户端 AbilityPowerValue.resolve：觉醒 N = p1 + (fm − p1) × N/4（存储值 1000 = 1%）
+            levels = [Fraction(p1) + Fraction(fm - p1) * n / 4 for n in range(5)]
+            self.assertEqual(len(set(levels)), 5, where)
+            self.assertEqual(levels, [Fraction(fm * (n + 1), 5) for n in range(5)], where)     # 20/40/60/80/100%
+            self.assertTrue(all((v / 100).denominator == 1 for v in levels), (where, levels))   # 0.1% 粒度
+            count += 1
+        self.assertEqual(count, 62)                               # 设计 §3.2/§3.3：62 条数值行
+
+    def test_full_awakening_values_unchanged(self):
+        got = {w.row: () for w in self.ws}
+        for w, _index, row in self._numeric_soul_rows():
+            got[w.row] += (int(row[_col(W.SOUL_T, self._content_block(row), "strength.first_max")]),)
+        self.assertEqual(got, {row: tuple(v * 1000 for v in pcts) for row, pcts in self.FULL_AWAKENING_PCT.items()})
+
+    def test_awakening_mechanism_rows_stay_flat(self):
+        # 机制行（245/461/525/26/226/629/206）强度与所有前置/触发阈值不随觉醒变化；唯一例外是赌注已下本体的触发周期
+        mechanism = 0
+        for w in self.ws:
+            for index, row in enumerate(self.out["flat"][W.SOUL][w.id]):
+                where = f"{w.name} S{index}"
+                kind = _kind(W.SOUL_T, row)
+                values = _strengths(W.SOUL_T, row)
+                if kind not in W.WEAK_KINDS or not values:
+                    mechanism += 1
+                    self.assertIn(kind, self.MECHANISM_KINDS, where)
+                    if kind == "206":
+                        self.assertEqual(values, [500.0, 1000.0], where)
+                    elif values:
+                        self.assertEqual(values[0], values[1], where)
+                trigger = "instant_trigger" if row[2] == "0" else "during_trigger"
+                for blk in (trigger, "precondition1", "precondition2", "precondition3"):
+                    try:
+                        lo, hi = (row[_col(W.SOUL_T, blk, f"threshold.{n}")] for n in ("power1", "first_max"))
+                    except KeyError:
+                        continue
+                    if (w.row, index, blk) == (10, 0, "instant_trigger"):
+                        continue
+                    self.assertEqual(lo, hi, (where, blk))
+        self.assertEqual(mechanism, 16)                           # 245/461/525、629×3、26/226×2、461×4、206×2
+
+    def test_wager_body_period_ladder(self):
+        # 赌注已下本体只有 629（无强度）：用 ElapsedTime 周期分级 45/40/35/30/25 秒；强化表的完整老虎机仍 25 秒
+        (row,) = self.soul(10)
+        self.assertEqual(_kind(W.SOUL_T, row), "629")
+        self.assertEqual(self.cell(W.SOUL_T, row, "instant_trigger", "kind"), W.IT_ELAPSED)
+        lo = int(self.cell(W.SOUL_T, row, "instant_trigger", "threshold.power1"))
+        hi = int(self.cell(W.SOUL_T, row, "instant_trigger", "threshold.first_max"))
+        self.assertEqual((lo, hi), (int(W.frames(2700)), int(W.frames(1500))))
+        seconds = [(Fraction(lo) + Fraction(hi - lo) * n / 4) / 100000 / 60 for n in range(5)]
+        self.assertEqual(seconds, [45, 40, 35, 30, 25])
+        self.assertEqual(self.cell(W.SOUL_T, row, "instant_trigger", "trigger_limit"), "(None)")
+        roll = [r for r in self.ea(10) if self.cell(W.EA_T, r, "instant_trigger", "kind") == W.IT_ELAPSED]
+        self.assertEqual([(self.cell(W.EA_T, r, "instant_trigger", "threshold.power1"),
+                           self.cell(W.EA_T, r, "instant_trigger", "threshold.first_max")) for r in roll],
+                         [(W.frames(1500), W.frames(1500))])
+
+    def test_awakening_ladder_matches_design_examples(self):
+        # 设计 §3.4 / 附录 A 的示例（觉醒 0 值, 满破值；存储值 1000 = 1%）
+        def pair(row_no, slot):
+            r = self.soul(row_no)[slot]
+            block = self._content_block(r)
+            return (self.cell(W.SOUL_T, r, block, "strength.power1"), self.cell(W.SOUL_T, r, block, "strength.first_max"))
+        expect = {(1, 0): ("1600", "8000"), (1, 1): ("400", "2000"), (9, 0): ("4000", "20000"), (9, 1): ("4000", "20000"),
+                  (12, 0): ("2000", "10000"), (12, 3): ("2000", "10000"), (14, 0): ("12000", "60000"),
+                  (18, 0): ("4000", "20000"), (18, 1): ("20000", "100000"), (18, 2): ("800", "4000"),
+                  (18, 3): ("1600", "8000"), (18, 5): ("12000", "60000"), (18, 6): ("8000", "40000"),
+                  (19, 0): ("7000", "35000"), (19, 1): ("13000", "65000"), (29, 0): ("1000", "5000"),
+                  (29, 1): ("500", "1000"), (29, 2): ("500", "1000")}
+        self.assertEqual({k: pair(*k) for k in expect}, expect)
+        # 说明同步改写成「+觉醒0%→满破%」
+        self.assertEqual(self.weapon(1).soul[0].note, "自身攻击力 +1.6%→8%")
+        self.assertEqual(self.weapon(9).soul[0].note, "火属性共鸣时：第 50 秒起全队攻击力 +4%→20%（10 秒）")
+        self.assertIn("每 45→25 秒", self.weapon(10).soul[0].note)
+        self.assertIn("箭头左值 = 觉醒 0", W.design_markdown(self.ws))
+
+    def test_budget_ignores_awakening_floor(self):
+        # 预算只读满破/120 级（first_max）：把本体 power1 抹回满破（改前的「恒定」形状），预算必须逐项相同
+        for w in self.ws:
+            flat = json.loads(json.dumps(self.soul(w.row)))
+            for r in flat:
+                for block in ("instant_content", "during_content", "instant_trigger", "during_trigger"):
+                    for name in ("strength", "threshold"):
+                        try:
+                            lo, hi = (_col(W.SOUL_T, block, f"{name}.{n}") for n in ("power1", "first_max"))
+                        except KeyError:
+                            continue
+                        r[lo] = r[hi]
+            self.assertEqual(self.budget(w.row, soul=flat), self.out["budgets"][w.row], w.name)
 
     def test_lone_wolf_cancels_exactly_at_120(self):
         w26 = next(w for w in self.ws if w.row == 26)
