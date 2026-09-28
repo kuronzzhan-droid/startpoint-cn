@@ -5,6 +5,8 @@ export const FIVE_BOSS_GAUNTLET_REWARD_IDS = Object.freeze({
     deepCrystal: 10000145,
     firstClearEmblem: 10000146,
     fiveKingCore: 10000147,
+    /** 深界王币：作者 0928「每把能掉 10-15 个」，兑换武器扭蛋券与禁忌星铁（五重商店 032/033/034）。 */
+    kingCoin: 10000310,
 })
 
 /**
@@ -20,6 +22,8 @@ export const FIVE_BOSS_GAUNTLET_REWARD_DISPLAY = Object.freeze({
         [FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal]: 2,
         [FIVE_BOSS_GAUNTLET_REWARD_IDS.firstClearEmblem]: 3,
         [FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore]: 4,
+        // 行 [590010000][5] = five_boss_king_coin,0,10000310,1,1 于 1.4.1100 上线（边 E2a）
+        [FIVE_BOSS_GAUNTLET_REWARD_IDS.kingCoin]: 5,
     }) as Readonly<Record<number, number>>,
 })
 
@@ -57,6 +61,10 @@ export const FIVE_BOSS_BLUEPRINT_DROP_RATE = 0.6
  * 2026-09-28 设计稿定 15%;同日作者裁定诅咒武器以武器扭蛋 990003 为主,五重直掉降到 5%。
  */
 export const FIVE_BOSS_CURSED_WEAPON_DROP_RATE = 0.05
+
+/** 深界王币每局掉落：MIN .. MIN + SPAN - 1（10..15），均匀，不乘手动倍率。 */
+export const FIVE_BOSS_KING_COIN_MIN = 10
+export const FIVE_BOSS_KING_COIN_SPAN = 6
 
 /** 诅咒武器池 id 区间:5910101..5910129(29 把),index = equipmentId - base。 */
 export const FIVE_BOSS_CURSED_WEAPON_ID_BASE = 5910100
@@ -177,6 +185,13 @@ export function buildFiveBossGauntletRewardPlan(
         itemId: FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore,
         amount: fiveKingCoreAmount,
         multiplierKind: "repeatable",
+    })
+    // 作者 0928：深界王币每局均匀 10..15 个，不随手动倍率翻倍（「每把能掉 10-15 个」）。
+    // 放在心核之后、诅咒武器掷骰之前（随机序列保持「先材料后武器」）。
+    items.push({
+        itemId: FIVE_BOSS_GAUNTLET_REWARD_IDS.kingCoin,
+        amount: FIVE_BOSS_KING_COIN_MIN + Math.floor(checkedRandomFloat(randomFloat) * FIVE_BOSS_KING_COIN_SPAN),
+        multiplierKind: "fixed",
     })
 
     return { items }

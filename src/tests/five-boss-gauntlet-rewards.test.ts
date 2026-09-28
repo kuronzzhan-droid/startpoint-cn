@@ -6,6 +6,7 @@ import {
     FIVE_BOSS_CURSED_WEAPON_DROP_RATE,
     FIVE_BOSS_CURSED_WEAPON_ID_BASE,
     FIVE_BOSS_CURSED_WEAPON_POOL_SIZE,
+    FIVE_BOSS_GAUNTLET_REWARD_DISPLAY,
     FIVE_BOSS_GAUNTLET_REWARD_IDS,
     FIVE_BOSS_GAUNTLET_WEAPON,
     buildFiveBossCursedWeaponDropPlan,
@@ -220,3 +221,25 @@ test("each granted weapon (including a repeat hit) gets its own additional_rewar
     )
 })
 
+
+
+test("the reward plan drops 10..15 king coins per clear, uniform and never doubled by manual play", () => {
+    // 作者 0928:「每把能掉 10-15 个」。随机序列:图纸、心核加成、王币(第三次调用)。
+    const coinsFor = (coinRoll: number, rewardMultiplier: 1 | 2) => {
+        const values = [0.99, 0.99, coinRoll]
+        const plan = buildFiveBossGauntletRewardPlan({
+            firstClear: false, rewardMultiplier, randomFloat: () => values.shift() as number,
+        })
+        const coin = plan.items.find(item => item.itemId === FIVE_BOSS_GAUNTLET_REWARD_IDS.kingCoin)
+        assert.ok(coin, "king coin must always drop")
+        assert.equal(coin.multiplierKind, "fixed")
+        return coin.amount
+    }
+    assert.equal(coinsFor(0, 1), 10)
+    assert.equal(coinsFor(0.999999, 1), 15)
+    assert.equal(coinsFor(0.999999, 2), 15)
+    const seen = new Set<number>()
+    for (let i = 0; i < 6; i += 1) seen.add(coinsFor((i + 0.5) / 6, 2))
+    assert.deepEqual([...seen].sort((a, b) => a - b), [10, 11, 12, 13, 14, 15])
+    assert.equal(FIVE_BOSS_GAUNTLET_REWARD_DISPLAY.indexByItemId[FIVE_BOSS_GAUNTLET_REWARD_IDS.kingCoin], 5)
+})

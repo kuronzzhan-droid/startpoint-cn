@@ -48,15 +48,19 @@ test("manual solo clear grants the mode materials at 2x and reports display drop
     assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 20)
     assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.firstClearEmblem), 1)
     assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore), 2)
+    // 作者 0928:深界王币每局 10..15,不乘手动倍率;0.99 → 10 + floor(0.99×6) = 15
+    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.kingCoin), 15)
     assert.deepEqual(result.items, {
         [FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal]: 20,
         [FIVE_BOSS_GAUNTLET_REWARD_IDS.firstClearEmblem]: 1,
         [FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore]: 2,
+        [FIVE_BOSS_GAUNTLET_REWARD_IDS.kingCoin]: 15,
     })
     assert.deepEqual(result.dropAdditionalRewardIds.map(d => [d.group_id, d.index, d.number]), [
         [FIVE_BOSS_GAUNTLET_REWARD_DISPLAY.additionalRewardGroupId, 2, 20],
         [FIVE_BOSS_GAUNTLET_REWARD_DISPLAY.additionalRewardGroupId, 3, 1],
         [FIVE_BOSS_GAUNTLET_REWARD_DISPLAY.additionalRewardGroupId, 4, 2],
+        [FIVE_BOSS_GAUNTLET_REWARD_DISPLAY.additionalRewardGroupId, 5, 15],
     ])
     assert.deepEqual(result.equipment_list, [])
     assert.deepEqual(result.grantedEquipment, [])
@@ -72,7 +76,9 @@ test("repeat solo clear skips the first-clear emblem and rolls blueprint and cor
     assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal), 20)
     // 2026-09-28 设计稿:心核必掉 1×倍率(=2)+ 0.1<25% 命中额外 1×倍率(=2)= 4。
     assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore), 4)
-    assert.equal(result.granted.length, 3)
+    // 王币不乘手动倍率:0.1 → 10 + floor(0.6) = 10
+    assert.equal(itemDomain.getPlayerItemSync(playerId, FIVE_BOSS_GAUNTLET_REWARD_IDS.kingCoin), 10)
+    assert.equal(result.granted.length, 4)
     assert.deepEqual(result.grantedEquipment, [])
 })
 
@@ -86,6 +92,7 @@ test("an Auto-start solo clear grants the mode materials at 1x", () => {
     assert.deepEqual(result.items, {
         [FIVE_BOSS_GAUNTLET_REWARD_IDS.deepCrystal]: 10,
         [FIVE_BOSS_GAUNTLET_REWARD_IDS.fiveKingCore]: 1,
+        [FIVE_BOSS_GAUNTLET_REWARD_IDS.kingCoin]: 15,
     })
 })
 
@@ -94,6 +101,7 @@ test("solo clear rolls and grants distinct cursed weapons, with one display row 
     const values = [
         0.9, // blueprint check: miss (rate 0.6)
         0.9, // five-king-core bonus check: miss -> base only
+        0.5, // king coin: 10 + floor(0.5×6) = 13
         0.01, 0, // weapon roll 1: hit (rate 0.05), pick index 0 -> 5910101
         0.01, 0.999999, // weapon roll 2: hit, pick index 2 -> 5910103
     ]
@@ -121,6 +129,7 @@ test("a repeated weapon hit collapses into one equipment_list entry but keeps tw
     const playerId = createPlayer()
     const values = [
         0.9, 0.9, // material rolls: both miss/base-only, irrelevant to this test
+        0.5,      // king coin roll (13), irrelevant to this test
         0, 0,       // weapon roll 1: hit, pick the only pool entry
         0.01, 0.5,  // weapon roll 2: hit (rate 0.05), pick the only pool entry again
     ]
