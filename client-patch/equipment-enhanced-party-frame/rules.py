@@ -23,13 +23,29 @@
 所有出口都落到原生入口（段内没有 return）；插入段只写新局部（从原 localcount 2 起编号），只读 ``this``；
 属性写只有自建图的 ``name / visible / transformationMatrix``（另经方法设贴图与尺寸）、``rarity`` 容器的 ``visible``
 和 ``image`` 容器的子节点。本类的字段一个也不写。取表只用不抛错的 ``getMasterTableMaybe`` + ``getMaybe``。
+
+第二处（b 版，2026-09-28「武器图标会消失」）：``PartyItemThumbnailView/setItemImage``（体 85274）的 None 分支入口
+#24（lookupswitch case 1，ENTER）插 4 条 ``this.itemImage.texture = null``。原生紧接着的
+``itemImage.changeTexture(Option.None)`` 于是看到 ``texture == null``，不再 ``texture.dispose()``。
+原生那一步 dispose 的是 **ItemThumbnail 缓存里的共享贴图**：官方装备图标是 ``item/sprite_sheet`` 图集的 SubTexture，
+dispose 是空操作；自制武器图标是独立 PNG（ConcreteTexture，trimmed_image 里没有行），dispose 直接释放 GPU 贴图，
+缓存（常驻 common 组）却仍记为 Loaded —— 之后任何格子、任何画面再取这个图标都拿到已释放的贴图。
+编成槽「卸下 → 换回」、同一格被刷新成空槽（出击前选队伍编辑后刷新、切到这一格为空的队伍分组、
+联机房间成员面板切到空槽成员）都会触发；蓝金框是自建图、从不 changeTexture(None)，所以照常显示。
+以上是代码层结论（反编译源码 + 真实字节码解释执行）：真机上画已释放的贴图是空白、黑块，还是抛 #3694 被
+CrashUtil 接住，没有证据；作者看到的「有框没图标」是否就是这个原因，待真机区分性检查（见 README）。
+插入的 setter 与原生 ``texture = null`` 是同一个，只少了 dispose；贴图始终归缓存所有（缓存重置时由缓存释放）。
+一个边界差异：原生 changeTexture 第一行是 ``if(_disposed) return``，插入段排在它之前，所以 itemImage 已经 dispose
+时补丁仍会多写一次 ``texture = null``（Image.set texture → MeshStyle.set texture(null)，只 setRequiresRedraw；
+Quad.setupVertices 因 _disposed 提前返回），没有可见效果、不会抛错。
 """
 from __future__ import annotations
 
 THUMB = 'pinball.ui.component.item.party::PartyItemThumbnailView'
 LABEL = 'PartyItemThumbnailView/updateEnhancedEffectAnimation'
-#: 只有这一个目标方法。
-TARGETS = (LABEL,)
+#: b 版第二处：setItemImage 的 None 分支先把图标贴图置空，原生 changeTexture(None) 就不会 dispose 缓存里的共享贴图。
+SET_IMAGE_LABEL = 'PartyItemThumbnailView/setItemImage'
+TARGETS = (LABEL, SET_IMAGE_LABEL)
 
 CAS = 'pinball.master.generated::CustomAbilityStringTable'
 MAYBE = 'pinball.asset.logic:ILogicAssetContainer::getMasterTableMaybe'
@@ -61,7 +77,9 @@ INHERITED_CAPABILITIES = (
 
 #: 插入点（原方法体的指令下标）。
 ANCHOR = 2
-ANCHORS = {LABEL: ANCHOR}
+#: setItemImage 的 #24 = lookupswitch 的 case 1（Option.None）入口：原生 findproperty itemImage … changeTexture(None)。
+SET_IMAGE_ANCHOR = 24
+ANCHORS = {LABEL: ANCHOR, SET_IMAGE_LABEL: SET_IMAGE_ANCHOR}
 #: 新局部变量从原 localcount 起编号，原方法体一个也读不到。asset 先存 view、再存 view.asset。
 LOCALS = {'layout': 2, 'rarity': 3, 'holder': 4, 'img': 5, 'option': 6, 'path': 7, 'key': 8, 'asset': 9,
           'global': 10, 'assets': 11, 'table': 12, 'text': 13, 'tex': 14}
@@ -71,7 +89,21 @@ READS = frozenset({0})
 NATIVE_AT_ANCHOR = (('pushscope', None), ('findproperty', 'isEnableEnhancedEffect'))
 #: 插入段指令条数（设计值；测试逐一核对）。
 INSERTED_COUNT = 161
-INSERTED_COUNTS = {LABEL: INSERTED_COUNT}
+SET_IMAGE_INSERTED_COUNT = 4
+INSERTED_COUNTS = {LABEL: INSERTED_COUNT, SET_IMAGE_LABEL: SET_IMAGE_INSERTED_COUNT}
+#: setItemImage 原生形状（整条方法只有 30 条：逐条核对指令名与操作数多名的短名）。
+SET_IMAGE_NATIVE = (
+    ('getlocal_0', None), ('pushscope', None), ('findproperty', 'imagePath'), ('getlocal_1', None),
+    ('initproperty', 'imagePath'), ('getlocal_1', None), ('getproperty', 'index'), ('lookupswitch', None),
+    ('jump', None), ('findproperty', 'view'), ('getproperty', 'view'), ('getproperty', 'asset'),
+    ('getlex', 'AssetGroupKind'), ('getproperty', 'ItemThumbnail'), ('getlocal_1', None), ('getproperty', 'params'),
+    ('pushbyte', None), ('getproperty', None), ('coerce', 'String'), ('findproperty', 'textureLoadCompleted'),
+    ('getproperty', 'textureLoadCompleted'), ('coerce', 'Function'), ('callpropvoid', 'setTexture'), ('jump', None),
+    ('findproperty', 'itemImage'), ('getproperty', 'itemImage'), ('getlex', 'Option'), ('getproperty', 'None'),
+    ('callpropvoid', 'changeTexture'), ('returnvoid', None),
+)
+#: lookupswitch（#7）：default → #8，case 0（Some）→ #9，case 1（None）→ #24。
+SET_IMAGE_SWITCH = (8, [9, 24])
 #: 插入段允许的属性写（setproperty 的名字）与写入对象（新局部）：只写自建图与 rarity 容器。
 PROPERTY_WRITES = {'name': 'img', 'visible': ('img', 'rarity'), 'transformationMatrix': 'img'}
 NEED_ACTIVATION = 0x02
@@ -176,6 +208,21 @@ def insertion(e):
     return code
 
 
+def set_image_insertion(e):
+    """setItemImage() 的 #24（None 分支入口，ENTER）：``this.itemImage.texture = null``。
+
+    栈 [] -> []，只读 this，不新增局部 / 常量 / 多名。随后原生 ``itemImage.changeTexture(Option.None)`` 看到
+    ``texture == null``，跳过 ``texture.dispose()``，再把 null 赋一遍（同一个 setter、同一个值，什么也不做）。
+
+    与原生唯一的边界差异：插入段排在 changeTexture 的 ``if(_disposed) return`` 之前。itemImage 已经 dispose 时，
+    原生什么都不做，补丁仍会写一次 ``texture = null``（Image.set texture → MeshStyle.set texture(null)，只触发
+    setRequiresRedraw；Quad.setupVertices 因 _disposed 提前返回）——多写一次 style.texture = null，无害：
+    不可见、不抛错。
+    """
+    q = e.q
+    return [('getlocal_0',), ('getproperty', q('itemImage')), ('pushnull',), ('setproperty', q('texture'))]
+
+
 # ---------------------------------------------------------------------------
 # 锚点与登记
 # ---------------------------------------------------------------------------
@@ -212,14 +259,47 @@ def find_anchor(e, asm, bodies, label=LABEL):
     return at
 
 
+def _short(abc, index):
+    return abc.mn_name(index).rsplit(':', 1)[-1]
+
+
+def find_set_image_anchor(e, asm, bodies, label=SET_IMAGE_LABEL):
+    """setItemImage：无活动对象 / 异常表 / 体内 trait；30 条原生指令逐条同形；lookupswitch 的 case 1 恰好是锚点，
+    全方法只有这一条分支指向锚点（ENTER：None 分支必经插入段）；localcount 仍是 2。已打过补丁（多了 4 条）直接拒绝。"""
+    abc = e.abc
+    body = abc.bodies[bodies.resolve(abc, label)]
+    ins = asm.decode(body[5])
+    if abc.methods[body[0]][3] & NEED_ACTIVATION or body[6] or body[7]:
+        raise asm.AsmError(f'{label} gained an activation, exception table or body traits')
+    if len(ins) != len(SET_IMAGE_NATIVE):
+        raise asm.AsmError(f'{label} has {len(ins)} instructions, expected {len(SET_IMAGE_NATIVE)} '
+                           '(already patched or changed)')
+    for i, (x, (name, operand)) in enumerate(zip(ins, SET_IMAGE_NATIVE)):
+        if x.name != name or (operand is not None and _short(abc, x.args[0]) != operand):
+            raise asm.AsmError(f'{label} native #{i} changed: {x}')
+    switch = ins[7]
+    if (switch.default, list(switch.cases)) != (SET_IMAGE_SWITCH[0], list(SET_IMAGE_SWITCH[1])):
+        raise asm.AsmError(f'{label} lookupswitch targets changed: {switch.default} {switch.cases}')
+    at = SET_IMAGE_ANCHOR
+    incoming = [i for i, x in enumerate(ins) if x.target == at or (x.cases and at in [x.default, *x.cases])]
+    if incoming != [7]:
+        raise asm.AsmError(f'{label} anchor #{at} incoming branches {incoming} != [7]')
+    if body[2] != 2 or asm.block_locals(ins) > 2:
+        raise asm.AsmError(f'{label} localcount changed: {body[2]}')
+    return at
+
+
 def install(e, asm, bodies, mutate=None):
-    """在 Editor 上登记插入段；返回 {标签: 锚点}。调用方负责 ``e.apply()``。
+    """在 Editor 上登记两处插入段；返回 {标签: 锚点}。调用方负责 ``e.apply()``。
 
     ``mutate(e, label, code) -> code`` 只供测试 / verify 构造变异体（负对照），交付构建不传。
+    变异体函数带 ``label`` 属性时只改那个方法，否则只改 updateEnhancedEffectAnimation。
     """
-    anchors = {LABEL: find_anchor(e, asm, bodies, LABEL)}
-    code = insertion(e)
-    if mutate is not None:
-        code = mutate(e, LABEL, code)
-    e.insert(LABEL, anchors[LABEL], code, asm.FORBID)
+    anchors = {LABEL: find_anchor(e, asm, bodies, LABEL),
+               SET_IMAGE_LABEL: find_set_image_anchor(e, asm, bodies, SET_IMAGE_LABEL)}
+    blocks = {LABEL: (insertion(e), asm.FORBID), SET_IMAGE_LABEL: (set_image_insertion(e), asm.ENTER)}
+    for label, (code, incoming) in blocks.items():
+        if mutate is not None and getattr(mutate, 'label', LABEL) == label:
+            code = mutate(e, label, code)
+        e.insert(label, anchors[label], code, incoming)
     return anchors

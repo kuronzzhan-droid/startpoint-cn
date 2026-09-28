@@ -42,9 +42,14 @@ SWF_MEMBER = 'assets/worldflipper_android_release.swf'
 OUTPUT_NAME = 'equipment-enhanced-party-frame.swf'
 BASE_ABC_SHA = overlay.BASE_ABC_SHA
 BASE_SWF_SHA = overlay.BASE_SWF_SHA
-#: 本补丁产物。主 ABC 是验收依据；基线与产物都是未压缩的 FWS（SwfAbc 保持原签名），容器哈希也可复现。
-TARGET_ABC_SHA = '016cd9270a5b9c0d2d7ae6e701f5d2bcbe6ac10c59a72d1f003ccd04234169dd'
-TARGET_SWF_SHA = '9986dea39831608e44a405619cf234c8cccdcdbc476939bb9b5c53d689d67177'
+#: 本补丁产物（b 版：编成槽框 + setItemImage 不再 dispose 缓存贴图）。主 ABC 是验收依据；基线与产物都是未压缩的
+#: FWS（SwfAbc 保持原签名），容器哈希也可复现。
+TARGET_ABC_SHA = '2a9583cddd47786844b9ce5fe2b99aff4e8b5f727e95e757fded99940688a1ad'
+TARGET_SWF_SHA = '5bd476f6effd1452a8d2508bbc721e1bc1636a5eb62b226005511eb698627162'
+#: a 版产物（APK 14396ce0，只有编成槽框、原生 setItemImage(None) 仍会 dispose 共享图标贴图）。不在它上面叠 b 版：
+#: b 版只认 e87371b7，a 版输入要求回到 7056f7dc 的主 SWF 重新打。
+SUPERSEDED_ABC_SHA = '016cd9270a5b9c0d2d7ae6e701f5d2bcbe6ac10c59a72d1f003ccd04234169dd'
+SUPERSEDED_SWF_SHA = '9986dea39831608e44a405619cf234c8cccdcdbc476939bb9b5c53d689d67177'
 
 
 def sha(data: bytes) -> str:
@@ -87,6 +92,10 @@ def inspect(source):
             state = 'ready'
         elif main_abc == TARGET_ABC_SHA:
             state = 'already_patched'
+        elif main_abc == SUPERSEDED_ABC_SHA or digest == SUPERSEDED_SWF_SHA:
+            raise ValueError('input is the superseded party-frame build (main ABC ' + SUPERSEDED_ABC_SHA +
+                             ', APK 14396ce0) that still disposes shared icon textures; apply this patch to the '
+                             'equipment-enhanced-look client (main ABC ' + BASE_ABC_SHA + ', APK 7056f7dc) instead.')
         else:
             raise ValueError('Unknown SWF baseline: container ' + digest + ', main ABC ' + str(main_abc) +
                              '. This patch only applies to the equipment-enhanced-look client (main ABC ' +

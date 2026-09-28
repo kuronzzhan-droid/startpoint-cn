@@ -43,7 +43,7 @@ rules = overlay.rules
 
 SWF_MEMBER = 'assets/worldflipper_android_release.swf'
 STATUS = overlay.STATUS
-TARGET_ABC_SHA = '016cd9270a5b9c0d2d7ae6e701f5d2bcbe6ac10c59a72d1f003ccd04234169dd'
+TARGET_ABC_SHA = '2a9583cddd47786844b9ce5fe2b99aff4e8b5f727e95e757fded99940688a1ad'
 #: 已安装在作者 MuMu 上的 equipment-enhanced-look APK 与其签名证书（覆盖安装 pm install -r 的前提）。
 INSTALLED_APK_SHA = '7056f7dc072cb5d4c01f03557085dc09131c62a8c85467ca1766d5d197072ebc'
 CERTIFICATE_SHA = '729507c10a893879b14f46cf81d8e5052d4b66c2c081fa5b9f915a142a827a0b'

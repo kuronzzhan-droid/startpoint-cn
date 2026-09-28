@@ -18,6 +18,25 @@ image 容器第 0 位的自建图得出「看到的框」。
 负对照：同一矩阵在未打补丁的基线（equipment-enhanced-look 产物 e87371b7）上全部是原生结果、从不访问
 custom_ability_string、从不建图、从不请求框图；变异体（删条件 / 删恢复 / 不藏粉框 / 删探测 / 删尺寸 / 删矩阵 /
 不认名字 / 放到图标上面 / 前缀写错 / 删空串判定 / 删 dispose 判定）必须让断言变红。
+
+图标矩阵（b 版）：ItemThumbnail 缓存是常驻 common 组（AssetGroupResolver.getCommonGroups），跨格子跨画面共享；
+图标贴图从缓存取（getTexture）。每个场景结束后查「图标在 image 容器里、可见、在自建框之上、贴图就是 imagePath
+那张且没有被 dispose」，并查缓存里没有任何贴图被格子 dispose。原生 setItemImage(None) → changeTexture(None) 会
+dispose 缓存里的共享贴图（自制图标是独立 PNG = ConcreteTexture），所以基线在「有图标 → 空槽」的场景上必须变红
+（负对照），补丁版全部为绿；变异体 keep_dispose（setItemImage 插入段不置空）必须让这些场景变红。
+
+**建模假设（未经真机）**：替身 ``Image.changeTexture(None)`` 只把贴图记为 ``disposed``，``icon_problems`` 再把
+「图标贴图已 dispose」算作看不见。真机上画一张已释放的 ConcreteTexture 会是空白、黑块，还是抛 #3694 被 CrashUtil
+接住，这里证明不了；本矩阵证明的是「原生字节码会 dispose 共享贴图、补丁版不会」，不是真机画面。
+
+真机流程 A–D（FLOWS）：编成（构造时带路径）/ 出击前选队伍（每格构造 None 再 replaceEquipment，多页共享缓存；
+切换队伍分组标签 = 同一批格子按另一分组重新 replaceEquipment）/ 联机房间成员面板（EmptyLabel，成员切换）/
+格子复用，贴图先到或后到；另有步骤 ('new', …) 在流程中途新建一格（出事之后才打开的编成画面，共享同一缓存）。
+每一步之后逐格查图标（同上）与框（框与 rarity 容器恰好显示一个、框只给键图标），最后比对最终看到的框。
+补丁版全绿；v1 基线与 a 版（016cd927）在 FLOW_DISPOSE_TARGETS（「某格有图标 → 空槽」）的流程上图标变红。
+原样的「构造 None → run → replaceEquipment」（B_select_none_then_paradox）在 a 版上是绿的：a 版要先有一次
+「有图标 → 空槽」才会丢图标。a 版在这些流程里的最终状态是「蓝金框在、图标贴图已 dispose」，与作者截图的现象
+一致，但这是代码层结论，真机是否就是这个原因待真机区分性检查（install-receipt 的 runtime_checks）。
 """
 from __future__ import annotations
 
@@ -80,7 +99,7 @@ METHODS = ('run', 'setItemImage', 'setRarity', 'updateEmpty', 'updateEnhancedEff
 LAYOUT_CONTAINERS = ('rarity', 'image', 'background_effect', 'empty_text', 'empty_plus', 'empty_ability_soul_text',
                      'empty_ability_soul_plus', 'used_overlay')
 #: 设计上的方法体 header（maxstack, localcount, initscope, maxscope）。
-EXPECTED_HEADERS = {rules.LABEL: [4, 15, 1, 2]}
+EXPECTED_HEADERS = {rules.LABEL: [4, 15, 1, 2], rules.SET_IMAGE_LABEL: [4, 2, 1, 2]}
 #: 插入段允许出现的调用（callproperty/callpropvoid/constructprop 的多名全名）；getMasterTable / getTexture 不在其中。
 ALLOWED_CALLS = {'checkPhaseBeforeDispose', 'getContainer', 'getChildAt', rules.GET_LOGIC_ASSETS, rules.MAYBE,
                  'get_data', 'getMaybe', 'forEach', 'setTexture', rules.IMAGE, 'addChildAt', 'Some', 'changeTexture',
@@ -250,6 +269,8 @@ class Image(DisplayObject):
         self.pivot = None
 
     def changeTexture(self, option):
+        """原生 ``TextureReplaceableImage.changeTexture``。None 分支的 ``texture.dispose()`` 在这里只记
+        ``disposed = True``（建模假设：之后画不出这张图；真机表现未证）。"""
         if self._disposed:
             return
         if option['index'] == 0:
@@ -305,10 +326,13 @@ class _Cas:
 class PartyWorld:
     """PartyItemThumbnailView（cell）+ 布局 + 一个 ItemThumbnail 贴图缓存（异步，回调排队）。"""
 
-    def __init__(self, abc, rows=None, table_loaded=True, preloaded=(), icon=None, rarity=None, enhanced=None):
+    def __init__(self, abc, rows=None, table_loaded=True, preloaded=(), icon=None, rarity=None, enhanced=None,
+                 cache=None, empty_style=0):
+        """``cache``：与别的格子共享的 ItemThumbnail 缓存（{路径: 贴图}），在 run() 之前就接上；
+        ``empty_style``：ThumbnailViewEmptyStyle 的下标（0 = EmptyLabel，1 = Plus）。"""
         self.abc = abc
         self.cas = _Cas(rows, table_loaded)
-        self.loaded = {}
+        self.loaded = {} if cache is None else cache
         for item in preloaded:
             path, size = (item, (72, 72)) if isinstance(item, str) else item
             self.loaded[path] = self._texture(path, size)
@@ -331,7 +355,7 @@ class PartyWorld:
                      'imagePath': some(icon) if icon else NONE_OPTION,
                      'rarity': some(rarity) if rarity else NONE_OPTION,
                      'isEnableEnhancedEffect': NONE_OPTION if enhanced is None else some(enhanced),
-                     'emptyStyle': {'index': 0, 'params': []}, 'emptyType': {'index': 0, 'params': []},
+                     'emptyStyle': {'index': empty_style, 'params': []}, 'emptyType': {'index': 0, 'params': []},
                      'enhancedEffectManager': None, 'enhancedEffectAnimation': NONE_OPTION,
                      'backgroundAnimation': NONE_OPTION,
                      'gear': {'checkPhaseBeforeDispose': lambda: self.alive}}
@@ -618,6 +642,280 @@ def party_matrix(abc):
 
 
 # ---------------------------------------------------------------------------
+# 图标矩阵（b 版）：图标贴图必须活着、可见、在框之上；缓存里的共享贴图不许被格子 dispose
+# ---------------------------------------------------------------------------
+
+def icon_problems(world):
+    """这一格此刻「看得见的图标」有什么问题（空列表 = 正常）。"""
+    probs = []
+    holder = world.layout.containers['image']
+    icon = world.cell['itemImage']
+    ours = [c for c in holder.children if c.name == rules.PREFIX]
+    path = world.cell['imagePath']
+    if icon not in holder.children:
+        probs.append('icon_left_holder')
+    elif not icon.visible:
+        probs.append('icon_hidden')
+    elif ours and holder.children.index(ours[0]) > holder.children.index(icon):
+        probs.append('frame_above_icon')
+    if path['index'] == 0 and path['params'][0] in world.loaded:
+        texture = icon.texture
+        if texture is None:
+            probs.append('icon_texture_missing')
+        elif texture['disposed']:
+            probs.append('icon_texture_disposed')
+        elif texture['path'] != path['params'][0]:
+            probs.append('icon_texture_wrong')
+    return probs
+
+
+def cache_disposed(world):
+    """缓存（Loaded）里被 dispose 掉的贴图路径：缓存仍会把它们发给下一个取图的格子。"""
+    return sorted(path for path, texture in world.loaded.items() if texture['disposed'])
+
+
+#: 名称: dict(build, preloaded, steps)。步骤同矩阵，另加 ('cell2', 图标)：新建第二格（共享同一个缓存）并装备。
+ICON_SCENARIOS = {
+    'icon_hit_then_load': dict(steps=[('equip', LV200), ('flush',)]),
+    'icon_icon_loaded_frame_async': dict(preloaded=(LV200,), steps=[('equip', LV200), ('flush',)]),
+    'icon_frame_loaded_icon_async': dict(preloaded=(FRAME,), steps=[('equip', LV200), ('flush',)]),
+    'icon_frame_first_icon_later': dict(steps=[('equip', LV200), ('flush', [FRAME]), ('flush',)]),
+    'icon_via_run_then_present': dict(build=(LV200, 5, True), steps=[('equip', LV200), ('flush',)]),
+    'icon_reuse_to_other': dict(steps=[('equip', LV200), ('flush',), ('equip', OTHER), ('flush',)]),
+    'icon_reuse_to_empty': dict(steps=[('equip', LV200), ('flush',), ('unequip',), ('flush',)]),
+    'icon_empty_then_reequip': dict(steps=[('equip', LV200), ('flush',), ('unequip',), ('equip', LV200), ('flush',)]),
+    'icon_soul_empty_then_reequip': dict(steps=[('equip', LV200), ('flush',), ('soul_none',), ('equip', LV200),
+                                                ('flush',)]),
+    'icon_other_cell_after_empty': dict(steps=[('equip', LV200), ('flush',), ('unequip',), ('cell2', LV200),
+                                               ('flush',)]),
+    'icon_late_load_after_empty': dict(steps=[('equip', LV200), ('unequip',), ('flush',), ('equip', LV200),
+                                              ('flush',)]),
+}
+#: 原生（未打补丁）必然 dispose 共享贴图的场景：有图标之后同一格变成空槽。
+ICON_DISPOSE_TARGETS = ('icon_reuse_to_empty', 'icon_empty_then_reequip', 'icon_soul_empty_then_reequip',
+                        'icon_other_cell_after_empty')
+
+
+def run_icon_scenario(abc, name):
+    spec = ICON_SCENARIOS[name]
+    try:
+        world = PartyWorld(abc, ROWS, True, spec.get('preloaded', ()), *spec.get('build', (None, None, None)))
+        cells = [world]
+        for step in spec['steps']:
+            kind = step[0]
+            if kind == 'equip':
+                world.equip(*step[1:])
+            elif kind == 'unequip':
+                world.unequip()
+            elif kind == 'soul_none':
+                world.cell['replaceAbilitySoul'](NONE_OPTION)
+            elif kind == 'cell2':
+                other = PartyWorld(abc, ROWS, True, ())
+                other.loaded = world.loaded                 # 同一个 ItemThumbnail 缓存（常驻 common 组）
+                other.equip(step[1])
+                cells.append(other)
+            elif kind == 'flush':
+                for cell in cells:
+                    cell.flush(step[1] if len(step) > 1 else None)
+            else:
+                raise ValueError(step)
+        problems = sorted({p for cell in cells for p in icon_problems(cell)})
+        disposed = cache_disposed(world)
+        return {'problems': problems, 'cache_disposed': disposed}
+    except AvmThrow as thrown:
+        value = thrown.value
+        return {'problems': ['throw ' + str(value.get('code') if isinstance(value, dict) else value)],
+                'cache_disposed': []}
+    except (AssertionError, KeyError, TypeError, ValueError, AttributeError, IndexError, RecursionError) as exc:
+        return {'problems': ['error ' + type(exc).__name__ + ': ' + str(exc)[:120]], 'cache_disposed': []}
+
+
+def icon_matrix(abc):
+    return {name: run_icon_scenario(abc, name) for name in ICON_SCENARIOS}
+
+
+def icon_red(results):
+    """图标矩阵里不干净的场景（有问题或缓存里有被 dispose 的贴图），名字加 icon: 前缀以便与框矩阵区分。"""
+    return ['icon:' + name for name, r in results.items() if r['problems'] or r['cache_disposed']]
+
+
+# ---------------------------------------------------------------------------
+# 真机流程 A–D（b 版）：三处使用方的真实调用顺序；多格共享同一个 ItemThumbnail 缓存；每一步之后逐格查图标与框
+# ---------------------------------------------------------------------------
+
+#: ThumbnailViewEmptyStyle 的枚举下标（__constructs__ = EmptyLabel, Plus, Character, …）。
+STYLE_EMPTY_LABEL, STYLE_PLUS = 0, 1
+
+#: 名称: dict(style, preloaded, rows, cells=[每格构造参数 (icon, rarity, enhanced)；None = 构造 None], steps, final)。
+#: 步骤：('equip', 格, 图标[, 稀有度, 强化]) / ('unequip', 格) / ('soul', 格) / ('soul_none', 格) /
+#: ('flush'[, 只到这些路径]) / ('new', 构造参数)：中途新建一格（编号接在已有格之后，共享同一缓存）。
+#: final = {格: 补丁版最终看到的框}。
+#: A 编成（PartyCarouselMemberView.run → present）：构造时就带路径 → run → replaceEquipment(同一件)，Plus 空槽样式。
+#:   ItemThumbnail 是常驻 common 组，出击前选队伍里被 dispose 的贴图之后打开编成画面照样取到（A_party_screen_after_select_emptied）。
+#: B 出击前选队伍（NormalPartySelectCarouselPageView.initialize）：每页 3 格都构造 None → run → replaceEquipment(peek)；
+#:   同一件装备可以编在不同队伍（不同页），各页各格共享同一个缓存；页面刷新 = 再跑一次 replaceEquipment。
+#:   切换队伍分组标签：NormalPartySelectLogic.tabChanged → PartySelectView.refreshCarousel → PartySelectCarouselView.refresh
+#:   → 当前页 initialize()：同一批 PartyItemThumbnailView 按另一分组的 getEquipmentPeek 再 replaceEquipment；
+#:   另一分组同位置是空槽时就是 setItemImage(None)（B_select_tab_switch）。
+#: C 联机房间成员面板（MultiRoomMemberInformationPanelView.setMemberInfo）：构造 None（EmptyLabel）→ 成员切换时
+#:   replaceEquipment / replaceAbilitySoul。
+#: D 格子复用：同一格换成别的强化 5★ / 空槽，贴图在换之前或之后才到。
+FLOWS = {
+    'A_party_screen': dict(cells=[(LV200, 5, True)], steps=[('equip', 0, LV200), ('flush',)],
+                           final={0: ('frame', FRAME)}),
+    'A_party_screen_icon_ready': dict(cells=[(LV200, 5, True)], preloaded=(LV200,),
+                                      steps=[('equip', 0, LV200), ('flush',)], final={0: ('frame', FRAME)}),
+    'A_party_screen_all_ready': dict(cells=[(LV200, 5, True)], preloaded=(LV200, FRAME), steps=[('equip', 0, LV200)],
+                                     final={0: ('frame', FRAME)}),
+    'A_party_screen_unequip_then_reequip': dict(cells=[(LV200, 5, True)], steps=[
+        ('equip', 0, LV200), ('flush',), ('unequip', 0), ('equip', 0, LV200), ('flush',)],
+        final={0: ('frame', FRAME)}),
+    # 出击前选队伍里一格「有图标 → 空槽」之后，再打开编成画面（新建一格，构造时带路径）看同一件 PARADOX
+    'A_party_screen_after_select_emptied': dict(steps=[
+        ('equip', 0, LV200), ('flush',), ('unequip', 0), ('new', (LV200, 5, True)), ('equip', 1, LV200), ('flush',)],
+        final={0: ('rarity', EMPTY), 1: ('frame', FRAME)}),
+    'B_select_none_then_paradox': dict(steps=[('equip', 0, LV200), ('flush',)], final={0: ('frame', FRAME)}),
+    'B_select_icon_first': dict(steps=[('equip', 0, LV200), ('flush', [LV200]), ('flush', [FRAME])],
+                                final={0: ('frame', FRAME)}),
+    'B_select_frame_first': dict(steps=[('equip', 0, LV200), ('flush', [FRAME]), ('flush', [LV200])],
+                                 final={0: ('frame', FRAME)}),
+    'B_select_both_ready': dict(preloaded=(LV200, FRAME), steps=[('equip', 0, LV200)], final={0: ('frame', FRAME)}),
+    'B_select_reinitialize_same': dict(steps=[('equip', 0, LV200), ('flush',), ('equip', 0, LV200)],
+                                       final={0: ('frame', FRAME)}),
+    'B_select_three_slots': dict(cells=[None, None, None], steps=[
+        ('equip', 0, LV200), ('equip', 1, OTHER), ('unequip', 2), ('flush',)],
+        final={0: ('frame', FRAME), 1: ('rarity', PINK), 2: ('rarity', EMPTY)}),
+    'B_select_refresh_empty_then_back': dict(steps=[
+        ('equip', 0, LV200), ('flush',), ('unequip', 0), ('equip', 0, LV200), ('flush',)],
+        final={0: ('frame', FRAME)}),
+    'B_select_other_page_emptied': dict(cells=[None, None], steps=[
+        ('equip', 0, LV200), ('equip', 1, LV200), ('flush',), ('unequip', 1), ('equip', 0, LV200)],
+        final={0: ('frame', FRAME), 1: ('rarity', EMPTY)}),
+    # 同一页 3 格：分组 1 = [PARADOX, 别的强化 5★, 空]；切到分组 2 = [空, 另一件强化 5★, 空]；再切回分组 1
+    'B_select_tab_switch': dict(cells=[None, None, None], steps=[
+        ('equip', 0, LV200), ('equip', 1, OTHER), ('unequip', 2), ('flush',),
+        ('unequip', 0), ('equip', 1, OTHER2), ('unequip', 2), ('flush',),
+        ('equip', 0, LV200), ('equip', 1, OTHER), ('unequip', 2), ('flush',)],
+        final={0: ('frame', FRAME), 1: ('rarity', PINK), 2: ('rarity', EMPTY)}),
+    'B_select_late_icon_after_empty': dict(steps=[
+        ('equip', 0, LV200), ('unequip', 0), ('flush',), ('equip', 0, LV200), ('flush',)],
+        final={0: ('frame', FRAME)}),
+    'C_room_member_switch': dict(style=STYLE_EMPTY_LABEL, steps=[
+        ('equip', 0, LV200), ('flush',), ('equip', 0, OTHER), ('flush',), ('equip', 0, LV200), ('flush',)],
+        final={0: ('frame', FRAME)}),
+    'C_room_member_empty_then_back': dict(style=STYLE_EMPTY_LABEL, steps=[
+        ('equip', 0, LV200), ('flush',), ('unequip', 0), ('flush',), ('equip', 0, LV200), ('flush',)],
+        final={0: ('frame', FRAME)}),
+    'C_room_soul_empty_then_back': dict(style=STYLE_EMPTY_LABEL, steps=[
+        ('soul', 0), ('flush',), ('soul_none', 0), ('flush',), ('soul', 0), ('flush',)],
+        final={0: ('rarity', RAINBOW)}),
+    'D_reuse_to_other_5star': dict(steps=[('equip', 0, LV200), ('flush',), ('equip', 0, OTHER), ('flush',)],
+                                   final={0: ('rarity', PINK)}),
+    'D_reuse_to_empty': dict(steps=[('equip', 0, LV200), ('flush',), ('unequip', 0), ('flush',)],
+                             final={0: ('rarity', EMPTY)}),
+    'D_reuse_to_empty_before_load': dict(steps=[('equip', 0, LV200), ('unequip', 0), ('flush',)],
+                                         final={0: ('rarity', EMPTY)}),
+    'D_other_then_late_paradox': dict(steps=[('equip', 0, OTHER), ('equip', 0, LV200), ('flush',)],
+                                      final={0: ('frame', FRAME)}),
+}
+#: 原生 setItemImage(None) 会 dispose 共享贴图的流程（某一格「有图标 → 空槽」）：v1 基线与 a 版在这些流程上必然变红。
+#: 顺序与 FLOWS 一致（flow_icon_red 按 FLOWS 顺序列出）。
+FLOW_DISPOSE_TARGETS = ('A_party_screen_unequip_then_reequip', 'A_party_screen_after_select_emptied',
+                        'B_select_refresh_empty_then_back', 'B_select_other_page_emptied', 'B_select_tab_switch',
+                        'C_room_member_empty_then_back', 'C_room_soul_empty_then_back', 'D_reuse_to_empty')
+
+
+def _keyed(world):
+    """这一格此刻是否该显示蓝金框：imagePath == Some(Lv200 图标) 且 isEnableEnhancedEffect == Some(true)。"""
+    path, enhanced = world.cell['imagePath'], world.cell['isEnableEnhancedEffect']
+    return (path['index'] == 0 and path['params'][0] == LV200 and enhanced['index'] == 0
+            and bool(enhanced['params'][0]))
+
+
+def flow_cell_problems(world):
+    """一格此刻的问题：图标（icon_problems）+ 框（框与 rarity 容器必须恰好显示一个；框只给键图标）。"""
+    probs = list(icon_problems(world))
+    try:
+        seen, _sweep = world.state()
+    except AssertionError as exc:
+        return probs + ['state ' + str(exc)[:80]]
+    if seen[0] in ('BOTH', 'NONE'):
+        probs.append('rarity_and_frame_' + seen[0].lower())
+    if seen[0] == 'frame' and not _keyed(world):
+        probs.append('frame_on_unkeyed_icon')
+    return probs
+
+
+def run_flow(abc, name):
+    """跑一条流程；返回 {final: {格: 看到的框}, problems: ['#步/格:问题'], cache_disposed: [路径]}。"""
+    spec = FLOWS[name]
+    cache = {}
+    for path in spec.get('preloaded', ()):
+        cache[path] = PartyWorld._texture(path)
+    problems = []
+    try:
+        def new_cell(build):
+            return PartyWorld(abc, spec.get('rows', ROWS), True, (), *(build or (None, None, None)), cache=cache,
+                              empty_style=spec.get('style', STYLE_PLUS))
+
+        cells = [new_cell(build) for build in spec.get('cells', [None])]
+        for index, step in enumerate(spec['steps']):
+            kind = step[0]
+            if kind == 'flush':
+                for cell in cells:
+                    cell.flush(step[1] if len(step) > 1 else None)
+            elif kind == 'new':
+                cells.append(new_cell(step[1]))
+            else:
+                cell = cells[step[1]]
+                if kind == 'equip':
+                    cell.equip(*step[2:])
+                elif kind == 'unequip':
+                    cell.unequip()
+                elif kind == 'soul':
+                    cell.soul(*step[2:])
+                elif kind == 'soul_none':
+                    cell.cell['replaceAbilitySoul'](NONE_OPTION)
+                else:
+                    raise ValueError(step)
+            for number, cell in enumerate(cells):
+                problems += [f'#{index}/{number}:{p}' for p in flow_cell_problems(cell)]
+        final = {}
+        for number, cell in enumerate(cells):
+            try:
+                final[number] = cell.state()[0]
+            except AssertionError as exc:
+                final[number] = ('error', str(exc)[:80])
+    except AvmThrow as thrown:
+        value = thrown.value
+        return {'final': {}, 'problems': ['throw ' + str(value.get('code') if isinstance(value, dict) else value)],
+                'cache_disposed': []}
+    except (AssertionError, KeyError, TypeError, ValueError, AttributeError, IndexError, RecursionError) as exc:
+        return {'final': {}, 'problems': ['error ' + type(exc).__name__ + ': ' + str(exc)[:120]],
+                'cache_disposed': []}
+    return {'final': final, 'problems': problems,
+            'cache_disposed': sorted(path for path, texture in cache.items() if texture['disposed'])}
+
+
+def flow_matrix(abc):
+    return {name: run_flow(abc, name) for name in FLOWS}
+
+
+def flow_expected(name):
+    return {'final': dict(FLOWS[name]['final']), 'problems': [], 'cache_disposed': []}
+
+
+def flow_red(results):
+    """流程里与补丁版期望不符的（最终框不对、任一步有问题、缓存里有被 dispose 的贴图），名字加 flow: 前缀。"""
+    return ['flow:' + name for name, r in results.items() if r != flow_expected(name)]
+
+
+def flow_icon_red(results):
+    """只看图标（每一步的问题 + 缓存 dispose），不看最终框：v1 基线没有蓝金框，最终框本来就与补丁版不同。"""
+    return ['flow:' + name for name, r in results.items() if r['problems'] or r['cache_disposed']]
+
+
+# ---------------------------------------------------------------------------
 # 截断执行：只跑插入段，所有路径必须到达原生入口（哨兵返回 this）
 # ---------------------------------------------------------------------------
 
@@ -793,7 +1091,47 @@ def static_proof(base_abc, out_abc):
                   and item['branches_stay_in_block_or_exit_to_native_entry']
                   and item['no_outside_branch_into_block'] and item['no_scope_or_exception_change']
                   and item['returns_in_block'] == 0 and item['stack_empty_at_native_entry'])
-    return {label: item, 'ok': item['ok']}
+    second = static_proof_set_image(base_abc, out_abc)
+    return {label: item, rules.SET_IMAGE_LABEL: second, 'ok': item['ok'] and second['ok']}
+
+
+def static_proof_set_image(base_abc, out_abc):
+    """setItemImage 的 4 条：恰好是 this.itemImage.texture = null；lookupswitch 的 None 分支落在块开头（ENTER），
+    其他分支不进块；原生 30 条逐字节可还原；header / 局部 / 异常表不变；原生入口处栈为空。"""
+    locks = json.loads((HERE / 'baseline.json').read_text(encoding='utf8'))
+    label, at = rules.SET_IMAGE_LABEL, rules.SET_IMAGE_ANCHOR
+    before = base_abc.bodies[bodies.resolve(base_abc, label)]
+    after = out_abc.bodies[bodies.resolve(out_abc, label)]
+    native_ins, patched = asm.decode(before[5]), asm.decode(after[5])
+    n = len(patched) - len(native_ins)
+    block = patched[at:at + n]
+    shape = [(x.name, out_abc.mn_name(x.args[0]) if x.name in ('getproperty', 'setproperty') else None)
+             for x in block]
+    switch = patched[7]
+    item = {
+        'anchor': at, 'inserted': n,
+        'native_restored_byte_identical': sha(asm.unsplice(after[5], at, n)) == locks[label]['sha'] == sha(before[5]),
+        'header_before': list(before[1:5]), 'header_after': list(after[1:5]),
+        'block': shape,
+        'block_is_itemimage_texture_null': shape == [('getlocal_0', None), ('getproperty', 'itemImage'),
+                                                     ('pushnull', None), ('setproperty', 'texture')],
+        'none_case_enters_block': switch.name == 'lookupswitch' and switch.cases == [9, at] and switch.default == 8,
+        'no_other_branch_into_block': not [i for i, x in enumerate(patched) if i != 7 and (
+            (x.target is not None and at <= x.target < at + n) or
+            (x.cases and any(at <= t < at + n for t in [x.default, *x.cases])))],
+        'native_after_block_is_change_texture_none': [x.name for x in patched[at + n:at + n + 5]] == [
+            'findproperty', 'getproperty', 'getlex', 'getproperty', 'callpropvoid']
+        and out_abc.mn_name(patched[at + n + 4].args[0]) == 'changeTexture'
+        and out_abc.mn_name(patched[at + n + 3].args[0]) == 'None',
+        'no_scope_or_exception_change': after[6] == before[6] == [] and after[7] == before[7],
+        'stack_empty_at_native_entry': _stack_empty_at(after, at + n, out_abc.multinames),
+    }
+    item['ok'] = (n == rules.SET_IMAGE_INSERTED_COUNT and item['native_restored_byte_identical']
+                  and item['header_after'] == EXPECTED_HEADERS[label] == item['header_before']
+                  and item['block_is_itemimage_texture_null'] and item['none_case_enters_block']
+                  and item['no_other_branch_into_block'] and item['native_after_block_is_change_texture_none']
+                  and item['no_scope_or_exception_change'] and item['stack_empty_at_native_entry'])
+    return item
 
 
 # ---------------------------------------------------------------------------
@@ -903,7 +1241,17 @@ def mutant_wrong_prefix(e, label, code):
     return out
 
 
+def mutant_keep_dispose(e, label, code):
+    """setItemImage 插入段只读图标、不置空：原生 changeTexture(None) 照旧 dispose 缓存里的共享贴图。"""
+    return [('getlocal_0',), ('getproperty', e.q('itemImage')), ('pop',)]
+
+
+mutant_keep_dispose.label = rules.SET_IMAGE_LABEL
+
+
 MUTANTS = {
+    # setItemImage 不置空（b 版修复被撤掉）：卸下 / 刷成空槽后图标贴图被 dispose，换回时图标消失
+    'keep_dispose': mutant_keep_dispose,
     # 删掉「isEnableEnhancedEffect == Some(true)」：非强化态 / 魂珠也换框
     'drop_enhanced': _drop(_enhanced_guard),
     # 删掉 dispose 判定：dispose 之后才到的回调仍然建图
@@ -936,6 +1284,8 @@ MUTANTS = {
 }
 #: 每个变异体至少要让这些场景变红（其余变红项也记录）。
 MUTANT_TARGETS = {
+    'keep_dispose': (['icon:' + name for name in ICON_DISPOSE_TARGETS]
+                     + ['flow:' + name for name in FLOW_DISPOSE_TARGETS]),
     'drop_enhanced': ['not_enhanced', 'ability_soul', 'reuse_to_not_enhanced_same_icon'],
     'drop_gear_guard': ['callback_after_dispose'],
     'drop_restore': ['reuse_to_other_enhanced', 'reuse_to_lv120', 'reuse_to_empty', 'reuse_to_soul',
@@ -952,9 +1302,11 @@ MUTANT_TARGETS = {
 
 
 def red_assertions(abc):
-    """在给定 ABC 上跑矩阵，返回所有与期望不符的场景名。"""
+    """在给定 ABC 上跑矩阵（框 + 图标 + 真机流程），返回所有与期望不符的场景名
+    （图标矩阵的名字带 icon: 前缀，流程带 flow: 前缀）。"""
     results, _ = party_matrix(abc)
-    return [name for name in SCENARIOS if results[name] != expected(name)]
+    return ([name for name in SCENARIOS if results[name] != expected(name)] + icon_red(icon_matrix(abc))
+            + flow_red(flow_matrix(abc)))
 
 
 def mutant_matrix(base_path: Path):
@@ -986,7 +1338,14 @@ def verify(out_path, base_path=None, mutants=True):
     fall = fallthrough(out.abc)
     report['fallthrough_mismatches'] = {k: [v, fallthrough_expected(k)] for k, v in fall.items()
                                         if v != fallthrough_expected(k)}
-    ok = not (report['mismatches'] or report['fallthrough_mismatches'])
+    icons = icon_matrix(out.abc)
+    report['icon_matrix_size'] = len(icons)
+    report['icon_red'] = icon_red(icons)
+    flows = flow_matrix(out.abc)
+    report['flow_matrix_size'] = len(flows)
+    report['flow_red'] = flow_red(flows)
+    report['flow_red_detail'] = {k: [v, flow_expected(k)] for k, v in flows.items() if v != flow_expected(k)}
+    ok = not (report['mismatches'] or report['fallthrough_mismatches'] or report['icon_red'] or report['flow_red'])
     if base_path is not None:
         base_path = Path(base_path)
         base = SwfAbc(base_path)
@@ -1005,10 +1364,24 @@ def verify(out_path, base_path=None, mutants=True):
             'base_requests_frames_or_creates_images': sorted(k for k, v in native_probes.items()
                                                              if v['frame_requests'] or v['frames_created']),
         }
+        base_icons = icon_matrix(base.abc)
+        # 原生缺陷的负对照：基线在「有图标 → 空槽」的场景上必须 dispose 缓存里的共享贴图（证明图标矩阵查得出这个缺陷），
+        # 其余场景基线与补丁一样干净。它不是失败项，单独记在 native_icon_defect 里。
+        report['native_icon_defect'] = {
+            'base_icon_red': icon_red(base_icons),
+            'expected_red': ['icon:' + name for name in ICON_DISPOSE_TARGETS],
+            'base_cache_disposed': {k: v['cache_disposed'] for k, v in base_icons.items() if v['cache_disposed']},
+        }
+        # 真机流程 A–D 同理：基线只在「某格有图标 → 空槽」的流程上图标变红（最终框本来就是粉框，不比）
+        defect = report['native_icon_defect']
+        defect['base_flow_icon_red'] = flow_icon_red(flow_matrix(base.abc))
+        defect['expected_flow_icon_red'] = ['flow:' + name for name in FLOW_DISPOSE_TARGETS]
+        native_defect_ok = (defect['base_icon_red'] == defect['expected_red']
+                            and defect['base_flow_icon_red'] == defect['expected_flow_icon_red'])
         neg = report['negative_control']
         ok = ok and report['base_abc_sha256'] == BASE_ABC_SHA and report['preservation']['ok'] \
             and report['static_proof']['ok'] and report['reproducible_from_base'] \
-            and not any(neg.values())
+            and not any(neg.values()) and native_defect_ok
         if mutants:
             report['mutants'] = mutant_matrix(base_path)
             ok = ok and all(m['red_count'] and m['targets_red'] for m in report['mutants'].values())

@@ -8,15 +8,75 @@
 - 锁不符就拒绝，**没有任何自动降级或兜底**。
 - 本目录只产出候选 SWF 和 APK。静态检查、解释器行为测试和 APK 验签都**不等于**已经安装，也不等于实机通过。
 
+## b 版（2026-09-28，作者反馈「武器图标会消失」）
+
+真机：a 版（14396ce0）出击前选队伍里 PARADOX Lv200 显示蓝金框、**没有图标**。
+
+**结论级别：代码层确认，真机待证。** 下面的机制在反编译源码与真实字节码解释执行里成立；作者看到的现象是否就是它，
+要靠下文「真机验收清单」里装 b 版之前的两项区分性检查来定。根因（代码层）不在编成槽框的插入段，是原生缺陷被框放大：
+
+- 原生 `setItemImage(None)`（体 85274 #24–28）调 `itemImage.changeTexture(Option.None)`，
+  `TextureReplaceableImage.changeTexture` 的 None 分支会 `texture.dispose()`。这张贴图是 `view.asset.getTexture(path)` 从
+  **ItemThumbnail 缓存**取来的共享贴图（常驻 common 组，跨格子、跨画面）。
+- 官方装备图标是 `item/sprite_sheet` 图集的 SubTexture（501 条 `item/equipment/...`），dispose 是空操作；
+  自制武器图标（`item/equipment/mod/**`，PARADOX 三档、诅咒武器等）是独立 PNG，`trimmed_image` 里也没有行，
+  缓存里存的是 ConcreteTexture 本体 —— dispose 直接释放 GPU 贴图，缓存却仍记为 Loaded。
+- 之后任何格子、任何画面再 `setTexture` 这个路径都同步拿到已释放的贴图，直到重启游戏（ItemThumbnail 是
+  `AssetGroupResolver.getCommonGroups` 里的常驻组，`AssetContainerBase.reset` 换场景时保留新旧场景都用的缓存）。
+  真机上画一张已释放的 ConcreteTexture 是什么结果——空白、黑块，还是抛 #3694 被 CrashUtil 接住——**没有证据**；
+  游戏代码里没有打开 `enableErrorChecking` 的地方，但这推不出「不抛错」。解释器替身只是把「贴图已 dispose」记为看不见。
+- 触发：同一格「有图标 → 空槽」——编成里卸下、出击前选队伍编辑后刷新成空槽、**出击前选队伍切到这一格为空的队伍分组**
+  （`NormalPartySelectLogic.tabChanged` → `PartySelectView.refreshCarousel` → `PartySelectCarouselView.refresh` →
+  当前页 `initialize()`，同一批 `PartyItemThumbnailView` 按另一分组 `replaceEquipment(getEquipmentPeek)`）、
+  联机房间成员面板切到空槽成员、魂珠槽清空。原样的「构造 None → run → replaceEquipment」本身**不**触发（a 版上是绿的）。
+  蓝金框是自建图，从不 `changeTexture(None)`，所以照常显示；v1 下同样步骤是「粉框 + 图标贴图已释放」。
+- 这个理论还有一个推论要真机对上：缓存跨画面共享，出事之后再打开编成画面，PARADOX 也应当没有图标
+  （`A_party_screen_after_select_emptied`）。作者同一份反馈里编成画面正常——只有在「看编成画面早于出事」时才对得上，
+  这一点没有核实。
+- 插入段本身不会碰图标：自建图按 `name === 前缀` 认（图标的 name 是 null），`addChildAt(img, 0)` 放在图标下面，
+  属性写只落在自建图与 rarity 容器（静态证明与变异体 `no_name_check` / `frame_above_icon` 都覆盖）。
+
+修法（单方法插入，仍是本能力 `equipment-enhanced-party-frame-v1`，数据契约不变）：
+
+| 方法 | 体 | 插入点 | 条数 | header | 常量池 |
+|---|---:|---|---:|---|---|
+| `PartyItemThumbnailView/setItemImage(Option)` | 85274 | #24：lookupswitch case 1（None）入口，ENTER | 4 | `[4,2,1,2]` 不变 | 不变 |
+
+```
+this.itemImage.texture = null;      // 与原生 changeTexture(None) 里的 texture = null 是同一个 setter，只少了 dispose
+→ 原生 itemImage.changeTexture(Option.None)   // 看到 texture == null：跳过 dispose，再赋一次 null（无操作）
+```
+
+- 方法锁 `e17a429af55504f3…`（体 85274，header `[4,2,1,2]`），整条 30 条原生指令逐条钉形状、lookupswitch 目标钉死；
+  已打过（多 4 条）或形状变了都拒绝，没有兜底。
+- 对官方图集图标行为逐字节等价（SubTexture.dispose 本来就是空操作）；对独立 PNG 图标只去掉那次破坏共享缓存的 dispose。
+  贴图始终归缓存所有，缓存重置时由缓存释放，不泄漏。`textureLoadCompleted` 的 None 分支此后只会遇到 `texture == null`，不需要改。
+- 与原生的唯一边界差异：插入段排在 `changeTexture` 第一行 `if(_disposed) return` 之前。itemImage 已经 dispose 时原生什么都不做，
+  补丁仍会多写一次 `style.texture = null`（`Image.set texture` → `MeshStyle.set texture(null)` 只 `setRequiresRedraw`；
+  `Quad.setupVertices` 因 `_disposed` 提前返回）——无害：不可见、不抛错。
+- 图标矩阵（verify.icon_matrix，11 个场景）：补丁版全绿；v1 基线与 a 版在「有图标 → 空槽」4 个场景上必然变红（负对照）；
+  变异体 `keep_dispose`（插入段不置空）让这 4 个场景变红。
+- 真机流程矩阵（verify.FLOWS，22 条）：A 编成（构造时带路径；另有「出击前选队伍出事之后才打开编成画面」）、
+  B 出击前选队伍（每格构造 None 再 `replaceEquipment`，同一件装备编在两页、共享缓存；`B_select_tab_switch` = 同一页 3 格
+  切到这一格为空的分组再切回）、C 联机房间成员面板（EmptyLabel，成员 / 魂珠切换）、D 格子复用；图标与框图贴图先到、后到、
+  已就绪都覆盖。每一步之后逐格查图标（在容器里、可见、在框之上、贴图是缓存那张且未 dispose）与框（框 / rarity 恰好显示一个、
+  框只给键图标），最后比对最终框。补丁版全绿；**同一组断言**在 v1 基线与 a 版（016cd927）上在 8 条「某格有图标 → 空槽」流程
+  （`FLOW_DISPOSE_TARGETS`）上变红；原样的 `B_select_none_then_paradox` 在 a 版上是绿的。a 版在这些流程里的最终状态是
+  「蓝金框在、图标贴图已 dispose」，与作者反馈的现象一致——这是代码层的对应，不等于真机已证实（回归测试钉住的是字节码行为）。
+- 其他原生视图（`PartyCarouselAbilitySoulView`、`FramelessItemThumbnailView` 等）也有 `changeTexture(None)`，本补丁不改；
+  数据侧另有不需要 APK 的加固：给自制图标路径补 `trimmed_image` 行（`x=0,y=0,w,h`），缓存就会存 SubTexture，所有视图的 dispose 都变成空操作。
+
 ## 构建链
 
 | 环节 | APK | 主 SWF 容器 | 主 ABC |
 |---|---|---|---|
 | equipment-description-override | `cf91b29b…` | `cdc4c1d1…` | `4994e23d…` |
 | equipment-enhanced-look（已装在作者 MuMu 上） | `7056f7dc072cb5d4…` | `45ca9985a896b644…` | `e87371b709c41b66…` |
-| **本补丁**（候选，未安装） | `14396ce09a4cf236…` | `9986dea39831608e…` | `016cd9270a5b9c0d…` |
+| 本补丁 a 版（已装本机，有「图标会消失」缺陷） | `14396ce09a4cf236…` | `9986dea39831608e…` | `016cd9270a5b9c0d…` |
+| **本补丁 b 版**（候选，未安装） | 见 `enhanced-look-party-20260928b/build-summary.json` | `5bd476f6effd1452…` | `2a9583cddd477868…` |
 
-- 基线按**主 ABC** `e87371b7…` 判定；容器哈希只作参考。其他基线一律拒绝，已打过本补丁的输入报告 `already_patched`。
+- 基线按**主 ABC** `e87371b7…` 判定；容器哈希只作参考。其他基线一律拒绝，已打过本补丁的输入报告 `already_patched`；
+  a 版产物（`016cd927…`）明确拒绝，要求回到 7056f7dc 的主 SWF 重新打（b 版不叠在 a 版上）。
 - 被改方法体在 1047（`d9559f3f…`）、equipment-rules（`d99246d9…`）、说明覆盖（`4994e23d…`）、v1（`e87371b7…`）里
   **逐字节相同、体下标相同**（测试核对）。但 apply 只认 v1 这一个主 ABC：候选 APK 的能力声明是「v1 的 11 项 + 本补丁 1 项」。
 - 签名证书 `729507c10a893879…` 与 7056f7dc 相同，候选 APK 可以 `pm install -r` 覆盖安装。
@@ -31,7 +91,7 @@
 - FORBID 策略：原方法的分支目标只有 #9/#10/#19/#21/#22/#24，没有指向 #2 的。插入段所有出口都落到原生入口，段内没有 return。
 - 常量池只追加 1 个字符串（前缀，同时用作自建图的 `name`）；`"rarity"`、`"image"` 与 35 个多名全部复用 ABC 里已有的条目。
 - 新局部从原 localcount 2 起编号（2–14），原方法体一个也读不到。插入段只读 `this`。
-- 其余 92567 个方法体逐字节不变（含 v1 的 2 个体和它登记的整条叠加链），方法 / 实例 / 类 / 脚本 / 元数据表与 ABC 以外的 SWF 标签都不变。
+- 其余 92566 个方法体逐字节不变（b 版另改 setItemImage 一个体；含 v1 的 2 个体和它登记的整条叠加链），方法 / 实例 / 类 / 脚本 / 元数据表与 ABC 以外的 SWF 标签都不变。
 
 ### 为什么宿主是 `updateEnhancedEffectAnimation`
 
@@ -146,7 +206,7 @@ python -X utf8 client-patch/equipment-enhanced-party-frame/package_apk.py --base
 python -X utf8 -m unittest client-patch/tests/test_equipment_enhanced_party_frame.py -v
 ```
 
-- **结构**：只有 1 个锁定体改变，插入段能还原出锁定 sha，header 与设计值一致，产物 ABC 等于锁定目标、可以复现；常量池只多 1 个字符串；
+- **结构**：只有 2 个锁定体改变（85268、85274），插入段能还原出锁定 sha，header 与设计值一致，产物 ABC 等于锁定目标、可以复现；常量池只多 1 个字符串；
   重复打补丁、方法体被改过（header 或字节不符）、锚点指令形状变了都拒绝。
 - **静态隔离证明**（`verify.static_proof`）：只写新局部；只读 `this`；调用白名单（不含 `getMasterTable`、`getTexture`）；
   `getlex` 只有 4 个类；属性写逐条追踪接收者，只有「自建图的 name / visible / transformationMatrix」和「rarity 的 visible」；
@@ -158,8 +218,9 @@ python -X utf8 -m unittest client-patch/tests/test_equipment_enhanced_party_fram
   载入前就换走、贴图随后到达（含本格已有自建图的情况）；两个命中键先后切换、旧键贴图先到（中途快照仍是粉框）；dispose 之后回调到达。
 - **截断执行**：每个场景跑完后再单独执行一次插入段（切片接哨兵），30 项全部到达原生入口且看到的框不变（幂等）。
 - **负对照**：未打补丁的 v1 基线上 30 项全部是原生结果（粉框），从不访问 `custom_ability_string`、从不建图、从不请求框图。
-  11 个变异体全部让断言变红：删强化条件、删 dispose 判定、删恢复、不藏粉框、删探测（同步重入）、删尺寸、删矩阵、
-  不认名字（把图标当自建图）、放到图标上面、前缀写成 v1 的、删空串判定。
+  12 个变异体全部让断言变红：setItemImage 不置空（b 版修复撤掉）、删强化条件、删 dispose 判定、删恢复、不藏粉框、
+  删探测（同步重入）、删尺寸、删矩阵、不认名字（把图标当自建图）、放到图标上面、前缀写成 v1 的、删空串判定。
+- **图标矩阵与真机流程 A–D**（b 版）：见上文「b 版」一节；`red_assertions` 同时跑框矩阵、图标矩阵和流程矩阵，变异体按三者合计。
 - 解释器是 `party_interp.py`：以 v1 的同一个模块名加载 `equipment-enhanced-look/look_interp.py`，不另写、不复制。
 
 ## 产物（2026-09-28，只构建）
@@ -167,6 +228,9 @@ python -X utf8 -m unittest client-patch/tests/test_equipment_enhanced_party_fram
 `D:\WF\out\PARADOX-20260928\apk\enhanced-look-party-20260928\`：`build.py`、`swf/`（baseline、候选、三份报告）、
 `WorldFlipper-equipment-enhanced-party-frame.apk` 与 `.build-report.json`、`build-summary.json`、`install-receipt.template.json`、
 `research.md`（调研与规格）、`prototype/`（原型）、`preview_party_frame.png`（美术预览）。哈希见 `build-summary.json`。
+
+b 版：`D:\WF\out\PARADOX-20260928\apk\enhanced-look-party-20260928b\`（同一套产物 + `repro/flows_icon.py` 复现脚本；
+诊断阶段的副本构建移到 `diagnosis-build/`），哈希见其 `build-summary.json`。
 
 ## 真机验收清单（静态与解释器证据不等于真机）
 
@@ -176,6 +240,14 @@ python -X utf8 -m unittest client-patch/tests/test_equipment_enhanced_party_fram
 - Lv120–199 的 PARADOX 显示 lv120 图标 + 粉框；魂珠槽不受影响。
 - 首次进入时可能先闪一下粉框再换成蓝金，这是异步载图的预期行为。
 - 回读缓存 SWF 的 sha，确认等于产物 SWF。
+- **装 b 版之前，先在仍装着 a 版的设备上做两项区分性检查**（结果填 install-receipt 的 `runtime_checks`）：
+  ① 出现「有框没图标」之后**不要重启**，回编成画面看 PARADOX：按本理论这里也应当没有图标（缓存跨画面共享）；
+  如果编成画面有图标，本理论解释不了作者的现象，先别装 b 版，回来重新查。
+  ② 重启游戏，进出击前选队伍，确认 PARADOX 有图标；切到这一格为空的队伍分组，再切回来：按本理论图标应当消失、蓝金框还在。
+  两项都符合才算真机证实根因；只做 ② 的话，可再做「编成里卸下 → 换回」作补充对照。
+- b 版另查（先重启一次：a 版会话里已被 dispose 的贴图要重启才恢复，不算 b 版结果）：编成里卸下 PARADOX → 换回，图标仍在；
+  再进出击前选队伍仍是图标 + 蓝金框；出击前选队伍切到这一格为空的分组再切回，图标仍在；出击前选队伍编辑把这格清空 → 回来 →
+  装回，图标仍在；联机房间成员面板在有 / 无 PARADOX 的成员之间切换，图标仍在；诅咒武器等自制武器卸下 / 换回，图标仍在。
 
 **未经真机的组合**：`constructprop TextureReplaceableImage`、`addChildAt`、两参 `readjustSize`、方法闭包作 `setTexture` 回调、
 写 `transformationMatrix` 在原生代码里各有先例，取表与 Option 判定与 v1 同源（v1 已在真机运行），但这段组合没有真机跑过。

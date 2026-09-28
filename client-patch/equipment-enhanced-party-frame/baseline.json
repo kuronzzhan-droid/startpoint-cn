@@ -8,5 +8,15 @@
       1,
       2
     ]
+  },
+  "PartyItemThumbnailView/setItemImage": {
+    "index": 85274,
+    "sha": "e17a429af55504f3f9c52558de55571f0c889727ef170fda0ee804eac0006c80",
+    "header": [
+      4,
+      2,
+      1,
+      2
+    ]
   }
 }
