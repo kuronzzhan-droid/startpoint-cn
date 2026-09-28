@@ -21,6 +21,7 @@ from wf_client_patch_scope import (  # noqa: E402
     patch_parser_capabilities, patch_parser_scope_problems, patch_parser_supported,
 )
 from wf_battle_rules import row_problems as battle_rule_problems  # noqa: E402
+import wfx_registry  # noqa: E402  扩展词条框架注册表(补丁构造的唯一真源)
 
 
 # master/ability/ability_statue_group.orderedmap 的全部键(25 个,实测取自 store)。
@@ -70,11 +71,13 @@ PRECONDITION_KINDS_NEED_NEXT_COL = frozenset({
 #     除 param_id 2 是绝对像素上限外,其余六个都是官方常量的倍率
 #     (生效值 = 官方常量 × (1 + strength/100000))。官方 CommonAbilityContentMasterValue
 #     只到 421,没打补丁读到 422 同样是 C7050。
-CLIENT_PATCH_CONTENT_KINDS = {
-    "instant_content": {"724": "kyubi-fever-ratio-v1"},
-    "during_content": {"422": "dash-parameter-v1", "423": "gauge-gain-rules-v1",
-                       "424": "damage-type-rules-v1"},
-}
+#
+# 表由 wfx_registry.json 的 patch_content_kinds 派生（唯一真源），与此前的手写表逐项相同：
+#   {"instant_content": {"724": "kyubi-fever-ratio-v1"},
+#    "during_content": {"422": "dash-parameter-v1", "423": "gauge-gain-rules-v1",
+#                       "424": "damage-type-rules-v1"}}
+# tests/test_wfx_registry.py 钉住这份快照；新增补丁构造只改注册表 + ability_enum_map.json。
+CLIENT_PATCH_CONTENT_KINDS = wfx_registry.client_patch_content_kinds()
 
 # ────────── 面板文案覆盖行(master/string/custom_ability_string)的补丁门禁 ──────────
 #

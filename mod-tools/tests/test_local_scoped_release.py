@@ -351,6 +351,7 @@ class LocalScopedReleaseTest(InventoryCase):
                 selection="local-311",
                 expected_manifest_sha256=hashlib.sha256(preimage).hexdigest(),
                 confirmation="NO",
+                client_profile="official",
             )
         self.assertEqual(before, snapshot_tree(output))
 
@@ -360,6 +361,7 @@ class LocalScopedReleaseTest(InventoryCase):
             selection="local-311",
             expected_manifest_sha256=hashlib.sha256(preimage).hexdigest(),
             confirmation=adapter.PUBLISH_CONFIRMATION,
+            client_profile="official",
         )
         self.assertEqual(
             {part.name for part in result.compatibility.parts},

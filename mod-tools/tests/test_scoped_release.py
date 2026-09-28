@@ -283,6 +283,7 @@ class ScopedReleaseTest(InventoryCase):
                 plans, active, manifest,
                 expected_manifest_sha256=hashlib.sha256(original).hexdigest(),
                 checkpoint=events.append,
+                client_profile="official",
             )
             self.assertEqual("after_manifest", events[-1])
             self.assertEqual(
@@ -318,6 +319,7 @@ class ScopedReleaseTest(InventoryCase):
                     plans, active, manifest,
                     expected_manifest_sha256=hashlib.sha256(original).hexdigest(),
                     checkpoint=fail,
+                    client_profile="official",
                 )
             self.assertEqual(original, manifest.read_bytes())
             self.assertEqual({existing.name}, {path.name for path in active.iterdir()})

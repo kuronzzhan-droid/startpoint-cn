@@ -411,6 +411,57 @@ def stage_archives(
         raise ScopedReleaseError(str(error)) from error
 
 
+def _plan_payload_entries(plan: EdgePlan) -> list:
+    import wfx_gate
+
+    return [
+        wfx_gate.PayloadEntry(
+            label=f"{entry.root}:{entry.logical_path}",
+            read=lambda payload=entry.payload: payload,
+            logical=entry.logical_path,
+            root=entry.root,
+        )
+        for entry in plan.entries
+    ]
+
+
+def _client_capability_gate(
+    plans: tuple[EdgePlan, ...],
+    client_profile: str,
+    unique_context: Mapping[str, str] | None = None,
+) -> None:
+    """Reject edges whose payloads need capabilities the receiving client lacks.
+
+    Each edge is checked on its own: two edges may carry different versions of
+    the same table.  Data without wfx rows or patch constructs passes as a no-op.
+
+    uid references (461/413/134 rows, DSL ACUnique) are resolved against the
+    caller's unique_condition context (source store) overlaid with every
+    selected edge's unique_condition payload, so an edge that only references a
+    wfx row delivered by another edge (or already in the source) is still
+    derived.  The union errs toward blocking (a row the receiver lacks can
+    still count); clean data is unaffected because an empty wfx index is a no-op.
+    """
+    import wfx_gate
+
+    try:
+        profile = wfx_gate.resolve_profile(client_profile)
+        entries_by_plan = [_plan_payload_entries(plan) for plan in plans]
+        context = wfx_gate.merge_unique_context(
+            unique_context,
+            *(wfx_gate.unique_context_from_entries(entries) for entries in entries_by_plan),
+        )
+        for plan, entries in zip(plans, entries_by_plan):
+            report = wfx_gate.check_entries(entries, profile, unique_context=context)
+            if not report.ok:
+                raise ScopedReleaseError(
+                    f"client capability gate rejected edge {plan.spec.patch_id} "
+                    f"for profile {profile.name}: " + "; ".join(report.problems)
+                )
+    except wfx_gate.GateError as error:
+        raise ScopedReleaseError(str(error)) from error
+
+
 def publish_archives_and_manifest(
     plans: Iterable[EdgePlan],
     active_dir: Path,
@@ -418,8 +469,22 @@ def publish_archives_and_manifest(
     *,
     expected_manifest_sha256: str,
     checkpoint: Callable[[str], None] | None = None,
+    client_profile: str | None = None,
+    client_unique_context: Mapping[str, str] | None = None,
 ) -> tuple[Path, ...]:
+    """client_profile: receiving client profile in mod-tools/client_profiles.json.
+
+    Scoped edges leave this machine (overlay/public chain), so the profile is
+    mandatory and never defaults to the local device (wfx_gate, design 4.9).
+    client_unique_context: unique_condition rows {uid: row text} of the source
+    (normally the terminal store) used to resolve uid references.
+    """
     selected = tuple(plans)
+    if client_profile is None:
+        raise ScopedReleaseError(
+            "scoped release requires an explicit client profile "
+            "(client_profile=<name in mod-tools/client_profiles.json>)"
+        )
     if (
         not isinstance(expected_manifest_sha256, str)
         or SHA256_RE.fullmatch(expected_manifest_sha256) is None
@@ -432,6 +497,7 @@ def publish_archives_and_manifest(
     if hashlib.sha256(preimage).hexdigest() != expected_manifest_sha256:
         raise ScopedReleaseError("manifest preimage sha256 mismatch")
     output = render_manifest(preimage, selected)
+    _client_capability_gate(selected, client_profile, client_unique_context)
     try:
         return transaction.publish_transaction(
             selected,

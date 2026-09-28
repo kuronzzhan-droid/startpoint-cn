@@ -15,9 +15,16 @@
   2. **已消费的 from-to 边严禁换内容重切**:变体按收方链尾重新锚定
      (--anchor <收方当前 tail>),产出一条属于收方血统的新边;若这条边
      在我方可见图里已经存在,直接拒绝构建。
+  3. (2026-09-28 扩展词条框架 B1-0 追加)**接收方客户端档案必须显式给**(--client-profile,见 mod-tools/client_profiles.json):
+     分享包的收方不是本机,不许默认成 local-mumu。能力闸门(wfx_gate)按档案判定每个
+     变体的条目会不会让收方崩溃/静默失效,缺崩溃级或语义必需级能力即拒绝。
+     作者裁决 #3(0928):分享包 = 数据 + 随包 APK 补丁包;用 --bundled-client-patch <补丁报告>
+     声明随包补丁后,档案按「装上随包补丁后」计算(只并入补丁报告的 capabilities_added),
+     并写进 requires.json / 说明.txt。uid 引用按「本包终态 + 我方整条 mod 链终态」的
+     unique_condition 解析(收方在 since 之前已有的 wfx 行也算)。
 
-用法:
-  python mod-tools/wf_share_variant.py plan
+用法(plan/build 都要带 --client-profile <档案>,下例省略):
+  python mod-tools/wf_share_variant.py plan --client-profile gray-1047
   python mod-tools/wf_share_variant.py plan  --anchor 1.4.130
   python mod-tools/wf_share_variant.py build --anchor 1.4.130 --tag share0729 \
       --min-server modes-20260714 --server-feature rush-mode
@@ -42,6 +49,7 @@ sys.path.insert(0, str(MOD_DIR))
 
 import wf_enhancement_policy as policy_mod  # noqa: E402
 import wf_mod_tool as core  # noqa: E402
+import wfx_gate  # noqa: E402  客户端能力闸门(扩展词条框架)
 from wf_enhancement_policy import (  # noqa: E402
     CLIENT_ROOTS, EXPECTED_CONTENT_ROWS, BaselineUnavailable, EntrySource,
     OfficialBaseline, Policy, bump_version, chain_sources, member_name,
@@ -288,6 +296,9 @@ def build_requires(
     min_server: str | None, server_features: Sequence[str],
     client_patches: Sequence[str], official_tail: str,
     pending_overlay: dict | None = None,
+    client_profile: str | None = None,
+    client_capabilities: Sequence[str] = (),
+    bundled_client_patches: Sequence[dict] = (),
 ) -> dict:
     content_only = variant == "content-only"
     requires = {
@@ -326,6 +337,13 @@ def build_requires(
             "clientPatches": list(client_patches),
         },
     }
+    if client_profile is not None:
+        # 发包前能力闸门所用的接收方档案,与本包数据实际要求的客户端能力(均已被档案覆盖)
+        requires["requires"]["clientProfile"] = client_profile
+        requires["requires"]["clientCapabilities"] = list(client_capabilities)
+        if bundled_client_patches:
+            # 裁决 #3:随包补丁;闸门按「档案 + 这些补丁新增的能力」算过
+            requires["requires"]["bundledClientPatches"] = [dict(item) for item in bundled_client_patches]
     if restart[0]:
         requires["requires"]["serverDataNote"] = (
             "角色类内容的服务端派生表(assets/character.json 等)不在本包内;"
@@ -359,6 +377,20 @@ def render_readme(variant: str, chain_meta: dict, anchor: tuple[str, str],
             "不得再叠加或重复应用同内容边")
     if len(lines) == 1 and not block["serverRestart"]:
         lines.append("- 纯 CDN 内容包,无额外依赖")
+    if block.get("clientProfile"):
+        bundled = block.get("bundledClientPatches") or []
+        if bundled:
+            lines.append(f"- 发包前按客户端档案 {block['clientProfile']} + 随包补丁做过能力闸门"
+                         "(收方须先装上下列补丁,本包才可用)")
+            for item in bundled:
+                lines.append(
+                    f"  - 随包补丁 {item['name']}: 新增 {', '.join(item['capabilitiesAdded'])};"
+                    f"补丁报告 sha256 {item['reportSha256'][:16]}…;"
+                    "补丁按方法体哈希锁应用,对不上会拒绝——拒绝即本包不可用,不要强装")
+        else:
+            lines.append(f"- 发包前按客户端档案 {block['clientProfile']} 做过能力闸门")
+        if block.get("clientCapabilities"):
+            lines.append(f"- 本包数据要求客户端具备: {', '.join(block['clientCapabilities'])}")
     detail = requires["enhancementDetail"]
     if requires["enhancement"]:
         official_note = (
@@ -448,6 +480,33 @@ def graph_tail(graph) -> str:
     return max(versions, key=vkey) if versions else policy_mod.OFFICIAL_TAIL
 
 
+def _gate_unique_context(
+    cdn_root: Path, repo_root: Path, sources: Sequence[EntrySource], *,
+    since: str, official_tail: str,
+) -> tuple[dict[str, str] | None, str | None]:
+    """能力闸门解析 uid 用的 unique_condition 上下文 → (行, 警告)。
+
+    = 我方整条 mod 链(official_tail 起)终态 ⊕ 本包终态(sources,已并 pending overlay)。
+    since 晚于 official_tail 时,收方在 since 之前就已拿到的 wfx 行只在前者里;本包的
+    ability/EA 行或 DSL 若引用它们,不给上下文就推导不到(设计稿 4.9 第 2 条)。
+    这是保守代理(可能多拦,干净数据不受影响:上下文里没有 wfx 行时闸门照旧空操作)。"""
+    def entries(items: Sequence[EntrySource]) -> list:
+        return [wfx_gate.PayloadEntry(label=f"{item.root}:{item.rel}", read=item.read,
+                                      rel=item.rel, root=item.root) for item in items]
+
+    tail_context = None
+    warning = None
+    if since != official_tail:
+        try:
+            full, _meta = chain_sources(cdn_root, repo_root, since=official_tail)
+            tail_context = wfx_gate.unique_context_from_entries(entries(full))
+        except Exception as exc:  # 上下文只用于多推导,取不到不拦发布,但必须留痕
+            warning = (f"能力闸门未能从整条 mod 链({official_tail} 起)取得 unique_condition 作 uid 上下文,"
+                       f"只按本包终态推导: {type(exc).__name__}: {exc}")
+    return (wfx_gate.merge_unique_context(tail_context, wfx_gate.unique_context_from_entries(entries(sources))),
+            warning)
+
+
 def build(
     cdn_root: Path,
     repo_root: Path,
@@ -471,7 +530,21 @@ def build(
     pending_overlay_pending: Path | None = None,
     dry_run: bool = False,
     force: bool = False,
+    client_profile: str | None = None,
+    bundled_client_patches: Sequence[Path | str] = (),
 ) -> dict:
+    # 分享包的收方不是本机:档案必须显式给,不许默认成 local-mumu(设计稿 4.9)
+    if client_profile is None:
+        raise VariantError(
+            "分享包必须显式指定接收方客户端档案 --client-profile"
+            "(见 mod-tools/client_profiles.json,如 gray-1047 / official / local-mumu)")
+    try:
+        profile = wfx_gate.resolve_profile(client_profile)
+        bundled = [wfx_gate.load_bundled_patch(path) for path in bundled_client_patches]
+    except wfx_gate.GateError as exc:
+        raise VariantError(str(exc)) from exc
+    # 裁决 #3:收方档案按「装上随包补丁后」计算
+    evaluated = wfx_gate.with_bundled_patches(profile, bundled)
     if not tag.isalnum() or not tag.islower():
         raise VariantError(f"tag 必须是纯小写字母数字: {tag!r}")
     unknown = [name for name in variants if name not in VARIANTS]
@@ -493,6 +566,8 @@ def build(
             store_root=pending_overlay_store,
             pending_path=pending_overlay_pending)
         sources = _merge_pending_overlay(sources, pending_overlay)
+    unique_context, context_warning = _gate_unique_context(
+        cdn_root, repo_root, sources, since=since, official_tail=official_tail)
     anchor = (anchor_from or chain_meta["since"],
               anchor_to or bump_version(anchor_from or chain_meta["since"]))
     if anchor_from is None and anchor_to is None:
@@ -526,16 +601,33 @@ def build(
     for conflict in chain_meta.get("conflicts", ())[:5]:
         report["warnings"].append(f"边内冲突(按后写覆盖先写解决): {conflict}")
 
+    report["clientProfile"] = profile.name
+    if bundled:
+        report["bundledClientPatches"] = [patch.to_dict() for patch in bundled]
+    if context_warning:
+        report["warnings"].append(context_warning)
     for variant in variants:
         entries, summary = variant_entries(
             sources, variant, baseline, policy,
             official_file_action=official_file_action)
+        capability_gate = wfx_gate.check_entries(
+            [wfx_gate.PayloadEntry(label=entry.member, read=entry.payload,
+                                   rel=entry.rel, root=entry.root)
+             for entry in entries],
+            evaluated, unique_context=unique_context)
+        report["warnings"].extend(
+            f"[{variant}] 客户端能力: {warning}" for warning in capability_gate.warnings)
+        if not capability_gate.ok:
+            raise VariantError(
+                f"{variant} 变体被客户端能力闸门拒绝(档案 {evaluated.name}):\n  "
+                + "\n  ".join(capability_gate.problems[:10]))
         parts = plan_parts(entries, max_bytes)
         pack_name = f"wfshare-{anchor[0]}-to-{anchor[1]}-{variant}"
         pack_dir = out_dir / pack_name
         variant_report = {
             "variant": variant, "tag": tags[variant], "pack": pack_name,
             "entries": len(entries), "summary": summary,
+            "clientCapabilityGate": capability_gate.to_dict(),
             "outputs": [
                 {"root": part.root,
                  "path": f"{ROOT_DIRS[part.root]}/"
@@ -589,7 +681,10 @@ def build(
                 min_server=min_server, server_features=server_features,
                 client_patches=client_patches, official_tail=official_tail,
                 pending_overlay=(pending_overlay.report
-                                 if pending_overlay is not None else None))
+                                 if pending_overlay is not None else None),
+                client_profile=profile.name,
+                client_capabilities=capability_gate.required_capabilities(),
+                bundled_client_patches=[patch.to_dict() for patch in bundled])
             (staging / "requires.json").write_text(
                 json.dumps(requires, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             (staging / "说明.txt").write_text(
@@ -691,6 +786,13 @@ def main(argv: list[str] | None = None) -> int:
                         help="声明依赖的服务端功能(可重复)")
     parser.add_argument("--client-patch", action="append", default=[],
                         help="声明需要的客户端补丁(可重复)")
+    parser.add_argument("--client-profile",
+                        help="接收方客户端档案(必填,见 mod-tools/client_profiles.json):"
+                             "能力闸门按它拒绝会让收方崩溃/静默失效的条目")
+    parser.add_argument("--bundled-client-patch", action="append", default=[], type=Path,
+                        help="随包交付的客户端补丁报告(补丁构建器的 prepare-report.json / "
+                             "patch-report.json,取 capabilities_added;可重复):能力闸门按"
+                             "「档案 + 随包补丁」计算(作者裁决 #3),写进 requires.json/说明.txt")
     parser.add_argument("--pending-overlay-manifest", type=Path,
                         help="冻结未发布 pending 的显式 manifest(只读，不直接吞当前 pending)")
     parser.add_argument("--pending-overlay-store", type=Path,
@@ -727,7 +829,9 @@ def main(argv: list[str] | None = None) -> int:
             pending_overlay_manifest=args.pending_overlay_manifest,
             pending_overlay_store=args.pending_overlay_store,
             pending_overlay_pending=args.pending_overlay_file,
-            dry_run=(args.command == "plan"), force=args.force)
+            dry_run=(args.command == "plan"), force=args.force,
+            client_profile=args.client_profile,
+            bundled_client_patches=args.bundled_client_patch)
     except (VariantError, BaselineUnavailable, ValueError) as exc:
         print(f"[ERR] {exc}", file=sys.stderr)
         return 2

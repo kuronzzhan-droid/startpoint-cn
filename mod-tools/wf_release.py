@@ -1717,7 +1717,12 @@ def publish_package(
     confirmation: str,
     installed_package_dir: Path | None = None,
 ) -> ReleaseResult:
-    """Publish a production or explicitly authorized runtime-test package."""
+    """Publish a production or explicitly authorized runtime-test package.
+
+    Callers own the client capability gate (wfx_gate): wf_character_flow and
+    this module's CLI (``_client_capability_gate``) run it before calling here.
+    A new caller must do the same.
+    """
     package_dir = Path(package_dir)
     manifest = character_pack.load_manifest(package_dir / "manifest.json")
     mode = _validate_qa_contract(manifest, confirmation=confirmation)
@@ -1920,6 +1925,40 @@ def reanchor_active_ledger(
         )
 
 
+def _client_capability_gate(
+    package_dir: Path, profile_id: str, client_profile: str | None
+) -> None:
+    """CLI publish exit: the same client capability gate as wf_character_flow.
+
+    publish_package itself stays gate-free (callers own the gate): the flow
+    gates before calling it, and this CLI gates here, so running
+    ``wf_release.py publish`` directly can no longer skip the check.
+    Default receiving profile is the local device (mod-tools/client_profiles.json).
+    """
+    import wf_mod_tool as core
+    import wfx_gate
+
+    stores: list[Path] = []
+    store_profile = core.resolve_profile(profile_id)
+    if store_profile is not None:
+        for candidate in (store_profile.store, getattr(store_profile, "fallback", None)):
+            if candidate is not None and Path(candidate).is_dir():
+                stores.append(Path(candidate))
+    try:
+        report = wfx_gate.check_package(
+            package_dir, stores, client_profile or wfx_gate.default_publish_profile()
+        )
+    except wfx_gate.GateError as exc:
+        raise ReleaseError(str(exc)) from exc
+    for line in report.lines():
+        print(line, file=sys.stderr)
+    if not report.ok:
+        raise ReleaseError(
+            f"client capability gate rejected the package for profile {report.profile}: "
+            + "; ".join(report.problems)
+        )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1935,6 +1974,11 @@ def main(argv: list[str] | None = None) -> int:
     rebase.add_argument("--profile", default="cn")
     publish = sub.choices["publish"]
     publish.add_argument("--confirm", required=True)
+    publish.add_argument(
+        "--client-profile",
+        help="receiving client profile in mod-tools/client_profiles.json "
+             "(default local-mumu); the capability gate runs before publishing",
+    )
     args = parser.parse_args(argv)
     try:
         if args.command == "rebase":
@@ -1961,6 +2005,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             print(_canonical(report).decode("utf-8"))
             return 0 if report.get("can_prepare") else 3
+        _client_capability_gate(args.package_dir, args.profile, args.client_profile)
         result = publish_package(
             args.package_dir,
             args.profile,

@@ -49,6 +49,7 @@ class ScopedTransactionIdentityTest(InventoryCase):
             (plan,), active, manifest,
             expected_manifest_sha256=hashlib.sha256(MANIFEST).hexdigest(),
             checkpoint=checkpoint,
+            client_profile="official",
         )
 
     def test_rollback_leaves_replacement_foreign_archive_and_retains_lock(self):

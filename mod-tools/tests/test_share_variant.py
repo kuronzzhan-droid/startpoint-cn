@@ -84,7 +84,7 @@ class VariantFixture(unittest.TestCase):
 
     def build(self, **kwargs):
         params = dict(tag="t0729", out_dir=self.out, expect_content_rows=EXPECT,
-                      foreign_lineage=True)
+                      foreign_lineage=True, client_profile="official")
         params.update(kwargs)
         return build(self.cdn, self.repo, **params)
 
@@ -179,6 +179,7 @@ class PendingOverlayCliTest(VariantFixture):
                     "--cdn", str(self.cdn), "--repo-root", str(self.repo),
                     "--out", str(self.out), "--foreign-lineage",
                     "--pending-overlay-manifest", str(manifest), "--json",
+                    "--client-profile", "official",
                 ])
             except SystemExit as exc:
                 result = int(exc.code)
@@ -668,7 +669,7 @@ class GuardTest(VariantFixture):
         with self.assertRaises(policy_mod.BaselineUnavailable):
             build(empty, self.repo, tag="t0729", out_dir=self.out,
                   variants=("content-only",), expect_content_rows=EXPECT,
-                  foreign_lineage=True, anchor_from="1.4.130")
+                  foreign_lineage=True, anchor_from="1.4.130", client_profile="official")
 
 
 class SplitTest(VariantFixture):

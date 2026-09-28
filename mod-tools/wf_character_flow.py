@@ -53,6 +53,8 @@ def _parser() -> argparse.ArgumentParser:
         if name in {"preflight", "publish"}:
             child.add_argument("--profile", default="cn")
             child.add_argument("--installed-package-dir", type=Path)
+            # 接收方客户端档案(client_profiles.json);--profile 是 store 档案,两者无关
+            child.add_argument("--client-profile")
         if name == "publish":
             child.add_argument("--confirm", required=True)
 
@@ -568,6 +570,22 @@ def _master_gate_errors(report: dict[str, Any]) -> list[str]:
     return errors
 
 
+def package_capability_gate(
+    package_dir: Path,
+    stores: tuple[Path, ...],
+    client_profile: str | None = None,
+):
+    """包 roots/common 整文件投递 ⇒ 按整表/全部 DSL 推导接收方需要的客户端能力(wfx_gate)。
+
+    默认档案 local-mumu;无 wfx 行、只用本机已装补丁的包 = 空操作通过。delivery_mode 不豁免。
+    """
+    import wfx_gate
+
+    return wfx_gate.check_package(
+        package_dir, stores, client_profile or wfx_gate.default_publish_profile()
+    )
+
+
 def _can_seal(status: workspace_module.WorkspaceStatus) -> bool:
     allowed_errors = {
         "manifest workspace_input_sha256 does not match status",
@@ -823,6 +841,23 @@ def run_command(
                     status=status.to_dict(),
                     master_reference_report=master_report,
                 )
+            capability_gate = package_capability_gate(
+                workspace.package_dir, _master_gate_stores(args.profile), args.client_profile
+            )
+            if not capability_gate.ok:
+                return 3, _base_payload(
+                    stage="preflight",
+                    workspace=workspace_path,
+                    release_ready=False,
+                    errors=list(capability_gate.problems),
+                    next_command=(
+                        "改掉接收方客户端不具备能力的数据(或换成真实接收方的 --client-profile)"
+                        "后重新运行 preflight"
+                    ),
+                    status=status.to_dict(),
+                    master_reference_report=master_report,
+                    client_capability_gate=capability_gate.to_dict(),
+                )
             if (
                 mode == "production"
                 and not status.release_ready
@@ -848,6 +883,7 @@ def run_command(
                 status=status.to_dict(),
                 preflight=report,
                 master_reference_report=master_report,
+                client_capability_gate=capability_gate.to_dict(),
             )
 
         if command == "publish":
@@ -868,6 +904,14 @@ def run_command(
                         "master 表资产引用门禁未通过: "
                         + "; ".join(_master_gate_errors(master_report))
                     )
+            capability_gate = package_capability_gate(
+                workspace.package_dir, _master_gate_stores(args.profile), args.client_profile
+            )
+            if not capability_gate.ok:
+                raise FlowError(
+                    f"客户端能力闸门未通过(档案 {capability_gate.profile}): "
+                    + "; ".join(capability_gate.problems)
+                )
             result = release_module.publish_package(
                 workspace.package_dir,
                 args.profile,

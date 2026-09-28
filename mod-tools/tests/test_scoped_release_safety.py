@@ -250,6 +250,7 @@ class ScopedReleaseSafetyTest(InventoryCase):
                     active,
                     manifest,
                     expected_manifest_sha256=hashlib.sha256(EMPTY_MANIFEST).hexdigest(),
+                    client_profile="official",
                 )
             self.assertEqual(b"another publisher", lock.read_bytes())
             self.assertEqual([], list(active.iterdir()))
@@ -280,6 +281,7 @@ class ScopedReleaseSafetyTest(InventoryCase):
                         expected_manifest_sha256=hashlib.sha256(
                             EMPTY_MANIFEST
                         ).hexdigest(),
+                        client_profile="official",
                     )
             self.assertEqual(b"foreign", foreign.read_bytes())
             self.assertEqual(EMPTY_MANIFEST, manifest.read_bytes())
@@ -319,6 +321,7 @@ class ScopedReleaseSafetyTest(InventoryCase):
                     manifest,
                     expected_manifest_sha256=hashlib.sha256(EMPTY_MANIFEST).hexdigest(),
                     checkpoint=tamper,
+                    client_profile="official",
                 )
             self.assertEqual(EMPTY_MANIFEST, manifest.read_bytes())
             self.assertEqual([], list(active.iterdir()))
@@ -360,6 +363,7 @@ class ScopedReleaseSafetyTest(InventoryCase):
                             EMPTY_MANIFEST
                         ).hexdigest(),
                         checkpoint=fail,
+                        client_profile="official",
                     )
             lock = patch_root / ".wf-scoped-release.lock"
             self.assertTrue(lock.is_file())
@@ -398,6 +402,7 @@ class ScopedReleaseSafetyTest(InventoryCase):
                         expected_manifest_sha256=hashlib.sha256(
                             EMPTY_MANIFEST
                         ).hexdigest(),
+                        client_profile="official",
                     )
             self.assertEqual(EMPTY_MANIFEST, manifest.read_bytes())
             self.assertEqual([], list(active.iterdir()))

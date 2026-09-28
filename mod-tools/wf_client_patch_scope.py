@@ -3,28 +3,24 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 
+import wfx_registry
+
+# 表范围与解析器 capability 由 wfx_registry.json 的 patch_content_kinds 派生（唯一真源），
+# 派生结果与此前的手写表逐项相同，另补 422 盲区（见下）；tests/test_wfx_registry.py 钉住。
+#
 # kyubi-fever-ratio/patch.py 的唯一 master parser 目标为
 # AbilityValues$/parseAt47。Leader/AbilitySoul/Equipment/Ex 都是独立解析器。
 # 未列出的构造沿用原校验规则；不要据此扩大其他补丁的支持范围。
+# 422 由 client-patch/dash-parameter 只扩 AbilityValues$/parseAt109：队长/魂/武器强化/EX 表写 422
+# 实机 C7050（记忆 wf-dash-parameter-leader-table-trap）。此前 422 未登记 ⇒ 对任何表都放行（盲区）。
 # 423 另由 client-patch/equipment-rules（R3）扩到 EquipmentEnhancementAbilityValues$/parseAt109
 # 与 AbilitySoulValues$/parseAt106；424 没有扩展，装备两表仍 C7050。
-PATCH_PARSER_TABLES = {
-    ("instant_content", "724"): frozenset({"ability"}),
-    ("during_content", "423"): frozenset({
-        "ability", "ability_soul", "equipment_enhancement_ability",
-    }),
-    ("during_content", "424"): frozenset({"ability"}),
-}
+PATCH_PARSER_TABLES = wfx_registry.patch_parser_tables()
 # 表解析器扩展自身的 capability，与构造的运行时 capability（CLIENT_PATCH_CONTENT_KINDS）并列：
 # 1047 客户端已有 gauge-gain-rules-v1，但读到装备两表的 423 仍在上述 parseAt 抛 C7050，
 # 必须同时装有 equipment-rules APK 声明的 equipment-gauge-gain-rules-v1。
 EQUIPMENT_GAUGE_CAP = "equipment-gauge-gain-rules-v1"
-PATCH_PARSER_CAPABILITIES = {
-    ("during_content", "423"): {
-        "ability_soul": EQUIPMENT_GAUGE_CAP,
-        "equipment_enhancement_ability": EQUIPMENT_GAUGE_CAP,
-    },
-}
+PATCH_PARSER_CAPABILITIES = wfx_registry.patch_parser_capabilities()
 _PARSER_CLASSES = {
     "ability": "AbilityValues",
     "leader_ability": "LeaderAbilityValues",

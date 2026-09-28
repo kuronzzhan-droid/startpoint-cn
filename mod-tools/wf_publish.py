@@ -14,6 +14,8 @@ WF mod 发布器:把改动的数据表打成客户端增量包(diff zip),经服�
   python mod-tools/wf_publish.py                 # 发布 pending 列表里的文件
   python mod-tools/wf_publish.py --tables ability,character_status
   python mod-tools/wf_publish.py --list          # 只看将发布什么/版本推进
+能力闸门:打包前按 --client-profile(默认 local-mumu,见 mod-tools/client_profiles.json)
+  判定本批数据需要的客户端补丁能力,缺崩溃级/语义必需级即拒绝(wfx_gate.py)。
 注意:CN 表含觉醒列(col3/4 awake_kind),打包为原样字节复制,不做重编码。
 """
 from __future__ import annotations
@@ -454,6 +456,11 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         help="校验器生成的严格发布快照(必须与 --tables 同时使用)",
     )
+    ap.add_argument(
+        "--client-profile",
+        help="接收方客户端档案(mod-tools/client_profiles.json;默认 local-mumu):"
+             "能力闸门按它判定本批数据会不会崩/静默失效",
+    )
     ap.add_argument("--list", action="store_true", help="只显示将发布的内容,不打包")
     ap.add_argument("--from-ver", help="覆盖起始版本(默认=CDN 现有最高版本)")
     ap.add_argument(
@@ -535,6 +542,26 @@ def main(argv: list[str] | None = None) -> int:
                     "确认这就是你要的效果,再加 --allow-key-deletion 重跑。"
                 )
             print("  [放行] --allow-key-deletion 已指定,明知故犯继续发布。")
+
+        # 客户端能力闸门(扩展词条框架 B1-0):本批数据要求接收方具备的 capability
+        # (补丁构造 422/423/424/724、wfx 效果状态、面板覆盖键)与档案比对。
+        # 无 wfx 行、只用本机已装补丁的数据 = 空操作通过;没有豁免开关。
+        import wfx_gate
+
+        client_profile = args.client_profile or wfx_gate.default_publish_profile()
+        print("能力闸门   :")
+        capability_gate = wfx_gate.check_publish(
+            [(entry.archive_name, entry.payload) for entry in prepared if not entry.prefix],
+            store,
+            client_profile,
+        )
+        for line in capability_gate.lines():
+            print("  " + line)
+        if not capability_gate.ok:
+            raise ValueError(
+                f"发布被客户端能力闸门阻断(档案 {client_profile}):接收方缺少上面列出的能力,"
+                "发出去会崩或静默失效。改数据,或换成真实具备这些能力的 --client-profile。"
+            )
 
         if args.list:
             return 0

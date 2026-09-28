@@ -76,6 +76,9 @@ class LocalScopedPlans:
     compatibility: scoped.EdgePlan
     edges: tuple[LocalEdgeEvidence, ...]
     deterministic_digest: str
+    # Terminal store's unique_condition table (uid context for the client
+    # capability gate only; not part of the deterministic digest).
+    source_unique_condition: bytes | None = None
 
     @property
     def terminal_digest(self) -> str:
@@ -194,6 +197,17 @@ def _safe_live_roots(roots: Mapping[str, Path]) -> Mapping[str, Path]:
             value = Path(value)
         selected[root] = _assert_plain(value, leaf="directory")
     return MappingProxyType(selected)
+
+
+def _source_unique_condition(roots: Mapping[str, Path]) -> bytes | None:
+    """Read-only uid context for the capability gate (terminal common store)."""
+    import wfx_gate
+
+    target = core.table_path(roots["common"], wfx_gate.UNIQUE_CONDITION_LOGICAL)
+    try:
+        return target.read_bytes() if target.is_file() else None
+    except OSError:
+        return None
 
 
 def _terminal_snapshot(
@@ -366,6 +380,7 @@ def build_local_scoped_plans(
         return LocalScopedPlans(
             bundle, terminal, baselines, primary, compatibility, edges,
             _result_digest(bundle, terminal, edges),
+            _source_unique_condition(roots),
         )
     except AdapterError:
         raise
@@ -387,8 +402,15 @@ def publish_local_scoped_plans(
     expected_manifest_sha256: str,
     confirmation: str,
     checkpoint: Callable[[str], None] | None = None,
+    client_profile: str | None = None,
 ) -> tuple[Path, ...]:
-    """Publish a selected immutable plan through the manifest-last transaction."""
+    """Publish a selected immutable plan through the manifest-last transaction.
+
+    client_profile is mandatory (receiving client profile, see
+    mod-tools/client_profiles.json); the scoped publisher rejects None.
+    uid references are resolved against the terminal store's unique_condition
+    captured at build time (plus the edges' own unique_condition payloads).
+    """
     if not isinstance(result, LocalScopedPlans):
         raise AdapterError("publish result is not a local scoped plan")
     if confirmation != PUBLISH_CONFIRMATION:
@@ -396,11 +418,21 @@ def publish_local_scoped_plans(
     root = _assert_plain(Path(output_repo_root), leaf="directory")
     active = root / "assets" / "asset-patch" / "active"
     manifest = active.parent / "manifest.json"
+    unique_context = None
+    if result.source_unique_condition is not None:
+        import wfx_gate
+
+        try:
+            unique_context = wfx_gate.decode_rows(result.source_unique_condition)
+        except Exception:
+            unique_context = None
     try:
         return scoped.publish_archives_and_manifest(
             result.select(selection), active, manifest,
             expected_manifest_sha256=expected_manifest_sha256,
             checkpoint=checkpoint,
+            client_profile=client_profile,
+            client_unique_context=unique_context,
         )
     except scoped.ScopedReleaseError as error:
         raise AdapterError(str(error)) from error
