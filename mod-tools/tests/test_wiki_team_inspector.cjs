@@ -173,6 +173,18 @@ test('imported recommendation selection opens its character panel without changi
   assert.ok(one(x.host,'1号主位：角色a')); assert.ok(one(x.host,'1号合击：角色d'));
   assert.equal(one(x.host,'2号主位：角色b').attributes['aria-current'],'true');
 });
+
+test('global avatar shortcut preference preserves the selected team, weapon filter and stored plate',async()=>{
+  const x=teamPage();x.window.WFTeamImport.load(plate,'浮动头像开关验证',{group:'unison',index:0});x.render();
+  await button(x.host,'武器').fire('click');await one(x.host,'武器水属性').fire('click');
+  const avatar=one(x.host,'1号主位：角色a');
+  x.window.WFCatalogAvatars.setForm('after');
+  assert.equal(avatar.querySelector('img').getAttribute('src'),'a-after.png');assert.equal(one(x.host,'1号主位：角色a'),avatar);
+  assert.equal(button(x.host,'觉醒后').attributes['aria-pressed'],'true');assert.ok(one(x.host,'选择水弓'));assert.equal(one(x.host,'选择武器'),undefined);
+  assert.equal(one(x.host,'1号合击：角色d').attributes['aria-current'],'true');assert.equal(x.inspected.at(-1),'d');
+  await button(x.host,'保存队伍').fire('click');const saved=JSON.parse(x.stored.get('wf-wiki-teams-v1'))[0];
+  assert.deepEqual(saved.team,plate);assert.equal(saved.name,'浮动头像开关验证');
+});
 test('replacement and dragging still assign slots while keeping the active avatar panel in sync', async () => {
   const x = teamPage(); x.window.WFTeamImport.load(plate,'推荐盘'); x.render();
   await one(x.host,'替换2号主位').fire('click'); await one(x.host,'选择角色d').fire('click');
