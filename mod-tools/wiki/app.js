@@ -89,7 +89,7 @@
   const byId = new Map(characters.map((c) => [String(c.id), c]));
   const searchIndex = new Map(characters.map((c) => [String(c.id), normalized(JSON.stringify(safeData(c)))]));
   const helpers = {el, list, object, text, safeUrl, safeData, disclosure, elementBadge, picture, formatNumber, stars, rarityBadge, nativeIcon, categoryName};
-  const controls = {search: $('character-search'), element: $('element-filter'), type: $('type-filter'), origin: $('origin-filter')};
+  const controls = {search: $('character-search'), element: $('element-filter'), rarity: $('rarity-filter'), type: $('type-filter'), origin: $('origin-filter')};
   let currentId = '';
   let selectedCategory = '';
   let searchTimer;
@@ -102,8 +102,9 @@
 
   function fillOptions(select, field) {
     const values = [...new Set(characters.map((c) => text(c[field])).filter(Boolean))];
+    if (field === 'rarity') values.sort((a, b) => Number(b) - Number(a));
     values.forEach((value) => {
-      const option = el('option', '', value);
+      const option = el('option', '', field === 'rarity' ? `${value} 星` : value);
       option.value = value;
       select.append(option);
     });
@@ -191,7 +192,7 @@
   function filteredCharacters() {
     const terms = normalized(controls.search.value).trim().split(/\s+/).filter(Boolean);
     const selected = characters.filter((c) => {
-      const matchesFields = ['element', 'type', 'origin'].every((key) => !controls[key].value || text(c[key]) === controls[key].value);
+      const matchesFields = ['element', 'rarity', 'type', 'origin'].every((key) => !controls[key].value || text(c[key]) === controls[key].value);
       return (!selectedCategory || categoryName(c) === selectedCategory)
         && matchesFields && terms.every((term) => searchIndex.get(String(c.id)).includes(term));
     });
@@ -226,7 +227,7 @@
       button.setAttribute('aria-pressed', String(button.dataset.element === controls.element.value)));
     $('all-categories').setAttribute('aria-current', selectedCategory ? 'false' : 'page');
     $('result-count').textContent = `${selected.length} / ${characters.length}`;
-    const filtered = selectedCategory || controls.search.value.trim() || ['element', 'type', 'origin'].some((key) => controls[key].value);
+    const filtered = selectedCategory || controls.search.value.trim() || ['element', 'rarity', 'type', 'origin'].some((key) => controls[key].value);
     $('filter-status').textContent = filtered ? `${selectedCategory || '全部分类'} · 找到 ${selected.length} 位角色` : '选择角色查看详情；原版角色改动单独列出官方与当前版本的差异。';
     $('empty-state').hidden = selected.length > 0 || characters.length === 0;
     $('load-error').hidden = characters.length > 0;
@@ -292,6 +293,7 @@
   }
 
   fillOptions(controls.element, 'element');
+  fillOptions(controls.rarity, 'rarity');
   fillOptions(controls.type, 'type');
   fillOptions(controls.origin, 'origin');
   renderCategoryNavigation();
@@ -300,7 +302,7 @@
     clearTimeout(searchTimer);
     searchTimer = setTimeout(applyFilters, 80);
   });
-  ['element', 'type', 'origin'].forEach((key) => controls[key].addEventListener('change', applyFilters));
+  ['element', 'rarity', 'type', 'origin'].forEach((key) => controls[key].addEventListener('change', applyFilters));
   $('sort-order').addEventListener('change', renderCatalog);
   $('clear-filters').addEventListener('click', clearFilters);
   $('empty-reset').addEventListener('click', clearFilters);

@@ -45,6 +45,7 @@
         <div class="search-wrap"><span aria-hidden="true">⌕</span><input id="character-search" type="search" placeholder="输入角色名、别称或技能…" autocomplete="off"><kbd>/</kbd></div>
         <p class="field-help">支持多关键词，以空格分隔</p>
         <label class="field-label" for="element-filter">属性</label><select id="element-filter"><option value="">全部属性</option></select>
+        <label class="field-label" for="rarity-filter">星级</label><select id="rarity-filter"><option value="">全部星级</option></select>
         <label class="field-label" for="type-filter">战斗类型</label><select id="type-filter"><option value="">全部类型</option></select>
         <label class="field-label" for="origin-filter">收录来源</label><select id="origin-filter"><option value="">全部来源</option></select>
         <button id="clear-filters" class="text-button clear-filters" type="button">重置全部筛选</button>
@@ -62,7 +63,7 @@
         <div class="section-heading"><h2>角色列表 <span id="result-count" class="inline-count"></span></h2></div>
         <div id="filter-status" class="filter-status" role="status" aria-live="polite"></div>
         <div id="character-grid" class="character-groups"></div>
-        <div id="empty-state" class="empty-state" hidden><span aria-hidden="true">✧</span><h3>暂时没有找到这位同行者</h3><p>试试更短的关键词，或调整属性与类型筛选。</p><button id="empty-reset" class="primary-button" type="button">查看全部角色</button></div>
+        <div id="empty-state" class="empty-state" hidden><span aria-hidden="true">✧</span><h3>暂时没有找到这位同行者</h3><p>试试更短的关键词，或调整属性、星级与类型筛选。</p><button id="empty-reset" class="primary-button" type="button">查看全部角色</button></div>
         <div id="load-error" class="empty-state" hidden><h3>资料尚未载入</h3><p>请将 index.html、data.js、脚本和媒体文件夹保留在同一个导出目录中。</p></div>
       </section>
       <article id="detail-view" hidden></article>

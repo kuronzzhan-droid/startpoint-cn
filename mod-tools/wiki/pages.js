@@ -8,6 +8,13 @@
     const enhancedStates = new Map();
     const search = el('input'); search.type = 'search'; search.placeholder = '搜索武器、效果或关键词'; search.setAttribute('aria-label', '搜索武器');
     const filter = el('select'); filter.setAttribute('aria-label', '武器分类');
+    const rarityFilter = el('select'); rarityFilter.setAttribute('aria-label', '武器星级');
+    const rarities = [...new Set(entries.map((entry) => entry.rarity))].sort((a, b) => b - a);
+    ['', ...rarities].forEach((rarity) => {
+      const total = rarity === '' ? entries.length : entries.filter((entry) => entry.rarity === rarity).length;
+      const option = el('option', '', `${rarity === '' ? '全部星级' : `${rarity}★`}（${total}）`);
+      option.value = String(rarity); rarityFilter.append(option);
+    });
     const enhancementFilter = el('select'); enhancementFilter.setAttribute('aria-label', '武器强化筛选');
     [['', '全部强化类型'], ['yes', '仅可强化武器'], ['no', '无强化武器']].forEach(([value, label]) => {const option = el('option', '', label); option.value = value; enhancementFilter.append(option);});
     const count = el('p', 'muted');
@@ -26,6 +33,7 @@
     function paint() {
       const q = search.value.trim().toLowerCase();
       const items = entries.filter((entry) => (!filter.value || entry.category === filter.value) &&
+        (!rarityFilter.value || String(entry.rarity) === rarityFilter.value) &&
         (!enhancementFilter.value || Boolean(entry.enhancement) === (enhancementFilter.value === 'yes')) && JSON.stringify(entry).toLowerCase().includes(q));
       count.textContent = `共 ${items.length} 件武器 · ${items.filter((entry) => entry.enhancement).length} 件可强化`; groups.replaceChildren();
       const grids = new Map();
@@ -93,8 +101,8 @@
         grids.get(entry.category).append(card);
       });
     }
-    search.addEventListener('input', paint); filter.addEventListener('change', paint); enhancementFilter.addEventListener('change', paint);
-    const toolbar = el('div', 'team-controls equipment-toolbar'); toolbar.append(search, filter, enhancementFilter);
+    search.addEventListener('input', paint); filter.addEventListener('change', paint); rarityFilter.addEventListener('change', paint); enhancementFilter.addEventListener('change', paint);
+    const toolbar = el('div', 'team-controls equipment-toolbar'); toolbar.append(search, filter, rarityFilter, enhancementFilter);
     host.replaceChildren(el('h1', '', '武器图鉴'), el('p', 'section-intro', '按系列分组，深渊、诅咒武器置顶。所有带「可强化」标识的武器均可切换强化前后，查看对应名称、图标、面板与效果；魂珠和材料独立列出。'), toolbar, count, groups);
     paint();
   }
