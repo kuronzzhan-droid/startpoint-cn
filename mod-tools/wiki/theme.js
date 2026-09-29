@@ -17,5 +17,7 @@
     try { localStorage.setItem(key, current); } catch { /* Switching still works. */ }
   });
   apply();
-  document.querySelector('.brand')?.after(button);
+  const navigation = document.querySelector('.app-navigation');
+  if (navigation) navigation.after(button);
+  else document.querySelector('.masthead')?.append(button);
 })();

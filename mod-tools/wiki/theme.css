@@ -1,4 +1,4 @@
-.theme-toggle{flex:none;min-height:36px;padding:7px 12px;border:1px solid #c4d5d6;border-radius:8px;background:#eff8f7;color:#267b73;font-size:12px;white-space:nowrap}
+.theme-toggle{grid-area:theme;justify-self:end;min-height:34px;padding:7px 10px;border:1px solid #c4d5d6;border-radius:8px;background:#eff8f7;color:#267b73;font-size:11px;line-height:1.35;white-space:nowrap}
 :root[data-theme="dark"]{color-scheme:dark;--paper:#111922;--surface:#1c2834;--ink:#dde8eb;--muted:#9caeb8;--line:#394e5a;--soft:#23333f;--accent-dark:#63dccb}
 [data-theme="dark"] body{background:#111922;color:var(--ink)}
 [data-theme="dark"] :is(.masthead,.sidebar,.character-card,.character-filters,.team-board,.team-preview,.team-library,.equipment-card,.equipment-toolbar,.guide-item,.portrait-viewer,.voice-card){background:#1c2834;color:#dce7eb;border-color:#3b505d;box-shadow:0 2px 8px #060e1644}
@@ -24,9 +24,9 @@
 [data-theme="dark"] .equipment-group-heading:hover{background:#304c51}
 [data-theme="dark"] :is(.equipment-state,.numeric-effect,.numeric-values dt,.numeric-values dd,.section-title,.info-table,.info-table dt,.info-table dd,.stats-table td,.data-card,.voice-header,.team-pair,.site-footer,.portrait-viewer-header){border-color:#354d59}
 [data-theme="dark"] :is(.app-navigation a,.breadcrumbs,.text-button){color:#a9c2c9}
+[data-theme="dark"] .app-navigation a:hover{background:#2b4350}
 [data-theme="dark"] :is(.character-filter-element,.catalog-layout-button,.portrait-controls button,.team-mode-button,.equipment-toggle button)[aria-pressed="true"],[data-theme="dark"] .detail-tabs button[aria-selected="true"],[data-theme="dark"] .app-navigation a[aria-current="page"]{background:#185a53;color:#caffef;border-color:#43bba8;box-shadow:none}
 [data-theme="dark"] .category-button[aria-pressed="true"],[data-theme="dark"] .nav-home[aria-current="page"]{background:#775b21;color:#fff0c1;border-color:#c79433}
 [data-theme="dark"] .portrait-enlarge-hint{background:#20323be8;color:#c9dce2;border-color:#48616e}
 [data-theme="dark"] .team-slot-weapon,[data-theme="dark"] .team-slot-soul{background:#253d43}
 [data-theme="dark"] .team-slot-remove{background:#263a46;color:#dbe8ec;border-color:#637d8c}
-@media(max-width:640px){.theme-toggle{margin-left:auto;padding:7px 10px;min-height:34px;font-size:11px}}
