@@ -28,6 +28,7 @@ class Node {
 }
 const el = (tag, cls, text) => new Node(tag, cls, text);
 const data = {meta:{sentinel:'full-meta'},characters:['a','b','c','d'].map((id) => ({id,name:`角色${id}`,icon:`${id}.png`,element:'火',
+  rarity:5,type:'剑士',theme:'常服',...(id === 'a' ? {limited:true,origin:'新增MOD'} : {}),
   avatars:{before:`${id}.png`,...(id === 'd' ? {} : {after:`${id}-after.png`})}})),
   equipment:[{id:'w',name:'武器',element:'火',rarity:5,awakenedEffects:['装备攻击 +25%'],
     enhancement:{maxLevel:120,effects:['强化技能伤害 +80%']},soul:{available:true,effects:['魂珠攻击 +10%']}},
@@ -91,6 +92,7 @@ function teamPage() {
   vm.runInNewContext(source('equipment-order.js'),context);
   vm.runInNewContext(source('team-equipment-filters.js'),context);
   vm.runInNewContext(source('catalog-avatars.js'),context);
+  vm.runInNewContext(source('character-badges.js'),context);
   vm.runInNewContext(source('team.js'),context);
   const host = el('main'); host.root = true;
   return {window,host,inspected,remembered,stored,render:() => window.renderWikiTeam(host,data,ui)};
@@ -188,4 +190,24 @@ test('weapon and soul candidates put higher rarity first and reverse the full ca
   await button(x.host,'魂珠').fire('click');
   assert.deepEqual(names(),['选择武器魂珠','选择水弓魂珠']);
   await one(x.host,'魂珠水属性').fire('click'); assert.deepEqual(names(),['选择水弓魂珠']);
+});
+
+test('large character candidates contain only a portrait with attribute and labels, then a single name; drag data and equipment layout stay intact', async () => {
+  const x = teamPage(); x.render();
+  let pool = x.host.querySelector('.team-candidates'); assert.equal(pool.dataset.kind,'character');
+  const candidate = one(x.host,'选择角色a'), art = candidate.querySelector('.team-candidate-art');
+  assert.equal(candidate.children.length,2); assert.equal(candidate.children[0],art);
+  assert.equal(candidate.children[1].className,'team-candidate-name'); assert.equal(candidate.children[1].textContent,'角色a');
+  assert.equal(candidate.children[1].title,'角色a'); assert.ok(art.querySelector('.element-badge'));
+  assert.ok(art.querySelector('.character-label-limited')); assert.ok(art.querySelector('.character-label-mod'));
+  assert.match(candidate.title,/火属性 · 5星 · 剑士 · 常服/); assert.match(candidate.attributes['aria-description'],/5星/);
+  assert.equal(candidate.draggable,true); let dragged;
+  await candidate.fire('dragstart',{dataTransfer:{setData:(type,value) => {dragged={type,value:JSON.parse(value)};}}});
+  assert.deepEqual(dragged,{type:'application/x-wf-wiki',value:{id:'a',kind:'character'}});
+  await button(x.host,'武器').fire('click'); pool = x.host.querySelector('.team-candidates');
+  assert.equal(pool.dataset.kind,'weapon'); const weapon = one(x.host,'选择武器');
+  assert.equal(weapon.querySelector('.team-candidate-art'),null); assert.equal(weapon.querySelector('.team-candidate-name'),null);
+  assert.ok(weapon.querySelector('.team-candidate-equipment-type'));
+  await button(x.host,'魂珠').fire('click'); assert.equal(pool.dataset.kind,'soul');
+  assert.ok(one(x.host,'选择武器魂珠').querySelector('.team-candidate-equipment-type'));
 });

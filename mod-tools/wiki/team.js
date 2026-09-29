@@ -234,6 +234,7 @@
     library.append(libraryHeading, characterFilters.element, equipmentFilters.element, candidates);
     function paintLibrary() {
       const characterMode = S.isCharacter(chosen.group);
+      candidates.dataset.kind = characterMode ? 'character' : chosen.group;
       heading.textContent = `选择${labels[chosen.group]} · ${chosen.index + 1}号位`;
       characterButton.setAttribute('aria-pressed', String(characterMode));
       weaponButton.setAttribute('aria-pressed', String(chosen.group === 'weapon'));
@@ -253,13 +254,15 @@
         const image = characterMode && avatars ? avatars.picture(item, item.name, 'team-candidate-image')
           : picture(item.icon, item.name, 'team-candidate-image');
         if (characterMode) {
-          const art = el('span', 'team-candidate-art'); art.append(image);
+          const details = [`${item.element || '未知'}属性`, item.rarity ? `${item.rarity}星` : '', item.type,
+            ...(Array.isArray(item.themes) ? item.themes : [item.theme])].filter(Boolean).join(' · ');
+          b.title = `${candidateName} · ${details}`; b.setAttribute('aria-description', details);
+          const art = el('span', 'team-candidate-art'); art.append(image, elementBadge(item.element));
           window.WFCharacterFrame?.apply(art, item);
           window.WFCharacterBadges?.append(art, item, ui); b.append(art);
         } else b.append(image);
-        b.append(el('span', '', item.name));
-        if (characterMode) b.append(elementBadge(item.element));
-        else b.append(el('span', 'team-candidate-equipment-type', `${chosen.group === 'soul' ? '魂珠' : '武器'} · ${item.element || '未标注'}${item.rarity ? ` · ${item.rarity}★` : ''}`));
+        const label = el('span', characterMode ? 'team-candidate-name' : '', item.name); label.title = item.name; b.append(label);
+        if (!characterMode) b.append(el('span', 'team-candidate-equipment-type', `${chosen.group === 'soul' ? '魂珠' : '武器'} · ${item.element || '未标注'}${item.rarity ? ` · ${item.rarity}★` : ''}`));
         b.addEventListener('dragstart', (event) => event.dataTransfer.setData('application/x-wf-wiki', JSON.stringify({id: item.id, kind: characterMode ? 'character' : 'equipment'})));
         candidates.append(b);
       }
