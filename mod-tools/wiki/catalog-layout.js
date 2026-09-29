@@ -5,9 +5,10 @@
   const control = document.getElementById('catalog-layout');
   if (!catalog || !control) return;
   const choices = [
-    ['standard', '标准'], ['dense', '致密'], ['portrait', '立绘'],
+    ['standard', '标准', 4], ['dense', '致密', 9], ['portrait', '立绘', 12],
   ];
-  const storageKey = 'wf-wiki-catalog-layout';
+  // The new icon controls begin in standard once, then keep the reader's new choice.
+  const storageKey = 'wf-wiki-catalog-layout-v2';
   const group = document.createElement('div');
   group.id = 'catalog-layout';
   group.className = 'catalog-layout-group';
@@ -17,12 +18,18 @@
   label.className = 'catalog-layout-label';
   label.textContent = '排列';
   group.append(label);
-  const buttons = choices.map(([value, name]) => {
+  const buttons = choices.map(([value, name, cells]) => {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'catalog-layout-button';
+    button.className = 'catalog-layout-button catalog-layout-icon-button';
     button.dataset.layout = value;
-    button.textContent = name;
+    button.title = name;
+    button.setAttribute('aria-label', name);
+    const icon = document.createElement('span');
+    icon.className = `catalog-layout-icon catalog-layout-icon-${cells}`;
+    icon.setAttribute('aria-hidden', 'true');
+    for (let index = 0; index < cells; index += 1) icon.append(document.createElement('span'));
+    button.append(icon);
     button.setAttribute('aria-pressed', 'false');
     group.append(button);
     return button;
@@ -37,7 +44,7 @@
   let saved;
   try { saved = localStorage.getItem(storageKey); } catch { /* Storage can be disabled for local files. */ }
   const initial = apply(saved);
-  if (saved && saved !== initial) {
+  if (saved !== initial) {
     try { localStorage.setItem(storageKey, initial); } catch { /* Old choices still fall back in this view. */ }
   }
   buttons.forEach((button) => button.addEventListener('click', () => {
