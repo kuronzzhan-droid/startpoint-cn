@@ -8,7 +8,7 @@ import {GAME_CODE_PATTERN, resolveGameCode, gameCodeInfo, createGameCode, revoke
 import {authMode, passwordConfig, authenticatePassword, publicUser} from './password-auth.mjs';
 import {authRoute, accountsRoute} from './auth-routes.mjs';
 import {listAliases, adminAliasesRoute} from './wiki-aliases.mjs';
-import {characterRatingsRoute} from './character-ratings.mjs';
+import {characterRatingsRoute, listCharacterRatings} from './character-ratings.mjs';
 
 function response(value, status = 200, headers = {}) {
   return Response.json(value, {status, headers: {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers}});
@@ -34,6 +34,9 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
       // Auth responses own their session cookie; do not overwrite it with a visitor cookie.
       if (path.startsWith('/auth/') && mode === 'password')
         return await authRoute(path, request, env, now, development, fetchImpl);
+      // Anonymous summaries must not mint a late cookie that replaces a rating visitor's identity.
+      if (request.method === 'GET' && path === '/ratings/characters')
+        return response(await listCharacterRatings(env.COMMUNITY_DB, trustedCatalog));
       identity = await visitor(request, env, now, development);
       const headers = identity.cookie ? {'Set-Cookie': identity.cookie} : {};
       if (request.method === 'GET' && path === '/config') {
@@ -62,7 +65,7 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
         return response(await listTeams(env.COMMUNITY_DB, listQuery(url, trustedCatalog)), 200, headers);
       if (path === '/aliases' && request.method === 'GET')
         return response(await listAliases(env.COMMUNITY_DB, trustedCatalog), 200, headers);
-      if (path.startsWith('/ratings/characters/'))
+      if (path === '/ratings/characters' || path.startsWith('/ratings/characters/'))
         return response(await characterRatingsRoute(path, request, env, trustedCatalog, identity, now, development, fetchImpl), 200, headers);
       if (path === '/teams' && request.method === 'POST') {
         fail(403, 'submission_disabled', '队伍由管理员收录，游客可以浏览和点赞。');

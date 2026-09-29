@@ -26,6 +26,13 @@ export async function readRating(db, id, visitorId, context) {
   return {average: row.voters ? Math.round(row.average * 100) / 100 : null, voters: row.voters,
     myScore: row.my_score ?? null, ratedToday: Boolean(row.my_day >= context.day || row.ip_claimed), nextVoteAt: context.nextVoteAt};
 }
+export async function listCharacterRatings(db, catalog) {
+  const rows = (await db.prepare(`SELECT character_id AS id,AVG(score) AS average,COUNT(*) AS voters
+    FROM community_character_ratings WHERE typeof(score)='integer' AND score BETWEEN 0 AND 5
+    GROUP BY character_id ORDER BY character_id`).all()).results;
+  return {items: rows.filter((row) => Object.hasOwn(catalog.characters, row.id))
+    .map((row) => ({id: row.id, average: Math.round(row.average * 100) / 100, voters: row.voters}))};
+}
 export async function recordRating(db, id, visitorId, context, score, now) {
   validateScore(score);
   const results = await db.batch([
@@ -44,6 +51,10 @@ export async function recordRating(db, id, visitorId, context, score, now) {
   return result;
 }
 export async function characterRatingsRoute(path, request, env, catalog, identity, now, development, fetchImpl) {
+  if (path === '/ratings/characters') {
+    if (request.method !== 'GET') fail(405, 'method_not_allowed', '评分汇总只支持 GET。');
+    return listCharacterRatings(env.COMMUNITY_DB, catalog);
+  }
   const match = path.match(/^\/ratings\/characters\/([a-zA-Z0-9_-]{1,40})$/);
   if (!match) fail(404, 'not_found', '没有这个角色评分接口。');
   const id = match[1]; requireCharacter(catalog, id);
