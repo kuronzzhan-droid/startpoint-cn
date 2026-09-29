@@ -9,8 +9,12 @@
       '临境域武器', '深层域武器', '装备扭蛋武器', '主线武器', '活动武器', '世界弹射器宝珠', '其他武器'];
     const categoryRank = (category) => {const rank = categoryOrder.indexOf(category); return rank < 0 ? categoryOrder.length : rank;};
     const equipmentCompare = window.WFEquipmentOrder.createCompare(data.equipment || []);
+    const elementOrder = ['火', '水', '雷', '风', '光', '暗'];
+    const elementRank = (entry) => {const rank = elementOrder.indexOf(entry.element); return rank < 0 ? elementOrder.length : rank;};
+    const catalogueCompare = (a, b) => Number(Boolean(b.enhancement)) - Number(Boolean(a.enhancement))
+      || (a.enhancement && b.enhancement ? elementRank(a) - elementRank(b) : 0) || equipmentCompare(a, b);
     const entries = [...(data.equipment || [])].filter((entry) => !entryId || entry.id === entryId)
-      .sort((a, b) => categoryRank(a.category) - categoryRank(b.category) || equipmentCompare(a, b));
+      .sort((a, b) => categoryRank(a.category) - categoryRank(b.category) || catalogueCompare(a, b));
     const enhancedStates = new Map(), cards = new Map(), sections = new Map();
     const searchText = new Map(entries.map((entry) => [entry, JSON.stringify(entry).toLowerCase()]));
     const search = el('input'); search.type = 'search'; search.placeholder = '搜索武器、效果或关键词'; search.setAttribute('aria-label', '搜索武器');
@@ -46,7 +50,7 @@
         const card = el('details', `equipment-card game-panel${e ? ' equipment-enhanceable' : ''}`);
         const summary = el('summary');
         const title = el('div', 'equipment-card-title'), name = el('strong', '', entry.name);
-        title.append(name, el('span', 'muted', `${entry.category} · ${entry.rarity}★`));
+        title.append(name, el('span', 'muted', [entry.category, entry.element, `${entry.rarity}★`].filter(Boolean).join(' · ')));
         const stateLabel = el('span', 'equipment-current-state');
         if (e) title.append(el('span', `equipment-enhance-badge${forms.length ? ' equipment-forms-badge' : ''}`, `可强化 · ${forms.length ? `${forms.length + 1} 种形态 · ` : ''}最高 Lv${e.maxLevel}`), stateLabel);
         let icon = el('span');
@@ -137,17 +141,27 @@
     function groupFor(category) {
       if (sections.has(category)) return sections.get(category);
       const section = el('details', 'equipment-group'), heading = el('summary', 'equipment-group-heading');
-      const total = el('span', 'equipment-group-count'), grid = el('div', 'equipment-grid');
+      const total = el('span', 'equipment-group-count'), content = el('div', 'equipment-group-body');
       section.open = false; heading.title = '点击展开或收起此分类';
-      heading.append(el('h2', '', category), total); section.append(heading, grid);
+      heading.append(el('h2', '', category), total); section.append(heading, content);
       const group = {section, total, members: [], mounted: []};
       group.mount = () => {
         const members = section.open ? group.members : [];
         if (members.length === group.mounted.length && members.every((entry, i) => entry === group.mounted[i])) return;
-        grid.replaceChildren(...members.map((entry) => {
-          if (!cards.has(entry)) cards.set(entry, weaponCard(entry));
-          return cards.get(entry);
-        }));
+        const tiers = [];
+        for (const enhanced of [true, false]) {
+          const items = members.filter((entry) => Boolean(entry.enhancement) === enhanced);
+          if (!items.length) continue;
+          const tier = el('section', `equipment-tier ${enhanced ? 'equipment-tier-enhanceable' : 'equipment-tier-regular'}`);
+          tier.append(el('h3', 'equipment-tier-heading', `${enhanced ? '可强化武器' : '普通武器'} · ${items.length} 件`));
+          const grid = el('div', 'equipment-grid');
+          grid.append(...items.map((entry) => {
+            if (!cards.has(entry)) cards.set(entry, weaponCard(entry));
+            return cards.get(entry);
+          }));
+          tier.append(grid); tiers.push(tier);
+        }
+        content.replaceChildren(...tiers);
         group.mounted = members;
       };
       section.addEventListener('toggle', group.mount);
@@ -193,7 +207,7 @@
       groupControls.append(button);
     });
     const resultBar = el('div', 'equipment-result-bar'); resultBar.append(count, groupControls);
-    host.replaceChildren(el('h1', '', '武器图鉴'), el('p', 'section-intro', '点击分类标题可展开或收起，深渊、诅咒武器置顶。各类内按星级由高到低，同星级按图鉴顺序倒序。带「可强化」标识的武器可切换强化前后，查看对应名称、图标、面板与效果；魂珠和材料独立列出。'), toolbar, resultBar, groups);
+    host.replaceChildren(el('h1', '', '武器图鉴'), el('p', 'section-intro', '点击分类标题可展开或收起，深渊、诅咒武器置顶。每类先列可强化武器，按火、水、雷、风、光、暗、通用排序，同属性内高星优先、同星按图鉴倒序；普通武器随后按高星和图鉴倒序排列。可强化武器可切换形态，查看对应名称、图标、面板与效果；魂珠和材料独立列出。'), toolbar, resultBar, groups);
     paint();
     window.WFWikiAliases?.watch(host, paint);
   };

@@ -34,7 +34,7 @@ class Node {
   get textContent() {return this.ownText + this.children.map((node) => node.textContent).join('');}
   set textContent(text) {this.children = [];this.ownText = text;}
   all(match) {return this.children.flatMap((node) => [...(match(node) ? [node] : []),...node.all(match)]);}
-  fire(name) {this.events[name]?.();}
+  fire(name, extra = {}) {this.events[name]?.({preventDefault(){},stopPropagation(){},...extra});}
 }
 test('weapon groups start unmounted and preserve category/rarity ordering when expanded and filtered', () => {
   const el = (...args) => new Node(...args), host = el('main');
@@ -60,4 +60,53 @@ test('a standalone weapon still opens its detail card immediately', () => {
   window.renderWikiWeaponPage(host,{equipment:entries},{el,picture:(_url,name,cls) => el('img',cls,name)},'aaa');
   const card = host.all((node) => node.className.includes('equipment-card'))[0];
   assert.equal(card.open,true); assert.match(document.title,/后期五星/);
+});
+
+function catalogue(items) {
+  const el = (...args) => new Node(...args), host = el('main');
+  const window = {WFEquipmentOrder:order,WFWikiReadable:{}};
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki/equipment-page.js'),'utf8'),{window});
+  window.renderWikiWeaponPage(host,{equipment:items},{el,picture:(_url,name,cls) => el('img',cls,name)});
+  const expand = (open = true) => host.all((node) => node.tag === 'button' && node.textContent === (open ? '全部展开' : '全部收起'))[0].fire('click');
+  const select = (label,value) => {const node=host.all((n)=>n.attributes['aria-label']===label)[0];node.value=value;node.fire('change');};
+  const names = (root=host) => root.all((node)=>node.tag==='strong').map((node)=>node.textContent);
+  return {host,expand,select,names};
+}
+const mixed = [
+  ['plain-old','普通早期五星','暗',5,false],['fire-old','火强化早期五星','火',5,true],
+  ['water-new','水强化五星','水',5,true],['fire-low','火强化三星','火',3,true],
+  ['fire-new','火强化后期五星','火',5,true],['plain-new','普通后期五星','火',5,false],
+  ['wind','风强化','风',5,true],['thunder','雷强化','雷',5,true],['light','光强化','光',5,true],
+  ['dark','暗强化','暗',5,true],['general','通用强化','通用/未分类',5,true],['plain-low','普通三星','水',3,false],
+].map(([id,name,element,rarity,enhanced])=>({id,name,element,rarity,category:'领主掉落与兑换',
+  ...(enhanced?{enhancement:{maxLevel:120,stats:{total:{hp:100,atk:20}}}}:{})}));
+
+test('each category separates enhanced cards from ordinary cards with enhanced attribute/rarity/reverse-catalogue ordering',()=>{
+  const before=mixed.map(e=>e.id),x=catalogue(mixed);assert.deepEqual(x.names(),[]);x.expand();
+  assert.deepEqual(x.names(),['火强化后期五星','火强化早期五星','火强化三星','水强化五星','雷强化','风强化','光强化','暗强化','通用强化','普通后期五星','普通早期五星','普通三星']);
+  const tiers=x.host.all(n=>n.className.startsWith('equipment-tier '));assert.equal(tiers.length,2);
+  assert.match(tiers[0].className,/enhanceable/);assert.match(tiers[1].className,/regular/);
+  assert.equal(tiers[0].all(n=>n.className==='equipment-grid').length,1);assert.equal(tiers[1].all(n=>n.className==='equipment-grid').length,1);
+  assert.equal(x.names(tiers[0]).length,9);assert.equal(x.names(tiers[1]).length,3);assert.deepEqual(mixed.map(e=>e.id),before);
+  // Formation ordering remains independent: a newer ordinary five-star still wins there.
+  assert.ok(order.createCompare(mixed)(mixed[5],mixed[1])<0);
+});
+
+test('filtering hides empty tiers, keeps rarity order and preserves an enhanced card state across unmounts',()=>{
+  const x=catalogue(mixed);x.expand();
+  const card=x.host.all(n=>n.className.includes('equipment-card')&&n.textContent.includes('火强化后期五星'))[0];
+  card.all(n=>n.tag==='button'&&n.attributes['data-level']==='120')[0].fire('click');
+  assert.equal(card.attributes['data-enhancement-level'],'120');
+  x.select('武器强化筛选','no');assert.deepEqual(x.names(),['普通后期五星','普通早期五星','普通三星']);
+  assert.equal(x.host.all(n=>n.className.startsWith('equipment-tier ')).length,1);
+  x.select('武器强化筛选','yes');x.select('武器星级','5');
+  assert.deepEqual(x.names(),['火强化后期五星','火强化早期五星','水强化五星','雷强化','风强化','光强化','暗强化','通用强化']);
+  assert.ok(x.host.all(n=>n===card).length);assert.equal(card.attributes['data-enhancement-level'],'120');
+  x.expand(false);assert.deepEqual(x.names(),[]);x.expand();assert.equal(card.attributes['data-enhancement-level'],'120');
+});
+
+test('category priority still precedes enhancement and missing attributes fall back after dark',()=>{
+  const x=catalogue([{id:'abyss',name:'深渊普通',category:'深渊武器',rarity:1},
+    ...mixed.filter(e=>e.id==='dark'),{id:'unknown',name:'未知属性强化',category:'领主掉落与兑换',rarity:5,enhancement:{maxLevel:120}}]);
+  x.expand();assert.deepEqual(x.names(),['深渊普通','暗强化','未知属性强化']);
 });

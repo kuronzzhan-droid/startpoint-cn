@@ -18,6 +18,11 @@
 .equipment-group-heading h2{margin:0;font-size:21px;color:#344e50}
 .equipment-group-count{padding:4px 10px;border:1px solid #c7ddda;border-radius:20px;background:#fff;color:#367570;font-size:12px;font-weight:700}
 .equipment-group .equipment-grid{grid-template-columns:repeat(auto-fill,minmax(310px,1fr))}
+.equipment-group-body{display:grid;gap:22px}
+.equipment-tier{min-width:0}
+.equipment-tier-heading{margin:0 0 10px;padding:0 0 8px;border-bottom:1px solid var(--line,#d5e2e0);font-size:14px;color:var(--muted,#52726e)}
+.equipment-tier-enhanceable>.equipment-tier-heading{color:#88601b;border-color:#e7ce94}
+[data-theme="dark"] .equipment-tier-enhanceable>.equipment-tier-heading{color:#ead08f;border-color:#715e37}
 .equipment-group .equipment-card{min-width:0}
 .equipment-card.equipment-enhanceable{border-top:3px solid #dea735;background:linear-gradient(#fffdf7,#fff 160px)}
 .equipment-card[data-enhanced="true"]{border-color:#2aa89b;box-shadow:0 2px 0 #9bd3ca}
