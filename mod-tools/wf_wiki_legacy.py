@@ -6,6 +6,8 @@ import json
 import lzma
 from pathlib import Path
 
+from wf_wiki_availability import enrich_availability
+
 
 SOURCE = "WF Wiki 离线版 v3.0.0（前人 Wiki）"
 
@@ -81,6 +83,7 @@ def enrich_legacy_reference(catalog: dict, path: Path) -> dict:
                 "note": "前人 Wiki 的历史参考，未核对当前技能程序。强化前/后是旧站的强化分类，不对应普通、进化或二次进化技能层级。现行程序缺失提示保留。",
                 "skills": reference_skills(role)}
             counts["referenceAppendices"] += 1
+    enrich_availability(catalog, roles)
     catalog["meta"]["legacyReference"] = {"source": SOURCE, "sha256": hashlib.sha256(raw).hexdigest(),
-        "note": "仅借鉴同名同角色的检索别名；缺失程序的历史技能数值另列参考。", **counts}
+        "note": "借鉴准确对应角色的检索别名及国服限定/常驻标记；缺失程序的历史技能数值另列参考。", **counts}
     return counts
