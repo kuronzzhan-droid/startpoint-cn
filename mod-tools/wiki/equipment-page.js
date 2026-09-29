@@ -8,7 +8,9 @@
       '幻想武器', '女帝武器', '普莉莉艾武器', '机兵武器', '领主掉落与兑换',
       '临境域武器', '深层域武器', '装备扭蛋武器', '主线武器', '活动武器', '世界弹射器宝珠', '其他武器'];
     const categoryRank = (category) => {const rank = categoryOrder.indexOf(category); return rank < 0 ? categoryOrder.length : rank;};
-    const entries = [...(data.equipment || [])].filter((entry) => !entryId || entry.id === entryId).sort((a, b) => categoryRank(a.category) - categoryRank(b.category));
+    const equipmentCompare = window.WFEquipmentOrder.createCompare(data.equipment || []);
+    const entries = [...(data.equipment || [])].filter((entry) => !entryId || entry.id === entryId)
+      .sort((a, b) => categoryRank(a.category) - categoryRank(b.category) || equipmentCompare(a, b));
     const enhancedStates = new Map(), cards = new Map(), sections = new Map();
     const searchText = new Map(entries.map((entry) => [entry, JSON.stringify(entry).toLowerCase()]));
     const search = el('input'); search.type = 'search'; search.placeholder = '搜索武器、效果或关键词'; search.setAttribute('aria-label', '搜索武器');
@@ -190,7 +192,7 @@
       groupControls.append(button);
     });
     const resultBar = el('div', 'equipment-result-bar'); resultBar.append(count, groupControls);
-    host.replaceChildren(el('h1', '', '武器图鉴'), el('p', 'section-intro', '点击分类标题可展开或收起，深渊、诅咒武器置顶。所有带「可强化」标识的武器均可切换强化前后，查看对应名称、图标、面板与效果；魂珠和材料独立列出。'), toolbar, resultBar, groups);
+    host.replaceChildren(el('h1', '', '武器图鉴'), el('p', 'section-intro', '点击分类标题可展开或收起，深渊、诅咒武器置顶。各类内按星级由高到低，同星级按图鉴顺序倒序。带「可强化」标识的武器可切换强化前后，查看对应名称、图标、面板与效果；魂珠和材料独立列出。'), toolbar, resultBar, groups);
     paint();
   };
 })();

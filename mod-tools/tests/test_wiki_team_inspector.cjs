@@ -87,6 +87,7 @@ function teamPage() {
     picture:(path,name,cls) => {const image=el('img',cls,name);image.setAttribute('src',path);return image;},
     elementBadge:(element) => el('span','element-badge',element)};
   const context = {window,localStorage:{getItem:(key) => stored.get(key),setItem:(key,value) => stored.set(key,value)},setTimeout};
+  vm.runInNewContext(source('equipment-order.js'),context);
   vm.runInNewContext(source('team-equipment-filters.js'),context);
   vm.runInNewContext(source('catalog-avatars.js'),context);
   vm.runInNewContext(source('team.js'),context);
@@ -160,4 +161,14 @@ test('three picker tabs assign to distinct slots, and selecting an empty soul sl
   await one(x.host,'替换1号魂珠').fire('click'); assert.equal(button(x.host,'魂珠').attributes['aria-pressed'],'true');
   await button(x.host,'角色').fire('click'); assert.equal(button(x.host,'角色').attributes['aria-pressed'],'true'); assert.ok(one(x.host,'选择角色a'));
   assert.ok(one(x.host,'1号主位：角色a')); assert.equal(x.window.location.hash,'#team');
+});
+
+test('weapon and soul candidates put higher rarity first and reverse the full catalogue within a rarity', async () => {
+  const x = teamPage(); x.render();
+  const names = () => x.host.querySelectorAll('.team-candidate').map((node) => node.attributes['aria-label']);
+  await button(x.host,'武器').fire('click');
+  assert.deepEqual(names(),['选择无魂珠武器','选择武器','选择水弓']);
+  await button(x.host,'魂珠').fire('click');
+  assert.deepEqual(names(),['选择武器魂珠','选择水弓魂珠']);
+  await one(x.host,'魂珠水属性').fire('click'); assert.deepEqual(names(),['选择水弓魂珠']);
 });

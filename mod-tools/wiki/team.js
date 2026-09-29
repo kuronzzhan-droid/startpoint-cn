@@ -17,6 +17,7 @@
     const {el, picture, elementBadge} = ui;
     const characters = new Map(data.characters.map((c) => [String(c.id), c]));
     const equipment = new Map((data.equipment || []).map((w) => [String(w.id), w]));
+    const equipmentCompare = window.WFEquipmentOrder.createCompare(data.equipment || []);
     if (imported) {
       undo.push(S.copy(team)); redo = [];
       team = S.validate(imported.team, characters, equipment);
@@ -212,10 +213,7 @@
       const items = characterMode ? [...characters.values()].filter(characterFilters.matches)
         : [...equipment.values()].filter(equipmentFilters.matches);
       if (characterMode) items.sort(window.WFCharacterOrder.compare);
-      else {
-        const priority = (item) => ['深渊武器', '诅咒武器'].includes(item.category) ? 0 : 1;
-        items.sort((a, b) => priority(a) - priority(b));
-      }
+      else items.sort(equipmentCompare);
       candidates.replaceChildren();
       for (const item of items) {
         const candidateName = `${item.name}${chosen.group === 'soul' ? '魂珠' : ''}`;
