@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {context, submission} from './helpers.mjs';
-import {hashPassword, checkPassword} from '../password-crypto.mjs';
+import {hashPassword, checkPassword, validatePassword} from '../password-crypto.mjs';
 import {issueSession} from '../password-auth.mjs';
 import {createEditor, changeOwnPassword, updateEditor} from '../account-repository.mjs';
 
@@ -212,4 +212,25 @@ test('untrusted bootstrap attempts cannot consume the owner login email allowanc
   for (let i = 0; i < 8; i++) assert.equal((await setup(c, {bootstrapToken: 'wrong'.repeat(8)})).status, 403);
   assert.equal((await c.call('/auth/login', {body: {email: ownerEmail, password, turnstileToken: 'test-token'},
     headers: {'CF-Connecting-IP': '192.0.2.44'}})).status, 200);
+});
+test('eight-character passwords work for bootstrap, login, creation, reset and first password change', async (t) => {
+  const c = passwordContext(t), original = 'Qa8xTest', reset = 'Rst8Test', changed = 'New8Test';
+  assert.throws(() => validatePassword('a'.repeat(7)), (e) => e.code === 'invalid_password');
+  assert.throws(() => validatePassword('a'.repeat(129)), (e) => e.code === 'invalid_password');
+  assert.equal(validatePassword('a'.repeat(128)).length, 128);
+  assert.equal((await setup(c, {password: original})).status, 201);
+  await c.call('/auth/logout', {body: {}});
+  assert.equal((await login(c, ownerEmail, original)).status, 200);
+  const ownerCookie = c.cookie;
+  const editor = await c.call('/admin/users', {body: {email: 'length-fixture@example.test', password: original}});
+  assert.equal(editor.status, 201);
+  c.cookie = ''; assert.equal((await login(c, editor.json.email, original)).status, 200);
+  const oldEditorCookie = c.cookie;
+  c.cookie = ownerCookie;
+  assert.equal((await c.call(`/admin/users/${editor.json.id}`, {method: 'PATCH', body: {expectedRevision: 1, password: reset}})).status, 200);
+  c.cookie = oldEditorCookie; assert.equal((await c.call('/auth/me')).status, 401);
+  c.cookie = ''; assert.equal((await login(c, editor.json.email, reset)).status, 200);
+  assert.equal((await c.call('/admin/me')).json.error, 'password_change_required');
+  assert.equal((await c.call('/auth/password', {body: {currentPassword: reset, newPassword: changed}})).status, 200);
+  assert.equal((await c.call('/admin/me')).status, 200);
 });
