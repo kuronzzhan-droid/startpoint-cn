@@ -4,6 +4,8 @@ import {productionReady, sameOrigin, readJSON, visitor, challenge, rateLimit, cs
 import {listTeams, insertTeam, findTeam, likeTeam, editTeam} from './repository.mjs';
 import {authenticateAdmin} from './admin-auth.mjs';
 import {GAME_CODE_PATTERN, resolveGameCode, gameCodeInfo, createGameCode, revokeGameCode} from './game-codes.mjs';
+import {authMode, passwordConfig, authenticatePassword, publicUser} from './password-auth.mjs';
+import {authRoute, accountsRoute} from './auth-routes.mjs';
 
 function response(value, status = 200, headers = {}) {
   return Response.json(value, {status, headers: {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers}});
@@ -20,24 +22,32 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
       if (!development && (url.protocol !== 'https:' || !csv(env.COMMUNITY_ALLOWED_HOSTNAMES).includes(url.hostname)))
         fail(403, 'invalid_host', '此站点未获社区服务授权。');
       const path = url.pathname.replace(/^\/api\/community/, '').replace(/\/$/, '') || '/';
+      const mode = authMode(env);
       if (['POST', 'PATCH', 'DELETE', 'PUT'].includes(request.method)) sameOrigin(request);
       if (development && path.startsWith('/development-')) {
-        const result = await development.route(path, request);
+        const result = await development.route(path, request, mode);
         if (result) return result;
       }
+      // Auth responses own their session cookie; do not overwrite it with a visitor cookie.
+      if (path.startsWith('/auth/') && mode === 'password')
+        return await authRoute(path, request, env, now, development, fetchImpl);
       identity = await visitor(request, env, now, development);
       const headers = identity.cookie ? {'Set-Cookie': identity.cookie} : {};
       if (request.method === 'GET' && path === '/config') {
         await env.COMMUNITY_DB.prepare('SELECT id FROM community_teams LIMIT 1').first();
         return response({enabled: true, siteKey: development ? '' : env.TURNSTILE_SITE_KEY,
           moderation: 'approved', canSubmit: false, publishing: 'admin',
+          ...(mode === 'password' ? await passwordConfig(env, development) : {authMode: mode, needsSetup: false, bootstrapAvailable: false}),
           elements: [...trustedCatalog.elements, 'universal'], damageTypes: DAMAGE_TYPES,
           ...(development ? {development: true} : {})}, 200, headers);
       }
       if (path.startsWith('/admin/')) {
-        const actor = await authenticateAdmin(request, env, fetchImpl, now, development);
+        const actor = mode === 'password' ? await authenticatePassword(request, env, now, development) :
+          await authenticateAdmin(request, env, fetchImpl, now, development);
         if (['POST', 'PATCH'].includes(request.method)) await rateLimit(env.COMMUNITY_DB, request, env, 'admin', now, development);
-        return await adminRoute(path, request, env.COMMUNITY_DB, trustedCatalog, actor, now);
+        if (mode === 'password' && (path === '/admin/users' || path.startsWith('/admin/users/')))
+          return await accountsRoute(path, request, env, now, development);
+        return await adminRoute(path, request, env.COMMUNITY_DB, trustedCatalog, mode === 'password' ? publicUser(actor) : actor, now);
       }
       if (path.startsWith('/game-codes/') && request.method === 'GET') {
         const code = path.slice('/game-codes/'.length);

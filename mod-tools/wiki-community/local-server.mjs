@@ -3,11 +3,12 @@ import {createReadStream} from 'node:fs';
 import {realpath, stat} from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {randomBytes} from 'node:crypto';
 import {createCommunityHandler} from './handler.mjs';
 import {openDatabase} from './sqlite-adapter.mjs';
 import {developmentTools} from './development.mjs';
 import catalog from './catalog.mjs';
+import {localSecrets} from './local-secrets.mjs';
+import {normalizeEmail} from './password-crypto.mjs';
 const MIME = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif',
   '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg',
@@ -46,11 +47,15 @@ async function serveFile(req, res, root, url) {
   if (req.method === 'HEAD' || !info.size) {res.end(); return;}
   createReadStream(file, {start, end}).on('error', () => res.destroy()).pipe(res);
 }
-export async function startLocalServer({site, db = ':memory:', port = 0, trustedCatalog = catalog}) {
-  const root = await realpath(site), database = openDatabase(db);
-  const secret = randomBytes(32).toString('hex');
-  const handler = createCommunityHandler(trustedCatalog, {development: developmentTools(secret)});
-  const env = {COMMUNITY_DB: database, COMMUNITY_COOKIE_SECRET: secret, COMMUNITY_IP_SALT: randomBytes(32).toString('hex'),
+export async function startLocalServer({site, db = ':memory:', port = 0, trustedCatalog = catalog, ownerEmail, deputyEmail, authMode = 'password'}) {
+  const root = await realpath(site);
+  if (!['access', 'password'].includes(authMode)) throw new Error('Invalid authMode');
+  if (authMode === 'password') ownerEmail = normalizeEmail(ownerEmail);
+  if (deputyEmail) deputyEmail = normalizeEmail(deputyEmail);
+  const privateConfig = await localSecrets(db, root), database = openDatabase(privateConfig.database);
+  const handler = createCommunityHandler(trustedCatalog, {development: developmentTools(privateConfig.secrets.COMMUNITY_COOKIE_SECRET)});
+  const env = {COMMUNITY_DB: database, ...privateConfig.secrets, COMMUNITY_AUTH_MODE: authMode, COMMUNITY_OWNER_EMAIL: ownerEmail,
+    COMMUNITY_INITIAL_DEPUTY_EMAIL: deputyEmail,
     COMMUNITY_ALLOWED_HOSTNAMES: '127.0.0.1,localhost', TURNSTILE_SECRET: 'LOCAL-ONLY', TURNSTILE_SITE_KEY: 'LOCAL-ONLY'};
   const server = http.createServer(async (req, res) => {
     try {
@@ -80,11 +85,11 @@ export async function startLocalServer({site, db = ':memory:', port = 0, trusted
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const args = process.argv.slice(2), settings = {};
   for (let i = 0; i < args.length; i += 2) {
-    if (!['--site', '--db', '--port'].includes(args[i]) || !args[i + 1]) throw new Error('Use --site PATH --db PATH --port NUMBER');
-    settings[args[i].slice(2)] = args[i + 1];
+    if (!['--site', '--db', '--port', '--owner-email', '--deputy-email'].includes(args[i]) || !args[i + 1]) throw new Error('Use --site PATH --db PATH --port NUMBER --owner-email EMAIL [--deputy-email EMAIL]');
+    settings[({'--owner-email': 'ownerEmail', '--deputy-email': 'deputyEmail'})[args[i]] || args[i].slice(2)] = args[i + 1];
   }
   if (!settings.site || !settings.db || !/^\d+$/.test(settings.port || '') || +settings.port > 65535) throw new Error('Explicit --site, --db and --port are required.');
   const app = await startLocalServer({...settings, port: +settings.port});
-  console.log(`Wiki local preview: ${app.origin}; development challenge and test admin only; SQLite: ${settings.db}`);
+  console.log(`Wiki local preview: ${app.origin}; password admin with local test challenge; SQLite: ${settings.db}`);
   for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, async () => {await app.close(); process.exit(0);});
 }

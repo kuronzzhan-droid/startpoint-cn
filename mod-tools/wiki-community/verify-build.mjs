@@ -16,7 +16,7 @@ const [source, metadata, routes] = await Promise.all([
   readFile(path.join(root, '_routes.json'), 'utf8').then(JSON.parse)
 ]);
 const inputs = Object.keys(metadata.inputs);
-for (const input of inputs) assert.ok(!/(?:^|\/)(?:development|local-server|sqlite-adapter|verify-build)\.mjs$|(?:^|\/)tests\//.test(input), input);
+for (const input of inputs) assert.ok(!/(?:^|\/)(?:development|local-server|local-secrets|sqlite-adapter|verify-build)\.mjs$|(?:^|\/)tests\//.test(input), input);
 assert.ok(!/node:sqlite|development-admin-login|development-challenge|dev-admin@example\.test|C:[/\\]|D:[/\\]|sourceMappingURL/.test(source));
 assert.deepEqual(routes.include, ['/api/community/*']); assert.deepEqual(routes.exclude, []);
 assert.ok(inputs.some((name) => name.endsWith('api/community/[[path]].js')));
@@ -35,7 +35,8 @@ try {
   const worker = (await import(pathToFileURL(bundlePath).href)).default;
   const runtime = {waitUntil() {throw new Error('Unexpected background task');}};
   async function call(route, options = {}, bindings = env) {
-    return worker.fetch(new Request(`https://wiki.example${route}`, {headers: {Origin: 'https://wiki.example', 'Content-Type': 'application/json'}, ...options}), bindings, runtime);
+    return worker.fetch(new Request(`https://wiki.example${route}`, {...options,
+      headers: {Origin: 'https://wiki.example', 'Content-Type': 'application/json', 'CF-Connecting-IP': '192.0.2.1', ...options.headers}}), bindings, runtime);
   }
   for (const route of ['/', '/data.js', '/media/sample.mp3', '/api/community-other/config']) {
     const response = await call(route); assert.equal(response.status, 200);
@@ -50,6 +51,18 @@ try {
   assert.equal((await call('/api/community/development-admin-login', {method: 'POST', body: '{}'})).status, 404); checks++;
   assert.equal((await call('/api/community/development-challenge?action=like_team')).status, 404); checks++;
   assert.equal((await call('/api/community/admin/me', {headers: {'Cf-Access-Authenticated-User-Email': 'admin@example.test'}})).status, 401); checks++;
+  const passwordEnv = {...env, COMMUNITY_AUTH_MODE: 'password', COMMUNITY_OWNER_EMAIL: 'owner@example.test',
+    COMMUNITY_PASSWORD_PEPPER: 'p'.repeat(40), COMMUNITY_OWNER_BOOTSTRAP_TOKEN: 'b'.repeat(40)};
+  const passwordConfig = await (await call('/api/community/config', {}, passwordEnv)).json();
+  assert.equal(passwordConfig.authMode, 'password'); assert.equal(passwordConfig.needsSetup, true);
+  assert.ok(!JSON.stringify(passwordConfig).includes('@')); checks++;
+  assert.equal((await call('/api/community/auth/bootstrap', {method: 'POST', body: JSON.stringify({email: 'owner@example.test', password: 'fixture-only-password'})}, passwordEnv)).status, 403); checks++;
+  const boot = await call('/api/community/auth/bootstrap', {method: 'POST', body: JSON.stringify({email: 'owner@example.test', password: 'fixture-only-password', bootstrapToken: 'b'.repeat(40)})}, passwordEnv);
+  assert.equal(boot.status, 201); assert.match(boot.headers.get('set-cookie'), /; Secure/); checks++;
+  const ownerCookie = boot.headers.get('set-cookie').split(';')[0];
+  assert.equal((await (await call('/api/community/admin/users', {headers: {Cookie: ownerCookie}}, passwordEnv)).json()).items[0].role, 'owner'); checks++;
+  assert.equal((await call('/api/community/admin/users', {headers: {'Cf-Access-Authenticated-User-Email': 'owner@example.test'}}, passwordEnv)).status, 401); checks++;
+  assert.equal((await call('/api/community/development-admin-login', {method: 'POST', body: '{}'}, passwordEnv)).status, 404); checks++;
   assert.equal(assets.length, 4);
   const report = {wrangler: '4.143.0', verifiedAt: new Date().toISOString(),
     bundle: {file: 'index.js', bytes: (await stat(bundlePath)).size, sha256: createHash('sha256').update(source).digest('hex')},

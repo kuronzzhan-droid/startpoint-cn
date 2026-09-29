@@ -36,3 +36,23 @@ CREATE TABLE IF NOT EXISTS community_game_codes (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS community_game_codes_active
   ON community_game_codes(team_id,fingerprint) WHERE revoked_at IS NULL;
+CREATE TABLE IF NOT EXISTS community_users (
+  id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  role TEXT NOT NULL CHECK(role IN ('owner','deputy','editor')),
+  enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0,1)),
+  password_hash TEXT NOT NULL, password_version INTEGER NOT NULL DEFAULT 1,
+  must_change_password INTEGER NOT NULL CHECK(must_change_password IN (0,1)),
+  revision INTEGER NOT NULL DEFAULT 1, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
+  CHECK(role <> 'owner' OR enabled=1)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS community_single_owner ON community_users(role) WHERE role='owner';
+CREATE TABLE IF NOT EXISTS community_sessions (
+  token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES community_users(id),
+  password_version INTEGER NOT NULL, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS community_sessions_user ON community_sessions(user_id);
+CREATE INDEX IF NOT EXISTS community_sessions_expiry ON community_sessions(expires_at);
+CREATE TABLE IF NOT EXISTS community_auth_audit (
+  id TEXT PRIMARY KEY, actor_id TEXT NOT NULL, actor_email TEXT NOT NULL,
+  target_id TEXT NOT NULL, action TEXT NOT NULL, created_at INTEGER NOT NULL
+);

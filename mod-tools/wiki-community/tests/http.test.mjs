@@ -12,7 +12,7 @@ test('真实loopback HTTP + SQLite：静态MIME/Range、显式开发管理员、
   await writeFile(path.join(folder, 'index.html'), '<!doctype html><title>Wiki test</title>');
   await writeFile(path.join(folder, 'data.js'), 'window.WF_WIKI={};');
   await writeFile(path.join(folder, 'voice.mp3'), Buffer.from([0, 1, 2, 3, 4, 5]));
-  const app = await startLocalServer({site: folder, db: path.join(folder, 'test.sqlite'), trustedCatalog: fixtureCatalog});
+  const app = await startLocalServer({site: folder, db: ':memory:', authMode: 'access', trustedCatalog: fixtureCatalog});
   t.after(async () => {await app.close(); await rm(folder, {recursive: true, force: true});});
   const get = (route, options) => fetch(app.origin + route, options);
   assert.match((await get('/data.js')).headers.get('Content-Type'), /javascript/);

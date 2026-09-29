@@ -8,7 +8,7 @@
 Node.js 24 使用内建 `node:sqlite`，无需安装新依赖。显式指定静态站目录、数据库路径和端口：
 
 ```powershell
-node mod-tools/wiki-community/local-server.mjs --site D:/WF/out/MOD角色Wiki-20260929/site --db D:/WF/out/MOD角色Wiki-20260929/community-local.sqlite --port 8877
+node mod-tools/wiki-community/local-server.mjs --site D:/WF/out/MOD角色Wiki-20260929/site --db D:/WF/out/MOD角色Wiki-20260929/community-local.sqlite --port 8877 --owner-email owner@example.test --deputy-email deputy@example.test
 node --test mod-tools/wiki-community/tests/*.test.mjs
 ```
 
@@ -16,11 +16,15 @@ node --test mod-tools/wiki-community/tests/*.test.mjs
 数据库应放在静态站目录之外；正式本地目录与浏览器联调测试库分开，测试数据不可导入生产。
 修改中的前端需由 Wiki 原有流程复制到站点目录。静态文件支持 MIME、懒加载分包和音频 Range。
 
-本地配置返回 `development:true`，页面必须明确显示“本地测试验证/管理员”：
+本机默认使用真实邮箱登录名及密码账号；邮箱仅作登录名，不会创建邮箱或发送邮件。
+站长第一次打开后台时自行设置密码，再创建管理员；密码不要写入命令、源码或聊天记录。
+上面示例邮箱须替换成使用者实际指定值，`--deputy-email` 仅预填建议，不会直接创建账号。
+账号权限、密钥持久化和生产配置详见 [邮箱密码管理员说明](AUTH.md)。
 
-- `GET /api/community/development-challenge?action=like_team` 返回一次性本地 token，五分钟过期。
-- `POST /api/community/development-admin-login`，JSON `{}`，签发一小时本地测试管理员 cookie。
-- 测试身份固定 `dev-admin@example.test`，不代表真实用户或已登录 Cloudflare。
+本地配置返回 `development:true`，页面必须明确显示“本地测试验证”：
+
+- `GET /api/community/development-challenge?action=like_team` 或 `admin_login` 返回一次性本地 token，五分钟过期。
+- 密码模式关闭 `development-admin-login`；仅旧 Access 专项测试以显式 `authMode:'access'` 启动时保留固定测试管理员。
 - 生产 Functions 入口不引用 `development.mjs`。设置任何环境开发旗标都不能打开这些接口。
 
 ## API
@@ -35,7 +39,7 @@ node --test mod-tools/wiki-community/tests/*.test.mjs
 | `GET /teams/:id` | 单个公开盘子 `{team}`，含 likedToday |
 | `POST /teams` | 始终 403 submission_disabled |
 | `POST /teams/:id/like` | `{turnstileToken}` → `{id,likes,likedToday,nextLikeAt}` |
-| `GET /admin/me` | 验证后的管理员 `{id,email}` |
+| `GET /admin/me` | 验证后的管理员；密码模式含 role/enabled/revision/mustChangePassword |
 | `GET /admin/login` | 验证后重定向 `/#community/admin` |
 | `GET /admin/teams` | 管理员列表，额外含 status/revision，支持 status 筛选 |
 | `POST /admin/teams` | 管理员创建 → 201 `{team}`，立即公开并记录审计 |
@@ -71,12 +75,14 @@ node --test mod-tools/wiki-community/tests/*.test.mjs
 | `ACCESS_TEAM_DOMAIN` | 固定的 `团队名.cloudflareaccess.com` |
 | `ACCESS_AUD` | 管理员 Access 应用的 AUD |
 | `ADMIN_EMAILS` | 已验证管理员邮箱白名单，逗号分隔 |
+| `COMMUNITY_AUTH_MODE` | 默认 `access`，设 `password` 使用站内邮箱密码管理；额外配置见 AUTH.md |
 
 私密密钥通过 Cloudflare secret 配置，不写进本文件、前端、Git 或部署日志。
-Cloudflare Access 应用保护 `/api/community/admin/*`，配置允许的管理员邮箱及登录方式。
+**仅 Access 模式**：Cloudflare Access 应用保护 `/api/community/admin/*`，配置允许的管理员邮箱及登录方式。
 登录页通过 Access 后才会进入 handler；服务端仍验证 RS256 签名、固定域名 JWKS、app 类型、
 iss/aud/exp、存在时的 nbf、sub、email 白名单，不信任裸邮箱头。管理员无权限通过 API 增加管理员。
-增加/移除管理员须由站点所有者修改 Access 策略和 `ADMIN_EMAILS` 配置。首次实际登录与云端权限需上线实测。
+该模式增加/移除管理员须由站点所有者修改 Access 策略和 `ADMIN_EMAILS` 配置。首次实际登录与云端权限需上线实测。
+切换成密码模式后，由站内账号管理授权；不能继续用旧 Access 邮箱名单拦住管理路径，详见 AUTH.md。
 
 Pages Functions 以此目录为项目工作目录，`functions/api/community/[[path]].js` 为入口；
 生产打包仅由 Functions 引入 handler 所依赖的模块，不能把 SQLite adapter、开发 server、tests、README 当静态文件外发。
