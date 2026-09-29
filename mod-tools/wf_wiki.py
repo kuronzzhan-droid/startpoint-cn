@@ -172,7 +172,7 @@ def export(output: Path, *, legacy_data: Path | None = None, external_character:
     script = "window.WF_WIKI = " + json.dumps(catalog, ensure_ascii=False, separators=(",", ":")) + ";\n"
     (output / "data.js").write_text(script, encoding="utf-8")
     for path in (HERE / "wiki").iterdir():
-        if path.suffix in {".html", ".css", ".js"}:
+        if path.suffix in {".html", ".css", ".js"} or path.name == "brand-logo.png":
             shutil.copyfile(path, output / path.name)
     write_json(output / "media-manifest.json", media.entries)
     (output / "打开角色Wiki.bat").write_bytes(b'@echo off\r\nstart "" "%~dp0index.html"\r\n')

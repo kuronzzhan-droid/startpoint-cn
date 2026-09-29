@@ -76,5 +76,5 @@ def public_catalog(catalog):
         public["id"] = public_id("w", original["id"])
     result["meta"]["dataNote"] = "数值从当前资料解析；条件、成长与单次命中倍率分别列出。"
     result["meta"]["rosterRule"] = "收录官方可玩角色、改版官方与新增 MOD。剧情及助战占位角色不列为可玩角色；独立角色包的资料来源另行标注。"
-    result["meta"]["credits"] = ["界面及配队交互参考作者提供的《弹射世界中文 WIKI》离线版 v3.0.0。感谢花头人及「弹射世界wiki重生群」（QQ群 610753092）整理的 Wiki 资料；当前 MOD 数值以本次数据快照为准。"]
+    result["meta"]["credits"] = ["界面及配队交互参考作者提供的《弹射世界中文 WIKI》离线版 v3.0.0。感谢memimu及「弹射世界wiki重生群」（QQ群 610753092）整理的 Wiki 资料；当前 MOD 数值以本次数据快照为准。"]
     return result
