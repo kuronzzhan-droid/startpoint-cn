@@ -1,5 +1,61 @@
 [
   {
+    "group": "abilityConditions",
+    "key": "main",
+    "sheetLogical": "scene/general/sprite_sheet.png",
+    "atlasLogical": "scene/general/sprite_sheet.atlas.amf3.deflate",
+    "textureName": "scene/general/sprite_sheet/vector_icon_color-assets/round_main"
+  },
+  {
+    "group": "abilityConditions",
+    "key": "unison",
+    "sheetLogical": "scene/general/sprite_sheet.png",
+    "atlasLogical": "scene/general/sprite_sheet.atlas.amf3.deflate",
+    "textureName": "scene/general/sprite_sheet/vector_icon_color-assets/round_unison"
+  },
+  {
+    "group": "abilityConditions",
+    "key": "fire",
+    "sheetLogical": "scene/general/sprite_sheet.png",
+    "atlasLogical": "scene/general/sprite_sheet.atlas.amf3.deflate",
+    "textureName": "scene/general/sprite_sheet/vector_icon_color-assets/round_ability_red"
+  },
+  {
+    "group": "abilityConditions",
+    "key": "water",
+    "sheetLogical": "scene/general/sprite_sheet.png",
+    "atlasLogical": "scene/general/sprite_sheet.atlas.amf3.deflate",
+    "textureName": "scene/general/sprite_sheet/vector_icon_color-assets/round_ability_blue"
+  },
+  {
+    "group": "abilityConditions",
+    "key": "thunder",
+    "sheetLogical": "scene/general/sprite_sheet.png",
+    "atlasLogical": "scene/general/sprite_sheet.atlas.amf3.deflate",
+    "textureName": "scene/general/sprite_sheet/vector_icon_color-assets/round_ability_yellow"
+  },
+  {
+    "group": "abilityConditions",
+    "key": "wind",
+    "sheetLogical": "scene/general/sprite_sheet.png",
+    "atlasLogical": "scene/general/sprite_sheet.atlas.amf3.deflate",
+    "textureName": "scene/general/sprite_sheet/vector_icon_color-assets/round_ability_green"
+  },
+  {
+    "group": "abilityConditions",
+    "key": "light",
+    "sheetLogical": "scene/general/sprite_sheet.png",
+    "atlasLogical": "scene/general/sprite_sheet.atlas.amf3.deflate",
+    "textureName": "scene/general/sprite_sheet/vector_icon_color-assets/round_ability_white"
+  },
+  {
+    "group": "abilityConditions",
+    "key": "dark",
+    "sheetLogical": "scene/general/sprite_sheet.png",
+    "atlasLogical": "scene/general/sprite_sheet.atlas.amf3.deflate",
+    "textureName": "scene/general/sprite_sheet/vector_icon_color-assets/round_ability_black"
+  },
+  {
     "group": "elements",
     "key": "火",
     "sheetLogical": "scene/general/sprite_sheet.png",

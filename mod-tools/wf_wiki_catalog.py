@@ -15,6 +15,7 @@ from wf_wiki_catalog_source import WikiSource, detect_roster, version_at, walk_c
 from wf_wiki_catalog_tags import OFFICIAL_NON_PLAYABLE_IDS, character_tags
 from wf_wiki_compare import official_comparison
 from wf_wiki_skill_values import skill_numeric_details
+from wf_wiki_ability_conditions import ability_restrictions
 
 ELEMENTS = {"0": "火", "1": "水", "2": "雷", "3": "风", "4": "光", "5": "暗", "6": "通用"}
 TYPES = {"0": "剑士", "1": "格斗", "2": "射击", "3": "辅助", "4": "特殊"}
@@ -74,7 +75,8 @@ def ability_group(source: WikiSource, kind: str, key: str, name: str) -> dict:
         "key": key, "name": name,
         "description": description,
         "descriptionSource": "游戏面板覆盖文案" if authored else "数据行自动解析",
-        "rows": [{"index": i + 1, "description": desc, "values": row}
+        "rows": [{"index": i + 1, "description": desc, "values": row,
+                  **({"restrictions": ability_restrictions(row)} if kind == "ability" else {})}
                  for i, (row, desc) in enumerate(zip(rows, descriptions))],
         "customText": references, "relatedPrograms": related_programs(source, rows, parsed_kind),
     }
