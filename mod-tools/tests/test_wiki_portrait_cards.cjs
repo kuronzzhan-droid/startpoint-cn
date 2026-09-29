@@ -127,17 +127,28 @@ test('idle cards and portraits have no 3D or translated transform outside an act
   assert.match(css,/\.portrait-card-media>\.portrait-card-image\{[^}]*transform:none/);
 });
 
-test('desktop hover zoom has enough contain margin for maximum image displacement across card sizes',()=>{
+test('desktop hover portrait breaks through only its active clipping layers and never captures clicks outside the link',()=>{
   const css=fs.readFileSync(path.join(__dirname,'../wiki/portrait-cards.css'),'utf8');
-  assert.match(css,/\.portrait-card-active \.portrait-card-image\{[^}]*scale\(1\.1\)/);
-  assert.match(css,/padding:calc\(7% \+ 9px\)/);
-  for(const width of [180,230,320,480,720]) {
-    const height=width*4/3,padding=width*.07+9;
-    for(const dimension of [width,height]) {
-      const zoomed=(dimension-padding*2)*1.1;
-      assert.ok(zoomed+8*2<=dimension,`contained portrait and its 8px offset fit a ${width}px card`);
-    }
-  }
+  const desktop=css.slice(css.indexOf('@media(min-width:769px)'),css.indexOf('@media(max-width:640px)'));
+  assert.match(desktop,/\.portrait-card-active \.portrait-card-image\{[^}]*z-index:2;[^}]*scale\(1\.32\)/);
+  assert.match(desktop,/#catalog-view \.portrait-card-active\{overflow:visible;[^}]*z-index:1/);
+  assert.match(desktop,/#catalog-view \.portrait-card-active \.card-art,\.portrait-card-active \.portrait-card-media\{overflow:visible\}/);
+  const overflowRules=[...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(([,selector,body])=>body.includes('overflow:visible'));
+  assert.equal(overflowRules.length,2);overflowRules.forEach(([,selector])=>assert.match(selector,/\.portrait-card-active/));
+  assert.match(css,/\.portrait-card-media>\.portrait-card-image\{[^}]*pointer-events:none/);
+  assert.doesNotMatch(css,/padding:calc|pointer-events:auto/);
+  assert.ok((230-12*2)*1.32>230,'1.32 zoom intentionally reaches past the card edge with the original 12px padding');
+});
+
+test('static, mobile and non-hover states retain full portraits with all clipping layers closed',()=>{
+  const css=fs.readFileSync(path.join(__dirname,'../wiki/portrait-cards.css'),'utf8');
+  const outside=css.slice(0,css.indexOf('@media(min-width:769px)'))+css.slice(css.indexOf('@media(max-width:640px)'));
+  assert.match(outside,/#catalog-view \.portrait-card\{[^}]*overflow:hidden;transform:none/);
+  assert.match(outside,/#catalog-view \.portrait-card \.card-art\{[^}]*overflow:hidden/);
+  assert.match(outside,/\.portrait-card-media\{[^}]*padding:12px;overflow:hidden/);
+  assert.doesNotMatch(outside,/overflow:visible|scale\(|perspective\(/);
+  const frame=fs.readFileSync(path.join(__dirname,'../wiki/character-frame.css'),'utf8');
+  assert.match(frame,/\.wf-character-frame::after\{[^}]*z-index:1;pointer-events:none/);
 });
 
 test('narrow screens default to static even with a mouse; width changes clear both rendered tilt and pending frames',()=>{
