@@ -22,7 +22,7 @@ const el = (tag, cls, text) => new Node(tag, cls, text);
 const find = (host, label) => host.all((node) => node.attributes['aria-label'] === label)[0];
 const button = (host, label) => host.all((node) => node.tag === 'button' && node.textContent === label)[0];
 const form = (host) => host.all((node) => node.tag === 'form')[0];
-const secret = 'local-only-test-password-123';
+const secret = 'Test!123'; // Synthetic 8-character boundary; never an actual account password.
 const owner = {id:'owner-1',email:'owner@example.test',role:'owner',enabled:true,revision:1,mustChangePassword:false};
 const editor = {id:'editor-1',email:'editor@example.test',role:'editor',enabled:true,revision:2,mustChangePassword:false};
 const deputy = {...editor,id:'deputy-1',email:'deputy@example.test',role:'deputy'};
@@ -181,4 +181,15 @@ test('suggested deputy is private server data and requires a password and explic
   await button(x.host, '添加预设副站长').fire('click');
   assert.equal(find(x.host, '新管理员邮箱').value, 'suggested@example.test'); assert.equal(find(x.host, '账号权限').value, 'deputy');
   assert.equal(find(x.host, '临时密码').value, ''); assert.equal(find(x.host, '临时密码').focused, true); assert.equal(x.calls.length, 1);
+});
+test('password forms use 8–128 boundaries and reject shorter or longer values before requests', async () => {
+  const x = setup(() => ({ok:true}));
+  await x.A.ensure(x.host, {...config,needsSetup:true,bootstrapAvailable:true}, x.ui, () => {});
+  const input = find(x.host, '站长密码'); assert.equal(input.minLength,8); assert.equal(input.maxLength,128);
+  for (const length of [7,129]) {
+    input.value = 'x'.repeat(length); find(x.host, '确认站长密码').value = input.value;
+    await form(x.host).fire('submit'); assert.equal(x.calls.length,0); assert.match(x.host.textContent,/8–128/);
+  }
+  input.value = 'x'.repeat(128); find(x.host, '确认站长密码').value = input.value;
+  await form(x.host).fire('submit'); assert.equal(x.calls.length,1); assert.equal(x.calls[0][1].password.length,128);
 });

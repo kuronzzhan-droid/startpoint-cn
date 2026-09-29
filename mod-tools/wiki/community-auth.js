@@ -5,7 +5,7 @@
   const request = (...args) => C.client.request(...args);
   const messages = {
     invalid_credentials:'邮箱或密码不正确。', login_failed:'邮箱或密码不正确。',
-    invalid_password:'密码须为 16–128 个字符。', password_policy:'密码须为 16–128 个字符。',
+    invalid_password:'密码须为 8–128 个字符。', password_policy:'密码须为 8–128 个字符。',
     password_change_required:'请先修改临时密码。', incorrect_password:'当前密码不正确。',
     invalid_current_password:'当前密码不正确。', same_password:'新密码必须与当前密码不同。',
     bootstrap_unavailable:'站长初始化尚未配置，请联系网站维护者。', bootstrap_complete:'站长已设置，请重新打开登录页。',
@@ -28,7 +28,7 @@
   function field(ui, label, type, autocomplete) {
     const wrapper = ui.el('label', 'community-auth-field'), input = ui.el('input');
     input.type = type; input.required = true; input.autocomplete = autocomplete; input.setAttribute('aria-label', label);
-    if (type === 'password') {input.minLength = 16; input.maxLength = 128;} else input.maxLength = 254;
+    if (type === 'password') {input.minLength = 8; input.maxLength = 128;} else input.maxLength = 254;
     wrapper.append(ui.el('span', '', label), input); return {wrapper, input};
   }
   function mount(host, ui, title) {
@@ -59,11 +59,11 @@
   }
   function password(host, identity, ui, done) {
     const box = mount(host, ui, identity.mustChangePassword ? '首次登录：修改临时密码' : '修改登录密码');
-    box.form.append(ui.el('p', 'muted', '新密码为 16–128 个字符。修改成功后使用新密码继续登录。'));
+    box.form.append(ui.el('p', 'muted', '新密码为 8–128 个字符。修改成功后使用新密码继续登录。'));
     const current = box.add('当前密码', 'password', 'current-password');
     const next = box.add('新密码', 'password', 'new-password'), confirm = box.add('确认新密码', 'password', 'new-password');
     box.submit('保存新密码', async () => {
-      if (next.value.length < 16 || next.value.length > 128) {box.status.textContent = messages.invalid_password; return;}
+      if (next.value.length < 8 || next.value.length > 128) {box.status.textContent = messages.invalid_password; return;}
       if (next.value !== confirm.value) {box.status.textContent = '两次输入的新密码不一致。'; return;}
       if (next.value === current.value) {box.status.textContent = messages.same_password; return;}
       await request('/auth/password', {currentPassword:current.value, newPassword:next.value}, 'POST');
@@ -89,7 +89,7 @@
     const challengeHost = ui.el('div', 'community-auth-challenge'); if (!setup) box.form.append(challengeHost);
     let challenge, verified = false;
     const save = box.submit(setup ? '创建站长账号' : '登录', async () => {
-      if (secret.value.length < 16 || secret.value.length > 128) {box.status.textContent = messages.invalid_password; return;}
+      if (secret.value.length < 8 || secret.value.length > 128) {box.status.textContent = messages.invalid_password; return;}
       if (confirm && secret.value !== confirm.value) {box.status.textContent = '两次输入的站长密码不一致。'; return;}
       const payload = {email:email.value.trim(), password:secret.value};
       if (setup && token) payload.bootstrapToken = token.value;

@@ -37,7 +37,7 @@
       form.append(save); createHost.replaceChildren(form); createFields = {email:email.input,password:password.input,role};
       form.addEventListener('submit', async (event) => {
         event.preventDefault(); if (busy) return;
-        if (password.input.value.length < 16 || password.input.value.length > 128) {notice.textContent = '临时密码须为 16–128 个字符。'; return;}
+        if (password.input.value.length < 8 || password.input.value.length > 128) {notice.textContent = '临时密码须为 8–128 个字符。'; return;}
         busy = true; save.disabled = true; notice.textContent = '正在创建…';
         try {
           const result = await request('/admin/users', {email:email.input.value.trim(), password:password.input.value,
@@ -74,7 +74,7 @@
           form.append(password.wrapper, save, button('取消重置', () => {password.input.value = ''; resetHost.replaceChildren();}));
           form.addEventListener('submit', async (event) => {
             event.preventDefault();
-            if (password.input.value.length < 16 || password.input.value.length > 128) {notice.textContent = '临时密码须为 16–128 个字符。'; return;}
+            if (password.input.value.length < 8 || password.input.value.length > 128) {notice.textContent = '临时密码须为 8–128 个字符。'; return;}
             await update({password:password.input.value}, '临时密码已重置，旧登录已失效；对方下次登录必须修改密码。');
           }); resetHost.replaceChildren(form);
         }));
