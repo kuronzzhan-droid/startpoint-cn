@@ -51,7 +51,7 @@
       wrap.append(input, el('span', '', label)); damage.append(wrap);
     });
     const status = el('p', 'community-status'); status.setAttribute('role', 'status');
-    const cards = el('div', 'community-grid');
+    const cards = el('div', options.id ? 'community-grid community-single' : 'community-grid');
     const more = el('button', 'secondary-button community-more', '加载更多'); more.type = 'button'; more.hidden = true;
     const retry = el('button', 'secondary-button', '重试连接'); retry.type = 'button'; retry.hidden = true;
     host.replaceChildren(el('h1', '', options.id ? '推荐队伍' : '配队大全'), intro, toolbar, damage, status, cards, more, retry, C.source(ui));
@@ -65,6 +65,7 @@
       const date = new Date(item.createdAt), time = el('time', 'muted', Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('zh-CN', {timeZone: 'Asia/Shanghai'}));
       if (!Number.isNaN(date.getTime())) time.dateTime = date.toISOString();
       node.append(heading, badges, C.board(item.team, data, ui), el('p', 'community-author', `作者：${item.author}`), time);
+      const gameCode = window.WFCommunityGameCodes?.readonly(item, ui); if (gameCode) node.append(gameCode);
       if (item.notes) {const notes = el('details', 'community-notes'); notes.open = Boolean(options.id); notes.append(el('summary', '', '用途与操作说明'), el('p', '', item.notes)); node.append(notes);}
       const actions = el('div', 'community-actions');
       const use = el('button', 'primary-button', '装入编成'); use.type = 'button';

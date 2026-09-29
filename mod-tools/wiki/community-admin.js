@@ -126,6 +126,7 @@
         `${statusNames[item.status] || item.status} · 版本 ${item.revision} · ${item.author || '未署名'} · ${C.elementLabel(item.element)}`),
       el('p', 'admin-team-main', (item.team?.main || []).map((id) => characters.get(id)?.name || '未收录角色').join(' / ')),
       button(item.status === 'hidden' ? '编辑 / 恢复公开' : '编辑 / 隐藏', () => edit(item)));
+      if (window.WFCommunityGameCodes) node.append(window.WFCommunityGameCodes.controls(item, ui, request));
       return node;
     }
     async function load(append) {
