@@ -48,8 +48,8 @@
         let icon = el('span');
         summary.append(icon, title);
         const panelStats = el('span', 'equipment-current-state'); title.append(panelStats);
-        let body, active, selectedLevel = 0, renderedLevel;
-        const buttons = [];
+        let body, active, selectedLevel = 0, renderedLevel, effectLevel = 'max', renderedEffectLevel;
+        const buttons = [], effectButtons = [];
         function renderHeader(level) {
           active = stages.find((stage) => stage.level === Number(level));
           selectedLevel = active?.level || 0;
@@ -72,32 +72,44 @@
           });
         }
         function renderBody() {
-          if (!card.open || renderedLevel === selectedLevel) return;
+          if (!card.open || (renderedLevel === selectedLevel && renderedEffectLevel === effectLevel)) return;
           if (!body) {
-            body = el('div', 'equipment-state'); card.append(body);
+            const effectControls = el('div', 'team-controls equipment-toggle');
+            effectControls.setAttribute('role', 'group'); effectControls.setAttribute('aria-label', `${entry.name}本体效果等级`);
+            [['initial', '初始效果'], ['max', '满级效果']].forEach(([value, label]) => {
+              const button = el('button', 'secondary-button', label); button.type = 'button';
+              button.setAttribute('data-effect-level', value);
+              button.addEventListener('click', () => {if (value !== effectLevel) {effectLevel = value; renderBody();}});
+              effectButtons.push({button, value}); effectControls.append(button);
+            });
+            body = el('div', 'equipment-state'); card.append(effectControls, body);
             if (e?.costs) card.append(lazyDetails(ui, forms.length ? `强化材料（0→${e.maxLevel}级完整路线）` : '强化材料', '',
               (cost) => renderReadable(cost, e.costs, ui)));
             if (entry.soul?.available) effects(card, '魂珠效果', entry.soul.effects);
             if (entry.soul?.note) card.append(el('p', 'muted', entry.soul.note));
             (entry.notes || []).forEach((note) => card.append(el('p', 'weapon-note', note)));
           }
+          const fullEffects = effectLevel === 'max';
+          const baseEffects = fullEffects ? entry.awakenedEffects : entry.baseEffects;
+          effectButtons.forEach(({button, value}) => button.setAttribute('aria-pressed', String(value === effectLevel)));
           const activeLabel = active?.label || `强化后 Lv${selectedLevel}`;
           body.replaceChildren(el('p', '', active ? active.description || entry.description : entry.description));
           if (active) {
             body.append(el('h3', '', activeLabel), el('p', 'equipment-stat', `满觉醒＋强化合计 ${stats(active.stats?.total)}`));
             if (forms.length && selectedLevel === 200) body.append(el('p', 'equipment-highest-marker', '最高强化 · Lv200'));
             if (active.stats?.additional) body.append(el('p', 'muted', `其中强化追加 ${stats(active.stats.additional)}`));
-            if (active.finalDescription) {body.append(el('h4', '', '强化后完整效果（含本体）'), el('p', '', active.finalDescription));}
-            effects(body, '本体满觉醒效果（保留）', entry.awakenedEffects);
+            if (fullEffects && active.finalDescription) {body.append(el('h4', '', '强化后完整效果（含本体）'), el('p', '', active.finalDescription));}
+            if (!fullEffects) body.append(el('p', 'muted', '当前对照本体初始效果；强化追加效果仍按已选形态显示，上方合计面板按满觉醒计算。'));
+            effects(body, fullEffects ? '本体满级效果（保留）' : '本体初始效果（对照）', baseEffects);
             effects(body, `强化 Lv${selectedLevel} 追加效果`, active.effects);
-            if (active.panelDescription) {body.append(el('h4', '', '强化阶段说明'), el('p', '', active.panelDescription));}
+            if (fullEffects && active.panelDescription) {body.append(el('h4', '', '强化阶段说明'), el('p', '', active.panelDescription));}
             if (active.note) body.append(el('p', 'muted', active.note));
           } else {
             body.append(el('h3', '', e ? originalLabel : '武器面板'), el('p', 'equipment-stat', `初始 ${stats(entry.stats?.base)}\n满觉醒 ${stats(entry.stats?.awakened)}`));
-            effects(body, '初始效果', entry.baseEffects); effects(body, '满觉醒效果', entry.awakenedEffects);
-            if (entry.panelDescription) body.append(el('p', '', entry.panelDescription));
+            effects(body, fullEffects ? '本体满级效果' : '本体初始效果', baseEffects);
+            if (fullEffects && entry.panelDescription) body.append(el('p', '', entry.panelDescription));
           }
-          renderedLevel = selectedLevel;
+          renderedLevel = selectedLevel; renderedEffectLevel = effectLevel;
         }
         if (e) {
           const toggle = el('div', `team-controls equipment-toggle${forms.length ? ' equipment-toggle-forms' : ''}`);
