@@ -9,15 +9,35 @@
 .team-board{grid-area:board;background-color:#fafbfa;background-image:linear-gradient(30deg,#e9edec55 12%,transparent 12.5%,transparent 87%,#e9edec55 87.5%),linear-gradient(150deg,#e9edec55 12%,transparent 12.5%,transparent 87%,#e9edec55 87.5%);background-size:48px 84px}
 .team-preview{grid-area:preview}
 .team-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.team-column h3{text-align:center;font-size:14px;background:#556568;color:white;padding:7px;border-radius:4px}
-.team-column:first-child h3{background:#ed9b15}.team-slot-wrap{margin:10px 0;text-align:center}
-.team-slot{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;min-height:135px;padding:8px 4px;gap:5px;background:#f6f9fa;border:2px solid #c7d2d5;border-radius:7px;color:#617075;position:relative}
-.team-slot.selected{border-color:#edaa20;box-shadow:0 0 0 2px #ffdb81}.team-slot.drag-over{background:#c7f3ed;border-color:#14aa9c}
-.team-slot-label{font-size:11px;font-weight:700}.team-slot-image{width:62px;height:62px;object-fit:contain;border-radius:5px}
-.team-slot-name{font-size:11px}.team-slot-empty{font-size:26px;color:#abc0c7}.team-slot>span:last-child{font-size:10px}
-.team-slot-wrap>.text-button{font-size:10px;padding:3px}.team-pair{border-top:1px solid #dde5e7;padding:13px 0}
+.team-column{min-width:0}.team-position{margin:0 0 12px;text-align:center;font-size:12px;font-weight:700;color:#647378}
+.team-card-stack{height:clamp(235px,24vw,310px);position:relative;margin:0 0 12px}
+.team-slot-wrap{position:relative;min-width:0;text-align:center}.team-card-stack>.team-slot-wrap{position:absolute}
+.team-slot-wrap-main{left:0;top:0;width:74%;height:87%;z-index:1}
+.team-slot-wrap-weapon{right:0;top:24%;width:max(49%,44px);height:29%;z-index:2}
+.team-slot-wrap-unison{right:0;bottom:0;width:max(52%,44px);height:43%;z-index:3}
+.team-leader-flag{position:absolute;z-index:5;top:-8px;left:-4px;padding:3px 16px 3px 8px;background:#fa4553;border:1px solid #c22636;color:#fff;font-size:11px;font-weight:800;clip-path:polygon(0 0,100% 0,91% 50%,100% 100%,0 100%);pointer-events:none}
+.team-slot{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;min-width:0;padding:0;gap:4px;background-color:#354046;background-image:conic-gradient(#ffffff09 25%,transparent 0 50%,#ffffff09 0 75%,transparent 0);background-size:18px 18px;border:4px solid #fff;border-radius:13px;color:#fff;position:relative;overflow:hidden;box-shadow:0 2px 5px #253a4b40;isolation:isolate}
+.team-slot.selected{border-color:#f5bc36;box-shadow:0 0 0 2px #da9416,0 3px 7px #263b4b33}.team-slot.drag-over{border-color:#18bca9;box-shadow:0 0 0 3px #94e9da}
+.team-slot-label{position:absolute;z-index:2;top:3px;left:4px;font-size:10px;font-weight:800;text-shadow:0 1px 3px #000}
+.team-slot-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 22%;border-radius:8px;z-index:0}
+.team-slot-name{position:absolute;z-index:2;bottom:0;left:0;width:100%;padding:17px 3px 5px;background:linear-gradient(transparent,#fff 11px);font-size:11px;font-weight:700;color:#4b5457;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team-slot-empty{font-size:32px;font-weight:400;color:#c1c9c9}.team-slot>.element-badge{position:absolute;top:0;right:0;min-width:0;padding:3px;background:#fff;border:0;border-radius:0 0 0 7px;z-index:3}
+.team-slot>.element-badge>span{display:none}.team-slot .native-icon{width:20px;height:20px}
+.team-slot-weapon .team-slot-image{inset:14px 8px 16px;width:calc(100% - 16px);height:calc(100% - 30px);object-fit:contain;image-rendering:pixelated;z-index:0}
+.team-slot-weapon .team-slot-name{font-size:9px;padding-bottom:3px}.team-slot-weapon .team-slot-empty{font-size:25px}
+.team-slot-remove{position:absolute;z-index:6;right:-5px;top:-5px;width:21px;height:21px;padding:0;border-radius:50%;border:1px solid #bac8cc;background:#fff;color:#53656b;font-size:17px;line-height:17px;box-shadow:0 1px 3px #263b4b33}
+.team-slot-wrap-main>.team-slot-remove{top:auto;bottom:5px;left:5px;right:auto}.team-slot-wrap-soul{height:47px;margin-top:7px}
+.team-slot-soul{flex-direction:row;justify-content:flex-start;padding:5px 5px 5px 33px;background:#edf5f4;border:1px solid #bdcfce;border-radius:8px;color:#536c70;gap:0;box-shadow:0 2px 0 #d5e1df}
+.team-slot-soul .team-slot-label{position:static;align-self:flex-start;font-size:9px;text-shadow:none;color:#4c7975}
+.team-slot-soul .team-slot-image{left:4px;top:9px;width:27px;height:27px;object-fit:contain;z-index:0;image-rendering:pixelated}
+.team-slot-soul .team-slot-empty{position:absolute;left:8px;top:7px;font-size:23px;color:#67a59d}
+.team-slot-soul .team-slot-name{left:33px;bottom:5px;width:calc(100% - 37px);padding:0;text-align:left;background:none;font-size:10px;color:#53676b}
+.team-pair{border-top:1px solid #dde5e7;padding:13px 0}
 .team-pair p{font-size:12px;white-space:pre-wrap}.team-pair h3{font-size:14px;margin:14px 0 6px}
 .team-library{grid-area:library;position:sticky;top:14px}.team-library h2{font-size:18px}.team-library>input{width:100%;margin-bottom:10px}.team-library>select{width:100%;margin-bottom:14px}
+.team-mode-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:4px;margin:0 0 14px;background:#e9efef;border:1px solid #c7d5d6;border-radius:8px}
+.team-mode-button{min-height:42px;padding:9px 12px;border:1px solid transparent;border-radius:5px;background:transparent;color:#52686b;font-weight:700}
+.team-mode-button[aria-pressed="true"]{background:#fff7dd;border-color:#e5ad32;color:#735019;box-shadow:0 2px 0 #ddb04b}.team-mode-button:hover{background:#fff}
 .team-candidates{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;max-height:72vh;overflow:auto;padding:3px}
 .team-candidate{display:flex;align-items:center;flex-direction:column;gap:4px;border:1px solid #d4dfe2;border-radius:6px;background:#f8fafb;padding:6px 3px;min-height:103px;font-size:10px}
 .team-candidate:hover{border-color:#16bfae;background:#e9f9f6}.team-candidate-image{width:48px;height:48px;object-fit:contain;border-radius:4px}.team-candidate>.element-badge{font-size:9px;padding:1px 3px}.team-candidate .native-icon{width:15px;height:15px}
@@ -31,5 +51,5 @@
 .guide-item{background:#fff;border:1px solid #d6e0e1;border-radius:9px;padding:18px;margin:12px 0}.guide-item h2,.guide-item h3{color:#25786f}
 .guide-field{margin:14px 0}.guide-field>h4{font-size:14px;border-left:4px solid var(--orange);padding-left:10px}.guide-detail{border-left:2px solid #dbe5e5;padding-left:15px;margin:12px 0}
 .boss-guide p{white-space:pre-wrap;font-size:13px}.boss-guide>p{font-size:14px}.boss-guide>.guide-field{background:#ffffffcc;border-radius:8px;padding:15px}
-@media(max-width:1100px){.team-layout{grid-template-columns:1fr;grid-template-areas:"board" "library" "preview"}.team-library{position:static}.team-candidates{max-height:450px}.team-slot{min-height:120px}.team-columns{gap:10px}}
-@media(max-width:640px){.team-controls{gap:6px}.team-controls input{width:100%}.team-controls button{font-size:11px}.team-board,.team-preview,.team-library{padding:12px}.team-slot-image{width:48px;height:48px}.team-slot{min-height:116px}.team-columns{gap:7px}.team-candidates{grid-template-columns:repeat(auto-fill,minmax(58px,1fr))}.equipment-grid{grid-template-columns:1fr}.guide-item{padding:12px}}
+@media(max-width:1100px){.team-layout{grid-template-columns:1fr;grid-template-areas:"board" "library" "preview"}.team-library{position:static}.team-candidates{max-height:450px}.team-columns{gap:12px}}
+@media(max-width:640px){.team-controls{gap:6px}.team-controls input{width:100%;min-width:0}.team-controls button{font-size:11px}.team-board,.team-preview,.team-library{padding:12px}.team-card-stack{height:225px}.team-slot{border-width:3px;border-radius:10px}.team-slot-name{font-size:10px}.team-slot .native-icon{width:16px;height:16px}.team-slot-soul{border-width:1px}.team-columns{gap:9px}.team-candidates{grid-template-columns:repeat(auto-fill,minmax(58px,1fr))}.equipment-grid{grid-template-columns:1fr}.guide-item{padding:12px}}

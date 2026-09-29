@@ -34,6 +34,10 @@
       if (kind && kind !== expected) {status.textContent = '请把角色放入主位或合击位，把武器放入装备或魂珠槽。'; return;}
       change(S.place(team, chosen.group, chosen.index, id, characters, equipment));
     }
+    function chooseSlot(group, index) {
+      if (S.isCharacter(group) !== S.isCharacter(chosen.group)) {query = ''; search.value = '';}
+      chosen = {group, index};
+    }
     const picker = el('select'); picker.setAttribute('aria-label', '已保存队伍');
     function refreshSaved() {
       picker.replaceChildren(el('option', '', '选择已保存队伍'));
@@ -77,17 +81,25 @@
       board.replaceChildren(el('h2', '', '队伍编成'));
       const grid = el('div', 'team-columns');
       for (let index = 0; index < 3; index++) {
-        const column = el('div', 'team-column'); column.append(el('h3', '', index ? `位置 ${index + 1}` : '队长'));
-        for (const group of S.groups) {
+        const column = el('div', 'team-column'); column.append(el('h3', 'team-position', `${index + 1}号位`));
+        const stack = el('div', 'team-card-stack'); column.append(stack);
+        if (index === 0) stack.append(el('span', 'team-leader-flag', '队长'));
+        for (const group of ['main', 'weapon', 'unison', 'soul']) {
           const source = S.isCharacter(group) ? characters : equipment;
           const item = source.get(team[group][index]);
-          const wrap = el('div', 'team-slot-wrap');
-          const slot = button('', () => {chosen = {group, index}; paintBoard(); paintLibrary();}, 'team-slot');
+          const wrap = el('div', `team-slot-wrap team-slot-wrap-${group}`);
+          const slot = button('', () => {chooseSlot(group, index); paintBoard(); paintLibrary();}, `team-slot team-slot-${group}`);
           slot.classList.toggle('selected', chosen.group === group && chosen.index === index);
           slot.setAttribute('aria-label', `${index + 1}号${labels[group]}：${item?.name || '空位'}`);
+          slot.title = `${labels[group]} · ${item?.name || '点击选择或拖入'}`;
           slot.append(el('span', 'team-slot-label', labels[group]));
-          if (item) slot.append(picture(item.icon, item.name, 'team-slot-image'), el('span', 'team-slot-name', item.name));
-          else slot.append(el('span', 'team-slot-empty', '+'), el('span', '', '拖入 / 点击选择'));
+          if (item) {
+            const portrait = group === 'main' && Array.isArray(item.portraits) ? item.portraits.at(-1)?.url : '';
+            slot.append(picture(portrait || item.icon, item.name, 'team-slot-image'));
+            if (S.isCharacter(group)) slot.append(elementBadge(item.element));
+          } else slot.append(el('span', 'team-slot-empty', '+'));
+          slot.append(el('span', 'team-slot-name', item?.name || (group === 'soul' ? '选择魂珠' : '点击选择')));
+          slot.querySelectorAll('img').forEach((img) => {img.draggable = false;});
           slot.draggable = Boolean(item);
           slot.addEventListener('dragstart', (event) => {event.dataTransfer.setData('application/x-wf-wiki', JSON.stringify({id: team[group][index], kind: S.isCharacter(group) ? 'character' : 'equipment'}));});
           slot.addEventListener('dragover', (event) => {event.preventDefault(); slot.classList.add('drag-over');});
@@ -99,13 +111,13 @@
               if (value.kind !== (S.isCharacter(group) ? 'character' : 'equipment')) {
                 status.textContent = '角色只能放入主位或合击位，武器只能放入装备或魂珠槽。'; return;
               }
-              chosen = {group, index}; assign(value.id, value.kind); paintBoard(); paintLibrary();
+              chooseSlot(group, index); assign(value.id, value.kind); paintBoard(); paintLibrary();
             }
             catch {status.textContent = '请从本页角色或武器列表拖入。';}
           });
           wrap.append(slot);
-          if (item) {const remove = button('移除', () => change(S.place(team, group, index, '', characters, equipment)), 'text-button'); remove.setAttribute('aria-label', `移除${index + 1}号${labels[group]}`); wrap.append(remove);}
-          column.append(wrap);
+          if (item) {const remove = button('×', () => change(S.place(team, group, index, '', characters, equipment)), 'team-slot-remove'); remove.setAttribute('aria-label', `移除${index + 1}号${labels[group]}`); remove.title = `移除${labels[group]}`; wrap.append(remove);}
+          (group === 'soul' ? column : stack).append(wrap);
         }
         grid.append(column);
       }
@@ -141,15 +153,29 @@
     const search = el('input'); search.type = 'search'; search.placeholder = '搜索角色或武器'; search.value = query; search.setAttribute('aria-label', '配队候选搜索');
     const element = el('select'); element.setAttribute('aria-label', '配队角色属性');
     ['全部属性', '火', '水', '雷', '风', '光', '暗'].forEach((label, i) => {const o = el('option', '', label); o.value = i ? label : ''; element.append(o);}); element.value = filterElement;
+    const modeSwitch = el('div', 'team-mode-switch'); modeSwitch.setAttribute('role', 'group'); modeSwitch.setAttribute('aria-label', '候选类别');
+    function switchMode(characterMode) {
+      if (S.isCharacter(chosen.group) === characterMode) return;
+      chooseSlot(characterMode ? 'main' : 'weapon', chosen.index); paintBoard(); paintLibrary();
+    }
+    const characterButton = button('角色', () => switchMode(true), 'team-mode-button');
+    const weaponButton = button('武器', () => switchMode(false), 'team-mode-button');
+    modeSwitch.append(characterButton, weaponButton);
     const candidates = el('div', 'team-candidates');
-    const heading = el('h2'); library.append(heading, search, element, candidates);
+    const heading = el('h2'); library.append(heading, modeSwitch, search, element, candidates);
     function paintLibrary() {
       const characterMode = S.isCharacter(chosen.group);
       heading.textContent = `选择${labels[chosen.group]} · ${chosen.index + 1}号位`;
+      characterButton.setAttribute('aria-pressed', String(characterMode));
+      weaponButton.setAttribute('aria-pressed', String(!characterMode));
       element.hidden = !characterMode;
       const items = [...(characterMode ? characters : equipment).values()].filter((item) =>
         (chosen.group !== 'soul' || item.soul?.available) && (!characterMode || !filterElement || item.element === filterElement) &&
         `${item.name} ${(item.aliases || []).join(' ')} ${item.theme || ''} ${item.category || ''}`.toLowerCase().includes(query.toLowerCase()));
+      if (!characterMode) {
+        const priority = (item) => ['深渊武器', '诅咒武器'].includes(item.category) ? 0 : 1;
+        items.sort((a, b) => priority(a) - priority(b));
+      }
       candidates.replaceChildren();
       for (const item of items) {
         const b = button('', () => assign(item.id), 'team-candidate'); b.title = `${item.name} ${item.theme || ''}`;
