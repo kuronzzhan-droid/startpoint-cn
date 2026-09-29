@@ -169,8 +169,8 @@ def export(output: Path, *, legacy_data: Path | None = None, external_character:
     })
     catalog = public_catalog(catalog)
     write_json(output / "data.json", catalog)
-    script = "window.WF_WIKI = " + json.dumps(catalog, ensure_ascii=False, separators=(",", ":")) + ";\n"
-    (output / "data.js").write_text(script, encoding="utf-8")
+    from wf_wiki_data import write_split_public
+    data_summary = write_split_public(output, catalog)
     for path in (HERE / "wiki").iterdir():
         if path.suffix in {".html", ".css", ".js"} or path.name == "brand-logo.png":
             shutil.copyfile(path, output / path.name)
@@ -178,7 +178,7 @@ def export(output: Path, *, legacy_data: Path | None = None, external_character:
     (output / "打开角色Wiki.bat").write_bytes(b'@echo off\r\nstart "" "%~dp0index.html"\r\n')
     (output / "使用说明.txt").write_text(
         "世界弹射 MOD 角色资料站\n\n双击 index.html 或 打开角色Wiki.bat 即可浏览，无需联网。\n"
-        "保留同目录下的 data.js、CSS、JavaScript 和 media 文件夹。\n"
+        "保留同目录下的 data.js、data 数据包文件夹、CSS、JavaScript 和 media 文件夹。\n"
         "搜索支持名字、别名、主题、技能与能力关键词；详情页面地址可保留角色定位。\n"
         "角色数据是导出时的本地快照。普通/进化技能分别展示；属性面板保留数值口径。\n"
         "语音逐条显示当前可用的日文原文和中文台词；缺失项不代表音频不存在。\n"
@@ -186,7 +186,7 @@ def export(output: Path, *, legacy_data: Path | None = None, external_character:
         encoding="utf-8")
     receipt = {"generator": "wf_wiki", "complete": True,
                "version": version_after, "characters": len(catalog["characters"]),
-               "voices": voice_summary, "media": media.summary()}
+               "voices": voice_summary, "media": media.summary(), "data": data_summary}
     write_json(output / MARKER, receipt)
     return receipt
 

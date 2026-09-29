@@ -34,6 +34,15 @@ def public_id(kind, value):
     return kind + hashlib.sha256(f"wf-wiki-public-v1:{kind}:{value}".encode()).hexdigest()[:12]
 
 
+def catalog_order(character_ids):
+    """Native character/showOrder order, published only as a continuous rank."""
+    identifiers = [str(value) for value in character_ids]
+    if len(identifiers) != len(set(identifiers)) or any(not value.isdecimal() for value in identifiers):
+        raise ValueError("图鉴顺序需要唯一的原生角色编号")
+    return {public_id("c", value): index + 1
+            for index, value in enumerate(sorted(identifiers, key=int))}
+
+
 def clean_text(value, translate_enums=True):
     value = re.sub(r"（固有\d+）", "", value)
     value = re.sub(r"固有\d+", "固有状态", value)
@@ -68,8 +77,10 @@ def readable(value, field="", translate_enums=True):
 
 def public_catalog(catalog):
     result = readable(catalog)
+    order = catalog_order(character["id"] for character in catalog["characters"])
     for original, public in zip(catalog["characters"], result["characters"]):
         public["id"] = public_id("c", original["id"])
+        public["catalogOrder"] = order[public["id"]]
         # Errors retain player context, never exception payloads or file paths.
         public["warnings"] = [w for w in public.get("warnings", []) if not re.search(r"[A-Za-z_]{8,}", w)]
     for original, public in zip(catalog.get("equipment", []), result.get("equipment", [])):
