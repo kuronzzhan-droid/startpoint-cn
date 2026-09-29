@@ -6,6 +6,7 @@
     const categoryRank = (category) => {const rank = categoryOrder.indexOf(category); return rank < 0 ? categoryOrder.length : rank;};
     const entries = [...(data.equipment || [])].sort((a, b) => categoryRank(a.category) - categoryRank(b.category));
     const enhancedStates = new Map();
+    const groupStates = new Map(), visibleGroups = new Map();
     const search = el('input'); search.type = 'search'; search.placeholder = '搜索武器、效果或关键词'; search.setAttribute('aria-label', '搜索武器');
     const filter = el('select'); filter.setAttribute('aria-label', '武器分类');
     const rarityFilter = el('select'); rarityFilter.setAttribute('aria-label', '武器星级');
@@ -31,6 +32,8 @@
     };
     const stats = (value) => value ? `HP ${value.hp} / 攻击力 ${value.atk}` : '暂无数值';
     function paint() {
+      visibleGroups.forEach((section, category) => groupStates.set(category, section.open));
+      visibleGroups.clear();
       const q = search.value.trim().toLowerCase();
       const items = entries.filter((entry) => (!filter.value || entry.category === filter.value) &&
         (!rarityFilter.value || String(entry.rarity) === rarityFilter.value) &&
@@ -39,7 +42,10 @@
       const grids = new Map();
       [...new Set(items.map((entry) => entry.category))].forEach((category) => {
         const members = items.filter((entry) => entry.category === category), enhanced = members.filter((entry) => entry.enhancement).length;
-        const section = el('section', 'equipment-group'), heading = el('header', 'equipment-group-heading');
+        const section = el('details', 'equipment-group'), heading = el('summary', 'equipment-group-heading');
+        section.open = groupStates.get(category) ?? true;
+        visibleGroups.set(category, section);
+        heading.title = '点击展开或收起此分类';
         heading.append(el('h2', '', category), el('span', 'equipment-group-count', `${members.length} 件${enhanced ? ` · ${enhanced} 件可强化` : ''}`));
         const grid = el('div', 'equipment-grid'); grids.set(category, grid); section.append(heading, grid); groups.append(section);
       });
@@ -103,7 +109,17 @@
     }
     search.addEventListener('input', paint); filter.addEventListener('change', paint); rarityFilter.addEventListener('change', paint); enhancementFilter.addEventListener('change', paint);
     const toolbar = el('div', 'team-controls equipment-toolbar'); toolbar.append(search, filter, rarityFilter, enhancementFilter);
-    host.replaceChildren(el('h1', '', '武器图鉴'), el('p', 'section-intro', '按系列分组，深渊、诅咒武器置顶。所有带「可强化」标识的武器均可切换强化前后，查看对应名称、图标、面板与效果；魂珠和材料独立列出。'), toolbar, count, groups);
+    const groupControls = el('div', 'team-controls equipment-group-controls');
+    [[true, '全部展开'], [false, '全部收起']].forEach(([open, label]) => {
+      const button = el('button', 'secondary-button', label); button.type = 'button';
+      button.addEventListener('click', () => {
+        entries.forEach((entry) => groupStates.set(entry.category, open));
+        visibleGroups.forEach((section) => {section.open = open;});
+      });
+      groupControls.append(button);
+    });
+    const resultBar = el('div', 'equipment-result-bar'); resultBar.append(count, groupControls);
+    host.replaceChildren(el('h1', '', '武器图鉴'), el('p', 'section-intro', '点击分类标题可展开或收起，深渊、诅咒武器置顶。所有带「可强化」标识的武器均可切换强化前后，查看对应名称、图标、面板与效果；魂珠和材料独立列出。'), toolbar, resultBar, groups);
     paint();
   }
   const fieldNames = {name: '名称', description: '说明', level: '等级', maxLevel: '最高等级', hp: '生命值', element: '属性', attack: '攻击', atk: '攻击',
