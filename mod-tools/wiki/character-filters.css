@@ -1,32 +1,30 @@
 /* One responsive filter panel shared by the catalogue and team candidates. */
 .character-filters{min-width:0;background:#fff;border:1px solid #d2e0df;border-radius:9px}
-.character-filter-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;list-style:none}
+.character-filter-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 10px;list-style:none}
 .character-filter-heading::-webkit-details-marker{display:none}
 .character-filter-heading h3{margin:0;font-size:14px;color:#3c5b5b}
 .character-filter-toggle-hint{font-size:10px;color:var(--muted);white-space:nowrap}
 .character-filters[open]>.character-filter-heading{border-bottom:1px solid var(--line)}
-.character-filter-body{padding:10px 14px 14px}
-.character-filter-actions{display:flex;justify-content:flex-end;margin-bottom:7px}
-.character-filter-actions .text-button{padding:3px 0;font-size:11px;white-space:nowrap}
-.character-filter-search-label{display:block;margin:0 0 5px;color:#617777;font-size:11px}
-.character-filter-search{display:block;min-width:0;width:100%;padding:10px 12px;border:1px solid #bfcfd1;border-radius:6px;background:#fafcfc;font-size:12px}
-.character-filter-help{margin:5px 0 10px;color:#819092;font-size:10px}
-.character-filter-elements{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-bottom:12px}
-.character-filter-element{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:38px;padding:5px 4px;background:#f6fafa;border:1px solid #c5d5d5;border-bottom-width:3px;border-radius:6px;font-size:11px;color:#4c6567}
-.character-filter-element .native-icon{width:23px;height:23px;flex:none}
+.character-filter-body{display:grid;gap:7px;padding:8px 10px 10px}
+.character-filter-search-row{display:flex;align-items:center;gap:8px;min-width:0}
+.character-filter-search-row .text-button{flex:none;min-height:34px;padding:5px 0;font-size:11px;white-space:nowrap}
+.character-filter-search-label,.character-filter-search-help,.character-filter-field>span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.character-filter-search{display:block;flex:1;min-width:0;width:100%;min-height:34px;padding:6px 9px;border:1px solid #bfcfd1;border-radius:6px;background:#fafcfc;font-size:12px}
+.character-filter-help{margin:0;color:#819092;font-size:10px;line-height:1.5}.character-filter-help:empty{display:none}
+.character-filter-elements{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.character-filter-element{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:32px;padding:3px 2px;background:#f6fafa;border:1px solid #c5d5d5;border-bottom-width:2px;border-radius:5px;font-size:10px;color:#4c6567}
+.character-filter-element .native-icon{width:20px;height:20px;flex:none}
 .character-filter-element[aria-pressed="true"]{border-color:#18ad9f;background:#e5f8f1;color:#117e74;box-shadow:inset 0 1px 0 #fff;font-weight:700}
 .character-filter-element:hover{background:#edf8f4;border-color:#1daf9f}
-.character-filter-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.character-filter-field{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:11px;color:#617777}
-.character-filter-field select{width:100%;min-width:0;min-height:36px;padding:6px 8px;border:1px solid #c4d4d4;border-radius:5px;background:#fafcfc;font-size:12px;color:#3c5558}
+.character-filter-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.character-filter-field{display:block;min-width:0;font-size:11px;color:#617777}
+.character-filter-field select{width:100%;min-width:0;min-height:32px;padding:5px 6px;border:1px solid #c4d4d4;border-radius:5px;background:#fafcfc;font-size:12px;color:#3c5558}
 .catalog-character-controls{margin-bottom:12px}
-.team-library>.character-filters{margin-bottom:12px}.team-library .character-filter-body{padding:9px 11px 11px}
-.team-library .character-filter-element{flex-direction:column;gap:1px;padding:4px 1px;font-size:9px}
-.team-library .character-filter-element .native-icon{width:21px;height:21px}
-.team-library .character-filter-fields{gap:6px}.team-library .character-filter-field select{font-size:11px;padding:6px 3px}
+.team-library>.character-filters{margin-bottom:7px}.team-library .character-filter-body{padding:7px 8px 8px}
+.team-library .character-filter-element .native-icon{width:18px;height:18px}
+.team-library .character-filter-field select{font-size:11px;padding:5px 3px}
 @media(max-width:640px){
-  .character-filter-heading{padding:10px 11px}.character-filter-body{padding:9px 11px 11px}.character-filter-elements{gap:4px}
-  .character-filter-element{flex-direction:column;gap:1px;font-size:10px;padding:4px 1px}
-  .character-filter-element .native-icon{width:21px;height:21px}.character-filter-fields{gap:6px}
-  .character-filter-field select{font-size:11px;padding:6px 3px}
+  .character-filter-elements{gap:3px}.character-filter-element{min-height:36px;gap:1px}
+  .character-filter-element .native-icon{width:17px;height:17px}
+  .character-filter-field select{font-size:11px;min-height:36px;padding:5px 3px}
 }

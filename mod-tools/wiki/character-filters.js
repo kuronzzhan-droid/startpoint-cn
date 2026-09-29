@@ -25,13 +25,15 @@
     heading.append(hint);
     root.addEventListener('toggle', () => {hint.textContent = root.open ? '收起 ▴' : '展开 ▾';});
     const body = el('div', 'character-filter-body');
-    const actions = el('div', 'character-filter-actions');
+    const searchRow = el('div', 'character-filter-search-row');
     const resetButton = el('button', 'text-button', '重置筛选'); resetButton.type = 'button';
-    actions.append(resetButton);
     const searchLabel = el('label', 'character-filter-search-label', '名字、别名、主题或技能');
     searchLabel.htmlFor = `${idPrefix}-search`;
     const search = el('input', 'character-filter-search'); search.id = searchLabel.htmlFor;
-    search.type = 'search'; search.placeholder = '输入角色名、别称或技能…'; search.autocomplete = 'off';
+    search.type = 'search'; search.placeholder = '搜索名字、别名、主题或技能…'; search.autocomplete = 'off';
+    const help = el('span', 'character-filter-search-help', '支持多关键词，以空格分隔'); help.id = `${idPrefix}-search-help`;
+    search.setAttribute('aria-describedby', help.id); search.title = help.textContent;
+    searchRow.append(searchLabel, search, resetButton, help);
     const elementRow = el('div', 'character-filter-elements'); elementRow.setAttribute('role', 'group'); elementRow.setAttribute('aria-label', '角色属性');
     const elementButtons = [];
     const selects = {};
@@ -93,7 +95,7 @@
     }
     resetButton.addEventListener('click', () => {reset(false); if (onReset) onReset(); else notify();});
     search.addEventListener('input', () => {state.search = search.value; onStateChange({...state}); clearTimeout(searchTimer); searchTimer = setTimeout(notify, 80);});
-    body.append(actions, searchLabel, search, el('p', 'character-filter-help', '支持多关键词，以空格分隔'), searchStatus, retry, elementRow, choices);
+    body.append(searchRow, searchStatus, retry, elementRow, choices);
     root.append(heading, body);
     sync();
     if (state.search.trim()) queueMicrotask(notify);

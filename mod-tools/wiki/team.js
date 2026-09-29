@@ -8,6 +8,26 @@
   let characterFilterState = {}, equipmentFilterState = {}, name = '我的队伍';
   const labels = {main: '主位', unison: '合击', weapon: '装备', soul: '魂珠'};
   let imported;
+  function arrangePanels() {
+    if (!window.matchMedia) return;
+    const layout = document.querySelector('#extra-view .team-layout');
+    if (!layout) return;
+    const mode = window.matchMedia('(max-width:820px)').matches ? 'phone'
+      : window.matchMedia('(max-width:1150px)').matches ? 'narrow' : 'wide';
+    if (layout.dataset.order === mode) return;
+    const main = layout.querySelector('.team-main'), board = layout.querySelector('.team-board');
+    const preview = layout.querySelector('.team-preview'), library = layout.querySelector('.team-library');
+    const inspector = layout.querySelector('.team-inspector');
+    if (!inspector) return;
+    const focused = document.activeElement, keepFocus = layout.contains(focused);
+    // Move existing panels so Tab order follows the responsive visual order.
+    if (mode === 'wide') {main.append(board, preview); layout.append(inspector, main, library);}
+    else if (mode === 'narrow') layout.append(inspector, board, library, preview, main);
+    else layout.append(board, library, inspector, preview, main);
+    layout.dataset.order = mode;
+    if (keepFocus) focused.focus({preventScroll:true});
+  }
+  window.addEventListener?.('resize', arrangePanels);
   window.WFTeamImport = {load(value, title, selection) {imported = {team: S.copy(value), title, selection};}};
   function savedTeams() {
     try { const data = JSON.parse(localStorage.getItem(storageKey) || '[]'); return Array.isArray(data) ? data.filter((item) => item && typeof item.name === 'string' && item.team && typeof item.team === 'object') : []; }
@@ -210,7 +230,8 @@
     const soulButton = button('魂珠', () => switchMode('soul'), 'team-mode-button');
     modeSwitch.append(characterButton, weaponButton, soulButton);
     const candidates = el('div', 'team-candidates');
-    const heading = el('h2'); library.append(heading, modeSwitch, characterFilters.element, equipmentFilters.element, candidates);
+    const heading = el('h2'), libraryHeading = el('div', 'team-library-heading'); libraryHeading.append(heading, modeSwitch);
+    library.append(libraryHeading, characterFilters.element, equipmentFilters.element, candidates);
     function paintLibrary() {
       const characterMode = S.isCharacter(chosen.group);
       heading.textContent = `选择${labels[chosen.group]} · ${chosen.index + 1}号位`;
@@ -248,6 +269,6 @@
     const layout = el('div', 'team-layout'); if (inspector) layout.append(inspector.element); layout.append(mainColumn, library);
     host.replaceChildren(el('h1', '', '配队模拟'), el('p', 'section-intro', '拖拽头像到槽位，或点空位／「换」后选择候选。点击盘中的角色头像，在角色面板查看技能与能力；第一列主位为队长。'),
       controls, status, layout, el('p', 'muted', '用于编成与查阅效果；主位限制、触发条件和武器特殊规则请结合说明判断。本页不模拟战斗过程或计算实战伤害。'));
-    refreshSaved(); paintBoard(); paintLibrary();
+    refreshSaved(); paintBoard(); paintLibrary(); arrangePanels();
   };
 })();

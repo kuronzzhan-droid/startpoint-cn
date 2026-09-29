@@ -20,8 +20,10 @@
       const rarities = [...new Set(equipment.map((item) => String(item.rarity ?? '')).filter(Boolean))].sort((a,b) => Number(b) - Number(a));
       ['', ...rarities].forEach((value) => {const option = el('option', '', value ? `${value} 星` : '全部星级'); option.value = value; rarity.append(option);});
       const reset = el('button', 'text-button', '重置筛选'); reset.type = 'button';
-      const controls = el('div', 'team-equipment-options'); controls.append(rarity, reset);
+      const controls = el('div', 'team-equipment-options'); controls.append(rarity);
+      const searchRow = el('div', 'character-filter-search-row'); searchRow.append(search, reset);
       const note = el('p', 'character-filter-help', '按现有装备属性分类；魂珠沿用对应武器分类。“通用”包含通用及尚未分类的装备。');
+      const help = el('details', 'team-equipment-help'); help.append(el('summary', '', '属性说明'), note); controls.append(help);
       const getState = () => ({weapon:{...states.weapon},soul:{...states.soul}});
       function notify() {onStateChange(getState()); onChange();}
       function sync() {
@@ -48,7 +50,7 @@
       search.addEventListener('input', () => {states[mode].search = search.value; notify();});
       rarity.addEventListener('change', () => {states[mode].rarity = rarity.value; notify();});
       reset.addEventListener('click', () => {states[mode] = {search:'',element:'',rarity:''}; sync(); notify();});
-      root.append(search, row, controls, note); sync();
+      root.append(searchRow, row, controls); sync();
       return {
         element: root, getState,
         setMode(value) {mode = value === 'soul' ? 'soul' : 'weapon'; sync();},

@@ -3,8 +3,8 @@
 .team-controls input,.team-weapon-search{padding:10px 12px;min-width:180px}
 .team-controls button{min-height:40px;padding:8px 13px;border-radius:6px}
 .team-controls .secondary-button{background:white;border:1px solid #bfcdd1;border-bottom-width:3px}
-.team-status{min-height:22px;color:#137a76;margin-bottom:10px}
-.team-layout{display:grid;grid-template-columns:minmax(340px,.95fr) minmax(320px,1.05fr);grid-template-areas:"main library";gap:18px;align-items:start}
+.team-status{color:#137a76;margin:0 0 8px}.team-status:empty{display:none}
+.team-layout{display:grid;grid-template-columns:minmax(340px,.95fr) minmax(320px,1.05fr);grid-template-areas:"main library";gap:10px;align-items:start}
 .team-main{grid-area:main;display:flex;flex-direction:column;gap:14px;min-width:0;align-self:start}
 .team-board,.team-preview,.team-library{min-width:0;padding:17px;background:#fff;border:1px solid #ccdadd;border-radius:10px}
 .team-board{grid-area:board;background-color:#fafbfa;background-image:linear-gradient(30deg,#e9edec55 12%,transparent 12.5%,transparent 87%,#e9edec55 87.5%),linear-gradient(150deg,#e9edec55 12%,transparent 12.5%,transparent 87%,#e9edec55 87.5%);background-size:48px 84px}
@@ -39,11 +39,11 @@
 .team-pair-effect>summary{display:flex;align-items:center;gap:6px;list-style:none;padding:8px;cursor:pointer;font-size:12px;line-height:1.5}.team-pair-effect>summary>strong{min-width:0;overflow-wrap:anywhere}
 .team-pair-effect p{font-size:12px;line-height:1.75;white-space:pre-wrap;margin:0;padding:2px 9px 10px;overflow-wrap:anywhere}.team-pair-effect h4{font-size:11px;margin:0;padding:2px 9px 6px}
 .team-preview-rules{margin:0 0 9px;font-size:12px}.team-preview-rules>summary{cursor:pointer;padding:5px 0}.team-preview-rules .weapon-note{font-size:12px;line-height:1.65;white-space:pre-wrap}
-.team-library{grid-area:library;position:sticky;top:14px}.team-library h2{font-size:18px}.team-weapon-search{width:100%;margin-bottom:10px}
-.team-mode-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:4px;margin:0 0 14px;background:#e9efef;border:1px solid #c7d5d6;border-radius:8px}
-.team-mode-button{min-height:42px;padding:9px 12px;border:1px solid transparent;border-radius:5px;background:transparent;color:#52686b;font-weight:700}
+.team-library{grid-area:library;position:sticky;top:14px;padding:11px}.team-library-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:7px}.team-library h2{font-size:14px;margin:0}.team-weapon-search{width:100%;margin-bottom:10px}
+.team-mode-switch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));flex:1;min-width:156px;max-width:260px;gap:3px;padding:3px;margin:0;background:#e9efef;border:1px solid #c7d5d6;border-radius:6px}
+.team-mode-button{min-height:30px;padding:4px 7px;border:1px solid transparent;border-radius:4px;background:transparent;color:#52686b;font-size:12px;font-weight:700}
 .team-mode-button[aria-pressed="true"]{background:#fff7dd;border-color:#e5ad32;color:#735019;box-shadow:0 2px 0 #ddb04b}.team-mode-button:hover{background:#fff}
-.team-candidates{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;max-height:72vh;overflow:auto;padding:3px}
+.team-candidates{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;max-height:72vh;overflow:auto;padding:3px}
 .team-candidate{display:flex;align-items:center;flex-direction:column;gap:4px;border:1px solid #d4dfe2;border-radius:6px;background:#f8fafb;padding:6px 3px;min-height:103px;font-size:10px}
 .team-candidate:hover{border-color:#16bfae;background:#e9f9f6}.team-candidate-image{width:48px;height:48px;object-fit:contain;border-radius:4px}.team-candidate>.element-badge{font-size:9px;padding:1px 3px}.team-candidate .native-icon{width:15px;height:15px}
 .equipment-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:14px;align-items:start}
