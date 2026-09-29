@@ -7,8 +7,8 @@
       '临境域武器', '深层域武器', '装备扭蛋武器', '主线武器', '活动武器', '世界弹射器宝珠', '其他武器'];
     const categoryRank = (category) => {const rank = categoryOrder.indexOf(category); return rank < 0 ? categoryOrder.length : rank;};
     const entries = [...(data.equipment || [])].sort((a, b) => categoryRank(a.category) - categoryRank(b.category));
-    const enhancedStates = new Map();
-    const groupStates = new Map(), visibleGroups = new Map();
+    const enhancedStates = new Map(), cards = new Map(), sections = new Map();
+    const searchText = new Map(entries.map((entry) => [entry, JSON.stringify(entry).toLowerCase()]));
     const search = el('input'); search.type = 'search'; search.placeholder = '搜索武器、效果或关键词'; search.setAttribute('aria-label', '搜索武器');
     const filter = el('select'); filter.setAttribute('aria-label', '武器分类');
     const rarityFilter = el('select'); rarityFilter.setAttribute('aria-label', '武器星级');
@@ -33,26 +33,7 @@
       parent.append(ul);
     };
     const stats = (value) => value ? `HP ${value.hp} / 攻击力 ${value.atk}` : '暂无数值';
-    function paint() {
-      visibleGroups.forEach((section, category) => groupStates.set(category, section.open));
-      visibleGroups.clear();
-      const q = search.value.trim().toLowerCase();
-      const items = entries.filter((entry) => (!filter.value || entry.category === filter.value) &&
-        (!rarityFilter.value || String(entry.rarity) === rarityFilter.value) &&
-        (!enhancementFilter.value || Boolean(entry.enhancement) === (enhancementFilter.value === 'yes')) && JSON.stringify(entry).toLowerCase().includes(q));
-      count.textContent = `共 ${items.length} 件武器 · ${items.filter((entry) => entry.enhancement).length} 件可强化`; groups.replaceChildren();
-      const grids = new Map();
-      [...new Set(items.map((entry) => entry.category))].forEach((category) => {
-        const members = items.filter((entry) => entry.category === category), enhanced = members.filter((entry) => entry.enhancement).length;
-        const section = el('details', 'equipment-group'), heading = el('summary', 'equipment-group-heading');
-        section.open = groupStates.get(category) ?? true;
-        visibleGroups.set(category, section);
-        heading.title = '点击展开或收起此分类';
-        heading.append(el('h2', '', category), el('span', 'equipment-group-count', `${members.length} 件${enhanced ? ` · ${enhanced} 件可强化` : ''}`));
-        const grid = el('div', 'equipment-grid'); grids.set(category, grid); section.append(heading, grid); groups.append(section);
-      });
-      if (!items.length) groups.append(el('p', 'equipment-empty', '没有符合条件的武器，请调整分类或搜索词。'));
-      items.forEach((entry) => {
+    function weaponCard(entry) {
         const e = entry.enhancement, stateKey = entry.id || entry.name;
         const forms = Array.isArray(e?.forms) ? e.forms.filter((form) => form && Number.isFinite(Number(form.level)) && Number(form.level) > 0)
           .map((form) => ({...form, level: Number(form.level)})).sort((a, b) => a.level - b.level) : [];
@@ -64,25 +45,43 @@
         title.append(name, el('span', 'muted', `${entry.category} · ${entry.rarity}★`));
         const stateLabel = el('span', 'equipment-current-state');
         if (e) title.append(el('span', `equipment-enhance-badge${forms.length ? ' equipment-forms-badge' : ''}`, `可强化 · ${forms.length ? `${forms.length + 1} 种形态 · ` : ''}最高 Lv${e.maxLevel}`), stateLabel);
-        let icon = picture(entry.icon, entry.name, 'equipment-icon');
+        let icon = el('span');
         summary.append(icon, title);
-        const body = el('div', 'equipment-state');
+        const panelStats = el('span', 'equipment-current-state'); title.append(panelStats);
+        let body, active, selectedLevel = 0, renderedLevel;
         const buttons = [];
-        function renderState(level) {
-          const active = stages.find((stage) => stage.level === Number(level));
-          const selectedLevel = active?.level || 0;
+        function renderHeader(level) {
+          active = stages.find((stage) => stage.level === Number(level));
+          selectedLevel = active?.level || 0;
           const activeLabel = active?.label || `强化后 Lv${selectedLevel}`;
           const shownName = active ? active.name || entry.name : entry.name;
           name.textContent = shownName;
           card.setAttribute('data-enhanced', String(Boolean(active)));
           card.setAttribute('data-enhancement-level', String(selectedLevel));
           stateLabel.textContent = `当前：${active ? activeLabel : originalLabel}`;
+          panelStats.textContent = `${active ? '满觉醒＋强化' : '满觉醒'} ${stats(active ? active.stats?.total : entry.stats?.awakened)}`;
           let nextIcon = picture(active ? active.icon || entry.icon : entry.icon, shownName, 'equipment-icon');
           if (active?.frame) {
             const framed = el('span', 'equipment-framed-icon');
             framed.append(picture(active.frame, '', 'equipment-frame-image'), nextIcon); nextIcon = framed;
           }
           icon.replaceWith(nextIcon); icon = nextIcon;
+          buttons.forEach(({button, value, label}) => {
+            button.setAttribute('aria-pressed', String(value === selectedLevel));
+            button.textContent = `${value === selectedLevel ? '● ' : ''}${label}`;
+          });
+        }
+        function renderBody() {
+          if (!card.open || renderedLevel === selectedLevel) return;
+          if (!body) {
+            body = el('div', 'equipment-state'); card.append(body);
+            if (e?.costs) card.append(lazyDetails(ui, forms.length ? `强化材料（0→${e.maxLevel}级完整路线）` : '强化材料', '',
+              (cost) => renderReadable(cost, e.costs, ui)));
+            if (entry.soul?.available) effects(card, '魂珠效果', entry.soul.effects);
+            if (entry.soul?.note) card.append(el('p', 'muted', entry.soul.note));
+            (entry.notes || []).forEach((note) => card.append(el('p', 'weapon-note', note)));
+          }
+          const activeLabel = active?.label || `强化后 Lv${selectedLevel}`;
           body.replaceChildren(el('p', '', active ? active.description || entry.description : entry.description));
           if (active) {
             body.append(el('h3', '', activeLabel), el('p', 'equipment-stat', `满觉醒＋强化合计 ${stats(active.stats?.total)}`));
@@ -98,10 +97,7 @@
             effects(body, '初始效果', entry.baseEffects); effects(body, '满觉醒效果', entry.awakenedEffects);
             if (entry.panelDescription) body.append(el('p', '', entry.panelDescription));
           }
-          buttons.forEach(({button, value, label}) => {
-            button.setAttribute('aria-pressed', String(value === selectedLevel));
-            button.textContent = `${value === selectedLevel ? '● ' : ''}${label}`;
-          });
+          renderedLevel = selectedLevel;
         }
         if (e) {
           const toggle = el('div', `team-controls equipment-toggle${forms.length ? ' equipment-toggle-forms' : ''}`);
@@ -109,18 +105,55 @@
           [[0, originalLabel], ...stages.map((stage) => [stage.level, stage.label || `强化后 Lv${stage.level}`])].forEach(([value, label]) => {
             const button = el('button', 'secondary-button', label); button.type = 'button';
             button.setAttribute('data-level', String(value));
-            button.addEventListener('click', (event) => {event.preventDefault(); event.stopPropagation(); enhancedStates.set(stateKey, value); renderState(value); card.open = true;});
+            button.addEventListener('click', (event) => {
+              event.preventDefault(); event.stopPropagation();
+              if (value === selectedLevel) return;
+              enhancedStates.set(stateKey, value); renderHeader(value); renderBody();
+            });
             buttons.push({button, value, label}); toggle.append(button);
           });
           title.append(toggle);
         }
-        card.append(summary, body); renderState(enhancedStates.get(stateKey) || 0);
-        if (e?.costs) {const cost = el('details'); cost.append(el('summary', '', forms.length ? `强化材料（0→${e.maxLevel}级完整路线）` : '强化材料')); renderReadable(cost, e.costs, ui); card.append(cost);}
-        if (entry.soul?.available) effects(card, '魂珠效果', entry.soul.effects);
-        card.append(el('p', 'muted', entry.soul?.note || ''));
-        (entry.notes || []).forEach((note) => card.append(el('p', 'weapon-note', note)));
-        grids.get(entry.category).append(card);
+        card.append(summary); renderHeader(enhancedStates.get(stateKey) || 0);
+        card.addEventListener('toggle', renderBody);
+        return card;
+    }
+    function groupFor(category) {
+      if (sections.has(category)) return sections.get(category);
+      const section = el('details', 'equipment-group'), heading = el('summary', 'equipment-group-heading');
+      const total = el('span', 'equipment-group-count'), grid = el('div', 'equipment-grid');
+      section.open = true; heading.title = '点击展开或收起此分类';
+      heading.append(el('h2', '', category), total); section.append(heading, grid);
+      const group = {section, total, members: [], mounted: []};
+      group.mount = () => {
+        const members = section.open ? group.members : [];
+        if (members.length === group.mounted.length && members.every((entry, i) => entry === group.mounted[i])) return;
+        grid.replaceChildren(...members.map((entry) => {
+          if (!cards.has(entry)) cards.set(entry, weaponCard(entry));
+          return cards.get(entry);
+        }));
+        group.mounted = members;
+      };
+      section.addEventListener('toggle', group.mount);
+      sections.set(category, group); return group;
+    }
+    function paint() {
+      const q = search.value.trim().toLowerCase();
+      const items = entries.filter((entry) => (!filter.value || entry.category === filter.value) &&
+        (!rarityFilter.value || String(entry.rarity) === rarityFilter.value) &&
+        (!enhancementFilter.value || Boolean(entry.enhancement) === (enhancementFilter.value === 'yes')) && searchText.get(entry).includes(q));
+      count.textContent = `共 ${items.length} 件武器 · ${items.filter((entry) => entry.enhancement).length} 件可强化`;
+      const grouped = new Map();
+      items.forEach((entry) => {if (!grouped.has(entry.category)) grouped.set(entry.category, []); grouped.get(entry.category).push(entry);});
+      sections.forEach((group, category) => {if (!grouped.has(category)) {group.members = []; group.mount();}});
+      const shown = [];
+      grouped.forEach((members, category) => {
+        const group = groupFor(category), enhanced = members.filter((entry) => entry.enhancement).length;
+        group.members = members; group.total.textContent = `${members.length} 件${enhanced ? ` · ${enhanced} 件可强化` : ''}`;
+        group.mount(); shown.push(group.section);
       });
+      if (!items.length) shown.push(el('p', 'equipment-empty', '没有符合条件的武器，请调整分类或搜索词。'));
+      groups.replaceChildren(...shown);
     }
     search.addEventListener('input', paint); filter.addEventListener('change', paint); rarityFilter.addEventListener('change', paint); enhancementFilter.addEventListener('change', paint);
     const toolbar = el('div', 'team-controls equipment-toolbar'); toolbar.append(search, filter, rarityFilter, enhancementFilter);
@@ -128,14 +161,24 @@
     [[true, '全部展开'], [false, '全部收起']].forEach(([open, label]) => {
       const button = el('button', 'secondary-button', label); button.type = 'button';
       button.addEventListener('click', () => {
-        entries.forEach((entry) => groupStates.set(entry.category, open));
-        visibleGroups.forEach((section) => {section.open = open;});
+        new Set(entries.map((entry) => entry.category)).forEach((category) => {
+          const group = groupFor(category); group.section.open = open; group.mount();
+        });
       });
       groupControls.append(button);
     });
     const resultBar = el('div', 'equipment-result-bar'); resultBar.append(count, groupControls);
     host.replaceChildren(el('h1', '', '武器图鉴'), el('p', 'section-intro', '点击分类标题可展开或收起，深渊、诅咒武器置顶。所有带「可强化」标识的武器均可切换强化前后，查看对应名称、图标、面板与效果；魂珠和材料独立列出。'), toolbar, resultBar, groups);
     paint();
+  }
+  function lazyDetails(ui, label, className, build) {
+    const section = ui.el('details', className);
+    section.append(ui.el('summary', '', label));
+    let built = false;
+    section.addEventListener('toggle', () => {
+      if (section.open && !built) {build(section); built = true;}
+    });
+    return section;
   }
   const fieldNames = {name: '名称', description: '说明', level: '等级', maxLevel: '最高等级', hp: '生命值', element: '属性', attack: '攻击', atk: '攻击',
     count: '数量', amount: '数量', quantity: '数量', item: '材料', itemName: '材料', costs: '材料', mechanics: '机制', summary: '概览',
@@ -173,13 +216,12 @@
         renderReadable(box, {entry:guide.entry,notes:guide.notes,rewards:guide.rewards},ui);
         box.append(ui.el('h2','','路线与各波敌人'));
         (guide.stages || []).forEach((stage) => {
-          const section = ui.el('details','guide-item');
-          section.append(ui.el('summary','',`${stage.round === 1 ? '上半场' : '下半场'} · ${stage.name}`));
-          const detail = {...stage}; delete detail.name; delete detail.round;
-          renderReadable(section,detail,ui); box.append(section);
+          box.append(lazyDetails(ui, `${stage.round === 1 ? '上半场' : '下半场'} · ${stage.name}`, 'guide-item', (section) => {
+            const detail = {...stage}; delete detail.name; delete detail.round;
+            renderReadable(section, detail, ui);
+          }));
         });
-        const bosses = ui.el('details','guide-item'); bosses.append(ui.el('summary','','Boss 机制速查'));
-        renderReadable(bosses,guide.bosses,ui); box.append(bosses);
+        box.append(lazyDetails(ui, 'Boss 机制速查', 'guide-item', (section) => renderReadable(section, guide.bosses, ui)));
       }
       else box.append(ui.el('p', '', '当前快照暂无五重决战资料。'));
       host.replaceChildren(box); return true;
