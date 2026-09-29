@@ -49,6 +49,9 @@ node --test mod-tools/wiki-community/tests/*.test.mjs
 | `POST /admin/teams/:id/game-code` | 管理员生成/复用，必须传 expectedRevision |
 | `POST /admin/teams/:id/game-code/revoke` | 管理员停用，必须传 expectedRevision |
 | `GET /game-codes/:code` | 供已接入的游戏服务读取 `{title,active:true,team}` |
+| `GET /aliases` | 游客读取角色/武器黑话 `{items:[{kind,id,aliases,revision}]}`，不含修改者 |
+| `GET /admin/aliases/:kind/:id` | 管理员读取单项 `{kind,id,aliases,revision}`；未编辑过为空数组、revision=0 |
+| `PATCH /admin/aliases/:kind/:id` | 管理员编辑 `{aliases,expectedRevision}`，返回直接记录；支持清空 |
 
 创建和编辑内容：`title` 最多 80 字符、`author` 最多 40（标题与署名须单行）、`notes` 最多 2000（支持多行），`team`
 含 main/unison/weapon/soul 四个长度为 3 的数组，空槽为 `""`。三主位必填，角色不能重复，
@@ -75,6 +78,11 @@ GET 的 `section` 省略或空值表示全部，`general` 仅查看通用，其�
 个人空间的盘子保存后可以显式生成公开游戏码；知道码的玩家可查询其阵容，但它仍不出现在配队大全，备注与创建者不随游戏码公开。
 切换保存空间不会撤销已发布的码；管理员可单独停用码。原有 `status=hidden` 表示隐藏停用，仍会永久撤码，不等于个人空间。
 
+黑话独立于导出的角色/武器数据，默认完全留空，不自动填入示例。`kind` 仅允许 character 或 weapon，ID 必须仍被可信目录收录。
+普通管理员、副站长和站长都可以编辑；游客只能读取。每项最多 12 个黑话，每个最多 32 个 Unicode 字符，去首尾空格、NFC 规范化并忽略大小写去重；单项不接受空值、换行或控制字符。
+提交空数组可清空，记录及递增版本保留。并发修改要求 expectedRevision，与审计写入同事务；公开接口不返回管理员身份。
+黑话属于纯文本，前端展示必须使用 textContent，不能作为 HTML 或脚本执行；清空后公开列表不再包含该项，便于搜索同步移除。
+
 阵容指纹固定第一列队长；第二、三列整体交换视为相同阵容。主位、合击、武器、魂珠配对保留。
 标题、备注、署名、分类、玩法变化不改变指纹。重复返回 409 duplicate + existingId/status；隐藏盘不泄漏正文。
 修改冲突返回 409 edit_conflict。点赞重复为 409 already_liked，包含当前赞数和次日可赞时间。
@@ -88,6 +96,7 @@ GET 的 `section` 省略或空值表示全部，`general` 仅查看通用，其�
 若没有 `category` 列，在部署新版 Worker 前执行一次 `migrations/0001-team-category.sql`。
 若没有 `section` 列，再执行一次 `migrations/0002-team-section.sql`。
 若没有 `visibility` 和 `created_by` 列，再执行一次 `migrations/0003-team-visibility.sql`；这两个字段应在同一迁移中追加。
+黑话功能需执行 `migrations/0004-wiki-aliases.sql`，只追加两张独立表及索引，可安全重复执行，不预填内容。
 已有对应列时不要重复执行 ALTER；新库使用当前 `schema.sql` 即可。
 迁移只追加默认空值列及索引，保留队伍、赞数、审计、队伍码和管理员账号。
 本地 SQLite 适配器在下次启动时自动检测并事务执行同一迁移，重复启动不会重置已填分类。

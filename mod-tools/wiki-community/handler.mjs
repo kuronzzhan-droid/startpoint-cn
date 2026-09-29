@@ -7,6 +7,7 @@ import {authenticateAdmin} from './admin-auth.mjs';
 import {GAME_CODE_PATTERN, resolveGameCode, gameCodeInfo, createGameCode, revokeGameCode} from './game-codes.mjs';
 import {authMode, passwordConfig, authenticatePassword, publicUser} from './password-auth.mjs';
 import {authRoute, accountsRoute} from './auth-routes.mjs';
+import {listAliases, adminAliasesRoute} from './wiki-aliases.mjs';
 
 function response(value, status = 200, headers = {}) {
   return Response.json(value, {status, headers: {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers}});
@@ -58,6 +59,8 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
       }
       if (path === '/teams' && request.method === 'GET')
         return response(await listTeams(env.COMMUNITY_DB, listQuery(url, trustedCatalog)), 200, headers);
+      if (path === '/aliases' && request.method === 'GET')
+        return response(await listAliases(env.COMMUNITY_DB, trustedCatalog), 200, headers);
       if (path === '/teams' && request.method === 'POST') {
         fail(403, 'submission_disabled', '队伍由管理员收录，游客可以浏览和点赞。');
       }
@@ -88,6 +91,7 @@ async function adminRoute(path, request, db, trustedCatalog, actor, now) {
   if (path === '/admin/me' && request.method === 'GET') return response(actor);
   if (path === '/admin/login' && request.method === 'GET')
     return new Response(null, {status: 302, headers: {Location: '/#community/admin', 'Cache-Control': 'no-store'}});
+  if (path.startsWith('/admin/aliases/')) return response(await adminAliasesRoute(path, request, db, trustedCatalog, actor, now));
   if (path === '/admin/teams' && request.method === 'GET')
     return response(await listTeams(db, listQuery(new URL(request.url), trustedCatalog, true, actor), true, actor));
   if (path === '/admin/teams' && request.method === 'POST') {
