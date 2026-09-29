@@ -3,11 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#203d53">
-  <meta name="description" content="世界弹射物语 MOD 角色资料索引：技能、能力、数值、立绘和语音。">
+  <meta name="theme-color" content="#21bfb0">
+  <meta name="description" content="世界弹射物语官方与 MOD 角色图鉴：属性面板、技能倍率、能力、原版对照和语音。">
   <title>星见图鉴 · MOD 角色 Wiki</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="detail.css">
+  <link rel="stylesheet" href="pages.css">
   <script src="data.js" defer></script>
+  <script src="voices.js" defer></script>
+  <script src="comparison.js" defer></script>
+  <script src="numeric.js" defer></script>
+  <script src="team-state.js" defer></script>
+  <script src="team.js" defer></script>
+  <script src="pages.js" defer></script>
   <script src="detail.js" defer></script>
   <script src="app.js" defer></script>
 </head>
@@ -15,45 +23,48 @@
   <a class="skip-link" href="#main-content">跳到主要内容</a>
   <header class="masthead">
     <a class="brand" href="#" aria-label="星见图鉴首页">
-      <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="m24 3 5 15 16 6-16 5-5 16-5-16-16-5 16-6Z" fill="currentColor"/><path d="m24 15 3 6 6 3-6 3-3 6-3-6-6-3 6-3Z" fill="#f7f3e8"/></svg>
-      <span><strong>星见图鉴</strong><span class="brand-caption">WORLD FLIPPER · MOD WIKI</span></span>
+      <span class="brand-mark" aria-hidden="true">W<span>F</span></span>
+      <span><strong>星见图鉴</strong><span class="brand-caption">WORLD FLIPPER · CHARACTER WIKI</span></span>
     </a>
+    <nav class="app-navigation" aria-label="资料站功能"><a href="#">角色图鉴</a><a href="#team">队伍编成</a><a href="#weapons">武器图鉴</a><a href="#five-boss">五重决战</a></nav>
     <div class="masthead-note"><span class="status-dot"></span>本地资料快照 <span id="header-version"></span></div>
   </header>
   <div class="page-shell">
     <aside class="sidebar" aria-label="角色查找">
-      <a id="all-categories" class="nav-home" href="#"><span aria-hidden="true">⌂</span> 全部角色 <span id="nav-count" class="count-badge">—</span></a>
-      <nav id="category-nav" class="category-nav" aria-label="角色分类与世界观"></nav>
+      <div class="sidebar-title">角色目录</div>
+      <nav class="roster-navigation" aria-label="角色分类与世界观">
+        <a id="all-categories" class="nav-home" href="#"><span aria-hidden="true">▦</span> 全部角色 <span id="nav-count" class="count-badge">—</span></a>
+        <div id="category-nav" class="category-nav"></div>
+      </nav>
       <details class="filter-panel" open>
         <summary>查找角色 <span class="summary-hint">搜索与筛选</span></summary>
-        <label class="field-label" for="character-search">名字、技能、能力或 ID</label>
-        <div class="search-wrap"><span aria-hidden="true">⌕</span><input id="character-search" type="search" placeholder="找一位同行者…" autocomplete="off"><kbd>/</kbd></div>
+        <label class="field-label" for="character-search">名字、别名、主题或技能</label>
+        <div class="search-wrap"><span aria-hidden="true">⌕</span><input id="character-search" type="search" placeholder="输入角色名、别称或技能…" autocomplete="off"><kbd>/</kbd></div>
         <p class="field-help">支持多关键词，以空格分隔</p>
         <label class="field-label" for="element-filter">属性</label><select id="element-filter"><option value="">全部属性</option></select>
         <label class="field-label" for="type-filter">战斗类型</label><select id="type-filter"><option value="">全部类型</option></select>
         <label class="field-label" for="origin-filter">收录来源</label><select id="origin-filter"><option value="">全部来源</option></select>
         <button id="clear-filters" class="text-button clear-filters" type="button">重置全部筛选</button>
       </details>
-      <div class="sidebar-note"><span class="eyebrow">关于这份图鉴</span><p>从当前 MOD 数据导出，可离线查阅。数值与语音以本次快照为准。</p><p>台词缺失处保留明确标记，方便后续补录与校对。</p></div>
+      <div class="sidebar-note"><span class="eyebrow">关于这份图鉴</span><p>收录官方与 MOD 角色。数值与语音以本次资料快照为准。</p><p>台词缺失处保留明确标记，方便后续补录与校对。</p></div>
       <div id="snapshot-note" class="snapshot-note"></div>
     </aside>
     <main id="main-content" tabindex="-1">
       <section id="catalog-view" aria-labelledby="catalog-title">
-        <div class="hero">
-          <div class="hero-orbit" aria-hidden="true"><span>✧</span></div>
-          <span class="eyebrow">THE CHARACTER ARCHIVE</span>
-          <h1 id="catalog-title">每一位同行者，<br><span>都值得被记住。</span></h1>
-          <p>在这里查阅 MOD 角色的技能与能力，<br class="desktop-break">欣赏立绘，听见他们的故事。</p>
+        <div class="catalog-header game-panel">
+          <div class="catalog-title-wrap"><span class="title-flag">CHARACTER</span><h1 id="catalog-title">角色图鉴</h1><p>角色资料 / 技能能力 / 语音台词</p></div>
           <div id="catalog-stats" class="hero-stats" aria-label="收录统计"></div>
         </div>
-        <div class="section-heading"><div><span class="eyebrow">CHARACTER INDEX</span><h2>角色索引 <span id="result-count" class="inline-count"></span></h2></div><label class="sort-control" for="sort-order">排序 <select id="sort-order"><option value="default">默认顺序</option><option value="name">按角色名称</option><option value="id">按角色 ID</option><option value="rarity">按稀有度</option></select></label></div>
+        <div class="catalog-controls"><div id="element-shortcuts" class="element-shortcuts" role="group" aria-label="按属性筛选角色"></div><label class="sort-control" for="sort-order">排序 <select id="sort-order"><option value="default">默认顺序</option><option value="name">按角色名称</option><option value="rarity">按稀有度</option></select></label></div>
+        <div class="section-heading"><h2>角色列表 <span id="result-count" class="inline-count"></span></h2></div>
         <div id="filter-status" class="filter-status" role="status" aria-live="polite"></div>
         <div id="character-grid" class="character-groups"></div>
         <div id="empty-state" class="empty-state" hidden><span aria-hidden="true">✧</span><h3>暂时没有找到这位同行者</h3><p>试试更短的关键词，或调整属性与类型筛选。</p><button id="empty-reset" class="primary-button" type="button">查看全部角色</button></div>
         <div id="load-error" class="empty-state" hidden><h3>资料尚未载入</h3><p>请将 index.html、data.js、脚本和媒体文件夹保留在同一个导出目录中。</p></div>
       </section>
       <article id="detail-view" hidden></article>
-      <footer class="site-footer"><span>星见图鉴 <span aria-hidden="true">✦</span> MOD CHARACTER ARCHIVE</span><span>本地导出资料 · 非官方 Wiki</span></footer>
+      <section id="extra-view" hidden></section>
+      <footer class="site-footer"><span>星见图鉴 <span aria-hidden="true">✦</span> WORLD FLIPPER CHARACTER ARCHIVE</span><span>游戏资料快照 · 非官方 Wiki</span></footer>
     </main>
   </div>
   <noscript><p class="noscript">请启用浏览器 JavaScript，以便搜索角色、阅读详情和试听语音。</p></noscript>
