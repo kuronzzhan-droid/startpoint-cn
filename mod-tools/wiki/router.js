@@ -21,11 +21,12 @@ window.createWikiRouter = function createWikiRouter(options) {
     const current = () => ticket === revision && location.hash.slice(1) === hash;
     const parts = hash.split('/');
     const isCharacter = parts[0] === 'character' && parts[1];
-    const pageTitle = ({team: '队伍编成', weapons: '武器图鉴', 'five-boss': '五重决战'})[hash];
+    const pageTitle = ({team: '队伍编成', community: '配队大全', weapons: '武器图鉴', weapon: '武器详情', 'five-boss': '五重决战'})[parts[0]];
     document.querySelectorAll('audio').forEach((audio) => audio.pause());
     document.querySelectorAll('.app-navigation a').forEach((link) => {
       const target = link.getAttribute('href').slice(1);
-      link.setAttribute('aria-current', (target === hash || (!target && isCharacter)) ? 'page' : 'false');
+      link.setAttribute('aria-current', (target === hash || (!target && isCharacter)
+        || (target === 'community' && parts[0] === 'community') || (target === 'weapons' && parts[0] === 'weapon')) ? 'page' : 'false');
     });
     catalog.hidden = Boolean(pageTitle || isCharacter);
     detail.hidden = !isCharacter;

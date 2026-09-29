@@ -92,6 +92,16 @@ test('team rendering waits for equipment, and superseded team loads stay inactiv
   const next=x.go('#team'); x.requests.equipment.resolve([]); await next;
   assert.deepEqual(x.rendered,['catalog','team']);
 });
+
+test('community and individual weapon routes load equipment and stay outside the catalogue', async () => {
+  for (const hash of ['#community', '#community/t1', '#community/admin', '#weapon/w1']) {
+    const x=router(), pending=x.go(hash);
+    assert.equal(x.nodes['catalog-view'].hidden, true);
+    assert.equal(x.nodes['extra-view'].hidden, false);
+    x.requests.equipment.resolve([]); await pending;
+    assert.deepEqual(x.rendered, [hash.slice(1)]);
+  }
+});
 test('detailed routes select the requested tab and stale failures cannot display errors', async () => {
   const x=router(), full=x.go('#character/ca/details/voices'); x.requests.ca.resolve({id:'ca'}); await full;
   assert.deepEqual(x.rendered,['ca/voices']);

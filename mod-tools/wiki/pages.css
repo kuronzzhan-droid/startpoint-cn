@@ -24,6 +24,7 @@
 .team-slot-weapon .team-slot-image,.team-slot-soul .team-slot-image{inset:1px;width:calc(100% - 2px);height:calc(100% - 2px);object-fit:contain;image-rendering:pixelated;z-index:0}
 .team-slot-weapon .team-slot-empty,.team-slot-soul .team-slot-empty{font-size:21px;color:#6ca8a0}
 .team-slot-remove{position:absolute;z-index:6;right:-4px;bottom:-4px;width:18px;height:18px;padding:0;border-radius:50%;border:1px solid #bac8cc;background:#fff;color:#53656b;font-size:15px;line-height:14px;box-shadow:0 1px 3px #263b4b33}
+.team-slot-replace{position:absolute;z-index:6;left:-4px;bottom:-4px;width:21px;height:19px;padding:0;border-radius:4px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:10px;line-height:17px}
 .team-pair{border-top:1px solid #dde5e7;padding:13px 0}
 .team-pair p{font-size:12px;white-space:pre-wrap}.team-pair h3{font-size:14px;margin:14px 0 6px}
 .team-library{grid-area:library;position:sticky;top:14px}.team-library h2{font-size:18px}.team-weapon-search{width:100%;margin-bottom:10px}

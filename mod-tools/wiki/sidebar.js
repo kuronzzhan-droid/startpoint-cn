@@ -13,7 +13,7 @@
   button.setAttribute('aria-controls', sidebar.id);
   const paint = () => {
     const page = location.hash.slice(1).split('/')[0];
-    const automatic = ['team', 'weapons', 'weapon', 'five-boss'].includes(page);
+    const automatic = ['team', 'community', 'weapons', 'weapon', 'five-boss'].includes(page);
     shell.classList.toggle('sidebar-collapsed', collapsed || automatic);
     sidebar.hidden = collapsed || automatic;
     toolbar.hidden = automatic;
