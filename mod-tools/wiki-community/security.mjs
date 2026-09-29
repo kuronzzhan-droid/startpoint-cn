@@ -57,12 +57,13 @@ export async function challenge(request, env, token, action, fetchImpl, developm
   let result;
   try {
     const response = await fetchImpl('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-      method: 'POST', redirect: 'error', signal: AbortSignal.timeout(8000),
+      // workerd supports manual/follow; reject non-2xx below without forwarding secrets.
+      method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(8000),
       body: new URLSearchParams({secret: env.TURNSTILE_SECRET, response: token})
     });
     if (!response.ok) throw new Error(); result = await response.json();
   } catch { fail(503, 'challenge_unavailable', '验证服务暂时不可用，请稍后重试。'); }
-  if (result.success !== true || result.action !== action || !hosts.includes(result.hostname) || result.hostname !== new URL(request.url).hostname)
+  if (!result || result.success !== true || result.action !== action || !hosts.includes(result.hostname) || result.hostname !== new URL(request.url).hostname)
     fail(403, 'challenge_failed', '人机验证失败或已过期，请重新验证。');
 }
 export async function rateLimit(db, request, env, action, now, development) {

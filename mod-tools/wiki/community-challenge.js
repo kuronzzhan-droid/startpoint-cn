@@ -41,7 +41,7 @@
         } else {
           if (!config.siteKey) throw new Error('社区的人机验证尚未配置，暂时无法完成此操作。');
           const turnstile = await loadTurnstile(); if (disposed) return;
-          widget = turnstile.render(target, {sitekey: config.siteKey, action, size: 'flexible', language: 'zh-CN',
+          widget = turnstile.render(target, {sitekey: config.siteKey, action, size: 'flexible', language: 'zh-cn',
             theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
             'response-field': false, callback: (value) => update(value, '验证完成。'),
             'expired-callback': () => update('', '验证已过期，请重新完成验证。'),

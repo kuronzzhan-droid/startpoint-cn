@@ -14,7 +14,7 @@ async function getKeys(issuer, fetchImpl, now) {
   if (cached && cached.expires > now && cached.fetchImpl === fetchImpl) return cached.keys;
   let result;
   try {
-    const response = await fetchImpl(`${issuer}/cdn-cgi/access/certs`, {redirect: 'error', signal: AbortSignal.timeout(8000)});
+    const response = await fetchImpl(`${issuer}/cdn-cgi/access/certs`, {redirect: 'manual', signal: AbortSignal.timeout(8000)});
     if (!response.ok) throw new Error(); result = await response.json();
     if (!Array.isArray(result.keys) || result.keys.length > 20) throw new Error();
   } catch { fail(503, 'admin_auth_unavailable', '管理员身份验证暂时不可用。'); }

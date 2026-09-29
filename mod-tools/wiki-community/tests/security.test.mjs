@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {context, submission, jwtFixture} from './helpers.mjs';
 import {authenticateAdmin} from '../admin-auth.mjs';
 import {sign} from '../codecs.mjs';
-import {rateLimit} from '../security.mjs';
+import {rateLimit, challenge} from '../security.mjs';
 
 const jwt = await jwtFixture();
 const now = Date.parse('2026-09-29T15:59:00Z');
@@ -62,6 +62,31 @@ test('签名匿名Cookie篡改不复用身份，生产secure/HttpOnly/SameSite',
   const saved = app.cookie; assert.equal((await app.call('/config')).headers.get('set-cookie'), null);
   app.cookie = saved.slice(0, -5) + 'AAAAA';
   assert.ok((await app.call('/config')).headers.get('set-cookie')); assert.notEqual(app.cookie, saved);
+});
+
+test('验证接口不跟随重定向，且不会把密钥发给另一个主机', async () => {
+  const request = new Request('https://wiki.example/api/community/auth/login');
+  const env = {TURNSTILE_SECRET: 'fixture-only', COMMUNITY_ALLOWED_HOSTNAMES: 'wiki.example'};
+  let calls = 0;
+  const redirect = async (_url, options) => {
+    calls++; assert.equal(options.redirect, 'manual'); assert.ok(options.signal instanceof AbortSignal);
+    return new Response(null, {status: 302, headers: {Location: 'https://untrusted.example/'}});
+  };
+  await assert.rejects(challenge(request, env, 'fixture-only', 'admin_login', redirect, null),
+    (error) => error.status === 503 && error.code === 'challenge_unavailable');
+  assert.equal(calls, 1);
+  await assert.rejects(challenge(request, env, 'fixture-only', 'admin_login', async () => Response.json(null), null),
+    (error) => error.status === 403 && error.code === 'challenge_failed');
+});
+
+test('Access JWKS读取同样拒绝重定向，不缓存错误密钥', async (t) => {
+  const app = context({production: true}); t.after(() => app.close());
+  const request = new Request('https://wiki.example/api/community/admin/me', {headers: {'Cf-Access-Jwt-Assertion': await jwt.token(now)}});
+  await assert.rejects(authenticateAdmin(request, app.env, async (_url, options) => {
+    assert.equal(options.redirect, 'manual');
+    return new Response(null, {status: 302, headers: {Location: 'https://untrusted.example/keys'}});
+  }, now), (error) => error.status === 503 && error.code === 'admin_auth_unavailable');
+  assert.equal((await authenticateAdmin(request, app.env, jwksFetch, now)).id, 'admin-id');
 });
 test('IP辅助限频原子执行只落HMAC标识并返回可读重试时间', async (t) => {
   const app = context({production: true, fetch: jwksFetch}); t.after(() => app.close());

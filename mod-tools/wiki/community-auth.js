@@ -16,6 +16,8 @@
     invalid_bootstrap_token:'初始化密钥无效，请检查后重试。', bootstrap_email_mismatch:'请填写部署时指定的站长邮箱。',
     invalid_email:'请填写有效的邮箱地址。', verification_failed:'验证未通过，请重新完成验证。',
     turnstile_failed:'验证未通过，请重新完成验证。', account_disabled:'该账号已停用，请联系站长。',
+    challenge_unavailable:'验证服务暂时不可用，请稍后重新验证并登录。',
+    challenge_failed:'人机验证失败或已过期，请重新验证。', challenge_required:'请先完成人机验证。',
   };
   function message(error) {
     if (error?.status === 429) return '操作较频繁，请稍后再试。';

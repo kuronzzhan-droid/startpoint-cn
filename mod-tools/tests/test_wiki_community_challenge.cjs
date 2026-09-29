@@ -22,6 +22,7 @@ test('verification tokens are consumed once and reset after each operation',asyn
   const challenge=x.C.challenge(x.host,{siteKey:'public-key'},'like_team',x.ui,(ready)=>changes.push(ready));await tick();
   const options=x.calls.find(([kind])=>kind==='render')[1];
   assert.equal(options.action,'like_team');assert.equal(options['response-field'],false);
+  assert.equal(options.language,'zh-cn');
   options.callback('single-use');assert.equal(challenge.take(),'single-use');assert.equal(challenge.take(),'');
   challenge.reset();assert.deepEqual(x.calls.at(-1),['reset','widget']);assert.equal(changes.at(-1),false);
   options.callback('next-token');options['expired-callback']();assert.equal(challenge.take(),'');

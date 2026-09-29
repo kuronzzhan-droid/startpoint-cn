@@ -46,6 +46,11 @@ function setup(handler) {
     admin:() => window.renderWikiCommunityAdmin(host,{characters:[],equipment:[]},{el})};
 }
 function fail(code, status = 401, message = 'failure') {throw Object.assign(new Error(message), {code,status});}
+test('verification service failures have a specific safe login message', () => {
+  const x = setup();
+  assert.match(x.A.message({code:'challenge_unavailable', status:503}), /验证服务暂时不可用/);
+  assert.match(x.A.message({code:'challenge_failed', status:403}), /重新验证/);
+});
 test('password guest gets a real login form and verification before any credential request', async () => {
   let done = 0;
   const x = setup((url) => {assert.equal(url, '/auth/me'); fail('admin_auth_required');});
