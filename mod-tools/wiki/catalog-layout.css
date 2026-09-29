@@ -9,14 +9,14 @@
 #catalog-view[data-layout="extra-large"] .card-name{font-size:19px}
 #catalog-view[data-layout="large"] .card-name{font-size:17px}
 #catalog-view[data-layout="dense"] .card-content{padding:6px}
-#catalog-view[data-layout="dense"] .card-name{font-size:11px;margin-bottom:4px}
+#catalog-view[data-layout="dense"] .card-name{font-size:11px}
 #catalog-view[data-layout="dense"] .card-title{font-size:8px;min-height:12px}
 #catalog-view[data-layout="dense"] .card-meta{font-size:8px;gap:2px;flex-wrap:wrap}
 #catalog-view[data-layout="dense"] .card-meta .native-icon{width:12px;height:12px}
 #catalog-view[data-layout="dense"] .card-art{border-width:3px}
 #catalog-view[data-layout="dense"] .card-art .element-badge{padding:2px}
 #catalog-view[data-layout="dense"] .card-art .native-icon{width:16px;height:16px}
-#catalog-view[data-layout="dense"] .rarity-stars img{max-width:68px;height:13px}
+#catalog-view[data-layout="dense"] .rarity-stars img{max-width:28px;height:9px}
 #catalog-view[data-layout="dense"] .alias-tag,#catalog-view[data-layout="dense"] .editor-tag{font-size:8px;padding:2px 3px;margin-bottom:4px}
 @media(max-width:640px){
   #catalog-view[data-layout="extra-large"] .character-grid{grid-template-columns:minmax(0,1fr);gap:14px}
@@ -24,5 +24,5 @@
   #catalog-view[data-layout="standard"] .character-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
   #catalog-view[data-layout="dense"] .character-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
   #catalog-view[data-layout="dense"] .card-content{padding:5px 4px}
-  #catalog-view[data-layout="dense"] .rarity-stars img{max-width:54px;height:11px}
+  #catalog-view[data-layout="dense"] .card-name-row{gap:2px}
 }
