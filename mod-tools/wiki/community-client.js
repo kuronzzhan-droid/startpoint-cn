@@ -1,0 +1,80 @@
+/* Public community data uses its own same-origin API, never the game server. */
+((root) => {
+  'use strict';
+  const damageTypes = {skill: '技能伤害', ability: '能力伤害', powerflip: '强化弹射伤害', direct: '直接攻击伤害'};
+  const sourceUrl = 'https://docs.qq.com/sheet/DSVNsWE5yWUNoR0Ju';
+  const groups = ['main', 'unison', 'weapon', 'soul'];
+  const elementLabel = (value) => value === 'universal' ? '宇宙' : value;
+  const teamCopy = (team) => Object.fromEntries(groups.map((key) => [key,
+    Array.from({length: 3}, (_, index) => typeof team?.[key]?.[index] === 'string' ? team[key][index] : '')]));
+  function teamError(team, data) {
+    const characters = new Map((data.characters || []).map((item) => [item.id, item]));
+    const equipment = new Map((data.equipment || []).map((item) => [item.id, item]));
+    const seen = new Set();
+    for (const group of groups) for (const id of team[group]) {
+      if (!id) {if (group === 'main') return '请先填好三个主位角色。'; continue;}
+      if (group === 'main' || group === 'unison') {
+        if (!characters.has(id)) return '队伍中有当前图鉴未收录的角色。';
+        if (seen.has(id)) return '同一角色不能重复编入队伍。';
+        seen.add(id);
+      } else if (!equipment.has(id) || (group === 'soul' && !equipment.get(id).soul?.available)) {
+        return '请检查装备和魂珠，当前图鉴未收录或不可作为魂珠的条目不能收录。';
+      }
+    }
+    return '';
+  }
+  function query(filters, cursor = '') {
+    const params = new URLSearchParams();
+    if (filters.element) params.set('element', filters.element);
+    const selected = Object.keys(damageTypes).filter((key) => filters.damageTypes?.includes(key));
+    if (selected.length) params.set('damage', selected.join(','));
+    params.set('sort', filters.sort === 'popular' ? 'popular' : 'latest');
+    if (cursor) params.set('cursor', cursor);
+    return params.toString();
+  }
+  function message(error) {
+    if (error?.status === 429) return `操作较频繁，请等待 ${Math.max(1, Math.ceil(error.retryAfter || 60))} 秒后再试。`;
+    if (error?.code === 'already_liked') return '今天已经为这张盘点过赞了，明天（北京时间）可以再来。';
+    if (error?.code === 'duplicate') return '相同阵容已收录，不需要重复提交。';
+    return error?.message || '暂时无法连接配队社区，请稍后重试。';
+  }
+  function createApi(fetcher, protocol) {
+    let configPromise;
+    async function request(path, body, method = body ? 'POST' : 'GET') {
+      if (!/^https?:$/.test(protocol)) throw new Error('离线版可编辑和保存队伍；配队大全与点赞请前往公开网站。');
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      try {
+        const response = await fetcher(`/api/community${path}`, {
+          method, credentials: 'same-origin', signal: controller.signal,
+          headers: {Accept: 'application/json', ...(body ? {'Content-Type': 'application/json'} : {})},
+          ...(body ? {body: JSON.stringify(body)} : {}),
+        });
+        let value;
+        try {value = await response.json();} catch {throw new Error('此站暂未启用配队社区，仍可使用本地队伍编成。');}
+        if (!response.ok) {
+          const error = new Error(value.message || '配队社区暂时无法完成此操作。');
+          Object.assign(error, {status: response.status, code: value.error, data: value,
+            retryAfter: Number(value.retryAfter || response.headers?.get('Retry-After')) || 0});
+          throw error;
+        }
+        return value;
+      } catch (error) {
+        if (error.name === 'AbortError') throw new Error('连接超时，请重试；填写的内容仍保留。');
+        if (error instanceof TypeError) throw new Error('网络连接失败，请重试；填写的内容仍保留。');
+        throw error;
+      } finally {clearTimeout(timeout);}
+    }
+    return {request, config: () => {
+      if (!configPromise) configPromise = request('/config').then((value) => {
+        if (!value.enabled) throw new Error('此站暂未启用配队社区，仍可使用本地队伍编成。');
+        return value;
+      }).catch((error) => {configPromise = null; throw error;});
+      return configPromise;
+    }};
+  }
+  const api = {damageTypes, sourceUrl, elementLabel, teamCopy, teamError, query, message, createApi};
+  if (root.location && root.fetch) api.client = createApi(root.fetch.bind(root), root.location.protocol);
+  root.WFCommunity = Object.assign(root.WFCommunity || {}, api);
+  if (typeof module !== 'undefined') module.exports = api;
+})(typeof window === 'undefined' ? globalThis : window);
