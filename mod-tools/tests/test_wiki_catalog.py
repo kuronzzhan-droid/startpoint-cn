@@ -50,7 +50,8 @@ class RosterTests(unittest.TestCase):
     def test_wiki_exclusions_filter_entries_media_and_counts_before_export(self):
         source = MemorySource()
         codes = {"119998": "resistance_princess_canary2", "119999": "kyle_wolf_knight",
-                 "129990": "spheal_mascot", "139997": "resistance_princess_ex", "139990": "kyle_moon"}
+                 "129990": "spheal_mascot", "129986": "soriz", "129987": "ghandagoza",
+                 "139997": "resistance_princess_ex", "139990": "kyle_moon"}
         source.live["character"].update({cid: [character(code)] for cid, code in codes.items()})
         # Also exercise a hidden official entry: visible official counts must not
         # use the unfiltered difference set even if a future baseline changes.
@@ -63,7 +64,7 @@ class RosterTests(unittest.TestCase):
         with patch.object(catalog, "WikiSource", return_value=source), patch.object(
                 catalog, "version_at", return_value="1.4.1111"):
             output = catalog.build_catalog(Path("unused"), media)
-        self.assertEqual(HIDDEN_CHARACTER_IDS, {"119998", "119999", "129990"})
+        self.assertEqual(HIDDEN_CHARACTER_IDS, {"119998", "119999", "129990", "129986", "129987"})
         self.assertEqual({entry["id"] for entry in output["characters"]}, {"10", "139997", "139990"})
         self.assertEqual(output["meta"]["counts"],
                          {"total": 3, "newMod": 2, "modifiedOfficial": 1, "officialOriginal": 0})

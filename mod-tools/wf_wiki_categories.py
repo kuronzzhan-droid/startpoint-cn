@@ -12,9 +12,10 @@ OFFICIAL_MODIFIED_IDS = frozenset({"10", "131020", "151159", "261089"})
 ALIASES = {"151159": ["光龙"], "261089": ["暗龙"],
            "131020": ["周年雷吉斯", "周年版雷吉斯"],
            "139995": ["秋稻穗"]}
-# Author's 2026-09-29 wiki-only exclusion: Canary II, Hugo and Spheal.
+# Author's wiki-only exclusions: Canary II, Hugo, Spheal (2026-09-29),
+# plus the currently unavailable water MODs Soriz/Ghandagoza (2026-09-30).
 # Exact IDs preserve other variants, including Lilith 139997 and Kyle 139990.
-HIDDEN_CHARACTER_IDS = frozenset({"119998", "119999", "129990"})
+HIDDEN_CHARACTER_IDS = frozenset({"119998", "119999", "129990", "129986", "129987"})
 FURRY_WORLD_IDS = frozenset({"129999", "149999", "169999", "139990"})
 EDITOR_NOTES = {
     "129999": "早期方案，后续将重做。此页保留当前已生效版本的数据。",
