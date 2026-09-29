@@ -3,6 +3,9 @@ window.renderWikiCharacterSummary = function renderWikiCharacterSummary(host, ch
   'use strict';
   options = options || {};
   const {el, list, object, text, picture, nativeIcon, elementBadge, rarityBadge, formatNumber} = ui;
+  let effectMode = 'max';
+  const effectViews = [];
+  const projectEffect = (entry, kind = 'effect') => window.WFCharacterLevels?.projectEntry(entry, effectMode, {kind, includeNumeric: false}) || entry;
   const root = el('section', 'character-summary');
   root.dataset.element = ({火:'fire', 水:'water', 雷:'thunder', 风:'wind', 光:'light', 暗:'dark'})[character.element] || 'other';
   root.setAttribute('aria-label', `${text(character.name, '角色')}概览`);
@@ -44,14 +47,31 @@ window.renderWikiCharacterSummary = function renderWikiCharacterSummary(host, ch
   });
   root.append(fields, el('p', 'summary-stat-note', `${highest ? `Lv. ${text(highest.level)} 基础数值` : '基础数值未记录'} · 未计觉醒、玛纳板、装备与能力加成`));
   if (text(character.editorNote).trim()) root.append(el('p', 'summary-editor-note', character.editorNote));
+  const levelToolbar = el('div', 'summary-level-toolbar');
+  levelToolbar.setAttribute('role', 'group'); levelToolbar.setAttribute('aria-label', '技能与能力等级');
+  levelToolbar.append(el('span', '', '技能与能力等级'));
+  const levelButtons = ['initial', 'max'].map((mode) => {
+    const button = el('button', '', mode === 'initial' ? '初始' : '满级'); button.type = 'button';
+    button.setAttribute('aria-pressed', String(mode === effectMode));
+    button.disabled = typeof window.WFCharacterLevels?.projectEntry !== 'function';
+    button.addEventListener('click', () => {
+      effectMode = mode;
+      levelButtons.forEach((item, index) => item.setAttribute('aria-pressed', String(['initial', 'max'][index] === mode)));
+      showSkill(chosen); effectViews.forEach(({host, entry}) => effects(host, entry));
+    });
+    levelToolbar.append(button); return button;
+  });
+  root.append(levelToolbar);
 
   function section(label, className = '') {
     const section = el('section', `summary-section ${className}`);
     section.append(el('h2', 'summary-section-label', label)); return section;
   }
   function effects(host, entry) {
-    if (!window.renderWikiAbilityRows?.(host, entry, meta, ui)) {
-      host.append(el('p', 'summary-copy', text(entry.description, '当前资料中暂无效果说明。')));
+    const shown = projectEffect(entry); host.replaceChildren();
+    if (shown.levelNote) host.append(el('p', 'summary-level-note', shown.levelNote));
+    if (!window.renderWikiAbilityRows?.(host, shown, meta, ui)) {
+      host.append(el('p', 'summary-copy', text(shown.description, '当前资料中暂无效果说明。')));
     }
     // Authored summaries stay primary; row-level conditions remain available without repeating long text.
     host.querySelectorAll('.ability-effect-disclosure').forEach((detail) => {detail.open = false;});
@@ -71,7 +91,7 @@ window.renderWikiCharacterSummary = function renderWikiCharacterSummary(host, ch
     button.addEventListener('click', () => showSkill(index)); skillChoices.append(button); return button;
   });
   function showSkill(index) {
-    const skill = skills[index]; if (!skill) return;
+    const skill = projectEffect(skills[index], 'skill'); if (!skill) return;
     chosen = index; buttons.forEach((button, i) => button.setAttribute('aria-pressed', String(i === index)));
     const heading = el('div', 'summary-skill-heading');
     heading.append(el('h3', '', text(skill.name, '技能名称未记录')));
@@ -79,6 +99,7 @@ window.renderWikiCharacterSummary = function renderWikiCharacterSummary(host, ch
     energy.append(el('span', '', text(skill.gaugeLabel, '满技能等级所需能量')), el('strong', '', skill.gauge == null ? '未记录' : formatNumber(skill.gauge)));
     heading.append(energy);
     const nodes = [heading, el('p', 'summary-copy', text(skill.description, '当前资料中暂无技能说明。'))];
+    if (skill.levelNote) nodes.push(el('p', 'summary-level-note', skill.levelNote));
     if (skill.kind === 'switched' && character.switch?.label) {
       nodes.push(el('p', 'summary-switch-note', `切换条件：${character.switch.label}${character.switch.conditionName ? ` · ${character.switch.conditionName}` : ''}`));
     }
@@ -90,7 +111,8 @@ window.renderWikiCharacterSummary = function renderWikiCharacterSummary(host, ch
 
   const leader = object(character.leader), leaderSection = section('队长技', 'summary-leader');
   if (leader.name) leaderSection.append(el('h3', 'summary-effect-name', leader.name));
-  effects(leaderSection, leader); root.append(leaderSection);
+  const leaderBody = el('div', 'summary-effect-body'); effects(leaderBody, leader);
+  effectViews.push({host: leaderBody, entry: leader}); leaderSection.append(leaderBody); root.append(leaderSection);
   const abilitySection = section('角色能力', 'summary-abilities');
   const abilities = list(character.abilities).filter((ability) => ability && typeof ability === 'object');
   abilities.map((ability, index) => ({ability, slot: ability.slot ?? index + 1})).sort((a, b) => Number(a.slot) - Number(b.slot)).forEach(({ability, slot}) => {
@@ -98,7 +120,8 @@ window.renderWikiCharacterSummary = function renderWikiCharacterSummary(host, ch
     const label = `能力 ${text(slot)}`; row.append(el('h3', 'summary-ability-label', label));
     const body = el('div', 'summary-ability-body');
     if (ability.name && ability.name !== label) body.append(el('h4', 'summary-effect-name', ability.name));
-    effects(body, ability); row.append(body); abilitySection.append(row);
+    const content = el('div', 'summary-effect-body'); effects(content, ability);
+    effectViews.push({host: content, entry: ability}); body.append(content); row.append(body); abilitySection.append(row);
   });
   if (!abilities.length) abilitySection.append(el('p', 'summary-copy', '当前资料中暂无能力说明。'));
   root.append(abilitySection);
