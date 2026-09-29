@@ -13,6 +13,9 @@ export function openDatabase(filename = ':memory:') {
       database.exec(readFileSync(new URL('./migrations/0002-team-section.sql', import.meta.url), 'utf8'));
     if (columns.length && !columns.some((column) => column.name === 'visibility'))
       database.exec(readFileSync(new URL('./migrations/0003-team-visibility.sql', import.meta.url), 'utf8'));
+    const teamSQL = database.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='community_teams'").get()?.sql;
+    if (teamSQL && !teamSQL.includes("'original'"))
+      database.exec(readFileSync(new URL('./migrations/0006-original-section.sql', import.meta.url), 'utf8'));
     database.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     database.exec('COMMIT');
   } catch (error) {database.exec('ROLLBACK'); database.close(); throw error;}

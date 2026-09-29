@@ -140,7 +140,7 @@ test('administrators can filter categories and preserve the empty legacy categor
   assert.equal(new URL(x.calls.at(-1).url,'https://wiki.example').searchParams.get('category'),'uncategorized');
   await button(x.host,'编辑 / 管理队伍码').click();assert.equal(select(x.host,'配队分类').value,'');
   assert.equal(select(x.host,'配队分类').children[0].textContent,'未分类（历史队伍）');
-  assert.equal(select(x.host,'玩法分区').value,'');assert.equal(select(x.host,'玩法分区').children[0].textContent,'通用/其他');
+  assert.equal(select(x.host,'玩法分区').value,'');assert.equal(select(x.host,'玩法分区').children[0].textContent,'其他');
 });
 
 test('administrators filter gameplay independently and reject invalid section edits before a request',async()=>{

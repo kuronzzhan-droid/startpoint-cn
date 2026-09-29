@@ -196,14 +196,18 @@ test('gameplay sections combine with folded filters, keep active conditions visi
   assert.equal(x.host.querySelector('.community-filter-reset').disabled,true);assert.equal(abyss.attributes['aria-pressed'],'false');
 });
 
-test('general section uses its own sentinel without hiding legacy cards or selecting a gameplay tab',async()=>{
+test('original and other sections are peer buttons and keep the legacy sentinel',async()=>{
   const calls=[];const x=setup({config:async()=>config,request:async(url)=>{calls.push(url);return {items:[item]};}});
   await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
-  assert.equal(x.host.querySelector('.community-section-badge').textContent,'通用/其他');
-  const other=x.host.querySelector('.community-section-other');other.value='general';await other.fire('change');await tick();
+  assert.equal(x.host.querySelector('.community-section-badge').textContent,'其他');
+  const buttons=x.host.querySelectorAll('.community-section-button');
+  assert.deepEqual(buttons.map(node=>node.textContent),['全部','深渊连战','幻想连战','五重决战','原版','其他']);
+  const other=buttons.find(node=>node.textContent==='其他');await other.fire('click');await tick();
   assert.equal(new URLSearchParams(calls.at(-1).split('?')[1]).get('section'),'general');
-  assert.equal(x.host.querySelectorAll('.community-section-button').some((node)=>node.attributes['aria-pressed']==='true'),false);
-  await x.host.querySelectorAll('.community-section-button')[0].fire('click');await tick();assert.equal(other.value,'');assert.doesNotMatch(calls.at(-1),/section=/);
+  assert.equal(other.attributes['aria-pressed'],'true');
+  await buttons.find(node=>node.textContent==='原版').fire('click');await tick();
+  assert.equal(new URLSearchParams(calls.at(-1).split('?')[1]).get('section'),'original');
+  await buttons[0].fire('click');await tick();assert.doesNotMatch(calls.at(-1),/section=/);
 });
 
 test('card header copies the exact server code without opening the editor and keeps credit/actions below the plate',async()=>{

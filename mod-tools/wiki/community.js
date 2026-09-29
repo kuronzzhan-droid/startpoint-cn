@@ -42,16 +42,11 @@
     const header = el('header', 'community-header'), links = el('div', 'community-header-links');
     const intro = el('p', 'section-intro community-intro', '点击队伍查看编成与角色面板，为实用的盘子点赞。');
     const sections = el('div', 'community-sections'); sections.setAttribute('role', 'group'); sections.setAttribute('aria-label', '推荐队伍玩法分区');
-    const sectionButtons = [['','全部'], ...Object.entries(C.teamSections).filter(([value]) => value)].map(([value,label]) => {
+    const sectionButtons = [['','全部'], ...Object.entries(C.teamSections).filter(([value]) => value), ['general', C.sectionLabel('')]].map(([value,label]) => {
       const button = el('button', 'community-section-button', label); button.type = 'button';
       button.setAttribute('aria-label', `玩法分区：${label}`);
       button.addEventListener('click', () => {filters.section = value; load();}); sections.append(button); return {button,value};
     });
-    const otherSection = el('select', 'community-section-other'); otherSection.setAttribute('aria-label', '其他玩法分区');
-    [['','其他分区'], ['general',C.sectionLabel('')]].forEach(([value,label]) => {
-      const option = el('option', '', label); option.value = value; otherSection.append(option);
-    });
-    otherSection.addEventListener('change', () => {filters.section = otherSection.value; load();}); sections.append(otherSection);
     const toolbar = el('div', 'community-toolbar');
     const element = el('select'); element.setAttribute('aria-label', '推荐队伍属性');
     const all = el('option', '', '全部属性'); all.value = ''; element.append(all);
@@ -87,7 +82,6 @@
     advancedBody.append(extraSelects, damage); advanced.append(advancedSummary, advancedBody);
     function syncFilters() {
       element.value = filters.element; category.value = filters.category; sort.value = filters.sort; code.value = filters.code;
-      otherSection.value = filters.section === 'general' ? 'general' : '';
       sectionButtons.forEach(({button,value}) => button.setAttribute('aria-pressed', String(filters.section === value)));
       const active = [...(filters.category ? [C.categoryLabel(filters.category)] : []), ...(filters.code ? [filters.code === 'has' ? '已有队伍码' : '暂无队伍码'] : []), ...filters.damageTypes.map((value) => C.damageTypes[value])];
       activeSummary.textContent = active.length ? `（${active.length}）${active.join(' · ')}` : '分类 · 伤害类型 · 队伍码';

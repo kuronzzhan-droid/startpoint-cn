@@ -25,13 +25,13 @@ test('import and query use known fields, stable filter order and escaped cursor'
   assert.equal(query.get('element'),'火'); assert.equal(query.get('sort'),'popular');
 });
 test('gameplay sections remain independent from categories and legacy general entries', () => {
-  for (const section of ['abyss','fantasy','five-boss','general']) {
+  for (const section of ['abyss','fantasy','five-boss','original','general']) {
     const params = new URLSearchParams(C.query({section,category:'玩具盘',damageTypes:['direct'],sort:'popular'}));
     assert.equal(params.get('section'),section); assert.equal(params.get('category'),'玩具盘'); assert.equal(params.get('damage'),'direct');
   }
   for (const section of [undefined,'','arbitrary']) assert.equal(new URLSearchParams(C.query({section})).has('section'),false);
-  assert.equal(C.sectionLabel('abyss'),'深渊连战'); assert.equal(C.sectionLabel(undefined),'通用/其他');
-  assert.equal(C.sectionLabel('玩具盘'),'通用/其他');
+  assert.equal(C.sectionLabel('abyss'),'深渊连战'); assert.equal(C.sectionLabel(undefined),'其他');
+  assert.equal(C.sectionLabel('玩具盘'),'其他');
 });
 test('code availability is an independent, allowlisted query filter', () => {
   for (const code of ['has','none']) assert.equal(new URLSearchParams(C.query({code,section:'abyss',category:'玩具盘'})).get('code'),code);
