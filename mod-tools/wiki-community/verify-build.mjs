@@ -6,6 +6,7 @@ import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 import {openDatabase} from './sqlite-adapter.mjs';
+import catalog from './catalog.mjs';
 
 const directory = process.argv[2];
 if (!directory) throw new Error('Usage: node verify-build.mjs ABSOLUTE_BUILD_DIRECTORY');
@@ -63,6 +64,55 @@ try {
   assert.equal((await (await call('/api/community/admin/users', {headers: {Cookie: ownerCookie}}, passwordEnv)).json()).items[0].role, 'owner'); checks++;
   assert.equal((await call('/api/community/admin/users', {headers: {'Cf-Access-Authenticated-User-Email': 'owner@example.test'}}, passwordEnv)).status, 401); checks++;
   assert.equal((await call('/api/community/development-admin-login', {method: 'POST', body: '{}'}, passwordEnv)).status, 404); checks++;
+  const characterIds = Object.keys(catalog.characters).slice(0, 3);
+  assert.equal(characterIds.length, 3);
+  const fixtureTeam = {main: characterIds, unison: ['', '', ''], weapon: ['', '', ''], soul: ['', '', '']};
+  const createPrivate = await call('/api/community/admin/teams', {method: 'POST', headers: {Cookie: ownerCookie},
+    body: JSON.stringify({title: '编译验证私盘', notes: '仅保存在验证内存库', author: '', category: '萌新启航',
+      section: 'original', visibility: 'private', element: 'auto', damageTypes: ['skill'], team: fixtureTeam})}, passwordEnv);
+  assert.equal(createPrivate.status, 201);
+  const privateTeam = (await createPrivate.json()).team;
+  assert.equal(privateTeam.visibility, 'private'); assert.equal(privateTeam.gameCode, null); checks++;
+  const publicTeams = await (await call('/api/community/teams')).json();
+  assert.deepEqual(publicTeams.items, []);
+  assert.equal((await call(`/api/community/teams/${privateTeam.id}`)).status, 404); checks++;
+  const createCode = await call(`/api/community/admin/teams/${privateTeam.id}/game-code`, {method: 'POST',
+    headers: {Cookie: ownerCookie}, body: JSON.stringify({expectedRevision: privateTeam.revision})}, passwordEnv);
+  assert.equal(createCode.status, 200); const publishedCode = (await createCode.json()).gameCode;
+  assert.match(publishedCode, /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{12}$/); checks++;
+  const lookup = await call(`/api/community/game-codes/${publishedCode}`); assert.equal(lookup.status, 200);
+  const shared = await lookup.json(); assert.deepEqual(shared.team, fixtureTeam);
+  assert.deepEqual(Object.keys(shared).sort(), ['active', 'team', 'title']); checks++;
+  const aliasesPath = `/api/community/admin/aliases/character/${characterIds[0]}`;
+  const aliasWrite = await call(aliasesPath, {method: 'PATCH', headers: {Cookie: ownerCookie},
+    body: JSON.stringify({aliases: ['编译验证别名'], expectedRevision: 0})}, passwordEnv);
+  assert.equal(aliasWrite.status, 200); const aliasRecord = await aliasWrite.json();
+  assert.deepEqual(aliasRecord.aliases, ['编译验证别名']); assert.equal(aliasRecord.revision, 1); checks++;
+  const publicAliases = await call('/api/community/aliases'); assert.equal(publicAliases.status, 200);
+  assert.deepEqual((await publicAliases.json()).items, [aliasRecord]);
+  assert.ok(!JSON.stringify(aliasRecord).includes('@')); checks++;
+  assert.ok(data.sections.some((section) => section.value === 'original' && section.label === '原版'));
+  assert.equal(privateTeam.section, 'original');
+  const originals = await call('/api/community/admin/teams?section=original&scope=private', {headers: {Cookie: ownerCookie}}, passwordEnv);
+  assert.equal(originals.status, 200); assert.equal((await originals.json()).items[0].id, privateTeam.id); checks++;
+  const ratingPath = `/api/community/ratings/characters/${characterIds[0]}`;
+  const ratingRead = await call(ratingPath); assert.equal(ratingRead.status, 200); const rating = await ratingRead.json();
+  assert.deepEqual(Object.keys(rating).sort(), ['average', 'myScore', 'nextVoteAt', 'ratedToday', 'voters']);
+  assert.equal(rating.average, null); assert.equal(rating.myScore, null); assert.equal(rating.voters, 0); assert.equal(rating.ratedToday, false);
+  const noChallenge = await call(ratingPath, {method: 'POST', body: JSON.stringify({score: 0})});
+  assert.equal(noChallenge.status, 400); assert.equal((await noChallenge.json()).error, 'challenge_required');
+  assert.equal(db.raw.prepare('SELECT COUNT(*) AS count FROM community_character_ratings').get().count, 0); checks++;
+  const emptyRatings = await call('/api/community/ratings/characters');
+  assert.equal(emptyRatings.status, 200); assert.equal(emptyRatings.headers.get('set-cookie'), null);
+  assert.deepEqual(await emptyRatings.json(), {items: []});
+  const seedRating = db.raw.prepare('INSERT INTO community_character_ratings(character_id,visitor_id,score,vote_day,updated_at) VALUES(?,?,?,?,?)');
+  seedRating.run(characterIds[0], 'fixture-rating-a', 0, '2026-09-30', Date.now());
+  seedRating.run(characterIds[1], 'fixture-rating-a', 2, '2026-09-30', Date.now());
+  seedRating.run(characterIds[1], 'fixture-rating-b', 3, '2026-09-30', Date.now());
+  const aggregate = await call('/api/community/ratings/characters/');
+  assert.equal(aggregate.status, 200); assert.equal(aggregate.headers.get('set-cookie'), null);
+  assert.deepEqual((await aggregate.json()).items.sort((a, b) => a.id.localeCompare(b.id)),
+    [{id: characterIds[0], average: 0, voters: 1}, {id: characterIds[1], average: 2.5, voters: 2}].sort((a, b) => a.id.localeCompare(b.id))); checks++;
   assert.equal(assets.length, 4);
   const report = {wrangler: '4.143.0', verifiedAt: new Date().toISOString(),
     bundle: {file: 'index.js', bytes: (await stat(bundlePath)).size, sha256: createHash('sha256').update(source).digest('hex')},
