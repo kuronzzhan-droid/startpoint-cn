@@ -94,6 +94,11 @@
   $('catalog-character-filters').append(characterFilters.element);
   const catalogAvatars = window.WFCatalogAvatars.create({host: $('catalog-avatar-controls'),
     catalog: $('catalog-view'), characters, ui: helpers});
+  const catalogRatings = window.WFCatalogRatings.create({characters, sort: $('sort-order'),
+    host: $('catalog-view').querySelector('.catalog-list-toolbar'), ui: helpers, onChange: () => {
+      if (catalogRatings.isRatingSort()) renderCatalog();
+      else catalogRatings.paintMounted($('character-grid'));
+    }});
 
   [['--frame-window', 'frames', 'window'], ['--frame-button', 'frames', 'button'], ['--frame-status', 'frames', 'status'], ['--game-detail-bg', 'backgrounds', 'detail']].forEach(([variable, group, key]) => {
     const url = safeUrl(object(object(meta.uiAssets)[group])[key]);
@@ -158,14 +163,15 @@
     const content = el('div', 'card-content');
     const nameRow = el('div', 'card-name-row');
     nameRow.append(el('h4', 'card-name', text(character.name, '未命名角色')), rarityBadge(character.rarity));
-    content.append(el('div', 'card-title', text(character.title, character.origin)), nameRow);
+    const details = el('div', 'card-meta'), profession = el('span', 'card-profession');
+    profession.append(nativeIcon('types', character.type, ''), el('span', '', text(character.type, '—')));
+    details.append(profession);
+    content.append(el('div', 'card-title', text(character.title, character.origin)), nameRow, details);
     if (categoryName(character) === '原版角色改动' && list(character.aliases).length) content.append(el('span', 'alias-tag', character.aliases[0]));
     list(character.themes || (character.theme ? [character.theme] : [])).forEach((theme) => content.append(el('span', 'theme-tag', theme)));
     if (character.earlyDesign === true) content.append(el('span', 'editor-tag', '早期方案'));
-    const details = el('div', 'card-meta');
-    details.append(nativeIcon('types', character.type, ''), el('span', '', text(character.type, '—')));
-    content.append(details);
     link.append(art, content);
+    catalogRatings.decorate(link, character);
     return link;
   }
 
@@ -176,11 +182,13 @@
     if (sort === 'default') selected.sort(window.WFCharacterOrder.compare);
     if (sort === 'name') selected.sort((a, b) => text(a.name).localeCompare(text(b.name), 'zh-CN'));
     if (sort === 'rarity') selected.sort((a, b) => Number(b.rarity) - Number(a.rarity) || Number(a.id) - Number(b.id));
+    if (catalogRatings.isRatingSort()) selected.sort(catalogRatings.compare);
     return selected;
   }
 
   function renderCatalog() {
     if ($('catalog-view').hidden) return;
+    if (catalogDisclosure.isOpen() || catalogRatings.isRatingSort()) catalogRatings.load();
     const selected = filteredCharacters();
     const fragment = document.createDocumentFragment();
     (catalogDisclosure.isOpen() ? selectedCategory ? [selectedCategory] : ['全部角色'] : []).forEach((category, index) => {

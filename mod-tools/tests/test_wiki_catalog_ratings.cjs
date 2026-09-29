@@ -1,0 +1,96 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const tick = () => new Promise(setImmediate);
+class Node {
+  constructor(tag, className = '', text = '') {Object.assign(this, {tag, className, textContent: text, children: [], attributes: {}, dataset: {}, events: {}});}
+  append(...nodes) {this.children.push(...nodes);}
+  setAttribute(key, value) {this.attributes[key] = value;}
+  getAttribute(key) {return this.attributes[key];}
+  addEventListener(name, action) {this.events[name] = action;}
+  fire(name = 'click') {return this.events[name]?.();}
+  querySelectorAll(selector) {return this.children.flatMap((node) => [...(node.className.split(' ').includes(selector.slice(1)) ? [node] : []), ...node.querySelectorAll(selector)]);}
+  querySelector(selector) {return this.querySelectorAll(selector)[0] || null;}
+}
+const source = fs.readFileSync(path.join(__dirname, '../wiki/catalog-ratings.js'), 'utf8');
+const characters = ['火', '火', '火', '水', '水', '水'].map((element, index) => ({id: `c${index}`, element}));
+const response = {items: [{id: 'c0', average: 2, voters: 8}, {id: 'c1', average: 0, voters: 1},
+  {id: 'c3', average: 5, voters: 1}, {id: 'c4', average: 2, voters: 6}]};
+function setup(handler = async () => response, protocol = 'https:') {
+  const calls = [], events = {}, host = new Node('div'), sort = new Node('select'), catalog = new Node('div'); sort.value = 'default';
+  const window = {addEventListener: (name, action) => {events[name] = action;},
+    WFCharacterOrder: {compare: (a, b) => a.id.localeCompare(b.id)},
+    WFCommunity: {client: {request: (...args) => {calls.push(args); return handler(...args);}}}};
+  vm.runInNewContext(source, {window, location: {protocol}});
+  let changes = 0;
+  const controller = window.WFCatalogRatings.create({characters, sort, host, ui: {el: (...args) => new Node(...args)},
+    onChange() {changes++; controller.paintMounted(catalog);}});
+  const card = (id) => {
+    const card = new Node('a', 'character-card'); card.title = '角色'; card.setAttribute('aria-label', '角色，查看详情');
+    card.append(new Node('div', 'card-meta')); catalog.append(card); controller.decorate(card, {id}); return card;
+  };
+  return {window, controller, calls, host, sort, catalog, card, get changes() {return changes;},
+    order(mode) {sort.value = mode; return [...characters].sort(controller.compare).map((item) => item.id);},
+    vote(id, value) {events['wf-character-rating-updated']({detail: {id, ...value}});},
+    status: () => host.querySelector('.catalog-rating-status'), retry: () => host.querySelector('.text-button').fire()};
+}
+
+test('catalogue requests one aggregate only on demand, coalesces concurrent loads and reuses results', async () => {
+  let resolve; const x = setup(() => new Promise((done) => {resolve = done;}));
+  assert.equal(x.calls.length, 0); assert.equal(x.sort.children.length, 4);
+  const first = x.controller.load(); x.controller.load(); await tick();
+  assert.equal(x.calls.length, 1); assert.deepEqual(x.calls[0], ['/ratings/characters']);
+  assert.equal(x.status().hidden, false); assert.match(x.status().children[0].textContent, /正在加载/);
+  resolve(response); await first; await x.controller.load(); assert.equal(x.calls.length, 1); assert.equal(x.status().hidden, true);
+});
+
+test('attribute and global sorting handle both directions, real zero, missing values and stable ties', async () => {
+  const x = setup(); await x.controller.load();
+  assert.deepEqual(x.order('rating-element-desc'), ['c0', 'c1', 'c2', 'c3', 'c4', 'c5']);
+  assert.deepEqual(x.order('rating-element-asc'), ['c1', 'c0', 'c2', 'c4', 'c3', 'c5']);
+  assert.deepEqual(x.order('rating-global-desc'), ['c3', 'c0', 'c4', 'c1', 'c2', 'c5']);
+  assert.deepEqual(x.order('rating-global-asc'), ['c1', 'c0', 'c4', 'c3', 'c2', 'c5']);
+  assert.equal(x.controller.isRatingSort(), true); x.sort.value = 'default'; assert.equal(x.controller.isRatingSort(), false);
+});
+
+test('card score and accessible title distinguish unloaded, unrated and zero without replacing card nodes', async () => {
+  const x = setup(), zero = x.card('c1'), missing = x.card('c2');
+  assert.equal(zero.querySelector('.card-rating').textContent, '评分 —'); assert.match(zero.title, /尚未加载/);
+  await x.controller.load(); assert.equal(x.catalog.children[0], zero);
+  assert.equal(zero.querySelector('.card-rating').textContent, '评分 0.0'); assert.match(zero.title, /0.0 \/ 5 · 1 人/);
+  assert.match(zero.getAttribute('aria-label'), /0.0/); assert.equal(missing.querySelector('.card-rating').textContent, '评分 —');
+  assert.match(missing.title, /未评分/);
+});
+
+test('an accepted single-character result wins over an in-flight batch, without pretending the batch is loaded', async () => {
+  let resolve; const x = setup(() => new Promise((done) => {resolve = done;})); const card = x.card('c0');
+  x.window.WFCatalogRatings.update('c0', {average: 1, voters: 1});
+  const pending = x.controller.load(); await tick(); assert.equal(x.calls.length, 1);
+  x.vote('c0', {average: 4.5, voters: 12, myScore: 5}); resolve(response); await pending;
+  assert.equal(card.querySelector('.card-rating').textContent, '评分 4.5');
+  assert.deepEqual(x.order('rating-global-desc').slice(0, 2), ['c3', 'c0']);
+  const before = x.changes; x.controller.update('c0', {average: 4.5, voters: 12}); assert.equal(x.changes, before);
+});
+
+test('failed batches do not turn missing scores into zero or auto-loop; explicit retry loads a fresh batch', async () => {
+  let attempts = 0; const x = setup(async () => {if (++attempts === 1) throw new Error('offline'); return response;});
+  const card = x.card('c0'); await x.controller.load(); assert.equal(x.status().hidden, false);
+  assert.match(x.status().children[0].textContent, /暂时未能加载/); assert.equal(x.status().children[1].hidden, false);
+  assert.equal(card.querySelector('.card-rating').textContent, '评分 —');
+  await x.controller.load(); assert.equal(x.calls.length, 1); x.retry(); await tick();
+  assert.equal(x.calls.length, 2); assert.equal(card.querySelector('.card-rating').textContent, '评分 2.0');
+});
+
+test('invalid aggregates are rejected atomically and offline catalogues stay network-free', async () => {
+  const x = setup(async () => ({items: [...response.items, {id: 'c5', average: null, voters: 1}]}));
+  const card = x.card('c0'); await x.controller.load(); assert.equal(card.querySelector('.card-rating').textContent, '评分 —');
+  assert.equal(x.status().children[1].hidden, false);
+  assert.equal(x.controller.update('unknown', {average: 5, voters: 1}), false);
+  assert.equal(x.controller.update('c0', {average: 0, voters: 0}), false);
+  assert.equal(x.controller.update('c0', {average: Infinity, voters: 1}), false);
+  const offline = setup(undefined, 'file:'); await offline.controller.load(); await offline.controller.load();
+  assert.equal(offline.calls.length, 0); assert.match(offline.status().children[0].textContent, /离线版/);
+  assert.equal(offline.status().children[1].hidden, true);
+});

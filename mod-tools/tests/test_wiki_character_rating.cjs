@@ -50,6 +50,7 @@ test('zero voters render no average rather than inventing a zero rating, even be
 
 test('choosing zero needs a consumed verification token and confirmed POST before changing the aggregate',async()=>{
   let finish;const x=setup((_path,body)=>body?new Promise((done)=>{finish=done;}):Promise.resolve(unrated)),{root}=x.mount();await tick();
+  const catalogUpdates=[];x.window.WFCatalogRatings={update:(id,value)=>catalogUpdates.push({id,...value})};
   await button(root,'0').fire();await tick();const dialog=x.dialogs[0].element,submit=button(dialog,'确认提交 0 分');
   assert.equal(x.challenges[0].action,'rate_character');await submit.fire();assert.equal(x.calls.length,1);
   x.challenges[0].ready('zero-token');const pending=submit.fire();assert.equal(x.calls[1][1].score,0);assert.equal(x.calls[1][1].turnstileToken,'zero-token');
@@ -57,6 +58,7 @@ test('choosing zero needs a consumed verification token and confirmed POST befor
   finish({...unrated,average:3,myScore:0,ratedToday:true});await pending;
   assert.equal(cls(root,'character-rating-average').textContent,'3.0');assert.equal(cls(root,'character-rating-voters').textContent,'27 位玩家');
   assert.match(root.textContent,/今天已评 0 分.*北京时间/);assert.equal(button(root,'5').disabled,true);assert.equal(x.challenges[0].resets,1);
+  assert.equal(catalogUpdates.length,1);assert.equal(catalogUpdates[0].id,'c1');assert.equal(catalogUpdates[0].average,3);
   await submit.fire();assert.equal(x.calls.length,2);
 });
 

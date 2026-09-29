@@ -31,6 +31,7 @@
   }
   function accept(state, value) {
     state.value = record(value); state.version++; state.error = ''; state.dailyBlocked = false; notify(state);
+    window.WFCatalogRatings?.update(state.id, state.value);
   }
   async function load(state, C) {
     const ticket = ++state.loadRevision, version = state.version;
@@ -102,7 +103,7 @@
     const retry = el('button','text-button character-rating-retry','刷新评分'); retry.type = 'button'; retry.hidden = true;
     root.append(summary,meter,choices,status,retry); host.append(root);
     for (const state of states.values()) for (const view of state.views) if (!view.element.isConnected) state.views.delete(view);
-    if (!states.has(id)) states.set(id,{path:`/ratings/characters/${encodeURIComponent(id)}`,value:null,version:0,loadRevision:0,views:new Set()});
+    if (!states.has(id)) states.set(id,{id,path:`/ratings/characters/${encodeURIComponent(id)}`,value:null,version:0,loadRevision:0,views:new Set()});
     const state = states.get(id), buttons = Array.from({length:6},(_,score) => {
       const button = el('button','character-rating-score',String(score)); button.type = 'button'; button.disabled = true;
       button.setAttribute('aria-label',`为${character.name || '角色'}评 ${score} 分`);
