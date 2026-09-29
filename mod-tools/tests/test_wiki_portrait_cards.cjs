@@ -115,3 +115,12 @@ test('portrait-only styles retain contain fit, safe motion margins, visible keyb
   assert.match(css,/@media\(max-width:640px\).*repeat\(2,minmax\(0,1fr\)\)/);assert.match(css,/@media\(max-width:360px\)/);
   assert.doesNotMatch(css,/object-fit:cover|scale\(/);
 });
+
+test('idle cards and portraits have no 3D or translated transform outside an active interaction',()=>{
+  const css=fs.readFileSync(path.join(__dirname,'../wiki/portrait-cards.css'),'utf8');
+  const transforms=[...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(([,selector,body])=>/transform:(?:perspective|translate)/.test(body));
+  assert.equal(transforms.length,2);
+  transforms.forEach(([,selector])=>assert.match(selector,/\.portrait-card-active/));
+  assert.match(css,/#catalog-view \.portrait-card\{[^}]*transform:none/);
+  assert.match(css,/\.portrait-card-media>\.portrait-card-image\{[^}]*transform:none/);
+});
