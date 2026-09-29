@@ -38,16 +38,20 @@
   window.renderWikiCommunity = async (host, data, ui, options = {}) => {
     const {el} = ui, startingHash = location.hash;
     let revision = 0, nextCursor = '', config;
-    const filters = {element: '', damageTypes: [], sort: 'latest'};
+    const filters = {element: '', category: '', damageTypes: [], sort: 'latest'};
     const intro = el('p', 'section-intro', '由管理员维护的推荐队伍。点击队伍标题进入编队，点击角色头像可在编队面板查阅技能与能力，也可以为实用的盘子点赞。');
     const toolbar = el('div', 'community-toolbar');
     const element = el('select'); element.setAttribute('aria-label', '推荐队伍属性');
     const all = el('option', '', '全部属性'); all.value = ''; element.append(all);
+    const category = el('select'); category.setAttribute('aria-label', '推荐队伍分类');
+    [['','全部分类'], ...C.teamCategories.map((value) => [value,value]), ['uncategorized','未分类']].forEach(([value,label]) => {
+      const option = el('option', '', label); option.value = value; category.append(option);
+    });
     const sort = el('select'); sort.setAttribute('aria-label', '推荐队伍排序');
     [['latest', '最新收录'], ['popular', '最多点赞']].forEach(([value, label]) => {const option = el('option', '', label); option.value = value; sort.append(option);});
     const edit = el('a', 'primary-button', '本地配队模拟'); edit.href = '#team';
     const admin = el('a', 'text-button', '管理员入口'); admin.href = '#community/admin';
-    toolbar.append(element, sort, edit, admin);
+    toolbar.append(element, category, sort, edit, admin);
     const damage = el('fieldset', 'community-damage-options'); damage.append(el('legend', '', '伤害类型（多选时同时满足）'));
     Object.entries(C.damageTypes).forEach(([value, label]) => {
       const wrap = el('label', 'community-check'), input = el('input'); input.type = 'checkbox'; input.value = value;
@@ -72,7 +76,7 @@
       }
       const heading = el('h2'); const link = el('a', '', item.title); link.href = '#team';
       link.addEventListener('click', (event) => {event.preventDefault(); enter();}); heading.append(link);
-      const badges = el('div', 'community-tags'); badges.append(el('span', 'badge', C.elementLabel(item.element)));
+      const badges = el('div', 'community-tags'); badges.append(el('span', 'badge', C.categoryLabel(item.category)), el('span', 'badge', C.elementLabel(item.element)));
       (item.damageTypes || []).filter((key) => C.damageTypes[key]).forEach((key) => badges.append(el('span', 'badge', C.damageTypes[key])));
       const date = new Date(item.createdAt), time = el('time', 'muted', Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('zh-CN', {timeZone: 'Asia/Shanghai'}));
       if (!Number.isNaN(date.getTime())) time.dateTime = date.toISOString();
@@ -118,6 +122,7 @@
       } catch (error) {if (current(ticket)) {status.textContent = C.message(error); retry.hidden = false;}}
     }
     element.addEventListener('change', () => {filters.element = element.value; load();});
+    category.addEventListener('change', () => {filters.category = category.value; load();});
     sort.addEventListener('change', () => {filters.sort = sort.value; load();});
     more.addEventListener('click', () => load(true)); retry.addEventListener('click', () => config ? load() : connect());
     await connect();

@@ -106,9 +106,11 @@ test('saving edited slots and hidden state sends the original revision with same
   await x.start(); await button(x.host,'编辑 / 隐藏').click(); const form=one(x.host,'admin-edit-form');
   select(form,'主位 1').value='c4'; select(form,'主位 1').events.change();
   const meta=one(form,'admin-edit-meta'); meta.all((n)=>n.tag==='select')[1].value='hidden';
+  select(form,'配队分类').value='原版毕业队';
   await form.events.submit({preventDefault(){}});
   assert.equal(saved.expectedRevision,4); assert.equal(saved.team.main[0],'c4'); assert.equal(saved.status,'hidden');
   assert.equal(saved.damageTypes[0],'skill'); assert.equal(x.calls.find((call)=>call.method==='PATCH').credentials,'same-origin');
+  assert.equal(saved.category,'原版毕业队');
   assert.match(one(x.host,'admin-notice').textContent,/已保存.*当前版本 5/);
 });
 test('invalid duplicate characters and missing damage selections never reach the write endpoint',async()=>{
@@ -126,4 +128,12 @@ test('late authentication cannot overwrite a different route in the same reused 
   x.host.replaceChildren(el('section','','另一页面'));
   answer(response({id:'a',email:'a@b.test'})); await pending;
   assert.equal(x.host.textContent,'另一页面'); assert.equal(x.calls.length,2);
+});
+
+test('administrators can filter categories and preserve the empty legacy category while editing',async()=>{
+  const x=setup();await x.start();
+  const category=select(x.host,'查看配队分类');assert.equal(category.children.length,7);category.value='uncategorized';category.events.change();await new Promise(setImmediate);
+  assert.equal(new URL(x.calls.at(-1).url,'https://wiki.example').searchParams.get('category'),'uncategorized');
+  await button(x.host,'编辑 / 隐藏').click();assert.equal(select(x.host,'配队分类').value,'');
+  assert.equal(select(x.host,'配队分类').children[0].textContent,'未分类（历史队伍）');
 });

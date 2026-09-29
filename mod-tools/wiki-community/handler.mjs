@@ -108,7 +108,7 @@ async function adminRoute(path, request, db, trustedCatalog, actor, now) {
     if (!row) fail(404, 'not_found', '队伍不存在。');
     if (!Number.isSafeInteger(body.expectedRevision) || body.expectedRevision !== row.revision)
       fail(409, 'edit_conflict', '其他管理员已修改该盘，请重新加载后再编辑。');
-    const value = validateSubmission({...teamRecord(row), ...body}, trustedCatalog);
+    const value = validateSubmission({...teamRecord(row), ...body}, trustedCatalog, {allowUncategorized: !row.category});
     const status = body.status ?? row.status;
     if (!['approved', 'hidden'].includes(status)) fail(400, 'invalid_status', '请选择公开或隐藏。');
     return response({team: await editTeam(db, row, value, await fingerprint(value.team), status, actor, now)});

@@ -24,6 +24,9 @@
     const title = field('队伍名称', 'input', 80, initialTitle.slice(0, 80)); title.required = true;
     const author = field('作者署名', 'input', 40); author.required = true;
     const notes = field('用途、操作要点与替换建议（选填）', 'textarea', 2000); notes.rows = 4;
+    const category = field('配队分类', 'select', 0); category.required = true; category.setAttribute('aria-label', '配队分类');
+    const categoryPrompt = el('option', '', '请选择配队分类'); categoryPrompt.value = ''; category.append(categoryPrompt);
+    C.teamCategories.forEach((value) => {const option = el('option', '', value); option.value = value; category.append(option);});
     const leader = (data.characters || []).find((item) => item.id === team.main[0]);
     const element = field('队伍属性', 'select', 0);
     const auto = el('option', '', `自动：队长${leader ? ` ${leader.name} · ${leader.element}` : '尚未选择'}`); auto.value = 'auto'; element.append(auto);
@@ -53,13 +56,14 @@
       event.preventDefault(); if (busy) return;
       const damageTypes = checks.filter((check) => check.checked).map((check) => check.value);
       const invalid = C.teamError(team, data) || (!title.value.trim() ? '请填写队伍名称。' : '')
-        || (!author.value.trim() ? '请填写作者署名。' : '') || (!damageTypes.length ? '请至少选择一种伤害类型。' : '');
+        || (!author.value.trim() ? '请填写作者署名。' : '') || (!C.teamCategories.includes(category.value) ? '请选择配队分类。' : '')
+        || (!damageTypes.length ? '请至少选择一种伤害类型。' : '');
       if (invalid) {status.textContent = invalid; return;}
       if (!ready) {status.textContent = '请先连接配队社区。'; return;}
       busy = true; update(false); status.textContent = '正在提交…';
       try {
         const result = await C.client.request('/admin/teams', {team, title: title.value.trim(), author: author.value.trim(),
-          notes: notes.value.trim(), element: element.value, damageTypes});
+          notes: notes.value.trim(), category: category.value, element: element.value, damageTypes});
         if (closed) return;
         const item = result.team;
         if (item?.status === 'approved') {

@@ -1,5 +1,6 @@
 import {encodeJSON, decodeJSON} from './codecs.mjs';
 export const DAMAGE_TYPES = ['skill', 'ability', 'powerflip', 'direct'];
+export const TEAM_CATEGORIES = ['萌新启航', '原版毕业队', 'MOD毕业队', '最新最潮盘', '玩具盘'];
 export const GROUPS = ['main', 'unison', 'weapon', 'soul'];
 export const PAGE_SIZE = 24;
 export class ApiError extends Error {
@@ -21,8 +22,10 @@ export function damageMask(value) {
     fail(400, 'invalid_damage', '至少选择一种有效伤害类型。');
   return [...new Set(value)].reduce((mask, type) => mask | (1 << DAMAGE_TYPES.indexOf(type)), 0);
 }
-export function validateSubmission(body, catalog) {
+export function validateSubmission(body, catalog, {allowUncategorized = false} = {}) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) fail(400, 'invalid_input', '投稿内容格式错误。');
+  if (!TEAM_CATEGORIES.includes(body.category) && !(allowUncategorized && body.category === ''))
+    fail(400, 'invalid_category', '请选择一个有效的配队分类。');
   const team = {}, seen = new Set();
   for (const group of GROUPS) {
     const values = body.team?.[group];
@@ -44,7 +47,7 @@ export function validateSubmission(body, catalog) {
   const element = body.element === 'auto' ? catalog.characters[team.main[0]].element : body.element;
   if (element !== 'universal' && !catalog.elements.includes(element)) fail(400, 'invalid_element', '请选择有效属性或宇宙。');
   return {title: cleanText(body.title, '标题', 80, true, true), notes: cleanText(body.notes ?? '', '备注', 2000),
-    author: cleanText(body.author ?? '', '署名', 40, false, true), team, element, damageMask: damageMask(body.damageTypes)};
+    author: cleanText(body.author ?? '', '署名', 40, false, true), team, element, category: body.category, damageMask: damageMask(body.damageTypes)};
 }
 export async function fingerprint(team) {
   const columns = [0, 1, 2].map((index) => GROUPS.map((group) => team[group][index]));
@@ -59,7 +62,7 @@ export function chinaDay(now) {
 }
 export function teamRecord(row, admin = false) {
   const item = {id: row.id, title: row.title, notes: row.notes, author: row.author, team: JSON.parse(row.team_json),
-    element: row.element, damageTypes: DAMAGE_TYPES.filter((_, i) => row.damage_mask & (1 << i)),
+    element: row.element, category: row.category || '', damageTypes: DAMAGE_TYPES.filter((_, i) => row.damage_mask & (1 << i)),
     createdAt: new Date(row.created_at).toISOString(), updatedAt: new Date(row.updated_at).toISOString(), likes: row.likes,
     gameCode: row.status === 'approved' ? row.game_code || null : null};
   if (admin) Object.assign(item, {status: row.status, revision: row.revision});
@@ -68,6 +71,8 @@ export function teamRecord(row, admin = false) {
 export function listQuery(url, catalog, admin = false) {
   const element = url.searchParams.get('element') || '';
   if (element && element !== 'universal' && !catalog.elements.includes(element)) fail(400, 'invalid_element', '属性筛选无效。');
+  const category = url.searchParams.get('category') || '';
+  if (category && category !== 'uncategorized' && !TEAM_CATEGORIES.includes(category)) fail(400, 'invalid_category', '配队分类筛选无效。');
   const damage = url.searchParams.get('damage');
   const sort = url.searchParams.get('sort') || 'latest';
   if (!['latest', 'popular'].includes(sort)) fail(400, 'invalid_sort', '排序方式无效。');
@@ -79,14 +84,14 @@ export function listQuery(url, catalog, admin = false) {
     try {
       if (encoded.length > 500) throw new Error();
       cursor = decodeJSON(encoded);
-      if (cursor.sort !== sort || cursor.element !== element || cursor.damage !== (damage || '') || cursor.status !== status ||
+      if (cursor.sort !== sort || cursor.element !== element || (cursor.category || '') !== category || cursor.damage !== (damage || '') || cursor.status !== status ||
           !Number.isSafeInteger(cursor.createdAt) || !Number.isSafeInteger(cursor.likes) || cursor.likes < 0 ||
           !/^[a-f0-9-]{36}$/.test(cursor.id)) throw new Error();
     } catch { fail(400, 'invalid_cursor', '分页位置无效，请重新打开列表。'); }
   }
-  return {element, damage: damage || '', mask: damage ? damageMask(damage.split(',')) : 0, sort, status, cursor};
+  return {element, category, damage: damage || '', mask: damage ? damageMask(damage.split(',')) : 0, sort, status, cursor};
 }
 export function nextCursor(query, row) {
-  return encodeJSON({sort: query.sort, element: query.element, damage: query.damage, status: query.status,
+  return encodeJSON({sort: query.sort, element: query.element, category: query.category || '', damage: query.damage, status: query.status,
     createdAt: row.created_at, likes: row.likes, id: row.id});
 }

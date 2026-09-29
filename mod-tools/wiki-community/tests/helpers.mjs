@@ -5,7 +5,7 @@ import {base64url, encodeJSON, utf8} from '../codecs.mjs';
 export const fixtureCatalog = {version: 'test', elements: ['火', '水', '无'],
   characters: Object.fromEntries(Array.from({length: 12}, (_, i) => [`c${i}`, {element: i ? '水' : '火'}])),
   equipment: {w0: {soul: true}, w1: {soul: true}, w2: {soul: false}}};
-export const submission = () => ({title: '测试盘', author: '测试署名', notes: '只在临时测试数据库保存', element: 'auto', damageTypes: ['skill'],
+export const submission = () => ({title: '测试盘', author: '测试署名', notes: '只在临时测试数据库保存', category: '萌新启航', element: 'auto', damageTypes: ['skill'],
   team: {main: ['c0', 'c1', 'c2'], unison: ['c3', 'c4', 'c5'], weapon: ['w0', 'w1', ''], soul: ['w1', 'w0', '']}});
 export function envFor(db) {
   return {COMMUNITY_DB: db, COMMUNITY_COOKIE_SECRET: 'c'.repeat(40), COMMUNITY_IP_SALT: 'i'.repeat(40),

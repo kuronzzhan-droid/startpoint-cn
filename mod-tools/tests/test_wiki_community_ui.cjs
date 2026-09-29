@@ -125,6 +125,7 @@ test('administrator collection checks the session and preserves input after requ
   await x.C.openSubmit({team,title:'我的盘',data,ui:x.ui});await tick();
   const dialog=x.modals[0].element,inputs=dialog.querySelectorAll('input'),form=dialog.querySelectorAll('form')[0];
   inputs[1].value='投稿人';inputs.find((input)=>input.value==='skill').checked=true;
+  dialog.querySelectorAll('select').find((node)=>node.attributes['aria-label']==='配队分类').value='萌新启航';
   await form.fire('submit');
   assert.equal(inputs[0].value,'我的盘');assert.equal(inputs[1].value,'投稿人');assert.match(dialog.textContent,/网络失败/);
   await form.fire('submit');assert.equal(calls.length,2);assert.equal(calls[1].turnstileToken,undefined);assert.match(dialog.textContent,/收录成功/);
@@ -135,6 +136,7 @@ test('duplicate hidden submissions do not expose a team detail link',async()=>{
   const x=setup({config:async()=>config,request:async(path)=>{if(path==='/admin/me')return {id:'admin'};const error=new Error('duplicate');Object.assign(error,{code:'duplicate',data:{existingId:'secret',status:'hidden'}});throw error;}});
   await x.C.openSubmit({team,title:'我的盘',data,ui:x.ui});await tick();
   const dialog=x.modals[0].element,inputs=dialog.querySelectorAll('input');inputs[1].value='作者';inputs.find((input)=>input.value==='skill').checked=true;
+  dialog.querySelectorAll('select').find((node)=>node.attributes['aria-label']==='配队分类').value='玩具盘';
   await dialog.querySelectorAll('form')[0].fire('submit');
   assert.match(dialog.textContent,/暂不公开/);assert.equal(dialog.querySelectorAll('a').filter((node)=>node.href==='#community/secret').length,0);
 });
@@ -143,6 +145,29 @@ test('a visitor cannot reach administrator creation controls',async()=>{
   await x.C.openSubmit({team,title:'我的盘',data,ui:x.ui});await tick();
   const dialog=x.modals[0].element;assert.deepEqual(calls,['/admin/me']);assert.equal(dialog.querySelectorAll('form').length,0);
   assert.ok(dialog.querySelectorAll('a').some((node)=>node.href==='#community/admin'));
+});
+
+test('category filters combine with element and damage and reset pagination',async()=>{
+  const calls=[];const x=setup({config:async()=>config,request:async(url)=>{calls.push(url);return {items:[{...item,category:'MOD毕业队'}],nextCursor:'page2'};}});
+  await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
+  const select=(label)=>x.host.querySelectorAll('select').find((node)=>node.attributes['aria-label']===label);
+  select('推荐队伍属性').value='火';await select('推荐队伍属性').fire('change');await tick();
+  const category=select('推荐队伍分类');assert.equal(category.children.length,7);category.value='MOD毕业队';await category.fire('change');await tick();
+  const skill=x.host.querySelectorAll('input').find((node)=>node.value==='skill');skill.checked=true;await skill.fire('change');await tick();
+  const params=new URLSearchParams(calls.at(-1).split('?')[1]);assert.equal(params.get('category'),'MOD毕业队');assert.equal(params.get('element'),'火');assert.equal(params.get('damage'),'skill');
+  await x.host.querySelectorAll('.community-more')[0].fire('click');await tick();assert.match(calls.at(-1),/cursor=page2/);
+  category.value='uncategorized';await category.fire('change');await tick();assert.doesNotMatch(calls.at(-1),/cursor=/);
+  assert.ok(x.host.querySelectorAll('.badge').some((node)=>node.textContent==='MOD毕业队'));
+});
+
+test('new collection requires a category before submitting and sends its visible label',async()=>{
+  const calls=[];const x=setup({config:async()=>config,request:async(url,body)=>{if(url==='/admin/me')return {id:'admin'};calls.push(body);return {team:{id:'new',status:'approved'}};}});
+  await x.C.openSubmit({team,title:'新盘',data,ui:x.ui});await tick();
+  const dialog=x.modals[0].element,inputs=dialog.querySelectorAll('input'),form=dialog.querySelectorAll('form')[0];
+  inputs[1].value='作者';inputs.find((node)=>node.value==='skill').checked=true;
+  await form.fire('submit');assert.equal(calls.length,0);assert.match(dialog.textContent,/请选择配队分类/);
+  const category=dialog.querySelectorAll('select').find((node)=>node.attributes['aria-label']==='配队分类');category.value='最新最潮盘';
+  await form.fire('submit');assert.equal(calls[0].category,'最新最潮盘');
 });
 test('like count changes only from a verified server response and repeated likes stay disabled',async()=>{
   const calls=[],results=[];const x=setup({config:async()=>config,request:async(_path,body)=>{calls.push(body);return {likes:4,likedToday:true};}});

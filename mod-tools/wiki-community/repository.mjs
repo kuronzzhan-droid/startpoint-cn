@@ -6,6 +6,7 @@ export async function listTeams(db, query, admin = false) {
   const clauses = [], values = [];
   if (query.status) { clauses.push('status=?'); values.push(query.status); }
   if (query.element) { clauses.push('element=?'); values.push(query.element); }
+  if (query.category) { clauses.push('category=?'); values.push(query.category === 'uncategorized' ? '' : query.category); }
   if (query.mask) { clauses.push('(damage_mask & ?) = ?'); values.push(query.mask, query.mask); }
   if (query.cursor) {
     const c = query.cursor;
@@ -24,9 +25,9 @@ export async function listTeams(db, query, admin = false) {
 export async function insertTeam(db, value, fingerprint, now, status, actor) {
   const id = crypto.randomUUID();
   const results = await db.batch([db.prepare(`INSERT INTO community_teams
-    (id,fingerprint,title,notes,author,team_json,element,damage_mask,status,created_at,updated_at)
-    VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(fingerprint) DO NOTHING`).bind(id, fingerprint,
-    value.title, value.notes, value.author, JSON.stringify(value.team), value.element, value.damageMask, status, now, now),
+    (id,fingerprint,title,notes,author,team_json,element,category,damage_mask,status,created_at,updated_at)
+    VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(fingerprint) DO NOTHING`).bind(id, fingerprint,
+    value.title, value.notes, value.author, JSON.stringify(value.team), value.element, value.category, value.damageMask, status, now, now),
     db.prepare(`INSERT INTO community_audit(id,team_id,actor_id,actor_email,action,before_json,after_json,created_at)
       SELECT ?,id,?,?,?,?,?,? FROM community_teams WHERE id=? AND changes()=1`)
       .bind(crypto.randomUUID(), actor.id, actor.email, 'create', 'null', JSON.stringify({...value, status}), now, id)]);
@@ -52,9 +53,9 @@ export async function editTeam(db, row, value, fingerprint, status, actor, now) 
     status, revision, gameCode: fingerprint === row.fingerprint && status === 'approved' ? row.game_code || null : null,
     updatedAt: new Date(now).toISOString()};
   const statements = [
-    db.prepare(`UPDATE community_teams SET fingerprint=?,title=?,notes=?,author=?,team_json=?,element=?,damage_mask=?,status=?,updated_at=?,revision=?
+    db.prepare(`UPDATE community_teams SET fingerprint=?,title=?,notes=?,author=?,team_json=?,element=?,category=?,damage_mask=?,status=?,updated_at=?,revision=?
       WHERE id=? AND revision=?`).bind(fingerprint, value.title, value.notes, value.author, JSON.stringify(value.team), value.element,
-      value.damageMask, status, now, revision, row.id, row.revision),
+      value.category, value.damageMask, status, now, revision, row.id, row.revision),
     db.prepare(`INSERT INTO community_audit(id,team_id,actor_id,actor_email,action,before_json,after_json,created_at)
       SELECT ?,id,?,?,?,?,?,? FROM community_teams WHERE id=? AND revision=? AND changes()=1`)
       .bind(crypto.randomUUID(), actor.id, actor.email, 'update', JSON.stringify(teamRecord(row, true)), JSON.stringify(after), now, row.id, revision),
