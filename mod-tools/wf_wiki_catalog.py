@@ -28,6 +28,11 @@ GENDERS = dict(Male="男", Female="女", Unknown="未知", Ririi="其他（Ririi
 LEVELS = {"1": "普通技能", "2": "进化技能", "3": "二次进化技能"}
 SWITCHES = {"0": "HP 达到阈值", "1": "存在指定状态", "2": "协力球达到指定数量",
             "3": "技能变化标志触发", "4": "处于合击位"}
+# This one official path contains a historical MOD reskin in the live store.
+# Keep the exception precise: other official and MOD media still use live assets.
+OFFICIAL_PORTRAIT_OVERRIDES = frozenset({
+    "character/pirates_girl/ui/full_shot_1440_1920_0.png",
+})
 
 
 def cell(row: list, index: int, default=""):
@@ -195,13 +200,19 @@ def character_entry(source: WikiSource, cid: str, scope: list[str] | None, media
     awake = source.table("awake").get(cid, [])
     awake_row = awake[0] if awake else []
     portraits = []
+    warnings = []
     for form, label in (("0", "觉醒前"), ("1", "觉醒后")):
-        url = media.image(f"character/{code}/ui/full_shot_1440_1920_{form}.png")
+        logical = f"character/{code}/ui/full_shot_1440_1920_{form}.png"
+        if logical in OFFICIAL_PORTRAIT_OVERRIDES:
+            url = media.official_image(logical, source.baseline)
+            if not url:
+                warnings.append(label + "官方立绘暂不可用，已隐藏错误图片")
+        else:
+            url = media.image(logical)
         if url:
             portraits.append({"label": label, "url": url})
     avatars = character_avatars(code, media)
     icon = avatars.get("before") or avatars.get("after")
-    warnings = []
     if not levels:
         warnings.append("缺少基础数值表")
     if not portraits:

@@ -5,9 +5,12 @@ import hashlib
 import io
 import json
 import re
+import zipfile
 from pathlib import Path
 
 import wf_assets
+import wf_mod_tool as core
+from wf_enhancement_policy import BaselineUnavailable
 
 
 def digest(data: bytes) -> str:
@@ -74,6 +77,29 @@ class WikiMedia:
         raw = self._read(logical)
         if raw is None:
             return None
+        return self._render_image(logical, raw)
+
+    def official_image(self, logical: str, baseline, root: str = "medium") -> str | None:
+        """Use a trusted official image; never fall back to a known reskinned live file."""
+        self.entries.pop(logical, None)
+        hashed = core.sha1_path(logical)
+        try:
+            raw = baseline.get(root, hashed[:2] + "/" + hashed[2:])
+        except (BaselineUnavailable, OSError, ValueError, KeyError, zipfile.BadZipFile):
+            self.errors.append({"logical": logical, "reason": "官方归档不可用，未使用已知错误图片"})
+            return None
+        if raw is None:
+            self.errors.append({"logical": logical, "reason": "官方图片缺失，未使用已知错误图片"})
+            return None
+        url = self._render_image(logical, raw)
+        if url:
+            # Copy reused entries so the previous manifest remains an immutable input.
+            self.entries[logical] = {**self.entries[logical],
+                                     "sourceKind": "official-baseline", "sourceRoot": root,
+                                     "officialTail": baseline.official_tail}
+        return url
+
+    def _render_image(self, logical: str, raw: bytes) -> str | None:
         previous = self._reuse(logical, raw)
         if previous:
             return previous
