@@ -48,12 +48,14 @@ test('offline and unconfigured sites never claim successful administrator authen
   const disabled=setup(()=>response({enabled:false})); await disabled.start();
   assert.equal(disabled.calls.length,1); assert.match(disabled.host.textContent,/暂未启用社区/);
   assert.equal(disabled.host.all((n)=>n.tag==='form').length,0);
+  assert.equal(one(disabled.host,'admin-controls').hidden,false);
 });
 test('authentication-required state links to server login and cannot accept a supplied email',async()=>{
   const x=setup((url)=>response(url.endsWith('/config')?{enabled:true,development:true}:
     {error:'admin_auth_required',message:'login'},url.endsWith('/config')?200:401));
   await x.start();
   assert.equal(x.host.all((n)=>n.tag==='a'&&n.textContent==='登录管理员')[0].href,'/api/community/admin/login');
+  assert.equal(one(x.host,'admin-controls').hidden,false);
   assert.equal(x.host.all((n)=>n.tag==='input').length,0);
   assert.equal(button(x.host,'本机测试：登录测试管理员'),undefined);
 });

@@ -24,15 +24,16 @@
   window.WFCommunityAdmin = {createApi};
   window.renderWikiCommunityAdmin = async function renderWikiCommunityAdmin(host, data, ui) {
     const {el} = ui, C = window.WFCommunity;
-    const request = createApi(window.fetch.bind(window), window.location.protocol);
+    const fallback = createApi(window.fetch.bind(window), window.location.protocol);
+    const request = (path, body, method = body ? 'PATCH' : 'GET') => C.client ? C.client.request(path, body, method) : fallback(path, body, method);
     const page = el('section', 'community-admin'), header = el('header', 'admin-header');
     const home = el('a', 'back-button', '‹ 返回配队社区'); home.href = '#community';
     const create = el('a', 'primary-button', '在编队模拟创建'); create.href = '#team';
     header.append(el('h1', '', '推荐配队管理'), home, create);
     const notice = el('p', 'admin-notice', '正在验证管理员身份…'); notice.setAttribute('role', 'status');
-    const account = el('p', 'admin-account'), controls = el('div', 'admin-controls');
+    const account = el('p', 'admin-account'), authHost = el('div', 'admin-auth'), controls = el('div', 'admin-controls');
     const layout = el('div', 'admin-layout'), listHost = el('div', 'admin-list'), editorHost = el('div', 'admin-editor');
-    editorHost.hidden = true; layout.append(listHost, editorHost); page.append(header, account, notice, controls, layout);
+    editorHost.hidden = true; layout.append(listHost, editorHost); page.append(header, account, authHost, notice, controls, layout);
     host.replaceChildren(page);
     let config, serial = 0, nextCursor = '', statusFilter, more;
     const characters = new Map((data.characters || []).map((c) => [c.id, c]));
@@ -149,15 +150,23 @@
       } finally {if (ticket === serial) more.disabled = false;}
     }
     async function start() {
+      serial++; account.textContent = ''; controls.replaceChildren(); listHost.replaceChildren(); editorHost.replaceChildren();
+      create.hidden = true; controls.hidden = true; layout.hidden = true; notice.textContent = '正在验证管理员身份…';
       try {
         config = await request('/config');
         if (!config.enabled) throw new Error('此站暂未启用社区，管理员功能不可用。');
-        const identity = await request('/admin/me');
         if (!page.isConnected) return;
+        if (config.authMode === 'password' && !window.WFCommunityAuth) throw new Error('登录模块未加载，请刷新页面后重试。');
+        const identity = config.authMode === 'password' ? await window.WFCommunityAuth.ensure(authHost, config, ui, start) : await request('/admin/me');
+        if (!page.isConnected) return;
+        if (!identity) {notice.textContent = ''; return;}
         if (!identity.id || !identity.email) throw new Error('未取得有效管理员身份，请重新登录。');
-        account.textContent = `${config.development === true ? '本机测试身份 · ' : '已验证管理员 · '}${identity.email}`;
+        const prefix = config.authMode === 'password' ? (config.development ? '本机账号' : '已登录') : (config.development ? '本机测试身份' : '已验证管理员');
+        account.textContent = `${prefix} · ${identity.email}${identity.role === 'owner' ? ' · 站长' : identity.role === 'deputy' ? ' · 副站长' : ''}`;
+        if (config.authMode === 'password') window.WFCommunityAuth.controls(authHost, identity, ui, start);
         await window.WFWikiData?.loadEquipment();
         if (!page.isConnected) return;
+        create.hidden = false; controls.hidden = false; layout.hidden = false;
         statusFilter = select([['approved','公开'],['hidden','已隐藏'],['','全部']], 'approved');
         statusFilter.addEventListener('change', () => load(false));
         more = button('继续加载 / 重试', () => load(true)); more.hidden = true;
@@ -166,8 +175,8 @@
       } catch (error) {
         if (!page.isConnected) return;
         notice.textContent = error.code === 'admin_auth_required' ? '请使用获授权的管理员账号登录。' : C.message(error);
-        controls.replaceChildren();
-        if (error.code === 'admin_auth_required') {
+        controls.replaceChildren(); controls.hidden = false;
+        if (error.code === 'admin_auth_required' && config?.authMode !== 'password') {
           const login = el('a', 'primary-button', '登录管理员'); login.href = '/api/community/admin/login'; controls.append(login);
           if (config?.development === true && ['localhost','127.0.0.1','[::1]'].includes(window.location.hostname)) {
             const dev = button('本机测试：登录测试管理员', async () => {
