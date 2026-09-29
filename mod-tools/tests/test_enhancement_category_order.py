@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-"""装备强化商店类目横幅顺序（wf_enhancement_category_order）：诅咒(6) → 深渊(5) → 官方 1–4。
+"""装备强化商店类目横幅顺序（wf_enhancement_category_order）：诅咒(6) → 深渊(5) → 羁绊(7) → 官方 1–4。
 
 作者 0928：强化商店「诅咒武器·觉醒」「深渊武装·觉醒」排在官方类目前面；c1 display_order 6 → -2、5 → -1，
-官方 1–4 不动。live 只读；另跑诅咒武器生成器（夹具 reader）确认它自己出的类目行 c1 也是 -2（重新暂存不会冲回 6）。
+官方 1–4 不动。0929 起「羁绊武器·觉醒」（键 7，c1 = 0，由羁绊生成器新增）排在深渊之后、官方之前；它发布前 live 里没有这一行，
+本模块跳过它（OPTIONAL），发布后照常核对。live 只读；另跑诅咒武器生成器（夹具 reader）确认它自己出的类目行 c1 也是 -2（重新暂存不会冲回 6）。
 """
 from __future__ import annotations
 
@@ -16,6 +17,7 @@ if str(TOOLS) not in sys.path:
     sys.path.insert(0, str(TOOLS))
 
 import wf_abyss_weapon_category as abyss  # noqa: E402
+import wf_bond_weapon_enhance as bond  # noqa: E402
 import wf_cursed_weapons as W  # noqa: E402
 import wf_enhancement_category_order as CO  # noqa: E402
 
@@ -31,11 +33,19 @@ def official_rows() -> dict[str, list[str]]:
             for k, sid in ids.items()}
 
 
+def with_bond(rows: dict[str, list[str]], order: str = bond.CATEGORY_ORDER) -> dict[str, list[str]]:
+    """加上羁绊类目行（发布后的 live 形状：c1 已是 0）。"""
+    return {**rows, "7": ["bond_weapon", order, "(None)", "羁绊武器·觉醒", "dynamic/equipment_enhancement/bond_weapon_banner",
+                          "dynamic/equipment_enhancement/bond_weapon_header", "how", "how2", "2000-01-01 00:00:00", "(None)"]}
+
+
 class CategoryOrderTests(unittest.TestCase):
     def test_constants(self):
         self.assertEqual(("6", "-2"), (W.ENH_CATEGORY_KEY, W.ENH_CATEGORY_DISPLAY_ORDER))
         self.assertEqual(("5", "-1"), (abyss.NEW_KEY, abyss.DISPLAY_ORDER))
-        self.assertEqual(("6", "5", "1", "2", "3", "4"), CO.EXPECTED_SEQUENCE)
+        self.assertEqual(("7", "0"), (bond.CATEGORY_KEY, bond.CATEGORY_ORDER))
+        self.assertEqual(("6", "5", "7", "1", "2", "3", "4"), CO.EXPECTED_SEQUENCE)
+        self.assertEqual({"7"}, set(CO.OPTIONAL))
 
     def test_only_c1_of_the_two_own_rows_changes(self):
         live = official_rows()
@@ -47,6 +57,32 @@ class CategoryOrderTests(unittest.TestCase):
             self.assertEqual([CO.ORDER_COL], diff)
             self.assertEqual(len(live[key]), len(row))
         self.assertEqual(("-2", "-1"), (upsert["6"][1], upsert["5"][1]))
+
+    def test_bond_row_optional_until_published(self):
+        """live 还没有键 7（羁绊发布前）：不算错、不改序、顺序按现有行核对；有了之后 c1 = 0 即到位。"""
+        upsert, problems = CO.target_rows(official_rows())
+        self.assertEqual(([], {"5", "6"}), (problems, set(upsert)))
+        live = with_bond(official_rows())
+        upsert, problems = CO.target_rows(live)
+        self.assertEqual(([], {"5", "6"}), (problems, set(upsert)))
+        staged = {**live, **upsert}
+        self.assertEqual(CO.EXPECTED_SEQUENCE, tuple(sorted(staged, key=lambda k: int(staged[k][1]))))
+        again, problems = CO.target_rows(staged)
+        self.assertEqual(({}, []), (again, problems))
+
+    def test_bond_row_guards(self):
+        live = with_bond(official_rows(), order="1")                        # 与官方类目 1 撞值：排序无兜底
+        self.assertTrue(any("重复" in p for p in CO.target_rows(live)[1]))
+        live = with_bond(official_rows(), order="9")                        # 有人另改过 c1
+        self.assertTrue(CO.target_rows(live)[1])
+        live = with_bond(official_rows())
+        live["7"][0] = "something_else"                                     # 键 7 不是羁绊类目
+        self.assertTrue(CO.target_rows(live)[1])
+        live = with_bond(official_rows(), order="7")                        # 原值 = 键：改到 0，其余列不动
+        upsert, problems = CO.target_rows(live)
+        self.assertEqual([], problems)
+        self.assertEqual("0", upsert["7"][1])
+        self.assertEqual([1], [i for i, (a, b) in enumerate(zip(live["7"], upsert["7"])) if a != b])
 
     def test_idempotent(self):
         live = official_rows()
@@ -84,9 +120,10 @@ class CategoryOrderTests(unittest.TestCase):
             self.skipTest("本检出没有 live store")
         upsert, problems = CO.target_rows(live)
         self.assertEqual([], problems)
-        self.assertLessEqual(set(upsert), {"5", "6"})
+        self.assertLessEqual(set(upsert), {"5", "6", "7"})
         staged = {**live, **upsert}
-        self.assertEqual(CO.EXPECTED_SEQUENCE, tuple(sorted(staged, key=lambda k: int(staged[k][1]))))
+        expected = tuple(k for k in CO.EXPECTED_SEQUENCE if k in staged)      # 键 7 发布前 live 没有
+        self.assertEqual(expected, tuple(sorted(staged, key=lambda k: int(staged[k][1]))))
         for key in ("1", "2", "3", "4"):
             self.assertEqual(key, staged[key][1])                           # 官方 1–4 不动
 
