@@ -9,7 +9,7 @@
 .detail-badges .theme-tag{margin:0;font-size:10px}
 .detail-layout{display:grid;grid-template-columns:minmax(225px,.8fr) minmax(0,1.45fr);align-items:start;gap:20px}
 .portrait-panel{position:sticky;top:18px;border:10px solid transparent;border-image:var(--frame-window) 17 fill stretch;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 3px 8px #4c69751a}
-.portrait-stage{height:520px;display:flex;align-items:center;justify-content:center;position:relative;background-image:var(--game-detail-bg),linear-gradient(#e2f6ed,#f5f8f8 68%);background-size:cover;background-position:center}
+.portrait-stage{height:520px;display:flex;align-items:center;justify-content:center;position:relative;background:#eef1f2}
 .portrait-stage>img{height:100%;width:100%;object-fit:contain;position:relative;filter:drop-shadow(0 4px 2px #3c6b6a12)}
 .portrait-controls{display:flex;gap:8px;justify-content:center;padding:13px 7px 8px;background:#fff}
 .portrait-controls button{flex:1;padding:8px 12px;border:1px solid #cedade;border-bottom:3px solid #becdd3;border-radius:7px;background:#fff;font-size:11px;color:#6d7c84}
