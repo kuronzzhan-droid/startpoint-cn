@@ -12,7 +12,8 @@
   window.addEventListener('hashchange', update);
   home?.addEventListener('click', () => window.scrollTo({top: 0, behavior: 'instant'}));
   button.addEventListener('click', () => {
-    window.scrollTo({top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'});
+    const staticMotion = window.matchMedia('(max-width: 768px), (hover: none) and (pointer: coarse), (prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({top: 0, behavior: staticMotion ? 'instant' : 'smooth'});
   });
   update();
 })();

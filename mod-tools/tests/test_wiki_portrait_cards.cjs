@@ -26,16 +26,16 @@ class Node extends Target {
 }
 const before=`media/${'a'.repeat(64)}.webp`, after=`media/${'b'.repeat(64)}.webp`;
 const character={id:'119990',code:'private_code',name:'角色甲',portraits:[{label:'觉醒前',url:before},{label:'觉醒后',url:after}]};
-function setup({fine=true,reduced=false}={}) {
-  const window=new Target(),document=new Target(),fineMedia=new Target(),reduceMedia=new Target(),frames=new Map();
-  document.hidden=false;fineMedia.matches=fine;reduceMedia.matches=reduced;
-  window.matchMedia=(query)=>query.includes('reduced')?reduceMedia:fineMedia;
+function setup({fine=true,reduced=false,narrow=false}={}) {
+  const window=new Target(),document=new Target(),fineMedia=new Target(),reduceMedia=new Target(),narrowMedia=new Target(),frames=new Map();
+  document.hidden=false;fineMedia.matches=fine;reduceMedia.matches=reduced;narrowMedia.matches=narrow;
+  window.matchMedia=(query)=>query.includes('reduced')?reduceMedia:query.includes('max-width')?narrowMedia:fineMedia;
   let next=1,created=0;window.requestAnimationFrame=(callback)=>{const id=next++;frames.set(id,callback);return id;};
   window.cancelAnimationFrame=(id)=>frames.delete(id);
   const ui={el:(...args)=>{created++;return new Node(...args);}};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki/portrait-cards.js'),'utf8'),{window,document});
   const api=window.WFPortraitCards.create({ui});
-  return {api,window,document,fineMedia,reduceMedia,frames,created:()=>created,
+  return {api,window,document,fineMedia,reduceMedia,narrowMedia,frames,created:()=>created,
     flush:()=>{const pending=[...frames.values()];frames.clear();pending.forEach((callback)=>callback());}};
 }
 const mouse=(card,x=110,y=220,type='pointermove')=>card.fire(type,{pointerType:'mouse',clientX:x,clientY:y});
@@ -102,7 +102,7 @@ test('only one card tilts and page lifecycle events stop work without changing a
 test('destroy removes old bindings and RAF, then the same controller can attach fresh cards normally',()=>{
   const x=setup(),old=new Node('a');x.api.attach(old);x.api.attach(old);assert.equal(old.listeners(),5);mouse(old);
   assert.equal(x.frames.size,1);x.api.destroy();assert.equal(x.frames.size,0);assert.equal(old.listeners(),0);
-  assert.equal(x.window.listeners()+x.document.listeners()+x.fineMedia.listeners()+x.reduceMedia.listeners(),0);
+  assert.equal(x.window.listeners()+x.document.listeners()+x.fineMedia.listeners()+x.reduceMedia.listeners()+x.narrowMedia.listeners(),0);
   const fresh=new Node('a');x.api.attach(fresh);mouse(old);assert.equal(x.frames.size,0);mouse(fresh);x.flush();assert.ok(fresh.style.values.size);
   fresh.isConnected=false;mouse(fresh);x.flush();assert.equal(fresh.style.values.size,0);assert.equal(x.frames.size,0);
   x.api.destroy();x.api.destroy();assert.equal(fresh.listeners(),0);
@@ -123,4 +123,28 @@ test('idle cards and portraits have no 3D or translated transform outside an act
   transforms.forEach(([,selector])=>assert.match(selector,/\.portrait-card-active/));
   assert.match(css,/#catalog-view \.portrait-card\{[^}]*transform:none/);
   assert.match(css,/\.portrait-card-media>\.portrait-card-image\{[^}]*transform:none/);
+});
+
+test('narrow screens default to static even with a mouse; width changes clear both rendered tilt and pending frames',()=>{
+  const x=setup({narrow:true}),card=new Node('a');x.api.attach(card);mouse(card);
+  assert.equal(x.frames.size,0);assert.equal(card.reads,0);assert.equal(card.style.values.size,0);
+  x.narrowMedia.matches=false;x.narrowMedia.fire('change');assert.equal(x.frames.size,0);
+  mouse(card);x.flush();assert.ok(card.style.values.size);assert.equal(card.classList.contains('portrait-card-active'),true);
+  x.narrowMedia.matches=true;x.narrowMedia.fire('change');assert.equal(card.style.values.size,0);assert.equal(card.classList.contains('portrait-card-active'),false);
+  mouse(card);assert.equal(x.frames.size,0);
+  x.narrowMedia.matches=false;x.narrowMedia.fire('change');mouse(card);assert.equal(x.frames.size,1);
+  x.narrowMedia.matches=true;x.narrowMedia.fire('change');assert.equal(x.frames.size,0);x.flush();assert.equal(card.style.values.size,0);
+  x.api.destroy();assert.equal(x.narrowMedia.listeners(),0);
+});
+
+test('mobile styles disable UI animation, transitions and smooth scrolling while preserving media and static transforms',()=>{
+  const css=fs.readFileSync(path.join(__dirname,'../wiki/mobile-motion.css'),'utf8');
+  const rules=css.replace(/\/\*[\s\S]*?\*\//g,'');
+  assert.match(css,/@media\(max-width:768px\)/);
+  assert.match(css,/\*,\*::before,\*::after\{[^}]*animation:none!important;transition:none!important;scroll-behavior:auto!important/);
+  assert.match(css,/\.character-card:hover,#catalog-view \.portrait-card,\.portrait-card \.portrait-card-image\{transform:none!important;will-change:auto!important/);
+  assert.doesNotMatch(rules,/display:none|visibility:hidden|pointer-events|\.pixel|\.voice|audio|img\{/);
+  assert.doesNotMatch(css,/\*::after\{[^}]*transform:/,'functional static layout and expanded-arrow transforms must stay intact');
+  const portraits=fs.readFileSync(path.join(__dirname,'../wiki/portrait-cards.css'),'utf8');
+  assert.match(portraits,/@media\(min-width:769px\) and \(hover:hover\) and \(pointer:fine\) and \(prefers-reduced-motion:no-preference\)/);
 });

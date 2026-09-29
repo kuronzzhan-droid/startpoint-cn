@@ -6,8 +6,10 @@
     const {el} = ui, cards = new Set();
     const fine = window.matchMedia?.('(hover: hover) and (pointer: fine)');
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    const narrow = window.matchMedia?.('(max-width: 768px)');
     let active = null, frame = 0, watching = false;
-    const enabled = () => fine?.matches === true && reduced?.matches === false && typeof window.requestAnimationFrame === 'function';
+    const enabled = () => fine?.matches === true && reduced?.matches === false && narrow?.matches === false
+      && typeof window.requestAnimationFrame === 'function';
     const properties = ['--portrait-rotate-x','--portrait-rotate-y','--portrait-shift-x','--portrait-shift-y'];
     function reset() {
       if (frame) window.cancelAnimationFrame(frame);
@@ -48,7 +50,7 @@
     function watch(value) {
       if (watching === value) return;
       const method = value ? 'addEventListener' : 'removeEventListener';
-      fine?.[method]?.('change', policyChange); reduced?.[method]?.('change', policyChange);
+      [fine, reduced, narrow].forEach((media) => media?.[method]?.('change', policyChange));
       window[method]('scroll', reset, true); window[method]('resize', reset); window[method]('hashchange', reset);
       document[method]('visibilitychange', visibility); watching = value;
     }
