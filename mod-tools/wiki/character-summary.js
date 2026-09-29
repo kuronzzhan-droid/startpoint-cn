@@ -1,11 +1,11 @@
-/* Lightweight overview: no portrait, voice player or full numeric table is created. */
+/* Lightweight overview; full portraits, voices and remaining numeric effects load on demand. */
 window.renderWikiCharacterSummary = function renderWikiCharacterSummary(host, character, meta, ui, options) {
   'use strict';
   options = options || {};
   const {el, list, object, text, picture, nativeIcon, elementBadge, rarityBadge, formatNumber} = ui;
   let effectMode = 'max';
   const effectViews = [];
-  const projectEffect = (entry, kind = 'effect') => window.WFCharacterLevels?.projectEntry(entry, effectMode, {kind, includeNumeric: false}) || entry;
+  const projectEffect = (entry, kind = 'effect') => window.WFCharacterLevels?.projectEntry(entry, effectMode, {kind, includeNumeric: kind === 'skill'}) || entry;
   const root = el('section', 'character-summary');
   root.dataset.element = ({火:'fire', 水:'water', 雷:'thunder', 风:'wind', 光:'light', 暗:'dark'})[character.element] || 'other';
   root.setAttribute('aria-label', `${text(character.name, '角色')}概览`);
@@ -79,7 +79,8 @@ window.renderWikiCharacterSummary = function renderWikiCharacterSummary(host, ch
     host.querySelectorAll('.ability-effect-disclosure').forEach((detail) => {detail.open = false;});
   }
   const skillSection = section('技能', 'summary-skill');
-  const skills = list(character.skills).filter((skill) => skill && (skill.name || skill.description || skill.gauge != null));
+  const skills = list(character.skills).filter((skill) => skill && (skill.name || skill.description || skill.gauge != null
+    || list(skill.numericDetails?.rows).length || list(skill.relatedPrograms).some((program) => list(program?.numericDetails?.rows).length)));
   const skillChoices = el('div', 'summary-skill-choices'); skillChoices.setAttribute('role', 'group'); skillChoices.setAttribute('aria-label', '技能形态');
   const skillBody = el('div', 'summary-skill-body');
   const skillLabel = (skill) => text(skill.label, `${skill.kind === 'switched' ? '切换后技能 · ' : ''}${({1:'普通技能',2:'进化技能',3:'二次进化技能'})[skill.level] || '主动技能'}`);
@@ -106,6 +107,7 @@ window.renderWikiCharacterSummary = function renderWikiCharacterSummary(host, ch
       nodes.push(el('p', 'summary-switch-note', `切换条件：${character.switch.label}${character.switch.conditionName ? ` · ${character.switch.conditionName}` : ''}`));
     }
     skillBody.replaceChildren(...nodes);
+    window.renderWikiSkillSummaryNumeric?.(skillBody, skill, ui);
   }
   if (skills.length) {skillSection.append(skillChoices, skillBody); showSkill(chosen);}
   else skillSection.append(el('p', 'summary-copy', '当前资料中没有可展示的主动技能。'));
