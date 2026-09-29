@@ -16,10 +16,10 @@
     if (panel) panel.open = true;
     search.focus();
   }
-  function create({characters, ui, idPrefix, onChange = () => {}, onStateChange = () => {}, onReset, initialState = {}}) {
+  function create({characters, ui, idPrefix, onChange = () => {}, onStateChange = () => {}, onReset, initialState = {}, collapsible = true}) {
     const {el, nativeIcon} = ui;
     const state = Object.fromEntries(['search', ...fields].map((key) => [key, String(initialState[key] ?? '')]));
-    const root = el('details', 'character-filters'); root.open = true;
+    const root = el(collapsible ? 'details' : 'div', 'character-filters'); root.open = true;
     const heading = el('summary', 'character-filter-heading'); heading.append(el('h3', '', '查找角色'));
     const hint = el('span', 'character-filter-toggle-hint', '收起 ▴'); hint.setAttribute('aria-hidden', 'true');
     heading.append(hint);
@@ -96,7 +96,8 @@
     resetButton.addEventListener('click', () => {reset(false); if (onReset) onReset(); else notify();});
     search.addEventListener('input', () => {state.search = search.value; onStateChange({...state}); clearTimeout(searchTimer); searchTimer = setTimeout(notify, 80);});
     body.append(searchRow, searchStatus, retry, elementRow, choices);
-    root.append(heading, body);
+    if (collapsible) root.append(heading);
+    root.append(body);
     sync();
     if (state.search.trim()) queueMicrotask(notify);
     return {

@@ -112,7 +112,7 @@
         const url = URL.createObjectURL(blob), a = el('a'); a.href = url; a.download = `${name || '队伍'}.json`;
         a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
       }), file);
-    const collect = button('收录配队大全', () => window.WFCommunity.openSubmit({team: S.copy(team), title: name, data, ui}), 'primary-button');
+    const collect = button('管理员保存队伍', () => window.WFCommunity.openSubmit({team: S.copy(team), title: name, data, ui}), 'primary-button');
     collect.hidden = true; controls.append(collect);
     window.WFCommunity?.client?.request('/admin/me').then((identity) => {
       if (identity?.id && identity?.email && controls.isConnected) collect.hidden = false;
@@ -218,7 +218,7 @@
     const equipmentFilters = window.WFTeamEquipmentFilters.create({equipment:[...equipment.values()], ui,
       initialState:equipmentFilterState, onStateChange:(state) => {equipmentFilterState = state;}, onChange:() => paintLibrary()});
     const characterFilters = window.WFCharacterFilters.create({characters: [...characters.values()], ui,
-      idPrefix: 'team-character', initialState: characterFilterState,
+      idPrefix: 'team-character', initialState: characterFilterState, collapsible: false,
       onStateChange: (state) => {characterFilterState = state;}, onChange: () => paintLibrary()});
     const modeSwitch = el('div', 'team-mode-switch'); modeSwitch.setAttribute('role', 'group'); modeSwitch.setAttribute('aria-label', '候选类别');
     function switchMode(mode) {
@@ -243,7 +243,7 @@
       if (!characterMode) equipmentFilters.setMode(chosen.group);
       const items = characterMode ? [...characters.values()].filter(characterFilters.matches)
         : [...equipment.values()].filter(equipmentFilters.matches);
-      if (characterMode) items.sort(window.WFCharacterOrder.compare);
+      if (characterMode) items.sort(window.WFCharacterOrder.compareTeam);
       else items.sort(equipmentCompare);
       candidates.replaceChildren();
       for (const item of items) {
