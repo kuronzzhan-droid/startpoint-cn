@@ -1,9 +1,18 @@
 /* These density settings only affect the character catalogue. */
-.catalog-display-controls{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px 20px;margin-top:9px}
+.catalog-list-toolbar{flex-wrap:wrap;gap:6px 14px;margin:8px 0 4px}
+.catalog-list-toolbar h2{flex:none;letter-spacing:0}
+.catalog-list-toggle{display:flex;align-items:center;gap:6px;min-height:32px;padding:3px 0;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.catalog-list-toggle .inline-count{margin-left:0}
+.catalog-list-hint{font:11px system-ui;color:var(--muted);white-space:nowrap}
+.catalog-list-toggle:focus-visible{outline:3px solid #e6af3a;outline-offset:3px;border-radius:4px}
+.catalog-display-controls{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px 12px;margin-top:0;margin-left:auto}
+.catalog-list-toolbar .sort-control{gap:4px}
+.catalog-list-toolbar .sort-control select{max-width:168px;padding:5px 6px;min-height:30px}
+#catalog-view .filter-status{margin:0 0 10px;font-size:10px}
 .catalog-display-controls>.sort-control{margin-left:0}
 .catalog-layout-group{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0}
-.catalog-layout-label{font-size:12px;color:#63777f;margin-right:2px}
-.catalog-layout-button{min-height:34px;border:1px solid #b9cbd0;border-radius:6px;padding:6px 10px;background:#fff;color:#48616a;font:inherit;font-size:12px;line-height:1.35;white-space:nowrap;cursor:pointer}
+.catalog-layout-label{font-size:11px;color:#63777f;margin-right:0}
+.catalog-layout-button{min-height:30px;border:1px solid #b9cbd0;border-radius:6px;padding:4px 8px;background:#fff;color:#48616a;font:inherit;font-size:11px;line-height:1.35;white-space:nowrap;cursor:pointer}
 .catalog-layout-button:hover{background:#eaf8f5;border-color:#289c91}
 .catalog-layout-button[aria-pressed="true"]{background:#167f75;border-color:#116e66;color:#fff;box-shadow:0 2px 0 #0e5b54;font-weight:700}
 .catalog-layout-button:focus-visible{outline:3px solid #e6af3a;outline-offset:3px}
@@ -14,6 +23,8 @@
 #catalog-view[data-layout="dense"] .character-card{border-radius:5px;border-bottom-width:1px;box-shadow:none}
 #catalog-view[data-layout="dense"] .card-art{border-width:2px;border-radius:4px}
 @media(max-width:640px){
+  .catalog-list-toolbar{margin-top:8px;gap:5px}
+  .catalog-display-controls{justify-content:flex-start;gap:5px 9px;margin-left:0;width:100%}
   .catalog-layout-group{gap:5px}
   .catalog-layout-label{font-size:10px}
   .catalog-layout-button{font-size:11px;padding:6px 8px}

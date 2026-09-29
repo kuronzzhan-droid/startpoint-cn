@@ -87,12 +87,13 @@
   const meta = object(data.meta);
   const characters = list(data.characters).filter((c) => c && typeof c === 'object' && c.id != null);
   const helpers = {el, list, object, text, safeUrl, safeData, disclosure, elementBadge, picture, formatNumber, stars, rarityBadge, nativeIcon, categoryName};
+  let selectedCategory = '';
+  const catalogDisclosure = window.WFCatalogDisclosure.create({catalog: $('catalog-view'), ui: helpers, onToggle: renderCatalog});
   const characterFilters = window.WFCharacterFilters.create({characters, ui: helpers,
-    idPrefix: 'catalog-character', onChange: renderCatalog, onReset: clearFilters});
+    idPrefix: 'catalog-character', onChange: renderCatalog, onStateChange: filterChanged, onReset: clearFilters});
   $('catalog-character-filters').append(characterFilters.element);
   const catalogAvatars = window.WFCatalogAvatars.create({host: $('catalog-avatar-controls'),
     catalog: $('catalog-view'), characters, ui: helpers});
-  let selectedCategory = '';
 
   [['--frame-window', 'frames', 'window'], ['--frame-button', 'frames', 'button'], ['--frame-status', 'frames', 'status'], ['--game-detail-bg', 'backgrounds', 'detail']].forEach(([variable, group, key]) => {
     const url = safeUrl(object(object(meta.uiAssets)[group])[key]);
@@ -182,7 +183,7 @@
     if ($('catalog-view').hidden) return;
     const selected = filteredCharacters();
     const fragment = document.createDocumentFragment();
-    (selectedCategory ? [selectedCategory] : ['全部角色']).forEach((category, index) => {
+    (catalogDisclosure.isOpen() ? selectedCategory ? [selectedCategory] : ['全部角色'] : []).forEach((category, index) => {
       const members = selectedCategory ? selected.filter((character) => categoryName(character) === category) : selected;
       if (!members.length) return;
       const group = el('section', 'catalog-group');
@@ -202,14 +203,19 @@
     $('all-categories').setAttribute('aria-current', selectedCategory ? 'false' : 'page');
     $('result-count').textContent = `${selected.length} / ${characters.length}`;
     const filtered = selectedCategory || characterFilters.hasActiveFilters();
-    $('filter-status').textContent = filtered ? `${selectedCategory || '全部分类'} · 找到 ${selected.length} 位角色` : '选择角色查看详情；原版角色改动单独列出官方与当前版本的差异。';
-    $('empty-state').hidden = selected.length > 0 || characters.length === 0;
+    $('filter-status').textContent = !catalogDisclosure.isOpen() ? '点击角色列表展开，或使用上方筛选查找角色。' : filtered ? `${selectedCategory || '全部分类'} · 找到 ${selected.length} 位角色` : '选择角色查看详情；原版角色改动单独列出官方与当前版本的差异。';
+    $('empty-state').hidden = !catalogDisclosure.isOpen() || selected.length > 0 || characters.length === 0;
     $('load-error').hidden = characters.length > 0;
   }
 
   const route = window.createWikiRouter({data, meta, ui: helpers, renderCatalog});
 
+  function filterChanged(state = characterFilters.getState()) {
+    catalogDisclosure.filterChanged(JSON.stringify([selectedCategory, state]),
+      Boolean(selectedCategory || Object.values(state).some((value) => String(value).trim())));
+  }
   function applyFilters() {
+    filterChanged();
     renderCatalog();
     if (location.hash) location.hash = '';
   }

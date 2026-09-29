@@ -19,10 +19,21 @@
 .character-filter-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .character-filter-field{display:block;min-width:0;font-size:11px;color:#617777}
 .character-filter-field select{width:100%;min-width:0;min-height:32px;padding:5px 6px;border:1px solid #c4d4d4;border-radius:5px;background:#fafcfc;font-size:12px;color:#3c5558}
-.catalog-character-controls{margin-bottom:12px}
+.catalog-character-controls{margin-bottom:6px}
+#catalog-character-filters .character-filter-body{grid-template-columns:minmax(180px,1fr) minmax(260px,1fr);gap:6px 10px}
+#catalog-character-filters .character-filter-search-row{grid-column:1;grid-row:1}
+#catalog-character-filters .character-filter-elements{grid-column:2;grid-row:1}
+#catalog-character-filters .character-filter-fields{grid-column:1 / -1;grid-row:2;max-width:550px}
+#catalog-character-filters .character-filter-help,#catalog-character-filters .character-filter-body>.text-button{grid-column:1 / -1}
+#catalog-character-filters .character-filter-search{max-width:360px}
 .team-library>.character-filters{margin-bottom:7px}.team-library .character-filter-body{padding:7px 8px 8px}
 .team-library .character-filter-element .native-icon{width:18px;height:18px}
 .team-library .character-filter-field select{font-size:11px;padding:5px 3px}
+@media(max-width:900px){
+  #catalog-character-filters .character-filter-body{grid-template-columns:minmax(0,1fr)}
+  #catalog-character-filters .character-filter-search-row,#catalog-character-filters .character-filter-elements,#catalog-character-filters .character-filter-fields{grid-column:1;grid-row:auto;max-width:none}
+  #catalog-character-filters .character-filter-search{max-width:none}
+}
 @media(max-width:640px){
   .character-filter-elements{gap:3px}.character-filter-element{min-height:36px;gap:1px}
   .character-filter-element .native-icon{width:17px;height:17px}

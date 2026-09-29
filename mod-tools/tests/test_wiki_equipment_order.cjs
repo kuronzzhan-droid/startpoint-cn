@@ -36,16 +36,28 @@ class Node {
   all(match) {return this.children.flatMap((node) => [...(match(node) ? [node] : []),...node.all(match)]);}
   fire(name) {this.events[name]?.();}
 }
-test('weapon catalogue preserves category priority and applies rarity/order inside each group and after filters', () => {
+test('weapon groups start unmounted and preserve category/rarity ordering when expanded and filtered', () => {
   const el = (...args) => new Node(...args), host = el('main');
   const window = {WFEquipmentOrder:order,WFWikiReadable:{}};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki/equipment-page.js'),'utf8'),{window});
   window.renderWikiWeaponPage(host,{equipment:entries},{el,picture:(_url, name, cls) => el('img',cls,name)});
   const names = () => host.all((node) => node.tag === 'strong').map((node) => node.textContent);
+  assert.deepEqual(names(), []);
+  assert.ok(host.all((node) => node.className === 'equipment-group').every((node) => node.open === false));
+  host.all((node) => node.tag === 'button' && node.textContent === '全部展开')[0].fire('click');
   assert.deepEqual(names(),['深渊后期五星','深渊早期五星','深渊一星','后期五星','早期五星','近期三星']);
   const rarity = host.all((node) => node.attributes['aria-label'] === '武器星级')[0];
   rarity.value = '5'; rarity.fire('change');
   assert.deepEqual(names(),['深渊后期五星','深渊早期五星','后期五星','早期五星']);
   const category = host.all((node) => node.attributes['aria-label'] === '武器分类')[0];
   category.value = '其他武器'; category.fire('change'); assert.deepEqual(names(),['后期五星','早期五星']);
+});
+
+test('a standalone weapon still opens its detail card immediately', () => {
+  const el = (...args) => new Node(...args), host = el('main'), document = {};
+  const window = {WFEquipmentOrder:order,WFWikiReadable:{}};
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki/equipment-page.js'),'utf8'),{window,document});
+  window.renderWikiWeaponPage(host,{equipment:entries},{el,picture:(_url,name,cls) => el('img',cls,name)},'aaa');
+  const card = host.all((node) => node.className.includes('equipment-card'))[0];
+  assert.equal(card.open,true); assert.match(document.title,/后期五星/);
 });

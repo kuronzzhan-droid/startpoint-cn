@@ -138,7 +138,7 @@
       if (sections.has(category)) return sections.get(category);
       const section = el('details', 'equipment-group'), heading = el('summary', 'equipment-group-heading');
       const total = el('span', 'equipment-group-count'), grid = el('div', 'equipment-grid');
-      section.open = true; heading.title = '点击展开或收起此分类';
+      section.open = false; heading.title = '点击展开或收起此分类';
       heading.append(el('h2', '', category), total); section.append(heading, grid);
       const group = {section, total, members: [], mounted: []};
       group.mount = () => {
