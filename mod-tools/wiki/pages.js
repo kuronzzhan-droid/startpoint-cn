@@ -52,55 +52,68 @@
       if (!items.length) groups.append(el('p', 'equipment-empty', '没有符合条件的武器，请调整分类或搜索词。'));
       items.forEach((entry) => {
         const e = entry.enhancement, stateKey = entry.id || entry.name;
+        const forms = Array.isArray(e?.forms) ? e.forms.filter((form) => form && Number.isFinite(Number(form.level)) && Number(form.level) > 0)
+          .map((form) => ({...form, level: Number(form.level)})).sort((a, b) => a.level - b.level) : [];
+        const stages = forms.length ? forms : e ? [{...e, level: Number(e.maxLevel), label: `强化后 Lv${e.maxLevel}`}] : [];
+        const originalLabel = forms.length ? '原始形态' : '强化前';
         const card = el('details', `equipment-card game-panel${e ? ' equipment-enhanceable' : ''}`);
         const summary = el('summary');
         const title = el('div', 'equipment-card-title'), name = el('strong', '', entry.name);
         title.append(name, el('span', 'muted', `${entry.category} · ${entry.rarity}★`));
         const stateLabel = el('span', 'equipment-current-state');
-        if (e) title.append(el('span', 'equipment-enhance-badge', `可强化 · 最高 Lv${e.maxLevel}`), stateLabel);
+        if (e) title.append(el('span', `equipment-enhance-badge${forms.length ? ' equipment-forms-badge' : ''}`, `可强化 · ${forms.length ? `${forms.length + 1} 种形态 · ` : ''}最高 Lv${e.maxLevel}`), stateLabel);
         let icon = picture(entry.icon, entry.name, 'equipment-icon');
         summary.append(icon, title);
         const body = el('div', 'equipment-state');
         const buttons = [];
-        function renderState(enhanced) {
-          const active = enhanced && e;
-          const shownName = active ? e.name || entry.name : entry.name;
+        function renderState(level) {
+          const active = stages.find((stage) => stage.level === Number(level));
+          const selectedLevel = active?.level || 0;
+          const activeLabel = active?.label || `强化后 Lv${selectedLevel}`;
+          const shownName = active ? active.name || entry.name : entry.name;
           name.textContent = shownName;
           card.setAttribute('data-enhanced', String(Boolean(active)));
-          stateLabel.textContent = active ? `当前：强化后 Lv${e.maxLevel}` : '当前：强化前';
-          const nextIcon = picture(active ? e.icon || entry.icon : entry.icon, shownName, 'equipment-icon');
+          card.setAttribute('data-enhancement-level', String(selectedLevel));
+          stateLabel.textContent = `当前：${active ? activeLabel : originalLabel}`;
+          let nextIcon = picture(active ? active.icon || entry.icon : entry.icon, shownName, 'equipment-icon');
+          if (active?.frame) {
+            const framed = el('span', 'equipment-framed-icon');
+            framed.append(picture(active.frame, '', 'equipment-frame-image'), nextIcon); nextIcon = framed;
+          }
           icon.replaceWith(nextIcon); icon = nextIcon;
-          body.replaceChildren(el('p', '', active ? e.description || entry.description : entry.description));
+          body.replaceChildren(el('p', '', active ? active.description || entry.description : entry.description));
           if (active) {
-            body.append(el('h3', '', `强化后 Lv${e.maxLevel}`), el('p', 'equipment-stat', `满觉醒＋强化合计 ${stats(e.stats?.total)}`));
-            if (e.stats?.additional) body.append(el('p', 'muted', `其中强化追加 ${stats(e.stats.additional)}`));
-            if (e.finalDescription) {body.append(el('h4', '', '强化后完整效果（含本体）'), el('p', '', e.finalDescription));}
+            body.append(el('h3', '', activeLabel), el('p', 'equipment-stat', `满觉醒＋强化合计 ${stats(active.stats?.total)}`));
+            if (forms.length && selectedLevel === 200) body.append(el('p', 'equipment-highest-marker', '最高强化 · Lv200'));
+            if (active.stats?.additional) body.append(el('p', 'muted', `其中强化追加 ${stats(active.stats.additional)}`));
+            if (active.finalDescription) {body.append(el('h4', '', '强化后完整效果（含本体）'), el('p', '', active.finalDescription));}
             effects(body, '本体满觉醒效果（保留）', entry.awakenedEffects);
-            effects(body, `强化 Lv${e.maxLevel} 追加效果`, e.effects);
-            if (e.panelDescription) {body.append(el('h4', '', '强化阶段说明'), el('p', '', e.panelDescription));}
-            if (e.note) body.append(el('p', 'muted', e.note));
+            effects(body, `强化 Lv${selectedLevel} 追加效果`, active.effects);
+            if (active.panelDescription) {body.append(el('h4', '', '强化阶段说明'), el('p', '', active.panelDescription));}
+            if (active.note) body.append(el('p', 'muted', active.note));
           } else {
-            body.append(el('h3', '', e ? '强化前' : '武器面板'), el('p', 'equipment-stat', `初始 ${stats(entry.stats?.base)}\n满觉醒 ${stats(entry.stats?.awakened)}`));
+            body.append(el('h3', '', e ? originalLabel : '武器面板'), el('p', 'equipment-stat', `初始 ${stats(entry.stats?.base)}\n满觉醒 ${stats(entry.stats?.awakened)}`));
             effects(body, '初始效果', entry.baseEffects); effects(body, '满觉醒效果', entry.awakenedEffects);
             if (entry.panelDescription) body.append(el('p', '', entry.panelDescription));
           }
           buttons.forEach(({button, value, label}) => {
-            button.setAttribute('aria-pressed', String(value === Boolean(active)));
-            button.textContent = `${value === Boolean(active) ? '● ' : ''}${label}`;
+            button.setAttribute('aria-pressed', String(value === selectedLevel));
+            button.textContent = `${value === selectedLevel ? '● ' : ''}${label}`;
           });
         }
         if (e) {
-          const toggle = el('div', 'team-controls equipment-toggle');
+          const toggle = el('div', `team-controls equipment-toggle${forms.length ? ' equipment-toggle-forms' : ''}`);
           toggle.setAttribute('role', 'group'); toggle.setAttribute('aria-label', `${entry.name}强化状态`);
-          [[false, '强化前'], [true, `强化后 Lv${e.maxLevel}`]].forEach(([value, label]) => {
+          [[0, originalLabel], ...stages.map((stage) => [stage.level, stage.label || `强化后 Lv${stage.level}`])].forEach(([value, label]) => {
             const button = el('button', 'secondary-button', label); button.type = 'button';
+            button.setAttribute('data-level', String(value));
             button.addEventListener('click', (event) => {event.preventDefault(); event.stopPropagation(); enhancedStates.set(stateKey, value); renderState(value); card.open = true;});
             buttons.push({button, value, label}); toggle.append(button);
           });
           title.append(toggle);
         }
-        card.append(summary, body); renderState(enhancedStates.get(stateKey) || false);
-        if (e?.costs) {const cost = el('details'); cost.append(el('summary', '', '强化材料')); renderReadable(cost, e.costs, ui); card.append(cost);}
+        card.append(summary, body); renderState(enhancedStates.get(stateKey) || 0);
+        if (e?.costs) {const cost = el('details'); cost.append(el('summary', '', forms.length ? `强化材料（0→${e.maxLevel}级完整路线）` : '强化材料')); renderReadable(cost, e.costs, ui); card.append(cost);}
         if (entry.soul?.available) effects(card, '魂珠效果', entry.soul.effects);
         card.append(el('p', 'muted', entry.soul?.note || ''));
         (entry.notes || []).forEach((note) => card.append(el('p', 'weapon-note', note)));

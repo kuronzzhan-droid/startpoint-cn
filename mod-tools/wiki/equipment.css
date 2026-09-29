@@ -10,9 +10,9 @@
 .equipment-group{min-width:0}
 .equipment-group-heading{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:0;padding:10px 14px;border-left:5px solid #edac2c;border-bottom:2px solid #d8e3e3;background:linear-gradient(110deg,#fff8e6,#f2f8f7);cursor:pointer;list-style:none}
 .equipment-group-heading::-webkit-details-marker{display:none}
-.equipment-group-heading::after{content:'▸';margin-left:auto;color:#278c80;font-size:22px}
+.equipment-group-heading::after{content:'展开 ▸';margin-left:auto;color:#278c80;font-size:13px;font-weight:700;white-space:nowrap}
 .equipment-group[open]>.equipment-group-heading{margin-bottom:14px}
-.equipment-group[open]>.equipment-group-heading::after{content:'▾'}
+.equipment-group[open]>.equipment-group-heading::after{content:'收起 ▾'}
 .equipment-group-heading:hover{background:#edf8f3}
 .equipment-group-heading:focus-visible{outline:3px solid #e6af3a;outline-offset:3px}
 .equipment-group-heading h2{margin:0;font-size:21px;color:#344e50}
@@ -26,16 +26,24 @@
 .equipment-card-title{min-width:0}
 .equipment-card-title strong{overflow-wrap:anywhere;line-height:1.45}
 .equipment-group .equipment-icon{width:60px;height:60px;margin-top:3px;border-radius:8px;background:#f3f7f6}
+.equipment-framed-icon{display:block;position:relative;width:60px;height:60px;margin-top:3px}
+.equipment-framed-icon>.equipment-frame-image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.equipment-group .equipment-framed-icon>.equipment-icon{position:absolute;inset:6px;width:48px;height:48px;margin:0;background:transparent;border-radius:0;z-index:1}
 .equipment-card-title .equipment-enhance-badge{display:table;margin-top:8px;padding:3px 7px;border:1px solid #e6c574;border-radius:5px;background:#fff1c6;color:#775515;font-size:11px;font-weight:700}
+.equipment-card-title .equipment-forms-badge{border-color:#d99823;background:#fff0bb;color:#795108}
 .equipment-card-title .equipment-current-state{display:block;margin-top:5px;color:#52726e;font-size:11px}
 .equipment-card[data-enhanced="true"] .equipment-current-state{color:#087b6f;font-weight:700}
 .equipment-card .equipment-toggle{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:9px 0 0}
+.equipment-card .equipment-toggle-forms{grid-template-columns:repeat(3,minmax(0,1fr))}
+.equipment-card .equipment-toggle-forms .secondary-button{min-height:48px}
 .equipment-toggle .secondary-button{min-width:0;min-height:38px;padding:6px 4px;font-size:11px;line-height:1.4;color:#4b6264}
 .equipment-toggle .secondary-button[aria-pressed="true"]{border-color:#21a491;background:#e1f6ee;color:#087968;font-weight:700;box-shadow:inset 0 1px 0 #fff}
+.equipment-toggle-forms .secondary-button[data-level="200"][aria-pressed="true"]{border-color:#d59a25;background:#fff0bf;color:#795006}
 .equipment-toggle .secondary-button:hover{border-color:#1eab9b;background:#f1fbf7}
 .equipment-toggle .secondary-button:focus-visible{outline:3px solid #e6af3a;outline-offset:2px}
 .equipment-state{margin-top:16px;border-top:1px solid #e0e9e7;padding-top:4px}
 .equipment-state .equipment-stat{font-weight:700;border-left:3px solid #28b6a6}
+.equipment-highest-marker{display:inline-block;margin:4px 0 10px;padding:5px 10px;border:1px solid #dba33b;border-radius:5px;background:#fff0bf;color:#795006;font-size:12px;font-weight:800}
 .equipment-empty{padding:35px;text-align:center;border:1px dashed #bbcdd0;border-radius:10px;background:#f8fbfb;color:#52726e}
 @media(max-width:640px){
   .equipment-toolbar{gap:8px;padding:10px}
