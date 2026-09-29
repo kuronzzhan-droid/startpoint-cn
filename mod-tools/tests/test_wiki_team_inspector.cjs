@@ -137,6 +137,25 @@ function teamPage(catalogue = data) {
   return {window,host,inspected,remembered,stored,render:() => window.renderWikiTeam(host,catalogue,ui)};
 }
 
+test('team help starts folded and the title beside the plate survives edits, undo and saving',async()=>{
+  const x=teamPage();x.window.WFTeamImport.load(plate,'原队伍名');x.render();
+  const help=x.host.querySelector('.team-help'),heading=x.host.querySelector('.team-board-heading');
+  assert.equal(help.tag,'details');assert.equal(help.open,false);
+  assert.equal(help.children[0].tag,'summary');assert.equal(help.children[0].querySelector('h1').textContent,'配队模拟');
+  assert.match(help.textContent,/拖拽头像.*本页不模拟战斗/s);
+  const title=one(x.host,'队伍名称');assert.equal(title.parent,heading);
+  assert.equal(heading.children[0].textContent,'队伍编成');assert.equal(title.value,'原队伍名');
+  assert.equal(x.host.querySelector('.team-toolbar').querySelectorAll('input').filter(n=>!n.hidden).length,0);
+  title.value='手机新队伍';await title.fire('input');
+  await one(x.host,'替换2号主位').fire('click');await one(x.host,'选择角色d').fire('click');
+  await button(x.host,'撤销').fire('click');
+  assert.equal(one(x.host,'队伍名称'),title);assert.equal(title.value,'手机新队伍');
+  await button(x.host,'保存队伍').fire('click');
+  const saved=JSON.parse(x.stored.get('wf-wiki-teams-v1'))[0];assert.equal(saved.name,'手机新队伍');assert.deepEqual(saved.team,plate);
+  x.render();assert.equal(one(x.host,'队伍名称').value,'手机新队伍');
+  assert.equal(x.host.querySelector('.team-help').open,false);
+});
+
 test('unchanged full-roster candidates are reused across slots and still assign to the latest target',async()=>{
   const catalogue={...data,characters:Array.from({length:572},(_,index)=>({...data.characters[0],id:`c${index}`,name:`角色${index}`}))};
   const x=teamPage(catalogue);x.render();const pool=x.host.querySelector('.team-candidates');

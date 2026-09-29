@@ -49,14 +49,15 @@
     const board = el('div', 'team-board game-panel');
     const preview = el('section', 'team-preview game-panel');
     const library = el('section', 'team-library game-panel');
-    const controls = el('div', 'team-controls');
+    const controls = el('div', 'team-controls team-toolbar'); controls.setAttribute('aria-label', '队伍操作');
     const status = el('p', 'team-status'); status.setAttribute('role', 'status');
     const avatarControls = el('div', 'team-avatar-controls');
     const avatars = window.WFCatalogAvatars?.create({host: avatarControls, catalog: host,
       characters: data.characters, ui, label: '编队头像'});
     const inspector = window.WFTeamInspector?.create(data, ui, avatars);
-    const title = el('input'); title.value = name; title.maxLength = 60; title.setAttribute('aria-label', '队伍名称');
+    const title = el('input', 'team-name-input'); title.value = name; title.maxLength = 60; title.setAttribute('aria-label', '队伍名称');
     title.addEventListener('input', () => {name = title.value;});
+    const boardHeading = el('div', 'team-board-heading'); boardHeading.append(el('h2', '', '队伍编成'), title);
     function button(label, action, className = 'secondary-button') {
       const b = el('button', className, label); b.type = 'button'; b.addEventListener('click', action); return b;
     }
@@ -103,7 +104,7 @@
       } catch {status.textContent = '请选择本站导出的队伍 JSON 文件。';}
       file.value = '';
     });
-    controls.append(title, button('保存队伍', save, 'primary-button'), picker,
+    controls.append(button('保存队伍', save, 'primary-button'), picker,
       button('撤销', () => {if (undo.length) {redo.push(S.copy(team)); team = undo.pop(); paintBoard();}}),
       button('重做', () => {if (redo.length) {undo.push(S.copy(team)); team = redo.pop(); paintBoard();}}),
       button('清空队伍', () => change(S.empty())), button('导入队伍', () => file.click()),
@@ -120,7 +121,7 @@
     const recommendations = el('a', 'text-button', '查看配队大全'); recommendations.href = '#community'; controls.append(recommendations);
     controls.append(avatarControls);
     function paintBoard() {
-      board.replaceChildren(el('h2', '', '队伍编成'));
+      board.replaceChildren(boardHeading);
       const grid = el('div', 'team-columns');
       for (let index = 0; index < 3; index++) {
         const column = el('div', 'team-column'); column.setAttribute('role', 'group'); column.setAttribute('aria-label', `${index + 1}号位`);
@@ -278,8 +279,11 @@
     }
     const mainColumn = el('div', 'team-main'); mainColumn.append(board, preview);
     const layout = el('div', 'team-layout'); if (inspector) layout.append(inspector.element); layout.append(mainColumn, library);
-    host.replaceChildren(el('h1', '', '配队模拟'), el('p', 'section-intro', '拖拽头像到槽位，或点空位／「换」后选择候选。点击盘中的角色头像，在角色面板查看技能与能力；第一列主位为队长。'),
-      controls, status, layout, el('p', 'muted', '用于编成与查阅效果；主位限制、触发条件和武器特殊规则请结合说明判断。本页不模拟战斗过程或计算实战伤害。'));
+    const help = el('details', 'team-help'); help.open = false;
+    const helpTitle = el('summary'); helpTitle.append(el('h1', '', '配队模拟'));
+    help.append(helpTitle, el('p', 'section-intro', '拖拽头像到槽位，或点空位／「换」后选择候选。点击盘中的角色头像，在角色面板查看技能与能力；第一列主位为队长。'),
+      el('p', 'muted', '用于编成与查阅效果；主位限制、触发条件和武器特殊规则请结合说明判断。本页不模拟战斗过程或计算实战伤害。'));
+    host.replaceChildren(help, controls, status, layout);
     refreshSaved(); paintBoard(); paintLibrary(); arrangePanels();
   };
 })();
