@@ -99,12 +99,14 @@
     if (collapsible) root.append(heading);
     root.append(body);
     sync();
+    window.WFWikiAliases?.watch(root, () => onChange({...state}));
     if (state.search.trim()) queueMicrotask(notify);
     return {
       element: root, search,
       matches(character) {
         return fields.every((key) => !state[key] || String(character[key] ?? '') === state[key])
-          && normalized(state.search).trim().split(/\s+/).filter(Boolean).every((term) => searchText(character).includes(term));
+          && normalized(state.search).trim().split(/\s+/).filter(Boolean).every((term) =>
+            `${searchText(character)} ${normalized((window.WFWikiAliases?.values('character', character.id) || []).join(' '))}`.includes(term));
       },
       hasActiveFilters: () => Object.values(state).some((value) => value.trim()),
       getState: () => ({...state}),

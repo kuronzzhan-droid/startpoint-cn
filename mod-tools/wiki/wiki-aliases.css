@@ -1,0 +1,8 @@
+.wiki-aliases{margin:8px 0;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel,#fff);font-size:13px}
+.wiki-aliases-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.wiki-aliases-values{margin:5px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.wiki-aliases-status{font-size:12px;color:var(--muted);margin:6px 0}.wiki-aliases-status:empty{display:none}
+.wiki-aliases-form{display:grid;gap:8px;margin-top:8px}.wiki-aliases-form label{display:grid;gap:6px}
+.wiki-aliases-form textarea{width:100%;box-sizing:border-box;resize:vertical;padding:8px;border:1px solid var(--line);border-radius:6px;color:inherit;background:var(--panel,#fff);font:inherit}
+.wiki-aliases-actions{display:flex;gap:8px}.wiki-aliases-form small{color:var(--muted)}
+[data-theme="dark"] .wiki-aliases,[data-theme="dark"] .wiki-aliases-form textarea{background:#192a31}

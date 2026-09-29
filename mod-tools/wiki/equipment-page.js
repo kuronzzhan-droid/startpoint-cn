@@ -157,7 +157,8 @@
       const q = search.value.trim().toLowerCase();
       const items = entries.filter((entry) => (!filter.value || entry.category === filter.value) &&
         (!rarityFilter.value || String(entry.rarity) === rarityFilter.value) &&
-        (!enhancementFilter.value || Boolean(entry.enhancement) === (enhancementFilter.value === 'yes')) && searchText.get(entry).includes(q));
+        (!enhancementFilter.value || Boolean(entry.enhancement) === (enhancementFilter.value === 'yes')) &&
+        `${searchText.get(entry)} ${(window.WFWikiAliases?.values('weapon', entry.id) || []).join(' ').toLowerCase()}`.includes(q));
       count.textContent = `共 ${items.length} 件武器 · ${items.filter((entry) => entry.enhancement).length} 件可强化`;
       const grouped = new Map();
       items.forEach((entry) => {if (!grouped.has(entry.category)) grouped.set(entry.category, []); grouped.get(entry.category).push(entry);});
@@ -178,7 +179,7 @@
       if (!entries.length) {host.append(el('p', 'note-box', '未找到这件武器。')); return;}
       const entry = entries[0], card = weaponCard(entry); card.open = true;
       document.title = `${entry.name} · 星见图鉴`;
-      host.append(el('h1', '', entry.name), card); return;
+      host.append(el('h1', '', entry.name)); window.WFWikiAliases?.mount(host, 'weapon', entry.id, ui); host.append(card); return;
     }
     const toolbar = el('div', 'team-controls equipment-toolbar'); toolbar.append(search, filter, rarityFilter, enhancementFilter);
     const groupControls = el('div', 'team-controls equipment-group-controls');
@@ -194,5 +195,6 @@
     const resultBar = el('div', 'equipment-result-bar'); resultBar.append(count, groupControls);
     host.replaceChildren(el('h1', '', '武器图鉴'), el('p', 'section-intro', '点击分类标题可展开或收起，深渊、诅咒武器置顶。各类内按星级由高到低，同星级按图鉴顺序倒序。带「可强化」标识的武器可切换强化前后，查看对应名称、图标、面板与效果；魂珠和材料独立列出。'), toolbar, resultBar, groups);
     paint();
+    window.WFWikiAliases?.watch(host, paint);
   };
 })();

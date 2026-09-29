@@ -18,8 +18,8 @@ const equipment = [
   {id:'universal',name:'水色之剑',element:'通用/未分类',rarity:5,soul:{available:true}},
   {id:'unknown',name:'火之未知',rarity:3,soul:{available:true}},
 ];
-function fixture(initialState) {
-  const window = {}, updates = [];
+function fixture(initialState, aliases = {}) {
+  const window = {WFWikiAliases: {values: (_kind, id) => aliases[id] || [], watch() {}}}, updates = [];
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki/team-equipment-filters.js'),'utf8'),{window});
   const control = window.WFTeamEquipmentFilters.create({equipment,initialState,ui:{el:(...args) => new Node(...args)},onStateChange:(state) => updates.push(state)});
   const find = (label) => control.element.all((node) => node.attributes['aria-label'] === label)[0];
@@ -47,4 +47,10 @@ test('reset changes only the current picker and invalid restored filters cannot 
   x.control.element.all((node) => node.tag === 'button' && node.ownText === '重置筛选')[0].fire('click');
   assert.equal(x.ids().length,4); assert.equal(x.updates.at(-1).soul.element,'');
   x.control.setMode('weapon'); assert.equal(x.ids().length,5);
+});
+test('administrator nicknames participate in both equipment pickers and clearing them removes search matches', () => {
+  const aliases = {fire:['火神剑']};
+  const x = fixture({weapon:{search:'火神剑'},soul:{search:'火神剑'}},aliases);
+  assert.deepEqual(x.ids(),['fire']);x.control.setMode('soul');assert.deepEqual(x.ids(),['fire']);
+  aliases.fire=[];assert.deepEqual(x.ids(),[]);
 });

@@ -48,7 +48,8 @@
         const name = (entry) => [entry.name,entry.theme || entry.title,entry.element,entry.rarity && `${entry.rarity}星`].filter(Boolean).join(' · ');
         function choices() {
           const term = search.value.trim().toLocaleLowerCase();
-          const matches = (source || []).filter((entry) => `${name(entry)} ${(entry.aliases || []).join(' ')}`.toLocaleLowerCase().includes(term));
+          const kind = group === 'main' || group === 'unison' ? 'character' : 'weapon';
+          const matches = (source || []).filter((entry) => `${name(entry)} ${(entry.aliases || []).join(' ')} ${(window.WFWikiAliases?.values(kind, entry.id) || []).join(' ')}`.toLocaleLowerCase().includes(term));
           const shown = matches.slice(0,60), id = team[group][index], current = (source || []).find((entry) => entry.id === id);
           if (current && !shown.includes(current)) shown.unshift(current);
           choice.replaceChildren(); const empty = el('option', '', '未选择'); empty.value = ''; choice.append(empty);

@@ -51,6 +51,7 @@
       rarity.addEventListener('change', () => {states[mode].rarity = rarity.value; notify();});
       reset.addEventListener('click', () => {states[mode] = {search:'',element:'',rarity:''}; sync(); notify();});
       root.append(searchRow, row, controls); sync();
+      window.WFWikiAliases?.watch(root, onChange);
       return {
         element: root, getState,
         setMode(value) {mode = value === 'soul' ? 'soul' : 'weapon'; sync();},
@@ -59,7 +60,7 @@
           return (mode !== 'soul' || item.soul?.available === true)
             && (!state.element || elementOf(item) === state.element)
             && (!state.rarity || String(item.rarity ?? '') === state.rarity)
-            && terms.every((term) => normalized(`${item.name} ${(item.aliases || []).join(' ')} ${item.category || ''}`).includes(term));
+            && terms.every((term) => normalized(`${item.name} ${(item.aliases || []).join(' ')} ${item.category || ''} ${(window.WFWikiAliases?.values('weapon', item.id) || []).join(' ')}`).includes(term));
         },
       };
     },

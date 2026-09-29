@@ -23,6 +23,7 @@ window.renderWikiCharacter = function renderWikiCharacter(container, character, 
   list(character.themes || (character.theme ? [character.theme] : [])).forEach((theme) => badges.append(el('span', 'theme-tag', theme)));
   heading.append(identity, badges);
   fragment.append(heading);
+  window.WFWikiAliases?.mount(fragment, 'character', character.id, ui);
 
   function paragraph(value, className = 'description') { return el('p', className, value); }
   function note(value) { return el('div', 'note-box', value); }
