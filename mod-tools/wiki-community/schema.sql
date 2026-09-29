@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS community_teams (
   title TEXT NOT NULL, notes TEXT NOT NULL, author TEXT NOT NULL,
   team_json TEXT NOT NULL, element TEXT NOT NULL, damage_mask INTEGER NOT NULL,
   category TEXT NOT NULL DEFAULT '' CHECK (category IN ('','萌新启航','原版毕业队','MOD毕业队','最新最潮盘','玩具盘')),
+  section TEXT NOT NULL DEFAULT '' CHECK (section IN ('','abyss','fantasy','five-boss')),
   status TEXT NOT NULL CHECK (status IN ('approved','pending','hidden')),
   created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
   likes INTEGER NOT NULL DEFAULT 0 CHECK (likes >= 0),
@@ -14,6 +15,7 @@ CREATE INDEX IF NOT EXISTS community_teams_latest ON community_teams(status,crea
 CREATE INDEX IF NOT EXISTS community_teams_popular ON community_teams(status,likes DESC,created_at DESC,id);
 CREATE INDEX IF NOT EXISTS community_teams_element ON community_teams(status,element,created_at DESC,id);
 CREATE INDEX IF NOT EXISTS community_teams_category ON community_teams(status,category,created_at DESC,id);
+CREATE INDEX IF NOT EXISTS community_teams_section ON community_teams(status,section,created_at DESC,id);
 CREATE TABLE IF NOT EXISTS community_likes (
   team_id TEXT NOT NULL REFERENCES community_teams(id),
   visitor_id TEXT NOT NULL, day TEXT NOT NULL, created_at INTEGER NOT NULL,

@@ -1,5 +1,5 @@
 import catalog from './catalog.mjs';
-import {ApiError, DAMAGE_TYPES, fail, validateSubmission, fingerprint, chinaDay, teamRecord, listQuery} from './model.mjs';
+import {ApiError, DAMAGE_TYPES, TEAM_SECTIONS, fail, validateSubmission, fingerprint, chinaDay, teamRecord, listQuery} from './model.mjs';
 import {productionReady, sameOrigin, readJSON, visitor, challenge, rateLimit, csv, LOOPBACK} from './security.mjs';
 import {listTeams, insertTeam, findTeam, likeTeam, editTeam} from './repository.mjs';
 import {authenticateAdmin} from './admin-auth.mjs';
@@ -38,7 +38,7 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
         return response({enabled: true, siteKey: development ? '' : env.TURNSTILE_SITE_KEY,
           moderation: 'approved', canSubmit: false, publishing: 'admin',
           ...(mode === 'password' ? await passwordConfig(env, development) : {authMode: mode, needsSetup: false, bootstrapAvailable: false}),
-          elements: [...trustedCatalog.elements, 'universal'], damageTypes: DAMAGE_TYPES,
+          elements: [...trustedCatalog.elements, 'universal'], damageTypes: DAMAGE_TYPES, sections: TEAM_SECTIONS,
           ...(development ? {development: true} : {})}, 200, headers);
       }
       if (path.startsWith('/admin/')) {

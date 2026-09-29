@@ -34,8 +34,8 @@ node --test mod-tools/wiki-community/tests/*.test.mjs
 
 | 接口 | 权限与结果 |
 | --- | --- |
-| `GET /config` | 配置、元素、伤害类型；`canSubmit:false,publishing:'admin'` |
-| `GET /teams` | 公开盘子 `{items,nextCursor}`；支持 category、element、damage、sort、cursor |
+| `GET /config` | 配置、元素、伤害类型、玩法分区 sections；`canSubmit:false,publishing:'admin'` |
+| `GET /teams` | 公开盘子 `{items,nextCursor}`；支持 section、category、element、damage、sort、cursor |
 | `GET /teams/:id` | 单个公开盘子 `{team}`，含 likedToday |
 | `POST /teams` | 始终 403 submission_disabled |
 | `POST /teams/:id/like` | `{turnstileToken}` → `{id,likes,likedToday,nextLikeAt}` |
@@ -56,11 +56,14 @@ node --test mod-tools/wiki-community/tests/*.test.mjs
 新建必须指定一个 `category`：萌新启航、原版毕业队、MOD毕业队、最新最潮盘、玩具盘。
 旧记录空分类保留，编辑时可保留空值或指定分类；已经分类的队伍不能改回空值。
 GET 的 `category` 省略表示全部，`uncategorized` 表示未分类，其余使用上述中文分类；与属性、伤害和状态取 AND。
-分页游标绑定这些筛选条件，改变分类后必须从第一页载入。仅改变分类不会改变阵容指纹或撤销游戏码。
+玩法 `section` 是独立字段：空值表示通用 / 其他，`abyss` 为深渊连战，`fantasy` 为幻想连战，`five-boss` 为五重决战。
+新建请求省略 section 时默认为空；编辑省略时保留原值，显式空值可改回通用。旧盘不会根据分类、标题或阵容自动猜测玩法。
+GET 的 `section` 省略或空值表示全部，`general` 仅查看通用，其余使用上述三个玩法标识；与其他筛选取 AND。
+分页游标绑定这些筛选条件，改变分类或玩法后必须从第一页载入。仅改变这些元数据不会改变阵容指纹或撤销游戏码。
 默认 latest，popular 按累计赞、创建时间排序。队伍 ID 和游戏码是不同标识。
 
 阵容指纹固定第一列队长；第二、三列整体交换视为相同阵容。主位、合击、武器、魂珠配对保留。
-标题、备注、署名、分类变化不改变指纹。重复返回 409 duplicate + existingId/status；隐藏盘不泄漏正文。
+标题、备注、署名、分类、玩法变化不改变指纹。重复返回 409 duplicate + existingId/status；隐藏盘不泄漏正文。
 修改冲突返回 409 edit_conflict。点赞重复为 409 already_liked，包含当前赞数和次日可赞时间。
 
 ## 生产配置与部署边界
@@ -68,9 +71,10 @@ GET 的 `category` 省略表示全部，`uncategorized` 表示未分类，其余
 部署前必须准备独立 D1，并用 `schema.sql` 初始化。`catalog.mjs` 由
 `wf_wiki_community_catalog.py` 从已脱敏 Wiki 数据生成，只接受站内收录 ID，不能信客户端传来的角色属性。
 
-已有数据库升级分类功能时，先备份并执行 `PRAGMA table_info(community_teams)` 检查：
+已有数据库升级分类和玩法功能时，先备份并执行 `PRAGMA table_info(community_teams)` 检查：
 若没有 `category` 列，在部署新版 Worker 前执行一次 `migrations/0001-team-category.sql`。
-已有该列时不要重复执行 ALTER；新库使用当前 `schema.sql` 即可。
+若没有 `section` 列，再执行一次 `migrations/0002-team-section.sql`。
+已有对应列时不要重复执行 ALTER；新库使用当前 `schema.sql` 即可。
 迁移只追加默认空值列及索引，保留队伍、赞数、审计、队伍码和管理员账号。
 本地 SQLite 适配器在下次启动时自动检测并事务执行同一迁移，重复启动不会重置已填分类。
 

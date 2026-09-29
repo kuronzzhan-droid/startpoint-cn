@@ -9,6 +9,8 @@ export function openDatabase(filename = ':memory:') {
     const columns = database.prepare('PRAGMA table_info(community_teams)').all();
     if (columns.length && !columns.some((column) => column.name === 'category'))
       database.exec(readFileSync(new URL('./migrations/0001-team-category.sql', import.meta.url), 'utf8'));
+    if (columns.length && !columns.some((column) => column.name === 'section'))
+      database.exec(readFileSync(new URL('./migrations/0002-team-section.sql', import.meta.url), 'utf8'));
     database.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     database.exec('COMMIT');
   } catch (error) {database.exec('ROLLBACK'); database.close(); throw error;}
