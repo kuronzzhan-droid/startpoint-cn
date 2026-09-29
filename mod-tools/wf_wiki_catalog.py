@@ -9,9 +9,12 @@ import zlib
 import wf_describe
 import wf_dsl_sig
 from wf_wiki_categories import (
-    CATEGORIES, EDITOR_NOTES, HIDDEN_CHARACTER_IDS, SMALL_ANIMAL_NOTE, category_for,
+    ALIASES, CATEGORIES, EDITOR_NOTES, HIDDEN_CHARACTER_IDS, SMALL_ANIMAL_NOTE, category_for,
 )
 from wf_wiki_catalog_source import WikiSource, detect_roster, version_at, walk_commands
+from wf_wiki_catalog_tags import OFFICIAL_NON_PLAYABLE_IDS, character_tags
+from wf_wiki_compare import official_comparison
+from wf_wiki_skill_values import skill_numeric_details
 
 ELEMENTS = {"0": "火", "1": "水", "2": "雷", "3": "风", "4": "光", "5": "暗", "6": "通用"}
 TYPES = {"0": "剑士", "1": "格斗", "2": "射击", "3": "辅助", "4": "特殊"}
@@ -64,9 +67,12 @@ def ability_group(source: WikiSource, kind: str, key: str, name: str) -> dict:
         for value in row:
             if value in strings and value not in references:
                 references[value] = "\n".join(plain(r[0]) for r in strings[value] if r)
+    description = authored or "\n".join(descriptions)
+    if not description and key in ("", "(None)"):
+        description = "此角色未配置队长技。" if kind == "leader" else "此角色未配置该能力。"
     return {
         "key": key, "name": name,
-        "description": authored or "\n".join(descriptions),
+        "description": description,
         "descriptionSource": "游戏面板覆盖文案" if authored else "数据行自动解析",
         "rows": [{"index": i + 1, "description": desc, "values": row}
                  for i, (row, desc) in enumerate(zip(rows, descriptions))],
@@ -85,6 +91,7 @@ def skill_program(source: WikiSource, program: str) -> dict:
         raw = list(walk_commands(tree))
         summaries = list(dict.fromkeys(wf_dsl_sig.brief_command(item[1]) for item in raw))
         return {"commands": summaries[:24], "commandCount": len(raw), "rawCommands": compact_commands(raw),
+                "numericDetails": skill_numeric_details(tree, source.table("condition")),
                 "commandsNote": "程序节点摘要；原始参数中的 commandRef 指向同表节点编号，保留嵌套分支且避免重复展开。",
                 "source": source.citation(logical)}
     except (ValueError, IndexError, KeyError, TypeError, zlib.error) as exc:
@@ -197,22 +204,27 @@ def character_entry(source: WikiSource, cid: str, scope: list[str] | None, media
     if not portraits:
         warnings.append("当前数据源缺少可导出的立绘")
     for entry in [leader] + abilities:
-        if not entry["rows"]:
+        if not entry["rows"] and entry["key"] not in ("", "(None)"):
             warnings.append(entry["name"] + "没有数据行")
     warnings.extend(s["warning"] for s in skills if s.get("warning"))
     warnings.extend(program["warning"] for group in [leader] + abilities
                     for program in group["relatedPrograms"] if program.get("warning"))
     sources = [source.citation(name) for name in
                ("character", "text", "status", "awake", "ability", "leader", "skill", "strings", "power_flip", "condition")]
-    category, category_source = category_for(cid)
+    official = cid in source.table("character", True)
+    category, category_source = category_for(cid, official_modified=bool(scope),
+                                             official_original=official and not scope)
+    origin = "改版官方" if scope else "官方原版" if official else "新增MOD"
     return {
         "id": cid, "code": code, "name": cell(text, 0) or code, "nameEn": cell(text, 1),
         "title": cell(text, 3), "rarity": numeric(row[2]), "elementId": row[3],
         "element": ELEMENTS.get(row[3], row[3]), "type": TYPES.get(row[6], row[6]),
         "role": ROLES.get(row[26], row[26]), "races": [RACES.get(v, v) for v in row[4].split(",") if v],
         "gender": GENDERS.get(row[7], row[7]), "cv": cell(text, 11), "profile": cell(text, 2),
-        "origin": "改版官方" if scope is not None else "新增MOD", "modificationScope": scope or ["新增角色"],
+        "origin": origin, "modificationScope": scope or ([] if official else ["新增角色"]),
         "category": category, "categorySource": category_source,
+        **character_tags(cid, row, cell(text, 0), ALIASES.get(cid, [])),
+        "officialComparison": official_comparison(source, cid, verified_unchanged=official and not scope),
         "editorNote": EDITOR_NOTES.get(cid, ""), "earlyDesign": cid == "129999",
         "icon": icon, "portraits": portraits, "leader": leader, "abilities": abilities, "skills": skills,
         "switch": switch, "stats": {"levels": levels,
@@ -228,7 +240,9 @@ def build_catalog(repo: Path, media) -> dict:
     repo = Path(repo)
     version = version_at(repo)
     source = WikiSource(repo, Path(media.store))
-    roster, modified = detect_roster(source)
+    _mod_roster, modified = detect_roster(source)
+    official = set(source.table("character", True))
+    roster = sorted(set(source.table("character")) - (official & OFFICIAL_NON_PLAYABLE_IDS), key=int)
     # Filter before entry creation: hidden characters must not export any media.
     roster = [cid for cid in roster if cid not in HIDDEN_CHARACTER_IDS]
     modified = {cid: scope for cid, scope in modified.items() if cid in roster}
@@ -239,12 +253,14 @@ def build_catalog(repo: Path, media) -> dict:
     return {"meta": {
         "version": version, "source": "本地 live 客户端表与官方归档差异快照",
         "generatedAt": datetime.now(timezone.utc).isoformat(),
-        "counts": {"total": len(roster), "newMod": len(roster) - len(modified),
-                   "modifiedOfficial": len(modified)},
+        "counts": {"total": len(roster), "newMod": len(set(roster) - official),
+                   "modifiedOfficial": len(modified),
+                   "officialOriginal": len(set(roster) & official) - len(modified)},
         "categoryCounts": {category: sum(c["category"] == category for c in characters)
                            for category in CATEGORIES},
         "categoryNote": SMALL_ANIMAL_NOTE,
-        "rosterRule": "官方归档之外的新增角色，以及身份、文案、基础/觉醒数值、能力、主技能表或主技能程序有修改的官方角色。",
+        "rosterRule": "收录官方可玩角色与新增 MOD 角色。官方档案中的 21 条剧情、助战及占位记录（已核 ID，c32=2/4）不列为可玩角色。改版官方依据身份、文案、数值、能力、主/切换技能及关联程序的差异识别。",
+        "themeNote": "节庆主题来自明确的角色主题标记；未识别主题的同一人物变体标为其他变体，基础形态标为通常版。",
         "dataNote": "游戏文案与程序数据分别展示；自动解析不等同于实机机制验收。",
         "fingerprints": source.fingerprints,
         "sourceHashes": source.live_hashes, "sourceMissing": sorted(source.missing),

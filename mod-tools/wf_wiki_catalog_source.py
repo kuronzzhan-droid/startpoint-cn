@@ -10,6 +10,7 @@ from pathlib import Path
 import wf_dsl
 import wf_mod_tool as core
 from wf_enhancement_policy import OfficialBaseline
+from wf_wiki_compare_refs import linked_changes
 
 TABLES = {
     "character": core.CHARACTER_LOGICAL,
@@ -159,14 +160,9 @@ def detect_roster(source: WikiSource) -> tuple[list[str], dict[str, list[str]]]:
             for key in keys:
                 if live.get(key) != base.get(key):
                     changed.setdefault(cid, []).append(name + ":" + key)
-    skills = source.table("skill")
     for cid in shared:
-        for rows in skills.get(characters[cid][0][8], {}).values():
-            if not rows or len(rows[0]) <= 7 or not rows[0][7].startswith("battle/"):
-                continue
-            logical = rows[0][7] + ".action.dsl.amf3.deflate"
-            live, base = source.raw(logical), source.raw(logical, True)
-            if live != base and source.tree(logical) != source.tree(logical, True):
-                changed.setdefault(cid, []).append("dsl:" + logical)
+        dependencies = linked_changes(source, official[cid][0], characters[cid][0])
+        if dependencies:
+            changed.setdefault(cid, []).extend(dependencies)
     new = set(characters) - set(official)
     return sorted(new | set(changed), key=int), changed

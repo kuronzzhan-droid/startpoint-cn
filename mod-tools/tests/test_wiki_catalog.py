@@ -14,6 +14,7 @@ from wf_wiki_catalog_source import WikiSource, detect_roster, walk_commands
 from wf_wiki_categories import (
     BOSS_IDS, EDITOR_NOTES, FURRY_WORLD_IDS, HIDDEN_CHARACTER_IDS, SMALL_ANIMAL_IDS, category_for,
 )
+from wf_wiki_catalog_tags import OFFICIAL_NON_PLAYABLE_IDS, character_tags
 
 
 def character(code="example", leader="3"):
@@ -64,15 +65,37 @@ class RosterTests(unittest.TestCase):
             output = catalog.build_catalog(Path("unused"), media)
         self.assertEqual(HIDDEN_CHARACTER_IDS, {"119998", "119999", "129990"})
         self.assertEqual({entry["id"] for entry in output["characters"]}, {"10", "139997", "139990"})
-        self.assertEqual(output["meta"]["counts"], {"total": 3, "newMod": 2, "modifiedOfficial": 1})
+        self.assertEqual(output["meta"]["counts"],
+                         {"total": 3, "newMod": 2, "modifiedOfficial": 1, "officialOriginal": 0})
         self.assertEqual(output["meta"]["categoryCounts"],
-                         {"原创与改版": 2, "毛茸异世界": 1, "Boss角色": 0, "小动物": 0})
+                         {"原创与变体": 1, "毛茸异世界": 1, "Boss角色": 0, "小动物": 0,
+                          "原版角色改动": 1, "官方原版": 0})
         requested = [call.args[0] for call in media.image.call_args_list]
         for cid in HIDDEN_CHARACTER_IDS:
             self.assertFalse(any(f"character/{codes[cid]}/" in path for path in requested))
         self.assertTrue(any("character/kyle_moon/" in path for path in requested))
         self.assertTrue(any("character/resistance_princess_ex/" in path for path in requested))
         self.assertNotIn("海豹球", output["meta"]["categoryNote"])
+
+    def test_all_official_playables_are_included_but_audited_npcs_are_not(self):
+        source = MemorySource()
+        for cid in ("231003", "700013", "999999"):
+            source.live["character"][cid] = source.base["character"][cid] = [character(cid)]
+        source.fingerprints, source.live_hashes, source.missing = {}, {}, set()
+        source.verify_unchanged = Mock()
+        media = Mock(store=Path("unused"), image=Mock(return_value=None))
+        with patch.object(catalog, "WikiSource", return_value=source), patch.object(
+                catalog, "version_at", return_value="1.4.1111"):
+            output = catalog.build_catalog(Path("unused"), media)
+        self.assertEqual(len(OFFICIAL_NON_PLAYABLE_IDS), 21)
+        self.assertEqual({entry["id"] for entry in output["characters"]}, {"10", "231003"})
+        self.assertEqual(output["meta"]["counts"],
+                         {"total": 2, "newMod": 0, "modifiedOfficial": 0, "officialOriginal": 2})
+        self.assertTrue(all(entry["category"] == "官方原版" for entry in output["characters"]))
+        self.assertTrue(all(entry["officialComparison"]["status"] == "unchanged"
+                            for entry in output["characters"]))
+        requested = [call.args[0] for call in media.image.call_args_list]
+        self.assertFalse(any("character/700013/" in path or "character/999999/" in path for path in requested))
 
     def test_new_key_and_legacy_leader_id_are_detected(self):
         source = MemorySource()
@@ -137,12 +160,26 @@ class SourceConsistencyTests(unittest.TestCase):
 
 
 class PresentationSemanticsTests(unittest.TestCase):
+    def test_theme_markers_do_not_guess_from_general_names(self):
+        for code, theme in (("white_tiger_xm20", "圣诞"), ("rec_android_1anv", "周年"),
+                            ("dimension_witch_smr20_ex", "泳装"), ("rec_android_seaside", "泳装"),
+                            ("wolf_assassin_wt21", "白色情人节"), ("dryad_hw23", "万圣节")):
+            tags = character_tags("1", character(code), "白", [])
+            self.assertEqual(tags["themes"], [theme])
+            self.assertIn(theme + "白", tags["aliases"])
+        row = character("ordinary")
+        row[27] = "1"
+        self.assertEqual(character_tags("1", row, "夏日般热情的角色", ["既有别名"])["themes"], ["通常版"])
+        self.assertEqual(character_tags("2", row, "普通名字", ["既有别名"])["themes"], ["其他变体"])
+
     def test_categories_follow_project_batches_not_beast_species(self):
         self.assertEqual(len(BOSS_IDS), 29)
         self.assertEqual(len(SMALL_ANIMAL_IDS), 16)
         self.assertFalse(BOSS_IDS & SMALL_ANIMAL_IDS)
-        for cid in ("10", "119990", "129992", "261089"):
-            self.assertEqual(category_for(cid)[0], "原创与改版")
+        for cid in ("119990", "129992"):
+            self.assertEqual(category_for(cid)[0], "原创与变体")
+        for cid in ("10", "131020", "151159", "261089"):
+            self.assertEqual(category_for(cid)[0], "原版角色改动")
         for cid in ("139996", "129990", "119994"):
             self.assertEqual(category_for(cid)[0], "小动物")
         for cid in ("169994", "179986", "149998"):
@@ -152,7 +189,7 @@ class PresentationSemanticsTests(unittest.TestCase):
         self.assertEqual(FURRY_WORLD_IDS, {"129999", "149999", "169999", "139990"})
         for cid in FURRY_WORLD_IDS:
             self.assertEqual(category_for(cid)[0], "毛茸异世界")
-        self.assertEqual(category_for("129992")[0], "原创与改版")
+        self.assertEqual(category_for("129992")[0], "原创与变体")
         self.assertIn("后续将重做", EDITOR_NOTES["129999"])
         self.assertEqual(set(EDITOR_NOTES), {"129999"})
 
@@ -175,6 +212,11 @@ class PresentationSemanticsTests(unittest.TestCase):
     def test_native_main_icon_forms_are_plain_text(self):
         self.assertEqual(catalog.plain("<icon id='main'> 技能"), "【主位】 技能")
         self.assertEqual(catalog.plain('<icon id="main" /> 技能'), "【主位】 技能")
+
+    def test_unconfigured_low_rarity_ability_has_neutral_explanation(self):
+        entry = catalog.ability_group(MemorySource(), "ability", "(None)", "能力 3")
+        self.assertEqual(entry["description"], "此角色未配置该能力。")
+        self.assertEqual(entry["rows"], [])
 
     def test_nested_commands_keep_numbers_without_recursive_duplication(self):
         child = ["Command", ["Damage", 25.5, {"min": 2, "max": 8}]]

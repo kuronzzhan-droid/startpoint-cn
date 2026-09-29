@@ -7,7 +7,11 @@ game data or the character's underlying editorial category.
 """
 from __future__ import annotations
 
-CATEGORIES = ("原创与改版", "毛茸异世界", "Boss角色", "小动物")
+CATEGORIES = ("原创与变体", "毛茸异世界", "Boss角色", "小动物", "原版角色改动", "官方原版")
+OFFICIAL_MODIFIED_IDS = frozenset({"10", "131020", "151159", "261089"})
+ALIASES = {"151159": ["光龙"], "261089": ["暗龙"],
+           "131020": ["周年雷吉斯", "周年版雷吉斯"],
+           "139995": ["秋稻穗"]}
 # Author's 2026-09-29 wiki-only exclusion: Canary II, Hugo and Spheal.
 # Exact IDs preserve other variants, including Lilith 139997 and Kyle 139990.
 HIDDEN_CHARACTER_IDS = frozenset({"119998", "119999", "129990"})
@@ -37,8 +41,13 @@ SMALL_ANIMAL_IDS = frozenset({
 SMALL_ANIMAL_NOTE = "沿用项目“小动物”十五角色批次；该组也包括哈宁、机器人与幽魂。"
 
 
-def category_for(cid: str) -> tuple[str, str]:
+def category_for(cid: str, official_modified: bool = False,
+                 official_original: bool = False) -> tuple[str, str]:
     cid = str(cid)
+    if official_original and not official_modified:
+        return "官方原版", "CN 官方可玩角色；已取得的当前数据与官方归档一致。"
+    if official_modified or cid in OFFICIAL_MODIFIED_IDS:
+        return "原版角色改动", "同一角色 ID 的 CN 官方归档与当前数据对照。"
     if cid in FURRY_WORLD_IDS:
         return "毛茸异世界", "作者于 2026-09-29 本次 Wiki 请求明确指定：赛瑞斯、杰拉德、基诺维、凯尔。"
     if cid in SMALL_ANIMAL_IDS:
@@ -48,4 +57,4 @@ def category_for(cid: str) -> tuple[str, str]:
     for group, _label, source in BOSS_GROUPS:
         if cid in group:
             return "Boss角色", source
-    return "原创与改版", "新增、主题改版及改版官方的普通角色；不按 Beast 种族自动分类。"
+    return "原创与变体", "新增与主题变体的普通角色；不按 Beast 种族自动分类。"
