@@ -26,6 +26,7 @@ test('verification tokens are consumed once and reset after each operation',asyn
   challenge.reset();assert.deepEqual(x.calls.at(-1),['reset','widget']);assert.equal(changes.at(-1),false);
   options.callback('next-token');options['expired-callback']();assert.equal(challenge.take(),'');
   challenge.destroy();assert.deepEqual(x.calls.at(-1),['remove','widget']);
+  challenge.reset();assert.deepEqual(x.calls.at(-1),['remove','widget']);
   options.callback('late-token');assert.equal(challenge.take(),'');
 });
 test('development verification never activates on a public hostname',async()=>{

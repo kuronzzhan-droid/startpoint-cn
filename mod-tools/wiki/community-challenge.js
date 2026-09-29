@@ -39,7 +39,7 @@
           });
           target.replaceChildren(el('p', 'muted', '这是本机测试验证，公开网站使用真实人机验证。'), button);
         } else {
-          if (!config.siteKey) throw new Error('社区的人机验证尚未配置，暂时不能投稿或点赞。');
+          if (!config.siteKey) throw new Error('社区的人机验证尚未配置，暂时无法完成此操作。');
           const turnstile = await loadTurnstile(); if (disposed) return;
           widget = turnstile.render(target, {sitekey: config.siteKey, action, size: 'flexible', language: 'zh-CN',
             theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
@@ -51,6 +51,7 @@
       } catch (error) {update('', C.message(error)); retry.hidden = false;} finally {busy = false;}
     }
     function reset() {
+      if (disposed) return;
       update('', '请重新完成人机验证。');
       if (widget !== undefined) window.turnstile.reset(widget);
     }
