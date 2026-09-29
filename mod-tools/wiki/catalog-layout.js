@@ -5,7 +5,7 @@
   const control = document.getElementById('catalog-layout');
   if (!catalog || !control) return;
   const choices = [
-    ['standard', '标准', 4], ['dense', '致密', 9], ['portrait', '立绘', 12],
+    ['portrait', '立绘', 4], ['standard', '标准', 9], ['dense', '致密', 12],
   ];
   // The new icon controls begin in standard once, then keep the reader's new choice.
   const storageKey = 'wf-wiki-catalog-layout-v2';

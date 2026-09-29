@@ -31,11 +31,11 @@ function setup(saved, blocked = false, existingStorage) {
 test('portrait layout restores independently and changes notify the catalogue exactly once', () => {
   const x = setup('portrait');
   assert.equal(x.catalog.dataset.layout,'portrait');
-  assert.deepEqual(x.buttons.map(b=>b.attrs['aria-label']), ['标准','致密','立绘']);
-  assert.equal(x.buttons[2].attrs['aria-pressed'],'true');
+  assert.deepEqual(x.buttons.map(b=>b.attrs['aria-label']), ['立绘','标准','致密']);
+  assert.equal(x.buttons[0].attrs['aria-pressed'],'true');
   assert.equal(x.changes.length,0);
-  x.buttons[2].click();assert.equal(x.changes.length,0);
-  x.buttons[0].click();x.buttons[1].click();x.buttons[2].click();
+  x.buttons[0].click();assert.equal(x.changes.length,0);
+  x.buttons[1].click();x.buttons[2].click();x.buttons[0].click();
   assert.deepEqual(x.changes,['standard','dense','portrait']);
   assert.equal(x.storage.get(storageKey),'portrait');
   assert.equal(x.buttons.filter(b=>b.attrs['aria-pressed']==='true').length,1);
@@ -43,8 +43,8 @@ test('portrait layout restores independently and changes notify the catalogue ex
 
 test('four, nine and twelve-cell icons retain accessible names and independent layout values', () => {
   const x=setup();
-  assert.deepEqual(x.buttons.map(button=>button.dataset.layout),['standard','dense','portrait']);
-  assert.deepEqual(x.buttons.map(button=>button.title),['标准','致密','立绘']);
+  assert.deepEqual(x.buttons.map(button=>button.dataset.layout),['portrait','standard','dense']);
+  assert.deepEqual(x.buttons.map(button=>button.title),['立绘','标准','致密']);
   assert.deepEqual(x.buttons.map(button=>button.children[0].children.length),[4,9,12]);
   x.buttons.forEach(button=>{
     assert.equal(button.type,'button');assert.equal(button.children[0].attrs['aria-hidden'],'true');
@@ -57,9 +57,9 @@ test('legacy dense and portrait choices migrate to standard once, then new selec
     const storage=new Map([['wf-wiki-catalog-layout',legacy]]), first=setup(undefined,false,storage);
     assert.equal(first.catalog.dataset.layout,'standard');assert.equal(storage.get(storageKey),'standard');
     assert.equal(storage.get('wf-wiki-catalog-layout'),legacy);assert.deepEqual(first.changes,[]);
-    first.buttons[2].click();
+    first.buttons[0].click();
     const returned=setup(undefined,false,storage);assert.equal(returned.catalog.dataset.layout,'portrait');assert.deepEqual(returned.changes,[]);
-    returned.buttons[1].click();assert.equal(setup(undefined,false,storage).catalog.dataset.layout,'dense');
+    returned.buttons[2].click();assert.equal(setup(undefined,false,storage).catalog.dataset.layout,'dense');
   }
 });
 
@@ -67,7 +67,7 @@ test('obsolete choices and unavailable storage retain usable layout controls', (
   for (const blocked of [false,true]) {
     const x = setup('extra-large',blocked);
     assert.equal(x.catalog.dataset.layout,'standard');
-    x.buttons[2].click();
+    x.buttons[0].click();
     assert.equal(x.catalog.dataset.layout,'portrait');
     assert.deepEqual(x.changes,['portrait']);
   }
