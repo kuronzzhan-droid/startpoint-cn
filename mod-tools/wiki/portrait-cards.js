@@ -26,10 +26,10 @@
       const {card, rect, x, y} = active;
       const clamp = (value) => Math.max(-1, Math.min(1, value));
       const dx = clamp((x - rect.left) / rect.width * 2 - 1), dy = clamp((y - rect.top) / rect.height * 2 - 1);
-      card.style.setProperty('--portrait-rotate-x', `${(-dy * 4).toFixed(2)}deg`);
-      card.style.setProperty('--portrait-rotate-y', `${(dx * 5).toFixed(2)}deg`);
-      card.style.setProperty('--portrait-shift-x', `${(dx * 3).toFixed(2)}px`);
-      card.style.setProperty('--portrait-shift-y', `${(dy * 3).toFixed(2)}px`);
+      card.style.setProperty('--portrait-rotate-x', `${(-dy * 6).toFixed(2)}deg`);
+      card.style.setProperty('--portrait-rotate-y', `${(dx * 8).toFixed(2)}deg`);
+      card.style.setProperty('--portrait-shift-x', `${(dx * 8).toFixed(2)}px`);
+      card.style.setProperty('--portrait-shift-y', `${(dy * 8).toFixed(2)}px`);
     }
     function move(event) {
       if (event.pointerType !== 'mouse' || !enabled() || document.hidden) return;

@@ -74,8 +74,10 @@ test('mouse moves coalesce into one RAF and one bounds read; leave cancels pendi
   const x=setup(),card=new Node('a');x.api.attach(card);mouse(card,10,20,'pointerenter');
   for(let i=0;i<20;i++)mouse(card,60+i*3,120+i*5);
   assert.equal(x.frames.size,1);assert.equal(card.reads,1);assert.equal(card.style.values.size,0);
-  x.flush();assert.equal(card.style.values.get('--portrait-rotate-y'),'5.00deg');assert.equal(card.style.values.get('--portrait-rotate-x'),'-3.80deg');
-  assert.equal(card.style.values.get('--portrait-shift-x'),'3.00px');assert.equal(x.frames.size,0);
+  x.flush();assert.equal(card.style.values.get('--portrait-rotate-y'),'8.00deg');assert.equal(card.style.values.get('--portrait-rotate-x'),'-5.70deg');
+  assert.equal(card.style.values.get('--portrait-shift-x'),'8.00px');assert.equal(x.frames.size,0);
+  mouse(card,-1000,-1000);x.flush();assert.equal(card.style.values.get('--portrait-rotate-x'),'6.00deg');
+  assert.equal(card.style.values.get('--portrait-rotate-y'),'-8.00deg');assert.equal(card.style.values.get('--portrait-shift-y'),'-8.00px');
   mouse(card);assert.equal(x.frames.size,1);card.fire('pointerleave');assert.equal(x.frames.size,0);assert.equal(card.style.values.size,0);
   assert.equal(card.classList.contains('portrait-card-active'),false);
 });
@@ -113,7 +115,7 @@ test('portrait-only styles retain contain fit, safe motion margins, visible keyb
   assert.match(css,/object-fit:contain/);assert.match(css,/aspect-ratio:3\/4/);assert.match(css,/padding:12px/);
   assert.match(css,/\.portrait-card:focus-visible\{outline:/);assert.match(css,/prefers-reduced-motion:no-preference/);
   assert.match(css,/@media\(max-width:640px\).*repeat\(2,minmax\(0,1fr\)\)/);assert.match(css,/@media\(max-width:360px\)/);
-  assert.doesNotMatch(css,/object-fit:cover|scale\(/);
+  assert.doesNotMatch(css,/object-fit:cover/);
 });
 
 test('idle cards and portraits have no 3D or translated transform outside an active interaction',()=>{
@@ -123,6 +125,19 @@ test('idle cards and portraits have no 3D or translated transform outside an act
   transforms.forEach(([,selector])=>assert.match(selector,/\.portrait-card-active/));
   assert.match(css,/#catalog-view \.portrait-card\{[^}]*transform:none/);
   assert.match(css,/\.portrait-card-media>\.portrait-card-image\{[^}]*transform:none/);
+});
+
+test('desktop hover zoom has enough contain margin for maximum image displacement across card sizes',()=>{
+  const css=fs.readFileSync(path.join(__dirname,'../wiki/portrait-cards.css'),'utf8');
+  assert.match(css,/\.portrait-card-active \.portrait-card-image\{[^}]*scale\(1\.1\)/);
+  assert.match(css,/padding:calc\(7% \+ 9px\)/);
+  for(const width of [180,230,320,480,720]) {
+    const height=width*4/3,padding=width*.07+9;
+    for(const dimension of [width,height]) {
+      const zoomed=(dimension-padding*2)*1.1;
+      assert.ok(zoomed+8*2<=dimension,`contained portrait and its 8px offset fit a ${width}px card`);
+    }
+  }
 });
 
 test('narrow screens default to static even with a mouse; width changes clear both rendered tilt and pending frames',()=>{
