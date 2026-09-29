@@ -119,7 +119,7 @@ test('leaving the explicit variant chain clears every remembered member and a fr
   start(); navigate('team'); x.api.remember('weapon','w'); assert.equal(navigate('weapon/w'),'#team');
   assert.equal(navigate('character/b'),undefined);
 });
-function teamPage() {
+function teamPage(catalogue = data) {
   const inspected = [], remembered = [], stored = new Map();
   const window = {WFTeamState:S,location:{hash:'#team'},WFCharacterOrder:{compare:() => 0},
     WFTeamInspector:{create:() => ({element:el('aside','team-inspector'),show:(id) => inspected.push(id)}),remember:(...args) => remembered.push(args)},
@@ -134,8 +134,44 @@ function teamPage() {
   vm.runInNewContext(source('character-badges.js'),context);
   vm.runInNewContext(source('team.js'),context);
   const host = el('main'); host.root = true;
-  return {window,host,inspected,remembered,stored,render:() => window.renderWikiTeam(host,data,ui)};
+  return {window,host,inspected,remembered,stored,render:() => window.renderWikiTeam(host,catalogue,ui)};
 }
+
+test('unchanged full-roster candidates are reused across slots and still assign to the latest target',async()=>{
+  const catalogue={...data,characters:Array.from({length:572},(_,index)=>({...data.characters[0],id:`c${index}`,name:`角色${index}`}))};
+  const x=teamPage(catalogue);x.render();const pool=x.host.querySelector('.team-candidates');
+  const mounted=[...pool.children],first=one(x.host,'选择角色0');pool.scrollTop=600;
+  await one(x.host,'2号主位：空位').fire('click');
+  assert.equal(pool.children.length,572);assert.ok(pool.children.every((node,index)=>node===mounted[index]));
+  assert.equal(pool.scrollTop,600);assert.equal(one(x.host,'选择角色0'),first);
+  await first.fire('click');assert.ok(one(x.host,'2号主位：角色0'));
+  await one(x.host,'1号合击：空位').fire('click');await one(x.host,'选择角色1').fire('click');
+  assert.ok(one(x.host,'1号合击：角色1'));assert.ok(pool.children.every((node,index)=>node===mounted[index]));
+  const beforeImage=first.querySelector('img');await button(x.host,'觉醒后').fire('click');
+  assert.equal(one(x.host,'选择角色0'),first);assert.notEqual(first.querySelector('img'),beforeImage);
+  assert.equal(first.querySelector('img').getAttribute('src'),'a-after.png');
+  let dragged;await first.fire('dragstart',{dataTransfer:{setData:(_type,value)=>{dragged=JSON.parse(value);}}});
+  assert.deepEqual(dragged,{id:'c0',kind:'character'});
+});
+
+test('candidate reuse invalidates on sort, filtered IDs and weapon versus soul mode, but preserves same results',async()=>{
+  const x=teamPage();x.render();const original=one(x.host,'选择角色a');
+  x.window.WFCharacterOrder.compareTeam=(a,b)=>b.name.localeCompare(a.name);
+  await one(x.host,'2号主位：空位').fire('click');
+  assert.notEqual(one(x.host,'选择角色a'),original);
+  assert.deepEqual(x.host.querySelectorAll('.team-candidate').map(n=>n.attributes['aria-label']),['选择角色d','选择角色c','选择角色b','选择角色a']);
+  await button(x.host,'武器').fire('click');const weapon=one(x.host,'选择武器');
+  await one(x.host,'2号装备：空位').fire('click');assert.equal(one(x.host,'选择武器'),weapon);
+  const search=one(x.host,'配队武器搜索');search.value='水弓';await search.fire('input');
+  assert.equal(one(x.host,'选择武器'),undefined);const water=one(x.host,'选择水弓');
+  await one(x.host,'3号装备：空位').fire('click');assert.equal(one(x.host,'选择水弓'),water);
+  await button(x.host,'魂珠').fire('click');assert.equal(one(x.host,'选择水弓'),undefined);assert.ok(one(x.host,'选择水弓魂珠'));
+  assert.equal(one(x.host,'选择无魂珠武器魂珠'),undefined);
+  await button(x.host,'武器').fire('click');assert.equal(search.value,'水弓');assert.ok(one(x.host,'选择水弓'));
+  assert.equal(one(x.host,'选择武器'),undefined);
+  search.value='不存在';await search.fire('input');const empty=x.host.querySelector('.team-candidates').children[0];
+  await one(x.host,'1号装备：空位').fire('click');assert.equal(x.host.querySelector('.team-candidates').children[0],empty);
+});
 
 test('inspector uses the current portrait choice after an asynchronous detail load', async () => {
   let form='before',resolve;

@@ -232,9 +232,11 @@
     const candidates = el('div', 'team-candidates');
     const heading = el('h2'), libraryHeading = el('div', 'team-library-heading'); libraryHeading.append(heading, modeSwitch);
     library.append(libraryHeading, characterFilters.element, equipmentFilters.element, candidates);
+    let mountedMode = '', mountedItems = [];
     function paintLibrary() {
       const characterMode = S.isCharacter(chosen.group);
-      candidates.dataset.kind = characterMode ? 'character' : chosen.group;
+      const mode = characterMode ? 'character' : chosen.group;
+      candidates.dataset.kind = mode;
       heading.textContent = `选择${labels[chosen.group]} · ${chosen.index + 1}号位`;
       characterButton.setAttribute('aria-pressed', String(characterMode));
       weaponButton.setAttribute('aria-pressed', String(chosen.group === 'weapon'));
@@ -246,6 +248,11 @@
         : [...equipment.values()].filter(equipmentFilters.matches);
       if (characterMode) items.sort(window.WFCharacterOrder.compareTeam);
       else items.sort(equipmentCompare);
+      // Slot selection does not change candidates. Reuse their nodes, focus and
+      // drag handlers; shared avatar controls already repaint images in place.
+      // Sources are fixed for this mounted page; a route rerender starts fresh.
+      if (mode === mountedMode && items.length === mountedItems.length
+          && items.every((item, index) => item === mountedItems[index])) return;
       candidates.replaceChildren();
       for (const item of items) {
         const candidateName = `${item.name}${chosen.group === 'soul' ? '魂珠' : ''}`;
@@ -267,6 +274,7 @@
         candidates.append(b);
       }
       if (!items.length) candidates.append(el('p', '', '没有匹配的候选。'));
+      mountedMode = mode; mountedItems = items;
     }
     const mainColumn = el('div', 'team-main'); mainColumn.append(board, preview);
     const layout = el('div', 'team-layout'); if (inspector) layout.append(inspector.element); layout.append(mainColumn, library);
