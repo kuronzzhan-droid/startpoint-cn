@@ -5,7 +5,7 @@
   const S = window.WFTeamState;
   let team = S.empty(), undo = [], redo = [], chosen = {group: 'main', index: 0};
   let inspected = {group: 'main', index: 0};
-  let weaponQuery = '', characterFilterState = {}, name = '我的队伍';
+  let characterFilterState = {}, equipmentFilterState = {}, name = '我的队伍';
   const labels = {main: '主位', unison: '合击', weapon: '装备', soul: '魂珠'};
   let imported;
   window.WFTeamImport = {load(value, title, selection) {imported = {team: S.copy(value), title, selection};}};
@@ -47,10 +47,6 @@
       change(S.place(team, chosen.group, chosen.index, id, characters, equipment));
     }
     function chooseSlot(group, index) {
-      if (S.isCharacter(group) !== S.isCharacter(chosen.group)) {
-        weaponQuery = ''; weaponSearch.value = ''; characterFilters.clearSearch(false);
-        characterFilterState = characterFilters.getState();
-      }
       chosen = {group, index};
     }
     const picker = el('select'); picker.setAttribute('aria-label', '已保存队伍');
@@ -183,30 +179,33 @@
         preview.append(box);
       }
     }
-    const weaponSearch = el('input', 'team-weapon-search'); weaponSearch.type = 'search'; weaponSearch.placeholder = '搜索武器或魂珠'; weaponSearch.value = weaponQuery; weaponSearch.setAttribute('aria-label', '配队武器搜索');
+    const equipmentFilters = window.WFTeamEquipmentFilters.create({equipment:[...equipment.values()], ui,
+      initialState:equipmentFilterState, onStateChange:(state) => {equipmentFilterState = state;}, onChange:() => paintLibrary()});
     const characterFilters = window.WFCharacterFilters.create({characters: [...characters.values()], ui,
       idPrefix: 'team-character', initialState: characterFilterState,
       onStateChange: (state) => {characterFilterState = state;}, onChange: () => paintLibrary()});
     const modeSwitch = el('div', 'team-mode-switch'); modeSwitch.setAttribute('role', 'group'); modeSwitch.setAttribute('aria-label', '候选类别');
-    function switchMode(characterMode) {
-      if (S.isCharacter(chosen.group) === characterMode) return;
-      chooseSlot(characterMode ? 'main' : 'weapon', chosen.index); paintBoard(); paintLibrary();
+    function switchMode(mode) {
+      if ((mode === 'character' && S.isCharacter(chosen.group)) || chosen.group === mode) return;
+      chooseSlot(mode === 'character' ? 'main' : mode, chosen.index); paintBoard(); paintLibrary();
     }
-    const characterButton = button('角色', () => switchMode(true), 'team-mode-button');
-    const weaponButton = button('武器', () => switchMode(false), 'team-mode-button');
-    modeSwitch.append(characterButton, weaponButton);
+    const characterButton = button('角色', () => switchMode('character'), 'team-mode-button');
+    const weaponButton = button('武器', () => switchMode('weapon'), 'team-mode-button');
+    const soulButton = button('魂珠', () => switchMode('soul'), 'team-mode-button');
+    modeSwitch.append(characterButton, weaponButton, soulButton);
     const candidates = el('div', 'team-candidates');
-    const heading = el('h2'); library.append(heading, modeSwitch, characterFilters.element, weaponSearch, candidates);
+    const heading = el('h2'); library.append(heading, modeSwitch, characterFilters.element, equipmentFilters.element, candidates);
     function paintLibrary() {
       const characterMode = S.isCharacter(chosen.group);
       heading.textContent = `选择${labels[chosen.group]} · ${chosen.index + 1}号位`;
       characterButton.setAttribute('aria-pressed', String(characterMode));
-      weaponButton.setAttribute('aria-pressed', String(!characterMode));
+      weaponButton.setAttribute('aria-pressed', String(chosen.group === 'weapon'));
+      soulButton.setAttribute('aria-pressed', String(chosen.group === 'soul'));
       characterFilters.element.hidden = !characterMode;
-      weaponSearch.hidden = characterMode;
+      equipmentFilters.element.hidden = characterMode;
+      if (!characterMode) equipmentFilters.setMode(chosen.group);
       const items = characterMode ? [...characters.values()].filter(characterFilters.matches)
-        : [...equipment.values()].filter((item) => (chosen.group !== 'soul' || item.soul?.available)
-          && `${item.name} ${(item.aliases || []).join(' ')} ${item.category || ''}`.toLowerCase().includes(weaponQuery.toLowerCase()));
+        : [...equipment.values()].filter(equipmentFilters.matches);
       if (characterMode) items.sort(window.WFCharacterOrder.compare);
       else {
         const priority = (item) => ['深渊武器', '诅咒武器'].includes(item.category) ? 0 : 1;
@@ -214,8 +213,9 @@
       }
       candidates.replaceChildren();
       for (const item of items) {
-        const b = button('', () => assign(item.id), 'team-candidate'); b.title = `${item.name} ${item.theme || ''}`;
-        b.setAttribute('aria-label', `选择${item.name}`); b.draggable = true;
+        const candidateName = `${item.name}${chosen.group === 'soul' ? '魂珠' : ''}`;
+        const b = button('', () => assign(item.id), 'team-candidate'); b.title = `${candidateName} ${item.theme || ''}`;
+        b.setAttribute('aria-label', `选择${candidateName}`); b.draggable = true;
         const image = picture(item.icon, item.name, 'team-candidate-image');
         if (characterMode) {
           const art = el('span', 'team-candidate-art'); art.append(image);
@@ -224,12 +224,12 @@
         } else b.append(image);
         b.append(el('span', '', item.name));
         if (characterMode) b.append(elementBadge(item.element));
+        else b.append(el('span', 'team-candidate-equipment-type', `${chosen.group === 'soul' ? '魂珠' : '武器'} · ${item.element || '未标注'}${item.rarity ? ` · ${item.rarity}★` : ''}`));
         b.addEventListener('dragstart', (event) => event.dataTransfer.setData('application/x-wf-wiki', JSON.stringify({id: item.id, kind: characterMode ? 'character' : 'equipment'})));
         candidates.append(b);
       }
       if (!items.length) candidates.append(el('p', '', '没有匹配的候选。'));
     }
-    weaponSearch.addEventListener('input', () => {weaponQuery = weaponSearch.value; paintLibrary();});
     const layout = el('div', 'team-layout'); if (inspector) layout.append(inspector.element); layout.append(board, library, preview);
     host.replaceChildren(el('h1', '', '配队模拟'), el('p', 'section-intro', '拖拽头像到槽位，或点空位／「换」后选择候选。点击盘中的角色头像，在角色面板查看技能与能力；第一列主位为队长。'),
       controls, status, layout, el('p', 'muted', '用于编成与查阅效果；主位限制、触发条件和武器特殊规则请结合说明判断。本页不模拟战斗过程或计算实战伤害。'));

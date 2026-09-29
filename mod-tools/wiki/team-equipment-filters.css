@@ -1,0 +1,8 @@
+.team-mode-switch{grid-template-columns:repeat(3,minmax(0,1fr))}
+.team-equipment-filters{margin-bottom:12px}
+.team-equipment-search{width:100%;min-width:0;padding:10px 12px;margin-bottom:10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+.team-equipment-elements{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-bottom:9px}
+.team-equipment-options{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.team-equipment-options select{min-width:0;max-width:65%;min-height:34px;padding:5px 8px;border:1px solid var(--line);border-radius:5px;background:var(--surface);color:var(--ink)}
+.team-equipment-options .text-button{font-size:11px}
+.team-candidate-equipment-type{font-size:9px;color:var(--muted)}

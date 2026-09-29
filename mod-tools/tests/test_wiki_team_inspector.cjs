@@ -25,7 +25,9 @@ class Node {
 }
 const el = (tag, cls, text) => new Node(tag, cls, text);
 const data = {meta:{sentinel:'full-meta'},characters:['a','b','c','d'].map((id) => ({id,name:`角色${id}`,icon:`${id}.png`,element:'火'})),
-  equipment:[{id:'w',name:'武器',soul:{available:true}}]};
+  equipment:[{id:'w',name:'武器',element:'火',rarity:5,soul:{available:true}},
+    {id:'water',name:'水弓',element:'水',rarity:4,soul:{available:true}},
+    {id:'no-soul',name:'无魂珠武器',element:'火',rarity:5,soul:{available:false}}]};
 const plate = {...S.empty(),main:['a','b','c'],unison:['d','',''],weapon:['w','','']};
 const one = (host, label) => host.all((node) => node.attributes['aria-label'] === label)[0];
 const button = (host, label) => host.all((node) => node.tag === 'button' && node.textContent === label)[0];
@@ -79,6 +81,7 @@ function teamPage() {
     WFCharacterFilters:{create:() => ({element:el('div'),clearSearch(){},getState:() => ({}),matches:() => true})}};
   const ui = {el,picture:(path,name,cls) => el('img',cls,name),elementBadge:(element) => el('span','element-badge',element)};
   const context = {window,localStorage:{getItem:(key) => stored.get(key),setItem:(key,value) => stored.set(key,value)},setTimeout};
+  vm.runInNewContext(source('team-equipment-filters.js'),context);
   vm.runInNewContext(source('team.js'),context);
   const host = el('main'); host.root = true;
   return {window,host,inspected,remembered,render:() => window.renderWikiTeam(host,data,ui)};
@@ -106,4 +109,19 @@ test('returning from full details retains imported title, every slot and selecte
   assert.ok(one(x.host,'1号主位：角色a')); assert.ok(one(x.host,'1号合击：角色d'));
   const weapon = one(x.host,'1号装备：武器'); assert.equal(weapon.href,'#weapon/w'); await weapon.fire('click');
   assert.deepEqual(x.remembered,[['weapon','w']]);
+});
+
+test('three picker tabs assign to distinct slots, and selecting an empty soul slot opens only souls', async () => {
+  const x = teamPage(); x.window.WFTeamImport.load(plate,'筛选盘'); x.render();
+  await button(x.host,'武器').fire('click');
+  assert.equal(button(x.host,'武器').attributes['aria-pressed'],'true'); assert.ok(one(x.host,'选择无魂珠武器'));
+  await one(x.host,'武器水属性').fire('click'); assert.ok(one(x.host,'选择水弓')); assert.equal(one(x.host,'选择武器'),undefined);
+  await one(x.host,'1号魂珠：空位').fire('click');
+  assert.equal(button(x.host,'魂珠').attributes['aria-pressed'],'true'); assert.ok(one(x.host,'选择武器魂珠')); assert.equal(one(x.host,'选择无魂珠武器魂珠'),undefined);
+  await one(x.host,'选择武器魂珠').fire('click'); assert.ok(one(x.host,'1号魂珠：武器'));
+  await button(x.host,'武器').fire('click'); assert.ok(one(x.host,'选择水弓')); assert.equal(one(x.host,'选择武器'),undefined);
+  await one(x.host,'选择水弓').fire('click'); assert.ok(one(x.host,'1号装备：水弓')); assert.ok(one(x.host,'1号魂珠：武器'));
+  await one(x.host,'替换1号魂珠').fire('click'); assert.equal(button(x.host,'魂珠').attributes['aria-pressed'],'true');
+  await button(x.host,'角色').fire('click'); assert.equal(button(x.host,'角色').attributes['aria-pressed'],'true'); assert.ok(one(x.host,'选择角色a'));
+  assert.ok(one(x.host,'1号主位：角色a')); assert.equal(x.window.location.hash,'#team');
 });

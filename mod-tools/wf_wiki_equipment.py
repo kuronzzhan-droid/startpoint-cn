@@ -21,6 +21,13 @@ ENHANCEMENT = "master/equipment_enhancement/equipment_enhancement.orderedmap"
 ENHANCEMENT_ABILITY = "master/equipment_enhancement/equipment_enhancement_ability.orderedmap"
 ENHANCEMENT_STATUS = "master/equipment_enhancement/equipment_enhancement_status.orderedmap"
 ITEM = "master/item/item.orderedmap"
+ELEMENTS = {0: "火", 1: "水", 2: "雷", 3: "风", 4: "光", 5: "暗", -1: "通用/未分类"}
+ELEMENT_NOTE = "沿用服务端装备属性分类；魂珠使用对应武器分类。通用/未分类不代表能力没有属性条件，具体限制仍以效果说明为准。"
+
+
+def equipment_element(value):
+    """The server's explicit classification, never inferred from public names."""
+    return ELEMENTS.get(value, "未标注") if type(value) is int else "未标注"
 
 
 def party_rules(raw):
@@ -77,6 +84,7 @@ def build_equipment_catalog(repo: Path, media, source=None) -> dict:
 
     known = {str(value) for value in read_json("assets/equipment_ids.json")}
     known_souls = {str(value) for value in read_json("assets/soul_item_ids.json")}
+    element_map = read_json("assets/equipment_element.json")
     rules_path = "client-patch/equipment-rules/rules.py"
     rules_raw = (Path(repo) / rules_path).read_bytes()
     tracked[rules_path] = hashlib.sha256(rules_raw).hexdigest()
@@ -108,6 +116,7 @@ def build_equipment_catalog(repo: Path, media, source=None) -> dict:
             notes.append("当前图标资源缺失。")
         entry = {
             "id": key, "name": text.clean(cell(row, 1)), "rarity": integer(cell(row, 11)),
+            "element": equipment_element(element_map.get(key)),
             "category": category_for(key, row, categories), "icon": icon, "description": text.clean(cell(row, 7)),
             "maxAwakeningLevel": limit, "stats": {"base": base, "awakened": maximum,
                                                     "checkpoints": points},
@@ -169,6 +178,7 @@ def build_equipment_catalog(repo: Path, media, source=None) -> dict:
         "enhanced": sum(entry["enhancement"] is not None for entry in entries),
         "partyRules": rules,
         "categoryNote": CATEGORY_NOTE,
+        "elementNote": ELEMENT_NOTE,
         "sourceHashes": dict(source.live_hashes), "sourceMissing": sorted(source.missing),
         "sourceFiles": tracked, "note": "收录当前本机登记的装备；收录不代表所有装备当前都有获取渠道。",
         "effectNote": "按原生能力槽选择已解锁最高档，分别列最低档、满觉醒和满强化；复杂能力以游戏内说明为准。",

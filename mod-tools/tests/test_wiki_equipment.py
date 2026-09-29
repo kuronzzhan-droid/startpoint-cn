@@ -37,6 +37,12 @@ class Source:
 
 
 class EquipmentTests(unittest.TestCase):
+    def test_equipment_elements_follow_server_registry_without_guessing_unknowns(self):
+        self.assertEqual([equipment.equipment_element(value) for value in range(6)], list("火水雷风光暗"))
+        self.assertEqual(equipment.equipment_element(-1), "通用/未分类")
+        for value in (None, "0", True, 6):
+            self.assertEqual(equipment.equipment_element(value), "未标注")
+
     def test_slot_upgrades_replace_old_version_without_losing_other_slots(self):
         rows = [ability("0", "1"), ability("0", "3"), ability("0", "5"), ability("1", "1")]
         self.assertEqual([row[:2] for row in learned_rows(rows, 4)], [["0", "3"], ["1", "1"]])
@@ -80,7 +86,7 @@ class EquipmentTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "assets").mkdir()
-            for name, value in {"equipment_ids": [10, 11], "soul_item_ids": [10], "equipment_enhancement_shop": {}}.items():
+            for name, value in {"equipment_ids": [10, 11], "soul_item_ids": [10], "equipment_element": {"10": 0, "11": -1}, "equipment_enhancement_shop": {}}.items():
                 (root / "assets" / (name + ".json")).write_text(json.dumps(value), encoding="utf8")
             rules = root / "client-patch/equipment-rules/rules.py"
             rules.parent.mkdir(parents=True)
@@ -88,6 +94,8 @@ class EquipmentTests(unittest.TestCase):
             with patch.object(equipment.EquipmentImages, "image", return_value="media/icon.webp"):
                 result = equipment.build_equipment_catalog(root, Mock(), source)
         first, second = result["equipment"]
+        self.assertEqual(first["element"], "火")
+        self.assertEqual(second["element"], "通用/未分类")
         self.assertTrue(first["canSoul"])
         self.assertFalse(first["soul"]["canGenerate"])
         self.assertFalse(second["canSoul"])

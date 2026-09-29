@@ -100,7 +100,7 @@ class EquipmentCategoryTests(unittest.TestCase):
             repo = Path(directory)
             (repo / "assets").mkdir()
             for name, value in {"equipment_ids": [300001, 300002, 5920001],
-                                "soul_item_ids": [], "equipment_enhancement_shop": {}}.items():
+                                "soul_item_ids": [], "equipment_element": {}, "equipment_enhancement_shop": {}}.items():
                 (repo / "assets" / (name + ".json")).write_text(json.dumps(value), encoding="utf8")
             rules = repo / "client-patch/equipment-rules/rules.py"
             rules.parent.mkdir(parents=True)
