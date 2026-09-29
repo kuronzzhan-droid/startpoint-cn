@@ -66,9 +66,15 @@ window.createWikiRouter = function createWikiRouter(options) {
           }
         }
       }
-      if (current()) window.scrollTo({top: 0});
+      if (current()) {
+        window.WFTeamInspector?.attachReturn(host, hash, ui);
+        window.scrollTo({top: 0});
+      }
     } catch (error) {
-      if (current()) status(host, error.message || '资料暂时无法载入。', route);
+      if (current()) {
+        status(host, error.message || '资料暂时无法载入。', route);
+        window.WFTeamInspector?.attachReturn(host, hash, ui);
+      }
     }
   };
 };

@@ -114,6 +114,19 @@ test('active load failure exposes a working retry without resetting the route', 
   const pending=retry.click(); x.requests.ca.resolve({id:'ca'}); await pending;
   assert.deepEqual(x.rendered,['ca']);
 });
+
+test('team return context is attached only to the active detail, including retryable errors', async () => {
+  const x=router(), attached=[];
+  x.context.window.WFTeamInspector={attachReturn:(host,hash)=>attached.push({host,hash})};
+  const old=x.go('#character/ca'), current=x.go('#character/cb/details/skills');
+  x.requests.cb.resolve({id:'cb'});await current;x.requests.ca.resolve({id:'ca'});await old;
+  assert.deepEqual(attached.map(entry=>entry.hash),['character/cb/details/skills']);
+  assert.equal(attached[0].host,x.nodes['detail-view']);
+  const weapon=x.go('#weapon/w1');x.requests.equipment.resolve([]);await weapon;
+  assert.equal(attached.at(-1).host,x.nodes['extra-view']);
+  const failed=x.go('#character/cc');x.requests.cc.reject(new Error('offline'));await failed;
+  assert.equal(attached.at(-1).hash,'character/cc');
+});
 test('native order groups element, descending rarity, then official before MOD', () => {
   const context={window:{}}; vm.runInNewContext(source('character-order.js'),context);
   const rows=[{name:'water',element:'水',rarity:5,catalogOrder:1},
