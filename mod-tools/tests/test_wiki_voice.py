@@ -126,6 +126,26 @@ class SubtitleSourceTests(unittest.TestCase):
 
 
 class VoiceExportTests(unittest.TestCase):
+    def test_official_plot_is_excluded_while_mod_plot_is_preserved(self):
+        from unittest.mock import Mock
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            audio = root / 'audio'; audio.write_bytes(b'voice')
+            index = sources.SubtitleIndex()
+            media = Mock(store=root)
+            media.audio.return_value = 'media/test.mp3'
+            characters = [dict(id=i, code='hero', origin=origin) for i, origin in
+                          enumerate(['官方原版', '改版官方', '新增MOD'])]
+            def locate(_store, logical):
+                return None if logical == voice.SPEECH_TABLE else ('upload', audio)
+            with patch.object(voice, 'build_subtitle_index', return_value=index), \
+                 patch.object(voice, 'speech_texts', return_value={}), \
+                 patch.object(voice, '_candidate_slots', return_value={'home/home_0', 'words/story_1'}), \
+                 patch.object(wf_assets, 'locate', side_effect=locate):
+                voice.export_voices(root, characters, media)
+            self.assertEqual([len(c['voices']) for c in characters], [1, 1, 2])
+            self.assertEqual({v['slot'] for v in characters[-1]['voices']}, {'home/home_0', 'words/story_1'})
+
     def test_live_speech_uses_csv_parser_for_multiline_text(self):
         with tempfile.TemporaryDirectory() as folder:
             store = Path(folder) / "upload"

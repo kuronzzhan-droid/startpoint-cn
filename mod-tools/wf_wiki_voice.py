@@ -85,7 +85,7 @@ def _candidate_slots(code: str, speech: dict, index) -> set[str]:
     return {slot for slot in slots if SLOT_RE.fullmatch(slot)}
 
 
-def export_voices(repo: Path, characters: list[dict], media) -> dict:
+def export_voices(repo: Path, characters: list[dict], media, *, official_common_only=True) -> dict:
     """Mutate c['voices']; media.audio(logical) supplies playable relative URLs.
 
     Counts reflect existing live assets, never files present only in a candidate.
@@ -104,6 +104,9 @@ def export_voices(repo: Path, characters: list[dict], media) -> dict:
         live_text = speech.get(cid, {})
         voices = []
         for slot in sorted(_candidate_slots(code, live_text, index), key=_slot_key):
+            if (official_common_only and character.get("origin") in {"官方原版", "改版官方"}
+                    and slot.split("/", 1)[0] not in _CATEGORIES):
+                continue
             logical = f"character/{code}/voice/{slot}.mp3"
             location = wf_assets.locate(media.store, logical)
             if not location:
@@ -138,6 +141,8 @@ def export_voices(repo: Path, characters: list[dict], media) -> dict:
     if speech_location and hashlib.sha256(speech_location[1].read_bytes()).hexdigest() != source_hashes[SPEECH_TABLE]:
         raise RuntimeError("语音导出期间 character_speech 已改变，请重新导出")
     return dict(counts, sourceDocuments=index.documents, sourceHashes=source_hashes,
+                scopeNote="官方角色收录主页、战斗、加入觉醒与登录语音，不含剧情；新增 MOD 角色保留全部已找到语音。"
+                if official_common_only else "全部已找到语音",
                 charsWithAudio=counts["characters"], audioCount=counts["recordings"],
                 jaCount=counts["withJapanese"], zhCount=counts["withChinese"],
                 missingZhCount=counts["missingChinese"], missingTranslations=missing_translations)
