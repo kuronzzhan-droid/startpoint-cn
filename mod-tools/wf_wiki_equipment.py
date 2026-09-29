@@ -11,6 +11,7 @@ from wf_wiki_catalog_source import WikiSource
 from wf_wiki_equipment_helpers import (
     EquipmentImages, PublicText, cell, effects, integer, status_points,
 )
+from wf_wiki_equipment_forms import FORM_NOTE, paradox_forms
 
 EQUIPMENT = "master/item/equipment.orderedmap"
 SOUL = "master/ability/ability_soul.orderedmap"
@@ -158,6 +159,10 @@ def build_equipment_catalog(repo: Path, media, source=None) -> dict:
                 "costs": enhancement_costs(shops[key], item_names),
                 "note": "所列能力为强化满级的追加效果，与满觉醒本体叠加；专用终式合计文案已经包含本体。",
             }
+            if key == "5920001":
+                entry["enhancement"]["forms"] = paradox_forms(
+                    entry, erow, soul_rows, additional.get(key, []), increments, text, pictures)
+                entry["enhancement"]["note"] = FORM_NOTE
             if not increments or increments[-1]["level"] != max_level:
                 notes.append("强化数值表未覆盖当前最高等级；请以游戏内面板为准。")
             if key in BOND_IDS:
