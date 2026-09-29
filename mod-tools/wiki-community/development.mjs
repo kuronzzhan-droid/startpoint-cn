@@ -18,7 +18,7 @@ export function developmentTools(secret, now = Date.now) {
     async route(path, request, mode = 'access') {
       if (path === '/development-challenge' && request.method === 'GET') {
         const action = new URL(request.url).searchParams.get('action');
-        if (!['like_team', 'admin_login'].includes(action)) fail(400, 'invalid_action', '本地验证动作无效。');
+        if (!['like_team', 'admin_login', 'rate_character'].includes(action)) fail(400, 'invalid_action', '本地验证动作无效。');
         for (const [key, item] of challenges) if (item.expires < now()) challenges.delete(key);
         if (challenges.size > 1000) fail(429, 'rate_limited', '本地测试验证过多。', {retryAfter: 300});
         const token = `development-only-${crypto.randomUUID()}`;

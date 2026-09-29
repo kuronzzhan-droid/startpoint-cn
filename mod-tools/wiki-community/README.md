@@ -52,6 +52,8 @@ node --test mod-tools/wiki-community/tests/*.test.mjs
 | `GET /aliases` | 游客读取角色/武器黑话 `{items:[{kind,id,aliases,revision}]}`，不含修改者 |
 | `GET /admin/aliases/:kind/:id` | 管理员读取单项 `{kind,id,aliases,revision}`；未编辑过为空数组、revision=0 |
 | `PATCH /admin/aliases/:kind/:id` | 管理员编辑 `{aliases,expectedRevision}`，返回直接记录；支持清空 |
+| `GET /ratings/characters/:id` | `{average,voters,myScore,ratedToday,nextVoteAt}`；未有评分 average=null；nextVoteAt 为毫秒时间戳 |
+| `POST /ratings/characters/:id` | `{score,turnstileToken}`，验证动作 rate_character，成功返回同一记录格式 |
 
 创建和编辑内容：`title` 最多 80 字符、`author` 最多 40（标题与署名须单行）、`notes` 最多 2000（支持多行），`team`
 含 main/unison/weapon/soul 四个长度为 3 的数组，空槽为 `""`。三主位必填，角色不能重复，
@@ -60,9 +62,9 @@ node --test mod-tools/wiki-community/tests/*.test.mjs
 新建必须指定一个 `category`：萌新启航、原版毕业队、MOD毕业队、最新最潮盘、玩具盘。
 旧记录空分类保留，编辑时可保留空值或指定分类；已经分类的队伍不能改回空值。
 GET 的 `category` 省略表示全部，`uncategorized` 表示未分类，其余使用上述中文分类；与属性、伤害和状态取 AND。
-玩法 `section` 是独立字段：空值表示通用 / 其他，`abyss` 为深渊连战，`fantasy` 为幻想连战，`five-boss` 为五重决战。
-新建请求省略 section 时默认为空；编辑省略时保留原值，显式空值可改回通用。旧盘不会根据分类、标题或阵容自动猜测玩法。
-GET 的 `section` 省略或空值表示全部，`general` 仅查看通用，其余使用上述三个玩法标识；与其他筛选取 AND。
+玩法 `section` 是独立字段：空值表示其他，`abyss` 为深渊连战，`fantasy` 为幻想连战，`five-boss` 为五重决战，`original` 为原版。
+新建请求省略 section 时默认为空；编辑省略时保留原值，显式空值可改回其他。旧盘不会根据分类、标题或阵容自动猜测玩法。
+GET 的 `section` 省略或空值表示全部，`general` 仅查看其他，其余使用上述玩法标识；与其他筛选取 AND。
 分页游标绑定这些筛选条件，改变分类或玩法后必须从第一页载入。仅改变这些元数据不会改变阵容指纹或撤销游戏码。
 默认 latest，popular 按累计赞、创建时间排序。队伍 ID 和游戏码是不同标识。
 
@@ -83,6 +85,13 @@ GET 的 `section` 省略或空值表示全部，`general` 仅查看通用，其�
 提交空数组可清空，记录及递增版本保留。并发修改要求 expectedRevision，与审计写入同事务；公开接口不返回管理员身份。
 黑话属于纯文本，前端展示必须使用 textContent，不能作为 HTML 或脚本执行；清空后公开列表不再包含该项，便于搜索同步移除。
 
+角色评分只接受 0–5 的整数，0 分计入平均分及人数。每个签名访客 Cookie 对同一角色在北京时间每天只能提交一次，次日提交覆盖旧分，
+同一访客始终只占一票。平均分保留两位小数；GET 只返回当前访客自己的 myScore，没有评分时为 null，不泄漏其他访客标识或单独分数。
+为防同日清 Cookie 重投，另用 HMAC(IP + 角色 + 北京日期) 占位，IP 原文不入库；同一网络当天对同一角色只能提交一次，
+但可评价其他角色。因此共享 IP 的玩家可能互相占用额度，且匿名机制不能保证跨设备、跨网络的真实一人一票。
+GET 发现同 IP 已占位时也返回 ratedToday=true，当前浏览器没有自己的评分则 myScore=null。重复 POST 返回 409 already_rated，顶层附上相同记录字段。
+每天占位和最新评分写入同一事务；保留当日及前一天的占位以避免跨午夜在途请求绕过限制。管理员登录不免除验证码、每日限制或频率限制。
+
 阵容指纹固定第一列队长；第二、三列整体交换视为相同阵容。主位、合击、武器、魂珠配对保留。
 标题、备注、署名、分类、玩法变化不改变指纹。重复返回 409 duplicate + existingId/status；隐藏盘不泄漏正文。
 修改冲突返回 409 edit_conflict。点赞重复为 409 already_liked，包含当前赞数和次日可赞时间。
@@ -97,6 +106,7 @@ GET 的 `section` 省略或空值表示全部，`general` 仅查看通用，其�
 若没有 `section` 列，再执行一次 `migrations/0002-team-section.sql`。
 若没有 `visibility` 和 `created_by` 列，再执行一次 `migrations/0003-team-visibility.sql`；这两个字段应在同一迁移中追加。
 黑话功能需执行 `migrations/0004-wiki-aliases.sql`，只追加两张独立表及索引，可安全重复执行，不预填内容。
+角色评分需执行 `migrations/0005-character-ratings.sql`，只追加评分/每日占位两表及索引，可安全重复执行，不预填分数。
 已有对应列时不要重复执行 ALTER；新库使用当前 `schema.sql` 即可。
 迁移只追加默认空值列及索引，保留队伍、赞数、审计、队伍码和管理员账号。
 本地 SQLite 适配器在下次启动时自动检测并事务执行同一迁移，重复启动不会重置已填分类。
@@ -152,7 +162,7 @@ node verify-build.mjs "<仓外构建目录>"
 后台校验 Turnstile 的 success、本站 hostname 和 action=`like_team`；失败、超时、重复 token 均不写点赞。
 Turnstile 服务端负责生产 token 的单次有效性。应用不缓存人机验证成功状态。
 
-管理员写入和点赞按每 IP 每小时 120 次限制，游戏码读取每 IP 每分钟 300 次。
+管理员写入、点赞和角色评分分别按每 IP 每小时 120 次限制，游戏码读取每 IP 每分钟 300 次。
 响应 429 带 Retry-After。限频键是带私密盐与时间窗口的 HMAC，过期键在后续成功限频操作中清理。
 IP 共用、代理与设备重置仍存在，不将 IP 视为用户身份。
 审计保存管理员标识/邮箱、时间、操作、队伍 ID 和修改前后内容；管理操作与审计用 D1 batch 同事务。
@@ -180,3 +190,5 @@ SELECT actor_email, action, team_id, created_at FROM community_audit ORDER BY cr
 - [Pages Functions 免费额度](https://developers.cloudflare.com/pages/functions/pricing/)和[D1 额度](https://developers.cloudflare.com/d1/platform/pricing/)
 
 免费层有请求、读写行与存储额度；用量达到上限可能暂不可用，不承诺无限免费，也不自动升级付费计划。
+
+现有库中 section 的旧 CHECK 若未包含 original，应在同一事务执行 migrations/0006-original-section.sql。该迁移只更换 section 列并重建其索引，不替换父表，不删除队伍或关联记录；本地适配器自动检测，重复启动不会重跑。
