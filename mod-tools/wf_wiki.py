@@ -118,6 +118,7 @@ def export(output: Path, *, legacy_data: Path | None = None, external_character:
     from wf_wiki_ui_assets import export_ui_assets
     from wf_wiki_equipment import build_equipment_catalog
     from wf_wiki_public import public_catalog
+    from wf_wiki_pixels import export_pixels
 
     repo = HERE.parent
     store = core.resolve_active_store()
@@ -168,6 +169,10 @@ def export(output: Path, *, legacy_data: Path | None = None, external_character:
         "snapshotNote": "本地数据快照；更新游戏数据后需重新导出。语音取当前资源，字幕来源逐条标注。",
     })
     catalog = public_catalog(catalog)
+    print("正在生成角色像素动作预览……", flush=True)
+    pixels = export_pixels(repo, output, catalog=catalog, store=store, external_package=external_character)
+    if version_after != wf_publish.current_max_version() or pending_after != (pending.read_bytes() if pending.exists() else None):
+        raise RuntimeError("像素导出期间发布状态改变，请重新导出")
     write_json(output / "data.json", catalog)
     from wf_wiki_data import write_split_public
     data_summary = write_split_public(output, catalog)
@@ -186,7 +191,8 @@ def export(output: Path, *, legacy_data: Path | None = None, external_character:
         encoding="utf-8")
     receipt = {"generator": "wf_wiki", "complete": True,
                "version": version_after, "characters": len(catalog["characters"]),
-               "voices": voice_summary, "media": media.summary(), "data": data_summary}
+               "voices": voice_summary, "media": media.summary(), "data": data_summary,
+               "pixels": pixels["summary"]}
     write_json(output / MARKER, receipt)
     return receipt
 

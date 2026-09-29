@@ -133,6 +133,7 @@ window.renderWikiCharacter = function renderWikiCharacter(container, character, 
     tabs.push({key, button, panel, build, built: false}); tabList.append(button); panels.append(panel);
   }
   function selectTab(key) {
+    window.WFPixelPreviews?.stop();
     tabs.forEach((item) => {
       const selected = item.key === key; item.panel.hidden = !selected;
       if (selected && !item.built) {item.build(item.panel); item.built = true;}
@@ -210,6 +211,10 @@ window.renderWikiCharacter = function renderWikiCharacter(container, character, 
     const voiceSection = section('语音与台词');
     window.renderWikiVoices(voiceSection, list(character.voices).filter((voice) => voice && typeof voice === 'object'), character, ui);
     voicePanel.append(voiceSection);
+  });
+  tab('pixels', '像素·动作', (pixelPanel) => {
+    const preview = section('像素小人与动作预览');
+    pixelPanel.append(preview); window.WFPixelPreviews?.mount(preview, character, ui);
   });
   const comparison = object(character.officialComparison);
   if (comparison.status === 'changed' || comparison.status === 'unchanged') {
