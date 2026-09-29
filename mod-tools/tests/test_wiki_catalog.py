@@ -11,7 +11,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import wf_mod_tool as core
 import wf_wiki_catalog as catalog
 from wf_wiki_catalog_source import WikiSource, detect_roster, walk_commands
-from wf_wiki_categories import BOSS_IDS, EDITOR_NOTES, FURRY_WORLD_IDS, SMALL_ANIMAL_IDS, category_for
+from wf_wiki_categories import (
+    BOSS_IDS, EDITOR_NOTES, FURRY_WORLD_IDS, HIDDEN_CHARACTER_IDS, SMALL_ANIMAL_IDS, category_for,
+)
 
 
 def character(code="example", leader="3"):
@@ -44,6 +46,34 @@ class MemorySource:
 
 
 class RosterTests(unittest.TestCase):
+    def test_wiki_exclusions_filter_entries_media_and_counts_before_export(self):
+        source = MemorySource()
+        codes = {"119998": "resistance_princess_canary2", "119999": "kyle_wolf_knight",
+                 "129990": "spheal_mascot", "139997": "resistance_princess_ex", "139990": "kyle_moon"}
+        source.live["character"].update({cid: [character(code)] for cid, code in codes.items()})
+        # Also exercise a hidden official entry: visible official counts must not
+        # use the unfiltered difference set even if a future baseline changes.
+        source.base["character"]["119998"] = [character(codes["119998"])]
+        source.live["leader"] = {"3": [["changed"]]}
+        source.base["leader"] = {"3": [["original"]]}
+        source.fingerprints, source.live_hashes, source.missing = {}, {}, set()
+        source.verify_unchanged = Mock()
+        media = Mock(store=Path("unused"), image=Mock(return_value=None))
+        with patch.object(catalog, "WikiSource", return_value=source), patch.object(
+                catalog, "version_at", return_value="1.4.1111"):
+            output = catalog.build_catalog(Path("unused"), media)
+        self.assertEqual(HIDDEN_CHARACTER_IDS, {"119998", "119999", "129990"})
+        self.assertEqual({entry["id"] for entry in output["characters"]}, {"10", "139997", "139990"})
+        self.assertEqual(output["meta"]["counts"], {"total": 3, "newMod": 2, "modifiedOfficial": 1})
+        self.assertEqual(output["meta"]["categoryCounts"],
+                         {"原创与改版": 2, "毛茸异世界": 1, "Boss角色": 0, "小动物": 0})
+        requested = [call.args[0] for call in media.image.call_args_list]
+        for cid in HIDDEN_CHARACTER_IDS:
+            self.assertFalse(any(f"character/{codes[cid]}/" in path for path in requested))
+        self.assertTrue(any("character/kyle_moon/" in path for path in requested))
+        self.assertTrue(any("character/resistance_princess_ex/" in path for path in requested))
+        self.assertNotIn("海豹球", output["meta"]["categoryNote"])
+
     def test_new_key_and_legacy_leader_id_are_detected(self):
         source = MemorySource()
         source.live["character"]["99"] = [character("new", "99")]

@@ -2,11 +2,15 @@
 
 The project's established 小动物 batch includes fifteen miniboss characters (also
 robots, haniwa and spirits); the author requested that existing group separately.
-Spheal joins it as a mascot. Beast-race playable people are ordinary characters.
+Beast-race playable people are ordinary characters. Wiki exclusions do not change
+game data or the character's underlying editorial category.
 """
 from __future__ import annotations
 
 CATEGORIES = ("原创与改版", "毛茸异世界", "Boss角色", "小动物")
+# Author's 2026-09-29 wiki-only exclusion: Canary II, Hugo and Spheal.
+# Exact IDs preserve other variants, including Lilith 139997 and Kyle 139990.
+HIDDEN_CHARACTER_IDS = frozenset({"119998", "119999", "129990"})
 FURRY_WORLD_IDS = frozenset({"129999", "149999", "169999", "139990"})
 EDITOR_NOTES = {
     "129999": "早期方案，后续将重做。此页保留当前已生效版本的数据。",
@@ -30,7 +34,7 @@ SMALL_ANIMAL_IDS = frozenset({
     "129998", "139996", "129996", "149994", "159999", "129995", "149993", "119995",
     "149992", "129994", "119993", "129993", "169993", "149991", "119994", "129990",
 })
-SMALL_ANIMAL_NOTE = "沿用项目“小动物”十五角色批次，另含海豹球；该组也包括哈宁、机器人与幽魂。"
+SMALL_ANIMAL_NOTE = "沿用项目“小动物”十五角色批次；该组也包括哈宁、机器人与幽魂。"
 
 
 def category_for(cid: str) -> tuple[str, str]:

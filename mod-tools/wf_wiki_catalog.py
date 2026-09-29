@@ -8,7 +8,9 @@ import zlib
 
 import wf_describe
 import wf_dsl_sig
-from wf_wiki_categories import CATEGORIES, EDITOR_NOTES, SMALL_ANIMAL_NOTE, category_for
+from wf_wiki_categories import (
+    CATEGORIES, EDITOR_NOTES, HIDDEN_CHARACTER_IDS, SMALL_ANIMAL_NOTE, category_for,
+)
 from wf_wiki_catalog_source import WikiSource, detect_roster, version_at, walk_commands
 
 ELEMENTS = {"0": "火", "1": "水", "2": "雷", "3": "风", "4": "光", "5": "暗", "6": "通用"}
@@ -227,6 +229,9 @@ def build_catalog(repo: Path, media) -> dict:
     version = version_at(repo)
     source = WikiSource(repo, Path(media.store))
     roster, modified = detect_roster(source)
+    # Filter before entry creation: hidden characters must not export any media.
+    roster = [cid for cid in roster if cid not in HIDDEN_CHARACTER_IDS]
+    modified = {cid: scope for cid, scope in modified.items() if cid in roster}
     characters = [character_entry(source, cid, modified.get(cid), media) for cid in roster]
     source.verify_unchanged()
     if version_at(repo) != version:
