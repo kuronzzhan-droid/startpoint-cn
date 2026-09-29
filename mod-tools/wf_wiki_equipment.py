@@ -12,6 +12,7 @@ from wf_wiki_equipment_helpers import (
     EquipmentImages, PublicText, cell, effects, integer, status_points,
 )
 from wf_wiki_equipment_forms import FORM_NOTE, paradox_forms
+from wf_wiki_equipment_final import final_effect_fields
 from wf_wiki_equipment_categories import BOND_IDS, CATEGORY_NOTE, category_for, source_categories
 
 EQUIPMENT = "master/item/equipment.orderedmap"
@@ -154,6 +155,8 @@ def build_equipment_catalog(repo: Path, media, source=None) -> dict:
                 "costs": enhancement_costs(shops[key], item_names),
                 "note": "所列能力为强化满级的追加效果，与满觉醒本体叠加；专用终式合计文案已经包含本体。",
             }
+            entry["enhancement"].update(final_effect_fields(
+                soul_rows, additional.get(key, []), limit, max_level, text))
             if key == "5920001":
                 entry["enhancement"]["forms"] = paradox_forms(
                     entry, erow, soul_rows, additional.get(key, []), increments, text, pictures)

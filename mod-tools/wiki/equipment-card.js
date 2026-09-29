@@ -102,8 +102,9 @@
           const fullEffects = effectLevel === 'max', baseEffects = fullEffects ? entry.awakenedEffects : entry.baseEffects;
           effectButtons.forEach(({button, value}) => button.setAttribute('aria-pressed', String(value === effectLevel)));
           const finalEffects = fullEffects ? active?.finalEffects : active?.initialFinalEffects;
-          if (active && finalEffects?.length) effects(body, '最终效果', finalEffects, true);
-          else if (active && fullEffects && active.finalDescription) body.append(el('h4', '', '最终加成'), emphasizeValues(el('p', 'equipment-final-effects'), active.finalDescription));
+          const finalDescription = fullEffects ? active?.finalDescription : active?.initialFinalDescription;
+          if (active && finalDescription) body.append(el('h4', '', '最终加成'), emphasizeValues(el('p', 'equipment-final-effects'), finalDescription));
+          else if (active && finalEffects?.length) effects(body, '最终效果', finalEffects, true);
           else if (active) {
             effects(body, '当前效果', [...(baseEffects || []), ...(active.effects || [])], true);
             body.append(el('p', 'muted', '当前数据尚未汇总，以上按各条原有效果列出。'));

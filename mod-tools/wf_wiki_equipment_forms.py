@@ -1,10 +1,9 @@
 """Read-only PARADOX form snapshots at its actual enhancement milestones."""
 from collections import defaultdict
-from fractions import Fraction
-import math
 
 import wf_describe
 from wf_wiki_equipment_helpers import cell, effects, endpoint_row, integer, learned_rows
+from wf_wiki_equipment_final import final_effect_fields, row_at_level
 
 KIND = "equipment_enhancement_ability"
 TEAM_KINDS = {"55", "696", "226"}
@@ -19,40 +18,14 @@ TOTAL_LABELS = {
 }
 
 
-def row_at_level(row, level):
-    """AbilityPowerValue MinToMaxLevelScale + Decimal Math.round, on a copy."""
-    result = list(row)
-    first_level, last_level = integer(row[1], 1), integer(row[2], 1)
-    definitions = wf_describe.enum_map()["block_fields"]
-    for name, base in wf_describe.layout(KIND)["blocks"].items():
-        group = "precondition" if name.startswith("precondition") else name
-        for offset, field, _ in definitions.get(group, []):
-            if not field.endswith(".power1") or base + offset + 1 >= len(row):
-                continue
-            first, last = base + offset, base + offset + 1
-            if not cell(row, first) and not cell(row, last):
-                continue
-            a, b = integer(cell(row, first)), integer(cell(row, last))
-            if level <= first_level:
-                value = a
-            elif level >= last_level:
-                value = b
-            else:
-                # Decimal_Impl_.inverseLerpAndLerp rounds ties toward +infinity.
-                value = math.floor(Fraction(a) + Fraction((b - a) * (level - first_level),
-                                                         last_level - first_level) + Fraction(1, 2))
-            result[first] = result[last] = str(value)
-    return result
-
-
-def total_summary(soul_rows, resolved_rows, text, level):
+def total_summary(soul_rows, resolved_rows, text, level, *, base_maximum=True):
     """Add only the verified self-target numeric effects; preserve conditions."""
     totals = defaultdict(int)
     for kind, rows in (("ability_soul", soul_rows), (KIND, resolved_rows)):
         blocks = wf_describe.layout(kind)["blocks"]
         content, pre = blocks["instant_content"], blocks["precondition1"]
         for original in rows:
-            row = endpoint_row(original, kind, True)
+            row = endpoint_row(original, kind, base_maximum if kind == "ability_soul" else True)
             effect = cell(row, content)
             target = cell(row, content + 1)
             if (cell(row, pre - 1) != "0" or effect not in TOTAL_LABELS or
@@ -62,7 +35,8 @@ def total_summary(soul_rows, resolved_rows, text, level):
             if cell(row, pre) not in ("0", "3"):
                 continue
             totals[(effect, condition)] += integer(cell(row, content + 4))
-    lines = [f"强化 Lv{level} 主要数值合计（含满觉醒本体）："]
+    base_label = "满觉醒本体" if base_maximum else "初始本体"
+    lines = [f"强化 Lv{level} 主要数值合计（含{base_label}）："]
     for (effect, condition), value in totals.items():
         amount = value / (100000 if effect == "226" else 1000)
         prefix = f"自身为{condition}时额外" if condition else ("" if effect in TEAM_KINDS else "自身")
@@ -98,8 +72,12 @@ def paradox_forms(entry, erow, soul_rows, enhancement_rows, increments, text, pi
             "stats": {"additional": increment, "total": total},
             "panelDescription": enhanced["panelDescription"],
             "finalDescription": total_summary(learned_rows(soul_rows, entry["maxAwakeningLevel"]), resolved, text, level),
+            "initialFinalDescription": total_summary(learned_rows(soul_rows, 1), resolved, text,
+                                                     level, base_maximum=False),
             "note": FORM_NOTE,
         }
+        form.update(final_effect_fields(soul_rows, enhancement_rows,
+                                       entry["maxAwakeningLevel"], level, text))
         frame = text.custom.get("enhanced_frame_override_" + icon)
         if frame:
             form["frame"] = pictures.image(frame)

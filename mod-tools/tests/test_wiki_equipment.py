@@ -81,6 +81,9 @@ class EquipmentTests(unittest.TestCase):
         soul_row = ability()
         erow = ["internal", "测试剑", "0", "", "", "", "item/test", "描述", "5", "false", "10", "5"]
         source.data = {equipment.EQUIPMENT: {"10": [erow], "11": [erow]}, equipment.SOUL: {"10": [soul_row]}}
+        upgrade = ["0", "1", "10", "24", "48"] + ability(power="10000", maximum="10000")[2:]
+        source.data[equipment.ENHANCEMENT] = {"10": [["10", "", "测试剑强化"]]}
+        source.data[equipment.ENHANCEMENT_ABILITY] = {"10": [upgrade]}
         source._tables[(equipment.STATUS, False, "wiki-nested")] = {
             "10": {"1": "100,20", "5": "150,30"}, "11": {"1": "100,20", "5": "150,30"}}
         with tempfile.TemporaryDirectory() as temporary:
@@ -101,6 +104,8 @@ class EquipmentTests(unittest.TestCase):
         self.assertFalse(second["canSoul"])
         self.assertEqual(second["soul"]["effects"], [])
         self.assertEqual(first["stats"]["awakened"], {"hp": 150, "atk": 30})
+        self.assertEqual(first["enhancement"]["finalEffects"], ["自身 攻击力 30%"])
+        self.assertEqual(first["enhancement"]["initialFinalEffects"], ["自身 攻击力 20%"])
         source.verify_unchanged.assert_called_once()
 
     def test_current_party_policy_counts_souls_and_excludes_paradox_from_curses(self):

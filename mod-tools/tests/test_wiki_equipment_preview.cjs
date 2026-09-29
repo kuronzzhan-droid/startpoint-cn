@@ -106,3 +106,15 @@ test('party restrictions remain visible beside weapon and soul effects rather th
   assert.equal(body.children.find(n=>n.className==='weapon-note').textContent,note);
   click(card,'data-equipment-mode','weapon');assert.equal(body.textContent.split(note).length-1,1);
 });
+test('verified form summaries precede arrays and initial effects never borrow the max-level summary',()=>{
+  const forms=weapon.enhancement.forms.map((form,i)=>({...form,finalDescription:`可信满级${form.level}：直击8段，覆写本体6段。`,
+    ...(i?{}:{initialFinalDescription:'可信初始120：直击8段，覆写本体6段。'}),
+    finalEffects:['本体直击6段','强化直击8段'],initialFinalEffects:[`初始数组${form.level}`]}));
+  const {card}=cardFixture({...weapon,enhancement:{...weapon.enhancement,forms}});card.open=true;card.fire('toggle');
+  const body=cls(card,'equipment-state'),visible=()=>body.children.filter(n=>n.className!=='equipment-calculation').map(n=>n.textContent).join('');
+  click(card,'data-level','120');assert.match(visible(),/可信满级120/);assert.doesNotMatch(visible(),/本体直击6段/);
+  click(card,'data-effect-level','initial');assert.match(visible(),/可信初始120/);assert.doesNotMatch(visible(),/可信满级/);
+  click(card,'data-level','200');assert.match(visible(),/初始数组200/);assert.doesNotMatch(visible(),/可信满级|可信初始120/);
+  click(card,'data-effect-level','max');assert.match(visible(),/可信满级200/);assert.doesNotMatch(visible(),/本体直击6段|初始数组200/);
+  assert.match(cls(card,'equipment-calculation').textContent,/强化追加 50%/);
+});

@@ -79,6 +79,9 @@ class EquipmentFormTests(unittest.TestCase):
                 self.assertIn(phrase, summary)
         self.assertIn("自身 攻击力 20%", first["effects"])
         self.assertIn("自身 攻击力 220%", last["effects"])
+        self.assertIn("自身 攻击力 800%", first["finalEffects"])
+        self.assertIn("自身 攻击力 1000%", last["finalEffects"])
+        self.assertIn("自身 攻击力 800%", first["initialFinalEffects"])
 
     def test_snapshots_keep_source_rows_and_entry_immutable(self):
         before = copy.deepcopy((self.entry, self.erow, self.soul, self.enhanced, self.points))
@@ -86,6 +89,22 @@ class EquipmentFormTests(unittest.TestCase):
         self.assertEqual(before, (self.entry, self.erow, self.soul, self.enhanced, self.points))
         for level, expected in ((120, "20000"), (200, "220000")):
             self.assertEqual(row_at_level(self.enhanced[1], level)[51:53], [expected, expected])
+
+    def test_initial_summary_uses_initial_endpoint_and_unlocked_slots_for_each_stage(self):
+        before_max = [form["finalDescription"] for form in self.forms()]
+        content = wf_describe.layout("ability_soul")["blocks"]["instant_content"]
+        self.soul[0][content + 4] = "220000"
+        forms = self.forms()
+        self.assertEqual([form["finalDescription"] for form in forms], before_max)
+        for form, expected in zip(forms, (470, 670)):
+            self.assertIn("含初始本体", form["initialFinalDescription"])
+            self.assertIn(f"自身攻击力 +{expected}%", form["initialFinalDescription"])
+            self.assertIn("时额外攻击力", form["initialFinalDescription"])
+        self.soul.append(row("ability_soul", len(self.soul), "32", 100, 100, learn=5))
+        added = self.forms()
+        self.assertEqual([form["initialFinalDescription"] for form in added],
+                         [form["initialFinalDescription"] for form in forms])
+        self.assertIn("自身攻击力 +900%", added[0]["finalDescription"])
 
     def test_each_form_has_its_own_icon_stats_and_only_200_has_frame(self):
         first, last = self.forms()
@@ -105,6 +124,8 @@ class EquipmentFormTests(unittest.TestCase):
             self.assertNotIn(private, serialized)
         self.assertIn("media/form120.webp", serialized)
         self.assertIn("自身攻击力 +800%", serialized)
+        self.assertEqual(published["equipment"][0]["enhancement"]["forms"][0]["initialFinalDescription"],
+                         self.entry["enhancement"]["forms"][0]["initialFinalDescription"])
 
 
 if __name__ == "__main__":
