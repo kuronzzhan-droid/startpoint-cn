@@ -34,6 +34,8 @@ window.renderWikiCharacterSummary = function renderWikiCharacterSummary(host, ch
   const type = el('div', 'summary-type');
   type.append(elementBadge(character.element), nativeIcon('types', character.type, ''), el('span', '', text(character.type, '类型未记录')));
   header.append(avatar, identity, type); root.append(header);
+  const variants = el('div', 'summary-variants'); root.append(variants);
+  window.WFCharacterVariants?.mount(variants, character, ui, {onNavigate:options.onVariantNavigate});
   window.WFWikiAliases?.mount(root, 'character', character.id, ui);
   window.WFCharacterRating?.mount(root, character, ui);
 

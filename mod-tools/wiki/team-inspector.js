@@ -6,12 +6,16 @@
     if (!detailOrigin) return false;
     const parts = route.replace(/^#/, '').split('/');
     let id; try {id = decodeURIComponent(parts[1] || '');} catch {return false;}
-    return parts[0] === detailOrigin.kind && id === detailOrigin.id;
+    return detailOrigin.has(`${parts[0]}/${id}`);
   }
   window.addEventListener('hashchange', () => {if (!matches(window.location.hash)) detailOrigin = null;});
   function remember(kind, id) {
     if (!['character','weapon'].includes(kind) || !id) return;
-    detailOrigin = {kind, id:String(id)};
+    detailOrigin = new Set([`${kind}/${String(id)}`]);
+  }
+  // Keep explicitly followed variants in one browsing chain, including Back/Forward.
+  function rememberVariant(id) {
+    if (id && matches(window.location.hash)) detailOrigin.add(`character/${String(id)}`);
   }
   function attachReturn(host, route, ui) {
     if (!matches(route)) return;
@@ -43,7 +47,7 @@
         if (typeof window.renderWikiCharacterSummary !== 'function') throw new Error('角色面板尚未加载，请刷新页面后重试。');
         window.renderWikiCharacterSummary(body, character, data.meta || {}, ui, {onOpenDetails: (tab) => {
           remember('character', id); window.location.hash = `#character/${encodeURIComponent(id)}/details/${tab || 'profile'}`;
-        }});
+        }, onVariantNavigate: (variantId) => remember('character', variantId)});
         const portrait = avatars && body.querySelector('.summary-avatar');
         if (portrait) portrait.replaceChildren(avatars.picture(character, character.name || '角色'));
         details.href = `#character/${encodeURIComponent(id)}/details/profile`; details.hidden = false;
@@ -56,5 +60,5 @@
     }
     return {element:root, show};
   }
-  window.WFTeamInspector = {create, remember, attachReturn};
+  window.WFTeamInspector = {create, remember, rememberVariant, attachReturn};
 })();

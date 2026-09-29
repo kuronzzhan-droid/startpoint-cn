@@ -87,6 +87,38 @@ test('team origin replaces the overview back link instead of creating duplicate 
   assert.equal(host.querySelectorAll('a').length,1); assert.equal(link.href,'#team');
   assert.equal(link.textContent,'‹ 返回当前编队');
 });
+test('following a character variant preserves an existing team origin without inventing one', () => {
+  const x = inspector(async () => null), host = el('section');
+  x.window.location.hash = '#character/a'; x.api.rememberVariant('b');
+  x.api.attachReturn(host,'character/b',{el}); assert.equal(host.children.length,0);
+  x.api.remember('character','a'); x.api.rememberVariant('b');
+  x.window.location.hash = '#character/b'; x.listeners.hashchange();
+  x.api.attachReturn(host,'character/b',{el}); assert.equal(host.children[0].href,'#team');
+});
+test('Back and Forward within a followed variant chain retain the current team return link', () => {
+  const x = inspector(async () => null);
+  const navigate = (route) => {
+    x.window.location.hash = '#' + route; x.listeners.hashchange();
+    const host = el('section'); x.api.attachReturn(host,route,{el}); return host.children[0]?.href;
+  };
+  x.api.remember('character','a'); assert.equal(navigate('character/a'),'#team');
+  x.api.rememberVariant('b'); assert.equal(navigate('character/b'),'#team');
+  x.api.rememberVariant('c'); assert.equal(navigate('character/c'),'#team');
+  assert.equal(navigate('character/b'),'#team'); assert.equal(navigate('character/a'),'#team');
+  assert.equal(navigate('character/b/details/skills'),'#team'); assert.equal(navigate('character/c'),'#team');
+});
+test('leaving the explicit variant chain clears every remembered member and a fresh team visit resets it', () => {
+  const x = inspector(async () => null);
+  const navigate = (route) => {
+    x.window.location.hash = '#' + route; x.listeners.hashchange();
+    const host = el('section'); x.api.attachReturn(host,route,{el}); return host.children[0]?.href;
+  };
+  const start = () => {x.api.remember('character','a'); navigate('character/a'); x.api.rememberVariant('b'); navigate('character/b');};
+  start(); navigate(''); assert.equal(navigate('character/a'),undefined); assert.equal(navigate('character/b'),undefined);
+  start(); assert.equal(navigate('character/unrelated'),undefined); assert.equal(navigate('character/a'),undefined);
+  start(); navigate('team'); x.api.remember('weapon','w'); assert.equal(navigate('weapon/w'),'#team');
+  assert.equal(navigate('character/b'),undefined);
+});
 function teamPage() {
   const inspected = [], remembered = [], stored = new Map();
   const window = {WFTeamState:S,location:{hash:'#team'},WFCharacterOrder:{compare:() => 0},

@@ -119,6 +119,7 @@ def export(output: Path, *, legacy_data: Path | None = None, external_character:
     from wf_wiki_equipment import build_equipment_catalog
     from wf_wiki_public import public_catalog
     from wf_wiki_pixels import export_pixels
+    from wf_wiki_variants import write_character_variants
 
     repo = HERE.parent
     store = core.resolve_active_store()
@@ -171,6 +172,7 @@ def export(output: Path, *, legacy_data: Path | None = None, external_character:
     catalog = public_catalog(catalog)
     print("正在生成角色像素动作预览……", flush=True)
     pixels = export_pixels(repo, output, catalog=catalog, store=store, external_package=external_character)
+    variants = write_character_variants(repo, output, catalog, store=store)
     if version_after != wf_publish.current_max_version() or pending_after != (pending.read_bytes() if pending.exists() else None):
         raise RuntimeError("像素导出期间发布状态改变，请重新导出")
     write_json(output / "data.json", catalog)
@@ -192,7 +194,7 @@ def export(output: Path, *, legacy_data: Path | None = None, external_character:
     receipt = {"generator": "wf_wiki", "complete": True,
                "version": version_after, "characters": len(catalog["characters"]),
                "voices": voice_summary, "media": media.summary(), "data": data_summary,
-               "pixels": pixels["summary"]}
+               "pixels": pixels["summary"], "variants": variants}
     write_json(output / MARKER, receipt)
     return receipt
 

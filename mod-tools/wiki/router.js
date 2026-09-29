@@ -62,6 +62,7 @@ window.createWikiRouter = function createWikiRouter(options) {
           } else {
             window.renderWikiCharacterSummary(detail, character, meta, ui, {
               onOpenDetails: (tab) => {location.hash = `${base}/details/${tab || 'profile'}`;},
+              onVariantNavigate: (variantId) => window.WFTeamInspector?.rememberVariant(variantId),
             });
             const navigation = el('nav', 'breadcrumbs'); navigation.setAttribute('aria-label', '返回角色列表');
             const back = el('a', 'back-button summary-back-link', '‹ 返回角色图鉴'); back.href = '#';
