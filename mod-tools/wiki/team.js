@@ -161,26 +161,36 @@
     }
     function paintPreview() {
       preview.replaceChildren(el('h2', '', '编成资料'));
-      S.ruleNotes(team, equipment, data.equipmentMeta?.partyRules).forEach((value) => preview.append(el('p', 'weapon-note', value)));
+      const rules = S.ruleNotes(team, equipment, data.equipmentMeta?.partyRules);
+      if (rules.length) {
+        const notes = el('details', 'team-preview-rules'); notes.append(el('summary', '', `装备规则 · ${rules.length} 条`));
+        rules.forEach((value) => notes.append(el('p', 'weapon-note', value))); preview.append(notes);
+      }
       const leader = characters.get(team.main[0]);
-      if (leader) preview.append(el('h3', '', `队长 · ${leader.name}`));
+      if (leader) preview.append(button(`队长技 · ${leader.name} ›`, () => {inspected = {group:'main',index:0}; paintBoard();}, 'text-button team-preview-leader'));
       for (let i = 0; i < 3; i++) {
         const main = characters.get(team.main[i]), unison = characters.get(team.unison[i]);
-        const box = el('details', 'team-pair'); box.open = i === 0;
-        box.append(el('summary', '', `${i + 1}号位：${main?.name || '空位'} / ${unison?.name || '空位'}`));
+        const box = el('details', 'team-pair'); box.open = i === inspected.index;
+        const summary = el('summary');
+        summary.append(el('span', 'team-pair-number', `${i + 1}号位`),
+          el('span', 'team-pair-names', `${main?.name || '空位'} / ${unison?.name || '空位'}`)); box.append(summary);
         for (const [label, item] of [['主位', main], ['合击', unison]]) if (item) {
-          box.append(el('h3', '', `${label} · ${item.name}`), elementBadge(item.element));
-          box.append(button('查看角色面板', () => {inspected = {group:label === '主位' ? 'main' : 'unison',index:i}; paintBoard();}, 'text-button'));
+          const row = el('div', 'team-pair-character');
+          const show = button('查看面板', () => {inspected = {group:label === '主位' ? 'main' : 'unison',index:i}; paintBoard();}, 'text-button');
+          show.setAttribute('aria-label', `查看${i + 1}号${label}${item.name}面板`);
+          row.append(el('span', 'team-pair-kind', label), el('strong', '', item.name), elementBadge(item.element), show); box.append(row);
         }
         for (const group of ['weapon', 'soul']) {
           const item = equipment.get(team[group][i]); if (!item) continue;
-          box.append(el('h3', '', `${labels[group]} · ${item.name}`));
+          const effect = el('details', 'team-pair-effect'), caption = el('summary');
+          caption.append(el('span', 'team-pair-kind', labels[group]), el('strong', '', item.name)); effect.append(caption);
           const effects = group === 'soul' ? item.soul?.effects : item.awakenedEffects || item.baseEffects;
-          box.append(el('p', '', Array.isArray(effects) ? effects.join('\n') : effects || item.description || ''));
+          effect.append(el('p', '', Array.isArray(effects) ? effects.join('\n') : effects || item.description || '暂无效果说明'));
           if (group === 'weapon' && item.enhancement) {
-            box.append(el('h4', '', `强化至 Lv${item.enhancement.maxLevel} 的追加效果`),
+            effect.append(el('h4', '', `强化至 Lv${item.enhancement.maxLevel} 的追加效果`),
               el('p', '', (item.enhancement.effects || []).join('\n')));
           }
+          box.append(effect);
         }
         preview.append(box);
       }
@@ -234,7 +244,8 @@
       }
       if (!items.length) candidates.append(el('p', '', '没有匹配的候选。'));
     }
-    const layout = el('div', 'team-layout'); if (inspector) layout.append(inspector.element); layout.append(board, library, preview);
+    const mainColumn = el('div', 'team-main'); mainColumn.append(board, preview);
+    const layout = el('div', 'team-layout'); if (inspector) layout.append(inspector.element); layout.append(mainColumn, library);
     host.replaceChildren(el('h1', '', '配队模拟'), el('p', 'section-intro', '拖拽头像到槽位，或点空位／「换」后选择候选。点击盘中的角色头像，在角色面板查看技能与能力；第一列主位为队长。'),
       controls, status, layout, el('p', 'muted', '用于编成与查阅效果；主位限制、触发条件和武器特殊规则请结合说明判断。本页不模拟战斗过程或计算实战伤害。'));
     refreshSaved(); paintBoard(); paintLibrary();

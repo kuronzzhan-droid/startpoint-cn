@@ -29,7 +29,8 @@ class Node {
 const el = (tag, cls, text) => new Node(tag, cls, text);
 const data = {meta:{sentinel:'full-meta'},characters:['a','b','c','d'].map((id) => ({id,name:`角色${id}`,icon:`${id}.png`,element:'火',
   avatars:{before:`${id}.png`,...(id === 'd' ? {} : {after:`${id}-after.png`})}})),
-  equipment:[{id:'w',name:'武器',element:'火',rarity:5,soul:{available:true}},
+  equipment:[{id:'w',name:'武器',element:'火',rarity:5,awakenedEffects:['装备攻击 +25%'],
+    enhancement:{maxLevel:120,effects:['强化技能伤害 +80%']},soul:{available:true,effects:['魂珠攻击 +10%']}},
     {id:'water',name:'水弓',element:'水',rarity:4,soul:{available:true}},
     {id:'no-soul',name:'无魂珠武器',element:'火',rarity:5,soul:{available:false}}]};
 const plate = {...S.empty(),main:['a','b','c'],unison:['d','',''],weapon:['w','','']};
@@ -146,6 +147,22 @@ test('returning from full details retains imported title, every slot and selecte
   assert.ok(one(x.host,'1号主位：角色a')); assert.ok(one(x.host,'1号合击：角色d'));
   const weapon = one(x.host,'1号装备：武器'); assert.equal(weapon.href,'#weapon/w'); await weapon.fire('click');
   assert.deepEqual(x.remembered,[['weapon','w']]);
+});
+
+test('plate and compact notes share one continuous column and preserve complete folded equipment effects',async()=>{
+  const x=teamPage();x.window.WFTeamImport.load({...plate,soul:['w','','']},'资料盘',{group:'main',index:1});x.render();
+  const main=x.host.querySelector('.team-main');
+  assert.equal(main.children[0],x.host.querySelector('.team-board'));assert.equal(main.children[1],x.host.querySelector('.team-preview'));
+  assert.notEqual(x.host.querySelector('.team-library').parent,main);
+  let pairs=x.host.querySelectorAll('.team-pair');assert.deepEqual(pairs.map((node)=>node.open),[false,true,false]);
+  const effects=x.host.querySelectorAll('.team-pair-effect');assert.equal(effects.length,2);
+  assert.match(effects[0].textContent,/装备攻击 \+25%.*强化至 Lv120.*强化技能伤害 \+80%/s);
+  assert.match(effects[1].textContent,/魂珠攻击 \+10%/);assert.ok(effects.every((node)=>!node.open && node.tag==='details'));
+  assert.equal(effects.flatMap((node)=>node.querySelectorAll('a')).length,0);
+  await button(x.host,'队长技 · 角色a ›').fire('click');
+  assert.equal(x.inspected.at(-1),'a');pairs=x.host.querySelectorAll('.team-pair');assert.deepEqual(pairs.map((node)=>node.open),[true,false,false]);
+  await one(x.host,'查看2号主位角色b面板').fire('click');assert.equal(x.inspected.at(-1),'b');
+  assert.equal(x.window.location.hash,'#team');assert.ok(one(x.host,'1号魂珠：武器'));
 });
 
 test('three picker tabs assign to distinct slots, and selecting an empty soul slot opens only souls', async () => {
