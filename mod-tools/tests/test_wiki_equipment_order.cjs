@@ -1,8 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
+const {environment} = require('./wiki_equipment_fixture.cjs');
 const order = require('../wiki/equipment-order.js');
 const entries = [
   {id:'zzz',name:'早期五星',rarity:5,category:'其他武器'},
@@ -24,24 +22,10 @@ test('unknown positions and missing rarity sort after known entries without prod
   assert.ok(compare(entries[5],{id:'not-in-catalog'}) < 0);
   assert.equal(compare({id:'none',rarity:'invalid'},{id:'other'}),0);
 });
-class Node {
-  constructor(tag, cls = '', text = '') {Object.assign(this,{tag,className:cls,ownText:text,children:[],events:{},attributes:{},value:''});}
-  append(...nodes) {nodes.forEach((node) => {node.parent = this;this.children.push(node);});}
-  replaceChildren(...nodes) {this.children = []; this.ownText = ''; this.append(...nodes);}
-  replaceWith(next) {const index = this.parent.children.indexOf(this);this.parent.children[index] = next;next.parent = this.parent;}
-  setAttribute(key,value) {this.attributes[key] = value;}
-  addEventListener(name, listener) {this.events[name] = listener;}
-  get textContent() {return this.ownText + this.children.map((node) => node.textContent).join('');}
-  set textContent(text) {this.children = [];this.ownText = text;}
-  all(match) {return this.children.flatMap((node) => [...(match(node) ? [node] : []),...node.all(match)]);}
-  fire(name, extra = {}) {this.events[name]?.({preventDefault(){},stopPropagation(){},...extra});}
-}
 test('weapon groups start unmounted and preserve category/rarity ordering when expanded and filtered', () => {
-  const el = (...args) => new Node(...args), host = el('main');
-  const window = {WFEquipmentOrder:order,WFWikiReadable:{}};
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki/equipment-page.js'),'utf8'),{window});
-  window.renderWikiWeaponPage(host,{equipment:entries},{el,picture:(_url, name, cls) => el('img',cls,name)});
-  const names = () => host.all((node) => node.tag === 'strong').map((node) => node.textContent);
+  const {host,window,ui} = environment();
+  window.renderWikiWeaponPage(host,{equipment:entries},ui);
+  const names = () => host.all((node) => node.tag === 'strong' && node.parent.className === 'equipment-card-title').map((node) => node.textContent);
   assert.deepEqual(names(), []);
   assert.ok(host.all((node) => node.className === 'equipment-group').every((node) => node.open === false));
   host.all((node) => node.tag === 'button' && node.textContent === '全部展开')[0].fire('click');
@@ -54,22 +38,18 @@ test('weapon groups start unmounted and preserve category/rarity ordering when e
 });
 
 test('a standalone weapon still opens its detail card immediately', () => {
-  const el = (...args) => new Node(...args), host = el('main'), document = {};
-  const window = {WFEquipmentOrder:order,WFWikiReadable:{}};
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki/equipment-page.js'),'utf8'),{window,document});
-  window.renderWikiWeaponPage(host,{equipment:entries},{el,picture:(_url,name,cls) => el('img',cls,name)},'aaa');
+  const {host,window,document,ui} = environment();
+  window.renderWikiWeaponPage(host,{equipment:entries},ui,'aaa');
   const card = host.all((node) => node.className.includes('equipment-card'))[0];
   assert.equal(card.open,true); assert.match(document.title,/后期五星/);
 });
 
 function catalogue(items) {
-  const el = (...args) => new Node(...args), host = el('main');
-  const window = {WFEquipmentOrder:order,WFWikiReadable:{}};
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki/equipment-page.js'),'utf8'),{window});
-  window.renderWikiWeaponPage(host,{equipment:items},{el,picture:(_url,name,cls) => el('img',cls,name)});
+  const {host,window,ui} = environment();
+  window.renderWikiWeaponPage(host,{equipment:items},ui);
   const expand = (open = true) => host.all((node) => node.tag === 'button' && node.textContent === (open ? '全部展开' : '全部收起'))[0].fire('click');
   const select = (label,value) => {const node=host.all((n)=>n.attributes['aria-label']===label)[0];node.value=value;node.fire('change');};
-  const names = (root=host) => root.all((node)=>node.tag==='strong').map((node)=>node.textContent);
+  const names = (root=host) => root.all((node)=>node.tag==='strong'&&node.parent.className==='equipment-card-title').map((node)=>node.textContent);
   return {host,expand,select,names};
 }
 const mixed = [
