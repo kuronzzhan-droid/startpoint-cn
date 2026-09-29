@@ -41,6 +41,7 @@
       const node = el('button', cls, label); node.type = 'button'; node.addEventListener('click', action); return node;
     }
     function field(label, input) {
+      input.setAttribute('aria-label', label);
       const node = el('label', 'admin-field'); node.append(el('span', '', label), input); return node;
     }
     function select(values, current) {
@@ -57,7 +58,8 @@
       const revision = Number(item.revision), warning = el('p', 'admin-edit-status'); warning.setAttribute('role', 'status');
       const title = input(item.title, 80), author = input(item.author, 40), notes = input(item.notes, 2000, true);
       title.required = true;
-      const element = select([['auto','根据主位自动判断'],['universal','宇宙'], ...['火','水','雷','风','光','暗'].map((v) => [v,v])], item.element || 'auto');
+      const element = select([['auto','根据队长属性自动判断'],['universal','宇宙'],
+        ...(config.elements || ['火','水','雷','风','光','暗','无']).filter((v) => v !== 'universal').map((v) => [v,v])], item.element || 'auto');
       const status = select([['approved','公开'],['hidden','隐藏']], item.status === 'hidden' ? 'hidden' : 'approved');
       const heading = el('div', 'admin-edit-heading'); heading.append(el('h2', '', `编辑：${item.title}`),
         button('关闭编辑', () => {editorHost.replaceChildren(); editorHost.hidden = true;}));

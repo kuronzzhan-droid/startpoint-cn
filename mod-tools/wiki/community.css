@@ -5,7 +5,8 @@
 .community-damage-options legend{padding:0 5px;color:var(--muted)}
 .community-check{display:inline-flex;align-items:center;gap:6px;cursor:pointer;min-height:28px}.community-check input{width:17px;height:17px;accent-color:#168e81}
 .community-status{min-height:1.5em;color:var(--muted);overflow-wrap:anywhere}.community-status a{display:inline-block;margin:5px}
-.community-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:15px;align-items:start}
+.community-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,400px),1fr));gap:15px;align-items:start}
+.community-grid.community-single{grid-template-columns:minmax(0,760px)}
 .community-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
 .community-card h2{font-size:17px;line-height:1.4;margin:0 0 8px;overflow-wrap:anywhere}.community-card h2 a{color:var(--ink);text-decoration:none}.community-card h2 a:hover{text-decoration:underline}
 .community-tags{display:flex;flex-wrap:wrap;gap:5px}.community-tags .badge{font-size:11px}
