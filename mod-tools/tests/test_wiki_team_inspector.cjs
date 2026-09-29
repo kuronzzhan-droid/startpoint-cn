@@ -80,6 +80,13 @@ test('return link is limited to an explicitly opened team detail and cleared aft
   x.api.attachReturn(host,'character/a',{el}); assert.equal(host.children.length,0);
   x.api.remember('weapon','w'); x.api.attachReturn(host,'weapon/w',{el}); assert.equal(host.children[0].href,'#team');
 });
+test('team origin replaces the overview back link instead of creating duplicate navigation', () => {
+  const x = inspector(async () => null), host = el('section'), nav = el('nav'), link = el('a','summary-back-link','返回角色图鉴');
+  link.href = '#'; nav.append(link); host.append(nav);
+  x.api.remember('character','a'); x.api.attachReturn(host,'character/a',{el});
+  assert.equal(host.querySelectorAll('a').length,1); assert.equal(link.href,'#team');
+  assert.equal(link.textContent,'‹ 返回当前编队');
+});
 function teamPage() {
   const inspected = [], remembered = [], stored = new Map();
   const window = {WFTeamState:S,location:{hash:'#team'},WFCharacterOrder:{compare:() => 0},

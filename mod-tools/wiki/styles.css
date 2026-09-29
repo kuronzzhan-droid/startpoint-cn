@@ -123,7 +123,9 @@ main{padding:26px 30px 0;min-width:0;outline:none}
 .back-to-top{position:fixed;z-index:50;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:52px;height:58px;border:2px solid #27bcae;border-bottom-width:4px;border-radius:12px;background:#fff;color:#167f75;box-shadow:0 3px 12px #244e4b26;font-size:11px;font-weight:700}
 .back-to-top>span:first-child{font-size:23px;line-height:1}
 .back-to-top:hover{background:#e7faf5}.back-to-top:focus-visible{outline:3px solid #e6af3a;outline-offset:3px}
+.back-to-home{bottom:calc(86px + env(safe-area-inset-bottom,0px));text-decoration:none}
 @media(max-width:640px){.back-to-top{right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));width:46px;height:52px}}
+@media(max-width:640px){.back-to-home{bottom:calc(72px + env(safe-area-inset-bottom,0px))}}
 @media(min-width:1450px){.character-grid{grid-template-columns:repeat(auto-fill,minmax(147px,1fr));gap:17px}}
 @media(max-width:1100px){.page-shell{grid-template-columns:202px minmax(0,1fr)}main{padding:23px 22px 0}.sidebar{padding:24px 14px}.character-grid{grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:12px}}
 @media(max-width:850px){.page-shell{grid-template-columns:185px minmax(0,1fr)}.sort-control{margin-left:auto}.card-name{font-size:14px}}

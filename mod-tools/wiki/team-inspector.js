@@ -15,6 +15,8 @@
   }
   function attachReturn(host, route, ui) {
     if (!matches(route)) return;
+    const summaryBack = host.querySelector('.summary-back-link');
+    if (summaryBack) {summaryBack.href = '#team'; summaryBack.textContent = '‹ 返回当前编队'; return;}
     const link = ui.el('a', 'back-button team-return-link', '‹ 返回当前编队'); link.href = '#team';
     host.prepend(link);
   }
