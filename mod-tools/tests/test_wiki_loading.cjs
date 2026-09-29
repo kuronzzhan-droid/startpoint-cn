@@ -17,7 +17,7 @@ function loader(split = true) {
     (context.window.WF_WIKI_CHUNKS ||= {})[key] = value;
     scripts[index].onload();
   };
-  return {api:context.window.WFWikiData, data, scripts, complete};
+  return {api:context.window.WFWikiData, data, scripts, complete, context};
 }
 test('concurrent character reads share one request and retain complete effects', async () => {
   const x=loader(), first=x.api.loadCharacter('ca'), second=x.api.loadCharacter('ca');
@@ -53,6 +53,23 @@ test('search normalizes full descriptions separately from lightweight character 
   const index=await promise;
   assert.equal(index.get('ca'),'abc 技能 台词'); assert.equal(x.api.searchIndex(),index);
   assert.equal(x.data.characters[0].name,'A'); assert.equal(await x.api.loadSearchIndex(),index);
+});
+
+test('real character filters find skill-only text through search chunks when bootstrap has no effects', async () => {
+  const {Node}=require('./wiki_equipment_fixture.cjs'),x=loader();
+  vm.runInNewContext(source('character-filters.js'),x.context);
+  const ui={el:(...args)=>new Node(...args),nativeIcon:()=>new Node('span')};
+  let done;const changed=new Promise(resolve=>{done=resolve;});
+  const filters=x.context.window.WFCharacterFilters.create({characters:x.data.characters,ui,idPrefix:'test-slim',
+    onChange:()=>done(x.data.characters.filter(filters.matches).map(c=>c.id))});
+  const mounted=new Node('document');mounted.append(filters.element);
+  assert.equal(x.data.characters[0].leader,undefined);assert.equal(x.data.characters[0].abilities,undefined);
+  filters.search.value='技能发动';filters.search.fire('input');
+  await new Promise(resolve=>setTimeout(resolve,95));
+  assert.equal(x.scripts.length,1);assert.match(x.scripts[0].src,/search/);
+  x.complete('search',{ca:'角色A 每次技能发动时攻击+50%',cb:'角色B 主位强化弹射'});
+  assert.deepEqual(Array.from(await changed),['ca']);
+  assert.equal(x.data.characters[0].abilities,undefined);
 });
 test('legacy unsplit exports remain readable without any requests', async () => {
   const x=loader(false);

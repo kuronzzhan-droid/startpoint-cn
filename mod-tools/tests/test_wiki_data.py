@@ -43,9 +43,7 @@ class WikiDataTests(unittest.TestCase):
         self.assertEqual(self.catalog, before)
         bootstrap, _ = data.split_catalog(self.catalog)
         index = bootstrap["characters"][0]
-        self.assertEqual(index["leader"], {"description": "全队攻击+100%"})
-        self.assertEqual(index["abilities"], [{"name": "能力1", "description": "主位攻击+50%"}])
-        self.assertFalse(set(index) & {"voices", "skills", "nameplates", "officialComparison"})
+        self.assertFalse(set(index) & {"leader", "abilities", "voices", "skills", "nameplates", "officialComparison"})
         self.assertEqual(index["portraits"], [{"url": "media/portrait.webp"}])
         self.assertEqual(index["catalogOrder"], 1)
         self.assertEqual(index["avatars"], self.catalog["characters"][0]["avatars"])
@@ -59,10 +57,19 @@ class WikiDataTests(unittest.TestCase):
 
     def test_search_includes_all_player_text_and_numbers_but_no_media_paths(self):
         content = data.search_text(self.catalog["characters"][0])
-        for term in ("只有台词", "音声です", "12倍", "魔像启动", "仅主位", "无修改", "信赖铭牌", "5"):
+        for term in ("只有台词", "音声です", "12倍", "魔像启动", "全队攻击+100%", "主位攻击+50%", "仅主位", "无修改", "信赖铭牌", "5"):
             self.assertIn(term, content)
         self.assertNotIn("media/", content)
         self.assertEqual(data.search_text(["重复", "重复", True, 1.5]), "重复\ntrue\n1.5")
+
+    def test_legacy_index_remains_readable_but_cannot_smuggle_changed_effects(self):
+        data.write_split_public(self.output, self.catalog)
+        bootstrap, _ = data.split_catalog(self.catalog)
+        bootstrap["characters"] = [data.index_character(c, legacy_effects=True) for c in self.catalog["characters"]]
+        self.assertEqual(data.read_split_catalog(self.output, bootstrap), self.catalog)
+        bootstrap["characters"][0]["leader"]["description"] = "错误旧正文"
+        with self.assertRaisesRegex(ValueError, "摘要与详情"):
+            data.read_split_catalog(self.output, bootstrap)
 
     def test_chunk_parser_does_not_execute_or_accept_appended_code(self):
         bootstrap, files = data.split_catalog(self.catalog)

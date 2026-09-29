@@ -69,16 +69,19 @@ def search_text(value):
     return "\n".join(dict.fromkeys(leaves(value)))
 
 
-def index_character(character):
+def index_character(character, *, legacy_effects=False):
     result = {key: character[key] for key in INDEX_FIELDS if key in character}
     if character.get("portraits"):
         result["portraits"] = [{key: portrait[key] for key in ("label", "url") if key in portrait}
                                for portrait in character["portraits"] if isinstance(portrait, dict)]
     if not result.get("icon") and character.get("portraits"):
         result["icon"] = character["portraits"][0].get("url")
-    result["leader"] = {"description": character.get("leader", {}).get("description", "")}
-    result["abilities"] = [{key: ability[key] for key in ("name", "description") if key in ability}
-                           for ability in character.get("abilities", [])]
+    # Only the reader accepts older format-1 indexes. New bootstrap data leaves
+    # effect text in the existing complete character and full-search chunks.
+    if legacy_effects:
+        result["leader"] = {"description": character.get("leader", {}).get("description", "")}
+        result["abilities"] = [{key: ability[key] for key in ("name", "description") if key in ability}
+                               for ability in character.get("abilities", [])]
     return result
 
 
@@ -156,7 +159,8 @@ def read_split_catalog(output: Path, bootstrap=None):
         parts[key] = chunk_payload(raw, key)
     characters = [parts["character:" + cid] for cid in ids]
     require(all(c.get("id") == cid for c, cid in zip(characters, ids)), "详情包角色与索引不符")
-    require([index_character(c) for c in characters] == bootstrap["characters"], "首页摘要与详情资料不一致")
+    require(all(brief == index_character(c) or brief == index_character(c, legacy_effects=True)
+                for c, brief in zip(characters, bootstrap["characters"])), "首页摘要与详情资料不一致")
     require(parts["search"] == {c["id"]: search_text(c) for c in characters}, "全文检索内容与详情不同")
     catalog = {"meta": bootstrap["meta"], "characters": characters}
     if "equipment" in parts:
