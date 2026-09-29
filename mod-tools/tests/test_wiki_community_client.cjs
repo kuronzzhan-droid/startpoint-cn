@@ -33,6 +33,10 @@ test('gameplay sections remain independent from categories and legacy general en
   assert.equal(C.sectionLabel('abyss'),'深渊连战'); assert.equal(C.sectionLabel(undefined),'通用/其他');
   assert.equal(C.sectionLabel('玩具盘'),'通用/其他');
 });
+test('code availability is an independent, allowlisted query filter', () => {
+  for (const code of ['has','none']) assert.equal(new URLSearchParams(C.query({code,section:'abyss',category:'玩具盘'})).get('code'),code);
+  for (const code of ['','invalid']) assert.equal(new URLSearchParams(C.query({code})).has('code'),false);
+});
 test('same-origin API sends JSON and credentials without querying any game endpoint', async () => {
   const calls = [], api = C.createApi(async (...args) => {calls.push(args); return response({id:'t1'});}, 'https:');
   await api.request('/teams/t1/like',{turnstileToken:'one-use'});

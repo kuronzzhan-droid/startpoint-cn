@@ -4,7 +4,7 @@
   const C = window.WFCommunity;
   C.openSubmit = async ({team: input, title: initialTitle = '', data, ui}) => {
     const {el} = ui, team = C.teamCopy(input);
-    const modal = C.dialog('管理员收录队伍', ui), host = modal.element;
+    const modal = C.dialog('管理员保存队伍', ui), host = modal.element;
     let closed = false;
     modal.cleanup(() => {closed = true;});
     const gate = el('p', 'community-status', '正在检查管理员登录…'); gate.setAttribute('role', 'status'); host.append(gate);
@@ -23,6 +23,11 @@
     };
     const title = field('队伍名称', 'input', 80, initialTitle.slice(0, 80)); title.required = true;
     const author = field('作者署名', 'input', 40); author.required = true;
+    const visibility = field('保存位置', 'select', 0); visibility.setAttribute('aria-label', '保存位置');
+    [['private','我的空间（私有）'],['public','配队大全（公开）']].forEach(([value,label]) => {
+      const option = el('option', '', label); option.value = value; visibility.append(option);
+    });
+    visibility.value = 'private';
     const notes = field('用途、操作要点与替换建议（选填）', 'textarea', 2000); notes.rows = 4;
     const category = field('配队分类', 'select', 0); category.required = true; category.setAttribute('aria-label', '配队分类');
     const categoryPrompt = el('option', '', '请选择配队分类'); categoryPrompt.value = ''; category.append(categoryPrompt);
@@ -38,12 +43,17 @@
       const wrap = el('label', 'community-check'), input = el('input'); input.type = 'checkbox'; input.value = value;
       wrap.append(input, el('span', '', label)); damage.append(wrap); return input;
     });
-    const submit = el('button', 'primary-button', '收录到配队大全'); submit.type = 'submit'; submit.disabled = true;
+    const submit = el('button', 'primary-button', '保存队伍'); submit.type = 'submit'; submit.disabled = true;
     const retry = el('button', 'secondary-button', '重新连接社区'); retry.type = 'button'; retry.hidden = true;
-    form.append(damage, el('p', 'muted', '收录后公开展示，作者署名用于注明队伍来源。相同阵容只收录一次。'), status, submit, retry);
+    form.append(damage, el('p', 'community-save-help', '我的空间仅本人及站长、副站长可见；选择配队大全则公开展示。保存后可单独公开游戏队伍码。'), status, submit, retry);
     host.append(form);
-    let busy = false, ready = false;
-    const update = (valid) => {ready = valid; submit.disabled = !ready || busy;};
+    let busy = false, ready = false, saved = false;
+    const update = (valid) => {ready = valid; submit.disabled = !ready || busy || saved;};
+    const lockFields = (locked) => {for (const tag of ['input','select','textarea']) form.querySelectorAll(tag).forEach((node) => {node.disabled = locked;});};
+    const adminLink = (label, item) => {
+      const link = el('a', 'text-button', label); link.href = '#community/admin';
+      link.addEventListener('click', () => {C.adminTarget = {id:item.id,scope:item.visibility === 'private' ? 'mine' : 'all'};}); return link;
+    };
     async function connect() {
       retry.hidden = true; status.textContent = '正在连接配队社区…';
       try {
@@ -56,32 +66,43 @@
     }
     retry.addEventListener('click', connect);
     form.addEventListener('submit', async (event) => {
-      event.preventDefault(); if (busy) return;
+      event.preventDefault(); if (busy || saved) return;
       const damageTypes = checks.filter((check) => check.checked).map((check) => check.value);
       const invalid = C.teamError(team, data) || (!title.value.trim() ? '请填写队伍名称。' : '')
         || (!author.value.trim() ? '请填写作者署名。' : '') || (!C.teamCategories.includes(category.value) ? '请选择配队分类。' : '')
         || (!Object.hasOwn(C.teamSections, section.value) ? '请选择有效的玩法分区。' : '')
+        || (!['public','private'].includes(visibility.value) ? '请选择有效的保存位置。' : '')
         || (!damageTypes.length ? '请至少选择一种伤害类型。' : '');
       if (invalid) {status.textContent = invalid; return;}
       if (!ready) {status.textContent = '请先连接配队社区。'; return;}
-      busy = true; update(false); status.textContent = '正在提交…';
+      busy = true; lockFields(true); update(false); status.textContent = '正在保存…';
       try {
         const result = await C.client.request('/admin/teams', {team, title: title.value.trim(), author: author.value.trim(),
-          notes: notes.value.trim(), category: category.value, section: section.value, element: element.value, damageTypes});
+          notes: notes.value.trim(), category: category.value, section: section.value, visibility:visibility.value, element: element.value, damageTypes});
         if (closed) return;
         const item = result.team;
-        if (item?.status === 'approved') {
+        if (!item?.id || !Number.isSafeInteger(Number(item.revision)) || Number(item.revision) < 1 || !['public','private'].includes(item.visibility)) {
+          throw new Error('服务端未返回完整的保存结果，请到管理后台核实，避免重复保存。');
+        }
+        saved = true;
+        if (item.visibility === 'private') {
+          status.replaceChildren(el('span', '', '已保存到我的空间，仅本人及站长、副站长可见。 '), adminLink('查看我的队伍',item));
+        } else if (item.status === 'approved') {
           status.replaceChildren(el('span', '', '收录成功，已公开。 '));
           const link = el('a', 'text-button', '查看推荐盘'); link.href = `#community/${encodeURIComponent(item.id)}`; status.append(link);
         } else status.textContent = '队伍已保存，公开后可在配队大全查看。';
+        const actions = el('div', 'community-saved-actions'); actions.append(adminLink('继续编辑 / 管理',item));
+        const codes = window.WFCommunityGameCodes?.controls(item,ui,(...args) => C.client.request(...args));
+        if (codes) {codes.open = true; actions.append(codes);} host.append(actions);
       } catch (error) {
         if (closed) return;
         status.textContent = C.message(error);
-        if (error.code === 'duplicate' && error.data?.status === 'approved' && error.data.existingId) {
-          const link = el('a', 'text-button', ' 查看已收录的盘子'); link.href = `#community/${encodeURIComponent(error.data.existingId)}`; status.append(link);
+        if (error.code === 'duplicate' && error.data?.existingId) {
+          if (error.data.status === 'hidden') status.textContent = '相同阵容已保存，暂不公开；不需要重复保存。';
+          status.append(adminLink(' 在后台查看已保存的队伍',{id:error.data.existingId}));
         } else if (error.code === 'duplicate') status.textContent = '相同阵容已保存，暂不公开；不需要重复收录。';
         if (error.status === 401 || error.status === 403) loginLink(status);
-      } finally {busy = false; if (!closed) update(true);}
+      } finally {busy = false; if (!closed) {lockFields(saved); update(true);}}
     });
     connect();
   };

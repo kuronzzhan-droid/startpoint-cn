@@ -2,7 +2,7 @@
 ((root) => {
   'use strict';
   const validCode = (value) => typeof value === 'string' && /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{12}$/.test(value);
-  const publicCode = (item) => (!item.status || item.status === 'approved') && validCode(item.gameCode) ? item.gameCode : '';
+  const publicCode = (item) => item.visibility !== 'private' && (!item.status || item.status === 'approved') && validCode(item.gameCode) ? item.gameCode : '';
   const explanation = '仅接入本站队伍码的游戏服务器可用。';
   function codeView(code, ui, {compact = false} = {}) {
     const {el} = ui, box = el('div', `community-game-code${compact ? ' community-game-code-compact' : ''}`);
@@ -33,21 +33,26 @@
     return box;
   }
   function readonly(item, ui, options) {const code = publicCode(item); return code ? codeView(code, ui, options) : null;}
-  function controls(item, ui, request) {
+  function controls(item, ui, request, {mutationBlocked = () => ''} = {}) {
     const {el} = ui, section = el('details', 'community-game-code-manager');
     section.append(el('summary', '', '游戏队伍码管理'));
     const status = el('p', 'community-game-code-status'); status.setAttribute('role', 'status');
     const preview = el('div'), actions = el('div', 'community-game-code-actions');
-    const make = el('button', 'secondary-button', '生成游戏码'), revoke = el('button', 'secondary-button', '停用游戏码');
+    const make = el('button', 'secondary-button', '公开队伍码'), revoke = el('button', 'secondary-button', '停用游戏码');
     const refresh = el('button', 'secondary-button', '刷新状态');
     [make, revoke, refresh].forEach((button) => {button.type = 'button';});
     actions.append(make, revoke, refresh); section.append(preview, status, actions);
-    let state = {gameCode: null, active: false, teamRevision: Number(item.revision)}, busy = false, loaded = false, conflict = false;
+    if (item.visibility === 'private') section.append(el('p', 'muted community-game-code-note', '公开队伍码后，持有码的玩家可在已接入的游戏服务器导入阵容；队伍仍保存在我的空间，不进入配队大全。'));
+    let state = {gameCode: null, active: false, teamRevision: Number(item.revision)}, busy = false, loaded = false, conflict = false, guardMessage = '';
     const base = `/admin/teams/${encodeURIComponent(item.id)}/game-code`;
     function paint() {
-      make.disabled = busy || conflict || item.status !== 'approved';
-      revoke.disabled = busy || conflict || !state.active; refresh.disabled = busy;
-      make.textContent = state.active ? '复用当前游戏码' : '生成游戏码';
+      const blocked = mutationBlocked();
+      make.disabled = busy || conflict || Boolean(blocked) || item.status !== 'approved';
+      revoke.disabled = busy || conflict || Boolean(blocked) || !state.active; refresh.disabled = busy;
+      make.textContent = state.active ? '复用已公开队伍码' : '公开队伍码';
+      if (blocked) status.textContent = blocked;
+      else if (guardMessage && status.textContent === guardMessage) status.textContent = '已恢复到保存版本，可管理队伍码。';
+      guardMessage = blocked;
     }
     function accept(result) {
       if (!result || typeof result.active !== 'boolean' || (result.active && !validCode(result.gameCode))) {
@@ -64,7 +69,8 @@
     }
     async function run(operation) {
       if (busy || (operation !== 'refresh' && conflict)) return;
-      if (operation === 'make' && item.status !== 'approved') {status.textContent = '隐藏或未公开的盘子不能生成游戏码。'; return;}
+      if (operation !== 'refresh' && mutationBlocked()) {paint(); return;}
+      if (operation === 'make' && item.status !== 'approved') {status.textContent = '已隐藏或停用的队伍不能公开队伍码。'; return;}
       if (operation !== 'refresh' && !Number.isSafeInteger(state.teamRevision)) {status.textContent = '队伍版本缺失，请重新加载管理列表。'; return;}
       busy = true; paint(); status.textContent = '正在读取服务端游戏码…';
       try {
@@ -72,9 +78,9 @@
           operation === 'refresh' ? undefined : {expectedRevision: state.teamRevision}, operation === 'refresh' ? 'GET' : 'POST');
         if (!section.isConnected) return;
         accept(result); conflict = false;
-        status.textContent = item.status !== 'approved' ? '隐藏或未公开的盘子不能生成游戏码。'
+        status.textContent = item.status !== 'approved' ? '已隐藏或停用的队伍不能公开队伍码。'
           : operation === 'revoke' ? '游戏码已停用，旧码将不能再导入。'
-            : state.active ? '这是服务端保存的有效游戏码。' : '尚无有效游戏码；由管理员生成后才会公开展示。';
+            : state.active ? '这是服务端保存的有效游戏码。' : '尚无队伍码。点击“公开队伍码”后才能分享给游戏玩家。';
       } catch (error) {
         if (!section.isConnected) return;
         conflict = error.code === 'edit_conflict';
@@ -85,6 +91,7 @@
     section.addEventListener('toggle', () => {if (section.open && !loaded) run('refresh');});
     make.addEventListener('click', () => run('make')); revoke.addEventListener('click', () => run('revoke'));
     refresh.addEventListener('click', () => run('refresh')); paint();
+    section.refreshAvailability = paint;
     return section;
   }
   const api = {validCode, publicCode, readonly, controls}; root.WFCommunityGameCodes = api;

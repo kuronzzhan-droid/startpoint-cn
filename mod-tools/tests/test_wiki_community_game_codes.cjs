@@ -35,6 +35,7 @@ test('visitors see only valid server-issued codes for public records and cannot 
   const x=setup();
   assert.equal(x.G.readonly({gameCode:null,status:'approved'},x.ui),null);
   assert.equal(x.G.readonly({gameCode:code,status:'hidden'},x.ui),null);
+  assert.equal(x.G.readonly({gameCode:code,status:'approved',visibility:'private'},x.ui),null);
   assert.equal(x.G.readonly({gameCode:'H4QUDN7W5R',status:'approved'},x.ui),null);
   assert.equal(x.G.readonly({gameCode:'AAAAAAAAAAA0',status:'approved'},x.ui),null);
   const view=x.G.readonly({gameCode:code,status:'approved'},x.ui);
@@ -64,23 +65,23 @@ test('administrator code status loads only on expansion and generation is server
   });
   assert.equal(calls.length,0);assert.equal(x.section.all('input').length,0);
   await x.open();assert.equal(calls[0].path,'/admin/teams/t1/game-code');assert.equal(calls[0].method,'GET');
-  await button(x.section,'生成游戏码').click();
+  await button(x.section,'公开队伍码').click();
   assert.equal(calls[1].method,'POST');assert.equal(calls[1].body.expectedRevision,3);
   assert.equal(x.section.all('input')[0].value,code);assert.equal(x.item.gameCode,code);assert.equal(x.item.revision,3);
-  assert.ok(button(x.section,'复用当前游戏码'));
+  assert.ok(button(x.section,'复用已公开队伍码'));
 });
 test('failed generation never displays an invented code and can be retried',async()=>{
   let posts=0;const x=manager(async(_path,_body,method)=>{
     if(method==='GET')return {gameCode:null,active:false,teamRevision:3};
     if(++posts===1)throw new Error('网络失败');return {gameCode:code,active:true,teamRevision:3};
   });
-  await x.open();await button(x.section,'生成游戏码').click();
+  await x.open();await button(x.section,'公开队伍码').click();
   assert.equal(x.section.all('input').length,0);assert.match(x.section.textContent,/网络失败/);
-  await button(x.section,'生成游戏码').click();assert.equal(x.section.all('input')[0].value,code);
+  await button(x.section,'公开队伍码').click();assert.equal(x.section.all('input')[0].value,code);
 });
 test('hidden records cannot generate and successful revocation removes the displayed code',async()=>{
   const hidden=manager(async()=>({gameCode:null,active:false,teamRevision:3}),'hidden');await hidden.open();
-  assert.equal(button(hidden.section,'生成游戏码').disabled,true);assert.match(hidden.section.textContent,/不能生成/);
+  assert.equal(button(hidden.section,'公开队伍码').disabled,true);assert.match(hidden.section.textContent,/不能公开/);
   const calls=[],active=manager(async(path,body,method)=>{
     calls.push({path,body,method});return {gameCode:path.endsWith('/revoke')?null:code,active:!path.endsWith('/revoke'),teamRevision:3};
   });
@@ -92,11 +93,11 @@ test('hidden records cannot generate and successful revocation removes the displ
 test('changed revisions require reloading the actual team rather than silently accepting its code',async()=>{
   const x=manager(async()=>({gameCode:code,active:true,teamRevision:4}));await x.open();
   assert.equal(x.item.revision,3);assert.equal(x.section.all('input').length,0);
-  assert.match(x.section.textContent,/重新加载管理列表/);assert.equal(button(x.section,'生成游戏码').disabled,true);
+  assert.match(x.section.textContent,/重新加载管理列表/);assert.equal(button(x.section,'公开队伍码').disabled,true);
 });
 test('detached management panels ignore late generation results',async()=>{
   let resolve;const x=manager((_path,_body,method)=>method==='GET'?Promise.resolve({gameCode:null,active:false,teamRevision:3}):new Promise((done)=>{resolve=done;}));
-  await x.open();const pending=button(x.section,'生成游戏码').click();x.section.root=false;
+  await x.open();const pending=button(x.section,'公开队伍码').click();x.section.root=false;
   resolve({gameCode:code,active:true,teamRevision:3});await pending;
   assert.equal(x.item.gameCode,null);assert.equal(x.section.all('input').length,0);
 });

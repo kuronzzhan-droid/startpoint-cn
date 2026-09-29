@@ -123,7 +123,7 @@ test('failed community config keeps the source link and a retry action visible',
 test('administrator collection checks the session and preserves input after request failure',async()=>{
   const calls=[];const x=setup({config:async()=>config,request:async(path,body)=>{
     if(path==='/admin/me')return {id:'admin'};
-    assert.equal(path,'/admin/teams');calls.push(body);if(calls.length===1)throw new Error('网络失败');return {team:{id:'new',status:'approved'}};
+    assert.equal(path,'/admin/teams');calls.push(body);if(calls.length===1)throw new Error('网络失败');return {team:{id:'new',status:'approved',revision:1,visibility:body.visibility}};
   }});
   await x.C.openSubmit({team,title:'我的盘',data,ui:x.ui});await tick();
   const dialog=x.modals[0].element,inputs=dialog.querySelectorAll('input'),form=dialog.querySelectorAll('form')[0];
@@ -131,8 +131,9 @@ test('administrator collection checks the session and preserves input after requ
   dialog.querySelectorAll('select').find((node)=>node.attributes['aria-label']==='配队分类').value='萌新启航';
   await form.fire('submit');
   assert.equal(inputs[0].value,'我的盘');assert.equal(inputs[1].value,'投稿人');assert.match(dialog.textContent,/网络失败/);
-  await form.fire('submit');assert.equal(calls.length,2);assert.equal(calls[1].turnstileToken,undefined);assert.match(dialog.textContent,/收录成功/);
-  assert.ok(dialog.querySelectorAll('a').some((node)=>node.href==='#community/new'));
+  await form.fire('submit');assert.equal(calls.length,2);assert.equal(calls[1].turnstileToken,undefined);assert.equal(calls[1].visibility,'private');assert.match(dialog.textContent,/已保存到我的空间/);
+  assert.ok(dialog.querySelectorAll('a').some((node)=>node.href==='#community/admin'));
+  assert.equal(inputs[0].disabled,true);await form.fire('submit');assert.equal(calls.length,2);
   assert.equal(x.challenges.length,0);
 });
 test('duplicate hidden submissions do not expose a team detail link',async()=>{
@@ -164,7 +165,7 @@ test('category filters combine with element and damage and reset pagination',asy
 });
 
 test('new collection requires a category before submitting and sends its visible label',async()=>{
-  const calls=[];const x=setup({config:async()=>config,request:async(url,body)=>{if(url==='/admin/me')return {id:'admin'};calls.push(body);return {team:{id:'new',status:'approved'}};}});
+  const calls=[];const x=setup({config:async()=>config,request:async(url,body)=>{if(url==='/admin/me')return {id:'admin'};calls.push(body);return {team:{id:'new',status:'approved',revision:1,visibility:body.visibility}};}});
   await x.C.openSubmit({team,title:'新盘',data,ui:x.ui});await tick();
   const dialog=x.modals[0].element,inputs=dialog.querySelectorAll('input'),form=dialog.querySelectorAll('form')[0];
   inputs[1].value='作者';inputs.find((node)=>node.value==='skill').checked=true;
@@ -226,6 +227,49 @@ test('card copy denial retains a selectable real code and never reports success'
   assert.match(header.textContent,/请复制上方已选中/);assert.doesNotMatch(header.textContent,/已复制。/);
   assert.equal(x.context.location.hash,'#community');assert.match(cards[1].querySelector('.community-card-header').textContent,/暂无队伍码/);
   assert.equal(cards[1].querySelector('.community-card-header').querySelectorAll('button').length,0);
+});
+
+test('code availability is folded, combines with section filters and clears with reset',async()=>{
+  const calls=[];const x=setup({config:async()=>config,request:async(url)=>{calls.push(url);return {items:[item,{...item,id:'private',visibility:'private',title:'不得公开的私盘'}]};}});
+  await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();assert.doesNotMatch(x.host.textContent,/不得公开的私盘/);
+  const code=x.host.querySelectorAll('select').find((node)=>node.attributes['aria-label']==='推荐队伍码状态');code.value='none';await code.fire('change');await tick();
+  const abyss=x.host.querySelectorAll('button').find((node)=>node.attributes['aria-label']==='玩法分区：深渊连战');await abyss.fire('click');await tick();
+  const params=new URLSearchParams(calls.at(-1).split('?')[1]);assert.equal(params.get('code'),'none');assert.equal(params.get('section'),'abyss');
+  assert.match(x.host.querySelector('.community-active-filters').textContent,/暂无队伍码/);
+  await x.host.querySelector('.community-filter-reset').fire('click');await tick();assert.equal(code.value,'');assert.equal(calls.at(-1),'/teams?sort=latest');
+});
+
+test('a newly saved private plate locks its draft and publishes its game code only on an explicit later click',async()=>{
+  const calls=[];const x=setup({config:async()=>config,request:async(path,body,method)=>{
+    calls.push({path,body,method});if(path==='/admin/me')return {id:'admin'};
+    if(path==='/admin/teams')return {team:{...item,...body,id:'saved',revision:1,createdBy:'admin'}};
+    assert.equal(path,'/admin/teams/saved/game-code');return {teamRevision:1,active:method==='POST',gameCode:method==='POST'?'H4QUDN7W5R22':null};
+  }});
+  await x.C.openSubmit({team,title:'私有测试',data,ui:x.ui});await tick();
+  const dialog=x.modals[0].element,inputs=dialog.querySelectorAll('input'),form=dialog.querySelector('form');
+  inputs[1].value='作者';inputs.find((node)=>node.value==='skill').checked=true;
+  dialog.querySelectorAll('select').find((node)=>node.attributes['aria-label']==='配队分类').value='玩具盘';
+  assert.equal(dialog.querySelectorAll('select').find((node)=>node.attributes['aria-label']==='保存位置').value,'private');
+  assert.equal(dialog.querySelectorAll('.community-game-code-manager').length,0);await form.fire('submit');
+  assert.equal(calls.find((call)=>call.path==='/admin/teams').body.visibility,'private');assert.equal(inputs[0].disabled,true);
+  const manager=dialog.querySelector('.community-game-code-manager');assert.ok(manager);await manager.fire('toggle');await tick();
+  assert.equal(calls.filter((call)=>call.method==='POST').length,0);
+  await manager.querySelectorAll('button').find((node)=>node.textContent==='公开队伍码').fire('click');
+  assert.equal(calls.at(-1).method,'POST');assert.equal(calls.at(-1).body.expectedRevision,1);
+  assert.match(manager.textContent,/不进入配队大全/);assert.equal(manager.querySelector('input').value,'H4QUDN7W5R22');
+  await form.fire('submit');assert.equal(calls.filter((call)=>call.path==='/admin/teams').length,1);
+});
+
+test('an administrator can explicitly choose the public directory without automatically publishing a code',async()=>{
+  const calls=[];const x=setup({config:async()=>config,request:async(path,body)=>{
+    if(path==='/admin/me')return {id:'admin'};calls.push({path,body});return {team:{...item,...body,id:'new-public',revision:1}};
+  }});
+  await x.C.openSubmit({team,title:'公开队伍',data,ui:x.ui});await tick();const dialog=x.modals[0].element;
+  dialog.querySelectorAll('input')[1].value='作者';dialog.querySelectorAll('input').find((node)=>node.value==='skill').checked=true;
+  dialog.querySelectorAll('select').find((node)=>node.attributes['aria-label']==='配队分类').value='原版毕业队';
+  dialog.querySelectorAll('select').find((node)=>node.attributes['aria-label']==='保存位置').value='public';
+  await dialog.querySelector('form').fire('submit');assert.equal(calls.length,1);assert.equal(calls[0].body.visibility,'public');
+  assert.match(dialog.textContent,/收录成功，已公开/);assert.ok(dialog.querySelectorAll('a').some((node)=>node.href==='#community/new-public'));
 });
 test('like count changes only from a verified server response and repeated likes stay disabled',async()=>{
   const calls=[],results=[];const x=setup({config:async()=>config,request:async(_path,body)=>{calls.push(body);return {likes:4,likedToday:true};}});

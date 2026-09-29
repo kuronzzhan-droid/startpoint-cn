@@ -31,6 +31,7 @@
     const params = new URLSearchParams();
     if (filters.element) params.set('element', filters.element);
     if (filters.section === 'general' || (filters.section && Object.hasOwn(teamSections, filters.section))) params.set('section', filters.section);
+    if (['has','none'].includes(filters.code)) params.set('code', filters.code);
     if (teamCategories.includes(filters.category) || filters.category === 'uncategorized') params.set('category', filters.category);
     const selected = Object.keys(damageTypes).filter((key) => filters.damageTypes?.includes(key));
     if (selected.length) params.set('damage', selected.join(','));

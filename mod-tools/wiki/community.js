@@ -38,7 +38,7 @@
   window.renderWikiCommunity = async (host, data, ui, options = {}) => {
     const {el} = ui, startingHash = location.hash;
     let revision = 0, nextCursor = '', config;
-    const filters = {section: '', element: '', category: '', damageTypes: [], sort: 'latest'};
+    const filters = {section: '', element: '', category: '', code: '', damageTypes: [], sort: 'latest'};
     const header = el('header', 'community-header'), links = el('div', 'community-header-links');
     const intro = el('p', 'section-intro community-intro', '点击队伍查看编成与角色面板，为实用的盘子点赞。');
     const sections = el('div', 'community-sections'); sections.setAttribute('role', 'group'); sections.setAttribute('aria-label', '推荐队伍玩法分区');
@@ -71,23 +71,30 @@
     advancedSummary.append(el('span', '', '更多筛选'), activeSummary);
     const advancedBody = el('div', 'community-advanced-body'), categoryField = el('label', 'community-category-filter');
     categoryField.append(el('span', '', '配队分类'), category);
+    const code = el('select'); code.setAttribute('aria-label', '推荐队伍码状态');
+    [['','全部队伍码状态'],['has','已有队伍码'],['none','暂无队伍码']].forEach(([value,label]) => {
+      const option = el('option', '', label); option.value = value; code.append(option);
+    });
+    const codeField = el('label', 'community-category-filter'); codeField.append(el('span', '', '队伍码'), code);
+    code.addEventListener('change', () => {filters.code = code.value; load();});
     const damage = el('fieldset', 'community-damage-options'); damage.append(el('legend', '', '伤害类型（多选时同时满足）'));
     Object.entries(C.damageTypes).forEach(([value, label]) => {
       const wrap = el('label', 'community-check'), input = el('input'); input.type = 'checkbox'; input.value = value;
       input.addEventListener('change', () => {filters.damageTypes = [...damage.querySelectorAll('input:checked')].map((node) => node.value); load();});
       wrap.append(input, el('span', '', label)); damage.append(wrap);
     });
-    advancedBody.append(categoryField, damage); advanced.append(advancedSummary, advancedBody);
+    const extraSelects = el('div', 'community-extra-selects'); extraSelects.append(categoryField,codeField);
+    advancedBody.append(extraSelects, damage); advanced.append(advancedSummary, advancedBody);
     function syncFilters() {
-      element.value = filters.element; category.value = filters.category; sort.value = filters.sort;
+      element.value = filters.element; category.value = filters.category; sort.value = filters.sort; code.value = filters.code;
       otherSection.value = filters.section === 'general' ? 'general' : '';
       sectionButtons.forEach(({button,value}) => button.setAttribute('aria-pressed', String(filters.section === value)));
-      const active = [...(filters.category ? [C.categoryLabel(filters.category)] : []), ...filters.damageTypes.map((value) => C.damageTypes[value])];
-      activeSummary.textContent = active.length ? `（${active.length}）${active.join(' · ')}` : '分类 · 伤害类型';
+      const active = [...(filters.category ? [C.categoryLabel(filters.category)] : []), ...(filters.code ? [filters.code === 'has' ? '已有队伍码' : '暂无队伍码'] : []), ...filters.damageTypes.map((value) => C.damageTypes[value])];
+      activeSummary.textContent = active.length ? `（${active.length}）${active.join(' · ')}` : '分类 · 伤害类型 · 队伍码';
       reset.disabled = !filters.section && !filters.element && !active.length && filters.sort === 'latest';
     }
     reset.addEventListener('click', () => {
-      Object.assign(filters, {section:'',element:'',category:'',damageTypes:[],sort:'latest'});
+      Object.assign(filters, {section:'',element:'',category:'',code:'',damageTypes:[],sort:'latest'});
       damage.querySelectorAll('input').forEach((input) => {input.checked = false;}); load();
     });
     const status = el('p', 'community-status'); status.setAttribute('role', 'status');
@@ -148,7 +155,7 @@
         if (!current(ticket)) return;
         const items = options.id ? [result.team || result] : result.items || [];
         // Public API is authoritative; never surface explicitly non-public records.
-        const publicItems = items.filter((item) => item && item.id && (!item.status || item.status === 'approved'));
+        const publicItems = items.filter((item) => item && item.id && item.visibility !== 'private' && (!item.status || item.status === 'approved'));
         publicItems.forEach((item) => cards.append(card(item)));
         nextCursor = result.nextCursor || ''; more.hidden = !nextCursor || Boolean(options.id);
         status.textContent = cards.children.length ? `已显示 ${cards.children.length} 支推荐队伍` : '暂时没有符合条件的推荐队伍。';
