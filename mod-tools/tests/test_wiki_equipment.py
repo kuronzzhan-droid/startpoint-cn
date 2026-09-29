@@ -60,6 +60,8 @@ class EquipmentTests(unittest.TestCase):
         self.assertEqual(result, "狼骑士·自身：月耀；直接攻击伤害；特殊效果")
         self.assertEqual(text.clean("自身 战斗不能Base计数- 400%"), "自身 复活所需碰撞次数-4次")
         self.assertEqual(text.clean("自身 2号位技能槽 50%"), "自身 技能槽上限 50%")
+        self.assertEqual(text.clean("Elapsed时间≥3600 → 自身 屏障 10%"), "经过时间≥3600 → 自身 屏障 10%")
+        self.assertEqual(text.clean("经过时间时间≥3600"), "经过时间≥3600")
 
     def test_boundary_materials_are_charged_once(self):
         rows = [{"stage": 1, "enhancementMaxLevel": 69, "costs": [{"id": 1, "amount": 12}]},

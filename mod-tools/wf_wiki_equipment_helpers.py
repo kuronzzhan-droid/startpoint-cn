@@ -82,7 +82,7 @@ class PublicText:
                       lambda m: f"复活所需碰撞次数{m[1]}{float(m[2]) / 100:g}次", text)
         for original, public in PUBLIC_TERMS.items():
             text = text.replace(original, public)
-        return text.replace("(None)", "").strip()
+        return text.replace("经过时间时间", "经过时间").replace("(None)", "").strip()
 
     def override(self, key):
         return self.clean(self.custom.get(key, ""))
