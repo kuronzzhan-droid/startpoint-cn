@@ -64,6 +64,10 @@ class WikiMedia:
         }
         return relative
 
+    def has(self, logical: str) -> bool:
+        """Check optional native variants without reporting missing forms as errors."""
+        return wf_assets.locate(self.store, logical) is not None
+
     def image(self, logical: str) -> str | None:
         if logical in self.entries:
             return self.entries[logical]["url"]

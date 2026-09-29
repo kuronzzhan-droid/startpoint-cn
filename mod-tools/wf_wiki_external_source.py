@@ -112,6 +112,10 @@ class PackageMedia(WikiMedia):
         self.__dict__.update(parent.__dict__)
         self.files = files
 
+    def has(self, logical: str) -> bool:
+        return any((tier, logical) in self.files.entries
+                   for tier in ("common", "medium", "android", "ios"))
+
     def _read(self, logical: str) -> bytes | None:
         for tier in ("common", "medium", "android", "ios"):
             raw = self.files.read(logical, tier)

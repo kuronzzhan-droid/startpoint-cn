@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="equipment.css">
   <link rel="stylesheet" href="character-filters.css">
   <link rel="stylesheet" href="catalog-layout.css">
+  <link rel="stylesheet" href="catalog-avatars.css">
   <link rel="stylesheet" href="ability-panel.css">
   <link rel="stylesheet" href="character-summary.css">
   <link rel="stylesheet" href="sidebar.css">
@@ -31,6 +32,7 @@
   <script src="character-filters.js" defer></script>
   <script src="character-order.js" defer></script>
   <script src="catalog-layout.js" defer></script>
+  <script src="catalog-avatars.js" defer></script>
   <script src="back-to-top.js" defer></script>
   <script src="theme.js" defer></script>
   <script src="team.js" defer></script>
@@ -76,6 +78,7 @@
         <div class="catalog-character-controls">
           <div id="catalog-character-filters"></div>
           <div class="catalog-display-controls">
+            <div id="catalog-avatar-controls"></div>
             <label class="sort-control" for="catalog-layout">排列 <select id="catalog-layout" aria-label="角色排列"><option value="standard" selected>标准</option><option value="dense">致密</option></select></label>
             <label class="sort-control" for="sort-order">排序 <select id="sort-order"><option value="default">属性 / 星级 / 图鉴顺序</option><option value="name">按角色名称</option><option value="rarity">按稀有度</option></select></label>
           </div>

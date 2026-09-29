@@ -90,6 +90,8 @@
   const characterFilters = window.WFCharacterFilters.create({characters, ui: helpers,
     idPrefix: 'catalog-character', onChange: renderCatalog, onReset: clearFilters});
   $('catalog-character-filters').append(characterFilters.element);
+  const catalogAvatars = window.WFCatalogAvatars.create({host: $('catalog-avatar-controls'),
+    catalog: $('catalog-view'), characters, ui: helpers});
   let selectedCategory = '';
 
   [['--frame-window', 'frames', 'window'], ['--frame-button', 'frames', 'button'], ['--frame-status', 'frames', 'status'], ['--game-detail-bg', 'backgrounds', 'detail']].forEach(([variable, group, key]) => {
@@ -149,8 +151,7 @@
     link.setAttribute('aria-label', `${text(character.name, '未命名角色')}，${text(character.rarity)}星，${text(character.element)}属性，查看详情`);
     link.title = `${text(character.name)} · ${text(character.rarity)}星 · ${text(character.element)}属性`;
     const art = el('div', 'card-art');
-    const portraits = list(character.portraits);
-    art.append(picture(character.icon || portraits[0]?.url, '', ''), elementBadge(character.element));
+    art.append(catalogAvatars.picture(character), elementBadge(character.element));
     window.WFCharacterFrame?.apply(art, character);
     window.WFCharacterBadges?.append(art, character, {el});
     const content = el('div', 'card-content');

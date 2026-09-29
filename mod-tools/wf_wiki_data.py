@@ -15,7 +15,7 @@ from wf_wiki_public import PRIVATE, public_id
 PREFIX = "window.WF_WIKI_CHUNKS = window.WF_WIKI_CHUNKS || {};\nwindow.WF_WIKI_CHUNKS["
 CHARACTER_ID = re.compile(r"c[0-9a-f]{12}\Z")
 LOCAL_PATH = re.compile(r"(?<![A-Za-z0-9_])[A-Za-z]:[\\/]|file://|/(?:Users|home)/[^/\s]+")
-INDEX_FIELDS = ("id", "name", "title", "rarity", "element", "type", "origin", "category", "icon",
+INDEX_FIELDS = ("id", "name", "title", "rarity", "element", "type", "origin", "category", "icon", "avatars",
                 "aliases", "themes", "theme", "earlyDesign", "editorNote", "limited",
                 "availabilitySource", "availabilityNote", "catalogOrder")
 

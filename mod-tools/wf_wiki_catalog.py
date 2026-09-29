@@ -17,6 +17,7 @@ from wf_wiki_compare import official_comparison
 from wf_wiki_skill_values import skill_numeric_details
 from wf_wiki_ability_conditions import ability_restrictions
 from wf_wiki_nameplates import attach_nameplates
+from wf_wiki_avatars import character_avatars
 
 ELEMENTS = {"0": "火", "1": "水", "2": "雷", "3": "风", "4": "光", "5": "暗", "6": "通用"}
 TYPES = {"0": "剑士", "1": "格斗", "2": "射击", "3": "辅助", "4": "特殊"}
@@ -198,9 +199,8 @@ def character_entry(source: WikiSource, cid: str, scope: list[str] | None, media
         url = media.image(f"character/{code}/ui/full_shot_1440_1920_{form}.png")
         if url:
             portraits.append({"label": label, "url": url})
-    icon = media.image(f"character/{code}/ui/square_0.png")
-    if not icon:
-        icon = media.image(f"character/{code}/ui/thumbnail_0.png")
+    avatars = character_avatars(code, media)
+    icon = avatars.get("before") or avatars.get("after")
     warnings = []
     if not levels:
         warnings.append("缺少基础数值表")
@@ -229,7 +229,8 @@ def character_entry(source: WikiSource, cid: str, scope: list[str] | None, media
         **character_tags(cid, row, cell(text, 0), ALIASES.get(cid, [])),
         "officialComparison": official_comparison(source, cid, verified_unchanged=official and not scope),
         "editorNote": EDITOR_NOTES.get(cid, ""), "earlyDesign": cid == "129999",
-        "icon": icon, "portraits": portraits, "leader": leader, "abilities": abilities, "skills": skills,
+        "icon": icon, "avatars": avatars, "portraits": portraits,
+        "leader": leader, "abilities": abilities, "skills": skills,
         "switch": switch, "stats": {"levels": levels,
             "awakePerNode": {"atk": numeric(cell(awake_row, 0)), "hp": numeric(cell(awake_row, 1))}
             if awake_row else None,

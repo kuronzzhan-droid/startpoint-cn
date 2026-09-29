@@ -15,7 +15,8 @@ def catalog():
     return public_catalog({"meta": {"version": "1.4.1111"}, "characters": [{
         "id": "111135", "name": "黛妲莉亚", "title": "魔像部部长", "element": "火", "rarity": 5,
         "type": "辅助", "origin": "官方原版", "category": "官方原版", "aliases": ["魔像"],
-        "icon": "media/avatar.webp", "portraits": [{"url": "media/portrait.webp"}],
+        "icon": "media/avatar.webp", "avatars": {"before": "media/avatar.webp", "after": "media/awakened.webp"},
+        "portraits": [{"url": "media/portrait.webp"}],
         "leader": {"name": "队长技", "description": "全队攻击+100%", "rows": [{"description": "原始分项"}]},
         "abilities": [{"name": "能力1", "slot": 1, "description": "主位攻击+50%", "rows": [{
             "description": "只在此条有效", "restrictions": {"operator": "AND", "items": [{"kind": "main", "label": "仅主位"}]}}]}],
@@ -46,6 +47,7 @@ class WikiDataTests(unittest.TestCase):
         self.assertEqual(index["abilities"], [{"name": "能力1", "description": "主位攻击+50%"}])
         self.assertFalse(set(index) & {"voices", "skills", "portraits", "nameplates", "officialComparison"})
         self.assertEqual(index["catalogOrder"], 1)
+        self.assertEqual(index["avatars"], self.catalog["characters"][0]["avatars"])
 
     def test_search_includes_all_player_text_and_numbers_but_no_media_paths(self):
         content = data.search_text(self.catalog["characters"][0])
