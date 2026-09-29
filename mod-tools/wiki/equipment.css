@@ -55,9 +55,16 @@
 .equipment-final-stats-label{font-size:11px;font-weight:600}
 .equipment-final-stats b{font-size:15px;line-height:1.45;font-variant-numeric:tabular-nums}
 .equipment-mode-controls{display:flex;gap:5px;margin-top:8px}
-.equipment-mode-controls button{flex:1;min-height:30px;padding:4px 8px;font-size:12px}
-.equipment-mode-controls button[aria-pressed="true"]{background:#167d70;color:#fff;border-color:#167d70}
+.equipment-mode-controls .equipment-mode-switch{display:inline-flex;align-items:center;gap:8px;max-width:100%;min-height:36px;padding:5px 9px;font-size:12px;text-align:left}
+.equipment-mode-track{display:block;flex:none;width:34px;height:20px;padding:3px;border-radius:20px;background:#839994;box-sizing:border-box}
+.equipment-mode-thumb{display:block;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #143c3955;transition:transform .16s ease}
+.equipment-mode-label{min-width:0;overflow-wrap:anywhere}
+.equipment-mode-switch[aria-checked="true"] .equipment-mode-track{background:#167d70}
+.equipment-mode-switch[aria-checked="true"] .equipment-mode-thumb{transform:translateX(14px)}
 .equipment-mode-controls button:disabled{opacity:.5;cursor:not-allowed}
+[data-theme="dark"] .equipment-mode-track{background:#647b86}
+[data-theme="dark"] .equipment-mode-switch[aria-checked="true"] .equipment-mode-track{background:#269f90}
+@media(prefers-reduced-motion:reduce){.equipment-mode-thumb{transition:none}}
 .equipment-calculation{margin:12px 0 0;border-top:1px solid var(--line,#d5e2e0);padding-top:10px}
 .equipment-calculation>summary{font-size:12px;color:var(--muted,#52726e);cursor:pointer}
 .equipment-calculation>div{padding-top:4px}

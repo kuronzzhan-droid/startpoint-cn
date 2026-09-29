@@ -20,7 +20,7 @@
       let icon = el('span'); summary.append(icon, title);
       const panelStats = el('div', 'equipment-final-stats'); title.append(panelStats);
       let body, effectControls, active, selectedLevel = 0, effectLevel = 'max', mode = 'weapon', renderedKey;
-      const buttons = [], effectButtons = [], modeButtons = [];
+      const buttons = [], effectButtons = [];
       const enhancementControls = el('div', `team-controls equipment-toggle${forms.length ? ' equipment-toggle-forms' : ''}`);
       const emphasizeValues = (node, text) => {
         String(text).split(/([-+＋－]?\d+(?:\.\d+)?(?:%|％|倍|秒|次|层)?)/g).forEach((part, i) => {
@@ -59,7 +59,8 @@
         buttons.forEach(({button, value, label}) => {
           button.setAttribute('aria-pressed', String(value === selectedLevel)); button.textContent = `${value === selectedLevel ? '● ' : ''}${label}`;
         });
-        modeButtons.forEach(({button, value}) => button.setAttribute('aria-pressed', String(value === mode)));
+        modeSwitch.setAttribute('aria-checked', String(soul));
+        modeLabel.textContent = modeSwitch.disabled ? '武器 · 无可用魂珠' : `当前：${soul ? '魂珠' : '武器'}`;
       }
       function breakdown(fullEffects, baseEffects) {
         const details = el('details', 'equipment-calculation'); details.open = false;
@@ -118,15 +119,16 @@
       }
       const modeControls = el('div', 'equipment-mode-controls');
       modeControls.setAttribute('role', 'group'); modeControls.setAttribute('aria-label', `${entry.name}效果类型`);
-      [['weapon', '武器'], ['soul', entry.soul?.available ? '魂珠' : '无魂珠']].forEach(([value, label]) => {
-        const button = el('button', 'secondary-button', label); button.type = 'button'; button.setAttribute('data-equipment-mode', value);
-        button.disabled = value === 'soul' && !entry.soul?.available;
-        if (button.disabled) button.title = entry.soul?.note || '暂无可用魂珠';
-        button.addEventListener('click', (event) => {
-          event.preventDefault(); event.stopPropagation(); if (button.disabled) return;
-          mode = value; card.open = true; renderHeader(selectedLevel); renderBody();
-        });
-        modeButtons.push({button, value}); modeControls.append(button);
+      const modeSwitch = el('button', 'secondary-button equipment-mode-switch'); modeSwitch.type = 'button';
+      modeSwitch.setAttribute('role', 'switch'); modeSwitch.disabled = !entry.soul?.available;
+      modeSwitch.setAttribute('aria-label', `${entry.name}魂珠预览${modeSwitch.disabled ? '（无可用魂珠）' : ''}`);
+      modeSwitch.title = modeSwitch.disabled ? entry.soul?.note || '暂无可用魂珠' : '点击切换武器或魂珠效果';
+      const modeTrack = el('span', 'equipment-mode-track'), modeLabel = el('span', 'equipment-mode-label');
+      modeTrack.setAttribute('aria-hidden', 'true'); modeTrack.append(el('span', 'equipment-mode-thumb'));
+      modeSwitch.append(modeTrack, modeLabel); modeControls.append(modeSwitch);
+      modeSwitch.addEventListener('click', (event) => {
+        event.preventDefault(); event.stopPropagation(); if (modeSwitch.disabled) return;
+        mode = mode === 'weapon' ? 'soul' : 'weapon'; card.open = true; renderHeader(selectedLevel); renderBody();
       });
       title.append(modeControls);
       if (e) {

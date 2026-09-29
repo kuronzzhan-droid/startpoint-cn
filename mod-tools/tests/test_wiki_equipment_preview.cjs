@@ -57,24 +57,33 @@ const weapon = {
 };
 function cardFixture(entry=weapon) {const x=environment();const card=x.window.WFEquipmentCard.create(entry,x.ui);x.host.append(card);return {...x,card};}
 const click = (card,key,value) => find(card,key,value).fire('click');
+const toggleMode = (card) => find(card,'role','switch').fire('click');
 test('weapon/soul switches retain enhancement and initial/max choice, and each card owns its own mode',()=>{
   const {card,window,host,ui}=cardFixture();
   assert.equal(card.attributes['data-equipment-mode'],'weapon');
+  const modes=find(card,'aria-label','试验武器效果类型'),mode=find(modes,'role','switch');
+  assert.equal(modes.all(n=>n.tag==='button').length,1);assert.equal(mode.type,'button');
+  assert.equal(mode.attributes['aria-checked'],'false');assert.match(mode.textContent,/当前：武器/);
+  assert.equal(cls(mode,'equipment-mode-track').attributes['aria-hidden'],'true');
   card.open=true;card.fire('toggle');click(card,'data-level','200');click(card,'data-effect-level','initial');
   let body=cls(card,'equipment-state');assert.match(body.textContent,/初始本体合计 攻击力 60%/);
   const stats=cls(card,'equipment-final-stats');assert.equal(stats.hidden,false);assert.match(stats.textContent,/HP 500 \/ 攻击力 80/);
-  click(card,'data-equipment-mode','soul');assert.equal(stats.hidden,true);assert.equal(card.attributes['data-enhancement-level'],'200');
+  toggleMode(card);assert.equal(stats.hidden,true);assert.equal(card.attributes['data-enhancement-level'],'200');
+  assert.equal(mode.attributes['aria-checked'],'true');assert.match(mode.textContent,/当前：魂珠/);
   assert.match(body.textContent,/魂珠独有 攻击力 5%/);assert.doesNotMatch(body.textContent,/最终|HP 500|强化追加 50/);
   assert.equal(find(card,'aria-label','试验武器本体效果等级').hidden,true);
   const other=window.WFEquipmentCard.create(weapon,ui);host.append(other);assert.equal(other.attributes['data-equipment-mode'],'weapon');
-  click(card,'data-equipment-mode','weapon');assert.equal(stats.hidden,false);assert.match(body.textContent,/初始本体合计 攻击力 60%/);
+  toggleMode(card);assert.equal(stats.hidden,false);assert.match(body.textContent,/初始本体合计 攻击力 60%/);
+  assert.equal(mode.attributes['aria-checked'],'false');assert.match(mode.textContent,/当前：武器/);
   assert.equal(find(card,'data-effect-level','initial').attributes['aria-pressed'],'true');
   click(card,'data-effect-level','max');assert.match(body.textContent,/最终 攻击力 100%/);
   const calculation=cls(card,'equipment-calculation');assert.equal(calculation.open,false);assert.match(calculation.textContent,/强化追加 50%/);
 });
 test('absent souls cannot be selected and unavailable notes remain accessible',()=>{
   const {card}=cardFixture({...weapon,soul:{available:false,effects:[],note:'当前服务端未登记魂珠。'}});
-  const button=find(card,'data-equipment-mode','soul');assert.equal(button.disabled,true);assert.match(button.title,/未登记/);
+  const button=find(card,'role','switch');assert.equal(button.disabled,true);assert.match(button.title,/未登记/);
+  assert.match(button.attributes['aria-label'],/无可用魂珠/);assert.match(button.textContent,/无可用魂珠/);
+  assert.equal(button.attributes['aria-checked'],'false');
   button.fire('click');assert.equal(card.attributes['data-equipment-mode'],'weapon');
 });
 test('legacy enhancement data preserves every effect without adding unlike conditions or hiding the only source',()=>{
@@ -101,10 +110,10 @@ test('party restrictions remain visible beside weapon and soul effects rather th
   assert.equal(body.children.filter(n=>n.className==='weapon-note').length,1);
   assert.equal(body.children.find(n=>n.className==='weapon-note').textContent,note);
   assert.doesNotMatch(cls(card,'equipment-calculation').textContent,/同队其他/);
-  click(card,'data-equipment-mode','soul');
+  toggleMode(card);
   assert.equal(body.children.filter(n=>n.className==='weapon-note').length,1);
   assert.equal(body.children.find(n=>n.className==='weapon-note').textContent,note);
-  click(card,'data-equipment-mode','weapon');assert.equal(body.textContent.split(note).length-1,1);
+  toggleMode(card);assert.equal(body.textContent.split(note).length-1,1);
 });
 test('verified form summaries precede arrays and initial effects never borrow the max-level summary',()=>{
   const forms=weapon.enhancement.forms.map((form,i)=>({...form,finalDescription:`可信满级${form.level}：直击8段，覆写本体6段。`,
