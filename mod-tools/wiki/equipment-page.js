@@ -29,12 +29,23 @@
     [['', '全部强化类型'], ['yes', '仅可强化武器'], ['no', '无强化武器']].forEach(([value, label]) => {const option = el('option', '', label); option.value = value; enhancementFilter.append(option);});
     const count = el('p', 'muted');
     const groups = el('div', 'equipment-groups');
+    groups.id = 'weapon-catalogue-groups';
     ['全部武器', ...new Set(entries.map((entry) => entry.category))].forEach((label, i) => {
       const total = i ? entries.filter((entry) => entry.category === label).length : entries.length;
       const option = el('option', '', `${label}（${total}）`); option.value = i ? label : ''; filter.append(option);
     });
     const weaponCard = (entry) => window.WFEquipmentCard.create(entry, ui, {enhancedStates});
-    let attributeFilter;
+    let attributeFilter, groupToggle, groupToggleLabel;
+    const visibleGroups = () => [...sections.values()].filter((group) => group.members.length);
+    function syncGroupToggle() {
+      if (!groupToggle) return;
+      const shown = visibleGroups(), allOpen = Boolean(shown.length) && shown.every((group) => group.section.open);
+      groupToggleLabel.textContent = allOpen ? '全部收起' : '全部展开';
+      groupToggle.disabled = !shown.length;
+      groupToggle.setAttribute('aria-expanded', String(allOpen));
+      groupToggle.setAttribute('aria-checked', String(allOpen));
+      groupToggle.title = groupToggle.disabled ? '没有符合筛选的武器' : `点击${groupToggle.textContent}当前筛选结果`;
+    }
     function groupFor(category) {
       if (sections.has(category)) return sections.get(category);
       const section = el('details', 'equipment-group'), heading = el('summary', 'equipment-group-heading');
@@ -61,7 +72,7 @@
         content.replaceChildren(...tiers);
         group.mounted = members;
       };
-      section.addEventListener('toggle', group.mount);
+      section.addEventListener('toggle', () => {group.mount(); syncGroupToggle();});
       sections.set(category, group); return group;
     }
     function paint() {
@@ -82,6 +93,7 @@
       });
       if (!items.length) shown.push(el('p', 'equipment-empty', '没有符合条件的武器，请调整分类或搜索词。'));
       groups.replaceChildren(...shown);
+      syncGroupToggle();
     }
     search.addEventListener('input', paint); filter.addEventListener('change', paint); rarityFilter.addEventListener('change', paint); enhancementFilter.addEventListener('change', paint);
     if (entryId) {
@@ -92,19 +104,21 @@
       document.title = `${entry.name} · 星见图鉴`;
       host.append(el('h1', '', entry.name)); window.WFWikiAliases?.mount(host, 'weapon', entry.id, ui); host.append(card); return;
     }
-    const toolbar = el('div', 'team-controls equipment-toolbar'); attributeFilter = window.WFEquipmentAttributeFilter.create(ui, paint);
-    toolbar.append(search, attributeFilter.button, filter, rarityFilter, enhancementFilter);
-    const groupControls = el('div', 'team-controls equipment-group-controls');
-    [[true, '全部展开'], [false, '全部收起']].forEach(([open, label]) => {
-      const button = el('button', 'secondary-button', label); button.type = 'button';
-      button.addEventListener('click', () => {
-        new Set(entries.map((entry) => entry.category)).forEach((category) => {
-          const group = groupFor(category); group.section.open = open; group.mount();
-        });
-      });
-      groupControls.append(button);
+    groupToggle = el('button', 'equipment-attribute-shortcut equipment-group-toggle'); groupToggle.type = 'button';
+    groupToggle.setAttribute('role', 'switch');
+    groupToggle.setAttribute('aria-label', '展开全部武器分类');
+    groupToggle.setAttribute('aria-controls', groups.id);
+    const groupToggleTrack = el('span', 'equipment-mode-track'); groupToggleTrack.setAttribute('aria-hidden', 'true');
+    groupToggleTrack.append(el('span', 'equipment-mode-thumb'));
+    groupToggleLabel = el('span', 'equipment-group-toggle-label'); groupToggle.append(groupToggleTrack, groupToggleLabel);
+    groupToggle.addEventListener('click', () => {
+      const shown = visibleGroups(), open = shown.some((group) => !group.section.open);
+      shown.forEach((group) => {group.section.open = open; group.mount();});
+      syncGroupToggle();
     });
-    const resultBar = el('div', 'equipment-result-bar'); resultBar.append(count, groupControls);
+    const toolbar = el('div', 'team-controls equipment-toolbar'); attributeFilter = window.WFEquipmentAttributeFilter.create(ui, paint, groupToggle);
+    toolbar.append(search, attributeFilter.button, filter, rarityFilter, enhancementFilter);
+    const resultBar = el('div', 'equipment-result-bar'); resultBar.append(count);
     host.replaceChildren(el('h1', '', '武器图鉴'), el('p', 'section-intro', '点击分类标题可展开或收起，深渊、诅咒武器置顶。每类先列可强化武器，按火、水、雷、风、光、暗、通用排序，同属性内高星优先、同星按图鉴倒序；普通武器随后按高星和图鉴倒序排列。可强化武器可切换形态，查看对应名称、图标、面板与效果；卡片可切换武器和魂珠效果，计算与材料可按需展开。'), toolbar, resultBar, groups, attributeFilter.floating);
     paint();
     window.WFWikiAliases?.watch(host, paint);

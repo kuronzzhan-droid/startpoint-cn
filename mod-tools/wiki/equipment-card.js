@@ -60,7 +60,8 @@
           button.setAttribute('aria-pressed', String(value === selectedLevel)); button.textContent = `${value === selectedLevel ? '● ' : ''}${label}`;
         });
         modeSwitch.setAttribute('aria-checked', String(soul));
-        modeLabel.textContent = modeSwitch.disabled ? '武器 · 无可用魂珠' : `当前：${soul ? '魂珠' : '武器'}`;
+        modeLabel.textContent = modeSwitch.disabled ? '无魂珠' : soul ? '魂珠' : '武器';
+        if (!modeSwitch.disabled) modeSwitch.title = `当前：${soul ? '魂珠' : '武器'}，点击切换为${soul ? '武器' : '魂珠'}`;
       }
       function breakdown(fullEffects, baseEffects) {
         const details = el('details', 'equipment-calculation'); details.open = false;
@@ -130,7 +131,8 @@
         event.preventDefault(); event.stopPropagation(); if (modeSwitch.disabled) return;
         mode = mode === 'weapon' ? 'soul' : 'weapon'; card.open = true; renderHeader(selectedLevel); renderBody();
       });
-      title.append(modeControls);
+      const actions = el('div', 'equipment-card-actions'), disclosure = el('span', 'equipment-disclosure-symbol');
+      disclosure.setAttribute('aria-hidden', 'true'); actions.append(modeControls, disclosure); summary.append(actions);
       if (e) {
         enhancementControls.setAttribute('role', 'group'); enhancementControls.setAttribute('aria-label', `${entry.name}强化状态`);
         [[0, originalLabel], ...stages.map((stage) => [stage.level, stage.label || `强化后 Lv${stage.level}`])].forEach(([value, label]) => {

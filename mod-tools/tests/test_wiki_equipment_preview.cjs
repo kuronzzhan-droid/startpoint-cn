@@ -63,18 +63,18 @@ test('weapon/soul switches retain enhancement and initial/max choice, and each c
   assert.equal(card.attributes['data-equipment-mode'],'weapon');
   const modes=find(card,'aria-label','试验武器效果类型'),mode=find(modes,'role','switch');
   assert.equal(modes.all(n=>n.tag==='button').length,1);assert.equal(mode.type,'button');
-  assert.equal(mode.attributes['aria-checked'],'false');assert.match(mode.textContent,/当前：武器/);
+  assert.equal(mode.attributes['aria-checked'],'false');assert.equal(mode.textContent,'武器');assert.match(mode.title,/当前：武器/);
   assert.equal(cls(mode,'equipment-mode-track').attributes['aria-hidden'],'true');
   card.open=true;card.fire('toggle');click(card,'data-level','200');click(card,'data-effect-level','initial');
   let body=cls(card,'equipment-state');assert.match(body.textContent,/初始本体合计 攻击力 60%/);
   const stats=cls(card,'equipment-final-stats');assert.equal(stats.hidden,false);assert.match(stats.textContent,/HP 500 \/ 攻击力 80/);
   toggleMode(card);assert.equal(stats.hidden,true);assert.equal(card.attributes['data-enhancement-level'],'200');
-  assert.equal(mode.attributes['aria-checked'],'true');assert.match(mode.textContent,/当前：魂珠/);
+  assert.equal(mode.attributes['aria-checked'],'true');assert.equal(mode.textContent,'魂珠');assert.match(mode.title,/当前：魂珠/);
   assert.match(body.textContent,/魂珠独有 攻击力 5%/);assert.doesNotMatch(body.textContent,/最终|HP 500|强化追加 50/);
   assert.equal(find(card,'aria-label','试验武器本体效果等级').hidden,true);
   const other=window.WFEquipmentCard.create(weapon,ui);host.append(other);assert.equal(other.attributes['data-equipment-mode'],'weapon');
   toggleMode(card);assert.equal(stats.hidden,false);assert.match(body.textContent,/初始本体合计 攻击力 60%/);
-  assert.equal(mode.attributes['aria-checked'],'false');assert.match(mode.textContent,/当前：武器/);
+  assert.equal(mode.attributes['aria-checked'],'false');assert.equal(mode.textContent,'武器');
   assert.equal(find(card,'data-effect-level','initial').attributes['aria-pressed'],'true');
   click(card,'data-effect-level','max');assert.match(body.textContent,/最终 攻击力 100%/);
   const calculation=cls(card,'equipment-calculation');assert.equal(calculation.open,false);assert.match(calculation.textContent,/强化追加 50%/);
@@ -82,9 +82,25 @@ test('weapon/soul switches retain enhancement and initial/max choice, and each c
 test('absent souls cannot be selected and unavailable notes remain accessible',()=>{
   const {card}=cardFixture({...weapon,soul:{available:false,effects:[],note:'当前服务端未登记魂珠。'}});
   const button=find(card,'role','switch');assert.equal(button.disabled,true);assert.match(button.title,/未登记/);
-  assert.match(button.attributes['aria-label'],/无可用魂珠/);assert.match(button.textContent,/无可用魂珠/);
+  assert.match(button.attributes['aria-label'],/无可用魂珠/);assert.equal(button.textContent,'无魂珠');
   assert.equal(button.attributes['aria-checked'],'false');
   button.fire('click');assert.equal(card.attributes['data-equipment-mode'],'weapon');
+});
+
+test('soul switch sits above the native disclosure in its own summary actions column',()=>{
+  const {card}=cardFixture(),summary=card.children.find(n=>n.tag==='summary');
+  const actions=cls(card,'equipment-card-actions'),modes=find(card,'aria-label','试验武器效果类型');
+  const symbol=cls(card,'equipment-disclosure-symbol'),mode=find(card,'role','switch');
+  assert.equal(actions.parent,summary);assert.equal(summary.children.at(-1),actions);
+  assert.deepEqual(actions.children,[modes,symbol]);assert.equal(symbol.attributes['aria-hidden'],'true');
+  assert.equal(cls(card,'equipment-card-title').contains(mode),false);
+  assert.equal(symbol.tag,'span');assert.equal(symbol.events.click,undefined);assert.equal(summary.events.click,undefined);
+  let prevented=0,stopped=0;
+  mode.fire('click',{preventDefault(){prevented++;},stopPropagation(){stopped++;}});
+  assert.equal(prevented,1);assert.equal(stopped,1);assert.equal(card.open,true);
+  assert.equal(card.attributes['data-equipment-mode'],'soul');
+  card.open=false;card.fire('toggle');assert.equal(card.attributes['data-equipment-mode'],'soul');
+  card.open=true;card.fire('toggle');assert.match(cls(card,'equipment-state').textContent,/魂珠独有/);
 });
 test('legacy enhancement data preserves every effect without adding unlike conditions or hiding the only source',()=>{
   const {card}=cardFixture({...weapon,enhancement:{maxLevel:120,stats:{total:{hp:1,atk:2}},effects:['水·自身 攻击力 20%']}});

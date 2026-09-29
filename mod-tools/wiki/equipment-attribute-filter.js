@@ -4,7 +4,7 @@
   const elements = ['火', '水', '雷', '风', '光', '暗'];
   let previous;
   window.WFEquipmentAttributeFilter = {
-    create(ui, onChange) {
+    create(ui, onChange, leadingControl) {
       previous?.destroy();
       const {el} = ui;
       let value = '', opened = false, opener, disposed = false;
@@ -25,6 +25,7 @@
         trigger.addEventListener('click', () => opened ? close() : open(trigger));
       });
       closeButton.type = 'button'; closeButton.addEventListener('click', () => close(true));
+      leadingControl?.addEventListener('click', () => close());
       ['', ...elements, '通用'].forEach((element) => {
         const option = el('button', 'secondary-button equipment-attribute-option'); option.type = 'button';
         option.setAttribute('data-weapon-element', element);
@@ -36,7 +37,7 @@
         });
         buttons.push({option, element}); choices.append(option);
       });
-      floating.append(panel, shortcut);
+      floating.append(...(leadingControl ? [leadingControl] : []), panel, shortcut);
       function update() {
         button.textContent = `属性：${value || '全部'}`;
         shortcut.textContent = `属性 · ${value || '全部'}`;
