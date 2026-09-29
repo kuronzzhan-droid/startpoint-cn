@@ -1,6 +1,6 @@
 #extra-view>h1,.boss-guide>h2{border-left:5px solid var(--orange);padding-left:14px;margin-bottom:16px}
 .team-controls{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:18px 0}
-.team-controls input,.team-library>input{padding:10px 12px;min-width:180px}
+.team-controls input,.team-weapon-search{padding:10px 12px;min-width:180px}
 .team-controls button{min-height:40px;padding:8px 13px;border-radius:6px}
 .team-controls .secondary-button{background:white;border:1px solid #bfcdd1;border-bottom-width:3px}
 .team-status{min-height:22px;color:#137a76;margin-bottom:10px}
@@ -26,7 +26,7 @@
 .team-slot-remove{position:absolute;z-index:6;right:-4px;bottom:-4px;width:18px;height:18px;padding:0;border-radius:50%;border:1px solid #bac8cc;background:#fff;color:#53656b;font-size:15px;line-height:14px;box-shadow:0 1px 3px #263b4b33}
 .team-pair{border-top:1px solid #dde5e7;padding:13px 0}
 .team-pair p{font-size:12px;white-space:pre-wrap}.team-pair h3{font-size:14px;margin:14px 0 6px}
-.team-library{grid-area:library;position:sticky;top:14px}.team-library h2{font-size:18px}.team-library>input{width:100%;margin-bottom:10px}.team-library>select{width:100%;margin-bottom:14px}
+.team-library{grid-area:library;position:sticky;top:14px}.team-library h2{font-size:18px}.team-weapon-search{width:100%;margin-bottom:10px}
 .team-mode-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:4px;margin:0 0 14px;background:#e9efef;border:1px solid #c7d5d6;border-radius:8px}
 .team-mode-button{min-height:42px;padding:9px 12px;border:1px solid transparent;border-radius:5px;background:transparent;color:#52686b;font-weight:700}
 .team-mode-button[aria-pressed="true"]{background:#fff7dd;border-color:#e5ad32;color:#735019;box-shadow:0 2px 0 #ddb04b}.team-mode-button:hover{background:#fff}

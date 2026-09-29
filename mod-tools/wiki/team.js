@@ -4,7 +4,7 @@
   const storageKey = 'wf-wiki-teams-v1';
   const S = window.WFTeamState;
   let team = S.empty(), undo = [], redo = [], chosen = {group: 'main', index: 0};
-  let query = '', filterElement = '', name = '我的队伍';
+  let weaponQuery = '', characterFilterState = {}, name = '我的队伍';
   const labels = {main: '主位', unison: '合击', weapon: '装备', soul: '魂珠'};
   function savedTeams() {
     try { const data = JSON.parse(localStorage.getItem(storageKey) || '[]'); return Array.isArray(data) ? data.filter((item) => item && typeof item.name === 'string' && item.team && typeof item.team === 'object') : []; }
@@ -35,7 +35,10 @@
       change(S.place(team, chosen.group, chosen.index, id, characters, equipment));
     }
     function chooseSlot(group, index) {
-      if (S.isCharacter(group) !== S.isCharacter(chosen.group)) {query = ''; search.value = '';}
+      if (S.isCharacter(group) !== S.isCharacter(chosen.group)) {
+        weaponQuery = ''; weaponSearch.value = ''; characterFilters.clearSearch(false);
+        characterFilterState = characterFilters.getState();
+      }
       chosen = {group, index};
     }
     const picker = el('select'); picker.setAttribute('aria-label', '已保存队伍');
@@ -148,9 +151,10 @@
         preview.append(box);
       }
     }
-    const search = el('input'); search.type = 'search'; search.placeholder = '搜索角色或武器'; search.value = query; search.setAttribute('aria-label', '配队候选搜索');
-    const element = el('select'); element.setAttribute('aria-label', '配队角色属性');
-    ['全部属性', '火', '水', '雷', '风', '光', '暗'].forEach((label, i) => {const o = el('option', '', label); o.value = i ? label : ''; element.append(o);}); element.value = filterElement;
+    const weaponSearch = el('input', 'team-weapon-search'); weaponSearch.type = 'search'; weaponSearch.placeholder = '搜索武器或魂珠'; weaponSearch.value = weaponQuery; weaponSearch.setAttribute('aria-label', '配队武器搜索');
+    const characterFilters = window.WFCharacterFilters.create({characters: [...characters.values()], ui,
+      idPrefix: 'team-character', initialState: characterFilterState,
+      onChange: (state) => {characterFilterState = state; paintLibrary();}});
     const modeSwitch = el('div', 'team-mode-switch'); modeSwitch.setAttribute('role', 'group'); modeSwitch.setAttribute('aria-label', '候选类别');
     function switchMode(characterMode) {
       if (S.isCharacter(chosen.group) === characterMode) return;
@@ -160,16 +164,17 @@
     const weaponButton = button('武器', () => switchMode(false), 'team-mode-button');
     modeSwitch.append(characterButton, weaponButton);
     const candidates = el('div', 'team-candidates');
-    const heading = el('h2'); library.append(heading, modeSwitch, search, element, candidates);
+    const heading = el('h2'); library.append(heading, modeSwitch, characterFilters.element, weaponSearch, candidates);
     function paintLibrary() {
       const characterMode = S.isCharacter(chosen.group);
       heading.textContent = `选择${labels[chosen.group]} · ${chosen.index + 1}号位`;
       characterButton.setAttribute('aria-pressed', String(characterMode));
       weaponButton.setAttribute('aria-pressed', String(!characterMode));
-      element.hidden = !characterMode;
-      const items = [...(characterMode ? characters : equipment).values()].filter((item) =>
-        (chosen.group !== 'soul' || item.soul?.available) && (!characterMode || !filterElement || item.element === filterElement) &&
-        `${item.name} ${(item.aliases || []).join(' ')} ${item.theme || ''} ${item.category || ''}`.toLowerCase().includes(query.toLowerCase()));
+      characterFilters.element.hidden = !characterMode;
+      weaponSearch.hidden = characterMode;
+      const items = characterMode ? [...characters.values()].filter(characterFilters.matches)
+        : [...equipment.values()].filter((item) => (chosen.group !== 'soul' || item.soul?.available)
+          && `${item.name} ${(item.aliases || []).join(' ')} ${item.category || ''}`.toLowerCase().includes(weaponQuery.toLowerCase()));
       if (!characterMode) {
         const priority = (item) => ['深渊武器', '诅咒武器'].includes(item.category) ? 0 : 1;
         items.sort((a, b) => priority(a) - priority(b));
@@ -185,8 +190,7 @@
       }
       if (!items.length) candidates.append(el('p', '', '没有匹配的候选。'));
     }
-    search.addEventListener('input', () => {query = search.value; paintLibrary();});
-    element.addEventListener('change', () => {filterElement = element.value; paintLibrary();});
+    weaponSearch.addEventListener('input', () => {weaponQuery = weaponSearch.value; paintLibrary();});
     const layout = el('div', 'team-layout'); layout.append(board, library, preview);
     host.replaceChildren(el('h1', '', '配队模拟'), el('p', 'section-intro', '拖拽头像到槽位，或先点槽位再点候选。重复角色会交换位置；第一列主位为队长。'),
       controls, status, layout, el('p', 'muted', '用于编成与查阅效果；主位限制、触发条件和武器特殊规则请结合说明判断。本页不模拟战斗过程或计算实战伤害。'));

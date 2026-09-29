@@ -12,11 +12,15 @@
   <link rel="stylesheet" href="detail.css">
   <link rel="stylesheet" href="pages.css">
   <link rel="stylesheet" href="equipment.css">
+  <link rel="stylesheet" href="character-filters.css">
+  <link rel="stylesheet" href="catalog-layout.css">
   <script src="data.js" defer></script>
   <script src="voices.js" defer></script>
   <script src="comparison.js" defer></script>
   <script src="numeric.js" defer></script>
   <script src="team-state.js" defer></script>
+  <script src="character-filters.js" defer></script>
+  <script src="catalog-layout.js" defer></script>
   <script src="team.js" defer></script>
   <script src="pages.js" defer></script>
   <script src="detail.js" defer></script>
@@ -33,23 +37,12 @@
     <div class="masthead-note"><span class="status-dot"></span>本地资料快照 <span id="header-version"></span></div>
   </header>
   <div class="page-shell">
-    <aside class="sidebar" aria-label="角色查找">
+    <aside class="sidebar" aria-label="角色目录">
       <div class="sidebar-title">角色目录</div>
       <nav class="roster-navigation" aria-label="角色分类与世界观">
         <a id="all-categories" class="nav-home" href="#"><span aria-hidden="true">▦</span> 全部角色 <span id="nav-count" class="count-badge">—</span></a>
         <div id="category-nav" class="category-nav"></div>
       </nav>
-      <details class="filter-panel" open>
-        <summary>查找角色 <span class="summary-hint">搜索与筛选</span></summary>
-        <label class="field-label" for="character-search">名字、别名、主题或技能</label>
-        <div class="search-wrap"><span aria-hidden="true">⌕</span><input id="character-search" type="search" placeholder="输入角色名、别称或技能…" autocomplete="off"><kbd>/</kbd></div>
-        <p class="field-help">支持多关键词，以空格分隔</p>
-        <label class="field-label" for="element-filter">属性</label><select id="element-filter"><option value="">全部属性</option></select>
-        <label class="field-label" for="rarity-filter">星级</label><select id="rarity-filter"><option value="">全部星级</option></select>
-        <label class="field-label" for="type-filter">战斗类型</label><select id="type-filter"><option value="">全部类型</option></select>
-        <label class="field-label" for="origin-filter">收录来源</label><select id="origin-filter"><option value="">全部来源</option></select>
-        <button id="clear-filters" class="text-button clear-filters" type="button">重置全部筛选</button>
-      </details>
       <div class="sidebar-note"><span class="eyebrow">关于这份图鉴</span><p>收录官方与 MOD 角色。数值与语音以本次资料快照为准。</p><p>台词缺失处保留明确标记，方便后续补录与校对。</p></div>
       <div id="snapshot-note" class="snapshot-note"></div>
     </aside>
@@ -59,7 +52,13 @@
           <div class="catalog-title-wrap"><span class="title-flag">CHARACTER</span><h1 id="catalog-title">角色图鉴</h1><p>角色资料 / 技能能力 / 语音台词</p></div>
           <div id="catalog-stats" class="hero-stats" aria-label="收录统计"></div>
         </div>
-        <div class="catalog-controls"><div id="element-shortcuts" class="element-shortcuts" role="group" aria-label="按属性筛选角色"></div><label class="sort-control" for="sort-order">排序 <select id="sort-order"><option value="default">默认顺序</option><option value="name">按角色名称</option><option value="rarity">按稀有度</option></select></label></div>
+        <div class="catalog-character-controls">
+          <div id="catalog-character-filters"></div>
+          <div class="catalog-display-controls">
+            <label class="sort-control" for="catalog-layout">排列 <select id="catalog-layout" aria-label="角色排列"><option value="extra-large">超大图标</option><option value="large">大图标</option><option value="standard" selected>标准</option><option value="dense">致密</option></select></label>
+            <label class="sort-control" for="sort-order">排序 <select id="sort-order"><option value="default">默认顺序</option><option value="name">按角色名称</option><option value="rarity">按稀有度</option></select></label>
+          </div>
+        </div>
         <div class="section-heading"><h2>角色列表 <span id="result-count" class="inline-count"></span></h2></div>
         <div id="filter-status" class="filter-status" role="status" aria-live="polite"></div>
         <div id="character-grid" class="character-groups"></div>
@@ -69,8 +68,10 @@
       <article id="detail-view" hidden></article>
       <section id="extra-view" hidden></section>
       <footer class="site-footer">
-        <span>星见图鉴 <span aria-hidden="true">✦</span> WORLD FLIPPER CHARACTER ARCHIVE</span><span>游戏资料快照 · 非官方 Wiki</span>
-        <p class="footer-credits">制作与维护：<strong>PARADOX</strong> · 上游：<a href="https://github.com/DontBeAlarmed/startpoint-cn" target="_blank" rel="noopener noreferrer">DontBeAlarmed/startpoint-cn</a> · 本项目：<a href="https://github.com/kuronzzhan-droid/startpoint-cn" target="_blank" rel="noopener noreferrer">kuronzzhan-droid/startpoint-cn</a> · 资料参考：《弹射世界中文 WIKI》离线版 v3.0.0；感谢memimu与「弹射世界wiki重生群」（QQ群 610753092）的资料收集与整理。</p>
+        <p class="footer-credit-row"><strong>PARADOX</strong><span>制作与维护 · 星见图鉴 · 非官方 Wiki</span></p>
+        <p class="footer-credit-row"><strong>Wiki</strong><span>资料参考：《弹射世界中文 WIKI》离线版 v3.0.0；感谢 memimu 与「弹射世界wiki重生群」（QQ群 610753092）的资料收集与整理。</span></p>
+        <p class="footer-credit-row"><strong>本项目</strong><a href="https://github.com/kuronzzhan-droid/startpoint-cn" target="_blank" rel="noopener noreferrer">kuronzzhan-droid/startpoint-cn</a></p>
+        <p class="footer-credit-row"><strong>上游项目</strong><a href="https://github.com/DontBeAlarmed/startpoint-cn" target="_blank" rel="noopener noreferrer">DontBeAlarmed/startpoint-cn</a></p>
       </footer>
     </main>
   </div>

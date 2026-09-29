@@ -72,7 +72,6 @@
     badge.setAttribute('aria-label', `${text(value, '未知')}星`);
     return badge;
   };
-  const normalized = (value) => text(value).normalize('NFKC').toLocaleLowerCase('zh-CN');
   const categories = ['毛茸异世界', '原创与变体', '原版角色改动', '官方原版', 'Boss角色', '小动物'];
   const categoryDescriptions = {
     '毛茸异世界': '来自毛茸异世界的同行者。',
@@ -87,28 +86,18 @@
   const meta = object(data.meta);
   const characters = list(data.characters).filter((c) => c && typeof c === 'object' && c.id != null);
   const byId = new Map(characters.map((c) => [String(c.id), c]));
-  const searchIndex = new Map(characters.map((c) => [String(c.id), normalized(JSON.stringify(safeData(c)))]));
   const helpers = {el, list, object, text, safeUrl, safeData, disclosure, elementBadge, picture, formatNumber, stars, rarityBadge, nativeIcon, categoryName};
-  const controls = {search: $('character-search'), element: $('element-filter'), rarity: $('rarity-filter'), type: $('type-filter'), origin: $('origin-filter')};
+  const characterFilters = window.WFCharacterFilters.create({characters, ui: helpers,
+    idPrefix: 'catalog-character', onChange: renderCatalog, onReset: clearFilters});
+  $('catalog-character-filters').append(characterFilters.element);
   let currentId = '';
   let selectedCategory = '';
-  let searchTimer;
 
   [['--frame-window', 'frames', 'window'], ['--frame-button', 'frames', 'button'], ['--frame-status', 'frames', 'status'], ['--game-detail-bg', 'backgrounds', 'detail']].forEach(([variable, group, key]) => {
     const url = safeUrl(object(object(meta.uiAssets)[group])[key]);
     if (url) document.documentElement.style.setProperty(variable, `url(${JSON.stringify(url)})`);
   });
   if (safeUrl(object(object(meta.uiAssets).frames).window)) document.documentElement.classList.add('native-ui');
-
-  function fillOptions(select, field) {
-    const values = [...new Set(characters.map((c) => text(c[field])).filter(Boolean))];
-    if (field === 'rarity') values.sort((a, b) => Number(b) - Number(a));
-    values.forEach((value) => {
-      const option = el('option', '', field === 'rarity' ? `${value} 星` : value);
-      option.value = value;
-      select.append(option);
-    });
-  }
 
   function renderMeta() {
     const counts = object(meta.counts);
@@ -154,20 +143,6 @@
     $('all-categories').addEventListener('click', () => { selectedCategory = ''; applyFilters(); });
   }
 
-  function renderElementShortcuts() {
-    ['', ...Object.keys(elementClasses)].forEach((value) => {
-      const button = el('button', 'element-shortcut');
-      button.type = 'button';
-      button.dataset.element = value;
-      button.setAttribute('aria-label', value ? `${value}属性` : '全部属性');
-      button.setAttribute('aria-pressed', String(!value));
-      if (value) button.append(nativeIcon('elements', value, value));
-      button.append(el('span', '', value || '全部'));
-      button.addEventListener('click', () => { controls.element.value = value; applyFilters(); });
-      $('element-shortcuts').append(button);
-    });
-  }
-
   function card(character) {
     const link = el('a', 'character-card');
     link.dataset.rarity = text(character.rarity);
@@ -190,12 +165,8 @@
   }
 
   function filteredCharacters() {
-    const terms = normalized(controls.search.value).trim().split(/\s+/).filter(Boolean);
-    const selected = characters.filter((c) => {
-      const matchesFields = ['element', 'rarity', 'type', 'origin'].every((key) => !controls[key].value || text(c[key]) === controls[key].value);
-      return (!selectedCategory || categoryName(c) === selectedCategory)
-        && matchesFields && terms.every((term) => searchIndex.get(String(c.id)).includes(term));
-    });
+    const selected = characters.filter((c) => (!selectedCategory || categoryName(c) === selectedCategory)
+      && characterFilters.matches(c));
     const sort = $('sort-order').value;
     if (sort === 'default') selected.sort((a, b) => Object.keys(elementClasses).indexOf(a.element) - Object.keys(elementClasses).indexOf(b.element) || Number(b.rarity) - Number(a.rarity) || text(a.name).localeCompare(text(b.name), 'zh-CN'));
     if (sort === 'name') selected.sort((a, b) => text(a.name).localeCompare(text(b.name), 'zh-CN'));
@@ -223,11 +194,9 @@
     $('character-grid').replaceChildren(fragment);
     document.querySelectorAll('.category-button').forEach((button) =>
       button.setAttribute('aria-pressed', String(button.dataset.category === selectedCategory)));
-    document.querySelectorAll('.element-shortcut').forEach((button) =>
-      button.setAttribute('aria-pressed', String(button.dataset.element === controls.element.value)));
     $('all-categories').setAttribute('aria-current', selectedCategory ? 'false' : 'page');
     $('result-count').textContent = `${selected.length} / ${characters.length}`;
-    const filtered = selectedCategory || controls.search.value.trim() || ['element', 'rarity', 'type', 'origin'].some((key) => controls[key].value);
+    const filtered = selectedCategory || characterFilters.hasActiveFilters();
     $('filter-status').textContent = filtered ? `${selectedCategory || '全部分类'} · 找到 ${selected.length} 位角色` : '选择角色查看详情；原版角色改动单独列出官方与当前版本的差异。';
     $('empty-state').hidden = selected.length > 0 || characters.length === 0;
     $('load-error').hidden = characters.length > 0;
@@ -288,37 +257,32 @@
 
   function clearFilters() {
     selectedCategory = '';
-    Object.values(controls).forEach((control) => { control.value = ''; });
-    applyFilters();
+    characterFilters.reset(false);
+    renderCatalog();
   }
 
-  fillOptions(controls.element, 'element');
-  fillOptions(controls.rarity, 'rarity');
-  fillOptions(controls.type, 'type');
-  fillOptions(controls.origin, 'origin');
   renderCategoryNavigation();
-  renderElementShortcuts();
-  controls.search.addEventListener('input', () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(applyFilters, 80);
-  });
-  ['element', 'rarity', 'type', 'origin'].forEach((key) => controls[key].addEventListener('change', applyFilters));
   $('sort-order').addEventListener('change', renderCatalog);
-  $('clear-filters').addEventListener('click', clearFilters);
   $('empty-reset').addEventListener('click', clearFilters);
   window.addEventListener('hashchange', route);
   document.addEventListener('keydown', (event) => {
     if (event.key !== '/' || event.altKey || event.ctrlKey || event.metaKey || event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+    const hash = location.hash.slice(1);
+    if (hash === 'team') {
+      const search = document.querySelector('#extra-view .character-filters:not([hidden]) .character-filter-search, #extra-view .team-weapon-search:not([hidden])');
+      if (search) {event.preventDefault(); search.focus();}
+      return;
+    }
+    if (hash && !hash.startsWith('character/')) return;
     event.preventDefault();
-    document.querySelector('.filter-panel').open = true;
-    controls.search.focus();
+    if (hash) {location.hash = ''; route();}
+    characterFilters.focus();
   });
   document.addEventListener('play', (event) => {
     if (event.target.tagName === 'AUDIO') document.querySelectorAll('audio').forEach((audio) => {
       if (audio !== event.target) audio.pause();
     });
   }, true);
-  if (window.matchMedia('(max-width: 640px)').matches) document.querySelector('.filter-panel').open = false;
   renderMeta();
   renderCatalog();
   window.WFWiki = {data, ui: helpers, refresh: route};
