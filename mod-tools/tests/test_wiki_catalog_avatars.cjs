@@ -33,9 +33,10 @@ function setup(saved, blocked = false) {
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki/catalog-avatars.js'),'utf8'), {window,
     localStorage:{getItem:(key) => {if (blocked) throw Error(); return storage.get(key);},
       setItem:(key,value) => {if (blocked) throw Error(); storage.set(key,value);}}});
-  const api = window.WFCatalogAvatars.create({host,catalog,characters,ui});
+  const changes = [];
+  const api = window.WFCatalogAvatars.create({host,catalog,characters,ui,onChange:form=>changes.push(form)});
   const cards = characters.map((character) => { const card = el('a'); card.append(api.picture(character)); catalog.append(card); return card; });
-  return {api, catalog, cards, buttons:host.querySelectorAll('button'), storage, window, ui};
+  return {api, catalog, cards, buttons:host.querySelectorAll('button'), storage, window, ui, changes};
 }
 const src = (node) => node.querySelector('img').getAttribute('src');
 
@@ -64,6 +65,18 @@ test('persisted preference applies to new and filtered catalogue cards', () => {
   assert.equal(src(cards[0]),'media/second.webp');
   assert.equal(buttons[1].attributes['aria-pressed'],'true');
   assert.equal(src(api.picture(characters[0])),'media/second.webp');
+});
+
+test('portrait consumers can read the saved form and update only when the choice changes', () => {
+  const x = setup('after');
+  assert.equal(x.api.getForm(), 'after');
+  assert.deepEqual(x.changes, []);
+  x.buttons[1].click();
+  assert.deepEqual(x.changes, []);
+  x.buttons[0].click();
+  assert.equal(x.api.getForm(), 'before');
+  assert.deepEqual(x.changes, ['before']);
+  assert.equal(src(x.cards[0]), 'media/first.webp');
 });
 
 test('unavailable storage and obsolete settings still allow both choices', () => {

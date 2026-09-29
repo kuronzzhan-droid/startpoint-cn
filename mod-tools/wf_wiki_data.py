@@ -71,6 +71,9 @@ def search_text(value):
 
 def index_character(character):
     result = {key: character[key] for key in INDEX_FIELDS if key in character}
+    if character.get("portraits"):
+        result["portraits"] = [{key: portrait[key] for key in ("label", "url") if key in portrait}
+                               for portrait in character["portraits"] if isinstance(portrait, dict)]
     if not result.get("icon") and character.get("portraits"):
         result["icon"] = character["portraits"][0].get("url")
     result["leader"] = {"description": character.get("leader", {}).get("description", "")}

@@ -92,8 +92,11 @@
   const characterFilters = window.WFCharacterFilters.create({characters, ui: helpers,
     idPrefix: 'catalog-character', onChange: renderCatalog, onStateChange: filterChanged, onReset: clearFilters});
   $('catalog-character-filters').append(characterFilters.element);
+  const catalogPortraits = window.WFPortraitCards.create({ui: helpers});
   const catalogAvatars = window.WFCatalogAvatars.create({host: $('catalog-avatar-controls'),
-    catalog: $('catalog-view'), characters, ui: helpers});
+    catalog: $('catalog-view'), characters, ui: helpers, onChange: () => {
+      if ($('catalog-view').dataset.layout === 'portrait') renderCatalog();
+    }});
   const catalogRatings = window.WFCatalogRatings.create({characters, sort: $('sort-order'),
     host: $('catalog-view').querySelector('.catalog-list-toolbar'), ui: helpers, onChange: () => {
       if (catalogRatings.isRatingSort()) renderCatalog();
@@ -157,7 +160,9 @@
     link.setAttribute('aria-label', `${text(character.name, '未命名角色')}，${text(character.rarity)}星，${text(character.element)}属性，查看详情`);
     link.title = `${text(character.name)} · ${text(character.rarity)}星 · ${text(character.element)}属性`;
     const art = el('div', 'card-art');
-    art.append(catalogAvatars.picture(character), elementBadge(character.element));
+    const portraitMode = $('catalog-view').dataset.layout === 'portrait';
+    art.append(portraitMode ? catalogPortraits.picture(character, catalogAvatars.getForm(), text(character.name))
+      : catalogAvatars.picture(character), elementBadge(character.element));
     window.WFCharacterFrame?.apply(art, character);
     window.WFCharacterBadges?.append(art, character, {el});
     const content = el('div', 'card-content');
@@ -171,6 +176,7 @@
     list(character.themes || (character.theme ? [character.theme] : [])).forEach((theme) => content.append(el('span', 'theme-tag', theme)));
     if (character.earlyDesign === true) content.append(el('span', 'editor-tag', '早期方案'));
     link.append(art, content);
+    if (portraitMode) catalogPortraits.attach(link);
     catalogRatings.decorate(link, character);
     return link;
   }
@@ -188,6 +194,7 @@
 
   function renderCatalog() {
     if ($('catalog-view').hidden) return;
+    catalogPortraits.destroy();
     if (catalogDisclosure.isOpen() || catalogRatings.isRatingSort()) catalogRatings.load();
     const selected = filteredCharacters();
     const fragment = document.createDocumentFragment();
@@ -236,7 +243,9 @@
 
   renderCategoryNavigation();
   $('sort-order').addEventListener('change', renderCatalog);
+  $('catalog-view').addEventListener('cataloglayoutchange', renderCatalog);
   $('empty-reset').addEventListener('click', clearFilters);
+  window.addEventListener('hashchange', () => {if (location.hash && location.hash !== '#') catalogPortraits.destroy();});
   window.addEventListener('hashchange', route);
   document.addEventListener('keydown', (event) => {
     if (event.key !== '/' || event.altKey || event.ctrlKey || event.metaKey || event.target.closest('input, textarea, select, [contenteditable="true"]')) return;

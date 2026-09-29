@@ -45,9 +45,17 @@ class WikiDataTests(unittest.TestCase):
         index = bootstrap["characters"][0]
         self.assertEqual(index["leader"], {"description": "全队攻击+100%"})
         self.assertEqual(index["abilities"], [{"name": "能力1", "description": "主位攻击+50%"}])
-        self.assertFalse(set(index) & {"voices", "skills", "portraits", "nameplates", "officialComparison"})
+        self.assertFalse(set(index) & {"voices", "skills", "nameplates", "officialComparison"})
+        self.assertEqual(index["portraits"], [{"url": "media/portrait.webp"}])
         self.assertEqual(index["catalogOrder"], 1)
         self.assertEqual(index["avatars"], self.catalog["characters"][0]["avatars"])
+
+    def test_portrait_index_contains_only_public_image_labels_and_urls(self):
+        character = deepcopy(self.catalog["characters"][0])
+        character["portraits"] = [{"label": "觉醒后", "url": "media/full.webp", "extra": "不进首页"}]
+        index = data.index_character(character)
+        self.assertEqual(index["portraits"], [{"label": "觉醒后", "url": "media/full.webp"}])
+        self.assertEqual(character["portraits"][0]["extra"], "不进首页")
 
     def test_search_includes_all_player_text_and_numbers_but_no_media_paths(self):
         content = data.search_text(self.catalog["characters"][0])

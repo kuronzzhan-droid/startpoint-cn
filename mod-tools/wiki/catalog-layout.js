@@ -5,7 +5,7 @@
   const control = document.getElementById('catalog-layout');
   if (!catalog || !control) return;
   const choices = [
-    ['standard', '标准'], ['dense', '致密'],
+    ['standard', '标准'], ['dense', '致密'], ['portrait', '立绘'],
   ];
   const storageKey = 'wf-wiki-catalog-layout';
   const group = document.createElement('div');
@@ -41,7 +41,9 @@
     try { localStorage.setItem(storageKey, initial); } catch { /* Old choices still fall back in this view. */ }
   }
   buttons.forEach((button) => button.addEventListener('click', () => {
+    if (catalog.dataset.layout === button.dataset.layout) return;
     const layout = apply(button.dataset.layout);
     try { localStorage.setItem(storageKey, layout); } catch { /* The current view still works. */ }
+    catalog.dispatchEvent(new Event('cataloglayoutchange'));
   }));
 })();

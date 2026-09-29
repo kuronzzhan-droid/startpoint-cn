@@ -1,7 +1,7 @@
 /* Shared portrait preference; each controller updates only its own mounted view. */
 (() => {
   'use strict';
-  window.WFCatalogAvatars = {create({host, catalog, characters, ui, label = '角色图鉴头像'}) {
+  window.WFCatalogAvatars = {create({host, catalog, characters, ui, label = '角色图鉴头像', onChange}) {
     const {el, picture, safeUrl} = ui;
     const storageKey = 'wf-wiki-catalog-avatar';
     const byId = new Map(characters.map((character) => [String(character.id), character]));
@@ -35,6 +35,7 @@
     const updateButtons = () => buttons.forEach((button) =>
       button.setAttribute('aria-pressed', String(button.dataset.avatarForm === form)));
     function apply(value) {
+      const previous = form;
       form = value === 'after' ? 'after' : 'before';
       updateButtons();
       try { localStorage.setItem(storageKey, form); } catch { /* The current view still switches. */ }
@@ -42,10 +43,11 @@
         const character = byId.get(node.dataset.catalogAvatar);
         if (character) paint(node, character);
       });
+      if (previous !== form) onChange?.(form);
     }
     updateButtons();
     host.append(group);
-    return {picture(character, alt = '', className = '') {
+    return {getForm: () => form, picture(character, alt = '', className = '') {
       const node = el('span', `catalog-avatar ${className}`.trim());
       node.dataset.catalogAvatar = String(character.id);
       node.dataset.avatarAlt = alt;
