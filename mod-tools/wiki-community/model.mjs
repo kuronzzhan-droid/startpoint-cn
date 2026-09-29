@@ -8,10 +8,11 @@ export class ApiError extends Error {
   }
 }
 export const fail = (status, code, message, extra) => { throw new ApiError(status, code, message, extra); };
-export function cleanText(value, name, max, required = false) {
+export function cleanText(value, name, max, required = false, singleLine = false) {
   if (typeof value !== 'string') fail(400, 'invalid_input', `${name}必须是文字。`);
   const text = value.trim().normalize('NFC');
-  if ([...text].length > max || (required && !text) || /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u.test(text))
+  if ([...text].length > max || (required && !text) || /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u.test(text) ||
+      (singleLine && /[\t\r\n]/u.test(text)))
     fail(400, 'invalid_input', `${name}不能为空或超过 ${max} 字符，且不能包含控制字符。`);
   return text;
 }
@@ -42,8 +43,8 @@ export function validateSubmission(body, catalog) {
   }
   const element = body.element === 'auto' ? catalog.characters[team.main[0]].element : body.element;
   if (element !== 'universal' && !catalog.elements.includes(element)) fail(400, 'invalid_element', '请选择有效属性或宇宙。');
-  return {title: cleanText(body.title, '标题', 80, true), notes: cleanText(body.notes ?? '', '备注', 2000),
-    author: cleanText(body.author ?? '', '署名', 40), team, element, damageMask: damageMask(body.damageTypes)};
+  return {title: cleanText(body.title, '标题', 80, true, true), notes: cleanText(body.notes ?? '', '备注', 2000),
+    author: cleanText(body.author ?? '', '署名', 40, false, true), team, element, damageMask: damageMask(body.damageTypes)};
 }
 export async function fingerprint(team) {
   const columns = [0, 1, 2].map((index) => GROUPS.map((group) => team[group][index]));

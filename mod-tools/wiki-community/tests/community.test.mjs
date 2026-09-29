@@ -21,6 +21,14 @@ test('可信目录验证角色/魂珠/完整主位/元素/类型而不是客户�
   const value = submission(); value.element = 'universal'; value.team.unison = ['', '', ''];
   assert.equal(validateSubmission(value, fixtureCatalog).element, 'universal');
 });
+test('标题与署名单行兼容游戏码客户端，备注可以保留换行', () => {
+  for (const field of ['title', 'author']) for (const separator of ['\n', '\r', '\t']) {
+    const value = submission(); value[field] = `第一行${separator}第二行`;
+    assert.throws(() => validateSubmission(value, fixtureCatalog));
+  }
+  const value = submission(); value.notes = '第一行\n第二行';
+  assert.equal(validateSubmission(value, fixtureCatalog).notes, value.notes);
+});
 test('游客不能创建，伪邮箱头不获管理员权限', async (t) => {
   const app = context(); t.after(() => app.close());
   assert.equal((await app.call('/teams', {body: submission()})).status, 403);
