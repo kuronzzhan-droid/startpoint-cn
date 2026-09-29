@@ -81,10 +81,10 @@
       board.replaceChildren(el('h2', '', '队伍编成'));
       const grid = el('div', 'team-columns');
       for (let index = 0; index < 3; index++) {
-        const column = el('div', 'team-column'); column.append(el('h3', 'team-position', `${index + 1}号位`));
+        const column = el('div', 'team-column'); column.setAttribute('role', 'group'); column.setAttribute('aria-label', `${index + 1}号位`);
         const stack = el('div', 'team-card-stack'); column.append(stack);
         if (index === 0) stack.append(el('span', 'team-leader-flag', '队长'));
-        for (const group of ['main', 'weapon', 'unison', 'soul']) {
+        for (const group of ['main', 'weapon', 'soul', 'unison']) {
           const source = S.isCharacter(group) ? characters : equipment;
           const item = source.get(team[group][index]);
           const wrap = el('div', `team-slot-wrap team-slot-wrap-${group}`);
@@ -94,11 +94,9 @@
           slot.title = `${labels[group]} · ${item?.name || '点击选择或拖入'}`;
           slot.append(el('span', 'team-slot-label', labels[group]));
           if (item) {
-            const portrait = group === 'main' && Array.isArray(item.portraits) ? item.portraits.at(-1)?.url : '';
-            slot.append(picture(portrait || item.icon, item.name, 'team-slot-image'));
+            slot.append(picture(item.icon, item.name, 'team-slot-image'));
             if (S.isCharacter(group)) slot.append(elementBadge(item.element));
           } else slot.append(el('span', 'team-slot-empty', '+'));
-          slot.append(el('span', 'team-slot-name', item?.name || (group === 'soul' ? '选择魂珠' : '点击选择')));
           slot.querySelectorAll('img').forEach((img) => {img.draggable = false;});
           slot.draggable = Boolean(item);
           slot.addEventListener('dragstart', (event) => {event.dataTransfer.setData('application/x-wf-wiki', JSON.stringify({id: team[group][index], kind: S.isCharacter(group) ? 'character' : 'equipment'}));});
@@ -117,7 +115,7 @@
           });
           wrap.append(slot);
           if (item) {const remove = button('×', () => change(S.place(team, group, index, '', characters, equipment)), 'team-slot-remove'); remove.setAttribute('aria-label', `移除${index + 1}号${labels[group]}`); remove.title = `移除${labels[group]}`; wrap.append(remove);}
-          (group === 'soul' ? column : stack).append(wrap);
+          stack.append(wrap);
         }
         grid.append(column);
       }
