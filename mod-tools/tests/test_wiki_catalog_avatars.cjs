@@ -35,7 +35,7 @@ function setup(saved, blocked = false) {
       setItem:(key,value) => {if (blocked) throw Error(); storage.set(key,value);}}});
   const api = window.WFCatalogAvatars.create({host,catalog,characters,ui});
   const cards = characters.map((character) => { const card = el('a'); card.append(api.picture(character)); catalog.append(card); return card; });
-  return {api, catalog, cards, buttons:host.querySelectorAll('button'), storage};
+  return {api, catalog, cards, buttons:host.querySelectorAll('button'), storage, window, ui};
 }
 const src = (node) => node.querySelector('img').getAttribute('src');
 
@@ -73,4 +73,19 @@ test('unavailable storage and obsolete settings still allow both choices', () =>
     buttons[1].click();
     assert.equal(src(cards[0]),'media/second.webp');
   }
+});
+
+test('team and community controls reuse the saved choice and preserve portrait presentation', () => {
+  const x = setup(); x.buttons[1].click();
+  const catalog = el('main'), host = el('div');
+  const other = x.window.WFCatalogAvatars.create({host,catalog,characters,ui:x.ui,label:'编队头像'});
+  const portrait = other.picture(characters[0],'角色一','team-slot-image'); catalog.append(portrait);
+  assert.equal(src(portrait),'media/second.webp');
+  assert.match(portrait.className,/team-slot-image/);assert.equal(portrait.dataset.avatarAlt,'角色一');
+  assert.equal(host.children[0].attributes['aria-label'],'编队头像');
+  host.querySelectorAll('button')[0].click();
+  assert.equal(src(portrait),'media/first.webp');
+  assert.equal(portrait.querySelector('img').draggable,false);
+  assert.equal(src(x.cards[0]),'media/second.webp');
+  assert.equal(x.storage.get('wf-wiki-catalog-avatar'),'before');
 });

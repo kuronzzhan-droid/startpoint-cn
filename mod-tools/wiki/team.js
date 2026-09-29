@@ -30,7 +30,10 @@
     const library = el('section', 'team-library game-panel');
     const controls = el('div', 'team-controls');
     const status = el('p', 'team-status'); status.setAttribute('role', 'status');
-    const inspector = window.WFTeamInspector?.create(data, ui);
+    const avatarControls = el('div', 'team-avatar-controls');
+    const avatars = window.WFCatalogAvatars?.create({host: avatarControls, catalog: host,
+      characters: data.characters, ui, label: '编队头像'});
+    const inspector = window.WFTeamInspector?.create(data, ui, avatars);
     const title = el('input'); title.value = name; title.maxLength = 60; title.setAttribute('aria-label', '队伍名称');
     title.addEventListener('input', () => {name = title.value;});
     function button(label, action, className = 'secondary-button') {
@@ -94,6 +97,7 @@
       if (identity?.id && identity?.email && controls.isConnected) collect.hidden = false;
     }).catch(() => {});
     const recommendations = el('a', 'text-button', '查看配队大全'); recommendations.href = '#community'; controls.append(recommendations);
+    controls.append(avatarControls);
     function paintBoard() {
       board.replaceChildren(el('h2', '', '队伍编成'));
       const grid = el('div', 'team-columns');
@@ -118,7 +122,8 @@
           slot.title = `${labels[group]} · ${item?.name || '点击选择或拖入'}`;
           slot.append(el('span', 'team-slot-label', labels[group]));
           if (item) {
-            slot.append(picture(item.icon, item.name, 'team-slot-image'));
+            slot.append(S.isCharacter(group) && avatars ? avatars.picture(item, item.name, 'team-slot-image')
+              : picture(item.icon, item.name, 'team-slot-image'));
             if (S.isCharacter(group)) {
               slot.append(elementBadge(item.element));
               window.WFCharacterFrame?.apply(slot, item);
@@ -216,7 +221,8 @@
         const candidateName = `${item.name}${chosen.group === 'soul' ? '魂珠' : ''}`;
         const b = button('', () => assign(item.id), 'team-candidate'); b.title = `${candidateName} ${item.theme || ''}`;
         b.setAttribute('aria-label', `选择${candidateName}`); b.draggable = true;
-        const image = picture(item.icon, item.name, 'team-candidate-image');
+        const image = characterMode && avatars ? avatars.picture(item, item.name, 'team-candidate-image')
+          : picture(item.icon, item.name, 'team-candidate-image');
         if (characterMode) {
           const art = el('span', 'team-candidate-art'); art.append(image);
           window.WFCharacterFrame?.apply(art, item);

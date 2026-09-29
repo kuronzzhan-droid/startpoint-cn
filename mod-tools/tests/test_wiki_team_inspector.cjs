@@ -7,36 +7,40 @@ const S = require('../wiki/team-state.js');
 const source = (name) => fs.readFileSync(path.join(__dirname,'../wiki',name),'utf8');
 class Node {
   constructor(tag, className = '', text = '') {
-    Object.assign(this,{tag,className,ownText:String(text || ''),children:[],events:{},attributes:{},value:'',disabled:false,hidden:false});
+    Object.assign(this,{tag,className,ownText:String(text || ''),children:[],events:{},attributes:{},dataset:{},value:'',disabled:false,hidden:false});
     this.classList = {toggle:()=>{},add:()=>{},remove:()=>{}};
   }
   append(...nodes) {nodes.forEach((node) => {node.parent = this; this.children.push(node);});}
   prepend(...nodes) {nodes.forEach((node) => {node.parent = this;}); this.children.unshift(...nodes);}
   replaceChildren(...nodes) {this.children.forEach((node) => {node.parent = null;}); this.children = []; this.ownText = ''; this.append(...nodes);}
   setAttribute(key, value) {this.attributes[key] = value;}
+  getAttribute(key) {return this.attributes[key];}
   addEventListener(name, handler) {this.events[name] = handler;}
   get isConnected() {return this.root || Boolean(this.parent?.isConnected);}
   get options() {return this.children;}
   get textContent() {return this.ownText + this.children.map((node) => node.textContent).join('');}
   set textContent(value) {this.replaceChildren(); this.ownText = String(value);}
-  querySelectorAll(selector) {return this.all((node) => selector.startsWith('.') ? node.className.split(' ').includes(selector.slice(1)) : node.tag === selector);}
+  querySelectorAll(selector) {return this.all((node) => selector === '[data-catalog-avatar]' ? node.dataset.catalogAvatar !== undefined
+    : selector.startsWith('.') ? node.className.split(' ').includes(selector.slice(1)) : node.tag === selector);}
+  querySelector(selector) {return this.querySelectorAll(selector)[0] || null;}
   all(match) {return this.children.flatMap((node) => [...(match(node) ? [node] : []), ...node.all(match)]);}
   async fire(name, extra = {}) {if (!this.disabled) return this.events[name]?.({preventDefault(){},...extra});}
 }
 const el = (tag, cls, text) => new Node(tag, cls, text);
-const data = {meta:{sentinel:'full-meta'},characters:['a','b','c','d'].map((id) => ({id,name:`角色${id}`,icon:`${id}.png`,element:'火'})),
+const data = {meta:{sentinel:'full-meta'},characters:['a','b','c','d'].map((id) => ({id,name:`角色${id}`,icon:`${id}.png`,element:'火',
+  avatars:{before:`${id}.png`,...(id === 'd' ? {} : {after:`${id}-after.png`})}})),
   equipment:[{id:'w',name:'武器',element:'火',rarity:5,soul:{available:true}},
     {id:'water',name:'水弓',element:'水',rarity:4,soul:{available:true}},
     {id:'no-soul',name:'无魂珠武器',element:'火',rarity:5,soul:{available:false}}]};
 const plate = {...S.empty(),main:['a','b','c'],unison:['d','',''],weapon:['w','','']};
 const one = (host, label) => host.all((node) => node.attributes['aria-label'] === label)[0];
 const button = (host, label) => host.all((node) => node.tag === 'button' && node.textContent === label)[0];
-function inspector(loadCharacter) {
+function inspector(loadCharacter, avatars) {
   const listeners = {}, rendered = [];
   const window = {location:{hash:'#team'},addEventListener:(key, fn) => {listeners[key] = fn;},WFWikiData:{loadCharacter},
-    renderWikiCharacterSummary(host, character, meta, ui, options) {rendered.push({character,meta,options});host.replaceChildren(ui.el('p','',character.name));}};
+    renderWikiCharacterSummary(host, character, meta, ui, options) {rendered.push({character,meta,options});host.replaceChildren(ui.el('p','',character.name),ui.el('div','summary-avatar'));}};
   vm.runInNewContext(source('team-inspector.js'),{window});
-  const instance = window.WFTeamInspector.create(data,{el}); instance.element.root = true;
+  const instance = window.WFTeamInspector.create(data,{el},avatars); instance.element.root = true;
   return {window,listeners,rendered,instance,api:window.WFTeamInspector};
 }
 test('inspector requests a complete character and renders existing skills summary with native metadata', async () => {
@@ -79,13 +83,45 @@ function teamPage() {
   const window = {WFTeamState:S,location:{hash:'#team'},WFCharacterOrder:{compare:() => 0},
     WFTeamInspector:{create:() => ({element:el('aside','team-inspector'),show:(id) => inspected.push(id)}),remember:(...args) => remembered.push(args)},
     WFCharacterFilters:{create:() => ({element:el('div'),clearSearch(){},getState:() => ({}),matches:() => true})}};
-  const ui = {el,picture:(path,name,cls) => el('img',cls,name),elementBadge:(element) => el('span','element-badge',element)};
+  const ui = {el,safeUrl:(value)=>typeof value==='string'?value:'',
+    picture:(path,name,cls) => {const image=el('img',cls,name);image.setAttribute('src',path);return image;},
+    elementBadge:(element) => el('span','element-badge',element)};
   const context = {window,localStorage:{getItem:(key) => stored.get(key),setItem:(key,value) => stored.set(key,value)},setTimeout};
   vm.runInNewContext(source('team-equipment-filters.js'),context);
+  vm.runInNewContext(source('catalog-avatars.js'),context);
   vm.runInNewContext(source('team.js'),context);
   const host = el('main'); host.root = true;
-  return {window,host,inspected,remembered,render:() => window.renderWikiTeam(host,data,ui)};
+  return {window,host,inspected,remembered,stored,render:() => window.renderWikiTeam(host,data,ui)};
 }
+
+test('inspector uses the current portrait choice after an asynchronous detail load', async () => {
+  let form='before',resolve;
+  const x=inspector(()=>new Promise((done)=>{resolve=done;}),{picture(character){return el('span','chosen-avatar',`${character.id}-${form}`);}});
+  const loading=x.instance.show('a');form='after';resolve({id:'a',name:'角色a'});await loading;
+  assert.equal(x.instance.element.querySelector('.summary-avatar').textContent,'a-after');
+  assert.equal(x.rendered.length,1);assert.equal(x.instance.element.querySelectorAll('a')[0].href,'#character/a/details/profile');
+});
+
+test('one team switch updates slots and candidates in place without losing selection, filters, history or saved plate',async()=>{
+  const x=teamPage();x.window.WFTeamImport.load(plate,'保留头像盘',{group:'unison',index:0});x.render();
+  const avatar=one(x.host,'1号主位：角色a'),candidate=one(x.host,'选择角色a');
+  const read=(node)=>node.querySelector('img').getAttribute('src');
+  await button(x.host,'觉醒后').fire('click');
+  assert.equal(read(avatar),'a-after.png');assert.equal(read(candidate),'a-after.png');
+  assert.equal(read(one(x.host,'1号合击：角色d')),'d.png');
+  assert.equal(one(x.host,'1号主位：角色a'),avatar);assert.equal(x.inspected.at(-1),'d');
+  assert.equal(one(x.host,'1号合击：角色d').attributes['aria-current'],'true');
+  await button(x.host,'武器').fire('click');await one(x.host,'武器水属性').fire('click');
+  await button(x.host,'觉醒前').fire('click');
+  assert.ok(one(x.host,'选择水弓'));assert.equal(one(x.host,'选择武器'),undefined);
+  await button(x.host,'角色').fire('click');await one(x.host,'替换2号主位').fire('click');await one(x.host,'选择角色d').fire('click');
+  await button(x.host,'觉醒后').fire('click');await button(x.host,'撤销').fire('click');
+  assert.ok(one(x.host,'2号主位：角色b'));assert.ok(one(x.host,'1号合击：角色d'));
+  await button(x.host,'保存队伍').fire('click');const saved=JSON.parse(x.stored.get('wf-wiki-teams-v1'))[0];
+  assert.deepEqual(saved.team,plate);assert.equal(saved.name,'保留头像盘');
+  x.host.replaceChildren(el('p','','完整资料'));x.render();
+  assert.equal(read(one(x.host,'1号主位：角色a')),'a-after.png');assert.equal(button(x.host,'觉醒后').attributes['aria-pressed'],'true');
+});
 test('imported recommendation selection opens its character panel without changing the team or route', async () => {
   const x = teamPage(); x.window.WFTeamImport.load(plate,'推荐盘',{group:'unison',index:0}); x.render();
   assert.equal(x.inspected.at(-1),'d');

@@ -20,7 +20,8 @@
           if (character && options.onCharacter) {
             slot.href = '#team'; slot.addEventListener('click', (event) => {event.preventDefault(); options.onCharacter({group,index});});
           }
-          slot.append(picture(item.icon, item.name, 'community-slot-image'));
+          slot.append(character && options.avatars ? options.avatars.picture(item, item.name, 'community-slot-image')
+            : picture(item.icon, item.name, 'community-slot-image'));
           if (character) window.WFCharacterFrame?.apply(slot, item);
         } else slot.append(el('span', '', team[group][index] ? '?' : '—'));
         slot.append(el('span', 'community-slot-label', index === 0 && group === 'main' ? '队长' : groupNames[group])); column.append(slot);
@@ -55,9 +56,12 @@
     });
     const status = el('p', 'community-status'); status.setAttribute('role', 'status');
     const cards = el('div', options.id ? 'community-grid community-single' : 'community-grid');
+    const avatarControls = el('div', 'community-avatar-controls');
+    const avatars = window.WFCatalogAvatars?.create({host: avatarControls, catalog: cards,
+      characters: data.characters || [], ui, label: '配队大全头像'});
     const more = el('button', 'secondary-button community-more', '加载更多'); more.type = 'button'; more.hidden = true;
     const retry = el('button', 'secondary-button', '重试连接'); retry.type = 'button'; retry.hidden = true;
-    host.replaceChildren(el('h1', '', options.id ? '推荐队伍' : '配队大全'), intro, toolbar, damage, status, cards, more, retry, C.source(ui));
+    host.replaceChildren(el('h1', '', options.id ? '推荐队伍' : '配队大全'), intro, toolbar, avatarControls, damage, status, cards, more, retry, C.source(ui));
     if (options.id) {toolbar.hidden = true; damage.hidden = true; const back = el('a', 'back-button', '‹ 返回配队大全'); back.href = '#community'; host.prepend(back);}
     const current = (ticket) => cards.isConnected && revision === ticket && location.hash === startingHash;
     function card(item) {
@@ -72,7 +76,7 @@
       (item.damageTypes || []).filter((key) => C.damageTypes[key]).forEach((key) => badges.append(el('span', 'badge', C.damageTypes[key])));
       const date = new Date(item.createdAt), time = el('time', 'muted', Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('zh-CN', {timeZone: 'Asia/Shanghai'}));
       if (!Number.isNaN(date.getTime())) time.dateTime = date.toISOString();
-      node.append(heading, badges, C.board(item.team, data, ui, {onCharacter:enter}), el('p', 'community-author', `作者：${item.author}`), time);
+      node.append(heading, badges, C.board(item.team, data, ui, {onCharacter:enter, avatars}), el('p', 'community-author', `作者：${item.author}`), time);
       const gameCode = window.WFCommunityGameCodes?.readonly(item, ui); if (gameCode) node.append(gameCode);
       if (item.notes) {const notes = el('details', 'community-notes'); notes.open = Boolean(options.id); notes.append(el('summary', '', '用途与操作说明'), el('p', '', item.notes)); node.append(notes);}
       const actions = el('div', 'community-actions');

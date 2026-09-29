@@ -6,7 +6,7 @@ const vm = require('node:vm');
 const C = require('../wiki/community-client.js');
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 class Node {
-  constructor(tag, className='', text='') {Object.assign(this,{tag,className,ownText:String(text),children:[],events:{},attributes:{},value:'',checked:false,disabled:false});}
+  constructor(tag, className='', text='') {Object.assign(this,{tag,className,ownText:String(text),children:[],events:{},attributes:{},dataset:{},value:'',checked:false,disabled:false});}
   append(...nodes) {nodes.forEach((node)=>{node.parent=this;this.children.push(node);});}
   prepend(...nodes) {nodes.forEach((node)=>{node.parent=this;});this.children.unshift(...nodes);}
   replaceChildren(...nodes) {this.children.forEach((node)=>node.parent=null);this.children=[];this.ownText='';this.append(...nodes);}
@@ -14,34 +14,39 @@ class Node {
   set textContent(text) {this.replaceChildren();this.ownText=String(text);}
   get textContent() {return this.ownText+this.children.map((node)=>node.textContent).join('');}
   setAttribute(key,value) {this.attributes[key]=value;}
+  getAttribute(key) {return this.attributes[key];}
   addEventListener(key,callback) {this.events[key]=callback;}
   get isConnected() {return this.connected===true || Boolean(this.parent?.isConnected);}
   async fire(name) {return this.events[name]?.({preventDefault(){}});}
   querySelectorAll(selector) {
     const match=(node)=>selector==='input:checked' ? node.tag==='input'&&node.checked
+      : selector==='[data-catalog-avatar]' ? node.dataset.catalogAvatar !== undefined
       : selector.startsWith('.') ? node.className.split(' ').includes(selector.slice(1)) : node.tag===selector;
     return this.children.flatMap((node)=>[...(match(node)?[node]:[]),...node.querySelectorAll(selector)]);
   }
+  querySelector(selector) {return this.querySelectorAll(selector)[0] || null;}
 }
 const el=(tag,cls,value)=>new Node(tag,cls,value);
-const data={characters:['c1','c2','c3'].map((id)=>({id,name:`角色${id}`,element:'火',icon:'test.webp'})),
+const data={characters:['c1','c2','c3'].map((id)=>({id,name:`角色${id}`,element:'火',icon:'test.webp',
+  avatars:{before:`${id}-before.webp`,...(id==='c3'?{}:{after:`${id}-after.webp`})}})),
   equipment:[{id:'w1',name:'装备',soul:{available:true}}]};
 const team=C.teamCopy({main:['c1','c2','c3'],weapon:['w1']});
 const item={id:'t1',status:'approved',title:'推荐 <img src=x onerror=alert(1)>',author:'作者',notes:'<script>bad</script>',
   team,element:'火',damageTypes:['skill'],createdAt:'2026-09-29T01:00:00Z',likes:3};
 function setup(client) {
   const location={hash:'#community'}, window={WFCommunity:{...C,client},WFTeamImport:{load:(...args)=>{window.imported=args;}}};
-  const context={window,location,URLSearchParams,Date,console};
-  for (const file of ['community.js','community-submit.js']) vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki',file),'utf8'),context);
+  const storage=new Map(),context={window,location,URLSearchParams,Date,console,
+    localStorage:{getItem:(key)=>storage.get(key),setItem:(key,value)=>storage.set(key,value)}};
+  for (const file of ['catalog-avatars.js','community.js','community-submit.js']) vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki',file),'utf8'),context);
   const host=el('main');host.connected=true;
-  const ui={el,picture:()=>el('img')};
+  const ui={el,safeUrl:(value)=>typeof value==='string'?value:'',picture:(url,alt,cls)=>{const node=el('img',cls);node.setAttribute('src',url);return node;}};
   const modals=[], challenges=[];
   window.WFCommunity.dialog=()=>{const modal={element:el('dialog'),cleanup(fn){this.clean=fn;}};modal.element.connected=true;modals.push(modal);return modal;};
   window.WFCommunity.challenge=(_host,_config,_action,_ui,onChange)=>{
     const challenge={tokens:[],resets:0,destroyed:false,take(){onChange(false);return this.tokens.shift()||'';},reset(){this.resets++;onChange(false);},destroy(){this.destroyed=true;},ready(token){this.tokens.push(token);onChange(true);}};
     challenges.push(challenge);return challenge;
   };
-  return {window,context,host,ui,modals,challenges,C:window.WFCommunity};
+  return {window,context,host,ui,modals,challenges,storage,C:window.WFCommunity};
 }
 const config={enabled:true,elements:['火','水','universal']};
 test('recommendations paginate, escape text, link plates and load a copied team into editor',async()=>{
@@ -65,6 +70,32 @@ test('recommendation title and avatar open its plate and preserve the clicked ch
   const avatar=x.host.querySelectorAll('a').find((link)=>link.attributes['aria-label']==='2号主位：角色c2');await avatar.fire('click');
   assert.equal(x.window.imported[2].group,'main');assert.equal(x.window.imported[2].index,1);
   x.window.imported[0].main[0]='changed';assert.equal(item.team.main[0],'c1');
+});
+
+test('gallery avatar toggle preserves cards, links, likes and filters while paginated cards follow its preference',async()=>{
+  let requests=0;const x=setup({config:async()=>config,request:async()=>{requests++;return {items:[{...item,id:`t${requests}`}],nextCursor:requests===1?'second':''};}});
+  await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
+  const cards=x.host.querySelectorAll('.community-card'),first=cards[0],portraits=first.querySelectorAll('[data-catalog-avatar]');
+  const after=x.host.querySelectorAll('button').find((button)=>button.textContent==='觉醒后');
+  await after.fire('click');
+  assert.equal(portraits[0].querySelector('img').getAttribute('src'),'c1-after.webp');
+  assert.equal(portraits[2].querySelector('img').getAttribute('src'),'test.webp');
+  assert.match(portraits[2].title,/未收录/);assert.equal(x.host.querySelectorAll('.community-card')[0],first);
+  assert.equal(requests,1);assert.equal(x.storage.get('wf-wiki-catalog-avatar'),'after');
+  assert.equal(first.querySelectorAll('button').find((button)=>button.textContent==='点赞 · 3').disabled,false);
+  await x.host.querySelectorAll('.community-more')[0].fire('click');await tick();
+  assert.equal(x.host.querySelectorAll('.community-card')[1].querySelector('img').getAttribute('src'),'c1-after.webp');
+  const avatar=first.querySelectorAll('a').find((link)=>link.attributes['aria-label']==='2号主位：角色c2');await avatar.fire('click');
+  assert.equal(x.window.imported[2].index,1);assert.deepEqual(JSON.parse(JSON.stringify(x.window.imported[0])),team);
+});
+
+test('single recommendation retains its avatar switch when list filters are hidden',async()=>{
+  const x=setup({config:async()=>config,request:async()=>({team:item})});
+  await x.window.renderWikiCommunity(x.host,data,x.ui,{id:item.id});await tick();
+  assert.equal(x.host.querySelectorAll('.community-toolbar')[0].hidden,true);
+  const group=x.host.querySelectorAll('.catalog-avatar-controls')[0];assert.ok(group);assert.notEqual(group.parent.hidden,true);
+  await group.querySelectorAll('button')[1].fire('click');
+  assert.equal(x.host.querySelectorAll('.community-board')[0].querySelector('img').getAttribute('src'),'c1-after.webp');
 });
 test('old page cannot populate a newly mounted page even when both have the same route',async()=>{
   let resolve;const x=setup({config:async()=>config,request:()=>new Promise((done)=>{resolve=done;})});

@@ -18,7 +18,7 @@
     const link = ui.el('a', 'back-button team-return-link', '‹ 返回当前编队'); link.href = '#team';
     host.prepend(link);
   }
-  function create(data, ui) {
+  function create(data, ui, avatars) {
     const {el} = ui, root = el('aside', 'team-inspector'); root.setAttribute('aria-label', '编队角色面板');
     const heading = el('div', 'team-inspector-heading'), body = el('div', 'team-inspector-body');
     const status = el('p', 'team-inspector-status'); status.setAttribute('role', 'status');
@@ -42,6 +42,8 @@
         window.renderWikiCharacterSummary(body, character, data.meta || {}, ui, {onOpenDetails: (tab) => {
           remember('character', id); window.location.hash = `#character/${encodeURIComponent(id)}/details/${tab || 'profile'}`;
         }});
+        const portrait = avatars && body.querySelector('.summary-avatar');
+        if (portrait) portrait.replaceChildren(avatars.picture(character, character.name || '角色'));
         details.href = `#character/${encodeURIComponent(id)}/details/profile`; details.hidden = false;
         status.textContent = ''; state = 'ready';
       } catch (error) {
