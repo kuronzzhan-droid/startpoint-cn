@@ -35,14 +35,15 @@ node --test mod-tools/wiki-community/tests/*.test.mjs
 | 接口 | 权限与结果 |
 | --- | --- |
 | `GET /config` | 配置、元素、伤害类型、玩法分区 sections；`canSubmit:false,publishing:'admin'` |
-| `GET /teams` | 公开盘子 `{items,nextCursor}`；支持 section、category、element、damage、sort、cursor |
+| `GET /teams` | 大全公开盘子 `{items,nextCursor}`；支持 section、category、element、damage、code、sort、cursor |
 | `GET /teams/:id` | 单个公开盘子 `{team}`，含 likedToday |
 | `POST /teams` | 始终 403 submission_disabled |
 | `POST /teams/:id/like` | `{turnstileToken}` → `{id,likes,likedToday,nextLikeAt}` |
 | `GET /admin/me` | 验证后的管理员；密码模式含 role/enabled/revision/mustChangePassword |
 | `GET /admin/login` | 验证后重定向 `/#community/admin` |
-| `GET /admin/teams` | 管理员列表，额外含 status/revision，支持 status 筛选 |
-| `POST /admin/teams` | 管理员创建 → 201 `{team}`，立即公开并记录审计 |
+| `GET /admin/teams` | 授权列表，额外含 status/revision/visibility/createdBy，支持 status、scope 筛选 |
+| `GET /admin/teams/:id` | 授权单盘 `{team}`；其他管理员的私盘返回 404 |
+| `POST /admin/teams` | 管理员创建 → 201 `{team}`，按 visibility 保存并记录审计 |
 | `PATCH /admin/teams/:id` | 管理员修改；必须传 expectedRevision，避免覆盖并发编辑 |
 | `GET /admin/teams/:id/game-code` | 当前阵容码 `{gameCode,active,teamRevision}` |
 | `POST /admin/teams/:id/game-code` | 管理员生成/复用，必须传 expectedRevision |
@@ -62,6 +63,18 @@ GET 的 `section` 省略或空值表示全部，`general` 仅查看通用，其�
 分页游标绑定这些筛选条件，改变分类或玩法后必须从第一页载入。仅改变这些元数据不会改变阵容指纹或撤销游戏码。
 默认 latest，popular 按累计赞、创建时间排序。队伍 ID 和游戏码是不同标识。
 
+`visibility` 为 `public`（配队大全）或 `private`（个人空间）。新建省略时兼容旧客户端，默认 public；编辑省略时保持原值。
+创建者 `createdBy` 由已验证的登录身份写入，客户端传入无效；旧盘创建者为空，不根据署名或历史隐藏状态猜测。
+游客只能查看和点赞 `visibility=public,status=approved` 的盘子。普通管理员可以管理全部公开空间的盘子及本人私盘；
+站长、副站长可以管理所有私盘。只有创建者、站长或副站长可以把公开空间盘子移入个人空间。
+管理员列表 `scope=all` 默认返回可见全集，`public` 查看公开空间，`mine` 查看本人私盘；`private` 查看全体私盘，仅站长/副站长可用。
+其他管理员私盘的读取、编辑及队伍码管理均返回 404；重复阵容冲突不返回该私盘的 ID 或状态。
+`code=has` 仅查看有当前有效码的盘子，`none` 仅查看没有有效码的盘子；省略时不限。此筛选在数据库分页之前执行。
+分页游标同时绑定空间、队伍码条件和管理员身份，不能跨账号或改变筛选后继续使用。
+
+个人空间的盘子保存后可以显式生成公开游戏码；知道码的玩家可查询其阵容，但它仍不出现在配队大全，备注与创建者不随游戏码公开。
+切换保存空间不会撤销已发布的码；管理员可单独停用码。原有 `status=hidden` 表示隐藏停用，仍会永久撤码，不等于个人空间。
+
 阵容指纹固定第一列队长；第二、三列整体交换视为相同阵容。主位、合击、武器、魂珠配对保留。
 标题、备注、署名、分类、玩法变化不改变指纹。重复返回 409 duplicate + existingId/status；隐藏盘不泄漏正文。
 修改冲突返回 409 edit_conflict。点赞重复为 409 already_liked，包含当前赞数和次日可赞时间。
@@ -74,6 +87,7 @@ GET 的 `section` 省略或空值表示全部，`general` 仅查看通用，其�
 已有数据库升级分类和玩法功能时，先备份并执行 `PRAGMA table_info(community_teams)` 检查：
 若没有 `category` 列，在部署新版 Worker 前执行一次 `migrations/0001-team-category.sql`。
 若没有 `section` 列，再执行一次 `migrations/0002-team-section.sql`。
+若没有 `visibility` 和 `created_by` 列，再执行一次 `migrations/0003-team-visibility.sql`；这两个字段应在同一迁移中追加。
 已有对应列时不要重复执行 ALTER；新库使用当前 `schema.sql` 即可。
 迁移只追加默认空值列及索引，保留队伍、赞数、审计、队伍码和管理员账号。
 本地 SQLite 适配器在下次启动时自动检测并事务执行同一迁移，重复启动不会重置已填分类。
@@ -135,7 +149,7 @@ IP 共用、代理与设备重置仍存在，不将 IP 视为用户身份。
 审计保存管理员标识/邮箱、时间、操作、队伍 ID 和修改前后内容；管理操作与审计用 D1 batch 同事务。
 
 游戏码使用密码学随机 12 位大写 32 字母表（60 bit），只有管理员能生成。
-相同阵容有效码复用，改阵容或隐藏在同事务永久撤销旧码；仅改备注或标题仍可复用。
+相同阵容有效码复用，改阵容或隐藏停用在同事务永久撤销旧码；仅改备注、标题或保存空间仍可复用。
 恢复公开或改回原阵容不会自动恢复旧码，须管理员显式重新生成。隐藏、停用码查询返回 404。
 公开查询只返回已脱敏阵容和标题。游戏端必须明确配置该 HTTPS 只读接口，且缓存不超过 10 秒；
 仅 Wiki 有码不等于灰服或现有 APK 已支持导入，接入与实机验收单独报告。

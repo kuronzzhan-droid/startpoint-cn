@@ -30,6 +30,8 @@ export function validateSubmission(body, catalog, {allowUncategorized = false} =
     fail(400, 'invalid_category', '请选择一个有效的配队分类。');
   const section = body.section === undefined ? '' : body.section;
   if (!TEAM_SECTIONS.some((item) => item.value === section)) fail(400, 'invalid_section', '请选择一个有效的玩法分区。');
+  const visibility = body.visibility === undefined ? 'public' : body.visibility;
+  if (!['public', 'private'].includes(visibility)) fail(400, 'invalid_visibility', '请选择配队大全或个人空间。');
   const team = {}, seen = new Set();
   for (const group of GROUPS) {
     const values = body.team?.[group];
@@ -51,7 +53,8 @@ export function validateSubmission(body, catalog, {allowUncategorized = false} =
   const element = body.element === 'auto' ? catalog.characters[team.main[0]].element : body.element;
   if (element !== 'universal' && !catalog.elements.includes(element)) fail(400, 'invalid_element', '请选择有效属性或宇宙。');
   return {title: cleanText(body.title, '标题', 80, true, true), notes: cleanText(body.notes ?? '', '备注', 2000),
-    author: cleanText(body.author ?? '', '署名', 40, false, true), team, element, category: body.category, section, damageMask: damageMask(body.damageTypes)};
+    author: cleanText(body.author ?? '', '署名', 40, false, true), team, element, category: body.category, section, visibility,
+    damageMask: damageMask(body.damageTypes)};
 }
 export async function fingerprint(team) {
   const columns = [0, 1, 2].map((index) => GROUPS.map((group) => team[group][index]));
@@ -69,10 +72,17 @@ export function teamRecord(row, admin = false) {
     element: row.element, category: row.category || '', section: row.section || '', damageTypes: DAMAGE_TYPES.filter((_, i) => row.damage_mask & (1 << i)),
     createdAt: new Date(row.created_at).toISOString(), updatedAt: new Date(row.updated_at).toISOString(), likes: row.likes,
     gameCode: row.status === 'approved' ? row.game_code || null : null};
-  if (admin) Object.assign(item, {status: row.status, revision: row.revision});
+  if (admin) Object.assign(item, {status: row.status, revision: row.revision, visibility: row.visibility, createdBy: row.created_by});
   return item;
 }
-export function listQuery(url, catalog, admin = false) {
+export function listQuery(url, catalog, admin = false, actor = null) {
+  if (admin && !actor?.id) fail(401, 'admin_auth_required', '请先使用管理员账号登录。');
+  const scope = admin ? (url.searchParams.get('scope') || 'all') : '';
+  if (admin && !['all', 'public', 'mine', 'private'].includes(scope)) fail(400, 'invalid_scope', '队伍范围筛选无效。');
+  if (scope === 'private' && !['owner', 'deputy'].includes(actor?.role)) fail(403, 'manager_required', '只有站长或副站长可以查看全部个人空间。');
+  const code = url.searchParams.get('code') || '';
+  if (code && !['has', 'none'].includes(code)) fail(400, 'invalid_code_filter', '队伍码筛选无效。');
+  const accessKey = admin ? `${actor.id}:${actor.role || 'editor'}` : '';
   const element = url.searchParams.get('element') || '';
   if (element && element !== 'universal' && !catalog.elements.includes(element)) fail(400, 'invalid_element', '属性筛选无效。');
   const category = url.searchParams.get('category') || '';
@@ -88,17 +98,19 @@ export function listQuery(url, catalog, admin = false) {
   const encoded = url.searchParams.get('cursor');
   if (encoded) {
     try {
-      if (encoded.length > 500) throw new Error();
+      if (encoded.length > 800) throw new Error();
       cursor = decodeJSON(encoded);
       if (cursor.sort !== sort || cursor.element !== element || (cursor.category || '') !== category || (cursor.section || '') !== section ||
           cursor.damage !== (damage || '') || cursor.status !== status ||
+          (cursor.scope || '') !== scope || (cursor.code || '') !== code || (cursor.accessKey || '') !== accessKey ||
           !Number.isSafeInteger(cursor.createdAt) || !Number.isSafeInteger(cursor.likes) || cursor.likes < 0 ||
           !/^[a-f0-9-]{36}$/.test(cursor.id)) throw new Error();
     } catch { fail(400, 'invalid_cursor', '分页位置无效，请重新打开列表。'); }
   }
-  return {element, category, section, damage: damage || '', mask: damage ? damageMask(damage.split(',')) : 0, sort, status, cursor};
+  return {element, category, section, scope, code, accessKey, damage: damage || '', mask: damage ? damageMask(damage.split(',')) : 0, sort, status, cursor};
 }
 export function nextCursor(query, row) {
   return encodeJSON({sort: query.sort, element: query.element, category: query.category || '', section: query.section || '', damage: query.damage, status: query.status,
+    scope: query.scope || '', code: query.code || '', accessKey: query.accessKey || '',
     createdAt: row.created_at, likes: row.likes, id: row.id});
 }

@@ -1,7 +1,8 @@
 import catalog from './catalog.mjs';
 import {ApiError, DAMAGE_TYPES, TEAM_SECTIONS, fail, validateSubmission, fingerprint, chinaDay, teamRecord, listQuery} from './model.mjs';
 import {productionReady, sameOrigin, readJSON, visitor, challenge, rateLimit, csv, LOOPBACK} from './security.mjs';
-import {listTeams, insertTeam, findTeam, likeTeam, editTeam} from './repository.mjs';
+import {listTeams, insertTeam, findTeam, findAdminTeam, likeTeam, editTeam} from './repository.mjs';
+import {isPublicTeam} from './team-access.mjs';
 import {authenticateAdmin} from './admin-auth.mjs';
 import {GAME_CODE_PATTERN, resolveGameCode, gameCodeInfo, createGameCode, revokeGameCode} from './game-codes.mjs';
 import {authMode, passwordConfig, authenticatePassword, publicUser} from './password-auth.mjs';
@@ -63,7 +64,7 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
       const match = path.match(/^\/teams\/([a-f0-9-]{36})(\/like)?$/);
       if (match && !match[2] && request.method === 'GET') {
         const row = await findTeam(env.COMMUNITY_DB, match[1]);
-        if (!row || row.status !== 'approved') fail(404, 'not_found', '队伍不存在或暂不展示。');
+        if (!isPublicTeam(row)) fail(404, 'not_found', '队伍不存在或暂不展示。');
         const liked = await env.COMMUNITY_DB.prepare('SELECT 1 AS liked FROM community_likes WHERE team_id=? AND visitor_id=? AND day=?')
           .bind(row.id, identity.id, chinaDay(now).date).first();
         return response({team: {...teamRecord(row), likedToday: Boolean(liked)}}, 200, headers);
@@ -88,27 +89,32 @@ async function adminRoute(path, request, db, trustedCatalog, actor, now) {
   if (path === '/admin/login' && request.method === 'GET')
     return new Response(null, {status: 302, headers: {Location: '/#community/admin', 'Cache-Control': 'no-store'}});
   if (path === '/admin/teams' && request.method === 'GET')
-    return response(await listTeams(db, listQuery(new URL(request.url), trustedCatalog, true), true));
+    return response(await listTeams(db, listQuery(new URL(request.url), trustedCatalog, true, actor), true, actor));
   if (path === '/admin/teams' && request.method === 'POST') {
     const value = validateSubmission(await readJSON(request), trustedCatalog);
     return response({team: await insertTeam(db, value, await fingerprint(value.team), now, 'approved', actor)}, 201);
   }
   const gameCodeMatch = path.match(/^\/admin\/teams\/([a-f0-9-]{36})\/game-code(\/revoke)?$/);
   if (gameCodeMatch && ['GET', 'POST'].includes(request.method)) {
-    const row = await findTeam(db, gameCodeMatch[1]); if (!row) fail(404, 'not_found', '队伍不存在。');
-    if (request.method === 'GET' && !gameCodeMatch[2]) return response(await gameCodeInfo(db, row));
+    const row = await findAdminTeam(db, gameCodeMatch[1], actor); if (!row) fail(404, 'not_found', '队伍不存在。');
+    if (request.method === 'GET' && !gameCodeMatch[2]) return response(await gameCodeInfo(db, row, actor));
     if (request.method !== 'POST') fail(405, 'method_not_allowed', '此操作必须使用 POST。');
     const body = await readJSON(request);
     if (body.expectedRevision !== row.revision) fail(409, 'edit_conflict', '队伍已被修改，请重新加载。');
     return response(await (gameCodeMatch[2] ? revokeGameCode(db, row, actor, now) : createGameCode(db, row, actor, now)));
   }
   const match = path.match(/^\/admin\/teams\/([a-f0-9-]{36})$/);
+  if (match && request.method === 'GET') {
+    const row = await findAdminTeam(db, match[1], actor);
+    if (!row) fail(404, 'not_found', '队伍不存在。');
+    return response({team: teamRecord(row, true)});
+  }
   if (match && request.method === 'PATCH') {
-    const body = await readJSON(request), row = await findTeam(db, match[1]);
+    const body = await readJSON(request), row = await findAdminTeam(db, match[1], actor);
     if (!row) fail(404, 'not_found', '队伍不存在。');
     if (!Number.isSafeInteger(body.expectedRevision) || body.expectedRevision !== row.revision)
       fail(409, 'edit_conflict', '其他管理员已修改该盘，请重新加载后再编辑。');
-    const value = validateSubmission({...teamRecord(row), ...body}, trustedCatalog, {allowUncategorized: !row.category});
+    const value = validateSubmission({...teamRecord(row, true), ...body}, trustedCatalog, {allowUncategorized: !row.category});
     const status = body.status ?? row.status;
     if (!['approved', 'hidden'].includes(status)) fail(400, 'invalid_status', '请选择公开或隐藏。');
     return response({team: await editTeam(db, row, value, await fingerprint(value.team), status, actor, now)});
