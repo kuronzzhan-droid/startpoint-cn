@@ -98,7 +98,11 @@
           slot.append(el('span', 'team-slot-label', labels[group]));
           if (item) {
             slot.append(picture(item.icon, item.name, 'team-slot-image'));
-            if (S.isCharacter(group)) slot.append(elementBadge(item.element));
+            if (S.isCharacter(group)) {
+              slot.append(elementBadge(item.element));
+              window.WFCharacterFrame?.apply(slot, item);
+              window.WFCharacterBadges?.append(slot, item, ui);
+            }
           } else slot.append(el('span', 'team-slot-empty', '+'));
           slot.querySelectorAll('img').forEach((img) => {img.draggable = false;});
           slot.draggable = Boolean(item);
@@ -183,7 +187,13 @@
       for (const item of items) {
         const b = button('', () => assign(item.id), 'team-candidate'); b.title = `${item.name} ${item.theme || ''}`;
         b.setAttribute('aria-label', `选择${item.name}`); b.draggable = true;
-        b.append(picture(item.icon, item.name, 'team-candidate-image'), el('span', '', item.name));
+        const image = picture(item.icon, item.name, 'team-candidate-image');
+        if (characterMode) {
+          const art = el('span', 'team-candidate-art'); art.append(image);
+          window.WFCharacterFrame?.apply(art, item);
+          window.WFCharacterBadges?.append(art, item, ui); b.append(art);
+        } else b.append(image);
+        b.append(el('span', '', item.name));
         if (characterMode) b.append(elementBadge(item.element));
         b.addEventListener('dragstart', (event) => event.dataTransfer.setData('application/x-wf-wiki', JSON.stringify({id: item.id, kind: characterMode ? 'character' : 'equipment'})));
         candidates.append(b);

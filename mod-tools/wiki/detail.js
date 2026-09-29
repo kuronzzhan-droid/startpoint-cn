@@ -14,6 +14,7 @@ window.renderWikiCharacter = function renderWikiCharacter(container, character, 
   if (list(character.aliases).length) identity.append(el('span', 'alias-tag', character.aliases.join(' / ')));
   const badges = el('div', 'detail-badges');
   badges.append(elementBadge(character.element), rarityBadge(character.rarity), el('span', 'badge', categoryName(character)));
+  window.WFCharacterBadges?.append(badges, character, ui, true);
   list(character.themes || (character.theme ? [character.theme] : [])).forEach((theme) => badges.append(el('span', 'theme-tag', theme)));
   heading.append(identity, badges);
   fragment.append(heading);
@@ -36,13 +37,20 @@ window.renderWikiCharacter = function renderWikiCharacter(container, character, 
   const layout = el('div', 'detail-layout');
   const portraits = list(character.portraits).filter((portrait) => portrait && safeUrl(portrait.url));
   const artPanel = el('div', 'portrait-panel');
-  const stage = el('div', 'portrait-stage');
+  const stage = el('button', 'portrait-stage portrait-trigger'); stage.type = 'button';
+  stage.setAttribute('aria-haspopup', 'dialog');
   const portraitButtons = el('div', 'portrait-controls');
+  let currentPortrait;
   function showPortrait(index) {
     const selected = portraits[index];
-    stage.replaceChildren(picture(selected?.url || character.icon, `${text(character.name)} · ${text(selected?.label, '角色立绘')}`, ''));
+    currentPortrait = {url: safeUrl(selected?.url || character.icon), alt: `${text(character.name)} · ${text(selected?.label, '角色立绘')}`};
+    const image = picture(currentPortrait.url, currentPortrait.alt, ''); image.draggable = false;
+    stage.replaceChildren(image, el('span', 'portrait-enlarge-hint', '点击放大'));
+    stage.disabled = !currentPortrait.url;
+    stage.setAttribute('aria-label', `放大立绘：${currentPortrait.alt}`);
     [...portraitButtons.children].forEach((button, i) => button.setAttribute('aria-pressed', String(i === index)));
   }
+  stage.addEventListener('click', () => window.WFPortraitViewer?.open({...currentPortrait, trigger: stage}));
   portraits.forEach((portrait, index) => {
     const button = el('button', '', text(portrait.label, `立绘 ${index + 1}`)); button.type = 'button';
     button.addEventListener('click', () => showPortrait(index)); portraitButtons.append(button);
@@ -53,6 +61,7 @@ window.renderWikiCharacter = function renderWikiCharacter(container, character, 
   const artCaption = el('div', 'portrait-caption');
   artCaption.append(el('span', '', text(character.name)), el('span', '', text(character.title)));
   artPanel.append(artCaption);
+  window.renderWikiNameplates?.(artPanel, character, ui);
   const dashboard = el('div', 'character-dashboard');
   layout.append(artPanel, dashboard);
   fragment.append(layout);
@@ -132,11 +141,8 @@ window.renderWikiCharacter = function renderWikiCharacter(container, character, 
     const data = object(entry); const card = el('div', 'data-card');
     card.append(el('span', 'card-label', label));
     if (data.name && data.name !== label) card.append(el('h3', '', data.name));
-    card.append(paragraph(text(data.description, '当前资料中暂无效果文案。')));
-    const rows = list(data.rows).filter((row) => row && row.description);
-    if (rows.length > 1) {
-      const detail = el('details', 'effect-breakdown'); detail.append(el('summary', '', `分项效果 · ${rows.length} 条`));
-      const items = el('ul'); rows.forEach((row) => items.append(el('li', '', row.description))); detail.append(items); card.append(detail);
+    if (!window.renderWikiAbilityRows(card, data, meta, ui)) {
+      card.append(paragraph(text(data.description, '当前资料中暂无效果文案。')));
     }
     window.renderWikiNumericDetails(card, data.numericDetails, ui);
     list(data.relatedPrograms).forEach((program) => window.renderWikiNumericDetails(card, program.numericDetails, ui));

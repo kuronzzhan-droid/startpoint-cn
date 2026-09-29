@@ -9,13 +9,23 @@
     if (!searchIndex.has(character)) searchIndex.set(character, normalized(JSON.stringify(character)));
     return searchIndex.get(character);
   };
+  function focusSearch(search) {
+    const panel = search.closest('details.character-filters');
+    if (panel) panel.open = true;
+    search.focus();
+  }
   function create({characters, ui, idPrefix, onChange = () => {}, onReset, initialState = {}}) {
     const {el, nativeIcon} = ui;
     const state = Object.fromEntries(['search', ...fields].map((key) => [key, String(initialState[key] ?? '')]));
-    const root = el('section', 'character-filters'); root.setAttribute('aria-label', '查找角色');
-    const heading = el('div', 'character-filter-heading'); heading.append(el('h3', '', '查找角色'));
+    const root = el('details', 'character-filters'); root.open = true;
+    const heading = el('summary', 'character-filter-heading'); heading.append(el('h3', '', '查找角色'));
+    const hint = el('span', 'character-filter-toggle-hint', '收起 ▴'); hint.setAttribute('aria-hidden', 'true');
+    heading.append(hint);
+    root.addEventListener('toggle', () => {hint.textContent = root.open ? '收起 ▴' : '展开 ▾';});
+    const body = el('div', 'character-filter-body');
+    const actions = el('div', 'character-filter-actions');
     const resetButton = el('button', 'text-button', '重置筛选'); resetButton.type = 'button';
-    heading.append(resetButton);
+    actions.append(resetButton);
     const searchLabel = el('label', 'character-filter-search-label', '名字、别名、主题或技能');
     searchLabel.htmlFor = `${idPrefix}-search`;
     const search = el('input', 'character-filter-search'); search.id = searchLabel.htmlFor;
@@ -59,7 +69,8 @@
     }
     resetButton.addEventListener('click', () => {reset(false); if (onReset) onReset(); else notify();});
     search.addEventListener('input', () => {state.search = search.value; clearTimeout(searchTimer); searchTimer = setTimeout(notify, 80);});
-    root.append(heading, searchLabel, search, el('p', 'character-filter-help', '支持多关键词，以空格分隔'), elementRow, choices);
+    body.append(actions, searchLabel, search, el('p', 'character-filter-help', '支持多关键词，以空格分隔'), elementRow, choices);
+    root.append(heading, body);
     sync();
     return {
       element: root, search,
@@ -70,8 +81,8 @@
       hasActiveFilters: () => Object.values(state).some((value) => value.trim()),
       getState: () => ({...state}),
       clearSearch(emit = true) {clearTimeout(searchTimer); state.search = ''; sync(); if (emit) notify();},
-      focus: () => search.focus(), reset,
+      focus: () => focusSearch(search), reset,
     };
   }
-  window.WFCharacterFilters = {create};
+  window.WFCharacterFilters = {create, focusSearch};
 })();

@@ -104,9 +104,9 @@
     $('header-version').textContent = text(meta.version);
     $('nav-count').textContent = characters.length;
     const stats = [
-      [counts.total ?? characters.length, '角色收录'],
+      [counts.total ?? characters.length, '收录'],
       [counts.newMod ?? characters.filter((c) => c.origin === '新增MOD').length, '新增 MOD'],
-      [counts.modifiedOfficial ?? characters.filter((c) => c.origin === '改版官方').length, '官方角色改版'],
+      [counts.modifiedOfficial ?? characters.filter((c) => c.origin === '改版官方').length, '官方改版'],
     ];
     stats.forEach(([value, label]) => {
       const stat = el('div', 'hero-stat');
@@ -148,9 +148,12 @@
     link.dataset.rarity = text(character.rarity);
     link.href = `#character/${encodeURIComponent(String(character.id))}`;
     link.setAttribute('aria-label', `${text(character.name, '未命名角色')}，${text(character.rarity)}星，${text(character.element)}属性，查看详情`);
+    link.title = `${text(character.name)} · ${text(character.rarity)}星 · ${text(character.element)}属性`;
     const art = el('div', 'card-art');
     const portraits = list(character.portraits);
     art.append(picture(character.icon || portraits[0]?.url, '', ''), elementBadge(character.element));
+    window.WFCharacterFrame?.apply(art, character);
+    window.WFCharacterBadges?.append(art, character, {el});
     const content = el('div', 'card-content');
     const nameRow = el('div', 'card-name-row');
     nameRow.append(el('h4', 'card-name', text(character.name, '未命名角色')), rarityBadge(character.rarity));
@@ -271,7 +274,7 @@
     const hash = location.hash.slice(1);
     if (hash === 'team') {
       const search = document.querySelector('#extra-view .character-filters:not([hidden]) .character-filter-search, #extra-view .team-weapon-search:not([hidden])');
-      if (search) {event.preventDefault(); search.focus();}
+      if (search) {event.preventDefault(); window.WFCharacterFilters.focusSearch(search);}
       return;
     }
     if (hash && !hash.startsWith('character/')) return;

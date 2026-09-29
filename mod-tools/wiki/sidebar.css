@@ -1,0 +1,6 @@
+.sidebar-toolbar{grid-column:1/-1;display:flex;align-items:center;padding:10px 18px 0}
+.sidebar-toggle{padding:6px 12px;min-height:32px;border:1px solid #c5d6d8;border-radius:7px;background:#f6fbfb;color:#42777a;font-size:11px}
+.sidebar-toggle:hover{background:#e7f6f3;border-color:#35b7a5}
+.page-shell.sidebar-collapsed{grid-template-columns:minmax(0,1fr)}
+[data-theme="dark"] .sidebar-toggle{background:#253743;color:#cbdde1;border-color:#48616e}
+@media(max-width:640px){.sidebar-toolbar{padding:9px 14px 0}}

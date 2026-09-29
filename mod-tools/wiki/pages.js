@@ -2,7 +2,9 @@
   'use strict';
   function weaponPage(host, data, ui) {
     const {el, picture} = ui;
-    const categoryOrder = ['深渊武器', '诅咒武器', '悖论武器', '羁绊武器', '五重决战武器', '世界弹射器宝珠', '其他武器'];
+    const categoryOrder = ['深渊武器', '诅咒武器', '悖论武器', '羁绊武器', '五重决战武器',
+      '幻想武器', '女帝武器', '普莉莉艾武器', '机兵武器', '领主掉落与兑换',
+      '临境域武器', '深层域武器', '装备扭蛋武器', '主线武器', '活动武器', '世界弹射器宝珠', '其他武器'];
     const categoryRank = (category) => {const rank = categoryOrder.indexOf(category); return rank < 0 ? categoryOrder.length : rank;};
     const entries = [...(data.equipment || [])].sort((a, b) => categoryRank(a.category) - categoryRank(b.category));
     const enhancedStates = new Map();
