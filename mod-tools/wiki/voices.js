@@ -73,7 +73,7 @@ window.renderWikiVoices = function renderWikiVoices(target, entries, character, 
 
   function groupFor(key) {
     if (groups.has(key)) return groups.get(key);
-    const section = el('details', 'voice-group'); section.open = true;
+    const section = el('details', 'voice-group'); section.open = false;
     const summary = el('summary', 'voice-group-header'), tally = el('span', 'voice-group-count');
     summary.append(caret(), el('span', 'voice-group-label', categoryLabel(key)), tally);
     const body = el('div', 'voice-group-body'); section.append(summary, body);

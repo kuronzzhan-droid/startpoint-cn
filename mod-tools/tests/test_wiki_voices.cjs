@@ -45,7 +45,7 @@ function setup(entries = fixtures) {
 test('existing scenes become foldable groups without inferring awakening stages or eagerly creating audio/text bodies', () => {
   const original = JSON.stringify(fixtures), x = setup();
   assert.deepEqual(x.groups().map((node) => node.querySelector('.voice-group-label').textContent), ['加入与觉醒', 'Home · 主页', '战斗语音', '登录语音', '其他', '剧情']);
-  assert.ok(x.groups().every((node) => node.tag === 'details' && node.open));
+  assert.ok(x.groups().every((node) => node.tag === 'details' && !node.open));
   assert.ok(x.cards().every((node) => node.tag === 'details' && !node.open && node.children.length === 1));
   assert.equal(x.audio().length, 0); assert.equal(x.target.querySelectorAll('.voice-entry-body').length, 0);
   assert.match(x.target.querySelector('.voice-stage-note').textContent, /未标注觉醒前后阶段/);
