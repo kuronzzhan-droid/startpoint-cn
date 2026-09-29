@@ -45,7 +45,7 @@ node --test mod-tools/wiki-community/tests/*.test.mjs
 | `POST /admin/teams/:id/game-code/revoke` | 管理员停用，必须传 expectedRevision |
 | `GET /game-codes/:code` | 供已接入的游戏服务读取 `{title,active:true,team}` |
 
-创建和编辑内容：`title` 最多 80 字符、`author` 最多 40、`notes` 最多 2000，`team`
+创建和编辑内容：`title` 最多 80 字符、`author` 最多 40（标题与署名须单行）、`notes` 最多 2000（支持多行），`team`
 含 main/unison/weapon/soul 四个长度为 3 的数组，空槽为 `""`。三主位必填，角色不能重复，
 魂珠必须被可信目录允许。`element` 为 `auto`、目录的中文属性、或 `universal`（宇宙）。
 `damageTypes` 至少一种，可多选 skill/ability/powerflip/direct；GET 的 `damage` 逗号分隔且取 AND。
@@ -83,6 +83,23 @@ Pages Functions 以此目录为项目工作目录，`functions/api/community/[[p
 `_routes.json` 复制到最终静态输出根目录，仅 API 触发 Functions。现有 Wiki 精确打包器还需显式支持这一个路由配置，
 不能直接扩大静态文件白名单。绑定/密钥未配置时返回 503，数据库不可用也不伪装提交成功。
 启用云资源、绑定、公开部署都属于后续明确的站点部署步骤，本模块的本地测试不证明生产已启用。
+
+### 仅本地构建 Functions
+
+在本目录运行以下命令。`<仓外构建目录>` 必须预先创建，且不得指向静态站输出目录：
+
+```powershell
+npx --offline --yes wrangler@4.143.0 pages functions build functions --project-directory . --outdir "<仓外构建目录>" --output-routes-path "<仓外构建目录>/_routes.json" --output-config-path "<仓外构建目录>/worker-config.json" --metafile "<仓外构建目录>/bundle-meta.json" --compatibility-date 2026-09-29 --fallback-service ASSETS --minify
+node verify-build.mjs "<仓外构建目录>"
+```
+
+须设置 `WRANGLER_SEND_METRICS=false`，已有 npm 缓存不足时 `--offline` 会失败，不会改为联网安装。
+`--minify` 会移除默认 bundle 内的构建机绝对路径注释，不输出 sourcemap。
+验证器检查生产模块闭包、路由范围、本地测试接口不可达，以及编译后 Worker 的 ASSETS 回退。
+它禁止网络请求，使用本地 SQLite 与 ASSETS 替身执行实际编译脚本；这不等于线上 Cloudflare 验收。
+只有 `index.js` 是 Worker 脚本；`bundle-meta.json`、`worker-config.json`、`verification.json` 都是仓外审计资料，
+包含或可能包含构建信息，绝不能加入公开静态包。部署时由现有精确打包/Functions 流程接入 Worker，
+不要把整个构建目录作为网站文件夹上传。
 
 ## 点赞、防刷与维护
 
