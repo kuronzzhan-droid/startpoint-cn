@@ -1,0 +1,38 @@
+PRAGMA foreign_keys = ON;
+CREATE TABLE IF NOT EXISTS community_teams (
+  id TEXT PRIMARY KEY,
+  fingerprint TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL, notes TEXT NOT NULL, author TEXT NOT NULL,
+  team_json TEXT NOT NULL, element TEXT NOT NULL, damage_mask INTEGER NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('approved','pending','hidden')),
+  created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
+  likes INTEGER NOT NULL DEFAULT 0 CHECK (likes >= 0),
+  revision INTEGER NOT NULL DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS community_teams_latest ON community_teams(status,created_at DESC,id);
+CREATE INDEX IF NOT EXISTS community_teams_popular ON community_teams(status,likes DESC,created_at DESC,id);
+CREATE INDEX IF NOT EXISTS community_teams_element ON community_teams(status,element,created_at DESC,id);
+CREATE TABLE IF NOT EXISTS community_likes (
+  team_id TEXT NOT NULL REFERENCES community_teams(id),
+  visitor_id TEXT NOT NULL, day TEXT NOT NULL, created_at INTEGER NOT NULL,
+  PRIMARY KEY (team_id,visitor_id,day)
+);
+CREATE TRIGGER IF NOT EXISTS community_like_count AFTER INSERT ON community_likes
+BEGIN
+  UPDATE community_teams SET likes=likes+1 WHERE id=NEW.team_id;
+END;
+CREATE TABLE IF NOT EXISTS community_limits (
+  key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS community_audit (
+  id TEXT PRIMARY KEY, team_id TEXT NOT NULL REFERENCES community_teams(id),
+  actor_id TEXT NOT NULL, actor_email TEXT NOT NULL, action TEXT NOT NULL,
+  before_json TEXT NOT NULL, after_json TEXT NOT NULL, created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS community_audit_team ON community_audit(team_id,created_at DESC);
+CREATE TABLE IF NOT EXISTS community_game_codes (
+  code TEXT PRIMARY KEY, team_id TEXT NOT NULL REFERENCES community_teams(id),
+  fingerprint TEXT NOT NULL, created_at INTEGER NOT NULL, revoked_at INTEGER
+);
+CREATE UNIQUE INDEX IF NOT EXISTS community_game_codes_active
+  ON community_game_codes(team_id,fingerprint) WHERE revoked_at IS NULL;

@@ -1,0 +1,108 @@
+import catalog from './catalog.mjs';
+import {ApiError, DAMAGE_TYPES, fail, validateSubmission, fingerprint, chinaDay, teamRecord, listQuery} from './model.mjs';
+import {productionReady, sameOrigin, readJSON, visitor, challenge, rateLimit, csv, LOOPBACK} from './security.mjs';
+import {listTeams, insertTeam, findTeam, likeTeam, editTeam} from './repository.mjs';
+import {authenticateAdmin} from './admin-auth.mjs';
+import {GAME_CODE_PATTERN, resolveGameCode, gameCodeInfo, createGameCode, revokeGameCode} from './game-codes.mjs';
+
+function response(value, status = 200, headers = {}) {
+  return Response.json(value, {status, headers: {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers}});
+}
+export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
+  const nowFn = options.now || Date.now, fetchImpl = options.fetch || fetch;
+  return async function handle(request, env) {
+    let identity;
+    try {
+      const url = new URL(request.url), now = nowFn();
+      const development = options.development && LOOPBACK.has(url.hostname) ? options.development : null;
+      if (options.development && !development) fail(403, 'development_loopback_only', '本地开发接口仅允许回环地址。');
+      if (!productionReady(env)) fail(503, 'not_configured', '社区服务尚未配置，请稍后再试。', {enabled: false, siteKey: ''});
+      if (!development && (url.protocol !== 'https:' || !csv(env.COMMUNITY_ALLOWED_HOSTNAMES).includes(url.hostname)))
+        fail(403, 'invalid_host', '此站点未获社区服务授权。');
+      const path = url.pathname.replace(/^\/api\/community/, '').replace(/\/$/, '') || '/';
+      if (['POST', 'PATCH', 'DELETE', 'PUT'].includes(request.method)) sameOrigin(request);
+      if (development && path.startsWith('/development-')) {
+        const result = await development.route(path, request);
+        if (result) return result;
+      }
+      identity = await visitor(request, env, now, development);
+      const headers = identity.cookie ? {'Set-Cookie': identity.cookie} : {};
+      if (request.method === 'GET' && path === '/config') {
+        await env.COMMUNITY_DB.prepare('SELECT id FROM community_teams LIMIT 1').first();
+        return response({enabled: true, siteKey: development ? '' : env.TURNSTILE_SITE_KEY,
+          moderation: 'approved', canSubmit: false, publishing: 'admin',
+          elements: [...trustedCatalog.elements, 'universal'], damageTypes: DAMAGE_TYPES,
+          ...(development ? {development: true} : {})}, 200, headers);
+      }
+      if (path.startsWith('/admin/')) {
+        const actor = await authenticateAdmin(request, env, fetchImpl, now, development);
+        if (['POST', 'PATCH'].includes(request.method)) await rateLimit(env.COMMUNITY_DB, request, env, 'admin', now, development);
+        return await adminRoute(path, request, env.COMMUNITY_DB, trustedCatalog, actor, now);
+      }
+      if (path.startsWith('/game-codes/') && request.method === 'GET') {
+        const code = path.slice('/game-codes/'.length);
+        if (!GAME_CODE_PATTERN.test(code)) fail(404, 'not_found', '队伍码不存在或已失效。');
+        await rateLimit(env.COMMUNITY_DB, request, env, 'game_lookup', now, development);
+        return response(await resolveGameCode(env.COMMUNITY_DB, code));
+      }
+      if (path === '/teams' && request.method === 'GET')
+        return response(await listTeams(env.COMMUNITY_DB, listQuery(url, trustedCatalog)), 200, headers);
+      if (path === '/teams' && request.method === 'POST') {
+        fail(403, 'submission_disabled', '队伍由管理员收录，游客可以浏览和点赞。');
+      }
+      const match = path.match(/^\/teams\/([a-f0-9-]{36})(\/like)?$/);
+      if (match && !match[2] && request.method === 'GET') {
+        const row = await findTeam(env.COMMUNITY_DB, match[1]);
+        if (!row || row.status !== 'approved') fail(404, 'not_found', '队伍不存在或暂不展示。');
+        const liked = await env.COMMUNITY_DB.prepare('SELECT 1 AS liked FROM community_likes WHERE team_id=? AND visitor_id=? AND day=?')
+          .bind(row.id, identity.id, chinaDay(now).date).first();
+        return response({team: {...teamRecord(row), likedToday: Boolean(liked)}}, 200, headers);
+      }
+      if (match?.[2] && request.method === 'POST') {
+        const body = await readJSON(request);
+        await challenge(request, env, body.turnstileToken, 'like_team', fetchImpl, development);
+        await rateLimit(env.COMMUNITY_DB, request, env, 'like', now, development);
+        return response(await likeTeam(env.COMMUNITY_DB, match[1], identity.id, chinaDay(now), now), 200, headers);
+      }
+      fail(404, 'not_found', '没有这个社区接口。');
+    } catch (error) {
+      if (error instanceof ApiError) return response({error: error.code, message: error.message, ...error.extra}, error.status,
+        {...(identity?.cookie ? {'Set-Cookie': identity.cookie} : {}), ...(error.status === 429 ? {'Retry-After': String(error.extra.retryAfter)} : {})});
+      // Do not return SQLite statements, secrets, or raw exception text to visitors.
+      return response({error: 'service_unavailable', message: '社区服务暂时不可用，请稍后重试。'}, 503);
+    }
+  };
+}
+async function adminRoute(path, request, db, trustedCatalog, actor, now) {
+  if (path === '/admin/me' && request.method === 'GET') return response(actor);
+  if (path === '/admin/login' && request.method === 'GET')
+    return new Response(null, {status: 302, headers: {Location: '/#community/admin', 'Cache-Control': 'no-store'}});
+  if (path === '/admin/teams' && request.method === 'GET')
+    return response(await listTeams(db, listQuery(new URL(request.url), trustedCatalog, true), true));
+  if (path === '/admin/teams' && request.method === 'POST') {
+    const value = validateSubmission(await readJSON(request), trustedCatalog);
+    return response({team: await insertTeam(db, value, await fingerprint(value.team), now, 'approved', actor)}, 201);
+  }
+  const gameCodeMatch = path.match(/^\/admin\/teams\/([a-f0-9-]{36})\/game-code(\/revoke)?$/);
+  if (gameCodeMatch && ['GET', 'POST'].includes(request.method)) {
+    const row = await findTeam(db, gameCodeMatch[1]); if (!row) fail(404, 'not_found', '队伍不存在。');
+    if (request.method === 'GET' && !gameCodeMatch[2]) return response(await gameCodeInfo(db, row));
+    if (request.method !== 'POST') fail(405, 'method_not_allowed', '此操作必须使用 POST。');
+    const body = await readJSON(request);
+    if (body.expectedRevision !== row.revision) fail(409, 'edit_conflict', '队伍已被修改，请重新加载。');
+    return response(await (gameCodeMatch[2] ? revokeGameCode(db, row, actor, now) : createGameCode(db, row, actor, now)));
+  }
+  const match = path.match(/^\/admin\/teams\/([a-f0-9-]{36})$/);
+  if (match && request.method === 'PATCH') {
+    const body = await readJSON(request), row = await findTeam(db, match[1]);
+    if (!row) fail(404, 'not_found', '队伍不存在。');
+    if (!Number.isSafeInteger(body.expectedRevision) || body.expectedRevision !== row.revision)
+      fail(409, 'edit_conflict', '其他管理员已修改该盘，请重新加载后再编辑。');
+    const value = validateSubmission({...teamRecord(row), ...body}, trustedCatalog);
+    const status = body.status ?? row.status;
+    if (!['approved', 'hidden'].includes(status)) fail(400, 'invalid_status', '请选择公开或隐藏。');
+    return response({team: await editTeam(db, row, value, await fingerprint(value.team), status, actor, now)});
+  }
+  fail(404, 'not_found', '没有这个管理接口。');
+}
+export const handleCommunity = createCommunityHandler();
