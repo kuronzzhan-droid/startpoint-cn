@@ -6,6 +6,8 @@
   const normalized = (value) => String(value ?? '').normalize('NFKC').toLocaleLowerCase('zh-CN');
   const searchIndex = new WeakMap();
   const searchText = (character) => {
+    const full = window.WFWikiData?.searchIndex()?.get(String(character.id));
+    if (full !== undefined) return full;
     if (!searchIndex.has(character)) searchIndex.set(character, normalized(JSON.stringify(character)));
     return searchIndex.get(character);
   };
@@ -14,7 +16,7 @@
     if (panel) panel.open = true;
     search.focus();
   }
-  function create({characters, ui, idPrefix, onChange = () => {}, onReset, initialState = {}}) {
+  function create({characters, ui, idPrefix, onChange = () => {}, onStateChange = () => {}, onReset, initialState = {}}) {
     const {el, nativeIcon} = ui;
     const state = Object.fromEntries(['search', ...fields].map((key) => [key, String(initialState[key] ?? '')]));
     const root = el('details', 'character-filters'); root.open = true;
@@ -34,8 +36,28 @@
     const elementButtons = [];
     const selects = {};
     const choices = el('div', 'character-filter-fields');
+    const searchStatus = el('p', 'character-filter-help'); searchStatus.setAttribute('role', 'status');
+    const retry = el('button', 'text-button', '重试完整搜索'); retry.type = 'button'; retry.hidden = true;
     let searchTimer;
-    const notify = () => {clearTimeout(searchTimer); onChange({...state});};
+    let searchRevision = 0;
+    const notify = async () => {
+      clearTimeout(searchTimer);
+      onStateChange({...state});
+      const ticket = ++searchRevision;
+      retry.hidden = true; searchStatus.textContent = '';
+      if (state.search.trim() && window.WFWikiData && !window.WFWikiData.searchIndex()) {
+        searchStatus.textContent = '正在载入技能与台词搜索…';
+        try {await window.WFWikiData.loadSearchIndex();}
+        catch {
+          if (ticket !== searchRevision) return;
+          searchStatus.textContent = '完整检索暂未载入，当前仅搜索基础资料。'; retry.hidden = false;
+        }
+      }
+      if (ticket !== searchRevision || !root.isConnected) return;
+      if (retry.hidden) searchStatus.textContent = '';
+      onChange({...state});
+    };
+    retry.addEventListener('click', notify);
     function sync() {
       search.value = state.search;
       Object.entries(selects).forEach(([key, select]) => {select.value = state[key];});
@@ -63,15 +85,18 @@
     });
     if (!elements.includes(state.element)) state.element = '';
     function reset(emit = true) {
+      searchRevision++; searchStatus.textContent = ''; retry.hidden = true;
       clearTimeout(searchTimer);
       Object.keys(state).forEach((key) => {state[key] = '';}); sync();
+      onStateChange({...state});
       if (emit) notify();
     }
     resetButton.addEventListener('click', () => {reset(false); if (onReset) onReset(); else notify();});
-    search.addEventListener('input', () => {state.search = search.value; clearTimeout(searchTimer); searchTimer = setTimeout(notify, 80);});
-    body.append(actions, searchLabel, search, el('p', 'character-filter-help', '支持多关键词，以空格分隔'), elementRow, choices);
+    search.addEventListener('input', () => {state.search = search.value; onStateChange({...state}); clearTimeout(searchTimer); searchTimer = setTimeout(notify, 80);});
+    body.append(actions, searchLabel, search, el('p', 'character-filter-help', '支持多关键词，以空格分隔'), searchStatus, retry, elementRow, choices);
     root.append(heading, body);
     sync();
+    if (state.search.trim()) queueMicrotask(notify);
     return {
       element: root, search,
       matches(character) {
@@ -80,7 +105,7 @@
       },
       hasActiveFilters: () => Object.values(state).some((value) => value.trim()),
       getState: () => ({...state}),
-      clearSearch(emit = true) {clearTimeout(searchTimer); state.search = ''; sync(); if (emit) notify();},
+      clearSearch(emit = true) {clearTimeout(searchTimer); searchRevision++; state.search = ''; searchStatus.textContent = ''; retry.hidden = true; sync(); if (emit) notify();},
       focus: () => focusSearch(search), reset,
     };
   }

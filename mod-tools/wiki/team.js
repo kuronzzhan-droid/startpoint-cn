@@ -158,7 +158,7 @@
     const weaponSearch = el('input', 'team-weapon-search'); weaponSearch.type = 'search'; weaponSearch.placeholder = '搜索武器或魂珠'; weaponSearch.value = weaponQuery; weaponSearch.setAttribute('aria-label', '配队武器搜索');
     const characterFilters = window.WFCharacterFilters.create({characters: [...characters.values()], ui,
       idPrefix: 'team-character', initialState: characterFilterState,
-      onChange: (state) => {characterFilterState = state; paintLibrary();}});
+      onStateChange: (state) => {characterFilterState = state;}, onChange: () => paintLibrary()});
     const modeSwitch = el('div', 'team-mode-switch'); modeSwitch.setAttribute('role', 'group'); modeSwitch.setAttribute('aria-label', '候选类别');
     function switchMode(characterMode) {
       if (S.isCharacter(chosen.group) === characterMode) return;
@@ -179,7 +179,8 @@
       const items = characterMode ? [...characters.values()].filter(characterFilters.matches)
         : [...equipment.values()].filter((item) => (chosen.group !== 'soul' || item.soul?.available)
           && `${item.name} ${(item.aliases || []).join(' ')} ${item.category || ''}`.toLowerCase().includes(weaponQuery.toLowerCase()));
-      if (!characterMode) {
+      if (characterMode) items.sort(window.WFCharacterOrder.compare);
+      else {
         const priority = (item) => ['深渊武器', '诅咒武器'].includes(item.category) ? 0 : 1;
         items.sort((a, b) => priority(a) - priority(b));
       }

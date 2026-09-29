@@ -1,0 +1,115 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const path = require('node:path');
+const source = (name) => fs.readFileSync(path.join(__dirname, '../wiki', name), 'utf8');
+function loader(split = true) {
+  const scripts = [];
+  const characters = [{id:'ca', name:'A'}, {id:'cb', name:'B'}];
+  const data = {characters, equipment: [{id:'wa'}], bossGuide:{stages:[]}};
+  if (split) data.dataManifest = {chunks: Object.fromEntries(['character:ca','character:cb','equipment','bossGuide','search']
+    .map((key) => [key, {url:`data/${key.replace(':','-')}-0123.js`}]))};
+  const context = {window:{WF_WIKI:data}, setTimeout, clearTimeout,
+    document:{createElement:() => ({remove(){this.removed=true;}}),head:{append:(script) => scripts.push(script)}}};
+  vm.runInNewContext(source('data-loader.js'), context);
+  const complete = (key, value, index = scripts.length - 1) => {
+    (context.window.WF_WIKI_CHUNKS ||= {})[key] = value;
+    scripts[index].onload();
+  };
+  return {api:context.window.WFWikiData, data, scripts, complete};
+}
+test('concurrent character reads share one request and retain complete effects', async () => {
+  const x=loader(), first=x.api.loadCharacter('ca'), second=x.api.loadCharacter('ca');
+  assert.equal(x.scripts.length,1);
+  const full={id:'ca',voices:[{text:'台词'}],skills:[{description:'完整效果'}]};
+  x.complete('character:ca',full);
+  assert.equal(await first,full); assert.equal(await second,full);
+  assert.equal(await x.api.loadCharacter('ca'),full); assert.equal(x.scripts.length,1);
+  assert.equal(x.scripts[0].removed,true);
+});
+test('network and invalid payload failures can retry without poisoning the cache', async () => {
+  const x=loader(), first=x.api.loadCharacter('ca'); x.scripts[0].onerror(); await assert.rejects(first);
+  const second=x.api.loadCharacter('ca'); x.complete('character:ca',{id:'cb'}); await assert.rejects(second);
+  const third=x.api.loadCharacter('ca'); x.complete('character:ca',{id:'ca',name:'Recovered'});
+  assert.equal((await third).name,'Recovered'); assert.equal(x.scripts.length,3);
+});
+test('missing character and unsafe manifest paths do not request scripts', async () => {
+  const x=loader(); assert.equal(await x.api.loadCharacter('missing'),null);
+  x.data.dataManifest.chunks['character:ca'].url='https://example.com/untrusted.js';
+  await assert.rejects(x.api.loadCharacter('ca')); assert.equal(x.scripts.length,0);
+});
+test('equipment mutates the shared catalogue only after a successful response', async () => {
+  const x=loader(), original=x.data.equipment, pending=x.api.loadEquipment();
+  assert.equal(x.data.equipment,original);
+  const equipment=[{id:'wb',soul:{available:true}}];
+  x.complete('equipment',{equipment,equipmentMeta:{rules:{limit:2}}});
+  assert.equal(await pending,equipment); assert.equal(x.data.equipment,equipment);
+  assert.equal(x.data.equipmentMeta.rules.limit,2);
+});
+test('search normalizes full descriptions separately from lightweight character objects', async () => {
+  const x=loader(), promise=x.api.loadSearchIndex();
+  x.complete('search',{ca:'ＡＢＣ 技能 台词',cb:'共鸣'});
+  const index=await promise;
+  assert.equal(index.get('ca'),'abc 技能 台词'); assert.equal(x.api.searchIndex(),index);
+  assert.equal(x.data.characters[0].name,'A'); assert.equal(await x.api.loadSearchIndex(),index);
+});
+test('legacy unsplit exports remain readable without any requests', async () => {
+  const x=loader(false);
+  assert.equal((await x.api.loadCharacter('ca')).name,'A');
+  assert.equal((await x.api.loadEquipment())[0].id,'wa');
+  assert.equal(await x.api.loadSearchIndex(),null);
+  assert.equal(x.scripts.length,0);
+});
+
+function router() {
+  const nodes={};
+  const el=(tag, cls, value) => ({tag,cls,textContent:value,children:[],hidden:false,
+    append(...items){this.children.push(...items);},replaceChildren(...items){this.children=items;},
+    setAttribute(){},addEventListener(event,fn){this[event]=fn;}});
+  ['catalog-view','detail-view','extra-view','character-grid'].forEach((id) => nodes[id]=el('div'));
+  const requests={},rendered=[],data={};
+  const wait=(key) => new Promise((resolve,reject) => {requests[key]={resolve,reject};});
+  const context={window:{scrollTo(){},WFWikiData:{loadCharacter:(id)=>wait(id),loadEquipment:()=>wait('equipment'),loadBossGuide:()=>wait('boss')}},
+    location:{hash:''},document:{getElementById:(id)=>nodes[id],querySelectorAll:()=>[]}};
+  context.window.renderWikiCharacterSummary=(_host,c)=>rendered.push(c.id);
+  context.window.renderWikiCharacter=(_host,c,_m,_u,o)=>rendered.push(`${c.id}/${o.initialTab}`);
+  context.window.renderWikiPage=(page)=>{rendered.push(page);return true;};
+  vm.runInNewContext(source('router.js'),context);
+  const route=context.window.createWikiRouter({data,meta:{},ui:{el,text:(value)=>value},renderCatalog:()=>rendered.push('catalog')});
+  return {nodes,requests,rendered,context,route,go(hash){context.location.hash=hash;return route();}};
+}
+test('late character responses cannot overwrite a later navigation', async () => {
+  const x=router(), first=x.go('#character/ca'), second=x.go('#character/cb');
+  x.requests.cb.resolve({id:'cb'}); await second;
+  x.requests.ca.resolve({id:'ca'}); await first;
+  assert.deepEqual(x.rendered,['cb']);
+});
+test('team rendering waits for equipment, and superseded team loads stay inactive', async () => {
+  const x=router(), team=x.go('#team'); assert.deepEqual(x.rendered,[]);
+  await x.go('#'); x.requests.equipment.resolve([]); await team;
+  assert.deepEqual(x.rendered,['catalog']);
+  const next=x.go('#team'); x.requests.equipment.resolve([]); await next;
+  assert.deepEqual(x.rendered,['catalog','team']);
+});
+test('detailed routes select the requested tab and stale failures cannot display errors', async () => {
+  const x=router(), full=x.go('#character/ca/details/voices'); x.requests.ca.resolve({id:'ca'}); await full;
+  assert.deepEqual(x.rendered,['ca/voices']);
+  const old=x.go('#character/cb'); await x.go('#'); x.requests.cb.reject(new Error('old')); await old;
+  assert.equal(x.nodes['detail-view'].children.length,0);
+});
+test('active load failure exposes a working retry without resetting the route', async () => {
+  const x=router(), first=x.go('#character/ca'); x.requests.ca.reject(new Error('offline')); await first;
+  const retry=x.nodes['detail-view'].children[0].children[0];
+  const pending=retry.click(); x.requests.ca.resolve({id:'ca'}); await pending;
+  assert.deepEqual(x.rendered,['ca']);
+});
+test('native order groups element, descending rarity, then official before MOD', () => {
+  const context={window:{}}; vm.runInNewContext(source('character-order.js'),context);
+  const rows=[{name:'water',element:'水',rarity:5,catalogOrder:1},
+    {name:'mod',element:'火',rarity:5,catalogOrder:1,origin:'新增MOD'},
+    {name:'four',element:'火',rarity:4,catalogOrder:1},
+    {name:'later',element:'火',rarity:5,catalogOrder:9,origin:'改版官方'},
+    {name:'early',element:'火',rarity:5,catalogOrder:2}];
+  assert.deepEqual(rows.sort(context.window.WFCharacterOrder.compare).map(x=>x.name),['early','later','mod','four','water']);
+});

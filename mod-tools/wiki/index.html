@@ -16,17 +16,20 @@
   <link rel="stylesheet" href="character-filters.css">
   <link rel="stylesheet" href="catalog-layout.css">
   <link rel="stylesheet" href="ability-panel.css">
+  <link rel="stylesheet" href="character-summary.css">
   <link rel="stylesheet" href="sidebar.css">
   <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="character-frame.css">
   <link rel="stylesheet" href="character-badges.css">
   <link rel="stylesheet" href="nameplates.css">
   <script src="data.js" defer></script>
+  <script src="data-loader.js" defer></script>
   <script src="voices.js" defer></script>
   <script src="comparison.js" defer></script>
   <script src="numeric.js" defer></script>
   <script src="team-state.js" defer></script>
   <script src="character-filters.js" defer></script>
+  <script src="character-order.js" defer></script>
   <script src="catalog-layout.js" defer></script>
   <script src="back-to-top.js" defer></script>
   <script src="theme.js" defer></script>
@@ -37,7 +40,10 @@
   <script src="portrait-viewer.js" defer></script>
   <script src="ability-panel.js" defer></script>
   <script src="nameplates.js" defer></script>
+  <script src="character-levels.js" defer></script>
   <script src="detail.js" defer></script>
+  <script src="character-summary.js" defer></script>
+  <script src="router.js" defer></script>
   <script src="sidebar.js" defer></script>
   <script src="app.js" defer></script>
 </head>
@@ -71,7 +77,7 @@
           <div id="catalog-character-filters"></div>
           <div class="catalog-display-controls">
             <label class="sort-control" for="catalog-layout">排列 <select id="catalog-layout" aria-label="角色排列"><option value="standard" selected>标准</option><option value="dense">致密</option></select></label>
-            <label class="sort-control" for="sort-order">排序 <select id="sort-order"><option value="default">默认顺序</option><option value="name">按角色名称</option><option value="rarity">按稀有度</option></select></label>
+            <label class="sort-control" for="sort-order">排序 <select id="sort-order"><option value="default">属性 / 星级 / 图鉴顺序</option><option value="name">按角色名称</option><option value="rarity">按稀有度</option></select></label>
           </div>
         </div>
         <div class="section-heading"><h2>角色列表 <span id="result-count" class="inline-count"></span></h2></div>

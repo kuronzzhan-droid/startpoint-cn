@@ -1,0 +1,73 @@
+/* Render only the active page; late data must never replace newer navigation. */
+window.createWikiRouter = function createWikiRouter(options) {
+  'use strict';
+  const {data, meta, ui, renderCatalog} = options;
+  const {el, text} = ui;
+  const catalog = document.getElementById('catalog-view');
+  const detail = document.getElementById('detail-view');
+  const extra = document.getElementById('extra-view');
+  let revision = 0;
+  function status(host, message, retry) {
+    const box = el('div', 'note-box', message); box.setAttribute('role', 'status');
+    if (retry) {
+      const button = el('button', 'secondary-button', '重新加载'); button.type = 'button';
+      button.addEventListener('click', retry); box.append(button);
+    }
+    host.replaceChildren(box);
+  }
+  return async function route() {
+    const ticket = ++revision;
+    const hash = location.hash.slice(1);
+    const current = () => ticket === revision && location.hash.slice(1) === hash;
+    const parts = hash.split('/');
+    const isCharacter = parts[0] === 'character' && parts[1];
+    const pageTitle = ({team: '队伍编成', weapons: '武器图鉴', 'five-boss': '五重决战'})[hash];
+    document.querySelectorAll('audio').forEach((audio) => audio.pause());
+    document.querySelectorAll('.app-navigation a').forEach((link) => {
+      const target = link.getAttribute('href').slice(1);
+      link.setAttribute('aria-current', (target === hash || (!target && isCharacter)) ? 'page' : 'false');
+    });
+    catalog.hidden = Boolean(pageTitle || isCharacter);
+    detail.hidden = !isCharacter;
+    extra.hidden = !pageTitle;
+    detail.replaceChildren(); extra.replaceChildren();
+    if (!catalog.hidden) {
+      document.title = '星见图鉴 · MOD 角色 Wiki';
+      renderCatalog(); return;
+    }
+    document.getElementById('character-grid').replaceChildren();
+    const host = pageTitle ? extra : detail;
+    status(host, '正在载入资料…');
+    try {
+      if (pageTitle) {
+        document.title = `${pageTitle} · 星见图鉴`;
+        if (hash === 'five-boss') await window.WFWikiData.loadBossGuide();
+        else await window.WFWikiData.loadEquipment();
+        if (!current()) return;
+        if (!window.renderWikiPage?.(hash, extra, data, ui)) status(extra, '此份导出尚未包含该页面。');
+      } else {
+        let id = '';
+        try { id = decodeURIComponent(parts[1]); } catch { /* invalid links use the missing state */ }
+        const character = await window.WFWikiData.loadCharacter(id);
+        if (!current()) return;
+        if (!character) {
+          status(detail, '未找到这位角色，该角色不在本次导出的资料中。');
+          const back = el('a', 'back-button', '‹ 返回角色列表'); back.href = '#'; detail.append(back);
+        } else {
+          document.title = `${text(character.name, '角色详情')} · 星见图鉴`;
+          const base = `#character/${encodeURIComponent(id)}`;
+          if (parts[2] === 'details') {
+            window.renderWikiCharacter(detail, character, meta, ui, {initialTab: parts[3] || 'profile', summaryHref: base});
+          } else {
+            window.renderWikiCharacterSummary(detail, character, meta, ui, {
+              onOpenDetails: (tab) => {location.hash = `${base}/details/${tab || 'profile'}`;},
+            });
+          }
+        }
+      }
+      if (current()) window.scrollTo({top: 0});
+    } catch (error) {
+      if (current()) status(host, error.message || '资料暂时无法载入。', route);
+    }
+  };
+};

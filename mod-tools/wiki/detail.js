@@ -1,11 +1,16 @@
 /* Native-style character dashboard: illustrated card, status bar and accessible tabs. */
-window.renderWikiCharacter = function renderWikiCharacter(container, character, meta, ui) {
+window.renderWikiCharacter = function renderWikiCharacter(container, character, meta, ui, options) {
   'use strict';
+  options = options || {};
+  const original = character;
+  let effectMode = 'max';
+  character = window.WFCharacterLevels?.project(original, effectMode) || original;
   const {el, list, object, text, safeUrl, elementBadge, picture, formatNumber, rarityBadge, nativeIcon, categoryName} = ui;
   const fragment = document.createDocumentFragment();
   const breadcrumb = el('nav', 'breadcrumbs');
   breadcrumb.setAttribute('aria-label', '当前位置');
-  const back = el('a', 'back-button', '‹ 返回角色列表'); back.href = '#';
+  const back = el('a', 'back-button', options.summaryHref ? '‹ 返回角色概览' : '‹ 返回角色列表');
+  back.href = options.summaryHref || '#';
   breadcrumb.append(back, el('span', '', categoryName(character)));
   fragment.append(breadcrumb);
   const heading = el('header', 'detail-heading game-panel');
@@ -87,11 +92,31 @@ window.renderWikiCharacter = function renderWikiCharacter(container, character, 
   status.append(statusHeader, values, el('div', 'status-note', '基础数值 · 未计觉醒节点、玛纳板、装备与能力加成'));
   dashboard.append(status);
 
+  const effectControls = el('div', 'summary-skill-choices');
+  effectControls.setAttribute('role', 'group'); effectControls.setAttribute('aria-label', '角色效果等级');
+  const effectButtons = [];
+  [['max', '满级效果'], ['initial', '初始效果']].forEach(([mode, label]) => {
+    const button = el('button', '', label); button.type = 'button';
+    button.setAttribute('aria-pressed', String(mode === effectMode));
+    button.addEventListener('click', () => {
+      effectMode = mode;
+      character = window.WFCharacterLevels?.project(original, mode) || original;
+      effectButtons.forEach(({button, mode}) => button.setAttribute('aria-pressed', String(mode === effectMode)));
+      const active = tabs.find((item) => item.button.getAttribute('aria-selected') === 'true')?.key || 'skills';
+      tabs.filter((item) => ['skills', 'abilities'].includes(item.key)).forEach((item) => {
+        item.panel.replaceChildren(); item.built = false;
+      });
+      selectTab(active);
+    });
+    effectButtons.push({button, mode}); effectControls.append(button);
+  });
+  dashboard.append(effectControls);
+
   const tabList = el('div', 'detail-tabs'); tabList.setAttribute('role', 'tablist'); tabList.setAttribute('aria-label', '角色详细资料');
   const panels = el('div', 'detail-panels');
   dashboard.append(tabList, panels);
   const tabs = [];
-  function tab(key, label) {
+  function tab(key, label, build) {
     const button = el('button', '', label); button.type = 'button'; button.id = `tab-${key}`;
     button.setAttribute('role', 'tab'); button.setAttribute('aria-controls', `panel-${key}`);
     const panel = el('div', 'detail-tab-panel'); panel.id = `panel-${key}`; panel.setAttribute('role', 'tabpanel');
@@ -104,38 +129,40 @@ window.renderWikiCharacter = function renderWikiCharacter(container, character, 
       const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
       selectTab(tabs[next].key); tabs[next].button.focus();
     });
-    tabs.push({key, button, panel}); tabList.append(button); panels.append(panel); return panel;
+    tabs.push({key, button, panel, build, built: false}); tabList.append(button); panels.append(panel);
   }
   function selectTab(key) {
     tabs.forEach((item) => {
       const selected = item.key === key; item.panel.hidden = !selected;
+      if (selected && !item.built) {item.build(item.panel); item.built = true;}
       item.button.setAttribute('aria-selected', String(selected)); item.button.tabIndex = selected ? 0 : -1;
       if (!selected) item.panel.querySelectorAll('audio').forEach((audio) => audio.pause());
     });
   }
 
-  const profilePanel = tab('profile', '资料');
-  const profile = section('角色档案');
-  const info = el('dl', 'info-table');
-  [['属性', character.element], ['类型', character.type], ['定位', character.role], ['种族', list(character.races).join(' / ')],
-    ['性别', character.gender], ['CV（资料表）', character.cv], ['收录来源', character.origin]].forEach(([label, value]) =>
-    info.append(el('dt', '', label), el('dd', '', text(value, '未记录'))));
-  profile.append(info, paragraph(text(character.profile, '当前资料中暂无角色简介。'), 'profile-copy'));
-  if (text(character.editorNote).trim()) {
-    const annotation = el('aside', 'editor-note'); annotation.setAttribute('aria-label', '资料注记');
-    annotation.append(el('span', 'eyebrow', '资料注记'), paragraph(character.editorNote)); profile.append(annotation);
-  }
-  profilePanel.append(profile);
-  const statSection = section('等级与基础数值');
-  statSection.append(paragraph(text(stats.note, '数值以本次导出资料为准。'), 'panel-note'));
-  if (levels.length) statSection.append(dataTable(['等级断点', 'HP', '攻击力'], levels.map((row) => [row.level, formatNumber(row.hp), formatNumber(row.atk)])));
-  else statSection.append(note('当前资料缺少基础数值。'));
-  if (stats.awakePerNode) {
-    statSection.append(el('h3', 'subsection-title', '觉醒节点增量'), dataTable(['每个已点亮大节点', 'HP 增量', '攻击力增量'],
-      [['独立加成', formatNumber(stats.awakePerNode.hp), formatNumber(stats.awakePerNode.atk)]]));
-    if (stats.awakeNote) statSection.append(note(stats.awakeNote));
-  }
-  profilePanel.append(statSection);
+  tab('profile', '资料', (profilePanel) => {
+    const profile = section('角色档案');
+    const info = el('dl', 'info-table');
+    [['属性', character.element], ['类型', character.type], ['定位', character.role], ['种族', list(character.races).join(' / ')],
+      ['性别', character.gender], ['CV（资料表）', character.cv], ['收录来源', character.origin]].forEach(([label, value]) =>
+      info.append(el('dt', '', label), el('dd', '', text(value, '未记录'))));
+    profile.append(info, paragraph(text(character.profile, '当前资料中暂无角色简介。'), 'profile-copy'));
+    if (text(character.editorNote).trim()) {
+      const annotation = el('aside', 'editor-note'); annotation.setAttribute('aria-label', '资料注记');
+      annotation.append(el('span', 'eyebrow', '资料注记'), paragraph(character.editorNote)); profile.append(annotation);
+    }
+    profilePanel.append(profile);
+    const statSection = section('等级与基础数值');
+    statSection.append(paragraph(text(stats.note, '数值以本次导出资料为准。'), 'panel-note'));
+    if (levels.length) statSection.append(dataTable(['等级断点', 'HP', '攻击力'], levels.map((row) => [row.level, formatNumber(row.hp), formatNumber(row.atk)])));
+    else statSection.append(note('当前资料缺少基础数值。'));
+    if (stats.awakePerNode) {
+      statSection.append(el('h3', 'subsection-title', '觉醒节点增量'), dataTable(['每个已点亮大节点', 'HP 增量', '攻击力增量'],
+        [['独立加成', formatNumber(stats.awakePerNode.hp), formatNumber(stats.awakePerNode.atk)]]));
+      if (stats.awakeNote) statSection.append(note(stats.awakeNote));
+    }
+    profilePanel.append(statSection);
+  });
 
   function effectCard(entry, label) {
     const data = object(entry); const card = el('div', 'data-card');
@@ -144,55 +171,60 @@ window.renderWikiCharacter = function renderWikiCharacter(container, character, 
     if (!window.renderWikiAbilityRows(card, data, meta, ui)) {
       card.append(paragraph(text(data.description, '当前资料中暂无效果文案。')));
     }
+    if (data.levelNote) card.append(paragraph(data.levelNote, 'panel-note'));
     window.renderWikiNumericDetails(card, data.numericDetails, ui);
     list(data.relatedPrograms).forEach((program) => window.renderWikiNumericDetails(card, program.numericDetails, ui));
     return card;
   }
-  const skillPanel = tab('skills', '技能');
-  const leaderSection = section('队长技能'); leaderSection.append(effectCard(character.leader, '队长')); skillPanel.append(leaderSection);
-  const skillSection = section('主动技能');
-  const skills = list(character.skills).filter((skill) => skill && typeof skill === 'object');
-  skills.forEach((skill) => {
-    const label = text(skill.label, ({1:'普通技能',2:'进化技能',3:'二次进化技能'})[skill.level] || '主动技能');
-    const card = effectCard(skill, label);
-    if (skill.gauge != null) {
-      const energy = el('div', 'skill-energy'); energy.append(el('span', '', text(skill.gaugeLabel, '满技能等级所需能量')), el('strong', '', formatNumber(skill.gauge)));
-      card.insertBefore(energy, card.querySelector('.numeric-block'));
+  tab('skills', '技能', (skillPanel) => {
+    const leaderSection = section('队长技能'); leaderSection.append(effectCard(character.leader, '队长')); skillPanel.append(leaderSection);
+    const skillSection = section('主动技能');
+    const skills = list(character.skills).filter((skill) => skill && typeof skill === 'object');
+    skills.forEach((skill) => {
+      const label = text(skill.label, ({1:'普通技能',2:'进化技能',3:'二次进化技能'})[skill.level] || '主动技能');
+      const card = effectCard(skill, label);
+      if (skill.gauge != null) {
+        const energy = el('div', 'skill-energy'); energy.append(el('span', '', text(skill.gaugeLabel, '满技能等级所需能量')), el('strong', '', formatNumber(skill.gauge)));
+        card.insertBefore(energy, card.querySelector('.numeric-block'));
+      }
+      skillSection.append(card);
+    });
+    if (!skills.length) skillSection.append(note('当前资料中没有可展示的主动技能。'));
+    if (character.switch?.label) skillSection.append(note(`技能切换条件：${character.switch.label}${character.switch.conditionName ? ` · ${character.switch.conditionName}` : ''}`));
+    skillPanel.append(skillSection);
+    if (character.legacyReference) {
+      const reference = character.legacyReference;
+      const legacy = section('前人 Wiki · 历史参考');
+      legacy.append(note(reference.note), paragraph(`旧稿更新于 ${reference.updatedAt || '未记录'}`, 'panel-note'));
+      list(reference.skills).forEach((skill) => legacy.append(effectCard(skill, skill.label)));
+      skillPanel.append(legacy);
     }
-    skillSection.append(card);
   });
-  if (!skills.length) skillSection.append(note('当前资料中没有可展示的主动技能。'));
-  if (character.switch?.label) skillSection.append(note(`技能切换条件：${character.switch.label}${character.switch.conditionName ? ` · ${character.switch.conditionName}` : ''}`));
-  skillPanel.append(skillSection);
-  if (character.legacyReference) {
-    const reference = character.legacyReference;
-    const legacy = section('前人 Wiki · 历史参考');
-    legacy.append(note(reference.note), paragraph(`旧稿更新于 ${reference.updatedAt || '未记录'}`, 'panel-note'));
-    list(reference.skills).forEach((skill) => legacy.append(effectCard(skill, skill.label)));
-    skillPanel.append(legacy);
-  }
-  const abilityPanel = tab('abilities', '能力');
-  const abilitySection = section('角色能力');
-  list(character.abilities).forEach((ability, index) => abilitySection.append(effectCard(ability, `能力 ${text(ability?.slot, index + 1)}`)));
-  abilityPanel.append(abilitySection);
-  const voicePanel = tab('voices', '语音');
-  const voiceSection = section('语音与台词');
-  window.renderWikiVoices(voiceSection, list(character.voices).filter((voice) => voice && typeof voice === 'object'), character, ui);
-  voicePanel.append(voiceSection);
+  tab('abilities', '能力', (abilityPanel) => {
+    const abilitySection = section('角色能力');
+    list(character.abilities).forEach((ability, index) => abilitySection.append(effectCard(ability, `能力 ${text(ability?.slot, index + 1)}`)));
+    abilityPanel.append(abilitySection);
+  });
+  tab('voices', '语音', (voicePanel) => {
+    const voiceSection = section('语音与台词');
+    window.renderWikiVoices(voiceSection, list(character.voices).filter((voice) => voice && typeof voice === 'object'), character, ui);
+    voicePanel.append(voiceSection);
+  });
   const comparison = object(character.officialComparison);
   if (comparison.status === 'changed' || comparison.status === 'unchanged') {
-    const comparePanel = tab('comparison', '原版差异');
-    window.renderWikiComparison(comparePanel, comparison, ui);
+    tab('comparison', '原版差异', (panel) => window.renderWikiComparison(panel, comparison, ui));
   }
-  const sourcePanel = tab('about', '说明');
-  const about = section('资料说明');
-  about.append(paragraph(`游戏数据版本 ${text(meta.version, '未记录')}`, 'panel-note'),
-    paragraph(`资料更新于 ${text(meta.generatedAt, '未记录')}`, 'panel-note'),
-    paragraph('数值与台词以此份资料快照为准。技能按普通与进化分别展示；语音来源逐条标注，未取得可靠台词的录音保留待补录标记。', 'panel-note'));
-  if (meta.dataNote) about.append(note(meta.dataNote));
-  if (meta.voiceCounts?.scopeNote) about.append(paragraph(meta.voiceCounts.scopeNote, 'panel-note'));
-  list(meta.credits).forEach((credit) => about.append(paragraph(credit, 'panel-note')));
-  sourcePanel.append(about);
-  selectTab(comparison.status === 'changed' ? 'comparison' : 'profile');
+  tab('about', '说明', (sourcePanel) => {
+    const about = section('资料说明');
+    about.append(paragraph(`游戏数据版本 ${text(meta.version, '未记录')}`, 'panel-note'),
+      paragraph(`资料更新于 ${text(meta.generatedAt, '未记录')}`, 'panel-note'),
+      paragraph('数值与台词以此份资料快照为准。技能按普通与进化分别展示；语音来源逐条标注，未取得可靠台词的录音保留待补录标记。', 'panel-note'));
+    if (meta.dataNote) about.append(note(meta.dataNote));
+    if (meta.voiceCounts?.scopeNote) about.append(paragraph(meta.voiceCounts.scopeNote, 'panel-note'));
+    list(meta.credits).forEach((credit) => about.append(paragraph(credit, 'panel-note')));
+    sourcePanel.append(about);
+  });
+  const initial = options.initialTab || (comparison.status === 'changed' ? 'comparison' : 'profile');
+  selectTab(tabs.some((item) => item.key === initial) ? initial : 'profile');
   container.replaceChildren(fragment);
 };

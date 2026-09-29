@@ -37,6 +37,7 @@
     const img = el('img', `native-icon ${className}`);
     img.src = url;
     img.alt = '';
+    img.loading = 'lazy';
     img.decoding = 'async';
     img.addEventListener('error', () => img.replaceWith(el('span', 'native-fallback', fallback)), {once: true});
     return img;
@@ -67,7 +68,7 @@
     const badge = el('span', 'rarity-stars');
     const url = safeUrl(object(object(meta.uiAssets).rarities)[String(value)]);
     if (url) {
-      const image = el('img'); image.src = url; image.alt = `${value}星`; badge.append(image);
+      const image = el('img'); image.src = url; image.alt = `${value}星`; image.loading = 'lazy'; image.decoding = 'async'; badge.append(image);
     } else badge.append(el('span', 'stars', stars(value)));
     badge.setAttribute('aria-label', `${text(value, '未知')}星`);
     return badge;
@@ -85,12 +86,10 @@
   const data = object(window.WF_WIKI);
   const meta = object(data.meta);
   const characters = list(data.characters).filter((c) => c && typeof c === 'object' && c.id != null);
-  const byId = new Map(characters.map((c) => [String(c.id), c]));
   const helpers = {el, list, object, text, safeUrl, safeData, disclosure, elementBadge, picture, formatNumber, stars, rarityBadge, nativeIcon, categoryName};
   const characterFilters = window.WFCharacterFilters.create({characters, ui: helpers,
     idPrefix: 'catalog-character', onChange: renderCatalog, onReset: clearFilters});
   $('catalog-character-filters').append(characterFilters.element);
-  let currentId = '';
   let selectedCategory = '';
 
   [['--frame-window', 'frames', 'window'], ['--frame-button', 'frames', 'button'], ['--frame-status', 'frames', 'status'], ['--game-detail-bg', 'backgrounds', 'detail']].forEach(([variable, group, key]) => {
@@ -172,13 +171,14 @@
     const selected = characters.filter((c) => (!selectedCategory || categoryName(c) === selectedCategory)
       && characterFilters.matches(c));
     const sort = $('sort-order').value;
-    if (sort === 'default') selected.sort((a, b) => Object.keys(elementClasses).indexOf(a.element) - Object.keys(elementClasses).indexOf(b.element) || Number(b.rarity) - Number(a.rarity) || text(a.name).localeCompare(text(b.name), 'zh-CN'));
+    if (sort === 'default') selected.sort(window.WFCharacterOrder.compare);
     if (sort === 'name') selected.sort((a, b) => text(a.name).localeCompare(text(b.name), 'zh-CN'));
     if (sort === 'rarity') selected.sort((a, b) => Number(b.rarity) - Number(a.rarity) || Number(a.id) - Number(b.id));
     return selected;
   }
 
   function renderCatalog() {
+    if ($('catalog-view').hidden) return;
     const selected = filteredCharacters();
     const fragment = document.createDocumentFragment();
     (selectedCategory ? [selectedCategory] : ['全部角色']).forEach((category, index) => {
@@ -206,53 +206,7 @@
     $('load-error').hidden = characters.length > 0;
   }
 
-  function route() {
-    const hash = location.hash.slice(1);
-    document.querySelectorAll('.app-navigation a').forEach((link) => {
-      const target = link.getAttribute('href').slice(1);
-      link.setAttribute('aria-current', (target === hash || (!target && hash.startsWith('character/'))) ? 'page' : 'false');
-    });
-    if (['team', 'weapons', 'five-boss'].includes(hash)) {
-      document.querySelectorAll('audio').forEach((audio) => audio.pause());
-      $('catalog-view').hidden = true; $('detail-view').hidden = true; $('extra-view').hidden = false;
-      const title = ({team:'队伍编成',weapons:'武器图鉴','five-boss':'五重决战'})[hash];
-      document.title = `${title} · 星见图鉴`;
-      const handled = typeof window.renderWikiPage === 'function' && window.renderWikiPage(hash, $('extra-view'), data, helpers);
-      if (handled === false || typeof window.renderWikiPage !== 'function') {
-        $('extra-view').replaceChildren(el('h1', '', title), el('p', 'note-box', '此份导出尚未包含该页面。'));
-      }
-      currentId = ''; return;
-    }
-    $('extra-view').hidden = true;
-    let id = '';
-    try { id = hash.startsWith('character/') ? decodeURIComponent(hash.slice(10)) : ''; } catch { id = ''; }
-    if (id) {
-      const character = byId.get(id);
-      $('catalog-view').hidden = true;
-      $('detail-view').hidden = false;
-      if (id !== currentId) {
-        document.querySelectorAll('audio').forEach((audio) => audio.pause());
-        if (character && typeof window.renderWikiCharacter === 'function') {
-          window.renderWikiCharacter($('detail-view'), character, meta, helpers);
-          document.title = `${text(character.name, '角色详情')} · 星见图鉴`;
-        } else {
-          const empty = el('div', 'empty-state');
-          const back = el('a', 'primary-button', '返回角色索引');
-          back.href = '#';
-          empty.append(el('h2', '', '未找到这位角色'), el('p', '', '该角色不在本次导出的资料中。'), back);
-          $('detail-view').replaceChildren(empty);
-        }
-        window.scrollTo({top: 0});
-      }
-      currentId = id;
-    } else {
-      if (currentId) document.querySelectorAll('audio').forEach((audio) => audio.pause());
-      $('detail-view').hidden = true;
-      $('catalog-view').hidden = false;
-      document.title = '星见图鉴 · MOD 角色 Wiki';
-      currentId = '';
-    }
-  }
+  const route = window.createWikiRouter({data, meta, ui: helpers, renderCatalog});
 
   function applyFilters() {
     renderCatalog();
@@ -288,7 +242,6 @@
     });
   }, true);
   renderMeta();
-  renderCatalog();
   window.WFWiki = {data, ui: helpers, refresh: route};
   route();
 })();
