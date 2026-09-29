@@ -12,26 +12,46 @@ PRIVATE = {
     "questId",
 }
 
+# GROUP_CN in wf_describe; DirectAttack1/2/3 resolve to 1/2/3 attack
+# segments in DuringAbilitySource / InstantAbilitySource, not total multipliers.
+ENUM_CN = {
+    "Red": "火", "Blue": "水", "Yellow": "雷", "Green": "风", "White": "光", "Black": "暗",
+    "MySelf": "自身", "Delete": "解除", "Direct": "直接攻击",
+    "DirectAttack1": "直接攻击1段（伤害修正）",
+    "DirectAttack2": "直接攻击2段（伤害修正）",
+    "DirectAttack3": "直接攻击3段（伤害修正）",
+    "Flying": "浮游", "Revival": "复活", "Specific": "指定",
+    "HPIncrease": "生命回复", "HPDecrease": "生命减少",
+}
+DISPLAY_FIELDS = {"description", "text", "context", "note", "notes", "summary", "label",
+                  "panelDescription", "finalDescription"}
+ENUM_PATTERN = re.compile(r"(?<![A-Za-z0-9_])(?:" +
+                          "|".join(sorted(ENUM_CN, key=len, reverse=True)) +
+                          r"|Flag[1-6]?)(?![A-Za-z0-9_])")
+
 
 def public_id(kind, value):
     return kind + hashlib.sha256(f"wf-wiki-public-v1:{kind}:{value}".encode()).hexdigest()[:12]
 
 
-def clean_text(value):
+def clean_text(value, translate_enums=True):
     value = re.sub(r"（固有\d+）", "", value)
     value = re.sub(r"固有\d+", "固有状态", value)
     value = re.sub(r"(?:battle|master|character)/[^\s，。；）\]']+", "相关技能", value)
     value = re.sub(r"(?:[A-Za-z]:[\\/]|file:///)[^\n]+", "本地资料", value)
     value = re.sub(r"\[[A-Za-z][A-Za-z0-9_$./-]*_[A-Za-z0-9_$./-]+\]", "（特殊效果）", value)
     value = re.sub(r"\b[A-Za-z][A-Za-z0-9$]*_[A-Za-z0-9_$./-]+", "特殊效果", value)
+    # Only human Chinese explanations; never English/romaji or Japanese dialogue.
+    if translate_enums and re.search(r"[\u3400-\u9fff]", value) and not re.search(r"[\u3040-\u30ff]", value):
+        value = ENUM_PATTERN.sub(lambda match: ENUM_CN.get(match[0], match[0].replace("Flag", "标记")), value)
     return value.replace("角色 ID", "角色条目").replace("程序摘要", "详细数值")
 
 
-def readable(value):
+def readable(value, field="", translate_enums=True):
     if isinstance(value, str):
-        return clean_text(value)
+        return clean_text(value, translate_enums and field in DISPLAY_FIELDS)
     if isinstance(value, list):
-        return [readable(item) for item in value]
+        return [readable(item, field, translate_enums) for item in value]
     if not isinstance(value, dict):
         return value
     result = {}
@@ -42,7 +62,7 @@ def readable(value):
             item = [row for row in item if isinstance(row, dict)]
         if key == "values" and isinstance(item, list):
             item = [row for row in item if isinstance(row, dict) and "label" in row and "value" in row]
-        result[key] = readable(item)
+        result[key] = readable(item, key, translate_enums and key != "voices")
     return result
 
 
@@ -56,5 +76,5 @@ def public_catalog(catalog):
         public["id"] = public_id("w", original["id"])
     result["meta"]["dataNote"] = "数值从当前资料解析；条件、成长与单次命中倍率分别列出。"
     result["meta"]["rosterRule"] = "收录官方可玩角色、改版官方与新增 MOD。剧情及助战占位角色不列为可玩角色；独立角色包的资料来源另行标注。"
-    result["meta"]["credits"] = ["界面及配队交互参考作者提供的《弹射世界中文 WIKI》离线版 v3.0.0。感谢前人整理的资料；当前 MOD 数值以本次数据快照为准。"]
+    result["meta"]["credits"] = ["界面及配队交互参考作者提供的《弹射世界中文 WIKI》离线版 v3.0.0。感谢花头人及「弹射世界wiki重生群」（QQ群 610753092）整理的 Wiki 资料；当前 MOD 数值以本次数据快照为准。"]
     return result

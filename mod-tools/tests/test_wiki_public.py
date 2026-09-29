@@ -28,6 +28,23 @@ class PublicExportTests(unittest.TestCase):
         self.assertEqual(public_id('c', 10), public_id('c', '10'))
         self.assertNotEqual(public_id('c', 10), public_id('w', 10))
 
+    def test_translate_only_chinese_display_enums_without_touching_voice_or_machine_values(self):
+        description = "赋予全队(White,Black) Delete状态减益 100%；MySelf 状态DirectAttack3 30%；形态切换Flag2"
+        data = {"meta": {}, "characters": [{"id": "1", "name": "White 骑士",
+            "kind": "中文MySelf", "description": description,
+            "skills": [{"text": "DirectAttack3", "context": "自身Flying 3秒"}],
+            "voices": [{"ja": "自身MySelf", "text": description, "zh": "光明的 White 骑士"}],
+            "notes": ["魔法少女の White", "Alter Device 正常保留"],
+        }]}
+        character = public_catalog(data)["characters"][0]
+        self.assertEqual(character["description"],
+            "赋予全队(光,暗) 解除状态减益 100%；自身 状态直接攻击3段（伤害修正） 30%；形态切换标记2")
+        self.assertEqual(character["kind"], "中文MySelf")
+        self.assertEqual(character["name"], "White 骑士")
+        self.assertEqual(character["skills"], [{"text": "DirectAttack3", "context": "自身浮游 3秒"}])
+        self.assertEqual(character["voices"], data["characters"][0]["voices"])
+        self.assertEqual(character["notes"], data["characters"][0]["notes"])
+
     def test_module_source_drift_cannot_overwrite_earlier_fingerprint(self):
         meta = {'sourceHashes': {'master/shared': 'old'}}
         with self.assertRaisesRegex(RuntimeError, '不同版本'):
