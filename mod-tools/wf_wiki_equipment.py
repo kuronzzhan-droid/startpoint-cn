@@ -12,6 +12,7 @@ from wf_wiki_equipment_helpers import (
     EquipmentImages, PublicText, cell, effects, integer, status_points,
 )
 from wf_wiki_equipment_forms import FORM_NOTE, paradox_forms
+from wf_wiki_equipment_categories import BOND_IDS, CATEGORY_NOTE, category_for, source_categories
 
 EQUIPMENT = "master/item/equipment.orderedmap"
 SOUL = "master/ability/ability_soul.orderedmap"
@@ -20,7 +21,6 @@ ENHANCEMENT = "master/equipment_enhancement/equipment_enhancement.orderedmap"
 ENHANCEMENT_ABILITY = "master/equipment_enhancement/equipment_enhancement_ability.orderedmap"
 ENHANCEMENT_STATUS = "master/equipment_enhancement/equipment_enhancement_status.orderedmap"
 ITEM = "master/item/item.orderedmap"
-BOND_IDS = {"5010005", "5030005", "5040022", "5020024", "5070027", "5050026", "5020041", "5060044"}
 
 
 def party_rules(raw):
@@ -36,21 +36,6 @@ def party_rules(raw):
                 "excludeSelf": True, "duplicateItemsCountSeparately": True,
                 "note": "其他已装槽位逐件计数；另一个悖论也计 1 件。按对应分档能力生效，不能把所有词条统一乘系数。"},
             "requiresClientSupport": True}
-
-
-def category_for(key, row):
-    number = integer(key)
-    if key == "5920001":
-        return "悖论武器"
-    if 5910101 <= number <= 5910129:
-        return "诅咒武器"
-    if key in BOND_IDS:
-        return "羁绊武器"
-    if 8000101 <= number <= 8000115:
-        return "深渊武器"
-    if key == "5900101":
-        return "五重决战武器"
-    return "世界弹射器宝珠" if cell(row, 2) == "1" else "其他武器"
 
 
 def enhancement_costs(records, names):
@@ -100,6 +85,7 @@ def build_equipment_catalog(repo: Path, media, source=None) -> dict:
     for row in read_json("assets/equipment_enhancement_shop.json").values():
         shops[str(row.get("equipmentId"))].append(row)
     equipment, souls = source.table(EQUIPMENT), source.table(SOUL)
+    categories = source_categories(source)
     enhanced, additional = source.table(ENHANCEMENT), source.table(ENHANCEMENT_ABILITY)
     item_names = {key: cell(rows[0], 2) for key, rows in source.table(ITEM).items() if rows}
     text, pictures = PublicText(source), EquipmentImages(media)
@@ -122,7 +108,7 @@ def build_equipment_catalog(repo: Path, media, source=None) -> dict:
             notes.append("当前图标资源缺失。")
         entry = {
             "id": key, "name": text.clean(cell(row, 1)), "rarity": integer(cell(row, 11)),
-            "category": category_for(key, row), "icon": icon, "description": text.clean(cell(row, 7)),
+            "category": category_for(key, row, categories), "icon": icon, "description": text.clean(cell(row, 7)),
             "maxAwakeningLevel": limit, "stats": {"base": base, "awakened": maximum,
                                                     "checkpoints": points},
             "baseEffects": first_effects, "awakenedEffects": max_effects,
@@ -170,7 +156,7 @@ def build_equipment_catalog(repo: Path, media, source=None) -> dict:
         if key == "5920001":
             entry["partyRule"] = "paradoxDecay"
             notes.append("同队其他武器或魂珠每多 1 件，增益降低 25%；达到 4 件时整件失效。诅咒代价不随增益衰减。")
-        elif category_for(key, row) == "诅咒武器":
+        elif entry["category"] == "诅咒武器":
             entry["partyRule"] = "curseExclusion"
             notes.append("同队装备两件以上诅咒武器或魂珠时，全部诅咒武器与魂珠失效；强化 1 级起诅咒生效。")
         entries.append(entry)
@@ -182,6 +168,7 @@ def build_equipment_catalog(repo: Path, media, source=None) -> dict:
         "counts": dict(Counter(entry["category"] for entry in entries)), "total": len(entries),
         "enhanced": sum(entry["enhancement"] is not None for entry in entries),
         "partyRules": rules,
+        "categoryNote": CATEGORY_NOTE,
         "sourceHashes": dict(source.live_hashes), "sourceMissing": sorted(source.missing),
         "sourceFiles": tracked, "note": "收录当前本机登记的装备；收录不代表所有装备当前都有获取渠道。",
         "effectNote": "按原生能力槽选择已解锁最高档，分别列最低档、满觉醒和满强化；复杂能力以游戏内说明为准。",
