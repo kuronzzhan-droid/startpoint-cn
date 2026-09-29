@@ -1,9 +1,9 @@
-/* Server-published recommendations with compact, directly linked team plates. */
+/* Published recommendations open their complete plate in the local team editor. */
 (() => {
   'use strict';
   const C = window.WFCommunity;
   const groupNames = {main: '主位', unison: '合击', weapon: '装备', soul: '魂珠'};
-  C.board = (input, data, ui) => {
+  C.board = (input, data, ui, options = {}) => {
     const {el, picture} = ui, team = C.teamCopy(input);
     const characters = new Map((data.characters || []).map((item) => [item.id, item]));
     const equipment = new Map((data.equipment || []).map((item) => [item.id, item]));
@@ -17,6 +17,9 @@
         slot.setAttribute('aria-label', `${index + 1}号${groupNames[group]}：${item?.name || (team[group][index] ? '当前图鉴未收录' : '空位')}`);
         if (item) {
           slot.href = `#${character ? 'character' : 'weapon'}/${encodeURIComponent(item.id)}`; slot.title = `${groupNames[group]} · ${item.name}`;
+          if (character && options.onCharacter) {
+            slot.href = '#team'; slot.addEventListener('click', (event) => {event.preventDefault(); options.onCharacter({group,index});});
+          }
           slot.append(picture(item.icon, item.name, 'community-slot-image'));
           if (character) window.WFCharacterFrame?.apply(slot, item);
         } else slot.append(el('span', '', team[group][index] ? '?' : '—'));
@@ -35,7 +38,7 @@
     const {el} = ui, startingHash = location.hash;
     let revision = 0, nextCursor = '', config;
     const filters = {element: '', damageTypes: [], sort: 'latest'};
-    const intro = el('p', 'section-intro', '由管理员维护的推荐队伍。点击头像查资料，装入编成后按需调整，也可以为实用的盘子点赞。');
+    const intro = el('p', 'section-intro', '由管理员维护的推荐队伍。点击队伍标题进入编队，点击角色头像可在编队面板查阅技能与能力，也可以为实用的盘子点赞。');
     const toolbar = el('div', 'community-toolbar');
     const element = el('select'); element.setAttribute('aria-label', '推荐队伍属性');
     const all = el('option', '', '全部属性'); all.value = ''; element.append(all);
@@ -59,20 +62,22 @@
     const current = (ticket) => cards.isConnected && revision === ticket && location.hash === startingHash;
     function card(item) {
       const node = el('article', 'community-card');
-      const heading = el('h2'); const link = el('a', '', item.title); link.href = `#community/${encodeURIComponent(item.id)}`; heading.append(link);
+      function enter(selection) {
+        if (!window.WFTeamImport?.load) {status.textContent = '编成编辑器暂未准备好，请刷新后重试。'; return;}
+        window.WFTeamImport.load(C.teamCopy(item.team), item.title, selection); location.hash = '#team';
+      }
+      const heading = el('h2'); const link = el('a', '', item.title); link.href = '#team';
+      link.addEventListener('click', (event) => {event.preventDefault(); enter();}); heading.append(link);
       const badges = el('div', 'community-tags'); badges.append(el('span', 'badge', C.elementLabel(item.element)));
       (item.damageTypes || []).filter((key) => C.damageTypes[key]).forEach((key) => badges.append(el('span', 'badge', C.damageTypes[key])));
       const date = new Date(item.createdAt), time = el('time', 'muted', Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('zh-CN', {timeZone: 'Asia/Shanghai'}));
       if (!Number.isNaN(date.getTime())) time.dateTime = date.toISOString();
-      node.append(heading, badges, C.board(item.team, data, ui), el('p', 'community-author', `作者：${item.author}`), time);
+      node.append(heading, badges, C.board(item.team, data, ui, {onCharacter:enter}), el('p', 'community-author', `作者：${item.author}`), time);
       const gameCode = window.WFCommunityGameCodes?.readonly(item, ui); if (gameCode) node.append(gameCode);
       if (item.notes) {const notes = el('details', 'community-notes'); notes.open = Boolean(options.id); notes.append(el('summary', '', '用途与操作说明'), el('p', '', item.notes)); node.append(notes);}
       const actions = el('div', 'community-actions');
       const use = el('button', 'primary-button', '装入编成'); use.type = 'button';
-      use.addEventListener('click', () => {
-        if (!window.WFTeamImport?.load) {status.textContent = '编成编辑器暂未准备好，请刷新后重试。'; return;}
-        window.WFTeamImport.load(C.teamCopy(item.team), item.title); location.hash = '#team';
-      });
+      use.addEventListener('click', () => enter());
       const like = el('button', 'secondary-button'); like.type = 'button';
       const showLikes = (result) => {
         if (Number.isFinite(Number(result.likes))) item.likes = Math.max(0, Number(result.likes));

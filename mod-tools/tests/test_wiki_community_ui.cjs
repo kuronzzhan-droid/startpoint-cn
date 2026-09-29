@@ -50,11 +50,20 @@ test('recommendations paginate, escape text, link plates and load a copied team 
   assert.match(x.host.textContent,/<img src=x onerror=alert\(1\)>/);
   assert.equal(x.host.querySelectorAll('script').length,0);
   const links=x.host.querySelectorAll('a').map((link)=>link.href);
-  assert.ok(links.includes('#character/c1'));assert.ok(links.includes('#weapon/w1'));
+  assert.ok(links.includes('#team'));assert.ok(links.includes('#weapon/w1'));
   const more=x.host.querySelectorAll('.community-more')[0];await more.fire('click');await tick();
   assert.match(calls[1],/cursor=second/);assert.equal(x.host.querySelectorAll('.community-card').length,2);
   const use=x.host.querySelectorAll('button').find((button)=>button.textContent==='装入编成');await use.fire('click');
   assert.equal(x.context.location.hash,'#team');assert.equal(x.window.imported[1],item.title);
+  x.window.imported[0].main[0]='changed';assert.equal(item.team.main[0],'c1');
+});
+test('recommendation title and avatar open its plate and preserve the clicked character selection',async()=>{
+  const x=setup({config:async()=>config,request:async()=>({items:[item]})});
+  await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
+  const title=x.host.querySelectorAll('a').find((link)=>link.textContent===item.title);await title.fire('click');
+  assert.equal(x.context.location.hash,'#team');assert.equal(x.window.imported[1],item.title);
+  const avatar=x.host.querySelectorAll('a').find((link)=>link.attributes['aria-label']==='2号主位：角色c2');await avatar.fire('click');
+  assert.equal(x.window.imported[2].group,'main');assert.equal(x.window.imported[2].index,1);
   x.window.imported[0].main[0]='changed';assert.equal(item.team.main[0],'c1');
 });
 test('old page cannot populate a newly mounted page even when both have the same route',async()=>{

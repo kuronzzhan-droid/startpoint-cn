@@ -1,13 +1,14 @@
-/* Editing stays local; a separate explicit submission publishes recommendations. */
+/* Editing stays local; administrator collection is a separate explicit action. */
 (() => {
   'use strict';
   const storageKey = 'wf-wiki-teams-v1';
   const S = window.WFTeamState;
   let team = S.empty(), undo = [], redo = [], chosen = {group: 'main', index: 0};
+  let inspected = {group: 'main', index: 0};
   let weaponQuery = '', characterFilterState = {}, name = '我的队伍';
   const labels = {main: '主位', unison: '合击', weapon: '装备', soul: '魂珠'};
   let imported;
-  window.WFTeamImport = {load(value, title) {imported = {team: value, title};}};
+  window.WFTeamImport = {load(value, title, selection) {imported = {team: S.copy(value), title, selection};}};
   function savedTeams() {
     try { const data = JSON.parse(localStorage.getItem(storageKey) || '[]'); return Array.isArray(data) ? data.filter((item) => item && typeof item.name === 'string' && item.team && typeof item.team === 'object') : []; }
     catch { return []; }
@@ -19,7 +20,9 @@
     if (imported) {
       undo.push(S.copy(team)); redo = [];
       team = S.validate(imported.team, characters, equipment);
-      name = String(imported.title || '推荐队伍').slice(0, 60); imported = null;
+      name = String(imported.title || '推荐队伍').slice(0, 60);
+      inspected = ['main','unison'].includes(imported.selection?.group) && [0,1,2].includes(imported.selection?.index)
+        ? {...imported.selection} : {group:'main',index:0}; imported = null;
     }
     team = S.validate(team, characters, equipment);
     const board = el('div', 'team-board game-panel');
@@ -27,18 +30,20 @@
     const library = el('section', 'team-library game-panel');
     const controls = el('div', 'team-controls');
     const status = el('p', 'team-status'); status.setAttribute('role', 'status');
+    const inspector = window.WFTeamInspector?.create(data, ui);
     const title = el('input'); title.value = name; title.maxLength = 60; title.setAttribute('aria-label', '队伍名称');
     title.addEventListener('input', () => {name = title.value;});
     function button(label, action, className = 'secondary-button') {
       const b = el('button', className, label); b.type = 'button'; b.addEventListener('click', action); return b;
     }
     function change(next) {
-      if (JSON.stringify(next) === JSON.stringify(team)) return;
+      if (JSON.stringify(next) === JSON.stringify(team)) {paintBoard(); return;}
       undo.push(S.copy(team)); undo = undo.slice(-50); redo = []; team = next; paintBoard();
     }
     function assign(id, kind = '') {
       const expected = S.isCharacter(chosen.group) ? 'character' : 'equipment';
       if (kind && kind !== expected) {status.textContent = '请把角色放入主位或合击位，把武器放入装备或魂珠槽。'; return;}
+      if (S.isCharacter(chosen.group)) inspected = {...chosen};
       change(S.place(team, chosen.group, chosen.index, id, characters, equipment));
     }
     function chooseSlot(group, index) {
@@ -104,9 +109,14 @@
           const source = S.isCharacter(group) ? characters : equipment;
           const item = source.get(team[group][index]);
           const wrap = el('div', `team-slot-wrap team-slot-wrap-${group}`);
-          const slot = item ? el('a', `team-slot team-slot-${group}`)
+          const slot = item && !S.isCharacter(group) ? el('a', `team-slot team-slot-${group}`)
+            : item ? button('', () => {inspected = {group,index}; paintBoard();}, `team-slot team-slot-${group}`)
             : button('', () => {chooseSlot(group, index); paintBoard(); paintLibrary();}, `team-slot team-slot-${group}`);
-          if (item) slot.href = `#${S.isCharacter(group) ? 'character' : 'weapon'}/${encodeURIComponent(item.id)}`;
+          if (item && !S.isCharacter(group)) {
+            slot.href = `#weapon/${encodeURIComponent(item.id)}`;
+            slot.addEventListener('click', () => window.WFTeamInspector?.remember('weapon', item.id));
+          }
+          if (item && S.isCharacter(group)) slot.setAttribute('aria-current', String(inspected.group === group && inspected.index === index));
           slot.classList.toggle('selected', chosen.group === group && chosen.index === index);
           slot.setAttribute('aria-label', `${index + 1}号${labels[group]}：${item?.name || '空位'}`);
           slot.title = `${labels[group]} · ${item?.name || '点击选择或拖入'}`;
@@ -145,21 +155,20 @@
         }
         grid.append(column);
       }
-      board.append(grid); paintPreview();
+      board.append(grid); paintPreview(); inspector?.show(team[inspected.group][inspected.index]);
     }
     function paintPreview() {
       preview.replaceChildren(el('h2', '', '编成资料'));
       S.ruleNotes(team, equipment, data.equipmentMeta?.partyRules).forEach((value) => preview.append(el('p', 'weapon-note', value)));
       const leader = characters.get(team.main[0]);
-      if (leader) preview.append(el('h3', '', `队长 · ${leader.name}`), el('p', '', leader.leader?.description || '无队长技'));
+      if (leader) preview.append(el('h3', '', `队长 · ${leader.name}`));
       for (let i = 0; i < 3; i++) {
         const main = characters.get(team.main[i]), unison = characters.get(team.unison[i]);
         const box = el('details', 'team-pair'); box.open = i === 0;
         box.append(el('summary', '', `${i + 1}号位：${main?.name || '空位'} / ${unison?.name || '空位'}`));
         for (const [label, item] of [['主位', main], ['合击', unison]]) if (item) {
           box.append(el('h3', '', `${label} · ${item.name}`), elementBadge(item.element));
-          const a = el('a', 'text-button', '查看角色详情'); a.href = `#character/${encodeURIComponent(item.id)}`; box.append(a);
-          (item.abilities || []).forEach((ability) => box.append(el('p', '', `${ability.name}：${ability.description || '未配置'}`)));
+          box.append(button('查看角色面板', () => {inspected = {group:label === '主位' ? 'main' : 'unison',index:i}; paintBoard();}, 'text-button'));
         }
         for (const group of ['weapon', 'soul']) {
           const item = equipment.get(team[group][i]); if (!item) continue;
@@ -221,8 +230,8 @@
       if (!items.length) candidates.append(el('p', '', '没有匹配的候选。'));
     }
     weaponSearch.addEventListener('input', () => {weaponQuery = weaponSearch.value; paintLibrary();});
-    const layout = el('div', 'team-layout'); layout.append(board, library, preview);
-    host.replaceChildren(el('h1', '', '配队模拟'), el('p', 'section-intro', '拖拽头像到槽位，或点空位／「换」后选择候选。点击已放入的头像查看详情；第一列主位为队长。'),
+    const layout = el('div', 'team-layout'); if (inspector) layout.append(inspector.element); layout.append(board, library, preview);
+    host.replaceChildren(el('h1', '', '配队模拟'), el('p', 'section-intro', '拖拽头像到槽位，或点空位／「换」后选择候选。点击盘中的角色头像，在角色面板查看技能与能力；第一列主位为队长。'),
       controls, status, layout, el('p', 'muted', '用于编成与查阅效果；主位限制、触发条件和武器特殊规则请结合说明判断。本页不模拟战斗过程或计算实战伤害。'));
     refreshSaved(); paintBoard(); paintLibrary();
   };
