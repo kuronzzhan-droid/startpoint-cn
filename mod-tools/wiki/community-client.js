@@ -4,6 +4,8 @@
   const damageTypes = {skill: '技能伤害', ability: '能力伤害', powerflip: '强化弹射伤害', direct: '直接攻击伤害'};
   const teamCategories = ['萌新启航', '原版毕业队', 'MOD毕业队', '最新最潮盘', '玩具盘'];
   const categoryLabel = (value) => teamCategories.includes(value) ? value : '未分类';
+  const teamSections = {'': '通用/其他', abyss: '深渊连战', fantasy: '幻想连战', 'five-boss': '五重决战'};
+  const sectionLabel = (value) => Object.hasOwn(teamSections, value) ? teamSections[value] : teamSections[''];
   const sourceUrl = 'https://docs.qq.com/sheet/DSVNsWE5yWUNoR0Ju';
   const groups = ['main', 'unison', 'weapon', 'soul'];
   const elementLabel = (value) => value === 'universal' ? '宇宙' : value;
@@ -28,6 +30,7 @@
   function query(filters, cursor = '') {
     const params = new URLSearchParams();
     if (filters.element) params.set('element', filters.element);
+    if (filters.section === 'general' || (filters.section && Object.hasOwn(teamSections, filters.section))) params.set('section', filters.section);
     if (teamCategories.includes(filters.category) || filters.category === 'uncategorized') params.set('category', filters.category);
     const selected = Object.keys(damageTypes).filter((key) => filters.damageTypes?.includes(key));
     if (selected.length) params.set('damage', selected.join(','));
@@ -76,7 +79,7 @@
       return configPromise;
     }};
   }
-  const api = {damageTypes, teamCategories, categoryLabel, sourceUrl, elementLabel, teamCopy, teamError, query, message, createApi};
+  const api = {damageTypes, teamCategories, categoryLabel, teamSections, sectionLabel, sourceUrl, elementLabel, teamCopy, teamError, query, message, createApi};
   if (root.location && root.fetch) api.client = createApi(root.fetch.bind(root), root.location.protocol);
   root.WFCommunity = Object.assign(root.WFCommunity || {}, api);
   if (typeof module !== 'undefined') module.exports = api;

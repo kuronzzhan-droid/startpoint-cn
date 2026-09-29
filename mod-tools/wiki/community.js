@@ -38,8 +38,20 @@
   window.renderWikiCommunity = async (host, data, ui, options = {}) => {
     const {el} = ui, startingHash = location.hash;
     let revision = 0, nextCursor = '', config;
-    const filters = {element: '', category: '', damageTypes: [], sort: 'latest'};
-    const intro = el('p', 'section-intro', '由管理员维护的推荐队伍。点击队伍标题进入编队，点击角色头像可在编队面板查阅技能与能力，也可以为实用的盘子点赞。');
+    const filters = {section: '', element: '', category: '', damageTypes: [], sort: 'latest'};
+    const header = el('header', 'community-header'), links = el('div', 'community-header-links');
+    const intro = el('p', 'section-intro community-intro', '点击队伍查看编成与角色面板，为实用的盘子点赞。');
+    const sections = el('div', 'community-sections'); sections.setAttribute('role', 'group'); sections.setAttribute('aria-label', '推荐队伍玩法分区');
+    const sectionButtons = [['','全部'], ...Object.entries(C.teamSections).filter(([value]) => value)].map(([value,label]) => {
+      const button = el('button', 'community-section-button', label); button.type = 'button';
+      button.setAttribute('aria-label', `玩法分区：${label}`);
+      button.addEventListener('click', () => {filters.section = value; load();}); sections.append(button); return {button,value};
+    });
+    const otherSection = el('select', 'community-section-other'); otherSection.setAttribute('aria-label', '其他玩法分区');
+    [['','其他分区'], ['general',C.sectionLabel('')]].forEach(([value,label]) => {
+      const option = el('option', '', label); option.value = value; otherSection.append(option);
+    });
+    otherSection.addEventListener('change', () => {filters.section = otherSection.value; load();}); sections.append(otherSection);
     const toolbar = el('div', 'community-toolbar');
     const element = el('select'); element.setAttribute('aria-label', '推荐队伍属性');
     const all = el('option', '', '全部属性'); all.value = ''; element.append(all);
@@ -51,22 +63,46 @@
     [['latest', '最新收录'], ['popular', '最多点赞']].forEach(([value, label]) => {const option = el('option', '', label); option.value = value; sort.append(option);});
     const edit = el('a', 'primary-button', '本地配队模拟'); edit.href = '#team';
     const admin = el('a', 'text-button', '管理员入口'); admin.href = '#community/admin';
-    toolbar.append(element, category, sort, edit, admin);
+    links.append(edit, admin); header.append(el('h1', '', options.id ? '推荐队伍' : '配队大全'), links);
+    const reset = el('button', 'text-button community-filter-reset', '重置筛选'); reset.type = 'button';
+    toolbar.append(element, sort, reset);
+    const advanced = el('details', 'community-advanced-filters'); advanced.open = false;
+    const advancedSummary = el('summary'), activeSummary = el('span', 'community-active-filters');
+    advancedSummary.append(el('span', '', '更多筛选'), activeSummary);
+    const advancedBody = el('div', 'community-advanced-body'), categoryField = el('label', 'community-category-filter');
+    categoryField.append(el('span', '', '配队分类'), category);
     const damage = el('fieldset', 'community-damage-options'); damage.append(el('legend', '', '伤害类型（多选时同时满足）'));
     Object.entries(C.damageTypes).forEach(([value, label]) => {
       const wrap = el('label', 'community-check'), input = el('input'); input.type = 'checkbox'; input.value = value;
       input.addEventListener('change', () => {filters.damageTypes = [...damage.querySelectorAll('input:checked')].map((node) => node.value); load();});
       wrap.append(input, el('span', '', label)); damage.append(wrap);
     });
+    advancedBody.append(categoryField, damage); advanced.append(advancedSummary, advancedBody);
+    function syncFilters() {
+      element.value = filters.element; category.value = filters.category; sort.value = filters.sort;
+      otherSection.value = filters.section === 'general' ? 'general' : '';
+      sectionButtons.forEach(({button,value}) => button.setAttribute('aria-pressed', String(filters.section === value)));
+      const active = [...(filters.category ? [C.categoryLabel(filters.category)] : []), ...filters.damageTypes.map((value) => C.damageTypes[value])];
+      activeSummary.textContent = active.length ? `（${active.length}）${active.join(' · ')}` : '分类 · 伤害类型';
+      reset.disabled = !filters.section && !filters.element && !active.length && filters.sort === 'latest';
+    }
+    reset.addEventListener('click', () => {
+      Object.assign(filters, {section:'',element:'',category:'',damageTypes:[],sort:'latest'});
+      damage.querySelectorAll('input').forEach((input) => {input.checked = false;}); load();
+    });
     const status = el('p', 'community-status'); status.setAttribute('role', 'status');
     const cards = el('div', options.id ? 'community-grid community-single' : 'community-grid');
     const avatarControls = el('div', 'community-avatar-controls');
     const avatars = window.WFCatalogAvatars?.create({host: avatarControls, catalog: cards,
       characters: data.characters || [], ui, label: '配队大全头像'});
+    if (!options.id) toolbar.append(avatarControls);
     const more = el('button', 'secondary-button community-more', '加载更多'); more.type = 'button'; more.hidden = true;
     const retry = el('button', 'secondary-button', '重试连接'); retry.type = 'button'; retry.hidden = true;
-    host.replaceChildren(el('h1', '', options.id ? '推荐队伍' : '配队大全'), intro, toolbar, avatarControls, damage, status, cards, more, retry, C.source(ui));
-    if (options.id) {toolbar.hidden = true; damage.hidden = true; const back = el('a', 'back-button', '‹ 返回配队大全'); back.href = '#community'; host.prepend(back);}
+    host.replaceChildren(header, intro, sections, toolbar, ...(options.id ? [avatarControls] : []), advanced, status, cards, more, retry, C.source(ui));
+    if (options.id) {
+      toolbar.hidden = true; sections.hidden = true; advanced.hidden = true;
+      const back = el('a', 'back-button', '‹ 返回配队大全'); back.href = '#community'; host.prepend(back);
+    }
     const current = (ticket) => cards.isConnected && revision === ticket && location.hash === startingHash;
     function card(item) {
       const node = el('article', 'community-card');
@@ -76,12 +112,16 @@
       }
       const heading = el('h2'); const link = el('a', '', item.title); link.href = '#team';
       link.addEventListener('click', (event) => {event.preventDefault(); enter();}); heading.append(link);
-      const badges = el('div', 'community-tags'); badges.append(el('span', 'badge', C.categoryLabel(item.category)), el('span', 'badge', C.elementLabel(item.element)));
+      const badges = el('div', 'community-tags'); badges.append(el('span', 'badge community-section-badge', C.sectionLabel(item.section)),
+        el('span', 'badge', C.categoryLabel(item.category)), el('span', 'badge', C.elementLabel(item.element)));
       (item.damageTypes || []).filter((key) => C.damageTypes[key]).forEach((key) => badges.append(el('span', 'badge', C.damageTypes[key])));
       const date = new Date(item.createdAt), time = el('time', 'muted', Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('zh-CN', {timeZone: 'Asia/Shanghai'}));
       if (!Number.isNaN(date.getTime())) time.dateTime = date.toISOString();
-      node.append(heading, badges, C.board(item.team, data, ui, {onCharacter:enter, avatars}), el('p', 'community-author', `作者：${item.author}`), time);
-      const gameCode = window.WFCommunityGameCodes?.readonly(item, ui); if (gameCode) node.append(gameCode);
+      const cardHeader = el('header', 'community-card-header'), headingArea = el('div', 'community-card-heading');
+      headingArea.append(heading, badges);
+      const gameCode = window.WFCommunityGameCodes?.readonly(item, ui, {compact:true});
+      cardHeader.append(headingArea, gameCode || el('span', 'muted community-no-code', '暂无队伍码'));
+      node.append(cardHeader, C.board(item.team, data, ui, {onCharacter:enter, avatars}));
       if (item.notes) {const notes = el('details', 'community-notes'); notes.open = Boolean(options.id); notes.append(el('summary', '', '用途与操作说明'), el('p', '', item.notes)); node.append(notes);}
       const actions = el('div', 'community-actions');
       const use = el('button', 'primary-button', '装入编成'); use.type = 'button';
@@ -94,9 +134,13 @@
         like.setAttribute('aria-label', `${item.likedToday ? '今天已点赞' : '为此队伍点赞'}，${item.likes || 0} 赞`);
       };
       showLikes(item); like.addEventListener('click', () => C.openLike(item, ui, showLikes));
-      actions.append(use, like); node.append(actions); return node;
+      actions.append(use, like);
+      const footer = el('footer', 'community-card-footer'), credit = el('div', 'community-card-credit');
+      credit.append(el('p', 'community-author', `作者：${item.author || '未署名'}`), time);
+      footer.append(credit, actions); node.append(footer); return node;
     }
     async function load(append = false) {
+      syncFilters();
       const ticket = ++revision; more.disabled = true; retry.hidden = true; status.textContent = '正在载入推荐队伍…';
       if (!append) {cards.replaceChildren(); nextCursor = ''; more.hidden = true;}
       try {
@@ -125,6 +169,6 @@
     category.addEventListener('change', () => {filters.category = category.value; load();});
     sort.addEventListener('change', () => {filters.sort = sort.value; load();});
     more.addEventListener('click', () => load(true)); retry.addEventListener('click', () => config ? load() : connect());
-    await connect();
+    syncFilters(); await connect();
   };
 })();

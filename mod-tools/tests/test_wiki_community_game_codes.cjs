@@ -22,8 +22,8 @@ const source=fs.readFileSync(path.join(__dirname,'../wiki/community-game-codes.j
 const code='H4QUDN7W5R22';
 const button=(node,label)=>node.all('button').find((node)=>node.textContent===label);
 const tick=()=>new Promise((resolve)=>setImmediate(resolve));
-function setup(writeText) {
-  const window={WFCommunity:{message:(error)=>error.message},navigator:writeText?{clipboard:{writeText}}:{}};
+function setup(writeText, isSecureContext=true) {
+  const window={WFCommunity:{message:(error)=>error.message},navigator:writeText?{clipboard:{writeText}}:{},isSecureContext};
   vm.runInNewContext(source,{window});return {G:window.WFCommunityGameCodes,ui:{el}};
 }
 function manager(request,status='approved') {
@@ -49,6 +49,14 @@ test('copy uses the exact returned game code and falls back to selected text on 
   await button(fallback,'复制游戏码').click();
   assert.equal(fallback.all('input')[0].selected,true);assert.equal(fallback.all('input')[0].focused,true);
   assert.match(fallback.textContent,/请复制上方已选中/);assert.doesNotMatch(fallback.textContent,/已复制。/);
+});
+
+test('compact codes preserve copying and insecure contexts fall back without using clipboard',async()=>{
+  let writes=0,stopped=false;const x=setup(async()=>{writes++;},false),view=x.G.readonly({gameCode:code},x.ui,{compact:true});
+  assert.match(view.className,/community-game-code-compact/);assert.equal(view.all('input')[0].value,code);
+  await button(view,'复制').events.click({stopPropagation(){stopped=true;}});
+  assert.equal(writes,0);assert.equal(stopped,true);assert.equal(view.all('input')[0].selected,true);
+  assert.match(view.textContent,/请复制上方已选中/);assert.doesNotMatch(view.textContent,/已复制。/);
 });
 test('administrator code status loads only on expansion and generation is server-confirmed',async()=>{
   const calls=[];const x=manager(async(path,body,method)=>{

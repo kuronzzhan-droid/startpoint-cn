@@ -16,6 +16,8 @@ class Node {
   setAttribute(key,value) {this.attributes[key]=value;}
   getAttribute(key) {return this.attributes[key];}
   addEventListener(key,callback) {this.events[key]=callback;}
+  focus() {this.focused=true;}
+  select() {this.selected=true;}
   get isConnected() {return this.connected===true || Boolean(this.parent?.isConnected);}
   async fire(name) {return this.events[name]?.({preventDefault(){}});}
   querySelectorAll(selector) {
@@ -33,11 +35,12 @@ const data={characters:['c1','c2','c3'].map((id)=>({id,name:`角色${id}`,elemen
 const team=C.teamCopy({main:['c1','c2','c3'],weapon:['w1']});
 const item={id:'t1',status:'approved',title:'推荐 <img src=x onerror=alert(1)>',author:'作者',notes:'<script>bad</script>',
   team,element:'火',damageTypes:['skill'],createdAt:'2026-09-29T01:00:00Z',likes:3};
-function setup(client) {
-  const location={hash:'#community'}, window={WFCommunity:{...C,client},WFTeamImport:{load:(...args)=>{window.imported=args;}}};
+function setup(client, writeText) {
+  const location={hash:'#community'}, window={WFCommunity:{...C,client},navigator:{clipboard:{writeText}},isSecureContext:true,
+    WFTeamImport:{load:(...args)=>{window.imported=args;}}};
   const storage=new Map(),context={window,location,URLSearchParams,Date,console,
     localStorage:{getItem:(key)=>storage.get(key),setItem:(key,value)=>storage.set(key,value)}};
-  for (const file of ['catalog-avatars.js','community.js','community-submit.js']) vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki',file),'utf8'),context);
+  for (const file of ['catalog-avatars.js','community-game-codes.js','community.js','community-submit.js']) vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki',file),'utf8'),context);
   const host=el('main');host.connected=true;
   const ui={el,safeUrl:(value)=>typeof value==='string'?value:'',picture:(url,alt,cls)=>{const node=el('img',cls);node.setAttribute('src',url);return node;}};
   const modals=[], challenges=[];
@@ -106,7 +109,7 @@ test('old page cannot populate a newly mounted page even when both have the same
 test('filter races cannot restore old results and non-public rows are not displayed',async()=>{
   const requests=[];const x=setup({config:async()=>config,request:(url)=>new Promise((resolve)=>requests.push({url,resolve}))});
   await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
-  const select=x.host.querySelectorAll('select')[0];select.value='水';select.fire('change');
+  const select=x.host.querySelectorAll('select').find((node)=>node.attributes['aria-label']==='推荐队伍属性');select.value='水';select.fire('change');
   requests[1].resolve({items:[{...item,id:'water',title:'水队'}, {...item,id:'hidden',status:'hidden',title:'不公开'}]});await tick();
   requests[0].resolve({items:[item]});await tick();
   assert.match(x.host.textContent,/水队/);assert.doesNotMatch(x.host.textContent,/不公开|推荐 <img/);
@@ -167,7 +170,62 @@ test('new collection requires a category before submitting and sends its visible
   inputs[1].value='作者';inputs.find((node)=>node.value==='skill').checked=true;
   await form.fire('submit');assert.equal(calls.length,0);assert.match(dialog.textContent,/请选择配队分类/);
   const category=dialog.querySelectorAll('select').find((node)=>node.attributes['aria-label']==='配队分类');category.value='最新最潮盘';
-  await form.fire('submit');assert.equal(calls[0].category,'最新最潮盘');
+  const section=dialog.querySelectorAll('select').find((node)=>node.attributes['aria-label']==='玩法分区');assert.equal(section.value,'');
+  section.value='fantasy';await form.fire('submit');assert.equal(calls[0].category,'最新最潮盘');assert.equal(calls[0].section,'fantasy');
+});
+
+test('gameplay sections combine with folded filters, keep active conditions visible and reset all conditions',async()=>{
+  const calls=[];const x=setup({config:async()=>config,request:async(url)=>{calls.push(url);return {items:[{...item,section:'abyss'}],nextCursor:'page2'};}});
+  await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
+  const advanced=x.host.querySelector('.community-advanced-filters');assert.equal(advanced.open,false);
+  const choose=(label)=>x.host.querySelectorAll('select').find((node)=>node.attributes['aria-label']===label);
+  const abyss=x.host.querySelectorAll('button').find((node)=>node.attributes['aria-label']==='玩法分区：深渊连战');
+  await abyss.fire('click');await tick();assert.equal(abyss.attributes['aria-pressed'],'true');
+  choose('推荐队伍属性').value='火';await choose('推荐队伍属性').fire('change');await tick();
+  choose('推荐队伍分类').value='MOD毕业队';await choose('推荐队伍分类').fire('change');await tick();
+  for(const value of ['skill','direct']) {const input=advanced.querySelectorAll('input').find((node)=>node.value===value);input.checked=true;await input.fire('change');await tick();}
+  choose('推荐队伍排序').value='popular';await choose('推荐队伍排序').fire('change');await tick();
+  const params=new URLSearchParams(calls.at(-1).split('?')[1]);
+  assert.equal(params.get('section'),'abyss');assert.equal(params.get('element'),'火');assert.equal(params.get('category'),'MOD毕业队');assert.equal(params.get('damage'),'skill,direct');
+  assert.equal(advanced.open,false);assert.match(advanced.querySelector('summary').textContent,/更多筛选（3）MOD毕业队 · 技能伤害 · 直接攻击伤害/);
+  await x.host.querySelector('.community-more').fire('click');await tick();assert.match(calls.at(-1),/cursor=page2/);
+  await x.host.querySelector('.community-filter-reset').fire('click');await tick();
+  assert.equal(calls.at(-1),'/teams?sort=latest');assert.equal(advanced.querySelectorAll('input:checked').length,0);
+  assert.equal(choose('推荐队伍分类').value,'');assert.equal(choose('推荐队伍属性').value,'');assert.equal(choose('推荐队伍排序').value,'latest');
+  assert.equal(x.host.querySelector('.community-filter-reset').disabled,true);assert.equal(abyss.attributes['aria-pressed'],'false');
+});
+
+test('general section uses its own sentinel without hiding legacy cards or selecting a gameplay tab',async()=>{
+  const calls=[];const x=setup({config:async()=>config,request:async(url)=>{calls.push(url);return {items:[item]};}});
+  await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
+  assert.equal(x.host.querySelector('.community-section-badge').textContent,'通用/其他');
+  const other=x.host.querySelector('.community-section-other');other.value='general';await other.fire('change');await tick();
+  assert.equal(new URLSearchParams(calls.at(-1).split('?')[1]).get('section'),'general');
+  assert.equal(x.host.querySelectorAll('.community-section-button').some((node)=>node.attributes['aria-pressed']==='true'),false);
+  await x.host.querySelectorAll('.community-section-button')[0].fire('click');await tick();assert.equal(other.value,'');assert.doesNotMatch(calls.at(-1),/section=/);
+});
+
+test('card header copies the exact server code without opening the editor and keeps credit/actions below the plate',async()=>{
+  const written=[],gameCode='H4QUDN7W5R22';
+  const x=setup({config:async()=>config,request:async()=>({items:[{...item,gameCode}]})},async(value)=>written.push(value));
+  await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
+  const card=x.host.querySelector('.community-card'),header=card.querySelector('.community-card-header'),footer=card.querySelector('.community-card-footer');
+  const copy=header.querySelectorAll('button').find((node)=>node.textContent==='复制');assert.ok(copy);
+  await copy.fire('click');assert.deepEqual(written,[gameCode]);assert.match(header.textContent,/已复制/);
+  assert.equal(x.context.location.hash,'#community');assert.equal(x.window.imported,undefined);
+  assert.equal(header.querySelector('input').value,gameCode);assert.equal(header.querySelector('input').readOnly,true);
+  assert.equal(card.children.at(-1),footer);assert.match(footer.textContent,/作者：作者/);assert.match(footer.textContent,/点赞 · 3/);
+  assert.ok(card.children.indexOf(card.querySelector('.community-board'))<card.children.indexOf(card.querySelector('.community-notes')));
+});
+
+test('card copy denial retains a selectable real code and never reports success',async()=>{
+  const x=setup({config:async()=>config,request:async()=>({items:[{...item,gameCode:'H4QUDN7W5R22'}, {...item,id:'without',gameCode:null}]})},async()=>{throw new Error('denied');});
+  await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
+  const cards=x.host.querySelectorAll('.community-card'),header=cards[0].querySelector('.community-card-header');
+  await header.querySelector('button').fire('click');assert.equal(header.querySelector('input').selected,true);
+  assert.match(header.textContent,/请复制上方已选中/);assert.doesNotMatch(header.textContent,/已复制。/);
+  assert.equal(x.context.location.hash,'#community');assert.match(cards[1].querySelector('.community-card-header').textContent,/暂无队伍码/);
+  assert.equal(cards[1].querySelector('.community-card-header').querySelectorAll('button').length,0);
 });
 test('like count changes only from a verified server response and repeated likes stay disabled',async()=>{
   const calls=[],results=[];const x=setup({config:async()=>config,request:async(_path,body)=>{calls.push(body);return {likes:4,likedToday:true};}});

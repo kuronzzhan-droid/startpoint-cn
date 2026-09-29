@@ -107,10 +107,12 @@ test('saving edited slots and hidden state sends the original revision with same
   select(form,'主位 1').value='c4'; select(form,'主位 1').events.change();
   const meta=one(form,'admin-edit-meta'); meta.all((n)=>n.tag==='select')[1].value='hidden';
   select(form,'配队分类').value='原版毕业队';
+  select(form,'玩法分区').value='five-boss';
   await form.events.submit({preventDefault(){}});
   assert.equal(saved.expectedRevision,4); assert.equal(saved.team.main[0],'c4'); assert.equal(saved.status,'hidden');
   assert.equal(saved.damageTypes[0],'skill'); assert.equal(x.calls.find((call)=>call.method==='PATCH').credentials,'same-origin');
   assert.equal(saved.category,'原版毕业队');
+  assert.equal(saved.section,'five-boss');
   assert.match(one(x.host,'admin-notice').textContent,/已保存.*当前版本 5/);
 });
 test('invalid duplicate characters and missing damage selections never reach the write endpoint',async()=>{
@@ -136,4 +138,16 @@ test('administrators can filter categories and preserve the empty legacy categor
   assert.equal(new URL(x.calls.at(-1).url,'https://wiki.example').searchParams.get('category'),'uncategorized');
   await button(x.host,'编辑 / 隐藏').click();assert.equal(select(x.host,'配队分类').value,'');
   assert.equal(select(x.host,'配队分类').children[0].textContent,'未分类（历史队伍）');
+  assert.equal(select(x.host,'玩法分区').value,'');assert.equal(select(x.host,'玩法分区').children[0].textContent,'通用/其他');
+});
+
+test('administrators filter gameplay independently and reject invalid section edits before a request',async()=>{
+  const x=setup();await x.start();
+  const section=select(x.host,'查看玩法分区');section.value='general';section.events.change();await new Promise(setImmediate);
+  const category=select(x.host,'查看配队分类');category.value='玩具盘';category.events.change();await new Promise(setImmediate);
+  const params=new URL(x.calls.at(-1).url,'https://wiki.example').searchParams;
+  assert.equal(params.get('section'),'general');assert.equal(params.get('category'),'玩具盘');
+  await button(x.host,'编辑 / 隐藏').click();select(x.host,'玩法分区').value='not-a-section';
+  await one(x.host,'admin-edit-form').events.submit({preventDefault(){}});
+  assert.match(one(x.host,'admin-edit-status').textContent,/有效的玩法分区/);assert.equal(x.calls.filter((call)=>call.method==='PATCH').length,0);
 });
