@@ -16,6 +16,7 @@ from wf_wiki_catalog_tags import OFFICIAL_NON_PLAYABLE_IDS, character_tags
 from wf_wiki_compare import official_comparison
 from wf_wiki_skill_values import skill_numeric_details
 from wf_wiki_ability_conditions import ability_restrictions
+from wf_wiki_nameplates import attach_nameplates
 
 ELEMENTS = {"0": "火", "1": "水", "2": "雷", "3": "风", "4": "光", "5": "暗", "6": "通用"}
 TYPES = {"0": "剑士", "1": "格斗", "2": "射击", "3": "辅助", "4": "特殊"}
@@ -249,6 +250,7 @@ def build_catalog(repo: Path, media) -> dict:
     roster = [cid for cid in roster if cid not in HIDDEN_CHARACTER_IDS]
     modified = {cid: scope for cid, scope in modified.items() if cid in roster}
     characters = [character_entry(source, cid, modified.get(cid), media) for cid in roster]
+    nameplates = attach_nameplates(repo, source, characters, media)
     source.verify_unchanged()
     if version_at(repo) != version:
         raise RuntimeError("导出过程中本地版本链发生变化，请重新导出")
@@ -264,6 +266,8 @@ def build_catalog(repo: Path, media) -> dict:
         "rosterRule": "收录官方可玩角色与新增 MOD 角色。官方档案中的 21 条剧情、助战及占位记录（已核 ID，c32=2/4）不列为可玩角色。改版官方依据身份、文案、数值、能力、主/切换技能及关联程序的差异识别。",
         "themeNote": "节庆主题来自明确的角色主题标记；未识别主题的同一人物变体标为其他变体，基础形态标为通常版。",
         "dataNote": "游戏文案与程序数据分别展示；自动解析不等同于实机机制验收。",
+        "nameplates": {key: value for key, value in nameplates.items() if key != "sourceFiles"},
+        "sourceFiles": nameplates["sourceFiles"],
         "fingerprints": source.fingerprints,
         "sourceHashes": source.live_hashes, "sourceMissing": sorted(source.missing),
     }, "characters": characters}
