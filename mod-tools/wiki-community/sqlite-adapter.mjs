@@ -22,7 +22,7 @@ export function openDatabase(filename = ':memory:') {
   function prepare(sql, parameters = []) {
     const statement = database.prepare(sql);
     return {
-      bind: (...values) => prepare(sql, values),
+      bind: (...values) => prepare(sql, values.map((value) => value instanceof ArrayBuffer ? new Uint8Array(value) : value)),
       first: async () => statement.get(...parameters) || null,
       all: async () => ({results: statement.all(...parameters), success: true}),
       run: async () => {const result = statement.run(...parameters); return {success: true, meta: {changes: Number(result.changes)}};},

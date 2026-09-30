@@ -13,8 +13,12 @@ test('visibility migration preserves old public/hidden teams and never infers pr
   let db;
   t.after(() => {db?.close(); rmSync(directory, {recursive: true, force: true});});
   const filename = path.join(directory, 'legacy.sqlite'), legacy = new DatabaseSync(filename);
-  legacy.exec(readFileSync(new URL('../schema.sql', import.meta.url), 'utf8').split('\n').filter((line) =>
-    !['visibility TEXT', 'created_by TEXT', 'community_teams_visibility', 'community_teams_creator'].some((text) => line.includes(text))).join('\n'));
+  // Reconstruct only the legacy team table; unrelated new tables may also have creator columns.
+  const schema = readFileSync(new URL('../schema.sql', import.meta.url), 'utf8')
+    .replace(/CREATE TABLE IF NOT EXISTS community_teams \([\s\S]*?\n\);/, (sql) => sql.split('\n')
+      .filter((line) => !['visibility TEXT', 'created_by TEXT'].some((text) => line.includes(text))).join('\n'));
+  legacy.exec(schema.split('\n').filter((line) =>
+    !['community_teams_visibility', 'community_teams_creator'].some((text) => line.includes(text))).join('\n'));
   for (const [index, status] of ['approved', 'hidden'].entries()) {
     const id = crypto.randomUUID(), value = submission(); value.team.unison[2] = `c${5 + index}`;
     const hash = await fingerprint(value.team);

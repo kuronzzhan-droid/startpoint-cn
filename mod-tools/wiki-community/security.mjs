@@ -12,20 +12,24 @@ export function sameOrigin(request) {
   if (request.headers.get('origin') !== expected || request.headers.get('sec-fetch-site') === 'cross-site')
     fail(403, 'invalid_origin', '请从本站页面提交。');
 }
-export async function readJSON(request) {
-  if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json'))
-    fail(415, 'invalid_content_type', '请使用 JSON 格式提交。');
-  if (Number(request.headers.get('content-length')) > 16384) fail(413, 'body_too_large', '提交内容过长。');
+export async function readBytes(request, limit = 16384, message = '提交内容过长。') {
+  if (Number(request.headers.get('content-length')) > limit) fail(413, 'body_too_large', message);
   if (!request.body) fail(400, 'invalid_json', '提交内容不能为空。');
   const reader = request.body.getReader(), chunks = []; let size = 0;
   while (true) {
     const {done, value} = await reader.read(); if (done) break;
     size += value.byteLength;
-    if (size > 16384) { await reader.cancel(); fail(413, 'body_too_large', '提交内容过长。'); }
+    if (size > limit) { await reader.cancel(); fail(413, 'body_too_large', message); }
     chunks.push(value);
   }
   const bytes = new Uint8Array(size); let at = 0;
   for (const chunk of chunks) {bytes.set(chunk, at); at += chunk.length;}
+  return bytes;
+}
+export async function readJSON(request, limit = 16384) {
+  if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json'))
+    fail(415, 'invalid_content_type', '请使用 JSON 格式提交。');
+  const bytes = await readBytes(request, limit);
   try {
     const value = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(bytes));
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error();
@@ -71,7 +75,7 @@ export async function rateLimit(db, request, env, action, now, development) {
   if (!ip || ip.length > 100) fail(503, 'client_address_unavailable', '暂时无法验证请求来源。');
   const windowMs = action === 'game_lookup' ? 60_000 : 3600_000, expires = Math.floor(now / windowMs) * windowMs + windowMs;
   const key = `${action}:${await sign(env.COMMUNITY_IP_SALT, `${expires}:${ip}`)}`;
-  const max = action === 'game_lookup' ? 300 : 120;
+  const max = action === 'game_lookup' ? 300 : action === 'dungeon_upload' ? 20 : 120;
   const row = await db.prepare(`INSERT INTO community_limits(key,count,expires_at) VALUES(?,1,?)
     ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count`).bind(key, expires).first();
   if (row.count > max) fail(429, 'rate_limited', '操作过于频繁，请稍后再试。', {retryAfter: Math.ceil((expires - now) / 1000)});

@@ -9,6 +9,7 @@ import {developmentTools} from './development.mjs';
 import catalog from './catalog.mjs';
 import {localSecrets} from './local-secrets.mjs';
 import {normalizeEmail} from './password-crypto.mjs';
+import {DUNGEON_ID, GUIDE_BYTES, IMAGE_BYTES} from './dungeon-model.mjs';
 const MIME = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif',
   '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg',
@@ -66,10 +67,12 @@ export async function startLocalServer({site, db = ':memory:', port = 0, trusted
         res.writeHead(403); res.end('Loopback only'); return;
       }
       if (!url.pathname.startsWith('/api/community/')) return await serveFile(req, res, root, url);
+      const limit = req.method === 'POST' && new RegExp(`^/api/community/admin/dungeons/${DUNGEON_ID}/images$`).test(url.pathname) ? IMAGE_BYTES :
+        req.method === 'PATCH' && new RegExp(`^/api/community/admin/dungeons/${DUNGEON_ID}$`).test(url.pathname) ? GUIDE_BYTES : 16384;
       const chunks = []; let size = 0;
       for await (const chunk of req) {
         size += chunk.length;
-        if (size > 16384) {res.writeHead(413, {'Content-Type': 'application/json'}); res.end(JSON.stringify({error: 'body_too_large', message: '提交内容过长。'})); return;}
+        if (size > limit) {res.writeHead(413, {'Content-Type': 'application/json'}); res.end(JSON.stringify({error: 'body_too_large', message: '提交内容过长。'})); return;}
         chunks.push(chunk);
       }
       const body = chunks.length ? Buffer.concat(chunks) : undefined;

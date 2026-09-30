@@ -9,12 +9,15 @@ import {authMode, passwordConfig, authenticatePassword, publicUser} from './pass
 import {authRoute, accountsRoute} from './auth-routes.mjs';
 import {listAliases, adminAliasesRoute} from './wiki-aliases.mjs';
 import {characterRatingsRoute, listCharacterRatings} from './character-ratings.mjs';
+import dungeonCatalog from './dungeon-catalog.mjs';
+import {dungeonRoute} from './dungeon-routes.mjs';
 
 function response(value, status = 200, headers = {}) {
   return Response.json(value, {status, headers: {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers}});
 }
 export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
   const nowFn = options.now || Date.now, fetchImpl = options.fetch || fetch;
+  const dungeons = options.dungeons || trustedCatalog.dungeons || dungeonCatalog;
   return async function handle(request, env) {
     let identity;
     try {
@@ -50,11 +53,15 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
       if (path.startsWith('/admin/')) {
         const actor = mode === 'password' ? await authenticatePassword(request, env, now, development) :
           await authenticateAdmin(request, env, fetchImpl, now, development);
-        if (['POST', 'PATCH'].includes(request.method)) await rateLimit(env.COMMUNITY_DB, request, env, 'admin', now, development);
+        if (['POST', 'PATCH', 'DELETE', 'PUT'].includes(request.method)) await rateLimit(env.COMMUNITY_DB, request, env, 'admin', now, development);
         if (mode === 'password' && (path === '/admin/users' || path.startsWith('/admin/users/')))
           return await accountsRoute(path, request, env, now, development);
+        if (path.startsWith('/admin/dungeons/')) return await dungeonRoute(path, request, env, dungeons,
+          mode === 'password' ? publicUser(actor) : actor, now, development);
         return await adminRoute(path, request, env.COMMUNITY_DB, trustedCatalog, mode === 'password' ? publicUser(actor) : actor, now);
       }
+      if (path.startsWith('/dungeons/') || path.startsWith('/dungeon-images/'))
+        return await dungeonRoute(path, request, env, dungeons, null, now, development);
       if (path.startsWith('/game-codes/') && request.method === 'GET') {
         const code = path.slice('/game-codes/'.length);
         if (!GAME_CODE_PATTERN.test(code)) fail(404, 'not_found', '队伍码不存在或已失效。');
