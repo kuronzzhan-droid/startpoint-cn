@@ -82,6 +82,7 @@ export function listQuery(url, catalog, admin = false, actor = null) {
   if (scope === 'private' && !['owner', 'deputy'].includes(actor?.role)) fail(403, 'manager_required', '只有站长或副站长可以查看全部个人空间。');
   const code = url.searchParams.get('code') || '';
   if (code && !['has', 'none'].includes(code)) fail(400, 'invalid_code_filter', '队伍码筛选无效。');
+  const q = admin ? cleanText(url.searchParams.get('q') || '', '搜索词', 80, false, true) : '';
   const accessKey = admin ? `${actor.id}:${actor.role || 'editor'}` : '';
   const element = url.searchParams.get('element') || '';
   if (element && element !== 'universal' && !catalog.elements.includes(element)) fail(400, 'invalid_element', '属性筛选无效。');
@@ -98,19 +99,20 @@ export function listQuery(url, catalog, admin = false, actor = null) {
   const encoded = url.searchParams.get('cursor');
   if (encoded) {
     try {
-      if (encoded.length > 800) throw new Error();
+      // An 80-character Unicode admin query adds up to 427 base64 characters to the existing cursor.
+      if (encoded.length > (admin && q ? 1280 : 800)) throw new Error();
       cursor = decodeJSON(encoded);
       if (cursor.sort !== sort || cursor.element !== element || (cursor.category || '') !== category || (cursor.section || '') !== section ||
           cursor.damage !== (damage || '') || cursor.status !== status ||
-          (cursor.scope || '') !== scope || (cursor.code || '') !== code || (cursor.accessKey || '') !== accessKey ||
+          (cursor.scope || '') !== scope || (cursor.code || '') !== code || (cursor.q || '') !== q || (cursor.accessKey || '') !== accessKey ||
           !Number.isSafeInteger(cursor.createdAt) || !Number.isSafeInteger(cursor.likes) || cursor.likes < 0 ||
           !/^[a-f0-9-]{36}$/.test(cursor.id)) throw new Error();
     } catch { fail(400, 'invalid_cursor', '分页位置无效，请重新打开列表。'); }
   }
-  return {element, category, section, scope, code, accessKey, damage: damage || '', mask: damage ? damageMask(damage.split(',')) : 0, sort, status, cursor};
+  return {element, category, section, scope, code, q, accessKey, damage: damage || '', mask: damage ? damageMask(damage.split(',')) : 0, sort, status, cursor};
 }
 export function nextCursor(query, row) {
   return encodeJSON({sort: query.sort, element: query.element, category: query.category || '', section: query.section || '', damage: query.damage, status: query.status,
-    scope: query.scope || '', code: query.code || '', accessKey: query.accessKey || '',
+    scope: query.scope || '', code: query.code || '', q: query.q || '', accessKey: query.accessKey || '',
     createdAt: row.created_at, likes: row.likes, id: row.id});
 }

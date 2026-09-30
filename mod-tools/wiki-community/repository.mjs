@@ -25,6 +25,13 @@ export async function listTeams(db, query, admin = false, actor = null) {
   if (query.mask) { clauses.push('(damage_mask & ?) = ?'); values.push(query.mask, query.mask); }
   if (query.code) clauses.push(`${query.code === 'none' ? 'NOT ' : ''}(status='approved' AND EXISTS(SELECT 1 FROM community_game_codes c
     WHERE c.team_id=community_teams.id AND c.fingerprint=community_teams.fingerprint AND c.revoked_at IS NULL))`);
+  if (admin && query.q) {
+    const term = `%${query.q.replace(/[\\%_]/g, '\\$&')}%`;
+    clauses.push(`(title LIKE ? ESCAPE '\\' OR author LIKE ? ESCAPE '\\' OR (status='approved' AND EXISTS(
+      SELECT 1 FROM community_game_codes c WHERE c.team_id=community_teams.id AND c.fingerprint=community_teams.fingerprint
+      AND c.revoked_at IS NULL AND c.code LIKE ? ESCAPE '\\')))`);
+    values.push(term, term, term);
+  }
   if (query.cursor) {
     const c = query.cursor;
     const time = '(created_at < ? OR (created_at = ? AND id < ?))';
@@ -65,7 +72,7 @@ export async function likeTeam(db, id, visitorId, day, now) {
   if (!result.meta.changes) fail(409, 'already_liked', '今天已经为这个盘子点过赞。', response);
   return response;
 }
-export async function editTeam(db, row, value, fingerprint, status, actor, now) {
+export async function editTeam(db, row, value, fingerprint, status, actor, now, action = 'update') {
   requireVisibilityChange(row, value.visibility, actor);
   const access = adminTeamScope(actor);
   const revision = row.revision + 1;
@@ -80,7 +87,7 @@ export async function editTeam(db, row, value, fingerprint, status, actor, now) 
         ...access.values, value.visibility, actor.id, Number(managesPrivateTeams(actor))),
     db.prepare(`INSERT INTO community_audit(id,team_id,actor_id,actor_email,action,before_json,after_json,created_at)
       SELECT ?,id,?,?,?,?,?,? FROM community_teams WHERE id=? AND revision=? AND changes()=1`)
-      .bind(crypto.randomUUID(), actor.id, actor.email, 'update', JSON.stringify(teamRecord(row, true)), JSON.stringify(after), now, row.id, revision),
+      .bind(crypto.randomUUID(), actor.id, actor.email, action, JSON.stringify(teamRecord(row, true)), JSON.stringify(after), now, row.id, revision),
     db.prepare(`UPDATE community_game_codes SET revoked_at=? WHERE team_id=? AND (fingerprint<>? OR ?='hidden') AND revoked_at IS NULL AND changes()>0
       AND EXISTS(SELECT 1 FROM community_teams WHERE id=? AND revision=?)`).bind(now, row.id, fingerprint, status, row.id, revision)
   ];
@@ -96,4 +103,10 @@ export async function editTeam(db, row, value, fingerprint, status, actor, now) 
   if (!latest) fail(404, 'not_found', '队伍不存在。');
   if (!results[0].meta.changes) fail(409, 'edit_conflict', '其他管理员已修改该盘，请重新加载后再编辑。');
   return teamRecord(latest, true);
+}
+export function deleteTeam(db, row, actor, now) {
+  // Retain the record and audit history; the existing hidden transition revokes every active code atomically.
+  // Do not revalidate an old roster against today's catalog just to remove it from circulation.
+  const value = {...teamRecord(row, true), damageMask: row.damage_mask};
+  return editTeam(db, row, value, row.fingerprint, 'hidden', actor, now, 'delete');
 }

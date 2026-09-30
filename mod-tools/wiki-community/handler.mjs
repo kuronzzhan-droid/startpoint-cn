@@ -1,7 +1,7 @@
 import catalog from './catalog.mjs';
 import {ApiError, DAMAGE_TYPES, TEAM_SECTIONS, fail, validateSubmission, fingerprint, chinaDay, teamRecord, listQuery} from './model.mjs';
 import {productionReady, sameOrigin, readJSON, visitor, challenge, rateLimit, csv, LOOPBACK} from './security.mjs';
-import {listTeams, insertTeam, findTeam, findAdminTeam, likeTeam, editTeam} from './repository.mjs';
+import {listTeams, insertTeam, findTeam, findAdminTeam, likeTeam, editTeam, deleteTeam} from './repository.mjs';
 import {isPublicTeam} from './team-access.mjs';
 import {authenticateAdmin} from './admin-auth.mjs';
 import {GAME_CODE_PATTERN, resolveGameCode, gameCodeInfo, createGameCode, revokeGameCode} from './game-codes.mjs';
@@ -130,6 +130,15 @@ async function adminRoute(path, request, db, trustedCatalog, actor, now) {
     const row = await findAdminTeam(db, match[1], actor);
     if (!row) fail(404, 'not_found', '队伍不存在。');
     return response({team: teamRecord(row, true)});
+  }
+  if (match && request.method === 'DELETE') {
+    const body = await readJSON(request), row = await findAdminTeam(db, match[1], actor);
+    if (!row) fail(404, 'not_found', '队伍不存在。');
+    if (Object.keys(body).some((key) => key !== 'expectedRevision'))
+      fail(400, 'invalid_fields', '删除队伍只需提交当前版本。');
+    if (!Number.isSafeInteger(body.expectedRevision) || body.expectedRevision !== row.revision)
+      fail(409, 'edit_conflict', '队伍已被修改，请重新加载后再删除。');
+    return response({team: await deleteTeam(db, row, actor, now)});
   }
   if (match && request.method === 'PATCH') {
     const body = await readJSON(request), row = await findAdminTeam(db, match[1], actor);
