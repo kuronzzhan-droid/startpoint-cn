@@ -32,7 +32,7 @@ summary::marker{color:var(--accent-dark)}
 .brand strong{font-size:20px;line-height:1.2;font-weight:650;letter-spacing:1px;display:block;color:#454b4c}
 .brand-caption{display:block;margin-top:3px;font-size:7px;line-height:1.3;letter-spacing:.65px;color:#929b9e;white-space:nowrap}
 .app-navigation{grid-area:navigation;display:flex;align-items:center;gap:3px;min-width:0}
-.app-navigation a{padding:9px 10px;border-radius:6px;font-size:12px;line-height:1.35;white-space:nowrap;color:#8a989e;border-bottom:3px solid transparent}
+.app-navigation a{padding:9px 10px;border-radius:6px;font-family:"Times New Roman","SimSun","Songti SC",serif;font-size:14px;font-weight:700;line-height:1.35;white-space:nowrap;color:#8a989e;border-bottom:3px solid transparent}
 .app-navigation a[aria-current="page"]{color:#14aa9c;background:#edf9f7;border-bottom-color:#24c3b1}
 .app-navigation a:hover{background:#f0f7f8}
 .masthead-note{grid-area:version;font-size:10px;color:#7a8286;display:flex;align-items:center;gap:6px;padding:7px 10px;background:#f2f6f7;border-radius:20px;white-space:nowrap}
@@ -139,7 +139,7 @@ main{padding:26px 30px 0;min-width:0;outline:none}
 @media(max-width:760px){
   .masthead{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"brand theme" "navigation navigation";gap:5px 8px;padding:8px 12px 0}
   .brand-caption{letter-spacing:.25px}
-  .app-navigation{display:grid;grid-template-columns:repeat(6,minmax(64px,1fr));gap:2px;width:100%;overflow-x:auto;scrollbar-width:none}
-  .app-navigation a{padding:9px 3px;font-size:11px;text-align:center;border-radius:6px 6px 0 0}
+  .app-navigation{display:grid;grid-template-columns:repeat(2,minmax(44px,1fr)) minmax(64px,1.5fr) repeat(3,minmax(44px,1fr));gap:2px;width:100%;overflow-x:auto;scrollbar-width:none}
+  .app-navigation a{padding:9px 3px;font-size:13px;text-align:center;border-radius:6px 6px 0 0}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
