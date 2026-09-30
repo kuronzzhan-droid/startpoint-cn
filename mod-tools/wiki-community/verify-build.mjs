@@ -97,8 +97,9 @@ try {
   assert.equal(originals.status, 200); assert.equal((await originals.json()).items[0].id, privateTeam.id); checks++;
   const ratingPath = `/api/community/ratings/characters/${characterIds[0]}`;
   const ratingRead = await call(ratingPath); assert.equal(ratingRead.status, 200); const rating = await ratingRead.json();
-  assert.deepEqual(Object.keys(rating).sort(), ['average', 'myScore', 'nextVoteAt', 'ratedToday', 'voters']);
-  assert.equal(rating.average, null); assert.equal(rating.myScore, null); assert.equal(rating.voters, 0); assert.equal(rating.ratedToday, false);
+  assert.deepEqual(Object.keys(rating).sort(), ['average', 'myScore', 'nextVoteAt', 'rankScore', 'ratedToday', 'voters']);
+  assert.equal(rating.average, null); assert.equal(rating.rankScore, null);
+  assert.equal(rating.myScore, null); assert.equal(rating.voters, 0); assert.equal(rating.ratedToday, false);
   const noChallenge = await call(ratingPath, {method: 'POST', body: JSON.stringify({score: 0})});
   assert.equal(noChallenge.status, 400); assert.equal((await noChallenge.json()).error, 'challenge_required');
   assert.equal(db.raw.prepare('SELECT COUNT(*) AS count FROM community_character_ratings').get().count, 0); checks++;
@@ -112,9 +113,21 @@ try {
   const aggregate = await call('/api/community/ratings/characters/');
   assert.equal(aggregate.status, 200); assert.equal(aggregate.headers.get('set-cookie'), null);
   assert.deepEqual((await aggregate.json()).items.sort((a, b) => a.id.localeCompare(b.id)),
-    [{id: characterIds[0], average: 0, voters: 1}, {id: characterIds[1], average: 2.5, voters: 2}].sort((a, b) => a.id.localeCompare(b.id))); checks++;
+    [{id: characterIds[0], average: 0, voters: 1, rankScore: 12.5 / 6},
+      {id: characterIds[1], average: 2.5, voters: 2, rankScore: 2.5}].sort((a, b) => a.id.localeCompare(b.id))); checks++;
   db.raw.prepare('INSERT INTO community_tier_rankings VALUES(?,?,?,?)')
     .run('fixture-ranking-a', JSON.stringify({tier0:characterIds}), '2026-09-30', Date.now());
+  const rankings = await call('/api/community/tier-rankings');
+  assert.equal(rankings.status, 200); assert.equal(rankings.headers.get('set-cookie'), null);
+  const boards = await rankings.json();
+  assert.deepEqual(Object.keys(boards).sort(), ['formula', 'rankings']);
+  assert.deepEqual(boards.formula, {method: 'bayesian', priorVoters: 5, placementPrior: 3, ratingPrior: 2.5});
+  assert.deepEqual(boards.rankings.placement,
+    [...characterIds].sort().map(id => ({id, average: 5, voters: 1, rankScore: 20 / 6, row: 'between1'})));
+  assert.deepEqual(boards.rankings.rating, [
+    {id: characterIds[1], average: 2.5, voters: 2, rankScore: 2.5, row: 'between2'},
+    {id: characterIds[0], average: 0, voters: 1, rankScore: 12.5 / 6, row: 'tier3'}
+  ]); checks++;
   const stats = await call('/api/community/stats');
   assert.equal(stats.status, 200); assert.equal(stats.headers.get('set-cookie'), null);
   const counts = await stats.json();

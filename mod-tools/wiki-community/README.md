@@ -190,6 +190,7 @@ POST 要求同源 JSON，每个网络每分钟最多 120 次，限流表复用�
 参与人数读取最小列后在服务端去重，按数据库和当前图鉴共享 60 秒缓存并合并同时刷新；
 在线人数继续使用 `last_seen` 索引单独统计。禁止在心跳中通过角色全集的 JSON 交叉查询反复扫描评分和排行。
 Cloudflare 边缘仅缓存公开 `/stats`、`/ratings/characters`、`/tier-rankings` 汇总 30 秒；
+同一 Worker 的相同冷缓存请求合并加载，失败后释放合并状态以便重试，不改变个人数据隔离。
 参与人数叠加缓存最多约 90 秒更新，在线人数最多约 30 秒延迟，`asOf` 为在线统计采样时间。
 个人评分、管理员、队伍及可撤销游戏码不使用此缓存；异常不缓存，也不伪造空数据。
 数据库每日限额错误返回 503 `database_quota_exceeded`、UTC `resetAt` 和 300 秒 `Retry-After`，不透出原始 SQL。
@@ -206,13 +207,20 @@ Cloudflare 边缘仅缓存公开 `/stats`、`/ratings/characters`、`/tier-ranki
 
 ### 从夯到拉动态排行
 
-`GET /api/community/tier-rankings` 匿名读取综合榜，不生成访客 cookie；前端按角色属性切换总榜与六属性榜。
+`GET /api/community/tier-rankings` 匿名读取两套独立榜单，不生成访客 cookie；前端可选手动排行或角色评分榜，
+各自按角色属性切换总榜与六属性榜。返回 `rankings.placement` 和 `rankings.rating` 两个有序数组，
+每条为 `{id, average, voters, rankScore, row}`，不再混合两个来源。
 `GET /api/community/tier-rankings/me` 读取自己的提交状态；`POST /api/community/tier-rankings` 接收
 `{rows, turnstileToken}`，验证码 action 为 `submit_tier_ranking`。拖拽只保存到本机，玩家显式验证、提交后才计票。
 
 五档按 5、4、3、2、1 分，四条档间线分别为 4.5、3.5、2.5、1.5 分。
-综合分为手排均分的 70% 加角色评分的 30%；缺一来源时使用已有来源并标注，两项均缺时不入榜。
-综合分保留两位；同分依次按手排人数、评分人数降序，最后按公开角色 ID 稳定排序。
+角色评分仍为 0–5 分。两榜分别按 `(实际票数 × 真实均分 + 5 × 中间分) / (实际票数 + 5)` 修正排序分；
+手排中间分为 3，角色评分为 2.5。5 个中间分仅是排序参考权重，不增加真实投票人数。
+`formula` 返回 `{method:'bayesian', priorVoters:5, placementPrior:3, ratingPrior:2.5}`。
+`average` 保留真实均分（两位），`voters` 保留真实票数；`rankScore` 使用未舍入的均分计算。
+按排序分降序，同分按该来源票数降序，最后按公开角色 ID 稳定排序。档位也按排序分确定；
+无该来源投票的角色不进入对应榜单，属性筛选不改变计算结果。
+图鉴评分排序使用同一角色评分修正分，支持升降序，无票置后；评分汇总和个人评分接口也返回 `rankScore`（无票为 `null`）。
 每个角色每位访客只保留一票；整榜按北京时间每天提交一次，下次提交替换全榜，未摆放角色不计票，空榜撤回旧手排票。
 每日网络 claim 防止同一 IP 清 cookie 后重复提交，且不存储原始 IP；公共接口不返回身份信息。
 

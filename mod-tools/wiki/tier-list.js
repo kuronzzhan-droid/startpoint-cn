@@ -8,7 +8,7 @@ window.renderWikiTierList = function renderWikiTierList(host, data, ui) {
   const state = window.WFTierListState.create({characters});
   const labels = ['夯', '顶级', '人上人', 'NPC', '拉完了'];
   const page = el('div', 'tier-page'), header = el('div', 'tier-header');
-  header.append(el('h1', '', '从夯到拉'), el('p', '', '自己排一排，或查看大家的综合排行。拖动头像，也可先点头像再点档位或分界线。'));
+  header.append(el('h1', '', '从夯到拉'), el('p', '', '自己排一排，或分别查看大家的手动排行和角色评分榜。拖动头像，也可先点头像再点档位或分界线。'));
   const toolbar = el('div', 'tier-toolbar'), avatarControls = el('div');
   const action = (label, callback) => {
     const button = el('button', 'secondary-button', label); button.type = 'button';
