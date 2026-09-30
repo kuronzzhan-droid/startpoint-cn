@@ -10,6 +10,8 @@ class Node {
     this.classList = {add: (value) => {this.className += ` ${value}`;},
       remove: (value) => {this.className = this.className.split(' ').filter((name) => name !== value).join(' ');}};
   }
+  get textContent() {return (this.text || '') + this.children.map((node) => node.textContent).join('');}
+  set textContent(value) {this.text = String(value); this.replaceChildren();}
   append(...items) {
     for (const node of items) {
       if (node.tag === '#fragment') {this.append(...[...node.children]); continue;}
