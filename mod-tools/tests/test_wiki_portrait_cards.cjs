@@ -118,13 +118,26 @@ test('portrait-only styles retain contain fit, safe motion margins, visible keyb
   assert.doesNotMatch(css,/object-fit:cover/);
 });
 
-test('idle cards and portraits have no 3D or translated transform outside an active interaction',()=>{
+test('only the active portrait image receives 3D motion; its card and frame keep their geometry',()=>{
   const css=fs.readFileSync(path.join(__dirname,'../wiki/portrait-cards.css'),'utf8');
   const transforms=[...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(([,selector,body])=>/transform:(?:perspective|translate)/.test(body));
-  assert.equal(transforms.length,2);
-  transforms.forEach(([,selector])=>assert.match(selector,/\.portrait-card-active/));
+  assert.equal(transforms.length,1);
+  assert.match(transforms[0][1],/\.portrait-card-active \.portrait-card-image/);
+  assert.match(transforms[0][2],/rotateX\(var\(--portrait-rotate-x/);
+  assert.match(transforms[0][2],/rotateY\(var\(--portrait-rotate-y/);
   assert.match(css,/#catalog-view \.portrait-card\{[^}]*transform:none/);
   assert.match(css,/\.portrait-card-media>\.portrait-card-image\{[^}]*transform:none/);
+});
+
+test('opening overflow cannot restore an intrinsic image minimum that stretches the portrait frame or grid row',()=>{
+  const css=fs.readFileSync(path.join(__dirname,'../wiki/portrait-cards.css'),'utf8');
+  assert.match(css,/#catalog-view \.portrait-card \.card-art\{[^}]*flex:none;min-height:0;width:100%;aspect-ratio:3\/4/);
+  assert.match(css,/\.portrait-card-media\{[^}]*position:absolute;inset:0;[^}]*width:100%;height:100%/);
+  const activeRules=[...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(([,selector])=>selector.includes('.portrait-card-active'));
+  for(const [,selector,body] of activeRules){
+    assert.doesNotMatch(body,/(?:^|;)(?:width|height|min-height|aspect-ratio|padding|flex):/);
+    if(!selector.includes('.portrait-card-image'))assert.doesNotMatch(body,/(?:^|;)transform:/);
+  }
 });
 
 test('desktop hover portrait breaks through only its active clipping layers and never captures clicks outside the link',()=>{
