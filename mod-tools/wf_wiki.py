@@ -181,7 +181,9 @@ def export(output: Path, *, legacy_data: Path | None = None, external_character:
     from wf_wiki_dungeons import export_dungeons
     export_dungeons(repo, output, store=store)
     for path in (HERE / "wiki").iterdir():
-        if path.suffix in {".html", ".css", ".js"} or path.name == "brand-logo.png":
+        if path.suffix in {".html", ".css", ".js"} or path.name in {
+            "brand-logo.png", "reborn-group-1.jpg", "reborn-group-2.jpg", "wiki-share-poster.png",
+        }:
             shutil.copyfile(path, output / path.name)
     write_json(output / "media-manifest.json", media.entries)
     (output / "打开角色Wiki.bat").write_bytes(b'@echo off\r\nstart "" "%~dp0index.html"\r\n')
