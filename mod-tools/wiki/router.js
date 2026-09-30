@@ -49,7 +49,8 @@ window.createWikiRouter = function createWikiRouter(options) {
           if (!current()) return;
           const item = hash === 'five-boss' ? directory.items.find((entry) => entry.legacyGuide === 'five-boss')
             : directory.items.find((entry) => entry.id === parts[1]);
-          if (item || hash === 'five-boss') {
+          const isSeries = directory.items.some((entry) => entry.seriesId && entry.seriesId === parts[1]);
+          if (item || isSeries || hash === 'five-boss') {
             await Promise.all([window.WFWikiData.loadEquipment(),
               ...(hash === 'five-boss' || item?.legacyGuide === 'five-boss' ? [window.WFWikiData.loadBossGuide()] : [])]);
           }

@@ -140,6 +140,15 @@ test('new five-boss detail and old link both load the complete boss guide and te
   }
 });
 
+test('series details load team equipment without requesting the unrelated five-boss guide', async () => {
+  const x=router(), pending=x.go('#dungeons/series-machina');
+  x.requests.dungeons.resolve({items:[{id:'boss-1-60',seriesId:'series-machina'}]});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.ok(x.requests.equipment);assert.equal(x.requests.boss,undefined);assert.deepEqual(x.rendered,[]);
+  x.requests.equipment.resolve([]);await pending;
+  assert.deepEqual(x.rendered,['dungeons/series-machina']);
+});
+
 test('leaving a pending dungeon catalogue never starts its later equipment or boss reads', async () => {
   const x=router(),pending=x.go('#five-boss');await x.go('#');
   x.requests.dungeons.resolve({items:[{id:'boss-1-99',legacyGuide:'five-boss'}]});await pending;
