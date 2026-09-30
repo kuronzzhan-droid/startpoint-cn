@@ -38,7 +38,7 @@ function setup(handler,options={}) {
   const fetcher=async(url,init)=>{calls.push({url,...init}); return handler ? handler(url,init,{data,item}) :
     response(url.endsWith('/config')?{enabled:true}:url.endsWith('/me')?{id:'trusted',email:'admin@example.test',role:options.role||'editor'}:{items:[item],nextCursor:''});};
   const window={WFCommunity:community,location:{protocol:options.protocol||'https:',hostname:options.hostname||'wiki.example'},fetch:fetcher,
-    WFWikiData:{loadEquipment:async()=>data.equipment}, confirm:options.confirm || (()=>true)};
+    WFWikiData:{loadEquipment:async()=>data.equipment}, WFCommunityAdminConfirm:{ask:options.confirm || (()=>Promise.resolve(true))}};
   const context={window,AbortController,setTimeout,clearTimeout,URLSearchParams};
   for (const file of ['community-game-codes.js','community-admin-cards.js','community-admin-editor.js']) vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki',file),'utf8'),context);
   vm.runInNewContext(source,context);
@@ -277,7 +277,7 @@ test('pending confirmation and slow deletion block editor, new-team and list swi
     const count=x.calls.length;let prevented=0;
     await secondEdit.click();await button(x.host,'刷新列表').click();await button(x.host,'继续加载 / 重试').click();
     await button(x.host,'我的空间').click();
-    newTeam.events.click({preventDefault(){prevented++;}});home.events.click({preventDefault(){prevented++;}});
+    await newTeam.events.click({preventDefault(){prevented++;}});await home.events.click({preventDefault(){prevented++;}});
     assert.equal(one(x.host,'admin-edit-form'),original);assert.equal(original.isConnected,true);
     assert.equal(x.calls.length,count);assert.equal(prevented,2);assert.equal(imports,0);
     assert.match(one(x.host,'admin-notice').textContent,/正在处理队伍操作/);
@@ -304,8 +304,9 @@ test('returning to the community preserves dirty edits when leaving is declined'
   let accepted=false;const x=setup(null,{confirm:()=>accepted});await x.start();await button(x.host,'编辑队伍').click();
   const form=one(x.host,'admin-edit-form'),notes=form.all(n=>n.tag==='textarea')[0];notes.value='未保存';
   const home=x.host.all(n=>n.tag==='a'&&n.href==='#community')[0];let prevented=0;
-  home.events.click({preventDefault(){prevented++;}});assert.equal(prevented,1);assert.equal(form.isConnected,true);assert.equal(notes.value,'未保存');
-  accepted=true;home.events.click({preventDefault(){prevented++;}});assert.equal(prevented,1);
+  await home.events.click({preventDefault(){prevented++;}});assert.equal(prevented,1);assert.equal(form.isConnected,true);assert.equal(notes.value,'未保存');
+  assert.equal(x.window.location.hash,undefined);
+  accepted=true;await home.events.click({preventDefault(){prevented++;}});assert.equal(prevented,2);assert.equal(x.window.location.hash,'#community');
 });
 
 test('authorized admin cards show valid private codes while public readonly still excludes them',async()=>{
@@ -331,4 +332,39 @@ test('malformed or unrelated deletion receipts preserve the card and request ver
     assert.equal(x.calls.filter(call=>call.url.includes('/admin/teams?')).length,1);
     assert.equal(one(x.host,'community-admin').inert,false);
   }
+});
+
+test('registered navigation guard protects drafts and delegates new-team preparation once',async()=>{
+  let guard,allowed=false,imports=0;const navigated=[],x=setup(null,{confirm:()=>allowed});
+  x.window.WFNavigationGuard={register(value){guard=value;},async navigate(hash,before){if(await guard.canLeave()){before?.();navigated.push(hash);}}};
+  x.window.WFTeamImport={load:()=>{imports++;}};
+  await x.start();assert.equal(guard.needsProtection(),false);await button(x.host,'编辑队伍').click();
+  const form=one(x.host,'admin-edit-form');form.all(n=>n.tag==='textarea')[0].value='草稿';assert.equal(guard.needsProtection(),true);
+  const create=x.host.all(n=>n.tag==='a'&&n.href==='#team')[0];assert.equal(create.attributes['data-navigation-guard'],'custom');
+  await create.events.click({preventDefault(){}});assert.equal(imports,0);assert.equal(form.isConnected,true);
+  allowed=true;await create.events.click({preventDefault(){}});assert.equal(imports,1);assert.deepEqual(navigated,['#team']);
+  x.host.replaceChildren();assert.equal(guard.isActive(),false);
+});
+
+test('game-code requests lock saving and navigation until the server response arrives',async()=>{
+  let finish;const x=setup((url,init,{item})=>init.method==='POST'?new Promise(resolve=>{finish=resolve;}):
+    response(url.endsWith('/config')?{enabled:true}:url.endsWith('/me')?{id:'trusted',email:'a@b.test'}:{items:[item]}));
+  await x.start();await button(x.host,'编辑队伍').click();const form=one(x.host,'admin-edit-form');
+  const pending=button(form,'公开队伍码').click();assert.equal(form.isBusy(),true);assert.equal(button(form,'保存修改').disabled,true);
+  form.all(n=>n.tag==='textarea')[0].value='新修改';await form.events.submit({preventDefault(){}});
+  assert.equal(x.calls.filter(call=>call.method==='PATCH').length,0);assert.equal(await form.canClose(),false);
+  finish(response({teamRevision:4,active:true,gameCode:'H4QUDN7W5R22'}));await pending;
+  assert.equal(form.isBusy(),false);assert.equal(button(form,'保存修改').disabled,false);assert.equal(form.isDirty(),true);
+});
+
+test('account controls preserve rejected drafts and lock new editors during account requests',async()=>{
+  let actions,accepted=false,guard;const x=setup((url,init,{item})=>response(url.endsWith('/config')?{enabled:true,authMode:'password'}:{items:[item]}),{confirm:()=>accepted});
+  x.window.WFCommunityAuth={ensure:async()=>({id:'trusted',email:'a@b.test',role:'owner'}),controls:(_host,_id,_ui,_refresh,options)=>{actions=options;}};
+  x.window.WFNavigationGuard={register(value){guard=value;}};
+  await x.start();await button(x.host,'编辑队伍').click();const form=one(x.host,'admin-edit-form');form.all(n=>n.tag==='textarea')[0].value='草稿';
+  assert.equal(await actions.beforeAction(),false);assert.equal(form.isConnected,true);
+  accepted=true;assert.equal(await actions.beforeAction(),true);assert.equal(form.isConnected,false);
+  actions.onBusyChange(true);assert.equal(guard.needsProtection(),true);assert.equal(await guard.canLeave(),false);
+  await button(x.host,'编辑队伍').click();assert.equal(one(x.host,'admin-edit-form'),undefined);
+  actions.onBusyChange(false);await button(x.host,'编辑队伍').click();assert.ok(one(x.host,'admin-edit-form'));
 });

@@ -28,11 +28,12 @@
     const request = (path, body, method = body ? 'PATCH' : 'GET') => C.client ? C.client.request(path, body, method) : fallback(path, body, method);
     const page = el('section', 'community-admin'), header = el('header', 'admin-header');
     const home = el('a', 'back-button', '‹ 返回配队社区'); home.href = '#community';
-    home.addEventListener('click', (event) => {if (!allowLeave()) event.preventDefault();});
+    home.setAttribute('data-navigation-guard','custom');
+    home.addEventListener('click', (event) => {event.preventDefault(); return navigate('#community');});
     const create = el('a', 'primary-button', '＋ 新建队伍'); create.href = '#team';
+    create.setAttribute('data-navigation-guard','custom');
     create.addEventListener('click', (event) => {
-      if (!allowLeave()) {event.preventDefault(); return;}
-      window.WFTeamImport?.load(C.teamCopy(), '新队伍');
+      event.preventDefault(); return navigate('#team', () => window.WFTeamImport?.load(C.teamCopy(), '新队伍'));
     });
     header.append(el('h1', '', '队伍管理'), home, create);
     const notice = el('p', 'admin-notice', '正在验证管理员身份…'); notice.setAttribute('role', 'status');
@@ -41,13 +42,24 @@
     editorHost.hidden = true; layout.append(listHost, editorHost); page.append(header, account, authHost, notice, controls, layout);
     host.replaceChildren(page);
     let config, identity, serial = 0, nextCursor = '', statusFilter, categoryFilter, sectionFilter, scopeFilter, codeFilter, search, more;
-    let currentForm, loading = false, mutating = false, debounce, avatars;
+    let currentForm, loading = false, mutating = false, authBusy = false, debounce, avatars;
     const tabs = [];
-    function canSwitch() {
-      if (mutating) notice.textContent = '正在处理队伍操作，请稍候再切换。';
-      return !mutating;
+    window.WFNavigationGuard?.register({isActive:() => page.isConnected, canLeave:allowLeave,
+      needsProtection:() => mutating || authBusy || Boolean(currentForm?.isConnected && (currentForm.isDirty?.() || currentForm.isBusy?.()))});
+    async function navigate(hash, before) {
+      if (window.WFNavigationGuard) return window.WFNavigationGuard.navigate(hash,before);
+      if (await allowLeave()) {before?.(); window.location.hash = hash;}
     }
-    function allowLeave() {return canSwitch() && (!currentForm || !currentForm.isConnected || !currentForm.canClose || currentForm.canClose());}
+    function canSwitch() {
+      if (mutating || authBusy) notice.textContent = `正在处理${authBusy ? '账号' : '队伍'}操作，请稍候再切换。`;
+      return !mutating && !authBusy;
+    }
+    async function allowLeave() {
+      if (!canSwitch()) return false;
+      const form = currentForm;
+      const allowed = !form || !form.isConnected || !form.canClose || await form.canClose();
+      return allowed && canSwitch() && currentForm === form && page.isConnected;
+    }
     function closeEditor() {currentForm = null; editorHost.replaceChildren(); editorHost.hidden = true; controls.hidden = false;}
     function button(label, action, cls = 'secondary-button') {
       const node = el('button', cls, label); node.type = 'button'; node.addEventListener('click', action); return node;
@@ -61,14 +73,15 @@
       values.forEach(([value, label]) => {const option = el('option', '', label); option.value = value; node.append(option);});
       node.value = current; return node;
     }
-    function edit(item, bypass = false) {
+    async function edit(item, bypass = false) {
       if (!canSwitch()) return;
-      if (!bypass && !allowLeave()) return;
+      if (!bypass && !await allowLeave()) return;
+      if (!canSwitch()) return;
       if (!window.WFCommunityAdminEditor) {notice.textContent = '编辑模块未加载，请刷新页面。'; return;}
       const form = window.WFCommunityAdminEditor.create({item, identity, config, data, ui, request,
         onClose: () => {if (canSwitch()) closeEditor();}, onReload: () => load(false),
         onSaved: async (saved) => {await load(false, true); if (!page.isConnected) return;
-          edit(saved, true); notice.textContent = `已保存「${saved.title}」，当前版本 ${saved.revision}。`;}});
+          await edit(saved, true); notice.textContent = `已保存「${saved.title}」，当前版本 ${saved.revision}。`;}});
       currentForm = form;
       editorHost.replaceChildren(form); editorHost.hidden = false; controls.hidden = true;
       editorHost.scrollIntoView?.({block:'start'});
@@ -78,13 +91,14 @@
         onDelete: item => mutate(item, false), onRestore: item => mutate(item, true)});
     }
     async function mutate(item, restore) {
-      if (mutating || loading || !allowLeave()) return;
+      if (mutating || loading || !await allowLeave() || mutating || loading) return;
       const question = restore ? `恢复「${item.title}」？\n${item.visibility === 'private' ? '恢复到创建者的个人空间。' : '恢复后会重新显示在配队大全。'}旧队伍码不会恢复，需要重新公开。`
         : `删除「${item.title}」？\n队伍会移到回收站，可随时恢复；大全和副本推荐中不再展示，已公开的队伍码立即失效。`;
       const previousNotice = notice.textContent;
       mutating = true; page.setAttribute('aria-busy','true');
       try {
-        const confirmed = await (window.WFCommunityAdminConfirm ? window.WFCommunityAdminConfirm.ask(question,{restore}) : Promise.resolve(window.confirm?.(question)));
+        if (!window.WFCommunityAdminConfirm) throw new Error('确认模块未加载，请刷新页面后重试。');
+        const confirmed = await window.WFCommunityAdminConfirm.ask(question,{restore});
         if (!page.isConnected) return;
         if (!confirmed) {notice.textContent = previousNotice; return;}
         page.inert = true;
@@ -106,7 +120,8 @@
     }
     async function load(append, bypass = false) {
       if (!bypass && !canSwitch()) return;
-      if (!append && !bypass && !allowLeave()) return;
+      if (!append && !bypass && !await allowLeave()) return;
+      if (!bypass && !canSwitch()) return;
       clearTimeout(debounce);
       const ticket = ++serial; more.disabled = true;
       loading = true;
@@ -146,7 +161,10 @@
         if (!identity.id || !identity.email) throw new Error('未取得有效管理员身份，请重新登录。');
         const prefix = config.authMode === 'password' ? (config.development ? '本机账号' : '已登录') : (config.development ? '本机测试身份' : '已验证管理员');
         account.textContent = `${prefix} · ${identity.email}${identity.role === 'owner' ? ' · 站长' : identity.role === 'deputy' ? ' · 副站长' : ''}`;
-        if (config.authMode === 'password') window.WFCommunityAuth.controls(authHost, identity, ui, start);
+        if (config.authMode === 'password') window.WFCommunityAuth.controls(authHost, identity, ui, start, {
+          beforeAction:async () => {if (!await allowLeave()) return false; closeEditor(); return true;},
+          onBusyChange:value => {authBusy = value;},
+        });
         await window.WFWikiData?.loadEquipment();
         if (!page.isConnected) return;
         create.hidden = false; controls.hidden = false; layout.hidden = false;
@@ -164,7 +182,7 @@
         more = button('继续加载 / 重试', () => load(true), 'secondary-button community-more'); more.hidden = true;
         const spaces = el('div', 'admin-space-tabs'); spaces.setAttribute('role','group'); spaces.setAttribute('aria-label','队伍保存位置'); tabs.length = 0;
         [['all','approved','全部队伍'],['public','approved','配队大全'],['mine','approved','我的空间'],['all','hidden','回收站']].forEach(([scope,status,label]) => {
-          const node = button(label, () => {if (!allowLeave()) return; scopeFilter.value = scope; statusFilter.value = status; return load(false, true);}, 'admin-space-tab');
+          const node = button(label, async () => {if (!await allowLeave() || !canSwitch()) return; scopeFilter.value = scope; statusFilter.value = status; return load(false, true);}, 'admin-space-tab');
           tabs.push({node,scope,status}); spaces.append(node);
         });
         search = el('input'); search.type = 'search'; search.maxLength = 80; search.placeholder = '搜索队伍名称、作者或队伍码'; search.setAttribute('aria-label','搜索已保存队伍');
@@ -180,7 +198,7 @@
         await load(false);
         if (initialTarget?.id && page.isConnected) {
           const result = await request(`/admin/teams/${encodeURIComponent(initialTarget.id)}`);
-          if (page.isConnected && result.team) edit(result.team);
+          if (page.isConnected && result.team) await edit(result.team);
         }
       } catch (error) {
         if (!page.isConnected) return;

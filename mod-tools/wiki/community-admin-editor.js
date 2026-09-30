@@ -25,7 +25,7 @@
     const canPrivatize = ['owner','deputy'].includes(identity?.role) || Boolean(item.createdBy && item.createdBy === identity?.id);
     const privateLabel = item.createdBy === identity?.id ? '我的空间（私有）' : item.createdBy ? '创建者的私有空间' : '私有（仅站长及副站长）';
     const visibility = select([['public','配队大全（公开）'], ...(canPrivatize || item.visibility === 'private' ? [['private',privateLabel]] : [])], item.visibility || 'public');
-    const heading = el('div', 'admin-edit-heading'); heading.append(el('h2', '', `编辑：${item.title}`), button('关闭编辑', () => {if (form.canClose()) onClose();}));
+    const heading = el('div', 'admin-edit-heading'); heading.append(el('h2', '', `编辑：${item.title}`), button('关闭编辑', async () => {if (await form.canClose() && form.isConnected) onClose();}));
     const preview = el('div', 'admin-edit-preview'); preview.setAttribute('aria-label', '当前角色与装备预览');
     const names = el('div', 'admin-edit-names'); names.append(field('队伍标题', title), field('投稿者署名', author));
     form.append(heading, el('p', 'admin-version', `当前版本 ${revision} · 保存时自动检查版本`), preview, names);
@@ -88,15 +88,25 @@
         category:category.value,section:section.value,visibility:visibility.value,status:status.value,
         damageTypes:checks.filter((check) => check.checked).map((check) => check.value)};
     }
-    let saved = JSON.stringify(values()), busy = false, conflict = false, previewSnapshot = '';
+    let saved = JSON.stringify(values()), busy = false, conflict = false, previewSnapshot = '', closeRequest;
     form.isDirty = () => JSON.stringify(values()) !== saved;
+    form.isBusy = () => busy || Boolean(closeRequest) || Boolean(manager?.isBusy?.());
     form.canClose = () => {
-      if (busy) {warning.textContent = '正在保存，请稍候再关闭编辑。'; return false;}
-      return !form.isDirty() || Boolean(window.confirm?.('还有未保存的修改，确定放弃修改并离开编辑吗？'));
+      if (closeRequest) return closeRequest;
+      if (form.isBusy()) {warning.textContent = '正在保存或处理队伍码，请稍候再关闭编辑。'; return Promise.resolve(false);}
+      if (!form.isDirty()) return Promise.resolve(true);
+      if (!window.WFCommunityAdminConfirm) {warning.textContent = '确认模块未加载，修改仍保留，请稍后重试。'; return Promise.resolve(false);}
+      const snapshot = JSON.stringify(values());
+      closeRequest = Promise.resolve(window.WFCommunityAdminConfirm.ask('还有未保存的修改，放弃后将无法恢复。',
+        {title:'放弃未保存的修改？',confirmLabel:'放弃修改',cancelLabel:'继续编辑'}))
+        .then(accepted => Boolean(accepted) && !busy && snapshot === JSON.stringify(values()))
+        .finally(() => {closeRequest = null;});
+      return closeRequest;
     };
     const blocked = () => conflict ? '版本冲突，请重新加载队伍后再公开队伍码。' : busy ? '正在保存，请稍候。'
       : form.isDirty() ? '还有未保存的修改，请先保存后再公开队伍码。' : '';
-    const manager = window.WFCommunityGameCodes?.controls(item,ui,request,{mutationBlocked:blocked});
+    const manager = window.WFCommunityGameCodes?.controls(item,ui,request,{mutationBlocked:blocked,
+      onBusyChange:() => {save.disabled = busy || conflict || Boolean(manager?.isBusy?.());}});
     function update() {
       dirtyStatus.textContent = blocked(); manager?.refreshAvailability();
       const current = values().team, snapshot = JSON.stringify(current); if (snapshot === previewSnapshot) return;
@@ -128,6 +138,7 @@
     update();
     form.addEventListener('submit', async (event) => {
       event.preventDefault(); if (busy || conflict) return;
+      if (closeRequest || manager?.isBusy?.()) {warning.textContent = '请先完成当前确认或队伍码操作，再保存修改。'; return;}
       const next = values(), invalid = !next.title ? '请填写队伍标题。' : !next.damageTypes.length ? '请至少选择一种伤害分类。'
         : (!C.teamCategories.includes(next.category) && (item.category || next.category)) ? '请选择有效的配队分类。'
         : !Object.hasOwn(C.teamSections,next.section) ? '请选择有效的玩法分区。'

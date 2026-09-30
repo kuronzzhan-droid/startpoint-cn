@@ -131,6 +131,29 @@ test('logout only clears administrator content after server confirms invalidatio
   reject = false; await button(x.host, '退出登录').fire('click');
   assert.ok(button(x.host, '登录')); assert.equal(button(x.host, '管理员账号'), undefined);
 });
+
+test('declined account actions never log out, replace settings, or refresh the edited page',async()=>{
+  let refreshed=0,checked=0;const x=setup(()=>({ok:true}));
+  x.A.controls(x.host,owner,x.ui,()=>{refreshed++;},{beforeAction:async()=>{checked++;return false;}});
+  for(const label of ['修改密码','退出登录','管理员账号'])await button(x.host,label).fire('click');
+  assert.equal(checked,3);assert.equal(x.calls.length,0);assert.equal(refreshed,0);assert.equal(form(x.host),undefined);
+});
+
+test('password form checks newly edited drafts again before submitting, cancelling or logging out',async()=>{
+  let allowed=true,done=0;const x=setup(()=>({ok:true}));
+  x.A.controls(x.host,owner,x.ui,()=>{done++;},{beforeAction:async()=>allowed});await button(x.host,'修改密码').fire('click');
+  find(x.host,'当前密码').value=secret;find(x.host,'新密码').value=`${secret}-new`;find(x.host,'确认新密码').value=`${secret}-new`;
+  allowed=false;await form(x.host).fire('submit');await button(x.host,'取消修改').fire('click');
+  const nestedLogout=form(x.host).all(n=>n.tag==='button'&&n.textContent==='退出登录')[0];await nestedLogout.fire('click');
+  assert.equal(x.calls.length,0);assert.equal(done,0);assert.ok(form(x.host));
+});
+
+test('account request busy state lasts until the response and ends before refreshing the page',async()=>{
+  let finish;const state=[],x=setup(()=>new Promise(resolve=>{finish=resolve;}));
+  x.A.controls(x.host,owner,x.ui,()=>{state.push('refresh');},{onBusyChange:value=>state.push(value)});
+  const pending=button(x.host,'退出登录').fire('click');await new Promise(setImmediate);assert.deepEqual(state,[true]);
+  finish({ok:true});await pending;assert.deepEqual(state,[true,false,'refresh']);
+});
 test('owner account creation uses server returned identity and clears temporary password', async () => {
   let created = false;
   const x = setup((url, body, method) => {

@@ -37,7 +37,7 @@
   function adminReadonly(item, ui, options) {
     return item.status === 'approved' && validCode(item.gameCode) ? codeView(item.gameCode,ui,options) : null;
   }
-  function controls(item, ui, request, {mutationBlocked = () => ''} = {}) {
+  function controls(item, ui, request, {mutationBlocked = () => '', onBusyChange = () => {}} = {}) {
     const {el} = ui, section = el('details', 'community-game-code-manager');
     section.append(el('summary', '', '游戏队伍码管理'));
     const status = el('p', 'community-game-code-status'); status.setAttribute('role', 'status');
@@ -76,7 +76,7 @@
       if (operation !== 'refresh' && mutationBlocked()) {paint(); return;}
       if (operation === 'make' && item.status !== 'approved') {status.textContent = '已隐藏或停用的队伍不能公开队伍码。'; return;}
       if (operation !== 'refresh' && !Number.isSafeInteger(state.teamRevision)) {status.textContent = '队伍版本缺失，请重新加载管理列表。'; return;}
-      busy = true; paint(); status.textContent = '正在读取服务端游戏码…';
+      busy = true; onBusyChange(); paint(); status.textContent = '正在读取服务端游戏码…';
       try {
         const result = await request(operation === 'revoke' ? `${base}/revoke` : base,
           operation === 'refresh' ? undefined : {expectedRevision: state.teamRevision}, operation === 'refresh' ? 'GET' : 'POST');
@@ -87,15 +87,16 @@
             : state.active ? '这是服务端保存的有效游戏码。' : '尚无队伍码。点击“公开队伍码”后才能分享给游戏玩家。';
       } catch (error) {
         if (!section.isConnected) return;
-        conflict = error.code === 'edit_conflict';
+        conflict = conflict || error.code === 'edit_conflict';
         if (conflict) {preview.replaceChildren(); state.active = false; item.gameCode = null;}
         status.textContent = conflict ? '队伍已被修改，请重新加载管理列表后操作。' : root.WFCommunity.message(error);
-      } finally {busy = false; if (section.isConnected) paint();}
+      } finally {busy = false; if (section.isConnected) {paint(); onBusyChange();}}
     }
     section.addEventListener('toggle', () => {if (section.open && !loaded) run('refresh');});
     make.addEventListener('click', () => run('make')); revoke.addEventListener('click', () => run('revoke'));
     refresh.addEventListener('click', () => run('refresh')); paint();
     section.refreshAvailability = paint;
+    section.isBusy = () => busy;
     return section;
   }
   const api = {validCode, publicCode, readonly, adminReadonly, controls}; root.WFCommunityGameCodes = api;

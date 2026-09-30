@@ -101,3 +101,10 @@ test('detached management panels ignore late generation results',async()=>{
   resolve({gameCode:code,active:true,teamRevision:3});await pending;
   assert.equal(x.item.gameCode,null);assert.equal(x.section.all('input').length,0);
 });
+
+test('a network failure after a revision conflict cannot re-enable stale code mutations',async()=>{
+  let calls=0;const x=manager(async()=>{if(++calls===1)return {gameCode:code,active:true,teamRevision:4};throw new Error('网络失败');});
+  await x.open();assert.equal(button(x.section,'公开队伍码').disabled,true);
+  await button(x.section,'刷新状态').click();assert.equal(button(x.section,'公开队伍码').disabled,true);
+  assert.equal(button(x.section,'停用游戏码').disabled,true);assert.equal(x.section.all('input').length,0);
+});

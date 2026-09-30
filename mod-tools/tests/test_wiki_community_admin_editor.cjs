@@ -25,7 +25,7 @@ function setup({confirm,request,board,pictures=true}={}) {
     equipment:[{id:'w1',name:'武器一',icon:'w1.png',soul:{available:true}},{id:'w2',name:'武器二',icon:'w2.png',soul:{available:true}}]};
   const item={id:'plate',title:'原标题',author:'作者',notes:'说明',revision:4,category:'玩具盘',section:'',visibility:'public',status:'approved',createdBy:'owner',
     element:'火',damageTypes:['skill'],team:{main:['c1','c2','c3'],unison:['c4','c5','c6'],weapon:['w1','',''],soul:['w1','','']}};
-  const images=[],frames=[],saved=[],window={WFCommunity:{...community,...(board?{board}: {})},confirm,
+  const images=[],frames=[],saved=[],window={WFCommunity:{...community,...(board?{board}: {})},...(confirm?{WFCommunityAdminConfirm:{ask:confirm}}:{}),
     WFCatalogAvatars:{getForm:()=> 'after'},WFCharacterFrame:{apply:(node,entry)=>{frames.push(entry.id);node.setAttribute('data-frame',entry.id);}}};
   const ui={el,...(pictures?{picture:(url,alt,cls)=>{images.push({url,alt});const node=el('img',cls);node.src=url;node.alt=alt;return node;}}:{})};
   vm.runInNewContext(source,{window});let closed=0;
@@ -63,35 +63,35 @@ test('slot selection immediately refreshes portrait and preview without changing
   assert.equal(x.form.isDirty(),true);assert.equal(JSON.stringify(x.item),before);
 });
 
-test('closing a clean editor is immediate, but dirty edits survive a cancelled confirmation',()=>{
+test('closing a clean editor is immediate, but dirty edits survive a cancelled confirmation',async()=>{
   let answer=false,confirmations=0;
   const x=setup({confirm:()=>{confirmations++;return answer;}});
-  button(x.form,'关闭编辑').events.click();assert.equal(x.closed(),1);assert.equal(confirmations,0);
+  await button(x.form,'关闭编辑').events.click();assert.equal(x.closed(),1);assert.equal(confirmations,0);
   const title=control(x.form,'队伍标题');title.value='新标题';
-  button(x.form,'关闭编辑').events.click();assert.equal(x.closed(),1);assert.equal(title.value,'新标题');
-  answer=true;button(x.form,'关闭编辑').events.click();assert.equal(x.closed(),2);assert.equal(confirmations,2);
+  await button(x.form,'关闭编辑').events.click();assert.equal(x.closed(),1);assert.equal(title.value,'新标题');
+  answer=true;await button(x.form,'关闭编辑').events.click();assert.equal(x.closed(),2);assert.equal(confirmations,2);
 });
 
-test('dirty guards use normalized saved values and never discard edits when confirmation is unavailable',()=>{
+test('dirty guards use normalized saved values and never discard edits when confirmation is unavailable',async()=>{
   const x=setup({pictures:false});
   control(x.form,'队伍标题').value='  原标题  ';control(x.form,'搜索主位 1').value='别名';
-  assert.equal(x.form.isDirty(),false);assert.equal(x.form.canClose(),true);
-  control(x.form,'队伍说明').value='改动说明';assert.equal(x.form.canClose(),false);
+  assert.equal(x.form.isDirty(),false);assert.equal(await x.form.canClose(),true);
+  control(x.form,'队伍说明').value='改动说明';assert.equal(await x.form.canClose(),false);
   assert.equal(one(x.form,'admin-edit-preview').all((n)=>n.tag==='img').length,0);
 });
 
 test('in-flight saves cannot close and successful saves establish a clean form snapshot',async()=>{
   let finish,confirmations=0;const x=setup({confirm:()=>{confirmations++;return true;},request:()=>new Promise((resolve)=>{finish=resolve;})});
   control(x.form,'队伍标题').value='新标题';const pending=x.form.events.submit({preventDefault(){}});
-  assert.equal(x.form.canClose(),false);assert.equal(confirmations,0);assert.equal(button(x.form,'保存修改').disabled,true);
+  assert.equal(await x.form.canClose(),false);assert.equal(confirmations,0);assert.equal(button(x.form,'保存修改').disabled,true);
   finish({team:{...x.item,title:'新标题',revision:5}});await pending;
-  assert.equal(x.saved.length,1);assert.equal(x.form.isDirty(),false);assert.equal(x.form.canClose(),true);
+  assert.equal(x.saved.length,1);assert.equal(x.form.isDirty(),false);assert.equal(await x.form.canClose(),true);
 });
 
 test('save conflicts keep typed changes and dirty close protection',async()=>{
   const x=setup({confirm:()=>false,request:async()=>{throw Object.assign(new Error('conflict'),{code:'edit_conflict'});}});
   control(x.form,'队伍说明').value='冲突时保留';await x.form.events.submit({preventDefault(){}});
-  assert.equal(x.form.isDirty(),true);assert.equal(x.form.canClose(),false);assert.equal(control(x.form,'队伍说明').value,'冲突时保留');
+  assert.equal(x.form.isDirty(),true);assert.equal(await x.form.canClose(),false);assert.equal(control(x.form,'队伍说明').value,'冲突时保留');
   assert.equal(button(x.form,'保存修改').disabled,true);assert.match(one(x.form,'admin-edit-status').textContent,/其他管理员修改/);
 });
 
@@ -102,4 +102,19 @@ test('malformed or unrelated save receipts never clear edits or report a saved r
     assert.equal(x.saved.length,0);assert.equal(x.form.isDirty(),true);assert.equal(button(x.form,'保存修改').disabled,false);
     assert.match(one(x.form,'admin-edit-status').textContent,/未返回更新版本/);
   }
+});
+
+test('one asynchronous discard confirmation protects repeated close requests and rejects changed inputs',async()=>{
+  let answer,calls=0;const x=setup({confirm:()=>{calls++;return new Promise(resolve=>{answer=resolve;});}});
+  control(x.form,'队伍说明').value='请求确认的修改';
+  const first=x.form.canClose(),second=x.form.canClose();assert.equal(first,second);assert.equal(calls,1);assert.equal(x.form.isBusy(),true);
+  control(x.form,'队伍说明').value='确认后又出现的修改';answer(true);
+  assert.equal(await first,false);assert.equal(x.form.isBusy(),false);assert.equal(x.form.isDirty(),true);
+});
+
+test('expired sessions and network failures retain editable drafts for a later retry',async()=>{
+  let attempts=0;const x=setup({request:async()=>{if(++attempts===1)throw Object.assign(new Error('登录已失效'),{status:401});return {team:{...x.item,revision:5}};}});
+  control(x.form,'队伍说明').value='保留我的草稿';await x.form.events.submit({preventDefault(){}});
+  assert.equal(x.form.isDirty(),true);assert.equal(control(x.form,'队伍说明').value,'保留我的草稿');assert.equal(button(x.form,'保存修改').disabled,false);
+  await x.form.events.submit({preventDefault(){}});assert.equal(x.saved.length,1);assert.equal(x.form.isDirty(),false);
 });

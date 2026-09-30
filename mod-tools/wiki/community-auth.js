@@ -59,7 +59,7 @@
     };
     return {form, status, add, submit, clear, cleanup, cleanups};
   }
-  function password(host, identity, ui, done) {
+  function password(host, identity, ui, done, {beforeAction = () => true, onBusyChange = () => {}} = {}) {
     const box = mount(host, ui, identity.mustChangePassword ? '首次登录：修改临时密码' : '修改登录密码');
     box.form.append(ui.el('p', 'muted', '新密码为 8–128 个字符。修改成功后使用新密码继续登录。'));
     const current = box.add('当前密码', 'password', 'current-password');
@@ -68,12 +68,20 @@
       if (next.value.length < 8 || next.value.length > 128) {box.status.textContent = messages.invalid_password; return;}
       if (next.value !== confirm.value) {box.status.textContent = '两次输入的新密码不一致。'; return;}
       if (next.value === current.value) {box.status.textContent = messages.same_password; return;}
-      await request('/auth/password', {currentPassword:current.value, newPassword:next.value}, 'POST');
+      if (!await beforeAction()) {box.status.textContent = '已取消操作，队伍修改仍保留。'; return;}
+      onBusyChange(true);
+      try {await request('/auth/password', {currentPassword:current.value, newPassword:next.value}, 'POST');}
+      finally {onBusyChange(false);}
       box.cleanup(); await done();
     });
-    if (!identity.mustChangePassword) box.form.append(button(ui, '取消修改', async () => {box.cleanup(); await done();}));
+    if (!identity.mustChangePassword) box.form.append(button(ui, '取消修改', async () => {if (await beforeAction()) {box.cleanup(); await done();}}));
     box.form.append(button(ui, '退出登录', async () => {
-      try {await request('/auth/logout', {}, 'POST'); box.cleanup(); await done();}
+      if (!await beforeAction()) return;
+      try {
+        onBusyChange(true);
+        try {await request('/auth/logout', {}, 'POST');} finally {onBusyChange(false);}
+        box.cleanup(); await done();
+      }
       catch (error) {box.status.textContent = message(error);}
     }));
   }
@@ -118,15 +126,21 @@
     if (identity.mustChangePassword) {password(host, identity, ui, ready); return null;}
     return identity;
   }
-  function controls(host, identity, ui, refresh) {
+  function controls(host, identity, ui, refresh, {beforeAction = () => true, onBusyChange = () => {}} = {}) {
     host.authCleanup?.(); host.replaceChildren();
     const actions = ui.el('div', 'community-auth-actions'), status = ui.el('p', 'community-auth-status'); status.setAttribute('role', 'status');
     const settings = ui.el('div');
-    actions.append(button(ui, '修改密码', () => password(settings, identity, ui, refresh)), button(ui, '退出登录', async () => {
-      try {await request('/auth/logout', {}, 'POST'); host.authCleanup?.(); settings.authCleanup?.(); await refresh();}
+    actions.append(button(ui, '修改密码', async () => {if (await beforeAction()) password(settings, identity, ui, refresh,{beforeAction,onBusyChange});}), button(ui, '退出登录', async () => {
+      if (!await beforeAction()) return;
+      try {
+        onBusyChange(true);
+        try {await request('/auth/logout', {}, 'POST');} finally {onBusyChange(false);}
+        host.authCleanup?.(); settings.authCleanup?.(); await refresh();
+      }
       catch (error) {status.textContent = message(error);}
     }));
     if (['owner','deputy'].includes(identity.role) && window.WFCommunityAccounts) actions.append(button(ui, '管理员账号', async () => {
+      if (!await beforeAction()) return;
       settings.authCleanup?.(); await window.WFCommunityAccounts.render(settings, ui, identity);
     }));
     host.append(actions, status, settings);
