@@ -12,7 +12,7 @@ from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from wf_wiki_pixel_output import digest
-from wf_wiki_public_dungeons import INDEX, MANIFEST, dungeon_plan
+from wf_wiki_public_dungeons import INDEX, MANIFEST, SERIES_VARIANTS, dungeon_plan
 
 
 class DungeonPublicPlanTests(unittest.TestCase):
@@ -145,6 +145,40 @@ class DungeonPublicPlanTests(unittest.TestCase):
         with patch.object(Path, "is_junction", lambda p: p.name == "media"):
             with self.assertRaisesRegex(ValueError, "链接"):
                 dungeon_plan(self.root)
+
+    def test_series_pairs_allow_only_frozen_variants_and_are_included_in_audit(self):
+        value = copy.deepcopy(self.value); item = value["items"][0]
+        del item["legacyGuide"]
+        for identifier, variants in SERIES_VARIANTS.items():
+            for variant in variants:
+                with self.subTest(identifier=identifier, variant=variant):
+                    item.update(seriesId=identifier, variantLabel=variant)
+                    self.write(value)
+                    _, _, audit = dungeon_plan(self.root)
+                    self.assertEqual(audit["series"], {identifier: 1})
+                    self.assertEqual(audit["seriesVariants"], {identifier: {variant: 1}})
+
+    def test_series_fields_are_optional_but_must_be_paired_and_fail_closed(self):
+        _, _, audit = dungeon_plan(self.root)
+        self.assertEqual(audit["series"], {})
+        invalid = [
+            {"seriesId": "series-machina"}, {"variantLabel": "火"},
+            {"seriesId": None, "variantLabel": None},
+            {"seriesId": {}, "variantLabel": "火"},
+            {"seriesId": "series-machina", "variantLabel": []},
+            {"seriesId": "series-new", "variantLabel": "火"},
+            {"seriesId": "series-spirit-beasts", "variantLabel": "无属性"},
+            {"seriesId": "series-gauntlets", "variantLabel": "EX深渊"},
+            {"seriesId": "series-gauntlets", "variantLabel": "无尽"},
+            {"seriesId": "series-machina", "variantLabel": "火", "category": "未知"},
+            {"seriesId": "series-gauntlets", "variantLabel": "幻想连战", "category": "活动"},
+        ]
+        for fields in invalid:
+            with self.subTest(fields=fields):
+                value = copy.deepcopy(self.value); value["items"][0].update(fields)
+                self.write(value)
+                with self.assertRaises(ValueError):
+                    dungeon_plan(self.root)
 
 
 if __name__ == "__main__":

@@ -19,6 +19,12 @@ CATEGORIES = {"活动", "领主战", "降临讨伐", "模式"}
 SOURCE_STATUSES = {"local-snapshot", "mixed-snapshot", "gray-snapshot"}
 ELEMENTS = {"", "火", "水", "雷", "风", "光", "暗", "无"}
 STATS = {"total", "matched", "sameName", "differentName"}
+SERIES_VARIANTS = {
+    "series-gauntlets": {"幻想连战", "普通深渊"},
+    "series-machina": {"火", "水", "雷", "风", "光", "暗", "无属性"},
+    "series-waste-dragons": {"火", "水", "雷", "风", "光", "暗"},
+    "series-spirit-beasts": {"火", "水", "雷", "风", "光", "暗"},
+}
 
 
 def require(condition, message):
@@ -67,6 +73,17 @@ def non_json(value):
     raise ValueError(f"副本 JSON 不支持常量 {value}")
 
 
+def series(item):
+    require(("seriesId" in item) == ("variantLabel" in item), "副本系列与变体字段必须成对提供")
+    if "seriesId" not in item:
+        return None
+    identifier, variant = item["seriesId"], item["variantLabel"]
+    require(isinstance(identifier, str) and identifier in SERIES_VARIANTS
+            and isinstance(variant, str) and variant in SERIES_VARIANTS[identifier], "副本系列或变体不在白名单")
+    require(identifier != "series-gauntlets" or item["category"] == "模式", "连战系列必须属于模式分类")
+    return identifier, variant
+
+
 def dungeon_plan(source_root: Path) -> tuple[list[dict], dict, dict]:
     """Return only the script and verified referenced WebP files, without writes.
 
@@ -86,9 +103,11 @@ def dungeon_plan(source_root: Path) -> tuple[list[dict], dict, dict]:
     items = value["items"]
     require(isinstance(items, list) and 0 < len(items) <= 5000, "副本目录为空或条目过多")
     seen, media, categories, stats = set(), set(), Counter(), Counter()
+    series_counts, series_variants = Counter(), {}
     quest_count = checked_items = 0
     for item in items:
-        shape(item, {"id", "title", "category", "summary", "quests", "banner", "entryImage", "previewImages", "source"}, {"legacyGuide"})
+        shape(item, {"id", "title", "category", "summary", "quests", "banner", "entryImage", "previewImages", "source"},
+              {"legacyGuide", "seriesId", "variantLabel"})
         identifier = item["id"]
         require(isinstance(identifier, str) and len(identifier) <= 80 and IDENTIFIER.fullmatch(identifier)
                 and identifier not in seen, "副本 ID 无效或重复")
@@ -96,6 +115,10 @@ def dungeon_plan(source_root: Path) -> tuple[list[dict], dict, dict]:
         text(item["title"], 500, False); text(item["summary"], 2000)
         require(isinstance(item["category"], str) and item["category"] in CATEGORIES, "副本分类无效")
         categories[item["category"]] += 1
+        grouped = series(item)
+        if grouped:
+            series_counts[grouped[0]] += 1
+            series_variants.setdefault(grouped[0], Counter())[grouped[1]] += 1
         if "legacyGuide" in item:
             require(item["legacyGuide"] == "five-boss" and identifier == "boss-1-99" and item["category"] == "模式",
                     "副本旧版查询入口不在白名单")
@@ -134,6 +157,7 @@ def dungeon_plan(source_root: Path) -> tuple[list[dict], dict, dict]:
         files.append({"path": url, "bytes": len(data), "sha256": file.stem})
         watched[url] = file.stem
     return files, watched, {"items": len(items), "categories": dict(categories), "quests": quest_count,
+                           "series": dict(series_counts), "seriesVariants": {key: dict(counts) for key, counts in series_variants.items()},
                            "questLookupItems": checked_items, "questLookup": dict(stats), "source": value["source"],
                            "images": len(media), "bytes": sum(row["bytes"] for row in files),
                            "publicIndex": INDEX, "manifestExcluded": True, "mediaHashVerified": True}
