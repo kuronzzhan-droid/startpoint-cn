@@ -1,33 +1,21 @@
 import {fail} from './model.mjs';
 import {sign} from './codecs.mjs';
 import {readJSON, rateLimit, visitor} from './security.mjs';
-import {ROW_SCORES} from './tier-ranking-store.mjs';
+import {createParticipationCounter} from './community-stats-counts.mjs';
 
 export const PRESENCE_WINDOW_SECONDS = 120;
 export const PRESENCE_INTERVAL_MS = 30_000;
 const CLEANUP_LIMIT = 100;
+const participationCounts = createParticipationCounter();
 
 export async function communityStats(db, catalog, now) {
-  // Bind the catalogue as one JSON value: its size must not exceed D1's parameter count.
-  // Count people with at least one current vote, never the sum of per-character votes.
-  const result = await db.prepare(`WITH characters AS (SELECT value AS id FROM json_each(?)),
-    rating_visitors AS (SELECT DISTINCT visitor_id FROM community_character_ratings
-      WHERE character_id IN (SELECT id FROM characters)
-        AND typeof(score)='integer' AND score BETWEEN 0 AND 5),
-    tier_visitors AS (SELECT DISTINCT ranking.visitor_id FROM community_tier_rankings AS ranking
-      WHERE EXISTS(SELECT 1
-        FROM json_each(CASE WHEN json_valid(ranking.rows_json) THEN ranking.rows_json ELSE '{}' END) AS tier,
-          json_each(CASE WHEN tier.type='array' THEN tier.value ELSE '[]' END) AS item
-        WHERE tier.key IN (${Object.keys(ROW_SCORES).map((key) => `'${key}'`).join(',')})
-          AND item.type='text' AND item.value IN (SELECT id FROM characters)))
-    SELECT
-      (SELECT COUNT(*) FROM rating_visitors) AS ratingVoters,
-      (SELECT COUNT(*) FROM tier_visitors) AS tierVoters,
-      (SELECT COUNT(*) FROM (SELECT visitor_id FROM rating_visitors UNION SELECT visitor_id FROM tier_visitors)) AS totalVoters,
-      (SELECT COUNT(*) FROM community_presence WHERE last_seen>? AND last_seen<=?) AS onlineVisitors`)
-    .bind(JSON.stringify(Object.keys(catalog.characters)), now - PRESENCE_WINDOW_SECONDS * 1000, now).first();
-  return {ratingVoters:Number(result.ratingVoters), tierVoters:Number(result.tierVoters), totalVoters:Number(result.totalVoters),
-    onlineVisitors:Number(result.onlineVisitors), asOf:new Date(now).toISOString(), presenceWindowSeconds:PRESENCE_WINDOW_SECONDS};
+  const [counts, online] = await Promise.all([
+    participationCounts(db, catalog, now),
+    Promise.resolve().then(() => db.prepare('SELECT COUNT(*) AS onlineVisitors FROM community_presence WHERE last_seen>? AND last_seen<=?')
+      .bind(now - PRESENCE_WINDOW_SECONDS * 1000, now).first())
+  ]);
+  return {...counts, onlineVisitors:Number(online.onlineVisitors),
+    asOf:new Date(now).toISOString(), presenceWindowSeconds:PRESENCE_WINDOW_SECONDS};
 }
 
 export async function recordPresence(db, visitorHash, now) {

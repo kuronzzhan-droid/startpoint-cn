@@ -45,10 +45,12 @@ test('participation counts unique visitors for each valid catalogue source and i
   assert.equal(result.status, 200); assert.equal(result.json.ratingVoters, 2); assert.equal(result.json.tierVoters, 2);
   assert.equal(result.json.totalVoters, 3, 'visitor a belongs to both sources and must count only once');
   app.db.raw.prepare('UPDATE community_tier_rankings SET rows_json=? WHERE visitor_id=?').run('{}', 'a');
+  app.now += 60_000;
   assert.equal((await app.call('/stats')).json.tierVoters, 1);
   const queries = [], counted = {prepare(sql) {queries.push(sql); return app.db.prepare(sql);}};
   assert.equal((await communityStats(counted, fixtureCatalog, app.now)).ratingVoters, 2);
-  assert.equal(queries.length, 1);
+  assert.equal(queries.length, 3);
+  assert.ok(queries.every((sql) => !sql.includes('json_each')));
 });
 
 test('online visitors expire at exactly two minutes even without deletion; future data is excluded', async (t) => {
