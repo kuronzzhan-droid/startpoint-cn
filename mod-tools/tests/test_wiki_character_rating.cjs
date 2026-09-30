@@ -30,9 +30,13 @@ function setup(handler=async()=>unrated,options={}) {
     const challenge={action,resets:0,destroyed:false,token:'',ready(value='one-use'){this.token=value;onChange(true);},take(){const value=this.token;this.token='';onChange(false);return value;},reset(){this.resets++;this.token='';onChange(false);},destroy(){this.destroyed=true;}};
     challenges.push(challenge);return challenge;
   };
-  const window={WFCommunity:C,location:{protocol:options.protocol||'https:'}};vm.runInNewContext(source,{window,Date});
+  const events={},documentEvents={},listeners=[],document={hidden:false,addEventListener(name,action){listeners.push(`document:${name}`);documentEvents[name]=action;}};
+  const window={WFCommunity:C,document,location:{protocol:options.protocol||'https:'},addEventListener(name,action){listeners.push(`window:${name}`);events[name]=action;}};
+  const clock={now:options.now??nextVoteAt-1000};
+  class ClockDate extends Date {static now(){return clock.now;}}
+  vm.runInNewContext(source,{window,Date:ClockDate});
   const mount=(id='c1',connected=true)=>{const host=el('section');host.connected=connected;const root=window.WFCharacterRating.mount(host,{id,name:'测试角色'}, {el});return {host,root};};
-  return {window,calls,dialogs,challenges,mount,configCalls:()=>configCalls};
+  return {window,calls,dialogs,challenges,mount,clock,events,documentEvents,listeners,configCalls:()=>configCalls};
 }
 
 test('mount shows only authoritative aggregates and 0–5 choices without starting verification',async()=>{
@@ -103,4 +107,42 @@ test('verification connection failure provides a retry and a detached old summar
   let attempts=0;const x=setup(async()=>unrated,{config:async()=>{if(++attempts===1)throw new Error('验证连接失败');return {enabled:true};}}),view=x.mount();await tick();
   await button(view.root,'1').fire();await tick();const dialog=x.dialogs[0].element;assert.match(dialog.textContent,/验证连接失败/);await button(dialog,'重新连接评分服务').fire();assert.equal(x.challenges.length,1);
   let answer;const y=setup(()=>new Promise((done)=>{answer=done;})),old=y.mount();old.host.connected=false;const before=old.root.textContent;answer(unrated);await tick();assert.equal(old.root.textContent,before);
+});
+
+test('crossing the daily boundary refreshes on focus and only the server can unlock voting',async()=>{
+  let finish;const rated={...unrated,myScore:3,ratedToday:true},x=setup(()=>x.calls.length===1?Promise.resolve(rated):new Promise(resolve=>{finish=resolve;})),view=x.mount();await tick();
+  assert.equal(button(view.root,'刷新评分').hidden,false);assert.equal(button(view.root,'5').disabled,true);
+  x.events.focus();await tick();assert.equal(x.calls.length,1);
+  x.clock.now=nextVoteAt+1;x.events.focus();x.events.focus();await tick();
+  assert.equal(x.calls.length,2);assert.equal(button(view.root,'5').disabled,true);assert.equal(x.challenges.length,0);
+  finish({...rated,ratedToday:false,nextVoteAt:nextVoteAt+86400000});await tick();
+  assert.equal(button(view.root,'5').disabled,false);assert.match(view.root.textContent,/选择 0–5 分/);
+});
+
+test('expired ratings refresh when visible or touched while hidden and detached summaries make no requests',async()=>{
+  for(const trigger of ['visible','pointerdown','focusin']) {
+    const x=setup(async()=>({...unrated,myScore:2,ratedToday:true})),view=x.mount();await tick();x.clock.now=nextVoteAt+1;
+    if(trigger==='visible') {
+      x.window.document.hidden=true;x.documentEvents.visibilitychange();x.events.focus();await tick();assert.equal(x.calls.length,1);
+      x.window.document.hidden=false;x.documentEvents.visibilitychange();
+    } else await view.root.fire(trigger);
+    await tick();assert.equal(x.calls.length,2);assert.equal(button(view.root,'2').disabled,true);
+    x.events.focus();await view.root.fire('pointerdown');await tick();assert.equal(x.calls.length,2);
+  }
+  const x=setup(async()=>({...unrated,ratedToday:true})),view=x.mount();await tick();view.host.connected=false;x.clock.now=nextVoteAt+1;
+  x.events.focus();x.documentEvents.visibilitychange();await tick();assert.equal(x.calls.length,1);
+});
+
+test('failed automatic daily refresh keeps voting locked and an explicit refresh can recover',async()=>{
+  const x=setup(async()=>{if(x.calls.length===2)throw new Error('网络失败');return x.calls.length===1?{...unrated,ratedToday:true}: {...unrated,nextVoteAt:nextVoteAt+86400000};}),view=x.mount();await tick();
+  x.clock.now=nextVoteAt+1;x.events.focus();await tick();assert.equal(button(view.root,'5').disabled,true);assert.match(view.root.textContent,/网络失败/);
+  x.events.focus();x.documentEvents.visibilitychange();await tick();assert.equal(x.calls.length,2);
+  await button(view.root,'刷新评分').fire();assert.equal(x.calls.length,3);assert.equal(button(view.root,'5').disabled,false);
+});
+
+test('many visited characters share one pair of resume listeners and refresh only connected summaries',async()=>{
+  const x=setup(async()=>({...unrated,ratedToday:true}));let view;
+  for(let index=0;index<20;index++) {if(view)view.host.connected=false;view=x.mount(`c${index}`);await tick();}
+  assert.deepEqual(x.listeners,['window:focus','document:visibilitychange']);
+  x.clock.now=nextVoteAt+1;x.events.focus();await tick();assert.equal(x.calls.length,21);assert.equal(x.calls.at(-1)[0],'/ratings/characters/c19');
 });

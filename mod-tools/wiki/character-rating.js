@@ -43,6 +43,18 @@
       if (ticket === state.loadRevision && version === state.version) state.error = message(error);
     } finally {if (ticket === state.loadRevision) {state.loading = false; notify(state);}}
   }
+  function refreshExpired(state) {
+    const boundary = state.value?.nextVoteAt, C = window.WFCommunity;
+    if (!boundary || Date.now() < boundary || state.checkedBoundary === boundary || state.loading || state.voting || state.dialogOpen
+      || !C?.client || window.location?.protocol === 'file:' || ![...state.views].some((view) => view.element.isConnected)) return;
+    // One automatic attempt per boundary; a failed request or a skewed device clock must not create a request loop.
+    state.checkedBoundary = boundary; load(state,C);
+  }
+  function refreshVisible() {
+    if (!window.document?.hidden) for (const state of states.values()) refreshExpired(state);
+  }
+  window.addEventListener?.('focus',refreshVisible);
+  window.document?.addEventListener('visibilitychange',refreshVisible);
   function open(state, character, ui, score, C) {
     if (state.loading || state.dialogOpen || state.voting || !state.value || state.value.ratedToday || state.dailyBlocked) return;
     const {el} = ui, modal = C.dialog(`为「${character.name || '角色'}」评分`,ui), host = modal.element;
@@ -121,12 +133,17 @@
       status.textContent = state.error || (state.loading ? '正在载入评分…' : locked
         ? `${value?.myScore == null ? '今天已评分。' : `今天已评 ${value.myScore} 分。`}${nextTime(value)}`
         : '选择 0–5 分，每位访客每天限评一次（北京时间）。');
-      retry.hidden = !state.error; retry.disabled = Boolean(state.loading);
+      retry.hidden = false; retry.disabled = Boolean(state.loading || state.dialogOpen || state.voting);
     }
     state.views.add({element:root,paint,attached:root.isConnected}); paint();
     if (!id || !C?.client || window.location?.protocol === 'file:') {
       state.error = window.location?.protocol === 'file:' ? '离线版无法读取或提交玩家评分。' : '评分服务尚未准备好，请刷新页面重试。'; paint(); retry.hidden = true;
-    } else {retry.addEventListener('click',() => load(state,C)); load(state,C);}
+    } else {
+      retry.addEventListener('click',() => load(state,C));
+      root.addEventListener('pointerdown',() => refreshExpired(state));
+      root.addEventListener('focusin',() => refreshExpired(state));
+      load(state,C);
+    }
     return root;
   }};
 })();
