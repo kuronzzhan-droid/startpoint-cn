@@ -4,16 +4,12 @@ from __future__ import annotations
 import re
 
 from wf_wiki_dungeons_schema import cell, event_table, quest_table
+from wf_wiki_dungeon_event_groups import extra_boss_series, extra_event_series
+from wf_wiki_dungeon_groups import SERIES_VARIANTS, validate_series_fields
 
 
 ELEMENT_LABELS = {"fire": "火", "water": "水", "thunder": "雷", "wind": "风",
                   "storm": "风", "light": "光", "dark": "暗", "another": "无属性"}
-SERIES_VARIANTS = {
-    "series-gauntlets": ("幻想连战", "普通深渊", "深渊连战EX"),
-    "series-machina": ("火", "水", "雷", "风", "光", "暗", "无属性"),
-    "series-waste-dragons": ("火", "水", "雷", "风", "光", "暗"),
-    "series-spirit-beasts": ("火", "水", "雷", "风", "光", "暗"),
-}
 FAMILIES = {"steam_robot": "series-machina", "discarded_dragon": "series-waste-dragons",
             "spirit_beast": "series-spirit-beasts"}
 GAUNTLET_ENTRIES = {
@@ -33,14 +29,14 @@ def event_series(kind, key, row):
     if (kind, str(key)) in GAUNTLET_ENTRIES:
         return {"seriesId": "series-gauntlets", "variantLabel": GAUNTLET_ENTRIES[kind, str(key)]}
     if kind not in ("advent", "hard_multi"):
-        return {}
+        return extra_event_series(kind, row)
     prefix = "advent_" if kind == "advent" else r"hard_multi_(?:advent_)?"
     families = "steam_robot|discarded_dragon|spirit_beast" if kind == "advent" else "steam_robot"
     match = re.match(r"^" + prefix + "(" + families + r")_"
                      r"(fire|water|thunder|wind|storm|light|dark|another)(?=$|_|[0-9])", cell(row, 0))
     if match and match[2] == "storm" and match[1] != "spirit_beast":
         return {}
-    return series_fields(*match.groups()) if match else {}
+    return series_fields(*match.groups()) if match else extra_event_series(kind, row)
 
 
 def boss_series(row):
@@ -48,7 +44,7 @@ def boss_series(row):
     match = re.fullmatch(r"quest/boss_battle/background/boss_battle_"
                          r"(steam_robot|discarded_dragon|spirit_beast)_"
                          r"(fire|water|thunder|wind|light|dark|another)(?:\.png)?", cell(row, 12))
-    return series_fields(*match.groups()) if match else {}
+    return series_fields(*match.groups()) if match else extra_boss_series(cell(row, 12))
 
 
 def correct_gauntlet_images(items):
@@ -71,10 +67,7 @@ def correct_gauntlet_images(items):
 
 
 def validate_series(item):
-    if "seriesId" not in item and "variantLabel" not in item:
-        return
-    if item.get("variantLabel") not in SERIES_VARIANTS.get(item.get("seriesId"), ()):
-        raise ValueError("副本系列或变体无效")
+    validate_series_fields(item)
 
 
 def verified_gauntlet_tables(sources, identifier):

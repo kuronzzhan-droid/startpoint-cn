@@ -23,11 +23,13 @@ class SeriesTests(unittest.TestCase):
             with self.subTest(code=code):
                 self.assertEqual(series.event_series(kind, "1", [code]),
                                  {"seriesId": identifier, "variantLabel": label})
-        for code in ("kc_discarded_dragon_water", "advent_spirit_beast_stormy", "other_steam_robot_fire",
+        for code in ("advent_spirit_beast_stormy", "other_steam_robot_fire",
                      "advent_steam_robot_storm", "advent_discarded_dragon_storm"):
             self.assertEqual(series.event_series("advent", "1", [code]), {})
         for code in ("hard_multi_spirit_beast_fire", "hard_multi_advent_discarded_dragon_water"):
             self.assertEqual(series.event_series("hard_multi", "1", [code]), {})
+        self.assertEqual(series.event_series("advent", "1", ["kc_discarded_dragon_water"])["seriesId"],
+                         "series-special-training")
 
     def test_boss_family_uses_enemy_artwork_and_never_recommended_party_element(self):
         for family, identifier in series.FAMILIES.items():
