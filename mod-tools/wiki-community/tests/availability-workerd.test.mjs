@@ -11,7 +11,8 @@ test('workerd Cache API caches public summaries but never a private or failed re
   const entry=`import {publicSummary} from './public-summary-cache.mjs';
     let count=0;export default {async fetch(request) {
       try {return Response.json(await publicSummary(request,async()=>{
-        count++;if(request.headers.get('x-fixture-fail'))throw Error('fixture failure');return {count};
+        count++;if(request.headers.get('x-fixture-fail'))throw Error('fixture failure');
+        if(request.headers.get('x-fixture-delay'))await new Promise(resolve=>setTimeout(resolve,80));return {count};
       }));}catch{return new Response('unavailable',{status:503});}
     }};`;
   const options={modulesRoot:root,compatibilityDate:'2026-09-29',modules:[
@@ -27,4 +28,7 @@ test('workerd Cache API caches public summaries but never a private or failed re
   assert.equal(b.count,a.count+1);
   assert.equal((await call('/tier-rankings',{'x-fixture-fail':'1'})).status,503);
   assert.equal((await call('/tier-rankings')).status,200);
+  const burst=await Promise.all(Array.from({length:8},(_,i)=>call('/ratings/characters?burst='+i,{'x-fixture-delay':'1'}).then(r=>r.json())));
+  assert.equal(new Set(burst.map(value=>value.count)).size,1);
+  assert.equal(burst[0].count,7);
 });

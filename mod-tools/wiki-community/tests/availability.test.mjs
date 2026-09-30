@@ -57,3 +57,27 @@ test('cache failures cannot interrupt reads, and failed database queries are nev
   assert.equal(cache.values.size,0);
   assert.equal(await publicSummary(request,async()=>++reads,undefined),2);
 });
+
+test('simultaneous cold public summaries query once and separate routes remain independent', async () => {
+  const cache=cacheFixture();let reads=0,release;
+  const gate=new Promise(resolve=>{release=resolve;});
+  const load=async()=>{reads++;await gate;return {reads};};
+  const calls=Array.from({length:12},(_,i)=>publicSummary(new Request(`https://wiki.example/api/community/tier-rankings?noise=${i}`),load,cache));
+  const other=publicSummary(new Request('https://wiki.example/api/community/stats'),load,cache);
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(reads,2);release();
+  const results=await Promise.all([...calls,other]);
+  assert(results.every(value=>value.reads===2));assert.equal(cache.values.size,2);
+});
+
+test('a failed concurrent load rejects every waiter and the next request can recover', async () => {
+  const cache=cacheFixture();let reads=0,release;
+  const gate=new Promise(resolve=>{release=resolve;});
+  const load=async()=>{reads++;await gate;throw Error('fixture unavailable');};
+  const request=new Request('https://wiki.example/api/community/stats');
+  const calls=Array.from({length:8},()=>publicSummary(request,load,cache));
+  const settled=Promise.allSettled(calls);
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(reads,1);release();
+  assert((await settled).every(result=>result.status==='rejected'));
+  assert.equal(cache.values.size,0);
+  assert.deepEqual(await publicSummary(request,async()=>({recovered:true}),cache),{recovered:true});
+});
