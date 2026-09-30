@@ -6,6 +6,8 @@ const vm = require('node:vm');
 const tick = () => new Promise(setImmediate);
 class Node {
   constructor(tag, className = '', text = '') {Object.assign(this, {tag, className, textContent: text, children: [], attributes: {}, dataset: {}, events: {}});}
+  get textContent() {return this.text + this.children.map((node) => node.textContent).join('');}
+  set textContent(value) {this.text = value; this.children = [];}
   append(...nodes) {this.children.push(...nodes);}
   setAttribute(key, value) {this.attributes[key] = value;}
   getAttribute(key) {return this.attributes[key];}
@@ -52,6 +54,12 @@ test('attribute and global sorting handle both directions, real zero, missing va
   assert.deepEqual(x.order('rating-element-asc'), ['c1', 'c0', 'c2', 'c4', 'c3', 'c5']);
   assert.deepEqual(x.order('rating-global-desc'), ['c3', 'c0', 'c4', 'c1', 'c2', 'c5']);
   assert.deepEqual(x.order('rating-global-asc'), ['c1', 'c0', 'c4', 'c3', 'c2', 'c5']);
+  x.controller.update('c2', {average: 2, voters: 9});
+  x.controller.update('c4', {average: 2, voters: 12});
+  assert.deepEqual(x.order('rating-element-desc'), ['c2', 'c0', 'c1', 'c3', 'c4', 'c5']);
+  assert.deepEqual(x.order('rating-element-asc'), ['c1', 'c2', 'c0', 'c4', 'c3', 'c5']);
+  assert.deepEqual(x.order('rating-global-desc'), ['c3', 'c4', 'c2', 'c0', 'c1', 'c5']);
+  assert.deepEqual(x.order('rating-global-asc'), ['c1', 'c4', 'c2', 'c0', 'c3', 'c5']);
   assert.equal(x.controller.isRatingSort(), true); x.sort.value = 'default'; assert.equal(x.controller.isRatingSort(), false);
 });
 

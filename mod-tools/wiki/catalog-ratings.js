@@ -32,7 +32,8 @@
       const label = rated ? `评分 ${value.average.toFixed(1)} / 5 · ${value.voters} 人`
         : phase === 'ready' ? '评分 —（未评分）' : '评分 —（尚未加载）';
       const badge = card.querySelector('.card-rating');
-      badge.textContent = rated ? `评分 ${value.average.toFixed(1)}` : '评分 —'; badge.title = label;
+      badge.textContent = '评分 ';
+      badge.append(el('strong', 'card-rating-value', rated ? value.average.toFixed(1) : '—')); badge.title = label;
       card.title = `${card.dataset.catalogBaseTitle} · ${label}`;
       card.setAttribute('aria-label', `${card.dataset.catalogBaseLabel}，${label}`);
     }
@@ -79,6 +80,7 @@
         const ar = Boolean(av?.voters), br = Boolean(bv?.voters);
         if (ar !== br) return ar ? -1 : 1;
         if (ar && av.average !== bv.average) return (av.average - bv.average) * (sort.value.endsWith('-asc') ? 1 : -1);
+        if (ar && av.voters !== bv.voters) return bv.voters - av.voters;
         return window.WFCharacterOrder.compare(a, b);
       },
       decorate(card, character) {

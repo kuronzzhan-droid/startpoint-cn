@@ -15,7 +15,8 @@
 .catalog-rating-status .text-button{font-size:inherit;padding:2px 4px}
 .card-meta{margin-top:0;margin-bottom:6px;flex-wrap:wrap;gap:3px 8px;justify-content:space-between}
 .card-profession{display:inline-flex;align-items:center;gap:3px}
-.card-rating{white-space:nowrap;color:var(--ink);font-variant-numeric:tabular-nums}
+.card-rating{display:inline-flex;align-items:baseline;gap:3px;white-space:nowrap;color:var(--ink);font-variant-numeric:tabular-nums}
+.card-rating-value{font-size:18px;font-weight:800;line-height:1.1}
 #catalog-view .filter-status{margin:0 0 10px;font-size:10px}
 .catalog-display-controls>.sort-control{margin-left:0}
 .catalog-layout-group{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0}
