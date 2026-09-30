@@ -70,9 +70,10 @@
     const ratingCount = el('strong', '', '—'), tierCount = el('strong', '', '—'), onlineCount = el('strong', '', '—');
     const participationStatus = el('small', 'tier-participation-status'); participationStatus.setAttribute('role', 'status');
     participation.append(participationLabel);
+    let onlineItem;
     [['角色评分', ratingCount], ['手动排行', tierCount], ['正在浏览', onlineCount]].forEach(([label, value]) => {
       const item = el('span', 'tier-participation-count'); item.append(el('span', '', label), value, el('span', '', '人'));
-      if (value === onlineCount) item.title = '最近 2 分钟有活动的全站访客；同一浏览器多标签去重，约 30 秒更新。';
+      if (value === onlineCount) {onlineItem = item; item.title = '最近 5 分钟有活动的全站访客；同一浏览器多标签去重，约 90 秒更新。';}
       participation.append(item);
     });
     participation.append(participationStatus);
@@ -102,7 +103,9 @@
       text(ratingCount, lastStats ? String(lastStats.ratingVoters) : '—');
       text(tierCount, lastStats ? String(lastStats.tierVoters) : '—');
       text(onlineCount, lastStats ? String(lastStats.onlineVisitors) : '—');
-      text(participationStatus, snapshot.status === 'ready' && valid ? '实时更新'
+      if (lastStats) onlineItem.title = `最近 ${lastStats.presenceWindowSeconds === 120 ? 2 : 5} 分钟有活动的全站访客；同一浏览器多标签去重，约 90 秒更新。`;
+      participationStatus.title = lastStats?.participationAsOf ? `参与人数统计于 ${new Date(lastStats.participationAsOf).toLocaleString('zh-CN')}；投票变化后按请求定时汇总。` : '';
+      text(participationStatus, snapshot.status === 'ready' && valid ? (lastStats.participationStale ? '参与人数更新中' : '定时更新')
         : snapshot.status === 'offline' ? (lastStats ? '离线 · 上次统计' : '离线，暂无统计')
         : snapshot.status === 'loading' ? (lastStats ? '更新中…' : '正在统计…')
         : lastStats ? '更新失败 · 上次统计' : '统计暂不可用');

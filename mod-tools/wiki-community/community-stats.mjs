@@ -3,8 +3,8 @@ import {sign} from './codecs.mjs';
 import {readJSON, rateLimit, visitor} from './security.mjs';
 import {createParticipationCounter} from './community-stats-counts.mjs';
 
-export const PRESENCE_WINDOW_SECONDS = 120;
-export const PRESENCE_INTERVAL_MS = 30_000;
+export const PRESENCE_WINDOW_SECONDS = 300;
+export const PRESENCE_INTERVAL_MS = 90_000;
 const CLEANUP_LIMIT = 100;
 const participationCounts = createParticipationCounter();
 

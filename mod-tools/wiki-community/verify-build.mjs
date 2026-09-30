@@ -134,7 +134,8 @@ try {
   const counts = await stats.json();
   assert.equal(counts.ratingVoters, 2); assert.equal(counts.tierVoters, 1); assert.equal(counts.onlineVisitors, 0);
   assert.equal(counts.totalVoters, 3);
-  assert.equal(counts.presenceWindowSeconds, 120); assert.ok(Number.isFinite(Date.parse(counts.asOf))); checks++;
+  assert.equal(counts.presenceWindowSeconds, 300); assert.ok(Number.isFinite(Date.parse(counts.asOf)));
+  assert.ok(Number.isFinite(Date.parse(counts.participationAsOf))); assert.equal(counts.participationStale, false); checks++;
   const anonymousPresence = await call('/api/community/presence', {method:'POST', body:'{}'});
   assert.equal(anonymousPresence.status, 428); assert.equal(anonymousPresence.headers.get('set-cookie'), null); checks++;
   const visitorCookie = config.headers.get('set-cookie').split(';')[0];

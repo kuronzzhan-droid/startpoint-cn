@@ -22,19 +22,19 @@ test('presence requires a configured browser identity and never mints a competin
   assert.deepEqual(result.json, (await app.call('/stats')).json);
 });
 
-test('multiple tabs share one visitor; distinct cookies count separately and only heartbeat at thirty seconds', async (t) => {
+test('multiple tabs share one visitor; distinct cookies count separately and only heartbeat at ninety seconds', async (t) => {
   const app = context(); t.after(() => app.close()); await app.call('/config');
   const original = app.cookie, baseTime = app.now;
   const results = await Promise.all(Array.from({length:4}, () => app.call('/presence', {body:{}, headers:{Cookie:original}})));
   assert.ok(results.every(result => result.status === 200 && result.json.onlineVisitors === 1));
-  app.now += 29_999; await app.call('/presence', {body:{}});
+  app.now += 89_999; await app.call('/presence', {body:{}});
   assert.equal(app.db.raw.prepare('SELECT last_seen FROM community_presence').get().last_seen, baseTime);
   app.now++; await app.call('/presence', {body:{}});
-  assert.equal(app.db.raw.prepare('SELECT last_seen FROM community_presence').get().last_seen, baseTime + 30_000);
+  assert.equal(app.db.raw.prepare('SELECT last_seen FROM community_presence').get().last_seen, baseTime + 90_000);
   app.cookie = ''; await app.call('/config');
   assert.equal((await app.call('/presence', {body:{}})).json.onlineVisitors, 2);
   assert.equal(app.db.raw.prepare('SELECT COUNT(*) n FROM community_presence').get().n, 2);
-  app.now += 120_000;
+  app.now += 300_000;
   assert.equal((await app.call('/stats')).json.onlineVisitors, 0);
   assert.equal((await app.call('/presence', {body:{}, headers:{Cookie:original}})).json.onlineVisitors, 1);
 });

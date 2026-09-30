@@ -58,20 +58,31 @@ function setup(handler = async pathname => pathname.endsWith('/me') ? me : aggre
     setRows: value => {localRows = value;}, portraitsCreated: () => portraitsCreated, configCalls: () => configCalls};
 }
 
-const siteStats = (ratingVoters = 17, tierVoters = 11, totalVoters = Math.max(ratingVoters, tierVoters)) => ({totalVoters, ratingVoters, tierVoters, onlineVisitors: 4, asOf: '2026-09-30T12:00:00.000Z', presenceWindowSeconds: 120});
+const siteStats = (ratingVoters = 17, tierVoters = 11, totalVoters = Math.max(ratingVoters, tierVoters)) => ({totalVoters, ratingVoters, tierVoters, onlineVisitors: 4, asOf: '2026-09-30T12:00:00.000Z', presenceWindowSeconds: 300});
 
 test('public participation uses distinct site statistics and keeps the same scope while filtering characters', async () => {
   const x = setup(); x.controller.setView('community'); await tick(); const summary = cls(x.host, 'tier-public-participation');
   assert.match(summary.textContent, /全站 · 共 — 人参与.*角色评分—人.*手动排行—人.*正在统计/);
   assert.equal(x.subscriptions.length, 1); assert.equal(x.calls.length, 1);
   x.emitStats({status: 'ready', data: siteStats()});
-  assert.match(summary.textContent, /全站 · 共 17 人参与.*角色评分17人.*手动排行11人.*正在浏览4人.*实时更新/);
-  assert.match(all(summary, 'tier-participation-count')[2].title, /最近 2 分钟.*全站.*多标签去重/);
+  assert.match(summary.textContent, /全站 · 共 17 人参与.*角色评分17人.*手动排行11人.*正在浏览4人.*定时更新/);
+  assert.match(all(summary, 'tier-participation-count')[2].title, /最近 5 分钟.*全站.*多标签去重/);
   await x.host.all(node => node.attributes['aria-label'] === '火属性排行')[0].fire();
   assert.match(summary.textContent, /全站 · 共 17 人参与.*角色评分17人.*手动排行11人/); assert.equal(x.calls.length, 1);
   assert.equal(all(x.host, 'tier-public-card').length, 2);
   x.emitStats({status: 'ready', data: {...siteStats(18, 12), onlineVisitors: 6}}); assert.match(summary.textContent, /角色评分18人.*手动排行12人.*正在浏览6人/);
   assert.equal(x.calls.length, 1); assert.equal(x.subscriptions.length, 1);
+});
+
+
+test('participation refresh age is separate from the online sample and supports rolling deployments', () => {
+  const x = setup(), summary = cls(x.host, 'tier-public-participation');
+  x.emitStats({status: 'ready', data: {...siteStats(), participationAsOf:'2026-09-30T11:50:00.000Z', participationStale:true}});
+  assert.match(summary.textContent, /正在浏览4人.*参与人数更新中/);
+  assert.match(cls(summary, 'tier-participation-status').title, /参与人数统计于/);
+  x.emitStats({status: 'ready', data: {...siteStats(), presenceWindowSeconds:120}});
+  assert.match(all(summary, 'tier-participation-count')[2].title, /最近 2 分钟/);
+  assert.equal(cls(summary, 'tier-participation-status').title, '');
 });
 
 test('total participation uses the server union count instead of adding overlapping rating and tier voters', () => {
@@ -81,13 +92,13 @@ test('total participation uses the server union count instead of adding overlapp
   x.emitStats({status: 'ready', data: siteStats(17, 11, 22)});
   assert.match(summary.textContent, /共 22 人参与.*角色评分17人.*手动排行11人/); assert.doesNotMatch(summary.textContent, /共 28 人参与/);
   x.emitStats({status: 'error', data: null}); assert.match(summary.textContent, /共 22 人参与.*上次统计/);
-  x.emitStats({status: 'ready', data: siteStats(0, 0, 0)}); assert.match(summary.textContent, /共 0 人参与.*实时更新/);
+  x.emitStats({status: 'ready', data: siteStats(0, 0, 0)}); assert.match(summary.textContent, /共 0 人参与.*定时更新/);
 });
 
 test('unknown or failed participation counts never become zero and last good totals remain marked stale', async () => {
   const x = setup(), summary = cls(x.host, 'tier-public-participation');
   x.emitStats({status: 'error', data: null}); assert.match(summary.textContent, /评分—人.*排行—人.*统计暂不可用/);
-  x.emitStats({status: 'ready', data: siteStats(0, 0)}); assert.match(summary.textContent, /评分0人.*排行0人.*实时更新/);
+  x.emitStats({status: 'ready', data: siteStats(0, 0)}); assert.match(summary.textContent, /评分0人.*排行0人.*定时更新/);
   x.emitStats({status: 'ready', data: siteStats(5, 9)});
   x.emitStats({status: 'error', data: null}); assert.match(summary.textContent, /评分5人.*排行9人.*更新失败.*上次统计/);
   x.emitStats({status: 'loading', data: siteStats(5, 9)}); assert.match(summary.textContent, /评分5人.*排行9人.*更新中/);
