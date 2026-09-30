@@ -139,6 +139,25 @@ test('filter races cannot restore old results and non-public rows are not displa
   requests[0].resolve({items:[item]});await tick();
   assert.match(x.host.textContent,/水队/);assert.doesNotMatch(x.host.textContent,/不公开|推荐 <img/);
 });
+test('late configuration fills attribute choices without resetting an already selected section or reloading teams',async()=>{
+  let finishConfig;const calls=[],x=setup({config:()=>new Promise(resolve=>{finishConfig=resolve;}),request:async(url)=>{calls.push(url);return {items:[item]};}});
+  const mounted=x.window.renderWikiCommunity(x.host,data,x.ui);
+  const section=x.host.querySelectorAll('button').find(node=>node.textContent==='深渊连战');await section.fire('click');await tick();
+  const card=x.host.querySelector('.community-card');finishConfig(config);await mounted;await tick();
+  const select=x.host.querySelectorAll('select').find(node=>node.attributes['aria-label']==='推荐队伍属性');
+  assert.deepEqual(select.children.map(node=>node.value),['','火','水','universal']);
+  assert.equal(calls.length,1);assert.match(calls[0],/section=abyss/);assert.equal(x.host.querySelector('.community-card'),card);
+  assert.equal(section.attributes['aria-pressed'],'true');
+  select.value='水';await select.fire('change');await tick();assert.match(calls[1],/section=abyss/);assert.match(calls[1],/element=%E6%B0%B4/);
+});
+test('configuration returning after navigation or replacement cannot mutate the old page or start a request',async()=>{
+  for(const leave of ['route','replace']) {
+    let finishConfig;const calls=[],x=setup({config:()=>new Promise(resolve=>{finishConfig=resolve;}),request:async(url)=>{calls.push(url);return {items:[]};}});
+    const mounted=x.window.renderWikiCommunity(x.host,data,x.ui),select=x.host.querySelectorAll('select').find(node=>node.attributes['aria-label']==='推荐队伍属性');
+    if(leave==='route')x.context.location.hash='#weapons';else x.host.replaceChildren(el('p','','new page'));
+    finishConfig(config);await mounted;await tick();assert.equal(select.children.length,1);assert.equal(calls.length,0);
+  }
+});
 test('failed community config keeps the source link and a retry action visible',async()=>{
   const x=setup({config:async()=>{throw new Error('此站暂未启用配队社区');}});
   await x.window.renderWikiCommunity(x.host,data,x.ui);

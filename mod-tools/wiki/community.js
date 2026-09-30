@@ -109,7 +109,8 @@
       toolbar.hidden = true; sections.hidden = true; advanced.hidden = true;
       const back = el('a', 'back-button', '‹ 返回配队大全'); back.href = '#community'; host.prepend(back);
     }
-    const current = (ticket) => cards.isConnected && revision === ticket && location.hash === startingHash;
+    const mounted = () => cards.isConnected && location.hash === startingHash;
+    const current = (ticket) => mounted() && revision === ticket;
     function card(item) {
       const node = el('article', 'community-card');
       function enter(selection) {
@@ -177,10 +178,10 @@
     async function connect() {
       const ticket = ++revision; status.textContent = '正在连接配队社区…'; retry.hidden = true;
       try {
-        config = await C.client.config(); if (!current(ticket)) return;
+        config = await C.client.config(); if (!mounted()) return;
         element.replaceChildren(all);
         (config.elements || []).forEach((value) => {const option = el('option', '', C.elementLabel(value)); option.value = value; element.append(option);});
-        element.value = filters.element; load();
+        element.value = filters.element; if (current(ticket)) load();
       } catch (error) {if (current(ticket)) {status.textContent = C.message(error); retry.hidden = false;}}
     }
     element.addEventListener('change', () => {filters.element = element.value; load();});
