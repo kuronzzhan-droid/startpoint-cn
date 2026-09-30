@@ -63,13 +63,52 @@
     const track = el('span', 'tier-detail-track'); track.setAttribute('aria-hidden', 'true'); track.append(el('span', 'tier-detail-thumb'));
     detailToggle.append(track, el('span', '', '显示评分详情'));
     publicToolbar.append(avatarHost, detailToggle, refresh);
+    const participation = el('div', 'tier-public-participation'); participation.setAttribute('aria-label', '全站参与人数');
+    const participationLabel = el('span', 'tier-participation-label', '全站参与');
+    participationLabel.title = '按访客去重的全站人数，不随属性筛选变化。';
+    const ratingCount = el('strong', '', '—'), tierCount = el('strong', '', '—'), onlineCount = el('strong', '', '—');
+    const participationStatus = el('small', 'tier-participation-status'); participationStatus.setAttribute('role', 'status');
+    participation.append(participationLabel);
+    [['角色评分', ratingCount], ['手动排行', tierCount], ['正在浏览', onlineCount]].forEach(([label, value]) => {
+      const item = el('span', 'tier-participation-count'); item.append(el('span', '', label), value, el('span', '', '人'));
+      if (value === onlineCount) item.title = '最近 2 分钟有活动的全站访客；同一浏览器多标签去重，约 30 秒更新。';
+      participation.append(item);
+    });
+    participation.append(participationStatus);
     const description = el('p', 'tier-public-formula', '综合得分 = 玩家手排均分 × 70% + 角色评分 × 30%。缺一项时暂按已有一项显示；两项都没有的角色暂不入榜。');
     const publicStatus = el('p', 'tier-public-status'); publicStatus.setAttribute('role', 'status');
     const elementFilters = el('div', 'tier-public-elements'); elementFilters.setAttribute('role', 'group'); elementFilters.setAttribute('aria-label', '综合排行属性');
     const results = el('div', 'tier-public-results'), elementButtons = [];
-    dynamicHost.append(publicToolbar, description, elementFilters, publicStatus, results);
+    dynamicHost.append(publicToolbar, participation, description, elementFilters, publicStatus, results);
     element.append(tabs, submitBar, mineHost, dynamicHost); host.append(element);
     let view = 'mine', revision = 0, portraits, dialogOpen = false, submitted, cached, elementFilter = '', showDetails = false, publicCards = [];
+    let stopStats, statsDisposed = false, statsAttached = element.isConnected, lastStats;
+    function destroy() {
+      if (statsDisposed) return;
+      statsDisposed = true; revision++; stopStats?.(); stopStats = undefined;
+      window.removeEventListener?.('wf-page-leave', destroy);
+    }
+    function paintParticipation(snapshot = {}) {
+      if (statsDisposed) return;
+      if (!element.isConnected && statsAttached) {destroy(); return;}
+      statsAttached ||= element.isConnected;
+      const valid = votes(snapshot.data?.ratingVoters) && votes(snapshot.data?.tierVoters) && votes(snapshot.data?.onlineVisitors);
+      if (valid) lastStats = snapshot.data;
+      const text = (node, value) => {if (node.textContent !== value) node.textContent = value;};
+      text(ratingCount, lastStats ? String(lastStats.ratingVoters) : '—');
+      text(tierCount, lastStats ? String(lastStats.tierVoters) : '—');
+      text(onlineCount, lastStats ? String(lastStats.onlineVisitors) : '—');
+      text(participationStatus, snapshot.status === 'ready' && valid ? '实时更新'
+        : snapshot.status === 'offline' ? (lastStats ? '离线 · 上次统计' : '离线，暂无统计')
+        : snapshot.status === 'loading' ? (lastStats ? '更新中…' : '正在统计…')
+        : lastStats ? '更新失败 · 上次统计' : '统计暂不可用');
+    }
+    window.addEventListener?.('wf-page-leave', destroy);
+    paintParticipation({status: /^https?:$/.test(window.location?.protocol) ? 'loading' : 'offline'});
+    if (window.WFSiteStats?.subscribe) {
+      stopStats = window.WFSiteStats.subscribe(paintParticipation);
+      if (statsDisposed) {stopStats?.(); stopStats = undefined;}
+    } else if (/^https?:$/.test(window.location?.protocol)) paintParticipation({status: 'error'});
     detailToggle.addEventListener('click', () => {
       showDetails = !showDetails; detailToggle.setAttribute('aria-checked', String(showDetails));
       publicCards.forEach(({card, text}) => {text.hidden = !showDetails; card.className = `tier-public-card${showDetails ? '' : ' is-compact'}`;});
@@ -208,7 +247,7 @@
       connect();
     }
     submit.addEventListener('click', openSubmit); refresh.addEventListener('click', loadPublic); setView('mine');
-    return {element, mineHost, refreshState, setView};
+    return {element, mineHost, refreshState, setView, destroy};
   }
   window.WFTierListCommunity = {create};
 })();

@@ -30,7 +30,12 @@ const record = (id, patch = {}) => ({id, compositeScore: 4.5, row: 'tier0', plac
 const data = {characters: [{id: 'c1', name: '甲', element: '火'}, {id: 'c2', name: '乙', element: '水'}, {id: 'c3', name: '丙', element: '火'}]};
 const aggregate = (items = [record('c1'), record('c2'), record('c3')]) => ({items, formula: {placementWeight: 0.7, ratingWeight: 0.3}});
 function setup(handler = async pathname => pathname.endsWith('/me') ? me : aggregate(), options = {}) {
-  const calls = [], dialogs = [], challenges = [], transitions = []; let configCalls = 0, portraitsCreated = 0;
+  const calls = [], dialogs = [], challenges = [], transitions = [], subscriptions = [], events = new Map(); let configCalls = 0, portraitsCreated = 0, unsubscribed = 0;
+  let statsSnapshot = {status: options.protocol === 'file:' ? 'offline' : 'loading', data: null};
+  const statsListeners = new Set(), siteStats = {subscribe(callback) {
+    subscriptions.push(callback); statsListeners.add(callback); callback(statsSnapshot);
+    return () => {if (statsListeners.delete(callback)) unsubscribed++;};
+  }};
   const C = {client: {request: async (...args) => {calls.push(args); return handler(...args);}, config: async () => {configCalls++; return options.config ? options.config() : {enabled: true};}}, message: error => error.message};
   C.dialog = title => {const modal = {title, element: el('dialog'), cleanup(callback) {this.clean = callback;}, close() {this.clean?.(); this.element.connected = false;}}; modal.element.connected = true; dialogs.push(modal); return modal;};
   C.challenge = (_host, _config, action, _ui, onChange) => {
@@ -38,15 +43,67 @@ function setup(handler = async pathname => pathname.endsWith('/me') ? me : aggre
       take() {const token = this.token; this.token = ''; onChange(false); return token;}, reset() {this.resets++; onChange(false);}, destroy() {this.destroyed = true;}};
     challenges.push(challenge); return challenge;
   };
-  const window = {WFCommunity: C, location: {protocol: options.protocol || 'https:'}, WFCatalogAvatars: {
+  const window = {WFCommunity: C, WFSiteStats: options.stats === false ? undefined : siteStats, location: {protocol: options.protocol || 'https:'},
+    addEventListener: (name, callback) => events.set(name, callback), removeEventListener: name => events.delete(name), WFCatalogAvatars: {
     create({host}) {portraitsCreated++; host.append(el('div', 'avatar-control')); return {picture: character => el('span', 'portrait', character.name)};},
   }};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki/tier-list-community.js'), 'utf8'), {window, Date});
-  const host = el('main'); host.connected = true; let localRows = rows();
+  const host = el('main'); host.connected = options.connected !== false; let localRows = rows();
   const state = {getRows: () => JSON.parse(JSON.stringify(localRows))};
   const controller = window.WFTierListCommunity.create({host, data, state, ui: {el, nativeIcon: (_group, value) => el('img', 'element-icon', value)}, onViewChange: value => transitions.push(value)});
-  return {host, controller, calls, dialogs, challenges, transitions, setRows: value => {localRows = value;}, portraitsCreated: () => portraitsCreated, configCalls: () => configCalls};
+  return {host, controller, calls, dialogs, challenges, transitions, subscriptions, events, statsListeners, unsubscribed: () => unsubscribed,
+    emitStats(snapshot) {statsSnapshot = snapshot; for (const callback of statsListeners) callback(snapshot);},
+    setRows: value => {localRows = value;}, portraitsCreated: () => portraitsCreated, configCalls: () => configCalls};
 }
+
+const siteStats = (ratingVoters = 17, tierVoters = 11) => ({ratingVoters, tierVoters, onlineVisitors: 4, asOf: '2026-09-30T12:00:00.000Z', presenceWindowSeconds: 120});
+
+test('public participation uses distinct site statistics and keeps the same scope while filtering characters', async () => {
+  const x = setup(); x.controller.setView('community'); await tick(); const summary = cls(x.host, 'tier-public-participation');
+  assert.match(summary.textContent, /全站参与.*角色评分—人.*手动排行—人.*正在统计/);
+  assert.equal(x.subscriptions.length, 1); assert.equal(x.calls.length, 1);
+  x.emitStats({status: 'ready', data: siteStats()});
+  assert.match(summary.textContent, /全站参与.*角色评分17人.*手动排行11人.*正在浏览4人.*实时更新/);
+  assert.match(all(summary, 'tier-participation-count')[2].title, /最近 2 分钟.*全站.*多标签去重/);
+  await x.host.all(node => node.attributes['aria-label'] === '火属性排行')[0].fire();
+  assert.match(summary.textContent, /全站参与.*角色评分17人.*手动排行11人/); assert.equal(x.calls.length, 1);
+  assert.equal(all(x.host, 'tier-public-card').length, 2);
+  x.emitStats({status: 'ready', data: {...siteStats(18, 12), onlineVisitors: 6}}); assert.match(summary.textContent, /角色评分18人.*手动排行12人.*正在浏览6人/);
+  assert.equal(x.calls.length, 1); assert.equal(x.subscriptions.length, 1);
+});
+
+test('unknown or failed participation counts never become zero and last good totals remain marked stale', async () => {
+  const x = setup(), summary = cls(x.host, 'tier-public-participation');
+  x.emitStats({status: 'error', data: null}); assert.match(summary.textContent, /评分—人.*排行—人.*统计暂不可用/);
+  x.emitStats({status: 'ready', data: siteStats(0, 0)}); assert.match(summary.textContent, /评分0人.*排行0人.*实时更新/);
+  x.emitStats({status: 'ready', data: siteStats(5, 9)});
+  x.emitStats({status: 'error', data: null}); assert.match(summary.textContent, /评分5人.*排行9人.*更新失败.*上次统计/);
+  x.emitStats({status: 'loading', data: siteStats(5, 9)}); assert.match(summary.textContent, /评分5人.*排行9人.*更新中/);
+  x.emitStats({status: 'offline', data: null}); assert.match(summary.textContent, /评分5人.*排行9人.*离线.*上次统计/);
+  x.emitStats({status: 'ready', data: siteStats(-1, '8')}); assert.match(summary.textContent, /评分5人.*排行9人.*更新失败.*上次统计/);
+});
+
+test('offline or unavailable statistics have a short status without inventing participation', () => {
+  const offline = setup(undefined, {protocol: 'file:'}), missing = setup(undefined, {stats: false});
+  assert.match(cls(offline.host, 'tier-public-participation').textContent, /评分—人.*排行—人.*离线，暂无统计/);
+  assert.match(cls(missing.host, 'tier-public-participation').textContent, /评分—人.*排行—人.*统计暂不可用/);
+  assert.deepEqual(offline.calls, []); assert.deepEqual(missing.calls, []);
+});
+
+test('page leave unsubscribes immediately and late shared-stat callbacks cannot update a destroyed board', () => {
+  const x = setup(), summary = cls(x.host, 'tier-public-participation'); x.emitStats({status: 'ready', data: siteStats()});
+  const before = summary.textContent; x.events.get('wf-page-leave')();
+  assert.equal(x.unsubscribed(), 1); assert.equal(x.statsListeners.size, 0); assert.equal(x.events.size, 0);
+  x.subscriptions[0]({status: 'ready', data: siteStats(99, 99)}); assert.equal(summary.textContent, before);
+  x.controller.destroy(); assert.equal(x.unsubscribed(), 1);
+});
+
+test('a not-yet-inserted board can receive initial statistics and later detachment releases its subscription', () => {
+  const x = setup(undefined, {connected: false}), summary = cls(x.host, 'tier-public-participation');
+  assert.equal(x.unsubscribed(), 0); x.host.connected = true; x.emitStats({status: 'ready', data: siteStats()});
+  assert.match(summary.textContent, /评分17人.*排行11人/); x.host.connected = false;
+  x.emitStats({status: 'ready', data: siteStats(20, 20)}); assert.equal(x.unsubscribed(), 1); assert.match(summary.textContent, /评分17人.*排行11人/);
+});
 
 test('my view and unsent local edits do not fetch rankings, request verification or submit votes', async () => {
   const x = setup(); assert.deepEqual(x.calls, []); assert.equal(x.portraitsCreated(), 0); assert.equal(x.challenges.length, 0);
