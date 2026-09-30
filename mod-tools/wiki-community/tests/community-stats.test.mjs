@@ -4,7 +4,7 @@ import {readFileSync, mkdtempSync, rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {context, fixtureCatalog} from './helpers.mjs';
-import {communityStats, recordPresence} from '../community-stats.mjs';
+import {communityStats, recordPresence, PRESENCE_WINDOW_SECONDS, PRESENCE_INTERVAL_MS} from '../community-stats.mjs';
 import {openDatabase} from '../sqlite-adapter.mjs';
 
 function rating(app, character, visitor, score = 3) {
@@ -14,17 +14,21 @@ function tier(app, visitor, rows) {
   app.db.raw.prepare('INSERT INTO community_tier_rankings VALUES(?,?,?,?)').run(visitor, JSON.stringify(rows), '2026-09-30', app.now);
 }
 
-test('anonymous stats are read-only and expose counts with a timestamp, not visitor data', async (t) => {
+test('anonymous stats only maintain their internal snapshot, without changing business data or cookies', async (t) => {
   const app = context(); t.after(() => app.close());
-  app.db.raw.prepare('INSERT INTO community_presence VALUES(?,?)').run('expired-hash', app.now - 120_000);
+  app.db.raw.prepare('INSERT INTO community_presence VALUES(?,?)').run('expired-hash', app.now - PRESENCE_WINDOW_SECONDS * 1000);
   app.db.raw.prepare('INSERT INTO community_limits VALUES(?,?,?)').run('old-limit', 1, app.now - 1);
-  const before = app.db.raw.prepare('SELECT total_changes() n').get().n;
+  const tables = app.db.raw.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'community_participation_%' ORDER BY name").all();
+  const business = () => tables.map(({name}) => app.db.raw.prepare(`SELECT * FROM ${name}`).all());
+  const before = business();
   const result = await app.call('/stats', {headers:{'CF-Connecting-IP':'', Cookie:''}});
   assert.equal(result.status, 200); assert.equal(result.headers.get('set-cookie'), null); assert.equal(app.cookie, '');
   assert.equal(result.headers.get('cache-control'), 'no-store');
   assert.deepEqual(result.json, {ratingVoters:0, tierVoters:0, totalVoters:0, onlineVisitors:0,
-    asOf:new Date(app.now).toISOString(), presenceWindowSeconds:120});
-  assert.equal(app.db.raw.prepare('SELECT total_changes() n').get().n, before);
+    asOf:new Date(app.now).toISOString(), presenceWindowSeconds:PRESENCE_WINDOW_SECONDS,
+    participationAsOf:new Date(app.now).toISOString(), participationStale:false});
+  assert.deepEqual(business(), before);
+  assert.equal(app.db.raw.prepare('SELECT COUNT(*) n FROM community_participation_snapshots').get().n, 1);
   assert.equal(app.db.raw.prepare('SELECT COUNT(*) n FROM community_presence').get().n, 1);
   assert.equal(app.db.raw.prepare('SELECT COUNT(*) n FROM community_limits').get().n, 1);
 });
@@ -49,16 +53,17 @@ test('participation counts unique visitors for each valid catalogue source and i
   assert.equal((await app.call('/stats')).json.tierVoters, 1);
   const queries = [], counted = {prepare(sql) {queries.push(sql); return app.db.prepare(sql);}};
   assert.equal((await communityStats(counted, fixtureCatalog, app.now)).ratingVoters, 2);
-  assert.equal(queries.length, 3);
+  assert.equal(queries.length, 2, 'a different counter uses the same persistent snapshot');
   assert.ok(queries.every((sql) => !sql.includes('json_each')));
 });
 
-test('online visitors expire at exactly two minutes even without deletion; future data is excluded', async (t) => {
+test('online visitors expire at the configured window without deletion; future data is excluded', async (t) => {
   const app = context(); t.after(() => app.close());
-  for (const [hash, seen] of [['current',app.now], ['recent',app.now - 119_999], ['expired',app.now - 120_000], ['future',app.now + 1]])
+  const window = PRESENCE_WINDOW_SECONDS * 1000;
+  for (const [hash, seen] of [['current',app.now], ['recent',app.now - window + 1], ['expired',app.now - window], ['future',app.now + 1]])
     app.db.raw.prepare('INSERT INTO community_presence VALUES(?,?)').run(hash, seen);
   assert.equal((await app.call('/stats')).json.onlineVisitors, 2);
-  app.now += 120_001;
+  app.now += window + 1;
   assert.equal((await app.call('/stats')).json.onlineVisitors, 0);
   assert.equal(app.db.raw.prepare('SELECT COUNT(*) n FROM community_presence').get().n, 4);
 });
@@ -67,11 +72,11 @@ test('heartbeat writes are atomically throttled and expired cleanup is bounded',
   const app = context(); t.after(() => app.close());
   await Promise.all(Array.from({length:8}, () => recordPresence(app.db, 'one-visitor', app.now)));
   assert.equal(app.db.raw.prepare('SELECT COUNT(*) n FROM community_presence').get().n, 1);
-  for (let i = 0; i < 250; i++) app.db.raw.prepare('INSERT INTO community_presence VALUES(?,?)').run(`old-${i}`, app.now - 120_000);
-  const duplicate = await recordPresence(app.db, 'one-visitor', app.now + 29_999);
+  for (let i = 0; i < 250; i++) app.db.raw.prepare('INSERT INTO community_presence VALUES(?,?)').run(`old-${i}`, app.now - PRESENCE_WINDOW_SECONDS * 1000);
+  const duplicate = await recordPresence(app.db, 'one-visitor', app.now + PRESENCE_INTERVAL_MS - 1);
   assert.equal(duplicate[0].meta.changes, 0); assert.equal(duplicate[1].meta.changes, 0);
   assert.equal(app.db.raw.prepare('SELECT last_seen FROM community_presence WHERE visitor_hash=?').get('one-visitor').last_seen, app.now);
-  const updated = await recordPresence(app.db, 'one-visitor', app.now + 30_000);
+  const updated = await recordPresence(app.db, 'one-visitor', app.now + PRESENCE_INTERVAL_MS);
   assert.equal(updated[0].meta.changes, 1); assert.equal(updated[1].meta.changes, 100);
   assert.equal(app.db.raw.prepare('SELECT COUNT(*) n FROM community_presence').get().n, 151);
 });
