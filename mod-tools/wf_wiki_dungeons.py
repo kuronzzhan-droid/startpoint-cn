@@ -17,6 +17,7 @@ from PIL import Image
 import wf_assets
 import wf_mod_tool as core
 from wf_wiki_dungeons_sources import DungeonSources, checksum
+from wf_wiki_dungeons_series import boss_series, correct_gauntlet_images, event_series, validate_series
 from wf_wiki_dungeons_schema import (
     BOSS_QUEST, EVENTS, MODES, NODE_TABLE, RANK_TABLE, cell, clean_text,
     event_table, image_paths, leaf_rows, quest_details, quest_table, table_paths,
@@ -120,6 +121,7 @@ def build_items(sources, lookup=None):
             item = base_item(f"event-{kind.replace('_', '-')}-{str(key).lower()}", title, category, summary,
                              details, logicals, image_paths(cell(row, banner_col)),
                              image_paths(cell(row, entry_col)) or thumbnail_paths(qnode), previews)
+            item.update(event_series(kind, key, row))
             if audit is not None:
                 item["_questCheck"] = dict(audit)
             result.append(item)
@@ -143,12 +145,14 @@ def build_items(sources, lookup=None):
                              f"{clean_text(cell(row, 0))} · {len(details)} 项关卡资料", details,
                              [NODE_TABLE, BOSS_QUEST, RANK_TABLE], [], image_paths(cell(row, 11)),
                              image_paths(cell(row, 12)))
+            item.update(boss_series(row))
             if five_boss:
                 item["legacyGuide"] = "five-boss"
                 item["_banners"] = image_paths(cell(row, 12)) + ["quest/event/banner/story_event/mod/five_boss/five_boss.png"]
             if audit is not None:
                 item["_questCheck"] = dict(audit)
             result.append(item)
+    correct_gauntlet_images(result)
     return result
 
 
@@ -196,6 +200,7 @@ def validate_catalog(payload, site):
                 raise ValueError("副本图片链接无效")
         if item["category"] not in ("活动", "领主战", "降临讨伐", "模式"):
             raise ValueError("副本分类无效")
+        validate_series(item)
 
 
 def export_dungeons(repo, site, *, gray_url=None, snapshot=None, store=None, gray_lookup=None, community_catalog=None):
@@ -229,6 +234,7 @@ def export_dungeons(repo, site, *, gray_url=None, snapshot=None, store=None, gra
     (site / "dungeons-data.js").write_text("window.WF_WIKI_DUNGEONS=" + encoded + ";\n", encoding="utf-8")
     receipt = {"generator": "wf_wiki_dungeons", "schemaVersion": 1, "source": payload["source"],
                "items": len(payload["items"]), "categories": dict(Counter(x["category"] for x in payload["items"])),
+               "series": dict(Counter(x["seriesId"] for x in payload["items"] if "seriesId" in x)),
                "media": media.entries, "mediaErrors": media.errors, "sourceFiles": sources.records,
                "sourceErrors": sources.errors, "bytes": len(encoded.encode("utf-8"))}
     if lookup is not None:
