@@ -40,8 +40,8 @@
     const passwords = [], cleanups = [];
     const clear = () => passwords.forEach((input) => {input.value = '';});
     let cleaned = false;
-    const cleanup = () => {if (cleaned) return; cleaned = true; clear(); cleanups.forEach((fn) => fn()); window.removeEventListener?.('hashchange', cleanup);};
-    host.authCleanup = cleanup; window.addEventListener?.('hashchange', cleanup, {once:true});
+    const cleanup = () => {if (cleaned) return; cleaned = true; clear(); cleanups.forEach((fn) => fn()); window.removeEventListener?.('wf-page-leave', cleanup);};
+    host.authCleanup = cleanup; window.addEventListener?.('wf-page-leave', cleanup, {once:true});
     const add = (label, type, autocomplete) => {
       const value = field(ui, label, type, autocomplete); form.append(value.wrapper);
       if (type === 'password') passwords.push(value.input); return value.input;

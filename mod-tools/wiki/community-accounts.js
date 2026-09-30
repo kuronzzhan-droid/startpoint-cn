@@ -19,8 +19,8 @@
     }
     const secrets = new Set();
     const clear = () => secrets.forEach((node) => {node.value = '';});
-    function cleanup() {clear(); window.removeEventListener?.('hashchange', cleanup);}
-    host.authCleanup?.(); host.authCleanup = cleanup; window.addEventListener?.('hashchange', cleanup, {once:true});
+    function cleanup() {clear(); window.removeEventListener?.('wf-page-leave', cleanup);}
+    host.authCleanup?.(); host.authCleanup = cleanup; window.addEventListener?.('wf-page-leave', cleanup, {once:true});
     heading.append(el('h2', '', '管理员账号'), button('关闭账号管理', () => {cleanup(); host.replaceChildren();}));
     page.append(heading, el('p', 'muted', '普通管理员可维护配队大全；副站长还可管理普通管理员。新账号及重置密码后，首次登录必须修改临时密码。'), notice, createHost, list);
     host.replaceChildren(page);

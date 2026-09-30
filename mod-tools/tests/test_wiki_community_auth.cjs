@@ -191,7 +191,34 @@ test('password reset sends revision, does not publish plaintext, and needs a new
 test('navigation clears an unfinished password form and disposes verification', async () => {
   const x = setup(() => fail('admin_auth_required'));
   await x.A.ensure(x.host, config, x.ui, () => {}); find(x.host, '登录密码').value = secret;
-  x.listeners.get('hashchange')(); assert.equal(find(x.host, '登录密码').value, ''); assert.equal(x.challenges[0].destroyed, true);
+  x.listeners.get('wf-page-leave')(); assert.equal(find(x.host, '登录密码').value, ''); assert.equal(x.challenges[0].destroyed, true);
+  assert.equal(x.listeners.has('wf-page-leave'),false);
+});
+
+test('rejected hash navigation leaves a mounted password form usable for submission',async()=>{
+  let done=0;const x=setup(()=>({ok:true}));x.A.password(x.host,editor,x.ui,()=>{done++;});
+  find(x.host,'当前密码').value=secret;find(x.host,'新密码').value=`${secret}-new`;find(x.host,'确认新密码').value=`${secret}-new`;
+  x.listeners.get('hashchange')?.();assert.equal(find(x.host,'当前密码').value,secret);
+  await form(x.host).fire('submit');assert.equal(x.calls[0][0],'/auth/password');assert.equal(done,1);
+});
+
+test('rejected navigation during a failed password request leaves retry available',async()=>{
+  let reject,attempts=0;const x=setup(()=>++attempts===1?new Promise((_resolve,fail)=>{reject=fail;}):({ok:true}));
+  x.A.password(x.host,editor,x.ui,()=>{});
+  const fill=()=>{find(x.host,'当前密码').value=secret;find(x.host,'新密码').value=`${secret}-new`;find(x.host,'确认新密码').value=`${secret}-new`;};
+  fill();const pending=form(x.host).fire('submit');await new Promise(setImmediate);x.listeners.get('hashchange')?.();
+  reject(new Error('offline'));await pending;assert.equal(button(x.host,'保存新密码').disabled,false);
+  fill();await form(x.host).fire('submit');assert.equal(x.calls.length,2);
+});
+
+test('account secrets survive rejected hash navigation and clear only on accepted page departure',async()=>{
+  const x=setup(()=>({items:[editor]}));await x.window.WFCommunityAccounts.render(x.host,x.ui,owner);
+  await button(x.host,'重置临时密码').fire('click');
+  find(x.host,'临时密码').value=secret;find(x.host,`新临时密码：${editor.email}`).value=`${secret}-reset`;
+  x.listeners.get('hashchange')?.();assert.equal(find(x.host,'临时密码').value,secret);
+  assert.equal(find(x.host,`新临时密码：${editor.email}`).value,`${secret}-reset`);
+  x.listeners.get('wf-page-leave')();assert.equal(find(x.host,'临时密码').value,'');
+  assert.equal(find(x.host,`新临时密码：${editor.email}`).value,'');assert.equal(x.listeners.has('wf-page-leave'),false);
 });
 test('deputy cannot manipulate owner or deputy accounts and can only create ordinary editors', async () => {
   const x = setup((_url, body, method) => method === 'POST' ? {...editor,email:body.email} : {items:[owner,deputy,editor],deputySuggestion:{email:'private@example.test'}});
