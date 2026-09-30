@@ -17,6 +17,7 @@ from PIL import Image
 import wf_assets
 import wf_mod_tool as core
 from wf_wiki_dungeons_sources import DungeonSources, checksum
+from wf_wiki_dungeons_gray import gray_quest_lookup, verify_gray_quests_unchanged
 from wf_wiki_dungeons_series import (
     boss_series, correct_gauntlet_images, event_series, validate_series, verified_gauntlet_tables,
 )
@@ -162,7 +163,7 @@ def build_items(sources, lookup=None):
     return result
 
 
-def render_catalog(sources, media, drafts):
+def render_catalog(sources, media, drafts, *, quest_assets=False):
     candidates = {logical for item in drafts for key in ("_banners", "_entries", "_previews") for logical in item[key]}
     sources.prefetch(candidates)
     items = []
@@ -194,9 +195,12 @@ def render_catalog(sources, media, drafts):
             item["source"]["label"] = "灰服当前补丁已核对；游戏内开放状态未实测"
         if "_questCheck" in draft:
             audit = draft["_questCheck"]
-            if not verified or audit["matched"]:
+            if quest_assets or not verified or audit["matched"]:
                 item["source"]["questLookup"] = audit
-                item["source"]["label"] += f"；灰服后台可对应 {audit['matched']}/{audit['total']} 项关卡"
+                label = "灰服当前关卡配置已对应" if quest_assets else "灰服后台可对应"
+                item["source"]["label"] += f"；{label} {audit['matched']}/{audit['total']} 项关卡"
+                if quest_assets and not verified:
+                    item["source"]["label"] += "；游戏内开放状态未实测"
         items.append(item)
     return {"schemaVersion": 1, "source": sources.source(sources.records), "items": items}
 
@@ -214,7 +218,8 @@ def validate_catalog(payload, site):
         validate_series(item)
 
 
-def export_dungeons(repo, site, *, gray_url=None, snapshot=None, store=None, gray_lookup=None, community_catalog=None):
+def export_dungeons(repo, site, *, gray_url=None, snapshot=None, store=None, gray_lookup=None,
+                    gray_quest_assets=None, community_catalog=None):
     repo, site = Path(repo).resolve(), Path(site).resolve()
     store = Path(store or core.resolve_active_store(repo)).resolve()
     if site == repo or site in repo.parents or site == store or site.is_relative_to(store.parent):
@@ -228,7 +233,10 @@ def export_dungeons(repo, site, *, gray_url=None, snapshot=None, store=None, gra
         raise ValueError("采集灰服资源时请显式指定 --gray-snapshot")
     sources = DungeonSources(store, snapshot=snapshot, gray_url=gray_url)
     lookup = None
-    if gray_lookup:
+    quest_hashes = {}
+    if gray_quest_assets:
+        lookup, quest_hashes = gray_quest_lookup(gray_quest_assets)
+    elif gray_lookup:
         lookup = json.loads(Path(gray_lookup).read_text(encoding="utf-8"))
         if not isinstance(lookup, dict) or any(not re.fullmatch(r"\d+_\d+", key) or not isinstance(value, str)
                                                or len(value) > 500 for key, value in lookup.items()):
@@ -237,9 +245,11 @@ def export_dungeons(repo, site, *, gray_url=None, snapshot=None, store=None, gra
     drafts = build_items(sources, lookup)
     print(f"已读取 {len(drafts)} 项入口，正在匹配横幅和预览图……", flush=True)
     media = DungeonMedia(sources, site)
-    payload = render_catalog(sources, media, drafts)
+    payload = render_catalog(sources, media, drafts, quest_assets=bool(gray_quest_assets))
     validate_catalog(payload, site)
     sources.verify_local_unchanged()
+    if gray_quest_assets:
+        verify_gray_quests_unchanged(gray_quest_assets, quest_hashes)
     sources.write_manifest()
     encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
     (site / "dungeons-data.js").write_text("window.WF_WIKI_DUNGEONS=" + encoded + ";\n", encoding="utf-8")
@@ -252,7 +262,9 @@ def export_dungeons(repo, site, *, gray_url=None, snapshot=None, store=None, gra
         totals = Counter()
         for draft in drafts:
             totals.update(draft.get("_questCheck", {}))
-        receipt["questLookup"] = {"sha256": checksum(Path(gray_lookup).read_bytes()), **dict(totals)}
+        provenance = ({"origin": "gray-quest-assets", "files": quest_hashes} if gray_quest_assets
+                      else {"sha256": checksum(Path(gray_lookup).read_bytes())})
+        receipt["questLookup"] = {**provenance, **dict(totals)}
     (site / "dungeons-manifest.json").write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     if community_catalog:
         target = Path(community_catalog)
@@ -269,11 +281,13 @@ def main():
     parser.add_argument("--gray-url", help="显式启用灰服公开资源 GET 采集")
     parser.add_argument("--gray-snapshot", type=Path, help="独立快照目录；无 URL 时只离线读已保存快照")
     parser.add_argument("--gray-lookup", type=Path, help="已只读获取的灰服 /api/lookup/quests JSON，仅核对名称，不推断开放")
+    parser.add_argument("--gray-quest-assets", type=Path, help="实际灰服关卡 JSON 快照，优先于旧后台查询快照；仅核对配置")
     parser.add_argument("--community-catalog", type=Path, help="仅显式指定时生成社区后端可信 ID/标题模块")
     args = parser.parse_args()
     result = export_dungeons(Path(__file__).resolve().parent.parent, args.site,
                              gray_url=args.gray_url, snapshot=args.gray_snapshot,
-                             gray_lookup=args.gray_lookup, community_catalog=args.community_catalog)
+                             gray_lookup=args.gray_lookup, gray_quest_assets=args.gray_quest_assets,
+                             community_catalog=args.community_catalog)
     print(json.dumps({key: result[key] for key in ("items", "categories", "source", "bytes")}, ensure_ascii=False, indent=2))
 
 
