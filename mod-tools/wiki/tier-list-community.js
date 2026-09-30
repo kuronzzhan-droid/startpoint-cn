@@ -57,14 +57,23 @@
     submitBar.append(submit, mineStatus);
     const publicToolbar = el('div', 'tier-public-toolbar'), avatarHost = el('div');
     const refresh = el('button', 'secondary-button', '刷新大家排行'); refresh.type = 'button';
-    publicToolbar.append(avatarHost, refresh);
+    const detailToggle = el('button', 'tier-detail-toggle'); detailToggle.type = 'button';
+    detailToggle.setAttribute('role', 'switch'); detailToggle.setAttribute('aria-label', '显示全部评分详情');
+    detailToggle.setAttribute('aria-checked', 'false');
+    const track = el('span', 'tier-detail-track'); track.setAttribute('aria-hidden', 'true'); track.append(el('span', 'tier-detail-thumb'));
+    detailToggle.append(track, el('span', '', '显示评分详情'));
+    publicToolbar.append(avatarHost, detailToggle, refresh);
     const description = el('p', 'tier-public-formula', '综合得分 = 玩家手排均分 × 70% + 角色评分 × 30%。缺一项时暂按已有一项显示；两项都没有的角色暂不入榜。');
     const publicStatus = el('p', 'tier-public-status'); publicStatus.setAttribute('role', 'status');
     const elementFilters = el('div', 'tier-public-elements'); elementFilters.setAttribute('role', 'group'); elementFilters.setAttribute('aria-label', '综合排行属性');
     const results = el('div', 'tier-public-results'), elementButtons = [];
     dynamicHost.append(publicToolbar, description, elementFilters, publicStatus, results);
     element.append(tabs, submitBar, mineHost, dynamicHost); host.append(element);
-    let view = 'mine', revision = 0, portraits, dialogOpen = false, submitted, cached, elementFilter = '';
+    let view = 'mine', revision = 0, portraits, dialogOpen = false, submitted, cached, elementFilter = '', showDetails = false, publicCards = [];
+    detailToggle.addEventListener('click', () => {
+      showDetails = !showDetails; detailToggle.setAttribute('aria-checked', String(showDetails));
+      publicCards.forEach(({card, text}) => {text.hidden = !showDetails; card.className = `tier-public-card${showDetails ? '' : ' is-compact'}`;});
+    });
     ['', '火', '水', '雷', '风', '光', '暗'].forEach(value => {
       const button = el('button', 'tier-public-element'); button.type = 'button';
       button.setAttribute('aria-label', value ? `${value}属性排行` : '全体角色总榜');
@@ -89,29 +98,44 @@
     function renderPublic(value) {
       const items = value.items.filter(item => byId.has(item.id) && (!elementFilter || byId.get(item.id).element === elementFilter));
       const board = el('div', 'tier-board tier-public-board');
+      publicCards = [];
       rowKeys.forEach((key, index) => {
         const between = key.startsWith('between'), row = el('section', `tier-zone ${between ? 'tier-boundary' : `tier-row tier-row-${index / 2}`}`);
         const slots = el('div', 'tier-slots'); row.append(el(between ? 'span' : 'h2', 'tier-label', labels[index]), slots);
         items.filter(item => item.row === key).forEach(item => {
-          const character = byId.get(item.id), card = el('a', 'tier-public-card'); card.href = `#character/${encodeURIComponent(item.id)}`;
+          const character = byId.get(item.id), card = el('button', `tier-public-card${showDetails ? '' : ' is-compact'}`); card.type = 'button';
+          card.setAttribute('data-character-id', item.id);
           const portrait = el('span', 'tier-avatar'); portrait.append(portraits.picture(character, '', ''), nativeIcon('elements', character.element, character.element, 'tier-avatar-element'));
           window.WFCharacterFrame?.apply(portrait, character);
           const title = `${character.name}${character.theme ? `（${character.theme}）` : ''}`;
           const counts = `手排 ${item.placementVoters} 人 · 评分 ${item.ratingVoters} 人`;
           const missing = item.missingSources.includes('placement') ? '仅评分 · 暂无手排' : item.missingSources.includes('rating') ? '仅手排 · 暂无评分' : '';
-          const averages = `手排均分 ${item.placementAverage === null ? '暂无' : item.placementAverage.toFixed(2)}；角色评分 ${item.ratingAverage === null ? '暂无' : item.ratingAverage.toFixed(2)}`;
-          card.title = `${title} · 综合 ${item.compositeScore.toFixed(2)} / 5 · ${counts} · ${averages}${missing ? ` · ${missing}` : ''}`;
-          card.setAttribute('aria-label', card.title);
+          card.title = title; card.setAttribute('aria-label', `查看${title}的排行详情`);
+          card.setAttribute('aria-haspopup', 'dialog');
+          card.addEventListener('click', () => {
+            const modal = C.dialog(`${title} · 排行详情`, ui), body = el('div', 'tier-score-detail');
+            const headline = el('div', 'tier-score-headline');
+            headline.append(el('span', '', '综合得分'), el('strong', '', item.compositeScore.toFixed(2)), el('span', '', `/ 5 · ${labels[rowKeys.indexOf(item.row)]}`));
+            body.append(headline);
+            [['手排均分', item.placementAverage, item.placementVoters], ['角色评分', item.ratingAverage, item.ratingVoters]].forEach(([label, average, voters]) => {
+              const stat = el('div', 'tier-score-stat');
+              stat.append(el('span', '', label), el('strong', '', average === null ? '暂无' : average.toFixed(2)), el('span', '', `${voters} 位玩家`)); body.append(stat);
+            });
+            body.append(el('p', 'tier-score-explanation', missing ? `${missing}，暂按已有分数显示。` : '手排均分 × 70% + 角色评分 × 30%。'));
+            const link = el('a', 'primary-button', '查看角色完整资料'); link.href = `#character/${encodeURIComponent(item.id)}`;
+            body.append(link); modal.element.append(body);
+          });
           const text = el('span', 'tier-public-card-text'); text.append(el('strong', 'tier-public-score', item.compositeScore.toFixed(2)),
             el('span', 'tier-public-name', title), el('small', 'tier-public-counts', counts));
+          text.hidden = !showDetails;
           if (missing) text.append(el('small', 'tier-public-missing', missing));
-          card.append(portrait, text); slots.append(card);
+          publicCards.push({card, text}); card.append(portrait, text); slots.append(card);
         });
         if (!slots.children.length) slots.append(el('span', 'tier-placeholder', '暂无角色'));
         board.append(row);
       });
       results.replaceChildren(board);
-      publicStatus.textContent = items.length ? `${elementFilter ? `${elementFilter}属性榜 · ` : '总榜 · '}${items.length} 位角色已有玩家评价；点击头像可查看角色详情。`
+      publicStatus.textContent = items.length ? `${elementFilter ? `${elementFilter}属性榜 · ` : '总榜 · '}${items.length} 位角色已有玩家评价；点击头像查看分数与投票详情。`
         : `${elementFilter ? `${elementFilter}属性暂时` : '目前'}还没有玩家提交手排或角色评分。你可以先完成自己的排行并提交。`;
     }
     async function loadPublic() {

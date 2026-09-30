@@ -21,6 +21,8 @@ const el = (...args) => new Node(...args);
 const cls = (root, name) => root.all(node => node.className.split(' ').includes(name))[0];
 const all = (root, name) => root.all(node => node.className.split(' ').includes(name));
 const button = (root, label) => root.all(node => node.tag === 'button' && node.textContent === label)[0];
+const visibleText = root => root.hidden ? '' : root.ownText + root.children.map(visibleText).join('');
+const detailSwitch = root => root.all(node => node.attributes.role === 'switch' && node.attributes['aria-label'] === '显示全部评分详情')[0];
 const rowKeys = ['tier0', 'between0', 'tier1', 'between1', 'tier2', 'between2', 'tier3', 'between3', 'tier4'];
 const rows = () => Object.fromEntries(rowKeys.map(key => [key, []]));
 const me = {rows: rows(), submittedToday: false, nextVoteAt: Date.parse('2026-10-01T16:00:00Z'), updatedAt: null, rankedCharacters: 0, challengeAction: 'submit_tier_ranking'};
@@ -30,7 +32,7 @@ const aggregate = (items = [record('c1'), record('c2'), record('c3')]) => ({item
 function setup(handler = async pathname => pathname.endsWith('/me') ? me : aggregate(), options = {}) {
   const calls = [], dialogs = [], challenges = [], transitions = []; let configCalls = 0, portraitsCreated = 0;
   const C = {client: {request: async (...args) => {calls.push(args); return handler(...args);}, config: async () => {configCalls++; return options.config ? options.config() : {enabled: true};}}, message: error => error.message};
-  C.dialog = () => {const modal = {element: el('dialog'), cleanup(callback) {this.clean = callback;}, close() {this.clean?.(); this.element.connected = false;}}; modal.element.connected = true; dialogs.push(modal); return modal;};
+  C.dialog = title => {const modal = {title, element: el('dialog'), cleanup(callback) {this.clean = callback;}, close() {this.clean?.(); this.element.connected = false;}}; modal.element.connected = true; dialogs.push(modal); return modal;};
   C.challenge = (_host, _config, action, _ui, onChange) => {
     const challenge = {action, resets: 0, destroyed: false, token: '', ready(token = 'one-use') {this.token = token; onChange(true);},
       take() {const token = this.token; this.token = ''; onChange(false); return token;}, reset() {this.resets++; onChange(false);}, destroy() {this.destroyed = true;}};
@@ -53,12 +55,21 @@ test('my view and unsent local edits do not fetch rankings, request verification
   assert.equal(x.controller.mineHost.hidden, false); assert.equal(cls(x.host, 'tier-public-view').hidden, true);
 });
 
-test('public view lazily reads authoritative scores, sources and counts without inventing scores for missing data', async () => {
+test('public view defaults to avatar buttons with rating text hidden and no score in hover or accessible names', async () => {
   const value = aggregate([record('c1'), record('c2', {compositeScore: 0, row: 'tier4', placementAverage: null, placementVoters: 0, ratingAverage: 0, ratingVoters: 1, missingSources: ['placement']})]);
   const x = setup(async () => value); x.controller.setView('community'); await tick();
   assert.equal(x.calls.length, 1); assert.equal(x.calls[0][0], '/tier-rankings'); assert.equal(x.portraitsCreated(), 1);
   const cards = all(x.host, 'tier-public-card'); assert.equal(cards.length, 2);
-  assert.equal(cards[0].href, '#character/c1'); assert.match(cards[0].textContent, /4\.50.*手排 2 人 · 评分 3 人/);
+  assert.equal(cards[0].tag, 'button'); assert.equal(cards[0].type, 'button'); assert.equal(cards[0].href, undefined);
+  assert.equal(cards[0].attributes['data-character-id'], 'c1'); assert.equal(cards[0].title, '甲');
+  assert.equal(cards[0].attributes['aria-label'], '查看甲的排行详情');
+  for (const card of cards) {
+    assert.equal(cls(card, 'tier-public-card-text').hidden, true);
+    assert.doesNotMatch(visibleText(card), /4\.50|0\.00|手排|评分|暂无/);
+    assert.doesNotMatch(card.title, /4\.50|0\.00|手排|评分|暂无/);
+  }
+  assert.equal(detailSwitch(x.host).attributes['aria-checked'], 'false');
+  assert.match(cards[0].textContent, /4\.50.*手排 2 人 · 评分 3 人/);
   assert.match(cards[1].textContent, /0\.00.*仅评分 · 暂无手排/); assert.doesNotMatch(cards[1].title, /手排均分 0/);
   assert.equal(x.controller.mineHost.hidden, true); assert.equal(button(x.host, '大家排行').attributes['aria-selected'], 'true');
 });
@@ -66,11 +77,49 @@ test('public view lazily reads authoritative scores, sources and counts without 
 test('element tabs filter cached rows without requests and preserve server tie order', async () => {
   const x = setup(async () => aggregate([record('c3'), record('c1'), record('c2')])); x.controller.setView('community'); await tick();
   const fire = x.host.all(node => node.attributes['aria-label'] === '火属性排行')[0]; await fire.fire();
-  assert.deepEqual(all(x.host, 'tier-public-card').map(card => card.href), ['#character/c3', '#character/c1']); assert.equal(x.calls.length, 1);
+  assert.deepEqual(all(x.host, 'tier-public-card').map(card => card.attributes['data-character-id']), ['c3', 'c1']); assert.equal(x.calls.length, 1);
   assert.match(cls(x.host, 'tier-public-status').textContent, /火属性榜 · 2/);
   await x.host.all(node => node.attributes['aria-label'] === '暗属性排行')[0].fire();
   assert.equal(all(x.host, 'tier-public-card').length, 0); assert.match(cls(x.host, 'tier-public-status').textContent, /暗属性暂时还没有/);
   await button(x.host, '总榜').fire(); assert.equal(all(x.host, 'tier-public-card').length, 3); assert.equal(x.calls.length, 1);
+});
+
+test('clicking an avatar opens its authoritative score breakdown and separate character detail link', async () => {
+  const x = setup(async () => aggregate([record('c1', {compositeScore: 4.35, placementAverage: 4.5, placementVoters: 7, ratingAverage: 4, ratingVoters: 3})]));
+  x.controller.setView('community'); await tick(); await all(x.host, 'tier-public-card')[0].fire();
+  assert.equal(x.dialogs.length, 1); const dialog = x.dialogs[0].element;
+  assert.match(x.dialogs[0].title, /甲.*排行详情/); assert.match(cls(dialog, 'tier-score-headline').textContent, /综合得分4\.35/);
+  const stats = all(dialog, 'tier-score-stat');
+  assert.match(stats[0].textContent, /手排均分4\.507\s*位玩家/); assert.match(stats[1].textContent, /角色评分4\.003\s*位玩家/);
+  const links = dialog.all(node => node.tag === 'a'); assert.equal(links.length, 1); assert.equal(links[0].href, '#character/c1');
+  assert.equal(x.calls.length, 1); assert.equal(x.challenges.length, 0); assert.equal(detailSwitch(x.host).attributes['aria-checked'], 'false');
+  x.dialogs[0].close(); assert.equal(cls(all(x.host, 'tier-public-card')[0], 'tier-public-card-text').hidden, true);
+});
+
+test('avatar details distinguish an actual zero rating from a missing placement source', async () => {
+  const x = setup(async () => aggregate([record('c2', {compositeScore: 0, row: 'tier4', placementAverage: null, placementVoters: 0, ratingAverage: 0, ratingVoters: 1, missingSources: ['placement']})]));
+  x.controller.setView('community'); await tick(); await all(x.host, 'tier-public-card')[0].fire();
+  const dialog = x.dialogs[0].element;
+  assert.match(cls(dialog, 'tier-score-headline').textContent, /综合得分0\.00/); assert.match(dialog.textContent, /暂无手排/);
+  const stats = all(dialog, 'tier-score-stat');
+  assert.match(stats[0].textContent, /手排均分暂无0\s*位玩家/); assert.match(stats[1].textContent, /角色评分0\.001\s*位玩家/);
+  assert.doesNotMatch(dialog.textContent, /暂无评分/); assert.equal(dialog.all(node => node.tag === 'a')[0].href, '#character/c2');
+});
+
+test('global details switch changes all card visibility locally and survives attribute filtering', async () => {
+  const x = setup(); x.controller.setView('community'); await tick(); const toggle = detailSwitch(x.host);
+  assert.equal(toggle.attributes['aria-checked'], 'false'); await toggle.fire();
+  assert.equal(toggle.attributes['aria-checked'], 'true');
+  for (const card of all(x.host, 'tier-public-card')) {
+    assert.equal(cls(card, 'tier-public-card-text').hidden, false); assert.match(visibleText(card), /4\.50.*手排 2 人 · 评分 3 人/);
+  }
+  await x.host.all(node => node.attributes['aria-label'] === '火属性排行')[0].fire();
+  assert.equal(all(x.host, 'tier-public-card').length, 2); assert.equal(toggle.attributes['aria-checked'], 'true');
+  assert.ok(all(x.host, 'tier-public-card-text').every(text => text.hidden === false));
+  await toggle.fire(); assert.equal(toggle.attributes['aria-checked'], 'false');
+  await button(x.host, '总榜').fire(); assert.equal(all(x.host, 'tier-public-card').length, 3);
+  assert.ok(all(x.host, 'tier-public-card-text').every(text => text.hidden === true)); assert.equal(x.calls.length, 1);
+  assert.equal(x.dialogs.length, 0); assert.equal(x.challenges.length, 0);
 });
 
 test('late or detached public responses never overwrite another view; returning requests current data', async () => {

@@ -6,28 +6,44 @@
 .tier-submit-status{color:var(--muted);font-size:12px;line-height:1.6}
 .tier-public-toolbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:9px;margin-top:12px}
 .tier-public-toolbar button{font-size:12px;min-height:36px}
+.tier-detail-toggle{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);padding:6px 10px;margin-left:auto}
+.tier-detail-track{display:block;flex:none;width:34px;height:20px;padding:3px;border-radius:20px;background:#839994;box-sizing:border-box}
+.tier-detail-thumb{display:block;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #143c3955}
+.tier-detail-toggle[aria-checked="true"] .tier-detail-track{background:var(--accent-dark)}
+.tier-detail-toggle[aria-checked="true"] .tier-detail-thumb{transform:translateX(14px)}
 .tier-public-formula,.tier-public-status{font-size:12px;line-height:1.7;margin:8px 0;color:var(--muted)}
 .tier-public-status{color:var(--accent-dark)}
 .tier-public-elements{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:9px 0;max-width:660px}
 .tier-public-element{display:flex;align-items:center;justify-content:center;gap:4px;min-height:37px;min-width:0;padding:5px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--muted);font-size:12px}
 .tier-public-element img{width:18px;height:18px;object-fit:contain}.tier-public-element[aria-pressed="true"]{border-color:var(--accent-dark);color:var(--accent-dark);font-weight:700;box-shadow:inset 0 -2px var(--accent-dark)}
 .tier-public-board .tier-slots{align-items:stretch;gap:7px}
-.tier-public-card{display:flex;align-items:center;gap:6px;flex:0 1 190px;min-width:0;padding:5px 7px 5px 5px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);text-decoration:none}
+.tier-public-card{display:flex;align-items:center;gap:6px;flex:0 1 190px;min-width:0;padding:5px 7px 5px 5px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);text-decoration:none;text-align:left;cursor:pointer}
 .tier-public-card:hover{border-color:var(--accent-dark);box-shadow:0 2px 5px #0002}
 .tier-public-card .tier-avatar{cursor:pointer;pointer-events:none}
 .tier-public-card-text{display:flex;flex-direction:column;gap:2px;min-width:0}
+.tier-public-card-text[hidden]{display:none}
+.tier-public-card.is-compact{flex:0 0 auto;align-self:center;padding:0;border:0;background:transparent}
+.tier-public-card.is-compact .tier-avatar{--tier-avatar-size:56px}
 .tier-public-score{font-size:20px;line-height:1.1;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink)}
 .tier-public-name{font-size:11px;line-height:1.35;overflow-wrap:anywhere}
 .tier-public-counts,.tier-public-missing{font-size:9px;line-height:1.4;color:var(--muted)}
 .tier-public-missing{color:var(--accent-dark)}
 .tier-submit-preview{font-weight:700;font-size:15px;line-height:1.7}
 .tier-submit-policy,.tier-submit-notice{font-size:13px;line-height:1.7;overflow-wrap:anywhere}
+.tier-score-detail{display:grid;gap:12px;min-width:0}
+.tier-score-headline{display:flex;align-items:baseline;flex-wrap:wrap;gap:7px;padding:12px;border-radius:9px;background:var(--soft);font-size:13px}
+.tier-score-headline strong{font-size:32px;font-weight:800;font-variant-numeric:tabular-nums}
+.tier-score-stat{display:grid;grid-template-columns:1fr auto auto;align-items:baseline;gap:12px;font-size:13px;padding:8px 0;border-bottom:1px solid var(--line)}
+.tier-score-stat strong{font-size:20px;font-variant-numeric:tabular-nums}
+.tier-score-explanation{margin:0;color:var(--muted);font-size:12px;line-height:1.6}
+.tier-score-detail>a{justify-self:start;font-size:13px}
 @media(max-width:640px){
  .tier-community-tabs{margin-top:10px}.tier-community-tabs button{font-size:13px;padding:8px 18px}
  .tier-submit-bar{gap:7px;margin-top:10px}.tier-submit-status{font-size:11px}
  .tier-public-formula,.tier-public-status{font-size:11px}
  .tier-public-elements{gap:3px}.tier-public-element{min-height:35px;font-size:11px;padding:4px 1px;gap:2px}.tier-public-element img{width:14px;height:14px}
  .tier-public-card{flex-basis:155px;padding:4px;gap:5px}.tier-public-card .tier-avatar{--tier-avatar-size:39px}
+ .tier-public-card.is-compact .tier-avatar{--tier-avatar-size:44px}
  .tier-public-score{font-size:19px}.tier-public-name{font-size:10px}
  .tier-public-board .tier-slots{gap:5px;padding-inline:5px}
 }
