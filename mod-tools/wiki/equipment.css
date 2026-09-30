@@ -1,10 +1,22 @@
 /* Weapon-only styles, independent of the game formation layout. */
-.equipment-toolbar{padding:14px;background:#fff;border:1px solid #d1dddd;border-radius:10px}
-.equipment-toolbar input{flex:1;min-width:200px}
-.equipment-toolbar select{min-height:42px;padding:8px 12px;border:1px solid #bbcdd0;border-radius:6px;background:#f9fcfc;color:#344b4e}
-.equipment-groups{display:flex;flex-direction:column;gap:30px}
-.equipment-result-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+.equipment-page-header{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;margin-bottom:8px}
+.equipment-page-header h1{margin:0;padding-left:10px;border-left:5px solid var(--orange,#edac2c);font-size:22px;line-height:1.5}
+.equipment-help{flex:1;min-width:120px;color:var(--muted,#52726e);font-size:12px}
+.equipment-help>summary{width:fit-content;padding:4px 0}
+.equipment-help p{margin:6px 0;line-height:1.6}
+.equipment-toolbar{display:grid;gap:5px;padding:8px 10px;margin-bottom:7px;background:var(--surface,#fff);border:1px solid var(--line,#d1dddd);border-radius:8px}
+.equipment-search-row{display:flex;align-items:center;gap:6px;min-width:0}
+.equipment-toolbar input{flex:1;min-width:0;min-height:34px;padding:7px 10px;border:1px solid var(--line,#bbcdd0);border-radius:6px;background:var(--surface,#f9fcfc);color:var(--ink,#344b4e);font:inherit;font-size:13px}
+.equipment-search-row .equipment-attribute-current{flex:none;min-height:34px;padding:6px 10px;font-size:12px}
+.equipment-advanced-filters>summary{width:fit-content;max-width:100%;padding:3px 0;color:var(--muted,#52726e);font-size:12px;overflow-wrap:anywhere}
+.equipment-filter-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding-top:5px}
+.equipment-filter-fields>*{min-width:0;max-width:100%}
+.equipment-toolbar select{width:100%;min-height:32px;padding:6px;border:1px solid #bbcdd0;border-radius:6px;background:#f9fcfc;color:#344b4e;font-size:12px}
+.equipment-groups{display:flex;flex-direction:column;gap:18px}
+.equipment-result-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:5px;margin-bottom:10px;font-size:12px}
 .equipment-result-bar>p{margin:0}
+.equipment-layout-controls{display:flex;gap:5px;margin-left:auto}
+.equipment-layout-button{display:inline-flex;align-items:center;gap:5px;min-height:32px}
 .equipment-group-controls{margin:0;gap:6px}
 .equipment-group-controls .secondary-button{min-height:36px;padding:6px 12px;font-size:12px;color:#3d6864}
 .equipment-group{min-width:0}
@@ -15,7 +27,7 @@
 .equipment-group[open]>.equipment-group-heading::after{content:'收起 ▾'}
 .equipment-group-heading:hover{background:#edf8f3}
 .equipment-group-heading:focus-visible{outline:3px solid #e6af3a;outline-offset:3px}
-.equipment-group-heading h2{margin:0;font-size:21px;color:#344e50}
+.equipment-group-heading h2{margin:0;font-size:18px;color:#344e50}
 .equipment-group-count{padding:4px 10px;border:1px solid #c7ddda;border-radius:20px;background:#fff;color:#367570;font-size:12px;font-weight:700}
 .equipment-group .equipment-grid{grid-template-columns:repeat(auto-fill,minmax(310px,1fr))}
 .equipment-group-body{display:grid;gap:22px}
@@ -91,14 +103,17 @@
 [data-theme="dark"] .equipment-final-stats{background:#173d38;border-color:#38746a;color:#b9efdd}
 [data-theme="dark"] .equipment-attribute-option[aria-pressed="true"]{background:#185a53;color:#caffef;border-color:#43bba8}
 @media(max-width:640px){
-  .equipment-toolbar{gap:8px;padding:10px}
+  .equipment-toolbar{padding:7px 8px}
   .equipment-toolbar input,.equipment-toolbar select{width:100%;min-width:0}
   .equipment-group .equipment-grid{grid-template-columns:minmax(0,1fr)}
   .equipment-card>summary{grid-template-columns:48px minmax(0,1fr) 48px;gap:8px}
   .equipment-card .equipment-icon,.equipment-framed-icon{width:48px;height:48px}
   .equipment-card .equipment-framed-icon>.equipment-icon{width:36px;height:36px}
-  .equipment-group-heading h2{font-size:19px}
-  .equipment-groups{gap:24px}
+  .equipment-page-header h1{font-size:20px}
+  .equipment-group-heading{gap:6px 8px;padding:8px 10px}
+  .equipment-group-heading h2{font-size:17px}
+  .equipment-group-count{padding:3px 6px;font-size:11px}
+  .equipment-groups{gap:14px}
   .equipment-attribute-current{min-height:36px}
   .equipment-attribute-floating{right:12px;bottom:calc(132px + env(safe-area-inset-bottom))}
   .equipment-attribute-shortcut{min-height:38px;padding:6px 9px;font-size:12px}
@@ -112,3 +127,13 @@
 .equipment-group-toggle:disabled{opacity:.5;cursor:not-allowed}
 .equipment-attribute-floating .equipment-attribute-popover{max-height:calc(100dvh - 274px - env(safe-area-inset-bottom,0px))}
 @media(max-width:640px){.equipment-attribute-floating .equipment-attribute-popover{max-height:calc(100dvh - 246px - env(safe-area-inset-bottom,0px))}}
+/* Dense cards reuse their native disclosure: an opened icon becomes a full-width panel. */
+.equipment-groups[data-layout="dense"] .equipment-grid{grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.equipment-groups[data-layout="dense"] .equipment-card[open]{grid-column:1 / -1}
+.equipment-groups[data-layout="dense"] .equipment-card:not([open]){padding:4px;border-width:2px;border-image:none;border-radius:6px;aspect-ratio:1;box-shadow:none}
+.equipment-groups[data-layout="dense"] .equipment-card:not([open])>summary{display:block;height:100%;margin:0}
+.equipment-groups[data-layout="dense"] .equipment-card:not([open]) .equipment-card-title,
+.equipment-groups[data-layout="dense"] .equipment-card:not([open]) .equipment-card-actions{display:none}
+.equipment-groups[data-layout="dense"] .equipment-card:not([open])>summary>.equipment-icon,
+.equipment-groups[data-layout="dense"] .equipment-card:not([open])>summary>.equipment-framed-icon{display:block;width:100%;height:auto;aspect-ratio:1;margin:0}
+.equipment-groups[data-layout="dense"] .equipment-card:not([open]) .equipment-framed-icon>.equipment-icon{width:calc(100% - 12px);height:calc(100% - 12px)}

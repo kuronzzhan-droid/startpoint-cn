@@ -7,7 +7,8 @@
       const e = entry.enhancement, stateKey = entry.id || entry.name;
       const forms = Array.isArray(e?.forms) ? e.forms.filter((form) => form && Number.isFinite(Number(form.level)) && Number(form.level) > 0)
         .map((form) => ({...form, level:Number(form.level)})).sort((a, b) => a.level - b.level) : [];
-      const stages = forms.length ? forms : e ? [{...e, level:Number(e.maxLevel), label:`强化后 Lv${e.maxLevel}`}] : [];
+      const stages = forms.length ? forms : e && Number.isFinite(Number(e.maxLevel)) && Number(e.maxLevel) > 0
+        ? [{...e, level:Number(e.maxLevel), label:`强化后 Lv${e.maxLevel}`}] : [];
       const originalLabel = forms.length ? '原始形态' : '强化前';
       const partyNotes = entry.partyRule ? entry.notes || [] : [];
       const card = el('details', `equipment-card game-panel${e ? ' equipment-enhanceable' : ''}`);
@@ -43,6 +44,8 @@
         active = stages.find((stage) => stage.level === Number(level)); selectedLevel = active?.level || 0;
         const soul = mode === 'soul', shownName = !soul && active ? active.name || entry.name : entry.name;
         name.textContent = soul ? `${shownName} · 魂珠` : shownName;
+        summary.setAttribute('aria-label', `${name.textContent}，${soul ? '魂珠效果' : active?.label || (active ? `强化 Lv${selectedLevel}` : e ? originalLabel : '武器资料')}，展开或收起资料`);
+        summary.title = `${name.textContent} · ${entry.element || '通用'} · ${entry.rarity || ''}★`;
         card.setAttribute('data-enhanced', String(Boolean(active) && !soul));
         card.setAttribute('data-enhancement-level', String(selectedLevel)); card.setAttribute('data-equipment-mode', mode);
         stateLabel.textContent = `当前：${active ? active.label || `强化后 Lv${selectedLevel}` : originalLabel}`;
@@ -145,7 +148,9 @@
         });
         title.append(enhancementControls);
       }
-      card.append(summary); renderHeader(enhancedStates.get(stateKey) || 0); card.addEventListener('toggle', renderBody);
+      const defaultLevel = Math.max(0, ...stages.map((stage) => stage.level));
+      card.append(summary); renderHeader(enhancedStates.has(stateKey) ? enhancedStates.get(stateKey) : defaultLevel);
+      card.addEventListener('toggle', renderBody);
       return card;
     },
   };

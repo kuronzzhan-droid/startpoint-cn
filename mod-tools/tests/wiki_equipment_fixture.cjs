@@ -28,9 +28,10 @@ function environment() {
     renderReadable(parent,value){parent.append(el('p','',JSON.stringify(value)));},
   }});
   class MutationObserver {constructor(callback){this.callback=callback;}observe(){observers.push(this);}disconnect(){this.stopped=true;}}
-  const context={window,document,MutationObserver};
+  const storage=new Map();
+  const context={window,document,MutationObserver,localStorage:{getItem:key=>storage.get(key),setItem:(key,value)=>storage.set(key,value)}};
   ['equipment-attribute-filter.js','equipment-card.js','equipment-page.js'].forEach(file=>vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki',file),'utf8'),context));
-  const ui={el,picture:(_url,name,cls)=>el('img',cls,name),elementBadge:value=>el('span','element-badge',value)};
-  return {window,document,host,ui,checkRemoved(){observers.forEach(o=>{if(!o.stopped)o.callback();});}};
+  const ui={el,picture:(url,name,cls)=>{const img=el('img',cls,name);img.setAttribute('src',url);return img;},elementBadge:value=>el('span','element-badge',value)};
+  return {window,document,host,ui,storage,checkRemoved(){observers.forEach(o=>{if(!o.stopped)o.callback();});}};
 }
 module.exports={Node,environment};

@@ -30,6 +30,19 @@
     const count = el('p', 'muted');
     const groups = el('div', 'equipment-groups');
     groups.id = 'weapon-catalogue-groups';
+    const layoutKey = 'wf-wiki-equipment-layout-v1', layoutButtons = [];
+    let layout = 'standard';
+    try {if (localStorage.getItem(layoutKey) === 'dense') layout = 'dense';} catch {}
+    function setLayout(value) {
+      if (value === 'dense' && layout !== value) cards.forEach((card) => {card.open = false;});
+      layout = value; groups.setAttribute('data-layout', layout);
+      layoutButtons.forEach(({button, value: choice}) => button.setAttribute('aria-pressed', String(layout === choice)));
+      try {localStorage.setItem(layoutKey, layout);} catch {}
+    }
+    const advanced = el('details', 'equipment-advanced-filters'), filterSummary = el('summary', '', '更多筛选');
+    advanced.open = false;
+    const filterFields = el('div', 'equipment-filter-fields'); filterFields.append(filter, rarityFilter, enhancementFilter);
+    advanced.append(filterSummary, filterFields);
     ['全部武器', ...new Set(entries.map((entry) => entry.category))].forEach((label, i) => {
       const total = i ? entries.filter((entry) => entry.category === label).length : entries.length;
       const option = el('option', '', `${label}（${total}）`); option.value = i ? label : ''; filter.append(option);
@@ -82,6 +95,8 @@
         (!enhancementFilter.value || Boolean(entry.enhancement) === (enhancementFilter.value === 'yes')) &&
         `${searchText.get(entry)} ${(window.WFWikiAliases?.values('weapon', entry.id) || []).join(' ').toLowerCase()}`.includes(q));
       count.textContent = `共 ${items.length} 件武器 · ${items.filter((entry) => entry.enhancement).length} 件可强化`;
+      filterSummary.textContent = ['更多筛选', filter.value, rarityFilter.value ? `${rarityFilter.value}★` : '',
+        enhancementFilter.value ? enhancementFilter.value === 'yes' ? '可强化' : '无强化' : ''].filter(Boolean).join(' · ');
       const grouped = new Map();
       items.forEach((entry) => {if (!grouped.has(entry.category)) grouped.set(entry.category, []); grouped.get(entry.category).push(entry);});
       sections.forEach((group, category) => {if (!grouped.has(category)) {group.members = []; group.mount();}});
@@ -116,11 +131,23 @@
       shown.forEach((group) => {group.section.open = open; group.mount();});
       syncGroupToggle();
     });
-    const toolbar = el('div', 'team-controls equipment-toolbar'); attributeFilter = window.WFEquipmentAttributeFilter.create(ui, paint, groupToggle);
-    toolbar.append(search, attributeFilter.button, filter, rarityFilter, enhancementFilter);
-    const resultBar = el('div', 'equipment-result-bar'); resultBar.append(count);
-    host.replaceChildren(el('h1', '', '武器图鉴'), el('p', 'section-intro', '点击分类标题可展开或收起，深渊、诅咒武器置顶。每类先列可强化武器，按火、水、雷、风、光、暗、通用排序，同属性内高星优先、同星按图鉴倒序；普通武器随后按高星和图鉴倒序排列。可强化武器可切换形态，查看对应名称、图标、面板与效果；卡片可切换武器和魂珠效果，计算与材料可按需展开。'), toolbar, resultBar, groups, attributeFilter.floating);
-    paint();
+    const toolbar = el('div', 'equipment-toolbar'); attributeFilter = window.WFEquipmentAttributeFilter.create(ui, paint, groupToggle);
+    const searchRow = el('div', 'equipment-search-row'); searchRow.append(search, attributeFilter.button); toolbar.append(searchRow, advanced);
+    const layoutControls = el('div', 'equipment-layout-controls'); layoutControls.setAttribute('role', 'group'); layoutControls.setAttribute('aria-label', '武器排列');
+    [['standard', '标准', 9], ['dense', '致密', 12]].forEach(([value, label, cells]) => {
+      const button = el('button', 'catalog-layout-button equipment-layout-button'); button.type = 'button';
+      button.setAttribute('aria-label', `武器${label}排列`); button.title = value === 'dense' ? '只显示图标，点击查看完整资料' : '显示武器名称、面板与强化选项';
+      const icon = el('span', `catalog-layout-icon catalog-layout-icon-${cells}`); icon.setAttribute('aria-hidden', 'true');
+      for (let i = 0; i < cells; i++) icon.append(el('span'));
+      button.append(icon, el('span', '', label)); button.addEventListener('click', () => setLayout(value));
+      layoutButtons.push({button, value}); layoutControls.append(button);
+    });
+    const resultBar = el('div', 'equipment-result-bar'); resultBar.append(count, layoutControls);
+    const header = el('header', 'equipment-page-header'), help = el('details', 'equipment-help'); help.open = false;
+    help.append(el('summary', '', '使用说明'), el('p', '', '默认查看满级效果与最高强化图标。点击分类展开；致密排列中点击图标查看资料，并可切换武器／魂珠、强化形态和效果等级。可强化武器优先，同组按属性、高星和图鉴倒序排列。'));
+    header.append(el('h1', '', '武器图鉴'), help);
+    host.replaceChildren(header, toolbar, resultBar, groups, attributeFilter.floating);
+    setLayout(layout); paint();
     window.WFWikiAliases?.watch(host, paint);
   };
 })();

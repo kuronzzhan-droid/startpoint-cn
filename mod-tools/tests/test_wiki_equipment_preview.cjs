@@ -111,7 +111,7 @@ test('legacy enhancement data preserves every effect without adding unlike condi
 });
 test('effect emphasis preserves original signs, decimals, conditions and literal markup without interpreting them',()=>{
   const text='HP≤30%时，攻击力+12.75%；持续20秒（限2次）<img onerror=alert(1)>';
-  const {card}=cardFixture({...weapon,awakenedEffects:[text]});card.open=true;card.fire('toggle');
+  const {card}=cardFixture({...weapon,awakenedEffects:[text]});click(card,'data-level','0');card.open=true;card.fire('toggle');
   const list=cls(card,'equipment-state').children.find(n=>n.className==='equipment-effects');
   assert.equal(list.children[0].textContent,text);
   assert.deepEqual(list.all(n=>n.className==='equipment-effect-value').map(n=>n.textContent),['30%','+12.75%','20秒','2次','1']);
