@@ -93,7 +93,7 @@ test('additive presence migration is idempotent, preserves old data and is appli
   db.raw.exec(migration); db.raw.exec(migration); assert.deepEqual(snapshot(), before);
   const schema = readFileSync(new URL('../schema.sql', import.meta.url), 'utf8');
   assert.equal(migration.slice(migration.indexOf('CREATE TABLE')).trim(),
-    schema.slice(schema.indexOf('CREATE TABLE IF NOT EXISTS community_presence'), schema.indexOf('CREATE TABLE IF NOT EXISTS community_dungeon_guides')).trim());
+    schema.slice(schema.indexOf('CREATE TABLE IF NOT EXISTS community_presence'), schema.indexOf('CREATE TABLE IF NOT EXISTS community_character_views')).trim());
   db.raw.exec('DROP TABLE community_presence'); db.close(); db = openDatabase(file);
   try {
     assert.deepEqual(snapshot(), before);

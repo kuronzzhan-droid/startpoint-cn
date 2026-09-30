@@ -22,6 +22,11 @@ export async function listTeams(db, query, admin = false, actor = null) {
   if (query.element) { clauses.push('element=?'); values.push(query.element); }
   if (query.category) { clauses.push('category=?'); values.push(query.category === 'uncategorized' ? '' : query.category); }
   if (query.section) { clauses.push('section=?'); values.push(query.section === 'general' ? '' : query.section); }
+  if (query.character) {
+    clauses.push(`(EXISTS(SELECT 1 FROM json_each(community_teams.team_json,'$.main') AS slot WHERE slot.type='text' AND slot.value=?)
+      OR EXISTS(SELECT 1 FROM json_each(community_teams.team_json,'$.unison') AS slot WHERE slot.type='text' AND slot.value=?))`);
+    values.push(query.character, query.character);
+  }
   if (query.mask) { clauses.push('(damage_mask & ?) = ?'); values.push(query.mask, query.mask); }
   if (query.code) clauses.push(`${query.code === 'none' ? 'NOT ' : ''}(status='approved' AND EXISTS(SELECT 1 FROM community_game_codes c
     WHERE c.team_id=community_teams.id AND c.fingerprint=community_teams.fingerprint AND c.revoked_at IS NULL))`);

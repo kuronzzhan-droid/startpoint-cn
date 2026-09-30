@@ -11,6 +11,7 @@ import {listAliases, adminAliasesRoute} from './wiki-aliases.mjs';
 import {characterRatingsRoute, listCharacterRatings} from './character-ratings.mjs';
 import {tierRankingsRoute, listTierRankings} from './tier-rankings.mjs';
 import {communityStats, presenceRoute} from './community-stats.mjs';
+import {characterViewsRoute} from './character-views.mjs';
 import dungeonCatalog from './dungeon-catalog.mjs';
 import {dungeonRoute} from './dungeon-routes.mjs';
 
@@ -44,6 +45,7 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
         return response(await communityStats(env.COMMUNITY_DB, trustedCatalog, now));
       }
       if (path === '/presence') return response(await presenceRoute(request, env, trustedCatalog, now, development));
+      if (path.startsWith('/characters/')) return response(await characterViewsRoute(path, request, env, trustedCatalog, now, development));
       // Anonymous summaries must not mint a late cookie that replaces a rating visitor's identity.
       if (request.method === 'GET' && path === '/ratings/characters')
         return response(await listCharacterRatings(env.COMMUNITY_DB, trustedCatalog));

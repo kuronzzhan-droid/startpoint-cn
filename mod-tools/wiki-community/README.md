@@ -162,6 +162,24 @@ node verify-build.mjs "<仓外构建目录>"
 
 ## 点赞、防刷与维护
 
+### 角色查看次数和相关配队
+
+`GET /api/community/characters/:id/views` 返回 `{characterId, views, windowSeconds:1800}`，
+只读、不建访客 cookie，`views` 是累计查看次数。实际角色页面先通过 `/config` 建立访客身份，再以 `{}`
+为正文 `POST` 同一路径，响应同上；缺少有效身份时返回 428 `visitor_required`，客户端可刷新配置后重试一次。
+同一匿名访客、同一角色连续 30 分钟最多计一次；刷新页面、概览与详细面板切换、多标签同时请求不会多计。
+重复查看不会把计数窗口顺延，不可见或未收录角色返回 404。此数不是独立人数，不能追溯功能上线前的查看。
+
+计数与窗口声明在一个事务中提交；去重仅保存按角色隔离的 HMAC 访客标识和最后计数时间，不存原始 IP、UA。
+累计次数独立保存，不随去重记录过期删除。每次新计数最多清除 100 条过期去重记录；公共 GET 不清理、不写库。
+POST 要求同源 JSON，每个网络每分钟最多 120 次，限流表复用现有 HMAC IP 标识。
+现有库上线前须执行增量 `migrations/0010-character-views.sql`；本地 SQLite 按当前 `schema.sql` 自动补齐。
+
+`GET /api/community/teams?character=:id` 可与原筛选、排序组合，只匹配主位或合击槽里的完整角色 ID，
+不匹配名字、备注、武器或魂珠。返回仍为 `{items,nextCursor}`，每页 24 支，翻页必须保留同一个 `character`；
+无效或不在当前图鉴的筛选 ID 返回 400 `invalid_character`。公开列表始终仅包含公开且使用中的队伍，
+私有队伍即使单独公开了游戏队伍码，也不会出现在相关配队中。管理员列表可选相同过滤，原权限保持。
+
 ### 参与人数和在线人数
 
 `GET /api/community/stats` 匿名只读，不建立访客 cookie，返回

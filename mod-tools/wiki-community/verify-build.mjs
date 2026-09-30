@@ -129,6 +129,25 @@ try {
   assert.equal((await presence.json()).onlineVisitors, 1); checks++;
   assert.equal((await call('/api/community/presence', {method:'POST', body:'{}', headers:{Cookie:visitorCookie, Origin:'https://other.example'}})).status, 403);
   assert.equal((await call('/api/community/presence')).status, 405); checks++;
+  const viewPath = `/api/community/characters/${characterIds[0]}/views`;
+  const emptyViews = await call(viewPath);
+  assert.equal(emptyViews.status, 200); assert.equal(emptyViews.headers.get('set-cookie'), null);
+  assert.deepEqual(await emptyViews.json(), {characterId:characterIds[0],views:0,windowSeconds:1800}); checks++;
+  const anonymousView = await call(viewPath, {method:'POST',body:'{}'});
+  assert.equal(anonymousView.status, 428); assert.equal(anonymousView.headers.get('set-cookie'), null);
+  for (let repeat = 0; repeat < 2; repeat++) {
+    const view = await call(viewPath, {method:'POST',body:'{}',headers:{Cookie:visitorCookie}});
+    assert.equal(view.status, 200); assert.equal(view.headers.get('set-cookie'), null); assert.equal((await view.json()).views, 1);
+  }
+  assert.equal((await (await call(viewPath)).json()).views, 1); checks++;
+  assert.equal((await call(viewPath, {method:'POST',body:'{}',headers:{Cookie:visitorCookie,Origin:'https://other.example'}})).status, 403);
+  assert.equal((await call('/api/community/characters/not-public/views')).status, 404); checks++;
+  const characterTeams = `/api/community/teams?character=${encodeURIComponent(characterIds[0])}`;
+  assert.deepEqual((await (await call(characterTeams)).json()).items, [], 'publishing a private game code must not expose its related team');
+  db.raw.prepare("UPDATE community_teams SET visibility='public' WHERE id=?").run(privateTeam.id);
+  const related = await call(characterTeams); assert.equal(related.headers.get('set-cookie'), null);
+  assert.deepEqual((await related.json()).items.map(item => item.id), [privateTeam.id]);
+  assert.equal((await call('/api/community/teams?character=not-public')).status, 400); checks++;
   assert.equal(assets.length, 4);
   const report = {wrangler: '4.143.0', verifiedAt: new Date().toISOString(),
     bundle: {file: 'index.js', bytes: (await stat(bundlePath)).size, sha256: createHash('sha256').update(source).digest('hex')},
