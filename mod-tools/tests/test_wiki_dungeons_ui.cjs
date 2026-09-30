@@ -231,14 +231,15 @@ test('old leaf URLs still fetch their own guide and return to the owning series'
   assert.equal(x.find('.back-button').href,'#dungeons/series-machina');
   assert.ok(x.calls.some(([route])=>route==='/dungeons/machina-fire-raid'));
 });
-test('unverified abyss EX shows a notice without API calls or borrowing another dungeon', async () => {
+test('a missing actual EX item creates no placeholder variant, count, or API request', async () => {
   const x=env();seriesFixture(x);await x.render({id:'series-gauntlets'});
-  assert.equal(x.host.querySelectorAll('.dungeon-variant').length,3);
+  assert.equal(x.host.querySelectorAll('.dungeon-variant').length,2);
   assert.ok(x.calls.some(([route])=>route==='/dungeons/fantasy'));
-  const before=x.calls.length;await x.find('.dungeon-variant-pending').fire('click');
-  assert.equal(x.calls.length,before);assert.ok(x.find('.dungeon-versions').hidden);
-  assert.ok(x.find('.dungeon-series-content').textContent.includes('深渊连战EX入口资料待核对'));
-  assert.ok(!x.find('.dungeon-admin-host'));
+  assert.ok(!x.find('.dungeon-variant-pending'));assert.ok(!x.host.textContent.includes('EX'));
+  const group=x.window.WFDungeonSeries.group(x.data.dungeons.items,'series-gauntlets');
+  assert.equal(group.countText,'2 种连战 · 3 个版本');
+  await x.render({id:'event-rush-700100'});assert.ok(x.host.textContent.includes('未找到此副本'));
+  assert.ok(x.calls.every(([route])=>!route.includes('700100')));
 });
 test('changing a series variant prevents an older guide response from replacing the selection', async () => {
   const pending=[];const x=env(route=>route==='/admin/me'?Promise.reject({status:401}):new Promise(resolve=>pending.push({route,resolve})));
@@ -259,5 +260,26 @@ test('actual catalog families prioritize boss snapshots and rush modes over olde
     {id:'event-advent-300098',category:'模式',seriesId:'series-gauntlets',variantLabel:'幻想连战'},
     {id:'event-rush-700098',category:'模式',seriesId:'series-gauntlets',variantLabel:'幻想连战'},
   ],'series-gauntlets');assert.equal(mode.variants[0].primary.id,'event-rush-700098');
-  assert.equal(mode.countText,'2 种连战 · 1 种已收录');assert.ok(mode.summary.includes('深渊连战EX（待核对）'));
+  assert.equal(mode.countText,'1 种连战 · 2 个版本');assert.ok(!mode.summary.includes('EX'));
+});
+
+test('verified EX uses its independent event guide and keeps ordinary and endless entries distinct', async () => {
+  const x=env(async route=>route==='/admin/me'?Promise.reject({status:401}):
+    {...emptyGuide(),guide:{...emptyGuide().guide,text:route.endsWith('700100')?'EX 专属攻略':'普通攻略'}});
+  const base={category:'模式',seriesId:'series-gauntlets',banner:'media/gauntlet.webp'};
+  x.data.dungeons.items.push(
+    {...base,id:'event-rush-700099',title:'深渊连战',variantLabel:'普通深渊',quests:[{name:'普通深渊 · 无尽'}]},
+    {...base,id:'event-rush-700100',title:'深渊连战EX',variantLabel:'深渊连战EX',quests:[{name:'EX · 第1层'},{name:'EX · 第30层'},{name:'EX · 无尽'}]},
+    {...base,id:'event-rush-700098',title:'幻想连战',variantLabel:'幻想连战',quests:[{name:'幻想 · 第1关'}]});
+  await x.render({id:'series-gauntlets'});
+  const variants=x.host.querySelectorAll('.dungeon-variant');assert.equal(variants.length,3);
+  assert.deepEqual(variants.map(node=>node.textContent),['幻想连战','普通深渊','深渊连战EX']);
+  await variants[2].fire('click');assert.equal(x.calls.at(-1)[0],'/dungeons/event-rush-700100');
+  assert.ok(x.host.textContent.includes('EX 专属攻略'));assert.ok(x.host.textContent.includes('EX · 第30层'));
+  assert.ok(x.host.textContent.includes('EX · 无尽'));assert.ok(!x.host.textContent.includes('普通深渊 · 无尽'));
+  assert.equal(x.host.querySelectorAll('.dungeon-version').length,1);
+  await variants[1].fire('click');assert.equal(x.calls.at(-1)[0],'/dungeons/event-rush-700099');
+  assert.ok(!x.host.textContent.includes('EX 专属攻略'));assert.ok(x.host.textContent.includes('普通深渊 · 无尽'));
+  assert.ok(x.calls.every(([route])=>!route.includes('700100099')));
+  const group=x.window.WFDungeonSeries.group(x.data.dungeons.items,'series-gauntlets');assert.equal(group.countText,'3 种连战 · 3 个版本');
 });

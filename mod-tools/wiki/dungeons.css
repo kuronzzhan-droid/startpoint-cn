@@ -90,13 +90,11 @@
 .dungeon-variant-label{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}
 .dungeon-variant-label strong{font-size:15px}
 .dungeon-variant-label>span{font-size:11px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.dungeon-variant-pending{border-style:dashed;justify-content:center}
 .dungeon-version-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));gap:7px;padding:0 12px 12px}
 .dungeon-version{display:grid;gap:5px;min-width:0;padding:10px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;overflow-wrap:anywhere}
 .dungeon-version[aria-pressed=true]{border-color:var(--accent-dark,#138b80);background:var(--soft)}
 .dungeon-version-name{font-size:14px;font-weight:600}
 .dungeon-version>.muted{font-size:11px}
-.dungeon-pending-note{padding:20px;border:1px dashed var(--line);border-radius:10px;line-height:1.8;background:var(--surface)}
 .dungeon-series-content{min-width:0}
 .dungeon-series-content>.dungeon-detail{border-top:1px solid var(--line);padding-top:12px}
 @media(max-width:640px){.dungeon-header h1{font-size:22px}

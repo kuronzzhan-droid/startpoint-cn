@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const definitions = {
-    'series-gauntlets': {title:'连战模式', labels:['幻想连战', '普通深渊'], compact:false},
+    'series-gauntlets': {title:'连战模式', labels:['幻想连战', '普通深渊', '深渊连战EX'], compact:false},
     'series-machina': {title:'机兵决战', labels:['火', '水', '雷', '风', '光', '暗', '无属性'], compact:true},
     'series-waste-dragons': {title:'荒龙讨伐', labels:['火', '水', '雷', '风', '光', '暗'], compact:true},
     'series-spirit-beasts': {title:'精灵兽讨伐', labels:['火', '水', '雷', '风', '光', '暗'], compact:true},
@@ -25,13 +25,11 @@
       return {label, versions, primary:preferred(versions)};
     });
     const primary = preferred(members);
-    const pending = id === 'series-gauntlets';
     return {...definition, id, members, variants, category:primary.category,
       categories:[...new Set(members.map((item) => item.category))],
       banner:primary.banner, entryImage:primary.entryImage,
-      summary:[...labels, ...(pending ? ['深渊连战EX（待核对）'] : [])].join(' · '),
-      countText:pending ? `${variants.length + 1} 种连战 · ${variants.length} 种已收录`
-        : `${variants.length} 种首领 · ${members.length} 个版本`};
+      summary:labels.join(' · '),
+      countText:`${variants.length} ${definition.compact ? '种首领' : '种连战'} · ${members.length} 个版本`};
   }
   function entries(items) {
     const result = [], included = new Set();
@@ -60,11 +58,6 @@
     function choose(variant) {
       currentVariant = variant;
       controls.forEach(({node, value}) => node.setAttribute('aria-pressed', String(value === variant)));
-      versions.hidden = !variant;
-      if (!variant) {
-        content.replaceChildren(el('p', 'dungeon-pending-note', '深渊连战EX入口资料待核对。核对后会补入对应关卡与攻略。'));
-        return;
-      }
       versions.open = false; versionTitle.textContent = `${variant.label} · 关卡版本（${variant.versions.length}）`;
       versionList.replaceChildren();
       for (const item of variant.versions) {
@@ -81,11 +74,6 @@
       const label = el('span', 'dungeon-variant-label'); label.append(el('strong', '', variant.label));
       if (series.compact) label.append(el('span', '', variant.primary.title));
       node.append(label); choices.append(node); controls.push({node, value:variant});
-    }
-    if (series.id === 'series-gauntlets') {
-      const node = D.button(ui, '', () => choose(null), 'dungeon-variant dungeon-variant-pending');
-      const label = el('span', 'dungeon-variant-label'); label.append(el('strong', '', '深渊连战EX'), el('span', '', '资料待核对'));
-      node.append(label); choices.append(node); controls.push({node, value:null});
     }
     const initial = choose(series.variants[0]);
     return Promise.resolve(initial).then(() => ({series, get variant() {return currentVariant;}}));
