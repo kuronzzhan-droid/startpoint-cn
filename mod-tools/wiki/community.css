@@ -13,6 +13,7 @@
 .community-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,400px),1fr));gap:15px;align-items:start}
 .community-grid.community-single{grid-template-columns:minmax(0,760px)}
 .community-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.community-card-preview{display:none}
 .community-card h2{font-size:17px;line-height:1.4;margin:0 0 8px;overflow-wrap:anywhere}.community-card h2 a{color:var(--ink);text-decoration:none}.community-card h2 a:hover{text-decoration:underline}
 .community-card-header{display:flex;align-items:start;justify-content:space-between;flex-wrap:wrap;gap:12px;min-height:64px}.community-card-heading{flex:1;min-width:min(145px,100%)}.community-no-code{font-size:11px;padding-top:3px;white-space:nowrap}
 .community-card .community-game-code-compact{display:grid;gap:3px;flex:0 1 205px;max-width:100%;margin:0;padding:7px 8px}.community-game-code-compact .community-game-code-label{font-size:10px}.community-game-code-row{display:flex;align-items:center;gap:5px;min-width:0}.community-game-code-compact .community-game-code-value{flex:1;min-width:0;padding:4px 5px;font-size:14px;letter-spacing:.07em}.community-game-code-row button{flex:none;min-height:28px;padding:3px 8px;border-radius:4px;font-size:11px}.community-game-code-compact .community-game-code-copy-status{font-size:10px}.community-game-code-compact .community-game-code-copy-status:empty{display:none}
@@ -23,6 +24,10 @@
 .community-slot{display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:1;background:var(--soft);border:2px solid var(--line);border-radius:5px;position:relative;overflow:hidden;color:var(--muted);text-decoration:none}
 .community-slot-main{grid-area:main}.community-slot-unison{grid-area:unison}.community-slot-weapon{grid-area:weapon;width:76%}.community-slot-soul{grid-area:soul;width:76%}
 .community-slot-image{width:100%;height:100%;object-fit:cover}.community-slot-weapon img,.community-slot-soul img{object-fit:contain;image-rendering:pixelated}
+.community-slot-entry{display:grid;grid-template-columns:minmax(0,1fr);justify-items:center;align-content:start;gap:5px;width:100%;min-width:0}
+.community-slot-entry>.community-slot{grid-area:auto}
+.community-slot-entry-main{grid-area:main}.community-slot-entry-unison{grid-area:unison}.community-slot-entry-weapon{grid-area:weapon}.community-slot-entry-soul{grid-area:soul}
+.community-slot-name{max-width:100%;font-size:11px;line-height:1.4;overflow-wrap:anywhere;text-align:center}
 .community-slot-label{position:absolute;bottom:0;left:0;font-size:8px;line-height:1.4;padding:0 3px;color:#fff;background:#233641b8}
 .community-slot:hover{outline:2px solid var(--accent-dark);outline-offset:2px}.community-slot:focus-visible{outline:3px solid var(--accent-dark);outline-offset:2px}
 .community-author{font-size:12px;margin:8px 0 2px;overflow-wrap:anywhere}.community-card time{font-size:11px}
@@ -37,29 +42,25 @@
 @media(max-width:640px){.community-card{padding:12px}.community-dialog{padding:14px}.community-dialog-header h2{font-size:17px}.community-toolbar select{flex:1;min-width:100px}.community-board{gap:7px}.community-board-column{gap:6px}.community-damage-options{gap:5px 12px}.community-header h1{font-size:22px}.community-section-button{padding:6px 9px;font-size:12px}.community-advanced-body{grid-template-columns:1fr}.community-toolbar .community-avatar-controls{margin:0}.community-active-filters{margin-left:6px}.community-card-header{gap:9px;min-height:0}.community-card .community-game-code-compact{margin-left:auto}.community-card-footer{align-items:center}
   /* Keep individual team details full width; only the recommendation list uses two columns. */
   .community-grid:not(.community-single){grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch}
-  .community-grid:not(.community-single) .community-card{display:flex;flex-direction:column;padding:9px;border-radius:8px}
-  .community-grid:not(.community-single) .community-card-header{display:grid;gap:8px}
-  .community-grid:not(.community-single) .community-card-heading{min-width:0}
+  .community-grid:not(.community-single) .community-card{position:relative;display:flex;flex-direction:column;padding:9px;border-radius:8px}
+  .community-grid:not(.community-single) .community-card-preview{display:block;min-width:0;color:var(--ink);text-decoration:none}
+  .community-card-preview::after{content:"";position:absolute;inset:0;z-index:1;border-radius:inherit}
+  .community-card-preview:focus-visible{outline:none}.community-card-preview:focus-visible::after{outline:3px solid var(--accent-dark);outline-offset:2px}
+  .community-grid:not(.community-single) .community-card-header{display:grid;gap:8px;margin-top:auto;padding-top:4px}
+  .community-grid:not(.community-single) .community-card-heading,
+  .community-grid:not(.community-single) .community-card>.community-board,
+  .community-grid:not(.community-single) .community-notes,
+  .community-grid:not(.community-single) .community-card-footer{display:none}
   .community-grid:not(.community-single) .community-card h2{font-size:14px;margin-bottom:6px}
   .community-grid:not(.community-single) .community-tags{gap:3px}
   .community-grid:not(.community-single) .community-tags .badge{font-size:10px;padding:2px 4px;overflow-wrap:anywhere}
-  .community-grid:not(.community-single) .community-game-code-compact{width:100%;box-sizing:border-box;margin:0;padding:5px}
+  .community-grid:not(.community-single) .community-game-code-compact{position:relative;z-index:2;width:100%;box-sizing:border-box;margin:0;padding:5px}
   .community-grid:not(.community-single) .community-game-code-row{flex-wrap:wrap;gap:4px}
   .community-grid:not(.community-single) .community-game-code-value{flex:1 1 88px;min-width:88px;padding:4px 3px;font-size:11px;letter-spacing:0}
   .community-grid:not(.community-single) .community-game-code-row button{flex:1 0 34px;min-height:34px;padding:3px 2px}
-  /* Stack each main/unison pair above its equipment so faces stay legible on a narrow card. */
-  .community-grid:not(.community-single) .community-board{width:100%;gap:4px;margin:12px 0 10px}
-  .community-grid:not(.community-single) .community-board-column{grid-template-columns:minmax(0,1fr);grid-template-areas:"main" "unison" "weapon" "soul";gap:4px}
-  .community-grid:not(.community-single) .community-slot-weapon,
-  .community-grid:not(.community-single) .community-slot-soul{width:72%;min-width:24px}
-  .community-grid:not(.community-single) .community-slot-label{display:none}
-  .community-grid:not(.community-single) .community-board-column:first-child .community-slot-label{display:block;padding:0 2px}
-  .community-grid:not(.community-single) .community-notes{margin:0 0 10px;padding-top:8px}
-  .community-grid:not(.community-single) .community-notes summary{font-size:11px;min-height:28px;line-height:1.6}
-  .community-grid:not(.community-single) .community-notes p{font-size:12px}
-  .community-grid:not(.community-single) .community-card-footer{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:auto;padding-top:8px}
-  .community-grid:not(.community-single) .community-author{font-size:11px}
-  .community-grid:not(.community-single) .community-card time{font-size:10px}
-  .community-grid:not(.community-single) .community-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:5px}
-  .community-grid:not(.community-single) .community-actions button{min-height:36px;padding:6px 3px;font-size:11px;overflow-wrap:anywhere}
+  /* The mobile preview is one accessible link; its six portraits are not nested links. */
+  .community-card-preview .community-board{width:100%;gap:4px;margin:10px 0 6px}
+  .community-card-preview .community-board-column{grid-template-columns:minmax(0,1fr);grid-template-areas:"main" "unison";gap:4px}
+  .community-card-preview .community-slot-label{display:none}
+  .community-card-preview .community-board-column:first-child .community-slot-main .community-slot-label{display:block;padding:0 2px}
 }

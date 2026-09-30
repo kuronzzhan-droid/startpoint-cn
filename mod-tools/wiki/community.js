@@ -6,25 +6,30 @@
   C.board = (input, data, ui, options = {}) => {
     const {el, picture} = ui, team = C.teamCopy(input);
     const characters = new Map((data.characters || []).map((item) => [item.id, item]));
-    const equipment = new Map((data.equipment || []).map((item) => [item.id, item]));
-    const board = el('div', 'community-board'); board.setAttribute('aria-label', '队伍阵容');
+    const equipment = new Map((options.preview ? [] : data.equipment || []).map((item) => [item.id, item]));
+    const board = el('div', 'community-board'); board.setAttribute('aria-label', options.preview ? '队伍角色预览' : '队伍阵容');
     for (let index = 0; index < 3; index++) {
       const column = el('div', 'community-board-column');
-      for (const group of ['main', 'weapon', 'soul', 'unison']) {
+      for (const group of options.preview ? ['main', 'unison'] : ['main', 'weapon', 'soul', 'unison']) {
         const character = group === 'main' || group === 'unison';
         const item = (character ? characters : equipment).get(team[group][index]);
-        const slot = el(item ? 'a' : 'span', `community-slot community-slot-${group}`);
+        const slot = el(item && !options.preview ? 'a' : 'span', `community-slot community-slot-${group}`);
         slot.setAttribute('aria-label', `${index + 1}号${groupNames[group]}：${item?.name || (team[group][index] ? '当前图鉴未收录' : '空位')}`);
         if (item) {
-          slot.href = `#${character ? 'character' : 'weapon'}/${encodeURIComponent(item.id)}`; slot.title = `${groupNames[group]} · ${item.name}`;
-          if (character && options.onCharacter) {
+          slot.title = `${groupNames[group]} · ${item.name}`;
+          if (!options.preview) slot.href = `#${character ? 'character' : 'weapon'}/${encodeURIComponent(item.id)}`;
+          if (!options.preview && character && options.onCharacter) {
             slot.href = '#team'; slot.addEventListener('click', (event) => {event.preventDefault(); options.onCharacter({group,index});});
           }
           slot.append(character && options.avatars ? options.avatars.picture(item, item.name, 'community-slot-image')
             : picture(item.icon, item.name, 'community-slot-image'));
           if (character) window.WFCharacterFrame?.apply(slot, item);
         } else slot.append(el('span', '', team[group][index] ? '?' : '—'));
-        slot.append(el('span', 'community-slot-label', index === 0 && group === 'main' ? '队长' : groupNames[group])); column.append(slot);
+        slot.append(el('span', 'community-slot-label', index === 0 && group === 'main' ? '队长' : groupNames[group]));
+        if (options.showNames) {
+          const entry = el('div', `community-slot-entry community-slot-entry-${group}`);
+          entry.append(slot, el('span', 'community-slot-name', item?.name || (team[group][index] ? '未收录' : '空位'))); column.append(entry);
+        } else column.append(slot);
       }
       board.append(column);
     }
@@ -113,16 +118,24 @@
       }
       const heading = el('h2'); const link = el('a', '', item.title); link.href = '#team';
       link.addEventListener('click', (event) => {event.preventDefault(); enter();}); heading.append(link);
-      const badges = el('div', 'community-tags'); badges.append(el('span', 'badge community-section-badge', C.sectionLabel(item.section)),
-        el('span', 'badge', C.categoryLabel(item.category)), el('span', 'badge', C.elementLabel(item.element)));
-      (item.damageTypes || []).filter((key) => C.damageTypes[key]).forEach((key) => badges.append(el('span', 'badge', C.damageTypes[key])));
+      function tags() {
+        const badges = el('div', 'community-tags'); badges.append(el('span', 'badge community-section-badge', C.sectionLabel(item.section)),
+          el('span', 'badge', C.categoryLabel(item.category)), el('span', 'badge', C.elementLabel(item.element)));
+        (item.damageTypes || []).filter((key) => C.damageTypes[key]).forEach((key) => badges.append(el('span', 'badge', C.damageTypes[key])));
+        return badges;
+      }
+      if (!options.id) {
+        const preview = el('a', 'community-card-preview'); preview.href = `#community/${encodeURIComponent(item.id)}`;
+        preview.setAttribute('aria-label', `查看队伍：${item.title}`);
+        preview.append(el('h2', '', item.title), tags(), C.board(item.team, data, ui, {preview:true, avatars})); node.append(preview);
+      }
       const date = new Date(item.createdAt), time = el('time', 'muted', Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('zh-CN', {timeZone: 'Asia/Shanghai'}));
       if (!Number.isNaN(date.getTime())) time.dateTime = date.toISOString();
       const cardHeader = el('header', 'community-card-header'), headingArea = el('div', 'community-card-heading');
-      headingArea.append(heading, badges);
+      headingArea.append(heading, tags());
       const gameCode = window.WFCommunityGameCodes?.readonly(item, ui, {compact:true});
       cardHeader.append(headingArea, gameCode || el('span', 'muted community-no-code', '暂无队伍码'));
-      node.append(cardHeader, C.board(item.team, data, ui, {onCharacter:enter, avatars}));
+      node.append(cardHeader, C.board(item.team, data, ui, {onCharacter:enter, avatars, showNames:Boolean(options.id)}));
       if (item.notes) {const notes = el('details', 'community-notes'); notes.open = Boolean(options.id); notes.append(el('summary', '', '用途与操作说明'), el('p', '', item.notes)); node.append(notes);}
       const actions = el('div', 'community-actions');
       const use = el('button', 'primary-button', '装入编成'); use.type = 'button';

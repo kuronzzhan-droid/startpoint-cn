@@ -100,6 +100,28 @@ test('single recommendation retains its avatar switch when list filters are hidd
   await group.querySelectorAll('button')[1].fire('click');
   assert.equal(x.host.querySelectorAll('.community-board')[0].querySelector('img').getAttribute('src'),'c1-after.webp');
 });
+test('mobile card preview links to saved details without nesting portrait links or importing a team',async()=>{
+  const x=setup({config:async()=>config,request:async()=>({items:[{...item,id:'team / one',category:'萌新启航'}]})});
+  await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
+  const preview=x.host.querySelector('.community-card-preview');
+  assert.equal(preview.tag,'a');assert.equal(preview.href,'#community/team%20%2F%20one');
+  assert.equal(preview.attributes['aria-label'],`查看队伍：${item.title}`);
+  assert.match(preview.textContent,/萌新启航/);assert.equal(preview.querySelectorAll('.community-slot').length,6);
+  assert.equal(preview.querySelectorAll('a').length,0);assert.equal(preview.querySelectorAll('.community-slot-weapon').length,0);
+  assert.equal(x.window.imported,undefined);
+  await x.host.querySelectorAll('button').find(node=>node.textContent==='觉醒后').fire('click');
+  assert.equal(preview.querySelector('img').getAttribute('src'),'c1-after.webp');
+});
+test('team details name all slots and retain the load action and weapon links',async()=>{
+  const x=setup({config:async()=>config,request:async()=>({team:item})});
+  await x.window.renderWikiCommunity(x.host,data,x.ui,{id:item.id});await tick();
+  assert.equal(x.host.querySelector('.community-card-preview'),null);
+  const names=x.host.querySelectorAll('.community-slot-name').map(node=>node.textContent);
+  assert.equal(names.length,12);assert.ok(names.includes('角色c1'));assert.ok(names.includes('装备'));assert.ok(names.includes('空位'));
+  assert.ok(x.host.querySelectorAll('a').some(node=>node.href==='#weapon/w1'));
+  await x.host.querySelectorAll('button').find(node=>node.textContent==='装入编成').fire('click');
+  assert.equal(x.window.imported[1],item.title);assert.deepEqual(JSON.parse(JSON.stringify(x.window.imported[0])),team);
+});
 test('old page cannot populate a newly mounted page even when both have the same route',async()=>{
   let resolve;const x=setup({config:async()=>config,request:()=>new Promise((done)=>{resolve=done;})});
   await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
