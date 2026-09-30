@@ -121,12 +121,13 @@ try {
   assert.equal(rankings.status, 200); assert.equal(rankings.headers.get('set-cookie'), null);
   const boards = await rankings.json();
   assert.deepEqual(Object.keys(boards).sort(), ['formula', 'rankings']);
-  assert.deepEqual(boards.formula, {method: 'bayesian', priorVoters: 5, placementPrior: 3, ratingPrior: 2.5});
+  assert.deepEqual(boards.formula, {method: 'bayesian', priorVoters: 5, placementPrior: 3, ratingPrior: 2.5,
+    tierMethod: 'raw-average', minimumTierVoters: 3});
   assert.deepEqual(boards.rankings.placement,
-    [...characterIds].sort().map(id => ({id, average: 5, voters: 1, rankScore: 20 / 6, row: 'between1'})));
+    [...characterIds].sort().map(id => ({id, average: 5, voters: 1, rankScore: 20 / 6, row: 'provisional'})));
   assert.deepEqual(boards.rankings.rating, [
-    {id: characterIds[1], average: 2.5, voters: 2, rankScore: 2.5, row: 'between2'},
-    {id: characterIds[0], average: 0, voters: 1, rankScore: 12.5 / 6, row: 'tier3'}
+    {id: characterIds[1], average: 2.5, voters: 2, rankScore: 2.5, row: 'provisional'},
+    {id: characterIds[0], average: 0, voters: 1, rankScore: 12.5 / 6, row: 'provisional'}
   ]); checks++;
   const stats = await call('/api/community/stats');
   assert.equal(stats.status, 200); assert.equal(stats.headers.get('set-cookie'), null);
@@ -161,6 +162,15 @@ try {
   const related = await call(characterTeams); assert.equal(related.headers.get('set-cookie'), null);
   assert.deepEqual((await related.json()).items.map(item => item.id), [privateTeam.id]);
   assert.equal((await call('/api/community/teams?character=not-public')).status, 400); checks++;
+  for (let i = 0; i < 2; i++) {
+    seedRating.run(characterIds[0], `fixture-third-${i}`, 0, '2026-09-30', Date.now());
+    db.raw.prepare('INSERT INTO community_tier_rankings VALUES(?,?,?,?)')
+      .run(`fixture-third-${i}`, JSON.stringify({tier0: [characterIds[0]]}), '2026-09-30', Date.now());
+  }
+  const qualified = (await (await call('/api/community/tier-rankings')).json()).rankings;
+  assert.equal(qualified.placement.find(item => item.id === characterIds[0]).row, 'tier0');
+  assert.equal(qualified.rating.find(item => item.id === characterIds[0]).row, 'tier4');
+  assert.equal(qualified.placement.find(item => item.id === characterIds[1]).row, 'provisional'); checks++;
   assert.equal(assets.length, 4);
   const report = {wrangler: '4.143.0', verifiedAt: new Date().toISOString(),
     bundle: {file: 'index.js', bytes: (await stat(bundlePath)).size, sha256: createHash('sha256').update(source).digest('hex')},
