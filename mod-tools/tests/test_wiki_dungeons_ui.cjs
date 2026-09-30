@@ -248,3 +248,16 @@ test('changing a series variant prevents an older guide response from replacing 
   pending[0].resolve({...emptyGuide(),guide:{...emptyGuide().guide,text:'过期火队攻略'}});await render;
   assert.ok(x.host.textContent.includes('水队攻略'));assert.ok(!x.host.textContent.includes('过期火队攻略'));
 });
+test('actual catalog families prioritize boss snapshots and rush modes over older event or proxy rows', () => {
+  const x=env(),S=x.window.WFDungeonSeries;
+  const group=S.group([
+    {id:'event-advent-200014',title:'旧活动',category:'降临讨伐',seriesId:'series-machina',variantLabel:'火',banner:'media/old.webp'},
+    {id:'boss-1-61',title:'红嫉机兵',category:'降临讨伐',seriesId:'series-machina',variantLabel:'火',entryImage:'media/boss.webp'},
+  ],'series-machina');
+  assert.equal(group.variants[0].primary.id,'boss-1-61');assert.equal(group.entryImage,'media/boss.webp');
+  const mode=S.group([
+    {id:'event-advent-300098',category:'模式',seriesId:'series-gauntlets',variantLabel:'幻想连战'},
+    {id:'event-rush-700098',category:'模式',seriesId:'series-gauntlets',variantLabel:'幻想连战'},
+  ],'series-gauntlets');assert.equal(mode.variants[0].primary.id,'event-rush-700098');
+  assert.equal(mode.countText,'2 种连战 · 1 种已收录');assert.ok(mode.summary.includes('深渊连战EX（待核对）'));
+});

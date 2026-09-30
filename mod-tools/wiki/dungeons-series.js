@@ -7,7 +7,9 @@
     'series-waste-dragons': {title:'荒龙讨伐', labels:['火', '水', '雷', '风', '光', '暗'], compact:true},
     'series-spirit-beasts': {title:'精灵兽讨伐', labels:['火', '水', '雷', '风', '光', '暗'], compact:true},
   };
-  const preferred = (items) => items.find((item) => item.category === '领主战')
+  const preferred = (items) => items.find((item) => /^boss-/.test(item.id))
+    || items.find((item) => /^event-rush-/.test(item.id))
+    || items.find((item) => item.category === '领主战')
     || items.find((item) => item.category === '模式') || items[0];
   function group(items, id) {
     const definition = Object.hasOwn(definitions, id) ? definitions[id] : null;
@@ -23,10 +25,13 @@
       return {label, versions, primary:preferred(versions)};
     });
     const primary = preferred(members);
+    const pending = id === 'series-gauntlets';
     return {...definition, id, members, variants, category:primary.category,
       categories:[...new Set(members.map((item) => item.category))],
       banner:primary.banner, entryImage:primary.entryImage,
-      summary:labels.join(' · '), countText:`${variants.length} ${definition.compact ? '种首领' : '种连战'} · ${members.length} 个版本`};
+      summary:[...labels, ...(pending ? ['深渊连战EX（待核对）'] : [])].join(' · '),
+      countText:pending ? `${variants.length + 1} 种连战 · ${variants.length} 种已收录`
+        : `${variants.length} 种首领 · ${members.length} 个版本`};
   }
   function entries(items) {
     const result = [], included = new Set();
