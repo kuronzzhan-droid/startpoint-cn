@@ -96,6 +96,19 @@
     resetButton.addEventListener('click', () => {reset(false); if (onReset) onReset(); else notify();});
     search.addEventListener('input', () => {state.search = search.value; onStateChange({...state}); clearTimeout(searchTimer); searchTimer = setTimeout(notify, 80);});
     body.append(searchRow, searchStatus, retry, elementRow, choices);
+    // Move the actual nodes so keyboard order follows the mobile catalogue layout.
+    // The team picker retains its own order and never installs a viewport listener.
+    if (idPrefix === 'catalog-character' && window.matchMedia) {
+      const mobile = window.matchMedia('(max-width:640px)');
+      const arrange = () => {
+        const last = mobile.matches ? elementRow : choices;
+        if (body.lastElementChild === last) return;
+        const focused = document.activeElement;
+        body.append(last);
+        if (focused && last.contains(focused)) focused.focus({preventScroll: true});
+      };
+      mobile.addEventListener('change', arrange); arrange();
+    }
     if (collapsible) root.append(heading);
     root.append(body);
     sync();

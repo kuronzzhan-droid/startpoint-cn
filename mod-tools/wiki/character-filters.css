@@ -35,6 +35,11 @@
   #catalog-character-filters .character-filter-search{max-width:none}
 }
 @media(max-width:640px){
+  #catalog-view>.catalog-header{display:none}
+  #catalog-character-filters .character-filter-body{gap:6px;padding:7px 8px 8px}
+  #catalog-character-filters .character-filter-search-row{gap:6px}
+  #catalog-character-filters .character-filter-fields{gap:5px}
+  #catalog-character-filters .character-filter-elements{padding-top:5px;border-top:1px solid var(--line,#d2e0df)}
   .character-filter-elements{gap:3px}.character-filter-element{min-height:36px;gap:1px}
   .character-filter-element .native-icon{width:17px;height:17px}
   .character-filter-field select{font-size:11px;min-height:36px;padding:5px 3px}
