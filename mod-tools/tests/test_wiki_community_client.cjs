@@ -44,12 +44,32 @@ test('same-origin API sends JSON and credentials without querying any game endpo
   assert.equal(calls[0][1].credentials,'same-origin'); assert.equal(calls[0][1].method,'POST');
   assert.deepEqual(JSON.parse(calls[0][1].body),{turnstileToken:'one-use'});
 });
+test('parallel initial config consumers share identity before any rating or presence read', async () => {
+  const calls=[];let resolve;
+  const api=C.createApi(async(url)=>{calls.push(url);return url.endsWith('/config')?new Promise(done=>resolve=done):response({ok:true});},'https:');
+  const statsConfig=api.config(),adminConfig=api.request('/config'),rating=api.request('/ratings/characters/c1');
+  assert.deepEqual(calls,['/api/community/config']);resolve(response({enabled:true}));
+  await Promise.all([statsConfig,adminConfig,rating]);
+  assert.deepEqual(calls,['/api/community/config','/api/community/ratings/characters/c1']);
+  let fresh=false;
+  const next=api.request('/config').then(()=>{fresh=true;});await new Promise(setImmediate);
+  assert.equal(calls.at(-1),'/api/community/config');resolve(response({enabled:true,needsSetup:false}));await next;assert.equal(fresh,true);
+});
 test('offline mode never requests an API and disabled config can recover after retry', async () => {
   let calls=0;
   const offline=C.createApi(async()=>{calls++;},'file:'); await assert.rejects(offline.config(),/离线版/); assert.equal(calls,0);
   const api=C.createApi(async()=>response({enabled:++calls>1}), 'http:');
   await assert.rejects(api.config(),/暂未启用/); assert.equal((await api.config()).enabled,true);
   await api.config(); assert.equal(calls,2);
+});
+
+test('refreshing expired visitor identity bypasses cached config and shares the in-flight request', async () => {
+  let calls=0,resolve;
+  const api=C.createApi(async()=>{calls++;return calls===1?response({enabled:true}):new Promise(done=>resolve=done);},'https:');
+  await api.config();await api.config();assert.equal(calls,1);
+  const fresh=api.config({refresh:true}),concurrent=api.request('/config');assert.equal(calls,2);
+  resolve(response({enabled:true,refreshed:true}));await concurrent;
+  assert.equal((await fresh).refreshed,true);assert.equal((await api.config()).refreshed,true);assert.equal(calls,2);
 });
 test('HTML fallback, connection failures and throttling produce actionable errors', async () => {
   const html=C.createApi(async()=>({json:async()=>{throw new SyntaxError();}}),'https:');

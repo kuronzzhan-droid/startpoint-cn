@@ -46,8 +46,8 @@
     return error?.message || '暂时无法连接配队社区，请稍后重试。';
   }
   function createApi(fetcher, protocol) {
-    let configPromise;
-    async function request(path, body, method = body ? 'POST' : 'GET') {
+    let configPromise, configRequest;
+    async function send(path, body, method = body ? 'POST' : 'GET') {
       if (!/^https?:$/.test(protocol)) throw new Error('离线版可编辑和保存队伍；配队大全与点赞请前往公开网站。');
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000);
@@ -72,8 +72,20 @@
         throw error;
       } finally {clearTimeout(timeout);}
     }
-    return {request, config: () => {
-      if (!configPromise) configPromise = request('/config').then((value) => {
+    function fetchConfig() {
+      if (!configRequest) configRequest = send('/config').finally(() => {configRequest = null;});
+      return configRequest;
+    }
+    async function request(path, body, method = body ? 'POST' : 'GET') {
+      if (path === '/config' && method === 'GET') return fetchConfig();
+      // Initial visible-page statistics and a page's own config share one cookie.
+      // Wait for that response before a concurrent rating/like may create an identity.
+      if (configRequest) await configRequest.catch(() => {});
+      return send(path, body, method);
+    }
+    return {request, config: ({refresh = false} = {}) => {
+      if (refresh) configPromise = null;
+      if (!configPromise) configPromise = fetchConfig().then((value) => {
         if (!value.enabled) throw new Error('此站暂未启用配队社区，仍可使用本地队伍编成。');
         return value;
       }).catch((error) => {configPromise = null; throw error;});
