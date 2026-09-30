@@ -5,6 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const {Node: BaseNode} = require('./wiki_equipment_fixture.cjs');
 class Node extends BaseNode {
+  constructor(...args) {super(...args); this.dataset = {};}
   matches(selector) {
     const value = selector.trim();
     if (value.startsWith('.')) return this.className.split(' ').includes(value.slice(1));
@@ -29,7 +30,7 @@ function env(responder = async (route) => {if (route === '/admin/me') throw {sta
     categoryLabel:value=>value, message:error=>error.message || '请求失败', board:(_team, _data, _ui, options)=>el('div', 'shared-board', options.preview ? '六头像预览' : '完整盘')},
   WFCommunityGameCodes:{readonly:()=>el('button', 'shared-code', '复制队伍码')}};
   const context = {window, document, URL, URLSearchParams, AbortController, setTimeout, clearTimeout};
-  ['dungeons.js', 'dungeons-admin.js'].forEach((file) => vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki', file), 'utf8'), context));
+  ['dungeons-series.js', 'dungeons.js', 'dungeons-admin.js'].forEach((file) => vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki', file), 'utf8'), context));
   const ui = {el}, data = {dungeons:{schemaVersion:1, source:{label:'灰服资料快照'}, items:[item,
     {id:'dragon', title:'火龙领主', category:'领主战', summary:'火龙讨伐'}, {id:'storm-event', title:'疾风活动', category:'活动'}]}, characters:[]};
   return {context, window, document, host, ui, data, calls, el, find:cls=>host.querySelector(cls),
@@ -191,4 +192,59 @@ test('unavailable linked records report their own error without pretending a rev
   const x=env(async()=>{throw {status:409,code:'references_unavailable',message:'推荐队伍已隐藏，请先移除。'};});
   const form=edit(x);await form.fire('submit');
   assert.ok(x.host.textContent.includes('推荐队伍已隐藏'));assert.ok(!x.button('读取最新版本供合并'));
+});
+
+function seriesFixture(x) {
+  x.data.dungeons.items.push(
+    {id:'machina-fire-raid',title:'红嫉机兵降临',category:'降临讨伐',seriesId:'series-machina',variantLabel:'火',banner:'media/fire-banner.webp'},
+    {id:'machina-fire',title:'红嫉机兵',category:'领主战',seriesId:'series-machina',variantLabel:'火',entryImage:'media/fire-icon.webp',quests:[{name:'火力考验'}]},
+    {id:'machina-water',title:'苍叹机兵',category:'领主战',seriesId:'series-machina',variantLabel:'水',entryImage:'media/water-icon.webp'},
+    {id:'fantasy-coop',title:'幻想协力',category:'降临讨伐',seriesId:'series-gauntlets',variantLabel:'幻想连战',banner:'media/fantasy.webp'},
+    {id:'fantasy',title:'幻想连战',category:'模式',seriesId:'series-gauntlets',variantLabel:'幻想连战',banner:'media/fantasy.webp'},
+    {id:'abyss',title:'深渊连战',category:'模式',seriesId:'series-gauntlets',variantLabel:'普通深渊',banner:'media/abyss.webp'});
+}
+test('series replace repeated directory cards, retain member search and match all member categories', async () => {
+  const x=env();seriesFixture(x);await x.render({});
+  assert.equal(x.host.querySelectorAll('.dungeon-card').length,5);
+  assert.equal(x.host.querySelectorAll('.dungeon-series-card').length,2);
+  assert.ok(!x.host.querySelectorAll('.dungeon-card').some(node=>node.href==='#dungeons/machina-fire-raid'));
+  const search=x.find('.dungeon-search');search.value='苍叹';await search.fire('input');
+  assert.deepEqual(x.host.querySelectorAll('.dungeon-card').filter(node=>!node.hidden).map(node=>node.href),['#dungeons/series-machina']);
+  search.value='';await search.fire('input');await x.button('降临讨伐').fire('click');
+  assert.deepEqual(x.host.querySelectorAll('.dungeon-card').filter(node=>!node.hidden).map(node=>node.href),['#dungeons/series-machina','#dungeons/series-gauntlets']);
+});
+test('series select compact variants, prefer permanent bosses, and collapse editions without inventing guide IDs', async () => {
+  const x=env();seriesFixture(x);await x.render({id:'series-machina'});
+  assert.equal(x.host.querySelectorAll('.dungeon-variant').length,2);
+  assert.ok(x.find('.dungeon-versions').open===false);assert.equal(x.host.querySelectorAll('.dungeon-version').length,2);
+  assert.ok(x.calls.some(([route])=>route==='/dungeons/machina-fire'));
+  assert.ok(x.calls.every(([route])=>!route.includes('/dungeons/series-machina')));
+  assert.ok(!x.host.querySelectorAll('.back-button').some(node=>node.textContent==='‹ 返回所属系列'));
+  const versions=x.host.querySelectorAll('.dungeon-version');await versions[0].fire('click');
+  assert.ok(x.calls.some(([route])=>route==='/dungeons/machina-fire-raid'));
+  await x.host.querySelectorAll('.dungeon-variant')[1].fire('click');
+  assert.ok(x.calls.some(([route])=>route==='/dungeons/machina-water'));
+  assert.equal(x.host.querySelectorAll('.dungeon-version').length,1);
+});
+test('old leaf URLs still fetch their own guide and return to the owning series', async () => {
+  const x=env();seriesFixture(x);await x.render({id:'machina-fire-raid'});
+  assert.equal(x.find('.back-button').href,'#dungeons/series-machina');
+  assert.ok(x.calls.some(([route])=>route==='/dungeons/machina-fire-raid'));
+});
+test('unverified abyss EX shows a notice without API calls or borrowing another dungeon', async () => {
+  const x=env();seriesFixture(x);await x.render({id:'series-gauntlets'});
+  assert.equal(x.host.querySelectorAll('.dungeon-variant').length,3);
+  assert.ok(x.calls.some(([route])=>route==='/dungeons/fantasy'));
+  const before=x.calls.length;await x.find('.dungeon-variant-pending').fire('click');
+  assert.equal(x.calls.length,before);assert.ok(x.find('.dungeon-versions').hidden);
+  assert.ok(x.find('.dungeon-series-content').textContent.includes('深渊连战EX入口资料待核对'));
+  assert.ok(!x.find('.dungeon-admin-host'));
+});
+test('changing a series variant prevents an older guide response from replacing the selection', async () => {
+  const pending=[];const x=env(route=>route==='/admin/me'?Promise.reject({status:401}):new Promise(resolve=>pending.push({route,resolve})));
+  seriesFixture(x);const render=x.render({id:'series-machina'});
+  const change=x.host.querySelectorAll('.dungeon-variant')[1].fire('click');
+  pending[1].resolve({...emptyGuide(),guide:{...emptyGuide().guide,text:'水队攻略'}});await change;
+  pending[0].resolve({...emptyGuide(),guide:{...emptyGuide().guide,text:'过期火队攻略'}});await render;
+  assert.ok(x.host.textContent.includes('水队攻略'));assert.ok(!x.host.textContent.includes('过期火队攻略'));
 });

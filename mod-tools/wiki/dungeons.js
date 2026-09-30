@@ -61,32 +61,34 @@
     const search = el('input', 'dungeon-search'); search.type = 'search'; search.placeholder = '查找活动、副本或模式…'; search.setAttribute('aria-label', '查找副本或模式');
     const filters = el('div', 'dungeon-categories'); filters.setAttribute('role', 'group'); filters.setAttribute('aria-label', '副本分类');
     const grid = el('div', 'dungeon-grid'), status = el('p', 'dungeon-result-count muted'); status.setAttribute('role', 'status');
-    const items = (snapshot.items || []).filter((item) => validId(item.id)), cards = [];
+    const sourceItems = (snapshot.items || []).filter((item) => validId(item.id));
+    const items = window.WFDungeonSeries?.entries(sourceItems) || sourceItems, cards = [];
     let category = '';
     const choices = [['', '全部'], ...categories.map((value) => [value, value])].map(([value, label]) => {
       const node = button(ui, label, () => {category = value; filter();}, 'dungeon-category');
       filters.append(node); return {node, value};
     });
     for (const item of items) {
-      const compact = compactCategory(item.category), node = el('a', `dungeon-card${compact ? ' dungeon-card-compact' : ''}`); node.href = `#dungeons/${encodeURIComponent(item.id)}`;
+      const compact = item.compact ?? compactCategory(item.category), node = el('a', `dungeon-card${compact ? ' dungeon-card-compact' : ''}${item.members ? ' dungeon-series-card' : ''}`); node.href = `#dungeons/${encodeURIComponent(item.id)}`;
       const art = el('div', 'dungeon-card-art'), banner = image(ui, compact ? item.entryImage || item.banner : item.banner || item.entryImage, item.title || '副本入口');
       if (banner) art.append(banner); else art.append(el('span', 'dungeon-art-placeholder', item.category || '副本'));
       const info = el('div', 'dungeon-card-info'), name = el('h2', '', item.title); name.title = item.title;
-      if (compact) info.append(name, el('p', 'dungeon-card-count', `${item.category} · ${item.quests?.length || 0} 个关卡`));
+      if (compact) info.append(name, el('p', 'dungeon-card-count', item.countText || `${item.category} · ${item.quests?.length || 0} 个关卡`));
       else {
-        info.append(el('span', 'badge', item.category || '副本'), name);
+        info.append(el('span', 'badge', item.members ? item.countText : item.category || '副本'), name);
         if (item.summary) info.append(el('p', '', item.summary));
       }
       node.append(art, info); grid.append(node);
-      cards.push({node, item, search: `${item.title || ''} ${item.summary || ''} ${(item.quests || []).map((quest) => quest.name || '').join(' ')}`.toLowerCase()});
+      const members = item.members || [item];
+      cards.push({node, item, compact, categories:item.categories || [item.category], search: `${item.title || ''} ${item.summary || ''} ${members.map((member) => `${member.title || ''} ${member.summary || ''} ${(member.quests || []).map((quest) => quest.name || '').join(' ')}`).join(' ')}`.toLowerCase()});
     }
     function filter() {
       const words = search.value.trim().toLowerCase().split(/\s+/).filter(Boolean); let count = 0;
-      for (const card of cards) {card.node.hidden = Boolean(category && card.item.category !== category) || !words.every((word) => card.search.includes(word)); if (!card.node.hidden) count++;}
+      for (const card of cards) {card.node.hidden = Boolean(category && !card.categories.includes(category)) || !words.every((word) => card.search.includes(word)); if (!card.node.hidden) count++;}
       const visible = cards.filter((card) => !card.node.hidden);
-      grid.className = `dungeon-grid${compactCategory(category) || (visible.length && visible.every((card) => compactCategory(card.item.category))) ? ' dungeon-grid-compact' : ''}`;
+      grid.className = `dungeon-grid${compactCategory(category) || (visible.length && visible.every((card) => card.compact)) ? ' dungeon-grid-compact' : ''}`;
       choices.forEach(({node, value}) => node.setAttribute('aria-pressed', String(category === value)));
-      status.textContent = `${count} 个副本${count ? '' : '，请尝试其他筛选'}`;
+      status.textContent = `${count} 个入口${count ? '' : '，请尝试其他筛选'}`;
     }
     search.addEventListener('input', filter); toolbar.append(search, filters);
     host.replaceChildren(header, toolbar, status, grid, sourceNote(ui, snapshot.source)); filter();
@@ -95,12 +97,15 @@
   window.renderWikiDungeons = async (host, data, ui, options = {}) => {
     const snapshot = data.dungeons || {items:[]};
     if (!options.id) {catalog(host, snapshot, ui); return {};}
+    const series = window.WFDungeonSeries?.group(snapshot.items || [], options.id);
+    if (series) return window.WFDungeonSeries.render(host, series, data, ui, options, window.renderWikiDungeons);
     const item = snapshot.items?.find((entry) => validId(entry.id) && entry.id === options.id), {el} = ui;
     const page = el('article', 'dungeon-detail'), back = el('a', 'back-button', '‹ 返回副本与模式'); back.href = '#dungeons';
-    page.append(back); host.replaceChildren(page);
+    if (item && window.WFDungeonSeries?.group(snapshot.items || [], item.seriesId)) {back.href = `#dungeons/${encodeURIComponent(item.seriesId)}`; back.textContent = '‹ 返回所属系列';}
+    if (!options.embedded) page.append(back); host.replaceChildren(page);
     if (!item) {page.append(el('h1', '', '未找到此副本'), el('p', 'muted', '请返回目录查找现有副本。')); return {};}
     const compact = compactCategory(item.category), heading = el('header', `dungeon-header${compact ? ' dungeon-header-compact' : ''}`), headingText = el('div');
-    headingText.append(el('span', 'badge', item.category), el('h1', '', item.title)); heading.append(headingText); page.append(heading);
+    headingText.append(el('span', 'badge', item.category), el(options.embedded ? 'h2' : 'h1', '', item.title)); heading.append(headingText); page.append(heading);
     const hero = image(ui, compact ? item.entryImage || item.banner : item.banner || item.entryImage, `${item.title} ${compact ? '入口' : '横幅'}`, `dungeon-hero${compact ? ' dungeon-hero-compact' : ''}`);
     if (hero) {if (compact) heading.replaceChildren(hero, headingText); else page.append(hero);}
     if (item.summary) page.append(el('p', 'dungeon-summary', item.summary));
