@@ -47,7 +47,7 @@
         : route.split('/')[1] || '';
       if (route === 'five-boss' && !id) {window.renderWikiBossGuide(host, data, ui); return true;}
       window.renderWikiDungeons(host, data, ui, {id,
-        renderLegacyGuide: (target) => window.renderWikiBossGuide(target, data, ui)});
+        renderLegacyGuide: (target) => window.renderWikiBossGuide(target, data, ui, {mechanicsOnly:true})});
       return true;
     }
     return false;
