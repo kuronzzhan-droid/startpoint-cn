@@ -55,7 +55,9 @@ test('workerd D1 reads stored votes once instead of expanding all 568 catalogue 
   const modules = [{type:'ESModule', path:path.join(root, '__stats_cost_test.mjs'), contents:entry}];
   for (const name of ['community-stats.mjs','community-stats-counts.mjs','tier-ranking-store.mjs','security.mjs','model.mjs','codecs.mjs'])
     modules.push({type:'ESModule', path:path.join(root,name), contents:await readFile(path.join(root,name),'utf8')});
-  const options = {modules, modulesRoot:root, compatibilityDate:'2026-09-29', d1Databases:{DB:'stats-cost-fixture'},
+  const scorePath = path.resolve(root, '../wiki/rating-score.js');
+  modules.push({type:'CommonJS', path:scorePath, contents:await readFile(scorePath,'utf8')});
+  const options = {modules, modulesRoot:path.dirname(root), compatibilityDate:'2026-09-29', d1Databases:{DB:'stats-cost-fixture'},
     outboundService:async () => {throw new Error('Network is disabled in the D1 cost fixture');}};
   const mf = new Miniflare(convertV4MiniflareOptions ? convertV4MiniflareOptions(options) : options);
   t.after(() => mf.dispose());
