@@ -43,9 +43,14 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
         return response(await listCharacterRatings(env.COMMUNITY_DB, trustedCatalog));
       if (request.method === 'GET' && path === '/tier-rankings')
         return response(await listTierRankings(env.COMMUNITY_DB, trustedCatalog));
-      identity = await visitor(request, env, now, development);
-      const headers = identity.cookie ? {'Set-Cookie': identity.cookie} : {};
+      // Only identity-dependent endpoints may initialize a visitor. A late public read must not
+      // replace a cookie established by a concurrent rating/like request or sign unrelated reads.
+      const visitorHeaders = async () => {
+        identity ||= await visitor(request, env, now, development);
+        return identity.cookie ? {'Set-Cookie': identity.cookie} : {};
+      };
       if (request.method === 'GET' && path === '/config') {
+        const headers = await visitorHeaders();
         await env.COMMUNITY_DB.prepare('SELECT id FROM community_teams LIMIT 1').first();
         return response({enabled: true, siteKey: development ? '' : env.TURNSTILE_SITE_KEY,
           moderation: 'approved', canSubmit: false, publishing: 'admin',
@@ -72,13 +77,17 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
         return response(await resolveGameCode(env.COMMUNITY_DB, code));
       }
       if (path === '/teams' && request.method === 'GET')
-        return response(await listTeams(env.COMMUNITY_DB, listQuery(url, trustedCatalog)), 200, headers);
+        return response(await listTeams(env.COMMUNITY_DB, listQuery(url, trustedCatalog)));
       if (path === '/aliases' && request.method === 'GET')
-        return response(await listAliases(env.COMMUNITY_DB, trustedCatalog), 200, headers);
-      if (path === '/ratings/characters' || path.startsWith('/ratings/characters/'))
+        return response(await listAliases(env.COMMUNITY_DB, trustedCatalog));
+      if (path === '/ratings/characters' || path.startsWith('/ratings/characters/')) {
+        const headers = await visitorHeaders();
         return response(await characterRatingsRoute(path, request, env, trustedCatalog, identity, now, development, fetchImpl), 200, headers);
-      if (path === '/tier-rankings' || path.startsWith('/tier-rankings/'))
+      }
+      if (path === '/tier-rankings' || path.startsWith('/tier-rankings/')) {
+        const headers = await visitorHeaders();
         return response(await tierRankingsRoute(path, request, env, trustedCatalog, identity, now, development, fetchImpl), 200, headers);
+      }
       if (path === '/teams' && request.method === 'POST') {
         fail(403, 'submission_disabled', '队伍由管理员收录，游客可以浏览和点赞。');
       }
@@ -86,6 +95,7 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
       if (match && !match[2] && request.method === 'GET') {
         const row = await findTeam(env.COMMUNITY_DB, match[1]);
         if (!isPublicTeam(row)) fail(404, 'not_found', '队伍不存在或暂不展示。');
+        const headers = await visitorHeaders();
         const liked = await env.COMMUNITY_DB.prepare('SELECT 1 AS liked FROM community_likes WHERE team_id=? AND visitor_id=? AND day=?')
           .bind(row.id, identity.id, chinaDay(now).date).first();
         return response({team: {...teamRecord(row), likedToday: Boolean(liked)}}, 200, headers);
@@ -94,6 +104,7 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
         const body = await readJSON(request);
         await challenge(request, env, body.turnstileToken, 'like_team', fetchImpl, development);
         await rateLimit(env.COMMUNITY_DB, request, env, 'like', now, development);
+        const headers = await visitorHeaders();
         return response(await likeTeam(env.COMMUNITY_DB, match[1], identity.id, chinaDay(now), now), 200, headers);
       }
       fail(404, 'not_found', '没有这个社区接口。');
