@@ -60,7 +60,7 @@
     header.append(el('h1', '', '副本与模式'));
     const search = el('input', 'dungeon-search'); search.type = 'search'; search.placeholder = '查找活动、副本或模式…'; search.setAttribute('aria-label', '查找副本或模式');
     const filters = el('div', 'dungeon-categories'); filters.setAttribute('role', 'group'); filters.setAttribute('aria-label', '副本分类');
-    const grid = el('div', 'dungeon-grid'), status = el('p', 'dungeon-result-count muted'); status.setAttribute('role', 'status');
+    const grid = el('div', 'dungeon-grid dungeon-grid-compact'), status = el('p', 'dungeon-result-count muted'); status.setAttribute('role', 'status');
     const sourceItems = (snapshot.items || []).filter((item) => validId(item.id));
     const items = window.WFDungeonSeries?.entries(sourceItems) || sourceItems, cards = [];
     let category = '';
@@ -69,24 +69,18 @@
       filters.append(node); return {node, value};
     });
     for (const item of items) {
-      const compact = item.compact ?? compactCategory(item.category), node = el('a', `dungeon-card${compact ? ' dungeon-card-compact' : ''}${item.members ? ' dungeon-series-card' : ''}`); node.href = `#dungeons/${encodeURIComponent(item.id)}`;
-      const art = el('div', 'dungeon-card-art'), banner = image(ui, compact ? item.entryImage || item.banner : item.banner || item.entryImage, item.title || '副本入口');
+      const node = el('a', `dungeon-card dungeon-card-compact${item.members ? ' dungeon-series-card' : ''}`); node.href = `#dungeons/${encodeURIComponent(item.id)}`;
+      const art = el('div', 'dungeon-card-art'), banner = image(ui, item.entryImage || item.banner, item.title || '副本入口');
       if (banner) art.append(banner); else art.append(el('span', 'dungeon-art-placeholder', item.category || '副本'));
       const info = el('div', 'dungeon-card-info'), name = el('h2', '', item.title); name.title = item.title;
-      if (compact) info.append(name, el('p', 'dungeon-card-count', item.countText || `${item.category} · ${item.quests?.length || 0} 个关卡`));
-      else {
-        info.append(el('span', 'badge', item.members ? item.countText : item.category || '副本'), name);
-        if (item.summary) info.append(el('p', '', item.summary));
-      }
+      info.append(name, el('p', 'dungeon-card-count', item.countText || `${item.category} · ${item.quests?.length || 0} 个关卡`));
       node.append(art, info); grid.append(node);
       const members = item.members || [item];
-      cards.push({node, item, compact, categories:item.categories || [item.category], search: `${item.title || ''} ${item.summary || ''} ${members.map((member) => `${member.title || ''} ${member.summary || ''} ${(member.quests || []).map((quest) => quest.name || '').join(' ')}`).join(' ')}`.toLowerCase()});
+      cards.push({node, categories:item.categories || [item.category], search: `${item.title || ''} ${item.summary || ''} ${members.map((member) => `${member.title || ''} ${member.summary || ''} ${(member.quests || []).map((quest) => quest.name || '').join(' ')}`).join(' ')}`.toLowerCase()});
     }
     function filter() {
       const words = search.value.trim().toLowerCase().split(/\s+/).filter(Boolean); let count = 0;
       for (const card of cards) {card.node.hidden = Boolean(category && !card.categories.includes(category)) || !words.every((word) => card.search.includes(word)); if (!card.node.hidden) count++;}
-      const visible = cards.filter((card) => !card.node.hidden);
-      grid.className = `dungeon-grid${compactCategory(category) || (visible.length && visible.every((card) => card.compact)) ? ' dungeon-grid-compact' : ''}`;
       choices.forEach(({node, value}) => node.setAttribute('aria-pressed', String(category === value)));
       status.textContent = `${count} 个入口${count ? '' : '，请尝试其他筛选'}`;
     }

@@ -12,9 +12,14 @@
     || items.find((item) => item.category === '领主战')
     || items.find((item) => item.category === '模式') || items[0];
   function group(items, id) {
-    const definition = Object.hasOwn(definitions, id) ? definitions[id] : null;
-    const members = items.filter((item) => item.seriesId === id && item.variantLabel);
-    if (!definition || !members.length) return null;
+    if (typeof id !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)) return null;
+    const members = items.filter((item) => item.seriesId === id && typeof item.variantLabel === 'string' && item.variantLabel.trim());
+    if (!members.length) return null;
+    const title = typeof members[0].seriesTitle === 'string' ? members[0].seriesTitle.trim() : '';
+    const definition = Object.hasOwn(definitions, id) ? definitions[id]
+      : title && members.every((item) => typeof item.seriesTitle === 'string' && item.seriesTitle.trim() === title)
+        ? {title, labels:['火', '水', '雷', '风', '光', '暗', '无属性'], compact:false, dynamic:true} : null;
+    if (!definition) return null;
     const labels = [...new Set(members.map((item) => item.variantLabel))];
     labels.sort((a, b) => {
       const ai = definition.labels.indexOf(a), bi = definition.labels.indexOf(b);
@@ -29,13 +34,14 @@
       categories:[...new Set(members.map((item) => item.category))],
       banner:primary.banner, entryImage:primary.entryImage,
       summary:labels.join(' · '),
-      countText:`${variants.length} ${definition.compact ? '种首领' : '种连战'} · ${members.length} 个版本`};
+      countText:`${variants.length} ${definition.dynamic ? '类关卡' : definition.compact ? '种首领' : '种连战'} · ${members.length} 个版本`};
   }
   function entries(items) {
-    const result = [], included = new Set();
+    const result = [], included = new Set(), groups = new Map();
     for (const item of items) {
-      const series = group(items, item.seriesId);
-      if (!series) {result.push(item); continue;}
+      if (!groups.has(item.seriesId)) groups.set(item.seriesId, group(items, item.seriesId));
+      const series = groups.get(item.seriesId);
+      if (!series || !series.members.includes(item)) {result.push(item); continue;}
       if (!included.has(series.id)) {result.push(series); included.add(series.id);}
     }
     return result;
@@ -44,12 +50,22 @@
     const {el} = ui, D = window.WFDungeons, page = el('article', 'dungeon-detail dungeon-series');
     const back = el('a', 'back-button', '‹ 返回副本与模式'); back.href = '#dungeons';
     const heading = el('header', 'dungeon-header'); heading.append(el('h1', '', series.title));
-    const intro = el('p', 'dungeon-series-intro muted', '选择首领或连战模式，查看攻略与推荐队伍。');
+    const intro = el('p', 'dungeon-series-intro muted', series.variants.length > 1
+      ? '选择分类，查看关卡、攻略与推荐队伍。' : '展开关卡版本，可查看不同活动或复刻。');
     const choices = el('div', 'dungeon-variants'); choices.setAttribute('role', 'group'); choices.setAttribute('aria-label', `${series.title}分类`);
     const versions = el('details', 'dungeon-fold dungeon-versions'), versionTitle = el('summary'), versionList = el('div', 'dungeon-version-list');
     versions.append(versionTitle, versionList);
     const content = el('div', 'dungeon-series-content'), controls = [];
-    page.append(back, heading, intro, choices, versions, content); host.replaceChildren(page);
+    page.append(back, heading, intro);
+    if (series.variants.length > 8) {
+      const search = el('input', 'dungeon-search dungeon-variant-search'); search.type = 'search'; search.placeholder = '查找系列内的活动或首领…'; search.setAttribute('aria-label', '查找系列内分类');
+      search.addEventListener('input', () => {
+        const words = search.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+        for (const {node, value} of controls) node.hidden = !words.every((word) => `${value.label} ${value.versions.map((item) => item.title).join(' ')}`.toLowerCase().includes(word));
+      }); page.append(search);
+    }
+    choices.hidden = series.variants.length === 1;
+    page.append(choices, versions, content); host.replaceChildren(page);
     let currentVariant = null;
     function selectVersion(item) {
       for (const node of versionList.children) node.setAttribute('aria-pressed', String(node.dataset.id === item.id));

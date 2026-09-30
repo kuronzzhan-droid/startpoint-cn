@@ -47,21 +47,22 @@ test('catalog filters categories and multiple search terms without navigation or
   assert.equal(x.find('.dungeon-card').querySelector('img').loading, 'lazy');
   assert.ok(x.host.querySelectorAll('img').every(img=>!img.src.includes('preview')));
 });
-test('lord and raid cards use compact entry icons and quest counts while activities keep banners', async () => {
+test('all directory categories share compact card structure, fixed artwork slots and counts', async () => {
   const x=env(); const lord=x.data.dungeons.items[1];
   Object.assign(lord,{entryImage:'media/lord/icon.png',banner:'media/lord/banner.webp',quests:[{name:'初级'},{name:'超级'}]});
   x.data.dungeons.items.push({id:'raid',title:'降临讨伐',category:'降临讨伐',banner:'media/raid/icon.png',quests:[{name:'上级'}]});
   await x.render({});
-  const compact=x.host.querySelectorAll('.dungeon-card-compact');assert.equal(compact.length,2);
-  assert.equal(compact[0].querySelector('img').src,'http://127.0.0.1:8877/media/lord/icon.png');
-  assert.equal(compact[0].querySelector('.dungeon-card-count').textContent,'领主战 · 2 个关卡');
-  assert.equal(compact[1].querySelector('.dungeon-card-count').textContent,'降临讨伐 · 1 个关卡');
+  const compact=x.host.querySelectorAll('.dungeon-card-compact');assert.equal(compact.length,4);
+  const lordCard=compact.find(node=>node.href==='#dungeons/dragon'),raidCard=compact.find(node=>node.href==='#dungeons/raid');
+  assert.equal(lordCard.querySelector('img').src,'http://127.0.0.1:8877/media/lord/icon.png');
+  assert.equal(lordCard.querySelector('.dungeon-card-count').textContent,'领主战 · 2 个关卡');
+  assert.equal(raidCard.querySelector('.dungeon-card-count').textContent,'降临讨伐 · 1 个关卡');
   const activity=x.host.querySelectorAll('.dungeon-card').find(node=>node.href==='#dungeons/storm-event');
-  assert.ok(!activity.className.includes('dungeon-card-compact'));assert.ok(!x.find('.dungeon-grid-compact'));
+  assert.ok(activity.className.includes('dungeon-card-compact'));assert.ok(x.find('.dungeon-grid-compact'));
   await x.button('领主战').fire('click');assert.ok(x.find('.dungeon-grid-compact'));
   await x.button('全部').fire('click');const search=x.find('.dungeon-search');search.value='讨伐';await search.fire('input');
   assert.ok(x.find('.dungeon-grid-compact'));assert.equal(x.host.querySelectorAll('.dungeon-card').filter(node=>!node.hidden).length,2);
-  search.value='';await search.fire('input');assert.ok(!x.find('.dungeon-grid-compact'));
+  search.value='';await search.fire('input');assert.ok(x.find('.dungeon-grid-compact'));
 });
 test('compact detail uses a small header icon and retains its expandable original artwork', async () => {
   const x=env();Object.assign(x.data.dungeons.items[1],{entryImage:'media/lord/icon.png',banner:'media/lord/banner.webp'});
@@ -282,4 +283,35 @@ test('verified EX uses its independent event guide and keeps ordinary and endles
   assert.ok(!x.host.textContent.includes('EX 专属攻略'));assert.ok(x.host.textContent.includes('普通深渊 · 无尽'));
   assert.ok(x.calls.every(([route])=>!route.includes('700100099')));
   const group=x.window.WFDungeonSeries.group(x.data.dungeons.items,'series-gauntlets');assert.equal(group.countText,'3 种连战 · 3 个版本');
+});
+
+test('data-defined repeat series aggregate without frontend hardcodes and retain all leaf guides', async () => {
+  const x=env(),base={category:'活动',seriesId:'series-event-example',seriesTitle:'庆典活动',variantLabel:'活动版本'};
+  x.data.dungeons.items.push({...base,id:'event-story-101',title:'庆典初次开放'}, {...base,id:'event-story-102',title:'庆典复刻'});
+  await x.render({});
+  const groupCard=x.host.querySelectorAll('.dungeon-series-card')[0];assert.equal(groupCard.href,'#dungeons/series-event-example');
+  assert.ok(groupCard.textContent.includes('庆典活动'));assert.ok(groupCard.textContent.includes('2 个版本'));
+  await x.render({id:'series-event-example'});assert.ok(x.find('.dungeon-variants').hidden);
+  assert.equal(x.host.querySelectorAll('.dungeon-version').length,2);assert.equal(x.find('.dungeon-versions').open,false);
+  await x.host.querySelectorAll('.dungeon-version')[1].fire('click');assert.ok(x.calls.some(([route])=>route==='/dungeons/event-story-102'));
+  await x.render({id:'event-story-102'});assert.equal(x.find('.back-button').href,'#dungeons/series-event-example');
+});
+
+test('incomplete or conflicting dynamic series metadata does not silently hide leaf entries', () => {
+  const x=env(),S=x.window.WFDungeonSeries,base={category:'活动',seriesId:'series-event-example',variantLabel:'活动版本'};
+  const entries=[{...base,id:'event-a',seriesTitle:'庆典'}, {...base,id:'event-b',seriesTitle:'另一活动'}];
+  assert.equal(S.group(entries,'series-event-example'),null);assert.equal(S.entries(entries).length,2);
+  assert.equal(S.group([{...base,id:'event-c',seriesTitle:12}],'series-event-example'),null);
+  assert.equal(S.group([{...base,id:'event-d',seriesId:'../../bad',seriesTitle:'庆典'}],'../../bad'),null);
+  const malformed=[{...base,id:'event-e',seriesTitle:'庆典'}, {...base,id:'event-f',seriesTitle:'庆典',variantLabel:null}];
+  assert.equal(S.entries(malformed).length,2);
+});
+
+test('large dynamic story series can filter variants without losing selected guide or hidden versions', async () => {
+  const x=env();for(let i=0;i<10;i++)x.data.dungeons.items.push({id:`event-world-${i}`,title:`故事${i}复刻`,category:'活动',seriesId:'series-side-stories',seriesTitle:'世界活动与外传',variantLabel:`故事${i}`});
+  await x.render({id:'series-side-stories'});const search=x.find('.dungeon-variant-search');assert.ok(search);
+  const requests=x.calls.length;search.value='故事7';await search.fire('input');
+  const shown=x.host.querySelectorAll('.dungeon-variant').filter(node=>!node.hidden);assert.equal(shown.length,1);
+  assert.equal(x.calls.length,requests);await shown[0].fire('click');assert.ok(x.calls.some(([route])=>route==='/dungeons/event-world-7'));
+  search.value='';await search.fire('input');assert.equal(x.host.querySelectorAll('.dungeon-variant').filter(node=>!node.hidden).length,10);
 });
