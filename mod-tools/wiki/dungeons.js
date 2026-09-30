@@ -58,6 +58,7 @@
   function catalog(host, snapshot, ui) {
     const {el} = ui, header = el('header', 'dungeon-header'), toolbar = el('div', 'dungeon-toolbar');
     header.append(el('h1', '', '副本与模式'));
+    const shopLink = el('a', 'dungeon-shops-entry', '兑换商店 ›'); shopLink.href = '#shops'; header.append(shopLink);
     const search = el('input', 'dungeon-search'); search.type = 'search'; search.placeholder = '查找活动、副本或模式…'; search.setAttribute('aria-label', '查找副本或模式');
     const filters = el('div', 'dungeon-categories'); filters.setAttribute('role', 'group'); filters.setAttribute('aria-label', '副本分类');
     const grid = el('div', 'dungeon-grid dungeon-grid-compact'), status = el('p', 'dungeon-result-count muted'); status.setAttribute('role', 'status');
@@ -125,6 +126,7 @@
         rendered = true; options.renderLegacyGuide(legacyHost);
       }); page.append(legacy);
     }
+    window.WFWikiRewardView?.renderDungeon(page, item.id, data, ui);
     const status = el('p', 'dungeon-status muted', '正在读取攻略与推荐队伍…'); status.setAttribute('role', 'status');
     const guides = el('div'), admin = el('div', 'dungeon-admin-host'), request = (...args) => window.WFCommunity.client.request(...args);
     page.append(status, guides, admin, sourceNote(ui, item.source || snapshot.source));

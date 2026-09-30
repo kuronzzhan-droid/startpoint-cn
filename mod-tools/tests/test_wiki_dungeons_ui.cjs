@@ -39,6 +39,7 @@ function env(responder = async (route) => {if (route === '/admin/me') throw {sta
 }
 test('catalog filters categories and multiple search terms without navigation or eager preview images', async () => {
   const x = env(); await x.render({});
+  assert.equal(x.find('.dungeon-shops-entry').href,'#shops');
   assert.equal(x.calls.length, 0); assert.equal(x.host.querySelectorAll('.dungeon-card').length, 3);
   await x.button('领主战').fire('click');
   assert.deepEqual(x.host.querySelectorAll('.dungeon-card').filter(node=>!node.hidden).map(node=>node.href), ['#dungeons/dragon']);
@@ -46,6 +47,12 @@ test('catalog filters categories and multiple search terms without navigation or
   assert.equal(x.host.querySelectorAll('.dungeon-card').filter(node=>!node.hidden).length, 1);
   assert.equal(x.find('.dungeon-card').querySelector('img').loading, 'lazy');
   assert.ok(x.host.querySelectorAll('img').every(img=>!img.src.includes('preview')));
+});
+test('dungeon detail passes its original leaf ID to the reward view without affecting guide requests', async () => {
+  const x=env();let received;
+  x.window.WFWikiRewardView={renderDungeon:(host,id,data,ui)=>{received={id,data};host.append(ui.el('p','','掉落与兑换资料'));}};
+  await x.render({id:'five-boss'});assert.equal(received.id,'five-boss');assert.equal(received.data,x.data);
+  assert.ok(x.host.textContent.includes('掉落与兑换资料'));assert.ok(x.calls.some(([route])=>route==='/dungeons/five-boss'));
 });
 test('all directory categories share compact card structure, fixed artwork slots and counts', async () => {
   const x=env(); const lord=x.data.dungeons.items[1];
