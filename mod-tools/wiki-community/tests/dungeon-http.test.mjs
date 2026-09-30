@@ -47,5 +47,8 @@ test('additive dungeon migration is idempotent and preserves existing users, tea
   for (const name of ['community_dungeon_guides', 'community_dungeon_images', 'community_dungeon_audit'])
     assert.equal(db.raw.prepare(`SELECT COUNT(*) n FROM ${name}`).get().n, 0);
   const schema = await readFile(new URL('../schema.sql', import.meta.url), 'utf8');
-  assert.equal(migration.slice(migration.indexOf('CREATE TABLE')).trim(), schema.slice(schema.indexOf('CREATE TABLE IF NOT EXISTS community_dungeon_guides')).trim());
+  const dungeonSchema = migration.slice(migration.indexOf('CREATE TABLE')).trim();
+  const start = schema.indexOf('CREATE TABLE IF NOT EXISTS community_dungeon_guides');
+  assert.notEqual(start, -1);
+  assert.equal(schema.slice(start, start + dungeonSchema.length), dungeonSchema);
 });
