@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 import { PlayerCharacter } from "../data/types"
-import { wikiPublicId } from "../lib/wiki-team-code-client"
+import { TeamCodeError, wikiPublicId } from "../lib/wiki-team-code-client"
 import { nativeBattleParty, ownedTeam, resolvePublicTeam, TeamAssets, TeamInventory } from "../lib/wiki-team-code-inventory"
 
 const character = (exp: number): PlayerCharacter => ({entryCount:1,evolutionLevel:1,overLimitStep:4,protection:false,
@@ -38,4 +38,10 @@ test("native response uses only the requesting player's levels, nodes, EX and il
     assert.deepEqual(output.equipments,[{equipment_id:5001,level:5},null,null])
     assert.deepEqual(output.ability_soul_ids,[6001,6001,null])
     assert.equal(output.characters[2],null)
+})
+test("native response rejects an empty projected leader without selecting a replacement",()=>{
+    const inv=inventory(), snapshot=JSON.stringify(inv)
+    assert.throws(()=>nativeBattleParty({...team(),main:[3,1,2]},inv,assets),
+        error=>error instanceof TeamCodeError && error.kind==="incompatible")
+    assert.equal(JSON.stringify(inv),snapshot)
 })

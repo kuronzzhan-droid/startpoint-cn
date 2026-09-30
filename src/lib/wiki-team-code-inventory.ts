@@ -61,6 +61,8 @@ export function ownedTeam(team: NativeTeam, inventory: TeamInventory, assets: Te
 }
 export function nativeBattleParty(team: NativeTeam, inventory: TeamInventory, assets: TeamAssets) {
     const own = ownedTeam(team, inventory, assets)
+    // The native client raises C2330 for an empty leader, even when other slots are populated.
+    if (own.main[0] === null) throw new TeamCodeError("incompatible")
     const character = (id: number | null) => {
         if (id === null) return null
         const data = inventory.characters[id]

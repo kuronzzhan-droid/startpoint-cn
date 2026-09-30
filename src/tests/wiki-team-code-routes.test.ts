@@ -64,7 +64,9 @@ async function createPlayer(stack = 0) {
 }
 function snapshot(playerId: number) {
     return {characters: characters.getPlayerCharactersSync(playerId), equipment: equipment.getPlayerEquipmentListSync(playerId),
-        items: items.getPlayerItemsSync(playerId), parties: getDb().prepare("SELECT * FROM players_parties WHERE player_id = ?").all(playerId)}
+        items: items.getPlayerItemsSync(playerId), partySlot: players.getPlayerSync(playerId)!.partySlot,
+        groups: getDb().prepare("SELECT * FROM players_party_groups WHERE player_id = ?").all(playerId),
+        parties: getDb().prepare("SELECT * FROM players_parties WHERE player_id = ?").all(playerId)}
 }
 function call(viewerId: number, action = "refer", extra: Record<string, unknown> = {}, ip = "127.0.0.1") {
     return app.inject({method: "POST", url: `/party/${action}`, remoteAddress: ip, payload: {viewer_id: viewerId, api_count: 1, ...extra}})
@@ -74,6 +76,12 @@ function remote(code: string, transform?: (payload: any) => void) {
         unison: [wikiPublicId("c", chars[3]), "", ""], weapon: Array(3).fill(wikiPublicId("w", weapon)), soul: Array(3).fill(wikiPublicId("w", weapon))}}
     transform?.(payload)
     remoteReplies.set(code, () => new Response(JSON.stringify(payload), {headers: {"content-type": "application/json"}}))
+}
+function editParty(partyId: number, leader: number | null = chars[0]) {
+    return {party_edited: true, party_category: 1, party_name: "队长保护测试", party_id: partyId,
+        character_ids: [leader, chars[1], null], unison_character_ids: [null, null, null],
+        equipment_ids: [weapon, null, null], ability_soul_ids: [soul, null, null],
+        options: {allow_other_players_to_heal_me: true}}
 }
 
 test("refer returns native fields from the viewer's actual inventory and never writes a save", async () => {
@@ -89,6 +97,16 @@ test("refer returns native fields from the viewer's actual inventory and never w
     assert.deepEqual(data.data.battle_party.unison_characters, [null, null, null])
     assert.deepEqual(data.data.battle_party.equipments, [{equipment_id: weapon, level: 3}, null, null])
     assert.deepEqual(data.data.battle_party.ability_soul_ids, [soul, soul, null])
+    assert.deepEqual(snapshot(playerId), before)
+})
+test("refer rejects an unowned leader without moving another member or changing the save", async () => {
+    const {playerId, viewerId} = await createPlayer(), before = snapshot(playerId)
+    const code = "23456789ABCJ"
+    remote(code, value => {value.team.main = [chars[2], chars[0], chars[1]].map(id => wikiPublicId("c", id))})
+    const response = await call(viewerId, "refer", {party_code: code}), data = response.json()
+    assert.equal(response.statusCode, 200)
+    assert.equal(data.data_headers.result_code, 3403)
+    assert.deepEqual(data.data, {})
     assert.deepEqual(snapshot(playerId), before)
 })
 test("malformed or unauthenticated reads and ordinary publishing cannot contact the public service", async () => {
@@ -143,4 +161,70 @@ test("edit validates final ownership, duplicate quantities and souls separately 
     assert.deepEqual(after.characters, before.characters); assert.deepEqual(after.equipment, before.equipment); assert.deepEqual(after.items, before.items)
     const untouched = (rows: unknown[]) => rows.filter((row: any) => row.group_id !== 1 || row.category !== 1 || ![1, 2].includes(row.slot))
     assert.deepEqual(untouched(after.parties), untouched(before.parties))
+})
+for (const leader of [null, 0, -1, chars[2], 99999999]) {
+    test(`edit rejects leader ${leader} before changing any party or selected slot`, async () => {
+        const {playerId, viewerId} = await createPlayer(), before = snapshot(playerId)
+        const response = await call(viewerId, "edit", {main_party_id: 2,
+            party_info_list: [editParty(1), editParty(2, leader)]})
+        assert.equal(response.statusCode, 400)
+        assert.deepEqual(snapshot(playerId), before)
+    })
+}
+for (const leader of [null, chars[2], 99999999]) {
+    test(`selecting an existing party with invalid leader ${leader} leaves the save unchanged`, async () => {
+        const {playerId, viewerId} = await createPlayer()
+        getDb().prepare("UPDATE players_parties SET character_id_1 = ? WHERE player_id = ? AND category = 1 AND group_id = 1 AND slot = 2")
+            .run(leader, playerId)
+        const before = snapshot(playerId)
+        const response = await call(viewerId, "edit", {main_party_id: 2, party_info_list: []})
+        assert.equal(response.statusCode, 400)
+        assert.deepEqual(snapshot(playerId), before)
+    })
+}
+test("selecting a missing normal party cannot be satisfied by an event party edit", async () => {
+    const {playerId, viewerId} = await createPlayer()
+    getDb().prepare("DELETE FROM players_parties WHERE player_id = ? AND category = 1 AND group_id = 1 AND slot = 2").run(playerId)
+    const before = snapshot(playerId)
+    const response = await call(viewerId, "edit", {main_party_id: 2,
+        party_info_list: [{...editParty(2), party_category: 3}]})
+    assert.equal(response.statusCode, 400)
+    assert.deepEqual(snapshot(playerId), before)
+})
+test("clearing nonleaders, equipment and souls keeps the leader and permits selection-only edits", async () => {
+    const {playerId, viewerId} = await createPlayer()
+    const filled = {...editParty(2), unison_character_ids: [1, null, null]}
+    assert.equal((await call(viewerId, "edit", {main_party_id: 2, party_info_list: [filled]})).statusCode, 200)
+    const cleared = {...editParty(2), character_ids: [chars[0], null, null], equipment_ids: [null, null, null],
+        ability_soul_ids: [null, null, null]}
+    assert.equal((await call(viewerId, "edit", {main_party_id: 2, party_info_list: [cleared]})).statusCode, 200)
+    const row = getDb().prepare("SELECT * FROM players_parties WHERE player_id = ? AND category = 1 AND group_id = 1 AND slot = 2").get(playerId) as any
+    assert.deepEqual([row.character_id_1, row.character_id_2, row.character_id_3], [chars[0], null, null])
+    assert.deepEqual([row.unison_character_1, row.unison_character_2, row.unison_character_3], [null, null, null])
+    assert.deepEqual([row.equipment_1, row.equipment_2, row.equipment_3, row.ability_soul_1, row.ability_soul_2, row.ability_soul_3], Array(6).fill(null))
+    const before = snapshot(playerId)
+    assert.equal((await call(viewerId, "edit", {main_party_id: 1, party_info_list: []})).statusCode, 200)
+    assert.deepEqual(snapshot(playerId), {...before, partySlot: 1})
+})
+test("selection uses the validated replacement from this batch instead of the previous broken row", async () => {
+    const {playerId, viewerId} = await createPlayer()
+    getDb().prepare("UPDATE players_parties SET character_id_1 = NULL WHERE player_id = ? AND category = 1 AND group_id = 1 AND slot = 2").run(playerId)
+    const response = await call(viewerId, "edit", {main_party_id: 2, party_info_list: [editParty(2)]})
+    assert.equal(response.statusCode, 200)
+    assert.equal(players.getPlayerSync(playerId)!.partySlot, 2)
+    const row = getDb().prepare("SELECT character_id_1 AS leader FROM players_parties WHERE player_id = ? AND category = 1 AND group_id = 1 AND slot = 2").get(playerId) as any
+    assert.equal(row.leader, chars[0])
+})
+test("a database failure rolls back earlier party writes and the selected slot", async () => {
+    const {playerId, viewerId} = await createPlayer(), before = snapshot(playerId)
+    getDb().exec(`CREATE TEMP TRIGGER reject_second_party BEFORE UPDATE ON players_parties
+        WHEN NEW.player_id = ${playerId} AND NEW.category = 1 AND NEW.group_id = 1 AND NEW.slot = 2
+        BEGIN SELECT RAISE(ABORT, 'isolated test failure'); END`)
+    try {
+        const response = await call(viewerId, "edit", {main_party_id: 2, party_info_list: [editParty(1), editParty(2)]})
+        assert.equal(response.statusCode, 500)
+        assert.deepEqual(snapshot(playerId), before)
+    } finally {
+        getDb().exec("DROP TRIGGER reject_second_party")
+    }
 })

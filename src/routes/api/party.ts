@@ -1,7 +1,9 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { getPlayerSync, updatePlayerSync } from "../../data/domains/player"
 import { getSession } from "../../data/domains/session"
-import { updatePlayerPartySync } from "../../data/domains/party"
+import { getPlayerPartyGroupListSync, updatePlayerPartySync } from "../../data/domains/party"
+import { getDb } from "../../data/db";
+import { PartyCategory, PlayerParty } from "../../data/types";
 import { generateDataHeaders } from "../../utils";
 import { registerWikiTeamCodeRoutes, playerTeamInventory } from "../../lib/wiki-team-code-routes";
 import { loadTeamCodeAssets, ownedTeam } from "../../lib/wiki-team-code-inventory";
@@ -38,7 +40,7 @@ const routes = async (fastify: FastifyInstance) => {
     fastify.post("/edit", async (request: FastifyRequest, reply: FastifyReply) => {
         const body = request.body as EditBody
 
-        const viewerId = body.viewer_id
+        const viewerId = body?.viewer_id
         if (!viewerId || isNaN(viewerId)) return reply.status(400).send({
             "error": "Bad Request",
             "message": "Invalid request body."
@@ -59,6 +61,14 @@ const routes = async (fastify: FastifyInstance) => {
             "message": "No players bound to account."
         })
 
+        const invalidParty = () => reply.status(400).send({error: "Bad Request", message: "Invalid party."})
+        if (!Number.isSafeInteger(body.main_party_id) || body.main_party_id < 1 || body.main_party_id > 120 ||
+            !Array.isArray(body.party_info_list) || body.party_info_list.some(info => !info ||
+                !Number.isSafeInteger(info.party_id) || info.party_id < 1 ||
+                typeof info.party_name !== "string" || typeof info.options?.allow_other_players_to_heal_me !== "boolean")) {
+            return invalidParty()
+        }
+
         // parse global PartyId: (groupIndex * 10 + slot), groupIndex 0-based
         const parsePartyId = (partyId: number) => {
             const gIdx = Math.floor((partyId - 1) / 10)
@@ -66,46 +76,46 @@ const routes = async (fastify: FastifyInstance) => {
             return { groupIndex: gIdx, groupId: gIdx + 1, slot: s }
         }
 
-        // store full global PartyId so /load returns the correct group+slot combo
-        if (player.partySlot !== body.main_party_id) {
-            updatePlayerSync({
-                id: playerId,
-                partySlot: body.main_party_id
-            })
-        }
-
-        // update each slot
+        // Project the complete batch before any write, including the selected party slot.
         const inventory = playerTeamInventory(playerId)
         const teamAssets = loadTeamCodeAssets()
-        const editCategories: number[] = []
-        for (const updateInfo of body.party_info_list) {
-            editCategories.push(updateInfo.party_category)
-        }
-        console.log(`[PARTY] edit: viewer=${viewerId} parties=${body.party_info_list.length} categories=${JSON.stringify(editCategories)} mainPartyId=${body.main_party_id}`)
-
-        for (const updateInfo of body.party_info_list) {
+        const edits = body.party_info_list.map(updateInfo => {
             const parsed = parsePartyId(updateInfo.party_id)
             const owned = ownedTeam({main: updateInfo.character_ids, unison: updateInfo.unison_character_ids,
                 weapon: updateInfo.equipment_ids, soul: updateInfo.ability_soul_ids}, inventory, teamAssets)
-            console.log(`[PARTY] edit: player=${playerId} id=${updateInfo.party_id} -> group=${parsed.groupId} slot=${parsed.slot} name="${updateInfo.party_name}" chars=${updateInfo.character_ids?.filter(Boolean).length || 0}`)
-            updatePlayerPartySync(
-                playerId,
-                parsed.slot,
-                {
-                    name: updateInfo.party_name,
-                    unisonCharacterIds: owned.unison,
-                    characterIds: owned.main,
-                    equipmentIds: owned.weapon,
-                    abilitySoulIds: owned.soul,
-                    options: { allowOtherPlayersToHealMe: updateInfo.options.allow_other_players_to_heal_me },
-                    edited: updateInfo.party_edited,
-                    category: updateInfo.party_category === 3 ? 4 : updateInfo.party_category,
-                    currentBattlePower: updateInfo.current_battle_power ?? 0,
-                    beforeBattlePower: updateInfo.before_battle_power ?? 0
-                },
-                parsed.groupId
-            )
-        }
+            const party: PlayerParty = {
+                name: updateInfo.party_name,
+                unisonCharacterIds: owned.unison,
+                characterIds: owned.main,
+                equipmentIds: owned.weapon,
+                abilitySoulIds: owned.soul,
+                options: { allowOtherPlayersToHealMe: updateInfo.options.allow_other_players_to_heal_me },
+                edited: updateInfo.party_edited,
+                category: updateInfo.party_category === 3 ? 4 : updateInfo.party_category,
+                currentBattlePower: updateInfo.current_battle_power ?? 0,
+                beforeBattlePower: updateInfo.before_battle_power ?? 0
+            }
+            return {partyId: updateInfo.party_id, ...parsed, party}
+        })
+        if (edits.some(edit => edit.party.characterIds[0] === null)) return invalidParty()
+
+        // A selection-only request must not activate a missing or already broken saved party.
+        const selectedId = parsePartyId(body.main_party_id)
+        const selectedEdit = edits.filter(edit => edit.partyId === body.main_party_id && edit.party.category === PartyCategory.NORMAL).at(-1)
+        const selectedParty = selectedEdit?.party ?? getPlayerPartyGroupListSync(playerId)[selectedId.groupId]?.list[selectedId.slot]
+        const leader = selectedParty?.characterIds[0]
+        if (leader == null || !Number.isSafeInteger(leader) || !inventory.characters[leader] ||
+            !new Set(teamAssets.characters.values()).has(leader)) return invalidParty()
+
+        const editCategories = edits.map(edit => edit.party.category)
+        console.log(`[PARTY] edit: viewer=${viewerId} parties=${edits.length} categories=${JSON.stringify(editCategories)} mainPartyId=${body.main_party_id}`)
+        getDb().transaction(() => {
+            // Store the full global PartyId so /load returns the correct group+slot combo.
+            if (player.partySlot !== body.main_party_id) updatePlayerSync({id: playerId, partySlot: body.main_party_id})
+            for (const edit of edits) {
+                updatePlayerPartySync(playerId, edit.slot, edit.party, edit.groupId)
+            }
+        })()
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
