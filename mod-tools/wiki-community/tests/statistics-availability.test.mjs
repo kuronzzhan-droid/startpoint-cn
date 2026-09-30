@@ -52,6 +52,15 @@ test('a new configured database namespace ignores the previous database edge pau
   assert.equal(await guard(request('stats'),{},1001,async()=>42,'db-b'),42);
 });
 
+test('an identity failure followed by a database failure still has only one recovery probe', async () => {
+  const guard=createStatisticsAvailability({cache:noCache}),db={};let release,calls=0;
+  const pending=new Promise(resolve=>{release=resolve;});
+  const first=guard(request('presence'),db,1000,async()=>{await pending;throw new ApiError(428,'visitor_required','identity');});
+  const jobs=Array.from({length:10},()=>guard(request('stats'),db,1000,async()=>{calls++;throw Error('database unavailable');}));
+  const settled=Promise.allSettled([first,...jobs]);release();
+  assert((await settled).every(item=>item.status==='rejected'));assert.equal(calls,1);
+});
+
 test('bad input, visitor identity errors, rate limits and snapshot refresh contention do not open global circuit', async () => {
   const guard=createStatisticsAvailability({cache:noCache}),db={};
   for(const [status,code] of [[400,'invalid_fields'],[428,'visitor_required'],[429,'rate_limited'],[503,'statistics_refreshing']]) {

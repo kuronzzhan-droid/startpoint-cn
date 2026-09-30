@@ -41,7 +41,11 @@ export function createStatisticsAvailability({cache = () => globalThis.caches?.d
     if (paused) rejectPaused(paused, now);
     // Only one initial/recovery probe per instance reaches D1. Each successful
     // follower still performs its own identity-dependent heartbeat afterward.
-    try {if (state.probe) await state.probe;} catch { /* Request-level errors belong only to their own caller. */ }
+    while (state.probe) {
+      try {await state.probe;} catch { /* Request-level errors belong only to their own caller. */ }
+      if (validPause(state.pause, now)) rejectPaused(state.pause, now);
+      // Another waiter may have taken over after a caller-specific error.
+    }
     if (validPause(state.pause, now)) rejectPaused(state.pause, now);
     const run = async () => {
       try {const result = await load(); state.checked = true; return result;}
