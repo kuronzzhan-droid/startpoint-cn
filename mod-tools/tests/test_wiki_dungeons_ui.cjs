@@ -88,14 +88,20 @@ test('recommendations reuse shared board and code views and open their own team 
   assert.equal(x.find('.dungeon-team-link').href,'#community/t1');
   assert.equal(x.find('.shared-board').textContent,'六头像预览'); assert.ok(x.find('.shared-code'));
 });
-test('admin controls require verified role and completed password change', async () => {
-  for(const identity of [{id:'a',role:'guest'},{id:'a',role:'editor',mustChangePassword:true},{}]) {
+test('admin controls require verified identity and completed password change', async () => {
+  for(const identity of [{id:'a',email:'a@example.test',role:'guest'},{id:'a',email:'a@example.test',role:'editor',mustChangePassword:true},{},{id:'a'}, {email:'a@example.test'}, {id:'a',email:'a@example.test',role:null}]) {
     const x=env(async route=>route==='/admin/me'?identity:emptyGuide()); await x.render({id:'five-boss'});
     assert.ok(!x.button('编辑攻略与推荐队伍'));
   }
-  const x=env(async route=>route==='/admin/me'?{id:'editor',role:'editor'}:emptyGuide()); await x.render({id:'five-boss'});
+  const x=env(async route=>route==='/admin/me'?{id:'editor',email:'editor@example.test',role:'editor'}:emptyGuide()); await x.render({id:'five-boss'});
   assert.ok(x.button('编辑攻略与推荐队伍')); assert.ok(!x.find('.dungeon-editor'));
   await x.button('编辑攻略与推荐队伍').fire('click'); assert.ok(x.find('.dungeon-editor'));
+});
+test('verified legacy Access identity can edit without inventing a role, while failed authentication cannot', async () => {
+  const x=env(async route=>route==='/admin/me'?{id:'access-subject',email:'editor@example.test'}:emptyGuide());
+  await x.render({id:'five-boss'}); assert.ok(x.button('编辑攻略与推荐队伍'));
+  const denied=env(async route=>{if(route==='/admin/me')throw {status:403};return emptyGuide();});
+  await denied.render({id:'five-boss'});assert.ok(!denied.button('编辑攻略与推荐队伍'));
 });
 function edit(x, result=emptyGuide(), onSaved=()=>{}) {
   return x.window.WFDungeonsAdmin.editor(x.host,item,result,x.data,x.ui,{current:()=>true,onSaved});

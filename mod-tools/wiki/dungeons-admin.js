@@ -194,7 +194,9 @@
     if (!window.WFCommunity?.client) return;
     let identity;
     try {identity = await request('/admin/me');} catch {return;}
-    if (!settings.current() || !identity?.id || !['owner','deputy','editor'].includes(identity.role) || identity.mustChangePassword) return;
+    // Legacy Access identities have no role; /admin/me has already verified their email allowlist.
+    if (!settings.current() || !identity?.id || !identity.email ||
+        (identity.role !== undefined && !['owner','deputy','editor'].includes(identity.role)) || identity.mustChangePassword) return;
     const D = window.WFDungeons, box = ui.el('div'), notice = ui.el('p', 'dungeon-status'); notice.setAttribute('role', 'status'); box.hidden = true;
     let loaded = false, loading = false;
     const edit = D.button(ui, '编辑攻略与推荐队伍', async () => {
