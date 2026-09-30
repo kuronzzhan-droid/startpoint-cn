@@ -9,6 +9,7 @@ import {authMode, passwordConfig, authenticatePassword, publicUser} from './pass
 import {authRoute, accountsRoute} from './auth-routes.mjs';
 import {listAliases, adminAliasesRoute} from './wiki-aliases.mjs';
 import {characterRatingsRoute, listCharacterRatings} from './character-ratings.mjs';
+import {tierRankingsRoute, listTierRankings} from './tier-rankings.mjs';
 import dungeonCatalog from './dungeon-catalog.mjs';
 import {dungeonRoute} from './dungeon-routes.mjs';
 
@@ -40,6 +41,8 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
       // Anonymous summaries must not mint a late cookie that replaces a rating visitor's identity.
       if (request.method === 'GET' && path === '/ratings/characters')
         return response(await listCharacterRatings(env.COMMUNITY_DB, trustedCatalog));
+      if (request.method === 'GET' && path === '/tier-rankings')
+        return response(await listTierRankings(env.COMMUNITY_DB, trustedCatalog));
       identity = await visitor(request, env, now, development);
       const headers = identity.cookie ? {'Set-Cookie': identity.cookie} : {};
       if (request.method === 'GET' && path === '/config') {
@@ -74,6 +77,8 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
         return response(await listAliases(env.COMMUNITY_DB, trustedCatalog), 200, headers);
       if (path === '/ratings/characters' || path.startsWith('/ratings/characters/'))
         return response(await characterRatingsRoute(path, request, env, trustedCatalog, identity, now, development, fetchImpl), 200, headers);
+      if (path === '/tier-rankings' || path.startsWith('/tier-rankings/'))
+        return response(await tierRankingsRoute(path, request, env, trustedCatalog, identity, now, development, fetchImpl), 200, headers);
       if (path === '/teams' && request.method === 'POST') {
         fail(403, 'submission_disabled', '队伍由管理员收录，游客可以浏览和点赞。');
       }

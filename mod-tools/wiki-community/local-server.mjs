@@ -68,7 +68,8 @@ export async function startLocalServer({site, db = ':memory:', port = 0, trusted
       }
       if (!url.pathname.startsWith('/api/community/')) return await serveFile(req, res, root, url);
       const limit = req.method === 'POST' && new RegExp(`^/api/community/admin/dungeons/${DUNGEON_ID}/images$`).test(url.pathname) ? IMAGE_BYTES :
-        req.method === 'PATCH' && new RegExp(`^/api/community/admin/dungeons/${DUNGEON_ID}$`).test(url.pathname) ? GUIDE_BYTES : 16384;
+        req.method === 'PATCH' && new RegExp(`^/api/community/admin/dungeons/${DUNGEON_ID}$`).test(url.pathname) ? GUIDE_BYTES :
+        req.method === 'POST' && /^\/api\/community\/tier-rankings\/?$/.test(url.pathname) ? 32768 : 16384;
       const chunks = []; let size = 0;
       for await (const chunk of req) {
         size += chunk.length;

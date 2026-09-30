@@ -162,6 +162,21 @@ node verify-build.mjs "<仓外构建目录>"
 
 ## 点赞、防刷与维护
 
+### 从夯到拉动态排行
+
+`GET /api/community/tier-rankings` 匿名读取综合榜，不生成访客 cookie；前端按角色属性切换总榜与六属性榜。
+`GET /api/community/tier-rankings/me` 读取自己的提交状态；`POST /api/community/tier-rankings` 接收
+`{rows, turnstileToken}`，验证码 action 为 `submit_tier_ranking`。拖拽只保存到本机，玩家显式验证、提交后才计票。
+
+五档按 5、4、3、2、1 分，四条档间线分别为 4.5、3.5、2.5、1.5 分。
+综合分为手排均分的 70% 加角色评分的 30%；缺一来源时使用已有来源并标注，两项均缺时不入榜。
+综合分保留两位；同分依次按手排人数、评分人数降序，最后按公开角色 ID 稳定排序。
+每个角色每位访客只保留一票；整榜按北京时间每天提交一次，下次提交替换全榜，未摆放角色不计票，空榜撤回旧手排票。
+每日网络 claim 防止同一 IP 清 cookie 后重复提交，且不存储原始 IP；公共接口不返回身份信息。
+
+现有数据库上线前需执行增量迁移 `migrations/0008-tier-rankings.sql`，不改原角色评分表。
+每位访客保存一份 JSON，整榜提交使用固定三句事务，避免按几百个角色逐项写入。
+
 匿名访客使用 HMAC 签名 HttpOnly / SameSite=Strict cookie，生产额外要求 Secure。
 数据库唯一键 `(team_id,visitor_id,北京时间日期)` 保证每日每盘一次；触发器与插入同事务计数。
 清 cookie 或更换设备会成为新访客，不能声称绝对“一人一次”。IP 只辅助限频，不原文存储。
