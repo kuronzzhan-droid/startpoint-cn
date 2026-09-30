@@ -2,6 +2,7 @@
 (() => {
   'use strict';
   const rowKeys = ['tier0', 'between0', 'tier1', 'between1', 'tier2', 'between2', 'tier3', 'between3', 'tier4'];
+  const publicRowKeys = [...rowKeys, 'provisional'];
   const labels = ['夯', '夯 ↔ 顶级', '顶级', '顶级 ↔ 人上人', '人上人', '人上人 ↔ NPC', 'NPC', 'NPC ↔ 拉完了', '拉完了'];
   const score = (value) => Number.isFinite(value) && value >= 0 && value <= 5;
   const votes = (value) => Number.isSafeInteger(value) && value >= 0;
@@ -13,9 +14,10 @@
       if (!Array.isArray(value.rankings?.[source])) invalid();
       const seen = new Set();
       for (const item of value.rankings[source]) {
-        if (!item || typeof item.id !== 'string' || seen.has(item.id) || !rowKeys.includes(item.row) || !score(item.rankScore)
+        // The server tiers unrounded averages; the displayed two-decimal mean can cross a boundary.
+        if (!item || typeof item.id !== 'string' || seen.has(item.id) || !publicRowKeys.includes(item.row) || !score(item.rankScore)
           || !votes(item.voters) || !item.voters || !score(item.average) || (source === 'placement' && item.average < 1)
-          || item.row !== rowKeys[Math.max(0, Math.min(8, Math.round((5 - item.rankScore) * 2)))]) invalid();
+          || (item.row === 'provisional') !== (item.voters < ranking.MINIMUM_TIER_VOTERS)) invalid();
         seen.add(item.id);
       }
     }
@@ -116,7 +118,7 @@
       publicCards.forEach(({card, text}) => {text.hidden = !showDetails; card.className = `tier-public-card${showDetails ? '' : ' is-compact'}`;});
     });
     function describeSource() {
-      description.textContent = `${sources[source]}独立计票。参考 ${ranking.PRIOR_VOTERS} 份中立分（每份 ${ranking.PRIORS[source]} 分）修正排序和分档，不增加玩家票数；无票不入榜。`;
+      description.textContent = `${sources[source]}独立计票，满 ${ranking.MINIMUM_TIER_VOTERS} 票按真实均分分档，不足则暂定，无票不入榜。档内排序参考 ${ranking.PRIOR_VOTERS} 份中立分（每份 ${ranking.PRIORS[source]} 分），不增加玩家票数。`;
     }
     Object.entries(sources).forEach(([value, label]) => {
       const button = el('button', 'tier-ranking-source', label); button.type = 'button';
@@ -153,40 +155,53 @@
       const items = value.rankings[source].filter(item => byId.has(item.id) && (!elementFilter || byId.get(item.id).element === elementFilter));
       const sourceLabel = sources[source], currentSource = source;
       const board = el('div', 'tier-board tier-public-board');
+      const provisionalCount = items.filter(item => item.row === 'provisional').length;
+      let provisionalSection;
       publicCards = [];
-      rowKeys.forEach((key, index) => {
-        const between = key.startsWith('between'), row = el('section', `tier-zone ${between ? 'tier-boundary' : `tier-row tier-row-${index / 2}`}`);
-        const slots = el('div', 'tier-slots'); row.append(el(between ? 'span' : 'h2', 'tier-label', labels[index]), slots);
+      publicRowKeys.forEach((key, index) => {
+        const provisional = key === 'provisional', between = key.startsWith('between');
+        const row = el('section', provisional ? 'tier-public-provisional' : `tier-zone ${between ? 'tier-boundary' : `tier-row tier-row-${index / 2}`}`);
+        row.setAttribute('data-row', key);
+        const slots = el('div', 'tier-slots');
+        if (provisional) {
+          const heading = el('div', 'tier-provisional-heading');
+          heading.append(el('h2', '', '暂定'), el('span', 'tier-provisional-count', `${provisionalCount} 位角色`));
+          row.append(heading, el('p', 'tier-provisional-note', `不足 ${ranking.MINIMUM_TIER_VOTERS} 票，尚未定级；满 ${ranking.MINIMUM_TIER_VOTERS} 票后按真实均分进入上方档位。`), slots);
+          provisionalSection = row;
+        } else row.append(el(between ? 'span' : 'h2', 'tier-label', labels[index]), slots);
         items.filter(item => item.row === key).forEach(item => {
           const character = byId.get(item.id), card = el('button', `tier-public-card${showDetails ? '' : ' is-compact'}`); card.type = 'button';
           card.setAttribute('data-character-id', item.id);
           const portrait = el('span', 'tier-avatar'); portrait.append(portraits.picture(character, '', ''), nativeIcon('elements', character.element, character.element, 'tier-avatar-element'));
           window.WFCharacterFrame?.apply(portrait, character);
           const title = `${character.name}${character.theme ? `（${character.theme}）` : ''}`;
-          const counts = `均分 ${item.average.toFixed(2)} · ${item.voters} 人`;
+          const counts = `${item.voters} 人 · ${provisional ? '暂定排序' : '档内排序'} ${item.rankScore.toFixed(2)}`;
           card.title = title; card.setAttribute('aria-label', `查看${title}的排行详情`);
           card.setAttribute('aria-haspopup', 'dialog');
           card.addEventListener('click', () => {
             const modal = C.dialog(`${title} · ${sourceLabel}`, ui), body = el('div', 'tier-score-detail');
             const headline = el('div', 'tier-score-headline');
-            headline.append(el('span', '', '排序分'), el('strong', '', item.rankScore.toFixed(2)), el('span', '', `/ 5 · ${labels[rowKeys.indexOf(item.row)]}`));
+            headline.append(el('span', '', '真实均分'), el('strong', '', item.average.toFixed(2)), el('span', '', `/ 5 · ${provisional ? '暂定，尚未定级' : labels[rowKeys.indexOf(item.row)]}`));
             body.append(headline);
             const stat = el('div', 'tier-score-stat');
-            stat.append(el('span', '', `${sourceLabel}真实均分`), el('strong', '', item.average.toFixed(2)), el('span', '', `${item.voters} 位玩家`)); body.append(stat);
-            body.append(el('p', 'tier-score-explanation', `参考 ${ranking.PRIOR_VOTERS} 份中立分、每份 ${ranking.PRIORS[currentSource]} 分，不增加玩家票数。排序分 =（真实均分 × 票数 + ${ranking.PRIOR_VOTERS} × ${ranking.PRIORS[currentSource]}）÷（票数 + ${ranking.PRIOR_VOTERS}）。票数越多越接近真实均分；仅使用${sourceLabel}，不混合另一类投票。`));
+            stat.append(el('span', '', provisional ? '暂定排序分' : '档内排序分'), el('strong', '', item.rankScore.toFixed(2)), el('span', '', `${item.voters} 位玩家`)); body.append(stat);
+            body.append(el('p', 'tier-score-placement', provisional
+              ? `当前 ${item.voters} 票，未满 ${ranking.MINIMUM_TIER_VOTERS} 票，仅作暂定；满票后按真实均分分档。`
+              : `已满 ${ranking.MINIMUM_TIER_VOTERS} 票，按真实均分分档；排序分仅决定档内顺序。`));
+            body.append(el('p', 'tier-score-explanation', `参考 ${ranking.PRIOR_VOTERS} 份中立分、每份 ${ranking.PRIORS[currentSource]} 分，不增加玩家票数。排序分 =（真实均分 × 票数 + ${ranking.PRIOR_VOTERS} × ${ranking.PRIORS[currentSource]}）÷（票数 + ${ranking.PRIOR_VOTERS}）。仅使用${sourceLabel}，不混合另一类投票。`));
             const link = el('a', 'primary-button', '查看角色完整资料'); link.href = `#character/${encodeURIComponent(item.id)}`;
             body.append(link); modal.element.append(body);
           });
-          const text = el('span', 'tier-public-card-text'); text.append(el('strong', 'tier-public-score', `排序 ${item.rankScore.toFixed(2)}`),
+          const text = el('span', 'tier-public-card-text'); text.append(el('strong', 'tier-public-score', `均分 ${item.average.toFixed(2)}`),
             el('span', 'tier-public-name', title), el('small', 'tier-public-counts', counts));
           text.hidden = !showDetails;
           publicCards.push({card, text}); card.append(portrait, text); slots.append(card);
         });
-        if (!slots.children.length) slots.append(el('span', 'tier-placeholder', '暂无角色'));
-        board.append(row);
+        if (!slots.children.length) slots.append(el('span', 'tier-placeholder', provisional ? '暂无暂定角色' : '暂无角色'));
+        if (!provisional) board.append(row);
       });
-      results.replaceChildren(board);
-      publicStatus.textContent = items.length ? `${sourceLabel} · ${elementFilter ? `${elementFilter}属性榜` : '总榜'} · ${items.length} 位角色；点击头像查看真实均分、人数与排序分。`
+      results.replaceChildren(board, provisionalSection);
+      publicStatus.textContent = items.length ? `${sourceLabel} · ${elementFilter ? `${elementFilter}属性榜` : '总榜'} · ${items.length} 位角色（已定级 ${items.length - provisionalCount} · 暂定 ${provisionalCount}）；点击头像查看均分与人数。`
         : `${sourceLabel} · ${elementFilter ? `${elementFilter}属性暂时` : '目前'}还没有玩家投票；未评分角色不入此榜。`;
     }
     async function loadPublic() {

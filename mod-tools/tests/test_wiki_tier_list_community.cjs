@@ -26,10 +26,10 @@ const detailSwitch = root => root.all(node => node.attributes.role === 'switch' 
 const rowKeys = ['tier0', 'between0', 'tier1', 'between1', 'tier2', 'between2', 'tier3', 'between3', 'tier4'];
 const rows = () => Object.fromEntries(rowKeys.map(key => [key, []]));
 const me = {rows: rows(), submittedToday: false, nextVoteAt: Date.parse('2026-10-01T16:00:00Z'), updatedAt: null, rankedCharacters: 0, challengeAction: 'submit_tier_ranking'};
-const record = (id, patch = {}) => ({id, average: 4.5, voters: 2, rankScore: 24 / 7, row: 'between1', ...patch});
+const record = (id, patch = {}) => ({id, average: 4.5, voters: 2, rankScore: 24 / 7, row: 'provisional', ...patch});
 const data = {characters: [{id: 'c1', name: '甲', element: '火'}, {id: 'c2', name: '乙', element: '水'}, {id: 'c3', name: '丙', element: '火'}]};
 const aggregate = (placement = [record('c1'), record('c2'), record('c3')], rating = []) => ({rankings: {placement, rating},
-  formula: {method: 'bayesian', priorVoters: 5, placementPrior: 3, ratingPrior: 2.5}});
+  formula: {method: 'bayesian', priorVoters: 5, placementPrior: 3, ratingPrior: 2.5, tierMethod: 'raw-average', minimumTierVoters: 3}});
 function setup(handler = async pathname => pathname.endsWith('/me') ? me : aggregate(), options = {}) {
   const calls = [], dialogs = [], challenges = [], transitions = [], subscriptions = [], events = new Map(); let configCalls = 0, portraitsCreated = 0, unsubscribed = 0;
   let statsSnapshot = {status: options.protocol === 'file:' ? 'offline' : 'loading', data: null};
@@ -138,7 +138,7 @@ test('public view defaults to avatar buttons with rating text hidden and no scor
     assert.doesNotMatch(card.title, /4\.50|0\.00|手排|评分|暂无/);
   }
   assert.equal(detailSwitch(x.host).attributes['aria-checked'], 'false');
-  assert.match(cards[0].textContent, /排序 3\.43.*均分 4\.50 · 2 人/);
+  assert.match(cards[0].textContent, /均分 4\.50.*2 人 · 暂定排序 3\.43/);
   assert.equal(button(x.host, '手动排行').attributes['aria-pressed'], 'true');
   assert.equal(button(x.host, '角色评分').attributes['aria-pressed'], 'false');
   assert.doesNotMatch(x.host.textContent, /70%|30%|综合得分/);
@@ -155,10 +155,73 @@ test('element tabs filter cached rows without requests and preserve server tie o
   await button(x.host, '总榜').fire(); assert.equal(all(x.host, 'tier-public-card').length, 3); assert.equal(x.calls.length, 1);
 });
 
+test('nine real-average tiers precede a separate provisional area with visible filtered counts', async () => {
+  const placement = [record('c3', {average: 5, voters: 3, rankScore: 3.75, row: 'tier0'}),
+    record('c2', {voters: 3, rankScore: 3.5625, row: 'between0'}),
+    record('c1', {average: 5, voters: 1, rankScore: 10 / 3})];
+  const x = setup(async () => aggregate(placement)); x.controller.setView('community'); await tick();
+  const results = cls(x.host, 'tier-public-results'), board = cls(results, 'tier-public-board'), provisional = cls(results, 'tier-public-provisional');
+  assert.equal(results.children[0], board); assert.equal(results.children[1], provisional);
+  assert.deepEqual(board.children.map(row => row.attributes['data-row']), rowKeys);
+  assert.deepEqual(all(board.children[0], 'tier-public-card').map(card => card.attributes['data-character-id']), ['c3']);
+  assert.deepEqual(all(board.children[1], 'tier-public-card').map(card => card.attributes['data-character-id']), ['c2']);
+  assert.deepEqual(all(provisional, 'tier-public-card').map(card => card.attributes['data-character-id']), ['c1']);
+  assert.match(provisional.textContent, /暂定1 位角色.*不足 3 票，尚未定级/);
+  assert.match(cls(x.host, 'tier-public-formula').textContent, /满 3 票按真实均分分档.*不足则暂定.*档内排序参考 5 份中立分/);
+  assert.match(cls(x.host, 'tier-public-status').textContent, /已定级 2 · 暂定 1/);
+  await detailSwitch(x.host).fire();
+  assert.ok(all(x.host, 'tier-public-card-text').every(node => !node.hidden));
+  assert.match(visibleText(provisional), /均分 5\.00.*1 人 · 暂定排序 3\.33/);
+  await x.host.all(node => node.attributes['aria-label'] === '火属性排行')[0].fire();
+  assert.match(cls(x.host, 'tier-public-status').textContent, /已定级 1 · 暂定 1/);
+  assert.ok(all(x.host, 'tier-public-card-text').every(node => !node.hidden));
+  await x.host.all(node => node.attributes['aria-label'] === '水属性排行')[0].fire();
+  assert.match(cls(x.host, 'tier-provisional-count').textContent, /0 位角色/);
+  assert.equal(all(cls(x.host, 'tier-public-provisional'), 'tier-public-card').length, 0);
+  assert.match(cls(x.host, 'tier-public-provisional').textContent, /暂无暂定角色/); assert.equal(x.calls.length, 1);
+});
+
+test('a third real vote moves a character from provisional to its real-average tier on refresh', async () => {
+  let reads = 0;
+  const x = setup(async () => aggregate([++reads === 1 ? record('c1', {average: 5, voters: 2, rankScore: 25 / 7})
+    : record('c1', {average: 5, voters: 3, rankScore: 3.75, row: 'tier0'})]));
+  x.controller.setView('community'); await tick();
+  assert.equal(all(cls(x.host, 'tier-public-provisional'), 'tier-public-card').length, 1);
+  assert.equal(all(cls(x.host, 'tier-public-board'), 'tier-public-card').length, 0);
+  await button(x.host, '刷新大家排行').fire();
+  assert.equal(all(cls(x.host, 'tier-public-provisional'), 'tier-public-card').length, 0);
+  const top = cls(x.host, 'tier-public-board').children[0];
+  assert.equal(all(top, 'tier-public-card')[0].attributes['data-character-id'], 'c1');
+  await all(top, 'tier-public-card')[0].fire();
+  assert.match(x.dialogs[0].element.textContent, /真实均分5\.00.*夯.*3 位玩家.*已满 3 票/);
+});
+
+test('rounded displayed averages never replace authoritative server tiers at a rounding boundary', async () => {
+  // Raw means just above and below 4.75 both display 4.75 but legitimately occupy different tiers.
+  const x = setup(async () => aggregate([record('c1', {average: 4.75, voters: 200, rankScore: 4.7097, row: 'tier0'}),
+    record('c2', {average: 4.75, voters: 200, rankScore: 4.7024, row: 'between0'})]));
+  x.controller.setView('community'); await tick();
+  const board = cls(x.host, 'tier-public-board');
+  assert.equal(all(board.children[0], 'tier-public-card')[0].attributes['data-character-id'], 'c1');
+  assert.equal(all(board.children[1], 'tier-public-card')[0].attributes['data-character-id'], 'c2');
+  assert.equal(all(x.host, 'tier-public-card').length, 2);
+});
+
+test('invalid provisional thresholds, zero voters and the old tier policy are rejected visibly', async () => {
+  const invalid = [aggregate([record('c1', {row: 'tier0'})]), aggregate([record('c1', {voters: 3})]),
+    aggregate([record('c1', {voters: 0})]), aggregate([record('c1', {row: 'unknown'})])];
+  const old = aggregate(); delete old.formula.tierMethod; invalid.push(old);
+  for (const value of invalid) {
+    const x = setup(async () => value); x.controller.setView('community'); await tick();
+    assert.equal(all(x.host, 'tier-public-card').length, 0);
+    assert.match(cls(x.host, 'tier-public-status').textContent, /资料异常.*重试/);
+  }
+});
+
 test('source switches preserve the attribute and exact server scores without blending or fetching again', async () => {
-  const placement = [record('c3', {average: 5, voters: 1, rankScore: 10 / 3, row: 'between1'}), record('c2')];
-  const rating = [record('c1', {average: 4.5, voters: 10, rankScore: 23 / 6, row: 'tier1'}),
-    record('c3', {average: 0, voters: 1, rankScore: 25 / 12, row: 'tier3'})];
+  const placement = [record('c3', {average: 5, voters: 1, rankScore: 10 / 3, row: 'provisional'}), record('c2')];
+  const rating = [record('c1', {average: 4.5, voters: 10, rankScore: 23 / 6, row: 'between0'}),
+    record('c3', {average: 0, voters: 1, rankScore: 25 / 12, row: 'provisional'})];
   const x = setup(async () => aggregate(placement, rating)); x.controller.setView('community'); await tick();
   const fire = x.host.all(node => node.attributes['aria-label'] === '火属性排行')[0]; await fire.fire();
   await detailSwitch(x.host).fire();
@@ -167,27 +230,31 @@ test('source switches preserve the attribute and exact server scores without ble
   assert.equal(fire.attributes['aria-pressed'], 'true'); assert.equal(button(x.host, '角色评分').attributes['aria-pressed'], 'true');
   assert.deepEqual(all(x.host, 'tier-public-card').map(card => card.attributes['data-character-id']), ['c1', 'c3']);
   assert.match(cls(x.host, 'tier-public-status').textContent, /角色评分 · 火属性榜/);
-  assert.match(all(x.host, 'tier-public-card')[0].textContent, /排序 3\.83.*均分 4\.50 · 10 人/);
-  assert.match(all(x.host, 'tier-public-card')[1].textContent, /排序 2\.08.*均分 0\.00 · 1 人/);
+  assert.match(all(x.host, 'tier-public-card')[0].textContent, /均分 4\.50.*10 人 · 档内排序 3\.83/);
+  assert.match(all(x.host, 'tier-public-card')[1].textContent, /均分 0\.00.*1 人 · 暂定排序 2\.08/);
+  assert.match(cls(x.host, 'tier-public-status').textContent, /已定级 1 · 暂定 1/);
+  assert.match(cls(x.host, 'tier-provisional-count').textContent, /1 位角色/);
   await button(x.host, '手动排行').fire();
+  assert.match(cls(x.host, 'tier-public-status').textContent, /已定级 0 · 暂定 1/);
   assert.equal(all(x.host, 'tier-public-card')[0].textContent, before); assert.equal(x.calls.length, 1);
 });
 
 test('switching source during an initial read uses the current source when the response arrives', async () => {
   let resolve; const x = setup(() => new Promise(done => {resolve = done;}));
   x.controller.setView('community'); await button(x.host, '角色评分').fire();
-  resolve(aggregate([record('c1')], [record('c2', {average: 5, voters: 1, rankScore: 35 / 12, row: 'tier2'})])); await tick();
+  resolve(aggregate([record('c1')], [record('c2', {average: 5, voters: 1, rankScore: 35 / 12, row: 'provisional'})])); await tick();
   assert.deepEqual(all(x.host, 'tier-public-card').map(card => card.attributes['data-character-id']), ['c2']);
   assert.match(cls(x.host, 'tier-public-status').textContent, /角色评分/);
 });
 
 test('clicking an avatar opens its authoritative score breakdown and separate character detail link', async () => {
-  const x = setup(async () => aggregate([record('c1', {average: 4.5, voters: 7, rankScore: 3.875, row: 'tier1'})]));
+  const x = setup(async () => aggregate([record('c1', {average: 4.5, voters: 7, rankScore: 3.875, row: 'between0'})]));
   x.controller.setView('community'); await tick(); await all(x.host, 'tier-public-card')[0].fire();
   assert.equal(x.dialogs.length, 1); const dialog = x.dialogs[0].element;
-  assert.match(x.dialogs[0].title, /甲.*手动排行/); assert.match(cls(dialog, 'tier-score-headline').textContent, /排序分3\.88/);
+  assert.match(x.dialogs[0].title, /甲.*手动排行/); assert.match(cls(dialog, 'tier-score-headline').textContent, /真实均分4\.50.*夯 ↔ 顶级/);
   const stats = all(dialog, 'tier-score-stat');
-  assert.equal(stats.length, 1); assert.match(stats[0].textContent, /手动排行真实均分4\.507\s*位玩家/);
+  assert.equal(stats.length, 1); assert.match(stats[0].textContent, /档内排序分3\.887\s*位玩家/);
+  assert.match(dialog.textContent, /按真实均分分档.*仅决定档内顺序/);
   assert.match(dialog.textContent, /5 份中立分.*3 分.*不增加玩家票数.*不混合另一类投票/);
   const links = dialog.all(node => node.tag === 'a'); assert.equal(links.length, 1); assert.equal(links[0].href, '#character/c1');
   assert.equal(x.calls.length, 1); assert.equal(x.challenges.length, 0); assert.equal(detailSwitch(x.host).attributes['aria-checked'], 'false');
@@ -195,14 +262,15 @@ test('clicking an avatar opens its authoritative score breakdown and separate ch
 });
 
 test('the rating board preserves actual zero but never fills an empty placement board with rating votes', async () => {
-  const x = setup(async () => aggregate([], [record('c2', {average: 0, voters: 1, rankScore: 12.5 / 6, row: 'tier3'})]));
+  const x = setup(async () => aggregate([], [record('c2', {average: 0, voters: 1, rankScore: 12.5 / 6, row: 'provisional'})]));
   x.controller.setView('community'); await tick();
   assert.equal(all(x.host, 'tier-public-card').length, 0); assert.match(cls(x.host, 'tier-public-status').textContent, /手动排行.*还没有玩家投票/);
   await button(x.host, '角色评分').fire(); await all(x.host, 'tier-public-card')[0].fire();
   const dialog = x.dialogs[0].element;
-  assert.match(cls(dialog, 'tier-score-headline').textContent, /排序分2\.08/);
+  assert.match(cls(dialog, 'tier-score-headline').textContent, /真实均分0\.00.*暂定，尚未定级/);
+  assert.match(dialog.textContent, /当前 1 票，未满 3 票，仅作暂定/);
   const stats = all(dialog, 'tier-score-stat');
-  assert.equal(stats.length, 1); assert.match(stats[0].textContent, /角色评分真实均分0\.001\s*位玩家/);
+  assert.equal(stats.length, 1); assert.match(stats[0].textContent, /暂定排序分2\.081\s*位玩家/);
   assert.match(dialog.textContent, /每份 2\.5 分/); assert.equal(dialog.all(node => node.tag === 'a')[0].href, '#character/c2');
   assert.equal(x.calls.length, 1);
   await button(x.host, '手动排行').fire(); assert.equal(all(x.host, 'tier-public-card').length, 0);
@@ -213,7 +281,7 @@ test('global details switch changes all card visibility locally and survives att
   assert.equal(toggle.attributes['aria-checked'], 'false'); await toggle.fire();
   assert.equal(toggle.attributes['aria-checked'], 'true');
   for (const card of all(x.host, 'tier-public-card')) {
-    assert.equal(cls(card, 'tier-public-card-text').hidden, false); assert.match(visibleText(card), /排序 3\.43.*均分 4\.50 · 2 人/);
+    assert.equal(cls(card, 'tier-public-card-text').hidden, false); assert.match(visibleText(card), /均分 4\.50.*2 人 · 暂定排序 3\.43/);
   }
   await x.host.all(node => node.attributes['aria-label'] === '火属性排行')[0].fire();
   assert.equal(all(x.host, 'tier-public-card').length, 2); assert.equal(toggle.attributes['aria-checked'], 'true');
