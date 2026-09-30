@@ -63,7 +63,7 @@ window.createWikiRouter = function createWikiRouter(options) {
             await Promise.all([Promise.all([window.WFWikiData.loadEquipment(), window.WFWikiData.loadRewards()]).catch(() => {}),
               ...(hash === 'five-boss' || item?.legacyGuide === 'five-boss' ? [window.WFWikiData.loadBossGuide()] : [])]);
           }
-        } else if (parts[0] !== 'tier-list') await window.WFWikiData.loadEquipment();
+        } else if (parts[0] !== 'tier-list' && !(parts[0] === 'community' && !parts[1])) await window.WFWikiData.loadEquipment();
         if (!current()) return;
         if (!window.renderWikiPage?.(hash, extra, data, ui)) status(extra, '此份导出尚未包含该页面。');
       } else {
@@ -79,8 +79,10 @@ window.createWikiRouter = function createWikiRouter(options) {
           const base = `#character/${encodeURIComponent(id)}`;
           if (parts[2] === 'details') {
             window.renderWikiCharacter(detail, character, meta, ui, {initialTab: parts[3] || 'profile', summaryHref: base});
+            if (location.protocol !== 'file:') window.WFCharacterViews?.record(id).catch(() => {});
           } else {
             window.renderWikiCharacterSummary(detail, character, meta, ui, {
+              publicOverview:true, characters:data.characters,
               onOpenDetails: (tab) => {location.hash = `${base}/details/${tab || 'profile'}`;},
               onVariantNavigate: (variantId) => window.WFTeamInspector?.rememberVariant(variantId),
             });

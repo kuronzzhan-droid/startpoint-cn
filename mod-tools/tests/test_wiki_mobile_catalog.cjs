@@ -85,7 +85,9 @@ test('route changes and desktop widths preserve automatic sidebar hiding and man
   x.resize(false);assert.equal(nav.hidden,false);assert.equal(button.textContent,'‹ 收起目录');
   button.fire('click');button.fire('click');assert.equal(nav.scrolls,1);
   x.context.location.hash='#character/c123';x.window.fire('hashchange');
-  x.resize(true);assert.equal(button.textContent,'‹ 收起目录');assert.ok(!shell.className.includes('catalog-home'));
+  x.resize(true);assert.equal(nav.hidden,true);assert.equal(toolbar.hidden,true);assert.ok(!shell.className.includes('catalog-home'));
+  assert.equal(x.storage.get('wf-wiki-sidebar-collapsed'),'false');
+  x.resize(false);assert.equal(nav.hidden,false);assert.equal(toolbar.hidden,false);
 });
 test('fresh mobile sessions default closed and never persist their temporary open state',()=>{
   const x=environment();x.storage.clear();const {nav,button}=sidebar(x);

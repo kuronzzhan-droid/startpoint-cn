@@ -38,6 +38,7 @@ window.renderWikiCharacterSummary = function renderWikiCharacterSummary(host, ch
   window.WFCharacterVariants?.mount(variants, character, ui, {onNavigate:options.onVariantNavigate});
   window.WFWikiAliases?.mount(root, 'character', character.id, ui);
   window.WFCharacterRating?.mount(root, character, ui);
+  window.WFCharacterViews?.mount(root, character, ui, {record:Boolean(options.publicOverview)});
 
   const stats = object(character.stats);
   const levels = list(stats.levels).filter((row) => row && row.level != null && row.level !== '' && Number.isFinite(Number(row.level)));
@@ -133,5 +134,7 @@ window.renderWikiCharacterSummary = function renderWikiCharacterSummary(host, ch
   root.append(abilitySection);
   const footer = el('div', 'summary-footer');
   footer.append(detailsButton('查看完整数值', 'skills'), detailsButton('试听语音与台词', 'voices'));
-  root.append(footer); host.replaceChildren(root); return root;
+  root.append(footer); host.replaceChildren(root);
+  if (options.publicOverview) window.WFCharacterTeams?.mount(root, character, ui, {characters:options.characters || []});
+  return root;
 };

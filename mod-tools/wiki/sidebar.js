@@ -15,7 +15,8 @@
   button.setAttribute('aria-controls', sidebar.id);
   const paint = () => {
     const page = location.hash.slice(1).split('/')[0];
-    const automatic = ['team', 'community', 'weapons', 'weapon', 'five-boss', 'dungeons', 'shops', 'tier-list'].includes(page);
+    const automatic = ['team', 'community', 'weapons', 'weapon', 'five-boss', 'dungeons', 'shops', 'tier-list'].includes(page)
+      || (mobile?.matches && page === 'character');
     if (!mobileCatalog()) mobileExpanded = false;
     const closed = mobileCatalog() ? !mobileExpanded : collapsed;
     shell.classList.toggle('catalog-home', !page);

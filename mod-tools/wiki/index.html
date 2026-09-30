@@ -45,6 +45,8 @@
   <link rel="stylesheet" href="nameplates.css">
   <link rel="stylesheet" href="wiki-aliases.css">
   <link rel="stylesheet" href="character-rating.css">
+  <link rel="stylesheet" href="character-views.css?v=views-1">
+  <link rel="stylesheet" href="character-teams.css?v=views-1">
   <link rel="stylesheet" href="portrait-cards.css">
   <link rel="stylesheet" href="dropdowns.css">
   <link rel="stylesheet" href="mobile-motion.css">
@@ -99,7 +101,9 @@
   <script src="detail.js" defer></script>
   <script src="skill-summary-numeric.js" defer></script>
   <script src="character-variants.js" defer></script>
-  <script src="character-summary.js" defer></script>
+  <script src="character-summary.js?v=views-1" defer></script>
+  <script src="character-views.js?v=views-1" defer></script>
+  <script src="character-teams.js?v=views-1" defer></script>
   <script src="character-rating.js?v=review-1" defer></script>
   <script src="team-inspector.js" defer></script>
   <script src="team-equipment-filters.js" defer></script>
@@ -109,8 +113,8 @@
   <script src="tier-list-state.js?v=tiers-1" defer></script>
   <script src="tier-list-community.js?v=stats-1" defer></script>
   <script src="tier-list.js?v=tiers-2" defer></script>
-  <script src="router.js?v=review-1" defer></script>
-  <script src="sidebar.js?v=tiers-1" defer></script>
+  <script src="router.js?v=views-1" defer></script>
+  <script src="sidebar.js?v=views-1" defer></script>
   <script src="catalog-disclosure.js" defer></script>
   <script src="catalog-ratings.js?v=rating-number-2" defer></script>
   <script src="portrait-cards.js" defer></script>
@@ -127,7 +131,6 @@
     </a>
     <nav class="app-navigation" aria-label="资料站功能"><a href="#">角色图鉴</a><a href="#team">队伍编成</a><a href="#community">配队大全</a><a href="#weapons">武器图鉴</a><a href="#dungeons">副本与模式</a><a href="#tier-list">从夯到拉</a></nav>
     <div class="masthead-tools"><div id="site-presence" class="site-presence" aria-label="网站当前浏览人数" role="status"></div></div>
-    <div class="masthead-note"><span class="status-dot"></span>本地资料快照 <span id="header-version"></span></div>
   </header>
   <div class="page-shell">
     <aside class="sidebar" aria-label="角色目录">
@@ -166,6 +169,7 @@
         <p class="footer-credit-row"><strong>Wiki</strong><span>资料参考：《弹射世界中文 WIKI》离线版 v3.0.0；感谢 memimu 与「弹射世界wiki重生群」（QQ群 610753092）的资料收集与整理。</span></p>
         <p class="footer-credit-row"><strong>本项目</strong><a href="https://github.com/kuronzzhan-droid/startpoint-cn" target="_blank" rel="noopener noreferrer">kuronzzhan-droid/startpoint-cn</a></p>
         <p class="footer-credit-row"><strong>上游项目</strong><a href="https://github.com/DontBeAlarmed/startpoint-cn" target="_blank" rel="noopener noreferrer">DontBeAlarmed/startpoint-cn</a></p>
+        <p class="footer-snapshot">本地资料快照 <span id="header-version"></span></p>
       </footer>
     </main>
   </div>

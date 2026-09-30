@@ -136,8 +136,14 @@ test('tier board needs no detail downloads and supersedes a pending team page', 
   assert.deepEqual(x.rendered, ['tier-list', 'tier-list']);
 });
 
-test('community and individual weapon routes load equipment and stay outside the catalogue', async () => {
-  for (const hash of ['#community', '#community/t1', '#community/admin', '#weapon/w1']) {
+test('community list renders without downloading equipment', async () => {
+  const x=router();await x.go('#community');
+  assert.equal(x.requests.equipment,undefined);assert.deepEqual(x.rendered,['community']);
+  assert.equal(x.nodes['extra-view'].hidden,false);
+});
+
+test('community details, admin and individual weapon routes load equipment and stay outside the catalogue', async () => {
+  for (const hash of ['#community/t1', '#community/admin', '#weapon/w1']) {
     const x=router(), pending=x.go(hash);
     assert.equal(x.nodes['catalog-view'].hidden, true);
     assert.equal(x.nodes['extra-view'].hidden, false);
