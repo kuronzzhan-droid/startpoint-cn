@@ -87,7 +87,7 @@
       onChange: refreshSaved, onStatus: message => {status.textContent = message;}});
     picker.addEventListener('change', () => {
       const item = pickerRecords.find(record => String(record.key) === picker.value);
-      if (item && picker.value !== '') loadSaved(item);
+      if (item && picker.value !== '') saved.load(item);
     });
     const file = el('input'); file.type = 'file'; file.accept = 'application/json,.json'; file.hidden = true;
     file.addEventListener('change', async () => {

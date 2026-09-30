@@ -27,16 +27,16 @@ const button = (root, name) => root.all(node => node.tag === 'button' && node.te
 const one = (root, name) => root.all(node => node.attributes['aria-label'] === name)[0];
 const record = name => ({name, team: {...S.empty(), main: ['a', '', ''], unison: ['b', '', '']}});
 function setup(entries = [record('火队'), record('水队')]) {
-  let raw = JSON.stringify(entries), failWrite = false;
+  let raw = JSON.stringify(entries), failWrite = false, failRead = false;
   const loaded = [], statuses = [], changed = [], document = {body: el('body'), activeElement: el('button')}; document.body.root = true;
-  const storage = {getItem: () => raw, setItem: (_key, value) => {if (failWrite) throw Error(); raw = value;}};
+  const storage = {getItem: () => {if (failRead) throw Error(); return raw;}, setItem: (_key, value) => {if (failWrite) throw Error(); raw = value;}};
   const window = {WFTeamState: S, WFTeamSavedStore: {create: () => Store.create(() => storage)}, addEventListener() {}, removeEventListener() {}};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki/team-saved.js'), 'utf8'), {window, document});
   const current = record('当前队伍'), characters = new Map([['a', {name: '甲', icon: 'a.png'}], ['b', {name: '乙', icon: 'b.png'}]]);
   const controller = window.WFTeamSaved.create({ui: {el, picture: (source, alt) => {const image = el('img'); image.src = source; image.alt = alt; return image;}},
     characters, getCurrent: () => current, onLoad: value => loaded.push(value), onChange: () => changed.push(true), onStatus: value => statuses.push(value)});
   return {controller, current, loaded, statuses, changed, body: document.body, records: () => JSON.parse(raw),
-    failWrite: () => {failWrite = true;}, replace: value => {raw = JSON.stringify(value);}};
+    failWrite: () => {failWrite = true;}, failRead: () => {failRead = true;}, replace: value => {raw = JSON.stringify(value);}};
 }
 test('manager shows named six-slot thumbnail cards, filters by name and loads only the chosen record', () => {
   const x = setup(); x.controller.open(); assert.equal(cls(x.body, 'team-saved-card').length, 2);
@@ -78,4 +78,35 @@ test('another page editing storage cannot make a stale delete hit the wrong save
   assert.deepEqual(x.records().map(item => item.name), ['新的', '火队', '水队']);
   assert.match(cls(x.body, 'team-saved-status')[0].textContent, /其他页面修改.*刷新/);
   button(x.body, '刷新').fire(); assert.equal(cls(x.body, 'team-saved-card').length, 3);
+});
+test('saving from inside the manager displays storage failures in the open dialog', () => {
+  for (const fail of ['failWrite', 'failRead']) {
+    const x = setup(); x.controller.open(); const before = x.records(); x[fail]();
+    button(x.body, '保存当前编成').fire();
+    assert.match(cls(x.body, 'team-saved-status')[0].textContent, fail === 'failWrite' ? /未能保存更改/ : /无法读取/);
+    assert.deepEqual(x.records(), before); assert.equal(x.loaded.length, 0);
+  }
+});
+test('loading a stale or unreadable saved card never changes the current composition or closes its manager', () => {
+  for (const update of ['deleted', 'changed', 'reordered', 'unreadable']) {
+    const x = setup(); x.controller.open(); const card = cls(x.body, 'team-saved-card')[0];
+    if (update === 'deleted') x.replace([record('水队')]);
+    else if (update === 'changed') x.replace([{...record('火队'), team: S.empty()}, record('水队')]);
+    else if (update === 'reordered') x.replace([record('新队伍'), record('火队'), record('水队')]);
+    else x.failRead();
+    button(card, '装入编成').fire();
+    assert.equal(x.loaded.length, 0); assert.equal(cls(x.body, 'team-saved-dialog').length, 1);
+    assert.match(cls(x.body, 'team-saved-status')[0].textContent, update === 'unreadable' ? /无法读取/ : /当前编成未改动/);
+    assert.deepEqual(x.current, record('当前队伍'));
+  }
+});
+test('an unchanged chosen record can still load after another record was renamed', () => {
+  const x = setup(); x.controller.open(); const first = cls(x.body, 'team-saved-card')[0];
+  x.replace([record('火队'), record('改名的水队')]); button(first, '装入编成').fire();
+  assert.equal(x.loaded.length, 1); assert.equal(x.loaded[0].name, '火队');
+});
+test('overlong legacy names show a recoverable validation error instead of throwing on save-copy', () => {
+  const value = record('长'.repeat(61)), x = setup([value]); x.controller.save(value);
+  assert.doesNotThrow(() => button(x.body, '另存副本').fire());
+  assert.match(cls(x.body, 'team-saved-status')[0].textContent, /1–60/); assert.deepEqual(x.records(), [value]);
 });

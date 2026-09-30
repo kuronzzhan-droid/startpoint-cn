@@ -4,7 +4,7 @@
   let serial = 0;
   window.WFTeamSaved = {create({ui, characters, avatars, getCurrent, onLoad, onChange = () => {}, onStatus = () => {}}) {
     const {el, picture} = ui, store = window.WFTeamSavedStore.create();
-    let managerRefresh = null;
+    let managerRefresh = null, managerStatus = null;
     const button = (text, action, cls = '') => {
       const node = el('button', `team-saved-button ${cls}`.trim(), text); node.type = 'button';
       node.addEventListener('click', action); return node;
@@ -35,7 +35,17 @@
       dialog.showModal();
       return {dialog, body, status, close};
     }
-    function committed(message) {onChange(); managerRefresh?.(); onStatus(message);}
+    function notice(message) {onStatus(message); if (managerStatus?.isConnected) managerStatus.textContent = message;}
+    function committed(message) {onChange(); managerRefresh?.(); notice(message);}
+    function load(item) {
+      try {
+        const current = store.read().records.find(record => record.key === item.key);
+        if (!current || JSON.stringify(current) !== JSON.stringify(item)) {
+          throw new Error('这支队伍已被其他页面修改或删除，请刷新列表后再装入。当前编成未改动。');
+        }
+        onLoad(current); return true;
+      } catch (error) {onChange(); notice(error.message); return false;}
+    }
     function save(record = getCurrent()) {
       const current = {name: String(record.name || '').trim() || '我的队伍', team: window.WFTeamState.copy(record.team)};
       let snapshot;
@@ -44,7 +54,7 @@
         if (!snapshot.records.some(item => item.name === current.name)) {
           store.add(snapshot, current); committed(`「${current.name}」已保存到此浏览器。`); return;
         }
-      } catch (error) {onStatus(error.message); return;}
+      } catch (error) {notice(error.message); return;}
       const box = modal('已有同名队伍'), actions = el('div', 'team-saved-actions');
       box.body.append(el('p', '', `「${current.name}」已有保存记录，请选择覆盖它，或保留原记录另存副本。`), preview(current.team));
       const finish = (operation, text) => {
@@ -56,8 +66,10 @@
         () => store.replace(snapshot, existing[0].key, current), `「${current.name}」已更新。`), 'team-saved-primary'));
       else box.body.append(el('p', '', '旧记录中有多个同名队伍，请先在已保存队伍中重命名，或另存副本。'));
       actions.append(button('另存副本', () => {
-        const name = store.copyName(snapshot, current.name);
-        finish(() => store.add(snapshot, {...current, name}), `已另存为「${name}」，原记录保留。`);
+        try {
+          const name = store.copyName(snapshot, current.name);
+          finish(() => store.add(snapshot, {...current, name}), `已另存为「${name}」，原记录保留。`);
+        } catch (error) {box.status.textContent = error.message;}
       }), button('取消', box.close));
       box.body.append(actions);
     }
@@ -87,7 +99,7 @@
         remove.append(el('p', '', `删除「${item.name}」的本地保存记录？`),
           button('确认删除', () => change(() => store.remove(snapshot, item.key), `已删除「${item.name}」的保存记录。`), 'team-saved-danger'),
           button('取消', () => {remove.hidden = true;}));
-        actions.append(button('装入编成', () => {onLoad(item); box.close();}),
+        actions.append(button('装入编成', () => {if (load(item)) box.close();}),
           button('重命名', () => {remove.hidden = true; rename.hidden = false; title.focus();}),
           button('删除', () => {rename.hidden = true; remove.hidden = false;}, 'team-saved-danger'));
         article.append(heading, preview(item.team), actions, rename, remove); return article;
@@ -103,10 +115,10 @@
       toolbar.append(search, button('保存当前编成', () => save(), 'team-saved-primary'), button('刷新', refresh));
       search.addEventListener('input', render);
       box.body.append(el('p', 'team-saved-note', '保存在此浏览器。删除只移除保存记录，当前编成与云端队伍不变。'), toolbar, readStatus, count, list);
-      managerRefresh = refresh;
-      box.dialog.addEventListener('close', () => {if (managerRefresh === refresh) managerRefresh = null;});
+      managerRefresh = refresh; managerStatus = box.status;
+      box.dialog.addEventListener('close', () => {if (managerRefresh === refresh) {managerRefresh = null; managerStatus = null;}});
       refresh(); search.focus();
     }
-    return {open, save, records: () => store.read().records};
+    return {open, save, load, records: () => store.read().records};
   }};
 })();

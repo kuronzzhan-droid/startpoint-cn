@@ -157,6 +157,18 @@ test('team help starts folded and the title beside the plate survives edits, und
   x.render();assert.equal(one(x.host,'队伍名称').value,'手机新队伍');
   assert.equal(x.host.querySelector('.team-help').open,false);
 });
+test('a stale quick-load selection refreshes its records without replacing the current team', async () => {
+  const x = teamPage(); x.window.WFTeamImport.load(plate, '原队伍'); x.render();
+  await button(x.host, '保存队伍').fire('click'); await button(x.host, '清空队伍').fire('click');
+  const picker = one(x.host, '已保存队伍'), changed = {...S.empty(), main: ['b', '', '']};
+  x.stored.set('wf-wiki-teams-v1', JSON.stringify([{name: '其他页面更新', team: changed}]));
+  picker.value = '0'; await picker.fire('change');
+  assert.ok(one(x.host, '1号主位：空位')); assert.equal(one(x.host, '队伍名称').value, '原队伍');
+  assert.match(x.host.querySelector('.team-status').textContent, /其他页面修改或删除/);
+  assert.equal(picker.options[1].textContent, '其他页面更新');
+  picker.value = '0'; await picker.fire('change');
+  assert.ok(one(x.host, '1号主位：角色b')); assert.equal(one(x.host, '队伍名称').value, '其他页面更新');
+});
 
 test('unchanged full-roster candidates are reused across slots and still assign to the latest target',async()=>{
   const catalogue={...data,characters:Array.from({length:572},(_,index)=>({...data.characters[0],id:`c${index}`,name:`角色${index}`}))};
