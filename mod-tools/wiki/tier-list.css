@@ -34,6 +34,16 @@
 .tier-pool-heading h2{margin:0;font-size:17px;font-weight:700}
 .tier-pool-heading>span{font-size:11px;color:var(--muted)}
 .tier-pool>.character-filters{margin-bottom:12px}
+.tier-pool .character-filter-body{gap:5px;padding:5px 7px 7px}
+.tier-filter-controls{position:relative;display:flex;align-items:center;gap:6px;min-width:0;max-width:100%;padding:3px;overflow-x:auto;scrollbar-width:thin;overscroll-behavior-x:contain}
+.tier-filter-controls .character-filter-search-row{flex:0 1 300px;min-width:160px;max-width:320px}
+.tier-filter-controls .character-filter-search{min-height:32px;font-size:12px}
+.tier-filter-controls .character-filter-fields{display:flex;flex:none;gap:6px}
+.tier-filter-controls .character-filter-field{flex:0 0 100px;width:100px}
+.tier-filter-controls>.text-button{flex:none;min-height:32px;padding:4px 2px;font-size:11px;white-space:nowrap}
+.tier-pool .character-filter-elements{grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.tier-pool .character-filter-element{min-height:32px}
+.tier-pool .character-filter-help{margin:0;padding:0 3px}
 .tier-pool-grid{--tier-avatar-size:58px;display:grid;grid-template-columns:repeat(auto-fill,var(--tier-avatar-size));gap:7px;min-width:0}
 .tier-pool-grid>.tier-placeholder{grid-column:1/-1;padding:12px 0}
 [data-theme="dark"] .tier-toolbar button[aria-pressed="true"]{background:#185a53;color:#caffef;border-color:#43bba8}
@@ -49,5 +59,12 @@
   .tier-avatar .tier-avatar-element{width:15px;height:15px}
   .tier-pool{margin-top:12px;padding:9px 8px;border-radius:9px}
   .tier-pool-heading{margin-bottom:7px}.tier-pool-heading h2{font-size:15px}
+  .tier-filter-controls .character-filter-search-row{flex:0 0 160px;min-width:160px}
+  .tier-filter-controls .character-filter-field{flex-basis:84px;width:84px}
+  .tier-filter-controls .character-filter-search,.tier-filter-controls>.text-button{min-height:36px}
+  .tier-filter-controls .wf-dropdown-trigger{font-size:11px;padding:5px 6px;gap:4px}
+  .tier-pool .character-filter-elements{gap:3px}
+  .tier-pool .character-filter-element{min-height:36px;font-size:10px}
+  .tier-pool .character-filter-element .native-icon{width:15px;height:15px}
   .tier-pool-grid{--tier-avatar-size:48px;gap:5px}
 }

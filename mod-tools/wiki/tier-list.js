@@ -1,4 +1,4 @@
-/* Personal tier board: shared catalogue filters and portraits, no server writes. */
+/* Local tier board with an explicit, separately verified community submission. */
 window.renderWikiTierList = function renderWikiTierList(host, data, ui) {
   'use strict';
   const {el, nativeIcon} = ui;
@@ -8,7 +8,7 @@ window.renderWikiTierList = function renderWikiTierList(host, data, ui) {
   const state = window.WFTierListState.create({characters});
   const labels = ['夯', '顶级', '人上人', 'NPC', '拉完了'];
   const page = el('div', 'tier-page'), header = el('div', 'tier-header');
-  header.append(el('h1', '', '从夯到拉'), el('p', '', '拖动头像排一排，也可以先点头像，再点档位或两档之间的线。'));
+  header.append(el('h1', '', '从夯到拉'), el('p', '', '自己排一排，或查看大家的综合排行。拖动头像，也可先点头像再点档位或分界线。'));
   const toolbar = el('div', 'tier-toolbar'), avatarControls = el('div');
   const action = (label, callback) => {
     const button = el('button', 'secondary-button', label); button.type = 'button';
@@ -20,7 +20,7 @@ window.renderWikiTierList = function renderWikiTierList(host, data, ui) {
   const count = el('span', 'inline-count'), poolGrid = el('div', 'tier-pool-grid');
   poolHeading.append(el('h2', '', '待排行角色'), count);
   const zones = new Map(), cards = new Map();
-  let selected = '', dragging = '';
+  let selected = '', dragging = '', community;
   const portraits = window.WFCatalogAvatars.create({host: avatarControls, catalog: page, characters, ui, label: '排行角色头像'});
   function announce(message = '') {
     status.textContent = state.persistenceError() || message || '已自动保存到当前浏览器；本排行由你自由安排。';
@@ -78,6 +78,12 @@ window.renderWikiTierList = function renderWikiTierList(host, data, ui) {
   });
   registerZone(pool, 'pool', '待排行区', poolGrid);
   const filters = window.WFCharacterFilters.create({characters, ui, idPrefix: 'tier-character', collapsible: false, onChange: renderPool});
+  const filterBody = filters.element.querySelector('.character-filter-body');
+  const filterControls = el('div', 'tier-filter-controls');
+  const searchRow = filterBody.querySelector('.character-filter-search-row');
+  const resetButton = searchRow.querySelector('.text-button');
+  filterControls.append(searchRow, filterBody.querySelector('.character-filter-fields'), resetButton);
+  filterBody.prepend(filterControls);
   pool.append(poolHeading, filters.element, poolGrid);
   // Pool controls do not place the selected portrait while the user is filtering.
   filters.element.addEventListener('click', (event) => event.stopPropagation());
@@ -117,7 +123,7 @@ window.renderWikiTierList = function renderWikiTierList(host, data, ui) {
     });
     renderPool();
     cards.forEach((card, id) => {card.classList.toggle('is-selected', selected === id); card.setAttribute('aria-pressed', String(selected === id));});
-    undo.disabled = !state.canUndo(); clear.disabled = state.assignedIds().size === 0; announce();
+    undo.disabled = !state.canUndo(); clear.disabled = state.assignedIds().size === 0; announce(); community?.refreshState();
   }
   const undo = action('撤销', () => {if (state.undo()) {selected = ''; render(); announce('已撤销上一步。');}});
   const remove = action('移回待排行', () => {if (selected) place(selected, 'pool'); else announce('先点选要移回的角色。');});
@@ -130,5 +136,7 @@ window.renderWikiTierList = function renderWikiTierList(host, data, ui) {
       event.preventDefault(); place(selected, 'pool');
     }
   });
-  page.append(header, toolbar, board, status, pool); host.replaceChildren(page); render();
+  page.append(header); host.replaceChildren(page);
+  community = window.WFTierListCommunity.create({host: page, data, ui, state});
+  community.mineHost.append(toolbar, board, status, pool); render();
 };
