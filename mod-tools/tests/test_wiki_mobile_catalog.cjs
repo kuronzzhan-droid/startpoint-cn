@@ -75,13 +75,25 @@ test('mobile directory opens into view and Escape closes it with focus retained 
   assert.equal(x.storage.get('wf-wiki-sidebar-collapsed'),'true');
 });
 test('route changes and desktop widths preserve automatic sidebar hiding and manual preference',()=>{
-  const x=environment(), {shell,nav,toolbar,button}=sidebar(x);
-  button.fire('click');assert.equal(x.storage.get('wf-wiki-sidebar-collapsed'),'false');
+  const x=environment();x.storage.set('wf-wiki-sidebar-collapsed','false');
+  const {shell,nav,toolbar,button}=sidebar(x);
+  assert.equal(nav.hidden,true);assert.equal(button.attributes['aria-expanded'],'false');
+  button.fire('click');assert.equal(nav.hidden,false);assert.equal(x.storage.get('wf-wiki-sidebar-collapsed'),'false');
   x.context.location.hash='#team';x.window.fire('hashchange');
   assert.equal(toolbar.hidden,true);assert.equal(nav.hidden,true);assert.ok(!shell.className.includes('catalog-home'));
-  x.context.location.hash='#';x.window.fire('hashchange');assert.equal(nav.hidden,false);assert.equal(toolbar.hidden,false);
-  x.resize(false);assert.equal(button.textContent,'‹ 收起目录');
+  x.context.location.hash='#';x.window.fire('hashchange');assert.equal(nav.hidden,true);assert.equal(toolbar.hidden,false);
+  x.resize(false);assert.equal(nav.hidden,false);assert.equal(button.textContent,'‹ 收起目录');
   button.fire('click');button.fire('click');assert.equal(nav.scrolls,1);
   x.context.location.hash='#character/c123';x.window.fire('hashchange');
   x.resize(true);assert.equal(button.textContent,'‹ 收起目录');assert.ok(!shell.className.includes('catalog-home'));
+});
+test('fresh mobile sessions default closed and never persist their temporary open state',()=>{
+  const x=environment();x.storage.clear();const {nav,button}=sidebar(x);
+  assert.equal(nav.hidden,true);button.fire('click');assert.equal(nav.hidden,false);
+  button.fire('click');assert.equal(nav.hidden,true);button.fire('click');
+  assert.equal(x.storage.size,0);
+  x.resize(false);assert.equal(nav.hidden,false);
+  button.fire('click');assert.equal(x.storage.get('wf-wiki-sidebar-collapsed'),'true');
+  x.resize(true);assert.equal(nav.hidden,true);button.fire('click');assert.equal(nav.hidden,false);
+  x.resize(false);assert.equal(nav.hidden,true);
 });
