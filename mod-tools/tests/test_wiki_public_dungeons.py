@@ -170,6 +170,7 @@ class DungeonPublicPlanTests(unittest.TestCase):
             {"seriesId": "series-spirit-beasts", "variantLabel": "无属性"},
             {"seriesId": "series-gauntlets", "variantLabel": "EX深渊"},
             {"seriesId": "series-gauntlets", "variantLabel": "无尽"},
+            {"seriesId": "series-gauntlets", "variantLabel": "深渊连战EX无尽"},
             {"seriesId": "series-machina", "variantLabel": "火", "category": "未知"},
             {"seriesId": "series-gauntlets", "variantLabel": "幻想连战", "category": "活动"},
         ]

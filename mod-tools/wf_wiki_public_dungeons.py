@@ -20,7 +20,7 @@ SOURCE_STATUSES = {"local-snapshot", "mixed-snapshot", "gray-snapshot"}
 ELEMENTS = {"", "火", "水", "雷", "风", "光", "暗", "无"}
 STATS = {"total", "matched", "sameName", "differentName"}
 SERIES_VARIANTS = {
-    "series-gauntlets": {"幻想连战", "普通深渊"},
+    "series-gauntlets": {"幻想连战", "普通深渊", "深渊连战EX"},
     "series-machina": {"火", "水", "雷", "风", "光", "暗", "无属性"},
     "series-waste-dragons": {"火", "水", "雷", "风", "光", "暗"},
     "series-spirit-beasts": {"火", "水", "雷", "风", "光", "暗"},
