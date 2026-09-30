@@ -178,6 +178,8 @@ def export(output: Path, *, legacy_data: Path | None = None, external_character:
     write_json(output / "data.json", catalog)
     from wf_wiki_data import write_split_public
     data_summary = write_split_public(output, catalog)
+    from wf_wiki_dungeons import export_dungeons
+    export_dungeons(repo, output, store=store)
     for path in (HERE / "wiki").iterdir():
         if path.suffix in {".html", ".css", ".js"} or path.name == "brand-logo.png":
             shutil.copyfile(path, output / path.name)

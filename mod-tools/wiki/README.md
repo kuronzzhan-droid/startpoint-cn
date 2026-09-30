@@ -45,7 +45,26 @@ python -m http.server 8877 --bind 127.0.0.1 --directory D:/WF/out/MOD角色Wiki/
 - 配队为三个主位、三个合击位、三件武器与三颗魂珠，支持拖拽和点击操作、撤销/重做、本机保存及 JSON 导入导出。保存只在当前浏览器；不模拟实际战斗。特殊装备规则按本方已占主位的槽位计件，不计其他玩家。
 - 界面与编成交互参考作者提供的《弹射世界中文 WIKI》离线版 v3.0.0；感谢 memimu 与「弹射世界wiki重生群」（QQ群 610753092）的资料收集。原生图标与面板从当前游戏资源提取，编队保留游戏面板与队长标记，卡组采用作者指定的紧凑双排：主位与装备在上，魂珠与合击在下。制作与维护署名 PARADOX，页脚保留上游与本项目仓库链接。旧稿与当前快照明确区分。
 
-## 维护边界
+## 副本与模式资料
+
+顶部「副本与模式」合并活动、领主战、降临讨伐、深渊／幻想等模式。五重决战保留波次、Boss 机制和旧 `#five-boss` 链接。
+目录按需加载 `dungeons-data.js`，横幅为去重 WebP；展开预览时才创建预览图片。只浏览角色页不会加载副本资料。
+
+普通 Wiki 导出默认读取本地当前资料。明确刷新灰服资料时单独运行：
+
+```powershell
+python -X utf8 mod-tools/wf_wiki_dungeons.py --site D:/WF/out/MOD角色Wiki/site --gray-url http://175.178.160.158:8001/patch/cn/dummy/download/production/upload --gray-snapshot D:/WF/out/Wiki副本模式/灰服快照 --community-catalog mod-tools/wiki-community/dungeon-catalog.mjs
+```
+
+仅读取正常公开资源，不绕过客户端准入验证。灰服未提供的文件可用本地快照补齐；每条入口记录来源状态，
+`dungeons-manifest.json` 保存详细审计信息，不能作为公开静态文件上传。目录收录不代表活动当前开放。
+导出参数及来源细节以 `wf_wiki_dungeons.py --help` 为准；`--community-catalog` 显式同步服务端可信副本 ID。
+
+攻略与推荐盘通过独立 Wiki 社区 API 保存。管理员可编辑攻略、关联公开队伍、上传图片；移除推荐只取消关联。
+图片上传先压缩、保存攻略后公开；未使用图片可由上传者或站长／副站长删除。游客只读，静态离线版保留资料目录，
+在线攻略不可用时明确提示。生产数据库迁移和接口见 [Wiki 社区后台](../wiki-community/README.md)。
+
+## 维护模块
 
 `wf_wiki.py` 负责导出入口；`wf_wiki_catalog*` 负责角色资料；`wf_wiki_voice*` 负责语音字幕；
 `wf_wiki_media.py` 负责媒体解码；本目录保存前端源码。此工具不修改 store、pending、角色候选或旧后台，不发布游戏数据。

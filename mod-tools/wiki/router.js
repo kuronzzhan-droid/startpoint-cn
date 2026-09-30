@@ -21,12 +21,14 @@ window.createWikiRouter = function createWikiRouter(options) {
     const current = () => ticket === revision && location.hash.slice(1) === hash;
     const parts = hash.split('/');
     const isCharacter = parts[0] === 'character' && parts[1];
-    const pageTitle = ({team: '队伍编成', community: '配队大全', weapons: '武器图鉴', weapon: '武器详情', 'five-boss': '五重决战'})[parts[0]];
+    const pageTitle = ({team: '队伍编成', community: '配队大全', weapons: '武器图鉴', weapon: '武器详情',
+      dungeons: '副本与模式', 'five-boss': '五重决战'})[parts[0]];
     document.querySelectorAll('audio').forEach((audio) => audio.pause());
     document.querySelectorAll('.app-navigation a').forEach((link) => {
       const target = link.getAttribute('href').slice(1);
       link.setAttribute('aria-current', (target === hash || (!target && isCharacter)
-        || (target === 'community' && parts[0] === 'community') || (target === 'weapons' && parts[0] === 'weapon')) ? 'page' : 'false');
+        || (target === 'community' && parts[0] === 'community') || (target === 'weapons' && parts[0] === 'weapon')
+        || (target === 'dungeons' && ['dungeons', 'five-boss'].includes(parts[0]))) ? 'page' : 'false');
     });
     catalog.hidden = Boolean(pageTitle || isCharacter);
     detail.hidden = !isCharacter;
@@ -42,8 +44,16 @@ window.createWikiRouter = function createWikiRouter(options) {
     try {
       if (pageTitle) {
         document.title = `${pageTitle} · 星见图鉴`;
-        if (hash === 'five-boss') await window.WFWikiData.loadBossGuide();
-        else await window.WFWikiData.loadEquipment();
+        if (parts[0] === 'dungeons' || hash === 'five-boss') {
+          const directory = await window.WFWikiData.loadDungeons();
+          if (!current()) return;
+          const item = hash === 'five-boss' ? directory.items.find((entry) => entry.legacyGuide === 'five-boss')
+            : directory.items.find((entry) => entry.id === parts[1]);
+          if (item || hash === 'five-boss') {
+            await Promise.all([window.WFWikiData.loadEquipment(),
+              ...(hash === 'five-boss' || item?.legacyGuide === 'five-boss' ? [window.WFWikiData.loadBossGuide()] : [])]);
+          }
+        } else await window.WFWikiData.loadEquipment();
         if (!current()) return;
         if (!window.renderWikiPage?.(hash, extra, data, ui)) status(extra, '此份导出尚未包含该页面。');
       } else {

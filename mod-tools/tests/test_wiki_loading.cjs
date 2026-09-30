@@ -87,7 +87,8 @@ function router() {
   ['catalog-view','detail-view','extra-view','character-grid'].forEach((id) => nodes[id]=el('div'));
   const requests={},rendered=[],data={};
   const wait=(key) => new Promise((resolve,reject) => {requests[key]={resolve,reject};});
-  const context={window:{scrollTo(){},WFWikiData:{loadCharacter:(id)=>wait(id),loadEquipment:()=>wait('equipment'),loadBossGuide:()=>wait('boss')}},
+  const context={window:{scrollTo(){},WFWikiData:{loadCharacter:(id)=>wait(id),loadEquipment:()=>wait('equipment'),loadBossGuide:()=>wait('boss'),
+    loadDungeons:()=>wait('dungeons').then(value=>{data.dungeons=value;return value;})}},
     location:{hash:''},document:{getElementById:(id)=>nodes[id],querySelectorAll:()=>[]}};
   context.window.renderWikiCharacterSummary=(_host,c)=>rendered.push(c.id);
   context.window.renderWikiCharacter=(_host,c,_m,_u,o)=>rendered.push(`${c.id}/${o.initialTab}`);
@@ -118,6 +119,54 @@ test('community and individual weapon routes load equipment and stay outside the
     x.requests.equipment.resolve([]); await pending;
     assert.deepEqual(x.rendered, [hash.slice(1)]);
   }
+});
+
+test('dungeon directory avoids equipment downloads and obsolete directory loads do not render', async () => {
+  const x=router(), pending=x.go('#dungeons');
+  assert.equal(x.nodes['catalog-view'].hidden,true);assert.equal(x.requests.equipment,undefined);
+  x.requests.dungeons.resolve({items:[]});await pending;assert.deepEqual(x.rendered,['dungeons']);
+  const old=x.go('#dungeons');await x.go('#');x.requests.dungeons.resolve({items:[]});await old;
+  assert.deepEqual(x.rendered,['dungeons','catalog']);assert.equal(x.requests.equipment,undefined);
+});
+
+test('new five-boss detail and old link both load the complete boss guide and team equipment', async () => {
+  for(const hash of ['#dungeons/boss-1-99','#five-boss']) {
+    const x=router(),pending=x.go(hash);
+    x.requests.dungeons.resolve({items:[{id:'boss-1-99',legacyGuide:'five-boss'}]});
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.ok(x.requests.equipment);assert.ok(x.requests.boss);assert.deepEqual(x.rendered,[]);
+    x.requests.equipment.resolve([]);x.requests.boss.resolve({stages:[]});await pending;
+    assert.deepEqual(x.rendered,[hash.slice(1)]);
+  }
+});
+
+test('leaving a pending dungeon catalogue never starts its later equipment or boss reads', async () => {
+  const x=router(),pending=x.go('#five-boss');await x.go('#');
+  x.requests.dungeons.resolve({items:[{id:'boss-1-99',legacyGuide:'five-boss'}]});await pending;
+  assert.equal(x.requests.equipment,undefined);assert.equal(x.requests.boss,undefined);
+  assert.deepEqual(x.rendered,['catalog']);
+});
+
+test('legacy five-boss route retains its guide if a snapshot has no corresponding directory item', async () => {
+  const x=router(),pending=x.go('#five-boss');x.requests.dungeons.resolve({items:[]});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.ok(x.requests.equipment);assert.ok(x.requests.boss);
+  x.requests.equipment.resolve([]);x.requests.boss.resolve({stages:[]});await pending;
+  assert.deepEqual(x.rendered,['five-boss']);
+});
+
+test('dungeon loader shares requests, rejects broken metadata and retries without touching character data', async () => {
+  const x=loader();vm.runInNewContext(source('dungeons-loader.js'),x.context);
+  const first=x.api.loadDungeons(),second=x.api.loadDungeons();assert.equal(x.scripts.length,1);
+  assert.equal(x.scripts[0].src,'dungeons-data.js');
+  x.context.window.WF_WIKI_DUNGEONS={schemaVersion:1,items:[{id:'../bad',title:'坏',category:'活动'}]};
+  x.scripts[0].onload();await assert.rejects(first);await assert.rejects(second);
+  const retry=x.api.loadDungeons();assert.equal(x.scripts.length,2);
+  const value={schemaVersion:1,items:[{id:'event-1',title:'活动',category:'活动'}]};
+  x.context.window.WF_WIKI_DUNGEONS=value;x.scripts[1].onload();
+  assert.equal(await retry,value);assert.equal(x.data.dungeons,value);
+  assert.equal(x.data.characters[0].name,'A');assert.equal(await x.api.loadDungeons(),value);
+  assert.equal(x.scripts.length,2);
 });
 test('detailed routes select the requested tab and stale failures cannot display errors', async () => {
   const x=router(), full=x.go('#character/ca/details/voices'); x.requests.ca.resolve({id:'ca'}); await full;

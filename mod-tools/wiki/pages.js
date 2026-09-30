@@ -41,23 +41,13 @@
     if (route.startsWith('weapon/')) {window.renderWikiWeaponPage(host, data, ui, decodeURIComponent(route.split('/')[1] || '')); return true;}
     if (route === 'community/admin') {window.renderWikiCommunityAdmin(host, data, ui); return true;}
     if (route === 'community' || route.startsWith('community/')) {window.renderWikiCommunity(host, data, ui, {id: route.split('/')[1] || ''}); return true;}
-    if (route === 'five-boss') {
-      const box = ui.el('div', 'boss-guide');
-      if (data.bossGuide) {
-        const guide = data.bossGuide;
-        box.append(ui.el('h1','',guide.title),ui.el('p','section-intro',guide.summary));
-        renderReadable(box, {entry:guide.entry,notes:guide.notes,rewards:guide.rewards},ui);
-        box.append(ui.el('h2','','路线与各波敌人'));
-        (guide.stages || []).forEach((stage) => {
-          box.append(lazyDetails(ui, `${stage.round === 1 ? '上半场' : '下半场'} · ${stage.name}`, 'guide-item', (section) => {
-            const detail = {...stage}; delete detail.name; delete detail.round;
-            renderReadable(section, detail, ui);
-          }));
-        });
-        box.append(lazyDetails(ui, 'Boss 机制速查', 'guide-item', (section) => renderReadable(section, guide.bosses, ui)));
-      }
-      else box.append(ui.el('p', '', '当前快照暂无五重决战资料。'));
-      host.replaceChildren(box); return true;
+    if (route === 'dungeons' || route.startsWith('dungeons/') || route === 'five-boss') {
+      const id = route === 'five-boss' ? data.dungeons?.items.find((item) => item.legacyGuide === 'five-boss')?.id
+        : route.split('/')[1] || '';
+      if (route === 'five-boss' && !id) {window.renderWikiBossGuide(host, data, ui); return true;}
+      window.renderWikiDungeons(host, data, ui, {id,
+        renderLegacyGuide: (target) => window.renderWikiBossGuide(target, data, ui)});
+      return true;
     }
     return false;
   };
