@@ -1,0 +1,158 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+class Node {
+  constructor(tag, cls = '', attributes = {}) {
+    Object.assign(this, {nodeType: 1, tag, className: cls, attributes, children: [], scrollWidth: 100, clientWidth: 100, overflowX: 'visible'});
+    this.classList = {toggle: (name, on) => {const names = new Set(this.className.split(' ')); on ? names.add(name) : names.delete(name); this.className = [...names].join(' ');}};
+  }
+  append(node) {node.parentElement = this; this.children.push(node);}
+  getAttribute(name) {return this.attributes[name] ?? null;}
+  setAttribute(name, value) {this.attributes[name] = value;}
+  contains(node) {return node === this || this.children.some(child => child.contains(node));}
+  matches(selector) {
+    return selector.split(',').some(value => value.startsWith('.') ? this.className.split(' ').includes(value.slice(1))
+      : value === '[draggable="true"]' ? this.attributes.draggable === 'true'
+      : value === '[role="combobox"]' ? this.attributes.role === 'combobox'
+      : value.startsWith('[contenteditable]') ? this.attributes.contenteditable !== undefined && this.attributes.contenteditable !== 'false'
+      : value === this.tag);
+  }
+  closest(selector) {for (let node = this; node; node = node.parentElement) if (node.matches(selector)) return node; return null;}
+  querySelectorAll() {return this.children.filter(node => node.tag === 'a');}
+  querySelector(selector) {for (const child of this.children) {if (child.matches(selector)) return child; const nested = child.querySelector(selector); if (nested) return nested;} return null;}
+}
+function setup(hash = '', width = 390, lateRouter = false) {
+  const listeners = {}, changes = {}, mediaChanges = {}, header = new Node('header', 'masthead'), nav = new Node('nav', 'app-navigation');
+  header.append(nav);
+  for (const path of ['', 'team', 'community', 'weapons', 'dungeons', 'tier-list']) nav.append(new Node('a', '', {href: '#' + path}));
+  const main = new Node('main'), content = new Node('div'); main.append(content);
+  const media = {matches: width <= 760, addEventListener: (event, fn) => {mediaChanges[event] = fn;}};
+  let dialog = null, now = 1000;
+  const scrolls = [], document = {activeElement: null, createElement: tag => new Node(tag),
+    querySelector: selector => selector === '.app-navigation' ? nav : dialog,
+    getElementById: () => main, addEventListener: (name, fn, options) => {listeners[name] = {fn, options};}};
+  let currentHash = '';
+  const location = {};
+  Object.defineProperty(location, 'hash', {get: () => currentHash, set(value) {
+    currentHash = value; const path = value.replace(/^#/, ''), prefix = path.split('/')[0];
+    const category = prefix === 'character' ? '' : prefix === 'weapon' ? 'weapons'
+      : ['shops', 'five-boss'].includes(prefix) ? 'dungeons' : prefix;
+    nav.children.forEach(link => link.setAttribute('aria-current', link.getAttribute('href') === '#' + category ? 'page' : 'false'));
+  }});
+  location.hash = hash ? '#' + hash : '';
+  if (lateRouter) nav.children.forEach(link => link.setAttribute('aria-current', 'false'));
+  let navChanged;
+  const window = {location, innerWidth: width, matchMedia: () => media,
+    MutationObserver: class {constructor(fn) {navChanged = fn;} observe() {}},
+    getComputedStyle: node => ({overflowX: node.overflowX}), scrollTo: options => scrolls.push(options),
+    addEventListener: (name, fn) => {changes[name] = fn;}};
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki/mobile-navigation.js'), 'utf8'), {window, document, Date: {now: () => now}});
+  function fire(type, target, points, patch = {}) {
+    const event = {target, touches: type === 'touchend' ? [] : points, changedTouches: points, cancelable: true, prevented: false, stopped: false,
+      preventDefault() {this.prevented = true;}, stopPropagation() {this.stopped = true;}, ...patch};
+    listeners[type].fn(event); return event;
+  }
+  const point = (x, y, identifier = 1) => ({identifier, clientX: x, clientY: y});
+  function swipe(target = content, start = [240, 200], end = [110, 205], patch = {}) {
+    fire('touchstart', target, [point(...start)]); const move = fire('touchmove', target, [point(...end)], patch);
+    fire('touchend', target, [point(...end)]); return move;
+  }
+  return {window, document, nav, main, content, header, media, changes, mediaChanges, listeners, scrolls, fire, point, swipe,
+    setDialog: value => {dialog = value;}, later: value => {now += value;}, navChanged: () => navChanged()};
+}
+
+test('navigation becomes ready when the initial router loads after the gesture script', () => {
+  const x = setup('community', 390, true); assert.doesNotMatch(x.header.className, /mobile-nav-ready/);
+  x.window.location.hash = '#community'; x.navChanged(); assert.match(x.header.className, /mobile-nav-ready/);
+  x.swipe(x.nav.children[2]); assert.equal(x.window.location.hash, '#weapons');
+});
+test('mobile header swipes move one adjacent route and content swipes work on browse pages', () => {
+  const x = setup('team'); x.swipe(x.nav.children[1]); assert.equal(x.window.location.hash, '#community'); assert.equal(x.scrolls.length, 1);
+  x.changes.hashchange(); x.swipe(); assert.equal(x.window.location.hash, '#weapons');
+  x.changes.hashchange(); x.swipe(x.content, [100, 200], [240, 205]); assert.equal(x.window.location.hash, '#community');
+  assert.match(x.header.className, /mobile-nav-ready/);
+});
+test('vertical scroll, short movements, taps, slow holds and desktop width never navigate', () => {
+  for (const [start, end] of [[[150, 150], [156, 300]], [[150, 150], [125, 150]], [[150, 150], [150, 150]], [[240, 100], [160, 180]]]) {
+    const x = setup('weapons'); const move = x.swipe(x.content, start, end); assert.equal(x.window.location.hash, '#weapons');
+    if (Math.abs(end[1] - start[1]) >= Math.abs(end[0] - start[0])) assert.equal(move.prevented, false);
+  }
+  const held = setup(); held.fire('touchstart', held.content, [held.point(240, 100)]); held.later(1300);
+  held.fire('touchmove', held.content, [held.point(100, 100)]); held.fire('touchend', held.content, [held.point(100, 100)]);
+  assert.equal(held.window.location.hash, '');
+  const desktop = setup('weapons', 1280); desktop.swipe(desktop.nav.children[3]); assert.equal(desktop.window.location.hash, '#weapons');
+});
+test('team and tier board content keep drag gestures but their header still switches pages', () => {
+  for (const hash of ['team', 'tier-list']) {
+    const x = setup(hash); assert.equal(x.swipe().prevented, false); assert.equal(x.window.location.hash, '#' + hash);
+    x.swipe(x.nav.children[hash === 'team' ? 1 : 5], [100, 100], [240, 105]);
+    assert.equal(x.window.location.hash, hash === 'team' ? '#' : '#dungeons');
+  }
+});
+test('read-only details and admin lists swipe their active header category without enabling content gestures', () => {
+  for (const [hash, expected] of [['character/c1', '#team'], ['weapon/w1', '#dungeons'], ['dungeons/boss1', '#tier-list'], ['community/admin', '#weapons']]) {
+    const x = setup(hash); x.swipe(); assert.equal(x.window.location.hash, '#' + hash);
+    x.swipe(x.nav.children[2]); assert.equal(x.window.location.hash, expected);
+    assert.match(x.header.className, /mobile-nav-ready/);
+  }
+});
+test('admin editing, login and other drafts block header swipes; accounts routes stay excluded even before their forms load', () => {
+  for (const formClass of ['admin-edit-form', 'community-auth-form', 'community-account-create', 'dungeon-editor', 'wiki-aliases-form']) {
+    const x = setup('community/admin'); x.main.append(new Node('form', formClass));
+    assert.equal(x.swipe(x.nav.children[2]).prevented, false); assert.equal(x.window.location.hash, '#community/admin');
+    x.main.children.pop(); x.swipe(x.nav.children[2]); assert.equal(x.window.location.hash, '#weapons');
+  }
+  for (const hash of ['community/accounts', 'community/accounts/member']) {
+    const x = setup(hash); x.swipe(x.nav.children[2]); assert.equal(x.window.location.hash, '#' + hash);
+    assert.doesNotMatch(x.header.className, /mobile-nav-ready/);
+  }
+});
+test('inputs, controls, draggable elements, forms, open dialogs and focused editors remain untouched', () => {
+  for (const node of [new Node('input'), new Node('textarea'), new Node('button'), new Node('summary'), new Node('form'),
+    new Node('div', '', {contenteditable: 'true'}), new Node('a', '', {draggable: 'true'}), new Node('div', '', {role: 'combobox'})]) {
+    const x = setup('weapons'); x.content.append(node); const child = new Node('span'); node.append(child);
+    assert.equal(x.swipe(child).prevented, false); assert.equal(x.window.location.hash, '#weapons');
+  }
+  const focused = setup('community'); focused.document.activeElement = new Node('input'); focused.swipe(focused.nav.children[2]); assert.equal(focused.window.location.hash, '#community');
+  const modal = setup(); modal.setDialog({}); modal.swipe(modal.nav.children[0]); assert.equal(modal.window.location.hash, '');
+});
+test('horizontal scrolling containers retain native scrolling while ordinary linked cards can swipe', () => {
+  const x = setup('community'), scroller = new Node('div'); scroller.scrollWidth = 500; scroller.clientWidth = 280; scroller.overflowX = 'auto';
+  x.content.append(scroller); const link = new Node('a'); scroller.append(link);
+  assert.equal(x.swipe(link).prevented, false); assert.equal(x.window.location.hash, '#community');
+  const ordinary = new Node('a'); x.content.append(ordinary); assert.equal(x.swipe(ordinary).prevented, true); assert.equal(x.window.location.hash, '#weapons');
+});
+test('browser edge gestures, multi-touch, canceled and already-native scrolling never switch', () => {
+  for (const [start, end] of [[[5, 100], [180, 100]], [[385, 100], [200, 100]]]) {
+    const x = setup('weapons'); x.swipe(x.content, start, end); assert.equal(x.window.location.hash, '#weapons');
+  }
+  const multiple = setup(); multiple.fire('touchstart', multiple.content, [multiple.point(240, 100), multiple.point(200, 100, 2)]);
+  multiple.fire('touchend', multiple.content, [multiple.point(100, 100)]); assert.equal(multiple.window.location.hash, '');
+  const canceled = setup(); canceled.fire('touchstart', canceled.content, [canceled.point(240, 100)]); canceled.fire('touchcancel', canceled.content, []);
+  canceled.fire('touchend', canceled.content, [canceled.point(100, 100)]); assert.equal(canceled.window.location.hash, '');
+  const native = setup(); native.swipe(native.content, [240, 100], [100, 100], {cancelable: false}); assert.equal(native.window.location.hash, '');
+});
+test('a swipe suppresses its synthesized click, allows keyboard activation and does not wrap at either end', () => {
+  const x = setup(); x.swipe(); const keyboard = x.fire('click', x.content, [], {detail: 0}); assert.equal(keyboard.prevented, false);
+  const click = x.fire('click', x.content, [], {detail: 1}); assert.equal(click.prevented, true); assert.equal(click.stopped, true);
+  assert.equal(x.fire('click', x.content, [], {detail: 1}).prevented, false);
+  const first = setup(); first.swipe(first.nav.children[0], [100, 100], [240, 100]); assert.equal(first.window.location.hash, '');
+  const last = setup('tier-list'); last.swipe(last.nav.children[5]); assert.equal(last.window.location.hash, '#tier-list');
+});
+test('route or viewport changes cancel in-progress swipes without disturbing later navigation', () => {
+  const x = setup(); x.fire('touchstart', x.content, [x.point(240, 100)]); x.window.location.hash = '#community/admin'; x.changes.hashchange();
+  x.fire('touchend', x.content, [x.point(100, 100)]); assert.equal(x.window.location.hash, '#community/admin');
+  x.window.location.hash = '#weapons'; x.changes.hashchange(); x.fire('touchstart', x.content, [x.point(240, 100)]);
+  x.media.matches = false; x.mediaChanges.change(); x.fire('touchend', x.content, [x.point(100, 100)]); assert.equal(x.window.location.hash, '#weapons');
+  assert.equal(x.listeners.touchstart.options.passive, true); assert.equal(x.listeners.touchmove.options.passive, false);
+});
+test('a raw child-route change or a newly opened editor cancels the swipe even while the same header category stays current', () => {
+  const x = setup('community/admin'); x.fire('touchstart', x.nav.children[2], [x.point(240, 100)]);
+  x.fire('touchmove', x.nav.children[2], [x.point(100, 100)]); x.window.location.hash = '#community/another';
+  x.fire('touchend', x.nav.children[2], [x.point(100, 100)]); assert.equal(x.window.location.hash, '#community/another');
+  const draft = setup('community/admin'); draft.fire('touchstart', draft.nav.children[2], [draft.point(240, 100)]);
+  draft.fire('touchmove', draft.nav.children[2], [draft.point(100, 100)]); draft.main.append(new Node('form', 'admin-edit-form'));
+  draft.fire('touchend', draft.nav.children[2], [draft.point(100, 100)]); assert.equal(draft.window.location.hash, '#community/admin');
+});
