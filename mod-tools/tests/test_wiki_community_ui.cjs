@@ -52,22 +52,25 @@ function setup(client, writeText) {
   return {window,context,host,ui,modals,challenges,storage,C:window.WFCommunity};
 }
 const config={enabled:true,elements:['火','水','universal']};
-test('recommendations paginate, escape text, link plates and load a copied team into editor',async()=>{
+test('recommendations paginate, escape text and link to compact team details',async()=>{
   const calls=[];const x=setup({config:async()=>config,request:async(p)=>{calls.push(p);return calls.length===1?{items:[{...item}],nextCursor:'second'}:{items:[{...item,id:'t2'}]};}});
   await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
   assert.match(x.host.textContent,/<img src=x onerror=alert\(1\)>/);
   assert.equal(x.host.querySelectorAll('script').length,0);
   const links=x.host.querySelectorAll('a').map((link)=>link.href);
-  assert.ok(links.includes('#team'));assert.ok(links.includes('#weapon/w1'));
+  assert.ok(links.includes('#community/t1'));assert.ok(!links.includes('#weapon/w1'));
   const more=x.host.querySelectorAll('.community-more')[0];await more.fire('click');await tick();
   assert.match(calls[1],/cursor=second/);assert.equal(x.host.querySelectorAll('.community-card').length,2);
-  const use=x.host.querySelectorAll('button').find((button)=>button.textContent==='装入编成');await use.fire('click');
-  assert.equal(x.context.location.hash,'#team');assert.equal(x.window.imported[1],item.title);
-  x.window.imported[0].main[0]='changed';assert.equal(item.team.main[0],'c1');
+  assert.equal(x.host.querySelectorAll('.community-board').length,2);
+  assert.equal(x.host.querySelectorAll('.community-slot').length,12);
+  assert.equal(x.host.querySelectorAll('.community-notes').length,0);
+  assert.equal(x.host.querySelectorAll('.community-card-footer').length,0);
+  assert.ok(!x.host.querySelectorAll('button').some(button=>button.textContent==='装入编成'));
+  assert.equal(x.window.imported,undefined);
 });
 test('recommendation title and avatar open its plate and preserve the clicked character selection',async()=>{
-  const x=setup({config:async()=>config,request:async()=>({items:[item]})});
-  await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
+  const x=setup({config:async()=>config,request:async()=>({team:item})});
+  await x.window.renderWikiCommunity(x.host,data,x.ui,{id:item.id});await tick();
   const title=x.host.querySelectorAll('a').find((link)=>link.textContent===item.title);await title.fire('click');
   assert.equal(x.context.location.hash,'#team');assert.equal(x.window.imported[1],item.title);
   const avatar=x.host.querySelectorAll('a').find((link)=>link.attributes['aria-label']==='2号主位：角色c2');await avatar.fire('click');
@@ -75,7 +78,7 @@ test('recommendation title and avatar open its plate and preserve the clicked ch
   x.window.imported[0].main[0]='changed';assert.equal(item.team.main[0],'c1');
 });
 
-test('gallery avatar toggle preserves cards, links, likes and filters while paginated cards follow its preference',async()=>{
+test('gallery avatar toggle preserves compact cards and filters while paginated cards follow its preference',async()=>{
   let requests=0;const x=setup({config:async()=>config,request:async()=>{requests++;return {items:[{...item,id:`t${requests}`}],nextCursor:requests===1?'second':''};}});
   await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
   const cards=x.host.querySelectorAll('.community-card'),first=cards[0],portraits=first.querySelectorAll('[data-catalog-avatar]');
@@ -85,11 +88,11 @@ test('gallery avatar toggle preserves cards, links, likes and filters while pagi
   assert.equal(portraits[2].querySelector('img').getAttribute('src'),'test.webp');
   assert.match(portraits[2].title,/未收录/);assert.equal(x.host.querySelectorAll('.community-card')[0],first);
   assert.equal(requests,1);assert.equal(x.storage.get('wf-wiki-catalog-avatar'),'after');
-  assert.equal(first.querySelectorAll('button').find((button)=>button.textContent==='点赞 · 3').disabled,false);
+  assert.equal(first.querySelector('.community-card-preview').href,'#community/t1');
   await x.host.querySelectorAll('.community-more')[0].fire('click');await tick();
   assert.equal(x.host.querySelectorAll('.community-card')[1].querySelector('img').getAttribute('src'),'c1-after.webp');
-  const avatar=first.querySelectorAll('a').find((link)=>link.attributes['aria-label']==='2号主位：角色c2');await avatar.fire('click');
-  assert.equal(x.window.imported[2].index,1);assert.deepEqual(JSON.parse(JSON.stringify(x.window.imported[0])),team);
+  assert.equal(first.querySelectorAll('.community-slot').length,6);
+  assert.equal(x.window.imported,undefined);
 });
 
 test('single recommendation retains its avatar switch when list filters are hidden',async()=>{
@@ -100,7 +103,7 @@ test('single recommendation retains its avatar switch when list filters are hidd
   await group.querySelectorAll('button')[1].fire('click');
   assert.equal(x.host.querySelectorAll('.community-board')[0].querySelector('img').getAttribute('src'),'c1-after.webp');
 });
-test('mobile card preview links to saved details without nesting portrait links or importing a team',async()=>{
+test('all gallery cards link to saved details without nesting portrait links or importing a team',async()=>{
   const x=setup({config:async()=>config,request:async()=>({items:[{...item,id:'team / one',category:'萌新启航'}]})});
   await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
   const preview=x.host.querySelector('.community-card-preview');
@@ -232,7 +235,7 @@ test('original and other sections are peer buttons and keep the legacy sentinel'
   await buttons[0].fire('click');await tick();assert.doesNotMatch(calls.at(-1),/section=/);
 });
 
-test('card header copies the exact server code without opening the editor and keeps credit/actions below the plate',async()=>{
+test('compact card copies the exact server code without adding full details or opening the editor',async()=>{
   const written=[],gameCode='H4QUDN7W5R22';
   const x=setup({config:async()=>config,request:async()=>({items:[{...item,gameCode}]})},async(value)=>written.push(value));
   await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
@@ -241,8 +244,9 @@ test('card header copies the exact server code without opening the editor and ke
   await copy.fire('click');assert.deepEqual(written,[gameCode]);assert.match(header.textContent,/已复制/);
   assert.equal(x.context.location.hash,'#community');assert.equal(x.window.imported,undefined);
   assert.equal(header.querySelector('input').value,gameCode);assert.equal(header.querySelector('input').readOnly,true);
-  assert.equal(card.children.at(-1),footer);assert.match(footer.textContent,/作者：作者/);assert.match(footer.textContent,/点赞 · 3/);
-  assert.ok(card.children.indexOf(card.querySelector('.community-board'))<card.children.indexOf(card.querySelector('.community-notes')));
+  assert.equal(footer,null);assert.equal(card.children.at(-1),header);
+  assert.equal(card.querySelector('.community-notes'),null);
+  assert.equal(card.querySelectorAll('.community-slot').length,6);
 });
 
 test('card copy denial retains a selectable real code and never reports success',async()=>{

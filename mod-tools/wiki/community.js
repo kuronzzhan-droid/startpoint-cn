@@ -116,24 +116,28 @@
         if (!window.WFTeamImport?.load) {status.textContent = '编成编辑器暂未准备好，请刷新后重试。'; return;}
         window.WFTeamImport.load(C.teamCopy(item.team), item.title, selection); location.hash = '#team';
       }
-      const heading = el('h2'); const link = el('a', '', item.title); link.href = '#team';
-      link.addEventListener('click', (event) => {event.preventDefault(); enter();}); heading.append(link);
       function tags() {
         const badges = el('div', 'community-tags'); badges.append(el('span', 'badge community-section-badge', C.sectionLabel(item.section)),
           el('span', 'badge', C.categoryLabel(item.category)), el('span', 'badge', C.elementLabel(item.element)));
         (item.damageTypes || []).filter((key) => C.damageTypes[key]).forEach((key) => badges.append(el('span', 'badge', C.damageTypes[key])));
         return badges;
       }
+      const gameCode = window.WFCommunityGameCodes?.readonly(item, ui, {compact:true});
       if (!options.id) {
         const preview = el('a', 'community-card-preview'); preview.href = `#community/${encodeURIComponent(item.id)}`;
         preview.setAttribute('aria-label', `查看队伍：${item.title}`);
         preview.append(el('h2', '', item.title), tags(), C.board(item.team, data, ui, {preview:true, avatars})); node.append(preview);
+        const codeRow = el('header', 'community-card-header');
+        codeRow.append(gameCode || el('span', 'muted community-no-code', '暂无队伍码'));
+        node.append(codeRow);
+        return node;
       }
+      const heading = el('h2'); const link = el('a', '', item.title); link.href = '#team';
+      link.addEventListener('click', (event) => {event.preventDefault(); enter();}); heading.append(link);
       const date = new Date(item.createdAt), time = el('time', 'muted', Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('zh-CN', {timeZone: 'Asia/Shanghai'}));
       if (!Number.isNaN(date.getTime())) time.dateTime = date.toISOString();
       const cardHeader = el('header', 'community-card-header'), headingArea = el('div', 'community-card-heading');
       headingArea.append(heading, tags());
-      const gameCode = window.WFCommunityGameCodes?.readonly(item, ui, {compact:true});
       cardHeader.append(headingArea, gameCode || el('span', 'muted community-no-code', '暂无队伍码'));
       node.append(cardHeader, C.board(item.team, data, ui, {onCharacter:enter, avatars, showNames:Boolean(options.id)}));
       if (item.notes) {const notes = el('details', 'community-notes'); notes.open = Boolean(options.id); notes.append(el('summary', '', '用途与操作说明'), el('p', '', item.notes)); node.append(notes);}
