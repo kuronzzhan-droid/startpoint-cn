@@ -87,14 +87,14 @@ test('absent souls cannot be selected and unavailable notes remain accessible',(
   button.fire('click');assert.equal(card.attributes['data-equipment-mode'],'weapon');
 });
 
-test('soul switch sits above the native disclosure in its own summary actions column',()=>{
+test('soul switch is independent while the icon retains native disclosure without extra symbols',()=>{
   const {card}=cardFixture(),summary=card.children.find(n=>n.tag==='summary');
   const actions=cls(card,'equipment-card-actions'),modes=find(card,'aria-label','试验武器效果类型');
   const symbol=cls(card,'equipment-disclosure-symbol'),mode=find(card,'role','switch');
   assert.equal(actions.parent,summary);assert.equal(summary.children.at(-1),actions);
-  assert.deepEqual(actions.children,[modes,symbol]);assert.equal(symbol.attributes['aria-hidden'],'true');
+  assert.deepEqual(actions.children,[modes]);assert.equal(symbol,undefined);
   assert.equal(cls(card,'equipment-card-title').contains(mode),false);
-  assert.equal(symbol.tag,'span');assert.equal(symbol.events.click,undefined);assert.equal(summary.events.click,undefined);
+  assert.equal(summary.events.click,undefined);
   let prevented=0,stopped=0;
   mode.fire('click',{preventDefault(){prevented++;},stopPropagation(){stopped++;}});
   assert.equal(prevented,1);assert.equal(stopped,1);assert.equal(card.open,true);

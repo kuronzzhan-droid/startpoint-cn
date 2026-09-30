@@ -134,8 +134,8 @@
         event.preventDefault(); event.stopPropagation(); if (modeSwitch.disabled) return;
         mode = mode === 'weapon' ? 'soul' : 'weapon'; card.open = true; renderHeader(selectedLevel); renderBody();
       });
-      const actions = el('div', 'equipment-card-actions'), disclosure = el('span', 'equipment-disclosure-symbol');
-      disclosure.setAttribute('aria-hidden', 'true'); actions.append(modeControls, disclosure); summary.append(actions);
+      const actions = el('div', 'equipment-card-actions');
+      actions.append(modeControls); summary.append(actions);
       if (e) {
         enhancementControls.setAttribute('role', 'group'); enhancementControls.setAttribute('aria-label', `${entry.name}强化状态`);
         [[0, originalLabel], ...stages.map((stage) => [stage.level, stage.label || `强化后 Lv${stage.level}`])].forEach(([value, label]) => {

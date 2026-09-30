@@ -30,9 +30,9 @@
     const count = el('p', 'muted');
     const groups = el('div', 'equipment-groups');
     groups.id = 'weapon-catalogue-groups';
-    const layoutKey = 'wf-wiki-equipment-layout-v1', layoutButtons = [];
-    let layout = 'standard';
-    try {if (localStorage.getItem(layoutKey) === 'dense') layout = 'dense';} catch {}
+    const layoutKey = 'wf-wiki-equipment-layout-v2', layoutButtons = [];
+    let layout = 'dense';
+    try {if (localStorage.getItem(layoutKey) === 'standard') layout = 'standard';} catch {}
     function setLayout(value) {
       if (value === 'dense' && layout !== value) cards.forEach((card) => {card.open = false;});
       layout = value; groups.setAttribute('data-layout', layout);

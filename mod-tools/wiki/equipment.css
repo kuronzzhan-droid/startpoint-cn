@@ -41,9 +41,6 @@
 .equipment-card>summary{display:grid;grid-template-columns:60px minmax(0,1fr) 52px;gap:10px;align-items:start}
 .equipment-card>summary::after{display:none}
 .equipment-card-actions{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:0}
-.equipment-card>summary .equipment-disclosure-symbol{display:flex;align-items:center;justify-content:center;width:44px;min-height:32px;font-size:22px;line-height:1;color:var(--accent-dark,#167f75)}
-.equipment-disclosure-symbol::before{content:'＋'}
-.equipment-card[open]>summary .equipment-disclosure-symbol::before{content:'−'}
 .equipment-card-title{min-width:0}
 .equipment-card-title strong{overflow-wrap:anywhere;line-height:1.45}
 .equipment-card .equipment-icon{width:60px;height:60px;margin-top:3px;border-radius:8px;background:#f3f7f6}

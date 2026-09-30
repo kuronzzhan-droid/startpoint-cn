@@ -51,7 +51,7 @@ test('single-stage and ordinary weapons use max defaults while explicit unenhanc
 
 test('density switches preserve card choices and group state without eagerly mounting collapsed categories',()=>{
   const x=catalogue(),{host,storage}=x,groups=cls(host,'equipment-groups'),category=cls(host,'equipment-group');
-  assert.equal(groups.attributes['data-layout'],'standard');assert.equal(category.open,false);assert.equal(cards(host).length,0);
+  assert.equal(groups.attributes['data-layout'],'dense');assert.equal(category.open,false);assert.equal(cards(host).length,0);
   click(host,'aria-label','武器致密排列');assert.equal(groups.attributes['data-layout'],'dense');
   assert.equal(find(host,'aria-label','武器致密排列').attributes['aria-pressed'],'true');
   assert.equal(category.open,false);assert.equal(cards(host).length,0);
@@ -65,7 +65,7 @@ test('density switches preserve card choices and group state without eagerly mou
   click(card,'data-level','0');
   const search=find(host,'aria-label','搜索武器');search.value='没有';search.fire('input');assert.equal(cards(host).length,0);
   search.value='';search.fire('input');assert.equal(cards(host)[0],card);assert.equal(card.attributes['data-enhancement-level'],'0');
-  assert.equal(storage.get('wf-wiki-equipment-layout-v1'),'dense');
+  assert.equal(storage.get('wf-wiki-equipment-layout-v2'),'dense');
   x.window.renderWikiWeaponPage(host,{equipment:[weapon]},x.ui);
   assert.equal(cls(host,'equipment-groups').attributes['data-layout'],'dense');assert.equal(cards(host).length,0);
 });
@@ -83,7 +83,7 @@ test('compact header keeps optional help and advanced filters closed and exposes
 });
 
 test('direct weapon details ignore catalogue density and open the highest form immediately',()=>{
-  const x=environment();x.storage.set('wf-wiki-equipment-layout-v1','dense');
+  const x=environment();x.storage.set('wf-wiki-equipment-layout-v2','dense');
   x.window.renderWikiWeaponPage(x.host,{equipment:[weapon]},x.ui,'forms');
   assert.equal(cls(x.host,'equipment-layout-controls'),undefined);assert.equal(cls(x.host,'equipment-groups'),undefined);
   const card=cards(x.host)[0];assert.equal(card.open,true);assert.equal(card.attributes['data-enhancement-level'],'200');
