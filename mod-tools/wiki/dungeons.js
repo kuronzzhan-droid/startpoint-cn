@@ -2,6 +2,7 @@
 (() => {
   'use strict';
   const categories = ['活动', '领主战', '降临讨伐', '模式'];
+  const compactCategory = (value) => value === '领主战' || value === '降临讨伐';
   const validId = (value) => typeof value === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
   function imageUrl(value) {
     if (typeof value !== 'string' || !value || /[\\\u0000-\u001f]/.test(value)) return '';
@@ -67,17 +68,23 @@
       filters.append(node); return {node, value};
     });
     for (const item of items) {
-      const node = el('a', 'dungeon-card'); node.href = `#dungeons/${encodeURIComponent(item.id)}`;
-      const art = el('div', 'dungeon-card-art'), banner = image(ui, item.banner || item.entryImage, item.title || '副本入口');
+      const compact = compactCategory(item.category), node = el('a', `dungeon-card${compact ? ' dungeon-card-compact' : ''}`); node.href = `#dungeons/${encodeURIComponent(item.id)}`;
+      const art = el('div', 'dungeon-card-art'), banner = image(ui, compact ? item.entryImage || item.banner : item.banner || item.entryImage, item.title || '副本入口');
       if (banner) art.append(banner); else art.append(el('span', 'dungeon-art-placeholder', item.category || '副本'));
-      const info = el('div', 'dungeon-card-info'); info.append(el('span', 'badge', item.category || '副本'), el('h2', '', item.title));
-      if (item.summary) info.append(el('p', '', item.summary));
+      const info = el('div', 'dungeon-card-info'), name = el('h2', '', item.title); name.title = item.title;
+      if (compact) info.append(name, el('p', 'dungeon-card-count', `${item.category} · ${item.quests?.length || 0} 个关卡`));
+      else {
+        info.append(el('span', 'badge', item.category || '副本'), name);
+        if (item.summary) info.append(el('p', '', item.summary));
+      }
       node.append(art, info); grid.append(node);
       cards.push({node, item, search: `${item.title || ''} ${item.summary || ''} ${(item.quests || []).map((quest) => quest.name || '').join(' ')}`.toLowerCase()});
     }
     function filter() {
       const words = search.value.trim().toLowerCase().split(/\s+/).filter(Boolean); let count = 0;
       for (const card of cards) {card.node.hidden = Boolean(category && card.item.category !== category) || !words.every((word) => card.search.includes(word)); if (!card.node.hidden) count++;}
+      const visible = cards.filter((card) => !card.node.hidden);
+      grid.className = `dungeon-grid${compactCategory(category) || (visible.length && visible.every((card) => compactCategory(card.item.category))) ? ' dungeon-grid-compact' : ''}`;
       choices.forEach(({node, value}) => node.setAttribute('aria-pressed', String(category === value)));
       status.textContent = `${count} 个副本${count ? '' : '，请尝试其他筛选'}`;
     }
@@ -92,11 +99,12 @@
     const page = el('article', 'dungeon-detail'), back = el('a', 'back-button', '‹ 返回副本与模式'); back.href = '#dungeons';
     page.append(back); host.replaceChildren(page);
     if (!item) {page.append(el('h1', '', '未找到此副本'), el('p', 'muted', '请返回目录查找现有副本。')); return {};}
-    const heading = el('header', 'dungeon-header'), headingText = el('div');
+    const compact = compactCategory(item.category), heading = el('header', `dungeon-header${compact ? ' dungeon-header-compact' : ''}`), headingText = el('div');
     headingText.append(el('span', 'badge', item.category), el('h1', '', item.title)); heading.append(headingText); page.append(heading);
-    const hero = image(ui, item.banner || item.entryImage, `${item.title} 横幅`, 'dungeon-hero'); if (hero) page.append(hero);
+    const hero = image(ui, compact ? item.entryImage || item.banner : item.banner || item.entryImage, `${item.title} ${compact ? '入口' : '横幅'}`, `dungeon-hero${compact ? ' dungeon-hero-compact' : ''}`);
+    if (hero) {if (compact) heading.replaceChildren(hero, headingText); else page.append(hero);}
     if (item.summary) page.append(el('p', 'dungeon-summary', item.summary));
-    const previews = [...new Set([item.entryImage, ...(item.previewImages || [])].filter((value) => value && value !== item.banner))];
+    const previews = [...new Set([item.entryImage, ...(compact ? [item.banner] : []), ...(item.previewImages || [])].filter((value) => value && (compact || value !== item.banner)))];
     if (previews.length) {
       const fold = el('details', 'dungeon-fold'), gallery = el('div', 'dungeon-gallery');
       fold.append(el('summary', '', `入口与模式预览 · ${previews.length}`), gallery);
@@ -112,7 +120,7 @@
     const legacyHost = el('div', 'dungeon-legacy-guide');
     if (item.legacyGuide === 'five-boss') {
       const legacy = el('details', 'dungeon-fold dungeon-legacy'); let rendered = false;
-      legacy.append(el('summary', '', '五重决战 · 波次、Boss 与机制查询'), legacyHost);
+      legacy.append(el('summary', '', '五重决战 · 波次、Boss 与机制查询（本地机制快照）'), legacyHost);
       legacy.addEventListener('toggle', () => {
         if (!legacy.open || rendered || !options.renderLegacyGuide) return;
         rendered = true; options.renderLegacyGuide(legacyHost);

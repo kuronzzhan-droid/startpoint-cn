@@ -46,6 +46,30 @@ test('catalog filters categories and multiple search terms without navigation or
   assert.equal(x.find('.dungeon-card').querySelector('img').loading, 'lazy');
   assert.ok(x.host.querySelectorAll('img').every(img=>!img.src.includes('preview')));
 });
+test('lord and raid cards use compact entry icons and quest counts while activities keep banners', async () => {
+  const x=env(); const lord=x.data.dungeons.items[1];
+  Object.assign(lord,{entryImage:'media/lord/icon.png',banner:'media/lord/banner.webp',quests:[{name:'初级'},{name:'超级'}]});
+  x.data.dungeons.items.push({id:'raid',title:'降临讨伐',category:'降临讨伐',banner:'media/raid/icon.png',quests:[{name:'上级'}]});
+  await x.render({});
+  const compact=x.host.querySelectorAll('.dungeon-card-compact');assert.equal(compact.length,2);
+  assert.equal(compact[0].querySelector('img').src,'http://127.0.0.1:8877/media/lord/icon.png');
+  assert.equal(compact[0].querySelector('.dungeon-card-count').textContent,'领主战 · 2 个关卡');
+  assert.equal(compact[1].querySelector('.dungeon-card-count').textContent,'降临讨伐 · 1 个关卡');
+  const activity=x.host.querySelectorAll('.dungeon-card').find(node=>node.href==='#dungeons/storm-event');
+  assert.ok(!activity.className.includes('dungeon-card-compact'));assert.ok(!x.find('.dungeon-grid-compact'));
+  await x.button('领主战').fire('click');assert.ok(x.find('.dungeon-grid-compact'));
+  await x.button('全部').fire('click');const search=x.find('.dungeon-search');search.value='讨伐';await search.fire('input');
+  assert.ok(x.find('.dungeon-grid-compact'));assert.equal(x.host.querySelectorAll('.dungeon-card').filter(node=>!node.hidden).length,2);
+  search.value='';await search.fire('input');assert.ok(!x.find('.dungeon-grid-compact'));
+});
+test('compact detail uses a small header icon and retains its expandable original artwork', async () => {
+  const x=env();Object.assign(x.data.dungeons.items[1],{entryImage:'media/lord/icon.png',banner:'media/lord/banner.webp'});
+  await x.render({id:'dragon'});const hero=x.find('.dungeon-hero-compact');
+  assert.ok(hero);assert.equal(hero.parent,x.find('.dungeon-header-compact'));
+  assert.equal(hero.src,'http://127.0.0.1:8877/media/lord/icon.png');
+  const previews=x.find('.dungeon-fold');assert.equal(previews.querySelectorAll('img').length,0);
+  previews.open=true;await previews.fire('toggle');assert.equal(previews.querySelectorAll('img').length,2);
+});
 test('only safe same-origin images are rendered and text remains text', async () => {
   const x = env(); const D = x.window.WFDungeons;
   for (const url of ['javascript:alert(1)', 'data:image/svg+xml,a', '//evil.test/a', 'https://evil.test/a', '/bad\\path', '/line\nfeed']) assert.equal(D.imageUrl(url), '');
@@ -67,6 +91,7 @@ test('detail preserves lazy five-boss query and previews while a guide request i
   let resolve; const x = env(route=>route==='/admin/me' ? Promise.reject({status:401}) : new Promise(done=>{resolve=done;}));
   let legacyCalls=0; const task=x.render({id:'five-boss',renderLegacyGuide:host=>{legacyCalls++; host.append(x.el('p','','波次查询'));}});
   const fold=x.find('.dungeon-legacy'); assert.ok(fold); assert.equal(legacyCalls,0);
+  assert.ok(fold.querySelector('summary').textContent.includes('本地机制快照'));
   fold.open=true; await fold.fire('toggle'); await fold.fire('toggle'); assert.equal(legacyCalls,1);
   const previews=x.host.querySelectorAll('.dungeon-fold')[0]; assert.equal(previews.querySelectorAll('img').length,0);
   previews.open=true; await previews.fire('toggle'); assert.equal(previews.querySelectorAll('img').length,2);
