@@ -138,7 +138,7 @@ main{padding:26px 30px 0;min-width:0;outline:none}
 @media(max-width:760px){
   .masthead{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"brand theme" "navigation navigation";gap:5px 8px;padding:8px 12px 0}
   .brand-caption{letter-spacing:.25px}
-  .app-navigation{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;width:100%}
+  .app-navigation{display:grid;grid-template-columns:repeat(6,minmax(64px,1fr));gap:2px;width:100%;overflow-x:auto;scrollbar-width:none}
   .app-navigation a{padding:9px 3px;font-size:11px;text-align:center;border-radius:6px 6px 0 0}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}

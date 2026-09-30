@@ -101,7 +101,7 @@ test('shops keep the character sidebar hidden at mobile and desktop widths witho
   for (const mobile of [true,false]) {
     const x=environment(mobile);x.storage.set('wf-wiki-sidebar-collapsed','false');
     const {shell,nav,toolbar}=sidebar(x);
-    for (const hash of ['#shops','#shops/boss-coins']) {
+    for (const hash of ['#shops','#shops/boss-coins','#tier-list']) {
       x.context.location.hash=hash;x.window.fire('hashchange');
       assert.equal(nav.hidden,true);assert.equal(toolbar.hidden,true);
       assert.ok(shell.className.includes('sidebar-collapsed'));

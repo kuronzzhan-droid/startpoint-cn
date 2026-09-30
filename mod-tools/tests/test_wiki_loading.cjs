@@ -112,6 +112,17 @@ test('team rendering waits for equipment, and superseded team loads stay inactiv
   assert.deepEqual(x.rendered,['catalog','team']);
 });
 
+test('tier board needs no detail downloads and supersedes a pending team page', async () => {
+  const x=router(); await x.go('#tier-list');
+  assert.deepEqual(Object.keys(x.requests), []);
+  assert.equal(x.nodes['catalog-view'].hidden, true);
+  assert.equal(x.nodes['extra-view'].hidden, false);
+  assert.deepEqual(x.rendered, ['tier-list']);
+  const pending=x.go('#team'); await x.go('#tier-list');
+  x.requests.equipment.resolve([]); await pending;
+  assert.deepEqual(x.rendered, ['tier-list', 'tier-list']);
+});
+
 test('community and individual weapon routes load equipment and stay outside the catalogue', async () => {
   for (const hash of ['#community', '#community/t1', '#community/admin', '#weapon/w1']) {
     const x=router(), pending=x.go(hash);

@@ -22,13 +22,16 @@ window.createWikiRouter = function createWikiRouter(options) {
     const parts = hash.split('/');
     const isCharacter = parts[0] === 'character' && parts[1];
     const pageTitle = ({team: '队伍编成', community: '配队大全', weapons: '武器图鉴', weapon: '武器详情',
-      dungeons: '副本与模式', shops: '兑换商店', 'five-boss': '五重决战'})[parts[0]];
+      dungeons: '副本与模式', shops: '兑换商店', 'five-boss': '五重决战', 'tier-list': '从夯到拉'})[parts[0]];
     document.querySelectorAll('audio').forEach((audio) => audio.pause());
     document.querySelectorAll('.app-navigation a').forEach((link) => {
       const target = link.getAttribute('href').slice(1);
       link.setAttribute('aria-current', (target === hash || (!target && isCharacter)
         || (target === 'community' && parts[0] === 'community') || (target === 'weapons' && parts[0] === 'weapon')
         || (target === 'dungeons' && ['dungeons', 'shops', 'five-boss'].includes(parts[0]))) ? 'page' : 'false');
+      if (link.getAttribute('aria-current') === 'page') window.requestAnimationFrame?.(() => {
+        if (link.getAttribute('aria-current') === 'page') link.scrollIntoView?.({block: 'nearest', inline: 'nearest'});
+      });
     });
     catalog.hidden = Boolean(pageTitle || isCharacter);
     detail.hidden = !isCharacter;
@@ -56,7 +59,7 @@ window.createWikiRouter = function createWikiRouter(options) {
             await Promise.all([Promise.all([window.WFWikiData.loadEquipment(), window.WFWikiData.loadRewards()]).catch(() => {}),
               ...(hash === 'five-boss' || item?.legacyGuide === 'five-boss' ? [window.WFWikiData.loadBossGuide()] : [])]);
           }
-        } else await window.WFWikiData.loadEquipment();
+        } else if (parts[0] !== 'tier-list') await window.WFWikiData.loadEquipment();
         if (!current()) return;
         if (!window.renderWikiPage?.(hash, extra, data, ui)) status(extra, '此份导出尚未包含该页面。');
       } else {
