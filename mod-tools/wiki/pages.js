@@ -39,6 +39,7 @@
     if (route === 'team') {window.renderWikiTeam(host, data, ui); return true;}
     if (route === 'weapons') {window.renderWikiWeaponPage(host, data, ui); return true;}
     if (route.startsWith('weapon/')) {window.renderWikiWeaponPage(host, data, ui, decodeURIComponent(route.split('/')[1] || '')); return true;}
+    if (route === 'shops' || route.startsWith('shops/')) {window.renderWikiShops(host, data, ui, {id: route.split('/')[1] || ''}); return true;}
     if (route === 'community/admin') {window.renderWikiCommunityAdmin(host, data, ui); return true;}
     if (route === 'community' || route.startsWith('community/')) {window.renderWikiCommunity(host, data, ui, {id: route.split('/')[1] || ''}); return true;}
     if (route === 'dungeons' || route.startsWith('dungeons/') || route === 'five-boss') {

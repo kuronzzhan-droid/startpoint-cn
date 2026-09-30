@@ -88,6 +88,7 @@ function router() {
   const requests={},rendered=[],data={};
   const wait=(key) => new Promise((resolve,reject) => {requests[key]={resolve,reject};});
   const context={window:{scrollTo(){},WFWikiData:{loadCharacter:(id)=>wait(id),loadEquipment:()=>wait('equipment'),loadBossGuide:()=>wait('boss'),
+    loadRewards:()=>wait('rewards'),
     loadDungeons:()=>wait('dungeons').then(value=>{data.dungeons=value;return value;})}},
     location:{hash:''},document:{getElementById:(id)=>nodes[id],querySelectorAll:()=>[]}};
   context.window.renderWikiCharacterSummary=(_host,c)=>rendered.push(c.id);
@@ -135,7 +136,7 @@ test('new five-boss detail and old link both load the complete boss guide and te
     x.requests.dungeons.resolve({items:[{id:'boss-1-99',legacyGuide:'five-boss'}]});
     await new Promise(resolve=>setImmediate(resolve));
     assert.ok(x.requests.equipment);assert.ok(x.requests.boss);assert.deepEqual(x.rendered,[]);
-    x.requests.equipment.resolve([]);x.requests.boss.resolve({stages:[]});await pending;
+    x.requests.equipment.resolve([]);x.requests.rewards.resolve({});x.requests.boss.resolve({stages:[]});await pending;
     assert.deepEqual(x.rendered,[hash.slice(1)]);
   }
 });
@@ -145,7 +146,7 @@ test('series details load team equipment without requesting the unrelated five-b
   x.requests.dungeons.resolve({items:[{id:'boss-1-60',seriesId:'series-machina'}]});
   await new Promise(resolve=>setImmediate(resolve));
   assert.ok(x.requests.equipment);assert.equal(x.requests.boss,undefined);assert.deepEqual(x.rendered,[]);
-  x.requests.equipment.resolve([]);await pending;
+  x.requests.equipment.resolve([]);x.requests.rewards.resolve({});await pending;
   assert.deepEqual(x.rendered,['dungeons/series-machina']);
 });
 
@@ -160,7 +161,7 @@ test('legacy five-boss route retains its guide if a snapshot has no correspondin
   const x=router(),pending=x.go('#five-boss');x.requests.dungeons.resolve({items:[]});
   await new Promise(resolve=>setImmediate(resolve));
   assert.ok(x.requests.equipment);assert.ok(x.requests.boss);
-  x.requests.equipment.resolve([]);x.requests.boss.resolve({stages:[]});await pending;
+  x.requests.equipment.resolve([]);x.requests.rewards.resolve({});x.requests.boss.resolve({stages:[]});await pending;
   assert.deepEqual(x.rendered,['five-boss']);
 });
 
@@ -176,6 +177,24 @@ test('dungeon loader shares requests, rejects broken metadata and retries withou
   assert.equal(await retry,value);assert.equal(x.data.dungeons,value);
   assert.equal(x.data.characters[0].name,'A');assert.equal(await x.api.loadDungeons(),value);
   assert.equal(x.scripts.length,2);
+});
+
+test('optional reward failure does not hide a dungeon guide', async () => {
+  const x=router(), pending=x.go('#dungeons/boss-1-60');
+  x.requests.dungeons.resolve({items:[{id:'boss-1-60'}]});
+  await new Promise(resolve=>setImmediate(resolve));
+  x.requests.equipment.resolve([]);x.requests.rewards.reject(new Error('offline'));await pending;
+  assert.deepEqual(x.rendered,['dungeons/boss-1-60']);
+});
+
+test('shops wait for linked catalogs and late shop responses cannot overwrite navigation', async () => {
+  const x=router(), first=x.go('#shops');
+  x.requests.dungeons.resolve({items:[]});x.requests.equipment.resolve([]);
+  await new Promise(resolve=>setImmediate(resolve));assert.deepEqual(x.rendered,[]);
+  x.requests.rewards.resolve({});await first;assert.deepEqual(x.rendered,['shops']);
+  const old=x.go('#shops/boss-shop');await x.go('#');
+  x.requests.dungeons.resolve({items:[]});x.requests.equipment.resolve([]);x.requests.rewards.resolve({});await old;
+  assert.deepEqual(x.rendered,['shops','catalog']);
 });
 test('detailed routes select the requested tab and stale failures cannot display errors', async () => {
   const x=router(), full=x.go('#character/ca/details/voices'); x.requests.ca.resolve({id:'ca'}); await full;
