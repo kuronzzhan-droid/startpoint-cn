@@ -13,6 +13,7 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from wf_wiki_pixel_output import digest
 from wf_wiki_public_dungeons import INDEX, MANIFEST, SERIES_VARIANTS, dungeon_plan
+from wf_wiki_dungeon_groups import GROUPS
 
 
 class DungeonPublicPlanTests(unittest.TestCase):
@@ -152,7 +153,7 @@ class DungeonPublicPlanTests(unittest.TestCase):
         for identifier, variants in SERIES_VARIANTS.items():
             for variant in variants:
                 with self.subTest(identifier=identifier, variant=variant):
-                    item.update(seriesId=identifier, variantLabel=variant)
+                    item.update(seriesId=identifier, variantLabel=variant, seriesTitle=GROUPS[identifier][0])
                     self.write(value)
                     _, _, audit = dungeon_plan(self.root)
                     self.assertEqual(audit["series"], {identifier: 1})
@@ -162,6 +163,9 @@ class DungeonPublicPlanTests(unittest.TestCase):
         _, _, audit = dungeon_plan(self.root)
         self.assertEqual(audit["series"], {})
         invalid = [
+            {"seriesTitle": "任意分组"},
+            {"seriesId": "series-side-stories", "variantLabel": "幻彩摩天楼"},
+            {"seriesId": "series-haniwa", "variantLabel": "闪火土机巨土俑", "seriesTitle": "其他玩法"},
             {"seriesId": "series-machina"}, {"variantLabel": "火"},
             {"seriesId": None, "variantLabel": None},
             {"seriesId": {}, "variantLabel": "火"},

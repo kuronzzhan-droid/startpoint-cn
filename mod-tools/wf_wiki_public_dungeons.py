@@ -10,6 +10,7 @@ import re
 
 from PIL import Image
 from wf_wiki_pixel_output import checked_path, digest
+from wf_wiki_dungeon_groups import SERIES_VARIANTS, validate_series_fields
 
 INDEX = "dungeons-data.js"
 MANIFEST = "dungeons-manifest.json"
@@ -19,12 +20,6 @@ CATEGORIES = {"活动", "领主战", "降临讨伐", "模式"}
 SOURCE_STATUSES = {"local-snapshot", "mixed-snapshot", "gray-snapshot"}
 ELEMENTS = {"", "火", "水", "雷", "风", "光", "暗", "无"}
 STATS = {"total", "matched", "sameName", "differentName"}
-SERIES_VARIANTS = {
-    "series-gauntlets": {"幻想连战", "普通深渊", "深渊连战EX"},
-    "series-machina": {"火", "水", "雷", "风", "光", "暗", "无属性"},
-    "series-waste-dragons": {"火", "水", "雷", "风", "光", "暗"},
-    "series-spirit-beasts": {"火", "水", "雷", "风", "光", "暗"},
-}
 
 
 def require(condition, message):
@@ -74,7 +69,7 @@ def non_json(value):
 
 
 def series(item):
-    require(("seriesId" in item) == ("variantLabel" in item), "副本系列与变体字段必须成对提供")
+    validate_series_fields(item)
     if "seriesId" not in item:
         return None
     identifier, variant = item["seriesId"], item["variantLabel"]
@@ -107,7 +102,7 @@ def dungeon_plan(source_root: Path) -> tuple[list[dict], dict, dict]:
     quest_count = checked_items = 0
     for item in items:
         shape(item, {"id", "title", "category", "summary", "quests", "banner", "entryImage", "previewImages", "source"},
-              {"legacyGuide", "seriesId", "variantLabel"})
+              {"legacyGuide", "seriesId", "seriesTitle", "variantLabel"})
         identifier = item["id"]
         require(isinstance(identifier, str) and len(identifier) <= 80 and IDENTIFIER.fullmatch(identifier)
                 and identifier not in seen, "副本 ID 无效或重复")
