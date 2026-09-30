@@ -64,8 +64,8 @@
     detailToggle.append(track, el('span', '', '显示评分详情'));
     publicToolbar.append(avatarHost, detailToggle, refresh);
     const participation = el('div', 'tier-public-participation'); participation.setAttribute('aria-label', '全站参与人数');
-    const participationLabel = el('span', 'tier-participation-label', '全站参与');
-    participationLabel.title = '按访客去重的全站人数，不随属性筛选变化。';
+    const participationLabel = el('span', 'tier-participation-label', '全站 · 共 — 人参与');
+    participationLabel.title = '角色评分和手动排行合并去重的全站人数，不随属性筛选变化。';
     const ratingCount = el('strong', '', '—'), tierCount = el('strong', '', '—'), onlineCount = el('strong', '', '—');
     const participationStatus = el('small', 'tier-participation-status'); participationStatus.setAttribute('role', 'status');
     participation.append(participationLabel);
@@ -92,9 +92,10 @@
       if (statsDisposed) return;
       if (!element.isConnected && statsAttached) {destroy(); return;}
       statsAttached ||= element.isConnected;
-      const valid = votes(snapshot.data?.ratingVoters) && votes(snapshot.data?.tierVoters) && votes(snapshot.data?.onlineVisitors);
+      const valid = votes(snapshot.data?.totalVoters) && votes(snapshot.data?.ratingVoters) && votes(snapshot.data?.tierVoters) && votes(snapshot.data?.onlineVisitors);
       if (valid) lastStats = snapshot.data;
       const text = (node, value) => {if (node.textContent !== value) node.textContent = value;};
+      text(participationLabel, `全站 · 共 ${lastStats ? lastStats.totalVoters : '—'} 人参与`);
       text(ratingCount, lastStats ? String(lastStats.ratingVoters) : '—');
       text(tierCount, lastStats ? String(lastStats.tierVoters) : '—');
       text(onlineCount, lastStats ? String(lastStats.onlineVisitors) : '—');
