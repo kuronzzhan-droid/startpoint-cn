@@ -16,8 +16,12 @@ window.createWikiRouter = function createWikiRouter(options) {
     host.replaceChildren(box);
   }
   return async function route() {
-    const ticket = ++revision;
     const hash = location.hash.slice(1);
+    const allowed = window.WFNavigationGuard?.allow(hash) ?? true;
+    if (!(allowed && typeof allowed.then === 'function' ? await allowed : allowed)
+        || location.hash.slice(1) !== hash) return;
+    const ticket = ++revision;
+    if (typeof window.CustomEvent === 'function') window.dispatchEvent(new window.CustomEvent('wf-page-leave', {detail:{to:hash}}));
     const current = () => ticket === revision && location.hash.slice(1) === hash;
     const parts = hash.split('/');
     const isCharacter = parts[0] === 'character' && parts[1];

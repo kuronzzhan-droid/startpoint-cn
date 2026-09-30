@@ -104,6 +104,19 @@ test('late character responses cannot overwrite a later navigation', async () =>
   x.requests.ca.resolve({id:'ca'}); await first;
   assert.deepEqual(x.rendered,['cb']);
 });
+test('cancelled asynchronous navigation leaves the mounted editor and downloads unchanged', async () => {
+  const x=router(), draft={textContent:'unsaved draft'};x.nodes['extra-view'].replaceChildren(draft);
+  let resolve;x.context.window.WFNavigationGuard={allow:()=>new Promise(done=>resolve=done)};
+  const pending=x.go('#weapons');assert.equal(x.nodes['extra-view'].children[0],draft);
+  assert.deepEqual(Object.keys(x.requests),[]);resolve(false);await pending;
+  assert.equal(x.nodes['extra-view'].children[0],draft);assert.deepEqual(x.rendered,[]);
+});
+test('accepted navigation only mounts the still-current destination', async () => {
+  const x=router();let resolve;
+  x.context.window.WFNavigationGuard={allow:()=>new Promise(done=>resolve=done)};
+  const pending=x.go('#weapons');x.context.location.hash='#community';resolve(true);await pending;
+  assert.deepEqual(Object.keys(x.requests),[]);assert.deepEqual(x.rendered,[]);
+});
 test('team rendering waits for equipment, and superseded team loads stay inactive', async () => {
   const x=router(), team=x.go('#team'); assert.deepEqual(x.rendered,[]);
   await x.go('#'); x.requests.equipment.resolve([]); await team;
