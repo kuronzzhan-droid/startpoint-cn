@@ -14,9 +14,9 @@ async function ctx(id = 'c0', ip = '192.0.2.1', time = now) {
 test('rating score includes zero, counts one current vote and never exposes visitor or IP identifiers', async (t) => {
   const db = database(t), context = await ctx();
   assert.deepEqual(await readRating(db, 'c0', 'visitor-a', context),
-    {average: null, voters: 0, myScore: null, ratedToday: false, nextVoteAt: now + 1});
+    {average: null, voters: 0, rankScore: null, myScore: null, ratedToday: false, nextVoteAt: now + 1});
   const zero = await recordRating(db, 'c0', 'visitor-a', context, 0, now);
-  assert.deepEqual(zero, {average: 0, voters: 1, myScore: 0, ratedToday: true, nextVoteAt: now + 1});
+  assert.deepEqual(zero, {average: 0, voters: 1, rankScore: 12.5 / 6, myScore: 0, ratedToday: true, nextVoteAt: now + 1});
   const five = await recordRating(db, 'c0', 'visitor-b', await ctx('c0', '192.0.2.2'), 5, now);
   assert.equal(five.average, 2.5); assert.equal(five.voters, 2); assert.equal(five.myScore, 5);
   const claims = db.raw.prepare('SELECT * FROM community_character_rating_claims').all();
@@ -33,7 +33,7 @@ test('same visitor cannot switch IP and same IP cannot reset cookie to vote agai
   await assert.rejects(recordRating(db, 'c0', 'visitor-new-cookie', first, 5, now),
     (error) => error.code === 'already_rated' && error.extra.myScore === null && error.extra.voters === 1 && error.extra.ratedToday);
   assert.deepEqual(await readRating(db, 'c0', 'visitor-new-cookie', first),
-    {average: 2, voters: 1, myScore: null, ratedToday: true, nextVoteAt: now + 1});
+    {average: 2, voters: 1, rankScore: 14.5 / 6, myScore: null, ratedToday: true, nextVoteAt: now + 1});
   assert.equal((await recordRating(db, 'c1', 'visitor-a', await ctx('c1'), 5, now)).voters, 1);
   // Rejected cross-IP retry did not consume another network's allowance.
   assert.equal((await recordRating(db, 'c0', 'visitor-b', await ctx('c0', '192.0.2.2'), 4, now)).voters, 2);
@@ -47,7 +47,7 @@ test('Beijing midnight replaces score without adding voters and retains recent c
   const before = await readRating(db, 'c0', 'visitor-a', next);
   assert.equal(before.ratedToday, false); assert.equal(before.myScore, 0);
   const updated = await recordRating(db, 'c0', 'visitor-a', next, 4, now + 1);
-  assert.deepEqual(updated, {average: 4.5, voters: 2, myScore: 4, ratedToday: true, nextVoteAt: now + 1 + 86400_000});
+  assert.deepEqual(updated, {average: 4.5, voters: 2, rankScore: 21.5 / 7, myScore: 4, ratedToday: true, nextVoteAt: now + 1 + 86400_000});
   assert.equal(db.raw.prepare('SELECT count(*) n FROM community_character_ratings').get().n, 2);
   assert.equal(db.raw.prepare('SELECT count(*) n FROM community_character_rating_claims WHERE vote_day<?').get(next.day).n, 2);
   await assert.rejects(recordRating(db, 'c0', 'late-old-day-cookie', await ctx(), 1, now), {code: 'already_rated'});

@@ -1,5 +1,6 @@
 import {chinaDay, fail} from './model.mjs';
 import {sign} from './codecs.mjs';
+import rankingScore from '../wiki/rating-score.js';
 
 export const ROW_SCORES = Object.freeze({tier0: 5, between0: 4.5, tier1: 4, between1: 3.5,
   tier2: 3, between2: 2.5, tier3: 2, between3: 1.5, tier4: 1});
@@ -62,7 +63,7 @@ export async function recordTierRanking(db, catalog, visitorId, context, value, 
   if (!results[1].meta.changes) fail(409, 'already_ranked', '今天你或同一网络已提交排行，请明天再来。', result);
   return result;
 }
-export async function listTierPlacements(db, catalog) {
+export async function listTierPlacements(db, catalog, {includeRankScore = false} = {}) {
   // Store one replaceable document per visitor so a full-board update is one atomic write.
   const score = `CASE tier.key ${Object.entries(ROW_SCORES).map(([key, value]) => `WHEN '${key}' THEN ${value}`).join(' ')} END`;
   const results = (await db.prepare(`SELECT id,AVG(score) AS average,COUNT(*) AS voters FROM (
@@ -73,5 +74,6 @@ export async function listTierPlacements(db, catalog) {
     GROUP BY ranking.visitor_id,item.value
     ) GROUP BY id`).all()).results;
   return results.filter((item) => Object.hasOwn(catalog.characters, item.id))
-    .map((item) => ({id: item.id, average: Math.round(item.average * 100) / 100, voters: item.voters}));
+    .map((item) => ({id: item.id, average: Math.round(item.average * 100) / 100, voters: item.voters,
+      ...(includeRankScore ? {rankScore: rankingScore.score(item.average, item.voters, 'placement')} : {})}));
 }

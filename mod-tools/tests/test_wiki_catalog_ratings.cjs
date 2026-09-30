@@ -25,6 +25,7 @@ function setup(handler = async () => response, protocol = 'https:') {
   const window = {addEventListener: (name, action) => {events[name] = action;},
     WFCharacterOrder: {compare: (a, b) => a.id.localeCompare(b.id)},
     WFCommunity: {client: {request: (...args) => {calls.push(args); return handler(...args);}}}};
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki/rating-score.js'), 'utf8'), {window});
   vm.runInNewContext(source, {window, location: {protocol}});
   let changes = 0;
   const controller = window.WFCatalogRatings.create({characters, sort, host, ui: {el: (...args) => new Node(...args)},
@@ -52,10 +53,11 @@ test('attribute and global sorting handle both directions, real zero, missing va
   const x = setup(); await x.controller.load();
   assert.deepEqual(x.order('rating-element-desc'), ['c0', 'c1', 'c2', 'c3', 'c4', 'c5']);
   assert.deepEqual(x.order('rating-element-asc'), ['c1', 'c0', 'c2', 'c4', 'c3', 'c5']);
-  assert.deepEqual(x.order('rating-global-desc'), ['c3', 'c0', 'c4', 'c1', 'c2', 'c5']);
+  assert.deepEqual(x.order('rating-global-desc'), ['c3', 'c4', 'c0', 'c1', 'c2', 'c5']);
   assert.deepEqual(x.order('rating-global-asc'), ['c1', 'c0', 'c4', 'c3', 'c2', 'c5']);
-  x.controller.update('c2', {average: 2, voters: 9});
-  x.controller.update('c4', {average: 2, voters: 12});
+  x.controller.update('c0', {average: 2.5, voters: 8});
+  x.controller.update('c2', {average: 2.5, voters: 9});
+  x.controller.update('c4', {average: 2.5, voters: 12});
   assert.deepEqual(x.order('rating-element-desc'), ['c2', 'c0', 'c1', 'c3', 'c4', 'c5']);
   assert.deepEqual(x.order('rating-element-asc'), ['c1', 'c2', 'c0', 'c4', 'c3', 'c5']);
   assert.deepEqual(x.order('rating-global-desc'), ['c3', 'c4', 'c2', 'c0', 'c1', 'c5']);
@@ -78,7 +80,7 @@ test('an accepted single-character result wins over an in-flight batch, without 
   const pending = x.controller.load(); await tick(); assert.equal(x.calls.length, 1);
   x.vote('c0', {average: 4.5, voters: 12, myScore: 5}); resolve(response); await pending;
   assert.equal(card.querySelector('.card-rating').textContent, '评分 4.5');
-  assert.deepEqual(x.order('rating-global-desc').slice(0, 2), ['c3', 'c0']);
+  assert.deepEqual(x.order('rating-global-desc').slice(0, 2), ['c0', 'c3']);
   const before = x.changes; x.controller.update('c0', {average: 4.5, voters: 12}); assert.equal(x.changes, before);
 });
 
@@ -101,4 +103,31 @@ test('invalid aggregates are rejected atomically and offline catalogues stay net
   const offline = setup(undefined, 'file:'); await offline.controller.load(); await offline.controller.load();
   assert.equal(offline.calls.length, 0); assert.match(offline.status().children[0].textContent, /离线版/);
   assert.equal(offline.status().children[1].hidden, true);
+});
+
+test('one extreme vote cannot outrank established high or low ratings; filtering does not change scores', async () => {
+  const x = setup(async () => ({items: [
+    {id: 'c0', average: 5, voters: 1}, {id: 'c1', average: 4.5, voters: 100},
+    {id: 'c3', average: 0, voters: 1}, {id: 'c4', average: 1, voters: 100},
+  ]}));
+  const one = x.card('c0'); await x.controller.load();
+  assert.deepEqual(x.order('rating-global-desc'), ['c1', 'c0', 'c3', 'c4', 'c2', 'c5']);
+  assert.deepEqual(x.order('rating-global-asc'), ['c4', 'c3', 'c0', 'c1', 'c2', 'c5']);
+  assert.deepEqual(x.order('rating-element-desc').slice(0, 3), ['c1', 'c0', 'c2']);
+  assert.equal(one.querySelector('.card-rating').textContent, '评分 5.0');
+  assert.match(one.title, /1 人 · 排序分 2\.92/);
+  x.sort.fire('change'); assert.match(x.status().textContent, /按票数修正排序.*真实均分/);
+  assert.equal(x.calls.length, 1);
+});
+
+test('server score precision survives accepted detail updates and invalid rank scores do not replace data', async () => {
+  const x = setup(async () => ({items: [
+    {id: 'c0', average: 4, voters: 10, rankScore: 3.49999},
+    {id: 'c1', average: 4, voters: 10, rankScore: 3.50001},
+  ]}));
+  await x.controller.load(); assert.deepEqual(x.order('rating-global-desc').slice(0, 2), ['c1', 'c0']);
+  x.vote('c0', {average: 4, voters: 10, rankScore: 3.50002});
+  assert.deepEqual(x.order('rating-global-desc').slice(0, 2), ['c0', 'c1']);
+  assert.equal(x.controller.update('c0', {average: 4, voters: 10, rankScore: NaN}), false);
+  assert.equal(x.controller.update('c0', {average: 4, voters: 10, rankScore: null}), false);
 });

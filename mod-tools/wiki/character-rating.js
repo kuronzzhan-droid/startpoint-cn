@@ -7,10 +7,12 @@
     if (!value || !Number.isSafeInteger(value.voters) || value.voters < 0 || typeof value.ratedToday !== 'boolean'
       || !(value.myScore === null || validScore(value.myScore))
       || !Number.isFinite(value.nextVoteAt) || value.nextVoteAt <= 0
-      || (value.voters === 0 ? value.average !== null : !Number.isFinite(value.average) || value.average < 0 || value.average > 5)) {
+      || (value.voters === 0 ? value.average !== null : !Number.isFinite(value.average) || value.average < 0 || value.average > 5)
+      || (value.rankScore !== undefined && (value.voters === 0 ? value.rankScore !== null : !Number.isFinite(value.rankScore) || value.rankScore < 0 || value.rankScore > 5))) {
       throw new Error('评分数据暂时不可用，请重试。');
     }
-    return {average:value.average,voters:value.voters,myScore:value.myScore,ratedToday:value.ratedToday,nextVoteAt:value.nextVoteAt};
+    return {average:value.average,voters:value.voters,myScore:value.myScore,ratedToday:value.ratedToday,nextVoteAt:value.nextVoteAt,
+      ...(value.rankScore === undefined ? {} : {rankScore:value.rankScore})};
   }
   function message(error) {
     if (error?.status === 401) return '无法确认访客身份，请刷新页面后重试。';

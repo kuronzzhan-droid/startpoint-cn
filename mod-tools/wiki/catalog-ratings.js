@@ -1,15 +1,19 @@
 /* One public aggregate request for the catalogue; never fetch individual votes. */
 (() => {
   'use strict';
+  const ranking = window.WFRatingScore;
   const modes = [['rating-element-desc', '属性内评分从高到低'], ['rating-element-asc', '属性内评分从低到高'],
     ['rating-global-desc', '全体评分从高到低'], ['rating-global-asc', '全体评分从低到高']];
   const elements = ['火', '水', '雷', '风', '光', '暗'];
   const rank = (value) => elements.includes(value) ? elements.indexOf(value) : elements.length;
   const normalize = (value) => {
     if (!value || !Number.isSafeInteger(value.voters) || value.voters < 0) return null;
-    if (value.voters === 0) return value.average === null ? {average: null, voters: 0} : null;
-    return typeof value.average === 'number' && Number.isFinite(value.average) && value.average >= 0 && value.average <= 5
-      ? {average: value.average, voters: value.voters} : null;
+    if (value.voters === 0) return value.average === null ? {average: null, voters: 0, rankScore: null} : null;
+    if (typeof value.average !== 'number' || !Number.isFinite(value.average) || value.average < 0 || value.average > 5) return null;
+    // Older cached responses may omit rankScore; use the same policy until they expire.
+    const rankScore = value.rankScore === undefined ? ranking.score(value.average, value.voters) : value.rankScore;
+    return Number.isFinite(rankScore) && rankScore >= 0 && rankScore <= 5
+      ? {average: value.average, voters: value.voters, rankScore} : null;
   };
   const api = window.WFCatalogRatings = {create({characters, sort, host, ui, onChange}) {
     const {el} = ui, ids = new Set(characters.map((character) => String(character.id)));
@@ -22,14 +26,14 @@
     modes.forEach(([value, label]) => {const option = el('option', '', label); option.value = value; sort.append(option);});
     const isRatingSort = () => modes.some(([value]) => value === sort.value);
     function paintStatus() {
-      status.hidden = phase === 'idle' || phase === 'ready';
+      status.hidden = phase === 'idle' || (phase === 'ready' && !isRatingSort());
       retry.hidden = phase !== 'error';
-      message.textContent = phase === 'loading' ? '正在加载玩家评分…' : phase === 'offline'
+      message.textContent = phase === 'ready' ? '按票数修正排序；卡片显示真实均分，未评分排末尾。' : phase === 'loading' ? '正在加载玩家评分…' : phase === 'offline'
         ? '离线版无法读取玩家评分；缺少评分显示 —。' : '评分暂时未能加载，缺少评分显示 —。';
     }
     function paint(card) {
       const value = records.get(card.dataset.catalogRatingId), rated = value && value.voters > 0;
-      const label = rated ? `评分 ${value.average.toFixed(1)} / 5 · ${value.voters} 人`
+      const label = rated ? `评分 ${value.average.toFixed(1)} / 5 · ${value.voters} 人 · 排序分 ${value.rankScore.toFixed(2)}`
         : phase === 'ready' ? '评分 —（未评分）' : '评分 —（尚未加载）';
       const badge = card.querySelector('.card-rating');
       badge.textContent = '评分 ';
@@ -42,7 +46,7 @@
       if (!ids.has(id) || !record) return false;
       const previous = records.get(id);
       records.set(id, record); updated.set(id, ++revision);
-      if (previous?.average !== record.average || previous?.voters !== record.voters) onChange();
+      if (previous?.average !== record.average || previous?.voters !== record.voters || previous?.rankScore !== record.rankScore) onChange();
       return true;
     }
     async function load() {
@@ -66,6 +70,7 @@
       return pending;
     }
     retry.addEventListener('click', () => {if (phase === 'error') {phase = 'idle'; load();}});
+    sort.addEventListener('change', paintStatus);
     api.update = update;
     window.addEventListener('wf-character-rating-updated', (event) => {
       if (event.detail) update(event.detail.id, event.detail);
@@ -77,11 +82,7 @@
           const group = rank(a.element) - rank(b.element); if (group) return group;
         }
         const av = records.get(String(a.id)), bv = records.get(String(b.id));
-        const ar = Boolean(av?.voters), br = Boolean(bv?.voters);
-        if (ar !== br) return ar ? -1 : 1;
-        if (ar && av.average !== bv.average) return (av.average - bv.average) * (sort.value.endsWith('-asc') ? 1 : -1);
-        if (ar && av.voters !== bv.voters) return bv.voters - av.voters;
-        return window.WFCharacterOrder.compare(a, b);
+        return ranking.compare(av, bv, sort.value.endsWith('-asc') ? 'asc' : 'desc') || window.WFCharacterOrder.compare(a, b);
       },
       decorate(card, character) {
         card.dataset.catalogRatingId = String(character.id);

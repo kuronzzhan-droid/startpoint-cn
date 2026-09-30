@@ -5,6 +5,10 @@
 .tier-submit-bar[hidden],.tier-personal-view[hidden],.tier-public-view[hidden]{display:none}
 .tier-submit-status{color:var(--muted);font-size:12px;line-height:1.6}
 .tier-public-toolbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:9px;margin-top:12px}
+.tier-ranking-sources{display:flex;gap:6px;margin-top:12px;max-width:100%;flex-wrap:wrap}
+.tier-ranking-source{min-height:40px;padding:8px 18px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font-size:14px;font-weight:700;cursor:pointer}
+.tier-ranking-source[aria-pressed="true"]{border-color:var(--accent-dark);background:var(--accent-dark);color:var(--surface)}
+.tier-ranking-source:focus-visible{outline:3px solid var(--accent-dark);outline-offset:3px}
 .tier-public-toolbar button{font-size:12px;min-height:36px}
 .tier-public-participation{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px;margin:10px 0;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:12px;line-height:1.5;min-width:0}
 .tier-participation-label,.tier-participation-status{color:var(--muted);font-size:11px}

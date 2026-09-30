@@ -1,6 +1,7 @@
 import {chinaDay, fail} from './model.mjs';
 import {sign} from './codecs.mjs';
 import {readJSON, challenge, rateLimit} from './security.mjs';
+import rankingScore from '../wiki/rating-score.js';
 
 function requireCharacter(catalog, id) {
   if (!Object.hasOwn(catalog.characters, id)) fail(404, 'not_found', '角色未收录。');
@@ -24,6 +25,7 @@ export async function readRating(db, id, visitorId, context) {
     FROM community_character_ratings WHERE character_id=?`)
     .bind(id, visitorId, id, visitorId, context.claimKey, id).first();
   return {average: row.voters ? Math.round(row.average * 100) / 100 : null, voters: row.voters,
+    rankScore: rankingScore.score(row.average, row.voters),
     myScore: row.my_score ?? null, ratedToday: Boolean(row.my_day >= context.day || row.ip_claimed), nextVoteAt: context.nextVoteAt};
 }
 export async function listCharacterRatings(db, catalog) {
@@ -31,7 +33,8 @@ export async function listCharacterRatings(db, catalog) {
     FROM community_character_ratings WHERE typeof(score)='integer' AND score BETWEEN 0 AND 5
     GROUP BY character_id ORDER BY character_id`).all()).results;
   return {items: rows.filter((row) => Object.hasOwn(catalog.characters, row.id))
-    .map((row) => ({id: row.id, average: Math.round(row.average * 100) / 100, voters: row.voters}))};
+    .map((row) => ({id: row.id, average: Math.round(row.average * 100) / 100, voters: row.voters,
+      rankScore: rankingScore.score(row.average, row.voters)}))};
 }
 export async function recordRating(db, id, visitorId, context, score, now) {
   validateScore(score);

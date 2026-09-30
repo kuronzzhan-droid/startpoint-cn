@@ -59,10 +59,11 @@ test('choosing zero needs a consumed verification token and confirmed POST befor
   assert.equal(x.challenges[0].action,'rate_character');await submit.fire();assert.equal(x.calls.length,1);
   x.challenges[0].ready('zero-token');const pending=submit.fire();assert.equal(x.calls[1][1].score,0);assert.equal(x.calls[1][1].turnstileToken,'zero-token');
   assert.equal(cls(root,'character-rating-average').textContent,'3.3');assert.equal(submit.disabled,true);
-  finish({...unrated,average:3,myScore:0,ratedToday:true});await pending;
+  finish({...unrated,average:3,rankScore:2.921875,myScore:0,ratedToday:true});await pending;
   assert.equal(cls(root,'character-rating-average').textContent,'3.0');assert.equal(cls(root,'character-rating-voters').textContent,'27 位玩家');
   assert.match(root.textContent,/今天已评 0 分.*北京时间/);assert.equal(button(root,'5').disabled,true);assert.equal(x.challenges[0].resets,1);
   assert.equal(catalogUpdates.length,1);assert.equal(catalogUpdates[0].id,'c1');assert.equal(catalogUpdates[0].average,3);
+  assert.equal(catalogUpdates[0].rankScore,2.921875);
   await submit.fire();assert.equal(x.calls.length,2);
 });
 

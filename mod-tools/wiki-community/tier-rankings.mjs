@@ -1,26 +1,19 @@
 import {fail} from './model.mjs';
 import {readJSON, challenge, rateLimit} from './security.mjs';
 import {listCharacterRatings} from './character-ratings.mjs';
+import rankingScore from '../wiki/rating-score.js';
 import {ROW_SCORES, TIER_CHALLENGE, validateTierRows, tierRankingContext, readTierRanking,
   recordTierRanking, listTierPlacements} from './tier-ranking-store.mjs';
 
 export async function listTierRankings(db, catalog) {
-  const [placements, ratings] = await Promise.all([listTierPlacements(db, catalog), listCharacterRatings(db, catalog)]);
-  const placed = new Map(placements.map((item) => [item.id, item]));
-  const rated = new Map(ratings.items.map((item) => [item.id, item]));
-  const ids = new Set([...placed.keys(), ...rated.keys()]), rowKeys = Object.keys(ROW_SCORES);
-  const items = [...ids].map((id) => {
-    const placement = placed.get(id), rating = rated.get(id);
-    const score = placement && rating ? placement.average * 0.7 + rating.average * 0.3 : (placement || rating).average;
-    const compositeScore = Math.round(score * 100) / 100;
-    return {id, compositeScore, row: rowKeys[Math.max(0, Math.min(8, Math.round((5 - compositeScore) * 2)))],
-      placementAverage: placement?.average ?? null, placementVoters: placement?.voters ?? 0,
-      ratingAverage: rating?.average ?? null, ratingVoters: rating?.voters ?? 0,
-      missingSources: [...(!placement ? ['placement'] : []), ...(!rating ? ['rating'] : [])]};
-  });
-  items.sort((a, b) => b.compositeScore - a.compositeScore || b.placementVoters - a.placementVoters
-    || b.ratingVoters - a.ratingVoters || a.id.localeCompare(b.id));
-  return {items, formula: {placementWeight: 0.7, ratingWeight: 0.3}};
+  const [placements, ratings] = await Promise.all([
+    listTierPlacements(db, catalog, {includeRankScore: true}), listCharacterRatings(db, catalog),
+  ]);
+  const rowKeys = Object.keys(ROW_SCORES);
+  const board = items => items.map(item => ({...item,
+    row: rowKeys[Math.max(0, Math.min(8, Math.round((5 - item.rankScore) * 2)))]}))
+    .sort((a, b) => rankingScore.compare(a, b));
+  return {rankings: {placement: board(placements), rating: board(ratings.items)}, formula: rankingScore.FORMULA};
 }
 export async function tierRankingsRoute(path, request, env, catalog, identity, now, development, fetchImpl) {
   if (path === '/tier-rankings' && request.method === 'GET') return listTierRankings(env.COMMUNITY_DB, catalog);

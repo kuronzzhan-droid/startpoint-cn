@@ -11,7 +11,7 @@ test('anonymous HTTP rating returns signed-cookie own state; cookie reset expose
   assert.equal(initial.json.average, null); assert.equal(initial.json.voters, 0);
   assert.match(initial.headers.get('Set-Cookie'), /HttpOnly; SameSite=Strict/);
   const response = await app.call(path, {body: {score: 0, turnstileToken: await token(app)}});
-  assert.deepEqual(response.json, {average: 0, voters: 1, myScore: 0, ratedToday: true, nextVoteAt: Date.parse('2026-09-29T16:00:00Z')});
+  assert.deepEqual(response.json, {average: 0, voters: 1, rankScore: 12.5 / 6, myScore: 0, ratedToday: true, nextVoteAt: Date.parse('2026-09-29T16:00:00Z')});
   app.cookie = '';
   const reset = await app.call(path); assert.equal(reset.json.myScore, null); assert.equal(reset.json.ratedToday, true);
   const duplicate = await app.call(path, {body: {score: 5, turnstileToken: await token(app)}});
