@@ -98,6 +98,11 @@ CREATE TABLE IF NOT EXISTS community_tier_ranking_claims (
   vote_day TEXT NOT NULL, created_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS community_tier_ranking_claim_day ON community_tier_ranking_claims(vote_day);
+CREATE TABLE IF NOT EXISTS community_presence (
+  visitor_hash TEXT PRIMARY KEY,
+  last_seen INTEGER NOT NULL CHECK(typeof(last_seen)='integer' AND last_seen>=0)
+);
+CREATE INDEX IF NOT EXISTS community_presence_seen ON community_presence(last_seen);
 CREATE TABLE IF NOT EXISTS community_dungeon_guides (
   id TEXT PRIMARY KEY, text TEXT NOT NULL,
   team_ids_json TEXT NOT NULL DEFAULT '[]', image_ids_json TEXT NOT NULL DEFAULT '[]',

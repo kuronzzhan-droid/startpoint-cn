@@ -162,6 +162,22 @@ node verify-build.mjs "<仓外构建目录>"
 
 ## 点赞、防刷与维护
 
+### 参与人数和在线人数
+
+`GET /api/community/stats` 匿名只读，不建立访客 cookie，返回
+`{ratingVoters, tierVoters, totalVoters, onlineVisitors, asOf, presenceWindowSeconds:120}`。
+`asOf` 为 UTC ISO 时间。评分和手排分别统计当前图鉴有效票的独立访客；同人评多个角色只计一次，
+评分 0 分仍计票，空手排或只包含已移出图鉴角色的手排不计参与。`totalVoters` 对两个来源再去重，不能用两类人数相加代替。
+
+前端先完成 `/config` 建立身份，再每 30 秒 `POST /api/community/presence`，正文为 `{}`；
+返回同一统计对象，无有效访客 cookie 时返回 428 `visitor_required`，不会另发 cookie。
+心跳要求同源 JSON；同访客每 30 秒最多更新一次，多标签页共享身份只算一人。
+在线人数指最近 120 秒有心跳的访客，离开页面或断网后自然过期，不能作为真实人数或登录人数。
+只存带域隔离 HMAC 的访客标识和最后心跳时间，不存原始 IP、UA 或页面浏览轨迹。
+请求另复用现有哈希 IP 限流桶，每分钟最多 300 次；每次有效心跳最多清除 100 条过期在线记录，
+公共 GET 不清理、不写库。现有库部署前需执行 `migrations/0009-presence.sql`，迁移只增加在线表及索引；
+本地 SQLite 适配器按 `schema.sql` 自动补齐，不能用空库替换已有库。
+
 ### 从夯到拉动态排行
 
 `GET /api/community/tier-rankings` 匿名读取综合榜，不生成访客 cookie；前端按角色属性切换总榜与六属性榜。

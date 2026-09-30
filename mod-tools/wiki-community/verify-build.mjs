@@ -113,6 +113,22 @@ try {
   assert.equal(aggregate.status, 200); assert.equal(aggregate.headers.get('set-cookie'), null);
   assert.deepEqual((await aggregate.json()).items.sort((a, b) => a.id.localeCompare(b.id)),
     [{id: characterIds[0], average: 0, voters: 1}, {id: characterIds[1], average: 2.5, voters: 2}].sort((a, b) => a.id.localeCompare(b.id))); checks++;
+  db.raw.prepare('INSERT INTO community_tier_rankings VALUES(?,?,?,?)')
+    .run('fixture-ranking-a', JSON.stringify({tier0:characterIds}), '2026-09-30', Date.now());
+  const stats = await call('/api/community/stats');
+  assert.equal(stats.status, 200); assert.equal(stats.headers.get('set-cookie'), null);
+  const counts = await stats.json();
+  assert.equal(counts.ratingVoters, 2); assert.equal(counts.tierVoters, 1); assert.equal(counts.onlineVisitors, 0);
+  assert.equal(counts.totalVoters, 3);
+  assert.equal(counts.presenceWindowSeconds, 120); assert.ok(Number.isFinite(Date.parse(counts.asOf))); checks++;
+  const anonymousPresence = await call('/api/community/presence', {method:'POST', body:'{}'});
+  assert.equal(anonymousPresence.status, 428); assert.equal(anonymousPresence.headers.get('set-cookie'), null); checks++;
+  const visitorCookie = config.headers.get('set-cookie').split(';')[0];
+  const presence = await call('/api/community/presence', {method:'POST', body:'{}', headers:{Cookie:visitorCookie}});
+  assert.equal(presence.status, 200); assert.equal(presence.headers.get('set-cookie'), null);
+  assert.equal((await presence.json()).onlineVisitors, 1); checks++;
+  assert.equal((await call('/api/community/presence', {method:'POST', body:'{}', headers:{Cookie:visitorCookie, Origin:'https://other.example'}})).status, 403);
+  assert.equal((await call('/api/community/presence')).status, 405); checks++;
   assert.equal(assets.length, 4);
   const report = {wrangler: '4.143.0', verifiedAt: new Date().toISOString(),
     bundle: {file: 'index.js', bytes: (await stat(bundlePath)).size, sha256: createHash('sha256').update(source).digest('hex')},

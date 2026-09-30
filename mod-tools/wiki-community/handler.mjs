@@ -10,6 +10,7 @@ import {authRoute, accountsRoute} from './auth-routes.mjs';
 import {listAliases, adminAliasesRoute} from './wiki-aliases.mjs';
 import {characterRatingsRoute, listCharacterRatings} from './character-ratings.mjs';
 import {tierRankingsRoute, listTierRankings} from './tier-rankings.mjs';
+import {communityStats, presenceRoute} from './community-stats.mjs';
 import dungeonCatalog from './dungeon-catalog.mjs';
 import {dungeonRoute} from './dungeon-routes.mjs';
 
@@ -38,6 +39,11 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
       // Auth responses own their session cookie; do not overwrite it with a visitor cookie.
       if (path.startsWith('/auth/') && mode === 'password')
         return await authRoute(path, request, env, now, development, fetchImpl);
+      if (path === '/stats') {
+        if (request.method !== 'GET') fail(405, 'method_not_allowed', '参与及在线人数只支持 GET 查询。');
+        return response(await communityStats(env.COMMUNITY_DB, trustedCatalog, now));
+      }
+      if (path === '/presence') return response(await presenceRoute(request, env, trustedCatalog, now, development));
       // Anonymous summaries must not mint a late cookie that replaces a rating visitor's identity.
       if (request.method === 'GET' && path === '/ratings/characters')
         return response(await listCharacterRatings(env.COMMUNITY_DB, trustedCatalog));

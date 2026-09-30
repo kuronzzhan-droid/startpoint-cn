@@ -73,11 +73,14 @@ export async function challenge(request, env, token, action, fetchImpl, developm
 export async function rateLimit(db, request, env, action, now, development) {
   const ip = development ? 'loopback' : request.headers.get('CF-Connecting-IP');
   if (!ip || ip.length > 100) fail(503, 'client_address_unavailable', '暂时无法验证请求来源。');
-  const windowMs = action === 'game_lookup' ? 60_000 : 3600_000, expires = Math.floor(now / windowMs) * windowMs + windowMs;
+  const windowMs = ['game_lookup', 'presence'].includes(action) ? 60_000 : 3600_000, expires = Math.floor(now / windowMs) * windowMs + windowMs;
   const key = `${action}:${await sign(env.COMMUNITY_IP_SALT, `${expires}:${ip}`)}`;
-  const max = action === 'game_lookup' ? 300 : action === 'dungeon_upload' ? 20 : 120;
+  const max = ['game_lookup', 'presence'].includes(action) ? 300 : action === 'dungeon_upload' ? 20 : 120;
   const row = await db.prepare(`INSERT INTO community_limits(key,count,expires_at) VALUES(?,1,?)
     ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count`).bind(key, expires).first();
   if (row.count > max) fail(429, 'rate_limited', '操作过于频繁，请稍后再试。', {retryAfter: Math.ceil((expires - now) / 1000)});
-  await db.prepare('DELETE FROM community_limits WHERE expires_at < ?').bind(now).run();
+  const cleanup = action === 'presence'
+    ? 'DELETE FROM community_limits WHERE key IN (SELECT key FROM community_limits WHERE expires_at < ? LIMIT 100)'
+    : 'DELETE FROM community_limits WHERE expires_at < ?';
+  await db.prepare(cleanup).bind(now).run();
 }
