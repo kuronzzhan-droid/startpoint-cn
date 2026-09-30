@@ -137,7 +137,9 @@
       busy = true; save.disabled = true; editable.forEach((node) => {node.disabled = true;}); update(); warning.textContent = '正在保存…';
       try {
         const result = await request(`/admin/teams/${encodeURIComponent(item.id)}`, {expectedRevision:revision,...next});
-        if (!result.team || Number(result.team.revision) <= revision) throw new Error('服务端未返回更新版本，请重新加载列表核实。');
+        if (result.team?.id !== item.id || !Number.isSafeInteger(Number(result.team.revision)) || Number(result.team.revision) <= revision) {
+          throw new Error('服务端未返回更新版本，请重新加载列表核实。');
+        }
         saved = JSON.stringify(next);
         if (form.isConnected) await onSaved(result.team);
       } catch (error) {

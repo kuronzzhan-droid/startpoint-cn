@@ -321,3 +321,14 @@ test('authorized admin cards show valid private codes while public readonly stil
   assert.equal(x.window.WFCommunityGameCodes.readonly(privateRecord,{el}),null);
   assert.equal(privateRecord.visibility,'private');assert.ok(x.window.WFCommunityGameCodes.adminReadonly(privateRecord,{el}));
 });
+
+test('malformed or unrelated deletion receipts preserve the card and request verification',async()=>{
+  for (const receipt of [{id:'team1'}, {id:'team1',revision:'invalid'}, {id:'team1',revision:4.5}, {id:'other',revision:5}]) {
+    const x=setup((url,init,{item})=>init.method==='DELETE'?response({team:receipt}):
+      response(url.endsWith('/config')?{enabled:true}:url.endsWith('/me')?{id:'trusted',email:'a@b.test'}:{items:[item]}));
+    await x.start();await button(x.host,'删除').click();
+    assert.match(one(x.host,'admin-notice').textContent,/未返回新版本/);assert.ok(button(x.host,'编辑队伍'));
+    assert.equal(x.calls.filter(call=>call.url.includes('/admin/teams?')).length,1);
+    assert.equal(one(x.host,'community-admin').inert,false);
+  }
+});

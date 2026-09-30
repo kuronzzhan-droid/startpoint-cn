@@ -91,7 +91,9 @@
         notice.textContent = restore ? '正在恢复…' : '正在移到回收站…';
         const result = await request(`/admin/teams/${encodeURIComponent(item.id)}`,
           {expectedRevision:Number(item.revision), ...(restore ? {status:'approved'} : {})}, restore ? 'PATCH' : 'DELETE');
-        if (!result.team || Number(result.team.revision) <= Number(item.revision)) throw new Error('服务端未返回新版本，请刷新列表核实。');
+        if (result.team?.id !== item.id || !Number.isSafeInteger(Number(result.team.revision)) || Number(result.team.revision) <= Number(item.revision)) {
+          throw new Error('服务端未返回新版本，请刷新列表核实。');
+        }
         if (!page.isConnected) return;
         await load(false, true);
         notice.textContent = restore ? `已恢复「${item.title}」，如需游戏队伍码请重新公开。` : `已将「${item.title}」移到回收站，原队伍码已停用。`;

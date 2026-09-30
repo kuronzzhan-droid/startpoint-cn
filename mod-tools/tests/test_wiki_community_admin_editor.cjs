@@ -94,3 +94,12 @@ test('save conflicts keep typed changes and dirty close protection',async()=>{
   assert.equal(x.form.isDirty(),true);assert.equal(x.form.canClose(),false);assert.equal(control(x.form,'队伍说明').value,'冲突时保留');
   assert.equal(button(x.form,'保存修改').disabled,true);assert.match(one(x.form,'admin-edit-status').textContent,/其他管理员修改/);
 });
+
+test('malformed or unrelated save receipts never clear edits or report a saved revision',async()=>{
+  for (const receipt of [{id:'plate'}, {id:'plate',revision:'invalid'}, {id:'plate',revision:4.5}, {id:'other',revision:5}]) {
+    const x=setup({request:async()=>({team:receipt})});control(x.form,'队伍说明').value='仍需保存';
+    await x.form.events.submit({preventDefault(){}});
+    assert.equal(x.saved.length,0);assert.equal(x.form.isDirty(),true);assert.equal(button(x.form,'保存修改').disabled,false);
+    assert.match(one(x.form,'admin-edit-status').textContent,/未返回更新版本/);
+  }
+});
