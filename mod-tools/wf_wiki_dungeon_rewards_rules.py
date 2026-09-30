@@ -1,7 +1,6 @@
 """Public reward projection of the copied gray runtime's quest settlement rules."""
 from __future__ import annotations
 
-import math
 import re
 
 
@@ -60,7 +59,8 @@ class QuestRewards:
             elif reward.get("type") == 1:
                 pool = self.rare.get(str(reward.get("id")), [])
                 # Runtime uses randomInt(0,100)/100 <= rarity (inclusive), then uniform pool choice.
-                chance = min(100, max(0, math.floor(float(reward.get("rarity", 0)) * 100) + 1)) / 100
+                rarity = float(reward.get("rarity", 0))
+                chance = sum(rarity >= draw / 100 for draw in range(100)) / 100
                 if quest_id == "1020004" and group_id == "209990" and reward.get("id") == 3099900:
                     chance = 0.01
                 for entry in pool:

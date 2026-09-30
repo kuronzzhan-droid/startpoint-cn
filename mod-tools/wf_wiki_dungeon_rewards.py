@@ -67,13 +67,15 @@ def build_payload(assets, wiki, catalog, mapping, boss_links=None, gray_source=N
             if kind == "rush" and config and quest_id != "700100099":
                 quest["drops"] += rogue_round(names, config, record.get("rushEventRound", 0))
             entry["quests"].append(quest)
-        if key.startswith("event-rush-"):
+        # Fantasy's native folder row mirrors the mode15 non-rescue completion
+        # grant. Showing both would incorrectly imply two separate grants.
+        if key.startswith("event-rush-") and key != "event-rush-700098":
             event_id = key.removeprefix("event-rush-")
             entry["quests"] += folder_rewards(names, assets, event_id, rogue.get(event_id, {}))
-        if not entry["quests"]:
-            entry["notes"].append("当前灰服快照中尚未对应此入口的奖励资料。")
         entry["quests"] += score_rewards(assets, names, key, mapping.get(key, []))
         entry["quests"] += special.get(key, [])
+        if not entry["quests"]:
+            entry["notes"].append("当前灰服快照中尚未对应此入口的奖励资料。")
         if key in ("event-rush-700098", "event-advent-300098"):
             entry["notes"].append("幻想奖励按灰服已安装模块配置展示；运行环境可能停用或替换该模块，游戏开放状态未实测。")
         dungeons[key] = entry

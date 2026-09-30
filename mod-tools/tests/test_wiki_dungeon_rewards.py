@@ -5,10 +5,12 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from wf_wiki_dungeon_rewards_mapping import boss_shop_links
+from wf_wiki_dungeon_rewards import build_payload
 from wf_wiki_dungeon_rewards_rules import QuestRewards, folder_rewards, rogue_round
 from wf_wiki_dungeon_rewards_schema import PREFIX, read_payload, validate_payload
 from wf_wiki_dungeon_rewards_shops import build_shops, project_product
@@ -26,6 +28,9 @@ class Assets:
 
     def merged(self, base, extra):
         return {**self.get(base), **self.get(extra)}
+
+    def rogue(self):
+        return {}
 
 
 def fixture_names(assets=None):
@@ -112,6 +117,11 @@ class RewardRulesTests(unittest.TestCase):
         row = self.rules.regular("boss", "1", {"scoreRewardGroupId": 7}, "Boss")
         self.assertIn("2%", row["drops"][0]["probabilityText"])
 
+    def test_rare_probability_does_not_round_down_float_boundary(self):
+        self.rules.score["7"][0]["rarity"] = 0.29
+        row = self.rules.regular("boss", "1", {"scoreRewardGroupId": 7}, "Boss")
+        self.assertIn("30%", row["drops"][0]["probabilityText"])
+
     def test_boss_profile_exact_rare_one_percent(self):
         self.rules.score["209990"] = [{"type": 1, "id": 3099900, "rarity": 0.01},
                                      {"type": 0, "reward_type": 0, "id": 40193, "count": 99}]
@@ -177,6 +187,17 @@ class RewardRulesTests(unittest.TestCase):
         source += 'export const MODE15_SOLO_FIXED_REWARDS: Record<number, unknown> = {\n'
         source += ''.join(f'    {stage}: itemSet(ELEMENT_TIER_1, {stage}),\n' for stage in stages) + '};'
         self.assertEqual(fantasy_schedule(source)[14], [(1, 14), (5, 14)])
+
+    def test_fantasy_native_folder_mirror_is_not_double_counted(self):
+        key = "event-rush-700098"
+        self.assets.data["rush_event_quest_folder.json"] = {"700098": {"1": [{"type": 0, "id": 1, "count": 1}]}}
+        special = {"name": "完整通关", "difficulty": "", "firstClear": [], "sPlus": [],
+                   "drops": [self.names.reward("item", 1)], "notes": []}
+        with patch("wf_wiki_dungeon_rewards.special_mode_rewards", return_value={key: [special]}):
+            data, _ = build_payload(self.assets, {"equipment": [], "characters": []},
+                {"items": [{"id": key, "title": "幻想连战"}]}, {}, gray_source=Path("fixture"))
+        self.assertEqual(len(data["dungeons"][key]["quests"]), 1)
+        self.assertFalse(any("尚未对应" in note for note in data["dungeons"][key]["notes"]))
 
     def test_score_thresholds_grouped_per_quest(self):
         self.assets.data["score_attack_border_reward.json"] = {"1_2": [
