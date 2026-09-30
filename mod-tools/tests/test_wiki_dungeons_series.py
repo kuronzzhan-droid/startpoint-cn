@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import sys
 import unittest
+from unittest.mock import Mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -65,11 +66,53 @@ class SeriesTests(unittest.TestCase):
     def test_optional_series_fields_must_be_valid_pair(self):
         series.validate_series({})
         series.validate_series({"seriesId": "series-gauntlets", "variantLabel": "普通深渊"})
+        series.validate_series({"seriesId": "series-gauntlets", "variantLabel": "深渊连战EX"})
         for fields in ({"seriesId": "series-machina"}, {"variantLabel": "火"},
                        {"seriesId": "series-gauntlets", "variantLabel": "深渊 EX"},
                        {"seriesId": "series-spirit-beasts", "variantLabel": "无属性"}):
             with self.subTest(fields=fields), self.assertRaises(ValueError):
                 series.validate_series(fields)
+
+    def test_ex_requires_its_own_real_master_row_and_keeps_its_own_quests(self):
+        class Source:
+            def prefetch(self, paths):
+                pass
+
+            def table(self, path):
+                if path == schema.event_table("rush"):
+                    return {"700099": "mod_rogue_gauntlet,深渊连战", "700100": "fixture_ex,深渊连战EX"}
+                if path == schema.quest_table("rush"):
+                    row = [""] * 103
+                    row[0], row[4], row[95], row[96] = "700100001", "EX第一战", "80", "2"
+                    return {"700099": {"99": "700099099,2,0,,普通无尽"},
+                            "700100": {"1": ",".join(row), "99": "700100099,2,0,,EX无尽"}}
+                if path == schema.RANK_TABLE:
+                    return {"2": "middle,中级,80,89"}
+                return {}
+
+        normal, ex = exporter.build_items(Source())
+        self.assertEqual(ex["id"], "event-rush-700100")
+        self.assertEqual(ex["category"], "模式")
+        self.assertEqual(ex["variantLabel"], "深渊连战EX")
+        self.assertEqual([row["name"] for row in ex["quests"]], ["EX第一战", "EX无尽"])
+        self.assertTrue(all(row["difficulty"] == "" for row in ex["quests"]))
+        self.assertEqual([row["name"] for row in normal["quests"]], ["普通无尽"])
+
+    def test_verified_mode_label_requires_both_actual_overlay_tables_and_keeps_private_audit(self):
+        records = {logical: {"origin": "gray-snapshot", "patchVersion": "1.4.115", "archiveSha256": "a" * 64}
+                   for logical in (schema.event_table("rush"), schema.quest_table("rush"))}
+        source = Mock(records=records)
+        source.source.return_value = {"label": "混合快照", "status": "mixed-snapshot", "checkedAt": "2026-09-30"}
+        draft = exporter.base_item("event-rush-700100", "深渊连战EX", "模式", "", [], list(records), [], [], [])
+        audit = {"total": 31, "matched": 0, "sameName": 0, "differentName": 0}
+        draft["_questCheck"] = audit
+        item = exporter.render_catalog(source, Mock(), [draft])["items"][0]
+        self.assertEqual(item["source"]["label"], "灰服当前补丁已核对；游戏内开放状态未实测")
+        self.assertNotIn("questLookup", item["source"])
+        self.assertEqual(draft["_questCheck"], audit)
+        self.assertFalse(series.verified_gauntlet_tables(source, "event-advent-300098"))
+        del records[schema.quest_table("rush")]["archiveSha256"]
+        self.assertFalse(series.verified_gauntlet_tables(source, "event-rush-700100"))
 
 
 if __name__ == "__main__":

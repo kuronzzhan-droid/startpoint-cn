@@ -3,13 +3,13 @@ from __future__ import annotations
 
 import re
 
-from wf_wiki_dungeons_schema import cell, event_table
+from wf_wiki_dungeons_schema import cell, event_table, quest_table
 
 
 ELEMENT_LABELS = {"fire": "火", "water": "水", "thunder": "雷", "wind": "风",
                   "storm": "风", "light": "光", "dark": "暗", "another": "无属性"}
 SERIES_VARIANTS = {
-    "series-gauntlets": ("幻想连战", "普通深渊"),
+    "series-gauntlets": ("幻想连战", "普通深渊", "深渊连战EX"),
     "series-machina": ("火", "水", "雷", "风", "光", "暗", "无属性"),
     "series-waste-dragons": ("火", "水", "雷", "风", "光", "暗"),
     "series-spirit-beasts": ("火", "水", "雷", "风", "光", "暗"),
@@ -18,6 +18,7 @@ FAMILIES = {"steam_robot": "series-machina", "discarded_dragon": "series-waste-d
             "spirit_beast": "series-spirit-beasts"}
 GAUNTLET_ENTRIES = {
     ("rush", "700098"): "幻想连战", ("rush", "700099"): "普通深渊",
+    ("rush", "700100"): "深渊连战EX",
     ("advent", "300098"): "幻想连战",
 }
 
@@ -74,3 +75,15 @@ def validate_series(item):
         return
     if item.get("variantLabel") not in SERIES_VARIANTS.get(item.get("seriesId"), ()):
         raise ValueError("副本系列或变体无效")
+
+
+def verified_gauntlet_tables(sources, identifier):
+    """Only actual published master overlays support the stronger source label."""
+    if identifier not in {"event-rush-700098", "event-rush-700099", "event-rush-700100"}:
+        return False
+    for logical in (event_table("rush"), quest_table("rush")):
+        record = sources.records.get(logical, {})
+        if (record.get("origin") not in ("gray", "gray-snapshot") or not record.get("patchVersion")
+                or not re.fullmatch(r"[0-9a-f]{64}", record.get("archiveSha256", ""))):
+            return False
+    return True

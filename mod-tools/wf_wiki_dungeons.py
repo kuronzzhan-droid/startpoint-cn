@@ -17,7 +17,9 @@ from PIL import Image
 import wf_assets
 import wf_mod_tool as core
 from wf_wiki_dungeons_sources import DungeonSources, checksum
-from wf_wiki_dungeons_series import boss_series, correct_gauntlet_images, event_series, validate_series
+from wf_wiki_dungeons_series import (
+    boss_series, correct_gauntlet_images, event_series, validate_series, verified_gauntlet_tables,
+)
 from wf_wiki_dungeons_schema import (
     BOSS_QUEST, EVENTS, MODES, NODE_TABLE, RANK_TABLE, cell, clean_text,
     event_table, image_paths, leaf_rows, quest_details, quest_table, table_paths,
@@ -112,6 +114,10 @@ def build_items(sources, lookup=None):
             if title in ("", "活动名"):
                 title = details[0]["name"] if details else label
             mode = MODES.get((kind, key))
+            if mode and kind == "rush":
+                # Custom towers borrow native rank slots; these do not describe their actual difficulty.
+                for detail in details:
+                    detail["difficulty"] = ""
             category = "模式" if mode else "活动"
             summary = mode[1] if mode else f"{label} · {len(details)} 项关卡资料"
             logicals = [logical, qlogical, RANK_TABLE]
@@ -180,12 +186,17 @@ def render_catalog(sources, media, drafts):
         banners = choose(draft["_banners"], 1)
         entries = choose(draft["_entries"], 1)
         previews = choose(draft["_previews"], 3)
+        verified = verified_gauntlet_tables(sources, item["id"])
+        logicals = [logical for logical in draft["_sources"] if not (verified and logical == RANK_TABLE)]
         item.update(banner=banners[0] if banners else None, entryImage=entries[0] if entries else None,
-                    previewImages=previews, source=sources.source(draft["_sources"] + used))
+                    previewImages=previews, source=sources.source(logicals + used))
+        if verified:
+            item["source"]["label"] = "灰服当前补丁已核对；游戏内开放状态未实测"
         if "_questCheck" in draft:
             audit = draft["_questCheck"]
-            item["source"]["questLookup"] = audit
-            item["source"]["label"] += f"；灰服后台可对应 {audit['matched']}/{audit['total']} 项关卡"
+            if not verified or audit["matched"]:
+                item["source"]["questLookup"] = audit
+                item["source"]["label"] += f"；灰服后台可对应 {audit['matched']}/{audit['total']} 项关卡"
         items.append(item)
     return {"schemaVersion": 1, "source": sources.source(sources.records), "items": items}
 
