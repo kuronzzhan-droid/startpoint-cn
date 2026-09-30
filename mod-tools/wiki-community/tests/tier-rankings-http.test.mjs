@@ -43,8 +43,8 @@ test('Turnstile is required, action-specific and single-use; existing character 
   const rating = await app.call('/ratings/characters/c0', {body: {score: 0, turnstileToken: await token(app, 'rate_character')}});
   assert.equal(rating.status, 200); assert.equal(rating.json.average, 0);
   const before = (await app.call(path)).json.rankings;
-  assert.deepEqual(before.placement, [{id: 'c0', average: 5, voters: 1, rankScore: 20 / 6, row: 'between1'}]);
-  assert.deepEqual(before.rating, [{id: 'c0', average: 0, voters: 1, rankScore: 12.5 / 6, row: 'tier3'}]);
+  assert.deepEqual(before.placement, [{id: 'c0', average: 5, voters: 1, rankScore: 20 / 6, row: 'provisional'}]);
+  assert.deepEqual(before.rating, [{id: 'c0', average: 0, voters: 1, rankScore: 12.5 / 6, row: 'provisional'}]);
   app.now = Date.parse('2026-09-29T16:00:00Z'); assert.equal((await submit(app, {})).json.rankedCharacters, 0);
   const summary = (await app.call(path)).json.rankings;
   assert.deepEqual(summary.placement, []); assert.deepEqual(summary.rating, before.rating);

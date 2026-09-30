@@ -2,17 +2,15 @@ import {fail} from './model.mjs';
 import {readJSON, challenge, rateLimit} from './security.mjs';
 import {listCharacterRatings} from './character-ratings.mjs';
 import rankingScore from '../wiki/rating-score.js';
-import {ROW_SCORES, TIER_CHALLENGE, validateTierRows, tierRankingContext, readTierRanking,
+import {TIER_CHALLENGE, validateTierRows, tierRankingContext, readTierRanking,
   recordTierRanking, listTierPlacements} from './tier-ranking-store.mjs';
 
 export async function listTierRankings(db, catalog) {
   const [placements, ratings] = await Promise.all([
-    listTierPlacements(db, catalog, {includeRankScore: true}), listCharacterRatings(db, catalog),
+    listTierPlacements(db, catalog, {includeRankScore: true, includeTierRow: true}),
+    listCharacterRatings(db, catalog, {includeTierRow: true}),
   ]);
-  const rowKeys = Object.keys(ROW_SCORES);
-  const board = items => items.map(item => ({...item,
-    row: rowKeys[Math.max(0, Math.min(8, Math.round((5 - item.rankScore) * 2)))]}))
-    .sort((a, b) => rankingScore.compare(a, b));
+  const board = items => items.sort((a, b) => rankingScore.compare(a, b));
   return {rankings: {placement: board(placements), rating: board(ratings.items)}, formula: rankingScore.FORMULA};
 }
 export async function tierRankingsRoute(path, request, env, catalog, identity, now, development, fetchImpl) {

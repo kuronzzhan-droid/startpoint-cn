@@ -63,7 +63,7 @@ export async function recordTierRanking(db, catalog, visitorId, context, value, 
   if (!results[1].meta.changes) fail(409, 'already_ranked', '今天你或同一网络已提交排行，请明天再来。', result);
   return result;
 }
-export async function listTierPlacements(db, catalog, {includeRankScore = false} = {}) {
+export async function listTierPlacements(db, catalog, {includeRankScore = false, includeTierRow = false} = {}) {
   // Store one replaceable document per visitor so a full-board update is one atomic write.
   const score = `CASE tier.key ${Object.entries(ROW_SCORES).map(([key, value]) => `WHEN '${key}' THEN ${value}`).join(' ')} END`;
   const results = (await db.prepare(`SELECT id,AVG(score) AS average,COUNT(*) AS voters FROM (
@@ -75,5 +75,6 @@ export async function listTierPlacements(db, catalog, {includeRankScore = false}
     ) GROUP BY id`).all()).results;
   return results.filter((item) => Object.hasOwn(catalog.characters, item.id))
     .map((item) => ({id: item.id, average: Math.round(item.average * 100) / 100, voters: item.voters,
-      ...(includeRankScore ? {rankScore: rankingScore.score(item.average, item.voters, 'placement')} : {})}));
+      ...(includeRankScore ? {rankScore: rankingScore.score(item.average, item.voters, 'placement')} : {}),
+      ...(includeTierRow ? {row: rankingScore.tierRow(item.average, item.voters)} : {})}));
 }

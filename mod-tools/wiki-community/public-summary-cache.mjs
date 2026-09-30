@@ -5,7 +5,7 @@ const pendingByCache = new WeakMap();
 export async function publicSummary(request, load, cache = globalThis.caches?.default) {
   const url = new URL(request.url), path = url.pathname.replace(/\/$/, '');
   if (!cache || request.method !== 'GET' || url.protocol !== 'https:' || !PATHS.has(path)) return load();
-  const key = new Request(`${url.origin}/__wiki_summary_cache/v2${path}`);
+  const key = new Request(`${url.origin}/__wiki_summary_cache/v3${path}`);
   try {
     const found = await cache.match(key);
     if (found?.ok) return await found.json();

@@ -28,13 +28,14 @@ export async function readRating(db, id, visitorId, context) {
     rankScore: rankingScore.score(row.average, row.voters),
     myScore: row.my_score ?? null, ratedToday: Boolean(row.my_day >= context.day || row.ip_claimed), nextVoteAt: context.nextVoteAt};
 }
-export async function listCharacterRatings(db, catalog) {
+export async function listCharacterRatings(db, catalog, {includeTierRow = false} = {}) {
   const rows = (await db.prepare(`SELECT character_id AS id,AVG(score) AS average,COUNT(*) AS voters
     FROM community_character_ratings WHERE typeof(score)='integer' AND score BETWEEN 0 AND 5
     GROUP BY character_id ORDER BY character_id`).all()).results;
   return {items: rows.filter((row) => Object.hasOwn(catalog.characters, row.id))
     .map((row) => ({id: row.id, average: Math.round(row.average * 100) / 100, voters: row.voters,
-      rankScore: rankingScore.score(row.average, row.voters)}))};
+      rankScore: rankingScore.score(row.average, row.voters),
+      ...(includeTierRow ? {row: rankingScore.tierRow(row.average, row.voters)} : {})}))};
 }
 export async function recordRating(db, id, visitorId, context, score, now) {
   validateScore(score);

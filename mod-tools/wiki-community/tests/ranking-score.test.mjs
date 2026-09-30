@@ -40,4 +40,25 @@ test('the same scoring helper loads as a browser script without CommonJS', async
   assert.ok(exported, 'browser scoring helper must be exposed');
   assert.equal(exported.score(5, 1), ranking.score(5, 1));
   assert.equal(exported.score(5, 1, 'placement'), ranking.score(5, 1, 'placement'));
+  assert.equal(exported.tierRow(5, 3), 'tier0');
+  assert.equal(exported.tierRow(5, 2), 'provisional');
+});
+
+test('tiers use real averages only after three votes, without forcing a populated top or bottom', () => {
+  for (const voters of [1, 2]) for (const average of [0, 1, 2.5, 3, 5]) {
+    assert.equal(ranking.tierRow(average, voters), 'provisional');
+  }
+  assert.equal(ranking.tierRow(5, 0), null);
+  assert.equal(ranking.tierRow(null, 3), null);
+  assert.equal(ranking.tierRow(5, 3), 'tier0');
+  assert.equal(ranking.tierRow(1, 3), 'tier4');
+  assert.equal(ranking.tierRow(0, 3), 'tier4');
+  ranking.ROW_KEYS.forEach((row, index) => assert.equal(ranking.tierRow(5 - index / 2, 3), row));
+  assert.equal(ranking.tierRow(4.751, 3), 'tier0');
+  assert.equal(ranking.tierRow(4.75, 3), 'between0');
+  assert.equal(ranking.tierRow(4.749, 3), 'between0');
+  assert.equal(ranking.tierRow(1.251, 3), 'between3');
+  assert.equal(ranking.tierRow(1.25, 3), 'tier4');
+  assert.equal(ranking.tierRow(1.249, 3), 'tier4');
+  assert.equal(ranking.tierRow(3, 999), 'tier2');
 });
