@@ -41,6 +41,17 @@ test('missing dungeon rows or empty reward sections say uncollected without asse
   x.rewards('boss-a');const quest=x.find('.reward-quest');quest.open=true;await quest.fire('toggle');
   assert.ok(x.host.textContent.includes('奖励明细尚未收录'));assert.ok(x.host.textContent.includes('对应兑换商店资料尚未收录'));
 });
+test('empty reward rows with an explicit explanation show the explanation without an uncollected warning',async()=>{
+  const explanation='无尽入口不结算常规关卡、首通、SS或每轮掉落奖励';
+  for (const noteValues of [[explanation],['', '  ', null]]) {
+    const x=env();x.data.rewards.dungeons['boss-a'].quests=[{name:'无尽入口',drops:[],firstClear:[],sPlus:[],notes:noteValues}];
+    x.rewards('boss-a');const quest=x.find('.reward-quest');quest.open=true;await quest.fire('toggle');
+    const body=quest.querySelector('.reward-quest-body');
+    assert.equal(body.textContent.includes(explanation),noteValues.includes(explanation));
+    assert.equal(body.textContent.includes('奖励明细尚未收录'),!noteValues.includes(explanation));
+    assert.equal(body.querySelectorAll('.reward-card').length,0);
+  }
+});
 test('reward text is literal, unknown assets are not linked, and only trusted local weapon icons load',()=>{
   const x=env(),R=x.window.WFWikiRewardView;x.data.equipment[0].icon='https://evil.test/sword.png';
   x.host.append(R.rewardList(x.ui,[{...drop,name:'<img onerror=alert(1)>',amountText:'<b>100</b>'},

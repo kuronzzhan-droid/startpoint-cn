@@ -59,8 +59,9 @@
           if (!list(quest[key]).length) continue;
           body.append(el('h3', '', title), rewardList(ui, quest[key], lookup)); count++;
         }
-        if (!count) body.append(el('p', 'muted', '此关卡的奖励明细尚未收录。'));
-        const detailNotes = notes(ui, quest.notes); if (detailNotes) body.append(detailNotes);
+        const detailNotes = notes(ui, quest.notes);
+        if (!count && !detailNotes) body.append(el('p', 'muted', '此关卡的奖励明细尚未收录。'));
+        if (detailNotes) body.append(detailNotes);
         fold.append(body);
       }); panel.append(fold);
     }
