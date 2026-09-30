@@ -14,6 +14,8 @@ import {communityStats, presenceRoute} from './community-stats.mjs';
 import {characterViewsRoute} from './character-views.mjs';
 import dungeonCatalog from './dungeon-catalog.mjs';
 import {dungeonRoute} from './dungeon-routes.mjs';
+import {publicSummary} from './public-summary-cache.mjs';
+import {quotaFailure} from './database-availability.mjs';
 
 function response(value, status = 200, headers = {}) {
   return Response.json(value, {status, headers: {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers}});
@@ -42,15 +44,15 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
         return await authRoute(path, request, env, now, development, fetchImpl);
       if (path === '/stats') {
         if (request.method !== 'GET') fail(405, 'method_not_allowed', '参与及在线人数只支持 GET 查询。');
-        return response(await communityStats(env.COMMUNITY_DB, trustedCatalog, now));
+        return response(await publicSummary(request, () => communityStats(env.COMMUNITY_DB, trustedCatalog, now)));
       }
       if (path === '/presence') return response(await presenceRoute(request, env, trustedCatalog, now, development));
       if (path.startsWith('/characters/')) return response(await characterViewsRoute(path, request, env, trustedCatalog, now, development));
       // Anonymous summaries must not mint a late cookie that replaces a rating visitor's identity.
       if (request.method === 'GET' && path === '/ratings/characters')
-        return response(await listCharacterRatings(env.COMMUNITY_DB, trustedCatalog));
+        return response(await publicSummary(request, () => listCharacterRatings(env.COMMUNITY_DB, trustedCatalog)));
       if (request.method === 'GET' && path === '/tier-rankings')
-        return response(await listTierRankings(env.COMMUNITY_DB, trustedCatalog));
+        return response(await publicSummary(request, () => listTierRankings(env.COMMUNITY_DB, trustedCatalog)));
       // Only identity-dependent endpoints may initialize a visitor. A late public read must not
       // replace a cookie established by a concurrent rating/like request or sign unrelated reads.
       const visitorHeaders = async () => {
@@ -120,6 +122,8 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
       if (error instanceof ApiError) return response({error: error.code, message: error.message, ...error.extra}, error.status,
         {...(identity?.cookie ? {'Set-Cookie': identity.cookie} : {}), ...(error.status === 429 ? {'Retry-After': String(error.extra.retryAfter)} : {})});
       // Do not return SQLite statements, secrets, or raw exception text to visitors.
+      const quota = quotaFailure(error, nowFn());
+      if (quota) return response(quota, 503, {'Retry-After':String(quota.retryAfter)});
       return response({error: 'service_unavailable', message: '社区服务暂时不可用，请稍后重试。'}, 503);
     }
   };
