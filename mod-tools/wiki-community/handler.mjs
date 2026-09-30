@@ -16,6 +16,7 @@ import dungeonCatalog from './dungeon-catalog.mjs';
 import {dungeonRoute} from './dungeon-routes.mjs';
 import {publicSummary} from './public-summary-cache.mjs';
 import {quotaFailure} from './database-availability.mjs';
+import {createStatisticsAvailability} from './statistics-availability.mjs';
 
 function response(value, status = 200, headers = {}) {
   return Response.json(value, {status, headers: {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers}});
@@ -23,6 +24,7 @@ function response(value, status = 200, headers = {}) {
 export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
   const nowFn = options.now || Date.now, fetchImpl = options.fetch || fetch;
   const dungeons = options.dungeons || trustedCatalog.dungeons || dungeonCatalog;
+  const statistics = createStatisticsAvailability();
   return async function handle(request, env) {
     let identity;
     try {
@@ -44,9 +46,11 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
         return await authRoute(path, request, env, now, development, fetchImpl);
       if (path === '/stats') {
         if (request.method !== 'GET') fail(405, 'method_not_allowed', '参与及在线人数只支持 GET 查询。');
-        return response(await publicSummary(request, () => communityStats(env.COMMUNITY_DB, trustedCatalog, now)));
+        return response(await publicSummary(request, () => statistics(request, env.COMMUNITY_DB, now,
+          () => communityStats(env.COMMUNITY_DB, trustedCatalog, now), env.COMMUNITY_STATS_CACHE_NAMESPACE)));
       }
-      if (path === '/presence') return response(await presenceRoute(request, env, trustedCatalog, now, development));
+      if (path === '/presence') return response(await statistics(request, env.COMMUNITY_DB, now,
+        () => presenceRoute(request, env, trustedCatalog, now, development), env.COMMUNITY_STATS_CACHE_NAMESPACE));
       if (path.startsWith('/characters/')) return response(await characterViewsRoute(path, request, env, trustedCatalog, now, development));
       // Anonymous summaries must not mint a late cookie that replaces a rating visitor's identity.
       if (request.method === 'GET' && path === '/ratings/characters')
@@ -120,7 +124,8 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
       fail(404, 'not_found', '没有这个社区接口。');
     } catch (error) {
       if (error instanceof ApiError) return response({error: error.code, message: error.message, ...error.extra}, error.status,
-        {...(identity?.cookie ? {'Set-Cookie': identity.cookie} : {}), ...(error.status === 429 ? {'Retry-After': String(error.extra.retryAfter)} : {})});
+        {...(identity?.cookie ? {'Set-Cookie': identity.cookie} : {}),
+          ...([429,503].includes(error.status) && error.extra.retryAfter ? {'Retry-After': String(error.extra.retryAfter)} : {})});
       // Do not return SQLite statements, secrets, or raw exception text to visitors.
       const quota = quotaFailure(error, nowFn());
       if (quota) return response(quota, 503, {'Retry-After':String(quota.retryAfter)});

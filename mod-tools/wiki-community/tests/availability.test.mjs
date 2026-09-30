@@ -11,11 +11,11 @@ test('D1 daily quota failures expose a safe reason, reset time and bounded retry
       `Your account has exceeded D1's free tier daily row ${kind} limit. Secret SQL should not appear.`)});}};
     const response = await createCommunityHandler(fixtureCatalog, {now:()=>now})(
       new Request('https://wiki.example/api/community/stats'), envFor(db));
-    assert.equal(response.status,503); assert.equal(response.headers.get('retry-after'),'300');
+    assert.equal(response.status,503); assert.equal(response.headers.get('retry-after'),'54000');
     const body = await response.json();
     assert.equal(body.error,'database_quota_exceeded');
     assert.equal(body.resetAt,'2026-10-01T00:00:00.000Z');
-    assert.equal(body.retryAfter,300); assert.doesNotMatch(JSON.stringify(body),/Secret SQL|D1_ERROR/);
+    assert.equal(body.retryAfter,54000); assert.doesNotMatch(JSON.stringify(body),/Secret SQL|D1_ERROR/);
   }
 });
 
@@ -23,7 +23,7 @@ test('unknown failures remain generic and do not leak SQL or secrets', async () 
   const db={prepare(){throw new Error('SELECT password_hash FROM community_users secret');}};
   const response=await createCommunityHandler(fixtureCatalog)(new Request('https://wiki.example/api/community/stats'),envFor(db));
   assert.equal(response.status,503);
-  assert.deepEqual(await response.json(),{error:'service_unavailable',message:'社区服务暂时不可用，请稍后重试。'});
+  assert.deepEqual(await response.json(),{error:'statistics_paused',message:'在线与参与人数统计暂时暂停，稍后自动恢复；已加载的图鉴资料仍可浏览。',retryAfter:300});
 });
 
 function cacheFixture() {
