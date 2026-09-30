@@ -141,6 +141,15 @@ test('a swipe suppresses its synthesized click, allows keyboard activation and d
   const first = setup(); first.swipe(first.nav.children[0], [100, 100], [240, 100]); assert.equal(first.window.location.hash, '');
   const last = setup('tier-list'); last.swipe(last.nav.children[5]); assert.equal(last.window.location.hash, '#tier-list');
 });
+test('a new tap after swiping is not swallowed by the previous swipe click guard', () => {
+  const x = setup(); x.swipe(); const target = new Node('button'); x.main.append(target);
+  x.fire('touchstart', target, [x.point(150, 200)]); x.fire('touchend', target, [x.point(150, 200)]);
+  const click = x.fire('click', target, [], {detail: 1}); assert.equal(click.prevented, false);
+  assert.equal(x.window.location.hash, '#team');
+  const hybrid = setup(); hybrid.swipe();
+  assert.equal(hybrid.fire('click', hybrid.content, [], {detail: 1, sourceCapabilities: {firesTouchEvents: false}}).prevented, false);
+  assert.equal(hybrid.fire('click', hybrid.content, [], {detail: 1, sourceCapabilities: {firesTouchEvents: true}}).prevented, true);
+});
 test('route or viewport changes cancel in-progress swipes without disturbing later navigation', () => {
   const x = setup(); x.fire('touchstart', x.content, [x.point(240, 100)]); x.window.location.hash = '#community/admin'; x.changes.hashchange();
   x.fire('touchend', x.content, [x.point(100, 100)]); assert.equal(x.window.location.hash, '#community/admin');

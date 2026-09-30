@@ -33,7 +33,8 @@
     header?.classList.toggle('mobile-nav-ready', mobile.matches && currentIndex() >= 0 && !accounts());
   }
   document.addEventListener('touchstart', event => {
-    gesture = null;
+    // A fresh touch belongs to a new tap, not the preceding swipe's synthetic click.
+    gesture = null; suppressClickUntil = 0;
     if (event.touches.length !== 1 || !available()) return;
     const target = element(event.target), point = event.touches[0], onNav = target && nav.contains(target);
     if (!target || target.closest(interactive)) return;
@@ -71,7 +72,7 @@
   }, {passive: true});
   document.addEventListener('touchcancel', () => {gesture = null;}, {passive: true});
   document.addEventListener('click', event => {
-    if (suppressClickUntil <= Date.now() || event.detail === 0) return;
+    if (suppressClickUntil <= Date.now() || event.detail === 0 || event.sourceCapabilities?.firesTouchEvents === false) return;
     suppressClickUntil = 0; event.preventDefault(); event.stopPropagation();
   }, true);
   // The first router render may finish after the deferred scripts have loaded.
