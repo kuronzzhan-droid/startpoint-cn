@@ -64,6 +64,52 @@ test('focus storms within the interval do not send extra requests',async()=>{
   assert.equal(x.calls.length,2);assert.equal(x.timers.size,1);
 });
 
+test('consecutive failures back off to five minutes and a success restores thirty-second polling',async()=>{
+  let failure=true;const x=fixture({request:async()=>{if(failure)throw new Error('unavailable');return stats();}});
+  x.api.start();await tick();
+  for(const delay of [30000,60000,120000,300000,300000]){
+    assert.equal([...x.timers.values()][0].ms,delay);x.advance(delay);await x.runTimer();
+  }
+  failure=false;x.advance(300000);await x.runTimer();
+  assert.equal(x.seen.at(-1).status,'ready');assert.equal([...x.timers.values()][0].ms,30000);
+  failure=true;x.advance(30000);await x.runTimer();assert.equal([...x.timers.values()][0].ms,30000);
+});
+
+test('server retryAfter survives focus, online, visibility, explicit refresh and restart attempts',async()=>{
+  const x=fixture({request:async()=>{throw Object.assign(new Error('raw SQL detail must stay private'),{
+    code:'database_quota_exceeded',retryAfter:300,data:{resetAt:'2026-10-01T00:00:00.000Z'}});}});
+  x.api.start();await tick();assert.equal([...x.timers.values()][0].ms,300000);
+  assert.equal(x.seen.at(-1).errorCode,'database_quota_exceeded');assert.equal(x.seen.at(-1).data,null);
+  assert.equal(JSON.stringify(x.seen).includes('raw SQL'),false);
+  x.advance(30000);
+  for(let i=0;i<10;i++){x.events.get('focus')();x.events.get('online')();x.hide();x.show();await x.api.refresh();}
+  x.api.stop();x.api.start();await tick();assert.equal(x.calls.length,2);assert.equal([...x.timers.values()][0].ms,270000);
+  x.advance(269999);x.events.get('online')();await tick();assert.equal(x.calls.length,2);
+  x.advance(1);x.events.get('focus')();await tick();assert.equal(x.calls.length,4);
+});
+
+test('retryAfter is bounded and invalid hints cannot disable backoff',async()=>{
+  for(const [retryAfter,delay] of [[90,90000],[999999,300000],[-4,30000],['bad',30000],[Infinity,30000]]){
+    const x=fixture({config:async()=>{throw Object.assign(new Error('unavailable'),{retryAfter});}});
+    x.api.start();await tick();assert.equal([...x.timers.values()][0].ms,delay);
+    assert.equal(x.seen.at(-1).data,null);assert.equal(x.seen.at(-1).errorCode,'');x.api.stop();
+  }
+});
+
+test('backoff starts when a slow failure finishes and quota errors preserve the last real count',async()=>{
+  let reject;const y=fixture({request:()=>new Promise((resolve,no)=>reject=no)});y.api.start();await tick();
+  y.advance(60000);reject(new Error('timeout'));await tick();assert.equal([...y.timers.values()][0].ms,30000);
+  const {createApi}=require('../wiki/community-client.js');
+  let failed=false;const client=createApi(async url=>({ok:!failed,status:failed?503:200,json:async()=>failed?
+    {error:'database_quota_exceeded',message:'raw database failure',retryAfter:300}:url.endsWith('/config')?{enabled:true}:stats()}),'https:');
+  const bus={addEventListener(){},removeEventListener(){}};let delay;
+  const api=create({client,protocol:'https:',document:{visibilityState:'visible',...bus},events:bus,now:()=>0,
+    schedule:(fn,ms)=>{delay=ms;return 1;},cancel:()=>{}}),seen=[];
+  api.subscribe(value=>seen.push(value));api.start();await tick();failed=true;await api.refresh();
+  assert.equal(seen.at(-1).data.onlineVisitors,2);assert.equal(seen.at(-1).errorCode,'database_quota_exceeded');
+  assert.equal(delay,300000);assert.equal(JSON.stringify(seen).includes('raw database'),false);api.stop();y.api.stop();
+});
+
 test('expired visitor cookies recover through fresh config, with at most one heartbeat retry',async()=>{
   const {createApi}=require('../wiki/community-client.js');
   let cookie=false,blocked=false,configs=0,presences=0;
