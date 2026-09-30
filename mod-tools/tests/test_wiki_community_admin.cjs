@@ -38,9 +38,9 @@ function setup(handler,options={}) {
   const fetcher=async(url,init)=>{calls.push({url,...init}); return handler ? handler(url,init,{data,item}) :
     response(url.endsWith('/config')?{enabled:true}:url.endsWith('/me')?{id:'trusted',email:'admin@example.test',role:options.role||'editor'}:{items:[item],nextCursor:''});};
   const window={WFCommunity:community,location:{protocol:options.protocol||'https:',hostname:options.hostname||'wiki.example'},fetch:fetcher,
-    WFWikiData:{loadEquipment:async()=>data.equipment}};
+    WFWikiData:{loadEquipment:async()=>data.equipment}, confirm:options.confirm || (()=>true)};
   const context={window,AbortController,setTimeout,clearTimeout,URLSearchParams};
-  for (const file of ['community-game-codes.js','community-admin-editor.js']) vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki',file),'utf8'),context);
+  for (const file of ['community-game-codes.js','community-admin-cards.js','community-admin-editor.js']) vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki',file),'utf8'),context);
   vm.runInNewContext(source,context);
   return {host,window,data,item,calls,start:()=>window.renderWikiCommunityAdmin(host,data,{el})};
 }
@@ -75,7 +75,7 @@ test('local development login requires an actual cookie endpoint response before
 });
 test('editing uses bounded searchable candidates and preserves original data until saving',async()=>{
   const x=setup(); await x.start(); const before=JSON.stringify(x.data);
-  await button(x.host,'编辑 / 管理队伍码').click();
+  await button(x.host,'编辑队伍').click();
   const form=one(x.host,'admin-edit-form');
   assert.equal(form.all((n)=>n.className==='admin-slot').length,12);
   assert.equal(select(form,'主位 1').children.length,61);
@@ -89,7 +89,7 @@ test('editing uses bounded searchable candidates and preserves original data unt
 test('revision conflicts preserve entered values and lock repeated saves until explicit reload',async()=>{
   const x=setup((url,init,{item})=>init.method==='PATCH'?response({error:'edit_conflict'},409):
     response(url.endsWith('/config')?{enabled:true}:url.endsWith('/me')?{id:'a',email:'a@b.test'}:{items:[item],nextCursor:''}));
-  await x.start(); await button(x.host,'编辑 / 管理队伍码').click(); const form=one(x.host,'admin-edit-form');
+  await x.start(); await button(x.host,'编辑队伍').click(); const form=one(x.host,'admin-edit-form');
   const notes=form.all((n)=>n.tag==='textarea')[0]; notes.value='保留我的输入';
   await form.events.submit({preventDefault(){}});
   assert.match(one(form,'admin-edit-status').textContent,/已被其他管理员修改/);
@@ -105,7 +105,7 @@ test('saving edited slots and hidden state sends the original revision with same
     if(init.method==='PATCH') {saved=JSON.parse(init.body); return response({team:{...item,...saved,revision:5}});}
     return response(url.endsWith('/config')?{enabled:true}:url.endsWith('/me')?{id:'a',email:'a@b.test'}:{items:[item],nextCursor:''});
   });
-  await x.start(); await button(x.host,'编辑 / 管理队伍码').click(); const form=one(x.host,'admin-edit-form');
+  await x.start(); await button(x.host,'编辑队伍').click(); const form=one(x.host,'admin-edit-form');
   select(form,'主位 1').value='c4'; select(form,'主位 1').events.change();
   const meta=one(form,'admin-edit-meta'); meta.all((n)=>n.tag==='select')[1].value='hidden';
   select(form,'配队分类').value='原版毕业队';
@@ -118,7 +118,7 @@ test('saving edited slots and hidden state sends the original revision with same
   assert.match(one(x.host,'admin-notice').textContent,/已保存.*当前版本 5/);
 });
 test('invalid duplicate characters and missing damage selections never reach the write endpoint',async()=>{
-  const x=setup(); await x.start(); await button(x.host,'编辑 / 管理队伍码').click(); const form=one(x.host,'admin-edit-form');
+  const x=setup(); await x.start(); await button(x.host,'编辑队伍').click(); const form=one(x.host,'admin-edit-form');
   select(form,'主位 1').value='c2'; select(form,'主位 1').events.change();
   await form.events.submit({preventDefault(){}}); assert.match(one(form,'admin-edit-status').textContent,/重复/);
   form.all((n)=>n.type==='checkbox').forEach((node)=>{node.checked=false;});
@@ -138,7 +138,7 @@ test('administrators can filter categories and preserve the empty legacy categor
   const x=setup();await x.start();
   const category=select(x.host,'查看配队分类');assert.equal(category.children.length,7);category.value='uncategorized';category.events.change();await new Promise(setImmediate);
   assert.equal(new URL(x.calls.at(-1).url,'https://wiki.example').searchParams.get('category'),'uncategorized');
-  await button(x.host,'编辑 / 管理队伍码').click();assert.equal(select(x.host,'配队分类').value,'');
+  await button(x.host,'编辑队伍').click();assert.equal(select(x.host,'配队分类').value,'');
   assert.equal(select(x.host,'配队分类').children[0].textContent,'未分类（历史队伍）');
   assert.equal(select(x.host,'玩法分区').value,'');assert.equal(select(x.host,'玩法分区').children[0].textContent,'其他');
 });
@@ -149,7 +149,7 @@ test('administrators filter gameplay independently and reject invalid section ed
   const category=select(x.host,'查看配队分类');category.value='玩具盘';category.events.change();await new Promise(setImmediate);
   const params=new URL(x.calls.at(-1).url,'https://wiki.example').searchParams;
   assert.equal(params.get('section'),'general');assert.equal(params.get('category'),'玩具盘');
-  await button(x.host,'编辑 / 管理队伍码').click();select(x.host,'玩法分区').value='not-a-section';
+  await button(x.host,'编辑队伍').click();select(x.host,'玩法分区').value='not-a-section';
   await one(x.host,'admin-edit-form').events.submit({preventDefault(){}});
   assert.match(one(x.host,'admin-edit-status').textContent,/有效的玩法分区/);assert.equal(x.calls.filter((call)=>call.method==='PATCH').length,0);
 });
@@ -160,14 +160,14 @@ test('space and code filters combine, and only station managers can select all p
     assert.equal(scope.children.some((node)=>node.value==='private'),role!=='editor');
     scope.value='mine';scope.events.change();await new Promise(setImmediate);code.value='none';code.events.change();await new Promise(setImmediate);
     const params=new URL(x.calls.at(-1).url,'https://wiki.example').searchParams;assert.equal(params.get('scope'),'mine');assert.equal(params.get('code'),'none');
-    await button(x.host,'编辑 / 管理队伍码').click();assert.ok(select(x.host,'保存位置').children.some((node)=>node.value==='private'));
+    await button(x.host,'编辑队伍').click();assert.ok(select(x.host,'保存位置').children.some((node)=>node.value==='private'));
   }
 });
 
 test('an editor cannot move another creator or legacy public plate into private storage',async()=>{
   for(const createdBy of ['someone-else','']) {
     const x=setup((url,init,{item})=>response(url.endsWith('/config')?{enabled:true}:url.endsWith('/me')?{id:'trusted',email:'admin@example.test',role:'editor'}:{items:[{...item,createdBy}]}));
-    await x.start();await button(x.host,'编辑 / 管理队伍码').click();const form=one(x.host,'admin-edit-form'),visibility=select(form,'保存位置');
+    await x.start();await button(x.host,'编辑队伍').click();const form=one(x.host,'admin-edit-form'),visibility=select(form,'保存位置');
     assert.equal(visibility.children.some((node)=>node.value==='private'),false);visibility.value='private';
     await form.events.submit({preventDefault(){}});assert.match(one(form,'admin-edit-status').textContent,/创建者/);
     assert.equal(x.calls.filter((call)=>call.method==='PATCH').length,0);
@@ -175,7 +175,7 @@ test('an editor cannot move another creator or legacy public plate into private 
 });
 
 test('unsaved normalized form values block code publication for all metadata, damage and twelve slots',async()=>{
-  const x=setup(null,{role:'owner'});await x.start();await button(x.host,'编辑 / 管理队伍码').click();
+  const x=setup(null,{role:'owner'});await x.start();await button(x.host,'编辑队伍').click();
   const form=one(x.host,'admin-edit-form'),make=button(form,'公开队伍码');assert.equal(make.disabled,false);
   const values=[['队伍标题','新标题'],['投稿者署名','新作者'],['队伍说明','新备注'],['属性分类','universal'],['展示状态','hidden'],['配队分类','玩具盘'],['玩法分区','abyss'],['保存位置','private']];
   for(const [label,value] of values) {
@@ -197,12 +197,127 @@ test('saving establishes a new clean revision for explicit publication, while sa
     if(url.endsWith('/game-code')) {posted=JSON.parse(init.body);return response({teamRevision:5,active:true,gameCode:'H4QUDN7W5R22'});}
     return response(url.endsWith('/config')?{enabled:true}:url.endsWith('/me')?{id:'trusted',email:'admin@example.test',role:'editor'}:{items:[saved?{...item,...saved,revision:5}:item]});
   });
-  await x.start();await button(x.host,'编辑 / 管理队伍码').click();let form=one(x.host,'admin-edit-form');
+  await x.start();await button(x.host,'编辑队伍').click();let form=one(x.host,'admin-edit-form');
   select(form,'保存位置').value='private';form.events.change();assert.equal(button(form,'公开队伍码').disabled,true);
   await form.events.submit({preventDefault(){}});assert.equal(saved.visibility,'private');
   form=one(x.host,'admin-edit-form');assert.equal(button(form,'公开队伍码').disabled,false);await button(form,'公开队伍码').click();assert.equal(posted.expectedRevision,5);
   const conflict=setup((url,init,{item})=>init.method==='PATCH'?response({error:'edit_conflict'},409):response(url.endsWith('/config')?{enabled:true}:url.endsWith('/me')?{id:'trusted',email:'admin@example.test'}:{items:[item]}));
-  await conflict.start();await button(conflict.host,'编辑 / 管理队伍码').click();const stale=one(conflict.host,'admin-edit-form');
+  await conflict.start();await button(conflict.host,'编辑队伍').click();const stale=one(conflict.host,'admin-edit-form');
   await stale.events.submit({preventDefault(){}});stale.events.change();assert.equal(button(stale,'公开队伍码').disabled,true);
   await button(stale,'公开队伍码').events.click();assert.equal(conflict.calls.filter((call)=>call.method==='POST').length,0);
+});
+
+test('cloud deletion is explicit, revision protected and keeps a recoverable row',async()=>{
+  let record,deleted;
+  const x=setup((url,init,{item})=>{
+    record ||= {...item};
+    if(init.method==='DELETE') {deleted=JSON.parse(init.body);record={...record,status:'hidden',gameCode:null,revision:5};return response({team:record});}
+    return response(url.endsWith('/config')?{enabled:true}:url.endsWith('/me')?{id:'trusted',email:'a@b.test'}:
+      {items:new URL(url,'https://wiki.test').searchParams.get('status')===record.status?[record]:[]});
+  });
+  await x.start(); await button(x.host,'删除').click();
+  assert.deepEqual(deleted,{expectedRevision:4});assert.match(one(x.host,'admin-notice').textContent,/回收站.*旧?原队伍码已停用/);
+  await button(x.host,'回收站').click();assert.ok(button(x.host,'恢复队伍'));
+  assert.match(x.host.textContent,/原队伍码不可用/);assert.equal(record.status,'hidden');
+});
+
+test('cancelled delete sends nothing; a restore does not publish a game code',async()=>{
+  const cancelled=setup(null,{confirm:()=>false});await cancelled.start();await button(cancelled.host,'删除').click();
+  assert.equal(cancelled.calls.filter(call=>call.method==='DELETE').length,0);
+  let restored;
+  const x=setup((url,init,{item})=>{
+    if(init.method==='PATCH') {restored=JSON.parse(init.body);return response({team:{...item,status:'approved',revision:5}});}
+    return response(url.endsWith('/config')?{enabled:true}:url.endsWith('/me')?{id:'trusted',email:'a@b.test'}:{items:[{...item,status:'hidden'}]});
+  });
+  await x.start();await button(x.host,'恢复队伍').click();
+  assert.deepEqual(restored,{expectedRevision:4,status:'approved'});
+  assert.equal(x.calls.filter(call=>call.method==='POST').length,0);
+  assert.match(one(x.host,'admin-notice').textContent,/已恢复.*重新公开/);
+});
+
+test('search is sent to the API with scope and code filters, never limited to loaded cards',async()=>{
+  const x=setup();await x.start();await button(x.host,'我的空间').click();
+  const input=x.host.all(n=>n.attributes['aria-label']==='搜索已保存队伍')[0];input.value=' 火队%_ ';
+  select(x.host,'队伍码状态').value='none';await button(x.host,'刷新列表').click();
+  const params=new URL(x.calls.at(-1).url,'https://wiki.test').searchParams;
+  assert.equal(params.get('q'),'火队%_');assert.equal(params.get('scope'),'mine');assert.equal(params.get('code'),'none');
+});
+
+test('rejected dirty-editor navigation preserves the form and list version',async()=>{
+  const x=setup(null,{confirm:()=>false});await x.start();await button(x.host,'编辑队伍').click();
+  const form=one(x.host,'admin-edit-form'),notes=form.all(n=>n.tag==='textarea')[0];notes.value='未保存的说明';
+  const calls=x.calls.length;await button(x.host,'刷新列表').click();
+  assert.equal(x.calls.length,calls);assert.equal(form.isConnected,true);assert.equal(notes.value,'未保存的说明');
+});
+
+test('delete conflicts keep the card and tell the administrator to refresh',async()=>{
+  const x=setup((url,init,{item})=>init.method==='DELETE'?response({error:'edit_conflict'},409):
+    response(url.endsWith('/config')?{enabled:true}:url.endsWith('/me')?{id:'trusted',email:'a@b.test'}:{items:[item]}));
+  await x.start();await button(x.host,'删除').click();
+  assert.match(one(x.host,'admin-notice').textContent,/已被其他管理员修改/);assert.ok(button(x.host,'编辑队伍'));
+});
+
+test('pending confirmation and slow deletion block editor, new-team and list switches until completion',async()=>{
+  let confirmAction,completeDelete,loaded=0,imports=0;
+  const x=setup((url,init,{item})=>{
+    if(init.method==='DELETE') return new Promise(resolve=>{completeDelete=()=>resolve(response({team:{...item,status:'hidden',revision:5}}));});
+    if(url.endsWith('/config')) return response({enabled:true});
+    if(url.endsWith('/me')) return response({id:'trusted',email:'a@b.test'});
+    loaded++;return response({items:[item,{...item,id:'team2',title:'另一队伍'}],nextCursor:'more'});
+  });
+  x.window.WFCommunityAdminConfirm={ask:()=>new Promise(resolve=>{confirmAction=resolve;})};
+  x.window.WFTeamImport={load:()=>{imports++;}};
+  await x.start();await button(x.host,'编辑队伍').click();
+  const original=one(x.host,'admin-edit-form'),page=one(x.host,'community-admin');
+  const secondEdit=x.host.all(n=>n.tag==='button'&&n.textContent==='编辑队伍')[1];
+  const newTeam=x.host.all(n=>n.tag==='a'&&n.textContent==='＋ 新建队伍')[0];
+  const home=x.host.all(n=>n.tag==='a'&&n.href==='#community')[0];
+  const pending=button(x.host,'删除').click();
+  async function assertLocked() {
+    const count=x.calls.length;let prevented=0;
+    await secondEdit.click();await button(x.host,'刷新列表').click();await button(x.host,'继续加载 / 重试').click();
+    await button(x.host,'我的空间').click();
+    newTeam.events.click({preventDefault(){prevented++;}});home.events.click({preventDefault(){prevented++;}});
+    assert.equal(one(x.host,'admin-edit-form'),original);assert.equal(original.isConnected,true);
+    assert.equal(x.calls.length,count);assert.equal(prevented,2);assert.equal(imports,0);
+    assert.match(one(x.host,'admin-notice').textContent,/正在处理队伍操作/);
+  }
+  await assertLocked();assert.equal(x.calls.filter(call=>call.method==='DELETE').length,0);
+  confirmAction(true);await new Promise(setImmediate);assert.equal(page.inert,true);
+  await assertLocked();completeDelete();await pending;
+  assert.equal(page.inert,false);assert.equal(page.attributes['aria-busy'],'false');assert.equal(loaded,2);
+  assert.equal(original.isConnected,false);await button(x.host,'编辑队伍').click();assert.ok(one(x.host,'admin-edit-form'));
+});
+
+test('cancelling asynchronous deletion releases navigation without sending a write',async()=>{
+  let confirmAction;const x=setup();
+  x.window.WFCommunityAdminConfirm={ask:()=>new Promise(resolve=>{confirmAction=resolve;})};
+  await x.start();const pending=button(x.host,'删除').click();
+  await button(x.host,'编辑队伍').click();assert.equal(one(x.host,'admin-edit-form'),undefined);
+  confirmAction(false);await pending;
+  assert.equal(x.calls.filter(call=>call.method==='DELETE').length,0);
+  assert.equal(one(x.host,'community-admin').attributes['aria-busy'],'false');
+  await button(x.host,'编辑队伍').click();assert.ok(one(x.host,'admin-edit-form'));
+});
+
+test('returning to the community preserves dirty edits when leaving is declined',async()=>{
+  let accepted=false;const x=setup(null,{confirm:()=>accepted});await x.start();await button(x.host,'编辑队伍').click();
+  const form=one(x.host,'admin-edit-form'),notes=form.all(n=>n.tag==='textarea')[0];notes.value='未保存';
+  const home=x.host.all(n=>n.tag==='a'&&n.href==='#community')[0];let prevented=0;
+  home.events.click({preventDefault(){prevented++;}});assert.equal(prevented,1);assert.equal(form.isConnected,true);assert.equal(notes.value,'未保存');
+  accepted=true;home.events.click({preventDefault(){prevented++;}});assert.equal(prevented,1);
+});
+
+test('authorized admin cards show valid private codes while public readonly still excludes them',async()=>{
+  const code='H4QUDN7W5R22';
+  const x=setup((url,init,{item})=>response(url.endsWith('/config')?{enabled:true}:url.endsWith('/me')?{id:'trusted',email:'a@b.test'}:
+    {items:[{...item,visibility:'private',gameCode:code},{...item,id:'deleted',visibility:'private',status:'hidden',gameCode:code},
+      {...item,id:'invalid',visibility:'private',gameCode:'not-a-code'},{...item,id:'pending',status:'pending',gameCode:code}]}));
+  await x.start();const cards=x.host.all(n=>n.className==='admin-team-row');
+  assert.equal(one(cards[0],'community-game-code-value').value,code);assert.doesNotMatch(cards[0].textContent,/尚未公开/);
+  assert.equal(one(cards[1],'community-game-code-value'),undefined);assert.match(cards[1].textContent,/原队伍码不可用/);
+  assert.equal(one(cards[2],'community-game-code-value'),undefined);assert.equal(one(cards[3],'community-game-code-value'),undefined);
+  const privateRecord={...x.item,visibility:'private',gameCode:code};
+  assert.equal(x.window.WFCommunityGameCodes.readonly(privateRecord,{el}),null);
+  assert.equal(privateRecord.visibility,'private');assert.ok(x.window.WFCommunityGameCodes.adminReadonly(privateRecord,{el}));
 });

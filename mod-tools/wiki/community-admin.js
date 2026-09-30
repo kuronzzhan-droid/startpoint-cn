@@ -28,16 +28,27 @@
     const request = (path, body, method = body ? 'PATCH' : 'GET') => C.client ? C.client.request(path, body, method) : fallback(path, body, method);
     const page = el('section', 'community-admin'), header = el('header', 'admin-header');
     const home = el('a', 'back-button', '‹ 返回配队社区'); home.href = '#community';
-    const create = el('a', 'primary-button', '在编队模拟创建'); create.href = '#team';
-    header.append(el('h1', '', '推荐配队管理'), home, create);
+    home.addEventListener('click', (event) => {if (!allowLeave()) event.preventDefault();});
+    const create = el('a', 'primary-button', '＋ 新建队伍'); create.href = '#team';
+    create.addEventListener('click', (event) => {
+      if (!allowLeave()) {event.preventDefault(); return;}
+      window.WFTeamImport?.load(C.teamCopy(), '新队伍');
+    });
+    header.append(el('h1', '', '队伍管理'), home, create);
     const notice = el('p', 'admin-notice', '正在验证管理员身份…'); notice.setAttribute('role', 'status');
     const account = el('p', 'admin-account'), authHost = el('div', 'admin-auth'), controls = el('div', 'admin-controls');
     const layout = el('div', 'admin-layout'), listHost = el('div', 'admin-list'), editorHost = el('div', 'admin-editor');
     editorHost.hidden = true; layout.append(listHost, editorHost); page.append(header, account, authHost, notice, controls, layout);
     host.replaceChildren(page);
-    let config, identity, serial = 0, nextCursor = '', statusFilter, categoryFilter, sectionFilter, scopeFilter, codeFilter, more;
-    const characters = new Map((data.characters || []).map((c) => [c.id, c]));
-    const statusNames = {approved:'正常', hidden:'已隐藏 / 停用', pending:'未启用'};
+    let config, identity, serial = 0, nextCursor = '', statusFilter, categoryFilter, sectionFilter, scopeFilter, codeFilter, search, more;
+    let currentForm, loading = false, mutating = false, debounce, avatars;
+    const tabs = [];
+    function canSwitch() {
+      if (mutating) notice.textContent = '正在处理队伍操作，请稍候再切换。';
+      return !mutating;
+    }
+    function allowLeave() {return canSwitch() && (!currentForm || !currentForm.isConnected || !currentForm.canClose || currentForm.canClose());}
+    function closeEditor() {currentForm = null; editorHost.replaceChildren(); editorHost.hidden = true; controls.hidden = false;}
     function button(label, action, cls = 'secondary-button') {
       const node = el('button', cls, label); node.type = 'button'; node.addEventListener('click', action); return node;
     }
@@ -50,32 +61,62 @@
       values.forEach(([value, label]) => {const option = el('option', '', label); option.value = value; node.append(option);});
       node.value = current; return node;
     }
-    function edit(item) {
+    function edit(item, bypass = false) {
+      if (!canSwitch()) return;
+      if (!bypass && !allowLeave()) return;
       if (!window.WFCommunityAdminEditor) {notice.textContent = '编辑模块未加载，请刷新页面。'; return;}
       const form = window.WFCommunityAdminEditor.create({item, identity, config, data, ui, request,
-        onClose: () => {editorHost.replaceChildren(); editorHost.hidden = true;}, onReload: () => load(false),
-        onSaved: async (saved) => {await load(false); if (!page.isConnected) return;
-          edit(saved); notice.textContent = `已保存「${saved.title}」，当前版本 ${saved.revision}。`;}});
-      editorHost.replaceChildren(form); editorHost.hidden = false;
+        onClose: () => {if (canSwitch()) closeEditor();}, onReload: () => load(false),
+        onSaved: async (saved) => {await load(false, true); if (!page.isConnected) return;
+          edit(saved, true); notice.textContent = `已保存「${saved.title}」，当前版本 ${saved.revision}。`;}});
+      currentForm = form;
+      editorHost.replaceChildren(form); editorHost.hidden = false; controls.hidden = true;
+      editorHost.scrollIntoView?.({block:'start'});
     }
     function row(item) {
-      const node = el('article', 'admin-team-row');
-      node.append(el('h2', '', item.title), el('p', 'admin-team-meta',
-        `${item.visibility === 'private' ? '私有' : '配队大全'} · ${statusNames[item.status] || item.status} · ${C.sectionLabel(item.section)} · ${C.categoryLabel(item.category)} · 版本 ${item.revision} · ${item.author || '未署名'} · ${C.elementLabel(item.element)}`),
-      el('p', 'admin-team-main', (item.team?.main || []).map((id) => characters.get(id)?.name || '未收录角色').join(' / ')),
-      el('p', 'admin-team-meta', item.gameCode && item.status === 'approved' ? '已有队伍码' : '暂无队伍码'),
-      button('编辑 / 管理队伍码', () => edit(item)));
-      return node;
+      return window.WFCommunityAdminCards.create(item, {data, ui, avatars, onEdit:edit,
+        onDelete: item => mutate(item, false), onRestore: item => mutate(item, true)});
     }
-    async function load(append) {
+    async function mutate(item, restore) {
+      if (mutating || loading || !allowLeave()) return;
+      const question = restore ? `恢复「${item.title}」？\n${item.visibility === 'private' ? '恢复到创建者的个人空间。' : '恢复后会重新显示在配队大全。'}旧队伍码不会恢复，需要重新公开。`
+        : `删除「${item.title}」？\n队伍会移到回收站，可随时恢复；大全和副本推荐中不再展示，已公开的队伍码立即失效。`;
+      const previousNotice = notice.textContent;
+      mutating = true; page.setAttribute('aria-busy','true');
+      try {
+        const confirmed = await (window.WFCommunityAdminConfirm ? window.WFCommunityAdminConfirm.ask(question,{restore}) : Promise.resolve(window.confirm?.(question)));
+        if (!page.isConnected) return;
+        if (!confirmed) {notice.textContent = previousNotice; return;}
+        page.inert = true;
+        notice.textContent = restore ? '正在恢复…' : '正在移到回收站…';
+        const result = await request(`/admin/teams/${encodeURIComponent(item.id)}`,
+          {expectedRevision:Number(item.revision), ...(restore ? {status:'approved'} : {})}, restore ? 'PATCH' : 'DELETE');
+        if (!result.team || Number(result.team.revision) <= Number(item.revision)) throw new Error('服务端未返回新版本，请刷新列表核实。');
+        if (!page.isConnected) return;
+        await load(false, true);
+        notice.textContent = restore ? `已恢复「${item.title}」，如需游戏队伍码请重新公开。` : `已将「${item.title}」移到回收站，原队伍码已停用。`;
+      } catch (error) {
+        if (page.isConnected) notice.textContent = error.code === 'edit_conflict' ? '队伍已被其他管理员修改，请刷新后核对再操作。' : C.message(error);
+      } finally {mutating = false; page.inert = false; page.setAttribute('aria-busy','false');}
+    }
+    function updateTabs() {
+      tabs.forEach(({node,scope,status}) => node.setAttribute('aria-pressed', String(statusFilter.value === status && (status === 'hidden' || scopeFilter.value === scope))));
+    }
+    async function load(append, bypass = false) {
+      if (!bypass && !canSwitch()) return;
+      if (!append && !bypass && !allowLeave()) return;
+      clearTimeout(debounce);
       const ticket = ++serial; more.disabled = true;
-      if (!append) {editorHost.replaceChildren(); editorHost.hidden = true; listHost.replaceChildren(); nextCursor = '';}
+      loading = true;
+      if (!append) {closeEditor(); listHost.replaceChildren(); nextCursor = '';}
+      updateTabs();
       notice.textContent = '正在载入推荐盘…';
       const params = new URLSearchParams({status:statusFilter.value, sort:'latest'});
       if (categoryFilter.value) params.set('category', categoryFilter.value);
       if (sectionFilter.value) params.set('section', sectionFilter.value);
       params.set('scope', scopeFilter.value);
       if (codeFilter.value) params.set('code', codeFilter.value);
+      if (search.value.trim()) params.set('q', search.value.trim());
       if (append && nextCursor) params.set('cursor', nextCursor);
       try {
         const result = await request(`/admin/teams?${params}`);
@@ -83,12 +124,13 @@
         if (!Array.isArray(result.items)) throw new Error('管理员列表格式无效，请重试。');
         result.items.forEach((item) => listHost.append(row(item)));
         nextCursor = result.nextCursor || ''; more.hidden = !nextCursor;
-        notice.textContent = listHost.childElementCount ? '选择队伍编辑，保存后可单独公开队伍码。私有队伍仅本人及站长、副站长可见。' : '当前筛选下没有队伍。';
+        notice.textContent = listHost.childElementCount ? `已显示 ${listHost.childElementCount} 支队伍${nextCursor ? '，还有更多可加载' : ''}。${statusFilter.value === 'hidden' ? '回收站包含以前停用的队伍；恢复不会启用旧码。' : '点击头像或“编辑队伍”修改，删除后可在回收站恢复。'}` : '当前筛选下没有队伍。';
       } catch (error) {
         if (page.isConnected && ticket === serial) {notice.textContent = C.message(error); more.hidden = false;}
-      } finally {if (ticket === serial) more.disabled = false;}
+      } finally {if (ticket === serial) {more.disabled = false; loading = false;}}
     }
     async function start() {
+      clearTimeout(debounce); more?.remove?.(); currentForm = null;
       serial++; account.textContent = ''; controls.replaceChildren(); listHost.replaceChildren(); editorHost.replaceChildren();
       create.hidden = true; controls.hidden = true; layout.hidden = true; notice.textContent = '正在验证管理员身份…';
       try {
@@ -106,7 +148,7 @@
         await window.WFWikiData?.loadEquipment();
         if (!page.isConnected) return;
         create.hidden = false; controls.hidden = false; layout.hidden = false;
-        statusFilter = select([['approved','正常'],['hidden','已隐藏 / 停用'],['','全部']], 'approved');
+        statusFilter = select([['approved','使用中'],['hidden','回收站 / 已停用'],['','全部状态']], 'approved');
         statusFilter.addEventListener('change', () => load(false));
         categoryFilter = select([['','全部分类'], ...C.teamCategories.map((value) => [value,value]), ['uncategorized','未分类']], '');
         categoryFilter.addEventListener('change', () => load(false));
@@ -117,9 +159,22 @@
         scopeFilter.addEventListener('change', () => load(false));
         codeFilter = select([['','全部队伍码状态'],['has','已有队伍码'],['none','暂无队伍码']], '');
         codeFilter.addEventListener('change', () => load(false));
-        more = button('继续加载 / 重试', () => load(true)); more.hidden = true;
-        controls.replaceChildren(field('查看空间', scopeFilter), field('队伍码状态', codeFilter), field('查看状态', statusFilter),
-          field('查看玩法分区', sectionFilter), field('查看配队分类', categoryFilter), button('刷新列表', () => load(false)), more);
+        more = button('继续加载 / 重试', () => load(true), 'secondary-button community-more'); more.hidden = true;
+        const spaces = el('div', 'admin-space-tabs'); spaces.setAttribute('role','group'); spaces.setAttribute('aria-label','队伍保存位置'); tabs.length = 0;
+        [['all','approved','全部队伍'],['public','approved','配队大全'],['mine','approved','我的空间'],['all','hidden','回收站']].forEach(([scope,status,label]) => {
+          const node = button(label, () => {if (!allowLeave()) return; scopeFilter.value = scope; statusFilter.value = status; return load(false, true);}, 'admin-space-tab');
+          tabs.push({node,scope,status}); spaces.append(node);
+        });
+        search = el('input'); search.type = 'search'; search.maxLength = 80; search.placeholder = '搜索队伍名称、作者或队伍码'; search.setAttribute('aria-label','搜索已保存队伍');
+        search.addEventListener('input', () => {clearTimeout(debounce); debounce = setTimeout(() => {if (page.isConnected) load(false);}, 250);});
+        const searchRow = el('div','admin-search-row'); searchRow.append(search, field('队伍码状态', codeFilter), button('刷新列表', () => load(false)));
+        const advanced = el('details', 'admin-filter-details'); advanced.append(el('summary','','更多筛选'));
+        const filterBody = el('div','admin-filter-body'); filterBody.append(field('查看空间',scopeFilter),field('查看状态',statusFilter),field('查看玩法分区',sectionFilter),field('查看配队分类',categoryFilter)); advanced.append(filterBody);
+        const avatarHost = el('div','admin-avatar-controls');
+        avatars = ui.picture && ui.safeUrl ? window.WFCatalogAvatars?.create({host:avatarHost,catalog:page,characters:data.characters || [],ui,label:'管理队伍角色头像'}) : null;
+        controls.replaceChildren(spaces, searchRow, advanced, avatarHost);
+        layout.after?.(more);
+        if (!more.parentNode) controls.append(more);
         await load(false);
         if (initialTarget?.id && page.isConnected) {
           const result = await request(`/admin/teams/${encodeURIComponent(initialTarget.id)}`);

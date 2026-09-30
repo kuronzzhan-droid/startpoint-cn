@@ -33,6 +33,10 @@
     return box;
   }
   function readonly(item, ui, options) {const code = publicCode(item); return code ? codeView(code, ui, options) : null;}
+  // The administrator API has already checked access to private team records.
+  function adminReadonly(item, ui, options) {
+    return item.status === 'approved' && validCode(item.gameCode) ? codeView(item.gameCode,ui,options) : null;
+  }
   function controls(item, ui, request, {mutationBlocked = () => ''} = {}) {
     const {el} = ui, section = el('details', 'community-game-code-manager');
     section.append(el('summary', '', '游戏队伍码管理'));
@@ -94,6 +98,6 @@
     section.refreshAvailability = paint;
     return section;
   }
-  const api = {validCode, publicCode, readonly, controls}; root.WFCommunityGameCodes = api;
+  const api = {validCode, publicCode, readonly, adminReadonly, controls}; root.WFCommunityGameCodes = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window === 'undefined' ? globalThis : window);

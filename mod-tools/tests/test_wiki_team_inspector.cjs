@@ -132,6 +132,8 @@ function teamPage(catalogue = data) {
   vm.runInNewContext(source('team-equipment-filters.js'),context);
   vm.runInNewContext(source('catalog-avatars.js'),context);
   vm.runInNewContext(source('character-badges.js'),context);
+  vm.runInNewContext(source('team-saved-store.js'),context);
+  vm.runInNewContext(source('team-saved.js'),context);
   vm.runInNewContext(source('team.js'),context);
   const host = el('main'); host.root = true;
   return {window,host,inspected,remembered,stored,render:() => window.renderWikiTeam(host,catalogue,ui)};

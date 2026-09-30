@@ -1,7 +1,6 @@
 /* Editing stays local; administrator collection is a separate explicit action. */
 (() => {
   'use strict';
-  const storageKey = 'wf-wiki-teams-v1';
   const S = window.WFTeamState;
   let team = S.empty(), undo = [], redo = [], chosen = {group: 'main', index: 0};
   let inspected = {group: 'main', index: 0};
@@ -29,10 +28,6 @@
   }
   window.addEventListener?.('resize', arrangePanels);
   window.WFTeamImport = {load(value, title, selection) {imported = {team: S.copy(value), title, selection};}};
-  function savedTeams() {
-    try { const data = JSON.parse(localStorage.getItem(storageKey) || '[]'); return Array.isArray(data) ? data.filter((item) => item && typeof item.name === 'string' && item.team && typeof item.team === 'object') : []; }
-    catch { return []; }
-  }
   window.renderWikiTeam = (host, data, ui) => {
     const {el, picture, elementBadge} = ui;
     const characters = new Map(data.characters.map((c) => [String(c.id), c]));
@@ -74,22 +69,25 @@
     function chooseSlot(group, index) {
       chosen = {group, index};
     }
-    const picker = el('select'); picker.setAttribute('aria-label', '已保存队伍');
+    const picker = el('select', 'team-saved-picker'); picker.setAttribute('aria-label', '已保存队伍');
+    let pickerRecords = [];
     function refreshSaved() {
-      picker.replaceChildren(el('option', '', '选择已保存队伍'));
-      savedTeams().forEach((item, i) => {const o = el('option', '', item.name || `队伍${i + 1}`); o.value = String(i); picker.append(o);});
-      picker.options[0].value = '';
+      try {
+        pickerRecords = saved.records(); picker.replaceChildren(el('option', '', '快速装入'));
+        pickerRecords.forEach((item) => {const o = el('option', '', item.name || '未命名队伍'); o.value = String(item.key); picker.append(o);});
+        picker.options[0].value = '';
+      } catch (error) {status.textContent = error.message;}
     }
-    const save = () => {
-      const saved = savedTeams(); const record = {name: name.trim() || '我的队伍', team: S.copy(team)};
-      const index = saved.findIndex((item) => item.name === record.name);
-      if (index >= 0) saved[index] = record; else saved.unshift(record);
-      try {localStorage.setItem(storageKey, JSON.stringify(saved)); refreshSaved(); status.textContent = '队伍已保存到此浏览器。';}
-      catch {status.textContent = '此浏览器暂不能保存，请使用导出队伍。';}
-    };
-    picker.addEventListener('change', () => {
-      const item = savedTeams()[Number(picker.value)]; if (!item || picker.value === '') return;
+    function loadSaved(item) {
       change(S.validate(item.team, characters, equipment)); name = item.name || '我的队伍'; title.value = name;
+      status.textContent = `已装入「${name}」。`;
+    }
+    const saved = window.WFTeamSaved.create({ui, characters, avatars,
+      getCurrent: () => ({name, team: S.copy(team)}), onLoad: loadSaved,
+      onChange: refreshSaved, onStatus: message => {status.textContent = message;}});
+    picker.addEventListener('change', () => {
+      const item = pickerRecords.find(record => String(record.key) === picker.value);
+      if (item && picker.value !== '') loadSaved(item);
     });
     const file = el('input'); file.type = 'file'; file.accept = 'application/json,.json'; file.hidden = true;
     file.addEventListener('change', async () => {
@@ -104,7 +102,7 @@
       } catch {status.textContent = '请选择本站导出的队伍 JSON 文件。';}
       file.value = '';
     });
-    controls.append(button('保存队伍', save, 'primary-button'), picker,
+    controls.append(button('保存队伍', () => saved.save(), 'primary-button'), button('已保存队伍', () => saved.open()), picker,
       button('撤销', () => {if (undo.length) {redo.push(S.copy(team)); team = undo.pop(); paintBoard();}}),
       button('重做', () => {if (redo.length) {undo.push(S.copy(team)); team = redo.pop(); paintBoard();}}),
       button('清空队伍', () => change(S.empty())), button('导入队伍', () => file.click()),
