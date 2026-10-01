@@ -77,7 +77,7 @@ test('percent, underscore, backslash and quotes are literal search terms', async
   assert.deepEqual(ids(await search(app, "' OR 1=1--%")), []);
 });
 
-test('search is bounded, normalized and admin-only without changing public listing behavior', async t => {
+test('admin search is bounded and normalized, while anonymous access uses only the public search route', async t => {
   const app = await privacyContext(t); app.as('editor-a');
   const item = (await app.create(numberedSubmission(0, {title: 'Café 公开', visibility: 'public'}))).json.team;
   assert.deepEqual(ids(await search(app, ' Cafe\u0301 ')), [item.id]);
@@ -85,7 +85,8 @@ test('search is bounded, normalized and admin-only without changing public listi
   for (const q of ['字'.repeat(81), 'a\nb', '\u0000']) assert.equal((await search(app, q)).status, 400);
   app.as('guest'); assert.equal((await search(app, '')).status, 401);
   const publicResult = await app.call(`/teams?q=${'x'.repeat(81)}`);
-  assert.equal(publicResult.status, 200); assert.deepEqual(ids(publicResult), [item.id]);
+  assert.equal(publicResult.status, 400);
+  assert.deepEqual(ids(await app.call('/teams?q=Caf%C3%A9')), [item.id]);
 });
 
 test('maximum Unicode search term round-trips through a cursor with all admin filters', () => {

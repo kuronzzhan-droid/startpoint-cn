@@ -1,8 +1,8 @@
 import {context, submission} from './helpers.mjs';
 import {issueSession} from '../password-auth.mjs';
 
-export async function privacyContext(t) {
-  const app = context({env: {COMMUNITY_AUTH_MODE: 'password', COMMUNITY_OWNER_EMAIL: 'owner@example.test',
+export async function privacyContext(t, options = {}) {
+  const app = context({...options, env: {COMMUNITY_AUTH_MODE: 'password', COMMUNITY_OWNER_EMAIL: 'owner@example.test',
     COMMUNITY_PASSWORD_PEPPER: 'p'.repeat(40)}});
   t.after(() => app.close());
   const actors = {}, cookies = {};

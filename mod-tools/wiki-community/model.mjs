@@ -82,7 +82,15 @@ export function listQuery(url, catalog, admin = false, actor = null) {
   if (scope === 'private' && !['owner', 'deputy'].includes(actor?.role)) fail(403, 'manager_required', '只有站长或副站长可以查看全部个人空间。');
   const code = url.searchParams.get('code') || '';
   if (code && !['has', 'none'].includes(code)) fail(400, 'invalid_code_filter', '队伍码筛选无效。');
-  const q = admin ? cleanText(url.searchParams.get('q') || '', '搜索词', 80, false, true) : '';
+  const q = cleanText(url.searchParams.get('q') || '', '搜索词', 80, false, true);
+  // Public character names come from the sanitized, versioned catalog. Never accept a
+  // caller-provided list of search IDs, or read every team into JavaScript to filter it.
+  const term = q.toLowerCase();
+  const searchCharacters = !admin && q ? Object.entries(catalog.characters).filter(([, item]) => {
+    const name = item.name || '', variant = item.variant || '';
+    return [name, variant, `${variant}${name}`, `${name}${variant}`, `${variant} ${name}`, `${name} ${variant}`]
+      .some(value => value.normalize('NFC').toLowerCase().includes(term));
+  }).map(([id]) => id) : [];
   const character = url.searchParams.get('character') || '';
   if (character && (!/^[a-zA-Z0-9_-]{1,40}$/.test(character) || !Object.hasOwn(catalog.characters, character)))
     fail(400, 'invalid_character', '角色筛选无效或未收录。');
@@ -102,8 +110,8 @@ export function listQuery(url, catalog, admin = false, actor = null) {
   const encoded = url.searchParams.get('cursor');
   if (encoded) {
     try {
-      // An 80-character Unicode admin query adds up to 427 base64 characters to the existing cursor.
-      if (encoded.length > (admin && q ? 1280 : 800) + (character ? 96 : 0)) throw new Error();
+      // An 80-character Unicode query adds up to 427 base64 characters to the existing cursor.
+      if (encoded.length > (q ? 1280 : 800) + (character ? 96 : 0)) throw new Error();
       cursor = decodeJSON(encoded);
       if (cursor.sort !== sort || cursor.element !== element || (cursor.category || '') !== category || (cursor.section || '') !== section ||
           cursor.damage !== (damage || '') || cursor.status !== status || (cursor.character || '') !== character ||
@@ -112,7 +120,7 @@ export function listQuery(url, catalog, admin = false, actor = null) {
           !/^[a-f0-9-]{36}$/.test(cursor.id)) throw new Error();
     } catch { fail(400, 'invalid_cursor', '分页位置无效，请重新打开列表。'); }
   }
-  return {element, category, section, scope, code, q, character, accessKey, damage: damage || '', mask: damage ? damageMask(damage.split(',')) : 0, sort, status, cursor};
+  return {element, category, section, scope, code, q, searchCharacters, character, accessKey, damage: damage || '', mask: damage ? damageMask(damage.split(',')) : 0, sort, status, cursor};
 }
 export function nextCursor(query, row) {
   return encodeJSON({sort: query.sort, element: query.element, category: query.category || '', section: query.section || '', damage: query.damage, status: query.status,

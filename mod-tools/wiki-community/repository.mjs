@@ -37,6 +37,19 @@ export async function listTeams(db, query, admin = false, actor = null) {
       AND c.revoked_at IS NULL AND c.code LIKE ? ESCAPE '\\')))`);
     values.push(term, term, term);
   }
+  if (!admin && query.q) {
+    const term = `%${query.q.replace(/[\\%_]/g, '\\$&')}%`;
+    const search = ["title LIKE ? ESCAPE '\\'", "notes LIKE ? ESCAPE '\\'"];
+    values.push(term, term);
+    if (query.searchCharacters?.length) {
+      for (const group of ['main', 'unison']) {
+        search.push(`EXISTS(SELECT 1 FROM json_each(community_teams.team_json,'$.${group}') AS slot
+          WHERE slot.type='text' AND slot.value IN (SELECT value FROM json_each(?)))`);
+        values.push(JSON.stringify(query.searchCharacters));
+      }
+    }
+    clauses.push(`(${search.join(' OR ')})`);
+  }
   if (query.cursor) {
     const c = query.cursor;
     const time = '(created_at < ? OR (created_at = ? AND id < ?))';

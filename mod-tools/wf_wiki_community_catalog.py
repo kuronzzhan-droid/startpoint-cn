@@ -14,7 +14,10 @@ def build_catalog(snapshot):
             raise ValueError("角色必须使用唯一公开图鉴 ID")
         if item["element"] not in elements:
             raise ValueError("角色属性不在支持范围内")
-        characters[key] = {"element": item["element"]}
+        name, variant = item.get("name", ""), item.get("theme", "")
+        if not isinstance(name, str) or not isinstance(variant, str):
+            raise ValueError("公开角色姓名和版本必须是文字")
+        characters[key] = {"element": item["element"], "name": name, "variant": variant}
     for item in snapshot["equipment"]:
         key = item["id"]
         if not re.fullmatch(r"w[0-9a-f]{12}", key) or key in equipment:

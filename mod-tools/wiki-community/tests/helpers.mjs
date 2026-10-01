@@ -27,7 +27,7 @@ export function context(options = {}) {
   let now = Date.parse('2026-09-29T15:59:00Z');
   const db = options.db || openDatabase(), env = {...envFor(db), ...options.env};
   const development = options.production ? undefined : developmentTools(env.COMMUNITY_COOKIE_SECRET, () => now);
-  const handle = createCommunityHandler(fixtureCatalog, {development, now: () => now, ...(options.fetch ? {fetch: options.fetch} : {})});
+  const handle = createCommunityHandler(options.catalog || fixtureCatalog, {development, now: () => now, ...(options.fetch ? {fetch: options.fetch} : {})});
   const origin = options.production ? 'https://wiki.example' : 'http://127.0.0.1:8890';
   let cookie = '';
   async function call(route, settings = {}) {
