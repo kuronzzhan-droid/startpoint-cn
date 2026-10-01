@@ -29,6 +29,7 @@
   }
   function query(filters, cursor = '') {
     const params = new URLSearchParams();
+    if (typeof filters.q === 'string' && filters.q.trim()) params.set('q', filters.q.trim().normalize('NFC'));
     if (filters.element) params.set('element', filters.element);
     if (filters.section === 'general' || (filters.section && Object.hasOwn(teamSections, filters.section))) params.set('section', filters.section);
     if (['has','none'].includes(filters.code)) params.set('code', filters.code);

@@ -39,26 +39,28 @@
     const notice = el('p', 'admin-notice', '正在验证管理员身份…'); notice.setAttribute('role', 'status');
     const account = el('p', 'admin-account'), authHost = el('div', 'admin-auth'), controls = el('div', 'admin-controls');
     const layout = el('div', 'admin-layout'), listHost = el('div', 'admin-list'), editorHost = el('div', 'admin-editor');
-    editorHost.hidden = true; layout.append(listHost, editorHost); page.append(header, account, authHost, notice, controls, layout);
+    const announcementHost = el('div');
+    editorHost.hidden = true; layout.append(listHost, editorHost); page.append(header, account, authHost, notice, announcementHost, controls, layout);
     host.replaceChildren(page);
     let config, identity, serial = 0, nextCursor = '', statusFilter, categoryFilter, sectionFilter, scopeFilter, codeFilter, search, more;
-    let currentForm, loading = false, mutating = false, authBusy = false, debounce, avatars;
+    let currentForm, announcementEditor, loading = false, mutating = false, authBusy = false, debounce, avatars;
     const tabs = [];
-    window.WFNavigationGuard?.register({isActive:() => page.isConnected, canLeave:allowLeave,
-      needsProtection:() => mutating || authBusy || Boolean(currentForm?.isConnected && (currentForm.isDirty?.() || currentForm.isBusy?.()))});
+    window.WFNavigationGuard?.register({isActive:() => page.isConnected, canLeave:() => allowLeave(true),
+      needsProtection:() => mutating || authBusy || [currentForm,announcementEditor].some(form => form?.isConnected && (form.isDirty?.() || form.isBusy?.()))});
     async function navigate(hash, before) {
       if (window.WFNavigationGuard) return window.WFNavigationGuard.navigate(hash,before);
-      if (await allowLeave()) {before?.(); window.location.hash = hash;}
+      if (await allowLeave(true)) {before?.(); window.location.hash = hash;}
     }
     function canSwitch() {
       if (mutating || authBusy) notice.textContent = `正在处理${authBusy ? '账号' : '队伍'}操作，请稍候再切换。`;
       return !mutating && !authBusy;
     }
-    async function allowLeave() {
+    async function allowLeave(protectAnnouncement = false) {
       if (!canSwitch()) return false;
       const form = currentForm;
       const allowed = !form || !form.isConnected || !form.canClose || await form.canClose();
-      return allowed && canSwitch() && currentForm === form && page.isConnected;
+      const announcementAllowed = allowed && (!protectAnnouncement || !announcementEditor?.isConnected || await announcementEditor.canClose());
+      return announcementAllowed && canSwitch() && currentForm === form && page.isConnected;
     }
     function closeEditor() {currentForm = null; editorHost.replaceChildren(); editorHost.hidden = true; controls.hidden = false;}
     function button(label, action, cls = 'secondary-button') {
@@ -148,6 +150,7 @@
     }
     async function start() {
       clearTimeout(debounce); more?.remove?.(); currentForm = null;
+      announcementEditor = null; announcementHost.replaceChildren();
       serial++; account.textContent = ''; controls.replaceChildren(); listHost.replaceChildren(); editorHost.replaceChildren();
       create.hidden = true; controls.hidden = true; layout.hidden = true; notice.textContent = '正在验证管理员身份…';
       try {
@@ -162,12 +165,13 @@
         const prefix = config.authMode === 'password' ? (config.development ? '本机账号' : '已登录') : (config.development ? '本机测试身份' : '已验证管理员');
         account.textContent = `${prefix} · ${identity.email}${identity.role === 'owner' ? ' · 站长' : identity.role === 'deputy' ? ' · 副站长' : ''}`;
         if (config.authMode === 'password') window.WFCommunityAuth.controls(authHost, identity, ui, start, {
-          beforeAction:async () => {if (!await allowLeave()) return false; closeEditor(); return true;},
+          beforeAction:async () => {if (!await allowLeave(true)) return false; closeEditor(); return true;},
           onBusyChange:value => {authBusy = value;},
         });
         await window.WFWikiData?.loadEquipment();
         if (!page.isConnected) return;
         create.hidden = false; controls.hidden = false; layout.hidden = false;
+        if (C.announcementEditor) {announcementEditor = C.announcementEditor({ui, request}); announcementHost.append(announcementEditor);}
         statusFilter = select([['approved','使用中'],['hidden','回收站 / 已停用'],['','全部状态']], 'approved');
         statusFilter.addEventListener('change', () => load(false));
         categoryFilter = select([['','全部分类'], ...C.teamCategories.map((value) => [value,value]), ['uncategorized','未分类']], '');

@@ -40,7 +40,7 @@ function setup(client, writeText) {
     WFTeamImport:{load:(...args)=>{window.imported=args;}}};
   const storage=new Map(),context={window,location,URLSearchParams,Date,console,
     localStorage:{getItem:(key)=>storage.get(key),setItem:(key,value)=>storage.set(key,value)}};
-  for (const file of ['catalog-avatars.js','community-game-codes.js','community.js','community-submit.js']) vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki',file),'utf8'),context);
+  for (const file of ['catalog-avatars.js','community-game-codes.js','community-code-search.js','community.js','community-submit.js']) vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki',file),'utf8'),context);
   const host=el('main');host.connected=true;
   const ui={el,safeUrl:(value)=>typeof value==='string'?value:'',picture:(url,alt,cls)=>{const node=el('img',cls);node.setAttribute('src',url);return node;}};
   const modals=[], challenges=[];
@@ -52,6 +52,37 @@ function setup(client, writeText) {
   return {window,context,host,ui,modals,challenges,storage,C:window.WFCommunity};
 }
 const config={enabled:true,elements:['火','水','universal']};
+test('keyword search submits explicitly, combines filters, paginates and resets to the directory',async()=>{
+  const calls=[];const x=setup({config:async()=>config,request:async(p)=>{calls.push(p);return {items:[{...item}],nextCursor:'next'};}});
+  await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
+  const input=x.host.querySelector('.community-code-search-input'),form=x.host.querySelector('.community-code-search-form');
+  input.value='  玛丽娜  ';await input.fire('input');assert.equal(calls.length,1);
+  await form.fire('submit');assert.equal(new URLSearchParams(calls.at(-1).split('?')[1]).get('q'),'玛丽娜');
+  assert.equal(x.host.querySelector('.community-directory').hidden,false);assert.match(x.host.querySelector('.community-status').textContent,/玛丽娜/);
+  const element=x.host.querySelectorAll('select').find(node=>node.getAttribute('aria-label')==='推荐队伍属性');
+  element.value='火';await element.fire('change');await tick();
+  let params=new URLSearchParams(calls.at(-1).split('?')[1]);assert.equal(params.get('q'),'玛丽娜');assert.equal(params.get('element'),'火');
+  await x.host.querySelector('.community-more').fire('click');await tick();
+  params=new URLSearchParams(calls.at(-1).split('?')[1]);assert.equal(params.get('q'),'玛丽娜');assert.equal(params.get('cursor'),'next');
+  await x.host.querySelector('.community-filter-reset').fire('click');await tick();
+  params=new URLSearchParams(calls.at(-1).split('?')[1]);assert.equal(params.has('q'),false);assert.equal(params.has('cursor'),false);assert.equal(input.value,'');
+});
+
+test('code lookup and keyword directory stay separate and returning to list clears the search',async()=>{
+  const calls=[];const x=setup({config:async()=>config,request:async(p)=>{calls.push(p);return p.startsWith('/game-codes/')?{active:true,title:'查码结果',team}:{items:[{...item}]};}});
+  x.window.WFWikiData={loadEquipment:async()=>data.equipment};
+  await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
+  const input=x.host.querySelector('.community-code-search-input'),form=x.host.querySelector('.community-code-search-form');
+  input.value='玛丽娜';await form.fire('submit');
+  input.value='BSFUGDCMCTD3';await input.fire('input');await form.fire('submit');
+  assert.equal(calls.at(-1),'/game-codes/BSFUGDCMCTD3');assert.equal(x.host.querySelector('.community-directory').hidden,true);
+  assert.match(x.host.querySelector('.community-code-search-result').textContent,/查码结果/);
+  await form.querySelectorAll('button').find(button=>button.textContent==='返回列表').fire('click');await tick();
+  assert.equal(x.host.querySelector('.community-directory').hidden,false);
+  assert.equal(new URLSearchParams(calls.at(-1).split('?')[1]).has('q'),false);assert.equal(input.value,'');
+  assert.equal(x.host.querySelector('.community-code-search-result').children.length,0);
+});
+
 test('recommendations paginate, escape text and link to compact team details',async()=>{
   const calls=[];const x=setup({config:async()=>config,request:async(p)=>{calls.push(p);return calls.length===1?{items:[{...item}],nextCursor:'second'}:{items:[{...item,id:'t2'}]};}});
   await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();

@@ -43,7 +43,7 @@
   window.renderWikiCommunity = async (host, data, ui, options = {}) => {
     const {el} = ui, startingHash = location.hash;
     let revision = 0, nextCursor = '', config;
-    const filters = {section: '', element: '', category: '', code: '', damageTypes: [], sort: 'latest'};
+    const filters = {q: '', section: '', element: '', category: '', code: '', damageTypes: [], sort: 'latest'};
     const header = el('header', 'community-header'), links = el('div', 'community-header-links');
     const intro = el('p', 'section-intro community-intro', '点击队伍查看编成与角色面板，为实用的盘子点赞。');
     const sections = el('div', 'community-sections'); sections.setAttribute('role', 'group'); sections.setAttribute('aria-label', '推荐队伍玩法分区');
@@ -90,10 +90,11 @@
       sectionButtons.forEach(({button,value}) => button.setAttribute('aria-pressed', String(filters.section === value)));
       const active = [...(filters.category ? [C.categoryLabel(filters.category)] : []), ...(filters.code ? [filters.code === 'has' ? '已有队伍码' : '暂无队伍码'] : []), ...filters.damageTypes.map((value) => C.damageTypes[value])];
       activeSummary.textContent = active.length ? `（${active.length}）${active.join(' · ')}` : '分类 · 伤害类型 · 队伍码';
-      reset.disabled = !filters.section && !filters.element && !active.length && filters.sort === 'latest';
+      reset.disabled = !filters.q && !filters.section && !filters.element && !active.length && filters.sort === 'latest';
     }
     reset.addEventListener('click', () => {
-      Object.assign(filters, {section:'',element:'',category:'',code:'',damageTypes:[],sort:'latest'});
+      Object.assign(filters, {q:'',section:'',element:'',category:'',code:'',damageTypes:[],sort:'latest'});
+      search?.resetView();
       damage.querySelectorAll('input').forEach((input) => {input.checked = false;}); load();
     });
     const status = el('p', 'community-status'); status.setAttribute('role', 'status');
@@ -104,7 +105,11 @@
     if (!options.id) toolbar.append(avatarControls);
     const more = el('button', 'secondary-button community-more', '加载更多'); more.type = 'button'; more.hidden = true;
     const retry = el('button', 'secondary-button', '重试连接'); retry.type = 'button'; retry.hidden = true;
-    host.replaceChildren(header, intro, sections, toolbar, ...(options.id ? [avatarControls] : []), advanced, status, cards, more, retry, C.source(ui));
+    const directory = el('div', 'community-directory');
+    directory.append(sections, toolbar, ...(options.id ? [avatarControls] : []), advanced, status, cards, more, retry, C.source(ui));
+    const search = !options.id && C.codeSearch({data, ui, onActiveChange: (active) => {directory.hidden = active;},
+      onKeywordSearch: (term) => {filters.q = term; return load();}});
+    host.replaceChildren(...(!options.id && C.announcement ? [C.announcement(ui)] : []), header, intro, ...(search ? [search] : []), directory);
     if (options.id) {
       toolbar.hidden = true; sections.hidden = true; advanced.hidden = true;
       const back = el('a', 'back-button', '‹ 返回配队大全'); back.href = '#community'; host.prepend(back);
@@ -170,7 +175,8 @@
         const publicItems = items.filter((item) => item && item.id && item.visibility !== 'private' && (!item.status || item.status === 'approved'));
         publicItems.forEach((item) => cards.append(card(item)));
         nextCursor = result.nextCursor || ''; more.hidden = !nextCursor || Boolean(options.id);
-        status.textContent = cards.children.length ? `已显示 ${cards.children.length} 支推荐队伍` : '暂时没有符合条件的推荐队伍。';
+        const prefix = filters.q ? `“${filters.q}” · ` : '';
+        status.textContent = prefix + (cards.children.length ? `已显示 ${cards.children.length} 支推荐队伍` : '暂时没有符合条件的推荐队伍。');
       } catch (error) {
         if (current(ticket)) {status.textContent = C.message(error); retry.hidden = false;}
       } finally {if (current(ticket)) more.disabled = false;}
