@@ -1,6 +1,6 @@
-// Only anonymous aggregate data may enter the edge cache. Identity, moderation,
+// Only anonymous aggregate data and the public announcement may enter the edge cache. Identity, moderation,
 // team visibility and revocable game codes must always read current state.
-const PATHS = new Set(['/api/community/stats', '/api/community/ratings/characters', '/api/community/tier-rankings']);
+const PATHS = new Set(['/api/community/stats', '/api/community/ratings/characters', '/api/community/tier-rankings', '/api/community/announcement']);
 const pendingByCache = new WeakMap();
 export async function publicSummary(request, load, cache = globalThis.caches?.default) {
   const url = new URL(request.url), path = url.pathname.replace(/\/$/, '');

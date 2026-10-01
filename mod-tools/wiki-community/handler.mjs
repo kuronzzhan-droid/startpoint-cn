@@ -17,6 +17,7 @@ import {dungeonRoute} from './dungeon-routes.mjs';
 import {publicSummary} from './public-summary-cache.mjs';
 import {quotaFailure} from './database-availability.mjs';
 import {createStatisticsAvailability} from './statistics-availability.mjs';
+import {readAnnouncement, adminAnnouncementRoute} from './announcement.mjs';
 
 function response(value, status = 200, headers = {}) {
   return Response.json(value, {status, headers: {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers}});
@@ -44,6 +45,10 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
       // Auth responses own their session cookie; do not overwrite it with a visitor cookie.
       if (path.startsWith('/auth/') && mode === 'password')
         return await authRoute(path, request, env, now, development, fetchImpl);
+      if (path === '/announcement') {
+        if (request.method !== 'GET') fail(405, 'method_not_allowed', '公告只支持 GET 查询。');
+        return response(await publicSummary(request, () => readAnnouncement(env.COMMUNITY_DB)));
+      }
       if (path === '/stats') {
         if (request.method !== 'GET') fail(405, 'method_not_allowed', '参与及在线人数只支持 GET 查询。');
         return response(await publicSummary(request, () => statistics(request, env.COMMUNITY_DB, now,
@@ -134,6 +139,7 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
   };
 }
 async function adminRoute(path, request, db, trustedCatalog, actor, now) {
+  if (path === '/admin/announcement') return response(await adminAnnouncementRoute(request, db, actor, now));
   if (path === '/admin/me' && request.method === 'GET') return response(actor);
   if (path === '/admin/login' && request.method === 'GET')
     return new Response(null, {status: 302, headers: {Location: '/#community/admin', 'Cache-Control': 'no-store'}});

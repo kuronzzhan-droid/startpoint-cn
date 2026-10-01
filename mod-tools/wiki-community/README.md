@@ -41,7 +41,7 @@ node --test mod-tools/wiki-community/tests/*.test.mjs
 | 接口 | 权限与结果 |
 | --- | --- |
 | `GET /config` | 配置、元素、伤害类型、玩法分区 sections；`canSubmit:false,publishing:'admin'` |
-| `GET /teams` | 大全公开盘子 `{items,nextCursor}`；支持 section、category、element、damage、code、sort、cursor |
+| `GET /teams` | 大全公开盘子 `{items,nextCursor}`；支持 q、character、section、category、element、damage、code、sort、cursor |
 | `GET /teams/:id` | 单个公开盘子 `{team}`，含 likedToday |
 | `POST /teams` | 始终 403 submission_disabled |
 | `POST /teams/:id/like` | `{turnstileToken}` → `{id,likes,likedToday,nextLikeAt}` |
@@ -73,6 +73,12 @@ GET 的 `category` 省略表示全部，`uncategorized` 表示未分类，其余
 GET 的 `section` 省略或空值表示全部，`general` 仅查看其他，其余使用上述玩法标识；与其他筛选取 AND。
 分页游标绑定这些筛选条件，改变分类或玩法后必须从第一页载入。仅改变这些元数据不会改变阵容指纹或撤销游戏码。
 默认 latest，popular 按累计赞、创建时间排序。队伍 ID 和游戏码是不同标识。
+
+公开列表 `q` 是单个搜索关键词，最多 80 个 Unicode 字符，去首尾空格并做 NFC 规范化，不接受换行或控制字符。
+在队名、攻略备注或主位/合击角色姓名（含版本）中做字面包含匹配；不把 `%`、`_` 当通配符，也不搜索作者或游戏码。
+角色名来自同批已脱敏 Wiki 的可信目录；不会读取管理员黑话或让客户端任意提交角色匹配集。
+搜索与其他筛选取 AND，在数据库分页前执行，游标绑定关键词。私盘、待审核和已删除队伍始终不进入公开搜索。
+管理员列表原有 `q` 队名、作者和有效游戏码搜索口径保持不变。此功能不新增数据库表、字段或迁移。
 
 `visibility` 为 `public`（配队大全）或 `private`（个人空间）。新建省略时兼容旧客户端，默认 public；编辑省略时保持原值。
 创建者 `createdBy` 由已验证的登录身份写入，客户端传入无效；旧盘创建者为空，不根据署名或历史隐藏状态猜测。
@@ -144,6 +150,10 @@ Pages Functions 以此目录为项目工作目录，`functions/api/community/[[p
 启用云资源、绑定、公开部署都属于后续明确的站点部署步骤，本模块的本地测试不证明生产已启用。
 
 ### 仅本地构建 Functions
+
+配队公告：`GET /api/community/announcement` 返回纯文字 `text`、`revision`、`updatedAt`，未设置时为空；公开读取缓存 30 秒，不轮询。
+已登录管理员可 `GET/PATCH /api/community/admin/announcement`，保存提交 `{text, expectedRevision}`，正文最多 500 字，留空撤下。
+并发编辑返回 409 并保留输入，保存与独立审计原子提交；首次部署需应用 `0012-community-announcement.sql`。
 
 在本目录运行以下命令。`<仓外构建目录>` 必须预先创建，且不得指向静态站输出目录：
 

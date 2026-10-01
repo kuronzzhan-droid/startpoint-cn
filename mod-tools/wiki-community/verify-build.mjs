@@ -83,6 +83,21 @@ try {
   const lookup = await call(`/api/community/game-codes/${publishedCode}`); assert.equal(lookup.status, 200);
   const shared = await lookup.json(); assert.deepEqual(shared.team, fixtureTeam);
   assert.deepEqual(Object.keys(shared).sort(), ['active', 'team', 'title']); checks++;
+  const noticePath = '/api/community/admin/announcement';
+  assert.equal((await call(noticePath)).status, 401); checks++;
+  const noticeWrite = await call(noticePath, {method:'PATCH', headers:{Cookie:ownerCookie},
+    body:JSON.stringify({text:'编译验证公告',expectedRevision:0})}, passwordEnv);
+  assert.equal(noticeWrite.status,200); assert.equal((await noticeWrite.json()).revision,1);
+  const publicNotice = await call('/api/community/announcement');
+  assert.equal(publicNotice.status,200); assert.equal(publicNotice.headers.get('set-cookie'),null);
+  assert.equal((await publicNotice.json()).text,'编译验证公告'); checks++;
+  const keyword = encodeURIComponent(catalog.characters[characterIds[0]].name);
+  assert.deepEqual((await (await call(`/api/community/teams?q=${keyword}`)).json()).items, []); checks++;
+  db.raw.prepare("UPDATE community_teams SET visibility='public' WHERE id=?").run(privateTeam.id);
+  const nameSearch = await (await call(`/api/community/teams?q=${keyword}`)).json();
+  assert.equal(nameSearch.items[0]?.id,privateTeam.id);
+  assert.deepEqual((await (await call('/api/community/teams?q=__no_such_fixture__')).json()).items,[]);
+  db.raw.prepare("UPDATE community_teams SET visibility='private' WHERE id=?").run(privateTeam.id); checks++;
   const aliasesPath = `/api/community/admin/aliases/character/${characterIds[0]}`;
   const aliasWrite = await call(aliasesPath, {method: 'PATCH', headers: {Cookie: ownerCookie},
     body: JSON.stringify({aliases: ['编译验证别名'], expectedRevision: 0})}, passwordEnv);
