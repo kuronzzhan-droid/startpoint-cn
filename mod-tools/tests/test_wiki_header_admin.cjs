@@ -8,7 +8,8 @@ const owner = {id:'test-owner', email:'owner@example.test', role:'owner', enable
 const response = (value, status = 200) => ({ok:status < 400, status, json:async () => value, headers:{get:() => null}});
 const settle = () => new Promise(setImmediate);
 function setup(handler, existingClient) {
-  const calls = [], link = {attributes:{}, setAttribute(key, value) {this.attributes[key] = value;}};
+  const calls = [], link = {attributes:{}, setAttribute(key, value) {this.attributes[key] = value;},
+    set textContent(_) {throw new Error('Updating identity must preserve the account icon.');}};
   const client = existingClient || C.createApi(async (url, options) => {
     const path = url.slice('/api/community'.length); calls.push({path, method:options.method});
     return handler(path, options);
@@ -27,6 +28,8 @@ test('the shared header keeps the home logo first and a separate management link
   assert.match(links[0][1],/class="brand"/); assert.match(links[0][1],/href="#"/);
   assert.match(links[0][2],/class="brand-logo"/);
   assert.match(links[1][1],/id="site-admin"/); assert.match(links[1][1],/href="#community\/admin"/);
+  assert.match(links[1][2],/<svg[^>]*aria-hidden="true"/);
+  assert.doesNotMatch(links[1][2],/管理|邮箱|@/);
   assert.equal((html.match(/id="site-admin"/g) || []).length,1);
 });
 
@@ -38,14 +41,14 @@ test('global header checks identity once, then follows server-confirmed login an
     if (path === '/auth/login') {logged = true; return response(owner);}
     if (path === '/auth/logout') {logged = false; return response({ok:true});}
   });
-  await settle(); assert.equal(x.link.textContent,'管理');
+  await settle(); assert.equal(x.link.title,'管理员登录');
   assert.deepEqual(x.calls.map(x => x.path),['/config','/auth/me']);
   x.A.header(x.link); x.A.header(x.link); await settle(); assert.equal(x.calls.length,2);
   await x.client.request('/auth/login',{email:owner.email,password:'synthetic-only'});
-  assert.equal(x.link.textContent,owner.email); assert.match(x.link.title,/已登录/);
+  assert.match(x.link.title,/已登录/); assert.ok(x.link.title.includes(owner.email));
   assert.equal(x.link.attributes['aria-label'],x.link.title); assert.equal(x.link.attributes['data-authenticated'],'true');
   await x.client.request('/auth/logout',{});
-  assert.equal(x.link.textContent,'管理'); assert.equal(x.link.attributes['data-authenticated'],'false');
+  assert.equal(x.link.title,'管理员登录'); assert.equal(x.link.attributes['data-authenticated'],'false');
   assert.equal(x.calls.filter(x => x.path.endsWith('/me')).length,1);
 });
 
@@ -54,7 +57,7 @@ test('header reuses observed identity, retains full email for accessible labels,
   const client = C.createApi(async () => {calls++; return response({...owner,password:'not-for-cache',token:'not-for-cache'});},'https:');
   await client.request('/auth/login',{password:'synthetic-only'});
   const x = setup(null,client); await settle();
-  assert.equal(calls,1); assert.equal(x.link.textContent,owner.email);
+  assert.equal(calls,1); assert.ok(x.link.attributes['aria-label'].includes(owner.email));
   assert.equal(x.link.title,`已登录：${owner.email} · 打开管理`);
   assert.deepEqual(Object.keys(client.identity()),['id','email','role','mustChangePassword']);
   assert.ok(Object.isFrozen(client.identity()));
@@ -62,11 +65,11 @@ test('header reuses observed identity, retains full email for accessible labels,
 
 test('Access login is observed once and offline/unconfigured sites keep the management link usable', async () => {
   const access = setup(path => path === '/config' ? response({enabled:true,authMode:'access'}) : response(owner));
-  await settle(); assert.equal(access.link.textContent,owner.email);
+  await settle(); assert.ok(access.link.title.includes(owner.email));
   assert.deepEqual(access.calls.map(x => x.path),['/config','/admin/me']);
   for (const config of [{enabled:false},{enabled:true,authMode:'password',needsSetup:true}]) {
     const x = setup(() => response(config)); await settle();
-    assert.equal(x.link.textContent,'管理'); assert.deepEqual(x.calls.map(x => x.path),['/config']);
+    assert.equal(x.link.title,'管理员登录'); assert.deepEqual(x.calls.map(x => x.path),['/config']);
   }
 });
 

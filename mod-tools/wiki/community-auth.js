@@ -149,7 +149,6 @@
   function header(link) {
     if (!link || !C?.client?.observeIdentity || link.adminCleanup) return;
     link.adminCleanup = C.client.observeIdentity((identity) => {
-      link.textContent = identity?.email || '管理';
       link.title = identity?.email ? `已登录：${identity.email} · 打开管理` : '管理员登录';
       link.setAttribute('aria-label', link.title);
       link.setAttribute('data-authenticated', String(Boolean(identity)));
