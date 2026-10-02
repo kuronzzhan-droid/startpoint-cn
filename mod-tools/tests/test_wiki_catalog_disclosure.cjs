@@ -34,9 +34,10 @@ class Node {
   contains(node) {return node === this || this.children.some(child => child.contains(node));}
   focus() {this.focused = true;}
 }
-function setup(handler = async () => ({items: []})) {
+function setup(handler = async () => ({items: []}), {realRouter = false} = {}) {
   const root = new Node('html'), catalog = new Node('section'); catalog.id = 'catalog-view'; root.append(catalog);
   const add = (id, tag = 'div', parent = root, cls = '') => {const node = new Node(tag, cls); node.id = id; parent.append(node); return node;};
+  if (realRouter) {add('detail-view'); add('extra-view');}
   const controls = add('controls', 'div', catalog), display = add('display', 'div', controls, 'catalog-display-controls');
   add('catalog-character-filters', 'div', controls); add('catalog-avatar-controls', 'div', display);
   add('catalog-layout', 'select', display);
@@ -67,6 +68,10 @@ function setup(handler = async () => ({items: []})) {
   const storage=new Map();
   const context = {document, window, location: {hash: '', protocol: 'https:'}, Event:class {constructor(type){this.type=type;}},
     localStorage:{getItem:(key)=>storage.get(key),setItem:(key,value)=>storage.set(key,value)}};
+  if (realRouter) {
+    window.WFWikiData = {loadEquipment:async () => []}; window.renderWikiPage = () => true; window.scrollTo = () => {};
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki/router.js'),'utf8'), context);
+  }
   for (const name of ['rating-score.js', 'portrait-cards.js', 'catalog-layout.js', 'catalog-disclosure.js', 'catalog-ratings.js', 'app.js'])
     vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki', name), 'utf8'), context);
   return {catalog, display, count, heading, sort, requests, filtersInitiallyOpen: callbacks.initiallyOpen, updateRating: (id, value) => window.WFCatalogRatings.update(id, value), get created() {return avatarCreates;},
@@ -178,4 +183,24 @@ test('density switches reuse avatars, while a cleared router view and changed or
   x.toggle(); assert.deepEqual(x.cards(), first);
   x.grid.replaceChildren(); x.passive(); assert.equal(x.cards().length, 2); assert.equal(x.created, 4);
   assert.notEqual(x.cards()[0], first[0]); assert.equal(x.mountedCards().length, 2);
+});
+
+test('real router preserves portrait interaction for unknown hashes and denied navigation, releasing it only on accepted page leave', async () => {
+  const x = setup(undefined,{realRouter:true}); x.layout('portrait'); x.toggle();
+  const cards = x.cards(), first = cards[0];
+  const go = async hash => {x.context.location.hash = hash; x.window.fire('hashchange'); await new Promise(setImmediate);};
+  for (const hash of ['#missing-page','#main-content']) {
+    await go(hash); assert.equal(x.cards()[0],first);
+    assert.equal(first.events.pointermove.size,1); assert.equal(x.window.events.scroll.size,1);
+  }
+  let resolve;
+  x.window.WFNavigationGuard = {allow:() => new Promise(done => {resolve=done;})};
+  x.context.location.hash = '#team'; x.window.fire('hashchange');
+  assert.equal(first.events.pointermove.size,1); resolve(false); await new Promise(setImmediate);
+  assert.equal(x.catalog.hidden,false); assert.equal(x.cards()[0],first); assert.equal(first.events.pointermove.size,1);
+  x.window.WFNavigationGuard.allow = () => true;
+  await go('#team'); assert.equal(x.catalog.hidden,true); assert.equal(x.mountedCards().length,0);
+  assert.equal(first.events.pointermove.size,0); assert.equal(x.window.events.scroll.size,0);
+  await go('#'); assert.equal(x.catalog.hidden,false); assert.equal(x.cards().length,2);
+  assert.notEqual(x.cards()[0],first); assert.equal(x.cards()[0].events.pointermove.size,1);
 });

@@ -235,7 +235,8 @@
     $('load-error').hidden = characters.length > 0;
   }
 
-  const route = window.createWikiRouter({data, meta, ui: helpers, renderCatalog});
+  const route = window.createWikiRouter({data, meta, ui: helpers, renderCatalog,
+    onCatalogLeave: () => catalogPortraits.destroy()});
 
   function filterChanged(state = characterFilters.getState()) {
     catalogDisclosure.filterChanged(JSON.stringify([selectedCategory, state]),
@@ -257,7 +258,6 @@
   $('sort-order').addEventListener('change', renderCatalog);
   $('catalog-view').addEventListener('cataloglayoutchange', renderCatalog);
   $('empty-reset').addEventListener('click', clearFilters);
-  window.addEventListener('hashchange', () => {if (location.hash && location.hash !== '#') catalogPortraits.destroy();});
   window.addEventListener('hashchange', route);
   document.addEventListener('keydown', (event) => {
     if (event.key !== '/' || event.altKey || event.ctrlKey || event.metaKey || event.target.closest('input, textarea, select, [contenteditable="true"]')) return;

@@ -45,6 +45,7 @@ window.createWikiRouter = function createWikiRouter(options) {
       document.title = '星见图鉴 · MOD 角色 Wiki';
       renderCatalog(); return;
     }
+    options.onCatalogLeave?.();
     document.getElementById('character-grid').replaceChildren();
     const host = pageTitle ? extra : detail;
     status(host, '正在载入资料…');
