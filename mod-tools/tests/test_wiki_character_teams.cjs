@@ -76,7 +76,7 @@ test('related teams query the exact character by popularity and use six-portrait
   const card = cards(x)[0]; assert.equal(card.href, '#community/team%20%2F%20%261');
   assert.equal(card.querySelectorAll('a').length, 0); assert.equal(card.querySelectorAll('.community-slot').length, 6);
   assert.equal(card.querySelectorAll('.community-slot-weapon').length, 0); assert.equal(card.querySelectorAll('.community-slot-soul').length, 0);
-  assert.match(card.textContent, /<img src=x onerror=bad> 火队.*深渊连战.*萌新启航.*队长 · 1号主位/);
+  assert.match(card.textContent, /<img src=x onerror=bad> 火队.*深渊.*萌新启航.*队长 · 1号主位/);
   assert.equal(card.querySelector('h3').children.length, 0); assert.equal(card.querySelectorAll('.is-character-match').length, 1);
   assert.match(card.attributes['aria-label'], /角色1位于队长 · 1号主位/);
   assert.equal(x.boards[0][1].characters.length, 6); assert.equal(x.boards[0][1].equipment, undefined); assert.equal(x.boards[0][3].preview, true);
