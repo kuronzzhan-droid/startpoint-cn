@@ -172,6 +172,22 @@ node verify-build.mjs "<仓外构建目录>"
 
 ## 点赞、防刷与维护
 
+### 2026-10-02 低频汇总
+
+- 公共角色评分列表及手排榜共用一份每日持久快照，按北京时间换日后首次访问汇总；同日其他访客复用。
+  投票立即保存，个人评分详情仍返回本人的即时提交结果，图鉴和公共榜在下一次汇总时反映变化。
+  公共结果附 `asOf`、`nextRefreshAt`、`refreshDay`、`stale`；汇总失败保留有明确标记的旧榜，并退避重试。
+  日期、角色目录和评分规则共同隔离缓存，管理员私有接口与可撤销队伍码不进入该缓存。
+- 在线心跳每 30 分钟一次，统计含义为“近 30 分钟活跃访客”，多标签合并且后台暂停。
+  公开统计最多边缘缓存 30 分钟；不代表实时在线人数，也不保证跨设备识别同一个人。
+- 过期限流记录全站每 30 分钟清理一批，最多 1000 条，通过持久抢占和过期索引避免每次请求删除。
+  **每次请求仍立即计数并执行原限流阈值**，并未把防刷判断推迟到 30 分钟，也未取消计数写入费用。
+- 角色关联队伍使用索引，并在概览滚动接近对应区域时才加载；队伍权限和可见性仍实时检查。
+- 上线前增量应用 `0013-daily-ranking-snapshot.sql`、`0014-limit-maintenance.sql`、`0015-team-character-index.sql`。
+  三份迁移只新增派生缓存、维护表、关系表、索引和触发器，保留原票、队伍、账号及队伍码。
+  静态 `_headers` 仅对文件名为内容 SHA-256 的 `/media/*` 设置一年缓存，HTML/脚本/API 不延长缓存。
+  这是降低用量的实现，不是 Cloudflare 费用硬上限；不修改套餐或自动付费设置。
+
 ### 角色查看次数和相关配队
 
 `GET /api/community/characters/:id/views` 返回 `{characterId, views, windowSeconds:1800}`，
@@ -193,7 +209,7 @@ POST 要求同源 JSON，每个网络每分钟最多 120 次，限流表复用�
 ### 参与人数和在线人数
 
 `GET /api/community/stats` 匿名读取，不建立访客 cookie，返回
-`{ratingVoters, tierVoters, totalVoters, onlineVisitors, asOf, presenceWindowSeconds:300, participationAsOf, participationStale}`。
+`{ratingVoters, tierVoters, totalVoters, onlineVisitors, asOf, presenceWindowSeconds:1800, participationAsOf, participationStale}`。
 `asOf` 为在线统计采样时间，`participationAsOf` 为参与人数最近成功汇总时间，均为 UTC ISO。
 评分和手排分别统计当前图鉴有效票的独立访客；同人评多个角色只计一次，评分 0 分仍计票，
 空手排或只包含已移出图鉴角色的手排不计参与。`totalVoters` 对两个来源再去重，不能直接相加。
@@ -204,21 +220,21 @@ POST 要求同源 JSON，每个网络每分钟最多 120 次，限流表复用�
 刷新中返回旧快照并标记 `participationStale:true`；尚无快照则返回可重试错误，不伪造零人数。
 在线人数继续使用 `last_seen` 索引单独统计；禁止用角色全集 JSON 交叉查询反复扫描投票。
 
-Cloudflare 边缘仅缓存公开 `/stats`、`/ratings/characters`、`/tier-rankings` 汇总 30 秒；
+Cloudflare 边缘将公开 `/stats` 缓存 30 分钟，`/ratings/characters` 和 `/tier-rankings` 缓存至北京时间换日；
 同一 Worker 的相同冷缓存请求合并加载。个人评分、管理员、队伍及可撤销游戏码不使用此缓存。
 参与人数需要下一次请求触发刷新，缓存和心跳会增加可见延迟；页面显示定时更新而非即时统计。
 公共 GET 可以维护内部参与人数快照，不修改玩家票、在线记录或其他业务资料。
 现有库部署前需执行 `migrations/0011-participation-snapshots.sql`；迁移可重复执行，保留原数据。
 本地 SQLite 适配器按 `schema.sql` 自动补齐，不能用空库替换已有库。
 
-前端先通过 `/config` 建立身份，再每 90 秒 `POST /api/community/presence`，正文为 `{}`；
+前端先通过 `/config` 建立身份，再每 30 分钟 `POST /api/community/presence`，正文为 `{}`；
 心跳要求同源 JSON，无有效访客 cookie 时返回 428 `visitor_required`，不另发 cookie。
-同访客每 90 秒最多更新一次，在线人数指最近 5 分钟有心跳的访客，不能作为精确人数或登录人数。
+同访客每 30 分钟最多更新一次，活跃人数指最近 30 分钟有心跳的访客，不能作为实时在线人数或登录人数。
 支持 Web Locks 与 localStorage 的同源多标签共用发送间隔和公开统计；后台页面暂停心跳，
-关闭发送页后其他可见页可接替。缺少这些浏览器能力时按每页 90 秒降级，不保证请求去重。
+关闭发送页后其他可见页可接替。缺少这些浏览器能力时按每页 30 分钟降级，不保证请求去重。
 共享存储仅保存公开统计和调度时间，不存账号、令牌或访客标识。
 
-统计请求失败后按 90/180/300/600 秒退避，成功后恢复；每日额度错误按 UTC 重置时间等待，
+统计请求失败后按 30/60/120/240 分钟退避，成功后恢复；每日额度错误按 UTC 重置时间等待，
 旧服务未返回重置时间时至少等 1 小时。保留并标记上次成功数据，不把错误当零人数。
 服务端 `/stats` 和 `/presence` 数据库异常后暂停 5 分钟；识别到每日额度耗尽则暂停到 UTC 次日。
 暂停标记使用内存与边缘缓存，不依赖 D1；返回 503 和 `Retry-After`。输入错误、身份校验、
@@ -264,7 +280,7 @@ Cloudflare 边缘仅缓存公开 `/stats`、`/ratings/characters`、`/tier-ranki
 Turnstile 服务端负责生产 token 的单次有效性。应用不缓存人机验证成功状态。
 
 管理员写入、点赞和角色评分分别按每 IP 每小时 120 次限制，游戏码读取每 IP 每分钟 300 次。
-响应 429 带 Retry-After。限频键是带私密盐与时间窗口的 HMAC，过期键在后续成功限频操作中清理。
+响应 429 带 Retry-After。限频键是带私密盐与时间窗口的 HMAC，过期键由请求触发的 30 分钟维护门控分批清理。
 IP 共用、代理与设备重置仍存在，不将 IP 视为用户身份。
 审计保存管理员标识/邮箱、时间、操作、队伍 ID 和修改前后内容；管理操作与审计用 D1 batch 同事务。
 

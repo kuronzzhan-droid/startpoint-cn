@@ -182,7 +182,7 @@ def export(output: Path, *, legacy_data: Path | None = None, external_character:
     export_dungeons(repo, output, store=store)
     for path in (HERE / "wiki").iterdir():
         if path.suffix in {".html", ".css", ".js"} or path.name in {
-            "brand-logo.png", "reborn-group-1.jpg", "reborn-group-2.jpg", "wiki-share-poster.png",
+            "brand-logo.png", "reborn-group-1.jpg", "reborn-group-2.jpg", "wiki-share-poster.png", "_headers",
         }:
             shutil.copyfile(path, output / path.name)
     write_json(output / "media-manifest.json", media.entries)

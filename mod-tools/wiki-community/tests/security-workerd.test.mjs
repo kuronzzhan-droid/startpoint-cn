@@ -18,7 +18,7 @@ test('workerd verifies Turnstile and rejects redirects without forwarding creden
       } catch (error) {return Response.json({error:error.code}, {status:error.status || 500});}
     }};`;
   const modules = [{type: 'ESModule', path: path.join(root, '__runtime_test.mjs'), contents: entry}];
-  for (const name of ['security.mjs', 'model.mjs', 'codecs.mjs'])
+  for (const name of ['security.mjs', 'model.mjs', 'codecs.mjs', 'limit-maintenance.mjs'])
     modules.push({type: 'ESModule', path: path.join(root, name), contents: await readFile(path.join(root, name), 'utf8')});
   let mode = 'success';
   const requests = [];

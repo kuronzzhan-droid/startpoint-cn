@@ -1,4 +1,5 @@
 import {fail} from './model.mjs';
+import {maintainLimits} from './limit-maintenance.mjs';
 import {readJSON, challenge, cookieValue} from './security.mjs';
 import {sign, verify} from './codecs.mjs';
 import {normalizeEmail, validatePassword, hashPassword, checkPassword, tokenHash} from './password-crypto.mjs';
@@ -20,7 +21,7 @@ async function limitLogin(request, env, email, now, development, bucket = 'both'
       ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count`).bind(`auth:${keys[i]}`, expires).first();
     if (row.count > [20, 8][i]) fail(429, 'rate_limited', '登录尝试过于频繁，请稍后再试。', {retryAfter: Math.ceil((expires - now) / 1000)});
   }
-  await env.COMMUNITY_DB.prepare('DELETE FROM community_limits WHERE expires_at<=?').bind(now).run();
+  await maintainLimits(env.COMMUNITY_DB, now);
 }
 function onlyFields(body, allowed) {
   if (Object.keys(body).some((key) => !allowed.includes(key))) fail(400, 'invalid_fields', '提交内容包含不支持的账号字段。');

@@ -89,7 +89,7 @@
         const confirmed = record(result);
         if (!confirmed.ratedToday || confirmed.myScore !== score) throw new Error('服务端未确认本次评分，请刷新评分后核实。');
         accept(state,confirmed); completed = true;
-        if (!closed) {notice.textContent = `已提交 ${score} 分。${nextTime(confirmed)}`; verification.hidden = true;}
+        if (!closed) {notice.textContent = `已提交 ${score} 分；公共榜每日汇总，次日计入。${nextTime(confirmed)}`; verification.hidden = true;}
       } catch (error) {
         if (error?.code === 'already_rated' || error?.code === 'daily_limit') {
           completed = true; state.dailyBlocked = true;

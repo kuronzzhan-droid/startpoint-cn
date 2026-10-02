@@ -1,5 +1,6 @@
 import {fail} from './model.mjs';
 import {sign, verify} from './codecs.mjs';
+import {maintainLimits} from './limit-maintenance.mjs';
 export const LOOPBACK = new Set(['127.0.0.1', 'localhost', '[::1]']);
 const COOKIE_AGE = 365 * 86400;
 export const csv = (value) => typeof value === 'string' ? value.split(',').map((v) => v.trim()).filter(Boolean) : [];
@@ -78,9 +79,6 @@ export async function rateLimit(db, request, env, action, now, development) {
   const max = ['game_lookup', 'presence'].includes(action) ? 300 : action === 'dungeon_upload' ? 20 : 120;
   const row = await db.prepare(`INSERT INTO community_limits(key,count,expires_at) VALUES(?,1,?)
     ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count`).bind(key, expires).first();
+  await maintainLimits(db, now);
   if (row.count > max) fail(429, 'rate_limited', '操作过于频繁，请稍后再试。', {retryAfter: Math.ceil((expires - now) / 1000)});
-  const cleanup = ['presence', 'character_view'].includes(action)
-    ? 'DELETE FROM community_limits WHERE key IN (SELECT key FROM community_limits WHERE expires_at < ? LIMIT 100)'
-    : 'DELETE FROM community_limits WHERE expires_at < ?';
-  await db.prepare(cleanup).bind(now).run();
 }

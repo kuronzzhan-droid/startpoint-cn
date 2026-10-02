@@ -18,7 +18,7 @@
   const api = window.WFCatalogRatings = {create({characters, sort, host, ui, onChange}) {
     const {el} = ui, ids = new Set(characters.map((character) => String(character.id)));
     const records = new Map(), updated = new Map();
-    let phase = 'idle', revision = 0, pending = null;
+    let phase = 'idle', revision = 0, pending = null, published;
     const status = el('div', 'catalog-rating-status'), message = el('span');
     status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
     const retry = el('button', 'text-button', '重试评分'); retry.type = 'button';
@@ -28,8 +28,9 @@
     function paintStatus() {
       status.hidden = phase === 'idle' || (phase === 'ready' && !isRatingSort());
       retry.hidden = phase !== 'error';
-      message.textContent = phase === 'ready' ? '按票数修正排序；卡片显示真实均分，未评分排末尾。' : phase === 'loading' ? '正在加载玩家评分…' : phase === 'offline'
+      message.textContent = phase === 'ready' ? `按票数修正排序；卡片显示真实均分，未评分排末尾。每日汇总，新评分次日计入。${published?.stale ? '今日汇总更新中，显示上次结果。' : ''}` : phase === 'loading' ? '正在加载玩家评分…' : phase === 'offline'
         ? '离线版无法读取玩家评分；缺少评分显示 —。' : '评分暂时未能加载，缺少评分显示 —。';
+      status.title = published?.asOf ? `汇总时间：${new Date(published.asOf).toLocaleString('zh-CN', {timeZone:'Asia/Shanghai'})}（北京时间）` : '';
     }
     function paint(card) {
       const value = records.get(card.dataset.catalogRatingId), rated = value && value.voters > 0;
@@ -42,6 +43,9 @@
       card.setAttribute('aria-label', `${card.dataset.catalogBaseLabel}，${label}`);
     }
     function update(id, value) {
+      // Detail-page results include the player's fresh vote. Do not mix them
+      // into a published daily catalogue and silently change its ordering.
+      if (published) return false;
       id = String(id); const record = normalize(value);
       if (!ids.has(id) || !record) return false;
       const previous = records.get(id);
@@ -50,11 +54,16 @@
       return true;
     }
     async function load() {
-      if (pending || phase === 'ready' || phase === 'error' || phase === 'offline') return pending;
+      if (pending) return pending;
+      if (phase === 'ready' && published && Date.parse(published.nextRefreshAt) <= Date.now()) phase = 'idle';
+      if (phase === 'ready' || phase === 'error' || phase === 'offline') return pending;
       if (location.protocol === 'file:') {phase = 'offline'; paintStatus(); return;}
       phase = 'loading'; paintStatus(); const started = revision;
       pending = Promise.resolve().then(() => window.WFCommunity.client.request('/ratings/characters')).then((response) => {
         if (!Array.isArray(response?.items)) throw new Error('invalid_ratings');
+        const daily = response.asOf !== undefined;
+        if (daily && (!Number.isFinite(Date.parse(response.asOf)) || !Number.isFinite(Date.parse(response.nextRefreshAt))
+          || Date.parse(response.nextRefreshAt) <= Date.parse(response.asOf) || typeof response.stale !== 'boolean')) throw new Error('invalid_ratings');
         const received = new Map();
         for (const item of response.items) {
           const record = normalize(item);
@@ -62,9 +71,10 @@
           if (ids.has(item.id)) received.set(item.id, record);
         }
         for (const id of ids) {
-          if ((updated.get(id) || 0) > started) continue; // A vote accepted after this request wins over its snapshot.
+          if (!daily && (updated.get(id) || 0) > started) continue;
           if (received.has(id)) records.set(id, received.get(id)); else records.delete(id);
         }
+        published = daily ? {asOf:response.asOf, nextRefreshAt:response.nextRefreshAt, stale:response.stale} : undefined;
         phase = 'ready'; onChange();
       }).catch(() => {phase = 'error';}).finally(() => {pending = null; paintStatus();});
       return pending;

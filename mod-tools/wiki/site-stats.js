@@ -1,13 +1,13 @@
 /* Visible tabs share public statistics and cooldowns; no identity is stored here. */
 ((root) => {
   'use strict';
-  const interval = 90000, failureDelays = [90000,180000,300000,600000], day = 86400000;
+  const interval = 1800000, failureDelays = [1800000,3600000,7200000,14400000], day = 86400000;
   const storageKey = 'wf-wiki-site-stats-v2', lockName = 'wf-wiki-site-stats';
   const timestamp = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && Number.isFinite(Date.parse(value));
   function normalize(value) {
     if (!value || !['totalVoters','ratingVoters','tierVoters','onlineVisitors'].every(key => Number.isSafeInteger(value[key]) && value[key] >= 0)
       || value.totalVoters < Math.max(value.ratingVoters,value.tierVoters) || value.totalVoters > value.ratingVoters + value.tierVoters
-      || ![120,300].includes(value.presenceWindowSeconds) || !timestamp(value.asOf)
+      || ![120,300,1800].includes(value.presenceWindowSeconds) || !timestamp(value.asOf)
       || (value.participationAsOf === undefined) !== (value.participationStale === undefined)
       || (value.participationAsOf !== undefined && !timestamp(value.participationAsOf))
       || (value.participationStale !== undefined && typeof value.participationStale !== 'boolean'))
@@ -106,6 +106,9 @@
         const value = await heartbeat(active);
         if (!active() || value === null) return;
         data = normalize(value); failures = 0; retryAt = 0;
+        // Start the next interval after the response. Otherwise network latency can make
+        // the next heartbeat arrive before the server's thirty-minute write gate opens.
+        lastAttempt = Math.max(lastAttempt,now());
         status = stale() ? 'error' : 'ready'; errorCode = stale() ? 'stale_stats' : '';
         publish(); notify();
       } catch (error) {if (active()) failure(error);}
@@ -171,9 +174,10 @@
   const host = root.document.getElementById('site-presence');
   if (host) {
     const label = root.document.createElement('span'), count = root.document.createElement('strong'), note = root.document.createElement('small');
-    label.textContent = '在看'; host.append(label,count,note);
+    label.textContent = '近30分钟活跃'; host.append(label,count,note);
     api.subscribe(({status,data,errorCode}) => {
-      const minutes = (data?.presenceWindowSeconds || 300) / 60;
+      const minutes = (data?.presenceWindowSeconds || 1800) / 60;
+      label.textContent = `近${minutes}分钟活跃`;
       count.textContent = data ? `${data.onlineVisitors.toLocaleString('zh-CN')} 人` : '—';
       note.textContent = status === 'offline' ? '离线版不统计访客' : status === 'loading' ? '正在连接统计'
         : status === 'error' ? (errorCode === 'database_quota_exceeded'
@@ -181,9 +185,9 @@
           : errorCode === 'stale_stats' ? '显示上次统计，正在更新'
           : errorCode === 'statistics_paused' ? (data ? '统计暂缓，显示上次统计' : '统计暂缓，稍后自动重试')
           : (data ? '连接中断，显示上次统计' : '统计暂不可用'))
-          : `最近 ${minutes} 分钟活跃访客 · 约 90 秒更新${data?.participationStale ? ' · 参与人数更新中' : ''}`;
+          : `最近 ${minutes} 分钟活跃访客 · 每 30 分钟更新${data?.participationStale ? ' · 参与人数更新中' : ''}`;
       host.dataset.status = status;
-      host.setAttribute('aria-label', `当前浏览人数 ${data ? `${data.onlineVisitors} 人` : '暂无统计'}，${note.textContent}`);
+      host.setAttribute('aria-label', `最近 ${minutes} 分钟活跃访客 ${data ? `${data.onlineVisitors} 人` : '暂无统计'}，${note.textContent}`);
       host.title = `${note.textContent}。按匿名访客去重，同一浏览器多个标签算一人；关闭或转入后台后将在 ${minutes} 分钟内不再计入。不同设备可能重复计数。`;
     });
   }

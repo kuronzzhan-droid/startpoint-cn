@@ -8,8 +8,9 @@ import {GAME_CODE_PATTERN, resolveGameCode, gameCodeInfo, createGameCode, revoke
 import {authMode, passwordConfig, authenticatePassword, publicUser} from './password-auth.mjs';
 import {authRoute, accountsRoute} from './auth-routes.mjs';
 import {listAliases, adminAliasesRoute} from './wiki-aliases.mjs';
-import {characterRatingsRoute, listCharacterRatings} from './character-ratings.mjs';
-import {tierRankingsRoute, listTierRankings} from './tier-rankings.mjs';
+import {characterRatingsRoute} from './character-ratings.mjs';
+import {tierRankingsRoute} from './tier-rankings.mjs';
+import {createDailyRankingReader} from './daily-ranking-snapshot.mjs';
 import {communityStats, presenceRoute} from './community-stats.mjs';
 import {characterViewsRoute} from './character-views.mjs';
 import dungeonCatalog from './dungeon-catalog.mjs';
@@ -26,6 +27,7 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
   const nowFn = options.now || Date.now, fetchImpl = options.fetch || fetch;
   const dungeons = options.dungeons || trustedCatalog.dungeons || dungeonCatalog;
   const statistics = createStatisticsAvailability();
+  const dailyRankings = createDailyRankingReader();
   return async function handle(request, env) {
     let identity;
     try {
@@ -52,16 +54,21 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
       if (path === '/stats') {
         if (request.method !== 'GET') fail(405, 'method_not_allowed', '参与及在线人数只支持 GET 查询。');
         return response(await publicSummary(request, () => statistics(request, env.COMMUNITY_DB, now,
-          () => communityStats(env.COMMUNITY_DB, trustedCatalog, now), env.COMMUNITY_STATS_CACHE_NAMESPACE)));
+          () => communityStats(env.COMMUNITY_DB, trustedCatalog, now), env.COMMUNITY_STATS_CACHE_NAMESPACE), undefined, now));
       }
       if (path === '/presence') return response(await statistics(request, env.COMMUNITY_DB, now,
         () => presenceRoute(request, env, trustedCatalog, now, development), env.COMMUNITY_STATS_CACHE_NAMESPACE));
       if (path.startsWith('/characters/')) return response(await characterViewsRoute(path, request, env, trustedCatalog, now, development));
       // Anonymous summaries must not mint a late cookie that replaces a rating visitor's identity.
       if (request.method === 'GET' && path === '/ratings/characters')
-        return response(await publicSummary(request, () => listCharacterRatings(env.COMMUNITY_DB, trustedCatalog)));
+        return response(await publicSummary(request, async () => {
+          const value = await dailyRankings(env.COMMUNITY_DB, trustedCatalog, now);
+          return {items:value.rankings.rating.map(({row, ...item}) => item).sort((a,b) => a.id.localeCompare(b.id)), asOf:value.asOf, nextRefreshAt:value.nextRefreshAt,
+            refreshDay:value.refreshDay, stale:value.stale};
+        }, undefined, now, await dailyRankings.cacheKey(trustedCatalog)));
       if (request.method === 'GET' && path === '/tier-rankings')
-        return response(await publicSummary(request, () => listTierRankings(env.COMMUNITY_DB, trustedCatalog)));
+        return response(await publicSummary(request, () => dailyRankings(env.COMMUNITY_DB, trustedCatalog, now), undefined, now,
+          await dailyRankings.cacheKey(trustedCatalog)));
       // Only identity-dependent endpoints may initialize a visitor. A late public read must not
       // replace a cookie established by a concurrent rating/like request or sign unrelated reads.
       const visitorHeaders = async () => {

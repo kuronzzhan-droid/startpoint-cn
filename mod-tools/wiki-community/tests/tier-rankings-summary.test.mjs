@@ -15,11 +15,14 @@ const formula = {method: 'bayesian', priorVoters: 5, placementPrior: 3, ratingPr
 
 test('public boards keep independent sources, raw displayed averages and zero votes without filling missing sources', async (t) => {
   const app = context(); t.after(() => app.close());
-  assert.deepEqual((await app.call('/tier-rankings')).json, {rankings: {placement: [], rating: []}, formula});
+  const empty = (await app.call('/tier-rankings')).json;
+  assert.deepEqual(empty.rankings, {placement: [], rating: []}); assert.deepEqual(empty.formula, formula);
   rank(app, 'a', {tier0: ['c0'], between0: ['c1'], between1: ['c3']});
   rate(app, 'c0', 'a', 0); rate(app, 'c2', 'a', 0); rate(app, 'c3', 'a', 5);
+  assert.deepEqual((await app.call('/tier-rankings')).json, empty);
+  app.now = Date.parse(empty.nextRefreshAt);
   const result = await app.call('/tier-rankings'); assert.equal(result.status, 200);
-  assert.deepEqual(result.json, {rankings: {
+  assert.deepEqual(result.json.rankings, {
     placement: [
       {id: 'c0', average: 5, voters: 1, rankScore: 20 / 6, row: 'provisional'},
       {id: 'c1', average: 4.5, voters: 1, rankScore: 19.5 / 6, row: 'provisional'},
@@ -30,14 +33,19 @@ test('public boards keep independent sources, raw displayed averages and zero vo
       {id: 'c0', average: 0, voters: 1, rankScore: 12.5 / 6, row: 'provisional'},
       {id: 'c2', average: 0, voters: 1, rankScore: 12.5 / 6, row: 'provisional'}
     ]
-  }, formula});
+  });
+  assert.deepEqual(result.json.formula, formula);
   assert.equal(result.headers.get('Set-Cookie'), null); assert.equal(app.cookie, '');
   assert.ok(!/visitor|claim|myScore|submittedToday|updatedAt|nextVoteAt|compositeScore|missingSources/.test(JSON.stringify(result.json)));
   rate(app, 'c0', 'b', 5);
+  assert.deepEqual((await app.call('/tier-rankings')).json.rankings, result.json.rankings);
+  app.now += 86400_000;
   const changed = (await app.call('/tier-rankings')).json.rankings;
   assert.deepEqual(changed.placement, result.json.rankings.placement);
   assert.notDeepEqual(changed.rating, result.json.rankings.rating);
   rank(app, 'b', {tier4: ['c3']});
+  assert.deepEqual((await app.call('/tier-rankings')).json.rankings, changed);
+  app.now += 86400_000;
   const placementChanged = (await app.call('/tier-rankings')).json.rankings;
   assert.notDeepEqual(placementChanged.placement, changed.placement);
   assert.deepEqual(placementChanged.rating, changed.rating);

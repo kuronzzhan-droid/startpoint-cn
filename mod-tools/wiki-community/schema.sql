@@ -175,3 +175,48 @@ CREATE TRIGGER IF NOT EXISTS community_participation_tier_update AFTER UPDATE ON
 BEGIN UPDATE community_participation_revision SET revision=revision+1 WHERE id=1; END;
 CREATE TRIGGER IF NOT EXISTS community_participation_tier_delete AFTER DELETE ON community_tier_rankings
 BEGIN UPDATE community_participation_revision SET revision=revision+1 WHERE id=1; END;
+
+-- Maintenance cadence only: live rate-limit counters and windows are unchanged.
+CREATE TABLE IF NOT EXISTS community_maintenance (
+  key TEXT PRIMARY KEY CHECK(key='limits'),
+  next_run INTEGER NOT NULL CHECK(typeof(next_run)='integer' AND next_run>=0)
+);
+CREATE INDEX IF NOT EXISTS community_limits_expiry ON community_limits(expires_at,key);
+
+-- Derived membership only. Visibility remains checked on the original team row.
+CREATE TABLE IF NOT EXISTS community_team_characters (
+  character_id TEXT NOT NULL, team_id TEXT NOT NULL REFERENCES community_teams(id) ON DELETE CASCADE,
+  PRIMARY KEY(character_id,team_id)
+);
+CREATE INDEX IF NOT EXISTS community_team_characters_team ON community_team_characters(team_id);
+INSERT OR IGNORE INTO community_team_characters(character_id,team_id)
+  SELECT slot.value,t.id FROM community_teams t,json_each(t.team_json,'$.main') slot
+  WHERE slot.type='text' AND slot.value<>''
+  UNION SELECT slot.value,t.id FROM community_teams t,json_each(t.team_json,'$.unison') slot
+  WHERE slot.type='text' AND slot.value<>'';
+CREATE TRIGGER IF NOT EXISTS community_team_characters_insert AFTER INSERT ON community_teams
+BEGIN
+  INSERT OR IGNORE INTO community_team_characters(character_id,team_id)
+    SELECT value,NEW.id FROM json_each(NEW.team_json,'$.main') WHERE type='text' AND value<>''
+    UNION SELECT value,NEW.id FROM json_each(NEW.team_json,'$.unison') WHERE type='text' AND value<>'';
+END;
+CREATE TRIGGER IF NOT EXISTS community_team_characters_update AFTER UPDATE OF team_json ON community_teams
+WHEN NEW.team_json<>OLD.team_json
+BEGIN
+  DELETE FROM community_team_characters WHERE team_id=OLD.id;
+  INSERT OR IGNORE INTO community_team_characters(character_id,team_id)
+    SELECT value,NEW.id FROM json_each(NEW.team_json,'$.main') WHERE type='text' AND value<>''
+    UNION SELECT value,NEW.id FROM json_each(NEW.team_json,'$.unison') WHERE type='text' AND value<>'';
+END;
+
+-- Published rankings refresh once per Beijing day; votes remain in their source tables.
+CREATE TABLE IF NOT EXISTS community_daily_ranking_snapshots (
+  catalog_hash TEXT PRIMARY KEY,
+  refresh_day TEXT,
+  payload_json TEXT CHECK(payload_json IS NULL OR json_valid(payload_json)),
+  computed_at INTEGER CHECK(computed_at IS NULL OR
+    (typeof(computed_at)='integer' AND computed_at BETWEEN 0 AND 8640000000000000)),
+  refresh_after INTEGER NOT NULL DEFAULT 0,
+  lease_until INTEGER NOT NULL DEFAULT 0,
+  lease_owner TEXT
+);

@@ -34,11 +34,27 @@ function cacheFixture() {
 test('public aggregate cache shares results across visitors and irrelevant query strings without caching cookies', async () => {
   const cache=cacheFixture();let reads=0;
   const load=async()=>({items:[{id:'c0',average:5,voters:2}],reads:++reads});
-  const one=await publicSummary(new Request('https://wiki.example/api/community/ratings/characters?x=1',{headers:{Cookie:'private'}}),load,cache);
-  const two=await publicSummary(new Request('https://wiki.example/api/community/ratings/characters?x=2'),load,cache);
+  const now=Date.parse('2026-10-02T04:00:00Z');
+  const one=await publicSummary(new Request('https://wiki.example/api/community/ratings/characters?x=1',{headers:{Cookie:'private'}}),load,cache,now);
+  const two=await publicSummary(new Request('https://wiki.example/api/community/ratings/characters?x=2'),load,cache,now);
   assert.deepEqual(one,two);assert.equal(reads,1);assert.equal(cache.values.size,1);
   assert.ok(cache.keys.every(key=>key.method==='GET'&&!key.headers.has('cookie')));
-  assert.equal([...cache.values.values()][0].headers.get('cache-control'),'public, max-age=30');
+  assert.equal([...cache.values.values()][0].headers.get('cache-control'),'public, max-age=43200');
+});
+test('daily cache rolls over at Beijing midnight; stats and announcement have separate cadences',async()=>{
+  const cache=cacheFixture(), request=new Request('https://wiki.example/api/community/tier-rankings');
+  let reads=0; const load=async()=>({count:++reads});
+  const lastSecond=Date.parse('2026-10-02T15:59:59Z');
+  await publicSummary(request,load,cache,lastSecond);
+  assert.equal([...cache.values.values()][0].headers.get('cache-control'),'public, max-age=1');
+  assert.equal((await publicSummary(request,load,cache,lastSecond+1000)).count,2);
+  const stats=new Request('https://wiki.example/api/community/stats'), notice=new Request('https://wiki.example/api/community/announcement');
+  await publicSummary(stats,load,cache,lastSecond);await publicSummary(notice,load,cache,lastSecond);
+  const ttls=[...cache.values.values()].map(r=>r.headers.get('cache-control'));
+  assert.deepEqual(ttls,['public, max-age=1','public, max-age=86400','public, max-age=1800','public, max-age=30']);
+  const staleCache=cacheFixture(); await publicSummary(request,async()=>({stale:true}),staleCache,lastSecond+1000);
+  assert.equal([...staleCache.values.values()][0].headers.get('cache-control'),'public, max-age=60');
+  assert.equal((await publicSummary(request,load,cache,lastSecond+1000,'new-catalog-and-rules')).count,5);
 });
 test('private reads, config, game codes, team visibility and writes always bypass aggregate cache', async () => {
   const cache=cacheFixture();let reads=0;

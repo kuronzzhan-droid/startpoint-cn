@@ -30,6 +30,9 @@ const env = {COMMUNITY_DB: db, COMMUNITY_COOKIE_SECRET: 'c'.repeat(40), COMMUNIT
     assets.push(new URL(request.url).pathname); return new Response('fixture-static-asset', {headers: {'X-Fixture-Asset': 'yes'}});
   }}};
 const originalFetch = globalThis.fetch;
+const originalNow = Date.now;
+let verificationNow = Date.parse('2026-10-02T04:00:00Z');
+Date.now = () => verificationNow;
 globalThis.fetch = async () => {throw new Error('Network access is forbidden during build verification');};
 let checks = 0;
 try {
@@ -120,11 +123,15 @@ try {
   assert.equal(db.raw.prepare('SELECT COUNT(*) AS count FROM community_character_ratings').get().count, 0); checks++;
   const emptyRatings = await call('/api/community/ratings/characters');
   assert.equal(emptyRatings.status, 200); assert.equal(emptyRatings.headers.get('set-cookie'), null);
-  assert.deepEqual(await emptyRatings.json(), {items: []});
+  const emptySnapshot = await emptyRatings.json();
+  assert.deepEqual(emptySnapshot.items, []); assert.equal(emptySnapshot.refreshDay, '2026-10-02');
+  assert.equal(emptySnapshot.stale, false);
   const seedRating = db.raw.prepare('INSERT INTO community_character_ratings(character_id,visitor_id,score,vote_day,updated_at) VALUES(?,?,?,?,?)');
   seedRating.run(characterIds[0], 'fixture-rating-a', 0, '2026-09-30', Date.now());
   seedRating.run(characterIds[1], 'fixture-rating-a', 2, '2026-09-30', Date.now());
   seedRating.run(characterIds[1], 'fixture-rating-b', 3, '2026-09-30', Date.now());
+  assert.deepEqual((await (await call('/api/community/ratings/characters')).json()).items, []); checks++;
+  verificationNow += 86_400_000;
   const aggregate = await call('/api/community/ratings/characters/');
   assert.equal(aggregate.status, 200); assert.equal(aggregate.headers.get('set-cookie'), null);
   assert.deepEqual((await aggregate.json()).items.sort((a, b) => a.id.localeCompare(b.id)),
@@ -132,10 +139,11 @@ try {
       {id: characterIds[1], average: 2.5, voters: 2, rankScore: 2.5}].sort((a, b) => a.id.localeCompare(b.id))); checks++;
   db.raw.prepare('INSERT INTO community_tier_rankings VALUES(?,?,?,?)')
     .run('fixture-ranking-a', JSON.stringify({tier0:characterIds}), '2026-09-30', Date.now());
+  verificationNow += 86_400_000;
   const rankings = await call('/api/community/tier-rankings');
   assert.equal(rankings.status, 200); assert.equal(rankings.headers.get('set-cookie'), null);
   const boards = await rankings.json();
-  assert.deepEqual(Object.keys(boards).sort(), ['formula', 'rankings']);
+  assert.deepEqual(Object.keys(boards).sort(), ['asOf', 'formula', 'nextRefreshAt', 'rankings', 'refreshDay', 'stale']);
   assert.deepEqual(boards.formula, {method: 'bayesian', priorVoters: 5, placementPrior: 3, ratingPrior: 2.5,
     tierMethod: 'raw-average', minimumTierVoters: 3});
   assert.deepEqual(boards.rankings.placement,
@@ -149,7 +157,7 @@ try {
   const counts = await stats.json();
   assert.equal(counts.ratingVoters, 2); assert.equal(counts.tierVoters, 1); assert.equal(counts.onlineVisitors, 0);
   assert.equal(counts.totalVoters, 3);
-  assert.equal(counts.presenceWindowSeconds, 300); assert.ok(Number.isFinite(Date.parse(counts.asOf)));
+  assert.equal(counts.presenceWindowSeconds, 1800); assert.ok(Number.isFinite(Date.parse(counts.asOf)));
   assert.ok(Number.isFinite(Date.parse(counts.participationAsOf))); assert.equal(counts.participationStale, false); checks++;
   const anonymousPresence = await call('/api/community/presence', {method:'POST', body:'{}'});
   assert.equal(anonymousPresence.status, 428); assert.equal(anonymousPresence.headers.get('set-cookie'), null); checks++;
@@ -183,6 +191,9 @@ try {
     db.raw.prepare('INSERT INTO community_tier_rankings VALUES(?,?,?,?)')
       .run(`fixture-third-${i}`, JSON.stringify({tier0: [characterIds[0]]}), '2026-09-30', Date.now());
   }
+  const sameDay = (await (await call('/api/community/tier-rankings')).json()).rankings;
+  assert.equal(sameDay.placement.find(item => item.id === characterIds[0]).row, 'provisional'); checks++;
+  verificationNow += 86_400_000;
   const qualified = (await (await call('/api/community/tier-rankings')).json()).rankings;
   assert.equal(qualified.placement.find(item => item.id === characterIds[0]).row, 'tier0');
   assert.equal(qualified.rating.find(item => item.id === characterIds[0]).row, 'tier4');
@@ -196,4 +207,4 @@ try {
     scope: 'Wrangler compiled bundle with local JavaScript request execution and SQLite; not a live Cloudflare runtime acceptance'};
   await writeFile(path.join(root, 'verification.json'), JSON.stringify(report, null, 2) + '\n', 'utf8');
   writeSync(1, JSON.stringify({bytes: report.bundle.bytes, sha256: report.bundle.sha256, runtimeChecksPassed: checks, report: path.join(root, 'verification.json')}) + '\n');
-} finally {globalThis.fetch = originalFetch; db.close();}
+} finally {globalThis.fetch = originalFetch; Date.now = originalNow; db.close();}

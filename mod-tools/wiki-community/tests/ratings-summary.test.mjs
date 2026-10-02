@@ -11,15 +11,18 @@ function seed(app, id, visitor, score) {
 test('public batch summary starts empty and preserves real zero ratings without visitor-specific state', async (t) => {
   const app = context(); t.after(() => app.close());
   const empty = await app.call('/ratings/characters');
-  assert.deepEqual(empty.json, {items: []}); assert.equal(empty.headers.get('Set-Cookie'), null); assert.equal(app.cookie, '');
+  assert.deepEqual(empty.json.items, []); assert.equal(empty.json.nextRefreshAt, '2026-09-29T16:00:00.000Z');
+  assert.equal(empty.headers.get('Set-Cookie'), null); assert.equal(app.cookie, '');
   seed(app, 'c0', 'private-visitor-a', 0);
   seed(app, 'c1', 'private-visitor-a', 2); seed(app, 'c1', 'private-visitor-b', 3);
+  assert.deepEqual((await app.call('/ratings/characters')).json, empty.json);
+  app.now = Date.parse(empty.json.nextRefreshAt);
   const response = await app.call('/ratings/characters');
   assert.equal(response.status, 200); assert.equal(response.headers.get('Set-Cookie'), null);
-  assert.deepEqual(response.json, {items: [
+  assert.deepEqual(response.json.items, [
     {id: 'c0', average: 0, voters: 1, rankScore: 12.5 / 6},
     {id: 'c1', average: 2.5, voters: 2, rankScore: 2.5}
-  ]});
+  ]);
   assert.ok(!/visitor|myScore|ratedToday|nextVoteAt|claim|vote_day|updated_at/.test(JSON.stringify(response.json)));
   app.cookie = '';
   assert.deepEqual((await app.call('/ratings/characters', {headers: {'CF-Connecting-IP': '198.51.100.20'}})).json, response.json);
@@ -37,7 +40,7 @@ test('one GROUP BY query excludes uncollected targets and invalid scores and ref
   assert.deepEqual(result, {items: [{id: 'c0', average: 1.67, voters: 3, rankScore: 17.5 / 8}]});
   assert.equal(queries.length, 1); assert.match(queries[0], /GROUP BY character_id/);
   app.db.raw.prepare('UPDATE community_character_ratings SET score=4 WHERE character_id=? AND visitor_id=?').run('c0', 'first');
-  assert.deepEqual((await app.call('/ratings/characters')).json, {items: [{id: 'c0', average: 2.67, voters: 3, rankScore: 20.5 / 8}]});
+  assert.deepEqual((await app.call('/ratings/characters')).json.items, [{id: 'c0', average: 2.67, voters: 3, rankScore: 20.5 / 8}]);
   assert.deepEqual(await listCharacterRatings(app.db, {...fixtureCatalog, characters: {}}), {items: []});
 });
 
@@ -53,7 +56,7 @@ test('summary route is read-only while original per-character GET and POST conti
   const token = (await app.call('/development-challenge?action=rate_character')).json.token;
   const vote = await app.call('/ratings/characters/c0', {body: {score: 5, turnstileToken: token}});
   assert.equal(vote.status, 200); assert.equal(vote.json.rankScore, 17.5 / 6);
-  assert.deepEqual((await app.call('/ratings/characters/')).json, {items: [{id: 'c0', average: 5, voters: 1, rankScore: 17.5 / 6}]});
+  assert.deepEqual((await app.call('/ratings/characters/')).json.items, [{id: 'c0', average: 5, voters: 1, rankScore: 17.5 / 6}]);
   const detail = (await app.call('/ratings/characters/c0')).json;
   assert.equal(detail.myScore, 5); assert.equal(detail.rankScore, vote.json.rankScore); assert.equal(detail.ratedToday, true);
   assert.equal(app.db.raw.prepare('SELECT count(*) n FROM community_character_ratings').get().n, 1);

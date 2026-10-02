@@ -20,7 +20,7 @@ const source = fs.readFileSync(path.join(__dirname, '../wiki/catalog-ratings.js'
 const characters = ['火', '火', '火', '水', '水', '水'].map((element, index) => ({id: `c${index}`, element}));
 const response = {items: [{id: 'c0', average: 2, voters: 8}, {id: 'c1', average: 0, voters: 1},
   {id: 'c3', average: 5, voters: 1}, {id: 'c4', average: 2, voters: 6}]};
-function setup(handler = async () => response, protocol = 'https:') {
+function setup(handler = async () => response, protocol = 'https:', onChangeHook) {
   const calls = [], events = {}, host = new Node('div'), sort = new Node('select'), catalog = new Node('div'); sort.value = 'default';
   const window = {addEventListener: (name, action) => {events[name] = action;},
     WFCharacterOrder: {compare: (a, b) => a.id.localeCompare(b.id)},
@@ -29,7 +29,7 @@ function setup(handler = async () => response, protocol = 'https:') {
   vm.runInNewContext(source, {window, location: {protocol}});
   let changes = 0;
   const controller = window.WFCatalogRatings.create({characters, sort, host, ui: {el: (...args) => new Node(...args)},
-    onChange() {changes++; controller.paintMounted(catalog);}});
+    onChange() {changes++; controller.paintMounted(catalog); onChangeHook?.(controller);}});
   const card = (id) => {
     const card = new Node('a', 'character-card'); card.title = '角色'; card.setAttribute('aria-label', '角色，查看详情');
     card.append(new Node('div', 'card-meta')); catalog.append(card); controller.decorate(card, {id}); return card;
@@ -130,4 +130,40 @@ test('server score precision survives accepted detail updates and invalid rank s
   assert.deepEqual(x.order('rating-global-desc').slice(0, 2), ['c0', 'c1']);
   assert.equal(x.controller.update('c0', {average: 4, voters: 10, rankScore: NaN}), false);
   assert.equal(x.controller.update('c0', {average: 4, voters: 10, rankScore: null}), false);
+});
+
+test('daily catalogue remains a single published snapshot even when a personal vote arrives during or after loading', async () => {
+  let resolve; const x = setup(() => new Promise(done => {resolve = done;}));
+  const card = x.card('c0'), pending = x.controller.load(); await tick();
+  x.vote('c0', {average: 5, voters: 99});
+  resolve({...response, asOf:'2099-01-01T04:00:00Z', nextRefreshAt:'2099-01-01T16:00:00Z', stale:false});
+  await pending;
+  assert.equal(card.querySelector('.card-rating').textContent, '评分 2.0');
+  assert.equal(x.controller.update('c0', {average: 5, voters: 100}), false);
+  assert.equal(card.querySelector('.card-rating').textContent, '评分 2.0');
+  await x.controller.load(); assert.equal(x.calls.length, 1);
+  assert.match(x.status().textContent, /每日汇总.*次日计入/); assert.match(x.status().title, /北京时间/);
+});
+
+test('expired daily catalogue loads again only on demand and rejects invalid snapshot timestamps', async () => {
+  let attempts = 0;
+  const x = setup(async () => ({...response, asOf:'2020-01-01T04:00:00Z',
+    nextRefreshAt:++attempts === 1 ? '2020-01-01T16:00:00Z' : '2099-01-01T16:00:00Z', stale:false}));
+  await x.controller.load(); assert.equal(x.calls.length, 1);
+  await tick(); assert.equal(x.calls.length, 1);
+  await x.controller.load(); assert.equal(x.calls.length, 2);
+  await x.controller.load(); assert.equal(x.calls.length, 2);
+  const invalid = setup(async () => ({...response, asOf:'broken', nextRefreshAt:'broken', stale:false}));
+  await invalid.controller.load(); assert.match(invalid.status().textContent, /未能加载/);
+});
+
+test('rendering a stale daily score sort can reenter load without hiding its refresh notice or starting another request', async () => {
+  let renders = 0;
+  const x = setup(async () => ({...response, asOf:'2020-01-01T04:00:00Z', nextRefreshAt:'2020-01-01T16:00:00Z', stale:true}),
+    'https:', controller => {renders++; controller.load();});
+  x.sort.value = 'rating-global-desc';
+  await x.controller.load(); await tick();
+  assert.equal(renders, 1); assert.equal(x.calls.length, 1);
+  assert.equal(x.status().hidden, false);
+  assert.match(x.status().textContent, /今日汇总更新中，显示上次结果/);
 });

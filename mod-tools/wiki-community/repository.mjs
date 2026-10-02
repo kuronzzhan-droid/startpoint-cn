@@ -23,9 +23,8 @@ export async function listTeams(db, query, admin = false, actor = null) {
   if (query.category) { clauses.push('category=?'); values.push(query.category === 'uncategorized' ? '' : query.category); }
   if (query.section) { clauses.push('section=?'); values.push(query.section === 'general' ? '' : query.section); }
   if (query.character) {
-    clauses.push(`(EXISTS(SELECT 1 FROM json_each(community_teams.team_json,'$.main') AS slot WHERE slot.type='text' AND slot.value=?)
-      OR EXISTS(SELECT 1 FROM json_each(community_teams.team_json,'$.unison') AS slot WHERE slot.type='text' AND slot.value=?))`);
-    values.push(query.character, query.character);
+    clauses.push('id IN (SELECT team_id FROM community_team_characters WHERE character_id=?)');
+    values.push(query.character);
   }
   if (query.mask) { clauses.push('(damage_mask & ?) = ?'); values.push(query.mask, query.mask); }
   if (query.code) clauses.push(`${query.code === 'none' ? 'NOT ' : ''}(status='approved' AND EXISTS(SELECT 1 FROM community_game_codes c
@@ -42,11 +41,9 @@ export async function listTeams(db, query, admin = false, actor = null) {
     const search = ["title LIKE ? ESCAPE '\\'", "notes LIKE ? ESCAPE '\\'"];
     values.push(term, term);
     if (query.searchCharacters?.length) {
-      for (const group of ['main', 'unison']) {
-        search.push(`EXISTS(SELECT 1 FROM json_each(community_teams.team_json,'$.${group}') AS slot
-          WHERE slot.type='text' AND slot.value IN (SELECT value FROM json_each(?)))`);
-        values.push(JSON.stringify(query.searchCharacters));
-      }
+      search.push(`id IN (SELECT team_id FROM community_team_characters
+        WHERE character_id IN (SELECT value FROM json_each(?)))`);
+      values.push(JSON.stringify(query.searchCharacters));
     }
     clauses.push(`(${search.join(' OR ')})`);
   }

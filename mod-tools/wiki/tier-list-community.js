@@ -7,9 +7,18 @@
   const score = (value) => Number.isFinite(value) && value >= 0 && value <= 5;
   const votes = (value) => Number.isSafeInteger(value) && value >= 0;
   const ranking = window.WFRatingScore, sources = {placement: '手动排行', rating: '角色评分'};
+  const beijingTime = value => new Date(value).toLocaleString('zh-CN', {
+    timeZone:'Asia/Shanghai', month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false,
+  });
+  const publishedTime = value => value?.asOf && value?.nextRefreshAt
+    ? `${value.stale ? '上次汇总' : '今日汇总'}：北京时间 ${beijingTime(value.asOf)}；${value.stale ? '今日数据更新中' : `下次 ${beijingTime(value.nextRefreshAt)}`}。`
+    : '公共榜每日汇总（北京时间换日），新投票立即保存，次日计入。';
   function publicRecord(value) {
     const invalid = () => {throw new Error('排行资料异常，请重新载入。');};
     if (!value || Object.entries(ranking.FORMULA).some(([key, entry]) => value.formula?.[key] !== entry)) invalid();
+    if (value.asOf !== undefined && (!Number.isFinite(Date.parse(value.asOf))
+      || !Number.isFinite(Date.parse(value.nextRefreshAt)) || Date.parse(value.nextRefreshAt) <= Date.parse(value.asOf)
+      || typeof value.stale !== 'boolean')) invalid();
     for (const source of Object.keys(sources)) {
       if (!Array.isArray(value.rankings?.[source])) invalid();
       const seen = new Set();
@@ -71,9 +80,9 @@
     const participationStatus = el('small', 'tier-participation-status'); participationStatus.setAttribute('role', 'status');
     participation.append(participationLabel);
     let onlineItem;
-    [['角色评分', ratingCount], ['手动排行', tierCount], ['正在浏览', onlineCount]].forEach(([label, value]) => {
+    [['角色评分', ratingCount], ['手动排行', tierCount], ['近 30 分钟活跃', onlineCount]].forEach(([label, value]) => {
       const item = el('span', 'tier-participation-count'); item.append(el('span', '', label), value, el('span', '', '人'));
-      if (value === onlineCount) {onlineItem = item; item.title = '最近 5 分钟有活动的全站访客；同一浏览器多标签去重，约 90 秒更新。';}
+      if (value === onlineCount) {onlineItem = item; item.title = '最近 30 分钟有活动的全站访客；同一浏览器多标签去重，每 30 分钟更新。';}
       participation.append(item);
     });
     participation.append(participationStatus);
@@ -103,7 +112,7 @@
       text(ratingCount, lastStats ? String(lastStats.ratingVoters) : '—');
       text(tierCount, lastStats ? String(lastStats.tierVoters) : '—');
       text(onlineCount, lastStats ? String(lastStats.onlineVisitors) : '—');
-      if (lastStats) onlineItem.title = `最近 ${lastStats.presenceWindowSeconds === 120 ? 2 : 5} 分钟有活动的全站访客；同一浏览器多标签去重，约 90 秒更新。`;
+      if (lastStats) onlineItem.title = `最近 ${Math.round(lastStats.presenceWindowSeconds / 60)} 分钟有活动的全站访客；同一浏览器多标签去重，每 30 分钟更新。`;
       participationStatus.title = lastStats?.participationAsOf ? `参与人数统计于 ${new Date(lastStats.participationAsOf).toLocaleString('zh-CN')}；投票变化后按请求定时汇总。` : '';
       text(participationStatus, snapshot.status === 'ready' && valid ? (lastStats.participationStale ? '参与人数更新中' : '定时更新')
         : snapshot.status === 'offline' ? (lastStats ? '离线 · 上次统计' : '离线，暂无统计')
@@ -121,7 +130,7 @@
       publicCards.forEach(({card, text}) => {text.hidden = !showDetails; card.className = `tier-public-card${showDetails ? '' : ' is-compact'}`;});
     });
     function describeSource() {
-      description.textContent = `${sources[source]}独立计票，满 ${ranking.MINIMUM_TIER_VOTERS} 票按真实均分分档，不足则暂定，无票不入榜。档内排序参考 ${ranking.PRIOR_VOTERS} 份中立分（每份 ${ranking.PRIORS[source]} 分），不增加玩家票数。`;
+      description.textContent = `${sources[source]}独立计票，每日汇总（北京时间换日）。满 ${ranking.MINIMUM_TIER_VOTERS} 票按真实均分分档，不足则暂定，无票不入榜。档内排序参考 ${ranking.PRIOR_VOTERS} 份中立分（每份 ${ranking.PRIORS[source]} 分），不增加玩家票数。`;
     }
     Object.entries(sources).forEach(([value, label]) => {
       const button = el('button', 'tier-ranking-source', label); button.type = 'button';
@@ -204,8 +213,8 @@
         if (!provisional) board.append(row);
       });
       results.replaceChildren(board, provisionalSection);
-      publicStatus.textContent = items.length ? `${sourceLabel} · ${elementFilter ? `${elementFilter}属性榜` : '总榜'} · ${items.length} 位角色（已定级 ${items.length - provisionalCount} · 暂定 ${provisionalCount}）；点击头像查看均分与人数。`
-        : `${sourceLabel} · ${elementFilter ? `${elementFilter}属性暂时` : '目前'}还没有玩家投票；未评分角色不入此榜。`;
+      publicStatus.textContent = (items.length ? `${sourceLabel} · ${elementFilter ? `${elementFilter}属性榜` : '总榜'} · ${items.length} 位角色（已定级 ${items.length - provisionalCount} · 暂定 ${provisionalCount}）；点击头像查看均分与人数。`
+        : `${sourceLabel} · ${elementFilter ? `${elementFilter}属性` : '目前'}还没有已汇总的玩家投票；未评分角色不入此榜。`) + publishedTime(value);
     }
     async function loadPublic() {
       const ticket = ++revision; cached = undefined; refresh.disabled = true; results.replaceChildren(); publicStatus.textContent = '正在载入大家排行…';
@@ -226,7 +235,8 @@
       onViewChange(view);
       if (mine) {revision++; refreshState(); return;}
       if (!portraits) portraits = window.WFCatalogAvatars.create({host: avatarHost, catalog: dynamicHost, characters, ui, label: '大家排行角色头像'});
-      if (changed || !results.children.length) loadPublic();
+      if (cached && !cached.stale && Date.parse(cached.nextRefreshAt) > Date.now()) renderPublic(cached);
+      else if (changed || !results.children.length) loadPublic();
     }
     async function openSubmit() {
       if (dialogOpen || !online()) return;
@@ -234,7 +244,7 @@
       const modal = C.dialog(count ? '提交我的排行' : '撤回自己的手排票', ui), dialog = modal.element;
       dialogOpen = true; refreshState();
       dialog.append(el('p', 'tier-submit-preview', count ? `将提交当前 ${count} 位角色的位置。未摆放的角色不计票。` : '当前排行为空，提交后会撤回你之前全部手排票。'),
-        el('p', 'tier-submit-policy', '每天可提交一次（北京时间换日）。本次提交会替换自己的整份旧排行，每位玩家对每个角色只占一票。'));
+        el('p', 'tier-submit-policy', '每天可提交一次（北京时间换日）。本次提交会替换自己的整份旧排行，每位玩家对每个角色只占一票。提交立即保存，公共榜每日汇总，次日显示。'));
       const notice = el('p', 'tier-submit-notice', '正在确认今日提交状态…'); notice.setAttribute('role', 'status');
       const verification = el('div', 'community-verification'), confirm = el('button', 'primary-button', count ? '验证后确认提交' : '验证后确认撤回'); confirm.type = 'button';
       const retry = el('button', 'secondary-button', '重新连接排行服务'); retry.type = 'button'; retry.hidden = true;
@@ -264,8 +274,7 @@
           const value = personalRecord(await C.client.request('/tier-rankings', {rows, turnstileToken}));
           if (!value.submittedToday || value.rankedCharacters !== count) throw new Error('服务端尚未确认本次排行，请重新连接核实。');
           submitted = value; completed = true;
-          if (!closed) {notice.textContent = `${count ? '排行已提交，大家排行已更新。' : '已撤回之前的手排票。'}${nextTime(value)}`; verification.hidden = true;}
-          if (element.isConnected && view === 'community') loadPublic();
+          if (!closed) {notice.textContent = `${count ? '排行已保存，次日计入大家排行。' : '已撤回之前的手排票，公共榜次日更新。'}${nextTime(value)}`; verification.hidden = true;}
         } catch (error) {
           if (error?.code === 'already_ranked' || error?.code === 'daily_limit') {
             completed = true;

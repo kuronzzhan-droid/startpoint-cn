@@ -65,12 +65,12 @@ test('public participation uses distinct site statistics and keeps the same scop
   assert.match(summary.textContent, /全站 · 共 — 人参与.*角色评分—人.*手动排行—人.*正在统计/);
   assert.equal(x.subscriptions.length, 1); assert.equal(x.calls.length, 1);
   x.emitStats({status: 'ready', data: siteStats()});
-  assert.match(summary.textContent, /全站 · 共 17 人参与.*角色评分17人.*手动排行11人.*正在浏览4人.*定时更新/);
+  assert.match(summary.textContent, /全站 · 共 17 人参与.*角色评分17人.*手动排行11人.*近 30 分钟活跃4人.*定时更新/);
   assert.match(all(summary, 'tier-participation-count')[2].title, /最近 5 分钟.*全站.*多标签去重/);
   await x.host.all(node => node.attributes['aria-label'] === '火属性排行')[0].fire();
   assert.match(summary.textContent, /全站 · 共 17 人参与.*角色评分17人.*手动排行11人/); assert.equal(x.calls.length, 1);
   assert.equal(all(x.host, 'tier-public-card').length, 2);
-  x.emitStats({status: 'ready', data: {...siteStats(18, 12), onlineVisitors: 6}}); assert.match(summary.textContent, /角色评分18人.*手动排行12人.*正在浏览6人/);
+  x.emitStats({status: 'ready', data: {...siteStats(18, 12), onlineVisitors: 6}}); assert.match(summary.textContent, /角色评分18人.*手动排行12人.*近 30 分钟活跃6人/);
   assert.equal(x.calls.length, 1); assert.equal(x.subscriptions.length, 1);
 });
 
@@ -78,7 +78,7 @@ test('public participation uses distinct site statistics and keeps the same scop
 test('participation refresh age is separate from the online sample and supports rolling deployments', () => {
   const x = setup(), summary = cls(x.host, 'tier-public-participation');
   x.emitStats({status: 'ready', data: {...siteStats(), participationAsOf:'2026-09-30T11:50:00.000Z', participationStale:true}});
-  assert.match(summary.textContent, /正在浏览4人.*参与人数更新中/);
+  assert.match(summary.textContent, /近 30 分钟活跃4人.*参与人数更新中/);
   assert.match(cls(summary, 'tier-participation-status').title, /参与人数统计于/);
   x.emitStats({status: 'ready', data: {...siteStats(), presenceWindowSeconds:120}});
   assert.match(all(summary, 'tier-participation-count')[2].title, /最近 2 分钟/);
@@ -162,7 +162,7 @@ test('element tabs filter cached rows without requests and preserve server tie o
   assert.deepEqual(all(x.host, 'tier-public-card').map(card => card.attributes['data-character-id']), ['c3', 'c1']); assert.equal(x.calls.length, 1);
   assert.match(cls(x.host, 'tier-public-status').textContent, /火属性榜 · 2/);
   await x.host.all(node => node.attributes['aria-label'] === '暗属性排行')[0].fire();
-  assert.equal(all(x.host, 'tier-public-card').length, 0); assert.match(cls(x.host, 'tier-public-status').textContent, /暗属性暂时还没有/);
+  assert.equal(all(x.host, 'tier-public-card').length, 0); assert.match(cls(x.host, 'tier-public-status').textContent, /暗属性还没有已汇总/);
   await button(x.host, '总榜').fire(); assert.equal(all(x.host, 'tier-public-card').length, 3); assert.equal(x.calls.length, 1);
 });
 
@@ -275,7 +275,7 @@ test('clicking an avatar opens its authoritative score breakdown and separate ch
 test('the rating board preserves actual zero but never fills an empty placement board with rating votes', async () => {
   const x = setup(async () => aggregate([], [record('c2', {average: 0, voters: 1, rankScore: 12.5 / 6, row: 'provisional'})]));
   x.controller.setView('community'); await tick();
-  assert.equal(all(x.host, 'tier-public-card').length, 0); assert.match(cls(x.host, 'tier-public-status').textContent, /手动排行.*还没有玩家投票/);
+  assert.equal(all(x.host, 'tier-public-card').length, 0); assert.match(cls(x.host, 'tier-public-status').textContent, /手动排行.*还没有已汇总的玩家投票/);
   await button(x.host, '角色评分').fire(); await all(x.host, 'tier-public-card')[0].fire();
   const dialog = x.dialogs[0].element;
   assert.match(cls(dialog, 'tier-score-headline').textContent, /真实均分0\.00.*暂定，尚未定级/);
@@ -317,10 +317,10 @@ test('failed or malformed aggregate reads have an explicit retry instead of a fa
   assert.match(cls(x.host, 'tier-public-status').textContent, /资料异常.*重试/);
   await button(x.host, '刷新大家排行').fire(); assert.equal(all(x.host, 'tier-public-card').length, 3);
   const empty = setup(async () => aggregate([])); empty.controller.setView('community'); await tick();
-  assert.equal(all(empty.host, 'tier-public-card').length, 0); assert.match(cls(empty.host, 'tier-public-status').textContent, /还没有玩家投票/);
+  assert.equal(all(empty.host, 'tier-public-card').length, 0); assert.match(cls(empty.host, 'tier-public-status').textContent, /还没有已汇总的玩家投票/);
 });
 
-test('submit requires a one-use challenge and explicit confirmation, uses a board snapshot, then reads the updated public board', async () => {
+test('submit requires a one-use challenge and explicit confirmation, uses a board snapshot, then reads the daily published board', async () => {
   const x = setup(async (pathname, body) => pathname === '/tier-rankings/me' ? me : body
     ? {...me, rows: body.rows, submittedToday: true, rankedCharacters: 1} : aggregate());
   const local = rows(); local.between0 = ['c1']; x.setRows(local);
@@ -329,9 +329,20 @@ test('submit requires a one-use challenge and explicit confirmation, uses a boar
   await confirm.fire(); assert.equal(x.calls.filter(call => call[1]).length, 0);
   x.setRows(rows()); x.challenges[0].ready('verified'); await confirm.fire();
   const post = x.calls.find(call => call[1]); assert.equal(post[1].turnstileToken, 'verified'); assert.deepEqual(post[1].rows.between0, ['c1']);
-  assert.match(modal.element.textContent, /排行已提交/); assert.equal(confirm.disabled, true); assert.equal(x.challenges[0].resets, 1);
+  assert.match(modal.element.textContent, /排行已保存，次日计入/); assert.equal(confirm.disabled, true); assert.equal(x.challenges[0].resets, 1);
   modal.close(); assert.equal(x.challenges[0].destroyed, true); x.controller.setView('community'); await tick();
   assert.equal(x.calls.filter(call => call[0] === '/tier-rankings' && !call[1]).length, 1); assert.equal(all(x.host, 'tier-public-card').length, 3);
+});
+
+test('daily public board shows its actual snapshot time and reuses it across view switches until expiry', async () => {
+  const snapshot = {...aggregate(), asOf:'2099-01-01T04:00:00Z', nextRefreshAt:'2099-01-01T16:00:00Z', stale:false};
+  const x = setup(async () => snapshot);
+  x.controller.setView('community'); await tick();
+  assert.match(cls(x.host, 'tier-public-status').textContent, /今日汇总：北京时间.*下次/);
+  x.controller.setView('mine'); x.controller.setView('community'); await tick(); assert.equal(x.calls.length, 1);
+  await button(x.host, '刷新大家排行').fire(); assert.equal(x.calls.length, 2);
+  const stale = setup(async () => ({...snapshot, stale:true})); stale.controller.setView('community'); await tick();
+  assert.match(cls(stale.host, 'tier-public-status').textContent, /上次汇总.*今日数据更新中/);
 });
 
 test('a daily block prevents verification and resubmission, and 409 responses also lock the dialog', async () => {

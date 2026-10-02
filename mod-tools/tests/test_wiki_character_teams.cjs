@@ -32,6 +32,7 @@ function setup(handler = async () => ({items: [entry()], nextCursor: null}), opt
   const window = {location: {protocol: options.protocol || 'https:', hash: '#character/c1'}, WFCommunity: {...api, client: {
     request: async (...args) => {calls.push(args); return handler(...args);},
   }}, addEventListener: (name, fn) => events.set(name, fn), removeEventListener: name => events.delete(name)};
+  if (options.IntersectionObserver) window.IntersectionObserver = options.IntersectionObserver;
   const storage = new Map([['wf-wiki-catalog-avatar', options.form || 'before']]);
   const context = {window, location: window.location, URLSearchParams, Date, localStorage: {getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value)}};
   for (const file of ['catalog-avatars.js', 'community.js', 'character-teams.js']) vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki', file), 'utf8'), context);
@@ -50,6 +51,23 @@ function setup(handler = async () => ({items: [entry()], nextCursor: null}), opt
 const cards = x => x.host.querySelectorAll('.character-team-card');
 const button = (x, label) => x.host.querySelectorAll('button').find(node => node.textContent === label);
 const status = x => x.host.querySelector('.character-teams-status');
+
+test('below-fold recommendations load once near the viewport and never load after page leave', async () => {
+  const observers = [];
+  class Observer {
+    constructor(callback, options) {this.callback = callback; this.options = options; observers.push(this);}
+    observe(node) {this.target = node;}
+    disconnect() {this.disconnected = true;}
+  }
+  const x = setup(undefined, {IntersectionObserver: Observer}); await tick();
+  assert.equal(x.calls.length, 0); assert.equal(observers[0].target, x.controller.element);
+  observers[0].callback([{isIntersecting:false}]); await tick(); assert.equal(x.calls.length, 0);
+  observers[0].callback([{isIntersecting:true}]); await tick();
+  assert.equal(x.calls.length, 1); assert.equal(observers[0].disconnected, true); assert.equal(cards(x).length, 1);
+  const y = setup(undefined, {IntersectionObserver: Observer});
+  y.controller.destroy(); assert.equal(observers[1].disconnected, true);
+  observers[1].callback([{isIntersecting:true}]); await tick(); assert.equal(y.calls.length, 0);
+});
 
 test('related teams query the exact character by popularity and use six-portrait public detail links without equipment', async () => {
   const x = setup(async () => ({items: [entry({id: 'team / &1', title: '<img src=x onerror=bad> 火队'})]})); await tick();

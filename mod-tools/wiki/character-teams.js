@@ -14,10 +14,10 @@
     const more = el('button', 'secondary-button', '加载更多配队'), retry = el('button', 'secondary-button', '重试加载');
     more.type = retry.type = 'button'; more.hidden = retry.hidden = true; actions.append(more, retry);
     root.append(heading, status, grid, actions); host.append(root);
-    const entries = new Map(); let cursor = '', failedCursor = '', busy = false, disposed = false, attached = root.isConnected, unsubscribe;
+    const entries = new Map(); let cursor = '', failedCursor = '', busy = false, disposed = false, attached = root.isConnected, unsubscribe, observer;
     function destroy() {
       if (disposed) return;
-      disposed = true; unsubscribe?.(); unsubscribe = undefined;
+      disposed = true; observer?.disconnect(); observer = undefined; unsubscribe?.(); unsubscribe = undefined;
       window.removeEventListener?.('wf-page-leave', destroy);
     }
     function current() {
@@ -92,7 +92,14 @@
     });
     if (!/^https?:$/.test(window.location?.protocol)) status.textContent = '离线版无法读取相关配队，请到在线网站查看。';
     else if (!id || !C?.client || !C?.board) status.textContent = '配队服务尚未准备好，请刷新页面重试。';
-    else load();
+    else if (window.IntersectionObserver) {
+      status.textContent = '滑到这里后加载相关配队。';
+      observer = new window.IntersectionObserver(items => {
+        if (!items.some(item => item.isIntersecting) || !current()) return;
+        observer?.disconnect(); observer = undefined; load();
+      }, {rootMargin: '160px'});
+      observer.observe(root);
+    } else load();
     return {element: root, destroy};
   }};
 })();

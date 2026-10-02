@@ -85,11 +85,20 @@ test('a complete 572-character board with the maximum verification token uses a 
     method: 'POST', headers: {Origin: 'https://wiki.example', 'Content-Type': 'application/json', 'CF-Connecting-IP': '192.0.2.1'}, body
   }), env);
   assert.equal(result.status, 200); assert.equal((await result.json()).rankedCharacters, 572);
-  assert.deepEqual(batches, [3]); assert.equal(queries.length, 6);
+  assert.deepEqual(batches, [3]);
+  assert.equal(queries.length, 7, 'first request adds one persistent maintenance gate; the vote transaction remains three statements');
+  assert.equal(queries.filter(sql => sql.startsWith('INSERT INTO community_maintenance')).length, 1);
   queries.length = 0;
   const summary = await handle(new Request('https://wiki.example/api/community/tier-rankings'), env);
   const resultBoards = (await summary.json()).rankings;
-  assert.equal(resultBoards.placement.length, 572); assert.deepEqual(resultBoards.rating, []); assert.equal(queries.length, 2);
+  assert.equal(resultBoards.placement.length, 572); assert.deepEqual(resultBoards.rating, []);
+  assert.equal(queries.length, 5, 'daily cold summary reads and claims its snapshot, scans both sources, then publishes once');
+  assert.equal(queries.filter(sql => /GROUP BY/.test(sql)).length, 2);
+  queries.length = 0;
+  const warm = await handle(new Request('https://wiki.example/api/community/tier-rankings'), env);
+  assert.deepEqual((await warm.json()).rankings, resultBoards);
+  assert.equal(queries.length, 1, 'later requests read only the persisted snapshot, regardless of board size');
+  assert.match(queries[0], /^SELECT \* FROM community_daily_ranking_snapshots/);
 });
 
 test('a later character score updates only the rating board and keeps one vote per player', async (t) => {

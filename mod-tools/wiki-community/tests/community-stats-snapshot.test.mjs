@@ -86,7 +86,7 @@ test('0011 is reentrant, preserves every old table and installs automatically on
   const names = raw.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all().map(row => row.name);
   const snapshot = () => names.map(name => raw.prepare(`SELECT * FROM ${name}`).all());
   const before = snapshot(), migration = readFileSync(new URL('../migrations/0011-participation-snapshots.sql', import.meta.url), 'utf8');
-  assert.equal(`-- Internal aggregate cache only;${additions}`.trim(), migration.trim());
+  assert.equal(`-- Internal aggregate cache only;${additions}`.split('-- Maintenance cadence only:')[0].trim(), migration.trim());
   raw.exec(migration); raw.exec(migration); assert.deepEqual(snapshot(), before);
   assert.equal(raw.prepare("SELECT COUNT(*) n FROM sqlite_master WHERE type='trigger' AND name LIKE 'community_participation_%'").get().n, 6);
   assert.equal(raw.prepare('SELECT revision FROM community_participation_revision').get().revision, 0);

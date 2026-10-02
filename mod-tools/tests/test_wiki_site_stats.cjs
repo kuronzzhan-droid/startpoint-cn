@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const {create,normalize,storageKey}=require('../wiki/site-stats.js');
 const tick=()=>new Promise(setImmediate);
 const epoch=Date.parse('2026-09-30T10:00:00.000Z');
-const stats=(extra={})=>({totalVoters:9,ratingVoters:7,tierVoters:3,onlineVisitors:2,asOf:new Date(epoch).toISOString(),presenceWindowSeconds:300,...extra});
+const stats=(extra={})=>({totalVoters:9,ratingVoters:7,tierVoters:3,onlineVisitors:2,asOf:new Date(epoch).toISOString(),presenceWindowSeconds:1800,...extra});
 function fixture({protocol='https:',hidden=false,request,config=async()=>({enabled:true}),storage,locks,clock={time:epoch}}={}) {
   let id=0;const timers=new Map(),calls=[],seen=[],events=new Map(),docEvents=new Map();
   const eventBus=map=>({addEventListener:(key,fn)=>map.set(key,fn),removeEventListener:(key)=>map.delete(key)});
@@ -40,7 +40,7 @@ const sharedSnapshot=(extra={})=>({version:1,writtenAt:epoch,lastAttempt:epoch,r
 test('one shared heartbeat initializes identity before presence and notifies multiple subscribers',async()=>{
   const x=fixture(),second=[];x.api.subscribe(v=>second.push(v));x.api.start();await tick();
   assert.deepEqual(x.calls,['config',['/presence',{},'POST']]);assert.equal(x.seen.at(-1).data.onlineVisitors,2);
-  assert.equal(second.at(-1).data.ratingVoters,7);assert.equal(x.timers.size,1);assert.equal([...x.timers.values()][0].ms,90000);
+  assert.equal(second.at(-1).data.ratingVoters,7);assert.equal(x.timers.size,1);assert.equal([...x.timers.values()][0].ms,1800000);
 });
 test('simultaneous refreshes share the pending request and only one timer',async()=>{
   let resolve;const x=fixture({request:()=>new Promise(done=>resolve=done)});x.api.start();await tick();
@@ -49,7 +49,7 @@ test('simultaneous refreshes share the pending request and only one timer',async
 });
 test('hidden pages stop polling; returning after the interval refreshes exactly once',async()=>{
   const x=fixture();x.api.start();await tick();x.hide();assert.equal(x.timers.size,0);
-  x.advance(120000);await x.api.refresh();assert.equal(x.calls.length,2);
+  x.advance(1800001);await x.api.refresh();assert.equal(x.calls.length,2);
   x.show();x.events.get('focus')();await tick();assert.equal(x.calls.length,4);assert.equal(x.timers.size,1);
 });
 test('background initial tabs never initialize identity or send presence until visible',async()=>{
@@ -61,9 +61,9 @@ test('becoming hidden during identity setup skips presence',async()=>{
   assert.deepEqual(x.calls,['config']);assert.equal(x.timers.size,0);
 });
 test('failures retain real last counts rather than showing invented zero and can recover',async()=>{
-  let failure=false;const x=fixture({request:async()=>{if(failure)throw new Error('offline');return stats();}});x.api.start();await tick();
-  failure=true;x.advance(90000);await x.runTimer();assert.equal(x.seen.at(-1).status,'error');assert.equal(x.seen.at(-1).data.tierVoters,3);
-  failure=false;x.advance(90000);await x.runTimer();assert.equal(x.seen.at(-1).status,'ready');
+  let failure=false;const x=fixture({request:async()=>{if(failure)throw new Error('offline');return stats({asOf:new Date(x.time()).toISOString()});}});x.api.start();await tick();
+  failure=true;x.advance(1800000);await x.runTimer();assert.equal(x.seen.at(-1).status,'error');assert.equal(x.seen.at(-1).data.tierVoters,3);
+  failure=false;x.advance(1800000);await x.runTimer();assert.equal(x.seen.at(-1).status,'ready');
 });
 test('malformed initial data is unavailable, not a zero-player result',async()=>{
   const x=fixture({request:async()=>stats({ratingVoters:-1})});x.api.start();await tick();
@@ -74,7 +74,7 @@ test('offline files never poll and keep unavailable counts distinct from zero',a
   const x=fixture({protocol:'file:'});x.api.start();await tick();assert.equal(x.calls.length,0);assert.equal(x.seen.at(-1).status,'offline');assert.equal(x.seen.at(-1).data,null);
 });
 test('unsubscribe and stop release view subscriptions, timers and visibility listeners',async()=>{
-  const x=fixture(),values=[];const off=x.api.subscribe(v=>values.push(v));x.api.start();await tick();off();x.advance(90000);await x.runTimer();
+  const x=fixture(),values=[];const off=x.api.subscribe(v=>values.push(v));x.api.start();await tick();off();x.advance(1800000);await x.runTimer();
   assert.equal(values.length,3);x.api.stop();assert.equal(x.timers.size,0);assert.equal(x.events.size,0);assert.equal(x.docEvents.size,0);
 });
 test('late responses after stop do not repaint or schedule new work',async()=>{
@@ -86,15 +86,27 @@ test('focus storms within the interval do not send extra requests',async()=>{
   assert.equal(x.calls.length,2);assert.equal(x.timers.size,1);
 });
 
-test('consecutive failures back off to ten minutes and a success restores ninety-second polling',async()=>{
+test('a slow successful response starts a full thirty-minute cooldown across tabs',async()=>{
+  let resolve;const group=browserGroup(),a=group.add({request:()=>new Promise(done=>resolve=done)}),b=group.add();
+  a.api.start();await tick();group.clock.time+=12000;
+  resolve(stats({asOf:new Date(group.clock.time-6000).toISOString()}));await tick();
+  b.api.start();await tick();
+  assert.equal([...a.timers.values()][0].ms,1800000);
+  assert.equal([...b.timers.values()][0].ms,1800000);
+  group.clock.time+=1799999;await b.api.refresh();assert.deepEqual(b.calls,[]);
+  group.clock.time++;await b.api.refresh();assert.equal(b.calls.length,2);
+  a.api.stop();b.api.stop();
+});
+
+test('consecutive failures back off to four hours and a success restores thirty-minute polling',async()=>{
   let failure=true;const x=fixture({request:async()=>{if(failure)throw new Error('unavailable');return stats({asOf:new Date(x.time()).toISOString()});}});
   x.api.start();await tick();
-  for(const delay of [90000,180000,300000,600000,600000]){
+  for(const delay of [1800000,3600000,7200000,14400000,14400000]){
     assert.equal([...x.timers.values()][0].ms,delay);x.advance(delay);await x.runTimer();
   }
-  failure=false;x.advance(600000);await x.runTimer();
-  assert.equal(x.seen.at(-1).status,'ready');assert.equal([...x.timers.values()][0].ms,90000);
-  failure=true;x.advance(90000);await x.runTimer();assert.equal([...x.timers.values()][0].ms,90000);
+  failure=false;x.advance(14400000);await x.runTimer();
+  assert.equal(x.seen.at(-1).status,'ready');assert.equal([...x.timers.values()][0].ms,1800000);
+  failure=true;x.advance(1800000);await x.runTimer();assert.equal([...x.timers.values()][0].ms,1800000);
 });
 
 test('server retryAfter survives focus, online, visibility, explicit refresh and restart attempts',async()=>{
@@ -111,7 +123,7 @@ test('server retryAfter survives focus, online, visibility, explicit refresh and
 });
 
 test('retryAfter is bounded and invalid hints cannot disable backoff',async()=>{
-  for(const [retryAfter,delay] of [[90,90000],[999999,86400000],[-4,90000],['bad',90000],[Infinity,90000]]){
+  for(const [retryAfter,delay] of [[90,1800000],[999999,86400000],[-4,1800000],['bad',1800000],[Infinity,1800000]]){
     const x=fixture({config:async()=>{throw Object.assign(new Error('unavailable'),{retryAfter});}});
     x.api.start();await tick();assert.equal([...x.timers.values()][0].ms,delay);
     assert.equal(x.seen.at(-1).data,null);assert.equal(x.seen.at(-1).errorCode,'');x.api.stop();
@@ -120,14 +132,14 @@ test('retryAfter is bounded and invalid hints cannot disable backoff',async()=>{
 
 test('backoff starts when a slow failure finishes and quota errors preserve the last real count',async()=>{
   let reject;const y=fixture({request:()=>new Promise((resolve,no)=>reject=no)});y.api.start();await tick();
-  y.advance(60000);reject(new Error('timeout'));await tick();assert.equal([...y.timers.values()][0].ms,90000);
+  y.advance(60000);reject(new Error('timeout'));await tick();assert.equal([...y.timers.values()][0].ms,1800000);
   const {createApi}=require('../wiki/community-client.js');
   let failed=false;const client=createApi(async url=>({ok:!failed,status:failed?503:200,json:async()=>failed?
     {error:'database_quota_exceeded',message:'raw database failure',retryAfter:300}:url.endsWith('/config')?{enabled:true}:stats()}),'https:');
   const bus={addEventListener(){},removeEventListener(){}};let delay,time=epoch;
   const api=create({client,protocol:'https:',document:{visibilityState:'visible',...bus},events:bus,now:()=>time,
     schedule:(fn,ms)=>{delay=ms;return 1;},cancel:()=>{}}),seen=[];
-  api.subscribe(value=>seen.push(value));api.start();await tick();failed=true;time+=90000;await api.refresh();
+  api.subscribe(value=>seen.push(value));api.start();await tick();failed=true;time+=1800000;await api.refresh();
   assert.equal(seen.at(-1).data.onlineVisitors,2);assert.equal(seen.at(-1).errorCode,'database_quota_exceeded');
   assert.equal(delay,3600000);assert.equal(JSON.stringify(seen).includes('raw database'),false);api.stop();y.api.stop();
 });
@@ -137,15 +149,15 @@ test('expired visitor cookies recover through fresh config, with at most one hea
   let cookie=false,blocked=false,configs=0,presences=0;
   const client=createApi(async url=>{
     if(url.endsWith('/config')){configs++;cookie=!blocked;return {ok:true,json:async()=>({enabled:true})};}
-    presences++;return cookie?{ok:true,json:async()=>stats()}:
+    presences++;return cookie?{ok:true,json:async()=>stats({asOf:new Date(time).toISOString()})}:
       {ok:false,status:428,json:async()=>({error:'visitor_required'})};
   },'https:');
   const eventBus={addEventListener(){},removeEventListener(){}};let time=epoch;
   const api=create({client,protocol:'https:',document:{visibilityState:'visible',...eventBus},events:eventBus,
     now:()=>time,schedule:()=>1,cancel:()=>{}}),seen=[];
   api.subscribe(value=>seen.push(value));api.start();await tick();assert.equal(configs,1);assert.equal(seen.at(-1).status,'ready');
-  cookie=false;time+=90000;await api.refresh();assert.equal(configs,2);assert.equal(presences,3);assert.equal(seen.at(-1).status,'ready');
-  cookie=false;blocked=true;time+=90000;await api.refresh();assert.equal(configs,3);assert.equal(presences,5);
+  cookie=false;time+=1800000;await api.refresh();assert.equal(configs,2);assert.equal(presences,3);assert.equal(seen.at(-1).status,'ready');
+  cookie=false;blocked=true;time+=1800000;await api.refresh();assert.equal(configs,3);assert.equal(presences,5);
   assert.equal(seen.at(-1).status,'error');assert.equal(seen.at(-1).data.onlineVisitors,2);api.stop();
 });
 
@@ -156,9 +168,9 @@ test('two visible tabs share one locked request and receive its result through s
   resolve(stats());await tick();
   for(const tab of [a,b]){
     assert.equal(tab.seen.at(-1).status,'ready');assert.equal(tab.seen.at(-1).data.onlineVisitors,2);
-    assert.equal([...tab.timers.values()][0].ms,90000);
+    assert.equal([...tab.timers.values()][0].ms,1800000);
   }
-  group.clock.time+=90000;
+  group.clock.time+=1800000;
   // The follower can lead the next interval; the original tab still receives its result.
   await b.runTimer();await a.runTimer();await tick();
   assert.equal(a.calls.length+b.calls.length,4);assert.equal(a.seen.at(-1).data.asOf,new Date(group.clock.time).toISOString());
@@ -169,20 +181,20 @@ test('a newly opened visible tab uses a fresh shared snapshot without configurin
   const group=browserGroup(),a=group.add();a.api.start();await tick();
   const b=group.add();b.api.start();await tick();
   assert.deepEqual(b.calls,[]);assert.equal(b.seen.at(-1).status,'ready');assert.equal(b.seen.at(-1).data.totalVoters,9);
-  assert.equal([...b.timers.values()][0].ms,90000);a.api.stop();b.api.stop();
+  assert.equal([...b.timers.values()][0].ms,1800000);a.api.stop();b.api.stop();
 });
 
-test('a follower takes over within ninety seconds after the previous owner closes or crashes',async()=>{
+test('a follower takes over within thirty minutes after the previous owner closes or crashes',async()=>{
   let resolve;const group=browserGroup(),a=group.add({request:()=>new Promise(done=>resolve=done)}),b=group.add();
   a.api.start();b.api.start();await tick();a.api.stop();group.releaseCrashedLock();
-  assert.equal(b.calls.length,0);group.clock.time+=90000;await b.runTimer();await tick();
+  assert.equal(b.calls.length,0);group.clock.time+=1800000;await b.runTimer();await tick();
   assert.equal(b.calls.length,2);assert.equal(b.seen.at(-1).status,'ready');
   const raw=group.raw(),writes=group.writes.length;resolve(stats({onlineVisitors:99}));await tick();
   assert.equal(group.raw(),raw);assert.equal(group.writes.length,writes);assert.equal(b.seen.at(-1).data.onlineVisitors,2);b.api.stop();
 });
 
 test('shared quota failures preserve counts and cooldown across tabs, focus storms and owner shutdown',async()=>{
-  const group=browserGroup(JSON.stringify(sharedSnapshot({lastAttempt:epoch-90000}))),resetAt=new Date(epoch+7200000).toISOString();
+  const group=browserGroup(JSON.stringify(sharedSnapshot({lastAttempt:epoch-1800000}))),resetAt=new Date(epoch+7200000).toISOString();
   const a=group.add({request:async()=>{throw Object.assign(new Error('private SQL'),{code:'database_quota_exceeded',retryAfter:300,data:{resetAt}});}});
   a.api.start();await tick();const b=group.add();b.api.start();await tick();a.api.stop();
   assert.deepEqual(b.calls,[]);assert.equal(b.seen.at(-1).data.onlineVisitors,2);assert.equal(b.seen.at(-1).errorCode,'database_quota_exceeded');
@@ -202,23 +214,23 @@ test('expired saved counts do not discard a valid shared quota cooldown',async()
 test('statistics-paused responses share the server cooldown without pretending it is quota exhaustion',async()=>{
   const group=browserGroup(),a=group.add({request:async()=>{throw Object.assign(new Error('paused'),{code:'statistics_paused',retryAfter:300});}});
   a.api.start();await tick();const b=group.add();b.api.start();await tick();
-  assert.deepEqual(b.calls,[]);assert.equal(b.seen.at(-1).errorCode,'statistics_paused');assert.equal([...b.timers.values()][0].ms,300000);
+  assert.deepEqual(b.calls,[]);assert.equal(b.seen.at(-1).errorCode,'statistics_paused');assert.equal([...b.timers.values()][0].ms,1800000);
   a.api.stop();b.api.stop();
 });
 
 test('ordinary failure streaks follow the next leading tab instead of restarting backoff',async()=>{
   const group=browserGroup(),fail=async()=>{throw new Error('unavailable');},a=group.add({request:fail}),b=group.add({request:fail});
-  a.api.start();b.api.start();await tick();assert.equal([...b.timers.values()][0].ms,90000);
-  a.hide();group.clock.time+=90000;await b.runTimer();await tick();
-  assert.equal([...b.timers.values()][0].ms,180000);assert.equal(a.seen.at(-1).status,'error');
-  a.show();assert.equal([...a.timers.values()][0].ms,180000);
+  a.api.start();b.api.start();await tick();assert.equal([...b.timers.values()][0].ms,1800000);
+  a.hide();group.clock.time+=1800000;await b.runTimer();await tick();
+  assert.equal([...b.timers.values()][0].ms,3600000);assert.equal(a.seen.at(-1).status,'error');
+  a.show();assert.equal([...a.timers.values()][0].ms,3600000);
   assert.equal(a.calls.length+b.calls.length,4);a.api.stop();b.api.stop();
 });
 
 test('hidden followers consume shared results without sending or scheduling heartbeats',async()=>{
   const group=browserGroup(),a=group.add(),b=group.add({hidden:true});a.api.start();b.api.start();await tick();
   assert.deepEqual(b.calls,[]);assert.equal(b.timers.size,0);assert.equal(b.seen.at(-1).data.totalVoters,9);
-  a.hide();group.clock.time+=90000;b.show();await tick();
+  a.hide();group.clock.time+=1800000;b.show();await tick();
   assert.equal(b.calls.length,2);assert.equal(a.calls.length,2);assert.equal(a.timers.size,0);a.api.stop();b.api.stop();
 });
 
@@ -234,10 +246,10 @@ test('corrupt, expired or future shared state cannot fake counts or prevent a le
 });
 
 test('a stale last-good snapshot is visibly stale rather than current and refreshes on schedule',async()=>{
-  const group=browserGroup(JSON.stringify(sharedSnapshot({data:stats({asOf:new Date(epoch-301000).toISOString()})}))),x=group.add();
+  const group=browserGroup(JSON.stringify(sharedSnapshot({data:stats({asOf:new Date(epoch-1800001).toISOString()})}))),x=group.add();
   x.api.start();await tick();assert.deepEqual(x.calls,[]);
   assert.equal(x.seen.at(-1).status,'error');assert.equal(x.seen.at(-1).errorCode,'stale_stats');assert.equal(x.seen.at(-1).data.onlineVisitors,2);
-  group.clock.time+=90000;await x.runTimer();assert.equal(x.seen.at(-1).status,'ready');x.api.stop();
+  group.clock.time+=1800000;await x.runTimer();assert.equal(x.seen.at(-1).status,'ready');x.api.stop();
 });
 
 test('disabled storage or unavailable locks safely degrades without a rapid retry loop',async()=>{
@@ -245,7 +257,7 @@ test('disabled storage or unavailable locks safely degrades without a rapid retr
   for(const options of [{storage:broken},{storage:{getItem:()=>null,setItem(){throw new Error('full');}}},
     {storage:{getItem:()=>null,setItem(){}},locks:{request:async()=>{throw new Error('unsupported');}}}]){
     const x=fixture(options);x.api.start();await tick();assert.equal(x.calls.length,2);assert.equal(x.seen.at(-1).status,'ready');
-    assert.equal([...x.timers.values()][0].ms,90000);await x.api.refresh();assert.equal(x.calls.length,2);x.api.stop();
+    assert.equal([...x.timers.values()][0].ms,1800000);await x.api.refresh();assert.equal(x.calls.length,2);x.api.stop();
   }
   const group=browserGroup(),a=group.add({locks:undefined}),b=group.add({locks:undefined});
   a.api.start();b.api.start();await tick();assert.equal(a.calls.length+b.calls.length,2);a.api.stop();b.api.stop();
@@ -268,12 +280,12 @@ test('stop before identity settles suppresses presence, shared writes and late c
 test('stopped generations cannot repaint after the same controller starts again',async()=>{
   let resolve;const x=fixture({request:()=>new Promise(done=>resolve=done)});x.api.start();await tick();x.api.stop();x.api.start();
   resolve(stats({onlineVisitors:99}));await tick();assert.equal(x.seen.at(-1).data,null);assert.equal(x.calls.length,2);
-  assert.equal([...x.timers.values()][0].ms,90000);x.api.stop();
+  assert.equal([...x.timers.values()][0].ms,1800000);x.api.stop();
 });
 
-test('normalization accepts both presence windows and validates optional participation freshness',()=>{
+test('normalization accepts legacy and thirty-minute presence windows and validates optional participation freshness',()=>{
   assert.equal(normalize(stats({presenceWindowSeconds:120})).presenceWindowSeconds,120);
-  assert.equal(normalize(stats()).presenceWindowSeconds,300);
+  assert.equal(normalize(stats()).presenceWindowSeconds,1800);
   const value=stats({participationAsOf:new Date(epoch-60000).toISOString(),participationStale:true});
   assert.equal(normalize(value).participationAsOf,value.participationAsOf);assert.equal(normalize(value).participationStale,true);
   for(const patch of [{presenceWindowSeconds:180},{participationAsOf:'bad',participationStale:false},
@@ -283,7 +295,7 @@ test('normalization accepts both presence windows and validates optional partici
 
 test('site presence describes the actual returned window and stale participation separately',async()=>{
   const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
-  for(const [seconds,participationStale] of [[120,false],[300,true]]){
+  for(const [seconds,participationStale] of [[120,false],[300,true],[1800,false]]){
     const host={children:[],dataset:{},append(...nodes){this.children.push(...nodes);},setAttribute(){}};
     const bus={addEventListener(){},removeEventListener(){}};
     const window={...bus,document:{...bus,visibilityState:'visible',getElementById:()=>host,createElement:()=>({textContent:''})},location:{protocol:'https:'},
@@ -291,7 +303,7 @@ test('site presence describes the actual returned window and stale participation
         ...(seconds===300?{participationStale,participationAsOf:new Date(epoch-60000).toISOString()}: {})})}}};
     class Clock extends Date{static now(){return epoch;}}
     vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki/site-stats.js'),'utf8'),{window,Date:Clock,setTimeout:()=>1,clearTimeout(){}});await tick();
-    assert.equal(host.dataset.status,'ready');assert.match(host.children[2].textContent,new RegExp(`最近 ${seconds/60} 分钟.*约 90 秒更新`));
+    assert.equal(host.dataset.status,'ready');assert.match(host.children[2].textContent,new RegExp(`最近 ${seconds/60} 分钟.*每 30 分钟更新`));
     assert.equal(host.children[2].textContent.includes('参与人数更新中'),participationStale);
     assert.match(host.title,new RegExp(`将在 ${seconds/60} 分钟内`));window.WFSiteStats.stop();
   }
