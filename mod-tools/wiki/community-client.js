@@ -48,8 +48,18 @@
   }
   function createApi(fetcher, protocol) {
     let configPromise, configRequest;
+    // Presentation-only memory: protected actions always ask the server again.
+    let identity, identityVersion = 0;
+    const identityListeners = new Set(), identityRequests = new Map();
+    const identityPath = (path) => path === '/auth/me' || path === '/admin/me';
+    function updateIdentity(value) {
+      identity = value?.id && typeof value.email === 'string' && value.enabled !== false
+        ? Object.freeze({id:value.id, email:value.email, role:value.role, mustChangePassword:value.mustChangePassword === true}) : null;
+      for (const listener of identityListeners) {try {listener(identity);} catch { /* UI listeners cannot change API outcomes. */ }}
+    }
     async function send(path, body, method = body ? 'POST' : 'GET') {
       if (!/^https?:$/.test(protocol)) throw new Error('离线版可编辑和保存队伍；配队大全与点赞请前往公开网站。');
+      const version = identityVersion;
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000);
       try {
@@ -61,11 +71,15 @@
         let value;
         try {value = await response.json();} catch {throw new Error('此站暂未启用配队社区，仍可使用本地队伍编成。');}
         if (!response.ok) {
+          if (response.status === 401 && version === identityVersion && (identityPath(path) || path.startsWith('/admin/'))) updateIdentity(null);
           const error = new Error(value.message || '配队社区暂时无法完成此操作。');
           Object.assign(error, {status: response.status, code: value.error, data: value,
             retryAfter: Number(value.retryAfter || response.headers?.get('Retry-After')) || 0});
           throw error;
         }
+        if (method === 'POST' && ['/auth/login','/auth/bootstrap','/auth/password','/auth/logout'].includes(path)) {
+          identityVersion++; identityRequests.clear(); updateIdentity(path === '/auth/logout' ? null : value);
+        } else if (method === 'GET' && identityPath(path) && version === identityVersion) updateIdentity(value);
         return value;
       } catch (error) {
         if (error.name === 'AbortError') throw new Error('连接超时，请重试；填写的内容仍保留。');
@@ -82,9 +96,18 @@
       // Initial visible-page statistics and a page's own config share one cookie.
       // Wait for that response before a concurrent rating/like may create an identity.
       if (configRequest) await configRequest.catch(() => {});
+      if (method === 'GET' && identityPath(path)) {
+        if (!identityRequests.has(path)) {
+          const pending = send(path, body, method).finally(() => {if (identityRequests.get(path) === pending) identityRequests.delete(path);});
+          identityRequests.set(path, pending);
+        }
+        return identityRequests.get(path);
+      }
       return send(path, body, method);
     }
-    return {request, config: ({refresh = false} = {}) => {
+    return {request, identity: () => identity, observeIdentity: (listener) => {
+      identityListeners.add(listener); listener(identity); return () => identityListeners.delete(listener);
+    }, config: ({refresh = false} = {}) => {
       if (refresh) configPromise = null;
       if (!configPromise) configPromise = fetchConfig().then((value) => {
         if (!value.enabled) throw new Error('此站暂未启用配队社区，仍可使用本地队伍编成。');

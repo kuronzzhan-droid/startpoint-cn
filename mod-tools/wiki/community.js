@@ -88,8 +88,7 @@
     const sort = el('select'); sort.setAttribute('aria-label', '推荐队伍排序');
     [['popular', '最多点赞'], ['latest', '最新收录']].forEach(([value, label]) => {const option = el('option', '', label); option.value = value; sort.append(option);});
     const edit = el('a', 'primary-button', '本地配队模拟'); edit.href = '#team';
-    const admin = el('a', 'text-button', '管理员入口'); admin.href = '#community/admin';
-    links.append(edit, admin); header.append(el('h1', '', options.id ? '推荐队伍' : '配队大全'), links);
+    links.append(edit); header.append(el('h1', '', options.id ? '推荐队伍' : '配队大全'), links);
     const reset = el('button', 'text-button community-filter-reset', '重置筛选'); reset.type = 'button';
     toolbar.append(element, sort, reset);
     const advanced = el('details', 'community-advanced-filters'); advanced.open = false;

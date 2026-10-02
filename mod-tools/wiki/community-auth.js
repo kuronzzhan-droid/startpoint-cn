@@ -146,5 +146,20 @@
     host.append(actions, status, settings);
     host.authCleanup = () => settings.authCleanup?.();
   }
-  window.WFCommunityAuth = {ensure, controls, password, message, field};
+  function header(link) {
+    if (!link || !C?.client?.observeIdentity || link.adminCleanup) return;
+    link.adminCleanup = C.client.observeIdentity((identity) => {
+      link.textContent = identity?.email || '管理';
+      link.title = identity?.email ? `已登录：${identity.email} · 打开管理` : '管理员登录';
+      link.setAttribute('aria-label', link.title);
+      link.setAttribute('data-authenticated', String(Boolean(identity)));
+    });
+    // One check when opening the site. Login/logout and other identity requests
+    // update this label directly; navigation never schedules another check.
+    if (C.client.identity() === undefined) C.client.config().then((config) => {
+      if (!config.needsSetup && C.client.identity() === undefined) return request(config.authMode === 'password' ? '/auth/me' : '/admin/me');
+    }).catch(() => {});
+  }
+  window.WFCommunityAuth = {ensure, controls, password, message, field, header};
+  if (typeof document !== 'undefined') header(document.getElementById('site-admin'));
 })();
