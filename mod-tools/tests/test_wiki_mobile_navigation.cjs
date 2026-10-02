@@ -6,6 +6,11 @@ const vm = require('node:vm');
 class Node {
   constructor(tag, cls = '', attributes = {}) {
     Object.assign(this, {nodeType: 1, tag, className: cls, attributes, children: [], listeners: {}, scrollWidth: 100, clientWidth: 100, overflowX: 'visible'});
+    this.layoutReads = {scrollWidth: 0, clientWidth: 0, style: 0};
+    for (const property of ['scrollWidth', 'clientWidth']) {
+      let value = this[property];
+      Object.defineProperty(this, property, {get: () => {this.layoutReads[property]++; return value;}, set: next => {value = next;}});
+    }
     this.classList = {toggle: (name, on) => {const names = new Set(this.className.split(' ')); on ? names.add(name) : names.delete(name); this.className = [...names].join(' ');}};
   }
   append(node) {node.parentElement = this; this.children.push(node);}
@@ -48,7 +53,7 @@ function setup(hash = '', width = 390, lateRouter = false) {
   let navChanged;
   const window = {location, innerWidth: width, matchMedia: () => media,
     MutationObserver: class {constructor(fn) {navChanged = fn;} observe() {}},
-    getComputedStyle: node => ({overflowX: node.overflowX}), scrollTo: options => scrolls.push(options),
+    getComputedStyle: node => {node.layoutReads.style++; return {overflowX: node.overflowX};}, scrollTo: options => scrolls.push(options),
     addEventListener: (name, fn) => {changes[name] = fn;}};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki/mobile-navigation.js'), 'utf8'), {window, document, Date: {now: () => now}});
   function fire(type, target, points, patch = {}) {
@@ -61,8 +66,13 @@ function setup(hash = '', width = 390, lateRouter = false) {
     fire('touchstart', target, [point(...start)]); const move = fire('touchmove', target, [point(...end)], patch);
     fire('touchend', target, [point(...end)]); return move;
   }
+  function layoutReads() {
+    const reads = {scrollWidth: 0, clientWidth: 0, style: 0};
+    function visit(node) {for (const key of Object.keys(reads)) reads[key] += node.layoutReads[key]; node.children.forEach(visit);}
+    visit(header); visit(main); return reads;
+  }
   return {window, document, nav, main, content, header, media, changes, mediaChanges, listeners, scrolls, fire, point, swipe,
-    setDialog: value => {dialog = value;}, later: value => {now += value;}, navChanged: () => navChanged()};
+    layoutReads, setDialog: value => {dialog = value;}, later: value => {now += value;}, navChanged: () => navChanged()};
 }
 
 test('navigation becomes ready when the initial router loads after the gesture script', () => {
@@ -85,6 +95,33 @@ test('vertical scroll, short movements, taps, slow holds and desktop width never
   held.fire('touchmove', held.content, [held.point(100, 100)]); held.fire('touchend', held.content, [held.point(100, 100)]);
   assert.equal(held.window.location.hash, '');
   const desktop = setup('weapons', 1280); desktop.swipe(desktop.nav.children[3]); assert.equal(desktop.window.location.hash, '#weapons');
+});
+
+test('taps, undecided movements and vertical scrolling do not read layout', () => {
+  for (const end of [[240, 100], [234, 102], [236, 180]]) {
+    const x = setup('community'), child = new Node('span'); x.content.append(child);
+    x.fire('touchstart', child, [x.point(240, 100)]);
+    assert.deepEqual(x.layoutReads(), {scrollWidth: 0, clientWidth: 0, style: 0});
+    assert.equal(x.fire('touchmove', child, [x.point(...end)]).prevented, false);
+    x.fire('touchend', child, [x.point(...end)]);
+    assert.deepEqual(x.layoutReads(), {scrollWidth: 0, clientWidth: 0, style: 0});
+    assert.equal(x.window.location.hash, '#community');
+  }
+});
+
+test('confirmed content horizontal intent checks scrolling ancestors only once', () => {
+  const x = setup('community'), child = new Node('span'); x.content.append(child);
+  x.content.scrollWidth = 500; // Overflow alone is not a native horizontal scroller.
+  x.fire('touchstart', child, [x.point(240, 100)]);
+  assert.equal(x.fire('touchmove', child, [x.point(234, 102)]).prevented, false);
+  assert.deepEqual(x.layoutReads(), {scrollWidth: 0, clientWidth: 0, style: 0});
+  assert.equal(x.fire('touchmove', child, [x.point(226, 102)]).prevented, true);
+  assert.deepEqual(x.layoutReads(), {scrollWidth: 2, clientWidth: 2, style: 1});
+  assert.equal(x.fire('touchmove', child, [x.point(200, 104)]).prevented, true);
+  assert.equal(x.fire('touchmove', child, [x.point(110, 105)]).prevented, true);
+  x.fire('touchend', child, [x.point(110, 105)]);
+  assert.deepEqual(x.layoutReads(), {scrollWidth: 2, clientWidth: 2, style: 1});
+  assert.equal(x.window.location.hash, '#weapons');
 });
 test('all main pages accept touch swipes on safe content, including team and tier pages', () => {
   for (const [hash, expected] of [['', '#team'], ['team', '#community'], ['community', '#weapons'], ['weapons', '#dungeons'], ['dungeons', '#tier-list']]) {
@@ -167,7 +204,14 @@ test('swipe navigation honors accepted and rejected draft guards without prematu
 test('horizontal scrolling containers retain native scrolling while ordinary linked cards can swipe', () => {
   const x = setup('community'), scroller = new Node('div'); scroller.scrollWidth = 500; scroller.clientWidth = 280; scroller.overflowX = 'auto';
   x.content.append(scroller); const link = new Node('a'); scroller.append(link);
-  assert.equal(x.swipe(link).prevented, false); assert.equal(x.window.location.hash, '#community');
+  x.fire('touchstart', link, [x.point(240, 100)]);
+  assert.deepEqual(x.layoutReads(), {scrollWidth: 0, clientWidth: 0, style: 0});
+  // Check the original target's ancestors even if a later event reports another target.
+  assert.equal(x.fire('touchmove', x.content, [x.point(210, 102)]).prevented, false);
+  const reads = x.layoutReads(); assert.deepEqual(reads, {scrollWidth: 2, clientWidth: 2, style: 1});
+  assert.equal(x.fire('touchmove', x.content, [x.point(110, 105)]).prevented, false);
+  x.fire('touchend', x.content, [x.point(110, 105)]);
+  assert.deepEqual(x.layoutReads(), reads); assert.equal(x.window.location.hash, '#community');
   const ordinary = new Node('a'); x.content.append(ordinary); assert.equal(x.swipe(ordinary).prevented, true); assert.equal(x.window.location.hash, '#weapons');
 });
 test('browser edge gestures, multi-touch, canceled and already-native scrolling never switch', () => {

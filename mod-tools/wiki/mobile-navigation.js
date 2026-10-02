@@ -42,16 +42,21 @@
     const onNav = target && nav.contains(target);
     if (!target || target.closest(interactive)) return;
     if (!onNav && (kind !== 'touch' || !contentRoutes.has(route()) || !main.contains(target)
-      || target.closest(dragAreas) || hasHorizontalScroll(target, main))) return;
+      || target.closest(dragAreas))) return;
     // Preserve the browser's own edge/back gesture.
     if (point.clientX < 18 || point.clientX > window.innerWidth - 18) return;
-    gesture = {kind, identifier: point.identifier ?? point.pointerId, x: point.clientX, y: point.clientY, at: Date.now(), hash: route(), index: currentIndex(), horizontal: false};
+    gesture = {kind, identifier: point.identifier ?? point.pointerId, x: point.clientX, y: point.clientY,
+      at: Date.now(), hash: route(), index: currentIndex(), horizontal: false, scrollTarget: onNav ? null : target};
   }
   function move(event, point) {
     if (!available() || gesture.hash !== route() || !point) {gesture = null; return;}
     const x = Math.abs(point.clientX - gesture.x), y = Math.abs(point.clientY - gesture.y);
     if (!gesture.horizontal && y > 10 && y >= x) {gesture = null; return;}
-    if (!gesture.horizontal && x >= 12 && x > y * 1.5) gesture.horizontal = true;
+    if (!gesture.horizontal && x >= 12 && x > y * 1.5) {
+      // Read layout only once horizontal intent is clear, before claiming native scrolling.
+      if (gesture.scrollTarget && hasHorizontalScroll(gesture.scrollTarget, main)) {gesture = null; return;}
+      gesture.horizontal = true;
+    }
     if (gesture.horizontal) {
       if (!event.cancelable) {gesture = null; return;}
       event.preventDefault();
