@@ -296,6 +296,20 @@ IP 共用、代理与设备重置仍存在，不将 IP 视为用户身份。
 SELECT actor_email, action, team_id, created_at FROM community_audit ORDER BY created_at DESC LIMIT 100;
 ```
 
+### 可编辑赞助广告位
+
+默认关闭，未配置时不占页面空间。站长、副站长在管理页展开“赞助广告设置”，填写标题、简短说明、图片地址和跳转链接，
+可显式预览、保存草稿或启用；普通管理员不能读取草稿或修改广告。图片可留空，启用需要标题与 HTTPS 跳转链接。
+仅接受 HTTPS PNG/JPG/WebP 图片地址或本站 `/media/<64位哈希>.扩展名`，不接受脚本或 HTML 广告代码；预览不会自动打开广告目标。
+
+`GET /api/community/sponsorship` 匿名读取已启用的素材；关闭时清空所有公开素材字段，不发访客 cookie。
+`GET/PATCH /api/community/admin/sponsorship` 使用现有管理员身份、同源检查和写入限频，PATCH 带 `expectedRevision` 防止覆盖他人的更新；
+配置与审计同事务保存。现有库增量执行 `migrations/0016-sponsorship.sql`，不会创建默认广告或更改队伍资料。
+
+访客滚动接近页脚才请求配置，单页只加载一次，不统计点击或曝光、不自动轮播、不轮询。
+边缘缓存与浏览器会话缓存均在每半小时边界失效，避免两层缓存叠加延迟；保存后最多约 30 分钟再新开或重新载入页面可见新配置。
+已打开页面不会自动换广告。广告明确标注“广告 · 赞助”，链接含 `sponsored noopener noreferrer`；后台管理页不展示广告。
+
 ## 官方实现依据（2026-09-29 核对）
 
 - [Cloudflare Access JWT 验证与固定 JWKS](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/)

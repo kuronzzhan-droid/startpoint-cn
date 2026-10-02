@@ -19,6 +19,7 @@ import {publicSummary} from './public-summary-cache.mjs';
 import {quotaFailure} from './database-availability.mjs';
 import {createStatisticsAvailability} from './statistics-availability.mjs';
 import {readAnnouncement, adminAnnouncementRoute} from './announcement.mjs';
+import {readSponsorship, adminSponsorshipRoute} from './sponsorship.mjs';
 
 function response(value, status = 200, headers = {}) {
   return Response.json(value, {status, headers: {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers}});
@@ -50,6 +51,10 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
       if (path === '/announcement') {
         if (request.method !== 'GET') fail(405, 'method_not_allowed', '公告只支持 GET 查询。');
         return response(await publicSummary(request, () => readAnnouncement(env.COMMUNITY_DB)));
+      }
+      if (path === '/sponsorship') {
+        if (request.method !== 'GET') fail(405, 'method_not_allowed', '赞助广告只支持 GET 查询。');
+        return response(await publicSummary(request, () => readSponsorship(env.COMMUNITY_DB), undefined, now));
       }
       if (path === '/stats') {
         if (request.method !== 'GET') fail(405, 'method_not_allowed', '参与及在线人数只支持 GET 查询。');
@@ -146,6 +151,7 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
   };
 }
 async function adminRoute(path, request, db, trustedCatalog, actor, now) {
+  if (path === '/admin/sponsorship') return response(await adminSponsorshipRoute(request, db, actor, now));
   if (path === '/admin/announcement') return response(await adminAnnouncementRoute(request, db, actor, now));
   if (path === '/admin/me' && request.method === 'GET') return response(actor);
   if (path === '/admin/login' && request.method === 'GET')

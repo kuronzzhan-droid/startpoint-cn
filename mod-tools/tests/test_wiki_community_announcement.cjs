@@ -180,3 +180,31 @@ test('management page registers announcement drafts with its existing navigation
   editor.all('textarea')[0].value='导航前的未保存公告';assert.equal(guard.needsProtection(),true);assert.equal(await guard.canLeave(),false);
   allowed=true;assert.equal(await guard.canLeave(),true);host.replaceChildren();assert.equal(guard.isActive(),false);assert.equal(guard.needsProtection(),false);
 });
+
+test('management mounts sponsorship only for owner/deputy and protects their unsaved drafts through navigation guard',async()=>{
+  for(const role of ['owner','deputy','editor']) {
+    let allowed=false,confirmations=0,guard;
+    const x=setup({admin:true,confirm:()=>{confirmations++;return allowed;},request:async route=>{
+      if(route==='/config')return {enabled:true};
+      if(route==='/admin/me')return {id:'admin',email:'admin@example.test',role};
+      if(route==='/admin/sponsorship')return {enabled:false,title:'',description:'',imageUrl:'',targetUrl:'',revision:0,updatedAt:null};
+      if(route.startsWith('/admin/teams?'))return {items:[],nextCursor:''};
+      throw new Error(`Unexpected request: ${route}`);
+    }});
+    x.window.fetch=()=>{throw new Error('The existing client must be reused');};x.window.location={...x.location,protocol:'https:'};
+    x.window.WFSponsor=require('../wiki/sponsor.js');
+    x.window.WFNavigationGuard={register:registration=>{guard=registration;}};
+    Object.assign(x.context,{URLSearchParams,clearTimeout(){},document:{createElement:tag=>el(tag)}});
+    for(const file of ['sponsor-editor.js','community-admin.js'])vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki',file),'utf8'),x.context);
+    const host=el('main');host.connected=true;await x.window.renderWikiCommunityAdmin(host,{characters:[],equipment:[]},{el});
+    const editors=host.all('.sponsor-editor');assert.equal(editors.length,role==='editor'?0:1,role);
+    assert.equal(x.calls.some(call=>call.route==='/admin/sponsorship'),false);assert.equal(guard.needsProtection(),false);
+    if(role==='editor')continue;
+    const editor=editors[0];assert.equal(editor.open,false);editor.open=true;await editor.fire('toggle');await tick();
+    const title=editor.all('input').find(node=>node.getAttribute('aria-label')==='广告标题');title.value='尚未保存的赞助草稿';
+    assert.equal(guard.needsProtection(),true);assert.equal(await guard.canLeave(),false);assert.equal(confirmations,1);
+    assert.equal(title.value,'尚未保存的赞助草稿');allowed=true;assert.equal(await guard.canLeave(),true);assert.equal(confirmations,2);
+    assert.equal(x.calls.filter(call=>call.route==='/admin/sponsorship').length,1);
+    host.replaceChildren();assert.equal(guard.isActive(),false);assert.equal(guard.needsProtection(),false);
+  }
+});

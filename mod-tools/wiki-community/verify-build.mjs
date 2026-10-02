@@ -64,6 +64,14 @@ try {
   const boot = await call('/api/community/auth/bootstrap', {method: 'POST', body: JSON.stringify({email: 'owner@example.test', password: 'fixture-only-password', bootstrapToken: 'b'.repeat(40)})}, passwordEnv);
   assert.equal(boot.status, 201); assert.match(boot.headers.get('set-cookie'), /; Secure/); checks++;
   const ownerCookie = boot.headers.get('set-cookie').split(';')[0];
+  const sponsorDefault = await call('/api/community/sponsorship');
+  assert.equal(sponsorDefault.headers.get('set-cookie'),null);
+  assert.deepEqual(await sponsorDefault.json(),{enabled:false,title:'',description:'',imageUrl:'',targetUrl:'',revision:0,updatedAt:null}); checks++;
+  assert.equal((await call('/api/community/admin/sponsorship',{},passwordEnv)).status,401); checks++;
+  const draft={enabled:false,title:'fixture sponsor',description:'',imageUrl:'',targetUrl:'https://example.com/',expectedRevision:0};
+  const sponsorSave=await call('/api/community/admin/sponsorship',{method:'PATCH',headers:{Cookie:ownerCookie},body:JSON.stringify(draft)},passwordEnv);
+  assert.equal(sponsorSave.status,200);assert.equal((await sponsorSave.json()).revision,1);checks++;
+  assert.equal((await (await call('/api/community/sponsorship',{},passwordEnv)).json()).title,'');checks++;
   assert.equal((await (await call('/api/community/admin/users', {headers: {Cookie: ownerCookie}}, passwordEnv)).json()).items[0].role, 'owner'); checks++;
   assert.equal((await call('/api/community/admin/users', {headers: {'Cf-Access-Authenticated-User-Email': 'owner@example.test'}}, passwordEnv)).status, 401); checks++;
   assert.equal((await call('/api/community/development-admin-login', {method: 'POST', body: '{}'}, passwordEnv)).status, 404); checks++;

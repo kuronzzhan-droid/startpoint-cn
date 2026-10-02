@@ -39,14 +39,14 @@
     const notice = el('p', 'admin-notice', '正在验证管理员身份…'); notice.setAttribute('role', 'status');
     const account = el('p', 'admin-account'), authHost = el('div', 'admin-auth'), controls = el('div', 'admin-controls');
     const layout = el('div', 'admin-layout'), listHost = el('div', 'admin-list'), editorHost = el('div', 'admin-editor');
-    const announcementHost = el('div');
-    editorHost.hidden = true; layout.append(listHost, editorHost); page.append(header, account, authHost, notice, announcementHost, controls, layout);
+    const announcementHost = el('div'), sponsorHost = el('div');
+    editorHost.hidden = true; layout.append(listHost, editorHost); page.append(header, account, authHost, notice, announcementHost, sponsorHost, controls, layout);
     host.replaceChildren(page);
     let config, identity, serial = 0, nextCursor = '', statusFilter, categoryFilter, sectionFilter, scopeFilter, codeFilter, search, more;
-    let currentForm, announcementEditor, loading = false, mutating = false, authBusy = false, debounce, avatars;
+    let currentForm, announcementEditor, sponsorEditor, loading = false, mutating = false, authBusy = false, debounce, avatars;
     const tabs = [];
     window.WFNavigationGuard?.register({isActive:() => page.isConnected, canLeave:() => allowLeave(true),
-      needsProtection:() => mutating || authBusy || [currentForm,announcementEditor].some(form => form?.isConnected && (form.isDirty?.() || form.isBusy?.()))});
+      needsProtection:() => mutating || authBusy || [currentForm,announcementEditor,sponsorEditor].some(form => form?.isConnected && (form.isDirty?.() || form.isBusy?.()))});
     async function navigate(hash, before) {
       if (window.WFNavigationGuard) return window.WFNavigationGuard.navigate(hash,before);
       if (await allowLeave(true)) {before?.(); window.location.hash = hash;}
@@ -60,7 +60,8 @@
       const form = currentForm;
       const allowed = !form || !form.isConnected || !form.canClose || await form.canClose();
       const announcementAllowed = allowed && (!protectAnnouncement || !announcementEditor?.isConnected || await announcementEditor.canClose());
-      return announcementAllowed && canSwitch() && currentForm === form && page.isConnected;
+      const sponsorAllowed = announcementAllowed && (!protectAnnouncement || !sponsorEditor?.isConnected || await sponsorEditor.canClose());
+      return sponsorAllowed && canSwitch() && currentForm === form && page.isConnected;
     }
     function closeEditor() {currentForm = null; editorHost.replaceChildren(); editorHost.hidden = true; controls.hidden = false;}
     function button(label, action, cls = 'secondary-button') {
@@ -151,6 +152,7 @@
     async function start() {
       clearTimeout(debounce); more?.remove?.(); currentForm = null;
       announcementEditor = null; announcementHost.replaceChildren();
+      sponsorEditor = null; sponsorHost.replaceChildren();
       serial++; account.textContent = ''; controls.replaceChildren(); listHost.replaceChildren(); editorHost.replaceChildren();
       create.hidden = true; controls.hidden = true; layout.hidden = true; notice.textContent = '正在验证管理员身份…';
       try {
@@ -172,6 +174,7 @@
         if (!page.isConnected) return;
         create.hidden = false; controls.hidden = false; layout.hidden = false;
         if (C.announcementEditor) {announcementEditor = C.announcementEditor({ui, request}); announcementHost.append(announcementEditor);}
+        if (C.sponsorEditor && ['owner','deputy'].includes(identity.role)) {sponsorEditor = C.sponsorEditor({ui,request}); sponsorHost.append(sponsorEditor);}
         statusFilter = select([['approved','使用中'],['hidden','回收站 / 已停用'],['','全部状态']], 'approved');
         statusFilter.addEventListener('change', () => load(false));
         categoryFilter = select([['','全部分类'], ...C.teamCategories.map((value) => [value,value]), ['uncategorized','未分类']], '');
