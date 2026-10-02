@@ -14,6 +14,7 @@ from wf_wiki_dungeon_rewards_shops import build_shops
 from wf_wiki_dungeon_rewards_special import score_rewards, special_mode_rewards
 from wf_wiki_dungeon_rewards_sources import GrayAssets, Names, collect_event_titles, read_assignment, wiki_catalog
 from wf_wiki_dungeons_sources import DungeonSources
+from wf_wiki_paths import is_junction
 
 SOURCE_RULES = {
     "lib/assets.ts": ["quest.sPlusReward = { type: 0, id: 14040, count: 3 }", "eventId = ABYSS_NORMAL_EVENT_ID",
@@ -92,7 +93,7 @@ def export_rewards(site, gray_assets, gray_source, dungeon_snapshot, store, rece
     site, receipt = Path(site).resolve(), Path(receipt).resolve()
     gray_assets, gray_source = Path(gray_assets).resolve(), Path(gray_source).resolve()
     require(site.is_dir() and site != gray_assets and not site.is_relative_to(gray_assets), "Invalid output site")
-    require(not site.is_symlink() and not getattr(site, "is_junction", lambda: False)(), "Linked output site")
+    require(not site.is_symlink() and not is_junction(site), "Linked output site")
     require(not receipt.is_relative_to(site), "Private export receipt must be outside public site")
     evidence = source_receipt(gray_source)
     assets = GrayAssets(gray_assets)

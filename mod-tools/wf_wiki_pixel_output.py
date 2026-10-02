@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import tempfile
 from wf_wiki_pixel_render import ACTIONS, LABELS
+from wf_wiki_paths import is_junction
 
 URL = re.compile(r"media/pixels/[0-9a-f]{64}\.webp")
 
@@ -18,7 +19,7 @@ def digest(raw):
 
 def checked_path(path):
     path = Path(path).absolute()
-    if any(p.is_symlink() or p.is_junction() for p in (path, *path.parents)):
+    if any(p.is_symlink() or is_junction(p) for p in (path, *path.parents)):
         raise ValueError("像素导出路径不能含符号链接或目录联接")
     return path.resolve()
 

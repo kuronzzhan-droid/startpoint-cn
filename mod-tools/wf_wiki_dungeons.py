@@ -16,6 +16,7 @@ from PIL import Image
 
 import wf_assets
 import wf_mod_tool as core
+from wf_wiki_paths import is_junction
 from wf_wiki_dungeons_sources import DungeonSources, checksum
 from wf_wiki_dungeons_gray import gray_quest_lookup, verify_gray_quests_unchanged
 from wf_wiki_dungeons_series import (
@@ -226,7 +227,7 @@ def export_dungeons(repo, site, *, gray_url=None, snapshot=None, store=None, gra
         raise ValueError("导出目录不得覆盖仓库或游戏资源目录")
     if site.is_relative_to(repo) and not site.is_relative_to(repo / "work"):
         raise ValueError("仓库内产物仅允许放在 work 下")
-    if (site / "media").is_symlink() or (site / "media").is_junction() or site.is_symlink() or site.is_junction():
+    if (site / "media").is_symlink() or is_junction(site / "media") or site.is_symlink() or is_junction(site):
         raise ValueError("导出目录不得使用链接或目录联接")
     site.mkdir(parents=True, exist_ok=True)
     if gray_url and not snapshot:
