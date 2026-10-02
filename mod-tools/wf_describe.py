@@ -373,7 +373,9 @@ def describe_line(row: list[str], kind: str) -> str:
         if ic:
             seg = (seg + " → " + ic) if seg else ic
         if delay:
-            seg += f"(延迟{delay / 60:g}秒)"
+            # InstantAbilitySource treats the CSV cell as seconds and derives
+            # frames internally (delayFrame = delaySec * 60).
+            seg += f"(延迟{delay:g}秒)"
         parts.append(seg)
 
     return " ".join(p for p in parts if p).strip()

@@ -42,6 +42,13 @@
 | **想自己开服**(玩全部内容,含十五位自制/改造角色) | **三步**:① 下载 [deploy.ps1](deploy.ps1) 运行(自动装 Git/Node → clone → 构建 → 起服 → 自检)→ ② 自备基础 CDN ~11GB 放入 `.cdn\cn\`(唯一手工环节,脚本会指引)→ ③ 按 [保姆级部署攻略](docs/部署攻略.md) 下载并校验[完整五合一基座 APK](https://github.com/kuronzzhan-droid/startpoint-cn/releases/download/client-base-v2.0/WorldFlipper-abyss-v2.apk),只改成自己的服务器地址后重签。技术参考/存量服升级/救援见 [docs/self-host-modes.md](docs/self-host-modes.md);mod 增量内容(1.4.54→**1.4.427** 现役态)已随仓库自带,clone 即得 |
 | **想改数据 / 做自己的 mod** | 数据修改工具链:[mod-tools/](mod-tools/)(独立仓 [startpoint-cn-mod-tools](https://github.com/kuronzzhan-droid/startpoint-cn-mod-tools),带全套文档与《新角色制作心得》) |
 
+## Wiki：星见图鉴
+
+在线浏览：[星见图鉴](https://wf-mod-wiki.pages.dev/)，提供角色、编队、配队参考、武器、副本和排行。
+静态界面、只读导出工具与验证方法见 [Wiki 源码与维护说明](mod-tools/wiki/README.md)；
+账号、配队与投票 API 的配置和增量迁移见 [Wiki 社区服务](mod-tools/wiki-community/README.md)。
+公开源码不含站点生产数据库或完整游戏媒体，导出前置条件以 Wiki 说明为准。
+
 ## 功能状态
 
 已实现(部分端点沿用国际服设计,对 CN 的通用性尚未验证):

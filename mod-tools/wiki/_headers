@@ -1,0 +1,4 @@
+# Media filenames are the SHA-256 of their bytes (wf_wiki_media.py).
+# Keep HTML, scripts, private data and revocable API responses outside this rule.
+/media/*
+  Cache-Control: public, max-age=31536000, immutable
