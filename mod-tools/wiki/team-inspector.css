@@ -18,3 +18,13 @@
 .team-candidate-art>.element-badge .native-icon{width:19px;height:19px}
 @media(max-width:1150px){.team-layout:has(.team-inspector){grid-template-columns:minmax(280px,.8fr) minmax(0,1.2fr);grid-template-areas:"inspector board" "inspector library" "inspector preview";grid-auto-rows:min-content}.team-layout:has(.team-inspector) .team-main{display:contents}.team-layout:has(.team-inspector) .team-library{position:static}.team-layout:has(.team-inspector) .team-candidates{max-height:450px}}
 @media(max-width:820px){.team-layout:has(.team-inspector){grid-template-columns:minmax(0,1fr);grid-template-areas:"board" "library" "inspector" "preview"}.team-inspector{position:static;max-height:600px}.team-inspector .summary-header{grid-template-columns:66px minmax(0,1fr) auto}.team-inspector .summary-avatar{width:66px;height:66px}}
+@media(max-width:640px){
+  .team-layout .team-library{padding:8px}
+  .team-candidates[data-kind="character"]{grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:5px}
+  .team-candidates[data-kind="character"]>.team-candidate{padding:0;gap:0;border:0;background:transparent;box-shadow:none;border-radius:5px}
+  .team-candidates[data-kind="character"] .team-candidate-art{max-width:none}
+  .team-candidates[data-kind="character"] .team-candidate-name,
+  .team-candidates[data-kind="character"] .element-badge,
+  .team-candidates[data-kind="character"] .character-label-limited{display:none}
+  .team-candidates[data-kind="character"] .character-label{font-size:8px;line-height:1.1;padding:1px 2px}
+}
