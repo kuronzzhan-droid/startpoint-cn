@@ -134,6 +134,8 @@
   <script src="sidebar.js?v=views-1" defer></script>
   <script src="catalog-disclosure.js" defer></script>
   <script src="catalog-ratings.js?v=confidence-1" defer></script>
+  <script src="catalog-views.js" defer></script>
+  <script src="catalog-sort.js" defer></script>
   <script src="portrait-cards.js" defer></script>
   <script src="app.js" defer></script>
   <script src="mobile-navigation.js?v=review-1" defer></script>
@@ -173,7 +175,8 @@
           <div class="catalog-display-controls">
             <div id="catalog-avatar-controls"></div>
             <label class="sort-control" for="catalog-layout">排列 <select id="catalog-layout" aria-label="角色排列"><option value="standard" selected>标准</option><option value="dense">致密</option><option value="portrait">立绘</option></select></label>
-            <label class="sort-control" for="sort-order">排序 <select id="sort-order"><option value="default">属性 / 星级 / 图鉴顺序</option><option value="name">按角色名称</option><option value="rarity">按稀有度</option></select></label>
+            <label class="sort-control" for="sort-order">排序 <select id="sort-order"><option value="rating" selected>评分</option><option value="views">查看次数</option><option value="rating-element">属性内评分</option><option value="default">图鉴顺序</option><option value="name">角色名称</option><option value="rarity">稀有度</option></select></label>
+            <button id="sort-direction" class="catalog-sort-direction" type="button" aria-label="当前倒序，点击切换正序" aria-pressed="false">↓ 倒序</button>
           </div>
         </div>
         <div class="section-heading"><h2>角色列表 <span id="result-count" class="inline-count"></span></h2></div>

@@ -34,14 +34,15 @@ class Node {
   contains(node) {return node === this || this.children.some(child => child.contains(node));}
   focus() {this.focused = true;}
 }
-function setup(handler = async () => ({items: []}), {realRouter = false} = {}) {
+function setup(handler = async () => ({items: []}), {realRouter = false, sortValue = 'rating', viewsHandler = async () => ({items:[],asOf:'2026-01-01T00:00:00Z',nextRefreshAt:'2099-01-01T00:00:00Z'})} = {}) {
   const root = new Node('html'), catalog = new Node('section'); catalog.id = 'catalog-view'; root.append(catalog);
   const add = (id, tag = 'div', parent = root, cls = '') => {const node = new Node(tag, cls); node.id = id; parent.append(node); return node;};
   if (realRouter) {add('detail-view'); add('extra-view');}
   const controls = add('controls', 'div', catalog), display = add('display', 'div', controls, 'catalog-display-controls');
   add('catalog-character-filters', 'div', controls); add('catalog-avatar-controls', 'div', display);
   add('catalog-layout', 'select', display);
-  const sort = add('sort-order', 'select', display); sort.value = 'default';
+  const sort = add('sort-order', 'select', display); sort.value = sortValue;
+  const direction = add('sort-direction', 'button', display);
   const heading = add('heading', 'div', catalog, 'section-heading'), title = new Node('h2'); heading.append(title);
   const count = add('result-count', 'span', title);
   ['filter-status', 'character-grid', 'empty-state', 'load-error', 'catalog-stats'].forEach((id) => add(id, 'div', catalog));
@@ -56,7 +57,7 @@ function setup(handler = async () => ({items: []}), {realRouter = false} = {}) {
     portraits:['觉醒前','觉醒后'].map((label,form)=>({label,url:`media/${'abcd'[index*2+form].repeat(64)}.webp`}))}));
   const window = Object.assign(new Node('#window'), {WF_WIKI: {meta: {}, characters},
     matchMedia: () => Object.assign(new Node('#media'), {matches:false}),
-    WFCommunity: {client: {request: (...args) => {requests.push(args); return handler(...args);}}},
+    WFCommunity: {client: {request: (...args) => {requests.push(args); return (args[0] === '/views/characters' ? viewsHandler : handler)(...args);}}},
     WFCharacterOrder: {compare: (a, b) => a.id.localeCompare(b.id)},
     WFCatalogAvatars: {create: (options) => {avatarOptions=options;return {getForm:()=>avatarForm,picture: () => {avatarCreates++; return new Node('img');}};}},
     WFCharacterFilters: {create(options) {callbacks = options; return {
@@ -72,9 +73,9 @@ function setup(handler = async () => ({items: []}), {realRouter = false} = {}) {
     window.WFWikiData = {loadEquipment:async () => []}; window.renderWikiPage = () => true; window.scrollTo = () => {};
     vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki/router.js'),'utf8'), context);
   }
-  for (const name of ['rating-score.js', 'portrait-cards.js', 'catalog-layout.js', 'catalog-disclosure.js', 'catalog-ratings.js', 'app.js'])
+  for (const name of ['rating-score.js', 'portrait-cards.js', 'catalog-layout.js', 'catalog-disclosure.js', 'catalog-ratings.js', 'catalog-views.js', 'catalog-sort.js', 'app.js'])
     vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki', name), 'utf8'), context);
-  return {catalog, display, count, heading, sort, requests, filtersInitiallyOpen: callbacks.initiallyOpen, updateRating: (id, value) => window.WFCatalogRatings.update(id, value), get created() {return avatarCreates;},
+  return {catalog, display, count, heading, sort, direction, requests, filtersInitiallyOpen: callbacks.initiallyOpen, updateRating: (id, value) => window.WFCatalogRatings.update(id, value), get created() {return avatarCreates;},
     get portraitCreates() {return images.filter((node)=>node.className==='portrait-card-image').length;},
     layout(value) {document.getElementById('catalog-layout').children.find((node)=>node.dataset.layout===value).fire('click');},
     avatar(form) {avatarForm=form;avatarOptions.onChange?.(form);},
@@ -105,39 +106,57 @@ test('rapid reopen reuses portrait nodes and an in-flight rating request, and fo
   x.toggle(); const original = x.cards();
   for (let i = 0; i < 20; i++) {x.toggle(); x.toggle();}
   assert.deepEqual(x.cards(), original); assert.equal(x.created, 2);
-  await new Promise(setImmediate); assert.equal(x.requests.length, 1);
+  await new Promise(setImmediate); assert.equal(x.requests.length, 2);
+  assert.deepEqual(x.requests.map(item=>item[0]).sort(),['/ratings/characters','/views/characters']);
   x.document.activeElement = original[0]; x.toggle();
   assert.equal(x.document.getElementById('catalog-list-toggle').focused, true);
   assert.equal(x.grid.hidden, true);
   resolve({items: []}); await new Promise(setImmediate);
-  x.toggle(); assert.deepEqual(x.cards(), original); assert.equal(x.requests.length, 1);
+  x.toggle(); assert.deepEqual(x.cards(), original); assert.equal(x.requests.length, 2);
 });
 
 test('batch ratings are lazy and update mounted card text without recreating portraits; rating sort preserves filters and collapse', async () => {
-  let resolve; const x = setup(() => new Promise((done) => {resolve = done;}));
+  let resolve; const x = setup(() => new Promise((done) => {resolve = done;}), {sortValue:'rarity'});
   await new Promise(setImmediate); assert.equal(x.requests.length, 0);
-  x.toggle(); await new Promise(setImmediate); assert.equal(x.requests.length, 1); const original = x.cards()[0];
+  x.toggle(); await new Promise(setImmediate); assert.equal(x.requests.length, 2); const original = x.cards()[0];
   resolve({items: [{id: 'c1', average: 0, voters: 1}, {id: 'c2', average: 5, voters: 1}]}); await new Promise(setImmediate);
   assert.equal(x.cards()[0], original); assert.equal(x.created, 2);
   assert.equal(original.querySelector('.card-rating').textContent, '评分 0.0');
-  x.sort.value = 'rating-global-desc'; x.sort.fire('change'); assert.equal(x.cards()[0].href, '#character/c2');
+  x.sort.value = 'rating'; x.sort.fire('change'); assert.equal(x.cards()[0].href, '#character/c2');
   x.change({element: '火'}); assert.equal(x.cards().length, 1); assert.equal(x.cards()[0].href, '#character/c1');
   x.toggle(); const before = x.created; x.updateRating('c1', {average: 4, voters: 2}); x.passive();
-  assert.equal(x.cards().length, 0); assert.equal(x.created, before); assert.equal(x.requests.length, 1);
+  assert.equal(x.cards().length, 0); assert.equal(x.created, before); assert.equal(x.requests.length, 2);
 });
 
 test('new ratings repaint reused cards even when their rating-sort order does not change', async () => {
   const x = setup(async () => ({items: [{id:'c1', average:4, voters:10}, {id:'c2', average:2, voters:10}]}));
   x.toggle(); await new Promise(setImmediate);
-  x.sort.value = 'rating-global-desc'; x.sort.fire('change'); const first = x.cards()[0], created = x.created;
+  x.sort.value = 'rating'; x.sort.fire('change'); const first = x.cards()[0], created = x.created;
   x.updateRating('c1', {average:4.5, voters:11});
   assert.equal(x.cards()[0], first); assert.equal(x.created, created);
   assert.equal(first.querySelector('.card-rating').textContent, '评分 4.5');
 });
 
 test('selecting rating sort while collapsed loads one batch without mounting any card', async () => {
-  const x = setup(); x.sort.value = 'rating-element-asc'; x.sort.fire('change'); await new Promise(setImmediate);
+  const x = setup(); x.sort.value = 'rating-element'; x.direction.fire('click'); x.sort.fire('change'); await new Promise(setImmediate);
   assert.equal(x.requests.length, 1); assert.equal(x.created, 0); assert.equal(x.cards().length, 0);
+});
+
+test('real app defaults to descending scores and paints a delayed batch of views on reused hidden cards', async () => {
+  let resolve;
+  const x = setup(async()=>({items:[{id:'c1',average:4,voters:10},{id:'c2',average:2,voters:10}]}),
+    {viewsHandler:()=>new Promise(done=>{resolve=done;})});
+  await new Promise(setImmediate);assert.equal(x.requests.length,1);assert.equal(x.sort.value,'rating');
+  assert.equal(x.direction.textContent,'↓ 倒序');x.toggle();const original=x.cards();x.toggle();await new Promise(setImmediate);
+  resolve({items:[{id:'c1',views:0},{id:'c2',views:9}],asOf:'2026-01-01T00:00:00Z',nextRefreshAt:'2099-01-01T00:00:00Z'});await new Promise(setImmediate);
+  assert.equal(x.cards().length,0);assert.equal(original[0].querySelector('.card-views').textContent,'查看 0 次');
+  x.toggle();assert.deepEqual(x.cards(),original);assert.equal(x.created,2);
+  assert.equal(original[0].querySelector('.card-stats').children[0].className,'card-rating');
+  assert.equal(original[0].querySelector('.card-footer').children[0].className,'card-tags');
+  assert.equal(original[0].querySelector('.card-footer').children[1].className,'card-views');
+  x.sort.value='views';x.sort.fire('change');assert.equal(x.cards()[0].href,'#character/c2');
+  x.direction.fire('click');assert.equal(x.cards()[0].href,'#character/c1');
+  assert.deepEqual(x.requests.map(item=>item[0]).sort(),['/ratings/characters','/views/characters']);
 });
 
 test('active user filters reopen results; passive aliases and delayed duplicate notifications preserve manual collapse', () => {

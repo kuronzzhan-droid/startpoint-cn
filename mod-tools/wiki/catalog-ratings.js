@@ -23,8 +23,7 @@
     status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
     const retry = el('button', 'text-button', '重试评分'); retry.type = 'button';
     status.append(message, retry); host.append(status);
-    modes.forEach(([value, label]) => {const option = el('option', '', label); option.value = value; sort.append(option);});
-    const isRatingSort = () => modes.some(([value]) => value === sort.value);
+    const isRatingSort = () => ['rating', 'rating-element'].includes(sort.value) || modes.some(([value]) => value === sort.value);
     function paintStatus() {
       status.hidden = phase === 'idle' || (phase === 'ready' && !isRatingSort());
       retry.hidden = phase !== 'error';
@@ -87,18 +86,18 @@
     });
     paintStatus();
     return {isRatingSort, load, update,
-      compare(a, b) {
-        if (sort.value.startsWith('rating-element-')) {
+      compare(a, b, direction = sort.value.endsWith('-asc') ? 'asc' : 'desc') {
+        if (sort.value === 'rating-element' || sort.value.startsWith('rating-element-')) {
           const group = rank(a.element) - rank(b.element); if (group) return group;
         }
         const av = records.get(String(a.id)), bv = records.get(String(b.id));
-        return ranking.compare(av, bv, sort.value.endsWith('-asc') ? 'asc' : 'desc') || window.WFCharacterOrder.compare(a, b);
+        return ranking.compare(av, bv, direction) || window.WFCharacterOrder.compare(a, b);
       },
       decorate(card, character) {
         card.dataset.catalogRatingId = String(character.id);
         card.dataset.catalogBaseTitle = card.title;
         card.dataset.catalogBaseLabel = card.getAttribute('aria-label');
-        card.querySelector('.card-meta').append(el('span', 'card-rating')); paint(card);
+        (card.querySelector('.card-stats') || card.querySelector('.card-meta')).append(el('span', 'card-rating')); paint(card);
       },
       paintMounted(catalog) {catalog.querySelectorAll('.character-card').forEach(paint);},
     };

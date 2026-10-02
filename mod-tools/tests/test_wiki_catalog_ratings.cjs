@@ -42,7 +42,7 @@ function setup(handler = async () => response, protocol = 'https:', onChangeHook
 
 test('catalogue requests one aggregate only on demand, coalesces concurrent loads and reuses results', async () => {
   let resolve; const x = setup(() => new Promise((done) => {resolve = done;}));
-  assert.equal(x.calls.length, 0); assert.equal(x.sort.children.length, 4);
+  assert.equal(x.calls.length, 0); assert.equal(x.sort.children.length, 0, 'criterion options are owned by the entry, not duplicate direction options');
   const first = x.controller.load(); x.controller.load(); await tick();
   assert.equal(x.calls.length, 1); assert.deepEqual(x.calls[0], ['/ratings/characters']);
   assert.equal(x.status().hidden, false); assert.match(x.status().children[0].textContent, /正在加载/);

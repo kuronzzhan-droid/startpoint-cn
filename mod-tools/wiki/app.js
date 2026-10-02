@@ -102,6 +102,12 @@
       catalogRatings.paintMounted($('character-grid'));
       if (catalogRatings.isRatingSort()) renderCatalog();
     }});
+  const catalogViews = window.WFCatalogViews.create({host: $('catalog-view').querySelector('.catalog-list-toolbar'), ui: helpers, onChange: () => {
+    catalogViews.paintMounted($('character-grid'));
+    if (catalogSort.isViewsSort()) renderCatalog();
+  }});
+  const catalogSort = window.WFCatalogSort.create({sort: $('sort-order'), button: $('sort-direction'),
+    ratings: catalogRatings, views: catalogViews, onChange: renderCatalog});
   let mountedCatalogKey = '', mountedPortraitForm = '';
 
   [['--frame-window', 'frames', 'window'], ['--frame-button', 'frames', 'button'], ['--frame-status', 'frames', 'status'], ['--game-detail-bg', 'backgrounds', 'detail']].forEach(([variable, group, key]) => {
@@ -171,31 +177,30 @@
     nameRow.append(el('h4', 'card-name', text(character.name, '未命名角色')), rarityBadge(character.rarity));
     const details = el('div', 'card-meta'), profession = el('span', 'card-profession');
     profession.append(nativeIcon('types', character.type, ''), el('span', '', text(character.type, '—')));
-    details.append(profession);
+    details.append(profession, el('span', 'card-stats'));
     content.append(el('div', 'card-title', text(character.title, character.origin)), nameRow, details);
-    if (categoryName(character) === '原版角色改动' && list(character.aliases).length) content.append(el('span', 'alias-tag', character.aliases[0]));
-    list(character.themes || (character.theme ? [character.theme] : [])).forEach((theme) => content.append(el('span', 'theme-tag', theme)));
-    if (character.earlyDesign === true) content.append(el('span', 'editor-tag', '早期方案'));
+    const footer = el('div', 'card-footer'), tags = el('div', 'card-tags');
+    if (categoryName(character) === '原版角色改动' && list(character.aliases).length) tags.append(el('span', 'alias-tag', character.aliases[0]));
+    list(character.themes || (character.theme ? [character.theme] : [])).forEach((theme) => tags.append(el('span', 'theme-tag', theme)));
+    if (character.earlyDesign === true) tags.append(el('span', 'editor-tag', '早期方案'));
+    footer.append(tags); content.append(footer);
     link.append(art, content);
     if (portraitMode) catalogPortraits.attach(link);
     catalogRatings.decorate(link, character);
+    catalogViews.decorate(link, character);
     return link;
   }
 
   function filteredCharacters() {
     const selected = characters.filter((c) => (!selectedCategory || categoryName(c) === selectedCategory)
       && characterFilters.matches(c));
-    const sort = $('sort-order').value;
-    if (sort === 'default') selected.sort(window.WFCharacterOrder.compare);
-    if (sort === 'name') selected.sort((a, b) => text(a.name).localeCompare(text(b.name), 'zh-CN'));
-    if (sort === 'rarity') selected.sort((a, b) => Number(b.rarity) - Number(a.rarity) || Number(a.id) - Number(b.id));
-    if (catalogRatings.isRatingSort()) selected.sort(catalogRatings.compare);
-    return selected;
+    return selected.sort(catalogSort.compare);
   }
 
   function renderCatalog() {
     if ($('catalog-view').hidden) return;
     if (catalogDisclosure.isOpen() || catalogRatings.isRatingSort()) catalogRatings.load();
+    if (catalogDisclosure.isOpen() || catalogSort.isViewsSort()) catalogViews.load();
     const selected = filteredCharacters();
     const container = $('character-grid'), portraitMode = $('catalog-view').dataset.layout === 'portrait';
     // Only one rendered view is retained. Identical results reuse the image nodes,
@@ -255,7 +260,6 @@
   }
 
   renderCategoryNavigation();
-  $('sort-order').addEventListener('change', renderCatalog);
   $('catalog-view').addEventListener('cataloglayoutchange', renderCatalog);
   $('empty-reset').addEventListener('click', clearFilters);
   window.addEventListener('hashchange', route);
