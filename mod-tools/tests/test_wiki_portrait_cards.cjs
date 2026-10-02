@@ -110,6 +110,15 @@ test('destroy removes old bindings and RAF, then the same controller can attach 
   x.api.destroy();x.api.destroy();assert.equal(fresh.listeners(),0);
 });
 
+test('collapse pauses motion without rebuilding card listeners, then resumes the same portrait safely',()=>{
+  const x=setup(),card=new Node('a');x.api.attach(card);mouse(card);x.flush();mouse(card);
+  x.api.pause();assert.equal(x.frames.size,0);assert.equal(card.style.values.size,0);assert.equal(card.listeners(),5);
+  assert.equal(x.window.listeners()+x.document.listeners()+x.fineMedia.listeners()+x.reduceMedia.listeners()+x.narrowMedia.listeners(),0);
+  mouse(card);assert.equal(x.frames.size,0);
+  x.api.resume();x.api.resume();mouse(card);assert.equal(x.frames.size,1);x.flush();assert.ok(card.style.values.size);
+  assert.equal(card.listeners(),5);x.api.destroy();assert.equal(card.listeners(),0);
+});
+
 test('portrait-only styles retain contain fit, safe motion margins, visible keyboard focus and responsive columns',()=>{
   const css=fs.readFileSync(path.join(__dirname,'../wiki/portrait-cards.css'),'utf8');
   assert.match(css,/object-fit:contain/);assert.match(css,/aspect-ratio:3\/4/);assert.match(css,/padding:12px/);

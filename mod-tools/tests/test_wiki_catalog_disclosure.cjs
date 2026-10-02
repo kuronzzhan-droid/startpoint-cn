@@ -31,6 +31,8 @@ class Node {
   querySelectorAll(selector) {return this.children.flatMap((node) => [...(node.matches(selector) ? [node] : []), ...node.querySelectorAll(selector)]);}
   querySelector(selector) {return this.querySelectorAll(selector)[0] || null;}
   closest(selector) {return this.matches(selector) ? this : this.parent?.closest(selector) || null;}
+  contains(node) {return node === this || this.children.some(child => child.contains(node));}
+  focus() {this.focused = true;}
 }
 function setup(handler = async () => ({items: []})) {
   const root = new Node('html'), catalog = new Node('section'); catalog.id = 'catalog-view'; root.append(catalog);
@@ -71,21 +73,39 @@ function setup(handler = async () => ({items: []})) {
     get portraitCreates() {return images.filter((node)=>node.className==='portrait-card-image').length;},
     layout(value) {document.getElementById('catalog-layout').children.find((node)=>node.dataset.layout===value).fire('click');},
     avatar(form) {avatarForm=form;avatarOptions.onChange?.(form);},
-    cards: () => catalog.querySelectorAll('.character-card'), toggle: () => document.getElementById('catalog-list-toggle').fire('click'),
+    document, window, context, grid: document.getElementById('character-grid'),
+    cards: () => document.getElementById('character-grid').hidden ? [] : catalog.querySelectorAll('.character-card'),
+    mountedCards: () => catalog.querySelectorAll('.character-card'), toggle: () => document.getElementById('catalog-list-toggle').fire('click'),
     change(values) {Object.assign(state, values); callbacks.onStateChange({...state}); callbacks.onChange({...state});},
     passive() {callbacks.onChange({...state});}, repeatNotify() {callbacks.onStateChange({...state}); callbacks.onChange({...state});}};
 }
 
-test('the real app creates no cards or portraits until the list is opened, and collapses by unmounting', () => {
+test('the real app creates no cards until first open and later collapses retain one hidden view', () => {
   const x = setup(); assert.equal(x.created, 0); assert.equal(x.cards().length, 0);
   assert.equal(x.filtersInitiallyOpen,false);
   assert.equal(x.count.textContent, '2 / 2'); assert.equal(x.display.parent, x.heading);
   assert.equal(x.catalog.querySelector('.catalog-list-label').textContent, '展开角色列表');
   x.passive(); assert.equal(x.created, 0);
   x.toggle(); assert.equal(x.cards().length, 2); assert.equal(x.created, 2);
+  const original = x.cards();
   assert.equal(x.catalog.querySelector('.catalog-list-label').textContent, '收起角色列表');
   x.toggle(); assert.equal(x.cards().length, 0);
+  assert.deepEqual(x.mountedCards(), original); assert.equal(x.grid.hidden, true);
   x.passive(); x.sort.fire('change'); assert.equal(x.created, 2); assert.equal(x.cards().length, 0);
+  x.toggle(); assert.deepEqual(x.cards(), original); assert.equal(x.created, 2);
+});
+
+test('rapid reopen reuses portrait nodes and an in-flight rating request, and focus returns to the toggle', async () => {
+  let resolve; const x = setup(() => new Promise(done => {resolve = done;}));
+  x.toggle(); const original = x.cards();
+  for (let i = 0; i < 20; i++) {x.toggle(); x.toggle();}
+  assert.deepEqual(x.cards(), original); assert.equal(x.created, 2);
+  await new Promise(setImmediate); assert.equal(x.requests.length, 1);
+  x.document.activeElement = original[0]; x.toggle();
+  assert.equal(x.document.getElementById('catalog-list-toggle').focused, true);
+  assert.equal(x.grid.hidden, true);
+  resolve({items: []}); await new Promise(setImmediate);
+  x.toggle(); assert.deepEqual(x.cards(), original); assert.equal(x.requests.length, 1);
 });
 
 test('batch ratings are lazy and update mounted card text without recreating portraits; rating sort preserves filters and collapse', async () => {
@@ -99,6 +119,15 @@ test('batch ratings are lazy and update mounted card text without recreating por
   x.change({element: '火'}); assert.equal(x.cards().length, 1); assert.equal(x.cards()[0].href, '#character/c1');
   x.toggle(); const before = x.created; x.updateRating('c1', {average: 4, voters: 2}); x.passive();
   assert.equal(x.cards().length, 0); assert.equal(x.created, before); assert.equal(x.requests.length, 1);
+});
+
+test('new ratings repaint reused cards even when their rating-sort order does not change', async () => {
+  const x = setup(async () => ({items: [{id:'c1', average:4, voters:10}, {id:'c2', average:2, voters:10}]}));
+  x.toggle(); await new Promise(setImmediate);
+  x.sort.value = 'rating-global-desc'; x.sort.fire('change'); const first = x.cards()[0], created = x.created;
+  x.updateRating('c1', {average:4.5, voters:11});
+  assert.equal(x.cards()[0], first); assert.equal(x.created, created);
+  assert.equal(first.querySelector('.card-rating').textContent, '评分 4.5');
 });
 
 test('selecting rating sort while collapsed loads one batch without mounting any card', async () => {
@@ -123,16 +152,30 @@ test('real layout buttons and app keep portrait cards uncreated while collapsed,
     assert.equal(image.getAttribute('src'),`media/${'bd'[index].repeat(64)}.webp`);assert.equal(image.loading,'lazy');assert.equal(image.decoding,'async');
   });
   x.toggle();assert.equal(x.cards().length,0);
-  cards.forEach((card)=>assert.equal(card.events.pointermove.size,0,'collapsing cleans actual portrait interaction bindings'));
+  assert.equal(x.window.events.scroll.size,0,'collapsing pauses global portrait interaction listeners');
+  x.toggle();assert.deepEqual(x.cards(),cards);assert.equal(x.portraitCreates,2);assert.equal(x.window.events.scroll.size,1);
+  x.toggle();
   x.layout('dense');x.layout('portrait');x.avatar('before');x.passive();assert.equal(x.portraitCreates,2);assert.equal(x.cards().length,0);
+  x.toggle();assert.deepEqual(x.cards(),cards);assert.equal(x.portraitCreates,4);
+  assert.equal(x.cards()[0].querySelector('.portrait-card-image').getAttribute('src'),`media/${'a'.repeat(64)}.webp`);
 });
 
 test('real app replaces standard avatars with the selected portrait form on layout change and cleans it when returning',()=>{
   const x=setup();x.toggle();assert.equal(x.created,2);assert.equal(x.portraitCreates,0);
   x.layout('portrait');const before=x.cards();assert.equal(x.portraitCreates,2);
   assert.equal(before[0].querySelector('.portrait-card-image').getAttribute('src'),`media/${'a'.repeat(64)}.webp`);
-  x.avatar('after');assert.equal(x.portraitCreates,4);assert.equal(before[0].events.pointermove.size,0);
+  x.avatar('after');assert.equal(x.portraitCreates,4);assert.equal(before[0].events.pointermove.size,1);
   const after=x.cards();assert.equal(after[0].querySelector('.portrait-card-image').getAttribute('src'),`media/${'b'.repeat(64)}.webp`);
+  assert.deepEqual(after,before,'awakening updates images without replacing the cards');
   x.layout('standard');assert.equal(x.created,4);assert.equal(x.portraitCreates,4);assert.equal(after[0].events.pointermove.size,0);
   assert.equal(x.catalog.querySelectorAll('.portrait-card-media').length,0);
+});
+
+test('density switches reuse avatars, while a cleared router view and changed ordering rebuild only the current view', () => {
+  const x = setup(); x.toggle(); const first = x.cards();
+  x.layout('dense'); assert.deepEqual(x.cards(), first); assert.equal(x.created, 2);
+  x.toggle(); x.sort.value = 'rarity'; x.sort.fire('change'); assert.equal(x.created, 2);
+  x.toggle(); assert.deepEqual(x.cards(), first);
+  x.grid.replaceChildren(); x.passive(); assert.equal(x.cards().length, 2); assert.equal(x.created, 4);
+  assert.notEqual(x.cards()[0], first[0]); assert.equal(x.mountedCards().length, 2);
 });

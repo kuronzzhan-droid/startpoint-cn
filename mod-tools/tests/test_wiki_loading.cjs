@@ -71,6 +71,16 @@ test('real character filters find skill-only text through search chunks when boo
   assert.deepEqual(Array.from(await changed),['ca']);
   assert.equal(x.data.characters[0].abilities,undefined);
 });
+test('rapid search-panel disclosure does not render results or fetch search or character chunks', () => {
+  const {Node}=require('./wiki_equipment_fixture.cjs'),x=loader();
+  vm.runInNewContext(source('character-filters.js'),x.context);
+  let changed=0;
+  const filters=x.context.window.WFCharacterFilters.create({characters:x.data.characters,idPrefix:'catalog-check',initiallyOpen:false,
+    ui:{el:(...args)=>new Node(...args),nativeIcon:()=>new Node('span')},onChange:()=>changed++});
+  const mounted=new Node('document');mounted.append(filters.element);
+  for(let index=0;index<40;index++){filters.element.open=!filters.element.open;filters.element.fire('toggle');}
+  assert.equal(filters.element.open,false);assert.equal(changed,0);assert.equal(x.scripts.length,0);
+});
 test('legacy unsplit exports remain readable without any requests', async () => {
   const x=loader(false);
   assert.equal((await x.api.loadCharacter('ca')).name,'A');

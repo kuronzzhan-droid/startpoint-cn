@@ -99,9 +99,10 @@
     }});
   const catalogRatings = window.WFCatalogRatings.create({characters, sort: $('sort-order'),
     host: $('catalog-view').querySelector('.catalog-list-toolbar'), ui: helpers, onChange: () => {
+      catalogRatings.paintMounted($('character-grid'));
       if (catalogRatings.isRatingSort()) renderCatalog();
-      else catalogRatings.paintMounted($('character-grid'));
     }});
+  let mountedCatalogKey = '', mountedPortraitForm = '';
 
   [['--frame-window', 'frames', 'window'], ['--frame-button', 'frames', 'button'], ['--frame-status', 'frames', 'status'], ['--game-detail-bg', 'backgrounds', 'detail']].forEach(([variable, group, key]) => {
     const url = safeUrl(object(object(meta.uiAssets)[group])[key]);
@@ -194,25 +195,36 @@
 
   function renderCatalog() {
     if ($('catalog-view').hidden) return;
-    catalogPortraits.destroy();
     if (catalogDisclosure.isOpen() || catalogRatings.isRatingSort()) catalogRatings.load();
     const selected = filteredCharacters();
-    const fragment = document.createDocumentFragment();
-    (catalogDisclosure.isOpen() ? selectedCategory ? [selectedCategory] : ['全部角色'] : []).forEach((category, index) => {
-      const members = selectedCategory ? selected.filter((character) => categoryName(character) === category) : selected;
-      if (!members.length) return;
-      const group = el('section', 'catalog-group');
-      const title = el('h3', 'group-title', category);
-      title.id = `catalog-group-${index}`;
-      title.append(el('span', 'group-count', `${members.length} 位`));
-      group.setAttribute('aria-labelledby', title.id);
-      const grid = el('div', 'character-grid');
-      members.forEach((character) => grid.append(card(character)));
-      if (category !== '全部角色') group.append(title, el('p', 'group-description', categoryDescriptions[category]));
-      group.append(grid);
-      fragment.append(group);
-    });
-    $('character-grid').replaceChildren(fragment);
+    const container = $('character-grid'), portraitMode = $('catalog-view').dataset.layout === 'portrait';
+    // Only one rendered view is retained. Identical results reuse the image nodes,
+    // including standard/dense switches; the router releases them on page leave.
+    const key = JSON.stringify([selectedCategory, portraitMode, selected.map(character => String(character.id))]);
+    if (!catalogDisclosure.isOpen()) catalogPortraits.pause();
+    else {
+      if (mountedCatalogKey !== key || (!container.children.length && selected.length)) {
+        catalogPortraits.destroy();
+        const fragment = document.createDocumentFragment();
+        if (selected.length) {
+          const category = selectedCategory || '全部角色', group = el('section', 'catalog-group');
+          if (selectedCategory) {
+            const title = el('h3', 'group-title', category); title.id = 'catalog-group-0';
+            title.append(el('span', 'group-count', `${selected.length} 位`));
+            group.setAttribute('aria-labelledby', title.id);
+            group.append(title, el('p', 'group-description', categoryDescriptions[category]));
+          }
+          const grid = el('div', 'character-grid'); selected.forEach(character => grid.append(card(character)));
+          group.append(grid); fragment.append(group);
+        }
+        container.replaceChildren(fragment); mountedCatalogKey = key; mountedPortraitForm = catalogAvatars.getForm();
+      } else if (portraitMode && mountedPortraitForm !== catalogAvatars.getForm()) {
+        const portraits = container.querySelectorAll('.portrait-card-media');
+        selected.forEach((character, index) => catalogPortraits.paint(portraits[index], character, catalogAvatars.getForm(), text(character.name)));
+        mountedPortraitForm = catalogAvatars.getForm();
+      }
+      catalogPortraits.resume();
+    }
     document.querySelectorAll('.category-button').forEach((button) =>
       button.setAttribute('aria-pressed', String(button.dataset.category === selectedCategory)));
     $('all-categories').setAttribute('aria-current', selectedCategory ? 'false' : 'page');

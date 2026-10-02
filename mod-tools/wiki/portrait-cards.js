@@ -7,9 +7,9 @@
     const fine = window.matchMedia?.('(hover: hover) and (pointer: fine)');
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
     const narrow = window.matchMedia?.('(max-width: 768px)');
-    let active = null, frame = 0, watching = false;
+    let active = null, frame = 0, watching = false, suspended = false;
     const enabled = () => fine?.matches === true && reduced?.matches === false && narrow?.matches === false
-      && typeof window.requestAnimationFrame === 'function';
+      && !suspended && typeof window.requestAnimationFrame === 'function';
     const properties = ['--portrait-rotate-x','--portrait-rotate-y','--portrait-shift-x','--portrait-shift-y'];
     function reset() {
       if (frame) window.cancelAnimationFrame(frame);
@@ -77,11 +77,13 @@
       attach(card) {
         if (cards.has(card)) return card;
         card.classList.add('portrait-card'); cards.add(card);
-        bindings.forEach(([type, listener]) => card.addEventListener(type, listener, {passive:true})); watch(true); return card;
+        bindings.forEach(([type, listener]) => card.addEventListener(type, listener, {passive:true})); watch(!suspended); return card;
       },
+      pause() {suspended = true; reset(); watch(false);},
+      resume() {suspended = false; if (cards.size) watch(true);},
       destroy() {
         reset(); cards.forEach((card) => bindings.forEach(([type, listener]) => card.removeEventListener(type, listener)));
-        cards.clear(); watch(false);
+        cards.clear(); watch(false); suspended = false;
       },
     };
   }};

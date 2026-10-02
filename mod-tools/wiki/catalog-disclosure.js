@@ -1,4 +1,4 @@
-/* Keep the catalogue unmounted until opened; passive data refreshes never open it. */
+/* Keep the catalogue unmounted until first opened; later collapses retain one reusable view. */
 (() => {
   'use strict';
   window.WFCatalogDisclosure = {create({catalog, ui, onToggle}) {
@@ -20,8 +20,8 @@
       toggle.setAttribute('aria-expanded', String(expanded));
       label.textContent = expanded ? '收起角色列表' : '展开角色列表';
       hint.textContent = expanded ? '▴' : '▾';
+      if (!expanded && document.activeElement && grid.contains(document.activeElement)) toggle.focus({preventScroll:true});
       grid.hidden = !expanded;
-      if (!expanded) grid.replaceChildren();
       if (notify) onToggle();
     }
     toggle.addEventListener('click', () => setOpen(!expanded));
