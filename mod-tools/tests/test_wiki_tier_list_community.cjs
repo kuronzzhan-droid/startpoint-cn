@@ -112,11 +112,16 @@ test('compact public controls keep help collapsed and local controls never reque
   assert.equal(detailSwitch(x.host).textContent, '详情');
   assert.doesNotMatch(visibleText(x.host), /中立分|每日汇总|点击头像查看均分|未评分角色不入|刷新/);
   assert.equal(cls(x.host, 'tier-public-status').hidden, true);
-  help.open = true;
+  const publicPanel = cls(nav, 'tier-help-body'), helpSlot = nav.children.indexOf(help);
+  assert.equal(help.children.length, 1); assert.equal(help.children[0].tag, 'summary');
+  assert.equal(help.children[0].attributes['aria-controls'], publicPanel.id);
+  help.open = true; await help.fire('toggle');
+  assert.equal(nav.children.indexOf(help), helpSlot); assert.equal(publicPanel.hidden, false);
   assert.match(visibleText(x.host), /中立分.*每日汇总|每日汇总.*中立分/);
   assert.match(visibleText(x.host), /刷新/);
   assert.equal(button(x.host, '刷新').attributes['aria-label'], '刷新大家排行');
-  help.open = false; await detailSwitch(x.host).fire();
+  help.open = false; await help.fire('toggle'); assert.equal(publicPanel.hidden, true);
+  await detailSwitch(x.host).fire();
   await x.host.all(node => node.attributes['aria-label'] === '火属性排行')[0].fire();
   await button(x.host, '角色评分').fire();
   assert.match(visibleText(x.host), /暂无已汇总投票/);
@@ -126,11 +131,27 @@ test('compact public controls keep help collapsed and local controls never reque
   assert.equal(detailSwitch(x.host).hidden, true);
   assert.equal(help.hidden, true);
   const personalHelp = cls(x.host, 'tier-personal-help'); assert.ok(!personalHelp.open);
+  const personalPanel = cls(cls(x.host, 'tier-toolbar'), 'tier-help-body');
+  assert.equal(personalHelp.children.length, 1); assert.equal(personalPanel.hidden, true);
   assert.equal(cls(x.host, 'tier-status').hidden, true);
   assert.doesNotMatch(visibleText(x.host), /每天可提交一次|手机也可先点头像/);
-  personalHelp.open = true; assert.match(visibleText(x.host), /手机也可先点头像/);
+  personalHelp.open = true; await personalHelp.fire('toggle');
+  assert.equal(personalPanel.hidden, false); assert.match(visibleText(x.host), /手机也可先点头像/);
+  personalHelp.open = false; await personalHelp.fire('toggle'); assert.equal(personalPanel.hidden, true);
   assert.ok(button(x.host, '提交我的排行')); assert.ok(button(x.host, '移回待排行'));
   assert.equal(x.calls.length, 1);
+});
+
+test('an expanded public help panel follows its view without moving the disclosure or leaking into mine', async () => {
+  const value = {...aggregate(), asOf:'2099-01-01T04:00:00Z', nextRefreshAt:'2099-01-01T16:00:00Z', stale:false};
+  const x = setup(async () => value, {defaultView:true}); await tick();
+  const nav = cls(x.host, 'tier-community-nav'), help = cls(nav, 'tier-public-help'), panel = cls(nav, 'tier-help-body');
+  const originalChildren = [...nav.children];
+  help.open = true; await help.fire('toggle'); assert.equal(panel.hidden, false);
+  x.controller.setView('mine'); assert.equal(panel.hidden, true);
+  await help.fire('toggle'); assert.equal(panel.hidden, true);
+  x.controller.setView('community'); assert.equal(panel.hidden, false);
+  assert.deepEqual(nav.children, originalChildren); assert.equal(x.calls.length, 1);
 });
 
 test('collapsed help never hides loading, errors or a local save failure', async () => {

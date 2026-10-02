@@ -75,7 +75,9 @@
     detailToggle.append(track, el('span', '', '详情'));
     const help = el('details', 'tier-help tier-public-help'), helpSummary = el('summary', '', '说明');
     const helpBody = el('div', 'tier-help-body'); helpSummary.setAttribute('aria-label', '查看排行说明');
-    help.append(helpSummary, helpBody);
+    helpBody.id = 'tier-public-help-body'; helpBody.hidden = true;
+    helpSummary.setAttribute('aria-controls', helpBody.id); help.append(helpSummary);
+    help.addEventListener('toggle', () => {helpBody.hidden = help.hidden || !help.open;});
     const participation = el('div', 'tier-public-participation'); participation.setAttribute('aria-label', '全站参与人数');
     const totalCount = el('strong', '', '—'), ratingCount = el('strong', '', '—'), tierCount = el('strong', '', '—');
     const participationStatus = el('small', 'tier-participation-status'); participationStatus.setAttribute('role', 'status');
@@ -96,7 +98,8 @@
     const results = el('div', 'tier-public-results'), elementButtons = [], boardHeading = el('div', 'tier-public-heading');
     boardHeading.append(elementFilters, participation);
     dynamicHost.append(publicToolbar, boardHeading, publicStatus, results);
-    const navigation = el('div', 'tier-community-nav'); navigation.append(tabs, detailToggle, help);
+    // Keep the disclosure in its toolbar slot; only its separate full-width panel expands below.
+    const navigation = el('div', 'tier-community-nav'); navigation.append(tabs, detailToggle, help, helpBody);
     element.append(navigation, submitBar, mineHost, dynamicHost); host.append(element);
     let view = 'mine', revision = 0, portraits, dialogOpen = false, submitted, cached, elementFilter = '', source = 'placement', showDetails = false, publicCards = [];
     let stopStats, statsDisposed = false, statsAttached = element.isConnected, lastStats;
@@ -241,7 +244,7 @@
     function setView(next) {
       const changed = view !== next; view = next === 'community' ? 'community' : 'mine';
       const mine = view === 'mine'; mineHost.hidden = !mine; submitBar.hidden = !mine; dynamicHost.hidden = mine;
-      detailToggle.hidden = mine; help.hidden = mine;
+      detailToggle.hidden = mine; help.hidden = mine; helpBody.hidden = mine || !help.open;
       [mineTab, publicTab].forEach((tab, index) => {tab.setAttribute('aria-selected', String(mine === !index)); tab.tabIndex = mine === !index ? 0 : -1;});
       onViewChange(view);
       if (mine) {revision++; refreshState(); return;}

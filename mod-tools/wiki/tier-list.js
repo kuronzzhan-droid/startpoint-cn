@@ -133,9 +133,12 @@ window.renderWikiTierList = function renderWikiTierList(host, data, ui, options)
   const help = el('details', 'tier-help tier-personal-help'), helpSummary = el('summary', '', '说明');
   helpSummary.setAttribute('aria-label', '查看手排操作说明');
   const helpBody = el('div', 'tier-help-body');
+  helpBody.id = 'tier-personal-help-body'; helpBody.hidden = true;
+  helpSummary.setAttribute('aria-controls', helpBody.id);
+  help.addEventListener('toggle', () => {helpBody.hidden = !help.open;});
   helpBody.append(el('p', '', '拖动角色到档位或分界线；手机也可先点头像，再点位置。选中角色后可移回待排行，Esc 取消选择。'),
     el('p', '', '本地自动保存，点击提交才计入大家排行。每天可提交一次（北京时间换日），整份排行替换自己的旧票，公共榜次日更新。提交空榜可撤回旧票。'));
-  help.append(helpSummary, helpBody); toolbar.append(avatarControls, help);
+  help.append(helpSummary); toolbar.append(avatarControls, help, helpBody);
   page.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') select('');
     if (event.key === 'Delete' && selected && !event.target.closest('input,textarea,select,[role="combobox"],[role="listbox"]')) {
