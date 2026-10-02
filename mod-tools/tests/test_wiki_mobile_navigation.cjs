@@ -5,22 +5,24 @@ const path = require('node:path');
 const vm = require('node:vm');
 class Node {
   constructor(tag, cls = '', attributes = {}) {
-    Object.assign(this, {nodeType: 1, tag, className: cls, attributes, children: [], scrollWidth: 100, clientWidth: 100, overflowX: 'visible'});
+    Object.assign(this, {nodeType: 1, tag, className: cls, attributes, children: [], listeners: {}, scrollWidth: 100, clientWidth: 100, overflowX: 'visible'});
     this.classList = {toggle: (name, on) => {const names = new Set(this.className.split(' ')); on ? names.add(name) : names.delete(name); this.className = [...names].join(' ');}};
   }
   append(node) {node.parentElement = this; this.children.push(node);}
   getAttribute(name) {return this.attributes[name] ?? null;}
   setAttribute(name, value) {this.attributes[name] = value;}
+  addEventListener(name, fn) {this.listeners[name] = fn;}
   contains(node) {return node === this || this.children.some(child => child.contains(node));}
   matches(selector) {
     return selector.split(',').some(value => value.startsWith('.') ? this.className.split(' ').includes(value.slice(1))
       : value === '[draggable="true"]' ? this.attributes.draggable === 'true'
-      : value === '[role="combobox"]' ? this.attributes.role === 'combobox'
+      : /^\[role="[^"]+"\]$/.test(value) ? this.attributes.role === value.slice(7, -2)
+      : value === '[hidden]' ? this.hidden || this.attributes.hidden !== undefined
       : value.startsWith('[contenteditable]') ? this.attributes.contenteditable !== undefined && this.attributes.contenteditable !== 'false'
       : value === this.tag);
   }
   closest(selector) {for (let node = this; node; node = node.parentElement) if (node.matches(selector)) return node; return null;}
-  querySelectorAll() {return this.children.filter(node => node.tag === 'a');}
+  querySelectorAll(selector) {return this.children.flatMap(node => [...((selector === 'a[href^="#"]' ? node.tag === 'a' : node.matches(selector)) ? [node] : []), ...node.querySelectorAll(selector)]);}
   querySelector(selector) {for (const child of this.children) {if (child.matches(selector)) return child; const nested = child.querySelector(selector); if (nested) return nested;} return null;}
 }
 function setup(hash = '', width = 390, lateRouter = false) {
@@ -84,12 +86,27 @@ test('vertical scroll, short movements, taps, slow holds and desktop width never
   assert.equal(held.window.location.hash, '');
   const desktop = setup('weapons', 1280); desktop.swipe(desktop.nav.children[3]); assert.equal(desktop.window.location.hash, '#weapons');
 });
-test('team and tier board content keep drag gestures but their header still switches pages', () => {
+test('all main pages accept touch swipes on safe content, including team and tier pages', () => {
+  for (const [hash, expected] of [['', '#team'], ['team', '#community'], ['community', '#weapons'], ['weapons', '#dungeons'], ['dungeons', '#tier-list']]) {
+    const x = setup(hash); assert.equal(x.swipe().prevented, true); assert.equal(x.window.location.hash, expected);
+  }
+  const last = setup('tier-list'); last.swipe(last.content, [100, 100], [240, 105]); assert.equal(last.window.location.hash, '#dungeons');
+});
+test('team and tier drag zones keep gestures but their header still switches pages', () => {
   for (const hash of ['team', 'tier-list']) {
-    const x = setup(hash); assert.equal(x.swipe().prevented, false); assert.equal(x.window.location.hash, '#' + hash);
+    const x = setup(hash), board = new Node('div', hash === 'team' ? 'team-board' : 'tier-board'); x.content.append(board);
+    assert.equal(x.swipe(board).prevented, false); assert.equal(x.window.location.hash, '#' + hash);
     x.swipe(x.nav.children[hash === 'team' ? 1 : 5], [100, 100], [240, 105]);
     assert.equal(x.window.location.hash, hash === 'team' ? '#' : '#dungeons');
   }
+});
+test('search forms and hidden old forms do not disable the whole page, but touching a search control does not navigate', () => {
+  const x = setup('community'), search = new Node('form', 'community-code-search-form', {role:'search'});
+  const input = new Node('input'); search.append(input); x.content.append(search);
+  assert.equal(x.swipe(input).prevented, false); assert.equal(x.window.location.hash, '#community');
+  x.swipe(); assert.equal(x.window.location.hash, '#weapons');
+  const hidden = new Node('section'); hidden.hidden = true; hidden.append(new Node('form')); x.main.append(hidden);
+  x.swipe(x.nav.children[3]); assert.equal(x.window.location.hash, '#dungeons');
 });
 test('read-only details and admin lists swipe their active header category without enabling content gestures', () => {
   for (const [hash, expected] of [['character/c1', '#team'], ['weapon/w1', '#dungeons'], ['dungeons/boss1', '#tier-list'], ['community/admin', '#weapons']]) {
@@ -111,12 +128,41 @@ test('admin editing, login and other drafts block header swipes; accounts routes
 });
 test('inputs, controls, draggable elements, forms, open dialogs and focused editors remain untouched', () => {
   for (const node of [new Node('input'), new Node('textarea'), new Node('button'), new Node('summary'), new Node('form'),
-    new Node('div', '', {contenteditable: 'true'}), new Node('a', '', {draggable: 'true'}), new Node('div', '', {role: 'combobox'})]) {
+    new Node('div', '', {contenteditable: 'true'}), new Node('a', '', {draggable: 'true'}), new Node('div', '', {role: 'combobox'}), new Node('div', '', {role:'scrollbar'})]) {
     const x = setup('weapons'); x.content.append(node); const child = new Node('span'); node.append(child);
     assert.equal(x.swipe(child).prevented, false); assert.equal(x.window.location.hash, '#weapons');
   }
   const focused = setup('community'); focused.document.activeElement = new Node('input'); focused.swipe(focused.nav.children[2]); assert.equal(focused.window.location.hash, '#community');
   const modal = setup(); modal.setDialog({}); modal.swipe(modal.nav.children[0]); assert.equal(modal.window.location.hash, '');
+});
+test('mouse and pen drags switch only the narrow-screen header; touch pointers do not duplicate touch events', () => {
+  function drag(x, target, pointerType = 'mouse') {
+    x.fire('pointerdown', target, [], {pointerType, pointerId:7, isPrimary:true, button:0, clientX:250, clientY:100});
+    x.fire('pointermove', target, [], {pointerType, pointerId:7, clientX:120, clientY:105});
+    x.fire('pointerup', target, [], {pointerType, pointerId:7, clientX:120, clientY:105});
+  }
+  for (const pointerType of ['mouse', 'pen']) {
+    const x = setup('community'); drag(x, x.content, pointerType); assert.equal(x.window.location.hash, '#community');
+    drag(x, x.nav.children[2], pointerType); assert.equal(x.window.location.hash, '#weapons');
+    assert.equal(x.fire('click', x.nav.children[2], [], {detail:1, sourceCapabilities:{firesTouchEvents:false}}).prevented, true);
+    x.fire('pointerdown', x.nav.children[4], [], {pointerType, pointerId:8, isPrimary:true, button:0, clientX:250, clientY:100});
+    x.fire('pointerup', x.nav.children[4], [], {pointerType, pointerId:8, clientX:250, clientY:100});
+    assert.equal(x.fire('click', x.nav.children[4], [], {detail:1, sourceCapabilities:{firesTouchEvents:false}}).prevented, false);
+  }
+  const touch = setup('community'); drag(touch, touch.nav.children[2], 'touch'); assert.equal(touch.window.location.hash, '#community');
+  touch.swipe(touch.nav.children[2]); assert.equal(touch.window.location.hash, '#weapons');
+  const desktop = setup('community', 1280); drag(desktop, desktop.nav.children[2]); assert.equal(desktop.window.location.hash, '#community');
+});
+test('swipe navigation honors accepted and rejected draft guards without premature hash or scroll changes', async () => {
+  for (const accepted of [true, false]) {
+    const x = setup('tier-list'); let settle, calls = 0;
+    x.window.WFNavigationGuard = {navigate: destination => {calls++; return new Promise(resolve => {settle = () => {if (accepted) x.window.location.hash = destination; resolve(accepted);};});}};
+    x.swipe(x.content, [100, 100], [240, 105]);
+    assert.equal(x.window.location.hash, '#tier-list'); assert.equal(x.scrolls.length, 0);
+    x.swipe(x.nav.children[5], [100, 100], [240, 105]); assert.equal(calls, 1);
+    settle(); await new Promise(setImmediate);
+    assert.equal(x.window.location.hash, accepted ? '#dungeons' : '#tier-list'); assert.equal(x.scrolls.length, accepted ? 1 : 0);
+  }
 });
 test('horizontal scrolling containers retain native scrolling while ordinary linked cards can swipe', () => {
   const x = setup('community'), scroller = new Node('div'); scroller.scrollWidth = 500; scroller.clientWidth = 280; scroller.overflowX = 'auto';
