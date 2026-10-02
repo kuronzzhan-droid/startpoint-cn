@@ -16,12 +16,12 @@
     if (panel) panel.open = true;
     search.focus();
   }
-  function create({characters, ui, idPrefix, onChange = () => {}, onStateChange = () => {}, onReset, initialState = {}, collapsible = true}) {
+  function create({characters, ui, idPrefix, onChange = () => {}, onStateChange = () => {}, onReset, initialState = {}, collapsible = true, initiallyOpen = true}) {
     const {el, nativeIcon} = ui;
     const state = Object.fromEntries(['search', ...fields].map((key) => [key, String(initialState[key] ?? '')]));
-    const root = el(collapsible ? 'details' : 'div', 'character-filters'); root.open = true;
+    const root = el(collapsible ? 'details' : 'div', 'character-filters'); root.open = initiallyOpen;
     const heading = el('summary', 'character-filter-heading'); heading.append(el('h3', '', '查找角色'));
-    const hint = el('span', 'character-filter-toggle-hint', '收起 ▴'); hint.setAttribute('aria-hidden', 'true');
+    const hint = el('span', 'character-filter-toggle-hint', initiallyOpen ? '收起 ▴' : '展开 ▾'); hint.setAttribute('aria-hidden', 'true');
     heading.append(hint);
     root.addEventListener('toggle', () => {hint.textContent = root.open ? '收起 ▴' : '展开 ▾';});
     const body = el('div', 'character-filter-body');
@@ -68,8 +68,9 @@
     ['', ...elements].forEach((value) => {
       const button = el('button', 'character-filter-element'); button.type = 'button';
       button.setAttribute('aria-label', value ? `${value}属性` : '全部属性');
+      button.title = value ? `${value}属性` : '全部属性';
       if (value) button.append(nativeIcon('elements', value, value));
-      button.append(el('span', '', value || '全部'));
+      else button.append(el('span', '', '全部'));
       button.addEventListener('click', () => {state.element = value; sync(); notify();});
       elementButtons.push({button, value}); elementRow.append(button);
     });

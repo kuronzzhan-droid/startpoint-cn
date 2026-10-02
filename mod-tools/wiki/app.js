@@ -90,7 +90,7 @@
   let selectedCategory = '';
   const catalogDisclosure = window.WFCatalogDisclosure.create({catalog: $('catalog-view'), ui: helpers, onToggle: renderCatalog});
   const characterFilters = window.WFCharacterFilters.create({characters, ui: helpers,
-    idPrefix: 'catalog-character', onChange: renderCatalog, onStateChange: filterChanged, onReset: clearFilters});
+    idPrefix: 'catalog-character', initiallyOpen: false, onChange: renderCatalog, onStateChange: filterChanged, onReset: clearFilters});
   $('catalog-character-filters').append(characterFilters.element);
   const catalogPortraits = window.WFPortraitCards.create({ui: helpers});
   const catalogAvatars = window.WFCatalogAvatars.create({host: $('catalog-avatar-controls'),

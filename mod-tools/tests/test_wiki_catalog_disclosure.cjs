@@ -67,7 +67,7 @@ function setup(handler = async () => ({items: []})) {
     localStorage:{getItem:(key)=>storage.get(key),setItem:(key,value)=>storage.set(key,value)}};
   for (const name of ['rating-score.js', 'portrait-cards.js', 'catalog-layout.js', 'catalog-disclosure.js', 'catalog-ratings.js', 'app.js'])
     vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki', name), 'utf8'), context);
-  return {catalog, display, count, heading, sort, requests, updateRating: (id, value) => window.WFCatalogRatings.update(id, value), get created() {return avatarCreates;},
+  return {catalog, display, count, heading, sort, requests, filtersInitiallyOpen: callbacks.initiallyOpen, updateRating: (id, value) => window.WFCatalogRatings.update(id, value), get created() {return avatarCreates;},
     get portraitCreates() {return images.filter((node)=>node.className==='portrait-card-image').length;},
     layout(value) {document.getElementById('catalog-layout').children.find((node)=>node.dataset.layout===value).fire('click');},
     avatar(form) {avatarForm=form;avatarOptions.onChange?.(form);},
@@ -78,6 +78,7 @@ function setup(handler = async () => ({items: []})) {
 
 test('the real app creates no cards or portraits until the list is opened, and collapses by unmounting', () => {
   const x = setup(); assert.equal(x.created, 0); assert.equal(x.cards().length, 0);
+  assert.equal(x.filtersInitiallyOpen,false);
   assert.equal(x.count.textContent, '2 / 2'); assert.equal(x.display.parent, x.heading);
   assert.equal(x.catalog.querySelector('.catalog-list-label').textContent, '展开角色列表');
   x.passive(); assert.equal(x.created, 0);

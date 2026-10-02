@@ -9,6 +9,7 @@ class Node extends BaseNode {
   get lastElementChild() {return this.children.at(-1);}
   prepend(node) {node.remove(); node.parent=this; this.children.unshift(node);}
   matches(selector) {return selector[0]==='.' ? this.className.split(' ').includes(selector.slice(1)) : this.tag===selector;}
+  closest(selector) {return (selector === 'details.character-filters' && this.tag === 'details' && this.className === 'character-filters') ? this : this.parent?.closest(selector) || null;}
   querySelector(selector) {return this.all(node=>node.matches(selector))[0] || null;}
   get classList() {return {toggle:(name, enabled)=>{
     const names=new Set(this.className.split(' ').filter(Boolean));
@@ -28,22 +29,32 @@ function environment(matches=true) {
   return {context,document,window,query,el,storage,subscriptions:()=>subscriptions,
     resize(matches){query.matches=matches;query.fire('change');}};
 }
-function filters(x, idPrefix) {
+function filters(x, idPrefix, options = {}) {
   vm.runInNewContext(source('character-filters.js'), x.context);
   const filter=x.window.WFCharacterFilters.create({characters:[{id:'a',name:'A',rarity:5,type:'剑士',origin:'MOD'}],
-    idPrefix,ui:{el:x.el,nativeIcon:()=>x.el('span')}});
+    idPrefix,ui:{el:x.el,nativeIcon:()=>x.el('img','native-icon')},...options});
   x.document.append(filter.element);
   const body=filter.element.querySelector('.character-filter-body');
   return {filter,body,fields:body.querySelector('.character-filter-fields'),elements:body.querySelector('.character-filter-elements')};
 }
 test('mobile catalogue tab order puts search and all three choices before element buttons',()=>{
-  const x=environment(), {filter,body,fields,elements}=filters(x,'catalog-character');
+  const x=environment(), {filter,body,fields,elements}=filters(x,'catalog-character',{initiallyOpen:false});
+  assert.equal(filter.element.open,false);
+  assert.equal(filter.element.querySelector('.character-filter-toggle-hint').textContent,'展开 ▾');
   const interactive=body.all(node=>node.tag==='input'||node.tag==='select'||node.className==='character-filter-element');
   assert.equal(interactive[0],filter.search);
   assert.deepEqual(interactive.slice(1,4).map(node=>node.id),['catalog-character-rarity','catalog-character-type','catalog-character-origin']);
   assert.equal(interactive[4],elements.children[0]);
   assert.ok(body.children.indexOf(fields)<body.children.indexOf(elements));
   assert.equal(elements.children.length,7);
+  assert.equal(elements.children[0].textContent,'全部');
+  ['火','水','雷','风','光','暗'].forEach((name,index)=>{
+    const button=elements.children[index+1];
+    assert.equal(button.textContent,'');assert.equal(button.children[0].tag,'img');
+    assert.equal(button.attributes['aria-label'],`${name}属性`);assert.equal(button.title,`${name}属性`);
+  });
+  filter.focus();assert.equal(filter.element.open,true);assert.equal(x.document.activeElement,filter.search);
+  filter.element.fire('toggle');assert.equal(filter.element.querySelector('.character-filter-toggle-hint').textContent,'收起 ▴');
 });
 test('resizing restores desktop order without replacing controls, values or keyboard focus',()=>{
   const x=environment(), {body,fields,elements}=filters(x,'catalog-character');
@@ -56,7 +67,8 @@ test('resizing restores desktop order without replacing controls, values or keyb
   assert.equal(fire.lastFocusOptions.preventScroll,true);
 });
 test('team filters keep the original ordering and install no catalogue viewport listener',()=>{
-  const x=environment(), {body,fields,elements}=filters(x,'team-character');
+  const x=environment(), {filter,body,fields,elements}=filters(x,'team-character',{collapsible:false});
+  assert.equal(filter.element.tag,'div');assert.equal(filter.element.querySelector('.character-filter-heading'),null);
   assert.equal(x.subscriptions(),0);assert.equal(body.lastElementChild,fields);
   x.resize(false);x.resize(true);assert.ok(body.children.indexOf(elements)<body.children.indexOf(fields));
 });
