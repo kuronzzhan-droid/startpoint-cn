@@ -263,12 +263,14 @@ class OfficialBaseline:
         official_tail: str = OFFICIAL_TAIL,
         cache_dir: Path | None = None,
         verify_pinned: bool = True,
+        write_cache: bool = True,
     ) -> None:
         self.cdn_root = Path(cdn_root)
         self.official_tail = official_tail
         self.cache_dir = Path(cache_dir) if cache_dir else CACHE_DIR
         self._index: dict[str, dict[str, BaselineEntry]] = {}
         self._verify_pinned = verify_pinned
+        self._write_cache = write_cache
         self._verified = False
 
     # -- 归档发现 ---------------------------------------------------
@@ -345,16 +347,17 @@ class OfficialBaseline:
                                 rel, info.CRC, info.file_size, path, info.filename)
                 except zipfile.BadZipFile:
                     continue
-            self.cache_dir.mkdir(parents=True, exist_ok=True)
-            cache_file.write_text(json.dumps({
-                "stamp": stamp,
-                "root": root,
-                "officialTail": self.official_tail,
-                "entries": {
-                    rel: [entry.crc, entry.size, str(entry.archive), entry.member]
-                    for rel, entry in index.items()
-                },
-            }, ensure_ascii=False), encoding="utf-8")
+            if self._write_cache:
+                self.cache_dir.mkdir(parents=True, exist_ok=True)
+                cache_file.write_text(json.dumps({
+                    "stamp": stamp,
+                    "root": root,
+                    "officialTail": self.official_tail,
+                    "entries": {
+                        rel: [entry.crc, entry.size, str(entry.archive), entry.member]
+                        for rel, entry in index.items()
+                    },
+                }, ensure_ascii=False), encoding="utf-8")
         self._index[root] = index
         if root == "common" and self._verify_pinned and not self._verified:
             self._verify_pinned_baselines(index)
