@@ -64,11 +64,12 @@ test('bounded Unicode plain text is preserved as text; invalid types, control by
 
 test('URLs reject unsafe schemes, credentials, ports, private or ambiguous hosts and non-raster images',async t=>{
   const db=database(t);
+  // Use the repository's conventional private test address while retaining rejection coverage.
   const invalid=['javascript:alert(1)','data:image/png;base64,AAA','http://example.com/a.png','//example.com/a.png',
     'https://user:pass@example.com/a.png','https://example.com:8443/a.png','https://localhost/a.png',
     'https://site.localhost/a.png','https://machine.local/a.png','https://host.internal/a.png','https://intranet/a.png',
     'https://127.0.0.1/a.png','https://127.1/a.png','https://2130706433/a.png','https://0x7f000001/a.png',
-    'https://10.0.0.1/a.png','https://172.16.0.1/a.png','https://192.168.1.1/a.png','https://169.254.169.254/a.png',
+    'https://10.0.0.1/a.png','https://172.16.0.1/a.png','https://192.168.1.10/a.png','https://169.254.169.254/a.png',
     'https://[::1]/a.png','https://[::ffff:127.0.0.1]/a.png','https://[fc00::1]/a.png',
     'https://example.com\\@localhost/a.png','https://exa\nmple.com/a.png','https://example.com/a%00.png'];
   for(const value of invalid)for(const field of ['imageUrl','targetUrl'])
