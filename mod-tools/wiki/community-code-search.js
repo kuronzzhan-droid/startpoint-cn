@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const C = window.WFCommunity, G = window.WFCommunityGameCodes;
-  C.codeSearch = ({data, ui, onActiveChange = () => {}, onKeywordSearch}) => {
+  C.codeSearch = ({data, ui, onActiveChange = () => {}, onKeywordSearch, previewOnly = false}) => {
     const {el} = ui, startingHash = location.hash;
     const label = onKeywordSearch ? '搜索队伍或队伍码' : '搜索队伍码';
     const box = el('section', 'community-code-search'); box.setAttribute('aria-label', label);
@@ -12,7 +12,7 @@
     input.setAttribute('aria-label', label); input.autocomplete = 'off'; input.spellcheck = false;
     input.setAttribute('autocapitalize', 'characters'); input.setAttribute('enterkeyhint', 'search');
     const search = el('button', 'primary-button', '查找'); search.type = 'submit';
-    const clear = el('button', 'text-button', '返回列表'); clear.type = 'button'; clear.hidden = true;
+    const clear = el('button', 'text-button', previewOnly ? '清除' : '返回列表'); clear.type = 'button'; clear.hidden = true;
     const status = el('p', 'community-code-search-status'); status.setAttribute('role', 'status');
     const result = el('div', 'community-code-search-result');
     form.append(input, search, clear); box.append(form, status, result);
@@ -42,18 +42,20 @@
       const details = el('details', 'community-code-details');
       details.append(el('summary', '', '查看角色、武器与魂珠'), C.board(team, data, ui, {showNames: true}));
       card.append(details);
-      const actions = el('div', 'community-actions'), use = el('button', 'primary-button', '装入 Wiki 编队'); use.type = 'button';
       const error = C.teamError(team, data);
-      use.disabled = Boolean(error); actions.append(use); card.append(actions);
+      if (!previewOnly) {
+        const actions = el('div', 'community-actions'), use = el('button', 'primary-button', '装入 Wiki 编队'); use.type = 'button';
+        use.disabled = Boolean(error); actions.append(use); card.append(actions);
+        use.addEventListener('click', () => {
+          if (use.disabled) return;
+          try {
+            window.WFTeamImport.load(C.teamCopy(team), title);
+            location.hash = '#team';
+          } catch (error) {status.textContent = C.message(error);}
+        });
+      }
       card.append(el('p', 'muted community-code-search-note', error
-        ? `此阵容与当前图鉴不匹配：${error}` : '游戏导入以账号实际持有的角色和装备为准。'));
-      use.addEventListener('click', () => {
-        if (use.disabled) return;
-        try {
-          window.WFTeamImport.load(C.teamCopy(team), title);
-          location.hash = '#team';
-        } catch (error) {status.textContent = C.message(error);}
-      });
+        ? `此阵容与当前图鉴不匹配：${error}` : previewOnly ? '查询仅供查看，不会改变当前编队。' : '游戏导入以账号实际持有的角色和装备为准。'));
       result.append(card);
     }
     form.addEventListener('submit', async (event) => {

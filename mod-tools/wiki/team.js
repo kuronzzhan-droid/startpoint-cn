@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const S = window.WFTeamState;
-  let team = S.empty(), undo = [], redo = [], chosen = {group: 'main', index: 0};
+  let team = S.empty(), undo = [], chosen = {group: 'main', index: 0};
   let inspected = {group: 'main', index: 0};
   let characterFilterState = {}, equipmentFilterState = {}, name = '我的队伍';
   const labels = {main: '主位', unison: '合击', weapon: '装备', soul: '魂珠'};
@@ -34,8 +34,11 @@
     const characters = new Map(data.characters.map((c) => [String(c.id), c]));
     const equipment = new Map((data.equipment || []).map((w) => [String(w.id), w]));
     const equipmentCompare = window.WFEquipmentOrder.createCompare(data.equipment || []);
+    const sortedCharacters = [...characters.values()].sort(window.WFCharacterOrder.compareTeam);
+    const sortedEquipment = [...equipment.values()].sort(equipmentCompare);
+    let matchedCharacters, matchedEquipment, equipmentTarget = 'weapon';
     if (imported) {
-      undo.push(S.copy(team)); redo = [];
+      undo.push(S.copy(team));
       team = S.validate(imported.team, characters, equipment);
       name = String(imported.title || '推荐队伍').slice(0, 60);
       inspected = ['main','unison'].includes(imported.selection?.group) && [0,1,2].includes(imported.selection?.index)
@@ -58,7 +61,7 @@
     }
     function change(next) {
       if (JSON.stringify(next) === JSON.stringify(team)) {paintBoard(); return;}
-      undo.push(S.copy(team)); undo = undo.slice(-50); redo = []; team = next; paintBoard();
+      undo.push(S.copy(team)); undo = undo.slice(-50); team = next; paintBoard();
     }
     function assign(id, kind = '') {
       const expected = S.isCharacter(chosen.group) ? 'character' : 'equipment';
@@ -68,6 +71,7 @@
     }
     function chooseSlot(group, index) {
       chosen = {group, index};
+      if (!S.isCharacter(group)) equipmentTarget = group;
     }
     const picker = el('select', 'team-saved-picker'); picker.setAttribute('aria-label', '已保存队伍');
     let pickerRecords = [];
@@ -89,28 +93,9 @@
       const item = pickerRecords.find(record => String(record.key) === picker.value);
       if (item && picker.value !== '') saved.load(item);
     });
-    const file = el('input'); file.type = 'file'; file.accept = 'application/json,.json'; file.hidden = true;
-    file.addEventListener('change', async () => {
-      const selected = file.files[0]; if (!selected) return;
-      try {
-        if (selected.size > 100000) throw new Error();
-        const record = JSON.parse(await selected.text());
-        if (record.format !== 'wf-wiki-team-v1' || !record.team) throw new Error();
-        change(S.validate(record.team, characters, equipment));
-        name = String(record.name || '导入的队伍').slice(0, 60); title.value = name;
-        status.textContent = '已导入队伍；不在当前图鉴中的条目已留空。';
-      } catch {status.textContent = '请选择本站导出的队伍 JSON 文件。';}
-      file.value = '';
-    });
     controls.append(button('保存队伍', () => saved.save(), 'primary-button'), button('已保存队伍', () => saved.open()), picker,
-      button('撤销', () => {if (undo.length) {redo.push(S.copy(team)); team = undo.pop(); paintBoard();}}),
-      button('重做', () => {if (redo.length) {undo.push(S.copy(team)); team = redo.pop(); paintBoard();}}),
-      button('清空队伍', () => change(S.empty())), button('导入队伍', () => file.click()),
-      button('导出队伍', () => {
-        const blob = new Blob([JSON.stringify({format: 'wf-wiki-team-v1', name, team}, null, 2)], {type: 'application/json'});
-        const url = URL.createObjectURL(blob), a = el('a'); a.href = url; a.download = `${name || '队伍'}.json`;
-        a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-      }), file);
+      button('撤销', () => {if (undo.length) {team = undo.pop(); paintBoard();}}),
+      button('清空队伍', () => change(S.empty())));
     const collect = button('管理员保存队伍', () => window.WFCommunity.openSubmit({team: S.copy(team), title: name, data, ui}), 'primary-button');
     collect.hidden = true; controls.append(collect);
     window.WFCommunity?.client?.request('/admin/me').then((identity) => {
@@ -118,6 +103,11 @@
     }).catch(() => {});
     const recommendations = el('a', 'text-button', '查看配队大全'); recommendations.href = '#community'; controls.append(recommendations);
     controls.append(avatarControls);
+    const codeLookup = el('details', 'team-code-lookup'); codeLookup.open = false;
+    codeLookup.append(el('summary', 'text-button', '查询 Wiki 队伍码'));
+    codeLookup.addEventListener('toggle', () => {
+      if (codeLookup.open && codeLookup.children.length === 1) codeLookup.append(window.WFCommunity.codeSearch({data, ui, previewOnly:true}));
+    });
     function paintBoard() {
       board.replaceChildren(boardHeading);
       const grid = el('div', 'team-columns');
@@ -177,68 +167,43 @@
         grid.append(column);
       }
       board.append(grid); inspector?.show(team[inspected.group][inspected.index]);
+      candidatePools.select(S.isCharacter(chosen.group) ? 'character' : 'equipment', team[chosen.group][chosen.index]);
     }
     const equipmentFilters = window.WFTeamEquipmentFilters.create({equipment:[...equipment.values()], ui,
-      initialState:equipmentFilterState, onStateChange:(state) => {equipmentFilterState = state;}, onChange:() => paintLibrary()});
+      initialState:equipmentFilterState, onStateChange:(state) => {equipmentFilterState = state;}, onChange:() => {matchedEquipment = null; paintLibrary();}});
     const characterFilters = window.WFCharacterFilters.create({characters: [...characters.values()], ui,
       idPrefix: 'team-character', initialState: characterFilterState, collapsible: false,
-      onStateChange: (state) => {characterFilterState = state;}, onChange: () => paintLibrary()});
+      onStateChange: (state) => {characterFilterState = state;}, onChange: () => {matchedCharacters = null; paintLibrary();}});
     const modeSwitch = el('div', 'team-mode-switch'); modeSwitch.setAttribute('role', 'group'); modeSwitch.setAttribute('aria-label', '候选类别');
     function switchMode(mode) {
       if ((mode === 'character' && S.isCharacter(chosen.group)) || chosen.group === mode) return;
       chooseSlot(mode === 'character' ? 'main' : mode, chosen.index); paintBoard(); paintLibrary();
     }
     const characterButton = button('角色', () => switchMode('character'), 'team-mode-button');
-    const weaponButton = button('武器', () => switchMode('weapon'), 'team-mode-button');
+    const equipmentButton = button('武器·魂珠', () => switchMode(equipmentTarget), 'team-mode-button');
+    modeSwitch.append(characterButton, equipmentButton);
+    const targets = el('div', 'team-equipment-targets'); targets.setAttribute('role', 'group'); targets.setAttribute('aria-label', '装配目标');
+    const weaponButton = button('装备', () => switchMode('weapon'), 'team-mode-button');
     const soulButton = button('魂珠', () => switchMode('soul'), 'team-mode-button');
-    modeSwitch.append(characterButton, weaponButton, soulButton);
-    const candidates = el('div', 'team-candidates');
+    weaponButton.setAttribute('aria-label', '装配到装备'); soulButton.setAttribute('aria-label', '装配到魂珠');
+    targets.append(el('span', '', '装配到'), weaponButton, soulButton);
+    const candidatePools = window.WFTeamCandidates.create({ui, avatars, onAssign:assign});
     const heading = el('h2'), libraryHeading = el('div', 'team-library-heading'); libraryHeading.append(heading, modeSwitch);
-    const candidatePanel = window.WFTeamScrollRail?.wrap(candidates, ui, '候选列表') || candidates;
-    library.append(libraryHeading, characterFilters.element, equipmentFilters.element, candidatePanel);
-    let mountedMode = '', mountedItems = [];
+    library.append(libraryHeading, targets, characterFilters.element, equipmentFilters.element, candidatePools.element);
     function paintLibrary() {
       const characterMode = S.isCharacter(chosen.group);
-      const mode = characterMode ? 'character' : chosen.group;
-      candidates.dataset.kind = mode;
       heading.textContent = `选择${labels[chosen.group]} · ${chosen.index + 1}号位`;
       characterButton.setAttribute('aria-pressed', String(characterMode));
+      equipmentButton.setAttribute('aria-pressed', String(!characterMode));
       weaponButton.setAttribute('aria-pressed', String(chosen.group === 'weapon'));
       soulButton.setAttribute('aria-pressed', String(chosen.group === 'soul'));
       characterFilters.element.hidden = !characterMode;
-      equipmentFilters.element.hidden = characterMode;
+      equipmentFilters.element.hidden = characterMode; targets.hidden = characterMode;
       if (!characterMode) equipmentFilters.setMode(chosen.group);
-      const items = characterMode ? [...characters.values()].filter(characterFilters.matches)
-        : [...equipment.values()].filter(equipmentFilters.matches);
-      if (characterMode) items.sort(window.WFCharacterOrder.compareTeam);
-      else items.sort(equipmentCompare);
-      // Slot selection does not change candidates. Reuse their nodes, focus and
-      // drag handlers; shared avatar controls already repaint images in place.
-      // Sources are fixed for this mounted page; a route rerender starts fresh.
-      if (mode === mountedMode && items.length === mountedItems.length
-          && items.every((item, index) => item === mountedItems[index])) return;
-      candidates.replaceChildren();
-      for (const item of items) {
-        const candidateName = `${item.name}${chosen.group === 'soul' ? '魂珠' : ''}`;
-        const b = button('', () => assign(item.id), 'team-candidate'); b.title = `${candidateName} ${item.theme || ''}`;
-        b.setAttribute('aria-label', `选择${candidateName}`); b.draggable = true;
-        const image = characterMode && avatars ? avatars.picture(item, item.name, 'team-candidate-image')
-          : picture(item.icon, item.name, 'team-candidate-image');
-        if (characterMode) {
-          const details = [`${item.element || '未知'}属性`, item.rarity ? `${item.rarity}星` : '', item.type,
-            ...(Array.isArray(item.themes) ? item.themes : [item.theme])].filter(Boolean).join(' · ');
-          b.title = `${candidateName} · ${details}`; b.setAttribute('aria-description', details);
-          const art = el('span', 'team-candidate-art'); art.append(image, elementBadge(item.element));
-          window.WFCharacterFrame?.apply(art, item);
-          window.WFCharacterBadges?.append(art, item, ui); b.append(art);
-        } else b.append(image);
-        const label = el('span', characterMode ? 'team-candidate-name' : '', item.name); label.title = item.name; b.append(label);
-        if (!characterMode) b.append(el('span', 'team-candidate-equipment-type', `${chosen.group === 'soul' ? '魂珠' : '武器'} · ${item.element || '未标注'}${item.rarity ? ` · ${item.rarity}★` : ''}`));
-        b.addEventListener('dragstart', (event) => event.dataTransfer.setData('application/x-wf-wiki', JSON.stringify({id: item.id, kind: characterMode ? 'character' : 'equipment'})));
-        candidates.append(b);
-      }
-      if (!items.length) candidates.append(el('p', '', '没有匹配的候选。'));
-      mountedMode = mode; mountedItems = items;
+      // Sorting is fixed for this catalogue; only filter and alias changes invalidate matches.
+      const items = characterMode ? (matchedCharacters ||= sortedCharacters.filter(characterFilters.matches))
+        : (matchedEquipment ||= sortedEquipment.filter(equipmentFilters.matches));
+      candidatePools.show(characterMode ? 'character' : 'equipment', items, chosen.group, team[chosen.group][chosen.index]);
     }
     const mainColumn = el('div', 'team-main'); mainColumn.append(board);
     const layout = el('div', 'team-layout');
@@ -248,7 +213,7 @@
     const helpTitle = el('summary'); helpTitle.append(el('h1', '', '配队模拟'));
     help.append(helpTitle, el('p', 'section-intro', '拖拽头像到槽位，或点空位／「换」后选择候选。点击盘中的角色头像，在角色面板查看技能与能力；第一列主位为队长。'),
       el('p', 'muted', '用于编成与查阅效果；主位限制、触发条件和武器特殊规则请结合说明判断。本页不模拟战斗过程或计算实战伤害。'));
-    host.replaceChildren(help, controls, status, layout);
+    host.replaceChildren(help, controls, status, codeLookup, layout);
     refreshSaved(); paintBoard(); paintLibrary(); arrangePanels();
   };
 })();

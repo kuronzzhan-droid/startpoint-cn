@@ -35,8 +35,10 @@ const data = {meta:{sentinel:'full-meta'},characters:['a','b','c','d'].map((id) 
     {id:'water',name:'水弓',element:'水',rarity:4,soul:{available:true}},
     {id:'no-soul',name:'无魂珠武器',element:'火',rarity:5,soul:{available:false}}]};
 const plate = {...S.empty(),main:['a','b','c'],unison:['d','',''],weapon:['w','','']};
-const one = (host, label) => host.all((node) => node.attributes['aria-label'] === label)[0];
-const button = (host, label) => host.all((node) => node.tag === 'button' && node.textContent === label)[0];
+const visible = node => !node.hidden && (!node.parent || visible(node.parent));
+const one = (host, label) => host.all((node) => visible(node) && node.attributes['aria-label'] === label)[0];
+const button = (host, label) => host.all((node) => visible(node) && node.tag === 'button' && node.textContent === label)[0];
+const activePool = host => host.querySelectorAll('.team-candidates').find(visible);
 function inspector(loadCharacter, avatars) {
   const listeners = {}, rendered = [];
   const window = {location:{hash:'#team'},addEventListener:(key, fn) => {listeners[key] = fn;},WFWikiData:{loadCharacter},
@@ -120,12 +122,16 @@ test('leaving the explicit variant chain clears every remembered member and a fr
   assert.equal(navigate('character/b'),undefined);
 });
 function teamPage(catalogue = data) {
-  const inspected = [], remembered = [], stored = new Map();
+  const inspected = [], remembered = [], stored = new Map(), lookups = [], images = [];
+  let characterQuery = '', changeCharacters = () => {}, matchCalls = 0, aliasReads = 0;
+  const aliases = {}, aliasWatchers = [];
   const window = {WFTeamState:S,location:{hash:'#team'},WFCharacterOrder:{compare:() => 0},
+    WFWikiAliases:{values:(_kind,id)=>{aliasReads++;return aliases[id] || [];},watch:(_host,callback)=>aliasWatchers.push(callback)},
+    WFCommunity:{codeSearch:options=>{lookups.push(options);return el('section','code-search-fixture');}},
     WFTeamInspector:{create:() => ({element:el('aside','team-inspector'),show:(id) => inspected.push(id)}),remember:(...args) => remembered.push(args)},
-    WFCharacterFilters:{create:() => ({element:el('div'),clearSearch(){},getState:() => ({}),matches:() => true})}};
+    WFCharacterFilters:{create:({onChange}) => {changeCharacters = onChange; return {element:el('div'),getState:() => ({}),matches:item => {matchCalls++;return item.name.includes(characterQuery);}};}}};
   const ui = {el,safeUrl:(value)=>typeof value==='string'?value:'',
-    picture:(path,name,cls) => {const image=el('img',cls,name);image.setAttribute('src',path);return image;},
+    picture:(path,name,cls) => {images.push(path);const image=el('img',cls,name);image.setAttribute('src',path);return image;},
     elementBadge:(element) => el('span','element-badge',element)};
   const context = {window,localStorage:{getItem:(key) => stored.get(key),setItem:(key,value) => stored.set(key,value)},setTimeout};
   vm.runInNewContext(source('equipment-order.js'),context);
@@ -134,9 +140,10 @@ function teamPage(catalogue = data) {
   vm.runInNewContext(source('character-badges.js'),context);
   vm.runInNewContext(source('team-saved-store.js'),context);
   vm.runInNewContext(source('team-saved.js'),context);
+  vm.runInNewContext(source('team-candidates.js'),context);
   vm.runInNewContext(source('team.js'),context);
   const host = el('main'); host.root = true;
-  return {window,host,inspected,remembered,stored,render:() => window.renderWikiTeam(host,catalogue,ui)};
+  return {window,host,inspected,remembered,stored,lookups,images,get aliasReads(){return aliasReads;},setAliases(id,values){aliases[id]=values;aliasWatchers.forEach(callback=>callback());},get matchCalls(){return matchCalls;},filterCharacters(query){characterQuery=query;changeCharacters();},render:() => window.renderWikiTeam(host,catalogue,ui)};
 }
 
 test('team help starts folded and the title beside the plate survives edits, undo and saving',async()=>{
@@ -156,6 +163,16 @@ test('team help starts folded and the title beside the plate survives edits, und
   const saved=JSON.parse(x.stored.get('wf-wiki-teams-v1'))[0];assert.equal(saved.name,'手机新队伍');assert.deepEqual(saved.team,plate);
   x.render();assert.equal(one(x.host,'队伍名称').value,'手机新队伍');
   assert.equal(x.host.querySelector('.team-help').open,false);
+  for(const removed of ['重做','导入队伍','导出队伍'])assert.equal(button(x.host,removed),undefined);
+  assert.equal(x.host.querySelectorAll('input').some(node=>node.type==='file'),false);
+});
+test('code lookup stays folded until requested and reuses a preview without replacing the current plate',async()=>{
+  const x=teamPage();x.window.WFTeamImport.load(plate,'查询前队伍');x.render();
+  const lookup=x.host.querySelector('.team-code-lookup');assert.equal(lookup.open,false);assert.equal(x.lookups.length,0);
+  lookup.open=true;await lookup.fire('toggle');assert.equal(x.lookups.length,1);assert.equal(x.lookups[0].previewOnly,true);
+  lookup.open=false;await lookup.fire('toggle');lookup.open=true;await lookup.fire('toggle');assert.equal(x.lookups.length,1);
+  assert.equal(one(x.host,'队伍名称').value,'查询前队伍');assert.ok(one(x.host,'1号主位：角色a'));
+  await button(x.host,'保存队伍').fire('click');assert.deepEqual(JSON.parse(x.stored.get('wf-wiki-teams-v1'))[0].team,plate);
 });
 test('a stale quick-load selection refreshes its records without replacing the current team', async () => {
   const x = teamPage(); x.window.WFTeamImport.load(plate, '原队伍'); x.render();
@@ -172,7 +189,7 @@ test('a stale quick-load selection refreshes its records without replacing the c
 
 test('unchanged full-roster candidates are reused across slots and still assign to the latest target',async()=>{
   const catalogue={...data,characters:Array.from({length:572},(_,index)=>({...data.characters[0],id:`c${index}`,name:`角色${index}`}))};
-  const x=teamPage(catalogue);x.render();const pool=x.host.querySelector('.team-candidates');
+  const x=teamPage(catalogue);x.render();const pool=activePool(x.host);
   const mounted=[...pool.children],first=one(x.host,'选择角色0');pool.scrollTop=600;
   await one(x.host,'2号主位：空位').fire('click');
   assert.equal(pool.children.length,572);assert.ok(pool.children.every((node,index)=>node===mounted[index]));
@@ -180,30 +197,53 @@ test('unchanged full-roster candidates are reused across slots and still assign 
   await first.fire('click');assert.ok(one(x.host,'2号主位：角色0'));
   await one(x.host,'1号合击：空位').fire('click');await one(x.host,'选择角色1').fire('click');
   assert.ok(one(x.host,'1号合击：角色1'));assert.ok(pool.children.every((node,index)=>node===mounted[index]));
+  const filteredCalls=x.matchCalls;
+  await button(x.host,'武器·魂珠').fire('click');const equipmentPool=activePool(x.host),equipmentNodes=[...equipmentPool.children];
+  const equipmentImages=equipmentNodes.map(node=>node.querySelector('img'));
+  for(let i=0;i<5;i++){
+    await button(x.host,'魂珠').fire('click');await button(x.host,'装备').fire('click');
+    await button(x.host,'角色').fire('click');assert.equal(one(x.host,'选择角色0'),first);assert.equal(activePool(x.host).scrollTop,600);
+    await button(x.host,'武器·魂珠').fire('click');
+  }
+  assert.ok(equipmentPool.children.every((node,index)=>node===equipmentNodes[index]&&node.querySelector('img')===equipmentImages[index]));
+  assert.equal(x.matchCalls,filteredCalls);
+  await button(x.host,'角色').fire('click');
   const beforeImage=first.querySelector('img');await button(x.host,'觉醒后').fire('click');
   assert.equal(one(x.host,'选择角色0'),first);assert.notEqual(first.querySelector('img'),beforeImage);
   assert.equal(first.querySelector('img').getAttribute('src'),'a-after.png');
+  const updatedImage=first.querySelector('img');await one(x.host,'3号主位：空位').fire('click');assert.equal(first.querySelector('img'),updatedImage);
   let dragged;await first.fire('dragstart',{dataTransfer:{setData:(_type,value)=>{dragged=JSON.parse(value);}}});
   assert.deepEqual(dragged,{id:'c0',kind:'character'});
 });
 
-test('candidate reuse invalidates on sort, filtered IDs and weapon versus soul mode, but preserves same results',async()=>{
-  const x=teamPage();x.render();const original=one(x.host,'选择角色a');
-  x.window.WFCharacterOrder.compareTeam=(a,b)=>b.name.localeCompare(a.name);
-  await one(x.host,'2号主位：空位').fire('click');
-  assert.notEqual(one(x.host,'选择角色a'),original);
-  assert.deepEqual(x.host.querySelectorAll('.team-candidate').map(n=>n.attributes['aria-label']),['选择角色d','选择角色c','选择角色b','选择角色a']);
-  await button(x.host,'武器').fire('click');const weapon=one(x.host,'选择武器');
+test('changing targets shares equipment filters and nodes; filtering and avatar updates invalidate only relevant data',async()=>{
+  const x=teamPage();x.render();const original=one(x.host,'选择角色a'), picture=original.querySelector('img');
+  const initialCalls=x.matchCalls;x.filterCharacters('角色b');assert.equal(one(x.host,'选择角色a'),undefined);
+  await button(x.host,'觉醒后').fire('click');x.filterCharacters('');
+  assert.equal(one(x.host,'选择角色a'),original);assert.notEqual(original.querySelector('img'),picture);
+  assert.equal(original.querySelector('img').getAttribute('src'),'a-after.png');assert.equal(x.matchCalls,initialCalls*3);
+  await button(x.host,'武器·魂珠').fire('click');const weapon=one(x.host,'选择武器');
   await one(x.host,'2号装备：空位').fire('click');assert.equal(one(x.host,'选择武器'),weapon);
   const search=one(x.host,'配队武器搜索');search.value='水弓';await search.fire('input');
   assert.equal(one(x.host,'选择武器'),undefined);const water=one(x.host,'选择水弓');
   await one(x.host,'3号装备：空位').fire('click');assert.equal(one(x.host,'选择水弓'),water);
-  await button(x.host,'魂珠').fire('click');assert.equal(one(x.host,'选择水弓'),undefined);assert.ok(one(x.host,'选择水弓魂珠'));
-  assert.equal(one(x.host,'选择无魂珠武器魂珠'),undefined);
-  await button(x.host,'武器').fire('click');assert.equal(search.value,'水弓');assert.ok(one(x.host,'选择水弓'));
-  assert.equal(one(x.host,'选择武器'),undefined);
-  search.value='不存在';await search.fire('input');const empty=x.host.querySelector('.team-candidates').children[0];
-  await one(x.host,'1号装备：空位').fire('click');assert.equal(x.host.querySelector('.team-candidates').children[0],empty);
+  await button(x.host,'魂珠').fire('click');assert.equal(one(x.host,'选择水弓魂珠'),water);
+  await button(x.host,'装备').fire('click');assert.equal(search.value,'水弓');assert.equal(one(x.host,'选择水弓'),water);
+  search.value='不存在';await search.fire('input');const empty=activePool(x.host).children[0];
+  await one(x.host,'1号装备：空位').fire('click');assert.equal(activePool(x.host).children[0],empty);
+  x.render();assert.equal(activePool(x.host).children[0].textContent,'没有匹配的候选。');
+});
+
+test('equipment alias changes invalidate cached matches, while repeated target changes reuse them',async()=>{
+  const x=teamPage();x.render();await button(x.host,'武器·魂珠').fire('click');
+  const search=one(x.host,'配队武器搜索');search.value='别称';await search.fire('input');
+  assert.equal(activePool(x.host).children[0].textContent,'没有匹配的候选。');
+  x.setAliases('w',['别称']);const candidate=one(x.host,'选择武器');assert.ok(candidate);
+  const reads=x.aliasReads;
+  await button(x.host,'魂珠').fire('click');await one(x.host,'3号魂珠：空位').fire('click');
+  assert.equal(one(x.host,'选择武器魂珠'),candidate);assert.equal(x.aliasReads,reads);
+  await candidate.fire('click');assert.ok(one(x.host,'3号魂珠：武器'));
+  x.setAliases('w',[]);assert.equal(activePool(x.host).children[0].textContent,'没有匹配的候选。');
 });
 
 test('inspector uses the current portrait choice after an asynchronous detail load', async () => {
@@ -223,7 +263,7 @@ test('one team switch updates slots and candidates in place without losing selec
   assert.equal(read(one(x.host,'1号合击：角色d')),'d.png');
   assert.equal(one(x.host,'1号主位：角色a'),avatar);assert.equal(x.inspected.at(-1),'d');
   assert.equal(one(x.host,'1号合击：角色d').attributes['aria-current'],'true');
-  await button(x.host,'武器').fire('click');await one(x.host,'武器水属性').fire('click');
+  await button(x.host,'武器·魂珠').fire('click');await one(x.host,'武器水属性').fire('click');
   await button(x.host,'觉醒前').fire('click');
   assert.ok(one(x.host,'选择水弓'));assert.equal(one(x.host,'选择武器'),undefined);
   await button(x.host,'角色').fire('click');await one(x.host,'替换2号主位').fire('click');await one(x.host,'选择角色d').fire('click');
@@ -245,7 +285,7 @@ test('imported recommendation selection opens its character panel without changi
 
 test('global avatar shortcut preference preserves the selected team, weapon filter and stored plate',async()=>{
   const x=teamPage();x.window.WFTeamImport.load(plate,'浮动头像开关验证',{group:'unison',index:0});x.render();
-  await button(x.host,'武器').fire('click');await one(x.host,'武器水属性').fire('click');
+  await button(x.host,'武器·魂珠').fire('click');await one(x.host,'武器水属性').fire('click');
   const avatar=one(x.host,'1号主位：角色a');
   x.window.WFCatalogAvatars.setForm('after');
   assert.equal(avatar.querySelector('img').getAttribute('src'),'a-after.png');assert.equal(one(x.host,'1号主位：角色a'),avatar);
@@ -282,34 +322,38 @@ test('plate retains direct character panels and equipment links without redundan
   assert.equal(x.window.location.hash,'#team');assert.equal(one(x.host,'1号魂珠：武器').href,'#weapon/w');
 });
 
-test('three picker tabs assign to distinct slots, and selecting an empty soul slot opens only souls', async () => {
-  const x = teamPage(); x.window.WFTeamImport.load(plate,'筛选盘'); x.render();
-  await button(x.host,'武器').fire('click');
-  assert.equal(button(x.host,'武器').attributes['aria-pressed'],'true'); assert.ok(one(x.host,'选择无魂珠武器'));
-  await one(x.host,'武器水属性').fire('click'); assert.ok(one(x.host,'选择水弓')); assert.equal(one(x.host,'选择武器'),undefined);
-  await one(x.host,'1号魂珠：空位').fire('click');
-  assert.equal(button(x.host,'魂珠').attributes['aria-pressed'],'true'); assert.ok(one(x.host,'选择武器魂珠')); assert.equal(one(x.host,'选择无魂珠武器魂珠'),undefined);
-  await one(x.host,'选择武器魂珠').fire('click'); assert.ok(one(x.host,'1号魂珠：武器'));
-  await button(x.host,'武器').fire('click'); assert.ok(one(x.host,'选择水弓')); assert.equal(one(x.host,'选择武器'),undefined);
-  await one(x.host,'选择水弓').fire('click'); assert.ok(one(x.host,'1号装备：水弓')); assert.ok(one(x.host,'1号魂珠：武器'));
-  await one(x.host,'替换1号魂珠').fire('click'); assert.equal(button(x.host,'魂珠').attributes['aria-pressed'],'true');
-  await button(x.host,'角色').fire('click'); assert.equal(button(x.host,'角色').attributes['aria-pressed'],'true'); assert.ok(one(x.host,'选择角色a'));
-  assert.ok(one(x.host,'1号主位：角色a')); assert.equal(x.window.location.hash,'#team');
+test('merged equipment picker keeps distinct targets and disables unavailable souls without losing the shared filter',async()=>{
+  const x=teamPage();x.window.WFTeamImport.load(plate,'筛选盘');x.render();
+  assert.equal(one(x.host,'候选类别').children.length,2);
+  await button(x.host,'武器·魂珠').fire('click');
+  const unavailable=one(x.host,'选择无魂珠武器');assert.equal(button(x.host,'装备').attributes['aria-pressed'],'true');
+  await button(x.host,'魂珠').fire('click');assert.equal(one(x.host,'选择无魂珠武器魂珠'),unavailable);assert.equal(unavailable.disabled,true);
+  await unavailable.fire('click');assert.ok(one(x.host,'1号魂珠：空位'));
+  await one(x.host,'魂珠水属性').fire('click');assert.ok(one(x.host,'选择水弓魂珠'));
+  await one(x.host,'2号魂珠：空位').fire('click');await one(x.host,'选择水弓魂珠').fire('click');assert.ok(one(x.host,'2号魂珠：水弓'));
+  assert.equal(one(x.host,'选择水弓魂珠').attributes['aria-pressed'],'true');
+  await button(x.host,'装备').fire('click');assert.ok(one(x.host,'选择水弓'));assert.equal(one(x.host,'选择武器'),undefined);
+  await one(x.host,'选择水弓').fire('click');assert.ok(one(x.host,'2号装备：水弓'));assert.ok(one(x.host,'2号魂珠：水弓'));
+  await one(x.host,'替换2号魂珠').fire('click');assert.equal(button(x.host,'魂珠').attributes['aria-pressed'],'true');
+  await button(x.host,'角色').fire('click');assert.ok(one(x.host,'选择角色a'));
+  await button(x.host,'武器·魂珠').fire('click');assert.equal(button(x.host,'魂珠').attributes['aria-pressed'],'true');
+  assert.ok(one(x.host,'1号主位：角色a'));assert.equal(x.window.location.hash,'#team');
 });
 
 test('weapon and soul candidates put higher rarity first and reverse the full catalogue within a rarity', async () => {
   const x = teamPage(); x.render();
-  const names = () => x.host.querySelectorAll('.team-candidate').map((node) => node.attributes['aria-label']);
-  await button(x.host,'武器').fire('click');
+  const names = () => activePool(x.host).querySelectorAll('.team-candidate').map((node) => node.attributes['aria-label']);
+  await button(x.host,'武器·魂珠').fire('click');
   assert.deepEqual(names(),['选择无魂珠武器','选择武器','选择水弓']);
   await button(x.host,'魂珠').fire('click');
-  assert.deepEqual(names(),['选择武器魂珠','选择水弓魂珠']);
+  assert.deepEqual(names(),['选择无魂珠武器魂珠','选择武器魂珠','选择水弓魂珠']);
+  assert.equal(one(x.host,'选择无魂珠武器魂珠').disabled,true);
   await one(x.host,'魂珠水属性').fire('click'); assert.deepEqual(names(),['选择水弓魂珠']);
 });
 
 test('large character candidates contain only a portrait with attribute and labels, then a single name; drag data and equipment layout stay intact', async () => {
   const x = teamPage(); x.render();
-  let pool = x.host.querySelector('.team-candidates'); assert.equal(pool.dataset.kind,'character');
+  let pool = activePool(x.host); assert.equal(pool.dataset.kind,'character');
   const candidate = one(x.host,'选择角色a'), art = candidate.querySelector('.team-candidate-art');
   assert.equal(candidate.children.length,2); assert.equal(candidate.children[0],art);
   assert.equal(candidate.children[1].className,'team-candidate-name'); assert.equal(candidate.children[1].textContent,'角色a');
@@ -319,10 +363,10 @@ test('large character candidates contain only a portrait with attribute and labe
   assert.equal(candidate.draggable,true); let dragged;
   await candidate.fire('dragstart',{dataTransfer:{setData:(type,value) => {dragged={type,value:JSON.parse(value)};}}});
   assert.deepEqual(dragged,{type:'application/x-wf-wiki',value:{id:'a',kind:'character'}});
-  await button(x.host,'武器').fire('click'); pool = x.host.querySelector('.team-candidates');
-  assert.equal(pool.dataset.kind,'weapon'); const weapon = one(x.host,'选择武器');
+  await button(x.host,'武器·魂珠').fire('click'); pool = activePool(x.host);
+  assert.equal(pool.dataset.kind,'equipment'); const weapon = one(x.host,'选择武器');
   assert.equal(weapon.querySelector('.team-candidate-art'),null); assert.equal(weapon.querySelector('.team-candidate-name'),null);
   assert.ok(weapon.querySelector('.team-candidate-equipment-type'));
-  await button(x.host,'魂珠').fire('click'); assert.equal(pool.dataset.kind,'soul');
+  await button(x.host,'魂珠').fire('click'); assert.equal(pool.dataset.kind,'equipment');
   assert.ok(one(x.host,'选择武器魂珠').querySelector('.team-candidate-equipment-type'));
 });

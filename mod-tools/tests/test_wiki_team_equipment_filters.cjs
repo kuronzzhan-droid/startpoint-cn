@@ -31,23 +31,26 @@ test('equipment attributes come only from metadata, including universal and unla
   x.find('武器通用/未分类属性').fire('click'); assert.deepEqual(x.ids(),['universal']);
   x.find('武器未标注属性').fire('click'); assert.deepEqual(x.ids(),['unknown']);
 });
-test('weapon and soul maintain independent attribute, rarity and search state', () => {
+test('weapon and soul share attribute, rarity and search state without hiding unavailable souls', () => {
   const x = fixture(); x.find('武器火属性').fire('click');
   const stars = x.find('配队武器星级'); stars.value = '5'; stars.fire('change');
   const search = x.find('配队武器搜索'); search.value = 'ＦＩＲＥ 测试'; search.fire('input');
   assert.deepEqual(x.ids(),['fire']);
-  x.control.setMode('soul'); assert.deepEqual(x.ids(),['fire','water','universal','unknown']);
-  x.find('魂珠水属性').fire('click'); assert.deepEqual(x.ids(),['water']);
-  x.control.setMode('weapon'); assert.deepEqual(x.ids(),['fire']); assert.equal(x.find('配队武器搜索').value,'ＦＩＲＥ 测试');
-  x.control.setMode('soul'); assert.deepEqual(x.ids(),['water']); assert.equal(x.find('配队魂珠搜索').value,'');
+  x.control.setMode('soul'); assert.deepEqual(x.ids(),['fire']);assert.equal(x.find('配队魂珠搜索').value,'ＦＩＲＥ 测试');
+  search.value='';search.fire('input');stars.value='';stars.fire('change');assert.deepEqual(x.ids(),['fire','without-soul']);
+  x.find('魂珠水属性').fire('click');assert.deepEqual(x.ids(),['water']);
+  x.control.setMode('weapon');assert.deepEqual(x.ids(),['water']);assert.equal(x.control.getState().element,'水');
 });
-test('reset changes only the current picker and invalid restored filters cannot hide everything', () => {
+
+test('reset clears shared filters and invalid legacy restored filters cannot hide everything', () => {
   const x = fixture({weapon:{element:'not-real',rarity:'6'},soul:{element:'水'}});
-  assert.equal(x.ids().length,5); x.control.setMode('soul'); assert.deepEqual(x.ids(),['water']);
+  assert.equal(x.ids().length,5);x.control.setMode('soul');assert.equal(x.ids().length,5);
+  x.find('魂珠水属性').fire('click');assert.deepEqual(x.ids(),['water']);
   x.control.element.all((node) => node.tag === 'button' && node.ownText === '重置筛选')[0].fire('click');
-  assert.equal(x.ids().length,4); assert.equal(x.updates.at(-1).soul.element,'');
-  x.control.setMode('weapon'); assert.equal(x.ids().length,5);
+  assert.equal(x.ids().length,5);assert.equal(x.updates.at(-1).element,'');
+  x.control.setMode('weapon');assert.equal(x.ids().length,5);
 });
+
 test('administrator nicknames participate in both equipment pickers and clearing them removes search matches', () => {
   const aliases = {fire:['火神剑']};
   const x = fixture({weapon:{search:'火神剑'},soul:{search:'火神剑'}},aliases);

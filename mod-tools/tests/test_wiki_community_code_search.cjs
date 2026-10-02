@@ -28,8 +28,8 @@ const plain=value=>JSON.parse(JSON.stringify(value));
 const team=community.teamCopy({main:['c1','c2','c3'],unison:['c4'],weapon:['w1'],soul:['w1']});
 const found=(overrides={})=>({title:'公开码阵容',active:true,team:plain(team),...overrides});
 const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};};
-function setup({request=async()=>found(),equipment=async()=>{},load,keyword}={}) {
-  const calls=[],activity=[],imports=[],location={hash:'#community'},data={
+function setup({request=async()=>found(),equipment=async()=>{},load,keyword,previewOnly=false}={}) {
+  const calls=[],activity=[],imports=[],location={hash:previewOnly?'#team':'#community'},data={
     characters:['c1','c2','c3','c4'].map(id=>({id,name:`角色 ${id}`,icon:`${id}.webp`})),
     equipment:[{id:'w1',name:'武器一',icon:'w1.webp',soul:{available:true}}],
   };
@@ -41,9 +41,9 @@ function setup({request=async()=>found(),equipment=async()=>{},load,keyword}={})
   for(const file of ['community-game-codes.js','community-code-search.js','community.js']) {
     vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki',file),'utf8'),context);
   }
-  const box=window.WFCommunity.codeSearch({data,ui,onActiveChange:value=>activity.push(value),onKeywordSearch:keyword});box.connected=true;
+  const box=window.WFCommunity.codeSearch({data,ui,onActiveChange:value=>activity.push(value),onKeywordSearch:keyword,previewOnly});box.connected=true;
   const input=box.all('.community-code-search-input')[0],form=box.all('form')[0],status=box.all('.community-code-search-status')[0];
-  const search=box.all('button').find(node=>node.type==='submit'),clear=box.all('button').find(node=>node.textContent==='返回列表');
+  const search=box.all('button').find(node=>node.type==='submit'),clear=box.all('button').find(node=>node.textContent===(previewOnly?'清除':'返回列表'));
   const result=box.all('.community-code-search-result')[0];
   return {box,input,status,search,clear,result,calls,activity,imports,window,location,data,
     submit:async(value=code)=>{input.value=value;return form.fire('submit');},
@@ -96,6 +96,15 @@ test('successful lookup loads a copied formation locally only after the explicit
   await useButton(x).fire('click');assert.equal(x.location.hash,'#team');assert.equal(x.imports.length,1);
   assert.deepEqual(plain(x.imports[0][0]),team);assert.equal(x.imports[0][1],payload.title);
   x.imports[0][0].main[0]='changed';assert.equal(payload.team.main[0],'c1');
+});
+
+test('team-page lookup only previews a code and never offers to overwrite the current formation',async()=>{
+  const x=setup({previewOnly:true});assert.equal(x.calls.length,0);await x.submit();
+  assert.equal(x.status.textContent,'已找到队伍');assert.equal(x.result.all('article').length,1);
+  assert.equal(x.result.all('.community-slot-weapon').length,3);assert.equal(x.result.all('.community-slot-soul').length,3);
+  assert.equal(x.result.all('input')[0].value,code);assert.equal(useButton(x),undefined);
+  assert.equal(x.imports.length,0);assert.equal(x.location.hash,'#team');assert.match(x.result.textContent,/不会改变当前编队/);
+  await x.clear.fire('click');assert.equal(x.result.children.length,0);assert.equal(x.imports.length,0);assert.equal(x.location.hash,'#team');
 });
 
 test('not found and revoked codes display an actionable error and clear previous results',async()=>{
