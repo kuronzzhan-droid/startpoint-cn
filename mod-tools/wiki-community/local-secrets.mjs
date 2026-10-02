@@ -20,7 +20,9 @@ async function safePath(file, site) {
 }
 export async function localSecrets(database, site) {
   if (database === ':memory:') return {database, secrets: fresh()};
-  const file = await safePath(database, site), secretFile = await safePath(`${file}.secrets.json`, site);
+  // Compare both sides canonically, including Windows short paths and directory aliases.
+  const root = await realpath(site);
+  const file = await safePath(database, root), secretFile = await safePath(`${file}.secrets.json`, root);
   let raw;
   try {raw = await readFile(secretFile, 'utf8');} catch (error) {
     if (error.code !== 'ENOENT') throw error;

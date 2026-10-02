@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp, mkdir, writeFile, readFile, rm, symlink} from 'node:fs/promises';
+import {mkdtemp, mkdir, writeFile, readFile, realpath, readdir, rm, symlink} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {startLocalServer} from '../local-server.mjs';
@@ -54,7 +54,7 @@ test('legacy database migrates without losing teams while existing password acco
     VALUES('old-team','old-fingerprint','legacy','note','author','{}','火',1,'approved',1,1)`).run();
   old.close();
   const first = await localSecrets(files.db, files.site);
-  assert.equal(first.database, files.db); assert.equal(first.secrets.COMMUNITY_PASSWORD_PEPPER.length, 64);
+  assert.equal(first.database, await realpath(files.db)); assert.equal(first.secrets.COMMUNITY_PASSWORD_PEPPER.length, 64);
   const migrated = openDatabase(files.db);
   assert.equal(migrated.raw.prepare('SELECT title FROM community_teams').get().title, 'legacy');
   migrated.raw.prepare(`INSERT INTO community_users(id,email,role,password_hash,must_change_password,created_at,updated_at)
@@ -69,6 +69,30 @@ test('private files cannot live under static site, malformed secrets are never r
   await writeFile(files.db + '.secrets.json', '{broken-secret');
   await assert.rejects(localSecrets(files.db, files.site), /restore it instead of regenerating/);
   assert.equal(await readFile(files.db + '.secrets.json', 'utf8'), '{broken-secret');
+});
+
+test('static directory aliases cannot bypass private file containment', async (t) => {
+  const files = await fixture(t), alias = path.join(files.root, 'site-alias');
+  t.after(() => rm(files.root, {recursive: true, force: true}));
+  // Windows junctions need no symlink privilege and reproduce long/short path comparison.
+  await symlink(files.site, alias, process.platform === 'win32' ? 'junction' : 'dir');
+  assert.equal(await realpath(alias), await realpath(files.site));
+  for (const site of [files.site, alias]) {
+    for (const directory of [files.site, alias]) {
+      await assert.rejects(localSecrets(path.join(directory, 'private.sqlite'), site), /outside the static site/);
+      assert.deepEqual(await readdir(files.site), ['index.html'], 'rejection must not create private files');
+    }
+  }
+  const first = await localSecrets(files.db, alias), second = await localSecrets(files.db, files.site);
+  assert.equal(first.database, path.join(await realpath(files.root), 'community.sqlite'));
+  assert.deepEqual(second, first, 'site aliases preserve the existing private secrets');
+});
+
+test('missing private file parents are rejected without creating directories', async (t) => {
+  const files = await fixture(t), missing = path.join(files.root, 'missing');
+  t.after(() => rm(files.root, {recursive: true, force: true}));
+  await assert.rejects(localSecrets(path.join(missing, 'community.sqlite'), files.site), {code: 'ENOENT'});
+  assert.deepEqual((await readdir(files.root)).sort(), ['site']);
 });
 test('private database and secret symlinks are rejected when host supports them', async (t) => {
   const files = await fixture(t), target = path.join(files.root, 'target'); await writeFile(target, '{}');
