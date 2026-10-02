@@ -219,7 +219,26 @@ test('series replace repeated directory cards, retain member search and match al
   const search=x.find('.dungeon-search');search.value='苍叹';await search.fire('input');
   assert.deepEqual(x.host.querySelectorAll('.dungeon-card').filter(node=>!node.hidden).map(node=>node.href),['#dungeons/series-machina']);
   search.value='';await search.fire('input');await x.button('降临讨伐').fire('click');
-  assert.deepEqual(x.host.querySelectorAll('.dungeon-card').filter(node=>!node.hidden).map(node=>node.href),['#dungeons/series-machina','#dungeons/series-gauntlets']);
+  assert.deepEqual(x.host.querySelectorAll('.dungeon-card').filter(node=>!node.hidden).map(node=>node.href),['#dungeons/series-gauntlets','#dungeons/series-machina']);
+});
+
+test('directory pins the single gauntlet entry and five-boss in all and mode views without losing search or source order', async () => {
+  const x=env();seriesFixture(x);
+  const five={...x.data.dungeons.items.shift(),id:'boss-1-99'};x.data.dungeons.items.push(five,
+    {id:'event-rush-700100',title:'深渊连战EX',category:'模式',seriesId:'series-gauntlets',variantLabel:'深渊连战EX'});
+  const original=JSON.stringify(x.data.dungeons.items);await x.render({});
+  const shown=()=>x.host.querySelectorAll('.dungeon-card').filter(node=>!node.hidden).map(node=>node.href);
+  const order=['#dungeons/series-gauntlets','#dungeons/boss-1-99','#dungeons/dragon','#dungeons/storm-event','#dungeons/series-machina'];
+  assert.deepEqual(shown(),order);assert.equal(JSON.stringify(x.data.dungeons.items),original);
+  assert.equal(x.host.querySelectorAll('.dungeon-card').filter(node=>node.href==='#dungeons/series-gauntlets').length,1);
+  assert.equal(x.find('.dungeon-card').querySelector('h2').textContent,'幻想 · 深渊 · 深渊EX');
+  await x.button('模式').fire('click');assert.deepEqual(shown(),order.slice(0,2));
+  await x.button('全部').fire('click');const search=x.find('.dungeon-search');
+  for(const term of ['深渊连战EX','幻想连战','连战模式']){
+    search.value=term;await search.fire('input');assert.deepEqual(shown(),['#dungeons/series-gauntlets']);
+  }
+  search.value='五重';await search.fire('input');assert.deepEqual(shown(),['#dungeons/boss-1-99']);
+  search.value='';await search.fire('input');assert.deepEqual(shown(),order);assert.equal(x.calls.length,0);
 });
 test('series select compact variants, prefer permanent bosses, and collapse editions without inventing guide IDs', async () => {
   const x=env();seriesFixture(x);await x.render({id:'series-machina'});

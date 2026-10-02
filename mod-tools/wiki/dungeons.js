@@ -3,6 +3,7 @@
   'use strict';
   const categories = ['活动', '领主战', '降临讨伐', '模式'];
   const compactCategory = (value) => value === '领主战' || value === '降临讨伐';
+  const directoryPriority = (item) => item.id === 'series-gauntlets' ? 0 : item.legacyGuide === 'five-boss' ? 1 : 2;
   const validId = (value) => typeof value === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
   function imageUrl(value) {
     if (typeof value !== 'string' || !value || /[\\\u0000-\u001f]/.test(value)) return '';
@@ -63,7 +64,9 @@
     const filters = el('div', 'dungeon-categories'); filters.setAttribute('role', 'group'); filters.setAttribute('aria-label', '副本分类');
     const grid = el('div', 'dungeon-grid dungeon-grid-compact'), status = el('p', 'dungeon-result-count muted'); status.setAttribute('role', 'status');
     const sourceItems = (snapshot.items || []).filter((item) => validId(item.id));
-    const items = window.WFDungeonSeries?.entries(sourceItems) || sourceItems, cards = [];
+    const entries = window.WFDungeonSeries?.entries(sourceItems) || sourceItems;
+    // Pin after aggregation so normal abyss, EX and fantasy still share one entry.
+    const items = [...entries].sort((a, b) => directoryPriority(a) - directoryPriority(b)), cards = [];
     let category = '';
     const choices = [['', '全部'], ...categories.map((value) => [value, value])].map(([value, label]) => {
       const node = button(ui, label, () => {category = value; filter();}, 'dungeon-category');
@@ -73,7 +76,9 @@
       const node = el('a', `dungeon-card dungeon-card-compact${item.members ? ' dungeon-series-card' : ''}`); node.href = `#dungeons/${encodeURIComponent(item.id)}`;
       const art = el('div', 'dungeon-card-art'), banner = image(ui, item.entryImage || item.banner, item.title || '副本入口');
       if (banner) art.append(banner); else art.append(el('span', 'dungeon-art-placeholder', item.category || '副本'));
-      const info = el('div', 'dungeon-card-info'), name = el('h2', '', item.title); name.title = item.title;
+      const title = item.id === 'series-gauntlets' && item.variants
+        ? item.variants.map(({label}) => label.replace('普通深渊', '深渊').replace('连战', '')).join(' · ') : item.title;
+      const info = el('div', 'dungeon-card-info'), name = el('h2', '', title); name.title = title;
       info.append(name, el('p', 'dungeon-card-count', item.countText || `${item.category} · ${item.quests?.length || 0} 个关卡`));
       node.append(art, info); grid.append(node);
       const members = item.members || [item];
