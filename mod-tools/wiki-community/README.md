@@ -197,9 +197,17 @@ node verify-build.mjs "<仓外构建目录>"
 重复查看不会把计数窗口顺延，不可见或未收录角色返回 404。此数不是独立人数，不能追溯功能上线前的查看。
 
 计数与窗口声明在一个事务中提交；去重仅保存按角色隔离的 HMAC 访客标识和最后计数时间，不存原始 IP、UA。
-累计次数独立保存，不随去重记录过期删除。每次新计数最多清除 100 条过期去重记录；公共 GET 不清理、不写库。
+累计次数独立保存，不随去重记录过期删除。每次新计数最多清除 100 条过期去重记录；单角色 GET 不清理、不写库。
 POST 要求同源 JSON，每个网络每分钟最多 120 次，限流表复用现有 HMAC IP 标识。
 现有库上线前须执行增量 `migrations/0010-character-views.sql`；本地 SQLite 按当前 `schema.sql` 自动补齐。
+
+`GET /api/community/views/characters` 匿名批量返回 `{items:[{id,views}],asOf,nextRefreshAt}`，两时间均为 UTC ISO。
+包含全部当前公开角色，无累计记录时 `views:0`，未知或移除的角色不返回；不建立 cookie、不计数、不读访客去重表。
+仅按总计表生成半小时快照，UTC 每小时整点/半点后首次访问更新，边缘使用相同边界缓存；没有后台轮询。
+复用已有 `community_daily_ranking_snapshots` 的 JSON/租约结构，`character-views:v1:<角色集合哈希>` 键与日榜键隔离；
+只维护派生快照，不改角色累计次数、票或访客记录，无新增迁移。暖新实例只按主键读取一条快照，不重扫角色总计。
+同实例并发合并，跨实例通过 30 秒租约避免重复聚合；失败保留 60 秒冷却。尚无当前快照时返回 503
+`views_refreshing` 和 `Retry-After`，客户端保留未知状态，不能将不可用当作零次。
 
 `GET /api/community/teams?character=:id` 可与原筛选、排序组合，只匹配主位或合击槽里的完整角色 ID，
 不匹配名字、备注、武器或魂珠。返回仍为 `{items,nextCursor}`，每页 24 支，翻页必须保留同一个 `character`；

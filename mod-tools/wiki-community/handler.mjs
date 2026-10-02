@@ -13,6 +13,7 @@ import {tierRankingsRoute} from './tier-rankings.mjs';
 import {createDailyRankingReader} from './daily-ranking-snapshot.mjs';
 import {communityStats, presenceRoute} from './community-stats.mjs';
 import {characterViewsRoute} from './character-views.mjs';
+import {createCharacterViewsReader} from './character-views-summary.mjs';
 import dungeonCatalog from './dungeon-catalog.mjs';
 import {dungeonRoute} from './dungeon-routes.mjs';
 import {publicSummary} from './public-summary-cache.mjs';
@@ -29,6 +30,7 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
   const dungeons = options.dungeons || trustedCatalog.dungeons || dungeonCatalog;
   const statistics = createStatisticsAvailability();
   const dailyRankings = createDailyRankingReader();
+  const characterViews = createCharacterViewsReader();
   return async function handle(request, env) {
     let identity;
     try {
@@ -64,6 +66,11 @@ export function createCommunityHandler(trustedCatalog = catalog, options = {}) {
       if (path === '/presence') return response(await statistics(request, env.COMMUNITY_DB, now,
         () => presenceRoute(request, env, trustedCatalog, now, development), env.COMMUNITY_STATS_CACHE_NAMESPACE));
       if (path.startsWith('/characters/')) return response(await characterViewsRoute(path, request, env, trustedCatalog, now, development));
+      if (path === '/views/characters') {
+        if (request.method !== 'GET') fail(405, 'method_not_allowed', '角色查看次数汇总只支持 GET 查询。');
+        return response(await publicSummary(request, () => characterViews(env.COMMUNITY_DB, trustedCatalog, now), undefined, now,
+          await characterViews.cacheKey(trustedCatalog)));
+      }
       // Anonymous summaries must not mint a late cookie that replaces a rating visitor's identity.
       if (request.method === 'GET' && path === '/ratings/characters')
         return response(await publicSummary(request, async () => {
