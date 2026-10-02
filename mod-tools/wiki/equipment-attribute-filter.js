@@ -11,6 +11,9 @@
       const button = el('button', 'secondary-button equipment-attribute-current');
       const floating = el('div', 'equipment-attribute-floating');
       const shortcut = el('button', 'equipment-attribute-shortcut');
+      const shortcutIcon = el('span', 'equipment-attribute-shortcut-icon'); shortcutIcon.setAttribute('aria-hidden', 'true');
+      const shortcutLabel = el('span', 'equipment-attribute-shortcut-label'); shortcut.append(shortcutIcon, shortcutLabel);
+      floating.setAttribute('role', 'group'); floating.setAttribute('aria-label', '武器快捷操作');
       const panel = el('div', 'equipment-attribute-popover');
       const heading = el('div', 'equipment-attribute-heading');
       const closeButton = el('button', 'secondary-button', '关闭');
@@ -40,8 +43,10 @@
       floating.append(...(leadingControl ? [leadingControl] : []), panel, shortcut);
       function update() {
         button.textContent = `属性：${value || '全部'}`;
-        shortcut.textContent = `属性 · ${value || '全部'}`;
+        shortcutLabel.textContent = value || '全部';
         shortcut.setAttribute('aria-label', `筛选武器属性，当前${value || '全部'}`);
+        shortcut.title = `筛选武器属性，当前${value || '全部'}`;
+        shortcut.setAttribute('data-filtered', String(Boolean(value)));
         buttons.forEach(({option, element}) => option.setAttribute('aria-pressed', String(element === value)));
       }
       function close(focus = false) {

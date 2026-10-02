@@ -21,7 +21,8 @@ test('attribute selection synchronizes toolbar/floating controls and composes wi
   find(host,'data-weapon-element','火').fire('click');assert.equal(panel.hidden,true);
   assert.deepEqual(names(),['火武器']);assert.match(host.textContent,/共 1 件武器 · 1 件可强化/);
   assert.equal(cls(host,'secondary-button equipment-attribute-current').textContent,'属性：火');
-  assert.equal(cls(host,'equipment-attribute-shortcut').textContent,'属性 · 火');
+  assert.equal(cls(host,'equipment-attribute-shortcut').textContent,'火');
+  assert.equal(cls(host,'equipment-attribute-shortcut').attributes['aria-label'],'筛选武器属性，当前火');
   select('武器星级','3');assert.deepEqual(names(),[]);select('武器星级','');
   find(host,'data-weapon-element','通用').fire('click');assert.deepEqual(names(),['通用武器','未分类武器']);
   select('武器分类','其他武器');assert.deepEqual(names(),[]);select('武器分类','');

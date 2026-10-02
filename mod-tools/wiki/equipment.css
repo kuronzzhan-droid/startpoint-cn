@@ -86,8 +86,13 @@
 .equipment-effect-value{font-weight:800;color:#087764;font-variant-numeric:tabular-nums}
 [data-theme="dark"] .equipment-effect-value{color:#82e4c9}
 .equipment-attribute-current{white-space:nowrap;min-height:42px}
-.equipment-attribute-floating{position:fixed;right:20px;bottom:calc(152px + env(safe-area-inset-bottom));z-index:55}
-.equipment-attribute-shortcut{min-height:42px;max-width:132px;padding:8px 12px;border:1px solid #239c8c;border-radius:10px;background:#177b70;color:#fff;box-shadow:0 3px 12px #23483a33;font-size:13px;font-weight:700;cursor:pointer}
+.equipment-attribute-floating{position:fixed;right:20px;bottom:calc(152px + env(safe-area-inset-bottom));z-index:55;display:flex;flex-direction:column;align-items:stretch;width:52px;padding:3px;border:1px solid var(--line,#c3d9d4);border-radius:13px;background:color-mix(in srgb,var(--surface,#fff) 94%,transparent);box-shadow:0 3px 12px #244e4b20;box-sizing:border-box}
+.equipment-attribute-shortcut{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:100%;min-height:47px;padding:5px 1px;border:0;border-radius:8px;background:transparent;color:#267d72;box-shadow:none;font-size:10px;font-weight:700;line-height:1.2;white-space:nowrap;cursor:pointer}
+.equipment-attribute-shortcut:hover,.equipment-attribute-shortcut[aria-expanded="true"]{background:#e4f6f1}
+.equipment-attribute-shortcut[data-filtered="true"]{color:#067561;background:#e4f6f1}
+.equipment-attribute-shortcut-icon{display:block;width:20px;height:20px;background:currentColor;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 5h16l-6 7v6l-4 2v-8L4 5Z' fill='none' stroke='black' stroke-width='1.7' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
+[data-theme="dark"] .equipment-attribute-shortcut{color:#9ddace}
+[data-theme="dark"] .equipment-attribute-shortcut:is(:hover,[aria-expanded="true"],[data-filtered="true"]){background:#24483f;color:#c1f5e9}
 .equipment-attribute-popover{position:absolute;right:0;bottom:calc(100% + 8px);width:268px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 230px);overflow:auto;padding:12px;border:1px solid var(--line,#bfd4d0);border-radius:10px;background:var(--surface,#fff);color:var(--ink,#30494b);box-shadow:0 6px 24px #142e3b33}
 .equipment-attribute-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
 .equipment-attribute-heading button{min-height:30px;padding:3px 8px;font-size:12px}
@@ -112,15 +117,16 @@
   .equipment-group-count{padding:3px 6px;font-size:11px}
   .equipment-groups{gap:14px}
   .equipment-attribute-current{min-height:36px}
-  .equipment-attribute-floating{right:12px;bottom:calc(132px + env(safe-area-inset-bottom))}
-  .equipment-attribute-shortcut{min-height:38px;padding:6px 9px;font-size:12px}
+  .equipment-attribute-floating{right:12px;bottom:calc(132px + env(safe-area-inset-bottom));width:50px;padding:2px;border-radius:11px}
+  .equipment-attribute-shortcut{min-height:44px;gap:3px;font-size:9px}
   .equipment-attribute-popover{max-height:calc(100dvh - 208px)}
 }
 /* Catalogue group toggle shares the attribute floating stack; the bottom anchor stays unchanged. */
-.equipment-attribute-floating{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
-.equipment-group-toggle{display:inline-flex;align-items:center;gap:6px}
-.equipment-group-toggle[aria-checked="true"] .equipment-mode-track{background:#9ee4c9}
-.equipment-group-toggle[aria-checked="true"] .equipment-mode-thumb{transform:translateX(14px)}
+.equipment-group-toggle{border-bottom:1px solid var(--line,#d5e3df);border-radius:8px 8px 0 0}
+.equipment-group-toggle .equipment-mode-track{width:28px;height:17px;padding:2px;background:#9aada8}
+.equipment-group-toggle .equipment-mode-thumb{width:13px;height:13px}
+.equipment-group-toggle[aria-checked="true"] .equipment-mode-track{background:#209884}
+.equipment-group-toggle[aria-checked="true"] .equipment-mode-thumb{transform:translateX(11px)}
 .equipment-group-toggle:disabled{opacity:.5;cursor:not-allowed}
 .equipment-attribute-floating .equipment-attribute-popover{max-height:calc(100dvh - 274px - env(safe-area-inset-bottom,0px))}
 @media(max-width:640px){.equipment-attribute-floating .equipment-attribute-popover{max-height:calc(100dvh - 246px - env(safe-area-inset-bottom,0px))}}
