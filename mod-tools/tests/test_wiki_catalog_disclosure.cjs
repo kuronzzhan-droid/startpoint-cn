@@ -65,7 +65,7 @@ function setup(handler = async () => ({items: []})) {
   const storage=new Map();
   const context = {document, window, location: {hash: '', protocol: 'https:'}, Event:class {constructor(type){this.type=type;}},
     localStorage:{getItem:(key)=>storage.get(key),setItem:(key,value)=>storage.set(key,value)}};
-  for (const name of ['portrait-cards.js', 'catalog-layout.js', 'catalog-disclosure.js', 'catalog-ratings.js', 'app.js'])
+  for (const name of ['rating-score.js', 'portrait-cards.js', 'catalog-layout.js', 'catalog-disclosure.js', 'catalog-ratings.js', 'app.js'])
     vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki', name), 'utf8'), context);
   return {catalog, display, count, heading, sort, requests, updateRating: (id, value) => window.WFCatalogRatings.update(id, value), get created() {return avatarCreates;},
     get portraitCreates() {return images.filter((node)=>node.className==='portrait-card-image').length;},
