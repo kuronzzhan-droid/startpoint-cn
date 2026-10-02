@@ -122,6 +122,7 @@ main{padding:26px 30px 0;min-width:0;outline:none}
 .footer-credit-row>strong{font-size:11px;color:#526b75}.footer-credit-row a{color:#397f7a;text-decoration:underline;text-underline-offset:2px}
 .noscript{text-align:center;margin:25px;font-size:13px}
 .back-to-top{position:fixed;z-index:50;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:52px;height:58px;border:2px solid #27bcae;border-bottom-width:4px;border-radius:12px;background:#fff;color:#167f75;box-shadow:0 3px 12px #244e4b26;font-size:11px;font-weight:700}
+#back-to-top{left:50%;right:auto;transform:translateX(-50%)}
 .back-to-top>span:first-child{font-size:23px;line-height:1}
 .back-to-top:hover{background:#e7faf5}.back-to-top:focus-visible{outline:3px solid #e6af3a;outline-offset:3px}
 .back-to-home{bottom:calc(86px + env(safe-area-inset-bottom,0px));text-decoration:none}
