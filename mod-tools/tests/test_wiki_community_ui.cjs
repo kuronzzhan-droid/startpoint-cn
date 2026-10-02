@@ -29,7 +29,7 @@ class Node {
   querySelector(selector) {return this.querySelectorAll(selector)[0] || null;}
 }
 const el=(tag,cls,value)=>new Node(tag,cls,value);
-const data={characters:['c1','c2','c3'].map((id)=>({id,name:`角色${id}`,element:'火',icon:'test.webp',
+const data={characters:['c1','c2','c3'].map((id)=>({id,name:`角色${id}`,element:'火',icon:'test.webp',origin:id==='c1'?'新增MOD':id==='c3'?'改版官方':'原版',
   avatars:{before:`${id}-before.webp`,...(id==='c3'?{}:{after:`${id}-after.webp`})}})),
   equipment:[{id:'w1',name:'装备',soul:{available:true}}]};
 const team=C.teamCopy({main:['c1','c2','c3'],weapon:['w1']});
@@ -40,7 +40,7 @@ function setup(client, writeText) {
     WFTeamImport:{load:(...args)=>{window.imported=args;}}};
   const storage=new Map(),context={window,location,URLSearchParams,Date,console,
     localStorage:{getItem:(key)=>storage.get(key),setItem:(key,value)=>storage.set(key,value)}};
-  for (const file of ['catalog-avatars.js','community-game-codes.js','community-code-search.js','community.js','community-submit.js']) vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki',file),'utf8'),context);
+  for (const file of ['character-badges.js','catalog-avatars.js','community-game-codes.js','community-code-search.js','community.js','community-submit.js']) vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki',file),'utf8'),context);
   const host=el('main');host.connected=true;
   const ui={el,safeUrl:(value)=>typeof value==='string'?value:'',picture:(url,alt,cls)=>{const node=el('img',cls);node.setAttribute('src',url);return node;}};
   const modals=[], challenges=[];
@@ -141,6 +141,11 @@ test('all gallery cards link to saved details without nesting portrait links or 
   assert.equal(preview.tag,'a');assert.equal(preview.href,'#community/team%20%2F%20one');
   assert.equal(preview.attributes['aria-label'],`查看队伍：${item.title}`);
   assert.match(preview.textContent,/萌新启航/);assert.equal(preview.querySelectorAll('.community-slot').length,6);
+  assert.equal(preview.querySelector('.community-slot-leader').getAttribute('aria-label'),'队长');
+  assert.equal(preview.querySelector('.community-slot-leader').textContent,'');
+  assert.equal(preview.querySelector('.character-label-mod').textContent,'MOD');
+  assert.equal(preview.querySelectorAll('.character-label-mod').length,1);assert.equal(preview.querySelectorAll('.character-label-modified').length,1);
+  assert.equal(preview.querySelectorAll('.character-label-limited').length,0);
   assert.equal(preview.querySelectorAll('a').length,0);assert.equal(preview.querySelectorAll('.community-slot-weapon').length,0);
   assert.equal(x.window.imported,undefined);
   await x.host.querySelectorAll('button').find(node=>node.textContent==='觉醒后').fire('click');
@@ -173,7 +178,7 @@ test('filter races cannot restore old results and non-public rows are not displa
 test('late configuration fills attribute choices without resetting an already selected section or reloading teams',async()=>{
   let finishConfig;const calls=[],x=setup({config:()=>new Promise(resolve=>{finishConfig=resolve;}),request:async(url)=>{calls.push(url);return {items:[item]};}});
   const mounted=x.window.renderWikiCommunity(x.host,data,x.ui);
-  const section=x.host.querySelectorAll('button').find(node=>node.textContent==='深渊连战');await section.fire('click');await tick();
+  const section=x.host.querySelectorAll('button').find(node=>node.textContent==='深渊');await section.fire('click');await tick();
   const card=x.host.querySelector('.community-card');finishConfig(config);await mounted;await tick();
   const select=x.host.querySelectorAll('select').find(node=>node.attributes['aria-label']==='推荐队伍属性');
   assert.deepEqual(select.children.map(node=>node.value),['','火','水','universal']);
@@ -255,7 +260,7 @@ test('gameplay sections combine with folded filters, keep active conditions visi
   await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
   const advanced=x.host.querySelector('.community-advanced-filters');assert.equal(advanced.open,false);
   const choose=(label)=>x.host.querySelectorAll('select').find((node)=>node.attributes['aria-label']===label);
-  const abyss=x.host.querySelectorAll('button').find((node)=>node.attributes['aria-label']==='玩法分区：深渊连战');
+  const abyss=x.host.querySelectorAll('button').find((node)=>node.attributes['aria-label']==='玩法分区：深渊');
   await abyss.fire('click');await tick();assert.equal(abyss.attributes['aria-pressed'],'true');
   choose('推荐队伍属性').value='火';await choose('推荐队伍属性').fire('change');await tick();
   choose('推荐队伍分类').value='MOD毕业队';await choose('推荐队伍分类').fire('change');await tick();
@@ -263,11 +268,12 @@ test('gameplay sections combine with folded filters, keep active conditions visi
   choose('推荐队伍排序').value='popular';await choose('推荐队伍排序').fire('change');await tick();
   const params=new URLSearchParams(calls.at(-1).split('?')[1]);
   assert.equal(params.get('section'),'abyss');assert.equal(params.get('element'),'火');assert.equal(params.get('category'),'MOD毕业队');assert.equal(params.get('damage'),'skill,direct');
-  assert.equal(advanced.open,false);assert.match(advanced.querySelector('summary').textContent,/更多筛选（3）MOD毕业队 · 技能伤害 · 直接攻击伤害/);
+  assert.equal(advanced.open,false);assert.match(advanced.querySelector('summary').textContent,/更多筛选最多点赞 · 火 · MOD毕业队 · 技能伤害 · 直接攻击伤害/);
+  assert.equal(choose('推荐队伍排序').parent.parent,advanced.querySelector('.community-advanced-body'));
   await x.host.querySelector('.community-more').fire('click');await tick();assert.match(calls.at(-1),/cursor=page2/);
   await x.host.querySelector('.community-filter-reset').fire('click');await tick();
-  assert.equal(calls.at(-1),'/teams?sort=latest');assert.equal(advanced.querySelectorAll('input:checked').length,0);
-  assert.equal(choose('推荐队伍分类').value,'');assert.equal(choose('推荐队伍属性').value,'');assert.equal(choose('推荐队伍排序').value,'latest');
+  assert.equal(calls.at(-1),'/teams?sort=popular');assert.equal(advanced.querySelectorAll('input:checked').length,0);
+  assert.equal(choose('推荐队伍分类').value,'');assert.equal(choose('推荐队伍属性').value,'');assert.equal(choose('推荐队伍排序').value,'popular');
   assert.equal(x.host.querySelector('.community-filter-reset').disabled,true);assert.equal(abyss.attributes['aria-pressed'],'false');
 });
 
@@ -276,7 +282,7 @@ test('original and other sections are peer buttons and keep the legacy sentinel'
   await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
   assert.equal(x.host.querySelector('.community-section-badge').textContent,'其他');
   const buttons=x.host.querySelectorAll('.community-section-button');
-  assert.deepEqual(buttons.map(node=>node.textContent),['全部','深渊连战','幻想连战','五重决战','原版','其他']);
+  assert.deepEqual(buttons.map(node=>node.textContent),['全部','原版','深渊','幻想','深渊EX','五重','其他']);
   const other=buttons.find(node=>node.textContent==='其他');await other.fire('click');await tick();
   assert.equal(new URLSearchParams(calls.at(-1).split('?')[1]).get('section'),'general');
   assert.equal(other.attributes['aria-pressed'],'true');
@@ -294,7 +300,7 @@ test('compact card copies the exact server code without adding full details or o
   await copy.fire('click');assert.deepEqual(written,[gameCode]);assert.match(header.textContent,/已复制/);
   assert.equal(x.context.location.hash,'#community');assert.equal(x.window.imported,undefined);
   assert.equal(header.querySelector('input').value,gameCode);assert.equal(header.querySelector('input').readOnly,true);
-  assert.equal(footer,null);assert.equal(card.children.at(-1),header);
+  assert.equal(footer,null);assert.equal(header.parent,card);assert.equal(card.querySelector('.community-like').parent,card);
   assert.equal(card.querySelector('.community-notes'),null);
   assert.equal(card.querySelectorAll('.community-slot').length,6);
 });
@@ -313,10 +319,10 @@ test('code availability is folded, combines with section filters and clears with
   const calls=[];const x=setup({config:async()=>config,request:async(url)=>{calls.push(url);return {items:[item,{...item,id:'private',visibility:'private',title:'不得公开的私盘'}]};}});
   await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();assert.doesNotMatch(x.host.textContent,/不得公开的私盘/);
   const code=x.host.querySelectorAll('select').find((node)=>node.attributes['aria-label']==='推荐队伍码状态');code.value='none';await code.fire('change');await tick();
-  const abyss=x.host.querySelectorAll('button').find((node)=>node.attributes['aria-label']==='玩法分区：深渊连战');await abyss.fire('click');await tick();
+  const abyss=x.host.querySelectorAll('button').find((node)=>node.attributes['aria-label']==='玩法分区：深渊');await abyss.fire('click');await tick();
   const params=new URLSearchParams(calls.at(-1).split('?')[1]);assert.equal(params.get('code'),'none');assert.equal(params.get('section'),'abyss');
   assert.match(x.host.querySelector('.community-active-filters').textContent,/暂无队伍码/);
-  await x.host.querySelector('.community-filter-reset').fire('click');await tick();assert.equal(code.value,'');assert.equal(calls.at(-1),'/teams?sort=latest');
+  await x.host.querySelector('.community-filter-reset').fire('click');await tick();assert.equal(code.value,'');assert.equal(calls.at(-1),'/teams?sort=popular');
 });
 
 test('a newly saved private plate locks its draft and publishes its game code only on an explicit later click',async()=>{
@@ -359,4 +365,46 @@ test('like count changes only from a verified server response and repeated likes
   x.challenges[0].ready('like-token');await button.fire('click');
   assert.equal(results[0].likes,4);assert.equal(button.disabled,true);assert.equal(x.challenges[0].resets,1);
   await button.fire('click');assert.equal(calls.length,1);
+});
+
+test('directory starts with popular ordering, preserves explicit latest through pagination and resets popular',async()=>{
+  const calls=[],x=setup({config:async()=>config,request:async(url)=>{calls.push(url);return {items:[{...item}],nextCursor:'page2'};}});
+  await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
+  const sort=x.host.querySelectorAll('select').find(node=>node.getAttribute('aria-label')==='推荐队伍排序');
+  const reset=x.host.querySelector('.community-filter-reset');
+  assert.equal(calls[0],'/teams?sort=popular');assert.equal(sort.value,'popular');assert.equal(reset.disabled,true);
+  sort.value='latest';await sort.fire('change');await tick();assert.equal(reset.disabled,false);
+  await x.host.querySelector('.community-more').fire('click');await tick();assert.equal(calls.at(-1),'/teams?sort=latest&cursor=page2');
+  await reset.fire('click');await tick();assert.equal(calls.at(-1),'/teams?sort=popular');assert.equal(sort.value,'popular');
+});
+
+test('gallery thumb updates from server only, stays outside preview link and remembers success after filtering',async()=>{
+  let writes=0;
+  const x=setup({config:async()=>config,request:async(url)=>{
+    if(url.endsWith('/like')) {writes++;return {likes:4,likedToday:true};}
+    return {items:[{...item}]};
+  }});
+  await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
+  const card=x.host.querySelector('.community-card'),like=card.querySelector('.community-like');
+  assert.equal(like.parent,card);assert.equal(card.querySelector('.community-card-preview').querySelectorAll('button').length,0);
+  await like.fire('click');await tick();assert.equal(x.context.location.hash,'#community');assert.equal(x.window.imported,undefined);
+  assert.equal(like.querySelector('.community-like-count').textContent,'3');assert.equal(writes,0);
+  x.challenges[0].ready('verified');await x.modals[0].element.querySelectorAll('button')[0].fire('click');
+  assert.equal(like.querySelector('.community-like-count').textContent,'4');assert.equal(like.disabled,true);assert.equal(like.getAttribute('aria-pressed'),'true');
+  await like.fire('click');assert.equal(x.modals.length,1);assert.equal(writes,1);
+  await x.host.querySelector('.community-filter-reset').fire('click');await tick();
+  const restored=x.host.querySelector('.community-like');assert.equal(restored.disabled,true);assert.equal(restored.querySelector('.community-like-count').textContent,'4');
+});
+
+test('gallery thumb does not invent votes on failures and already-liked restores authoritative total',async()=>{
+  let tries=0;const x=setup({config:async()=>config,request:async(url)=>{
+    if(!url.endsWith('/like'))return {items:[{...item}]};
+    tries++;if(tries===1)throw new Error('暂时失败');
+    throw Object.assign(new Error('今天已赞'),{code:'already_liked',data:{likes:9,likedToday:true}});
+  }});
+  await x.window.renderWikiCommunity(x.host,data,x.ui);await tick();
+  const like=x.host.querySelector('.community-like');await like.fire('click');await tick();
+  const confirm=x.modals[0].element.querySelectorAll('button')[0];
+  x.challenges[0].ready('first');await confirm.fire('click');assert.equal(like.disabled,false);assert.equal(like.querySelector('.community-like-count').textContent,'3');
+  x.challenges[0].ready('retry');await confirm.fire('click');assert.equal(like.disabled,true);assert.equal(like.querySelector('.community-like-count').textContent,'9');
 });

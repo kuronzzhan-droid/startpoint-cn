@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS community_teams (
   title TEXT NOT NULL, notes TEXT NOT NULL, author TEXT NOT NULL,
   team_json TEXT NOT NULL, element TEXT NOT NULL, damage_mask INTEGER NOT NULL,
   category TEXT NOT NULL DEFAULT '' CHECK (category IN ('','萌新启航','原版毕业队','MOD毕业队','最新最潮盘','玩具盘')),
-  section TEXT NOT NULL DEFAULT '' CHECK (section IN ('','abyss','fantasy','five-boss','original')),
+  section TEXT NOT NULL DEFAULT '' CHECK (section IN ('','abyss','abyss-ex','fantasy','five-boss','original')),
   visibility TEXT NOT NULL DEFAULT 'public' CHECK (visibility IN ('public','private')),
   created_by TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL CHECK (status IN ('approved','pending','hidden')),

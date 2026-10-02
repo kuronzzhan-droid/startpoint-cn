@@ -23,9 +23,15 @@
           }
           slot.append(character && options.avatars ? options.avatars.picture(item, item.name, 'community-slot-image')
             : picture(item.icon, item.name, 'community-slot-image'));
-          if (character) window.WFCharacterFrame?.apply(slot, item);
+          if (character) {
+            window.WFCharacterFrame?.apply(slot, item);
+            window.WFCharacterBadges?.append(slot, {origin:item.origin}, ui);
+          }
         } else slot.append(el('span', '', team[group][index] ? '?' : '—'));
-        slot.append(el('span', 'community-slot-label', index === 0 && group === 'main' ? '队长' : groupNames[group]));
+        const leader = index === 0 && group === 'main';
+        const role = el('span', `community-slot-label${leader ? ' community-slot-leader' : ''}`, leader ? '' : groupNames[group]);
+        if (leader) {role.setAttribute('aria-label', '队长'); role.title = '队长';}
+        slot.append(role);
         if (options.showNames) {
           const entry = el('div', `community-slot-entry community-slot-entry-${group}`);
           entry.append(slot, el('span', 'community-slot-name', item?.name || (team[group][index] ? '未收录' : '空位'))); column.append(entry);
@@ -40,10 +46,30 @@
     const link = ui.el('a', 'text-button', '腾讯文档《配队大全》（原表）'); link.href = C.sourceUrl; link.target = '_blank'; link.rel = 'noopener noreferrer';
     line.append(link); return line;
   };
+  function likeButton(item, ui, remembered) {
+    const button = ui.el('button', 'community-like'), icon = ui.el('span', 'community-like-icon');
+    const count = ui.el('strong', 'community-like-count');
+    button.type = 'button'; icon.setAttribute('aria-hidden', 'true'); button.append(icon, count);
+    const day = () => new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+    function update(result) {
+      if (Number.isFinite(Number(result.likes))) item.likes = Math.max(0, Number(result.likes));
+      if (result.likedToday !== undefined) item.likedToday = result.likedToday;
+      if (item.likedToday) remembered.set(item.id, {day:day(), likes:item.likes});
+      count.textContent = String(item.likes || 0); button.disabled = Boolean(item.likedToday);
+      button.setAttribute('aria-pressed', String(Boolean(item.likedToday)));
+      button.setAttribute('aria-label', `${item.likedToday ? '今天已点赞' : '为此队伍点赞'}：${item.title}，${item.likes || 0} 赞`);
+      button.title = item.likedToday ? '今天已点赞' : '为这支队伍点赞';
+    }
+    const previous = remembered.get(item.id);
+    update(previous?.day === day() ? {likedToday:true, likes:Math.max(item.likes || 0, previous.likes || 0)} : item);
+    button.addEventListener('click', () => {if (!button.disabled) C.openLike(item, ui, update);});
+    return button;
+  }
   window.renderWikiCommunity = async (host, data, ui, options = {}) => {
     const {el} = ui, startingHash = location.hash;
     let revision = 0, nextCursor = '', config;
-    const filters = {q: '', section: '', element: '', category: '', code: '', damageTypes: [], sort: 'latest'};
+    const liked = new Map();
+    const filters = {q: '', section: '', element: '', category: '', code: '', damageTypes: [], sort: 'popular'};
     const header = el('header', 'community-header'), links = el('div', 'community-header-links');
     const intro = el('p', 'section-intro community-intro', '点击队伍查看编成与角色面板，为实用的盘子点赞。');
     const sections = el('div', 'community-sections'); sections.setAttribute('role', 'group'); sections.setAttribute('aria-label', '推荐队伍玩法分区');
@@ -60,7 +86,7 @@
       const option = el('option', '', label); option.value = value; category.append(option);
     });
     const sort = el('select'); sort.setAttribute('aria-label', '推荐队伍排序');
-    [['latest', '最新收录'], ['popular', '最多点赞']].forEach(([value, label]) => {const option = el('option', '', label); option.value = value; sort.append(option);});
+    [['popular', '最多点赞'], ['latest', '最新收录']].forEach(([value, label]) => {const option = el('option', '', label); option.value = value; sort.append(option);});
     const edit = el('a', 'primary-button', '本地配队模拟'); edit.href = '#team';
     const admin = el('a', 'text-button', '管理员入口'); admin.href = '#community/admin';
     links.append(edit, admin); header.append(el('h1', '', options.id ? '推荐队伍' : '配队大全'), links);
@@ -84,16 +110,16 @@
       wrap.append(input, el('span', '', label)); damage.append(wrap);
     });
     const extraSelects = el('div', 'community-extra-selects'); extraSelects.append(categoryField,codeField);
-    advancedBody.append(extraSelects, damage); advanced.append(advancedSummary, advancedBody);
+    advancedBody.append(toolbar, extraSelects, damage); advanced.append(advancedSummary, advancedBody);
     function syncFilters() {
       element.value = filters.element; category.value = filters.category; sort.value = filters.sort; code.value = filters.code;
       sectionButtons.forEach(({button,value}) => button.setAttribute('aria-pressed', String(filters.section === value)));
-      const active = [...(filters.category ? [C.categoryLabel(filters.category)] : []), ...(filters.code ? [filters.code === 'has' ? '已有队伍码' : '暂无队伍码'] : []), ...filters.damageTypes.map((value) => C.damageTypes[value])];
-      activeSummary.textContent = active.length ? `（${active.length}）${active.join(' · ')}` : '分类 · 伤害类型 · 队伍码';
-      reset.disabled = !filters.q && !filters.section && !filters.element && !active.length && filters.sort === 'latest';
+      const active = [...(filters.element ? [C.elementLabel(filters.element)] : []), ...(filters.category ? [C.categoryLabel(filters.category)] : []), ...(filters.code ? [filters.code === 'has' ? '已有队伍码' : '暂无队伍码'] : []), ...filters.damageTypes.map((value) => C.damageTypes[value])];
+      activeSummary.textContent = `${filters.sort === 'latest' ? '最新收录' : '最多点赞'} · ${active.length ? active.join(' · ') : '全部属性'}`;
+      reset.disabled = !filters.q && !filters.section && !filters.element && !active.length && filters.sort === 'popular';
     }
     reset.addEventListener('click', () => {
-      Object.assign(filters, {q:'',section:'',element:'',category:'',code:'',damageTypes:[],sort:'latest'});
+      Object.assign(filters, {q:'',section:'',element:'',category:'',code:'',damageTypes:[],sort:'popular'});
       search?.resetView();
       damage.querySelectorAll('input').forEach((input) => {input.checked = false;}); load();
     });
@@ -106,7 +132,7 @@
     const more = el('button', 'secondary-button community-more', '加载更多'); more.type = 'button'; more.hidden = true;
     const retry = el('button', 'secondary-button', '重试连接'); retry.type = 'button'; retry.hidden = true;
     const directory = el('div', 'community-directory');
-    directory.append(sections, toolbar, ...(options.id ? [avatarControls] : []), advanced, status, cards, more, retry, C.source(ui));
+    directory.append(sections, ...(options.id ? [avatarControls] : []), advanced, status, cards, more, retry, C.source(ui));
     const search = !options.id && C.codeSearch({data, ui, onActiveChange: (active) => {directory.hidden = active;},
       onKeywordSearch: (term) => {filters.q = term; return load();}});
     host.replaceChildren(...(!options.id && C.announcement ? [C.announcement(ui)] : []), header, intro, ...(search ? [search] : []), directory);
@@ -135,7 +161,7 @@
         preview.append(el('h2', '', item.title), tags(), C.board(item.team, data, ui, {preview:true, avatars})); node.append(preview);
         const codeRow = el('header', 'community-card-header');
         codeRow.append(gameCode || el('span', 'muted community-no-code', '暂无队伍码'));
-        node.append(codeRow);
+        node.append(codeRow, likeButton(item, ui, liked));
         return node;
       }
       const heading = el('h2'); const link = el('a', '', item.title); link.href = '#team';
@@ -150,15 +176,7 @@
       const actions = el('div', 'community-actions');
       const use = el('button', 'primary-button', '装入编成'); use.type = 'button';
       use.addEventListener('click', () => enter());
-      const like = el('button', 'secondary-button'); like.type = 'button';
-      const showLikes = (result) => {
-        if (Number.isFinite(Number(result.likes))) item.likes = Math.max(0, Number(result.likes));
-        if (result.likedToday !== undefined) item.likedToday = result.likedToday;
-        like.textContent = `${item.likedToday ? '今日已赞' : '点赞'} · ${item.likes || 0}`; like.disabled = Boolean(item.likedToday);
-        like.setAttribute('aria-label', `${item.likedToday ? '今天已点赞' : '为此队伍点赞'}，${item.likes || 0} 赞`);
-      };
-      showLikes(item); like.addEventListener('click', () => C.openLike(item, ui, showLikes));
-      actions.append(use, like);
+      actions.append(use, likeButton(item, ui, liked));
       const footer = el('footer', 'community-card-footer'), credit = el('div', 'community-card-credit');
       credit.append(el('p', 'community-author', `作者：${item.author || '未署名'}`), time);
       footer.append(credit, actions); node.append(footer); return node;

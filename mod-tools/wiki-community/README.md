@@ -68,7 +68,7 @@ node --test mod-tools/wiki-community/tests/*.test.mjs
 新建必须指定一个 `category`：萌新启航、原版毕业队、MOD毕业队、最新最潮盘、玩具盘。
 旧记录空分类保留，编辑时可保留空值或指定分类；已经分类的队伍不能改回空值。
 GET 的 `category` 省略表示全部，`uncategorized` 表示未分类，其余使用上述中文分类；与属性、伤害和状态取 AND。
-玩法 `section` 是独立字段：空值表示其他，`abyss` 为深渊连战，`fantasy` 为幻想连战，`five-boss` 为五重决战，`original` 为原版。
+玩法 `section` 是独立字段：空值表示其他，`abyss` 为深渊，`abyss-ex` 为深渊EX，`fantasy` 为幻想，`five-boss` 为五重，`original` 为原版。
 新建请求省略 section 时默认为空；编辑省略时保留原值，显式空值可改回其他。旧盘不会根据分类、标题或阵容自动猜测玩法。
 GET 的 `section` 省略或空值表示全部，`general` 仅查看其他，其余使用上述玩法标识；与其他筛选取 AND。
 分页游标绑定这些筛选条件，改变分类或玩法后必须从第一页载入。仅改变这些元数据不会改变阵容指纹或撤销游戏码。
@@ -323,3 +323,5 @@ SELECT actor_email, action, team_id, created_at FROM community_audit ORDER BY cr
 免费层有请求、读写行与存储额度；用量达到上限可能暂不可用，不承诺无限免费，也不自动升级付费计划。
 
 现有库中 section 的旧 CHECK 若未包含 original，应在同一事务执行 migrations/0006-original-section.sql。该迁移只更换 section 列并重建其索引，不替换父表，不删除队伍或关联记录；本地适配器自动检测，重复启动不会重跑。
+
+独立深渊EX分区上线前，若 `sqlite_master` 中 `community_teams` 的 CHECK 未包含 `abyss-ex`，在同一事务执行 `migrations/0017-abyss-ex-section.sql`。它只扩充分区约束并重建分区索引，原分区值、点赞、队伍码和关联记录保持不变；已有 `abyss` 队伍不会根据标题自动归入EX，管理员可按实际用途修改。新的 `schema.sql` 已包含EX，本地适配器会检测旧约束并迁移；部署现有正式库需先备份、执行增量迁移，再发布Worker。

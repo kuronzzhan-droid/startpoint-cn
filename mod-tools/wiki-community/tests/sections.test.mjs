@@ -77,7 +77,7 @@ test('latest and popular cursors cannot cross gameplay sections', async (t) => {
   for (const sort of ['latest', 'popular']) {
     const cursor = nextCursor({sort, element: '', category: '', section: 'abyss', damage: '', status: 'approved'}, row);
     assert.equal((await app.call(`/teams?section=abyss&sort=${sort}&cursor=${cursor}`)).status, 200);
-    for (const section of ['', 'fantasy', 'five-boss', 'general'])
+    for (const section of ['', 'abyss-ex', 'fantasy', 'five-boss', 'general'])
       assert.equal((await app.call(`/teams?section=${section}&sort=${sort}&cursor=${cursor}`)).json.error, 'invalid_cursor');
   }
 });

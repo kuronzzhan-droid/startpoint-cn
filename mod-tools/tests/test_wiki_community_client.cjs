@@ -23,14 +23,16 @@ test('import and query use known fields, stable filter order and escaped cursor'
   const query = new URLSearchParams(C.query({element:'火',sort:'popular',damageTypes:['direct','skill','<script>']},'x&y'));
   assert.equal(query.get('damage'),'skill,direct'); assert.equal(query.get('cursor'),'x&y');
   assert.equal(query.get('element'),'火'); assert.equal(query.get('sort'),'popular');
+  assert.equal(new URLSearchParams(C.query({})).get('sort'),'popular');
+  assert.equal(new URLSearchParams(C.query({sort:'latest'})).get('sort'),'latest');
 });
 test('gameplay sections remain independent from categories and legacy general entries', () => {
-  for (const section of ['abyss','fantasy','five-boss','original','general']) {
+  for (const section of ['abyss','abyss-ex','fantasy','five-boss','original','general']) {
     const params = new URLSearchParams(C.query({section,category:'玩具盘',damageTypes:['direct'],sort:'popular'}));
     assert.equal(params.get('section'),section); assert.equal(params.get('category'),'玩具盘'); assert.equal(params.get('damage'),'direct');
   }
   for (const section of [undefined,'','arbitrary']) assert.equal(new URLSearchParams(C.query({section})).has('section'),false);
-  assert.equal(C.sectionLabel('abyss'),'深渊连战'); assert.equal(C.sectionLabel(undefined),'其他');
+  assert.equal(C.sectionLabel('abyss'),'深渊'); assert.equal(C.sectionLabel('abyss-ex'),'深渊EX'); assert.equal(C.sectionLabel(undefined),'其他');
   assert.equal(C.sectionLabel('玩具盘'),'其他');
 });
 test('code availability is an independent, allowlisted query filter', () => {

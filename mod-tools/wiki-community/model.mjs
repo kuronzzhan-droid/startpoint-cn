@@ -1,8 +1,8 @@
 import {encodeJSON, decodeJSON} from './codecs.mjs';
 export const DAMAGE_TYPES = ['skill', 'ability', 'powerflip', 'direct'];
 export const TEAM_CATEGORIES = ['萌新启航', '原版毕业队', 'MOD毕业队', '最新最潮盘', '玩具盘'];
-export const TEAM_SECTIONS = [{value: '', label: '其他'}, {value: 'abyss', label: '深渊连战'},
-  {value: 'fantasy', label: '幻想连战'}, {value: 'five-boss', label: '五重决战'}, {value: 'original', label: '原版'}];
+export const TEAM_SECTIONS = [{value: 'original', label: '原版'}, {value: 'abyss', label: '深渊'}, {value: 'fantasy', label: '幻想'},
+  {value: 'abyss-ex', label: '深渊EX'}, {value: 'five-boss', label: '五重'}, {value: '', label: '其他'}];
 export const GROUPS = ['main', 'unison', 'weapon', 'soul'];
 export const PAGE_SIZE = 24;
 export class ApiError extends Error {

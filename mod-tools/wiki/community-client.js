@@ -4,7 +4,7 @@
   const damageTypes = {skill: '技能伤害', ability: '能力伤害', powerflip: '强化弹射伤害', direct: '直接攻击伤害'};
   const teamCategories = ['萌新启航', '原版毕业队', 'MOD毕业队', '最新最潮盘', '玩具盘'];
   const categoryLabel = (value) => teamCategories.includes(value) ? value : '未分类';
-  const teamSections = {'': '其他', abyss: '深渊连战', fantasy: '幻想连战', 'five-boss': '五重决战', original: '原版'};
+  const teamSections = {original: '原版', abyss: '深渊', fantasy: '幻想', 'abyss-ex': '深渊EX', 'five-boss': '五重', '': '其他'};
   const sectionLabel = (value) => Object.hasOwn(teamSections, value) ? teamSections[value] : teamSections[''];
   const sourceUrl = 'https://docs.qq.com/sheet/DSVNsWE5yWUNoR0Ju';
   const groups = ['main', 'unison', 'weapon', 'soul'];
@@ -36,7 +36,7 @@
     if (teamCategories.includes(filters.category) || filters.category === 'uncategorized') params.set('category', filters.category);
     const selected = Object.keys(damageTypes).filter((key) => filters.damageTypes?.includes(key));
     if (selected.length) params.set('damage', selected.join(','));
-    params.set('sort', filters.sort === 'popular' ? 'popular' : 'latest');
+    params.set('sort', filters.sort === 'latest' ? 'latest' : 'popular');
     if (cursor) params.set('cursor', cursor);
     return params.toString();
   }
