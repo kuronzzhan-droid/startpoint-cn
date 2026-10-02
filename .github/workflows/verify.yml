@@ -53,6 +53,20 @@ jobs:
       - run: npm audit --audit-level=high
         working-directory: admin
 
+  wiki:
+    name: Wiki frontend and community (Node 24)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+      # Wiki uses Node's built-in SQLite; no game server packages or database.
+      - name: Test Wiki frontend
+        run: node --test (Get-ChildItem mod-tools/tests/test_wiki_*.cjs).FullName
+      - name: Test Wiki community
+        run: node --test (Get-ChildItem mod-tools/wiki-community/tests/*.test.mjs).FullName
+
   tools:
     name: Python tools and launcher
     runs-on: windows-latest
