@@ -10,6 +10,7 @@ from pathlib import Path
 from wf_wiki_data import chunk_payload
 from wf_wiki_public import public_id
 from wf_wiki_dungeon_rewards_schema import require, unique_object
+from wf_wiki_paths import is_junction
 
 
 def collect_event_titles(store):
@@ -35,7 +36,7 @@ def collect_event_titles(store):
 
 
 def read_json(path):
-    require(path.is_file() and not path.is_symlink() and not getattr(path, "is_junction", lambda: False)(),
+    require(path.is_file() and not path.is_symlink() and not is_junction(path),
             f"Missing or linked snapshot file: {path.name}")
     return json.loads(path.read_text(encoding="utf-8-sig"), object_pairs_hook=unique_object)
 

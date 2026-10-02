@@ -10,6 +10,7 @@ import unicodedata
 
 from wf_wiki_categories import HIDDEN_CHARACTER_IDS
 from wf_wiki_public import public_id
+from wf_wiki_paths import is_junction
 
 PUBLIC_ID = re.compile(r"c[0-9a-f]{12}\Z")
 
@@ -95,14 +96,14 @@ def write_character_variants(repo: Path, output: Path, catalog: dict, store: Pat
     payload = build_variant_index(catalog["characters"], source.table("character"), source.table("character", True))
     source.verify_unchanged()
     directory = Path(output) / "data"
-    if directory.is_symlink() or directory.is_junction():
+    if directory.is_symlink() or is_junction(directory):
         raise ValueError("变体索引目录不能是链接")
     directory.mkdir(parents=True, exist_ok=True)
     text = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     for filename, content in (("character-variants.json", text + "\n"),
                               ("character-variants.js", "window.WF_CHARACTER_VARIANTS=" + text + ";\n")):
         path = directory / filename
-        if path.is_symlink() or path.is_junction():
+        if path.is_symlink() or is_junction(path):
             raise ValueError("变体索引不能覆盖链接")
         path.write_text(content, encoding="utf-8", newline="\n")
     # The snapshot hash busts browser caches; repeated mounts share one lazy load.

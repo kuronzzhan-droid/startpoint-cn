@@ -7,6 +7,7 @@ import re
 from pathlib import Path
 
 from wf_wiki_dungeons_schema import QUEST_CATEGORIES, quest_table
+from wf_wiki_paths import is_junction
 
 
 def unique_object(pairs):
@@ -21,7 +22,7 @@ def unique_object(pairs):
 def gray_quest_lookup(directory):
     """Retain category boundaries and CN overrides; expose only private hashes."""
     directory = Path(directory)
-    if not directory.is_dir() or directory.is_symlink() or directory.is_junction():
+    if not directory.is_dir() or directory.is_symlink() or is_junction(directory):
         raise ValueError("灰服关卡配置目录不存在或属于链接")
     lookup, hashes = {}, {}
 

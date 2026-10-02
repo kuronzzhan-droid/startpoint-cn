@@ -14,6 +14,7 @@ import wf_mod_tool as core
 import wf_publish
 from wf_wiki_media import WikiMedia
 from wf_wiki_media import digest
+from wf_wiki_paths import is_junction
 
 HERE = Path(__file__).resolve().parent
 MARKER = ".wf-wiki-export.json"
@@ -30,7 +31,7 @@ def prepare_output(output: Path, repo: Path, store: Path) -> Path:
         raise ValueError("仓库内导出仅允许 work/；建议放到仓库外")
     if output.exists() and any(output.iterdir()):
         children = list(output.iterdir())
-        if any(path.is_symlink() or path.is_junction() for path in children):
+        if any(path.is_symlink() or is_junction(path) for path in children):
             raise ValueError("输出目录含链接或目录联接，请选择独立目录")
         marker = output / MARKER
         try:
@@ -40,7 +41,7 @@ def prepare_output(output: Path, repo: Path, store: Path) -> Path:
         if not isinstance(identity, dict) or identity.get("generator") != "wf_wiki":
             raise ValueError("输出目录非空且不是本工具产物，请选择新目录")
         media = output / "media"
-        if media.is_dir() and any(path.is_symlink() or path.is_junction() for path in media.iterdir()):
+        if media.is_dir() and any(path.is_symlink() or is_junction(path) for path in media.iterdir()):
             raise ValueError("媒体目录含链接或目录联接，请选择独立目录")
     output.mkdir(parents=True, exist_ok=True)
     (output / MARKER).write_text('{"generator":"wf_wiki","complete":false}\n', encoding="utf-8")

@@ -11,6 +11,7 @@ import tempfile
 
 from wf_wiki_categories import HIDDEN_CHARACTER_IDS
 from wf_wiki_public import PRIVATE, public_id
+from wf_wiki_paths import is_junction
 
 PREFIX = "window.WF_WIKI_CHUNKS = window.WF_WIKI_CHUNKS || {};\nwindow.WF_WIKI_CHUNKS["
 CHARACTER_ID = re.compile(r"c[0-9a-f]{12}\Z")
@@ -34,7 +35,7 @@ def require(condition, message):
 
 
 def regular(path):
-    require(not path.is_symlink() and not getattr(path, "is_junction", lambda: False)(), "数据路径不得为链接")
+    require(not path.is_symlink() and not is_junction(path), "数据路径不得为链接")
 
 
 def check_public(value):

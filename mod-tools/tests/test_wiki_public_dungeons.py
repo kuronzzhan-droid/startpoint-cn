@@ -143,7 +143,7 @@ class DungeonPublicPlanTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "链接"):
                 dungeon_plan(self.root)
         self.write()
-        with patch.object(Path, "is_junction", lambda p: p.name == "media"):
+        with patch("wf_wiki_pixel_output.is_junction", side_effect=lambda p: p.name == "media"):
             with self.assertRaisesRegex(ValueError, "链接"):
                 dungeon_plan(self.root)
 
