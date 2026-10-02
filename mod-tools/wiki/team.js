@@ -15,20 +15,21 @@
       : window.matchMedia('(max-width:1150px)').matches ? 'narrow' : 'wide';
     if (layout.dataset.order === mode) return;
     const main = layout.querySelector('.team-main'), board = layout.querySelector('.team-board');
-    const preview = layout.querySelector('.team-preview'), library = layout.querySelector('.team-library');
-    const inspector = layout.querySelector('.team-inspector');
+    const library = layout.querySelector('.team-library');
+    const inspector = layout.querySelector('.team-inspector-scroll-region') || layout.querySelector('.team-inspector');
     if (!inspector) return;
     const focused = document.activeElement, keepFocus = layout.contains(focused);
     // Move existing panels so Tab order follows the responsive visual order.
-    if (mode === 'wide') {main.append(board, preview); layout.append(inspector, main, library);}
-    else if (mode === 'narrow') layout.append(inspector, board, library, preview, main);
-    else layout.append(board, library, inspector, preview, main);
+    if (mode === 'wide') {main.append(board); layout.append(inspector, main, library);}
+    else if (mode === 'narrow') layout.append(inspector, board, library, main);
+    else layout.append(board, library, inspector, main);
     layout.dataset.order = mode;
     if (keepFocus) focused.focus({preventScroll:true});
   }
   window.addEventListener?.('resize', arrangePanels);
   window.WFTeamImport = {load(value, title, selection) {imported = {team: S.copy(value), title, selection};}};
   window.renderWikiTeam = (host, data, ui) => {
+    window.WFTeamScrollRail?.reset();
     const {el, picture, elementBadge} = ui;
     const characters = new Map(data.characters.map((c) => [String(c.id), c]));
     const equipment = new Map((data.equipment || []).map((w) => [String(w.id), w]));
@@ -42,7 +43,6 @@
     }
     team = S.validate(team, characters, equipment);
     const board = el('div', 'team-board game-panel');
-    const preview = el('section', 'team-preview game-panel');
     const library = el('section', 'team-library game-panel');
     const controls = el('div', 'team-controls team-toolbar'); controls.setAttribute('aria-label', '队伍操作');
     const status = el('p', 'team-status'); status.setAttribute('role', 'status');
@@ -176,43 +176,7 @@
         }
         grid.append(column);
       }
-      board.append(grid); paintPreview(); inspector?.show(team[inspected.group][inspected.index]);
-    }
-    function paintPreview() {
-      preview.replaceChildren(el('h2', '', '编成资料'));
-      const rules = S.ruleNotes(team, equipment, data.equipmentMeta?.partyRules);
-      if (rules.length) {
-        const notes = el('details', 'team-preview-rules'); notes.append(el('summary', '', `装备规则 · ${rules.length} 条`));
-        rules.forEach((value) => notes.append(el('p', 'weapon-note', value))); preview.append(notes);
-      }
-      const leader = characters.get(team.main[0]);
-      if (leader) preview.append(button(`队长技 · ${leader.name} ›`, () => {inspected = {group:'main',index:0}; paintBoard();}, 'text-button team-preview-leader'));
-      for (let i = 0; i < 3; i++) {
-        const main = characters.get(team.main[i]), unison = characters.get(team.unison[i]);
-        const box = el('details', 'team-pair'); box.open = i === inspected.index;
-        const summary = el('summary');
-        summary.append(el('span', 'team-pair-number', `${i + 1}号位`),
-          el('span', 'team-pair-names', `${main?.name || '空位'} / ${unison?.name || '空位'}`)); box.append(summary);
-        for (const [label, item] of [['主位', main], ['合击', unison]]) if (item) {
-          const row = el('div', 'team-pair-character');
-          const show = button('查看面板', () => {inspected = {group:label === '主位' ? 'main' : 'unison',index:i}; paintBoard();}, 'text-button');
-          show.setAttribute('aria-label', `查看${i + 1}号${label}${item.name}面板`);
-          row.append(el('span', 'team-pair-kind', label), el('strong', '', item.name), elementBadge(item.element), show); box.append(row);
-        }
-        for (const group of ['weapon', 'soul']) {
-          const item = equipment.get(team[group][i]); if (!item) continue;
-          const effect = el('details', 'team-pair-effect'), caption = el('summary');
-          caption.append(el('span', 'team-pair-kind', labels[group]), el('strong', '', item.name)); effect.append(caption);
-          const effects = group === 'soul' ? item.soul?.effects : item.awakenedEffects || item.baseEffects;
-          effect.append(el('p', '', Array.isArray(effects) ? effects.join('\n') : effects || item.description || '暂无效果说明'));
-          if (group === 'weapon' && item.enhancement) {
-            effect.append(el('h4', '', `强化至 Lv${item.enhancement.maxLevel} 的追加效果`),
-              el('p', '', (item.enhancement.effects || []).join('\n')));
-          }
-          box.append(effect);
-        }
-        preview.append(box);
-      }
+      board.append(grid); inspector?.show(team[inspected.group][inspected.index]);
     }
     const equipmentFilters = window.WFTeamEquipmentFilters.create({equipment:[...equipment.values()], ui,
       initialState:equipmentFilterState, onStateChange:(state) => {equipmentFilterState = state;}, onChange:() => paintLibrary()});
@@ -230,7 +194,8 @@
     modeSwitch.append(characterButton, weaponButton, soulButton);
     const candidates = el('div', 'team-candidates');
     const heading = el('h2'), libraryHeading = el('div', 'team-library-heading'); libraryHeading.append(heading, modeSwitch);
-    library.append(libraryHeading, characterFilters.element, equipmentFilters.element, candidates);
+    const candidatePanel = window.WFTeamScrollRail?.wrap(candidates, ui, '候选列表') || candidates;
+    library.append(libraryHeading, characterFilters.element, equipmentFilters.element, candidatePanel);
     let mountedMode = '', mountedItems = [];
     function paintLibrary() {
       const characterMode = S.isCharacter(chosen.group);
@@ -275,8 +240,10 @@
       if (!items.length) candidates.append(el('p', '', '没有匹配的候选。'));
       mountedMode = mode; mountedItems = items;
     }
-    const mainColumn = el('div', 'team-main'); mainColumn.append(board, preview);
-    const layout = el('div', 'team-layout'); if (inspector) layout.append(inspector.element); layout.append(mainColumn, library);
+    const mainColumn = el('div', 'team-main'); mainColumn.append(board);
+    const layout = el('div', 'team-layout');
+    if (inspector) layout.append(window.WFTeamScrollRail?.wrap(inspector.element, ui, '角色面板', 'team-inspector-scroll-region') || inspector.element);
+    layout.append(mainColumn, library);
     const help = el('details', 'team-help'); help.open = false;
     const helpTitle = el('summary'); helpTitle.append(el('h1', '', '配队模拟'));
     help.append(helpTitle, el('p', 'section-intro', '拖拽头像到槽位，或点空位／「换」后选择候选。点击盘中的角色头像，在角色面板查看技能与能力；第一列主位为队长。'),
