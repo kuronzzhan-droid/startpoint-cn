@@ -5,6 +5,15 @@
 .tier-toolbar button:hover:not(:disabled){border-color:var(--accent-dark);color:var(--accent-dark)}
 .tier-toolbar button[aria-pressed="true"]{background:var(--accent-dark);border-color:var(--accent-dark);color:var(--surface);font-weight:700}
 .tier-status{min-height:20px;margin:0 0 9px;color:var(--accent-dark);font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.tier-status[hidden]{display:none}
+.tier-help{min-width:0;color:var(--muted);font-size:12px}
+.tier-help>summary{display:list-item;width:max-content;min-height:32px;padding:6px 7px;box-sizing:border-box;cursor:pointer;color:var(--accent-dark);font-weight:600;white-space:nowrap}
+.tier-help>summary:focus-visible{outline:2px solid var(--accent-dark);outline-offset:2px;border-radius:5px}
+.tier-help[open]{flex-basis:100%;order:1}
+.tier-help-body{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);line-height:1.6;overflow-wrap:anywhere}
+.tier-help-body p{margin:0 0 6px}.tier-help-body p:last-child{margin-bottom:0}
+.tier-help-body button{font-size:12px;min-height:32px;padding:5px 9px}
+.tier-personal-help{margin-left:auto}
 .tier-board{min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 .tier-row,.tier-boundary{display:grid;grid-template-columns:var(--tier-label-width) minmax(0,1fr);min-width:0}
 .tier-label{display:flex;align-items:center;justify-content:center;align-self:stretch;min-width:0;margin:0;padding:8px 6px;text-align:center;overflow-wrap:anywhere}

@@ -66,13 +66,16 @@
     const mineStatus = el('span', 'tier-submit-status'); mineStatus.setAttribute('role', 'status');
     submitBar.append(submit, mineStatus);
     const publicToolbar = el('div', 'tier-public-toolbar'), avatarHost = el('div');
-    const refresh = el('button', 'secondary-button', '刷新大家排行'); refresh.type = 'button';
+    const refresh = el('button', 'secondary-button', '刷新'); refresh.type = 'button';
+    refresh.setAttribute('aria-label', '刷新大家排行');
     const detailToggle = el('button', 'tier-detail-toggle'); detailToggle.type = 'button';
     detailToggle.setAttribute('role', 'switch'); detailToggle.setAttribute('aria-label', '显示全部评分详情');
     detailToggle.setAttribute('aria-checked', 'false');
     const track = el('span', 'tier-detail-track'); track.setAttribute('aria-hidden', 'true'); track.append(el('span', 'tier-detail-thumb'));
-    detailToggle.append(track, el('span', '', '显示评分详情'));
-    publicToolbar.append(avatarHost, detailToggle, refresh);
+    detailToggle.append(track, el('span', '', '详情'));
+    const help = el('details', 'tier-help tier-public-help'), helpSummary = el('summary', '', '说明');
+    const helpBody = el('div', 'tier-help-body'); helpSummary.setAttribute('aria-label', '查看排行说明');
+    help.append(helpSummary, helpBody);
     const participation = el('div', 'tier-public-participation'); participation.setAttribute('aria-label', '全站参与人数');
     const totalCount = el('strong', '', '—'), ratingCount = el('strong', '', '—'), tierCount = el('strong', '', '—');
     const participationStatus = el('small', 'tier-participation-status'); participationStatus.setAttribute('role', 'status');
@@ -84,13 +87,17 @@
     participation.append(participationStatus);
     const sourceTabs = el('div', 'tier-ranking-sources'), sourceButtons = [];
     sourceTabs.setAttribute('role', 'group'); sourceTabs.setAttribute('aria-label', '排行投票来源');
-    const description = el('p', 'tier-public-formula');
+    publicToolbar.append(sourceTabs, avatarHost);
+    const description = el('p', 'tier-public-formula'), publicSummary = el('p', 'tier-public-summary');
+    const updated = el('p', 'tier-public-updated');
+    helpBody.append(description, publicSummary, updated, refresh);
     const publicStatus = el('p', 'tier-public-status'); publicStatus.setAttribute('role', 'status');
     const elementFilters = el('div', 'tier-public-elements'); elementFilters.setAttribute('role', 'group'); elementFilters.setAttribute('aria-label', '排行属性');
     const results = el('div', 'tier-public-results'), elementButtons = [], boardHeading = el('div', 'tier-public-heading');
     boardHeading.append(elementFilters, participation);
-    dynamicHost.append(sourceTabs, publicToolbar, description, boardHeading, publicStatus, results);
-    element.append(tabs, submitBar, mineHost, dynamicHost); host.append(element);
+    dynamicHost.append(publicToolbar, boardHeading, publicStatus, results);
+    const navigation = el('div', 'tier-community-nav'); navigation.append(tabs, detailToggle, help);
+    element.append(navigation, submitBar, mineHost, dynamicHost); host.append(element);
     let view = 'mine', revision = 0, portraits, dialogOpen = false, submitted, cached, elementFilter = '', source = 'placement', showDetails = false, publicCards = [];
     let stopStats, statsDisposed = false, statsAttached = element.isConnected, lastStats;
     function destroy() {
@@ -156,9 +163,10 @@
     function refreshState() {
       const count = Object.values(state.getRows()).reduce((total, ids) => total + ids.length, 0);
       submit.disabled = dialogOpen || !online();
-      mineStatus.textContent = !online() ? '离线版可以自由排行；请到在线网站提交。'
-        : submitted?.submittedToday ? `今天已提交 ${submitted.rankedCharacters} 位角色。${nextTime(submitted)}`
-        : count ? `本地已排 ${count} 位角色；点击提交才计入大家排行。` : '尚未放置角色；提交空榜可撤回自己之前的手排票。';
+      mineStatus.textContent = !online() ? '离线模式，无法提交'
+        : submitted?.submittedToday ? `今天已提交 ${submitted.rankedCharacters} 位角色`
+        : count ? `本地已排 ${count} 位角色` : '尚未放置角色';
+      mineStatus.title = submitted?.submittedToday ? nextTime(submitted) : '本地自动保存，点击提交才计入大家排行；提交空榜可撤回旧票。';
     }
     function renderPublic(value) {
       const items = value.rankings[source].filter(item => byId.has(item.id) && (!elementFilter || byId.get(item.id).element === elementFilter));
@@ -175,7 +183,8 @@
         if (provisional) {
           const heading = el('div', 'tier-provisional-heading');
           heading.append(el('h2', '', '暂定'), el('span', 'tier-provisional-count', `${provisionalCount} 位角色`));
-          row.append(heading, el('p', 'tier-provisional-note', `不足 ${ranking.MINIMUM_TIER_VOTERS} 票，尚未定级；满 ${ranking.MINIMUM_TIER_VOTERS} 票后按真实均分进入上方档位。`), slots);
+          heading.title = `不足 ${ranking.MINIMUM_TIER_VOTERS} 票，尚未定级；满票后按真实均分分档。`;
+          row.append(heading, slots);
           provisionalSection = row;
         } else row.append(el(between ? 'span' : 'h2', 'tier-label', labels[index]), slots);
         items.filter(item => item.row === key).forEach(item => {
@@ -210,11 +219,15 @@
         if (!provisional) board.append(row);
       });
       results.replaceChildren(board, provisionalSection);
-      publicStatus.textContent = (items.length ? `${sourceLabel} · ${elementFilter ? `${elementFilter}属性榜` : '总榜'} · ${items.length} 位角色（已定级 ${items.length - provisionalCount} · 暂定 ${provisionalCount}）；点击头像查看均分与人数。`
-        : `${sourceLabel} · ${elementFilter ? `${elementFilter}属性` : '目前'}还没有已汇总的玩家投票；未评分角色不入此榜。`) + publishedTime(value);
+      publicSummary.textContent = items.length ? `${sourceLabel} · ${elementFilter ? `${elementFilter}属性榜` : '总榜'} · ${items.length} 位角色（已定级 ${items.length - provisionalCount} · 暂定 ${provisionalCount}）；点击头像查看均分与人数。`
+        : `${sourceLabel} · ${elementFilter ? `${elementFilter}属性` : '目前'}还没有已汇总的玩家投票；未评分角色不入此榜。`;
+      updated.textContent = publishedTime(value);
+      publicStatus.textContent = items.length ? '' : '暂无已汇总投票'; publicStatus.hidden = Boolean(items.length);
     }
     async function loadPublic() {
-      const ticket = ++revision; cached = undefined; refresh.disabled = true; results.replaceChildren(); publicStatus.textContent = '正在载入大家排行…';
+      const ticket = ++revision; cached = undefined; refresh.disabled = true; results.replaceChildren();
+      publicSummary.textContent = ''; updated.textContent = '';
+      publicStatus.hidden = false; publicStatus.textContent = '正在载入大家排行…';
       if (!C?.client || !/^https?:$/.test(window.location?.protocol)) {
         publicStatus.textContent = '离线版无法读取大家排行，请前往在线网站查看。'; refresh.disabled = true; return;
       }
@@ -222,12 +235,13 @@
         const value = publicRecord(await C.client.request('/tier-rankings'));
         if (ticket === revision && view === 'community' && element.isConnected) {cached = value; renderPublic(value);}
       } catch (error) {
-        if (ticket === revision && view === 'community' && element.isConnected) publicStatus.textContent = `${message(error)} 点击“刷新大家排行”重试。`;
+        if (ticket === revision && view === 'community' && element.isConnected) publicStatus.textContent = `${message(error)} 可在“说明”中点击“刷新”重试。`;
       } finally {if (ticket === revision) refresh.disabled = false;}
     }
     function setView(next) {
       const changed = view !== next; view = next === 'community' ? 'community' : 'mine';
       const mine = view === 'mine'; mineHost.hidden = !mine; submitBar.hidden = !mine; dynamicHost.hidden = mine;
+      detailToggle.hidden = mine; help.hidden = mine;
       [mineTab, publicTab].forEach((tab, index) => {tab.setAttribute('aria-selected', String(mine === !index)); tab.tabIndex = mine === !index ? 0 : -1;});
       onViewChange(view);
       if (mine) {revision++; refreshState(); return;}

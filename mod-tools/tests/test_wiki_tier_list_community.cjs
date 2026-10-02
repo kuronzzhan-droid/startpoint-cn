@@ -26,7 +26,8 @@ const el = (...args) => new Node(...args);
 const cls = (root, name) => root.all(node => node.className.split(' ').includes(name))[0];
 const all = (root, name) => root.all(node => node.className.split(' ').includes(name));
 const button = (root, label) => root.all(node => node.tag === 'button' && node.textContent === label)[0];
-const visibleText = root => root.hidden ? '' : root.ownText + root.children.map(visibleText).join('');
+const visibleText = root => root.hidden ? '' : root.ownText
+  + root.children.filter(node => root.tag !== 'details' || root.open || node.tag === 'summary').map(visibleText).join('');
 const detailSwitch = root => root.all(node => node.attributes.role === 'switch' && node.attributes['aria-label'] === '显示全部评分详情')[0];
 const rowKeys = ['tier0', 'between0', 'tier1', 'between1', 'tier2', 'between2', 'tier3', 'between3', 'tier4'];
 const rows = () => Object.fromEntries(rowKeys.map(key => [key, []]));
@@ -56,7 +57,7 @@ function setup(handler = async pathname => pathname.endsWith('/me') ? me : aggre
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki/rating-score.js'), 'utf8'), {window});
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki/tier-list-community.js'), 'utf8'), {window, Date});
   const host = el('main'); host.connected = options.connected !== false; let localRows = rows();
-  const state = {getRows: () => JSON.parse(JSON.stringify(localRows)), assignedIds: () => new Set(Object.values(localRows).flat()), canUndo: () => false, persistenceError: () => ''};
+  const state = {getRows: () => JSON.parse(JSON.stringify(localRows)), assignedIds: () => new Set(Object.values(localRows).flat()), canUndo: () => false, persistenceError: () => options.persistenceError || ''};
   // Individual voting tests explicitly start on the personal view; the entry-point test omits it.
   const initialView = options.defaultView ? {} : {initialView: 'mine'};
   const ui = {el, nativeIcon: (_group, value) => el('img', 'element-icon', value)};
@@ -98,6 +99,52 @@ test('default entry shows everyone ranking and switching to mine preserves the u
   const personal = setup(undefined, {renderPage: true});
   assert.equal(personal.controller.mineHost.hidden, false); assert.deepEqual(personal.calls, []);
   assert.equal(button(personal.host, '我的排行').attributes['aria-selected'], 'true');
+});
+
+test('compact public controls keep help collapsed and local controls never request new data', async () => {
+  const x = setup(undefined, {defaultView: true, renderPage: true}); await tick();
+  const help = cls(x.host, 'tier-public-help'), nav = cls(x.host, 'tier-community-nav');
+  assert.equal(help.tag, 'details'); assert.ok(!help.open);
+  assert.equal(cls(x.host, 'tier-community-tabs').parent, nav);
+  assert.equal(cls(x.host, 'tier-ranking-sources').parent, cls(x.host, 'tier-public-toolbar'));
+  assert.equal(cls(x.host, 'tier-public-toolbar').children[1].children[0].className, 'avatar-control');
+  assert.equal(detailSwitch(x.host).parent, nav);
+  assert.equal(detailSwitch(x.host).textContent, '详情');
+  assert.doesNotMatch(visibleText(x.host), /中立分|每日汇总|点击头像查看均分|未评分角色不入|刷新/);
+  assert.equal(cls(x.host, 'tier-public-status').hidden, true);
+  help.open = true;
+  assert.match(visibleText(x.host), /中立分.*每日汇总|每日汇总.*中立分/);
+  assert.match(visibleText(x.host), /刷新/);
+  assert.equal(button(x.host, '刷新').attributes['aria-label'], '刷新大家排行');
+  help.open = false; await detailSwitch(x.host).fire();
+  await x.host.all(node => node.attributes['aria-label'] === '火属性排行')[0].fire();
+  await button(x.host, '角色评分').fire();
+  assert.match(visibleText(x.host), /暂无已汇总投票/);
+  assert.doesNotMatch(visibleText(x.host), /未评分角色不入此榜/);
+  assert.equal(x.calls.length, 1); assert.equal(x.challenges.length, 0);
+  await button(x.host, '我的排行').fire();
+  assert.equal(detailSwitch(x.host).hidden, true);
+  assert.equal(help.hidden, true);
+  const personalHelp = cls(x.host, 'tier-personal-help'); assert.ok(!personalHelp.open);
+  assert.equal(cls(x.host, 'tier-status').hidden, true);
+  assert.doesNotMatch(visibleText(x.host), /每天可提交一次|手机也可先点头像/);
+  personalHelp.open = true; assert.match(visibleText(x.host), /手机也可先点头像/);
+  assert.ok(button(x.host, '提交我的排行')); assert.ok(button(x.host, '移回待排行'));
+  assert.equal(x.calls.length, 1);
+});
+
+test('collapsed help never hides loading, errors or a local save failure', async () => {
+  let reject;
+  const x = setup(() => new Promise((_resolve, fail) => {reject = fail;}), {defaultView: true});
+  assert.match(visibleText(x.host), /正在载入大家排行/);
+  assert.equal(cls(x.host, 'tier-public-status').hidden, false);
+  reject(new Error('连接超时')); await tick();
+  assert.match(visibleText(x.host), /连接超时.*重试/);
+  assert.equal(cls(x.host, 'tier-public-status').hidden, false);
+  assert.ok(!cls(x.host, 'tier-public-help').open);
+  const local = setup(undefined, {renderPage:true, persistenceError:'保存失败，请检查浏览器存储空间'});
+  assert.match(visibleText(local.host), /保存失败，请检查浏览器存储空间/);
+  assert.equal(cls(local.host, 'tier-status').hidden, false);
 });
 
 test('public participation uses distinct site statistics and keeps the same scope while filtering characters', async () => {
@@ -206,9 +253,9 @@ test('element tabs filter cached rows without requests and preserve server tie o
   const x = setup(async () => aggregate([record('c3'), record('c1'), record('c2')])); x.controller.setView('community'); await tick();
   const fire = x.host.all(node => node.attributes['aria-label'] === '火属性排行')[0]; await fire.fire();
   assert.deepEqual(all(x.host, 'tier-public-card').map(card => card.attributes['data-character-id']), ['c3', 'c1']); assert.equal(x.calls.length, 1);
-  assert.match(cls(x.host, 'tier-public-status').textContent, /火属性榜 · 2/);
+  assert.match(cls(x.host, 'tier-public-summary').textContent, /火属性榜 · 2/);
   await x.host.all(node => node.attributes['aria-label'] === '暗属性排行')[0].fire();
-  assert.equal(all(x.host, 'tier-public-card').length, 0); assert.match(cls(x.host, 'tier-public-status').textContent, /暗属性还没有已汇总/);
+  assert.equal(all(x.host, 'tier-public-card').length, 0); assert.match(cls(x.host, 'tier-public-summary').textContent, /暗属性还没有已汇总/);
   await button(x.host, '总榜').fire(); assert.equal(all(x.host, 'tier-public-card').length, 3); assert.equal(x.calls.length, 1);
 });
 
@@ -223,14 +270,15 @@ test('nine real-average tiers precede a separate provisional area with visible f
   assert.deepEqual(all(board.children[0], 'tier-public-card').map(card => card.attributes['data-character-id']), ['c3']);
   assert.deepEqual(all(board.children[1], 'tier-public-card').map(card => card.attributes['data-character-id']), ['c2']);
   assert.deepEqual(all(provisional, 'tier-public-card').map(card => card.attributes['data-character-id']), ['c1']);
-  assert.match(provisional.textContent, /暂定1 位角色.*不足 3 票，尚未定级/);
+  assert.match(provisional.textContent, /暂定1 位角色/);
+  assert.match(cls(provisional, 'tier-provisional-heading').title, /不足 3 票，尚未定级/);
   assert.match(cls(x.host, 'tier-public-formula').textContent, /满 3 票按真实均分分档.*不足则暂定.*档内排序参考 5 份中立分/);
-  assert.match(cls(x.host, 'tier-public-status').textContent, /已定级 2 · 暂定 1/);
+  assert.match(cls(x.host, 'tier-public-summary').textContent, /已定级 2 · 暂定 1/);
   await detailSwitch(x.host).fire();
   assert.ok(all(x.host, 'tier-public-card-text').every(node => !node.hidden));
   assert.match(visibleText(provisional), /均分 5\.00.*1 人 · 暂定排序 3\.33/);
   await x.host.all(node => node.attributes['aria-label'] === '火属性排行')[0].fire();
-  assert.match(cls(x.host, 'tier-public-status').textContent, /已定级 1 · 暂定 1/);
+  assert.match(cls(x.host, 'tier-public-summary').textContent, /已定级 1 · 暂定 1/);
   assert.ok(all(x.host, 'tier-public-card-text').every(node => !node.hidden));
   await x.host.all(node => node.attributes['aria-label'] === '水属性排行')[0].fire();
   assert.match(cls(x.host, 'tier-provisional-count').textContent, /0 位角色/);
@@ -245,7 +293,7 @@ test('a third real vote moves a character from provisional to its real-average t
   x.controller.setView('community'); await tick();
   assert.equal(all(cls(x.host, 'tier-public-provisional'), 'tier-public-card').length, 1);
   assert.equal(all(cls(x.host, 'tier-public-board'), 'tier-public-card').length, 0);
-  await button(x.host, '刷新大家排行').fire();
+  await button(x.host, '刷新').fire();
   assert.equal(all(cls(x.host, 'tier-public-provisional'), 'tier-public-card').length, 0);
   const top = cls(x.host, 'tier-public-board').children[0];
   assert.equal(all(top, 'tier-public-card')[0].attributes['data-character-id'], 'c1');
@@ -286,13 +334,13 @@ test('source switches preserve the attribute and exact server scores without ble
   await button(x.host, '角色评分').fire();
   assert.equal(fire.attributes['aria-pressed'], 'true'); assert.equal(button(x.host, '角色评分').attributes['aria-pressed'], 'true');
   assert.deepEqual(all(x.host, 'tier-public-card').map(card => card.attributes['data-character-id']), ['c1', 'c3']);
-  assert.match(cls(x.host, 'tier-public-status').textContent, /角色评分 · 火属性榜/);
+  assert.match(cls(x.host, 'tier-public-summary').textContent, /角色评分 · 火属性榜/);
   assert.match(all(x.host, 'tier-public-card')[0].textContent, /均分 4\.50.*10 人 · 档内排序 3\.83/);
   assert.match(all(x.host, 'tier-public-card')[1].textContent, /均分 0\.00.*1 人 · 暂定排序 2\.08/);
-  assert.match(cls(x.host, 'tier-public-status').textContent, /已定级 1 · 暂定 1/);
+  assert.match(cls(x.host, 'tier-public-summary').textContent, /已定级 1 · 暂定 1/);
   assert.match(cls(x.host, 'tier-provisional-count').textContent, /1 位角色/);
   await button(x.host, '手动排行').fire();
-  assert.match(cls(x.host, 'tier-public-status').textContent, /已定级 0 · 暂定 1/);
+  assert.match(cls(x.host, 'tier-public-summary').textContent, /已定级 0 · 暂定 1/);
   assert.equal(all(x.host, 'tier-public-card')[0].textContent, before); assert.equal(x.calls.length, 1);
 });
 
@@ -301,7 +349,7 @@ test('switching source during an initial read uses the current source when the r
   x.controller.setView('community'); await button(x.host, '角色评分').fire();
   resolve(aggregate([record('c1')], [record('c2', {average: 5, voters: 1, rankScore: 35 / 12, row: 'provisional'})])); await tick();
   assert.deepEqual(all(x.host, 'tier-public-card').map(card => card.attributes['data-character-id']), ['c2']);
-  assert.match(cls(x.host, 'tier-public-status').textContent, /角色评分/);
+  assert.match(cls(x.host, 'tier-public-summary').textContent, /角色评分/);
 });
 
 test('clicking an avatar opens its authoritative score breakdown and separate character detail link', async () => {
@@ -321,7 +369,7 @@ test('clicking an avatar opens its authoritative score breakdown and separate ch
 test('the rating board preserves actual zero but never fills an empty placement board with rating votes', async () => {
   const x = setup(async () => aggregate([], [record('c2', {average: 0, voters: 1, rankScore: 12.5 / 6, row: 'provisional'})]));
   x.controller.setView('community'); await tick();
-  assert.equal(all(x.host, 'tier-public-card').length, 0); assert.match(cls(x.host, 'tier-public-status').textContent, /手动排行.*还没有已汇总的玩家投票/);
+  assert.equal(all(x.host, 'tier-public-card').length, 0); assert.match(cls(x.host, 'tier-public-summary').textContent, /手动排行.*还没有已汇总的玩家投票/);
   await button(x.host, '角色评分').fire(); await all(x.host, 'tier-public-card')[0].fire();
   const dialog = x.dialogs[0].element;
   assert.match(cls(dialog, 'tier-score-headline').textContent, /真实均分0\.00.*暂定，尚未定级/);
@@ -361,9 +409,9 @@ test('failed or malformed aggregate reads have an explicit retry instead of a fa
   let reads = 0; const x = setup(async () => ++reads === 1 ? aggregate([record('c1', {rankScore: null})]) : aggregate());
   x.controller.setView('community'); await tick(); assert.equal(all(x.host, 'tier-public-card').length, 0);
   assert.match(cls(x.host, 'tier-public-status').textContent, /资料异常.*重试/);
-  await button(x.host, '刷新大家排行').fire(); assert.equal(all(x.host, 'tier-public-card').length, 3);
+  await button(x.host, '刷新').fire(); assert.equal(all(x.host, 'tier-public-card').length, 3);
   const empty = setup(async () => aggregate([])); empty.controller.setView('community'); await tick();
-  assert.equal(all(empty.host, 'tier-public-card').length, 0); assert.match(cls(empty.host, 'tier-public-status').textContent, /还没有已汇总的玩家投票/);
+  assert.equal(all(empty.host, 'tier-public-card').length, 0); assert.match(cls(empty.host, 'tier-public-status').textContent, /暂无已汇总投票/);
 });
 
 test('submit requires a one-use challenge and explicit confirmation, uses a board snapshot, then reads the daily published board', async () => {
@@ -384,11 +432,11 @@ test('daily public board shows its actual snapshot time and reuses it across vie
   const snapshot = {...aggregate(), asOf:'2099-01-01T04:00:00Z', nextRefreshAt:'2099-01-01T16:00:00Z', stale:false};
   const x = setup(async () => snapshot);
   x.controller.setView('community'); await tick();
-  assert.match(cls(x.host, 'tier-public-status').textContent, /今日汇总：北京时间.*下次/);
+  assert.match(cls(x.host, 'tier-public-updated').textContent, /今日汇总：北京时间.*下次/);
   x.controller.setView('mine'); x.controller.setView('community'); await tick(); assert.equal(x.calls.length, 1);
-  await button(x.host, '刷新大家排行').fire(); assert.equal(x.calls.length, 2);
+  await button(x.host, '刷新').fire(); assert.equal(x.calls.length, 2);
   const stale = setup(async () => ({...snapshot, stale:true})); stale.controller.setView('community'); await tick();
-  assert.match(cls(stale.host, 'tier-public-status').textContent, /上次汇总.*今日数据更新中/);
+  assert.match(cls(stale.host, 'tier-public-updated').textContent, /上次汇总.*今日数据更新中/);
 });
 
 test('a daily block prevents verification and resubmission, and 409 responses also lock the dialog', async () => {
