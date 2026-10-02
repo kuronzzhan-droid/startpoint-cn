@@ -1,4 +1,5 @@
 import {cleanText, fail} from './model.mjs';
+import {floorParent} from './dungeon-floors.mjs';
 
 export const DUNGEON_ID = '[a-zA-Z0-9_-]{1,80}';
 export const IMAGE_ID = '[a-f0-9-]{36}';
@@ -8,7 +9,8 @@ export const IMAGE_QUOTAS = {site: 256 * 1024 * 1024, actor: 64 * 1024 * 1024, d
 export const managesImages = (actor) => ['owner', 'deputy'].includes(actor?.role);
 export function requireDungeon(catalog, id) {
   const items = Array.isArray(catalog) ? catalog : catalog?.items;
-  if (!new RegExp(`^${DUNGEON_ID}$`).test(id) || !Array.isArray(items) || !items.some((item) => item?.id === id))
+  const parent = floorParent(id);
+  if (!new RegExp(`^${DUNGEON_ID}$`).test(id) || !Array.isArray(items) || !items.some((item) => item?.id === (parent || id)))
     fail(404, 'not_found', '副本未收录。');
 }
 export function requireEditor(actor) {

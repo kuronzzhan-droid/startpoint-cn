@@ -104,6 +104,8 @@
     const hero = image(ui, compact ? item.entryImage || item.banner : item.banner || item.entryImage, `${item.title} ${compact ? '入口' : '横幅'}`, `dungeon-hero${compact ? ' dungeon-hero-compact' : ''}`);
     if (hero) {if (compact) heading.replaceChildren(hero, headingText); else page.append(hero);}
     if (item.summary) page.append(el('p', 'dungeon-summary', item.summary));
+    const floorHost = window.WFDungeonFloors?.scopes(item).length > 1 ? el('div', 'dungeon-floor-host') : null;
+    if (floorHost) page.append(floorHost);
     const previews = [...new Set([item.entryImage, ...(compact ? [item.banner] : []), ...(item.previewImages || [])].filter((value) => value && (compact || value !== item.banner)))];
     if (previews.length) {
       const fold = el('details', 'dungeon-fold'), gallery = el('div', 'dungeon-gallery');
@@ -127,26 +129,34 @@
       }); page.append(legacy);
     }
     window.WFWikiRewardView?.renderDungeon(page, item.id, data, ui);
-    const status = el('p', 'dungeon-status muted', '正在读取攻略与推荐队伍…'); status.setAttribute('role', 'status');
-    const guides = el('div'), admin = el('div', 'dungeon-admin-host'), request = (...args) => window.WFCommunity.client.request(...args);
-    page.append(status, guides, admin, sourceNote(ui, item.source || snapshot.source));
+    const request = (...args) => window.WFCommunity.client.request(...args);
     const hash = window.location.hash, current = () => page.isConnected && host.contains(page) && window.location.hash === hash;
-    let serial = 0;
-    async function load() {
-      const ticket = ++serial; status.textContent = '正在读取攻略与推荐队伍…';
-      try {
-        const result = await request(`/dungeons/${encodeURIComponent(item.id)}`);
-        if (!current() || serial !== ticket) return;
-        guideView(guides, result, data, ui); status.replaceChildren();
-      } catch (error) {
-        if (!current() || serial !== ticket) return;
-        status.replaceChildren(el('span', '', '在线攻略暂时不可用；上方副本资料仍可查看。'), button(ui, '重试', load));
+    let identity;
+    async function renderGuide(target, scope) {
+      const status = el('p', 'dungeon-status muted', '正在读取攻略与推荐队伍…'); status.setAttribute('role', 'status');
+      const guides = el('div'), admin = el('div', 'dungeon-admin-host'); target.append(status, guides, admin);
+      let serial = 0;
+      const active = () => current() && target.isConnected;
+      async function load() {
+        const ticket = ++serial; status.textContent = '正在读取攻略与推荐队伍…';
+        try {
+          const result = await request(`/dungeons/${encodeURIComponent(scope.id)}`);
+          if (!active() || serial !== ticket) return;
+          guideView(guides, result, data, ui); status.replaceChildren();
+        } catch (error) {
+          if (!active() || serial !== ticket) return;
+          status.replaceChildren(el('span', '', '在线攻略暂时不可用；上方副本资料仍可查看。'), button(ui, '重试', load));
+        }
       }
+      identity ||= request('/admin/me').catch(() => null);
+      const management = window.WFDungeonsAdmin?.attach(admin, scope, data, ui, {current:active, identity, onSaved: (result) => {
+        if (!active()) return; serial++; status.replaceChildren(); guideView(guides, result, data, ui);
+      }});
+      await Promise.all([load(), management]);
     }
-    const management = window.WFDungeonsAdmin?.attach(admin, item, data, ui, {current, onSaved: (result) => {
-      if (!current()) return; serial++; status.replaceChildren(); guideView(guides, result, data, ui);
-    }});
-    await Promise.all([load(), management]);
+    const floors = window.WFDungeonFloors?.mount(floorHost || page, item, ui, renderGuide);
+    const ready = floors ? floors.ready : renderGuide(page, item);
+    page.append(sourceNote(ui, item.source || snapshot.source)); await ready;
     return {legacyHost, item};
   };
 })();

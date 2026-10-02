@@ -126,3 +126,12 @@
 .dungeon-editor-actions button{flex:1}
 .dungeon-gallery{grid-template-columns:1fr}
 }
+/* Floor choices remain compact and touch-sized; each panel keeps its own draft. */
+.dungeon-floors{margin-top:20px}
+.dungeon-floor-choices{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;max-width:900px;margin:12px 0 16px}
+.dungeon-floor-choice{min-height:40px;padding:7px 5px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;cursor:pointer}
+.dungeon-floor-choice[aria-pressed="true"]{background:var(--accent-dark,#138b80);border-color:var(--accent-dark,#138b80);color:var(--paper,#fff);font-weight:700}
+.dungeon-floor-choice:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.dungeon-floor-panel[hidden]{display:none!important}
+.dungeon-floor-title{margin:8px 0 4px}.dungeon-floor-description{margin:0 0 14px;font-size:.9em}
+@media(max-width:600px){.dungeon-floor-choices{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}.dungeon-floor-choice{min-height:42px;font-size:13px}.dungeon-floor-title{font-size:17px}.dungeon-floors>h2{font-size:19px}}

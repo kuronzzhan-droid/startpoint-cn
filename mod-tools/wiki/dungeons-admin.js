@@ -53,6 +53,7 @@
     const teams = new Map((result.teams || []).map((team) => [team.id, team]));
     const images = new Map([...(guide.images || []), ...(result.availableImages || [])].map((image) => [image.id, image]));
     const heading = el('div', 'dungeon-editor-heading'); heading.append(el('h2', '', '编辑攻略与推荐队伍'));
+    if (item.scopeLabel) heading.append(el('p', 'muted', `${item.title}${item.scopeLabel === '通用攻略' ? ' · 通用攻略' : ''}；切换层数会保留此处未保存的草稿。`));
     const status = el('p', 'dungeon-status'); status.setAttribute('role', 'status');
     const text = el('textarea', 'dungeon-guide-input'); text.rows = 12; text.maxLength = maxText; text.value = guide.text || '';
     text.setAttribute('aria-label', '详细攻略'); text.placeholder = '写下适用难度、机制、操作顺序及注意事项…';
@@ -193,7 +194,7 @@
   async function attach(host, item, data, ui, settings) {
     if (!window.WFCommunity?.client) return;
     let identity;
-    try {identity = await request('/admin/me');} catch {return;}
+    try {identity = await (settings.identity || request('/admin/me'));} catch {return;}
     // Legacy Access identities have no role; /admin/me has already verified their email allowlist.
     if (!settings.current() || !identity?.id || !identity.email ||
         (identity.role !== undefined && !['owner','deputy','editor'].includes(identity.role)) || identity.mustChangePassword) return;
