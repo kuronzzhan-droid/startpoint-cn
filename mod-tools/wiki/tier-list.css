@@ -1,7 +1,5 @@
 /* Personal tier board. Boundary rows are first-class drop targets. */
 .tier-page{--tier-label-width:88px;--tier-avatar-size:56px;min-width:0;max-width:100%;color:var(--ink)}
-.tier-header h1{margin:0 0 5px;font-size:26px;line-height:1.3}
-.tier-header p{margin:0;color:var(--muted);font-size:12px;line-height:1.6}
 .tier-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:7px 10px;margin:12px 0 9px;min-width:0}
 .tier-toolbar button{min-height:36px;border:1px solid var(--line);border-radius:7px;background:var(--surface);padding:7px 12px;font-size:12px}
 .tier-toolbar button:hover:not(:disabled){border-color:var(--accent-dark);color:var(--accent-dark)}
@@ -50,7 +48,6 @@
 @media(hover:hover) and (pointer:fine){.tier-avatar:hover{border-color:var(--accent-dark);box-shadow:0 2px 7px #0004;transform:translateY(-1px);z-index:1}}
 @media(max-width:640px){
   .tier-page{--tier-label-width:64px;--tier-avatar-size:44px}
-  .tier-header h1{font-size:22px}.tier-header p{font-size:11px}
   .tier-toolbar{margin-top:9px;gap:6px}.tier-toolbar button{min-height:36px;padding:6px 9px;font-size:11px}
   .tier-status{font-size:11px}.tier-board{border-radius:9px}
   .tier-row{min-height:78px}.tier-row>.tier-label{padding:8px 3px;font-size:18px;white-space:nowrap}

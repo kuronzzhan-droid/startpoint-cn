@@ -1,14 +1,14 @@
 /* Local tier board with an explicit, separately verified community submission. */
-window.renderWikiTierList = function renderWikiTierList(host, data, ui) {
+window.renderWikiTierList = function renderWikiTierList(host, data, ui, options) {
   'use strict';
+  options ||= {};
   const {el, nativeIcon} = ui;
   const characters = (data.characters || []).filter((item) => item && item.id != null);
   const ordered = [...characters].sort(window.WFCharacterOrder.compare);
   const byId = new Map(characters.map((item) => [String(item.id), item]));
   const state = window.WFTierListState.create({characters});
   const labels = ['夯', '顶级', '人上人', 'NPC', '拉完了'];
-  const page = el('div', 'tier-page'), header = el('div', 'tier-header');
-  header.append(el('h1', '', '从夯到拉'), el('p', '', '自己排一排，或分别查看大家的手动排行和角色评分榜。拖动头像，也可先点头像再点档位或分界线。'));
+  const page = el('div', 'tier-page');
   const toolbar = el('div', 'tier-toolbar'), avatarControls = el('div');
   const action = (label, callback) => {
     const button = el('button', 'secondary-button', label); button.type = 'button';
@@ -136,7 +136,7 @@ window.renderWikiTierList = function renderWikiTierList(host, data, ui) {
       event.preventDefault(); place(selected, 'pool');
     }
   });
-  page.append(header); host.replaceChildren(page);
-  community = window.WFTierListCommunity.create({host: page, data, ui, state});
+  host.replaceChildren(page);
+  community = window.WFTierListCommunity.create({host: page, data, ui, state, initialView: options.initialView});
   community.mineHost.append(toolbar, board, status, pool); render();
 };

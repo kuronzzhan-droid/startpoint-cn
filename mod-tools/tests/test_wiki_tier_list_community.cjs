@@ -5,8 +5,12 @@ const path = require('node:path');
 const vm = require('node:vm');
 const tick = () => new Promise(setImmediate);
 class Node {
-  constructor(tag, className = '', text = '') {Object.assign(this, {tag, className, ownText: String(text), children: [], events: {}, attributes: {}, disabled: false, hidden: false});}
+  constructor(tag, className = '', text = '') {
+    Object.assign(this, {tag, className, ownText: String(text), children: [], events: {}, attributes: {}, dataset: {}, disabled: false, hidden: false});
+    this.classList = {toggle: (name, on) => {const names = new Set(this.className.split(' ')); on ? names.add(name) : names.delete(name); this.className = [...names].join(' ');}};
+  }
   append(...nodes) {nodes.forEach(node => {node.parent = this; this.children.push(node);});}
+  prepend(...nodes) {nodes.forEach(node => {node.parent = this;}); this.children.unshift(...nodes);}
   replaceChildren(...nodes) {this.children.forEach(node => {node.parent = null;}); this.children = []; this.ownText = ''; this.append(...nodes);}
   get textContent() {return this.ownText + this.children.map(node => node.textContent).join('');}
   set textContent(value) {this.replaceChildren(); this.ownText = String(value);}
@@ -14,6 +18,7 @@ class Node {
   addEventListener(event, action) {this.events[event] = action;}
   get isConnected() {return Boolean(this.connected || this.parent?.isConnected);}
   all(match) {return this.children.flatMap(node => [...(match(node) ? [node] : []), ...node.all(match)]);}
+  querySelector(selector) {return this.all(node => selector.startsWith('.') ? node.className.split(' ').includes(selector.slice(1)) : node.tag === selector)[0] || null;}
   async fire(event = 'click', args = {}) {if (!this.disabled) return this.events[event]?.({target: this, preventDefault() {}, ...args});}
   focus() {this.focused = true;}
 }
@@ -51,8 +56,25 @@ function setup(handler = async pathname => pathname.endsWith('/me') ? me : aggre
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki/rating-score.js'), 'utf8'), {window});
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki/tier-list-community.js'), 'utf8'), {window, Date});
   const host = el('main'); host.connected = options.connected !== false; let localRows = rows();
-  const state = {getRows: () => JSON.parse(JSON.stringify(localRows))};
-  const controller = window.WFTierListCommunity.create({host, data, state, ui: {el, nativeIcon: (_group, value) => el('img', 'element-icon', value)}, onViewChange: value => transitions.push(value)});
+  const state = {getRows: () => JSON.parse(JSON.stringify(localRows)), assignedIds: () => new Set(Object.values(localRows).flat()), canUndo: () => false, persistenceError: () => ''};
+  // Individual voting tests explicitly start on the personal view; the entry-point test omits it.
+  const initialView = options.defaultView ? {} : {initialView: 'mine'};
+  const ui = {el, nativeIcon: (_group, value) => el('img', 'element-icon', value)};
+  let controller;
+  if (options.renderPage) {
+    window.WFCharacterOrder = {compare: (a, b) => a.id.localeCompare(b.id)};
+    window.WFTierListState = {create: () => state}; window.WFCharacterFrame = {apply() {}};
+    window.WFCharacterFilters = {create() {
+      const element = el('section', 'character-filters'), body = el('div', 'character-filter-body');
+      const searchRow = el('div', 'character-filter-search-row'); searchRow.append(el('button', 'text-button'));
+      body.append(searchRow, el('div', 'character-filter-fields')); element.append(body);
+      return {element, matches: () => true};
+    }};
+    const create = window.WFTierListCommunity.create;
+    window.WFTierListCommunity.create = args => (controller = create(args));
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../wiki/tier-list.js'), 'utf8'), {window});
+    window.renderWikiTierList(host, data, ui, options.defaultView ? undefined : initialView);
+  } else controller = window.WFTierListCommunity.create({host, data, state, ...initialView, ui, onViewChange: value => transitions.push(value)});
   return {host, controller, calls, dialogs, challenges, transitions, subscriptions, events, statsListeners, unsubscribed: () => unsubscribed,
     emitStats(snapshot) {statsSnapshot = snapshot; for (const callback of statsListeners) callback(snapshot);},
     setRows: value => {localRows = value;}, portraitsCreated: () => portraitsCreated, configCalls: () => configCalls};
@@ -60,56 +82,80 @@ function setup(handler = async pathname => pathname.endsWith('/me') ? me : aggre
 
 const siteStats = (ratingVoters = 17, tierVoters = 11, totalVoters = Math.max(ratingVoters, tierVoters)) => ({totalVoters, ratingVoters, tierVoters, onlineVisitors: 4, asOf: '2026-09-30T12:00:00.000Z', presenceWindowSeconds: 300});
 
+test('default entry shows everyone ranking and switching to mine preserves the unsubmitted local draft', async () => {
+  const x = setup(undefined, {defaultView: true, renderPage: true});
+  assert.equal(cls(x.host, 'tier-header'), undefined); assert.doesNotMatch(visibleText(x.host), /从夯到拉|自己排一排/);
+  assert.equal(x.controller.mineHost.hidden, true); assert.equal(cls(x.host, 'tier-public-view').hidden, false);
+  assert.equal(button(x.host, '大家排行').attributes['aria-selected'], 'true');
+  assert.equal(cls(x.host, 'tier-submit-bar').hidden, true);
+  await tick(); assert.equal(x.calls.length, 1); assert.equal(x.calls[0][0], '/tier-rankings');
+  assert.equal(x.challenges.length, 0); assert.equal(x.configCalls(), 0);
+  const draft = rows(); draft.tier0 = ['c1']; x.setRows(draft);
+  await button(x.host, '我的排行').fire();
+  assert.equal(x.controller.mineHost.hidden, false); assert.equal(cls(x.host, 'tier-submit-bar').hidden, false);
+  assert.match(cls(x.host, 'tier-submit-status').textContent, /本地已排 1 位角色/);
+  assert.equal(x.calls.length, 1); assert.equal(x.challenges.length, 0);
+  const personal = setup(undefined, {renderPage: true});
+  assert.equal(personal.controller.mineHost.hidden, false); assert.deepEqual(personal.calls, []);
+  assert.equal(button(personal.host, '我的排行').attributes['aria-selected'], 'true');
+});
+
 test('public participation uses distinct site statistics and keeps the same scope while filtering characters', async () => {
   const x = setup(); x.controller.setView('community'); await tick(); const summary = cls(x.host, 'tier-public-participation');
-  assert.match(summary.textContent, /全站 · 共 — 人参与.*角色评分—人.*手动排行—人.*正在统计/);
+  assert.match(summary.textContent, /参与—人.*评分—人.*手排—人.*正在统计/);
   assert.equal(x.subscriptions.length, 1); assert.equal(x.calls.length, 1);
   x.emitStats({status: 'ready', data: siteStats()});
-  assert.match(summary.textContent, /全站 · 共 17 人参与.*角色评分17人.*手动排行11人.*近 30 分钟活跃4人.*定时更新/);
-  assert.match(all(summary, 'tier-participation-count')[2].title, /最近 5 分钟.*全站.*多标签去重/);
+  assert.match(summary.textContent, /参与17人.*评分17人.*手排11人.*定时更新/);
+  assert.equal(summary.parent, cls(x.host, 'tier-public-heading'));
+  assert.equal(all(summary, 'tier-participation-count').length, 3);
+  assert.match(all(summary, 'tier-participation-count')[0].title, /合并去重的全站人数/);
+  assert.doesNotMatch(summary.textContent, /活跃|在线/);
+  assert.equal(cls(summary, 'tier-participation-status').hidden, true);
+  assert.match(summary.title, /全站参与人数.*定时更新/);
   await x.host.all(node => node.attributes['aria-label'] === '火属性排行')[0].fire();
-  assert.match(summary.textContent, /全站 · 共 17 人参与.*角色评分17人.*手动排行11人/); assert.equal(x.calls.length, 1);
+  assert.match(summary.textContent, /参与17人.*评分17人.*手排11人/); assert.equal(x.calls.length, 1);
   assert.equal(all(x.host, 'tier-public-card').length, 2);
-  x.emitStats({status: 'ready', data: {...siteStats(18, 12), onlineVisitors: 6}}); assert.match(summary.textContent, /角色评分18人.*手动排行12人.*近 30 分钟活跃6人/);
+  x.emitStats({status: 'ready', data: {...siteStats(18, 12), onlineVisitors: 6}}); assert.match(summary.textContent, /评分18人.*手排12人/);
   assert.equal(x.calls.length, 1); assert.equal(x.subscriptions.length, 1);
 });
 
 
-test('participation refresh age is separate from the online sample and supports rolling deployments', () => {
+test('participation freshness stays visible when stale, without a duplicate online sample', () => {
   const x = setup(), summary = cls(x.host, 'tier-public-participation');
   x.emitStats({status: 'ready', data: {...siteStats(), participationAsOf:'2026-09-30T11:50:00.000Z', participationStale:true}});
-  assert.match(summary.textContent, /近 30 分钟活跃4人.*参与人数更新中/);
+  assert.match(summary.textContent, /参与人数更新中/); assert.equal(cls(summary, 'tier-participation-status').hidden, false);
   assert.match(cls(summary, 'tier-participation-status').title, /参与人数统计于/);
-  x.emitStats({status: 'ready', data: {...siteStats(), presenceWindowSeconds:120}});
-  assert.match(all(summary, 'tier-participation-count')[2].title, /最近 2 分钟/);
+  x.emitStats({status: 'ready', data: {...siteStats(), onlineVisitors:undefined, presenceWindowSeconds:120}});
+  assert.doesNotMatch(summary.textContent, /活跃|在线|更新中/);
+  assert.equal(cls(summary, 'tier-participation-status').hidden, true);
   assert.equal(cls(summary, 'tier-participation-status').title, '');
 });
 
 test('total participation uses the server union count instead of adding overlapping rating and tier voters', () => {
   const x = setup(), summary = cls(x.host, 'tier-public-participation');
   const missingTotal = siteStats(); delete missingTotal.totalVoters;
-  x.emitStats({status: 'ready', data: missingTotal}); assert.match(summary.textContent, /共 — 人参与.*统计暂不可用/);
+  x.emitStats({status: 'ready', data: missingTotal}); assert.match(summary.textContent, /参与—人.*统计暂不可用/);
   x.emitStats({status: 'ready', data: siteStats(17, 11, 22)});
-  assert.match(summary.textContent, /共 22 人参与.*角色评分17人.*手动排行11人/); assert.doesNotMatch(summary.textContent, /共 28 人参与/);
-  x.emitStats({status: 'error', data: null}); assert.match(summary.textContent, /共 22 人参与.*上次统计/);
-  x.emitStats({status: 'ready', data: siteStats(0, 0, 0)}); assert.match(summary.textContent, /共 0 人参与.*定时更新/);
+  assert.match(summary.textContent, /参与22人.*评分17人.*手排11人/); assert.doesNotMatch(summary.textContent, /参与28人/);
+  x.emitStats({status: 'error', data: null}); assert.match(summary.textContent, /参与22人.*上次统计/);
+  x.emitStats({status: 'ready', data: siteStats(0, 0, 0)}); assert.match(summary.textContent, /参与0人.*定时更新/);
 });
 
 test('unknown or failed participation counts never become zero and last good totals remain marked stale', async () => {
   const x = setup(), summary = cls(x.host, 'tier-public-participation');
-  x.emitStats({status: 'error', data: null}); assert.match(summary.textContent, /评分—人.*排行—人.*统计暂不可用/);
-  x.emitStats({status: 'ready', data: siteStats(0, 0)}); assert.match(summary.textContent, /评分0人.*排行0人.*定时更新/);
+  x.emitStats({status: 'error', data: null}); assert.match(summary.textContent, /评分—人.*手排—人.*统计暂不可用/);
+  x.emitStats({status: 'ready', data: siteStats(0, 0)}); assert.match(summary.textContent, /评分0人.*手排0人.*定时更新/);
   x.emitStats({status: 'ready', data: siteStats(5, 9)});
-  x.emitStats({status: 'error', data: null}); assert.match(summary.textContent, /评分5人.*排行9人.*更新失败.*上次统计/);
-  x.emitStats({status: 'loading', data: siteStats(5, 9)}); assert.match(summary.textContent, /评分5人.*排行9人.*更新中/);
-  x.emitStats({status: 'offline', data: null}); assert.match(summary.textContent, /评分5人.*排行9人.*离线.*上次统计/);
-  x.emitStats({status: 'ready', data: siteStats(-1, '8')}); assert.match(summary.textContent, /评分5人.*排行9人.*更新失败.*上次统计/);
+  x.emitStats({status: 'error', data: null}); assert.match(summary.textContent, /评分5人.*手排9人.*更新失败.*上次统计/);
+  x.emitStats({status: 'loading', data: siteStats(5, 9)}); assert.match(summary.textContent, /评分5人.*手排9人.*更新中/);
+  x.emitStats({status: 'offline', data: null}); assert.match(summary.textContent, /评分5人.*手排9人.*离线.*上次统计/);
+  x.emitStats({status: 'ready', data: siteStats(-1, '8')}); assert.match(summary.textContent, /评分5人.*手排9人.*更新失败.*上次统计/);
 });
 
 test('offline or unavailable statistics have a short status without inventing participation', () => {
   const offline = setup(undefined, {protocol: 'file:'}), missing = setup(undefined, {stats: false});
-  assert.match(cls(offline.host, 'tier-public-participation').textContent, /评分—人.*排行—人.*离线，暂无统计/);
-  assert.match(cls(missing.host, 'tier-public-participation').textContent, /评分—人.*排行—人.*统计暂不可用/);
+  assert.match(cls(offline.host, 'tier-public-participation').textContent, /评分—人.*手排—人.*离线，暂无统计/);
+  assert.match(cls(missing.host, 'tier-public-participation').textContent, /评分—人.*手排—人.*统计暂不可用/);
   assert.deepEqual(offline.calls, []); assert.deepEqual(missing.calls, []);
 });
 
@@ -124,8 +170,8 @@ test('page leave unsubscribes immediately and late shared-stat callbacks cannot 
 test('a not-yet-inserted board can receive initial statistics and later detachment releases its subscription', () => {
   const x = setup(undefined, {connected: false}), summary = cls(x.host, 'tier-public-participation');
   assert.equal(x.unsubscribed(), 0); x.host.connected = true; x.emitStats({status: 'ready', data: siteStats()});
-  assert.match(summary.textContent, /评分17人.*排行11人/); x.host.connected = false;
-  x.emitStats({status: 'ready', data: siteStats(20, 20)}); assert.equal(x.unsubscribed(), 1); assert.match(summary.textContent, /评分17人.*排行11人/);
+  assert.match(summary.textContent, /评分17人.*手排11人/); x.host.connected = false;
+  x.emitStats({status: 'ready', data: siteStats(20, 20)}); assert.equal(x.unsubscribed(), 1); assert.match(summary.textContent, /评分17人.*手排11人/);
 });
 
 test('my view and unsent local edits do not fetch rankings, request verification or submit votes', async () => {

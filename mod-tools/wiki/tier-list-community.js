@@ -42,7 +42,7 @@
   const nextTime = (value) => `北京时间 ${new Date(value.nextVoteAt).toLocaleString('zh-CN', {
     timeZone: 'Asia/Shanghai', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
   })} 后可再次提交。`;
-  function create({host, data, ui, state, onViewChange = () => {}}) {
+  function create({host, data, ui, state, initialView = 'community', onViewChange = () => {}}) {
     const {el, nativeIcon} = ui, C = window.WFCommunity;
     const characters = data.characters || [], byId = new Map(characters.map(character => [String(character.id), character]));
     const element = el('section', 'tier-community'), tabs = el('div', 'tier-community-tabs');
@@ -74,15 +74,11 @@
     detailToggle.append(track, el('span', '', '显示评分详情'));
     publicToolbar.append(avatarHost, detailToggle, refresh);
     const participation = el('div', 'tier-public-participation'); participation.setAttribute('aria-label', '全站参与人数');
-    const participationLabel = el('span', 'tier-participation-label', '全站 · 共 — 人参与');
-    participationLabel.title = '角色评分和手动排行合并去重的全站人数，不随属性筛选变化。';
-    const ratingCount = el('strong', '', '—'), tierCount = el('strong', '', '—'), onlineCount = el('strong', '', '—');
+    const totalCount = el('strong', '', '—'), ratingCount = el('strong', '', '—'), tierCount = el('strong', '', '—');
     const participationStatus = el('small', 'tier-participation-status'); participationStatus.setAttribute('role', 'status');
-    participation.append(participationLabel);
-    let onlineItem;
-    [['角色评分', ratingCount], ['手动排行', tierCount], ['近 30 分钟活跃', onlineCount]].forEach(([label, value]) => {
+    [['参与', totalCount, '角色评分和手动排行合并去重的全站人数'], ['评分', ratingCount, '全站角色评分人数'], ['手排', tierCount, '全站手动排行人数']].forEach(([label, value, title]) => {
       const item = el('span', 'tier-participation-count'); item.append(el('span', '', label), value, el('span', '', '人'));
-      if (value === onlineCount) {onlineItem = item; item.title = '最近 30 分钟有活动的全站访客；同一浏览器多标签去重，每 30 分钟更新。';}
+      item.title = `${title}，不随属性筛选变化。`;
       participation.append(item);
     });
     participation.append(participationStatus);
@@ -91,8 +87,9 @@
     const description = el('p', 'tier-public-formula');
     const publicStatus = el('p', 'tier-public-status'); publicStatus.setAttribute('role', 'status');
     const elementFilters = el('div', 'tier-public-elements'); elementFilters.setAttribute('role', 'group'); elementFilters.setAttribute('aria-label', '排行属性');
-    const results = el('div', 'tier-public-results'), elementButtons = [];
-    dynamicHost.append(sourceTabs, publicToolbar, participation, description, elementFilters, publicStatus, results);
+    const results = el('div', 'tier-public-results'), elementButtons = [], boardHeading = el('div', 'tier-public-heading');
+    boardHeading.append(elementFilters, participation);
+    dynamicHost.append(sourceTabs, publicToolbar, description, boardHeading, publicStatus, results);
     element.append(tabs, submitBar, mineHost, dynamicHost); host.append(element);
     let view = 'mine', revision = 0, portraits, dialogOpen = false, submitted, cached, elementFilter = '', source = 'placement', showDetails = false, publicCards = [];
     let stopStats, statsDisposed = false, statsAttached = element.isConnected, lastStats;
@@ -105,19 +102,19 @@
       if (statsDisposed) return;
       if (!element.isConnected && statsAttached) {destroy(); return;}
       statsAttached ||= element.isConnected;
-      const valid = votes(snapshot.data?.totalVoters) && votes(snapshot.data?.ratingVoters) && votes(snapshot.data?.tierVoters) && votes(snapshot.data?.onlineVisitors);
+      const valid = votes(snapshot.data?.totalVoters) && votes(snapshot.data?.ratingVoters) && votes(snapshot.data?.tierVoters);
       if (valid) lastStats = snapshot.data;
       const text = (node, value) => {if (node.textContent !== value) node.textContent = value;};
-      text(participationLabel, `全站 · 共 ${lastStats ? lastStats.totalVoters : '—'} 人参与`);
+      text(totalCount, lastStats ? String(lastStats.totalVoters) : '—');
       text(ratingCount, lastStats ? String(lastStats.ratingVoters) : '—');
       text(tierCount, lastStats ? String(lastStats.tierVoters) : '—');
-      text(onlineCount, lastStats ? String(lastStats.onlineVisitors) : '—');
-      if (lastStats) onlineItem.title = `最近 ${Math.round(lastStats.presenceWindowSeconds / 60)} 分钟有活动的全站访客；同一浏览器多标签去重，每 30 分钟更新。`;
       participationStatus.title = lastStats?.participationAsOf ? `参与人数统计于 ${new Date(lastStats.participationAsOf).toLocaleString('zh-CN')}；投票变化后按请求定时汇总。` : '';
       text(participationStatus, snapshot.status === 'ready' && valid ? (lastStats.participationStale ? '参与人数更新中' : '定时更新')
         : snapshot.status === 'offline' ? (lastStats ? '离线 · 上次统计' : '离线，暂无统计')
         : snapshot.status === 'loading' ? (lastStats ? '更新中…' : '正在统计…')
         : lastStats ? '更新失败 · 上次统计' : '统计暂不可用');
+      participationStatus.hidden = snapshot.status === 'ready' && valid && !lastStats.participationStale;
+      participation.title = `全站参与人数，不随属性筛选变化。${participationStatus.title || '定时更新。'}${participationStatus.textContent}`;
     }
     window.addEventListener?.('wf-page-leave', destroy);
     paintParticipation({status: /^https?:$/.test(window.location?.protocol) ? 'loading' : 'offline'});
@@ -285,7 +282,7 @@
       });
       connect();
     }
-    submit.addEventListener('click', openSubmit); refresh.addEventListener('click', loadPublic); setView('mine');
+    submit.addEventListener('click', openSubmit); refresh.addEventListener('click', loadPublic); setView(initialView === 'mine' ? 'mine' : 'community');
     return {element, mineHost, refreshState, setView, destroy};
   }
   window.WFTierListCommunity = {create};

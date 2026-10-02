@@ -1,4 +1,4 @@
-.tier-community-tabs{display:flex;gap:5px;padding:4px;margin-top:13px;border:1px solid var(--line);border-radius:10px;background:var(--soft);width:max-content;max-width:100%}
+.tier-community-tabs{display:flex;gap:5px;padding:4px;margin-top:0;border:1px solid var(--line);border-radius:10px;background:var(--soft);width:max-content;max-width:100%}
 .tier-community-tabs button{border:0;border-radius:7px;background:transparent;color:var(--muted);padding:9px 22px;font-size:14px;font-weight:700;min-height:40px}
 .tier-community-tabs button[aria-selected="true"]{background:var(--surface);color:var(--accent-dark);box-shadow:0 1px 4px #0002}
 .tier-submit-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin-top:12px}
@@ -10,11 +10,12 @@
 .tier-ranking-source[aria-pressed="true"]{border-color:var(--accent-dark);background:var(--accent-dark);color:var(--surface)}
 .tier-ranking-source:focus-visible{outline:3px solid var(--accent-dark);outline-offset:3px}
 .tier-public-toolbar button{font-size:12px;min-height:36px}
-.tier-public-participation{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px;margin:10px 0;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:12px;line-height:1.5;min-width:0}
-.tier-participation-label,.tier-participation-status{color:var(--muted);font-size:11px}
-.tier-participation-count{display:inline-flex;align-items:baseline;gap:5px;color:var(--ink);min-width:0}
-.tier-participation-count strong{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--accent-dark);overflow-wrap:anywhere;min-width:0}
-.tier-participation-status{margin-left:auto;overflow-wrap:anywhere}
+.tier-public-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 16px;margin:9px 0;min-width:0}
+.tier-public-participation{display:flex;align-items:baseline;justify-content:flex-end;flex-wrap:wrap;gap:3px 10px;margin-left:auto;font-size:11px;line-height:1.5;min-width:0}
+.tier-participation-count{display:inline-flex;align-items:baseline;gap:3px;color:var(--muted);white-space:nowrap}
+.tier-participation-count strong{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--accent-dark)}
+.tier-participation-status{color:var(--muted);font-size:10px;overflow-wrap:anywhere}
+.tier-participation-status[hidden]{display:none}
 .tier-detail-toggle{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);padding:6px 10px;margin-left:auto}
 .tier-detail-track{display:block;flex:none;width:34px;height:20px;padding:3px;border-radius:20px;background:#839994;box-sizing:border-box}
 .tier-detail-thumb{display:block;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #143c3955}
@@ -22,7 +23,7 @@
 .tier-detail-toggle[aria-checked="true"] .tier-detail-thumb{transform:translateX(14px)}
 .tier-public-formula,.tier-public-status{font-size:12px;line-height:1.7;margin:8px 0;color:var(--muted)}
 .tier-public-status{color:var(--accent-dark)}
-.tier-public-elements{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:9px 0;max-width:660px}
+.tier-public-elements{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));flex:1 1 300px;gap:5px;max-width:660px}
 .tier-public-element{display:flex;align-items:center;justify-content:center;gap:4px;min-height:37px;min-width:0;padding:5px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--muted);font-size:12px}
 .tier-public-element img{width:18px;height:18px;object-fit:contain}.tier-public-element[aria-pressed="true"]{border-color:var(--accent-dark);color:var(--accent-dark);font-weight:700;box-shadow:inset 0 -2px var(--accent-dark)}
 .tier-public-board .tier-slots{align-items:stretch;gap:7px}
@@ -53,10 +54,10 @@
 .tier-score-placement{color:var(--accent-dark)}
 .tier-score-detail>a{justify-self:start;font-size:13px}
 @media(max-width:640px){
- .tier-community-tabs{margin-top:10px}.tier-community-tabs button{font-size:13px;padding:8px 18px}
+ .tier-community-tabs button{font-size:13px;padding:8px 18px}
  .tier-submit-bar{gap:7px;margin-top:10px}.tier-submit-status{font-size:11px}
  .tier-public-formula,.tier-public-status{font-size:11px}
- .tier-public-participation{gap:4px 12px;padding:8px 9px}.tier-participation-label{flex-basis:100%}.tier-participation-count{font-size:11px}.tier-participation-count strong{font-size:17px}
+ .tier-public-participation{gap:2px 9px;font-size:10px}.tier-participation-count strong{font-size:12px}
  .tier-public-elements{gap:3px}.tier-public-element{min-height:35px;font-size:11px;padding:4px 1px;gap:2px}.tier-public-element img{width:14px;height:14px}
  .tier-public-card{flex-basis:155px;padding:4px;gap:5px}.tier-public-card .tier-avatar{--tier-avatar-size:39px}
  .tier-public-card.is-compact .tier-avatar{--tier-avatar-size:44px}
