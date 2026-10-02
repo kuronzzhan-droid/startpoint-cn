@@ -1,13 +1,13 @@
 /* Keep mounted candidate pools and images when changing slot type or equipment target. */
 (() => {
   'use strict';
-  window.WFTeamCandidates = {create({ui, avatars, onAssign}) {
+  window.WFTeamCandidates = {create({ui, avatars, onAssign, scrollRail = true}) {
     const {el, picture, elementBadge} = ui, root = el('div', 'team-candidate-pools'), pools = new Map();
     let active = '';
     function poolFor(kind) {
       if (pools.has(kind)) return pools.get(kind);
       const viewport = el('div', 'team-candidates'); viewport.dataset.kind = kind;
-      const panel = window.WFTeamScrollRail?.wrap(viewport, ui, kind === 'character' ? '角色候选' : '武器与魂珠候选') || viewport;
+      const panel = (scrollRail && window.WFTeamScrollRail?.wrap(viewport, ui, kind === 'character' ? '角色候选' : '武器与魂珠候选')) || viewport;
       panel.hidden = true; root.append(panel);
       const pool = {viewport, panel, records:new Map(), items:null, target:'', selected:'', form:avatars?.getForm()}; pools.set(kind, pool); return pool;
     }

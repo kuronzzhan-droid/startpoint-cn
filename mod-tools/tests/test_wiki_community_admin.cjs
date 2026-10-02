@@ -4,16 +4,19 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const community = require('../wiki/community-client.js');
+const teamState = require('../wiki/team-state.js');
 const source = fs.readFileSync(path.join(__dirname,'../wiki/community-admin.js'),'utf8');
 class Node {
   constructor(tag, className = '', value = '') {
-    Object.assign(this,{tag,className,text:String(value || ''),children:[],attributes:{},events:{},value:'',hidden:false,disabled:false});
+    Object.assign(this,{tag,className,text:String(value || ''),children:[],attributes:{},dataset:{},events:{},value:'',hidden:false,disabled:false});
   }
   append(...nodes) {for (const node of nodes) {node.parent = this; this.children.push(node);}}
   replaceChildren(...nodes) {this.children.forEach((node)=>{node.parent=null;}); this.children=[]; this.append(...nodes);}
   setAttribute(key,value) {this.attributes[key]=value;}
   getAttribute(key) {return this.attributes[key];}
   addEventListener(key,fn) {this.events[key]=fn;}
+  querySelectorAll(selector) {return this.all(node=>selector.startsWith('.') ? node.className.split(' ').includes(selector.slice(1)) : node.tag===selector);}
+  querySelector(selector) {return this.querySelectorAll(selector)[0] || null;}
   async click() {if (!this.disabled) await this.events.click?.();}
   get isConnected() {return Boolean(this.root || this.parent?.isConnected);}
   get childElementCount() {return this.children.length;}
@@ -23,6 +26,8 @@ class Node {
 }
 const el=(tag,cls,text)=>new Node(tag,cls,text);
 const one=(node,cls)=>node.all((n)=>n.className.split(' ').includes(cls))[0];
+const visible=node=>!node.hidden&&(!node.parent||visible(node.parent));
+const control=(node,label)=>node.all(n=>visible(n)&&n.attributes['aria-label']===label)[0];
 const button=(node,label)=>node.all((n)=>n.tag==='button'&&n.textContent===label)[0];
 const select=(node,label)=>node.all((n)=>n.tag==='select'&&n.attributes['aria-label']===label)[0];
 const response=(data,status=200)=>({ok:status>=200&&status<300,status,json:async()=>data});
@@ -37,10 +42,12 @@ function setup(handler,options={}) {
   const {data,item}=fixture(),calls=[],host=el('main'); host.root=true;
   const fetcher=async(url,init)=>{calls.push({url,...init}); return handler ? handler(url,init,{data,item}) :
     response(url.endsWith('/config')?{enabled:true}:url.endsWith('/me')?{id:'trusted',email:'admin@example.test',role:options.role||'editor'}:{items:[item],nextCursor:''});};
-  const window={WFCommunity:community,location:{protocol:options.protocol||'https:',hostname:options.hostname||'wiki.example'},fetch:fetcher,
+  const window={WFTeamState:teamState,WFCharacterOrder:{compareTeam:(a,b)=>a.name.localeCompare(b.name)},
+    WFCharacterFilters:{create:({onChange})=>{const search=el('input');search.setAttribute('aria-label','搜索角色');search.value='';search.addEventListener('input',onChange);return {element:search,matches:item=>item.name.includes(search.value)};}},
+    WFCommunity:community,location:{protocol:options.protocol||'https:',hostname:options.hostname||'wiki.example'},fetch:fetcher,
     WFWikiData:{loadEquipment:async()=>data.equipment}, WFCommunityAdminConfirm:{ask:options.confirm || (()=>Promise.resolve(true))}};
   const context={window,AbortController,setTimeout,clearTimeout,URLSearchParams};
-  for (const file of ['community-game-codes.js','community-admin-cards.js','community-admin-editor.js']) vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki',file),'utf8'),context);
+  for (const file of ['equipment-order.js','team-equipment-filters.js','team-candidates.js','community-team-picker.js','community-game-codes.js','community-admin-cards.js','community-admin-editor.js']) vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki',file),'utf8'),context);
   vm.runInNewContext(source,context);
   return {host,window,data,item,calls,start:()=>window.renderWikiCommunityAdmin(host,data,{el})};
 }
@@ -73,19 +80,18 @@ test('local development login requires an actual cookie endpoint response before
   await button(x.host,'本机测试：登录测试管理员').click();
   assert.match(x.host.textContent,/本机测试身份 · dev-admin@example.test/);
 });
-test('editing uses bounded searchable candidates and preserves original data until saving',async()=>{
-  const x=setup(); await x.start(); const before=JSON.stringify(x.data);
-  await button(x.host,'编辑队伍').click();
-  const form=one(x.host,'admin-edit-form');
-  assert.equal(form.all((n)=>n.className==='admin-slot').length,12);
-  assert.equal(select(form,'主位 1').children.length,61);
-  const search=form.all((n)=>n.attributes['aria-label']==='搜索主位 1')[0];
-  search.value='角色85'; search.events.input();
-  assert.equal(select(form,'主位 1').children.length,3);
-  select(form,'主位 1').value='c85'; select(form,'主位 1').events.change();
-  assert.equal(JSON.stringify(x.data),before);
-  assert.equal(select(form,'魂珠 1').children.length,2);
+test('editing uses searchable portrait candidates and preserves original data until saving',async()=>{
+  const x=setup();await x.start();const before=JSON.stringify(x.data);
+  await button(x.host,'编辑队伍').click();const form=one(x.host,'admin-edit-form');
+  assert.equal(form.all(n=>n.className==='community-picker-slot').length,12);
+  assert.equal(form.querySelectorAll('.team-candidate').length,0);
+  await control(form,'调整1号主位：角色1').click();
+  const search=control(form,'搜索角色');search.value='角色85';search.events.input();
+  assert.equal(form.querySelectorAll('.team-candidate').length,1);await control(form,'选择角色85').click();
+  assert.ok(control(form,'调整1号主位：角色85'));assert.equal(JSON.stringify(x.data),before);
+  await control(form,'调整1号魂珠：空位').click();assert.equal(control(form,'选择武器2魂珠').disabled,true);
 });
+
 test('revision conflicts preserve entered values and lock repeated saves until explicit reload',async()=>{
   const x=setup((url,init,{item})=>init.method==='PATCH'?response({error:'edit_conflict'},409):
     response(url.endsWith('/config')?{enabled:true}:url.endsWith('/me')?{id:'a',email:'a@b.test'}:{items:[item],nextCursor:''}));
@@ -106,7 +112,7 @@ test('saving edited slots and hidden state sends the original revision with same
     return response(url.endsWith('/config')?{enabled:true}:url.endsWith('/me')?{id:'a',email:'a@b.test'}:{items:[item],nextCursor:''});
   });
   await x.start(); await button(x.host,'编辑队伍').click(); const form=one(x.host,'admin-edit-form');
-  select(form,'主位 1').value='c4'; select(form,'主位 1').events.change();
+  await control(form,'调整1号主位：角色1').click();await control(form,'选择角色4').click();
   const meta=one(form,'admin-edit-meta'); meta.all((n)=>n.tag==='select')[1].value='hidden';
   select(form,'配队分类').value='原版毕业队';
   select(form,'玩法分区').value='five-boss';
@@ -118,8 +124,7 @@ test('saving edited slots and hidden state sends the original revision with same
   assert.match(one(x.host,'admin-notice').textContent,/已保存.*当前版本 5/);
 });
 test('invalid duplicate characters and missing damage selections never reach the write endpoint',async()=>{
-  const x=setup(); await x.start(); await button(x.host,'编辑队伍').click(); const form=one(x.host,'admin-edit-form');
-  select(form,'主位 1').value='c2'; select(form,'主位 1').events.change();
+  const x=setup();x.item.team.main[0]='c2';await x.start();await button(x.host,'编辑队伍').click();const form=one(x.host,'admin-edit-form');
   await form.events.submit({preventDefault(){}}); assert.match(one(form,'admin-edit-status').textContent,/重复/);
   form.all((n)=>n.type==='checkbox').forEach((node)=>{node.checked=false;});
   await form.events.submit({preventDefault(){}}); assert.match(one(form,'admin-edit-status').textContent,/至少选择/);
@@ -140,7 +145,7 @@ test('administrators can filter categories and preserve the empty legacy categor
   assert.equal(new URL(x.calls.at(-1).url,'https://wiki.example').searchParams.get('category'),'uncategorized');
   await button(x.host,'编辑队伍').click();assert.equal(select(x.host,'配队分类').value,'');
   assert.equal(select(x.host,'配队分类').children[0].textContent,'未分类（历史队伍）');
-  assert.equal(select(x.host,'玩法分区').value,'');assert.equal(select(x.host,'玩法分区').children[0].textContent,'其他');
+  assert.equal(select(x.host,'玩法分区').value,'');assert.equal(select(x.host,'玩法分区').children.find(node=>node.value==='').textContent,'其他');
 });
 
 test('administrators filter gameplay independently and reject invalid section edits before a request',async()=>{
@@ -183,9 +188,14 @@ test('unsaved normalized form values block code publication for all metadata, da
     assert.equal(make.disabled,true,label);await make.events.click();control.value=before;form.events.input();assert.equal(make.disabled,false,label);
   }
   for(const control of form.all((node)=>node.type==='checkbox')) {const before=control.checked;control.checked=!before;form.events.change();assert.equal(make.disabled,true);control.checked=before;form.events.change();assert.equal(make.disabled,false);}
-  for(const label of ['主位','合击','武器','魂珠']) for(let index=1;index<=3;index++) {
-    const control=select(form,`${label} ${index}`),before=control.value;control.value=label==='主位'||label==='合击'?'c4':'w2';form.events.change();
-    assert.equal(make.disabled,true,`${label} ${index}`);await make.events.click();control.value=before;form.events.change();assert.equal(make.disabled,false);
+  for(const [group,label] of [['main','主位'],['unison','合击'],['weapon','装备'],['soul','魂珠']]) for(let index=1;index<=3;index++) {
+    const before=x.item.team[group][index-1],character=group==='main'||group==='unison';
+    const target=form.all(node=>node.attributes['aria-label']?.startsWith(`调整${index}号${label}：`))[0];await target.click();
+    await control(form,character?'选择角色4':group==='soul'?'选择武器1魂珠':'选择武器2').click();
+    assert.equal(make.disabled,true,`${label} ${index}`);await make.events.click();
+    if (before) await control(form,character?`选择角色${before.slice(1)}`:`选择武器${before.slice(1)}${group==='soul'?'魂珠':''}`).click();
+    else await button(form,'清空此位').click();
+    assert.equal(make.disabled,false);
   }
   const title=form.all((node)=>node.attributes['aria-label']==='队伍标题')[0];title.value+='  ';form.events.input();assert.equal(make.disabled,false);
   assert.equal(x.calls.filter((call)=>call.method==='POST').length,0);assert.doesNotMatch(one(form,'admin-dirty-status').textContent,/未保存/);
