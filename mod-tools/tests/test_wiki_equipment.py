@@ -108,14 +108,23 @@ class EquipmentTests(unittest.TestCase):
         self.assertEqual(first["enhancement"]["initialFinalEffects"], ["自身 攻击力 20%"])
         source.verify_unchanged.assert_called_once()
 
-    def test_current_party_policy_counts_souls_and_excludes_paradox_from_curses(self):
-        root = Path(__file__).resolve().parents[2]
-        policy = equipment.party_rules((root / "client-patch/equipment-rules/rules.py").read_bytes())
+    def assert_party_policy_counts_souls_and_excludes_paradox_from_curses(self, raw):
+        policy = equipment.party_rules(raw)
         self.assertEqual(policy["curseExclusion"]["threshold"], 2)
         self.assertFalse(policy["curseExclusion"]["paradoxIncluded"])
         self.assertTrue(policy["paradoxDecay"]["includesSouls"])
         self.assertTrue(policy["paradoxDecay"]["excludeSelf"])
         self.assertEqual(policy["paradoxDecay"]["offAtOtherCount"], 4)
+
+    def test_party_policy_parser_counts_souls_and_excludes_paradox_from_curses(self):
+        fixture = Path(__file__).parent / "fixtures/wiki/equipment_rules.py.txt"
+        self.assert_party_policy_counts_souls_and_excludes_paradox_from_curses(fixture.read_bytes())
+
+    def test_current_client_party_policy_matches_guide(self):
+        source = Path(__file__).resolve().parents[2] / "client-patch/equipment-rules/rules.py"
+        if not source.is_file():
+            self.skipTest("可选集成校验需要匹配版本的完整客户端补丁源码")
+        self.assert_party_policy_counts_souls_and_excludes_paradox_from_curses(source.read_bytes())
 
 
 if __name__ == "__main__":

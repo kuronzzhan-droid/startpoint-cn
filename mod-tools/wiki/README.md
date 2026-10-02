@@ -25,7 +25,13 @@
 
 ## 导出与打开
 
-在仓库根目录执行（Python 环境需有 Pillow，复用现有 MOD 工具依赖）：
+公开源码不包含游戏资源、生产数据库、账号或本机配置。干净克隆可运行下文的测试夹具，
+但不能直接重新生成完整站点媒体。完整导出需将 Wiki 工具用于匹配版本的完整游戏工作区，
+其中包括有效的本地 profile/store、官方比较归档、装备登记与客户端规则，以及五重决战源码和配置。
+`wf_wiki.py` 从工具目录的上一级读取游戏工作区，目前没有 `--repo` 参数。
+仅部署网页与社区服务时，可使用已获授权并核验过的导出包，无需复制游戏服务端实现到静态站点。
+
+在完整游戏工作区的仓库根目录执行（Python 环境需有 Pillow，复用现有 MOD 工具依赖）：
 
 ```powershell
 python -X utf8 mod-tools/wf_wiki.py --output D:/WF/out/MOD角色Wiki/site
@@ -100,4 +106,6 @@ node --test mod-tools/wiki-community/tests/*.test.mjs
 
 完整前端聚焦测试：PowerShell 可使用 `node --test (Get-ChildItem mod-tools/tests/test_wiki_*.cjs).FullName`。
 社区本地测试需要 Node.js 24 的 `node:sqlite`；依赖 workerd 的检查需显式指定已安装的 Miniflare 路径。
+装备规则和五重奖励的解析测试使用 `../tests/fixtures/wiki/` 中的最小资料，不执行客户端补丁或服务端代码。
+若工作区带有对应游戏源码，还会校验当前规则与说明一致；缺少时只跳过这两项集成校验，解析测试仍会执行。
 这些检查不读取或修改正式数据库，也不替代真实手机和正式部署后的验收。

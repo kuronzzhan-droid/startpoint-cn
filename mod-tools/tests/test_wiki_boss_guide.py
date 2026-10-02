@@ -55,8 +55,7 @@ class BossGuideTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "试炼门槛变化"):
                 verify_trials(Mock(), boss)
 
-    def test_current_reward_rates_and_manual_exceptions(self):
-        raw = (self.repo / "src/multi/five-boss/rewards.ts").read_text(encoding="utf8")
+    def assert_reward_rates_and_manual_exceptions(self, raw):
         names = {str(key): str(key) for key in [10000144, 10000145, 10000146, 10000147, 10000310]}
         result = reward_text(raw, names)
         self.assertIn("60%", result[0]["description"])
@@ -66,6 +65,16 @@ class BossGuideTests(unittest.TestCase):
         self.assertIn("可能重复", result[-1]["description"])
         with self.assertRaisesRegex(ValueError, "公式已变化"):
             reward_text(raw.replace("amount: 10 * input.rewardMultiplier", "amount: 20 * input.rewardMultiplier"), names)
+
+    def test_reward_parser_rates_and_manual_exceptions(self):
+        fixture = Path(__file__).parent / "fixtures/wiki/five_boss_rewards.ts.txt"
+        self.assert_reward_rates_and_manual_exceptions(fixture.read_text(encoding="utf8"))
+
+    def test_current_server_reward_rates_match_guide(self):
+        source = self.repo / "src/multi/five-boss/rewards.ts"
+        if not source.is_file():
+            self.skipTest("可选集成校验需要匹配版本的完整游戏服务端源码")
+        self.assert_reward_rates_and_manual_exceptions(source.read_text(encoding="utf8"))
 
 
 if __name__ == "__main__":
