@@ -2,7 +2,7 @@
 ((root)=>{
  'use strict';
  function create({content,Audio=root.Audio,Image=root.Image,now=()=>Date.now(),random=Math.random,onFailure=()=>{},muted=false,volume=.65}){
-  let dead=false,paused=false,current=null,queue=[],epoch=0;
+  let dead=false,paused=false,current=null,queue=[],epoch=0,reusable=null,voiceToken=0;
   const recent=new Set(),lastPick=new Map(),deployAt=new Map(),failed=new Set(),images=new Map(),se=new Set(),seAt=new Map();
   const active=()=>!dead&&!paused&&!muted;
   function release(audio){audio.onended=null;audio.onerror=null;audio.pause();audio.removeAttribute?.('src');audio.load?.();}
@@ -12,9 +12,9 @@
    const url=choices[Math.min(choices.length-1,Math.floor(random()*choices.length))];lastPick.set(key,url);return url;
   }
   function pump(){if(!active()||current)return;queue=queue.filter(item=>now()-item.at<=2000);const item=queue.shift();if(!item)return;
-   const generation=epoch,audio=new Audio(item.url);current=audio;audio.volume=volume;
-   const done=()=>{if(dead||generation!==epoch||current!==audio)return;release(audio);current=null;pump();};
-   const fail=()=>{if(generation!==epoch||dead)return;failed.add(item.url);onFailure('声音暂未播放，可点击声音按钮重试');done();};
+   const generation=epoch,token=++voiceToken,audio=reusable||new Audio();reusable=audio;audio.src=item.url;current=audio;audio.volume=volume;
+   const done=()=>{if(dead||generation!==epoch||token!==voiceToken||current!==audio)return;release(audio);current=null;pump();};
+   const fail=()=>{if(generation!==epoch||dead||token!==voiceToken)return;failed.add(item.url);onFailure('声音暂未播放，可点击声音按钮重试');done();};
    audio.onended=done;audio.onerror=fail;try{const promise=audio.play();promise?.catch(fail);}catch{fail();}
   }
   function soundEffect(id,cue){if(!active()||!Audio)return;const url=choose(id,cue,content.media[id]?.seCues?.[cue]);if(!url||se.size>=3||now()-(seAt.get(url)??-Infinity)<250)return;
@@ -38,9 +38,14 @@
     cancel=()=>{done();img.removeAttribute?.('src');};img.onload=done;img.onerror=()=>{if(!dead&&generation===epoch)onFailure('部分像素图未载入，仍可继续战斗');done();};img.src=url;
    });images.set(url,{promise,cancel});return promise;}));
   }
-  return {deploy,handle,preload,stop,sprite:(id,action='idle')=>content.media[id]?.actions[action],
+  function unlock(){if(!Audio||dead||muted||current)return;reusable||=new Audio();
+   // A silent PCM sample unlocks this same HTMLAudioElement during the user's click.
+   const token=++voiceToken,audio=reusable;audio.src='data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YQIAAACAgA==';audio.volume=volume;
+   try{audio.play()?.then(()=>{if(!dead&&token===voiceToken&&!current)release(audio);}).catch(()=>{if(!dead&&token===voiceToken)onFailure('点击声音按钮开启播放');});}catch{onFailure('点击声音按钮开启播放');}
+  }
+  return {deploy,handle,preload,stop,unlock,sprite:(id,action='idle')=>content.media[id]?.actions[action],
    setPaused(value){paused=value;if(value)stop();},setMuted(value){muted=value;if(value)stop();},setVolume(value){volume=Math.max(0,Math.min(1,Number(value)||0));if(current)current.volume=volume;},
-   retry(){failed.clear();},destroy(){dead=true;stop();for(const entry of images.values())entry.cancel();images.clear();recent.clear();deployAt.clear();lastPick.clear();seAt.clear();},
+   retry(){failed.clear();unlock();},destroy(){dead=true;stop();if(reusable)release(reusable);reusable=null;for(const entry of images.values())entry.cancel();images.clear();recent.clear();deployAt.clear();lastPick.clear();seAt.clear();},
    inspect:()=>({queued:queue.length,active:Number(!!current)+se.size,images:images.size,dead})};
  }
  const api={create};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.WFBattleMedia=api;

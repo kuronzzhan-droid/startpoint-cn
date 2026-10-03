@@ -37,3 +37,4 @@ test('enemy reselects a living nearest ally if the warned target dies before its
  s.units=[{id:1,x:2.5,y:3,hp:100,maxHp:100,statuses:[]},{id:2,x:3,y:3,hp:100,maxHp:100,statuses:[]}];
  W.advance(s);s.units[0].hp=0;s.tick=16;W.advance(s);assert.equal(s.units[1].hp,65);
 });
+test('enemy maintained slow ends when its caster dies',()=>{const s=M.create(F.options()),enemy=s.enemies[0];enemy.statuses=[{type:'slow',ratio:.3,until:160,requiresCasterAlive:true,sourceId:999}];W.advance(s);assert.deepEqual(enemy.statuses,[]);});

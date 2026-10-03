@@ -53,7 +53,7 @@
  function advance(s){
   const events=[];if(!s.rageWarned&&s.tick-(s.waveStartedTick||0)>=1740){s.rageWarned=true;events.push(emit(s,'rage-warning'));}
   for(const e of s.enemies){
-   if(e.hp<=0)continue;e.statuses=(e.statuses||[]).filter(b=>b.until>s.tick);
+   if(e.hp<=0)continue;e.statuses=(e.statuses||[]).filter(b=>b.until>s.tick&&(!b.requiresCasterAlive||s.units.some(u=>u.id===b.sourceId&&u.hp>0)));
    if(e.pending){if(e.pending.due<=s.tick){resolve(s,e,e.pending,events);e.pending=null;}else continue;}
    if(e.hp<=0)continue;
    const target=nearest(s,e);

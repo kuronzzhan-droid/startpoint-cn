@@ -59,8 +59,9 @@ test('corrupt, future, unknown-id and invalid finite saves return safe defaults 
   const good=saved(disk);
   const invalid=[null,{}, {...good,schema:2}, {...good,squad:['missing']}, {...good,squad:['a','a']},
     {...good,settings:{muted:false,volume:2}}, {...good,endless:{bestWave:1e7,bestKills:0}},
+    {...good,modified:{settings:-1,squad:0}}, {...good,modified:{settings:Infinity,squad:0}},
     {...good,campaign:{unknown:{completed:true,bestTime:1}}}];
-  for(const raw of ['{','',JSON.stringify('saved'),...invalid.map(JSON.stringify)]) {
+  for(const raw of ['{','',' '.repeat(65537),JSON.stringify('saved'),...invalid.map(JSON.stringify)]) {
     disk.values.set(key,raw);const next=create(disk),before=disk.writes(),result=next.read();
     assert.equal(result.ok,false);assert.ok(result.error);assert.deepEqual(result.value.squad,[]);
     assert.equal(next.writeSquad(['b']).ok,false);
