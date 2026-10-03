@@ -1,14 +1,17 @@
 /* Pure battle state. Rendering and network callbacks never own these transitions. */
 ((root) => {
   'use strict';
+  const Effects=typeof module!=='undefined'&&module.exports?require('./battle-effects.js'):root.WFBattleEffects;
+  const Waves=typeof module!=='undefined'&&module.exports?require('./battle-waves.js'):root.WFBattleWaves;
   const emit=(s,type,extra={})=>({id:s.nextEventId++,tick:s.tick,type,...extra});
   const live=e=>e.hp>0;
   function create({content,squad,mode='campaign',stageId}) {
     if(!content?.characters||!Array.isArray(squad)||squad.length!==6||new Set(squad).size!==6
       ||squad.some(id=>!content.characters[id])||!['campaign','endless'].includes(mode)
       ||!content.stages?.some(stage=>stage.id===stageId))throw new Error('请选择六位不同的 MOD 角色和有效关卡');
-    return {content,squad:[...squad],mode,stageId,status:'running',tick:0,time:0,energy:60,baseHp:100,
+    const state={content,squad:[...squad],mode,stageId,status:'running',tick:0,time:0,energy:60,baseHp:100,
       wave:1,units:[],enemies:[],effects:[],coffins:[],lastCommandId:0,nextEntityId:1,nextEventId:1,kills:0,result:null};
+    Waves.spawn(state);return state;
   }
   function canDeploy(s,characterId,col,row) {
     if(s.status!=='running'||!s.squad.includes(characterId))return '角色不可部署';
@@ -33,7 +36,15 @@
       s.units.push(unit);s.energy-=def.stats.deployCost;
       return {ok:true,events:[emit(s,'deploy',{entityId:unit.id,characterId:unit.characterId,position:{x:unit.x,y:unit.y}})]};
     }
-    return fail('技能尚不可用');
+    if(c.type==='cast') {
+      const u=s.units.find(u=>u.id===c.unitId&&live(u));if(!u)return fail('角色已离场');
+      const skill=s.content.characters[u.characterId].skill;
+      if(u.readyAtTick>s.tick)return fail('技能冷却中');if(s.energy<skill.cost)return fail('能量不足');
+      const plan=Effects.planCast(s,u.id);if(!plan)return fail('没有有效目标');
+      s.energy-=skill.cost;u.readyAtTick=s.tick+Math.round(skill.cooldown*20);u.readyAnnounced=false;
+      return {ok:true,events:Effects.startCast(s,plan)};
+    }
+    return fail('操作不可用');
   }
   function cleanup(s) {
     const events=[];
@@ -50,10 +61,11 @@
     if(s.status!=='running')return [];
     s.tick++;s.time=s.tick/20;s.energy=Math.min(120,Math.round((s.energy+.15)*100)/100);
     const events=cleanup(s);
+    events.push(...Effects.advance(s),...cleanup(s),...Waves.advance(s),...cleanup(s));
     for(const c of s.coffins.filter(c=>c.releaseAtTick<=s.tick))events.push(emit(s,'returned',{characterId:c.characterId}));
     s.coffins=s.coffins.filter(c=>c.releaseAtTick>s.tick);
     for(const u of s.units)if(s.tick>=u.readyAtTick&&!u.readyAnnounced){u.readyAnnounced=true;events.push(emit(s,'ready',{entityId:u.id,characterId:u.characterId}));}
-    if(s.baseHp<=0) {s.baseHp=0;s.status='lost';s.result={mode:s.mode,stageId:s.stageId,won:false,wave:s.wave,kills:s.kills,time:s.time};events.push(emit(s,'result',{value:s.result}));}
+    events.push(...Waves.progress(s));
     return events;
   }
   const api={create,dispatch,advance,canDeploy,cleanup,emit,setPaused(s,value){if(['running','paused'].includes(s.status))s.status=value?'paused':'running';}};
