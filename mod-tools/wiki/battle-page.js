@@ -12,9 +12,18 @@
   const toolbar=el('div','battle-toolbar'),area=el('div','battle-area'),notice=el('p','battle-notice');notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');
   box.append(header,toolbar,notice,area);host.replaceChildren(box);
   const store=root.WFBattleStorage.create({characterIds:Object.keys(content.characters),stageIds:content.stages.map(s=>s.id)});
-  let state=null,view=null,input=null,media=null,clock=null,selection=null,choice=null,dead=false,dialog=null,lastOptions=null,settled=false;
+  let state=null,view=null,input=null,media=null,clock=null,selection=null,choice=null,dead=false,dialog=null,lastOptions=null,settled=false,lastNoticeTick=-Infinity;
   const button=(label,action,cls='secondary-button')=>{const node=el('button',cls,label);node.type='button';node.addEventListener('click',action);return node;};
-  const message=text=>{if(!dead)notice.textContent=text;};
+  const message=(text,announce=true)=>{if(dead)return;if(notice.textContent!==text){notice.setAttribute('aria-live',announce?'polite':'off');notice.textContent=text;notice.title=text;}lastNoticeTick=state?.tick??-Infinity;};
+  function eventNotice(events){
+   const fallen=events.filter(e=>e.type==='death'),returned=events.filter(e=>e.type==='returned'),ready=events.filter(e=>e.type==='ready');
+   const names=list=>[...new Set(list.map(e=>content.characters[e.characterId]?.name||'角色'))].join('、');
+   if(fallen.length)message(`${names(fallen)}倒下 · 棺材占格20秒，复归后可再部署`);
+   else if(state.tick-lastNoticeTick>=80){
+    if(returned.length)message(`${names(returned)}已复归 · 选择头像重新部署`);
+    else if(ready.length)message(`${names(ready)}技能就绪 · 点击头像发动`);
+   }
+  }
   const resourceFailure=text=>{retry.hidden=false;message(text);};
   const ask=(text,title='离开战斗？')=>root.WFCommunityAdminConfirm.ask(text,{title,confirmLabel:'确定',cancelLabel:'继续当前战斗'});
   function pause(reason='战斗已暂停'){
@@ -46,11 +55,12 @@
    '阵亡后留下棺材并占格 20 秒。倒计时结束后需要重新支付部署费，不会自动复活。',
    '敌人从上方接近，攻击身边最近角色；冲到底部会攻击据点。清空一波后休息 5 秒。关卡共三波，无尽逐波增强。',
    '暂停或切到后台不会推进战斗。阵容、最佳成绩只存本机；战斗不向社区上传记录。声音和像素资源按需下载。']));
-  const restart=button('重开',async()=>{if(!lastOptions)return;const wasRunning=state?.status==='running';pause();if(!state||state.result||await ask('放弃本场进度，使用当前六人阵容重新开始？','重新开始？'))begin(lastOptions);else if(wasRunning)resume();});
-  const change=button('换阵容',async()=>{const wasRunning=state?.status==='running';pause();if(!state||state.result||await ask('放弃本场进度并返回选择阵容？','重新选择？'))prepare();else if(wasRunning)resume();});
-  toolbar.append(pauseButton,sound,volume,help,restart,change,retry);
+  const restart=button('重开',async()=>{more.open=false;if(!lastOptions)return;const wasRunning=state?.status==='running';pause();if(!state||state.result||await ask('放弃本场进度，使用当前六人阵容重新开始？','重新开始？'))begin(lastOptions);else if(wasRunning)resume();});
+  const change=button('换阵容',async()=>{more.open=false;const wasRunning=state?.status==='running';pause();if(!state||state.result||await ask('放弃本场进度并返回选择阵容？','重新选择？'))prepare();else if(wasRunning)resume();});
+  const more=el('details','battle-more'),moreTitle=el('summary','','更多'),morePanel=el('div','battle-more-panel'),volumeLabel=el('label','battle-volume','音量');volumeLabel.append(volume);morePanel.append(volumeLabel,restart,change);more.append(moreTitle,morePanel);
+  toolbar.className+=' battle-main-toolbar';toolbar.append(pauseButton,sound,help,more,retry);
   function stopSession(){clock?.destroy();input?.destroy();media?.destroy();view?.destroy();selection?.destroy();clock=input=media=view=selection=null;choice=null;closeDialog();}
-  function prepare(){stopSession();state=null;pauseButton.hidden=restart.hidden=change.hidden=true;area.replaceChildren();
+  function prepare(){stopSession();state=null;more.open=false;pauseButton.hidden=restart.hidden=change.hidden=true;area.replaceChildren();
    selection=root.WFBattleSelection.mount({host:area,content,ui,store,onStart:begin,onInspect:inspect});applySettings(store.read().value.settings);message('选择六位角色，守住草地尽头的据点。');}
   function select(value){choice=choice?.characterId===value.characterId?null:value;view.setSelection(choice);message(choice?`选择空格部署 ${content.characters[choice.characterId].name}`:'已取消选择');}
   function selectUnit(unitId){if(state?.status!=='running')return;const unit=state.units.find(u=>u.id===unitId&&u.hp>0);if(!unit)return;
@@ -70,7 +80,7 @@
    if(state.mode==='endless')result.append(el('p','',`本机最高：第 ${saved.value.endless.bestWave} 波`));
    result.append(button('再来一次',()=>begin(lastOptions),'primary-button'),button('选择阵容',prepare));area.prepend(result);message(saved.ok?'成绩已保存在本机':saved.error);}
   function begin(options){if(dead)return;stopSession();lastOptions={...options,squad:[...options.squad]};state=root.WFBattleModel.create({content,...lastOptions});settled=false;
-   area.replaceChildren();pauseButton.hidden=restart.hidden=change.hidden=false;pauseButton.textContent='暂停';
+   area.replaceChildren();more.open=false;pauseButton.hidden=restart.hidden=change.hidden=false;pauseButton.textContent='暂停';
    media=root.WFBattleMedia.create({content,...store.read().value.settings,onFailure:resourceFailure});media.unlock();
    view=root.WFBattleRender.create({host:area,content,ui,onFailure:resourceFailure,onCast:unitId=>command({type:'cast',unitId},'技能已发动 · 不消耗公共能量'),
     onRecall:unitId=>command({type:'recall',unitId},'已回收 · 保留生命与充能，再部署时继续'),onInspect:unitId=>{const unit=state.units.find(u=>u.id===unitId&&u.hp>0);if(unit)inspect(content.characters[unit.characterId]);}});view.draw(state);
@@ -78,9 +88,9 @@
    input=root.WFBattleInput.create({host:area,board:view.board,canSelect:value=>state.status==='running'&&!state.units.some(u=>u.characterId===value.characterId)&&!state.coffins.some(c=>c.characterId===value.characterId),
     onVoice:id=>media.deploy(id),onSelect:select,onDrop:execute,onCell:cellClick,onUnit:selectUnit,onCancel:()=>{choice=null;view.setSelection(null);},onPreview:(value,cell)=>{
      if(!value||!cell){view.setSelection(choice);return false;}const reason=root.WFBattleModel.canDeploy(state,value.characterId,cell.col,cell.row);
-     view.setSelection({...value,cell,valid:!reason});message(reason||'松手部署');return !reason;
+     view.setSelection({...value,cell,valid:!reason});message(reason||'松手部署',false);return !reason;
     }});
-   clock=root.WFBattleClock.create({step:()=>{const events=root.WFBattleModel.advance(state);media.handle(events);view.draw(state,events);
+   clock=root.WFBattleClock.create({step:()=>{const events=root.WFBattleModel.advance(state);media.handle(events);view.draw(state,events);eventNotice(events);
     if(events.some(e=>e.type==='wave'))loadCurrent();if(events.some(e=>e.type==='rage-warning'))message('敌人即将狂暴，攻击会逐渐增强');if(state.result)finish();},
     // Native WebP animates independently. Tick/input/resize draws avoid duplicate work at 120+ Hz.
     render:()=>{},onLag:()=>pause('运行出现延迟，已自动暂停。点击继续。')});

@@ -43,3 +43,21 @@ test('character details describe only supported refund ratio and optional trigge
  character.skill.refund={ratio:.3,ct:15,limit:3};const limited=details();assert.match(limited,/施技后回槽 30% · 回槽触发冷却 15 秒 · 每局最多触发 3 次/);
  page.destroy();assert.equal(document.all(n=>n.tag==='dialog').length,0);
 });
+
+test('battle notices summarize state changes without repeat tick or drag announcements, keeping media events intact',()=>{
+ const window=new Node('window'),document=new Node('document'),host=new Node('main');document.body=new Node('body');document.append(document.body);document.body.append(host);
+ const characters={a:{name:'甲'},b:{name:'乙'}},content={characters,stages:[{id:'fire'}],media:{a:{},b:{}}};let selection,input,clock,state,events=[];const delivered=[];
+ Object.assign(window,{WF_BATTLE_CONTENT:content,WFNavigationGuard:{register:()=>()=>{}},WFBattleStorage:{create:()=>({read:()=>({value:{settings:{muted:false,volume:.65}}}),destroy(){}})},
+  WFBattleSelection:{mount:args=>{selection=args;return{destroy(){}};}},WFBattleModel:{create:()=>state={tick:0,status:'running',squad:['a','b'],units:[],enemies:[],coffins:[]},canDeploy:()=>'',advance:s=>{s.tick++;return events;}},
+  WFBattleMedia:{create:()=>({unlock(){},preload(){},setMuted(){},setVolume(){},handle:batch=>delivered.push(batch),destroy(){}})},
+  WFBattleRender:{create:()=>({draw(){},setSelection(){},destroy(){}})},WFBattleInput:{create:args=>{input=args;return{destroy(){}};}},WFBattleClock:{create:args=>{clock=args;return{start(){},destroy(){}};}}
+ });
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki/battle-page.js'),'utf8'),{window,document});const page=window.WFBattlePage.render(host,null,{el:(...args)=>new Node(...args)});selection.onStart({squad:['a','b']});
+ const notice=host.all(n=>n.className==='battle-notice')[0],descriptor=Object.getOwnPropertyDescriptor(Node.prototype,'textContent');let writes=0;
+ Object.defineProperty(notice,'textContent',{get:()=>descriptor.get.call(notice),set:value=>{writes++;descriptor.set.call(notice,value);}});
+ input.onPreview({characterId:'a'},{col:0,row:0});input.onPreview({characterId:'a'},{col:0,row:1});assert.equal(writes,1);assert.equal(notice.attributes['aria-live'],'off');
+ state.tick=100;events=[{type:'ready',characterId:'a'},{type:'ready',characterId:'b'}];clock.step();assert.match(notice.textContent,/甲、乙技能就绪/);assert.equal(notice.attributes['aria-live'],'polite');assert.equal(writes,2);assert.equal(delivered.at(-1),events);
+ clock.step();assert.equal(writes,2);events=[{type:'damage',characterId:'a'}];clock.step();assert.equal(writes,2);
+ events=[{type:'death',characterId:'a'}];clock.step();assert.match(notice.textContent,/甲倒下.*20秒/);assert.equal(writes,3);assert.equal(delivered.at(-1),events);
+ state.tick+=80;events=[{type:'returned',characterId:'a'}];clock.step();assert.match(notice.textContent,/甲已复归/);assert.equal(writes,4);page.destroy();
+});

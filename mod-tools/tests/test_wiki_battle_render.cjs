@@ -26,6 +26,7 @@ function setup(width=320,dpr=3,callbacks={}){
  const state={squad:Object.keys(content.characters),content,status:'running',tick:0,time:0,energy:60,baseHp:100,wave:1,mode:'campaign',stageId:'fire',units:[],enemies:[],coffins:[]};
  const unit=(id=1,characterId='c0')=>({id,characterId,x:2.5,y:4.5,col:2,row:4,hp:90,maxHp:100,readyAtTick:20,statuses:[]});
  const enemy=(id=10,rank='boss')=>({id,characterId:'c1',x:2.5,y:1.5,hp:200,maxHp:400,rank,statuses:[]});
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../wiki/battle-vfx.js'),'utf8'),{window,document});
  if(fs.existsSync(file))vm.runInNewContext(fs.readFileSync(file,'utf8'),{window,document});
  assert.equal(typeof window.WFBattleRender?.create,'function','battle renderer must be implemented');
  const renderer=window.WFBattleRender.create({host,content,ui:{el},...callbacks});
@@ -87,6 +88,22 @@ test('bosses and vanguards have different visual scale and independently updated
  const images=x.nodes('battle-sprite');assert.ok(parseFloat(images[0].style.width)>parseFloat(images[1].style.width));
  assert.match(x.host.textContent,/先锋/);assert.match(x.host.textContent,/Boss/);
 });
+test('boss HUD and state badges reflect live HP and real status expiry instead of effect animation lifetime',()=>{
+ const x=setup();x.state.enemies=[x.enemy()];x.state.units=[x.unit()];x.state.units[0].hp=20;
+ x.state.units[0].statuses=[{type:'shield',remaining:20,until:10},{type:'attackUp',ratio:.2,until:30},{type:'slow',ratio:.2,until:20}];x.renderer.draw(x.state);
+ assert.equal(x.nodes('battle-boss-hud')[0].hidden,false);assert.equal(x.nodes('battle-boss-track')[0].getAttribute('aria-valuenow'),'200');
+ const ally=x.nodes('battle-ally')[0];assert.match(ally.className,/has-shield/);assert.match(ally.className,/is-low-health/);
+ assert.equal(x.nodes('battle-status-icon').filter(n=>!n.hidden).length,3);
+ x.state.tick=10;x.renderer.draw(x.state);assert.doesNotMatch(ally.className,/has-shield/);assert.equal(x.nodes('battle-status-icon').filter(n=>!n.hidden).length,2);
+ x.state.enemies=[];x.state.tick=31;x.renderer.draw(x.state);assert.equal(x.nodes('battle-boss-hud')[0].hidden,true);assert.equal(x.nodes('battle-status-icon').filter(n=>!n.hidden).length,0);
+});
+test('wave banners and short hit feedback expire on simulation ticks and stay fixed during pause',()=>{
+ const x=setup();x.state.units=[x.unit()];x.renderer.draw(x.state,[{id:1,type:'damage',targetId:1,value:10,tick:0,position:{x:2.5,y:4.5}}]);
+ const banner=x.nodes('battle-banner')[0],ally=x.nodes('battle-ally')[0];assert.equal(banner.hidden,false);assert.match(ally.className,/is-hurt/);
+ x.state.status='paused';x.renderer.draw(x.state);assert.equal(banner.hidden,false);assert.match(ally.className,/is-hurt/);
+ x.state.status='running';x.state.tick=41;x.renderer.draw(x.state);assert.equal(banner.hidden,true);assert.doesNotMatch(ally.className,/is-hurt/);
+ x.state.wave=2;x.renderer.draw(x.state);assert.equal(banner.hidden,false);assert.match(banner.textContent,/第 2 波/);
+});
 
 test('canvas backing pixels cap at DPR 2 and static grass only redraws when its size changes',()=>{
  for(const width of [280,342,382]){
@@ -102,7 +119,8 @@ test('dense effect bursts obey 48 visual and 12 floating-text caps while leaving
  const x=setup();x.state.units=[x.unit()];x.renderer.draw(x.state);const fx=x.contexts[1];fx.calls.length=0;
  const events=Array.from({length:100},(_,i)=>({id:i+1,type:'damage',entityId:10,targetId:1,value:5,position:{x:2.5,y:4.5},tick:0}));
  const before=JSON.stringify(x.state);x.renderer.draw(x.state,events);
- assert.ok(fx.calls.filter(c=>c[0]==='stroke').length<=48);assert.equal(fx.calls.filter(c=>c[0]==='fillText').length,12);
+ assert.ok(fx.calls.filter(c=>c[0]==='stroke').length<=48);assert.equal(fx.calls.filter(c=>c[0]==='fillText').length,1);
+ assert.equal(fx.calls.find(c=>c[0]==='fillText')[1],'−500');
  assert.equal(JSON.stringify(x.state),before);
  fx.calls.length=0;x.state.tick=30;x.renderer.draw(x.state,events);assert.equal(fx.calls.filter(c=>c[0]==='fillText').length,0);
 });

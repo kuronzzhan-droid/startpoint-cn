@@ -22,6 +22,9 @@ FROZEN_MANIFEST_SHA256 = "e1a7353d53be2404b6a1b8b3b7989fd14820479b3ebeff902218ca
 UI_REPLACEMENTS = frozenset({"index.html", "router.js", "pages.js", "dungeons.js"})
 BATTLE_ASSETS = frozenset({"battle-" + name + ".js" for name in
     ("loader", "model", "targets", "effects", "waves", "clock", "media", "render", "input", "storage", "selection", "page")} | {"battle.css"})
+# Keep the small source module separate, but deliver it with its renderer so
+# battle still adds 16 public files and no additional network round trip.
+SOURCE_FRAGMENTS = frozenset({"battle-vfx.js"})
 RESERVED = frozenset({"_worker.js", "_headers", "_routes.json"})
 MAX_STATIC_FILES, MAX_ADDED_FILES = 20000, 16
 MAX_FILE_BYTES, MAX_CONTENT_BYTES = 25 * 1024 * 1024, 256 * 1024
@@ -198,7 +201,7 @@ def _prepare(site, output, definitions, evidence):
              and not output.is_relative_to(REPO.resolve()), "拒绝覆盖源目录或仓库")
     _require(not output.with_name(output.name + "-receipt.json").exists(), "目标回执已存在")
     files, old, manifest = _frozen(site)
-    source_paths = sorted((_safe_path(UI_ROOT / n) for n in UI_REPLACEMENTS | BATTLE_ASSETS))
+    source_paths = sorted((_safe_path(UI_ROOT / n) for n in UI_REPLACEMENTS | BATTLE_ASSETS | SOURCE_FRAGMENTS))
     source_paths += [_safe_path(definitions / n) for n in DEFINITION_FILES]
     tool_paths = [Path(__file__).resolve(), Path(__file__).with_name("wf_wiki_battle_content.py").resolve(),
                   Path(__file__).with_name("wf_wiki_battle_native.py").resolve(),
@@ -213,9 +216,11 @@ def _prepare(site, output, definitions, evidence):
     payload = ("window.WF_BATTLE_CONTENT = " + json.dumps(content, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c") + ";\n").encode("utf-8")
     _require(len(payload) <= MAX_CONTENT_BYTES, "玩法内容超过 256 KiB 预算")
     additions = _media(content, site, evidence, old)
-    blobs = {name: raw for name, raw in source.items() if name != "index.html"}
+    blobs = {name: raw for name, raw in source.items() if name != "index.html" and name not in SOURCE_FRAGMENTS}
+    blobs["battle-render.js"] = source["battle-vfx.js"] + b"\n;\n" + source["battle-render.js"]
     blobs["data/battle-content.js"] = payload
     versions = {n: _sha(raw) for n, raw in sorted(blobs.items())}
+    versions.update({"source/" + n: _sha(source[n]) for n in SOURCE_FRAGMENTS | {"battle-render.js"}})
     versions.update({"definition/" + p.name: _sha(committed[p]) for p in source_paths if p.parent == definitions})
     version = _sha(json.dumps(versions, sort_keys=True, separators=(",", ":")).encode())[:16]
     blobs["index.html"] = _html((site / "index.html").read_text(encoding="utf-8"), source["index.html"].decode(), blobs, version)

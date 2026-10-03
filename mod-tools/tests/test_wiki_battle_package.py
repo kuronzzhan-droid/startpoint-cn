@@ -51,7 +51,7 @@ class PackageTests(unittest.TestCase):
         for name in package.UI_REPLACEMENTS - {"index.html"}:
             (self.ui / name).write_text("/* reviewed " + name + " */", encoding="utf-8")
         (self.ui / "index.html").write_text(self.base_html.replace('<script src="router.js"', '<script src="battle-loader.js" data-battle-version="dev" defer></script><script src="router.js"'), encoding="utf-8")
-        for name in package.BATTLE_ASSETS:
+        for name in package.BATTLE_ASSETS | package.SOURCE_FRAGMENTS:
             (self.ui / name).write_text("/* " + name + " */", encoding="utf-8")
         self.pin = self.add_patch("FROZEN_MANIFEST_SHA256", "")
         self.add_patch("UI_ROOT", self.ui)
@@ -120,6 +120,28 @@ class PackageTests(unittest.TestCase):
         for target in (self.site, self.site / "nested", self.root, package.REPO / "inside"):
             with self.subTest(target=target), self.assertRaises(ValueError):
                 package.build_candidate(self.site, target, self.defs, self.evidence)
+
+    def test_visual_helper_is_committed_bundled_and_versioned_without_extra_public_path(self):
+        first = self.build(check_only=True)
+        helper = self.ui / "battle-vfx.js"
+        helper.write_bytes(b"/* changed visual helper */")
+        changed = self.build()
+        self.assertNotEqual(first["version"], changed["version"])
+        self.assertEqual(changed["sourceHashes"]["source/battle-vfx.js"], digest(helper.read_bytes()))
+        self.assertEqual((self.output / "battle-render.js").read_bytes(),
+                         helper.read_bytes() + b"\n;\n" + (self.ui / "battle-render.js").read_bytes())
+        self.assertFalse((self.output / "battle-vfx.js").exists())
+        self.assertNotIn("battle-vfx.js", changed["added"])
+
+    def test_uncommitted_visual_helper_is_rejected_before_output(self):
+        helper = self.ui / "battle-vfx.js"
+        original = helper.read_bytes()
+        helper.write_bytes(b"/* uncommitted */")
+        with mock.patch.object(package, "_committed", side_effect=lambda paths: {
+                p: original if p == helper else p.read_bytes() for p in paths}):
+            with self.assertRaisesRegex(ValueError, "提交"):
+                self.build()
+        self.assertFalse(self.output.exists())
 
     def test_unknown_manifest_or_changed_frozen_bytes_fail_without_output(self):
         package.FROZEN_MANIFEST_SHA256 = "0" * 64
