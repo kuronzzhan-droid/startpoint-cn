@@ -9,3 +9,10 @@ test('input deduplicates synthesized click after touch drop and cancels a second
  listeners.get('pointerdown')(ev(1,5,5));listeners.get('pointermove')(ev(1,50,50));listeners.get('pointerup')(ev(1,50,50));listeners.get('click')({target:source,detail:1});assert.equal(deployments,1);assert.equal(voices,1);assert.equal(selects,0);
  listeners.get('pointerdown')(ev(2,5,5));listeners.get('pointerdown')(ev(3,6,6));listeners.get('pointerup')(ev(2,50,50));assert.equal(deployments,1);input.destroy();assert.equal(listeners.size,0);
 });
+test('escape cancels an in-progress drag so releasing it cannot deploy',()=>{
+ const callbacks=new Map(),win=new EventTarget(),source={dataset:{gesture:'deploy',characterId:'a'},closest:()=>source},host={contains:()=>true,addEventListener:(k,f)=>callbacks.set(k,f),removeEventListener:k=>callbacks.delete(k)};
+ let drops=0;const doc={createElement:()=>({style:{},remove(){}}),body:{append(){}}};
+ const input=I.create({host,board:{getBoundingClientRect:()=>({left:0,top:0,width:500,height:700})},canSelect:()=>true,onVoice(){},onSelect(){},onDrop(){drops++;},onCell(){},window:win,document:doc});
+ const ev={target:source,pointerId:1,button:0,clientX:10,clientY:10,preventDefault(){}};callbacks.get('pointerdown')(ev);callbacks.get('pointermove')({...ev,clientX:50});
+ const escape=new Event('keydown');escape.key='Escape';win.dispatchEvent(escape);callbacks.get('pointerup')({...ev,clientX:50});assert.equal(drops,0);input.destroy();
+});

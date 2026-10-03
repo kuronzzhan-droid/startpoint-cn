@@ -15,6 +15,7 @@
   let state=null,view=null,input=null,media=null,clock=null,selection=null,choice=null,dead=false,dialog=null,lastOptions=null,settled=false;
   const button=(label,action,cls='secondary-button')=>{const node=el('button',cls,label);node.type='button';node.addEventListener('click',action);return node;};
   const message=text=>{if(!dead)notice.textContent=text;};
+  const resourceFailure=text=>{retry.hidden=false;message(text);};
   const ask=(text,title='离开战斗？')=>root.WFCommunityAdminConfirm.ask(text,{title,confirmLabel:'确定',cancelLabel:'继续当前战斗'});
   function pause(reason='战斗已暂停'){
    if(!state||!['running','paused'].includes(state.status))return;
@@ -32,6 +33,7 @@
    (mediaDef.missingCues||[]).length?'部分场景语音尚未确认，使用视觉提示；本体音效与角色台词分别映射。':'使用本角色已核实的出战、准备和发动声音。']);}
   const pauseButton=button('暂停',()=>state?.status==='paused'?resume():pause());
   const sound=button('声音',()=>{const settings=store.read().value.settings;const result=store.writeSettings({muted:!settings.muted});applySettings(result.value.settings);media?.retry();message(result.ok?(result.value.settings.muted?'声音已关闭':'声音已开启，下次角色事件将尝试播放'):result.error);});
+  const retry=button('重试资源',()=>{retry.hidden=true;media?.retry();view?.retry();message('已重试图片和声音；继续战斗时播放后续角色事件。');});retry.hidden=true;
   const volume=el('input');volume.type='range';volume.min='0';volume.max='1';volume.step='.05';volume.setAttribute('aria-label','声音音量');
   volume.addEventListener('change',()=>{const result=store.writeSettings({volume:Number(volume.value)});applySettings(result.value.settings);if(!result.ok)message(result.error);});
   function applySettings(settings){sound.textContent=settings.muted?'声音关':'声音开';sound.setAttribute('aria-pressed',String(!settings.muted));volume.value=String(settings.volume);media?.setMuted(settings.muted);media?.setVolume(settings.volume);}
@@ -43,7 +45,7 @@
    '暂停或切到后台不会推进战斗。阵容、最佳成绩只存本机；战斗不向社区上传记录。声音和像素资源按需下载。']));
   const restart=button('重开',async()=>{if(!lastOptions)return;const wasRunning=state?.status==='running';pause();if(!state||state.result||await ask('放弃本场进度，使用当前六人阵容重新开始？','重新开始？'))begin(lastOptions);else if(wasRunning)resume();});
   const change=button('换阵容',async()=>{const wasRunning=state?.status==='running';pause();if(!state||state.result||await ask('放弃本场进度并返回选择阵容？','重新选择？'))prepare();else if(wasRunning)resume();});
-  toolbar.append(pauseButton,sound,volume,help,restart,change);
+  toolbar.append(pauseButton,sound,volume,help,restart,change,retry);
   function stopSession(){clock?.destroy();input?.destroy();media?.destroy();view?.destroy();selection?.destroy();clock=input=media=view=selection=null;choice=null;closeDialog();}
   function prepare(){stopSession();state=null;pauseButton.hidden=restart.hidden=change.hidden=true;area.replaceChildren();
    selection=root.WFBattleSelection.mount({host:area,content,ui,store,onStart:begin,onInspect:inspect});applySettings(store.read().value.settings);message('选择六位角色，守住草地尽头的据点。');}
@@ -64,14 +66,14 @@
    result.append(button('再来一次',()=>begin(lastOptions),'primary-button'),button('选择阵容',prepare));area.prepend(result);message(saved.ok?'成绩已保存在本机':saved.error);}
   function begin(options){if(dead)return;stopSession();lastOptions={...options,squad:[...options.squad]};state=root.WFBattleModel.create({content,...lastOptions});settled=false;
    area.replaceChildren();pauseButton.hidden=restart.hidden=change.hidden=false;pauseButton.textContent='暂停';
-   media=root.WFBattleMedia.create({content,...store.read().value.settings,onFailure:message});media.unlock();view=root.WFBattleRender.create({host:area,content,ui});view.draw(state);
+   media=root.WFBattleMedia.create({content,...store.read().value.settings,onFailure:resourceFailure});media.unlock();view=root.WFBattleRender.create({host:area,content,ui,onFailure:resourceFailure});view.draw(state);
    const loadCurrent=()=>media.preload([...state.squad,...new Set(state.enemies.map(e=>e.characterId))]);loadCurrent();
    input=root.WFBattleInput.create({host:area,board:view.board,canSelect:value=>state.status==='running'&&(value.energy||(!state.units.some(u=>u.characterId===value.characterId)&&!state.coffins.some(c=>c.characterId===value.characterId))),
-    onVoice:id=>media.deploy(id),onSelect:select,onDrop:execute,onCell:cellClick,onPreview:(value,cell)=>{
-     if(!value||!cell){view.setSelection(choice);return false;}let reason='';
-     if(value.energy){const unit=state.units.find(u=>u.col===cell.col&&u.row===cell.row&&u.hp>0);reason=!unit?'请选择存活角色':unit.readyAtTick>state.tick?'技能冷却中':state.energy<content.characters[unit.characterId].skill.cost?'能量不足':!root.WFBattleEffects.planCast(state,unit.id)?'没有有效目标':'';}
+    onVoice:id=>media.deploy(id),onSelect:select,onDrop:execute,onCell:cellClick,onCancel:()=>{choice=null;view.setSelection(null);},onPreview:(value,cell)=>{
+     if(!value||!cell){view.setSelection(choice);return false;}let reason='',cost=null;
+     if(value.energy){const unit=state.units.find(u=>u.col===cell.col&&u.row===cell.row&&u.hp>0);cost=unit?content.characters[unit.characterId].skill.cost:null;reason=!unit?'请选择存活角色':unit.readyAtTick>state.tick?'技能冷却中':state.energy<cost?'能量不足':!root.WFBattleEffects.planCast(state,unit.id)?'没有有效目标':'';}
      else reason=root.WFBattleModel.canDeploy(state,value.characterId,cell.col,cell.row);
-     view.setSelection({...value,cell,valid:!reason});message(reason|| (value.energy?'松手发动技能':'松手部署'));return !reason;
+     view.setSelection({...value,cell,cost,valid:!reason});message(reason|| (value.energy?`松手发动技能 · 消耗 ${cost} 能量`:'松手部署'));return !reason;
     }});
    clock=root.WFBattleClock.create({step:()=>{const events=root.WFBattleModel.advance(state);media.handle(events);view.draw(state,events);
     if(events.some(e=>e.type==='wave'))loadCurrent();if(events.some(e=>e.type==='rage-warning'))message('敌人即将狂暴，攻击会逐渐增强');if(state.result)finish();},render:()=>view.draw(state),onLag:()=>pause('运行出现延迟，已自动暂停。点击继续。')});
@@ -80,9 +82,10 @@
   const guard=makeGuard({getState:()=>state,isConnected:()=>!dead&&box.isConnected,pause,resume,ask:()=>ask('离开会结束本场战斗，阵容与历史成绩仍保存在本机。')});
   const unregister=root.WFNavigationGuard.register(guard);
   function visibility(){if(document.hidden)pause('已切到后台，战斗暂停。回来后点击继续。');}
+  function pageHide(){pause('页面已离开，战斗暂停。回来后点击继续。');}
   function storage(event){if(event.key===root.WFBattleStorage.key&&event.newValue){const result=store.mergeExternal(event.newValue);applySettings(result.value.settings);}}
-  function destroy(){if(dead)return;dead=true;stopSession();store.destroy();unregister();root.removeEventListener('wf-page-leave',destroy);root.removeEventListener('storage',storage);document.removeEventListener('visibilitychange',visibility);root.removeEventListener('pagehide',visibility);}
-  root.addEventListener('wf-page-leave',destroy);root.addEventListener('storage',storage);document.addEventListener('visibilitychange',visibility);root.addEventListener('pagehide',visibility);prepare();
+  function destroy(){if(dead)return;dead=true;stopSession();store.destroy();unregister();root.removeEventListener('wf-page-leave',destroy);root.removeEventListener('storage',storage);document.removeEventListener('visibilitychange',visibility);root.removeEventListener('pagehide',pageHide);}
+  root.addEventListener('wf-page-leave',destroy);root.addEventListener('storage',storage);document.addEventListener('visibilitychange',visibility);root.addEventListener('pagehide',pageHide);prepare();
   return {destroy};
  }
  const api={makeGuard,render};if(typeof module!=='undefined'&&module.exports)module.exports=api;else {root.WFBattlePage=api;root.renderWikiBattle=render;}

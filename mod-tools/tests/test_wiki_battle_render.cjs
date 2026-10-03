@@ -91,6 +91,7 @@ test('canvas backing pixels cap at DPR 2 and static grass only redraws when its 
   x.resize(width-20);x.renderer.draw(x.state);assert.equal(canvases[0].width,(width-20)*2);assert.ok(x.contexts[0].calls.length>count);
  }
 });
+test('paused resize redraws static presentation immediately without advancing simulation',()=>{const x=setup(300);x.state.status='paused';x.state.units=[x.unit()];x.renderer.draw(x.state);const before=JSON.stringify(x.state);const canvas=x.renderer.board.all(n=>n.tag==='canvas')[0];x.resize(250);assert.equal(canvas.width,500);assert.equal(JSON.stringify(x.state),before);});
 
 test('dense effect bursts obey 48 visual and 12 floating-text caps while leaving logical HP untouched',()=>{
  const x=setup();x.state.units=[x.unit()];x.renderer.draw(x.state);const fx=x.contexts[1];fx.calls.length=0;
@@ -126,4 +127,13 @@ test('broken native action falls back only to the same character and late image 
  x.renderer.destroy();x.renderer.destroy();const writes=image.srcWrites;image.fire('error');
  assert.equal(image.srcWrites,writes);assert.equal(x.host.children.length,0);assert.equal(x.observers[0].stopped,true);
  x.renderer.draw(x.state);assert.equal(x.host.children.length,0);
+});
+test('failed native action and poster fall back to same-character avatar and explicit retry reloads native action',()=>{
+ const x=setup();x.state.units=[x.unit()];x.renderer.draw(x.state);const image=x.nodes('battle-sprite')[0];
+ image.fire('error');image.fire('error');assert.equal(image.src,'media/avatar0.webp');assert.equal(image.hidden,false);
+ x.renderer.retry();assert.equal(image.src,'media/idle0.webp?retry=1');assert.equal(image.hidden,false);
+});
+test('energy target preview shows the selected skill cost and resets after cancellation',()=>{
+ const x=setup();x.renderer.draw(x.state);x.renderer.setSelection({energy:true,cost:25});assert.match(x.renderer.energyButton.textContent,/消耗 25/);
+ x.renderer.setSelection(null);assert.doesNotMatch(x.renderer.energyButton.textContent,/消耗/);
 });

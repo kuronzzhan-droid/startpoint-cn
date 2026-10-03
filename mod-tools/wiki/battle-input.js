@@ -1,7 +1,7 @@
 ((root)=>{
  'use strict';
  function cellAt(x,y,r){if(!r.width||!r.height||x<r.left||y<r.top||x>=r.left+r.width||y>=r.top+r.height)return null;return {col:Math.floor((x-r.left)/r.width*5),row:Math.floor((y-r.top)/r.height*7)};}
- function create({host,board,canSelect,onVoice,onSelect,onDrop,onCell,onPreview=()=>null,window=root,document=root.document}){
+ function create({host,board,canSelect,onVoice,onSelect,onDrop,onCell,onPreview=()=>null,onCancel=()=>{},window=root,document=root.document}){
   let gesture=null,ghost=null,dead=false;const removers=[];
   function listen(node,type,fn){node.addEventListener(type,fn);removers.push(()=>node.removeEventListener(type,fn));}
   function cancel(){const previous=gesture;gesture=null;if(previous)try{previous.source.releasePointerCapture?.(previous.id);}catch{}ghost?.remove();ghost=null;onPreview(null,null);}
@@ -29,6 +29,7 @@
    cancel();
   });
   listen(host,'pointercancel',cancel);listen(host,'lostpointercapture',cancel);listen(window,'blur',cancel);
+  listen(window,'keydown',event=>{if(event.key==='Escape'){cancel();onCancel();}});
   listen(host,'click',event=>{
    const source=event.target.closest?.('[data-gesture]');
    if(source&&host.contains(source)){if(event.detail===0&&!source.disabled&&canSelect(choice(source))){const c=choice(source);if(c.characterId)onVoice(c.characterId);onSelect(c);}return;}
