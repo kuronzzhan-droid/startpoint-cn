@@ -35,7 +35,8 @@ body:has(.battle-root) .page-shell{grid-template-columns:minmax(0,1fr)}
 .battle-cell.is-selected{box-shadow:inset 0 0 0 3px #8fffe3;background:#d0fff929}
 .battle-cell.is-drop-valid{box-shadow:inset 0 0 0 3px #afffaa!important;background:#8cff9b42!important}
 .battle-cell.is-drop-invalid{box-shadow:inset 0 0 0 3px #ff9292!important;background:#ff737347!important}
-.battle-sprites{z-index:3;pointer-events:none;overflow:visible}
+/* Contain wide native skill canvases; keep a small bottom allowance for foot labels. */
+.battle-sprites{z-index:3;pointer-events:none;overflow:visible;clip-path:inset(0 -4px -14px -4px round 12px)}
 .battle-entity,.battle-coffin{position:absolute;width:0;height:0;pointer-events:none}
 .battle-sprite{position:absolute;max-width:none!important;max-height:none!important;image-rendering:pixelated;object-fit:fill;filter:drop-shadow(0 2px 1px #102b2d65)}
 .battle-entity.is-hurt .battle-sprite{filter:drop-shadow(1px 0 0 #ffc0a4) drop-shadow(-1px 0 0 #e2685f) brightness(1.13)}
