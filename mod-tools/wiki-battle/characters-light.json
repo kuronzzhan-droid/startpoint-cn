@@ -43,8 +43,8 @@
         "cooldown": 30,
         "cost": 25,
         "phases": [
-          {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"circle","center":"target","radius":2},"effects":[{"type":"dot","duration":8,"interval":1,"requiresCasterAlive":false,"budgetShare":0.3}],"requiresCasterAlive":true},
-          {"offset":0,"selector":{"team":"ally","kind":"all","range":12},"geometry":{"kind":"all","center":"self"},"effects":[{"type":"heal","duration":8,"interval":1,"budgetShare":0.4}],"requiresCasterAlive":true},
+          {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"circle","center":"target","radius":2},"effects":[{"type":"dot","duration":8,"interval":1,"requiresCasterAlive":false,"budgetShare":0.3,"targetMode":"area"}],"requiresCasterAlive":true},
+          {"offset":0,"selector":{"team":"ally","kind":"all","range":12},"geometry":{"kind":"all","center":"self"},"effects":[{"type":"heal","duration":8,"interval":1,"budgetShare":0.4,"targetMode":"attached"}],"requiresCasterAlive":true},
           {"offset":0,"selector":{"team":"ally","kind":"all","range":12},"geometry":{"kind":"all","center":"self"},"effects":[{"type":"attackUp","duration":8,"budgetShare":0.3}],"requiresCasterAlive":true}
         ]
       }
@@ -84,7 +84,7 @@
         "cooldown": 24,
         "cost": 20,
         "phases": [
-          {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"circle","center":"target","radius":1.5},"effects":[{"type":"dot","duration":8,"interval":1,"requiresCasterAlive":false,"budgetShare":0.4}],"requiresCasterAlive":true},
+          {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"circle","center":"target","radius":1.5},"effects":[{"type":"dot","duration":8,"interval":1,"requiresCasterAlive":false,"budgetShare":0.4,"targetMode":"area"}],"requiresCasterAlive":true},
           {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"circle","center":"target","radius":1.5},"effects":[{"type":"slow","duration":5,"budgetShare":0.2}],"requiresCasterAlive":true},
           {"offset":8,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"circle","center":"target","radius":2},"effects":[{"type":"damage","budgetShare":0.4}],"requiresCasterAlive":false}
         ]
@@ -102,7 +102,7 @@
         "cost": 20,
         "phases": [
           {"offset":0,"selector":{"team":"ally","kind":"all","range":12},"geometry":{"kind":"all","center":"self"},"effects":[{"type":"heal","budgetShare":0.3}],"requiresCasterAlive":true},
-          {"offset":0,"selector":{"team":"ally","kind":"all","range":12},"geometry":{"kind":"all","center":"self"},"effects":[{"type":"heal","duration":8,"interval":1,"budgetShare":0.4}],"requiresCasterAlive":true},
+          {"offset":0,"selector":{"team":"ally","kind":"all","range":12},"geometry":{"kind":"all","center":"self"},"effects":[{"type":"heal","duration":8,"interval":1,"budgetShare":0.4,"targetMode":"attached"}],"requiresCasterAlive":true},
           {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"line","center":"self","width":1,"length":4,"direction":"up"},"effects":[{"type":"damage","budgetShare":0.075}],"requiresCasterAlive":true},
           {"offset":0.4,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"line","center":"self","width":1,"length":4,"direction":"up"},"effects":[{"type":"damage","budgetShare":0.075}],"requiresCasterAlive":true},
           {"offset":0.8,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"line","center":"self","width":1,"length":4,"direction":"up"},"effects":[{"type":"damage","budgetShare":0.075}],"requiresCasterAlive":true},
@@ -279,7 +279,7 @@
         "cost": 25,
         "phases": [
           {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"rect","center":"self","width":5,"length":3,"direction":"up"},"effects":[{"type":"damage","budgetShare":0.1}],"requiresCasterAlive":true},
-          {"offset":0,"selector":{"team":"ally","kind":"all","range":12},"geometry":{"kind":"all","center":"self"},"effects":[{"type":"heal","duration":8,"interval":1,"budgetShare":0.4}],"requiresCasterAlive":true},
+          {"offset":0,"selector":{"team":"ally","kind":"all","range":12},"geometry":{"kind":"all","center":"self"},"effects":[{"type":"heal","duration":8,"interval":1,"budgetShare":0.4,"targetMode":"attached"}],"requiresCasterAlive":true},
           {"offset":0,"selector":{"team":"ally","kind":"all","range":12},"geometry":{"kind":"all","center":"self"},"effects":[{"type":"attackUp","duration":8,"budgetShare":0.3}],"requiresCasterAlive":true},
           {"offset":0.6,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"rect","center":"self","width":5,"length":3,"direction":"up"},"effects":[{"type":"damage","budgetShare":0.1}],"requiresCasterAlive":true},
           {"offset":1.2,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"rect","center":"self","width":5,"length":3,"direction":"up"},"effects":[{"type":"damage","budgetShare":0.1}],"requiresCasterAlive":true}

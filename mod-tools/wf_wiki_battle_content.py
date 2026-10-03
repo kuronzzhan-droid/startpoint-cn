@@ -109,7 +109,7 @@ def _geometry(value):
 
 def _effect(value, compiled):
     _keys(value, ("type", "amount", "ratio", "duration", "interval", "budgetShare",
-                  "requiresCasterAlive", "hits", "maxProcs"), ("type",) if compiled else ("type", "budgetShare"), "effect")
+                  "requiresCasterAlive", "hits", "maxProcs", "targetMode"), ("type",) if compiled else ("type", "budgetShare"), "effect")
     kind = value["type"]
     _require(kind in EFFECTS, "Unsupported effect")
     if "budgetShare" in value:
@@ -119,6 +119,10 @@ def _effect(value, compiled):
             _number(value[key], key, .000001, 100000 if key == "amount" else 60 if key in ("duration", "interval") else 1)
     if kind in ("shield", "attackUp", "haste", "slow", "dot", "basicHits", "followup"):
         _require("duration" in value, "Timed effect requires duration")
+    if kind == "dot" or kind == "heal" and "duration" in value:
+        _require(value.get("targetMode") in ("attached", "area"), "Periodic effect requires explicit targetMode")
+    else:
+        _require("targetMode" not in value, "Unexpected targetMode on non-periodic effect")
     if "interval" in value:
         _require(kind in ("dot", "heal") and value.get("duration", 0) >= value["interval"], "Invalid tick interval")
     if "requiresCasterAlive" in value:
@@ -147,7 +151,7 @@ def _skill(value, compiled=False):
     _require(isinstance(phases, list) and 1 <= len(phases) <= 32, "Invalid skill phase count")
     shares, previous_offset = [], -1
     for index, phase in enumerate(phases):
-        _keys(phase, ("offset", "selector", "geometry", "effects", "requiresCasterAlive", "retarget", "requiresHit", "impactFrom", "impactMode"),
+        _keys(phase, ("offset", "selector", "geometry", "effects", "requiresCasterAlive", "retarget", "requiresHit", "impactFrom", "impactMode", "refreshFrom"),
               ("offset", "selector", "geometry", "effects", "requiresCasterAlive"), "phase")
         _number(phase["offset"], "offset", 0, 15)
         _require(phase["offset"] >= previous_offset, "Phases must be ordered")
@@ -165,6 +169,15 @@ def _skill(value, compiled=False):
                      "Invalid hit-position dependency")
         _selector(phase["selector"])
         _geometry(phase["geometry"])
+        if "refreshFrom" in phase:
+            ref = phase["refreshFrom"]
+            _require(not compiled and type(ref) is int and 0 <= ref < index, "Invalid refresh reference")
+            original = phases[ref]
+            _require(phase["effects"] == [] and original["effects"] and
+                     all(e["type"] in ("attackUp", "haste") for e in original["effects"]) and
+                     phase["selector"] == original["selector"] and phase["geometry"] == original["geometry"],
+                     "Invalid refresh source or target")
+            continue
         _require(isinstance(phase["effects"], list) and 1 <= len(phase["effects"]) <= 6, "Invalid effects")
         for effect in phase["effects"]:
             _effect(effect, compiled)
@@ -177,6 +190,9 @@ def _compile_skill(skill, stats):
     result = copy.deepcopy(skill)
     budget = BUDGETS[(skill["cooldown"], skill["cost"])]
     for phase in result["phases"]:
+        if "refreshFrom" in phase:
+            phase["effects"] = copy.deepcopy(result["phases"][phase.pop("refreshFrom")]["effects"])
+            continue
         area = phase["geometry"]["kind"] != "single" or phase["selector"]["kind"] == "all"
         for effect in phase["effects"]:
             kind, share = effect["type"], effect["budgetShare"]
@@ -191,10 +207,12 @@ def _compile_skill(skill, stats):
     return result
 
 
-def _url(value, site_root=None):
+def _url(value, site_root=None, kind="image"):
     _require(isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9_./-]+", value) and
-             not value.startswith("/") and all(part not in ("", ".", "..") for part in value.split("/")),
+             value.startswith("media/") and all(part not in ("", ".", "..") for part in value.split("/")),
              "Media URL must stay inside this site")
+    extensions = (".mp3",) if kind == "audio" else (".webp", ".png", ".jpg", ".jpeg", ".gif")
+    _require(Path(value).suffix in extensions, "Media URL has the wrong file type")
     if site_root is not None:
         _require((site_root / value).resolve().is_relative_to(site_root.resolve()), "Media path escapes site root")
     return value
@@ -227,7 +245,7 @@ def _media(value, site_root=None):
     for pool in value["voices"].values():
         _require(isinstance(pool, list) and len(pool) <= 100, "Invalid voice pool")
         for url in pool:
-            _url(url, site_root)
+            _url(url, site_root, "audio")
     _require(isinstance(value["missingCues"], list), "Invalid missing cue list")
     for cue in value["missingCues"]:
         _text(cue, "missing cue")
@@ -236,7 +254,7 @@ def _media(value, site_root=None):
         for pool in value["seCues"].values():
             _require(isinstance(pool, list) and len(pool) <= 100, "Invalid SE cue pool")
             for url in pool:
-                _url(url, site_root)
+                _url(url, site_root, "audio")
 
 
 def validate_content(value):

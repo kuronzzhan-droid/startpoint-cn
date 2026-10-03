@@ -109,15 +109,95 @@ class ContentTests(unittest.TestCase):
 
     def test_dot_and_periodic_heal_keep_total_not_per_tick_amount(self):
         self.rows["fire"][0]["skill"]["phases"] = [phase([
-            {"type": "dot", "budgetShare": .5, "duration": 8, "interval": 1},
-            {"type": "heal", "budgetShare": .5, "duration": 8, "interval": 1}])]
+            {"type": "dot", "budgetShare": .5, "duration": 8, "interval": 1, "targetMode": "attached"},
+            {"type": "heal", "budgetShare": .5, "duration": 8, "interval": 1, "targetMode": "attached"}])]
         self.rows["fire"][0]["skill"]["phases"][0]["effects"].pop()
-        heal = phase([{"type": "heal", "budgetShare": .5, "duration": 8, "interval": 1}])
+        heal = phase([{"type": "heal", "budgetShare": .5, "duration": 8, "interval": 1, "targetMode": "attached"}])
         heal["selector"] = {"team": "ally", "kind": "self", "range": 0}
         self.rows["fire"][0]["skill"]["phases"].append(heal)
         built = self.build()["characters"][IDS[0]]["skill"]["phases"]
         self.assertEqual(built[0]["effects"][0]["amount"], 150)
         self.assertEqual(built[1]["effects"][0]["ratio"], .125)
+
+    def test_periodic_effects_require_explicit_target_mode(self):
+        for kind in ("dot", "heal"):
+            effect = {"type": kind, "budgetShare": 1, "duration": 5}
+            self.rows["fire"][0]["skill"]["phases"] = [phase([effect])]
+            with self.assertRaisesRegex(ValueError, "targetMode"):
+                self.build()
+            effect["targetMode"] = "nearest-every-tick"
+            with self.assertRaisesRegex(ValueError, "targetMode"):
+                self.build()
+            for mode in ("area", "attached"):
+                effect["targetMode"] = mode
+                result = self.build()
+                self.assertEqual(result["characters"][IDS[0]]["skill"]["phases"][0]["effects"][0]["targetMode"], mode)
+        self.rows["fire"][0]["skill"]["phases"] = [phase([{"type": "damage", "budgetShare": 1, "targetMode": "area"}])]
+        with self.assertRaisesRegex(ValueError, "targetMode"):
+            self.build()
+
+    def test_explicit_poison_and_ground_field_roster_modes(self):
+        definitions = Path(__file__).resolve().parents[1] / "wiki-battle"
+        attached = {"cbebf6c04269f", "c633b80b6a710", "ca2c6d69b5906", "c22ca49e2f9aa"}
+        seen, heals = set(), 0
+        for path in definitions.glob("characters-*.json"):
+            for char in json.loads(path.read_text(encoding="utf-8"))["characters"]:
+                for item in char["skill"]["phases"]:
+                    for effect in item["effects"]:
+                        if effect["type"] == "dot":
+                            expected = "attached" if char["id"] in attached else "area"
+                            self.assertEqual(effect.get("targetMode"), expected, char["id"])
+                            if expected == "attached":
+                                seen.add(char["id"])
+                        elif effect["type"] == "heal" and "duration" in effect:
+                            self.assertEqual(effect.get("targetMode"), "attached", char["id"])
+                            heals += 1
+        self.assertEqual(seen, attached)
+        self.assertEqual(heals, 4)
+
+    def test_media_prefix_and_picture_audio_types_are_enforced(self):
+        media = self.media["media"][IDS[0]]
+        for url in ("missing.webp", "media/voice.mp3", "media/script.js"):
+            media["avatar"] = url
+            with self.assertRaisesRegex(ValueError, "Media"):
+                self.build()
+        media["avatar"] = "media/sprite.webp"
+        for url in ("voice.mp3", "media/sprite.webp", "media/script.js"):
+            media["voices"]["deploy"] = [url]
+            with self.assertRaisesRegex(ValueError, "Media"):
+                self.build()
+
+    def test_buff_refresh_copies_numeric_effect_without_new_budget(self):
+        first = phase([{"type": "attackUp", "budgetShare": .4, "duration": 8}])
+        first["selector"] = {"team": "ally", "kind": "all", "range": 12}
+        first["geometry"] = {"kind": "all", "center": "self"}
+        refresh = {**copy.deepcopy(first), "offset": 1, "effects": [], "refreshFrom": 0}
+        self.rows["fire"][0]["skill"]["phases"] = [first, refresh, phase([{"type": "damage", "budgetShare": .6}])]
+        self.rows["fire"][0]["skill"]["phases"][2]["offset"] = 1.5
+        phases = self.build()["characters"][IDS[0]]["skill"]["phases"]
+        self.assertEqual(phases[0]["effects"], phases[1]["effects"])
+        self.assertEqual(phases[1]["effects"][0]["ratio"], .08)
+        self.assertNotIn("refreshFrom", phases[1])
+        for field, value in (("refreshFrom", 1), ("effects", [{"type": "attackUp", "budgetShare": .1, "duration": 8}])):
+            original = copy.deepcopy(refresh)
+            refresh[field] = value
+            with self.assertRaisesRegex(ValueError, "refresh"):
+                self.build()
+            refresh.clear()
+            refresh.update(original)
+        first["effects"][0]["type"] = "shield"
+        with self.assertRaisesRegex(ValueError, "refresh"):
+            self.build()
+
+    def test_haning_blue_refreshes_after_each_successful_bubble(self):
+        path = Path(__file__).resolve().parents[1] / "wiki-battle/characters-water.json"
+        skill = next(c["skill"] for c in json.loads(path.read_text(encoding="utf-8"))["characters"] if c["id"] == "cb911196e000f")
+        result = content._compile_skill(skill, content.STATS["support"])
+        phases = result["phases"]
+        buffs = [(i, p) for i, p in enumerate(phases) if p["effects"][0]["type"] == "attackUp"]
+        self.assertEqual([p["requiresHit"] for _, p in buffs], [0, 2, 4])
+        self.assertTrue(all(p["effects"] == buffs[0][1]["effects"] for _, p in buffs))
+        self.assertTrue(all(p["effects"][0]["duration"] == 8 for _, p in buffs))
 
     def test_followup_total_is_divided_by_proc_limit(self):
         p = phase([{"type": "followup", "budgetShare": 1, "duration": 5, "maxProcs": 5}])

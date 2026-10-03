@@ -160,22 +160,26 @@ def _html(base, source, blobs, version):
     return base.encode("utf-8")
 
 
-def _strings(value):
-    if isinstance(value, str):
-        yield value
-    elif isinstance(value, list):
-        for child in value:
-            yield from _strings(child)
-    elif isinstance(value, dict):
-        for child in value.values():
-            yield from _strings(child)
+def _media_urls(content):
+    def image_urls(image):
+        yield image["url"]
+        if "poster" in image:
+            yield from image_urls(image["poster"])
+    yield from image_urls(content["coffin"])
+    for media in content["media"].values():
+        yield media["avatar"]
+        for image in media["actions"].values():
+            yield from image_urls(image)
+        for field in ("voices", "seCues"):
+            for pool in media.get(field, {}).values():
+                yield from pool
 
 
 def _media(content, site, evidence, old):
     added = {}
-    references = {s for s in _strings({"media": content["media"], "coffin": content["coffin"]}) if s.startswith("media/")}
-    for name in sorted(references):
+    for name in sorted(set(_media_urls(content))):
         _relative(name)
+        _require(name.startswith("media/"), "媒体必须使用站内 media/ 路径")
         path = site / name if name in old else evidence.parent / "battle-native-media" / name
         path = _safe_path(path)
         _require(path.is_file(), "媒体引用不存在：" + name)

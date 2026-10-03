@@ -174,6 +174,33 @@ class PackageTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.build()
 
+    def test_every_media_slot_requires_existing_typed_site_media(self):
+        original = copy.deepcopy(self.fixture.media)
+        def alter(slot, value):
+            self.fixture.media = copy.deepcopy(original)
+            media = self.fixture.media["media"][fixtures.IDS[0]]
+            if slot == "avatar":
+                media["avatar"] = value
+            elif slot == "action":
+                media["actions"]["idle"]["url"] = value
+            elif slot == "poster":
+                media["actions"]["idle"]["poster"] = {**media["actions"]["idle"], "url": value}
+            elif slot == "voice":
+                media["voices"]["ready"] = [value]
+            elif slot == "se":
+                media["seCues"] = {"cast": [value]}
+            else:
+                self.fixture.media["coffin"]["url"] = value
+            self.write_evidence()
+        for slot in ("avatar", "action", "poster", "voice", "se", "coffin"):
+            suffix = ".mp3" if slot in ("voice", "se") else ".webp"
+            for path in ("missing" + suffix, "media/" + "0" * 64 + suffix):
+                with self.subTest(slot=slot, path=path):
+                    alter(slot, path)
+                    with self.assertRaises(ValueError):
+                        self.build()
+                    self.assertFalse(self.output.exists())
+
     def test_new_media_hash_drift_is_rejected(self):
         path = self.root / "battle-native-media" / self.fixture.media["coffin"]["url"]
         path.write_bytes(b"changed native output")

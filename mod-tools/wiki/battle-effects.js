@@ -89,7 +89,7 @@
     for(const job of due) {
       if(job.kind==='phase'){phaseStep(s,job,events);continue;}
       if(job.requiresCasterAlive&&!s.units.some(u=>u.id===job.casterId&&u.hp>0))continue;
-      const ids=job.geometry?.kind==='single'?job.targets:(job.team==='ally'?s.units:s.enemies).filter(t=>t.hp>0
+      const ids=job.effect.targetMode==='attached'||job.geometry?.kind==='single'?job.targets:(job.team==='ally'?s.units:s.enemies).filter(t=>t.hp>0
         &&(!Number.isFinite(job.hpBelow)||t.hp/t.maxHp<job.hpBelow)
         &&(!job.elements?.length||job.elements.includes(s.content.characters[t.characterId]?.element))
         &&job.origins.some(o=>T.contains(job.geometry,o,t))).map(t=>t.id);

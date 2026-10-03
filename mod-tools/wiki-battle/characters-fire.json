@@ -31,7 +31,7 @@
         "cost": 20,
         "phases": [
           {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"circle","center":"target","radius":1.5},"effects":[{"type":"damage","budgetShare":0.1}],"requiresCasterAlive":true},
-          {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"circle","center":"target","radius":1.5},"effects":[{"type":"dot","duration":8,"interval":1,"requiresCasterAlive":false,"budgetShare":0.4}],"requiresCasterAlive":true},
+          {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"circle","center":"target","radius":1.5},"effects":[{"type":"dot","duration":8,"interval":1,"requiresCasterAlive":false,"budgetShare":0.4,"targetMode":"area"}],"requiresCasterAlive":true},
           {"offset":0.6,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"circle","center":"target","radius":1.5},"effects":[{"type":"damage","budgetShare":0.1}],"requiresCasterAlive":true},
           {"offset":1.2,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"circle","center":"target","radius":1.5},"effects":[{"type":"damage","budgetShare":0.1}],"requiresCasterAlive":true},
           {"offset":8,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"circle","center":"target","radius":2},"effects":[{"type":"damage","budgetShare":0.3}],"requiresCasterAlive":false}
@@ -86,7 +86,7 @@
         "phases": [
           {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":1.5},"geometry":{"kind":"line","center":"self","width":1,"length":3,"direction":"up"},"effects":[{"type":"damage","budgetShare":0.2}],"requiresCasterAlive":true},
           {"offset":0.5,"selector":{"team":"enemy","kind":"nearest","range":3},"geometry":{"kind":"circle","center":"self","radius":1,"offsetY":-3},"effects":[{"type":"damage","budgetShare":0.2}],"requiresCasterAlive":true},
-          {"offset":0.5,"selector":{"team":"enemy","kind":"nearest","range":1.5},"geometry":{"kind":"circle","center":"self","radius":1},"effects":[{"type":"dot","duration":5,"interval":1,"requiresCasterAlive":true,"budgetShare":0.3}],"requiresCasterAlive":true},
+          {"offset":0.5,"selector":{"team":"enemy","kind":"nearest","range":1.5},"geometry":{"kind":"circle","center":"self","radius":1},"effects":[{"type":"dot","duration":5,"interval":1,"requiresCasterAlive":true,"budgetShare":0.3,"targetMode":"area"}],"requiresCasterAlive":true},
           {"offset":0.5,"selector":{"team":"ally","kind":"all","range":12},"geometry":{"kind":"all","center":"self"},"effects":[{"type":"attackUp","duration":5,"budgetShare":0.3}],"requiresCasterAlive":true}
         ]
       }
@@ -140,7 +140,7 @@
         "cost": 15,
         "phases": [
           {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":3},"geometry":{"kind":"fan","center":"self","radius":3,"angle":90,"direction":"up"},"effects":[{"type":"damage","budgetShare":0.2}],"requiresCasterAlive":true},
-          {"offset":0.4,"selector":{"team":"enemy","kind":"nearest","range":3},"geometry":{"kind":"fan","center":"self","radius":3,"angle":90,"direction":"up"},"effects":[{"type":"dot","duration":8,"interval":1,"requiresCasterAlive":false,"budgetShare":0.4}],"requiresCasterAlive":true},
+          {"offset":0.4,"selector":{"team":"enemy","kind":"nearest","range":3},"geometry":{"kind":"fan","center":"self","radius":3,"angle":90,"direction":"up"},"effects":[{"type":"dot","duration":8,"interval":1,"requiresCasterAlive":false,"budgetShare":0.4,"targetMode":"attached"}],"requiresCasterAlive":true},
           {"offset":0.4,"selector":{"team":"enemy","kind":"nearest","range":3},"geometry":{"kind":"fan","center":"self","radius":3,"angle":90,"direction":"up"},"effects":[{"type":"slow","duration":5,"budgetShare":0.2}],"requiresCasterAlive":true},
           {"offset":1.2,"selector":{"team":"enemy","kind":"nearest","range":3},"geometry":{"kind":"fan","center":"self","radius":3,"angle":90,"direction":"up"},"effects":[{"type":"damage","budgetShare":0.2}],"requiresCasterAlive":true}
         ]
@@ -193,7 +193,7 @@
         "cost": 20,
         "phases": [
           {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":2},"geometry":{"kind":"circle","center":"self","radius":2},"effects":[{"type":"damage","budgetShare":0.3}],"requiresCasterAlive":true},
-          {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":2},"geometry":{"kind":"circle","center":"self","radius":2},"effects":[{"type":"dot","duration":8,"interval":1,"requiresCasterAlive":true,"budgetShare":0.4}],"requiresCasterAlive":true},
+          {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":2},"geometry":{"kind":"circle","center":"self","radius":2},"effects":[{"type":"dot","duration":8,"interval":1,"requiresCasterAlive":true,"budgetShare":0.4,"targetMode":"area"}],"requiresCasterAlive":true},
           {"offset":0,"selector":{"team":"ally","kind":"all","range":12},"geometry":{"kind":"all","center":"self"},"effects":[{"type":"attackUp","duration":8,"budgetShare":0.3}],"requiresCasterAlive":true}
         ]
       }
@@ -249,7 +249,7 @@
         "cost": 20,
         "phases": [
           {"offset":0,"selector":{"team":"ally","kind":"leader","range":12},"geometry":{"kind":"single","center":"target"},"effects":[{"type":"shield","duration":8,"budgetShare":0.35}],"requiresCasterAlive":true},
-          {"offset":0,"selector":{"team":"ally","kind":"lowestHp","range":12},"geometry":{"kind":"single","center":"target"},"effects":[{"type":"heal","duration":8,"interval":1,"budgetShare":0.45}],"requiresCasterAlive":true},
+          {"offset":0,"selector":{"team":"ally","kind":"lowestHp","range":12},"geometry":{"kind":"single","center":"target"},"effects":[{"type":"heal","duration":8,"interval":1,"budgetShare":0.45,"targetMode":"attached"}],"requiresCasterAlive":true},
           {"offset":0,"selector":{"team":"ally","kind":"all","range":12,"elements":["fire","wind"]},"geometry":{"kind":"all","center":"self"},"effects":[{"type":"attackUp","duration":5,"budgetShare":0.2}],"requiresCasterAlive":true}
         ]
       }

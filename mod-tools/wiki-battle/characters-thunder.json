@@ -65,7 +65,7 @@
         "cost": 20,
         "phases": [
           {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"rect","center":"self","width":3,"length":3,"direction":"up"},"effects":[{"type":"damage","budgetShare":0.2}],"requiresCasterAlive":true},
-          {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"rect","center":"self","width":3,"length":3,"direction":"up"},"effects":[{"type":"dot","duration":5,"interval":1,"requiresCasterAlive":false,"budgetShare":0.3}],"requiresCasterAlive":true},
+          {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"rect","center":"self","width":3,"length":3,"direction":"up"},"effects":[{"type":"dot","duration":5,"interval":1,"requiresCasterAlive":false,"budgetShare":0.3,"targetMode":"area"}],"requiresCasterAlive":true},
           {"offset":5,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"line","center":"self","width":1,"length":5,"direction":"up"},"effects":[{"type":"damage","budgetShare":0.3}],"requiresCasterAlive":true},
           {"offset":5,"selector":{"team":"enemy","kind":"nearest","range":4},"geometry":{"kind":"line","center":"self","width":1,"length":5,"direction":"up"},"effects":[{"type":"slow","duration":5,"budgetShare":0.2}],"requiresCasterAlive":true}
         ]
@@ -101,7 +101,7 @@
         "cooldown": 20,
         "cost": 15,
         "phases": [
-          {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":1.5},"geometry":{"kind":"circle","center":"self","radius":1.5},"effects":[{"type":"dot","duration":5,"interval":1,"requiresCasterAlive":true,"budgetShare":0.6}],"requiresCasterAlive":true},
+          {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":1.5},"geometry":{"kind":"circle","center":"self","radius":1.5},"effects":[{"type":"dot","duration":5,"interval":1,"requiresCasterAlive":true,"budgetShare":0.6,"targetMode":"area"}],"requiresCasterAlive":true},
           {"offset":0,"selector":{"team":"ally","kind":"all","range":2},"geometry":{"kind":"circle","center":"self","radius":2},"effects":[{"type":"haste","duration":5,"budgetShare":0.4}],"requiresCasterAlive":true}
         ]
       }

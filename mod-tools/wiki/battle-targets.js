@@ -23,7 +23,8 @@
     switch(g.kind) {
       case 'all':return true;
       case 'circle':return d<=(g.radius||0)+eps;
-      case 'line':case 'rect':return along>=-eps&&along<=(g.length||0)+eps&&across<=(g.width||1)/2+eps;
+      case 'line':return along>=-eps&&along<=(g.length||0)+eps&&across<=(g.width||1)/2+eps;
+      case 'rect':return along>=.5-eps&&along<=(g.length||0)+eps&&across<=(g.width||1)/2+eps;
       case 'fan':return d<=(g.radius||0)+eps&&(d<eps||along/d>=Math.cos((g.angle||90)*Math.PI/360)-eps);
       case 'cross':return (Math.abs(x)<=.5+eps&&Math.abs(y)<=(g.length||g.radius||1)+eps)||(Math.abs(y)<=.5+eps&&Math.abs(x)<=(g.length||g.radius||1)+eps);
       default:return d<=eps;

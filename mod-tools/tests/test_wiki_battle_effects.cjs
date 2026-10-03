@@ -39,3 +39,8 @@ test('ground DoT hits entrants at its fixed point and never double-hits overlapp
   const s=setup([dot]);s.enemies=[F.enemy(10,2.5,3.5),F.enemy(11,.5,3.5)];M.dispatch(s,{id:2,type:'cast',unitId:s.units[0].id});M.advance(s);
   s.enemies[0].x=.5;s.enemies[1].x=2.5;for(let i=0;i<40;i++)M.advance(s);assert.equal(s.enemies[0].hp,10000);assert.equal(s.enemies[1].hp,9920);
 });
+test('attached poison follows only the enemies actually hit, never a later entrant',()=>{
+ const dot=p('dot',{amount:80,duration:2,targetMode:'attached'});dot.geometry={kind:'circle',radius:1,center:'target'};
+ const s=setup([dot]);s.enemies=[F.enemy(10,2.5,3.5),F.enemy(11,.5,3.5)];M.dispatch(s,{id:2,type:'cast',unitId:s.units[0].id});M.advance(s);
+ s.enemies[0].x=.5;s.enemies[1].x=2.5;for(let i=0;i<40;i++)M.advance(s);assert.equal(s.enemies[0].hp,9920);assert.equal(s.enemies[1].hp,10000);
+});
