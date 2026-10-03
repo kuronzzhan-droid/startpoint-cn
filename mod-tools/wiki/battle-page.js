@@ -22,14 +22,16 @@
    root.WFBattleModel.setPaused(state,true);clock?.pause();media?.setPaused(true);input?.cancel();choice=null;view?.setSelection(null);view?.draw(state);pauseButton.textContent='继续';message(reason);
   }
   function resume(){if(dead||dialog||document.hidden||state?.status!=='paused')return;
-   root.WFBattleModel.setPaused(state,false);media?.setPaused(false);clock.start();pauseButton.textContent='暂停';message('拖头像部署，拖能量到就绪角色发动技能。');}
+   root.WFBattleModel.setPaused(state,false);media?.setPaused(false);clock.start();pauseButton.textContent='暂停';message('拖头像部署；点击场上角色或头像发动技能、回收。');}
   function closeDialog(){if(!dialog)return;const previous=dialog;dialog=null;previous.close?.();previous.remove();}
   function showInfo(title,lines){pause('查看资料中，关闭后点击继续');closeDialog();dialog=el('dialog','battle-dialog');const node=dialog;
    node.setAttribute('aria-label',title);node.append(el('h2','',title));lines.forEach(line=>node.append(el('p','',line)));
    node.append(button('关闭',closeDialog));node.addEventListener('cancel',event=>{event.preventDefault();closeDialog();});document.body.append(node);node.showModal();}
   function inspect(c){const mediaDef=content.media[c.id];showInfo(`${c.name} · ${c.title||c.theme}`,[
    `${root.WFBattleSelection.roles[c.role]} · 生命 ${c.stats.hp} · 射程 ${c.stats.range} 格 · 部署 ${c.stats.deployCost} 能量`,
-   `${c.skill.name}：${c.skill.description}`,`技能冷却 ${c.skill.cooldown} 秒 · 消耗 ${c.skill.cost} 能量`,
+   `${c.skill.name}：${c.skill.description}`,`独立技能槽 ${c.skill.gauge} 点 · 本玩法基准每秒 20 点${c.skill.chargeSpeed?`，充能速度 +${Math.round(c.skill.chargeSpeed*100)}%`:''} · 满槽约 ${c.skill.cooldown} 秒`,
+   `按原角色技能槽与可适配充能效果换算，秒数仅用于本放置玩法。${c.skill.initial?`首次部署初始充能 ${Math.round(c.skill.initial*100)}%。`:''}技能满槽发动，不消耗公共能量。`,
+   ...(c.skill.refund?[`施技后回槽 ${Math.round(c.skill.refund.ratio*100)}%${c.skill.refund.ct>0?` · 回槽触发冷却 ${c.skill.refund.ct} 秒`:''}${c.skill.refund.limit!==undefined?` · 每局最多触发 ${c.skill.refund.limit} 次`:''}`]:[]),
    (mediaDef.missingCues||[]).length?'部分场景语音尚未确认，使用视觉提示；本体音效与角色台词分别映射。':'使用本角色已核实的出战、准备和发动声音。']);}
   const pauseButton=button('暂停',()=>state?.status==='paused'?resume():pause());
   const sound=button('声音',()=>{const settings=store.read().value.settings;const result=store.writeSettings({muted:!settings.muted});applySettings(result.value.settings);media?.retry();message(result.ok?(result.value.settings.muted?'声音已关闭':'声音已开启，下次角色事件将尝试播放'):result.error);});
@@ -39,7 +41,8 @@
   function applySettings(settings){sound.textContent=settings.muted?'声音关':'声音开';sound.setAttribute('aria-pressed',String(!settings.muted));volume.value=String(settings.volume);media?.setMuted(settings.muted);media?.setVolume(settings.volume);}
   const help=button('说明',()=>showInfo('放置挑战怎么玩',[
    '选择六位 MOD 角色组成阵容。第一位是队长；拖动下方头像到草地空格，或点击头像后点击空格部署。',
-   '角色自动攻击或治疗。能量每秒增加 3，击败敌人获得 10。技能就绪后，拖动能量球到角色，或先点能量再点角色。点击场上角色可查看技能。',
+   '角色自动攻击或治疗，各自的技能槽独立充能。点场上角色或已部署头像，满槽即可发动技能，不消耗公共能量。详情中可查看招牌技能和基础充能时间。',
+   `公共能量每秒增加 3，击败敌人获得 10；仅用于部署和回收。花费 ${content.recallCost??10} 能量回收可立即腾格，保留剩余生命与充能；待部署时停止充能，再次部署仍需支付部署费。`,
    '阵亡后留下棺材并占格 20 秒。倒计时结束后需要重新支付部署费，不会自动复活。',
    '敌人从上方接近，攻击身边最近角色；冲到底部会攻击据点。清空一波后休息 5 秒。关卡共三波，无尽逐波增强。',
    '暂停或切到后台不会推进战斗。阵容、最佳成绩只存本机；战斗不向社区上传记录。声音和像素资源按需下载。']));
@@ -49,15 +52,17 @@
   function stopSession(){clock?.destroy();input?.destroy();media?.destroy();view?.destroy();selection?.destroy();clock=input=media=view=selection=null;choice=null;closeDialog();}
   function prepare(){stopSession();state=null;pauseButton.hidden=restart.hidden=change.hidden=true;area.replaceChildren();
    selection=root.WFBattleSelection.mount({host:area,content,ui,store,onStart:begin,onInspect:inspect});applySettings(store.read().value.settings);message('选择六位角色，守住草地尽头的据点。');}
-  function select(value){choice=choice?.characterId===value.characterId&&choice?.energy===value.energy?null:value;view.setSelection(choice);message(choice?.energy?'点击就绪角色发动技能':choice?.characterId?`选择空格部署 ${content.characters[choice.characterId].name}`:'已取消选择');}
-  function execute(value,cell){if(state?.status!=='running')return;let command;
-   if(value.energy){const unit=state.units.find(u=>u.col===cell.col&&u.row===cell.row&&u.hp>0);if(!unit){message('请选择存活且技能就绪的角色');return;}command={type:'cast',unitId:unit.id};}
-   else command={type:'deploy',characterId:value.characterId,...cell};
-   const result=root.WFBattleModel.dispatch(state,{id:state.lastCommandId+1,...command});choice=null;view.setSelection(null);
-   if(result.ok){media.handle(result.events);view.draw(state,result.events);message(value.energy?'技能已发动':'部署完成');}else message(result.reason);
+  function select(value){choice=choice?.characterId===value.characterId?null:value;view.setSelection(choice);message(choice?`选择空格部署 ${content.characters[choice.characterId].name}`:'已取消选择');}
+  function selectUnit(unitId){if(state?.status!=='running')return;const unit=state.units.find(u=>u.id===unitId&&u.hp>0);if(!unit)return;
+   choice=choice?.unitId===unitId?null:{unitId};view.setSelection(choice);message(choice?'满槽后点发动技能；回收保留生命和剩余充能。':'已取消选择');}
+  function command(action,text){if(state?.status!=='running')return;
+   const result=root.WFBattleModel.dispatch(state,{id:state.lastCommandId+1,...action});
+   if(result.ok){if(action.type!=='cast')choice=null;view.setSelection(choice);media.handle(result.events);view.draw(state,result.events);message(text);}else message(result.reason);
   }
-  function cellClick(cell){if(state?.status!=='running')return;if(choice){execute(choice,cell);return;}
-   const unit=state.units.find(u=>u.col===cell.col&&u.row===cell.row);if(unit){inspect(content.characters[unit.characterId]);return;}
+  function execute(value,cell){command({type:'deploy',characterId:value.characterId,...cell},'部署完成');
+  }
+  function cellClick(cell){if(state?.status!=='running')return;if(choice?.characterId){execute(choice,cell);return;}
+   const unit=state.units.find(u=>u.col===cell.col&&u.row===cell.row&&u.hp>0);if(unit){selectUnit(unit.id);return;}
    const coffin=state.coffins.find(c=>c.col===cell.col&&c.row===cell.row);message(coffin?`复归剩余 ${Math.ceil((coffin.releaseAtTick-state.tick)/20)} 秒`:'先选择下方头像，再选择空格。');}
   function finish(){if(settled)return;settled=true;clock.pause();media.stop();input.cancel();pauseButton.hidden=true;
    const saved=store.record(state.result),result=el('section','battle-result');result.setAttribute('aria-label','战斗结果');
@@ -66,14 +71,14 @@
    result.append(button('再来一次',()=>begin(lastOptions),'primary-button'),button('选择阵容',prepare));area.prepend(result);message(saved.ok?'成绩已保存在本机':saved.error);}
   function begin(options){if(dead)return;stopSession();lastOptions={...options,squad:[...options.squad]};state=root.WFBattleModel.create({content,...lastOptions});settled=false;
    area.replaceChildren();pauseButton.hidden=restart.hidden=change.hidden=false;pauseButton.textContent='暂停';
-   media=root.WFBattleMedia.create({content,...store.read().value.settings,onFailure:resourceFailure});media.unlock();view=root.WFBattleRender.create({host:area,content,ui,onFailure:resourceFailure});view.draw(state);
+   media=root.WFBattleMedia.create({content,...store.read().value.settings,onFailure:resourceFailure});media.unlock();
+   view=root.WFBattleRender.create({host:area,content,ui,onFailure:resourceFailure,onCast:unitId=>command({type:'cast',unitId},'技能已发动 · 不消耗公共能量'),
+    onRecall:unitId=>command({type:'recall',unitId},'已回收 · 保留生命与充能，再部署时继续'),onInspect:unitId=>{const unit=state.units.find(u=>u.id===unitId&&u.hp>0);if(unit)inspect(content.characters[unit.characterId]);}});view.draw(state);
    const loadCurrent=()=>media.preload([...state.squad,...new Set(state.enemies.map(e=>e.characterId))]);loadCurrent();
-   input=root.WFBattleInput.create({host:area,board:view.board,canSelect:value=>state.status==='running'&&(value.energy||(!state.units.some(u=>u.characterId===value.characterId)&&!state.coffins.some(c=>c.characterId===value.characterId))),
-    onVoice:id=>media.deploy(id),onSelect:select,onDrop:execute,onCell:cellClick,onCancel:()=>{choice=null;view.setSelection(null);},onPreview:(value,cell)=>{
-     if(!value||!cell){view.setSelection(choice);return false;}let reason='',cost=null;
-     if(value.energy){const unit=state.units.find(u=>u.col===cell.col&&u.row===cell.row&&u.hp>0);cost=unit?content.characters[unit.characterId].skill.cost:null;reason=!unit?'请选择存活角色':unit.readyAtTick>state.tick?'技能冷却中':state.energy<cost?'能量不足':!root.WFBattleEffects.planCast(state,unit.id)?'没有有效目标':'';}
-     else reason=root.WFBattleModel.canDeploy(state,value.characterId,cell.col,cell.row);
-     view.setSelection({...value,cell,cost,valid:!reason});message(reason|| (value.energy?`松手发动技能 · 消耗 ${cost} 能量`:'松手部署'));return !reason;
+   input=root.WFBattleInput.create({host:area,board:view.board,canSelect:value=>state.status==='running'&&!state.units.some(u=>u.characterId===value.characterId)&&!state.coffins.some(c=>c.characterId===value.characterId),
+    onVoice:id=>media.deploy(id),onSelect:select,onDrop:execute,onCell:cellClick,onUnit:selectUnit,onCancel:()=>{choice=null;view.setSelection(null);},onPreview:(value,cell)=>{
+     if(!value||!cell){view.setSelection(choice);return false;}const reason=root.WFBattleModel.canDeploy(state,value.characterId,cell.col,cell.row);
+     view.setSelection({...value,cell,valid:!reason});message(reason||'松手部署');return !reason;
     }});
    clock=root.WFBattleClock.create({step:()=>{const events=root.WFBattleModel.advance(state);media.handle(events);view.draw(state,events);
     if(events.some(e=>e.type==='wave'))loadCurrent();if(events.some(e=>e.type==='rage-warning'))message('敌人即将狂暴，攻击会逐渐增强');if(state.result)finish();},

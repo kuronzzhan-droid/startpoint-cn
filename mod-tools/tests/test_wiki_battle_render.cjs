@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const {Node:Base}=require('./wiki_equipment_fixture.cjs');
 const file=path.join(__dirname,'../wiki/battle-render.js');
-function setup(width=320,dpr=3){
+function setup(width=320,dpr=3,callbacks={}){
  const contexts=[],observers=[],listeners=new Map();
  class Node extends Base{
   constructor(...args){super(...args);this.dataset={};this.style={setProperty:(k,v)=>{this.style[k]=String(v);}};this.clientWidth=width;this.srcWrites=0;
@@ -28,7 +28,7 @@ function setup(width=320,dpr=3){
  const enemy=(id=10,rank='boss')=>({id,characterId:'c1',x:2.5,y:1.5,hp:200,maxHp:400,rank,statuses:[]});
  if(fs.existsSync(file))vm.runInNewContext(fs.readFileSync(file,'utf8'),{window,document});
  assert.equal(typeof window.WFBattleRender?.create,'function','battle renderer must be implemented');
- const renderer=window.WFBattleRender.create({host,content,ui:{el}});
+ const renderer=window.WFBattleRender.create({host,content,ui:{el},...callbacks});
  const nodes=cls=>host.all(n=>n.className.split(' ').includes(cls));
  return {renderer,state,unit,enemy,content,host,window,contexts,observers,listeners,nodes,resize(w){observers[0].cb([{contentRect:{width:w}}]);}};
 }
@@ -40,7 +40,7 @@ test('board exposes 35 grid controls and stable six-card roster without changing
  assert.ok(cells.every(n=>n.getAttribute('aria-label')));
  const cards=[...x.renderer.roster.children];assert.equal(cards.length,6);
  assert.ok(cards.every(n=>n.dataset.gesture==='deploy'&&n.dataset.characterId));
- assert.equal(x.renderer.energyButton.dataset.gesture,'energy');
+ assert.equal(x.renderer.energyDisplay.dataset.gesture,undefined);assert.equal(x.renderer.energyDisplay.tag,'div');
  x.renderer.draw(x.state);assert.deepEqual(x.renderer.roster.children,cards);assert.equal(JSON.stringify(x.state),before);
 });
 
@@ -110,8 +110,7 @@ test('dense effect bursts obey 48 visual and 12 floating-text caps while leaving
 test('selection updates interactive hints without mutating the battle or hiding keyboard grid targets',()=>{
  const x=setup();x.renderer.draw(x.state);const before=JSON.stringify(x.state);
  x.renderer.setSelection({characterId:'c0'});assert.equal(x.renderer.roster.children[0].getAttribute('aria-pressed'),'true');
- x.renderer.setSelection({energy:true});assert.equal(x.renderer.energyButton.getAttribute('aria-pressed'),'true');
- x.renderer.setSelection(null);assert.equal(x.renderer.energyButton.getAttribute('aria-pressed'),'false');
+ x.renderer.setSelection(null);assert.equal(x.renderer.roster.children[0].getAttribute('aria-pressed'),'false');
  assert.equal(JSON.stringify(x.state),before);assert.equal(x.renderer.board.all(n=>n.tag==='button'&&n.disabled).length,0);
 });
 
@@ -138,7 +137,33 @@ test('failed native action and poster fall back to same-character avatar and exp
  image.fire('error');image.fire('error');assert.equal(image.src,'media/avatar0.webp');assert.equal(image.hidden,false);
  x.renderer.retry();assert.equal(image.src,'media/idle0.webp?retry=1');assert.equal(image.hidden,false);
 });
-test('energy target preview shows the selected skill cost and resets after cancellation',()=>{
- const x=setup();x.renderer.draw(x.state);x.renderer.setSelection({energy:true,cost:25});assert.match(x.renderer.energyButton.textContent,/消耗 25/);
- x.renderer.setSelection(null);assert.doesNotMatch(x.renderer.energyButton.textContent,/消耗/);
+test('independent gauges reflect each skill duration while deployed cards remain selectable at zero public energy',()=>{
+ const x=setup();x.content.characters.c1.skill.cooldown=30;x.state.units=[{...x.unit(),readyAtTick:400},{...x.unit(2,'c1'),readyAtTick:600}];x.state.energy=0;x.state.tick=100;x.renderer.draw(x.state);
+ const cards=x.renderer.roster.children;assert.equal(cards[0].disabled,false);assert.equal(cards[0].dataset.gesture,undefined);assert.equal(cards[0].dataset.battleUnitId,'1');assert.equal(cards[2].disabled,true);
+ const bars=x.nodes('battle-card-charge');assert.equal(bars[0].getAttribute('aria-valuenow'),'25');assert.equal(bars[1].getAttribute('aria-valuenow'),'17');
+ assert.match(x.renderer.energyDisplay.textContent,/部署 \/ 回收/);assert.doesNotMatch(x.renderer.energyDisplay.getAttribute('aria-label'),/点击/);
+});
+test('selected ready unit casts without energy; recall charges separately and stale selection cannot issue commands',()=>{
+ const calls=[],x=setup(320,2,{onCast:id=>calls.push(['cast',id]),onRecall:id=>calls.push(['recall',id])});x.state.units=[x.unit()];x.state.tick=20;x.state.energy=0;x.renderer.draw(x.state);x.renderer.setSelection({unitId:1});
+ assert.equal(x.renderer.actions.hidden,false);assert.equal(x.renderer.castButton.disabled,false);assert.equal(x.renderer.recallButton.disabled,true);assert.match(x.renderer.actions.textContent,/技能0/);
+ x.renderer.castButton.fire('click');x.renderer.recallButton.fire('click');assert.deepEqual(calls,[['cast',1]]);
+ x.state.energy=10;x.renderer.draw(x.state);assert.equal(x.renderer.recallButton.disabled,false);x.renderer.recallButton.fire('click');assert.deepEqual(calls,[['cast',1],['recall',1]]);
+ x.state.units=[];x.renderer.draw(x.state);assert.equal(x.renderer.actions.hidden,true);x.renderer.castButton.fire('click');assert.equal(calls.length,2);
+});
+test('unit operation panel waits for that unit full gauge, disables in pause and resumes without replacing controls',()=>{
+ const x=setup();x.state.units=[{...x.unit(),readyAtTick:400}];x.state.tick=100;x.renderer.draw(x.state);x.renderer.setSelection({unitId:1});const panel=x.renderer.actions;
+ assert.equal(x.renderer.castButton.disabled,true);assert.match(panel.textContent,/充能 25% · 15 秒/);
+ x.state.tick=400;x.state.status='paused';x.renderer.draw(x.state);assert.equal(x.renderer.castButton.disabled,true);assert.equal(x.renderer.recallButton.disabled,true);
+ x.state.status='running';x.renderer.draw(x.state);assert.equal(x.renderer.castButton.disabled,false);assert.equal(x.renderer.actions,panel);
+});
+test('recalled unit roster preserves visible health and frozen charge while allowing paid redeployment',()=>{
+ const x=setup();x.state.reserves={c0:{hp:37,remainingTicks:200}};x.renderer.draw(x.state);const card=x.renderer.roster.children[0];
+ assert.equal(card.dataset.gesture,'deploy');assert.equal(card.disabled,false);assert.match(card.textContent,/20 部署 · 生命37/);assert.match(card.getAttribute('title'),/充能剩余 10 秒/);
+ assert.equal(x.nodes('battle-card-charge')[0].getAttribute('aria-valuenow'),'50');x.state.tick=200;x.renderer.draw(x.state);assert.equal(x.nodes('battle-card-charge')[0].getAttribute('aria-valuenow'),'50');
+ x.state.energy=19;x.renderer.draw(x.state);assert.equal(card.disabled,true);
+});
+test('long personal gauge stays below 100 percent until the exact ready tick',()=>{
+ const x=setup();x.content.characters.c0.skill.cooldown=75;x.state.units=[{...x.unit(),readyAtTick:1500}];x.state.tick=1493;x.renderer.draw(x.state);x.renderer.setSelection({unitId:1});
+ assert.equal(x.nodes('battle-card-charge')[0].getAttribute('aria-valuenow'),'99');assert.match(x.renderer.actions.textContent,/充能 99%/);assert.equal(x.renderer.castButton.disabled,true);
+ x.state.tick=1500;x.renderer.draw(x.state);assert.equal(x.nodes('battle-card-charge')[0].getAttribute('aria-valuenow'),'100');assert.equal(x.renderer.castButton.disabled,false);
 });

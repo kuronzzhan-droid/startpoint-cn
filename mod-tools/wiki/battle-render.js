@@ -1,14 +1,18 @@
 /* Presentation only: simulation owns time, health, cooldowns and all commands. */
 ((root)=>{
  'use strict';
- function create({host,content,ui,onFailure=()=>{}}){
+ function create({host,content,ui,onFailure=()=>{},onCast=()=>{},onRecall=()=>{},onInspect=()=>{}}){
   const {el}=ui,field=el('section','battle-field'),status=el('div','battle-status'),board=el('div','battle-board');
   const ground=el('canvas','battle-ground'),fx=el('canvas','battle-fx'),grid=el('div','battle-grid'),layer=el('div','battle-sprites');
-  const roster=el('div','battle-roster'),energyButton=el('button','battle-energy'),energyValue=el('strong'),energyLabel=el('span','','能量');
+  const roster=el('div','battle-roster'),energyDisplay=el('div','battle-energy'),energyValue=el('strong'),energyLabel=el('span','','部署 / 回收');
+  const actions=el('section','battle-unit-actions'),actionTitle=el('strong'),actionHint=el('span','battle-action-hint'),actionCharge=el('span','battle-action-charge'),actionBar=el('i');
+  const castButton=el('button','primary-button','发动技能'),recallButton=el('button','secondary-button','回收'),inspectButton=el('button','secondary-button','详情');
+  actions.hidden=true;actions.setAttribute('aria-label','选中角色操作');actionCharge.append(actionBar);actions.append(actionTitle,actionHint,actionCharge,castButton,recallButton,inspectButton);
+  for(const [node,callback]of [[castButton,onCast],[recallButton,onRecall],[inspectButton,onInspect]]){node.type='button';node.addEventListener('click',()=>{const unit=lastState?.units.find(u=>u.id===selection?.unitId&&u.hp>0);if(unit&&!node.disabled)callback(unit.id);});}
   const entry=el('span','battle-entry'),base=el('span','battle-base'),wave=el('span','battle-wave');
   status.append(wave,base,entry);status.setAttribute('aria-label','战场状态');board.setAttribute('aria-label','五列七行草地战场');
-  board.dataset.navigationSwipeIgnore='';energyButton.type='button';energyButton.dataset.gesture='energy';energyButton.setAttribute('aria-pressed','false');
-  energyButton.append(energyLabel,energyValue);board.append(ground,fx,grid,layer);field.append(status,board,roster,energyButton);host.append(field);
+  board.dataset.navigationSwipeIgnore='';energyDisplay.setAttribute('role','status');
+  energyDisplay.append(energyLabel,energyValue);board.append(ground,fx,grid,layer);field.append(status,board,actions,roster,energyDisplay);host.append(field);
   ground.setAttribute('aria-hidden','true');fx.setAttribute('aria-hidden','true');layer.setAttribute('aria-hidden','true');
   const groundCtx=ground.getContext('2d'),fxCtx=fx.getContext('2d'),cells=[],cards=new Map(),entities=new Map(),coffins=new Map(),castUntil=new Map();
   let dead=false,selection=null,width=0,height=0,dpr=0,pendingWidth=board.clientWidth||280,lastEventId=0,lastState=null;
@@ -16,6 +20,8 @@
   const setText=(node,text)=>{text=String(text);if(node.textContent!==text)node.textContent=text;};
   const attr=(node,key,value)=>{value=String(value);if(node.getAttribute(key)!==value)node.setAttribute(key,value);};
   const name=id=>content.characters[id]?.name||'角色',alive=unit=>unit.hp>0;
+  const charge=(id,remaining)=>remaining<=0?100:Math.max(0,Math.min(99,Math.round((1-remaining/(content.characters[id].skill.cooldown*20))*100)));
+  const remaining=unit=>Math.max(0,unit.readyAtTick-lastState.tick);
   const safeImage=def=>def&&typeof def.url==='string'&&/^media\/[a-zA-Z0-9_./-]+\.(webp|png|jpg)$/.test(def.url)&&!def.url.includes('..')&&Number.isFinite(def.width)&&def.width>0&&Number.isFinite(def.height)&&def.height>0;
   function imageState(img){
    const record={img,failed:new Set(),options:[],current:null,scale:1};
@@ -37,10 +43,10 @@
   }
   function createEntity(unit,enemy){
    const node=el('div',`battle-entity ${enemy?'battle-enemy battle-'+unit.rank:'battle-ally'}`),img=el('img','battle-sprite');
-   const health=el('span','battle-health'),bar=el('i'),label=el('span','battle-unit-label'),ready=el('span','battle-ready');
+   const health=el('span','battle-health'),bar=el('i'),label=el('span','battle-unit-label'),ready=el('span','battle-ready'),gauge=el('span','battle-charge'),gaugeBar=el('i');
    img.alt='';img.draggable=false;health.setAttribute('role','progressbar');health.setAttribute('aria-label',`${name(unit.characterId)}生命`);
-   health.append(bar);node.append(ready,img,health,label);layer.append(node);
-   return {node,img,health,bar,label,ready,picture:imageState(img)};
+   health.append(bar);gauge.append(gaugeBar);gauge.hidden=enemy;node.append(ready,img,health,gauge,label);layer.append(node);
+   return {node,img,health,bar,label,ready,gauge,gaugeBar,picture:imageState(img)};
   }
   function updateEntity(record,unit,state,enemy){
    const media=content.media[unit.characterId],actions=media?.actions||{},casting=(castUntil.get(unit.id)||0)>state.tick;
@@ -52,6 +58,7 @@
    const ratio=Math.max(0,Math.min(1,unit.hp/unit.maxHp));record.bar.style.width=`${ratio*100}%`;
    attr(record.health,'aria-valuemin',0);attr(record.health,'aria-valuemax',unit.maxHp);attr(record.health,'aria-valuenow',Math.max(0,Math.round(unit.hp)));
    const isReady=!enemy&&state.tick>=unit.readyAtTick;record.node.classList.toggle('is-ready',isReady);
+   if(!enemy)record.gaugeBar.style.width=`${charge(unit.characterId,remaining(unit))}%`;
    record.node.classList.toggle('is-casting',casting);record.node.classList.toggle('is-missing',!record.picture.current);
    setText(record.label,enemy?(unit.rank==='boss'?'Boss':'先锋'):record.picture.current?'':name(unit.characterId));
   }
@@ -83,13 +90,18 @@
   function drawRoster(state){
    state.squad.forEach((id,index)=>{
     let card=cards.get(id);if(!card){
-     const node=el('button','battle-roster-card'),img=el('img'),title=el('span','battle-roster-name',name(id)),hint=el('span','battle-roster-hint');
+     const node=el('button','battle-roster-card'),img=el('img'),title=el('span','battle-roster-name',name(id)),hint=el('span','battle-roster-hint'),gauge=el('span','battle-card-charge'),gaugeBar=el('i');
      node.type='button';node.dataset.characterId=id;node.dataset.gesture='deploy';img.alt='';img.draggable=false;img.src=content.media[id]?.avatar||'';
-     node.append(img,title,hint);if(index===0){const flag=el('span','battle-leader','⚑');flag.setAttribute('aria-label','队长');node.append(flag);}roster.append(node);card={node,hint};cards.set(id,card);
+     gauge.append(gaugeBar);gauge.setAttribute('role','progressbar');gauge.setAttribute('aria-label',`${name(id)}技能充能`);
+     node.append(img,title,hint,gauge);if(index===0){const flag=el('span','battle-leader','⚑');flag.setAttribute('aria-label','队长');node.append(flag);}roster.append(node);card={node,hint,gauge,gaugeBar};cards.set(id,card);
     }
     const unit=state.units.find(u=>alive(u)&&u.characterId===id),coffin=state.coffins.find(c=>c.characterId===id),cost=content.characters[id]?.stats.deployCost||20;
-    const label=unit?(state.tick>=unit.readyAtTick?'技能就绪':`${Math.max(0,Math.ceil((unit.readyAtTick-state.tick)/20))}s`):coffin?`${Math.max(0,Math.ceil((coffin.releaseAtTick-state.tick)/20))}s 复归`:`${cost} 部署`;
-    card.node.disabled=!!unit||!!coffin||state.status!=='running'||state.energy<cost;
+    const reserve=state.reserves?.[id],ticks=unit?remaining(unit):reserve?.remainingTicks,percent=ticks===undefined?0:charge(id,ticks);
+    const label=unit?(ticks<=0?'技能就绪':`${Math.ceil(ticks/20)}s · ${percent}%`):coffin?`${Math.max(0,Math.ceil((coffin.releaseAtTick-state.tick)/20))}s 复归`:reserve?`${cost} 部署 · 生命${Math.ceil(reserve.hp)}`:`${cost} 部署`;
+    card.node.disabled=!!coffin||state.status!=='running'||(!unit&&state.energy<cost);
+    if(unit){card.node.dataset.battleUnitId=String(unit.id);delete card.node.dataset.gesture;}else{delete card.node.dataset.battleUnitId;card.node.dataset.gesture='deploy';}
+    card.gauge.hidden=!unit&&!reserve;card.gaugeBar.style.width=`${percent}%`;attr(card.gauge,'aria-valuemin',0);attr(card.gauge,'aria-valuemax',100);attr(card.gauge,'aria-valuenow',percent);
+    attr(card.node,'title',reserve?`保留生命 ${Math.ceil(reserve.hp)}，充能剩余 ${Math.ceil(ticks/20)} 秒；待部署时停止充能。`:label);
     card.node.classList.toggle('is-deployed',!!unit);card.node.classList.toggle('is-ready',!!unit&&state.tick>=unit.readyAtTick);setText(card.hint,label);attr(card.node,'aria-label',`${index===0?'队长，':''}${name(id)}，${label}`);
    });
   }
@@ -132,18 +144,24 @@
    }fxCtx.globalAlpha=1;
   }
   function setSelection(value){
-   setText(energyLabel,value?.energy&&value.cost?`消耗 ${value.cost}`:'能量');
    if(dead)return;selection=value;
-   for(const [id,card]of cards)attr(card.node,'aria-pressed',!!value&&value.characterId===id);
-   attr(energyButton,'aria-pressed',!!value?.energy);board.classList.toggle('is-selecting',!!value);board.classList.toggle('is-energy-select',!!value?.energy);
+   const unit=lastState?.units.find(u=>u.id===value?.unitId&&u.hp>0);if(value?.unitId&&!unit)selection=null;
+   for(const [id,card]of cards)attr(card.node,'aria-pressed',value?.characterId===id||unit?.characterId===id);
+   board.classList.toggle('is-selecting',!!value?.characterId);actions.hidden=!unit;
+   if(unit){
+    const def=content.characters[unit.characterId],ticks=remaining(unit),percent=charge(unit.characterId,ticks),running=lastState.status==='running';
+    setText(actionTitle,`${def.name} · ${def.skill.name}`);setText(actionHint,ticks<=0?'技能已就绪':`充能 ${percent}% · ${Math.ceil(ticks/20)} 秒`);actionBar.style.width=`${percent}%`;
+    setText(castButton,ticks<=0?'发动技能':`充能 ${Math.ceil(ticks/20)}s`);castButton.disabled=!running||ticks>0;
+    const cost=content.recallCost??10;setText(recallButton,`回收 ${cost}`);attr(recallButton,'aria-label',`回收${def.name}，消耗${cost}能量，保留生命与充能`);recallButton.disabled=!running||lastState.energy<cost;
+   }
    for(const cell of cells){const match=value?.cell&&Number(cell.dataset.col)===value.cell.col&&Number(cell.dataset.row)===value.cell.row;
-    cell.classList.toggle('is-drop-valid',!!match&&value.valid!==false);cell.classList.toggle('is-drop-invalid',!!match&&value.valid===false);}
+    cell.classList.toggle('is-drop-valid',!!match&&value.valid!==false);cell.classList.toggle('is-drop-invalid',!!match&&value.valid===false);cell.classList.toggle('is-selected',!!unit&&String(unit.id)===cell.dataset.unitId);}
   }
   function draw(state,events=[]){
    if(dead)return;lastState=state;size();collect(state,events);updateUnits(state);drawRoster(state);effects(state);setSelection(selection);
    setText(wave,`第 ${state.wave} 波`);setText(base,`据点 ${Math.max(0,Math.ceil(state.baseHp))}`);
    setText(entry,state.status==='paused'?'已暂停':state.status==='won'?'已通关':state.status==='lost'?'挑战结束':state.nextWaveTick?`${Math.max(0,Math.ceil((state.nextWaveTick-state.tick)/20))}s 后迎敌`:'↓ 敌人入口');
-   setText(energyValue,`${Math.floor(state.energy)} / 120`);energyButton.disabled=state.status!=='running';attr(energyButton,'aria-label',`能量 ${Math.floor(state.energy)}，选择后点击就绪角色发动技能`);
+   setText(energyValue,`${Math.floor(state.energy)} / 120`);attr(energyDisplay,'aria-label',`公共能量 ${Math.floor(state.energy)}，只用于部署和回收；角色技能独立充能`);
    board.classList.toggle('is-paused',state.status!=='running');
   }
   function resized(value){if(dead||!value||value===pendingWidth)return;pendingWidth=value;if(lastState)draw(lastState);}
@@ -155,7 +173,7 @@
    cards.clear();visuals=[];texts=[];selection=null;field.remove();
   }
   function retry(){if(dead)return;for(const record of [...entities.values(),...coffins.values()]){record.picture.failed.clear();record.picture.url=null;record.picture.retry=(record.picture.retry||0)+1;}if(lastState)draw(lastState);}
-  return {board,roster,energyButton,status,draw,setSelection,retry,destroy};
+  return {board,roster,energyDisplay,actions,castButton,recallButton,status,draw,setSelection,retry,destroy};
  }
  const api={create};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.WFBattleRender=api;
 })(typeof window==='undefined'?globalThis:window);
