@@ -201,6 +201,7 @@ def _prepare(site, output, definitions, evidence):
     source_paths = sorted((_safe_path(UI_ROOT / n) for n in UI_REPLACEMENTS | BATTLE_ASSETS))
     source_paths += [_safe_path(definitions / n) for n in DEFINITION_FILES]
     tool_paths = [Path(__file__).resolve(), Path(__file__).with_name("wf_wiki_battle_content.py").resolve(),
+                  Path(__file__).with_name("wf_wiki_battle_native.py").resolve(),
                   Path(__file__).with_name("wf_wiki_paths.py").resolve()]
     source_paths += tool_paths
     source_commit = _head()

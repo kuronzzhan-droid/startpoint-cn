@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import sys
 import tempfile
@@ -51,6 +52,7 @@ class ContentTests(unittest.TestCase):
                          "aliases": ["别名"], "element": ELEMENTS[i], "origin": "新增MOD"}
                         for i, cid in enumerate(IDS)]
         self.rows = {theme: [definition(cid)] for theme, cid in zip(THEMES, IDS)}
+        self.native = {}
         self.stages = {"stages": [{"id": theme, "name": theme, "bossId": cid,
                                   "theme": theme, "difficulty": round(1 + .12 * i, 2)}
                                  for i, (theme, cid) in enumerate(zip(THEMES, IDS))],
@@ -64,8 +66,24 @@ class ContentTests(unittest.TestCase):
                                  "death": [], "se": []}, "missingCues": ["未收录准备语音"]}
                       for cid in IDS}, "coffin": image, "audit": {"privatePath": "private-fixture"}}
 
+    def write_catalog(self):
+        chunks = {}
+        (self.site / "data").mkdir(exist_ok=True)
+        for row in self.catalog:
+            cid = row["id"]
+            detail = self.native.get(cid, {"id": cid, "skills": [{"kind": "main", "level": "2", "gauge": 500}],
+                                            "abilities": []})
+            raw = ('window.WF_WIKI_CHUNKS = window.WF_WIKI_CHUNKS || {};\n' +
+                   f'window.WF_WIKI_CHUNKS["character:{cid}"] = ' + json.dumps(detail) + ';\n').encode()
+            digest = hashlib.sha256(raw).hexdigest()
+            url = f"data/character-{cid}-{digest[:16]}.js"
+            (self.site / url).write_bytes(raw)
+            chunks["character:" + cid] = {"url": url, "sha256": digest, "bytes": len(raw)}
+        catalog = {"characters": self.catalog, "dataManifest": {"chunks": chunks}}
+        (self.site / "data.js").write_text("window.WF_WIKI = " + json.dumps(catalog) + ";", encoding="utf-8")
+
     def write(self):
-        (self.site / "data.js").write_text("window.WF_WIKI = " + json.dumps({"characters": self.catalog}) + ";", encoding="utf-8")
+        self.write_catalog()
         for theme, rows in self.rows.items():
             (self.defs / f"characters-{theme}.json").write_text(json.dumps({"characters": rows}), encoding="utf-8")
         (self.defs / "stages.json").write_text(json.dumps(self.stages), encoding="utf-8")
@@ -83,6 +101,27 @@ class ContentTests(unittest.TestCase):
         self.assertNotIn("audit", result)
         self.assertNotIn("sourceExcerpt", result["characters"][IDS[0]])
         self.assertEqual(result["characters"][IDS[0]]["aliases"], ["别名"])
+
+    def test_native_charge_replaces_runtime_cost_after_damage_budget_compilation(self):
+        self.native[IDS[0]] = {"id": IDS[0], "skills": [{"kind": "main", "level": "2", "gauge": 510}],
+            "abilities": [{"rows": [{"description": "自身 技能槽充能 5%",
+                                      "restrictions": {"operator": "AND", "items": []}}]}]}
+        skill = self.build()["characters"][IDS[0]]["skill"]
+        self.assertEqual(skill["gauge"], 510)
+        self.assertEqual(skill["cooldown"], 24.3)
+        self.assertEqual(skill["chargeSpeed"], .05)
+        self.assertNotIn("cost", skill)
+        self.assertEqual(skill["phases"][0]["effects"][0]["amount"], 210)
+
+    def test_runtime_rejects_native_gauge_duration_or_refund_mismatch(self):
+        for key, value in (("gauge", True), ("cooldown", 30), ("initial", 1.1),
+                           ("chargeSpeed", -1), ("cost", 15),
+                           ("refund", {"ratio": .05, "ct": -1}),
+                           ("refund", {"ratio": .05, "ct": 15, "limit": True})):
+            result = self.build()
+            result["characters"][IDS[0]]["skill"][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                content.validate_content(result)
 
     def test_build_only_budget_shares_do_not_ship_to_runtime(self):
         result = self.build()
@@ -347,7 +386,7 @@ class ContentTests(unittest.TestCase):
         self.catalog = [{"id": cid, "name": cid, "title": "公开称号", "theme": "公开版本",
                          "aliases": [], "element": element, "origin": "新增MOD"}
                         for cid, element in APPROVED.items()]
-        (self.site / "data.js").write_text("window.WF_WIKI = " + json.dumps({"characters": self.catalog}) + ";", encoding="utf-8")
+        self.write_catalog()
         sample = copy.deepcopy(self.media["media"][IDS[0]])
         self.media["media"] = {cid: copy.deepcopy(sample) for cid in APPROVED}
         result = content.build_content(self.site, self.defs, self.media)

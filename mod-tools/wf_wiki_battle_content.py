@@ -7,6 +7,8 @@ import math
 import re
 from pathlib import Path
 
+from wf_wiki_battle_native import cooldown_seconds, read_native_skills
+
 THEMES = ("fire", "water", "thunder", "wind", "light", "dark")
 ELEMENTS = dict(zip("火水雷风光暗", THEMES))
 ORIGINS = {"新增MOD", "改版官方", "灰服独立角色资料"}
@@ -140,13 +142,29 @@ def _effect(value, compiled):
 
 
 def _skill(value, compiled=False):
-    _keys(value, ("name", "description", "cooldown", "cost", "phases"),
-          ("name", "description", "cooldown", "cost", "phases"), "skill")
+    fields = ("name", "description", "cooldown", "phases")
+    extra = ("gauge", "initial", "chargeSpeed", "refund") if compiled else ("cost",)
+    _keys(value, (*fields, *extra), (*fields, "gauge" if compiled else "cost"), "skill")
     _text(value["name"], "skill name")
     _text(value["description"], "skill description")
-    _number(value["cooldown"], "cooldown", 1, 60)
-    _number(value["cost"], "cost", 1, 120)
-    _require((value["cooldown"], value["cost"]) in BUDGETS, "Unsupported cost tier")
+    _number(value["cooldown"], "cooldown", .05 if compiled else 1, 500 if compiled else 60)
+    if compiled:
+        _require(type(value["gauge"]) is int and 1 <= value["gauge"] <= 10000, "Invalid native gauge")
+        for key, limit in (("initial", 1), ("chargeSpeed", 10)):
+            if key in value:
+                _number(value[key], key, .000001, limit)
+        expected = cooldown_seconds(value["gauge"], value.get("chargeSpeed", 0))
+        _require(value["cooldown"] == expected, "Native charging duration mismatch")
+        if "refund" in value:
+            refund = value["refund"]
+            _keys(refund, ("ratio", "ct", "limit"), ("ratio", "ct"), "refund")
+            _number(refund["ratio"], "refund ratio", .000001, 1)
+            _number(refund["ct"], "refund CT", 0, 3600)
+            if "limit" in refund:
+                _require(type(refund["limit"]) is int and 1 <= refund["limit"] <= 10000, "Invalid refund limit")
+    else:
+        _number(value["cost"], "cost", 1, 120)
+        _require((value["cooldown"], value["cost"]) in BUDGETS, "Unsupported cost tier")
     phases = value["phases"]
     _require(isinstance(phases, list) and 1 <= len(phases) <= 32, "Invalid skill phase count")
     shares, previous_offset = [], -1
@@ -315,6 +333,7 @@ def build_content(site_root: Path, definitions_root: Path, media_evidence: dict)
     site_root, definitions_root = Path(site_root), Path(definitions_root)
     catalog = _catalog(site_root)
     allowed = {cid for cid, row in catalog.items() if row.get("origin") in ORIGINS}
+    native = read_native_skills(site_root, sorted(allowed))
     characters = {}
     for theme in THEMES:
         document = _json(definitions_root / f"characters-{theme}.json")
@@ -330,10 +349,13 @@ def build_content(site_root: Path, definitions_root: Path, media_evidence: dict)
             _text(row["sourceSkill"], "source skill")
             _text(row["sourceExcerpt"], "source excerpt")
             stats = copy.deepcopy(STATS[row["role"]])
+            skill = _compile_skill(row["skill"], stats)
+            del skill["cost"]
+            skill.update(native[cid])
             characters[cid] = {"id": cid, **{key: meta.get(key, "") for key in ("name", "title", "theme")},
                                "aliases": meta.get("aliases", []), "element": theme, "role": row["role"],
                                "tag": "MOD改" if meta.get("origin") == "改版官方" else "MOD",
-                               "stats": stats, "skill": _compile_skill(row["skill"], stats)}
+                               "stats": stats, "skill": skill}
     _require(set(characters) == allowed, "Definitions must cover the complete public MOD roster")
     stages = _json(definitions_root / "stages.json")
     _keys(stages, ("stages", "endless"), ("stages", "endless"), "stages document")

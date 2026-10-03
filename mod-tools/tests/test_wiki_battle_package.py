@@ -91,6 +91,7 @@ class PackageTests(unittest.TestCase):
                 self.assertEqual(result[name], raw, name)
         self.assertEqual(len(result) - len(before), 15)
         self.assertEqual(receipt["characters"], 6)
+        self.assertIn("wf_wiki_battle_native.py", receipt["toolHashes"])
         self.assertTrue(receipt["oldPayloadUnchanged"])
         self.assertEqual(receipt["addedMedia"], [self.fixture.media["coffin"]["url"]])
         (self.output / "_worker.js").write_bytes(b"candidate edit")
