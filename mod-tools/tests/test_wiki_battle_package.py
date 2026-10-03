@@ -95,7 +95,7 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(receipt["addedMedia"], [self.fixture.media["coffin"]["url"]])
         (self.output / "_worker.js").write_bytes(b"candidate edit")
         self.assertEqual((self.site / "_worker.js").read_bytes(), before["_worker.js"])
-        self.assertNotIn("audit", (self.output / "data/battle-content.js").read_text())
+        self.assertNotIn("audit", (self.output / "data/battle-content.js").read_text(encoding="utf-8"))
         self.assertTrue(self.output.with_name("candidate-receipt.json").is_file())
 
     def test_lazy_assets_do_not_become_eager_and_version_is_deterministic(self):
@@ -104,7 +104,7 @@ class PackageTests(unittest.TestCase):
         self.assertFalse(self.output.with_name("candidate-receipt.json").exists())
         second = self.build()
         self.assertEqual(first["version"], second["version"])
-        html = (self.output / "index.html").read_text()
+        html = (self.output / "index.html").read_text(encoding="utf-8")
         self.assertIn('data-battle-version="' + first["version"] + '"', html)
         self.assertIn("battle-loader.js?v=" + first["version"], html)
         self.assertNotIn("battle.css", html)
@@ -141,7 +141,7 @@ class PackageTests(unittest.TestCase):
         manifest = self.site.with_name("site-sha256.json")
         for name in ("../escape", "data.js"):
             self.pin_manifest()
-            data = json.loads(manifest.read_text())
+            data = json.loads(manifest.read_text(encoding="utf-8"))
             data["files"].append({"path": name, "sha256": "0" * 64, "bytes": 0})
             manifest.write_text(json.dumps(data))
             package.FROZEN_MANIFEST_SHA256 = digest(manifest.read_bytes())
@@ -192,7 +192,7 @@ class PackageTests(unittest.TestCase):
             self.build()
         (self.ui / "battle-page.js").write_text("/* safe */")
         path = self.ui / "index.html"
-        path.write_text(path.read_text().replace("battle-loader.js", "battle-page.js"))
+        path.write_text(path.read_text(encoding="utf-8").replace("battle-loader.js", "battle-page.js"))
         with self.assertRaisesRegex(ValueError, "首页"):
             self.build()
 
@@ -207,7 +207,7 @@ class PackageTests(unittest.TestCase):
         def changing(*args):
             result = compile_content(*args)
             path = self.defs / "stages.json"
-            path.write_text(path.read_text() + "\n")
+            path.write_text(path.read_text(encoding="utf-8") + "\n")
             return result
 
         with mock.patch.object(package, "build_content", side_effect=changing):
