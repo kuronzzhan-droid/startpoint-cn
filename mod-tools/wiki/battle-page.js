@@ -76,7 +76,9 @@
      view.setSelection({...value,cell,cost,valid:!reason});message(reason|| (value.energy?`松手发动技能 · 消耗 ${cost} 能量`:'松手部署'));return !reason;
     }});
    clock=root.WFBattleClock.create({step:()=>{const events=root.WFBattleModel.advance(state);media.handle(events);view.draw(state,events);
-    if(events.some(e=>e.type==='wave'))loadCurrent();if(events.some(e=>e.type==='rage-warning'))message('敌人即将狂暴，攻击会逐渐增强');if(state.result)finish();},render:()=>view.draw(state),onLag:()=>pause('运行出现延迟，已自动暂停。点击继续。')});
+    if(events.some(e=>e.type==='wave'))loadCurrent();if(events.some(e=>e.type==='rage-warning'))message('敌人即将狂暴，攻击会逐渐增强');if(state.result)finish();},
+    // Native WebP animates independently. Tick/input/resize draws avoid duplicate work at 120+ Hz.
+    render:()=>{},onLag:()=>pause('运行出现延迟，已自动暂停。点击继续。')});
    clock.start();applySettings(store.read().value.settings);message('拖头像部署；也可点击头像后点击草地。');
   }
   const guard=makeGuard({getState:()=>state,isConnected:()=>!dead&&box.isConnected,pause,resume,ask:()=>ask('离开会结束本场战斗，阵容与历史成绩仍保存在本机。')});
