@@ -10,7 +10,7 @@
       ||squad.some(id=>!content.characters[id])||!['campaign','endless'].includes(mode)
       ||!content.stages?.some(stage=>stage.id===stageId))throw new Error('请选择六位不同的 MOD 角色和有效关卡');
     const state={content,squad:[...squad],mode,stageId,status:'running',tick:0,time:0,energy:60,baseHp:100,
-      wave:1,units:[],enemies:[],effects:[],coffins:[],reserves:{},deployed:{},lastCommandId:0,nextEntityId:1,nextEventId:1,kills:0,result:null};
+      wave:1,units:[],enemies:[],effects:[],coffins:[],reserves:{},deployed:{},refunds:{},lastCommandId:0,nextEntityId:1,nextEventId:1,kills:0,result:null};
     Waves.spawn(state);return state;
   }
   function canDeploy(s,characterId,col,row) {
@@ -30,8 +30,9 @@
     if(c.type==='deploy') {
       const reason=canDeploy(s,c.characterId,c.col,c.row);if(reason)return fail(reason);
       const def=s.content.characters[c.characterId],reserve=s.reserves[c.characterId];
+      const initial=s.deployed[c.characterId]?0:(def.skill.initial||0),firstTicks=Math.ceil(Math.round(def.skill.cooldown*20)*(1-initial));
       const unit={id:s.nextEntityId++,characterId:c.characterId,col:c.col,row:c.row,x:c.col+.5,y:c.row+.5,
-        hp:reserve?.hp??def.stats.hp,maxHp:def.stats.hp,statuses:[],readyAtTick:s.tick+(reserve?.remainingTicks??Math.round(def.skill.cooldown*20)),
+        hp:reserve?.hp??def.stats.hp,maxHp:def.stats.hp,statuses:[],readyAtTick:s.tick+(reserve?.remainingTicks??firstTicks),
         readyAnnounced:reserve?.readyAnnounced??false,nextActionTick:s.tick+Math.round(def.stats.interval*20)};
       delete s.reserves[c.characterId];s.deployed[c.characterId]=true;
       s.units.push(unit);s.energy-=def.stats.deployCost;
@@ -51,6 +52,11 @@
       if(u.readyAtTick>s.tick)return fail('角色技能尚未充满');
       const plan=Effects.planCast(s,u.id);if(!plan)return fail('没有有效目标');
       u.readyAtTick=s.tick+Math.round(skill.cooldown*20);u.readyAnnounced=false;
+      const refund=skill.refund,history=s.refunds[u.characterId]||{uses:0,nextTick:0};
+      if(refund&&s.tick>=history.nextTick&&history.uses<(refund.limit??Infinity)) {
+        u.readyAtTick=s.tick+Math.ceil(Math.round(skill.cooldown*20)*(1-refund.ratio));
+        s.refunds[u.characterId]={uses:history.uses+1,nextTick:s.tick+Math.round(refund.ct*20)};
+      }
       return {ok:true,events:Effects.startCast(s,plan)};
     }
     return fail('操作不可用');

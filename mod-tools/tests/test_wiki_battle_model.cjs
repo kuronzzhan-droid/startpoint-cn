@@ -56,3 +56,15 @@ test('ready unit remains ready after recall without repeated ready speech or car
  const s=create();deploy(s);const u=s.units[0];u.readyAtTick=0;u.readyAnnounced=true;u.statuses=[{type:'attackUp',ratio:.5,until:1000}];
  assert.ok(M.dispatch(s,{id:2,type:'recall',unitId:u.id}).ok);assert.ok(deploy(s,3).ok);assert.equal(s.units[0].readyAtTick,s.tick);assert.deepEqual(s.units[0].statuses,[]);assert.equal(M.advance(s).some(e=>e.type==='ready'),false);
 });
+test('native-derived full charge lengths differ and initial gauge is granted only on first deployment',()=>{
+ const o=F.options();o.content.characters.c0.skill.cooldown=75;o.content.characters.c0.skill.initial=.5;o.content.characters.c1.skill.cooldown=22.5;
+ const s=M.create(o);deploy(s);assert.equal(s.units[0].readyAtTick,750);deploy(s,2,'c1',3,5);assert.equal(s.units[1].readyAtTick,450);
+ s.units[0].hp=0;M.advance(s);for(let i=0;i<400;i++)M.advance(s);s.energy=120;assert.ok(deploy(s,3).ok);const u=s.units.find(u=>u.characterId==='c0');assert.equal(u.readyAtTick-s.tick,1500);
+});
+test('source cast refunds obey CT and count across recall and redeployment',()=>{
+ const o=F.options();o.content.characters.c0.skill.refund={ratio:.2,ct:15,limit:2};const s=M.create(o);deploy(s);s.enemies=[F.enemy()];let command=2;
+ function cast(){const u=s.units[0];u.readyAtTick=s.tick;return M.dispatch(s,{id:command++,type:'cast',unitId:u.id});}
+ assert.ok(cast().ok);assert.equal(s.units[0].readyAtTick-s.tick,320);assert.ok(cast().ok);assert.equal(s.units[0].readyAtTick-s.tick,400);
+ s.energy=120;assert.ok(M.dispatch(s,{id:command++,type:'recall',unitId:s.units[0].id}).ok);assert.ok(deploy(s,command++).ok);assert.ok(cast().ok);assert.equal(s.units[0].readyAtTick-s.tick,400);
+ s.tick+=300;assert.ok(cast().ok);assert.equal(s.units[0].readyAtTick-s.tick,320);s.tick+=300;assert.ok(cast().ok);assert.equal(s.units[0].readyAtTick-s.tick,400);
+});
