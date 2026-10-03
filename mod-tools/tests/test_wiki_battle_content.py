@@ -89,6 +89,15 @@ class ContentTests(unittest.TestCase):
         effects = [e for char in result["characters"].values() for p in char["skill"]["phases"] for e in p["effects"]]
         self.assertTrue(all("budgetShare" not in effect for effect in effects))
 
+    def test_badge_preserves_modified_official_identity(self):
+        self.catalog[0]["origin"] = "改版官方"
+        result = self.build()
+        self.assertEqual(result["characters"][IDS[0]]["tag"], "MOD改")
+        self.assertEqual(result["characters"][IDS[1]]["tag"], "MOD")
+        result["characters"][IDS[0]]["tag"] = "官方"
+        with self.assertRaises(ValueError):
+            content.validate_content(result)
+
     def test_multihit_area_budget_does_not_restart_each_phase(self):
         phases = [phase([{"type": "damage", "budgetShare": .25}],
                         {"kind": "circle", "center": "target", "radius": 1.5}) for _ in range(4)]

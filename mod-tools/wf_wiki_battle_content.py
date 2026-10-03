@@ -247,13 +247,14 @@ def validate_content(value):
     chars = value["characters"]
     _require(isinstance(chars, dict) and chars, "Empty roster")
     for cid, char in chars.items():
-        _keys(char, ("id", "name", "title", "theme", "aliases", "element", "role", "stats", "skill"),
+        _keys(char, ("id", "name", "title", "theme", "aliases", "element", "role", "stats", "skill", "tag"),
               ("id", "name", "title", "theme", "aliases", "element", "role", "stats", "skill"), "character")
         _require(re.fullmatch(r"c[0-9a-f]{12}", cid) and char["id"] == cid, "Invalid character ID")
         for key in ("name", "title", "theme"):
             _text(char[key], key)
         _require(isinstance(char["aliases"], list) and all(isinstance(x, str) for x in char["aliases"]), "Invalid aliases")
         _require(char["role"] in STATS and char["element"] in THEMES, "Invalid role or element")
+        _require(char.get("tag", "MOD") in ("MOD", "MOD改"), "Invalid character badge")
         _keys(char["stats"], STATS["melee"], STATS["melee"], "stats")
         for key, number in char["stats"].items():
             _number(number, key, .001)
@@ -300,6 +301,7 @@ def build_content(site_root: Path, definitions_root: Path, media_evidence: dict)
             stats = copy.deepcopy(STATS[row["role"]])
             characters[cid] = {"id": cid, **{key: meta.get(key, "") for key in ("name", "title", "theme")},
                                "aliases": meta.get("aliases", []), "element": theme, "role": row["role"],
+                               "tag": "MOD改" if meta.get("origin") == "改版官方" else "MOD",
                                "stats": stats, "skill": _compile_skill(row["skill"], stats)}
     _require(set(characters) == allowed, "Definitions must cover the complete public MOD roster")
     stages = _json(definitions_root / "stages.json")
