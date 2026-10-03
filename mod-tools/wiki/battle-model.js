@@ -10,7 +10,7 @@
       ||squad.some(id=>!content.characters[id])||!['campaign','endless'].includes(mode)
       ||!content.stages?.some(stage=>stage.id===stageId))throw new Error('请选择六位不同的 MOD 角色和有效关卡');
     const state={content,squad:[...squad],mode,stageId,status:'running',tick:0,time:0,energy:60,baseHp:100,
-      wave:1,units:[],enemies:[],effects:[],coffins:[],lastCommandId:0,nextEntityId:1,nextEventId:1,kills:0,result:null};
+      wave:1,units:[],enemies:[],effects:[],coffins:[],reserves:{},deployed:{},lastCommandId:0,nextEntityId:1,nextEventId:1,kills:0,result:null};
     Waves.spawn(state);return state;
   }
   function canDeploy(s,characterId,col,row) {
@@ -29,19 +29,28 @@
     if(s.status!=='running')return fail('战斗已暂停或结束');
     if(c.type==='deploy') {
       const reason=canDeploy(s,c.characterId,c.col,c.row);if(reason)return fail(reason);
-      const def=s.content.characters[c.characterId];
+      const def=s.content.characters[c.characterId],reserve=s.reserves[c.characterId];
       const unit={id:s.nextEntityId++,characterId:c.characterId,col:c.col,row:c.row,x:c.col+.5,y:c.row+.5,
-        hp:def.stats.hp,maxHp:def.stats.hp,statuses:[],readyAtTick:s.tick+Math.round(def.skill.cooldown*20),
-        readyAnnounced:false,nextActionTick:s.tick+Math.round(def.stats.interval*20)};
+        hp:reserve?.hp??def.stats.hp,maxHp:def.stats.hp,statuses:[],readyAtTick:s.tick+(reserve?.remainingTicks??Math.round(def.skill.cooldown*20)),
+        readyAnnounced:reserve?.readyAnnounced??false,nextActionTick:s.tick+Math.round(def.stats.interval*20)};
+      delete s.reserves[c.characterId];s.deployed[c.characterId]=true;
       s.units.push(unit);s.energy-=def.stats.deployCost;
       return {ok:true,events:[emit(s,'deploy',{entityId:unit.id,characterId:unit.characterId,position:{x:unit.x,y:unit.y}})]};
+    }
+    if(c.type==='recall') {
+      const u=s.units.find(u=>u.id===c.unitId&&live(u));if(!u)return fail('角色已离场');
+      if(s.energy<10)return fail('回收需要 10 能量');
+      s.energy-=10;s.reserves[u.characterId]={hp:u.hp,remainingTicks:Math.max(0,u.readyAtTick-s.tick),readyAnnounced:u.readyAnnounced};
+      s.units=s.units.filter(unit=>unit.id!==u.id);
+      for(const unit of [...s.units,...s.enemies])unit.statuses=(unit.statuses||[]).filter(b=>!(b.requiresCasterAlive&&b.sourceId===u.id));
+      return {ok:true,events:[emit(s,'recall',{entityId:u.id,characterId:u.characterId,position:{x:u.x,y:u.y}})]};
     }
     if(c.type==='cast') {
       const u=s.units.find(u=>u.id===c.unitId&&live(u));if(!u)return fail('角色已离场');
       const skill=s.content.characters[u.characterId].skill;
-      if(u.readyAtTick>s.tick)return fail('技能冷却中');if(s.energy<skill.cost)return fail('能量不足');
+      if(u.readyAtTick>s.tick)return fail('角色技能尚未充满');
       const plan=Effects.planCast(s,u.id);if(!plan)return fail('没有有效目标');
-      s.energy-=skill.cost;u.readyAtTick=s.tick+Math.round(skill.cooldown*20);u.readyAnnounced=false;
+      u.readyAtTick=s.tick+Math.round(skill.cooldown*20);u.readyAnnounced=false;
       return {ok:true,events:Effects.startCast(s,plan)};
     }
     return fail('操作不可用');

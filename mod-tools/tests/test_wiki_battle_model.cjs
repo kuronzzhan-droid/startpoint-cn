@@ -40,3 +40,19 @@ test('dead enemy rewards only once and a simultaneous base death takes precedenc
   assert.equal(s.status,'lost');assert.equal(events.filter(e=>e.type==='result').length,1);
   const energy=s.energy;M.advance(s);assert.equal(s.energy,energy);
 });
+test('recall pays ten energy once, frees the cell and preserves HP and remaining charge off-field',()=>{
+ const s=create();deploy(s);const u=s.units[0];u.hp=321;u.readyAtTick=s.tick+137;const id=u.id;
+ const result=M.dispatch(s,{id:2,type:'recall',unitId:id});assert.equal(result.ok,true);assert.equal(s.energy,30);assert.equal(s.units.length,0);assert.equal(s.coffins.length,0);assert.equal(result.events[0].type,'recall');
+ assert.equal(M.dispatch(s,{id:2,type:'recall',unitId:id}).ok,false);assert.equal(s.energy,30);
+ for(let i=0;i<30;i++)M.advance(s);assert.equal(s.reserves.c0.remainingTicks,137);assert.equal(s.reserves.c0.hp,321);
+ assert.equal(deploy(s,3).ok,true);assert.equal(s.units[0].hp,321);assert.equal(s.units[0].readyAtTick-s.tick,137);assert.equal(s.energy,14.5);assert.equal(s.reserves.c0,undefined);
+});
+test('recall rejects insufficient energy, paused battles and dead or unknown units without changing state',()=>{
+ const s=create();deploy(s);const id=s.units[0].id;s.energy=9;assert.equal(M.dispatch(s,{id:2,type:'recall',unitId:id}).ok,false);assert.equal(s.units.length,1);assert.equal(s.energy,9);
+ s.energy=20;M.setPaused(s,true);assert.equal(M.dispatch(s,{id:3,type:'recall',unitId:id}).ok,false);M.setPaused(s,false);
+ s.units[0].hp=0;assert.equal(M.dispatch(s,{id:4,type:'recall',unitId:id}).ok,false);assert.equal(M.dispatch(s,{id:5,type:'recall',unitId:999}).ok,false);assert.equal(s.energy,20);
+});
+test('ready unit remains ready after recall without repeated ready speech or carried temporary buffs',()=>{
+ const s=create();deploy(s);const u=s.units[0];u.readyAtTick=0;u.readyAnnounced=true;u.statuses=[{type:'attackUp',ratio:.5,until:1000}];
+ assert.ok(M.dispatch(s,{id:2,type:'recall',unitId:u.id}).ok);assert.ok(deploy(s,3).ok);assert.equal(s.units[0].readyAtTick,s.tick);assert.deepEqual(s.units[0].statuses,[]);assert.equal(M.advance(s).some(e=>e.type==='ready'),false);
+});

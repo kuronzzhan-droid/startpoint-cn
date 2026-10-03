@@ -1,10 +1,10 @@
 const test=require('node:test'),assert=require('node:assert/strict'),M=require('../wiki/battle-model.js'),E=require('../wiki/battle-effects.js'),F=require('./wiki_battle_fixture.cjs');
 function setup(phases){const o=F.options();if(phases)o.content.characters.c0.skill.phases=phases;const s=M.create(o);M.dispatch(s,{id:1,type:'deploy',characterId:'c0',col:2,row:5});s.units[0].readyAtTick=0;s.units[0].nextActionTick=1e9;return s;}
 const p=(type,extra={})=>({offset:0,selector:{team:type==='damage'||type==='dot'?'enemy':'ally',kind:'nearest',range:4},geometry:{kind:'single',center:'target'},effects:[{type,...extra}]});
-test('cast needs a valid branch, charges once and resets full cooldown',()=>{
+test('cast needs a valid branch, consumes personal readiness and never charges deployment energy',()=>{
   const s=setup();assert.equal(M.dispatch(s,{id:2,type:'cast',unitId:s.units[0].id}).ok,false);assert.equal(s.energy,40);
-  s.enemies=[F.enemy()];assert.ok(M.dispatch(s,{id:3,type:'cast',unitId:s.units[0].id}).ok);assert.equal(s.energy,25);
-  assert.equal(M.dispatch(s,{id:4,type:'cast',unitId:s.units[0].id}).ok,false);assert.equal(s.energy,25);M.advance(s);assert.equal(s.enemies[0].hp,9700);
+  s.enemies=[F.enemy()];s.energy=0;assert.ok(M.dispatch(s,{id:3,type:'cast',unitId:s.units[0].id}).ok);assert.equal(s.energy,0);
+  assert.equal(M.dispatch(s,{id:4,type:'cast',unitId:s.units[0].id}).ok,false);assert.equal(s.energy,0);M.advance(s);assert.equal(s.enemies[0].hp,9700);
 });
 test('a full-health mixed shield can cast but pure heal cannot',()=>{
   const s=setup([p('heal',{ratio:.2})]);assert.equal(E.planCast(s,s.units[0].id),null);

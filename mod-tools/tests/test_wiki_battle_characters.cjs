@@ -28,9 +28,9 @@ test('emergency healing affects only allies below forty percent',()=>{
  const id=ids.find(id=>characters[id].skill.phases.some(p=>p.selector.hpBelow===.4));assert.ok(id);const s=create(id),caster=s.units[0];s.units[1].hp=s.units[1].maxHp*.4;
  const untouched=s.units[1].hp;M.dispatch(s,{id:7,type:'cast',unitId:caster.id});for(let i=0;i<40;i++)M.advance(s);assert.equal(s.units[1].hp,untouched);
 });
-test('each character cooldown and cost is taken only on accepted commands',()=>{
- for(const id of ids){const s=create(id),u=s.units[0],cost=characters[id].skill.cost;const before=s.energy;
-  assert.equal(M.dispatch(s,{id:7,type:'cast',unitId:u.id}).ok,true);assert.equal(s.energy,before-cost);
-  assert.equal(M.dispatch(s,{id:7,type:'cast',unitId:u.id}).ok,false);assert.equal(M.dispatch(s,{id:8,type:'cast',unitId:u.id}).ok,false);assert.equal(s.energy,before-cost);
+test('each character personal charge is consumed once without spending shared energy',()=>{
+ for(const id of ids){const s=create(id),u=s.units[0];s.energy=0;
+  assert.equal(M.dispatch(s,{id:7,type:'cast',unitId:u.id}).ok,true);assert.equal(s.energy,0);
+  assert.equal(M.dispatch(s,{id:7,type:'cast',unitId:u.id}).ok,false);assert.equal(M.dispatch(s,{id:8,type:'cast',unitId:u.id}).ok,false);assert.equal(s.energy,0);
  }
 });
