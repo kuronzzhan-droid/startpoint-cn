@@ -218,6 +218,34 @@ class ContentTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.build()
 
+    def test_hit_targets_reference_only_prior_damage_and_attached_poison(self):
+        hit = phase([{"type": "damage", "budgetShare": .7}])
+        poison = {**phase([{"type": "dot", "budgetShare": .3, "duration": 8,
+                           "targetMode": "attached"}]), "offset": 1, "hitTargetsFrom": [0]}
+        self.rows["fire"][0]["skill"]["phases"] = [hit, poison]
+        self.assertEqual(self.build()["characters"][IDS[0]]["skill"]["phases"][1]["hitTargetsFrom"], [0])
+        for refs in ([], [1], [0, 0], [True], [-1]):
+            poison["hitTargetsFrom"] = refs
+            with self.subTest(refs=refs), self.assertRaisesRegex(ValueError, "hit-target"):
+                self.build()
+        poison["hitTargetsFrom"] = [0]
+        poison["effects"][0]["targetMode"] = "area"
+        with self.assertRaisesRegex(ValueError, "attached poison"):
+            self.build()
+        poison["effects"][0]["targetMode"] = "attached"
+        hit["effects"] = [{"type": "attackUp", "budgetShare": .7, "duration": 5}]
+        with self.assertRaisesRegex(ValueError, "hit-target"):
+            self.build()
+
+    def test_all_attached_poison_is_bound_to_explicit_prior_damage(self):
+        definitions = Path(__file__).resolve().parents[1] / "wiki-battle"
+        for path in definitions.glob("characters-*.json"):
+            for char in json.loads(path.read_text(encoding="utf-8"))["characters"]:
+                skill = content._compile_skill(char["skill"], content.STATS[char["role"]])
+                for item in skill["phases"]:
+                    if any(e["type"] == "dot" and e.get("targetMode") == "attached" for e in item["effects"]):
+                        self.assertTrue(item.get("hitTargetsFrom"), char["id"])
+
     def test_verified_sound_effect_cues_are_preserved_and_path_checked(self):
         self.media["media"][IDS[0]]["seCues"] = {"deploy": [], "cast": ["media/voice.mp3"],
                                                     "attack": [], "death": []}

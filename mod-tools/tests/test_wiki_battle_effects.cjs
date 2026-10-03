@@ -44,3 +44,42 @@ test('attached poison follows only the enemies actually hit, never a later entra
  const s=setup([dot]);s.enemies=[F.enemy(10,2.5,3.5),F.enemy(11,.5,3.5)];M.dispatch(s,{id:2,type:'cast',unitId:s.units[0].id});M.advance(s);
  s.enemies[0].x=.5;s.enemies[1].x=2.5;for(let i=0;i<40;i++)M.advance(s);assert.equal(s.enemies[0].hp,9920);assert.equal(s.enemies[1].hp,10000);
 });
+test('delayed attached poison uses prior hit identities, deduplicates hits and excludes later entrants',()=>{
+ const hit=p('damage',{amount:10});hit.geometry={kind:'line',center:'self',width:1,length:3,direction:'up',offsetX:-2};
+ const second={...hit,offset:.2},dot=p('dot',{amount:80,duration:2,targetMode:'attached'});
+ dot.offset=1;dot.geometry={kind:'rect',center:'self',width:5,length:3,direction:'up'};dot.hitTargetsFrom=[0,1];
+ const s=setup([hit,second,dot]);s.enemies=[F.enemy(10,.5,4.5),F.enemy(11,.5,6.5)];M.dispatch(s,{id:2,type:'cast',unitId:s.units[0].id});
+ for(let i=0;i<5;i++)M.advance(s);assert.equal(s.enemies[0].hp,9980);
+ s.enemies[0].y=6.5;s.enemies[1].y=4.5;for(let i=0;i<55;i++)M.advance(s);
+ assert.equal(s.enemies[0].hp,9900);assert.equal(s.enemies[1].hp,10000);
+});
+test('hit-bound poison cannot create a valid cast from an unhit enemy in its own area',()=>{
+ const hit=p('damage',{amount:10});hit.geometry={kind:'line',center:'self',width:1,length:3,direction:'up',offsetX:-2};
+ const dot=p('dot',{amount:80,duration:2,targetMode:'attached'});dot.geometry={kind:'circle',center:'target',radius:2};dot.hitTargetsFrom=[0];dot.offset=1;
+ const s=setup([hit,dot]);s.enemies=[F.enemy(10,3.5,4.5)];assert.equal(E.planCast(s,s.units[0].id),null);
+});
+test('a dead hit target never transfers attached poison to a replacement entity',()=>{
+ const hit=p('damage',{amount:10}),dot=p('dot',{amount:80,duration:2,targetMode:'attached'});dot.offset=1;dot.hitTargetsFrom=[0];
+ const s=setup([hit,dot]);s.enemies=[F.enemy(10,2.5,4.5)];M.dispatch(s,{id:2,type:'cast',unitId:s.units[0].id});M.advance(s);
+ s.enemies[0].hp=0;s.enemies.push(F.enemy(11,2.5,4.5));for(let i=0;i<60;i++)M.advance(s);assert.equal(s.enemies[0].id,11);assert.equal(s.enemies[0].hp,10000);
+});
+function compiledCharacter(file,id){
+ const fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process'),tools=path.resolve(__dirname,'..');
+ const row=JSON.parse(fs.readFileSync(path.join(tools,'wiki-battle',file),'utf8')).characters.find(c=>c.id===id);
+ const code="import json,sys;sys.path.insert(0,sys.argv[1]);import wf_wiki_battle_content as c;r=json.loads(sys.stdin.read());s={**c.STATS[r['role']],**r.get('stats',{})};print(json.dumps({**r,'stats':s,'skill':c._compile_skill(r['skill'],s)}))";
+ return JSON.parse(execFileSync(process.env.PYTHON||'python',['-c',code,tools],{input:JSON.stringify(row),encoding:'utf8'}));
+}
+test('actual ninja poison follows the five sword hits instead of the later rectangle',()=>{
+ const c=compiledCharacter('characters-dark.json','c633b80b6a710'),s=setup(c.skill.phases);s.content.characters.c0={...c,id:'c0'};
+ s.enemies=[F.enemy(10,.5,4.5),F.enemy(11,.5,6.5)];M.dispatch(s,{id:2,type:'cast',unitId:s.units[0].id});M.advance(s);
+ const struck=s.enemies[0].hp;s.enemies[0].y=6.5;s.enemies[1].y=4.5;for(let i=0;i<180;i++)M.advance(s);
+ const poison=c.skill.phases[5].effects[0].amount;assert.ok(Math.abs(s.enemies[0].hp-(struck-poison))<1e-6);assert.equal(s.enemies[1].hp,10000);
+});
+test('actual viper refresh keeps one full poison budget per enemy across both sprays',()=>{
+ const c=compiledCharacter('characters-fire.json','cbebf6c04269f'),s=setup(c.skill.phases);s.content.characters.c0={...c,id:'c0'};
+ s.enemies=[F.enemy(10,2.5,4.5),F.enemy(11,.5,4.5),F.enemy(12,3.5,3.5)];M.dispatch(s,{id:2,type:'cast',unitId:s.units[0].id});
+ for(let i=0;i<9;i++)M.advance(s);s.enemies[0].x=.5;s.enemies[0].y=6.5;s.enemies[1].x=2.5;
+ for(let i=0;i<191;i++)M.advance(s);
+ const damage=c.skill.phases[0].effects[0].amount,poison=c.skill.phases[1].effects[0].amount;
+ for(let i=0;i<3;i++)assert.ok(Math.abs(s.enemies[i].hp-(10000-poison-damage*(i===2?2:1)))<1e-6,`enemy ${i}`);
+});

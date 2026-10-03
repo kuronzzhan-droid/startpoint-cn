@@ -30,12 +30,13 @@
     for(const phase of phases){
       if(Number.isInteger(phase.requiresHit))phase.possible=phase.possible&&Boolean(phases[phase.requiresHit]?.possible&&phases[phase.requiresHit]?.effects.some(e=>e.type==='damage'));
       if(phase.impactFrom?.length)phase.possible=phase.impactFrom.some(i=>phases[i]?.possible&&phases[i]?.effects.some(e=>e.type==='damage'));
+      if(phase.hitTargetsFrom?.length)phase.possible=phase.hitTargetsFrom.some(i=>phases[i]?.possible&&phases[i]?.effects.some(e=>e.type==='damage'));
     }
     return phases.some(p=>p.possible)?{casterId:unitId,characterId:caster.characterId,skill,phases}:null;
   }
   function startCast(s,plan) {
-    const castId=s.nextEventId++,hits={},impacts={},caster=entity(s,plan.casterId),casterOrigin={x:caster.x,y:caster.y};
-    for(const p of plan.phases)s.effects.push({kind:'phase',due:s.tick+Math.round(p.offset*20),casterId:plan.casterId,characterId:plan.characterId,castId,hits,impacts,casterOrigin,phase:p});
+    const castId=s.nextEventId++,hits={},hitTargets={},impacts={},caster=entity(s,plan.casterId),casterOrigin={x:caster.x,y:caster.y};
+    for(const p of plan.phases)s.effects.push({kind:'phase',due:s.tick+Math.round(p.offset*20),casterId:plan.casterId,characterId:plan.characterId,castId,hits,hitTargets,impacts,casterOrigin,phase:p});
     return [emit(s,'cast',{entityId:plan.casterId,characterId:plan.characterId})];
   }
   function apply(s,target,e,owner,events) {
@@ -71,16 +72,24 @@
         &&(!Number.isFinite(p.selector.hpBelow)||t.hp/t.maxHp<p.selector.hpBelow)
         &&origins.some(o=>T.contains(p.geometry,o,t))).map(t=>t.id);
     }
+    if(p.hitTargetsFrom?.length){
+      ids=[...new Set(p.hitTargetsFrom.flatMap(i=>job.hitTargets[i]||[]))].filter(id=>entity(s,id)?.hp>0);
+      if(!ids.length)return;
+    }
     for(const effect of p.effects) {
       const e={...effect};if(['damage','dot'].includes(e.type))e.amount=(e.amount||0)*(1+modifier(caster||{},'attackUp',s.tick));
       if(e.type==='dot'||(e.type==='heal'&&e.duration>0)) {
         const interval=Math.max(1,Math.round((e.interval||1)*20)),count=Math.max(1,Math.floor(e.duration*20/interval));
-        s.effects.push({kind:'periodic',due:s.tick+interval,interval,left:count,casterId:job.casterId,
+        if(e.type==='dot'&&e.targetMode==='attached'){
+          for(const old of s.effects)if(old.kind==='periodic'&&old.castId===job.castId&&old.casterId===job.casterId&&old.effect.type==='dot'&&old.effect.targetMode==='attached')old.targets=old.targets.filter(id=>!ids.includes(id));
+          s.effects=s.effects.filter(old=>old.kind!=='periodic'||old.effect.targetMode!=='attached'||old.targets.length);
+        }
+        s.effects.push({kind:'periodic',due:s.tick+interval,interval,left:count,casterId:job.casterId,castId:job.castId,
           targets:[...ids],geometry:p.geometry,origins,team:p.selector.team,elements:p.selector.elements,hpBelow:p.selector.hpBelow,effect:{...e,amount:(e.amount||0)/count,ratio:(e.ratio||0)/count},
           requiresCasterAlive:e.requiresCasterAlive===true});
       }else for(const id of ids) {
         const target=entity(s,id);if(!target||!valid(target,e))continue;
-        apply(s,target,e,job,events);if(e.type==='damage'){job.hits[p.index]=true;(job.impacts[p.index]||=[]).push({x:target.x,y:target.y});}
+        apply(s,target,e,job,events);if(e.type==='damage'){job.hits[p.index]=true;(job.hitTargets[p.index]||=[]).push(id);(job.impacts[p.index]||=[]).push({x:target.x,y:target.y});}
       }
     }
   }

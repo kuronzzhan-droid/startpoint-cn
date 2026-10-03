@@ -151,7 +151,7 @@ def _skill(value, compiled=False):
     _require(isinstance(phases, list) and 1 <= len(phases) <= 32, "Invalid skill phase count")
     shares, previous_offset = [], -1
     for index, phase in enumerate(phases):
-        _keys(phase, ("offset", "selector", "geometry", "effects", "requiresCasterAlive", "retarget", "requiresHit", "impactFrom", "impactMode", "refreshFrom"),
+        _keys(phase, ("offset", "selector", "geometry", "effects", "requiresCasterAlive", "retarget", "requiresHit", "impactFrom", "impactMode", "refreshFrom", "hitTargetsFrom"),
               ("offset", "selector", "geometry", "effects", "requiresCasterAlive"), "phase")
         _number(phase["offset"], "offset", 0, 15)
         _require(phase["offset"] >= previous_offset, "Phases must be ordered")
@@ -169,18 +169,31 @@ def _skill(value, compiled=False):
                      "Invalid hit-position dependency")
         _selector(phase["selector"])
         _geometry(phase["geometry"])
+        if "hitTargetsFrom" in phase:
+            refs = phase["hitTargetsFrom"]
+            _require(isinstance(refs, list) and refs and all(type(i) is int and 0 <= i < index for i in refs)
+                     and len(refs) == len(set(refs)) and "impactFrom" not in phase and not phase.get("retarget")
+                     and all(phases[i]["selector"]["team"] == phase["selector"]["team"]
+                             and any(e["type"] == "damage" for e in phases[i]["effects"]) for i in refs),
+                     "Invalid hit-target dependency")
         if "refreshFrom" in phase:
             ref = phase["refreshFrom"]
             _require(not compiled and type(ref) is int and 0 <= ref < index, "Invalid refresh reference")
             original = phases[ref]
             _require(phase["effects"] == [] and original["effects"] and
-                     all(e["type"] in ("attackUp", "haste") for e in original["effects"]) and
+                     all(e["type"] in ("attackUp", "haste") or
+                         e["type"] == "dot" and e.get("targetMode") == "attached"
+                         and 0 <= phase["offset"] - original["offset"] < e.get("interval", 1)
+                         for e in original["effects"]) and
                      phase["selector"] == original["selector"] and phase["geometry"] == original["geometry"],
                      "Invalid refresh source or target")
             continue
         _require(isinstance(phase["effects"], list) and 1 <= len(phase["effects"]) <= 6, "Invalid effects")
         for effect in phase["effects"]:
             _effect(effect, compiled)
+            if "hitTargetsFrom" in phase:
+                _require(effect["type"] == "dot" and effect.get("targetMode") == "attached",
+                         "Hit-target dependency requires attached poison")
             shares.append(effect.get("budgetShare", 0))
     _require(sum(shares) <= 1.000001, "Skill budget is overallocated")
 

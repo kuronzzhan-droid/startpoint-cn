@@ -140,9 +140,10 @@
         "cost": 15,
         "phases": [
           {"offset":0,"selector":{"team":"enemy","kind":"nearest","range":3},"geometry":{"kind":"fan","center":"self","radius":3,"angle":90,"direction":"up"},"effects":[{"type":"damage","budgetShare":0.2}],"requiresCasterAlive":true},
-          {"offset":0.4,"selector":{"team":"enemy","kind":"nearest","range":3},"geometry":{"kind":"fan","center":"self","radius":3,"angle":90,"direction":"up"},"effects":[{"type":"dot","duration":8,"interval":1,"requiresCasterAlive":false,"budgetShare":0.4,"targetMode":"attached"}],"requiresCasterAlive":true},
+          {"offset":0.4,"selector":{"team":"enemy","kind":"nearest","range":3},"geometry":{"kind":"fan","center":"self","radius":3,"angle":90,"direction":"up"},"effects":[{"type":"dot","duration":8,"interval":1,"requiresCasterAlive":false,"budgetShare":0.4,"targetMode":"attached"}],"requiresCasterAlive":true,"hitTargetsFrom":[0]},
           {"offset":0.4,"selector":{"team":"enemy","kind":"nearest","range":3},"geometry":{"kind":"fan","center":"self","radius":3,"angle":90,"direction":"up"},"effects":[{"type":"slow","duration":5,"budgetShare":0.2}],"requiresCasterAlive":true},
-          {"offset":1.2,"selector":{"team":"enemy","kind":"nearest","range":3},"geometry":{"kind":"fan","center":"self","radius":3,"angle":90,"direction":"up"},"effects":[{"type":"damage","budgetShare":0.2}],"requiresCasterAlive":true}
+          {"offset":1.2,"selector":{"team":"enemy","kind":"nearest","range":3},"geometry":{"kind":"fan","center":"self","radius":3,"angle":90,"direction":"up"},"effects":[{"type":"damage","budgetShare":0.2}],"requiresCasterAlive":true},
+          {"offset":1.2,"selector":{"team":"enemy","kind":"nearest","range":3},"geometry":{"kind":"fan","center":"self","radius":3,"angle":90,"direction":"up"},"effects":[],"requiresCasterAlive":true,"hitTargetsFrom":[3],"refreshFrom":1}
         ]
       }
     },
