@@ -68,7 +68,7 @@
       events.push(emit(s,'death',{entityId:u.id,characterId:u.characterId,position:{x:u.x,y:u.y}}));
     }
     s.units=s.units.filter(live);
-    for(const e of s.enemies.filter(e=>!live(e))) {s.kills=Math.min(1e6,s.kills+1);s.energy=Math.min(120,s.energy+10);events.push(emit(s,'kill',{entityId:e.id}));}
+    for(const e of s.enemies.filter(e=>!live(e))) {s.kills=Math.min(1e6,s.kills+1);s.energy=Math.min(120,s.energy+10);events.push(emit(s,'kill',{entityId:e.id,characterId:e.characterId,position:{x:e.x,y:e.y}}));}
     s.enemies=s.enemies.filter(live);
     return events;
   }
@@ -77,9 +77,9 @@
     s.tick++;s.time=s.tick/20;s.energy=Math.min(120,Math.round((s.energy+.15)*100)/100);
     const events=cleanup(s);
     events.push(...Effects.advance(s),...cleanup(s),...Waves.advance(s),...cleanup(s));
-    for(const c of s.coffins.filter(c=>c.releaseAtTick<=s.tick))events.push(emit(s,'returned',{characterId:c.characterId}));
+    for(const c of s.coffins.filter(c=>c.releaseAtTick<=s.tick))events.push(emit(s,'returned',{characterId:c.characterId,position:{x:c.col+.5,y:c.row+.5}}));
     s.coffins=s.coffins.filter(c=>c.releaseAtTick>s.tick);
-    for(const u of s.units)if(s.tick>=u.readyAtTick&&!u.readyAnnounced){u.readyAnnounced=true;events.push(emit(s,'ready',{entityId:u.id,characterId:u.characterId}));}
+    for(const u of s.units)if(s.tick>=u.readyAtTick&&!u.readyAnnounced){u.readyAnnounced=true;events.push(emit(s,'ready',{entityId:u.id,characterId:u.characterId,position:{x:u.x,y:u.y}}));}
     events.push(...Waves.progress(s));
     return events;
   }

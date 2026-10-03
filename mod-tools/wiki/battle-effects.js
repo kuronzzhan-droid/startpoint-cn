@@ -10,7 +10,9 @@
     const shields=(target.statuses||[]).filter(b=>b.type==='shield'&&b.until>s.tick),shield=Math.max(0,...shields.map(b=>b.remaining||0));
     const absorb=Math.min(amount,shield);for(const b of shields)b.remaining=Math.max(0,b.remaining-absorb);
     target.hp=Math.max(0,target.hp-amount+absorb);
-    events.push(emit(s,'damage',{entityId:sourceId,targetId:target.id,value:amount-absorb,position:{x:target.x,y:target.y}}));return true;
+    const source=entity(s,sourceId);
+    events.push(emit(s,'damage',{entityId:sourceId,characterId:source?.characterId,targetId:target.id,value:amount-absorb,absorbed:absorb,
+      sourcePosition:source?{x:source.x,y:source.y}:undefined,position:{x:target.x,y:target.y}}));return true;
   }
   function targets(s,caster,phase) {
     const chosen=T.select(s,caster,phase.selector),g=phase.geometry||{kind:'single',center:'target'};
@@ -37,7 +39,7 @@
   function startCast(s,plan) {
     const castId=s.nextEventId++,hits={},hitTargets={},impacts={},caster=entity(s,plan.casterId),casterOrigin={x:caster.x,y:caster.y};
     for(const p of plan.phases)s.effects.push({kind:'phase',due:s.tick+Math.round(p.offset*20),casterId:plan.casterId,characterId:plan.characterId,castId,hits,hitTargets,impacts,casterOrigin,phase:p});
-    return [emit(s,'cast',{entityId:plan.casterId,characterId:plan.characterId})];
+    return [emit(s,'cast',{entityId:plan.casterId,characterId:plan.characterId,position:{...casterOrigin}})];
   }
   function apply(s,target,e,owner,events) {
     if(!target||target.hp<=0)return;
@@ -45,7 +47,9 @@
     if(e.type==='heal') {
       const amount=((e.amount||0)+(e.ratio||0)*target.maxHp)*(1-modifier(target,'healReduction',s.tick));
       const healed=Math.min(amount,target.maxHp-target.hp);target.hp+=healed;
-      if(healed>0)events.push(emit(s,'heal',{entityId:owner.casterId,targetId:target.id,value:healed,position:{x:target.x,y:target.y}}));return;
+      const source=entity(s,owner.casterId);
+      if(healed>0)events.push(emit(s,'heal',{entityId:owner.casterId,characterId:source?.characterId,targetId:target.id,value:healed,
+        sourcePosition:source?{x:source.x,y:source.y}:undefined,position:{x:target.x,y:target.y}}));return;
     }
     const key=`${owner.casterId}:${e.type}`;target.statuses||=[];target.statuses=target.statuses.filter(b=>b.key!==key);
     target.statuses.push({...e,key,sourceId:owner.casterId,until:s.tick+Math.round((e.duration||5)*20),
@@ -120,7 +124,7 @@
         const follow=unit.statuses.find(b=>b.type==='followup'&&b.procs<(b.maxProcs||1));
         if(follow){hurt(s,target,follow.amount||0,unit.id,events);follow.procs++;}
       }
-      events.push(emit(s,'attack',{entityId:unit.id,characterId:unit.characterId,targetId:target.id,position:{x:target.x,y:target.y}}));
+      events.push(emit(s,'attack',{entityId:unit.id,characterId:unit.characterId,targetId:target.id,sourcePosition:{x:unit.x,y:unit.y},position:{x:target.x,y:target.y}}));
     }
     return events;
   }

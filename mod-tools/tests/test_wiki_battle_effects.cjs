@@ -10,6 +10,14 @@ test('a full-health mixed shield can cast but pure heal cannot',()=>{
   const s=setup([p('heal',{ratio:.2})]);assert.equal(E.planCast(s,s.units[0].id),null);
   s.content.characters.c0.skill.phases.push(p('shield',{ratio:.1,duration:8}));assert.ok(E.planCast(s,s.units[0].id));
 });
+test('visual hit and heal origins are value snapshots and expose shield absorption without changing damage',()=>{
+ const s=setup(),u=s.units[0],enemy=F.enemy();s.enemies=[enemy];u.statuses=[{type:'shield',remaining:50,until:20}];const events=[];
+ E.hurt(s,u,30,enemy.id,events);assert.equal(u.hp,900);assert.equal(u.statuses[0].remaining,20);
+ assert.equal(events[0].value,0);assert.equal(events[0].absorbed,30);assert.deepEqual(events[0].sourcePosition,{x:2.5,y:3.5});
+ enemy.x=4;u.x=1;assert.deepEqual(events[0].sourcePosition,{x:2.5,y:3.5});assert.deepEqual(events[0].position,{x:2.5,y:5.5});
+ u.hp=800;E.apply(s,u,{type:'heal',amount:40},{casterId:enemy.id},events);assert.equal(u.hp,840);assert.deepEqual(events[1].sourcePosition,{x:4,y:3.5});
+ const cast=E.startCast(s,{casterId:u.id,characterId:u.characterId,phases:[]})[0];assert.deepEqual(cast.position,{x:1,y:5.5});u.y=0;assert.equal(cast.position.y,5.5);
+});
 test('eight-second DoT applies exactly eight parts; death does not cancel emitted ground effect',()=>{
   const s=setup([p('dot',{amount:80,duration:8,interval:1})]);s.enemies=[F.enemy()];M.dispatch(s,{id:2,type:'cast',unitId:s.units[0].id});
   M.advance(s);s.units[0].hp=0;for(let i=0;i<160;i++)M.advance(s);assert.equal(s.enemies[0].hp,9920);
