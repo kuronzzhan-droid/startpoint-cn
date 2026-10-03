@@ -114,7 +114,7 @@ def _committed(paths):
 
 def _public_text(name, raw):
     text = raw.decode("utf-8")
-    forbidden = r"[A-Za-z]:[\\/]|file://[A-Za-z/]|https?://(?:localhost|127\.|10\.|192\.168\.)|-----BEGIN .*PRIVATE KEY|sourceMappingURL|sourceURL"
+    forbidden = r"(?<!\w)[A-Za-z]:[\\/]|file://[A-Za-z/]|https?://(?:localhost|127\.|10\.|192\.168\.)|-----BEGIN .*PRIVATE KEY|sourceMappingURL|sourceURL"
     secret = r'''(?<![\w-])(?:api[_-]?key|password|passwd|access[_-]?token|refresh[_-]?token|client[_-]?secret)["']?\s*[:=]\s*(["'])([^"'\r\n]+)\1'''
     _require(not re.search(forbidden, text, re.I) and not re.search(secret, text, re.I), "公开内容包含私密路径或凭据：" + name)
 

@@ -196,6 +196,23 @@ class PackageTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "首页"):
             self.build()
 
+    def test_public_https_links_are_not_misclassified_as_drive_paths(self):
+        for path in (self.site / "index.html", self.ui / "index.html"):
+            html = path.read_text(encoding="utf-8")
+            path.write_text(html.replace("</body>", '<a href="https://example.org/wiki">Wiki</a></body>'), encoding="utf-8")
+        self.pin_manifest()
+        self.build(check_only=True)
+        self.assertFalse(self.output.exists())
+
+    def test_private_drive_paths_file_urls_and_secret_literals_remain_rejected(self):
+        cases = [r'C:\Users\fixture\secret.json', 'C:/Users/fixture/secret.json',
+                 'const path = "D:/private/config.json";', 'file:///C:/private/config.json',
+                 'http://127.0.0.1:8001/private', 'const password = "unsafe-fixture";',
+                 'const api_key = "test-only-fixture";']
+        for text in cases:
+            with self.subTest(text=text), self.assertRaisesRegex(ValueError, "公开"):
+                package._public_text("fixture.js", text.encode("utf-8"))
+
     def test_reparse_path_is_rejected_before_read_or_write(self):
         with mock.patch.object(package, "is_junction", side_effect=lambda p: Path(p) == self.site):
             with self.assertRaisesRegex(ValueError, "链接"):

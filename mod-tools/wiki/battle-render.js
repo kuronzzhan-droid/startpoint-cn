@@ -123,7 +123,8 @@
    for(const {event,start,end}of visuals){
     const x=event.position.x*cell,y=event.position.y*cell,alpha=(end-state.tick)/(end-start),healing=event.type==='heal';
     fxCtx.globalAlpha=alpha;fxCtx.strokeStyle=event.type==='warning'?'#ff9d83':healing?'#abffb5':'#ffe5a0';fxCtx.lineWidth=event.type==='warning'?3:2;fxCtx.beginPath();
-    const actor=entities.get(event.entityId);if(event.type==='attack'&&actor){fxCtx.moveTo(parseFloat(actor.node.style.left)/100*width,parseFloat(actor.node.style.top)/100*height);fxCtx.lineTo(x,y);}else fxCtx.arc(x,y,event.type==='warning'?cell*.46:cell*.12+(1-alpha)*cell*.16,0,Math.PI*2);fxCtx.stroke();
+    const actor=entities.get(event.entityId),radius=event.type==='warning'?cell*(event.value==='fire'?1:.46):cell*.12+(1-alpha)*cell*.16;
+    if(event.type==='attack'&&actor){fxCtx.moveTo(parseFloat(actor.node.style.left)/100*width,parseFloat(actor.node.style.top)/100*height);fxCtx.lineTo(x,y);}else fxCtx.arc(x,y,radius,0,Math.PI*2);fxCtx.stroke();
    }
    fxCtx.textAlign='center';fxCtx.font='bold 13px sans-serif';for(const {event,start,end}of texts){
     fxCtx.globalAlpha=Math.min(1,(end-state.tick)/5);fxCtx.fillStyle=event.type==='heal'?'#baffbc':'#fff0df';

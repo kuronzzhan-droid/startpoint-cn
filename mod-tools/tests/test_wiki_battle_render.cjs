@@ -109,6 +109,16 @@ test('selection updates interactive hints without mutating the battle or hiding 
  assert.equal(JSON.stringify(x.state),before);assert.equal(x.renderer.board.all(n=>n.tag==='button'&&n.disabled).length,0);
 });
 
+test('fire warnings mark the full one-cell damage radius and preview retains separate invalid landing hints',()=>{
+ const x=setup(300);x.renderer.draw(x.state);const fx=x.contexts[1];fx.calls.length=0;
+ x.renderer.draw(x.state,[{id:1,type:'warning',value:'fire',tick:0,position:{x:2.5,y:4.5}}]);
+ const arc=fx.calls.find(c=>c[0]==='arc');assert.equal(arc[3],60,'one world cell is the actual fire damage radius');
+ x.renderer.setSelection({characterId:'c0',cell:{col:2,row:4},valid:false});
+ const target=x.renderer.board.all(n=>n.dataset.col==='2'&&n.dataset.row==='4')[0];
+ assert.match(target.className,/is-drop-invalid/);assert.doesNotMatch(target.className,/is-drop-valid/);
+ x.renderer.setSelection(null);assert.doesNotMatch(target.className,/is-drop-invalid/);
+});
+
 test('broken native action falls back only to the same character and late image errors after destroy stay inert',()=>{
  const x=setup();x.state.units=[x.unit()];x.renderer.draw(x.state);const image=x.nodes('battle-sprite')[0];
  image.fire('error');assert.equal(image.src,'media/poster0.webp');
