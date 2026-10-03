@@ -104,6 +104,11 @@ test('wave banners and short hit feedback expire on simulation ticks and stay fi
  x.state.status='running';x.state.tick=41;x.renderer.draw(x.state);assert.equal(banner.hidden,true);assert.doesNotMatch(ally.className,/is-hurt/);
  x.state.wave=2;x.renderer.draw(x.state);assert.equal(banner.hidden,false);assert.match(banner.textContent,/第 2 波/);
 });
+test('exhausted follow-up counts do not show an active badge before the duration expires',()=>{
+ const x=setup();x.state.units=[x.unit()];const effect={type:'followup',procs:4,maxProcs:5,until:100};x.state.units[0].statuses=[effect];x.renderer.draw(x.state);
+ assert.equal(x.nodes('battle-status-icon').filter(n=>!n.hidden).length,1);effect.procs=5;x.renderer.draw(x.state);
+ assert.equal(x.nodes('battle-status-icon').filter(n=>!n.hidden).length,0);
+});
 
 test('canvas backing pixels cap at DPR 2 and static grass only redraws when its size changes',()=>{
  for(const width of [280,342,382]){

@@ -66,7 +66,8 @@
    const isReady=!enemy&&state.tick>=unit.readyAtTick;record.node.classList.toggle('is-ready',isReady);
    if(!enemy)record.gaugeBar.style.width=`${charge(unit.characterId,remaining(unit))}%`;
    record.node.classList.toggle('is-casting',casting);record.node.classList.toggle('is-missing',!record.picture.current);
-   const buffs=(unit.statuses||[]).filter(b=>b.until>state.tick&&(b.type!=='shield'||b.remaining>0));
+   const buffs=(unit.statuses||[]).filter(b=>b.until>state.tick&&(b.type!=='shield'||b.remaining>0)
+    &&(b.type!=='followup'||b.procs<(b.maxProcs||1)));
    const badges=[['shield','盾','护盾'],['healReduction','疗↓','治疗降低'],['slow','缓','减速'],['attackUp','↑','攻击提升'],['haste','速','攻速提升'],['basicHits','连','连击'],['followup','追','追击']]
     .filter(([type])=>buffs.some(b=>b.type===type)).slice(0,3);
    record.icons.forEach((icon,i)=>{const badge=badges[i];icon.hidden=!badge;if(badge){setText(icon,badge[1]);attr(icon,'title',badge[2]);attr(icon,'aria-label',badge[2]);}});
