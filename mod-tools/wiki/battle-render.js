@@ -30,11 +30,10 @@
    record.img.style.left=`${-(def.anchorX??def.width/2)*scale}px`;record.img.style.top=`${-(def.anchorY??def.height)*scale}px`;
   }
   function scaleFor(media,kind){
-   const defs=[media?.actions?.idle,media?.actions?.skill_ready].filter(safeImage);
-   if(!defs.length)return 1;
-   const extent=key=>Math.max(...defs.map(def=>key==='left'?(def.anchorX??def.width/2):key==='right'?def.width-(def.anchorX??def.width/2):key==='up'?(def.anchorY??def.height):def.height-(def.anchorY??def.height)));
+   // Measure the idle body once; a large skill-effect canvas must not shrink its actor.
+   const body=media?.actions?.idle;if(!safeImage(body))return 1;
    const factor=kind==='boss'?1.32:kind==='vanguard'?.76:1,cell=width/5;
-   return Math.min(3,cell*1.5*factor/Math.max(1,extent('left')+extent('right')),cell*1.7*factor/Math.max(1,extent('up')+extent('down')));
+   return Math.min(3,cell*.82*factor/body.width,cell*1.05*factor/body.height);
   }
   function createEntity(unit,enemy){
    const node=el('div',`battle-entity ${enemy?'battle-enemy battle-'+unit.rank:'battle-ally'}`),img=el('img','battle-sprite');

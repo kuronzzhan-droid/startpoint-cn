@@ -1,5 +1,5 @@
 .battle-root{max-width:760px;margin:auto;color:var(--ink);padding-bottom:20px}
-body:has(.battle-root) .sidebar,body:has(.battle-root) .sidebar-toggle,body:has(.battle-root) .mobile-nav-hint{display:none!important}
+body:has(.battle-root) .sidebar,body:has(.battle-root) .sidebar-toolbar,body:has(.battle-root) .sidebar-toggle,body:has(.battle-root) .mobile-nav-hint,body:has(.battle-root) .back-to-top{display:none!important}
 body:has(.battle-root) .page-shell{grid-template-columns:minmax(0,1fr)}
 .battle-root button,.battle-root select,.battle-root input{font:inherit}
 .battle-root button,.battle-root select{min-height:44px}
@@ -67,4 +67,4 @@ body:has(.battle-root) .page-shell{grid-template-columns:minmax(0,1fr)}
 .battle-root button:focus-visible,.battle-root input:focus-visible,.battle-root select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 @media(max-width:430px){.battle-root{padding:0 0 16px}.battle-heading h1{font-size:19px}.battle-toolbar{gap:4px}.battle-toolbar button,.battle-toolbar select{font-size:12px;padding:6px 8px}.battle-notice{font-size:11px}.battle-squad{grid-template-columns:repeat(3,minmax(0,1fr))}.battle-squad .battle-choice{display:grid;grid-template-columns:40px minmax(0,1fr);text-align:left;min-height:48px}.battle-squad .battle-choice img{width:40px}.battle-roster-card{grid-template-columns:34px minmax(0,1fr);padding:4px;column-gap:3px}.battle-roster-card img{width:34px;height:34px}.battle-roster-name{font-size:10px}.battle-roster-hint{font-size:9px}.battle-pool{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}}
 @media(max-height:700px) and (max-width:600px){.battle-field{max-width:320px}}
-@media(max-width:760px){.battle-board{width:min(100%,max(220px,calc((100svh - 420px)*5/7)));margin:auto}.battle-roster{margin-top:14px}.battle-heading{margin-bottom:4px}.battle-notice{margin:3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+@media(max-width:760px){.battle-board{width:min(100%,max(220px,calc((100svh - 470px)*5/7)));margin:auto}.battle-roster{margin-top:14px}.battle-heading{margin-bottom:4px}.battle-toolbar input[type=range]{width:48px}.battle-notice{margin:3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}

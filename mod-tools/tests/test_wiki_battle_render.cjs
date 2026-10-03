@@ -64,6 +64,11 @@ test('idle and skill images preserve one scale and common world foot anchor, wit
  x.state.status='paused';x.renderer.draw(x.state);assert.equal(image.src,'media/cast-poster0.webp');
  x.state.status='running';x.state.tick=21;x.renderer.draw(x.state);assert.equal(image.src,'media/idle0.webp');
 });
+test('large skill effect canvas does not shrink a small idle actor',()=>{
+ const x=setup(300),media=x.content.media.c0;media.actions.idle={...media.actions.idle,width:17,height:18,anchorX:8,anchorY:16};media.actions.skill_ready={...media.actions.skill_ready,width:92,height:94,anchorX:47,anchorY:76};
+ x.state.units=[x.unit()];x.renderer.draw(x.state);const img=x.nodes('battle-sprite')[0],scale=parseFloat(img.style.width)/17;assert.ok(parseFloat(img.style.width)>40);
+ x.renderer.draw(x.state,[{id:1,type:'cast',entityId:1,tick:0}]);assert.ok(Math.abs(parseFloat(img.style.width)/92-scale)<1e-8);
+});
 
 test('death replaces a unit with the native coffin, simulation countdown and locked roster without healing or ready UI',()=>{
  const x=setup();x.state.units=[x.unit()];x.renderer.draw(x.state);
