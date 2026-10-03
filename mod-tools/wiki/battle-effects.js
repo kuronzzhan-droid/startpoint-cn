@@ -17,6 +17,7 @@
     if(!chosen.length)return {targets:[],origin:T.origin(g,caster,caster)};
     const origin=T.origin(g,caster,chosen[0]);
     const pool=g.kind==='single'?chosen:(phase.selector.team==='ally'?s.units:s.enemies).filter(e=>e.hp>0&&T.contains(g,origin,e)
+      &&(!Number.isFinite(phase.selector.hpBelow)||e.hp/e.maxHp<phase.selector.hpBelow)
       &&(!phase.selector.elements?.length||phase.selector.elements.includes(s.content.characters[e.characterId]?.element)));
     return {targets:pool,origin};
   }
@@ -26,12 +27,15 @@
     const skill=s.content.characters[caster.characterId].skill;
     const phases=skill.phases.map((phase,index)=>{const found=targets(s,caster,phase);return {...phase,index,
       targets:found.targets.map(t=>t.id),origin:found.origin,possible:found.targets.some(t=>phase.effects.some(e=>valid(t,e)))};});
-    for(const phase of phases)if(Number.isInteger(phase.requiresHit))phase.possible=phase.possible&&Boolean(phases[phase.requiresHit]?.possible&&phases[phase.requiresHit]?.effects.some(e=>e.type==='damage'));
+    for(const phase of phases){
+      if(Number.isInteger(phase.requiresHit))phase.possible=phase.possible&&Boolean(phases[phase.requiresHit]?.possible&&phases[phase.requiresHit]?.effects.some(e=>e.type==='damage'));
+      if(phase.impactFrom?.length)phase.possible=phase.impactFrom.some(i=>phases[i]?.possible&&phases[i]?.effects.some(e=>e.type==='damage'));
+    }
     return phases.some(p=>p.possible)?{casterId:unitId,characterId:caster.characterId,skill,phases}:null;
   }
   function startCast(s,plan) {
-    const castId=s.nextEventId++,hits={};
-    for(const p of plan.phases)s.effects.push({kind:'phase',due:s.tick+Math.round(p.offset*20),casterId:plan.casterId,characterId:plan.characterId,castId,hits,phase:p});
+    const castId=s.nextEventId++,hits={},impacts={},caster=entity(s,plan.casterId),casterOrigin={x:caster.x,y:caster.y};
+    for(const p of plan.phases)s.effects.push({kind:'phase',due:s.tick+Math.round(p.offset*20),casterId:plan.casterId,characterId:plan.characterId,castId,hits,impacts,casterOrigin,phase:p});
     return [emit(s,'cast',{entityId:plan.casterId,characterId:plan.characterId})];
   }
   function apply(s,target,e,owner,events) {
@@ -53,16 +57,30 @@
     if(Number.isInteger(p.requiresHit)&&!job.hits[p.requiresHit])return;
     let ids=p.targets,origin=p.origin;
     if(p.retarget&&caster?.hp>0){const found=targets(s,caster,p);ids=found.targets.map(t=>t.id);origin=found.origin;}
+    let origins=[origin];
+    if(p.geometry?.kind!=='single')ids=(p.selector.team==='ally'?s.units:s.enemies).filter(t=>t.hp>0
+      &&(!p.selector.elements?.length||p.selector.elements.includes(s.content.characters[t.characterId]?.element))
+      &&(!Number.isFinite(p.selector.hpBelow)||t.hp/t.maxHp<p.selector.hpBelow)
+      &&T.contains(p.geometry,origin,t)).map(t=>t.id);
+    if(p.impactFrom?.length){
+      const points=p.impactFrom.flatMap(i=>job.impacts[i]||[]);if(!points.length)return;
+      const unique=[...new Map(points.map(point=>[`${point.x},${point.y}`,point])).values()];
+      origins=(p.impactMode==='farthest'?unique.sort((a,b)=>T.distance(job.casterOrigin,b)-T.distance(job.casterOrigin,a)).slice(0,1):unique).map(point=>({...point,dx:0,dy:-1}));
+      const pool=p.selector.team==='ally'?s.units:s.enemies;ids=pool.filter(t=>t.hp>0
+        &&(!p.selector.elements?.length||p.selector.elements.includes(s.content.characters[t.characterId]?.element))
+        &&(!Number.isFinite(p.selector.hpBelow)||t.hp/t.maxHp<p.selector.hpBelow)
+        &&origins.some(o=>T.contains(p.geometry,o,t))).map(t=>t.id);
+    }
     for(const effect of p.effects) {
       const e={...effect};if(['damage','dot'].includes(e.type))e.amount=(e.amount||0)*(1+modifier(caster||{},'attackUp',s.tick));
       if(e.type==='dot'||(e.type==='heal'&&e.duration>0)) {
         const interval=Math.max(1,Math.round((e.interval||1)*20)),count=Math.max(1,Math.floor(e.duration*20/interval));
         s.effects.push({kind:'periodic',due:s.tick+interval,interval,left:count,casterId:job.casterId,
-          targets:[...ids],geometry:p.geometry,origin,team:p.selector.team,effect:{...e,amount:(e.amount||0)/count,ratio:(e.ratio||0)/count},
+          targets:[...ids],geometry:p.geometry,origins,team:p.selector.team,elements:p.selector.elements,hpBelow:p.selector.hpBelow,effect:{...e,amount:(e.amount||0)/count,ratio:(e.ratio||0)/count},
           requiresCasterAlive:e.requiresCasterAlive===true});
       }else for(const id of ids) {
         const target=entity(s,id);if(!target||!valid(target,e))continue;
-        apply(s,target,e,job,events);if(e.type==='damage')job.hits[p.index]=true;
+        apply(s,target,e,job,events);if(e.type==='damage'){job.hits[p.index]=true;(job.impacts[p.index]||=[]).push({x:target.x,y:target.y});}
       }
     }
   }
@@ -71,7 +89,11 @@
     for(const job of due) {
       if(job.kind==='phase'){phaseStep(s,job,events);continue;}
       if(job.requiresCasterAlive&&!s.units.some(u=>u.id===job.casterId&&u.hp>0))continue;
-      for(const id of job.targets)apply(s,entity(s,id),job.effect,job,events);
+      const ids=job.geometry?.kind==='single'?job.targets:(job.team==='ally'?s.units:s.enemies).filter(t=>t.hp>0
+        &&(!Number.isFinite(job.hpBelow)||t.hp/t.maxHp<job.hpBelow)
+        &&(!job.elements?.length||job.elements.includes(s.content.characters[t.characterId]?.element))
+        &&job.origins.some(o=>T.contains(job.geometry,o,t))).map(t=>t.id);
+      for(const id of ids)apply(s,entity(s,id),job.effect,job,events);
       if(--job.left>0){job.due+=job.interval;s.effects.push(job);}
     }
     for(const unit of s.units) {
@@ -89,7 +111,7 @@
         const follow=unit.statuses.find(b=>b.type==='followup'&&b.procs<(b.maxProcs||1));
         if(follow){hurt(s,target,follow.amount||0,unit.id,events);follow.procs++;}
       }
-      events.push(emit(s,'attack',{entityId:unit.id,targetId:target.id,position:{x:target.x,y:target.y}}));
+      events.push(emit(s,'attack',{entityId:unit.id,characterId:unit.characterId,targetId:target.id,position:{x:target.x,y:target.y}}));
     }
     return events;
   }

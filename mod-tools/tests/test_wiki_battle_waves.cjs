@@ -32,3 +32,8 @@ test('water heal, light shield, dark reduction and wind warning use theme schedu
   if(theme==='dark')assert.equal(s.units[0].statuses[0].ratio,.35);if(theme==='wind')assert.notEqual(e.x,2.5);
  }
 });
+test('enemy reselects a living nearest ally if the warned target dies before its attack',()=>{
+ const s=M.create(F.options());s.enemies=[F.enemy(99,2.5,2.5)];s.enemies[0].nextActionTick=0;
+ s.units=[{id:1,x:2.5,y:3,hp:100,maxHp:100,statuses:[]},{id:2,x:3,y:3,hp:100,maxHp:100,statuses:[]}];
+ W.advance(s);s.units[0].hp=0;s.tick=16;W.advance(s);assert.equal(s.units[1].hp,65);
+});

@@ -28,3 +28,14 @@ test('hit-dependent buff cannot be cast for free on an empty board',()=>{
   const dmg=p('damage',{amount:50}),buff=p('attackUp',{ratio:.2,duration:5});buff.requiresHit=0;
   const s=setup([dmg,buff]);assert.equal(E.planCast(s,s.units[0].id),null);s.enemies=[F.enemy()];assert.ok(E.planCast(s,s.units[0].id));
 });
+test('impact areas use actual hit points once and farthest picks the distant struck enemy',()=>{
+  const hit=p('damage',{amount:10});hit.selector.kind='all';hit.geometry.kind='all';
+  const follow=p('damage',{amount:100});follow.offset=.1;follow.impactFrom=[0];follow.impactMode='farthest';follow.geometry={kind:'circle',radius:.7,center:'target'};
+  const s=setup([hit,follow]);s.enemies=[F.enemy(10,2.5,4.5),F.enemy(11,2.5,2.5)];M.dispatch(s,{id:2,type:'cast',unitId:s.units[0].id});
+  for(let i=0;i<3;i++)M.advance(s);assert.equal(s.enemies[0].hp,9990);assert.equal(s.enemies[1].hp,9890);
+});
+test('ground DoT hits entrants at its fixed point and never double-hits overlapping impact areas',()=>{
+  const dot=p('dot',{amount:80,duration:2});dot.geometry={kind:'circle',radius:1,center:'target'};
+  const s=setup([dot]);s.enemies=[F.enemy(10,2.5,3.5),F.enemy(11,.5,3.5)];M.dispatch(s,{id:2,type:'cast',unitId:s.units[0].id});M.advance(s);
+  s.enemies[0].x=.5;s.enemies[1].x=2.5;for(let i=0;i<40;i++)M.advance(s);assert.equal(s.enemies[0].hp,10000);assert.equal(s.enemies[1].hp,9920);
+});

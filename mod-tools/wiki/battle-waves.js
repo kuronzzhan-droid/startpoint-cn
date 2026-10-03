@@ -37,7 +37,7 @@
  }
  const nearest=(s,e)=>s.units.filter(u=>u.hp>0&&dist(e,u)<=e.range).sort((a,b)=>dist(e,a)-dist(e,b)||a.id-b.id)[0];
  function resolve(s,e,p,events){
-  const target=s.units.find(u=>u.id===p.targetId&&u.hp>0);
+  const target=s.units.find(u=>u.id===p.targetId&&u.hp>0)||(p.kind==='attack'?nearest(s,e):null);
   const elapsed=s.tick-(s.waveStartedTick||0),rage=1+Math.min(1,Math.max(0,Math.floor((elapsed-1800)/200)+1)*.1);
   const damage=e.attack*rage;
   if(p.kind==='siege'){s.baseHp=Math.max(0,s.baseHp-(e.rank==='boss'?20:5));events.push(emit(s,'siege',{entityId:e.id,value:s.baseHp}));return;}
