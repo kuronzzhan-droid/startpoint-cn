@@ -60,6 +60,7 @@
     const {el} = ui, header = el('header', 'dungeon-header'), toolbar = el('div', 'dungeon-toolbar');
     header.append(el('h1', '', '副本与模式'));
     const shopLink = el('a', 'dungeon-shops-entry', '兑换商店 ›'); shopLink.href = '#shops'; header.append(shopLink);
+    const battleLink = el('a', 'dungeon-shops-entry', '放置挑战 ›'); battleLink.href = '#battle'; header.append(battleLink);
     const search = el('input', 'dungeon-search'); search.type = 'search'; search.placeholder = '查找活动、副本或模式…'; search.setAttribute('aria-label', '查找副本或模式');
     const filters = el('div', 'dungeon-categories'); filters.setAttribute('role', 'group'); filters.setAttribute('aria-label', '副本分类');
     const grid = el('div', 'dungeon-grid dungeon-grid-compact'), status = el('p', 'dungeon-result-count muted'); status.setAttribute('role', 'status');

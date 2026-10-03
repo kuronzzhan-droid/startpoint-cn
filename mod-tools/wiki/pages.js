@@ -36,6 +36,7 @@
   }
   window.WFWikiReadable = {lazyDetails, renderReadable};
   window.renderWikiPage = (route, host, data, ui) => {
+    if (route === 'battle') {window.renderWikiBattle(host, data, ui); return true;}
     if (route === 'tier-list') {window.renderWikiTierList(host, data, ui); return true;}
     if (route === 'team') {window.renderWikiTeam(host, data, ui); return true;}
     if (route === 'weapons') {window.renderWikiWeaponPage(host, data, ui); return true;}
