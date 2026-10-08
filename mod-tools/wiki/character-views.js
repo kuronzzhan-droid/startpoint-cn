@@ -17,6 +17,8 @@
         let value;
         try {value = await client.request(path, {}, 'POST');}
         catch (error) {
+          // A rate-limited network's visit goes uncounted; the panel still shows the current total.
+          if (error?.status === 429) return normalize(await client.request(path), id);
           if (error?.status !== 428 || error?.code !== 'visitor_required') throw error;
           await client.config({refresh:true});
           value = await client.request(path, {}, 'POST');

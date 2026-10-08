@@ -136,6 +136,12 @@ test('persistent email/IP rate limits precede hashing and do not store raw addre
   c.now += 900_000; assert.equal((await login(c, 'unknown@example.test')).status, 401);
   for (let i = 0; i < 19; i++) await login(c, `unknown${i}@example.test`);
   assert.equal((await login(c, 'one-more@example.test')).status, 429);
+  // A full IP bucket rejects before the challenge and writes nothing.
+  const token = (await c.call('/development-challenge?action=admin_login')).json.token;
+  const changes = () => c.db.raw.prepare('SELECT total_changes() n').get().n, before = changes();
+  assert.equal((await c.call('/auth/login', {body: {email: 'flood@example.test', password, turnstileToken: token}})).status, 429);
+  assert.equal(changes() - before, 0);
+  assert.ok(c.db.raw.prepare('SELECT count FROM community_limits').all().every((row) => row.count <= 20));
 });
 test('concurrent bootstrap and normalized duplicate creation yield one account and one audit per winner', async (t) => {
   const c = passwordContext(t);

@@ -20,6 +20,11 @@ test('expired identity recovers once; blocked cookies do not retry forever',asyn
  calls=0;client.request=async()=>{calls++;throw Object.assign(Error(),{status:428,code:'visitor_required'});};
  await assert.rejects(create(client).load('c1',true));assert.equal(calls,2);
 });
+test('a rate-limited visit falls back to a read-only total without retrying the POST',async()=>{
+ const calls=[],client={async config(){},async request(...args){calls.push(args);if(args[2]==='POST')throw Object.assign(Error(),{status:429,code:'rate_limited'});return value('c1',7);}};
+ assert.equal((await create(client).load('c1',true)).views,7);
+ assert.deepEqual(calls,[['/characters/c1/views',{},'POST'],['/characters/c1/views']]);
+});
 test('network failure never creates a fabricated count and retry is possible',async()=>{
  let bad=true;const api=create({async request(){if(bad)throw Error('network');return value('c1',0);}});
  await assert.rejects(api.load('c1'));bad=false;assert.equal((await api.load('c1')).views,0);

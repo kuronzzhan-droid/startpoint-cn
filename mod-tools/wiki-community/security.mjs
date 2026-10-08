@@ -74,11 +74,13 @@ export async function challenge(request, env, token, action, fetchImpl, developm
 export async function rateLimit(db, request, env, action, now, development) {
   const ip = development ? 'loopback' : request.headers.get('CF-Connecting-IP');
   if (!ip || ip.length > 100) fail(503, 'client_address_unavailable', '暂时无法验证请求来源。');
-  const windowMs = ['game_lookup', 'presence', 'character_view'].includes(action) ? 60_000 : 3600_000, expires = Math.floor(now / windowMs) * windowMs + windowMs;
+  // Every allowed request costs one D1 row write, including captcha-free reads, so all budgets are hourly.
+  const windowMs = 3600_000, expires = Math.floor(now / windowMs) * windowMs + windowMs;
   const key = `${action}:${await sign(env.COMMUNITY_IP_SALT, `${expires}:${ip}`)}`;
-  const max = ['game_lookup', 'presence'].includes(action) ? 300 : action === 'dungeon_upload' ? 20 : 120;
+  const max = action === 'dungeon_upload' ? 20 : 120;
+  // A full bucket is left untouched: rejected floods must not spend the daily D1 write quota.
   const row = await db.prepare(`INSERT INTO community_limits(key,count,expires_at) VALUES(?,1,?)
-    ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count`).bind(key, expires).first();
+    ON CONFLICT(key) DO UPDATE SET count=count+1 WHERE community_limits.count<? RETURNING count`).bind(key, expires, max).first();
   await maintainLimits(db, now);
-  if (row.count > max) fail(429, 'rate_limited', '操作过于频繁，请稍后再试。', {retryAfter: Math.ceil((expires - now) / 1000)});
+  if (!row) fail(429, 'rate_limited', '操作过于频繁，请稍后再试。', {retryAfter: Math.ceil((expires - now) / 1000)});
 }

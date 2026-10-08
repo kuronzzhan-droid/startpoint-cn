@@ -15,11 +15,13 @@ async function limitLogin(request, env, email, now, development, bucket = 'both'
   const expires = Math.floor(now / 900_000) * 900_000 + 900_000;
   const keys = await Promise.all([sign(env.COMMUNITY_IP_SALT, `${expires}:ip:${ip}`), sign(env.COMMUNITY_IP_SALT, `${expires}:email:${email}`)]);
   // Both buckets run before hashing. Login requires a valid challenge before charging the email bucket.
+  // A full bucket is left untouched, so rejected attempts cost no D1 row writes.
   for (let i = 0; i < keys.length; i++) {
     if (bucket === 'ip' && i !== 0 || bucket === 'email' && i !== 1) continue;
     const row = await env.COMMUNITY_DB.prepare(`INSERT INTO community_limits(key,count,expires_at) VALUES(?,1,?)
-      ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count`).bind(`auth:${keys[i]}`, expires).first();
-    if (row.count > [20, 8][i]) fail(429, 'rate_limited', '登录尝试过于频繁，请稍后再试。', {retryAfter: Math.ceil((expires - now) / 1000)});
+      ON CONFLICT(key) DO UPDATE SET count=count+1 WHERE community_limits.count<? RETURNING count`)
+      .bind(`auth:${keys[i]}`, expires, [20, 8][i]).first();
+    if (!row) fail(429, 'rate_limited', '登录尝试过于频繁，请稍后再试。', {retryAfter: Math.ceil((expires - now) / 1000)});
   }
   await maintainLimits(env.COMMUNITY_DB, now);
 }

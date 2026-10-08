@@ -94,7 +94,7 @@ test('IP辅助限频原子执行只落HMAC标识并返回可读重试时间', as
   await Promise.all(Array.from({length: 120}, () => rateLimit(app.db, req, app.env, 'like', now)));
   await assert.rejects(() => rateLimit(app.db, req, app.env, 'like', now), (error) => error.status === 429 && error.extra.retryAfter > 0);
   const row = app.db.raw.prepare('SELECT * FROM community_limits').get();
-  assert.equal(row.count, 121); assert.ok(!JSON.stringify(row).includes('192.0.2.55'));
+  assert.equal(row.count, 120); assert.ok(!JSON.stringify(row).includes('192.0.2.55'));
 });
 test('未绑定D1或真实Turnstile配置生产明确503，环境开发旗标不生效', async (t) => {
   const app = context({production: true, fetch: jwksFetch}); t.after(() => app.close());

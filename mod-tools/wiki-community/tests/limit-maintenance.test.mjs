@@ -54,15 +54,25 @@ test('maintenance coalesces simultaneous requests in one instance and retries da
 test('live rate windows and thresholds still count every request during the maintenance cooldown', async t => {
   const app = context({production:true}); t.after(() => app.close());
   const request = new Request('https://wiki.example/api/community/presence',{headers:{'CF-Connecting-IP':'192.0.2.3'}});
-  for (const [action,max,windowMs] of [['presence',300,60_000],['game_lookup',300,60_000],['character_view',120,60_000],['like',120,3600_000],['dungeon_upload',20,3600_000]]) {
+  for (const [action,max,windowMs] of [['presence',120,3600_000],['game_lookup',120,3600_000],['character_view',120,3600_000],['like',120,3600_000],['dungeon_upload',20,3600_000]]) {
     const now = app.now, expires = Math.floor(now / windowMs) * windowMs + windowMs;
     await Promise.all(Array.from({length:max}, () => rateLimit(app.db,request,app.env,action,now)));
     await assert.rejects(rateLimit(app.db,request,app.env,action,now),error =>
       error.status === 429 && error.extra.retryAfter === Math.ceil((expires - now) / 1000));
-    assert.equal(app.db.raw.prepare('SELECT count FROM community_limits WHERE key LIKE ? AND expires_at=?').get(`${action}:%`,expires).count,max + 1);
+    assert.equal(app.db.raw.prepare('SELECT count FROM community_limits WHERE key LIKE ? AND expires_at=?').get(`${action}:%`,expires).count,max);
     await rateLimit(app.db,request,app.env,action,expires);
     assert.equal(app.db.raw.prepare('SELECT count FROM community_limits WHERE key LIKE ? AND expires_at=?').get(`${action}:%`,expires + windowMs).count,1);
   }
+});
+
+test('rejected floods leave a full bucket untouched and spend no D1 row writes', async t => {
+  const app = context({production:true}); t.after(() => app.close());
+  const changes = () => app.db.raw.prepare('SELECT total_changes() n').get().n;
+  for (let i = 0; i < 120; i++) assert.equal((await app.call('/game-codes/ABCDEFGHJKLM')).status, 404);
+  const before = changes();
+  for (let i = 0; i < 50; i++) assert.equal((await app.call('/game-codes/ABCDEFGHJKLM')).status, 429);
+  assert.equal(changes() - before, 0);
+  assert.equal(app.db.raw.prepare("SELECT count FROM community_limits WHERE key LIKE 'game_lookup:%'").get().count, 120);
 });
 
 test('rejected rate-limit requests still perform due maintenance', async t => {
