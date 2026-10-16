@@ -1,0 +1,206 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/gotoNextState; body: 92517; method: 100990
+# code SHA-256: 4208c1a297a715745ad92e7568e7d6813a9a6bffaca652c44fbe00b96e84f77d; header: [4, 6, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 92776, 1, 1893]
+#0004 ofs0011: op_ef [1, 92777, 2, 1892]
+#0005 ofs0019: op_ef [1, 92779, 3, 1894]
+#0006 ofs0021: pushfalse []
+#0007 ofs0022: convert_b []
+#0008 ofs0023: setlocal_3 []
+#0009 ofs0024: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiEx']
+#0010 ofs0028: getlocal_1 []
+#0011 ofs0029: callproperty ['next', 1]
+#0012 ofs002c: coerce_a []
+#0013 ofs002d: setlocal_2 []
+#0014 ofs002e: getlocal_2 []
+#0015 ofs002f: getproperty ['type']
+#0016 ofs0033: coerce ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0017 ofs0036: setlocal [4]
+#0018 ofs0038: jump [] -> #113
+#0019 ofs003c: avm_label []
+#0020 ofs003d: pushfalse []
+#0021 ofs003e: convert_b []
+#0022 ofs003f: setlocal_3 []
+#0023 ofs0040: jump [] -> #195
+#0024 ofs0044: avm_label []
+#0025 ofs0045: pushfalse []
+#0026 ofs0046: convert_b []
+#0027 ofs0047: setlocal_3 []
+#0028 ofs0048: jump [] -> #195
+#0029 ofs004c: avm_label []
+#0030 ofs004d: pushfalse []
+#0031 ofs004e: convert_b []
+#0032 ofs004f: setlocal_3 []
+#0033 ofs0050: jump [] -> #195
+#0034 ofs0054: avm_label []
+#0035 ofs0055: pushfalse []
+#0036 ofs0056: convert_b []
+#0037 ofs0057: setlocal_3 []
+#0038 ofs0058: jump [] -> #195
+#0039 ofs005c: avm_label []
+#0040 ofs005d: pushfalse []
+#0041 ofs005e: convert_b []
+#0042 ofs005f: setlocal_3 []
+#0043 ofs0060: jump [] -> #195
+#0044 ofs0064: avm_label []
+#0045 ofs0065: pushfalse []
+#0046 ofs0066: convert_b []
+#0047 ofs0067: setlocal_3 []
+#0048 ofs0068: jump [] -> #195
+#0049 ofs006c: avm_label []
+#0050 ofs006d: pushfalse []
+#0051 ofs006e: convert_b []
+#0052 ofs006f: setlocal_3 []
+#0053 ofs0070: jump [] -> #195
+#0054 ofs0074: avm_label []
+#0055 ofs0075: pushfalse []
+#0056 ofs0076: convert_b []
+#0057 ofs0077: setlocal_3 []
+#0058 ofs0078: jump [] -> #195
+#0059 ofs007c: avm_label []
+#0060 ofs007d: pushfalse []
+#0061 ofs007e: convert_b []
+#0062 ofs007f: setlocal_3 []
+#0063 ofs0080: jump [] -> #195
+#0064 ofs0084: avm_label []
+#0065 ofs0085: pushfalse []
+#0066 ofs0086: convert_b []
+#0067 ofs0087: setlocal_3 []
+#0068 ofs0088: jump [] -> #195
+#0069 ofs008c: avm_label []
+#0070 ofs008d: pushfalse []
+#0071 ofs008e: convert_b []
+#0072 ofs008f: setlocal_3 []
+#0073 ofs0090: jump [] -> #195
+#0074 ofs0094: avm_label []
+#0075 ofs0095: pushfalse []
+#0076 ofs0096: convert_b []
+#0077 ofs0097: setlocal_3 []
+#0078 ofs0098: jump [] -> #195
+#0079 ofs009c: avm_label []
+#0080 ofs009d: pushfalse []
+#0081 ofs009e: convert_b []
+#0082 ofs009f: setlocal_3 []
+#0083 ofs00a0: jump [] -> #195
+#0084 ofs00a4: avm_label []
+#0085 ofs00a5: pushfalse []
+#0086 ofs00a6: convert_b []
+#0087 ofs00a7: setlocal_3 []
+#0088 ofs00a8: jump [] -> #195
+#0089 ofs00ac: avm_label []
+#0090 ofs00ad: pushfalse []
+#0091 ofs00ae: convert_b []
+#0092 ofs00af: setlocal_3 []
+#0093 ofs00b0: jump [] -> #195
+#0094 ofs00b4: avm_label []
+#0095 ofs00b5: getlocal [4]
+#0096 ofs00b7: getproperty ['index']
+#0097 ofs00b9: pushbyte [2]
+#0098 ofs00bb: equals []
+#0099 ofs00bc: dup []
+#0100 ofs00bd: iffalse [] -> #109
+#0101 ofs00c1: pop []
+#0102 ofs00c2: getlocal [4]
+#0103 ofs00c4: getproperty ['params']
+#0104 ofs00c6: pushbyte [0]
+#0105 ofs00c8: getproperty ['<mn kind 0x1b>']
+#0106 ofs00cc: getproperty ['index']
+#0107 ofs00d0: pushbyte [1]
+#0108 ofs00d2: equals []
+#0109 ofs00d3: convert_b []
+#0110 ofs00d4: setlocal_3 []
+#0111 ofs00d5: avm_label []
+#0112 ofs00d6: jump [] -> #195
+#0113 ofs00da: getlocal_2 []
+#0114 ofs00db: getproperty ['name']
+#0115 ofs00df: getproperty ['index']
+#0116 ofs00e3: setlocal [5]
+#0117 ofs00e5: pushbyte [0]
+#0118 ofs00e7: getlocal [5]
+#0119 ofs00e9: ifstrictne [] -> #122
+#0120 ofs00ed: pushbyte [0]
+#0121 ofs00ef: jump [] -> #193
+#0122 ofs00f3: pushbyte [1]
+#0123 ofs00f5: getlocal [5]
+#0124 ofs00f7: ifstrictne [] -> #127
+#0125 ofs00fb: pushbyte [1]
+#0126 ofs00fd: jump [] -> #193
+#0127 ofs0101: pushbyte [2]
+#0128 ofs0103: getlocal [5]
+#0129 ofs0105: ifstrictne [] -> #132
+#0130 ofs0109: pushbyte [2]
+#0131 ofs010b: jump [] -> #193
+#0132 ofs010f: pushbyte [3]
+#0133 ofs0111: getlocal [5]
+#0134 ofs0113: ifstrictne [] -> #137
+#0135 ofs0117: pushbyte [3]
+#0136 ofs0119: jump [] -> #193
+#0137 ofs011d: pushbyte [4]
+#0138 ofs011f: getlocal [5]
+#0139 ofs0121: ifstrictne [] -> #142
+#0140 ofs0125: pushbyte [4]
+#0141 ofs0127: jump [] -> #193
+#0142 ofs012b: pushbyte [5]
+#0143 ofs012d: getlocal [5]
+#0144 ofs012f: ifstrictne [] -> #147
+#0145 ofs0133: pushbyte [5]
+#0146 ofs0135: jump [] -> #193
+#0147 ofs0139: pushbyte [18]
+#0148 ofs013b: getlocal [5]
+#0149 ofs013d: ifstrictne [] -> #152
+#0150 ofs0141: pushbyte [6]
+#0151 ofs0143: jump [] -> #193
+#0152 ofs0147: pushbyte [19]
+#0153 ofs0149: getlocal [5]
+#0154 ofs014b: ifstrictne [] -> #157
+#0155 ofs014f: pushbyte [7]
+#0156 ofs0151: jump [] -> #193
+#0157 ofs0155: pushbyte [20]
+#0158 ofs0157: getlocal [5]
+#0159 ofs0159: ifstrictne [] -> #162
+#0160 ofs015d: pushbyte [8]
+#0161 ofs015f: jump [] -> #193
+#0162 ofs0163: pushbyte [21]
+#0163 ofs0165: getlocal [5]
+#0164 ofs0167: ifstrictne [] -> #167
+#0165 ofs016b: pushbyte [9]
+#0166 ofs016d: jump [] -> #193
+#0167 ofs0171: pushbyte [22]
+#0168 ofs0173: getlocal [5]
+#0169 ofs0175: ifstrictne [] -> #172
+#0170 ofs0179: pushbyte [10]
+#0171 ofs017b: jump [] -> #193
+#0172 ofs017f: pushbyte [23]
+#0173 ofs0181: getlocal [5]
+#0174 ofs0183: ifstrictne [] -> #177
+#0175 ofs0187: pushbyte [11]
+#0176 ofs0189: jump [] -> #193
+#0177 ofs018d: pushbyte [24]
+#0178 ofs018f: getlocal [5]
+#0179 ofs0191: ifstrictne [] -> #182
+#0180 ofs0195: pushbyte [12]
+#0181 ofs0197: jump [] -> #193
+#0182 ofs019b: pushbyte [25]
+#0183 ofs019d: getlocal [5]
+#0184 ofs019f: ifstrictne [] -> #187
+#0185 ofs01a3: pushbyte [13]
+#0186 ofs01a5: jump [] -> #193
+#0187 ofs01a9: pushbyte [26]
+#0188 ofs01ab: getlocal [5]
+#0189 ofs01ad: ifstrictne [] -> #192
+#0190 ofs01b1: pushbyte [14]
+#0191 ofs01b3: jump [] -> #193
+#0192 ofs01b7: pushbyte [255]
+#0193 ofs01b9: op_08 [5]
+#0194 ofs01bb: lookupswitch [] default #94, cases [19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 84, 89]
+#0195 ofs01ed: findpropstrict ['_changeState']
+#0196 ofs01f1: getlocal_2 []
+#0197 ofs01f2: getlocal_3 []
+#0198 ofs01f3: pushbyte [1]
+#0199 ofs01f5: callpropvoid ['_changeState', 3]
+#0200 ofs01fa: returnvoid []

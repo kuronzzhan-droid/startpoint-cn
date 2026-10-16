@@ -1,0 +1,30 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.admission.ClientAdmission; label: anonymous-method-17; body: 14; method: 17
+# code SHA-256: e7a2b7b56f85f2f362f04108193b378fcce556c63a23e87e5e1658a1622d7589; header: [2, 1, 0, 0]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlex ['cn.admission:ClientAdmission::connects']
+#0001 ofs0002: getlex ['cn.admission::connection']
+#0002 ofs0004: getproperty ['<mn kind 0x1b>']
+#0003 ofs0006: getlex ['cn.admission::marker']
+#0004 ofs0008: strictequals []
+#0005 ofs0009: not []
+#0006 ofs000a: dup []
+#0007 ofs000b: iftrue [] -> #13
+#0008 ofs000f: pop []
+#0009 ofs0010: getlex ['cn.admission::connection']
+#0010 ofs0012: getproperty ['gear']
+#0011 ofs0014: callproperty ['isDisposed', 0]
+#0012 ofs0017: coerce_a []
+#0013 ofs0018: iffalse [] -> #15
+#0014 ofs001c: returnvoid []
+#0015 ofs001d: getlex ['cn.admission:ClientAdmission::connects']
+#0016 ofs001f: getlex ['cn.admission::connection']
+#0017 ofs0021: deleteproperty ['<mn kind 0x1b>']
+#0018 ofs0023: pop []
+#0019 ofs0024: findpropstrict ['cn.admission:ClientAdmission::state']
+#0020 ofs0026: callproperty ['cn.admission:ClientAdmission::state', 0]
+#0021 ofs0029: callpropvoid ['allowRetry', 0]
+#0022 ofs002c: getlex ['cn.admission::connection']
+#0023 ofs002e: callpropvoid ['socketConnect', 0]
+#0024 ofs0031: returnvoid []

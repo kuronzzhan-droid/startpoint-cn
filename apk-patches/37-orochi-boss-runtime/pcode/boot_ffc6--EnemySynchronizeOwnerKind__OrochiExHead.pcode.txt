@@ -1,0 +1,19 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: EnemySynchronizeOwnerKind$/OrochiExHead; body: 92463; method: 100936
+# code SHA-256: 8c1f8ad1bac55b3da8d1013e21ecd6c3d91958449741aee6daf2d35c035baa26; header: [6, 4, 3, 4]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: op_ef [1, 92778, 2, 0]
+#0005 ofs0017: getlocal_0 []
+#0006 ofs0018: pushstring ['OrochiExHead']
+#0007 ofs001b: pushbyte [4]
+#0008 ofs001d: getlocal_1 []
+#0009 ofs001e: getlocal_2 []
+#0010 ofs001f: getlocal_3 []
+#0011 ofs0020: newarray [3]
+#0012 ofs0022: construct [3]
+#0013 ofs0024: returnvalue []

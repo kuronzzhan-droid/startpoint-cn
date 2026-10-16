@@ -1,0 +1,91 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/getInitialState; body: 92535; method: 101008
+# code SHA-256: b50449eb971ab1eb55cf4d32ead190e2d9f293ecc5ed51436857ef48efe6c0d6; header: [5, 3, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 92775, 0, 2291]
+#0003 ofs000a: pushnull []
+#0004 ofs000b: coerce_a []
+#0005 ofs000c: setlocal_1 []
+#0006 ofs000d: jump [] -> #54
+#0007 ofs0011: avm_label []
+#0008 ofs0012: pushstring ['name']
+#0009 ofs0015: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateName']
+#0010 ofs0019: getproperty ['Phase1Contemporize1']
+#0011 ofs001d: pushstring ['type']
+#0012 ofs0020: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0013 ofs0023: getproperty ['Idle']
+#0014 ofs0027: newobject [2]
+#0015 ofs0029: coerce_a []
+#0016 ofs002a: setlocal_1 []
+#0017 ofs002b: jump [] -> #79
+#0018 ofs002f: avm_label []
+#0019 ofs0030: pushstring ['name']
+#0020 ofs0033: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateName']
+#0021 ofs0037: getproperty ['Phase2Attack1']
+#0022 ofs003b: pushstring ['type']
+#0023 ofs003e: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0024 ofs0041: getproperty ['Idle']
+#0025 ofs0045: newobject [2]
+#0026 ofs0047: coerce_a []
+#0027 ofs0048: setlocal_1 []
+#0028 ofs0049: jump [] -> #79
+#0029 ofs004d: avm_label []
+#0030 ofs004e: pushstring ['name']
+#0031 ofs0051: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateName']
+#0032 ofs0055: getproperty ['Phase3Contemporize1']
+#0033 ofs0059: pushstring ['type']
+#0034 ofs005c: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0035 ofs005f: getproperty ['Idle']
+#0036 ofs0063: newobject [2]
+#0037 ofs0065: coerce_a []
+#0038 ofs0066: setlocal_1 []
+#0039 ofs0067: jump [] -> #79
+#0040 ofs006b: avm_label []
+#0041 ofs006c: pushstring ['name']
+#0042 ofs006f: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateName']
+#0043 ofs0073: getproperty ['Phase4Attack1']
+#0044 ofs0077: pushstring ['type']
+#0045 ofs007a: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0046 ofs007d: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueAttackState']
+#0047 ofs0081: getproperty ['Start']
+#0048 ofs0084: callproperty ['Attack', 1]
+#0049 ofs0088: newobject [2]
+#0050 ofs008a: coerce_a []
+#0051 ofs008b: setlocal_1 []
+#0052 ofs008c: avm_label []
+#0053 ofs008d: jump [] -> #79
+#0054 ofs0091: getlex ['phase']
+#0055 ofs0094: setlocal_2 []
+#0056 ofs0095: pushbyte [1]
+#0057 ofs0097: getlocal_2 []
+#0058 ofs0098: ifstrictne [] -> #61
+#0059 ofs009c: pushbyte [0]
+#0060 ofs009e: jump [] -> #77
+#0061 ofs00a2: pushbyte [2]
+#0062 ofs00a4: getlocal_2 []
+#0063 ofs00a5: ifstrictne [] -> #66
+#0064 ofs00a9: pushbyte [1]
+#0065 ofs00ab: jump [] -> #77
+#0066 ofs00af: pushbyte [3]
+#0067 ofs00b1: getlocal_2 []
+#0068 ofs00b2: ifstrictne [] -> #71
+#0069 ofs00b6: pushbyte [2]
+#0070 ofs00b8: jump [] -> #77
+#0071 ofs00bc: pushbyte [4]
+#0072 ofs00be: getlocal_2 []
+#0073 ofs00bf: ifstrictne [] -> #76
+#0074 ofs00c3: pushbyte [3]
+#0075 ofs00c5: jump [] -> #77
+#0076 ofs00c9: pushbyte [255]
+#0077 ofs00cb: op_08 [2]
+#0078 ofs00cd: lookupswitch [] default #52, cases [7, 18, 29, 40]
+#0079 ofs00de: getlex ['pinball.scene.battle.battle.enemy::EnemyState']
+#0080 ofs00e2: getlocal_1 []
+#0081 ofs00e3: getlex ['pinball.scene.battle.battle.boss.orochi._OrochiExUniqueStateGroup::OrochiExUniqueStateGroup_Impl_']
+#0082 ofs00e7: getlocal_1 []
+#0083 ofs00e8: callproperty ['_new', 1]
+#0084 ofs00ec: callproperty ['Unique', 2]
+#0085 ofs00f0: returnvalue []

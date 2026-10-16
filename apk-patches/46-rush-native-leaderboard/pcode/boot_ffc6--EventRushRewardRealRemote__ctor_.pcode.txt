@@ -1,0 +1,39 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: EventRushRewardRealRemote/<ctor>; body: 48465; method: 52094
+# code SHA-256: 36411b6694c06c1578848c535b0fe243de22ae3bdb643d27d8e30bbb3be17b20; header: [5, 4, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: op_ef [1, 92778, 2, 0]
+#0005 ofs0017: getlex ['flash::Boot']
+#0006 ofs0019: getproperty ['skip_constructor']
+#0007 ofs001b: iffalse [] -> #9
+#0008 ofs001f: returnvoid []
+#0009 ofs0020: getlocal_0 []
+#0010 ofs0021: getlocal_1 []
+#0011 ofs0022: constructsuper [1]
+#0012 ofs0024: findproperty ['dispatcher']
+#0013 ofs0026: getlocal_2 []
+#0014 ofs0027: setproperty ['dispatcher']
+#0015 ofs0029: findpropstrict ['startUserRequest']
+#0016 ofs002c: getlocal_3 []
+#0017 ofs002d: pushbyte [0]
+#0018 ofs002f: ifnlt [] -> #21
+#0019 ofs0033: pushstring ['event/rush/leaderboard']
+#0020 ofs0037: jump [] -> #22
+#0021 ofs003b: pushstring ['event/rush/reward']
+#0022 ofs003f: pushstring ['event_id']
+#0023 ofs0042: getlocal_3 []
+#0024 ofs0043: pushbyte [0]
+#0025 ofs0045: ifnlt [] -> #29
+#0026 ofs0049: getlocal_3 []
+#0027 ofs004a: negate []
+#0028 ofs004b: jump [] -> #30
+#0029 ofs004f: getlocal_3 []
+#0030 ofs0050: newobject [1]
+#0031 ofs0052: getlex ['successHandler']
+#0032 ofs0055: callpropvoid ['startUserRequest', 3]
+#0033 ofs0059: returnvoid []

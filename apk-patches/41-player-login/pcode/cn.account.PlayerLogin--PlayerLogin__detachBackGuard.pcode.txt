@@ -1,0 +1,31 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.account.PlayerLogin; label: PlayerLogin$/detachBackGuard; body: 14; method: 15
+# code SHA-256: ef6630e6c1a3cc740802234dcff735068d6b0b603d533dc5b72b822a36753a78; header: [4, 1, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['cn.account:PlayerLogin::stageRef']
+#0003 ofs0004: iftrue [] -> #5
+#0004 ofs0008: returnvoid []
+#0005 ofs0009: getlex ['cn.account:PlayerLogin::stageRef']
+#0006 ofs000b: pushstring ['keyDown']
+#0007 ofs000e: getlex ['cn.account:PlayerLogin::guardBack']
+#0008 ofs0010: pushtrue []
+#0009 ofs0011: callpropvoid ['removeEventListener', 3]
+#0010 ofs0015: getlex ['cn.account:PlayerLogin::stageRef']
+#0011 ofs0017: pushstring ['keyUp']
+#0012 ofs001a: getlex ['cn.account:PlayerLogin::guardBack']
+#0013 ofs001c: pushtrue []
+#0014 ofs001d: callpropvoid ['removeEventListener', 3]
+#0015 ofs0021: getlex ['cn.account:PlayerLogin::stageRef']
+#0016 ofs0023: pushstring ['keyDown']
+#0017 ofs0026: getlex ['cn.account:PlayerLogin::guardBack']
+#0018 ofs0028: pushfalse []
+#0019 ofs0029: callpropvoid ['removeEventListener', 3]
+#0020 ofs002d: getlex ['cn.account:PlayerLogin::stageRef']
+#0021 ofs002f: pushstring ['keyUp']
+#0022 ofs0032: getlex ['cn.account:PlayerLogin::guardBack']
+#0023 ofs0034: pushfalse []
+#0024 ofs0035: callpropvoid ['removeEventListener', 3]
+#0025 ofs0039: returnvoid []

@@ -1,0 +1,21 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/startPhase4Reset; body: 92487; method: 100960
+# code SHA-256: 6fcc9ff7d9831e682e3a3ba9c6e1f3b82129372402279660ce6ac922ced7f08a; header: [4, 1, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: findproperty ['phase4ResetRemaining']
+#0003 ofs0006: getlex ['Math']
+#0004 ofs0008: pushbyte [0]
+#0005 ofs000a: getlex ['source']
+#0006 ofs000d: getproperty ['values']
+#0007 ofs0011: getproperty ['phase4_reset_delay_frames']
+#0008 ofs0015: callproperty ['max', 2]
+#0009 ofs0018: setproperty ['phase4ResetRemaining']
+#0010 ofs001c: getlex ['phase4ResetRemaining']
+#0011 ofs0020: pushbyte [0]
+#0012 ofs0022: ifne [] -> #15
+#0013 ofs0026: findpropstrict ['resetAllWeakPoints']
+#0014 ofs002a: callpropvoid ['resetAllWeakPoints', 0]
+#0015 ofs002f: returnvoid []

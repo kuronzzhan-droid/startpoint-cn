@@ -1,0 +1,75 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: QuestResultScene/finishQuestResult; body: 92253; method: 100726
+# code SHA-256: b144c1e4dfd056de5a80ca59dc0cdbef7371379d18e199a8dd891b9952dfd1ac; header: [3, 3, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 92775, 0, 1513]
+#0003 ofs000a: findpropstrict ['isFantasyRushMultiContinue']
+#0004 ofs000e: callproperty ['isFantasyRushMultiContinue', 0]
+#0005 ofs0013: iffalse [] -> #9
+#0006 ofs0017: findpropstrict ['retryQuest']
+#0007 ofs001b: callpropvoid ['retryQuest', 0]
+#0008 ofs0020: returnvoid []
+#0009 ofs0021: getlex ['transitionSource']
+#0010 ofs0024: coerce ['pinball.common.data.quest.transition::QuestResultTransitionSource']
+#0011 ofs0028: setlocal_1 []
+#0012 ofs0029: jump [] -> #48
+#0013 ofs002d: avm_label []
+#0014 ofs002e: getlex ['isolated']
+#0015 ofs0032: iffalse [] -> #20
+#0016 ofs0036: findpropstrict ['changeSceneWithRouterResult']
+#0017 ofs003a: getlex ['routerResult']
+#0018 ofs003e: callpropvoid ['changeSceneWithRouterResult', 1]
+#0019 ofs0043: jump [] -> #30
+#0020 ofs0047: getlex ['remote']
+#0021 ofs004a: getlocal_1 []
+#0022 ofs004b: getproperty ['params']
+#0023 ofs004d: pushbyte [0]
+#0024 ofs004f: getproperty ['<mn kind 0x1b>']
+#0025 ofs0053: getproperty ['roomNumber']
+#0026 ofs0057: callpropvoid ['pinball.context.remote:RemoteForLogic::multiBattleQuestDisbandRoom', 1]
+#0027 ofs005c: findpropstrict ['changeSceneWithRouterResult']
+#0028 ofs0060: getlex ['routerResult']
+#0029 ofs0064: callpropvoid ['changeSceneWithRouterResult', 1]
+#0030 ofs0069: jump [] -> #69
+#0031 ofs006d: avm_label []
+#0032 ofs006e: getlex ['isolated']
+#0033 ofs0072: iffalse [] -> #38
+#0034 ofs0076: findpropstrict ['changeSceneWithRouterResult']
+#0035 ofs007a: getlex ['routerResult']
+#0036 ofs007e: callpropvoid ['changeSceneWithRouterResult', 1]
+#0037 ofs0083: jump [] -> #41
+#0038 ofs0087: findpropstrict ['changeSceneWithRouterResult']
+#0039 ofs008b: getlex ['routerResult']
+#0040 ofs008f: callpropvoid ['changeSceneWithRouterResult', 1]
+#0041 ofs0094: jump [] -> #69
+#0042 ofs0098: avm_label []
+#0043 ofs0099: findpropstrict ['changeSceneWithRouterResult']
+#0044 ofs009d: getlex ['routerResult']
+#0045 ofs00a1: callpropvoid ['changeSceneWithRouterResult', 1]
+#0046 ofs00a6: avm_label []
+#0047 ofs00a7: jump [] -> #69
+#0048 ofs00ab: getlocal_1 []
+#0049 ofs00ac: getproperty ['index']
+#0050 ofs00ae: setlocal_2 []
+#0051 ofs00af: pushbyte [0]
+#0052 ofs00b1: getlocal_2 []
+#0053 ofs00b2: ifstrictne [] -> #56
+#0054 ofs00b6: pushbyte [0]
+#0055 ofs00b8: jump [] -> #67
+#0056 ofs00bc: pushbyte [1]
+#0057 ofs00be: getlocal_2 []
+#0058 ofs00bf: ifstrictne [] -> #61
+#0059 ofs00c3: pushbyte [1]
+#0060 ofs00c5: jump [] -> #67
+#0061 ofs00c9: pushbyte [2]
+#0062 ofs00cb: getlocal_2 []
+#0063 ofs00cc: ifstrictne [] -> #66
+#0064 ofs00d0: pushbyte [2]
+#0065 ofs00d2: jump [] -> #67
+#0066 ofs00d6: pushbyte [255]
+#0067 ofs00d8: op_08 [2]
+#0068 ofs00da: lookupswitch [] default #46, cases [13, 31, 42]
+#0069 ofs00e8: returnvoid []

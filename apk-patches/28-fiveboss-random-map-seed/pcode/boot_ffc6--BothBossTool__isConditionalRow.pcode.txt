@@ -1,0 +1,50 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: BothBossTool$/isConditionalRow; body: 92435; method: 100908
+# code SHA-256: 7db4961886739d9c8695feace54846431831a2bea366d8aefa0a4cfe8de848ec; header: [2, 3, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 92776, 1, 429]
+#0004 ofs0011: getlocal_1 []
+#0005 ofs0012: getproperty ['values']
+#0006 ofs0016: coerce ['Object']
+#0007 ofs0018: setlocal_2 []
+#0008 ofs0019: getlocal_2 []
+#0009 ofs001a: getproperty ['party_condition_kind1']
+#0010 ofs001e: getproperty ['index']
+#0011 ofs0022: pushbyte [0]
+#0012 ofs0024: ifne [] -> #15
+#0013 ofs0028: pushtrue []
+#0014 ofs0029: returnvalue []
+#0015 ofs002a: getlocal_2 []
+#0016 ofs002b: getproperty ['party_condition_kind2']
+#0017 ofs002f: getproperty ['index']
+#0018 ofs0033: pushbyte [0]
+#0019 ofs0035: ifne [] -> #22
+#0020 ofs0039: pushtrue []
+#0021 ofs003a: returnvalue []
+#0022 ofs003b: getlocal_2 []
+#0023 ofs003c: getproperty ['party_condition_kind3']
+#0024 ofs0040: getproperty ['index']
+#0025 ofs0044: pushbyte [0]
+#0026 ofs0046: ifne [] -> #29
+#0027 ofs004a: pushtrue []
+#0028 ofs004b: returnvalue []
+#0029 ofs004c: getlocal_2 []
+#0030 ofs004d: getproperty ['party_condition_kind4']
+#0031 ofs0051: getproperty ['index']
+#0032 ofs0055: pushbyte [0]
+#0033 ofs0057: ifne [] -> #36
+#0034 ofs005b: pushtrue []
+#0035 ofs005c: returnvalue []
+#0036 ofs005d: getlocal_2 []
+#0037 ofs005e: getproperty ['party_condition_kind5']
+#0038 ofs0062: getproperty ['index']
+#0039 ofs0066: pushbyte [0]
+#0040 ofs0068: ifne [] -> #43
+#0041 ofs006c: pushtrue []
+#0042 ofs006d: returnvalue []
+#0043 ofs006e: pushfalse []
+#0044 ofs006f: returnvalue []

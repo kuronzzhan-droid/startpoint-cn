@@ -1,0 +1,124 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/updateWeakPointCountdown; body: 92471; method: 100944
+# code SHA-256: 485a19874d075b3ee741eb793fdbab482aacf12803b6ddc3cd5da273335ddd25; header: [4, 4, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 92775, 0, 695]
+#0003 ofs000a: op_ef [1, 92776, 1, 688]
+#0004 ofs0012: pushbyte [0]
+#0005 ofs0014: convert_i []
+#0006 ofs0015: setlocal_2 []
+#0007 ofs0016: getlex ['phase']
+#0008 ofs0019: pushbyte [4]
+#0009 ofs001b: equals []
+#0010 ofs001c: dup []
+#0011 ofs001d: iffalse [] -> #15
+#0012 ofs0021: pop []
+#0013 ofs0022: findpropstrict ['hasPhase4HealthMode']
+#0014 ofs0026: callproperty ['hasPhase4HealthMode', 0]
+#0015 ofs002b: dup []
+#0016 ofs002c: iffalse [] -> #21
+#0017 ofs0030: pop []
+#0018 ofs0031: getlex ['phase4DamageWindowRemaining']
+#0019 ofs0035: pushbyte [0]
+#0020 ofs0037: greaterthan []
+#0021 ofs0038: iffalse [] -> #35
+#0022 ofs003c: getlex ['Math']
+#0023 ofs003e: pushbyte [0]
+#0024 ofs0040: getlex ['weakPointCountdownTotalFrames']
+#0025 ofs0044: getlex ['phase4DamageWindowRemaining']
+#0026 ofs0048: subtract []
+#0027 ofs0049: callproperty ['max', 2]
+#0028 ofs004c: convert_i []
+#0029 ofs004d: setlocal_2 []
+#0030 ofs004e: getlex ['playheadWeakPointCountdown']
+#0031 ofs0052: pushstring ['start']
+#0032 ofs0055: getlocal_2 []
+#0033 ofs0056: callpropvoid ['gotoAndStopWithOffset', 2]
+#0034 ofs005a: returnvoid []
+#0035 ofs005b: getlex ['state']
+#0036 ofs005e: coerce ['pinball.scene.battle.battle.enemy::EnemyState']
+#0037 ofs0062: setlocal_1 []
+#0038 ofs0063: jump [] -> #102
+#0039 ofs0067: avm_label []
+#0040 ofs0068: jump [] -> #57
+#0041 ofs006c: avm_label []
+#0042 ofs006d: getlex ['playheadWeakPointCountdown']
+#0043 ofs0071: pushstring ['none']
+#0044 ofs0074: callpropvoid ['gotoAndStop', 1]
+#0045 ofs0078: jump [] -> #81
+#0046 ofs007c: avm_label []
+#0047 ofs007d: getlex ['playheadWeakPointCountdown']
+#0048 ofs0081: pushstring ['none']
+#0049 ofs0084: callpropvoid ['gotoAndStop', 1]
+#0050 ofs0088: jump [] -> #81
+#0051 ofs008c: avm_label []
+#0052 ofs008d: getlex ['playheadWeakPointCountdown']
+#0053 ofs0091: pushstring ['none']
+#0054 ofs0094: callpropvoid ['gotoAndStop', 1]
+#0055 ofs0098: avm_label []
+#0056 ofs0099: jump [] -> #81
+#0057 ofs009d: getlocal_1 []
+#0058 ofs009e: getproperty ['params']
+#0059 ofs00a0: pushbyte [0]
+#0060 ofs00a2: getproperty ['<mn kind 0x1b>']
+#0061 ofs00a6: getproperty ['index']
+#0062 ofs00aa: setlocal_3 []
+#0063 ofs00ab: pushbyte [0]
+#0064 ofs00ad: getlocal_3 []
+#0065 ofs00ae: ifstrictne [] -> #68
+#0066 ofs00b2: pushbyte [0]
+#0067 ofs00b4: jump [] -> #79
+#0068 ofs00b8: pushbyte [1]
+#0069 ofs00ba: getlocal_3 []
+#0070 ofs00bb: ifstrictne [] -> #73
+#0071 ofs00bf: pushbyte [1]
+#0072 ofs00c1: jump [] -> #79
+#0073 ofs00c5: pushbyte [2]
+#0074 ofs00c7: getlocal_3 []
+#0075 ofs00c8: ifstrictne [] -> #78
+#0076 ofs00cc: pushbyte [2]
+#0077 ofs00ce: jump [] -> #79
+#0078 ofs00d2: pushbyte [255]
+#0079 ofs00d4: op_08 [3]
+#0080 ofs00d6: lookupswitch [] default #55, cases [41, 46, 51]
+#0081 ofs00e4: jump [] -> #118
+#0082 ofs00e8: avm_label []
+#0083 ofs00e9: findpropstrict ['isChargingSpecialAttack']
+#0084 ofs00ed: callproperty ['isChargingSpecialAttack', 0]
+#0085 ofs00f2: iffalse [] -> #97
+#0086 ofs00f6: getlex ['weakPointCountdownTotalFrames']
+#0087 ofs00fa: findpropstrict ['getRemainingFramesOfUniqueStateGroup']
+#0088 ofs00fe: callproperty ['getRemainingFramesOfUniqueStateGroup', 0]
+#0089 ofs0103: subtract []
+#0090 ofs0104: convert_i []
+#0091 ofs0105: setlocal_2 []
+#0092 ofs0106: getlex ['playheadWeakPointCountdown']
+#0093 ofs010a: pushstring ['start']
+#0094 ofs010d: getlocal_2 []
+#0095 ofs010e: callpropvoid ['gotoAndStopWithOffset', 2]
+#0096 ofs0112: jump [] -> #118
+#0097 ofs0116: getlex ['playheadWeakPointCountdown']
+#0098 ofs011a: pushstring ['none']
+#0099 ofs011d: callpropvoid ['gotoAndStop', 1]
+#0100 ofs0121: avm_label []
+#0101 ofs0122: jump [] -> #118
+#0102 ofs0126: getlocal_1 []
+#0103 ofs0127: getproperty ['index']
+#0104 ofs0129: setlocal_3 []
+#0105 ofs012a: pushbyte [0]
+#0106 ofs012c: getlocal_3 []
+#0107 ofs012d: ifstrictne [] -> #110
+#0108 ofs0131: pushbyte [0]
+#0109 ofs0133: jump [] -> #116
+#0110 ofs0137: pushbyte [1]
+#0111 ofs0139: getlocal_3 []
+#0112 ofs013a: ifstrictne [] -> #115
+#0113 ofs013e: pushbyte [1]
+#0114 ofs0140: jump [] -> #116
+#0115 ofs0144: pushbyte [255]
+#0116 ofs0146: op_08 [3]
+#0117 ofs0148: lookupswitch [] default #100, cases [39, 82]
+#0118 ofs0153: returnvoid []

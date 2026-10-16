@@ -1,0 +1,87 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/forwardDamageFromHead; body: 92545; method: 101018
+# code SHA-256: 9c53f45d311696991d78c94fb7ed04bab189c85126d12a65994ece39b7f4ad23; header: [3, 4, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: findpropstrict ['hasUnifiedPhaseHealthMode']
+#0005 ofs0014: callproperty ['hasUnifiedPhaseHealthMode', 0]
+#0006 ofs0019: dup []
+#0007 ofs001a: convert_b []
+#0008 ofs001b: iffalse [] -> #19
+#0009 ofs001f: pop []
+#0010 ofs0020: getlocal_2 []
+#0011 ofs0021: pushbyte [1]
+#0012 ofs0023: equals []
+#0013 ofs0024: dup []
+#0014 ofs0025: iftrue [] -> #19
+#0015 ofs0029: pop []
+#0016 ofs002a: getlocal_2 []
+#0017 ofs002b: pushbyte [3]
+#0018 ofs002d: equals []
+#0019 ofs002e: iffalse [] -> #25
+#0020 ofs0032: findpropstrict ['acceptUnifiedPhaseDamage']
+#0021 ofs0036: getlocal_2 []
+#0022 ofs0037: getlocal_1 []
+#0023 ofs0038: callpropvoid ['acceptUnifiedPhaseDamage', 2]
+#0024 ofs003d: returnvoid []
+#0025 ofs003e: jump [] -> #56
+#0026 ofs0042: avm_label []
+#0027 ofs0043: findproperty ['amountOfPhase1Damage']
+#0028 ofs0047: getlex ['amountOfPhase1Damage']
+#0029 ofs004b: getlocal_1 []
+#0030 ofs004c: add []
+#0031 ofs004d: setproperty ['amountOfPhase1Damage']
+#0032 ofs0051: jump [] -> #81
+#0033 ofs0055: avm_label []
+#0034 ofs0056: getlex ['flash::Boot']
+#0035 ofs0058: findpropstrict ['Error']
+#0036 ofs005a: constructprop ['Error', 0]
+#0037 ofs005d: setproperty ['lastError']
+#0038 ofs005f: pushstring ['1a37ae24-1dea-4fcd-820c-901baf88a392']
+#0039 ofs0063: throw []
+#0040 ofs0064: avm_label []
+#0041 ofs0065: findproperty ['amountOfPhase3Damage']
+#0042 ofs0069: getlex ['amountOfPhase3Damage']
+#0043 ofs006d: getlocal_1 []
+#0044 ofs006e: add []
+#0045 ofs006f: setproperty ['amountOfPhase3Damage']
+#0046 ofs0073: jump [] -> #81
+#0047 ofs0077: avm_label []
+#0048 ofs0078: getlex ['flash::Boot']
+#0049 ofs007a: findpropstrict ['Error']
+#0050 ofs007c: constructprop ['Error', 0]
+#0051 ofs007f: setproperty ['lastError']
+#0052 ofs0081: pushstring ['7a2fc7ed-fe3c-4bb3-bef4-2efe7555f387']
+#0053 ofs0085: throw []
+#0054 ofs0086: avm_label []
+#0055 ofs0087: jump [] -> #81
+#0056 ofs008b: getlocal_2 []
+#0057 ofs008c: setlocal_3 []
+#0058 ofs008d: pushbyte [1]
+#0059 ofs008f: getlocal_3 []
+#0060 ofs0090: ifstrictne [] -> #63
+#0061 ofs0094: pushbyte [0]
+#0062 ofs0096: jump [] -> #79
+#0063 ofs009a: pushbyte [2]
+#0064 ofs009c: getlocal_3 []
+#0065 ofs009d: ifstrictne [] -> #68
+#0066 ofs00a1: pushbyte [1]
+#0067 ofs00a3: jump [] -> #79
+#0068 ofs00a7: pushbyte [3]
+#0069 ofs00a9: getlocal_3 []
+#0070 ofs00aa: ifstrictne [] -> #73
+#0071 ofs00ae: pushbyte [2]
+#0072 ofs00b0: jump [] -> #79
+#0073 ofs00b4: pushbyte [4]
+#0074 ofs00b6: getlocal_3 []
+#0075 ofs00b7: ifstrictne [] -> #78
+#0076 ofs00bb: pushbyte [3]
+#0077 ofs00bd: jump [] -> #79
+#0078 ofs00c1: pushbyte [255]
+#0079 ofs00c3: op_08 [3]
+#0080 ofs00c5: lookupswitch [] default #54, cases [26, 33, 40, 47]
+#0081 ofs00d6: returnvoid []

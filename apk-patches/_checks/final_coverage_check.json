@@ -1,0 +1,278 @@
+{
+  "scope": "只读内存核对；未落盘APK/SWF/ABC/bundle/payload，未封装签名",
+  "artifacts": [
+    {
+      "version": "v17",
+      "apk": "C:\\Users\\12101\\Downloads\\世界弹射测试服-v17.apk",
+      "swf_sha256": "be3cd96af18c569153314ca2c9468ad9cb6061e188c75e84713c0dca06be5f15",
+      "target": "production/android_bundle/dc/bcccb129122c0189c8eab004ecc4516a077f3e",
+      "payload_bytes": 466,
+      "payload_sha256": "bf37fe2fa8b7f25b2924bed0093f8f2b53970dd62162532099d04d3aa01885cc",
+      "bundle_sha1": "4689291ede87e87c2322bb9db6ad3878bdc2a392",
+      "bundle_marker": "79dc501007a9944e6eea04467999f6b0356603bd",
+      "bundle_marker_valid": false,
+      "groups": 10,
+      "matches_compact_builder_output": false,
+      "generated_compact_proof": {
+        "input_payload_bytes": 466,
+        "input_payload_sha256": "bf37fe2fa8b7f25b2924bed0093f8f2b53970dd62162532099d04d3aa01885cc",
+        "output_payload_bytes": 480,
+        "output_payload_sha256": "f9cba755d3c5d63f334989fd0a0a21b7f169f0fbede9e77e3178f4efa5568125",
+        "groups": 11,
+        "root_segments": 11,
+        "frame": 6,
+        "layout": "compact-centered"
+      },
+      "frame6_root_segments": [],
+      "inaho_helper": {
+        "tag_sha256": "0ea8df216fb5f261f2289697efe934863cea9e4be4a58d04a9a9faaaf352452a",
+        "bodies": 7,
+        "method": "InahoAbilityVisuals$/preload",
+        "body_sha256": "c7b3e8879db4e421c24d024a8a8728d2691947607e54f84ad3b835acaf619d16",
+        "labels": [
+          "InahoAbilityVisuals/<ctor>",
+          "InahoAbilityVisuals$/<cinit>",
+          "InahoAbilityVisuals$/preload",
+          "InahoAbilityVisuals$/shot",
+          "InahoAbilityVisuals$/hit",
+          "InahoAbilityVisuals$/isInaho"
+        ],
+        "pcode": [
+          "#0000 ofs0000: getlocal_0 []",
+          "#0001 ofs0001: pushscope []",
+          "#0002 ofs0002: getlocal_2 []",
+          "#0003 ofs0003: pushstring ['battle/effect/ability_damage/inaho_midautumn_wip/moonlight_launch']",
+          "#0004 ofs0005: callpropvoid ['addAnimationLayout', 1]",
+          "#0005 ofs0008: getlocal_2 []",
+          "#0006 ofs0009: pushstring ['battle/effect/ability_damage/inaho_midautumn_wip/moonlight_shot_gold_jade']",
+          "#0007 ofs000b: callpropvoid ['addAnimationLayout', 1]",
+          "#0008 ofs000e: getlocal_2 []",
+          "#0009 ofs000f: pushstring ['battle/effect/ability_damage/inaho_midautumn_wip/moonlight_hit']",
+          "#0010 ofs0011: callpropvoid ['addAnimationLayout', 1]",
+          "#0011 ofs0014: getlocal_2 []",
+          "#0012 ofs0015: pushstring ['battle/effect/skill_unique/inaho_midautumn_wip/midautumn_native/effect']",
+          "#0013 ofs0017: callpropvoid ['addAnimationLayout', 1]",
+          "#0014 ofs001a: getlocal_2 []",
+          "#0015 ofs001b: pushstring ['battle/common/layer1/total_ability_damage_effect']",
+          "#0016 ofs001d: callpropvoid ['addAnimationLayout', 1]",
+          "#0017 ofs0020: getlocal_2 []",
+          "#0018 ofs0021: pushstring ['battle/common/layer1/total_powerflip_damage_effect']",
+          "#0019 ofs0023: callpropvoid ['addAnimationLayout', 1]",
+          "#0020 ofs0026: returnvoid []"
+        ]
+      },
+      "abyss_details": {
+        "tag_sha256": "71149dd2d75d05974973776c7ed68838885febec20e49fa556aa07fc2b349527",
+        "bodies": 13,
+        "method": "AbyssDetails$/attach",
+        "body_sha256": "7f38aef909a00815deb6e8828d17ead178f2c8612a4c6e1ee5aea12dcc76d27d",
+        "labels": [
+          "AbyssDetails/<ctor>",
+          "AbyssDetails$/<cinit>",
+          "AbyssDetails$/isAbyss",
+          "AbyssDetails$/rawSubtitle",
+          "AbyssDetails$/elements",
+          "AbyssDetails$/summaryForQuest",
+          "AbyssDetails$/escape",
+          "AbyssDetails$/detailsHtml",
+          "AbyssDetails$/attach",
+          "AbyssDetails$/openDetails"
+        ],
+        "selected_pcode": [
+          "#0115 ofs00d0: pushstring ['starling.display.Canvas']",
+          "#0125 ofs00e1: pushstring ['starling.geom.Polygon']",
+          "#0191 ofs0151: getlex ['cn.ui::corner']",
+          "#0197 ofs015c: getlex ['cn.ui::corner']",
+          "#0202 ofs0167: getlex ['cn.ui::radius']",
+          "#0205 ofs016e: getlex ['cn.ui::radius']",
+          "#0211 ofs0176: getlex ['cn.ui::corner']",
+          "#0217 ofs0181: getlex ['cn.ui::corner']",
+          "#0222 ofs018c: getlex ['cn.ui::radius']",
+          "#0225 ofs0193: getlex ['cn.ui::radius']",
+          "#0238 ofs01a8: getlex ['cn.ui::corner']",
+          "#0242 ofs01ae: getlex ['cn.ui::step']",
+          "#0258 ofs01c7: getlex ['Math']",
+          "#0260 ofs01cb: callproperty ['cos', 1]",
+          "#0261 ofs01ce: getlex ['cn.ui::radius']",
+          "#0265 ofs01d4: getlex ['Math']",
+          "#0267 ofs01d8: callproperty ['sin', 1]",
+          "#0268 ofs01db: getlex ['cn.ui::radius']",
+          "#0272 ofs01e2: getlex ['cn.ui::step']",
+          "#0275 ofs01e6: findpropstrict ['cn.ui::step']",
+          "#0277 ofs01e9: setproperty ['cn.ui::step']",
+          "#0278 ofs01eb: getlex ['cn.ui::step']",
+          "#0281 ofs01f3: getlex ['cn.ui::corner']",
+          "#0284 ofs01f7: findpropstrict ['cn.ui::corner']",
+          "#0286 ofs01fa: setproperty ['cn.ui::corner']",
+          "#0287 ofs01fc: getlex ['cn.ui::corner']",
+          "#0290 ofs0204: findpropstrict ['cn.ui::CanvasClass']",
+          "#0291 ofs0206: constructprop ['cn.ui::CanvasClass', 0]",
+          "#0300 ofs0218: findpropstrict ['cn.ui::PolygonClass']",
+          "#0302 ofs021c: constructprop ['cn.ui::PolygonClass', 1]",
+          "#0303 ofs021f: callpropvoid ['drawPolygon', 1]"
+        ]
+      }
+    },
+    {
+      "version": "v33",
+      "apk": "C:\\Users\\12101\\Downloads\\世界弹射测试服-v33.apk",
+      "swf_sha256": "3b7b3391ae0aee01f15167fe1d5a5b69eddb71a64605c57486f025916611aaa4",
+      "target": "production/android_bundle/dc/bcccb129122c0189c8eab004ecc4516a077f3e",
+      "payload_bytes": 466,
+      "payload_sha256": "bf37fe2fa8b7f25b2924bed0093f8f2b53970dd62162532099d04d3aa01885cc",
+      "bundle_sha1": "5b5cbf56e9da6cc3a8e939aae4308c9d59b3ac71",
+      "bundle_marker": "5b5cbf56e9da6cc3a8e939aae4308c9d59b3ac71",
+      "bundle_marker_valid": true,
+      "groups": 10,
+      "matches_compact_builder_output": false,
+      "generated_compact_proof": {
+        "input_payload_bytes": 466,
+        "input_payload_sha256": "bf37fe2fa8b7f25b2924bed0093f8f2b53970dd62162532099d04d3aa01885cc",
+        "output_payload_bytes": 480,
+        "output_payload_sha256": "f9cba755d3c5d63f334989fd0a0a21b7f169f0fbede9e77e3178f4efa5568125",
+        "groups": 11,
+        "root_segments": 11,
+        "frame": 6,
+        "layout": "compact-centered"
+      },
+      "frame6_root_segments": [],
+      "inaho_helper": {
+        "tag_sha256": "0ea8df216fb5f261f2289697efe934863cea9e4be4a58d04a9a9faaaf352452a",
+        "bodies": 7,
+        "method": "InahoAbilityVisuals$/preload",
+        "body_sha256": "c7b3e8879db4e421c24d024a8a8728d2691947607e54f84ad3b835acaf619d16",
+        "labels": [
+          "InahoAbilityVisuals/<ctor>",
+          "InahoAbilityVisuals$/<cinit>",
+          "InahoAbilityVisuals$/preload",
+          "InahoAbilityVisuals$/shot",
+          "InahoAbilityVisuals$/hit",
+          "InahoAbilityVisuals$/isInaho"
+        ],
+        "pcode": [
+          "#0000 ofs0000: getlocal_0 []",
+          "#0001 ofs0001: pushscope []",
+          "#0002 ofs0002: getlocal_2 []",
+          "#0003 ofs0003: pushstring ['battle/effect/ability_damage/inaho_midautumn_wip/moonlight_launch']",
+          "#0004 ofs0005: callpropvoid ['addAnimationLayout', 1]",
+          "#0005 ofs0008: getlocal_2 []",
+          "#0006 ofs0009: pushstring ['battle/effect/ability_damage/inaho_midautumn_wip/moonlight_shot_gold_jade']",
+          "#0007 ofs000b: callpropvoid ['addAnimationLayout', 1]",
+          "#0008 ofs000e: getlocal_2 []",
+          "#0009 ofs000f: pushstring ['battle/effect/ability_damage/inaho_midautumn_wip/moonlight_hit']",
+          "#0010 ofs0011: callpropvoid ['addAnimationLayout', 1]",
+          "#0011 ofs0014: getlocal_2 []",
+          "#0012 ofs0015: pushstring ['battle/effect/skill_unique/inaho_midautumn_wip/midautumn_native/effect']",
+          "#0013 ofs0017: callpropvoid ['addAnimationLayout', 1]",
+          "#0014 ofs001a: getlocal_2 []",
+          "#0015 ofs001b: pushstring ['battle/common/layer1/total_ability_damage_effect']",
+          "#0016 ofs001d: callpropvoid ['addAnimationLayout', 1]",
+          "#0017 ofs0020: getlocal_2 []",
+          "#0018 ofs0021: pushstring ['battle/common/layer1/total_powerflip_damage_effect']",
+          "#0019 ofs0023: callpropvoid ['addAnimationLayout', 1]",
+          "#0020 ofs0026: returnvoid []"
+        ]
+      },
+      "abyss_details": {
+        "tag_sha256": "71149dd2d75d05974973776c7ed68838885febec20e49fa556aa07fc2b349527",
+        "bodies": 13,
+        "method": "AbyssDetails$/attach",
+        "body_sha256": "7f38aef909a00815deb6e8828d17ead178f2c8612a4c6e1ee5aea12dcc76d27d",
+        "labels": [
+          "AbyssDetails/<ctor>",
+          "AbyssDetails$/<cinit>",
+          "AbyssDetails$/isAbyss",
+          "AbyssDetails$/rawSubtitle",
+          "AbyssDetails$/elements",
+          "AbyssDetails$/summaryForQuest",
+          "AbyssDetails$/escape",
+          "AbyssDetails$/detailsHtml",
+          "AbyssDetails$/attach",
+          "AbyssDetails$/openDetails"
+        ],
+        "selected_pcode": [
+          "#0115 ofs00d0: pushstring ['starling.display.Canvas']",
+          "#0125 ofs00e1: pushstring ['starling.geom.Polygon']",
+          "#0191 ofs0151: getlex ['cn.ui::corner']",
+          "#0197 ofs015c: getlex ['cn.ui::corner']",
+          "#0202 ofs0167: getlex ['cn.ui::radius']",
+          "#0205 ofs016e: getlex ['cn.ui::radius']",
+          "#0211 ofs0176: getlex ['cn.ui::corner']",
+          "#0217 ofs0181: getlex ['cn.ui::corner']",
+          "#0222 ofs018c: getlex ['cn.ui::radius']",
+          "#0225 ofs0193: getlex ['cn.ui::radius']",
+          "#0238 ofs01a8: getlex ['cn.ui::corner']",
+          "#0242 ofs01ae: getlex ['cn.ui::step']",
+          "#0258 ofs01c7: getlex ['Math']",
+          "#0260 ofs01cb: callproperty ['cos', 1]",
+          "#0261 ofs01ce: getlex ['cn.ui::radius']",
+          "#0265 ofs01d4: getlex ['Math']",
+          "#0267 ofs01d8: callproperty ['sin', 1]",
+          "#0268 ofs01db: getlex ['cn.ui::radius']",
+          "#0272 ofs01e2: getlex ['cn.ui::step']",
+          "#0275 ofs01e6: findpropstrict ['cn.ui::step']",
+          "#0277 ofs01e9: setproperty ['cn.ui::step']",
+          "#0278 ofs01eb: getlex ['cn.ui::step']",
+          "#0281 ofs01f3: getlex ['cn.ui::corner']",
+          "#0284 ofs01f7: findpropstrict ['cn.ui::corner']",
+          "#0286 ofs01fa: setproperty ['cn.ui::corner']",
+          "#0287 ofs01fc: getlex ['cn.ui::corner']",
+          "#0290 ofs0204: findpropstrict ['cn.ui::CanvasClass']",
+          "#0291 ofs0206: constructprop ['cn.ui::CanvasClass', 0]",
+          "#0300 ofs0218: findpropstrict ['cn.ui::PolygonClass']",
+          "#0302 ofs021c: constructprop ['cn.ui::PolygonClass', 1]",
+          "#0303 ofs021f: callpropvoid ['drawPolygon', 1]"
+        ]
+      }
+    }
+  ],
+  "items": {
+    "superplus_flatomo_layout": {
+      "status": "excluded_not_adopted",
+      "formal_patch": false,
+      "conclusion": "实际v17/v33内置payload相同且不匹配紧凑居中生成结果，未采用登记LAN的第6帧紧凑排版。",
+      "evidence": [
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\orochi-rescue-bell-superplus\\build_embedded_layout.py:20-27,51-83",
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\orochi-rescue-bell-superplus\\README.md:3-20"
+      ],
+      "registry_expected_payload_sha256": "f9cba755d3c5d63f334989fd0a0a21b7f169f0fbede9e77e3178f4efa5568125",
+      "actual_payload_unchanged_v17_v33": true
+    },
+    "c8016_v3_preload": {
+      "status": "do_not_add_separate_patch",
+      "formal_patch": false,
+      "conclusion": "实际v33为7方法且无条件六项预载，已覆盖13/14直建AbilityDamageShot的所需资源；不是后期8方法needsInahoPreload v3。并入inaho-visuals，收实际P-code。",
+      "evidence": [
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\orochi-rescue-bell-superplus\\C8016-PRELOAD.md:7-14,35",
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\author-unified-damage\\src\\cn\\mod\\InahoAbilityVisuals.as:7-16,35-52"
+      ],
+      "source_mismatch": "现存AS已改为v3条件预载，与实际v33不同；不能作为最终源原样收录"
+    },
+    "periodic_cache_10m": {
+      "status": "excluded_not_effective_for_wt",
+      "formal_patch": false,
+      "conclusion": "v17/v33 DEX相同且保留com.leiting.wf守卫，com.leiting.wt使StartupCache.run直接返回，不能将LAN10分钟清理视为wt生效补丁。",
+      "evidence": [
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\startup-cache\\native\\cn\\startpoint\\StartupCache.java:16-21,122-131",
+        "D:\\WF\\apkp1016\\research\\startup_cache_dex_check.json",
+        "D:\\WF\\apkp1016\\research\\early_actual_checks.json:v17.dex_sha256/v33.dex_sha256"
+      ]
+    },
+    "abyss_details_curved_button": {
+      "status": "adopted_merge_into_abyss_details",
+      "formal_patch": false,
+      "conclusion": "实际v17/v33同一AbyssDetails helper含四角迭代、cos/sin和Polygon绘制；圆角曲线已保留，并入abyss-details最终说明，不重复计完整功能。",
+      "labels": [
+        "AbyssDetails$/attach"
+      ],
+      "source_files": [
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\abyss-detail-ui\\src\\cn\\ui\\AbyssDetails.as",
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\startup-cache\\build_swf.py"
+      ],
+      "evidence": [
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\abyss-detail-ui\\src\\cn\\ui\\AbyssDetails.as:103-123",
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\startup-cache\\build_swf.py:53-73"
+      ]
+    }
+  }
+}

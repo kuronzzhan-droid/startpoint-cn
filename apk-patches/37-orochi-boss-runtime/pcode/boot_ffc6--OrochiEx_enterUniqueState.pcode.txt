@@ -1,0 +1,673 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/enterUniqueState; body: 92551; method: 101024
+# code SHA-256: 441339a33b2e20fe6f0da6574a46337773638cbfc8cff143a0ea68d099418b7d; header: [5, 8, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: op_ef [1, 92777, 2, 2738]
+#0005 ofs0018: op_ef [1, 92779, 3, 2739]
+#0006 ofs0020: op_ef [1, 92842, 4, 2736]
+#0007 ofs0028: op_ef [1, 92843, 5, 2737]
+#0008 ofs0030: pushnull []
+#0009 ofs0031: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0010 ofs0034: astypelate []
+#0011 ofs0035: coerce_a []
+#0012 ofs0036: setlocal [5]
+#0013 ofs0038: pushfalse []
+#0014 ofs0039: convert_b []
+#0015 ofs003a: setlocal [6]
+#0016 ofs003c: getlocal_1 []
+#0017 ofs003d: coerce_a []
+#0018 ofs003e: setlocal_3 []
+#0019 ofs003f: getlocal_2 []
+#0020 ofs0040: coerce_a []
+#0021 ofs0041: setlocal [4]
+#0022 ofs0043: getlocal_3 []
+#0023 ofs0044: getproperty ['type']
+#0024 ofs0048: coerce_a []
+#0025 ofs0049: setlocal [5]
+#0026 ofs004b: jump [] -> #82
+#0027 ofs004f: avm_label []
+#0028 ofs0050: getlocal [5]
+#0029 ofs0052: getproperty ['index']
+#0030 ofs0056: pushbyte [2]
+#0031 ofs0058: ifne [] -> #44
+#0032 ofs005c: getlocal [5]
+#0033 ofs005e: getproperty ['params']
+#0034 ofs0062: pushbyte [0]
+#0035 ofs0064: getproperty ['<mn kind 0x1b>']
+#0036 ofs0068: getproperty ['index']
+#0037 ofs006c: pushbyte [0]
+#0038 ofs006e: ifne [] -> #44
+#0039 ofs0072: findproperty ['trial1Index']
+#0040 ofs0076: getlex ['trial1Index']
+#0041 ofs007a: pushbyte [1]
+#0042 ofs007c: add []
+#0043 ofs007d: setproperty ['trial1Index']
+#0044 ofs0081: jump [] -> #104
+#0045 ofs0085: avm_label []
+#0046 ofs0086: getlocal [5]
+#0047 ofs0088: getproperty ['index']
+#0048 ofs008c: pushbyte [2]
+#0049 ofs008e: ifne [] -> #62
+#0050 ofs0092: getlocal [5]
+#0051 ofs0094: getproperty ['params']
+#0052 ofs0098: pushbyte [0]
+#0053 ofs009a: getproperty ['<mn kind 0x1b>']
+#0054 ofs009e: getproperty ['index']
+#0055 ofs00a2: pushbyte [0]
+#0056 ofs00a4: ifne [] -> #62
+#0057 ofs00a8: findproperty ['trial2Index']
+#0058 ofs00ac: getlex ['trial2Index']
+#0059 ofs00b0: pushbyte [1]
+#0060 ofs00b2: add []
+#0061 ofs00b3: setproperty ['trial2Index']
+#0062 ofs00b7: jump [] -> #104
+#0063 ofs00bb: avm_label []
+#0064 ofs00bc: getlocal [5]
+#0065 ofs00be: getproperty ['index']
+#0066 ofs00c2: pushbyte [2]
+#0067 ofs00c4: ifne [] -> #80
+#0068 ofs00c8: getlocal [5]
+#0069 ofs00ca: getproperty ['params']
+#0070 ofs00ce: pushbyte [0]
+#0071 ofs00d0: getproperty ['<mn kind 0x1b>']
+#0072 ofs00d4: getproperty ['index']
+#0073 ofs00d8: pushbyte [0]
+#0074 ofs00da: ifne [] -> #80
+#0075 ofs00de: findproperty ['trial3Index']
+#0076 ofs00e2: getlex ['trial3Index']
+#0077 ofs00e6: pushbyte [1]
+#0078 ofs00e8: add []
+#0079 ofs00e9: setproperty ['trial3Index']
+#0080 ofs00ed: avm_label []
+#0081 ofs00ee: jump [] -> #104
+#0082 ofs00f2: getlocal_3 []
+#0083 ofs00f3: getproperty ['name']
+#0084 ofs00f7: getproperty ['index']
+#0085 ofs00fb: setlocal [7]
+#0086 ofs00fd: pushbyte [8]
+#0087 ofs00ff: getlocal [7]
+#0088 ofs0101: ifstrictne [] -> #91
+#0089 ofs0105: pushbyte [0]
+#0090 ofs0107: jump [] -> #102
+#0091 ofs010b: pushbyte [10]
+#0092 ofs010d: getlocal [7]
+#0093 ofs010f: ifstrictne [] -> #96
+#0094 ofs0113: pushbyte [1]
+#0095 ofs0115: jump [] -> #102
+#0096 ofs0119: pushbyte [12]
+#0097 ofs011b: getlocal [7]
+#0098 ofs011d: ifstrictne [] -> #101
+#0099 ofs0121: pushbyte [2]
+#0100 ofs0123: jump [] -> #102
+#0101 ofs0127: pushbyte [255]
+#0102 ofs0129: op_08 [7]
+#0103 ofs012b: lookupswitch [] default #80, cases [27, 45, 63]
+#0104 ofs0139: findpropstrict ['changeAnimation']
+#0105 ofs013d: pushbyte [1]
+#0106 ofs013f: findpropstrict ['getAnimationLabel']
+#0107 ofs0143: getlocal_3 []
+#0108 ofs0144: callproperty ['getAnimationLabel', 1]
+#0109 ofs0149: findpropstrict ['getAnimationLabel']
+#0110 ofs014d: getlocal_3 []
+#0111 ofs014e: callproperty ['getAnimationLabel', 1]
+#0112 ofs0153: callpropvoid ['changeAnimation', 3]
+#0113 ofs0158: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiEx']
+#0114 ofs015c: getlocal_3 []
+#0115 ofs015d: getproperty ['name']
+#0116 ofs0161: callproperty ['isAttack', 1]
+#0117 ofs0166: iffalse [] -> #139
+#0118 ofs016a: getlocal_3 []
+#0119 ofs016b: getproperty ['type']
+#0120 ofs016f: coerce_a []
+#0121 ofs0170: setlocal [5]
+#0122 ofs0172: getlocal [5]
+#0123 ofs0174: getproperty ['index']
+#0124 ofs0178: pushbyte [2]
+#0125 ofs017a: equals []
+#0126 ofs017b: dup []
+#0127 ofs017c: iffalse [] -> #136
+#0128 ofs0180: pop []
+#0129 ofs0181: getlocal [5]
+#0130 ofs0183: getproperty ['params']
+#0131 ofs0187: pushbyte [0]
+#0132 ofs0189: getproperty ['<mn kind 0x1b>']
+#0133 ofs018d: getproperty ['index']
+#0134 ofs0191: pushbyte [0]
+#0135 ofs0193: equals []
+#0136 ofs0194: convert_b []
+#0137 ofs0195: setlocal [6]
+#0138 ofs0197: jump [] -> #142
+#0139 ofs019b: pushfalse []
+#0140 ofs019c: convert_b []
+#0141 ofs019d: setlocal [6]
+#0142 ofs019f: getlocal [6]
+#0143 ofs01a1: iffalse [] -> #151
+#0144 ofs01a5: findpropstrict ['showCutin']
+#0145 ofs01a9: findpropstrict ['getAttackValues']
+#0146 ofs01ad: getlocal_3 []
+#0147 ofs01ae: getproperty ['name']
+#0148 ofs01b2: callproperty ['getAttackValues', 1]
+#0149 ofs01b7: getproperty ['cutin']
+#0150 ofs01bb: callpropvoid ['showCutin', 1]
+#0151 ofs01c0: getlocal_3 []
+#0152 ofs01c1: getproperty ['type']
+#0153 ofs01c5: coerce_a []
+#0154 ofs01c6: setlocal [5]
+#0155 ofs01c8: jump [] -> #211
+#0156 ofs01cc: avm_label []
+#0157 ofs01cd: getlocal [5]
+#0158 ofs01cf: getproperty ['index']
+#0159 ofs01d3: pushbyte [0]
+#0160 ofs01d5: ifne [] -> #173
+#0161 ofs01d9: findpropstrict ['showCutin']
+#0162 ofs01dd: getlex ['source']
+#0163 ofs01e0: getproperty ['values']
+#0164 ofs01e4: getproperty ['phase2_normal1_cutin']
+#0165 ofs01e8: callpropvoid ['showCutin', 1]
+#0166 ofs01ed: findpropstrict ['executeAction']
+#0167 ofs01f1: getlex ['source']
+#0168 ofs01f4: getlex ['source']
+#0169 ofs01f7: getproperty ['values']
+#0170 ofs01fb: getproperty ['phase2_normal1_action_paths']
+#0171 ofs01ff: callproperty ['resolveEnemyActions', 1]
+#0172 ofs0204: callpropvoid ['executeAction', 1]
+#0173 ofs0209: jump [] -> #233
+#0174 ofs020d: avm_label []
+#0175 ofs020e: getlocal [5]
+#0176 ofs0210: getproperty ['index']
+#0177 ofs0214: pushbyte [0]
+#0178 ofs0216: ifne [] -> #191
+#0179 ofs021a: findpropstrict ['showCutin']
+#0180 ofs021e: getlex ['source']
+#0181 ofs0221: getproperty ['values']
+#0182 ofs0225: getproperty ['phase2_normal2_cutin']
+#0183 ofs0229: callpropvoid ['showCutin', 1]
+#0184 ofs022e: findpropstrict ['executeAction']
+#0185 ofs0232: getlex ['source']
+#0186 ofs0235: getlex ['source']
+#0187 ofs0238: getproperty ['values']
+#0188 ofs023c: getproperty ['phase2_normal2_action_paths']
+#0189 ofs0240: callproperty ['resolveEnemyActions', 1]
+#0190 ofs0245: callpropvoid ['executeAction', 1]
+#0191 ofs024a: jump [] -> #233
+#0192 ofs024e: avm_label []
+#0193 ofs024f: getlocal [5]
+#0194 ofs0251: getproperty ['index']
+#0195 ofs0255: pushbyte [0]
+#0196 ofs0257: ifne [] -> #209
+#0197 ofs025b: findpropstrict ['showCutin']
+#0198 ofs025f: getlex ['source']
+#0199 ofs0262: getproperty ['values']
+#0200 ofs0266: getproperty ['phase2_normal3_cutin']
+#0201 ofs026a: callpropvoid ['showCutin', 1]
+#0202 ofs026f: findpropstrict ['executeAction']
+#0203 ofs0273: getlex ['source']
+#0204 ofs0276: getlex ['source']
+#0205 ofs0279: getproperty ['values']
+#0206 ofs027d: getproperty ['phase2_normal3_action_paths']
+#0207 ofs0281: callproperty ['resolveEnemyActions', 1]
+#0208 ofs0286: callpropvoid ['executeAction', 1]
+#0209 ofs028b: avm_label []
+#0210 ofs028c: jump [] -> #233
+#0211 ofs0290: getlocal_3 []
+#0212 ofs0291: getproperty ['name']
+#0213 ofs0295: getproperty ['index']
+#0214 ofs0299: setlocal [7]
+#0215 ofs029b: pushbyte [9]
+#0216 ofs029d: getlocal [7]
+#0217 ofs029f: ifstrictne [] -> #220
+#0218 ofs02a3: pushbyte [0]
+#0219 ofs02a5: jump [] -> #231
+#0220 ofs02a9: pushbyte [11]
+#0221 ofs02ab: getlocal [7]
+#0222 ofs02ad: ifstrictne [] -> #225
+#0223 ofs02b1: pushbyte [1]
+#0224 ofs02b3: jump [] -> #231
+#0225 ofs02b7: pushbyte [13]
+#0226 ofs02b9: getlocal [7]
+#0227 ofs02bb: ifstrictne [] -> #230
+#0228 ofs02bf: pushbyte [2]
+#0229 ofs02c1: jump [] -> #231
+#0230 ofs02c5: pushbyte [255]
+#0231 ofs02c7: op_08 [7]
+#0232 ofs02c9: lookupswitch [] default #209, cases [156, 174, 192]
+#0233 ofs02d7: getlocal_3 []
+#0234 ofs02d8: getproperty ['type']
+#0235 ofs02dc: coerce_a []
+#0236 ofs02dd: setlocal [5]
+#0237 ofs02df: jump [] -> #412
+#0238 ofs02e3: avm_label []
+#0239 ofs02e4: getlocal [5]
+#0240 ofs02e6: getproperty ['index']
+#0241 ofs02ea: pushbyte [2]
+#0242 ofs02ec: ifne [] -> #283
+#0243 ofs02f0: jump [] -> #263
+#0244 ofs02f4: avm_label []
+#0245 ofs02f5: getlex ['trialGauge']
+#0246 ofs02f9: getlex ['source']
+#0247 ofs02fc: getproperty ['values']
+#0248 ofs0300: getproperty ['phase2_attack1_trial_kind']
+#0249 ofs0304: callpropvoid ['playStartAnimation', 1]
+#0250 ofs0309: jump [] -> #282
+#0251 ofs030d: avm_label []
+#0252 ofs030e: getlex ['trialGauge']
+#0253 ofs0312: getlex ['source']
+#0254 ofs0315: getproperty ['values']
+#0255 ofs0319: getproperty ['phase2_attack1_trial_kind']
+#0256 ofs031d: callpropvoid ['onFail', 1]
+#0257 ofs0322: jump [] -> #282
+#0258 ofs0326: avm_label []
+#0259 ofs0327: getlex ['trialGauge']
+#0260 ofs032b: callpropvoid ['hideImmediately', 0]
+#0261 ofs0330: avm_label []
+#0262 ofs0331: jump [] -> #282
+#0263 ofs0335: getlocal [5]
+#0264 ofs0337: getproperty ['params']
+#0265 ofs033b: pushbyte [0]
+#0266 ofs033d: getproperty ['<mn kind 0x1b>']
+#0267 ofs0341: getproperty ['index']
+#0268 ofs0345: setlocal [7]
+#0269 ofs0347: pushbyte [1]
+#0270 ofs0349: getlocal [7]
+#0271 ofs034b: ifstrictne [] -> #274
+#0272 ofs034f: pushbyte [0]
+#0273 ofs0351: jump [] -> #280
+#0274 ofs0355: pushbyte [2]
+#0275 ofs0357: getlocal [7]
+#0276 ofs0359: ifstrictne [] -> #279
+#0277 ofs035d: pushbyte [1]
+#0278 ofs035f: jump [] -> #280
+#0279 ofs0363: pushbyte [255]
+#0280 ofs0365: op_08 [7]
+#0281 ofs0367: lookupswitch [] default #258, cases [244, 251]
+#0282 ofs0372: jump [] -> #285
+#0283 ofs0376: getlex ['trialGauge']
+#0284 ofs037a: callpropvoid ['hideImmediately', 0]
+#0285 ofs037f: jump [] -> #449
+#0286 ofs0383: avm_label []
+#0287 ofs0384: getlocal [5]
+#0288 ofs0386: getproperty ['index']
+#0289 ofs038a: pushbyte [2]
+#0290 ofs038c: ifne [] -> #331
+#0291 ofs0390: jump [] -> #311
+#0292 ofs0394: avm_label []
+#0293 ofs0395: getlex ['trialGauge']
+#0294 ofs0399: getlex ['source']
+#0295 ofs039c: getproperty ['values']
+#0296 ofs03a0: getproperty ['phase2_attack2_trial_kind']
+#0297 ofs03a4: callpropvoid ['playStartAnimation', 1]
+#0298 ofs03a9: jump [] -> #330
+#0299 ofs03ad: avm_label []
+#0300 ofs03ae: getlex ['trialGauge']
+#0301 ofs03b2: getlex ['source']
+#0302 ofs03b5: getproperty ['values']
+#0303 ofs03b9: getproperty ['phase2_attack2_trial_kind']
+#0304 ofs03bd: callpropvoid ['onFail', 1]
+#0305 ofs03c2: jump [] -> #330
+#0306 ofs03c6: avm_label []
+#0307 ofs03c7: getlex ['trialGauge']
+#0308 ofs03cb: callpropvoid ['hideImmediately', 0]
+#0309 ofs03d0: avm_label []
+#0310 ofs03d1: jump [] -> #330
+#0311 ofs03d5: getlocal [5]
+#0312 ofs03d7: getproperty ['params']
+#0313 ofs03db: pushbyte [0]
+#0314 ofs03dd: getproperty ['<mn kind 0x1b>']
+#0315 ofs03e1: getproperty ['index']
+#0316 ofs03e5: setlocal [7]
+#0317 ofs03e7: pushbyte [1]
+#0318 ofs03e9: getlocal [7]
+#0319 ofs03eb: ifstrictne [] -> #322
+#0320 ofs03ef: pushbyte [0]
+#0321 ofs03f1: jump [] -> #328
+#0322 ofs03f5: pushbyte [2]
+#0323 ofs03f7: getlocal [7]
+#0324 ofs03f9: ifstrictne [] -> #327
+#0325 ofs03fd: pushbyte [1]
+#0326 ofs03ff: jump [] -> #328
+#0327 ofs0403: pushbyte [255]
+#0328 ofs0405: op_08 [7]
+#0329 ofs0407: lookupswitch [] default #306, cases [292, 299]
+#0330 ofs0412: jump [] -> #333
+#0331 ofs0416: getlex ['trialGauge']
+#0332 ofs041a: callpropvoid ['hideImmediately', 0]
+#0333 ofs041f: jump [] -> #449
+#0334 ofs0423: avm_label []
+#0335 ofs0424: getlocal [5]
+#0336 ofs0426: getproperty ['index']
+#0337 ofs042a: pushbyte [2]
+#0338 ofs042c: ifne [] -> #379
+#0339 ofs0430: jump [] -> #359
+#0340 ofs0434: avm_label []
+#0341 ofs0435: getlex ['trialGauge']
+#0342 ofs0439: getlex ['source']
+#0343 ofs043c: getproperty ['values']
+#0344 ofs0440: getproperty ['phase2_attack3_trial_kind']
+#0345 ofs0444: callpropvoid ['playStartAnimation', 1]
+#0346 ofs0449: jump [] -> #378
+#0347 ofs044d: avm_label []
+#0348 ofs044e: getlex ['trialGauge']
+#0349 ofs0452: getlex ['source']
+#0350 ofs0455: getproperty ['values']
+#0351 ofs0459: getproperty ['phase2_attack3_trial_kind']
+#0352 ofs045d: callpropvoid ['onFail', 1]
+#0353 ofs0462: jump [] -> #378
+#0354 ofs0466: avm_label []
+#0355 ofs0467: getlex ['trialGauge']
+#0356 ofs046b: callpropvoid ['hideImmediately', 0]
+#0357 ofs0470: avm_label []
+#0358 ofs0471: jump [] -> #378
+#0359 ofs0475: getlocal [5]
+#0360 ofs0477: getproperty ['params']
+#0361 ofs047b: pushbyte [0]
+#0362 ofs047d: getproperty ['<mn kind 0x1b>']
+#0363 ofs0481: getproperty ['index']
+#0364 ofs0485: setlocal [7]
+#0365 ofs0487: pushbyte [1]
+#0366 ofs0489: getlocal [7]
+#0367 ofs048b: ifstrictne [] -> #370
+#0368 ofs048f: pushbyte [0]
+#0369 ofs0491: jump [] -> #376
+#0370 ofs0495: pushbyte [2]
+#0371 ofs0497: getlocal [7]
+#0372 ofs0499: ifstrictne [] -> #375
+#0373 ofs049d: pushbyte [1]
+#0374 ofs049f: jump [] -> #376
+#0375 ofs04a3: pushbyte [255]
+#0376 ofs04a5: op_08 [7]
+#0377 ofs04a7: lookupswitch [] default #354, cases [340, 347]
+#0378 ofs04b2: jump [] -> #381
+#0379 ofs04b6: getlex ['trialGauge']
+#0380 ofs04ba: callpropvoid ['hideImmediately', 0]
+#0381 ofs04bf: jump [] -> #449
+#0382 ofs04c3: avm_label []
+#0383 ofs04c4: getlocal [5]
+#0384 ofs04c6: getproperty ['index']
+#0385 ofs04ca: pushbyte [0]
+#0386 ofs04cc: ifne [] -> #404
+#0387 ofs04d0: getlex ['trialGauge']
+#0388 ofs04d4: callpropvoid ['onSucceed', 0]
+#0389 ofs04d9: getlex ['trialSuccessCount']
+#0390 ofs04dd: pushbyte [4]
+#0391 ofs04df: ifnge [] -> #398
+#0392 ofs04e3: findpropstrict ['showCutin']
+#0393 ofs04e7: getlex ['source']
+#0394 ofs04ea: getproperty ['values']
+#0395 ofs04ee: getproperty ['phase2_trial_stun_cutin2']
+#0396 ofs04f2: callpropvoid ['showCutin', 1]
+#0397 ofs04f7: jump [] -> #403
+#0398 ofs04fb: findpropstrict ['showCutin']
+#0399 ofs04ff: getlex ['source']
+#0400 ofs0502: getproperty ['values']
+#0401 ofs0506: getproperty ['phase2_trial_stun_cutin1']
+#0402 ofs050a: callpropvoid ['showCutin', 1]
+#0403 ofs050f: jump [] -> #449
+#0404 ofs0513: getlex ['trialGauge']
+#0405 ofs0517: callpropvoid ['hideImmediately', 0]
+#0406 ofs051c: jump [] -> #449
+#0407 ofs0520: avm_label []
+#0408 ofs0521: getlex ['trialGauge']
+#0409 ofs0525: callpropvoid ['hideImmediately', 0]
+#0410 ofs052a: avm_label []
+#0411 ofs052b: jump [] -> #449
+#0412 ofs052f: getlocal_3 []
+#0413 ofs0530: getproperty ['name']
+#0414 ofs0534: getproperty ['index']
+#0415 ofs0538: setlocal [7]
+#0416 ofs053a: pushbyte [8]
+#0417 ofs053c: getlocal [7]
+#0418 ofs053e: ifstrictne [] -> #421
+#0419 ofs0542: pushbyte [0]
+#0420 ofs0544: jump [] -> #447
+#0421 ofs0548: pushbyte [10]
+#0422 ofs054a: getlocal [7]
+#0423 ofs054c: ifstrictne [] -> #426
+#0424 ofs0550: pushbyte [1]
+#0425 ofs0552: jump [] -> #447
+#0426 ofs0556: pushbyte [12]
+#0427 ofs0558: getlocal [7]
+#0428 ofs055a: ifstrictne [] -> #431
+#0429 ofs055e: pushbyte [2]
+#0430 ofs0560: jump [] -> #447
+#0431 ofs0564: pushbyte [14]
+#0432 ofs0566: getlocal [7]
+#0433 ofs0568: ifstrictne [] -> #436
+#0434 ofs056c: pushbyte [3]
+#0435 ofs056e: jump [] -> #447
+#0436 ofs0572: pushbyte [15]
+#0437 ofs0574: getlocal [7]
+#0438 ofs0576: ifstrictne [] -> #441
+#0439 ofs057a: pushbyte [4]
+#0440 ofs057c: jump [] -> #447
+#0441 ofs0580: pushbyte [16]
+#0442 ofs0582: getlocal [7]
+#0443 ofs0584: ifstrictne [] -> #446
+#0444 ofs0588: pushbyte [5]
+#0445 ofs058a: jump [] -> #447
+#0446 ofs058e: pushbyte [255]
+#0447 ofs0590: op_08 [7]
+#0448 ofs0592: lookupswitch [] default #407, cases [238, 286, 334, 382, 382, 382]
+#0449 ofs05a9: getlocal_3 []
+#0450 ofs05aa: getproperty ['type']
+#0451 ofs05ae: coerce_a []
+#0452 ofs05af: setlocal [5]
+#0453 ofs05b1: jump [] -> #595
+#0454 ofs05b5: avm_label []
+#0455 ofs05b6: getlocal [5]
+#0456 ofs05b8: getproperty ['index']
+#0457 ofs05bc: pushbyte [0]
+#0458 ofs05be: ifne [] -> #467
+#0459 ofs05c2: findpropstrict ['tryStartPhase1Trial']
+#0460 ofs05c6: pushbyte [1]
+#0461 ofs05c8: callproperty ['tryStartPhase1Trial', 1]
+#0462 ofs05cd: not []
+#0463 ofs05ce: iffalse [] -> #467
+#0464 ofs05d2: getlex ['heads']
+#0465 ofs05d6: pushbyte [1]
+#0466 ofs05d8: callpropvoid ['startGroup1IfPossible', 1]
+#0467 ofs05dd: jump [] -> #667
+#0468 ofs05e1: avm_label []
+#0469 ofs05e2: getlocal [5]
+#0470 ofs05e4: getproperty ['index']
+#0471 ofs05e8: pushbyte [0]
+#0472 ofs05ea: ifne [] -> #481
+#0473 ofs05ee: findpropstrict ['tryStartPhase1Trial']
+#0474 ofs05f2: pushbyte [2]
+#0475 ofs05f4: callproperty ['tryStartPhase1Trial', 1]
+#0476 ofs05f9: not []
+#0477 ofs05fa: iffalse [] -> #481
+#0478 ofs05fe: getlex ['heads']
+#0479 ofs0602: pushbyte [2]
+#0480 ofs0604: callpropvoid ['startGroup1IfPossible', 1]
+#0481 ofs0609: jump [] -> #667
+#0482 ofs060d: avm_label []
+#0483 ofs060e: getlocal [5]
+#0484 ofs0610: getproperty ['index']
+#0485 ofs0614: pushbyte [0]
+#0486 ofs0616: ifne [] -> #495
+#0487 ofs061a: findpropstrict ['tryStartPhase1Trial']
+#0488 ofs061e: pushbyte [3]
+#0489 ofs0620: callproperty ['tryStartPhase1Trial', 1]
+#0490 ofs0625: not []
+#0491 ofs0626: iffalse [] -> #495
+#0492 ofs062a: getlex ['heads']
+#0493 ofs062e: pushbyte [3]
+#0494 ofs0630: callpropvoid ['startGroup1IfPossible', 1]
+#0495 ofs0635: jump [] -> #667
+#0496 ofs0639: avm_label []
+#0497 ofs063a: getlocal [5]
+#0498 ofs063c: getproperty ['index']
+#0499 ofs0640: pushbyte [0]
+#0500 ofs0642: ifne [] -> #509
+#0501 ofs0646: findpropstrict ['tryStartPhase1Trial']
+#0502 ofs064a: pushbyte [4]
+#0503 ofs064c: callproperty ['tryStartPhase1Trial', 1]
+#0504 ofs0651: not []
+#0505 ofs0652: iffalse [] -> #509
+#0506 ofs0656: getlex ['heads']
+#0507 ofs065a: pushbyte [4]
+#0508 ofs065c: callpropvoid ['startGroup1IfPossible', 1]
+#0509 ofs0661: jump [] -> #667
+#0510 ofs0665: avm_label []
+#0511 ofs0666: getlocal [5]
+#0512 ofs0668: getproperty ['index']
+#0513 ofs066c: pushbyte [0]
+#0514 ofs066e: ifne [] -> #522
+#0515 ofs0672: findpropstrict ['tryStartPhase1Trial']
+#0516 ofs0676: pushbyte [5]
+#0517 ofs0678: callproperty ['tryStartPhase1Trial', 1]
+#0518 ofs067d: not []
+#0519 ofs067e: iffalse [] -> #522
+#0520 ofs0682: getlex ['heads']
+#0521 ofs0686: callpropvoid ['startAttackEIfPossible', 0]
+#0522 ofs068b: jump [] -> #667
+#0523 ofs068f: avm_label []
+#0524 ofs0690: getlocal [5]
+#0525 ofs0692: getproperty ['index']
+#0526 ofs0696: pushbyte [0]
+#0527 ofs0698: ifne [] -> #531
+#0528 ofs069c: getlex ['heads']
+#0529 ofs06a0: pushbyte [1]
+#0530 ofs06a2: callpropvoid ['startGroup1IfPossible', 1]
+#0531 ofs06a7: jump [] -> #667
+#0532 ofs06ab: avm_label []
+#0533 ofs06ac: getlocal [5]
+#0534 ofs06ae: getproperty ['index']
+#0535 ofs06b2: pushbyte [0]
+#0536 ofs06b4: ifne [] -> #540
+#0537 ofs06b8: getlex ['heads']
+#0538 ofs06bc: pushbyte [1]
+#0539 ofs06be: callpropvoid ['startTrial1IfPossible', 1]
+#0540 ofs06c3: jump [] -> #667
+#0541 ofs06c7: avm_label []
+#0542 ofs06c8: getlocal [5]
+#0543 ofs06ca: getproperty ['index']
+#0544 ofs06ce: pushbyte [0]
+#0545 ofs06d0: ifne [] -> #549
+#0546 ofs06d4: getlex ['heads']
+#0547 ofs06d8: pushbyte [2]
+#0548 ofs06da: callpropvoid ['startGroup1IfPossible', 1]
+#0549 ofs06df: jump [] -> #667
+#0550 ofs06e3: avm_label []
+#0551 ofs06e4: getlocal [5]
+#0552 ofs06e6: getproperty ['index']
+#0553 ofs06ea: pushbyte [0]
+#0554 ofs06ec: ifne [] -> #558
+#0555 ofs06f0: getlex ['heads']
+#0556 ofs06f4: pushbyte [3]
+#0557 ofs06f6: callpropvoid ['startTrial1IfPossible', 1]
+#0558 ofs06fb: jump [] -> #667
+#0559 ofs06ff: avm_label []
+#0560 ofs0700: getlocal [5]
+#0561 ofs0702: getproperty ['index']
+#0562 ofs0706: pushbyte [0]
+#0563 ofs0708: ifne [] -> #567
+#0564 ofs070c: getlex ['heads']
+#0565 ofs0710: pushbyte [3]
+#0566 ofs0712: callpropvoid ['startGroup1IfPossible', 1]
+#0567 ofs0717: jump [] -> #667
+#0568 ofs071b: avm_label []
+#0569 ofs071c: getlocal [5]
+#0570 ofs071e: getproperty ['index']
+#0571 ofs0722: pushbyte [0]
+#0572 ofs0724: ifne [] -> #576
+#0573 ofs0728: getlex ['heads']
+#0574 ofs072c: pushbyte [2]
+#0575 ofs072e: callpropvoid ['startTrial1IfPossible', 1]
+#0576 ofs0733: jump [] -> #667
+#0577 ofs0737: avm_label []
+#0578 ofs0738: getlocal [5]
+#0579 ofs073a: getproperty ['index']
+#0580 ofs073e: pushbyte [0]
+#0581 ofs0740: ifne [] -> #585
+#0582 ofs0744: getlex ['heads']
+#0583 ofs0748: pushbyte [4]
+#0584 ofs074a: callpropvoid ['startGroup1IfPossible', 1]
+#0585 ofs074f: jump [] -> #667
+#0586 ofs0753: avm_label []
+#0587 ofs0754: getlocal [5]
+#0588 ofs0756: getproperty ['index']
+#0589 ofs075a: pushbyte [0]
+#0590 ofs075c: ifne [] -> #593
+#0591 ofs0760: getlex ['heads']
+#0592 ofs0764: callpropvoid ['startTrial2IfPossible', 0]
+#0593 ofs0769: avm_label []
+#0594 ofs076a: jump [] -> #667
+#0595 ofs076e: getlocal_3 []
+#0596 ofs076f: getproperty ['name']
+#0597 ofs0773: getproperty ['index']
+#0598 ofs0777: setlocal [7]
+#0599 ofs0779: pushbyte [1]
+#0600 ofs077b: getlocal [7]
+#0601 ofs077d: ifstrictne [] -> #604
+#0602 ofs0781: pushbyte [0]
+#0603 ofs0783: jump [] -> #665
+#0604 ofs0787: pushbyte [2]
+#0605 ofs0789: getlocal [7]
+#0606 ofs078b: ifstrictne [] -> #609
+#0607 ofs078f: pushbyte [1]
+#0608 ofs0791: jump [] -> #665
+#0609 ofs0795: pushbyte [3]
+#0610 ofs0797: getlocal [7]
+#0611 ofs0799: ifstrictne [] -> #614
+#0612 ofs079d: pushbyte [2]
+#0613 ofs079f: jump [] -> #665
+#0614 ofs07a3: pushbyte [4]
+#0615 ofs07a5: getlocal [7]
+#0616 ofs07a7: ifstrictne [] -> #619
+#0617 ofs07ab: pushbyte [3]
+#0618 ofs07ad: jump [] -> #665
+#0619 ofs07b1: pushbyte [5]
+#0620 ofs07b3: getlocal [7]
+#0621 ofs07b5: ifstrictne [] -> #624
+#0622 ofs07b9: pushbyte [4]
+#0623 ofs07bb: jump [] -> #665
+#0624 ofs07bf: pushbyte [19]
+#0625 ofs07c1: getlocal [7]
+#0626 ofs07c3: ifstrictne [] -> #629
+#0627 ofs07c7: pushbyte [5]
+#0628 ofs07c9: jump [] -> #665
+#0629 ofs07cd: pushbyte [20]
+#0630 ofs07cf: getlocal [7]
+#0631 ofs07d1: ifstrictne [] -> #634
+#0632 ofs07d5: pushbyte [6]
+#0633 ofs07d7: jump [] -> #665
+#0634 ofs07db: pushbyte [21]
+#0635 ofs07dd: getlocal [7]
+#0636 ofs07df: ifstrictne [] -> #639
+#0637 ofs07e3: pushbyte [7]
+#0638 ofs07e5: jump [] -> #665
+#0639 ofs07e9: pushbyte [22]
+#0640 ofs07eb: getlocal [7]
+#0641 ofs07ed: ifstrictne [] -> #644
+#0642 ofs07f1: pushbyte [8]
+#0643 ofs07f3: jump [] -> #665
+#0644 ofs07f7: pushbyte [23]
+#0645 ofs07f9: getlocal [7]
+#0646 ofs07fb: ifstrictne [] -> #649
+#0647 ofs07ff: pushbyte [9]
+#0648 ofs0801: jump [] -> #665
+#0649 ofs0805: pushbyte [24]
+#0650 ofs0807: getlocal [7]
+#0651 ofs0809: ifstrictne [] -> #654
+#0652 ofs080d: pushbyte [10]
+#0653 ofs080f: jump [] -> #665
+#0654 ofs0813: pushbyte [25]
+#0655 ofs0815: getlocal [7]
+#0656 ofs0817: ifstrictne [] -> #659
+#0657 ofs081b: pushbyte [11]
+#0658 ofs081d: jump [] -> #665
+#0659 ofs0821: pushbyte [26]
+#0660 ofs0823: getlocal [7]
+#0661 ofs0825: ifstrictne [] -> #664
+#0662 ofs0829: pushbyte [12]
+#0663 ofs082b: jump [] -> #665
+#0664 ofs082f: pushbyte [255]
+#0665 ofs0831: op_08 [7]
+#0666 ofs0833: lookupswitch [] default #593, cases [454, 468, 482, 496, 510, 523, 532, 541, 550, 559, 568, 577, 586]
+#0667 ofs085f: returnvoid []

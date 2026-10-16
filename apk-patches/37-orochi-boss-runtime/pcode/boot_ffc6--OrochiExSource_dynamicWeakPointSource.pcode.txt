@@ -1,0 +1,14 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiExSource/dynamicWeakPointSource; body: 92582; method: 101055
+# code SHA-256: dfb103ca3a8107bb28e7f4fc217165d313c6d72152eac134a57ae7a8ce01ff3b; header: [4, 2, 5, 6]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: pushstring ['name']
+#0004 ofs000c: getlocal_1 []
+#0005 ofs000d: pushstring ['omniazimuth']
+#0006 ofs0011: pushfalse []
+#0007 ofs0012: newobject [2]
+#0008 ofs0014: returnvalue []

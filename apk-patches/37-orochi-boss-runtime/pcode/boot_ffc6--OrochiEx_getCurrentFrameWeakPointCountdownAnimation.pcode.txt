@@ -1,0 +1,10 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/getCurrentFrameWeakPointCountdownAnimation; body: 92538; method: 101011
+# code SHA-256: 6445ba04d63450744c62b9225f0e27a44307cc320cab4cd45afe317aae933998; header: [1, 1, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['playheadWeakPointCountdown']
+#0003 ofs0006: getproperty ['currentFrame']
+#0004 ofs0009: returnvalue []

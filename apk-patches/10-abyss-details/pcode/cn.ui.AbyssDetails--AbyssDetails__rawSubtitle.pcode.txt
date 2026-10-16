@@ -1,0 +1,40 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.ui.AbyssDetails; label: AbyssDetails$/rawSubtitle; body: 1; method: 2
+# code SHA-256: 472f7e8623f2ee2cbbc2747c8de10d6784bb929bb35282c8fea64b4007bcb928; header: [2, 3, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: getproperty ['values']
+#0004 ofs0005: getproperty ['sub_name']
+#0005 ofs0007: coerce ['Object']
+#0006 ofs0009: setlocal_2 []
+#0007 ofs000a: getlocal_2 []
+#0008 ofs000b: getlex ['String']
+#0009 ofs000d: istypelate []
+#0010 ofs000e: iffalse [] -> #14
+#0011 ofs0012: getlocal_2 []
+#0012 ofs0013: convert_s []
+#0013 ofs0014: returnvalue []
+#0014 ofs0015: getlocal_2 []
+#0015 ofs0016: pushnull []
+#0016 ofs0017: equals []
+#0017 ofs0018: not []
+#0018 ofs0019: dup []
+#0019 ofs001a: iffalse [] -> #25
+#0020 ofs001e: pop []
+#0021 ofs001f: getlocal_2 []
+#0022 ofs0020: getproperty ['index']
+#0023 ofs0022: pushbyte [0]
+#0024 ofs0024: equals []
+#0025 ofs0025: iffalse [] -> #32
+#0026 ofs0029: getlocal_2 []
+#0027 ofs002a: getproperty ['params']
+#0028 ofs002c: pushbyte [0]
+#0029 ofs002e: getproperty ['<mn kind 0x1b>']
+#0030 ofs0030: convert_s []
+#0031 ofs0031: jump [] -> #34
+#0032 ofs0035: pushstring ['']
+#0033 ofs0037: coerce_s []
+#0034 ofs0038: returnvalue []

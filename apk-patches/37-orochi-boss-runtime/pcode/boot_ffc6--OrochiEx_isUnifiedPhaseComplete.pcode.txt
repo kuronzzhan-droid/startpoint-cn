@@ -1,0 +1,23 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/isUnifiedPhaseComplete; body: 92594; method: 101067
+# code SHA-256: e44f988ef27deb0379ae125b6e4cda26605c86bd803b690e2fe2557644daa4e7; header: [3, 2, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: findpropstrict ['hasUnifiedPhaseHealthMode']
+#0004 ofs000d: callproperty ['hasUnifiedPhaseHealthMode', 0]
+#0005 ofs0012: convert_b []
+#0006 ofs0013: dup []
+#0007 ofs0014: iffalse [] -> #17
+#0008 ofs0018: pop []
+#0009 ofs0019: findpropstrict ['unifiedPhaseDamage']
+#0010 ofs001d: getlocal_1 []
+#0011 ofs001e: callproperty ['unifiedPhaseDamage', 1]
+#0012 ofs0023: findpropstrict ['unifiedPhaseHealthPoint']
+#0013 ofs0027: getlocal_1 []
+#0014 ofs0028: callproperty ['unifiedPhaseHealthPoint', 1]
+#0015 ofs002d: greaterequals []
+#0016 ofs002e: convert_b []
+#0017 ofs002f: returnvalue []

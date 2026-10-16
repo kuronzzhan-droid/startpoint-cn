@@ -1,0 +1,56 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.loading.BattlePackSlicer; label: BattlePackSlicer/disposeAll; body: 15; method: 16
+# code SHA-256: 96d6ac7a17fd63d60f4679c1ca94f15a623694fda47327d9c46172fa8e51d636; header: [3, 9, 0, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: pushbyte [0]
+#0003 ofs0004: setlocal [8]
+#0004 ofs0006: getlex ['cn.loading:BattlePackSlicer::layers']
+#0005 ofs0008: setlocal [7]
+#0006 ofs000a: jump [] -> #48
+#0007 ofs000e: avm_label []
+#0008 ofs000f: getlocal [7]
+#0009 ofs0011: getlocal [8]
+#0010 ofs0013: nextvalue []
+#0011 ofs0014: coerce ['Object']
+#0012 ofs0016: setlocal_2 []
+#0013 ofs0017: pushbyte [0]
+#0014 ofs0019: setlocal [6]
+#0015 ofs001b: getlocal_2 []
+#0016 ofs001c: getproperty ['pages']
+#0017 ofs001e: setlocal [5]
+#0018 ofs0020: jump [] -> #46
+#0019 ofs0024: avm_label []
+#0020 ofs0025: getlocal [5]
+#0021 ofs0027: getlocal [6]
+#0022 ofs0029: nextvalue []
+#0023 ofs002a: coerce ['Object']
+#0024 ofs002c: setlocal_1 []
+#0025 ofs002d: getlocal_1 []
+#0026 ofs002e: getproperty ['rt']
+#0027 ofs0030: pushnull []
+#0028 ofs0031: ifeq [] -> #46
+#0029 ofs0035: getlocal_1 []
+#0030 ofs0036: getproperty ['rt']
+#0031 ofs0038: callpropvoid ['dispose', 0]
+#0032 ofs003c: jump [] -> #43
+#0033 ofs0040: getlocal_0 []
+#0034 ofs0041: pushscope []
+#0035 ofs0042: newcatch [0]
+#0036 ofs0044: dup []
+#0037 ofs0045: setlocal [4]
+#0038 ofs0047: dup []
+#0039 ofs0048: pushscope []
+#0040 ofs0049: swap []
+#0041 ofs004a: setslot [1]
+#0042 ofs004c: popscope []
+#0043 ofs004d: getlocal_1 []
+#0044 ofs004e: pushnull []
+#0045 ofs004f: setproperty ['rt']
+#0046 ofs0051: hasnext2 [5, 6]
+#0047 ofs0054: iftrue [] -> #19
+#0048 ofs0058: hasnext2 [7, 8]
+#0049 ofs005b: iftrue [] -> #7
+#0050 ofs005f: returnvoid []

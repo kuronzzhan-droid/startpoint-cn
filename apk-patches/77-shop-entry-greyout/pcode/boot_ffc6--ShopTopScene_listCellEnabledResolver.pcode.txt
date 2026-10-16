@@ -1,0 +1,101 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: ShopTopScene/listCellEnabledResolver; body: 81061; method: 88990
+# code SHA-256: 4c1d46648cfb44800021200cdf2a52e3d477919380f0c475544103f888ee73f1; header: [2, 2, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: getproperty ['kind']
+#0004 ofs0006: coerce ['pinball.ui.component.list.menu.data::ShopTopListItemKind']
+#0005 ofs000a: getproperty ['index']
+#0006 ofs000c: lookupswitch [] default #7, cases [8, 22, 34, 38, 52, 66, 70, 74, 78, 82]
+#0007 ofs002f: jump [] -> #95
+#0008 ofs0033: findproperty ['globalLogic']
+#0009 ofs0036: getproperty ['globalLogic']
+#0010 ofs0039: pushstring ['merchant']
+#0011 ofs003c: callproperty ['isGameSystemUnlocked', 1]
+#0012 ofs0041: convert_b []
+#0013 ofs0042: iffalse [] -> #18
+#0014 ofs0046: getlex ['pinball.ui.component.list.core.cell::CellEnabledState']
+#0015 ofs004a: getproperty ['Enabled']
+#0016 ofs004d: returnvalue []
+#0017 ofs004e: jump [] -> #21
+#0018 ofs0052: getlex ['pinball.ui.component.list.core.cell::CellEnabledState']
+#0019 ofs0056: getproperty ['DisabledVisual']
+#0020 ofs005a: returnvalue []
+#0021 ofs005b: jump [] -> #95
+#0022 ofs005f: findproperty ['existsSpecialPackProducts']
+#0023 ofs0063: callproperty ['existsSpecialPackProducts', 0]
+#0024 ofs0068: convert_b []
+#0025 ofs0069: iffalse [] -> #30
+#0026 ofs006d: getlex ['pinball.ui.component.list.core.cell::CellEnabledState']
+#0027 ofs0071: getproperty ['Enabled']
+#0028 ofs0074: returnvalue []
+#0029 ofs0075: jump [] -> #33
+#0030 ofs0079: getlex ['pinball.ui.component.list.core.cell::CellEnabledState']
+#0031 ofs007d: getproperty ['DisabledVisual']
+#0032 ofs0081: returnvalue []
+#0033 ofs0082: jump [] -> #95
+#0034 ofs0086: getlex ['pinball.ui.component.list.core.cell::CellEnabledState']
+#0035 ofs008a: getproperty ['Enabled']
+#0036 ofs008d: returnvalue []
+#0037 ofs008e: jump [] -> #95
+#0038 ofs0092: pushfalse []
+#0039 ofs0093: iftrue [] -> #44
+#0040 ofs0097: findproperty ['existsExchangeableEvents']
+#0041 ofs009b: callproperty ['existsExchangeableEvents', 0]
+#0042 ofs00a0: convert_b []
+#0043 ofs00a1: iffalse [] -> #48
+#0044 ofs00a5: getlex ['pinball.ui.component.list.core.cell::CellEnabledState']
+#0045 ofs00a9: getproperty ['Enabled']
+#0046 ofs00ac: returnvalue []
+#0047 ofs00ad: jump [] -> #51
+#0048 ofs00b1: getlex ['pinball.ui.component.list.core.cell::CellEnabledState']
+#0049 ofs00b5: getproperty ['DisabledVisual']
+#0050 ofs00b9: returnvalue []
+#0051 ofs00ba: jump [] -> #95
+#0052 ofs00be: findproperty ['globalLogic']
+#0053 ofs00c1: getproperty ['globalLogic']
+#0054 ofs00c4: pushstring ['boss_battle']
+#0055 ofs00c8: callproperty ['isGameSystemUnlocked', 1]
+#0056 ofs00cd: convert_b []
+#0057 ofs00ce: iffalse [] -> #62
+#0058 ofs00d2: getlex ['pinball.ui.component.list.core.cell::CellEnabledState']
+#0059 ofs00d6: getproperty ['Enabled']
+#0060 ofs00d9: returnvalue []
+#0061 ofs00da: jump [] -> #65
+#0062 ofs00de: getlex ['pinball.ui.component.list.core.cell::CellEnabledState']
+#0063 ofs00e2: getproperty ['DisabledVisual']
+#0064 ofs00e6: returnvalue []
+#0065 ofs00e7: jump [] -> #95
+#0066 ofs00eb: getlex ['pinball.ui.component.list.core.cell::CellEnabledState']
+#0067 ofs00ef: getproperty ['Enabled']
+#0068 ofs00f2: returnvalue []
+#0069 ofs00f3: jump [] -> #95
+#0070 ofs00f7: getlex ['pinball.ui.component.list.core.cell::CellEnabledState']
+#0071 ofs00fb: getproperty ['Enabled']
+#0072 ofs00fe: returnvalue []
+#0073 ofs00ff: jump [] -> #95
+#0074 ofs0103: getlex ['pinball.ui.component.list.core.cell::CellEnabledState']
+#0075 ofs0107: getproperty ['Enabled']
+#0076 ofs010a: returnvalue []
+#0077 ofs010b: jump [] -> #95
+#0078 ofs010f: getlex ['pinball.ui.component.list.core.cell::CellEnabledState']
+#0079 ofs0113: getproperty ['Enabled']
+#0080 ofs0116: returnvalue []
+#0081 ofs0117: jump [] -> #95
+#0082 ofs011b: findproperty ['globalLogic']
+#0083 ofs011e: getproperty ['globalLogic']
+#0084 ofs0121: pushstring ['equipment_enhancement']
+#0085 ofs0125: callproperty ['isGameSystemUnlocked', 1]
+#0086 ofs012a: convert_b []
+#0087 ofs012b: iffalse [] -> #92
+#0088 ofs012f: getlex ['pinball.ui.component.list.core.cell::CellEnabledState']
+#0089 ofs0133: getproperty ['Enabled']
+#0090 ofs0136: returnvalue []
+#0091 ofs0137: jump [] -> #95
+#0092 ofs013b: getlex ['pinball.ui.component.list.core.cell::CellEnabledState']
+#0093 ofs013f: getproperty ['DisabledVisual']
+#0094 ofs0143: returnvalue []
+#0095 ofs0144: returnvoid []

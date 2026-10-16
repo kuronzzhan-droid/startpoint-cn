@@ -1,0 +1,19 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.admission.ClientAdmission; label: anonymous-method-28; body: 25; method: 28
+# code SHA-256: 951d3b4f366c50033780883d1ff6bafeb3788e1bbd62711a0ae6e2802d19b678; header: [3, 2, 0, 0]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_1 []
+#0001 ofs0001: getproperty ['ok']
+#0002 ofs0003: iffalse [] -> #8
+#0003 ofs0007: getlex ['cn.admission::attempt']
+#0004 ofs0009: getglobalscope []
+#0005 ofs000a: call [0]
+#0006 ofs000c: pop []
+#0007 ofs000d: jump [] -> #13
+#0008 ofs0011: getlex ['cn.admission::deliver']
+#0009 ofs0013: getglobalscope []
+#0010 ofs0014: getlocal_1 []
+#0011 ofs0015: call [1]
+#0012 ofs0017: pop []
+#0013 ofs0018: returnvoid []

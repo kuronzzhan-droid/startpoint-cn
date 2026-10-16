@@ -1,0 +1,18 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: BothBossTool$/randomIndex; body: 92438; method: 100911
+# code SHA-256: 730d28453db5beaf32c3483afd615930af4fe9b0819483fa9081d32fd70aac89; header: [2, 3, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: getlocal_2 []
+#0005 ofs0011: pushbyte [1]
+#0006 ofs0013: ifnle [] -> #9
+#0007 ofs0017: pushbyte [0]
+#0008 ofs0019: returnvalue []
+#0009 ofs001a: getlocal_1 []
+#0010 ofs001b: getlocal_2 []
+#0011 ofs001c: modulo []
+#0012 ofs001d: returnvalue []

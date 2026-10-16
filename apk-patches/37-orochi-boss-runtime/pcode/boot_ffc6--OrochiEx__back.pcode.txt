@@ -1,0 +1,188 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx$/back; body: 92572; method: 101045
+# code SHA-256: 38b6f2fcb324450172de98065d4c73f84eabbbf42f94daf2222c0acc5f43a6b3; header: [5, 6, 5, 6]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 92776, 1, 208]
+#0004 ofs0011: op_ef [1, 92777, 2, 238]
+#0005 ofs0019: op_ef [1, 92779, 3, 239]
+#0006 ofs0021: getlocal_1 []
+#0007 ofs0022: getproperty ['type']
+#0008 ofs0026: coerce ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0009 ofs0029: setlocal_2 []
+#0010 ofs002a: jump [] -> #57
+#0011 ofs002e: avm_label []
+#0012 ofs002f: getlocal_2 []
+#0013 ofs0030: getproperty ['index']
+#0014 ofs0032: pushbyte [2]
+#0015 ofs0034: ifne [] -> #25
+#0016 ofs0038: getlocal_2 []
+#0017 ofs0039: getproperty ['params']
+#0018 ofs003b: pushbyte [0]
+#0019 ofs003d: getproperty ['<mn kind 0x1b>']
+#0020 ofs0041: getproperty ['index']
+#0021 ofs0045: pushbyte [1]
+#0022 ofs0047: ifne [] -> #25
+#0023 ofs004b: getlocal_1 []
+#0024 ofs004c: returnvalue []
+#0025 ofs004d: jump [] -> #79
+#0026 ofs0051: avm_label []
+#0027 ofs0052: getlocal_2 []
+#0028 ofs0053: getproperty ['index']
+#0029 ofs0055: pushbyte [2]
+#0030 ofs0057: ifne [] -> #40
+#0031 ofs005b: getlocal_2 []
+#0032 ofs005c: getproperty ['params']
+#0033 ofs005e: pushbyte [0]
+#0034 ofs0060: getproperty ['<mn kind 0x1b>']
+#0035 ofs0064: getproperty ['index']
+#0036 ofs0068: pushbyte [1]
+#0037 ofs006a: ifne [] -> #40
+#0038 ofs006e: getlocal_1 []
+#0039 ofs006f: returnvalue []
+#0040 ofs0070: jump [] -> #79
+#0041 ofs0074: avm_label []
+#0042 ofs0075: getlocal_2 []
+#0043 ofs0076: getproperty ['index']
+#0044 ofs0078: pushbyte [2]
+#0045 ofs007a: ifne [] -> #55
+#0046 ofs007e: getlocal_2 []
+#0047 ofs007f: getproperty ['params']
+#0048 ofs0081: pushbyte [0]
+#0049 ofs0083: getproperty ['<mn kind 0x1b>']
+#0050 ofs0087: getproperty ['index']
+#0051 ofs008b: pushbyte [1]
+#0052 ofs008d: ifne [] -> #55
+#0053 ofs0091: getlocal_1 []
+#0054 ofs0092: returnvalue []
+#0055 ofs0093: avm_label []
+#0056 ofs0094: jump [] -> #79
+#0057 ofs0098: getlocal_1 []
+#0058 ofs0099: getproperty ['name']
+#0059 ofs009d: getproperty ['index']
+#0060 ofs00a1: setlocal [5]
+#0061 ofs00a3: pushbyte [8]
+#0062 ofs00a5: getlocal [5]
+#0063 ofs00a7: ifstrictne [] -> #66
+#0064 ofs00ab: pushbyte [0]
+#0065 ofs00ad: jump [] -> #77
+#0066 ofs00b1: pushbyte [10]
+#0067 ofs00b3: getlocal [5]
+#0068 ofs00b5: ifstrictne [] -> #71
+#0069 ofs00b9: pushbyte [1]
+#0070 ofs00bb: jump [] -> #77
+#0071 ofs00bf: pushbyte [12]
+#0072 ofs00c1: getlocal [5]
+#0073 ofs00c3: ifstrictne [] -> #76
+#0074 ofs00c7: pushbyte [2]
+#0075 ofs00c9: jump [] -> #77
+#0076 ofs00cd: pushbyte [255]
+#0077 ofs00cf: op_08 [5]
+#0078 ofs00d1: lookupswitch [] default #55, cases [11, 26, 41]
+#0079 ofs00df: getlocal_0 []
+#0080 ofs00e0: getlocal_1 []
+#0081 ofs00e1: getproperty ['name']
+#0082 ofs00e5: callproperty ['getNextStateName', 1]
+#0083 ofs00ea: coerce ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateName']
+#0084 ofs00ee: setlocal_3 []
+#0085 ofs00ef: getlocal_1 []
+#0086 ofs00f0: getproperty ['name']
+#0087 ofs00f4: coerce ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateName']
+#0088 ofs00f8: setlocal [4]
+#0089 ofs00fa: jump [] -> #159
+#0090 ofs00fe: avm_label []
+#0091 ofs00ff: pushstring ['name']
+#0092 ofs0102: getlocal_3 []
+#0093 ofs0103: pushstring ['type']
+#0094 ofs0106: getlocal_0 []
+#0095 ofs0107: getlocal_3 []
+#0096 ofs0108: callproperty ['isIdleable', 1]
+#0097 ofs010d: iffalse [] -> #101
+#0098 ofs0111: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0099 ofs0114: getproperty ['Idle']
+#0100 ofs0118: jump [] -> #112
+#0101 ofs011c: getlocal_0 []
+#0102 ofs011d: getlocal_3 []
+#0103 ofs011e: callproperty ['isAttack', 1]
+#0104 ofs0123: iffalse [] -> #110
+#0105 ofs0127: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0106 ofs012a: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueAttackState']
+#0107 ofs012e: getproperty ['Start']
+#0108 ofs0131: callproperty ['Attack', 1]
+#0109 ofs0135: jump [] -> #112
+#0110 ofs0139: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0111 ofs013c: getproperty ['Normal']
+#0112 ofs013f: newobject [2]
+#0113 ofs0141: returnvalue []
+#0114 ofs0142: avm_label []
+#0115 ofs0143: pushstring ['name']
+#0116 ofs0146: getlocal [4]
+#0117 ofs0148: pushstring ['type']
+#0118 ofs014b: getlocal_0 []
+#0119 ofs014c: getlocal [4]
+#0120 ofs014e: callproperty ['isAttack', 1]
+#0121 ofs0153: iffalse [] -> #127
+#0122 ofs0157: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0123 ofs015a: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueAttackState']
+#0124 ofs015e: getproperty ['Start']
+#0125 ofs0161: callproperty ['Attack', 1]
+#0126 ofs0165: jump [] -> #129
+#0127 ofs0169: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0128 ofs016c: getproperty ['Normal']
+#0129 ofs016f: newobject [2]
+#0130 ofs0171: returnvalue []
+#0131 ofs0172: avm_label []
+#0132 ofs0173: pushstring ['name']
+#0133 ofs0176: getlocal_3 []
+#0134 ofs0177: pushstring ['type']
+#0135 ofs017a: getlocal_0 []
+#0136 ofs017b: getlocal_3 []
+#0137 ofs017c: callproperty ['isIdleable', 1]
+#0138 ofs0181: iffalse [] -> #142
+#0139 ofs0185: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0140 ofs0188: getproperty ['Idle']
+#0141 ofs018c: jump [] -> #153
+#0142 ofs0190: getlocal_0 []
+#0143 ofs0191: getlocal_3 []
+#0144 ofs0192: callproperty ['isAttack', 1]
+#0145 ofs0197: iffalse [] -> #151
+#0146 ofs019b: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0147 ofs019e: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueAttackState']
+#0148 ofs01a2: getproperty ['Start']
+#0149 ofs01a5: callproperty ['Attack', 1]
+#0150 ofs01a9: jump [] -> #153
+#0151 ofs01ad: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0152 ofs01b0: getproperty ['Normal']
+#0153 ofs01b3: newobject [2]
+#0154 ofs01b5: returnvalue []
+#0155 ofs01b6: avm_label []
+#0156 ofs01b7: returnvoid []
+#0157 ofs01b8: avm_label []
+#0158 ofs01b9: jump [] -> #181
+#0159 ofs01bd: getlocal_1 []
+#0160 ofs01be: getproperty ['type']
+#0161 ofs01c2: getproperty ['index']
+#0162 ofs01c6: setlocal [5]
+#0163 ofs01c8: pushbyte [0]
+#0164 ofs01ca: getlocal [5]
+#0165 ofs01cc: ifstrictne [] -> #168
+#0166 ofs01d0: pushbyte [0]
+#0167 ofs01d2: jump [] -> #179
+#0168 ofs01d6: pushbyte [1]
+#0169 ofs01d8: getlocal [5]
+#0170 ofs01da: ifstrictne [] -> #173
+#0171 ofs01de: pushbyte [1]
+#0172 ofs01e0: jump [] -> #179
+#0173 ofs01e4: pushbyte [2]
+#0174 ofs01e6: getlocal [5]
+#0175 ofs01e8: ifstrictne [] -> #178
+#0176 ofs01ec: pushbyte [2]
+#0177 ofs01ee: jump [] -> #179
+#0178 ofs01f2: pushbyte [255]
+#0179 ofs01f4: op_08 [5]
+#0180 ofs01f6: lookupswitch [] default #155, cases [90, 114, 131]
+#0181 ofs0204: pushundefined []
+#0182 ofs0205: returnvalue []

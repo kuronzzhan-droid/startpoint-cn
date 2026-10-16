@@ -1,0 +1,65 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/getNextPhaseChangeThreshold; body: 92533; method: 101006
+# code SHA-256: d479ffc97d37be3aeed5bdd3b4d323649a0299af04adcd9b829a62992d3b0692; header: [2, 2, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: jump [] -> #33
+#0003 ofs0006: avm_label []
+#0004 ofs0007: getlex ['haxe.ds::Option']
+#0005 ofs0009: getlex ['phase1HpThreshold']
+#0006 ofs000d: callproperty ['Some', 1]
+#0007 ofs0011: returnvalue []
+#0008 ofs0012: avm_label []
+#0009 ofs0013: getlex ['haxe.ds::Option']
+#0010 ofs0015: getlex ['phase2HpThreshold']
+#0011 ofs0019: callproperty ['Some', 1]
+#0012 ofs001d: returnvalue []
+#0013 ofs001e: avm_label []
+#0014 ofs001f: findpropstrict ['hasPhase4HealthMode']
+#0015 ofs0023: callproperty ['hasPhase4HealthMode', 0]
+#0016 ofs0028: iffalse [] -> #21
+#0017 ofs002c: getlex ['haxe.ds::Option']
+#0018 ofs002e: getlex ['phase3HpThreshold']
+#0019 ofs0032: callproperty ['Some', 1]
+#0020 ofs0036: returnvalue []
+#0021 ofs0037: getlex ['haxe.ds::Option']
+#0022 ofs0039: getproperty ['None']
+#0023 ofs003c: returnvalue []
+#0024 ofs003d: jump [] -> #58
+#0025 ofs0041: avm_label []
+#0026 ofs0042: getlex ['haxe.ds::Option']
+#0027 ofs0044: getproperty ['None']
+#0028 ofs0047: returnvalue []
+#0029 ofs0048: avm_label []
+#0030 ofs0049: returnvoid []
+#0031 ofs004a: avm_label []
+#0032 ofs004b: jump [] -> #58
+#0033 ofs004f: getlex ['phase']
+#0034 ofs0052: setlocal_1 []
+#0035 ofs0053: pushbyte [1]
+#0036 ofs0055: getlocal_1 []
+#0037 ofs0056: ifstrictne [] -> #40
+#0038 ofs005a: pushbyte [0]
+#0039 ofs005c: jump [] -> #56
+#0040 ofs0060: pushbyte [2]
+#0041 ofs0062: getlocal_1 []
+#0042 ofs0063: ifstrictne [] -> #45
+#0043 ofs0067: pushbyte [1]
+#0044 ofs0069: jump [] -> #56
+#0045 ofs006d: pushbyte [3]
+#0046 ofs006f: getlocal_1 []
+#0047 ofs0070: ifstrictne [] -> #50
+#0048 ofs0074: pushbyte [2]
+#0049 ofs0076: jump [] -> #56
+#0050 ofs007a: pushbyte [4]
+#0051 ofs007c: getlocal_1 []
+#0052 ofs007d: ifstrictne [] -> #55
+#0053 ofs0081: pushbyte [3]
+#0054 ofs0083: jump [] -> #56
+#0055 ofs0087: pushbyte [255]
+#0056 ofs0089: op_08 [1]
+#0057 ofs008b: lookupswitch [] default #29, cases [3, 8, 13, 25]
+#0058 ofs009c: pushundefined []
+#0059 ofs009d: returnvalue []

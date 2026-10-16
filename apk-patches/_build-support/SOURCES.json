@@ -1,0 +1,77 @@
+[
+  {
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\common.py",
+    "file": "_build-support\\perf-tools\\common.py",
+    "sha256": "45c60c75e3d022d434006d606bbbfb3850fed8f79de0d3638190769b1dec9b9e"
+  },
+  {
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\asm.py",
+    "file": "_build-support\\perf-tools\\asm.py",
+    "sha256": "c033836d0a7aa109b81509c1cb0731be82fc543c76d8d3b43881f9dab7d81e87"
+  },
+  {
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\abcfmt.py",
+    "file": "_build-support\\perf-tools\\abcfmt.py",
+    "sha256": "2d35f0fb5476bde3a400756ece1467a4dce665fd9c9e7618e1c6815cb5f51f82"
+  },
+  {
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\opwalk.py",
+    "file": "_build-support\\perf-tools\\opwalk.py",
+    "sha256": "c3e17d85438d5f1a62320c811b77bdfd7f475a123e0e8ea2ac759062bb9d6080"
+  },
+  {
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\bodies.py",
+    "file": "_build-support\\perf-tools\\bodies.py",
+    "sha256": "daa069c919b46d25bf6b25e367f1ac2744ffd64f76d6d0469e0eacf42d0d25d8"
+  },
+  {
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\swfabc.py",
+    "file": "_build-support\\perf-tools\\swfabc.py",
+    "sha256": "d3a56b7f23d809e14d78b0ac11e55f8bf127fb60f1d9dfd5814502cc691eaad3"
+  },
+  {
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\swftags.py",
+    "file": "_build-support\\perf-tools\\swftags.py",
+    "sha256": "81d253a0c27ada1f4e377384484fcadd8bf8a360e4d93b456483ef1128ea6b06"
+  },
+  {
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\patch_perf.py",
+    "file": "_build-support\\perf-tools\\patch_perf.py",
+    "sha256": "8774d4809f0cd648687c121306f54551c482ed83672b225d12303eb0dc34455a"
+  },
+  {
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_core.py",
+    "file": "_build-support\\perf-tools\\perf2_core.py",
+    "sha256": "b5d50c6ae613e22773f8dd969df0faf80a3afe4a1aa1bef790b561ceb94c4a8a"
+  },
+  {
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_apply.py",
+    "file": "_build-support\\perf-tools\\perf2_apply.py",
+    "sha256": "d000586e73c2c430b91e3efc8a3e1f6676ee20c02f36b95b78a3b689f88a6966"
+  },
+  {
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_patches.py",
+    "file": "_build-support\\perf-tools\\perf2_patches.py",
+    "sha256": "08c28cf3492d0c5c03ae87a51e0477e18a00438f4358d21ee08c87536841c224"
+  },
+  {
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\build_perf_apk.py",
+    "file": "_build-support\\perf-tools\\build_perf_apk.py",
+    "sha256": "ade104daff1cafed047dc2a1cdc02d8446610f6198bebf55f39c9286cd46cec3"
+  },
+  {
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\build_perf2_apk.py",
+    "file": "_build-support\\perf-tools\\build_perf2_apk.py",
+    "sha256": "52f0ed20f5b74bddc3c3b76c6100525cbaa8751674dd12b8180db1754d48b862"
+  },
+  {
+    "source": "D:\\WF\\coop-fix-20261014\\client\\inspect_v28.py",
+    "file": "_build-support\\coop-tools\\inspect_v28.py",
+    "sha256": "77c1934d320bf08a2095af49baf12fb2b0df6424bc41546199333645c6c333b4"
+  },
+  {
+    "source": "D:\\WF\\coop-fix-20261014\\client\\patch_local_endpoints.py",
+    "file": "_build-support\\coop-tools\\patch_local_endpoints.py",
+    "sha256": "b494f647fe926d25245383cb58d2461c5412e9c907a5f3c5e50de165e1786495"
+  }
+]

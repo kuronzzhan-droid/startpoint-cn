@@ -1,0 +1,22 @@
+[
+  {
+    "version": 17,
+    "classes_dex_sha256": "280e64891f48b1b50b8bab85aa4daa5196e3d69d9669c6a6eb6d570273adb318",
+    "size": 16676,
+    "matched_strings": [
+      "Lcn/startpoint/BuildIdentity;",
+      "Lcn/startpoint/StartupCache;",
+      "com.leiting.wf"
+    ]
+  },
+  {
+    "version": 33,
+    "classes_dex_sha256": "280e64891f48b1b50b8bab85aa4daa5196e3d69d9669c6a6eb6d570273adb318",
+    "size": 16676,
+    "matched_strings": [
+      "Lcn/startpoint/BuildIdentity;",
+      "Lcn/startpoint/StartupCache;",
+      "com.leiting.wf"
+    ]
+  }
+]

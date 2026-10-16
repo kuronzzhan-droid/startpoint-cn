@@ -1,0 +1,28 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/applyAttack; body: 92567; method: 101040
+# code SHA-256: b26fc55076a3b1a5acce32b20b35fd41a35178b09fd73bb953625474414194dc; header: [4, 5, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: op_ef [1, 92778, 2, 0]
+#0005 ofs0017: op_ef [1, 3342, 3, 3431]
+#0006 ofs001e: getlocal_0 []
+#0007 ofs001f: getlocal_1 []
+#0008 ofs0020: getlocal_2 []
+#0009 ofs0021: getlocal_3 []
+#0010 ofs0022: callsupervoid ['applyAttack', 3]
+#0011 ofs0027: getlocal_2 []
+#0012 ofs0028: getproperty ['trialId']
+#0013 ofs002c: coerce ['Object']
+#0014 ofs002e: setlocal [4]
+#0015 ofs0030: getlocal [4]
+#0016 ofs0032: pushnull []
+#0017 ofs0033: ifeq [] -> #22
+#0018 ofs0037: getlex ['trialGauge']
+#0019 ofs003b: getlocal [4]
+#0020 ofs003d: convert_i []
+#0021 ofs003e: callpropvoid ['increaseTrialCount', 1]
+#0022 ofs0043: returnvoid []

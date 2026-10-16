@@ -1,0 +1,24 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.loading.BattlePackSlicer; label: BattlePackSlicer$/cls; body: 0; method: 1
+# code SHA-256: a3e677a1c802473dbd619b5553c5fd68c7c0224f49ba78097694ad493f609308; header: [5, 2, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['Class']
+#0003 ofs0004: getglobalscope []
+#0004 ofs0005: getlex ['resolver']
+#0005 ofs0007: pushnull []
+#0006 ofs0008: ifeq [] -> #12
+#0007 ofs000c: getlex ['resolver']
+#0008 ofs000e: getglobalscope []
+#0009 ofs000f: getlocal_1 []
+#0010 ofs0010: call [1]
+#0011 ofs0012: jump [] -> #17
+#0012 ofs0016: getlex ['flash.utils::getDefinitionByName']
+#0013 ofs0018: getglobalscope []
+#0014 ofs0019: getlocal_1 []
+#0015 ofs001a: call [1]
+#0016 ofs001c: coerce_a []
+#0017 ofs001d: call [1]
+#0018 ofs001f: returnvalue []

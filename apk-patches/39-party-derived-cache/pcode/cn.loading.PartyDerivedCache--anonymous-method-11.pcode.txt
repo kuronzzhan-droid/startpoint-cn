@@ -1,0 +1,21 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.loading.PartyDerivedCache; label: anonymous-method-11; body: 9; method: 11
+# code SHA-256: ee1a1e0c31bc7bccd32fcb51676bd376aac128a53694e0055a88b61b4d16169f; header: [6, 6, 0, 0]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlex ['cn.loading:PartyDerivedCache::active']
+#0001 ofs0002: iffalse [] -> #8
+#0002 ofs0006: getlex ['cn.loading:PartyDerivedCache::stats']
+#0003 ofs0008: dup []
+#0004 ofs0009: getproperty ['calculatedCharacters']
+#0005 ofs000b: convert_d []
+#0006 ofs000c: increment []
+#0007 ofs000d: setproperty ['calculatedCharacters']
+#0008 ofs000f: getlex ['cn.loading::party']
+#0009 ofs0011: getlocal_1 []
+#0010 ofs0012: getlocal_2 []
+#0011 ofs0013: getlocal_3 []
+#0012 ofs0014: getlocal [4]
+#0013 ofs0016: getlocal [5]
+#0014 ofs0018: callproperty ['_createCalculatedBattleCharacterLogic', 5]
+#0015 ofs001b: returnvalue []

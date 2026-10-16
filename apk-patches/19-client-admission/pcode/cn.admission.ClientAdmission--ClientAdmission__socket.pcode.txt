@@ -1,0 +1,22 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.admission.ClientAdmission; label: ClientAdmission$/socket; body: 18; method: 19
+# code SHA-256: 745c492994c401a9ada5850c6e01368081e1875b463c1732a8dcd6f46cdf7250; header: [2, 2, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: dup []
+#0004 ofs0004: iffalse [] -> #9
+#0005 ofs0008: pop []
+#0006 ofs0009: getlocal_1 []
+#0007 ofs000a: getproperty ['handshakeCommand']
+#0008 ofs000c: coerce_a []
+#0009 ofs000d: iffalse [] -> #16
+#0010 ofs0011: getlocal_1 []
+#0011 ofs0012: getproperty ['handshakeCommand']
+#0012 ofs0014: findpropstrict ['cn.admission:ClientAdmission::state']
+#0013 ofs0016: callproperty ['cn.admission:ClientAdmission::state', 0]
+#0014 ofs0019: getproperty ['token']
+#0015 ofs001b: setproperty ['sp_admission']
+#0016 ofs001d: returnvoid []

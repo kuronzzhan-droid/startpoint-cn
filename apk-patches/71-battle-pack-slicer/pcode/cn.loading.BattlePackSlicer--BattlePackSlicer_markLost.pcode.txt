@@ -1,0 +1,12 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.loading.BattlePackSlicer; label: BattlePackSlicer/markLost; body: 8; method: 9
+# code SHA-256: 4c3ad09a1b7ce8a2ecebb28a99eccb5a2d8d329e994a62076e77897a45253049; header: [2, 1, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: pushtrue []
+#0003 ofs0003: findproperty ['cn.loading:BattlePackSlicer::lost']
+#0004 ofs0005: swap []
+#0005 ofs0006: setproperty ['cn.loading:BattlePackSlicer::lost']
+#0006 ofs0008: returnvoid []

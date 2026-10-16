@@ -1,0 +1,12 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/resolveCollision; body: 92492; method: 100965
+# code SHA-256: d3ea97c8f672f072c308bfa1b7e20e75da4e96a11ffbb3892dc8c03c035c77a5; header: [1, 1, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_0 []
+#0003 ofs0003: callsupervoid ['resolveCollision', 0]
+#0004 ofs0008: getlex ['heads']
+#0005 ofs000c: callpropvoid ['resolveCollision', 0]
+#0006 ofs0011: returnvoid []

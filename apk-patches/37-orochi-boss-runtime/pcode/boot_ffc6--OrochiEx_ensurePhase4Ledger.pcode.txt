@@ -1,0 +1,28 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/ensurePhase4Ledger; body: 92481; method: 100954
+# code SHA-256: e636af5a929a6d259eaae4630e89ca8468d7236009002845dca2e87220d1e0e7; header: [5, 1, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: findpropstrict ['hasPhase4HealthMode']
+#0003 ofs0006: callproperty ['hasPhase4HealthMode', 0]
+#0004 ofs000b: not []
+#0005 ofs000c: iffalse [] -> #10
+#0006 ofs0010: findproperty ['phase4Ledger']
+#0007 ofs0014: pushnull []
+#0008 ofs0015: setproperty ['phase4Ledger']
+#0009 ofs0019: returnvoid []
+#0010 ofs001a: getlex ['phase4Ledger']
+#0011 ofs001e: pushnull []
+#0012 ofs001f: ifne [] -> #22
+#0013 ofs0023: findproperty ['phase4Ledger']
+#0014 ofs0027: getlex ['cn.boss::BossMechanicsRuntime']
+#0015 ofs002b: findpropstrict ['phase4Profile']
+#0016 ofs002f: callproperty ['phase4Profile', 0]
+#0017 ofs0034: findpropstrict ['phase4HealthRaw']
+#0018 ofs0038: callproperty ['phase4HealthRaw', 0]
+#0019 ofs003d: pushbyte [0]
+#0020 ofs003f: callproperty ['create', 3]
+#0021 ofs0043: setproperty ['phase4Ledger']
+#0022 ofs0047: returnvoid []

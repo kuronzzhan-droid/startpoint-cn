@@ -1,0 +1,63 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: RushEventClearRewardDialog/completeAnimation; body: 92028; method: 100501
+# code SHA-256: 7170673e44810492c9e71df0b37a2e0d449aeaf07449196cb27efc8037627159; header: [7, 2, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: findproperty ['treasureBoxAnimationFinished']
+#0003 ofs0006: pushtrue []
+#0004 ofs0007: setproperty ['treasureBoxAnimationFinished']
+#0005 ofs000b: getlex ['viewOrder']
+#0006 ofs000f: callpropvoid ['enableUserInput', 0]
+#0007 ofs0014: findproperty ['terminalBackButtonHandler']
+#0008 ofs0018: getlex ['haxe.ds::Option']
+#0009 ofs001a: pushstring ['handler']
+#0010 ofs001d: findpropstrict ['pinball.common.tools._FunctionTools::BindImpl1_0']
+#0011 ofs0020: getlex ['buttonClicked']
+#0012 ofs0024: pushbyte [0]
+#0013 ofs0026: constructprop ['pinball.common.tools._FunctionTools::BindImpl1_0', 2]
+#0014 ofs002a: getproperty ['execute']
+#0015 ofs002d: pushstring ['soundEffect']
+#0016 ofs0031: getlex ['haxe.ds::Option']
+#0017 ofs0033: getlex ['pinball.sound::SoundConstants']
+#0018 ofs0036: getproperty ['BACK_BUTTON_SOUND_EFFECT']
+#0019 ofs0039: callproperty ['Some', 1]
+#0020 ofs003d: newobject [2]
+#0021 ofs003f: callproperty ['Some', 1]
+#0022 ofs0043: setproperty ['terminalBackButtonHandler']
+#0023 ofs0047: jump [] -> #36
+#0024 ofs004b: avm_label []
+#0025 ofs004c: findpropstrict ['isFantasyRushMultiBoundary']
+#0026 ofs0050: callproperty ['isFantasyRushMultiBoundary', 0]
+#0027 ofs0055: not []
+#0028 ofs0056: iffalse [] -> #32
+#0029 ofs005a: findproperty ['autoRetryFinishWaitCount']
+#0030 ofs005e: pushbyte [120]
+#0031 ofs0060: setproperty ['autoRetryFinishWaitCount']
+#0032 ofs0064: jump [] -> #57
+#0033 ofs0068: avm_label []
+#0034 ofs0069: avm_label []
+#0035 ofs006a: jump [] -> #57
+#0036 ofs006e: getlex ['autoMode']
+#0037 ofs0072: getproperty ['index']
+#0038 ofs0074: setlocal_1 []
+#0039 ofs0075: pushbyte [1]
+#0040 ofs0077: getlocal_1 []
+#0041 ofs0078: ifstrictne [] -> #44
+#0042 ofs007c: pushbyte [0]
+#0043 ofs007e: jump [] -> #55
+#0044 ofs0082: pushbyte [0]
+#0045 ofs0084: getlocal_1 []
+#0046 ofs0085: ifstrictne [] -> #49
+#0047 ofs0089: pushbyte [1]
+#0048 ofs008b: jump [] -> #55
+#0049 ofs008f: pushbyte [2]
+#0050 ofs0091: getlocal_1 []
+#0051 ofs0092: ifstrictne [] -> #54
+#0052 ofs0096: pushbyte [2]
+#0053 ofs0098: jump [] -> #55
+#0054 ofs009c: pushbyte [255]
+#0055 ofs009e: op_08 [1]
+#0056 ofs00a0: lookupswitch [] default #34, cases [24, 33, 33]
+#0057 ofs00ae: returnvoid []

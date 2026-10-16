@@ -1,0 +1,31 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.loading.BattlePackSlicer; label: BattlePackSlicer/abort; body: 16; method: 17
+# code SHA-256: 0c8f89b4efb9cab8bca11e71f508daee100c5894727b2d264650b097598be48b; header: [3, 3, 0, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: findpropstrict ['cn.loading:BattlePackSlicer::stop']
+#0003 ofs0004: callpropvoid ['cn.loading:BattlePackSlicer::stop', 0]
+#0004 ofs0007: findpropstrict ['cn.loading:BattlePackSlicer::disposeAll']
+#0005 ofs0009: callpropvoid ['cn.loading:BattlePackSlicer::disposeAll', 0]
+#0006 ofs000c: getlex ['cn.loading:BattlePackSlicer::stat']
+#0007 ofs000e: pushtrue []
+#0008 ofs000f: setproperty ['aborted']
+#0009 ofs0012: findpropstrict ['cn.loading:BattlePackSlicer::dumpStat']
+#0010 ofs0014: callpropvoid ['cn.loading:BattlePackSlicer::dumpStat', 0]
+#0011 ofs0017: getlex ['cn.loading:BattlePackSlicer::svc']
+#0012 ofs0019: getproperty ['gear']
+#0013 ofs001c: callpropvoid ['removeFromParent', 0]
+#0014 ofs0020: jump [] -> #25
+#0015 ofs0024: getlocal_0 []
+#0016 ofs0025: pushscope []
+#0017 ofs0026: newcatch [0]
+#0018 ofs0028: dup []
+#0019 ofs0029: setlocal_2 []
+#0020 ofs002a: dup []
+#0021 ofs002b: pushscope []
+#0022 ofs002c: swap []
+#0023 ofs002d: setslot [1]
+#0024 ofs002f: popscope []
+#0025 ofs0030: returnvoid []

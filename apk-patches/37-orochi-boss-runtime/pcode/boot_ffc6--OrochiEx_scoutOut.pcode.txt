@@ -1,0 +1,25 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/scoutOut; body: 92588; method: 101061
+# code SHA-256: 63bc6ff7daf625f3672a3cd2078809707b4031dc9af72b94d6dbadcc2b06799d; header: [2, 2, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: findproperty ['phase']
+#0003 ofs0005: getproperty ['phase']
+#0004 ofs0008: lookupswitch [] default #5, cases [5, 6, 7, 11, 12]
+#0005 ofs001c: jump [] -> #15
+#0006 ofs0020: jump [] -> #15
+#0007 ofs0024: findpropstrict ['scoutOut']
+#0008 ofs0028: getlocal_1 []
+#0009 ofs0029: callsupervoid ['scoutOut', 1]
+#0010 ofs002e: jump [] -> #15
+#0011 ofs0032: jump [] -> #15
+#0012 ofs0036: findpropstrict ['scoutOut']
+#0013 ofs003a: getlocal_1 []
+#0014 ofs003b: callsupervoid ['scoutOut', 1]
+#0015 ofs0040: findproperty ['heads']
+#0016 ofs0044: getproperty ['heads']
+#0017 ofs0048: getlocal_1 []
+#0018 ofs0049: callpropvoid ['scoutOut', 1]
+#0019 ofs004e: returnvoid []

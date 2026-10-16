@@ -1,0 +1,52 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.admission.AdmissionSession; label: AdmissionSession/background; body: 7; method: 7
+# code SHA-256: 6d11e9ba59c6a576291585bac57d74fd71aa5c656f5e86116976e03384c12fbf; header: [4, 1, 0, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: newactivation []
+#0003 ofs0003: pushscope []
+#0004 ofs0004: getlex ['cn.admission:AdmissionSession::running']
+#0005 ofs0006: not []
+#0006 ofs0007: dup []
+#0007 ofs0008: iffalse [] -> #12
+#0008 ofs000c: pop []
+#0009 ofs000d: getlex ['cn.admission:AdmissionSession::stopped']
+#0010 ofs000f: pushnull []
+#0011 ofs0010: equals []
+#0012 ofs0011: dup []
+#0013 ofs0012: iffalse [] -> #17
+#0014 ofs0016: pop []
+#0015 ofs0017: getlex ['cn.admission:AdmissionSession::grant']
+#0016 ofs0019: coerce_a []
+#0017 ofs001a: dup []
+#0018 ofs001b: iffalse [] -> #22
+#0019 ofs001f: pop []
+#0020 ofs0020: getlex ['cn.admission:AdmissionSession::account']
+#0021 ofs0022: coerce_a []
+#0022 ofs0023: dup []
+#0023 ofs0024: iffalse [] -> #31
+#0024 ofs0028: pop []
+#0025 ofs0029: getlex ['cn.admission:AdmissionSession::clock']
+#0026 ofs002b: getglobalscope []
+#0027 ofs002c: call [0]
+#0028 ofs002e: getlex ['cn.admission:AdmissionSession::renewAt']
+#0029 ofs0030: greaterequals []
+#0030 ofs0031: coerce_a []
+#0031 ofs0032: dup []
+#0032 ofs0033: iffalse [] -> #40
+#0033 ofs0037: pop []
+#0034 ofs0038: getlex ['cn.admission:AdmissionSession::clock']
+#0035 ofs003a: getglobalscope []
+#0036 ofs003b: call [0]
+#0037 ofs003d: getlex ['cn.admission:AdmissionSession::retryAt']
+#0038 ofs003f: greaterequals []
+#0039 ofs0040: coerce_a []
+#0040 ofs0041: iffalse [] -> #46
+#0041 ofs0045: findpropstrict ['ensure']
+#0042 ofs0047: newfunction [8]
+#0043 ofs0049: pushtrue []
+#0044 ofs004a: pushtrue []
+#0045 ofs004b: callpropvoid ['ensure', 3]
+#0046 ofs004e: returnvoid []

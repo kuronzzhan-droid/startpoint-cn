@@ -1,0 +1,73 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/hasPinched; body: 92513; method: 100986
+# code SHA-256: e14f063642ed90ce68708e85bad060693fbaa28010127676118bbc81afa8c525; header: [2, 6, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 92776, 1, 1785]
+#0004 ofs0011: op_ef [1, 92777, 2, 1783]
+#0005 ofs0019: op_ef [1, 92779, 3, 1784]
+#0006 ofs0021: pushnull []
+#0007 ofs0022: coerce_a []
+#0008 ofs0023: setlocal_3 []
+#0009 ofs0024: pushnull []
+#0010 ofs0025: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0011 ofs0028: astypelate []
+#0012 ofs0029: coerce_a []
+#0013 ofs002a: setlocal [4]
+#0014 ofs002c: getlex ['state']
+#0015 ofs002f: coerce ['pinball.scene.battle.battle.enemy::EnemyState']
+#0016 ofs0033: setlocal_2 []
+#0017 ofs0034: getlocal_2 []
+#0018 ofs0035: getproperty ['index']
+#0019 ofs0037: pushbyte [1]
+#0020 ofs0039: ifne [] -> #63
+#0021 ofs003d: getlocal_2 []
+#0022 ofs003e: getproperty ['params']
+#0023 ofs0040: pushbyte [0]
+#0024 ofs0042: getproperty ['<mn kind 0x1b>']
+#0025 ofs0046: coerce_a []
+#0026 ofs0047: setlocal_3 []
+#0027 ofs0048: getlocal_3 []
+#0028 ofs0049: getproperty ['type']
+#0029 ofs004d: coerce_a []
+#0030 ofs004e: setlocal [4]
+#0031 ofs0050: jump [] -> #41
+#0032 ofs0054: avm_label []
+#0033 ofs0055: getlocal [4]
+#0034 ofs0057: getproperty ['index']
+#0035 ofs005b: pushbyte [0]
+#0036 ofs005d: ifne [] -> #39
+#0037 ofs0061: pushtrue []
+#0038 ofs0062: returnvalue []
+#0039 ofs0063: avm_label []
+#0040 ofs0064: jump [] -> #63
+#0041 ofs0068: getlocal_3 []
+#0042 ofs0069: getproperty ['name']
+#0043 ofs006d: getproperty ['index']
+#0044 ofs0071: setlocal [5]
+#0045 ofs0073: pushbyte [14]
+#0046 ofs0075: getlocal [5]
+#0047 ofs0077: ifstrictne [] -> #50
+#0048 ofs007b: pushbyte [0]
+#0049 ofs007d: jump [] -> #61
+#0050 ofs0081: pushbyte [15]
+#0051 ofs0083: getlocal [5]
+#0052 ofs0085: ifstrictne [] -> #55
+#0053 ofs0089: pushbyte [1]
+#0054 ofs008b: jump [] -> #61
+#0055 ofs008f: pushbyte [16]
+#0056 ofs0091: getlocal [5]
+#0057 ofs0093: ifstrictne [] -> #60
+#0058 ofs0097: pushbyte [2]
+#0059 ofs0099: jump [] -> #61
+#0060 ofs009d: pushbyte [255]
+#0061 ofs009f: op_08 [5]
+#0062 ofs00a1: lookupswitch [] default #39, cases [32, 32, 32]
+#0063 ofs00af: getlocal_0 []
+#0064 ofs00b0: getlocal_1 []
+#0065 ofs00b1: callsuper ['hasPinched', 1]
+#0066 ofs00b5: convert_b []
+#0067 ofs00b6: returnvalue []

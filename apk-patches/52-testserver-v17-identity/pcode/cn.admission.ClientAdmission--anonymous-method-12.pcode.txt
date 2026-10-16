@@ -1,0 +1,41 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.admission.ClientAdmission; label: anonymous-method-12; body: 10; method: 12
+# code SHA-256: c4457758bebbe6c31cc233c87cdf2be9fe6b6336b7978e7fa57801a6e1ab2f07; header: [4, 2, 0, 0]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlex ['cn.admission:ClientAdmission::queues']
+#0001 ofs0002: getlex ['cn.admission::queue']
+#0002 ofs0004: getproperty ['<mn kind 0x1b>']
+#0003 ofs0006: getlex ['cn.admission::marker']
+#0004 ofs0008: ifstricteq [] -> #6
+#0005 ofs000c: returnvoid []
+#0006 ofs000d: getlex ['cn.admission:ClientAdmission::queues']
+#0007 ofs000f: getlex ['cn.admission::queue']
+#0008 ofs0011: deleteproperty ['<mn kind 0x1b>']
+#0009 ofs0013: pop []
+#0010 ofs0014: getlex ['cn.admission::queue']
+#0011 ofs0016: getproperty ['gear']
+#0012 ofs0018: dup []
+#0013 ofs0019: iffalse [] -> #19
+#0014 ofs001d: pop []
+#0015 ofs001e: getlex ['cn.admission::queue']
+#0016 ofs0020: getproperty ['gear']
+#0017 ofs0022: callproperty ['isDisposed', 0]
+#0018 ofs0025: coerce_a []
+#0019 ofs0026: iffalse [] -> #21
+#0020 ofs002a: returnvoid []
+#0021 ofs002b: getlocal_1 []
+#0022 ofs002c: getproperty ['ok']
+#0023 ofs002e: iffalse [] -> #30
+#0024 ofs0032: getlex ['cn.admission::queue']
+#0025 ofs0034: getlex ['cn.admission::setting']
+#0026 ofs0036: getlex ['cn.admission::retry']
+#0027 ofs0038: getlex ['cn.admission::started']
+#0028 ofs003a: callpropvoid ['startRequest', 3]
+#0029 ofs003d: jump [] -> #35
+#0030 ofs0041: findpropstrict ['cn.admission:ClientAdmission::failQueue']
+#0031 ofs0043: getlex ['cn.admission::queue']
+#0032 ofs0045: getlex ['cn.admission::setting']
+#0033 ofs0047: getlocal_1 []
+#0034 ofs0048: callpropvoid ['cn.admission:ClientAdmission::failQueue', 3]
+#0035 ofs004b: returnvoid []

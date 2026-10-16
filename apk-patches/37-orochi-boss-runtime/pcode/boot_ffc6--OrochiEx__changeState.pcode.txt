@@ -1,0 +1,22 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/_changeState; body: 92570; method: 101043
+# code SHA-256: 4a701be9510e8d71511c0125e898271beada23403b595ce80fc0db80012316f1; header: [5, 4, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: op_ef [1, 92778, 2, 0]
+#0005 ofs0017: findpropstrict ['changeState']
+#0006 ofs001a: getlex ['pinball.scene.battle.battle.enemy::EnemyState']
+#0007 ofs001e: getlocal_1 []
+#0008 ofs001f: getlex ['pinball.scene.battle.battle.boss.orochi._OrochiExUniqueStateGroup::OrochiExUniqueStateGroup_Impl_']
+#0009 ofs0023: getlocal_1 []
+#0010 ofs0024: callproperty ['_new', 1]
+#0011 ofs0028: callproperty ['Unique', 2]
+#0012 ofs002c: pushbyte [0]
+#0013 ofs002e: getlocal_2 []
+#0014 ofs002f: getlocal_3 []
+#0015 ofs0030: callpropvoid ['changeState', 4]
+#0016 ofs0034: returnvoid []

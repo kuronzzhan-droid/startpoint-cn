@@ -1,0 +1,31 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.admission.ClientAdmission; label: ClientAdmission$/cancelLoad; body: 22; method: 23
+# code SHA-256: 1c78967f567b3419e35d719fcb4374d22d206c33a007dc83a637b7a40e18b7a3; header: [3, 3, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['cn.admission:ClientAdmission::loads']
+#0003 ofs0004: getlocal_1 []
+#0004 ofs0005: getproperty ['<mn kind 0x1b>']
+#0005 ofs0007: coerce ['Object']
+#0006 ofs0009: setlocal_2 []
+#0007 ofs000a: getlocal_2 []
+#0008 ofs000b: iffalse [] -> #25
+#0009 ofs000f: getlocal_2 []
+#0010 ofs0010: pushfalse []
+#0011 ofs0011: setproperty ['active']
+#0012 ofs0013: getlocal_2 []
+#0013 ofs0014: getproperty ['listener']
+#0014 ofs0016: pushnull []
+#0015 ofs0017: ifeq [] -> #21
+#0016 ofs001b: getlocal_1 []
+#0017 ofs001c: pushstring ['complete']
+#0018 ofs001f: getlocal_2 []
+#0019 ofs0020: getproperty ['listener']
+#0020 ofs0022: callpropvoid ['removeEventListener', 2]
+#0021 ofs0025: getlex ['cn.admission:ClientAdmission::loads']
+#0022 ofs0027: getlocal_1 []
+#0023 ofs0028: deleteproperty ['<mn kind 0x1b>']
+#0024 ofs002a: pop []
+#0025 ofs002b: returnvoid []

@@ -1,0 +1,19 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.shop.ShopFirstOpen; label: ShopFirstOpen$/eventKey; body: 0; method: 1
+# code SHA-256: 060577dad26bcf7e5a1f295841a7fbda571b3f927b972001413df09af597a70b; header: [3, 2, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: getproperty ['index']
+#0004 ofs0005: convert_s []
+#0005 ofs0006: pushstring [':']
+#0006 ofs0008: add []
+#0007 ofs0009: getlocal_1 []
+#0008 ofs000a: getproperty ['params']
+#0009 ofs000c: pushbyte [0]
+#0010 ofs000e: getproperty ['<mn kind 0x1b>']
+#0011 ofs0010: convert_s []
+#0012 ofs0011: add []
+#0013 ofs0012: returnvalue []

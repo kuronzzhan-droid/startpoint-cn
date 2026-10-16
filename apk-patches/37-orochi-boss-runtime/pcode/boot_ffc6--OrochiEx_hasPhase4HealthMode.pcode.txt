@@ -1,0 +1,31 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/hasPhase4HealthMode; body: 92478; method: 100951
+# code SHA-256: 195868905a7cf59d0b060dd858076ff93447d692cec99135e50086d08878816f; header: [2, 1, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['source']
+#0003 ofs0005: getproperty ['values']
+#0004 ofs0009: getproperty ['extension_schema_version']
+#0005 ofs000d: pushbyte [1]
+#0006 ofs000f: equals []
+#0007 ofs0010: convert_b []
+#0008 ofs0011: dup []
+#0009 ofs0012: iffalse [] -> #17
+#0010 ofs0016: pop []
+#0011 ofs0017: getlex ['source']
+#0012 ofs001a: getproperty ['values']
+#0013 ofs001e: getproperty ['phase4_victory_mode']
+#0014 ofs0022: pushbyte [2]
+#0015 ofs0024: equals []
+#0016 ofs0025: convert_b []
+#0017 ofs0026: dup []
+#0018 ofs0027: iffalse [] -> #25
+#0019 ofs002b: pop []
+#0020 ofs002c: getlex ['source']
+#0021 ofs002f: getproperty ['phase4HealthPoint']
+#0022 ofs0033: pushbyte [0]
+#0023 ofs0035: greaterthan []
+#0024 ofs0036: convert_b []
+#0025 ofs0037: returnvalue []

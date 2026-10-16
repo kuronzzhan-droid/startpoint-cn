@@ -1,0 +1,18 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/phase4DamageRate; body: 92482; method: 100955
+# code SHA-256: 3a1f53d85f2d85a76d29f173b5f89c42ebd28860ed0dfb8aa3908b00567ca6d3; header: [2, 1, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['phase4DamageWindowRemaining']
+#0003 ofs0006: pushbyte [0]
+#0004 ofs0008: ifngt [] -> #9
+#0005 ofs000c: getlex ['source']
+#0006 ofs000f: getproperty ['values']
+#0007 ofs0013: getproperty ['phase4_open_damage_rate']
+#0008 ofs0017: returnvalue []
+#0009 ofs0018: getlex ['source']
+#0010 ofs001b: getproperty ['values']
+#0011 ofs001f: getproperty ['phase4_closed_damage_rate']
+#0012 ofs0023: returnvalue []

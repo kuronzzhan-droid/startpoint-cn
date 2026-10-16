@@ -1,0 +1,158 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/gotoNextPhaseIfPossible; body: 92518; method: 100991
+# code SHA-256: 14a808e8f3ec478164b42bd6f8f0c50606f1e0190ba4b0de18f6a715b07345d6; header: [3, 4, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 92775, 0, 2086]
+#0003 ofs000a: op_ef [1, 92776, 1, 2087]
+#0004 ofs0012: pushfalse []
+#0005 ofs0013: convert_b []
+#0006 ofs0014: setlocal_1 []
+#0007 ofs0015: pushbyte [0]
+#0008 ofs0017: convert_i []
+#0009 ofs0018: setlocal_2 []
+#0010 ofs0019: jump [] -> #70
+#0011 ofs001d: avm_label []
+#0012 ofs001e: findpropstrict ['hasUnifiedPhaseHealthMode']
+#0013 ofs0022: callproperty ['hasUnifiedPhaseHealthMode', 0]
+#0014 ofs0027: iffalse [] -> #19
+#0015 ofs002b: findpropstrict ['isUnifiedPhaseComplete']
+#0016 ofs002f: pushbyte [1]
+#0017 ofs0031: callproperty ['isUnifiedPhaseComplete', 1]
+#0018 ofs0036: jump [] -> #25
+#0019 ofs003a: getlex ['amountOfPhase1Damage']
+#0020 ofs003e: getlex ['pinball.common.math._Decimal100::Decimal100_Impl_']
+#0021 ofs0041: getlex ['source']
+#0022 ofs0044: getproperty ['phase1HealthPoint']
+#0023 ofs0048: callproperty ['fromInt', 1]
+#0024 ofs004c: greaterequals []
+#0025 ofs004d: convert_b []
+#0026 ofs004e: setlocal_1 []
+#0027 ofs004f: jump [] -> #95
+#0028 ofs0053: avm_label []
+#0029 ofs0054: findpropstrict ['hasUnifiedPhaseHealthMode']
+#0030 ofs0058: callproperty ['hasUnifiedPhaseHealthMode', 0]
+#0031 ofs005d: iffalse [] -> #36
+#0032 ofs0061: findpropstrict ['isUnifiedPhaseComplete']
+#0033 ofs0065: pushbyte [2]
+#0034 ofs0067: callproperty ['isUnifiedPhaseComplete', 1]
+#0035 ofs006c: jump [] -> #38
+#0036 ofs0070: getlex ['healthPointGauge']
+#0037 ofs0073: callproperty ['isMinimum', 0]
+#0038 ofs0078: dup []
+#0039 ofs0079: convert_b []
+#0040 ofs007a: iffalse [] -> #44
+#0041 ofs007e: pop []
+#0042 ofs007f: findpropstrict ['canAdvanceFromPhase2']
+#0043 ofs0083: callproperty ['canAdvanceFromPhase2', 0]
+#0044 ofs0088: convert_b []
+#0045 ofs0089: setlocal_1 []
+#0046 ofs008a: jump [] -> #95
+#0047 ofs008e: avm_label []
+#0048 ofs008f: findpropstrict ['hasUnifiedPhaseHealthMode']
+#0049 ofs0093: callproperty ['hasUnifiedPhaseHealthMode', 0]
+#0050 ofs0098: iffalse [] -> #55
+#0051 ofs009c: findpropstrict ['isUnifiedPhaseComplete']
+#0052 ofs00a0: pushbyte [3]
+#0053 ofs00a2: callproperty ['isUnifiedPhaseComplete', 1]
+#0054 ofs00a7: jump [] -> #61
+#0055 ofs00ab: getlex ['amountOfPhase3Damage']
+#0056 ofs00af: getlex ['pinball.common.math._Decimal100::Decimal100_Impl_']
+#0057 ofs00b2: getlex ['source']
+#0058 ofs00b5: getproperty ['phase3HealthPoint']
+#0059 ofs00b9: callproperty ['fromInt', 1]
+#0060 ofs00bd: greaterequals []
+#0061 ofs00be: convert_b []
+#0062 ofs00bf: setlocal_1 []
+#0063 ofs00c0: jump [] -> #95
+#0064 ofs00c4: avm_label []
+#0065 ofs00c5: pushfalse []
+#0066 ofs00c6: convert_b []
+#0067 ofs00c7: setlocal_1 []
+#0068 ofs00c8: avm_label []
+#0069 ofs00c9: jump [] -> #95
+#0070 ofs00cd: getlex ['phase']
+#0071 ofs00d0: setlocal_3 []
+#0072 ofs00d1: pushbyte [1]
+#0073 ofs00d3: getlocal_3 []
+#0074 ofs00d4: ifstrictne [] -> #77
+#0075 ofs00d8: pushbyte [0]
+#0076 ofs00da: jump [] -> #93
+#0077 ofs00de: pushbyte [2]
+#0078 ofs00e0: getlocal_3 []
+#0079 ofs00e1: ifstrictne [] -> #82
+#0080 ofs00e5: pushbyte [1]
+#0081 ofs00e7: jump [] -> #93
+#0082 ofs00eb: pushbyte [3]
+#0083 ofs00ed: getlocal_3 []
+#0084 ofs00ee: ifstrictne [] -> #87
+#0085 ofs00f2: pushbyte [2]
+#0086 ofs00f4: jump [] -> #93
+#0087 ofs00f8: pushbyte [4]
+#0088 ofs00fa: getlocal_3 []
+#0089 ofs00fb: ifstrictne [] -> #92
+#0090 ofs00ff: pushbyte [3]
+#0091 ofs0101: jump [] -> #93
+#0092 ofs0105: pushbyte [255]
+#0093 ofs0107: op_08 [3]
+#0094 ofs0109: lookupswitch [] default #68, cases [11, 28, 47, 64]
+#0095 ofs011a: getlocal_1 []
+#0096 ofs011b: not []
+#0097 ofs011c: iffalse [] -> #99
+#0098 ofs0120: returnvoid []
+#0099 ofs0121: jump [] -> #124
+#0100 ofs0125: avm_label []
+#0101 ofs0126: pushbyte [2]
+#0102 ofs0128: convert_i []
+#0103 ofs0129: setlocal_2 []
+#0104 ofs012a: jump [] -> #149
+#0105 ofs012e: avm_label []
+#0106 ofs012f: pushbyte [3]
+#0107 ofs0131: convert_i []
+#0108 ofs0132: setlocal_2 []
+#0109 ofs0133: jump [] -> #149
+#0110 ofs0137: avm_label []
+#0111 ofs0138: pushbyte [4]
+#0112 ofs013a: convert_i []
+#0113 ofs013b: setlocal_2 []
+#0114 ofs013c: jump [] -> #149
+#0115 ofs0140: avm_label []
+#0116 ofs0141: getlex ['flash::Boot']
+#0117 ofs0143: findpropstrict ['Error']
+#0118 ofs0145: constructprop ['Error', 0]
+#0119 ofs0148: setproperty ['lastError']
+#0120 ofs014a: pushstring ['58df9abb-5733-4b9b-89f7-ba5219de363a']
+#0121 ofs014e: throw []
+#0122 ofs014f: avm_label []
+#0123 ofs0150: jump [] -> #149
+#0124 ofs0154: getlex ['phase']
+#0125 ofs0157: setlocal_3 []
+#0126 ofs0158: pushbyte [1]
+#0127 ofs015a: getlocal_3 []
+#0128 ofs015b: ifstrictne [] -> #131
+#0129 ofs015f: pushbyte [0]
+#0130 ofs0161: jump [] -> #147
+#0131 ofs0165: pushbyte [2]
+#0132 ofs0167: getlocal_3 []
+#0133 ofs0168: ifstrictne [] -> #136
+#0134 ofs016c: pushbyte [1]
+#0135 ofs016e: jump [] -> #147
+#0136 ofs0172: pushbyte [3]
+#0137 ofs0174: getlocal_3 []
+#0138 ofs0175: ifstrictne [] -> #141
+#0139 ofs0179: pushbyte [2]
+#0140 ofs017b: jump [] -> #147
+#0141 ofs017f: pushbyte [4]
+#0142 ofs0181: getlocal_3 []
+#0143 ofs0182: ifstrictne [] -> #146
+#0144 ofs0186: pushbyte [3]
+#0145 ofs0188: jump [] -> #147
+#0146 ofs018c: pushbyte [255]
+#0147 ofs018e: op_08 [3]
+#0148 ofs0190: lookupswitch [] default #122, cases [100, 105, 110, 115]
+#0149 ofs01a1: findpropstrict ['changePhase']
+#0150 ofs01a5: getlocal_2 []
+#0151 ofs01a6: callpropvoid ['changePhase', 1]
+#0152 ofs01ab: returnvoid []

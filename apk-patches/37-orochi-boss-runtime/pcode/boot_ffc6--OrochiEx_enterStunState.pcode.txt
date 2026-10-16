@@ -1,0 +1,24 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/enterStunState; body: 92552; method: 101025
+# code SHA-256: ce447cdb581fd0ae2852f3a5a66861a2f3b630a8e25e78e5d5d00baf49bd3ea3; header: [2, 3, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 92776, 1, 2994]
+#0004 ofs0011: getlocal_0 []
+#0005 ofs0012: getlocal_1 []
+#0006 ofs0013: callsupervoid ['enterStunState', 1]
+#0007 ofs0018: getlex ['targets']
+#0008 ofs001b: callpropvoid ['cancel', 0]
+#0009 ofs0020: findpropstrict ['getTrialNameOfChallenging']
+#0010 ofs0024: callproperty ['getTrialNameOfChallenging', 0]
+#0011 ofs0029: coerce ['Object']
+#0012 ofs002b: setlocal_2 []
+#0013 ofs002c: getlocal_2 []
+#0014 ofs002d: pushnull []
+#0015 ofs002e: ifne [] -> #18
+#0016 ofs0032: getlex ['trialGauge']
+#0017 ofs0036: callpropvoid ['hideImmediately', 0]
+#0018 ofs003b: returnvoid []

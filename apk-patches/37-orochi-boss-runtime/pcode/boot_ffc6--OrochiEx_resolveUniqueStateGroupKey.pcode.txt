@@ -1,0 +1,16 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/resolveUniqueStateGroupKey; body: 92491; method: 100964
+# code SHA-256: d83cbbce5a4095bffe56658b98d3be1f307ba1b14180cf20ac43b0ed83da4295; header: [2, 3, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 92776, 1, 1151]
+#0004 ofs0011: getlocal_1 []
+#0005 ofs0012: coerce_s []
+#0006 ofs0013: setlocal_2 []
+#0007 ofs0014: getlex ['pinball.scene.battle.battle.enemy._EnemyStateGroupKey::EnemyStateGroupKey_Impl_']
+#0008 ofs0017: getlocal_2 []
+#0009 ofs0018: callproperty ['_new', 1]
+#0010 ofs001c: returnvalue []

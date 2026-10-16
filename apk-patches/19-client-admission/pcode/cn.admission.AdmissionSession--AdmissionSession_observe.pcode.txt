@@ -1,0 +1,27 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.admission.AdmissionSession; label: AdmissionSession/observe; body: 3; method: 4
+# code SHA-256: bb85d851c1f0c80f70301679c495a02b399d482e3c4b20df9a30293ad53e19d9; header: [2, 3, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: getlex ['cn.admission:AdmissionSession::account']
+#0004 ofs0005: ifeq [] -> #15
+#0005 ofs0009: getlocal_1 []
+#0006 ofs000a: findproperty ['cn.admission:AdmissionSession::account']
+#0007 ofs000c: swap []
+#0008 ofs000d: setproperty ['cn.admission:AdmissionSession::account']
+#0009 ofs000f: getlex ['cn.admission:AdmissionSession::epoch']
+#0010 ofs0011: convert_d []
+#0011 ofs0012: increment []
+#0012 ofs0013: findpropstrict ['cn.admission:AdmissionSession::epoch']
+#0013 ofs0015: swap []
+#0014 ofs0016: setproperty ['cn.admission:AdmissionSession::epoch']
+#0015 ofs0018: getlocal_2 []
+#0016 ofs0019: iffalse [] -> #21
+#0017 ofs001d: getlocal_1 []
+#0018 ofs001e: findproperty ['cn.admission:AdmissionSession::bound']
+#0019 ofs0020: swap []
+#0020 ofs0021: setproperty ['cn.admission:AdmissionSession::bound']
+#0021 ofs0023: returnvoid []

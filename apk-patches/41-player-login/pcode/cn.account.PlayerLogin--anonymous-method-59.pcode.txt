@@ -1,0 +1,19 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.account.PlayerLogin; label: anonymous-method-59; body: 57; method: 59
+# code SHA-256: 3fb57d7fbdef07fc874e9833703993c800e985a69dbd15c9b14d2302d504ee2b; header: [2, 1, 0, 0]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlex ['cn.account:PlayerLogin::localOutcome']
+#0001 ofs0002: pushstring ['bound']
+#0002 ofs0005: ifne [] -> #11
+#0003 ofs0009: newobject [0]
+#0004 ofs000b: findproperty ['cn.account:PlayerLogin::form']
+#0005 ofs000d: swap []
+#0006 ofs000e: setproperty ['cn.account:PlayerLogin::form']
+#0007 ofs0010: findpropstrict ['cn.account:PlayerLogin::navigate']
+#0008 ofs0012: pushstring ['login']
+#0009 ofs0014: callpropvoid ['cn.account:PlayerLogin::navigate', 1]
+#0010 ofs0017: jump [] -> #13
+#0011 ofs001b: findpropstrict ['cn.account:PlayerLogin::detectLocalSave']
+#0012 ofs001d: callpropvoid ['cn.account:PlayerLogin::detectLocalSave', 0]
+#0013 ofs0020: returnvoid []

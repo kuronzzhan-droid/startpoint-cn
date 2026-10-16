@@ -1,0 +1,42 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.account.PlayerLogin; label: PlayerLogin$/cancelNetwork; body: 38; method: 39
+# code SHA-256: ea7bb63812fc4e12a85994b9e8077f753173637f8fce9915d1ab3abca74e04cc; header: [8, 3, 0, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['cn.admission::ClientAdmission']
+#0003 ofs0005: getlex ['cn.account:PlayerLogin::loader']
+#0004 ofs0007: callpropvoid ['cancelLoad', 1]
+#0005 ofs000b: getlex ['cn.account:PlayerLogin::timeout']
+#0006 ofs000d: iffalse [] -> #13
+#0007 ofs0011: getlex ['cn.account:PlayerLogin::timeout']
+#0008 ofs0013: callpropvoid ['stop', 0]
+#0009 ofs0017: pushnull []
+#0010 ofs0018: findproperty ['cn.account:PlayerLogin::timeout']
+#0011 ofs001a: swap []
+#0012 ofs001b: setproperty ['cn.account:PlayerLogin::timeout']
+#0013 ofs001d: getlex ['cn.account:PlayerLogin::loader']
+#0014 ofs001f: iffalse [] -> #32
+#0015 ofs0023: getlex ['cn.account:PlayerLogin::loader']
+#0016 ofs0025: callpropvoid ['close', 0]
+#0017 ofs0029: jump [] -> #28
+#0018 ofs002d: getlocal_0 []
+#0019 ofs002e: pushscope []
+#0020 ofs002f: newcatch [0]
+#0021 ofs0031: dup []
+#0022 ofs0032: setlocal_2 []
+#0023 ofs0033: dup []
+#0024 ofs0034: pushscope []
+#0025 ofs0035: swap []
+#0026 ofs0036: setslot [1]
+#0027 ofs0038: popscope []
+#0028 ofs0039: pushnull []
+#0029 ofs003a: findproperty ['cn.account:PlayerLogin::loader']
+#0030 ofs003c: swap []
+#0031 ofs003d: setproperty ['cn.account:PlayerLogin::loader']
+#0032 ofs003f: pushfalse []
+#0033 ofs0040: findproperty ['cn.account:PlayerLogin::busy']
+#0034 ofs0042: swap []
+#0035 ofs0043: setproperty ['cn.account:PlayerLogin::busy']
+#0036 ofs0045: returnvoid []

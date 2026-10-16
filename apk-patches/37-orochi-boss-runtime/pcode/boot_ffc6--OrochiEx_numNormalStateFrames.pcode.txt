@@ -1,0 +1,337 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/numNormalStateFrames; body: 92496; method: 100969
+# code SHA-256: 04f3a97fd2b6dc3f6b20a7b05082f1ba22e5d048348c91ee04d144574d707dfc; header: [3, 4, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 5209, 1, 1332]
+#0004 ofs0010: getlocal_1 []
+#0005 ofs0011: getproperty ['index']
+#0006 ofs0013: pushbyte [27]
+#0007 ofs0015: equals []
+#0008 ofs0016: dup []
+#0009 ofs0017: iffalse [] -> #14
+#0010 ofs001b: pop []
+#0011 ofs001c: getlex ['phase4RoundCount']
+#0012 ofs0020: pushbyte [0]
+#0013 ofs0022: greaterthan []
+#0014 ofs0023: iffalse [] -> #49
+#0015 ofs0027: findpropstrict ['phase4Profile']
+#0016 ofs002b: callproperty ['phase4Profile', 0]
+#0017 ofs0030: coerce ['Object']
+#0018 ofs0032: setlocal_2 []
+#0019 ofs0033: getlocal_2 []
+#0020 ofs0034: pushnull []
+#0021 ofs0035: equals []
+#0022 ofs0036: not []
+#0023 ofs0037: dup []
+#0024 ofs0038: iffalse [] -> #31
+#0025 ofs003c: pop []
+#0026 ofs003d: getlocal_2 []
+#0027 ofs003e: getproperty ['window']
+#0028 ofs0042: pushnull []
+#0029 ofs0043: equals []
+#0030 ofs0044: not []
+#0031 ofs0045: dup []
+#0032 ofs0046: iffalse [] -> #40
+#0033 ofs004a: pop []
+#0034 ofs004b: getlocal_2 []
+#0035 ofs004c: getproperty ['window']
+#0036 ofs0050: getproperty ['rearm_awake_frames']
+#0037 ofs0054: pushnull []
+#0038 ofs0055: equals []
+#0039 ofs0056: not []
+#0040 ofs0057: iffalse [] -> #49
+#0041 ofs005b: getlex ['Math']
+#0042 ofs005d: pushbyte [1]
+#0043 ofs005f: getlocal_2 []
+#0044 ofs0060: getproperty ['window']
+#0045 ofs0064: getproperty ['rearm_awake_frames']
+#0046 ofs0068: convert_i []
+#0047 ofs0069: callproperty ['max', 2]
+#0048 ofs006c: returnvalue []
+#0049 ofs006d: jump [] -> #179
+#0050 ofs0071: avm_label []
+#0051 ofs0072: getlex ['source']
+#0052 ofs0075: getproperty ['values']
+#0053 ofs0079: getproperty ['phase1_normal_state_frames_awake']
+#0054 ofs007d: returnvalue []
+#0055 ofs007e: avm_label []
+#0056 ofs007f: pushbyte [1]
+#0057 ofs0081: returnvalue []
+#0058 ofs0082: avm_label []
+#0059 ofs0083: pushbyte [1]
+#0060 ofs0085: returnvalue []
+#0061 ofs0086: avm_label []
+#0062 ofs0087: pushbyte [1]
+#0063 ofs0089: returnvalue []
+#0064 ofs008a: avm_label []
+#0065 ofs008b: pushbyte [1]
+#0066 ofs008d: returnvalue []
+#0067 ofs008e: avm_label []
+#0068 ofs008f: pushbyte [1]
+#0069 ofs0091: returnvalue []
+#0070 ofs0092: avm_label []
+#0071 ofs0093: findpropstrict ['once']
+#0072 ofs0095: callproperty ['once', 0]
+#0073 ofs0098: returnvalue []
+#0074 ofs0099: avm_label []
+#0075 ofs009a: getlex ['source']
+#0076 ofs009d: getproperty ['values']
+#0077 ofs00a1: getproperty ['phase2_normal_state_frames_normal0']
+#0078 ofs00a5: returnvalue []
+#0079 ofs00a6: avm_label []
+#0080 ofs00a7: getlex ['flash::Boot']
+#0081 ofs00a9: findpropstrict ['Error']
+#0082 ofs00ab: constructprop ['Error', 0]
+#0083 ofs00ae: setproperty ['lastError']
+#0084 ofs00b0: pushstring ['95646344-734c-4c3a-8a5f-c43546ed0c1a']
+#0085 ofs00b4: throw []
+#0086 ofs00b5: avm_label []
+#0087 ofs00b6: getlex ['source']
+#0088 ofs00b9: getproperty ['values']
+#0089 ofs00bd: getproperty ['phase2_normal1_state_frames_normal']
+#0090 ofs00c1: returnvalue []
+#0091 ofs00c2: avm_label []
+#0092 ofs00c3: getlex ['flash::Boot']
+#0093 ofs00c5: findpropstrict ['Error']
+#0094 ofs00c7: constructprop ['Error', 0]
+#0095 ofs00ca: setproperty ['lastError']
+#0096 ofs00cc: pushstring ['ca7222ea-09b2-4730-ab87-54e3bdc4f0b2']
+#0097 ofs00d0: throw []
+#0098 ofs00d1: avm_label []
+#0099 ofs00d2: getlex ['source']
+#0100 ofs00d5: getproperty ['values']
+#0101 ofs00d9: getproperty ['phase2_normal2_state_frames_normal']
+#0102 ofs00dd: returnvalue []
+#0103 ofs00de: avm_label []
+#0104 ofs00df: getlex ['flash::Boot']
+#0105 ofs00e1: findpropstrict ['Error']
+#0106 ofs00e3: constructprop ['Error', 0]
+#0107 ofs00e6: setproperty ['lastError']
+#0108 ofs00e8: pushstring ['9964238b-47f8-4788-904a-9cbe9e7fca77']
+#0109 ofs00ec: throw []
+#0110 ofs00ed: avm_label []
+#0111 ofs00ee: getlex ['source']
+#0112 ofs00f1: getproperty ['values']
+#0113 ofs00f5: getproperty ['phase2_normal3_state_frames_normal']
+#0114 ofs00f9: returnvalue []
+#0115 ofs00fa: avm_label []
+#0116 ofs00fb: getlex ['source']
+#0117 ofs00fe: getproperty ['values']
+#0118 ofs0102: getproperty ['phase2_trial_stun1_state_frames']
+#0119 ofs0106: returnvalue []
+#0120 ofs0107: avm_label []
+#0121 ofs0108: getlex ['source']
+#0122 ofs010b: getproperty ['values']
+#0123 ofs010f: getproperty ['phase2_trial_stun2_state_frames']
+#0124 ofs0113: returnvalue []
+#0125 ofs0114: avm_label []
+#0126 ofs0115: getlex ['source']
+#0127 ofs0118: getproperty ['values']
+#0128 ofs011c: getproperty ['phase2_trial_stun3_state_frames']
+#0129 ofs0120: returnvalue []
+#0130 ofs0121: avm_label []
+#0131 ofs0122: findpropstrict ['once']
+#0132 ofs0124: callproperty ['once', 0]
+#0133 ofs0127: returnvalue []
+#0134 ofs0128: avm_label []
+#0135 ofs0129: getlex ['source']
+#0136 ofs012c: getproperty ['values']
+#0137 ofs0130: getproperty ['phase3_normal_state_frames_awake']
+#0138 ofs0134: returnvalue []
+#0139 ofs0135: avm_label []
+#0140 ofs0136: pushbyte [1]
+#0141 ofs0138: returnvalue []
+#0142 ofs0139: avm_label []
+#0143 ofs013a: pushbyte [1]
+#0144 ofs013c: returnvalue []
+#0145 ofs013d: avm_label []
+#0146 ofs013e: pushbyte [1]
+#0147 ofs0140: returnvalue []
+#0148 ofs0141: avm_label []
+#0149 ofs0142: pushbyte [1]
+#0150 ofs0144: returnvalue []
+#0151 ofs0145: avm_label []
+#0152 ofs0146: pushbyte [1]
+#0153 ofs0148: returnvalue []
+#0154 ofs0149: avm_label []
+#0155 ofs014a: pushbyte [1]
+#0156 ofs014c: returnvalue []
+#0157 ofs014d: avm_label []
+#0158 ofs014e: pushbyte [1]
+#0159 ofs0150: returnvalue []
+#0160 ofs0151: avm_label []
+#0161 ofs0152: pushbyte [1]
+#0162 ofs0154: returnvalue []
+#0163 ofs0155: avm_label []
+#0164 ofs0156: getlex ['source']
+#0165 ofs0159: getproperty ['values']
+#0166 ofs015d: getproperty ['phase4_normal_state_frames_awake']
+#0167 ofs0161: returnvalue []
+#0168 ofs0162: avm_label []
+#0169 ofs0163: getlex ['flash::Boot']
+#0170 ofs0165: findpropstrict ['Error']
+#0171 ofs0167: constructprop ['Error', 0]
+#0172 ofs016a: setproperty ['lastError']
+#0173 ofs016c: pushstring ['961f0da1-c3e6-4294-a621-9abdddc47db5']
+#0174 ofs0170: throw []
+#0175 ofs0171: avm_label []
+#0176 ofs0172: returnvoid []
+#0177 ofs0173: avm_label []
+#0178 ofs0174: jump [] -> #330
+#0179 ofs0178: getlocal_1 []
+#0180 ofs0179: getproperty ['index']
+#0181 ofs017b: setlocal_3 []
+#0182 ofs017c: pushbyte [0]
+#0183 ofs017e: getlocal_3 []
+#0184 ofs017f: ifstrictne [] -> #187
+#0185 ofs0183: pushbyte [0]
+#0186 ofs0185: jump [] -> #328
+#0187 ofs0189: pushbyte [1]
+#0188 ofs018b: getlocal_3 []
+#0189 ofs018c: ifstrictne [] -> #192
+#0190 ofs0190: pushbyte [1]
+#0191 ofs0192: jump [] -> #328
+#0192 ofs0196: pushbyte [2]
+#0193 ofs0198: getlocal_3 []
+#0194 ofs0199: ifstrictne [] -> #197
+#0195 ofs019d: pushbyte [2]
+#0196 ofs019f: jump [] -> #328
+#0197 ofs01a3: pushbyte [3]
+#0198 ofs01a5: getlocal_3 []
+#0199 ofs01a6: ifstrictne [] -> #202
+#0200 ofs01aa: pushbyte [3]
+#0201 ofs01ac: jump [] -> #328
+#0202 ofs01b0: pushbyte [4]
+#0203 ofs01b2: getlocal_3 []
+#0204 ofs01b3: ifstrictne [] -> #207
+#0205 ofs01b7: pushbyte [4]
+#0206 ofs01b9: jump [] -> #328
+#0207 ofs01bd: pushbyte [5]
+#0208 ofs01bf: getlocal_3 []
+#0209 ofs01c0: ifstrictne [] -> #212
+#0210 ofs01c4: pushbyte [5]
+#0211 ofs01c6: jump [] -> #328
+#0212 ofs01ca: pushbyte [6]
+#0213 ofs01cc: getlocal_3 []
+#0214 ofs01cd: ifstrictne [] -> #217
+#0215 ofs01d1: pushbyte [6]
+#0216 ofs01d3: jump [] -> #328
+#0217 ofs01d7: pushbyte [7]
+#0218 ofs01d9: getlocal_3 []
+#0219 ofs01da: ifstrictne [] -> #222
+#0220 ofs01de: pushbyte [7]
+#0221 ofs01e0: jump [] -> #328
+#0222 ofs01e4: pushbyte [8]
+#0223 ofs01e6: getlocal_3 []
+#0224 ofs01e7: ifstrictne [] -> #227
+#0225 ofs01eb: pushbyte [8]
+#0226 ofs01ed: jump [] -> #328
+#0227 ofs01f1: pushbyte [9]
+#0228 ofs01f3: getlocal_3 []
+#0229 ofs01f4: ifstrictne [] -> #232
+#0230 ofs01f8: pushbyte [9]
+#0231 ofs01fa: jump [] -> #328
+#0232 ofs01fe: pushbyte [10]
+#0233 ofs0200: getlocal_3 []
+#0234 ofs0201: ifstrictne [] -> #237
+#0235 ofs0205: pushbyte [10]
+#0236 ofs0207: jump [] -> #328
+#0237 ofs020b: pushbyte [11]
+#0238 ofs020d: getlocal_3 []
+#0239 ofs020e: ifstrictne [] -> #242
+#0240 ofs0212: pushbyte [11]
+#0241 ofs0214: jump [] -> #328
+#0242 ofs0218: pushbyte [12]
+#0243 ofs021a: getlocal_3 []
+#0244 ofs021b: ifstrictne [] -> #247
+#0245 ofs021f: pushbyte [12]
+#0246 ofs0221: jump [] -> #328
+#0247 ofs0225: pushbyte [13]
+#0248 ofs0227: getlocal_3 []
+#0249 ofs0228: ifstrictne [] -> #252
+#0250 ofs022c: pushbyte [13]
+#0251 ofs022e: jump [] -> #328
+#0252 ofs0232: pushbyte [14]
+#0253 ofs0234: getlocal_3 []
+#0254 ofs0235: ifstrictne [] -> #257
+#0255 ofs0239: pushbyte [14]
+#0256 ofs023b: jump [] -> #328
+#0257 ofs023f: pushbyte [15]
+#0258 ofs0241: getlocal_3 []
+#0259 ofs0242: ifstrictne [] -> #262
+#0260 ofs0246: pushbyte [15]
+#0261 ofs0248: jump [] -> #328
+#0262 ofs024c: pushbyte [16]
+#0263 ofs024e: getlocal_3 []
+#0264 ofs024f: ifstrictne [] -> #267
+#0265 ofs0253: pushbyte [16]
+#0266 ofs0255: jump [] -> #328
+#0267 ofs0259: pushbyte [17]
+#0268 ofs025b: getlocal_3 []
+#0269 ofs025c: ifstrictne [] -> #272
+#0270 ofs0260: pushbyte [17]
+#0271 ofs0262: jump [] -> #328
+#0272 ofs0266: pushbyte [18]
+#0273 ofs0268: getlocal_3 []
+#0274 ofs0269: ifstrictne [] -> #277
+#0275 ofs026d: pushbyte [18]
+#0276 ofs026f: jump [] -> #328
+#0277 ofs0273: pushbyte [19]
+#0278 ofs0275: getlocal_3 []
+#0279 ofs0276: ifstrictne [] -> #282
+#0280 ofs027a: pushbyte [19]
+#0281 ofs027c: jump [] -> #328
+#0282 ofs0280: pushbyte [20]
+#0283 ofs0282: getlocal_3 []
+#0284 ofs0283: ifstrictne [] -> #287
+#0285 ofs0287: pushbyte [20]
+#0286 ofs0289: jump [] -> #328
+#0287 ofs028d: pushbyte [21]
+#0288 ofs028f: getlocal_3 []
+#0289 ofs0290: ifstrictne [] -> #292
+#0290 ofs0294: pushbyte [21]
+#0291 ofs0296: jump [] -> #328
+#0292 ofs029a: pushbyte [22]
+#0293 ofs029c: getlocal_3 []
+#0294 ofs029d: ifstrictne [] -> #297
+#0295 ofs02a1: pushbyte [22]
+#0296 ofs02a3: jump [] -> #328
+#0297 ofs02a7: pushbyte [23]
+#0298 ofs02a9: getlocal_3 []
+#0299 ofs02aa: ifstrictne [] -> #302
+#0300 ofs02ae: pushbyte [23]
+#0301 ofs02b0: jump [] -> #328
+#0302 ofs02b4: pushbyte [24]
+#0303 ofs02b6: getlocal_3 []
+#0304 ofs02b7: ifstrictne [] -> #307
+#0305 ofs02bb: pushbyte [24]
+#0306 ofs02bd: jump [] -> #328
+#0307 ofs02c1: pushbyte [25]
+#0308 ofs02c3: getlocal_3 []
+#0309 ofs02c4: ifstrictne [] -> #312
+#0310 ofs02c8: pushbyte [25]
+#0311 ofs02ca: jump [] -> #328
+#0312 ofs02ce: pushbyte [26]
+#0313 ofs02d0: getlocal_3 []
+#0314 ofs02d1: ifstrictne [] -> #317
+#0315 ofs02d5: pushbyte [26]
+#0316 ofs02d7: jump [] -> #328
+#0317 ofs02db: pushbyte [27]
+#0318 ofs02dd: getlocal_3 []
+#0319 ofs02de: ifstrictne [] -> #322
+#0320 ofs02e2: pushbyte [27]
+#0321 ofs02e4: jump [] -> #328
+#0322 ofs02e8: pushbyte [28]
+#0323 ofs02ea: getlocal_3 []
+#0324 ofs02eb: ifstrictne [] -> #327
+#0325 ofs02ef: pushbyte [28]
+#0326 ofs02f1: jump [] -> #328
+#0327 ofs02f5: pushbyte [255]
+#0328 ofs02f7: op_08 [3]
+#0329 ofs02f9: lookupswitch [] default #175, cases [50, 55, 58, 61, 64, 67, 70, 74, 79, 86, 91, 98, 103, 110, 115, 120, 125, 130, 134, 139, 142, 145, 148, 151, 154, 157, 160, 163, 168]
+#0330 ofs0355: pushundefined []
+#0331 ofs0356: returnvalue []

@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "patch_directories": 101,
+  "shared_v33_patches": 97,
+  "x86_variant_patches": 4,
+  "source_copies": 209,
+  "pcode_files": 790,
+  "method_references": 795,
+  "files": 1129,
+  "total_bytes": 10398423,
+  "max_file_bytes": 471044,
+  "checked_relative_links": 1204,
+  "admission_constant_redacted_method_references": 2,
+  "failures": []
+}

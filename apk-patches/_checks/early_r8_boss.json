@@ -1,0 +1,316 @@
+{
+  "r8_patches": [
+    {
+      "slug": "ability-summary-description-cache",
+      "title": "能力汇总描述缓存",
+      "purpose": "在一次能力汇总中，按上一项能力对象的身份复用 getDescription(false) 结果，减少同一能力多条触发条件的重复描述计算。",
+      "first_version": "v17以前；原性能阶段称 R8，具体发布APK编号未核实",
+      "labels": [
+        "AbilitySummarizer$/summaryAbilities"
+      ],
+      "locations": [
+        "AbilitySummarizer$/summaryAbilities"
+      ],
+      "final_body_index": 15140,
+      "final_body_sha256": "26d392cb941fbc9a1d7134d4e12aaaa4260179786930513be49f7d1c962ec03c",
+      "final_header": [
+        8,
+        35,
+        1,
+        1
+      ],
+      "instruction_count": 593,
+      "description_call_sites": [
+        {
+          "getDescription_at": 191,
+          "preceding_opnames": [
+            "getlocal",
+            "getlocal",
+            "ifstricteq",
+            "getlocal",
+            "pushfalse"
+          ],
+          "following_opnames": [
+            "coerce",
+            "setlocal",
+            "getlocal",
+            "setlocal"
+          ]
+        },
+        {
+          "getDescription_at": 270,
+          "preceding_opnames": [
+            "getlocal",
+            "getlocal",
+            "ifstricteq",
+            "getlocal",
+            "pushfalse"
+          ],
+          "following_opnames": [
+            "coerce",
+            "setlocal",
+            "getlocal",
+            "setlocal"
+          ]
+        }
+      ],
+      "source_files": [
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\r10-public-release\\build.py"
+      ],
+      "evidence": [
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\loading-diagnostic\\patch_swf.py:86-88",
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\r10-public-release\\build.py:85-101",
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\r10-public-release\\README.md:10-12"
+      ],
+      "source_limit": "原始R8改写脚本未找到；现存build.py只去掉诊断，不生成优化算法。正式补丁源可从最终v33按精确label提取单方法P-code；不可收LoadingTrace诊断。",
+      "binary_only": false,
+      "adoption": "实际v33方法可读，文档明确R8逻辑保留；缺原始改写源不影响最终P-code收录。"
+    },
+    {
+      "slug": "available-ability-description-cache",
+      "title": "可用能力描述缓存",
+      "purpose": "在一次可用能力筛选中，按上一项能力对象的身份复用 getDescription(false) 结果，减少遍历同一能力多条触发条件时的重复描述计算。",
+      "first_version": "v17以前；原性能阶段称 R8，具体发布APK编号未核实",
+      "labels": [
+        "BattleCharacterLogic/getAvailableAbilities"
+      ],
+      "locations": [
+        "BattleCharacterLogic/getAvailableAbilities"
+      ],
+      "final_body_index": 92420,
+      "final_body_sha256": "9a0fcbbeae31de6293028b437a0716e2d959524544370cf2f7bfa58aef59fd9f",
+      "final_header": [
+        9,
+        23,
+        6,
+        7
+      ],
+      "instruction_count": 551,
+      "description_call_sites": [
+        {
+          "getDescription_at": 430,
+          "preceding_opnames": [
+            "getlocal",
+            "getlocal",
+            "ifstricteq",
+            "getlocal",
+            "pushfalse"
+          ],
+          "following_opnames": [
+            "setlocal",
+            "getlocal",
+            "setlocal",
+            "getlocal"
+          ]
+        },
+        {
+          "getDescription_at": 508,
+          "preceding_opnames": [
+            "getlocal",
+            "getlocal",
+            "ifstricteq",
+            "getlocal",
+            "pushfalse"
+          ],
+          "following_opnames": [
+            "setlocal",
+            "getlocal",
+            "setlocal",
+            "getlocal"
+          ]
+        }
+      ],
+      "source_files": [
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\r10-public-release\\build.py"
+      ],
+      "evidence": [
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\loading-diagnostic\\patch_swf.py:86-88",
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\r10-public-release\\build.py:85-101",
+        "D:\\WF\\startpoint-cn-kulo\\client-patch\\r10-public-release\\README.md:10-12"
+      ],
+      "source_limit": "原始R8改写脚本未找到；现存build.py只去掉诊断，不生成优化算法。正式补丁源可从最终v33按精确label提取单方法P-code；不可收LoadingTrace诊断。",
+      "binary_only": false,
+      "adoption": "实际v33方法可读，文档明确R8逻辑保留；缺原始改写源不影响最终P-code收录。"
+    }
+  ],
+  "boss": {
+    "slug": "orochi-boss-runtime",
+    "title": "八岐大蛇阶段血量弱点与同步运行时",
+    "purpose": "按机制配置建立阶段伤害账本，维护弱点伤害窗口、阶段生命值和联机快照恢复。",
+    "first_version": "v17以前；2026-09-25/26高难V2成品有证据，具体APK编号未核实",
+    "helper_class": "cn.boss::BossMechanicsRuntime",
+    "labels": [
+      "OrochiExValues/<ctor>",
+      "OrochiEx/ensurePhase4Ledger",
+      "OrochiEx/resolvePhase4Break",
+      "OrochiEx/updatePhase4Extension",
+      "OrochiEx/reinitialize",
+      "OrochiEx/getSynchronizeKind",
+      "OrochiEx/changePhase",
+      "OrochiEx/applySynchronizeKind",
+      "OrochiEx/subtractHealthPoint",
+      "OrochiEx/ensurePhaseDamageLedger"
+    ],
+    "exact_main_hooks": [
+      {
+        "label": "OrochiExValues/<ctor>",
+        "body_index": 92450,
+        "sha256": "41e2e27ed7206a7e712b7ddfb2fd8a68a9491bacd9c9f3da7cbd3456732c1755",
+        "header": [
+          15,
+          66,
+          4,
+          5
+        ],
+        "helper_call_instruction_indices": [
+          2173
+        ]
+      },
+      {
+        "label": "OrochiEx/ensurePhase4Ledger",
+        "body_index": 92481,
+        "sha256": "e636af5a929a6d259eaae4630e89ca8468d7236009002845dca2e87220d1e0e7",
+        "header": [
+          5,
+          1,
+          6,
+          7
+        ],
+        "helper_call_instruction_indices": [
+          14
+        ]
+      },
+      {
+        "label": "OrochiEx/resolvePhase4Break",
+        "body_index": 92488,
+        "sha256": "3d354b593e4fcda48d464533e7378799c7ad91179647b1ff0f3376441ff3aa88",
+        "header": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "helper_call_instruction_indices": [
+          62,
+          76
+        ]
+      },
+      {
+        "label": "OrochiEx/updatePhase4Extension",
+        "body_index": 92489,
+        "sha256": "485da7950c4ccbf716c757392019122a7fe9c50c82708b104c37c90f51f69e0d",
+        "header": [
+          4,
+          4,
+          6,
+          7
+        ],
+        "helper_call_instruction_indices": [
+          51,
+          63,
+          112
+        ]
+      },
+      {
+        "label": "OrochiEx/reinitialize",
+        "body_index": 92493,
+        "sha256": "9746c5ad87816d480b112a479083fbb37bf04c5e302d5dd8922a7215faab0b2f",
+        "header": [
+          3,
+          1,
+          6,
+          7
+        ],
+        "helper_call_instruction_indices": [
+          40
+        ]
+      },
+      {
+        "label": "OrochiEx/getSynchronizeKind",
+        "body_index": 92526,
+        "sha256": "3ce9520e3211b40669016a43de0fd950bc982f29dfcbf0f9d90315d2de5c6260",
+        "header": [
+          17,
+          4,
+          6,
+          7
+        ],
+        "helper_call_instruction_indices": [
+          46
+        ]
+      },
+      {
+        "label": "OrochiEx/changePhase",
+        "body_index": 92559,
+        "sha256": "1ca1a185adbec74ea6803ae4cfe60e1620fd0f1ef4dcfe97f6b9f3ff93c5cdbc",
+        "header": [
+          5,
+          6,
+          6,
+          7
+        ],
+        "helper_call_instruction_indices": [
+          113
+        ]
+      },
+      {
+        "label": "OrochiEx/applySynchronizeKind",
+        "body_index": 92564,
+        "sha256": "2efb7a8f2676390a87a2a3bbdef27d52bd29d40fd53f2389cfc77ee8df582eaf",
+        "header": [
+          6,
+          5,
+          7,
+          12
+        ],
+        "helper_call_instruction_indices": [
+          153
+        ]
+      },
+      {
+        "label": "OrochiEx/subtractHealthPoint",
+        "body_index": 92566,
+        "sha256": "9755480bf06a7a5e401f5951f9ec41a372c2e62cea560d9e7bf271541b2430bf",
+        "header": [
+          5,
+          6,
+          6,
+          7
+        ],
+        "helper_call_instruction_indices": [
+          88
+        ]
+      },
+      {
+        "label": "OrochiEx/ensurePhaseDamageLedger",
+        "body_index": 92591,
+        "sha256": "a085f7fe75c3f1456d2cdb05cda4452d2fa4d86640147281f7b9015865c661c9",
+        "header": [
+          5,
+          1,
+          6,
+          7
+        ],
+        "helper_call_instruction_indices": [
+          11
+        ]
+      }
+    ],
+    "source_files": [
+      "D:\\WF\\startpoint-cn-kulo\\client-patch\\orochi-boss\\build_public_android.py"
+    ],
+    "evidence": [
+      "D:\\WF\\startpoint-cn-kulo\\client-patch\\orochi-boss\\README.md:7-15",
+      "D:\\WF\\startpoint-cn-kulo\\client-patch\\orochi-boss\\build_public_android.py:1-6,18-39"
+    ],
+    "source_limit": "Boss原Android实现/改写源码未找到；现存Android脚本只转换已有LAN Boss SWF的端点和UUID。F:/codex/work/orochi-boss-v2-1047-20260925不存在，D:/WF/out文本搜索无BossMechanicsRuntime命中。可提取最终helper和精确目标方法P-code，不应收EnemyImpl/*或BattleScenePlayingStateImpl/*整个类。",
+    "binary_only": false,
+    "scope_limit": "上述10个标签穷尽最终主ABC中直接引用cn.boss::BossMechanicsRuntime的具名方法；Boss还可能有不直接引用helper的配套改动，应按真正变更集合另核对，不能将这10个直接hook自动声称为整个Boss改动全集。"
+  },
+  "source_audit": {
+    "F_work_exists": false,
+    "original_R8_rewriter_found": false,
+    "original_Boss_implementation_found": false
+  },
+  "actual_v33_swf_sha256": "3b7b3391ae0aee01f15167fe1d5a5b69eddb71a64605c57486f025916611aaa4"
+}

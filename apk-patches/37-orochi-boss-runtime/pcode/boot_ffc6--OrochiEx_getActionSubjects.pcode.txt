@@ -1,0 +1,55 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/getActionSubjects; body: 92543; method: 101016
+# code SHA-256: 2d6e46be4139b6f111ba3aa181a8c3e8351f2d50cb7e5ea6ea120de8c86407d8; header: [4, 6, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: op_ef [1, 92778, 2, 0]
+#0005 ofs0017: op_ef [1, 92779, 3, 2527]
+#0006 ofs001f: op_ef [1, 92842, 4, 2528]
+#0007 ofs0027: pushnull []
+#0008 ofs0028: coerce_a []
+#0009 ofs0029: setlocal [4]
+#0010 ofs002b: pushnull []
+#0011 ofs002c: getlex ['pinball.scene.battle.battle.action::ActionSubject']
+#0012 ofs002f: astypelate []
+#0013 ofs0030: coerce_a []
+#0014 ofs0031: setlocal [5]
+#0015 ofs0033: getlex ['centerMarkerVisible']
+#0016 ofs0037: dup []
+#0017 ofs0038: iftrue [] -> #20
+#0018 ofs003c: pop []
+#0019 ofs003d: getlocal_3 []
+#0020 ofs003e: iffalse [] -> #44
+#0021 ofs0042: getlocal_2 []
+#0022 ofs0043: iffalse [] -> #41
+#0023 ofs0047: getlex ['units']
+#0024 ofs004b: callproperty ['iterator', 0]
+#0025 ofs0050: coerce_a []
+#0026 ofs0051: setlocal [4]
+#0027 ofs0053: jump [] -> #36
+#0028 ofs0057: avm_label []
+#0029 ofs0058: getlocal [4]
+#0030 ofs005a: callproperty ['next', 0]
+#0031 ofs005f: coerce_a []
+#0032 ofs0060: setlocal [5]
+#0033 ofs0062: getlocal_1 []
+#0034 ofs0063: getlocal [5]
+#0035 ofs0065: callpropvoid ['http://adobe.com/AS3/2006/builtin::push', 1]
+#0036 ofs0068: getlocal [4]
+#0037 ofs006a: callproperty ['hasNext', 0]
+#0038 ofs006f: convert_b []
+#0039 ofs0070: iftrue [] -> #28
+#0040 ofs0074: jump [] -> #44
+#0041 ofs0078: getlocal_1 []
+#0042 ofs0079: getlocal_0 []
+#0043 ofs007a: callpropvoid ['http://adobe.com/AS3/2006/builtin::push', 1]
+#0044 ofs007d: getlex ['heads']
+#0045 ofs0081: getlocal_1 []
+#0046 ofs0082: getlocal_2 []
+#0047 ofs0083: getlocal_3 []
+#0048 ofs0084: callpropvoid ['getActionSubjects', 3]
+#0049 ofs0089: returnvoid []

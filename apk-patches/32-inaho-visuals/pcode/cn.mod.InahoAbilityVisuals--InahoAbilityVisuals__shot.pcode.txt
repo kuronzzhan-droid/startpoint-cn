@@ -1,0 +1,30 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.mod.InahoAbilityVisuals; label: InahoAbilityVisuals$/shot; body: 1; method: 2
+# code SHA-256: 5e96be34ca2b05298be3f4e942f7da7d70596b0c8ced94f34a936f1836eef507; header: [2, 3, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: findpropstrict ['cn.mod:InahoAbilityVisuals::isInaho']
+#0003 ofs0004: getlocal_1 []
+#0004 ofs0005: callproperty ['cn.mod:InahoAbilityVisuals::isInaho', 1]
+#0005 ofs0008: iffalse [] -> #8
+#0006 ofs000c: pushstring ['battle/effect/ability_damage/inaho_midautumn_wip/moonlight_shot_gold_jade']
+#0007 ofs000e: returnvalue []
+#0008 ofs000f: getlocal_2 []
+#0009 ofs0010: convert_i []
+#0010 ofs0011: lookupswitch [] default #23, cases [11, 13, 15, 17, 19, 21]
+#0011 ofs0028: pushstring ['battle/effect/ability_damage/ability_damage_red/ability_damage_shot_red']
+#0012 ofs002a: returnvalue []
+#0013 ofs002b: pushstring ['battle/effect/ability_damage/ability_damage_blue/ability_damage_shot_blue']
+#0014 ofs002d: returnvalue []
+#0015 ofs002e: pushstring ['battle/effect/ability_damage/ability_damage_yellow/ability_damage_shot_yellow']
+#0016 ofs0030: returnvalue []
+#0017 ofs0031: pushstring ['battle/effect/ability_damage/ability_damage_green/ability_damage_shot_green']
+#0018 ofs0033: returnvalue []
+#0019 ofs0034: pushstring ['battle/effect/ability_damage/ability_damage_white/ability_damage_shot_white']
+#0020 ofs0036: returnvalue []
+#0021 ofs0037: pushstring ['battle/effect/ability_damage/ability_damage_black/ability_damage_shot_black']
+#0022 ofs0039: returnvalue []
+#0023 ofs003a: pushstring ['battle/effect/ability_damage/ability_damage_white/ability_damage_shot_white']
+#0024 ofs003c: returnvalue []

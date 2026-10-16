@@ -1,0 +1,25 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: ProductionLoading/resetAssets; body: 37884; method: 41178
+# code SHA-256: 88f4837fd4a910380176d6fd9072c5236ea43dce3140a33ea6864346040330ce; header: [2, 2, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: findproperty ['view']
+#0003 ofs0005: getproperty ['view']
+#0004 ofs0008: getlocal_1 []
+#0005 ofs0009: callpropvoid ['pinball.context:ViewForLoading::resetAssets', 1]
+#0006 ofs000e: findproperty ['sound']
+#0007 ofs0011: getproperty ['sound']
+#0008 ofs0014: getlocal_1 []
+#0009 ofs0015: callpropvoid ['pinball.sound:SoundSectionForLoading::resetAssets', 1]
+#0010 ofs001a: findproperty ['logicAssets']
+#0011 ofs001d: getproperty ['logicAssets']
+#0012 ofs0020: getlocal_1 []
+#0013 ofs0021: callpropvoid ['pinball.asset.logic:LogicAssetContainerForLoading::reset', 1]
+#0014 ofs0025: getlex ['cn.loading::GcGate']
+#0015 ofs0029: callproperty ['skip', 0]
+#0016 ofs002d: iftrue [] -> #19
+#0017 ofs0031: getlex ['flash.system::System']
+#0018 ofs0034: callpropvoid ['gc', 0]
+#0019 ofs0039: returnvoid []

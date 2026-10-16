@@ -1,0 +1,66 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/getAttackValues; body: 92541; method: 101014
+# code SHA-256: 106b12452c0ed41dec096bab86f0a20a97e412f04ad0ef4adb4f1d0e633fd90a; header: [2, 3, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: jump [] -> #33
+#0004 ofs000d: avm_label []
+#0005 ofs000e: getlex ['source']
+#0006 ofs0011: getproperty ['values']
+#0007 ofs0015: getproperty ['phase2_attack1']
+#0008 ofs0019: returnvalue []
+#0009 ofs001a: avm_label []
+#0010 ofs001b: getlex ['source']
+#0011 ofs001e: getproperty ['values']
+#0012 ofs0022: getproperty ['phase2_attack2']
+#0013 ofs0026: returnvalue []
+#0014 ofs0027: avm_label []
+#0015 ofs0028: getlex ['source']
+#0016 ofs002b: getproperty ['values']
+#0017 ofs002f: getproperty ['phase2_attack3']
+#0018 ofs0033: returnvalue []
+#0019 ofs0034: avm_label []
+#0020 ofs0035: getlex ['source']
+#0021 ofs0038: getproperty ['values']
+#0022 ofs003c: getproperty ['phase4_attack1']
+#0023 ofs0040: returnvalue []
+#0024 ofs0041: avm_label []
+#0025 ofs0042: getlex ['flash::Boot']
+#0026 ofs0044: findpropstrict ['Error']
+#0027 ofs0046: constructprop ['Error', 0]
+#0028 ofs0049: setproperty ['lastError']
+#0029 ofs004b: pushstring ['055e4689-fb1b-4126-9bf0-202105714c8a']
+#0030 ofs004f: throw []
+#0031 ofs0050: avm_label []
+#0032 ofs0051: jump [] -> #59
+#0033 ofs0055: getlocal_1 []
+#0034 ofs0056: getproperty ['index']
+#0035 ofs0058: setlocal_2 []
+#0036 ofs0059: pushbyte [8]
+#0037 ofs005b: getlocal_2 []
+#0038 ofs005c: ifstrictne [] -> #41
+#0039 ofs0060: pushbyte [0]
+#0040 ofs0062: jump [] -> #57
+#0041 ofs0066: pushbyte [10]
+#0042 ofs0068: getlocal_2 []
+#0043 ofs0069: ifstrictne [] -> #46
+#0044 ofs006d: pushbyte [1]
+#0045 ofs006f: jump [] -> #57
+#0046 ofs0073: pushbyte [12]
+#0047 ofs0075: getlocal_2 []
+#0048 ofs0076: ifstrictne [] -> #51
+#0049 ofs007a: pushbyte [2]
+#0050 ofs007c: jump [] -> #57
+#0051 ofs0080: pushbyte [28]
+#0052 ofs0082: getlocal_2 []
+#0053 ofs0083: ifstrictne [] -> #56
+#0054 ofs0087: pushbyte [3]
+#0055 ofs0089: jump [] -> #57
+#0056 ofs008d: pushbyte [255]
+#0057 ofs008f: op_08 [2]
+#0058 ofs0091: lookupswitch [] default #24, cases [4, 9, 14, 19]
+#0059 ofs00a2: pushundefined []
+#0060 ofs00a3: returnvalue []

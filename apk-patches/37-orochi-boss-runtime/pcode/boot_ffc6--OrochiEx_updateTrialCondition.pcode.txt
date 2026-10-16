@@ -1,0 +1,37 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/updateTrialCondition; body: 92473; method: 100946
+# code SHA-256: 02212353e29928a227c693aeb1ad64297ea09e3ee4a7ec965fd72fbb1d194d07; header: [3, 4, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 92775, 0, 859]
+#0003 ofs000a: op_ef [1, 92776, 1, 860]
+#0004 ofs0012: op_ef [1, 92777, 2, 858]
+#0005 ofs001a: pushbyte [0]
+#0006 ofs001c: convert_i []
+#0007 ofs001d: setlocal_3 []
+#0008 ofs001e: pushbyte [0]
+#0009 ofs0020: convert_i []
+#0010 ofs0021: setlocal_1 []
+#0011 ofs0022: getlex ['trialSuccessCount']
+#0012 ofs0026: convert_i []
+#0013 ofs0027: setlocal_2 []
+#0014 ofs0028: jump [] -> #28
+#0015 ofs002c: avm_label []
+#0016 ofs002d: getlocal_1 []
+#0017 ofs002e: dup []
+#0018 ofs002f: increment_i []
+#0019 ofs0030: convert_i []
+#0020 ofs0031: setlocal_1 []
+#0021 ofs0032: convert_i []
+#0022 ofs0033: setlocal_3 []
+#0023 ofs0034: getlex ['conditionSlot']
+#0024 ofs0037: getlex ['trialConditionIds']
+#0025 ofs003b: getlocal_3 []
+#0026 ofs003c: getproperty ['<mn kind 0x1b>']
+#0027 ofs0040: callpropvoid ['applyConditionCancel', 1]
+#0028 ofs0045: getlocal_1 []
+#0029 ofs0046: getlocal_2 []
+#0030 ofs0047: iflt [] -> #15
+#0031 ofs004b: returnvoid []

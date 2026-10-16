@@ -1,0 +1,76 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.asset.EmptyUpdate; label: EmptyUpdate$/empty; body: 1; method: 2
+# code SHA-256: a5ba2f7ce1c194aa907d67f12d5c645ed33f35b557f370ab225e5755db216c14; header: [2, 6, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: pushnull []
+#0004 ofs0004: ifne [] -> #7
+#0005 ofs0008: pushtrue []
+#0006 ofs0009: returnvalue []
+#0007 ofs000a: getlocal_2 []
+#0008 ofs000b: iftrue [] -> #28
+#0009 ofs000f: getlocal_1 []
+#0010 ofs0010: dup []
+#0011 ofs0011: iffalse [] -> #18
+#0012 ofs0015: pop []
+#0013 ofs0016: getlocal_1 []
+#0014 ofs0017: getproperty ['archive']
+#0015 ofs0019: getlex ['Array']
+#0016 ofs001b: istypelate []
+#0017 ofs001c: coerce_a []
+#0018 ofs001d: dup []
+#0019 ofs001e: iffalse [] -> #27
+#0020 ofs0022: pop []
+#0021 ofs0023: getlocal_1 []
+#0022 ofs0024: getproperty ['archive']
+#0023 ofs0026: getproperty ['length']
+#0024 ofs0028: pushbyte [0]
+#0025 ofs002a: equals []
+#0026 ofs002b: coerce_a []
+#0027 ofs002c: returnvalue []
+#0028 ofs002d: getlocal_1 []
+#0029 ofs002e: getlex ['Array']
+#0030 ofs0030: istypelate []
+#0031 ofs0031: iftrue [] -> #34
+#0032 ofs0035: pushfalse []
+#0033 ofs0036: returnvalue []
+#0034 ofs0037: pushbyte [0]
+#0035 ofs0039: setlocal [5]
+#0036 ofs003b: getlocal_1 []
+#0037 ofs003c: setlocal [4]
+#0038 ofs003e: jump [] -> #67
+#0039 ofs0042: avm_label []
+#0040 ofs0043: getlocal [4]
+#0041 ofs0045: getlocal [5]
+#0042 ofs0047: nextvalue []
+#0043 ofs0048: coerce ['Object']
+#0044 ofs004a: setlocal_3 []
+#0045 ofs004b: getlocal_3 []
+#0046 ofs004c: not []
+#0047 ofs004d: dup []
+#0048 ofs004e: iftrue [] -> #55
+#0049 ofs0052: pop []
+#0050 ofs0053: getlocal_3 []
+#0051 ofs0054: getproperty ['archive']
+#0052 ofs0056: getlex ['Array']
+#0053 ofs0058: istypelate []
+#0054 ofs0059: not []
+#0055 ofs005a: dup []
+#0056 ofs005b: iftrue [] -> #64
+#0057 ofs005f: pop []
+#0058 ofs0060: getlocal_3 []
+#0059 ofs0061: getproperty ['archive']
+#0060 ofs0063: getproperty ['length']
+#0061 ofs0065: pushbyte [0]
+#0062 ofs0067: equals []
+#0063 ofs0068: not []
+#0064 ofs0069: iffalse [] -> #67
+#0065 ofs006d: pushfalse []
+#0066 ofs006e: returnvalue []
+#0067 ofs006f: hasnext2 [4, 5]
+#0068 ofs0072: iftrue [] -> #39
+#0069 ofs0076: pushtrue []
+#0070 ofs0077: returnvalue []

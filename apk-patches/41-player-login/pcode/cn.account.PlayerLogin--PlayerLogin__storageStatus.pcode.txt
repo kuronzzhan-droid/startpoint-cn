@@ -1,0 +1,22 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.account.PlayerLogin; label: PlayerLogin$/storageStatus; body: 20; method: 21
+# code SHA-256: 061341abe1b924cb7bd3bb8bba59949a4eb0d323bf723942795c71e0e55691c7; header: [2, 2, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: getproperty ['info']
+#0004 ofs0006: getproperty ['code']
+#0005 ofs0009: pushstring ['SharedObject.Flush.Success']
+#0006 ofs000c: ifne [] -> #9
+#0007 ofs0010: pushstring ['']
+#0008 ofs0012: jump [] -> #11
+#0009 ofs0016: pushstring ['本机保存失败；关闭后可能需要重新输入密码。']
+#0010 ofs0019: coerce_s []
+#0011 ofs001a: findproperty ['cn.account:PlayerLogin::storageNotice']
+#0012 ofs001c: swap []
+#0013 ofs001d: setproperty ['cn.account:PlayerLogin::storageNotice']
+#0014 ofs001f: findpropstrict ['cn.account:PlayerLogin::render']
+#0015 ofs0021: callpropvoid ['cn.account:PlayerLogin::render', 0]
+#0016 ofs0024: returnvoid []

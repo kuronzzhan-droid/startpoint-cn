@@ -1,0 +1,15 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.account.PlayerLogin; label: anonymous-method-54; body: 52; method: 54
+# code SHA-256: a010875f9cd0c61f307b83476eb6985ed95776a0091b1c87e261a61b462e172d; header: [2, 1, 0, 0]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: findpropstrict ['cn.account:PlayerLogin::navigate']
+#0001 ofs0002: getlex ['cn.account:PlayerLogin::savedAccounts']
+#0002 ofs0004: getproperty ['length']
+#0003 ofs0007: iffalse [] -> #6
+#0004 ofs000b: pushstring ['accounts']
+#0005 ofs000e: jump [] -> #8
+#0006 ofs0012: pushstring ['login']
+#0007 ofs0014: coerce_s []
+#0008 ofs0015: callpropvoid ['cn.account:PlayerLogin::navigate', 1]
+#0009 ofs0018: returnvoid []

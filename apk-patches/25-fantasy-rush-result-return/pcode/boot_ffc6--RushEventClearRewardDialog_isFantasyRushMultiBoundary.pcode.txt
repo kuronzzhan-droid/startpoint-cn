@@ -1,0 +1,44 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: RushEventClearRewardDialog/isFantasyRushMultiBoundary; body: 92027; method: 100500
+# code SHA-256: b7cfdf3e1f68a165c20fd9489fdd79ba38d2e6842381591d9b6fedfb2632bac6; header: [2, 2, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['eventId']
+#0003 ofs0005: pushint [700098]
+#0004 ofs0008: ifeq [] -> #7
+#0005 ofs000c: pushfalse []
+#0006 ofs000d: returnvalue []
+#0007 ofs000e: jump [] -> #16
+#0008 ofs0012: avm_label []
+#0009 ofs0013: pushtrue []
+#0010 ofs0014: returnvalue []
+#0011 ofs0015: avm_label []
+#0012 ofs0016: pushfalse []
+#0013 ofs0017: returnvalue []
+#0014 ofs0018: avm_label []
+#0015 ofs0019: jump [] -> #37
+#0016 ofs001d: getlex ['event']
+#0017 ofs0020: callproperty ['getRushBattleRound', 0]
+#0018 ofs0025: setlocal_1 []
+#0019 ofs0026: pushbyte [5]
+#0020 ofs0028: getlocal_1 []
+#0021 ofs0029: ifstrictne [] -> #24
+#0022 ofs002d: pushbyte [0]
+#0023 ofs002f: jump [] -> #35
+#0024 ofs0033: pushbyte [10]
+#0025 ofs0035: getlocal_1 []
+#0026 ofs0036: ifstrictne [] -> #29
+#0027 ofs003a: pushbyte [1]
+#0028 ofs003c: jump [] -> #35
+#0029 ofs0040: pushbyte [15]
+#0030 ofs0042: getlocal_1 []
+#0031 ofs0043: ifstrictne [] -> #34
+#0032 ofs0047: pushbyte [2]
+#0033 ofs0049: jump [] -> #35
+#0034 ofs004d: pushbyte [255]
+#0035 ofs004f: op_08 [1]
+#0036 ofs0051: lookupswitch [] default #11, cases [8, 8, 8]
+#0037 ofs005f: pushundefined []
+#0038 ofs0060: returnvalue []

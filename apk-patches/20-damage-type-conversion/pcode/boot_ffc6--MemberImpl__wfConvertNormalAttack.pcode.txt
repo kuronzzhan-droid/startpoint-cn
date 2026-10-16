@@ -1,0 +1,189 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: MemberImpl$/wfConvertNormalAttack; body: 92442; method: 100915
+# code SHA-256: d75e6f800238961f51ba118216857f320303362ec5a6bfec1c87054bbac39bc0; header: [3, 5, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: getproperty ['buffTargetAs']
+#0004 ofs0007: convert_i []
+#0005 ofs0008: pushbyte [100]
+#0006 ofs000a: subtract_i []
+#0007 ofs000b: setlocal_2 []
+#0008 ofs000c: getlocal_2 []
+#0009 ofs000d: pushbyte [1]
+#0010 ofs000f: ifeq [] -> #90
+#0011 ofs0013: getlocal_2 []
+#0012 ofs0014: pushbyte [2]
+#0013 ofs0016: ifeq [] -> #90
+#0014 ofs001a: getlocal_2 []
+#0015 ofs001b: pushbyte [4]
+#0016 ofs001d: ifeq [] -> #90
+#0017 ofs0021: getlocal_2 []
+#0018 ofs0022: pushbyte [31]
+#0019 ofs0024: ifeq [] -> #90
+#0020 ofs0028: getlocal_2 []
+#0021 ofs0029: pushbyte [32]
+#0022 ofs002b: ifeq [] -> #90
+#0023 ofs002f: getlocal_2 []
+#0024 ofs0030: pushbyte [33]
+#0025 ofs0032: ifeq [] -> #90
+#0026 ofs0036: getlocal_1 []
+#0027 ofs0037: getproperty ['attacker']
+#0028 ofs003b: astype ['pinball.scene.battle.battle.squad.member::MemberImpl']
+#0029 ofs003e: setlocal_3 []
+#0030 ofs003f: getlocal_3 []
+#0031 ofs0040: iffalse [] -> #182
+#0032 ofs0044: pushbyte [0]
+#0033 ofs0046: setlocal [4]
+#0034 ofs0048: getlocal_1 []
+#0035 ofs0049: getproperty ['createdByDirectAttack']
+#0036 ofs004d: iffalse [] -> #40
+#0037 ofs0051: pushbyte [4]
+#0038 ofs0053: setlocal [4]
+#0039 ofs0055: jump [] -> #65
+#0040 ofs0059: getlocal_1 []
+#0041 ofs005a: getproperty ['createdByPowerFlipAction']
+#0042 ofs005e: iffalse [] -> #46
+#0043 ofs0062: pushbyte [3]
+#0044 ofs0064: setlocal [4]
+#0045 ofs0066: jump [] -> #65
+#0046 ofs006a: getlocal_1 []
+#0047 ofs006b: getproperty ['createdByAbility']
+#0048 ofs006f: iffalse [] -> #52
+#0049 ofs0073: pushbyte [2]
+#0050 ofs0075: setlocal [4]
+#0051 ofs0077: jump [] -> #65
+#0052 ofs007b: getlocal_1 []
+#0053 ofs007c: getproperty ['createdByMainSkillAction']
+#0054 ofs0080: iffalse [] -> #58
+#0055 ofs0084: pushbyte [1]
+#0056 ofs0086: setlocal [4]
+#0057 ofs0088: jump [] -> #65
+#0058 ofs008c: getlocal_1 []
+#0059 ofs008d: getproperty ['createdByUnisonSkillAction']
+#0060 ofs0091: iffalse [] -> #64
+#0061 ofs0095: pushbyte [1]
+#0062 ofs0097: setlocal [4]
+#0063 ofs0099: jump [] -> #65
+#0064 ofs009d: jump [] -> #182
+#0065 ofs00a1: getlocal_3 []
+#0066 ofs00a2: getproperty ['abilityTotalizer']
+#0067 ofs00a5: getlocal [4]
+#0068 ofs00a7: callproperty ['wfResolveDamageType', 1]
+#0069 ofs00ac: convert_i []
+#0070 ofs00ad: setlocal_2 []
+#0071 ofs00ae: getlocal_2 []
+#0072 ofs00af: pushbyte [1]
+#0073 ofs00b1: ifeq [] -> #90
+#0074 ofs00b5: getlocal_2 []
+#0075 ofs00b6: pushbyte [2]
+#0076 ofs00b8: ifeq [] -> #90
+#0077 ofs00bc: getlocal_2 []
+#0078 ofs00bd: pushbyte [4]
+#0079 ofs00bf: ifeq [] -> #90
+#0080 ofs00c3: getlocal_2 []
+#0081 ofs00c4: pushbyte [31]
+#0082 ofs00c6: ifeq [] -> #90
+#0083 ofs00ca: getlocal_2 []
+#0084 ofs00cb: pushbyte [32]
+#0085 ofs00cd: ifeq [] -> #90
+#0086 ofs00d1: getlocal_2 []
+#0087 ofs00d2: pushbyte [33]
+#0088 ofs00d4: ifeq [] -> #90
+#0089 ofs00d8: jump [] -> #182
+#0090 ofs00dc: getlocal_1 []
+#0091 ofs00dd: pushfalse []
+#0092 ofs00de: setproperty ['createdByDirectAttack']
+#0093 ofs00e2: getlocal_1 []
+#0094 ofs00e3: pushfalse []
+#0095 ofs00e4: setproperty ['createdByPowerFlipAction']
+#0096 ofs00e8: getlocal_1 []
+#0097 ofs00e9: pushfalse []
+#0098 ofs00ea: setproperty ['createdByMainSkillAction']
+#0099 ofs00ee: getlocal_1 []
+#0100 ofs00ef: pushfalse []
+#0101 ofs00f0: setproperty ['createdByUnisonSkillAction']
+#0102 ofs00f4: getlocal_1 []
+#0103 ofs00f5: pushfalse []
+#0104 ofs00f6: setproperty ['createdByAbility']
+#0105 ofs00fa: getlocal_1 []
+#0106 ofs00fb: pushfalse []
+#0107 ofs00fc: setproperty ['createdByUnisonAbility']
+#0108 ofs0100: getlocal_1 []
+#0109 ofs0101: pushfalse []
+#0110 ofs0102: setproperty ['createdBySkillInvoker']
+#0111 ofs0106: getlocal_1 []
+#0112 ofs0107: pushbyte [0]
+#0113 ofs0109: setproperty ['buffTargetAs']
+#0114 ofs010d: getlocal_1 []
+#0115 ofs010e: pushbyte [0]
+#0116 ofs0110: setproperty ['powerFlipChargeLv']
+#0117 ofs0114: getlocal_2 []
+#0118 ofs0115: pushbyte [1]
+#0119 ofs0117: ifne [] -> #132
+#0120 ofs011b: getlocal_1 []
+#0121 ofs011c: getproperty ['originMemberKind']
+#0122 ofs0120: pushbyte [1]
+#0123 ofs0122: ifeq [] -> #128
+#0124 ofs0126: getlocal_1 []
+#0125 ofs0127: pushtrue []
+#0126 ofs0128: setproperty ['createdByMainSkillAction']
+#0127 ofs012c: jump [] -> #182
+#0128 ofs0130: getlocal_1 []
+#0129 ofs0131: pushtrue []
+#0130 ofs0132: setproperty ['createdByUnisonSkillAction']
+#0131 ofs0136: jump [] -> #182
+#0132 ofs013a: getlocal_2 []
+#0133 ofs013b: pushbyte [2]
+#0134 ofs013d: ifne [] -> #145
+#0135 ofs0141: getlocal_1 []
+#0136 ofs0142: pushtrue []
+#0137 ofs0143: setproperty ['createdByAbility']
+#0138 ofs0147: getlocal_1 []
+#0139 ofs0148: getlocal_1 []
+#0140 ofs0149: getproperty ['originMemberKind']
+#0141 ofs014d: pushbyte [1]
+#0142 ofs014f: strictequals []
+#0143 ofs0150: setproperty ['createdByUnisonAbility']
+#0144 ofs0154: jump [] -> #182
+#0145 ofs0158: getlocal_2 []
+#0146 ofs0159: pushbyte [4]
+#0147 ofs015b: ifne [] -> #152
+#0148 ofs015f: getlocal_1 []
+#0149 ofs0160: pushtrue []
+#0150 ofs0161: setproperty ['createdByDirectAttack']
+#0151 ofs0165: jump [] -> #182
+#0152 ofs0169: getlocal_2 []
+#0153 ofs016a: pushbyte [31]
+#0154 ofs016c: ifne [] -> #162
+#0155 ofs0170: getlocal_1 []
+#0156 ofs0171: pushtrue []
+#0157 ofs0172: setproperty ['createdByPowerFlipAction']
+#0158 ofs0176: getlocal_1 []
+#0159 ofs0177: pushbyte [1]
+#0160 ofs0179: setproperty ['powerFlipChargeLv']
+#0161 ofs017d: jump [] -> #182
+#0162 ofs0181: getlocal_2 []
+#0163 ofs0182: pushbyte [32]
+#0164 ofs0184: ifne [] -> #172
+#0165 ofs0188: getlocal_1 []
+#0166 ofs0189: pushtrue []
+#0167 ofs018a: setproperty ['createdByPowerFlipAction']
+#0168 ofs018e: getlocal_1 []
+#0169 ofs018f: pushbyte [2]
+#0170 ofs0191: setproperty ['powerFlipChargeLv']
+#0171 ofs0195: jump [] -> #182
+#0172 ofs0199: getlocal_2 []
+#0173 ofs019a: pushbyte [33]
+#0174 ofs019c: ifne [] -> #182
+#0175 ofs01a0: getlocal_1 []
+#0176 ofs01a1: pushtrue []
+#0177 ofs01a2: setproperty ['createdByPowerFlipAction']
+#0178 ofs01a6: getlocal_1 []
+#0179 ofs01a7: pushbyte [3]
+#0180 ofs01a9: setproperty ['powerFlipChargeLv']
+#0181 ofs01ad: jump [] -> #182
+#0182 ofs01b1: getlocal_1 []
+#0183 ofs01b2: returnvalue []

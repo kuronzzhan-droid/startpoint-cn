@@ -1,0 +1,37 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.account.PlayerLogin; label: anonymous-method-34; body: 32; method: 34
+# code SHA-256: 97aa21983897fc990c30c4a69395436a7cba733bc0147e26cd774d14a90edf13; header: [4, 3, 0, 0]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlex ['cn.account::completed']
+#0001 ofs0003: iffalse [] -> #3
+#0002 ofs0007: returnvoid []
+#0003 ofs0008: pushtrue []
+#0004 ofs0009: findproperty ['cn.account::completed']
+#0005 ofs000c: swap []
+#0006 ofs000d: setproperty ['cn.account::completed']
+#0007 ofs0010: findpropstrict ['cn.account:PlayerLogin::cancelNetwork']
+#0008 ofs0012: callpropvoid ['cn.account:PlayerLogin::cancelNetwork', 0]
+#0009 ofs0015: pushfalse []
+#0010 ofs0016: findproperty ['cn.account:PlayerLogin::busy']
+#0011 ofs0018: swap []
+#0012 ofs0019: setproperty ['cn.account:PlayerLogin::busy']
+#0013 ofs001b: getlocal_1 []
+#0014 ofs001c: iffalse [] -> #31
+#0015 ofs0020: getlex ['cn.account::failure']
+#0016 ofs0023: pushnull []
+#0017 ofs0024: ifeq [] -> #25
+#0018 ofs0028: getlex ['cn.account::failure']
+#0019 ofs002b: getglobalscope []
+#0020 ofs002c: getlocal_1 []
+#0021 ofs002d: getlocal_2 []
+#0022 ofs002e: call [2]
+#0023 ofs0030: pop []
+#0024 ofs0031: jump [] -> #31
+#0025 ofs0035: getlocal_1 []
+#0026 ofs0036: findproperty ['cn.account:PlayerLogin::message']
+#0027 ofs0038: swap []
+#0028 ofs0039: setproperty ['cn.account:PlayerLogin::message']
+#0029 ofs003b: findpropstrict ['cn.account:PlayerLogin::render']
+#0030 ofs003d: callpropvoid ['cn.account:PlayerLogin::render', 0]
+#0031 ofs0040: returnvoid []

@@ -1,0 +1,28 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: ReproduceFileRecordImpl/saveLog; body: 30917; method: 33352
+# code SHA-256: 0796011b5ae3d02da88f76ddf37f768dd128df02d551834499305c3daf8f71e4; header: [3, 2, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: getproperty ['logway']
+#0004 ofs0006: getproperty ['index']
+#0005 ofs0008: pushbyte [2]
+#0006 ofs000a: ifeq [] -> #8
+#0007 ofs000e: returnvoid []
+#0008 ofs000f: findproperty ['closed']
+#0009 ofs0013: getproperty ['closed']
+#0010 ofs0017: not []
+#0011 ofs0018: iffalse [] -> #22
+#0012 ofs001c: findproperty ['fileStream']
+#0013 ofs001f: getproperty ['fileStream']
+#0014 ofs0022: getlex ['pinball.context.reproduce::RecordLogTools']
+#0015 ofs0025: getlocal_1 []
+#0016 ofs0026: callproperty ['print', 1]
+#0017 ofs002a: coerce ['String']
+#0018 ofs002c: pushstring ['\n']
+#0019 ofs002e: add []
+#0020 ofs002f: coerce ['String']
+#0021 ofs0031: callpropvoid ['writeUTFBytes', 1]
+#0022 ofs0035: returnvoid []

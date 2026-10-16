@@ -1,0 +1,33 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.admission.ClientAdmission; label: ClientAdmission$/observe; body: 5; method: 6
+# code SHA-256: 625bb69a6ae976ddf2a25be4da89f606e7461b3cc92ca6ca7bc3a0cd36d23b26; header: [2, 5, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: pushbyte [0]
+#0003 ofs0004: setlocal [4]
+#0004 ofs0006: getlocal_1 []
+#0005 ofs0007: setlocal_3 []
+#0006 ofs0008: jump [] -> #25
+#0007 ofs000c: avm_label []
+#0008 ofs000d: getlocal_3 []
+#0009 ofs000e: getlocal [4]
+#0010 ofs0010: nextvalue []
+#0011 ofs0011: coerce ['Object']
+#0012 ofs0013: setlocal_2 []
+#0013 ofs0014: getlocal_2 []
+#0014 ofs0015: getproperty ['name']
+#0015 ofs0017: convert_s []
+#0016 ofs0018: callproperty ['http://adobe.com/AS3/2006/builtin::toLowerCase', 0]
+#0017 ofs001b: pushstring ['x-sp-session']
+#0018 ofs001d: ifne [] -> #25
+#0019 ofs0021: findpropstrict ['cn.admission:ClientAdmission::state']
+#0020 ofs0023: callproperty ['cn.admission:ClientAdmission::state', 0]
+#0021 ofs0026: getlocal_2 []
+#0022 ofs0027: getproperty ['value']
+#0023 ofs0029: convert_s []
+#0024 ofs002a: callpropvoid ['observe', 1]
+#0025 ofs002d: hasnext2 [3, 4]
+#0026 ofs0030: iftrue [] -> #7
+#0027 ofs0034: returnvoid []

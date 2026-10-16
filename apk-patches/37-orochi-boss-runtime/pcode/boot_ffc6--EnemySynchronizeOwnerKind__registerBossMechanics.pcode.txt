@@ -1,0 +1,14 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: EnemySynchronizeOwnerKind$/registerBossMechanics; body: 92455; method: 100928
+# code SHA-256: f8a49b52685cfa2f5893f716e5abf29004a8a71d6babfc6fae0d252cb161f655; header: [2, 1, 3, 4]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['pinball.online.battle.sync:EnemySynchronizeOwnerKind::bossMechanicsTypeRegistered']
+#0003 ofs0006: iffalse [] -> #5
+#0004 ofs000a: returnvoid []
+#0005 ofs000b: findproperty ['pinball.online.battle.sync:EnemySynchronizeOwnerKind::bossMechanicsTypeRegistered']
+#0006 ofs000f: pushtrue []
+#0007 ofs0010: setproperty ['pinball.online.battle.sync:EnemySynchronizeOwnerKind::bossMechanicsTypeRegistered']
+#0008 ofs0014: returnvoid []

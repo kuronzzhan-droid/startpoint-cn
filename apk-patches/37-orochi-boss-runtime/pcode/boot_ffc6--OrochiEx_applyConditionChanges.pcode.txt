@@ -1,0 +1,20 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/applyConditionChanges; body: 92565; method: 101038
+# code SHA-256: 4b612aed5aafab33cc88a72edf7e48d45ad0afdb5a53c4aa07569592548fa508; header: [4, 4, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: op_ef [1, 92778, 2, 0]
+#0005 ofs0017: getlex ['phase']
+#0006 ofs001a: pushbyte [2]
+#0007 ofs001c: ifeq [] -> #9
+#0008 ofs0020: returnvoid []
+#0009 ofs0021: getlocal_0 []
+#0010 ofs0022: getlocal_1 []
+#0011 ofs0023: getlocal_2 []
+#0012 ofs0024: getlocal_3 []
+#0013 ofs0025: callsupervoid ['applyConditionChanges', 3]
+#0014 ofs002a: returnvoid []

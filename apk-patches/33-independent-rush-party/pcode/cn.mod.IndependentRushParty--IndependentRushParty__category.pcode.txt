@@ -1,0 +1,24 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.mod.IndependentRushParty; label: IndependentRushParty$/category; body: 2; method: 3
+# code SHA-256: 5cfa51adb717da8391a74dd4b004480ce83e9d1ae93d20abd196a39b2ee47184; header: [2, 1, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['cn.mod:IndependentRushParty::_eventId']
+#0003 ofs0004: pushint [700099]
+#0004 ofs0006: ifne [] -> #7
+#0005 ofs000a: pushbyte [5]
+#0006 ofs000c: returnvalue []
+#0007 ofs000d: getlex ['cn.mod:IndependentRushParty::_eventId']
+#0008 ofs000f: pushint [700100]
+#0009 ofs0011: ifne [] -> #12
+#0010 ofs0015: pushbyte [6]
+#0011 ofs0017: returnvalue []
+#0012 ofs0018: getlex ['cn.mod:IndependentRushParty::_eventId']
+#0013 ofs001a: pushint [700098]
+#0014 ofs001c: ifne [] -> #17
+#0015 ofs0020: pushbyte [7]
+#0016 ofs0022: returnvalue []
+#0017 ofs0023: pushbyte [4]
+#0018 ofs0025: returnvalue []

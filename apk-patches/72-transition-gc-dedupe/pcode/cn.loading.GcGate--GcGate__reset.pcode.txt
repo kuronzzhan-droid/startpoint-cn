@@ -1,0 +1,20 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.loading.GcGate; label: GcGate$/reset; body: 1; method: 2
+# code SHA-256: c9ad1a6cdcf04b416ceac9b98f1740986e68e7a99be7544a1bb98a8682a85a4a; header: [2, 1, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: pushint [4293967296]
+#0003 ofs0004: findproperty ['cn.loading:GcGate::last']
+#0004 ofs0006: swap []
+#0005 ofs0007: setproperty ['cn.loading:GcGate::last']
+#0006 ofs0009: pushbyte [0]
+#0007 ofs000b: findproperty ['skipped']
+#0008 ofs000d: swap []
+#0009 ofs000e: setproperty ['skipped']
+#0010 ofs0010: pushbyte [0]
+#0011 ofs0012: findproperty ['ran']
+#0012 ofs0014: swap []
+#0013 ofs0015: setproperty ['ran']
+#0014 ofs0017: returnvoid []

@@ -1,0 +1,27 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.admission.ClientAdmission; label: ClientAdmission$/now; body: 0; method: 1
+# code SHA-256: 97e276a3ed4c4fcccf2b212f6619f2e4f4395eea003ef18b5cc3f9a3c9d58df8; header: [4, 2, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['flash.utils::getTimer']
+#0003 ofs0004: getglobalscope []
+#0004 ofs0005: call [0]
+#0005 ofs0007: convert_u []
+#0006 ofs0008: setlocal_1 []
+#0007 ofs0009: findpropstrict ['cn.admission:ClientAdmission::elapsed']
+#0008 ofs000b: dup []
+#0009 ofs000c: getproperty ['cn.admission:ClientAdmission::elapsed']
+#0010 ofs000e: getlocal_1 []
+#0011 ofs000f: getlex ['cn.admission:ClientAdmission::lastTick']
+#0012 ofs0011: subtract []
+#0013 ofs0012: convert_u []
+#0014 ofs0013: add []
+#0015 ofs0014: setproperty ['cn.admission:ClientAdmission::elapsed']
+#0016 ofs0016: getlocal_1 []
+#0017 ofs0017: findproperty ['cn.admission:ClientAdmission::lastTick']
+#0018 ofs0019: swap []
+#0019 ofs001a: setproperty ['cn.admission:ClientAdmission::lastTick']
+#0020 ofs001c: getlex ['cn.admission:ClientAdmission::elapsed']
+#0021 ofs001e: returnvalue []

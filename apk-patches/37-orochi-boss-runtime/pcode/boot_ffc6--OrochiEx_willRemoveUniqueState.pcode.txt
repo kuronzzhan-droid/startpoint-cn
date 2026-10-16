@@ -1,0 +1,14 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/willRemoveUniqueState; body: 92469; method: 100942
+# code SHA-256: 2a1a7d3128f19cb89d478c83dbe69ee3d79bad6134d51daecf58fc6816ffe6a7; header: [1, 3, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 92776, 1, 665]
+#0004 ofs0011: getlocal_1 []
+#0005 ofs0012: coerce_a []
+#0006 ofs0013: setlocal_2 []
+#0007 ofs0014: pushfalse []
+#0008 ofs0015: returnvalue []

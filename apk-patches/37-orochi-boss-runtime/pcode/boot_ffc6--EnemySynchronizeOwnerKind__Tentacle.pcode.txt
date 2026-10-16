@@ -1,0 +1,15 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: EnemySynchronizeOwnerKind$/Tentacle; body: 92464; method: 100937
+# code SHA-256: 7d8717e706b2a912bd8fb6452510bbc0be47394e41bea9c730124bf2eef49fd1; header: [4, 2, 3, 4]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: getlocal_0 []
+#0004 ofs000a: pushstring ['Tentacle']
+#0005 ofs000e: pushbyte [1]
+#0006 ofs0010: getlocal_1 []
+#0007 ofs0011: newarray [1]
+#0008 ofs0013: construct [3]
+#0009 ofs0015: returnvalue []

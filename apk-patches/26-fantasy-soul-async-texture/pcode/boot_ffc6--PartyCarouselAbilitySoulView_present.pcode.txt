@@ -1,0 +1,51 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: PartyCarouselAbilitySoulView/present; body: 92077; method: 100550
+# code SHA-256: 7a5338b2abf272abb008d136064ddc8ae56254ed14655e3f0e286c191e08e369; header: [4, 3, 5, 6]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: jump [] -> #29
+#0004 ofs000d: avm_label []
+#0005 ofs000e: findproperty ['pinball.scene.character.partyCarousel.page:PartyCarouselAbilitySoulView::pendingFantasySoulImagePath']
+#0006 ofs0012: getlocal_1 []
+#0007 ofs0013: getproperty ['params']
+#0008 ofs0015: pushbyte [0]
+#0009 ofs0017: getproperty ['<mn kind 0x1b>']
+#0010 ofs001b: getproperty ['imagePath']
+#0011 ofs001f: setproperty ['pinball.scene.character.partyCarousel.page:PartyCarouselAbilitySoulView::pendingFantasySoulImagePath']
+#0012 ofs0023: getlex ['asset']
+#0013 ofs0026: getlex ['pinball.asset::AssetGroupKind']
+#0014 ofs0029: getproperty ['ItemThumbnail']
+#0015 ofs002c: getlex ['pinball.scene.character.partyCarousel.page:PartyCarouselAbilitySoulView::pendingFantasySoulImagePath']
+#0016 ofs0030: getlex ['pinball.scene.character.partyCarousel.page:PartyCarouselAbilitySoulView::fantasySoulTextureLoadCompleted']
+#0017 ofs0034: callpropvoid ['setTexture', 3]
+#0018 ofs0038: jump [] -> #45
+#0019 ofs003c: avm_label []
+#0020 ofs003d: findproperty ['pinball.scene.character.partyCarousel.page:PartyCarouselAbilitySoulView::pendingFantasySoulImagePath']
+#0021 ofs0041: pushnull []
+#0022 ofs0042: setproperty ['pinball.scene.character.partyCarousel.page:PartyCarouselAbilitySoulView::pendingFantasySoulImagePath']
+#0023 ofs0046: getlex ['abilitySoul']
+#0024 ofs004a: getlex ['haxe.ds::Option']
+#0025 ofs004c: getproperty ['None']
+#0026 ofs004f: callpropvoid ['changeTexture', 1]
+#0027 ofs0054: avm_label []
+#0028 ofs0055: jump [] -> #45
+#0029 ofs0059: getlocal_1 []
+#0030 ofs005a: getproperty ['index']
+#0031 ofs005c: setlocal_2 []
+#0032 ofs005d: pushbyte [0]
+#0033 ofs005f: getlocal_2 []
+#0034 ofs0060: ifstrictne [] -> #37
+#0035 ofs0064: pushbyte [0]
+#0036 ofs0066: jump [] -> #43
+#0037 ofs006a: pushbyte [1]
+#0038 ofs006c: getlocal_2 []
+#0039 ofs006d: ifstrictne [] -> #42
+#0040 ofs0071: pushbyte [1]
+#0041 ofs0073: jump [] -> #43
+#0042 ofs0077: pushbyte [255]
+#0043 ofs0079: op_08 [2]
+#0044 ofs007b: lookupswitch [] default #27, cases [4, 19]
+#0045 ofs0086: returnvoid []

@@ -1,0 +1,32 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/changeState; body: 92557; method: 101030
+# code SHA-256: 796d7c3b75be72f407a9a729027d1449239da6b36ee85994b3c88d1c936c8297; header: [5, 6, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: op_ef [1, 92778, 2, 0]
+#0005 ofs0017: op_ef [1, 92858, 3, 0]
+#0006 ofs001e: op_ef [1, 92842, 4, 3038]
+#0007 ofs0026: getlocal_1 []
+#0008 ofs0027: coerce ['pinball.scene.battle.battle.enemy::EnemyState']
+#0009 ofs002b: setlocal [5]
+#0010 ofs002d: findpropstrict ['willCrossStateGroup']
+#0011 ofs0031: getlex ['state']
+#0012 ofs0034: getlocal [5]
+#0013 ofs0036: callproperty ['willCrossStateGroup', 2]
+#0014 ofs003b: iffalse [] -> #20
+#0015 ofs003f: getlex ['targets']
+#0016 ofs0042: pushnull []
+#0017 ofs0043: ifeq [] -> #20
+#0018 ofs0047: getlex ['targets']
+#0019 ofs004a: callpropvoid ['notifyStateGroupChange', 0]
+#0020 ofs004f: getlocal_0 []
+#0021 ofs0050: getlocal [5]
+#0022 ofs0052: getlocal_2 []
+#0023 ofs0053: getlocal_3 []
+#0024 ofs0054: getlocal [4]
+#0025 ofs0056: callsupervoid ['changeState', 4]
+#0026 ofs005a: returnvoid []

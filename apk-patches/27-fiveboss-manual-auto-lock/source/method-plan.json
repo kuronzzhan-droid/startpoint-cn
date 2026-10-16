@@ -1,0 +1,380 @@
+{
+  "donor_swf_sha256": "dee19b6a96d8cece93021c09f937fdf35832ed362dcbf9b9df0b8750a3774572",
+  "insert_only_methods": [
+    {
+      "label": "pinball.common.data.ability::AbilityLogic/getDescriptions|1",
+      "accepted_code_sha256": "05e7f53541bb281f6af3ae3a210e3caef99679240c0159a854ea946a5ce8d084",
+      "donor_code_sha256": "e852615b2175fc06f06d135e44741ad1d6a4490abf82edfc25c45c328b1ad107",
+      "insertions": [
+        {
+          "at": 2,
+          "instructions": 90
+        }
+      ]
+    },
+    {
+      "label": "pinball.common.data.ability::AbilityLogic/getDescriptionWithSimplify|1",
+      "accepted_code_sha256": "e9a605723fa77e7a2552999f6ca4591d099c5aa4b3984ff49697eaa1c536ff12",
+      "donor_code_sha256": "a466954b08895bf79ab97200a79af6bdc3b9f4b238ea3359b58907439b0b78be",
+      "insertions": [
+        {
+          "at": 2,
+          "instructions": 97
+        }
+      ]
+    },
+    {
+      "label": "pinball.common.data.ability::LeaderAbilityLogic/getDescriptions|1",
+      "accepted_code_sha256": "05e7f53541bb281f6af3ae3a210e3caef99679240c0159a854ea946a5ce8d084",
+      "donor_code_sha256": "e852615b2175fc06f06d135e44741ad1d6a4490abf82edfc25c45c328b1ad107",
+      "insertions": [
+        {
+          "at": 2,
+          "instructions": 90
+        }
+      ]
+    },
+    {
+      "label": "pinball.common.data.ability::LeaderAbilityLogic/getDescriptionWithSimplify|1",
+      "accepted_code_sha256": "e9a605723fa77e7a2552999f6ca4591d099c5aa4b3984ff49697eaa1c536ff12",
+      "donor_code_sha256": "a466954b08895bf79ab97200a79af6bdc3b9f4b238ea3359b58907439b0b78be",
+      "insertions": [
+        {
+          "at": 2,
+          "instructions": 97
+        }
+      ]
+    },
+    {
+      "label": "pinball.common.data.ability.description::AbilityDescriptionGenerator/stringfySummaryCommonContent|1",
+      "accepted_code_sha256": "89944661b697311cb1f8203d1959a158690b814e58187801adf6d18457a13978",
+      "donor_code_sha256": "e1c07102c97eca4ea7cfbc4c4213bcc8b1190da05f6c9286389c4947d90d9b00",
+      "insertions": [
+        {
+          "at": 2,
+          "instructions": 87
+        }
+      ]
+    },
+    {
+      "label": "pinball.common.data.ability.description::AbilityDescriptionGenerator/stringfyStrengthByCommonBattleContent|1",
+      "accepted_code_sha256": "ff5c485d2702968119e4ecba508fafa0af5b5bc97b557e92fc99dac22677fe3c",
+      "donor_code_sha256": "df27408c4c5aa1287fae0c3babb85b718eb8761ab8d5c45201f7791ce7c179f2",
+      "insertions": [
+        {
+          "at": 2,
+          "instructions": 13
+        }
+      ]
+    },
+    {
+      "label": "pinball.common.data.ability.description::AbilityDescriptionGenerator/stringfyCommonBattleContent|1",
+      "accepted_code_sha256": "ef922b3cbfc877b60164608da76f259f704c551014f0a5c05526fd1cc9c027e7",
+      "donor_code_sha256": "884e343f831f5d744f68389e3287cf84229dd7ffb53962c2a733ca8afc00dbc3",
+      "insertions": [
+        {
+          "at": 2,
+          "instructions": 84
+        }
+      ]
+    },
+    {
+      "label": "pinball.common.data.ability.description::InstantAbilityDescriptionGenerator/stringfyInstantBattleContentAccordingToPrecontent|1",
+      "accepted_code_sha256": "490083f1e60b70edb581ace0a262af37926f9b52614aa19a375dfa7fed3f1b0a",
+      "donor_code_sha256": "eaa77178133795069c2000a53694f701c3685691ff51d9ab9ed6cf85b5aedda4",
+      "insertions": [
+        {
+          "at": 2,
+          "instructions": 9
+        }
+      ]
+    },
+    {
+      "label": "pinball.common.data.ability.description::InstantAbilityDescriptionGenerator/stringfyInstantBattleContent|1",
+      "accepted_code_sha256": "2191439dd33af32e7c7e94979712d414b825e147ca6be551bb85bb19f7c16741",
+      "donor_code_sha256": "7fa27ffe287690661a9c3717b92b675e2d94ed8c4e3ed705308278ce97c065d8",
+      "insertions": [
+        {
+          "at": 2,
+          "instructions": 36
+        }
+      ]
+    },
+    {
+      "label": "pinball.common.data.ability.during::CommonAbilityContentTools$/getStrength|1",
+      "accepted_code_sha256": "8af807b7dddc804432eb78da824543bea27b8ec82945446b17db380f9be8e6ae",
+      "donor_code_sha256": "9bf3101e24016b00b1baa0f677638ac2f0d65034caeec9ae20d5d327e008520e",
+      "insertions": [
+        {
+          "at": 0,
+          "instructions": 23
+        }
+      ]
+    },
+    {
+      "label": "pinball.common.data.ability.during::CommonAbilityContentTools$/hasAdvantage|1",
+      "accepted_code_sha256": "2e285a23b6bd2801ce3defc0d1ec8657bae0b240192cad6b73a50ea776e9ad7a",
+      "donor_code_sha256": "737dde9d05c7ddb3f897e2882b9b02c47ade4f6e51b91ce578fac276af982ce2",
+      "insertions": [
+        {
+          "at": 0,
+          "instructions": 23
+        }
+      ]
+    },
+    {
+      "label": "pinball.common.data.ability.during::CommonAbilityContentTools$/mergeForDescription|1",
+      "accepted_code_sha256": "1fff92637077950e0c608fadaa16b8045f1470a93d82e290e8d4591325d819c9",
+      "donor_code_sha256": "9263dd48f59bbfebe2387faf6ab4e3e3abad8fb3251803219613377bd1b9f17f",
+      "insertions": [
+        {
+          "at": 32,
+          "instructions": 25
+        }
+      ]
+    },
+    {
+      "label": "pinball.common.data.ability.during::DuringAbilitySource$/createFromDuringAbilityValues|1",
+      "accepted_code_sha256": "0beea94826ac6f276d3bd295dfca7262dbfdbf30f0598e2027f85c9c7735a2a7",
+      "donor_code_sha256": "c584c07f21db9d3a235ba191b3906e2385bf9e35d97e850eff245a6726c5997d",
+      "insertions": [
+        {
+          "at": 7303,
+          "instructions": 28
+        }
+      ]
+    },
+    {
+      "label": "pinball.common.data.ability.instant::InstantAbilityContentTools$/mergeForDescription|1",
+      "accepted_code_sha256": "e73aa9f5e14cf4790329624c4863e885b69e0896873782df1cf36e27a78d0ee6",
+      "donor_code_sha256": "57e3377095ba23490686a8b30d4f6cfbba57001305f3570d89617f87b95d81f6",
+      "insertions": [
+        {
+          "at": 26,
+          "instructions": 25
+        }
+      ]
+    },
+    {
+      "label": "pinball.common.data.ability.instant::InstantAbilitySource$/resolveInstantContent|1",
+      "accepted_code_sha256": "c6be23a330b67c5fa62ee056075a7df10fc2cb6b89334fc7dcc7e554814afd19",
+      "donor_code_sha256": "9a54baea9283c0bda439f711139ccac3c0625b79fe2e54ab6047e8de7a537f47",
+      "insertions": [
+        {
+          "at": 56,
+          "instructions": 22
+        }
+      ]
+    },
+    {
+      "label": "pinball.master.generated::AbilityValues$/parseAt47|1",
+      "accepted_code_sha256": "dd353039ee17361f7b511bc5bc66279973fed78894a6646c2f0e03bbe5a372fd",
+      "donor_code_sha256": "94ccfb385d261220a1731d5a9151cc956af4d59b72336e618e13459cc3109b6a",
+      "insertions": [
+        {
+          "at": 6,
+          "instructions": 16
+        }
+      ]
+    },
+    {
+      "label": "pinball.master.generated::AbilityValues$/parseAt109|1",
+      "accepted_code_sha256": "af1ac9ba39907ecaa248d0bea913fa991d7a8e0d9fd6e1f6c3c53c1b6595f603",
+      "donor_code_sha256": "09565f2a2eeda2cc9b230da7f62ea874e77c6c3c671c1248689b7f64398b8579",
+      "insertions": [
+        {
+          "at": 6,
+          "instructions": 21
+        }
+      ]
+    },
+    {
+      "label": "pinball.scene.battle.battle.ability::AbilitySlotImpl/applyInstantBattle|1",
+      "accepted_code_sha256": "b7201ce2674c1f3cd0571f968f09c6881444cb91543ea0ce525cde1b5e27e88d",
+      "donor_code_sha256": "ac1991962c71de71adae4ae61932e00d39d83b52e007baf48ad46e45c4bd3f94",
+      "insertions": [
+        {
+          "at": 27,
+          "instructions": 20
+        }
+      ]
+    },
+    {
+      "label": "pinball.scene.battle.battle.ability::BattleAbilityTotalizerImpl/addDuringContent|1",
+      "accepted_code_sha256": "159eafe418f31138623173968cefc80ba509a1b37bbec7867738944e197ea001",
+      "donor_code_sha256": "08035095f40f6d33ae6254c23507c908754f8faef9f61ac77d0c054978082ff3",
+      "insertions": [
+        {
+          "at": 2,
+          "instructions": 46
+        }
+      ]
+    },
+    {
+      "label": "pinball.scene.battle.battle.action::ActionEvaluationResolver/<ctor>",
+      "accepted_code_sha256": "417375564f8f453d4ccdf90b189a528e4928ffd73308bb801ebf337f74058c1b",
+      "donor_code_sha256": "7deff6bc8c7c906b9a887fa2d8e308c4d7b05db6da1a35b88ad6f9bc6ff446c6",
+      "insertions": [
+        {
+          "at": 117,
+          "instructions": 33
+        }
+      ]
+    },
+    {
+      "label": "pinball.scene.battle.battle.squad.ball::BallImpl/update|1",
+      "accepted_code_sha256": "c4a9ab4365c82b2a44b4a7add87cd9e37234616c37a167a7876700a36018e02a",
+      "donor_code_sha256": "030a2d15d4c9f4f8ab4b8a326d0f2b55c55efee4ccc6ea6cef8d4c81697c9b66",
+      "insertions": [
+        {
+          "at": 79,
+          "instructions": 19
+        },
+        {
+          "at": 288,
+          "instructions": 27
+        }
+      ]
+    },
+    {
+      "label": "pinball.scene.battle.battle.squad.ball::BallImpl/tryEscape|1",
+      "accepted_code_sha256": "57ad706724cd4c64900fb1cebf15e9e834d913d0f802ede0807a2bad50a0f8f8",
+      "donor_code_sha256": "dcf1144388ef591e9f016a488cbcb7124922727abd77cd93aca5eeb1eda0e485",
+      "insertions": [
+        {
+          "at": 87,
+          "instructions": 12
+        },
+        {
+          "at": 98,
+          "instructions": 12
+        },
+        {
+          "at": 192,
+          "instructions": 12
+        },
+        {
+          "at": 203,
+          "instructions": 12
+        }
+      ]
+    },
+    {
+      "label": "pinball.scene.battle.battle.squad.ball::BallImpl/resolveCollisionForPrimaryOrSummons|1",
+      "accepted_code_sha256": "8fd6b97bea90790c0cd478cbe0453b2527302611e6354cd7c56a0e6bbae7259b",
+      "donor_code_sha256": "4f338510498321c57895fccc6f50026768f3337510b9eaa3b15a9e76cdca9c9a",
+      "insertions": [
+        {
+          "at": 144,
+          "instructions": 6
+        }
+      ]
+    },
+    {
+      "label": "pinball.scene.battle.battle.squad.ball::BallImpl/findEscapeTarget|1",
+      "accepted_code_sha256": "321bcf65cfc4ac3eba5a720e84c48ca30d2a0e0ad8fa0abbfc4f979c5228e5d9",
+      "donor_code_sha256": "33a1ccc68bc938426761beb0727f5494aa7aaf5567bdb00cac83ac88d3fdd966",
+      "insertions": [
+        {
+          "at": 40,
+          "instructions": 23
+        },
+        {
+          "at": 214,
+          "instructions": 12
+        },
+        {
+          "at": 227,
+          "instructions": 12
+        },
+        {
+          "at": 249,
+          "instructions": 12
+        }
+      ]
+    },
+    {
+      "label": "pinball.scene.battle.battle.squad.ball::BallImpl/canEscapeNow|1",
+      "accepted_code_sha256": "23f76abb169fa60f3f09b964e4eaf3a2596e77eec02cf547fb82f58733160b64",
+      "donor_code_sha256": "56f2b178c4815d2bf48a94ae6965c2d434d8e318e4a763f10d40b03d0595d41d",
+      "insertions": [
+        {
+          "at": 14,
+          "instructions": 12
+        }
+      ]
+    },
+    {
+      "label": "pinball.scene.battle.battle.zone.fever::FeverPointGaugeImpl/addFeverPoint|1",
+      "accepted_code_sha256": "7cb61a7b7237f823656b3accca361200733cd7553028e73d30b074f5ece66d92",
+      "donor_code_sha256": "76c33e709c6bb2dd9a2d47e97c5748a9fd2cc0c3b1c9af682c41b05acd1355d8",
+      "insertions": [
+        {
+          "at": 2,
+          "instructions": 15
+        }
+      ]
+    }
+  ],
+  "replace_methods": [
+    {
+      "label": "pinball.scene.battle.battle::BothBossTool$/mapBoss|1",
+      "accepted_code_sha256": "e3eb31792132fbcf0747025ce4f542c20708eae41c533201cd5b30006f646415",
+      "donor_code_sha256": "3c3dd51681f2bf0dff6d0dec4e247d0d8e380dcb1cdb3c042c8eaab6aa2510eb"
+    },
+    {
+      "label": "pinball.scene.battle.battle::BothBossTool$/bothBossMap|1",
+      "accepted_code_sha256": "e4edc5b9829d2fff7cbc3caa679062441b50b27431cbd1420aa8c7e4b3afe209",
+      "donor_code_sha256": "39938475b63fb631b6ee90d2599ec3950bd694c136c7e7bc57fd4e8cf6ed44f2"
+    },
+    {
+      "label": "pinball.scene.battle.battle::BothBossTool$/bothBossMapSingle|1",
+      "accepted_code_sha256": "49362bdef456dd0519f5429526f70f1363c81b1cbe8fa567e84d059ce03db951",
+      "donor_code_sha256": "62b60fedc855ce7a5e2525510edf73f42e140b683a69449360f8780ae42ba048"
+    }
+  ],
+  "new_methods": [
+    {
+      "label": "pinball.scene.battle.battle::BothBossTool$/isRandomMapQuest|1",
+      "body": [
+        92515
+      ]
+    },
+    {
+      "label": "pinball.scene.battle.battle::BothBossTool$/isConditionalRow|1",
+      "body": [
+        92516
+      ]
+    },
+    {
+      "label": "pinball.scene.battle.battle::BothBossTool$/mapSeed|1",
+      "body": [
+        92517
+      ]
+    },
+    {
+      "label": "pinball.scene.battle.battle::BothBossTool$/singleMapSeed|1",
+      "body": [
+        92518
+      ]
+    },
+    {
+      "label": "pinball.scene.battle.battle::BothBossTool$/randomIndex|1",
+      "body": [
+        92519
+      ]
+    },
+    {
+      "label": "pinball.scene.battle.battle::BothBossTool$/pickCandidate|1",
+      "body": [
+        92520
+      ]
+    },
+    {
+      "label": "pinball.scene.battle.battle.ability::BattleAbilityTotalizerImpl/getTotalDashParameter|1",
+      "body": [
+        92555
+      ]
+    }
+  ]
+}

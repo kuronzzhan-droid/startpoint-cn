@@ -1,0 +1,258 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/canEnterStunStateFromUniqueState; body: 92562; method: 101035
+# code SHA-256: 9b92a8fadf5fee15c721ce3c05f0b8f4a53f746e685ec7641eadaf84801f300f; header: [2, 4, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 92776, 1, 3157]
+#0004 ofs0011: getlocal_1 []
+#0005 ofs0012: coerce_a []
+#0006 ofs0013: setlocal_2 []
+#0007 ofs0014: jump [] -> #99
+#0008 ofs0018: avm_label []
+#0009 ofs0019: pushfalse []
+#0010 ofs001a: returnvalue []
+#0011 ofs001b: avm_label []
+#0012 ofs001c: pushfalse []
+#0013 ofs001d: returnvalue []
+#0014 ofs001e: avm_label []
+#0015 ofs001f: pushfalse []
+#0016 ofs0020: returnvalue []
+#0017 ofs0021: avm_label []
+#0018 ofs0022: pushfalse []
+#0019 ofs0023: returnvalue []
+#0020 ofs0024: avm_label []
+#0021 ofs0025: pushfalse []
+#0022 ofs0026: returnvalue []
+#0023 ofs0027: avm_label []
+#0024 ofs0028: pushfalse []
+#0025 ofs0029: returnvalue []
+#0026 ofs002a: avm_label []
+#0027 ofs002b: pushfalse []
+#0028 ofs002c: returnvalue []
+#0029 ofs002d: avm_label []
+#0030 ofs002e: pushtrue []
+#0031 ofs002f: returnvalue []
+#0032 ofs0030: avm_label []
+#0033 ofs0031: pushtrue []
+#0034 ofs0032: returnvalue []
+#0035 ofs0033: avm_label []
+#0036 ofs0034: pushtrue []
+#0037 ofs0035: returnvalue []
+#0038 ofs0036: avm_label []
+#0039 ofs0037: pushtrue []
+#0040 ofs0038: returnvalue []
+#0041 ofs0039: avm_label []
+#0042 ofs003a: pushtrue []
+#0043 ofs003b: returnvalue []
+#0044 ofs003c: avm_label []
+#0045 ofs003d: pushtrue []
+#0046 ofs003e: returnvalue []
+#0047 ofs003f: avm_label []
+#0048 ofs0040: pushtrue []
+#0049 ofs0041: returnvalue []
+#0050 ofs0042: avm_label []
+#0051 ofs0043: pushtrue []
+#0052 ofs0044: returnvalue []
+#0053 ofs0045: avm_label []
+#0054 ofs0046: pushtrue []
+#0055 ofs0047: returnvalue []
+#0056 ofs0048: avm_label []
+#0057 ofs0049: pushtrue []
+#0058 ofs004a: returnvalue []
+#0059 ofs004b: avm_label []
+#0060 ofs004c: pushfalse []
+#0061 ofs004d: returnvalue []
+#0062 ofs004e: avm_label []
+#0063 ofs004f: pushfalse []
+#0064 ofs0050: returnvalue []
+#0065 ofs0051: avm_label []
+#0066 ofs0052: pushfalse []
+#0067 ofs0053: returnvalue []
+#0068 ofs0054: avm_label []
+#0069 ofs0055: pushfalse []
+#0070 ofs0056: returnvalue []
+#0071 ofs0057: avm_label []
+#0072 ofs0058: pushfalse []
+#0073 ofs0059: returnvalue []
+#0074 ofs005a: avm_label []
+#0075 ofs005b: pushfalse []
+#0076 ofs005c: returnvalue []
+#0077 ofs005d: avm_label []
+#0078 ofs005e: pushfalse []
+#0079 ofs005f: returnvalue []
+#0080 ofs0060: avm_label []
+#0081 ofs0061: pushfalse []
+#0082 ofs0062: returnvalue []
+#0083 ofs0063: avm_label []
+#0084 ofs0064: pushfalse []
+#0085 ofs0065: returnvalue []
+#0086 ofs0066: avm_label []
+#0087 ofs0067: pushfalse []
+#0088 ofs0068: returnvalue []
+#0089 ofs0069: avm_label []
+#0090 ofs006a: pushfalse []
+#0091 ofs006b: returnvalue []
+#0092 ofs006c: avm_label []
+#0093 ofs006d: pushfalse []
+#0094 ofs006e: returnvalue []
+#0095 ofs006f: avm_label []
+#0096 ofs0070: returnvoid []
+#0097 ofs0071: avm_label []
+#0098 ofs0072: jump [] -> #251
+#0099 ofs0076: getlocal_2 []
+#0100 ofs0077: getproperty ['name']
+#0101 ofs007b: getproperty ['index']
+#0102 ofs007f: setlocal_3 []
+#0103 ofs0080: pushbyte [0]
+#0104 ofs0082: getlocal_3 []
+#0105 ofs0083: ifstrictne [] -> #108
+#0106 ofs0087: pushbyte [0]
+#0107 ofs0089: jump [] -> #249
+#0108 ofs008d: pushbyte [1]
+#0109 ofs008f: getlocal_3 []
+#0110 ofs0090: ifstrictne [] -> #113
+#0111 ofs0094: pushbyte [1]
+#0112 ofs0096: jump [] -> #249
+#0113 ofs009a: pushbyte [2]
+#0114 ofs009c: getlocal_3 []
+#0115 ofs009d: ifstrictne [] -> #118
+#0116 ofs00a1: pushbyte [2]
+#0117 ofs00a3: jump [] -> #249
+#0118 ofs00a7: pushbyte [3]
+#0119 ofs00a9: getlocal_3 []
+#0120 ofs00aa: ifstrictne [] -> #123
+#0121 ofs00ae: pushbyte [3]
+#0122 ofs00b0: jump [] -> #249
+#0123 ofs00b4: pushbyte [4]
+#0124 ofs00b6: getlocal_3 []
+#0125 ofs00b7: ifstrictne [] -> #128
+#0126 ofs00bb: pushbyte [4]
+#0127 ofs00bd: jump [] -> #249
+#0128 ofs00c1: pushbyte [5]
+#0129 ofs00c3: getlocal_3 []
+#0130 ofs00c4: ifstrictne [] -> #133
+#0131 ofs00c8: pushbyte [5]
+#0132 ofs00ca: jump [] -> #249
+#0133 ofs00ce: pushbyte [6]
+#0134 ofs00d0: getlocal_3 []
+#0135 ofs00d1: ifstrictne [] -> #138
+#0136 ofs00d5: pushbyte [6]
+#0137 ofs00d7: jump [] -> #249
+#0138 ofs00db: pushbyte [7]
+#0139 ofs00dd: getlocal_3 []
+#0140 ofs00de: ifstrictne [] -> #143
+#0141 ofs00e2: pushbyte [7]
+#0142 ofs00e4: jump [] -> #249
+#0143 ofs00e8: pushbyte [8]
+#0144 ofs00ea: getlocal_3 []
+#0145 ofs00eb: ifstrictne [] -> #148
+#0146 ofs00ef: pushbyte [8]
+#0147 ofs00f1: jump [] -> #249
+#0148 ofs00f5: pushbyte [9]
+#0149 ofs00f7: getlocal_3 []
+#0150 ofs00f8: ifstrictne [] -> #153
+#0151 ofs00fc: pushbyte [9]
+#0152 ofs00fe: jump [] -> #249
+#0153 ofs0102: pushbyte [10]
+#0154 ofs0104: getlocal_3 []
+#0155 ofs0105: ifstrictne [] -> #158
+#0156 ofs0109: pushbyte [10]
+#0157 ofs010b: jump [] -> #249
+#0158 ofs010f: pushbyte [11]
+#0159 ofs0111: getlocal_3 []
+#0160 ofs0112: ifstrictne [] -> #163
+#0161 ofs0116: pushbyte [11]
+#0162 ofs0118: jump [] -> #249
+#0163 ofs011c: pushbyte [12]
+#0164 ofs011e: getlocal_3 []
+#0165 ofs011f: ifstrictne [] -> #168
+#0166 ofs0123: pushbyte [12]
+#0167 ofs0125: jump [] -> #249
+#0168 ofs0129: pushbyte [13]
+#0169 ofs012b: getlocal_3 []
+#0170 ofs012c: ifstrictne [] -> #173
+#0171 ofs0130: pushbyte [13]
+#0172 ofs0132: jump [] -> #249
+#0173 ofs0136: pushbyte [14]
+#0174 ofs0138: getlocal_3 []
+#0175 ofs0139: ifstrictne [] -> #178
+#0176 ofs013d: pushbyte [14]
+#0177 ofs013f: jump [] -> #249
+#0178 ofs0143: pushbyte [15]
+#0179 ofs0145: getlocal_3 []
+#0180 ofs0146: ifstrictne [] -> #183
+#0181 ofs014a: pushbyte [15]
+#0182 ofs014c: jump [] -> #249
+#0183 ofs0150: pushbyte [16]
+#0184 ofs0152: getlocal_3 []
+#0185 ofs0153: ifstrictne [] -> #188
+#0186 ofs0157: pushbyte [16]
+#0187 ofs0159: jump [] -> #249
+#0188 ofs015d: pushbyte [17]
+#0189 ofs015f: getlocal_3 []
+#0190 ofs0160: ifstrictne [] -> #193
+#0191 ofs0164: pushbyte [17]
+#0192 ofs0166: jump [] -> #249
+#0193 ofs016a: pushbyte [18]
+#0194 ofs016c: getlocal_3 []
+#0195 ofs016d: ifstrictne [] -> #198
+#0196 ofs0171: pushbyte [18]
+#0197 ofs0173: jump [] -> #249
+#0198 ofs0177: pushbyte [19]
+#0199 ofs0179: getlocal_3 []
+#0200 ofs017a: ifstrictne [] -> #203
+#0201 ofs017e: pushbyte [19]
+#0202 ofs0180: jump [] -> #249
+#0203 ofs0184: pushbyte [20]
+#0204 ofs0186: getlocal_3 []
+#0205 ofs0187: ifstrictne [] -> #208
+#0206 ofs018b: pushbyte [20]
+#0207 ofs018d: jump [] -> #249
+#0208 ofs0191: pushbyte [21]
+#0209 ofs0193: getlocal_3 []
+#0210 ofs0194: ifstrictne [] -> #213
+#0211 ofs0198: pushbyte [21]
+#0212 ofs019a: jump [] -> #249
+#0213 ofs019e: pushbyte [22]
+#0214 ofs01a0: getlocal_3 []
+#0215 ofs01a1: ifstrictne [] -> #218
+#0216 ofs01a5: pushbyte [22]
+#0217 ofs01a7: jump [] -> #249
+#0218 ofs01ab: pushbyte [23]
+#0219 ofs01ad: getlocal_3 []
+#0220 ofs01ae: ifstrictne [] -> #223
+#0221 ofs01b2: pushbyte [23]
+#0222 ofs01b4: jump [] -> #249
+#0223 ofs01b8: pushbyte [24]
+#0224 ofs01ba: getlocal_3 []
+#0225 ofs01bb: ifstrictne [] -> #228
+#0226 ofs01bf: pushbyte [24]
+#0227 ofs01c1: jump [] -> #249
+#0228 ofs01c5: pushbyte [25]
+#0229 ofs01c7: getlocal_3 []
+#0230 ofs01c8: ifstrictne [] -> #233
+#0231 ofs01cc: pushbyte [25]
+#0232 ofs01ce: jump [] -> #249
+#0233 ofs01d2: pushbyte [26]
+#0234 ofs01d4: getlocal_3 []
+#0235 ofs01d5: ifstrictne [] -> #238
+#0236 ofs01d9: pushbyte [26]
+#0237 ofs01db: jump [] -> #249
+#0238 ofs01df: pushbyte [27]
+#0239 ofs01e1: getlocal_3 []
+#0240 ofs01e2: ifstrictne [] -> #243
+#0241 ofs01e6: pushbyte [27]
+#0242 ofs01e8: jump [] -> #249
+#0243 ofs01ec: pushbyte [28]
+#0244 ofs01ee: getlocal_3 []
+#0245 ofs01ef: ifstrictne [] -> #248
+#0246 ofs01f3: pushbyte [28]
+#0247 ofs01f5: jump [] -> #249
+#0248 ofs01f9: pushbyte [255]
+#0249 ofs01fb: op_08 [3]
+#0250 ofs01fd: lookupswitch [] default #95, cases [8, 11, 14, 17, 20, 23, 26, 29, 32, 35, 38, 41, 44, 47, 50, 53, 56, 59, 62, 65, 68, 71, 74, 77, 80, 83, 86, 89, 92]
+#0251 ofs0259: pushundefined []
+#0252 ofs025a: returnvalue []

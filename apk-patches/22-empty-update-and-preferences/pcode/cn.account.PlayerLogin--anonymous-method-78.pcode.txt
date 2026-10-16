@@ -1,0 +1,9 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.account.PlayerLogin; label: anonymous-method-78; body: 76; method: 78
+# code SHA-256: 4418daba7d453a3ce3c22830c5dbf1cac5caf7002078807adb4fb95bc7d3b127; header: [2, 2, 0, 0]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlex ['cn.account::placeholder']
+#0001 ofs0003: pushfalse []
+#0002 ofs0004: setproperty ['visible']
+#0003 ofs0007: returnvoid []

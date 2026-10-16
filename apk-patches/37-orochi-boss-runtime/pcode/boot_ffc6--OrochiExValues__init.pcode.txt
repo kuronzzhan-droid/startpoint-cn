@@ -1,0 +1,13 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiExValues$/init; body: 92448; method: 100921
+# code SHA-256: b0885e8a619be441b7c3df8ce589d4be35353eb60b17a1a9f166e50e1de89ed3; header: [2, 2, 3, 4]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: getlocal_0 []
+#0004 ofs000a: getlocal_1 []
+#0005 ofs000b: callproperty ['pinball.master.runtime:IMasterBinary::getRow', 0]
+#0006 ofs000f: construct [1]
+#0007 ofs0011: returnvalue []

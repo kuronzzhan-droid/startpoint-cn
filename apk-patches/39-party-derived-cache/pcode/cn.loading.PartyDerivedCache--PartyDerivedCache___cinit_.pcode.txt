@@ -1,0 +1,16 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.loading.PartyDerivedCache; label: PartyDerivedCache$/<cinit>; body: 16; method: 17
+# code SHA-256: 10fe9e763de10a0b148654e1539db1391cec9e1a8cf60e610681ad3972f53cfa; header: [2, 1, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: newarray [0]
+#0003 ofs0004: findproperty ['cn.loading:PartyDerivedCache::entries']
+#0004 ofs0006: swap []
+#0005 ofs0007: setproperty ['cn.loading:PartyDerivedCache::entries']
+#0006 ofs0009: newarray [0]
+#0007 ofs000b: findproperty ['cn.loading:PartyDerivedCache::jobs']
+#0008 ofs000d: swap []
+#0009 ofs000e: setproperty ['cn.loading:PartyDerivedCache::jobs']
+#0010 ofs0010: returnvoid []

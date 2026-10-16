@@ -1,0 +1,57 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.account.PlayerLogin; label: PlayerLogin$/tabs; body: 73; method: 72
+# code SHA-256: 4068318d6e65a9465852904f333d0b8829c11b8bf644650299c1ab6c3a6bdea5; header: [8, 1, 0, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: newactivation []
+#0003 ofs0003: pushscope []
+#0004 ofs0004: findpropstrict ['cn.account:PlayerLogin::line']
+#0005 ofs0006: getlex ['cn.account:PlayerLogin::card']
+#0006 ofs0008: pushbyte [28]
+#0007 ofs000a: pushshort [136]
+#0008 ofs000d: pushshort [298]
+#0009 ofs0010: callpropvoid ['cn.account:PlayerLogin::line', 4]
+#0010 ofs0013: findpropstrict ['cn.account:PlayerLogin::link']
+#0011 ofs0015: pushstring ['登录']
+#0012 ofs0018: pushbyte [28]
+#0013 ofs001a: pushbyte [110]
+#0014 ofs001c: pushshort [149]
+#0015 ofs001f: newfunction [73]
+#0016 ofs0021: getlex ['cn.account:PlayerLogin::page']
+#0017 ofs0023: pushstring ['login']
+#0018 ofs0025: ifne [] -> #21
+#0019 ofs0029: pushuint [2144682]
+#0020 ofs002b: jump [] -> #22
+#0021 ofs002f: pushuint [8689809]
+#0022 ofs0031: callpropvoid ['cn.account:PlayerLogin::link', 6]
+#0023 ofs0034: findpropstrict ['cn.account:PlayerLogin::link']
+#0024 ofs0036: pushstring ['注册']
+#0025 ofs0039: pushshort [177]
+#0026 ofs003c: pushbyte [110]
+#0027 ofs003e: pushshort [149]
+#0028 ofs0041: newfunction [74]
+#0029 ofs0043: getlex ['cn.account:PlayerLogin::page']
+#0030 ofs0045: pushstring ['register']
+#0031 ofs0048: ifne [] -> #34
+#0032 ofs004c: pushuint [2144682]
+#0033 ofs004e: jump [] -> #35
+#0034 ofs0052: pushuint [8689809]
+#0035 ofs0054: callpropvoid ['cn.account:PlayerLogin::link', 6]
+#0036 ofs0057: findpropstrict ['cn.account:PlayerLogin::rounded']
+#0037 ofs0059: getlex ['cn.account:PlayerLogin::card']
+#0038 ofs005b: getlex ['cn.account:PlayerLogin::page']
+#0039 ofs005d: pushstring ['login']
+#0040 ofs005f: ifne [] -> #43
+#0041 ofs0063: pushbyte [67]
+#0042 ofs0065: jump [] -> #45
+#0043 ofs0069: pushshort [216]
+#0044 ofs006c: convert_d []
+#0045 ofs006d: pushshort [135]
+#0046 ofs0070: pushbyte [72]
+#0047 ofs0072: pushbyte [3]
+#0048 ofs0074: pushbyte [2]
+#0049 ofs0076: pushuint [2144682]
+#0050 ofs0078: callpropvoid ['cn.account:PlayerLogin::rounded', 7]
+#0051 ofs007b: returnvoid []

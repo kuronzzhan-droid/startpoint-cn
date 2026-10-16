@@ -1,0 +1,2897 @@
+{
+  "v17": {
+    "path": "C:\\Users\\12101\\Downloads\\世界弹射测试服-v17.apk",
+    "apk_sha256": "36af07929b7a3d2de76fa7f9c78cb66a8676ec88b26755c2478f9bf025a498e2",
+    "swf_sha256": "be3cd96af18c569153314ca2c9468ad9cb6061e188c75e84713c0dca06be5f15",
+    "dex_sha256": "280e64891f48b1b50b8bab85aa4daa5196e3d69d9669c6a6eb6d570273adb318"
+  },
+  "v33": {
+    "path": "C:\\Users\\12101\\Downloads\\世界弹射测试服-v33.apk",
+    "apk_sha256": "3de625cf0c745c79d333a09140ad82fdea74746d2e2200a5b6922f67eca14532",
+    "swf_sha256": "3b7b3391ae0aee01f15167fe1d5a5b69eddb71a64605c57486f025916611aaa4",
+    "dex_sha256": "280e64891f48b1b50b8bab85aa4daa5196e3d69d9669c6a6eb6d570273adb318"
+  },
+  "method_checks": [
+    {
+      "label": "AbilityLogic/getDescriptionWithSimplify",
+      "v17_body": 7342,
+      "v33_body": 7342,
+      "v17_sha256": "229ef6943988233f9f13b8201dc12d8180bf571ba041e16b96a0aad42dde26a9",
+      "v33_sha256": "229ef6943988233f9f13b8201dc12d8180bf571ba041e16b96a0aad42dde26a9",
+      "equal": true
+    },
+    {
+      "label": "AbilityLogic/getDescriptions",
+      "v17_body": 7341,
+      "v33_body": 7341,
+      "v17_sha256": "3e396ebe35c717c1e064f14bf2b9708672ab7352f0a5271c48e5397e875a3e27",
+      "v33_sha256": "3e396ebe35c717c1e064f14bf2b9708672ab7352f0a5271c48e5397e875a3e27",
+      "equal": true
+    },
+    {
+      "label": "AbilitySlotImpl/applyInstantBattle",
+      "v17_body": 51424,
+      "v33_body": 51424,
+      "v17_sha256": "0c6c80690b2862bbbd44a962a5225296e5c1ffac862cd1f9a8e6b9e513560d25",
+      "v33_sha256": "0c6c80690b2862bbbd44a962a5225296e5c1ffac862cd1f9a8e6b9e513560d25",
+      "equal": true
+    },
+    {
+      "label": "AbilityValues$/parseAt109",
+      "v17_body": 39060,
+      "v33_body": 39060,
+      "v17_sha256": "3e42c85d4ee45ce33be9a7aec70e350a2303ce3cb7132dd0e8183c02310516eb",
+      "v33_sha256": "3e42c85d4ee45ce33be9a7aec70e350a2303ce3cb7132dd0e8183c02310516eb",
+      "equal": true
+    },
+    {
+      "label": "AbilityValues$/parseAt47",
+      "v17_body": 39030,
+      "v33_body": 39030,
+      "v17_sha256": "9c32845d494c25b0f15009205b38e0cbdd2d4ab1b65ddfaa91e89a3b4deb0943",
+      "v33_sha256": "9c32845d494c25b0f15009205b38e0cbdd2d4ab1b65ddfaa91e89a3b4deb0943",
+      "equal": true
+    },
+    {
+      "label": "AccountLocalStore_Impl_$/get",
+      "v17_body": 29386,
+      "v33_body": 29386,
+      "v17_sha256": "16a02778ee23e4f6fdf43350ef9e735b689669bb75f6710ad04d3fe3110b547c",
+      "v33_sha256": "16a02778ee23e4f6fdf43350ef9e735b689669bb75f6710ad04d3fe3110b547c",
+      "equal": true
+    },
+    {
+      "label": "AccountLocalStore_Impl_$/saveAccountData",
+      "v17_body": 29390,
+      "v33_body": 29390,
+      "v17_sha256": "47dc813287972f40c4a72c57dbbeb2ea6e71a2324a88dd654802f4c3032fd5d0",
+      "v33_sha256": "47dc813287972f40c4a72c57dbbeb2ea6e71a2324a88dd654802f4c3032fd5d0",
+      "equal": true
+    },
+    {
+      "label": "ActionEvaluationResolver/<ctor>",
+      "v17_body": 52225,
+      "v33_body": 52225,
+      "v17_sha256": "f04f8ade940fe81b9221c9b0e5fdd848e213dd89eca0c6623ac31b3fb8dc2140",
+      "v33_sha256": "f04f8ade940fe81b9221c9b0e5fdd848e213dd89eca0c6623ac31b3fb8dc2140",
+      "equal": true
+    },
+    {
+      "label": "ActionEvaluator/addImpactToSubject",
+      "v17_body": 52295,
+      "v33_body": 52295,
+      "v17_sha256": "2cd4d6fee6d01e91a67829603085af9270298c361b492fa6dedab72c707e9a02",
+      "v33_sha256": "2cd4d6fee6d01e91a67829603085af9270298c361b492fa6dedab72c707e9a02",
+      "equal": true
+    },
+    {
+      "label": "AndroidManifest.xml",
+      "v17_body": null,
+      "v33_body": null,
+      "v17_sha256": null,
+      "v33_sha256": null,
+      "equal": false
+    },
+    {
+      "label": "AssetGetPathRealRemote/successHandler",
+      "v17_body": 47777,
+      "v33_body": 47777,
+      "v17_sha256": "1b4ba31b15628d5eab11d6b6f535327277d2d8e507f564da8153871e17bbeb28",
+      "v33_sha256": "1b4ba31b15628d5eab11d6b6f535327277d2d8e507f564da8153871e17bbeb28",
+      "equal": true
+    },
+    {
+      "label": "BallImpl/canEscapeNow",
+      "v17_body": 60011,
+      "v33_body": 60011,
+      "v17_sha256": "487e8f3e1fbc2be41fc00aaddb468f5db239fb7eb014fbe796720f85dea5f268",
+      "v33_sha256": "487e8f3e1fbc2be41fc00aaddb468f5db239fb7eb014fbe796720f85dea5f268",
+      "equal": true
+    },
+    {
+      "label": "BallImpl/findEscapeTarget",
+      "v17_body": 59973,
+      "v33_body": 59973,
+      "v17_sha256": "eff8bb9bf1840c36e2e9b3076759397f31a492ee31de4e8d0323eb671801facc",
+      "v33_sha256": "eff8bb9bf1840c36e2e9b3076759397f31a492ee31de4e8d0323eb671801facc",
+      "equal": true
+    },
+    {
+      "label": "BallImpl/resolveCollisionForPrimaryOrSummons",
+      "v17_body": 59837,
+      "v33_body": 59837,
+      "v17_sha256": "fde02ea9a9645500b28a7990bb0404d300dc4ee3184fd7bab10f3942fdd1bf52",
+      "v33_sha256": "fde02ea9a9645500b28a7990bb0404d300dc4ee3184fd7bab10f3942fdd1bf52",
+      "equal": true
+    },
+    {
+      "label": "BallImpl/tryEscape",
+      "v17_body": 59819,
+      "v33_body": 59819,
+      "v17_sha256": "0a8f0df53ce4171c79c2e29b1a5ebfd6777211a65c5353f1e3777a3feda5c2c7",
+      "v33_sha256": "0a8f0df53ce4171c79c2e29b1a5ebfd6777211a65c5353f1e3777a3feda5c2c7",
+      "equal": true
+    },
+    {
+      "label": "BallImpl/update",
+      "v17_body": 59818,
+      "v33_body": 59818,
+      "v17_sha256": "7b51eee71693ca74a1f69feacc7220cbcf60fb27b2c617e9b6cf9a367c7594bd",
+      "v33_sha256": "7b51eee71693ca74a1f69feacc7220cbcf60fb27b2c617e9b6cf9a367c7594bd",
+      "equal": true
+    },
+    {
+      "label": "BattleAbilityTotalizerImpl/addDuringContent",
+      "v17_body": 51465,
+      "v33_body": 51465,
+      "v17_sha256": "8d64bbf5744ba5a257ee6f81e46eec7995868d8eb62f6df6583411bcfde0d4bc",
+      "v33_sha256": "8d64bbf5744ba5a257ee6f81e46eec7995868d8eb62f6df6583411bcfde0d4bc",
+      "equal": true
+    },
+    {
+      "label": "BattleCharacterLogic/getPowerFlipAction",
+      "v17_body": 92383,
+      "v33_body": 92383,
+      "v17_sha256": "f8814f50deefedfcf218b143455cb37d49ed73261ed233a15b0b0c1edbf64fdb",
+      "v33_sha256": "f8814f50deefedfcf218b143455cb37d49ed73261ed233a15b0b0c1edbf64fdb",
+      "equal": true
+    },
+    {
+      "label": "BattleCharacterLogic/resolveFollowingPathCollection",
+      "v17_body": 92330,
+      "v33_body": 92330,
+      "v17_sha256": "be6b2b0efb10cabf980c3a8ae39b0b80faf23dbc7b77788a248015603e79fee1",
+      "v33_sha256": "d8d6141c41bcb2d9290f8cfcfe71d5618e65127a8bab1129779fe30b6924e8ea",
+      "equal": false
+    },
+    {
+      "label": "BattleCharacterLogic/resolvePathCollection",
+      "v17_body": 92329,
+      "v33_body": 92329,
+      "v17_sha256": "4be465684a1346a539ccdcc65221ea64a875fdc0e3ebcd93bb16d47b185b7e93",
+      "v33_sha256": "4be465684a1346a539ccdcc65221ea64a875fdc0e3ebcd93bb16d47b185b7e93",
+      "equal": true
+    },
+    {
+      "label": "BattlePartyLogic/getUnitedCharacters",
+      "v17_body": 20565,
+      "v33_body": 20565,
+      "v17_sha256": "46c807a5ff5b1b02e4435417d1e026b33683909b726c0f1b7095148e325f2e7c",
+      "v33_sha256": "46c807a5ff5b1b02e4435417d1e026b33683909b726c0f1b7095148e325f2e7c",
+      "equal": true
+    },
+    {
+      "label": "BattleQuestBaseImpl/getInitialEnemyConditions",
+      "v17_body": 21496,
+      "v33_body": 21496,
+      "v17_sha256": "36116b39b8e406997d649d04c5d127c9cddca89c2ec6a848fbb8dfdd647e3416",
+      "v33_sha256": "36116b39b8e406997d649d04c5d127c9cddca89c2ec6a848fbb8dfdd647e3416",
+      "equal": true
+    },
+    {
+      "label": "BattleScene/leaveHandler",
+      "v17_body": 28971,
+      "v33_body": 28971,
+      "v17_sha256": "f07dd5bd29f06da66b08ffb4fae263583372bc1d22053a23178d39c9b0a70577",
+      "v33_sha256": "f07dd5bd29f06da66b08ffb4fae263583372bc1d22053a23178d39c9b0a70577",
+      "equal": true
+    },
+    {
+      "label": "BattleScenePlayingStateImpl/proceedBattles",
+      "v17_body": 63135,
+      "v33_body": 63135,
+      "v17_sha256": "4f68cf4574671f0158bda5533df23482ce6f7c5e7fa3329fe93e51f287a7684d",
+      "v33_sha256": "c0dc1c45f6587c6ae0017873763fd4047043537bbca406b92750f30d15860713",
+      "equal": false
+    },
+    {
+      "label": "BattleStartProductionViewService/prepare",
+      "v17_body": 38045,
+      "v33_body": 38045,
+      "v17_sha256": "3d5055ba1611bff68b1d33e68d299e33bb2036d4288615a5fe3a748857b400b7",
+      "v33_sha256": "8eb9f901d73b20499ad2b97b3d7a72beab1eda5e0a9a98d480f7196320744c59",
+      "equal": false
+    },
+    {
+      "label": "BattleStartProductionViewService/setupTextureAtlas",
+      "v17_body": 38042,
+      "v33_body": 38042,
+      "v17_sha256": "4f4f555dbf94e21a538cad4a454cf8d692661cae38176f40e97b614cb229e663",
+      "v33_sha256": "7448e38e05aaeb9e4ff5f7b967ba8bd752e4373e819987fac8ba5da2debfe5e9",
+      "equal": false
+    },
+    {
+      "label": "ChannelSDKDummy/startLoginServer",
+      "v17_body": 7174,
+      "v33_body": 7174,
+      "v17_sha256": "167fe9b72ae4454ada8b7ab0081343983a6cc5f5c9469bf15e0272bda3464b8d",
+      "v33_sha256": "167fe9b72ae4454ada8b7ab0081343983a6cc5f5c9469bf15e0272bda3464b8d",
+      "equal": true
+    },
+    {
+      "label": "CharacterAwakeScene/applyMissionProgress",
+      "v17_body": 67207,
+      "v33_body": 67207,
+      "v17_sha256": "25e561de470dab606fa46acc94bb8093d91dc56636f9cabe6273f69e4035e89b",
+      "v33_sha256": "25e561de470dab606fa46acc94bb8093d91dc56636f9cabe6273f69e4035e89b",
+      "equal": true
+    },
+    {
+      "label": "CharacterCellButtonProcessor/beginTouch",
+      "v17_body": 65893,
+      "v33_body": 65893,
+      "v17_sha256": "d304073b7f4d0970b3ebfab1248525861b3257da086f76b6e08e72401f9c4220",
+      "v33_sha256": "d304073b7f4d0970b3ebfab1248525861b3257da086f76b6e08e72401f9c4220",
+      "equal": true
+    },
+    {
+      "label": "CharacterCellView/drawWithAdvanceFlag",
+      "v17_body": 65790,
+      "v33_body": 65790,
+      "v17_sha256": "0266a4cb63cbdbf9deccdfdcc8e30c7d58bdcc6463ddb2a14e815b1ec8ec4631",
+      "v33_sha256": "beedce9917da57caa8d1d65576cc86ea91a18540a14cca0979e3fcd1cda03fc5",
+      "equal": false
+    },
+    {
+      "label": "CharacterScene/viewDidChange",
+      "v17_body": 65499,
+      "v33_body": 65499,
+      "v17_sha256": "334df0a00fe8ab97c2abc5d221954208ce4db1d796b6b22937a93c9d9855bbe1",
+      "v33_sha256": "23cfe3a3d1f7ba64782551339141867b32a06a1ae575db8701a0ab4a5e479e02",
+      "equal": false
+    },
+    {
+      "label": "CharacterSprite/getCharacterImagePath",
+      "v17_body": 63893,
+      "v33_body": 63893,
+      "v17_sha256": "938d3093f58996daf21a3af3596c02229fcf0e7dd319f73f4400b6bd97faf51d",
+      "v33_sha256": "938d3093f58996daf21a3af3596c02229fcf0e7dd319f73f4400b6bd97faf51d",
+      "equal": true
+    },
+    {
+      "label": "CharacterSpriteView/draw",
+      "v17_body": 63907,
+      "v33_body": 63907,
+      "v17_sha256": "731e8d9acd2bfe6e8ee66de599f78c13c35906411e1e4633c885910601ba006e",
+      "v33_sha256": "731e8d9acd2bfe6e8ee66de599f78c13c35906411e1e4633c885910601ba006e",
+      "equal": true
+    },
+    {
+      "label": "CharacterTable/applyCharacters",
+      "v17_body": 66148,
+      "v33_body": 66148,
+      "v17_sha256": "c830d532bd2d768b91752ec4206fb8baaf040366b0889e111d4bcdd77947b482",
+      "v33_sha256": "cc8f9aff1df3b621da06717d1cb401d93942ef2a6607978659544d97bdd85945",
+      "equal": false
+    },
+    {
+      "label": "CharacterTable/updateCells",
+      "v17_body": 66116,
+      "v33_body": 66116,
+      "v17_sha256": "ea7b61a9b8d575084b16e146026d7d55e845fe96d99c4a9dd03309137495e134",
+      "v33_sha256": "917156e5da4c81f2d395de7a76739eee259217f906fad883120ed91a8326fb8b",
+      "equal": false
+    },
+    {
+      "label": "CharacterTableView/applyPatch",
+      "v17_body": 66180,
+      "v33_body": 66180,
+      "v17_sha256": "e4917e49f3034a996ba13688064aaea995196cf5133de97c6b6440f516b3834b",
+      "v33_sha256": "ef807c15a01668ec1b6ad0f3b64a368a8ce22965b3f614c68a8d7defee8c8591",
+      "equal": false
+    },
+    {
+      "label": "CharacterTableView/draw",
+      "v17_body": 66178,
+      "v33_body": 66178,
+      "v17_sha256": "a6e57959c37277e47f6d85ea21e6ede921447ee677e5ffc0a13238a0ed061ce3",
+      "v33_sha256": "e4f6b5269662be8323bb6f91cd00e124eb4e0cc7f33c619284279a603a7fc6fb",
+      "equal": false
+    },
+    {
+      "label": "CharacterTableView/present",
+      "v17_body": 66173,
+      "v33_body": 66173,
+      "v17_sha256": "c89bdddd20bc4bfd05a3c7dfb1cb2cb32d109aa676fab7b67f01b6ebfc934670",
+      "v33_sha256": "4d056fc151a6fe4d85a32ef408dc6ba7e79c9f41d1d8a3b80d12fff393091530",
+      "equal": false
+    },
+    {
+      "label": "CharacterVoiceLogic/createVoicePathMap",
+      "v17_body": 84274,
+      "v33_body": 84274,
+      "v17_sha256": "76793ea193c635de4becc8523969103cdde63ae98777db6431d13b8878b6005f",
+      "v33_sha256": "a3f3aa721b20af0547543fb26a0ab4227104248b6aee01289e66fea765dc14d7",
+      "equal": false
+    },
+    {
+      "label": "ConditionSlot/getOneSideTotalAbilityDamageResistance",
+      "v17_body": 56724,
+      "v33_body": 56724,
+      "v17_sha256": "ca835a8afbbae9802a6d0a6f118e1b2075f9f0c8795dbb1b6fd61ee1e9f5d420",
+      "v33_sha256": "ca835a8afbbae9802a6d0a6f118e1b2075f9f0c8795dbb1b6fd61ee1e9f5d420",
+      "equal": true
+    },
+    {
+      "label": "DevConfig$/<cinit>",
+      "v17_body": 91829,
+      "v33_body": 91829,
+      "v17_sha256": "ad5151cd172ed8b225a6542c4cfd9eef684164fee1a102804b18fecab6a21187",
+      "v33_sha256": "ad5151cd172ed8b225a6542c4cfd9eef684164fee1a102804b18fecab6a21187",
+      "equal": true
+    },
+    {
+      "label": "DevConfig/<ctor>",
+      "v17_body": 91828,
+      "v33_body": 91828,
+      "v17_sha256": "84e74d8b6891771077e882ea0a4df724e66da06612c73a537da20d8e51dab58a",
+      "v33_sha256": "84e74d8b6891771077e882ea0a4df724e66da06612c73a537da20d8e51dab58a",
+      "equal": true
+    },
+    {
+      "label": "DevConfig/getSaveDataKey",
+      "v17_body": 91815,
+      "v33_body": 91815,
+      "v17_sha256": "18cef2072e7760043f1430a73565f662b544a7d1346632e001953dc2fe3fb4d4",
+      "v33_sha256": "18cef2072e7760043f1430a73565f662b544a7d1346632e001953dc2fe3fb4d4",
+      "equal": true
+    },
+    {
+      "label": "DevConfig_gf_android/<ctor>",
+      "v17_body": 91893,
+      "v33_body": 91893,
+      "v17_sha256": "aee7494661c43707178b8d042fe0c853dea722eddf3cb7483dd1893dfb244c00",
+      "v33_sha256": "aee7494661c43707178b8d042fe0c853dea722eddf3cb7483dd1893dfb244c00",
+      "equal": true
+    },
+    {
+      "label": "DeviceLocalStore_Impl_$/writeFile",
+      "v17_body": 29456,
+      "v33_body": 29456,
+      "v17_sha256": "a248484cb9a33d4667109fb1a8e542a9d5a05252b28e3ea48f277c2f17875423",
+      "v33_sha256": "a248484cb9a33d4667109fb1a8e542a9d5a05252b28e3ea48f277c2f17875423",
+      "equal": true
+    },
+    {
+      "label": "DuringAbilitySource$/createFromDuringAbilityValues",
+      "v17_body": 13253,
+      "v33_body": 13253,
+      "v17_sha256": "7a5349a32a8335817281b9bb9b52f345dec5c26aa56333e27209472fe0aed46f",
+      "v33_sha256": "7a5349a32a8335817281b9bb9b52f345dec5c26aa56333e27209472fe0aed46f",
+      "equal": true
+    },
+    {
+      "label": "EventItemExchangeTopScene/getListSource",
+      "v17_body": 72076,
+      "v33_body": 72076,
+      "v17_sha256": "465163db1e7254f58e75572a423d5a59a5d5b7511f7daed41d0d2e9720c47446",
+      "v33_sha256": "465163db1e7254f58e75572a423d5a59a5d5b7511f7daed41d0d2e9720c47446",
+      "equal": true
+    },
+    {
+      "label": "EventRushPartyRealRemote/<ctor>",
+      "v17_body": 48429,
+      "v33_body": 48429,
+      "v17_sha256": "6665250af7d41be817e9b39eaa2ad43b1105c04eb1a345ae6a37eb69d3a64a26",
+      "v33_sha256": "6665250af7d41be817e9b39eaa2ad43b1105c04eb1a345ae6a37eb69d3a64a26",
+      "equal": true
+    },
+    {
+      "label": "EventRushRewardRealRemote/<ctor>",
+      "v17_body": 48465,
+      "v33_body": 48465,
+      "v17_sha256": "36411b6694c06c1578848c535b0fe243de22ae3bdb643d27d8e30bbb3be17b20",
+      "v33_sha256": "36411b6694c06c1578848c535b0fe243de22ae3bdb643d27d8e30bbb3be17b20",
+      "equal": true
+    },
+    {
+      "label": "EventRushRewardRealRemote/successHandler",
+      "v17_body": 48463,
+      "v33_body": 48463,
+      "v17_sha256": "a558b9711da96a1308e26b52d355d5f9f540d642ff2f448767e8d2feb8fe6384",
+      "v33_sha256": "a558b9711da96a1308e26b52d355d5f9f540d642ff2f448767e8d2feb8fe6384",
+      "equal": true
+    },
+    {
+      "label": "HomeView/<ctor>",
+      "v17_body": 74852,
+      "v33_body": 74852,
+      "v17_sha256": "4fcc157b3ee805dcd728d5b583f6f96d6f963855a65eeab4e31f1ab58426215f",
+      "v33_sha256": "2b945c18710679255987f8b4aadb7f7483fdf89fc32d04e6db850baf269ef581",
+      "equal": false
+    },
+    {
+      "label": "HudMemberStatus/getCharacterImageAssetPath",
+      "v17_body": 58776,
+      "v33_body": 58776,
+      "v17_sha256": "6fae7906c03644eb5f452e27dcc6d993631a3b359dc818b5955f92d78df4410b",
+      "v33_sha256": "6fae7906c03644eb5f452e27dcc6d993631a3b359dc818b5955f92d78df4410b",
+      "equal": true
+    },
+    {
+      "label": "HudMemberStatus/update",
+      "v17_body": 58762,
+      "v33_body": 58762,
+      "v17_sha256": "6e9410cdab300775dd5a584703a539c314237bebe12650a20cb06858d09486e7",
+      "v33_sha256": "7858113b678d100259739c4716f0729c9f3dfc75498fd101efc37f9dbaf9e50c",
+      "equal": false
+    },
+    {
+      "label": "HudMemberStatusView/draw",
+      "v17_body": 58785,
+      "v33_body": 58785,
+      "v17_sha256": "64d32a373172bb0add8a407aeda87757071230ae0e10f24fb0549ad11f76f1e9",
+      "v33_sha256": "64d32a373172bb0add8a407aeda87757071230ae0e10f24fb0549ad11f76f1e9",
+      "equal": true
+    },
+    {
+      "label": "InstantAbilitySource$/resolveInstantContent",
+      "v17_body": 14488,
+      "v33_body": 14488,
+      "v17_sha256": "b920769d365cae73818ed25a5ef2e243714122e218ed2061f7657d36acc38056",
+      "v33_sha256": "b920769d365cae73818ed25a5ef2e243714122e218ed2061f7657d36acc38056",
+      "equal": true
+    },
+    {
+      "label": "ItemHowToGetQuestSearcher/getAvailableQuestLogic",
+      "v17_body": 75737,
+      "v33_body": 75737,
+      "v17_sha256": "60091e604c925ebdaf7d7cd88c020859789ee74b72514cbc8c0c6ecc52c4ced5",
+      "v33_sha256": "60091e604c925ebdaf7d7cd88c020859789ee74b72514cbc8c0c6ecc52c4ced5",
+      "equal": true
+    },
+    {
+      "label": "LeaderAbilityLogic/getDescriptionWithSimplify",
+      "v17_body": 7679,
+      "v33_body": 7679,
+      "v17_sha256": "229ef6943988233f9f13b8201dc12d8180bf571ba041e16b96a0aad42dde26a9",
+      "v33_sha256": "229ef6943988233f9f13b8201dc12d8180bf571ba041e16b96a0aad42dde26a9",
+      "equal": true
+    },
+    {
+      "label": "LeaderAbilityLogic/getDescriptions",
+      "v17_body": 7678,
+      "v33_body": 7678,
+      "v17_sha256": "3e396ebe35c717c1e064f14bf2b9708672ab7352f0a5271c48e5397e875a3e27",
+      "v33_sha256": "3e396ebe35c717c1e064f14bf2b9708672ab7352f0a5271c48e5397e875a3e27",
+      "equal": true
+    },
+    {
+      "label": "LoadingSceneBase/gotoNextScene",
+      "v17_body": 76049,
+      "v33_body": 76049,
+      "v17_sha256": "beba3cc4411150a78609dd8ae4f4d9f7e6ca3ffb255dab80cc3c5c08c4731316",
+      "v33_sha256": "beba3cc4411150a78609dd8ae4f4d9f7e6ca3ffb255dab80cc3c5c08c4731316",
+      "equal": true
+    },
+    {
+      "label": "LoadingSceneBase/startNextSceneAssetLoadWithDetail",
+      "v17_body": 76042,
+      "v33_body": 76042,
+      "v17_sha256": "1db5b17c44379920f3886404a86433c169ee46d850bb7ee3ad7bda4d05d690da",
+      "v33_sha256": "1db5b17c44379920f3886404a86433c169ee46d850bb7ee3ad7bda4d05d690da",
+      "equal": true
+    },
+    {
+      "label": "LocalLoading/startChild",
+      "v17_body": 38428,
+      "v33_body": 38428,
+      "v17_sha256": "772081a633396f3b936e30143f78e5842ca8f030a82deff4678be648959ba193",
+      "v33_sha256": "77eb5495b8bd1c332701e4ed63920b5a792385ce776aeeb2145648ef28c6a598",
+      "equal": false
+    },
+    {
+      "label": "LogicSceneTransition/deactivatePreviousScene",
+      "v17_body": 31072,
+      "v33_body": 31072,
+      "v17_sha256": "61c657f7c02972473d92fc399594c5ede75271c6bcd138f6be24123bbe4f9fc3",
+      "v33_sha256": "96ee8a34ddee66156b98761c766815eeec8a24f4ca1dc350a4b7f42b924c40bd",
+      "equal": false
+    },
+    {
+      "label": "MemberImpl/applyInstantAbility",
+      "v17_body": 60552,
+      "v33_body": 60552,
+      "v17_sha256": "6088e8e59832bca7c260e5f82339395fe1d1fce47c92aa7fa2f0591549052817",
+      "v33_sha256": "6088e8e59832bca7c260e5f82339395fe1d1fce47c92aa7fa2f0591549052817",
+      "equal": true
+    },
+    {
+      "label": "MemberImpl/invokeActionSkillIfPossible",
+      "v17_body": 60263,
+      "v33_body": 60263,
+      "v17_sha256": "872558b0ca7c0ba9f1e2ac79aa0e3774b9286dfb0d3b7b99628f025a260b1675",
+      "v33_sha256": "872558b0ca7c0ba9f1e2ac79aa0e3774b9286dfb0d3b7b99628f025a260b1675",
+      "equal": true
+    },
+    {
+      "label": "MemberView/<ctor>",
+      "v17_body": 60618,
+      "v33_body": 60618,
+      "v17_sha256": "bad0f9ea0fb66f638029fb96c26b2c67b9df352f43265aed6603610eaafc1b35",
+      "v33_sha256": "bad0f9ea0fb66f638029fb96c26b2c67b9df352f43265aed6603610eaafc1b35",
+      "equal": true
+    },
+    {
+      "label": "MemberView/draw",
+      "v17_body": 60616,
+      "v33_body": 60616,
+      "v17_sha256": "f32bfe1956a9d8b906987ad12d8b349c908f5cbf7b4ac8f76a8a7ae9b7b1bc8e",
+      "v33_sha256": "f32bfe1956a9d8b906987ad12d8b349c908f5cbf7b4ac8f76a8a7ae9b7b1bc8e",
+      "equal": true
+    },
+    {
+      "label": "MenuTopScene/createMenuListData",
+      "v17_body": 77056,
+      "v33_body": 77056,
+      "v17_sha256": "628e347f457027585c6e34dc8a57651736f4ed6b1c2be611c1ede2c39e854098",
+      "v33_sha256": "628e347f457027585c6e34dc8a57651736f4ed6b1c2be611c1ede2c39e854098",
+      "equal": true
+    },
+    {
+      "label": "MiscDataLogic/setAutoSpeedLevel",
+      "v17_body": 19909,
+      "v33_body": 19909,
+      "v17_sha256": "c3fbb8ac315e0834c53bf623272eb8c7408ac24696ae7be6637d9d3bfd97b339",
+      "v33_sha256": "c21ad66afd1e438cbfefeee33c3a7b1d37f9d66807b70cae51f51d07b8164502",
+      "equal": false
+    },
+    {
+      "label": "PartyCarousel/changeIndex",
+      "v17_body": 66403,
+      "v33_body": 66403,
+      "v17_sha256": "fbba333b70b8b6517019079caab12747dc06915491f3f54891e8a8b86946fe43",
+      "v33_sha256": "fbba333b70b8b6517019079caab12747dc06915491f3f54891e8a8b86946fe43",
+      "equal": true
+    },
+    {
+      "label": "PartyCarousel/update",
+      "v17_body": 66361,
+      "v33_body": 66361,
+      "v17_sha256": "335ad9078b65f3819cd64ee926e9f5a52bb89561d2ad5c2723ef9d2f9fc2a20f",
+      "v33_sha256": "335ad9078b65f3819cd64ee926e9f5a52bb89561d2ad5c2723ef9d2f9fc2a20f",
+      "equal": true
+    },
+    {
+      "label": "PartyCarouselPageView/apply",
+      "v17_body": 66664,
+      "v33_body": 66664,
+      "v17_sha256": "e62c6980e0429bd737b109b11f49073178bf22e0418d720924937015eaa0e8b7",
+      "v33_sha256": "6a70058f30d894e6ca6f3618609bd6fb3f748f73ab8784d76f7f01e0940b5ae3",
+      "equal": false
+    },
+    {
+      "label": "PartyGroupEditSceneView/refreshPartyCategory",
+      "v17_body": 77565,
+      "v33_body": 77565,
+      "v17_sha256": "52fb8029eaaee239942cbfcfdd7fee9b9c51c3b35e3007e77566c36765899a3b",
+      "v33_sha256": "52fb8029eaaee239942cbfcfdd7fee9b9c51c3b35e3007e77566c36765899a3b",
+      "equal": true
+    },
+    {
+      "label": "PartySelectTopPanelView/baseRun",
+      "v17_body": 78230,
+      "v33_body": 78230,
+      "v17_sha256": "e74bd779ee14e7770dfa25b01dd83a49bc15403231067068b22abfe8ad2f0362",
+      "v33_sha256": "e74bd779ee14e7770dfa25b01dd83a49bc15403231067068b22abfe8ad2f0362",
+      "equal": true
+    },
+    {
+      "label": "PixelArtCharacterView/spriteSheetLoadCompleted",
+      "v17_body": 92300,
+      "v33_body": 92300,
+      "v17_sha256": "05389cca6b968bcc6097e3cb4054636a1ffc132cff35f500449a9c285e669317",
+      "v33_sha256": "05389cca6b968bcc6097e3cb4054636a1ffc132cff35f500449a9c285e669317",
+      "equal": true
+    },
+    {
+      "label": "PlayerProfileView/refreshFollowRelationButtons",
+      "v17_body": 78965,
+      "v33_body": 78965,
+      "v17_sha256": "31bd383995f6ff26867e53ca9d51fd3d55da1fb4eb86936e6d56a6387aa80af6",
+      "v33_sha256": "31bd383995f6ff26867e53ca9d51fd3d55da1fb4eb86936e6d56a6387aa80af6",
+      "equal": true
+    },
+    {
+      "label": "ProductionLoading/resetAssets",
+      "v17_body": 37884,
+      "v33_body": 37884,
+      "v17_sha256": "70aba8421334000345d89653c5b75f56856cb3f1469b660e9d3152bba1bb1430",
+      "v33_sha256": "88f4837fd4a910380176d6fd9072c5236ea43dce3140a33ea6864346040330ce",
+      "equal": false
+    },
+    {
+      "label": "QuestTranslator/translateFormattedQuestNumber",
+      "v17_body": 71715,
+      "v33_body": 71715,
+      "v17_sha256": "af669ba5cbb13cb958e65a00946d0fad5be92f8ba2c24778cd2345716abf229d",
+      "v33_sha256": "af669ba5cbb13cb958e65a00946d0fad5be92f8ba2c24778cd2345716abf229d",
+      "equal": true
+    },
+    {
+      "label": "ReproduceFileRecordImpl/saveLog",
+      "v17_body": 30917,
+      "v33_body": 30917,
+      "v17_sha256": "a3f44be61f720c0c6b8f68062aab504792d28fd89d017e3b9c8ef8cd4a925ea3",
+      "v33_sha256": "0796011b5ae3d02da88f76ddf37f768dd128df02d551834499305c3daf8f71e4",
+      "equal": false
+    },
+    {
+      "label": "RushEventAutoStartQuestGroup/getDuplicatedCharacterIdsForEachQuest",
+      "v17_body": 24599,
+      "v33_body": 24599,
+      "v17_sha256": "a5feea4824f2dfe2406d3bd1982e31cf50fe835698911fec8ce731a56284767d",
+      "v33_sha256": "a5feea4824f2dfe2406d3bd1982e31cf50fe835698911fec8ce731a56284767d",
+      "equal": true
+    },
+    {
+      "label": "RushEventLoadingTask/summaryRemoteInput",
+      "v17_body": 38717,
+      "v33_body": 38717,
+      "v17_sha256": "6a29188afd89a123f1009b58048b88f23516801651fdffe22098fba2ecb9f8e5",
+      "v33_sha256": "6a29188afd89a123f1009b58048b88f23516801651fdffe22098fba2ecb9f8e5",
+      "equal": true
+    },
+    {
+      "label": "RushEventPartyGroupHolder/getPartyCategory",
+      "v17_body": 20866,
+      "v33_body": 20866,
+      "v17_sha256": "10161f4b71a03f945aae0ef41029ca52df18e59e40d6b942498bccbdf6773e04",
+      "v33_sha256": "10161f4b71a03f945aae0ef41029ca52df18e59e40d6b942498bccbdf6773e04",
+      "equal": true
+    },
+    {
+      "label": "RushEventRankingPartyListCellContentView/apply",
+      "v17_body": 71047,
+      "v33_body": 71047,
+      "v17_sha256": "6d23b6d82f3c00abe461e557fc4e23b322e3ff58ca1df89df9a37fef2e596e6a",
+      "v33_sha256": "6d23b6d82f3c00abe461e557fc4e23b322e3ff58ca1df89df9a37fef2e596e6a",
+      "equal": true
+    },
+    {
+      "label": "RushEventRankingPartyListCellContentView/resizeWidth",
+      "v17_body": 71043,
+      "v33_body": 71043,
+      "v17_sha256": "da79dca455460c5aa3c34c784209bc43d0c88fd18a33b20ab6fb3e53aec23153",
+      "v33_sha256": "da79dca455460c5aa3c34c784209bc43d0c88fd18a33b20ab6fb3e53aec23153",
+      "equal": true
+    },
+    {
+      "label": "RushEventRankingPartyListCellContentView/run",
+      "v17_body": 71042,
+      "v33_body": 71042,
+      "v17_sha256": "795e4692235094e46b9b04d0cd39508047f3fc6be9d10d1d37d82476f5dd0d0b",
+      "v33_sha256": "795e4692235094e46b9b04d0cd39508047f3fc6be9d10d1d37d82476f5dd0d0b",
+      "equal": true
+    },
+    {
+      "label": "RushEventRankingPartyListView/createListCell",
+      "v17_body": 71023,
+      "v33_body": 71023,
+      "v17_sha256": "046c2ba2f8755a08affa59456220138a29d36ce4cd62f7edd07f12f6dc33e231",
+      "v33_sha256": "046c2ba2f8755a08affa59456220138a29d36ce4cd62f7edd07f12f6dc33e231",
+      "equal": true
+    },
+    {
+      "label": "RushEventRankingPartyScene/afterTransition",
+      "v17_body": 71003,
+      "v33_body": 71003,
+      "v17_sha256": "52dc974bbe75f7597e6160539574f2fc1949096d17f93553a880646b35bc85b7",
+      "v33_sha256": "52dc974bbe75f7597e6160539574f2fc1949096d17f93553a880646b35bc85b7",
+      "equal": true
+    },
+    {
+      "label": "RushEventRankingPartyScene/buttonClicked",
+      "v17_body": 71002,
+      "v33_body": 71002,
+      "v17_sha256": "9f1f3c2d5510b4d96e6370957a25a792ee847e085a144548934179eb32ef7a53",
+      "v33_sha256": "9f1f3c2d5510b4d96e6370957a25a792ee847e085a144548934179eb32ef7a53",
+      "equal": true
+    },
+    {
+      "label": "RushEventRankingPartyScene/copyPlayedParty",
+      "v17_body": 71000,
+      "v33_body": 71000,
+      "v17_sha256": "e44d600bf617c0b100dbc4b2aebadb9f977a72d9b0a4f651719f9627f4cdef00",
+      "v33_sha256": "e44d600bf617c0b100dbc4b2aebadb9f977a72d9b0a4f651719f9627f4cdef00",
+      "equal": true
+    },
+    {
+      "label": "RushEventRankingPartyScene/preparation",
+      "v17_body": 70995,
+      "v33_body": 70995,
+      "v17_sha256": "290e64aaab3a904ad5dc4566dcdc79548cb2dc653c5a1390e0d07ea449368a11",
+      "v33_sha256": "290e64aaab3a904ad5dc4566dcdc79548cb2dc653c5a1390e0d07ea449368a11",
+      "equal": true
+    },
+    {
+      "label": "RushEventRankingPartyScene/run",
+      "v17_body": 70993,
+      "v33_body": 70993,
+      "v17_sha256": "778d46660d1ca60f0e3ffbbd1e40ac4f166cbdb15ae567da33c4e42b7a49d351",
+      "v33_sha256": "778d46660d1ca60f0e3ffbbd1e40ac4f166cbdb15ae567da33c4e42b7a49d351",
+      "equal": true
+    },
+    {
+      "label": "RushEventRankingPartyView/run",
+      "v17_body": 71012,
+      "v33_body": 71012,
+      "v17_sha256": "40f0a147bbd0b4051806625c59269e0e113a777b1030be101aec2014ddd148c2",
+      "v33_sha256": "40f0a147bbd0b4051806625c59269e0e113a777b1030be101aec2014ddd148c2",
+      "equal": true
+    },
+    {
+      "label": "RushEventTopScene/buttonClicked",
+      "v17_body": 71083,
+      "v33_body": 71083,
+      "v17_sha256": "ff1399e1d817506365d54528bbb528ec90710b6081a2336e86ac6e7edecdceb4",
+      "v33_sha256": "ff1399e1d817506365d54528bbb528ec90710b6081a2336e86ac6e7edecdceb4",
+      "equal": true
+    },
+    {
+      "label": "RushEventTopScene/run",
+      "v17_body": 71069,
+      "v33_body": 71069,
+      "v17_sha256": "92018c3f00aa31ce271987b8f00fab9c07dd57c60cd158064c514ebf52b1ce9d",
+      "v33_sha256": "92018c3f00aa31ce271987b8f00fab9c07dd57c60cd158064c514ebf52b1ce9d",
+      "equal": true
+    },
+    {
+      "label": "RushEventTopView/run",
+      "v17_body": 71087,
+      "v33_body": 71087,
+      "v17_sha256": "64c20d3f9cba4969835d634d5acae79326dfbc8ca883556d8ec0bf1d956db9a9",
+      "v33_sha256": "64c20d3f9cba4969835d634d5acae79326dfbc8ca883556d8ec0bf1d956db9a9",
+      "equal": true
+    },
+    {
+      "label": "ShopProductRepository/existsEventItemInQuestEvent",
+      "v17_body": 25381,
+      "v33_body": 25381,
+      "v17_sha256": "bc3956a4e87ea5c6878008d0ec2dde0524030064e5ba9062cb92a9090ccb63cb",
+      "v33_sha256": "bc3956a4e87ea5c6878008d0ec2dde0524030064e5ba9062cb92a9090ccb63cb",
+      "equal": true
+    },
+    {
+      "label": "ShopProductRepository/getAllProducts",
+      "v17_body": 25379,
+      "v33_body": 25379,
+      "v17_sha256": "d876a9c9842dd16661c24188b71c718219f74d316843d328e93273dad906ad2c",
+      "v33_sha256": "d876a9c9842dd16661c24188b71c718219f74d316843d328e93273dad906ad2c",
+      "equal": true
+    },
+    {
+      "label": "ShopTopScene/existsExchangeableEvents",
+      "v17_body": 81069,
+      "v33_body": 81069,
+      "v17_sha256": "e313a96606a3092109dc5c01e28d0e03b41fedfc298cf3206dbaaaa37913bf2d",
+      "v33_sha256": "e313a96606a3092109dc5c01e28d0e03b41fedfc298cf3206dbaaaa37913bf2d",
+      "equal": true
+    },
+    {
+      "label": "SquadManagerImpl/invokeActionSkill",
+      "v17_body": 59726,
+      "v33_body": 59726,
+      "v17_sha256": "22ddd65155caa3a2110ec8abc5cc7c6e501f688c5d7847c8fcfa21ae1295293f",
+      "v33_sha256": "22ddd65155caa3a2110ec8abc5cc7c6e501f688c5d7847c8fcfa21ae1295293f",
+      "equal": true
+    },
+    {
+      "label": "TitleMenuDialogContentView/setupContents",
+      "v17_body": 37085,
+      "v33_body": 37085,
+      "v17_sha256": "77dcedbfbea53661d3755c303efa7ab2bc8093983c8e6068fb11f439b159db92",
+      "v33_sha256": "77dcedbfbea53661d3755c303efa7ab2bc8093983c8e6068fb11f439b159db92",
+      "equal": true
+    },
+    {
+      "label": "TitleView/refreshHealth",
+      "v17_body": 82390,
+      "v33_body": 82390,
+      "v17_sha256": "fedd34ccb3e026ff9f9c176ef305f22a0c351417aed8a01b1fbe028563090a68",
+      "v33_sha256": "fedd34ccb3e026ff9f9c176ef305f22a0c351417aed8a01b1fbe028563090a68",
+      "equal": true
+    },
+    {
+      "label": "cn.ui.AbyssDetails/openDetails",
+      "v17_body": null,
+      "v33_body": null,
+      "v17_sha256": null,
+      "v33_sha256": null,
+      "equal": false
+    },
+    {
+      "label": "cn.ui.AbyssRecordDetails/responseText",
+      "v17_body": null,
+      "v33_body": null,
+      "v17_sha256": null,
+      "v33_sha256": null,
+      "equal": false
+    },
+    {
+      "label": "resources.arsc",
+      "v17_body": null,
+      "v33_body": null,
+      "v17_sha256": null,
+      "v33_sha256": null,
+      "equal": false
+    }
+  ],
+  "helper_checks": [
+    {
+      "tag": "cn/storage/LocalRecordIO",
+      "v17_sha256": "0b07d77e3298be51916457758a705769d072448bafafa7d89919956e97de451b",
+      "v33_sha256": "0b07d77e3298be51916457758a705769d072448bafafa7d89919956e97de451b",
+      "equal": true
+    },
+    {
+      "tag": "cn/admission/ClientAdmission",
+      "v17_sha256": "1b90354fb608db07a1b414c7e343dbf6461bb46c0b30ba720d31661301147c61",
+      "v33_sha256": "1b90354fb608db07a1b414c7e343dbf6461bb46c0b30ba720d31661301147c61",
+      "equal": true
+    },
+    {
+      "tag": "cn/loading/PartyDerivedCache",
+      "v17_sha256": "9518c71b4ccf46b81dfb4ebfab6f50b063065a8bf96d87780482763a64005ab7",
+      "v33_sha256": "9518c71b4ccf46b81dfb4ebfab6f50b063065a8bf96d87780482763a64005ab7",
+      "equal": true
+    },
+    {
+      "tag": "cn/admission/AdmissionSession",
+      "v17_sha256": "c9a7b4bb7e0818b9834ffbf592f30d5045410651bfd0d2ebb39e2ca0ff9c5dd0",
+      "v33_sha256": "c9a7b4bb7e0818b9834ffbf592f30d5045410651bfd0d2ebb39e2ca0ff9c5dd0",
+      "equal": true
+    },
+    {
+      "tag": "cn/admission/BuildConfig",
+      "v17_sha256": "23b46a7aee02a5381a4d7e14cd47dfd3b76c9f0c2aa73f74977949d9662f4a4f",
+      "v33_sha256": "23b46a7aee02a5381a4d7e14cd47dfd3b76c9f0c2aa73f74977949d9662f4a4f",
+      "equal": true
+    },
+    {
+      "tag": "cn.rules.QuestElementResistance",
+      "v17_sha256": "1a7ff2f55f3437afec887867ded1764342d6126599de88b3c68480d3f7e786f9",
+      "v33_sha256": "1a7ff2f55f3437afec887867ded1764342d6126599de88b3c68480d3f7e786f9",
+      "equal": true
+    },
+    {
+      "tag": "cn.ui.AbyssDetails",
+      "v17_sha256": "71149dd2d75d05974973776c7ed68838885febec20e49fa556aa07fc2b349527",
+      "v33_sha256": "71149dd2d75d05974973776c7ed68838885febec20e49fa556aa07fc2b349527",
+      "equal": true
+    },
+    {
+      "tag": "cn.account.PlayerLogin",
+      "v17_sha256": "edf1234a63dafbd9e3a3ddacff830a53d25465ea2f79533c59b724e7fb37868d",
+      "v33_sha256": "edf1234a63dafbd9e3a3ddacff830a53d25465ea2f79533c59b724e7fb37868d",
+      "equal": true
+    },
+    {
+      "tag": "cn.asset.EmptyUpdate",
+      "v17_sha256": "a7b0b87f8b0bc03434b5e1e09b9a944e038047e348ea12bdb43922d12ce7d1b8",
+      "v33_sha256": "a7b0b87f8b0bc03434b5e1e09b9a944e038047e348ea12bdb43922d12ce7d1b8",
+      "equal": true
+    },
+    {
+      "tag": "cn.ui.AbyssRecordDetails",
+      "v17_sha256": "830ae52840df63c469d151bdebe8da208e243a2dd6afa710e3816c90f2caa441",
+      "v33_sha256": "830ae52840df63c469d151bdebe8da208e243a2dd6afa710e3816c90f2caa441",
+      "equal": true
+    },
+    {
+      "tag": "cn.ui.ItemSourceFolderGate",
+      "v17_sha256": "d117aa1bdb852d728da1341f8f5dca1c5d0afa2d8da6454ac987a43eab4f6424",
+      "v33_sha256": "d117aa1bdb852d728da1341f8f5dca1c5d0afa2d8da6454ac987a43eab4f6424",
+      "equal": true
+    },
+    {
+      "tag": "cn.shop.ShopFirstOpen",
+      "v17_sha256": "a2aa1975aae4d36f55dfea907af227c1fb989cf8b3efb449df902e14b45a933e",
+      "v33_sha256": "31f9a7233dcc5e9beb43b4fd3963ac579bdd62f5dab1a3bd8a1d236e3aa06e3c",
+      "equal": false
+    },
+    {
+      "tag": "cn.mod.InahoAbilityVisuals",
+      "v17_sha256": "0ea8df216fb5f261f2289697efe934863cea9e4be4a58d04a9a9faaaf352452a",
+      "v33_sha256": "0ea8df216fb5f261f2289697efe934863cea9e4be4a58d04a9a9faaaf352452a",
+      "equal": true
+    },
+    {
+      "tag": "cn.mod.IndependentRushParty",
+      "v17_sha256": "e68b7029f6ab88a235f2018273f2fdec4574a544946950364f8ec24e42305941",
+      "v33_sha256": "e68b7029f6ab88a235f2018273f2fdec4574a544946950364f8ec24e42305941",
+      "equal": true
+    },
+    {
+      "tag": "cn.boss.BossMechanicsRuntime",
+      "v17_sha256": "a70e4cdcd8047c78e8680a74aa80e8974b71231ca4986fb16565f7f9c71b598a",
+      "v33_sha256": "a70e4cdcd8047c78e8680a74aa80e8974b71231ca4986fb16565f7f9c71b598a",
+      "equal": true
+    },
+    {
+      "tag": "cn.loading.BattlePackSlicer",
+      "v17_sha256": null,
+      "v33_sha256": "c41e4ad73cf4143c75c6cd9c6a6edd16fad15f62569400f9701e29e8d84b81c8",
+      "equal": false
+    },
+    {
+      "tag": "cn.loading.GcGate",
+      "v17_sha256": null,
+      "v33_sha256": "b26dc6817b5fc2501c2b61ea349cc0dca8c2b613c7e78e1de8d3382b44212bf7",
+      "equal": false
+    }
+  ],
+  "helper_callsites": [
+    {
+      "label": "ChannelSDKDummy/startLoginServer",
+      "body": 7174,
+      "hits": [
+        {
+          "instruction": 0,
+          "text": "getlex ['cn.account::PlayerLogin']"
+        }
+      ]
+    },
+    {
+      "label": "InstantAbilitySource/resolvePathCollection",
+      "body": 14502,
+      "hits": [
+        {
+          "instruction": 2,
+          "text": "getlex ['cn.mod::InahoAbilityVisuals']"
+        }
+      ]
+    },
+    {
+      "label": "BattlePartyLogic/getUnitedCharacters",
+      "body": 20565,
+      "hits": [
+        {
+          "instruction": 2,
+          "text": "getlex ['cn.loading::PartyDerivedCache']"
+        }
+      ]
+    },
+    {
+      "label": "RushEventPartyGroupHolder/getPartyCategory",
+      "body": 20866,
+      "hits": [
+        {
+          "instruction": 0,
+          "text": "getlex ['cn.mod::IndependentRushParty']"
+        }
+      ]
+    },
+    {
+      "label": "BattleQuestBaseImpl/getInitialEnemyConditions",
+      "body": 21496,
+      "hits": [
+        {
+          "instruction": 113,
+          "text": "getlex ['cn.rules::QuestElementResistance']"
+        }
+      ]
+    },
+    {
+      "label": "ShopProductRepository/getAllProducts",
+      "body": 25379,
+      "hits": [
+        {
+          "instruction": 156,
+          "text": "getlex ['cn.shop::ShopFirstOpen']"
+        }
+      ]
+    },
+    {
+      "label": "ShopProductRepository/existsEventItemInQuestEvent",
+      "body": 25381,
+      "hits": [
+        {
+          "instruction": 125,
+          "text": "getlex ['cn.shop::ShopFirstOpen']"
+        }
+      ]
+    },
+    {
+      "label": "BattleScene/leaveHandler",
+      "body": 28971,
+      "hits": [
+        {
+          "instruction": 2,
+          "text": "getlex ['cn.loading::PartyDerivedCache']"
+        }
+      ]
+    },
+    {
+      "label": "AccountLocalStore_Impl_$/saveAccountData",
+      "body": 29390,
+      "hits": [
+        {
+          "instruction": 55,
+          "text": "getlex ['cn.storage::LocalRecordIO']"
+        }
+      ]
+    },
+    {
+      "label": "DeviceLocalStore_Impl_$/writeFile",
+      "body": 29456,
+      "hits": [
+        {
+          "instruction": 80,
+          "text": "getlex ['cn.storage::LocalRecordIO']"
+        }
+      ]
+    },
+    {
+      "label": "RemoteUtil$/requestCompleteHandler",
+      "body": 29670,
+      "hits": [
+        {
+          "instruction": 332,
+          "text": "getlex ['cn.admission::ClientAdmission']"
+        }
+      ]
+    },
+    {
+      "label": "RequestQueue/startRequest",
+      "body": 29697,
+      "hits": [
+        {
+          "instruction": 2,
+          "text": "getlex ['cn.account::PlayerLogin']"
+        },
+        {
+          "instruction": 5,
+          "text": "getlex ['cn.admission::ClientAdmission']"
+        }
+      ]
+    },
+    {
+      "label": "RequestQueue/requestSuccessHandler",
+      "body": 29701,
+      "hits": [
+        {
+          "instruction": 2,
+          "text": "getlex ['cn.admission::ClientAdmission']"
+        }
+      ]
+    },
+    {
+      "label": "RequestQueue/clearQueue",
+      "body": 29703,
+      "hits": [
+        {
+          "instruction": 2,
+          "text": "getlex ['cn.admission::ClientAdmission']"
+        }
+      ]
+    },
+    {
+      "label": "SockletConnection/socket_connected",
+      "body": 31405,
+      "hits": [
+        {
+          "instruction": 2,
+          "text": "getlex ['cn.account::PlayerLogin']"
+        },
+        {
+          "instruction": 5,
+          "text": "getlex ['cn.admission::ClientAdmission']"
+        }
+      ]
+    },
+    {
+      "label": "SockletConnection/socketConnect",
+      "body": 31407,
+      "hits": [
+        {
+          "instruction": 2,
+          "text": "getlex ['cn.admission::ClientAdmission']"
+        }
+      ]
+    },
+    {
+      "label": "SockletConnection/close",
+      "body": 31421,
+      "hits": [
+        {
+          "instruction": 2,
+          "text": "getlex ['cn.admission::ClientAdmission']"
+        }
+      ]
+    },
+    {
+      "label": "RushEventLoadingTask/summaryRemoteInput",
+      "body": 38717,
+      "hits": [
+        {
+          "instruction": 68,
+          "text": "getlex ['cn.mod::IndependentRushParty']"
+        }
+      ]
+    },
+    {
+      "label": "OrochiExValues/<ctor>",
+      "body": 92450,
+      "hits": [
+        {
+          "instruction": 2173,
+          "text": "getlex ['cn.boss::BossMechanicsRuntime']"
+        }
+      ]
+    },
+    {
+      "label": "AssetGetPathRealRemote/successHandler",
+      "body": 47777,
+      "hits": [
+        {
+          "instruction": 0,
+          "text": "getlex ['cn.asset::EmptyUpdate']"
+        }
+      ]
+    },
+    {
+      "label": "EventRushPartyRealRemote/<ctor>",
+      "body": 48429,
+      "hits": [
+        {
+          "instruction": 15,
+          "text": "getlex ['cn.mod::IndependentRushParty']"
+        }
+      ]
+    },
+    {
+      "label": "AbilityDamageShot/getEffect",
+      "body": 51319,
+      "hits": [
+        {
+          "instruction": 0,
+          "text": "getlex ['cn.mod::InahoAbilityVisuals']"
+        }
+      ]
+    },
+    {
+      "label": "AbilityDamageShot/finish",
+      "body": 51320,
+      "hits": [
+        {
+          "instruction": 468,
+          "text": "getlex ['cn.mod::InahoAbilityVisuals']"
+        }
+      ]
+    },
+    {
+      "label": "OrochiEx/ensurePhase4Ledger",
+      "body": 92481,
+      "hits": [
+        {
+          "instruction": 14,
+          "text": "getlex ['cn.boss::BossMechanicsRuntime']"
+        }
+      ]
+    },
+    {
+      "label": "OrochiEx/resolvePhase4Break",
+      "body": 92488,
+      "hits": [
+        {
+          "instruction": 62,
+          "text": "getlex ['cn.boss::BossMechanicsRuntime']"
+        },
+        {
+          "instruction": 76,
+          "text": "getlex ['cn.boss::BossMechanicsRuntime']"
+        }
+      ]
+    },
+    {
+      "label": "OrochiEx/updatePhase4Extension",
+      "body": 92489,
+      "hits": [
+        {
+          "instruction": 51,
+          "text": "getlex ['cn.boss::BossMechanicsRuntime']"
+        },
+        {
+          "instruction": 63,
+          "text": "getlex ['cn.boss::BossMechanicsRuntime']"
+        },
+        {
+          "instruction": 112,
+          "text": "getlex ['cn.boss::BossMechanicsRuntime']"
+        }
+      ]
+    },
+    {
+      "label": "OrochiEx/reinitialize",
+      "body": 92493,
+      "hits": [
+        {
+          "instruction": 40,
+          "text": "getlex ['cn.boss::BossMechanicsRuntime']"
+        }
+      ]
+    },
+    {
+      "label": "OrochiEx/getSynchronizeKind",
+      "body": 92526,
+      "hits": [
+        {
+          "instruction": 46,
+          "text": "getlex ['cn.boss::BossMechanicsRuntime']"
+        }
+      ]
+    },
+    {
+      "label": "OrochiEx/changePhase",
+      "body": 92559,
+      "hits": [
+        {
+          "instruction": 113,
+          "text": "getlex ['cn.boss::BossMechanicsRuntime']"
+        }
+      ]
+    },
+    {
+      "label": "OrochiEx/applySynchronizeKind",
+      "body": 92564,
+      "hits": [
+        {
+          "instruction": 153,
+          "text": "getlex ['cn.boss::BossMechanicsRuntime']"
+        }
+      ]
+    },
+    {
+      "label": "OrochiEx/subtractHealthPoint",
+      "body": 92566,
+      "hits": [
+        {
+          "instruction": 88,
+          "text": "getlex ['cn.boss::BossMechanicsRuntime']"
+        }
+      ]
+    },
+    {
+      "label": "OrochiEx/ensurePhaseDamageLedger",
+      "body": 92591,
+      "hits": [
+        {
+          "instruction": 11,
+          "text": "getlex ['cn.boss::BossMechanicsRuntime']"
+        }
+      ]
+    },
+    {
+      "label": "BattleScenePlayingStateImpl/update",
+      "body": 63113,
+      "hits": [
+        {
+          "instruction": 91,
+          "text": "getlex ['cn.loading::PartyDerivedCache']"
+        }
+      ]
+    },
+    {
+      "label": "QuestTranslator/translateFormattedQuestNumber",
+      "body": 71715,
+      "hits": [
+        {
+          "instruction": 3,
+          "text": "getlex ['cn.ui::AbyssDetails']"
+        }
+      ]
+    },
+    {
+      "label": "EventItemExchangeTopScene/getListSource",
+      "body": 72076,
+      "hits": [
+        {
+          "instruction": 430,
+          "text": "getlex ['cn.shop::ShopFirstOpen']"
+        }
+      ]
+    },
+    {
+      "label": "ItemHowToGetQuestSearcher/getAvailableQuestLogic",
+      "body": 75737,
+      "hits": [
+        {
+          "instruction": 53,
+          "text": "getlex ['cn.ui::ItemSourceFolderGate']"
+        }
+      ]
+    },
+    {
+      "label": "LoadingSceneBase/startNextSceneAssetLoadWithDetail",
+      "body": 76042,
+      "hits": [
+        {
+          "instruction": 2,
+          "text": "getlex ['cn.loading::PartyDerivedCache']"
+        }
+      ]
+    },
+    {
+      "label": "LoadingSceneBase/gotoNextScene",
+      "body": 76049,
+      "hits": [
+        {
+          "instruction": 2,
+          "text": "getlex ['cn.loading::PartyDerivedCache']"
+        }
+      ]
+    },
+    {
+      "label": "PartySelectTopPanelView/baseRun",
+      "body": 78230,
+      "hits": [
+        {
+          "instruction": 607,
+          "text": "getlex ['cn.ui::AbyssDetails']"
+        }
+      ]
+    },
+    {
+      "label": "ShopTopScene/existsExchangeableEvents",
+      "body": 81069,
+      "hits": [
+        {
+          "instruction": 2,
+          "text": "getlex ['cn.shop::ShopFirstOpen']"
+        }
+      ]
+    },
+    {
+      "label": "TitleScene/disposeTitleScene",
+      "body": 82380,
+      "hits": [
+        {
+          "instruction": 2,
+          "text": "getlex ['cn.account::PlayerLogin']"
+        }
+      ]
+    },
+    {
+      "label": "TitleScene/afterTransition",
+      "body": 82382,
+      "hits": [
+        {
+          "instruction": 0,
+          "text": "getlex ['cn.account::PlayerLogin']"
+        }
+      ]
+    }
+  ],
+  "feature_probes": {
+    "DevConfig$/<cinit>": [
+      {
+        "instruction": 0,
+        "text": "getlocal_0 []"
+      },
+      {
+        "instruction": 1,
+        "text": "pushscope []"
+      },
+      {
+        "instruction": 2,
+        "text": "findproperty ['sdkDummy']"
+      },
+      {
+        "instruction": 3,
+        "text": "pushtrue []"
+      },
+      {
+        "instruction": 4,
+        "text": "setproperty ['sdkDummy']"
+      },
+      {
+        "instruction": 5,
+        "text": "returnvoid []"
+      },
+      {
+        "instruction": 2,
+        "text": "findproperty ['sdkDummy']"
+      },
+      {
+        "instruction": 3,
+        "text": "pushtrue []"
+      },
+      {
+        "instruction": 4,
+        "text": "setproperty ['sdkDummy']"
+      },
+      {
+        "instruction": 5,
+        "text": "returnvoid []"
+      }
+    ],
+    "DevConfig_gf_android/<ctor>": [
+      {
+        "instruction": 9,
+        "text": "getlex ['pinball.config.kind::ApiServerKind']"
+      },
+      {
+        "instruction": 10,
+        "text": "pushstring ['http']"
+      },
+      {
+        "instruction": 11,
+        "text": "pushstring ['TEST-SERVER-HOST:8001']"
+      },
+      {
+        "instruction": 12,
+        "text": "callproperty ['Custom', 2]"
+      },
+      {
+        "instruction": 13,
+        "text": "setproperty ['apiServer']"
+      },
+      {
+        "instruction": 14,
+        "text": "findproperty ['assetDirectories']"
+      }
+    ],
+    "DevConfig/<ctor>": [],
+    "MemberView/<ctor>": [
+      {
+        "instruction": 59,
+        "text": "getlex ['pinball.scene.battle.battle::BattleConstants']"
+      },
+      {
+        "instruction": 60,
+        "text": "getproperty ['SCALE_RENDERER']"
+      },
+      {
+        "instruction": 61,
+        "text": "initproperty ['scaleX']"
+      },
+      {
+        "instruction": 62,
+        "text": "findproperty ['shadow']"
+      },
+      {
+        "instruction": 63,
+        "text": "getproperty ['shadow']"
+      },
+      {
+        "instruction": 64,
+        "text": "getlex ['pinball.scene.battle.battle::BattleConstants']"
+      },
+      {
+        "instruction": 64,
+        "text": "getlex ['pinball.scene.battle.battle::BattleConstants']"
+      },
+      {
+        "instruction": 65,
+        "text": "getproperty ['SCALE_RENDERER']"
+      },
+      {
+        "instruction": 66,
+        "text": "initproperty ['scaleY']"
+      },
+      {
+        "instruction": 67,
+        "text": "findproperty ['character']"
+      },
+      {
+        "instruction": 68,
+        "text": "findproperty ['asset']"
+      },
+      {
+        "instruction": 69,
+        "text": "getproperty ['asset']"
+      }
+    ],
+    "PixelArtCharacterView/spriteSheetLoadCompleted": [
+      {
+        "instruction": 149,
+        "text": "subtract []"
+      },
+      {
+        "instruction": 150,
+        "text": "getproperty ['<mn kind 0x1b>']"
+      },
+      {
+        "instruction": 151,
+        "text": "pushstring ['special']"
+      },
+      {
+        "instruction": 152,
+        "text": "ifne [] -> #159"
+      },
+      {
+        "instruction": 153,
+        "text": "getlocal [7]"
+      },
+      {
+        "instruction": 154,
+        "text": "callpropvoid ['pop', 0]"
+      },
+      {
+        "instruction": 154,
+        "text": "callpropvoid ['pop', 0]"
+      },
+      {
+        "instruction": 155,
+        "text": "getlocal [7]"
+      },
+      {
+        "instruction": 156,
+        "text": "pushstring ['special_sprite_sheet']"
+      },
+      {
+        "instruction": 157,
+        "text": "callpropvoid ['push', 1]"
+      },
+      {
+        "instruction": 158,
+        "text": "jump [] -> #164"
+      },
+      {
+        "instruction": 159,
+        "text": "getlocal [7]"
+      },
+      {
+        "instruction": 344,
+        "text": "getlocal [12]"
+      },
+      {
+        "instruction": 345,
+        "text": "getlocal [12]"
+      },
+      {
+        "instruction": 346,
+        "text": "getproperty ['scale']"
+      },
+      {
+        "instruction": 347,
+        "text": "pushbyte [6]"
+      },
+      {
+        "instruction": 348,
+        "text": "divide []"
+      },
+      {
+        "instruction": 349,
+        "text": "setproperty ['scale']"
+      },
+      {
+        "instruction": 347,
+        "text": "pushbyte [6]"
+      },
+      {
+        "instruction": 348,
+        "text": "divide []"
+      },
+      {
+        "instruction": 349,
+        "text": "setproperty ['scale']"
+      },
+      {
+        "instruction": 350,
+        "text": "getlex ['tempTransformation']"
+      },
+      {
+        "instruction": 351,
+        "text": "getlocal [12]"
+      },
+      {
+        "instruction": 352,
+        "text": "getproperty ['scale']"
+      },
+      {
+        "instruction": 350,
+        "text": "getlex ['tempTransformation']"
+      },
+      {
+        "instruction": 351,
+        "text": "getlocal [12]"
+      },
+      {
+        "instruction": 352,
+        "text": "getproperty ['scale']"
+      },
+      {
+        "instruction": 353,
+        "text": "setproperty ['scale']"
+      },
+      {
+        "instruction": 354,
+        "text": "getlocal [12]"
+      },
+      {
+        "instruction": 355,
+        "text": "getlex ['_smoothing']"
+      },
+      {
+        "instruction": 351,
+        "text": "getlocal [12]"
+      },
+      {
+        "instruction": 352,
+        "text": "getproperty ['scale']"
+      },
+      {
+        "instruction": 353,
+        "text": "setproperty ['scale']"
+      },
+      {
+        "instruction": 354,
+        "text": "getlocal [12]"
+      },
+      {
+        "instruction": 355,
+        "text": "getlex ['_smoothing']"
+      },
+      {
+        "instruction": 356,
+        "text": "callpropvoid ['set_smoothing', 1]"
+      }
+    ],
+    "BattleCharacterLogic/getPowerFlipAction": [],
+    "MemberImpl/invokeActionSkillIfPossible": [],
+    "CharacterSprite/getCharacterImagePath": [],
+    "CharacterSpriteView/draw": [
+      {
+        "instruction": 199,
+        "text": "getproperty ['overlayImage']"
+      },
+      {
+        "instruction": 200,
+        "text": "getlocal [9]"
+      },
+      {
+        "instruction": 201,
+        "text": "initproperty ['scaleY']"
+      },
+      {
+        "instruction": 202,
+        "text": "findproperty ['overlayImage']"
+      },
+      {
+        "instruction": 203,
+        "text": "getproperty ['overlayImage']"
+      },
+      {
+        "instruction": 204,
+        "text": "pushbyte [2]"
+      }
+    ],
+    "HudMemberStatus/getCharacterImageAssetPath": [],
+    "HudMemberStatusView/draw": [],
+    "MemberView/draw": [
+      {
+        "instruction": 40,
+        "text": "callproperty ['pinball.scene.battle.battle.squad.member:MemberPeek::getCharacter', 0]"
+      },
+      {
+        "instruction": 41,
+        "text": "getproperty ['characterTags']"
+      },
+      {
+        "instruction": 42,
+        "text": "pushstring ['ModDualForm']"
+      },
+      {
+        "instruction": 43,
+        "text": "callproperty ['http://adobe.com/AS3/2006/builtin::indexOf', 1]"
+      },
+      {
+        "instruction": 44,
+        "text": "convert_i []"
+      },
+      {
+        "instruction": 45,
+        "text": "pushbyte [255]"
+      },
+      {
+        "instruction": 49,
+        "text": "getlex ['pinball.common.data.character.condition::ConditionTargetKind']"
+      },
+      {
+        "instruction": 50,
+        "text": "pushbyte [22]"
+      },
+      {
+        "instruction": 51,
+        "text": "callproperty ['Unique', 1]"
+      },
+      {
+        "instruction": 52,
+        "text": "coerce ['pinball.common.data.character.condition::ConditionTargetKind']"
+      },
+      {
+        "instruction": 53,
+        "text": "callproperty ['matchCondition', 1]"
+      },
+      {
+        "instruction": 54,
+        "text": "convert_b []"
+      },
+      {
+        "instruction": 60,
+        "text": "getproperty ['mainCharacterStringId']"
+      },
+      {
+        "instruction": 61,
+        "text": "add []"
+      },
+      {
+        "instruction": 62,
+        "text": "pushstring ['/pixelart/special']"
+      },
+      {
+        "instruction": 63,
+        "text": "add []"
+      },
+      {
+        "instruction": 64,
+        "text": "coerce ['String']"
+      },
+      {
+        "instruction": 65,
+        "text": "setlocal [23]"
+      },
+      {
+        "instruction": 799,
+        "text": "jump [] -> #801"
+      },
+      {
+        "instruction": 800,
+        "text": "getlocal [16]"
+      },
+      {
+        "instruction": 801,
+        "text": "pushdouble [1e-10]"
+      },
+      {
+        "instruction": 802,
+        "text": "add []"
+      },
+      {
+        "instruction": 803,
+        "text": "convert_d []"
+      },
+      {
+        "instruction": 804,
+        "text": "pushdouble [1e-10]"
+      },
+      {
+        "instruction": 802,
+        "text": "add []"
+      },
+      {
+        "instruction": 803,
+        "text": "convert_d []"
+      },
+      {
+        "instruction": 804,
+        "text": "pushdouble [1e-10]"
+      },
+      {
+        "instruction": 805,
+        "text": "add []"
+      },
+      {
+        "instruction": 806,
+        "text": "convert_d []"
+      },
+      {
+        "instruction": 807,
+        "text": "callproperty ['floor', 1]"
+      },
+      {
+        "instruction": 831,
+        "text": "pushbyte [10]"
+      },
+      {
+        "instruction": 832,
+        "text": "divide []"
+      },
+      {
+        "instruction": 833,
+        "text": "pushdouble [1e-10]"
+      },
+      {
+        "instruction": 834,
+        "text": "add []"
+      },
+      {
+        "instruction": 835,
+        "text": "convert_d []"
+      },
+      {
+        "instruction": 836,
+        "text": "pushdouble [1e-10]"
+      },
+      {
+        "instruction": 834,
+        "text": "add []"
+      },
+      {
+        "instruction": 835,
+        "text": "convert_d []"
+      },
+      {
+        "instruction": 836,
+        "text": "pushdouble [1e-10]"
+      },
+      {
+        "instruction": 837,
+        "text": "add []"
+      },
+      {
+        "instruction": 838,
+        "text": "convert_d []"
+      },
+      {
+        "instruction": 839,
+        "text": "callproperty ['floor', 1]"
+      }
+    ],
+    "RushEventTopScene/run": [],
+    "RushEventTopScene/buttonClicked": [
+      {
+        "instruction": 113,
+        "text": "getlex ['pinball.common.data.scene::SceneKind']"
+      },
+      {
+        "instruction": 114,
+        "text": "getlex ['eventId']"
+      },
+      {
+        "instruction": 115,
+        "text": "getlex ['pinball.scene.event.rush.ranking.party::RushEventRankingPartyMode']"
+      },
+      {
+        "instruction": 116,
+        "text": "pushbyte [255]"
+      },
+      {
+        "instruction": 117,
+        "text": "callproperty ['RushBattle', 1]"
+      },
+      {
+        "instruction": 118,
+        "text": "getlex ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 115,
+        "text": "getlex ['pinball.scene.event.rush.ranking.party::RushEventRankingPartyMode']"
+      },
+      {
+        "instruction": 116,
+        "text": "pushbyte [255]"
+      },
+      {
+        "instruction": 117,
+        "text": "callproperty ['RushBattle', 1]"
+      },
+      {
+        "instruction": 118,
+        "text": "getlex ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 119,
+        "text": "getproperty ['None']"
+      },
+      {
+        "instruction": 120,
+        "text": "callproperty ['RushEventRankingParty', 3]"
+      },
+      {
+        "instruction": 118,
+        "text": "getlex ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 119,
+        "text": "getproperty ['None']"
+      },
+      {
+        "instruction": 120,
+        "text": "callproperty ['RushEventRankingParty', 3]"
+      },
+      {
+        "instruction": 121,
+        "text": "callproperty ['Scene', 1]"
+      },
+      {
+        "instruction": 122,
+        "text": "callpropvoid ['changeSceneFromLoadingTask', 1]"
+      },
+      {
+        "instruction": 123,
+        "text": "returnvoid []"
+      }
+    ],
+    "RushEventRankingPartyScene/preparation": [
+      {
+        "instruction": 51,
+        "text": "setlocal [15]"
+      },
+      {
+        "instruction": 52,
+        "text": "getlocal_0 []"
+      },
+      {
+        "instruction": 53,
+        "text": "coerce ['pinball.scene.event.rush.ranking.party::RushEventRankingPartyScene']"
+      },
+      {
+        "instruction": 54,
+        "text": "setlocal_2 []"
+      },
+      {
+        "instruction": 55,
+        "text": "findproperty ['stoneBuyDialogChangeSceneBackKind']"
+      },
+      {
+        "instruction": 56,
+        "text": "getlex ['pinball.common.data.scene::ChangeSceneBackKind']"
+      },
+      {
+        "instruction": 60,
+        "text": "getlex ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 61,
+        "text": "getproperty ['None']"
+      },
+      {
+        "instruction": 62,
+        "text": "callproperty ['RushEventRankingParty', 3]"
+      },
+      {
+        "instruction": 63,
+        "text": "callproperty ['Add', 1]"
+      },
+      {
+        "instruction": 64,
+        "text": "setproperty ['stoneBuyDialogChangeSceneBackKind']"
+      },
+      {
+        "instruction": 65,
+        "text": "findproperty ['event']"
+      },
+      {
+        "instruction": 71,
+        "text": "jump [] -> #91"
+      },
+      {
+        "instruction": 72,
+        "text": "avm_label []"
+      },
+      {
+        "instruction": 73,
+        "text": "getlex ['pinball.scene.event.rush.ranking.party.list.cell::RushEventRankingPartyListCellPresentationTools']"
+      },
+      {
+        "instruction": 74,
+        "text": "getlex ['globalLogic']"
+      },
+      {
+        "instruction": 75,
+        "text": "getlex ['event']"
+      },
+      {
+        "instruction": 76,
+        "text": "callproperty ['getRushBattlePlayedParties', 0]"
+      },
+      {
+        "instruction": 74,
+        "text": "getlex ['globalLogic']"
+      },
+      {
+        "instruction": 75,
+        "text": "getlex ['event']"
+      },
+      {
+        "instruction": 76,
+        "text": "callproperty ['getRushBattlePlayedParties', 0]"
+      },
+      {
+        "instruction": 77,
+        "text": "callproperty ['fromQuestParties', 2]"
+      },
+      {
+        "instruction": 78,
+        "text": "coerce_a []"
+      },
+      {
+        "instruction": 79,
+        "text": "setlocal_3 []"
+      },
+      {
+        "instruction": 80,
+        "text": "jump [] -> #107"
+      },
+      {
+        "instruction": 81,
+        "text": "avm_label []"
+      },
+      {
+        "instruction": 82,
+        "text": "getlex ['pinball.scene.event.rush.ranking.party.list.cell::RushEventRankingPartyListCellPresentationTools']"
+      },
+      {
+        "instruction": 83,
+        "text": "getlex ['globalLogic']"
+      },
+      {
+        "instruction": 84,
+        "text": "getlex ['event']"
+      },
+      {
+        "instruction": 85,
+        "text": "callproperty ['getEndlessBattlePlayedParties', 0]"
+      },
+      {
+        "instruction": 305,
+        "text": "getlex ['buttonGroup']"
+      },
+      {
+        "instruction": 306,
+        "text": "pushstring ['fileName']"
+      },
+      {
+        "instruction": 307,
+        "text": "pushstring ['pinball/scene/event/rush/ranking/party/RushEventRankingPartyScene.hx']"
+      },
+      {
+        "instruction": 308,
+        "text": "pushstring ['lineNumber']"
+      },
+      {
+        "instruction": 309,
+        "text": "pushbyte [122]"
+      },
+      {
+        "instruction": 310,
+        "text": "pushstring ['className']"
+      },
+      {
+        "instruction": 309,
+        "text": "pushbyte [122]"
+      },
+      {
+        "instruction": 310,
+        "text": "pushstring ['className']"
+      },
+      {
+        "instruction": 311,
+        "text": "pushstring ['pinball.scene.event.rush.ranking.party.RushEventRankingPartyScene']"
+      },
+      {
+        "instruction": 312,
+        "text": "pushstring ['methodName']"
+      },
+      {
+        "instruction": 313,
+        "text": "pushstring ['preparation']"
+      },
+      {
+        "instruction": 314,
+        "text": "newobject [4]"
+      }
+    ],
+    "HudMemberStatus/update": [
+      {
+        "instruction": 73,
+        "text": "callproperty ['absorb', 2]"
+      },
+      {
+        "instruction": 74,
+        "text": "coerce ['pinball.scene.battle.battle.zone::ZoneManager']"
+      },
+      {
+        "instruction": 75,
+        "text": "callproperty ['pinball.scene.battle.battle.zone:ZoneManager::isFeverMode', 0]"
+      },
+      {
+        "instruction": 76,
+        "text": "convert_b []"
+      },
+      {
+        "instruction": 77,
+        "text": "setlocal_3 []"
+      },
+      {
+        "instruction": 78,
+        "text": "getlocal_3 []"
+      },
+      {
+        "instruction": 251,
+        "text": "getproperty ['logic']"
+      },
+      {
+        "instruction": 252,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 253,
+        "text": "pushstring ['character/unicorn_lancer_rose/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 254,
+        "text": "callproperty ['pinball.asset.logic:ILogicAssetContainer::existsVoiceFileReader', 1]"
+      },
+      {
+        "instruction": 255,
+        "text": "iffalse [] -> #294"
+      },
+      {
+        "instruction": 256,
+        "text": "getlex ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 255,
+        "text": "iffalse [] -> #294"
+      },
+      {
+        "instruction": 256,
+        "text": "getlex ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 257,
+        "text": "pushstring ['character/unicorn_lancer_rose/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 258,
+        "text": "callproperty ['Some', 1]"
+      },
+      {
+        "instruction": 259,
+        "text": "coerce ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 260,
+        "text": "setlocal [4]"
+      },
+      {
+        "instruction": 386,
+        "text": "getproperty ['logic']"
+      },
+      {
+        "instruction": 387,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 388,
+        "text": "pushstring ['character/samurai_robot_plum/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 389,
+        "text": "callproperty ['pinball.asset.logic:ILogicAssetContainer::existsVoiceFileReader', 1]"
+      },
+      {
+        "instruction": 390,
+        "text": "iffalse [] -> #397"
+      },
+      {
+        "instruction": 391,
+        "text": "getlex ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 390,
+        "text": "iffalse [] -> #397"
+      },
+      {
+        "instruction": 391,
+        "text": "getlex ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 392,
+        "text": "pushstring ['character/samurai_robot_plum/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 393,
+        "text": "callproperty ['Some', 1]"
+      },
+      {
+        "instruction": 394,
+        "text": "coerce ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 395,
+        "text": "setlocal [4]"
+      },
+      {
+        "instruction": 398,
+        "text": "getproperty ['character']"
+      },
+      {
+        "instruction": 399,
+        "text": "getproperty ['mainCharacterStringId']"
+      },
+      {
+        "instruction": 400,
+        "text": "pushstring ['white_wolf_gerald']"
+      },
+      {
+        "instruction": 401,
+        "text": "ifne [] -> #469"
+      },
+      {
+        "instruction": 402,
+        "text": "getlocal [4]"
+      },
+      {
+        "instruction": 403,
+        "text": "getproperty ['index']"
+      },
+      {
+        "instruction": 423,
+        "text": "getproperty ['logic']"
+      },
+      {
+        "instruction": 424,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 425,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 426,
+        "text": "callproperty ['pinball.asset.logic:ILogicAssetContainer::existsVoiceFileReader', 1]"
+      },
+      {
+        "instruction": 427,
+        "text": "iffalse [] -> #469"
+      },
+      {
+        "instruction": 428,
+        "text": "getlex ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 427,
+        "text": "iffalse [] -> #469"
+      },
+      {
+        "instruction": 428,
+        "text": "getlex ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 429,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 430,
+        "text": "callproperty ['Some', 1]"
+      },
+      {
+        "instruction": 431,
+        "text": "coerce ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 432,
+        "text": "setlocal [4]"
+      },
+      {
+        "instruction": 443,
+        "text": "getproperty ['logic']"
+      },
+      {
+        "instruction": 444,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 445,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_1']"
+      },
+      {
+        "instruction": 446,
+        "text": "callproperty ['pinball.asset.logic:ILogicAssetContainer::existsVoiceFileReader', 1]"
+      },
+      {
+        "instruction": 447,
+        "text": "iffalse [] -> #469"
+      },
+      {
+        "instruction": 448,
+        "text": "getlex ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 447,
+        "text": "iffalse [] -> #469"
+      },
+      {
+        "instruction": 448,
+        "text": "getlex ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 449,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_1']"
+      },
+      {
+        "instruction": 450,
+        "text": "callproperty ['Some', 1]"
+      },
+      {
+        "instruction": 451,
+        "text": "coerce ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 452,
+        "text": "setlocal [4]"
+      },
+      {
+        "instruction": 459,
+        "text": "getproperty ['logic']"
+      },
+      {
+        "instruction": 460,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 461,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_2']"
+      },
+      {
+        "instruction": 462,
+        "text": "callproperty ['pinball.asset.logic:ILogicAssetContainer::existsVoiceFileReader', 1]"
+      },
+      {
+        "instruction": 463,
+        "text": "iffalse [] -> #469"
+      },
+      {
+        "instruction": 464,
+        "text": "getlex ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 463,
+        "text": "iffalse [] -> #469"
+      },
+      {
+        "instruction": 464,
+        "text": "getlex ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 465,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_2']"
+      },
+      {
+        "instruction": 466,
+        "text": "callproperty ['Some', 1]"
+      },
+      {
+        "instruction": 467,
+        "text": "coerce ['haxe.ds::Option']"
+      },
+      {
+        "instruction": 468,
+        "text": "setlocal [4]"
+      },
+      {
+        "instruction": 489,
+        "text": "ifeq [] -> #541"
+      },
+      {
+        "instruction": 490,
+        "text": "getlocal [5]"
+      },
+      {
+        "instruction": 491,
+        "text": "pushstring ['white_wolf_gerald']"
+      },
+      {
+        "instruction": 492,
+        "text": "ifeq [] -> #541"
+      },
+      {
+        "instruction": 493,
+        "text": "getlocal [4]"
+      },
+      {
+        "instruction": 494,
+        "text": "getproperty ['params']"
+      }
+    ],
+    "CharacterVoiceLogic/createVoicePathMap": [
+      {
+        "instruction": 244,
+        "text": "getlocal_2 []"
+      },
+      {
+        "instruction": 245,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 246,
+        "text": "pushstring ['character/unicorn_lancer_rose/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 247,
+        "text": "callproperty ['pinball.asset.logic:ILogicAssetContainer::existsVoiceFileReader', 1]"
+      },
+      {
+        "instruction": 248,
+        "text": "iffalse [] -> #252"
+      },
+      {
+        "instruction": 249,
+        "text": "getlocal [21]"
+      },
+      {
+        "instruction": 248,
+        "text": "iffalse [] -> #252"
+      },
+      {
+        "instruction": 249,
+        "text": "getlocal [21]"
+      },
+      {
+        "instruction": 250,
+        "text": "pushstring ['character/unicorn_lancer_rose/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 251,
+        "text": "callpropvoid ['http://adobe.com/AS3/2006/builtin::push', 1]"
+      },
+      {
+        "instruction": 252,
+        "text": "getlocal_2 []"
+      },
+      {
+        "instruction": 253,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 332,
+        "text": "getlocal_2 []"
+      },
+      {
+        "instruction": 333,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 334,
+        "text": "pushstring ['character/samurai_robot_plum/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 335,
+        "text": "callproperty ['pinball.asset.logic:ILogicAssetContainer::existsVoiceFileReader', 1]"
+      },
+      {
+        "instruction": 336,
+        "text": "iffalse [] -> #340"
+      },
+      {
+        "instruction": 337,
+        "text": "getlocal [21]"
+      },
+      {
+        "instruction": 336,
+        "text": "iffalse [] -> #340"
+      },
+      {
+        "instruction": 337,
+        "text": "getlocal [21]"
+      },
+      {
+        "instruction": 338,
+        "text": "pushstring ['character/samurai_robot_plum/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 339,
+        "text": "callpropvoid ['http://adobe.com/AS3/2006/builtin::push', 1]"
+      },
+      {
+        "instruction": 340,
+        "text": "jump [] -> #341"
+      },
+      {
+        "instruction": 341,
+        "text": "getlocal_2 []"
+      },
+      {
+        "instruction": 345,
+        "text": "getlocal_2 []"
+      },
+      {
+        "instruction": 346,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 347,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_1']"
+      },
+      {
+        "instruction": 348,
+        "text": "callproperty ['pinball.asset.logic:ILogicAssetContainer::existsVoiceFileReader', 1]"
+      },
+      {
+        "instruction": 349,
+        "text": "iffalse [] -> #353"
+      },
+      {
+        "instruction": 350,
+        "text": "getlocal [21]"
+      },
+      {
+        "instruction": 349,
+        "text": "iffalse [] -> #353"
+      },
+      {
+        "instruction": 350,
+        "text": "getlocal [21]"
+      },
+      {
+        "instruction": 351,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_1']"
+      },
+      {
+        "instruction": 352,
+        "text": "callpropvoid ['http://adobe.com/AS3/2006/builtin::push', 1]"
+      },
+      {
+        "instruction": 353,
+        "text": "getlocal_2 []"
+      },
+      {
+        "instruction": 354,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 353,
+        "text": "getlocal_2 []"
+      },
+      {
+        "instruction": 354,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 355,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_2']"
+      },
+      {
+        "instruction": 356,
+        "text": "callproperty ['pinball.asset.logic:ILogicAssetContainer::existsVoiceFileReader', 1]"
+      },
+      {
+        "instruction": 357,
+        "text": "iffalse [] -> #361"
+      },
+      {
+        "instruction": 358,
+        "text": "getlocal [21]"
+      },
+      {
+        "instruction": 357,
+        "text": "iffalse [] -> #361"
+      },
+      {
+        "instruction": 358,
+        "text": "getlocal [21]"
+      },
+      {
+        "instruction": 359,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_2']"
+      },
+      {
+        "instruction": 360,
+        "text": "callpropvoid ['http://adobe.com/AS3/2006/builtin::push', 1]"
+      },
+      {
+        "instruction": 361,
+        "text": "getlocal_2 []"
+      },
+      {
+        "instruction": 362,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 361,
+        "text": "getlocal_2 []"
+      },
+      {
+        "instruction": 362,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 363,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 364,
+        "text": "callproperty ['pinball.asset.logic:ILogicAssetContainer::existsVoiceFileReader', 1]"
+      },
+      {
+        "instruction": 365,
+        "text": "iffalse [] -> #369"
+      },
+      {
+        "instruction": 366,
+        "text": "getlocal [21]"
+      },
+      {
+        "instruction": 365,
+        "text": "iffalse [] -> #369"
+      },
+      {
+        "instruction": 366,
+        "text": "getlocal [21]"
+      },
+      {
+        "instruction": 367,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 368,
+        "text": "callpropvoid ['http://adobe.com/AS3/2006/builtin::push', 1]"
+      },
+      {
+        "instruction": 369,
+        "text": "getlocal_2 []"
+      },
+      {
+        "instruction": 370,
+        "text": "getproperty ['characterId']"
+      }
+    ],
+    "BattleCharacterLogic/resolveFollowingPathCollection": [
+      {
+        "instruction": 152,
+        "text": "getlocal [5]"
+      },
+      {
+        "instruction": 153,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 154,
+        "text": "pushstring ['character/unicorn_lancer_rose/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 155,
+        "text": "callproperty ['pinball.asset.logic:ILogicAssetContainer::existsVoiceFileReader', 1]"
+      },
+      {
+        "instruction": 156,
+        "text": "iffalse [] -> #160"
+      },
+      {
+        "instruction": 157,
+        "text": "getlocal_1 []"
+      },
+      {
+        "instruction": 156,
+        "text": "iffalse [] -> #160"
+      },
+      {
+        "instruction": 157,
+        "text": "getlocal_1 []"
+      },
+      {
+        "instruction": 158,
+        "text": "pushstring ['character/unicorn_lancer_rose/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 159,
+        "text": "callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addSoundEffect', 1]"
+      },
+      {
+        "instruction": 160,
+        "text": "getlocal [5]"
+      },
+      {
+        "instruction": 161,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 200,
+        "text": "getlocal [5]"
+      },
+      {
+        "instruction": 201,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 202,
+        "text": "pushstring ['character/samurai_robot_plum/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 203,
+        "text": "callproperty ['pinball.asset.logic:ILogicAssetContainer::existsVoiceFileReader', 1]"
+      },
+      {
+        "instruction": 204,
+        "text": "iffalse [] -> #208"
+      },
+      {
+        "instruction": 205,
+        "text": "getlocal_1 []"
+      },
+      {
+        "instruction": 204,
+        "text": "iffalse [] -> #208"
+      },
+      {
+        "instruction": 205,
+        "text": "getlocal_1 []"
+      },
+      {
+        "instruction": 206,
+        "text": "pushstring ['character/samurai_robot_plum/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 207,
+        "text": "callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addSoundEffect', 1]"
+      },
+      {
+        "instruction": 208,
+        "text": "getlocal [5]"
+      },
+      {
+        "instruction": 209,
+        "text": "getproperty ['characterId']"
+      },
+      {
+        "instruction": 212,
+        "text": "getlocal [5]"
+      },
+      {
+        "instruction": 213,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 214,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_1']"
+      },
+      {
+        "instruction": 215,
+        "text": "callproperty ['pinball.asset.logic:ILogicAssetContainer::existsVoiceFileReader', 1]"
+      },
+      {
+        "instruction": 216,
+        "text": "iffalse [] -> #220"
+      },
+      {
+        "instruction": 217,
+        "text": "getlocal_1 []"
+      },
+      {
+        "instruction": 216,
+        "text": "iffalse [] -> #220"
+      },
+      {
+        "instruction": 217,
+        "text": "getlocal_1 []"
+      },
+      {
+        "instruction": 218,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_1']"
+      },
+      {
+        "instruction": 219,
+        "text": "callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addSoundEffect', 1]"
+      },
+      {
+        "instruction": 220,
+        "text": "getlocal [5]"
+      },
+      {
+        "instruction": 221,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 220,
+        "text": "getlocal [5]"
+      },
+      {
+        "instruction": 221,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 222,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_2']"
+      },
+      {
+        "instruction": 223,
+        "text": "callproperty ['pinball.asset.logic:ILogicAssetContainer::existsVoiceFileReader', 1]"
+      },
+      {
+        "instruction": 224,
+        "text": "iffalse [] -> #228"
+      },
+      {
+        "instruction": 225,
+        "text": "getlocal_1 []"
+      },
+      {
+        "instruction": 224,
+        "text": "iffalse [] -> #228"
+      },
+      {
+        "instruction": 225,
+        "text": "getlocal_1 []"
+      },
+      {
+        "instruction": 226,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_2']"
+      },
+      {
+        "instruction": 227,
+        "text": "callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addSoundEffect', 1]"
+      },
+      {
+        "instruction": 228,
+        "text": "getlocal [5]"
+      },
+      {
+        "instruction": 229,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 228,
+        "text": "getlocal [5]"
+      },
+      {
+        "instruction": 229,
+        "text": "getproperty ['logicAssets']"
+      },
+      {
+        "instruction": 230,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 231,
+        "text": "callproperty ['pinball.asset.logic:ILogicAssetContainer::existsVoiceFileReader', 1]"
+      },
+      {
+        "instruction": 232,
+        "text": "iffalse [] -> #236"
+      },
+      {
+        "instruction": 233,
+        "text": "getlocal_1 []"
+      },
+      {
+        "instruction": 232,
+        "text": "iffalse [] -> #236"
+      },
+      {
+        "instruction": 233,
+        "text": "getlocal_1 []"
+      },
+      {
+        "instruction": 234,
+        "text": "pushstring ['character/white_wolf_gerald/voice/battle/skill_ready_alt_3']"
+      },
+      {
+        "instruction": 235,
+        "text": "callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addSoundEffect', 1]"
+      },
+      {
+        "instruction": 236,
+        "text": "getlocal [5]"
+      },
+      {
+        "instruction": 237,
+        "text": "callproperty ['get_skillReadyVoicePath', 0]"
+      }
+    ]
+  }
+}

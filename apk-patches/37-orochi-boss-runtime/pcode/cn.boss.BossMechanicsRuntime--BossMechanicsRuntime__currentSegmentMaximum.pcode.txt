@@ -1,0 +1,33 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.boss.BossMechanicsRuntime; label: BossMechanicsRuntime$/currentSegmentMaximum; body: 4; method: 5
+# code SHA-256: 7d2d7ed7522c92ef16ed3784a2cb4bc4dab23cd078d2bc29ca43f16624a016f4; header: [7, 2, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: pushnull []
+#0004 ofs0004: ifne [] -> #7
+#0005 ofs0008: pushbyte [0]
+#0006 ofs000a: jump [] -> #27
+#0007 ofs000e: getlex ['Math']
+#0008 ofs0010: pushbyte [0]
+#0009 ofs0012: getlex ['Math']
+#0010 ofs0014: getlocal_1 []
+#0011 ofs0015: getproperty ['segmentMax']
+#0012 ofs0017: convert_d []
+#0013 ofs0018: getlocal_1 []
+#0014 ofs0019: getproperty ['total']
+#0015 ofs001b: convert_d []
+#0016 ofs001c: getlocal_1 []
+#0017 ofs001d: getproperty ['segmentMax']
+#0018 ofs001f: convert_d []
+#0019 ofs0020: getlocal_1 []
+#0020 ofs0021: getproperty ['segmentIndex']
+#0021 ofs0023: convert_i []
+#0022 ofs0024: multiply []
+#0023 ofs0025: subtract []
+#0024 ofs0026: callproperty ['min', 2]
+#0025 ofs0029: callproperty ['max', 2]
+#0026 ofs002c: convert_d []
+#0027 ofs002d: returnvalue []

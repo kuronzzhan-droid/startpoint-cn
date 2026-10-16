@@ -1,0 +1,38 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.admission.ClientAdmission; label: anonymous-method-39; body: 37; method: 39
+# code SHA-256: db5e9acbd42a04201faf2252c3fa3289e7f07ced4ac8f981eefb6586851064b8; header: [3, 3, 0, 0]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_1 []
+#0001 ofs0001: callpropvoid ['stopImmediatePropagation', 0]
+#0002 ofs0004: getlex ['cn.admission:ClientAdmission::retryAction']
+#0003 ofs0006: coerce ['Function']
+#0004 ofs0008: setlocal_2 []
+#0005 ofs0009: getlex ['cn.admission:ClientAdmission::stageRef']
+#0006 ofs000b: pushstring ['enterFrame']
+#0007 ofs000e: getlex ['cn.admission:ClientAdmission::raise']
+#0008 ofs0010: callpropvoid ['removeEventListener', 2]
+#0009 ofs0013: getlex ['cn.admission:ClientAdmission::panel']
+#0010 ofs0015: dup []
+#0011 ofs0016: iffalse [] -> #16
+#0012 ofs001a: pop []
+#0013 ofs001b: getlex ['cn.admission:ClientAdmission::panel']
+#0014 ofs001d: getproperty ['parent']
+#0015 ofs0020: coerce_a []
+#0016 ofs0021: iffalse [] -> #21
+#0017 ofs0025: getlex ['cn.admission:ClientAdmission::panel']
+#0018 ofs0027: getproperty ['parent']
+#0019 ofs002a: getlex ['cn.admission:ClientAdmission::panel']
+#0020 ofs002c: callpropvoid ['removeChild', 1]
+#0021 ofs0030: pushnull []
+#0022 ofs0031: findproperty ['cn.admission:ClientAdmission::panel']
+#0023 ofs0033: swap []
+#0024 ofs0034: setproperty ['cn.admission:ClientAdmission::panel']
+#0025 ofs0036: getlocal_2 []
+#0026 ofs0037: pushnull []
+#0027 ofs0038: ifeq [] -> #32
+#0028 ofs003c: getlocal_2 []
+#0029 ofs003d: getlocal_0 []
+#0030 ofs003e: call [0]
+#0031 ofs0040: pop []
+#0032 ofs0041: returnvoid []

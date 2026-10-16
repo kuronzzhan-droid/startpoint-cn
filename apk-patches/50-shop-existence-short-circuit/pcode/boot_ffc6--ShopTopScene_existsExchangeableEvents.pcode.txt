@@ -1,0 +1,13 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: ShopTopScene/existsExchangeableEvents; body: 81069; method: 88998
+# code SHA-256: e313a96606a3092109dc5c01e28d0e03b41fedfc298cf3206dbaaaa37913bf2d; header: [3, 7, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['cn.shop::ShopFirstOpen']
+#0003 ofs0006: findproperty ['globalLogic']
+#0004 ofs0009: getproperty ['globalLogic']
+#0005 ofs000c: callproperty ['shopTopExists', 1]
+#0006 ofs0011: convert_b []
+#0007 ofs0012: returnvalue []

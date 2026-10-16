@@ -1,0 +1,22 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: BothBossTool$/singleMapSeed; body: 92437; method: 100910
+# code SHA-256: 1f51b372b44a7fed9ef03abf84eb8fd950284cf8d7f5a6d98caccaf557395581; header: [4, 3, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 92776, 1, 472]
+#0004 ofs0011: findpropstrict ['Date']
+#0005 ofs0013: constructprop ['Date', 0]
+#0006 ofs0016: coerce ['Date']
+#0007 ofs0018: setlocal_2 []
+#0008 ofs0019: getlocal_0 []
+#0009 ofs001a: findpropstrict ['String']
+#0010 ofs001c: getlocal_2 []
+#0011 ofs001d: callproperty ['getTime', 0]
+#0012 ofs0022: callproperty ['String', 1]
+#0013 ofs0025: pushbyte [255]
+#0014 ofs0027: getlocal_1 []
+#0015 ofs0028: callproperty ['mapSeed', 3]
+#0016 ofs002d: returnvalue []

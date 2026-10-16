@@ -1,0 +1,59 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.admission.AdmissionSession; label: anonymous-method-16; body: 14; method: 16
+# code SHA-256: 529c4a5fcf539c2ff10a91d8b677abf67a8c142adbd01f84922f9497ff599dd3; header: [7, 2, 0, 0]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: findpropstrict ['cn.admission:AdmissionSession::changed']
+#0001 ofs0002: getlex ['cn.admission::revision']
+#0002 ofs0004: callproperty ['cn.admission:AdmissionSession::changed', 1]
+#0003 ofs0007: iffalse [] -> #5
+#0004 ofs000b: returnvoid []
+#0005 ofs000c: findpropstrict ['cn.admission:AdmissionSession::issued']
+#0006 ofs000e: getlocal_1 []
+#0007 ofs000f: getlex ['cn.admission::started']
+#0008 ofs0011: callproperty ['cn.admission:AdmissionSession::issued', 2]
+#0009 ofs0014: iftrue [] -> #33
+#0010 ofs0018: findpropstrict ['cn.admission:AdmissionSession::finish']
+#0011 ofs001a: getlocal_1 []
+#0012 ofs001b: dup []
+#0013 ofs001c: iffalse [] -> #20
+#0014 ofs0020: pop []
+#0015 ofs0021: getlocal_1 []
+#0016 ofs0022: getproperty ['ok']
+#0017 ofs0024: pushtrue []
+#0018 ofs0025: strictequals []
+#0019 ofs0026: coerce_a []
+#0020 ofs0027: iffalse [] -> #29
+#0021 ofs002b: pushstring ['ok']
+#0022 ofs002d: pushfalse []
+#0023 ofs002e: pushstring ['action']
+#0024 ofs0030: pushstring ['retry']
+#0025 ofs0032: pushstring ['message']
+#0026 ofs0034: pushstring ['服务器校验响应无效，请稍后重试。']
+#0027 ofs0036: newobject [3]
+#0028 ofs0038: jump [] -> #31
+#0029 ofs003c: getlocal_1 []
+#0030 ofs003d: coerce ['Object']
+#0031 ofs003f: callpropvoid ['cn.admission:AdmissionSession::finish', 1]
+#0032 ofs0042: returnvoid []
+#0033 ofs0043: pushstring ['']
+#0034 ofs0045: findproperty ['cn.admission:AdmissionSession::bound']
+#0035 ofs0047: swap []
+#0036 ofs0048: setproperty ['cn.admission:AdmissionSession::bound']
+#0037 ofs004a: getlex ['cn.admission:AdmissionSession::mustBind']
+#0038 ofs004c: dup []
+#0039 ofs004d: iffalse [] -> #43
+#0040 ofs0051: pop []
+#0041 ofs0052: getlex ['cn.admission:AdmissionSession::account']
+#0042 ofs0054: coerce_a []
+#0043 ofs0055: iffalse [] -> #48
+#0044 ofs0059: findpropstrict ['cn.admission:AdmissionSession::rebind']
+#0045 ofs005b: getlex ['cn.admission::revision']
+#0046 ofs005d: callpropvoid ['cn.admission:AdmissionSession::rebind', 1]
+#0047 ofs0060: jump [] -> #53
+#0048 ofs0064: findpropstrict ['cn.admission:AdmissionSession::finish']
+#0049 ofs0066: pushstring ['ok']
+#0050 ofs0068: pushtrue []
+#0051 ofs0069: newobject [1]
+#0052 ofs006b: callpropvoid ['cn.admission:AdmissionSession::finish', 1]
+#0053 ofs006e: returnvoid []

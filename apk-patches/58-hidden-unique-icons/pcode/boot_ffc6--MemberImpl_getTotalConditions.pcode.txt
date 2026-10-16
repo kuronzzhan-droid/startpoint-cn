@@ -1,0 +1,18 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: MemberImpl/getTotalConditions; body: 60292; method: 65348
+# code SHA-256: 405cc8b1a873c66be00b5dc4b84c7e6b0acfbe84e2f673644fcbf6a9614cb7d5; header: [2, 1, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: findproperty ['conditionSlot']
+#0003 ofs0005: getproperty ['conditionSlot']
+#0004 ofs0008: pushfalse []
+#0005 ofs0009: callproperty ['getTotalNumberOfConditionsIncludingOuterEnvironments', 1]
+#0006 ofs000e: convert_i []
+#0007 ofs000f: pop []
+#0008 ofs0010: getlocal_0 []
+#0009 ofs0011: callproperty ['getConditionsIncludingOuterEnvironments', 0]
+#0010 ofs0016: getproperty ['length']
+#0011 ofs0018: convert_i []
+#0012 ofs0019: returnvalue []

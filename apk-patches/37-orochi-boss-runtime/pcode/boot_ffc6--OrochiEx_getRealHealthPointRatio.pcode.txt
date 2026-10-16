@@ -1,0 +1,25 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/getRealHealthPointRatio; body: 92530; method: 101003
+# code SHA-256: 5064bdc75a0a082ea140339ca0ddb7bbd4cdb98d1cea5cf9d162745de79a7895; header: [2, 3, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 92775, 0, 2243]
+#0003 ofs000a: op_ef [1, 92776, 1, 2244]
+#0004 ofs0012: getlex ['pinball.common.math._Decimal100::Decimal100_Impl_']
+#0005 ofs0015: findpropstrict ['getRealCurrentHealthPoint']
+#0006 ofs0018: callproperty ['getRealCurrentHealthPoint', 0]
+#0007 ofs001c: callproperty ['toFloat', 1]
+#0008 ofs0020: convert_d []
+#0009 ofs0021: setlocal_1 []
+#0010 ofs0022: getlex ['pinball.common.math._Decimal100::Decimal100_Impl_']
+#0011 ofs0025: findpropstrict ['getRealMaximumHealthPoint']
+#0012 ofs0028: callproperty ['getRealMaximumHealthPoint', 0]
+#0013 ofs002c: callproperty ['toFloat', 1]
+#0014 ofs0030: convert_d []
+#0015 ofs0031: setlocal_2 []
+#0016 ofs0032: getlocal_1 []
+#0017 ofs0033: getlocal_2 []
+#0018 ofs0034: divide []
+#0019 ofs0035: returnvalue []

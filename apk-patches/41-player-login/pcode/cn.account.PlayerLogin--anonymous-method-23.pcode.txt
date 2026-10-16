@@ -1,0 +1,40 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.account.PlayerLogin; label: anonymous-method-23; body: 21; method: 23
+# code SHA-256: 81e34c90a350c6a43354af20f5d245dddc1d266d0a8c6fb7771f346ef4031569; header: [3, 3, 0, 0]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_2 []
+#0001 ofs0001: pushstring ['SESSION_INVALID']
+#0002 ofs0004: ifne [] -> #24
+#0003 ofs0008: findpropstrict ['cn.account:PlayerLogin::invalidateEntry']
+#0004 ofs000a: getlex ['cn.account::entry']
+#0005 ofs000d: callpropvoid ['cn.account:PlayerLogin::invalidateEntry', 1]
+#0006 ofs0010: pushstring ['username']
+#0007 ofs0013: getlex ['cn.account::entry']
+#0008 ofs0016: getproperty ['profile']
+#0009 ofs0018: getproperty ['username']
+#0010 ofs001b: dup []
+#0011 ofs001c: iftrue [] -> #15
+#0012 ofs0020: pop []
+#0013 ofs0021: pushstring ['']
+#0014 ofs0023: coerce_a []
+#0015 ofs0024: newobject [1]
+#0016 ofs0026: findproperty ['cn.account:PlayerLogin::form']
+#0017 ofs0028: swap []
+#0018 ofs0029: setproperty ['cn.account:PlayerLogin::form']
+#0019 ofs002b: pushstring ['login']
+#0020 ofs002d: findproperty ['cn.account:PlayerLogin::page']
+#0021 ofs002f: swap []
+#0022 ofs0030: setproperty ['cn.account:PlayerLogin::page']
+#0023 ofs0032: jump [] -> #28
+#0024 ofs0036: pushstring ['retry']
+#0025 ofs0039: findproperty ['cn.account:PlayerLogin::page']
+#0026 ofs003b: swap []
+#0027 ofs003c: setproperty ['cn.account:PlayerLogin::page']
+#0028 ofs003e: getlocal_1 []
+#0029 ofs003f: findproperty ['cn.account:PlayerLogin::message']
+#0030 ofs0041: swap []
+#0031 ofs0042: setproperty ['cn.account:PlayerLogin::message']
+#0032 ofs0044: findpropstrict ['cn.account:PlayerLogin::render']
+#0033 ofs0046: callpropvoid ['cn.account:PlayerLogin::render', 0]
+#0034 ofs0049: returnvoid []

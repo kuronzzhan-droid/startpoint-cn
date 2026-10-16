@@ -1,0 +1,31 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.ui.AbyssDetails; label: AbyssDetails$/isAbyss; body: 0; method: 1
+# code SHA-256: 41bcfc4e0b063d4a1a194c6b7c0c21ab8d34626d64235a716cdebd258c28892e; header: [3, 2, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: pushnull []
+#0004 ofs0004: equals []
+#0005 ofs0005: not []
+#0006 ofs0006: dup []
+#0007 ofs0007: iffalse [] -> #12
+#0008 ofs000b: pop []
+#0009 ofs000c: pushstring ['id']
+#0010 ofs000e: getlocal_1 []
+#0011 ofs000f: in []
+#0012 ofs0010: dup []
+#0013 ofs0011: iffalse [] -> #25
+#0014 ofs0015: pop []
+#0015 ofs0016: getlocal_1 []
+#0016 ofs0017: getproperty ['id']
+#0017 ofs0019: convert_s []
+#0018 ofs001a: getlex ['RegExp']
+#0019 ofs001c: pushstring ['^(?:7000990[0-9]{2}|7001000(?:0[1-9]|[12][0-9]|30))$']
+#0020 ofs001f: construct [1]
+#0021 ofs0021: callproperty ['http://adobe.com/AS3/2006/builtin::match', 1]
+#0022 ofs0024: pushnull []
+#0023 ofs0025: equals []
+#0024 ofs0026: not []
+#0025 ofs0027: returnvalue []

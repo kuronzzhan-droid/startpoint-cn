@@ -1,0 +1,1883 @@
+[
+  {
+    "patch": "pf-initial-combo",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\kyubi-pf-combo\\slot.py",
+    "file": "01-pf-initial-combo\\source\\slot.py",
+    "bytes": 4652,
+    "source_sha256": "a4f603b4df98843dc748ec9def90fe3e63c09a0a14569ae155a50cf80e043c6a",
+    "collected_sha256": "a4f603b4df98843dc748ec9def90fe3e63c09a0a14569ae155a50cf80e043c6a",
+    "redacted": false
+  },
+  {
+    "patch": "pf-initial-combo",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\kyubi-pf-combo\\pcode.py",
+    "file": "01-pf-initial-combo\\source\\pcode.py",
+    "bytes": 5228,
+    "source_sha256": "99db53ea8c6c00ab908f67535f1d6899c09253511f6b01e255cdc0fea2db675e",
+    "collected_sha256": "99db53ea8c6c00ab908f67535f1d6899c09253511f6b01e255cdc0fea2db675e",
+    "redacted": false
+  },
+  {
+    "patch": "panel-description-override",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\kyubi-panel-override\\pcode.py",
+    "file": "02-panel-description-override\\source\\pcode.py",
+    "bytes": 12328,
+    "source_sha256": "2b20d3afecac4e43a88ff06fbe3439cd36328e8448c9d92f29c2d96861baada9",
+    "collected_sha256": "2b20d3afecac4e43a88ff06fbe3439cd36328e8448c9d92f29c2d96861baada9",
+    "redacted": false
+  },
+  {
+    "patch": "dash-parameter-422",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\dash-parameter\\abcpatch.py",
+    "file": "03-dash-parameter-422\\source\\abcpatch.py",
+    "bytes": 27276,
+    "source_sha256": "a004add43ffed6c901cc6ca92dee2472f58d9860ec10275b6715ca91ad58027b",
+    "collected_sha256": "a004add43ffed6c901cc6ca92dee2472f58d9860ec10275b6715ca91ad58027b",
+    "redacted": false
+  },
+  {
+    "patch": "fever-ratio-724",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\kyubi-fever-ratio\\abcpatch.py",
+    "file": "04-fever-ratio-724\\source\\abcpatch.py",
+    "bytes": 15704,
+    "source_sha256": "31dcd6614d925034c008c330d441d3d0d6a7f734a7143afd530d5815d9e846ed",
+    "collected_sha256": "31dcd6614d925034c008c330d441d3d0d6a7f734a7143afd530d5815d9e846ed",
+    "redacted": false
+  },
+  {
+    "patch": "summer-bai-sunburn",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\lens0910\\build_swf.py",
+    "file": "05-summer-bai-sunburn\\source\\build_swf.py",
+    "bytes": 7194,
+    "source_sha256": "71d997688239906ddb2255c9774abb5ee6108e95411f914ffa184f5b61b73172",
+    "collected_sha256": "71d997688239906ddb2255c9774abb5ee6108e95411f914ffa184f5b61b73172",
+    "redacted": false
+  },
+  {
+    "patch": "summer-bai-voice",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\lens0910\\build_swf.py",
+    "file": "06-summer-bai-voice\\source\\build_swf.py",
+    "bytes": 7194,
+    "source_sha256": "71d997688239906ddb2255c9774abb5ee6108e95411f914ffa184f5b61b73172",
+    "collected_sha256": "71d997688239906ddb2255c9774abb5ee6108e95411f914ffa184f5b61b73172",
+    "redacted": false
+  },
+  {
+    "patch": "gerald-129992-ready-voice",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\lens0910\\build_swf.py",
+    "file": "07-gerald-129992-ready-voice\\source\\build_swf.py",
+    "bytes": 7194,
+    "source_sha256": "71d997688239906ddb2255c9774abb5ee6108e95411f914ffa184f5b61b73172",
+    "collected_sha256": "71d997688239906ddb2255c9774abb5ee6108e95411f914ffa184f5b61b73172",
+    "redacted": false
+  },
+  {
+    "patch": "ability-summary-description-cache",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\r10-public-release\\build.py",
+    "file": "08-ability-summary-description-cache\\source\\build.py",
+    "bytes": 19523,
+    "source_sha256": "bcf73b6196bc4e5b5c4fd0aee61a0848213fc83ef5f46786ea1219d6b2aabc84",
+    "collected_sha256": "bcf73b6196bc4e5b5c4fd0aee61a0848213fc83ef5f46786ea1219d6b2aabc84",
+    "redacted": false
+  },
+  {
+    "patch": "abyss-autostart",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\abyss-autostart\\build_apk.py",
+    "file": "09-abyss-autostart\\source\\build_apk.py",
+    "bytes": 19347,
+    "source_sha256": "1d26bc5994606c2938c5899adbfe8301b77dea591e711b83b01817b19842aeea",
+    "collected_sha256": "1d26bc5994606c2938c5899adbfe8301b77dea591e711b83b01817b19842aeea",
+    "redacted": false
+  },
+  {
+    "patch": "abyss-details",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\abyss-detail-ui\\build_swf.py",
+    "file": "10-abyss-details\\source\\build_swf.py",
+    "bytes": 8634,
+    "source_sha256": "d94d88d8adf6dd374b175f825a160c52ff1d62f07c6ff2bc0ce3970efc8efdfb",
+    "collected_sha256": "d94d88d8adf6dd374b175f825a160c52ff1d62f07c6ff2bc0ce3970efc8efdfb",
+    "redacted": false
+  },
+  {
+    "patch": "abyss-details",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\abyss-detail-ui\\build.py",
+    "file": "10-abyss-details\\source\\build.py",
+    "bytes": 4719,
+    "source_sha256": "23c76ffb75c4ab21b6aaeda3e6d2f143683480a2178f3b1c4980aea6e007517a",
+    "collected_sha256": "23c76ffb75c4ab21b6aaeda3e6d2f143683480a2178f3b1c4980aea6e007517a",
+    "redacted": false
+  },
+  {
+    "patch": "abyss-details",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\abyss-detail-ui\\src\\cn\\ui\\AbyssDetails.as",
+    "file": "10-abyss-details\\source\\AbyssDetails.as",
+    "bytes": 7929,
+    "source_sha256": "029a4a8aa42beaaa01be105b7a7a39da63e357a9824fee37d92212d8a9909eb5",
+    "collected_sha256": "029a4a8aa42beaaa01be105b7a7a39da63e357a9824fee37d92212d8a9909eb5",
+    "redacted": false
+  },
+  {
+    "patch": "abyss-details",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\startup-cache\\build_swf.py",
+    "file": "10-abyss-details\\source\\startup-cache--build_swf.py",
+    "bytes": 6471,
+    "source_sha256": "d5dcfb6826b8f3cb462b44860c18f51aae78883c77aa26573c38425c771a3468",
+    "collected_sha256": "d5dcfb6826b8f3cb462b44860c18f51aae78883c77aa26573c38425c771a3468",
+    "redacted": false
+  },
+  {
+    "patch": "abyss-details",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\abyss-records\\patch_swf.py",
+    "file": "10-abyss-details\\source\\patch_swf.py",
+    "bytes": 3012,
+    "source_sha256": "0a3f03adf1b71c4affcd7c53b6629af0627a9a6ab2602ae27fb920239a2c2205",
+    "collected_sha256": "0a3f03adf1b71c4affcd7c53b6629af0627a9a6ab2602ae27fb920239a2c2205",
+    "redacted": false
+  },
+  {
+    "patch": "abyss-equipment-mode-gate",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\abyss-mode-equipment\\patch.py",
+    "file": "11-abyss-equipment-mode-gate\\source\\patch.py",
+    "bytes": 23582,
+    "source_sha256": "b0b4b110860595a7c5bf21f88028f8d11718f508da192217c5a4569c5ce2f36b",
+    "collected_sha256": "b0b4b110860595a7c5bf21f88028f8d11718f508da192217c5a4569c5ce2f36b",
+    "redacted": false
+  },
+  {
+    "patch": "abyss-equipment-mode-gate",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\abyss-mode-equipment\\build_apk.py",
+    "file": "11-abyss-equipment-mode-gate\\source\\build_apk.py",
+    "bytes": 41289,
+    "source_sha256": "58a0853ac1910e58a82bac3f99419bdccdf07bbabd7272cb5a67ce4984a538a9",
+    "collected_sha256": "58a0853ac1910e58a82bac3f99419bdccdf07bbabd7272cb5a67ce4984a538a9",
+    "redacted": false
+  },
+  {
+    "patch": "abyss-record-holder",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\abyss-record-holder\\patch_swf.py",
+    "file": "12-abyss-record-holder\\source\\patch_swf.py",
+    "bytes": 2395,
+    "source_sha256": "cbb5c4065d5eb2cea0ca895b09a23ecb2e42a4d9157679e5676165ea7d44c86a",
+    "collected_sha256": "cbb5c4065d5eb2cea0ca895b09a23ecb2e42a4d9157679e5676165ea7d44c86a",
+    "redacted": false
+  },
+  {
+    "patch": "abyss-records",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\abyss-records\\patch_swf.py",
+    "file": "13-abyss-records\\source\\patch_swf.py",
+    "bytes": 3012,
+    "source_sha256": "0a3f03adf1b71c4affcd7c53b6629af0627a9a6ab2602ae27fb920239a2c2205",
+    "collected_sha256": "0a3f03adf1b71c4affcd7c53b6629af0627a9a6ab2602ae27fb920239a2c2205",
+    "redacted": false
+  },
+  {
+    "patch": "abyss-records",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\abyss-records\\src\\cn\\ui\\AbyssRecordDetails.as",
+    "file": "13-abyss-records\\source\\AbyssRecordDetails.as",
+    "bytes": 6045,
+    "source_sha256": "73985005705045abbb53a64cdaa052e7edc64e1729bf0673bf047852f4eaa27d",
+    "collected_sha256": "73985005705045abbb53a64cdaa052e7edc64e1729bf0673bf047852f4eaa27d",
+    "redacted": false
+  },
+  {
+    "patch": "abyss-records",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\abyss-record-holder\\patch_swf.py",
+    "file": "13-abyss-records\\source\\abyss-record-holder--patch_swf.py",
+    "bytes": 2395,
+    "source_sha256": "cbb5c4065d5eb2cea0ca895b09a23ecb2e42a4d9157679e5676165ea7d44c86a",
+    "collected_sha256": "cbb5c4065d5eb2cea0ca895b09a23ecb2e42a4d9157679e5676165ea7d44c86a",
+    "redacted": false
+  },
+  {
+    "patch": "account-takeover-entry",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\account-takeover\\build_apk.py",
+    "file": "14-account-takeover-entry\\source\\build_apk.py",
+    "bytes": 23983,
+    "source_sha256": "bdf57cb5e32d6a98234040caf524dba6a1e2b50e0c701312785f50ad006a4ea0",
+    "collected_sha256": "bdf57cb5e32d6a98234040caf524dba6a1e2b50e0c701312785f50ad006a4ea0",
+    "redacted": false
+  },
+  {
+    "patch": "author-ready-voices",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\author-content-1043\\build_swf.py",
+    "file": "15-author-ready-voices\\source\\build_swf.py",
+    "bytes": 6853,
+    "source_sha256": "27cca1d26bf8225ff3d72c5689c7c9fe14d7c07272618306bbe81ece4d13f5a1",
+    "collected_sha256": "27cca1d26bf8225ff3d72c5689c7c9fe14d7c07272618306bbe81ece4d13f5a1",
+    "redacted": false
+  },
+  {
+    "patch": "available-ability-description-cache",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\r10-public-release\\build.py",
+    "file": "16-available-ability-description-cache\\source\\build.py",
+    "bytes": 19523,
+    "source_sha256": "bcf73b6196bc4e5b5c4fd0aee61a0848213fc83ef5f46786ea1219d6b2aabc84",
+    "collected_sha256": "bcf73b6196bc4e5b5c4fd0aee61a0848213fc83ef5f46786ea1219d6b2aabc84",
+    "redacted": false
+  },
+  {
+    "patch": "awake-page-refresh",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\awake-page-refresh\\patch_swf.py",
+    "file": "17-awake-page-refresh\\source\\patch_swf.py",
+    "bytes": 5090,
+    "source_sha256": "6f887884e07a3bc39ac93b4c7754933d089366f5446bff31bb82f6f4b09dadbc",
+    "collected_sha256": "6f887884e07a3bc39ac93b4c7754933d089366f5446bff31bb82f6f4b09dadbc",
+    "redacted": false
+  },
+  {
+    "patch": "character-carousel-current-only",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\character-carousel\\repack_apk_with_unique.py",
+    "file": "18-character-carousel-current-only\\source\\repack_apk_with_unique.py",
+    "bytes": 6336,
+    "source_sha256": "707160f40109a4f6c2085dc05651b653c8aff506c57bb054d7ca7be5a36b1d1e",
+    "collected_sha256": "707160f40109a4f6c2085dc05651b653c8aff506c57bb054d7ca7be5a36b1d1e",
+    "redacted": false
+  },
+  {
+    "patch": "client-admission",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\r10-public-release\\build.py",
+    "file": "19-client-admission\\source\\build.py",
+    "bytes": 19523,
+    "source_sha256": "bcf73b6196bc4e5b5c4fd0aee61a0848213fc83ef5f46786ea1219d6b2aabc84",
+    "collected_sha256": "bcf73b6196bc4e5b5c4fd0aee61a0848213fc83ef5f46786ea1219d6b2aabc84",
+    "redacted": false
+  },
+  {
+    "patch": "client-admission",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\r10-public-release\\src\\cn\\admission\\ClientAdmission.as",
+    "file": "19-client-admission\\source\\ClientAdmission.as",
+    "bytes": 15389,
+    "source_sha256": "8d403f21d86378f01d47b1f49e870f4e9fabb930f367b0b2f1b12063021ca998",
+    "collected_sha256": "8d403f21d86378f01d47b1f49e870f4e9fabb930f367b0b2f1b12063021ca998",
+    "redacted": false
+  },
+  {
+    "patch": "client-admission",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\author-public-release\\prepare_admission.py",
+    "file": "19-client-admission\\source\\prepare_admission.py",
+    "bytes": 2150,
+    "source_sha256": "68afb13ef1eec66ec09d3faa501217b461948979e0463a53aec791c3b397550e",
+    "collected_sha256": "68afb13ef1eec66ec09d3faa501217b461948979e0463a53aec791c3b397550e",
+    "redacted": false
+  },
+  {
+    "patch": "client-admission",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\r10-public-release\\src\\cn\\admission\\AdmissionSession.as",
+    "file": "19-client-admission\\source\\AdmissionSession.as",
+    "bytes": 6313,
+    "source_sha256": "29edd815c6aad69a4979e22d55e9790a32c3d83f2c185a596f55c766da73d9c8",
+    "collected_sha256": "29edd815c6aad69a4979e22d55e9790a32c3d83f2c185a596f55c766da73d9c8",
+    "redacted": false
+  },
+  {
+    "patch": "damage-type-conversion",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\patch.py",
+    "file": "20-damage-type-conversion\\source\\patch.py",
+    "bytes": 2198,
+    "source_sha256": "2bb80662023229a11274161fe856332e8fb7ea1608efe26f3f734784acd68596",
+    "collected_sha256": "2bb80662023229a11274161fe856332e8fb7ea1608efe26f3f734784acd68596",
+    "redacted": false
+  },
+  {
+    "patch": "damage-type-conversion",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\content.py",
+    "file": "20-damage-type-conversion\\source\\content.py",
+    "bytes": 5593,
+    "source_sha256": "f28fe969f3441726702622c508a8191876f4f73d36bca791669251958d346ade",
+    "collected_sha256": "f28fe969f3441726702622c508a8191876f4f73d36bca791669251958d346ade",
+    "redacted": false
+  },
+  {
+    "patch": "damage-type-conversion",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\damage.py",
+    "file": "20-damage-type-conversion\\source\\damage.py",
+    "bytes": 5910,
+    "source_sha256": "772e9db3cf672465af5cca619e020c570a4eafe76f392cf5f3639fcbdc40dfe8",
+    "collected_sha256": "772e9db3cf672465af5cca619e020c570a4eafe76f392cf5f3639fcbdc40dfe8",
+    "redacted": false
+  },
+  {
+    "patch": "damage-type-conversion",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\gauge.py",
+    "file": "20-damage-type-conversion\\source\\gauge.py",
+    "bytes": 4614,
+    "source_sha256": "b0eb2ab4904858e94d438fe9a8927c9fbee6d1aa68fea3b89ccc2c49bb1dc4f2",
+    "collected_sha256": "b0eb2ab4904858e94d438fe9a8927c9fbee6d1aa68fea3b89ccc2c49bb1dc4f2",
+    "redacted": false
+  },
+  {
+    "patch": "damage-type-conversion",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\provenance.py",
+    "file": "20-damage-type-conversion\\source\\provenance.py",
+    "bytes": 6970,
+    "source_sha256": "d1f385c253e72f6f7958b131f58292379cf3845353ea6cad26b43a92cb6c2213",
+    "collected_sha256": "d1f385c253e72f6f7958b131f58292379cf3845353ea6cad26b43a92cb6c2213",
+    "redacted": false
+  },
+  {
+    "patch": "damage-type-conversion",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\core.py",
+    "file": "20-damage-type-conversion\\source\\core.py",
+    "bytes": 6290,
+    "source_sha256": "7cf5d9ddbda00f976887e58308c641b143d5dfc959a3c587bf75e750e222b33a",
+    "collected_sha256": "7cf5d9ddbda00f976887e58308c641b143d5dfc959a3c587bf75e750e222b33a",
+    "redacted": false
+  },
+  {
+    "patch": "damage-type-conversion",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\verify.py",
+    "file": "20-damage-type-conversion\\source\\verify.py",
+    "bytes": 2027,
+    "source_sha256": "d5cdbb3af58e7aa57d7bf4d68fa15a2c53823843b8e22dfe3fe564318fd495b0",
+    "collected_sha256": "d5cdbb3af58e7aa57d7bf4d68fa15a2c53823843b8e22dfe3fe564318fd495b0",
+    "redacted": false
+  },
+  {
+    "patch": "damage-type-conversion",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\baseline.json",
+    "file": "20-damage-type-conversion\\source\\baseline.json",
+    "bytes": 6213,
+    "source_sha256": "d89bb9ec2dd691fe37e0639f6c452a33b499537080c2f0fea3986c3b7a7adca1",
+    "collected_sha256": "d89bb9ec2dd691fe37e0639f6c452a33b499537080c2f0fea3986c3b7a7adca1",
+    "redacted": false
+  },
+  {
+    "patch": "damage-type-conversion",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\build_apk.py",
+    "file": "20-damage-type-conversion\\source\\build_apk.py",
+    "bytes": 4913,
+    "source_sha256": "935a001df9ba303987e32dc162797693b1bd63c29269eeed300f5b8e3a6980df",
+    "collected_sha256": "935a001df9ba303987e32dc162797693b1bd63c29269eeed300f5b8e3a6980df",
+    "redacted": false
+  },
+  {
+    "patch": "dual-form-animation",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\dual-form-v1\\patch_pcode.py",
+    "file": "21-dual-form-animation\\source\\patch_pcode.py",
+    "bytes": 71950,
+    "source_sha256": "fe02e42b9b0bc525bfc5fefccf1e4422c46d2130722902652de3b80c5008b045",
+    "collected_sha256": "fe02e42b9b0bc525bfc5fefccf1e4422c46d2130722902652de3b80c5008b045",
+    "redacted": false
+  },
+  {
+    "patch": "dual-form-animation",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\dual-form-v1\\pcode_tools.py",
+    "file": "21-dual-form-animation\\source\\pcode_tools.py",
+    "bytes": 4977,
+    "source_sha256": "e44386619d1899f960091218e86e765e5ebfbcc90c3f6c78bfaf77c08d452540",
+    "collected_sha256": "e44386619d1899f960091218e86e765e5ebfbcc90c3f6c78bfaf77c08d452540",
+    "redacted": false
+  },
+  {
+    "patch": "dual-form-animation",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\dual-form-v1\\patch-manifest-pure-pcode.json",
+    "file": "21-dual-form-animation\\source\\patch-manifest-pure-pcode.json",
+    "bytes": 1059,
+    "source_sha256": "af95a983f2292f7696737c22dfa001a855183649fd95bf0aa6f8bb3dcd2933a0",
+    "collected_sha256": "af95a983f2292f7696737c22dfa001a855183649fd95bf0aa6f8bb3dcd2933a0",
+    "redacted": false
+  },
+  {
+    "patch": "empty-update-and-preferences",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\startup-cache\\build_swf.py",
+    "file": "22-empty-update-and-preferences\\source\\build_swf.py",
+    "bytes": 6471,
+    "source_sha256": "d5dcfb6826b8f3cb462b44860c18f51aae78883c77aa26573c38425c771a3468",
+    "collected_sha256": "d5dcfb6826b8f3cb462b44860c18f51aae78883c77aa26573c38425c771a3468",
+    "redacted": false
+  },
+  {
+    "patch": "empty-update-and-preferences",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\startup-cache\\src\\cn\\asset\\EmptyUpdate.as",
+    "file": "22-empty-update-and-preferences\\source\\EmptyUpdate.as",
+    "bytes": 1167,
+    "source_sha256": "cd3aa716910c136cef5659dc1c42f5dd0c421b9d28ab6d2ba452a2d18c569d87",
+    "collected_sha256": "cd3aa716910c136cef5659dc1c42f5dd0c421b9d28ab6d2ba452a2d18c569d87",
+    "redacted": false
+  },
+  {
+    "patch": "fiveboss-manual-auto-lock",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\lens0907-0908\\build_swf.py",
+    "file": "27-fiveboss-manual-auto-lock\\source\\build_swf.py",
+    "bytes": 21318,
+    "source_sha256": "fda30d7f435f8d0a9c0ab6a2a09cde1178014d65c25f8eae0b8163151736d4f4",
+    "collected_sha256": "fda30d7f435f8d0a9c0ab6a2a09cde1178014d65c25f8eae0b8163151736d4f4",
+    "redacted": false
+  },
+  {
+    "patch": "fiveboss-manual-auto-lock",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\lens0907-0908\\method-plan.json",
+    "file": "27-fiveboss-manual-auto-lock\\source\\method-plan.json",
+    "bytes": 12882,
+    "source_sha256": "8e726176d9273f1c85573fe0cdcc0ff4246c6110c7cd7f248daad79a997cbf40",
+    "collected_sha256": "8e726176d9273f1c85573fe0cdcc0ff4246c6110c7cd7f248daad79a997cbf40",
+    "redacted": false
+  },
+  {
+    "patch": "fiveboss-random-map-seed",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\lens0907-0908\\build_swf.py",
+    "file": "28-fiveboss-random-map-seed\\source\\build_swf.py",
+    "bytes": 21318,
+    "source_sha256": "fda30d7f435f8d0a9c0ab6a2a09cde1178014d65c25f8eae0b8163151736d4f4",
+    "collected_sha256": "fda30d7f435f8d0a9c0ab6a2a09cde1178014d65c25f8eae0b8163151736d4f4",
+    "redacted": false
+  },
+  {
+    "patch": "fiveboss-random-map-seed",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\lens0907-0908\\method-plan.json",
+    "file": "28-fiveboss-random-map-seed\\source\\method-plan.json",
+    "bytes": 12882,
+    "source_sha256": "8e726176d9273f1c85573fe0cdcc0ff4246c6110c7cd7f248daad79a997cbf40",
+    "collected_sha256": "8e726176d9273f1c85573fe0cdcc0ff4246c6110c7cd7f248daad79a997cbf40",
+    "redacted": false
+  },
+  {
+    "patch": "fiveboss-weapon-no-steel",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\lens0907-0908\\fix_weapon_steel.py",
+    "file": "29-fiveboss-weapon-no-steel\\source\\fix_weapon_steel.py",
+    "bytes": 3376,
+    "source_sha256": "4cec70e13a0f98ee5d6f123559d6439f7ff69ca498251a326c738871ad61ac4e",
+    "collected_sha256": "4cec70e13a0f98ee5d6f123559d6439f7ff69ca498251a326c738871ad61ac4e",
+    "redacted": false
+  },
+  {
+    "patch": "fiveboss-weapon-no-steel",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\lens0907-0908\\package_steel_fix.py",
+    "file": "29-fiveboss-weapon-no-steel\\source\\package_steel_fix.py",
+    "bytes": 4296,
+    "source_sha256": "2d3911d4c7bb4291d198acaa3cccfa4316307ff44892405ae7f2806a1878c247",
+    "collected_sha256": "2d3911d4c7bb4291d198acaa3cccfa4316307ff44892405ae7f2806a1878c247",
+    "redacted": false
+  },
+  {
+    "patch": "gauge-effect-guard",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\gauge_effect_guard.py",
+    "file": "30-gauge-effect-guard\\source\\gauge_effect_guard.py",
+    "bytes": 2220,
+    "source_sha256": "cc04de50dadc741906f44d3d08d3d34d80c703092205970d205994fef1b4f3d7",
+    "collected_sha256": "cc04de50dadc741906f44d3d08d3d34d80c703092205970d205994fef1b4f3d7",
+    "redacted": false
+  },
+  {
+    "patch": "gauge-effect-guard",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\gauge_perf_overlay.py",
+    "file": "30-gauge-effect-guard\\source\\gauge_perf_overlay.py",
+    "bytes": 3598,
+    "source_sha256": "b81e5e8f3cbf796b053e66e024454c44227ba17fa6ea8fc42a0c1c96ada54f2a",
+    "collected_sha256": "b81e5e8f3cbf796b053e66e024454c44227ba17fa6ea8fc42a0c1c96ada54f2a",
+    "redacted": false
+  },
+  {
+    "patch": "gauge-effect-guard",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\gauge.py",
+    "file": "30-gauge-effect-guard\\source\\gauge.py",
+    "bytes": 4614,
+    "source_sha256": "b0eb2ab4904858e94d438fe9a8927c9fbee6d1aa68fea3b89ccc2c49bb1dc4f2",
+    "collected_sha256": "b0eb2ab4904858e94d438fe9a8927c9fbee6d1aa68fea3b89ccc2c49bb1dc4f2",
+    "redacted": false
+  },
+  {
+    "patch": "gauge-effect-guard",
+    "source": "D:\\WF\\out\\月兔回槽性能与狮子PF点火-20260925\\build-apk.py",
+    "file": "30-gauge-effect-guard\\source\\build-apk.py",
+    "bytes": 1983,
+    "source_sha256": "dabe7608c6afc1676bbe49344573743f2928530a61eb911092eb393954a705d5",
+    "collected_sha256": "dabe7608c6afc1676bbe49344573743f2928530a61eb911092eb393954a705d5",
+    "redacted": false
+  },
+  {
+    "patch": "gauge-gain-rules",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\patch.py",
+    "file": "31-gauge-gain-rules\\source\\patch.py",
+    "bytes": 2198,
+    "source_sha256": "2bb80662023229a11274161fe856332e8fb7ea1608efe26f3f734784acd68596",
+    "collected_sha256": "2bb80662023229a11274161fe856332e8fb7ea1608efe26f3f734784acd68596",
+    "redacted": false
+  },
+  {
+    "patch": "gauge-gain-rules",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\content.py",
+    "file": "31-gauge-gain-rules\\source\\content.py",
+    "bytes": 5593,
+    "source_sha256": "f28fe969f3441726702622c508a8191876f4f73d36bca791669251958d346ade",
+    "collected_sha256": "f28fe969f3441726702622c508a8191876f4f73d36bca791669251958d346ade",
+    "redacted": false
+  },
+  {
+    "patch": "gauge-gain-rules",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\damage.py",
+    "file": "31-gauge-gain-rules\\source\\damage.py",
+    "bytes": 5910,
+    "source_sha256": "772e9db3cf672465af5cca619e020c570a4eafe76f392cf5f3639fcbdc40dfe8",
+    "collected_sha256": "772e9db3cf672465af5cca619e020c570a4eafe76f392cf5f3639fcbdc40dfe8",
+    "redacted": false
+  },
+  {
+    "patch": "gauge-gain-rules",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\gauge.py",
+    "file": "31-gauge-gain-rules\\source\\gauge.py",
+    "bytes": 4614,
+    "source_sha256": "b0eb2ab4904858e94d438fe9a8927c9fbee6d1aa68fea3b89ccc2c49bb1dc4f2",
+    "collected_sha256": "b0eb2ab4904858e94d438fe9a8927c9fbee6d1aa68fea3b89ccc2c49bb1dc4f2",
+    "redacted": false
+  },
+  {
+    "patch": "gauge-gain-rules",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\provenance.py",
+    "file": "31-gauge-gain-rules\\source\\provenance.py",
+    "bytes": 6970,
+    "source_sha256": "d1f385c253e72f6f7958b131f58292379cf3845353ea6cad26b43a92cb6c2213",
+    "collected_sha256": "d1f385c253e72f6f7958b131f58292379cf3845353ea6cad26b43a92cb6c2213",
+    "redacted": false
+  },
+  {
+    "patch": "gauge-gain-rules",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\core.py",
+    "file": "31-gauge-gain-rules\\source\\core.py",
+    "bytes": 6290,
+    "source_sha256": "7cf5d9ddbda00f976887e58308c641b143d5dfc959a3c587bf75e750e222b33a",
+    "collected_sha256": "7cf5d9ddbda00f976887e58308c641b143d5dfc959a3c587bf75e750e222b33a",
+    "redacted": false
+  },
+  {
+    "patch": "gauge-gain-rules",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\verify.py",
+    "file": "31-gauge-gain-rules\\source\\verify.py",
+    "bytes": 2027,
+    "source_sha256": "d5cdbb3af58e7aa57d7bf4d68fa15a2c53823843b8e22dfe3fe564318fd495b0",
+    "collected_sha256": "d5cdbb3af58e7aa57d7bf4d68fa15a2c53823843b8e22dfe3fe564318fd495b0",
+    "redacted": false
+  },
+  {
+    "patch": "gauge-gain-rules",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\baseline.json",
+    "file": "31-gauge-gain-rules\\source\\baseline.json",
+    "bytes": 6213,
+    "source_sha256": "d89bb9ec2dd691fe37e0639f6c452a33b499537080c2f0fea3986c3b7a7adca1",
+    "collected_sha256": "d89bb9ec2dd691fe37e0639f6c452a33b499537080c2f0fea3986c3b7a7adca1",
+    "redacted": false
+  },
+  {
+    "patch": "gauge-gain-rules",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\build_apk.py",
+    "file": "31-gauge-gain-rules\\source\\build_apk.py",
+    "bytes": 4913,
+    "source_sha256": "935a001df9ba303987e32dc162797693b1bd63c29269eeed300f5b8e3a6980df",
+    "collected_sha256": "935a001df9ba303987e32dc162797693b1bd63c29269eeed300f5b8e3a6980df",
+    "redacted": false
+  },
+  {
+    "patch": "gauge-gain-rules",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\battle-rules\\gauge_effect_guard.py",
+    "file": "31-gauge-gain-rules\\source\\gauge_effect_guard.py",
+    "bytes": 2220,
+    "source_sha256": "cc04de50dadc741906f44d3d08d3d34d80c703092205970d205994fef1b4f3d7",
+    "collected_sha256": "cc04de50dadc741906f44d3d08d3d34d80c703092205970d205994fef1b4f3d7",
+    "redacted": false
+  },
+  {
+    "patch": "independent-rush-party",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\independent-formations\\build_swf.py",
+    "file": "33-independent-rush-party\\source\\build_swf.py",
+    "bytes": 13839,
+    "source_sha256": "a320ca11048be25048e4d88cf909b11c5fd95b12abea9785516c09f0b032d8e4",
+    "collected_sha256": "a320ca11048be25048e4d88cf909b11c5fd95b12abea9785516c09f0b032d8e4",
+    "redacted": false
+  },
+  {
+    "patch": "independent-rush-party",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\independent-formations\\src\\cn\\mod\\IndependentRushParty.as",
+    "file": "33-independent-rush-party\\source\\IndependentRushParty.as",
+    "bytes": 605,
+    "source_sha256": "f08ed9ca386a322c19e3f095b87821239bad2302cc82c8a1512984db32e2d195",
+    "collected_sha256": "f08ed9ca386a322c19e3f095b87821239bad2302cc82c8a1512984db32e2d195",
+    "redacted": false
+  },
+  {
+    "patch": "independent-rush-party",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\independent-formations\\patch_set_edit_c8601.py",
+    "file": "33-independent-rush-party\\source\\patch_set_edit_c8601.py",
+    "bytes": 6287,
+    "source_sha256": "3e0c7541e1f695c8b86975263167b37bdf80c8389c4bbea8d41567ee2c6dbe12",
+    "collected_sha256": "3e0c7541e1f695c8b86975263167b37bdf80c8389c4bbea8d41567ee2c6dbe12",
+    "redacted": false
+  },
+  {
+    "patch": "item-source-folders",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\item-source-folders\\patch_swf.py",
+    "file": "34-item-source-folders\\source\\patch_swf.py",
+    "bytes": 4136,
+    "source_sha256": "2a6bde5c58cba5f74b77f1937a4b16a7eafd95922739d93044feb58d520901f6",
+    "collected_sha256": "2a6bde5c58cba5f74b77f1937a4b16a7eafd95922739d93044feb58d520901f6",
+    "redacted": false
+  },
+  {
+    "patch": "item-source-folders",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\item-source-folders\\src\\cn\\ui\\ItemSourceFolderGate.as",
+    "file": "34-item-source-folders\\source\\ItemSourceFolderGate.as",
+    "bytes": 825,
+    "source_sha256": "d44e74be2687309fe4638f9f7ad52fb53f58c1b5d46ae76827be12179777d6d9",
+    "collected_sha256": "d44e74be2687309fe4638f9f7ad52fb53f58c1b5d46ae76827be12179777d6d9",
+    "redacted": false
+  },
+  {
+    "patch": "leaderboard-self-profile",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\rush-leaderboard\\build_self_profile_lan_apk.py",
+    "file": "35-leaderboard-self-profile\\source\\build_self_profile_lan_apk.py",
+    "bytes": 8642,
+    "source_sha256": "71836144e6f8fe6c11f65aece132d351d7d6fe3aebffd7268ff09081f05f2aea",
+    "collected_sha256": "71836144e6f8fe6c11f65aece132d351d7d6fe3aebffd7268ff09081f05f2aea",
+    "redacted": false
+  },
+  {
+    "patch": "local-record-recovery",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\local-record-recovery\\build.py",
+    "file": "36-local-record-recovery\\source\\build.py",
+    "bytes": 11874,
+    "source_sha256": "a664189cca03f8673c1f6cf901c9bdb31f94afa27b8abb41b8831f78687bfde2",
+    "collected_sha256": "a664189cca03f8673c1f6cf901c9bdb31f94afa27b8abb41b8831f78687bfde2",
+    "redacted": false
+  },
+  {
+    "patch": "local-record-recovery",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\local-record-recovery\\src\\cn\\storage\\LocalRecordIO.as",
+    "file": "36-local-record-recovery\\source\\LocalRecordIO.as",
+    "bytes": 1585,
+    "source_sha256": "31f96ee5782928749fcb96bf2b245f1487537b76f72622d2caf978ae234bff86",
+    "collected_sha256": "31f96ee5782928749fcb96bf2b245f1487537b76f72622d2caf978ae234bff86",
+    "redacted": false
+  },
+  {
+    "patch": "orochi-boss-runtime",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\orochi-boss\\build_public_android.py",
+    "file": "37-orochi-boss-runtime\\source\\build_public_android.py",
+    "bytes": 2853,
+    "source_sha256": "2fe8169f3379a071209b3bea96290a210b8ba62284ca81189e12f431ae7c62a6",
+    "collected_sha256": "2fe8169f3379a071209b3bea96290a210b8ba62284ca81189e12f431ae7c62a6",
+    "redacted": false
+  },
+  {
+    "patch": "party-carousel-f1009",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\party-carousel-f1009\\patch_swf.py",
+    "file": "38-party-carousel-f1009\\source\\patch_swf.py",
+    "bytes": 4085,
+    "source_sha256": "1e25e83a7abb21dc9fdcc4281adbf77a1e9c385d97138bf7c6158ec2778d8a05",
+    "collected_sha256": "1e25e83a7abb21dc9fdcc4281adbf77a1e9c385d97138bf7c6158ec2778d8a05",
+    "redacted": false
+  },
+  {
+    "patch": "party-carousel-f1009",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\party-carousel-f1009\\build_apk.py",
+    "file": "38-party-carousel-f1009\\source\\build_apk.py",
+    "bytes": 6122,
+    "source_sha256": "ad0dc11705e401f81dcccbdcdf42a7a47eaecdd4e5af5e124b4b1069efd19522",
+    "collected_sha256": "ad0dc11705e401f81dcccbdcdf42a7a47eaecdd4e5af5e124b4b1069efd19522",
+    "redacted": false
+  },
+  {
+    "patch": "party-derived-cache",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\loading-preparation-r10\\patch_swf.py",
+    "file": "39-party-derived-cache\\source\\patch_swf.py",
+    "bytes": 6012,
+    "source_sha256": "bf02b8e15bcf1d60e06a2352fa5030eb501ce063790563c6e32882c381b1e271",
+    "collected_sha256": "bf02b8e15bcf1d60e06a2352fa5030eb501ce063790563c6e32882c381b1e271",
+    "redacted": false
+  },
+  {
+    "patch": "party-derived-cache",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\loading-preparation-r10\\src\\cn\\loading\\PartyDerivedCache.as",
+    "file": "39-party-derived-cache\\source\\PartyDerivedCache.as",
+    "bytes": 12221,
+    "source_sha256": "4322bc35d8b25481546f6a8e3b8c453f077cd6c34af259c5b452e635cdeee604",
+    "collected_sha256": "4322bc35d8b25481546f6a8e3b8c453f077cd6c34af259c5b452e635cdeee604",
+    "redacted": false
+  },
+  {
+    "patch": "party-derived-cache",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\r10-public-release\\build.py",
+    "file": "39-party-derived-cache\\source\\build.py",
+    "bytes": 19523,
+    "source_sha256": "bcf73b6196bc4e5b5c4fd0aee61a0848213fc83ef5f46786ea1219d6b2aabc84",
+    "collected_sha256": "bcf73b6196bc4e5b5c4fd0aee61a0848213fc83ef5f46786ea1219d6b2aabc84",
+    "redacted": false
+  },
+  {
+    "patch": "party-precompute-batching",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\loading-preparation-r10\\patch_swf.py",
+    "file": "40-party-precompute-batching\\source\\patch_swf.py",
+    "bytes": 6012,
+    "source_sha256": "bf02b8e15bcf1d60e06a2352fa5030eb501ce063790563c6e32882c381b1e271",
+    "collected_sha256": "bf02b8e15bcf1d60e06a2352fa5030eb501ce063790563c6e32882c381b1e271",
+    "redacted": false
+  },
+  {
+    "patch": "party-precompute-batching",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\loading-preparation-r10\\src\\cn\\loading\\PartyDerivedCache.as",
+    "file": "40-party-precompute-batching\\source\\PartyDerivedCache.as",
+    "bytes": 12221,
+    "source_sha256": "4322bc35d8b25481546f6a8e3b8c453f077cd6c34af259c5b452e635cdeee604",
+    "collected_sha256": "4322bc35d8b25481546f6a8e3b8c453f077cd6c34af259c5b452e635cdeee604",
+    "redacted": false
+  },
+  {
+    "patch": "player-login",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\player-login\\build_swf.py",
+    "file": "41-player-login\\source\\build_swf.py",
+    "bytes": 11534,
+    "source_sha256": "ff19b248d40f3e6eaab7e266c9bf855a9f2d3be30e7b074987f4981377106eef",
+    "collected_sha256": "ff19b248d40f3e6eaab7e266c9bf855a9f2d3be30e7b074987f4981377106eef",
+    "redacted": false
+  },
+  {
+    "patch": "player-login",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\player-login\\src\\cn\\account\\PlayerLogin.as",
+    "file": "41-player-login\\source\\PlayerLogin.as",
+    "bytes": 42277,
+    "source_sha256": "7b3356fa98ba8cdf8ea56e22a89247324a55cb6a1d7837649d61b9abd298ed89",
+    "collected_sha256": "7b3356fa98ba8cdf8ea56e22a89247324a55cb6a1d7837649d61b9abd298ed89",
+    "redacted": false
+  },
+  {
+    "patch": "player-login",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\startup-cache\\build_swf.py",
+    "file": "41-player-login\\source\\startup-cache--build_swf.py",
+    "bytes": 6471,
+    "source_sha256": "d5dcfb6826b8f3cb462b44860c18f51aae78883c77aa26573c38425c771a3468",
+    "collected_sha256": "d5dcfb6826b8f3cb462b44860c18f51aae78883c77aa26573c38425c771a3468",
+    "redacted": false
+  },
+  {
+    "patch": "player-login",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\r10-public-release\\build.py",
+    "file": "41-player-login\\source\\build.py",
+    "bytes": 19523,
+    "source_sha256": "bcf73b6196bc4e5b5c4fd0aee61a0848213fc83ef5f46786ea1219d6b2aabc84",
+    "collected_sha256": "bcf73b6196bc4e5b5c4fd0aee61a0848213fc83ef5f46786ea1219d6b2aabc84",
+    "redacted": false
+  },
+  {
+    "patch": "private-server-route",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\rush-leaderboard\\build_self_profile_public_apk.py",
+    "file": "42-private-server-route\\source\\build_self_profile_public_apk.py",
+    "bytes": 6618,
+    "source_sha256": "124674c287f4aaa66582553f6d09bf91d95ba4f77c31c9786fe158699f016bea",
+    "collected_sha256": "124674c287f4aaa66582553f6d09bf91d95ba4f77c31c9786fe158699f016bea",
+    "redacted": false
+  },
+  {
+    "patch": "profile-follow-visibility",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\rush-leaderboard\\build_profile_follow_lan_rootfix_apk.py",
+    "file": "43-profile-follow-visibility\\source\\build_profile_follow_lan_rootfix_apk.py",
+    "bytes": 14375,
+    "source_sha256": "060c52da13e04a946938a35ff93568e95114e750fe68bb7f076899ef56ca65d7",
+    "collected_sha256": "060c52da13e04a946938a35ff93568e95114e750fe68bb7f076899ef56ca65d7",
+    "redacted": false
+  },
+  {
+    "patch": "quest-element-resistance",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\quest-element-resistance\\build_channel.py",
+    "file": "44-quest-element-resistance\\source\\build_channel.py",
+    "bytes": 8912,
+    "source_sha256": "cb8a0924973ffed5f98827a0101263c49e70c3210c124f84957989560ab5adf4",
+    "collected_sha256": "cb8a0924973ffed5f98827a0101263c49e70c3210c124f84957989560ab5adf4",
+    "redacted": false
+  },
+  {
+    "patch": "quest-element-resistance",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\quest-element-resistance\\build_apk.py",
+    "file": "44-quest-element-resistance\\source\\build_apk.py",
+    "bytes": 3231,
+    "source_sha256": "c6880a3888bd457e901e1ae0a02cb2ef1d91d2accca33419020ee4adba217b36",
+    "collected_sha256": "c6880a3888bd457e901e1ae0a02cb2ef1d91d2accca33419020ee4adba217b36",
+    "redacted": false
+  },
+  {
+    "patch": "quest-element-resistance",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\quest-element-resistance\\src\\cn\\rules\\QuestElementResistance.as",
+    "file": "44-quest-element-resistance\\source\\QuestElementResistance.as",
+    "bytes": 4070,
+    "source_sha256": "bf51cfb283cc746cd695937626bcd757f91d6678219d62605f3d84b46a78f86c",
+    "collected_sha256": "bf51cfb283cc746cd695937626bcd757f91d6678219d62605f3d84b46a78f86c",
+    "redacted": false
+  },
+  {
+    "patch": "render-frame-scale",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\render-scale-v1\\build_render_scale_apk.py",
+    "file": "45-render-frame-scale\\source\\build_render_scale_apk.py",
+    "bytes": 4200,
+    "source_sha256": "866e18f02b8317140e7857c716d6c36f23c2426fe51e6f711af73c12eb684adb",
+    "collected_sha256": "866e18f02b8317140e7857c716d6c36f23c2426fe51e6f711af73c12eb684adb",
+    "redacted": false
+  },
+  {
+    "patch": "render-frame-scale",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\render-scale-v1\\patch_memberview_site2.py",
+    "file": "45-render-frame-scale\\source\\patch_memberview_site2.py",
+    "bytes": 6877,
+    "source_sha256": "631d38f68cdc20952ff6540732e5d6e1fbcb76e5bc52e8824c3f3cdca70418e6",
+    "collected_sha256": "631d38f68cdc20952ff6540732e5d6e1fbcb76e5bc52e8824c3f3cdca70418e6",
+    "redacted": false
+  },
+  {
+    "patch": "render-frame-scale",
+    "source": "D:\\WF\\out\\q1056\\rv4p\\client-patch\\offline-android\\render_scale_pcode.py",
+    "file": "45-render-frame-scale\\source\\render_scale_pcode.py",
+    "bytes": 37043,
+    "source_sha256": "7be4ae8bf89d7f505e397919d85feb9525a036d2eb0978b244775914c5985ce8",
+    "collected_sha256": "7be4ae8bf89d7f505e397919d85feb9525a036d2eb0978b244775914c5985ce8",
+    "redacted": false
+  },
+  {
+    "patch": "rush-native-leaderboard",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\rush-leaderboard\\patch.py",
+    "file": "46-rush-native-leaderboard\\source\\patch.py",
+    "bytes": 33171,
+    "source_sha256": "0276b5cffe329291e3862efc41ec03001d3f521be3a39f2aab04a98802632db2",
+    "collected_sha256": "0276b5cffe329291e3862efc41ec03001d3f521be3a39f2aab04a98802632db2",
+    "redacted": false
+  },
+  {
+    "patch": "rush-native-leaderboard",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\rush-leaderboard\\build_apk.py",
+    "file": "46-rush-native-leaderboard\\source\\build_apk.py",
+    "bytes": 36562,
+    "source_sha256": "29727a48d8d36191562df780b59304e285243f50b51e27391cb6d29b8491b7df",
+    "collected_sha256": "29727a48d8d36191562df780b59304e285243f50b51e27391cb6d29b8491b7df",
+    "redacted": false
+  },
+  {
+    "patch": "rush-native-leaderboard",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\rush-leaderboard\\build_navigation_apk.py",
+    "file": "46-rush-native-leaderboard\\source\\build_navigation_apk.py",
+    "bytes": 21442,
+    "source_sha256": "a6a591e4b69691899326521db5b0b382ca2108149f1dd484af4242c9e47e8acc",
+    "collected_sha256": "a6a591e4b69691899326521db5b0b382ca2108149f1dd484af4242c9e47e8acc",
+    "redacted": false
+  },
+  {
+    "patch": "set-edit-title-c8601",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\independent-formations\\patch_set_edit_c8601.py",
+    "file": "48-set-edit-title-c8601\\source\\patch_set_edit_c8601.py",
+    "bytes": 6287,
+    "source_sha256": "3e0c7541e1f695c8b86975263167b37bdf80c8389c4bbea8d41567ee2c6dbe12",
+    "collected_sha256": "3e0c7541e1f695c8b86975263167b37bdf80c8389c4bbea8d41567ee2c6dbe12",
+    "redacted": false
+  },
+  {
+    "patch": "shop-event-product-index",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\shop-first-open\\patch_swf.py",
+    "file": "49-shop-event-product-index\\source\\patch_swf.py",
+    "bytes": 8571,
+    "source_sha256": "dd1e959457b148d117d30f7a5ec3937cc928f7e0b7c0e8f70fc7462eb7a0dc47",
+    "collected_sha256": "dd1e959457b148d117d30f7a5ec3937cc928f7e0b7c0e8f70fc7462eb7a0dc47",
+    "redacted": false
+  },
+  {
+    "patch": "shop-event-product-index",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_patches.py",
+    "file": "49-shop-event-product-index\\source\\perf2_patches.py",
+    "bytes": 14850,
+    "source_sha256": "08c28cf3492d0c5c03ae87a51e0477e18a00438f4358d21ee08c87536841c224",
+    "collected_sha256": "08c28cf3492d0c5c03ae87a51e0477e18a00438f4358d21ee08c87536841c224",
+    "redacted": false
+  },
+  {
+    "patch": "shop-event-product-index",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_apply.py",
+    "file": "49-shop-event-product-index\\source\\perf2_apply.py",
+    "bytes": 1900,
+    "source_sha256": "d000586e73c2c430b91e3efc8a3e1f6676ee20c02f36b95b78a3b689f88a6966",
+    "collected_sha256": "d000586e73c2c430b91e3efc8a3e1f6676ee20c02f36b95b78a3b689f88a6966",
+    "redacted": false
+  },
+  {
+    "patch": "shop-event-product-index",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_core.py",
+    "file": "49-shop-event-product-index\\source\\perf2_core.py",
+    "bytes": 9504,
+    "source_sha256": "b5d50c6ae613e22773f8dd969df0faf80a3afe4a1aa1bef790b561ceb94c4a8a",
+    "collected_sha256": "b5d50c6ae613e22773f8dd969df0faf80a3afe4a1aa1bef790b561ceb94c4a8a",
+    "redacted": false
+  },
+  {
+    "patch": "shop-event-product-index",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\build_perf2_apk.py",
+    "file": "49-shop-event-product-index\\source\\build_perf2_apk.py",
+    "bytes": 6583,
+    "source_sha256": "52f0ed20f5b74bddc3c3b76c6100525cbaa8751674dd12b8180db1754d48b862",
+    "collected_sha256": "52f0ed20f5b74bddc3c3b76c6100525cbaa8751674dd12b8180db1754d48b862",
+    "redacted": false
+  },
+  {
+    "patch": "shop-existence-short-circuit",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\shop-first-open\\patch_swf.py",
+    "file": "50-shop-existence-short-circuit\\source\\patch_swf.py",
+    "bytes": 8571,
+    "source_sha256": "dd1e959457b148d117d30f7a5ec3937cc928f7e0b7c0e8f70fc7462eb7a0dc47",
+    "collected_sha256": "dd1e959457b148d117d30f7a5ec3937cc928f7e0b7c0e8f70fc7462eb7a0dc47",
+    "redacted": false
+  },
+  {
+    "patch": "title-cntips-hide",
+    "source": "D:\\WF\\startpoint-cn-kulo\\client-patch\\rush-leaderboard\\build_title_cntips_apk.py",
+    "file": "51-title-cntips-hide\\source\\build_title_cntips_apk.py",
+    "bytes": 7803,
+    "source_sha256": "ffdadf3c7d0e012a2f3dcbc23d95fd568b33b5c9bc0c1b2d49ba9b9d2dd8b8b2",
+    "collected_sha256": "ffdadf3c7d0e012a2f3dcbc23d95fd568b33b5c9bc0c1b2d49ba9b9d2dd8b8b2",
+    "redacted": false
+  },
+  {
+    "patch": "testserver-v17-identity",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3a2d10f4-784b-4e40-914d-69525c153b6e\\scratchpad\\apk\\make_test_apk.py",
+    "file": "52-testserver-v17-identity\\source\\make_test_apk.py",
+    "bytes": 6234,
+    "source_sha256": "8c1c835f0320cf0f9d224f2ea251d83d9c04780bdd62e43eb90fcb53c8a929b1",
+    "collected_sha256": "8c1c835f0320cf0f9d224f2ea251d83d9c04780bdd62e43eb90fcb53c8a929b1",
+    "redacted": false
+  },
+  {
+    "patch": "charge-cap-unique",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "53-charge-cap-unique\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "kyle-direct-multiplier",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "54-kyle-direct-multiplier\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "kyle-pf-marker-silence",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "55-kyle-pf-marker-silence\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "kyle-direct-merge",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "56-kyle-direct-merge\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "boss-stun-gauge",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "57-boss-stun-gauge\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "hidden-unique-icons",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "58-hidden-unique-icons\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "autospeed-store-skip",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "59-autospeed-store-skip\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "character-apply-throttle",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "60-character-apply-throttle\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "character-offscreen-draw-skip",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "61-character-offscreen-draw-skip\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "character-offscreen-playhead-skip",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "62-character-offscreen-playhead-skip\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "character-rank-map-sort",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "63-character-rank-map-sort\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "five-boss-round1-grace",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "64-five-boss-round1-grace\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "gerald-149999-ready-voice",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "65-gerald-149999-ready-voice\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "home-msaa-off",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "66-home-msaa-off\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "party-ui-log-skip",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "67-party-ui-log-skip\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "reproduce-snapshot-only",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "68-reproduce-snapshot-only\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "atlas-overflow-spill",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "69-atlas-overflow-spill\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "local-loading-view-gc",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "70-local-loading-view-gc\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "battle-pack-slicer",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "71-battle-pack-slicer\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "battle-pack-slicer",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\src\\cn\\loading\\BattlePackSlicer.as",
+    "file": "71-battle-pack-slicer\\source\\BattlePackSlicer.as",
+    "bytes": 16575,
+    "source_sha256": "88ce4e3a57a1c6c3f00186e386ddef4738917d213de8c91e66367a083e3816e1",
+    "collected_sha256": "88ce4e3a57a1c6c3f00186e386ddef4738917d213de8c91e66367a083e3816e1",
+    "redacted": false
+  },
+  {
+    "patch": "transition-gc-dedupe",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "file": "72-transition-gc-dedupe\\source\\wf_hitfx_silence.v28.py",
+    "bytes": 67120,
+    "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "collected_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
+    "redacted": false
+  },
+  {
+    "patch": "transition-gc-dedupe",
+    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\src\\cn\\loading\\GcGate.as",
+    "file": "72-transition-gc-dedupe\\source\\GcGate.as",
+    "bytes": 897,
+    "source_sha256": "49036c9c1699d3d308d0de2a53447358d9fb54a40d10c68d5890fa72737eb70a",
+    "collected_sha256": "49036c9c1699d3d308d0de2a53447358d9fb54a40d10c68d5890fa72737eb70a",
+    "redacted": false
+  },
+  {
+    "patch": "coop-bounded-grace",
+    "source": "D:\\WF\\coop-fix-20261014\\client\\patch_coop_grace.py",
+    "file": "73-coop-bounded-grace\\source\\patch_coop_grace.py",
+    "bytes": 6649,
+    "source_sha256": "325d676f3256f9d866236f786ca06ce2ae16ad9ee7101de8c4e7b8ed233fa51f",
+    "collected_sha256": "325d676f3256f9d866236f786ca06ce2ae16ad9ee7101de8c4e7b8ed233fa51f",
+    "redacted": false
+  },
+  {
+    "patch": "coop-bounded-grace",
+    "source": "D:\\WF\\coop-fix-20261014\\client\\build_coop_apk.py",
+    "file": "73-coop-bounded-grace\\source\\build_coop_apk.py",
+    "bytes": 6461,
+    "source_sha256": "827057057af149d5a053dc0ed74c6cc96f144031ce44a224b54c908480346e8e",
+    "collected_sha256": "827057057af149d5a053dc0ed74c6cc96f144031ce44a224b54c908480346e8e",
+    "redacted": false
+  },
+  {
+    "patch": "master-index-dictionary",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_patches.py",
+    "file": "74-master-index-dictionary\\source\\perf2_patches.py",
+    "bytes": 14850,
+    "source_sha256": "08c28cf3492d0c5c03ae87a51e0477e18a00438f4358d21ee08c87536841c224",
+    "collected_sha256": "08c28cf3492d0c5c03ae87a51e0477e18a00438f4358d21ee08c87536841c224",
+    "redacted": false
+  },
+  {
+    "patch": "master-index-dictionary",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_apply.py",
+    "file": "74-master-index-dictionary\\source\\perf2_apply.py",
+    "bytes": 1900,
+    "source_sha256": "d000586e73c2c430b91e3efc8a3e1f6676ee20c02f36b95b78a3b689f88a6966",
+    "collected_sha256": "d000586e73c2c430b91e3efc8a3e1f6676ee20c02f36b95b78a3b689f88a6966",
+    "redacted": false
+  },
+  {
+    "patch": "master-index-dictionary",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_core.py",
+    "file": "74-master-index-dictionary\\source\\perf2_core.py",
+    "bytes": 9504,
+    "source_sha256": "b5d50c6ae613e22773f8dd969df0faf80a3afe4a1aa1bef790b561ceb94c4a8a",
+    "collected_sha256": "b5d50c6ae613e22773f8dd969df0faf80a3afe4a1aa1bef790b561ceb94c4a8a",
+    "redacted": false
+  },
+  {
+    "patch": "master-index-dictionary",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\build_perf2_apk.py",
+    "file": "74-master-index-dictionary\\source\\build_perf2_apk.py",
+    "bytes": 6583,
+    "source_sha256": "52f0ed20f5b74bddc3c3b76c6100525cbaa8751674dd12b8180db1754d48b862",
+    "collected_sha256": "52f0ed20f5b74bddc3c3b76c6100525cbaa8751674dd12b8180db1754d48b862",
+    "redacted": false
+  },
+  {
+    "patch": "master-index-dictionary",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\patch_perf.py",
+    "file": "74-master-index-dictionary\\source\\patch_perf.py",
+    "bytes": 10127,
+    "source_sha256": "8774d4809f0cd648687c121306f54551c482ed83672b225d12303eb0dc34455a",
+    "collected_sha256": "8774d4809f0cd648687c121306f54551c482ed83672b225d12303eb0dc34455a",
+    "redacted": false
+  },
+  {
+    "patch": "battle-skip-status-dump",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_patches.py",
+    "file": "75-battle-skip-status-dump\\source\\perf2_patches.py",
+    "bytes": 14850,
+    "source_sha256": "08c28cf3492d0c5c03ae87a51e0477e18a00438f4358d21ee08c87536841c224",
+    "collected_sha256": "08c28cf3492d0c5c03ae87a51e0477e18a00438f4358d21ee08c87536841c224",
+    "redacted": false
+  },
+  {
+    "patch": "battle-skip-status-dump",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_apply.py",
+    "file": "75-battle-skip-status-dump\\source\\perf2_apply.py",
+    "bytes": 1900,
+    "source_sha256": "d000586e73c2c430b91e3efc8a3e1f6676ee20c02f36b95b78a3b689f88a6966",
+    "collected_sha256": "d000586e73c2c430b91e3efc8a3e1f6676ee20c02f36b95b78a3b689f88a6966",
+    "redacted": false
+  },
+  {
+    "patch": "battle-skip-status-dump",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_core.py",
+    "file": "75-battle-skip-status-dump\\source\\perf2_core.py",
+    "bytes": 9504,
+    "source_sha256": "b5d50c6ae613e22773f8dd969df0faf80a3afe4a1aa1bef790b561ceb94c4a8a",
+    "collected_sha256": "b5d50c6ae613e22773f8dd969df0faf80a3afe4a1aa1bef790b561ceb94c4a8a",
+    "redacted": false
+  },
+  {
+    "patch": "battle-skip-status-dump",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\build_perf2_apk.py",
+    "file": "75-battle-skip-status-dump\\source\\build_perf2_apk.py",
+    "bytes": 6583,
+    "source_sha256": "52f0ed20f5b74bddc3c3b76c6100525cbaa8751674dd12b8180db1754d48b862",
+    "collected_sha256": "52f0ed20f5b74bddc3c3b76c6100525cbaa8751674dd12b8180db1754d48b862",
+    "redacted": false
+  },
+  {
+    "patch": "party-flip-cached-members",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_patches.py",
+    "file": "76-party-flip-cached-members\\source\\perf2_patches.py",
+    "bytes": 14850,
+    "source_sha256": "08c28cf3492d0c5c03ae87a51e0477e18a00438f4358d21ee08c87536841c224",
+    "collected_sha256": "08c28cf3492d0c5c03ae87a51e0477e18a00438f4358d21ee08c87536841c224",
+    "redacted": false
+  },
+  {
+    "patch": "party-flip-cached-members",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_apply.py",
+    "file": "76-party-flip-cached-members\\source\\perf2_apply.py",
+    "bytes": 1900,
+    "source_sha256": "d000586e73c2c430b91e3efc8a3e1f6676ee20c02f36b95b78a3b689f88a6966",
+    "collected_sha256": "d000586e73c2c430b91e3efc8a3e1f6676ee20c02f36b95b78a3b689f88a6966",
+    "redacted": false
+  },
+  {
+    "patch": "party-flip-cached-members",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_core.py",
+    "file": "76-party-flip-cached-members\\source\\perf2_core.py",
+    "bytes": 9504,
+    "source_sha256": "b5d50c6ae613e22773f8dd969df0faf80a3afe4a1aa1bef790b561ceb94c4a8a",
+    "collected_sha256": "b5d50c6ae613e22773f8dd969df0faf80a3afe4a1aa1bef790b561ceb94c4a8a",
+    "redacted": false
+  },
+  {
+    "patch": "party-flip-cached-members",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\build_perf2_apk.py",
+    "file": "76-party-flip-cached-members\\source\\build_perf2_apk.py",
+    "bytes": 6583,
+    "source_sha256": "52f0ed20f5b74bddc3c3b76c6100525cbaa8751674dd12b8180db1754d48b862",
+    "collected_sha256": "52f0ed20f5b74bddc3c3b76c6100525cbaa8751674dd12b8180db1754d48b862",
+    "redacted": false
+  },
+  {
+    "patch": "shop-entry-greyout",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_patches.py",
+    "file": "77-shop-entry-greyout\\source\\perf2_patches.py",
+    "bytes": 14850,
+    "source_sha256": "08c28cf3492d0c5c03ae87a51e0477e18a00438f4358d21ee08c87536841c224",
+    "collected_sha256": "08c28cf3492d0c5c03ae87a51e0477e18a00438f4358d21ee08c87536841c224",
+    "redacted": false
+  },
+  {
+    "patch": "shop-entry-greyout",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_apply.py",
+    "file": "77-shop-entry-greyout\\source\\perf2_apply.py",
+    "bytes": 1900,
+    "source_sha256": "d000586e73c2c430b91e3efc8a3e1f6676ee20c02f36b95b78a3b689f88a6966",
+    "collected_sha256": "d000586e73c2c430b91e3efc8a3e1f6676ee20c02f36b95b78a3b689f88a6966",
+    "redacted": false
+  },
+  {
+    "patch": "shop-entry-greyout",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\perf2_core.py",
+    "file": "77-shop-entry-greyout\\source\\perf2_core.py",
+    "bytes": 9504,
+    "source_sha256": "b5d50c6ae613e22773f8dd969df0faf80a3afe4a1aa1bef790b561ceb94c4a8a",
+    "collected_sha256": "b5d50c6ae613e22773f8dd969df0faf80a3afe4a1aa1bef790b561ceb94c4a8a",
+    "redacted": false
+  },
+  {
+    "patch": "shop-entry-greyout",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\build_perf2_apk.py",
+    "file": "77-shop-entry-greyout\\source\\build_perf2_apk.py",
+    "bytes": 6583,
+    "source_sha256": "52f0ed20f5b74bddc3c3b76c6100525cbaa8751674dd12b8180db1754d48b862",
+    "collected_sha256": "52f0ed20f5b74bddc3c3b76c6100525cbaa8751674dd12b8180db1754d48b862",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-crystal-buttons",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\overlimit_patches.py",
+    "file": "78-overlimit-crystal-buttons\\source\\overlimit_patches.py",
+    "bytes": 15453,
+    "source_sha256": "1971f1c69925e15786ec2931503238623c66bc6ba175b8564435054510ea7496",
+    "collected_sha256": "1971f1c69925e15786ec2931503238623c66bc6ba175b8564435054510ea7496",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-crystal-buttons",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\build_overlimit_apk.py",
+    "file": "78-overlimit-crystal-buttons\\source\\build_overlimit_apk.py",
+    "bytes": 11436,
+    "source_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "collected_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-experience",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\build_overlimit_apk.py",
+    "file": "79-overlimit-experience\\source\\build_overlimit_apk.py",
+    "bytes": 11436,
+    "source_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "collected_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-full-pedestal",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\overlimit_patches.py",
+    "file": "80-overlimit-full-pedestal\\source\\overlimit_patches.py",
+    "bytes": 15453,
+    "source_sha256": "1971f1c69925e15786ec2931503238623c66bc6ba175b8564435054510ea7496",
+    "collected_sha256": "1971f1c69925e15786ec2931503238623c66bc6ba175b8564435054510ea7496",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-full-pedestal",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\build_overlimit_apk.py",
+    "file": "80-overlimit-full-pedestal\\source\\build_overlimit_apk.py",
+    "bytes": 11436,
+    "source_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "collected_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-half-pedestal",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\overlimit_patches.py",
+    "file": "81-overlimit-half-pedestal\\source\\overlimit_patches.py",
+    "bytes": 15453,
+    "source_sha256": "1971f1c69925e15786ec2931503238623c66bc6ba175b8564435054510ea7496",
+    "collected_sha256": "1971f1c69925e15786ec2931503238623c66bc6ba175b8564435054510ea7496",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-half-pedestal",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\build_overlimit_apk.py",
+    "file": "81-overlimit-half-pedestal\\source\\build_overlimit_apk.py",
+    "bytes": 11436,
+    "source_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "collected_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-level-cap",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\build_overlimit_apk.py",
+    "file": "82-overlimit-level-cap\\source\\build_overlimit_apk.py",
+    "bytes": 11436,
+    "source_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "collected_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-max-step",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\overlimit_patches.py",
+    "file": "83-overlimit-max-step\\source\\overlimit_patches.py",
+    "bytes": 15453,
+    "source_sha256": "1971f1c69925e15786ec2931503238623c66bc6ba175b8564435054510ea7496",
+    "collected_sha256": "1971f1c69925e15786ec2931503238623c66bc6ba175b8564435054510ea7496",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-max-step",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\build_overlimit_apk.py",
+    "file": "83-overlimit-max-step\\source\\build_overlimit_apk.py",
+    "bytes": 11436,
+    "source_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "collected_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-no-dupes",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\overlimit_patches.py",
+    "file": "84-overlimit-no-dupes\\source\\overlimit_patches.py",
+    "bytes": 15453,
+    "source_sha256": "1971f1c69925e15786ec2931503238623c66bc6ba175b8564435054510ea7496",
+    "collected_sha256": "1971f1c69925e15786ec2931503238623c66bc6ba175b8564435054510ea7496",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-no-dupes",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\build_overlimit_apk.py",
+    "file": "84-overlimit-no-dupes\\source\\build_overlimit_apk.py",
+    "bytes": 11436,
+    "source_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "collected_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-owned-crystals",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\overlimit_patches.py",
+    "file": "85-overlimit-owned-crystals\\source\\overlimit_patches.py",
+    "bytes": 15453,
+    "source_sha256": "1971f1c69925e15786ec2931503238623c66bc6ba175b8564435054510ea7496",
+    "collected_sha256": "1971f1c69925e15786ec2931503238623c66bc6ba175b8564435054510ea7496",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-owned-crystals",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\build_overlimit_apk.py",
+    "file": "85-overlimit-owned-crystals\\source\\build_overlimit_apk.py",
+    "bytes": 11436,
+    "source_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "collected_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-pedestal-atlas",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\build_overlimit_apk.py",
+    "file": "86-overlimit-pedestal-atlas\\source\\build_overlimit_apk.py",
+    "bytes": 11436,
+    "source_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "collected_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "redacted": false
+  },
+  {
+    "patch": "pf-lv4-color",
+    "source": "D:\\WF\\out\\赛瑞斯重做-20261015\\apk\\pflv4_patches.py",
+    "file": "87-pf-lv4-color\\source\\pflv4_patches.py",
+    "bytes": 24815,
+    "source_sha256": "623cbe32a7cb7b950b12fd4ef03a3e50c0c4354ba195d4c7e3890746fdfb64e1",
+    "collected_sha256": "623cbe32a7cb7b950b12fd4ef03a3e50c0c4354ba195d4c7e3890746fdfb64e1",
+    "redacted": false
+  },
+  {
+    "patch": "pf-lv4-color",
+    "source": "D:\\WF\\out\\赛瑞斯重做-20261015\\apk\\build_pflv4_apk.py",
+    "file": "87-pf-lv4-color\\source\\build_pflv4_apk.py",
+    "bytes": 5761,
+    "source_sha256": "6c39dfc5c0bc61e2860dbd05fba30fd839348de61fc3cf2ff0f931f26eb0b929",
+    "collected_sha256": "6c39dfc5c0bc61e2860dbd05fba30fd839348de61fc3cf2ff0f931f26eb0b929",
+    "redacted": false
+  },
+  {
+    "patch": "pf-lv4-dsl",
+    "source": "D:\\WF\\out\\赛瑞斯重做-20261015\\apk\\pflv4_patches.py",
+    "file": "88-pf-lv4-dsl\\source\\pflv4_patches.py",
+    "bytes": 24815,
+    "source_sha256": "623cbe32a7cb7b950b12fd4ef03a3e50c0c4354ba195d4c7e3890746fdfb64e1",
+    "collected_sha256": "623cbe32a7cb7b950b12fd4ef03a3e50c0c4354ba195d4c7e3890746fdfb64e1",
+    "redacted": false
+  },
+  {
+    "patch": "pf-lv4-dsl",
+    "source": "D:\\WF\\out\\赛瑞斯重做-20261015\\apk\\build_pflv4_apk.py",
+    "file": "88-pf-lv4-dsl\\source\\build_pflv4_apk.py",
+    "bytes": 5761,
+    "source_sha256": "6c39dfc5c0bc61e2860dbd05fba30fd839348de61fc3cf2ff0f931f26eb0b929",
+    "collected_sha256": "6c39dfc5c0bc61e2860dbd05fba30fd839348de61fc3cf2ff0f931f26eb0b929",
+    "redacted": false
+  },
+  {
+    "patch": "pf-lv4-ready",
+    "source": "D:\\WF\\out\\赛瑞斯重做-20261015\\apk\\pflv4_patches.py",
+    "file": "89-pf-lv4-ready\\source\\pflv4_patches.py",
+    "bytes": 24815,
+    "source_sha256": "623cbe32a7cb7b950b12fd4ef03a3e50c0c4354ba195d4c7e3890746fdfb64e1",
+    "collected_sha256": "623cbe32a7cb7b950b12fd4ef03a3e50c0c4354ba195d4c7e3890746fdfb64e1",
+    "redacted": false
+  },
+  {
+    "patch": "pf-lv4-ready",
+    "source": "D:\\WF\\out\\赛瑞斯重做-20261015\\apk\\build_pflv4_apk.py",
+    "file": "89-pf-lv4-ready\\source\\build_pflv4_apk.py",
+    "bytes": 5761,
+    "source_sha256": "6c39dfc5c0bc61e2860dbd05fba30fd839348de61fc3cf2ff0f931f26eb0b929",
+    "collected_sha256": "6c39dfc5c0bc61e2860dbd05fba30fd839348de61fc3cf2ff0f931f26eb0b929",
+    "redacted": false
+  },
+  {
+    "patch": "fever-arrow-close",
+    "source": "D:\\WF\\out\\赛瑞斯重做-20261015\\apk\\feveritems_patches.py",
+    "file": "90-fever-arrow-close\\source\\feveritems_patches.py",
+    "bytes": 37593,
+    "source_sha256": "b37963c756354dededdb937a15275aa693c0424c3ad45582efa39c719b46adee",
+    "collected_sha256": "b37963c756354dededdb937a15275aa693c0424c3ad45582efa39c719b46adee",
+    "redacted": false
+  },
+  {
+    "patch": "fever-arrow-close",
+    "source": "D:\\WF\\out\\赛瑞斯重做-20261015\\apk\\build_feveritems_apk.py",
+    "file": "90-fever-arrow-close\\source\\build_feveritems_apk.py",
+    "bytes": 6287,
+    "source_sha256": "afa802f15b929f3885cd5023b9045790647a1f2b7aa23a55887c0014f7afb291",
+    "collected_sha256": "afa802f15b929f3885cd5023b9045790647a1f2b7aa23a55887c0014f7afb291",
+    "redacted": false
+  },
+  {
+    "patch": "fever-arrow-items",
+    "source": "D:\\WF\\out\\赛瑞斯重做-20261015\\apk\\feveritems_patches.py",
+    "file": "91-fever-arrow-items\\source\\feveritems_patches.py",
+    "bytes": 37593,
+    "source_sha256": "b37963c756354dededdb937a15275aa693c0424c3ad45582efa39c719b46adee",
+    "collected_sha256": "b37963c756354dededdb937a15275aa693c0424c3ad45582efa39c719b46adee",
+    "redacted": false
+  },
+  {
+    "patch": "fever-arrow-items",
+    "source": "D:\\WF\\out\\赛瑞斯重做-20261015\\apk\\build_feveritems_apk.py",
+    "file": "91-fever-arrow-items\\source\\build_feveritems_apk.py",
+    "bytes": 6287,
+    "source_sha256": "afa802f15b929f3885cd5023b9045790647a1f2b7aa23a55887c0014f7afb291",
+    "collected_sha256": "afa802f15b929f3885cd5023b9045790647a1f2b7aa23a55887c0014f7afb291",
+    "redacted": false
+  },
+  {
+    "patch": "fever-items-preload",
+    "source": "D:\\WF\\out\\赛瑞斯重做-20261015\\apk\\feveritems_patches.py",
+    "file": "92-fever-items-preload\\source\\feveritems_patches.py",
+    "bytes": 37593,
+    "source_sha256": "b37963c756354dededdb937a15275aa693c0424c3ad45582efa39c719b46adee",
+    "collected_sha256": "b37963c756354dededdb937a15275aa693c0424c3ad45582efa39c719b46adee",
+    "redacted": false
+  },
+  {
+    "patch": "fever-items-preload",
+    "source": "D:\\WF\\out\\赛瑞斯重做-20261015\\apk\\build_feveritems_apk.py",
+    "file": "92-fever-items-preload\\source\\build_feveritems_apk.py",
+    "bytes": 6287,
+    "source_sha256": "afa802f15b929f3885cd5023b9045790647a1f2b7aa23a55887c0014f7afb291",
+    "collected_sha256": "afa802f15b929f3885cd5023b9045790647a1f2b7aa23a55887c0014f7afb291",
+    "redacted": false
+  },
+  {
+    "patch": "fever-items-leading-dsl",
+    "source": "D:\\WF\\out\\赛瑞斯重做-20261015\\apk\\feveritems_patches.py",
+    "file": "93-fever-items-leading-dsl\\source\\feveritems_patches.py",
+    "bytes": 37593,
+    "source_sha256": "b37963c756354dededdb937a15275aa693c0424c3ad45582efa39c719b46adee",
+    "collected_sha256": "b37963c756354dededdb937a15275aa693c0424c3ad45582efa39c719b46adee",
+    "redacted": false
+  },
+  {
+    "patch": "fever-items-leading-dsl",
+    "source": "D:\\WF\\out\\赛瑞斯重做-20261015\\apk\\build_feveritems_apk.py",
+    "file": "93-fever-items-leading-dsl\\source\\build_feveritems_apk.py",
+    "bytes": 6287,
+    "source_sha256": "afa802f15b929f3885cd5023b9045790647a1f2b7aa23a55887c0014f7afb291",
+    "collected_sha256": "afa802f15b929f3885cd5023b9045790647a1f2b7aa23a55887c0014f7afb291",
+    "redacted": false
+  },
+  {
+    "patch": "generic-ready-gallery",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\voice_patches.py",
+    "file": "94-generic-ready-gallery\\source\\voice_patches.py",
+    "bytes": 14417,
+    "source_sha256": "cebbe4868343265d7e9d711d71d20eaadfabf5699c8d6d941a899118811d0ff8",
+    "collected_sha256": "cebbe4868343265d7e9d711d71d20eaadfabf5699c8d6d941a899118811d0ff8",
+    "redacted": false
+  },
+  {
+    "patch": "generic-ready-gallery",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\build_voice_apk.py",
+    "file": "94-generic-ready-gallery\\source\\build_voice_apk.py",
+    "bytes": 3766,
+    "source_sha256": "4e578e1bb35e1749bb49233efbc2b147e518e43666241ffdad2c504e6f6efbd7",
+    "collected_sha256": "4e578e1bb35e1749bb49233efbc2b147e518e43666241ffdad2c504e6f6efbd7",
+    "redacted": false
+  },
+  {
+    "patch": "generic-ready-preload",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\voice_patches.py",
+    "file": "95-generic-ready-preload\\source\\voice_patches.py",
+    "bytes": 14417,
+    "source_sha256": "cebbe4868343265d7e9d711d71d20eaadfabf5699c8d6d941a899118811d0ff8",
+    "collected_sha256": "cebbe4868343265d7e9d711d71d20eaadfabf5699c8d6d941a899118811d0ff8",
+    "redacted": false
+  },
+  {
+    "patch": "generic-ready-preload",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\build_voice_apk.py",
+    "file": "95-generic-ready-preload\\source\\build_voice_apk.py",
+    "bytes": 3766,
+    "source_sha256": "4e578e1bb35e1749bb49233efbc2b147e518e43666241ffdad2c504e6f6efbd7",
+    "collected_sha256": "4e578e1bb35e1749bb49233efbc2b147e518e43666241ffdad2c504e6f6efbd7",
+    "redacted": false
+  },
+  {
+    "patch": "generic-ready-rotation",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\voice_patches.py",
+    "file": "96-generic-ready-rotation\\source\\voice_patches.py",
+    "bytes": 14417,
+    "source_sha256": "cebbe4868343265d7e9d711d71d20eaadfabf5699c8d6d941a899118811d0ff8",
+    "collected_sha256": "cebbe4868343265d7e9d711d71d20eaadfabf5699c8d6d941a899118811d0ff8",
+    "redacted": false
+  },
+  {
+    "patch": "generic-ready-rotation",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\build_voice_apk.py",
+    "file": "96-generic-ready-rotation\\source\\build_voice_apk.py",
+    "bytes": 3766,
+    "source_sha256": "4e578e1bb35e1749bb49233efbc2b147e518e43666241ffdad2c504e6f6efbd7",
+    "collected_sha256": "4e578e1bb35e1749bb49233efbc2b147e518e43666241ffdad2c504e6f6efbd7",
+    "redacted": false
+  },
+  {
+    "patch": "x86-air-runtime",
+    "source": "D:\\WF\\perf-v30-20261015\\build-v33x86.ps1",
+    "file": "97-x86-air-runtime\\source\\build-v33x86.ps1",
+    "bytes": 1598,
+    "source_sha256": "4c453b373f29550e4bb554e85f9c7d61c683ff877399b7a6dc42708bf9f8511d",
+    "collected_sha256": "4c453b373f29550e4bb554e85f9c7d61c683ff877399b7a6dc42708bf9f8511d",
+    "redacted": false
+  },
+  {
+    "patch": "x86-air-runtime",
+    "source": "D:\\WF\\perf-v30-20261015\\build-e3.ps1",
+    "file": "97-x86-air-runtime\\source\\build-e3.ps1",
+    "bytes": 2038,
+    "source_sha256": "22c828c2c84ace543b5a1677f3b38cbcd083df9ded0029ff34dc15e1878d78e9",
+    "collected_sha256": "22c828c2c84ace543b5a1677f3b38cbcd083df9ded0029ff34dc15e1878d78e9",
+    "redacted": false
+  },
+  {
+    "patch": "x86-air-runtime",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\build_x86.py",
+    "file": "97-x86-air-runtime\\source\\build_x86.py",
+    "bytes": 1942,
+    "source_sha256": "93dad51b1a9316cbedf4f76042d507cbb119dbfab50a547f5a1347a4339fb3ac",
+    "collected_sha256": "93dad51b1a9316cbedf4f76042d507cbb119dbfab50a547f5a1347a4339fb3ac",
+    "redacted": false
+  },
+  {
+    "patch": "x86-ane-platforms",
+    "source": "D:\\WF\\perf-v30-20261015\\work\\x86stubs\\src\\ane_x64_patch.py",
+    "file": "98-x86-ane-platforms\\source\\ane_x64_patch.py",
+    "bytes": 3530,
+    "source_sha256": "d71fa45916131cac82202f5875303aeab13670f4ea6cc1bc24ab13b15fee8a12",
+    "collected_sha256": "d71fa45916131cac82202f5875303aeab13670f4ea6cc1bc24ab13b15fee8a12",
+    "redacted": false
+  },
+  {
+    "patch": "x86-ane-platforms",
+    "source": "D:\\WF\\perf-v30-20261015\\build-v33x86.ps1",
+    "file": "98-x86-ane-platforms\\source\\build-v33x86.ps1",
+    "bytes": 1598,
+    "source_sha256": "4c453b373f29550e4bb554e85f9c7d61c683ff877399b7a6dc42708bf9f8511d",
+    "collected_sha256": "4c453b373f29550e4bb554e85f9c7d61c683ff877399b7a6dc42708bf9f8511d",
+    "redacted": false
+  },
+  {
+    "patch": "x86-ane-platforms",
+    "source": "D:\\WF\\perf-v30-20261015\\build-e3.ps1",
+    "file": "98-x86-ane-platforms\\source\\build-e3.ps1",
+    "bytes": 2038,
+    "source_sha256": "22c828c2c84ace543b5a1677f3b38cbcd083df9ded0029ff34dc15e1878d78e9",
+    "collected_sha256": "22c828c2c84ace543b5a1677f3b38cbcd083df9ded0029ff34dc15e1878d78e9",
+    "redacted": false
+  },
+  {
+    "patch": "x86-ane-platforms",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\build_x86.py",
+    "file": "98-x86-ane-platforms\\source\\build_x86.py",
+    "bytes": 1942,
+    "source_sha256": "93dad51b1a9316cbedf4f76042d507cbb119dbfab50a547f5a1347a4339fb3ac",
+    "collected_sha256": "93dad51b1a9316cbedf4f76042d507cbb119dbfab50a547f5a1347a4339fb3ac",
+    "redacted": false
+  },
+  {
+    "patch": "x86-native-stubs",
+    "source": "D:\\WF\\perf-v30-20261015\\work\\x86stubs\\gen\\libentryexpro.c",
+    "file": "99-x86-native-stubs\\source\\libentryexpro.c",
+    "bytes": 6982,
+    "source_sha256": "e158622c7125e5d73e3fa1a7e5e67504bd9d83e5aff9cb460924471427757c20",
+    "collected_sha256": "e158622c7125e5d73e3fa1a7e5e67504bd9d83e5aff9cb460924471427757c20",
+    "redacted": false
+  },
+  {
+    "patch": "x86-native-stubs",
+    "source": "D:\\WF\\perf-v30-20261015\\work\\x86stubs\\gen\\libexecgame.c",
+    "file": "99-x86-native-stubs\\source\\libexecgame.c",
+    "bytes": 139,
+    "source_sha256": "71cc3d54ef26cdddecb2b092300feda8b6232cd703eb3a270424c263bf0f9ac9",
+    "collected_sha256": "71cc3d54ef26cdddecb2b092300feda8b6232cd703eb3a270424c263bf0f9ac9",
+    "redacted": false
+  },
+  {
+    "patch": "x86-native-stubs",
+    "source": "D:\\WF\\perf-v30-20261015\\work\\x86stubs\\gen\\libfakedyn.c",
+    "file": "99-x86-native-stubs\\source\\libfakedyn.c",
+    "bytes": 139,
+    "source_sha256": "71cc3d54ef26cdddecb2b092300feda8b6232cd703eb3a270424c263bf0f9ac9",
+    "collected_sha256": "71cc3d54ef26cdddecb2b092300feda8b6232cd703eb3a270424c263bf0f9ac9",
+    "redacted": false
+  },
+  {
+    "patch": "x86-native-stubs",
+    "source": "D:\\WF\\perf-v30-20261015\\work\\x86stubs\\gen\\libfakedyn_x86.c",
+    "file": "99-x86-native-stubs\\source\\libfakedyn_x86.c",
+    "bytes": 139,
+    "source_sha256": "71cc3d54ef26cdddecb2b092300feda8b6232cd703eb3a270424c263bf0f9ac9",
+    "collected_sha256": "71cc3d54ef26cdddecb2b092300feda8b6232cd703eb3a270424c263bf0f9ac9",
+    "redacted": false
+  },
+  {
+    "patch": "x86-native-stubs",
+    "source": "D:\\WF\\perf-v30-20261015\\work\\x86stubs\\gen\\libgetuiext3.c",
+    "file": "99-x86-native-stubs\\source\\libgetuiext3.c",
+    "bytes": 267,
+    "source_sha256": "c6008efaa9bd74c8a87c104e075d03285ba68d0b3c8c6b58376c0893fcda59b1",
+    "collected_sha256": "c6008efaa9bd74c8a87c104e075d03285ba68d0b3c8c6b58376c0893fcda59b1",
+    "redacted": false
+  },
+  {
+    "patch": "x86-native-stubs",
+    "source": "D:\\WF\\perf-v30-20261015\\work\\x86stubs\\gen\\libsecsdk.c",
+    "file": "99-x86-native-stubs\\source\\libsecsdk.c",
+    "bytes": 139,
+    "source_sha256": "71cc3d54ef26cdddecb2b092300feda8b6232cd703eb3a270424c263bf0f9ac9",
+    "collected_sha256": "71cc3d54ef26cdddecb2b092300feda8b6232cd703eb3a270424c263bf0f9ac9",
+    "redacted": false
+  },
+  {
+    "patch": "x86-native-stubs",
+    "source": "D:\\WF\\perf-v30-20261015\\work\\x86stubs\\gen\\libsobot.c",
+    "file": "99-x86-native-stubs\\source\\libsobot.c",
+    "bytes": 262,
+    "source_sha256": "6752549dc2aab6f1001c4ecb737c5cc1cff2300b13070819a89a63829ce06711",
+    "collected_sha256": "6752549dc2aab6f1001c4ecb737c5cc1cff2300b13070819a89a63829ce06711",
+    "redacted": false
+  },
+  {
+    "patch": "x86-native-stubs",
+    "source": "D:\\WF\\perf-v30-20261015\\work\\x86stubs\\gen\\libtracepath.c",
+    "file": "99-x86-native-stubs\\source\\libtracepath.c",
+    "bytes": 436,
+    "source_sha256": "80d10e3638f32bc63ed1788ca965b475a8645fc79b43f20facd457f9d19e9d64",
+    "collected_sha256": "80d10e3638f32bc63ed1788ca965b475a8645fc79b43f20facd457f9d19e9d64",
+    "redacted": false
+  },
+  {
+    "patch": "x86-native-stubs",
+    "source": "D:\\WF\\perf-v30-20261015\\work\\x86stubs\\gen\\libuptsmaddon.c",
+    "file": "99-x86-native-stubs\\source\\libuptsmaddon.c",
+    "bytes": 139,
+    "source_sha256": "71cc3d54ef26cdddecb2b092300feda8b6232cd703eb3a270424c263bf0f9ac9",
+    "collected_sha256": "71cc3d54ef26cdddecb2b092300feda8b6232cd703eb3a270424c263bf0f9ac9",
+    "redacted": false
+  },
+  {
+    "patch": "x86-native-stubs",
+    "source": "D:\\WF\\perf-v30-20261015\\work\\x86stubs\\gen\\libuptsmaddonmi.c",
+    "file": "99-x86-native-stubs\\source\\libuptsmaddonmi.c",
+    "bytes": 139,
+    "source_sha256": "71cc3d54ef26cdddecb2b092300feda8b6232cd703eb3a270424c263bf0f9ac9",
+    "collected_sha256": "71cc3d54ef26cdddecb2b092300feda8b6232cd703eb3a270424c263bf0f9ac9",
+    "redacted": false
+  },
+  {
+    "patch": "x86-native-stubs",
+    "source": "D:\\WF\\perf-v30-20261015\\work\\x86stubs\\gen\\libwordfilter.c",
+    "file": "99-x86-native-stubs\\source\\libwordfilter.c",
+    "bytes": 139,
+    "source_sha256": "71cc3d54ef26cdddecb2b092300feda8b6232cd703eb3a270424c263bf0f9ac9",
+    "collected_sha256": "71cc3d54ef26cdddecb2b092300feda8b6232cd703eb3a270424c263bf0f9ac9",
+    "redacted": false
+  },
+  {
+    "patch": "x86-native-stubs",
+    "source": "D:\\WF\\perf-v30-20261015\\work\\x86stubs\\src\\stub.c",
+    "file": "99-x86-native-stubs\\source\\stub.c",
+    "bytes": 100,
+    "source_sha256": "f8e4c34c8fc1e700599237e8a99397a9944aeb3849e53950ad9e9019de68aa92",
+    "collected_sha256": "f8e4c34c8fc1e700599237e8a99397a9944aeb3849e53950ad9e9019de68aa92",
+    "redacted": false
+  },
+  {
+    "patch": "x86-native-stubs",
+    "source": "D:\\WF\\perf-v30-20261015\\build-v33x86.ps1",
+    "file": "99-x86-native-stubs\\source\\build-v33x86.ps1",
+    "bytes": 1598,
+    "source_sha256": "4c453b373f29550e4bb554e85f9c7d61c683ff877399b7a6dc42708bf9f8511d",
+    "collected_sha256": "4c453b373f29550e4bb554e85f9c7d61c683ff877399b7a6dc42708bf9f8511d",
+    "redacted": false
+  },
+  {
+    "patch": "x86-native-stubs",
+    "source": "D:\\WF\\perf-v30-20261015\\build-e3.ps1",
+    "file": "99-x86-native-stubs\\source\\build-e3.ps1",
+    "bytes": 2038,
+    "source_sha256": "22c828c2c84ace543b5a1677f3b38cbcd083df9ded0029ff34dc15e1878d78e9",
+    "collected_sha256": "22c828c2c84ace543b5a1677f3b38cbcd083df9ded0029ff34dc15e1878d78e9",
+    "redacted": false
+  },
+  {
+    "patch": "x86-native-stubs",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\build_x86.py",
+    "file": "99-x86-native-stubs\\source\\build_x86.py",
+    "bytes": 1942,
+    "source_sha256": "93dad51b1a9316cbedf4f76042d507cbb119dbfab50a547f5a1347a4339fb3ac",
+    "collected_sha256": "93dad51b1a9316cbedf4f76042d507cbb119dbfab50a547f5a1347a4339fb3ac",
+    "redacted": false
+  },
+  {
+    "patch": "x86-sockethelper",
+    "source": "D:\\WF\\perf-v30-20261015\\work\\x86stubs\\src\\SocketHelper_e3.c",
+    "file": "100-x86-sockethelper\\source\\SocketHelper_e3.c",
+    "bytes": 15306,
+    "source_sha256": "7b88f64cb6d5e19acc55f8c10000c8d6d3529143961b105ba3bd4cc10bf763c7",
+    "collected_sha256": "7b88f64cb6d5e19acc55f8c10000c8d6d3529143961b105ba3bd4cc10bf763c7",
+    "redacted": false
+  },
+  {
+    "patch": "x86-sockethelper",
+    "source": "D:\\WF\\perf-v30-20261015\\work\\x86stubs\\src\\SocketHelper.c",
+    "file": "100-x86-sockethelper\\source\\SocketHelper.c",
+    "bytes": 9009,
+    "source_sha256": "fb6f8b8315c15267dd0e0a707f77a97263770aaa2703df5cfba8328e05145d62",
+    "collected_sha256": "fb6f8b8315c15267dd0e0a707f77a97263770aaa2703df5cfba8328e05145d62",
+    "redacted": false
+  },
+  {
+    "patch": "x86-sockethelper",
+    "source": "D:\\WF\\perf-v30-20261015\\build-v33x86.ps1",
+    "file": "100-x86-sockethelper\\source\\build-v33x86.ps1",
+    "bytes": 1598,
+    "source_sha256": "4c453b373f29550e4bb554e85f9c7d61c683ff877399b7a6dc42708bf9f8511d",
+    "collected_sha256": "4c453b373f29550e4bb554e85f9c7d61c683ff877399b7a6dc42708bf9f8511d",
+    "redacted": false
+  },
+  {
+    "patch": "x86-sockethelper",
+    "source": "D:\\WF\\perf-v30-20261015\\build-e3.ps1",
+    "file": "100-x86-sockethelper\\source\\build-e3.ps1",
+    "bytes": 2038,
+    "source_sha256": "22c828c2c84ace543b5a1677f3b38cbcd083df9ded0029ff34dc15e1878d78e9",
+    "collected_sha256": "22c828c2c84ace543b5a1677f3b38cbcd083df9ded0029ff34dc15e1878d78e9",
+    "redacted": false
+  },
+  {
+    "patch": "x86-sockethelper",
+    "source": "D:\\WF\\perf-v30-20261015\\tools\\build_x86.py",
+    "file": "100-x86-sockethelper\\source\\build_x86.py",
+    "bytes": 1942,
+    "source_sha256": "93dad51b1a9316cbedf4f76042d507cbb119dbfab50a547f5a1347a4339fb3ac",
+    "collected_sha256": "93dad51b1a9316cbedf4f76042d507cbb119dbfab50a547f5a1347a4339fb3ac",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-paradox-core-item",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\overlimit_patches.py",
+    "file": "101-overlimit-paradox-core-item\\source\\overlimit_patches.py",
+    "bytes": 15453,
+    "source_sha256": "1971f1c69925e15786ec2931503238623c66bc6ba175b8564435054510ea7496",
+    "collected_sha256": "1971f1c69925e15786ec2931503238623c66bc6ba175b8564435054510ea7496",
+    "redacted": false
+  },
+  {
+    "patch": "overlimit-paradox-core-item",
+    "source": "D:\\WF\\out\\角色超限-120\\apk\\build_overlimit_apk.py",
+    "file": "101-overlimit-paradox-core-item\\source\\build_overlimit_apk.py",
+    "bytes": 11436,
+    "source_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "collected_sha256": "3896b43ef3aa495cb2cac8bac82fed9403df1ea8fd4efe50af045d7d1fda3a13",
+    "redacted": false
+  }
+]

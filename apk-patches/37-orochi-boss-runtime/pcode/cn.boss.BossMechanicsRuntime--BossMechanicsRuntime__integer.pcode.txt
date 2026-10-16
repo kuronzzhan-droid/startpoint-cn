@@ -1,0 +1,32 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.boss.BossMechanicsRuntime; label: BossMechanicsRuntime$/integer; body: 0; method: 1
+# code SHA-256: edf97da5d5bffd1e12613ea05be0dec2f2ab84712ac765b7c35c721095cbcc2f; header: [3, 4, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['isFinite']
+#0003 ofs0004: getglobalscope []
+#0004 ofs0005: getlocal_1 []
+#0005 ofs0006: call [1]
+#0006 ofs0008: dup []
+#0007 ofs0009: iffalse [] -> #14
+#0008 ofs000d: pop []
+#0009 ofs000e: getlocal_1 []
+#0010 ofs000f: getlex ['Math']
+#0011 ofs0011: getlocal_1 []
+#0012 ofs0012: callproperty ['floor', 1]
+#0013 ofs0015: equals []
+#0014 ofs0016: dup []
+#0015 ofs0017: iffalse [] -> #20
+#0016 ofs001b: pop []
+#0017 ofs001c: getlocal_1 []
+#0018 ofs001d: getlocal_2 []
+#0019 ofs001e: greaterequals []
+#0020 ofs001f: dup []
+#0021 ofs0020: iffalse [] -> #26
+#0022 ofs0024: pop []
+#0023 ofs0025: getlocal_1 []
+#0024 ofs0026: getlocal_3 []
+#0025 ofs0027: lessequals []
+#0026 ofs0028: returnvalue []

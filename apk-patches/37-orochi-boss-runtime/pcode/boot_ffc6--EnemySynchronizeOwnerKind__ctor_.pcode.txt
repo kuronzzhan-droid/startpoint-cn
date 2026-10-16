@@ -1,0 +1,22 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: EnemySynchronizeOwnerKind/<ctor>; body: 92466; method: 100939
+# code SHA-256: 7979072a95c57c395e3c40246f53d8ecd3d89ff1c967d87f9dd114c2cf51751d; header: [2, 4, 4, 5]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: op_ef [1, 92778, 2, 0]
+#0005 ofs0017: getlocal_0 []
+#0006 ofs0018: constructsuper [0]
+#0007 ofs001a: findproperty ['tag']
+#0008 ofs001c: getlocal_1 []
+#0009 ofs001d: setproperty ['tag']
+#0010 ofs001f: findproperty ['index']
+#0011 ofs0021: getlocal_2 []
+#0012 ofs0022: setproperty ['index']
+#0013 ofs0024: findproperty ['params']
+#0014 ofs0026: getlocal_3 []
+#0015 ofs0027: setproperty ['params']
+#0016 ofs0029: returnvoid []

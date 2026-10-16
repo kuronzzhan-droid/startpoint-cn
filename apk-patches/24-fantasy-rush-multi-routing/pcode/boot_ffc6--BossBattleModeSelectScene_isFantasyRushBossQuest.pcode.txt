@@ -1,0 +1,36 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: BossBattleModeSelectScene/isFantasyRushBossQuest; body: 91927; method: 100400
+# code SHA-256: 498f61fe586f70bf4169bd100373135748e0cde9de7b03148d9a1d8c10c89848; header: [2, 2, 7, 8]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 92775, 0, 371]
+#0003 ofs000a: getlex ['quest']
+#0004 ofs000e: getlex ['pinball.common.data.quest.event.advent::AdventEventQuestLogic']
+#0005 ofs0012: astypelate []
+#0006 ofs0013: coerce ['pinball.common.data.quest.event.advent::AdventEventQuestLogic']
+#0007 ofs0017: setlocal_1 []
+#0008 ofs0018: getlocal_1 []
+#0009 ofs0019: pushnull []
+#0010 ofs001a: equals []
+#0011 ofs001b: not []
+#0012 ofs001c: dup []
+#0013 ofs001d: iffalse [] -> #19
+#0014 ofs0021: pop []
+#0015 ofs0022: getlocal_1 []
+#0016 ofs0023: getproperty ['id']
+#0017 ofs0026: pushint [300098001]
+#0018 ofs0029: greaterequals []
+#0019 ofs002a: dup []
+#0020 ofs002b: iffalse [] -> #26
+#0021 ofs002f: pop []
+#0022 ofs0030: getlocal_1 []
+#0023 ofs0031: getproperty ['id']
+#0024 ofs0034: pushint [300098003]
+#0025 ofs0037: lessequals []
+#0026 ofs0038: iffalse [] -> #29
+#0027 ofs003c: pushtrue []
+#0028 ofs003d: returnvalue []
+#0029 ofs003e: pushfalse []
+#0030 ofs003f: returnvalue []

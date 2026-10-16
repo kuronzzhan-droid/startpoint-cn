@@ -1,0 +1,23 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.admission.ClientAdmission; label: anonymous-method-25; body: 23; method: 25
+# code SHA-256: bdcc34080cbb66c7305a88091d42be4538542a51a04561466af9168f3c7f8b97; header: [3, 2, 0, 0]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlex ['cn.admission::job']
+#0001 ofs0002: getproperty ['active']
+#0002 ofs0004: iftrue [] -> #4
+#0003 ofs0008: returnvoid []
+#0004 ofs0009: findpropstrict ['cancelLoad']
+#0005 ofs000b: getlex ['cn.admission::loader']
+#0006 ofs000d: callpropvoid ['cancelLoad', 1]
+#0007 ofs0010: getlex ['cn.admission::loader']
+#0008 ofs0012: getlex ['JSON']
+#0009 ofs0014: getlocal_1 []
+#0010 ofs0015: callproperty ['stringify', 1]
+#0011 ofs0018: setproperty ['data']
+#0012 ofs001a: getlex ['cn.admission::loader']
+#0013 ofs001c: findpropstrict ['flash.events::Event']
+#0014 ofs001e: pushstring ['complete']
+#0015 ofs0021: constructprop ['flash.events::Event', 1]
+#0016 ofs0024: callpropvoid ['dispatchEvent', 1]
+#0017 ofs0027: returnvoid []

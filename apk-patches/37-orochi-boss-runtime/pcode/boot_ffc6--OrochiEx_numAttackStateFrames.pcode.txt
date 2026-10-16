@@ -1,0 +1,148 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/numAttackStateFrames; body: 92498; method: 100971
+# code SHA-256: d257fee65c5a14bb0d52787e1709a457cdc60765448caed73818b7b0d51b4c76; header: [3, 6, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: op_ef [1, 92777, 2, 1366]
+#0005 ofs0018: op_ef [1, 92779, 3, 1352]
+#0006 ofs0020: pushnull []
+#0007 ofs0021: getlex ['pinball.common.data.battle.enemy::StateLengthKind']
+#0008 ofs0024: astypelate []
+#0009 ofs0025: coerce_a []
+#0010 ofs0026: setlocal [4]
+#0011 ofs0028: jump [] -> #30
+#0012 ofs002c: avm_label []
+#0013 ofs002d: findpropstrict ['once']
+#0014 ofs002f: callproperty ['once', 0]
+#0015 ofs0032: returnvalue []
+#0016 ofs0033: avm_label []
+#0017 ofs0034: jump [] -> #61
+#0018 ofs0038: avm_label []
+#0019 ofs0039: findpropstrict ['once']
+#0020 ofs003b: callproperty ['once', 0]
+#0021 ofs003e: returnvalue []
+#0022 ofs003f: avm_label []
+#0023 ofs0040: jump [] -> #61
+#0024 ofs0044: avm_label []
+#0025 ofs0045: findpropstrict ['once']
+#0026 ofs0047: callproperty ['once', 0]
+#0027 ofs004a: returnvalue []
+#0028 ofs004b: avm_label []
+#0029 ofs004c: jump [] -> #61
+#0030 ofs0050: getlocal_2 []
+#0031 ofs0051: getproperty ['index']
+#0032 ofs0053: setlocal [5]
+#0033 ofs0055: pushbyte [0]
+#0034 ofs0057: getlocal [5]
+#0035 ofs0059: ifstrictne [] -> #38
+#0036 ofs005d: pushbyte [0]
+#0037 ofs005f: jump [] -> #59
+#0038 ofs0063: pushbyte [1]
+#0039 ofs0065: getlocal [5]
+#0040 ofs0067: ifstrictne [] -> #43
+#0041 ofs006b: pushbyte [1]
+#0042 ofs006d: jump [] -> #59
+#0043 ofs0071: pushbyte [2]
+#0044 ofs0073: getlocal [5]
+#0045 ofs0075: ifstrictne [] -> #48
+#0046 ofs0079: pushbyte [2]
+#0047 ofs007b: jump [] -> #59
+#0048 ofs007f: pushbyte [3]
+#0049 ofs0081: getlocal [5]
+#0050 ofs0083: ifstrictne [] -> #53
+#0051 ofs0087: pushbyte [3]
+#0052 ofs0089: jump [] -> #59
+#0053 ofs008d: pushbyte [4]
+#0054 ofs008f: getlocal [5]
+#0055 ofs0091: ifstrictne [] -> #58
+#0056 ofs0095: pushbyte [4]
+#0057 ofs0097: jump [] -> #59
+#0058 ofs009b: pushbyte [255]
+#0059 ofs009d: op_08 [5]
+#0060 ofs009f: lookupswitch [] default #28, cases [12, 16, 18, 22, 24]
+#0061 ofs00b3: findpropstrict ['getAttackValues']
+#0062 ofs00b7: getlocal_1 []
+#0063 ofs00b8: callproperty ['getAttackValues', 1]
+#0064 ofs00bd: coerce_a []
+#0065 ofs00be: setlocal_3 []
+#0066 ofs00bf: jump [] -> #88
+#0067 ofs00c3: avm_label []
+#0068 ofs00c4: getlocal_3 []
+#0069 ofs00c5: getproperty ['attack_state_frames_a2']
+#0070 ofs00c9: coerce_a []
+#0071 ofs00ca: setlocal [4]
+#0072 ofs00cc: jump [] -> #104
+#0073 ofs00d0: avm_label []
+#0074 ofs00d1: getlocal_3 []
+#0075 ofs00d2: getproperty ['attack_state_frames_a4']
+#0076 ofs00d6: coerce_a []
+#0077 ofs00d7: setlocal [4]
+#0078 ofs00d9: jump [] -> #104
+#0079 ofs00dd: avm_label []
+#0080 ofs00de: getlex ['flash::Boot']
+#0081 ofs00e0: findpropstrict ['Error']
+#0082 ofs00e2: constructprop ['Error', 0]
+#0083 ofs00e5: setproperty ['lastError']
+#0084 ofs00e7: pushstring ['07930eca-a5ac-40ce-8867-c581e6d4a25e']
+#0085 ofs00eb: throw []
+#0086 ofs00ec: avm_label []
+#0087 ofs00ed: jump [] -> #104
+#0088 ofs00f1: getlocal_2 []
+#0089 ofs00f2: getproperty ['index']
+#0090 ofs00f4: setlocal [5]
+#0091 ofs00f6: pushbyte [1]
+#0092 ofs00f8: getlocal [5]
+#0093 ofs00fa: ifstrictne [] -> #96
+#0094 ofs00fe: pushbyte [0]
+#0095 ofs0100: jump [] -> #102
+#0096 ofs0104: pushbyte [3]
+#0097 ofs0106: getlocal [5]
+#0098 ofs0108: ifstrictne [] -> #101
+#0099 ofs010c: pushbyte [1]
+#0100 ofs010e: jump [] -> #102
+#0101 ofs0112: pushbyte [255]
+#0102 ofs0114: op_08 [5]
+#0103 ofs0116: lookupswitch [] default #79, cases [67, 73]
+#0104 ofs0121: jump [] -> #125
+#0105 ofs0125: avm_label []
+#0106 ofs0126: getlocal [4]
+#0107 ofs0128: getproperty ['params']
+#0108 ofs012c: pushbyte [0]
+#0109 ofs012e: getproperty ['<mn kind 0x1b>']
+#0110 ofs0132: convert_i []
+#0111 ofs0133: returnvalue []
+#0112 ofs0134: avm_label []
+#0113 ofs0135: findpropstrict ['loop']
+#0114 ofs0138: getlocal [4]
+#0115 ofs013a: getproperty ['params']
+#0116 ofs013e: pushbyte [0]
+#0117 ofs0140: getproperty ['<mn kind 0x1b>']
+#0118 ofs0144: convert_i []
+#0119 ofs0145: callproperty ['loop', 1]
+#0120 ofs0149: returnvalue []
+#0121 ofs014a: avm_label []
+#0122 ofs014b: returnvoid []
+#0123 ofs014c: avm_label []
+#0124 ofs014d: jump [] -> #141
+#0125 ofs0151: getlocal [4]
+#0126 ofs0153: getproperty ['index']
+#0127 ofs0157: setlocal [5]
+#0128 ofs0159: pushbyte [0]
+#0129 ofs015b: getlocal [5]
+#0130 ofs015d: ifstrictne [] -> #133
+#0131 ofs0161: pushbyte [0]
+#0132 ofs0163: jump [] -> #139
+#0133 ofs0167: pushbyte [1]
+#0134 ofs0169: getlocal [5]
+#0135 ofs016b: ifstrictne [] -> #138
+#0136 ofs016f: pushbyte [1]
+#0137 ofs0171: jump [] -> #139
+#0138 ofs0175: pushbyte [255]
+#0139 ofs0177: op_08 [5]
+#0140 ofs0179: lookupswitch [] default #121, cases [105, 112]
+#0141 ofs0184: pushundefined []
+#0142 ofs0185: returnvalue []

@@ -1,0 +1,41 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.account.PlayerLogin; label: PlayerLogin$/invalidateEntry; body: 23; method: 24
+# code SHA-256: 6bcb6523745137640ba59a9fda2d7bbfe319e8aa6f999bca339c82d8da792c6f; header: [2, 3, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['cn.account:PlayerLogin::session']
+#0003 ofs0004: getlocal_1 []
+#0004 ofs0005: getproperty ['token']
+#0005 ofs0008: ifne [] -> #8
+#0006 ofs000c: findpropstrict ['cn.account:PlayerLogin::clearLiveSession']
+#0007 ofs000e: callpropvoid ['cn.account:PlayerLogin::clearLiveSession', 0]
+#0008 ofs0011: findpropstrict ['cn.account:PlayerLogin::findEntry']
+#0009 ofs0013: getlocal_1 []
+#0010 ofs0014: getproperty ['profile']
+#0011 ofs0016: getproperty ['viewer_id']
+#0012 ofs0018: convert_s []
+#0013 ofs0019: callproperty ['cn.account:PlayerLogin::findEntry', 1]
+#0014 ofs001c: coerce ['Object']
+#0015 ofs001e: setlocal_2 []
+#0016 ofs001f: getlocal_2 []
+#0017 ofs0020: dup []
+#0018 ofs0021: iffalse [] -> #26
+#0019 ofs0025: pop []
+#0020 ofs0026: getlocal_2 []
+#0021 ofs0027: getproperty ['token']
+#0022 ofs002a: getlocal_1 []
+#0023 ofs002b: getproperty ['token']
+#0024 ofs002e: equals []
+#0025 ofs002f: coerce_a []
+#0026 ofs0030: iffalse [] -> #30
+#0027 ofs0034: getlocal_2 []
+#0028 ofs0035: pushstring ['']
+#0029 ofs0037: setproperty ['token']
+#0030 ofs003a: getlocal_1 []
+#0031 ofs003b: pushstring ['']
+#0032 ofs003d: setproperty ['token']
+#0033 ofs0040: findpropstrict ['cn.account:PlayerLogin::persistAccounts']
+#0034 ofs0042: callpropvoid ['cn.account:PlayerLogin::persistAccounts', 0]
+#0035 ofs0045: returnvoid []

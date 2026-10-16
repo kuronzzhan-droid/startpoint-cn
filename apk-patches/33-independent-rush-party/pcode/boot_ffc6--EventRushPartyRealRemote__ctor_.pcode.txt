@@ -1,0 +1,28 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: EventRushPartyRealRemote/<ctor>; body: 48429; method: 52058
+# code SHA-256: 6665250af7d41be817e9b39eaa2ad43b1105c04eb1a345ae6a37eb69d3a64a26; header: [5, 3, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['flash::Boot']
+#0003 ofs0004: getproperty ['skip_constructor']
+#0004 ofs0006: iffalse [] -> #6
+#0005 ofs000a: returnvoid []
+#0006 ofs000b: getlocal_0 []
+#0007 ofs000c: getlocal_1 []
+#0008 ofs000d: constructsuper [1]
+#0009 ofs000f: findproperty ['dispatcher']
+#0010 ofs0011: getlocal_2 []
+#0011 ofs0012: initproperty ['dispatcher']
+#0012 ofs0014: findproperty ['startUserRequest']
+#0013 ofs0017: pushstring ['event/rush/party']
+#0014 ofs001b: pushstring ['event_id']
+#0015 ofs001e: getlex ['cn.mod::IndependentRushParty']
+#0016 ofs0022: callproperty ['getEventId', 0]
+#0017 ofs0027: newobject [1]
+#0018 ofs0029: findproperty ['successHandler']
+#0019 ofs002c: getproperty ['successHandler']
+#0020 ofs002f: coerce ['Function']
+#0021 ofs0031: callpropvoid ['startUserRequest', 3]
+#0022 ofs0035: returnvoid []

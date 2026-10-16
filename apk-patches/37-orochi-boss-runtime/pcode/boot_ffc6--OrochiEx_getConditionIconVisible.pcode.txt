@@ -1,0 +1,62 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/getConditionIconVisible; body: 92539; method: 101012
+# code SHA-256: 6de1229675e25aa935a4316b2e6d1cc72d20140728aa0783d7c1054ae799695a; header: [2, 3, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 92775, 0, 2349]
+#0003 ofs000a: pushnull []
+#0004 ofs000b: getlex ['pinball.scene.battle.battle.enemy::EnemyState']
+#0005 ofs000f: astypelate []
+#0006 ofs0010: coerce_a []
+#0007 ofs0011: setlocal_1 []
+#0008 ofs0012: getlex ['phase']
+#0009 ofs0015: pushbyte [2]
+#0010 ofs0017: ifeq [] -> #13
+#0011 ofs001b: pushfalse []
+#0012 ofs001c: returnvalue []
+#0013 ofs001d: getlex ['state']
+#0014 ofs0020: coerce_a []
+#0015 ofs0021: setlocal_1 []
+#0016 ofs0022: getlocal_1 []
+#0017 ofs0023: getproperty ['index']
+#0018 ofs0027: pushbyte [1]
+#0019 ofs0029: ifeq [] -> #24
+#0020 ofs002d: getlocal_0 []
+#0021 ofs002e: callsuper ['getConditionIconVisible', 0]
+#0022 ofs0033: convert_b []
+#0023 ofs0034: returnvalue []
+#0024 ofs0035: jump [] -> #35
+#0025 ofs0039: avm_label []
+#0026 ofs003a: pushfalse []
+#0027 ofs003b: returnvalue []
+#0028 ofs003c: avm_label []
+#0029 ofs003d: getlocal_0 []
+#0030 ofs003e: callsuper ['getConditionIconVisible', 0]
+#0031 ofs0043: convert_b []
+#0032 ofs0044: returnvalue []
+#0033 ofs0045: avm_label []
+#0034 ofs0046: jump [] -> #55
+#0035 ofs004a: getlocal_1 []
+#0036 ofs004b: getproperty ['params']
+#0037 ofs004f: pushbyte [0]
+#0038 ofs0051: getproperty ['<mn kind 0x1b>']
+#0039 ofs0055: getproperty ['name']
+#0040 ofs0059: getproperty ['index']
+#0041 ofs005d: setlocal_2 []
+#0042 ofs005e: pushbyte [6]
+#0043 ofs0060: getlocal_2 []
+#0044 ofs0061: ifstrictne [] -> #47
+#0045 ofs0065: pushbyte [0]
+#0046 ofs0067: jump [] -> #53
+#0047 ofs006b: pushbyte [7]
+#0048 ofs006d: getlocal_2 []
+#0049 ofs006e: ifstrictne [] -> #52
+#0050 ofs0072: pushbyte [1]
+#0051 ofs0074: jump [] -> #53
+#0052 ofs0078: pushbyte [255]
+#0053 ofs007a: op_08 [2]
+#0054 ofs007c: lookupswitch [] default #28, cases [25, 25]
+#0055 ofs0087: pushundefined []
+#0056 ofs0088: returnvalue []

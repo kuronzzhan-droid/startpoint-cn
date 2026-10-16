@@ -1,0 +1,23 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: MemberImpl/reserveSkillPoint; body: 60198; method: 65254
+# code SHA-256: 6fe9817a84ad66ca0cdeaed697b1e984f3953b78dcea0ef76e6de6b35e16c1f2; header: [3, 2, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: pushbyte [0]
+#0004 ofs0005: ifle [] -> #10
+#0005 ofs0009: getlocal_0 []
+#0006 ofs000a: pushbyte [8]
+#0007 ofs000c: callproperty ['wfAllowsGauge', 1]
+#0008 ofs0011: iftrue [] -> #10
+#0009 ofs0015: returnvoid []
+#0010 ofs0016: findproperty ['reservedSkillPoint']
+#0011 ofs001a: findproperty ['reservedSkillPoint']
+#0012 ofs001e: getproperty ['reservedSkillPoint']
+#0013 ofs0022: getlocal_1 []
+#0014 ofs0023: add []
+#0015 ofs0024: convert_d []
+#0016 ofs0025: initproperty ['reservedSkillPoint']
+#0017 ofs0029: returnvoid []

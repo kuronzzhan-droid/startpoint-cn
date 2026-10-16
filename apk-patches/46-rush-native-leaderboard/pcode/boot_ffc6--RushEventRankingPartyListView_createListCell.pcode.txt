@@ -1,0 +1,39 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: RushEventRankingPartyListView/createListCell; body: 71023; method: 77480
+# code SHA-256: 046c2ba2f8755a08affa59456220138a29d36ce4cd62f7edd07f12f6dc33e231; header: [3, 5, 7, 8]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: op_ef [1, 92777, 2, 24]
+#0005 ofs0017: op_ef [1, 92779, 3, 25]
+#0006 ofs001e: getlocal_2 []
+#0007 ofs001f: coerce_a []
+#0008 ofs0020: setlocal_3 []
+#0009 ofs0021: findpropstrict ['pinball.scene.event.rush.ranking.party.list.cell::RushEventRankingPartyListCellView']
+#0010 ofs0025: constructprop ['pinball.scene.event.rush.ranking.party.list.cell::RushEventRankingPartyListCellView', 0]
+#0011 ofs002a: coerce ['pinball.scene.event.rush.ranking.party.list.cell::RushEventRankingPartyListCellView']
+#0012 ofs002e: setlocal [4]
+#0013 ofs0030: getlocal [4]
+#0014 ofs0032: getproperty ['config']
+#0015 ofs0035: getlocal_2 []
+#0016 ofs0036: pushnull []
+#0017 ofs0037: equals []
+#0018 ofs0038: not []
+#0019 ofs0039: dup []
+#0020 ofs003a: iffalse [] -> #27
+#0021 ofs003e: pop []
+#0022 ofs003f: getlocal_2 []
+#0023 ofs0040: getproperty ['rank']
+#0024 ofs0044: pushnull []
+#0025 ofs0045: equals []
+#0026 ofs0046: not []
+#0027 ofs0047: iffalse [] -> #30
+#0028 ofs004b: pushshort [204]
+#0029 ofs004e: jump [] -> #31
+#0030 ofs0052: pushshort [329]
+#0031 ofs0055: setproperty ['height']
+#0032 ofs0059: getlocal [4]
+#0033 ofs005b: returnvalue []

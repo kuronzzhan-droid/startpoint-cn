@@ -1,0 +1,92 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/getRemainingFramesOfUniqueStateGroup; body: 92528; method: 101001
+# code SHA-256: 62320b753e31aac9702e912ab36f7162ea0d420fd18c24f1016acfb8418aa661; header: [3, 3, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 92775, 0, 2209]
+#0003 ofs000a: getlex ['state']
+#0004 ofs000d: coerce ['pinball.scene.battle.battle.enemy::EnemyState']
+#0005 ofs0011: setlocal_1 []
+#0006 ofs0012: jump [] -> #69
+#0007 ofs0016: avm_label []
+#0008 ofs0017: jump [] -> #32
+#0009 ofs001b: avm_label []
+#0010 ofs001c: getlex ['flash::Boot']
+#0011 ofs001e: findpropstrict ['Error']
+#0012 ofs0020: constructprop ['Error', 0]
+#0013 ofs0023: setproperty ['lastError']
+#0014 ofs0025: pushstring ['06f45529-1550-4ca0-b968-2aea90d22b2e']
+#0015 ofs0029: throw []
+#0016 ofs002a: avm_label []
+#0017 ofs002b: getlex ['flash::Boot']
+#0018 ofs002d: findpropstrict ['Error']
+#0019 ofs002f: constructprop ['Error', 0]
+#0020 ofs0032: setproperty ['lastError']
+#0021 ofs0034: pushstring ['bdba128f-ca57-446d-9734-69a18ad32eb3']
+#0022 ofs0038: throw []
+#0023 ofs0039: avm_label []
+#0024 ofs003a: getlex ['flash::Boot']
+#0025 ofs003c: findpropstrict ['Error']
+#0026 ofs003e: constructprop ['Error', 0]
+#0027 ofs0041: setproperty ['lastError']
+#0028 ofs0043: pushstring ['d03ebb8e-7d40-4544-ae95-a0cc2dcb1e3d']
+#0029 ofs0047: throw []
+#0030 ofs0048: avm_label []
+#0031 ofs0049: jump [] -> #56
+#0032 ofs004d: getlocal_1 []
+#0033 ofs004e: getproperty ['params']
+#0034 ofs0050: pushbyte [0]
+#0035 ofs0052: getproperty ['<mn kind 0x1b>']
+#0036 ofs0056: getproperty ['index']
+#0037 ofs005a: setlocal_2 []
+#0038 ofs005b: pushbyte [0]
+#0039 ofs005d: getlocal_2 []
+#0040 ofs005e: ifstrictne [] -> #43
+#0041 ofs0062: pushbyte [0]
+#0042 ofs0064: jump [] -> #54
+#0043 ofs0068: pushbyte [1]
+#0044 ofs006a: getlocal_2 []
+#0045 ofs006b: ifstrictne [] -> #48
+#0046 ofs006f: pushbyte [1]
+#0047 ofs0071: jump [] -> #54
+#0048 ofs0075: pushbyte [2]
+#0049 ofs0077: getlocal_2 []
+#0050 ofs0078: ifstrictne [] -> #53
+#0051 ofs007c: pushbyte [2]
+#0052 ofs007e: jump [] -> #54
+#0053 ofs0082: pushbyte [255]
+#0054 ofs0084: op_08 [2]
+#0055 ofs0086: lookupswitch [] default #30, cases [9, 16, 23]
+#0056 ofs0094: jump [] -> #85
+#0057 ofs0098: avm_label []
+#0058 ofs0099: findpropstrict ['numUniqueStateFrames']
+#0059 ofs009d: getlocal_1 []
+#0060 ofs009e: getproperty ['params']
+#0061 ofs00a0: pushbyte [0]
+#0062 ofs00a2: getproperty ['<mn kind 0x1b>']
+#0063 ofs00a6: callproperty ['numUniqueStateFrames', 1]
+#0064 ofs00ab: getlex ['stateFrame']
+#0065 ofs00af: subtract []
+#0066 ofs00b0: returnvalue []
+#0067 ofs00b1: avm_label []
+#0068 ofs00b2: jump [] -> #85
+#0069 ofs00b6: getlocal_1 []
+#0070 ofs00b7: getproperty ['index']
+#0071 ofs00b9: setlocal_2 []
+#0072 ofs00ba: pushbyte [0]
+#0073 ofs00bc: getlocal_2 []
+#0074 ofs00bd: ifstrictne [] -> #77
+#0075 ofs00c1: pushbyte [0]
+#0076 ofs00c3: jump [] -> #83
+#0077 ofs00c7: pushbyte [1]
+#0078 ofs00c9: getlocal_2 []
+#0079 ofs00ca: ifstrictne [] -> #82
+#0080 ofs00ce: pushbyte [1]
+#0081 ofs00d0: jump [] -> #83
+#0082 ofs00d4: pushbyte [255]
+#0083 ofs00d6: op_08 [2]
+#0084 ofs00d8: lookupswitch [] default #67, cases [7, 57]
+#0085 ofs00e3: pushundefined []
+#0086 ofs00e4: returnvalue []

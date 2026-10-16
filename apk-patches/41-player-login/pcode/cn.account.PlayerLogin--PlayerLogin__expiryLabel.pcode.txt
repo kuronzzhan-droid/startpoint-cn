@@ -1,0 +1,32 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.account.PlayerLogin; label: PlayerLogin$/expiryLabel; body: 65; method: 66
+# code SHA-256: 00bab8214b964c4d66f81c2506ef7b7355739dceb9fa55500db7087ad2fc916e; header: [3, 3, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: findpropstrict ['Date']
+#0004 ofs0006: constructprop ['Date', 0]
+#0005 ofs000a: getproperty ['time']
+#0006 ofs000d: subtract []
+#0007 ofs000e: convert_d []
+#0008 ofs000f: setlocal_2 []
+#0009 ofs0010: getlocal_2 []
+#0010 ofs0011: pushbyte [0]
+#0011 ofs0013: ifnle [] -> #14
+#0012 ofs0017: pushstring ['需要重新登录']
+#0013 ofs001a: returnvalue []
+#0014 ofs001b: getlocal_2 []
+#0015 ofs001c: pushint [86400000]
+#0016 ofs001e: ifnlt [] -> #19
+#0017 ofs0022: pushstring ['不到 1 天后需重新登录']
+#0018 ofs0025: returnvalue []
+#0019 ofs0026: getlex ['Math']
+#0020 ofs0029: getlocal_2 []
+#0021 ofs002a: pushint [86400000]
+#0022 ofs002c: divide []
+#0023 ofs002d: callproperty ['ceil', 1]
+#0024 ofs0031: pushstring [' 天内可直接登录']
+#0025 ofs0034: add []
+#0026 ofs0035: returnvalue []

@@ -1,0 +1,43 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.admission.ClientAdmission; label: ClientAdmission$/forwardAdmission; body: 21; method: 22
+# code SHA-256: 2e438fb4728cdda6cd095102159b2845f00cbea21b7cdd4ef2201a7149b27f33; header: [3, 4, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: dup []
+#0004 ofs0004: iffalse [] -> #9
+#0005 ofs0008: pop []
+#0006 ofs0009: getlocal_1 []
+#0007 ofs000a: getproperty ['data_headers']
+#0008 ofs000c: coerce_a []
+#0009 ofs000d: iffalse [] -> #14
+#0010 ofs0011: getlocal_1 []
+#0011 ofs0012: getproperty ['data_headers']
+#0012 ofs0014: getproperty ['client_admission']
+#0013 ofs0016: jump [] -> #16
+#0014 ofs001a: pushnull []
+#0015 ofs001b: coerce_a []
+#0016 ofs001c: coerce ['Object']
+#0017 ofs001e: setlocal_3 []
+#0018 ofs001f: getlocal_3 []
+#0019 ofs0020: not []
+#0020 ofs0021: dup []
+#0021 ofs0022: iftrue [] -> #28
+#0022 ofs0026: pop []
+#0023 ofs0027: getlocal_3 []
+#0024 ofs0028: getproperty ['ok']
+#0025 ofs002a: pushfalse []
+#0026 ofs002b: strictequals []
+#0027 ofs002c: not []
+#0028 ofs002d: iffalse [] -> #31
+#0029 ofs0031: pushtrue []
+#0030 ofs0032: returnvalue []
+#0031 ofs0033: getlocal_2 []
+#0032 ofs0034: getlocal_0 []
+#0033 ofs0035: getlocal_1 []
+#0034 ofs0036: call [1]
+#0035 ofs0038: pop []
+#0036 ofs0039: pushfalse []
+#0037 ofs003a: returnvalue []

@@ -1,0 +1,19 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: EnemySynchronizeOwnerKind$/BossMechanics; body: 92456; method: 100929
+# code SHA-256: 29665f2f83e8be2dda60a1fa17158ea327e9995fd8aced862653727eeb1f69f2; header: [6, 4, 3, 4]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: op_ef [1, 92778, 2, 0]
+#0005 ofs0017: getlocal_0 []
+#0006 ofs0018: pushstring ['BossMechanics']
+#0007 ofs001c: pushbyte [13]
+#0008 ofs001e: getlocal_1 []
+#0009 ofs001f: getlocal_2 []
+#0010 ofs0020: getlocal_3 []
+#0011 ofs0021: newarray [3]
+#0012 ofs0023: construct [3]
+#0013 ofs0025: returnvalue []

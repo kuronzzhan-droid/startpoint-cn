@@ -1,0 +1,26 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/isPhase4AttackRunning; body: 92483; method: 100956
+# code SHA-256: 5b5f3b9a3dba84237e3175b8d5e813181020b6b684695b64c2b389dd7326c6be; header: [2, 2, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 92775, 0, 962]
+#0003 ofs000a: getlex ['state']
+#0004 ofs000d: coerce ['pinball.scene.battle.battle.enemy::EnemyState']
+#0005 ofs0011: setlocal_1 []
+#0006 ofs0012: getlocal_1 []
+#0007 ofs0013: getproperty ['index']
+#0008 ofs0015: pushbyte [1]
+#0009 ofs0017: ifeq [] -> #12
+#0010 ofs001b: pushfalse []
+#0011 ofs001c: returnvalue []
+#0012 ofs001d: getlocal_1 []
+#0013 ofs001e: getproperty ['params']
+#0014 ofs0020: pushbyte [0]
+#0015 ofs0022: getproperty ['<mn kind 0x1b>']
+#0016 ofs0026: getproperty ['name']
+#0017 ofs002a: getproperty ['index']
+#0018 ofs002e: pushbyte [28]
+#0019 ofs0030: equals []
+#0020 ofs0031: returnvalue []

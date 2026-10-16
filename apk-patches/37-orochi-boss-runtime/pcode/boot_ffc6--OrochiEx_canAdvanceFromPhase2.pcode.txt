@@ -1,0 +1,18 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/canAdvanceFromPhase2; body: 92476; method: 100949
+# code SHA-256: c6b3929cb480976b82748a43e354dbda0d46221a7dec9a2064d64c76ccd33d9b; header: [2, 1, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: findpropstrict ['isPhase2TrialGuardReleased']
+#0003 ofs0006: callproperty ['isPhase2TrialGuardReleased', 0]
+#0004 ofs000b: convert_b []
+#0005 ofs000c: dup []
+#0006 ofs000d: iffalse [] -> #12
+#0007 ofs0011: pop []
+#0008 ofs0012: findpropstrict ['isPhase2TrialStunRunning']
+#0009 ofs0016: callproperty ['isPhase2TrialStunRunning', 0]
+#0010 ofs001b: not []
+#0011 ofs001c: convert_b []
+#0012 ofs001d: returnvalue []

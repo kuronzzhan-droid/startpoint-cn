@@ -1,0 +1,21 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/backtrackUniqueState; body: 92563; method: 101036
+# code SHA-256: ec3ab737e3ba3660a75adb903b9dfb94dc30ffa2c30b36a472ff8afdbb93f7a8; header: [4, 4, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: op_ef [1, 92777, 2, 3225]
+#0005 ofs0018: getlocal_1 []
+#0006 ofs0019: coerce_a []
+#0007 ofs001a: setlocal_3 []
+#0008 ofs001b: findpropstrict ['_changeState']
+#0009 ofs001f: getlex ['pinball.scene.battle.battle.boss.orochi::OrochiEx']
+#0010 ofs0023: getlocal_3 []
+#0011 ofs0024: callproperty ['back', 1]
+#0012 ofs0028: pushfalse []
+#0013 ofs0029: pushbyte [1]
+#0014 ofs002b: callpropvoid ['_changeState', 3]
+#0015 ofs0030: returnvoid []

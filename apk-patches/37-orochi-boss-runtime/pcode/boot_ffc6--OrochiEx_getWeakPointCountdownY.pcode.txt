@@ -1,0 +1,11 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/getWeakPointCountdownY; body: 92519; method: 100992
+# code SHA-256: 153a987248bcbeee11e08159e5d9fdefd7a8e84ac38f837a2e2ae98f00f14ae1; header: [2, 1, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['y']
+#0003 ofs0005: getlex ['weakPointCountdownOffsetY']
+#0004 ofs0009: add []
+#0005 ofs000a: returnvalue []

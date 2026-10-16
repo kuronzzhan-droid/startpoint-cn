@@ -1,0 +1,50 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: AdventEventQuestLogic/isSelectable; body: 91898; method: 100371
+# code SHA-256: fa30506f61f35800ca78a3c9070406adf9322ea7df3e5f06d4476a8f096bca7b; header: [3, 3, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: getlex ['id']
+#0005 ofs0013: pushint [300098001]
+#0006 ofs0016: greaterequals []
+#0007 ofs0017: dup []
+#0008 ofs0018: iffalse [] -> #13
+#0009 ofs001c: pop []
+#0010 ofs001d: getlex ['id']
+#0011 ofs0020: pushint [300098003]
+#0012 ofs0023: lessequals []
+#0013 ofs0024: iffalse [] -> #33
+#0014 ofs0028: findpropstrict ['isHostCleared']
+#0015 ofs002c: getlocal_1 []
+#0016 ofs002d: callproperty ['isHostCleared', 1]
+#0017 ofs0032: iffalse [] -> #20
+#0018 ofs0036: pushfalse []
+#0019 ofs0037: returnvalue []
+#0020 ofs0038: findpropstrict ['isViewable']
+#0021 ofs003b: getlocal_1 []
+#0022 ofs003c: getlocal_2 []
+#0023 ofs003d: callproperty ['isViewable', 2]
+#0024 ofs0041: convert_b []
+#0025 ofs0042: dup []
+#0026 ofs0043: iffalse [] -> #32
+#0027 ofs0047: pop []
+#0028 ofs0048: findpropstrict ['isWithinPeriod']
+#0029 ofs004b: getlocal_2 []
+#0030 ofs004c: callproperty ['isWithinPeriod', 1]
+#0031 ofs0050: convert_b []
+#0032 ofs0051: returnvalue []
+#0033 ofs0052: getlocal_0 []
+#0034 ofs0053: getlocal_1 []
+#0035 ofs0054: getlocal_2 []
+#0036 ofs0055: callsuper ['isSelectable', 2]
+#0037 ofs005a: convert_b []
+#0038 ofs005b: iffalse [] -> #43
+#0039 ofs005f: findpropstrict ['isWithinPeriod']
+#0040 ofs0062: getlocal_2 []
+#0041 ofs0063: callproperty ['isWithinPeriod', 1]
+#0042 ofs0067: returnvalue []
+#0043 ofs0068: pushfalse []
+#0044 ofs0069: returnvalue []

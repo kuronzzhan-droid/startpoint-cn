@@ -1,0 +1,27 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.account.PlayerLogin; label: anonymous-method-41; body: 39; method: 41
+# code SHA-256: e85edae24999d4281d6c29833b707d87a87faa5765e71a9795c9b2410bad9785; header: [2, 2, 0, 0]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_1 []
+#0001 ofs0001: getproperty ['proof']
+#0002 ofs0004: findproperty ['cn.account:PlayerLogin::proof']
+#0003 ofs0006: swap []
+#0004 ofs0007: setproperty ['cn.account:PlayerLogin::proof']
+#0005 ofs0009: getlocal_1 []
+#0006 ofs000a: getproperty ['profile']
+#0007 ofs000c: findproperty ['cn.account:PlayerLogin::claimProfile']
+#0008 ofs000e: swap []
+#0009 ofs000f: setproperty ['cn.account:PlayerLogin::claimProfile']
+#0010 ofs0011: pushfalse []
+#0011 ofs0012: findproperty ['cn.account:PlayerLogin::claimIsLocal']
+#0012 ofs0014: swap []
+#0013 ofs0015: setproperty ['cn.account:PlayerLogin::claimIsLocal']
+#0014 ofs0017: newobject [0]
+#0015 ofs0019: findproperty ['cn.account:PlayerLogin::form']
+#0016 ofs001b: swap []
+#0017 ofs001c: setproperty ['cn.account:PlayerLogin::form']
+#0018 ofs001e: findpropstrict ['cn.account:PlayerLogin::navigate']
+#0019 ofs0020: pushstring ['claim']
+#0020 ofs0023: callpropvoid ['cn.account:PlayerLogin::navigate', 1]
+#0021 ofs0026: returnvoid []

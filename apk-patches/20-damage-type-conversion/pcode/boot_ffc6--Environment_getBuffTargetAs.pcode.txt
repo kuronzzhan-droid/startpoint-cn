@@ -1,0 +1,76 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: Environment/getBuffTargetAs; body: 52614; method: 56594
+# code SHA-256: 3534ccee67770f7f2f581051c53c7b13f35f0bb75a80a13fe4390d0a2bf5cfa1; header: [2, 2, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_0 []
+#0003 ofs0003: getproperty ['buffTargetAs']
+#0004 ofs0007: pushbyte [101]
+#0005 ofs0009: ifne [] -> #9
+#0006 ofs000d: getlocal_0 []
+#0007 ofs000e: getproperty ['buffTargetAs']
+#0008 ofs0012: returnvalue []
+#0009 ofs0013: getlocal_0 []
+#0010 ofs0014: getproperty ['buffTargetAs']
+#0011 ofs0018: pushbyte [102]
+#0012 ofs001a: ifne [] -> #16
+#0013 ofs001e: getlocal_0 []
+#0014 ofs001f: getproperty ['buffTargetAs']
+#0015 ofs0023: returnvalue []
+#0016 ofs0024: getlocal_0 []
+#0017 ofs0025: getproperty ['buffTargetAs']
+#0018 ofs0029: pushbyte [104]
+#0019 ofs002b: ifne [] -> #23
+#0020 ofs002f: getlocal_0 []
+#0021 ofs0030: getproperty ['buffTargetAs']
+#0022 ofs0034: returnvalue []
+#0023 ofs0035: getlocal_0 []
+#0024 ofs0036: getproperty ['buffTargetAs']
+#0025 ofs003a: pushint [131]
+#0026 ofs003c: ifne [] -> #30
+#0027 ofs0040: getlocal_0 []
+#0028 ofs0041: getproperty ['buffTargetAs']
+#0029 ofs0045: returnvalue []
+#0030 ofs0046: getlocal_0 []
+#0031 ofs0047: getproperty ['buffTargetAs']
+#0032 ofs004b: pushint [132]
+#0033 ofs004d: ifne [] -> #37
+#0034 ofs0051: getlocal_0 []
+#0035 ofs0052: getproperty ['buffTargetAs']
+#0036 ofs0056: returnvalue []
+#0037 ofs0057: getlocal_0 []
+#0038 ofs0058: getproperty ['buffTargetAs']
+#0039 ofs005c: pushint [133]
+#0040 ofs005e: ifne [] -> #44
+#0041 ofs0062: getlocal_0 []
+#0042 ofs0063: getproperty ['buffTargetAs']
+#0043 ofs0067: returnvalue []
+#0044 ofs0068: pushnull []
+#0045 ofs0069: astype ['pinball.scene.battle.battle.action::Environment']
+#0046 ofs006d: setlocal_1 []
+#0047 ofs006e: findproperty ['buffTargetAs']
+#0048 ofs0072: getproperty ['buffTargetAs']
+#0049 ofs0076: lookupswitch [] default #50, cases [51, 67, 67, 67, 67]
+#0050 ofs008a: jump [] -> #70
+#0051 ofs008e: findproperty ['outerEnvironment']
+#0052 ofs0091: getproperty ['outerEnvironment']
+#0053 ofs0094: coerce ['pinball.scene.battle.battle.action::Environment']
+#0054 ofs0098: setlocal_1 []
+#0055 ofs0099: getlocal_1 []
+#0056 ofs009a: pushnull []
+#0057 ofs009b: coerce ['pinball.scene.battle.battle.action::Environment']
+#0058 ofs009f: ifeq [] -> #64
+#0059 ofs00a3: getlocal_1 []
+#0060 ofs00a4: callproperty ['getBuffTargetAs', 0]
+#0061 ofs00a9: convert_i []
+#0062 ofs00aa: returnvalue []
+#0063 ofs00ab: jump [] -> #66
+#0064 ofs00af: pushbyte [0]
+#0065 ofs00b1: returnvalue []
+#0066 ofs00b2: jump [] -> #70
+#0067 ofs00b6: findproperty ['buffTargetAs']
+#0068 ofs00ba: getproperty ['buffTargetAs']
+#0069 ofs00be: returnvalue []
+#0070 ofs00bf: returnvoid []

@@ -1,0 +1,57 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/isInvincible; body: 92505; method: 100978
+# code SHA-256: f0962643573d1de38f10ee7aad5d132cd67f97a5a30eacc5bd33cda4df6927c0; header: [2, 2, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: jump [] -> #23
+#0003 ofs0006: avm_label []
+#0004 ofs0007: jump [] -> #48
+#0005 ofs000b: avm_label []
+#0006 ofs000c: findpropstrict ['hasPhase4HealthMode']
+#0007 ofs0010: callproperty ['hasPhase4HealthMode', 0]
+#0008 ofs0015: dup []
+#0009 ofs0016: convert_b []
+#0010 ofs0017: iffalse [] -> #16
+#0011 ofs001b: pop []
+#0012 ofs001c: findpropstrict ['phase4DamageRate']
+#0013 ofs0020: callproperty ['phase4DamageRate', 0]
+#0014 ofs0025: pushbyte [0]
+#0015 ofs0027: greaterthan []
+#0016 ofs0028: iffalse [] -> #19
+#0017 ofs002c: pushfalse []
+#0018 ofs002d: returnvalue []
+#0019 ofs002e: pushtrue []
+#0020 ofs002f: returnvalue []
+#0021 ofs0030: avm_label []
+#0022 ofs0031: jump [] -> #48
+#0023 ofs0035: getlex ['phase']
+#0024 ofs0038: setlocal_1 []
+#0025 ofs0039: pushbyte [1]
+#0026 ofs003b: getlocal_1 []
+#0027 ofs003c: ifstrictne [] -> #30
+#0028 ofs0040: pushbyte [0]
+#0029 ofs0042: jump [] -> #46
+#0030 ofs0046: pushbyte [2]
+#0031 ofs0048: getlocal_1 []
+#0032 ofs0049: ifstrictne [] -> #35
+#0033 ofs004d: pushbyte [1]
+#0034 ofs004f: jump [] -> #46
+#0035 ofs0053: pushbyte [3]
+#0036 ofs0055: getlocal_1 []
+#0037 ofs0056: ifstrictne [] -> #40
+#0038 ofs005a: pushbyte [2]
+#0039 ofs005c: jump [] -> #46
+#0040 ofs0060: pushbyte [4]
+#0041 ofs0062: getlocal_1 []
+#0042 ofs0063: ifstrictne [] -> #45
+#0043 ofs0067: pushbyte [3]
+#0044 ofs0069: jump [] -> #46
+#0045 ofs006d: pushbyte [255]
+#0046 ofs006f: op_08 [1]
+#0047 ofs0071: lookupswitch [] default #21, cases [3, 3, 3, 5]
+#0048 ofs0082: getlocal_0 []
+#0049 ofs0083: callsuper ['isInvincible', 0]
+#0050 ofs0087: convert_b []
+#0051 ofs0088: returnvalue []

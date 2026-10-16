@@ -1,0 +1,57 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: DevConfig/getSaveDataKey; body: 91815; method: 100288
+# code SHA-256: 18cef2072e7760043f1430a73565f662b544a7d1346632e001953dc2fe3fb4d4; header: [3, 2, 4, 5]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: jump [] -> #26
+#0003 ofs0006: avm_label []
+#0004 ofs0007: pushstring ['dummy']
+#0005 ofs000a: returnvalue []
+#0006 ofs000b: avm_label []
+#0007 ofs000c: pushstring ['custom_']
+#0008 ofs000f: getlex ['Std']
+#0009 ofs0011: getlex ['publishTarget']
+#0010 ofs0014: callproperty ['string', 1]
+#0011 ofs0017: add []
+#0012 ofs0018: pushstring ['_']
+#0013 ofs001b: add []
+#0014 ofs001c: getlex ['Std']
+#0015 ofs001e: getlex ['publishPlatform']
+#0016 ofs0021: callproperty ['string', 1]
+#0017 ofs0024: add []
+#0018 ofs0025: returnvalue []
+#0019 ofs0026: avm_label []
+#0020 ofs0027: pushstring ['empty']
+#0021 ofs002a: returnvalue []
+#0022 ofs002b: avm_label []
+#0023 ofs002c: returnvoid []
+#0024 ofs002d: avm_label []
+#0025 ofs002e: jump [] -> #50
+#0026 ofs0032: getlex ['remote']
+#0027 ofs0035: getproperty ['index']
+#0028 ofs0039: setlocal_1 []
+#0029 ofs003a: pushbyte [0]
+#0030 ofs003c: getlocal_1 []
+#0031 ofs003d: ifstrictne [] -> #34
+#0032 ofs0041: pushbyte [0]
+#0033 ofs0043: jump [] -> #48
+#0034 ofs0047: pushbyte [1]
+#0035 ofs0049: getlocal_1 []
+#0036 ofs004a: ifstrictne [] -> #39
+#0037 ofs004e: pushbyte [1]
+#0038 ofs0050: jump [] -> #48
+#0039 ofs0054: pushbyte [2]
+#0040 ofs0056: getlocal_1 []
+#0041 ofs0057: ifstrictne [] -> #44
+#0042 ofs005b: pushbyte [2]
+#0043 ofs005d: jump [] -> #48
+#0044 ofs0061: jump [] -> #47
+#0045 ofs0065: pushbyte [3]
+#0046 ofs0067: jump [] -> #48
+#0047 ofs006b: pushbyte [3]
+#0048 ofs006d: op_08 [1]
+#0049 ofs006f: lookupswitch [] default #24, cases [3, 6, 19, 22, 24]
+#0050 ofs0083: pushundefined []
+#0051 ofs0084: returnvalue []

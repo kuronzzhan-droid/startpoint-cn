@@ -1,0 +1,22 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: BothBossTool$/isRandomMapQuest; body: 92434; method: 100907
+# code SHA-256: e84bc0b0fe0b4b3e90dba190809ba2a78af89a981e68babba8aec7a696bfa7eb; header: [2, 2, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: getlocal_1 []
+#0004 ofs000a: pushint [1099001]
+#0005 ofs000d: greaterequals []
+#0006 ofs000e: dup []
+#0007 ofs000f: iffalse [] -> #12
+#0008 ofs0013: pop []
+#0009 ofs0014: getlocal_1 []
+#0010 ofs0015: pushint [1099099]
+#0011 ofs0018: lessequals []
+#0012 ofs0019: iffalse [] -> #15
+#0013 ofs001d: pushtrue []
+#0014 ofs001e: returnvalue []
+#0015 ofs001f: pushfalse []
+#0016 ofs0020: returnvalue []

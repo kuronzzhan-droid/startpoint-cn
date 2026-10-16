@@ -1,0 +1,33 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: LocalLoading/startChild; body: 38428; method: 41733
+# code SHA-256: 77eb5495b8bd1c332701e4ed63920b5a792385ce776aeeb2145648ef28c6a598; header: [3, 3, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_2 []
+#0003 ofs0003: callproperty ['pinball.common.task:IProgressManager::get_completed', 0]
+#0004 ofs0008: convert_b []
+#0005 ofs0009: iffalse [] -> #11
+#0006 ofs000d: findproperty ['progressManager']
+#0007 ofs0010: getproperty ['progressManager']
+#0008 ofs0013: getlocal_1 []
+#0009 ofs0014: pushdouble [0.05]
+#0010 ofs0016: callpropvoid ['reduceWeight', 2]
+#0011 ofs001b: findproperty ['progressManager']
+#0012 ofs001e: getproperty ['progressManager']
+#0013 ofs0021: getlocal_1 []
+#0014 ofs0022: getlocal_2 []
+#0015 ofs0023: callpropvoid ['attachChild', 2]
+#0016 ofs0027: getlocal_1 []
+#0017 ofs0028: pushbyte [3]
+#0018 ofs002a: ifne [] -> #26
+#0019 ofs002e: getlocal_2 []
+#0020 ofs002f: getproperty ['waitCompleteImpl']
+#0021 ofs0032: coerce ['pinball.asset::WaitImpl']
+#0022 ofs0035: getlex ['flash.system::System']
+#0023 ofs0038: getproperty ['gc']
+#0024 ofs003c: coerce ['Function']
+#0025 ofs003e: callpropvoid ['addCompleteHandler', 1]
+#0026 ofs0042: getlocal_2 []
+#0027 ofs0043: returnvalue []

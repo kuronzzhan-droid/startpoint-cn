@@ -1,0 +1,52 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: MemberAbilityTotalizerImpl/wfResolveDamageType; body: 92441; method: 100914
+# code SHA-256: 13482a0345ec249255960ba143f1abf5c85843ecbf27273f383795e4d9555c75; header: [2, 7, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_0 []
+#0003 ofs0003: getproperty ['wfDamageRules']
+#0004 ofs0007: setlocal_2 []
+#0005 ofs0008: getlocal_2 []
+#0006 ofs0009: iffalse [] -> #45
+#0007 ofs000d: pushbyte [0]
+#0008 ofs000f: setlocal_3 []
+#0009 ofs0010: avm_label []
+#0010 ofs0011: getlocal_3 []
+#0011 ofs0012: getlocal_2 []
+#0012 ofs0013: getproperty ['length']
+#0013 ofs0015: ifge [] -> #45
+#0014 ofs0019: getlocal_2 []
+#0015 ofs001a: getlocal_3 []
+#0016 ofs001b: getproperty ['<mn kind 0x1b>']
+#0017 ofs001d: coerce ['pinball.scene.battle.battle.ability::DuringCheckerWithDecimal']
+#0018 ofs0021: setlocal [4]
+#0019 ofs0023: inclocal_i [3]
+#0020 ofs0025: getlocal [4]
+#0021 ofs0027: pushnull []
+#0022 ofs0028: callproperty ['getActiveCount', 1]
+#0023 ofs002d: pushbyte [0]
+#0024 ofs002f: ifle [] -> #9
+#0025 ofs0033: getlocal [4]
+#0026 ofs0035: getproperty ['value']
+#0027 ofs0038: convert_i []
+#0028 ofs0039: setlocal [5]
+#0029 ofs003b: getlocal [5]
+#0030 ofs003d: pushbyte [100]
+#0031 ofs003f: divide []
+#0032 ofs0040: convert_i []
+#0033 ofs0041: setlocal [6]
+#0034 ofs0043: getlocal [6]
+#0035 ofs0045: pushbyte [0]
+#0036 ofs0047: ifeq [] -> #40
+#0037 ofs004b: getlocal [6]
+#0038 ofs004d: getlocal_1 []
+#0039 ofs004e: ifne [] -> #9
+#0040 ofs0052: getlocal [5]
+#0041 ofs0054: pushbyte [100]
+#0042 ofs0056: modulo []
+#0043 ofs0057: convert_i []
+#0044 ofs0058: returnvalue []
+#0045 ofs0059: pushbyte [0]
+#0046 ofs005b: returnvalue []

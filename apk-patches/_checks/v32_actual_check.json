@@ -1,0 +1,378 @@
+{
+  "method": "只读 APK，以内存 ZIP 解包；只解析内存 SWF/ABC 与 bundle；未执行构建脚本、未输出二进制。",
+  "apk": "C:\\Users\\12101\\Downloads\\世界弹射测试服-v33.apk",
+  "apk_sha256": "3de625cf0c745c79d333a09140ad82fdea74746d2e2200a5b6922f67eca14532",
+  "expected_final_apk_sha256": "3de625cf0c745c79d333a09140ad82fdea74746d2e2200a5b6922f67eca14532",
+  "apk_matches": true,
+  "swf_member": "assets/worldflipper_android_release.swf",
+  "swf_sha256": "3b7b3391ae0aee01f15167fe1d5a5b69eddb71a64605c57486f025916611aaa4",
+  "expected_final_swf_sha256": "3b7b3391ae0aee01f15167fe1d5a5b69eddb71a64605c57486f025916611aaa4",
+  "swf_matches": true,
+  "method_checks": [
+    {
+      "key": "overlimit-O1",
+      "slug": "overlimit-max-step",
+      "label": "GeneralCharacterLogic/get_maxOverLimitStep",
+      "status_in_collection": "adopted",
+      "body_index": 17542,
+      "header": [
+        3,
+        2,
+        1,
+        2
+      ],
+      "actual_sha256": "a1b57b4034b60def3d9b1a328b7ceb321157f45e5243c246353d733a7643ebab",
+      "expected_sha256": "a1b57b4034b60def3d9b1a328b7ceb321157f45e5243c246353d733a7643ebab",
+      "matches": true
+    },
+    {
+      "key": "overlimit-O2",
+      "slug": "overlimit-owned-crystals",
+      "label": "OwnedOverLimitLogic/getOwnAwakingCrystalToOverLimit",
+      "status_in_collection": "adopted",
+      "body_index": 18060,
+      "header": [
+        3,
+        12,
+        1,
+        2
+      ],
+      "actual_sha256": "2be9af1fa92ed8bb56a5ee90b9eb511f7f94c6941f38a223e406207e17be61b2",
+      "expected_sha256": "2be9af1fa92ed8bb56a5ee90b9eb511f7f94c6941f38a223e406207e17be61b2",
+      "matches": true
+    },
+    {
+      "key": "overlimit-O3",
+      "slug": "overlimit-crystal-buttons",
+      "label": "OwnedOverLimitLogic/getAwakingCrystalToOverLimit",
+      "status_in_collection": "adopted",
+      "body_index": 18063,
+      "header": [
+        3,
+        13,
+        1,
+        2
+      ],
+      "actual_sha256": "2e584914a2f67e60a268e62502f8e7af84a6a6e1e38af444b8de79c446470b34",
+      "expected_sha256": "2e584914a2f67e60a268e62502f8e7af84a6a6e1e38af444b8de79c446470b34",
+      "matches": true
+    },
+    {
+      "key": "overlimit-O4",
+      "slug": "overlimit-no-dupes",
+      "label": "OwnedOverLimitLogic/getOverLimitState",
+      "status_in_collection": "adopted",
+      "body_index": 18061,
+      "header": [
+        3,
+        12,
+        1,
+        2
+      ],
+      "actual_sha256": "98f9c7121ac212729daaf7a0e9b740e2de275dcc26e2536ad4d8e1d63d023fd0",
+      "expected_sha256": "98f9c7121ac212729daaf7a0e9b740e2de275dcc26e2536ad4d8e1d63d023fd0",
+      "matches": true
+    },
+    {
+      "key": "overlimit-O5",
+      "slug": "overlimit-paradox-core-item",
+      "label": "OwnedCharacterLogic/getPossibleOverLimitCountByItem",
+      "status_in_collection": "adopted",
+      "body_index": 17768,
+      "header": [
+        3,
+        6,
+        1,
+        2
+      ],
+      "actual_sha256": "7fa65be8a2181e01a0a17b400d74fecbd0565c2600be4e78a7be8d96a94e837e",
+      "expected_sha256": "7fa65be8a2181e01a0a17b400d74fecbd0565c2600be4e78a7be8d96a94e837e",
+      "matches": true,
+      "collection_directory": "101-overlimit-paradox-core-item"
+    },
+    {
+      "key": "overlimit-O6",
+      "slug": "overlimit-full-pedestal",
+      "label": "GeneralCharacterLogic/getPedestalImagePath",
+      "status_in_collection": "adopted",
+      "body_index": 17568,
+      "header": [
+        3,
+        3,
+        1,
+        2
+      ],
+      "actual_sha256": "1c5905b65f624a24c01cf58adeeb90c300a9e9ae965577c4b295c093f0be117d",
+      "expected_sha256": "1c5905b65f624a24c01cf58adeeb90c300a9e9ae965577c4b295c093f0be117d",
+      "matches": true
+    },
+    {
+      "key": "overlimit-O7",
+      "slug": "overlimit-half-pedestal",
+      "label": "GeneralCharacterLogic/getHalfPedestalImagePath",
+      "status_in_collection": "adopted",
+      "body_index": 17588,
+      "header": [
+        3,
+        3,
+        1,
+        2
+      ],
+      "actual_sha256": "0dc8e515702c2c3c77cca60549da8e063eec0785f89a57e503b5ddf41be6a28a",
+      "expected_sha256": "0dc8e515702c2c3c77cca60549da8e063eec0785f89a57e503b5ddf41be6a28a",
+      "matches": true
+    },
+    {
+      "key": "pflv4-P1",
+      "slug": "pf-lv4-dsl",
+      "label": "MemberImpl/startPowerFlip",
+      "status_in_collection": "adopted",
+      "body_index": 60180,
+      "header": [
+        27,
+        20,
+        1,
+        2
+      ],
+      "actual_sha256": "0aaa43db85c048dda9784925de22fccc38068f638449fcb59938420f12fc2d6b",
+      "expected_sha256": "0aaa43db85c048dda9784925de22fccc38068f638449fcb59938420f12fc2d6b",
+      "matches": true
+    },
+    {
+      "key": "pflv4-P2",
+      "slug": "pf-lv4-ready",
+      "label": "BattleFlipperImpl/update",
+      "status_in_collection": "adopted",
+      "body_index": 58371,
+      "header": [
+        5,
+        10,
+        1,
+        2
+      ],
+      "actual_sha256": "850b7356ba86f981b98d73d4d3619484acf2e7b2b0ff9f4ee8814113b7e9b8f0",
+      "expected_sha256": "850b7356ba86f981b98d73d4d3619484acf2e7b2b0ff9f4ee8814113b7e9b8f0",
+      "matches": true
+    },
+    {
+      "key": "pflv4-P3",
+      "slug": "pf-lv4-color",
+      "label": "BattleFlipperView/draw",
+      "status_in_collection": "adopted",
+      "body_index": 58431,
+      "header": [
+        6,
+        26,
+        1,
+        2
+      ],
+      "actual_sha256": "379ac4029668dbf388a33ee321940f77837f1911d14c3f06f19f66c553377375",
+      "expected_sha256": "379ac4029668dbf388a33ee321940f77837f1911d14c3f06f19f66c553377375",
+      "matches": true
+    },
+    {
+      "key": "feveritems-B1",
+      "slug": "fever-arrow-items",
+      "label": "YakumonoManagerImpl/activate",
+      "status_in_collection": "adopted",
+      "body_index": 61871,
+      "header": [
+        5,
+        17,
+        1,
+        2
+      ],
+      "actual_sha256": "fd64527e90a488f108d36e1efc3b4164cecc10c2b0d575eade511a92d4def037",
+      "expected_sha256": "fd64527e90a488f108d36e1efc3b4164cecc10c2b0d575eade511a92d4def037",
+      "matches": true
+    },
+    {
+      "key": "feveritems-B2",
+      "slug": "fever-arrow-close",
+      "label": "YakumonoManagerImpl/deactivate",
+      "status_in_collection": "adopted",
+      "body_index": 61868,
+      "header": [
+        3,
+        8,
+        1,
+        2
+      ],
+      "actual_sha256": "be565848a5c9bccb1030b57a98799a4fde637418f8601d76009fc45aa3422e9b",
+      "expected_sha256": "be565848a5c9bccb1030b57a98799a4fde637418f8601d76009fc45aa3422e9b",
+      "matches": true
+    },
+    {
+      "key": "feveritems-B3",
+      "slug": "fever-items-preload",
+      "label": "BattleQuestBaseImpl/resolvePathCollectionForDashPanel",
+      "status_in_collection": "adopted",
+      "body_index": 21430,
+      "header": [
+        3,
+        11,
+        1,
+        1
+      ],
+      "actual_sha256": "6143a756bc032bd52230fa2d42efa799c0ba7b57796759a0848e7a70befceb98",
+      "expected_sha256": "6143a756bc032bd52230fa2d42efa799c0ba7b57796759a0848e7a70befceb98",
+      "matches": true
+    },
+    {
+      "key": "feveritems-B5",
+      "slug": "fever-items-leading-dsl",
+      "label": "BattleQuestBaseImpl/leadingResolvePathCollection",
+      "status_in_collection": "adopted",
+      "body_index": 21446,
+      "header": [
+        7,
+        35,
+        1,
+        2
+      ],
+      "actual_sha256": "ae7218d15898f9b2ebe0d995b070d0088be70548bac6b6176588d5d4c7ebe391",
+      "expected_sha256": "ae7218d15898f9b2ebe0d995b070d0088be70548bac6b6176588d5d4c7ebe391",
+      "matches": true
+    },
+    {
+      "key": "voice-V1",
+      "slug": "generic-ready-rotation",
+      "label": "HudMemberStatus/update",
+      "status_in_collection": "adopted",
+      "body_index": 58762,
+      "header": [
+        7,
+        8,
+        1,
+        2
+      ],
+      "actual_sha256": "7858113b678d100259739c4716f0729c9f3dfc75498fd101efc37f9dbaf9e50c",
+      "expected_sha256": "7858113b678d100259739c4716f0729c9f3dfc75498fd101efc37f9dbaf9e50c",
+      "matches": true
+    },
+    {
+      "key": "voice-V2",
+      "slug": "generic-ready-preload",
+      "label": "BattleCharacterLogic/resolveFollowingPathCollection",
+      "status_in_collection": "adopted",
+      "body_index": 92330,
+      "header": [
+        4,
+        14,
+        6,
+        7
+      ],
+      "actual_sha256": "d8d6141c41bcb2d9290f8cfcfe71d5618e65127a8bab1129779fe30b6924e8ea",
+      "expected_sha256": "d8d6141c41bcb2d9290f8cfcfe71d5618e65127a8bab1129779fe30b6924e8ea",
+      "matches": true
+    },
+    {
+      "key": "voice-V3",
+      "slug": "generic-ready-gallery",
+      "label": "CharacterVoiceLogic/createVoicePathMap",
+      "status_in_collection": "adopted",
+      "body_index": 84274,
+      "header": [
+        5,
+        39,
+        1,
+        2
+      ],
+      "actual_sha256": "a3f3aa721b20af0547543fb26a0ab4227104248b6aee01289e66fea765dc14d7",
+      "expected_sha256": "a3f3aa721b20af0547543fb26a0ab4227104248b6aee01289e66fea765dc14d7",
+      "matches": true
+    }
+  ],
+  "all_method_hashes_match": true,
+  "bundle_sha1": "5b5cbf56e9da6cc3a8e939aae4308c9d59b3ac71",
+  "bundle_sha1_file": "5b5cbf56e9da6cc3a8e939aae4308c9d59b3ac71",
+  "bundle_matches_v31_report": true,
+  "bundle_member_checks": [
+    {
+      "logical_path": "master/character/level_cap_iosbundled.orderedmap",
+      "member": "production/android_bundle/c7/b8f9c6f9d572bb625885e0d0c9226c01d9a385",
+      "bytes": 69,
+      "actual_sha256": "9b816e7f05479519549357df3fe7a5193f56689e4c419ec554030757fd49d4ba",
+      "expected_after_sha256": "9b816e7f05479519549357df3fe7a5193f56689e4c419ec554030757fd49d4ba",
+      "hash_matches": true,
+      "size_matches": true
+    },
+    {
+      "logical_path": "master/character/character_level_iosbundled.orderedmap",
+      "member": "production/android_bundle/23/a83b55daad153a95f8d5b66667b32e47f3dca2",
+      "bytes": 5932,
+      "actual_sha256": "8ce0cbe4ab540483a535068a6b6005dba3eefabb2cd42938294ca0995ef53828",
+      "expected_after_sha256": "8ce0cbe4ab540483a535068a6b6005dba3eefabb2cd42938294ca0995ef53828",
+      "hash_matches": true,
+      "size_matches": true
+    },
+    {
+      "logical_path": "character_pedestal/sprite_sheet.png",
+      "member": "production/android_bundle/96/b97133a2b5c5bc58a4f234d531960136f0729f",
+      "bytes": 54926,
+      "actual_sha256": "c7618668e916b823926795523a1612acf99e0f1d998ecaaa898280469ac3b8d0",
+      "expected_after_sha256": "c7618668e916b823926795523a1612acf99e0f1d998ecaaa898280469ac3b8d0",
+      "hash_matches": true,
+      "size_matches": true
+    },
+    {
+      "logical_path": "character_pedestal/sprite_sheet.atlas.amf3.deflate",
+      "member": "production/android_bundle/ce/d720392bdd8eeb25b339c2e3943f327fea27ba",
+      "bytes": 833,
+      "actual_sha256": "c8b460ff58f075cc6260878decf5c4eb394f2d3f4b03b9463bc45c4a67255964",
+      "expected_after_sha256": "c8b460ff58f075cc6260878decf5c4eb394f2d3f4b03b9463bc45c4a67255964",
+      "hash_matches": true,
+      "size_matches": true
+    }
+  ],
+  "level_cap_table": {
+    "4": "70,6,5,1.5,1.5",
+    "5": "80,8,5,3,3"
+  },
+  "level_cap_5_matches": true,
+  "experience_101_to_120_matches": true,
+  "experience_100": "379988",
+  "experience_101": "394988",
+  "experience_120": "679988",
+  "pedestal_atlas_frames_total": 89,
+  "pedestal_expected_new_frame_count": 24,
+  "pedestal_new_frames_present_count": 24,
+  "pedestal_new_frames_present": [
+    "character_pedestal/common/red_6",
+    "character_pedestal/common/red_6_half",
+    "character_pedestal/common/red_7",
+    "character_pedestal/common/red_7_half",
+    "character_pedestal/common/blue_6",
+    "character_pedestal/common/blue_6_half",
+    "character_pedestal/common/blue_7",
+    "character_pedestal/common/blue_7_half",
+    "character_pedestal/common/yellow_6",
+    "character_pedestal/common/yellow_6_half",
+    "character_pedestal/common/yellow_7",
+    "character_pedestal/common/yellow_7_half",
+    "character_pedestal/common/green_6",
+    "character_pedestal/common/green_6_half",
+    "character_pedestal/common/green_7",
+    "character_pedestal/common/green_7_half",
+    "character_pedestal/common/white_6",
+    "character_pedestal/common/white_6_half",
+    "character_pedestal/common/white_7",
+    "character_pedestal/common/white_7_half",
+    "character_pedestal/common/black_6",
+    "character_pedestal/common/black_6_half",
+    "character_pedestal/common/black_7",
+    "character_pedestal/common/black_7_half"
+  ],
+  "pedestal_all_24_frames_present": true,
+  "pedestal_png_dimensions": [
+    27,
+    2015
+  ],
+  "O5_note": "实际方法 SHA 与 O5 最终实现一致，已证实在最终测试者 v33 内，正式收录为101。用户本次补充澄清：尚未构建的是后续零核调整（超限突破不再消耗悖论之核），不是此已构建双道具规则。",
+  "evidence_report": "D:\\WF\\out\\角色超限-120\\apk\\out\\世界弹射测试服-v31-overlimit120.build-report.json",
+  "parser_evidence": [
+    "D:\\WF\\perf-v30-20261015\\tools\\common.py:47-66",
+    "D:\\WF\\perf-v30-20261015\\tools\\bodies.py:72-80",
+    "D:\\WF\\startpoint-cn-kulo\\tools\\fantasy-gauntlet-mod-tools\\wf_mod_tool.py:175（仅内存提取 AMF3Reader 类）"
+  ]
+}

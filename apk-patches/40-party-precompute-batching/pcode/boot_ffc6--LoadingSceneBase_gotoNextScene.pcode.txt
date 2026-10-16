@@ -1,0 +1,43 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: LoadingSceneBase/gotoNextScene; body: 76049; method: 83262
+# code SHA-256: beba3cc4411150a78609dd8ae4f4d9f7e6ca3ffb255dab80cc3c5c08c4731316; header: [8, 2, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['cn.loading::PartyDerivedCache']
+#0003 ofs0006: getlocal_0 []
+#0004 ofs0007: callproperty ['defer', 1]
+#0005 ofs000c: iffalse [] -> #7
+#0006 ofs0010: returnvoid []
+#0007 ofs0011: findproperty ['sceneBackKind']
+#0008 ofs0015: getproperty ['sceneBackKind']
+#0009 ofs0019: coerce ['haxe.ds::Option']
+#0010 ofs001b: setlocal_1 []
+#0011 ofs001c: getlocal_1 []
+#0012 ofs001d: getproperty ['index']
+#0013 ofs001f: lookupswitch [] default #14, cases [15, 28]
+#0014 ofs002a: jump [] -> #37
+#0015 ofs002e: findproperty ['changeSceneWithDetail']
+#0016 ofs0032: getlex ['pinball.common.data.scene::ChangeSceneNextKind']
+#0017 ofs0036: findproperty ['nextScene']
+#0018 ofs003a: getproperty ['nextScene']
+#0019 ofs003e: callproperty ['Scene', 1]
+#0020 ofs0043: coerce ['pinball.common.data.scene::ChangeSceneNextKind']
+#0021 ofs0047: getlocal_1 []
+#0022 ofs0048: getproperty ['params']
+#0023 ofs004a: pushbyte [0]
+#0024 ofs004c: getproperty ['<mn kind 0x1b>']
+#0025 ofs004e: coerce ['pinball.common.data.scene::ChangeSceneBackKind']
+#0026 ofs0052: callpropvoid ['changeSceneWithDetail', 2]
+#0027 ofs0057: jump [] -> #37
+#0028 ofs005b: getlex ['flash::Boot']
+#0029 ofs005d: findpropstrict ['Error']
+#0030 ofs005f: constructprop ['Error', 0]
+#0031 ofs0062: initproperty ['lastError']
+#0032 ofs0064: findpropstrict ['pinball.error::ClientError']
+#0033 ofs0067: pushint [2041]
+#0034 ofs006a: pushstring ['バックシーンが未設定の状態で次のシーンへ遷移しました']
+#0035 ofs006e: constructprop ['pinball.error::ClientError', 2]
+#0036 ofs0072: throw []
+#0037 ofs0073: returnvoid []

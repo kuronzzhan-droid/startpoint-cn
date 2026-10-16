@@ -1,0 +1,28 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.account.PlayerLogin; label: PlayerLogin$/line; body: 88; method: 89
+# code SHA-256: 17248c1be261d0720a07c50ca5f74adf4faf11b7b6c07cae067ea19b458908ab; header: [3, 5, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: getproperty ['graphics']
+#0004 ofs0006: pushbyte [1]
+#0005 ofs0008: pushint [14871781]
+#0006 ofs000a: callpropvoid ['lineStyle', 2]
+#0007 ofs000e: getlocal_1 []
+#0008 ofs000f: getproperty ['graphics']
+#0009 ofs0012: getlocal_2 []
+#0010 ofs0013: getlocal_3 []
+#0011 ofs0014: callpropvoid ['moveTo', 2]
+#0012 ofs0018: getlocal_1 []
+#0013 ofs0019: getproperty ['graphics']
+#0014 ofs001c: getlocal_2 []
+#0015 ofs001d: getlocal [4]
+#0016 ofs001f: add []
+#0017 ofs0020: getlocal_3 []
+#0018 ofs0021: callpropvoid ['lineTo', 2]
+#0019 ofs0025: getlocal_1 []
+#0020 ofs0026: getproperty ['graphics']
+#0021 ofs0029: callpropvoid ['lineStyle', 0]
+#0022 ofs002d: returnvoid []

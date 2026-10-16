@@ -1,0 +1,22 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.admission.AdmissionSession; label: AdmissionSession/<ctor>; body: 19; method: 20
+# code SHA-256: 65a6e7e557cd9c3193405e3764a9b7ccd8f4271a0db63f827867aab5bea77869; header: [2, 3, 0, 1]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: newarray [0]
+#0003 ofs0004: findproperty ['cn.admission:AdmissionSession::waiters']
+#0004 ofs0006: swap []
+#0005 ofs0007: setproperty ['cn.admission:AdmissionSession::waiters']
+#0006 ofs0009: getlocal_0 []
+#0007 ofs000a: constructsuper [0]
+#0008 ofs000c: getlocal_1 []
+#0009 ofs000d: findproperty ['cn.admission:AdmissionSession::transport']
+#0010 ofs000f: swap []
+#0011 ofs0010: setproperty ['cn.admission:AdmissionSession::transport']
+#0012 ofs0012: getlocal_2 []
+#0013 ofs0013: findproperty ['cn.admission:AdmissionSession::clock']
+#0014 ofs0015: swap []
+#0015 ofs0016: setproperty ['cn.admission:AdmissionSession::clock']
+#0016 ofs0018: returnvoid []

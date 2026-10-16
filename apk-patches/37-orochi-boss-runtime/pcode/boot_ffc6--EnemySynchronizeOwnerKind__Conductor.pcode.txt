@@ -1,0 +1,15 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: EnemySynchronizeOwnerKind$/Conductor; body: 92454; method: 100927
+# code SHA-256: 66cca0f18a09746bc4724e8e0559bfa7447daff68b8863798050d92fc08f6b72; header: [4, 2, 3, 4]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: getlocal_0 []
+#0004 ofs000a: pushstring ['Conductor']
+#0005 ofs000e: pushbyte [5]
+#0006 ofs0010: getlocal_1 []
+#0007 ofs0011: newarray [1]
+#0008 ofs0013: construct [3]
+#0009 ofs0015: returnvalue []

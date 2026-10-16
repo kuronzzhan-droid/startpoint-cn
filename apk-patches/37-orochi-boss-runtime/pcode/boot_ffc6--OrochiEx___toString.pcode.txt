@@ -1,0 +1,424 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx$/_toString; body: 92578; method: 101051
+# code SHA-256: 3d4156578cad8ebeca3aa4caebc79428ea55dd2ae9369c629d13bfde525add98; header: [2, 6, 5, 6]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 92776, 1, 541]
+#0004 ofs0011: op_ef [1, 92777, 2, 542]
+#0005 ofs0019: op_ef [1, 92779, 3, 632]
+#0006 ofs0021: pushnull []
+#0007 ofs0022: getlex ['String']
+#0008 ofs0024: astypelate []
+#0009 ofs0025: coerce_a []
+#0010 ofs0026: setlocal_2 []
+#0011 ofs0027: pushnull []
+#0012 ofs0028: getlex ['String']
+#0013 ofs002a: astypelate []
+#0014 ofs002b: coerce_a []
+#0015 ofs002c: setlocal_3 []
+#0016 ofs002d: jump [] -> #163
+#0017 ofs0031: avm_label []
+#0018 ofs0032: pushstring ['登場']
+#0019 ofs0036: coerce_a []
+#0020 ofs0037: setlocal_2 []
+#0021 ofs0038: jump [] -> #315
+#0022 ofs003c: avm_label []
+#0023 ofs003d: pushstring ['連携攻撃A']
+#0024 ofs0041: coerce_a []
+#0025 ofs0042: setlocal_2 []
+#0026 ofs0043: jump [] -> #315
+#0027 ofs0047: avm_label []
+#0028 ofs0048: pushstring ['連携攻撃B']
+#0029 ofs004c: coerce_a []
+#0030 ofs004d: setlocal_2 []
+#0031 ofs004e: jump [] -> #315
+#0032 ofs0052: avm_label []
+#0033 ofs0053: pushstring ['連携攻撃C']
+#0034 ofs0057: coerce_a []
+#0035 ofs0058: setlocal_2 []
+#0036 ofs0059: jump [] -> #315
+#0037 ofs005d: avm_label []
+#0038 ofs005e: pushstring ['連携攻撃D']
+#0039 ofs0062: coerce_a []
+#0040 ofs0063: setlocal_2 []
+#0041 ofs0064: jump [] -> #315
+#0042 ofs0068: avm_label []
+#0043 ofs0069: pushstring ['連携攻撃E']
+#0044 ofs006d: coerce_a []
+#0045 ofs006e: setlocal_2 []
+#0046 ofs006f: jump [] -> #315
+#0047 ofs0073: avm_label []
+#0048 ofs0074: pushstring ['登場']
+#0049 ofs0078: coerce_a []
+#0050 ofs0079: setlocal_2 []
+#0051 ofs007a: jump [] -> #315
+#0052 ofs007e: avm_label []
+#0053 ofs007f: pushstring ['バフを付与']
+#0054 ofs0083: coerce_a []
+#0055 ofs0084: setlocal_2 []
+#0056 ofs0085: jump [] -> #315
+#0057 ofs0089: avm_label []
+#0058 ofs008a: pushstring ['試練A']
+#0059 ofs008e: coerce_a []
+#0060 ofs008f: setlocal_2 []
+#0061 ofs0090: jump [] -> #315
+#0062 ofs0094: avm_label []
+#0063 ofs0095: pushstring ['ファンネル召喚A']
+#0064 ofs0099: coerce_a []
+#0065 ofs009a: setlocal_2 []
+#0066 ofs009b: jump [] -> #315
+#0067 ofs009f: avm_label []
+#0068 ofs00a0: pushstring ['試練B']
+#0069 ofs00a4: coerce_a []
+#0070 ofs00a5: setlocal_2 []
+#0071 ofs00a6: jump [] -> #315
+#0072 ofs00aa: avm_label []
+#0073 ofs00ab: pushstring ['ファンネル召喚B']
+#0074 ofs00af: coerce_a []
+#0075 ofs00b0: setlocal_2 []
+#0076 ofs00b1: jump [] -> #315
+#0077 ofs00b5: avm_label []
+#0078 ofs00b6: pushstring ['試練C']
+#0079 ofs00ba: coerce_a []
+#0080 ofs00bb: setlocal_2 []
+#0081 ofs00bc: jump [] -> #315
+#0082 ofs00c0: avm_label []
+#0083 ofs00c1: pushstring ['ファンネル召喚C']
+#0084 ofs00c5: coerce_a []
+#0085 ofs00c6: setlocal_2 []
+#0086 ofs00c7: jump [] -> #315
+#0087 ofs00cb: avm_label []
+#0088 ofs00cc: pushstring ['試練気絶A']
+#0089 ofs00d0: coerce_a []
+#0090 ofs00d1: setlocal_2 []
+#0091 ofs00d2: jump [] -> #315
+#0092 ofs00d6: avm_label []
+#0093 ofs00d7: pushstring ['試練気絶B']
+#0094 ofs00db: coerce_a []
+#0095 ofs00dc: setlocal_2 []
+#0096 ofs00dd: jump [] -> #315
+#0097 ofs00e1: avm_label []
+#0098 ofs00e2: pushstring ['試練気絶C']
+#0099 ofs00e6: coerce_a []
+#0100 ofs00e7: setlocal_2 []
+#0101 ofs00e8: jump [] -> #315
+#0102 ofs00ec: avm_label []
+#0103 ofs00ed: pushstring ['死亡']
+#0104 ofs00f1: coerce_a []
+#0105 ofs00f2: setlocal_2 []
+#0106 ofs00f3: jump [] -> #315
+#0107 ofs00f7: avm_label []
+#0108 ofs00f8: pushstring ['登場']
+#0109 ofs00fc: coerce_a []
+#0110 ofs00fd: setlocal_2 []
+#0111 ofs00fe: jump [] -> #315
+#0112 ofs0102: avm_label []
+#0113 ofs0103: pushstring ['連携攻撃A']
+#0114 ofs0107: coerce_a []
+#0115 ofs0108: setlocal_2 []
+#0116 ofs0109: jump [] -> #315
+#0117 ofs010d: avm_label []
+#0118 ofs010e: pushstring ['試練A']
+#0119 ofs0112: coerce_a []
+#0120 ofs0113: setlocal_2 []
+#0121 ofs0114: jump [] -> #315
+#0122 ofs0118: avm_label []
+#0123 ofs0119: pushstring ['連携攻撃B']
+#0124 ofs011d: coerce_a []
+#0125 ofs011e: setlocal_2 []
+#0126 ofs011f: jump [] -> #315
+#0127 ofs0123: avm_label []
+#0128 ofs0124: pushstring ['試練B']
+#0129 ofs0128: coerce_a []
+#0130 ofs0129: setlocal_2 []
+#0131 ofs012a: jump [] -> #315
+#0132 ofs012e: avm_label []
+#0133 ofs012f: pushstring ['連携攻撃C']
+#0134 ofs0133: coerce_a []
+#0135 ofs0134: setlocal_2 []
+#0136 ofs0135: jump [] -> #315
+#0137 ofs0139: avm_label []
+#0138 ofs013a: pushstring ['試練C']
+#0139 ofs013e: coerce_a []
+#0140 ofs013f: setlocal_2 []
+#0141 ofs0140: jump [] -> #315
+#0142 ofs0144: avm_label []
+#0143 ofs0145: pushstring ['連携攻撃D']
+#0144 ofs0149: coerce_a []
+#0145 ofs014a: setlocal_2 []
+#0146 ofs014b: jump [] -> #315
+#0147 ofs014f: avm_label []
+#0148 ofs0150: pushstring ['試練D']
+#0149 ofs0154: coerce_a []
+#0150 ofs0155: setlocal_2 []
+#0151 ofs0156: jump [] -> #315
+#0152 ofs015a: avm_label []
+#0153 ofs015b: pushstring ['登場']
+#0154 ofs015f: coerce_a []
+#0155 ofs0160: setlocal_2 []
+#0156 ofs0161: jump [] -> #315
+#0157 ofs0165: avm_label []
+#0158 ofs0166: pushstring ['最後っ屁']
+#0159 ofs016a: coerce_a []
+#0160 ofs016b: setlocal_2 []
+#0161 ofs016c: avm_label []
+#0162 ofs016d: jump [] -> #315
+#0163 ofs0171: getlocal_1 []
+#0164 ofs0172: getproperty ['name']
+#0165 ofs0176: getproperty ['index']
+#0166 ofs017a: setlocal [5]
+#0167 ofs017c: pushbyte [0]
+#0168 ofs017e: getlocal [5]
+#0169 ofs0180: ifstrictne [] -> #172
+#0170 ofs0184: pushbyte [0]
+#0171 ofs0186: jump [] -> #313
+#0172 ofs018a: pushbyte [1]
+#0173 ofs018c: getlocal [5]
+#0174 ofs018e: ifstrictne [] -> #177
+#0175 ofs0192: pushbyte [1]
+#0176 ofs0194: jump [] -> #313
+#0177 ofs0198: pushbyte [2]
+#0178 ofs019a: getlocal [5]
+#0179 ofs019c: ifstrictne [] -> #182
+#0180 ofs01a0: pushbyte [2]
+#0181 ofs01a2: jump [] -> #313
+#0182 ofs01a6: pushbyte [3]
+#0183 ofs01a8: getlocal [5]
+#0184 ofs01aa: ifstrictne [] -> #187
+#0185 ofs01ae: pushbyte [3]
+#0186 ofs01b0: jump [] -> #313
+#0187 ofs01b4: pushbyte [4]
+#0188 ofs01b6: getlocal [5]
+#0189 ofs01b8: ifstrictne [] -> #192
+#0190 ofs01bc: pushbyte [4]
+#0191 ofs01be: jump [] -> #313
+#0192 ofs01c2: pushbyte [5]
+#0193 ofs01c4: getlocal [5]
+#0194 ofs01c6: ifstrictne [] -> #197
+#0195 ofs01ca: pushbyte [5]
+#0196 ofs01cc: jump [] -> #313
+#0197 ofs01d0: pushbyte [6]
+#0198 ofs01d2: getlocal [5]
+#0199 ofs01d4: ifstrictne [] -> #202
+#0200 ofs01d8: pushbyte [6]
+#0201 ofs01da: jump [] -> #313
+#0202 ofs01de: pushbyte [7]
+#0203 ofs01e0: getlocal [5]
+#0204 ofs01e2: ifstrictne [] -> #207
+#0205 ofs01e6: pushbyte [7]
+#0206 ofs01e8: jump [] -> #313
+#0207 ofs01ec: pushbyte [8]
+#0208 ofs01ee: getlocal [5]
+#0209 ofs01f0: ifstrictne [] -> #212
+#0210 ofs01f4: pushbyte [8]
+#0211 ofs01f6: jump [] -> #313
+#0212 ofs01fa: pushbyte [9]
+#0213 ofs01fc: getlocal [5]
+#0214 ofs01fe: ifstrictne [] -> #217
+#0215 ofs0202: pushbyte [9]
+#0216 ofs0204: jump [] -> #313
+#0217 ofs0208: pushbyte [10]
+#0218 ofs020a: getlocal [5]
+#0219 ofs020c: ifstrictne [] -> #222
+#0220 ofs0210: pushbyte [10]
+#0221 ofs0212: jump [] -> #313
+#0222 ofs0216: pushbyte [11]
+#0223 ofs0218: getlocal [5]
+#0224 ofs021a: ifstrictne [] -> #227
+#0225 ofs021e: pushbyte [11]
+#0226 ofs0220: jump [] -> #313
+#0227 ofs0224: pushbyte [12]
+#0228 ofs0226: getlocal [5]
+#0229 ofs0228: ifstrictne [] -> #232
+#0230 ofs022c: pushbyte [12]
+#0231 ofs022e: jump [] -> #313
+#0232 ofs0232: pushbyte [13]
+#0233 ofs0234: getlocal [5]
+#0234 ofs0236: ifstrictne [] -> #237
+#0235 ofs023a: pushbyte [13]
+#0236 ofs023c: jump [] -> #313
+#0237 ofs0240: pushbyte [14]
+#0238 ofs0242: getlocal [5]
+#0239 ofs0244: ifstrictne [] -> #242
+#0240 ofs0248: pushbyte [14]
+#0241 ofs024a: jump [] -> #313
+#0242 ofs024e: pushbyte [15]
+#0243 ofs0250: getlocal [5]
+#0244 ofs0252: ifstrictne [] -> #247
+#0245 ofs0256: pushbyte [15]
+#0246 ofs0258: jump [] -> #313
+#0247 ofs025c: pushbyte [16]
+#0248 ofs025e: getlocal [5]
+#0249 ofs0260: ifstrictne [] -> #252
+#0250 ofs0264: pushbyte [16]
+#0251 ofs0266: jump [] -> #313
+#0252 ofs026a: pushbyte [17]
+#0253 ofs026c: getlocal [5]
+#0254 ofs026e: ifstrictne [] -> #257
+#0255 ofs0272: pushbyte [17]
+#0256 ofs0274: jump [] -> #313
+#0257 ofs0278: pushbyte [18]
+#0258 ofs027a: getlocal [5]
+#0259 ofs027c: ifstrictne [] -> #262
+#0260 ofs0280: pushbyte [18]
+#0261 ofs0282: jump [] -> #313
+#0262 ofs0286: pushbyte [19]
+#0263 ofs0288: getlocal [5]
+#0264 ofs028a: ifstrictne [] -> #267
+#0265 ofs028e: pushbyte [19]
+#0266 ofs0290: jump [] -> #313
+#0267 ofs0294: pushbyte [20]
+#0268 ofs0296: getlocal [5]
+#0269 ofs0298: ifstrictne [] -> #272
+#0270 ofs029c: pushbyte [20]
+#0271 ofs029e: jump [] -> #313
+#0272 ofs02a2: pushbyte [21]
+#0273 ofs02a4: getlocal [5]
+#0274 ofs02a6: ifstrictne [] -> #277
+#0275 ofs02aa: pushbyte [21]
+#0276 ofs02ac: jump [] -> #313
+#0277 ofs02b0: pushbyte [22]
+#0278 ofs02b2: getlocal [5]
+#0279 ofs02b4: ifstrictne [] -> #282
+#0280 ofs02b8: pushbyte [22]
+#0281 ofs02ba: jump [] -> #313
+#0282 ofs02be: pushbyte [23]
+#0283 ofs02c0: getlocal [5]
+#0284 ofs02c2: ifstrictne [] -> #287
+#0285 ofs02c6: pushbyte [23]
+#0286 ofs02c8: jump [] -> #313
+#0287 ofs02cc: pushbyte [24]
+#0288 ofs02ce: getlocal [5]
+#0289 ofs02d0: ifstrictne [] -> #292
+#0290 ofs02d4: pushbyte [24]
+#0291 ofs02d6: jump [] -> #313
+#0292 ofs02da: pushbyte [25]
+#0293 ofs02dc: getlocal [5]
+#0294 ofs02de: ifstrictne [] -> #297
+#0295 ofs02e2: pushbyte [25]
+#0296 ofs02e4: jump [] -> #313
+#0297 ofs02e8: pushbyte [26]
+#0298 ofs02ea: getlocal [5]
+#0299 ofs02ec: ifstrictne [] -> #302
+#0300 ofs02f0: pushbyte [26]
+#0301 ofs02f2: jump [] -> #313
+#0302 ofs02f6: pushbyte [27]
+#0303 ofs02f8: getlocal [5]
+#0304 ofs02fa: ifstrictne [] -> #307
+#0305 ofs02fe: pushbyte [27]
+#0306 ofs0300: jump [] -> #313
+#0307 ofs0304: pushbyte [28]
+#0308 ofs0306: getlocal [5]
+#0309 ofs0308: ifstrictne [] -> #312
+#0310 ofs030c: pushbyte [28]
+#0311 ofs030e: jump [] -> #313
+#0312 ofs0312: pushbyte [255]
+#0313 ofs0314: op_08 [5]
+#0314 ofs0316: lookupswitch [] default #161, cases [17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97, 102, 107, 112, 117, 122, 127, 132, 137, 142, 147, 152, 157]
+#0315 ofs0372: getlocal_1 []
+#0316 ofs0373: getproperty ['type']
+#0317 ofs0377: coerce ['pinball.scene.battle.battle.boss.orochi::OrochiExUniqueStateType']
+#0318 ofs037a: setlocal [4]
+#0319 ofs037c: jump [] -> #394
+#0320 ofs0380: avm_label []
+#0321 ofs0381: pushstring ['(通常)']
+#0322 ofs0385: coerce_a []
+#0323 ofs0386: setlocal_3 []
+#0324 ofs0387: jump [] -> #415
+#0325 ofs038b: avm_label []
+#0326 ofs038c: pushstring ['(待機)']
+#0327 ofs0390: coerce_a []
+#0328 ofs0391: setlocal_3 []
+#0329 ofs0392: jump [] -> #415
+#0330 ofs0396: avm_label []
+#0331 ofs0397: jump [] -> #358
+#0332 ofs039b: avm_label []
+#0333 ofs039c: pushstring ['(攻撃1)']
+#0334 ofs03a0: coerce_a []
+#0335 ofs03a1: setlocal_3 []
+#0336 ofs03a2: jump [] -> #392
+#0337 ofs03a6: avm_label []
+#0338 ofs03a7: pushstring ['(攻撃2)']
+#0339 ofs03ab: coerce_a []
+#0340 ofs03ac: setlocal_3 []
+#0341 ofs03ad: jump [] -> #392
+#0342 ofs03b1: avm_label []
+#0343 ofs03b2: pushstring ['(攻撃3)']
+#0344 ofs03b6: coerce_a []
+#0345 ofs03b7: setlocal_3 []
+#0346 ofs03b8: jump [] -> #392
+#0347 ofs03bc: avm_label []
+#0348 ofs03bd: pushstring ['(攻撃4)']
+#0349 ofs03c1: coerce_a []
+#0350 ofs03c2: setlocal_3 []
+#0351 ofs03c3: jump [] -> #392
+#0352 ofs03c7: avm_label []
+#0353 ofs03c8: pushstring ['(攻撃5)']
+#0354 ofs03cc: coerce_a []
+#0355 ofs03cd: setlocal_3 []
+#0356 ofs03ce: avm_label []
+#0357 ofs03cf: jump [] -> #392
+#0358 ofs03d3: getlocal [4]
+#0359 ofs03d5: getproperty ['params']
+#0360 ofs03d7: pushbyte [0]
+#0361 ofs03d9: getproperty ['<mn kind 0x1b>']
+#0362 ofs03dd: getproperty ['index']
+#0363 ofs03e1: setlocal [5]
+#0364 ofs03e3: pushbyte [0]
+#0365 ofs03e5: getlocal [5]
+#0366 ofs03e7: ifstrictne [] -> #369
+#0367 ofs03eb: pushbyte [0]
+#0368 ofs03ed: jump [] -> #390
+#0369 ofs03f1: pushbyte [1]
+#0370 ofs03f3: getlocal [5]
+#0371 ofs03f5: ifstrictne [] -> #374
+#0372 ofs03f9: pushbyte [1]
+#0373 ofs03fb: jump [] -> #390
+#0374 ofs03ff: pushbyte [2]
+#0375 ofs0401: getlocal [5]
+#0376 ofs0403: ifstrictne [] -> #379
+#0377 ofs0407: pushbyte [2]
+#0378 ofs0409: jump [] -> #390
+#0379 ofs040d: pushbyte [3]
+#0380 ofs040f: getlocal [5]
+#0381 ofs0411: ifstrictne [] -> #384
+#0382 ofs0415: pushbyte [3]
+#0383 ofs0417: jump [] -> #390
+#0384 ofs041b: pushbyte [4]
+#0385 ofs041d: getlocal [5]
+#0386 ofs041f: ifstrictne [] -> #389
+#0387 ofs0423: pushbyte [4]
+#0388 ofs0425: jump [] -> #390
+#0389 ofs0429: pushbyte [255]
+#0390 ofs042b: op_08 [5]
+#0391 ofs042d: lookupswitch [] default #356, cases [332, 337, 342, 347, 352]
+#0392 ofs0441: avm_label []
+#0393 ofs0442: jump [] -> #415
+#0394 ofs0446: getlocal [4]
+#0395 ofs0448: getproperty ['index']
+#0396 ofs044a: setlocal [5]
+#0397 ofs044c: pushbyte [0]
+#0398 ofs044e: getlocal [5]
+#0399 ofs0450: ifstrictne [] -> #402
+#0400 ofs0454: pushbyte [0]
+#0401 ofs0456: jump [] -> #413
+#0402 ofs045a: pushbyte [1]
+#0403 ofs045c: getlocal [5]
+#0404 ofs045e: ifstrictne [] -> #407
+#0405 ofs0462: pushbyte [1]
+#0406 ofs0464: jump [] -> #413
+#0407 ofs0468: pushbyte [2]
+#0408 ofs046a: getlocal [5]
+#0409 ofs046c: ifstrictne [] -> #412
+#0410 ofs0470: pushbyte [2]
+#0411 ofs0472: jump [] -> #413
+#0412 ofs0476: pushbyte [255]
+#0413 ofs0478: op_08 [5]
+#0414 ofs047a: lookupswitch [] default #392, cases [320, 325, 330]
+#0415 ofs0488: getlocal_2 []
+#0416 ofs0489: getlocal_3 []
+#0417 ofs048a: add []
+#0418 ofs048b: returnvalue []

@@ -1,0 +1,28 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/exitUniqueState; body: 92546; method: 101019
+# code SHA-256: 3520c279d89a0f8692216b9ad4cdac3f455a01038e67c0b6a8468daf5d4f0b75; header: [2, 3, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 92776, 1, 2597]
+#0004 ofs0011: getlocal_1 []
+#0005 ofs0012: coerce_a []
+#0006 ofs0013: setlocal_2 []
+#0007 ofs0014: getlocal_2 []
+#0008 ofs0015: getproperty ['name']
+#0009 ofs0019: getproperty ['index']
+#0010 ofs001d: pushbyte [7]
+#0011 ofs001f: ifne [] -> #22
+#0012 ofs0023: getlocal_2 []
+#0013 ofs0024: getproperty ['type']
+#0014 ofs0028: getproperty ['index']
+#0015 ofs002c: pushbyte [0]
+#0016 ofs002e: ifne [] -> #22
+#0017 ofs0032: findpropstrict ['showCutin']
+#0018 ofs0036: getlex ['source']
+#0019 ofs0039: getproperty ['values']
+#0020 ofs003d: getproperty ['phase2_awake_cutin']
+#0021 ofs0041: callpropvoid ['showCutin', 1]
+#0022 ofs0046: returnvoid []

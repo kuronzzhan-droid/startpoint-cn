@@ -1,0 +1,12 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/move; body: 92500; method: 100973
+# code SHA-256: 2d2ad36165bbf997321c09e4ce180fd2b317eafb3df24a9d24ac53c54ec5bccd; header: [1, 1, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_0 []
+#0003 ofs0003: callsupervoid ['move', 0]
+#0004 ofs0007: getlex ['heads']
+#0005 ofs000b: callpropvoid ['move', 0]
+#0006 ofs000f: returnvoid []

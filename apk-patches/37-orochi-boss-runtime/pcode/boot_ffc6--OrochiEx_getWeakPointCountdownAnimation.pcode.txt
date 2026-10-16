@@ -1,0 +1,9 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx/getWeakPointCountdownAnimation; body: 92521; method: 100994
+# code SHA-256: a92f5c15a7f3397b0910e98dffd75a9b12513e8beddcc88ff93bff0947eab163; header: [1, 1, 6, 7]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: pushstring ['battle/common/layer1/boss_weak_point_countdown']
+#0003 ofs0006: returnvalue []

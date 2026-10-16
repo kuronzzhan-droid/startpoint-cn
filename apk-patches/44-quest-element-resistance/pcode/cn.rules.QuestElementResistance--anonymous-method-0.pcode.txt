@@ -1,0 +1,15 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: cn.rules.QuestElementResistance; label: anonymous-method-0; body: 4; method: 0
+# code SHA-256: 65bb9a4ab560f23ed321a6778500f5d6c01cf44a18b5b465c6229d0f316c8439; header: [3, 1, 0, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getscopeobject [0]
+#0003 ofs0004: getlex ['Object']
+#0004 ofs0006: dup []
+#0005 ofs0007: pushscope []
+#0006 ofs0008: newclass [0]
+#0007 ofs000a: popscope []
+#0008 ofs000b: initproperty ['cn.rules::QuestElementResistance']
+#0009 ofs000d: returnvoid []

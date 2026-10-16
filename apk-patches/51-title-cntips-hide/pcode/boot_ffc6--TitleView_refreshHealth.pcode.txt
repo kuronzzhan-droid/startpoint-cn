@@ -1,0 +1,46 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: TitleView/refreshHealth; body: 82390; method: 90428
+# code SHA-256: fedd34ccb3e026ff9f9c176ef305f22a0c351417aed8a01b1fbe028563090a68; header: [3, 2, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: pushtrue []
+#0003 ofs0003: findproperty ['peek']
+#0004 ofs0007: getproperty ['peek']
+#0005 ofs000b: callproperty ['pinball.scene.title:TitleScenePeek::get_isHealthAnnouncement', 0]
+#0006 ofs0010: convert_b []
+#0007 ofs0011: findproperty ['isHealth']
+#0008 ofs0015: getproperty ['isHealth']
+#0009 ofs0019: ifne [] -> #13
+#0010 ofs001d: pop []
+#0011 ofs001e: getlocal_1 []
+#0012 ofs001f: convert_b []
+#0013 ofs0020: iffalse [] -> #40
+#0014 ofs0024: findproperty ['isHealth']
+#0015 ofs0028: findproperty ['peek']
+#0016 ofs002c: getproperty ['peek']
+#0017 ofs0030: callproperty ['pinball.scene.title:TitleScenePeek::get_isHealthAnnouncement', 0]
+#0018 ofs0035: convert_b []
+#0019 ofs0036: initproperty ['isHealth']
+#0020 ofs003a: findproperty ['isHealth']
+#0021 ofs003e: getproperty ['isHealth']
+#0022 ofs0042: iffalse [] -> #32
+#0023 ofs0046: findproperty ['friendShipTipsImage']
+#0024 ofs004a: getproperty ['friendShipTipsImage']
+#0025 ofs004e: pushtrue []
+#0026 ofs004f: initproperty ['visible']
+#0027 ofs0052: findproperty ['copyrightImage']
+#0028 ofs0056: getproperty ['copyrightImage']
+#0029 ofs005a: pushfalse []
+#0030 ofs005b: initproperty ['visible']
+#0031 ofs005e: jump [] -> #40
+#0032 ofs0062: findproperty ['friendShipTipsImage']
+#0033 ofs0066: getproperty ['friendShipTipsImage']
+#0034 ofs006a: pushfalse []
+#0035 ofs006b: initproperty ['visible']
+#0036 ofs006e: findproperty ['copyrightImage']
+#0037 ofs0072: getproperty ['copyrightImage']
+#0038 ofs0076: pushfalse []
+#0039 ofs0077: initproperty ['visible']
+#0040 ofs007a: returnvoid []

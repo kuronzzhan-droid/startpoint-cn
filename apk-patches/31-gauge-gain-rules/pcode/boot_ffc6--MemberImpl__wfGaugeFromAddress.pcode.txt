@@ -1,0 +1,21 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: MemberImpl$/wfGaugeFromAddress; body: 92445; method: 100918
+# code SHA-256: 7014ebb423883d75b41b1ae2500889f6376b579520e957ac859bd45481f17436; header: [8, 2, 1, 2]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: pushstring ['wfGainKind']
+#0003 ofs0006: getlocal_1 []
+#0004 ofs0007: getproperty ['wfGainKind']
+#0005 ofs000b: pushstring ['wfGainCategory']
+#0006 ofs000f: getlocal_1 []
+#0007 ofs0010: getproperty ['wfGainCategory']
+#0008 ofs0014: pushstring ['wfGainOwner']
+#0009 ofs0018: getlocal_1 []
+#0010 ofs0019: getproperty ['wfGainOwner']
+#0011 ofs001d: pushstring ['wfGainTrigger']
+#0012 ofs0021: getlocal_1 []
+#0013 ofs0022: getproperty ['wfGainTrigger']
+#0014 ofs0026: newobject [4]
+#0015 ofs0028: returnvalue []

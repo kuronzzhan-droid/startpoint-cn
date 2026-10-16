@@ -1,0 +1,22 @@
+# 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
+# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# DoABC2: boot_ffc6; label: OrochiEx$/_equals; body: 92577; method: 101050
+# code SHA-256: 646b1e4a5003baddd41a0089e1f286ad77cd03229298a97fb60f0641b153c62d; header: [2, 3, 5, 6]
+# 按实际字节码解析的指令文本。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: op_ef [1, 59271, 0, 0]
+#0003 ofs0009: op_ef [1, 59272, 1, 0]
+#0004 ofs0010: getlocal_1 []
+#0005 ofs0011: getproperty ['name']
+#0006 ofs0015: getlocal_2 []
+#0007 ofs0016: getproperty ['name']
+#0008 ofs001a: ifne [] -> #15
+#0009 ofs001e: getlocal_1 []
+#0010 ofs001f: getproperty ['type']
+#0011 ofs0023: getlocal_2 []
+#0012 ofs0024: getproperty ['type']
+#0013 ofs0028: equals []
+#0014 ofs0029: returnvalue []
+#0015 ofs002a: pushfalse []
+#0016 ofs002b: returnvalue []
