@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.218",
+  "cdn_version": "1.4.219",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -31654,6 +31654,38 @@
             "production/upload/88/172a39aaf083fba8d673d1279c69b3e1f1c367",
             "production/upload/d6/db0ad14433ea7076b084e9a55d31a550359ba3",
             "production/upload/fe/331349fe8d2d40f4c52c37e03afc0454a37673"
+          ]
+        }
+      ],
+      "created_at": "2026-10-16"
+    },
+    {
+      "id": "wagner-fx-restore-1.4.219",
+      "type": "patch",
+      "name": "(本地) 炎龙王超限技能特效还原去黑底",
+      "description": "",
+      "version": "1.4.219",
+      "depends_on": "1.4.218",
+      "enabled": true,
+      "local_test_only": true,
+      "archive": "pinball-1.4.218-1.4.219-1-wagner-overlimit-fx-restore-local.zip",
+      "archive_size": 31334,
+      "chain": [
+        "pinball-1.4.218-1.4.219-1-wagner-overlimit-fx-restore-local.zip"
+      ],
+      "files": [
+        "production/upload/40/7ce62fdda9509bccc30be6319d43cd642904d8",
+        "production/upload/fa/fac25a2ef8055d0c35f961a7df55ac6259f943"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.218-1.4.219-1-wagner-overlimit-fx-restore-local.zip",
+          "size": 31334,
+          "sha256": "0ce827337ada19a3971489200d8f084b81b8d560b156cdf2a0b2882fbdd58435",
+          "members": 2,
+          "files": [
+            "production/upload/40/7ce62fdda9509bccc30be6319d43cd642904d8",
+            "production/upload/fa/fac25a2ef8055d0c35f961a7df55ac6259f943"
           ]
         }
       ],
