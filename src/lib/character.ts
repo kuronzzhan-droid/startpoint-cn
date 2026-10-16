@@ -4,6 +4,7 @@ import { adjustPlayerExpPoolSync, getPlayerSync } from "../data/domains/player"
 import { givePlayerItemSync } from "../data/domains/item"
 import { getCharacterDataSync } from "./assets";
 import { grantCharacterDegreeRewardsSync } from "./character-degree-rewards";
+import { getCharacterExpCap } from "./character-overlimit";
 import { AddExpList, AddExpListItem, ClientReturnBondTokenStatus, ClientReturnBondTokenStatusList, ClientReturnCharacter, Element, GivePlayerCharacterResult, RewardPlayerCharacterExpResult } from "./types";
 
 export const characterExpCaps: Record<number, number[]> = {
@@ -221,7 +222,7 @@ export function givePlayerCharactersExpSync(
         const assetData = getCharacterDataSync(characterId)
         
         if ((characterData !== null) && (assetData !== null) && !ignoreUpdate) {
-            const expCap = characterExpCaps[assetData.rarity][characterData.overLimitStep] || Number.MAX_SAFE_INTEGER
+            const expCap = getCharacterExpCap(characterId, assetData.rarity, characterData.overLimitStep) || Number.MAX_SAFE_INTEGER
             const currentExp = characterData.exp
 
             let afterExp = currentExp + expAmount

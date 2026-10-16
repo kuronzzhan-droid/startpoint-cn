@@ -53,15 +53,22 @@ export function hasAbyssExUnlockSync(playerId: number): boolean {
             .get(playerId, QuestCategory.RUSH_EVENT, ABYSS_NORMAL_EVENT_ID * 1000 + 30)
 }
 
+function towerNeedsReset(playerId: number, eventId: number, revision: string): boolean {
+    const row = getDb().prepare(`SELECT tower_revision FROM players_rush_events
+        WHERE player_id=? AND event_id=?`).get(playerId, eventId) as { tower_revision: string | null } | undefined
+    return row !== undefined && row.tower_revision !== revision
+}
+
 /** Only current finite-run state is reset. Clears, inventories and reward receipts survive. */
 export function refreshPlayerAbyssTowerSync(playerId: number, eventId: number): boolean {
     const revision = getAbyssTowerResetRevision(eventId)
     if (revision === null) return false
+    // Read first: an up-to-date tower needs no write transaction. The check
+    // is repeated inside the transaction before anything is reset.
+    if (!towerNeedsReset(playerId, eventId, revision)) return false
     const db = getDb()
     return runPersistenceTransactionSync({ domain: "event", playerId, operation: "refresh_abyss_tower" }, () => {
-        const row = db.prepare(`SELECT tower_revision FROM players_rush_events
-            WHERE player_id=? AND event_id=?`).get(playerId, eventId) as { tower_revision: string | null } | undefined
-        if (row === undefined || row.tower_revision === revision) return false
+        if (!towerNeedsReset(playerId, eventId, revision)) return false
         resetLeaderboardCompetitionSync(playerId, { category: QuestCategory.RUSH_EVENT, eventId, folderId: 1 })
         db.prepare(`DELETE FROM players_rush_events_played_parties
             WHERE player_id=? AND event_id=? AND battle_type=?`).run(playerId, eventId, RushEventBattleType.FOLDER)
@@ -73,6 +80,13 @@ export function refreshPlayerAbyssTowerSync(playerId: number, eventId: number): 
 }
 
 export function refreshPlayerAbyssTowersSync(playerId: number): void {
+    // Read-only check first; the common case (every tower current) opens no
+    // write transaction. Otherwise all towers reset atomically as before.
+    const needed = ABYSS_EVENT_IDS.some(eventId => {
+        const revision = getAbyssTowerResetRevision(eventId)
+        return revision !== null && towerNeedsReset(playerId, eventId, revision)
+    })
+    if (!needed) return
     runPersistenceTransactionSync({ domain: "event", playerId, operation: "refresh_abyss_towers" }, () => {
         for (const eventId of ABYSS_EVENT_IDS) refreshPlayerAbyssTowerSync(playerId, eventId)
     })

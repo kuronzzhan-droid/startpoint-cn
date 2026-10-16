@@ -1,0 +1,25 @@
+{
+  "item_id": 10000320,
+  "extra_costs": [
+    {
+      "item_id": 10000302,
+      "amount": 1
+    }
+  ],
+  "rarity": 5,
+  "max_over_limit": 8,
+  "extra_exp_caps": [
+    454988,
+    529988,
+    604988,
+    679988
+  ],
+  "characters": [
+    111183,
+    141099
+  ],
+  "level_missions": {
+    "1111831": 120,
+    "1410991": 120
+  }
+}

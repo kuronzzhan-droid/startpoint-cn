@@ -81,6 +81,8 @@ export function handleLoungeMessage(socket: net.Socket, value: unknown): void {
             break
         case 3: {
             const readyState = Array.isArray(notify[1]) ? notify[1] : [0]
+            // setLoungeMemberReady rejects oversized states; nothing is
+            // stored or rebroadcast for them.
             if (setLoungeMemberReady(context.room, context.viewerId, readyState)) {
                 broadcastLoungeFrame(context.room, [1, [0, context.viewerId, readyState]])
             }

@@ -9,8 +9,9 @@ import {
     waitForSqliteWriterReady,
     writerThreadSettings,
 } from "./persistence/writer-client"
-import { recordServerWork } from "./server-work-performance"
-import { drainPlayerWriteQueues, runImmediateTransactionWithRetry, withPlayerWriteQueue } from "./sqlite-write-coordinator"
+import { measureServerWork, recordServerWork } from "./server-work-performance"
+import { drainPlayerWriteQueues, isSqliteBusyError, runImmediateTransactionWithRetry, withPlayerWriteQueue } from "./sqlite-write-coordinator"
+import { beginCommitProbe, endCommitProbe } from "./sqlite-commit-diagnostics"
 
 /**
  * Stable ownership labels for the main database write path.
@@ -191,6 +192,121 @@ export async function runPersistenceTransaction<T>(
             stats.maxTransactionMs = Math.max(stats.maxTransactionMs, transactionMs)
             recordServerWork("persistence.transaction", transactionMs)
         }
+    }
+
+    if (context.playerId !== undefined) {
+        return withPlayerWriteQueue(context.playerId, execute)
+    }
+    return enqueueGlobalWrite(execute)
+}
+
+/**
+ * Write phase of a request that interleaves reads with optional repairs.
+ *
+ * `write` opens one `BEGIN IMMEDIATE` on first use; later writes, and any
+ * statement or nested persistence transaction executed before `finish`, join
+ * that same transaction. `finish` commits it (no-op when nothing was opened),
+ * so a request performs at most one COMMIT however many repairs it needs.
+ */
+export interface PersistenceWriteScope {
+    /** Whether the shared write transaction has been opened. */
+    readonly began: boolean
+    /** Run one mutation inside the shared transaction, opening it if needed. */
+    write<T>(operation: () => T): T
+    /** Commit the shared transaction. Later writes use their own transaction. */
+    finish(): void
+}
+
+/**
+ * Run a synchronous request section with a lazily opened write transaction.
+ *
+ * Ordering matches `runPersistenceTransaction`: the section waits for the
+ * player's (or the global) write queue and yields once before it starts. The
+ * transaction opens only when `scope.write` is first called, and commits when
+ * `scope.finish` is called or the section returns. A failure rolls back every
+ * write of the section. `SQLITE_BUSY` while opening the transaction re-runs
+ * the whole section, which must therefore stay read-only until its first
+ * `scope.write`.
+ */
+export async function runPersistenceWriteScope<T>(
+    context: PersistenceContext,
+    operation: (scope: PersistenceWriteScope) => T,
+    maxAttempts = 3,
+): Promise<T> {
+    const queuedAt = performance.now()
+    const stats = statsFor(context.domain)
+    const execute = async (): Promise<T> => {
+        await yieldToEventLoop()
+        recordServerWork("persistence.queue", performance.now() - queuedAt)
+        const db = getDb()
+        let lastError: unknown
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            let began = false
+            let finished = false
+            let beginFailed = false
+            let commitFailed = false
+            let startedAt = 0
+            const settle = (committed: boolean) => {
+                const transactionMs = performance.now() - startedAt
+                if (committed) stats.committed++
+                else stats.failed++
+                stats.transactionMs += transactionMs
+                stats.maxTransactionMs = Math.max(stats.maxTransactionMs, transactionMs)
+                recordServerWork("persistence.transaction", transactionMs)
+            }
+            const scope: PersistenceWriteScope = {
+                get began() { return began },
+                write<R>(mutation: () => R): R {
+                    if (finished) return runPersistenceTransactionSync(context, mutation)
+                    if (!began) {
+                        stats.queued++
+                        stats.maxPending = Math.max(stats.maxPending, stats.queued - stats.committed - stats.failed)
+                        startedAt = performance.now()
+                        try {
+                            measureServerWork("db.begin", () => db.exec("BEGIN IMMEDIATE"))
+                        } catch (error) {
+                            beginFailed = true
+                            settle(false)
+                            throw error
+                        }
+                        began = true
+                    }
+                    // A savepoint per mutation keeps the previous contract that
+                    // a caught failure inside one repair does not keep its
+                    // partial writes.
+                    return withPersistenceContext(context, () => db.transaction(mutation)())
+                },
+                finish(): void {
+                    if (finished) return
+                    finished = true
+                    if (!began) return
+                    const probe = beginCommitProbe(db, "immediate")
+                    try {
+                        measureServerWork("db.commit", () => db.exec("COMMIT"))
+                        endCommitProbe(db, probe, true)
+                    } catch (error) {
+                        endCommitProbe(db, probe, false, error)
+                        commitFailed = true
+                        throw error
+                    }
+                    settle(true)
+                },
+            }
+            try {
+                const result = operation(scope)
+                scope.finish()
+                return result
+            } catch (error) {
+                if (began && db.inTransaction) {
+                    try { db.exec("ROLLBACK") } catch {}
+                }
+                if (began && (!finished || commitFailed)) settle(false)
+                if (!(beginFailed && isSqliteBusyError(error)) || attempt >= maxAttempts) throw error
+                lastError = error
+                await new Promise(resolve => setTimeout(resolve, 10 * (2 ** (attempt - 1))))
+            }
+        }
+        throw lastError
     }
 
     if (context.playerId !== undefined) {

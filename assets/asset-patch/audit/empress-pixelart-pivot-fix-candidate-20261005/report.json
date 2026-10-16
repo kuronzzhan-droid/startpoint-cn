@@ -1,0 +1,65 @@
+{
+  "status": "candidate",
+  "base_version": "1.4.130",
+  "target_version": "<由所有者分配>",
+  "archive": {
+    "name": "pinball-1.4.130-1.4.131-1-empress-pixelart-pivot-fix-candidate.zip",
+    "size": 146021,
+    "sha256": "55a30454a0c1d78cb3178bc5440d2d63e886e4cc300bb9aa940a40328e8af353",
+    "members": 7,
+    "files": [
+      "production/upload/3a/88ac92c4c19100308f4de8316ce3643575c7b8",
+      "production/upload/88/17ca5ba735ea49d1cb9f131f8c300785db2309",
+      "production/upload/ab/2c7aa166fcb7757f9eebefe7983406062ef710",
+      "production/upload/b0/c98779d8c575cb9bc0bba0db8f4297c63d51d3",
+      "production/upload/c6/111f3fab99f98b9a5e5d0f437e7e04a2854696",
+      "production/upload/e2/ceca50d78de1eafb65c29d4c66cb8f5caa769a",
+      "production/upload/ff/a71d173d805d94f3f0ac77f170378aecd0e235"
+    ]
+  },
+  "source": "old repo chain final state (D:/WF/_archive/startpoint-cn-old/repo/.cdn/cn/archive-common-diff)",
+  "members": [
+    {
+      "file": "production/upload/3a/88ac92c4c19100308f4de8316ce3643575c7b8",
+      "logical_path": "(special-form pixel file, fixed in old 1.4.696)",
+      "from_archive": "pinball-1.4.695-1.4.696-1-09021600.zip",
+      "sha256": "a193438e0ce1f5998154959ced3a2792a21ce0e3a46e07cb394707f56caa4bd8"
+    },
+    {
+      "file": "production/upload/88/17ca5ba735ea49d1cb9f131f8c300785db2309",
+      "logical_path": "(special-form pixel file, fixed in old 1.4.696)",
+      "from_archive": "pinball-1.4.695-1.4.696-1-09021600.zip",
+      "sha256": "988b3232f11f4a7eb1ecd6240a82e9c06546ed47584a8235cd6edf8dd0163e6c"
+    },
+    {
+      "file": "production/upload/ab/2c7aa166fcb7757f9eebefe7983406062ef710",
+      "logical_path": "character/epuration_empress_playable/pixelart/sprite_sheet.png",
+      "from_archive": "pinball-1.4.789-1.4.790-1-09090400.zip",
+      "sha256": "dd8ee3a45ccdf1ca232dbda539845b4e83bc311cd4796ad9800bb31f8f718f5e"
+    },
+    {
+      "file": "production/upload/b0/c98779d8c575cb9bc0bba0db8f4297c63d51d3",
+      "logical_path": "character/epuration_empress_playable/pixelart/pixelart.frame.amf3.deflate",
+      "from_archive": "pinball-1.4.695-1.4.696-1-09021600.zip",
+      "sha256": "d4ba5683c8bfe28ba34706e5b7266aa3862cdd79a46f259c39eb9efa5a27efd7"
+    },
+    {
+      "file": "production/upload/c6/111f3fab99f98b9a5e5d0f437e7e04a2854696",
+      "logical_path": "character/epuration_empress_playable/pixelart/pixelart.timeline.amf3.deflate",
+      "from_archive": "pinball-1.4.660-1.4.661-1-charpkg-epuration_empress_playable-20260831t201500z-3d6e0b60-common.zip",
+      "sha256": "e220a3f8ae4fec96272033d7642764c7b0a12f5e7636db9cde42ea33e78c62dd"
+    },
+    {
+      "file": "production/upload/e2/ceca50d78de1eafb65c29d4c66cb8f5caa769a",
+      "logical_path": "character/epuration_empress_playable/pixelart/sprite_sheet.atlas.amf3.deflate",
+      "from_archive": "pinball-1.4.789-1.4.790-1-09090400.zip",
+      "sha256": "2212450f7940dd4d2c1e1870731e5ceef9c32ef1d043a81dc962a136fcd063fa"
+    },
+    {
+      "file": "production/upload/ff/a71d173d805d94f3f0ac77f170378aecd0e235",
+      "logical_path": "(special-form pixel file, fixed in old 1.4.696)",
+      "from_archive": "pinball-1.4.695-1.4.696-1-09021600.zip",
+      "sha256": "758719a4a6794e23bae7f120383a659bda67f86d06ecf8e274feb22578d08403"
+    }
+  ]
+}

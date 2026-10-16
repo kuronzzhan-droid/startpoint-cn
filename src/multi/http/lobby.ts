@@ -6,7 +6,7 @@ import { getQuestFromCategorySync } from "../../lib/assets"
 import { generateDataHeaders } from "../../utils"
 import { getFavoritePartySelectionSync } from "../../lib/profileFavorite"
 import { createRoom, getRoom, getRoomAcceptedSeatCount, getRoomByToken, getRooms,
-    isRoomWaitingForExpectedMember } from "../room/manager"
+    getRoomsHostedBy, isRoomWaitingForExpectedMember } from "../room/manager"
 import { serializeRoom, serializeRoomConnection } from "../room/serializer"
 import { isRoomSharedWithPlayer } from "../room/sharing"
 import { sessionManager } from "../state/SessionManager"
@@ -28,6 +28,35 @@ import { primeRealPartySnapshot } from "../party-snapshot"
 import { canJoinMultiGuestQuestSync } from "../guest-eligibility"
 
 const ROOM_CAPACITY = 3
+
+function isIdleHostedLobbyRoom(room: MultiRoom): boolean {
+    return embeddedMultiCoordinator.ensureLifecycle(room).phase === "LOBBY"
+        && !room.settlement_return_pending
+        && !sessionManager.hasRoomConnections(room.room_number)
+}
+
+/**
+ * A host that creates a new room can no longer be using an earlier lobby
+ * that has no connection at all (for example a create_room retry, or a
+ * room whose socket never connected). Disband those so one viewer cannot
+ * accumulate unused rooms. Rooms with any live connection are untouched.
+ */
+export async function disbandIdleHostedLobbyRooms(hostViewerId: number): Promise<number> {
+    let disbanded = 0
+    for (const room of getRoomsHostedBy(hostViewerId)) {
+        if (!isIdleHostedLobbyRoom(room)) continue
+        const roomNumber = room.room_number
+        const generation = room.lobby_generation
+        await embeddedMultiCoordinator.enqueueRoomCommand(roomNumber, () => {
+            if (getRoom(roomNumber) !== room || room.lobby_generation !== generation
+                || room.host_viewer_id !== hostViewerId || !isIdleHostedLobbyRoom(room)) return
+            if (sessionManager.commitRoomDisband(roomNumber, "host_created_new_room")) disbanded += 1
+        }).catch(error => {
+            console.error(`[MULTI] idle hosted room cleanup failed: room=${roomNumber}`, error)
+        })
+    }
+    return disbanded
+}
 
 function isReturningMember(room: MultiRoom, viewerId: number): boolean {
     return room.host_viewer_id === viewerId
@@ -186,6 +215,8 @@ export function registerLobbyRoutes(fastify: FastifyInstance): void {
         )
         const profileMainCharacterId =
             favorite.characterIds[0] ?? ctx.player.leaderCharacterId ?? 1
+
+        await disbandIdleHostedLobbyRooms(Number(viewer_id))
 
         const room = createRoom(
             viewer_id,

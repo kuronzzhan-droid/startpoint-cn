@@ -29,6 +29,7 @@ import { getPlayerCharacterClearsSync } from "../../data/domains/character_clear
 import { getActiveMissionConditionalBattleFactsSync } from "../../data/domains/active_mission_battle_condition_facts"
 import { getActiveMissionBattleFactsSync } from "../../data/domains/active_mission_battle_facts"
 import { runPersistenceTransactionSync } from "../persistence-coordinator"
+import { getDb } from "../../data/db"
 import {
     getActiveMissionEventMasterDefinition,
     getActiveMissionMasterDefinitions,
@@ -1159,109 +1160,124 @@ function getReconciliationPlan(input: ReconcileActiveMissionFactsInput) {
 export function reconcileActiveMissionFacts(
     input: ReconcileActiveMissionFactsInput,
 ): ActiveMissionProgressDelta[] {
-    const { definitions, definitionById, questReadPlan, requirements } = getReconciliationPlan(input)
-    if (definitions.length === 0) return []
+    const plan = getReconciliationPlan(input)
+    if (plan.definitions.length === 0) return []
 
+    // Outside a transaction, settle without writing first. When no mission
+    // changes (the usual case) the result is final and no write transaction
+    // is opened; otherwise settlement is recomputed under the write lock.
+    if (!getDb().inTransaction) {
+        const preview = settleActiveMissionFacts(input, plan, false)
+        if (preview.length === 0) return preview
+    }
     return runPersistenceTransactionSync({
         domain: "mission", playerId: input.playerId, operation: "reconcile_active_mission_facts",
-    }, () => {
-        const player = input.player ?? getPlayerSync(input.playerId)
-        if (!player) throw new Error(`Player ${input.playerId} does not exist.`)
-        if (player.id !== input.playerId) {
-            throw new Error(`Player snapshot ${player.id} does not match ${input.playerId}.`)
-        }
+    }, () => settleActiveMissionFacts(input, plan, true))
+}
 
-        const questProgress = input.questProgress
-            ?? (questReadPlan?.full
-                ? getPlayerQuestProgressSync(input.playerId)
-                : getPlayerQuestProgressSubsetSync(input.playerId, {
-                    sections: [...(questReadPlan?.sections ?? [])],
-                    questIds: [...(questReadPlan?.questIds ?? [])],
-                }))
-        const questProgressFacts: ActiveMissionFactQuestProgress[] = []
-        const finishedQuestIds = new Set<number>()
-        for (const [categoryText, progressList] of Object.entries(questProgress)) {
-            const category = Number(categoryText)
-            for (const progress of progressList) {
-                questProgressFacts.push({
-                    category,
-                    questId: progress.questId,
-                    finished: progress.finished,
-                    clearRank: progress.clearRank,
-                    leaderCharacterId: progress.leaderCharacterId,
-                    multiClearCount: Math.max(0, progress.multiClearCount ?? 0),
-                })
-                if (progress.finished) {
-                    finishedQuestIds.add(normalizeActiveMissionQuestId(category, progress.questId))
-                }
+function settleActiveMissionFacts(
+    input: ReconcileActiveMissionFactsInput,
+    { definitions, definitionById, questReadPlan, requirements }: ReturnType<typeof getReconciliationPlan>,
+    persist: boolean,
+): ActiveMissionProgressDelta[] {
+    const player = input.player ?? getPlayerSync(input.playerId)
+    if (!player) throw new Error(`Player ${input.playerId} does not exist.`)
+    if (player.id !== input.playerId) {
+        throw new Error(`Player snapshot ${player.id} does not match ${input.playerId}.`)
+    }
+
+    const questProgress = input.questProgress
+        ?? (questReadPlan?.full
+            ? getPlayerQuestProgressSync(input.playerId)
+            : getPlayerQuestProgressSubsetSync(input.playerId, {
+                sections: [...(questReadPlan?.sections ?? [])],
+                questIds: [...(questReadPlan?.questIds ?? [])],
+            }))
+    const questProgressFacts: ActiveMissionFactQuestProgress[] = []
+    const finishedQuestIds = new Set<number>()
+    for (const [categoryText, progressList] of Object.entries(questProgress)) {
+        const category = Number(categoryText)
+        for (const progress of progressList) {
+            questProgressFacts.push({
+                category,
+                questId: progress.questId,
+                finished: progress.finished,
+                clearRank: progress.clearRank,
+                leaderCharacterId: progress.leaderCharacterId,
+                multiClearCount: Math.max(0, progress.multiClearCount ?? 0),
+            })
+            if (progress.finished) {
+                finishedQuestIds.add(normalizeActiveMissionQuestId(category, progress.questId))
             }
         }
-        const activeMissions = normalizeActiveMissions(getPlayerActiveMissionsSync(input.playerId))
-        const factState = buildActiveMissionFactState(
-            input.playerId,
-            player,
-            finishedQuestIds,
-            questProgressFacts,
-            input.repository,
-            requirements,
-            input,
-        )
-        const deltas = new Map<number, { progress: number, stages: Set<number> }>()
+    }
+    const activeMissions = normalizeActiveMissions(getPlayerActiveMissionsSync(input.playerId))
+    const factState = buildActiveMissionFactState(
+        input.playerId,
+        player,
+        finishedQuestIds,
+        questProgressFacts,
+        input.repository,
+        requirements,
+        input,
+    )
+    const deltas = new Map<number, { progress: number, stages: Set<number> }>()
 
-        // Every definition runs once. A changed mission only requeues definitions
-        // that can observe it through phase or target-mission dependencies.
-        const dependents = getActiveMissionDependents(input.repository)
-        const queue = definitions.map(definition => definition.missionId)
-        const queued = new Set(queue)
-        let processed = 0
-        const maximumProcessed = Math.max(definitions.length, definitions.length * definitions.length * 2)
-        let cursor = 0
-        while (cursor < queue.length) {
-            if (++processed > maximumProcessed) {
-                throw new Error("Active Mission reconciliation did not converge.")
-            }
-            const missionId = queue[cursor++]!
-            queued.delete(missionId)
-            const definition = definitionById.get(missionId)
-            if (!definition) continue
-            let authoritativeProgress: number | null
-            try {
-                const mission = getParsedActiveMissionDefinition(
-                    definition.missionId,
-                    input.repository,
-                )
-                if (!mission) continue
-                if (!isEligibleEvent(input, mission.eventId)) continue
-                if (!isActiveMissionAvailable(definition.missionId, {
-                    repository: input.repository,
-                    now: input.now,
-                    activeMissions,
-                    questProgress,
-                })) continue
-                authoritativeProgress = computeAuthoritativeProgress(
-                    definition.missionId,
-                    definition.row,
-                    player,
-                    finishedQuestIds,
-                    activeMissions,
-                    input.repository,
-                    factState,
-                )
-            } catch {
-                continue
-            }
-            if (authoritativeProgress === null) continue
-            if (activeMissions[String(definition.missionId)] === undefined
-                && authoritativeProgress <= 0) continue
-
-            const settlement = settleActiveMissionProgress(
+    // Every definition runs once. A changed mission only requeues definitions
+    // that can observe it through phase or target-mission dependencies.
+    const dependents = getActiveMissionDependents(input.repository)
+    const queue = definitions.map(definition => definition.missionId)
+    const queued = new Set(queue)
+    let processed = 0
+    const maximumProcessed = Math.max(definitions.length, definitions.length * definitions.length * 2)
+    let cursor = 0
+    while (cursor < queue.length) {
+        if (++processed > maximumProcessed) {
+            throw new Error("Active Mission reconciliation did not converge.")
+        }
+        const missionId = queue[cursor++]!
+        queued.delete(missionId)
+        const definition = definitionById.get(missionId)
+        if (!definition) continue
+        let authoritativeProgress: number | null
+        try {
+            const mission = getParsedActiveMissionDefinition(
                 definition.missionId,
-                activeMissions[String(definition.missionId)],
-                authoritativeProgress,
-                { repository: input.repository },
+                input.repository,
             )
-            if (settlement.delta === null) continue
+            if (!mission) continue
+            if (!isEligibleEvent(input, mission.eventId)) continue
+            if (!isActiveMissionAvailable(definition.missionId, {
+                repository: input.repository,
+                now: input.now,
+                activeMissions,
+                questProgress,
+            })) continue
+            authoritativeProgress = computeAuthoritativeProgress(
+                definition.missionId,
+                definition.row,
+                player,
+                finishedQuestIds,
+                activeMissions,
+                input.repository,
+                factState,
+            )
+        } catch {
+            continue
+        }
+        if (authoritativeProgress === null) continue
+        if (activeMissions[String(definition.missionId)] === undefined
+            && authoritativeProgress <= 0) continue
 
+        const settlement = settleActiveMissionProgress(
+            definition.missionId,
+            activeMissions[String(definition.missionId)],
+            authoritativeProgress,
+            { repository: input.repository },
+        )
+        if (settlement.delta === null) continue
+
+        if (persist) {
             updatePlayerActiveMissionSync(
                 input.playerId,
                 definition.missionId,
@@ -1275,23 +1291,23 @@ export function reconcileActiveMissionFacts(
                     false,
                 )
             }
-            activeMissions[String(definition.missionId)] = settlement.state
-            mergeDelta(deltas, settlement.delta)
-            for (const dependentMissionId of dependents.get(definition.missionId) ?? []) {
-                if (!definitionById.has(dependentMissionId) || queued.has(dependentMissionId)) continue
-                queue.push(dependentMissionId)
-                queued.add(dependentMissionId)
-            }
         }
+        activeMissions[String(definition.missionId)] = settlement.state
+        mergeDelta(deltas, settlement.delta)
+        for (const dependentMissionId of dependents.get(definition.missionId) ?? []) {
+            if (!definitionById.has(dependentMissionId) || queued.has(dependentMissionId)) continue
+            queue.push(dependentMissionId)
+            queued.add(dependentMissionId)
+        }
+    }
 
-        return [...deltas.entries()]
-            .sort(([left], [right]) => left - right)
-            .map(([missionId, delta]) => ({
-                mission_id: missionId,
-                progress_value: delta.progress,
-                stages: [...delta.stages]
-                    .sort((left, right) => left - right)
-                    .map(stage => ({ stage, received: false as const })),
-            }))
-    })
+    return [...deltas.entries()]
+        .sort(([left], [right]) => left - right)
+        .map(([missionId, delta]) => ({
+            mission_id: missionId,
+            progress_value: delta.progress,
+            stages: [...delta.stages]
+                .sort((left, right) => left - right)
+                .map(stage => ({ stage, received: false as const })),
+        }))
 }

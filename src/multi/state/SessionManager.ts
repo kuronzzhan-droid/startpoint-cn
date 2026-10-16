@@ -19,7 +19,10 @@ import { registerMemoryCounters } from "../../lib/memory-diagnostics"
 import { recordServerWork } from "../../lib/server-work-performance"
 import { recordRealtimeDiagnostic } from "../../lib/realtime-diagnostics"
 import { markTcpDisconnectReason } from "../tcp/disconnect-diagnostics"
+import { battleTelemetry } from "../battle-telemetry"
 import { clearEquipmentBlock } from "../room/equipment-ready"
+import { battleRelayBridge, isRelayProxySocket } from "../tcp/battle-relay/bridge"
+import type { RelayMember } from "../tcp/battle-relay/protocol"
 
 export interface SessionClient {
     socket: net.Socket
@@ -38,6 +41,8 @@ export interface SessionClient {
     superseded: boolean
     connectedAt: number
     fiveBossBattleEntered: boolean
+    /** This battle connection sent Finalize: its battle ended normally. */
+    finalizeSent: boolean
     admissionClaimed: boolean
     admissionGeneration?: number
     equipmentSelectedPartyId?: number
@@ -103,6 +108,13 @@ export class SessionManager {
     private battleLevelNextClients = new Map<string, Set<string>>()
     private battleExpectedCount = new Map<string, number>()
     private battleBarrierCycles = new Map<string, BattleBarrierCycle>()
+    // Roster handed to setBattleExpectedCount at StartBattle, by connection id.
+    // It lets a seat open its battle socket after its lobby socket dropped.
+    private battleRosterSeats = new Map<string, Map<string, {
+        viewerId: number
+        playerId: number | null
+        roomGeneration: number
+    }>>()
     private retiredBattleSeats = new Map<string, Set<string>>()
     private battleHeartbeatTimers = new Map<string, NodeJS.Timeout>()
     private battleLastActivityAt = new Map<string, number>()
@@ -379,6 +391,7 @@ export class SessionManager {
         const cycle = this.battleBarrierCycles.get(roomNumber)
         const waitMs = cycle ? performance.now() - cycle.startedAt : 0
         if (cycle) recordServerWork("multi.barrier", waitMs)
+        battleTelemetry.barrier(roomNumber, this.battleLevelNextClients.has(roomNumber) ? "next_scene" : "initial", waitMs)
         recordRealtimeDiagnostic(roomNumber, "barrier_released", {
             reason,
             expected,
@@ -439,6 +452,7 @@ export class SessionManager {
         retired.add(key)
         retired.add(`connection:${seat.connectionId}`)
         fiveBossConnectionDiagnostics.seatEvent(roomNumber, seat.viewerId, "seat_expired")
+        battleTelemetry.seatExpired(roomNumber)
         this.queueBattleLeave(roomNumber, seat.connectionId)
         this.battleExpectedCount.set(roomNumber, expected - 1)
         this.logBattleBarrierState(roomNumber, "missing_seat_expired")
@@ -477,15 +491,19 @@ export class SessionManager {
     }
 
     private publishBattleDeparture(client: SessionClient): void {
-        if (client.fiveBossBattleEntered) {
-            // The CN five-boss client normally closes cooperation_battle after
-            // BattleStart and continues the fight client-side. Publishing the
-            // ordinary Leave frame here creates a false communication-loss
-            // dialog for peers. A later LevelNext barrier still owns its normal
-            // missing-seat grace and publishes Leave only after retiring the
-            // absent seat.
+        if (client.fiveBossBattleEntered && client.finalizeSent) {
+            // The client discards cooperation_battle as soon as Finalized
+            // arrives. That close ends a finished battle; a Leave here would
+            // only show teammates a false disconnect notice.
             return
         } else if (this.battleSceneStartedRooms.has(client.roomNumber)) {
+            // Any other close mid-battle (network loss, app killed, or the
+            // client isolating itself after a lag spike) must reach the
+            // teammates. The CN client runs battles in lockstep: without
+            // Leave, a silent peer's frame counter stands still, every
+            // teammate slows down and after ~240 frames isolates itself with
+            // "communication lost" (in the first dual-boss round it freezes
+            // instead). Leave turns that peer into a departed member at once.
             this.broadcastBattleLeave(client.roomNumber, client.connectionId)
         } else {
             this.queueBattleLeave(client.roomNumber, client.connectionId)
@@ -887,6 +905,7 @@ export class SessionManager {
         this.closeSupersededSocketsForRoom(roomNumber)
         this.roomClients.delete(roomNumber)
         this.battleClients.delete(roomNumber)
+        this.battleRelayMembershipChanged(roomNumber)
         this.clearBattleExpectedCount(roomNumber)
         this.retiredBattleSeats.delete(roomNumber)
         gameVerboseLog(() => `[MULTI] room disbanded: room=${roomNumber} reason=${reason}`)
@@ -944,6 +963,7 @@ export class SessionManager {
             this.abandonedBattleTimers.delete(roomNumber)
             this.roomClients.delete(roomNumber)
             this.battleClients.delete(roomNumber)
+            this.battleRelayMembershipChanged(roomNumber)
             this.sceneReadyClients.delete(roomNumber)
             this.battleLevelNextClients.delete(roomNumber)
             this.battleExpectedCount.delete(roomNumber)
@@ -1060,6 +1080,7 @@ export class SessionManager {
             superseded: false,
             connectedAt: Date.now(),
             fiveBossBattleEntered: false,
+            finalizeSent: false,
             admissionClaimed: false,
             clientState: new ClientStateMachine(ClientState.Connecting),
             battleState: BattleState.Initializing,
@@ -1080,6 +1101,86 @@ export class SessionManager {
             if (!client.isBattle && client.connectionId === connectionId) return client
         }
         return undefined
+    }
+
+    /**
+     * Resolve who owns a battle connection id. The lobby connection that
+     * issued the id is authoritative; when it is gone, a known battle seat for
+     * the same connection id (live, awaiting reconnect, on the StartBattle
+     * roster, or frozen by the five-boss runtime) identifies the viewer. Unknown ids resolve to null.
+     */
+    resolveBattleHandshakeIdentity(roomNumber: string, connectionId: string): {
+        viewerId: number
+        playerId: number | null
+        roomGeneration?: number
+    } | null {
+        const roomClient = this.getRoomClientByConnectionId(roomNumber, connectionId)
+        if (roomClient) {
+            return {
+                viewerId: roomClient.viewerId,
+                playerId: roomClient.playerId,
+                roomGeneration: roomClient.roomGeneration,
+            }
+        }
+        const battleClient = this.cidToBattleClient.get(connectionId)
+        if (battleClient && battleClient.roomNumber === roomNumber && battleClient.viewerId > 0) {
+            return {
+                viewerId: battleClient.viewerId,
+                playerId: battleClient.playerId,
+                roomGeneration: battleClient.roomGeneration,
+            }
+        }
+        let room: any
+        try {
+            room = require("../room/manager").getRoom(roomNumber)
+        } catch (e) {
+            room = undefined
+        }
+        const memberPlayerId = (viewerId: number): number | null => {
+            try {
+                return room ? require("../room/manager").getRoomMemberPlayerId(room, viewerId) : null
+            } catch (e) {
+                return null
+            }
+        }
+        // Battle peers carry the lobby round they started from; a seat that
+        // reconnects without its lobby socket must join that same round.
+        const battleGeneration = (): number | undefined => {
+            for (const id of this.battleClients.get(roomNumber) ?? []) {
+                const peer = this.cidToBattleClient.get(id)
+                if (peer) return peer.roomGeneration
+            }
+            return room?.lifecycle?.phase === "BATTLE"
+                ? Math.max(0, Number(room.lobby_generation ?? 0) - 1)
+                : undefined
+        }
+        for (const seat of this.battleBarrierCycles.get(roomNumber)?.missing.values() ?? []) {
+            if (seat.connectionId === connectionId && seat.viewerId > 0) {
+                return {
+                    viewerId: seat.viewerId,
+                    playerId: memberPlayerId(seat.viewerId),
+                    roomGeneration: battleGeneration(),
+                }
+            }
+        }
+        const rostered = this.battleRosterSeats.get(roomNumber)?.get(connectionId)
+        if (rostered) {
+            return {
+                viewerId: rostered.viewerId,
+                playerId: rostered.playerId ?? memberPlayerId(rostered.viewerId),
+                roomGeneration: rostered.roomGeneration,
+            }
+        }
+        const frozen = room?.five_boss_runtime?.battleIdentityByViewerId
+        if (frozen && typeof frozen === "object") {
+            for (const [viewerKey, identity] of Object.entries(frozen) as [string, any][]) {
+                const viewerId = Number(viewerKey)
+                if (identity?.connectionId === connectionId && Number.isSafeInteger(viewerId) && viewerId > 0) {
+                    return { viewerId, playerId: identity.playerId ?? null, roomGeneration: battleGeneration() }
+                }
+            }
+        }
+        return null
     }
 
     addClientToRoom(client: SessionClient): Result<void> {
@@ -1158,6 +1259,7 @@ export class SessionManager {
                 this.cidToBattleClient.delete(client.connectionId)
                 this.sceneReadyClients.get(client.roomNumber)?.delete(client.connectionId)
                 this.battleLevelNextClients.get(client.roomNumber)?.delete(client.connectionId)
+                this.battleRelayMembershipChanged(client.roomNumber)
             }
             if (!superseded && isCurrentBattleConnection) this.scheduleMissingBattleSeat(client.roomNumber, client)
         }
@@ -1231,6 +1333,12 @@ export class SessionManager {
             if (c && (roomGeneration === undefined || c.roomGeneration === roomGeneration)) out.push(c)
         }
         return out
+    }
+
+    /** True while any lobby or battle connection is indexed for the room. */
+    hasRoomConnections(roomNumber: string): boolean {
+        return (this.roomClients.get(roomNumber)?.size ?? 0) > 0
+            || (this.battleClients.get(roomNumber)?.size ?? 0) > 0
     }
 
     hasRoomClients(roomNumber: string): boolean {
@@ -1320,9 +1428,11 @@ export class SessionManager {
         if (pendingLeaves?.size === 0) this.pendingBattleLeaves.delete(client.roomNumber)
         set.add(connectionId)
         this.cidToBattleClient.set(connectionId, client)
+        this.battleRelayMembershipChanged(client.roomNumber)
         this.indexClientSocket(client)
         this.armBattleLoadingLease(connectionId)
         fiveBossConnectionDiagnostics.socketEvent(client.socket, "accepted")
+        battleTelemetry.connected(client.roomNumber, client.viewerId)
         this.logBattleBarrierState(client.roomNumber, "connected")
         return true
     }
@@ -1339,6 +1449,7 @@ export class SessionManager {
             this.battleLevelNextClients.get(client.roomNumber)?.delete(connectionId)
         }
         this.cidToBattleClient.delete(connectionId)
+        if (client) this.battleRelayMembershipChanged(client.roomNumber)
         if (client) this.scheduleMissingBattleSeat(client.roomNumber, client)
     }
 
@@ -1356,6 +1467,23 @@ export class SessionManager {
 
     isRetiredLobbySocket(socket: net.Socket): boolean {
         return this.retiredLobbySockets.has(socket)
+    }
+
+    /**
+     * Battle sockets adopted by the relay child relay Broadcast/Send there, so
+     * the child needs the same recipient set snapshotBattleRelayRecipients()
+     * uses. Called after every change to battleClients/cidToBattleClient.
+     */
+    private battleRelayMembershipChanged(roomNumber: string): void {
+        battleRelayBridge.scheduleMembership(roomNumber, () => {
+            const members: RelayMember[] = []
+            for (const connectionId of this.battleClients.get(roomNumber) ?? []) {
+                const client = this.cidToBattleClient.get(connectionId)
+                if (!client || client.superseded || !isRelayProxySocket(client.socket)) continue
+                members.push({ sid: client.socket.sid, cid: connectionId, gen: client.roomGeneration })
+            }
+            return members
+        })
     }
 
     isCurrentBattleClient(client: SessionClient): boolean {
@@ -1429,9 +1557,10 @@ export class SessionManager {
             this.sceneReadyClients.set(roomNumber, new Set())
             const connected = this.battleClients.get(roomNumber)?.size ?? 0
             this.battleExpectedCount.set(roomNumber, connected)
-            this.beginBattleBarrierCycle(roomNumber)
+            const cycle = this.beginBattleBarrierCycle(roomNumber)
             this.battleSceneStartedRooms.delete(roomNumber)
             this.logBattleBarrierState(roomNumber, "level_next")
+            this.armLevelNextDeadline(roomNumber, cycle)
         }
         if (levelNextSet.has(connectionId)) return
         levelNextSet.add(connectionId)
@@ -1439,6 +1568,41 @@ export class SessionManager {
         // LevelNext starts its fixed loading deadline; duplicate packets cannot
         // reset that deadline or demote an already-ready connection.
         this.armBattleLoadingLease(connectionId)
+    }
+
+    /**
+     * Bound the next-scene barrier for peers that never start it.
+     *
+     * A peer that sends LevelNext owns a fixed loading lease, and a peer that
+     * closes its socket gets the missing-seat grace. A peer that keeps its
+     * socket open but sends neither LevelNext nor SceneReady (frozen or
+     * backgrounded app, half-open mobile link) had no deadline: an entered
+     * five-boss connection has no heartbeat lease, so every teammate waited
+     * on the transition screen indefinitely. After the deadline that peer is
+     * disconnected; the ordinary close path retires its seat to AI.
+     */
+    private armLevelNextDeadline(roomNumber: string, cycle: BattleBarrierCycle): void {
+        const deadlineMs = this.parsePositiveDuration("BATTLE_LEVEL_NEXT_DEADLINE_MS", 90_000, 10_000)
+        const timer = setTimeout(() => {
+            void embeddedMultiCoordinator.enqueueRoomCommand(roomNumber, () => {
+                if (cycle.timers.get("level_next_deadline") !== timer) return
+                cycle.timers.delete("level_next_deadline")
+                if (!this.isCurrentBattleBarrier(roomNumber, cycle)) return
+                if ((this.battleExpectedCount.get(roomNumber) ?? 0) <= 0) return
+                const started = this.battleLevelNextClients.get(roomNumber)
+                const ready = this.sceneReadyClients.get(roomNumber)
+                for (const client of this.getConnectedBattleClients(roomNumber)) {
+                    if (started?.has(client.connectionId) || ready?.has(client.connectionId)) continue
+                    console.warn(`[MULTI] next scene never started: room=${roomNumber}`
+                        + ` viewer=${client.viewerId} connection=${client.connectionId} timeoutMs=${deadlineMs}`)
+                    fiveBossConnectionDiagnostics.socketEvent(client.socket, "level_next_timeout", String(deadlineMs))
+                    markTcpDisconnectReason(client.socket, "level_next_timeout")
+                    client.socket.destroy()
+                }
+            }).catch(error => console.error(`[MULTI] next scene deadline failed: room=${roomNumber}`, error))
+        }, deadlineMs)
+        timer.unref()
+        cycle.timers.set("level_next_deadline", timer)
     }
 
     clearSceneReady(roomNumber: string): void {
@@ -1457,6 +1621,19 @@ export class SessionManager {
         this.battleExpectedCount.set(roomNumber, count)
         this.battleSceneStartedRooms.delete(roomNumber)
         this.pendingBattleLeaves.delete(roomNumber)
+        const roster = new Map<string, { viewerId: number; playerId: number | null; roomGeneration: number }>()
+        for (const seat of seats) {
+            if (!(seat.viewerId > 0) || !seat.connectionId) continue
+            const lobbyClient = this.getRoomClientByConnectionId(roomNumber, seat.connectionId)
+            if (!lobbyClient || lobbyClient.viewerId !== seat.viewerId) continue
+            roster.set(seat.connectionId, {
+                viewerId: seat.viewerId,
+                playerId: lobbyClient.playerId,
+                roomGeneration: lobbyClient.roomGeneration,
+            })
+        }
+        if (roster.size > 0) this.battleRosterSeats.set(roomNumber, roster)
+        else this.battleRosterSeats.delete(roomNumber)
         if (count > 0 && seats.length === count && seats.every(seat => seat.viewerId > 0 && seat.connectionId)
             && new Set(seats.map(seat => this.battleSeatKey(seat))).size === count) {
             // A frozen lobby member might never open a battle socket, so it
@@ -1490,6 +1667,7 @@ export class SessionManager {
         this.sceneReadyClients.delete(roomNumber)
         this.battleLevelNextClients.delete(roomNumber)
         this.battleExpectedCount.delete(roomNumber)
+        this.battleRosterSeats.delete(roomNumber)
         this.battleBarrierLogState.delete(roomNumber)
         this.battleSceneStartedRooms.delete(roomNumber)
         this.pendingBattleLeaves.delete(roomNumber)
@@ -1499,6 +1677,7 @@ export class SessionManager {
         for (const client of this.getClientsInRoom(roomNumber)) clearEquipmentBlock(client)
         this.clearBattleBarrierCycle(roomNumber)
         this.retiredBattleSeats.delete(roomNumber)
+        this.battleRosterSeats.delete(roomNumber)
         clearChainDiagnosticRoom(roomNumber)
         const abandonedTimer = this.abandonedBattleTimers.get(roomNumber)
         if (abandonedTimer) clearTimeout(abandonedTimer)
@@ -1515,6 +1694,10 @@ export class SessionManager {
         for (const key of this.roomConnectionGenerations.keys()) {
             if (key.endsWith(`@${roomNumber}`)) this.roomConnectionGenerations.delete(key)
         }
+        try {
+            const lobby = require("../tcp/lobby")
+            lobby.clearLobbyRoomState?.(roomNumber)
+        } catch (e) {}
     }
 
     sendJson(

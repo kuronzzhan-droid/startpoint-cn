@@ -43,6 +43,8 @@ export interface Gacha {
     guaranteeRarity?: number,
     rankRates?: GachaRankRates,
     equipmentMovieProbabilityId?: string,
+    // Legacy pools retain archival dates; only scheduled pools enforce this window.
+    enforceAvailabilityWindow?: boolean,
     startDate: string,
     endDate: string,
     pool: Record<string, GachaPoolItem[]>

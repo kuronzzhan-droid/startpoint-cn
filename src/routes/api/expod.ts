@@ -6,7 +6,7 @@ import { getPlayerCharacterSync, getPlayerCharactersSync, updatePlayerCharacterS
 import { getPlayerItemsSync, givePlayerItemSync } from "../../data/domains/item"
 import { adjustPlayerExpPoolSync, collectPlayerDataPooledExpSync, getPlayerSync } from "../../data/domains/player"
 import { getSession } from "../../data/domains/session"
-import { characterMaxOverLimits } from "./character";
+import { getCharacterMaxOverLimit } from "../../lib/character-overlimit";
 import { givePlayerCharactersExpSync } from "../../lib/character";
 import { generateDataHeaders, getServerDate, getServerTime } from "../../utils";
 import { getCharacterDataSync } from "../../lib/assets";
@@ -193,7 +193,7 @@ const routes = async (fastify: FastifyInstance) => {
             if (!charAsset) continue
 
             const rarity = charAsset.rarity
-            const maxOver = characterMaxOverLimits[rarity] ?? 0
+            const maxOver = getCharacterMaxOverLimit(characterId, rarity) ?? 0
             if (character.overLimitStep < maxOver) continue
 
             const stack = character.stack

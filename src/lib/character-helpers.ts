@@ -381,6 +381,28 @@ export function reconcilePlayerManaBoardCompletionSync(
     const repairedCharacterIds = new Set<number>()
     const evolutionCharacterIds = new Set<number>()
 
+    // Read-only pass first: a fully repaired save opens no write transaction.
+    // The write pass below re-evaluates every board, so both passes agree.
+    const needsRepair = Object.entries(characters).some(([characterIdText, character]) => {
+        if (candidates && !candidates.has(characterIdText)) return false
+        const characterId = Number(characterIdText)
+        const boardCount = getCharacterManaBoardCountSync(characterId)
+        if (boardCount <= 0) return false
+        const tokenByBoard = new Map(
+            character.bondTokenList.map(token => [token.manaBoardIndex, token]),
+        )
+        for (let boardIndex = 1; boardIndex <= boardCount; boardIndex++) {
+            const token = tokenByBoard.get(boardIndex)
+            if (!token) return true
+            if (
+                token.status === 0
+                && isManaBoardComplete(characterId, boardIndex, learnedNodes[characterIdText] ?? [])
+            ) return true
+        }
+        return false
+    })
+    if (!needsRepair) return { repairedCharacterIds: [], evolutionCharacterIds: [] }
+
     runPersistenceTransactionSync({
         domain: "player", playerId, operation: "reconcile_mana_board_completion",
     }, () => {

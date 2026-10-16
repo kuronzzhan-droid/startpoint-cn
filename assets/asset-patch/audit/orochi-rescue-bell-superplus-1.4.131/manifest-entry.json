@@ -1,0 +1,39 @@
+{
+  "id": "orochi-rescue-bell-superplus-1.4.131",
+  "type": "patch",
+  "name": "救援铃铛超级+难度条文字修复",
+  "description": "衔接 1.4.130：补齐 hud_attention_label 难度条第6帧的超级+字形，不修改 SWF。",
+  "version": "1.4.131",
+  "depends_on": "1.4.130",
+  "enabled": true,
+  "archive": "pinball-1.4.130-1.4.131-1-orochi-rescue-bell-superplus-20261002.zip",
+  "archive_size": 698,
+  "chain": [
+    "pinball-1.4.130-1.4.131-1-orochi-rescue-bell-superplus-20261002.zip"
+  ],
+  "archive_integrity": [
+    {
+      "name": "pinball-1.4.130-1.4.131-1-orochi-rescue-bell-superplus-20261002.zip",
+      "size": 698,
+      "sha256": "8a0b30b3fb573ef5bbc19403cb49c000074b72ddb6a825979149a742b6e25e37",
+      "members": 1,
+      "files": [
+        "production/upload/dc/bcccb129122c0189c8eab004ecc4516a077f3e"
+      ]
+    }
+  ],
+  "files": [
+    "production/upload/dc/bcccb129122c0189c8eab004ecc4516a077f3e"
+  ],
+  "created_at": "2026-10-02",
+  "audit": {
+    "directory": "assets/asset-patch/audit/orochi-rescue-bell-superplus-1.4.131",
+    "report": "report.json"
+  },
+  "changes": [
+    "补齐 battle/common/attention/hud_attention_label.parts.amf3.deflate 根节点第6帧缺失的图形段。",
+    "复用现有图集中的“超”“级”“+”字形，保持难度数据、时间轴与 SWF 不变。",
+    "旧 1.4.124 尝试不回改；本修复作为 1.4.130 之后的唯一 1.4.131 增量发布。"
+  ],
+  "candidate_only": true
+}

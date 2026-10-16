@@ -51,8 +51,12 @@ export async function handleHandshake(socket: net.Socket, data: any): Promise<vo
         // lobby connection that issued the same connection_id.  Leaving every
         // battle client as viewer 0 makes unrelated host/guest sockets look
         // like duplicate connections and causes one side to be replaced.
-        const roomClient = sessionManager.getRoomClientByConnectionId(roomId, String(connectionId))
-        if (roomClient && !playerSocketAllowed(roomClient.viewerId, data.sp_session)) {
+        // A connection id that no known room/battle seat issued cannot be
+        // bound to a viewer, so it is never admitted as an anonymous seat.
+        const identity = sessionManager.resolveBattleHandshakeIdentity(roomId, String(connectionId))
+        if (!identity || !playerSocketAllowed(identity.viewerId, data.sp_session)) {
+            fiveBossConnectionDiagnostics.socketEvent(socket, "handshake_denied",
+                identity ? "session_mismatch" : "unknown_connection")
             markTcpDisconnectReason(socket, "handshake_denied")
             sessionManager.sendJson(socket, [3, "HANDSHAKE_DENIED"])
             socket.end()
@@ -60,13 +64,13 @@ export async function handleHandshake(socket: net.Socket, data: any): Promise<vo
         }
         const battleClient = sessionManager.createClient(
             socket,
-            roomClient?.viewerId ?? 0,
+            identity.viewerId,
             roomId,
             String(connectionId),
-            roomClient?.playerId ?? null,
+            identity.playerId,
         )
         const battleRoom = getRoom(roomId)
-        battleClient.roomGeneration = roomClient?.roomGeneration ?? battleRoom?.lobby_generation ?? 0
+        battleClient.roomGeneration = identity.roomGeneration ?? battleRoom?.lobby_generation ?? 0
         if (battleRoom) fiveBossConnectionDiagnostics.bind(battleRoom, battleClient)
         if (!battleRoom || battleRoom.lifecycle.phase !== "BATTLE") {
             fiveBossConnectionDiagnostics.socketEvent(socket, "handshake_denied", "room_not_in_battle")

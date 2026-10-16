@@ -502,6 +502,10 @@ export function drawBoxGachaSync(
                 drawnExp += reward.count
                 break;
             }
+            case BoxGachaRewardType.PASS_CARD_POINT: {
+                // Pass-card points require an event scope unavailable in box draws.
+                break;
+            }
             case BoxGachaRewardType.CHARACTER: {
                 const characterId = (reward as BoxGachaIdReward).id
                 drawnCharacters.set(characterId, (drawnCharacters.get(characterId) ?? 0) + reward.count)

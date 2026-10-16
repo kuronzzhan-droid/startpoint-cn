@@ -1,0 +1,75 @@
+{
+  "task": "orochi-rescue-bell-superplus-1.4.131",
+  "status": "prepared_local_resource_update",
+  "base_version": "1.4.130",
+  "target_version": "1.4.131",
+  "archive": {
+    "name": "pinball-1.4.130-1.4.131-1-orochi-rescue-bell-superplus-20261002.zip",
+    "size": 698,
+    "sha256": "8a0b30b3fb573ef5bbc19403cb49c000074b72ddb6a825979149a742b6e25e37",
+    "members": 1,
+    "files": [
+      "production/upload/dc/bcccb129122c0189c8eab004ecc4516a077f3e"
+    ]
+  },
+  "resource": {
+    "logical": "battle/common/attention/hud_attention_label.parts.amf3.deflate",
+    "member": "production/upload/dc/bcccb129122c0189c8eab004ecc4516a077f3e",
+    "before_sha256": "bf37fe2fa8b7f25b2924bed0093f8f2b53970dd62162532099d04d3aa01885cc",
+    "before_bytes": 466,
+    "after_sha256": "ae22aa9378937c8328dfe6e51a81e81a445a3230685eadfdfe736f0226c34a54",
+    "after_bytes": 477,
+    "groups_before": 10,
+    "groups_after": 11,
+    "root_segments_before": 10,
+    "root_segments_after": 11,
+    "added_frame": 6,
+    "glyphs": [
+      "超",
+      "级",
+      "+"
+    ]
+  },
+  "static_validation": [
+    "ZIP CRC 与成员读取通过。",
+    "第6帧 payload 结构回读通过，根节点新增 start=5 段。",
+    "离线原生等价渲染第6帧显示“超级+”。",
+    "现有 rank=6 与 timeline=chokyu_plus 未修改。"
+  ],
+  "previous_attempt": {
+    "version": "1.4.124",
+    "archive_member_was_excluded": true,
+    "reason": "旧尝试在热重载复测中仍显示空框；不覆盖旧版本，改接当前链尾。"
+  },
+  "runtime_deployed": false,
+  "device_tested": false,
+  "save_impact": {
+    "status": "no_schema_or_save_format_change",
+    "detail": "纯客户端 CDN 动画资源修复。"
+  },
+  "runtime_mirror": {
+    "status": "synced_local_8001",
+    "backup": "F:/startpoint-cn-main/.codex-backups/20261002-025649-orochi-rescue-bell-1.4.131",
+    "paths": [
+      "assets/asset-patch/manifest.json",
+      "assets/asset-patch/active/pinball-1.4.129-1.4.130-1-five-boss-reward-preview.zip",
+      "assets/asset-patch/active/pinball-1.4.130-1.4.131-1-orochi-rescue-bell-superplus-20261002.zip"
+    ]
+  },
+  "runtime_http": {
+    "status": "passed",
+    "request_res_ver": "1.4.130",
+    "target_asset_version": "1.4.131",
+    "platforms": [
+      "android",
+      "ios"
+    ],
+    "archive_sha256": "8a0b30b3fb573ef5bbc19403cb49c000074b72ddb6a825979149a742b6e25e37",
+    "archive_size": 698,
+    "evidence": "runtime-get-path-131.json"
+  },
+  "not_validated": [
+    "客户端冷启动后的救援铃铛 UI 实机验收",
+    "云服部署"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "res_ver": "1.4.130",
+  "results": [
+    {
+      "device": "android",
+      "target": "1.4.131",
+      "archive": "/patch/cn/asset-patch/active/pinball-1.4.130-1.4.131-1-orochi-rescue-bell-superplus-20261002.zip",
+      "size": 698,
+      "sha256": "8a0b30b3fb573ef5bbc19403cb49c000074b72ddb6a825979149a742b6e25e37"
+    },
+    {
+      "device": "ios",
+      "target": "1.4.131",
+      "archive": "/patch/cn/asset-patch/active/pinball-1.4.130-1.4.131-1-orochi-rescue-bell-superplus-20261002.zip",
+      "size": 698,
+      "sha256": "8a0b30b3fb573ef5bbc19403cb49c000074b72ddb6a825979149a742b6e25e37"
+    }
+  ]
+}

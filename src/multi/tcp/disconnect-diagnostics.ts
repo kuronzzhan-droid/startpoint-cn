@@ -12,6 +12,7 @@ export type TcpDisconnectReason =
     | "message_error"
     | "loading_timeout"
     | "heartbeat_timeout"
+    | "level_next_timeout"
     | "send_backpressure"
     | "send_queue_limit"
     | "send_write_error"
@@ -21,6 +22,7 @@ export type TcpDisconnectReason =
     | "rescue_timeout"
     | "room_disband"
     | "server_shutdown"
+    | "relay_exit"
     | "unknown_close"
 
 const reasons: readonly TcpDisconnectReason[] = [
@@ -34,6 +36,7 @@ const reasons: readonly TcpDisconnectReason[] = [
     "message_error",
     "loading_timeout",
     "heartbeat_timeout",
+    "level_next_timeout",
     "send_backpressure",
     "send_queue_limit",
     "send_write_error",
@@ -43,6 +46,7 @@ const reasons: readonly TcpDisconnectReason[] = [
     "rescue_timeout",
     "room_disband",
     "server_shutdown",
+    "relay_exit",
     "unknown_close",
 ]
 

@@ -2,6 +2,7 @@ import { randomUUID } from "crypto"
 import type { MultiRoom, MultiRoomLifecycle, MultiRoomPhase } from "../types"
 import { buildBattleInstanceId } from "../settlement-snapshot"
 import { gameVerboseLog } from "../../lib/game-logging"
+import { battleTelemetry } from "../battle-telemetry"
 
 export type RoomTransitionResult =
     | { ok: true; previous: MultiRoomPhase; current: MultiRoomPhase; version: number }
@@ -67,6 +68,8 @@ export class EmbeddedMultiCoordinator {
         }
         lifecycle.phase = to
         lifecycle.version += 1
+        if (previous === "BATTLE") battleTelemetry.end(room.room_number, `${to.toLowerCase()}:${reason}`)
+        if (to === "BATTLE") battleTelemetry.begin(room)
         gameVerboseLog(() => `[MULTI-LIFECYCLE] room=${room.room_number}`
             + ` instance=${lifecycle.instanceId} version=${lifecycle.version}`
             + ` ${previous}->${to} reason=${reason}`)

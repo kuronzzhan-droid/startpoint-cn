@@ -268,5 +268,11 @@
     "name": "噬龙者",
     "rarity": 5,
     "skill_count": 6
+  },
+  "169978": {
+    "element": 5,
+    "name": "碧",
+    "rarity": 5,
+    "skill_count": 6
   }
 }

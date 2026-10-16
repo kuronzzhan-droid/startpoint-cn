@@ -30,6 +30,10 @@ class FakeSocket {
         return true
     }
 
+    once() {
+        return this
+    }
+
     end() {
         this.writable = false
     }

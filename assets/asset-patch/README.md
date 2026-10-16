@@ -6,8 +6,6 @@
 
 - `active/`：当前向客户端发布的 ZIP。
 - `inactive/`：暂时停用、以后可能再次启用的 ZIP。
-  - `inactive/candidates/`：本地测试候选归档（2026-10-06 从 `active/candidates/` 整体移出，字节未变）。
-    链解析只扫描 `manifest.json` 与平铺的 `active/*.zip`，此目录不参与任何发布；生成脚本也已改写到该路径。
 - `archive/`：历史版本归档，不参与发布。
 - `production/upload/`：缺失资源的单文件覆盖目录，不属于增量 ZIP 发布。
 

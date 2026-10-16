@@ -2,6 +2,7 @@ import * as net from "net"
 import { recordBattleSendAnomaly } from "./chain-diagnostic"
 import { registerMemoryCounters } from "../../lib/memory-diagnostics"
 import { markTcpDisconnectReason } from "./disconnect-diagnostics"
+import { battleTelemetry } from "../battle-telemetry"
 
 export type ReliableSendResult = "sent" | "queued" | "closed"
 
@@ -104,6 +105,8 @@ function recordTerminalAnomaly(
 ): void {
     if (state.terminalRecorded) return
     state.terminalRecorded = true
+    const context = state.episodeContext ?? state.context
+    battleTelemetry.backpressure(context?.roomNumber, context?.viewerId, blockedDuration(state))
     recordBattleSendAnomaly(anomaly, state.episodeContext ?? state.context, {
         ...diagnosticDetails(state),
         ...details,
@@ -121,6 +124,8 @@ function resetBackpressure(state: SocketSendState): void {
 function recordBackpressureRecovery(state: SocketSendState): void {
     const blockedMs = blockedDuration(state)
     if (blockedMs >= MIN_DIAGNOSTIC_BLOCK_MS) {
+        const context = state.episodeContext ?? state.context
+        battleTelemetry.backpressure(context?.roomNumber, context?.viewerId, blockedMs)
         recordBattleSendAnomaly("backpressure_recovered", state.episodeContext ?? state.context, {
             ...diagnosticDetails(state),
             queuedMessages: 0,

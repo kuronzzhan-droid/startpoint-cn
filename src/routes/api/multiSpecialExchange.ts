@@ -11,7 +11,10 @@ import { getSession } from "../../data/domains/session"
 import { getDb } from "../../data/db"
 import { reconcileAwakeUnlockCharacterList } from "../../lib/mission"
 import { givePlayerCharacterSync } from "../../lib/character"
-import { getMultiSpecialExchangeCampaignDefinition } from "../../lib/multi-special-exchange"
+import {
+    getMultiSpecialExchangeCampaignDefinition,
+    isMultiSpecialExchangeCharacter,
+} from "../../lib/multi-special-exchange"
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator"
 import { generateDataHeaders, getServerTime } from "../../utils"
 
@@ -112,6 +115,11 @@ const routes = async (fastify: FastifyInstance) => {
         const definition = getMultiSpecialExchangeCampaignDefinition(campaignId)
         if (!definition || !definition.ticketItemIds.includes(ticketItemId)) {
             return sendResultCode(reply, context.viewerId, 4901)
+        }
+        // Only characters listed for this ticket in the client master table
+        // can be selected; other ids are rejected like any failed exchange.
+        if (!isMultiSpecialExchangeCharacter(ticketItemId, characterId)) {
+            return sendResultCode(reply, context.viewerId, 4902)
         }
 
         const exchangeResult = await runPersistenceTransaction({

@@ -25,6 +25,7 @@
     "guaranteeMovieName": "normal_guarantee",
     "toUseOddsUpAsTrialReading": false,
     "canBeStartDashExchange": false,
+    "enforceAvailabilityWindow": true,
     "startDate": "2020-12-31 12:00:00",
     "endDate": "2025-01-01 00:00:00",
     "name": "中秋·国庆限定扭蛋",

@@ -6758,5 +6758,530 @@
     "category": 2,
     "sale_price": 50,
     "sellable": false
+  },
+  "5930001": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930002": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930011": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930012": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930021": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930022": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930031": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930032": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930041": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930042": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930051": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930052": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930061": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930062": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930071": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930072": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930081": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930082": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930091": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930092": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930101": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930102": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930111": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930112": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930121": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930122": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930131": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930132": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930141": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930142": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930151": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930152": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930161": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930162": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930171": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930172": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930181": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930182": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930191": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930192": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930201": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930202": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930211": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930212": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930221": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930222": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930231": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930232": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930241": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930242": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930251": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930252": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930261": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5930262": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000401": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000400": {
+    "category": 6,
+    "sale_price": 30,
+    "sellable": true
+  },
+  "10000403": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000402": {
+    "category": 6,
+    "sale_price": 30,
+    "sellable": true
+  },
+  "10000405": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000404": {
+    "category": 6,
+    "sale_price": 30,
+    "sellable": true
+  },
+  "10000407": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000406": {
+    "category": 6,
+    "sale_price": 30,
+    "sellable": true
+  },
+  "10000409": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000408": {
+    "category": 6,
+    "sale_price": 30,
+    "sellable": true
+  },
+  "10000411": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000410": {
+    "category": 6,
+    "sale_price": 30,
+    "sellable": true
+  },
+  "10000413": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000412": {
+    "category": 6,
+    "sale_price": 30,
+    "sellable": true
+  },
+  "10000415": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000414": {
+    "category": 6,
+    "sale_price": 30,
+    "sellable": true
+  },
+  "10000417": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000416": {
+    "category": 6,
+    "sale_price": 30,
+    "sellable": true
+  },
+  "10000419": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000421": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000423": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000425": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000427": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000429": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000431": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000433": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000435": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000437": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000439": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000441": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000443": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000445": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000447": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000449": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000451": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "10000453": {
+    "category": 9,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000116": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000117": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000118": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000119": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000120": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000121": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000122": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000123": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "8000124": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5990001": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5990002": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5990003": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5990004": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5990005": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
+  },
+  "5990006": {
+    "category": 5,
+    "sale_price": 500,
+    "sellable": true
   }
 }

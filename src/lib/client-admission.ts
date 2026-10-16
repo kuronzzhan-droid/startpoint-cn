@@ -113,6 +113,8 @@ export class ClientAdmission {
     challenge(body: any, ip: string): object {
         if (this.limited(ip)) return this.fail("RATE_LIMITED")
         const build = scalar(body?.build), b = this.build(build)
+        // test-server diagnostics: build id and reason only, never keys or proofs
+        console.log(`[ADMISSION-DIAG] challenge build=${build.slice(0, 80)} known=${!!b} protocol=${body?.protocol} platform=${body?.platform} ip=${ip}`)
         if (!b || body?.protocol !== 1 || (body?.platform !== undefined && body.platform !== b.platform)) return this.fail()
         if (this.challenges.size >= MAX_ENTRIES) return this.fail("RATE_LIMITED")
         const id = randomBytes(24).toString("hex"), nonce = randomBytes(32).toString("hex")
@@ -124,9 +126,13 @@ export class ClientAdmission {
         const id = scalar(body?.challenge), c = this.challenges.get(id)
         this.challenges.delete(id) // One attempt, including a wrong proof.
         const b = c && this.build(c.build), proof = scalar(body?.proof)
-        if (!c || !b || !this.allowed(c) || c.ip !== ip || c.expires <= this.now() || !HEX.test(proof)) return this.fail()
+        if (!c || !b || !this.allowed(c) || c.ip !== ip || c.expires <= this.now() || !HEX.test(proof)) {
+            console.log(`[ADMISSION-DIAG] prove reject challenge=${!!c} build=${!!b} sameIp=${c ? c.ip === ip : "-"} ip=${ip} expired=${c ? c.expires <= this.now() : "-"} proofHex=${HEX.test(proof)}`)
+            return this.fail()
+        }
         const expected = createHmac("sha256", Buffer.from(b.key, "hex")).update(proofMessage(b.id, id, c.nonce)).digest()
-        if (!timingSafeEqual(expected, Buffer.from(proof, "hex"))) return this.fail()
+        if (!timingSafeEqual(expected, Buffer.from(proof, "hex"))) { console.log(`[ADMISSION-DIAG] prove reject hmac-mismatch ip=${ip}`); return this.fail() }
+        console.log(`[ADMISSION-DIAG] prove ok build=${b.id} ip=${ip}`)
         if (this.grants.size >= MAX_ENTRIES) return this.fail("RATE_LIMITED")
         const token = randomBytes(32).toString("hex"), expires = this.now() + TTL
         const grant: Grant = { build: b.id, platform: b.platform, keyHash: b.keyHash, expires, session: "" }
@@ -196,6 +202,7 @@ export function installClientAdmission(app: FastifyInstance, gate = clientAdmiss
             ? gate.checkActivity(request.headers["x-sp-admission"], request.headers["x-sp-session"])
             : gate.check(request.headers["x-sp-admission"], game ? request.headers["x-sp-session"] : undefined)
         if (result.ok) return
+        console.log(`[ADMISSION-DIAG] gate reject path=${path.slice(0, 80)} code=${(result as any).code} hasTicket=${!!request.headers["x-sp-admission"]} ip=${request.ip}`)
         reply.header("cache-control", "no-store")
         if (!game) return reply.send(result)
         reply.type("application/x-msgpack")

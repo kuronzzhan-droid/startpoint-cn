@@ -203,7 +203,53 @@ function result(session: PlayerLoginSession) {
     disconnectViewer(session.viewer_id)
     return { token: session.token, udid: session.udid, expires_at: session.expires_at, profile: playerLoginProfile(session.account_id) }
 }
+// ── Test-server tester accounts (deployment-local patch, not upstream) ──
+// TEST_SERVER_SHARED_PASSWORD: one password for every tester; an unknown account name logging in with it
+// gets a fresh account whose save is a copy of TEST_SERVER_TEMPLATE_SAVE (a V2 player snapshot JSON).
+const testerPassword = process.env.TEST_SERVER_SHARED_PASSWORD || ""
+const testerTemplatePath = process.env.TEST_SERVER_TEMPLATE_SAVE || ""
+let testerTemplate: unknown = null
+function loadTesterTemplate(): unknown {
+    if (testerTemplate === null) {
+        const { readFileSync } = require("node:fs") as typeof import("node:fs")
+        testerTemplate = JSON.parse(readFileSync(testerTemplatePath, "utf8"))
+    }
+    return testerTemplate
+}
+function createTesterAccount(username: string, password: string, remember: boolean) {
+    const { restorePlayerSaveSnapshotV2Sync } = require("../data/snapshots/player-snapshot") as typeof import("../data/snapshots/player-snapshot")
+    const template = loadTesterTemplate()
+    let newPlayerId = 0
+    const session = runPersistenceTransactionSync({
+        domain: "account", operation: "register_tester_login",
+    }, () => {
+        const account = insertAccountSync({ appId: "wf_cn", idpAlias: "", idpCode: "leiting", idpId: "", status: "normal" })
+        setCredentials(account.id, username, password)
+        const player = insertDefaultPlayerSync(account.id)
+        newPlayerId = player.id
+        restorePlayerSaveSnapshotV2Sync(template, player.id, { includeArchiveHistory: false })
+        getDb().prepare("UPDATE players SET name=? WHERE id=?").run(username.slice(0, 12), player.id)
+        let viewer = generateViewerId()
+        while (getDb().prepare("SELECT 1 FROM sessions WHERE token=?").get(String(viewer))) viewer = generateViewerId()
+        getDb().prepare("INSERT INTO sessions(token,account_id,expires,type) VALUES(?,?,?,2)").run(String(viewer), account.id, new Date(Date.now() + 365 * DAY).toISOString())
+        return issue(account.id, remember)
+    })
+    saveAccountDefaultPlayer(session.account_id, newPlayerId)
+    console.log(`[TESTER] new tester account created player=${newPlayerId}`)
+    return result(session)
+}
+function testerLogin(username: unknown, password: unknown, remember: boolean) {
+    const value = input(username, password)
+    if (!equal(value.password, testerPassword)) fail("测试服密码不正确，请向作者索取。")
+    const row = getDb().prepare(`SELECT a.id FROM accounts a JOIN player_login_credentials c ON c.account_id=a.id
+        WHERE lower(a.username)=? AND a.username IS NOT NULL AND a.username<>''`).get(value.username) as { id: number } | undefined
+    if (!row) return createTesterAccount(value.username, value.password, remember)
+    const session = runPersistenceTransactionSync({ domain: "account", operation: "login_tester" }, () => issue(row.id, remember))
+    return result(session)
+}
+
 export function registerPlayerLogin(username: unknown, password: unknown, remember: boolean) {
+    if (testerPassword && testerTemplatePath) return testerLogin(username, password, remember)
     input(username, password)
     let newPlayerId = 0
     const session = runPersistenceTransactionSync({
@@ -222,6 +268,7 @@ export function registerPlayerLogin(username: unknown, password: unknown, rememb
     return result(session)
 }
 export function loginPlayer(username: unknown, password: unknown, remember: boolean) {
+    if (testerPassword && testerTemplatePath) return testerLogin(username, password, remember)
     const value = input(username, password)
     const session = runPersistenceTransactionSync({
         domain: "account", operation: "login_player",

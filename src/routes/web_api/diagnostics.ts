@@ -1,10 +1,16 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify"
 import { configureRealtimeDiagnostics, getRealtimeDiagnostics } from "../../lib/realtime-diagnostics"
+import { battleTelemetry } from "../../multi/battle-telemetry"
 
 /** Management-only runtime controls for bounded multiplayer diagnostics. */
 const routes = async (fastify: FastifyInstance) => {
     fastify.get("/realtime", async (_request: FastifyRequest, reply: FastifyReply) => {
         return reply.status(200).send(getRealtimeDiagnostics())
+    })
+
+    // Recent per-battle summaries (same content as the [MULTI-BATTLE] log lines).
+    fastify.get("/battles", async (_request: FastifyRequest, reply: FastifyReply) => {
+        return reply.status(200).send({ active: battleTelemetry.activeCount(), recent: battleTelemetry.recentSummaries() })
     })
 
     fastify.post("/realtime", async (request: FastifyRequest, reply: FastifyReply) => {

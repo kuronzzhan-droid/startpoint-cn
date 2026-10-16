@@ -1,4 +1,5 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
+import path from "node:path";
 import type { FastifyReply, FastifyRequest } from "fastify";
 
 const SESSION_COOKIE = "sp_admin_session";
@@ -17,8 +18,31 @@ interface FailureBucket {
 const sessions = new Map<string, Session>();
 const failures = new Map<string, FailureBucket>();
 
+const FAILURE_MAP_MAX = 4096;
+let nextFailureSweepAt = 0;
+
 function pathOf(request: FastifyRequest): string {
     return (request.raw.url ?? request.url).split("?", 1)[0] || "/";
+}
+
+/**
+ * Paths the router may resolve this request to. The router decodes and
+ * normalises the URL, so the guard must judge the same forms, not only the
+ * raw request line. Returns null when the path cannot be decoded.
+ */
+function routedPathsOf(request: FastifyRequest): string[] | null {
+    const raw = pathOf(request);
+    let decoded: string;
+    try {
+        decoded = decodeURIComponent(raw);
+    } catch {
+        return null;
+    }
+    const collapsed = decoded.replace(/\\/g, "/").replace(/\/{2,}/g, "/");
+    const candidates = [raw, collapsed, path.posix.normalize(collapsed), collapsed.split(";", 1)[0] || "/"];
+    const routeUrl = request.routeOptions?.url;
+    if (routeUrl) candidates.push(routeUrl);
+    return candidates;
 }
 
 function cookies(request: FastifyRequest): Record<string, string> {
@@ -26,13 +50,18 @@ function cookies(request: FastifyRequest): Record<string, string> {
     return Object.fromEntries(raw.split(";").map(part => {
         const separator = part.indexOf("=");
         if (separator < 0) return ["", ""];
-        return [part.slice(0, separator).trim(), decodeURIComponent(part.slice(separator + 1).trim())];
+        const value = part.slice(separator + 1).trim();
+        try {
+            return [part.slice(0, separator).trim(), decodeURIComponent(value)];
+        } catch {
+            return [part.slice(0, separator).trim(), value];
+        }
     }).filter(([key]) => key !== ""));
 }
 
 function clientIp(request: FastifyRequest): string {
-    return (request.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim()
-        || request.ip;
+    // Fastify resolves forwarded addresses only for configured trusted proxies.
+    return request.ip;
 }
 
 function isManagementPath(pathname: string): boolean {
@@ -90,8 +119,19 @@ function failureAllowed(ip: string): boolean {
 
 function recordFailure(ip: string): void {
     const now = Date.now();
+    if (now >= nextFailureSweepAt) {
+        for (const [key, bucket] of failures) {
+            if (bucket.resetAt <= now) failures.delete(key);
+        }
+        nextFailureSweepAt = now + LOGIN_WINDOW_MS;
+    }
     const current = failures.get(ip);
     if (!current || current.resetAt <= now) {
+        if (!current && failures.size >= FAILURE_MAP_MAX) {
+            // Drop the oldest bucket instead of growing without bound.
+            const oldest = failures.keys().next().value;
+            if (oldest !== undefined) failures.delete(oldest);
+        }
         failures.set(ip, { failures: 1, resetAt: now + LOGIN_WINDOW_MS });
         return;
     }
@@ -111,12 +151,14 @@ export function installManagementAuth(fastify: { addHook: Function, get: Functio
 
     fastify.addHook("onRequest", async (request: FastifyRequest, reply: FastifyReply) => {
         const pathname = pathOf(request);
-        if (!isManagementPath(pathname)) return;
+        const routedPaths = routedPathsOf(request);
+        if (routedPaths === null) return reply.status(400).send({ error: "bad request" });
+        if (!routedPaths.some(isManagementPath)) return;
         if (hasSession(request)) {
             if (request.method === "GET" && pathname === "/") return reply.redirect("/admin/");
             return;
         }
-        if (pathname.startsWith("/api/")) return reply.status(401).send({ error: "unauthorized" });
+        if (routedPaths.some(candidate => candidate.startsWith("/api/"))) return reply.status(401).send({ error: "unauthorized" });
         return reply.redirect("/admin-login");
     });
 

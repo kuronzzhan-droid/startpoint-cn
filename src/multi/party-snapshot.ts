@@ -82,12 +82,10 @@ export function buildRealParty(playerId: number, targetParty?: PlayerParty): any
         const charId = selectedParty?.characterIds[i] ?? null
         if (!charId) {
             filledChars.push([1])
-            filledUnison.push([1])
         } else {
             const dbChar = getPlayerCharacterSync(playerId, charId)
             if (!dbChar) {
                 filledChars.push([1])
-                filledUnison.push([1])
             } else {
                 const rawManaNodes = getPlayerCharacterManaNodesSync(playerId, charId)
                 const manaNodeMap: Record<string, number> = {}

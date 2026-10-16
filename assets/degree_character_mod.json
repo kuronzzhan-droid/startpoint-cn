@@ -334,5 +334,19 @@
     "kana": "degree_mod_character_179999_awake1",
     "condition": "获得条件：将罗尔夫突破至上限并升至100级；已满足者完成一次木桩练习补领。",
     "category_id": 2
+  },
+  "9910090": {
+    "string_id": "degree_mod_character_169978_awake0",
+    "name": "我不是蜥蜴！",
+    "kana": "degree_mod_character_169978_awake0",
+    "condition": "获得条件：将碧突破至上限并升至100级；已满足者完成一次木桩练习补领。",
+    "category_id": 2
+  },
+  "9910091": {
+    "string_id": "degree_mod_character_169978_awake1",
+    "name": "巴哈姆特碎片",
+    "kana": "degree_mod_character_169978_awake1",
+    "condition": "获得条件：将碧突破至上限并升至100级；已满足者完成一次木桩练习补领。",
+    "category_id": 2
   }
 }

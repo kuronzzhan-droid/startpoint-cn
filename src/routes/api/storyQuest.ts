@@ -47,7 +47,7 @@ async function processStoryQuestFinish(playerId: number, viewerId: number, quest
         const finished = questProgress !== null ? questProgress.finished : false
         if (finished) return { data: [] }
 
-        const rewardResult = questData.clearReward !== undefined
+        const rewardResult = questData.clearReward != null
             ? givePlayerRewardSync(playerId, questData.clearReward)
             : null
         if (questProgress === null) {

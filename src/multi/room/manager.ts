@@ -11,6 +11,9 @@ import { fiveBossConnectionDiagnostics } from "../five-boss/connection-diagnosti
 import { registerMemoryCounters } from "../../lib/memory-diagnostics";
 
 const rooms = new Map<string, MultiRoom>();
+// access_token -> room_number. Tokens are random and never reassigned, so a
+// direct index replaces scanning every room per token lookup.
+const roomNumbersByToken = new Map<string, string>();
 registerMemoryCounters("rooms", detailed => {
     if (!detailed) return { total: rooms.size };
     const counts: Record<string, number> = { total: rooms.size, lobby: 0, battle: 0, returning: 0, other: 0 };
@@ -140,6 +143,7 @@ export function createRoom(
         lifecycle: embeddedMultiCoordinator.createLifecycle(),
     };
     rooms.set(roomNumber, room);
+    roomNumbersByToken.set(room.access_token, roomNumber);
     gameVerboseLog(() => `[MULTI] room created: ${roomNumber} host=${hostViewerId} category=${category} quest=${questId}`);
     return room;
 }
@@ -151,10 +155,20 @@ export function getRoom(roomNumber: string): MultiRoom | undefined {
 }
 
 export function getRoomByToken(token: string): MultiRoom | undefined {
+    if (typeof token !== "string" || token.length === 0) return undefined;
+    const roomNumber = roomNumbersByToken.get(token);
+    if (roomNumber === undefined) return undefined;
+    const room = rooms.get(roomNumber);
+    return room?.access_token === token ? room : undefined;
+}
+
+/** Rooms whose host is the given viewer (used when that host creates a new room). */
+export function getRoomsHostedBy(hostViewerId: number): MultiRoom[] {
+    const result: MultiRoom[] = [];
     for (const room of rooms.values()) {
-        if (room.access_token === token) return room;
+        if (room.host_viewer_id === hostViewerId) result.push(room);
     }
-    return undefined;
+    return result;
 }
 
 function getRoomEventId(room: MultiRoom): number | undefined {
@@ -272,6 +286,9 @@ export function disbandRoom(roomNumber: string, reason = "room_manager_delete"):
     if (room) fiveBossConnectionDiagnostics.roomEvent(roomNumber, "room_disband", reason);
     if (room) embeddedMultiCoordinator.commitDisband(room, reason);
     const deleted = rooms.delete(roomNumber);
+    if (room && roomNumbersByToken.get(room.access_token) === roomNumber) {
+        roomNumbersByToken.delete(room.access_token);
+    }
     if (deleted) {
         gameVerboseLog(() => `[MULTI] room deleted: ${roomNumber}`);
         roomAdmissionRegistry.clearRoom(roomNumber);

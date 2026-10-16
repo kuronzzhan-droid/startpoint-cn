@@ -43,6 +43,8 @@ export const MULTI_CLEANUP_ACTIVE_QUEST = "multi.cleanup_active_quest"
 export interface MultiCleanupActiveQuestArgs {
     playerId: number
     expectedPlayId: string
+    /** Completes the durable finish receipt written by the reward transaction. */
+    receipt?: { playId: string, response: unknown }
 }
 
 /**

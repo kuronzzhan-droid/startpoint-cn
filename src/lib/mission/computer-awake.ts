@@ -15,6 +15,8 @@ import { isMissionProgressComplete } from "./stages"
 import type { MissionComputer, CategoryContext } from "./types"
 import type { Player, PlayerActiveMission, PlayerCharacter, PlayerQuestProgress } from "../../data/types"
 import { characterAwakeDefinitions } from "./awake-master-assets"
+import { getCharacterDataSync } from "../assets"
+import { estimateExtendedCharacterLevel, getAwakeLevelMissionTarget } from "../character-overlimit"
 import {
     AWAKE_DIRECT_BATTLE_MISSION_IDS,
     BARAK_AWAKE_PRACTICE_QUEST_ID,
@@ -289,6 +291,16 @@ export const AwakeComputer: MissionComputer = {
                 if (!matches.some(q => q.leaderCharacterId === qc.leaderCharId)) return dbProgress
             }
             return Math.max(dbProgress, 1)
+        }
+
+        // Over-limit level missions: progress is the character's current level.
+        if (getAwakeLevelMissionTarget(missionId) !== undefined) {
+            const char = actx.charData.get(charId)
+            const rarity = getCharacterDataSync(Number(charId))?.rarity
+            const level = char && rarity !== undefined
+                ? estimateExtendedCharacterLevel(Number(charId), rarity, char.exp)
+                : 0
+            return Math.max(dbProgress, level)
         }
 
         // Race-composition missions (e.g., 人+龙+魔)

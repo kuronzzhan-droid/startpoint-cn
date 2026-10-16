@@ -14,6 +14,7 @@ import { resolvePlayerIdSync } from "../../data/activeAccount";
 import { reconcileAwakeUnlockCharacterList, settleDegreeMissionResponse } from "../../lib/mission";
 import { gameVerboseLog } from "../../lib/game-logging";
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator";
+import { getExtendedOverLimitExtraCosts, validateOverLimitRequest } from "../../lib/character-overlimit";
 
 interface OverLimitBody {
     viewer_id: number
@@ -123,9 +124,11 @@ const routes = async (fastify: FastifyInstance) => {
             if (!character) return { error: "Character not owned." }
             const newOverLimit = character.overLimitStep + overLimitCount
             const rarity = characterAssetData.rarity
-            if (newOverLimit > characterMaxOverLimits[rarity]) {
-                return { error: "Character cannot be uncapped further." }
-            }
+            const requestError = validateOverLimitRequest(
+                characterId, rarity, character.overLimitStep, overLimitCount,
+                Boolean(body.use_stack), body.item_id,
+            )
+            if (requestError !== null) return { error: requestError }
             let stack = character.stack
             const itemList: Record<number, number> = {}
             if (body.use_stack) {
@@ -134,16 +137,21 @@ const routes = async (fastify: FastifyInstance) => {
                 updatePlayerCharacterSync(playerId, characterId, { overLimitStep: newOverLimit, stack })
             } else {
                 const itemId = body.item_id
-                if ((rarity === 5 && itemId !== 10003)
-                    || (rarity <= 4 && itemId !== 10002 && itemId !== 10001)) {
-                    return { error: "Attempted to use invalid item." }
+                const costs = [{ itemId, amount: overLimitCount }, ...getExtendedOverLimitExtraCosts(
+                    characterId, rarity, character.overLimitStep, overLimitCount,
+                )]
+                const remainders: Record<number, number> = {}
+                for (const cost of costs) {
+                    const count = getPlayerItemSync(playerId, cost.itemId)
+                    if (count === null) return { error: "Attempted to use unowned item." }
+                    const remaining = count - cost.amount
+                    if (remaining < 0) return { error: "Not enough of item to uncap." }
+                    remainders[cost.itemId] = remaining
                 }
-                const count = getPlayerItemSync(playerId, itemId)
-                if (count === null) return { error: "Attempted to use unowned item." }
-                const remaining = count - overLimitCount
-                if (remaining < 0) return { error: "Not enough of item to uncap." }
-                updatePlayerItemSync(playerId, itemId, remaining)
-                itemList[itemId] = remaining
+                for (const [costItemId, remaining] of Object.entries(remainders)) {
+                    updatePlayerItemSync(playerId, Number(costItemId), remaining)
+                    itemList[Number(costItemId)] = remaining
+                }
                 updatePlayerCharacterSync(playerId, characterId, { overLimitStep: newOverLimit })
             }
             grantCharacterDegreeRewardsSync(playerId, [characterId])

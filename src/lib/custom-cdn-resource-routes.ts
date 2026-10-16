@@ -1,6 +1,6 @@
 import { existsSync } from "./file-exists";
-import { readFileSync } from "fs"
 import path from "path"
+import { sendFileStream } from "./file-download"
 import { FastifyInstance } from "fastify"
 
 /** Serve loose custom resources in all native roots, then the pristine store. */
@@ -17,8 +17,8 @@ export function installCustomCdnResourceRoutes(
             const custom = path.join(options.patchRoot, "production", root, prefix, hash)
             const pristine = path.join(options.cdnRoot, "cn", "dummy", "download", "production", root, prefix, hash)
             const file = existsSync(custom) ? custom : pristine
-            if (existsSync(file)) {
-                return reply.type("application/octet-stream").send(readFileSync(file))
+            if (sendFileStream(reply, file, "application/octet-stream")) {
+                return reply
             }
             return reply.status(404).send("Not Found")
         })

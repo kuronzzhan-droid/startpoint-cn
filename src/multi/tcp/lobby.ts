@@ -423,7 +423,10 @@ async function handleEnterComs(
     const npcMates: any[] = []
     const recruitedMates = selectStableNpcSlots(recruitResult.recruitedMates, needNPCs)
     room.npc_party_by_com_id ??= {}
-    const missingPartyCount = recruitedMates.filter(recruited =>
+    // Test server: COM seats copy the host's current party instead of drawing
+    // from the player party pool (author 1009). Off unless NPC_COPY_HOST_PARTY is set.
+    const copyHostParty = /^(1|true|yes|on)$/i.test(process.env.NPC_COPY_HOST_PARTY ?? "")
+    const missingPartyCount = copyHostParty ? 0 : recruitedMates.filter(recruited =>
         !room.npc_party_by_com_id[String(recruited.com_id)]).length
     // Select only parties for COM seats this room has never used. A rematch
     // whose complete COM roster is cached performs no pool scan or random draw.
@@ -451,9 +454,11 @@ async function handleEnterComs(
         // custom-asset combination and make the AIR client's 4096 atlas packer
         // fail with U_1d93f4 during auto-repeat.
         const partyKey = String(comId)
-        const party = legalNpcParty(room, room.npc_party_by_com_id?.[partyKey]
-            ?? npcParties[nextPartyIndex++]
-            ?? hostMate.party)
+        const party = copyHostParty
+            ? legalNpcParty(room, structuredClone(hostMate.party))
+            : legalNpcParty(room, room.npc_party_by_com_id?.[partyKey]
+                ?? npcParties[nextPartyIndex++]
+                ?? hostMate.party)
         room.npc_party_by_com_id[partyKey] = party
 
         npcMates.push({
@@ -687,6 +692,46 @@ function scheduleRematchRosterCleanup(roomNumber: string): void {
     }, REMATCH_RECONNECT_GRACE_MS)
     timer.unref()
     rematchCleanupTimers.set(roomNumber, timer)
+}
+
+/**
+ * Drop per-room lobby bookkeeping when a room is removed. Room numbers can be
+ * reused, so stale entries here must not leak into a later room.
+ */
+export function clearLobbyRoomState(roomNumber: string): void {
+    const rematchTimer = rematchCleanupTimers.get(roomNumber)
+    if (rematchTimer) clearTimeout(rematchTimer)
+    rematchCleanupTimers.delete(roomNumber)
+    rematchCleanedGeneration.delete(roomNumber)
+    const reconcileTimer = npcReconcileTimers.get(roomNumber)
+    if (reconcileTimer) clearTimeout(reconcileTimer)
+    npcReconcileTimers.delete(roomNumber)
+    npcReconcilePendingRooms.delete(roomNumber)
+    // npcRecruitingRooms is owned by the in-flight recruitment and is always
+    // released in its finally block; clearing it here could let that stale
+    // finally clear a newer room's marker.
+}
+
+/** Test-only view of per-room lobby bookkeeping. */
+export function getLobbyRoomStateForTests(roomNumber: string): {
+    rematchTimer: boolean
+    rematchCleanedGeneration: number | undefined
+    npcReconcileTimer: boolean
+    npcReconcilePending: boolean
+} {
+    return {
+        rematchTimer: rematchCleanupTimers.has(roomNumber),
+        rematchCleanedGeneration: rematchCleanedGeneration.get(roomNumber),
+        npcReconcileTimer: npcReconcileTimers.has(roomNumber),
+        npcReconcilePending: npcReconcilePendingRooms.has(roomNumber),
+    }
+}
+
+/** Test-only seed for per-room lobby bookkeeping. */
+export function seedLobbyRoomStateForTests(roomNumber: string, generation: number): void {
+    rematchCleanedGeneration.set(roomNumber, generation)
+    npcReconcilePendingRooms.add(roomNumber)
+    scheduleNpcReconcile(roomNumber, 60_000)
 }
 
 export function scheduleRematchDisconnectCleanup(roomNumber: string): void {
@@ -1253,17 +1298,23 @@ function handleBroadcast(_socket: net.Socket, client: SessionClient, data: any[]
     )
 }
 
-function handleSend(_socket: net.Socket, _client: SessionClient, data: any[]): void {
-    const targetViewerId = data[1] as number
-    const roomNumber = _client.roomNumber
-    const clientsMap = (sessionManager as any).clients as Map<string, SessionClient> | undefined
-    if (!clientsMap) return
-    for (const c of clientsMap.values()) {
-        if (c.viewerId === targetViewerId && c.roomNumber === roomNumber) {
-            sessionManager.sendJson(c.socket, data)
-            return
-        }
-    }
+function handleSend(_socket: net.Socket, client: SessionClient, data: any[]): void {
+    const targetViewerId = Number(data[1])
+    if (!Number.isSafeInteger(targetViewerId) || targetViewerId <= 0) return
+    // Lobby clients are indexed by viewer@room, so the target is a direct
+    // lookup. Apply the same recipient rules as broadcastToRoom: current
+    // connection, Enter already answered, and the room's current round.
+    const target = sessionManager.getClient(targetViewerId, client.roomNumber)
+    if (!target || target.isBattle || target.superseded || target.enterData === null) return
+    const currentGeneration = getRoom(client.roomNumber)?.lobby_generation
+    if (currentGeneration !== undefined && target.roomGeneration !== currentGeneration) return
+    sessionManager.sendJson(target.socket, data, {
+        roomNumber: client.roomNumber,
+        connectionId: target.connectionId,
+        viewerId: target.viewerId,
+        roomGeneration: target.roomGeneration,
+        channel: "lobby",
+    })
 }
 
 export function handleMessage(socket: net.Socket, data: unknown): void {

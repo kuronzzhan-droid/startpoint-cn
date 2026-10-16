@@ -4,6 +4,7 @@ import { recordBattleRelay } from "./chain-diagnostic"
 import { performance } from "node:perf_hooks"
 import { recordServerWork } from "../../lib/server-work-performance"
 import { recordRealtimeDiagnostic } from "../../lib/realtime-diagnostics"
+import { battleTelemetry } from "../battle-telemetry"
 
 export function relayToBattleRoom(
     source: SessionClient,
@@ -31,6 +32,7 @@ export function relayToBattleRoom(
             roomGeneration: source.roomGeneration,
             channel: `battle_${relayKind}`,
         })
+        battleTelemetry.relayed(source.roomNumber, client.viewerId)
     }
     const sendMs = performance.now() - sendStarted
     recordServerWork("multi.relay.send", sendMs)

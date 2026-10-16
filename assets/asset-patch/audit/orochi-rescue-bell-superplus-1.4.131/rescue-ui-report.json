@@ -1,0 +1,19 @@
+{
+  "logical": "battle/common/attention/hud_attention_label.parts.amf3.deflate",
+  "member": "production/upload/dc/bcccb129122c0189c8eab004ecc4516a077f3e",
+  "before_sha256": "bf37fe2fa8b7f25b2924bed0093f8f2b53970dd62162532099d04d3aa01885cc",
+  "after_sha256": "ae22aa9378937c8328dfe6e51a81e81a445a3230685eadfdfe736f0226c34a54",
+  "before_bytes": 466,
+  "after_bytes": 477,
+  "groups_before": 10,
+  "groups_after": 11,
+  "root_segments_before": 10,
+  "root_segments_after": 11,
+  "added_frame": 6,
+  "added_glyphs": [
+    "超",
+    "级",
+    "+"
+  ],
+  "note": "恢复根节点第6帧段，复用现有图集字形。"
+}

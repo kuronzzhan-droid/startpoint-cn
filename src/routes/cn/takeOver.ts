@@ -114,20 +114,47 @@ function accountByViewerId(viewerId: string): AccountByViewerRow | null {
 }
 
 function clientIp(request: FastifyRequest): string {
-    const forwarded = request.headers["x-forwarded-for"]
-    const raw = Array.isArray(forwarded) ? forwarded[0] : forwarded
-    return raw?.split(",")[0]?.trim() || request.ip
+    // Fastify resolves forwarded addresses only for configured trusted proxies.
+    return request.ip
 }
 
 function failureKey(request: FastifyRequest, viewerId: string): string {
     return `${clientIp(request)}:${viewerId}`
 }
 
+// Failures one address may spend across all viewer IDs in a window, so a
+// single client cannot fill the per-viewer table and lock everyone out.
+const ADDRESS_FAILURE_LIMIT = 30
+const addressFailures = new Map<string, { count: number, resetAt: number }>()
+
+function addressLimited(ip: string, now: number): boolean {
+    const entry = addressFailures.get(ip)
+    if (!entry) return false
+    if (now >= entry.resetAt) {
+        addressFailures.delete(ip)
+        return false
+    }
+    return entry.count >= ADDRESS_FAILURE_LIMIT
+}
+
+function sweepFailures(now: number): void {
+    if (now < nextFailureSweepAt && failures.size < FAILURE_MAP_MAX) return
+    for (const [entryKey, entry] of failures) {
+        if (entry.resetAt <= now) failures.delete(entryKey)
+    }
+    for (const [ip, entry] of addressFailures) {
+        if (entry.resetAt <= now) addressFailures.delete(ip)
+    }
+    nextFailureSweepAt = now + FAILURE_WINDOW_MS
+}
+
 function isRateLimited(request: FastifyRequest, viewerId: string): boolean {
+    const now = Date.now()
+    if (addressLimited(clientIp(request), now)) return true
     const key = failureKey(request, viewerId)
     const entry = failures.get(key)
-    if (!entry) return failures.size >= FAILURE_MAP_MAX
-    if (Date.now() >= entry.resetAt) {
+    if (!entry) return false
+    if (now >= entry.resetAt) {
         failures.delete(key)
         return false
     }
@@ -137,15 +164,25 @@ function isRateLimited(request: FastifyRequest, viewerId: string): boolean {
 function recordFailure(request: FastifyRequest, viewerId: string, password: string): void {
     const key = failureKey(request, viewerId)
     const now = Date.now()
-    if (now >= nextFailureSweepAt) {
-        for (const [entryKey, entry] of failures) {
-            if (entry.resetAt <= now) failures.delete(entryKey)
+    sweepFailures(now)
+    const ip = clientIp(request)
+    const address = addressFailures.get(ip)
+    if (!address || now >= address.resetAt) {
+        if (!address && addressFailures.size >= FAILURE_MAP_MAX) {
+            const oldest = addressFailures.keys().next().value
+            if (oldest !== undefined) addressFailures.delete(oldest)
         }
-        nextFailureSweepAt = now + FAILURE_WINDOW_MS
+        addressFailures.set(ip, { count: 1, resetAt: now + FAILURE_WINDOW_MS })
+    } else {
+        address.count += 1
     }
     const previous = failures.get(key)
     if (!previous || now >= previous.resetAt) {
-        if (failures.size >= FAILURE_MAP_MAX) return
+        if (!previous && failures.size >= FAILURE_MAP_MAX) {
+            // Evict the oldest entry rather than refusing new viewers.
+            const oldest = failures.keys().next().value
+            if (oldest !== undefined) failures.delete(oldest)
+        }
         failures.set(key, {
             count: 1,
             resetAt: now + FAILURE_WINDOW_MS,

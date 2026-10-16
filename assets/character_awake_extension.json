@@ -91,5 +91,43 @@
         "awake_level": 1
       }
     ]
+  },
+  "111183": {
+    "linked_mana_node_slots": [
+      {
+        "board_index": 2,
+        "ability_slot": 4,
+        "awake_level": 1
+      },
+      {
+        "board_index": 2,
+        "ability_slot": 5,
+        "awake_level": 1
+      },
+      {
+        "board_index": 2,
+        "ability_slot": 6,
+        "awake_level": 1
+      }
+    ]
+  },
+  "141099": {
+    "linked_mana_node_slots": [
+      {
+        "board_index": 2,
+        "ability_slot": 4,
+        "awake_level": 1
+      },
+      {
+        "board_index": 2,
+        "ability_slot": 5,
+        "awake_level": 1
+      },
+      {
+        "board_index": 2,
+        "ability_slot": 6,
+        "awake_level": 1
+      }
+    ]
   }
 }

@@ -4,7 +4,7 @@ import { getPlayerGachaCampaignSync, getPlayerGachaInfoListSync, getPlayerGachaI
 import { getPlayerItemSync, updatePlayerItemSync } from "../../data/domains/item"
 import { getPlayerSync, updatePlayerSync } from "../../data/domains/player"
 import { getSession } from "../../data/domains/session"
-import { generateDataHeaders } from "../../utils";
+import { generateDataHeaders, getServerTime } from "../../utils";
 import {
     commitPlannedCharacterGachaMovies,
     drawGachaWithMetadataSync,
@@ -341,7 +341,8 @@ const routes = async (fastify: FastifyInstance) => {
                 "message": "Gacha doesn't exist."
             })
         }
-        if (!isGachaAvailableAt(gachaData, Date.now())) {
+        if (gachaData.enforceAvailabilityWindow === true
+            && !isGachaAvailableAt(gachaData, getServerTime() * 1000)) {
             gameVerboseLog(() => `[GACHA] gacha unavailable: gachaId=${gachaId}`);
             return reply.status(400).send({
                 "error": "Bad Request",
@@ -351,7 +352,7 @@ const routes = async (fastify: FastifyInstance) => {
         const isCharacterGacha = gachaData.type == GachaType.CHARACTER
 
         const previewPlayer = getPlayerSync(playerId)
-        if (previewPlayer === null) return
+        if (previewPlayer === null) return reply.status(500).send({ "error": "Internal Server Error", "message": "Player not found." })
         const previewGachaData = getPlayerGachaInfoSync(playerId, gachaId) ?? {
             gachaId,
             isAccountFirst: true,

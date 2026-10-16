@@ -7,7 +7,7 @@ type Event = "frozen" | "http_start" | "handshake" | "accepted" | "handshake_den
     | "level_next" | "finalize" | "level_next_queued" | "finalize_queued"
     | "level_next_recorded" | "finalize_recorded" | "signal_rejected"
     | "packet_unindexed" | "socket_end" | "socket_close" | "socket_error" | "protocol_close"
-    | "loading_timeout" | "heartbeat_timeout" | "replaced" | "removed" | "seat_expired"
+    | "loading_timeout" | "heartbeat_timeout" | "level_next_timeout" | "replaced" | "removed" | "seat_expired"
     | "room_disband" | "http_finish" | "finish_rejected"
 
 interface TraceEvent { at: number; event: Event; socket?: number; detail?: string }

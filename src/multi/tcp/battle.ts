@@ -7,6 +7,8 @@ import { getRoom } from "../room/manager"
 import { recordFiveBossSignal } from "../five-boss/lobby-runtime"
 import { fiveBossConnectionDiagnostics } from "../five-boss/connection-diagnostic"
 import { markPlayerOnlineFromTcp } from "../../lib/online-presence"
+import { battleTelemetry } from "../battle-telemetry"
+import type { RelayActivity } from "./battle-relay/protocol"
 
 function findBattleClientBySocket(socket: net.Socket): SessionClient | undefined {
     const client = sessionManager.findClientBySocket(socket)
@@ -53,6 +55,7 @@ function handleBattleNotify(socket: net.Socket, data: unknown, indexedClient?: S
         case 2: { // Finalize
             const room = client && getRoom(client.roomNumber)
             if (client && room?.five_boss_runtime) recordFiveBossSignal(room, client, "finalize")
+            if (client) client.finalizeSent = true
             if (client) sendToBattleClient(client, [1, [2]], "battle_finalize_ack")
             break
         }
@@ -82,6 +85,8 @@ export function handleBattleMessage(socket: net.Socket, data: unknown): void {
     fiveBossConnectionDiagnostics.packet(socket, !!activityClient)
     if (activityClient) {
         sessionManager.noteBattleActivity(activityClient.connectionId)
+        battleTelemetry.packet(activityClient.roomNumber, activityClient.viewerId, tag,
+            tag === 0 && Array.isArray(data[1]) ? data[1][0] as number : undefined)
         if (!socket.destroyed && sessionManager.isCurrentBattleClient(activityClient)) {
             markPlayerOnlineFromTcp(activityClient.viewerId)
         }
@@ -113,5 +118,34 @@ export function handleBattleMessage(socket: net.Socket, data: unknown): void {
         }
         default:
             break
+    }
+}
+
+/**
+ * Applies what the battle relay child handled on its own (relayed frames and
+ * Heartbeat/Measurement acks) to the same lease, presence and telemetry state
+ * handleBattleMessage() updates per frame in the in-process path.
+ */
+export function handleBattleRelayActivity(socket: net.Socket, activity: RelayActivity): void {
+    const client = findBattleClientBySocket(socket)
+    if (!client) return
+    const packets = activity.broadcasts + activity.sends + activity.heartbeats
+        + activity.measurements + activity.lineSpeedWarnings
+    if (packets > 0) {
+        fiveBossConnectionDiagnostics.packet(socket, true)
+        sessionManager.noteBattleActivity(client.connectionId)
+        if (!socket.destroyed && sessionManager.isCurrentBattleClient(client)) {
+            markPlayerOnlineFromTcp(client.viewerId)
+        }
+    }
+    battleTelemetry.relayActivity(client.roomNumber, client.viewerId, {
+        packets,
+        broadcasts: activity.broadcasts + activity.sends,
+        lineSpeedWarnings: activity.lineSpeedWarnings,
+        maxGapMs: activity.maxGapMs,
+        relayedOut: activity.relayedOut,
+    })
+    if (activity.maxBackpressureMs >= 100) {
+        battleTelemetry.backpressure(client.roomNumber, client.viewerId, activity.maxBackpressureMs)
     }
 }

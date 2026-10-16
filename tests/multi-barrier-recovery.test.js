@@ -140,10 +140,20 @@ test('reconnect within grace cancels retirement and deferred Leave', async t => 
     assert.deepEqual(a.socket.frames, [[1,[1]]])
 })
 
-test('entered five-boss peer does not publish ordinary Leave', async t => {
+test('entered five-boss peer that drops mid-battle publishes Leave so teammates do not stall', async t => {
+    const x = setup(t), [a,b] = x.clients
+    x.ready(a); x.ready(b); a.socket.frames = []
+    a.fiveBossBattleEntered = true
+    b.fiveBossBattleEntered = true
+    x.drop(b)
+    assert.deepEqual(a.socket.frames, [[1,[0,b.connectionId]]])
+})
+
+test('entered five-boss peer closing after its own Finalize does not publish Leave', async t => {
     const x = setup(t), [a,b] = x.clients
     x.ready(a); x.ready(b); a.socket.frames = []
     b.fiveBossBattleEntered = true
+    b.finalizeSent = true
     x.drop(b)
     assert.deepEqual(a.socket.frames, [])
 })
@@ -156,7 +166,7 @@ test('five-boss replacement remains current after the old socket closes', async 
     const replacement = x.make(2)
     assert.equal(x.manager.addBattleClient(replacement.connectionId, replacement), true)
     x.manager.removeClient(b)
-    assert.deepEqual(a.socket.frames, [])
+    assert.deepEqual(a.socket.frames, [[1,[0,b.connectionId]]], 'one Leave for the drop, none for the stale close')
     assert.equal(x.manager.getBattleClient(replacement.connectionId), replacement)
 })
 
@@ -227,6 +237,42 @@ test('next-scene disconnected peer does not strand the remaining ready player', 
     x.manager.beginBattleLevelNext(a.connectionId, x.roomNumber)
     x.drop(b); x.ready(a); await x.fire(x.grace())
     assert.deepEqual(a.socket.frames, [[1,[1]], [1,[0,b.connectionId]]])
+})
+
+test('next-scene deadline releases teammates from a connected peer that never starts loading', async t => {
+    const x = setup(t, 3), [a,b,c] = x.clients
+    x.ready(a); x.ready(b); x.ready(c)
+    for (const client of x.clients) client.fiveBossBattleEntered = true
+    a.socket.frames = []
+    x.manager.beginBattleLevelNext(a.connectionId, x.roomNumber)
+    x.manager.beginBattleLevelNext(b.connectionId, x.roomNumber)
+    x.ready(a)
+    // c keeps an open socket but never sends LevelNext or SceneReady; with no
+    // heartbeat lease on an entered five-boss connection nothing else ends it.
+    const deadline = x.manager.battleBarrierCycles.get(x.roomNumber).timers.get('level_next_deadline')
+    assert.equal(deadline.ms, 90000)
+    await x.fire(deadline)
+    assert.equal(a.socket.destroyed, false)
+    assert.equal(b.socket.destroyed, false, 'a peer still loading keeps its own loading lease')
+    assert.equal(c.socket.destroyed, true)
+    assert.deepEqual(a.socket.frames, [])
+    x.manager.removeClient(c)
+    x.ready(b)
+    await x.fire(x.manager.battleBarrierCycles.get(x.roomNumber).timers.get('viewer:3'))
+    assert.deepEqual(a.socket.frames, [[1,[1]], [1,[0,c.connectionId]]])
+})
+
+test('next-scene deadline is inert once the barrier released or a new scene began', async t => {
+    const x = setup(t), [a,b] = x.clients
+    x.ready(a); x.ready(b)
+    x.manager.beginBattleLevelNext(a.connectionId, x.roomNumber)
+    const deadline = x.manager.battleBarrierCycles.get(x.roomNumber).timers.get('level_next_deadline')
+    x.manager.beginBattleLevelNext(b.connectionId, x.roomNumber)
+    x.ready(a); assert.equal(x.ready(b), true)
+    assert.equal(deadline.cancelled, true)
+    await x.fire(deadline)
+    assert.equal(a.socket.destroyed, false)
+    assert.equal(b.socket.destroyed, false)
 })
 
 test('a replacement connection can finish loading without replaying LevelNext', t => {
@@ -396,7 +442,7 @@ test('clearing settlement barriers does not reopen a retired battle seat', async
 test('battle handshakes reject non-battle rooms and retired seats without a welcome', async t => {
     const x = setup(t)
     const add = t.mock.method(singleton, 'addBattleClient', () => false)
-    t.mock.method(singleton, 'getRoomClientByConnectionId', () => undefined)
+    t.mock.method(singleton, 'getRoomClientByConnectionId', () => ({ viewerId: 9, playerId: 9, roomGeneration: 1 }))
     for (const phase of ['SETTLING', 'RETURNING', 'DISBANDED', 'BATTLE']) {
         x.room.lifecycle.phase = phase
         const socket = new Socket()
@@ -405,4 +451,35 @@ test('battle handshakes reject non-battle rooms and retired seats without a welc
         assert.equal(socket.destroyed, true)
     }
     assert.equal(add.mock.callCount(), 1, 'only a live BATTLE room may attempt seat admission')
+})
+
+test('battle handshake with a connection id no seat issued is denied before admission', async t => {
+    const x = setup(t)
+    const add = t.mock.method(singleton, 'addBattleClient', () => true)
+    t.mock.method(singleton, 'getRoomClientByConnectionId', () => undefined)
+    x.room.lifecycle.phase = 'BATTLE'
+    const socket = new Socket()
+    await handleHandshake(socket, { socklet: 'cooperation_battle', room_number: x.roomNumber, connection_id: 'not-issued' })
+    assert.deepEqual(socket.frames, [[3, 'HANDSHAKE_DENIED']])
+    assert.equal(socket.destroyed, true)
+    assert.equal(add.mock.callCount(), 0)
+})
+
+test('battle identity falls back to a known seat when the lobby connection is gone', t => {
+    const x = setup(t), [a, b] = x.clients
+    t.mock.method(x.manager, 'getRoomClientByConnectionId', () => undefined)
+    // Live battle connection with the same id.
+    assert.deepEqual(x.manager.resolveBattleHandshakeIdentity(x.roomNumber, a.connectionId),
+        { viewerId: 1, playerId: 1, roomGeneration: 1 })
+    // Seat waiting for reconnect after its battle socket dropped.
+    x.drop(b)
+    const seat = x.manager.resolveBattleHandshakeIdentity(x.roomNumber, b.connectionId)
+    assert.equal(seat.viewerId, 2)
+    assert.equal(seat.roomGeneration, 1, 'a reconnecting seat joins the peers battle round')
+    // Five-boss frozen identity.
+    x.room.five_boss_runtime = { battleIdentityByViewerId: { 7: { playerId: 70, connectionId: 'frozen-cid' } } }
+    assert.deepEqual(x.manager.resolveBattleHandshakeIdentity(x.roomNumber, 'frozen-cid'),
+        { viewerId: 7, playerId: 70, roomGeneration: 1 })
+    assert.equal(x.manager.resolveBattleHandshakeIdentity(x.roomNumber, 'unknown-cid'), null)
+    assert.equal(x.manager.resolveBattleHandshakeIdentity('999999', a.connectionId), null)
 })

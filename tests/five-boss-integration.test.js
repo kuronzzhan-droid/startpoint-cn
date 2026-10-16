@@ -1051,16 +1051,32 @@ test('authenticated SceneReady survives a later TCP close and prevents finish H4
             socket.on('data', () => {})
             socket.write(JSON.stringify({ socklet: 'cooperation_battle', room_number: room.room_number,
                 connection_id: connectionId, sp_session: `five-boss-${p.id}` }) + '\0')
-            await waitFor(() => manager.getBattleClient(connectionId)?.socket === serverSocket)
-            return { socket, serverSocket }
+            await waitFor(() => manager.getBattleClient(connectionId)?.isBattle)
+            const accepted = manager.getBattleClient(connectionId)
+            assert.equal(accepted.viewerId, p.viewerId)
+            assert.equal(accepted.playerId, p.id)
+            assert.equal(accepted.roomNumber, room.room_number)
+            assert.equal(accepted.connectionId, connectionId)
+            const { battleRelayProcessEnabled, isRelayProxySocket } = load('multi/tcp/battle-relay/bridge')
+            if (battleRelayProcessEnabled()) {
+                assert.ok(isRelayProxySocket(accepted.socket), 'relay-enabled battle owns an accepted proxy')
+                assert.ok(accepted.socket.sid > 0)
+                assert.notEqual(accepted.socket, serverSocket, 'the original socket was handed to the child')
+            } else {
+                assert.equal(accepted.socket, serverSocket)
+            }
+            // After relay handoff the original server socket is closed; the
+            // accepted proxy carries the real connection's later close.
+            return { socket, acceptedSocket: accepted.socket }
         }
         const first = await connect()
         first.socket.write(JSON.stringify([0, [0]]) + '\0')
         await waitFor(() => trace.snapshot(runId, p.id).counts?.battle_entry_recorded)
-        const closed = once(first.serverSocket, 'close')
+        const closed = once(first.acceptedSocket, 'close')
         first.socket.end()
         await closed
         await coordinator.enqueueRoomCommand(room.room_number, () => {})
+        assert.equal(manager.getBattleClient(connectionId), undefined, 'the closed battle connection was removed')
         const settled = await app.inject({ method: 'POST', url: '/finish', payload: httpFinish(p) })
         assert.equal(settled.statusCode, 200, settled.body)
         const crystals = items.getPlayerItemSync(p.id, 10000145)
@@ -1643,6 +1659,8 @@ function seedRewardFinish(p, category, questId, host = true) {
         isMultiHost: host, continueCount: 0, startedAtMs: Date.now(), matePlayerIds: [], mateComIds: [],
         questTimeRevision: category === 24 ? load('lib/abyss-time-revision').getAbyssTimeRevision() : null }
     load('routes/api/singleBattleQuest').activeQuests[p.id] = quest
+    // Like insertActiveQuest, a single-player registration is persisted too.
+    if (category !== 7) active.insertPlayerActiveQuestSync(p.id, { ...quest, playerId: p.id })
     if (category === 7) load('multi/settlement-snapshot').registerMultiSettlementSnapshot({
         battleInstanceId: p.playId, playerId: p.id, viewerId: p.viewerId, playId: p.playId,
         roomNumber: 'ticket-test', roomGeneration: 1, activeQuest: quest, participants: [],

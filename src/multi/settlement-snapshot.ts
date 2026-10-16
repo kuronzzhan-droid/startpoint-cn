@@ -26,6 +26,10 @@ export interface MultiSettlementSnapshot {
     lifecycle: MultiBattleLifecycle
     createdAt: number
     expiresAt: number
+    /** Set once this player's rewards for the play have been committed. */
+    settled?: boolean
+    /** The response produced by the settling finish, replayed to duplicates. */
+    settledResponse?: unknown
 }
 
 const snapshots = new Map<string, MultiSettlementSnapshot>()
@@ -134,4 +138,24 @@ export function transitionRoomSettlementSnapshots(
         }
     }
     return transitioned
+}
+
+/**
+ * Settled latch for one player's play. Callers check and set it while holding
+ * the player's persistence queue so at most one finish pays out per snapshot.
+ */
+export function isMultiSettlementSettled(playerId: number, playId: string): boolean {
+    return getMultiSettlementSnapshot(playerId, playId)?.settled === true
+}
+
+export function markMultiSettlementSettled(playerId: number, playId: string): boolean {
+    const snapshot = getMultiSettlementSnapshot(playerId, playId)
+    if (!snapshot) return false
+    snapshot.settled = true
+    return true
+}
+
+export function recordMultiSettlementResponse(playerId: number, playId: string, response: unknown): void {
+    const snapshot = getMultiSettlementSnapshot(playerId, playId)
+    if (snapshot?.settled) snapshot.settledResponse = response
 }

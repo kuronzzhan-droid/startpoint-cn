@@ -153919,6 +153919,168 @@
                 "availableFrom": "2000-01-01 00:00:00",
                 "availableUntil": "2099-12-31 23:59:59",
                 "stock": 5
+            },
+            "9700121": {
+                "costs": [
+                    {
+                        "id": 2370099,
+                        "amount": 15
+                    }
+                ],
+                "rewards": [
+                    {
+                        "type": 4,
+                        "id": 8000116,
+                        "count": 1
+                    }
+                ],
+                "availableFrom": "2000-01-01 00:00:00",
+                "availableUntil": "2099-12-31 23:59:59",
+                "stock": 1
+            },
+            "9700122": {
+                "costs": [
+                    {
+                        "id": 2370099,
+                        "amount": 15
+                    }
+                ],
+                "rewards": [
+                    {
+                        "type": 4,
+                        "id": 8000117,
+                        "count": 1
+                    }
+                ],
+                "availableFrom": "2000-01-01 00:00:00",
+                "availableUntil": "2099-12-31 23:59:59",
+                "stock": 1
+            },
+            "9700123": {
+                "costs": [
+                    {
+                        "id": 2370099,
+                        "amount": 15
+                    }
+                ],
+                "rewards": [
+                    {
+                        "type": 4,
+                        "id": 8000118,
+                        "count": 1
+                    }
+                ],
+                "availableFrom": "2000-01-01 00:00:00",
+                "availableUntil": "2099-12-31 23:59:59",
+                "stock": 1
+            },
+            "9700124": {
+                "costs": [
+                    {
+                        "id": 2370099,
+                        "amount": 15
+                    }
+                ],
+                "rewards": [
+                    {
+                        "type": 4,
+                        "id": 8000119,
+                        "count": 1
+                    }
+                ],
+                "availableFrom": "2000-01-01 00:00:00",
+                "availableUntil": "2099-12-31 23:59:59",
+                "stock": 1
+            },
+            "9700125": {
+                "costs": [
+                    {
+                        "id": 2370099,
+                        "amount": 15
+                    }
+                ],
+                "rewards": [
+                    {
+                        "type": 4,
+                        "id": 8000120,
+                        "count": 1
+                    }
+                ],
+                "availableFrom": "2000-01-01 00:00:00",
+                "availableUntil": "2099-12-31 23:59:59",
+                "stock": 1
+            },
+            "9700126": {
+                "costs": [
+                    {
+                        "id": 2370099,
+                        "amount": 15
+                    }
+                ],
+                "rewards": [
+                    {
+                        "type": 4,
+                        "id": 8000121,
+                        "count": 1
+                    }
+                ],
+                "availableFrom": "2000-01-01 00:00:00",
+                "availableUntil": "2099-12-31 23:59:59",
+                "stock": 1
+            },
+            "9700127": {
+                "costs": [
+                    {
+                        "id": 2370099,
+                        "amount": 15
+                    }
+                ],
+                "rewards": [
+                    {
+                        "type": 4,
+                        "id": 8000122,
+                        "count": 1
+                    }
+                ],
+                "availableFrom": "2000-01-01 00:00:00",
+                "availableUntil": "2099-12-31 23:59:59",
+                "stock": 1
+            },
+            "9700128": {
+                "costs": [
+                    {
+                        "id": 2370099,
+                        "amount": 15
+                    }
+                ],
+                "rewards": [
+                    {
+                        "type": 4,
+                        "id": 8000123,
+                        "count": 1
+                    }
+                ],
+                "availableFrom": "2000-01-01 00:00:00",
+                "availableUntil": "2099-12-31 23:59:59",
+                "stock": 1
+            },
+            "9700129": {
+                "costs": [
+                    {
+                        "id": 2370099,
+                        "amount": 15
+                    }
+                ],
+                "rewards": [
+                    {
+                        "type": 4,
+                        "id": 8000124,
+                        "count": 1
+                    }
+                ],
+                "availableFrom": "2000-01-01 00:00:00",
+                "availableUntil": "2099-12-31 23:59:59",
+                "stock": 1
             }
         }
     },

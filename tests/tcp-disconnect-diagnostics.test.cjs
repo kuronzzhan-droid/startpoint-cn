@@ -24,5 +24,5 @@ test('TCP disconnect diagnostics retain the first cause and use bounded counters
     assert.equal(counters.peer_fin, 1)
     assert.equal(counters.unknown_close, 1)
     assert.equal(counters.socket_error, 0)
-    assert.equal(Object.keys(counters).length, 21)
+    assert.equal(Object.keys(counters).length, 23)
 })

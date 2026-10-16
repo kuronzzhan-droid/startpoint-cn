@@ -28,6 +28,10 @@ class FakeSocket {
         return true
     }
 
+    once() {
+        return this
+    }
+
     destroy() {
         this.destroyed = true
         this.writable = false

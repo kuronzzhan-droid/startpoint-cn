@@ -18,6 +18,17 @@ function fiveBossSignalKey(runId: string, playerId: number): string {
     return `${runId}:${playerId}`
 }
 
+// level_next/finalize are first-write-wins (COALESCE) rows. Once a signal for
+// a member is queued or recorded, repeated frames need no further write.
+// Keyed by the frozen runtime object so entries vanish with the run.
+const acceptedFiveBossSignals = new WeakMap<object, Set<string>>()
+
+function acceptedSignalsFor(runtime: object): Set<string> {
+    let accepted = acceptedFiveBossSignals.get(runtime)
+    if (!accepted) acceptedFiveBossSignals.set(runtime, accepted = new Set())
+    return accepted
+}
+
 /** Wait for proof notifications already accepted from this member's socket. */
 export function waitForFiveBossSignalPersistence(runId: string, playerId: number): Promise<void> {
     return pendingFiveBossSignalWrites.get(fiveBossSignalKey(runId, playerId)) ?? Promise.resolve()
@@ -92,9 +103,16 @@ export function recordFiveBossSignal(
         return false
     }
     if (signal === "scene_ready" && client.fiveBossBattleEntered) return true
-    const runId = room.five_boss_runtime!.runId
+    const runtime = room.five_boss_runtime!
+    const runId = runtime.runId
     const playerId = client.playerId!
     const roomNumber = room.room_number
+    const dedupeKey = `${playerId}:${signal}`
+    if (signal !== "scene_ready") {
+        const accepted = acceptedSignalsFor(runtime)
+        if (accepted.has(dedupeKey)) return true
+        accepted.add(dedupeKey)
+    }
     if (signal === "scene_ready") client.fiveBossBattleEntered = true
     // The TCP handler must only update the in-memory barrier and return. The
     // proof row is durable evidence, but it is not part of the realtime ACK.
@@ -118,17 +136,25 @@ export function recordFiveBossSignal(
                     : signal === "level_next" ? "level_next_recorded" : "finalize_recorded", "tcp")
         })
         .catch(error => {
-            if (signal === "scene_ready") client.fiveBossBattleEntered = false
-            const code = (error as { code?: string }).code ?? "unknown"
-            fiveBossConnectionDiagnostics.socketEvent(client.socket, "signal_rejected", `${signal}:${code}`)
-            fiveBossDiagnostics.report(JSON.stringify(["signal", runId, roomNumber,
-                playerId, signal, code]), () => `[FIVE-BOSS-SIGNAL] rejected=${code}`
-                + ` room=${roomNumber} run=${runId}`
-                + ` player=${playerId} connection=${client.connectionId} signal=${signal}: ${(error as Error).message}`)
+            // This handler terminates the chain: it must never throw, or the
+            // next queued signal and the cleanup below would see a rejection.
+            try {
+                if (signal === "scene_ready") client.fiveBossBattleEntered = false
+                else acceptedFiveBossSignals.get(runtime)?.delete(dedupeKey)
+                const code = (error as { code?: string } | null)?.code ?? "unknown"
+                const message = error instanceof Error ? error.message : String(error)
+                fiveBossConnectionDiagnostics.socketEvent(client.socket, "signal_rejected", `${signal}:${code}`)
+                fiveBossDiagnostics.report(JSON.stringify(["signal", runId, roomNumber,
+                    playerId, signal, code]), () => `[FIVE-BOSS-SIGNAL] rejected=${code}`
+                    + ` room=${roomNumber} run=${runId}`
+                    + ` player=${playerId} connection=${client.connectionId} signal=${signal}: ${message}`)
+            } catch (reportError) {
+                console.error("[FIVE-BOSS-SIGNAL] failed to report rejected signal", reportError)
+            }
         })
     pendingFiveBossSignalWrites.set(key, pending)
     void pending.finally(() => {
         if (pendingFiveBossSignalWrites.get(key) === pending) pendingFiveBossSignalWrites.delete(key)
-    })
+    }).catch(() => {})
     return true
 }
