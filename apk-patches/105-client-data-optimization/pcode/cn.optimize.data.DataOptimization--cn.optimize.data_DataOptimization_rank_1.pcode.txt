@@ -1,0 +1,23 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.data.DataOptimization; label: cn.optimize.data::DataOptimization$/rank|1; body: 3; method: 4
+# code SHA-256: 0f2b4b4a8e578d4ffefa24cd6914c83179c894190e0d510478757e88950e6c93; header: [2, 4, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_2 []
+#0003 ofs0003: convert_s []
+#0004 ofs0004: coerce_s []
+#0005 ofs0005: setlocal_3 []
+#0006 ofs0006: getlocal_1 []
+#0007 ofs0007: getlocal_3 []
+#0008 ofs0008: callproperty [(7, (8, 'http://adobe.com/AS3/2006/builtin'), 'hasOwnProperty'), 1]
+#0009 ofs000b: iffalse [] -> #15
+#0010 ofs000f: getlocal_1 []
+#0011 ofs0010: getlocal_3 []
+#0012 ofs0011: getproperty [(27, ((5, 'cn.optimize.data:DataOptimization'), (26, 'cn.optimize.data:DataOptimization'), (26, 'Object'), (22, 'cn.optimize.data'), (23, 'cn.optimize.data'), (5, 'FilePrivateNS:DataOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0013 ofs0013: convert_i []
+#0014 ofs0014: jump [] -> #17
+#0015 ofs0018: pushbyte [255]
+#0016 ofs001a: coerce_a []
+#0017 ofs001b: returnvalue []
+# exceptions: []

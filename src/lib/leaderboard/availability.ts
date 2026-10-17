@@ -42,16 +42,17 @@ export function getLeaderboardAvailabilitySync(
     competitionKey: string,
     nowMs: number = Date.now(),
 ): LeaderboardAvailability {
-    getDb().prepare(`
-        INSERT OR IGNORE INTO leaderboard_availability (
-            competition_key, enabled, updated_at_ms
-        ) VALUES (?, ?, ?)
-    `).run(competitionKey, competitionKey === "rush:700100:1" ? 0 : 1, nowMs)
-    const row = getDb().prepare(`
+    const read = () => getDb().prepare(`
         SELECT competition_key, enabled, updated_at_ms
         FROM leaderboard_availability
         WHERE competition_key = ?
-    `).get(competitionKey) as RawAvailability
+    `).get(competitionKey) as RawAvailability | undefined
+    const row = read() ?? runPersistenceTransactionSync({ domain: "leaderboard", operation: "initialize_availability" }, () => {
+        getDb().prepare(`INSERT OR IGNORE INTO leaderboard_availability
+            (competition_key, enabled, updated_at_ms) VALUES (?, ?, ?)`)
+            .run(competitionKey, competitionKey === "rush:700100:1" ? 0 : 1, nowMs)
+        return read()!
+    })
     if (row.enabled !== 0 && isLeaderboardDeadlineDueSync(competitionKey, nowMs)) {
         return setLeaderboardAvailabilitySync(competitionKey, false, nowMs).availability
     }

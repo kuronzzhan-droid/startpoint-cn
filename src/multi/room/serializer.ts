@@ -1,9 +1,5 @@
 import * as os from "os"
 import { MultiRoom } from "../types"
-import { sessionManager } from "../state/SessionManager"
-import { getPlayerSync } from "../../data/domains/player"
-import { getPlayerCharacterSync } from "../../data/domains/character"
-import { getFollowRelationSync } from "../../data/domains/follow"
 
 export function getDisplayHost(): string {
     const publicHost = (process.env.SESSION_PUBLIC_HOST || process.env.CN_PUBLIC_HOST || "").trim()
@@ -63,7 +59,28 @@ export interface SerializedRoomConnection {
     is_pickup: boolean | null;
 }
 
-export function serializeRoom(room: MultiRoom, viewerPlayerId?: number): SerializedRoom {
+/** JSON-only owner fields; player, character and follow facts stay in HTTP. */
+export type RoomPublicState = Pick<MultiRoom, "access_token" | "category" | "host_entry_time"
+    | "host_main_character_id" | "host_player_id" | "host_viewer_id" | "is_npc_mode"
+    | "quest_id" | "raising_state" | "room_number" | "share_room_options" | "room_sequence">
+    & { mateCount: number }
+
+export function projectRoomPublicState(room: MultiRoom): RoomPublicState {
+    return {
+        access_token: room.access_token, category: room.category, host_entry_time: room.host_entry_time,
+        host_main_character_id: room.host_main_character_id, host_player_id: room.host_player_id,
+        host_viewer_id: room.host_viewer_id, is_npc_mode: room.is_npc_mode, quest_id: room.quest_id,
+        raising_state: room.raising_state, room_number: room.room_number,
+        share_room_options: room.share_room_options, room_sequence: room.room_sequence,
+        mateCount: room.mates.length,
+    }
+}
+
+export function serializeRoom(room: RoomPublicState | MultiRoom, viewerPlayerId?: number): SerializedRoom {
+    const { getPlayerSync } = require("../../data/domains/player") as typeof import("../../data/domains/player")
+    const { getPlayerCharacterSync } = require("../../data/domains/character") as typeof import("../../data/domains/character")
+    const { getFollowRelationSync } = require("../../data/domains/follow") as typeof import("../../data/domains/follow")
+    const mateCount = "mateCount" in room ? room.mateCount : room.mates.length
     const charId = Number(room.host_main_character_id) || 1;
     const host = getPlayerSync(room.host_player_id)
     const hostCharacter = getPlayerCharacterSync(room.host_player_id, charId)
@@ -84,18 +101,19 @@ export function serializeRoom(room: MultiRoom, viewerPlayerId?: number): Seriali
         room_number: room.room_number,
         share_room_options: room.share_room_options,
         room_sequence: room.room_sequence,
-        room_member_count: room.mates.length,
+        room_member_count: mateCount,
         // Required by client parser (see SerializedRoom).
         establisher_character: charId,
         establisher_character_evolution_img_level: hostCharacter?.evolutionLevel ?? 0,
         establisher_follow: followState,
         establisher_name: host?.name || `Player${room.host_viewer_id}`,
         is_pickup: false,
-        mates: room.mates.length,
+        mates: mateCount,
     };
 }
 
-export function serializeRoomConnection(room: MultiRoom): SerializedRoomConnection {
+export function serializeRoomConnection(room: Pick<RoomPublicState, "category" | "host_entry_time"
+    | "quest_id" | "raising_state" | "room_number" | "room_sequence" | "share_room_options">): SerializedRoomConnection {
     const displayHost = getDisplayHost();
     const sessionPort = parseInt(process.env.SESSION_PORT || "8003");
     return {

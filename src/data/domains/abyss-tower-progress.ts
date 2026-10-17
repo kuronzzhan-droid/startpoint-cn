@@ -63,8 +63,8 @@ function towerNeedsReset(playerId: number, eventId: number, revision: string): b
 export function refreshPlayerAbyssTowerSync(playerId: number, eventId: number): boolean {
     const revision = getAbyssTowerResetRevision(eventId)
     if (revision === null) return false
-    // Read first: an up-to-date tower needs no write transaction. The check
-    // is repeated inside the transaction before anything is reset.
+    // Avoid taking a write lock for an unchanged tower. Recheck under the
+    // transaction before resetting: another writer may have refreshed it.
     if (!towerNeedsReset(playerId, eventId, revision)) return false
     const db = getDb()
     return runPersistenceTransactionSync({ domain: "event", playerId, operation: "refresh_abyss_tower" }, () => {
@@ -80,8 +80,8 @@ export function refreshPlayerAbyssTowerSync(playerId: number, eventId: number): 
 }
 
 export function refreshPlayerAbyssTowersSync(playerId: number): void {
-    // Read-only check first; the common case (every tower current) opens no
-    // write transaction. Otherwise all towers reset atomically as before.
+    // Preserve the atomic batch when any tower is stale; the common read-only
+    // path needs neither a write transaction nor a nested savepoint.
     const needed = ABYSS_EVENT_IDS.some(eventId => {
         const revision = getAbyssTowerResetRevision(eventId)
         return revision !== null && towerNeedsReset(playerId, eventId, revision)

@@ -1,3 +1,4 @@
+import { getPlayerClientExpTime } from "../../lib/player-time-compat"
 // Handles the insertion of mana into characters.
 
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
@@ -131,7 +132,7 @@ const routes = async (fastify: FastifyInstance) => {
             "data": {
                 "user_info": {
                     "exp_pool": afterExp,
-                    "exp_pooled_time": getServerTime(player.expPooledTime)
+                    "exp_pooled_time": getPlayerClientExpTime(player)
                 },
                 "character_list": [
                     {
@@ -229,7 +230,7 @@ const routes = async (fastify: FastifyInstance) => {
                     "item_list": getPlayerItemsSync(playerId),
                     "user_info": {
                         "exp_pool": player.expPool,
-                        "exp_pooled_time": getServerTime(player.expPooledTime)
+                        "exp_pooled_time": getPlayerClientExpTime(player)
                     },
                     "mail_arrived": false
                 }
@@ -268,7 +269,7 @@ const routes = async (fastify: FastifyInstance) => {
                 "item_list": items,
                 "user_info": {
                     "exp_pool": newExpPool,
-                    "exp_pooled_time": getServerTime(player.expPooledTime)
+                    "exp_pooled_time": getPlayerClientExpTime(player)
                 },
                 "mail_arrived": false
             }
@@ -359,7 +360,7 @@ const routes = async (fastify: FastifyInstance) => {
             "character_list": rewardResult.character_list,
             "user_info": {
                 "exp_pool": rewardResult.exp_pool,
-                "exp_pooled_time": getServerTime(expPooledTime)
+                "exp_pooled_time": getPlayerClientExpTime({ expPooledTime, timeOffset: getPlayerSync(playerId)?.timeOffset })
             },
         }
         settleDegreeMissionResponse(playerId, viewerId, responseData, undefined, [5, 44], [characterId])

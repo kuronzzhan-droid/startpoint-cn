@@ -12,7 +12,7 @@ test('winning runtime pools retain eligibility and exact pickup rates across mir
         assert.equal(by.size,rows.length)
         for(const cid of fresh) {
             assert.equal(by.get(cid).odds,weight)
-            assert.equal(by.get(cid).isExchangeable,id===990002)
+            assert.equal(by.get(cid).isExchangeable,true)
             assert.equal(content.serverCharacters[cid].rarity,5)
             assert.ok(content.cdnCharacters[cid]&&content.cdnCharacterTexts[cid]&&content.serverManaNodes[cid])
         }

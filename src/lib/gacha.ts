@@ -504,7 +504,8 @@ export function drawBoxGachaSync(
             }
             case BoxGachaRewardType.PASS_CARD_POINT: {
                 // Pass-card points require an event scope unavailable in box draws.
-                break;
+                // Abort the surrounding settlement before charging for an ungrantable reward.
+                throw new Error("Box gacha pass-card point rewards are unsupported")
             }
             case BoxGachaRewardType.CHARACTER: {
                 const characterId = (reward as BoxGachaIdReward).id

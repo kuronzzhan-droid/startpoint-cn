@@ -1,3 +1,4 @@
+import { getPlayerBusinessDateSync, getPlayerBusinessOffsetSync } from "../../lib/player-time-compat"
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { validatePlayerField, VALID_CHARACTER_IDS, VALID_ITEM_IDS, MAX_INT } from "./validation";
 import { wantsJson } from "./http";
@@ -28,10 +29,13 @@ import { cleanupPlayerImportBackups, createPlayerImportSnapshotBackup } from "..
 import {
     DEFAULT_PLAYER_SAVE_EXPORT_MAX_BYTES,
     exportPlayerSaveInWorker,
+    closePlayerSaveExports,
     PlayerSaveExportError,
 } from "../../lib/player-save-export";
 import { hijackUnavailableReply } from "../../lib/http-reply";
-import { runPersistenceTransactionSync } from "../../lib/persistence-coordinator";
+import { runPersistenceTransaction, runPersistenceTransactionSync } from "../../lib/persistence-coordinator";
+import { ServerClosingError } from "../../lib/shutdown-state";
+import { isPersistenceAdmissionError } from "../../lib/persistence-admission";
 
 interface SaveQuery {
     id: string | undefined
@@ -58,6 +62,7 @@ function applyPlayerImportBackupRetention(directory: string) {
 }
 
 const routes = async (fastify: FastifyInstance) => {
+    fastify.addHook("onClose", async () => { await closePlayerSaveExports(); });
     fastify.get("/", async (request: FastifyRequest, reply: FastifyReply) => {
         const { page, perPage } = request.query as GetPlayersQuery
         const parsedPage = page === undefined ? 0 : Number.parseInt(page)
@@ -183,6 +188,7 @@ const routes = async (fastify: FastifyInstance) => {
             return reply.type("application/json").send(exported.payload)
         } catch (error) {
             if (hijackUnavailableReply(request, reply)) return reply
+            if (error instanceof ServerClosingError) throw error
             if (error instanceof PlayerSaveExportError) {
                 if (error.code === "busy") return reply.status(429).send({ error: error.message })
                 if (error.code === "too-large") return reply.status(413).send({ error: `导出失败：${error.message}` })
@@ -207,7 +213,7 @@ const routes = async (fastify: FastifyInstance) => {
             : reply.redirect(`/player/${id}?error=${encodeURIComponent(msg)}`)
         if (isNaN(playerId)) return json ? reply.status(400).send({ error: "无效的玩家 ID" }) : reply.redirect("/player");
 
-        let safetyBackup: { name: string; directory: string } | null = null
+        const importState = { safetyBackup: null as { name: string; directory: string } | null }
         let backupCleanup = {
             retainedBackups: null as number | null,
             removedBackups: 0,
@@ -234,30 +240,39 @@ const routes = async (fastify: FastifyInstance) => {
                 return fail("仅支持 V2 完整存档；旧版 V1 存档与当前数据库结构不兼容")
             }
             const snapshot = validatePlayerSaveSnapshotV2Sync(parsed)
-            const rollbackSnapshot = createPlayerSaveSnapshotV2Sync(playerId)
-            safetyBackup = createPlayerImportSnapshotBackup(playerId, rollbackSnapshot, {
-                sourceSnapshotVersion: 2,
-                sourcePlayerId: snapshot.playerId,
-            })
-            backupCleanup = applyPlayerImportBackupRetention(safetyBackup.directory)
-            const restored = restorePlayerSaveSnapshotV2Sync(snapshot, playerId, {
-                includeArchiveHistory: true,
+            // Uploads do not reserve write admission. Capture the target and
+            // backup only once the actual coordinated write is accepted.
+            const imported = await runPersistenceTransaction({
+                domain: "admin", playerId, operation: "import_save",
+            }, () => {
+                const rollbackSnapshot = createPlayerSaveSnapshotV2Sync(playerId)
+                const safetyBackup = createPlayerImportSnapshotBackup(playerId, rollbackSnapshot, {
+                    sourceSnapshotVersion: 2,
+                    sourcePlayerId: snapshot.playerId,
+                })
+                importState.safetyBackup = safetyBackup
+                backupCleanup = applyPlayerImportBackupRetention(safetyBackup.directory)
+                const restored = restorePlayerSaveSnapshotV2Sync(snapshot, playerId, {
+                    includeArchiveHistory: true,
+                })
+                return { restored, backup: safetyBackup }
             })
             if (json) return reply.status(200).send({
                 ok: true,
                 playerId,
                 snapshotVersion: 2,
-                backup: `.database/admin-backups/${safetyBackup.name}`,
+                backup: `.database/admin-backups/${imported.backup.name}`,
                 ...backupCleanup,
-                restored,
+                restored: imported.restored,
             })
             return reply.redirect(`/player/${id}`)
         } catch (error: any) {
+            if (error instanceof ServerClosingError || isPersistenceAdmissionError(error)) throw error
             if (error?.code === "FST_REQ_FILE_TOO_LARGE") {
                 return fail(`存档超过 ${maxSaveUploadBytes / 1024 / 1024} MB 安全上限`, 413)
             }
-            const backupHint = safetyBackup
-                ? `；安全备份：.database/admin-backups/${safetyBackup.name}`
+            const backupHint = importState.safetyBackup
+                ? `；安全备份：.database/admin-backups/${importState.safetyBackup.name}`
                 : ""
             const cleanupHint = backupCleanup.backupCleanupError
                 ? `；旧回滚备份清理失败：${backupCleanup.backupCleanupError}`
@@ -295,8 +310,8 @@ const routes = async (fastify: FastifyInstance) => {
             // A manually assigned balance is an exact snapshot. Start its
             // regeneration from the current virtual time instead of retaining
             // a checkpoint copied from another clock position.
-            extra.expPooledTime = getServerDate()
-            extra.timeOffset = getTimeOffset() ?? 0
+            extra.expPooledTime = getPlayerBusinessDateSync(playerId)
+            extra.timeOffset = getPlayerBusinessOffsetSync(playerId)
         }
 
         try {

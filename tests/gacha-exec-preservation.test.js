@@ -100,6 +100,23 @@ test('single and ten-pull currency costs and equipment grants remain consistent'
     }
 });
 
+test('legacy pools keep daily paid summons and reject repeats without further debit', async () => {
+    const p = await player();
+    for (const [gid, cost] of [[1, 50], [3, 25]]) {
+        const before = players.getPlayerSync(p.id);
+        const result = data(await request(p, gid, 2, 5));
+        assert.equal(players.getPlayerSync(p.id).vmoney, before.vmoney - cost);
+        assert.equal(players.getPlayerSync(p.id).freeVmoney, before.freeVmoney);
+        assert.equal((gid === 3 ? result.draw_equipment : result.draw).length, 1);
+        assert.equal(result.user_info.vmoney, before.vmoney - cost);
+        const after = snapshot(p.id);
+        const repeat = await request(p, gid, 2, 5);
+        assert.equal(repeat.statusCode, 400);
+        assert.equal(repeat.json().message, 'Already did daily paid summon.');
+        assert.deepEqual(snapshot(p.id), after);
+    }
+});
+
 test('gacha still repairs eligible old characters even when they were not drawn', async () => {
     const p = await player();
     for (const id of [211002, 341005]) {

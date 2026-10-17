@@ -1,9 +1,11 @@
+import { getPlayerClientExpTime, getPlayerClientMaintenanceDateSync } from "../../lib/player-time-compat"
 import { clientSerializeDate } from "./date"
 import { getAttentionConfig } from "../../multi/attention-config"
 import { serializeBondTokenStatuses, serializePartyGroupList, serializeGachaCampaign, serializeRushEvent } from "./serialize-entities"
 import { ClientPlayerData, DailyChallengePointListEntry, MergedPlayerData, PartyCategory, Player, PlayerBoxGacha, PlayerCharacter, PlayerCharacterBondToken, PlayerDrawnQuest, PlayerEquipment, PlayerGachaCampaign, PlayerGachaInfo, PlayerMultiSpecialExchangeCampaign, PlayerParty, PlayerPartyGroup, PlayerQuestProgress, PlayerRushEvent, PlayerRushEventPlayedParty, PlayerStartDashExchangeCampaign, RushEventBattleType, UserBoxGacha, UserCharacter, UserCharacterBondTokenStatus, UserEquipment, UserGachaCampaign, UserMultiSpecialExchangeCampaignList, UserPartyGroup, UserPartyGroupTeam, UserQuestProgress, UserRushEvent, UserRushEventPlayedParty, UserRushEventPlayedPartyList, UserTutorial } from "../types"
 import { kIdToBusinessCode } from "../codeMap"
 import { isStartTutorialActive } from "../../lib/start-tutorial-state"
+import { resolveMultiSpecialExchangeCampaign } from "../../lib/multi-special-exchange"
 const getServerTime = (date: Date): number => Math.floor(date.getTime() / 1000)
 export interface PlayerSerializationContext {
     assetVersion: string; timeOffset: number; mailArrived: boolean
@@ -185,7 +187,7 @@ export function serializePlayerSnapshot(
             "transition_state": playerData.transitionState,
             "role": playerData.role,
             "name": playerData.name,
-            "last_login_time": clientSerializeDate(playerData.lastLoginTime),
+            "last_login_time": clientSerializeDate(getPlayerClientMaintenanceDateSync(playerData.id, playerData.lastLoginTime)),
             "comment": playerData.comment,
             "vmoney": playerData.vmoney,
             "free_vmoney": playerData.freeVmoney,
@@ -193,7 +195,7 @@ export function serializePlayerSnapshot(
             "star_crumb": playerData.starCrumb,
             "bond_token": playerData.bondToken,
             "exp_pool": playerData.expPool,
-            "exp_pooled_time": getServerTime(playerData.expPooledTime),
+            "exp_pooled_time": getPlayerClientExpTime(playerData),
             "leader_character_id": playerData.leaderCharacterId != null ? kIdToBusinessCode(playerData.leaderCharacterId) : 0,
             "party_slot": playerData.partySlot,
             "degree_id": playerData.degreeId ?? 1,
@@ -293,7 +295,9 @@ export function serializePlayerSnapshot(
                 "term_index": campaign.termIndex
             }
         }),
-        "multi_special_exchange_campaign_list": toSerialize.multiSpecialExchangeCampaignList.map(campaign => {
+        "multi_special_exchange_campaign_list": toSerialize.multiSpecialExchangeCampaignList.flatMap(saved => {
+            const campaign = resolveMultiSpecialExchangeCampaign(saved, id => toSerialize.itemList[String(id)] ?? 0)
+            if (!campaign) return []
             const serialized: UserMultiSpecialExchangeCampaignList = {
                 "campaign_id": campaign.campaignId,
                 "status": campaign.status
@@ -301,7 +305,7 @@ export function serializePlayerSnapshot(
             if (campaign.ticketItemId !== null && campaign.ticketItemId !== undefined) {
                 serialized.ticket_item_id = campaign.ticketItemId
             }
-            return serialized
+            return [serialized]
         }),
         "associate_token": "associate_token",
         "config": {

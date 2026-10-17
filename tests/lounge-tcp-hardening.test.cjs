@@ -194,7 +194,11 @@ test('five-boss level transition signals are written once per member and failure
         autoplayModeByPlayerId: {}, partyCharacterIdsByPlayerId: {},
         battleIdentityByViewerId: { 21: { playerId: 21, remoteAddress: '127.0.0.1', connectionId: 'cid-21' } },
     }
-    const room = { room_number: '880004', five_boss_runtime: runtime }
+    const roomCoordinator = require('../out/multi/coordinator/embedded').embeddedMultiCoordinator
+    const room = { room_number: '880004', category: 2, quest_id: 1099001, mates: [], lobby_generation: 0,
+        lifecycle: roomCoordinator.createLifecycle(), member_viewer_ids: [21], member_player_ids: { 21: 21 },
+        expected_real_viewer_ids: [21], five_boss_runtime: runtime }
+    assert.equal(roomCoordinator.commitBattleStart(room).ok, true)
     const client = sessionManager.createClient(new FakeSocket(), 21, room.room_number, 'cid-21', 21)
     client.isBattle = true
 
@@ -236,6 +240,8 @@ test('five-boss level transition signals are written once per member and failure
         await tick()
         assert.deepEqual(unhandled, [])
     } finally {
+        await fiveBossRuntime.waitForFiveBossSignalPersistence(runtime.runId, 21)
+        require('../out/multi/battle-telemetry').battleTelemetry.end(room.room_number, 'fixture_complete')
         process.off('unhandledRejection', onUnhandled)
     }
 })
@@ -266,6 +272,7 @@ test('a StartBattle roster seat can open its battle socket after its lobby socke
     const { handleHandshake } = require('../out/multi/tcp/handshake')
     const roomNumber = '880005'
     const room = { room_number: roomNumber, lobby_generation: 1, category: 1, quest_id: 1,
+        expected_real_viewer_ids:[51],member_viewer_ids:[51],member_player_ids:{51:510},
         lifecycle: { instanceId: 'i', battleSessionId: 'b', phase: 'BATTLE' } }
     t.mock.method(rooms, 'getRoom', number => number === roomNumber ? room : undefined)
     const lobbyClient = sessionManager.createClient(new FakeSocket(), 51, roomNumber, 'lobby-cid-51', 510)

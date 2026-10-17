@@ -62,7 +62,7 @@ test('兑换资格修复通过实际路由结算，并保留积分和池边界�
         for(const [gid,cid,amount,message] of [
             [219,261089,249,'Not enough exchange points.'],
             [1,261089,250,'Character is not exchangeable from this gacha.'],
-            [990001,139994,250,'Character is not exchangeable from this gacha.'],
+            [990001,119992,250,'Character is not exchangeable from this gacha.'],
         ]){
             points(gid,amount);
             const before=getPlayerCharacterSync(player.id,cid);

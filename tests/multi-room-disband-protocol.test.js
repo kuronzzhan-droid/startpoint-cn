@@ -73,6 +73,7 @@ test("room disband lets notified lobby sockets close themselves", t => {
         if (request === "../room/manager"
             && parent?.filename.endsWith("SessionManager.js")) {
             return {
+                getRoom: () => undefined,
                 disbandRoom(actualRoomNumber, reason) {
                     disbandCall = { roomNumber: actualRoomNumber, reason }
                     return true
@@ -127,7 +128,7 @@ test("room disband closes a lobby socket when its final frame cannot be sent", t
     Module._load = function (request, parent, isMain) {
         if (request === "../room/manager"
             && parent?.filename.endsWith("SessionManager.js")) {
-            return { disbandRoom: () => true }
+            return { getRoom: () => undefined, disbandRoom: () => true }
         }
         return originalLoad.call(this, request, parent, isMain)
     }

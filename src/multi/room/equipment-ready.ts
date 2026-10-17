@@ -1,9 +1,13 @@
-import { getPlayerSync } from "../../data/domains/player"
-import { getMode15ExclusiveGlobalPartyItemsSync, getMode15ExclusiveItemIds,
-    isMode15EquipmentAllowedQuest } from "../../lib/mode15-optional"
+import { isRealtimeOwnerChild } from "../coordinator/runtime-role"
+import { getPlayerBusinessFacts, getQuestBusinessPolicy, refreshRealtimePlayerFacts } from "../coordinator/business-facts"
+import { exclusivePartyItems } from "../npc/equipment-policy"
 import type { MultiRoom } from "../types"
 import { sessionManager, type SessionClient } from "../state/SessionManager"
 import { embeddedMultiCoordinator } from "../coordinator/embedded"
+function isMode15EquipmentAllowedQuest(category: number, questId: number): boolean {
+    return isRealtimeOwnerChild() ? getQuestBusinessPolicy(category, questId)?.equipmentAllowed === true
+        : require("../../lib/mode15-optional").isMode15EquipmentAllowedQuest(category, questId)
+}
 
 function getRoom(roomNumber: string): MultiRoom | undefined {
     return (require("./manager") as typeof import("./manager")).getRoom(roomNumber)
@@ -11,26 +15,9 @@ function getRoom(roomNumber: string): MultiRoom | undefined {
 
 export const EQUIPMENT_IDLE_MS = 30_000
 
-function unwrap(value: any): any {
-    if (!Array.isArray(value)) return value
-    return value[0] === 0 ? value[1] : null
-}
-
 /** Accept both the TCP Option encoding and the HTTP/plain party encoding. */
 export function exclusiveWirePartyItems(party: any): number[] {
-    if (!party || typeof party !== "object") return []
-    const ids: unknown[] = []
-    for (const field of ["equipments", "equipmentIds", "equipment_ids",
-        "abilitySoulIds", "ability_soul_ids"]) {
-        if (!Array.isArray(party[field])) continue
-        for (const raw of party[field].slice(0, 3)) {
-            const item = unwrap(raw)
-            ids.push(item && typeof item === "object"
-                ? item.equipmentId ?? item.equipment_id ?? item.abilitySoulId ?? item.id
-                : item)
-        }
-    }
-    return getMode15ExclusiveItemIds(ids)
+    return exclusivePartyItems(party)
 }
 
 /** AI parties belong to the server, so normalize them before publishing a roster. */
@@ -53,14 +40,19 @@ export function selectedPartyId(client: SessionClient): number {
     // HTTP /party/edit can finish before TCP ChangeParty, while TCP can arrive
     // before the deferred player.partySlot write. Explicit changes win.
     return client.equipmentSelectedPartyId
-        ?? Number(getPlayerSync(Number(client.playerId))?.partySlot
+        ?? Number((isRealtimeOwnerChild() ? getPlayerBusinessFacts(Number(client.playerId))?.partyId
+            : require("../../data/domains/player").getPlayerSync(Number(client.playerId))?.partySlot)
             || client.yourself?.currentPartyId || 1)
 }
 
 export function hasRestrictedEquipment(room: MultiRoom, client: SessionClient): boolean {
     if (isMode15EquipmentAllowedQuest(room.category, room.quest_id)) return false
     if (exclusiveWirePartyItems(client.yourself?.party).length) return true
-    return getMode15ExclusiveGlobalPartyItemsSync(
+    if (isRealtimeOwnerChild()) {
+        const facts = getPlayerBusinessFacts(Number(client.playerId), { category: room.category, questId: room.quest_id, partyId: selectedPartyId(client) })
+        return !facts || facts.restrictedEquipment
+    }
+    return require("../../lib/mode15-optional").getMode15ExclusiveGlobalPartyItemsSync(
         Number(client.playerId), 1, selectedPartyId(client),
     ).length > 0
 }
@@ -159,9 +151,21 @@ export function recordEquipmentPartyChange(client: SessionClient, partyId?: numb
 /** Freeze the checked selection so late lobby edits cannot change this battle. */
 export function freezeEquipmentSelections(room: MultiRoom, generation = room.lobby_generation): void {
     room.equipmentPartyIds = {}
+    room.npcPartySnapshots = {}
     for (const client of sessionManager.getClientsInRoom(room.room_number, generation)) {
         if (client.isBattle || !client.playerId || client.enterData === null) continue
-        room.equipmentPartyIds[client.viewerId] = selectedPartyId(client)
+        const partyId = selectedPartyId(client)
+        room.equipmentPartyIds[client.viewerId] = partyId
+        try {
+            const snapshot = isRealtimeOwnerChild()
+                ? getPlayerBusinessFacts(Number(client.playerId), { category: room.category, questId: room.quest_id, partyId })?.questNpcPartySnapshot
+                : require("../npc/quest-party-snapshot").captureQuestNpcPartySnapshot(Number(client.playerId), room.category,
+                    room.quest_id, partyId, client.yourself?.party)
+            if (snapshot) room.npcPartySnapshots[client.viewerId] = snapshot
+        } catch (error) {
+            // History is optional; a capture failure must not reject the battle.
+            console.error("[MULTI] NPC clear-party capture failed", error)
+        }
         clearEquipmentBlock(client)
     }
 }
@@ -170,12 +174,15 @@ export async function notifyEquipmentPartySaved(playerId: number, changedPartyId
     selectionChanged: boolean): Promise<void> {
     if (!selectionChanged && !changedPartyIds.length) return
     for (const client of sessionManager.getLobbyClientsForPlayer(playerId)) {
+        const initialRoom = getRoom(client.roomNumber)
+        if (!initialRoom) continue
+        const facts = await refreshRealtimePlayerFacts(playerId, { category: initialRoom.category, questId: initialRoom.quest_id })
         await embeddedMultiCoordinator.enqueueRoomCommand(client.roomNumber, () => {
             const room = getRoom(client.roomNumber)
             if (!room || room.lifecycle.phase !== "LOBBY"
                 || client.roomGeneration !== room.lobby_generation
                 || sessionManager.getClient(client.viewerId, client.roomNumber) !== client) return
-            const selected = getPlayerSync(playerId)?.partySlot
+            const selected = facts.partyId
             if (selected === undefined || (!selectionChanged && !changedPartyIds.includes(selected))) return
             recordEquipmentPartyChange(client, selected)
             // Do not replace the client's wire party with a DB edit. Wait for

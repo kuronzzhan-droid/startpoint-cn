@@ -825,6 +825,7 @@ export interface RawPlayerActiveQuest {
     started_at_ms: number | null
     party_slot: number | null
     quest_time_revision?: string | null
+    clock_version?: number
 }
 
 export interface PlayerActiveQuest {
@@ -844,4 +845,5 @@ export interface PlayerActiveQuest {
     startedAtMs: number | null
     partySlot?: number | null
     questTimeRevision?: string | null
+    clockVersion?: number
 }

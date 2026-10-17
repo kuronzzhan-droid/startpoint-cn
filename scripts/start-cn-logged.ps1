@@ -17,17 +17,6 @@ $configuredPortText = & $nodeExecutable "--env-file=$envFilePath" -e "process.st
 if ($LASTEXITCODE -ne 0 -or $configuredPortText -notmatch '^\d+$') { throw "Cannot read CN_LISTEN_PORT from server configuration." }
 $configuredPort = [int]$configuredPortText
 if ($configuredPort -lt 1 -or $configuredPort -gt 65535) { throw "CN_LISTEN_PORT is out of range." }
-$timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-$stdoutPath = Join-Path $logDirectory "cn-server-$timestamp.stdout.log"
-$stderrPath = Join-Path $logDirectory "cn-server-$timestamp.stderr.log"
-
-New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
-
-$cutoff = (Get-Date).AddDays(-$RetentionDays)
-Get-ChildItem -LiteralPath $logDirectory -File -Filter "cn-server-*.log" |
-    Where-Object { $_.LastWriteTime -lt $cutoff } |
-    Remove-Item -Force
-
 $listener = Get-NetTCPConnection -LocalPort $configuredPort -State Listen -ErrorAction SilentlyContinue |
     Select-Object -First 1
 if ($listener) {
@@ -36,25 +25,33 @@ if ($listener) {
 
 $process = Start-Process `
     -FilePath $nodeExecutable `
-    -ArgumentList "--env-file=.env", "out/cn-server.js" `
+    -ArgumentList "--env-file=.env", "scripts/run-cn-logged.cjs", "--retention-days", "$RetentionDays" `
     -WorkingDirectory $projectRoot `
-    -RedirectStandardOutput $stdoutPath `
-    -RedirectStandardError $stderrPath `
     -WindowStyle Hidden `
     -PassThru
 
-$currentLogInfo = [ordered]@{
-    pid = $process.Id
-    startedAt = (Get-Date).ToString("o")
-    stdout = $stdoutPath
-    stderr = $stderrPath
-    temp = $tempDirectory
+# The receipt contains the game PID, not the logger PID, for maintenance tools.
+$receiptPath = Join-Path $logDirectory "cn-server-current.json"
+$currentLogInfo = $null
+$deadline = (Get-Date).AddSeconds(10)
+while ((Get-Date) -lt $deadline) {
+    if ($process.HasExited) { throw "Log collector exited before server startup. Check .logs." }
+    if (Test-Path -LiteralPath $receiptPath) {
+        try {
+            $candidate = Get-Content -Raw -LiteralPath $receiptPath | ConvertFrom-Json
+            if ($candidate.loggerPid -eq $process.Id -and $candidate.pid) {
+                $currentLogInfo = $candidate
+                break
+            }
+        } catch {
+            # Retry a transient read while the receipt is replaced atomically.
+        }
+    }
+    Start-Sleep -Milliseconds 100
 }
-$currentLogInfo |
-    ConvertTo-Json |
-    Set-Content -LiteralPath (Join-Path $logDirectory "cn-server-current.json") -Encoding utf8
+if (!$currentLogInfo) { throw "No startup receipt within 10 seconds; inspect logger PID $($process.Id) before retrying." }
 
-Write-Output "CN StarPoint started. PID=$($process.Id)"
+Write-Output "CN StarPoint launched. PID=$($currentLogInfo.pid) loggerPID=$($process.Id)"
 Write-Output "temp: $tempDirectory"
-Write-Output "stdout: $stdoutPath"
-Write-Output "stderr: $stderrPath"
+Write-Output "log: $($currentLogInfo.log)"
+Write-Output "Rotation: every 4 hours at 00/04/08/12/16/20 (UTC+08:00)."

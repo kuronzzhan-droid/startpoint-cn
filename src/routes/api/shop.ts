@@ -384,10 +384,6 @@ const routes = async (fastify: FastifyInstance) => {
             })
         }
 
-        // build rewards array (depends only on master data and request amount)
-        const rewards: Reward[] = []
-        appendShopItemRewards(rewards, shopItemData, purchaseAmount)
-
         type BuyRejection = { ok: false, status: 400 | 500, message: string }
         const reject = (message: string, status: 400 | 500 = 400): BuyRejection => ({ ok: false, status, message })
         const isEnhancementShop = shopType === ShopType.TREASURE_EQUIPMENT
@@ -401,6 +397,10 @@ const routes = async (fastify: FastifyInstance) => {
         }, () => {
             const player = getPlayerSync(playerId)
             if (player === null) return reject("No players bound to account.", 500)
+            const now = getServerDate()
+            if (shopType === ShopType.EVENT_ITEM && !isShopItemAvailable(shopItemData, now)) {
+                return reject("Event shop item is not currently available.")
+            }
 
             if (degreeIds.some(degreeId => hasPlayerDegreeSync(playerId, degreeId))) {
                 return reject("Player already owns this degree.")
@@ -421,7 +421,6 @@ const routes = async (fastify: FastifyInstance) => {
                 grantedLevelCount: number
             } | null = null
             if (isEnhancementShop) {
-                const now = getServerDate()
                 if (!isShopItemAvailable(shopItemData, now)) return reject("Enhancement item is not currently available.")
 
                 const equipmentId = shopItemData.equipmentId
@@ -581,6 +580,11 @@ const routes = async (fastify: FastifyInstance) => {
                     balances: { freeVmoney, vmoney, freeMana, paidMana, bondTokens },
                 }
             }
+
+            // Character rewards expand per purchase. Reject invalid stock/cost
+            // requests before constructing that potentially large array.
+            const rewards: Reward[] = []
+            appendShopItemRewards(rewards, shopItemData, purchaseAmount)
 
             // Costs, ordinary rewards, title ownership and stock history must commit
             // together. A title product must never charge the player and then fail

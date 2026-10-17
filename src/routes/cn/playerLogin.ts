@@ -1,6 +1,11 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify"
+import { createPlayerLoginRateLimiter } from "../../lib/player-login-rate-limit"
+import { accountCreationBudget } from "../../lib/account-creation-budget"
+import { requestRoutePath } from "../../lib/request-route-path"
+import { isPersistenceAdmissionError } from "../../lib/persistence-admission"
+import { getDb } from "../../data/db"
 import { generateDataHeaders } from "../../utils"
-import { bindPlayerLogin, createPlayerLoginCode, loginPlayer, logoutPlayer,
+import { bindPlayerLogin, createPlayerLoginCode, loginPlayerAsync, logoutPlayer,
     PlayerLoginError, previewPlayerClaim, readPlayerLoginSession,
     registerPlayerLogin, resetPlayerLoginPassword, resumePlayerLogin, readPlayerLoginAccess,
     rememberVerifiedPlayerLogin, finishPlayerLoginSwitch, previewLocalPlayerClaim,
@@ -8,8 +13,8 @@ import { bindPlayerLogin, createPlayerLoginCode, loginPlayer, logoutPlayer,
 
 export function installPlayerLoginGuard(app: FastifyInstance): void {
     app.addHook("preHandler", async (request, reply) => {
-        if (!request.url.startsWith("/api/index.php/")) return
-        const path = request.url.split("?")[0]
+        const path = requestRoutePath(request)
+        if (!path.startsWith("/api/index.php/")) return
         const body = (request.body && typeof request.body === "object" ? request.body : {}) as Record<string, unknown>
         const supplied = request.headers["x-sp-session"]
         const viewer = body.viewer_id || body.keychain
@@ -37,29 +42,26 @@ export function installPlayerLoginGuard(app: FastifyInstance): void {
 }
 
 export default async function playerLoginRoutes(app: FastifyInstance): Promise<void> {
-    const buckets = new Map<string, { n: number; reset: number }>()
-    let nextSweep = 0
-    function limited(request: FastifyRequest, restoring: boolean): boolean {
-        const now = Date.now(), key = request.ip + (restoring ? ":session" : ":password")
-        if (now >= nextSweep) {
-            for (const [id, bucket] of buckets) if (bucket.reset <= now) buckets.delete(id)
-            nextSweep = now + 60000
-        }
-        if (!buckets.has(key) && buckets.size >= 4096) return true
-        const existing = buckets.get(key)
-        const bucket = existing && existing.reset > now ? existing : { n: 0, reset: now + 60000 }
-        bucket.n++; buckets.set(key, bucket)
-        return bucket.n > (restoring ? 120 : 30)
-    }
-    function route(path: string, handler: (body: Record<string, unknown>, req: FastifyRequest) => unknown, admin = false) {
+    const limited = createPlayerLoginRateLimiter()
+    const creation = accountCreationBudget(app)
+    function route(path: string, handler: (body: Record<string, unknown>, req: FastifyRequest, reply: FastifyReply) => unknown, admin = false) {
         app.post(path, { bodyLimit: 4096 }, async (request: FastifyRequest, reply: FastifyReply) => {
             reply.header("cache-control", "no-store")
-            if (!admin && limited(request, path.endsWith("/resume") || path.endsWith("/logout"))) return { ok: false, code: "RATE_LIMITED", message: "操作较频繁，请稍后再试。" }
+            const input = request.body
+            const body = input && typeof input === "object" && !Array.isArray(input) ? input as Record<string, unknown> : {}
+            const restoring = path.endsWith("/resume") || path.endsWith("/logout")
+            // New-account admission has its own source/global budget; attempts
+            // to register must not consume existing players' login/bind quotas.
+            if (!admin && path !== "/player-auth/register" && limited(request.ip, path, body, restoring ? readPlayerLoginSession(body.token)?.account_id ?? null : null)) return { ok: false, code: "RATE_LIMITED", message: "操作较频繁，请稍后再试。" }
             try {
                 const body = request.body
                 if (!body || typeof body !== "object" || Array.isArray(body)) throw new PlayerLoginError("请求内容无效。")
-                return { ok: true, data: handler(body as Record<string, unknown>, request) }
+                return { ok: true, data: await handler(body as Record<string, unknown>, request, reply) }
             } catch (error) {
+                if (isPersistenceAdmissionError(error) || (error instanceof PlayerLoginError && error.code === "SERVER_BUSY")) {
+                    reply.header("retry-after", "1")
+                    return { ok: false, code: "SERVER_BUSY", message: "服务器写入繁忙，请稍后重试。" }
+                }
                 // Never serialize request bodies, passwords, proofs, session tokens or raw database errors.
                 return { ok: false, code: error instanceof PlayerLoginError ? error.code : "SERVER_ERROR", message: error instanceof PlayerLoginError ? error.message : "暂时无法完成，请稍后重试。" }
             }
@@ -69,8 +71,47 @@ export default async function playerLoginRoutes(app: FastifyInstance): Promise<v
         finishPlayerLoginSwitch(b.previous_token, next)
         return next
     }
-    route("/player-auth/register", b => activate(b, registerPlayerLogin(b.username, b.password, b.remember === true)))
-    route("/player-auth/login", b => activate(b, loginPlayer(b.username, b.password, b.remember === true)))
+    route("/player-auth/register", (b, request) => {
+        const reservation = creation.reserve(request.ip)
+        if (!reservation) throw new PlayerLoginError("新建账号较频繁，请稍后再试。", "RATE_LIMITED")
+        const username = typeof b.username === "string" && /^[A-Za-z0-9_]{4,24}$/.test(b.username)
+            ? b.username.toLowerCase() : null
+        let originalId: number | undefined
+        const accountId = () => username === null ? undefined : (getDb().prepare(
+            "SELECT id FROM accounts WHERE lower(username)=? AND username IS NOT NULL AND username<>''")
+            .get(username) as { id: number } | undefined)?.id
+        try {
+            originalId = accountId()
+            const registered = registerPlayerLogin(b.username, b.password, b.remember === true)
+            reservation.commit()
+            return activate(b, registered)
+        } catch (error) {
+            // The library commits before preference writes/transport callbacks.
+            // A post-commit failure must still consume the creation quota.
+            try {
+                const currentId = accountId()
+                if (currentId !== undefined && currentId !== originalId) reservation.commit()
+                else reservation.release()
+            } catch { reservation.commit() } // Unknown durable outcome: fail closed.
+            throw error
+        }
+    })
+    route("/player-auth/login", async (b, request, reply) => {
+        const cancellation = new AbortController()
+        const abort = () => cancellation.abort()
+        const close = () => { if (!reply.raw.writableEnded) abort() }
+        request.raw.once("aborted", abort)
+        reply.raw.once("close", close)
+        if (request.raw.aborted || reply.raw.destroyed) abort()
+        try {
+            return await loginPlayerAsync(b.username, b.password, b.remember === true, {
+                previousToken: b.previous_token, signal: cancellation.signal,
+            })
+        } finally {
+            request.raw.removeListener("aborted", abort)
+            reply.raw.removeListener("close", close)
+        }
+    })
     route("/player-auth/resume", b => activate(b, resumePlayerLogin(b.token)))
     route("/player-auth/logout", b => { logoutPlayer(b.token); return {} })
     route("/player-auth/claim-preview", b => previewPlayerClaim(b))

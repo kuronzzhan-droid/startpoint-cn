@@ -47,7 +47,6 @@ test('one summary per battle with per-member gaps, warnings, disconnects and bar
     assert.equal(host.levelNext, 1)
     assert.equal(host.lineSpeedWarnings, 1)
     assert.equal(host.maxInboundGapMs, 31_000)
-    assert.deepEqual(host.longGaps, [{ ms: 5_000, atMs: 5_200, scene: 0 }, { ms: 31_000, atMs: 36_200, scene: 0 }])
     assert.equal('lastInboundAt' in host, false)
     const guest = summary.members.find(member => member.viewer === 12)
     assert.equal(guest.relayedOut, 1)
@@ -58,25 +57,67 @@ test('one summary per battle with per-member gaps, warnings, disconnects and bar
     assert.equal(telemetry.end('880001', 'again'), undefined, 'a battle is summarized once')
 })
 
-test('long inbound gaps keep the three longest in time order with their scene', () => {
+test('battle end includes the final silence after the last inbound packet', () => {
     let now = 1_000
-    const telemetry = new BattleTelemetry(() => now, () => {}, 2)
+    const telemetry = new BattleTelemetry(() => now, () => {}, 0)
     telemetry.begin(room())
-    const report = maxGapMs => telemetry.relayActivity('880001', 11,
-        { packets: 1, broadcasts: 1, lineSpeedWarnings: 0, maxGapMs, relayedOut: 2 })
-    now += 1_000; report(2_000)
-    now += 1_000; report(999)
-    now += 1_000; telemetry.packet('880001', 11, 0, 1)
-    now += 1_000; report(6_000)
-    now += 1_000; report(1_500)
-    now += 1_000; report(4_000)
-    const host = telemetry.end('880001', 'returning:settlement').members.find(member => member.viewer === 11)
-    assert.equal(host.maxInboundGapMs, 6_000)
-    assert.deepEqual(host.longGaps, [
-        { ms: 2_000, atMs: 1_000, scene: 0 },
-        { ms: 6_000, atMs: 4_000, scene: 1 },
-        { ms: 4_000, atMs: 6_000, scene: 1 },
-    ])
+    telemetry.connected('880001', 11)
+    now = 1_100; telemetry.packet('880001', 11, 1)
+    now = 91_100
+    const summary = telemetry.end('880001', 'settling:finish_received')
+    assert.equal(summary.members[0].maxInboundGapMs, 90_000)
+    assert.equal(summary.members[0].packets, 1)
+})
+
+test('disconnect includes final silence without counting time after the connection closed', () => {
+    let now = 1_000
+    const telemetry = new BattleTelemetry(() => now, () => {}, 0)
+    telemetry.begin(room())
+    telemetry.connected('880001', 11)
+    now = 1_100; telemetry.packet('880001', 11, 1)
+    now = 91_100; telemetry.disconnected('880001', 11, 'level_next_timeout')
+    now = 300_000
+    const summary = telemetry.end('880001', 'disbanded:test')
+    assert.equal(summary.members[0].maxInboundGapMs, 90_000)
+    assert.deepEqual(summary.members[0].disconnects, { level_next_timeout: 1 })
+})
+
+test('a live connection replacement preserves silence before the replacement was accepted', () => {
+    let now = 1_000
+    const telemetry = new BattleTelemetry(() => now, () => {}, 0)
+    telemetry.begin(room())
+    telemetry.connected('880001', 11)
+    now = 1_100; telemetry.packet('880001', 11, 1)
+    now = 91_100; telemetry.connected('880001', 11)
+    now = 91_200; telemetry.packet('880001', 11, 1)
+    const summary = telemetry.end('880001', 'disbanded:test')
+    assert.equal(summary.members[0].connections, 2)
+    assert.equal(summary.members[0].maxInboundGapMs, 90_000)
+})
+
+test('reconnecting after a closed connection excludes the offline interval', () => {
+    let now = 1_000
+    const telemetry = new BattleTelemetry(() => now, () => {}, 0)
+    telemetry.begin(room())
+    telemetry.connected('880001', 11)
+    now = 1_100; telemetry.packet('880001', 11, 1)
+    now = 2_100; telemetry.disconnected('880001', 11, 'socket_error')
+    now = 91_100; telemetry.connected('880001', 11)
+    now = 91_200; telemetry.packet('880001', 11, 1)
+    const summary = telemetry.end('880001', 'disbanded:test')
+    assert.equal(summary.members[0].connections, 2)
+    assert.equal(summary.members[0].maxInboundGapMs, 1_000)
+})
+
+test('a connection with no inbound packet still reports silence through battle end', () => {
+    let now = 1_000
+    const telemetry = new BattleTelemetry(() => now, () => {}, 0)
+    telemetry.begin(room())
+    telemetry.connected('880001', 11)
+    now = 91_000
+    const summary = telemetry.end('880001', 'disbanded:test')
+    assert.equal(summary.members[0].maxInboundGapMs, 90_000)
+    assert.equal(summary.members[0].packets, 0)
 })
 
 test('events for rooms without an active battle are ignored and recent history is bounded', () => {
@@ -108,7 +149,8 @@ test('the coordinator opens a summary on BATTLE and closes it when the room leav
     const { battleTelemetry } = require('../out/multi/battle-telemetry')
     const { EmbeddedMultiCoordinator } = require('../out/multi/coordinator/embedded')
     const coordinator = new EmbeddedMultiCoordinator()
-    const r = room({ room_number: '880077', lobby_generation: 0, raising_state: 1, five_boss_runtime: undefined })
+    const r = room({ room_number: '880077', lobby_generation: 0, raising_state: 1, five_boss_runtime: undefined,
+        expected_real_viewer_ids: [11, 12], member_viewer_ids: [11, 12], member_player_ids: { 11: 111, 12: 112 } })
     r.lifecycle = coordinator.createLifecycle()
     const original = console.warn
     const lines = []

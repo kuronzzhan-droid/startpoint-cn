@@ -2,14 +2,14 @@
 
 StarPoint CN 是《世界弹射物语》国服（雷霆）客户端的非官方服务端实现。本仓库在[上游项目](https://github.com/dontbealarmed/startpoint-cn)基础上继续维护云服务器部署、管理后台、联机、活动内容、任务成就、客户端兼容和运行性能。
 
-> `staging` 是日常开发、集成测试和云服覆盖包的交付分支；`main` 只接收经过观察验证的稳定更新。自动测试和服务端构建通过不代表所有客户端流程都已完成人工验收。
+> `main` 是唯一长期开发与整合分支；正式交付使用 `release-YYYY.MM.DD-N` 标签固定包源提交。推送代码不代表上传覆盖包或部署云服。自动测试和服务端构建通过不代表所有客户端流程都已完成人工验收。
 
 ## 支持边界
 
 当前开发与验收基线包括：
 
-- Android 官方 CN 1.8.1 客户端，仅修改登录跳过和服务器地址；
-- 可选的 iOS 1.8.4 私服客户端补丁；
+- Android CN 派生客户端及累计补丁，public/LAN 输入分别从[平台工作入口](./client-patch/AGENTS.md)定位；
+- iOS 独立平台补丁，实际输入与验收层级从同一入口定位对应登记；
 - 官方 CN 1.4.54 CDN 基础资源，以及仓库清单中明确启用的增量补丁；
 - Node.js 24 LTS 或更高版本；
 - SQLite 本地状态，默认存放在 `.database/`。
@@ -23,6 +23,7 @@ StarPoint CN 是《世界弹射物语》国服（雷霆）客户端的非官方�
 服务端已经覆盖账号与存档、主要养成、主线与部分活动、单人和多人战斗、任务成就与称号、抽卡、商店、邮件、NPC 协力、管理后台及资源更新流程。部分旧端点、特殊活动和客户端边缘流程仍需要继续验证。
 
 - [完整文档入口](./docs/README.md)：按系统、协议和操作目标查找文档
+- [运行架构与排错入口](./docs/architecture.md)：服务如何运行、状态归谁管理、按症状从哪里查起
 - [端点实现状态](./docs/reference/routes-status.md)：查看路由族与端点覆盖情况
 - [测试进度](./docs/status/test-progress.md)：区分自动回归与客户端人工验收
 - [已知问题](./docs/status/known-issues.md)：当前限制与待处理问题
@@ -39,7 +40,7 @@ cp .env.example .env
 bash scripts/start-cn.sh
 ```
 
-Windows 也可以使用仓库根目录的 `start-cn-production.bat`。首次运行前请按实际网络环境修改 `.env`：局域网真机需要填写服务器 LAN 地址，云服应填写 Cloudflare/CDN 公网地址和联机公网地址。
+Windows 也可以使用仓库根目录的 `start-cn-production.bat`。从 Git 获取源码后，首次运行先执行 `npm ci` 和 `npm run build`，生成本地 `out/`；该 BAT 使用已有产物，不自动编译。云服覆盖包已包含对应运行产物。首次运行前请按实际网络环境修改 `.env`：局域网真机需要填写服务器 LAN 地址，云服应填写 Cloudflare/CDN 公网地址和联机公网地址。
 
 上述启动脚本将 stdout/stderr 合并到 `.logs/cn-server-YYYYMMDD-HH00.log`，按北京时间
 00/04/08/12/16/20 点切分，每四小时一份，同一时段重启追加、不覆盖。当前文件与游戏
@@ -91,12 +92,12 @@ npm run build:admin
 
 ## 客户端补丁
 
-Android 客户端连接本服务至少需要完成两项修改：
+历史 Android 基础适配涉及以下修改；制作或调整累计客户端前，先从[平台工作入口](./client-patch/AGENTS.md)选择当前登记输入及方法：
 
 1. 在 `pinball/config/core/DevConfig.as` 启用 SDK Dummy，跳过官方登录；
 2. 在 `pinball/config/gbits/DevConfig_gf_android.as` 将 API 地址改为本服务地址。
 
-仓库提供补丁脚本和说明，但不提供已签名 APK：
+仓库保留基础适配脚本和说明，但不提供已签名 APK。以下命令用于匹配旧输入的基础适配，不作为累计客户端的默认起点：
 
 ```bash
 bash client-patch/apply.sh <AS3_EXPORT_DIR> <SERVER_HOST>:8001
@@ -118,7 +119,7 @@ Android 与 iOS 的详细流程见[客户端补丁说明](./client-patch/README.
 
 ## 开发与交付
 
-正常开发在 `staging` 进行；稳定发布由 `staging` 经过验证后合并到 `main`。服务端 TypeScript 改动需要同时验证并交付对应 `out/` 产物，云服覆盖包只包含运行必需文件，不包含 `.env`、数据库、日志、密钥或本地工作目录。
+正常开发与整合在 `main` 进行。普通协作者从最新 `main` 建立临时分支并向 `main` 提交 PR；仓库所有者在任务授权和保护规则允许时可验证后直接推送。正式交付标签按 `Asia/Singapore` 真实日期每日递增编号，标签只固定已有提交，不额外增加代码 commit。Git 保存源码及编译输入，不跟踪生成的 `out/`；服务端改动通过实际暂存输入的隔离编译检查，云服打包从固定提交生成并核验运行产物。覆盖包不包含 `.env`、数据库、日志、密钥或本地工作目录。详见[运行产物流程](docs/development/runtime-artifacts.md)。
 
 具体分支、同步与整合包规则见[开发与交付流程](./docs/development/branch-workflow.md)。私有仓库边界见[私有仓库说明](./PRIVATE_REPOSITORY.md)。
 

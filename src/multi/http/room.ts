@@ -1,355 +1,128 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { PrepareBody, SummonBody, RestoreRoomBody, ShareRoomBody } from "../types";
-import { generateDataHeaders } from "../../utils";
-import { getRoom, getRoomByToken, isRoomMember, updateHostEntryTime } from "../room/manager";
-import { serializeRoomConnection } from "../room/serializer";
-import { sessionManager } from "../state/SessionManager";
-import { buildNpcMates } from "../npc/builder";
-import { isRandomRecruiting, publishRandomRecruitment, stopRandomRecruitment } from "../recruitment";
-import { scheduleAiFallback } from "../ai-fill";
-import {
-    encodeRoomShareOptions,
-    mergeRoomShareTypes,
-    RANDOM_RECRUITMENT_SHARE_TYPE,
-} from "../room/sharing";
-import { gameVerboseLog } from "../../lib/game-logging";
-import { isMode15RoomClosed } from "../mode15-room-gate";
-import { embeddedMultiCoordinator } from "../coordinator/embedded";
-import { resolveMultiPlayerContext } from "../player-context";
-import { getAttentionConfig } from "../attention-config";
+import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify"
+import { PrepareBody, SummonBody, RestoreRoomBody, ShareRoomBody } from "../types"
+import { generateDataHeaders } from "../../utils"
+import { getDisplayHost } from "../room/serializer"
+import { buildNpcMates } from "../npc/builder"
+import { gameVerboseLog } from "../../lib/game-logging"
+import { isMode15RoomClosed } from "../mode15-room-gate"
+import { resolveMultiPlayerContext } from "../player-context"
+import { getAttentionConfig } from "../attention-config"
+import { getRoomCommandGateway } from "../coordinator/default-runtime"
+import { createRoomCommandId, RoomCommandError } from "../coordinator/command-protocol"
+import type { RoomQueryProjection, RoomDecisionPayload, RoomDecisionResult, RoomConnectionState } from "../coordinator/room-command-handlers"
 
 async function hasValidViewer(viewerId: number): Promise<boolean> {
-    return await resolveMultiPlayerContext(viewerId) !== null;
+    return await resolveMultiPlayerContext(viewerId) !== null
 }
-
 function forbidden(reply: FastifyReply): FastifyReply {
-    return reply.status(403).send({
-        "error": "Forbidden",
-        "message": "Room permission denied.",
-    });
+    return reply.status(403).send({ error: "Forbidden", message: "Room permission denied." })
 }
-
-function sendShareRoomAcknowledgement(
-    reply: FastifyReply,
-    viewerId: number,
-    reason: string,
-): FastifyReply {
-    console.warn(`[MULTI] stale share_room acknowledged: viewer=${viewerId} reason=${reason}`)
-    reply.header("content-type", "application/x-msgpack")
-    return reply.status(200).send({
-        data_headers: generateDataHeaders({ viewer_id: viewerId }),
-        data: { config: getAttentionConfig() },
-    })
+function numberOrNull(value: unknown): number | null {
+    const number = Number(value)
+    return Number.isFinite(number) ? number : null
 }
-
-function sendUnavailableRoomConnection(
-    reply: FastifyReply,
-    viewerId: number,
-    roomNumber: string,
-    reason: string,
-): FastifyReply {
-    console.warn(`[MULTI] room connection acknowledged as unavailable:`
-        + ` viewer=${viewerId} room=${roomNumber} reason=${reason}`)
+async function roomFacts(roomNumber?: string, accessToken?: string): Promise<RoomQueryProjection | null> {
+    return await getRoomCommandGateway().execute("room.query", roomNumber
+        ? { roomNumber } : { accessToken: accessToken || "" }) as RoomQueryProjection | null
+}
+function decisionPayload(room: RoomQueryProjection | null, roomNumber: string, viewerId: number): RoomDecisionPayload {
+    return { roomNumber: room?.room_number || roomNumber, viewerId,
+        identity: room?.identity ?? null, mode15Closed: !!room && isMode15RoomClosed(room) }
+}
+async function execute(kind: string, payload: RoomDecisionPayload,
+    commandId = createRoomCommandId()): Promise<RoomDecisionResult> {
+    const result = await getRoomCommandGateway().execute(kind, payload, { commandId }) as RoomDecisionResult
+    if (result.status === "expired") {
+        throw new RoomCommandError("COMMAND_EXPIRED", "Room command expired before application", commandId, false)
+    }
+    return result
+}
+async function executeConnection(kind: "room.prepare" | "room.restore", payload: RoomDecisionPayload): Promise<RoomDecisionResult> {
+    let commandId = createRoomCommandId()
+    let result = await execute(kind, payload, commandId)
+    if (result.status !== "stale") return result
+    // Only a definitive, unapplied stale result permits one new command.
+    // A timeout or unknown result throws above and never reaches this path.
+    const latest = await roomFacts(payload.roomNumber)
+    if (latest && payload.identity && latest.identity.instanceId === payload.identity.instanceId
+        && latest.identity.generation === payload.identity.generation) {
+        commandId = createRoomCommandId()
+        result = await execute(kind, { ...payload,
+            ...decisionPayload(latest, payload.roomNumber, payload.viewerId) }, commandId)
+    }
+    if (result.status === "stale") {
+        throw new RoomCommandError("STALE_ROOM_IDENTITY", "Room identity changed during connection decision", commandId, false)
+    }
+    return result
+}
+function connectionData(connection: RoomConnectionState, disabled = false) {
+    return { application_update_url: "", ...connection,
+        ip_address: disabled ? "" : getDisplayHost(),
+        port: disabled ? 0 : parseInt(process.env.SESSION_PORT || "8003"), is_pickup: null }
+}
+function missingConnection(roomNumber: string): RoomConnectionState {
+    return { category_id: 0, host_entry_time: 0, quest_id: 0, raising_state: 9,
+        room_number: roomNumber, room_sequence: 0, share_room_options: 0 }
+}
+function send(reply: FastifyReply, viewerId: number, data: unknown) {
     reply.header("content-type", "application/x-msgpack")
-    return reply.status(200).send({
-        data_headers: generateDataHeaders({ viewer_id: viewerId }),
-        data: {
-            application_update_url: "",
-            category_id: 0,
-            host_entry_time: 0,
-            ip_address: "",
-            port: 0,
-            quest_id: 0,
-            raising_state: 9,
-            room_number: roomNumber,
-            room_sequence: 0,
-            share_room_options: 0,
-            is_pickup: null,
-        },
-    })
+    return reply.status(200).send({ data_headers: generateDataHeaders({ viewer_id: viewerId }), data })
 }
 
 export function registerRoomRoutes(fastify: FastifyInstance): void {
-
-    // ---- prepare ----
     fastify.post("/prepare", async (request: FastifyRequest, reply: FastifyReply) => {
-        const body = request.body as PrepareBody;
-        const viewerId = body.viewer_id;
-        gameVerboseLog(() => `[MULTI] prepare: viewer=${viewerId} room=${body.room_number}`);
-
-        if (!await hasValidViewer(viewerId)) {
-            return reply.status(400).send({
-                "error": "Bad Request", "message": "Invalid request body."
-            });
+        const body = request.body as PrepareBody, viewerId = body.viewer_id
+        gameVerboseLog(() => `[MULTI] prepare: viewer=${viewerId} room=${body.room_number}`)
+        if (!await hasValidViewer(viewerId)) return reply.status(400).send({ error: "Bad Request", message: "Invalid request body." })
+        const room = await roomFacts(body.room_number, body.access_token)
+        const payload = { ...decisionPayload(room, body.room_number || "", viewerId),
+            category: numberOrNull(body.category), questId: numberOrNull(body.quest_id) }
+        const result = await executeConnection("room.prepare", payload)
+        if (result.status !== "ready") {
+            console.warn(`[MULTI] room connection acknowledged as unavailable: viewer=${viewerId} room=${payload.roomNumber} reason=${result.status}`)
+            return send(reply, viewerId, connectionData(missingConnection(payload.roomNumber), true))
         }
-
-        const room = body.room_number
-            ? getRoom(body.room_number)
-            : getRoomByToken(body.access_token || "");
-
-        const mode15RoomClosed = !!room && isMode15RoomClosed(room);
-        if (!room || mode15RoomClosed || sessionManager.isRoomRestoreBlocked(room.room_number, viewerId)) {
-            if (mode15RoomClosed) {
-                console.log(`[MODE15] prepare denied: completed host room=${room?.room_number} viewer=${viewerId}`);
-            }
-            return sendUnavailableRoomConnection(
-                reply,
-                viewerId,
-                room?.room_number || body.room_number || "",
-                !room ? "room_missing"
-                    : mode15RoomClosed ? "mode15_closed" : "restore_blocked",
-            )
-        }
-
-        if (room.category !== Number(body.category) || room.quest_id !== Number(body.quest_id)) {
-            return sendUnavailableRoomConnection(
-                reply,
-                viewerId,
-                room.room_number,
-                "quest_mismatch",
-            )
-        }
-
-        if (viewerId === room.host_viewer_id) updateHostEntryTime(room.room_number);
-        const data = serializeRoomConnection(room);
-        if (viewerId === room.host_viewer_id) {
-            data.raising_state = 1
-        } else if (!sessionManager.isHostOnline(room.host_viewer_id, room.room_number, room.lobby_generation)) {
-            data.raising_state = 2
-            gameVerboseLog(() => `[MULTI] prepare: host offline, guest polls raising_state → 2`)
-        }
-
-        reply.header("content-type", "application/x-msgpack");
-        return reply.status(200).send({
-            "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-            "data": data,
-        });
-    });
-
-    // ---- summon ----
+        return send(reply, viewerId, connectionData(result.connection))
+    })
     fastify.post("/summon", async (request: FastifyRequest, reply: FastifyReply) => {
-        const body = request.body as SummonBody;
-        const viewerId = body.viewer_id;
-        gameVerboseLog(() => `[MULTI] summon: viewer=${viewerId} room=${body.room_number}`);
-
-        if (!await hasValidViewer(viewerId)) {
-            return reply.status(400).send({
-                "error": "Bad Request", "message": "Invalid request body."
-            });
-        }
-
-        const room = getRoom(body.room_number);
-        if (!room || isMode15RoomClosed(room) || sessionManager.isRoomRestoreBlocked(body.room_number, viewerId)) {
-            console.warn(`[MULTI] stale summon acknowledged: viewer=${viewerId}`
-                + ` room=${body.room_number} reason=room_unavailable`)
-            reply.header("content-type", "application/x-msgpack")
-            return reply.status(200).send({
-                data_headers: generateDataHeaders({ viewer_id: viewerId }),
-                data: { mate1: null, mate2: null },
-            })
-        }
-
-        if (room.host_viewer_id !== viewerId) return forbidden(reply);
-        if (room.category !== Number(body.category_id) || room.quest_id !== Number(body.quest_id)) {
-            console.warn(`[MULTI] stale summon acknowledged: viewer=${viewerId}`
-                + ` room=${body.room_number} reason=quest_mismatch`)
-            reply.header("content-type", "application/x-msgpack")
-            return reply.status(200).send({
-                data_headers: generateDataHeaders({ viewer_id: viewerId }),
-                data: { mate1: null, mate2: null },
-            })
-        }
-
-        // Random recruitment is a real-player broadcast.  The client still calls
-        // /summon after its legacy COM timeout, so only return COM data for rooms
-        // that explicitly selected the second (AI) share option.
-        const mates = room.is_npc_mode
-            ? buildNpcMates(body.quest_id, room.category)
-            : { mate1: null, mate2: null };
-
-        reply.header("content-type", "application/x-msgpack");
-        return reply.status(200).send({
-            "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-            "data": {
-                "mate1": mates.mate1,
-                "mate2": mates.mate2,
-            }
-        });
-    });
-
-    // ---- restore_room ----
+        const body = request.body as SummonBody, viewerId = body.viewer_id
+        if (!await hasValidViewer(viewerId)) return reply.status(400).send({ error: "Bad Request", message: "Invalid request body." })
+        const room = await roomFacts(body.room_number)
+        const result = await execute("room.summon", { ...decisionPayload(room, body.room_number, viewerId),
+            category: numberOrNull(body.category_id), questId: numberOrNull(body.quest_id) })
+        if (result.status === "forbidden") return forbidden(reply)
+        const mates = result.status === "summon" && result.npcMode
+            ? buildNpcMates(body.quest_id, result.category) : { mate1: null, mate2: null }
+        return send(reply, viewerId, { mate1: mates.mate1, mate2: mates.mate2 })
+    })
     fastify.post("/restore_room", async (request: FastifyRequest, reply: FastifyReply) => {
-        const body = request.body as RestoreRoomBody;
-        const viewerId = body.viewer_id;
-        gameVerboseLog(() => `[MULTI] restore_room: viewer=${viewerId} room=${body.room_number}`);
-
-        if (!await hasValidViewer(viewerId)) {
-            return reply.status(400).send({
-                "error": "Bad Request", "message": "Invalid request body."
-            });
-        }
-
-        const room = getRoom(body.room_number);
-        const mode15RoomClosed = !!room && isMode15RoomClosed(room);
-        if (!room || mode15RoomClosed || sessionManager.isRoomRestoreBlocked(body.room_number, viewerId)) {
-            if (mode15RoomClosed) {
-                console.log(`[MODE15] restore_room denied: completed host room=${body.room_number} viewer=${viewerId}`);
-            }
-            reply.header("content-type", "application/x-msgpack");
-            return reply.status(200).send({
-                "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-                "data": {
-                    application_update_url: "",
-                    category_id: 0,
-                    host_entry_time: 0,
-                    ip_address: "",
-                    port: 0,
-                    quest_id: 0,
-                    raising_state: 9,
-                    room_number: body.room_number,
-                    room_sequence: 0,
-                    share_room_options: 0,
-                    is_pickup: null,
-                    is_same_room: true,
-                }
-            });
-        }
-
-        if (!isRoomMember(room, viewerId)) {
-            reply.header("content-type", "application/x-msgpack");
-            return reply.status(200).send({
-                "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-                "data": {
-                    application_update_url: "",
-                    category_id: room.category,
-                    host_entry_time: room.host_entry_time,
-                    ip_address: "",
-                    port: 0,
-                    quest_id: room.quest_id,
-                    raising_state: 13,
-                    room_number: room.room_number,
-                    room_sequence: room.room_sequence,
-                    share_room_options: room.share_room_options,
-                    is_pickup: null,
-                    is_same_room: true,
-                }
-            });
-        }
-
-        const data = { ...serializeRoomConnection(room), is_same_room: true };
-        if (viewerId === room.host_viewer_id) {
-            data.raising_state = 1
-        } else if (!sessionManager.isHostOnline(room.host_viewer_id, room.room_number, room.lobby_generation)) {
-            data.raising_state = 2
-            gameVerboseLog(() => `[MULTI] restore_room: host offline, guest polls raising_state → 2`)
-        }
-
-        reply.header("content-type", "application/x-msgpack");
-        return reply.status(200).send({
-            "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-            "data": data,
-        });
-    });
-
-    // ---- share_room ----
+        const body = request.body as RestoreRoomBody, viewerId = body.viewer_id
+        if (!await hasValidViewer(viewerId)) return reply.status(400).send({ error: "Bad Request", message: "Invalid request body." })
+        const room = await roomFacts(body.room_number)
+        const result = await executeConnection("room.restore", decisionPayload(room, body.room_number, viewerId))
+        const connection = result.status === "ready" ? result.connection : missingConnection(body.room_number)
+        return send(reply, viewerId, { ...connectionData(connection, [9, 13].includes(connection.raising_state)), is_same_room: true })
+    })
     fastify.post("/share_room", async (request: FastifyRequest, reply: FastifyReply) => {
-        const body = request.body as ShareRoomBody;
-        const viewerId = body.viewer_id;
-        gameVerboseLog(() => `[MULTI] share_room: viewer=${viewerId} room=${body.room_number}`);
-
-        if (!await hasValidViewer(viewerId)) {
-            return reply.status(400).send({
-                "error": "Bad Request", "message": "Invalid request body."
-            });
-        }
-
-        const room = getRoom(body.room_number);
-        if (!room) {
-            return sendShareRoomAcknowledgement(reply, viewerId, "room_missing")
-        }
-        if (room.host_viewer_id !== viewerId) return forbidden(reply);
-
-        if ((body.category !== undefined && room.category !== Number(body.category))
-            || (body.quest_id !== undefined && room.quest_id !== Number(body.quest_id))) {
-            return sendShareRoomAcknowledgement(reply, viewerId, "quest_mismatch")
-        }
-
-        if (isMode15RoomClosed(room)) {
-            stopRandomRecruitment(room.room_number);
-            console.log(`[MODE15] share_room ignored: completed host room=${room.room_number} viewer=${viewerId}`);
-            reply.header("content-type", "application/x-msgpack");
-            return reply.status(200).send({
-                "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-                "data": { "config": getAttentionConfig() }
-            });
-        }
-
-        // The client's share_type_list is a delta: it contains only the types
-        // enabled by this dialog confirmation, and already-shared entries are
-        // disabled client-side. Merge instead of replace so enabling random
-        // recruitment cannot silently drop the follow-based visibility that
-        // was granted earlier in the same room.
-        const shareTypes = mergeRoomShareTypes(room.share_room_options, body.share_type_list);
-        const randomSelected = shareTypes.includes(RANDOM_RECRUITMENT_SHARE_TYPE)
-        room.share_room_options = encodeRoomShareOptions(shareTypes);
-        gameVerboseLog(() => `[MULTI] share_room: requested=${JSON.stringify(body.share_type_list ?? null)}`
-            + ` options=${room.share_room_options}`);
-
-        // The client cannot turn random recruitment off after enabling it.
-        // Treat it as sticky: a later refresh without type 3 must not stop the
-        // active recruitment or its AI fallback. Battle start, room disband
-        // and the fallback itself own the stop path.
-        if (randomSelected && !room.is_npc_mode) {
-            const wasRecruiting = isRandomRecruiting(room.room_number)
-            const recruitment = publishRandomRecruitment(room.room_number);
-            if (!wasRecruiting) scheduleAiFallback(room.room_number)
-            gameVerboseLog(() => `[MULTI] share_room: random recruitment published room=${room.room_number} key=${recruitment.attentionKey}`);
-        } else {
-            gameVerboseLog(() => `[MULTI] share_room: scoped visibility updated room=${room.room_number} options=${room.share_room_options}`);
-        }
-
-        reply.header("content-type", "application/x-msgpack");
-        return reply.status(200).send({
-            "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-            "data": { "config": getAttentionConfig() }
-        });
-    });
-
-    // ---- disband_room ----
+        const body = request.body as ShareRoomBody, viewerId = body.viewer_id
+        if (!await hasValidViewer(viewerId)) return reply.status(400).send({ error: "Bad Request", message: "Invalid request body." })
+        const room = await roomFacts(body.room_number)
+        const payload: RoomDecisionPayload = { ...decisionPayload(room, body.room_number, viewerId), shareTypes: body.share_type_list ?? null }
+        if (body.category !== undefined) payload.category = numberOrNull(body.category)
+        if (body.quest_id !== undefined) payload.questId = numberOrNull(body.quest_id)
+        const result = await execute("room.share", payload)
+        if (result.status === "forbidden") return forbidden(reply)
+        if (result.status !== "done") console.warn(`[MULTI] stale share_room acknowledged: viewer=${viewerId} reason=${result.status}`)
+        return send(reply, viewerId, { config: getAttentionConfig() })
+    })
     fastify.post("/disband_room", async (request: FastifyRequest, reply: FastifyReply) => {
-        const body = request.body as RestoreRoomBody;
-        const viewerId = body?.viewer_id;
-        const roomNumber = body?.room_number;
-        gameVerboseLog(() => `[MULTI] disband_room: viewer=${viewerId} room=${roomNumber}`);
-
-        if (typeof roomNumber !== "string" || !roomNumber
-            || !await hasValidViewer(viewerId)) {
-            return reply.status(400).send({
-                "error": "Bad Request", "message": "Invalid request body."
-            });
+        const body = request.body as RestoreRoomBody, viewerId = body?.viewer_id, roomNumber = body?.room_number
+        if (typeof roomNumber !== "string" || !roomNumber || !await hasValidViewer(viewerId)) {
+            return reply.status(400).send({ error: "Bad Request", message: "Invalid request body." })
         }
-
-        const room = getRoom(roomNumber);
-        // Settlement or disconnect cleanup may already have removed the room
-        // before the client returns to the quest selector. Repeated cleanup
-        // must succeed; a 400 here makes the CN client show H400 and log out.
-        if (room) {
-            if (room.host_viewer_id !== viewerId) return forbidden(reply);
-            const generation = room.lobby_generation;
-            await embeddedMultiCoordinator.enqueueRoomCommand(roomNumber, () => {
-                // A queued request belongs only to the room and round that
-                // passed the ownership check, even if its number is reused.
-                if (getRoom(roomNumber) !== room || room.lobby_generation !== generation) return;
-                if (sessionManager.commitRoomDisband(roomNumber, `viewer_${viewerId}_requested`)) {
-                    gameVerboseLog(() => `[MULTI] room ${roomNumber} disbanded by viewer ${viewerId}`);
-                }
-            });
-        }
-
-        reply.header("content-type", "application/x-msgpack");
-        return reply.status(200).send({
-            "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-            "data": {}
-        });
-    });
+        const room = await roomFacts(roomNumber)
+        const result = await execute("room.disband", { roomNumber, viewerId, identity: room?.identity ?? null, mode15Closed: false })
+        if (result.status === "forbidden") return forbidden(reply)
+        return send(reply, viewerId, {})
+    })
 }

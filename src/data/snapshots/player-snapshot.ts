@@ -1,7 +1,7 @@
 import { createHash } from "crypto"
 import type { Database as BetterSqlite3Database } from "better-sqlite3"
-import { getServerDate, getTimeOffset } from "../../utils"
 import { COMPACT_COUNTER_VALUES, getStorageSnapshotTableInfo, isCompactStorage, RETIRED_COUNTER_SNAPSHOTS } from "../../lib/storage-layout"
+import { getExistingPlayerTimeStateSync, getPlayerBusinessDateSync, getPlayerBusinessOffsetSync, PlayerArchiveTimeBasis, validatePlayerArchiveTimeBasis } from "../../lib/player-time-compat"
 
 type SnapshotScalar = string | number | null
 
@@ -17,6 +17,10 @@ export interface PlayerSaveSnapshotV2 {
     exportedAt: string
     playerId: number
     schemaFingerprint: string
+    /** Optional for old V2 archives; the portable SQL fingerprint is unchanged. */
+    timeBasis?: PlayerArchiveTimeBasis
+    /** Exact source IDs for server-local daily grants; absent on old V2. */
+    dailyMailBasis?: { version: 1; mails: Array<{ bucket: string; mailId: number }> }
     summary: {
         playerName: string
         includedTableCount: number
@@ -120,6 +124,11 @@ export const PLAYER_SNAPSHOT_V2_TABLES = Object.freeze([
 
 const EXCLUDED_PLAYER_STATE = Object.freeze([
     {
+        tables: ["player_time_state", "player_time_migration_ledger"],
+        policy: "preserve-target" as const,
+        reason: "真实时间迁移标记和账本属于本服目标账号，导入保留目标既有模式及锚点；来源 timeBasis 仅作受校验的来源元数据，不新增迁移状态。",
+    },
+    {
         tables: ["abyss_floor_records"],
         policy: "preserve-target" as const,
         reason: "深渊全服纪录属于本服公共历史，viewer_id 只作归属快照且无玩家外键；V1/V2 导入均不迁移、不回填、不删除。",
@@ -141,8 +150,8 @@ const EXCLUDED_PLAYER_STATE = Object.freeze([
     },
     {
         tables: ["daily_vmoney_mail_grants"],
-        policy: "reset" as const,
-        reason: "每日星导石邮件发放账本属于服务器派生的幂等状态，不能随存档迁移，导入时清除后按当前周期重新发放。",
+        policy: "preserve-target" as const,
+        reason: "每日邮件发放账本绑定本服目标账号；导入保留当天已发放事实，避免重试或旧存档重复授予。",
     },
     {
         tables: ["leaderboard_runs", "leaderboard_run_rounds", "leaderboard_settlement_results"],
@@ -357,6 +366,20 @@ export function createPlayerSaveSnapshotV2Sync(
         },
         data: { tables },
     }
+    const timeState = getExistingPlayerTimeStateSync(playerId, db)
+    if (timeState) {
+        snapshot.timeBasis = {
+            kind: "real-system", version: 1, cutoverRealMs: timeState.cutoverRealMs,
+            dayAnchorMs: timeState.dayAnchorMs, weekAnchorMs: timeState.weekAnchorMs,
+        }
+    }
+    snapshot.dailyMailBasis = {
+        version: 1,
+        mails: (db.prepare(`SELECT g.bucket, g.mail_id FROM daily_vmoney_mail_grants g
+            JOIN players_mails m ON m.id=g.mail_id AND m.player_id=g.player_id
+            WHERE g.player_id=? ORDER BY g.bucket`).all(playerId) as Array<{bucket: string; mail_id: number}>)
+            .map(row => ({ bucket: row.bucket, mailId: row.mail_id })),
+    }
     return validatePlayerSaveSnapshotV2Sync(snapshot, db)
 }
 
@@ -377,6 +400,7 @@ export function validatePlayerSaveSnapshotV2Sync(
     if (typeof snapshot.exportedAt !== "string" || !Number.isFinite(Date.parse(snapshot.exportedAt))) {
         throw new Error("存档导出时间无效")
     }
+    if (snapshot.timeBasis !== undefined) validatePlayerArchiveTimeBasis(snapshot.timeBasis)
 
     assertPlayerSnapshotCoverageSync(db)
     const expectedFingerprint = getSchemaFingerprint(db)
@@ -442,6 +466,22 @@ export function validatePlayerSaveSnapshotV2Sync(
         throw new Error("存档摘要中的表数量不一致")
     }
     if (snapshot.summary.rowCount !== totalRows) throw new Error("存档摘要中的行数量不一致")
+    if (snapshot.dailyMailBasis !== undefined) {
+        const basis = snapshot.dailyMailBasis
+        if (!basis || basis.version !== 1 || !Array.isArray(basis.mails)) throw new Error("Invalid daily-mail archive basis")
+        const sourceMails = snapshot.data.tables.players_mails
+        const idIndex = sourceMails.columns.indexOf("id")
+        const mailIds = new Set(sourceMails.rows.map(row => row[idIndex]))
+        const seenIds = new Set<number>(), seenBuckets = new Set<string>()
+        for (const mail of basis.mails) {
+            if (!mail || !Number.isSafeInteger(mail.mailId) || mail.mailId < 1
+                || typeof mail.bucket !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(mail.bucket)
+                || !mailIds.has(mail.mailId) || seenIds.has(mail.mailId) || seenBuckets.has(mail.bucket)) {
+                throw new Error("Invalid or duplicate daily-mail archive reference")
+            }
+            seenIds.add(mail.mailId); seenBuckets.add(mail.bucket)
+        }
+    }
     return snapshot
 }
 
@@ -502,11 +542,27 @@ export function restorePlayerSaveSnapshotV2Sync(
     const resetTables = EXCLUDED_PLAYER_STATE
         .filter(entry => entry.policy === "reset")
         .flatMap(entry => [...entry.tables])
-    const currentPoolTime = getServerDate().toISOString()
-    const currentOffset = getTimeOffset() ?? 0
+    // Retain the destination's existing clock mode. Import starts its EXP
+    // checkpoint here and never creates a time marker or copies source anchors.
+    const targetTimeState = getExistingPlayerTimeStateSync(targetPlayerId, db)
+    const currentDate = getPlayerBusinessDateSync(targetPlayerId, undefined, db)
+    const currentPoolTime = currentDate.toISOString()
+    const currentOffset = getPlayerBusinessOffsetSync(targetPlayerId, db)
 
     let restoredRows = 1
     const restore = db.transaction(() => {
+        // Grants are target-local. Preserve their exact mail payload and claim
+        // status while remapping IDs after the source mailbox is restored.
+        const targetDailyMails = includeArchiveHistory
+            ? db.prepare(`SELECT m.*, g.bucket AS grant_bucket FROM daily_vmoney_mail_grants g
+                JOIN players_mails m ON m.id=g.mail_id AND m.player_id=g.player_id WHERE g.player_id=?`)
+                .all(targetPlayerId) as Array<Record<string, SnapshotScalar>>
+            : []
+        const sourceDailyMailIds = new Set(snapshot.dailyMailBasis?.mails.map(mail => mail.mailId) ?? [])
+        const sourceMails = snapshot.data.tables.players_mails
+        const sourceMailIdIndex = sourceMails.columns.indexOf("id")
+        const portableMails = { columns: sourceMails.columns,
+            rows: sourceMails.rows.filter(row => !sourceDailyMailIds.has(row[sourceMailIdIndex] as number)) }
         for (const table of [...restoredTables].reverse()) {
             db.prepare(`DELETE FROM ${quoteIdentifier(table)} WHERE player_id = ?`).run(targetPlayerId)
         }
@@ -518,7 +574,7 @@ export function restorePlayerSaveSnapshotV2Sync(
         const sourcePlayer = playerTable.rows[0]
         const updateColumns = playerTable.columns.filter(column => column !== "id" && column !== "account_id")
         const updateValues = updateColumns.map(column => {
-            if (column === "exp_pooled_time") return currentPoolTime
+            if (column === "exp_pooled_time" || column === "last_login_time") return currentPoolTime
             if (column === "time_offset") return currentOffset
             return sourcePlayer[playerTable.columns.indexOf(column)]
         })
@@ -530,7 +586,7 @@ export function restorePlayerSaveSnapshotV2Sync(
         if (playerUpdate.changes !== 1) throw new Error("目标玩家主记录更新失败")
 
         for (const table of restoredTables) {
-            const tableData = snapshot.data.tables[table]
+            const tableData = table === "players_mails" ? portableMails : snapshot.data.tables[table]
             const omitted = REMAPPED_AUTOINCREMENT_IDS.get(table) ?? new Set<string>()
             const insertColumns = tableData.columns.filter(column => !omitted.has(column))
             if (tableData.rows.length === 0) continue
@@ -549,6 +605,17 @@ export function restorePlayerSaveSnapshotV2Sync(
                 restoredRows++
             }
         }
+        if (targetDailyMails.length) {
+            const columns = sourceMails.columns.filter(column => column !== "id")
+            const insertMail = db.prepare(`INSERT INTO players_mails (${columns.map(quoteIdentifier).join(",")})
+                VALUES (${columns.map(() => "?").join(",")})`)
+            for (const mail of targetDailyMails) {
+                const result = insertMail.run(...columns.map(column => mail[column]))
+                db.prepare("UPDATE daily_vmoney_mail_grants SET mail_id=? WHERE player_id=? AND bucket=?")
+                    .run(Number(result.lastInsertRowid), targetPlayerId, mail.grant_bucket)
+                restoredRows++
+            }
+        }
 
         const restoredPlayer = readSnapshotTable(db, "players", targetPlayerId)
         if (restoredPlayer.rows.length !== 1) throw new Error("恢复后玩家主记录不唯一")
@@ -559,7 +626,7 @@ export function restorePlayerSaveSnapshotV2Sync(
                 ? targetPlayerId
                 : column === "account_id"
                     ? target.account_id
-                    : column === "exp_pooled_time"
+                    : column === "exp_pooled_time" || column === "last_login_time"
                         ? currentPoolTime
                         : column === "time_offset"
                             ? currentOffset
@@ -570,7 +637,16 @@ export function restorePlayerSaveSnapshotV2Sync(
         }
 
         for (const table of restoredTables) {
-            assertRestoredTable(db, table, snapshot.data.tables[table], targetPlayerId)
+            const expected = table === "players_mails"
+                ? { columns: portableMails.columns, rows: [...portableMails.rows,
+                    ...targetDailyMails.map(mail => portableMails.columns.map(column => mail[column]))] }
+                : snapshot.data.tables[table]
+            assertRestoredTable(db, table, expected, targetPlayerId)
+        }
+        if (targetTimeState) {
+            db.prepare("UPDATE player_time_state SET day_anchor_ms=?,week_anchor_ms=? WHERE player_id=?")
+                .run(Math.max(targetTimeState.dayAnchorMs, currentDate.getTime()),
+                    Math.max(targetTimeState.weekAnchorMs, currentDate.getTime()), targetPlayerId)
         }
     })
 

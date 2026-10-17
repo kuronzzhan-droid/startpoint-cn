@@ -1,644 +1,127 @@
-# 架构文档 — StarPoint CN
-> 状态: 核心架构   关键文件: src/cn-server.ts, src/routes/cn/*   相关端点: 全局
+# StarPoint CN 运行架构与排错入口
 
-## 技术栈
+> 结构核对日期：2026-10-09。依据当前源码、命令定义和已有专项文档；本页描述代码具备的能力及配置条件，不表示某台服务器已启用这些能力或完成部署验收。
 
-| 层级 | 技术 |
-|------|------|
-| 运行时 | Node.js 24 LTS+ |
-| 语言 | TypeScript |
-| HTTP | Fastify 5 |
-| 数据库 | better-sqlite3 (SQLite) |
-| 序列化 | MsgPack (msgpackr) |
-| 客户端 | Adobe AIR SWF (ActionScript 3) |
+先用本页确定问题属于哪个模块，再读取相关代码和专项说明。协议字段、抓包和早期资源格式样例分别见[路由索引](routes/README.md)及[历史协议参考](reference/cn-protocol-legacy.md)。
 
-## 服务入口
+## 1. 运行关系
 
-### cn-server.ts
+运行时为 Node.js 24+、TypeScript/CommonJS，HTTP 使用 Fastify 5，业务库使用 better-sqlite3/SQLite。服务端源码编译到 `out/`；实际启动执行 `out/cn-server.js`。Android 与 iOS 客户端分别包含 AIR/SWF 及对应平台载荷。
 
-- 端口：`CN_LISTEN_PORT`（默认 8001）
-- 监听：`CN_LISTEN_HOST`（默认 localhost，`.env` 中设为 0.0.0.0）
-- 不包括：Kakao OpenAPI、Web 管理面板（全球服功能）
-
-### 响应管线
-
-```
-路由 handler
-  → JSON 序列化（Fastify 内置）
-  → onSend hook：JSON → MsgPack 编码 → Base64 编码
-  → HTTP 响应
-```
-
-### 请求管线
-
-```
-HTTP body (Base64)
-  → Content-Type 解析器：Base64 解码 → MsgPack 解码 → JavaScript 对象
-  → 路由 handler
+```mermaid
+flowchart LR
+    Client["Android / iOS 客户端"]
+    subgraph Main["一个业务主进程"]
+        HTTP["Fastify HTTP：默认 8001"]
+        Guard["玩家登录 / 客户端准入"]
+        Routes["CN 与通用游戏路由"]
+        Domains["业务逻辑 / 数据领域"]
+        TCP["联机 TCP：默认 8003"]
+        Rooms["会话 / 房间 / 战斗状态"]
+        Admin["管理认证 / 后台 API"]
+        CDN["资源清单 / ZIP / 单文件路由"]
+        HTTP --> Guard --> Routes --> Domains
+        TCP --> Rooms --> Domains
+        HTTP --> Admin --> Domains
+        HTTP --> CDN
+    end
+    Client --> HTTP
+    Client --> TCP
+    Domains --> DB["SQLite 业务库"]
+    CDN --> Files["CDN 基线 + manifest 启用补丁"]
+    Domains -. "按配置或请求启动" .-> DBWorkers["注册写命令 / 存档导出 worker"]
+    DBWorkers -. "业务库读写，按任务区分" .-> DB
+    NPCWorker["NPC 队伍库 worker"] --> NPCDB["独立 NPC 队伍库"]
+    NPCWorker -. "队伍缓存更新" .-> Rooms
 ```
 
----
+图中列出主要路径；导出 worker 对业务库只读，NPC worker 使用独立队伍库，其他线程职责见第 4 节。房间、socket 和实时会话仍在主进程内，增加 HTTP 进程需要另行解决这些共享状态与写入一致性。
 
-## 一、响应协议
+## 2. 模块地图
 
-```
-请求：
-  Content-Type: application/x-www-form-urlencoded
-  Body: base64(msgpack(object))
+| 模块 | 当前入口 | 负责什么 |
+| --- | --- | --- |
+| 服务装配与生命周期 | [src/cn-server.ts](../src/cn-server.ts) | 注册解析器、认证/准入 hook、路由、静态资源、任务与 TCP 服务；处理启动就绪和关闭 |
+| 玩家登录与准入 | [playerLogin.ts](../src/routes/cn/playerLogin.ts)、[player-login.ts](../src/lib/player-login.ts)、[client-admission.ts](../src/lib/client-admission.ts) | 玩家身份和登录会话、客户端准入；与管理后台认证分别处理 |
+| 游戏 API | `src/routes/cn/`、`src/routes/api/` | CN 专属协议及通用养成、抽卡、任务、单人/多人结算等入口 |
+| 联机与 NPC | `src/multi/`，从 [multi/index.ts](../src/multi/index.ts) 定位 | TCP、房间、编队、战斗事实、恢复和结算；休息室状态另见 `src/lounge/` |
+| 数据库与存档 | [data/index.ts](../src/data/index.ts)、[data/db.ts](../src/data/db.ts)、`src/data/domains/`、`src/data/snapshots/` | 初始化/迁移、共享连接、业务领域与玩家存档分类、导入导出 |
+| 服务端内容表 | [assets.ts](../src/lib/assets.ts)、[content-master.ts](../src/lib/content-master.ts)、[content-snapshot.ts](../src/content/runtime/content-snapshot.ts) | 读取 `assets/` 业务表、CDN 派生表和按需内容快照；实际覆盖顺序由各 accessor 决定 |
+| 客户端资源下发 | [asset.ts](../src/routes/cn/asset.ts)、[version.ts](../src/lib/version.ts)、[custom-cdn-resource-routes.ts](../src/lib/custom-cdn-resource-routes.ts) | 目标版本、设备下载清单、发布补丁与按哈希请求的资源 |
+| 管理后台 | `admin/src/`、`src/routes/web_api/`、[modAdmin.ts](../src/routes/api/modAdmin.ts) | React 管理界面、旧管理页面及管理 API；界面构建到 `web/dist/` 后由 `/admin/` 服务 |
+| 客户端工具 | [client-patch/AGENTS.md](../client-patch/AGENTS.md)、[MOD 工具入口](../tools/fantasy-gauntlet-mod-tools/README.md) | 平台输入登记、SWF/ABC/AOT 与资源制作流程；平台成品、资源和服务端代码分层核对 |
 
-响应：
-  Content-Type: application/x-msgpack
-  Body: base64(msgpack({ data_headers: {...}, data: {...} }))
-```
+管理后台已经接入 CN 服务。`web/dist/index.html` 存在时启用 React SPA，旧 Web 页面仍保留；不能据此推定当前机器已经构建或开放该界面。
 
-### data_headers 结构
+## 3. 启动、请求与就绪
 
-```typescript
-{
-  force_update: boolean,    // 客户端是否强制更新
-  asset_update: boolean,    // 是否有新的 CDN 资源
-  short_udid: number,       // 短设备 ID
-  viewer_id: number,        // 玩家 ID
-  servertime: number,       // Unix 时间戳（秒）
-  result_code: number       // 1 = 成功
-}
-```
+1. `cn-server.ts` 装配主数据库及业务模块，安装管理认证、玩家登录、客户端准入和兼容 hook，注册游戏、后台及资源路由。
+2. 根据配置启动特定 worker；绑定 HTTP 后启动定时任务和联机 TCP。HTTP 的默认地址为 `127.0.0.1:8001`，TCP 默认为 `0.0.0.0:8003`，实际值分别取 `CN_LISTEN_HOST/PORT` 与 `SESSION_HOST/PORT`。
+3. HTTP 与 TCP 都绑定成功后写入 `.logs/cn-server-ready.json`。`.logs/cn-server-current.json` 是日志收集器的进程/文件回执，不能单独证明两个监听器已经就绪；就绪文件也不替代客户端准入等必要配置成功加载的证据。
+4. 正常关闭先停止 TCP 接收和定时任务，再排空持久化及 writer 队列，关闭相关 worker，并移除就绪文件。
 
-### 错误响应（非 msgpack）
+普通游戏 HTTP 请求通常采用 Base64 包装的 MessagePack；表单解析器同时保留普通表单/JSON 兼容。输出由 [cn-response-hook.ts](../src/lib/cn-response-hook.ts) 按响应类型编码，`/load` 的 HTTP 压缩和响应线程池另受配置控制。管理 API、版本文件和静态下载有各自格式，排查时以目标路由为准。
 
-```json
-{ "error": "Bad Request", "message": "..." }
-```
+| 操作或证据 | 入口与边界 |
+| --- | --- |
+| 构建服务端 | `npm run build` 编译到本地忽略的 `out/` 并生成 CSS；`dev:cn` 会先构建。Git 不跟踪生成物，云服包按固定提交隔离生成运行产物，见[运行产物流程](development/runtime-artifacts.md) |
+| Windows 日志启动 | [start-cn-logged.ps1](../scripts/start-cn-logged.ps1) 使用已有生成物，通过日志收集器启动；就绪依据仍取上述监听/就绪记录 |
+| 类型检查 | `npm run typecheck` 只覆盖 `src/**/*.ts`，可能更新 incremental 信息；不覆盖 React 后台 |
+| 后台构建 | `build:admin` 包含依赖安装和后台构建，不能当作无副作用的检查 |
+| 日志 | 默认日志入口按 UTC+08:00 的四小时日历窗口合并 stdout/stderr；详情见[四小时日志](development/SERVER-FOUR-HOUR-LOGS-20261005.md)与[诊断模式](development/server-diagnostics-modes.md) |
 
----
+代码存在、生成物存在、进程启动、监听就绪和具体功能验收是不同证据。部署范围与操作顺序见[开发与交付流程](development/branch-workflow.md)。
 
-## 二、CN 专有端点
+## 4. 数据与线程归属
 
-### 2.1 版本检查
+业务库由主进程初始化和迁移，领域模块通过共享连接或指定 override 连接读写。SQLite 使用 WAL；经过持久化协调器的操作有排队与事务控制，直接同步领域调用仍需核对实际调用路径。
 
-全局 GET 路由，无 `/api/index.php` 前缀。
+| 执行单元 | 当前职责 | 启用/归属边界 |
+| --- | --- | --- |
+| 业务主进程 | HTTP、socket、房间、实时会话及大量业务计算/读写 | 保留进程内状态；不能直接复制成无状态 HTTP cluster |
+| 注册命令 writer | 已登记业务命令、事务与组提交 | `CN_WRITER_THREAD` 代码默认关闭；只覆盖 [commands.ts](../src/lib/persistence/commands.ts) 注册的路径，不能概括为所有业务写入 |
+| SQL persistence worker | 协调器委派的特定 SQL 命令 | `SQLITE_PERSISTENCE_WORKER` 默认关闭；与 writer 是不同执行路径 |
+| checkpoint worker | WAL 维护与自动 checkpoint 所有权切换 | 默认跟随多核配置，四核及以上默认启用多核，可显式覆盖；不承担游戏结算 |
+| 响应线程池 | 特定响应编码和压缩任务 | `CN_RESPONSE_WORKERS` 默认 0；主线程的计算与 MessagePack 成本不能全部归入 worker |
+| NPC 队伍库 worker | 独立 `quest_ai_party_pool.db` 的筛选与持久化，向主进程发送队伍缓存更新 | 实时房间和本局出战快照仍在主进程路径核对 |
+| 存档导出 worker | 单个只读事务中的一致玩家快照，关库后序列化 | 按请求创建，最多一个并行导出；并非复制整个数据库文件 |
 
-| 端点 | 方法 | 用途 |
-|------|:--:|------|
-| `/shijtswy/version/client_release_android.dis` | GET | Android 版本配置文件 |
-| `/shijtswy/version/client_release_ios.dis` | GET | iOS 版本配置文件 |
+配置定义见 [multicore-config.ts](../src/lib/multicore-config.ts)、[writer-config.ts](../src/lib/persistence/writer-config.ts) 与 [sqlite-persistence-worker.ts](../src/lib/sqlite-persistence-worker.ts)。实现和已覆盖路径见[单写线程记录](development/SQLITE-WRITER-THREAD-20261003.md)；[多核记录](development/MULTICORE-CPU-OPTIMIZATION-20261002.md)含历史基准，不能据其旧配置推定当前服务器的实际开关。
 
-响应 `text/plain; charset=utf-8`：
+存档修改从 [player-snapshot.ts](../src/data/snapshots/player-snapshot.ts) 的分类与事务入手；导出、导入、自动备份、账号身份及共享关系分别核对。运行数据库默认位于 `.database/`，数据和环境配置独立于源码版本。
 
-```
-// 用于官服正式用\r\n
-{"default":{"apiPath":"shijtswygamegf.leiting.com"}}
-```
+## 5. 三类内容来源
 
-### 2.2 雷霆认证
+| 来源 | 消费方与有效内容 | 排查要点 |
+| --- | --- | --- |
+| `assets/` JSON 业务表与派生表 | 服务端 accessor 或内容快照读取 | 核对实际 base/extension 合并顺序；编辑单个 JSON 不保证它是最终获胜数据源 |
+| CDN 基线 + 发布增量 | 客户端 master 表、图像、声音和动画资源 | `active/` 存放不等于发布；只由 manifest 中启用且匹配发布类型的记录/chain 进入下载清单 |
+| 平台客户端载荷 | UI、解析器、运行机制与平台实现 | 先通过平台登记选择输入；服务端或静态表修改不能证明 SWF/ABC/AOT 的行为已改变 |
 
-prefix: `/api/index.php`，文件：`src/routes/cn/leitingAuth.ts`
+资源主链为基础 full → CDN diff → manifest 指定的 active 补丁；同名资源后应用覆盖先应用。服务端根据设备 `RES_VER`、平台和目标版本生成所需任务：首次包含基础 full 与适用差分，更新只取后续差分；版本已对齐且没有下载任务时 `full`、`diff` 为 `null`。
 
-| 端点 | 用途 |
-|------|------|
-| `channels/channel_leiting/leiting_login` | 模拟雷霆账号登录 |
-| `channels/channel_leiting/leiting_antiaddiction_login` | 防沉迷系统登录检查 |
-| `channels/channel_leiting/leiting_antiaddiction_logout` | 防沉迷系统登出 |
-| `channels/channel_leiting/leiting_update` | 雷霆 SDK 心跳/更新检查 |
+目标版本由 CDN 差分和启用补丁推导，`CN_RES_VERSION` 已废弃；`/load.available_asset_version` 取有效目标版本。`manifest.depends_on` 是发布依赖，不是设备当前版本。下载数量、大小和具体版本应从当前清单/请求取证，不能固定为历史样例中的包数。
 
-#### leiting_login
+按哈希直接读取单文件还有独立 HTTP 路由：四个平台根下先找 `assets/asset-patch/production/`，再回退 pristine CDN。这是单文件服务的优先级，不替代 ZIP/manifest 发布链；交付时另遵循包范围规则。
 
-请求 Body：
-```typescript
-{
-  userId:    string,   // 用户标识
-  game:      string,   // 游戏标识
-  channelNo: string,   // 渠道号
-  token:     string,   // SDK token（模拟模式下忽略）
-  media?:    string,   // 媒体来源
-  imei?:     string,   // IMEI
-  androidId?: string,  // Android ID
-  oaid?:     string,   // OAID
-  mac?:      string,   // MAC 地址
-  terminInfo?: string, // 终端信息
-  osVer?:    string    // 系统版本
-}
-```
+机制细节见[CDN 总览](cdn/overview.md)、[排查手册](cdn/debugging.md)。[客户端下载逆向](cdn/client-flow.md)基于历史反编译树，使用其具体机制时应匹配所选当前客户端。Android public/LAN 与 iOS 输入从[平台工作入口](../client-patch/AGENTS.md)定位；`accepted_offline`、用户设备验收和云服部署分别取证。
 
-响应 data：
-```json
-{
-  "status": "success",
-  "userId": "<请求中的 userId>",
-  "data": {
-    "idCard": "123456",     // 模拟身份证号
-    "age": 18,              // 年龄（成人）
-    "isGuest": 0,           // 非游客
-    "auth": 1               // 已认证
-  },
-  "online_server_check": true,
-  "heart_beat_interval": 240
-}
-```
+## 6. 从症状选择入口
 
-#### leiting_antiaddiction_login
+| 现象 | 首先读取 | 验证重点 |
+| --- | --- | --- |
+| 无法登录、反复回标题、准入失败 | 玩家登录/准入 hook、对应路由和同时间窗口日志 | 身份、会话、准入配置加载与配对；端口已监听不证明准入可用，需要客户端身份时再进入平台流程 |
+| 联机掉线、卡准备/续战、重复或缺失结算 | `src/multi/` 调用栈、[多人稳定性记录](development/MULTIPLAYER-STABILITY-CONSOLIDATED-20261004.md)、[结算诊断](development/server-settlement-reliability.md) | HTTP 与 TCP 阶段、本局事实快照、结算归属、队列和事务 |
+| 角色、奖励、池子、商店数据不符 | 相关 route/domain 与实际 `assets.ts` accessor | 获胜数据源、结算规则及存档引用；客户端显示另核对有效 master |
+| 资源不更新、图像/动效缺失 | `asset.ts`、`version.ts`、manifest 与请求 `RES_VER/device` | 发布清单、平台资源、覆盖顺序和加载器；图像能单独下载不证明 UI 已预加载 |
+| 存档导出/导入失败或数据丢失 | 快照分类、导出 worker、导入 route/domain | 非空数据、级联、身份保留、V1/V2、失败回滚；写入场景使用隔离库 |
+| 后台打不开或管理 API 失败 | `admin/`、管理认证、Web 路由与 `web/dist/` | 区分生成物、认证、API 和浏览器行为；根类型检查不覆盖后台 |
+| CPU、内存、卡顿或写入排队 | 性能摘要、SQLite diagnostics 与相关 worker 配置 | 先确认实际开关、主线程热点、队列/事务；再选对应基准或回归 |
 
-响应 data：
-```json
-{
-  "status": 0,
-  "message": "success",
-  "data": {
-    "onlineTime": 0,
-    "limitTime": 999999,    // 无限制
-    "usableTime": 999999    // 无限制
-  }
-}
-```
+验证选能覆盖原症状和受影响回归的现有检查。源码、资源、环境及结果未变化时复用有效证据；静态检查、隔离测试、实际服务、设备和生产验收分别记录，不要求每个问题都走发布全套流程。
 
-#### leiting_antiaddiction_logout / leiting_update
+## 7. 文档维护
 
-响应 data：`{}`（空对象）
-
-### 2.3 注册/工具
-
-prefix: `/api/index.php/tool`，文件：`src/routes/cn/tool.ts`
-
-| 端点 | 用途 |
-|------|------|
-| `get_header_response` | 获取响应头握手，客户端据此获取 viewer_id |
-| `auth` | 认证 stub，客户端可能调用，返回空 `{}` |
-| `signup` | CN 账号注册，创建 account + 默认玩家 |
-
-#### get_header_response
-
-请求 Body：
-```typescript
-{ viewer_id: number }
-```
-
-响应 data：`[]`（空数组），`data_headers.viewer_id` 设为 body 中的值。
-
-#### auth
-
-请求 Body：`{}`
-
-响应 data：`{}`
-
-#### signup
-
-请求 Body：
-```typescript
-{
-  device_id:       number,   // 设备 ID
-  channelNo:       string,   // 渠道号
-  media?:          string,   // 媒体来源
-  androidId?:      string,   // Android ID
-  oaid?:           string,   // OAID
-  mac?:            string,   // MAC 地址
-  terminInfo?:     string,   // 终端信息
-  osVer?:          string,   // 系统版本
-  storage_directory_path?: string,
-  first_viewer_id?: number,  // 首次 viewer_id
-  advertise_id?:   string    // 广告 ID
-}
-```
-
-请求 Header：
-```
-udid: string   // 设备 UDID
-```
-
-响应 data：
-```json
-{
-  "login_token":  "<32位随机字母数字>",
-  "newAccount":   1,
-  "roleName":     "Player{accountId}",
-  "accountName":  "Player{accountId}",
-  "sign":         "dummy_sign",
-  "createDate":   "<ISO 8601>",
-  "serverName":   "StarPoint CN",
-  "serverId":     1
-}
-```
-
-### 2.4 玩家加载
-
-prefix: `/api/index.php`，文件：`src/routes/cn/load.ts`
-
-| 端点 | 用途 |
-|------|------|
-| `/load` | 获取玩家完整游戏数据 |
-
-请求 Header：
-```
-res_ver: string   // 客户端 CDN 本地版本（可选）
-```
-
-请求 Body：
-```typescript
-{
-  device_id:       number,
-  device_token:    string,
-  keychain:        number,     // accountId fallback
-  graphics_device_name: string,
-  platform_os_version: string,
-  storage_directory_path: string,
-  oaid?:   string,
-  imei?:   string,
-  mac?:    string,
-  advertise_id?: string,
-  viewer_id?: number           // 主要 accountId 来源
-}
-```
-
-处理流程：
-
-```
-1. 读取 accountId (viewer_id || keychain || 1)
-2. 查找玩家 → dailyResetPlayerDataSync() → collectPlayerDataPooledExpSync()
-3. getClientSerializedData() 序列化完整玩家数据
-4. wrapOptionFields() 补全 CN 特有字段
-   ├─ last_login_time: Number → "YYYY-MM-DD HH:mm:ss"
-   ├─ 30+ CN 配置字段 (cn_crash_url, enable_customer_service, ...)
-   ├─ user_info 缺失字段补全 (is_bought_fund_*, monthly_*, ...)
-   ├─ user_option 补全 (episode_encyclopedia_suggest_show, ...)
-   └─ CN 数组字段 (tower_dungeon_list, stars_gacha_campaign_list, ...)
-5. available_asset_version = res_ver ?? "1.4.0"
-```
-
-响应 data：62 个顶层字段，含 `user_info`, `user_character_list`, `item_list`, `quest_progress`, `gacha_info_list`, `config` 等。
-
-### 2.5 CDN 资源
-
-prefix: `/api/index.php/asset`，文件：`src/routes/cn/asset.ts`
-
-| 端点 | 用途 |
-|------|------|
-| `version_info` | CDN 版本和文件清单 URL |
-| `get_path` | CDN 下载清单（full + diff） |
-
-#### version_info
-
-响应 data：
-```json
-{
-  "base_url":             "http://{ip}:8001/patch/cn/EntityLists/",
-  "files_list":           "http://{ip}:8001/patch/cn/EntityLists/10939-android_medium.csv",
-  "total_size":           10500000000,
-  "delayed_assets_size":  7000000000
-}
-```
-
-#### get_path
-
-请求 Header：
-```
-res_ver:    string   // 客户端本地 CDN 版本（可选）
-asset_size: string   // "fulfill"（全量）或空（部分）
-```
-
-请求 Body：`{}`（可选含 `target_asset_version`）
-
-响应 `full-only`（默认）：
-```json
-{
-  "info": {
-    "client_asset_version":          null,
-    "target_asset_version":          "1.4.0",
-    "eventual_target_asset_version": "1.4.0",
-     "is_initial":                    true,
-    "latest_maj_first_version":      "1.4.0"
-  },
-  "full": {
-    "version": "1.4.0",
-    "archive": [
-      { "location": "http://.../archive-common-full/pinball-1.4.0-N-hash.zip", "size": N, "sha256": "" }
-    ]
-  },
-  "diff": [],
-  "asset_version_hash": ""
-}
-```
-
-响应 `full+diff`（当 diff 目录有文件时）：
-```json
-{
-  "info": {
-    "target_asset_version": "1.4.54"
-  },
-  "diff": [
-    {
-      "original_version": "1.4.0",
-      "version": "1.4.1",
-      "archive": [
-        { "location": "http://.../archive-common-diff/pinball-1.4.0-1.4.1-1-hash.zip", "size": N }
-      ]
-    }
-  ]
-}
-```
-
-版本决策逻辑：
-
-```
-targetVer = res_ver ?? highestDiff   // 首次无 res_ver → 1.4.54
-client_asset_version = res_ver ?? null   // 匹配客户端已有版本
-is_initial = true                        // 强制全量下载
-```
-
-## 八、消息序列化细节
-
-### onSend hook
-
-```typescript
-fastify.addHook("onSend", (_, reply, payload, done) => {
-    if (reply.getHeader("content-type") === "application/x-msgpack") {
-        done(null, pack(payload).toString("base64"));
-        return;
-    }
-    done(null, payload);  // JSON 透传
-});
-```
-
-游戏 API 的所有响应经过 `JSON → msgpackr.pack() → base64 编码`。非 `application/x-msgpack` 的响应（如 404 错误）不走此管线。
-
-### Content-Type 解析器
-
-```typescript
-fastify.addContentTypeParser("application/x-www-form-urlencoded", { parseAs: "string" },
-    (_request, body, done) => {
-        try { done(null, unpack(Buffer.from(body, "base64"))); }
-        catch { jsonParser(_request, body, done); }  // 回退 JSON
-    }
-);
-```
-
-客户端请求经 `base64 解码 → msgpackr.unpack()` 还原为 JavaScript 对象。
-
----
-
-## 九、CN 字段补全函数
-
-`wrapOptionFields()` 位于 `src/routes/cn/load.ts`，在全球服 `getClientSerializedData()` 输出后补全 CN 特有字段。
-
-### 类型转换
-
-| 字段 | 原始类型 | 转换为 |
-|------|---------|--------|
-| `user_info.last_login_time` | Number (Unix) | `"YYYY-MM-DD HH:mm:ss"` |
-
-### CN 配置字段（String）
-
-| 字段 | 值 | 说明 |
-|------|------|------|
-| `cn_crash_url` | `"http://{IP}:8001/crash"` | 崩溃上报端点 |
-| `survey_url` | `""` | 调查问卷 |
-| `qq_group_url` | `""` | QQ 群入口 |
-| `bug_report_url` | `""` | 反馈入口 |
-
-### CN 配置字段（Boolean）
-
-| 字段 | 值 | 说明 |
-|------|------|------|
-| `enable_gift` | `false` | 礼包入口 |
-| `enable_customer_service` | `false` | 客服 |
-| `enable_rename` | `true` | 改名 |
-| `enable_delete_file` | `false` | 删除文件（调试功能） |
-| `enable_newbie` | `true` | 新手引导 |
-| `enable_little_assistant` | `false` | 小助手 |
-| `mission_tips` | `false` | 任务提示 |
-| `monthly_tip` | `false` | 月度提示 |
-| `pass_force_reward` | `false` | 通行证强制奖励 |
-
-### CN 数组字段
-
-| 字段 | 值 | 说明 |
-|------|------|------|
-| `tower_dungeon_list` | `[]` | 塔活动 |
-| `special_exchange_campaign_list` | `[]` | 特殊兑换 |
-| `stars_gacha_campaign_list` | `[]` | 星辰抽卡 |
-| `win_lottery_active_mission_list` | `[]` | 彩票任务 |
-| `favorite_party_group_list` | `[]` | 收藏编队 |
-| `ranking_event_reward` | `[]` | 排名奖励 |
-| `crazy_gacha_result_list` | `[]` | 疯狂抽卡结果 |
-| `last_crazy_gacha_draw_result` | `[]` | 最近抽卡结果 |
-| `fund_receive_list` | `[]` | 基金领取 |
-| `simple_payment_item_list` | `[]` | 支付列表 |
-| `party_list` | `[]` | 队伍列表 |
-
-### 补全的 user_info 字段
-
-| 字段 | 默认值 | 说明 |
-|------|--------|------|
-| `is_bought_fund_ex_quest` | `false` | 购买基金-EX 关卡 |
-| `is_bought_fund_main_quest` | `false` | 购买基金-主线 |
-| `is_bought_fund_laite` ~ `laite3` | `false` | 购买基金-莱特 1~3 |
-| `is_newbie` | `true` | 新手标记 |
-| `is_comeback` | `false` | 回归标记 |
-| `month_card_remain_days` | `0` | 月卡剩余 |
-| `weekly_bonus_remain_days` | `0` | 周奖励剩余 |
-| `monthly_payment_total` | `0` | 月支付累计 |
-| `renewal_gift_remain_days` | `0` | 续费礼包剩余 |
-
-### 补全的 user_option 字段
-
-| 字段 | 默认值 |
-|------|--------|
-| `episode_encyclopedia_suggest_show` | `false` |
-| `server_push` | `false` |
-| `stamina` | `false` |
-
-### 嵌套对象字段
-
-| 字段 | 结构 |
-|------|------|
-| `payment_rebate_info` | `{ expired_time: 0, status: 0, start_time: 0 }` |
-| `monthly_charge_bonus_info` | `{ bonus_days: 0, expired_time: 0, init_time: 0, status: 0, start_time: 0 }` |
-| `comeback_campaign_boss_boost` | `{ period_start_time: 0, period_end_time: 0 }` |
-| `login_info` | `{}` |
-
----
-
-## 十、stubMsgpackReply 函数
-
-行内 stub 端点的统一响应辅助：
-
-```typescript
-function stubMsgpackReply(reply: any, data: any) {
-    reply.header("content-type", "application/x-msgpack");
-    reply.status(200).send({
-        data_headers: {
-            force_update: false, asset_update: false,
-            short_udid: 0, viewer_id: 0,
-            servertime: Math.floor(Date.now() / 1000),
-            result_code: 1
-        },
-        data
-    });
-}
-```
-
-所有行内 stub（`custom_notify`, `contact_active`, `query_unfinish_order` 等）通过此函数返回统一的 `data_headers` + response data。
-
----
-
-## 十一、EN vs CN API 关键差异
-
-| 字段 | EN (global starpoint) | CN (starpoint-cn) | 影响 |
-|------|:--:|:--:|------|
-| `is_initial` | `true` | `true` | 强制全量下载 |
-| `client_asset_version` | 空 (undefined) | `resVer \|\| null` | 匹配客户端已有版本 |
-| `target_asset_version` | `availableAssetVersion` (metadata.json) | `resVer \|\| highestDiff` | 动态匹配 |
-| `full.version` | `"2.1.0"` | `"1.4.0"` | CDN 基准版本 |
-| `full.archive` | 预构建静态 JSON（357 条） | 动态扫描目录（490 条） | 文件来源不同 |
-| SHA256 | 真实 SHA256 值 | 空字符串 | EN 校验完整性 |
-| `diff` | 始终 `[]` | 54 组增量包 | CN 支持 diff |
-| `device_lang` header | 必需，否则 400 | 忽略 | EN 多语言支持 |
-
----
-
-## 十二、CharacterTable orderedmap 二进制格式
-
-CDN 中 `production/upload/93/35d17430d2d157ea5e2b573b6ba4f210232664` 包含 505 个角色的 CharacterTable 数据。
-
-### 物理路径计算
-
-```
-hash = SHA1("master/character/character.orderedmap" + "K6R9T9Hz22OpeIGEWB0ui6c6PYFQnJGy")
-path = "production/upload/" + hash[0:2] + "/" + hash[2:]
-```
-
-### 二进制结构
-
-```
-[4 bytes: 压缩后长度（大端）]
-[zlib 压缩数据]
-  → 解压 → [4 bytes: 条目数 (LE)]
-            [条目数 × 8 bytes: { string_offset(u32), data_offset(u32) }]
-            [键字符串区域: null-separated strings]
-            [zlib-compressed CSV rows]
-```
-
-### 数据内容
-
-每个 CSV 行对应 CharacterValues 的 37 列：
-```
-[0] string_id      [1] gacha_odds_weight  [2] rarity      [3] element
-[4] race           [5] character_tag       [6] speciality   [7] gender
-[8] action_skill   [9-16] skill_switching  [17-18] leader_ability
-[19-24] abilities  [25] mana_board_kind    [26] stance      ...
-[36] max_ability_powers
-```
-
-### Salt 验证
-
-```
-已知确认路径:
-  ✅ "master/config/config.orderedmap" → CSV 中找到 (16 bytes)
-  ✅ "story/.../movie.movie.amf3.deflate" → CSV 中找到 (6260 bytes)
-  ✅ "master/character/character.orderedmap" → CSV 中找到 (72979 bytes)
-```
-
-Salt `K6R9T9Hz22OpeIGEWB0ui6c6PYFQnJGy` 经 3/3 路径验证正确。
-
----
-
-## 十三、wf-assets-cn 源数据
-
-`wf-assets-cn/` 目录包含 CN CDN 构建前的原始 JSON 数据（571MB, 2115 个 orderedmap JSON 文件）。
-
-```
-wf-assets-cn/
-├── VERSION                → "1.4.54"
-├── .pathlist (7.5MB)      → 逻辑路径→物理文件映射
-├── orderedmap/             → JSON 源数据
-│   ├── character/          → 角色表（character.json 含 505 角色）
-│   ├── gacha/              → 抽卡表
-│   ├── ability/            → 技能表
-│   ├── battle/             → 战斗数据
-│   └── ...                 → 共 2115 个 .json 文件
-└── assets/                 → 服务端 character.json 等
-```
-
-### 与 CDN 关系
-
-```
-wf-assets-cn (JSON) → 构建过程 → CDN (binary in ZIPs)
-```
-
-源数据包含所有 master 表。CDN 构建时应全部编译为二进制并放入 ZIP。当前 `cn_cdn.rar` 中的 `character/character.orderedmap` 数据完整（505 角色），确认构建过程正常。
-
-## 三、行内 Stub 端点
-
-直接在 `cn-server.ts` 中定义，替换全球服对应路由。
-
-| 端点 | 用途 | 响应 data |
-|------|------|----------|
-| `assetintitle/version_info_in_title` | 标题界面 CDN 信息 | `{ base_url, files_list, total_size, delayed_assets_size }` |
-| `tool/check_social_link_enable` | 社交功能开关 | `{ enable: false }` |
-| `tool/contact_active` | 客服入口 | `{ enable_customer_service: false }` |
-| `tool/custom_notify` | 在线通知系统 | `{}` |
-| `channels/channel_leiting_pay/query_unfinish_order` | 雷霆支付未完成订单 | `{ order_id: "" }` |
-| `tutorial/update_step` | 教程步骤（替代全球服） | `{ step: 1, start_time: N, mail_arrived: false }` |
-| `tutorial/finish_trigger` | 教程完成触发器（替代全球服） | `[]` |
-
----
-
-## 四、调试端点
-
-| 端点 | 方法 | 用途 |
-|------|:--:|------|
-| `/debug` | GET/POST | 信标日志，参数 `loc` 记录到控制台 |
-| `/crash` | POST | 客户端崩溃报告，body 打印到控制台 |
-
----
-
-## 五、复用全球服 API
-
-以下路由复用 `src/routes/api/`，prefix 均为 `/api/index.php`：
-
-| 路由 | 文件 | 功能 |
-|------|------|------|
-| `reproduce` | reproduce.ts | 遥测/回放 |
-| `gacha` | gacha.ts | 抽卡执行与交换 |
-| `party` | party.ts | 队伍编辑 |
-| `expod` | expod.ts | 经验值系统 |
-| `story_quest` | storyQuest.ts | 剧情关卡 |
-| `option` | option.ts | 游戏设置 |
-| `single_battle_quest` | singleBattleQuest.ts | 单人战斗 |
-| `multi_battle_quest` | multiBattleQuest.ts | 多人战斗 |
-| `attention` | attention.ts | 协作匹配 |
-| `character` | character.ts | 角色强化/突破/玛纳节点 |
-| `party_group` | partyGroup.ts | 编队组管理 |
-| `equipment` | equipment.ts | 装备系统 |
-| `ex_boost` | exBoost.ts | EX 强化 |
-| `box_gacha` | boxGacha.ts | 宝箱抽卡 |
-| `shop` | shop.ts | 商店 |
-| `encyclopedia` | encyclopedia.ts | 图鉴 |
-| `mail` | mail.ts | 邮件系统 |
-| `ranking_event` | rankingEvent.ts | 排名活动 |
-| `mission` | mission.ts | 任务系统 |
-| `payment` | payment.ts | 支付 |
-| `news` | news.ts | 新闻/公告 |
-| `event/raid` | raidEvent.ts | 讨伐活动 |
-| `event/rush` | rushEvent.ts | Rush 活动 |
-
----
-
-## 六、静态文件
-
-| 路径 | 映射 | 说明 |
-|------|------|------|
-| `/patch/*` | `.cdn/` 目录 | CDN ZIP 资源服务 |
-
----
-
-## 七、数据流
-
-```
-客户端 APK
-  └─ /api/index.php/tool/signup     → 注册账号
-  └─ /api/index.php/load            → 获取玩家数据
-  └─ /api/index.php/asset/get_path  → CDN 下载清单
-  └─ /patch/cn/archive-*/**.zip     → 下载 CDN ZIP
-  └─ /api/index.php/tutorial/update_step → 教程进度
-  └─ /api/index.php/channels/...    → 雷击 SDK stub
-  └─ 游戏 API (gacha/party/quest...) → 核心游戏逻辑
-```
+- 服务装配、状态/线程归属、数据来源、发布链或关键入口改变时，更新本页对应段落和入口；纯数值/文案变化通常只维护专项资料。
+- 保留实际代码链接和核对日期。环境开关、端口、资源版本、客户端身份和部署状态从当前对象取值，不在总览中登记“永久最新值”。
+- 专项文档保存详细机制、验证和回滚；本页保留定位所需信息。历史参考只用于匹配输入的兼容调查，不作为当前运行状态。

@@ -20,15 +20,10 @@ test('featured box characters are returned for all three type-6 master rewards',
     }
 })
 
-test('event-scoped type-5 pass-card points are skipped without granting a character', () => {
-    const result = drawBoxGachaSync({
+test('event-scoped type-5 pass-card points reject a draw instead of consuming it', () => {
+    const drawn = []
+    assert.throws(() => drawBoxGachaSync({
         '1001': { type: 5, count: 10, available: 1, tier: 0 },
-    }, [], 1)
-    assert.equal(result.drawCount, 1)
-    assert.deepEqual(result.rewards, [{ id: 1001, number: 1 }])
-    assert.equal(result.characters.size, 0)
-    assert.equal(result.items.size, 0)
-    assert.equal(result.equipment.size, 0)
-    assert.equal(result.mana, 0)
-    assert.equal(result.exp, 0)
+    }, drawn, 1), /pass-card point rewards are unsupported/)
+    assert.deepEqual(drawn, [])
 })

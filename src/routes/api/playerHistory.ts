@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify"
-import { getPlayerTimeOffsetSync, resolvePlayerIdSync } from "../../data/activeAccount"
+import { resolvePlayerIdSync } from "../../data/activeAccount"
 import { getPlayerCharactersSync } from "../../data/domains/character"
 import { hasPlayerDegreeSync } from "../../data/domains/degree"
 import {
@@ -21,7 +21,8 @@ import {
     PlayerHistoryTopicAggregates,
 } from "../../lib/player-history-aggregates"
 import { getFavoritePartySelectionSync } from "../../lib/profileFavorite"
-import { generateDataHeaders, getServerTimeForPlayer, getTimeOffset } from "../../utils"
+import { generateDataHeaders, getServerTimeForPlayer } from "../../utils"
+import { getServerDate, getTimeOffset } from "../../utils"
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator"
 
 interface RequestBody {
@@ -137,12 +138,12 @@ const routes = async (fastify: FastifyInstance) => {
         const degreeId = hasPlayerDegreeSync(resolved.playerId, settings.degreeId)
             ? settings.degreeId
             : defaults.degreeId
-        const offsetMs = getPlayerTimeOffsetSync(resolved.playerId) ?? getTimeOffset() ?? 0
+        const offsetMs = getTimeOffset() ?? 0
         const aggregates = buildPlayerHistoryTopicAggregatesSync(
             resolved.playerId,
             resolved.player,
             getStartGameDate(resolved.playerId, offsetMs),
-            formatPlayerHistoryJstDate(new Date(), offsetMs),
+            formatPlayerHistoryJstDate(getServerDate(), 0),
             offsetMs,
         )
 

@@ -1,0 +1,50 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.data.DataOptimization; label: cn.optimize.data::DataOptimization$/cn.optimize.data:DataOptimization::equals|1; body: 8; method: 9
+# code SHA-256: b32323e31e20f3d56b38696d55f35f881c8cf023b58a6813fe4f7b83923e3fc1; header: [3, 4, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: pushbyte [0]
+#0003 ofs0004: setlocal_3 []
+#0004 ofs0005: getlocal_1 []
+#0005 ofs0006: pushnull []
+#0006 ofs0007: equals []
+#0007 ofs0008: dup []
+#0008 ofs0009: iftrue [] -> #13
+#0009 ofs000d: pop []
+#0010 ofs000e: getlocal_2 []
+#0011 ofs000f: pushnull []
+#0012 ofs0010: equals []
+#0013 ofs0011: dup []
+#0014 ofs0012: iftrue [] -> #22
+#0015 ofs0016: pop []
+#0016 ofs0017: getlocal_1 []
+#0017 ofs0018: getproperty [(7, (22, ''), 'length')]
+#0018 ofs001a: getlocal_2 []
+#0019 ofs001b: getproperty [(7, (22, ''), 'length')]
+#0020 ofs001d: equals []
+#0021 ofs001e: not []
+#0022 ofs001f: iffalse [] -> #25
+#0023 ofs0023: pushfalse []
+#0024 ofs0024: returnvalue []
+#0025 ofs0025: pushbyte [0]
+#0026 ofs0027: setlocal_3 []
+#0027 ofs0028: jump [] -> #39
+#0028 ofs002c: op_09 []
+#0029 ofs002d: getlocal_1 []
+#0030 ofs002e: getlocal_3 []
+#0031 ofs002f: getproperty [(27, ((5, 'cn.optimize.data:DataOptimization'), (26, 'cn.optimize.data:DataOptimization'), (26, 'Object'), (22, 'cn.optimize.data'), (23, 'cn.optimize.data'), (5, 'FilePrivateNS:DataOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0032 ofs0031: getlocal_2 []
+#0033 ofs0032: getlocal_3 []
+#0034 ofs0033: getproperty [(27, ((5, 'cn.optimize.data:DataOptimization'), (26, 'cn.optimize.data:DataOptimization'), (26, 'Object'), (22, 'cn.optimize.data'), (23, 'cn.optimize.data'), (5, 'FilePrivateNS:DataOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0035 ofs0035: ifstricteq [] -> #38
+#0036 ofs0039: pushfalse []
+#0037 ofs003a: returnvalue []
+#0038 ofs003b: inclocal_i [3]
+#0039 ofs003d: getlocal_3 []
+#0040 ofs003e: getlocal_1 []
+#0041 ofs003f: getproperty [(7, (22, ''), 'length')]
+#0042 ofs0041: iflt [] -> #28
+#0043 ofs0045: pushtrue []
+#0044 ofs0046: returnvalue []
+# exceptions: []

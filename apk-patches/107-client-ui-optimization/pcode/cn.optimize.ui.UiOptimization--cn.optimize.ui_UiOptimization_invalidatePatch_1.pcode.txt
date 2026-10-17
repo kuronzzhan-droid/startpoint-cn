@@ -1,0 +1,36 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.ui.UiOptimization; label: cn.optimize.ui::UiOptimization$/invalidatePatch|1; body: 5; method: 6
+# code SHA-256: 9fc56168ee41af4640657e6bf5ccb58e9d3abddb608a5fefc1ee71977fc767a4; header: [2, 7, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex [(7, (5, 'cn.optimize.ui:UiOptimization'), 'listStates')]
+#0003 ofs0004: getlocal_1 []
+#0004 ofs0005: getproperty [(27, ((5, 'cn.optimize.ui:UiOptimization'), (26, 'cn.optimize.ui:UiOptimization'), (26, 'Object'), (22, 'cn.optimize.ui'), (23, 'cn.optimize.ui'), (5, 'FilePrivateNS:UiOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0005 ofs0007: coerce [(7, (22, ''), 'Object')]
+#0006 ofs0009: dup []
+#0007 ofs000a: setlocal [4]
+#0008 ofs000c: pushnull []
+#0009 ofs000d: ifne [] -> #11
+#0010 ofs0011: returnvoid []
+#0011 ofs0012: pushbyte [0]
+#0012 ofs0014: setlocal [6]
+#0013 ofs0016: getlocal_2 []
+#0014 ofs0017: setlocal [5]
+#0015 ofs0019: jump [] -> #28
+#0016 ofs001d: op_09 []
+#0017 ofs001e: getlocal [5]
+#0018 ofs0020: getlocal [6]
+#0019 ofs0022: nextvalue []
+#0020 ofs0023: coerce [(7, (22, ''), 'Object')]
+#0021 ofs0025: setlocal_3 []
+#0022 ofs0026: getlocal [4]
+#0023 ofs0028: getlocal_3 []
+#0024 ofs0029: getproperty [(9, 'key', ((5, 'cn.optimize.ui:UiOptimization'), (26, 'cn.optimize.ui:UiOptimization'), (26, 'Object'), (22, 'cn.optimize.ui'), (23, 'cn.optimize.ui'), (5, 'FilePrivateNS:UiOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0025 ofs002b: convert_i []
+#0026 ofs002c: deleteproperty [(27, ((5, 'cn.optimize.ui:UiOptimization'), (26, 'cn.optimize.ui:UiOptimization'), (26, 'Object'), (22, 'cn.optimize.ui'), (23, 'cn.optimize.ui'), (5, 'FilePrivateNS:UiOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0027 ofs002e: pop []
+#0028 ofs002f: hasnext2 [5, 6]
+#0029 ofs0032: iftrue [] -> #16
+#0030 ofs0036: returnvoid []
+# exceptions: []

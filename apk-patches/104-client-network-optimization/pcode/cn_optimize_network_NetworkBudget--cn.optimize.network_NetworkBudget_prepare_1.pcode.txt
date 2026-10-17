@@ -1,0 +1,30 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn/optimize/network/NetworkBudget; label: cn.optimize.network::NetworkBudget$/prepare|1; body: 1; method: 2
+# code SHA-256: 9cfeb09440709663f096c9c611d5f606bb72fcc4f867412985ac6a753cc7594d; header: [4, 4, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_2 []
+#0003 ofs0003: pushbyte [0]
+#0004 ofs0005: ifne [] -> #17
+#0005 ofs0009: getlex [(7, (22, 'flash.utils'), 'getTimer')]
+#0006 ofs000b: getglobalscope []
+#0007 ofs000c: call [0]
+#0008 ofs000e: convert_i []
+#0009 ofs000f: setlocal_3 []
+#0010 ofs0010: getlocal_1 []
+#0011 ofs0011: getlocal_1 []
+#0012 ofs0012: getproperty [(9, 'devConfig', ((5, 'cn.optimize.network:NetworkBudget'), (26, 'cn.optimize.network:NetworkBudget'), (26, 'Object'), (22, 'cn.optimize.network'), (23, 'cn.optimize.network'), (5, 'FilePrivateNS:NetworkBudget'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0013 ofs0014: getproperty [(9, 'connectionTotalTimeout', ((5, 'cn.optimize.network:NetworkBudget'), (26, 'cn.optimize.network:NetworkBudget'), (26, 'Object'), (22, 'cn.optimize.network'), (23, 'cn.optimize.network'), (5, 'FilePrivateNS:NetworkBudget'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0014 ofs0016: convert_i []
+#0015 ofs0017: setproperty [(9, 'timeLeft', ((5, 'cn.optimize.network:NetworkBudget'), (26, 'cn.optimize.network:NetworkBudget'), (26, 'Object'), (22, 'cn.optimize.network'), (23, 'cn.optimize.network'), (5, 'FilePrivateNS:NetworkBudget'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0016 ofs0019: jump [] -> #23
+#0017 ofs001d: getlocal_1 []
+#0018 ofs001e: findpropstrict [(7, (22, ''), 'remaining')]
+#0019 ofs0020: getlocal_1 []
+#0020 ofs0021: getlocal_3 []
+#0021 ofs0022: callproperty [(7, (22, ''), 'remaining'), 2]
+#0022 ofs0025: setproperty [(9, 'timeLeft', ((5, 'cn.optimize.network:NetworkBudget'), (26, 'cn.optimize.network:NetworkBudget'), (26, 'Object'), (22, 'cn.optimize.network'), (23, 'cn.optimize.network'), (5, 'FilePrivateNS:NetworkBudget'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0023 ofs0027: getlocal_3 []
+#0024 ofs0028: returnvalue []
+# exceptions: []

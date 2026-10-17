@@ -1,0 +1,1 @@
+package pinball.master.generated {import haxe.ds.Option;public class CharacterQuestValues {public var character_1:int;public var character_2:Option;public var character_3:Option;public function CharacterQuestValues(a:int,b:Option,c:Option){character_1=a;character_2=b;character_3=c;}}}

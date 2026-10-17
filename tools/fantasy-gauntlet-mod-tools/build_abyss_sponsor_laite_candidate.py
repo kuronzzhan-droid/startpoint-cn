@@ -2,7 +2,7 @@
 
 Requires finalized seed-46454236 outputs and verified .105/.106 donors.
 The shared manifest and held entry-condition resources remain untouched. The
-candidate lives below active/candidates because the runtime scans flat ZIPs.
+candidate lives below inactive/candidates (moved out of the tracked active/ tree on 2026-10-06) because the runtime scans flat ZIPs.
 """
 from __future__ import annotations
 
@@ -232,7 +232,7 @@ def main():
         assert {m: z.read(m) for m in z.namelist()} == payloads
         sponsor.verify_degree(degree_before, z.read(p.member(("common", p.hrel(sponsor.DEGREE_LOGICAL)))))
         sponsor.verify_stored_png(z.read(p.member(("common", p.hrel(sponsor.IMAGE_LOGICAL)))), formal)
-    dest = ROOT / "assets/asset-patch/active/candidates" / NAME
+    dest = ROOT / "assets/asset-patch/inactive/candidates" / NAME
     assert not dest.resolve().is_relative_to(cdn)
     assert not dest.exists() or dest.read_bytes() == archive
     save(dest, archive)

@@ -10,6 +10,7 @@ import { getComputer } from "./registry"
 import { getCategoryMissionRewardStageDefinition } from "./rewards"
 import { getCompletedStageNumbers, getMissionFinalTargetProgress, getMissionIdsByCategory, isMissionProgressComplete } from "./stages"
 import { getMissionPattern, isMissionEnabledAt } from "./patterns"
+import { isClientProgressMissionPattern } from "./client-progress"
 import { MissionRewardGranter } from "./grants"
 import { getMissionMasterDefinition } from "./master-data"
 import { runPersistenceTransaction, runPersistenceTransactionSync, runWriterCommand } from "../persistence-coordinator"
@@ -153,7 +154,7 @@ function evaluateMissionCategories(
                 missionId,
                 progress: finalTarget === undefined
                     ? monotonicProgress
-                    : category === 2
+                    : category === 2 || isClientProgressMissionPattern(getMissionPattern(category, missionId))
                         ? Math.max(dbProgress, Math.min(monotonicProgress, finalTarget))
                         : Math.min(monotonicProgress, finalTarget),
                 receivedStages: current?.stages ?? [],

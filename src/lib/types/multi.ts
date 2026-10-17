@@ -1,4 +1,5 @@
 import { QuestCategory } from "./quest"
+import type { QuestNpcPartySnapshot } from "../../multi/npc/quest-party-pool-shared"
 
 export interface MultiMatePartyCharacter {
     id: number
@@ -50,6 +51,8 @@ export interface MultiRoomLifecycle {
     phase: MultiRoomPhase
     version: number
     battleSessionId: string | null
+    /** Internal scene identity; legacy TCP arrays remain unchanged. */
+    sceneEpoch?: number
 }
 
 
@@ -71,6 +74,8 @@ export interface MultiRoom {
     host_party_id: number
     /** Party selections approved before this generation enters BATTLE. */
     equipmentPartyIds?: Record<number, number>
+    /** Actual wire rosters captured with the checked selections before BATTLE. */
+    npcPartySnapshots?: Record<number, QuestNpcPartySnapshot>
     readyCountdownPending?: boolean
     host_main_character_id: number
     accepted_type: number

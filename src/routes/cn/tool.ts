@@ -7,6 +7,8 @@ import { SessionType } from "../../data/types";
 import { saveAccountDefaultPlayer } from "../../data/activeAccount";
 import { readPlayerLoginSession, playerLoginProfile, verifiedPlayerLogin } from "../../lib/player-login";
 import { runPersistenceTransactionSync } from "../../lib/persistence-coordinator";
+import { accountCreationBudget, AccountCreationBudgetError, AccountCreationReservation } from "../../lib/account-creation-budget";
+import { createPlayerLoginRateLimiter } from "../../lib/player-login-rate-limit";
 
 interface CnSignupBody {
     device_id: number;
@@ -36,6 +38,8 @@ interface GetHeaderResponseBody {
 }
 
 const routes = async (fastify: FastifyInstance) => {
+    const creation = accountCreationBudget(fastify)
+    const returningLoginLimited = createPlayerLoginRateLimiter()
     fastify.post("/get_header_response", (request: FastifyRequest, reply: FastifyReply) => {
         const body = request.body as GetHeaderResponseBody;
         reply.header("content-type", "application/x-msgpack");
@@ -77,56 +81,86 @@ const routes = async (fastify: FastifyInstance) => {
             return reply.status(400).send({ error: "Missing device_id" })
         }
 
-        const signup = runPersistenceTransactionSync({
-            domain: "account", operation: "signup_device",
-        }, () => {
-            let resolvedAccountId: number | undefined
-            let createdPlayerId: number | undefined
-            let viewerId: number | undefined
-            // Device binding: each device gets its own account.
+        const reserved: { current: AccountCreationReservation | null } = { current: null }
+        let signup
+        try {
+            // Avoid taking a write lock when new-account capacity is exhausted.
+            // The transaction rechecks the binding to handle concurrent deletion.
             const binding = getDeviceBindingSync(deviceId)
-            if (binding) {
-                // Known device — verify account still exists.
-                const accountExists = getAccountSync(binding.account_id)
-                if (accountExists) {
-                    resolvedAccountId = binding.account_id
-                    newAccount = false
-                    updateAccountSync({
-                        id: resolvedAccountId,
-                        lastLoginTime: new Date(),
-                        // A still-bound device is authoritative after reinstall;
-                        // refresh its local UDID so takeover checks remain valid.
-                        ...(accountExists.takeoverUdid ? { takeoverUdid: udid } : {}),
-                    })
-                    const sessions = getAccountSessionsOfTypeSync(resolvedAccountId, SessionType.VIEWER)
-                    if (sessions.length > 0) {
-                        viewerId = parseInt(sessions[0].token)
-                        deleteAccountSessionsOfTypeSync(resolvedAccountId, SessionType.VIEWER)
-                    }
-                } else {
-                    // Account was deleted — clean up the stale binding in the
-                    // same transaction that creates its replacement.
-                    deleteDeviceBindingSync(deviceId)
-                }
-            }
-            if (resolvedAccountId === undefined) {
-                const account = insertAccountSync({
-                    appId: "wf_cn", idpAlias: "", idpCode: "leiting", idpId: "", status: "normal",
+            const existing = binding && getAccountSync(binding.account_id)
+            if (existing && returningLoginLimited(request.ip, "/player-auth/resume", {}, existing.id)) {
+                return reply.header("retry-after", "60").type("application/x-msgpack").send({
+                    data_headers: generateDataHeaders({ result_code: 516 }), data: {},
                 })
-                const player = insertDefaultPlayerSync(account.id)
-                insertDeviceBindingSync(deviceId, account.id)
-                resolvedAccountId = account.id
-                createdPlayerId = player.id
             }
-            viewerId ??= generateViewerId()
-            insertSessionWithTokenSync({
-                token: String(viewerId),
-                accountId: resolvedAccountId,
-                type: SessionType.VIEWER,
-                expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            if (!existing) {
+                reserved.current = creation.reserve(request.ip)
+                if (!reserved.current) throw new AccountCreationBudgetError()
+            }
+            signup = runPersistenceTransactionSync({
+                domain: "account", operation: "signup_device",
+            }, () => {
+                let resolvedAccountId: number | undefined
+                let createdPlayerId: number | undefined
+                let viewerId: number | undefined
+                // Device binding: each device gets its own account.
+                const binding = getDeviceBindingSync(deviceId)
+                if (binding) {
+                    // Known device — verify account still exists.
+                    const accountExists = getAccountSync(binding.account_id)
+                    if (accountExists) {
+                        resolvedAccountId = binding.account_id
+                        newAccount = false
+                        updateAccountSync({
+                            id: resolvedAccountId,
+                            lastLoginTime: new Date(),
+                            // A still-bound device is authoritative after reinstall;
+                            // refresh its local UDID so takeover checks remain valid.
+                            ...(accountExists.takeoverUdid ? { takeoverUdid: udid } : {}),
+                        })
+                        const sessions = getAccountSessionsOfTypeSync(resolvedAccountId, SessionType.VIEWER)
+                        if (sessions.length > 0) {
+                            viewerId = parseInt(sessions[0].token)
+                            deleteAccountSessionsOfTypeSync(resolvedAccountId, SessionType.VIEWER)
+                        }
+                    } else {
+                        // Account was deleted — clean up the stale binding in the
+                        // same transaction that creates its replacement.
+                        deleteDeviceBindingSync(deviceId)
+                    }
+                }
+                if (resolvedAccountId === undefined) {
+                    // A previously valid account may disappear between the cheap
+                    // read and BEGIN. Still require admission before creating it.
+                    reserved.current ??= creation.reserve(request.ip)
+                    if (!reserved.current) throw new AccountCreationBudgetError()
+                    const account = insertAccountSync({
+                        appId: "wf_cn", idpAlias: "", idpCode: "leiting", idpId: "", status: "normal",
+                    })
+                    const player = insertDefaultPlayerSync(account.id)
+                    insertDeviceBindingSync(deviceId, account.id)
+                    resolvedAccountId = account.id
+                    createdPlayerId = player.id
+                }
+                viewerId ??= generateViewerId()
+                insertSessionWithTokenSync({
+                    token: String(viewerId),
+                    accountId: resolvedAccountId,
+                    type: SessionType.VIEWER,
+                    expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+                })
+                return { accountId: resolvedAccountId, viewerId, createdPlayerId, newAccount }
             })
-            return { accountId: resolvedAccountId, viewerId, createdPlayerId, newAccount }
-        })
+        } catch (error) {
+            reserved.current?.release()
+            if (error instanceof AccountCreationBudgetError) {
+                reply.type("application/x-msgpack")
+                return reply.send({ data_headers: generateDataHeaders({ result_code: 516 }), data: {} })
+            }
+            throw error
+        }
+        if (signup.newAccount) reserved.current?.commit()
+        else reserved.current?.release()
         accountId = signup.accountId
         const viewerId = signup.viewerId
         newAccount = signup.newAccount

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<application xmlns="http://ns.adobe.com/air/application/51.0">
+  <id>cn.party.refresh.performance.test</id><versionNumber>1.0.0</versionNumber><filename>PartyRefreshTest</filename>
+  <initialWindow><content>RuntimeHarness.swf</content><visible>false</visible><width>1</width><height>1</height></initialWindow>
+</application>

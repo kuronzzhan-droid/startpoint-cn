@@ -1,5 +1,6 @@
+import { getPlayerBusinessDateSync } from "../../lib/player-time-compat"
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { generateDataHeaders, getServerTime, getServerDate } from "../../utils";
+import { generateDataHeaders, getServerTime, getServerDate, getRealServerDate, getTimeOffset, withServerClock } from "../../utils";
 import { collectPlayerDataPooledExpSync, dailyResetPlayerDataSync, getPlayerSync, updatePlayerSync } from "../../data/domains/player"
 import { deletePlayerActiveQuestIfPlayIdSync, getPlayerActiveQuestSync } from "../../data/domains/quest_active"
 import { getSession } from "../../data/domains/session"
@@ -8,14 +9,13 @@ import { getContentSnapshot } from "../../content/runtime/content-snapshot";
 import { reconcileActiveMissionFacts } from "../../lib/mission/active-reconciliation";
 import { resolvePlayerIdSync } from "../../data/activeAccount";
 import { getDisplayHost } from "../../multi/room/serializer";
-import { getRoom } from "../../multi/room/manager";
-import { sessionManager } from "../../multi/state/SessionManager";
 import { runPermanentValidators } from "../../lib/validate";
 import { activeQuests } from "../api/singleBattleQuest";
 import { getFavoritePartyGroupListSync } from "../../lib/profileFavorite";
 import { gameVerboseLog } from "../../lib/game-logging";
 import { shouldResetMode15RunForStaleActiveQuest } from "../../lib/mode15-active-quest-recovery";
-import { classifyMultiActiveQuestRecovery } from "../../lib/multi-active-quest-recovery";
+import type { MultiActiveQuestRecoveryDecision } from "../../lib/multi-active-quest-recovery";
+import { getRoomCommandGateway } from "../../multi/coordinator/default-runtime";
 import {
     cleanupLegacyMode15RescueProgressSync,
     isMode15RuntimeLoaded,
@@ -40,8 +40,11 @@ import { ensureDailyVmoneyMailForPlayerSync } from "../../lib/daily-vmoney-mail"
 import { getNewsDeliveryState, getNewsInterruptFlag } from "../../lib/news-delivery";
 import { performance } from "node:perf_hooks";
 import { recordServerWork } from "../../lib/server-work-performance";
-import { runPersistenceTransaction, runPersistenceWriteScope } from "../../lib/persistence-coordinator";
+import { runPersistenceTransaction } from "../../lib/persistence-coordinator";
+import { isPersistenceAdmissionError } from "../../lib/persistence-admission";
 import { serializePlayerSnapshot } from "../../data/utils/client-player-snapshot";
+import { formatClientDisplayDateTime } from "../../lib/client-display-time";
+import { withServerWorkAdmission } from "../../lib/shutdown-state";
 
 interface CnLoadBody {
     device_id: number;
@@ -61,8 +64,7 @@ function fillClientDefaults(d: any) {
     if (d.user_info) {
         if (typeof d.user_info.last_login_time === 'number') {
             const dt = new Date(d.user_info.last_login_time * 1000);
-            const p = (n: number) => n.toString().padStart(2, '0');
-            d.user_info.last_login_time = `${dt.getFullYear()}-${p(dt.getMonth()+1)}-${p(dt.getDate())} ${p(dt.getHours())}:${p(dt.getMinutes())}:${p(dt.getSeconds())}`;
+            d.user_info.last_login_time = formatClientDisplayDateTime(dt);
         }
         d.user_info.is_bought_fund_ex_quest ??= false;
         d.user_info.is_bought_fund_main_quest ??= false;
@@ -153,41 +155,28 @@ const routes = async (fastify: FastifyInstance) => {
             return reply.status(400).send({ error: "Bad Request", message: "No player found" });
         }
 
-        const player = getPlayerSync(playerId);
-        if (player === null) {
-            return reply.status(500).send({ error: "Internal Server Error", message: "No player data." });
-        }
-
-        const now = getServerDate();
-        // One write transaction covers load maintenance and every repair the
-        // snapshot needs. It is committed before the read-only serialization,
-        // so a /load performs a single COMMIT instead of one per repair.
-        const prepared = await runPersistenceWriteScope({
+        return await withServerWorkAdmission(async () => {
+        // The load snapshot preparation also repairs old saves (including
+        // mana boards and stamina). Admit the complete write unit before
+        // queueing, read fresh state inside it, and commit it atomically.
+        const { now, prepared } = await runPersistenceTransaction({
             domain: "player", playerId, operation: "load_maintenance",
-        }, (loadWrites) => {
-            loadWrites.write(() => {
-                ensureDailyVmoneyMailForPlayerSync(playerId, now.getTime());
-                dailyResetPlayerDataSync(player, now);
-                collectPlayerDataPooledExpSync(player, now);
-
-                // Keep the login timestamp with the same player-owned transaction
-                // as the other load maintenance writes.
-                if (now.toDateString() !== player.lastLoginTime.toDateString()) {
-                    updatePlayerSync({ id: player.id, lastLoginTime: now });
-                }
-            });
+        }, () => {
+            const now = getServerDate();
+            const current = getPlayerSync(playerId);
+            if (!current) throw new Error("No player data.");
+            ensureDailyVmoneyMailForPlayerSync(playerId, getRealServerDate().getTime());
+            dailyResetPlayerDataSync(current, now);
+            collectPlayerDataPooledExpSync(current, now);
+            updatePlayerSync({ id: playerId, lastLoginTime: getPlayerBusinessDateSync(playerId, now) });
             markLoadPhase("load.maintenance")
 
-            // Equipment is needed by both validation and serialization. Validators
-            // mutate this request-local object when they repair a row.
-            const equipmentList = getPlayerEquipmentListSync(playerId)
-            runPermanentValidators(playerId, { player, equipmentList });
-
-            // Daily reset and pooled EXP collection may update the base row. Read
-            // it once after those mutations, then reuse the fresh snapshot through
-            // the remaining synchronous /load pipeline.
+            // Maintenance can change the base row. Validators mutate these
+            // request-local snapshots; none escape if this transaction fails.
             const currentPlayer = getPlayerSync(playerId)
-            if (currentPlayer === null) return null
+            if (!currentPlayer) throw new Error("No player data.");
+            const equipmentList = getPlayerEquipmentListSync(playerId)
+            runPermanentValidators(playerId, { player: currentPlayer, equipmentList }, { throwOnError: true });
             markLoadPhase("load.player")
 
             const characterList = getPlayerCharactersSync(playerId)
@@ -205,17 +194,14 @@ const routes = async (fastify: FastifyInstance) => {
                 partyGroupList,
                 questProgress,
                 repository: getContentSnapshot().repository,
-                now: getServerTime() * 1000,
+                now: now.getTime(),
             })
             const removedMode15RescueRows = cleanupLegacyMode15RescueProgressSync(playerId)
             if (removedMode15RescueRows > 0) {
                 console.log(`[MODE15] removed legacy rescue progress: player=${playerId} rows=${removedMode15RescueRows}`)
             }
-            // AdventEvent quest visibility points at Mode15's Rush quests.  The
-            // legacy client cannot resolve that cross-event condition until the
-            // corresponding Rush event exists in its player model.  A completed
-            // or failed run removes the server row, so recreate the empty shell
-            // before serializing /load instead of requiring a visit to Rush first.
+            // Preserve the empty Rush shell required for cross-event visibility
+            // on a cold load, including after a completed or failed Mode15 run.
             if (
                 isMode15RuntimeLoaded()
                 && getPlayerRushEventSync(playerId, MODE15_RUSH_EVENT_ID) === null
@@ -239,13 +225,9 @@ const routes = async (fastify: FastifyInstance) => {
                 ? getPlayerQuestProgressSync(playerId)
                 : questProgress
             markLoadPhase("load.reconcile")
-            // Include Rush state in the initial payload so the legacy client can
-            // evaluate cross-event clear conditions on a cold visit. Optional
-            // saved party slots are normalized to null before packing (rather than
-            // MessagePack's unsupported undefined extension, 0xD4).
             refreshPlayerAbyssTowersSync(playerId)
             const assemblyStartedAt = performance.now()
-            const prepared = prepareClientSerializedData(playerId, {
+            const prepared = withServerClock(now, () => prepareClientSerializedData(playerId, {
                 viewerId: accountId,
                 serializeRushEventData: true,
                 preloadedPlayer: currentPlayer,
@@ -254,14 +236,13 @@ const routes = async (fastify: FastifyInstance) => {
                 preloadedEquipmentList: equipmentList,
                 preloadedPartyGroupList: partyGroupList,
                 preloadedQuestProgress: serializedQuestProgress,
-                afterRepairs: () => loadWrites.finish(),
-            });
+            }), getTimeOffset() ?? 0);
             recordServerWork("load.assemble", performance.now() - assemblyStartedAt)
-            return prepared
+            if (!prepared) throw new Error("No player data.");
+            return { now, prepared };
         });
-        if (prepared === null) {
-            return reply.status(500).send({ error: "Internal Server Error", message: "No player data." });
-        }
+        // Pure response conversion runs after COMMIT. Saved optional party slots
+        // still normalize to null before MessagePack encoding.
         const conversionStartedAt = performance.now()
         const clientData: any = serializePlayerSnapshot(
             prepared.data,
@@ -280,16 +261,18 @@ const routes = async (fastify: FastifyInstance) => {
         // Inject unfinished quest lists for battle recovery
         const activeQuest = getPlayerActiveQuestSync(playerId);
         if (activeQuest) {
-            const activeRoom = activeQuest.roomNumber ? getRoom(activeQuest.roomNumber) : undefined;
-            const multiRecovery = classifyMultiActiveQuestRecovery(
-                activeQuest,
-                activeRoom,
-                viewerId,
-                activeQuest.roomNumber
-                    ? sessionManager.isBattleSeatRetired(activeQuest.roomNumber, viewerId)
-                    : false,
-            );
-            if (!multiRecovery.recoverable || isStaleAbyssBattle(activeQuest)) {
+            const multiRecovery = await getRoomCommandGateway().execute("battle.recovery", {
+                quest: activeQuest, viewerId, playerId,
+            }) as MultiActiveQuestRecoveryDecision & { roomPhase: string | null };
+            if (multiRecovery.retained && !isStaleAbyssBattle(activeQuest)) {
+                // A lobby can advance before another member posts its result.
+                // Keep that exact play for finish; legacy clients cannot resume
+                // gameplay after Finalize or rejoin it in a newer room battle.
+                clientData.unfinished_quest_list = [];
+                clientData.unfinished_multi_quest_list = [];
+                gameVerboseLog(() => `[CN-LOAD] retained result play=${activeQuest.playId}`
+                    + ` room=${activeQuest.roomNumber} reason=${multiRecovery.reason}`);
+            } else if (!multiRecovery.recoverable || isStaleAbyssBattle(activeQuest)) {
                 const mode15Quest = isMode15Quest(activeQuest.category, activeQuest.questId);
                 // A stale multiplayer room cannot distinguish a defeat from a
                 // transport loss. Mode15 therefore clears this battle record
@@ -301,7 +284,7 @@ const routes = async (fastify: FastifyInstance) => {
                 gameVerboseLog(() => `[CN-LOAD] stale active quest cleared:`
                     + ` play=${activeQuest.playId} room=${activeQuest.roomNumber ?? "missing"}`
                     + ` reason=${multiRecovery.reason}`
-                    + ` state=${activeRoom?.lifecycle?.phase ?? "missing"}`
+                    + ` state=${multiRecovery.roomPhase ?? "missing"}`
                     + ` mode15=${mode15Quest} multiHost=${activeQuest.isMultiHost}`
                     + ` reset=${shouldResetMode15Run}`);
                 const deleted = await runPersistenceTransaction({
@@ -363,9 +346,12 @@ const routes = async (fastify: FastifyInstance) => {
             }),
             data: clientData
         });
+        });
         } catch(e: any) {
-            console.error(`[CN-LOAD] ERROR:`, e.message, e.stack);
             if (hijackUnavailableReply(request, reply)) return reply;
+            // Preserve the game protocol's bounded-queue retry response.
+            if (isPersistenceAdmissionError(e)) throw e;
+            console.error(`[CN-LOAD] ERROR:`, e.message, e.stack);
             return reply.status(500).send({ error: "Internal Server Error", message: e.message });
         }
     });

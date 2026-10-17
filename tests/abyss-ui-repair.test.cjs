@@ -76,7 +76,8 @@ test('campus, Scutum and summer White exchange for 250 points; unrelated exclusi
     const {getPlayerCharacterSync}=require('../out/data/domains/character')
     try {
         g.insertPlayerGachaInfoSync(player.id,{gachaId:990001,isAccountFirst:false,isDailyFirst:false,gachaExchangePoint:0})
-        for(const id of [119989,149989,169989,149988,149990]) {
+        // The previous MOD rotation is exchangeable in the current effective pool.
+        for(const id of [119989,149989,169989,149988,149990,139994]) {
             g.updatePlayerGachaInfoSync(player.id,{gachaId:990001,gachaExchangePoint:249})
             assert.equal((await post('/gacha/exchange_character',{gacha_id:990001,character_id:id})).statusCode,400)
             assert.equal(g.getPlayerGachaInfoSync(player.id,990001).gachaExchangePoint,249)
@@ -87,7 +88,8 @@ test('campus, Scutum and summer White exchange for 250 points; unrelated exclusi
             assert.ok(getPlayerCharacterSync(player.id,id))
         }
         g.updatePlayerGachaInfoSync(player.id,{gachaId:990001,gachaExchangePoint:250})
-        for(const id of [139994])assert.equal((await post('/gacha/exchange_character',{gacha_id:990001,character_id:id})).statusCode,400)
+        assert.equal(require('../out/lib/gacha-rules').getExchangeableGachaItem(assets.getGachaSync(990001),151153),null)
+        for(const id of [151153])assert.equal((await post('/gacha/exchange_character',{gacha_id:990001,character_id:id})).statusCode,400)
         assert.equal(g.getPlayerGachaInfoSync(player.id,990001).gachaExchangePoint,250)
     } finally {await app.close()}
 })

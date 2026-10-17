@@ -189,8 +189,9 @@ function getQuestSync(
     // always return BattleQuest; missing fields default to 0
     return {
         name: quest.name,
-        clearReward: quest.clearRewardId === undefined ? undefined : getClearRewardSync(quest.clearRewardId),
-        sPlusReward: quest.sPlusRewardId === undefined ? undefined : getClearRewardSync(quest.sPlusRewardId),
+        // A dangling reward id must read as "no reward", not null: callers check `!== undefined`.
+        clearReward: quest.clearRewardId === undefined ? undefined : getClearRewardSync(quest.clearRewardId) ?? undefined,
+        sPlusReward: quest.sPlusRewardId === undefined ? undefined : getClearRewardSync(quest.sPlusRewardId) ?? undefined,
         scoreRewardGroupId: quest.scoreRewardGroupId ?? undefined,
         scoreRewardGroup: quest.scoreRewardGroupId != null ? getScoreRewardGroup(quest.scoreRewardGroupId) : undefined,
         element: quest.element,

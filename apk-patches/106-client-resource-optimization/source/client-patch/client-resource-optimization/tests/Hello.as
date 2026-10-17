@@ -1,0 +1,1 @@
+package {import flash.display.Sprite;import flash.filesystem.*;import flash.desktop.NativeApplication;public class Hello extends Sprite {public function Hello(){trace("HELLO");var s:FileStream=new FileStream();s.open(File.applicationDirectory.resolvePath("hello.txt"),FileMode.WRITE);s.writeUTFBytes("ok");s.close();NativeApplication.nativeApplication.exit(0);}}}

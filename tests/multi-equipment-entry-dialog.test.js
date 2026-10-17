@@ -206,6 +206,7 @@ for (const field of ['equipments', 'abilitySoulIds']) {
 test('repairing host equipment before expiry cancels disband and allows a normal start', async t => {
     t.mock.timers.enable({ apis: ['Date', 'setTimeout'] })
     const x = setup(t, [201])
+    x.clients[0].yourself.autoStart = true
     await x.notify(0, [3, [1]])
     t.mock.timers.tick(29999)
     x.rejected.length = 0
@@ -283,6 +284,7 @@ test('valid party repair clears the deadline and permits a fresh countdown and b
     t.mock.timers.enable({ apis: ['Date', 'setTimeout'] })
     const rejected = [202]
     const x = setup(t, rejected)
+    x.clients[0].yourself.autoStart = true
     await x.notify(1, [3, [1]])
     rejected.length = 0
     await x.notify(1, [2, { party: { equipments: [], abilitySoulIds: [] } }, false, 7])
@@ -323,6 +325,7 @@ test('automatic party changes do not extend the equipment deadline', async t => 
 
 test('legal automatic rematch party changes retain readiness', async t => {
     const x = setup(t)
+    x.clients[0].yourself.autoStart = true
     await x.notify(1, [2, { party: { equipments: [], abilitySoulIds: [] } }, true, 7])
     assert.equal(x.clients[1].isReady, true)
     assert.equal(x.clients[1].yourself.state[0], 1)
@@ -332,6 +335,7 @@ test('legal automatic rematch party changes retain readiness', async t => {
 
 test('an already announced countdown cannot start after an invalid party change', async t => {
     const x = setup(t)
+    x.clients[0].yourself.autoStart = true
     checkHostAutoReady(x.room.room_number)
     assert.equal(x.room.readyCountdownPending, true)
     await x.notify(1, [2, { party: { abilitySoulIds: [[0, 100023]] } }, false, 7])

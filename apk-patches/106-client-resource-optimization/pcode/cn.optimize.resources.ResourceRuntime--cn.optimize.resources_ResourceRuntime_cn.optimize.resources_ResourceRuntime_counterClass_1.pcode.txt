@@ -1,0 +1,12 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.resources.ResourceRuntime; label: cn.optimize.resources::ResourceRuntime$/cn.optimize.resources:ResourceRuntime::counterClass|1; body: 0; method: 1
+# code SHA-256: 0826425ca34268cffc49d0a36aebad15a79828e8ff12b07293d5f70391f72a16; header: [3, 1, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex [(7, (22, 'flash.utils'), 'getDefinitionByName')]
+#0003 ofs0004: getglobalscope []
+#0004 ofs0005: pushstring [('string', 'pinball.asset.file.FileStreamWithCounter')]
+#0005 ofs0007: call [1]
+#0006 ofs0009: returnvalue []
+# exceptions: []

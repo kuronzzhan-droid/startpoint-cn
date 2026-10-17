@@ -21,6 +21,7 @@ export function setDbOverride(db: SqliteDatabase | null): void {
 }
 
 export function getDb(): SqliteDatabase {
+    if (process.env.MULTI_REALTIME_OWNER_CHILD === "1") throw new Error("REALTIME_OWNER_CANNOT_OPEN_PLAYER_DATABASE")
     if (override !== null) return override;
     if (resolved === null) resolved = getDatabase(Database.WDFP_DATA);
     return resolved;

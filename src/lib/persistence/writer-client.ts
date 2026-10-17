@@ -4,7 +4,7 @@ import { existsSync } from "../file-exists"
 import { observeWorkerMemory, registerMemoryCounters } from "../memory-diagnostics"
 import type { WriterCommandMeta } from "./command-registry"
 import { WRITER_PROTOCOL_VERSION, writerThreadConfig, type WriterThreadConfig } from "./writer-config"
-import { getTimeOffset, onServerTimeOffsetChanged } from "../../utils"
+import { getLegacyTimeOffset, onServerTimeOffsetChanged } from "../../utils"
 
 export interface SqliteWriterCommand {
     name: string
@@ -310,7 +310,7 @@ function pushTimeOffset(): void {
     const current = worker
     if (current === null) return
     try {
-        current.postMessage({ type: "set_time_offset", offset: getTimeOffset() })
+        current.postMessage({ type: "set_time_offset", offset: getLegacyTimeOffset() })
     } catch (error) {
         console.error(
             `[WRITER] failed to push the time offset: ${error instanceof Error ? error.message : String(error)}`,

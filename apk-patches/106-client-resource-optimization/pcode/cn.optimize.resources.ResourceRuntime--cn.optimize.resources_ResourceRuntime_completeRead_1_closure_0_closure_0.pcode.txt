@@ -1,0 +1,21 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.resources.ResourceRuntime; label: cn.optimize.resources::ResourceRuntime$/completeRead|1/closure:0/closure:0; body: 28; method: 31
+# code SHA-256: c6667bea8cfddecef0951fc7d88c5466bfbc2e63a2044365b566b50615528cf1; header: [3, 3, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlex [(7, (23, 'cn.optimize.resources'), 'h')]
+#0001 ofs0002: getlex [(7, (23, 'cn.optimize.resources'), 'value')]
+#0002 ofs0005: callpropvoid [(9, 'completeHandler', ((5, 'cn.optimize.resources:ResourceRuntime'), (26, 'cn.optimize.resources:ResourceRuntime'), (26, 'Object'), (22, 'cn.optimize.resources'), (23, 'cn.optimize.resources'), (5, 'FilePrivateNS:ResourceRuntime'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin'))), 1]
+#0003 ofs0008: jump [] -> #15
+#0004 ofs000c: newcatch [0]
+#0005 ofs000e: dup []
+#0006 ofs000f: setlocal_2 []
+#0007 ofs0010: dup []
+#0008 ofs0011: pushscope []
+#0009 ofs0012: swap []
+#0010 ofs0013: setslot [1]
+#0011 ofs0015: getlex [(7, (23, 'cn.optimize.resources'), 'bytes')]
+#0012 ofs0018: callpropvoid [(7, (22, ''), 'clear'), 0]
+#0013 ofs001c: getlex [(7, (23, 'cn.optimize.resources'), 'error')]
+#0014 ofs001e: throw []
+#0015 ofs001f: returnvoid []
+# exceptions: [(0, 3, 4, ('any',), (7, (23, 'cn.optimize.resources'), 'error'))]

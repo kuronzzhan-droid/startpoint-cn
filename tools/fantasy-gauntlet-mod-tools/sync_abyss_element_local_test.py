@@ -52,7 +52,7 @@ def main(work,apply):
             if rel.endswith('.json') and json.loads(actual)==json.loads(raw):
                 skipped.append(rel);continue
         add(rel,source)
-    archive=ROOT/'assets/asset-patch/active/candidates'/entry['archive']
+    archive=ROOT/'assets/asset-patch/inactive/candidates'/entry['archive']
     assert sha(archive.read_bytes())==report['archive']['sha256']
     assert not (RUNTIME/'assets/asset-patch/active'/archive.name).exists()
     add('assets/asset-patch/active/'+archive.name,archive)

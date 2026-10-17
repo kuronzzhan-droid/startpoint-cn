@@ -173,7 +173,7 @@ def main(work, apply):
         assert z.testzip() is None and set(z.namelist()) == set(members)
         for name, raw in members.items():
             assert z.read(name) == raw
-    dest = ROOT/'assets/asset-patch/active/candidates'/NAME
+    dest = ROOT/'assets/asset-patch/inactive/candidates'/NAME
     assert not dest.exists() or dest.read_bytes() == archive
     save(dest, archive)
     integrity = dict(name=NAME, size=len(archive), sha256=sha(archive), members=len(members), files=sorted(members))

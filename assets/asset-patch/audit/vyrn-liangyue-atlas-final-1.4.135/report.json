@@ -1,0 +1,334 @@
+{
+  "status": "local135_complete_representative_packing_verified",
+  "baselineResourceVersion": "1.4.134",
+  "resourceVersion": "1.4.135",
+  "manifestBeforeSha256": "8714070092ba3a3b79bb96f722587ba1f24334b159acb34460f9c497544d2faf",
+  "archives": [
+    {
+      "name": "pinball-1.4.134-1.4.135-1-vyrn-liangyue-atlas-final-20261011.zip",
+      "size": 5066197,
+      "sha256": "c4eef3afad6a9350a319e5a4959c46b216422024481731a543d568e00524e918",
+      "members": 21,
+      "files": [
+        "production/android_upload/33/b20176a4e5cf8418e090937df96efb99b2a6de",
+        "production/android_upload/e9/032f5278e5a246be77da1370f69834ffb5ab50",
+        "production/ios_upload/33/b20176a4e5cf8418e090937df96efb99b2a6de",
+        "production/ios_upload/e9/032f5278e5a246be77da1370f69834ffb5ab50",
+        "production/medium_upload/00/ae7d4203fdd239c0e32bdfbdb2e50fe30f41ef",
+        "production/medium_upload/35/5ea2b823b907bc8bd62e5e0e05b8c0840f3328",
+        "production/medium_upload/41/3cee5934dd31e5838b3775a14b90a65182f837",
+        "production/medium_upload/49/b6d0eebe9f7dd9ff116b814b5938dc81f6aa1f",
+        "production/medium_upload/4b/f4ffb903ef39a02c3d6b9b47528aa6aca1b193",
+        "production/medium_upload/4d/ae44ffd4e380ffea76d63d3789a6fd4d48e3a0",
+        "production/medium_upload/4f/024219cea1a24ba46e57adbff7afbfcde33bb3",
+        "production/medium_upload/68/b11af4ca0d369801391d0fc863d4ce38b3ea8c",
+        "production/medium_upload/72/977619f558e1fcc8108cc9a39b3e7870e695af",
+        "production/medium_upload/78/87c5a10a07cd96ef7e10f1119a14dfb510a4d7",
+        "production/medium_upload/7a/6f55ac8a719db46090f5cbeb891bc6a404251b",
+        "production/medium_upload/7e/23fb44102fd6bb3133fb2e59f5026b2cc345f1",
+        "production/medium_upload/7f/24430f2a3fa2902d84a03bfa8de39a776bb6e7",
+        "production/medium_upload/80/decd2953472667857d2cd1e4a9a781601428fe",
+        "production/medium_upload/81/1215ae0dd742c526251c605c252a144fd75c54",
+        "production/medium_upload/84/510bb4aa2b692c2534eefa1b441113637bf4a1",
+        "production/medium_upload/86/cf42d4f384e8c012cb6f3d8cc85181cdab3f88"
+      ]
+    },
+    {
+      "name": "pinball-1.4.134-1.4.135-2-vyrn-liangyue-atlas-final-20261011.zip",
+      "size": 5139252,
+      "sha256": "e3eae6a09467d1b533aeb6424cc38080d969d8cf9bf40fe251d381f486939838",
+      "members": 53,
+      "files": [
+        "production/medium_upload/89/6a01b4b8fe69b9f027e17a4485c90362e689ba",
+        "production/medium_upload/94/86151404426e5c435b7802315f0e3beae5e6b4",
+        "production/medium_upload/9d/621dc28e59218afe58d9b1e8d8905ca8420d77",
+        "production/medium_upload/ac/0ac06579a89756c08f95c72f5cea3996a663e2",
+        "production/medium_upload/c1/030bc30dd12096037536546f76ae2f7991091e",
+        "production/medium_upload/c1/2502fb221f1274ecff747642294f422c735f79",
+        "production/medium_upload/c2/bad83f1dad95aa175b7b23bd1187ed54c7fd58",
+        "production/medium_upload/de/ed937a539cd4258062f7320422b888b0ab83f5",
+        "production/upload/06/d719901ec65793aa85a96a39c3504a9d655f83",
+        "production/upload/0a/6b2d5c149dd8ad77f8c02d39f2701387b8d0b3",
+        "production/upload/0c/90b2d9675384b18ecbc062fd4caf3963c0198d",
+        "production/upload/0c/e04d851c593ccb3131df5dbee4c0ebf3f27587",
+        "production/upload/0d/b7df6eeaa6293d98b4bc2e967dc9ffd7bf2f2e",
+        "production/upload/0e/086ec398b846206879b6e58e32128fc42464a1",
+        "production/upload/0f/a127f42c4a83ac09df00df1e3fd503015927ed",
+        "production/upload/17/9857bc0e6fcce756672233312acd11902cdad4",
+        "production/upload/18/319d0e6f49201a0f65171252731fabc11f54c1",
+        "production/upload/19/7aa300e0c836f6d45649074d20c7b45494573f",
+        "production/upload/1b/8eb3484f48d6190aa93a315a4ce31f637ba11e",
+        "production/upload/1c/601b1b954726400af5b5b89562d4604d932318",
+        "production/upload/1c/9798e7c6af1e297df8bb3ac6d3ef214d5cdb68",
+        "production/upload/1d/0d2bfc94d94fe54e10e213f8b9a1c9b9ccb4ae",
+        "production/upload/1d/222e5126fc7ebe3f22c7efe87325f73742eb4f",
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/21/d3a456e8e0731db2f864d1b24d163535e1f45f",
+        "production/upload/23/2a83833ca9e972df50d66df801ca247fbd6d02",
+        "production/upload/24/a125b05584af1585d47ca25676d764b29d85bd",
+        "production/upload/25/257f4bd2158ebb3916fe4690798a6f0acbf9b2",
+        "production/upload/27/7b65484214436114201ae654fefa60fdc822ea",
+        "production/upload/28/3013a35ab419fe4a0ff50aefb21552235e728a",
+        "production/upload/2d/1487a20393b768adaf31765bf5f64fccfcab87",
+        "production/upload/2d/5cb9b28d18f984a51b345a4d7aab03d77bddfc",
+        "production/upload/2e/e3dbcca6811162717c021c658ea7c51c1d89a8",
+        "production/upload/2f/03cb575566d90717bd1d7af072e6a89e2a3d80",
+        "production/upload/31/f39b0dd56f79d30e0a06f699e2d27d1dc68044",
+        "production/upload/37/0d2f124a8b6572d64aa4ad0a8d979269167aca",
+        "production/upload/3b/32ccb101bbf07fde3a184a2807e4dd28f49167",
+        "production/upload/3e/b411841802398d5b21d422579f2eaa65d30c0e",
+        "production/upload/47/2db252ae5a7adeb6dd48ea7cfa5bad08397d06",
+        "production/upload/48/b81179fd177f13bb77551ebb5d40395dd3f7fb",
+        "production/upload/49/b569904440f3a532b5b8859669286664525092",
+        "production/upload/4b/248a00a396209fd2568dabf763704e19ffa1b8",
+        "production/upload/4d/5b3a5bceb6e60341009f2e00099e3f3f0a2db5",
+        "production/upload/4f/50b68a1e061a43a26bafce77fa85b1a9b29735",
+        "production/upload/51/cbc5a9508723a9b853829dea9cf554a7e08111",
+        "production/upload/57/8872ecbc78561807e6846b3980c5dea980d8ce",
+        "production/upload/5c/6a4f0e2ceb1dbcf60f9b306b0f7bfd0eca55c9",
+        "production/upload/66/50bb991b1f648a9a539a9e4c1b22c6bec993e0",
+        "production/upload/6b/6861dead0241074d24513012f653ec362fce69",
+        "production/upload/6c/9a69bc2e9d1d04ec4eefc77ed36db5e3fdb9be",
+        "production/upload/6e/ec9c783ac350706c6531e6630907d9f949a469",
+        "production/upload/6f/5dec5f335f446e9616cea49699bc6d07358c14",
+        "production/upload/73/9416cd48cb1c1f1b8235aa2431083a4a199641"
+      ]
+    },
+    {
+      "name": "pinball-1.4.134-1.4.135-3-vyrn-liangyue-atlas-final-20261011.zip",
+      "size": 3823227,
+      "sha256": "302518c4516f3d8ef36197abaee1bd82f2cb36f60d017a21742dc37c7b681e30",
+      "members": 70,
+      "files": [
+        "production/upload/75/b85bacf0239998239bee580d077f5a55dd9b54",
+        "production/upload/7e/d9c6edef8991fa61c78217b4b8bc9dc5b5130d",
+        "production/upload/7f/de73a8b8db0b1ed3d48e0d8b722e4f355b78da",
+        "production/upload/87/ebfe05aa1e11a9c48cb352178a3149a17e6c47",
+        "production/upload/89/213a0ed02b0681f68bc8c5695b85c269dd8c3d",
+        "production/upload/89/643970f4a139d9de815bf1f22fa0d8fb150df0",
+        "production/upload/89/e5c25c791e2a9527422c186084a1793218c2ac",
+        "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+        "production/upload/8c/06c99d9249935a85091ed2c44d238b103caa0b",
+        "production/upload/8c/1a5c45209368d9d97149a6f348fe2b35856133",
+        "production/upload/8c/ae2d579dee99acb049bb0967efafbc242c101d",
+        "production/upload/8e/24717f6739191e76d9a1b2a9e1e1bf38310920",
+        "production/upload/8e/977a773c5a269636889786c543cda59501f22f",
+        "production/upload/91/360d59497d9e28a87ff8cd1ea72001e0bb0160",
+        "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
+        "production/upload/93/5a1a79b624f3e05b780af7516716ad0306ca4d",
+        "production/upload/9d/08491698d39e4518d11674a419ae9d928f7e7f",
+        "production/upload/9e/e170a4931288f12e2d1695df4ecb6139f3df3b",
+        "production/upload/9f/c1a8d2f6c63a60f96d658eb2a240d8f9dd3084",
+        "production/upload/a2/29ecb5ad897c4d2ffc0761f803547d9d1c1744",
+        "production/upload/a2/aba841c2c583db0a21aaf43cc9c82b266395c4",
+        "production/upload/a3/93aa45111ae908523cc8d200d6fca8d84371e5",
+        "production/upload/a7/47d8fbd707e5269b9205e93bec25d8856ac062",
+        "production/upload/a7/ad7e5c9d3820f12d86d41a6cde64516896bab1",
+        "production/upload/a8/2365ea49854e1184737cc500dd74b82251db56",
+        "production/upload/a9/23707f1a6a0592d3b2a0b9c4a8f7f0bcf89978",
+        "production/upload/aa/abdd2e178d62dba4997034aab8c236a4422154",
+        "production/upload/ac/b038c35f3048ba7ca07a6a84307b2fb10c041c",
+        "production/upload/ad/613b203d8febf56b41bf1e9512971ce0eadccd",
+        "production/upload/ae/0ea8ea5c8be26688fa5f2467aa04987bc08429",
+        "production/upload/ae/c45ffea353f4fac4ee732c5e7d597d2a1f572b",
+        "production/upload/af/655285c7dc25e54eef1fa97acaacdf9eec1307",
+        "production/upload/b0/4f3c40cd0126b2e6dd9a85ce377725943e59ed",
+        "production/upload/b4/a28679b8eeefdbdcbe6071fd4f2ff85e5b3415",
+        "production/upload/b5/8b40e46bc576a6cd1d6bcf5642c96c1f0547fa",
+        "production/upload/b9/132d27178d27f9d91df89fc47e106bbaf2d5b5",
+        "production/upload/bc/0bc800f482670f3ec8a7f2fee9b9deeeca3a04",
+        "production/upload/bc/1a73a8ec6630c894fe8c15d8d60caf8e2d16a6",
+        "production/upload/bc/6e83b9b781dfdca305f9ff17e0790088a9a6bc",
+        "production/upload/be/aaf8210174cde70726f31aaf068868bbd2916c",
+        "production/upload/bf/e039dabbad35079efe089b753fc8d193a782b1",
+        "production/upload/c0/24772865dae85fa59b9e4b07666b078632ced7",
+        "production/upload/c0/64fa0ae50d08865bec87d03b80e645cdf02ccd",
+        "production/upload/c1/3238beeb63548c8e5715c6754d622036a80628",
+        "production/upload/c2/13faba4d0d4007f7325f329c787c558bd46c29",
+        "production/upload/c2/c0ae8ab40e5105ba8581fb11215083feed4e6d",
+        "production/upload/c2/c6a0c8a7bb2eec1d11b44329b1f5c91367e46f",
+        "production/upload/c5/ee01d2168516326e343c490ca0e89bb43d2640",
+        "production/upload/c9/47449df717e75970f28587faed118349aab5a4",
+        "production/upload/cb/8e0a84a3240c495cab4b6478103afa2e63469a",
+        "production/upload/cc/a8580b2489eb88e7399c2ed3820948be530f0f",
+        "production/upload/cc/e035bb02f2df7c874722efffd1114261a0b56d",
+        "production/upload/d0/6bae005b339709b4196e3acc0e6801c79de86f",
+        "production/upload/d2/13a997b6fff768769e2084abfe6df85d6e21e1",
+        "production/upload/d3/be0de5b1023b2837e866b33bdad17081d23533",
+        "production/upload/d3/eba600e60967b81aace2014040bdb29cfb1b22",
+        "production/upload/d7/6ce7d90624aeb966602b30c08415324edfa95c",
+        "production/upload/d8/1a96a9c1ca0605e11511e4de02a9e0e284ca7c",
+        "production/upload/db/2edd479b83b34cb1600b990a0d21d4b2d8f249",
+        "production/upload/db/71f16069b5785b96f4776313093f723f9dbbe6",
+        "production/upload/e5/821440d3e6f7f8597ed918c7617b4cd9137ac1",
+        "production/upload/ee/7c653442aa69888200642ffae8454d28cf5f01",
+        "production/upload/ef/3d4e57af892e54c0ab5a4f3cabd7caaebf310e",
+        "production/upload/f2/ae316abc7d8c6de49551efde2dbc5b9e38f2c7",
+        "production/upload/f5/5dbadada6934c247ad9e4d6afc5592adc4c733",
+        "production/upload/f6/ae960776617f0676f6266e6a1995e7d388b402",
+        "production/upload/fb/ab4344a7456dca88f3ce06f01208922f37e395",
+        "production/upload/fd/26298df808a93185de1380b7530f2c60d96cfb",
+        "production/upload/fd/34af5b5af5996988e019cff62140804ec691f6",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ]
+    }
+  ],
+  "oldArchives": [
+    {
+      "name": "pinball-1.4.134-1.4.135-1-vyrn-liangyue-optimized-20261011.zip",
+      "size": 5066197,
+      "sha256": "87c33b1b7794ee6771c177f7aff99411680a0e9a39508a2e094f2ad0f2b675ed",
+      "members": 21
+    },
+    {
+      "name": "pinball-1.4.134-1.4.135-2-vyrn-liangyue-optimized-20261011.zip",
+      "size": 5058050,
+      "sha256": "d6227e72a82c27702e8096b1240f8bf3bac5fe0abcd961aafb960007b55ee7d9",
+      "members": 54
+    },
+    {
+      "name": "pinball-1.4.134-1.4.135-3-vyrn-liangyue-optimized-20261011.zip",
+      "size": 3786072,
+      "sha256": "ee8a35926ad791d6b5465e86164b286e7726405c433d04f967f137e613136ef3",
+      "members": 67
+    }
+  ],
+  "allMemberCount": 144,
+  "originalMemberCount": 142,
+  "replacedOrAddedMembers": 14,
+  "addedMembers": 2,
+  "untouchedOriginalMembers": 130,
+  "unrelatedMemberBytesUnchanged": true,
+  "wholeBattleAcceptance": true,
+  "devicePerformanceAcceptance": false,
+  "retirementPending": [],
+  "retiredArchives": [
+    "pinball-1.4.134-1.4.135-1-vyrn-liangyue-final-20261011.zip",
+    "pinball-1.4.134-1.4.135-1-vyrn-liangyue-optimized-20261011.zip",
+    "pinball-1.4.134-1.4.135-2-vyrn-liangyue-final-20261011.zip",
+    "pinball-1.4.134-1.4.135-2-vyrn-liangyue-optimized-20261011.zip",
+    "pinball-1.4.134-1.4.135-3-vyrn-liangyue-final-20261011.zip",
+    "pinball-1.4.134-1.4.135-3-vyrn-liangyue-optimized-20261011.zip"
+  ],
+  "retiredArchivesBackedUp": true,
+  "enabledChainIssues": [],
+  "currentMemberRoutingVerified": true,
+  "unrelatedArchiveMetadataUnchanged": true,
+  "wholeBattleAcceptanceScope": "Only the two fixed 18-slot inputs and three observed preparation collections",
+  "arbitraryPartyAcceptance": false,
+  "runtimeCapacity": {
+    "status": "passed_representative_three_party_observed_packing",
+    "resourceVersion": "1.4.135",
+    "renderedClients": 1,
+    "protocolParticipants": 2,
+    "slotsPerScenario": 18,
+    "equipmentSoulEXIncluded": false,
+    "preparationCollections": 3,
+    "actualLayerAttempts": 6,
+    "actualTargets": 611,
+    "allActualPackingPassed": true,
+    "missingPNGCarrier": 0,
+    "missingAtlas": 0,
+    "scenarios": [
+      {
+        "questId": 1020003,
+        "round": 0,
+        "bossModel": "orochi_ex",
+        "layers": [
+          {
+            "layer": "layer0",
+            "actualTargetCount": 126,
+            "actualPaddedOccupancyPercent": 55.6587278842926,
+            "actualContentBBox": [
+              2425,
+              4094
+            ],
+            "actualPackPassed": true
+          },
+          {
+            "layer": "layer1",
+            "actualTargetCount": 101,
+            "actualPaddedOccupancyPercent": 28.477758169174194,
+            "actualContentBBox": [
+              1365,
+              4092
+            ],
+            "actualPackPassed": true
+          }
+        ]
+      },
+      {
+        "questId": 1001002,
+        "round": 0,
+        "bossModel": "double_owl_lich_ability",
+        "layers": [
+          {
+            "layer": "layer0",
+            "actualTargetCount": 128,
+            "actualPaddedOccupancyPercent": 44.470810890197754,
+            "actualContentBBox": [
+              2080,
+              4094
+            ],
+            "actualPackPassed": true
+          },
+          {
+            "layer": "layer1",
+            "actualTargetCount": 61,
+            "actualPaddedOccupancyPercent": 24.949568510055542,
+            "actualContentBBox": [
+              1212,
+              4094
+            ],
+            "actualPackPassed": true
+          }
+        ]
+      },
+      {
+        "questId": 1001002,
+        "round": 1,
+        "bossModel": "owl_ability + owl_wind + owl_tornado_ability",
+        "layers": [
+          {
+            "layer": "layer0",
+            "actualTargetCount": 130,
+            "actualPaddedOccupancyPercent": 45.542168617248535,
+            "actualContentBBox": [
+              1969,
+              4093
+            ],
+            "actualPackPassed": true
+          },
+          {
+            "layer": "layer1",
+            "actualTargetCount": 65,
+            "actualPaddedOccupancyPercent": 25.463610887527466,
+            "actualContentBBox": [
+              1125,
+              4093
+            ],
+            "actualPackPassed": true
+          }
+        ]
+      }
+    ],
+    "originalDimensionsModelAlsoPassed": true,
+    "originalDimensionsDeviceTested": false,
+    "arbitraryFuturePartyAcceptance": false,
+    "threeDevicePerformanceAcceptance": false,
+    "bossClearAcceptance": false,
+    "fullSemanticDependencyMissingCount": null,
+    "finalTraceSha256": "930396b459e80787f7d7cd171eafe8272ee0243d23413288b830b914121c4cad",
+    "independentReviewSha256": "1a6d01e012394c165168f53cacd79ce62c53b0ab8a8401fd38d5af1a97f9dc88",
+    "originalClientAndAccountLocalStoreRestored": true,
+    "acceptedRegistryChanged": false,
+    "testedLocalManifestSha256": "5d96f35f957d6e280070caa1cdfe6c30284e2f0713ec9650d0745aadb1384288",
+    "releaseManifestSha256": "a5fc0abeb60b0fb054d1b938ae0a4317ac5f22851052b092c3fab1ab8bb6f35e",
+    "releaseEnabledChainMatchesTestedLocalChain": true,
+    "manifestIdentityScope": "Native packing was observed with the tested local manifest; the release manifest has the same enabled chain and archive bytes, omitting an unrelated disabled candidate."
+  },
+  "testedLocalManifestSha256": "5d96f35f957d6e280070caa1cdfe6c30284e2f0713ec9650d0745aadb1384288",
+  "releaseManifestSha256": "a5fc0abeb60b0fb054d1b938ae0a4317ac5f22851052b092c3fab1ab8bb6f35e",
+  "releaseBaseManifestSha256": "f7bb1a9b1d704e21e425f5610b64d4ec92288423bee5eaf6854ee04409de83b3",
+  "releasePrefixMatchesFormalBaseline": true
+}

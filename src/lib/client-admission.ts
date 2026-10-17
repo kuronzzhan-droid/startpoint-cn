@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import type { FastifyInstance, FastifyRequest } from "fastify"
 import { generateDataHeaders } from "../utils"
+import { requestRoutePath } from "./request-route-path"
 
 const ID = /^[a-zA-Z0-9_-]{1,80}$/
 const HEX = /^[a-f0-9]{64}$/
@@ -165,6 +166,13 @@ export class ClientAdmission {
         }
         return result
     }
+    /** Serializable, short socket capability. Grant storage and keys stay in the business process. */
+    socketLease(token: unknown, session: unknown, active: boolean): { ok: boolean; remainingMs: number } {
+        const result = active ? this.checkActivity(token, session) : this.check(token, session, true)
+        if (!result.ok) return { ok: false, remainingMs: 0 }
+        const g = this.grants.get(scalar(token))
+        return { ok: true, remainingMs: Math.max(0, Math.min(60_000, g ? g.expires - this.now() : 60_000)) }
+    }
     bind(token: unknown, session: string): void {
         const g = this.grants.get(scalar(token))
         if (g && this.current(g)) g.session = digest(session)
@@ -193,7 +201,7 @@ export function clientAdmission(): ClientAdmission {
 export function installClientAdmission(app: FastifyInstance, gate = clientAdmission()): void {
     app.addHook("onClose", async () => gate.close())
     app.addHook("preHandler", async (request, reply) => {
-        const path = request.url.split("?")[0]
+        const path = requestRoutePath(request)
         const game = path.startsWith("/api/index.php/")
         if (!game && !path.startsWith("/player-auth/")) return
         // Account ownership remains checked by the existing player-login guard.

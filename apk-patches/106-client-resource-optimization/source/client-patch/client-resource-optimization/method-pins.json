@@ -1,0 +1,343 @@
+{
+  "pinball.asset.file::BitmapTextureRestoreHandler/uploadPng|1": {
+    "body": 5368,
+    "meta": [
+      5558,
+      4,
+      2,
+      1,
+      2
+    ],
+    "sha": "28ccd0ed81b107f7071e54dca17f874c3fec5d740fd7f3591497a42204d1038a"
+  },
+  "pinball.asset.file::BitmapTextureRestoreHandler/restoreHandler|1": {
+    "body": 5369,
+    "meta": [
+      5559,
+      6,
+      1,
+      1,
+      2
+    ],
+    "sha": "c8fbaf64557d1c5add5ab0d2c2249be64232624c3fd883534352832299efa7d2"
+  },
+  "pinball.asset.file::BitmapTextureRestoreHandler/pngReadHandler|1": {
+    "body": 5370,
+    "meta": [
+      5560,
+      3,
+      2,
+      1,
+      2
+    ],
+    "sha": "8a7259ceb69e69cd2006ffa2634fa9629d19955193a16614008c56e3f9818f99"
+  },
+  "pinball.asset.file::BitmapTextureRestoreHandler/<ctor>": {
+    "body": 5371,
+    "meta": [
+      5556,
+      2,
+      6,
+      1,
+      2
+    ],
+    "sha": "14ad05a6981d19cc65812063be232d9616fa20f9dfd82565c4c8d07df091e61e"
+  },
+  "script:pinball.asset.file::BitmapTextureRestoreHandler/<init>": {
+    "body": 5372,
+    "meta": [
+      5561,
+      2,
+      1,
+      1,
+      3
+    ],
+    "sha": "9f609a23ccfe696f2989c6ff485445e07b4a12dcf02ddfe570b0e71da278e621"
+  },
+  "pinball.asset.file._FileReader::OpenHandler/execute|1": {
+    "body": 5381,
+    "meta": [
+      5575,
+      5,
+      3,
+      1,
+      2
+    ],
+    "sha": "cfc91adf8921de152311df3ea73bc307ad54ea1e81126248a50c76f6e9f7ac6c"
+  },
+  "pinball.asset.file._FileReader::OpenHandler/<ctor>": {
+    "body": 5382,
+    "meta": [
+      5573,
+      2,
+      4,
+      1,
+      2
+    ],
+    "sha": "5645855d5dd790f52c9ad6912448de6e2279c16446e2fa747afaf73d39fe8701"
+  },
+  "script:pinball.asset.file._FileReader::OpenHandler/<init>": {
+    "body": 5383,
+    "meta": [
+      5576,
+      2,
+      1,
+      1,
+      3
+    ],
+    "sha": "4e95fcf1abadadb1e46c33648664c559af6eb3d8b591b365d781b416b1afe5a9"
+  },
+  "pinball.asset.file::FileStreamWithCounter/openAsync|1": {
+    "body": 5425,
+    "meta": [
+      5619,
+      3,
+      3,
+      1,
+      2
+    ],
+    "sha": "c451973f19984635d84511fc341ffd1e9dbc100f15e590ef4013ef18e1d4b47c"
+  },
+  "pinball.asset.file::FileStreamWithCounter/open|1": {
+    "body": 5426,
+    "meta": [
+      5620,
+      4,
+      5,
+      1,
+      5
+    ],
+    "sha": "4d0f6ae75f4aea8dc09e224d55381b6ada671d2505310c8f0397520bc2a1be3f"
+  },
+  "pinball.asset.file::FileStreamWithCounter/close|1": {
+    "body": 5427,
+    "meta": [
+      5621,
+      2,
+      1,
+      1,
+      2
+    ],
+    "sha": "0a4d962ca839724533c8a355365fd0617bf30271d64840de96da31745c6a4cd2"
+  },
+  "pinball.asset.file::FileStreamWithCounter/_openAsync|1": {
+    "body": 5440,
+    "meta": [
+      5634,
+      5,
+      5,
+      1,
+      5
+    ],
+    "sha": "777410466abdf0d29c60922fd4d12e1ba63e526eb0e1a1e38b7d09e52e6515f1"
+  },
+  "pinball.asset.file::FileStreamWithCounter/_close|1": {
+    "body": 5441,
+    "meta": [
+      5635,
+      2,
+      1,
+      1,
+      2
+    ],
+    "sha": "9bacfab7c346097e765429321a35d434881090885300fe248f6e40986edb11fa"
+  },
+  "pinball.asset.file::ReadAtfTextureFileHandler/uploadAtf|1": {
+    "body": 5478,
+    "meta": [
+      5672,
+      5,
+      1,
+      1,
+      2
+    ],
+    "sha": "565f0388992906ce9aa2c5e66886a61983f5e5c099322b9aef4b5e99b13db2f4"
+  },
+  "pinball.asset.file::ReadAtfTextureFileHandler/atfReadHandler|1": {
+    "body": 5479,
+    "meta": [
+      5673,
+      2,
+      2,
+      1,
+      2
+    ],
+    "sha": "50da8264a36a8ed86cb3e9c462980f841d0e8770cc83578683015e6d219fbd94"
+  },
+  "pinball.asset.file::ReadAtfTextureFileHandler/<ctor>": {
+    "body": 5480,
+    "meta": [
+      5670,
+      2,
+      4,
+      1,
+      2
+    ],
+    "sha": "851b0f85edd7c8a991b946e7239d4c25fc1fdd454801330f00c11bc05c564819"
+  },
+  "script:pinball.asset.file::ReadAtfTextureFileHandler/<init>": {
+    "body": 5481,
+    "meta": [
+      5674,
+      2,
+      1,
+      1,
+      3
+    ],
+    "sha": "657bbfaa46d68c90c271e0a8fdfd16d659c79d1de95b13f8757bb3805738b06e"
+  },
+  "pinball.asset.file::ReadPngTextureFileHandler/uploadPng|1": {
+    "body": 5483,
+    "meta": [
+      5677,
+      2,
+      2,
+      1,
+      2
+    ],
+    "sha": "34bffd97b591206b3b43b27245010dcbe7856c8113ca5605cc8862ec596dd2d7"
+  },
+  "pinball.asset.file::ReadPngTextureFileHandler/pngReadHandler|1": {
+    "body": 5484,
+    "meta": [
+      5678,
+      3,
+      2,
+      1,
+      2
+    ],
+    "sha": "8a7259ceb69e69cd2006ffa2634fa9629d19955193a16614008c56e3f9818f99"
+  },
+  "pinball.asset.file::ReadPngTextureFileHandler/_uploadPng|1": {
+    "body": 5485,
+    "meta": [
+      5679,
+      6,
+      2,
+      1,
+      2
+    ],
+    "sha": "1c7dcea3f4179c447511fc7fd73a77215836bed286f0e48cd5640b90432f3dbd"
+  },
+  "pinball.asset.file::ReadPngTextureFileHandler/<ctor>": {
+    "body": 5486,
+    "meta": [
+      5675,
+      2,
+      4,
+      1,
+      2
+    ],
+    "sha": "851b0f85edd7c8a991b946e7239d4c25fc1fdd454801330f00c11bc05c564819"
+  },
+  "script:pinball.asset.file::ReadPngTextureFileHandler/<init>": {
+    "body": 5487,
+    "meta": [
+      5680,
+      2,
+      1,
+      1,
+      3
+    ],
+    "sha": "5f180fd0fcc30173b369d7f75193bc36460e2b8522f5e73e54dcea0f1903074c"
+  },
+  "pinball.asset.view::ViewAssetCache/startOtherLoad|1": {
+    "body": 5946,
+    "meta": [
+      6184,
+      3,
+      5,
+      1,
+      2
+    ],
+    "sha": "69ff286e8e179d47d1f591660f00ff8c4467dc04b1749fc1569e650a022cdc45"
+  },
+  "pinball.asset.view::ViewAssetCache/readTextureHandler|1": {
+    "body": 5962,
+    "meta": [
+      6200,
+      7,
+      4,
+      1,
+      2
+    ],
+    "sha": "44f1c1eff8eb54ea0e8b77fdcb8256700c0922782e3d7b3815ebf654940e8ff3"
+  },
+  "pinball.asset.view::ViewAssetCache/readTexture|1": {
+    "body": 5963,
+    "meta": [
+      6201,
+      6,
+      8,
+      1,
+      2
+    ],
+    "sha": "92c321ff4879e542e3e698542e3fbb0c7f1bb2363aec1db2695b1f6a59f5eea2"
+  },
+  "pinball.asset.view::ViewAssetCache/downloadTexture|1": {
+    "body": 5987,
+    "meta": [
+      6225,
+      3,
+      3,
+      1,
+      2
+    ],
+    "sha": "61a6ded84a1e470e1fe6035879c68ab6878d0aec881ab97a25c8b51c4a869f23"
+  },
+  "pinball.asset.view::ViewAssetCache/dispose|1": {
+    "body": 5989,
+    "meta": [
+      6227,
+      4,
+      7,
+      1,
+      2
+    ],
+    "sha": "c530dff5c1d9cac37f01be94d0f9a205d45ea32918e154b70fac8a029fa7b3df"
+  },
+  "pinball.asset.view::ViewAssetCache/addGroup|1": {
+    "body": 5993,
+    "meta": [
+      6231,
+      5,
+      32,
+      1,
+      2
+    ],
+    "sha": "e5a36fb82277d56ccc5579c887771d75597a605f1d518f3c206dd3974451756e"
+  },
+  "pinball.common.task::MultiTask/startNextTask|1": {
+    "body": 26437,
+    "meta": [
+      28063,
+      4,
+      4,
+      1,
+      2
+    ],
+    "sha": "30e3572c0f9f602ca4f619a5733151b28616e5be3711ce5ed8b993bfa271cac8"
+  },
+  "pinball.common.task::MultiTask/_startNextTask|1": {
+    "body": 26441,
+    "meta": [
+      28067,
+      3,
+      2,
+      1,
+      2
+    ],
+    "sha": "4ee549b5ca76a88be1416ed8cb3bac3c6f923bb968c0afb403d802c1bb068a31"
+  },
+  "pinball.asset.view::ViewAssetCache$/disposeDownloadedTexture|1": {
+    "body": 5937,
+    "sha": "47435b8e42520fe9bc216bc786d14608895ba5f546a45566a39f4f1bb5b05825",
+    "meta": [
+      6236,
+      1,
+      3,
+      1,
+      1
+    ]
+  }
+}

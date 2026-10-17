@@ -1,0 +1,103 @@
+{
+  "number": 108,
+  "upstream_number": 102,
+  "id": "O8",
+  "slug": "overlimit-owned-pedestal",
+  "title": "像素小人改用持有角色的超限台座",
+  "dependencies": [
+    80,
+    81,
+    86
+  ],
+  "source_revision": "r2",
+  "behavior": "玩家持有角色且 player 非空时，把已取得的 GeneralCharacterLogic 换为 player.getOwnedCharacter(id)，让原有全身/半身台座虚调用使用持有角色的突破阶段。未持有、player 为空或 character 为 None 的原路径保留。只插入单方法 P-code，不追加主 ABC 常量池。",
+  "caveat": "联机房间、排行榜里的同一角色也按玩家自己的持有角色突破状态显示；这是来源补丁明确列出的行为。",
+  "methods": [
+    {
+      "id": "O8",
+      "label": "PixelArtCharacter/getPedestalImagePath",
+      "body": 87354,
+      "before": "7a286e705e1416d02a1d9dcbb811f80d238fe48976b8b1b0ab4cbb54888330ed",
+      "after": "10eb1e21f915782bcd5715a3fb58670cb18737ae8a5f0f569781f774b1a48f0d",
+      "before_header": [
+        3,
+        4,
+        1,
+        2
+      ],
+      "after_header": [
+        3,
+        5,
+        1,
+        2
+      ],
+      "abc": "boot_ffc6",
+      "v33_archive_intersection": [],
+      "r4_target_intersection": [],
+      "five_composed_methods_intersection": false,
+      "composition": "无交集；按已锁定的方法体直接应用，不新增合成。",
+      "actual_final_method": {
+        "code_sha256": "10eb1e21f915782bcd5715a3fb58670cb18737ae8a5f0f569781f774b1a48f0d",
+        "header": [
+          3,
+          5,
+          1,
+          2
+        ],
+        "method_id": 95716,
+        "check": {
+          "max_stack": 3,
+          "max_scope": 2,
+          "unreachable_instructions": 4
+        }
+      }
+    }
+  ],
+  "first_apk_version": "v34",
+  "status": "归档条目草稿",
+  "input_swf_sha256": "3b7b3391ae0aee01f15167fe1d5a5b69eddb71a64605c57486f025916611aaa4",
+  "r4_base_swf_sha256": "53890c19f5ced5c70ed2e327e62a8f2f800d8ce5f2fdff5f493ad5c758518642",
+  "final_swf_sha256": "3d5c9745f519beee68557df7bce3e4ff635c9bb127069ed85a8fd02b5cbedb8a",
+  "source_files": [
+    {
+      "path": "108-overlimit-owned-pedestal/pcode/boot_ffc6--PixelArtCharacter_getPedestalImagePath.before.pcode.txt",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\102-overlimit-owned-pedestal\\pcode\\boot_ffc6--PixelArtCharacter_getPedestalImagePath.before.pcode.txt",
+      "bytes": 2727,
+      "sha256": "38b45a77c3aefc74caec217679c2dd530ed00948769f7ad1fcc534e866370533"
+    },
+    {
+      "path": "108-overlimit-owned-pedestal/pcode/boot_ffc6--PixelArtCharacter_getPedestalImagePath.pcode.txt",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\102-overlimit-owned-pedestal\\pcode\\boot_ffc6--PixelArtCharacter_getPedestalImagePath.pcode.txt",
+      "bytes": 3328,
+      "sha256": "be96edbec7401549197d41fea16f3e4d13a0f3b10664391bcb5bca23d8165c36"
+    },
+    {
+      "path": "108-overlimit-owned-pedestal/provenance/upstream-README.md",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\102-overlimit-owned-pedestal\\README.md",
+      "bytes": 2975,
+      "sha256": "4735ea6bda3587de8127b5682b91ef4a21f3a6e0885f1148f2ed7a542c760820"
+    },
+    {
+      "path": "108-overlimit-owned-pedestal/source/apply.py",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\102-overlimit-owned-pedestal\\source\\apply.py",
+      "bytes": 980,
+      "sha256": "261a03475e763452953d31dde400c9fdbeeaac847ddc9ee50f4ab73d2294939d"
+    },
+    {
+      "path": "108-overlimit-owned-pedestal/source/run.py",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\102-overlimit-owned-pedestal\\source\\run.py",
+      "bytes": 1060,
+      "sha256": "738473e690caa1fd49c7fe5cb2fa464ce5e9d8aa77784ecf37eba438cdd4a453"
+    },
+    {
+      "path": "108-overlimit-owned-pedestal/source/v34_patches.py",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\102-overlimit-owned-pedestal\\source\\v34_patches.py",
+      "bytes": 11272,
+      "sha256": "4a67d7aefeee19eadbd344c9f07af7cc089b154135d287ea35acad8611613497"
+    }
+  ],
+  "upstream_source": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\102-overlimit-owned-pedestal",
+  "upstream_files_byte_identical": true,
+  "current_validation_scope": "离线；最终产物验证见根 build-report.json；本轮未运行设备。",
+  "upstream_history_scope": "provenance/upstream-README.md 中自测及真机记载仅属于来源线程，不冒认为本轮重跑。"
+}

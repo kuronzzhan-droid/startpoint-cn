@@ -27,4 +27,4 @@
 
 本次备份：`F:/startpoint-cn-main/.codex-backups/20260910-205430-five-boss-item-art/`。精确同步路径和摘要见 `assets/asset-patch/audit/five-boss-item-art-1.4.111-test/local-sync-report.json`：共 10 个运行文件，即新 ZIP、8 个散资源和最后写入的 manifest。工具与技能的修正前快照在 `F:/codex/work/five-boss-icon-size-20260910/`。
 
-审计目录另含 `report.json`、`local-http-verification.json` 和 `resource-inventory.json`。当前补丁源文件为 `assets/asset-patch/active/candidates/pinball-1.4.110-1.4.111-1-five-boss-item-art-test.zip`；准确摘要见 `report.json`。
+审计目录另含 `report.json`、`local-http-verification.json` 和 `resource-inventory.json`。当前补丁源文件为 `assets/asset-patch/inactive/candidates/pinball-1.4.110-1.4.111-1-five-boss-item-art-test.zip`（2026-10-06 自 `active/candidates/` 移入 `inactive/candidates/`，字节未变）；准确摘要见 `report.json`。

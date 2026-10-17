@@ -16,6 +16,7 @@ const items = require('../out/data/domains/item');
 const gachaState = require('../out/data/domains/gacha');
 const assets = require('../out/lib/assets');
 const draws = require('../out/lib/gacha');
+const utils = require('../out/utils');
 const snapshots = require('../out/data/snapshots/player-snapshot');
 const { serverGachas, serverItemIds } = require('../out/lib/content-master');
 const seed = require('../out/lib/seed-validator').default;
@@ -45,7 +46,11 @@ async function player() {
     await require('../out/data/domains/session').insertSessionWithToken({ token:String(viewer), accountId:account.id, expires:new Date('2099-01-01'),type:2 });
     return {id,viewer,account:account.id};
 }
-const exec = (p,payment=3,type=4,count=1,gid=GID) => app.inject({ method:'POST', url:'/gacha/exec', payload:{viewer_id:p.viewer,gacha_id:gid,payment_type:payment,type,number_of_exec:count} });
+const exec = (p,payment=3,type=4,count=1,gid=GID,now=Date.parse('2024-12-31T12:00:00+08:00')) => {
+    const originalOffset=utils.getTimeOffset();utils.setServerTimeOffset(now-Date.now());
+    return app.inject({ method:'POST', url:'/gacha/exec', payload:{viewer_id:p.viewer,gacha_id:gid,payment_type:payment,type,number_of_exec:count} })
+        .finally(()=>{utils.setServerTimeOffset(originalOffset);});
+};
 function data(response) { assert.equal(response.statusCode,200,response.body);return unpack(Buffer.from(response.body,'base64')).data; }
 const state = id => snapshots.createPlayerSaveSnapshotV2Sync(id).data.tables;
 function points(id,value) {
@@ -67,7 +72,63 @@ test('winning runtime accessor has exactly twelve equal MOD pickups and the nati
     for (const e of mod) assert.equal(e.odds*1200*5,total*100);
     assert.deepEqual(Object.values(g.pool).flat().filter(x=>x.isExchangeable).map(x=>x.id),MODS);
     for (const bucket of ['1','2','3']) assert.deepEqual(g.pool[bucket].filter(x=>!x.isLimited).map(x=>x.id),assets.getGachaSync(1675).pool[bucket].map(x=>x.id));
-    assert.equal(g.startDate,'2020-12-31 12:00:00');assert.equal(g.endDate,'2199-12-31 23:59:59');
+    assert.equal(g.startDate,'2020-12-31 12:00:00');assert.equal(g.endDate,'2025-01-01 00:00:00');
+    assert.equal(g.enforceAvailabilityWindow,true);
+});
+
+test('Orochi shop removes mooncakes and keeps the other three exchange items permanent', () => {
+    const shop=require('../assets/boss_coin_shop.json');
+    const categoryMap=require('../assets/boss_coin_shop_item_category_map.json');
+    const cdnShop=require('../assets/cdndata/boss_coin_shop.json');
+    assert.equal(shop['20']['202045'],undefined);assert.equal(categoryMap['202045'],undefined);assert.equal(cdnShop['202045'],undefined);
+    for(const id of ['202046','202047','202048']) {
+        assert.equal(shop['20'][id].availableUntil,null);
+        assert.equal(cdnShop[id][0][26],'(None)');
+    }
+    assert.equal(require('../assets/cdndata/gacha.json')['990003'][0][30],'2025-01-01 00:00:00');
+});
+
+test('the closed gacha rejects direct draws after the end time without changing player state', async () => {
+    const p=await player();items.setPlayerItemSync(p.id,IID,2);const before=state(p.id);
+    const response=await exec(p,3,4,1,GID,Date.parse('2025-01-02T00:00:00+08:00'));
+    assert.equal(response.statusCode,400);
+    assert.equal(response.json().message,'Gacha is not available.');
+    assert.deepEqual(state(p.id),before);
+});
+
+test('the virtual global clock includes both window boundaries and rejects adjacent seconds', async () => {
+    const p=await player();items.setPlayerItemSync(p.id,IID,3);
+    const start=Date.parse('2020-12-31T12:00:00+08:00'),end=Date.parse('2025-01-01T00:00:00+08:00');
+    for(const now of [start-1000,end+1000]) {
+        const before=state(p.id),response=await exec(p,3,4,1,GID,now);
+        assert.equal(response.statusCode,400);assert.equal(response.json().message,'Gacha is not available.');
+        assert.deepEqual(state(p.id),before);
+    }
+    for(const now of [start,end]) assert.equal(data(await exec(p,3,4,1,GID,now)).draw.length,10);
+    assert.equal(items.getPlayerItemSync(p.id,IID),1);
+});
+
+test('a nonzero global offset opens the historical window without replacing the real clock and is restored', async () => {
+    const p=await player();items.setPlayerItemSync(p.id,IID,1);
+    const originalNow=Date.now,originalOffset=utils.getTimeOffset();
+    try {
+        utils.setServerTimeOffset(123456);
+        const result=data(await exec(p));
+        assert.equal(result.draw.length,10);
+        assert.equal(utils.getTimeOffset(),123456);
+        assert.strictEqual(Date.now,originalNow);
+    } finally {utils.setServerTimeOffset(originalOffset);}
+});
+
+test('gacha availability follows the global clock despite a conflicting legacy player offset', async () => {
+    const p=await player();items.setPlayerItemSync(p.id,IID,2);
+    const open=Date.parse('2024-12-31T12:00:00+08:00'),closed=Date.parse('2025-01-02T00:00:00+08:00');
+    players.updatePlayerSync({id:p.id,timeOffset:closed-Date.now()});
+    assert.equal(data(await exec(p,3,4,1,GID,open)).draw.length,10);
+    players.updatePlayerSync({id:p.id,timeOffset:open-Date.now()});
+    const before=state(p.id),response=await exec(p,3,4,1,GID,closed);
+    assert.equal(response.statusCode,400);assert.equal(response.json().message,'Gacha is not available.');
+    assert.deepEqual(state(p.id),before);
 });
 
 test('all one-thousand rank rolls match 5/35/60 and the tenth slot matches 5/95', () => {
@@ -120,7 +181,8 @@ test('missing mooncakes, single draws, other tickets and premium currency cannot
 
 test('twenty-five mooncakes yield 250 points and one of the twelve MODs can be exchanged', async () => {
     const p=await player();items.setPlayerItemSync(p.id,IID,25);
-    assert.equal(data(await exec(p,3,4,25)).draw.length,250);
+    const drawsMade=[];for(const count of [10,10,5])drawsMade.push(...data(await exec(p,3,4,count)).draw);
+    assert.equal(drawsMade.length,250);
     assert.equal(items.getPlayerItemSync(p.id,IID),0);
     assert.equal(gachaState.getPlayerGachaInfoSync(p.id,GID).gachaExchangePoint,250);
     assert.equal((await exchange(p,MODS[0])).statusCode,200);

@@ -72,6 +72,23 @@ test("economy routes stay consistent under duplicates and concurrency", async t 
     })
     const parallel = (count, makeRequest) => Promise.all(Array.from({ length: count }, makeRequest))
 
+    await t.test("character purchases reject excessive quantities before expanding rewards", async () => {
+        const { playerId, viewerId } = await createPlayer()
+        const before = getPlayerSync(playerId)
+        const response = await post("/shop/buy", {
+            viewer_id: viewerId, api_count: 1,
+            shop_type: require("../out/lib/types").ShopType.STAR_GRAIN,
+            shop_item_id: 100000, number: Number.MAX_SAFE_INTEGER,
+        })
+        assert.equal(response.statusCode, 400, response.payload)
+        assert.match(response.json().message, /stock|purchase limit/i)
+        const after = getPlayerSync(playerId)
+        assert.equal(after.freeMana, before.freeMana)
+        assert.equal(after.freeVmoney, before.freeVmoney)
+        assert.equal(getPlayerShopPurchaseCountSync(playerId,
+            getShopPurchaseKey(require("../out/lib/types").ShopType.STAR_GRAIN, 100000)), 0)
+    })
+
     await t.test("concurrent purchases cannot spend the same mana twice", async () => {
         const { playerId, viewerId } = await createPlayer({ freeMana: 1000, paidMana: 0 })
         const results = await parallel(10, () => post("/shop/buy", {

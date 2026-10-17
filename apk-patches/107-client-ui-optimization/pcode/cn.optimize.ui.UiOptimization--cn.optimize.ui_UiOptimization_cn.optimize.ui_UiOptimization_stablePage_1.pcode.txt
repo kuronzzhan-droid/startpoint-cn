@@ -1,0 +1,36 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.ui.UiOptimization; label: cn.optimize.ui::UiOptimization$/cn.optimize.ui:UiOptimization::stablePage|1; body: 8; method: 9
+# code SHA-256: f0cfe3b2ff6f8950937d608d710c97eb712cf3f9b1f57ae13fa6e22906ccbf93; header: [2, 3, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_2 []
+#0003 ofs0003: pushnull []
+#0004 ofs0004: equals []
+#0005 ofs0005: not []
+#0006 ofs0006: dup []
+#0007 ofs0007: iffalse [] -> #12
+#0008 ofs000b: pop []
+#0009 ofs000c: getlocal_2 []
+#0010 ofs000d: getproperty [(9, 'hidden', ((5, 'cn.optimize.ui:UiOptimization'), (26, 'cn.optimize.ui:UiOptimization'), (26, 'Object'), (22, 'cn.optimize.ui'), (23, 'cn.optimize.ui'), (5, 'FilePrivateNS:UiOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0011 ofs000f: coerce_a []
+#0012 ofs0010: dup []
+#0013 ofs0011: iffalse [] -> #20
+#0014 ofs0015: pop []
+#0015 ofs0016: getlocal_1 []
+#0016 ofs0017: getproperty [(9, 'thumbnailLayer', ((5, 'cn.optimize.ui:UiOptimization'), (26, 'cn.optimize.ui:UiOptimization'), (26, 'Object'), (22, 'cn.optimize.ui'), (23, 'cn.optimize.ui'), (5, 'FilePrivateNS:UiOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0017 ofs0019: getproperty [(9, 'visible', ((5, 'cn.optimize.ui:UiOptimization'), (26, 'cn.optimize.ui:UiOptimization'), (26, 'Object'), (22, 'cn.optimize.ui'), (23, 'cn.optimize.ui'), (5, 'FilePrivateNS:UiOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0018 ofs001b: not []
+#0019 ofs001c: coerce_a []
+#0020 ofs001d: dup []
+#0021 ofs001e: iffalse [] -> #30
+#0022 ofs0022: pop []
+#0023 ofs0023: getlocal_2 []
+#0024 ofs0024: getproperty [(9, 'fade', ((5, 'cn.optimize.ui:UiOptimization'), (26, 'cn.optimize.ui:UiOptimization'), (26, 'Object'), (22, 'cn.optimize.ui'), (23, 'cn.optimize.ui'), (5, 'FilePrivateNS:UiOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0025 ofs0026: getlocal_1 []
+#0026 ofs0027: getproperty [(9, 'carouselPeek', ((5, 'cn.optimize.ui:UiOptimization'), (26, 'cn.optimize.ui:UiOptimization'), (26, 'Object'), (22, 'cn.optimize.ui'), (23, 'cn.optimize.ui'), (5, 'FilePrivateNS:UiOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0027 ofs0029: callproperty [(9, 'getLargeThumbnailFadingRate', ((5, 'cn.optimize.ui:UiOptimization'), (26, 'cn.optimize.ui:UiOptimization'), (26, 'Object'), (22, 'cn.optimize.ui'), (23, 'cn.optimize.ui'), (5, 'FilePrivateNS:UiOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin'))), 0]
+#0028 ofs002c: strictequals []
+#0029 ofs002d: coerce_a []
+#0030 ofs002e: returnvalue []
+# exceptions: []

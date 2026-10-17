@@ -1,0 +1,19 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.resources.ResourceRuntime; label: cn.optimize.resources::ResourceRuntime$/failed|1; body: 18; method: 19
+# code SHA-256: 213198a17672538fc8ca4b8d87de26288a195ecc670b710fc6bf0eb58cf7330c; header: [2, 3, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_2 []
+#0003 ofs0003: iffalse [] -> #10
+#0004 ofs0007: getlex [(7, (5, 'cn.optimize.resources:ResourceRuntime'), 'counters')]
+#0005 ofs0009: dup []
+#0006 ofs000a: getproperty [(9, 'openFailures', ((5, 'cn.optimize.resources:ResourceRuntime'), (26, 'cn.optimize.resources:ResourceRuntime'), (26, 'Object'), (22, 'cn.optimize.resources'), (23, 'cn.optimize.resources'), (5, 'FilePrivateNS:ResourceRuntime'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0007 ofs000c: convert_d []
+#0008 ofs000d: increment []
+#0009 ofs000e: setproperty [(9, 'openFailures', ((5, 'cn.optimize.resources:ResourceRuntime'), (26, 'cn.optimize.resources:ResourceRuntime'), (26, 'Object'), (22, 'cn.optimize.resources'), (23, 'cn.optimize.resources'), (5, 'FilePrivateNS:ResourceRuntime'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0010 ofs0010: findpropstrict [(7, (22, ''), 'release')]
+#0011 ofs0012: getlocal_1 []
+#0012 ofs0013: callpropvoid [(7, (22, ''), 'release'), 1]
+#0013 ofs0016: returnvoid []
+# exceptions: []

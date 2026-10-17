@@ -156,6 +156,8 @@ test('NPC deltas match persisted membership through pruning, updates, reload, de
         current.pools.get('2:1001001').map(x=>({id:x.sourcePlayerId,payload:JSON.stringify(x.party)})).sort((a,b)=>a.id-b.id), readPersisted())
     check(cache)
     assert.equal(cache.pools.get('2:1001001').length, 50)
+    assert.deepEqual(cache.pools.get('2:1001001').map(x => x.sourcePlayerId).sort((a, b) => a - b),
+        Array.from({length: 50}, (_, i) => i + 26), 'old high-power clears must not displace newer clears')
     assert.equal(messages.filter(m=>m.type==='quest_delta').length, 76)
     assert.equal(messages.filter(m=>m.type==='quest_snapshot').length, 0)
     await waitFor(worker, 'ready', () => worker.postMessage({type:'reload'}))
@@ -168,9 +170,9 @@ test('NPC deltas match persisted membership through pruning, updates, reload, de
     await record(snapshot(76, 50000)); check(cache)
     await worker.terminate()
     const restarted = await npcWorker(t, dir); check(restarted.cache)
-    // An old low-power record can be pruned immediately, including itself.
+    // An old clear can be pruned immediately, even when it has the highest power.
     for (let i = 77; i <= 80; i++) await restarted.record(snapshot(i, 50000))
-    await restarted.record({...snapshot(1, 1), clearedAt:0})
+    await restarted.record({...snapshot(1, 999999), clearedAt:0})
     assert.ok(restarted.cache.pools.get('2:1001001').every(x=>x.sourcePlayerId!==1))
     check(restarted.cache)
     await waitFor(restarted.worker, 'remove_players_result', () => restarted.worker.postMessage({
@@ -178,6 +180,42 @@ test('NPC deltas match persisted membership through pruning, updates, reload, de
     }))
     assert.equal(restarted.cache.pools.size,0)
     assert.deepEqual(readPersisted(),[])
+})
+test('NPC startup and reload retain only the latest 50 stored clears per quest', async t => {
+    const dir = directory(), file = path.join(dir, 'quest_ai_party_pool.db')
+    const seed = new Database(file)
+    seed.exec(`CREATE TABLE quest_npc_party_pool (
+        quest_category INTEGER NOT NULL, quest_id INTEGER NOT NULL, source_player_id INTEGER NOT NULL,
+        party_slot INTEGER NOT NULL, battle_power INTEGER NOT NULL, party_element INTEGER,
+        party_payload TEXT NOT NULL, cleared_at INTEGER NOT NULL,
+        PRIMARY KEY (quest_category, quest_id, source_player_id))`)
+    const insert = seed.prepare('INSERT INTO quest_npc_party_pool VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    for (let i = 1; i <= 65; i++) {
+        const s = snapshot(i, i <= 15 ? 999999 : 8000)
+        insert.run(s.questCategory, s.questId, s.sourcePlayerId, s.partySlot,
+            s.battlePower, s.partyElement, JSON.stringify(s.party), s.clearedAt)
+    }
+    const other = {...snapshot(1), questId: 1002001}
+    insert.run(other.questCategory, other.questId, other.sourcePlayerId, other.partySlot,
+        other.battlePower, other.partyElement, JSON.stringify(other.party), other.clearedAt)
+    seed.close()
+    const {worker, cache, record} = await npcWorker(t, dir)
+    const latest = () => cache.pools.get('2:1001001').map(s => s.sourcePlayerId).sort((a, b) => a - b)
+    assert.deepEqual(latest(), Array.from({length: 50}, (_, i) => i + 16))
+    assert.equal(cache.pools.get('2:1002001').length, 1, 'quest limits are independent')
+    const db = new Database(file)
+    try {
+        assert.equal(db.prepare('SELECT COUNT(*) AS n FROM quest_npc_party_pool WHERE quest_id = 1001001').get().n, 50)
+        const s = {...snapshot(66, 8000), clearedAt: 66}
+        db.prepare('INSERT INTO quest_npc_party_pool VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+            s.questCategory, s.questId, s.sourcePlayerId, s.partySlot,
+            s.battlePower, s.partyElement, JSON.stringify(s.party), s.clearedAt)
+    } finally { db.close() }
+    await waitFor(worker, 'ready', () => worker.postMessage({type: 'reload'}))
+    assert.deepEqual(latest(), Array.from({length: 50}, (_, i) => i + 17))
+    await record({...snapshot(30, 8000), partySlot: 12, clearedAt: 1000})
+    assert.equal(latest().length, 50, 'another SET from the same player replaces its record')
+    assert.equal(cache.pools.get('2:1001001').find(s => s.sourcePlayerId === 30).partySlot, 12)
 })
 test('NPC full-update fallback has the same party contents', async t => {
     const {cache, record, messages} = await npcWorker(t, directory(), false)

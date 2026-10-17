@@ -1,4 +1,5 @@
 import { randomBytes, timingSafeEqual } from "node:crypto"
+import { performance } from "node:perf_hooks"
 import { getDb } from "../data/db"
 import { insertAccountSync, updateAccountSync } from "../data/domains/account"
 import { insertDefaultPlayerSync } from "../data/domains/player"
@@ -6,9 +7,11 @@ import { getViewerIdSync } from "../data/domains/session"
 import { resolvePlayerIdSync, saveAccountDefaultPlayer } from "../data/activeAccount"
 import { getRankDegree } from "./stamina"
 import { generateViewerId } from "../utils"
-import { runPersistenceTransactionSync } from "./persistence-coordinator"
+import { runPersistenceTransaction, runPersistenceTransactionSync } from "./persistence-coordinator"
 
 const DAY = 86400000
+// Leave room for the existing client's 15-second network timeout.
+export const PASSWORD_LOGIN_QUEUE_TIMEOUT_MS = 10_000
 let initialized = false
 let nextMaintenanceAt = 0
 const statements = new Map<string, import("better-sqlite3").Statement<unknown[]>>()
@@ -199,9 +202,12 @@ function issue(accountId: number, remember: boolean): PlayerLoginSession {
     audit(accountId, "login")
     return result
 }
+function loginResponse(session: PlayerLoginSession) {
+    return { token: session.token, udid: session.udid, expires_at: session.expires_at, profile: playerLoginProfile(session.account_id) }
+}
 function result(session: PlayerLoginSession) {
     disconnectViewer(session.viewer_id)
-    return { token: session.token, udid: session.udid, expires_at: session.expires_at, profile: playerLoginProfile(session.account_id) }
+    return loginResponse(session)
 }
 // ── Test-server tester accounts (deployment-local patch, not upstream) ──
 // TEST_SERVER_SHARED_PASSWORD: one password for every tester; an unknown account name logging in with it
@@ -267,18 +273,77 @@ export function registerPlayerLogin(username: unknown, password: unknown, rememb
     saveAccountDefaultPlayer(session.account_id, newPlayerId)
     return result(session)
 }
+function passwordLoginSync(value: ReturnType<typeof input>, remember: boolean) {
+    const row = getDb().prepare(`SELECT a.id,c.password FROM accounts a JOIN player_login_credentials c ON c.account_id=a.id
+        WHERE lower(a.username)=? AND a.username IS NOT NULL AND a.username<>''`).get(value.username) as { id: number; password: string } | undefined
+    if (!row || !equal(row.password, value.password)) fail("账号或密码不正确。")
+    // Prepare the response inside the transaction too: missing/corrupt profile
+    // data must not revoke the old session and then report a failed login.
+    return loginResponse(issue(row.id, remember))
+}
 export function loginPlayer(username: unknown, password: unknown, remember: boolean) {
     if (testerPassword && testerTemplatePath) return testerLogin(username, password, remember)
     const value = input(username, password)
-    const session = runPersistenceTransactionSync({
+    const response = runPersistenceTransactionSync({
         domain: "account", operation: "login_player",
-    }, () => {
-        const row = getDb().prepare(`SELECT a.id,c.password FROM accounts a JOIN player_login_credentials c ON c.account_id=a.id
-            WHERE lower(a.username)=? AND a.username IS NOT NULL AND a.username<>''`).get(value.username) as { id: number; password: string } | undefined
-        if (!row || !equal(row.password, value.password)) fail("账号或密码不正确。")
-        return issue(row.id, remember)
+    }, () => passwordLoginSync(value, remember))
+    disconnectViewer(response.profile.viewer_id)
+    return response
+}
+
+/** Password requests share bounded account admission and recheck credentials after waiting. */
+export async function loginPlayerAsync(
+    username: unknown, password: unknown, remember: boolean,
+    options: { previousToken?: unknown; signal?: AbortSignal } = {},
+) {
+    const value = input(username, password)
+    if (options.signal?.aborted) fail("登录请求已取消，请重新登录。", "REQUEST_CANCELLED")
+    const deadline = performance.now() + PASSWORD_LOGIN_QUEUE_TIMEOUT_MS
+    let committed = false, waitingFailure: PlayerLoginError | undefined
+    let rejectWaiting!: (error: PlayerLoginError) => void
+    const stopped = new Promise<never>((_resolve, reject) => { rejectWaiting = reject })
+    const queueTimeout = () => new PlayerLoginError("服务器写入繁忙，请稍后重试。", "SERVER_BUSY")
+    const stopWaiting = (error: PlayerLoginError) => {
+        if (committed || waitingFailure) return
+        waitingFailure = error
+        rejectWaiting(error)
+    }
+    const abort = () => stopWaiting(new PlayerLoginError("登录请求已取消，请重新登录。", "REQUEST_CANCELLED"))
+    options.signal?.addEventListener("abort", abort, { once: true })
+    const timer = setTimeout(() => stopWaiting(queueTimeout()), PASSWORD_LOGIN_QUEUE_TIMEOUT_MS)
+    timer.unref()
+    const pending = runPersistenceTransaction({ domain: "account", operation: "login_player" }, () => {
+        // A client that left while queued must not lose its still-valid session
+        // to a token it will never receive. Cancellation after COMMIT cannot be
+        // reported as a rolled-back login.
+        if (waitingFailure) throw waitingFailure
+        if (options.signal?.aborted) fail("登录请求已取消，请重新登录。", "REQUEST_CANCELLED")
+        if (performance.now() >= deadline) throw queueTimeout()
+        const response = passwordLoginSync(value, remember)
+        return { response, previousViewerId: readPlayerLoginSession(options.previousToken)?.viewer_id }
+    }, {
+        afterCommit: ({ response, previousViewerId }) => {
+            committed = true
+            for (const viewerId of new Set([response.profile.viewer_id, previousViewerId])) {
+                if (viewerId === undefined) continue
+                try { disconnectViewer(viewerId) }
+                catch {
+                    // Transport cleanup cannot undo the committed session or
+                    // turn success into a retry; never log tokens or raw errors.
+                    console.error("[PLAYER-LOGIN] transport disconnect failed after committed login")
+                }
+            }
+        },
     })
-    return result(session)
+    try {
+        // Return promptly, but retain admission until the original queued
+        // closure drains. Both outcomes stay observed after timeout/cancel.
+        const completed = await Promise.race([pending, stopped])
+        return completed.response
+    } finally {
+        clearTimeout(timer)
+        options.signal?.removeEventListener("abort", abort)
+    }
 }
 export function resumePlayerLogin(value: unknown) {
     const session = readPlayerLoginSession(value)

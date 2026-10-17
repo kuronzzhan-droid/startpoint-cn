@@ -1,7 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify"
 import { VerifyAccessTokenBody, MicroCommunityBody } from "../types"
 import { generateDataHeaders } from "../../utils"
-import { getRoomByToken } from "../room/manager"
+import { getRoomCommandGateway } from "../coordinator/default-runtime"
+import type { RoomQueryProjection } from "../coordinator/room-command-handlers"
 import { resolveMultiPlayerContext } from "../player-context"
 import { getFollowRelationSync } from "../../data/domains/follow"
 import { getPlayerCharacterSync } from "../../data/domains/character"
@@ -17,7 +18,9 @@ export function registerSocialRoutes(fastify: FastifyInstance): void {
             "error": "Bad Request", "message": "Invalid viewer id or no player bound."
         })
 
-        const room = getRoomByToken(body.access_token || "")
+        const room = await getRoomCommandGateway().execute("room.query", {
+            accessToken: body.access_token || "",
+        }) as RoomQueryProjection | null
         if (!room) {
             reply.header("content-type", "application/x-msgpack")
             return reply.status(200).send({

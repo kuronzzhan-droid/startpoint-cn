@@ -94,6 +94,10 @@ export function getLeaderboardSeasonSync(
         throw new Error("contentRevision must be a non-empty string when provided.")
     }
     const db = getDb()
+    const current = db.prepare(`SELECT season, content_revision FROM leaderboard_seasons WHERE competition_key = ?`)
+        .get(competitionKey) as { season: number; content_revision: string | null } | undefined
+    if (current && (contentRevision === undefined || current.content_revision === contentRevision)) return current.season
+    // Only initialization/revision changes need a write lock; common reads do not.
     return runPersistenceTransactionSync({ domain: "leaderboard", operation: "get_leaderboard_season" }, () => {
         db.prepare(`
             INSERT OR IGNORE INTO leaderboard_seasons
@@ -333,6 +337,16 @@ const ELIGIBLE_RUN_CONDITION = `r.status = 'completed' AND r.tracked_from_round 
     AND (SELECT COUNT(*) FROM leaderboard_run_rounds rr WHERE rr.run_id = r.id)
         = r.total_rounds`
 
+function liveRankCondition(filter: LeaderboardRankFilter): string {
+    return `r.competition_key = ? AND r.season = ?
+        ${filter.excludeDeleted ? "AND EXISTS (SELECT 1 FROM players p WHERE p.id = r.player_id)" : ""}
+        ${filter.excludeBots ? `AND NOT EXISTS (
+            SELECT 1 FROM players p JOIN accounts a ON a.id = p.account_id
+            WHERE p.id = r.player_id AND a.idp_code = 'rushbot'
+        )` : ""}
+        AND ${ELIGIBLE_RUN_CONDITION}`
+}
+
 function rankCte(filter: LeaderboardRankFilter = {}): string {
     const snapshotColumns: Record<string, string> = {
         id: "result.run_id", competition_key: "settlement.competition_key",
@@ -368,13 +382,7 @@ function rankCte(filter: LeaderboardRankFilter = {}): string {
             ORDER BY r.client_battle_ms ASC, r.finished_at_ms ASC, r.id ASC
         ) AS player_record_number
         FROM leaderboard_runs r
-        WHERE r.competition_key = ? AND r.season = ?
-            ${filter.excludeDeleted ? "AND EXISTS (SELECT 1 FROM players p WHERE p.id = r.player_id)" : ""}
-            ${filter.excludeBots ? `AND NOT EXISTS (
-                SELECT 1 FROM players p JOIN accounts a ON a.id = p.account_id
-                WHERE p.id = r.player_id AND a.idp_code = 'rushbot'
-            )` : ""}
-            AND ${ELIGIBLE_RUN_CONDITION}
+        WHERE ${liveRankCondition(filter)}
     ), ranked AS (
         SELECT eligible.*, ROW_NUMBER() OVER (
             ORDER BY client_battle_ms ASC, finished_at_ms ASC, id ASC
@@ -398,9 +406,14 @@ function deserializeRank(raw: RawRankRecord): LeaderboardRankRecord {
 export function countLeaderboardRanksSync(
     competitionKey: string, season: number, filter: LeaderboardRankFilter = {},
 ): number {
-    const row = getDb().prepare(`${rankCte(filter)}
-        SELECT COUNT(*) AS count FROM ranked
-    `).get(competitionKey, season) as { count: number }
+    // Counting eligible players needs neither ranking sorts nor full row
+    // materialization. Settled counts must retain deleted-player snapshots.
+    const sql = filter.settled ? `SELECT COUNT(*) AS count
+        FROM leaderboard_settlement_results result
+        JOIN leaderboard_settlements settlement ON settlement.id = result.settlement_id
+        WHERE settlement.competition_key = ? AND settlement.season = ? AND settlement.status = 'completed'`
+        : `SELECT COUNT(DISTINCT r.player_id) AS count FROM leaderboard_runs r WHERE ${liveRankCondition(filter)}`
+    const row = getDb().prepare(sql).get(competitionKey, season) as { count: number }
     return row.count
 }
 
@@ -435,6 +448,50 @@ export function getLeaderboardPlayerRankSync(
         WHERE ranked.player_id = ? LIMIT 1
     `).get(competitionKey, season, playerId) as RawRankRecord | undefined
     return row === undefined ? null : deserializeRank(row)
+}
+
+/** Compute the ranking once for the visible page and the player's own row. */
+export function getLeaderboardRankPageAndPlayerSync(input: {
+    competitionKey: string; season: number; offset: number; limit: number
+    playerId: number | null; filter?: LeaderboardRankFilter
+}): { rows: LeaderboardRankRecord[]; mine: LeaderboardRankRecord | null } {
+    const records = (getDb().prepare(`${rankCte(input.filter)}
+        SELECT ranked.*, COALESCE(p.name, ranked.player_name) AS live_name,
+            CASE WHEN p.id IS NULL THEN 0 ELSE 1 END AS player_exists, p.rank_point
+        FROM ranked LEFT JOIN players p ON p.id = ranked.player_id
+        WHERE (rank_number > ? AND rank_number <= ?) OR ranked.player_id = ?
+        ORDER BY rank_number ASC
+    `).all(input.competitionKey, input.season, input.offset, input.offset + input.limit,
+        input.playerId) as RawRankRecord[]).map(deserializeRank)
+    return {
+        rows: records.filter(row => row.rankNumber > input.offset && row.rankNumber <= input.offset + input.limit),
+        mine: input.playerId === null ? null : records.find(row => row.playerId === input.playerId) ?? null,
+    }
+}
+
+let settlementSnapshotSequence = 0
+/** Rank once in SQLite temp storage, then release each bounded read before writing rewards. */
+export function forEachLeaderboardRankBatchSync(
+    competitionKey: string, season: number, filter: LeaderboardRankFilter,
+    visit: (row: LeaderboardRankRecord) => void,
+): void {
+    const db = getDb()
+    const table = `leaderboard_settlement_work_${++settlementSnapshotSequence}`
+    db.prepare(`CREATE TEMP TABLE ${table} AS ${rankCte(filter)}
+        SELECT ranked.*, COALESCE(p.name, ranked.player_name) AS live_name,
+            CASE WHEN p.id IS NULL THEN 0 ELSE 1 END AS player_exists, p.rank_point
+        FROM ranked LEFT JOIN players p ON p.id = ranked.player_id`).run(competitionKey, season)
+    try {
+        db.exec(`CREATE UNIQUE INDEX temp.${table}_rank ON ${table}(rank_number)`)
+        const page = db.prepare(`SELECT * FROM temp.${table} WHERE rank_number > ? ORDER BY rank_number LIMIT 256`)
+        let last = 0
+        for (;;) {
+            const rows = page.all(last) as RawRankRecord[]
+            if (rows.length === 0) break
+            for (const row of rows) visit(deserializeRank(row))
+            last = rows[rows.length - 1].rank_number
+        }
+    } finally { db.exec(`DROP TABLE temp.${table}`) }
 }
 
 export interface LeaderboardRoundRecord {

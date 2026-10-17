@@ -1,0 +1,15 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.data.DataOptimization; label: cn.optimize.data::DataOptimization$/rankComparator|1/closure:0; body: 4; method: 6
+# code SHA-256: 36d9bef97635fe6b4f62ac47a317ba162e68b63cfbcd752dd22d2c34084aeafb; header: [4, 3, 0, 0]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: findpropstrict [(7, (22, ''), 'rank')]
+#0001 ofs0002: getlex [(7, (23, 'cn.optimize.data'), 'ranks')]
+#0002 ofs0004: getlocal_1 []
+#0003 ofs0005: callproperty [(7, (22, ''), 'rank'), 2]
+#0004 ofs0008: findpropstrict [(7, (22, ''), 'rank')]
+#0005 ofs000a: getlex [(7, (23, 'cn.optimize.data'), 'ranks')]
+#0006 ofs000c: getlocal_2 []
+#0007 ofs000d: callproperty [(7, (22, ''), 'rank'), 2]
+#0008 ofs0010: subtract []
+#0009 ofs0011: returnvalue []
+# exceptions: []

@@ -2,7 +2,9 @@ import type { MultiRoom, MultiMate, CompanionInfo } from "../types"
 import type { IRoomMateProvider, RecruitResult } from "../types"
 import type { NpcMateTemplate } from "../../lib/types"
 import { NPC_TEMPLATES } from "./types"
-import { buildNpcMates } from "./builder"
+import { invokeRealtimeBusiness } from "../coordinator/business-rpc"
+import { isRealtimeOwnerChild } from "../coordinator/runtime-role"
+import { getRoom } from "../room/manager"
 
 type RecruitedMate = RecruitResult["recruitedMates"][number]
 
@@ -22,12 +24,20 @@ export function selectStableNpcSlots(
 }
 
 export class NpcMateProvider implements IRoomMateProvider {
+    private readonly prepared = new Map<string, MultiMate[]>()
     getMates(roomNumber: string): MultiMate[] {
-        const { mate1, mate2 } = buildNpcMates()
+        const room = getRoom(roomNumber)
+        if (isRealtimeOwnerChild()) return this.prepared.get(roomNumber) ?? []
+        const { mate1, mate2 } = require("./builder").buildNpcMates(room?.quest_id, room?.category)
         return [mate1, mate2].filter((m): m is MultiMate => m !== null)
     }
 
     async onRecruit(roomNumber: string, hostViewerId: string): Promise<RecruitResult> {
+        const room = getRoom(roomNumber)
+        if (!room) return { recruitedMates: [] }
+        const mates = await invokeRealtimeBusiness<MultiMate[]>("npc.mates", { category: room.category, questId: room.quest_id })
+        this.prepared.set(roomNumber, mates)
+        while (this.prepared.size > 256) this.prepared.delete(this.prepared.keys().next().value!)
         return {
             recruitedMates: [
                 { viewer_id: 900000001, com_id: 1 },

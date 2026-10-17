@@ -1,5 +1,5 @@
 import { getDb } from "../../data/db"
-import { abandonLeaderboardRunsSync, countLeaderboardRanksSync, getLeaderboardRankPageSync, LeaderboardRankFilter } from "../../data/domains/leaderboard"
+import { abandonLeaderboardRunsSync, countLeaderboardRanksSync, forEachLeaderboardRankBatchSync, LeaderboardRankFilter } from "../../data/domains/leaderboard"
 import { degreeDefinitions } from "../content-master"
 import { insertMailSync, MailType } from "../../data/domains/mail"
 import {
@@ -18,7 +18,15 @@ import {
     upgradeLeaderboardRewardRules,
 } from "./rewards"
 import { getLeaderboardAvailabilitySync, setLeaderboardAvailabilitySync } from "./availability"
-import { runPersistenceTransaction, runPersistenceTransactionSync } from "../persistence-coordinator"
+import { runPersistenceTransactionSync } from "../persistence-coordinator"
+import { LeaderboardWorkBusyError, runLeaderboardWork } from "./work-control"
+import { checkSynchronousSettlementSize } from "./sync-budget"
+import { isMainThread } from "node:worker_threads"
+import type { LeaderboardSettlementWorkerInput } from "./background-worker"
+import { isPersistenceAdmissionError } from "../persistence-admission"
+import { isSqliteBusyError } from "../sqlite-write-coordinator"
+import { isServerShuttingDown } from "../shutdown-state"
+import { assertLeaderboardSettlementNotCancelled } from "./worker-cancellation"
 
 export interface LeaderboardSettlementConfig {
     competitionKey: string
@@ -83,29 +91,28 @@ export function getLeaderboardSettlementConfigSync(
     competitionKey: string,
     nowMs: number = Date.now(),
 ): LeaderboardSettlementConfig {
-    const initial = defaultConfig(competitionKey, nowMs)
-    getDb().prepare(`
-        INSERT OR IGNORE INTO leaderboard_settlement_configs (
-            competition_key, auto_enabled, settle_at_ms, repeat_interval_ms,
-            reward_tiers_json, mail_subject, mail_body, exclude_bots, updated_at_ms
-        ) VALUES (?, 0, NULL, NULL, ?, ?, ?, 1, ?)
-    `).run(
-        competitionKey,
-        JSON.stringify(initial.rewardTiers),
-        initial.mailSubject,
-        initial.mailBody,
-        nowMs,
-    )
-    const row = getDb().prepare(`
-        SELECT * FROM leaderboard_settlement_configs WHERE competition_key = ?
-    `).get(competitionKey) as RawConfig
+    const read = () => getDb().prepare(`SELECT * FROM leaderboard_settlement_configs WHERE competition_key = ?`)
+        .get(competitionKey) as RawConfig | undefined
+    let row = read()
+    if (!row) {
+        const initial = defaultConfig(competitionKey, nowMs)
+        row = runPersistenceTransactionSync({ domain: "leaderboard", operation: "initialize_settlement_config" }, () => {
+            getDb().prepare(`
+                INSERT OR IGNORE INTO leaderboard_settlement_configs (
+                    competition_key, auto_enabled, settle_at_ms, repeat_interval_ms,
+                    reward_tiers_json, mail_subject, mail_body, exclude_bots, updated_at_ms
+                ) VALUES (?, 0, NULL, NULL, ?, ?, ?, 1, ?)
+            `).run(competitionKey, JSON.stringify(initial.rewardTiers), initial.mailSubject, initial.mailBody, nowMs)
+            return read()!
+        })
+    }
     const config = deserializeConfig(row)
     const upgraded = upgradeLeaderboardRewardRules(competitionKey, config.rewardTiers)
     if (upgraded !== null) {
         config.rewardTiers = competitionKey === "rush:700100:1" && config.rewardTiers.length === 0
-            ? initial.rewardTiers : upgraded
+            ? defaultConfig(competitionKey, nowMs).rewardTiers : upgraded
         config.updatedAtMs = nowMs
-        putLeaderboardSettlementConfigSync(config)
+        runPersistenceTransactionSync({ domain: "leaderboard", operation: "upgrade_settlement_config" }, () => putLeaderboardSettlementConfigSync(config))
     }
     return config
 }
@@ -317,10 +324,14 @@ export function settleLeaderboardSeasonSync(
     source: string,
     nowMs: number = Date.now(),
 ): SettlementOutcome {
+    return settleLeaderboardSeasonInternal(competitionKey, source, nowMs, true)
+}
+
+function settleLeaderboardSeasonInternal(
+    competitionKey: string, source: string, nowMs: number, synchronous: boolean,
+): SettlementOutcome {
+    assertLeaderboardSettlementNotCancelled()
     const season = getLeaderboardCompetitionSeasonSync(competitionKey, nowMs)
-    // Freeze independently of the mail transaction: an award failure must not
-    // reopen the competition or accept extra results before a retry.
-    setLeaderboardAvailabilitySync(competitionKey, false, nowMs)
     const existing = getDb().prepare(`
         SELECT id, ranked_players, rewarded_players
         FROM leaderboard_settlements
@@ -330,29 +341,35 @@ export function settleLeaderboardSeasonSync(
         ranked_players: number
         rewarded_players: number
     } | undefined
-    if (existing !== undefined) return {
-        ok: true,
-        competitionKey,
-        season,
-        settlementId: existing.id,
-        rankedPlayers: existing.ranked_players,
-        rewardedPlayers: existing.rewarded_players,
-        reason: "already-settled",
+    if (existing !== undefined) {
+        setLeaderboardAvailabilitySync(competitionKey, false, nowMs)
+        return {
+            ok: true,
+            competitionKey,
+            season,
+            settlementId: existing.id,
+            rankedPlayers: existing.ranked_players,
+            rewardedPlayers: existing.rewarded_players,
+            reason: "already-settled",
+        }
     }
 
     const config = getLeaderboardSettlementConfigSync(competitionKey, nowMs)
     const filter = getLeaderboardRewardRankFilter(config)
+    const inTransaction = getDb().inTransaction
+    const checkSize = () => synchronous
+        ? checkSynchronousSettlementSize(competitionKey, season, filter, config)
+        : countLeaderboardRanksSync(competitionKey, season, filter)
+    const admittedTotal = checkSize()
+    assertLeaderboardSettlementNotCancelled()
+    // Legacy synchronous jobs are refused before freezing or issuing any mail.
+    // Due schedules retain their independent deadline freeze.
+    setLeaderboardAvailabilitySync(competitionKey, false, nowMs)
     return runPersistenceTransactionSync({
         domain: "leaderboard", operation: "settle_leaderboard_season",
     }, () => {
-        const total = countLeaderboardRanksSync(competitionKey, season, filter)
-        const records = getLeaderboardRankPageSync({
-            competitionKey,
-            season,
-            offset: 0,
-            limit: total,
-            filter,
-        })
+        // Direct legacy callers may have raced another connection before BEGIN.
+        const total = inTransaction ? admittedTotal : checkSize()
         const rewardTiers = resolveLeaderboardRewardTiers(config.rewardTiers, total)
 
         const settlement = getDb().prepare(`
@@ -360,12 +377,13 @@ export function settleLeaderboardSeasonSync(
                 competition_key, season, source, settled_at_ms,
                 ranked_players, rewarded_players, status, summary_json
             ) VALUES (?, ?, ?, ?, ?, 0, 'running', '{}')
-        `).run(competitionKey, season, source, nowMs, records.length)
+        `).run(competitionKey, season, source, nowMs, total)
         const settlementId = Number(settlement.lastInsertRowid)
         let rewardedPlayers = 0
         const skipped: Record<string, number> = {}
 
-        for (const record of records) {
+        forEachLeaderboardRankBatchSync(competitionKey, season, filter, record => {
+            assertLeaderboardSettlementNotCancelled()
             const tier = matchLeaderboardRewardTier(rewardTiers, record.rankNumber)
             let skipReason: string | null = null
             if (tier === null) skipReason = "no-tier"
@@ -424,8 +442,9 @@ export function settleLeaderboardSeasonSync(
                 JSON.stringify(mailIds),
                 record.clearCount,
             )
-        }
+        })
 
+        assertLeaderboardSettlementNotCancelled()
         getDb().prepare(`
             UPDATE leaderboard_settlements
             SET rewarded_players = ?, status = 'completed', summary_json = ?
@@ -439,7 +458,7 @@ export function settleLeaderboardSeasonSync(
             competitionKey,
             season,
             settlementId,
-            rankedPlayers: records.length,
+            rankedPlayers: total,
             rewardedPlayers,
         }
     })
@@ -510,14 +529,16 @@ export function getLeaderboardSettlementOverviewSync(competitionKey: string): ob
 function runDueLeaderboardSettlementSync(
     competitionKey: string,
     nowMs: number,
-): void {
+    synchronous = true,
+): SettlementOutcome | null {
     const config = getLeaderboardSettlementConfigSync(competitionKey, nowMs)
     if ((!config.freezeEnabled && !config.autoEnabled)
-        || config.settleAtMs === null || config.settleAtMs > nowMs) return
+        || config.settleAtMs === null || config.settleAtMs > nowMs) return null
     getLeaderboardAvailabilitySync(competitionKey, nowMs)
-    if (!config.autoEnabled) return
-    const outcome = settleLeaderboardSeasonSync(competitionKey, "scheduler", nowMs)
-    if (!outcome.ok) return
+    if (!config.autoEnabled) return null
+    const outcome = settleLeaderboardSeasonInternal(competitionKey, "scheduler", nowMs, synchronous)
+    if (!outcome.ok) return outcome
+    assertLeaderboardSettlementNotCancelled()
     const nextSettleAtMs = config.repeatIntervalMs === null
         ? null
         : config.settleAtMs + (
@@ -530,6 +551,31 @@ function runDueLeaderboardSettlementSync(
         freezeEnabled: config.repeatIntervalMs !== null,
         updatedAtMs: nowMs,
     })
+    return outcome
+}
+
+/** Only the dedicated worker may remove synchronous ceilings, inside its atomic transaction. */
+export function runLeaderboardSettlementWorkerSync(input: LeaderboardSettlementWorkerInput): SettlementOutcome | null {
+    assertLeaderboardSettlementNotCancelled()
+    if (isMainThread || !getDb().inTransaction) throw new Error("Background settlement requires a worker-owned transaction.")
+    if (getLeaderboardCompetitionSeasonSync(input.competitionKey, input.nowMs) !== input.season) {
+        throw new Error("Leaderboard season changed before background settlement; no rewards issued.")
+    }
+    return input.scheduled
+        ? runDueLeaderboardSettlementSync(input.competitionKey, input.nowMs, false)
+        : settleLeaderboardSeasonInternal(input.competitionKey, input.source, input.nowMs, false)
+}
+
+/** Manual HTTP callers keep their result contract while all ranking and mail work runs off-thread. */
+export function settleLeaderboardSeason(
+    competitionKey: string, source: string, nowMs?: number, expectedSeason?: number,
+): Promise<SettlementOutcome> {
+    return runLeaderboardWork.background(competitionKey, "settle", async () => {
+        const { runLeaderboardSettlementInBackground } = await import("./background-worker")
+        const outcome = await runLeaderboardSettlementInBackground({ competitionKey, source, nowMs, scheduled: false, expectedSeason })
+        if (!outcome) throw new Error("Manual leaderboard settlement returned no result.")
+        return outcome
+    })
 }
 
 export function runDueLeaderboardSettlementsSync(nowMs: number = Date.now()): void {
@@ -540,61 +586,100 @@ export function runDueLeaderboardSettlementsSync(nowMs: number = Date.now()): vo
 
 /**
  * Run scheduled leaderboard writes through the persistence ownership queue.
- * The SQLite work is still synchronous inside the queued operation today, but
- * the scheduler no longer starts overlapping runs or calls the write path
- * directly from the timer callback. This is the seam for a future worker
- * executor without changing the scheduler or leaderboard business rules.
+ * Each due job uses the same worker and atomic commit as manual settlement.
+ * Inactive schedules do not create workers. Deadline freezing is independent.
  */
-export async function runDueLeaderboardSettlements(nowMs: number = Date.now()): Promise<void> {
+export async function runDueLeaderboardSettlements(
+    nowMs: number = Date.now(), shouldStop: () => boolean = isServerShuttingDown,
+): Promise<void> {
+    const failures: Array<{ competitionKey: string; error: unknown }> = []
     for (const competition of getLeaderboardCompetitions()) {
-        await runPersistenceTransaction({
-            domain: "leaderboard",
-            operation: `scheduler:${competition.key}`,
-        }, () => runDueLeaderboardSettlementSync(competition.key, nowMs))
+        if (shouldStop() || isServerShuttingDown()) break
+        try {
+            await runLeaderboardWork.background(competition.key, "scheduler", async () => {
+                // Read without lazy initialization/freeze writes before the
+                // background gate. Even a small BEGIN could wait on an active
+                // native writer and stall the main loop here.
+                const schedule = getDb().prepare(`SELECT c.auto_enabled, c.freeze_enabled, c.settle_at_ms, a.enabled
+                    FROM leaderboard_settlement_configs c LEFT JOIN leaderboard_availability a
+                    ON a.competition_key=c.competition_key WHERE c.competition_key=?`).get(competition.key) as {
+                    auto_enabled: number; freeze_enabled: number; settle_at_ms: number | null; enabled: number | null
+                } | undefined
+                if (!schedule || (!schedule.freeze_enabled && !schedule.auto_enabled)
+                    || schedule.settle_at_ms === null || schedule.settle_at_ms > nowMs
+                    || (!schedule.auto_enabled && schedule.enabled === 0)) return
+                const { runLeaderboardSettlementInBackground } = await import("./background-worker")
+                await runLeaderboardSettlementInBackground({ competitionKey: competition.key, source: "scheduler", nowMs, scheduled: true })
+            })
+        } catch (error) {
+            // An active administrative job owns this turn; the next scheduler
+            // tick catches up. A failing/oversized job must not starve other
+            // competitions, but its failure is still reported after this tick.
+            if (!(error instanceof LeaderboardWorkBusyError)) failures.push({ competitionKey: competition.key, error })
+        }
     }
+    if (failures.length === 1) throw failures[0]!.error
+    if (failures.length > 1) throw Object.assign(
+        new Error("Multiple leaderboard settlements failed; due schedules retained for retry."), { failures },
+    )
 }
 
 /** Freeze overdue seasons synchronously so clients observe the deadline immediately. */
 function freezeDueLeaderboardSeasonsSync(nowMs: number): void {
-    for (const competition of getLeaderboardCompetitions()) {
-        const config = getLeaderboardSettlementConfigSync(competition.key, nowMs)
-        if ((!config.freezeEnabled && !config.autoEnabled)
-            || config.settleAtMs === null || config.settleAtMs > nowMs) continue
-        getLeaderboardAvailabilitySync(competition.key, nowMs)
-    }
+    const db = getDb(), timeout = db.pragma("busy_timeout", { simple: true }) as number
+    db.pragma("busy_timeout = 0")
+    try {
+        for (const competition of getLeaderboardCompetitions()) {
+            const config = getLeaderboardSettlementConfigSync(competition.key, nowMs)
+            if ((!config.freezeEnabled && !config.autoEnabled)
+                || config.settleAtMs === null || config.settleAtMs > nowMs) continue
+            getLeaderboardAvailabilitySync(competition.key, nowMs)
+        }
+    } finally { db.pragma(`busy_timeout = ${timeout}`) }
 }
 
 export function createLeaderboardSettlementScheduler(intervalMs: number = 60_000): {
     start(): void
-    stop(): void
+    stop(): Promise<void>
 } {
     let timer: NodeJS.Timeout | null = null
     let running = false
+    let pending: Promise<void> | null = null
+    let localStopped = false
     return {
         start() {
-            if (timer !== null) return
+            if (timer !== null || isServerShuttingDown()) return
+            localStopped = false
             const tick = () => {
-                if (running) return
+                if (running || localStopped || isServerShuttingDown()) return
                 running = true
                 const nowMs = Date.now()
                 try { freezeDueLeaderboardSeasonsSync(nowMs) }
                 catch (error) {
-                    running = false
-                    console.error("[LEADERBOARD] settlement deadline freeze failed", error)
-                    return
+                    // If a native writer owns the lock, queue the worker below.
+                    // The deadline predicate already disallows new ranked runs.
+                    if (!isSqliteBusyError(error) && !isPersistenceAdmissionError(error)) {
+                        running = false
+                        console.error("[LEADERBOARD] settlement deadline freeze failed", error)
+                        return
+                    }
                 }
-                void runDueLeaderboardSettlements(nowMs)
+                pending = runDueLeaderboardSettlements(nowMs, () => localStopped || isServerShuttingDown())
                     .catch(error => console.error("[LEADERBOARD] settlement scheduler failed", error))
-                    .finally(() => { running = false })
+                    .finally(() => { running = false; pending = null })
             }
             // Catch up an overdue schedule immediately when the service starts.
             tick()
             timer = setInterval(tick, intervalMs)
             timer.unref()
         },
-        stop() {
+        async stop() {
+            localStopped = true
             if (timer !== null) clearInterval(timer)
             timer = null
+            // Finish the accepted job. Later competitions keep their due plan
+            // and are picked up by a fresh scheduler after restart.
+            await pending
         },
     }
 }

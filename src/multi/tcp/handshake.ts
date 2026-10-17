@@ -6,11 +6,9 @@
 // HandshakeResult: Accept=0, Denied=1, Reconnect=2, Exception=3, Complete=4
 
 import * as net from "net"
-import { playerSocketAllowed } from "../../lib/player-login"
 import { isFiveBossGauntletQuest } from "../five-boss/contract"
 import { isFrozenFiveBossBattleClient } from "../five-boss/lobby-runtime"
 import { fiveBossConnectionDiagnostics } from "../five-boss/connection-diagnostic"
-import { getRankDegree } from "../../lib/stamina"
 import { getRoom, getRoomMemberPlayerId } from "../room/manager"
 import { sessionManager } from "../state/SessionManager"
 import type { SessionClient } from "../state/SessionManager"
@@ -22,14 +20,17 @@ import {
     recordRoomAdmissionDenial,
     roomAdmissionRegistry,
 } from "../room/admission"
-import { getCachedMultiPlayerContext, resolveMultiPlayerContext } from "../player-context"
-import { buildRealParty, getRealPartySnapshot } from "../party-snapshot"
+import { invokeRealtimeBusiness } from "../coordinator/business-rpc"
+import { isRealtimeOwnerChild } from "../coordinator/runtime-role"
+import { applyPlayerBusinessFacts, type PlayerBusinessFacts } from "../coordinator/business-facts"
 import { markTcpDisconnectReason } from "./disconnect-diagnostics"
-import { canJoinMultiGuestQuestSync } from "../guest-eligibility"
 
 // NPC workers historically import buildRealParty from this module. Keep the
 // export stable while the implementation lives beside the warmed snapshot.
-export { buildRealParty }
+export function buildRealParty(playerId: number, targetParty?: any): any {
+    if (isRealtimeOwnerChild()) throw new Error("REALTIME_PARTY_FACTS_REQUIRED")
+    return require("../party-snapshot").buildRealParty(playerId, targetParty)
+}
 
 export async function handleHandshake(socket: net.Socket, data: any): Promise<void> {
     gameVerboseLog(() => `[TCP] handshake: ${JSON.stringify({ socklet: data.socklet, viewerId: data.viewerId, room_number: data.room_number || data.roomNumber })}`)
@@ -54,13 +55,22 @@ export async function handleHandshake(socket: net.Socket, data: any): Promise<vo
         // A connection id that no known room/battle seat issued cannot be
         // bound to a viewer, so it is never admitted as an anonymous seat.
         const identity = sessionManager.resolveBattleHandshakeIdentity(roomId, String(connectionId))
-        if (!identity || !playerSocketAllowed(identity.viewerId, data.sp_session)) {
+        const sourceBattleRoom = getRoom(roomId)
+        const sourceBattleId = sourceBattleRoom?.lifecycle.battleSessionId
+        const sourceBattleGeneration = sourceBattleRoom?.lobby_generation
+        if (!identity || !await invokeRealtimeBusiness<boolean>("player.authorize", { viewerId: identity.viewerId, session: data.sp_session ?? null })) {
             fiveBossConnectionDiagnostics.socketEvent(socket, "handshake_denied",
                 identity ? "session_mismatch" : "unknown_connection")
             markTcpDisconnectReason(socket, "handshake_denied")
             sessionManager.sendJson(socket, [3, "HANDSHAKE_DENIED"])
             socket.end()
             return
+        }
+        if (socket.destroyed || getRoom(roomId) !== sourceBattleRoom
+            || getRoom(roomId)?.lifecycle.battleSessionId !== sourceBattleId
+            || getRoom(roomId)?.lobby_generation !== sourceBattleGeneration
+            || sessionManager.resolveBattleHandshakeIdentity(roomId, String(connectionId))?.viewerId !== identity.viewerId) {
+            markTcpDisconnectReason(socket, "handshake_denied"); socket.end(); return
         }
         const battleClient = sessionManager.createClient(
             socket,
@@ -105,12 +115,6 @@ export async function handleHandshake(socket: net.Socket, data: any): Promise<vo
 
     if (socklet === "cooperation_room") {
         const viewerId = data.viewerId
-        if (!playerSocketAllowed(viewerId, data.sp_session)) {
-            markTcpDisconnectReason(socket, "handshake_denied")
-            sessionManager.sendJson(socket, [3, "HANDSHAKE_DENIED"])
-            socket.end()
-            return
-        }
         if (!viewerId || !roomNumber) {
             markTcpDisconnectReason(socket, "handshake_denied")
             sessionManager.sendJson(socket, [3, "HANDSHAKE_DENIED"])
@@ -131,14 +135,24 @@ export async function handleHandshake(socket: net.Socket, data: any): Promise<vo
         // playerSocketAllowed above still performs the authoritative session
         // check. A context warmed by create/select_room can therefore be used
         // here without another synchronous session/player lookup.
-        const ctx = getCachedMultiPlayerContext(Number(viewerId))
-            ?? await resolveMultiPlayerContext(Number(viewerId))
-        if (!ctx) {
+        const sourceRoom = getRoom(roomId)!
+        const sourceInstance = sourceRoom.lifecycle.instanceId, sourceGeneration = sourceRoom.lobby_generation
+        const sourceVersion = sourceRoom.lifecycle.version, sourceCategory = sourceRoom.category, sourceQuest = sourceRoom.quest_id
+        const facts = await invokeRealtimeBusiness<PlayerBusinessFacts | null>("player.handshake", {
+            viewerId: Number(viewerId), session: data.sp_session ?? null,
+            category: sourceRoom.category, questId: sourceRoom.quest_id,
+        })
+        if (!facts || socket.destroyed || getRoom(roomId)?.lifecycle.instanceId !== sourceInstance
+            || getRoom(roomId)?.lobby_generation !== sourceGeneration) {
             markTcpDisconnectReason(socket, "handshake_denied")
             sessionManager.sendJson(socket, [3, "HANDSHAKE_DENIED"])
             socket.end()
             return
         }
+        if (getRoom(roomId)?.lifecycle.version !== sourceVersion || getRoom(roomId)?.category !== sourceCategory
+            || getRoom(roomId)?.quest_id !== sourceQuest) { markTcpDisconnectReason(socket, "handshake_denied"); socket.end(); return }
+        if (!applyPlayerBusinessFacts(facts)) throw new Error("PLAYER_HANDSHAKE_FACTS_STALE")
+        const ctx = { playerId: facts.playerId, player: facts.player }
 
         // HTTP room selection and TCP connection are separate operations. Two
         // guests can pass the HTTP capacity check concurrently, so re-check the
@@ -186,11 +200,7 @@ export async function handleHandshake(socket: net.Socket, data: any): Promise<vo
         const guestAdmissionIsRescue = !isReturningMember
             && roomAdmissionRegistry.isRescue(roomId, currentRoom.lobby_generation, Number(viewerId))
         const guestEligibility = !isReturningMember
-            ? canJoinMultiGuestQuestSync(
-                ctx.playerId,
-                currentRoom.category,
-                currentRoom.quest_id,
-            )
+            ? facts.guestEligibility
             : null
         const structuralReasons = [
             categoryMismatch ? "category_mismatch" : "",
@@ -229,7 +239,7 @@ export async function handleHandshake(socket: net.Socket, data: any): Promise<vo
         // The HTTP room-selection path primes this snapshot before opening the
         // socket. Direct legacy clients still get a safe synchronous fallback,
         // but normal handshakes now stay on the in-memory path.
-        const party = getRealPartySnapshot(playerId)
+        const party = facts.party
         if (isReturningMember) recordRoomAdmissionBypass("returning_member")
         const admissionClaim = isReturningMember
             ? null
@@ -263,7 +273,7 @@ export async function handleHandshake(socket: net.Socket, data: any): Promise<vo
             viewerId: Number(viewerId),
             playerId: playerId,
             name: player.name,
-            rank: getRankDegree(player.rankPoint || 0),
+            rank: player.rank,
             degreeId: player.degreeId || 1,
             mainCharacterId: player.leaderCharacterId,
             party,

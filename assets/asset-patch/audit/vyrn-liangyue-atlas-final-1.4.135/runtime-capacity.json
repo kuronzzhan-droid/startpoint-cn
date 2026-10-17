@@ -1,0 +1,111 @@
+{
+  "status": "passed_representative_three_party_observed_packing",
+  "resourceVersion": "1.4.135",
+  "renderedClients": 1,
+  "protocolParticipants": 2,
+  "slotsPerScenario": 18,
+  "equipmentSoulEXIncluded": false,
+  "preparationCollections": 3,
+  "actualLayerAttempts": 6,
+  "actualTargets": 611,
+  "allActualPackingPassed": true,
+  "missingPNGCarrier": 0,
+  "missingAtlas": 0,
+  "scenarios": [
+    {
+      "questId": 1020003,
+      "round": 0,
+      "bossModel": "orochi_ex",
+      "layers": [
+        {
+          "layer": "layer0",
+          "actualTargetCount": 126,
+          "actualPaddedOccupancyPercent": 55.6587278842926,
+          "actualContentBBox": [
+            2425,
+            4094
+          ],
+          "actualPackPassed": true
+        },
+        {
+          "layer": "layer1",
+          "actualTargetCount": 101,
+          "actualPaddedOccupancyPercent": 28.477758169174194,
+          "actualContentBBox": [
+            1365,
+            4092
+          ],
+          "actualPackPassed": true
+        }
+      ]
+    },
+    {
+      "questId": 1001002,
+      "round": 0,
+      "bossModel": "double_owl_lich_ability",
+      "layers": [
+        {
+          "layer": "layer0",
+          "actualTargetCount": 128,
+          "actualPaddedOccupancyPercent": 44.470810890197754,
+          "actualContentBBox": [
+            2080,
+            4094
+          ],
+          "actualPackPassed": true
+        },
+        {
+          "layer": "layer1",
+          "actualTargetCount": 61,
+          "actualPaddedOccupancyPercent": 24.949568510055542,
+          "actualContentBBox": [
+            1212,
+            4094
+          ],
+          "actualPackPassed": true
+        }
+      ]
+    },
+    {
+      "questId": 1001002,
+      "round": 1,
+      "bossModel": "owl_ability + owl_wind + owl_tornado_ability",
+      "layers": [
+        {
+          "layer": "layer0",
+          "actualTargetCount": 130,
+          "actualPaddedOccupancyPercent": 45.542168617248535,
+          "actualContentBBox": [
+            1969,
+            4093
+          ],
+          "actualPackPassed": true
+        },
+        {
+          "layer": "layer1",
+          "actualTargetCount": 65,
+          "actualPaddedOccupancyPercent": 25.463610887527466,
+          "actualContentBBox": [
+            1125,
+            4093
+          ],
+          "actualPackPassed": true
+        }
+      ]
+    }
+  ],
+  "originalDimensionsModelAlsoPassed": true,
+  "originalDimensionsDeviceTested": false,
+  "arbitraryFuturePartyAcceptance": false,
+  "threeDevicePerformanceAcceptance": false,
+  "bossClearAcceptance": false,
+  "fullSemanticDependencyMissingCount": null,
+  "finalTraceSha256": "930396b459e80787f7d7cd171eafe8272ee0243d23413288b830b914121c4cad",
+  "independentReviewSha256": "1a6d01e012394c165168f53cacd79ce62c53b0ab8a8401fd38d5af1a97f9dc88",
+  "originalClientAndAccountLocalStoreRestored": true,
+  "acceptedRegistryChanged": false,
+  "testedLocalManifestSha256": "5d96f35f957d6e280070caa1cdfe6c30284e2f0713ec9650d0745aadb1384288",
+  "releaseManifestSha256": "a5fc0abeb60b0fb054d1b938ae0a4317ac5f22851052b092c3fab1ab8bb6f35e",
+  "releaseEnabledChainMatchesTestedLocalChain": true,
+  "manifestIdentityScope": "Native packing was observed with the tested local manifest; the release manifest has the same enabled chain and archive bytes, omitting an unrelated disabled candidate."
+}

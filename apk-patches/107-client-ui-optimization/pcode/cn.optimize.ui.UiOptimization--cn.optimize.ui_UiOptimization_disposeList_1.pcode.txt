@@ -1,0 +1,11 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.ui.UiOptimization; label: cn.optimize.ui::UiOptimization$/disposeList|1; body: 6; method: 7
+# code SHA-256: bcd8d85c7006d85a91fea2c900b82e123301d6d0502e819fac17bc0c5e88cac8; header: [2, 2, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex [(7, (5, 'cn.optimize.ui:UiOptimization'), 'listStates')]
+#0003 ofs0004: getlocal_1 []
+#0004 ofs0005: deleteproperty [(27, ((5, 'cn.optimize.ui:UiOptimization'), (26, 'cn.optimize.ui:UiOptimization'), (26, 'Object'), (22, 'cn.optimize.ui'), (23, 'cn.optimize.ui'), (5, 'FilePrivateNS:UiOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0005 ofs0007: returnvoid []
+# exceptions: []

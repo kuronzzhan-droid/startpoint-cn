@@ -41,6 +41,8 @@ function installEntryPoint(app, mode, failCompression = false) {
         cnLoadCompressionConfig: compression.getCnLoadHttpCompressionConfig({CN_LOAD_HTTP_COMPRESSION:mode, CN_LOAD_HTTP_COMPRESSION_MIN_BYTES:'0'}),
         utils_1: {getServerTime:()=>1, getServerTimeForPlayer:()=>1},
         seed_validator_1: {default:{flushPersistence: async()=>{}}},
+        crash_report_1: require('../out/lib/crash-report'),
+        game_logging_1: {gameVerboseLog(){}},
         console: capturedConsole,
         require(name) {
             assert.equal(name, './routes/cn/asset')

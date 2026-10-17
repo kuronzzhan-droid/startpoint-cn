@@ -13,6 +13,26 @@ const CLIENT_REPORTED_PATTERN_PREFIXES: Readonly<Record<string, readonly string[
     twitter_check: ["twitter_check"],
 })
 
+export const MAX_CLIENT_PROGRESS_DELTA = 100
+
+/** Bound only client UI counters; server-computed mission facts are separate. */
+export function collectClientProgressDeltas(params: unknown): Map<string, number> {
+    const deltas = new Map<string, number>()
+    if (!Array.isArray(params)) return deltas
+    for (const param of params) {
+        if (!param || typeof param !== "object" || Array.isArray(param)) continue
+        const { mission_pattern: pattern, progress_value: delta } = param
+        if (typeof pattern !== "string"
+            || !Object.prototype.hasOwnProperty.call(CLIENT_REPORTED_PATTERN_PREFIXES, pattern)
+            || typeof delta !== "number" || !Number.isSafeInteger(delta) || delta <= 0) continue
+        // A repeated pattern must share the same request budget rather than
+        // multiplying it. Cap before addition to avoid unsafe integer sums.
+        deltas.set(pattern, Math.min(MAX_CLIENT_PROGRESS_DELTA,
+            (deltas.get(pattern) ?? 0) + Math.min(delta, MAX_CLIENT_PROGRESS_DELTA)))
+    }
+    return deltas
+}
+
 export interface ClientProgressTarget {
     category: number
     missionId: number
@@ -24,6 +44,10 @@ function matchesClientPattern(masterPattern: string, clientPattern: string): boo
     return prefixes?.some(prefix => (
         masterPattern === prefix || masterPattern.startsWith(`${prefix}_`)
     )) ?? false
+}
+
+export function isClientProgressMissionPattern(masterPattern: string): boolean {
+    return Object.keys(CLIENT_REPORTED_PATTERN_PREFIXES).some(pattern => matchesClientPattern(masterPattern, pattern))
 }
 
 export function resolveClientProgressTargetsFromDefinitions(

@@ -1,0 +1,11 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: boot_ffc6; label: pinball.asset.view::ViewAssetCache$/disposeDownloadedTexture|1; body: 5937; method: 6236
+# code SHA-256: f36ccad31b43e424950dea81d5a9b1b6d1ab7da7606bb30b88655dc69474aa09; header: [4, 3, 1, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlex [(7, (22, 'cn.optimize.resources'), 'ResourceRuntime')]
+#0001 ofs0004: getlocal_2 []
+#0002 ofs0005: callpropvoid [(7, (22, ''), 'forgetTexture'), 1]
+#0003 ofs000a: getlocal_2 []
+#0004 ofs000b: callpropvoid [(7, (22, ''), 'dispose'), 0]
+#0005 ofs000f: returnvoid []
+# exceptions: []

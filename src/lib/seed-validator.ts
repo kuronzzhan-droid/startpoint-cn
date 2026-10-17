@@ -16,6 +16,7 @@
 import { join } from "path";
 import { readJsonWithBackupSync, writeJsonAtomicSync } from "./atomic-json-file";
 import { SeedPersistence } from "./seed-persistence";
+import { SeedFeedbackGuard, SeedFeedbackGuardOptions, PublicSeedFeedback } from "./seed-feedback-guard";
 
 const ASSETS_DIR = join(__dirname, "..", "..", "assets");
 const GACHA_VERBOSE_LOGS = /^(1|true|yes)$/i.test(process.env.GACHA_VERBOSE_LOGS ?? "");
@@ -45,9 +46,27 @@ export class SeedValidator {
     private selectedMovieId: string = 'fes';
     private poolMembershipCache = new WeakMap<number[], Set<number>>();
     private persistence: SeedPersistence;
+    private feedbackGuard: SeedFeedbackGuard;
+    private persistedSeedCount = 0;
+    // Absolute public-learning capacity across reloads; oversized legacy files and
+    // administrator edits stay usable. Deletions are conservatively not refunded.
+    private publicSeedCapacity: number;
 
-    constructor(private assetsDirectory = process.env.GACHA_SEED_DIR || ASSETS_DIR) {
+    constructor(private assetsDirectory = process.env.GACHA_SEED_DIR || ASSETS_DIR, feedbackOptions: SeedFeedbackGuardOptions = {}) {
+        this.publicSeedCapacity = Number.isSafeInteger(feedbackOptions.maxPersistedSeeds) && feedbackOptions.maxPersistedSeeds! > 0
+            ? feedbackOptions.maxPersistedSeeds! : 100_000;
+        this.feedbackGuard = new SeedFeedbackGuard(feedbackOptions, (movieId, seed) => {
+            const p = this.pools.get(movieId);
+            if (p) this.cleanupPending(seed, p);
+            if (movieId.endsWith('_guarantee')) {
+                const base = this.pools.get(movieId.replace('_guarantee', ''));
+                if (base) this.cleanupPending(seed, base);
+            }
+        });
         this.load();
+        for (const p of this.pools.values()) {
+            this.persistedSeedCount += new Set([...p.confirmPool.keys(), ...p.playPool.keys(), ...p.verifiedPool.keys(), ...p.pendingPool.keys()]).size;
+        }
         this.persistence = new SeedPersistence(this.assetsDirectory, () => new Map(
             [...this.pools].map(([movieId, pool]) => [movieId, {
                 confirmPool: pool.confirmPool, pendingPool: pool.pendingPool,
@@ -282,6 +301,7 @@ export class SeedValidator {
 
     confirm(movieId: string, seed: number, r?: number | null): void {
         const p = this.pool(movieId);
+        const wasKnown = this.inAnyPool(p, seed, null);
         this.cleanupPending(seed, p);
         if (p.playPool.has(seed)) return;
         if (p.confirmPool.has(seed)) {
@@ -293,17 +313,20 @@ export class SeedValidator {
         }
         p.pendingPool.delete(seed);
         p.confirmPool.set(seed, r !== undefined ? r : null);
+        if (!wasKnown) this.persistedSeedCount += 1;
         if (r !== undefined) this.trace(`confirm seed=${seed} r=${'★'+(r!+3)} confirmPool.size=${p.confirmPool.size}`);
         this.persistSeed(movieId, seed);
     }
 
     addPlay(movieId: string, seed: number, r: number, didPlay?: boolean | null): void {
         const p = this.pool(movieId);
+        const wasKnown = this.inAnyPool(p, seed, null);
         this.cleanupPending(seed, p);
         if (didPlay === true) {
             p.confirmPool.delete(seed);
             p.pendingPool.delete(seed);
             p.playPool.set(seed, { r, tag: '未测试', play: true });
+            if (!wasKnown) this.persistedSeedCount += 1;
             this.trace(`addPlay seed=${seed} r=${'★'+(r+3)} play=true playPool.size=${p.playPool.size}`);
             this.persistSeed(movieId, seed);
             this.trace(`PLAY [${movieId}] seed=${seed} ★${r+3} play=1`);
@@ -317,6 +340,7 @@ export class SeedValidator {
     /** 稀有度经 C3032 客户端校验后移入验证池，同时跨池去重 */
     moveToVerified(movieId: string, seed: number, r: number): void {
         const p = this.pool(movieId);
+        if (!this.inAnyPool(p, seed, null)) this.persistedSeedCount += 1;
         this.cleanupPending(seed, p);
         p.verifiedPool.set(seed, r);
         p.pendingPool.delete(seed);
@@ -350,6 +374,7 @@ export class SeedValidator {
     }
 
     markSent(movieId: string, seed: number, rarity?: number): void {
+        if (!this.feedbackGuard.markSent(movieId, seed, rarity)) return;
         const p = this.pool(movieId);
         const r = rarity !== undefined ? rarity - 3 : null;
         p.sentSeeds.set(seed, r);
@@ -368,13 +393,54 @@ export class SeedValidator {
         this.pool(movieId).sentPlayFlags.set(seed, didPlay);
     }
 
+    allowPublicFeedbackRequest(source: string): boolean { return this.feedbackGuard.allowRequest(source); }
+    getPublicFeedbackStats() { return { ...this.feedbackGuard.stats(), persistedSeeds: this.persistedSeedCount, publicSeedCapacity: this.publicSeedCapacity }; }
+
+    /** Only public debug/crash handlers use this boundary; local loads and administrator corrections retain their contract. */
+    applyPublicFeedback(source: string, feedback: PublicSeedFeedback, requestAllowed = false): 'accepted' | 'duplicate' | 'rejected' {
+        if (!requestAllowed && !this.feedbackGuard.allowRequest(source)) return 'rejected';
+        const checked = this.feedbackGuard.check(feedback);
+        if (!checked) return 'rejected';
+        const { sent, signature } = checked;
+        if (sent.seen.has(signature)) return 'duplicate';
+        // Lookups never call pool() until both identity and actual issued-seed evidence pass.
+        const p = this.pools.get(feedback.movieId);
+        const addsSeed = !p || !this.inAnyPool(p, feedback.seed, null);
+        if (addsSeed && (!this.feedbackGuard.canAddSeed() || this.persistedSeedCount >= this.publicSeedCapacity)) return 'rejected';
+        const r = feedback.kind === 'play' ? sent.rarity! - 3 : feedback.rarity! - 3;
+        if (feedback.kind === 'crash') {
+            this.addPending(feedback.movieId, feedback.seed, r);
+        } else if (feedback.kind === 'play') {
+            if (feedback.didPlay) {
+                this.addPlay(feedback.movieId, feedback.seed, r, true);
+                this.moveToVerified(feedback.movieId, feedback.seed, r);
+            } else this.confirm(feedback.movieId, feedback.seed, r);
+        } else {
+            this.moveToVerified(feedback.movieId, feedback.seed, r);
+            if (feedback.didPlay === false) this.confirm(feedback.movieId, feedback.seed, r);
+            if (feedback.didPlay === undefined || feedback.didPlay === null) this.addPending(feedback.movieId, feedback.seed, r);
+        }
+        if (addsSeed) this.feedbackGuard.addedSeed();
+        // A later PLAY beacon must not undo a client-observed C3032 correction.
+        if (feedback.kind !== 'play') sent.rarity = feedback.rarity!;
+        sent.seen.add(signature);
+        return 'accepted';
+    }
+
     /** 清理 sentSeeds：有 play 标记的按标记入池，无标记的入 pendingPool 重测 */
     flushAll(): void {
+        // Silent/late clients cannot leave expired sent entries to be learned at
+        // shutdown. Automatic fallback learning obeys the same absolute cap.
+        this.feedbackGuard.pruneSent();
         const summaries: string[] = [];
         let totalFlushed = 0, totalPlay1 = 0, totalPlay0 = 0, totalUnmarked = 0;
         for (const [movieId, p] of this.pools) {
             let flushed = 0, play1 = 0, play0 = 0, unmarked = 0;
             for (const [seed, r] of p.sentSeeds) {
+                if (!this.inAnyPool(p, seed, null) && this.persistedSeedCount >= this.publicSeedCapacity) {
+                    this.cleanupPending(seed, p);
+                    continue;
+                }
                 const didPlay = p.sentPlayFlags.get(seed);
                 if (didPlay === true) {
                     this.addPlay(movieId, seed, r ?? 0, true);

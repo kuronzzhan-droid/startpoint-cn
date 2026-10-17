@@ -3,24 +3,15 @@ import { existsSync } from "../../lib/file-exists";
 import path from "path"
 import { Worker } from "worker_threads"
 import { QuestPartyPoolCache } from "./quest-party-pool-cache"
+import { isNpcPartyAllowedInRoom } from "./equipment-policy"
 import { observeWorkerMemory, registerMemoryCounters } from "../../lib/memory-diagnostics"
-import { getDb } from "../../data/db"
-import { PartyCategory, PlayerParty, RawPlayerParty } from "../../data/types"
-import { gameVerboseLog } from "../../lib/game-logging"
 import { QuestCategory } from "../../lib/types/quest"
-import { parseGlobalPartyId } from "../../lib/special-event-parties"
-import { serverCharacters as characterTable } from "../../lib/content-master"
-import { buildRealParty } from "../tcp/handshake"
 import {
     getQuestNpcPartyPoolKey,
     isQuestNpcPartyPoolEligibleCategory,
     QUEST_NPC_POOL_MIN_POWER,
     QuestNpcPartySnapshot,
 } from "./quest-party-pool-shared"
-
-interface CachedPlayerParty extends RawPlayerParty {
-    player_id: number
-}
 
 export interface RandomNpcParty {
     sourcePlayerId: number
@@ -43,22 +34,11 @@ const STEAM_ROBOT_DECISIVE_ELEMENTS: Readonly<Record<number, number>> = {
     1006001: 4, // dark robot -> light
 }
 
-const CACHE_TTL_MS = Math.max(
-    10_000,
-    Number.parseInt(process.env.NPC_PARTY_POOL_TTL_MS || "300000", 10) || 300_000,
-)
-const CACHE_MAX_ENTRIES = Math.max(
-    100,
-    Number.parseInt(process.env.NPC_PARTY_POOL_MAX_ENTRIES || "5000", 10) || 5_000,
-)
 const MIN_BATTLE_POWER_INCLUSIVE = Math.max(
     0,
     Number.parseInt(process.env.NPC_PARTY_POOL_MIN_BATTLE_POWER || "8000", 10) || 8_000,
 )
 
-let cachedParties: CachedPlayerParty[] = []
-let cachedPartiesByElement = new Map<number, CachedPlayerParty[]>()
-let cacheExpiresAt = 0
 const questPoolCache = new QuestPartyPoolCache()
 let questPartyPools = questPoolCache.pools
 let questPartyPoolWorker: Worker | null = null
@@ -72,7 +52,6 @@ const pendingCleanupRequests = new Map<number, {
     resolve: (result: QuestNpcPartyCleanupResult) => void
     reject: (error: Error) => void
     timeout: NodeJS.Timeout
-    playerIds: Set<number>
 }>()
 
 export interface QuestNpcPartyCleanupResult {
@@ -80,7 +59,7 @@ export interface QuestNpcPartyCleanupResult {
     affectedQuestCount: number
 }
 registerMemoryCounters("npcPool", detailed => ({ ...(detailed ? questPoolCache.stats() : { pools: questPoolCache.pools.size }),
-    cachedParties: cachedParties.length, pendingRecords: pendingClearRecords.length,
+    cachedParties: 0, pendingRecords: pendingClearRecords.length,
     inFlightRecords, pendingCleanups: pendingCleanupRequests.size, droppedBeforeReady,
     workerReady: questPartyPoolWorkerReady }))
 
@@ -150,8 +129,6 @@ export function startQuestNpcPartyPoolWorker(): void {
             if (!request) return
             pendingCleanupRequests.delete(message.requestId)
             clearTimeout(request.timeout)
-            cachedParties = cachedParties.filter(party => !request.playerIds.has(party.player_id))
-            indexCachedPartiesByElement()
             request.resolve({
                 removedRows: Math.max(0, Math.trunc(Number(message.removedRows) || 0)),
                 affectedQuestCount: Math.max(0, Math.trunc(Number(message.affectedQuestCount) || 0)),
@@ -210,36 +187,20 @@ export async function stopQuestNpcPartyPoolWorker(): Promise<void> {
 }
 
 export function recordSuccessfulQuestNpcParty(
-    playerId: number,
-    questCategory: number,
-    questId: number,
-    partySlot: number,
+    frozenSnapshot: QuestNpcPartySnapshot | null | undefined,
 ): void {
-    if (!isQuestNpcPartyPoolEligibleCategory(questCategory)) return
-    const parsed = parseGlobalPartyId(partySlot)
-    if (!parsed) return
-    const row = getDb().prepare(`
-        SELECT slot, name, character_id_1, character_id_2, character_id_3,
-               unison_character_1, unison_character_2, unison_character_3,
-               equipment_1, equipment_2, equipment_3,
-               ability_soul_1, ability_soul_2, ability_soul_3,
-               edited, group_id, category, current_battle_power, before_battle_power,
-               player_id
-        FROM players_parties
-        WHERE player_id = ? AND category = ? AND group_id = ? AND slot = ?
-    `).get(playerId, PartyCategory.NORMAL, parsed.groupId, parsed.slot) as CachedPlayerParty | undefined
-    if (!row || (row.current_battle_power ?? 0) < QUEST_NPC_POOL_MIN_POWER) return
-    const party = buildRealParty(playerId, toPlayerParty(row))
-    if (!hasCompleteMainCharacters(party)) return
+    if (!frozenSnapshot
+        || !isQuestNpcPartyPoolEligibleCategory(frozenSnapshot.questCategory)
+        || !Number.isFinite(frozenSnapshot.battlePower)
+        || frozenSnapshot.battlePower < QUEST_NPC_POOL_MIN_POWER
+        || !hasCompleteMainCharacters(frozenSnapshot.party)) return
+
+    // The successful clear belongs to the party approved at battle start.
+    // Never reload a mutable SET here, including while the worker is warming.
     const snapshot: QuestNpcPartySnapshot = {
-        questCategory,
-        questId,
-        sourcePlayerId: playerId,
-        partySlot,
-        battlePower: row.current_battle_power ?? 0,
-        partyElement: getUniformPartyElement(row),
+        ...frozenSnapshot,
+        party: JSON.parse(JSON.stringify(frozenSnapshot.party)),
         clearedAt: Date.now(),
-        party,
     }
     if (!questPartyPoolWorker || !questPartyPoolWorkerReady) {
         if (pendingClearRecords.length < 1000) pendingClearRecords.push(snapshot)
@@ -268,9 +229,6 @@ export function removePlayerQuestNpcPartySnapshots(
 
     const removedPlayers = new Set(normalizedPlayerIds)
     pendingClearRecords = pendingClearRecords.filter(snapshot => !removedPlayers.has(snapshot.sourcePlayerId))
-    cachedParties = cachedParties.filter(party => !removedPlayers.has(party.player_id))
-    indexCachedPartiesByElement()
-    cacheExpiresAt = 0
     startQuestNpcPartyPoolWorker()
 
     const requestId = nextCleanupRequestId++
@@ -286,7 +244,6 @@ export function removePlayerQuestNpcPartySnapshots(
             resolve,
             reject,
             timeout,
-            playerIds: removedPlayers,
         })
         if (questPartyPoolWorker && questPartyPoolWorkerReady) {
             questPartyPoolWorker.postMessage(message)
@@ -294,41 +251,6 @@ export function removePlayerQuestNpcPartySnapshots(
             pendingCleanupMessages.push(message)
         }
     })
-}
-
-function getCharacterElement(characterId: number | null): number | null {
-    if (!characterId) return null
-    const entry = (characterTable as Record<string, { element?: number }>)[String(characterId)]
-    return Number.isInteger(entry?.element) ? Number(entry.element) : null
-}
-
-function getUniformPartyElement(party: CachedPlayerParty): number | null {
-    const characterIds = [
-        party.character_id_1,
-        party.character_id_2,
-        party.character_id_3,
-        party.unison_character_1,
-        party.unison_character_2,
-        party.unison_character_3,
-    ].filter((characterId): characterId is number =>
-        Number.isSafeInteger(characterId) && Number(characterId) > 0,
-    )
-    if (characterIds.length < 3) return null
-
-    const elements = characterIds.map(getCharacterElement)
-    if (elements.some(element => element === null)) return null
-    return elements.every(element => element === elements[0]) ? elements[0] : null
-}
-
-function indexCachedPartiesByElement(): void {
-    cachedPartiesByElement = new Map()
-    for (const party of cachedParties) {
-        const element = getUniformPartyElement(party)
-        if (element === null) continue
-        const parties = cachedPartiesByElement.get(element) ?? []
-        parties.push(party)
-        cachedPartiesByElement.set(element, parties)
-    }
 }
 
 export function getNpcPartySelectionOptions(
@@ -346,25 +268,6 @@ export function getNpcPartySelectionOptions(
     }
 }
 
-function toPlayerParty(row: CachedPlayerParty): PlayerParty {
-    return {
-        name: row.name,
-        characterIds: [row.character_id_1, row.character_id_2, row.character_id_3],
-        unisonCharacterIds: [
-            row.unison_character_1,
-            row.unison_character_2,
-            row.unison_character_3,
-        ],
-        equipmentIds: [row.equipment_1, row.equipment_2, row.equipment_3],
-        abilitySoulIds: [row.ability_soul_1, row.ability_soul_2, row.ability_soul_3],
-        edited: row.edited !== 0,
-        options: { allowOtherPlayersToHealMe: true },
-        category: row.category,
-        currentBattlePower: row.current_battle_power ?? 0,
-        beforeBattlePower: row.before_battle_power ?? 0,
-    }
-}
-
 function hasCompleteMainCharacters(party: any): boolean {
     return Array.isArray(party?.characters)
         && party.characters.length >= 3
@@ -373,54 +276,8 @@ function hasCompleteMainCharacters(party: any): boolean {
         )
 }
 
-export function refreshPlayerNpcPartyPoolSync(force = false): number {
-    const now = Date.now()
-    if (!force && now < cacheExpiresAt) return cachedParties.length
-
-    // Only cache normal parties with three characters that still belong to the
-    // source player. Equipment and unison data is checked again by
-    // buildRealParty when the party is selected, so stale optional slots safely
-    // become empty instead of breaking the multiplayer room.
-    cachedParties = getDb().prepare(`
-        SELECT
-            p.slot, p.name,
-            p.character_id_1, p.character_id_2, p.character_id_3,
-            p.unison_character_1, p.unison_character_2, p.unison_character_3,
-            p.equipment_1, p.equipment_2, p.equipment_3,
-            p.ability_soul_1, p.ability_soul_2, p.ability_soul_3,
-            p.edited, p.group_id, p.category,
-            p.current_battle_power, p.before_battle_power,
-            p.player_id
-        FROM players_parties p
-        INNER JOIN players_characters c1
-            ON c1.player_id = p.player_id AND c1.id = p.character_id_1
-        INNER JOIN players_characters c2
-            ON c2.player_id = p.player_id AND c2.id = p.character_id_2
-        INNER JOIN players_characters c3
-            ON c3.player_id = p.player_id AND c3.id = p.character_id_3
-        WHERE p.category = ?
-          AND p.character_id_1 IS NOT NULL
-          AND p.character_id_2 IS NOT NULL
-          AND p.character_id_3 IS NOT NULL
-          AND p.current_battle_power >= ?
-        ORDER BY p.rowid DESC
-        LIMIT ?
-    `).all(PartyCategory.NORMAL, MIN_BATTLE_POWER_INCLUSIVE, CACHE_MAX_ENTRIES) as CachedPlayerParty[]
-
-    indexCachedPartiesByElement()
-    cacheExpiresAt = now + CACHE_TTL_MS
-    gameVerboseLog(() =>
-        `[LOBBY] player NPC party pool refreshed: entries=${cachedParties.length} minPowerInclusive=${MIN_BATTLE_POWER_INCLUSIVE} ttlMs=${CACHE_TTL_MS}`,
-    )
-    return cachedParties.length
-}
-
-export function invalidatePlayerNpcPartyPool(): void {
-    cacheExpiresAt = 0
-}
-
 export function getRandomPlayerNpcPartiesSync(
-    hostPlayerId: number | null,
+    _hostPlayerId: number | null,
     count: number,
     options: PlayerNpcPartySelectionOptions = {},
 ): RandomNpcParty[] {
@@ -437,7 +294,8 @@ export function getRandomPlayerNpcPartiesSync(
         const available = historicalParties.filter(candidate =>
             candidate.battlePower >= minimumBattlePower
             && (options.requiredElement === undefined
-                || candidate.partyElement === options.requiredElement),
+                || candidate.partyElement === options.requiredElement)
+            && isNpcPartyAllowedInRoom(options.questCategory, options.questId, candidate.party),
         )
         const selected: RandomNpcParty[] = []
         while (available.length > 0 && selected.length < targetCount) {
@@ -455,52 +313,9 @@ export function getRandomPlayerNpcPartiesSync(
         if (selected.length >= targetCount) return selected
     }
 
-    // Compatibility fallback while a newly installed server is still building
-    // per-quest clear history. Its database scan is lazy and TTL-cached.
-    refreshPlayerNpcPartyPoolSync()
-    const candidateParties = options.requiredElement === undefined
-        ? cachedParties
-        : (cachedPartiesByElement.get(options.requiredElement) ?? [])
-    if (targetCount === 0 || candidateParties.length === 0) return []
-
-    const availableIndexes: number[] = []
-    for (let index = 0; index < candidateParties.length; index++) {
-        const candidate = candidateParties[index]
-        if ((candidate.current_battle_power ?? 0) >= minimumBattlePower) {
-            availableIndexes.push(index)
-        }
-    }
-
-    const selected: RandomNpcParty[] = []
-    const usedSourcePlayers = new Set<number>()
-    const deferredSamePlayer: CachedPlayerParty[] = []
-
-    while (availableIndexes.length > 0 && selected.length < targetCount) {
-        const pickedOffset = Math.floor(Math.random() * availableIndexes.length)
-        const [pickedIndex] = availableIndexes.splice(pickedOffset, 1)
-        const candidate = candidateParties[pickedIndex]
-        if (usedSourcePlayers.has(candidate.player_id)) {
-            deferredSamePlayer.push(candidate)
-            continue
-        }
-
-        const party = buildRealParty(candidate.player_id, toPlayerParty(candidate))
-        if (!hasCompleteMainCharacters(party)) continue
-        selected.push({ sourcePlayerId: candidate.player_id, party })
-        usedSourcePlayers.add(candidate.player_id)
-    }
-
-    // Small servers may only have one valid source player. In that case allow
-    // two different parties from that player before falling back to the host.
-    while (deferredSamePlayer.length > 0 && selected.length < targetCount) {
-        const pickedOffset = Math.floor(Math.random() * deferredSamePlayer.length)
-        const [candidate] = deferredSamePlayer.splice(pickedOffset, 1)
-        const party = buildRealParty(candidate.player_id, toPlayerParty(candidate))
-        if (!hasCompleteMainCharacters(party)) continue
-        selected.push({ sourcePlayerId: candidate.player_id, party })
-    }
-
-    return selected
+    // Only the same quest's successful battle snapshots are candidates.
+    // An empty history leaves fallback selection to the lobby; never scan SETs.
+    return []
 }
 
 export function getPlayerNpcPartyPoolStats(): {
@@ -513,10 +328,11 @@ export function getPlayerNpcPartyPoolStats(): {
     questPoolEntryCount: number
 } {
     return {
-        size: cachedParties.length,
-        expiresAt: cacheExpiresAt,
-        ttlMs: CACHE_TTL_MS,
-        maxEntries: CACHE_MAX_ENTRIES,
+        // Keep legacy stats fields without reviving the removed SET pool.
+        size: 0,
+        expiresAt: 0,
+        ttlMs: 0,
+        maxEntries: 0,
         minBattlePowerInclusive: MIN_BATTLE_POWER_INCLUSIVE,
         questPoolCount: questPartyPools.size,
         questPoolEntryCount: [...questPartyPools.values()]

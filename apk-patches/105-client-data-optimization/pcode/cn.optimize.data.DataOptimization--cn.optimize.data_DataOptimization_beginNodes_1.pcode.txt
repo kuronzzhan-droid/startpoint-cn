@@ -1,0 +1,18 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.data.DataOptimization; label: cn.optimize.data::DataOptimization$/beginNodes|1; body: 17; method: 18
+# code SHA-256: 0df1b0415cbc0f75d61d024322712a39c412cd313354e4c7b69219bbf6d1a5da; header: [2, 2, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: pushstring [('string', 'nodes')]
+#0003 ofs0004: findpropstrict [(7, (22, 'flash.utils'), 'Dictionary')]
+#0004 ofs0006: constructprop [(7, (22, 'flash.utils'), 'Dictionary'), 0]
+#0005 ofs0009: newobject [1]
+#0006 ofs000b: coerce [(7, (22, ''), 'Object')]
+#0007 ofs000d: setlocal_1 []
+#0008 ofs000e: getlex [(7, (5, 'cn.optimize.data:DataOptimization'), 'nodeScopes')]
+#0009 ofs0010: getlocal_1 []
+#0010 ofs0011: callpropvoid [(7, (8, 'http://adobe.com/AS3/2006/builtin'), 'push'), 1]
+#0011 ofs0014: getlocal_1 []
+#0012 ofs0015: returnvalue []
+# exceptions: []

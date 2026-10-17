@@ -19,7 +19,7 @@ import { settleDegreeMissionResponse } from "../../lib/mission/degree-response";
 import { countNewAbilitySoulEquipments } from "../../lib/mission/ability-soul-facts";
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator";
 import { invalidateRealPartySnapshot } from "../../multi/party-snapshot";
-import { notifyEquipmentPartySaved } from "../../multi/room/equipment-ready";
+import { getRoomCommandGateway } from "../../multi/coordinator/default-runtime";
 import { createTeamCodeClient, GAME_CODE_PATTERN, TeamCodeError, TeamCodeLimiter } from "../../lib/wiki-team-code-client";
 import { loadTeamCodeAssets, nativeBattleParty, resolvePublicTeam, TeamAssets, TeamInventory } from "../../lib/wiki-team-code-inventory";
 
@@ -861,7 +861,9 @@ const routes = async (fastify: FastifyInstance) => {
         // the newly persisted party instead of waiting for its TTL.
         invalidateRealPartySnapshot(playerId)
         try {
-            await notifyEquipmentPartySaved(playerId, changedNormalPartyIds, normalSelectionChanged)
+            await getRoomCommandGateway().execute("runtime.partyChanged", {
+                playerId, changedPartyIds: changedNormalPartyIds, selectionChanged: normalSelectionChanged,
+            })
         } catch (error) {
             // The save committed. Ready/Start will recheck authoritative data;
             // a failed lobby refresh must not make the client retry this save.

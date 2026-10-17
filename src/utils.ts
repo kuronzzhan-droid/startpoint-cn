@@ -1,5 +1,6 @@
 import { randomInt } from "crypto"
 import { FastifyRequest } from "fastify"
+import { AsyncLocalStorage } from "node:async_hooks"
 
 // The server's current time offset (real time + offset = simulated time)
 let timeOffset: number | null = null;  // milliseconds, null = use system time
@@ -14,6 +15,31 @@ console.log(`[TIME] startup offset=${timeOffset ?? 'null(system)'}`);
  * utility module depending on the writer client.
  */
 const timeOffsetListeners = new Set<(offset: number | null) => void>()
+
+interface ServerClockContext { nowMs: number; effectiveOffset: number }
+const serverClock = new AsyncLocalStorage<ServerClockContext>()
+
+/** Freeze business time and its coordinate offset together across awaits. */
+export function withServerClock<T>(now: number | Date, callback: () => T, effectiveOffset = getTimeOffset() ?? 0): T {
+    const nowMs = now instanceof Date ? now.getTime() : now
+    if (!Number.isFinite(nowMs) || !Number.isSafeInteger(effectiveOffset)) throw new Error("Invalid server clock context")
+    return serverClock.run({ nowMs, effectiveOffset }, callback)
+}
+
+export function withCurrentServerClock<T>(callback: () => T): T {
+    const captured = serverClock.getStore()
+    return captured ? callback() : withServerClock(Date.now() + (timeOffset ?? 0), callback, timeOffset ?? 0)
+}
+
+/** The configured legacy offset, unaffected by an individual player's context. */
+export function getLegacyTimeOffset(): number | null { return timeOffset }
+
+/** Real time captured at the same execution boundary as the business clock. */
+export function getRealServerDate(): Date {
+    const captured = serverClock.getStore()
+    return new Date(captured ? captured.nowMs - captured.effectiveOffset : Date.now())
+}
+
 
 export function onServerTimeOffsetChanged(listener: (offset: number | null) => void): () => void {
     timeOffsetListeners.add(listener)
@@ -44,7 +70,7 @@ export function getServerTime(
     if (date !== undefined) {
         return Math.floor(date.getTime() / 1000);
     }
-    return Math.floor((Date.now() + (timeOffset ?? 0)) / 1000);
+    return Math.floor((serverClock.getStore()?.nowMs ?? Date.now() + (timeOffset ?? 0)) / 1000);
 }
 
 /**
@@ -53,12 +79,12 @@ export function getServerTime(
  * @returns The current server time as a date.
  */
 export function getServerDate(): Date {
-    return timeOffset !== null ? new Date(Date.now() + timeOffset) : new Date();
+    return new Date(serverClock.getStore()?.nowMs ?? Date.now() + (timeOffset ?? 0));
 }
 
 /** Convert a real Date (as stored in DB) to virtual epoch seconds for client. */
 export function realToVirtual(date: Date): number {
-    return Math.floor((date.getTime() + (timeOffset ?? 0)) / 1000);
+    return Math.floor((date.getTime() + (getTimeOffset() ?? 0)) / 1000);
 }
 
 /**
@@ -85,22 +111,16 @@ export function setServerTimeOffset(offset: number | null) {
  * Returns the raw time offset (used for persistence).
  */
 export function getTimeOffset(): number | null {
-    return timeOffset;
+    return serverClock.getStore()?.effectiveOffset ?? timeOffset;
 }
 
 /**
  * Returns server time for a specific player.
- * Uses player.time_offset if set, otherwise falls back to global server offset.
+ * Content and client time use the global legacy clock; saved EXP offsets are storage coordinates.
  */
 export function getServerTimeForPlayer(playerId?: number): number {
-    if (playerId) {
-        try {
-            const { getPlayerTimeOffsetSync } = require("./data/activeAccount");
-            const offset = getPlayerTimeOffsetSync(playerId);
-            if (offset !== null) return Math.floor((Date.now() + offset) / 1000);
-        } catch {}
-    }
-    return getServerTime();
+    void playerId
+    return getServerTime()
 }
 
 /**

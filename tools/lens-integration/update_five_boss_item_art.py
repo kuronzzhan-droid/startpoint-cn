@@ -201,7 +201,7 @@ def build(args):
         for logical,raw in resources.items():
             stored=z.read(p.member(('common',p.hrel(logical))));assert stored==raw
             if logical.endswith('.png'): closure.strict_png(stored)
-    destination=REPO/'assets/asset-patch/active/candidates'/name
+    destination=REPO/'assets/asset-patch/inactive/candidates'/name
     assert not destination.exists();save(destination,archive)
     integrity=dict(name=name,size=len(archive),sha256=p.sha(archive),members=len(members),files=sorted(members))
     entry=dict(id=patch_id,type='patch',name='五重决战道具与商品图更新（本地测试）',

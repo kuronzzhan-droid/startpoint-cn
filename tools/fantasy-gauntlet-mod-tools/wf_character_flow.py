@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 import wf_character_pack as character_pack
+import wf_character_gates as character_gates
 import wf_character_requirements as requirements
 import wf_character_workspace as workspace_module
 import wf_apk_paths
@@ -28,6 +29,309 @@ import wf_release
 
 class FlowError(RuntimeError):
     pass
+
+
+# ---------------------------------------------------------------------------
+# 边界门禁(2026-10-06 凉月复盘):发布默认输出不得写 .cdn;发布前外层 key
+# union;live store 漂移 fail-closed;作者声明(来源与声明)分组。
+# 纯逻辑在 wf_character_gates;这里只做 I/O 与编排。
+# ---------------------------------------------------------------------------
+
+BASE_STATE_SLOTS = (
+    "neutral", "walk_front", "walk_back", "kachidoki",
+    "into_coffin", "ghost_raise", "ghost_neutral", "revive",
+)
+COMPANION_SLOTS = ("skill_ready", "special_land", "special_pose")
+KEY_UI_SLOTS = ("square", "thumb_party_main", "skill_cutin",
+                "battle_control_board", "cutin_skill_chain")
+UI_MASK_VALUES = frozenset({"auto", "none", "rounded", "cone", "hexagon", "circle"})
+EFFECT_ORIGINS = frozenset({"reuse", "reskin", "original"})
+VOICE_ENTRIES = frozenset({"ally", "battle", "home", "login", "words"})
+
+
+def _resolve_write_paths(release_module, profile_id: str):
+    """测试注入的 release 模块没有路径解析器时返回 None。"""
+    resolver = getattr(release_module, "_resolve_repo_paths", None)
+    if resolver is None:
+        return None
+    return resolver(profile_id)
+
+
+def assert_writable_release_root(paths) -> None:
+    """默认输出不得写 ``.cdn``(pristine 基线;2026-10-06 发布路径违规事故)。"""
+    if paths is None:
+        return
+    cdn_root = Path(paths.cdn_root)
+    resolved = cdn_root.resolve() if cdn_root.exists() else cdn_root
+    if (
+        character_gates.resolved_parts_include_cdn(cdn_root)
+        or character_gates.resolved_parts_include_cdn(resolved)
+    ):
+        raise FlowError(
+            "发布根落在受保护的 .cdn 基线内: "
+            f"{cdn_root} -> {resolved}。发布默认不得写 .cdn;"
+            "新角色资源必须走 assets/asset-patch/active/ + manifest + audit/,"
+            "或用 WF_CDN_DIR 指向仓库外的可写 CDN 根。"
+        )
+
+
+def _live_table_path(store: Path | None, server_root: Path | None, root: str, logical: str):
+    if root == "common":
+        return core.table_path(Path(store), logical) if store is not None else None
+    if root == "server":
+        if server_root is None:
+            return None
+        return Path(server_root) / Path(*logical.split("/"))
+    return None
+
+
+def production_key_union_report(
+    package_dir: Path,
+    *,
+    stores: tuple[Path, ...],
+    server_root: Path | None,
+) -> dict:
+    """发布前外层 key union:包内每张有序表都不得丢有效链既有 outer key。"""
+    report: dict = {"tables": [], "problems": [], "warnings": []}
+    try:
+        manifest = character_pack.load_manifest(Path(package_dir) / "manifest.json")
+    except (OSError, ValueError) as exc:
+        report["problems"].append(f"无法读取 manifest.json: {type(exc).__name__}: {exc}")
+        return report
+    roots = manifest.get("roots")
+    if not isinstance(roots, dict):
+        report["problems"].append("manifest.roots 结构无效")
+        return report
+    store = stores[0] if stores else None
+    for root in ("common", "server"):
+        entries = roots.get(root)
+        if not isinstance(entries, list):
+            continue
+        for entry in entries:
+            if not isinstance(entry, dict) or not isinstance(entry.get("logical_path"), str):
+                continue
+            logical = entry["logical_path"]
+            candidate = Path(package_dir) / "roots" / root / Path(*logical.split("/"))
+            if not candidate.is_file():
+                continue
+            try:
+                after = core.read_orderedmap_file_from_bytes(candidate.read_bytes())
+            except Exception:  # noqa: BLE001 - 非 orderedmap 资产跳过
+                continue
+            if not after:
+                continue
+            live_path = _live_table_path(store, server_root, root, logical)
+            row = {"root": root, "logical_path": logical,
+                   "package_keys": len(after), "live_keys": None}
+            if live_path is None or not live_path.is_file():
+                row["live_state"] = "absent"
+                report["warnings"].append(
+                    f"live store 缺少该表(首次发布或新表): {root}:{logical}"
+                )
+                report["tables"].append(row)
+                continue
+            try:
+                before = core.read_orderedmap_file_from_bytes(live_path.read_bytes())
+            except Exception as exc:  # noqa: BLE001
+                report["problems"].append(
+                    f"无法解码 live 表 {root}:{logical}: {type(exc).__name__}"
+                )
+                report["tables"].append(row)
+                continue
+            union = character_gates.outer_key_union_report(before, after)
+            row.update({
+                "live_keys": union["before_keys"],
+                "added": union["added"][:40],
+                "changed": union["changed"][:40],
+                "removed": union["removed"][:40],
+            })
+            for problem in union["problems"]:
+                report["problems"].append(
+                    f"{root}:{logical}: {problem}。"
+                    "包必须整表合并而不是只装声明行(C8601 整表覆盖事故)。"
+                )
+            report["tables"].append(row)
+    return report
+
+
+def live_store_drift_report(package_dir: Path, *, stores: tuple[Path, ...],
+                            server_root: Path | None) -> dict:
+    """live store 漂移 fail-closed:rebase 记录 live_before_sha256 必须仍然成立。"""
+    report: dict = {"tables": [], "problems": [], "warnings": []}
+    try:
+        manifest = character_pack.load_manifest(Path(package_dir) / "manifest.json")
+    except (OSError, ValueError) as exc:
+        report["problems"].append(f"无法读取 manifest.json: {type(exc).__name__}: {exc}")
+        return report
+    snapshot = manifest.get("snapshot")
+    rebase = snapshot.get("runtime_rebase") if isinstance(snapshot, dict) else None
+    facts = rebase.get("tables") if isinstance(rebase, dict) else None
+    if not isinstance(facts, list):
+        report["status"] = "no-rebase-facts"
+        return report
+    store = stores[0] if stores else None
+    for fact in facts:
+        if not isinstance(fact, dict):
+            continue
+        root, logical = fact.get("root"), fact.get("logical_path")
+        expected = fact.get("live_before_sha256")
+        row = {"root": root, "logical_path": logical, "expected_sha256": expected}
+        if root not in ("common", "server") or not isinstance(logical, str):
+            report["problems"].append(f"rebase 记录字段无效: {fact!r}")
+            report["tables"].append(row)
+            continue
+        path = _live_table_path(store, server_root, root, logical)
+        if path is None or not path.is_file():
+            row["actual_sha256"] = None
+            report["problems"].append(
+                f"live store 漂移: {root}:{logical} 已不存在"
+                f"(rebase 时 {str(expected)[:12]}…);请重跑 rebase 后再发布"
+            )
+            report["tables"].append(row)
+            continue
+        actual = hashlib.sha256(path.read_bytes()).hexdigest()
+        row["actual_sha256"] = actual
+        if expected and actual != expected:
+            report["problems"].append(
+                f"live store 漂移: {root}:{logical} 期望 {str(expected)[:12]}… "
+                f"实际 {actual[:12]}…;说明 rebase 之后 live 表被其它任务改写,"
+                "禁止按旧基线发布,请重跑 rebase。"
+            )
+        report["tables"].append(row)
+    return report
+
+
+def declaration_report(package_dir: Path) -> dict:
+    """作者声明(来源与声明)分组;基础状态带合成帧且未声明 = 阻断。"""
+    package_dir = Path(package_dir)
+    payload = None
+    source = None
+    path = package_dir / "declarations.json"
+    if path.is_file():
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            source = str(path)
+        except (OSError, ValueError) as exc:
+            return {"blocking": [f"declarations.json 无法解析: {type(exc).__name__}"],
+                    "warnings": [], "summary": {}, "source": str(path)}
+    else:
+        try:
+            manifest = character_pack.load_manifest(package_dir / "manifest.json")
+            payload = manifest.get("declarations")
+            source = "manifest.declarations"
+        except (OSError, ValueError):
+            payload = None
+    if not isinstance(payload, dict):
+        return {"blocking": [], "warnings": [],
+                "summary": {"status": "undeclared"},
+                "source": source,
+                "note": "包内没有 declarations.json / manifest.declarations;"
+                        "基础状态是否带附属物无法核对(E2 来源与声明分组)"}
+    blocking: list[str] = []
+    warnings: list[str] = []
+    animations = payload.get("animations")
+    if isinstance(animations, list):
+        for item in animations:
+            if not isinstance(item, dict):
+                continue
+            slot = str(item.get("slot") or "")
+            variant = str(item.get("variant") or item.get("frameVariant") or "")
+            companion = item.get("includesCompanion")
+            composite = variant in ("composite", "mixed")
+            if slot in BASE_STATE_SLOTS and composite and companion is not True:
+                blocking.append(
+                    f"基础状态 {slot} 使用合成帧(_sp)但未声明包含附属物;"
+                    "请替换为纯本体帧,或把该状态声明为包含召唤物(2026-10-06 事故组合)"
+                )
+            elif slot in COMPANION_SLOTS and composite and companion not in (True, False):
+                warnings.append(
+                    f"获取/技能状态 {slot} 使用合成帧但未二选一声明是否包含附属物"
+                )
+            elif composite and companion not in (True, False):
+                warnings.append(f"动作 {slot} 使用合成帧但未声明是否包含附属物")
+    else:
+        warnings.append("声明缺少 animations[]:基础状态/附属物来源无法核对")
+    ui_declarations = payload.get("uiDeclarations")
+    if isinstance(ui_declarations, dict):
+        for key, spec in ui_declarations.items():
+            if not isinstance(spec, dict):
+                continue
+            mask = spec.get("mask")
+            if mask is not None and mask not in UI_MASK_VALUES:
+                blocking.append(f"UI 声明 {key}.mask={mask!r} 不在 {sorted(UI_MASK_VALUES)}")
+        for slot in KEY_UI_SLOTS:
+            if not any(str(key).endswith(slot) for key in ui_declarations):
+                warnings.append(f"UI 用途 {slot} 未声明取景/遮罩意图")
+    else:
+        warnings.append("声明缺少 uiDeclarations:五类重点 UI 用途的取景/遮罩意图未登记")
+    effects = payload.get("effects")
+    if isinstance(effects, list):
+        for item in effects:
+            if not isinstance(item, dict):
+                continue
+            origin = item.get("origin")
+            if origin in (None, ""):
+                warnings.append(f"特效 {item.get('name') or item.get('id') or '?'} 未声明来源"
+                                "(reuse/reskin/original)")
+            elif origin not in EFFECT_ORIGINS:
+                blocking.append(f"特效来源 {origin!r} 不在 {sorted(EFFECT_ORIGINS)}")
+    else:
+        warnings.append("声明缺少 effects[]:特效来源未登记")
+    voices = payload.get("voiceDeclarations")
+    if isinstance(voices, list):
+        for item in voices:
+            if not isinstance(item, dict):
+                continue
+            entry = item.get("entry")
+            if entry in (None, ""):
+                warnings.append(f"语音 {item.get('file') or '?'} 缺少入口分类")
+            elif entry not in VOICE_ENTRIES:
+                blocking.append(f"语音入口 {entry!r} 不在 {sorted(VOICE_ENTRIES)}")
+    else:
+        warnings.append("声明缺少 voiceDeclarations[]:语音入口/台词未登记")
+    summary = {
+        "animations": len(animations) if isinstance(animations, list) else 0,
+        "ui_declarations": len(ui_declarations) if isinstance(ui_declarations, dict) else 0,
+        "effects": len(effects) if isinstance(effects, list) else 0,
+        "voices": len(voices) if isinstance(voices, list) else 0,
+    }
+    return {"blocking": blocking, "warnings": warnings, "summary": summary,
+            "source": source}
+
+
+def production_boundary_gates(
+    package_dir: Path,
+    *,
+    profile_id: str,
+    release_module,
+) -> dict:
+    """发布前统一边界门禁报告(供 preflight/publish 共用)。"""
+    report: dict = {"problems": [], "warnings": []}
+    paths = _resolve_write_paths(release_module, profile_id)
+    if paths is not None:
+        assert_writable_release_root(paths)
+    stores = _master_gate_stores(profile_id)
+    try:
+        server_root = Path(core.resolve_server_dir(profile_id))
+    except (OSError, ValueError):
+        server_root = None
+    key_union = production_key_union_report(
+        package_dir, stores=stores, server_root=server_root,
+    )
+    drift = live_store_drift_report(
+        package_dir, stores=stores, server_root=server_root,
+    )
+    declarations = declaration_report(package_dir)
+    report["key_union"] = key_union
+    report["live_store_drift"] = drift
+    report["declarations"] = declarations
+    report["problems"].extend(key_union["problems"])
+    report["problems"].extend(drift["problems"])
+    report["problems"].extend(declarations["blocking"])
+    report["warnings"].extend(key_union["warnings"])
+    report["warnings"].extend(drift["warnings"])
+    report["warnings"].extend(declarations["warnings"])
+    return report
 
 
 class _Parser(argparse.ArgumentParser):
@@ -524,6 +828,9 @@ def run_command(
         if command == "reanchor":
             if not hasattr(release_module, "reanchor_active_ledger"):
                 raise FlowError("release API 未提供 reanchor_active_ledger")
+            assert_writable_release_root(
+                _resolve_write_paths(release_module, args.profile)
+            )
             dry_run = args.confirm is None
             if not dry_run and args.confirm != "REANCHOR_CHARACTER_LEDGER":
                 raise FlowError("重锚必须使用确认口令 REANCHOR_CHARACTER_LEDGER")
@@ -578,20 +885,32 @@ def run_command(
         if command == "preflight":
             status = workspace_module.workspace_status(workspace)
             mode = _manifest_mode(workspace)
+            boundary = None
+            if mode == "production":
+                boundary = production_boundary_gates(
+                    workspace.package_dir,
+                    profile_id=args.profile,
+                    release_module=release_module,
+                )
             master_report = master_reference_report(
                 workspace.package_dir, _master_gate_stores(args.profile)
             )
-            if mode == "production" and not master_report["release_ready"]:
+            if mode == "production" and (not master_report["release_ready"]
+                                         or boundary["problems"]):
+                errors = _master_gate_errors(master_report)
+                errors.extend(boundary["problems"] if boundary else [])
                 return 3, _base_payload(
                     stage="preflight",
                     workspace=workspace_path,
                     release_ready=False,
-                    errors=_master_gate_errors(master_report),
+                    errors=errors,
                     next_command=(
-                        "补齐 master_reference_report.missing 的资产后重新运行 preflight"
+                        "补齐 master_reference_report.missing 的资产并解决边界门禁问题后"
+                        "重新运行 preflight"
                     ),
                     status=status.to_dict(),
                     master_reference_report=master_report,
+                    boundary_gates=boundary,
                 )
             if (
                 mode == "production"
@@ -618,6 +937,7 @@ def run_command(
                 status=status.to_dict(),
                 preflight=report,
                 master_reference_report=master_report,
+                boundary_gates=boundary,
             )
 
         if command == "publish":
@@ -630,6 +950,16 @@ def run_command(
             if mode == "production":
                 if not status.release_ready:
                     raise FlowError("production workspace 未达到 release_ready=true")
+                boundary = production_boundary_gates(
+                    workspace.package_dir,
+                    profile_id=args.profile,
+                    release_module=release_module,
+                )
+                if boundary["problems"]:
+                    raise FlowError(
+                        "边界门禁未通过(路径/live key union/漂移/声明): "
+                        + "; ".join(boundary["problems"])
+                    )
                 master_report = master_reference_report(
                     workspace.package_dir, _master_gate_stores(args.profile)
                 )
@@ -638,6 +968,8 @@ def run_command(
                         "master 表资产引用门禁未通过: "
                         + "; ".join(_master_gate_errors(master_report))
                     )
+            else:
+                boundary = None
             result = release_module.publish_package(
                 workspace.package_dir,
                 args.profile,
@@ -661,6 +993,7 @@ def run_command(
                 next_command=None,
                 delivery_mode=mode,
                 dev_catalog=dev_catalog,
+                boundary_gates=boundary,
                 **_release_result_payload(result),
             )
 
@@ -669,6 +1002,9 @@ def run_command(
                 raise FlowError("release API 未提供 rebase_package")
             mode = _manifest_mode(workspace)
             if mode == "production":
+                assert_writable_release_root(
+                    _resolve_write_paths(release_module, args.profile)
+                )
                 status = workspace_module.workspace_status(workspace)
                 if not status.release_ready:
                     raise FlowError("production workspace 未达到 release_ready=true")

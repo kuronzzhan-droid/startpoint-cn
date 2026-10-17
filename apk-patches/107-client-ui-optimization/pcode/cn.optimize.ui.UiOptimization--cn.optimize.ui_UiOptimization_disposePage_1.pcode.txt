@@ -1,0 +1,11 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.ui.UiOptimization; label: cn.optimize.ui::UiOptimization$/disposePage|1; body: 11; method: 12
+# code SHA-256: 59d4cfdb5e10b0a78c37a9f33873de36941a8578b072186a53643b69ac3e0b5b; header: [2, 2, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex [(7, (5, 'cn.optimize.ui:UiOptimization'), 'pageStates')]
+#0003 ofs0004: getlocal_1 []
+#0004 ofs0005: deleteproperty [(27, ((5, 'cn.optimize.ui:UiOptimization'), (26, 'cn.optimize.ui:UiOptimization'), (26, 'Object'), (22, 'cn.optimize.ui'), (23, 'cn.optimize.ui'), (5, 'FilePrivateNS:UiOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0005 ofs0007: returnvoid []
+# exceptions: []

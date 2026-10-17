@@ -1,14 +1,18 @@
 import { registerWriterCommand } from "./command-registry"
+import { getServerDate } from "../../utils"
 import {
     MISSION_SETTLE_CATEGORIES,
     MULTI_CLEANUP_ACTIVE_QUEST,
     MULTI_RECORD_BATTLE_FACTS,
+    MULTI_SETTLE_FINISH,
     SINGLE_REFRESH_QUEST_PROGRESS,
     SINGLE_SETTLE_FINISH,
     type MissionSettleCategoriesArgs,
     type MultiCleanupActiveQuestArgs,
     type MultiRecordBattleFactsArgs,
     type MultiRecordBattleFactsResult,
+    type MultiSettleFinishArgs,
+    type MultiSettleFinishResult,
     type SingleRefreshQuestProgressArgs,
     type SingleRefreshQuestProgressResult,
     type SingleSettleFinishArgs,
@@ -23,6 +27,7 @@ import { trackSteamRobotChallengeMission } from "../mission/steam-robot-challeng
 import { recordQuestRecommendedPartySafe } from "../quest/recommended-party-history"
 import { givePlayerCharactersExpSync } from "../character"
 import { settleSingleQuestFinishInTransaction } from "../quest/finish/single-finish-transaction"
+import { settleMultiQuestFinishInTransaction } from "../quest/finish/multi-finish-transaction"
 import { runPersistenceTransactionSync } from "../persistence-coordinator"
 
 /**
@@ -42,7 +47,7 @@ registerWriterCommand<MissionSettleCategoriesArgs, MissionSettlementResult>(
     args => settleMissionCategories(
         args.playerId,
         args.categories,
-        new Date(args.evaluationTimeMs),
+        getServerDate(),
     ),
 )
 
@@ -78,7 +83,7 @@ registerWriterCommand<MultiRecordBattleFactsArgs, MultiRecordBattleFactsResult>(
         () => {
             const missionBattleFacts = recordMissionBattleFacts(
                 args.finishCtx,
-                new Date(args.evaluationTimeMs),
+                getServerDate(),
             )
             if (!args.fixedParty) {
                 recordQuestRecommendedPartySafe(args.finishCtx)
@@ -113,5 +118,13 @@ registerWriterCommand<SingleSettleFinishArgs, SingleSettleFinishResult>(
     args => runPersistenceTransactionSync(
         { domain: "single-quest", playerId: args.playerId, operation: "finish" },
         () => settleSingleQuestFinishInTransaction(args),
+    ),
+)
+
+registerWriterCommand<MultiSettleFinishArgs, MultiSettleFinishResult>(
+    MULTI_SETTLE_FINISH,
+    args => runPersistenceTransactionSync(
+        { domain: "multi-settlement", playerId: args.playerId, operation: "finish" },
+        () => settleMultiQuestFinishInTransaction({ ...args, evaluationTimeMs: getServerDate().getTime() }),
     ),
 )

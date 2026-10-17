@@ -1,7 +1,7 @@
 # 商店系统修复文档
 > 状态: 已修复   关键文件: src/data/domains/*, assets/general_shop.json   相关端点: /shop/buy, /shop/get_sales_list
 
-本文记录四个独立但相关的商店问题及其维护方式。
+本文记录五个独立但相关的商店问题及其维护方式。
 
 ---
 
@@ -302,11 +302,36 @@ node tools/star_grain_material_pack.test.cjs
 
 ---
 
+## 五、首次兑换多个相同角色报错 C2274
+
+### 触发条件与根因
+
+星之粒商店首次一次兑换多个相同角色时，服务端已扣除星之粒、发放角色并更新购买次数，但客户端处理响应时报错 `C2274`。`/shop/bulk_buy` 同样受影响；首次只兑换一个角色正常。
+
+`givePlayerRewardsSync()` 按角色 ID 汇总奖励时，后续重复角色返回的局部数据直接覆盖了首次获得角色的完整数据。最终 `character_list` 缺少 `entry_count`，客户端无法创建尚未持有的角色。
+
+### 修复与验证
+
+同 ID 的奖励改为按字段合并：保留首次获得时的 `entry_count`、经验、羁绊证及魔力盘信息，后续重复奖励更新最终 `stack`。星之粒价格、库存、重复角色补偿和玩家已有培养进度保持不变。
+
+持久回归测试 `tests/shop-character-reward.test.cjs` 覆盖全部五种角色商品的首次单个兑换、四种可多次兑换商品的首次多份兑换、批量兑换、交错角色奖励和未知角色夹在重复奖励之间的情形。测试通过真实 SQLite、Fastify 路由及二进制 MessagePack 编解码，核对首次获得字段、最终 `stack`、重复补偿、库存与扣费，并确认已有角色的培养进度、保护、EX、羁绊证及魔力盘节点保持不变。
+
+在独立 worktree 中编译当前源码得到该 worktree 的 `out/` 后，运行：
+
+```bash
+node tools/run-isolated-check.cjs --test tests/shop-character-reward.test.cjs
+```
+
+测试数据库和种子状态位于隔离临时目录，结束后自动清理，不使用玩家存档或主工作区的 `out/`。首次修复时另有相关回归与道具数量一致性检查；这些历史结果不能替代当前源码上的测试。
+
+---
+
 ## 相关文件索引
 
 | 文件 | 用途 |
 |------|------|
 | `src/routes/api/shop.ts` | 商店 API 端点（含白名单过滤 + 调试日志） |
+| `src/lib/quest.ts` | 通用奖励发放与同 ID 角色数据合并 |
 | `assets/cdn_general_shop_whitelist.json` | GeneralShop CDN 白名单（270 个 ID） |
 | `assets/boss_coin_shop.json` | Boss 币商店商品数据（50 类别，6132 条） |
 | `assets/boss_coin_shop_item_category_map.json` | Boss 币商品 → 类别映射 |

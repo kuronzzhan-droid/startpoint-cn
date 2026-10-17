@@ -1,0 +1,38 @@
+{
+  "status": "prepared_offline",
+  "base_version": "1.4.135",
+  "target_version": "1.4.136",
+  "baseline_manifest_sha256": "626724164e9304f471ac27d216dad40f381e131d6f273851c7147a1877592571",
+  "archive": {
+    "name": "pinball-1.4.135-1.4.136-1-five-boss-evil-cannon-preload.zip",
+    "size": 358759,
+    "sha256": "483324a08673c81aea27cfdcf662e64b3e772a717b25ab1276f2100ada657d32",
+    "members": 2,
+    "files": [
+      "production/upload/d2/d5a267930ba55b6589348347e495a7bbd7685f",
+      "production/upload/ec/d8f66b60947ca05643c4080a6cc925c750b9d6"
+    ]
+  },
+  "output_manifest_before_sha256": "a5fc0abeb60b0fb054d1b938ae0a4317ac5f22851052b092c3fab1ab8bb6f35e",
+  "output_manifest_after_sha256": "9dc3ba67ae0919ccf4edda452df1741ad32890bdd0ad1bb0f3b8fe1ef103e456",
+  "baseline_manifest_json_equal": true,
+  "shim": "battle/action/enemy/action/mod/five_boss_v2/fb2_preload$evil_fixed_green",
+  "native_donor": "battle/action/enemy/action/zako/zako_evil$difficulity10_shot1",
+  "changed_boss_rows": [
+    "mod_fb2_035_evil_w02",
+    "mod_fb2_037_evil_w01",
+    "mod_fb2_039_evil_w02"
+  ],
+  "scope": "three tier100 action39 declarations; shared native action and all other chunks preserved",
+  "resources": {
+    "master/battle/boss/general_boss.orderedmap": {
+      "sha256": "9d8f8368aac50d5af4289b4586632bf9bd45363383c979235d50f2bd2e36c246",
+      "bytes": 467363
+    },
+    "battle/action/enemy/action/mod/five_boss_v2/fb2_preload$evil_fixed_green.action.dsl.amf3.deflate": {
+      "sha256": "f20a9f91a1b0d777ab072f6d56633cece8f31042754d93ae3c4ddaf27d188d8d",
+      "bytes": 422
+    }
+  },
+  "baseline_manifest_json_sha256": "673f5c711c2772309b8a37d39d0a8ebcd90562efe890e8e76907fe9f2cdd658f"
+}

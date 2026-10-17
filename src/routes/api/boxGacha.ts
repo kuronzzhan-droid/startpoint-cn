@@ -1,3 +1,4 @@
+import { getPlayerClientExpTime } from "../../lib/player-time-compat"
 // Handles the insertion of mana into characters.
 
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
@@ -17,6 +18,7 @@ import { BoxGachaBox, BoxGachaBoxes } from "../../lib/types";
 import { PlayerBoxGacha, PlayerBoxGachaDrawnReward } from "../../data/types";
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator";
 import { gameVerboseLog } from "../../lib/game-logging";
+import { BOX_GACHA_1001_ID, getBoxGacha1001PeriodError, getBoxGacha1001Settings } from "../../lib/box-gacha-1001";
 
 interface GetBoxListBody {
     box_gacha_id: number
@@ -47,6 +49,10 @@ interface ResetBody {
     api_count: number
 }
 
+function isPositiveSafeInteger(value: unknown): value is number {
+    return typeof value === "number" && Number.isSafeInteger(value) && value > 0
+}
+
 /**
  * Calculates the remaining stock from the current reward master and the
  * player's per-reward draw history. This remains correct when a patch expands
@@ -56,10 +62,32 @@ function getCurrentRemainingNumber(
     rewards: BoxGachaBox,
     drawnRewards: PlayerBoxGachaDrawnReward[]
 ): number {
+    if (drawnRewards.some(reward => !Number.isSafeInteger(reward.number) || reward.number < 0)) {
+        throw new Error("Invalid box draw history.")
+    }
     const drawnMap = new Map(drawnRewards.map(reward => [reward.id, reward.number]))
     return Object.entries(rewards).reduce((remaining, [rewardId, reward]) => {
         return remaining + Math.max(0, reward.available - (drawnMap.get(Number(rewardId)) ?? 0))
     }, 0)
+}
+
+/** Read eligibility after queueing, against the transaction's clock and facts. */
+function get1001EligibilityError(playerId: number, boxId: number, boxes: BoxGachaBoxes): string | null {
+    const settings = getBoxGacha1001Settings(boxId)
+    if (settings === null) return "Missing box availability settings."
+    const periodError = getBoxGacha1001PeriodError(boxId, getServerTime())
+    if (periodError !== null) return periodError
+    if (settings.requiredBoxId !== null) {
+        const requiredId = settings.requiredBoxId
+        const requiredRewards = boxes[requiredId]
+        if (requiredRewards === undefined) return "Required box does not exist."
+        const requiredBox = getPlayerBoxGachaSync(playerId, BOX_GACHA_1001_ID, requiredId)
+        if (!requiredBox?.isClosed && getCurrentRemainingNumber(requiredRewards,
+            getPlayerBoxGachaDrawnRewardsSync(playerId, BOX_GACHA_1001_ID, requiredId)) > 0) {
+            return "Required box is not empty or closed."
+        }
+    }
+    return null
 }
 
 /**
@@ -116,13 +144,15 @@ function getAllBoxList(
         const parsedBoxId = Number(boxId)
         if (parsedBoxId !== skipBoxId) {
             const playerDrawnRewards = getPlayerBoxGachaDrawnRewardsSync(playerId, boxGachaId, parsedBoxId)
-            const playerBoxData = reconcileExpandedEmptyBox(
+            // Historical 1001 state is portable progress; listing must not reopen it.
+            const storedBoxData = getPlayerBoxGachaSync(playerId, boxGachaId, parsedBoxId)
+            const playerBoxData = boxGachaId === BOX_GACHA_1001_ID ? storedBoxData : reconcileExpandedEmptyBox(
                 playerId,
                 boxGachaId,
                 parsedBoxId,
                 rewards,
                 playerDrawnRewards,
-                getPlayerBoxGachaSync(playerId, boxGachaId, parsedBoxId)
+                storedBoxData
             )
 
             boxInfo.push({
@@ -144,14 +174,14 @@ function getAllBoxList(
 
 const routes = async (fastify: FastifyInstance) => {
     fastify.post("/reset", async (request: FastifyRequest, reply: FastifyReply) => {
-        const body = request.body as ResetBody
+        const body = (request.body ?? {}) as ResetBody
 
-        const viewerId = Number(body.viewer_id)
-        const boxGachaId = Number(body.box_gacha_id)
-        const boxId = Number(body.box_id)
+        const viewerId = body.viewer_id
+        const boxGachaId = body.box_gacha_id
+        const boxId = body.box_id
         gameVerboseLog(() => `[BOX] reset: boxGachaId=${boxGachaId} boxId=${boxId}`)
 
-        if (!Number.isFinite(viewerId) || !Number.isFinite(boxGachaId) || !Number.isFinite(boxId)) return reply.status(400).send({
+        if (!isPositiveSafeInteger(viewerId) || !isPositiveSafeInteger(boxGachaId) || !isPositiveSafeInteger(boxId)) return reply.status(400).send({
             "error": "Bad Request",
             "message": "Invalid request body."
         })
@@ -170,8 +200,7 @@ const routes = async (fastify: FastifyInstance) => {
 
         const boxGachaData = getBoxGachaSync(boxGachaId)
         const boxRewards = boxGachaData?.boxes[boxId]
-        const availableCount = boxGachaData?.availableCounts[boxId]
-        if (boxGachaData === null || boxRewards === undefined || availableCount === undefined) return reply.status(400).send({
+        if (boxGachaData === null || boxRewards === undefined) return reply.status(400).send({
             "error": "Bad Request",
             "message": "Invalid box gacha or box id."
         })
@@ -179,19 +208,19 @@ const routes = async (fastify: FastifyInstance) => {
         const resetResult = await runPersistenceTransaction({
             domain: "gacha", playerId, operation: "box_reset",
         }, () => {
+            if (boxGachaId === BOX_GACHA_1001_ID) {
+                const settings = getBoxGacha1001Settings(boxId)
+                return { allBoxInfo: null, errorMessage: settings?.resetKind === 0
+                    ? "Box cannot be reset." : "Missing box reset settings." }
+            }
             const playerDrawnRewards = getPlayerBoxGachaDrawnRewardsSync(playerId, boxGachaId, boxId)
-            const playerBoxData = reconcileExpandedEmptyBox(
-                playerId,
-                boxGachaId,
-                boxId,
-                boxRewards,
-                playerDrawnRewards,
-                getPlayerBoxGachaSync(playerId, boxGachaId, boxId)
-            )
+            const playerBoxData = getPlayerBoxGachaSync(playerId, boxGachaId, boxId)
             if (playerBoxData === null) return { allBoxInfo: null, errorMessage: "Box doesn't exist." }
-            if (!playerBoxData.isClosed && playerBoxData.remainingNumber > 0) {
+            if (getCurrentRemainingNumber(boxRewards, playerDrawnRewards) > 0) {
                 return { allBoxInfo: null, errorMessage: "Box still has remaining rewards." }
             }
+            const availableCount = getCurrentRemainingNumber(boxRewards, [])
+            if (!isPositiveSafeInteger(availableCount)) return { allBoxInfo: null, errorMessage: "Box has no rewards." }
             if (!resetPlayerBoxGachaSync(playerId, boxGachaId, boxId, availableCount)) {
                 return { allBoxInfo: null, errorMessage: "Failed to reset box." }
             }
@@ -217,12 +246,12 @@ const routes = async (fastify: FastifyInstance) => {
 
     fastify.post("/close", async (request: FastifyRequest, reply: FastifyReply) => {
 
-        const body = request.body as CloseBody
+        const body = (request.body ?? {}) as CloseBody
 
         const viewerId = body.viewer_id
         const boxGachaId = body.box_gacha_id
         const boxId = body.box_id
-        if (isNaN(viewerId) || isNaN(boxGachaId) || isNaN(boxId)) return reply.status(400).send({
+        if (!isPositiveSafeInteger(viewerId) || !isPositiveSafeInteger(boxGachaId) || !isPositiveSafeInteger(boxId)) return reply.status(400).send({
             "error": "Bad Request",
             "message": "Invalid request body."
         })
@@ -243,7 +272,8 @@ const routes = async (fastify: FastifyInstance) => {
 
         // get box asset data.
         const boxGachaData = getBoxGachaSync(boxGachaId)
-        if (boxGachaData === null) return reply.status(400).send({
+        const boxRewards = boxGachaData?.boxes[boxId]
+        if (boxGachaData === null || boxRewards === undefined) return reply.status(400).send({
             "error": "Bad Request",
             "message": "Invalid box gacha id."
         })
@@ -253,8 +283,21 @@ const routes = async (fastify: FastifyInstance) => {
         }, () => {
             const playerBoxData = getPlayerBoxGachaSync(playerId, boxGachaId, boxId)
             if (playerBoxData === null) return { allBoxInfo: null, errorMessage: "Box doesn't exist" }
-            if (playerBoxData.isClosed) return { allBoxInfo: null, errorMessage: "Box is already closed." }
-            updatePlayerBoxGachaSync(playerId, boxGachaId, { boxId, isClosed: true })
+            if (boxGachaId === BOX_GACHA_1001_ID) {
+                // An existing terminal state is returned without rewriting old progress.
+                if (playerBoxData.isClosed) return { allBoxInfo: getAllBoxList(playerId, boxGachaId, boxGachaData.boxes) }
+                const eligibilityError = get1001EligibilityError(playerId, boxId, boxGachaData.boxes)
+                if (eligibilityError !== null) return { allBoxInfo: null, errorMessage: eligibilityError }
+            }
+            const remainingNumber = getCurrentRemainingNumber(
+                boxRewards, getPlayerBoxGachaDrawnRewardsSync(playerId, boxGachaId, boxId),
+            )
+            if (boxGachaId === BOX_GACHA_1001_ID && remainingNumber > 0) {
+                return { allBoxInfo: null, errorMessage: "Box still has remaining rewards." }
+            }
+            if (!playerBoxData.isClosed || playerBoxData.remainingNumber !== remainingNumber) {
+                updatePlayerBoxGachaSync(playerId, boxGachaId, { boxId, isClosed: true, remainingNumber })
+            }
             return { allBoxInfo: getAllBoxList(playerId, boxGachaId, boxGachaData.boxes) }
         })
         if (closeResult.allBoxInfo === null) return reply.status(400).send({
@@ -274,7 +317,7 @@ const routes = async (fastify: FastifyInstance) => {
     })
 
     fastify.post("/exec", async (request: FastifyRequest, reply: FastifyReply) => {
-        const body = request.body as ExecBody
+        const body = (request.body ?? {}) as ExecBody
 
         const viewerId = body.viewer_id
         const boxGachaId = body.box_gacha_id
@@ -282,7 +325,7 @@ const routes = async (fastify: FastifyInstance) => {
         const pullCount = body.number
         const stopOnFeaturedRewards = body.stop_on_featured_rewards
         gameVerboseLog(() => `[BOX] exec: boxGachaId=${boxGachaId} boxId=${boxId} pullCount=${pullCount}`)
-        if (isNaN(viewerId) || isNaN(boxGachaId) || isNaN(boxId) || isNaN(pullCount) || stopOnFeaturedRewards === undefined) return reply.status(400).send({
+        if (!isPositiveSafeInteger(viewerId) || !isPositiveSafeInteger(boxGachaId) || !isPositiveSafeInteger(boxId) || !isPositiveSafeInteger(pullCount) || typeof stopOnFeaturedRewards !== "boolean") return reply.status(400).send({
             "error": "Bad Request",
             "message": "Invalid request body."
         })
@@ -309,65 +352,49 @@ const routes = async (fastify: FastifyInstance) => {
             "message": "Invalid box gacha id."
         })
 
-        // make sure the player has enough currency
         const pullCurrencyId = boxGachaData.redeemItemId
-        const playerPullCurrency = getPlayerItemSync(playerId, pullCurrencyId)
-        if (playerPullCurrency === null) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "No pull currency."
-        })
-        const maximumPullCost = Math.abs(pullCount) * boxGachaData.redeemItemCount
-        if (playerPullCurrency < maximumPullCost) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "Not enough pull currency."
-        })
-
-        // get the current box
         const boxRewards = boxGachaData.boxes[boxId]
         if (boxRewards === undefined) return reply.status(400).send({
             "error": "Bad Request",
             "message": "Invalid box ID."
         })
 
-        const playerDrawnRewards = getPlayerBoxGachaDrawnRewardsSync(playerId, boxGachaId, boxId)
-        const playerBoxData = reconcileExpandedEmptyBox(
-            playerId,
-            boxGachaId,
-            boxId,
-            boxRewards,
-            playerDrawnRewards,
-            getPlayerBoxGachaSync(playerId, boxGachaId, boxId)
-        )
-        if (playerBoxData !== null && playerBoxData.isClosed) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "Box is closed."
-        })
-
         const settlement = await runPersistenceTransaction({
             domain: "gacha", playerId, operation: "box_exec",
         }, () => {
+            if (boxGachaId === BOX_GACHA_1001_ID) {
+                const eligibilityError = get1001EligibilityError(playerId, boxId, boxGachaData.boxes)
+                if (eligibilityError !== null) return { errorMessage: eligibilityError }
+            }
             const currentDrawnRewards = getPlayerBoxGachaDrawnRewardsSync(playerId, boxGachaId, boxId)
-            const currentBoxData = reconcileExpandedEmptyBox(
-                playerId, boxGachaId, boxId, boxRewards, currentDrawnRewards,
-                getPlayerBoxGachaSync(playerId, boxGachaId, boxId),
-            )
-            if (currentBoxData?.isClosed) throw new Error("Box is closed.")
+            const currentBoxData = getPlayerBoxGachaSync(playerId, boxGachaId, boxId)
+            const remainingNumber = getCurrentRemainingNumber(boxRewards, currentDrawnRewards)
+            const expandedEmptyBox = boxGachaId !== BOX_GACHA_1001_ID
+                && currentBoxData?.remainingNumber === 0 && remainingNumber > 0
+            if (currentBoxData?.isClosed && !expandedEmptyBox) return { errorMessage: "Box is closed." }
+            if (pullCount > remainingNumber) return { errorMessage: "Not enough remaining rewards." }
             const currentCurrency = getPlayerItemSync(playerId, pullCurrencyId)
-            if (currentCurrency === null) throw new Error("No pull currency.")
+            if (currentCurrency === null) return { errorMessage: "No pull currency." }
+            const maximumPullCost = pullCount * boxGachaData.redeemItemCount
+            if (!isPositiveSafeInteger(maximumPullCost)) return { errorMessage: "Invalid pull cost." }
+            if (currentCurrency < maximumPullCost) return { errorMessage: "Not enough pull currency." }
 
             const drawResult = drawBoxGachaSync(boxRewards, currentDrawnRewards, pullCount, stopOnFeaturedRewards)
             const actualPullCost = drawResult.drawCount * boxGachaData.redeemItemCount
             const newPullCurrency = currentCurrency - actualPullCost
-            if (newPullCurrency < 0) throw new Error("Not enough pull currency.")
+            if (!isPositiveSafeInteger(drawResult.drawCount) || drawResult.drawCount > pullCount
+                || !isPositiveSafeInteger(actualPullCost) || newPullCurrency < 0) {
+                return { errorMessage: "Invalid draw result." }
+            }
             gameVerboseLog(() =>
                 `[BOX] exec result: boxGachaId=${boxGachaId} boxId=${boxId} requested=${pullCount} actual=${drawResult.drawCount} cost=${actualPullCost} stopOnFeatured=${stopOnFeaturedRewards}`
             )
 
+            // Charge first so a reward in the same currency is added to the final balance.
+            updatePlayerItemSync(playerId, pullCurrencyId, newPullCurrency)
             const rewardResult = rewardPlayerBoxGachaResultSync(playerId, drawResult)
             const playerDrawnRewardMap = new Map(currentDrawnRewards.map(reward => [reward.id, reward.number]))
-            const totalDrawCount = currentDrawnRewards.reduce((total, reward) => total + reward.number, 0)
-                + drawResult.rewards.reduce((total, reward) => total + reward.number, 0)
-            const remainingDrawsNumber = (boxGachaData.availableCounts[boxId] ?? totalDrawCount) - totalDrawCount
+            const remainingDrawsNumber = remainingNumber - drawResult.drawCount
             const shouldClose = remainingDrawsNumber === 0
             if (currentBoxData === null) {
                 insertPlayerBoxGachaSync(playerId, boxGachaId, {
@@ -390,35 +417,39 @@ const routes = async (fastify: FastifyInstance) => {
                     )
                 }
             }
-            updatePlayerItemSync(playerId, pullCurrencyId, newPullCurrency)
+            const existingCharacterList = (rewardResult?.character_list ?? []) as Record<string, unknown>[]
+            const characterList = reconcileAwakeUnlockCharacterList(playerId, existingCharacterList)
+            const responsePlayer = getPlayerSync(playerId)
+            if (responsePlayer === null) throw new Error("Player disappeared during box settlement.")
             return {
-                drawResult, rewardResult, newPullCurrency,
-                playerBoxData: currentBoxData ?? {
-                    boxId, resetTimes: 0, remainingNumber: remainingDrawsNumber, isClosed: shouldClose,
+                drawResult, rewardResult, currentDrawnRewards,
+                playerBoxData: {
+                    boxId, resetTimes: currentBoxData?.resetTimes ?? 0,
+                    remainingNumber: remainingDrawsNumber, isClosed: shouldClose,
                 },
-                currentDrawnRewards,
+                allBoxInfo: getAllBoxList(playerId, boxGachaId, boxGachaData.boxes, boxId),
+                characterList,
+                finalPullCurrency: getPlayerItemSync(playerId, pullCurrencyId)!,
+                userInfo: {
+                    free_mana: responsePlayer.freeMana,
+                    exp_pool: responsePlayer.expPool,
+                    exp_pooled_time: getPlayerClientExpTime(responsePlayer),
+                },
             }
         })
-        const { drawResult, rewardResult, newPullCurrency, currentDrawnRewards } = settlement
+        if ("errorMessage" in settlement) return reply.status(400).send({
+            "error": "Bad Request", "message": settlement.errorMessage,
+        })
+        const { drawResult, rewardResult, currentDrawnRewards, allBoxInfo, characterList } = settlement
         const drawnRewards = drawResult.rewards
         const allDrawResultMap: Map<number, number> = new Map()
-        let totalDrawCount = 0
         for (const drawnReward of drawnRewards) {
-            totalDrawCount += drawnReward.number
             allDrawResultMap.set(drawnReward.id, drawnReward.number)
         }
         for (const playerDrawnReward of currentDrawnRewards) {
-            totalDrawCount += playerDrawnReward.number
             allDrawResultMap.set(playerDrawnReward.id, (allDrawResultMap.get(playerDrawnReward.id) ?? 0) + playerDrawnReward.number)
         }
-        const remainingDrawsNumber = (boxGachaData.availableCounts[boxId] ?? totalDrawCount) - totalDrawCount
-        const shouldClose = remainingDrawsNumber === 0
         const responsePlayerBoxData = settlement.playerBoxData
-
-        // generate totalDrawnRewards array
-        const allBoxInfo: Object[] = await runPersistenceTransaction({
-            domain: "gacha", playerId, operation: "box_response_reconcile",
-        }, () => getAllBoxList(playerId, boxGachaId, boxGachaData.boxes, boxId))
 
         // add current box to allBoxInfo
         {
@@ -436,14 +467,9 @@ const routes = async (fastify: FastifyInstance) => {
                 "reset_times": responsePlayerBoxData?.resetTimes ?? 0,
                 "all_drawn_reward_list": allDrawnRewardList,
                 "coming_next_reward_list": [],
-                "is_closed": shouldClose ? true : responsePlayerBoxData?.isClosed ?? false
+                "is_closed": responsePlayerBoxData.isClosed
             })
         }
-
-        const existingCharacterList = (rewardResult?.character_list ?? []) as Record<string, unknown>[]
-        const characterList = drawnRewards.length > 0
-            ? reconcileAwakeUnlockCharacterList(playerId, existingCharacterList)
-            : existingCharacterList
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
@@ -451,11 +477,7 @@ const routes = async (fastify: FastifyInstance) => {
                 viewer_id: viewerId
             }),
             "data": {
-                "user_info": {
-                    "free_mana": player.freeMana + (rewardResult?.user_info.free_mana ?? 0),
-                    "exp_pool": player.expPool + (rewardResult?.user_info.exp_pool ?? 0),
-                    "exp_pooled_time": getServerTime(player.expPooledTime),
-                },
+                "user_info": settlement.userInfo,
                 "drawn_reward_list": drawnRewards.map(reward => {
                     return {
                         "reward_id": reward.id,
@@ -467,8 +489,8 @@ const routes = async (fastify: FastifyInstance) => {
                 "character_list": characterList,
                 "equipment_list": rewardResult?.equipment_list ?? [],
                 "item_list": {
-                    [pullCurrencyId]: newPullCurrency,
-                    ...(rewardResult?.items ?? {})
+                    ...(rewardResult?.items ?? {}),
+                    [pullCurrencyId]: settlement.finalPullCurrency,
                 },
                 "mail_arrived": false
             }
@@ -476,12 +498,12 @@ const routes = async (fastify: FastifyInstance) => {
     })
 
     fastify.post("/get_box_list", async (request: FastifyRequest, reply: FastifyReply) => {
-        const body = request.body as GetBoxListBody
+        const body = (request.body ?? {}) as GetBoxListBody
 
         const viewerId = body.viewer_id
         const boxGachaId = body.box_gacha_id
         gameVerboseLog(() => `[BOX] get_box_list: boxGachaId=${boxGachaId}`)
-        if (isNaN(viewerId) || isNaN(boxGachaId)) return reply.status(400).send({
+        if (!isPositiveSafeInteger(viewerId) || !isPositiveSafeInteger(boxGachaId)) return reply.status(400).send({
             "error": "Bad Request",
             "message": "Invalid request body."
         })
@@ -508,13 +530,16 @@ const routes = async (fastify: FastifyInstance) => {
             "message": "Invalid box gacha id."
         })
 
+        const allBoxInfo = await runPersistenceTransaction({
+            domain: "gacha", playerId, operation: "box_list",
+        }, () => getAllBoxList(playerId, boxGachaId, boxGachaData.boxes))
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
             "data_headers": generateDataHeaders({
                 viewer_id: viewerId
             }),
             "data": {
-                "all_box_info": getAllBoxList(playerId, boxGachaId, boxGachaData.boxes)
+                "all_box_info": allBoxInfo
             }
         })
     })

@@ -1,5 +1,6 @@
 import type { Database } from "better-sqlite3"
 import type { PersistenceContext } from "./persistence-coordinator"
+import { isServerShuttingDown, withServerWorkAdmission } from "./shutdown-state"
 import { acquireHistoryLease, finishHistoryLease, initializeMaintenanceState, isHistoryCatchupNeeded, readHistoryPolicy, refreshHistoryLease } from "./maintenance-state"
 
 const DEFAULT_MAX_ROWS = 500
@@ -350,7 +351,7 @@ export function createReceiveHistoryRetentionService(
     }
 
     const schedule = (overrideDelayMs: number | null = null): void => {
-        if (stopped || !config.enabled || timer !== null) return
+        if (stopped || isServerShuttingDown() || !config.enabled || timer !== null) return
         const now = new Date()
         const delayMs = overrideDelayMs ?? millisecondsUntilNextReceiveHistoryRetentionRun(
             now,
@@ -363,8 +364,8 @@ export function createReceiveHistoryRetentionService(
         )
         timer = setTimeout(() => {
             timer = null
-            if (stopped) return
-            activePass = (async () => {
+            if (stopped || isServerShuttingDown()) return
+            activePass = withServerWorkAdmission(async () => {
                 let lease: ReturnType<typeof acquireHistoryLease> = null
                 try {
                     lease = await write("receive_history_acquire", () => stopped ? null : acquireHistoryLease(database))
@@ -405,7 +406,7 @@ export function createReceiveHistoryRetentionService(
                         `[DB_MAINTENANCE] receive history retention pass failed: ${describeError(error)}`,
                     )
                 }
-            })()
+            })
             void activePass.then(() => {
                 activePass = null
                 if (!stopped) schedule(isHistoryCatchupNeeded(database,config.dailyHour,config.dailyMinute) ? 120_000 : null)
@@ -416,7 +417,7 @@ export function createReceiveHistoryRetentionService(
 
     return {
         start(): void {
-            if (!stopped) return
+            if (!stopped || isServerShuttingDown()) return
             stopped = false
             if (!config.enabled) {
                 config.logger.log(

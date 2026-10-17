@@ -10,7 +10,7 @@ import { getPlayerSync } from "../../data/domains/player"
 import { getSession } from "../../data/domains/session"
 import { MissionRewardGranter } from "../../lib/mission/grants"
 import { getPassCardEventDefinition, getPassCardRewardDefinition, isPassCardEventActiveAt } from "../../lib/pass-card"
-import { generateDataHeaders, getServerTime } from "../../utils"
+import { generateDataHeaders, getServerTime, getServerDate } from "../../utils"
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator"
 
 interface PassCardBody {
@@ -113,23 +113,27 @@ export default async function passCardRoutes(fastify: FastifyInstance): Promise<
             return reply.status(400).send({ error: "Bad Request", message: "Invalid pass reward request." })
         }
 
-        const state = getPlayerPassCardStateSync(playerId, body.pass_card_id)
-        const currentLevel = Math.floor(state.point / event.levelThreshold)
-        const definitions = new Map<number, ReturnType<typeof getPassCardRewardDefinition>>()
-        for (const [rewardId, tracks] of requested) {
-            const definition = getPassCardRewardDefinition(rewardId)
-            if (!definition
-                || definition.eventId !== body.pass_card_id
-                || definition.level > currentLevel
-                || (tracks.receive2 && !state.isBuy)) {
-                return reply.status(400).send({ error: "Bad Request", message: "Pass reward is not available." })
-            }
-            definitions.set(rewardId, definition)
-        }
-
         const result = await runPersistenceTransaction({
             domain: "event", playerId, operation: "receive_pass_card",
         }, () => {
+            const event = getPassCardEventDefinition(body.pass_card_id)
+            if (!event || !isPassCardEventActiveAt(event, getServerDate())) {
+                return { ok: false as const, message: "Invalid pass reward request." }
+            }
+            const state = getPlayerPassCardStateSync(playerId, body.pass_card_id)
+            const currentLevel = Math.floor(state.point / event.levelThreshold)
+            const definitions = new Map<number, ReturnType<typeof getPassCardRewardDefinition>>()
+            for (const [rewardId, tracks] of requested) {
+                const definition = getPassCardRewardDefinition(rewardId)
+                if (!definition
+                    || definition.eventId !== body.pass_card_id
+                    || definition.level > currentLevel
+                    || (tracks.receive2 && !state.isBuy)) {
+                    return { ok: false as const, message: "Pass reward is not available." }
+                }
+                definitions.set(rewardId, definition)
+            }
+
             const player = getPlayerSync(playerId)
             if (!player) throw new Error(`Player ${playerId} not found during pass reward settlement.`)
             const granter = new MissionRewardGranter(playerId, player)
@@ -155,22 +159,24 @@ export default async function passCardRoutes(fastify: FastifyInstance): Promise<
                 }
             }
             granter.persistPlayer()
-            return granter
+            return { ok: true as const, granter }
         })
+        if (!result.ok) return reply.status(400).send({ error: "Bad Request", message: result.message })
+        const granter = result.granter
 
         reply.header("content-type", "application/x-msgpack")
         return reply.send({
             data_headers: generateDataHeaders({ viewer_id: body.viewer_id }),
             data: {
                 all_received_record: responseRecords(playerId, body.pass_card_id),
-                item_list: result.itemList,
-                character_list: result.characterList,
-                equipment_list: result.equipmentList,
-                degree_list: result.degreeList.map(degreeId => ({
+                item_list: granter.itemList,
+                character_list: granter.characterList,
+                equipment_list: granter.equipmentList,
+                degree_list: granter.degreeList.map(degreeId => ({
                     viewer_id: body.viewer_id,
                     degree_id: degreeId,
                 })),
-                ...(result.hasPlayerChanges() ? { user_info: result.getUserInfo() } : {}),
+                ...(granter.hasPlayerChanges() ? { user_info: granter.getUserInfo() } : {}),
                 mail_arrived: getPlayerMailCountSync(playerId, true) > 0,
             },
         })

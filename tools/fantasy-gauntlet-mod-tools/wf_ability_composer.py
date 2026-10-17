@@ -1,6 +1,10 @@
 """Shared offline ability composer. No GUI, profiles, store or release imports."""
 from __future__ import annotations
 import wf_describe
+from wf_client_legality import (INSTANT_CONTENT_BOOL_KINDS,
+                                INSTANT_CONTENT_MAX_ACCUMULATION_KINDS,
+                                INSTANT_CONTENT_MULTIPLY_KINDS,
+                                INSTANT_CONTENT_LIMIT_KINDS)
 from decimal import Decimal, InvalidOperation
 
 def _encode_numeric(value, factor):
@@ -278,6 +282,30 @@ def generate(dst_key: str, trigger_id: str = "", effect_id: str = "",
         cbase = blocks["during_content"]
     row[cbase] = effect_kind
     row[cbase + 1] = str(target or "0")
+    if mode == "instant" and str(effect_kind) in INSTANT_CONTENT_BOOL_KINDS:
+        # parseAt47/parseAt45 -> parseAt72/parseAt70:`by_each_trigger_puller`
+        # 是这些条件类瞬发效果的必填 Bool,空串会抛 ClientError 7101(打开角色
+        # 详情即崩)。官方数据绝大多数为 false(按触发者分别计数是显式增强);
+        # 需要逐触发者计数的调用方可在返回行上手改该列。
+        row[cbase + 25] = "false"
+    if mode == "instant" and str(effect_kind) in INSTANT_CONTENT_MULTIPLY_KINDS:
+        # parseAt75/parseAt73:`multiply_trigger` 也是必填枚举,空串抛
+        # C7050("不存在的构造函数");官方默认 0(=None)。
+        row[cbase + 28] = "0"
+    if mode == "instant" and str(effect_kind) in INSTANT_CONTENT_LIMIT_KINDS:
+        # parseAt47/parseAt45 分支里的 Option 列(flip_limit/power_flip_limit/
+        # end_power_flip_limit/end_power_flip_accepted_levels = +15..+18):
+        # 空串会解析成 Some(null)/Some(0),描述生成器对
+        # resolveEndPowerFlipLevels(Some(0)) 的 undefined 结果取 .length,
+        # 打开角色详情即 F1009(2026-10-06 凉月实锤)。默认写官方 None 哨兵。
+        for offset in (15, 16, 17, 18):
+            if not str(row[cbase + offset]).strip():
+                row[cbase + offset] = "(None)"
+    if mode == "instant" and str(effect_kind) in INSTANT_CONTENT_MAX_ACCUMULATION_KINDS:
+        # max_accumulation(+14)同属 Option:空串 = Some(null) = 0 层,
+        # 官方只用 '(None)'(=1 层)或数字。
+        if not str(row[cbase + 14]).strip():
+            row[cbase + 14] = "(None)"
     if groups:
         row[cbase + 2] = groups                   # 目标·角色组(如 全队(火))
     if effect_kind == "629" and float(value or 0) == 0:

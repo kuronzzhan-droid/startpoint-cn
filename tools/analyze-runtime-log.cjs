@@ -3,12 +3,16 @@ const path = require('node:path')
 
 const stderrPath = path.resolve(process.argv[2] || '')
 if (!stderrPath || !fs.existsSync(stderrPath)) {
-    console.error('Usage: node tools/analyze-runtime-log.cjs <stderr.log> [stdout.log]')
+    console.error('Usage: node tools/analyze-runtime-log.cjs <combined.log|stderr.log> [stdout.log]')
     process.exit(1)
 }
 const stdoutPath = process.argv[3] ? path.resolve(process.argv[3]) : null
 
-const lines = fs.readFileSync(stderrPath, 'utf8').split(/\r?\n/)
+function readLogLines(file) {
+    return fs.readFileSync(file, 'utf8').split(/\r?\n/).map(line =>
+        line.replace(/^\[\d{4}-\d{2}-\d{2}T[\d:.]+Z\] \[(?:stdout|stderr)\] /, ''))
+}
+const lines = readLogLines(stderrPath)
 const memory = lines.filter(line => line.startsWith('[MEM] '))
     .map(line => JSON.parse(line.slice('[MEM] '.length)))
 const perf = lines.filter(line => line.startsWith('[PERF] '))
@@ -16,9 +20,9 @@ const settlements = lines.filter(line => line.startsWith('[SINGLE-SETTLEMENT] ')
     .map(line => JSON.parse(line.slice('[SINGLE-SETTLEMENT] '.length)))
 const requestSummaries = lines.filter(line => line.startsWith('[REQUEST-PERF] '))
     .map(line => JSON.parse(line.slice('[REQUEST-PERF] '.length)))
-const crashLines = stdoutPath && fs.existsSync(stdoutPath)
-    ? fs.readFileSync(stdoutPath, 'utf8').split(/\r?\n/).filter(line => line.startsWith('[CRASH] '))
-    : []
+const crashLines = (stdoutPath && stdoutPath !== stderrPath && fs.existsSync(stdoutPath)
+    ? readLogLines(stdoutPath)
+    : lines).filter(line => line.startsWith('[CRASH] '))
 const number = (line, key) => Number(line.match(new RegExp(`${key}=([\\d.]+)`))?.[1])
 const median = values => {
     if (values.length === 0) return null

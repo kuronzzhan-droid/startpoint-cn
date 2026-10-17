@@ -1,0 +1,1 @@
+package haxe.ds._IntMap { public class IntMapKeysIterator { private var keys:Array=[];private var i:int=0;public function IntMapKeysIterator(h:Object){for(var k:String in h)keys.push(int(k));}public function hasNext():Boolean{return i<keys.length;}public function next():int{return int(keys[i++]);} } }

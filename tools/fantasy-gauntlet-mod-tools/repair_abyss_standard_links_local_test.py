@@ -54,7 +54,7 @@ def main(work, apply):
     old_archives={}
     for audit in (TOWER,PREVIOUS):
         entry=readj(audit/'manifest-entry.json')
-        path=ROOT/'assets/asset-patch/active/candidates'/entry['archive']
+        path=ROOT/'assets/asset-patch/inactive/candidates'/entry['archive']
         raw=path.read_bytes()
         assert sha(raw)==entry['archive_integrity'][0]['sha256']
         assert (RUNTIME/'assets/asset-patch/active'/path.name).read_bytes()==raw
@@ -181,7 +181,7 @@ def main(work, apply):
     with zipfile.ZipFile(io.BytesIO(archive)) as z:
         assert z.testzip() is None and set(z.namelist())==set(members)
         for name,raw in members.items():assert z.read(name)==raw
-    dest=ROOT/'assets/asset-patch/active/candidates'/NAME
+    dest=ROOT/'assets/asset-patch/inactive/candidates'/NAME
     assert not dest.exists() or dest.read_bytes()==archive
     save(dest,archive)
     integrity=dict(name=NAME,size=len(archive),sha256=sha(archive),members=len(members),files=sorted(members))

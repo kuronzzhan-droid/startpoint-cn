@@ -1,0 +1,14 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.data.DataOptimization; label: cn.optimize.data::DataOptimization$/rankComparator|1; body: 5; method: 5
+# code SHA-256: 3fc79e21caf02821a2bb2a979f2e4066238beaa03a079ea2442283fcdb96e9d0; header: [2, 2, 0, 2]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: newactivation []
+#0003 ofs0003: pushscope []
+#0004 ofs0004: findpropstrict [(7, (23, 'cn.optimize.data'), 'ranks')]
+#0005 ofs0006: getlocal_1 []
+#0006 ofs0007: setproperty [(7, (23, 'cn.optimize.data'), 'ranks')]
+#0007 ofs0009: newfunction ['cn.optimize.data::DataOptimization$/rankComparator|1/closure:0']
+#0008 ofs000b: returnvalue []
+# exceptions: []

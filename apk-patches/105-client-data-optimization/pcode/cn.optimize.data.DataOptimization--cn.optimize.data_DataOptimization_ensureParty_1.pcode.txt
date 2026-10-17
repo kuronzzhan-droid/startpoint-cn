@@ -1,0 +1,12 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.data.DataOptimization; label: cn.optimize.data::DataOptimization$/ensureParty|1; body: 15; method: 16
+# code SHA-256: e35215cd272673a559c759a827a61340153368847a0f4d97cad5168b2d6ffed2; header: [3, 3, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: findpropstrict [(7, (22, ''), 'partyData')]
+#0003 ofs0004: getlocal_1 []
+#0004 ofs0005: getlocal_2 []
+#0005 ofs0006: callpropvoid [(7, (22, ''), 'partyData'), 2]
+#0006 ofs0009: returnvoid []
+# exceptions: []

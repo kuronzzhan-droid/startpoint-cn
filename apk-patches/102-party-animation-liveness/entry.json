@@ -1,0 +1,76 @@
+{
+  "number": 102,
+  "module": "liveness",
+  "title": "编队动画等待存活性修复",
+  "status": "归档条目草稿",
+  "upstream_origin_main": "224aa2a663b7756fc8a34c0f37f1ae61ad81800c",
+  "input_apk_sha256": "3de625cf0c745c79d333a09140ad82fdea74746d2e2200a5b6922f67eca14532",
+  "input_swf_sha256": "3b7b3391ae0aee01f15167fe1d5a5b69eddb71a64605c57486f025916611aaa4",
+  "final_swf_sha256": "3d5c9745f519beee68557df7bce3e4ff635c9bb127069ed85a8fd02b5cbedb8a",
+  "methods": [
+    {
+      "module": "liveness",
+      "method": "pinball.scene.character.partyCarousel::PartyCarousel/update|1",
+      "body": 66361,
+      "v33_code_sha256": "335ad9078b65f3819cd64ee926e9f5a52bb89561d2ad5c2723ef9d2f9fc2a20f",
+      "r4_pins": [
+        "335ad9078b65f3819cd64ee926e9f5a52bb89561d2ad5c2723ef9d2f9fc2a20f"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [
+        {
+          "entry": "18-character-carousel-current-only",
+          "code_sha256": "335ad9078b65f3819cd64ee926e9f5a52bb89561d2ad5c2723ef9d2f9fc2a20f"
+        }
+      ],
+      "category": "b"
+    }
+  ],
+  "helpers": [],
+  "composition": "合成 PartyCarousel/update（原 #18）；其 v33 代码指纹本就与上游补丁的单方法锁一致，使用上游可逆插入，不以整方法回退覆盖 #18。",
+  "source_files": [
+    {
+      "path": "102-party-animation-liveness/source/client-patch/party-animation-liveness/patch_swf.py",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/party-animation-liveness/patch_swf.py",
+      "bytes": 8452,
+      "sha256": "464b1bee045ce1a2802ce1beb48e65197b46e67d14e358a172856262a24583ea"
+    },
+    {
+      "path": "102-party-animation-liveness/source/client-patch/party-animation-liveness/run_air_harness.py",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/party-animation-liveness/run_air_harness.py",
+      "bytes": 6435,
+      "sha256": "6dbd8efe518967ad24a33174c9d5035192de2fe794e1811e35b05fc88cacc345"
+    },
+    {
+      "path": "102-party-animation-liveness/source/client-patch/party-animation-liveness/tests/harness-app.xml",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/party-animation-liveness/tests/harness-app.xml",
+      "bytes": 365,
+      "sha256": "85181259d7e9b022e1a53dac786f31b3d8bd373d3f0d1ad039aa64ea3a981327"
+    },
+    {
+      "path": "102-party-animation-liveness/source/client-patch/party-animation-liveness/tests/RuntimeHarness.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/party-animation-liveness/tests/RuntimeHarness.as",
+      "bytes": 9656,
+      "sha256": "259fd00c8ef1fe66a21f936470ebfe56f60edf5367dc5b06a5db0617543679df"
+    }
+  ],
+  "final_pcode": [
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.scene.character.partyCarousel::PartyCarousel/update|1",
+      "body": 66361,
+      "code_sha256": "f46c81b67a4f8a2fef0d06ce7c40eebd6bedce963f72be14b6ccd3094ab341c2",
+      "method_body_sha256": "7e62c78dbfff784cd1687e3969bc99ab2bb9a8ef20a41c7e70b11e7b1c154707",
+      "path": "pcode/boot_ffc6--pinball.scene.character.partyCarousel_PartyCarousel_update_1.pcode.txt",
+      "check": {
+        "max_stack": 5,
+        "max_scope": 7,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "6ff0d0c39f472e2f103eabefe5b1cffdcfa1c3b950b854156d473b9342c57c81"
+    }
+  ],
+  "verification_report": "../../build-report.json",
+  "pcode_export_status": "已复制实际 SWF 最终导出",
+  "r4_stage_swf_sha256": "53890c19f5ced5c70ed2e327e62a8f2f800d8ce5f2fdff5f493ad5c758518642"
+}

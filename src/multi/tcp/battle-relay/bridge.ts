@@ -10,7 +10,8 @@ import { EventEmitter } from "events"
 import { fork, type ChildProcess } from "child_process"
 import * as path from "path"
 import type * as net from "net"
-import type { RelayActivity, RelayChildMessage, RelayCloseReason, RelayMember, RelayParentMessage } from "./protocol"
+import type { RelayActivity, RelayChildMessage, RelayCloseReason, RelayIdentityRejection, RelayMember, RelayParentMessage, RelayRoomIdentity } from "./protocol"
+import { BoundedRelayIpc, type RelayIpcWire } from "./ipc"
 
 function positiveInteger(name: string, fallback: number, minimum: number): number {
     const value = Number.parseInt(process.env[name] ?? "", 10)
@@ -32,7 +33,7 @@ export class RelayProxySocket extends EventEmitter {
     destroyed = false
     writableEnded = false
     readable = true
-    readonly writableLength = 0
+    get writableLength(): number { return this.bridge.pendingSocketBytes(this.sid) }
     private closeEmitted = false
 
     constructor(
@@ -50,8 +51,7 @@ export class RelayProxySocket extends EventEmitter {
 
     write(data: string | Uint8Array): boolean {
         if (!this.writable) return false
-        this.bridge.post({ t: "write", sid: this.sid, data: typeof data === "string" ? data : Buffer.from(data).toString("utf8") })
-        return true
+        return this.bridge.post({ t: "write", sid: this.sid, data: typeof data === "string" ? data : Buffer.from(data).toString("utf8") })
     }
 
     end(data?: string | Uint8Array): this {
@@ -79,6 +79,18 @@ export class RelayProxySocket extends EventEmitter {
     resume(): this { return this }
     ref(): this { return this }
     unref(): this { return this }
+
+    /** Production listeners resolve only after the exact forwarded frame boundary. */
+    receiveFrames(data: string, identity?: RelayRoomIdentity): Promise<void> {
+        return new Promise((resolve, reject) => {
+            if (this.destroyed) { reject(new Error("relay_socket_closed")); return }
+            if (this.listenerCount("relay-frames") > 0) {
+                this.emit("relay-frames", data, (error?: Error) => error ? reject(error) : resolve(), identity)
+                // Existing diagnostic observers can still observe incoming bytes.
+                this.emit("data", data)
+            } else { this.emit("data", data); resolve() }
+        })
+    }
 
     /** The child reported that the real socket closed. */
     remoteClosed(reason: RelayCloseReason | "relay_exit", hadError: boolean, detail?: string): void {
@@ -112,11 +124,24 @@ export class BattleRelayBridge {
     private restarts = 0
     private nextSid = 1
     private readonly proxies = new Map<number, RelayProxySocket>()
-    private readonly pendingMembership = new Map<string, () => RelayMember[]>()
+    private ipc: BoundedRelayIpc<RelayParentMessage> | null = null
+    private membershipVersion = 0
+    private readonly desiredMembership = new Map<string, RelayParentMessage & { t: "members" }>()
+    private readonly membershipSentAt = new Map<string, { version: number; at: number }>()
+    private readonly pendingMembership = new Map<string, { compute: () => RelayMember[]; identity: RelayRoomIdentity }>()
+    private childDiagnostics: Record<string, unknown> | null = null
+    private lastFault: string | null = null
+    private readonly rejectedFrames = { instance: 0, run: 0, scene: 0, unbound: 0 }
+    private readonly frameTails = new Map<number, Promise<void>>()
     private membershipFlushQueued = false
     private readyWaiters: Array<() => void> = []
 
-    constructor(private readonly childPath = path.join(__dirname, "child.js")) {}
+    constructor(private readonly childPath = path.join(__dirname, "child.js"),
+        private readonly memberSyncObserved: (room: string, durationMs: number) => void = (room, durationMs) => {
+            // Keep the bridge independently loadable; telemetry already loads it
+            // through SessionManager and must not form an eager import cycle.
+            require("../../battle-telemetry").battleTelemetry.controlDelay(room, "member-sync", durationMs)
+        }, private readonly now: () => number = () => performance.now()) {}
 
     get isReady(): boolean {
         return this.ready && this.child !== null && this.child.connected
@@ -124,6 +149,17 @@ export class BattleRelayBridge {
 
     get activeSockets(): number {
         return this.proxies.size
+    }
+
+    pendingSocketBytes(sid: number): number { return this.ipc?.pendingBytesFor(m => m.t === "write" && m.sid === sid) ?? 0 }
+
+    noteRejectedFrames(reason: RelayIdentityRejection): void { this.rejectedFrames[reason]++ }
+
+    diagnostics() {
+        return { enabled: battleRelayProcessEnabled(), ready: this.isReady, pid: this.child?.pid ?? null,
+            proxies: this.proxies.size, restarts: this.restarts, lastFault: this.lastFault,
+            pendingMembership: this.pendingMembership.size, desiredMembership: this.desiredMembership.size,
+            parentIpc: this.ipc?.diagnostics() ?? null, child: this.childDiagnostics, rejectedFrames: { ...this.rejectedFrames } }
     }
 
     start(): Promise<void> {
@@ -136,9 +172,31 @@ export class BattleRelayBridge {
             stdio: ["ignore", "inherit", "inherit", "ipc"],
         })
         this.child = child
-        child.on("message", (message: RelayChildMessage) => this.handleChildMessage(message))
+        this.ipc = new BoundedRelayIpc<RelayParentMessage>((message, handle, callback) => {
+            if (!child.connected) throw new Error("ipc_disconnected")
+            return handle === undefined ? child.send(message, callback)
+                : child.send(message, handle as net.Socket, { keepOpen: false }, callback)
+        }, reason => {
+            if (this.child !== child) return
+            this.lastFault = reason
+            this.ready = false
+            console.error(`[BATTLE-RELAY] parent IPC failed: reason=${reason}; closing adopted sockets`)
+            // A synchronous send failure can happen inside adopt(), before the
+            // caller attaches cleanup listeners to the returned proxy.
+            for (const proxy of [...this.proxies.values()]) process.nextTick(() => proxy.remoteClosed("relay_exit", true, reason))
+            child.kill()
+        })
+        const ipc = this.ipc
+        child.on("message", (message: RelayIpcWire<RelayChildMessage>) => {
+            if (this.child === child) ipc.receive(message, undefined, body => this.handleChildMessage(body))
+        })
         child.on("exit", (code, signal) => this.handleChildExit(child, code, signal))
-        child.on("error", (error) => console.error("[BATTLE-RELAY] child process error:", error))
+        child.on("error", (error) => {
+            console.error("[BATTLE-RELAY] child process error:", error)
+            this.lastFault = "child_process_error"
+            // A failed spawn may emit error/close without an exit event.
+            if (child.pid === undefined) this.handleChildExit(child, null, null)
+        })
         return this.waitReady()
     }
 
@@ -154,22 +212,23 @@ export class BattleRelayBridge {
         return new Promise(resolve => {
             const timer = setTimeout(() => child.kill(), 2_000)
             timer.unref()
-            child.once("exit", () => {
+            const done = () => {
                 clearTimeout(timer)
+                child.off("exit", done)
+                child.off("close", done)
                 resolve()
-            })
+            }
+            child.once("exit", done)
+            // A failed spawn emits error/close without an exit event.
+            child.once("close", done)
             this.post({ t: "shutdown" })
         })
     }
 
-    post(message: RelayParentMessage): void {
+    post(message: RelayParentMessage): boolean {
         const child = this.child
-        if (!child || !child.connected) return
-        try {
-            child.send(message)
-        } catch (error) {
-            console.error("[BATTLE-RELAY] IPC send failed:", (error as Error).message)
-        }
+        if (!child || !this.ipc) return false
+        return this.ipc.enqueue(message)
     }
 
     forget(sid: number): void {
@@ -184,6 +243,10 @@ export class BattleRelayBridge {
     adopt(socket: net.Socket): { proxy: RelayProxySocket; pending: string } | null {
         const child = this.child
         if (!this.isReady || !child) return null
+        // setEncoding() can retain an incomplete UTF-8 code point that read()
+        // cannot recover. Keep that decoder and socket in the parent instead.
+        const decoder = (socket as unknown as { _readableState?: { decoder?: { lastNeed?: number } } })._readableState?.decoder
+        if ((decoder?.lastNeed ?? 0) > 0) return null
         const handle = (socket as unknown as { _handle?: { readStop?: () => number; reading?: boolean } })._handle
         if (!handle?.readStop) return null
 
@@ -209,17 +272,18 @@ export class BattleRelayBridge {
         const proxy = new RelayProxySocket(sid, this, socket.remoteAddress, socket.remotePort)
         this.proxies.set(sid, proxy)
         try {
-            child.send({ t: "adopt", sid } satisfies RelayParentMessage, socket, { keepOpen: false }, (error) => {
+            this.ipc!.enqueue({ t: "adopt", sid }, socket, (error) => {
                 // The parent's handle is already closed; this releases the
                 // JS socket and the server's connection count.
                 socket.destroy()
                 if (error) {
                     console.error(`[BATTLE-RELAY] socket handoff failed: sid=${sid}`, error.message)
-                    proxy.remoteClosed("socket_error", true, "handoff_failed")
+                    process.nextTick(() => proxy.remoteClosed("socket_error", true, "handoff_failed"))
                 }
             })
         } catch (error) {
             console.error(`[BATTLE-RELAY] socket handoff threw: sid=${sid}`, (error as Error).message)
+            socket.destroy()
             process.nextTick(() => proxy.remoteClosed("socket_error", true, "handoff_failed"))
         }
         return { proxy, pending }
@@ -229,22 +293,26 @@ export class BattleRelayBridge {
      * Publishes a room's relay membership. Several changes in one turn of the
      * event loop collapse into one IPC message carrying the final state.
      */
-    scheduleMembership(roomNumber: string, compute: () => RelayMember[]): void {
+    scheduleMembership(roomNumber: string, compute: () => RelayMember[], identity?: RelayRoomIdentity): void {
         if (!this.child) return
-        this.pendingMembership.set(roomNumber, compute)
+        // Missing identity can only use parent routing, never an invented room identity.
+        this.pendingMembership.set(roomNumber, { compute, identity: identity ?? { instanceId: "", battleSessionId: null, sceneEpoch: 0 } })
         if (this.membershipFlushQueued) return
         this.membershipFlushQueued = true
         queueMicrotask(() => {
             this.membershipFlushQueued = false
             const pending = [...this.pendingMembership]
             this.pendingMembership.clear()
-            for (const [room, computeMembers] of pending) {
-                this.post({ t: "members", room, members: computeMembers() })
+            for (const [room, { compute, identity }] of pending) {
+                const snapshot = { t: "members" as const, room, ...identity, version: ++this.membershipVersion, members: compute() }
+                this.desiredMembership.set(room, snapshot)
+                this.membershipSentAt.set(room, { version: snapshot.version, at: this.now() })
+                this.post(snapshot)
             }
         })
     }
 
-    private handleChildMessage(message: RelayChildMessage): void {
+    private handleChildMessage(message: RelayChildMessage): void | Promise<void> {
         switch (message.t) {
             case "ready":
                 this.ready = true
@@ -255,26 +323,61 @@ export class BattleRelayBridge {
                 if (!message.ok) this.proxies.get(message.sid)?.remoteClosed("socket_error", true, "adopt_rejected")
                 break
             case "frames":
-                this.proxies.get(message.sid)?.emit("data", message.data)
+                const previous = this.frameTails.get(message.sid) ?? Promise.resolve()
+                const applied = previous.then(async () => {
+                    const proxy = this.proxies.get(message.sid)
+                    if (proxy && !proxy.destroyed) {
+                        try { await proxy.receiveFrames(message.data, message.identity) }
+                        catch (error) { if (!proxy.destroyed) throw error }
+                    }
+                    // A deliberately retired socket is already explicitly closed;
+                    // acknowledge its queued ingress without reviving its ownership.
+                    this.post({ t: "control-applied", sid: message.sid, controlId: message.controlId })
+                })
+                this.frameTails.set(message.sid, applied)
+                void applied.then(() => { if (this.frameTails.get(message.sid) === applied) this.frameTails.delete(message.sid) }, () => {})
+                return applied
+            case "members-applied": {
+                const desired = this.desiredMembership.get(message.room)
+                if (!desired || desired.version !== message.version || desired.instanceId !== message.instanceId
+                    || desired.battleSessionId !== message.battleSessionId || desired.sceneEpoch !== message.sceneEpoch) break
+                const sent = this.membershipSentAt.get(message.room)
+                if (sent?.version === message.version) {
+                    this.memberSyncObserved(message.room, this.now() - sent.at)
+                    this.membershipSentAt.delete(message.room)
+                }
+                this.post({ t: "activate", room: message.room, instanceId: message.instanceId,
+                    battleSessionId: message.battleSessionId, sceneEpoch: message.sceneEpoch, version: message.version })
+                if (desired.members.length === 0) this.desiredMembership.delete(message.room)
                 break
+            }
+            case "diagnostics": this.childDiagnostics = message.data; break
             case "activity":
                 for (const item of message.items) this.proxies.get(item.sid)?.emit("relay-activity", item as RelayActivity)
                 break
             case "closed":
-                this.proxies.get(message.sid)?.remoteClosed(message.reason, message.hadError, message.detail)
-                break
+                return (this.frameTails.get(message.sid) ?? Promise.resolve()).then(() => {
+                    this.proxies.get(message.sid)?.remoteClosed(message.reason, message.hadError, message.detail)
+                })
         }
     }
 
     private handleChildExit(child: ChildProcess, code: number | null, signal: NodeJS.Signals | null): void {
         if (this.child !== child) return
+        if (!this.stopping && !this.ipc?.diagnostics().fault) this.lastFault = `child_exit:${code ?? "unknown"}:${signal ?? "none"}`
         this.child = null
         this.ready = false
+        this.ipc?.close("relay_exit"); this.ipc = null
+        this.pendingMembership.clear(); this.desiredMembership.clear(); this.membershipSentAt.clear(); this.childDiagnostics = null
+        this.frameTails.clear()
         // Every adopted socket died with the child. Report them so rooms run
         // their normal departure path (Leave, absent-seat grace, AI takeover).
         for (const proxy of [...this.proxies.values()]) proxy.remoteClosed("relay_exit", true)
         this.proxies.clear()
-        if (this.stopping) return
+        if (this.stopping) {
+            for (const resolve of this.readyWaiters.splice(0)) resolve()
+            return
+        }
         console.error(`[BATTLE-RELAY] relay process exited: code=${code} signal=${signal}`)
         if (this.restarts >= MAX_RESTARTS) {
             console.error("[BATTLE-RELAY] restart limit reached; battle sockets stay in the main process")

@@ -1,0 +1,19 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.data.DataOptimization; label: cn.optimize.data::DataOptimization$/acceptParty|1; body: 13; method: 14
+# code SHA-256: bb814d2ab1d62ced882f6de4c0c62f70a3d95ef0bbb83a2e562010dcece7f742; header: [3, 4, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: findpropstrict [(7, (5, 'cn.optimize.data:DataOptimization'), 'details')]
+#0003 ofs0004: getlocal_1 []
+#0004 ofs0005: callproperty [(7, (5, 'cn.optimize.data:DataOptimization'), 'details'), 1]
+#0005 ofs0008: coerce [(7, (22, ''), 'Object')]
+#0006 ofs000a: setlocal_3 []
+#0007 ofs000b: getlocal_3 []
+#0008 ofs000c: getproperty [(9, 'versions', ((5, 'cn.optimize.data:DataOptimization'), (26, 'cn.optimize.data:DataOptimization'), (26, 'Object'), (22, 'cn.optimize.data'), (23, 'cn.optimize.data'), (5, 'FilePrivateNS:DataOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0009 ofs000e: getlocal_2 []
+#0010 ofs000f: getlocal_3 []
+#0011 ofs0010: getproperty [(9, 'revision', ((5, 'cn.optimize.data:DataOptimization'), (26, 'cn.optimize.data:DataOptimization'), (26, 'Object'), (22, 'cn.optimize.data'), (23, 'cn.optimize.data'), (5, 'FilePrivateNS:DataOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0012 ofs0012: setproperty [(27, ((5, 'cn.optimize.data:DataOptimization'), (26, 'cn.optimize.data:DataOptimization'), (26, 'Object'), (22, 'cn.optimize.data'), (23, 'cn.optimize.data'), (5, 'FilePrivateNS:DataOptimization'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0013 ofs0014: returnvoid []
+# exceptions: []

@@ -69,7 +69,7 @@
 
 - 发布脚本在写盘前对每个目标路径做前缀断言，失败即退出；
 - 发布后核对 active 目录、manifest 条目、audit 目录的实际落盘；
-- 发布后读回 loose 散文件端点，确认字节等于本次发布物（防止写错层级导致端点仍返回旧表）。
+- 发布后核对 loose 资源的本地落盘；存在单文件交付路径时，比对其字节与 ZIP 中的本次发布物，防止写错层级。HTTP 读回仅按第 8.1 节的故障、受影响路由/准入或明确验收等条件触发，不作为普通发布的固定步骤。
 
 案例（2026-10-05）：角色包发布沿用工具默认链，把 ZIP 写入 `.cdn/cn/archive-{common,medium,android}-diff/`，并生成 `.cdn/cn/character-releases/active.json` 与 `.cdn/cn/dev-catalog/`；该链被服务端 `get_path` 列出。处理方式：14 个新文件移入任务隔离目录 `local-evidence:liangyue-character-20261005/quarantine-cdn-20261005/`，清理由本批新建的 `.cdn` 目录，随后重建 active 发布流程；隔离目录内容不得复制回 `.cdn/`。
 

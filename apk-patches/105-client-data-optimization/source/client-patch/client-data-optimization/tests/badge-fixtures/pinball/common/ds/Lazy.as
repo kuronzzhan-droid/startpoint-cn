@@ -1,0 +1,1 @@
+package pinball.common.ds {import haxe.ds.Option;public class Lazy {public var value:Option;public var getter:Function;public function Lazy(f:Function){getter=f;value=Option.None;}public function get():Object{return null;}}}

@@ -2,17 +2,31 @@ import { randomUUID } from "crypto"
 import type { MultiRoom } from "../../lib/types/multi"
 import { getRoomMemberPlayerId } from "../room/manager"
 import { sessionManager, type SessionClient } from "../state/SessionManager"
-import { recordMemberBattleSignalSync } from "../../data/domains/fiveBossGauntletRun"
-import { getPlayerCharacterSync } from "../../data/domains/character"
 import { FIVE_BOSS_GAUNTLET, isFiveBossGauntletQuest } from "./contract"
 import { fiveBossDiagnostics } from "../../lib/coalesced-diagnostics"
 import { fiveBossConnectionDiagnostics } from "./connection-diagnostic"
-import { runPersistenceTransaction } from "../../lib/persistence-coordinator"
+import { invokeRealtimeBusiness, retainRealtimeBusinessTail } from "../coordinator/business-rpc"
+import { isRealtimeOwnerChild } from "../coordinator/runtime-role"
+import { getPlayerBusinessFacts } from "../coordinator/business-facts"
 
 // TCP proof notifications are acknowledged before their SQLite write has
 // necessarily committed.  Keep the tail for each frozen member so HTTP
 // settlement can wait for notifications that already reached this process.
 const pendingFiveBossSignalWrites = new Map<string, Promise<void>>()
+const failedFiveBossSignals = new Map<string, { at: number; signals: Set<string> }>()
+const proofSequences = new WeakMap<object, number>()
+const terminalProofRuns = new Map<string, number>()
+
+/** Only a parent-confirmed terminal ledger event can forget an unresolved proof failure. */
+export function clearFiveBossProofStatus(runId: string): void {
+    terminalProofRuns.set(runId, Date.now())
+    while (terminalProofRuns.size > 4096) terminalProofRuns.delete(terminalProofRuns.keys().next().value!)
+    for (const key of failedFiveBossSignals.keys()) if (key.startsWith(`${runId}:`)) failedFiveBossSignals.delete(key)
+}
+
+export function fiveBossProofBarrierStatus(runId: string, playerId: number): { ok: boolean } {
+    return { ok: !failedFiveBossSignals.get(fiveBossSignalKey(runId, playerId))?.signals.size }
+}
 
 function fiveBossSignalKey(runId: string, playerId: number): string {
     return `${runId}:${playerId}`
@@ -32,6 +46,11 @@ function acceptedSignalsFor(runtime: object): Set<string> {
 /** Wait for proof notifications already accepted from this member's socket. */
 export function waitForFiveBossSignalPersistence(runId: string, playerId: number): Promise<void> {
     return pendingFiveBossSignalWrites.get(fiveBossSignalKey(runId, playerId)) ?? Promise.resolve()
+}
+
+/** Includes detached proof tails accepted before TCP ingress was withdrawn. */
+export async function drainFiveBossSignalPersistence(): Promise<void> {
+    while (pendingFiveBossSignalWrites.size) await Promise.allSettled([...pendingFiveBossSignalWrites.values()])
 }
 
 /** Freeze the canonical live lobby before either HTTP or TCP starts the battle. */
@@ -69,7 +88,13 @@ export function freezeFiveBossLobby(room: MultiRoom, members?: any[]): boolean {
             .filter(entry => Array.isArray(entry) && entry[0] === 0)
             .map(entry => Number(entry[1]?.id))
             .filter(id => Number.isSafeInteger(id) && id > 0)
-        if (!ids.length || ids.some(id => !getPlayerCharacterSync(playerId, id))
+        const facts = getPlayerBusinessFacts(playerId, { category: Number(room.category), questId: room.quest_id })
+        // Embedded tests still use the parent business reader. The child must
+        // have an authenticated, refreshed ownership fact before freezing.
+        const owns = (id: number) => isRealtimeOwnerChild()
+            ? !!facts?.ownedCharacterIds.includes(id)
+            : !!require("../../data/domains/character").getPlayerCharacterSync(playerId, id)
+        if (!ids.length || ids.some(id => !owns(id))
             || frozen.expectedRealPlayerIds.includes(playerId)) return false
         frozen.expectedRealPlayerIds.push(playerId)
         frozen.autoplayModeByPlayerId[String(playerId)] = live.yourself.autoplayMode
@@ -120,11 +145,38 @@ export function recordFiveBossSignal(
         signal === "scene_ready" ? "battle_entry_queued"
             : signal === "level_next" ? "level_next_queued" : "finalize_queued", "tcp")
     const key = fiveBossSignalKey(runId, playerId)
+    for (const [oldRun, at] of terminalProofRuns) if (Date.now() - at > 300000) terminalProofRuns.delete(oldRun)
+    if (failedFiveBossSignals.size >= 4096 && !failedFiveBossSignals.has(key)) {
+        if (signal === "scene_ready") client.fiveBossBattleEntered = false
+        else acceptedFiveBossSignals.get(runtime)?.delete(dedupeKey)
+        fiveBossConnectionDiagnostics.socketEvent(client.socket, "signal_rejected", `${signal}:proof_budget`)
+        client.socket.destroy?.(new Error("FIVE_BOSS_PROOF_BUDGET"))
+        return false
+    }
     const previous = pendingFiveBossSignalWrites.get(key) ?? Promise.resolve()
-    const pending = previous.then(() => runPersistenceTransaction({
-        domain: "multi-settlement", playerId, operation: `five_boss_${signal}`,
-    }, () => recordMemberBattleSignalSync({ runId, playerId, roomNumber, signal })))
+    // Acquire admission now. The coordinator already preserves per-player
+    // order; waiting on another tail here would bypass its upstream bound.
+    const proofSequence = (proofSequences.get(runtime) ?? 0) + 1
+    proofSequences.set(runtime, proofSequence)
+    const attempted = invokeRealtimeBusiness<{ persisted: boolean }>("fiveBoss.proof.persist", {
+        runId, playerId, roomNumber, signal, proofSequence,
+        roomInstanceId: room.lifecycle.instanceId,
+        battleSessionId: room.lifecycle.battleSessionId,
+    })
+        .catch(async error => {
+            const uncertain = error as { code?: string; confirmation?: Promise<unknown> }
+            // This local promise observes the original application ACK. It is
+            // not another business request and remains inside its IPC budget.
+            if (uncertain?.code === "BUSINESS_OUTCOME_UNKNOWN" && uncertain.confirmation
+                && typeof uncertain.confirmation.then === "function") {
+                return await uncertain.confirmation as { persisted: boolean }
+            }
+            throw error
+        })
+        .then(result => { if (!result.persisted) throw new Error("Proof application ACK missing") })
         .then(() => {
+            failedFiveBossSignals.get(key)?.signals.delete(signal)
+            if (failedFiveBossSignals.get(key)?.signals.size === 0) failedFiveBossSignals.delete(key)
             const currentRuntime = room.five_boss_runtime
             if (signal === "scene_ready"
                 && currentRuntime?.runId === runId
@@ -135,10 +187,18 @@ export function recordFiveBossSignal(
                 signal === "scene_ready" ? "battle_entry_recorded"
                     : signal === "level_next" ? "level_next_recorded" : "finalize_recorded", "tcp")
         })
-        .catch(error => {
+    // Observe both immediately, but retain earlier proof writes in the HTTP
+    // drain even if a later signal is rejected before it can enter the queue.
+    const pending = retainRealtimeBusinessTail(Promise.all([previous, attempted]).then(() => {})
+        .catch(async error => {
+            await previous
             // This handler terminates the chain: it must never throw, or the
             // next queued signal and the cleanup below would see a rejection.
             try {
+                if (!terminalProofRuns.has(runId)) {
+                    const failure = failedFiveBossSignals.get(key) ?? { at: Date.now(), signals: new Set<string>() }
+                    failure.at = Date.now(); failure.signals.add(signal); failedFiveBossSignals.set(key, failure)
+                }
                 if (signal === "scene_ready") client.fiveBossBattleEntered = false
                 else acceptedFiveBossSignals.get(runtime)?.delete(dedupeKey)
                 const code = (error as { code?: string } | null)?.code ?? "unknown"
@@ -151,7 +211,7 @@ export function recordFiveBossSignal(
             } catch (reportError) {
                 console.error("[FIVE-BOSS-SIGNAL] failed to report rejected signal", reportError)
             }
-        })
+        }))
     pendingFiveBossSignalWrites.set(key, pending)
     void pending.finally(() => {
         if (pendingFiveBossSignalWrites.get(key) === pending) pendingFiveBossSignalWrites.delete(key)

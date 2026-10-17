@@ -133,10 +133,7 @@ async function runBattle(relayProcess) {
         }
     } finally {
         console.warn = originalWarn
-        const exited = clients.exitCode !== null || clients.signalCode !== null
-            ? Promise.resolve() : once(clients, 'exit')
         clients.kill()
-        await exited
         await tcp.stopSessionServer()
         for (const client of lobbyClients) manager.removeClient(client)
         rooms.disbandRoom(room.room_number)
@@ -169,13 +166,11 @@ test('the relay child keeps battle frames flowing while the main thread is block
 })
 
 test.after(async () => {
-    // The simulations start no SQLite workers; their relay children and TCP
-    // sockets are stopped in each test's finally block. Drain queued proof
-    // writes and close the one database before Windows removes its files.
     await load('lib/persistence-coordinator').drainPersistence()
-    const db = load('data/db').getDb()
-    if (db.open) db.close()
+    await load('multi/npc/player-party-pool').stopQuestNpcPartyPoolWorker()
+    const db = load('data/db').getDb(); if (db.open) db.close()
     const resolved = fs.realpathSync(dataDir)
     assert.equal(path.dirname(resolved), fs.realpathSync(os.tmpdir()))
-    fs.rmSync(resolved, { recursive: true, force: true })
+    assert.ok(path.basename(resolved).startsWith('startpoint-battle-relay-'))
+    fs.rmSync(resolved, { recursive: true })
 })

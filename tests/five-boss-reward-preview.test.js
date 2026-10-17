@@ -2,7 +2,7 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
-const JSZip = require('jszip')
+const unzipper = require('unzipper')
 
 const root = path.resolve(__dirname, '..')
 const quest = require(path.join(root, 'assets/boss_battle_quest.json'))
@@ -38,6 +38,6 @@ test('1.4.130 CDN patch is registered and contains both preview tables', async (
         'production/upload/93/a3763bc243c7178e1d97a3acd9dab2e9406a5e',
         'production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64',
     ])
-    const zip = await JSZip.loadAsync(archiveBytes)
-    assert.deepEqual(Object.keys(zip.files).sort(), patch.files.slice().sort())
+    const zip = await unzipper.Open.buffer(archiveBytes)
+    assert.deepEqual(zip.files.map(file => file.path).sort(), patch.files.slice().sort())
 })

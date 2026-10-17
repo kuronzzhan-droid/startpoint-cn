@@ -11,7 +11,7 @@ import {
     getLeaderboardSeasonRewardViewSync,
     putLeaderboardSettlementConfigSync,
     rolloverLeaderboardSeasonSync,
-    settleLeaderboardSeasonSync,
+    settleLeaderboardSeason,
     validateRewardTiers,
 } from "../../lib/leaderboard/settlement"
 import type { LeaderboardRewardRule } from "../../lib/leaderboard/rewards"
@@ -21,6 +21,9 @@ import {
     setLeaderboardAvailabilitySync,
 } from "../../lib/leaderboard/availability"
 import { runPersistenceTransactionSync } from "../../lib/persistence-coordinator"
+import { LeaderboardWorkBusyError, runLeaderboardWork } from "../../lib/leaderboard/work-control"
+import { LeaderboardSyncLimitError, SYNCHRONOUS_SETTLEMENT_LIMITS } from "../../lib/leaderboard/sync-budget"
+import { isPersistenceAdmissionError } from "../../lib/persistence-admission"
 
 interface KeyParams { key: string }
 
@@ -32,6 +35,14 @@ function resolveKey(request: FastifyRequest, reply: FastifyReply): string | null
 }
 
 const routes = async (fastify: FastifyInstance) => {
+    fastify.setErrorHandler((error, _request, reply) => {
+        if (error instanceof LeaderboardSyncLimitError) return reply.status(409).send({
+            error: error.message, code: error.code, resource: error.resource,
+            limit: SYNCHRONOUS_SETTLEMENT_LIMITS[error.resource], observed: error.observed,
+        })
+        if (!(error instanceof LeaderboardWorkBusyError)) return reply.send(error)
+        return reply.header("retry-after", "2").status(429).send({ error: error.message, code: error.code })
+    })
     fastify.get("/", async (_request, reply) => reply.send(
         getLeaderboardCompetitions().map(competition => ({
             competition,
@@ -45,9 +56,13 @@ const routes = async (fastify: FastifyInstance) => {
         if (key === null) return reply
         const competition = getLeaderboardCompetition(key)!
         const season = getLeaderboardCompetitionSeasonSync(key)
-        const { total, filter } = getLeaderboardSeasonRewardViewSync(key, season)
         const query = request.query as { page?: string }
-        const page = Math.max(0, Math.floor(Number(query.page ?? 0) || 0))
+        const requestedPage = Number(query.page ?? 0)
+        if (!Number.isSafeInteger(requestedPage) || requestedPage < 0) {
+            return reply.status(400).send({ error: "page must be a non-negative safe integer." })
+        }
+        const { total, filter } = getLeaderboardSeasonRewardViewSync(key, season)
+        const page = Math.min(requestedPage, Math.max(0, Math.ceil(total / competition.pageSize) - 1))
         return reply.send({
             competition,
             availability: getLeaderboardAvailabilitySync(key),
@@ -132,6 +147,7 @@ const routes = async (fastify: FastifyInstance) => {
                     updatedAtMs: Date.now(),
                 }))
         } catch (error) {
+            if (isPersistenceAdmissionError(error)) throw error
             return reply.status(400).send({
                 error: error instanceof Error ? error.message : "Invalid settlement config.",
             })
@@ -142,18 +158,19 @@ const routes = async (fastify: FastifyInstance) => {
     fastify.post("/:key/settle", async (request, reply) => {
         const key = resolveKey(request, reply)
         if (key === null) return reply
-        const outcome = runPersistenceTransactionSync({
-            domain: "leaderboard", operation: `admin_settle:${key}`,
-        }, () => settleLeaderboardSeasonSync(key, "admin-manual"))
+        const body = (request.body ?? {}) as Record<string, unknown>
+        const expectedSeason = body.expectedSeason
+        if (expectedSeason !== undefined && (!Number.isSafeInteger(expectedSeason) || (expectedSeason as number) < 1)) {
+            return reply.status(400).send({ error: "expectedSeason must be a positive safe integer." })
+        }
+        const outcome = await settleLeaderboardSeason(key, "admin-manual", undefined, expectedSeason as number | undefined)
         return reply.status(outcome.ok ? 200 : 409).send(outcome)
     })
 
     fastify.post("/:key/rollover", async (request, reply) => {
         const key = resolveKey(request, reply)
         if (key === null) return reply
-        const outcome = runPersistenceTransactionSync({
-            domain: "leaderboard", operation: `admin_rollover:${key}`,
-        }, () => rolloverLeaderboardSeasonSync(key, "admin-rollover"))
+        const outcome = await runLeaderboardWork(key, "rollover", () => rolloverLeaderboardSeasonSync(key, "admin-rollover"))
         return reply.status(outcome.ok ? 200 : 409).send(outcome.ok ? outcome : {
             ...outcome,
             error: "当前赛季尚未结算，不能换季。",

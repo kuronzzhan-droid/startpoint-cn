@@ -5,13 +5,12 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { getPlayerCategoryMissionsSync, updatePlayerCategoryMissionSync } from "../../data/domains/mission"
 import { getSession } from "../../data/domains/session"
 import { getPlayerMailCountSync } from "../../data/domains/mail"
-import { generateDataHeaders, getServerTime } from "../../utils";
+import { generateDataHeaders, getServerTime, getServerDate } from "../../utils";
 import { getComputer, getMissionIdsByCategory, getCurrentStage, getCharacterIdFromMission, getMissionFinalTargetProgress, isMissionEnabledAt, mergeMissionSettlementResponse, reconcileAwakeUnlockCharacterList, settleAwakeMissionRewards, settleMissionCategories, settleMissionCategoriesWithProgress } from "../../lib/mission/index";
-import { resolveClientProgressTargets } from "../../lib/mission/client-progress";
+import { collectClientProgressDeltas, resolveClientProgressTargets } from "../../lib/mission/client-progress";
 import type { AwakeMissionComputedProgress, AwakeMissionInfo } from "../../lib/mission/index";
 import { resolvePlayerIdSync } from "../../data/activeAccount";
 import type { CategoryContext } from "../../lib/mission/index";
-import { addMissionProgressDelta } from "../../lib/mission/progress";
 import { gameVerboseLog } from "../../lib/game-logging";
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator";
 
@@ -231,20 +230,17 @@ const routes = async (fastify: FastifyInstance) => {
         })
 
         // Update mission progress counters in DB (fire-and-forget from client)
-        const missionParams = body.mission_param_list || []
+        const missionParams = collectClientProgressDeltas(body.mission_param_list)
         let updatedCount = 0
         const updatedMissionIdsByCategory = new Map<number, Set<number>>()
-        const evaluationTime = new Date(getServerTime() * 1000)
-
-        await runPersistenceTransaction({
+        const evaluationTime = await runPersistenceTransaction({
             domain: "mission", playerId, operation: "update_progress",
         }, () => {
+            const evaluationTime = getServerDate()
             const categoryMissionCache = new Map<number, ReturnType<typeof getPlayerCategoryMissionsSync>>()
-            for (const param of missionParams) {
-                const delta = addMissionProgressDelta(0, param.progress_value)
-                if (typeof param.mission_pattern !== "string" || delta === null) continue
+            for (const [pattern, delta] of missionParams) {
                 const matches = resolveClientProgressTargets(
-                    param.mission_pattern,
+                    pattern,
                     evaluationTime,
                 )
                 for (const match of matches) {
@@ -259,7 +255,7 @@ const routes = async (fastify: FastifyInstance) => {
                     const unboundedProgress = previousProgress + delta
                     const nextProgress = finalTarget === undefined
                         ? unboundedProgress
-                        : Math.min(unboundedProgress, finalTarget)
+                        : Math.max(previousProgress, Math.min(unboundedProgress, finalTarget))
                     updatePlayerCategoryMissionSync(
                         playerId,
                         match.category,
@@ -276,6 +272,7 @@ const routes = async (fastify: FastifyInstance) => {
                     updatedCount++
                 }
             }
+            return evaluationTime
         })
 
         const characterList = reconcileAwakeUnlockCharacterList(playerId, [])
@@ -300,7 +297,7 @@ const routes = async (fastify: FastifyInstance) => {
                 viewerId,
             )
         }
-        gameVerboseLog(() => `[MISSION] update_progress viewer=${viewerId} params=${missionParams.length} db_updates=${updatedCount}`)
+        gameVerboseLog(() => `[MISSION] update_progress viewer=${viewerId} patterns=${missionParams.size} db_updates=${updatedCount}`)
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({

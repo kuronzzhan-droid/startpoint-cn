@@ -1,0 +1,23 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.data.DataOptimization; label: cn.optimize.data::DataOptimization$/deferredQuestBadge|1; body: 1; method: 1
+# code SHA-256: f5e75b0c2b80cff296df0faf94f0eb7acaabb4c8c00bfa75277fc3996472ae80; header: [2, 5, 0, 2]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: newactivation []
+#0003 ofs0003: pushscope []
+#0004 ofs0004: findpropstrict [(7, (23, 'cn.optimize.data'), 'repository')]
+#0005 ofs0006: getlocal_1 []
+#0006 ofs0007: setproperty [(7, (23, 'cn.optimize.data'), 'repository')]
+#0007 ofs0009: findpropstrict [(7, (23, 'cn.optimize.data'), 'characterId')]
+#0008 ofs000b: getlocal_2 []
+#0009 ofs000c: setproperty [(7, (23, 'cn.optimize.data'), 'characterId')]
+#0010 ofs000e: findpropstrict [(7, (23, 'cn.optimize.data'), 'player')]
+#0011 ofs0010: getlocal_3 []
+#0012 ofs0011: setproperty [(7, (23, 'cn.optimize.data'), 'player')]
+#0013 ofs0013: findpropstrict [(7, (23, 'cn.optimize.data'), 'time')]
+#0014 ofs0015: getlocal [4]
+#0015 ofs0017: setproperty [(7, (23, 'cn.optimize.data'), 'time')]
+#0016 ofs0019: newfunction ['cn.optimize.data::DataOptimization$/deferredQuestBadge|1/closure:0']
+#0017 ofs001b: returnvalue []
+# exceptions: []

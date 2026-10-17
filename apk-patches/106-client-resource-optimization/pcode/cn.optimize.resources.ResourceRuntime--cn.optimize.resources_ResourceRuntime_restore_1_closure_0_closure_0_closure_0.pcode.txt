@@ -1,0 +1,11 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.resources.ResourceRuntime; label: cn.optimize.resources::ResourceRuntime$/restore|1/closure:0/closure:0/closure:0; body: 36; method: 40
+# code SHA-256: f128d7a9450fa11310d4c6e2fcd02b6886ab2846bfc2250890bf417b1ab3d9cc; header: [4, 2, 0, 0]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: findpropstrict [(7, (22, ''), 'uploadRestore')]
+#0001 ofs0002: getlex [(7, (23, 'cn.optimize.resources'), 'h')]
+#0002 ofs0004: getlocal_1 []
+#0003 ofs0005: getlex [(7, (23, 'cn.optimize.resources'), 'generation')]
+#0004 ofs0008: callpropvoid [(7, (22, ''), 'uploadRestore'), 3]
+#0005 ofs000b: returnvoid []
+# exceptions: []

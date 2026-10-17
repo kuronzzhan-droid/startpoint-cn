@@ -17,10 +17,11 @@ const TEMPORAL_FILTERS: TemporalFilter[] = [
     // Add temporal filters here (e.g. ExBoostReleaseFilter, ItemReleaseFilter)
 ]
 
-/** Run all permanent validators. Returns total fixes applied. */
+/** Run all permanent validators. Transaction owners can require atomic failure. */
 export function runPermanentValidators(
     playerId: number,
     context: SaveValidationContext = {},
+    options: { throwOnError?: boolean } = {},
 ): number {
     let totalFixes = 0
     const appliedVersions = getPlayerRepairVersionsSync(playerId)
@@ -30,6 +31,10 @@ export function runPermanentValidators(
             totalFixes += v.validate(playerId, context)
             setPlayerRepairVersionSync(playerId, v.name, v.version)
         } catch (e) {
+            // The caller owns the transaction and must discard its local
+            // snapshots on failure. Do not commit repairs or version markers
+            // from earlier validators when an atomic load fails later.
+            if (options.throwOnError) throw e
             console.error(`[VALIDATE:${v.name}] error:`, e)
         }
     }

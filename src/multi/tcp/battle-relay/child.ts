@@ -2,17 +2,18 @@
 //
 // Co-op battles are lockstep: every client waits for its teammates' frames, so
 // any delay on the client → server → client path freezes the whole room. In the
-// main CN process that path shares one event loop with synchronous SQLite
-// settlement work, which regularly blocks for hundreds of milliseconds. This
-// process owns only the battle sockets' steady-state traffic so that relay
-// latency no longer depends on the main event loop.
+// main process that path shares one event loop with synchronous work. When
+// that work blocks, this process keeps the battle sockets' steady-state
+// traffic moving independently. Mixed native/proxy rooms use the parent
+// fan-out and therefore still depend on the main event loop.
 //
 // It never decides who belongs to a room: the main process pushes the
 // membership it computed (`members`) and receives every frame that changes
 // room state (handshake, SceneReady, LevelNext, Finalize, unknown frames).
 
 import type * as net from "net"
-import type { RelayActivity, RelayChildMessage, RelayCloseReason, RelayMember, RelayParentMessage } from "./protocol"
+import type { RelayActivity, RelayChildMessage, RelayCloseReason, RelayMember, RelayParentMessage, RelayRoomIdentity } from "./protocol"
+import { BoundedRelayIpc, type RelayIpcWire } from "./ipc"
 
 function positiveInteger(name: string, fallback: number, minimum: number): number {
     const value = Number.parseInt(process.env[name] ?? "", 10)
@@ -43,10 +44,26 @@ interface RelaySocket {
 }
 
 const sockets = new Map<number, RelaySocket>()
-const rooms = new Map<string, RelayMember[]>()
+interface RoomSnapshot extends RelayRoomIdentity { members: RelayMember[]; version: number; active: boolean }
+const rooms = new Map<string, RoomSnapshot>()
+const controls = new Map<number, { sid: number; room?: string }>()
+let controlSequence = 0
+let lastMembershipVersion = 0
+let failing = false
+const routeCounters = { local: 0, parent: 0, mixed: 0, controlGated: 0, snapshotGated: 0, staleSnapshot: 0 }
+const ipc = new BoundedRelayIpc<RelayChildMessage>((message, _handle, callback) => {
+    if (!process.connected) throw new Error("ipc_disconnected")
+    return process.send!(message, callback)
+}, reason => {
+    if (failing) return
+    failing = true
+    console.error(`[BATTLE-RELAY] child IPC failed: reason=${reason}; closing owned sockets`)
+    for (const entry of sockets.values()) entry.socket.destroy()
+    setImmediate(() => process.exit(1))
+})
 
-function send(message: RelayChildMessage): void {
-    if (process.connected) process.send!(message)
+function send(message: RelayChildMessage): boolean {
+    return ipc.enqueue(message)
 }
 
 function emptyActivity(sid: number): RelayActivity {
@@ -97,12 +114,12 @@ function ack(entry: RelaySocket): void {
 }
 
 function relay(source: RelaySocket, payload: unknown[]): void {
-    const members = source.room === undefined ? undefined : rooms.get(source.room)
+    const members = source.room === undefined ? undefined : rooms.get(source.room)?.members
     if (!members) return
     // Serialize once per fan-out, exactly like relayToBattleRoom().
     const frame = JSON.stringify(payload) + "\0"
     for (const member of members) {
-        if (member.sid === source.sid || member.gen !== source.gen) continue
+        if (member.sid === null || member.sid === source.sid || member.gen !== source.gen) continue
         const target = sockets.get(member.sid)
         if (!target || target.closed || target.socket.destroyed || !target.socket.writable) continue
         write(target, frame)
@@ -110,19 +127,40 @@ function relay(source: RelaySocket, payload: unknown[]): void {
     }
 }
 
+/** A mixed room must use one parent fan-out and one parent acknowledgement. */
+function ownsGeneration(entry: RelaySocket): boolean {
+    const snapshot = entry.room === undefined ? undefined : rooms.get(entry.room)
+    if (!snapshot?.active || !snapshot.instanceId) { routeCounters.snapshotGated++; return false }
+    if ([...controls.values()].some(control => control.sid === entry.sid || (entry.room && control.room === entry.room))) {
+        routeCounters.controlGated++; return false
+    }
+    const members = snapshot.members
+    if (!members?.some(member => member.sid === entry.sid && member.cid === entry.cid && member.gen === entry.gen)) return false
+    return members.filter(member => member.gen === entry.gen).every(member => {
+        if (member.sid === null) { routeCounters.mixed++; return false }
+        const target = sockets.get(member.sid)
+        return target !== undefined && !target.closed && !target.socket.destroyed && target.socket.writable
+            && target.room === entry.room && target.cid === member.cid && target.gen === member.gen
+    })
+}
+
 /** Returns false when the frame must be handled by the main process. */
 function handleLocally(entry: RelaySocket, data: unknown): boolean {
     if (entry.cid === undefined || !Array.isArray(data)) return false
     switch (data[0]) {
         case 1: // Broadcast → BattleServer2Client.Messages(2, senderId, array)
+            if (!ownsGeneration(entry)) return false
             relay(entry, [2, entry.cid, data[1]])
             ack(entry)
             entry.activity.broadcasts++
+            routeCounters.local++
             return true
         case 2: // Send → BattleServer2Client.Send(3, senderId, message)
+            if (!ownsGeneration(entry)) return false
             if (data[2] !== undefined && data[2] !== null) relay(entry, [3, entry.cid, data[2]])
             ack(entry)
             entry.activity.sends++
+            routeCounters.local++
             return true
         case 0: {
             const notify = data[1]
@@ -178,11 +216,21 @@ function onData(entry: RelaySocket, chunk: string): void {
             closeSocket(entry, "protocol", `invalid JSON frame: ${(error as Error).message}`)
             break
         }
-        if (!handleLocally(entry, data)) forward += raw + "\0"
+        // Preserve ordering after a control frame in a coalesced TCP chunk.
+        // The parent sees the following frames after the preceding state change.
+        if (forward.length > 0 || !handleLocally(entry, data)) forward += raw + "\0"
     }
     // Forward in arrival order before any close notice so the main process sees
     // a Finalize that preceded a FIN.
-    if (forward.length > 0) send({ t: "frames", sid: entry.sid, data: forward })
+    if (forward.length > 0) {
+        const controlId = ++controlSequence
+        controls.set(controlId, { sid: entry.sid, room: entry.room })
+        routeCounters.parent++
+        const snapshot = entry.room === undefined ? undefined : rooms.get(entry.room)
+        send({ t: "frames", sid: entry.sid, controlId, data: forward,
+            identity: snapshot ? { instanceId: snapshot.instanceId, battleSessionId: snapshot.battleSessionId,
+                sceneEpoch: snapshot.sceneEpoch } : undefined })
+    }
     if (!entry.closed && Buffer.byteLength(entry.buffer, "utf8") > MAX_FRAME_BYTES) {
         closeSocket(entry, "protocol", `unterminated frame exceeded ${MAX_FRAME_BYTES} bytes`)
     }
@@ -211,6 +259,7 @@ function adopt(sid: number, socket: net.Socket | undefined): void {
         entry.closed = true
         if (entry.blockTimer) clearTimeout(entry.blockTimer)
         sockets.delete(sid)
+        for (const [id, control] of controls) if (control.sid === sid) controls.delete(id)
         flushActivity(entry)
         send({
             t: "closed", sid, hadError,
@@ -222,10 +271,17 @@ function adopt(sid: number, socket: net.Socket | undefined): void {
     send({ t: "adopted", sid, ok: true })
 }
 
-function setMembers(room: string, members: RelayMember[]): void {
-    const previous = rooms.get(room) ?? []
+function setMembers(message: Extract<RelayParentMessage, { t: "members" }>): void {
+    const { room, members, version } = message
+    if (!Number.isSafeInteger(version) || version <= lastMembershipVersion) {
+        routeCounters.staleSnapshot++
+        return
+    }
+    lastMembershipVersion = version
+    const previous = rooms.get(room)?.members ?? []
     const nextSids = new Set(members.map(member => member.sid))
     for (const member of previous) {
+        if (member.sid === null) continue
         const entry = sockets.get(member.sid)
         if (entry && !nextSids.has(member.sid) && entry.room === room) {
             entry.room = undefined
@@ -234,14 +290,18 @@ function setMembers(room: string, members: RelayMember[]): void {
         }
     }
     if (members.length === 0) rooms.delete(room)
-    else rooms.set(room, members)
+    else rooms.set(room, { instanceId: message.instanceId, battleSessionId: message.battleSessionId,
+        sceneEpoch: message.sceneEpoch, members, version, active: false })
     for (const member of members) {
+        if (member.sid === null) continue
         const entry = sockets.get(member.sid)
         if (!entry) continue
         entry.room = room
         entry.cid = member.cid
         entry.gen = member.gen
     }
+    send({ t: "members-applied", room, instanceId: message.instanceId,
+        battleSessionId: message.battleSessionId, sceneEpoch: message.sceneEpoch, version })
 }
 
 function flushActivity(only?: RelaySocket): void {
@@ -279,7 +339,16 @@ function handleParentMessage(message: RelayParentMessage, handle: unknown): void
             break
         }
         case "members":
-            setMembers(message.room, message.members)
+            setMembers(message)
+            break
+        case "activate": {
+            const room = rooms.get(message.room)
+            if (room?.version === message.version && room.instanceId === message.instanceId
+                && room.battleSessionId === message.battleSessionId && room.sceneEpoch === message.sceneEpoch) room.active = true
+            break
+        }
+        case "control-applied":
+            if (controls.get(message.controlId)?.sid === message.sid) controls.delete(message.controlId)
             break
         case "shutdown":
             for (const entry of sockets.values()) closeSocket(entry, "parent_request")
@@ -289,19 +358,18 @@ function handleParentMessage(message: RelayParentMessage, handle: unknown): void
 }
 
 export function startBattleRelayChild(): void {
-    process.on("message", (message: RelayParentMessage, handle: unknown) => {
-        try {
-            handleParentMessage(message, handle)
-        } catch (error) {
-            console.error("[BATTLE-RELAY] child failed to handle a message:", error)
-        }
+    process.on("message", (message: RelayIpcWire<RelayParentMessage>, handle: unknown) => {
+        ipc.receive(message, handle, handleParentMessage)
     })
     // Without the parent there is nobody to decide barriers or settlement.
     process.on("disconnect", () => {
+        ipc.close("parent_disconnect")
         for (const entry of sockets.values()) entry.socket.destroy()
         process.exit(0)
     })
     setInterval(() => flushActivity(), ACTIVITY_INTERVAL_MS)
+    setInterval(() => send({ t: "diagnostics", data: { pid: process.pid, uptimeSeconds: process.uptime(),
+        sockets: sockets.size, rooms: rooms.size, controls: controls.size, ipc: ipc.diagnostics(), routes: { ...routeCounters } } }), 1_000).unref()
     send({ t: "ready" })
 }
 

@@ -48,6 +48,66 @@ function createAccount(insertAccountSync, label) {
     })
 }
 
+function businessDatabaseDigest(database) {
+    const tables = database.prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all()
+    return JSON.stringify(tables.map(({ name }) => {
+        const quote = identifier => '"' + identifier.replace(/"/g, '""') + '"'
+        const statement = database.prepare(`SELECT * FROM ${quote(name)}`)
+        const columns = statement.columns().map(column => column.name)
+        const rows = statement.safeIntegers(true).raw().all().map(row => JSON.stringify(row.map(value =>
+            Buffer.isBuffer(value) ? { blob: value.toString('hex') }
+                : typeof value === 'bigint' ? { integer: value.toString() } : value))).sort()
+        return { name, columns, rows }
+    }))
+}
+
+function identityState() {
+    return Object.fromEntries(["accounts", "sessions", "device_bindings", "player_login_credentials", "player_login_sessions"]
+        .map(table => [table, db.prepare(`SELECT * FROM ${table} ORDER BY rowid`).all()]))
+}
+
+function seedLoginIdentity(playerId, label) {
+    const accountId = db.prepare("SELECT account_id FROM players WHERE id=?").get(playerId).account_id
+    db.prepare("UPDATE accounts SET username=?,admin_note=? WHERE id=?").run(`snapshot_${label}`, `identity-${label}`, accountId)
+    db.prepare("INSERT INTO player_login_credentials(account_id,password,created_at) VALUES(?,?,?)")
+        .run(accountId, "SnapshotFixture11", 123456)
+    const viewer = 710000000 + playerId
+    db.prepare("INSERT INTO sessions(token,account_id,expires,type) VALUES(?,?,?,2)")
+        .run(String(viewer), accountId, "2099-01-01T00:00:00.000Z")
+    db.prepare("INSERT INTO device_bindings(device_id,account_id,last_seen) VALUES(?,?,'2026-08-20T00:00:00.000Z')")
+        .run(910000000 + playerId, accountId)
+    db.prepare("INSERT INTO player_login_sessions(token,account_id,viewer_id,udid,expires_at) VALUES(?,?,?,?,?)")
+        .run(playerId.toString(16).padStart(64, "0"), accountId, viewer, `fixture-${label}`, 4070908800000)
+}
+
+function dailyState(playerId) {
+    const grants = db.prepare("SELECT * FROM daily_vmoney_mail_grants WHERE player_id=? ORDER BY bucket").all(playerId)
+    return grants.map(grant => ({ grant, mail: db.prepare("SELECT * FROM players_mails WHERE id=? AND player_id=?")
+        .get(grant.mail_id, playerId) }))
+}
+
+function assertDailyMailsPreserved(playerId, before, remapped) {
+    const after = dailyState(playerId)
+    assert.equal(after.length, before.length)
+    for (let index = 0; index < before.length; index++) {
+        const old = before[index], current = after[index]
+        assert.ok(current.mail, "preserved grant must reference a mail owned by the target")
+        assert.deepEqual({ ...current.grant, mail_id: old.grant.mail_id }, old.grant)
+        assert.deepEqual({ ...current.mail, id: old.mail.id }, old.mail, "all daily mail fields and claim status survive")
+        assert.equal(current.grant.mail_id, current.mail.id)
+        if (remapped) assert.notEqual(current.mail.id, old.mail.id, "V2 archive restore must remap the target daily mail id")
+        else assert.equal(current.mail.id, old.mail.id, "skipped/rejected imports must keep the original mail id")
+    }
+}
+
+function targetState(playerId) {
+    return {
+        snapshot: require("../src/data/snapshots/player-snapshot").createPlayerSaveSnapshotV2Sync(playerId).data,
+        daily: dailyState(playerId),
+        identity: identityState(),
+    }
+}
+
 function seedLeaderboardRecord(playerId, competitionKey) {
     const run = db.prepare(`INSERT INTO leaderboard_runs
         (competition_key, player_id, player_name, season, status, started_at_ms, finished_at_ms,
@@ -74,6 +134,9 @@ function seedRepresentativeState(playerId, otherPlayerId) {
         (id, player_id, reason_id, subject, description, type, type_id, number, receive_time, create_time, reward_period_limited, reward_limit_time)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
         .run(700001, playerId, 99, "V2 邮件", "邮件正文", 1, 123, 5, "0000-00-00 00:00:00", "2026-08-22T00:00:00.000Z", 0, null)
+    db.prepare(`INSERT INTO players_mails (id,player_id,subject,description,type,number,receive_time,create_time)
+        VALUES(700002,?,'来源日邮','must stay on source',4,321,'2026-08-20T01:00:00.000Z','2026-08-20T00:00:00.000Z')`).run(playerId)
+    db.prepare("INSERT INTO daily_vmoney_mail_grants(bucket,player_id,mail_id,created_at_ms) VALUES('2026-08-20',?,700002,1234567)").run(playerId)
     db.prepare(`INSERT INTO players_receive_history
         (id, player_id, type, type_id, number, reason_id, create_time)
         VALUES (?, ?, ?, ?, ?, ?, ?)`)
@@ -159,8 +222,10 @@ function seedRepresentativeState(playerId, otherPlayerId) {
 }
 
 function assertHistoryWasRemapped(sourcePlayerId, targetPlayerId) {
-    const sourceMail = db.prepare(`SELECT id, subject FROM players_mails WHERE player_id = ?`).get(sourcePlayerId)
-    const targetMail = db.prepare(`SELECT id, subject FROM players_mails WHERE player_id = ?`).get(targetPlayerId)
+    const sourceMail = db.prepare(`SELECT id, subject FROM players_mails WHERE player_id = ? AND id=700001`).get(sourcePlayerId)
+    const targetMails = db.prepare(`SELECT id, subject FROM players_mails WHERE player_id = ? AND subject=? AND reason_id=99`).all(targetPlayerId, sourceMail.subject)
+    assert.equal(targetMails.length, 1, "source history mail must be imported exactly once")
+    const targetMail = targetMails[0]
     assert.equal(targetMail.subject, sourceMail.subject)
     assert.notEqual(targetMail.id, sourceMail.id, "mail id must be remapped")
     const sourceHistory = db.prepare(`SELECT id, reason_id FROM players_receive_history WHERE player_id = ?`).get(sourcePlayerId)
@@ -186,6 +251,8 @@ function runFreshDatabaseTests(api) {
     const source = insertDefaultPlayerSync(createAccount(insertAccountSync, "source").id)
     const target = insertDefaultPlayerSync(createAccount(insertAccountSync, "target").id)
     const other = insertDefaultPlayerSync(createAccount(insertAccountSync, "other").id)
+    seedLoginIdentity(source.id, "source")
+    seedLoginIdentity(target.id, "target")
     seedRepresentativeState(source.id, other.id)
 
     const targetMail = db.prepare(`INSERT INTO players_mails
@@ -195,6 +262,11 @@ function runFreshDatabaseTests(api) {
     db.prepare(`INSERT INTO daily_vmoney_mail_grants (bucket, player_id, mail_id, created_at_ms)
         VALUES (?, ?, ?, ?)`)
         .run("2026-08-20", target.id, Number(targetMail.lastInsertRowid), 2026082000000)
+    const claimedMail = db.prepare(`INSERT INTO players_mails
+        (player_id,subject,description,type,number,receive_time,create_time)
+        VALUES(?,'目标已领取日邮','keep claimed',4,222,'2026-08-19T01:00:00.000Z','2026-08-19T00:00:00.000Z')`).run(target.id)
+    db.prepare("INSERT INTO daily_vmoney_mail_grants(bucket,player_id,mail_id,created_at_ms) VALUES('2026-08-19',?,?,1234568)")
+        .run(target.id, Number(claimedMail.lastInsertRowid))
     db.prepare(`INSERT INTO players_active_quests
         (player_id, play_id, quest_id, category) VALUES (?, ?, ?, ?)`)
         .run(target.id, "target-active-battle", 1, 1)
@@ -213,7 +285,8 @@ function runFreshDatabaseTests(api) {
         entry.policy === "reset" && entry.tables.includes("players_repair_versions")))
     assert.equal(Object.hasOwn(snapshot.data.tables, "daily_vmoney_mail_grants"), false)
     assert.ok(snapshot.summary.excludedState.some(entry =>
-        entry.policy === "reset" && entry.tables.includes("daily_vmoney_mail_grants")))
+        entry.policy === "preserve-target" && entry.tables.includes("daily_vmoney_mail_grants")))
+    assert.deepEqual(snapshot.dailyMailBasis, { version: 1, mails: [{ bucket: "2026-08-20", mailId: 700002 }] })
     assert.equal(Object.hasOwn(snapshot.data.tables, "leaderboard_runs"), false)
     assert.ok(snapshot.summary.excludedState.some(entry =>
         entry.policy === "preserve-target" && entry.tables.includes("leaderboard_runs")))
@@ -221,6 +294,7 @@ function runFreshDatabaseTests(api) {
     assert.equal(snapshot.data.tables.players_practice_battle_history.rows.length, 1)
 
     const targetAccountId = db.prepare(`SELECT account_id FROM players WHERE id = ?`).get(target.id).account_id
+    const originalIdentity = identityState(), sourceBefore = targetState(source.id), targetDailyBefore = dailyState(target.id)
     const result = api.restorePlayerSaveSnapshotV2Sync(snapshot, target.id, { includeArchiveHistory: true })
     assert.equal(result.skippedTables.length, 0)
     assert.ok(result.restoredRows > 1)
@@ -231,7 +305,11 @@ function runFreshDatabaseTests(api) {
     assert.equal(restoredPlayer.free_vmoney, 8765)
     assert.equal(db.prepare(`SELECT COUNT(*) count FROM players_active_quests WHERE player_id = ?`).get(target.id).count, 0)
     assert.equal(db.prepare(`SELECT COUNT(*) count FROM players_repair_versions WHERE player_id = ?`).get(target.id).count, 0)
-    assert.equal(db.prepare(`SELECT COUNT(*) count FROM daily_vmoney_mail_grants WHERE player_id = ?`).get(target.id).count, 0)
+    assertDailyMailsPreserved(target.id, targetDailyBefore, true)
+    assert.deepEqual(identityState(), originalIdentity, "credentials, UID, device bindings and account metadata stay on the target")
+    assert.deepEqual(targetState(source.id), sourceBefore, "export/import must leave source identity, progress and daily grants intact")
+    assert.equal(db.prepare("SELECT count(*) n FROM players_mails WHERE player_id=? AND subject='来源日邮'").get(target.id).n, 0)
+    assert.equal(db.prepare("SELECT count(*) n FROM players_mails WHERE player_id=?").get(target.id).n, 3)
     assert.equal(db.prepare(`SELECT COUNT(*) count FROM players_follows WHERE follower_player_id = ? AND followed_player_id = ?`).get(target.id, other.id).count, 1)
     assert.equal(db.prepare(`SELECT COUNT(*) count FROM leaderboard_runs WHERE player_id = ? AND competition_key = ?`).get(target.id, "snapshot-target").count, 1)
     assert.equal(db.prepare(`SELECT COUNT(*) count FROM leaderboard_runs WHERE player_id = ? AND competition_key = ?`).get(target.id, "snapshot-source").count, 0)
@@ -239,10 +317,14 @@ function runFreshDatabaseTests(api) {
     assertHistoryWasRemapped(source.id, target.id)
 
     const noHistoryTarget = insertDefaultPlayerSync(createAccount(insertAccountSync, "no-history-target").id)
-    db.prepare(`INSERT INTO players_mails
+    const noHistoryMail = db.prepare(`INSERT INTO players_mails
         (player_id, subject, description, type, number, create_time)
         VALUES (?, ?, ?, ?, ?, ?)`)
         .run(noHistoryTarget.id, "保留目标历史", "keep", 1, 1, "2026-08-21T00:00:00.000Z")
+    db.prepare("INSERT INTO daily_vmoney_mail_grants(bucket,player_id,mail_id,created_at_ms) VALUES('2026-08-21',?,?,1234569)")
+        .run(noHistoryTarget.id, Number(noHistoryMail.lastInsertRowid))
+    seedLoginIdentity(noHistoryTarget.id, "nohistory")
+    const noHistoryDailyBefore = dailyState(noHistoryTarget.id), noHistoryIdentity = identityState()
     db.prepare(`INSERT INTO players_practice_battle_history
         (id, player_id, play_id, category_id, create_time, elapsed_time_ms, finish_kind, quest_id, total_damage)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
@@ -257,12 +339,15 @@ function runFreshDatabaseTests(api) {
     ].sort())
     const keptMails = db.prepare(`SELECT subject FROM players_mails WHERE player_id = ?`).all(noHistoryTarget.id)
     assert.deepEqual(keptMails, [{ subject: "保留目标历史" }])
+    assertDailyMailsPreserved(noHistoryTarget.id, noHistoryDailyBefore, false)
+    assert.deepEqual(identityState(), noHistoryIdentity)
     const keptPracticeHistory = db.prepare(`
         SELECT play_id FROM players_practice_battle_history WHERE player_id = ?
     `).all(noHistoryTarget.id)
     assert.deepEqual(keptPracticeHistory, [{ play_id: "keep-target-practice-battle" }])
 
     const beforeRollback = api.createPlayerSaveSnapshotV2Sync(noHistoryTarget.id)
+    const rawBeforeRollback = targetState(noHistoryTarget.id)
     const invalid = JSON.parse(JSON.stringify(snapshot))
     assert.ok(invalid.data.tables.players_items.rows.length > 0)
     invalid.data.tables.players_items.rows.push([...invalid.data.tables.players_items.rows[0]])
@@ -273,6 +358,22 @@ function runFreshDatabaseTests(api) {
     )
     const afterRollback = api.createPlayerSaveSnapshotV2Sync(noHistoryTarget.id)
     assert.deepEqual(afterRollback.data, beforeRollback.data, "failed restore must roll back every write")
+    assert.deepEqual(targetState(noHistoryTarget.id), rawBeforeRollback, "rollback also preserves excluded grants and all login identity")
+
+    const lateFailureBefore = targetState(target.id)
+    db.exec(`CREATE TEMP TRIGGER fail_snapshot_daily_mapping AFTER UPDATE OF mail_id ON daily_vmoney_mail_grants
+        WHEN NEW.player_id=${target.id}
+        BEGIN SELECT RAISE(ABORT,'fixture daily mapping failure'); END`)
+    try {
+        assert.throws(() => api.restorePlayerSaveSnapshotV2Sync(snapshot, target.id), /fixture daily mapping failure/)
+    } finally { db.exec("DROP TRIGGER fail_snapshot_daily_mapping") }
+    assert.deepEqual(targetState(target.id), lateFailureBefore, "failure after mail insertion and grant remapping rolls back exact rows and IDs")
+    const retryDailyBefore = dailyState(target.id)
+    api.restorePlayerSaveSnapshotV2Sync(snapshot, target.id)
+    assertDailyMailsPreserved(target.id, retryDailyBefore, true)
+    assert.equal(db.prepare("SELECT count(*) n FROM players_mails WHERE player_id=?").get(target.id).n, 3, "retry does not duplicate target grants or source mail")
+    assert.deepEqual(identityState(), lateFailureBefore.identity)
+    assert.deepEqual(targetState(source.id).daily, sourceBefore.daily)
 
     db.prepare(`CREATE TABLE snapshot_unknown_player_state (
         player_id INTEGER PRIMARY KEY,
@@ -343,6 +444,12 @@ async function runHttpIntegrationTests(api, fixture) {
 
         const importAccount = createAccount(api.insertAccountSync, "http-import")
         const importTarget = api.insertDefaultPlayerSync(importAccount.id)
+        seedLoginIdentity(importTarget.id, "httpimport")
+        const importMail = db.prepare(`INSERT INTO players_mails(player_id,subject,description,type,number,receive_time,create_time)
+            VALUES(?,'HTTP目标日邮','preserve HTTP target',4,789,'2026-08-20T02:00:00.000Z','2026-08-20T00:00:00.000Z')`).run(importTarget.id)
+        db.prepare("INSERT INTO daily_vmoney_mail_grants(bucket,player_id,mail_id,created_at_ms) VALUES('2026-08-20',?,?,1234570)")
+            .run(importTarget.id, Number(importMail.lastInsertRowid))
+        const importBefore = targetState(importTarget.id), importDailyBefore = dailyState(importTarget.id)
         const imported = await app.inject({
             method: "POST",
             url: `/api/player/save?id=${importTarget.id}`,
@@ -364,6 +471,8 @@ async function runHttpIntegrationTests(api, fixture) {
         assert.equal(rollbackSnapshot.version, 2)
         assert.equal(rollbackSnapshot.playerId, importTarget.id)
         assert.equal(rollbackSnapshot.summary.playerName, "冒险者")
+        assert.deepEqual(rollbackSnapshot.data, importBefore.snapshot, "automatic backup is the destination before replacement")
+        assert.deepEqual(rollbackSnapshot.dailyMailBasis, { version: 1, mails: [{ bucket: "2026-08-20", mailId: Number(importMail.lastInsertRowid) }] })
         const rollbackInfo = JSON.parse(fs.readFileSync(path.join(backupDirectory, "backup-info.json"), "utf8"))
         assert.equal(rollbackInfo.includesFullDatabase, false)
         assert.equal(rollbackInfo.sourceSnapshotVersion, 2)
@@ -375,9 +484,26 @@ async function runHttpIntegrationTests(api, fixture) {
         assert.equal(fs.existsSync(path.join(manualBackup, "marker.txt")), true)
         assert.equal(fs.existsSync(path.join(accountCleanupBackup, "marker.txt")), true)
         assert.equal(db.prepare(`SELECT name FROM players WHERE id = ?`).get(importTarget.id).name, "完整存档来源")
+        assert.equal(db.prepare("SELECT account_id FROM players WHERE id=?").get(importTarget.id).account_id, importAccount.id)
+        assertDailyMailsPreserved(importTarget.id, importDailyBefore, true)
+        assert.deepEqual(identityState(), importBefore.identity)
+        assertHistoryWasRemapped(fixture.sourcePlayerId, importTarget.id)
+        assert.equal(db.prepare("SELECT count(*) n FROM players_mails WHERE player_id=? AND subject='来源日邮'").get(importTarget.id).n, 0)
+
+        const failedImportBefore = targetState(importTarget.id)
+        db.exec(`CREATE TEMP TRIGGER fail_http_daily_mapping AFTER UPDATE OF mail_id ON daily_vmoney_mail_grants
+            WHEN NEW.player_id=${importTarget.id}
+            BEGIN SELECT RAISE(ABORT,'fixture HTTP daily mapping failure'); END`)
+        try {
+            const failedImport = await app.inject({ method: "POST", url: `/api/player/save?id=${importTarget.id}`,
+                ...createMultipartJson(exportedSnapshot) })
+            assert.equal(failedImport.statusCode, 500, failedImport.body)
+            assert.deepEqual(targetState(importTarget.id), failedImportBefore, "HTTP late SQL failure preserves exact mail/grant/identity rows")
+        } finally { db.exec("DROP TRIGGER fail_http_daily_mapping") }
 
         const legacyAccount = createAccount(api.insertAccountSync, "http-v1-import")
         const legacyTarget = api.insertDefaultPlayerSync(legacyAccount.id)
+        seedLoginIdentity(legacyTarget.id, "httplegacy")
         db.prepare(`INSERT INTO players_follows (follower_player_id, followed_player_id, created_at) VALUES (?, ?, ?)`)
             .run(legacyTarget.id, fixture.sourcePlayerId, 2000001)
         db.prepare(`INSERT INTO published_parties
@@ -406,35 +532,28 @@ async function runHttpIntegrationTests(api, fixture) {
             playerId: fixture.sourcePlayerId,
             data: api.getMergedPlayerDataSync(fixture.sourcePlayerId),
         }
+        const legacyStateBefore = businessDatabaseDigest(db)
+        const legacyBefore = targetState(legacyTarget.id), legacyDailyBefore = dailyState(legacyTarget.id)
+        const backupsBeforeLegacy = fs.readdirSync(automaticBackupRoot).sort()
         const legacyImported = await app.inject({
             method: "POST",
             url: `/api/player/save?id=${legacyTarget.id}`,
             ...createMultipartJson(legacySnapshot, "legacy-v1.json"),
         })
-        assert.equal(legacyImported.statusCode, 200, legacyImported.body)
-        assert.equal(legacyImported.json().snapshotVersion, 1)
-        assert.equal(legacyImported.json().legacyPartialSnapshot, true)
-        assert.equal(legacyImported.json().retainedBackups, 5)
-        assert.equal(legacyImported.json().removedBackups, 1)
-        assert.equal(legacyImported.json().backupCleanupError, null)
+        assert.equal(legacyImported.statusCode, 400, legacyImported.body)
+        assert.match(legacyImported.json().error, /仅支持 V2 完整存档/)
+        assert.equal(businessDatabaseDigest(db), legacyStateBefore,
+            "rejected V1 HTTP import must preserve all target player state")
+        assert.deepEqual(targetState(legacyTarget.id), legacyBefore, "unsupported V1 must fail before any destination mutation")
+        assertDailyMailsPreserved(legacyTarget.id, legacyDailyBefore, false)
+        assert.deepEqual(fs.readdirSync(automaticBackupRoot).sort(), backupsBeforeLegacy, "rejected V1 must not create/prune safety backups")
         assert.equal(db.prepare(`SELECT account_id FROM players WHERE id = ?`).get(legacyTarget.id).account_id, legacyAccount.id)
         assert.equal(db.prepare(`SELECT COUNT(*) count FROM players_follows WHERE follower_player_id = ?`).get(legacyTarget.id).count, 1)
         assert.equal(db.prepare(`SELECT COUNT(*) count FROM published_parties WHERE owner_player_id = ?`).get(legacyTarget.id).count, 1)
         assert.equal(db.prepare(`SELECT COUNT(*) count FROM quest_npc_party_pool WHERE source_player_id = ?`).get(legacyTarget.id).count, 1)
         assert.equal(db.prepare(`SELECT COUNT(*) count FROM raid_event_global_kill_ledger WHERE player_id = ?`).get(legacyTarget.id).count, 1)
         assert.equal(db.prepare(`SELECT COUNT(*) count FROM leaderboard_runs WHERE player_id = ? AND competition_key = ?`).get(legacyTarget.id, "legacy-target").count, 1)
-        assert.equal(db.prepare(`SELECT COUNT(*) count FROM daily_vmoney_mail_grants WHERE player_id = ?`).get(legacyTarget.id).count, 0)
-        const legacyBackupDirectory = path.join(
-            databaseDirectory,
-            legacyImported.json().backup.replace(/^\.database[\\/]admin-backups[\\/]/, "admin-backups/"),
-        )
-        const legacyRollback = JSON.parse(fs.readFileSync(path.join(legacyBackupDirectory, "player-save.json"), "utf8"))
-        assert.equal(legacyRollback.version, 2)
-        assert.equal(legacyRollback.playerId, legacyTarget.id)
-        assert.equal(legacyRollback.summary.playerName, "冒险者")
-        const legacyRollbackInfo = JSON.parse(fs.readFileSync(path.join(legacyBackupDirectory, "backup-info.json"), "utf8"))
-        assert.equal(legacyRollbackInfo.sourceSnapshotVersion, 1)
-        assert.equal(legacyRollbackInfo.legacyPartialSnapshot, true)
+        assert.equal(db.prepare(`SELECT COUNT(*) count FROM daily_vmoney_mail_grants WHERE player_id = ?`).get(legacyTarget.id).count, 1)
 
         const defaultUploaded = await app.inject({
             method: "POST",
@@ -525,6 +644,7 @@ async function main() {
     const snapshotApi = require("../src/data/snapshots/player-snapshot")
     initializeDatabase()
     db = getDb()
+    require("../src/lib/player-login").initializePlayerLogin()
     const api = { ...snapshotApi, insertAccountSync, insertDefaultPlayerSync, getMergedPlayerDataSync, saveDefaultSaveTemplate }
     if (sourceDatabasePath) runCopiedDatabaseTest(api)
     else {

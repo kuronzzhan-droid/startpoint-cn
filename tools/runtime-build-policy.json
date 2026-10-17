@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "output_dir": "out",
+  "toolchain": { "node": "24.19.0", "npm": "11.17.0", "typescript": "5.4.5" },
+  "required_outputs": [
+    "out/cn-server.js",
+    "out/workers/cn-response-worker.js",
+    "out/workers/sqlite-writer-worker.js",
+    "out/workers/sqlite-checkpoint-worker.js",
+    "out/workers/sqlite-persistence-worker.js",
+    "out/workers/player-save-export-worker.js",
+    "out/workers/quest-npc-party-pool-worker.js",
+    "out/workers/admin-account-cleanup-worker.js",
+    "out/lib/seed-persistence-worker.js",
+    "out/multi/tcp/battle-relay/child.js"
+  ]
+}

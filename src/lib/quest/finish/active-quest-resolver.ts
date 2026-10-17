@@ -3,6 +3,8 @@ import { getPlayerActiveQuestSync } from "../../../data/domains/quest_active"
 import { BattleQuest, QuestCategory } from "../../types"
 import type { PlayerActiveQuest } from "../../../data/types"
 import type { ActiveQuest } from "../../../routes/api/singleBattleQuest"
+import { getDb } from "../../../data/db"
+import { BATTLE_CLOCK_VERSION, isSupportedBattleClockVersion, isClockAbortedPlaySync } from "../../battle-clock-compatibility"
 
 /** Where the active quest backing a finish/continue request came from. */
 export type ActiveQuestSource = "memory" | "database" | "rebuilt"
@@ -70,6 +72,7 @@ function fromPersisted(row: PlayerActiveQuest): ActiveQuest {
         useBoostPoint: row.useBoostPoint,
         isAutoStartMode: row.isAutoStartMode,
         isMulti: row.isMulti,
+        isMultiHost: row.isMultiHost,
         roomNumber: row.roomNumber ?? undefined,
         entryItemId: row.entryItemId ?? undefined,
         eventId: row.eventId ?? undefined,
@@ -78,6 +81,7 @@ function fromPersisted(row: PlayerActiveQuest): ActiveQuest {
         continueCount: row.continueCount,
         startedAtMs: row.startedAtMs ?? undefined,
         questTimeRevision: row.questTimeRevision ?? null,
+        clockVersion: row.clockVersion,
     }
 }
 
@@ -113,8 +117,21 @@ export function resolveActiveQuest(options: ResolveActiveQuestOptions): Resolved
         ?? ((category, questId) => getQuestFromCategorySync(category, questId) as BattleQuest | null)
     const allowRebuild = options.allowRebuild ?? !isStrictFinishMode()
 
+    if (!options.readPersisted) {
+        if (hint.play_id && isClockAbortedPlaySync(getDb(), playerId, hint.play_id)) return null
+    }
+    const persisted = readPersisted(playerId)
     const cached = memory[playerId]
-    if (cached !== undefined) return { quest: cached, source: "memory" }
+    if (cached !== undefined) {
+        if (persisted?.playId === cached.playId && isSupportedBattleClockVersion(persisted.clockVersion)) {
+            // Keep party/room metadata in memory, but use the committed clock.
+            cached.startedAtMs = persisted.startedAtMs ?? undefined
+            cached.clockVersion = persisted.clockVersion
+            return { quest: cached, source: "memory" }
+        }
+        if (cached.clockVersion === BATTLE_CLOCK_VERSION) return { quest: cached, source: "memory" }
+        delete memory[playerId]
+    }
 
     const usePersisted = (row: PlayerActiveQuest): ResolvedActiveQuest => {
         const quest = fromPersisted(row)
@@ -122,8 +139,8 @@ export function resolveActiveQuest(options: ResolveActiveQuestOptions): Resolved
         return { quest, source: "database" }
     }
 
-    const persisted = readPersisted(playerId)
     if (persisted !== null) {
+        if (!isSupportedBattleClockVersion(persisted.clockVersion)) return null
         if (persisted.questId === hint.quest_id || !allowRebuild) return usePersisted(persisted)
         const rebuilt = rebuildFromHint(hint, findQuest)
         if (rebuilt === null) return usePersisted(persisted)

@@ -11,7 +11,9 @@ export type RoomAdmissionClaimResult =
     | { readonly ok: true, readonly kind: "claimed" | "reclaimed" | "idempotent" }
     | { readonly ok: false, readonly reason: "missing" | "expired" | "generation_mismatch" }
 
-const DEFAULT_ADMISSION_TTL_MS = 15_000
+// Room selection precedes the client's boost prompt and resource loading.
+// Keep a finite seat reservation long enough for that normal join flow.
+const DEFAULT_ADMISSION_TTL_MS = 60_000
 
 interface AdmissionTiming {
     count: number

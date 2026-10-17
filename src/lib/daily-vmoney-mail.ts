@@ -1,4 +1,5 @@
 import type { Database } from "better-sqlite3"
+import { isServerShuttingDown, withServerWorkAdmission } from "./shutdown-state"
 
 const CHINA_UTC_OFFSET_MS = 8 * 60 * 60 * 1000
 const MAX_MAIL_AMOUNT = 2_147_483_647
@@ -468,12 +469,12 @@ export function createDailyVmoneyMailScheduler(
     let timer: NodeJS.Timeout | null = null
     let running = false
     const tick = () => {
-        if (running) return
+        if (running || isServerShuttingDown()) return
         running = true
-        void runDailyVmoneyPersistence(
+        void withServerWorkAdmission(() => runDailyVmoneyPersistence(
             database,
             () => dispatchDailyVmoneyMailSync(Date.now(), "scheduler", false, database),
-        ).then(result => {
+        )).then(result => {
             if (result.status === "sent" && result.run) {
                 logger.log(
                     `[DAILY_VMONEY_MAIL] bucket=${result.run.bucket} amount=${result.run.amount} sent=${result.run.sentCount}`,

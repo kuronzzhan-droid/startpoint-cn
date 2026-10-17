@@ -5,17 +5,17 @@ import { getFollowRelationSync } from "../../data/domains/follow"
 import { generateDataHeaders } from "../../utils";
 import { resolveAttentionEstablisherRank } from "../../lib/attention-rank"
 import { getFavoritePartySelectionSync } from "../../lib/profileFavorite"
-import { getRoom, isRoomWaitingForExpectedMember } from "../../multi/room/manager"
-import { sessionManager } from "../../multi/state/SessionManager"
-import { takeRandomRecruitments } from "../../multi/recruitment"
 import { gameVerboseLog } from "../../lib/game-logging"
 import { isNewbiePlayerSync } from "../../lib/newbie"
-import { roomAdmissionRegistry } from "../../multi/room/admission"
 import { resolveMultiPlayerContext } from "../../multi/player-context"
 import { getAttentionConfig } from "../../multi/attention-config"
 import { isMode15RoomClosed } from "../../multi/mode15-room-gate"
-import { embeddedMultiCoordinator } from "../../multi/coordinator/embedded"
 import { canJoinMultiGuestQuestSync } from "../../multi/guest-eligibility"
+
+import { getRoomCommandGateway } from "../../multi/coordinator/default-runtime"
+import type { LobbyRoomProjection } from "../../multi/coordinator/lobby-command-handlers"
+import { fetchLobbyRoomProjections } from "../../multi/http/lobby"
+import { installRealtimeHttpFailureHandler } from "../../multi/http/command-error"
 
 interface CheckBody {
     viewer_id: number
@@ -37,6 +37,7 @@ interface LoggerBody {
 }
 
 const routes = async (fastify: FastifyInstance) => {
+    installRealtimeHttpFailureHandler(fastify)
     fastify.post("/check", async (request: FastifyRequest, reply: FastifyReply) => {
         const body = request.body as CheckBody
 
@@ -58,43 +59,26 @@ const routes = async (fastify: FastifyInstance) => {
         const availableSlots = Math.max(0, Math.min(3, requested) - Math.max(0, holding))
         const guestEligibilityByQuest = new Map<string, boolean>()
 
-        const recruitments = takeRandomRecruitments(viewerId, availableSlots, recruitment => {
-            const room = getRoom(recruitment.roomNumber)
-            if (!room || room.host_viewer_id === viewerId) return false
-            if (room.is_npc_mode || isMode15RoomClosed(room)) return false
-            if (["STARTING", "BATTLE"].includes(embeddedMultiCoordinator.ensureLifecycle(room).phase)) return false
-            const eligibilityKey = `${room.category}:${room.quest_id}`
-            let guestEligible = guestEligibilityByQuest.get(eligibilityKey)
-            if (guestEligible === undefined) {
-                guestEligible = canJoinMultiGuestQuestSync(
-                    playerId,
-                    room.category,
-                    room.quest_id,
-                    player,
-                ).allowed
-                guestEligibilityByQuest.set(eligibilityKey, guestEligible)
+        const candidates = await fetchLobbyRoomProjections(viewerId, undefined, undefined, true)
+        const eligible = candidates.filter(room => {
+            if (room.host_viewer_id === viewerId || room.is_npc_mode || isMode15RoomClosed(room)) return false
+            if (!room.hostOnline || room.occupancy >= 3 || room.waitingForExpectedMember || ["STARTING", "BATTLE"].includes(room.phase)) return false
+            const key = `${room.category}:${room.quest_id}`
+            let allowed = guestEligibilityByQuest.get(key)
+            if (allowed === undefined) {
+                allowed = canJoinMultiGuestQuestSync(playerId, room.category, room.quest_id, player).allowed
+                guestEligibilityByQuest.set(key, allowed)
             }
-            if (!guestEligible) return false
-            if (!sessionManager.isHostOnline(room.host_viewer_id, room.room_number, room.lobby_generation)) return false
-            if (isRoomWaitingForExpectedMember(room)) return false
-            const occupiedViewerIds = new Set<number>(room.member_viewer_ids ?? [room.host_viewer_id])
-            for (const client of sessionManager.getClientsInRoom(room.room_number, room.lobby_generation)) {
-                if (client.isBattle
-                    || client.socket.destroyed
-                    || !client.socket.readable
-                    || !client.socket.writable) continue
-                occupiedViewerIds.add(client.viewerId)
-            }
-            return roomAdmissionRegistry.getOccupancy(
-                room.room_number,
-                room.lobby_generation,
-                occupiedViewerIds,
-            ) < 3
+            // Do not consume delivery quota for an absent host business record.
+            return allowed && !!getPlayerSync(room.host_player_id)
         })
+        const recruitments = await getRoomCommandGateway().execute("lobby.attention.take", {
+            viewerId, limit: availableSlots,
+            eligible: eligible.map(room => ({ roomNumber: room.room_number, identity: room.identity })),
+        }) as { attentionKey: string; room: LobbyRoomProjection }[]
 
         const multi = recruitments.flatMap(recruitment => {
-            const room = getRoom(recruitment.roomNumber)
-            if (!room) return []
+            const room = recruitment.room
             const host = getPlayerSync(room.host_player_id)
             if (!host) return []
             // Rescue cards must use the same avatar source as the public

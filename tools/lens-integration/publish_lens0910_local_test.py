@@ -40,7 +40,7 @@ def build(work,server,pristine):
         assert z.testzip() is None and z.namelist()==sorted(members)
         assert all(z.read(k)==v for k,v in members.items())
     name='pinball-1.4.111-1.4.112-1-lens0910-details-test.zip'
-    archive=R/'assets/asset-patch/active/candidates'/name;assert not archive.exists();save(archive,raw)
+    archive=R/'assets/asset-patch/inactive/candidates'/name;assert not archive.exists();save(archive,raw)
     patch_id='lens0910-1.4.112-test';audit=R/'assets/asset-patch/audit'/patch_id;assert not audit.exists()
     integrity=dict(name=name,size=len(raw),sha256=p.sha(raw),members=len(members),files=sorted(members))
     entry=dict(id=patch_id,type='patch',name='Lens 0910 角色更新（保留深渊详情，本地测试）',description='夏白、雷白、秋九尾更新，角色图像语音与杰拉尔文案；保留本地卡池及深渊累计修正。',version='1.4.112',depends_on='1.4.111',enabled=True,archive=name,archive_size=len(raw),chain=[name],archive_integrity=[integrity],files=sorted(members),created_at='2026-09-10',local_test_only=True,audit=dict(directory=audit.relative_to(R).as_posix(),report='report.json'))

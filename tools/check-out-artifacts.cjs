@@ -1,126 +1,40 @@
 #!/usr/bin/env node
 'use strict'
 
-/**
- * Guard for the compiled artifacts that must travel with a commit.
- *
- * `.gitignore` excludes the `out` directory while the runtime (and the cloud
- * service) executes from `out/`, so a subset of compiled files is tracked on
- * purpose. A compiled file that is new or ignored is invisible to a plain
- * `git add`: forgetting `git add -f` ships a commit that is missing a module.
- *
- * The check is deliberately scoped to this change set so it stays actionable:
- * for every changed TypeScript source under `src/`, the matching `.js` under
- * `out/` must exist, must be tracked, and (in staged mode) must be part of the
- * commit. Pre-existing untracked files elsewhere in `out/` are not reported.
- *
- * Usage:
- *   node tools/check-out-artifacts.cjs              # staged set (default)
- *   node tools/check-out-artifacts.cjs --worktree   # everything changed vs HEAD
- *
- * Exit code 1 means the commit would be incomplete. The script never modifies
- * files, never stages anything and never runs the build.
- */
-
-const { execFileSync } = require('node:child_process')
+// The commit guard builds the actual index, not local src/ or historical out/.
+// --worktree is explicitly a development check and is not commit evidence.
 const fs = require('node:fs')
+const os = require('node:os')
 const path = require('node:path')
+const { execFileSync } = require('node:child_process')
+const { buildRuntimeArtifact } = require('./build-runtime-artifact.cjs')
 
-const repoRoot = path.resolve(__dirname, '..')
-const flags = new Set(process.argv.slice(2))
-const mode = flags.has('--worktree') ? 'worktree' : 'staged'
-
-if (flags.has('--help') || flags.has('-h')) {
-    console.log('用法: node tools/check-out-artifacts.cjs [--worktree]')
-    console.log('  默认检查已暂存（将要提交）的文件集合；--worktree 检查相对 HEAD 的全部改动。')
-    process.exit(0)
-}
-
-function gitLines(...gitArgs) {
-    const output = execFileSync('git', gitArgs, { cwd: repoRoot, encoding: 'utf8' }).trim()
-    return output === '' ? [] : output.split(/\r?\n/)
-}
-
-function isTracked(relativePath) {
+function checkOutArtifacts(options = {}) {
+    const repo = path.resolve(options.repo || path.join(__dirname, '..'))
+    const git = args => execFileSync('git', args, { cwd: repo, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+    const mode = options.worktree ? 'worktree' : 'index'
+    const changed = git(['diff', ...(options.worktree ? ['HEAD'] : ['--cached']), '--name-only', '-z']).split('\0').filter(Boolean)
+    const trackedOut = git(['ls-files', '-z', '--', 'out/']).split('\0').filter(Boolean)
+    if (trackedOut.length) throw new Error('Source-only runtime policy prohibits tracked out/ files; remove all generated out/ entries from the index')
+    if (!options.all && !changed.some(name => name.startsWith('src/') || ['package.json', 'package-lock.json', 'tsconfig.json', 'tools/runtime-build-policy.json', 'tools/build-runtime-artifact.cjs', 'tools/check-out-artifacts.cjs', 'docs/generated/character_table.json'].includes(name) || name.startsWith('out/') || /^assets\/.*\.json$/.test(name))) return { mode, skipped: true }
+    const output = fs.mkdtempSync(path.join(os.tmpdir(), 'runtime-index-check-'))
     try {
-        execFileSync('git', ['ls-files', '--error-unmatch', '--', relativePath], {
-            cwd: repoRoot,
-            stdio: 'ignore',
-        })
-        return true
-    } catch {
-        return false
-    }
+        const artifact = buildRuntimeArtifact({ repo, inputMode: mode, output, dependencyRoot: options.dependencyRoot })
+        return { mode, skipped: false, ...artifact }
+    } finally { fs.rmSync(output, { recursive: true, force: true }) }
 }
-
-function differsFromHead(relativePath) {
-    return gitLines('diff', '--name-only', 'HEAD', '--', relativePath).length > 0
-}
-
-function compiledPathFor(sourcePath) {
-    return `out/${sourcePath.slice('src/'.length).replace(/\.ts$/, '.js')}`
-}
-
-function changedFiles() {
-    if (mode === 'staged') {
-        return new Set(gitLines('diff', '--cached', '--name-only', '--diff-filter=ACMR'))
+function main(argv = process.argv.slice(2)) {
+    const options = {}
+    for (let i = 0; i < argv.length; i++) {
+        if (argv[i] === '--worktree') options.worktree = true
+        else if (argv[i] === '--all') options.all = true
+        else if (argv[i] === '--repo' && argv[i + 1]) options.repo = argv[++i]
+        else if (argv[i] === '--dependency-root' && argv[i + 1]) options.dependencyRoot = argv[++i]
+        else if (argv[i] === '--help' || argv[i] === '-h') { console.log('Usage: node tools/check-out-artifacts.cjs [--worktree] [--all] [--repo REPO] [--dependency-root LOCKED_INSTALL_DIR]'); return }
+        else throw new Error(`Unknown or incomplete argument: ${argv[i]}`)
     }
-    return new Set([
-        ...gitLines('diff', 'HEAD', '--name-only', '--diff-filter=ACMR'),
-        ...gitLines('ls-files', '--others', '--exclude-standard'),
-    ])
+    const result = checkOutArtifacts(options)
+    console.log(`[runtime check] ${result.mode}${options.worktree ? ' (development only)' : ' (staged inputs)'}: ${result.skipped ? 'no affected build inputs' : `${result.files.length} emitted files; passed`}`)
 }
-
-const changed = changedFiles()
-if (changed.size === 0) {
-    console.log(`[out 检查] 模式=${mode}：没有检测到待检查的改动。`)
-    process.exit(0)
-}
-
-const problems = []
-const warnings = []
-const rows = []
-
-for (const sourcePath of changed) {
-    if (!/^src\/.*\.ts$/.test(sourcePath)) continue
-    const compiledPath = compiledPathFor(sourcePath)
-    const absolute = path.join(repoRoot, compiledPath)
-    rows.push(compiledPath)
-
-    if (!fs.existsSync(absolute)) {
-        problems.push(`${compiledPath} 不存在：请先运行 npm run build（对应 ${sourcePath}）`)
-        continue
-    }
-    if (!isTracked(compiledPath)) {
-        problems.push(`${compiledPath} 未被 Git 跟踪，提交时必须显式加入：git add -f ${compiledPath}`)
-        continue
-    }
-    if (mode === 'staged') {
-        if (differsFromHead(compiledPath) && !changed.has(compiledPath)) {
-            problems.push(`${compiledPath} 内容已变化但没有加入本次提交：git add ${compiledPath}`)
-        }
-        continue
-    }
-    if (differsFromHead(compiledPath)) {
-        warnings.push(`${compiledPath} 与 HEAD 不同，提交前记得加入`)
-    }
-    try {
-        const sourceStat = fs.statSync(path.join(repoRoot, sourcePath))
-        const compiledStat = fs.statSync(absolute)
-        if (compiledStat.mtimeMs + 1_000 < sourceStat.mtimeMs) {
-            warnings.push(`${compiledPath} 比源码旧，可能没有重新构建`)
-        }
-    } catch {
-        // Timestamps are advisory only.
-    }
-}
-
-console.log(`[out 检查] 模式=${mode}，改动文件 ${changed.size} 个，涉及编译产物 ${rows.length} 个。`)
-for (const warning of warnings) console.log(`  ⚠ ${warning}`)
-for (const problem of problems) console.log(`  ✖ ${problem}`)
-
-if (problems.length > 0) {
-    console.log(`[out 检查] 发现 ${problems.length} 项问题：按上面的提示补齐后再提交。`)
-    process.exit(1)
-}
-console.log('[out 检查] 通过：本次改动涉及的编译产物都已纳入。')
+module.exports = { checkOutArtifacts }
+if (require.main === module) { try { main() } catch (error) { console.error(`[runtime check] ${error.message}`); process.exitCode = 1 } }

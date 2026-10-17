@@ -1,5 +1,6 @@
 import { getRoom } from "./room/manager"
 import { embeddedMultiCoordinator } from "./coordinator/embedded"
+import { createRealtimeMaintenanceTimer } from "./coordinator/business-rpc"
 
 /**
  * Shared random-recruitment fallback for every multiplayer mode.
@@ -22,7 +23,7 @@ export function scheduleAiFallback(roomNumber: string): void {
     if (!scheduledRoom) return
     const scheduledInstanceId = scheduledRoom.lifecycle.instanceId
     const timeoutMs = aiFillTimeoutMs()
-    const timer = setTimeout(() => {
+    const timer = createRealtimeMaintenanceTimer(() => setTimeout(() => {
         aiFallbackTimers.delete(roomNumber)
         void embeddedMultiCoordinator.enqueueRoomCommand(roomNumber, () => {
             const room = getRoom(roomNumber)
@@ -43,7 +44,7 @@ export function scheduleAiFallback(roomNumber: string): void {
             recruitNpcMatesForRoom(roomNumber)
             console.log(`[MULTI-AI] fallback triggered room=${roomNumber} timeoutMs=${timeoutMs}`)
         }).catch(error => console.error(`[MULTI-AI] fallback failed room=${roomNumber}`, error))
-    }, timeoutMs)
+    }, timeoutMs))
     timer.unref()
     aiFallbackTimers.set(roomNumber, timer)
 }

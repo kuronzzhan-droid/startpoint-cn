@@ -23,7 +23,10 @@ function setup(t, count = 2, initialCount = count) {
         const timer = { fn, ms, cancelled: false, unref() {} }; timers.push(timer); return timer
     })
     t.mock.method(global, 'clearTimeout', timer => { if (timer) timer.cancelled = true })
-    const room = { lifecycle: { instanceId: 'instance-a', battleSessionId: 'battle-a', phase: 'BATTLE' } }
+    const roster = Array.from({length:initialCount},(_,i)=>i+1)
+    const room = { room_number:'701001', lobby_generation:1, category:2, quest_id:1099001999,
+        expected_real_viewer_ids:roster, member_viewer_ids:[...roster], member_player_ids:Object.fromEntries(roster.map(id=>[id,id])),
+        lifecycle: { instanceId: 'instance-a', battleSessionId: 'battle-a', sceneEpoch:0, version:1, phase: 'BATTLE' } }
     t.mock.method(rooms, 'getRoom', () => room)
     const manager = new SessionManager(), roomNumber = '701001'
     const make = (id, cid = `cid-${id}`) => {
@@ -82,12 +85,16 @@ test('lease expiry rechecks socket I/O before disconnecting a live client', asyn
 
     assert.equal(x.ready(b), true)
     const heartbeat = x.manager.battleHeartbeatTimers.get(a.connectionId)
-    const future = Date.now() + 120000
-    t.mock.method(Date, 'now', () => future)
+    const future = performance.now() + 120000
+    t.mock.method(performance, 'now', () => future)
     heartbeat.fn()
+    x.manager.battleHeartbeatTimers.get(b.connectionId).fn()
     x.manager.noteBattleActivity(a.connectionId)
     await new Promise(resolve => setImmediate(resolve))
     assert.equal(a.socket.destroyed, false, 'activity waiting behind the timer must renew the heartbeat lease')
+    assert.equal(b.socket.destroyed, true, 'the same monotonic clock must expire an idle ordinary battle peer')
+    assert.notEqual(x.manager.battleHeartbeatTimers.get(a.connectionId), heartbeat,
+        'recent activity must schedule the remaining lease instead of ignoring expiry')
 })
 
 test('two-player loading: grace then BattleStart before AI Leave; late peer denied', async t => {
@@ -216,8 +223,8 @@ test('five-boss active scene may stay silent beyond the ordinary heartbeat lease
     x.ready(a); x.ready(b)
     assert.equal(x.manager.battleHeartbeatTimers.get(a.connectionId), undefined)
     assert.equal(x.manager.battleHeartbeatTimers.get(b.connectionId), undefined)
-    const future = Date.now() + 120000
-    t.mock.method(Date, 'now', () => future)
+    const future = performance.now() + 120000
+    t.mock.method(performance, 'now', () => future)
     await new Promise(resolve => setImmediate(resolve))
     assert.equal(a.socket.destroyed, false)
     assert.equal(b.socket.destroyed, false)
@@ -262,6 +269,35 @@ test('next-scene deadline releases teammates from a connected peer that never st
     assert.deepEqual(a.socket.frames, [[1,[1]], [1,[0,c.connectionId]]])
 })
 
+for (const signal of ['LevelNext', 'SceneReady']) {
+    test(`next-scene deadline lets pending ${signal} I/O run before disconnecting a peer`, async t => {
+        const x = setup(t, 3), [a,b,c] = x.clients
+        x.ready(a); x.ready(b); x.ready(c)
+        for (const client of x.clients) client.fiveBossBattleEntered = true
+        x.manager.beginBattleLevelNext(a.connectionId, x.roomNumber)
+        x.manager.beginBattleLevelNext(b.connectionId, x.roomNumber)
+        x.ready(a); x.ready(b)
+        const deadline = x.manager.battleBarrierCycles.get(x.roomNumber).timers.get('level_next_deadline')
+        deadline.fn()
+        // A room-queue Promise alone would run before the next I/O turn.
+        await Promise.resolve()
+        assert.equal(c.socket.destroyed, false, 'timer must yield to I/O before enforcing the deadline')
+        if (signal === 'LevelNext') x.manager.beginBattleLevelNext(c.connectionId, x.roomNumber)
+        else {
+            assert.equal(x.ready(c), false, 'old-scene SceneReady cannot release a new barrier')
+            x.manager.beginBattleLevelNext(c.connectionId, x.roomNumber)
+            assert.equal(x.ready(c), true, 'ordered LevelNext then SceneReady pending behind the timer may release it')
+        }
+        await new Promise(resolve => setImmediate(resolve))
+        await coordinator.enqueueRoomCommand(x.roomNumber, () => {})
+        assert.equal(c.socket.destroyed, false)
+        if (signal === 'LevelNext') {
+            assert.equal(x.manager.battleConnectionPhase.get(c.connectionId), 'loading')
+            assert.ok(x.manager.battleHeartbeatTimers.get(c.connectionId), 'its own loading lease remains in charge')
+        }
+    })
+}
+
 test('next-scene deadline is inert once the barrier released or a new scene began', async t => {
     const x = setup(t), [a,b] = x.clients
     x.ready(a); x.ready(b)
@@ -273,6 +309,22 @@ test('next-scene deadline is inert once the barrier released or a new scene bega
     await x.fire(deadline)
     assert.equal(a.socket.destroyed, false)
     assert.equal(b.socket.destroyed, false)
+})
+
+test('next-scene deadline queued for I/O cannot disconnect members of a new barrier', async t => {
+    const x = setup(t), [a,b] = x.clients
+    x.ready(a); x.ready(b)
+    x.manager.beginBattleLevelNext(a.connectionId, x.roomNumber)
+    const deadline = x.manager.battleBarrierCycles.get(x.roomNumber).timers.get('level_next_deadline')
+    deadline.fn()
+    x.manager.clearSceneReady(x.roomNumber)
+    x.room.lifecycle.battleSessionId = 'battle-b'
+    x.manager.setBattleExpectedCount(x.roomNumber, 2)
+    await new Promise(resolve => setImmediate(resolve))
+    await coordinator.enqueueRoomCommand(x.roomNumber, () => {})
+    assert.equal(a.socket.destroyed, false)
+    assert.equal(b.socket.destroyed, false)
+    assert.equal(x.manager.battleExpectedCount.get(x.roomNumber), 2)
 })
 
 test('a replacement connection can finish loading without replaying LevelNext', t => {
@@ -314,15 +366,16 @@ test('initial roster deadline does not shorten a connected member reconnect grac
     assert.deepEqual(a.socket.frames, [[1,[1]], [1,[0,b.connectionId]]])
 })
 
-test('an unresolved lobby viewer still counts as arrived by its real connection ID', async t => {
-    const x = setup(t, 0, 2), a = x.make(0, 'cid-1'), b = x.make(2)
+test('an unresolved battle viewer is denied, while an authenticated frozen seat retains reconnect grace', async t => {
+    const x = setup(t, 0, 2), a = x.make(1, 'cid-1'), b = x.make(2)
+    assert.equal(x.manager.addBattleClient('cid-1',x.make(0,'cid-1')),false)
     x.manager.addBattleClient(a.connectionId, a); x.manager.addBattleClient(b.connectionId, b)
     const cycle = x.manager.battleBarrierCycles.get(x.roomNumber)
     const initial = cycle.timers.get('initial_roster')
     x.ready(b); x.drop(a)
     await x.fire(initial)
     assert.equal(x.manager.battleExpectedCount.get(x.roomNumber), 2)
-    await x.fire(cycle.timers.get('connection:cid-1'))
+    await x.fire(cycle.timers.get('viewer:1'))
     assert.deepEqual(b.socket.frames, [[1,[1]], [1,[0,'cid-1']]])
 })
 
@@ -426,6 +479,7 @@ test('retirement resets only with a new round; empty rooms never broadcast Battl
     const cycle = x.manager.battleBarrierCycles.get(x.roomNumber)
     await x.fire(cycle.timers.get('viewer:1')); await x.fire(cycle.timers.get('viewer:2'))
     assert.equal(x.manager.battleSceneStartedRooms.has(x.roomNumber), false)
+    x.room.lifecycle.battleSessionId='battle-b'; x.room.lobby_generation++
     x.manager.setBattleExpectedCount(x.roomNumber, 2)
     assert.equal(x.manager.addBattleClient('cid-2', x.make(2)), true)
 })
@@ -435,6 +489,7 @@ test('clearing settlement barriers does not reopen a retired battle seat', async
     x.ready(a); x.drop(b); await x.fire(x.grace())
     x.manager.clearBattleExpectedCount(x.roomNumber)
     assert.equal(x.manager.addBattleClient('cid-2', x.make(2)), false)
+    x.room.lifecycle.battleSessionId='battle-b'; x.room.lobby_generation++
     x.manager.setBattleExpectedCount(x.roomNumber, 2)
     assert.equal(x.manager.addBattleClient('cid-2', x.make(2)), true)
 })

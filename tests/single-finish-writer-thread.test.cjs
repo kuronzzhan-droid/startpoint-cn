@@ -171,8 +171,8 @@ test('the solo finish transaction commits identically in-process and in the writ
 
     const stats = writerClient.sqliteWriterStats()
     assert.ok(
-        stats.submitted - statsBefore.submitted >= 2,
-        `expected progress refresh and settle commands, saw ${stats.submitted - statsBefore.submitted}`,
+        stats.submitted - statsBefore.submitted >= 1,
+        `expected a settle command containing progress refresh, saw ${stats.submitted - statsBefore.submitted}`,
     )
     assert.equal(stats.failed, 0)
     assert.equal(stats.completed, stats.submitted)

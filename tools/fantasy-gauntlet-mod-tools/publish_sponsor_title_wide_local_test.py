@@ -87,7 +87,7 @@ def main(work,apply):
     with zipfile.ZipFile(io.BytesIO(archive)) as z:
         assert z.testzip() is None and z.namelist()==[MEMBER]
         sponsor.verify_stored_png(z.read(MEMBER),formal)
-    dest=ROOT/'assets/asset-patch/active/candidates'/NAME
+    dest=ROOT/'assets/asset-patch/inactive/candidates'/NAME
     assert not dest.exists() or dest.read_bytes()==archive
     save(dest,archive)
     integrity=dict(name=NAME,size=len(archive),sha256=sha(archive),members=1,files=[MEMBER])

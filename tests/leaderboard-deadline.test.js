@@ -113,7 +113,9 @@ test("到时冻结独立于发奖；精确截止拦截已开始挑战的完成�
     assert.equal(award.json().rewardedPlayers, 1)
     assert.equal(mailCount(), 2)
     assert.equal(buildNativeLeaderboardPayload(competition, id).time, "已结算")
-    assert.equal((await app.inject({ method: "POST", url: `${adminUrl}/settle` })).json().reason, "already-settled")
+    const repeatedAward = await app.inject({ method: "POST", url: `${adminUrl}/settle` })
+    assert.equal(repeatedAward.statusCode, 429)
+    assert.equal(repeatedAward.json().code, "LEADERBOARD_BUSY")
     assert.equal(mailCount(), 2)
 })
 
@@ -202,7 +204,7 @@ test("空赛季到期显示当前期待结算；结算后为空也不会误显�
     assert.equal(buildNativeLeaderboardPayload(competition, id).total, 0)
 })
 
-test("服务启动立即补做逾期冻结，无需等待首个一分钟检查", () => {
+test("服务启动立即补做逾期冻结，无需等待首个一分钟检查", async () => {
     completedPlayer()
     config({ settleAtMs: deadline, freezeEnabled: true, autoEnabled: false })
     now = deadline + 3600_000
@@ -212,7 +214,7 @@ test("服务启动立即补做逾期冻结，无需等待首个一分钟检查",
         const raw = db.prepare("SELECT enabled FROM leaderboard_availability WHERE competition_key = ?").get(competition.key)
         assert.equal(raw.enabled, 0)
         assert.equal(mailCount(), 0)
-    } finally { scheduler.stop() }
+    } finally { await scheduler.stop() }
 })
 
 test("后台和客户端共用北京时间转换，在洛杉矶、UTC、上海时区均不漂移", () => {

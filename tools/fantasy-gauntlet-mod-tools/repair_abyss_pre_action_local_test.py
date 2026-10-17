@@ -47,7 +47,7 @@ def main(work, apply):
     manifest = json.loads(manifest_before)
     assert manifest['cdn_version'] == '1.4.104'
     assert (RUNTIME/'assets/asset-patch/manifest.json').read_bytes() == manifest_before
-    previous_archive = ROOT/'assets/asset-patch/active/candidates'/manifest['patches'][-1]['archive']
+    previous_archive = ROOT/'assets/asset-patch/inactive/candidates'/manifest['patches'][-1]['archive']
     assert sha(previous_archive.read_bytes()) == OLD_ZIP_SHA
     assert (RUNTIME/'assets/asset-patch/active'/previous_archive.name).read_bytes() == previous_archive.read_bytes()
     with zipfile.ZipFile(previous_archive) as z:
@@ -97,7 +97,7 @@ def main(work, apply):
     archive = buffer.getvalue()
     with zipfile.ZipFile(io.BytesIO(archive)) as z:
         assert z.testzip() is None and z.namelist() == [MEMBER] and z.read(MEMBER) == after
-    dest = ROOT/'assets/asset-patch/active/candidates'/NAME
+    dest = ROOT/'assets/asset-patch/inactive/candidates'/NAME
     assert not dest.exists() or dest.read_bytes() == archive
     save(dest, archive)
     integrity = dict(name=NAME, size=len(archive), sha256=sha(archive), members=1, files=[MEMBER])

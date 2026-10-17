@@ -36,6 +36,20 @@ const { createRoom } = load('multi/room/manager')
 global.setInterval = originalInterval
 let sequence = 0
 
+function businessDatabaseDigest(database) {
+    const tables = database.prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all()
+    return JSON.stringify(tables.map(({ name }) => {
+        const quote = identifier => '"' + identifier.replace(/"/g, '""') + '"'
+        const statement = database.prepare(`SELECT * FROM ${quote(name)}`)
+        const columns = statement.columns().map(column => column.name)
+        const rows = statement.safeIntegers(true).raw().all().map(row => JSON.stringify(row.map(value =>
+            Buffer.isBuffer(value) ? { blob: value.toString('hex') }
+                : typeof value === 'bigint' ? { integer: value.toString() } : value))).sort()
+        return { name, columns, rows }
+    }))
+}
+
+
 function player(tickets = 2) {
     const id = ++sequence
     const account = accounts.insertAccountSync({ appId: 'wf_cn', idpAlias: '', idpCode: 'test', idpId: `five-${id}`, status: 'normal' })
@@ -490,6 +504,150 @@ test('AI auto-repeat keeps the first successful COM parties stable in the room',
     }
 })
 
+test('invalid host fallback leaves AI seats empty until the host corrects its wire party', async t => {
+    const p = player()
+    const room = createRoom(p.viewerId, p.id, 1, mode.category, mode.visibleQuestId, 0, 111001)
+    room.is_npc_mode = true
+    const manager = load('multi/state/SessionManager').sessionManager
+    const coordinator = load('multi/coordinator/embedded').embeddedMultiCoordinator
+    const pool = load('multi/npc/player-party-pool')
+    let selectionCount = 0
+    let historicalParties = []
+    t.mock.method(pool, 'getRandomPlayerNpcPartiesSync', () => { selectionCount++; return historicalParties })
+    const timers = []
+    t.mock.method(global, 'setTimeout', (callback, delay) => {
+        const timer = { callback, delay, unref() { return this }, ref() { return this } }
+        timers.push(timer)
+        return timer
+    })
+    const socket = new (require('node:events').EventEmitter)()
+    Object.assign(socket, { destroyed: false, readable: true, writable: true,
+        write: () => true, end: () => {}, destroy: () => { socket.destroyed = true } })
+    const client = manager.createClient(socket, p.viewerId, room.room_number, `blocked-ai-${p.id}`, p.id)
+    client.enterData = {}
+    client.yourself = { viewerId: p.viewerId, playerId: p.id, comId: 0, state: [0], rank: 1,
+        currentPartyId: 1, party: {
+            characters: [[0, { id: 111001 }]], unison_characters: [],
+            equipments: [[0, { equipmentId: 100013 }], [1], [1]],
+            abilitySoulIds: [[0, 100023], [1], [1]],
+        } }
+    client.mates = [client.yourself]
+    manager.addClientToRoom(client)
+    const lobby = load('multi/tcp/lobby')
+    const equipmentIdleMs = load('multi/room/equipment-ready').EQUIPMENT_IDLE_MS
+    try {
+        lobby.recruitNpcMatesForRoom(room.room_number)
+        await coordinator.enqueueRoomCommand(room.room_number, () => {})
+        assert.equal(client.mates.filter(mate => mate.comId).length, 0)
+        assert.equal(room.npc_count, 0)
+        assert.deepEqual(room.npc_party_by_com_id, {})
+        assert.deepEqual(client.yourself.party.equipments[0], [0, { equipmentId: 100013 }])
+        assert.deepEqual(client.yourself.party.abilitySoulIds[0], [0, 100023])
+        // Drain several delayed callback generations. A ready callback used to
+        // schedule another recruitment, which installed another ready callback.
+        let drainedTimers = 0
+        for (let cycle = 0; cycle < 4; cycle++) {
+            const pending = timers.slice(drainedTimers)
+            drainedTimers = timers.length
+            // Advance recruitment/readiness cycles, not the independent 30s
+            // equipment idle deadline that deliberately disbands an invalid host.
+            for (const timer of pending.filter(timer => timer.delay < equipmentIdleMs)) timer.callback()
+            await coordinator.enqueueRoomCommand(room.room_number, () => {})
+            await coordinator.enqueueRoomCommand(room.room_number, () => {})
+        }
+        assert.equal(selectionCount, 1, 'an empty legal pool must not be drawn again by delayed readiness')
+        assert.equal(timers.length, drainedTimers, 'blocked recruitment must not create recurring timers')
+        assert.equal(timers.some(timer => timer.delay === 100), false, 'invalid host must not retry indefinitely')
+
+        const legal = { ...client.yourself.party,
+            equipments: [[0, { equipmentId: 300101 }], [1], [1]],
+            abilitySoulIds: [[0, 300201], [1], [1]],
+        }
+        historicalParties = [{ party: legal }]
+        lobby.recruitNpcMatesForRoom(room.room_number)
+        await coordinator.enqueueRoomCommand(room.room_number, () => {})
+        for (let cycle = 0; cycle < 4; cycle++) {
+            const pending = timers.slice(drainedTimers)
+            drainedTimers = timers.length
+            for (const timer of pending.filter(timer => timer.delay < equipmentIdleMs)) timer.callback()
+            await coordinator.enqueueRoomCommand(room.room_number, () => {})
+            await coordinator.enqueueRoomCommand(room.room_number, () => {})
+        }
+        assert.equal(client.mates.filter(mate => mate.comId).length, 1)
+        assert.equal(selectionCount, 2, 'a partial legal roster must not keep rerolling its missing seat')
+        assert.equal(timers.length, drainedTimers)
+        assert.equal(timers.some(timer => timer.delay === 100), false)
+        assert.equal(load('multi/room/manager').getRoom(room.room_number), room)
+        assert.ok(client.equipmentReadyBlock, 'partial AI readiness must retain the host equipment gate')
+
+        lobby.handleMessage(socket, [0, [2, { party: legal }, 1, 1]])
+        await coordinator.enqueueRoomCommand(room.room_number, () => {})
+        const reconciliation = timers.filter(timer => timer.delay === 100)
+        assert.equal(reconciliation.length, 1)
+        reconciliation[0].callback()
+        await coordinator.enqueueRoomCommand(room.room_number, () => {})
+        await coordinator.enqueueRoomCommand(room.room_number, () => {})
+        assert.equal(client.mates.filter(mate => mate.comId).length, 2)
+        assert.equal(room.npc_count, 2)
+        for (const mate of client.mates.filter(mate => mate.comId)) {
+            assert.deepEqual(mate.party, legal)
+            assert.notEqual(mate.party, legal, 'the serialized business projection must not expose its source party reference')
+        }
+        assert.equal(selectionCount, 3)
+    } finally {
+        manager.removeClient(client)
+        load('multi/room/manager').disbandRoom(room.room_number)
+    }
+})
+
+test('invalid rematch cache is discarded and replaced with a legal pool party', async t => {
+    const p = player()
+    const room = createRoom(p.viewerId, p.id, 1, mode.category, mode.visibleQuestId, 0, 111001)
+    room.is_npc_mode = true
+    room.npc_party_by_com_id['1'] = {
+        characters: [[0, { id: 111001 }]],
+        equipments: [[0, { equipmentId: 100013 }]],
+        abilitySoulIds: [[0, 100023]],
+        marker: 'invalid-cache',
+    }
+    const manager = load('multi/state/SessionManager').sessionManager
+    const coordinator = load('multi/coordinator/embedded').embeddedMultiCoordinator
+    const pool = load('multi/npc/player-party-pool')
+    t.mock.method(pool, 'getRandomPlayerNpcPartiesSync', (_host, count) =>
+        Array.from({ length: count }, (_, index) => ({
+            sourcePlayerId: 900 + index,
+            party: {
+                characters: [[0, { id: 111001 }], [0, { id: 111001 }], [0, { id: 111001 }]],
+                equipments: [[0, { equipmentId: 300101 }], [1], [1]],
+                abilitySoulIds: [[0, 300201], [1], [1]],
+                marker: `replacement-${index}`,
+            },
+        })))
+    const socket = new (require('node:events').EventEmitter)()
+    Object.assign(socket, { destroyed: false, readable: true, writable: true, remoteAddress: '127.0.0.1',
+        write: () => true, end: () => {}, destroy: () => { socket.destroyed = true } })
+    const client = manager.createClient(socket, p.viewerId, room.room_number, `invalid-cache-${p.id}`, p.id)
+    client.yourself = { viewerId: p.viewerId, playerId: p.id, comId: 0, state: [1], rank: 1,
+        party: { characters: [[0, { id: 111001 }]], equipments: [], abilitySoulIds: [] } }
+    client.mates = [client.yourself]
+    manager.addClientToRoom(client)
+    const lobby = load('multi/tcp/lobby')
+    try {
+        lobby.recruitNpcMatesForRoom(room.room_number)
+        await coordinator.enqueueRoomCommand(room.room_number, () => {})
+        assert.equal(
+            Object.values(room.npc_party_by_com_id).some(party => party.marker === 'invalid-cache'),
+            false,
+        )
+        assert.equal(client.mates.filter(mate => mate.comId).length, 2)
+        assert.ok(client.mates.filter(mate => mate.comId)
+            .every(mate => mate.party.marker?.startsWith('replacement-')))
+    } finally {
+        manager.removeClient(client)
+        load('multi/room/manager').disbandRoom(room.room_number)
+    }
+})
+
 test('shared random-recruitment fallback fills AI after the configured timeout', async () => {
     const p = player()
     const room = createRoom(p.viewerId, p.id, 1, mode.category, mode.visibleQuestId, 0, 111001)
@@ -524,7 +682,7 @@ test('shared random-recruitment fallback fills AI after the configured timeout',
     }
 })
 
-test('rematch restores the previous AI count and fills the extra AI after the real-player grace', async () => {
+test('rematch restores the previous AI count and fills the extra AI after the real-player grace', async t => {
     const host = player(), guest = player()
     const room = createRoom(host.viewerId, host.id, 1, mode.category, mode.visibleQuestId, 0, 111001)
     room.lobby_generation = 1
@@ -538,11 +696,20 @@ test('rematch restores the previous AI count and fills the extra AI after the re
         write: () => true, end: () => {}, destroy: () => { socket.destroyed = true } })
     const client = manager.createClient(socket, host.viewerId, room.room_number, `rematch-host-${host.id}`, host.id)
     client.roomGeneration = room.lobby_generation
+    client.enterData = {}
     client.yourself = { viewerId: host.viewerId, playerId: host.id, comId: 0, state: [1], rank: 1,
         party: { characters: [[0, { id: 111001 }]], unison_characters: [], marker: 'host-party' } }
     client.mates = [client.yourself]
     manager.addClientToRoom(client)
     const lobby = load('multi/tcp/lobby')
+    const reservations = load('multi/room/rematch-roster')
+    const mono = require('node:perf_hooks').performance
+    let monotonicNow = mono.now()
+    t.mock.method(mono, 'now', () => monotonicNow)
+    reservations.markMemberSettlementCommitted(room, guest.viewerId)
+    reservations.markRematchReturnWindowOpened(room)
+    const returnDeadline = reservations.getNextReturnDeadline(room)
+    assert.equal(returnDeadline, monotonicNow + 60_000)
     const waitForNpcCount = async expected => {
         const deadline = Date.now() + 3000
         while (Date.now() < deadline && client.mates.filter(m => m.comId).length < expected) {
@@ -559,18 +726,29 @@ test('rematch restores the previous AI count and fills the extra AI after the re
         assert.ok(room.rematch_wait_started_at !== null)
         assert.equal(client.mates.filter(m => m.comId).length, 1)
 
-        // Simulate the post-grace cleanup removing the missing real player.
-        room.expected_real_viewer_ids = [host.viewerId]
+        monotonicNow = returnDeadline - 1
+        assert.deepEqual(reservations.getExpiredReturnViewerIds(room), [])
         lobby.recruitNpcMatesForRoom(room.room_number)
+        await coordinator.enqueueRoomCommand(room.room_number, () => {})
+        assert.deepEqual(room.expected_real_viewer_ids, [host.viewerId, guest.viewerId])
+        assert.equal(client.mates.filter(m => m.comId).length, 1)
+
+        const originalAiParty = structuredClone(client.mates.find(mate => mate.comId).party)
+        // Advance the member's monotonic result/return lease, then exercise
+        // the actual room cleanup rather than editing its expected roster.
+        monotonicNow = returnDeadline + 1
+        lobby.scheduleRematchDisconnectCleanup(room.room_number)
         assert.equal(await waitForNpcCount(2), 2)
+        assert.deepEqual(room.expected_real_viewer_ids, [host.viewerId])
         assert.equal(client.mates.length, 3)
+        assert.deepEqual(client.mates.find(mate => mate.comId === 1).party, originalAiParty)
     } finally {
         manager.removeClient(client)
         load('multi/room/manager').disbandRoom(room.room_number)
     }
 })
 
-test('departed bell guest releases the rematch seat so AI can fill and start again', async () => {
+test('departed bell guest retains its return lease before expiry then AI fills and starts again', async t => {
     const host = player(), guest = player()
     const room = createRoom(host.viewerId, host.id, 1, mode.category, mode.visibleQuestId, 0, 111001)
     room.lobby_generation = 1
@@ -598,6 +776,7 @@ test('departed bell guest releases the rematch seat so AI can fill and start aga
     )
     hostClient.roomGeneration = room.lobby_generation
     guestClient.roomGeneration = room.lobby_generation
+    hostClient.enterData = guestClient.enterData = {}
     hostClient.yourself = { viewerId: host.viewerId, playerId: host.id, comId: 0, state: [1],
         autoplayMode: false, rank: 130, party: {
             characters: [[0, { id: 111001 }]], unison_characters: [],
@@ -616,16 +795,38 @@ test('departed bell guest releases the rematch seat so AI can fill and start aga
     manager.addClientToRoom(guestClient)
     manager.markRescueGuest(room.room_number, guest.viewerId)
     const lobby = load('multi/tcp/lobby')
+    const reservations = load('multi/room/rematch-roster')
+    const mono = require('node:perf_hooks').performance
+    let monotonicNow = mono.now()
+    t.mock.method(mono, 'now', () => monotonicNow)
+    reservations.markMemberSettlementCommitted(room, guest.viewerId)
+    reservations.markRematchReturnWindowOpened(room)
+    reservations.markMemberReturned(room, guest.viewerId)
     try {
         // A transport loss alone still reserves the real seat for reconnect.
         manager.removeClient(guestClient)
         assert.deepEqual(room.expected_real_viewer_ids, [host.viewerId, guest.viewerId])
+        const returnDeadline = reservations.getNextReturnDeadline(room)
+        assert.equal(returnDeadline, monotonicNow + 60_000)
+        monotonicNow = returnDeadline - 1
+        assert.deepEqual(reservations.getExpiredReturnViewerIds(room), [])
 
-        // The host's explicit EnterComs request chooses AI replacement now,
-        // releasing the absent rescue guest without waiting for the reconnect
-        // grace to expire.
+        // Legacy Notify10 can be automatic. It restores the previous COM but
+        // cannot revoke an absent member's individual return lease.
         lobby.handleMessage(hostSocket, [0, [10, [{ name: 'COM1' }, { name: 'COM2' }]]])
         await coordinator.enqueueRoomCommand(room.room_number, () => {})
+        assert.deepEqual(room.expected_real_viewer_ids, [host.viewerId, guest.viewerId])
+        assert.deepEqual(room.member_viewer_ids, [host.viewerId, guest.viewerId])
+        assert.equal(load('multi/room/manager').isRoomMember(room, guest.viewerId), true)
+        assert.equal(hostClient.mates.filter(mate => mate.comId).length, 1)
+
+        monotonicNow = returnDeadline + 1
+        lobby.scheduleRematchDisconnectCleanup(room.room_number)
+        const cleanupDeadline = Date.now() + 3000
+        while (Date.now() < cleanupDeadline && room.expected_real_viewer_ids.includes(guest.viewerId)) {
+            await new Promise(resolve => setTimeout(resolve, 10))
+            await coordinator.enqueueRoomCommand(room.room_number, () => {})
+        }
         assert.deepEqual(room.expected_real_viewer_ids, [host.viewerId])
         assert.deepEqual(room.member_viewer_ids, [host.viewerId])
         assert.equal(room.mates.some(mate => mate.viewer_id === guest.viewerId), false)
@@ -725,6 +926,57 @@ test('five-boss start acknowledges a room lost after the outer gate without char
         playerId: p.id,
         clientPlayId: p.playId,
     }), null)
+})
+
+test('queued five-boss start rejects a replaced battle or frozen run before persistent side effects', async t => {
+    const persistence = load('lib/persistence-coordinator')
+    const manager = load('multi/room/manager')
+    const memory = load('routes/api/singleBattleQuest').activeQuests
+    for (const changedIdentity of ['battleSessionId', 'frozenRunId']) {
+        const p = player(2), room = run([p])
+        room.lifecycle.phase = 'BATTLE'
+        room.lifecycle.battleSessionId = `queued-battle-${room.room_number}`
+        const originalRunId = room.five_boss_runtime.runId
+        const before = {
+            quest: active.getPlayerActiveQuestSync(p.id),
+            memory: memory[p.id],
+            tickets: items.getPlayerItemSync(p.id, mode.ticketItemId),
+            stamina: players.getPlayerSync(p.id).stamina,
+            staminaUsed: players.getPlayerSync(p.id).totalStaminaUsed,
+        }
+        const app = await httpApp(p, load('multi/http/battle').registerBattleRoutes)
+        const originalTransaction = persistence.runPersistenceTransaction
+        let intercepted = 0
+        const mockedTransaction = t.mock.method(persistence, 'runPersistenceTransaction', (context, callback, ...rest) =>
+            originalTransaction(context, () => {
+                if (context.operation === 'five_boss_start') {
+                    intercepted++
+                    // Change identity after the HTTP gate captured the room,
+                    // at the point where the queued transaction begins work.
+                    if (changedIdentity === 'battleSessionId') room.lifecycle.battleSessionId += '-replacement'
+                    else room.five_boss_runtime.runId += '-replacement'
+                }
+                return callback()
+            }, ...rest))
+        try {
+            const response = await app.inject({ method: 'POST', url: '/start', payload: httpStart(p, room) })
+            assert.equal(intercepted, 1, changedIdentity)
+            assert.equal(response.statusCode, 200, response.body)
+            assert.equal(response.json().data_headers.result_code, 4050, changedIdentity)
+            assert.deepEqual(active.getPlayerActiveQuestSync(p.id), before.quest, changedIdentity)
+            assert.equal(memory[p.id], before.memory, changedIdentity)
+            assert.equal(items.getPlayerItemSync(p.id, mode.ticketItemId), before.tickets, changedIdentity)
+            assert.equal(players.getPlayerSync(p.id).stamina, before.stamina, changedIdentity)
+            assert.equal(players.getPlayerSync(p.id).totalStaminaUsed, before.staminaUsed, changedIdentity)
+            assert.equal(ledger.getFiveBossRunByClientSync({ playerId: p.id, clientPlayId: p.playId }), null)
+            assert.equal(getDb().prepare('SELECT COUNT(*) AS count FROM five_boss_gauntlet_runs WHERE run_id IN (?, ?)')
+                .get(originalRunId, room.five_boss_runtime.runId).count, 0)
+        } finally {
+            mockedTransaction.mock.restore()
+            manager.disbandRoom(room.room_number)
+            await app.close()
+        }
+    }
 })
 
 test('solo full-manual rewards use the whole-run AUTO record and replay exactly once', async () => {
@@ -1005,14 +1257,14 @@ test('stale multiplayer with a missing room field is recovered from its immutabl
 
 test('authenticated SceneReady survives a later TCP close and prevents finish H400', { timeout: 15000 }, async () => {
     const p = player(), room = run([p]), connectionId = `trace-${p.id}`
-    room.lifecycle.phase = 'BATTLE'
-    room.lobby_generation = 1
+    const coordinator = load('multi/coordinator/embedded').embeddedMultiCoordinator
+    assert.equal(coordinator.commitBattleStart(room).ok, true)
+    assert.ok(load('multi/state/battle-contract').getBattleSessionContract(room))
     room.five_boss_runtime.battleIdentityByViewerId[String(p.viewerId)] = {
         playerId: p.id, connectionId, remoteAddress: '127.0.0.1',
     }
     const runId = room.five_boss_runtime.runId
     const manager = load('multi/state/SessionManager').sessionManager
-    const coordinator = load('multi/coordinator/embedded').embeddedMultiCoordinator
     const trace = load('multi/five-boss/connection-diagnostic').fiveBossConnectionDiagnostics
     const { EventEmitter, once } = require('node:events'), net = require('node:net')
     const lobbySocket = new EventEmitter()
@@ -1040,7 +1292,9 @@ test('authenticated SceneReady survives a later TCP close and prevents finish H4
         tcp = load('multi/tcp/server')
         await tcp.startSessionServer()
         net.createServer = originalCreateServer
-        assert.equal((await app.inject({ method: 'POST', url: '/start', payload: httpStart(p, room) })).statusCode, 200)
+        const started = await app.inject({ method: 'POST', url: '/start', payload: httpStart(p, room) })
+        assert.equal(started.statusCode, 200, started.body)
+        assert.equal(started.json().data_headers.result_code, 1, started.body)
         const connect = async () => {
             const incoming = once(rawServer, 'connection')
             const socket = net.createConnection({ host: '127.0.0.1', port: rawServer.address().port })
@@ -1051,32 +1305,16 @@ test('authenticated SceneReady survives a later TCP close and prevents finish H4
             socket.on('data', () => {})
             socket.write(JSON.stringify({ socklet: 'cooperation_battle', room_number: room.room_number,
                 connection_id: connectionId, sp_session: `five-boss-${p.id}` }) + '\0')
-            await waitFor(() => manager.getBattleClient(connectionId)?.isBattle)
-            const accepted = manager.getBattleClient(connectionId)
-            assert.equal(accepted.viewerId, p.viewerId)
-            assert.equal(accepted.playerId, p.id)
-            assert.equal(accepted.roomNumber, room.room_number)
-            assert.equal(accepted.connectionId, connectionId)
-            const { battleRelayProcessEnabled, isRelayProxySocket } = load('multi/tcp/battle-relay/bridge')
-            if (battleRelayProcessEnabled()) {
-                assert.ok(isRelayProxySocket(accepted.socket), 'relay-enabled battle owns an accepted proxy')
-                assert.ok(accepted.socket.sid > 0)
-                assert.notEqual(accepted.socket, serverSocket, 'the original socket was handed to the child')
-            } else {
-                assert.equal(accepted.socket, serverSocket)
-            }
-            // After relay handoff the original server socket is closed; the
-            // accepted proxy carries the real connection's later close.
-            return { socket, acceptedSocket: accepted.socket }
+            await waitFor(() => manager.getBattleClient(connectionId)?.socket === serverSocket)
+            return { socket, serverSocket }
         }
         const first = await connect()
         first.socket.write(JSON.stringify([0, [0]]) + '\0')
         await waitFor(() => trace.snapshot(runId, p.id).counts?.battle_entry_recorded)
-        const closed = once(first.acceptedSocket, 'close')
+        const closed = once(first.serverSocket, 'close')
         first.socket.end()
         await closed
         await coordinator.enqueueRoomCommand(room.room_number, () => {})
-        assert.equal(manager.getBattleClient(connectionId), undefined, 'the closed battle connection was removed')
         const settled = await app.inject({ method: 'POST', url: '/finish', payload: httpFinish(p) })
         assert.equal(settled.statusCode, 200, settled.body)
         const crystals = items.getPlayerItemSync(p.id, 10000145)
@@ -1218,10 +1456,26 @@ test('finish without authenticated battle entry is terminal and forged identity 
             return prepare.call(this, sql)
         }
         try {
+            const admission = load('lib/persistence-admission').persistenceAdmission
+            const digest = () => businessDatabaseDigest(getDb())
+            const terminalBefore = digest(p.id, getDb())
+            const rejectedBefore = admission.stats().rejected
             const retries = await Promise.all(Array.from({ length: 20 }, () =>
                 app.inject({ method: 'POST', url: '/finish', payload: httpFinish(p) })))
-            assert.ok(retries.every(response => response.statusCode === 200))
-            assert.ok(retries.every(response => response.json().data.clear_rank === 0))
+            const admitted = retries.filter(response => response.statusCode === 200)
+            const busy = retries.filter(response => response.statusCode === 503)
+            assert.equal(admitted.length, 8, 'the per-player admission limit must remain eight')
+            assert.equal(busy.length, 12)
+            assert.ok(admitted.every(response => response.json().data.clear_rank === 0))
+            assert.ok(busy.every(response => response.json().code === 'PERSISTENCE_QUEUE_FULL'))
+            assert.equal(admission.stats().rejected - rejectedBefore, 12)
+            assert.equal(admission.stats().total, 0)
+            assert.equal(digest(p.id, getDb()), terminalBefore, 'overflow must preserve all terminal business state')
+            const recovered = await Promise.all(Array.from({ length: 8 }, () =>
+                app.inject({ method: 'POST', url: '/finish', payload: httpFinish(p) })))
+            assert.ok(recovered.every(response => response.statusCode === 200 && response.json().data.clear_rank === 0))
+            assert.equal(admission.stats().total, 0)
+            assert.equal(digest(p.id, getDb()), terminalBefore, 'recovery must not grant or change business state')
             assert.equal(diagnosticReads, 0)
             const acknowledgements = messages
                 .filter(line => line.startsWith('[FIVE-BOSS-ACK]'))
@@ -1442,6 +1696,22 @@ test('real solo HTTP start/finish persists receipt; hidden scene and free finish
         assert.equal(retry.statusCode, 200, retry.body)
         assert.equal(items.getPlayerItemSync(p.id, 10000145), 5)
         assert.equal(characters.getPlayerCharacterSync(p.id, 111001).exp, exp)
+        // Upgrade compatibility: this old completed run has only the dedicated
+        // five-boss receipt, and its delayed retry must not consume a newer run.
+        getDb().prepare("DELETE FROM player_operation_receipts WHERE player_id = ? AND operation = 'quest_finish.single'").run(p.id)
+        const oldFinishBody = httpFinish(p)
+        p.playId += '-new-run'
+        const nextStart = await app.inject({ method: 'POST', url: '/start', payload: httpStart(p) })
+        assert.equal(nextStart.statusCode, 200, nextStart.body)
+        const staminaAfterStart = players.getPlayerSync(p.id).stamina
+        const oldRetry = await app.inject({ method: 'POST', url: '/finish', payload: oldFinishBody })
+        assert.equal(oldRetry.statusCode, 200, oldRetry.body)
+        assert.deepEqual(oldRetry.json(), finish.json())
+        assert.equal(load('data/domains/quest_active').getPlayerActiveQuestSync(p.id).playId, p.playId)
+        assert.equal(load('routes/api/singleBattleQuest').activeQuests[p.id].playId, p.playId)
+        assert.equal(players.getPlayerSync(p.id).stamina, staminaAfterStart)
+        assert.equal(items.getPlayerItemSync(p.id, 10000145), 5)
+        assert.equal(characters.getPlayerCharacterSync(p.id, 111001).exp, exp)
     } finally { await app.close() }
 })
 
@@ -1656,11 +1926,15 @@ function seedRewardFinish(p, category, questId, host = true) {
     }
     const quest = { playId: p.playId, category, questId, useBoostPoint: false,
         useBossBoostPoint: false, isAutoStartMode: true, isMulti: category === 7,
-        isMultiHost: host, continueCount: 0, startedAtMs: Date.now(), matePlayerIds: [], mateComIds: [],
+        isMultiHost: host, clockVersion: 1, continueCount: 0, startedAtMs: Date.now(), matePlayerIds: [], mateComIds: [],
         questTimeRevision: category === 24 ? load('lib/abyss-time-revision').getAbyssTimeRevision() : null }
     load('routes/api/singleBattleQuest').activeQuests[p.id] = quest
-    // Like insertActiveQuest, a single-player registration is persisted too.
-    if (category !== 7) active.insertPlayerActiveQuestSync(p.id, { ...quest, playerId: p.id })
+    // A registered solo battle has both memory and a durable active row. Seed
+    // the real contract so the settlement can consume that exact play once.
+    if (category === 24) load('data/domains/quest_active').insertPlayerActiveQuestSync(p.id, {
+        ...quest, playerId: p.id, isMultiHost: false, roomNumber: null,
+        entryItemId: null, eventId: null, partySlot: null,
+    })
     if (category === 7) load('multi/settlement-snapshot').registerMultiSettlementSnapshot({
         battleInstanceId: p.playId, playerId: p.id, viewerId: p.viewerId, playId: p.playId,
         roomNumber: 'ticket-test', roomGeneration: 1, activeQuest: quest, participants: [],
@@ -1705,6 +1979,31 @@ test('Fantasy real multiplayer finish grants one ticket for full host clear; not
     const p = player(0)
     const app = await httpApp(p, load('multi/http/battle').registerBattleRoutes)
     try {
+        // A fresh frozen play without a proven real-clock basis must not settle.
+        const digest = () => businessDatabaseDigest(getDb())
+        const receipts = () => getDb().prepare(
+            "SELECT * FROM player_operation_receipts WHERE player_id=? ORDER BY operation, request_key"
+        ).all(p.id)
+        for (const clockVersion of [undefined, 0]) {
+            p.playId += '-unproven-' + String(clockVersion)
+            const body = { ...seedRewardFinish(p, 7, 300098003, true), is_accomplished: true }
+            const frozen = load('multi/settlement-snapshot').getMultiSettlementSnapshot(p.id, p.playId)
+            assert.equal(frozen.activeQuest.clockVersion, 1)
+            for (const quest of [load('routes/api/singleBattleQuest').activeQuests[p.id], frozen.activeQuest]) {
+                if (clockVersion === undefined) delete quest.clockVersion
+                else quest.clockVersion = clockVersion
+            }
+            assert.equal(active.getPlayerActiveQuestSync(p.id), null, 'no durable current-clock play may mask the negative fixture')
+            const before = digest(p.id, getDb()), beforeReceipts = receipts()
+            assert.equal(beforeReceipts.length, 0, 'each rejected play must be fresh, without a replay receipt')
+            const tickets = items.getPlayerItemSync(p.id, 10000143)
+            const rejected = await app.inject({ method: 'POST', url: '/finish', payload: body })
+            assert.equal(rejected.statusCode, 400, rejected.body)
+            assert.equal(rejected.json().message, 'No unsettled multiplayer play.')
+            assert.equal(digest(p.id, getDb()), before, 'unproven clock must preserve all business state')
+            assert.equal(items.getPlayerItemSync(p.id, 10000143), tickets)
+            assert.deepEqual(receipts(), beforeReceipts, 'unproven clock must not create a finish receipt')
+        }
         for (const [questId, host, accomplished, expected] of [
             [300098001, true, true, 0], [300098002, true, true, 0],
             [300098003, false, true, 0], [300098003, true, false, 0],

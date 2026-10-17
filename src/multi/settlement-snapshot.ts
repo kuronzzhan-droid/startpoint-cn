@@ -1,6 +1,7 @@
 import { routineGameLog } from "../lib/routine-game-logging"
 import type { ActiveQuest } from "../routes/api/singleBattleQuest"
 import { registerMemoryCounters } from "../lib/memory-diagnostics"
+import { cloneQuestNpcPartySnapshot, type QuestNpcPartySnapshot } from "./npc/quest-party-pool-shared"
 
 export type MultiBattleLifecycle = "BATTLE" | "SETTLING" | "RETURN_PENDING" | "LOBBY"
 
@@ -11,6 +12,7 @@ export interface FrozenSettlementParticipant {
 
 export interface MultiSettlementSnapshot {
     battleInstanceId: string
+    roomInstanceId?: string
     playerId: number
     viewerId: number
     playId: string
@@ -19,6 +21,7 @@ export interface MultiSettlementSnapshot {
     activeQuest: ActiveQuest
     participants: FrozenSettlementParticipant[]
     expectedRealViewerIds: number[]
+    npcPartySnapshot?: QuestNpcPartySnapshot
     isHost: boolean
     isRescueGuest: boolean
     isRescueFragmentEligible: boolean
@@ -58,11 +61,12 @@ export function buildBattleInstanceId(
     roomGeneration: number,
     category: number,
     questId: number,
+    roomInstanceId?: string,
 ): string {
     // The lobby generation increments for every rematch, while each client has
     // its own play_id.  Therefore generation (not play_id) is the shared battle
     // identity used by every participant's settlement barrier.
-    return `${roomNumber}:${roomGeneration}:${category}:${questId}`
+    return `${roomInstanceId ?? roomNumber}:${roomGeneration}:${category}:${questId}`
 }
 
 export function registerMultiSettlementSnapshot(input: Omit<MultiSettlementSnapshot, "lifecycle" | "createdAt" | "expiresAt">): MultiSettlementSnapshot {
@@ -77,6 +81,7 @@ export function registerMultiSettlementSnapshot(input: Omit<MultiSettlementSnaps
         },
         participants: input.participants.map(participant => ({ ...participant })),
         expectedRealViewerIds: [...input.expectedRealViewerIds],
+        npcPartySnapshot: cloneQuestNpcPartySnapshot(input.npcPartySnapshot),
         lifecycle: "BATTLE",
         createdAt: now,
         expiresAt: now + START_TTL_MS,
@@ -117,12 +122,16 @@ export function transitionRoomSettlementSnapshots(
     roomNumber: string,
     lifecycle: MultiBattleLifecycle,
     roomGeneration?: number,
+    roomInstanceId?: string,
 ): number {
     cleanup()
     let transitioned = 0
     for (const snapshot of snapshots.values()) {
         if (snapshot.roomNumber !== roomNumber) continue
         if (roomGeneration !== undefined && snapshot.roomGeneration !== roomGeneration) continue
+        if (roomInstanceId !== undefined && snapshot.roomInstanceId !== roomInstanceId) continue
+        // Host lobby return does not complete another member's unsettled play.
+        if (lifecycle === "LOBBY" && snapshot.lifecycle === "BATTLE") continue
         if (LIFECYCLE_RANK[lifecycle] < LIFECYCLE_RANK[snapshot.lifecycle]) {
             console.warn(`[MULTI-SETTLEMENT] ignored lifecycle regression instance=${snapshot.battleInstanceId}`
                 + ` player=${snapshot.playerId} current=${snapshot.lifecycle} requested=${lifecycle}`)

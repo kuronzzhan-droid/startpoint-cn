@@ -1,0 +1,13 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.resources.ResourceRuntime; label: cn.optimize.resources::ResourceRuntime$/ownTask|1; body: 11; method: 12
+# code SHA-256: 296462439cc0a1f4080eea125b80575560e3db6d0e9673d259b97abf866e0b34; header: [3, 3, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex [(7, (5, 'cn.optimize.resources:ResourceRuntime'), 'taskOwners')]
+#0003 ofs0004: getlocal_1 []
+#0004 ofs0005: getlocal_2 []
+#0005 ofs0006: setproperty [(27, ((5, 'cn.optimize.resources:ResourceRuntime'), (26, 'cn.optimize.resources:ResourceRuntime'), (26, 'Object'), (22, 'cn.optimize.resources'), (23, 'cn.optimize.resources'), (5, 'FilePrivateNS:ResourceRuntime'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0006 ofs0008: getlocal_1 []
+#0007 ofs0009: returnvalue []
+# exceptions: []

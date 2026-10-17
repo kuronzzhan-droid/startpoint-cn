@@ -1,31 +1,28 @@
 # Android APK/SWF：当前已验收基线
 
-2026-09-25，双端作者机制公网包完成离线验收；Android 另完成模拟器安装、首次及冷启动至登录面板，iOS 未真机测试。作者机制内网包的 `user_accepted` 状态保持，见 [作者机制内网验收](./ACCEPTANCE-AUTHOR-UNIFIED-LAN-20260924.md)。精确身份以
-[android-accepted.json](./android-accepted.json) 和 [ios-accepted.json](./ios-accepted.json) 为准，
-范围见 [作者机制公网验收](./ACCEPTANCE-AUTHOR-PUBLIC-20260925.md)。旧 SET / EX 成品与方法保留在历史验收记录中。
+2026-10-14，R4 客户端稳定性与一览优化登记为后续功能基线。Android内网沿用其最终成品；公网版本从同一成品直接转换地址、配置新的Android准入配对并更新AIR缓存身份。身份及状态以 [android-accepted.json](android-accepted.json) 为准，范围见 [R4验收记录](ACCEPTANCE-CLIENT-R4-20261014.md)。
 
-| 环境 | 成品 | 状态 |
-| --- | --- | --- |
-| Android 公网 | `F:/codex/outputs/author-public-release-20260924/android/StarPoint-CN-1.8.1-author-unified-damage-public-20260924-68bc1d3a.apk` | `accepted_offline`，模拟器安装和启动至登录面板通过，未重新实战 |
-| Android 内网 | `F:/codex/outputs/author-unified-damage-lan-20260924/StarPoint-CN-1.8.1-author-unified-damage-lan-20260924-eac4a37d.apk` | `user_accepted` 保持 |
+| 环境 | 功能基线与验证范围 |
+| --- | --- |
+| Android内网 | R4；基线批准已记录，复用既有有限MuMu验证及离线身份证据 |
+| Android公网 | 同功能R4；地址、准入、SWF/DEX、固定签名与ZIP对齐离线核验；未新增公网设备测试 |
 
-公网保留 R10、EX、独立编队、SET C8601 与作者机制累计功能。主 ABC 索引 361，全 SWF 共 96,654 个方法体；无诊断导出。公网准入号为 `android-181-author-1043-20260924`。iOS 使用独立注册表，完整 ABC 与 AOT 方法表均为 101,387 项，准入号为 `ios-184-author-1043-20260924`。两端旧独立编队正式号仍可通过公网准入。
+两变体的登记标签为`accepted_offline`，另以`user_confirmed_baseline=true`记录基线批准；标签不扩大为手机性能或偶发卡死率验收。公网使用`android-181-r4-performance-public-20261014`，内网保留实际旧号`android-181-author-1047-public-20261001`。服务端完整配对仅保留新R4、上一版Android和现用iOS三条及其原密钥，更早条目与密钥不再交付；iOS登记和IPA不变。
 
-在仓库根目录运行：
+R4主`boot_ffc6`为零基DoABC ordinal 304、原始SWF tag index 367；96706个原方法体加5个helper ABC/102个方法体，共96808。`method_bodies_checked=96706`表示原方法比较数；不要把tag序号、DoABC ordinal和方法体编号混用。生产包没有诊断collector，也没有Q1/Q2/Q3改动。
 
 ```powershell
 python -B client-patch/verify_android_baseline.py --variant public
 python -B client-patch/verify_android_baseline.py --variant lan
-python -B client-patch/verify_ios_baseline.py
 ```
 
-检查器回读成品哈希、APK/SWF/DEX/AIR UUID、IPA 包身份与完整 AOT；协议证据和设备实测范围分别记录。原 EX 构建输入锁定于 `abyss-ex/source-artifacts.json`，只用于历史复现。旧包不替代当前成品；APK/IPA、密钥和签名材料不进入 Git。
+这些检查器回读登记身份；APK签名、地址、准入常量和方法/非目标成员保持由本批独立成品回执覆盖。原构建报告保持生成时状态；公网未上传部署，配置未同步到本地运行服务。APK、SWF及任何密钥/签名材料不进入Git。
 
 以下为仍须保留的历史累计方法，容器索引按各历史步骤记录，不代表当前主 ABC 索引。
 
 ## 深渊续战与 Lens 累计内容
 
-9 月 9 日续战步骤仅对活动 `700099` 放开续战队伍的跨关角色复用；每关返回独立空数组，逐关选队、其他活动的重复检查保持。该历史步骤只改 `284:24599`（当前内网为 `286:24599`），方法见 [深渊续战](./abyss-autostart/README.md)。
+9 月 9 日续战步骤仅对活动 `700099` 放开续战队伍的跨关角色复用；每关返回独立空数组，逐关选队、其他活动的重复检查保持。该历史步骤只改 `284:24599`（该历史内网包为 `286:24599`），方法见 [深渊续战](./abyss-autostart/README.md)。
 
 当前包在下表的资料页和标题修复上加入 724 Fever、422 冲刺参数完整解析/描述/战斗逻辑、
 稻穗 PF 连击数、基诺维冲刺、五重决战随机地图与联机房号种子、手动开局后的 Auto 锁、

@@ -1,0 +1,107 @@
+{
+  "number": 111,
+  "upstream_number": 105,
+  "id": "O12",
+  "slug": "overlimit-dialog-paradox-text",
+  "title": "超限确认框文案包含悖论之核",
+  "dependencies": [],
+  "companions": [
+    101,
+    109,
+    110
+  ],
+  "revision": "r2",
+  "source_revision": "r2",
+  "revision_note": "在五星且 overLimitStep >= 4 条件后追加 get_maxOverLimitStep() > 4。最大突破次数为 4 的普通五星不查询/拼接悖论之核名称，保留原文案。r1 已废弃；首发版本仍为 v34。",
+  "behavior": "目标角色为五星、overLimitStep >= 4 且 get_maxOverLimitStep() > 4 时，在原超限结晶 itemName 后拼接主 ABC 已有字符串「＋」与 globalLogic.getItem(10000302).get_name() 返回的悖论之核名称。只改变本次确认框模板的 itemName 参数，不改公共文案数据；普通突破保留原路径。只插入单方法 P-code，不追加主 ABC 常量池。",
+  "caveat": "本条只改确认框显示文字，不改消耗数量、可否突破或服务端规则；与 101/109/110 配套。作者已取消零消耗方案，本条随双消耗方案保留；设备显示效果未核实。",
+  "methods": [
+    {
+      "id": "O12",
+      "label": "ExpodOverLimitByItemDialog/getDescription",
+      "body": 33543,
+      "before": "479e1323bda6560e5033a2f4d303e2932412d19c39b340844ecfb9a2d46fbbec",
+      "after": "a0468818a62ad753f0d18a755b29af19c61ebf5c3cd4a145c7a5a8cfc8a8be55",
+      "before_header": [
+        6,
+        2,
+        1,
+        2
+      ],
+      "after_header": [
+        9,
+        2,
+        1,
+        2
+      ],
+      "superseded_r1_after_sha256": "6e55a92902831e873f57f66e6725e751266466e45d903bad58a648ef409921fc",
+      "abc": "boot_ffc6",
+      "v33_archive_intersection": [],
+      "r4_target_intersection": [],
+      "five_composed_methods_intersection": false,
+      "composition": "无交集；按已锁定的方法体直接应用，不新增合成。",
+      "actual_final_method": {
+        "code_sha256": "a0468818a62ad753f0d18a755b29af19c61ebf5c3cd4a145c7a5a8cfc8a8be55",
+        "header": [
+          9,
+          2,
+          1,
+          2
+        ],
+        "method_id": 36362,
+        "check": {
+          "max_stack": 7,
+          "max_scope": 2,
+          "unreachable_instructions": 0
+        }
+      }
+    }
+  ],
+  "first_apk_version": "v34",
+  "status": "归档条目草稿",
+  "input_swf_sha256": "3b7b3391ae0aee01f15167fe1d5a5b69eddb71a64605c57486f025916611aaa4",
+  "r4_base_swf_sha256": "53890c19f5ced5c70ed2e327e62a8f2f800d8ce5f2fdff5f493ad5c758518642",
+  "final_swf_sha256": "3d5c9745f519beee68557df7bce3e4ff635c9bb127069ed85a8fd02b5cbedb8a",
+  "source_files": [
+    {
+      "path": "111-overlimit-dialog-paradox-text/pcode/boot_ffc6--ExpodOverLimitByItemDialog_getDescription.before.pcode.txt",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\105-overlimit-dialog-paradox-text\\pcode\\boot_ffc6--ExpodOverLimitByItemDialog_getDescription.before.pcode.txt",
+      "bytes": 722,
+      "sha256": "f7e2f7b484143a8f2205103319bf080961fee66b17a618b05d1fa421fb8440f2"
+    },
+    {
+      "path": "111-overlimit-dialog-paradox-text/pcode/boot_ffc6--ExpodOverLimitByItemDialog_getDescription.pcode.txt",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\105-overlimit-dialog-paradox-text\\pcode\\boot_ffc6--ExpodOverLimitByItemDialog_getDescription.pcode.txt",
+      "bytes": 1827,
+      "sha256": "27f58b3b664d39b7dce3a441b63b611558d402e7adad8658ff124c27d94cf11d"
+    },
+    {
+      "path": "111-overlimit-dialog-paradox-text/provenance/upstream-README.md",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\105-overlimit-dialog-paradox-text\\README.md",
+      "bytes": 2345,
+      "sha256": "691a04421627acd7453735a7e26bed8e9dc0a1fa796f91e1f59d495f8574bd67"
+    },
+    {
+      "path": "111-overlimit-dialog-paradox-text/source/apply.py",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\105-overlimit-dialog-paradox-text\\source\\apply.py",
+      "bytes": 980,
+      "sha256": "261a03475e763452953d31dde400c9fdbeeaac847ddc9ee50f4ab73d2294939d"
+    },
+    {
+      "path": "111-overlimit-dialog-paradox-text/source/run.py",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\105-overlimit-dialog-paradox-text\\source\\run.py",
+      "bytes": 1060,
+      "sha256": "738473e690caa1fd49c7fe5cb2fa464ce5e9d8aa77784ecf37eba438cdd4a453"
+    },
+    {
+      "path": "111-overlimit-dialog-paradox-text/source/v34_patches.py",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\105-overlimit-dialog-paradox-text\\source\\v34_patches.py",
+      "bytes": 11272,
+      "sha256": "4a67d7aefeee19eadbd344c9f07af7cc089b154135d287ea35acad8611613497"
+    }
+  ],
+  "upstream_source": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\105-overlimit-dialog-paradox-text",
+  "upstream_files_byte_identical": true,
+  "current_validation_scope": "离线；最终产物验证见根 build-report.json；本轮未运行设备。",
+  "upstream_history_scope": "provenance/upstream-README.md 中自测及真机记载仅属于来源线程，不冒认为本轮重跑。"
+}

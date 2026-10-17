@@ -7,10 +7,11 @@ import { getPlayerSync, updatePlayerSync } from "../../data/domains/player"
 import { getPaymentProductCountSync, getPaymentReceiptSync, insertPaymentReceiptSync } from "../../data/domains/payment"
 import { getSession } from "../../data/domains/session"
 import { resolvePlayerIdSync } from "../../data/activeAccount";
-import { generateDataHeaders, getServerTime } from "../../utils";
+import { generateDataHeaders } from "../../utils";
 import { getConfigSync } from "../../lib/assets";
 import paymentProducts from "../../../assets/payment_products.json";
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator";
+import { paymentGrantGuard } from "../../lib/payment-grant-guard";
 
 interface PaymentProduct {
     store_product_id: string
@@ -29,6 +30,7 @@ const PRODUCTS: Record<string, PaymentProduct> = paymentProducts as Record<strin
 const purchaseHistory: Record<string, number> = {}
 
 const routes = async (fastify: FastifyInstance) => {
+    const grantGuard = paymentGrantGuard(fastify)
     fastify.post("/item_list", async (request: FastifyRequest, reply: FastifyReply) => {
         const body = request.body as { api_count: number, viewer_id: number }
         const viewerId = body.viewer_id
@@ -80,7 +82,7 @@ const routes = async (fastify: FastifyInstance) => {
             })
         }
 
-        const product = PRODUCTS[productId]
+        const product = Object.prototype.hasOwnProperty.call(PRODUCTS, productId) ? PRODUCTS[productId] : undefined
         if (!product) {
             console.warn(`[PAYMENT-START] unknown product: ${productId}`)
             reply.header("content-type", "application/x-msgpack")
@@ -145,9 +147,9 @@ const routes = async (fastify: FastifyInstance) => {
 
         // Determine product_id from pending payment
         const productId = body.product_id || ""
-        const product = PRODUCTS[productId]
+        const product = Object.prototype.hasOwnProperty.call(PRODUCTS, productId) ? PRODUCTS[productId] : undefined
         if (!product) {
-            console.warn(`[PAYMENT-FINISH] unknown product: ${productId}, receipt: ${receipt}`)
+            console.warn(`[PAYMENT-FINISH] unknown product: ${productId}`)
             reply.header("content-type", "application/x-msgpack")
             return reply.status(200).send({
                 "data_headers": generateDataHeaders({ viewer_id: viewerId }),
@@ -166,6 +168,7 @@ const routes = async (fastify: FastifyInstance) => {
         const paymentKey = rawPaymentIdentity
             ? createHash("sha256").update(`${productId}\u0000${rawPaymentIdentity}`).digest("hex")
             : null
+        const purchaseKey = `${playerId}_${productId}`
         const result = await runPersistenceTransaction({
             domain: "player", playerId, operation: "payment_finish",
         }, () => {
@@ -181,7 +184,21 @@ const routes = async (fastify: FastifyInstance) => {
                         afterFree: previous.afterFreeVmoney,
                         times: previous.purchaseCount,
                         duplicate: true,
+                        denied: null,
+                        retryAfterMs: 0,
+                        budgetAt: 0,
                     }
+                }
+            }
+
+            const decision = grantGuard.check({ playerId, productId })
+            if (!decision.allowed) {
+                return {
+                    beforePaid: current.vmoney, beforeFree: current.freeVmoney,
+                    afterPaid: current.vmoney, afterFree: current.freeVmoney,
+                    times: paymentKey ? getPaymentProductCountSync(playerId, productId) : (purchaseHistory[purchaseKey] ?? 0),
+                    duplicate: false, denied: decision.reason,
+                    retryAfterMs: decision.retryAfterMs, budgetAt: decision.at,
                 }
             }
 
@@ -190,31 +207,38 @@ const routes = async (fastify: FastifyInstance) => {
             const afterFree = Math.min(current.freeVmoney + freeVmoney, maxVmoney)
             updatePlayerSync({ id: playerId, vmoney: afterPaid, freeVmoney: afterFree })
 
-            const purchaseKey = `${playerId}_${productId}`
             const times = paymentKey
                 ? getPaymentProductCountSync(playerId, productId) + 1
                 : (purchaseHistory[purchaseKey] ?? 0) + 1
-            purchaseHistory[purchaseKey] = times
             if (paymentKey) {
                 insertPaymentReceiptSync({
                     playerId, paymentKey, productId, paidVmoney, freeVmoney,
                     afterVmoney: afterPaid, afterFreeVmoney: afterFree, purchaseCount: times,
                 })
             }
-            return { beforePaid: current.vmoney, beforeFree: current.freeVmoney, afterPaid, afterFree, times, duplicate: false }
+            return { beforePaid: current.vmoney, beforeFree: current.freeVmoney, afterPaid, afterFree, times,
+                duplicate: false, denied: null, retryAfterMs: 0, budgetAt: decision.at }
+        }, {
+            afterCommit: committed => {
+                if (committed.duplicate || committed.denied) return
+                grantGuard.commit({ playerId, productId }, committed.budgetAt)
+                purchaseHistory[purchaseKey] = committed.times
+            },
         })
         const { afterPaid, afterFree, times } = result
 
-        console.log(`[PAYMENT-FINISH] player ${playerId}: paid ${result.beforePaid}->${afterPaid} (+${result.duplicate ? 0 : paidVmoney}), free ${result.beforeFree}->${afterFree} (+${result.duplicate ? 0 : freeVmoney}), product: ${productId}, times: ${times}${result.duplicate ? " duplicate=1" : ""}`)
+        const skipped = result.duplicate || result.denied
+        console.log(`[PAYMENT-FINISH] player ${playerId}: paid ${result.beforePaid}->${afterPaid} (+${skipped ? 0 : paidVmoney}), free ${result.beforeFree}->${afterFree} (+${skipped ? 0 : freeVmoney}), product: ${productId}, times: ${times}${result.duplicate ? " duplicate=1" : ""}${result.denied ? ` denied=${result.denied}` : ""}`)
 
         reply.header("content-type", "application/x-msgpack")
+        if (result.denied) reply.header("retry-after", Math.ceil(result.retryAfterMs / 1_000))
         return reply.status(200).send({
             "data_headers": generateDataHeaders({ viewer_id: viewerId }),
             "data": {
                 "after_vmoney": afterPaid,
                 "after_free_vmoney": afterFree,
-                "first_payment": times === 1,
-                "first_time": times === 1,
+                "first_payment": !result.denied && times === 1,
+                "first_time": !result.denied && times === 1,
                 "purchased_times_list": { [productId]: times },
                 "monthly_payment_total": 0,
                 "monthly_charge_bonus_info": null,

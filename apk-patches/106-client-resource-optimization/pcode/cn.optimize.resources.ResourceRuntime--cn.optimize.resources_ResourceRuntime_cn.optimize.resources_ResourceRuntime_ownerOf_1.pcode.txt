@@ -1,0 +1,28 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.resources.ResourceRuntime; label: cn.optimize.resources::ResourceRuntime$/cn.optimize.resources:ResourceRuntime::ownerOf|1; body: 3; method: 4
+# code SHA-256: 64946eb4c1153790610611baf7fc582964711dcc8666a2cbc84c36c855d23dc5; header: [2, 2, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: pushnull []
+#0004 ofs0004: equals []
+#0005 ofs0005: not []
+#0006 ofs0006: dup []
+#0007 ofs0007: iffalse [] -> #15
+#0008 ofs000b: pop []
+#0009 ofs000c: getlex [(7, (5, 'cn.optimize.resources:ResourceRuntime'), 'completions')]
+#0010 ofs000e: getlocal_1 []
+#0011 ofs000f: getproperty [(27, ((5, 'cn.optimize.resources:ResourceRuntime'), (26, 'cn.optimize.resources:ResourceRuntime'), (26, 'Object'), (22, 'cn.optimize.resources'), (23, 'cn.optimize.resources'), (5, 'FilePrivateNS:ResourceRuntime'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0012 ofs0011: pushnull []
+#0013 ofs0012: equals []
+#0014 ofs0013: not []
+#0015 ofs0014: iffalse [] -> #20
+#0016 ofs0018: getlex [(7, (5, 'cn.optimize.resources:ResourceRuntime'), 'completions')]
+#0017 ofs001a: getlocal_1 []
+#0018 ofs001b: getproperty [(27, ((5, 'cn.optimize.resources:ResourceRuntime'), (26, 'cn.optimize.resources:ResourceRuntime'), (26, 'Object'), (22, 'cn.optimize.resources'), (23, 'cn.optimize.resources'), (5, 'FilePrivateNS:ResourceRuntime'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0019 ofs001d: jump [] -> #22
+#0020 ofs0021: getlex [(7, (5, 'cn.optimize.resources:ResourceRuntime'), 'currentOwner')]
+#0021 ofs0023: coerce_a []
+#0022 ofs0024: returnvalue []
+# exceptions: []

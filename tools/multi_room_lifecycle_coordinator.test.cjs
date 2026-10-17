@@ -21,6 +21,8 @@ function room(coordinator) {
         is_npc_mode: false,
         npc_count: 0,
         expected_real_viewer_ids: [],
+        member_viewer_ids: [],
+        member_player_ids: {},
         lobby_generation: 0,
         rematch_wait_started_at: null,
         settlement_return_pending: false,
@@ -41,7 +43,7 @@ async function main() {
     assert.equal(value.lifecycle.phase, "BATTLE")
     assert.equal(value.lobby_generation, 1)
     assert.equal(value.raising_state, 4)
-    assert.match(value.lifecycle.battleSessionId, /^123456:1:1:2$/)
+    assert.equal(value.lifecycle.battleSessionId, `${value.lifecycle.instanceId}:1:1:2`)
 
     const duplicateStart = coordinator.commitBattleStart(value)
     assert.deepEqual(duplicateStart, { ok: false, reason: "INVALID_TRANSITION" })

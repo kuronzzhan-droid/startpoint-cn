@@ -1,5 +1,7 @@
+import { getPlayerClientExpTime } from "../../lib/player-time-compat"
 import type { FastifyReply } from "fastify"
 import type { Player } from "../../data/types"
+import type { PlayerActiveQuest } from "../../data/types"
 import type { MultiRoom } from "../../lib/types/multi"
 import type { MultiAbortBody, MultiFinishBody, MultiStartBody } from "../types"
 import {
@@ -19,9 +21,11 @@ import { clientSerializeEquipment } from "../../lib/equipment"
 import type { RewardPlayerCharacterExpResult } from "../../lib/types/character"
 import { generateDataHeaders, getServerTime, realToVirtual } from "../../utils"
 import { activeQuests } from "../../routes/api/singleBattleQuest"
-import { getRoom } from "../room/manager"
-import { sessionManager } from "../state/SessionManager"
-import { embeddedMultiCoordinator } from "../coordinator/embedded"
+import { getRoomCommandGateway, assertRealtimeOwnerEpoch } from "../coordinator/default-runtime"
+import { publishDurableOwnerDecision } from "../coordinator/durable-owner-event"
+import type { FiveBossStartClaim } from "../coordinator/five-boss-command-handlers"
+import { RoomCommandError, createRoomCommandId } from "../coordinator/command-protocol"
+import { performance } from "perf_hooks"
 import {
     abortFiveBossBattle,
     finishFiveBossBattle,
@@ -33,13 +37,11 @@ import {
 import { FIVE_BOSS_GAUNTLET, isFiveBossGauntletQuest } from "../five-boss/contract"
 import { buildFiveBossAdditionalRewardDrops, buildFiveBossWeaponAdditionalRewardDrops } from "../five-boss/rewards"
 import { abandonFiveBossSoloForMultiSync } from "../five-boss/solo-runtime"
-import { waitForFiveBossSignalPersistence } from "../five-boss/lobby-runtime"
 import { getDb } from "../../data/db"
 import { measureSettlementPhaseAsync } from "../../lib/settlement-performance"
 import { fiveBossDiagnostics } from "../../lib/coalesced-diagnostics"
 import { fiveBossConnectionDiagnostics } from "../five-boss/connection-diagnostic"
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator"
-import { classifyMultiActiveQuestRecovery } from "../../lib/multi-active-quest-recovery"
 
 /** Small structured evidence, without logging tokens, party data or the full request. */
 export function logFiveBossRequestFailure(operation: "start" | "finish" | "abort", body: MultiStartBody | MultiFinishBody | MultiAbortBody,
@@ -106,9 +108,7 @@ export function isFiveBossBattleRequestError(error: unknown): boolean {
 
 
 export function shouldHandleFiveBossStart(body: MultiStartBody): boolean {
-    const room = body.room_number ? getRoom(body.room_number) : undefined
     return isFiveBossGauntletQuest(body.category, body.quest_id)
-        || !!room && isFiveBossGauntletQuest(room.category, room.quest_id)
 }
 
 
@@ -139,51 +139,22 @@ function clearMatchingMemoryActive(playerId: number, playId: string): void {
 }
 
 
-function terminalRoomTransition(
+async function terminalRoomTransition(
     roomNumber: string,
     runId: string,
     runStatus: "active" | "settled" | "aborted",
-): void {
+): Promise<void> {
     if (runStatus === "active") return
-    const room = getRoom(roomNumber)
-    if (
-        !room
-        || !isFiveBossGauntletQuest(room.category, room.quest_id)
-        || room.five_boss_runtime?.runId !== runId
-    ) {
-        return
-    }
-
-    sessionManager.clearBattleExpectedCount(roomNumber)
-    if (runStatus === "settled") {
-        const wasSettlementReturnPending = room.settlement_return_pending
-        const transition = embeddedMultiCoordinator.beginSettlementReturn(room, room.lobby_generation)
-        if (!transition.ok) {
-            console.warn(`[MULTI] five-boss settled: unable to retain room ${roomNumber}`
-                + ` generation=${room.lobby_generation} reason=${transition.reason}`)
-            sessionManager.commitRoomDisband(roomNumber, "five_boss_settlement_return_failed")
-            return
-        }
-        delete room.five_boss_runtime
-        // Keep the room through the settlement return handshake.  The CN
-        // client closes the battle socket before HTTP finish and then uses
-        // the original room code for the rematch.  Disbanding here makes that
-        // returning guest receive room_not_found before the host can re-enter.
-        if (!wasSettlementReturnPending) sessionManager.beginSettlementReturnGrace(roomNumber)
-        console.log(`[MULTI] five-boss settled: room ${roomNumber} entered RETURNING`
-            + ` generation=${room.lobby_generation}`)
-        return
-    }
-    sessionManager.commitRoomDisband(roomNumber, "five_boss_aborted")
+    await publishDurableOwnerDecision("fiveBoss.terminal", { roomNumber, runId, runStatus })
 }
 
 
-function afterResponse(reply: FastifyReply, operation: () => void): void {
+function afterResponse(reply: FastifyReply, operation: () => void | Promise<void>): void {
     let completed = false
     const run = () => {
         if (completed) return
         completed = true
-        try { operation() }
+        try { void Promise.resolve(operation()).catch(error => console.error("[MULTI] five-boss post-response cleanup failed", error)) }
         catch (error) {
             console.error(`[MULTI] five-boss post-response cleanup failed: ${(error as Error).message}`)
         }
@@ -229,7 +200,7 @@ function resolveFiveBossRoomNumber(bodyRoomNumber: unknown, playerId: number, pl
  * 按整轮身份区别同房号的新旧局；活动房间仍属于旧局时不清理。
  * 此函数与新局 start 同处一个事务，开新局失败时旧局保持原状。
  */
-function abandonStaleFiveBossRun(body: MultiStartBody, playerId: number): void {
+function abandonStaleFiveBossRun(body: MultiStartBody, playerId: number, authorization: FiveBossStartClaim["oldPlayRecovery"]): void {
     const stale = getPlayerActiveQuestSync(playerId)
     if (!stale || stale.playId === body.play_id) return
     try {
@@ -253,24 +224,8 @@ function abandonStaleFiveBossRun(body: MultiStartBody, playerId: number): void {
         }
         const oldRun = getFiveBossRunByClientSync({ playerId, clientPlayId: stale.playId })
         const oldRoomNumber = oldRun?.roomNumber ?? stale.roomNumber
-        const oldRoom = oldRoomNumber ? getRoom(oldRoomNumber) : undefined
-        if (oldRun
-            && oldRoom?.lifecycle.phase === "BATTLE"
-            && oldRoom.five_boss_runtime?.runId === oldRun.runId
-            && oldRoom.five_boss_runtime.expectedRealPlayerIds.includes(playerId)) {
-            return
-        }
-        const oldViewerId = oldRoom?.member_viewer_ids.find(viewerId =>
-            oldRoom.member_player_ids[viewerId] === playerId)
-        const recovery = classifyMultiActiveQuestRecovery(
-            stale,
-            oldRoom,
-            oldViewerId ?? 0,
-            oldRoomNumber && oldViewerId
-                ? sessionManager.isBattleSeatRetired(oldRoomNumber, oldViewerId)
-                : false,
-        )
-        if (recovery.recoverable) return
+        if (!authorization || authorization.playId !== stale.playId || authorization.recoverable
+            || ("retained" in authorization && authorization.retained)) return
         if (!oldRun || !oldRoomNumber || !isFiveBossGauntletQuest(stale.category, stale.questId)) {
             if (deletePlayerActiveQuestIfPlayIdSync(playerId, stale.playId)) {
                 if (activeQuests[playerId]?.playId === stale.playId) {
@@ -278,7 +233,7 @@ function abandonStaleFiveBossRun(body: MultiStartBody, playerId: number): void {
                 }
                 console.log(`[MULTI] five-boss start: abandoned orphan active quest`
                     + ` player=${playerId} play=${stale.playId}`
-                    + ` reason=${recovery.reason}`)
+                    + ` reason=${authorization.reason}`)
             }
             return
         }
@@ -365,7 +320,7 @@ function buildFinishData(
         user_info: {
             free_mana: player.freeMana,
             exp_pool: player.expPool,
-            exp_pooled_time: getServerTime(player.expPooledTime),
+            exp_pooled_time: getPlayerClientExpTime(player),
             free_vmoney: player.freeVmoney,
             rank_point: player.rankPoint,
             // getRankDegree 算出来的是玩家 **rank**(高 rank 号如 250),不是称号表 degree 的键;
@@ -416,13 +371,47 @@ function buildFinishData(
 }
 
 
+/** A receipt/run alone does not prove this player's active original start. */
+function readCurrentDurableFiveBossStart(body: MultiStartBody, playerId: number): {
+    runId: string; activeQuest: PlayerActiveQuest
+} | null {
+    if (getDb().inTransaction) throw new Error("FIVE_BOSS_DURABILITY_UNRESOLVED")
+    const run = getFiveBossRunByClientSync({ playerId, clientPlayId: body.play_id })
+    const activeQuest = getPlayerActiveQuestSync(playerId)
+    if (!run || run.status !== "active" || run.roomNumber !== body.room_number
+        || !activeQuest?.isMulti || activeQuest.playId !== body.play_id || activeQuest.roomNumber !== body.room_number
+        || Number(activeQuest.category) !== Number(body.category) || Number(activeQuest.questId) !== Number(body.quest_id)) return null
+    const member = getDb().prepare(`SELECT started_at, aborted_at FROM five_boss_gauntlet_members
+        WHERE run_id = ? AND player_id = ? AND client_play_id = ?`).get(run.runId, playerId, body.play_id) as {
+        started_at: string | null; aborted_at: string | null
+    } | undefined
+    return member?.started_at && !member.aborted_at ? { runId: run.runId, activeQuest } : null
+}
+
 export async function handleFiveBossStart(
     body: MultiStartBody,
     playerId: number,
     reply: FastifyReply,
 ) {
-    const room = getRoom(body.room_number)
-    if (!room) {
+    const staleQuest = getPlayerActiveQuestSync(playerId)
+    const staleRun = staleQuest ? getFiveBossRunByClientSync({ playerId, clientPlayId: staleQuest.playId }) : null
+    const durableStart = readCurrentDurableFiveBossStart(body, playerId)
+    const prepareId = createRoomCommandId()
+    let prepared: FiveBossStartClaim | { status: "unavailable" }
+    try { prepared = await getRoomCommandGateway().execute("fiveBoss.start.prepare", JSON.parse(JSON.stringify({
+        body, playerId, ...(staleQuest ? { staleQuest } : {}),
+        ...(staleRun ? { staleFrozenRunId: staleRun.runId } : {}),
+        ...(durableStart ? { durableRunId: durableStart.runId } : {}),
+    })), { commandId: prepareId }) as FiveBossStartClaim | { status: "unavailable" } }
+    catch (error) {
+        // No SQL has started. A known per-attempt token can safely resolve a
+        // late Prepare without releasing any concurrent request's claim.
+        try { await getRoomCommandGateway().execute("fiveBoss.start.cancel", {
+            token: prepareId, playerId, playId: body.play_id, roomNumber: body.room_number,
+        }) } catch (cancelError) { console.error("[FIVE-BOSS] prepare cancellation unresolved", cancelError) }
+        throw error
+    }
+    if (prepared.status !== "ready") {
         console.warn(`[MULTI] five-boss start acknowledged as unavailable:`
             + ` viewer=${body.viewer_id} room=${body.room_number} reason=room_missing_after_gate`)
         reply.header("content-type", "application/x-msgpack")
@@ -434,6 +423,9 @@ export async function handleFiveBossStart(
             data: {},
         })
     }
+    const claim = prepared
+    const room = claim.room
+    const claimDeadline = performance.now() + claim.remainingMs
 
     // 五重决战不消耗、不结算任何强化点:客户端在"降临讨伐"页签建房时会按官方 boss 战
     // 习惯默认勾上领主强化点(use_boss_boost_point=true),真机实测直接被 runtime 的
@@ -444,13 +436,24 @@ export async function handleFiveBossStart(
             + ` viewer=${body.viewer_id} room=${body.room_number}`
             + ` boost=${body.use_boost_point}/${body.use_boss_boost_point}`)
     }
-    const previousMemory = activeQuests[playerId]
+    let memoryBeforeCleanup: typeof activeQuests[number] | undefined = undefined
+    let memoryAfterCleanup: typeof activeQuests[number] | undefined = undefined
+    let cleanupChanged = false
     let result: ReturnType<typeof startFiveBossBattle>
     try {
         result = await runPersistenceTransaction({
             domain: "multi-settlement", playerId, operation: "five_boss_start",
         }, () => {
-            abandonStaleFiveBossRun(body, playerId)
+            // The copied room is input, not a live guard. The owner pins the
+            // exact generation until this token is explicitly resolved.
+            try {
+                assertRealtimeOwnerEpoch(claim.ownerEpoch, claim.token)
+                if (performance.now() >= claimDeadline) throw new Error("Claim deadline elapsed")
+            } catch { throw new FiveBossBattleRuntimeError("run_identity_mismatch", "Realtime start claim is no longer valid") }
+            memoryBeforeCleanup = activeQuests[playerId]
+            abandonStaleFiveBossRun(body, playerId, claim.oldPlayRecovery)
+            memoryAfterCleanup = activeQuests[playerId]
+            cleanupChanged = memoryBeforeCleanup !== memoryAfterCleanup
             const result = startFiveBossBattle({
                 playerId,
                 clientPlayId: body.play_id,
@@ -472,12 +475,47 @@ export async function handleFiveBossStart(
             return result
         })
     } catch (error) {
-        if (previousMemory) activeQuests[playerId] = previousMemory
-        else delete activeQuests[playerId]
+        let durableAfterFailure: ReturnType<typeof readCurrentDurableFiveBossStart> = null
+        let readFailed = false
+        try { durableAfterFailure = readCurrentDurableFiveBossStart(body, playerId) }
+        catch { readFailed = true }
+        if (durableAfterFailure?.runId === claim.frozenRunId) {
+            // A committed original start can survive a lost result or a later
+            // observer failure. Reconcile it without executing payment again.
+            const persisted = durableAfterFailure.activeQuest
+            activeQuests[playerId] = { ...persisted, roomNumber: body.room_number,
+                entryItemId: persisted.entryItemId ?? undefined, eventId: persisted.eventId ?? undefined,
+                partySlot: persisted.partySlot ?? undefined, startedAtMs: persisted.startedAtMs ?? undefined }
+            try { await publishDurableOwnerDecision("fiveBoss.start.commit", {
+                token: claim.token, playerId, playId: body.play_id, runId: durableAfterFailure.runId,
+            }) } catch (commitError) { console.error("[FIVE-BOSS] durable start reconciliation unresolved", commitError) }
+        } else if (readFailed || (error as { outcomeUnknown?: boolean })?.outcomeUnknown === true) {
+            // An ambiguous durable result is not permission to unlock lifecycle
+            // or retry payment. Keep the original token for explicit reconciliation.
+            console.error("[FIVE-BOSS] persistence outcome unknown; start remains pinned", error)
+        } else {
+            try { await getRoomCommandGateway().execute("fiveBoss.start.cancel", { token: claim.token, playerId, playId: body.play_id }) }
+            catch (cancelError) { console.error("[FIVE-BOSS] start cancellation unresolved; owner remains pinned", cancelError) }
+            // Restore only the stale cleanup performed by this transaction.
+            // A concurrent successful same-play request may already own memory.
+            if (cleanupChanged && activeQuests[playerId] === memoryAfterCleanup) {
+                if (memoryBeforeCleanup) activeQuests[playerId] = memoryBeforeCleanup
+                else delete activeQuests[playerId]
+            }
+        }
         throw error
     }
     activeQuests[playerId] = result.activeQuest
-    fiveBossConnectionDiagnostics.begin(room)
+    try {
+        const committed = await publishDurableOwnerDecision("fiveBoss.start.commit", {
+            token: claim.token, playerId, playId: body.play_id, runId: result.runId,
+        }) as { applied: boolean } | undefined
+        if (committed?.applied === false) console.error("[FIVE-BOSS] paid start awaits owner reconciliation", { playerId, playId: body.play_id })
+    } catch (error) {
+        // The durable original run/play remains authoritative for payment.
+        // Never cancel or rerun a paid decision because the owner ACK was lost.
+        console.error("[FIVE-BOSS] paid start commit outcome unknown", error)
+    }
     fiveBossConnectionDiagnostics.memberEvent(result.runId, playerId, "http_start", result.startStatus)
     const player = requirePlayer(playerId)
 
@@ -502,6 +540,8 @@ export async function handleFiveBossFinish(
 ) {
     const memoryBeforeFinish = activeQuests[playerId]
     const boundRun = getFiveBossRunByClientSync({ playerId, clientPlayId: body.play_id })
+    const alreadyPaid = !!boundRun && !!getDb().prepare("SELECT 1 FROM five_boss_gauntlet_receipts WHERE run_id = ? AND player_id = ?")
+        .get(boundRun.runId, playerId)
     if (boundRun) fiveBossConnectionDiagnostics.memberEvent(boundRun.runId, playerId, "http_finish",
         body.is_accomplished === true ? "success_requested" : "failure_requested")
     const roomNumber = resolveFiveBossRoomNumber(body.room_number, playerId, body.play_id, boundRun)
@@ -512,8 +552,11 @@ export async function handleFiveBossFinish(
             // Failed finishes become aborts and do not need successful battle
             // proof.  Waiting here would make an abort depend on an unrelated
             // proof write that may be queued behind a closing socket.
-            if (boundRun && body.is_accomplished === true) {
-                await waitForFiveBossSignalPersistence(boundRun.runId, playerId)
+            if (boundRun?.status === "active" && !alreadyPaid && body.is_accomplished === true) {
+                const barrier = await getRoomCommandGateway().execute("fiveBoss.proof.barrier", {
+                    runId: boundRun.runId, playerId, roomNumber,
+                }) as { ok: boolean }
+                if (!barrier.ok) throw new RoomCommandError("PROOF_PERSISTENCE_UNAVAILABLE", "Accepted proof is not durably acknowledged", body.play_id, true)
             }
             return runPersistenceTransaction({
                 domain: "multi-settlement", playerId, operation: "five_boss_finish",
@@ -597,6 +640,11 @@ export async function handleFiveBossFinish(
         })
     }
     clearMatchingMemoryActive(playerId, body.play_id)
+    if (result.kind === "success") {
+        try { await publishDurableOwnerDecision("fiveBoss.terminal", {
+            roomNumber, runId: result.runId, runStatus: "active", playerId, viewerId: body.viewer_id, playId: body.play_id,
+        }) } catch (error) { console.error("[FIVE-BOSS] durable settlement room event unresolved", error) }
+    }
     if (result.runStatus !== "active") {
         afterResponse(reply, () => terminalRoomTransition(roomNumber, result.runId, result.runStatus))
     }

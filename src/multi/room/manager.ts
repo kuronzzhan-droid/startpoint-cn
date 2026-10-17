@@ -9,6 +9,10 @@ import { embeddedMultiCoordinator } from "../coordinator/embedded";
 import { getQuestFromCategorySync } from "../../lib/assets";
 import { fiveBossConnectionDiagnostics } from "../five-boss/connection-diagnostic";
 import { registerMemoryCounters } from "../../lib/memory-diagnostics";
+import { clearRematchReturnReservations, forgetReturnReservation,
+    getFrozenRematchViewerIds, getReservedReturnViewerIds, markMemberReturned } from "./rematch-roster";
+import { assertRealtimeAuthority } from "../coordinator/runtime-role";
+import { hasRoomStartClaims } from "../coordinator/room-start-claims";
 
 const rooms = new Map<string, MultiRoom>();
 // access_token -> room_number. Tokens are random and never reassigned, so a
@@ -69,7 +73,8 @@ function cleanExpiredRooms() {
         }).catch(error => console.error(`[MULTI] room cleanup failed: room=${roomNumber}`, error));
     }
 }
-setInterval(cleanExpiredRooms, CLEAN_INTERVAL_MS);
+const cleanupTimer = setInterval(cleanExpiredRooms, CLEAN_INTERVAL_MS);
+cleanupTimer.unref();
 
 export function generateRoomNumber(): string {
     for (let attempt = 0; attempt < 100; attempt += 1) {
@@ -113,6 +118,7 @@ export function createRoom(
     hostMainCharacterId: number,
     isNpcMode: boolean = false
 ): MultiRoom {
+    assertRealtimeAuthority();
     const roomNumber = generateRoomNumber();
     const room: MultiRoom = {
         room_number: roomNumber,
@@ -149,12 +155,14 @@ export function createRoom(
 }
 
 export function getRoom(roomNumber: string): MultiRoom | undefined {
+    assertRealtimeAuthority();
     const room = rooms.get(roomNumber);
     if (!room) gameVerboseLog(() => `[MULTI] room not found: ${roomNumber}`);
     return room;
 }
 
 export function getRoomByToken(token: string): MultiRoom | undefined {
+    assertRealtimeAuthority();
     if (typeof token !== "string" || token.length === 0) return undefined;
     const roomNumber = roomNumbersByToken.get(token);
     if (roomNumber === undefined) return undefined;
@@ -164,6 +172,7 @@ export function getRoomByToken(token: string): MultiRoom | undefined {
 
 /** Rooms whose host is the given viewer (used when that host creates a new room). */
 export function getRoomsHostedBy(hostViewerId: number): MultiRoom[] {
+    assertRealtimeAuthority();
     const result: MultiRoom[] = [];
     for (const room of rooms.values()) {
         if (room.host_viewer_id === hostViewerId) result.push(room);
@@ -184,6 +193,7 @@ function getRoomEventId(room: MultiRoom): number | undefined {
 }
 
 export function getRooms(categoryId: number, eventId?: number): MultiRoom[] {
+    assertRealtimeAuthority();
     const result: MultiRoom[] = [];
     for (const room of rooms.values()) {
         if (room.category !== categoryId) continue;
@@ -200,12 +210,11 @@ export function getRooms(categoryId: number, eventId?: number): MultiRoom[] {
 }
 
 export function isRoomMember(room: MultiRoom, viewerId: number): boolean {
+    if (room.lifecycle?.phase === "DISBANDED") return false
     if (room.member_viewer_ids?.includes(viewerId)) return true
     if (room.host_viewer_id === viewerId) return true
-    if (room.expected_real_viewer_ids.includes(viewerId)) return true
-    if (room.mates.some(mate => mate.viewer_id === viewerId)) return true
-    return sessionManager.getClientsInRoom(room.room_number, room.lobby_generation)
-        .some(client => !client.isBattle && client.viewerId === viewerId)
+    if (room.lifecycle?.phase === "BATTLE" && getFrozenRematchViewerIds(room).includes(viewerId)) return true
+    return getReservedReturnViewerIds(room).includes(viewerId)
 }
 
 /**
@@ -225,16 +234,20 @@ export function getRoomAcceptedSeatCount(room: MultiRoom): number {
 }
 
 export function addRoomMember(roomNumber: string, viewerId: number, playerId: number): boolean {
+    assertRealtimeAuthority();
     const room = rooms.get(roomNumber)
     if (!room) return false
     if (!room.member_viewer_ids.includes(viewerId)) room.member_viewer_ids.push(viewerId)
     room.member_player_ids[viewerId] = playerId
+    markMemberReturned(room, viewerId)
     return true
 }
 
-export function removeRoomMember(roomNumber: string, viewerId: number): boolean {
+export function removeRoomMember(roomNumber: string, viewerId: number, expectedGeneration?: number): boolean {
+    assertRealtimeAuthority();
     const room = rooms.get(roomNumber)
-    if (!room || viewerId === room.host_viewer_id) return false
+    if (!room || viewerId === room.host_viewer_id || room.lifecycle.phase !== "LOBBY"
+        || (expectedGeneration !== undefined && expectedGeneration !== room.lobby_generation)) return false
 
     let changed = false
     const index = room.member_viewer_ids.indexOf(viewerId)
@@ -258,6 +271,7 @@ export function removeRoomMember(roomNumber: string, viewerId: number): boolean 
     const mateCount = room.mates.length
     room.mates = room.mates.filter(mate => mate.viewer_id !== viewerId)
     if (room.mates.length !== mateCount) changed = true
+    forgetReturnReservation(room, viewerId)
 
     return changed
 }
@@ -274,6 +288,7 @@ export function getRoomMemberPlayerId(room: MultiRoom, viewerId: number): number
 }
 
 export function setRoomBattle(roomNumber: string): boolean {
+    assertRealtimeAuthority();
     const room = rooms.get(roomNumber);
     if (!room) return false;
     const lifecycle = embeddedMultiCoordinator.ensureLifecycle(room);
@@ -282,7 +297,10 @@ export function setRoomBattle(roomNumber: string): boolean {
 }
 
 export function disbandRoom(roomNumber: string, reason = "room_manager_delete"): boolean {
+    assertRealtimeAuthority();
     const room = rooms.get(roomNumber);
+    if (room && hasRoomStartClaims(room)) return false;
+    if (room) clearRematchReturnReservations(room);
     if (room) fiveBossConnectionDiagnostics.roomEvent(roomNumber, "room_disband", reason);
     if (room) embeddedMultiCoordinator.commitDisband(room, reason);
     const deleted = rooms.delete(roomNumber);
@@ -303,6 +321,7 @@ export function disbandRoom(roomNumber: string, reason = "room_manager_delete"):
 }
 
 export function updateHostEntryTime(roomNumber: string): boolean {
+    assertRealtimeAuthority();
     const room = rooms.get(roomNumber);
     if (!room) return false;
     room.host_entry_time = getServerTime();

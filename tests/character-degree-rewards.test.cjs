@@ -34,6 +34,7 @@ const catalogIds = [
     9910087, 9910088, 9910089, 9910075, 9910076, 9910077,
     9910078, 9910079, 9910080, 9910081, 9910082, 9910083,
     9910084, 9910085, 9910086,
+    9910090, 9910091,
 ]
 const allIds = [...catalogIds].sort((a, b) => a - b)
 const db = getDb()
@@ -86,8 +87,8 @@ test.after(() => {
     fs.rmSync(resolved, { recursive: true })
 })
 
-test('43 characters and 89 stable client/server definitions agree with the active master accessor', () => {
-    assert.equal(catalog.CHARACTER_DEGREE_CATALOG.length, 43)
+test('44 characters and 91 stable client/server definitions agree with the active master accessor', () => {
+    assert.equal(catalog.CHARACTER_DEGREE_CATALOG.length, 44)
     assert.deepEqual(catalog.CHARACTER_DEGREE_CATALOG.flatMap(row => [...row.degree_ids]), catalogIds)
     assert.equal(characterExpCaps[5][4], catalog.CHARACTER_DEGREE_LEVEL_100_EXP)
     assert.equal(rewards.characterDegreeRewardsEnabled(), true)
@@ -176,7 +177,7 @@ test('missing, disabled, malformed and redirected activation files fail closed',
     assert.deepEqual(owned(p), [])
 })
 
-test('one successful practice grants all 89 eligible inventory variants, without putting them in the party', () => {
+test('one successful practice grants all 91 eligible inventory variants, without putting them in the party', () => {
     const p = player(); for (const id of catalog.CHARACTER_DEGREE_CHARACTER_IDS) own(p, id)
     recordBattleMissionDimensions(practice(p))
     assert.deepEqual(owned(p), allIds)

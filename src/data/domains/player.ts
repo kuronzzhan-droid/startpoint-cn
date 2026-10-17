@@ -1,7 +1,7 @@
 import { cachedStatement } from "../../lib/cached-statement"
 import { getPlayerPortableDegreesSync, grantPlayerDegreeSync, validatePortableDegreeList } from "./degree";
 import { Player, RawPlayer, MergedPlayerData, PartyCategory, PlayerPartyGroup, Account, PlayerParty, DailyChallengePointListEntry, DailyChallengePointListCampaign, RawDailyChallengePointListEntry, RawDailyChallengePointListCampaign, PlayerRushEventPlayedParty, RawPlayerRushEventPlayedParty, UserRushEventPlayedParty } from "../types";
-import { getServerDate, getTimeOffset } from "../../utils";
+import { getServerDate } from "../../utils";
 import { getDefaultPlayerData, deserializeBoolean, serializeBoolean } from "../utils";
 import { getAccountSync } from "./account";
 import { getPlayerQuestProgressSync } from "./quest";
@@ -12,6 +12,7 @@ import { ensurePlayerPassCardLoginProgressSync } from "./pass-card";
 import dailyChallengePointLookup from "../../../assets/daily_challenge_point_lookup.json";
 import { gameVerboseLog } from "../../lib/game-logging";
 import { runPersistenceSqlCommand, runPersistenceTransactionSync } from "../../lib/persistence-coordinator";
+import { getExistingPlayerTimeStateSync, getPlayerBusinessDateSync, getPlayerBusinessOffsetSync } from "../../lib/player-time-compat";
 
 type DailyChallengePointLookup = Record<string, { maxPoint: number, isRecovery: boolean, name: string }>
 
@@ -77,6 +78,7 @@ import { getPlayerCharactersManaNodeAwakeLevelsSync, insertPlayerCharactersSync,
 import { insertPlayerDrawnQuestsSync, insertPlayerQuestProgressListSync } from "./quest";
 import { insertPlayerGachaInfoListSync, insertPlayerGachaCampaignListSync , getPlayerGachaInfoListSync, updatePlayerGachaInfoSync, getPlayerGachaCampaignListSync, updatePlayerGachaCampaignSync } from "./gacha";
 import { insertPlayerBoxGachasSync } from "./boxGacha";
+import { getBoxGachaSync } from "../../lib/assets";
 import { insertPlayerRushEventListSync, insertPlayerRushEventClearedFolderListSync, insertPlayerRushEventPlayedPartyListSync } from "./rushEvent";
 import { deletePlayerCategoryMissionsSync, insertPlayerCategoryMissionListSync, insertPlayerClearedRegularMissionListSync, insertPlayerActiveMissionsSync } from "./mission";
 import { insertPlayerPeriodicRewardPointsListSync, insertPlayerStartDashExchangeCampaignsSync, insertPlayerMultiSpecialExchangeCampaignsSync } from "./campaign";
@@ -1036,41 +1038,16 @@ export function insertDefaultPlayerSync(
     // insert active missions
     insertPlayerActiveMissionsSync(playerId, {})
 
-    // insert box gacha
-    insertPlayerBoxGachasSync(playerId, {
-        "1001": [
-            {
-                boxId: 1,
-                resetTimes: 0,
-                remainingNumber: 572,
-                isClosed: false
-            },
-            {
-                boxId: 2,
-                resetTimes: 0,
-                remainingNumber: 647,
-                isClosed: false
-            },
-            {
-                boxId: 3,
-                resetTimes: 0,
-                remainingNumber: 732,
-                isClosed: false
-            },
-            {
-                boxId: 4,
-                resetTimes: 0,
-                remainingNumber: 912,
-                isClosed: false
-            },
-            {
-                boxId: 5,
-                resetTimes: 0,
-                remainingNumber: 1401,
-                isClosed: false
-            },
-        ]
-    })
+    // Seed only a new player's default gacha; imported and existing rows retain their progress.
+    const defaultBoxGacha = getBoxGachaSync(1001)
+    if (defaultBoxGacha !== null) {
+        insertPlayerBoxGachasSync(playerId, {
+            "1001": Object.entries(defaultBoxGacha.boxes).map(([boxId, rewards]) => ({
+                boxId: Number(boxId), resetTimes: 0, isClosed: false,
+                remainingNumber: Object.values(rewards).reduce((total, reward) => total + reward.available, 0),
+            })),
+        })
+    }
 
     // insert start dash campaign list
     insertPlayerStartDashExchangeCampaignsSync(playerId, [])
@@ -1232,6 +1209,26 @@ export function adjustPlayerExpPoolSync(
 
 const LEGACY_REPLACE_PRESERVED_RELATIONS = [
     {
+        table: "player_time_state",
+        where: "player_id = ?",
+        parameters: (playerId: number) => [playerId],
+    },
+    {
+        table: "player_time_migration_ledger",
+        where: "player_id = ?",
+        parameters: (playerId: number) => [playerId],
+    },
+    {
+        table: "players_mails",
+        where: "player_id = ? AND id IN (SELECT mail_id FROM daily_vmoney_mail_grants WHERE player_id = ?)",
+        parameters: (playerId: number) => [playerId, playerId],
+    },
+    {
+        table: "daily_vmoney_mail_grants",
+        where: "player_id = ?",
+        parameters: (playerId: number) => [playerId],
+    },
+    {
         table: "players_follows",
         where: "follower_player_id = ? OR followed_player_id = ?",
         parameters: (playerId: number) => [playerId, playerId],
@@ -1330,12 +1327,14 @@ export function replacePlayerDataSync(
     }
     validatePortableDegreeList(replaceWith.degreeList)
 
-    // Import, clone and default-template restoration all pass through this
-    // function. Preserve the explicit EXP balance but start regeneration from
-    // the current virtual clock so a checkpoint from another date cannot be
-    // sent to the client as a future timestamp.
-    replaceWith.player.expPooledTime = getServerDate()
-    replaceWith.player.timeOffset = getTimeOffset() ?? 0
+    // Import preserves the explicit EXP balance and starts regeneration in
+    // the destination's existing clock mode. Source offsets and elapsed time
+    // never create an implicit destination migration or additional EXP.
+    const importTimeState = getExistingPlayerTimeStateSync(playerId, getDb())
+    const importDate = getPlayerBusinessDateSync(playerId, undefined, getDb())
+    replaceWith.player.expPooledTime = importDate
+    replaceWith.player.timeOffset = getPlayerBusinessOffsetSync(playerId, getDb())
+    replaceWith.player.lastLoginTime = importDate
 
     // Older exports did not contain per-node awake levels. Preserve the current
     // values for every imported learned node instead of silently resetting them.
@@ -1354,7 +1353,10 @@ export function replacePlayerDataSync(
     }
 
     const replace = () => runPersistenceTransactionSync({ domain: "player", playerId, operation: "replace_player_data" }, () => {
-        const preservedRelations = LEGACY_REPLACE_PRESERVED_RELATIONS.map(specification => ({
+        const preservedRelations = LEGACY_REPLACE_PRESERVED_RELATIONS
+            .filter(specification => !["player_time_state", "player_time_migration_ledger"].includes(specification.table)
+                || getDb().prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(specification.table))
+            .map(specification => ({
             table: specification.table,
             rows: getDb().prepare(`
                 SELECT * FROM ${quotePlayerDataIdentifier(specification.table)}
@@ -1376,6 +1378,13 @@ export function replacePlayerDataSync(
             for (const row of relation.rows) insert.run(...columns.map(column => row[column]))
         }
 
+        if (importTimeState) {
+            // Imported periodic progress is protected until the destination's
+            // next real boundary. Only advance its pre-existing local anchors.
+            getDb().prepare("UPDATE player_time_state SET day_anchor_ms=?,week_anchor_ms=? WHERE player_id=?")
+                .run(Math.max(importTimeState.dayAnchorMs, importDate.getTime()),
+                    Math.max(importTimeState.weekAnchorMs, importDate.getTime()), playerId)
+        }
         const readbackPlayer = getPlayerSync(playerId)
         if (readbackPlayer === null) throw new Error("Replacement readback is missing the player.");
         const readbackAccount = getAccountFromPlayerIdSync(playerId)
@@ -1407,21 +1416,17 @@ export function collectPlayerDataPooledExpSync(
     player: Player,
     dateNow: Date = getServerDate()
 ) {
-    const currentOffset = getTimeOffset() ?? 0
+    dateNow = getPlayerBusinessDateSync(player.id, dateNow, getDb())
+    // Re-read durable state: callers may hold the object from before another
+    // maintenance step. Existing markers select real time; no marker is made.
+    player = getPlayerSync(player.id)!
+    const currentOffset = getPlayerBusinessOffsetSync(player.id, getDb())
     const savedOffset = player.timeOffset
-    const hasSavedOffset = typeof savedOffset === 'number' && Number.isFinite(savedOffset)
-
-    // expPooledTime is stored in virtual-clock coordinates. Moving it by the
-    // offset delta keeps it anchored to the same real instant after a server
-    // time switch, so only real elapsed time produces pooled EXP.
+    const hasSavedOffset = typeof savedOffset === "number" && Number.isFinite(savedOffset)
     let normalizedPoolTime = hasSavedOffset
         ? new Date(player.expPooledTime.getTime() + currentOffset - savedOffset)
         : player.expPooledTime
     let checkpointChanged = !hasSavedOffset || savedOffset !== currentOffset
-
-    // Legacy saves can lack an offset, and older time-setting code could leave
-    // a checkpoint in the future. Its exact real instant is unknowable; retain
-    // the saved balance and restart accumulation from now.
     if (
         !Number.isFinite(normalizedPoolTime.getTime())
         || normalizedPoolTime.getTime() > dateNow.getTime()
@@ -1461,13 +1466,14 @@ export function collectPlayerDataPooledExpSync(
  * @param playerId The ID of the player to collect the pooled EXP of.
  */
 export function collectPlayerPooledExpSync(
-    playerId: number
+    playerId: number,
+    dateNow: Date = getServerDate(),
 ) {
     // exp regenerates at a rate of 1/min
     const playerData = getPlayerSync(playerId)
     if (!playerData) return;
 
-    collectPlayerDataPooledExpSync(playerData)
+    collectPlayerDataPooledExpSync(playerData, dateNow)
 }
 
 /**
@@ -1479,15 +1485,21 @@ export function collectPlayerPooledExpSync(
  */
 export function dailyResetPlayerDataSync(
     player: Player,
-    loginDate: Date = new Date()
+    loginDate: Date = getServerDate()
 ): boolean {
-    const lastLoginTime = player.lastLoginTime
     const playerId = player.id
-    const crossedDay = isNewDay(loginDate, lastLoginTime)
-    const crossedWeek = isNewWeek(loginDate, lastLoginTime)
+    // Content remains on the legacy server calendar for every player. Only
+    // durable reset anchors/checkpoints retain a marked player's real basis.
+    const contentDate = loginDate
+    loginDate = getPlayerBusinessDateSync(playerId, loginDate, getDb())
+    const timeState = getExistingPlayerTimeStateSync(playerId, getDb())
+    player = getPlayerSync(playerId)!
+    const crossedDay = isNewDay(loginDate, new Date(timeState?.dayAnchorMs ?? player.lastLoginTime.getTime()))
+    const crossedWeek = isNewWeek(loginDate, new Date(timeState?.weekAnchorMs ?? player.lastLoginTime.getTime()))
 
-    if (crossedDay) {
+    if (crossedDay || crossedWeek) {
         return runPersistenceTransactionSync({ domain: "player", playerId, operation: "daily_reset_player" }, () => {
+            if (crossedDay) {
             updatePlayerSync({
                 id: playerId,
                 lastLoginTime: loginDate,
@@ -1498,7 +1510,7 @@ export function dailyResetPlayerDataSync(
             recordCurrentPassLogin(
                 playerId,
                 (player.totalLoginDays ?? 0) + 1,
-                loginDate,
+                contentDate,
             )
 
             // Reset daily challenge points — sync with CDN and rebuild if missing
@@ -1535,6 +1547,7 @@ export function dailyResetPlayerDataSync(
             for (const campaign of gachaCampaigns) {
                 updatePlayerGachaCampaignSync(playerId, campaign.gachaId, campaign.campaignId, 1)
             }
+            }
 
             // Daily mission reset: take snapshot + wipe cache
             const questProgress = getPlayerQuestProgressSync(playerId)
@@ -1551,13 +1564,15 @@ export function dailyResetPlayerDataSync(
                 }
             }
             const periodicBaseline = buildPeriodicSnapshotData(playerId, player, totalClears)
-            takeSnapshot(playerId, 'daily', periodicBaseline)
-            deletePlayerCategoryMissionsSync(playerId, 2)
-            deletePlayerCategoryMissionsSync(playerId, 6)
+            if (crossedDay) {
+                takeSnapshot(playerId, 'daily', periodicBaseline)
+                deletePlayerCategoryMissionsSync(playerId, 2)
+                deletePlayerCategoryMissionsSync(playerId, 6)
+            }
 
             const activePassWeekEventId = getMissionMasterDefinitions(7).find(definition =>
                 definition.eventId !== undefined
-                && isMissionDefinitionEnabledAt(definition, loginDate)
+                && isMissionDefinitionEnabledAt(definition, contentDate)
             )?.eventId
             if (activePassWeekEventId !== undefined) {
                 const snapshotType = getPassWeekSnapshotType(activePassWeekEventId)
@@ -1571,6 +1586,14 @@ export function dailyResetPlayerDataSync(
                 takeSnapshot(playerId, 'weekly', periodicBaseline)
                 deletePlayerCategoryMissionsSync(playerId, 7)
                 deletePlayerCategoryMissionsSync(playerId, 10)
+            }
+            updatePlayerSync({ id: playerId, lastLoginTime: loginDate })
+            if (timeState) {
+                // Advance only a marker that already exists. Ordinary login
+                // never opts another player into the unfinished cutover.
+                getDb().prepare("UPDATE player_time_state SET day_anchor_ms=?,week_anchor_ms=? WHERE player_id=?")
+                    .run(crossedDay ? Math.max(timeState.dayAnchorMs, loginDate.getTime()) : timeState.dayAnchorMs,
+                        crossedWeek ? Math.max(timeState.weekAnchorMs, loginDate.getTime()) : timeState.weekAnchorMs, playerId)
             }
 
             return true
@@ -1591,11 +1614,12 @@ export function dailyResetPlayerDataSync(
  * @returns A boolean; whether the daily reset was performed
  */
 export function dailyResetPlayerSync(
-    playerId: number
+    playerId: number,
+    loginDate: Date = getServerDate(),
 ): boolean {
     const playerData = getPlayerSync(playerId)
     if (!playerData) return false;
 
-    return dailyResetPlayerDataSync(playerData)
+    return dailyResetPlayerDataSync(playerData, loginDate)
 }
 import { getDb } from "../db";

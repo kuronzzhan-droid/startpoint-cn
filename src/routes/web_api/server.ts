@@ -25,6 +25,7 @@ import { createFullDatabaseBackup, getDatabaseDirectory } from "../../lib/admin-
 import { getOnlinePlayerCount } from "../../lib/online-presence";
 import { clearRecoveryFailuresForViewer } from "../cn/takeOver";
 import { getZipFileSummary } from "../../lib/zip-summary-cache";
+import { assertServerAcceptingWork, isServerShuttingDown, ServerClosingError, withShutdownCleanup } from "../../lib/shutdown-state";
 import {
     createPlayerSaveSnapshotV2Sync,
     isPlayerSaveSnapshotV2,
@@ -58,6 +59,8 @@ interface AccountCleanupJob {
     finishedAt: string | null
     totalAccounts: number
     processedAccounts: number
+    remainingAccounts: number
+    interrupted: boolean
     deletedAccounts: number
     deletedSaves: number
     skippedActiveAccount: number | null
@@ -73,6 +76,18 @@ interface AccountCleanupJob {
 
 let accountCleanupJob: AccountCleanupJob | null = null
 let accountCleanupWorker: Worker | null = null
+let accountCleanupWorkerExit: Promise<void> | null = null
+let accountCleanupExecution: Promise<void> | null = null
+let accountCleanupClosing = false
+function cleanupClosing(): boolean { return accountCleanupClosing || isServerShuttingDown() }
+function interruptCleanup(job: AccountCleanupJob): void {
+    job.ok = false
+    job.status = "failed"
+    job.interrupted = true
+    job.remainingAccounts = Math.max(0, job.totalAccounts - job.processedAccounts)
+    job.finishedAt = new Date().toISOString()
+    job.error = `服务器正在关闭，清理已停止；已提交删除 ${job.deletedAccounts} 个账号，剩余 ${job.remainingAccounts} 个待处理，可在重启后重新确认清理。`
+}
 
 function delay(milliseconds: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, milliseconds))
@@ -144,26 +159,36 @@ async function executeAccountCleanupPlan(
 ): Promise<void> {
     const job = accountCleanupJob
     if (!job || job.jobId !== jobId || job.status !== "running") return
-
+    let backup: Awaited<ReturnType<typeof createFullDatabaseBackup>> | null = null
+    const deletedAccountIds: number[] = []
+    const deletedPlayerIds: number[] = []
+    let interrupted = false
+    let failure: unknown
     try {
+        if (cleanupClosing()) { interruptCleanup(job); return }
+        job.totalAccounts = plannedEntries.length
+        job.remainingAccounts = job.totalAccounts
         job.phase = "backing_up"
-        const backup = await createFullDatabaseBackup("unnoted-accounts")
+        backup = await createFullDatabaseBackup("unnoted-accounts")
         job.backup = `.database/admin-backups/${backup.name}`
 
         job.phase = "indexing"
-        job.createdIndexes = await runPersistenceTransaction({
-            domain: "admin", operation: "ensure_cleanup_indexes",
-        }, () => ensureCascadeDeleteIndexes(getDb()))
+        if (!cleanupClosing()) {
+            job.createdIndexes = await runPersistenceTransaction({
+                domain: "admin", operation: "ensure_cleanup_indexes",
+            }, () => ensureCascadeDeleteIndexes(getDb()))
+        }
 
         job.phase = "deleting"
         let processedAccounts = 0
         let deletedAccounts = 0
         let deletedSaves = 0
-        const deletedAccountIds: number[] = []
-        const deletedPlayerIds: number[] = []
         const plannedAccountIds = plannedEntries.map(entry => entry.accountId)
 
         for (let offset = 0; offset < plannedAccountIds.length; offset += ACCOUNT_CLEANUP_BATCH_SIZE) {
+            // Each accepted transaction may finish; close never admits the
+            // next batch under a blanket cleanup exemption.
+            if (cleanupClosing()) { interrupted = true; break }
             const requestedIds = plannedAccountIds.slice(offset, offset + ACCOUNT_CLEANUP_BATCH_SIZE)
             if (requestedIds.length === 0) continue
             const placeholders = requestedIds.map(() => "?").join(", ")
@@ -206,20 +231,40 @@ async function executeAccountCleanupPlan(
             deletedSaves += batchPlayerIds.length
             deletedAccountIds.push(...batch.map(entry => entry.accountId))
             deletedPlayerIds.push(...batchPlayerIds)
-            removeDeletedAccountsFromState(batch)
-            for (const viewerId of new Set(batch.flatMap(entry => entry.viewerIds))) {
-                disconnectDeletedPlayerLogin(viewerId)
-            }
             job.processedAccounts = processedAccounts
             job.deletedAccounts = deletedAccounts
             job.deletedSaves = deletedSaves
+            job.remainingAccounts = Math.max(0, job.totalAccounts - processedAccounts)
+            withShutdownCleanup(() => {
+                removeDeletedAccountsFromState(batch)
+                for (const viewerId of new Set(batch.flatMap(entry => entry.viewerIds))) {
+                    disconnectDeletedPlayerLogin(viewerId)
+                }
+            })
             if (processedAccounts < plannedAccountIds.length) {
                 await delay(ACCOUNT_CLEANUP_BATCH_PAUSE_MS)
             }
         }
 
-        job.phase = "finalizing"
-        await cleanupDeletedPlayerAiSnapshots(deletedPlayerIds, `unnoted-account cleanup ${jobId}`)
+    } catch (error) {
+        if (error instanceof ServerClosingError) interrupted = true
+        else failure = error
+    }
+
+    job.phase = "finalizing"
+    // Only post-commit cleanup of already deleted objects may continue during
+    // close. No new account deletion is hidden inside this cleanup scope.
+    await withShutdownCleanup(() => cleanupDeletedPlayerAiSnapshots(deletedPlayerIds, `unnoted-account cleanup ${jobId}`))
+    interrupted ||= cleanupClosing() && job.remainingAccounts > 0
+    if (interrupted) interruptCleanup(job)
+    else {
+        job.status = failure ? "failed" : "completed"
+        job.ok = !failure
+        job.finishedAt = new Date().toISOString()
+        if (failure) job.error = failure instanceof Error ? failure.message : String(failure)
+    }
+    try {
+        if (!backup) return
         writeFileSync(
             path.join(backup.directory, "cleanup-result.json"),
             JSON.stringify({
@@ -227,7 +272,12 @@ async function executeAccountCleanupPlan(
                 jobId,
                 deletedAccountIds,
                 deletedPlayerIds,
-                deletedSaves,
+                deletedSaves: job.deletedSaves,
+                status: job.status,
+                interrupted: job.interrupted,
+                totalAccounts: job.totalAccounts,
+                processedAccounts: job.processedAccounts,
+                remainingAccounts: job.remainingAccounts,
                 skippedActiveAccount: job.skippedActiveAccount,
                 createdIndexes: job.createdIndexes,
             }, null, 2),
@@ -235,16 +285,12 @@ async function executeAccountCleanupPlan(
         )
 
         try {
-            job.removedBackups = removeOlderCleanupBackups(backup.directory).length
+            if (job.status === "completed") job.removedBackups = removeOlderCleanupBackups(backup.directory).length
         } catch (error) {
             job.backupCleanupError = error instanceof Error ? error.message : String(error)
         }
-        job.status = "completed"
-        job.finishedAt = new Date().toISOString()
     } catch (error) {
-        job.status = "failed"
-        job.finishedAt = new Date().toISOString()
-        job.error = error instanceof Error ? error.message : String(error)
+        job.backupCleanupError = error instanceof Error ? error.message : String(error)
     }
 }
 
@@ -268,6 +314,8 @@ function getCleanupWorkerLocation(): { filename: string; execArgv?: string[] } {
 function startAccountCleanupWorker(
     accountIds: number[],
 ): AccountCleanupJob {
+    assertServerAcceptingWork()
+    if (accountCleanupClosing) throw new ServerClosingError()
     const jobId = randomUUID()
     const databaseDirectory = getDatabaseDirectory()
     const workerLocation = getCleanupWorkerLocation()
@@ -280,6 +328,8 @@ function startAccountCleanupWorker(
         finishedAt: null,
         totalAccounts: accountIds.length,
         processedAccounts: 0,
+        remainingAccounts: accountIds.length,
+        interrupted: false,
         deletedAccounts: 0,
         deletedSaves: 0,
         skippedActiveAccount: null,
@@ -304,6 +354,16 @@ function startAccountCleanupWorker(
         },
     })
     accountCleanupWorker = worker
+    accountCleanupWorkerExit = new Promise<void>(resolve => {
+        worker.once("exit", () => {
+            if (accountCleanupWorker === worker) {
+                accountCleanupWorker = null
+                accountCleanupWorkerExit = null
+            }
+            job.workerThreadId = null
+            resolve()
+        })
+    })
     job.workerThreadId = worker.threadId
     let planReceived = false
 
@@ -314,19 +374,27 @@ function startAccountCleanupWorker(
             return
         }
         if (message.type === "plan") {
+            if (planReceived) return
             planReceived = true
-            accountCleanupJob.workerThreadId = null
             const plannedEntries = Array.isArray(message.plannedEntries)
                 ? message.plannedEntries as PlannedCleanupEntry[]
                 : []
-            void executeAccountCleanupPlan(jobId, plannedEntries)
+            if (cleanupClosing()) { interruptCleanup(job); return }
+            const execution = executeAccountCleanupPlan(jobId, plannedEntries)
+            accountCleanupExecution = execution
+            void execution.finally(() => {
+                if (accountCleanupExecution === execution) accountCleanupExecution = null
+            }).catch(error => {
+                job.status = "failed"; job.ok = false
+                job.finishedAt = new Date().toISOString()
+                job.error = error instanceof Error ? error.message : String(error)
+            })
             return
         }
         if (message.type === "failed") {
             accountCleanupJob.status = "failed"
             accountCleanupJob.finishedAt = new Date().toISOString()
             accountCleanupJob.error = message.error
-            accountCleanupJob.workerThreadId = null
         }
     })
     worker.on("error", error => {
@@ -334,12 +402,12 @@ function startAccountCleanupWorker(
         accountCleanupJob.status = "failed"
         accountCleanupJob.finishedAt = new Date().toISOString()
         accountCleanupJob.error = error instanceof Error ? error.message : String(error)
-        accountCleanupJob.workerThreadId = null
     })
     worker.on("exit", code => {
         if (accountCleanupWorker === worker) accountCleanupWorker = null
-        if (planReceived && code === 0) return
+        if (planReceived) return
         if (!accountCleanupJob || accountCleanupJob.jobId !== jobId || accountCleanupJob.status !== "running") return
+        if (cleanupClosing()) { interruptCleanup(job); return }
         accountCleanupJob.status = "failed"
         accountCleanupJob.finishedAt = new Date().toISOString()
         accountCleanupJob.error = `Cleanup worker exited before completion (code ${code})`
@@ -351,10 +419,12 @@ function startAccountCleanupWorker(
 const routes = async (fastify: FastifyInstance) => {
 
     fastify.addHook("onClose", async () => {
+        accountCleanupClosing = true
         if (accountCleanupWorker) {
             await accountCleanupWorker.terminate()
-            accountCleanupWorker = null
         }
+        await accountCleanupWorkerExit
+        await accountCleanupExecution
     })
 
     fastify.post("/databaseBackup", async (_request: FastifyRequest, reply: FastifyReply) => {
@@ -777,11 +847,13 @@ const routes = async (fastify: FastifyInstance) => {
 
     // Only account notes determine eligibility, including bound and selected accounts.
     fastify.post("/deleteUnnotedAccounts", async (request: FastifyRequest, reply: FastifyReply) => {
+        assertServerAcceptingWork()
+        if (accountCleanupClosing) throw new ServerClosingError()
         const body = (request.body || {}) as { confirm?: unknown }
         if (body.confirm !== "DELETE_UNNOTED_ACCOUNTS") {
             return reply.status(400).send({ error: "Confirmation token is required" })
         }
-        if (accountCleanupJob?.status === "running") {
+        if (accountCleanupJob?.status === "running" || accountCleanupExecution || accountCleanupWorker) {
             return reply.status(409).send({
                 error: "An account cleanup job is already running",
                 job: accountCleanupJob,
@@ -802,6 +874,8 @@ const routes = async (fastify: FastifyInstance) => {
                 finishedAt: now,
                 totalAccounts: 0,
                 processedAccounts: 0,
+                remainingAccounts: 0,
+                interrupted: false,
                 deletedAccounts: 0,
                 deletedSaves: 0,
                 backup: null,

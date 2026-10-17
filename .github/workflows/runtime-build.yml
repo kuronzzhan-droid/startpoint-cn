@@ -1,0 +1,43 @@
+name: runtime-build
+
+on:
+  push:
+    branches: ['**']
+    tags-ignore: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-build:
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+          cache: npm
+      - name: Pin npm and install locked compiler dependencies
+        run: |
+          npm install --global npm@11.17.0
+          npm ci --ignore-scripts --no-audit --no-fund --include=dev
+      - name: Build complete runtime from the checked out commit
+        run: node tools/build-runtime-artifact.cjs --repo . --source "$GITHUB_SHA" --output "$RUNNER_TEMP/runtime-artifact" --dependency-root .
+      - name: Validate staged source-only inputs
+        run: node tools/check-out-artifacts.cjs --all --dependency-root .
+      - name: Runtime build and index guard regressions
+        run: node --test tests/runtime-build-artifact.test.cjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Cloud overlay regressions
+        env:
+          STARPOINT_TEST_DEPENDENCY_ROOT: ${{ github.workspace }}
+        run: |
+          python tests/cloud-overlay-release.test.py
+          python tests/cloud-overlay-source-build.test.py

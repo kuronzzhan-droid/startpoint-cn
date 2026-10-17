@@ -1,0 +1,105 @@
+{
+  "number": 109,
+  "upstream_number": 103,
+  "id": "O9",
+  "slug": "overlimit-paradox-core-gate",
+  "title": "缺悖论之核时禁止确认超限",
+  "dependencies": [
+    84,
+    101
+  ],
+  "revision": "r2",
+  "source_revision": "r2",
+  "revision_note": "在五星且 overLimitStep >= 4 条件后追加 get_maxOverLimitStep() > 4 能力门控。最大突破次数为 4 的普通五星保持原按钮状态路径。r1 已废弃；首发版本仍为 v34。",
+  "behavior": "目标角色为五星、overLimitStep >= 4 且 get_maxOverLimitStep() > 4、悖论之核 10000302 持有量 <= 0 时，把传入原 getOverLimitState 的突破道具列表置空。原逻辑据此判定道具不足，禁用确认入口，避免零可突破次数被对话框抬成 count=1。只插入单方法 P-code，不追加主 ABC 常量池。",
+  "caveat": "作者已取消零消耗方案；本条 109 与原归档 101 均保留。--without-O9 仅为历史诊断开关，不再是候选，也不是完整零核实现。",
+  "methods": [
+    {
+      "id": "O9",
+      "label": "OverLimitWindow/getOverLimitState",
+      "body": 73067,
+      "before": "d39a4847f5adfd05c660a4bacd1ea2bad9b13bdabe8b72a72927fa9bbca7bc9b",
+      "after": "ae683cc1f5574ac7b415c43cf779ea642535cd6a66531aa1ee51a150d1492068",
+      "before_header": [
+        2,
+        3,
+        1,
+        2
+      ],
+      "after_header": [
+        4,
+        3,
+        1,
+        2
+      ],
+      "superseded_r1_after_sha256": "28703c0dae17f7d2e4def4b6e5f3cc0b9183ea87dadcf392b4b9aa2f2469a126",
+      "abc": "boot_ffc6",
+      "v33_archive_intersection": [],
+      "r4_target_intersection": [],
+      "five_composed_methods_intersection": false,
+      "composition": "无交集；按已锁定的方法体直接应用，不新增合成。",
+      "actual_final_method": {
+        "code_sha256": "ae683cc1f5574ac7b415c43cf779ea642535cd6a66531aa1ee51a150d1492068",
+        "header": [
+          4,
+          3,
+          1,
+          2
+        ],
+        "method_id": 79868,
+        "check": {
+          "max_stack": 3,
+          "max_scope": 2,
+          "unreachable_instructions": 0
+        }
+      }
+    }
+  ],
+  "first_apk_version": "v34",
+  "status": "归档条目草稿",
+  "input_swf_sha256": "3b7b3391ae0aee01f15167fe1d5a5b69eddb71a64605c57486f025916611aaa4",
+  "r4_base_swf_sha256": "53890c19f5ced5c70ed2e327e62a8f2f800d8ce5f2fdff5f493ad5c758518642",
+  "final_swf_sha256": "3d5c9745f519beee68557df7bce3e4ff635c9bb127069ed85a8fd02b5cbedb8a",
+  "source_files": [
+    {
+      "path": "109-overlimit-paradox-core-gate/pcode/boot_ffc6--OverLimitWindow_getOverLimitState.before.pcode.txt",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\103-overlimit-paradox-core-gate\\pcode\\boot_ffc6--OverLimitWindow_getOverLimitState.before.pcode.txt",
+      "bytes": 952,
+      "sha256": "1cc73550bfefd0acd4e3033a135584683f701be573a755aa5149c106c1370ec1"
+    },
+    {
+      "path": "109-overlimit-paradox-core-gate/pcode/boot_ffc6--OverLimitWindow_getOverLimitState.pcode.txt",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\103-overlimit-paradox-core-gate\\pcode\\boot_ffc6--OverLimitWindow_getOverLimitState.pcode.txt",
+      "bytes": 2082,
+      "sha256": "7cba1808f85ce4ca84ccecb947fdce0d1d73c87ddb81e9164ddf96cddcce0cd8"
+    },
+    {
+      "path": "109-overlimit-paradox-core-gate/provenance/upstream-README.md",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\103-overlimit-paradox-core-gate\\README.md",
+      "bytes": 3298,
+      "sha256": "871c26ba1acb157fd85af297cfd5887ead473bfe37b1ee3be213ecad6cd80234"
+    },
+    {
+      "path": "109-overlimit-paradox-core-gate/source/apply.py",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\103-overlimit-paradox-core-gate\\source\\apply.py",
+      "bytes": 980,
+      "sha256": "261a03475e763452953d31dde400c9fdbeeaac847ddc9ee50f4ab73d2294939d"
+    },
+    {
+      "path": "109-overlimit-paradox-core-gate/source/run.py",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\103-overlimit-paradox-core-gate\\source\\run.py",
+      "bytes": 1060,
+      "sha256": "738473e690caa1fd49c7fe5cb2fa464ce5e9d8aa77784ecf37eba438cdd4a453"
+    },
+    {
+      "path": "109-overlimit-paradox-core-gate/source/v34_patches.py",
+      "origin": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\103-overlimit-paradox-core-gate\\source\\v34_patches.py",
+      "bytes": 11272,
+      "sha256": "4a67d7aefeee19eadbd344c9f07af7cc089b154135d287ea35acad8611613497"
+    }
+  ],
+  "upstream_source": "D:\\WF\\out\\v34补丁-20261016\\apk-patches\\103-overlimit-paradox-core-gate",
+  "upstream_files_byte_identical": true,
+  "current_validation_scope": "离线；最终产物验证见根 build-report.json；本轮未运行设备。",
+  "upstream_history_scope": "provenance/upstream-README.md 中自测及真机记载仅属于来源线程，不冒认为本轮重跑。"
+}

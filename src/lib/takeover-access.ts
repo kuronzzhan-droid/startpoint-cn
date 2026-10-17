@@ -3,6 +3,7 @@ import { getDb } from "../data/db"
 import { SessionType } from "../data/types"
 import { generateDataHeaders } from "../utils"
 import { verifiedPlayerLogin } from "./player-login"
+import { requestRoutePath } from "./request-route-path"
 
 export const TAKEOVER_OLD_ACCESS_ERROR = 516
 
@@ -15,13 +16,13 @@ function normalizeViewerId(value: unknown): string | null {
 /** Reject the superseded local store after an account has moved devices. */
 export function installTakeoverUdidGuard(fastify: FastifyInstance): void {
     fastify.addHook("preHandler", async (request, reply) => {
-        if (!request.url.startsWith("/api/index.php/")) return
+        const requestPath = requestRoutePath(request)
+        if (!requestPath.startsWith("/api/index.php/")) return
         // The new account guard has already checked this exact request and account.
         if (verifiedPlayerLogin(request)) return
         // Leaderboard reads are public and may be retried without the local-store UDID.
         // Keep takeover protection for mutating/authenticated APIs, but do not turn a
         // missing UDID into an empty leaderboard response that the client cannot render.
-        const requestPath = request.url.split("?", 1)[0]
         if (requestPath.endsWith("/event/rush/leaderboard")) return
         const body = request.body
         if (!body || typeof body !== "object" || Array.isArray(body)) return

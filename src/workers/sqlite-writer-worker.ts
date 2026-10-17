@@ -10,7 +10,7 @@ import {
 } from "../lib/persistence/command-registry"
 import { openWriterConnection } from "../lib/persistence/writer-connection"
 import { WRITER_PROTOCOL_VERSION } from "../lib/persistence/writer-config"
-import { setServerTimeOffset } from "../utils"
+import { setServerTimeOffset, getLegacyTimeOffset, withServerClock } from "../utils"
 
 export interface WriterWorkerInput {
     databasePath: string
@@ -172,7 +172,8 @@ function executeBatch(batch: QueuedCommand[]): BatchResult {
             }
             connection.exec(`SAVEPOINT ${savepoint}`)
             try {
-                const value = handler(command.args, context)
+                const offset = getLegacyTimeOffset() ?? 0
+                const value = withServerClock(Date.now() + offset, () => handler(command.args, context), offset)
                 // Clone before COMMIT: a result that cannot cross the thread
                 // boundary must roll the command back instead of committing a
                 // write whose caller will only ever see an error.

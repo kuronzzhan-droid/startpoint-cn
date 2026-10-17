@@ -1,0 +1,24 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.resources.ResourceRuntime; label: cn.optimize.resources::ResourceRuntime$/completeRead|1/closure:0/closure:1; body: 29; method: 32
+# code SHA-256: b1c2588fa84beffb884bd779514b8b768443fcedc69a1eaddcf6f800c294b2cd; header: [3, 1, 0, 0]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlex [(7, (23, 'cn.optimize.resources'), 'bytes')]
+#0001 ofs0003: callpropvoid [(7, (22, ''), 'clear'), 0]
+#0002 ofs0007: getlex [(7, (23, 'cn.optimize.resources'), 'value')]
+#0003 ofs000a: getlex [(7, (22, 'flash.utils'), 'ByteArray')]
+#0004 ofs000d: istypelate []
+#0005 ofs000e: dup []
+#0006 ofs000f: iffalse [] -> #12
+#0007 ofs0013: pop []
+#0008 ofs0014: getlex [(7, (23, 'cn.optimize.resources'), 'value')]
+#0009 ofs0017: getlex [(7, (23, 'cn.optimize.resources'), 'bytes')]
+#0010 ofs001a: strictequals []
+#0011 ofs001b: not []
+#0012 ofs001c: iffalse [] -> #18
+#0013 ofs0020: getlex [(7, (22, 'flash.utils'), 'ByteArray')]
+#0014 ofs0023: getglobalscope []
+#0015 ofs0024: getlex [(7, (23, 'cn.optimize.resources'), 'value')]
+#0016 ofs0027: call [1]
+#0017 ofs0029: callpropvoid [(7, (22, ''), 'clear'), 0]
+#0018 ofs002d: returnvoid []
+# exceptions: []

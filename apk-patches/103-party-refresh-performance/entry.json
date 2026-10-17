@@ -1,0 +1,113 @@
+{
+  "number": 103,
+  "module": "refresh",
+  "title": "编队刷新重复能力汇总复用",
+  "status": "归档条目草稿",
+  "upstream_origin_main": "224aa2a663b7756fc8a34c0f37f1ae61ad81800c",
+  "input_apk_sha256": "3de625cf0c745c79d333a09140ad82fdea74746d2e2200a5b6922f67eca14532",
+  "input_swf_sha256": "3b7b3391ae0aee01f15167fe1d5a5b69eddb71a64605c57486f025916611aaa4",
+  "final_swf_sha256": "3d5c9745f519beee68557df7bce3e4ff635c9bb127069ed85a8fd02b5cbedb8a",
+  "methods": [
+    {
+      "module": "refresh",
+      "method": "pinball.scene.character.translator::PartyTranslator/translate|1",
+      "body": 66996,
+      "v33_code_sha256": "bab1bb17179ebac5c563c3a50d781b7d61aa034066c5e394ab6c5a6df28ee33d",
+      "r4_pins": [
+        "bab1bb17179ebac5c563c3a50d781b7d61aa034066c5e394ab6c5a6df28ee33d"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    }
+  ],
+  "helpers": [],
+  "composition": "本条与 #105 共用 PartyTranslator/translate。归档最终 P-code 显示两条顺序合成后的方法，不能把本条最终方法再整方法覆盖 #105。",
+  "source_files": [
+    {
+      "path": "103-party-refresh-performance/source/client-patch/party-refresh-performance/patch_swf.py",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/party-refresh-performance/patch_swf.py",
+      "bytes": 5883,
+      "sha256": "a348c218b12fc32635fa8a70d5a4bbce1afa7b7e75e0dfcdaff65997ffbea2a1"
+    },
+    {
+      "path": "103-party-refresh-performance/source/client-patch/party-refresh-performance/reader-fingerprints.json",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/party-refresh-performance/reader-fingerprints.json",
+      "bytes": 9792,
+      "sha256": "051f8d7da4527a5aed4595b95cc77c8210287439971d5acd5bff52222a6941e4"
+    },
+    {
+      "path": "103-party-refresh-performance/source/client-patch/party-refresh-performance/tests/fixtures/haxe/ds/Option.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/party-refresh-performance/tests/fixtures/haxe/ds/Option.as",
+      "bytes": 328,
+      "sha256": "f6944e1f45aa7027b54d0957446b0676b22de889e13fce9e7f4a9f9ec0b90b07"
+    },
+    {
+      "path": "103-party-refresh-performance/source/client-patch/party-refresh-performance/tests/fixtures/pinball/common/data/ability/summary/AbilitySummarizer.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/party-refresh-performance/tests/fixtures/pinball/common/data/ability/summary/AbilitySummarizer.as",
+      "bytes": 1491,
+      "sha256": "0c297bd6cdb673640c63cf0a626bd0588a47746f305712dd8f71ac581122d4e7"
+    },
+    {
+      "path": "103-party-refresh-performance/source/client-patch/party-refresh-performance/tests/fixtures/pinball/common/data/character/BattleCharacterLogic.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/party-refresh-performance/tests/fixtures/pinball/common/data/character/BattleCharacterLogic.as",
+      "bytes": 532,
+      "sha256": "e56b9203dabc4f72634c32b3549b2f4b6126684b3f3bec557aee91db5b3a8719"
+    },
+    {
+      "path": "103-party-refresh-performance/source/client-patch/party-refresh-performance/tests/fixtures/pinball/common/math/_Decimal/Decimal_Impl_.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/party-refresh-performance/tests/fixtures/pinball/common/math/_Decimal/Decimal_Impl_.as",
+      "bytes": 235,
+      "sha256": "5be6197a6d7b0f12640f2de792a81aa647624d47249bffd5553f3561117c03c0"
+    },
+    {
+      "path": "103-party-refresh-performance/source/client-patch/party-refresh-performance/tests/harness-app.xml",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/party-refresh-performance/tests/harness-app.xml",
+      "bytes": 364,
+      "sha256": "1dde7d679accf262ae37e3e983beaea9ec0e6d8d45a09d52c271b24b2ad13636"
+    },
+    {
+      "path": "103-party-refresh-performance/source/client-patch/party-refresh-performance/tests/run_tests.py",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/party-refresh-performance/tests/run_tests.py",
+      "bytes": 5052,
+      "sha256": "f6b66135655c99aa725b6cf919f72d3bc194e5a3dce61a48e6af4ff1898f44c6"
+    },
+    {
+      "path": "103-party-refresh-performance/source/client-patch/party-refresh-performance/tests/RuntimeHarness.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/party-refresh-performance/tests/RuntimeHarness.as",
+      "bytes": 5193,
+      "sha256": "866bf54a1d7f58d52ff6bd80c62f1f194db58171e35a6a49780cf2dd8273f74c"
+    },
+    {
+      "path": "103-party-refresh-performance/source/client-patch/party-refresh-performance/tests/SegmentProbe.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/party-refresh-performance/tests/SegmentProbe.as",
+      "bytes": 249,
+      "sha256": "b2d9358e69f3e99b94e9d035a5d6a499a0c1f07635ccbd7789ffff0c827339f6"
+    },
+    {
+      "path": "103-party-refresh-performance/source/client-patch/party-refresh-performance/tests/test_patch.py",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/party-refresh-performance/tests/test_patch.py",
+      "bytes": 2881,
+      "sha256": "42de798a24b53e5742240e6e8a41f1f3aa737f3ce8654ff552274c9192c5bd57"
+    }
+  ],
+  "final_pcode": [
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.scene.character.translator::PartyTranslator/translate|1",
+      "body": 66996,
+      "code_sha256": "f8afab6e8406ac92c6862fa1982854ca60be8202081c0c2a99b6b46d2e7793ed",
+      "method_body_sha256": "b2466b68438089ee19c5a921fa7dab0d70563028ed21fd7cc82dc17e0854b1ec",
+      "path": "pcode/boot_ffc6--pinball.scene.character.translator_PartyTranslator_translate_1.pcode.txt",
+      "check": {
+        "max_stack": 24,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "b2cd770c17471de0d2217f2e105e273a62450425a927fa1ba084a69c2c3f496a"
+    }
+  ],
+  "verification_report": "../../build-report.json",
+  "pcode_export_status": "已复制实际 SWF 最终导出",
+  "r4_stage_swf_sha256": "53890c19f5ced5c70ed2e327e62a8f2f800d8ce5f2fdff5f493ad5c758518642"
+}

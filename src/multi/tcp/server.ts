@@ -5,22 +5,25 @@
 
 import * as net from "net"
 import { observeServerConnections } from "../../lib/memory-diagnostics"
-import { clientAdmission } from "../../lib/client-admission"
+import { authorizeSocketAdmission, checkSocketAdmission, stopSocketAdmission } from "../coordinator/socket-admission"
 import { handleHandshake } from "./handshake"
-import { handleBattleMessage } from "./battle"
+import { handleBattleMessage, handleBattleRelayActivity, discardPinnedBattleControlsForShutdown } from "./battle"
+import { battleRelayBridge, battleRelayProcessEnabled, isRelayProxySocket } from "./battle-relay/bridge"
+import { relayFramesIdentityRejection, type RelayActivity, type RelayRoomIdentity } from "./battle-relay/protocol"
 import { sessionManager } from "../state/SessionManager"
 import { gameVerboseLog } from "../../lib/game-logging"
 import { clearReliableSendState } from "./reliable-send"
 import {
     finishTcpDisconnect,
     markTcpDisconnectReason,
+    readTcpDisconnectReason,
+    type TcpDisconnectReason,
 } from "./disconnect-diagnostics"
 import { embeddedMultiCoordinator } from "../coordinator/embedded"
 import { battleTelemetry } from "../battle-telemetry"
+import { runWithTcpBusinessAdmission } from "../coordinator/business-rpc"
+import { getRoom } from "../room/manager"
 import { fiveBossConnectionDiagnostics } from "../five-boss/connection-diagnostic"
-import { battleRelayBridge, battleRelayProcessEnabled, isRelayProxySocket } from "./battle-relay/bridge"
-import { handleBattleRelayActivity } from "./battle"
-import type { RelayActivity } from "./battle-relay/protocol"
 import {
     detachLoungeSocket,
     handleLoungeHandshake,
@@ -50,6 +53,8 @@ export const SESSION_MAX_FRAMES_PER_TICK = positiveInteger(
 )
 
 let server: net.Server | null = null
+let quiescing = false
+let listenerClosed: Promise<void> | undefined
 const activeSockets = new Set<net.Socket>()
 
 export function handleRuntimeServerError(error: Error): void {
@@ -57,13 +62,8 @@ export function handleRuntimeServerError(error: Error): void {
     console.error(`[TCP] session server error code=${code}:`, error.message)
 }
 
-/**
- * Wires one session socket: framing, handshake, dispatch and cleanup. With the
- * battle relay process enabled, a battle socket is moved to the child right
- * after its handshake frame and this function runs again for the
- * RelayProxySocket that replaces it, with the frames read so far as `initial`.
- */
 function attachSessionSocket(socket: net.Socket, initial?: string): void {
+    if (quiescing) { socket.destroy(); return }
     activeSockets.add(socket)
     socket.once("close", () => activeSockets.delete(socket))
     const remoteAddr = `${socket.remoteAddress}:${socket.remotePort}`
@@ -77,10 +77,27 @@ function attachSessionSocket(socket: net.Socket, initial?: string): void {
     let isBattleSocket = false
     let isLoungeSocket = false
     let socketRemoved = false
+    let battleDisconnectRecorded = false
+    let closedReason: TcpDisconnectReason | undefined
     let protocolClosed = false
     let processingFrames = false
     let processFramesScheduled = false
     let handshakePending: Promise<void> | null = null
+    let receivedUnits = 0, consumedUnits = 0
+    const relayCompletions: Array<{ boundary: number; at: number; done: (error?: Error) => void }> = []
+    const completeRelayFrames = () => {
+        if (processingFrames || handshakePending) return
+        if (protocolClosed || socket.destroyed) {
+            for (const pending of relayCompletions.splice(0)) pending.done(new Error("relay_socket_closed"))
+            return
+        }
+        while (relayCompletions[0] && relayCompletions[0].boundary <= consumedUnits) {
+            const pending = relayCompletions.shift()!
+            const client = sessionManager.findClientBySocket(socket)
+            if (client) battleTelemetry.controlDelay(client.roomNumber, "relay-control", performance.now() - pending.at)
+            pending.done()
+        }
+    }
     let admissionToken: unknown, admissionSession: unknown
 
     const closeForProtocolViolation = (reason: string) => {
@@ -101,6 +118,14 @@ function attachSessionSocket(socket: net.Socket, initial?: string): void {
 
     const clearHandshakeTimer = () => clearTimeout(handshakeTimer)
 
+    const recordBattleDisconnect = (client: ReturnType<typeof sessionManager.findClientBySocket>,
+        reason: TcpDisconnectReason) => {
+        if (battleDisconnectRecorded || !client?.isBattle || client.superseded
+            || !sessionManager.isCurrentBattleClient(client)) return
+        battleTelemetry.disconnected(client.roomNumber, client.viewerId, reason)
+        battleDisconnectRecorded = true
+    }
+
     const removeSocketClient = () => {
         clearReliableSendState(socket)
         detachLoungeSocket(socket)
@@ -111,7 +136,13 @@ function attachSessionSocket(socket: net.Socket, initial?: string): void {
                 socketRemoved = true
                 void embeddedMultiCoordinator.enqueueRoomCommand(
                     client.roomNumber,
-                    () => sessionManager.removeClient(client),
+                    () => {
+                        // An error cleanup may remove the socket index
+                        // before close. Record its current owner once;
+                        // superseded cleanup must not reset a replacement.
+                        recordBattleDisconnect(client, closedReason ?? readTcpDisconnectReason(socket))
+                        return sessionManager.removeClient(client)
+                    },
                 ).catch(error => {
                     console.error(`[TCP] queued socket cleanup failed: room=${client.roomNumber}`, error)
                 })
@@ -122,8 +153,18 @@ function attachSessionSocket(socket: net.Socket, initial?: string): void {
         }
     }
 
+    const runBusinessFrame = (operation: () => unknown): void => {
+        // The operation starts locally now. Its promise is only a lifetime/drain
+        // fence; battle barriers and other sockets never wait for parent grant.
+        void runWithTcpBusinessAdmission(operation).catch(error => {
+            markTcpDisconnectReason(socket, "message_error")
+            console.warn("[TCP] accepted business frame failed:", (error as Error).message)
+            socket.destroy()
+        })
+    }
+
     const processFrames = (): void => {
-        if (protocolClosed || processingFrames || processFramesScheduled || handshakePending) return
+        if (quiescing || protocolClosed || processingFrames || processFramesScheduled || handshakePending) return
         processingFrames = true
         let processed = 0
         try {
@@ -132,6 +173,7 @@ function attachSessionSocket(socket: net.Socket, initial?: string): void {
                 if (idx < 0) break
                 const raw = buffer.substring(0, idx)
                 buffer = buffer.substring(idx + 1)
+                consumedUnits += idx + 1
                 processed++
                 if (raw.trim().length === 0) continue
                 const frameBytes = Buffer.byteLength(raw, "utf8")
@@ -155,7 +197,8 @@ function attachSessionSocket(socket: net.Socket, initial?: string): void {
                         }
                         admissionToken = data.sp_admission
                         admissionSession = data.sp_session
-                        if (!clientAdmission().checkActivity(admissionToken, admissionSession).ok) {
+                        const handshake = runWithTcpBusinessAdmission(async () => {
+                        if (!await authorizeSocketAdmission(socket, admissionToken, admissionSession)) {
                             markTcpDisconnectReason(socket, "admission")
                             socket.end(JSON.stringify([1, "CLIENT_ADMISSION_REQUIRED"]) + "\0")
                             protocolClosed = true
@@ -167,23 +210,18 @@ function attachSessionSocket(socket: net.Socket, initial?: string): void {
                         if (isBattleSocket && !isRelayProxySocket(socket) && battleRelayBridge.isReady) {
                             const adopted = battleRelayBridge.adopt(socket)
                             if (adopted) {
-                                // This closure no longer owns the socket. The
-                                // proxy replays the handshake and anything
-                                // after it through the normal path below.
                                 protocolClosed = true
                                 clearHandshakeTimer()
                                 activeSockets.delete(socket)
-                                attachSessionSocket(
-                                    adopted.proxy as unknown as net.Socket,
-                                    raw + "\0" + buffer + adopted.pending,
-                                )
+                                attachSessionSocket(adopted.proxy as unknown as net.Socket, raw + "\0" + buffer + adopted.pending)
                                 buffer = ""
                                 return
                             }
                         }
-                        const handshake = isLoungeSocket
+                        await (isLoungeSocket
                             ? handleLoungeHandshake(socket, data)
-                            : handleHandshake(socket, data)
+                            : handleHandshake(socket, data))
+                        })
                         handshakePending = Promise.resolve(handshake).then(() => {
                             handshakePending = null
                             clearHandshakeTimer()
@@ -209,16 +247,37 @@ function attachSessionSocket(socket: net.Socket, initial?: string): void {
                         // those frames before the async handshake has
                         // indexed this socket in SessionManager.
                         return
-                    } else if (!clientAdmission().checkActivity(admissionToken, admissionSession).ok) {
+                    } else if (!checkSocketAdmission(socket, admissionToken, admissionSession)) {
                         closeForProtocolViolation("client build no longer admitted")
                         return
                     } else if (isBattleSocket) {
-                        handleBattleMessage(socket, data)
+                        if (Array.isArray(data) && data[0] === 0 && Array.isArray(data[1])
+                            && [0, 1, 2].includes(data[1][0])) {
+                            runBusinessFrame(() => handleBattleMessage(socket, data))
+                        } else handleBattleMessage(socket, data)
                     } else if (isLoungeSocket) {
-                        handleLoungeMessage(socket, data)
+                        const handled = Array.isArray(data) && data[0] === 0
+                            && Array.isArray(data[1]) && data[1][0] === 4
+                            ? runWithTcpBusinessAdmission(() => handleLoungeMessage(socket, data))
+                            : handleLoungeMessage(socket, data)
+                        if (handled && typeof (handled as Promise<void>).then === "function") {
+                            handshakePending = Promise.resolve(handled).then(() => {
+                                handshakePending = null
+                                if (!protocolClosed && !socket.destroyed) processFrames()
+                            }, err => {
+                                handshakePending = null
+                                markTcpDisconnectReason(socket, "message_error")
+                                console.warn("[TCP] lounge message rejected:", (err as Error).message)
+                                socket.destroy()
+                            })
+                            return
+                        }
                     } else {
                         const lobby = require("./lobby")
-                        lobby.handleMessage(socket, data)
+                        if (Array.isArray(data) && data[0] === 0 && Array.isArray(data[1])
+                            && ![4, 5, 8, 9].includes(data[1][0])) {
+                            runBusinessFrame(() => lobby.handleMessage(socket, data))
+                        } else lobby.handleMessage(socket, data)
                     }
                 } catch (e) {
                     markTcpDisconnectReason(socket, "message_error")
@@ -229,6 +288,7 @@ function attachSessionSocket(socket: net.Socket, initial?: string): void {
             }
         } finally {
             processingFrames = false
+            completeRelayFrames()
             if (!protocolClosed && !handshakePending
                 && buffer.includes("\0") && !processFramesScheduled) {
                 processFramesScheduled = true
@@ -245,6 +305,7 @@ function attachSessionSocket(socket: net.Socket, initial?: string): void {
 
     const onData = (chunk: string) => {
         if (protocolClosed) return
+        receivedUnits += chunk.length
         buffer += chunk
         if (Buffer.byteLength(buffer, "utf8") > SESSION_MAX_BUFFER_BYTES) {
             closeForProtocolViolation(`receive buffer exceeded ${SESSION_MAX_BUFFER_BYTES} bytes`)
@@ -252,33 +313,54 @@ function attachSessionSocket(socket: net.Socket, initial?: string): void {
         }
         processFrames()
     }
-    socket.on("data", onData)
+    if (isRelayProxySocket(socket)) {
+        socket.on("relay-frames", (chunk: string, done: (error?: Error) => void, identity?: RelayRoomIdentity) => {
+            const at = performance.now()
+            const apply = () => {
+                if (protocolClosed || socket.destroyed) { done(new Error("relay_socket_closed")); return }
+                const client = sessionManager.findClientBySocket(socket)
+                const room = client && getRoom(client.roomNumber)
+                const rejection = !client || !room?.lifecycle || !sessionManager.isCurrentBattleClient(client) ? "unbound"
+                    : relayFramesIdentityRejection({ instanceId: room.lifecycle.instanceId,
+                        battleSessionId: room.lifecycle.battleSessionId, sceneEpoch: room.lifecycle.sceneEpoch ?? 0 },
+                    { instanceId: client.roomInstanceId ?? "", battleSessionId: client.battleSessionId ?? null,
+                        sceneEpoch: client.sceneEpoch ?? 0 }, identity, chunk)
+                if (rejection) {
+                    battleRelayBridge.noteRejectedFrames(rejection)
+                    gameVerboseLog(() => `[BATTLE-RELAY] rejected stale ingress: sid=${socket.sid} reason=${rejection}`)
+                    // Invalid old ownership never acts on a replacement room. It
+                    // still completes the application ACK and releases IPC budget.
+                    done()
+                    if (rejection !== "scene") socket.destroy()
+                    return
+                }
+                relayCompletions.push({ boundary: receivedUnits + chunk.length, at, done })
+                onData(chunk)
+                completeRelayFrames()
+            }
+            // Adoption replays the native handshake before child ingress. Validate
+            // against the resulting binding, never an unfinished handshake.
+            if (handshakePending) void handshakePending.then(apply, () => done(new Error("relay_handshake_failed")))
+            else apply()
+        })
+    } else socket.on("data", onData)
 
     if (isRelayProxySocket(socket)) {
-        // Frames the child relayed or acknowledged itself still count as
-        // battle activity, and the client build must remain admitted.
         socket.on("relay-activity", (activity: RelayActivity) => {
             if (protocolClosed || !handshakeDone) return
-            if (!clientAdmission().checkActivity(admissionToken, admissionSession).ok) {
+            if (!checkSocketAdmission(socket, admissionToken, admissionSession)) {
                 closeForProtocolViolation("client build no longer admitted")
                 return
             }
             handleBattleRelayActivity(socket, activity)
         })
         socket.on("relay-close-reason", (reason: string, detail?: string) => {
-            if (reason === "protocol") {
-                markTcpDisconnectReason(socket, "protocol")
-                console.warn(`[TCP] protocol violation from ${remoteAddr}: ${detail ?? "relay"}`)
-            } else if (reason === "send_backpressure" || reason === "send_queue_limit") {
+            if (reason === "protocol" || reason === "send_backpressure" || reason === "send_queue_limit" || reason === "relay_exit") {
                 markTcpDisconnectReason(socket, reason)
-                console.warn(`[MULTI] slow battle connection removed by relay: reason=${reason} ${detail ?? ""}`
-                    + ` remote=${remoteAddr}`)
-            } else if (reason === "relay_exit") {
-                markTcpDisconnectReason(socket, "relay_exit")
+                gameVerboseLog(() => `[BATTLE-RELAY] socket closed: reason=${reason} detail=${detail ?? ""}`)
             }
         })
     }
-    if (initial !== undefined) onData(initial)
 
     socket.on("end", () => {
         markTcpDisconnectReason(socket, "peer_fin")
@@ -286,11 +368,11 @@ function attachSessionSocket(socket: net.Socket, initial?: string): void {
     })
 
     socket.on("close", (hadError: boolean) => {
+        for (const pending of relayCompletions.splice(0)) pending.done(new Error("relay_socket_closed"))
         const reason = finishTcpDisconnect(socket, hadError)
+        closedReason = reason
         const closedClient = sessionManager.findClientBySocket(socket)
-        if (closedClient?.isBattle) {
-            battleTelemetry.disconnected(closedClient.roomNumber, closedClient.viewerId, reason)
-        }
+        recordBattleDisconnect(closedClient, reason)
         fiveBossConnectionDiagnostics.socketEvent(socket, "socket_close", hadError ? "with_error" : "without_error")
         clearHandshakeTimer()
         gameVerboseLog(() => `[TCP] connection closed: ${remoteAddr} reason=${reason}`)
@@ -304,26 +386,25 @@ function attachSessionSocket(socket: net.Socket, initial?: string): void {
         console.warn(`[TCP] socket error from ${remoteAddr}:`, err.message)
         removeSocketClient()
     })
+    // Attach all cleanup handlers before replaying handshake/coalesced bytes.
+    if (initial !== undefined) onData(initial)
 }
 
-/** Starts the relay child when enabled; battle sockets stay in-process until it is ready. */
-function startBattleRelay(): Promise<void> {
-    if (!battleRelayProcessEnabled()) return Promise.resolve()
+async function startBattleRelay(): Promise<void> {
+    if (!battleRelayProcessEnabled()) return
     const ready = battleRelayBridge.start().catch(error => {
         console.error("[BATTLE-RELAY] failed to start; battle sockets stay in the main process", error)
     })
-    const timeout = new Promise<void>(resolve => setTimeout(resolve, 5_000).unref())
-    return Promise.race([ready, timeout])
+    await Promise.race([ready, new Promise<void>(resolve => setTimeout(resolve, 5_000).unref())])
 }
 
 export async function startSessionServer(): Promise<void> {
+    if (server) return
+    quiescing = false; listenerClosed = undefined
     await startBattleRelay()
     return new Promise((resolve, reject) => {
-        if (server) {
-            resolve()
-            return
-        }
-        server = net.createServer((socket) => attachSessionSocket(socket))
+        if (server) { resolve(); return }
+        server = net.createServer(socket => attachSessionSocket(socket))
 
         observeServerConnections("tcp", server)
         const handleListenError = (error: Error) => {
@@ -351,11 +432,23 @@ export function getSessionServer(): net.Server | null {
     return server
 }
 
+/** Close ingress while retaining sockets/room state for already accepted work. */
+export function quiesceSessionServer(): void {
+    if (quiescing) return
+    quiescing = true
+    for (const socket of activeSockets) socket.pause()
+    discardPinnedBattleControlsForShutdown()
+    const current = server
+    if (current?.listening) listenerClosed = new Promise(resolve => current.close(() => resolve()))
+}
+
 export function stopSessionServer(): Promise<void> {
+    quiesceSessionServer()
+    stopSocketAdmission()
     return new Promise((resolve) => {
         const current = server
         if (!current) {
-            resolve()
+            void battleRelayBridge.stop().then(resolve)
             return
         }
         // net.Server.close() stops accepts but waits forever for established
@@ -365,9 +458,12 @@ export function stopSessionServer(): Promise<void> {
             markTcpDisconnectReason(socket, "server_shutdown")
             socket.destroy()
         }
-        current.close(() => {
+        const finish = () => {
             server = null
             void battleRelayBridge.stop().then(resolve)
-        })
+        }
+        if (listenerClosed) void listenerClosed.then(finish)
+        else if (!current.listening) finish()
+        else current.close(finish)
     })
 }

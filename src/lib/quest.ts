@@ -277,7 +277,10 @@ export function givePlayerRewardsSync(
     
                 const giveCharacter = giveResult?.character
                 if (giveCharacter !== undefined) {
-                    characters.set(characterId, giveCharacter)
+                    // Later copies only carry stack updates; retain the initial
+                    // entry_count and other fields needed to create a new character.
+                    const existingCharacter = characters.get(characterId)
+                    characters.set(characterId, { ...existingCharacter, ...giveCharacter })
                 }
                 break;
             }

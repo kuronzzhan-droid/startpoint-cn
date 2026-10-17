@@ -2,7 +2,7 @@ import { cdnCharacters as characterMaster } from "../content-master"
 import { getPlayerSync } from "../../data/domains/player"
 import { getViewerIdByPlayerIdSync } from "../../data/domains/follow"
 import {
-    getLeaderboardPlayerRankSync,
+    getLeaderboardRankPageAndPlayerSync,
     getLeaderboardRankPageSync,
     getLeaderboardRunRoundsSync,
     LeaderboardRankRecord,
@@ -172,9 +172,10 @@ export function getOfficialLeaderboardPageSync(input: {
     const pageMax = Math.max(1, Math.ceil(visibleTotal / input.competition.pageSize))
     const requestedPage = Number.isFinite(input.page) ? Math.trunc(input.page) : 0
     const page = Math.max(0, Math.min(requestedPage, pageMax - 1))
-    const rows = getLeaderboardRankPageSync({
+    const { rows, mine } = getLeaderboardRankPageAndPlayerSync({
         competitionKey: input.competition.key,
         season,
+        playerId: input.playerId,
         offset: page * input.competition.pageSize,
         filter,
         limit: Math.min(
@@ -182,12 +183,6 @@ export function getOfficialLeaderboardPageSync(input: {
             Math.max(0, input.competition.displayLimit - page * input.competition.pageSize),
         ),
     })
-    const mine = getLeaderboardPlayerRankSync(
-        input.competition.key,
-        season,
-        input.playerId,
-        filter,
-    )
     const favorites = getFirstPlayerPartyDisplaySelectionsSync(
         [
             ...rows.map(record => record.playerId),
@@ -256,16 +251,14 @@ export function buildNativeLeaderboardPayload(
     const rewardView = getLeaderboardSeasonRewardViewSync(competition.key, season)
     const { total, filter, settled } = rewardView
     const rewardPresentation = buildLeaderboardRewardPresentation(competition, rewardView)
-    const records = getLeaderboardRankPageSync({
+    const { rows: records, mine } = getLeaderboardRankPageAndPlayerSync({
         competitionKey: competition.key,
         season,
+        playerId,
         offset: 0,
         limit: competition.displayLimit,
         filter,
     })
-    const mine = playerId === null
-        ? null
-        : getLeaderboardPlayerRankSync(competition.key, season, playerId, filter)
     const favorites = getFirstPlayerPartyDisplaySelectionsSync(
         [
             ...records.map(record => record.playerId),

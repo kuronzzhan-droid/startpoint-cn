@@ -2,6 +2,14 @@ import type { PlayerEquipment } from "../../data/types"
 import type { BattleHistoryProtocolRecord } from "../../data/domains/battle-history"
 import { clientSerializeDate } from "../../data/utils"
 
+/** Invalid optional client telemetry; storage and server identity errors are not payload errors. */
+export class BattleHistoryPayloadValidationError extends Error {
+    constructor(message: string) {
+        super(message)
+        this.name = "BattleHistoryPayloadValidationError"
+    }
+}
+
 export interface HistoryParty {
     readonly characters?: readonly ({ readonly id?: unknown } | null)[]
     readonly unison_characters?: readonly ({ readonly id?: unknown } | null)[]
@@ -31,7 +39,7 @@ export interface BuildBattleHistoryInput {
 
 function requiredNonNegativeNumber(value: unknown, field: string, label: string): number {
     if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
-        throw new Error(`${label} ${field} must be a finite non-negative number`)
+        throw new BattleHistoryPayloadValidationError(`${label} ${field} must be a finite non-negative number`)
     }
     return value
 }
@@ -39,7 +47,7 @@ function requiredNonNegativeNumber(value: unknown, field: string, label: string)
 function optionalPositiveInteger(value: unknown, field: string, label: string): number | null {
     if (value === undefined || value === null) return null
     if (!Number.isSafeInteger(value) || Number(value) <= 0) {
-        throw new Error(`${label} ${field} must be a positive integer or null`)
+        throw new BattleHistoryPayloadValidationError(`${label} ${field} must be a positive integer or null`)
     }
     return Number(value)
 }
@@ -47,7 +55,7 @@ function optionalPositiveInteger(value: unknown, field: string, label: string): 
 function optionalNonNegativeInteger(value: unknown, field: string, label: string): number | null {
     if (value === undefined || value === null) return null
     if (!Number.isSafeInteger(value) || Number(value) < 0) {
-        throw new Error(`${label} ${field} must be a non-negative integer or null`)
+        throw new BattleHistoryPayloadValidationError(`${label} ${field} must be a non-negative integer or null`)
     }
     return Number(value)
 }
@@ -67,7 +75,7 @@ function sumMemberDamage(
             `statistics.zones[${zoneIndex}].members[${memberIndex}].origin_damage`,
             label,
         )
-        if (!Number.isFinite(total)) throw new Error(`${label} member damage overflow`)
+        if (!Number.isFinite(total)) throw new BattleHistoryPayloadValidationError(`${label} member damage overflow`)
         found = true
     }
     return found ? total : null
@@ -91,16 +99,19 @@ export function buildBattleHistoryProtocolRecord(
     const clearRank = optionalNonNegativeInteger(input.clearRank, "clear_rank", label)
     const zones = input.statistics.zones
     if (!Array.isArray(zones) || zones.length === 0) {
-        throw new Error(`${label} statistics.zones must not be empty`)
+        throw new BattleHistoryPayloadValidationError(`${label} statistics.zones must not be empty`)
     }
     let totalDamage = 0
     for (const [index, zone] of zones.entries()) {
+        if (zone === null || typeof zone !== "object" || Array.isArray(zone)) {
+            throw new BattleHistoryPayloadValidationError(`${label} statistics.zones[${index}] must be an object`)
+        }
         totalDamage += requiredNonNegativeNumber(
             zone.damage_deal_total,
             `statistics.zones[${index}].damage_deal_total`,
             label,
         )
-        if (!Number.isFinite(totalDamage)) throw new Error(`${label} total damage overflow`)
+        if (!Number.isFinite(totalDamage)) throw new BattleHistoryPayloadValidationError(`${label} total damage overflow`)
     }
 
     const characters = [0, 1, 2].map(index => optionalPositiveInteger(
@@ -126,7 +137,7 @@ export function buildBattleHistoryProtocolRecord(
     const equipmentSnapshots = equipments.map((equipmentId, index) => {
         if (equipmentId === null) return null
         const equipment = input.equipmentList[String(equipmentId)]
-        if (!equipment) throw new Error(`${label} equipment${index + 1}_id is not owned`)
+        if (!equipment) throw new BattleHistoryPayloadValidationError(`${label} equipment${index + 1}_id is not owned`)
         return equipment
     })
 

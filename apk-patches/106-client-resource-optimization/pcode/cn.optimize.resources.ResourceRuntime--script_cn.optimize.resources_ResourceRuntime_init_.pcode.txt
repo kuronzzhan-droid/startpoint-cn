@@ -1,0 +1,15 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.resources.ResourceRuntime; label: script:cn.optimize.resources::ResourceRuntime/<init>; body: 49; method: 0
+# code SHA-256: ac0bb359cd03cf8b231378f5eba6bbee8e00a164fc91e04ac833784a0c1d9658; header: [3, 1, 0, 2]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getscopeobject [0]
+#0003 ofs0004: getlex [(7, (22, ''), 'Object')]
+#0004 ofs0006: dup []
+#0005 ofs0007: pushscope []
+#0006 ofs0008: newclass [(7, (22, 'cn.optimize.resources'), 'ResourceRuntime')]
+#0007 ofs000a: popscope []
+#0008 ofs000b: initproperty [(7, (22, 'cn.optimize.resources'), 'ResourceRuntime')]
+#0009 ofs000d: returnvoid []
+# exceptions: []

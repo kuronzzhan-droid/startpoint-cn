@@ -19,7 +19,7 @@ const dataDir = process.env.DATA_DIR
     ? path.resolve(process.env.DATA_DIR)
     : path.resolve(__dirname, "../../.database")
 const versionFileExtension = ".version"
-if (!existsSync(dataDir)) {
+if (process.env.MULTI_REALTIME_OWNER_CHILD !== "1" && !existsSync(dataDir)) {
     // make the data directory since it doesn't exist
     try {
         mkdirSync(dataDir)
@@ -57,6 +57,7 @@ const loadedDatabases: {
 export default function getDatabase(
     database: Database
 ): BetterSqlite3Database {
+    if (process.env.MULTI_REALTIME_OWNER_CHILD === "1") throw new Error("REALTIME_OWNER_CANNOT_OPEN_PLAYER_DATABASE")
     // don't try to load an already-loaded database
     const isLoaded = loadedDatabases[database]
     if (isLoaded) return isLoaded

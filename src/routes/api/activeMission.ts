@@ -1,3 +1,4 @@
+import { getPlayerClientExpTime } from "../../lib/player-time-compat"
 // Active mission reward claiming endpoint
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { getPlayerActiveMissionsSync, updatePlayerActiveMissionStageSync } from "../../data/domains/mission"
@@ -95,7 +96,7 @@ const routes = async (fastify: FastifyInstance) => {
                 "active_mission_list": resultList,
                 "user_info": {
                     ...granter.getUserInfo(),
-                    "exp_pooled_time": getServerTime(player.expPooledTime)
+                    "exp_pooled_time": getPlayerClientExpTime(player)
                 },
                 "character_list": characterList,
                 "equipment_list": granter.equipmentList,

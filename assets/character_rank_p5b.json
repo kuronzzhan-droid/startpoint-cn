@@ -274,5 +274,29 @@
     "name": "碧",
     "rarity": 5,
     "skill_count": 6
+  },
+  "139985": {
+    "element": 2,
+    "name": "露迪",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "169985": {
+    "element": 5,
+    "name": "莫弥亚",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "159985": {
+    "element": 4,
+    "name": "塞里奥尔",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "149985": {
+    "element": 3,
+    "name": "瑞西塔尔",
+    "rarity": 5,
+    "skill_count": 6
   }
 }

@@ -1,4 +1,3 @@
-import { getFollowRelationSync } from "../../data/domains/follow"
 import type { MultiRoom } from "../types"
 
 export const MUTUAL_FOLLOW_SHARE_TYPE = 1
@@ -46,15 +45,23 @@ export function mergeRoomShareTypes(currentOptions: number, requested: unknown):
     ])].sort((a, b) => a - b)
 }
 
-export function hasRoomShareType(room: MultiRoom, shareType: number): boolean {
+export function hasRoomShareType(room: Pick<MultiRoom, "share_room_options">, shareType: number): boolean {
     return (room.share_room_options & (1 << (shareType - 1))) !== 0
 }
 
 export function isRoomSharedWithPlayer(
-    room: MultiRoom,
+    room: Pick<MultiRoom, "share_room_options" | "host_player_id">,
     viewerPlayerId: number,
 ): boolean {
+    const { getFollowRelationSync } = require("../../data/domains/follow") as typeof import("../../data/domains/follow")
     const relation = getFollowRelationSync(viewerPlayerId, room.host_player_id)
+    return isRoomSharedWithRelation(room, relation)
+}
+
+export function isRoomSharedWithRelation(
+    room: Pick<MultiRoom, "share_room_options">,
+    relation: { state: number; followTime: unknown | null },
+): boolean {
     // 1 = mutual follow only; 2 = any viewer who follows the host, including
     // a one-way follow where the host does not follow back.
     const mutualVisible = hasRoomShareType(room, MUTUAL_FOLLOW_SHARE_TYPE)

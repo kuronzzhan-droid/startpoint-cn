@@ -1,0 +1,14 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.resources.ResourceRuntime; label: cn.optimize.resources::ResourceRuntime$/closeError|1; body: 22; method: 23
+# code SHA-256: c1cf5892d4aa7333fd440f80f282fbec38c8a09ba521687d2bf15238b2504282; header: [2, 1, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex [(7, (5, 'cn.optimize.resources:ResourceRuntime'), 'counters')]
+#0003 ofs0004: dup []
+#0004 ofs0005: getproperty [(9, 'closeFailures', ((5, 'cn.optimize.resources:ResourceRuntime'), (26, 'cn.optimize.resources:ResourceRuntime'), (26, 'Object'), (22, 'cn.optimize.resources'), (23, 'cn.optimize.resources'), (5, 'FilePrivateNS:ResourceRuntime'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0005 ofs0007: convert_d []
+#0006 ofs0008: increment []
+#0007 ofs0009: setproperty [(9, 'closeFailures', ((5, 'cn.optimize.resources:ResourceRuntime'), (26, 'cn.optimize.resources:ResourceRuntime'), (26, 'Object'), (22, 'cn.optimize.resources'), (23, 'cn.optimize.resources'), (5, 'FilePrivateNS:ResourceRuntime'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin')))]
+#0008 ofs000b: returnvoid []
+# exceptions: []

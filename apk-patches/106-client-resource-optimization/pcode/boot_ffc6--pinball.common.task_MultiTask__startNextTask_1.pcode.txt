@@ -1,0 +1,12 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: boot_ffc6; label: pinball.common.task::MultiTask/_startNextTask|1; body: 26441; method: 28067
+# code SHA-256: 311bc5721d1fc89999e8b2a42a4d3657074649d0d114f29fc93260461ab218a4; header: [3, 2, 1, 2]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex [(7, (22, 'cn.optimize.resources'), 'ResourceRuntime')]
+#0003 ofs0006: getlocal_0 []
+#0004 ofs0007: getlocal_1 []
+#0005 ofs0008: callpropvoid [(7, (22, ''), 'startTasks'), 2]
+#0006 ofs000d: returnvoid []
+# exceptions: []

@@ -399,6 +399,13 @@ const routes = async (fastify: FastifyInstance) => {
         const transactionResult = await measureSettlementPhaseAsync("gacha", "transaction", () => runPersistenceTransaction({
             domain: "gacha", playerId, operation: "draw",
         }, () => {
+            // Availability is authoritative at actual write execution, after queueing.
+            const currentGacha = getGachaSync(gachaId)
+            if (currentGacha === null) return { ok: false as const, message: "Gacha doesn't exist." }
+            if (currentGacha.enforceAvailabilityWindow === true
+                && !isGachaAvailableAt(currentGacha, getServerTime() * 1000)) {
+                return { ok: false as const, message: "Gacha is not available." }
+            }
             const player = getPlayerSync(playerId)
             if (player === null) return { ok: false as const, message: "No player data." }
             const existingGachaData = getPlayerGachaInfoSync(playerId, gachaId)

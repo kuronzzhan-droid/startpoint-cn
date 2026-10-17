@@ -1,3 +1,4 @@
+import { getPlayerBusinessDateSync } from "../../lib/player-time-compat"
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { SessionType } from "../../data/types";
 import { getClientSerializedData, serializePlayerData } from "../../data/utils";
@@ -15,7 +16,8 @@ import { getPlayerPartyGroupListSync } from "../../data/domains/party"
 import { getPlayerTriggeredTutorialsSync } from "../../data/domains/tutorial"
 import { getSession } from "../../data/domains/session"
 import { resolvePlayerIdSync } from "../../data/activeAccount";
-import { generateDataHeaders } from "../../utils";
+import { generateDataHeaders, getServerDate, getRealServerDate, getTimeOffset, withServerClock } from "../../utils";
+import { ensureDailyVmoneyMailForPlayerSync } from "../../lib/daily-vmoney-mail";
 import { runPermanentValidators } from "../../lib/validate";
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator";
 
@@ -69,14 +71,20 @@ const routes = async (fastify: FastifyInstance) => {
             "message": "No player data."
         })
 
-        await runPersistenceTransaction({
+        const clock = await runPersistenceTransaction({
             domain: "player", playerId, operation: "legacy_load_snapshot",
         }, () => {
-            dailyResetPlayerDataSync(player)
-            collectPlayerDataPooledExpSync(player)
+            const now = getServerDate()
+            const current = getPlayerSync(playerId)
+            if (!current) throw new Error("Player disappeared during load maintenance.")
+            ensureDailyVmoneyMailForPlayerSync(playerId, getRealServerDate().getTime())
+            dailyResetPlayerDataSync(current, now)
+            collectPlayerDataPooledExpSync(current, now)
+            updatePlayerSync({ id: playerId, lastLoginTime: getPlayerBusinessDateSync(playerId, now) })
             runPermanentValidators(playerId)
+            return { now, offset: getTimeOffset() ?? 0 }
         })
-        const clientData = getClientSerializedData(playerId, { viewerId })
+        const clientData = withServerClock(clock.now, () => getClientSerializedData(playerId, { viewerId }), clock.offset)
         if (clientData === null) return reply.status(500).send({
             "error": "Internal Server Error",
             "message": "No player data."

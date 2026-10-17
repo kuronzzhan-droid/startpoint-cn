@@ -1,0 +1,2356 @@
+diff --git a/src/cn-server.ts b/src/cn-server.ts
+index ebf4a2cc..b061d857 100644
+--- a/src/cn-server.ts
++++ b/src/cn-server.ts
+@@ -31,6 +31,7 @@ import { installCustomCdnResourceRoutes } from "./lib/custom-cdn-resource-routes
+ import { resolvePlainFileInside, sendFileStream } from "./lib/file-download";
+ import { trustProxySetting } from "./lib/client-address";
+ import { parseCrashReportBody, crashReportText, createCrashLogRecord } from "./lib/crash-report";
++import { installProcessGuards } from "./lib/process-guards";
+ 
+ import versionCheckPlugin from "./routes/cn/versionCheck";
+ import iosLeitingPlugin from "./routes/cn/ios-leiting";
+@@ -586,8 +587,11 @@ const closeGracefully = createGracefulShutdown({
+     },
+     failed: () => { process.exitCode = 1; process.exit(1); },
+ });
+-function requestGracefulShutdown(source: string): void {
++function requestGracefulShutdown(source: string, forceExit = false): void {
+     void closeGracefully(source).then(() => {
++        // After a fatal error, do not wait for leftover handles to let the
++        // event loop drain on its own.
++        if (forceExit) process.exit(process.exitCode ?? 1);
+         if (process.connected) process.disconnect();
+     });
+ }
+@@ -599,6 +603,15 @@ if (process.connected) process.on("message", message => {
+     if (message && typeof message === "object" && "type" in message
+         && message.type === "starpoint:shutdown") requestGracefulShutdown("parent IPC");
+ });
++// A stray rejected promise is logged and the server keeps serving players;
++// an uncaught synchronous exception is logged and then drains like a stop
++// signal, because state touched by the throwing code may be inconsistent.
++installProcessGuards({
++    onFatal: () => {
++        process.exitCode = 1;
++        requestGracefulShutdown("uncaughtException", true);
++    },
++});
+ startQuestNpcPartyPoolWorker();
+ const persistenceWorkerStarted = startSqlitePersistenceWorker(getDb().name);
+ if (persistenceWorkerStarted && isSqlitePersistenceWorkerStarted()) {
+diff --git a/src/data/domains/finish-receipt.ts b/src/data/domains/finish-receipt.ts
+new file mode 100644
+index 00000000..910d5892
+--- /dev/null
++++ b/src/data/domains/finish-receipt.ts
+@@ -0,0 +1,94 @@
++import { getDb } from "../db"
++
++/**
++ * Durable quest-finish receipts.
++ *
++ * A receipt is written in the same transaction that pays a battle out, keyed
++ * by player and client play_id (the client creates a fresh id for every
++ * battle start; a restored battle keeps its id). Any later finish carrying the
++ * same play_id replays the stored response and pays nothing.
++ *
++ * Rows live in the existing `player_operation_receipts` ledger, which is
++ * already preserved across save import/transfer. Retention is bounded: the
++ * stored response is dropped after FINISH_RECEIPT_RESPONSE_DAYS (the key keeps
++ * blocking a second payout) and the key itself after
++ * FINISH_RECEIPT_RETENTION_DAYS.
++ */
++export type FinishReceiptKind = "single" | "multi"
++
++const OPERATIONS: Record<FinishReceiptKind, string> = {
++    single: "quest_finish.single",
++    multi: "quest_finish.multi",
++}
++const DAY_MS = 24 * 60 * 60 * 1000
++const COMPACTED = "null"
++
++function days(name: string, fallback: number): number {
++    const parsed = Number.parseInt(process.env[name] ?? "", 10)
++    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback
++}
++
++export function finishReceiptResponseRetentionMs(): number {
++    return days("FINISH_RECEIPT_RESPONSE_DAYS", 7) * DAY_MS
++}
++
++export function finishReceiptRetentionMs(): number {
++    return Math.max(days("FINISH_RECEIPT_RETENTION_DAYS", 180) * DAY_MS, finishReceiptResponseRetentionMs())
++}
++
++export interface FinishReceipt {
++    /** Null when the play is settled but its response is no longer kept. */
++    response: unknown | null
++}
++
++export function getFinishReceiptSync(
++    playerId: number,
++    kind: FinishReceiptKind,
++    playId: string,
++): FinishReceipt | null {
++    const row = getDb().prepare(`
++        SELECT response_json FROM player_operation_receipts
++        WHERE player_id = ? AND operation = ? AND request_key = ?
++    `).get(playerId, OPERATIONS[kind], playId) as { response_json: string } | undefined
++    if (!row) return null
++    try {
++        return { response: JSON.parse(row.response_json) as unknown }
++    } catch {
++        // A damaged response must still block a second payout.
++        return { response: null }
++    }
++}
++
++/**
++ * Record (or complete) the receipt for a settled play. Must run inside the
++ * settlement transaction. The first write keeps its creation time.
++ */
++export function recordFinishReceiptSync(
++    playerId: number,
++    kind: FinishReceiptKind,
++    playId: string,
++    response: unknown | null,
++    nowMs: number = Date.now(),
++): void {
++    const responseJson = response === null ? COMPACTED : JSON.stringify(response)
++    if (responseJson === undefined) throw new Error(`结算回执不可序列化：${kind}`)
++    getDb().prepare(`
++        INSERT INTO player_operation_receipts (player_id, operation, request_key, response_json, created_at)
++        VALUES (?, ?, ?, ?, ?)
++        ON CONFLICT (player_id, operation, request_key)
++        DO UPDATE SET response_json = excluded.response_json
++    `).run(playerId, OPERATIONS[kind], playId, responseJson, nowMs)
++}
++
++/** Bounded retention for one player's finish receipts; uses the (player_id, created_at) index. */
++export function pruneFinishReceiptsSync(playerId: number, nowMs: number = Date.now()): void {
++    const db = getDb()
++    db.prepare(`
++        DELETE FROM player_operation_receipts
++        WHERE player_id = ? AND created_at < ? AND operation IN (?, ?)
++    `).run(playerId, nowMs - finishReceiptRetentionMs(), OPERATIONS.single, OPERATIONS.multi)
++    db.prepare(`
++        UPDATE player_operation_receipts SET response_json = '${COMPACTED}'
++        WHERE player_id = ? AND created_at < ? AND operation IN (?, ?) AND response_json <> '${COMPACTED}'
++    `).run(playerId, nowMs - finishReceiptResponseRetentionMs(), OPERATIONS.single, OPERATIONS.multi)
++}
+diff --git a/src/data/utils/player-data.ts b/src/data/utils/player-data.ts
+index 5fcbdb9c..ba61df06 100644
+--- a/src/data/utils/player-data.ts
++++ b/src/data/utils/player-data.ts
+@@ -38,6 +38,12 @@ export interface ClientSerializedDataOptions extends SerializePlayerDataOptions
+     preloadedEquipmentList?: Record<string, PlayerEquipment>
+     preloadedPartyGroupList?: Record<string, PlayerPartyGroup>
+     preloadedQuestProgress?: Record<string, PlayerQuestProgress[]>
++    /**
++     * Called once the load-time repairs below are written, before the
++     * read-only serialization queries. /load commits its shared write
++     * transaction here.
++     */
++    afterRepairs?: () => void
+ }
+ 
+ /**
+@@ -116,6 +122,7 @@ export function prepareClientSerializedData(
+         preloadedEquipmentList,
+         preloadedPartyGroupList,
+         preloadedQuestProgress,
++        afterRepairs,
+         ...serializeOptions
+     } = options
+     if (preloadedPlayer && preloadedPlayer.id !== playerId) {
+@@ -136,7 +143,10 @@ export function prepareClientSerializedData(
+     )
+ 
+     const playerData = preloadedPlayer ?? getPlayerSync(playerId)
+-    if (playerData === null) return null
++    if (playerData === null) {
++        afterRepairs?.()
++        return null
++    }
+     const characterList = preloadedCharacterList ?? getPlayerCharactersSync(playerId)
+     const learnedManaNodes = preloadedCharacterManaNodeList
+         ?? getPlayerCharactersManaNodesSync(playerId)
+@@ -191,6 +201,7 @@ export function prepareClientSerializedData(
+             }
+         })
+     }
++    afterRepairs?.()
+     const missionAwakeMap = new Map<string, Record<number, number>>()
+     for (const [characterId, levels] of awakeSummary.manaBoardAwakeMap) {
+         const visible = filterCharacterManaBoardAwakeLevels(
+diff --git a/src/lib/character-helpers.ts b/src/lib/character-helpers.ts
+index 542bccbf..58b580de 100644
+--- a/src/lib/character-helpers.ts
++++ b/src/lib/character-helpers.ts
+@@ -381,6 +381,28 @@ export function reconcilePlayerManaBoardCompletionSync(
+     const repairedCharacterIds = new Set<number>()
+     const evolutionCharacterIds = new Set<number>()
+ 
++    // Read-only pass first: a fully repaired save opens no write transaction.
++    // The write pass below re-evaluates every board, so both passes agree.
++    const needsRepair = Object.entries(characters).some(([characterIdText, character]) => {
++        if (candidates && !candidates.has(characterIdText)) return false
++        const characterId = Number(characterIdText)
++        const boardCount = getCharacterManaBoardCountSync(characterId)
++        if (boardCount <= 0) return false
++        const tokenByBoard = new Map(
++            character.bondTokenList.map(token => [token.manaBoardIndex, token]),
++        )
++        for (let boardIndex = 1; boardIndex <= boardCount; boardIndex++) {
++            const token = tokenByBoard.get(boardIndex)
++            if (!token) return true
++            if (
++                token.status === 0
++                && isManaBoardComplete(characterId, boardIndex, learnedNodes[characterIdText] ?? [])
++            ) return true
++        }
++        return false
++    })
++    if (!needsRepair) return { repairedCharacterIds: [], evolutionCharacterIds: [] }
++
+     runPersistenceTransactionSync({
+         domain: "player", playerId, operation: "reconcile_mana_board_completion",
+     }, () => {
+diff --git a/src/lib/character-overlimit.ts b/src/lib/character-overlimit.ts
+new file mode 100644
+index 00000000..90ee0019
+--- /dev/null
++++ b/src/lib/character-overlimit.ts
+@@ -0,0 +1,124 @@
++// Character over-limit extension ("超限"): selected 5* characters may uncap
++// past the retail cap with a dedicated item, up to level 120.
++//
++// The patched client mirrors these rules: a tagged character reports the
++// extended cap only after the retail uncaps are used, offers only the
++// extension item for the extra steps, and never offers duplicates for them.
++
++import overLimitJson from "../../assets/character_overlimit.json"
++import { characterExpCaps } from "./character"
++
++interface OverLimitExtension {
++    item_id: number
++    // Items consumed together with item_id by every extended uncap step.
++    extra_costs: { item_id: number, amount: number }[]
++    rarity: number
++    max_over_limit: number
++    // Cumulative EXP at the level cap reached by each extra uncap step
++    // (step base+1, base+2, ...), matching the client's bundled level table.
++    extra_exp_caps: number[]
++    characters: number[]
++    // Awake mission ID -> character level that completes it.
++    level_missions: Record<string, number>
++}
++
++const extension = overLimitJson as OverLimitExtension
++const extendedCharacters = new Set(extension.characters)
++
++export const OVER_LIMIT_EXTENSION_ITEM_ID = extension.item_id
++
++export const retailMaxOverLimits: Record<number, number> = {
++    [1]: 12,
++    [2]: 10,
++    [3]: 8,
++    [4]: 6,
++    [5]: 4,
++}
++
++export function isOverLimitExtendedCharacter(characterId: number, rarity: number): boolean {
++    return rarity === extension.rarity && extendedCharacters.has(characterId)
++}
++
++export function getRetailMaxOverLimit(rarity: number): number | undefined {
++    return retailMaxOverLimits[rarity]
++}
++
++export function getCharacterMaxOverLimit(characterId: number, rarity: number): number | undefined {
++    if (isOverLimitExtendedCharacter(characterId, rarity)) return extension.max_over_limit
++    return retailMaxOverLimits[rarity]
++}
++
++function getCharacterExpCapList(characterId: number, rarity: number): number[] | undefined {
++    const caps = characterExpCaps[rarity]
++    if (!caps) return undefined
++    return isOverLimitExtendedCharacter(characterId, rarity)
++        ? [...caps, ...extension.extra_exp_caps]
++        : caps
++}
++
++export function getCharacterExpCap(characterId: number, rarity: number, overLimitStep: number): number | undefined {
++    return getCharacterExpCapList(characterId, rarity)?.[overLimitStep]
++}
++
++export function estimateExtendedCharacterLevel(characterId: number, rarity: number, exp: number): number {
++    const caps = getCharacterExpCapList(characterId, rarity)
++    if (!caps || caps.length === 0) return 0
++    const baseLevel = 40 + (rarity - 1) * 10
++    let level = 0
++    for (let index = 0; index < caps.length; index++) {
++        if (exp < caps[index]) break
++        level = baseLevel + index * 5
++    }
++    return level
++}
++
++export function getExtendedOverLimitExtraCosts(
++    characterId: number,
++    rarity: number,
++    currentStep: number,
++    count: number,
++): { itemId: number, amount: number }[] {
++    const retailMax = retailMaxOverLimits[rarity]
++    if (!isOverLimitExtendedCharacter(characterId, rarity) || retailMax === undefined || currentStep < retailMax) {
++        return []
++    }
++    return extension.extra_costs.map(cost => ({ itemId: cost.item_id, amount: cost.amount * count }))
++}
++
++export function getAwakeLevelMissionTarget(missionId: number): number | undefined {
++    return extension.level_missions[String(missionId)]
++}
++
++/**
++ * Validates one over_limit request against the retail and extended caps.
++ * Returns an error message, or null when the request is allowed.
++ */
++export function validateOverLimitRequest(
++    characterId: number,
++    rarity: number,
++    currentStep: number,
++    count: number,
++    useStack: boolean,
++    itemId: number | undefined,
++): string | null {
++    const retailMax = retailMaxOverLimits[rarity]
++    const maxOver = getCharacterMaxOverLimit(characterId, rarity)
++    if (retailMax === undefined || maxOver === undefined) return "Unknown rarity."
++    const newStep = currentStep + count
++    if (newStep > maxOver) return "Character cannot be uncapped further."
++    if (currentStep < retailMax) {
++        if (newStep > retailMax) return "Retail and extended uncaps must be requested separately."
++        if (useStack) return null
++        // Matches the client item table: 10003 is 5* only, 10002 covers 4* and below,
++        // 10001 covers 3* and below.
++        if ((rarity === 5 && itemId !== 10003)
++            || (rarity === 4 && itemId !== 10002)
++            || (rarity <= 3 && itemId !== 10002 && itemId !== 10001)) {
++            return "Attempted to use invalid item."
++        }
++        return null
++    }
++    if (useStack) return "Duplicates cannot uncap past the retail cap."
++    if (itemId !== extension.item_id) return "Attempted to use invalid item."
++    return null
++}
+diff --git a/src/lib/character.ts b/src/lib/character.ts
+index ffbdcff1..d434ad7f 100644
+--- a/src/lib/character.ts
++++ b/src/lib/character.ts
+@@ -4,6 +4,7 @@ import { adjustPlayerExpPoolSync, getPlayerSync } from "../data/domains/player"
+ import { givePlayerItemSync } from "../data/domains/item"
+ import { getCharacterDataSync } from "./assets";
+ import { grantCharacterDegreeRewardsSync } from "./character-degree-rewards";
++import { getCharacterExpCap } from "./character-overlimit";
+ import { AddExpList, AddExpListItem, ClientReturnBondTokenStatus, ClientReturnBondTokenStatusList, ClientReturnCharacter, Element, GivePlayerCharacterResult, RewardPlayerCharacterExpResult } from "./types";
+ 
+ export const characterExpCaps: Record<number, number[]> = {
+@@ -221,7 +222,7 @@ export function givePlayerCharactersExpSync(
+         const assetData = getCharacterDataSync(characterId)
+         
+         if ((characterData !== null) && (assetData !== null) && !ignoreUpdate) {
+-            const expCap = characterExpCaps[assetData.rarity][characterData.overLimitStep] || Number.MAX_SAFE_INTEGER
++            const expCap = getCharacterExpCap(characterId, assetData.rarity, characterData.overLimitStep) || Number.MAX_SAFE_INTEGER
+             const currentExp = characterData.exp
+ 
+             let afterExp = currentExp + expAmount
+diff --git a/src/lib/finish-response-cache.ts b/src/lib/finish-response-cache.ts
+index fa347c83..7a7b5715 100644
+--- a/src/lib/finish-response-cache.ts
++++ b/src/lib/finish-response-cache.ts
+@@ -13,20 +13,75 @@ registerMemoryCounters("finishCache", () => ({ entries: entries.size, executing:
+ const ttlMs = Math.max(5_000, Number.parseInt(process.env.FINISH_RESPONSE_CACHE_TTL_MS ?? "120000", 10) || 120_000)
+ const maxEntries = Math.max(32, Number.parseInt(process.env.FINISH_RESPONSE_CACHE_MAX ?? "512", 10) || 512)
+ 
++function normalizeRequestNumber(value: unknown): number | null {
++    if (typeof value === "number") return Number.isFinite(value) ? value : null
++    if (typeof value !== "string") return null
++    const text = value.trim()
++    if (text.length === 0) return null
++    const parsed = Number(text)
++    return Number.isFinite(parsed) ? parsed : null
++}
++
++function normalizePlayId(value: unknown): string | null {
++    return typeof value === "string" && value.length > 0 ? value : null
++}
++
++/** The client play id of a finish request, or null when it carries none. */
++export function finishRequestPlayId(body: Record<string, unknown>): string | null {
++    return normalizePlayId(body.play_id)
++}
++
++/** Numeric fields use their number form; anything else keeps the legacy string form. */
++function keyPart(value: unknown): string {
++    if (value === undefined || value === null) return ""
++    const parsed = normalizeRequestNumber(value)
++    return parsed === null ? String(value) : String(parsed)
++}
++
++/** Request token: play_id first, then api_count (as sent when not numeric). */
++function finishRequestToken(body: Record<string, unknown>): string | null {
++    const playId = normalizePlayId(body.play_id)
++    if (playId !== null) return playId
++    if (body.api_count === undefined || body.api_count === null) return null
++    return `api:${keyPart(body.api_count)}`
++}
++
++export interface FinishResponseCacheKeyOptions {
++    /** Multiplayer settlements are keyed by player, quest and play, not by viewer or api_count. */
++    playerId?: number
++}
++
+ export function buildFinishResponseCacheKey(
+     mode: "single" | "multi",
+     viewerId: number,
+     body: Record<string, unknown>,
++    options: FinishResponseCacheKeyOptions = {},
+ ): string | null {
+-    const playId = typeof body.play_id === "string" && body.play_id.length > 0
+-        ? body.play_id
+-        : body.api_count !== undefined && body.api_count !== null
+-            ? `api:${String(body.api_count)}`
+-            : null
++    const category = keyPart(body.category)
++    const questId = keyPart(body.quest_id)
++    const playId = normalizePlayId(body.play_id)
++    if (mode === "multi" && options.playerId !== undefined && playId !== null) {
++        return `multi:player:${options.playerId}:${category}:${questId}:${playId}`
++    }
++    const token = finishRequestToken(body)
+     // Without a client request token, two legitimate consecutive clears of the
+     // same quest are indistinguishable.  In that case it is safer not to cache.
+-    if (playId === null) return null
+-    return `${mode}:${viewerId}:${String(body.category ?? "")}:${String(body.quest_id ?? "")}:${playId}`
++    if (token === null) return null
++    return `${mode}:${viewerId}:${category}:${questId}:${token}`
++}
++
++/**
++ * Serialization key for finish execution.  It is never null: a request
++ * without a usable token still waits behind other finishes of the same
++ * player (single) or the same player and play (multi).
++ */
++export function buildFinishExecutionKey(
++    mode: "single" | "multi",
++    playerId: number,
++    body: Record<string, unknown>,
++): string {
++    if (mode === "single") return `single:${playerId}`
++    return `multi:${playerId}:${normalizePlayId(body.play_id) ?? ""}`
+ }
+ 
+ export function getCachedFinishResponse(key: string | null): unknown | undefined {
+diff --git a/src/lib/mission/active-reconciliation.ts b/src/lib/mission/active-reconciliation.ts
+index 5178a338..8e9a3973 100644
+--- a/src/lib/mission/active-reconciliation.ts
++++ b/src/lib/mission/active-reconciliation.ts
+@@ -29,6 +29,7 @@ import { getPlayerCharacterClearsSync } from "../../data/domains/character_clear
+ import { getActiveMissionConditionalBattleFactsSync } from "../../data/domains/active_mission_battle_condition_facts"
+ import { getActiveMissionBattleFactsSync } from "../../data/domains/active_mission_battle_facts"
+ import { runPersistenceTransactionSync } from "../persistence-coordinator"
++import { getDb } from "../../data/db"
+ import {
+     getActiveMissionEventMasterDefinition,
+     getActiveMissionMasterDefinitions,
+@@ -1159,109 +1160,124 @@ function getReconciliationPlan(input: ReconcileActiveMissionFactsInput) {
+ export function reconcileActiveMissionFacts(
+     input: ReconcileActiveMissionFactsInput,
+ ): ActiveMissionProgressDelta[] {
+-    const { definitions, definitionById, questReadPlan, requirements } = getReconciliationPlan(input)
+-    if (definitions.length === 0) return []
+-
++    const plan = getReconciliationPlan(input)
++    if (plan.definitions.length === 0) return []
++
++    // Outside a transaction, settle without writing first. When no mission
++    // changes (the usual case) the result is final and no write transaction
++    // is opened; otherwise settlement is recomputed under the write lock.
++    if (!getDb().inTransaction) {
++        const preview = settleActiveMissionFacts(input, plan, false)
++        if (preview.length === 0) return preview
++    }
+     return runPersistenceTransactionSync({
+         domain: "mission", playerId: input.playerId, operation: "reconcile_active_mission_facts",
+-    }, () => {
+-        const player = input.player ?? getPlayerSync(input.playerId)
+-        if (!player) throw new Error(`Player ${input.playerId} does not exist.`)
+-        if (player.id !== input.playerId) {
+-            throw new Error(`Player snapshot ${player.id} does not match ${input.playerId}.`)
+-        }
++    }, () => settleActiveMissionFacts(input, plan, true))
++}
+ 
+-        const questProgress = input.questProgress
+-            ?? (questReadPlan?.full
+-                ? getPlayerQuestProgressSync(input.playerId)
+-                : getPlayerQuestProgressSubsetSync(input.playerId, {
+-                    sections: [...(questReadPlan?.sections ?? [])],
+-                    questIds: [...(questReadPlan?.questIds ?? [])],
+-                }))
+-        const questProgressFacts: ActiveMissionFactQuestProgress[] = []
+-        const finishedQuestIds = new Set<number>()
+-        for (const [categoryText, progressList] of Object.entries(questProgress)) {
+-            const category = Number(categoryText)
+-            for (const progress of progressList) {
+-                questProgressFacts.push({
+-                    category,
+-                    questId: progress.questId,
+-                    finished: progress.finished,
+-                    clearRank: progress.clearRank,
+-                    leaderCharacterId: progress.leaderCharacterId,
+-                    multiClearCount: Math.max(0, progress.multiClearCount ?? 0),
+-                })
+-                if (progress.finished) {
+-                    finishedQuestIds.add(normalizeActiveMissionQuestId(category, progress.questId))
+-                }
++function settleActiveMissionFacts(
++    input: ReconcileActiveMissionFactsInput,
++    { definitions, definitionById, questReadPlan, requirements }: ReturnType<typeof getReconciliationPlan>,
++    persist: boolean,
++): ActiveMissionProgressDelta[] {
++    const player = input.player ?? getPlayerSync(input.playerId)
++    if (!player) throw new Error(`Player ${input.playerId} does not exist.`)
++    if (player.id !== input.playerId) {
++        throw new Error(`Player snapshot ${player.id} does not match ${input.playerId}.`)
++    }
++
++    const questProgress = input.questProgress
++        ?? (questReadPlan?.full
++            ? getPlayerQuestProgressSync(input.playerId)
++            : getPlayerQuestProgressSubsetSync(input.playerId, {
++                sections: [...(questReadPlan?.sections ?? [])],
++                questIds: [...(questReadPlan?.questIds ?? [])],
++            }))
++    const questProgressFacts: ActiveMissionFactQuestProgress[] = []
++    const finishedQuestIds = new Set<number>()
++    for (const [categoryText, progressList] of Object.entries(questProgress)) {
++        const category = Number(categoryText)
++        for (const progress of progressList) {
++            questProgressFacts.push({
++                category,
++                questId: progress.questId,
++                finished: progress.finished,
++                clearRank: progress.clearRank,
++                leaderCharacterId: progress.leaderCharacterId,
++                multiClearCount: Math.max(0, progress.multiClearCount ?? 0),
++            })
++            if (progress.finished) {
++                finishedQuestIds.add(normalizeActiveMissionQuestId(category, progress.questId))
+             }
+         }
+-        const activeMissions = normalizeActiveMissions(getPlayerActiveMissionsSync(input.playerId))
+-        const factState = buildActiveMissionFactState(
+-            input.playerId,
+-            player,
+-            finishedQuestIds,
+-            questProgressFacts,
+-            input.repository,
+-            requirements,
+-            input,
+-        )
+-        const deltas = new Map<number, { progress: number, stages: Set<number> }>()
+-
+-        // Every definition runs once. A changed mission only requeues definitions
+-        // that can observe it through phase or target-mission dependencies.
+-        const dependents = getActiveMissionDependents(input.repository)
+-        const queue = definitions.map(definition => definition.missionId)
+-        const queued = new Set(queue)
+-        let processed = 0
+-        const maximumProcessed = Math.max(definitions.length, definitions.length * definitions.length * 2)
+-        let cursor = 0
+-        while (cursor < queue.length) {
+-            if (++processed > maximumProcessed) {
+-                throw new Error("Active Mission reconciliation did not converge.")
+-            }
+-            const missionId = queue[cursor++]!
+-            queued.delete(missionId)
+-            const definition = definitionById.get(missionId)
+-            if (!definition) continue
+-            let authoritativeProgress: number | null
+-            try {
+-                const mission = getParsedActiveMissionDefinition(
+-                    definition.missionId,
+-                    input.repository,
+-                )
+-                if (!mission) continue
+-                if (!isEligibleEvent(input, mission.eventId)) continue
+-                if (!isActiveMissionAvailable(definition.missionId, {
+-                    repository: input.repository,
+-                    now: input.now,
+-                    activeMissions,
+-                    questProgress,
+-                })) continue
+-                authoritativeProgress = computeAuthoritativeProgress(
+-                    definition.missionId,
+-                    definition.row,
+-                    player,
+-                    finishedQuestIds,
+-                    activeMissions,
+-                    input.repository,
+-                    factState,
+-                )
+-            } catch {
+-                continue
+-            }
+-            if (authoritativeProgress === null) continue
+-            if (activeMissions[String(definition.missionId)] === undefined
+-                && authoritativeProgress <= 0) continue
+-
+-            const settlement = settleActiveMissionProgress(
++    }
++    const activeMissions = normalizeActiveMissions(getPlayerActiveMissionsSync(input.playerId))
++    const factState = buildActiveMissionFactState(
++        input.playerId,
++        player,
++        finishedQuestIds,
++        questProgressFacts,
++        input.repository,
++        requirements,
++        input,
++    )
++    const deltas = new Map<number, { progress: number, stages: Set<number> }>()
++
++    // Every definition runs once. A changed mission only requeues definitions
++    // that can observe it through phase or target-mission dependencies.
++    const dependents = getActiveMissionDependents(input.repository)
++    const queue = definitions.map(definition => definition.missionId)
++    const queued = new Set(queue)
++    let processed = 0
++    const maximumProcessed = Math.max(definitions.length, definitions.length * definitions.length * 2)
++    let cursor = 0
++    while (cursor < queue.length) {
++        if (++processed > maximumProcessed) {
++            throw new Error("Active Mission reconciliation did not converge.")
++        }
++        const missionId = queue[cursor++]!
++        queued.delete(missionId)
++        const definition = definitionById.get(missionId)
++        if (!definition) continue
++        let authoritativeProgress: number | null
++        try {
++            const mission = getParsedActiveMissionDefinition(
++                definition.missionId,
++                input.repository,
++            )
++            if (!mission) continue
++            if (!isEligibleEvent(input, mission.eventId)) continue
++            if (!isActiveMissionAvailable(definition.missionId, {
++                repository: input.repository,
++                now: input.now,
++                activeMissions,
++                questProgress,
++            })) continue
++            authoritativeProgress = computeAuthoritativeProgress(
+                 definition.missionId,
+-                activeMissions[String(definition.missionId)],
+-                authoritativeProgress,
+-                { repository: input.repository },
++                definition.row,
++                player,
++                finishedQuestIds,
++                activeMissions,
++                input.repository,
++                factState,
+             )
+-            if (settlement.delta === null) continue
++        } catch {
++            continue
++        }
++        if (authoritativeProgress === null) continue
++        if (activeMissions[String(definition.missionId)] === undefined
++            && authoritativeProgress <= 0) continue
++
++        const settlement = settleActiveMissionProgress(
++            definition.missionId,
++            activeMissions[String(definition.missionId)],
++            authoritativeProgress,
++            { repository: input.repository },
++        )
++        if (settlement.delta === null) continue
+ 
++        if (persist) {
+             updatePlayerActiveMissionSync(
+                 input.playerId,
+                 definition.missionId,
+@@ -1275,23 +1291,23 @@ export function reconcileActiveMissionFacts(
+                     false,
+                 )
+             }
+-            activeMissions[String(definition.missionId)] = settlement.state
+-            mergeDelta(deltas, settlement.delta)
+-            for (const dependentMissionId of dependents.get(definition.missionId) ?? []) {
+-                if (!definitionById.has(dependentMissionId) || queued.has(dependentMissionId)) continue
+-                queue.push(dependentMissionId)
+-                queued.add(dependentMissionId)
+-            }
+         }
++        activeMissions[String(definition.missionId)] = settlement.state
++        mergeDelta(deltas, settlement.delta)
++        for (const dependentMissionId of dependents.get(definition.missionId) ?? []) {
++            if (!definitionById.has(dependentMissionId) || queued.has(dependentMissionId)) continue
++            queue.push(dependentMissionId)
++            queued.add(dependentMissionId)
++        }
++    }
+ 
+-        return [...deltas.entries()]
+-            .sort(([left], [right]) => left - right)
+-            .map(([missionId, delta]) => ({
+-                mission_id: missionId,
+-                progress_value: delta.progress,
+-                stages: [...delta.stages]
+-                    .sort((left, right) => left - right)
+-                    .map(stage => ({ stage, received: false as const })),
+-            }))
+-    })
++    return [...deltas.entries()]
++        .sort(([left], [right]) => left - right)
++        .map(([missionId, delta]) => ({
++            mission_id: missionId,
++            progress_value: delta.progress,
++            stages: [...delta.stages]
++                .sort((left, right) => left - right)
++                .map(stage => ({ stage, received: false as const })),
++        }))
+ }
+diff --git a/src/lib/mission/computer-awake.ts b/src/lib/mission/computer-awake.ts
+index f0e0f1a8..5e0a1b6f 100644
+--- a/src/lib/mission/computer-awake.ts
++++ b/src/lib/mission/computer-awake.ts
+@@ -15,6 +15,8 @@ import { isMissionProgressComplete } from "./stages"
+ import type { MissionComputer, CategoryContext } from "./types"
+ import type { Player, PlayerActiveMission, PlayerCharacter, PlayerQuestProgress } from "../../data/types"
+ import { characterAwakeDefinitions } from "./awake-master-assets"
++import { getCharacterDataSync } from "../assets"
++import { estimateExtendedCharacterLevel, getAwakeLevelMissionTarget } from "../character-overlimit"
+ import {
+     AWAKE_DIRECT_BATTLE_MISSION_IDS,
+     BARAK_AWAKE_PRACTICE_QUEST_ID,
+@@ -291,6 +293,16 @@ export const AwakeComputer: MissionComputer = {
+             return Math.max(dbProgress, 1)
+         }
+ 
++        // Over-limit level missions: progress is the character's current level.
++        if (getAwakeLevelMissionTarget(missionId) !== undefined) {
++            const char = actx.charData.get(charId)
++            const rarity = getCharacterDataSync(Number(charId))?.rarity
++            const level = char && rarity !== undefined
++                ? estimateExtendedCharacterLevel(Number(charId), rarity, char.exp)
++                : 0
++            return Math.max(dbProgress, level)
++        }
++
+         // Race-composition missions (e.g., 人+龙+魔)
+         if (AWAKE_DIRECT_BATTLE_MISSION_IDS.has(missionId)) {
+             return Math.max(dbProgress, actx.categoryMissionProgress.get(missionId) ?? 0)
+diff --git a/src/lib/persistence/command-names.ts b/src/lib/persistence/command-names.ts
+index 2b6718ae..af765870 100644
+--- a/src/lib/persistence/command-names.ts
++++ b/src/lib/persistence/command-names.ts
+@@ -47,6 +47,8 @@ export const MULTI_CLEANUP_ACTIVE_QUEST = "multi.cleanup_active_quest"
+ export interface MultiCleanupActiveQuestArgs {
+     playerId: number
+     expectedPlayId: string
++    /** Completes the durable finish receipt written by the reward transaction. */
++    receipt?: { playId: string, response: unknown }
+ }
+ 
+ /**
+diff --git a/src/lib/persistence/commands.ts b/src/lib/persistence/commands.ts
+index 9ba76054..20b6bcd2 100644
+--- a/src/lib/persistence/commands.ts
++++ b/src/lib/persistence/commands.ts
+@@ -21,6 +21,7 @@ import {
+ import { settleMissionCategories, type MissionSettlementResult } from "../mission/settlement"
+ import { getPlayerSingleQuestProgressSync } from "../../data/domains/quest"
+ import { deletePlayerActiveQuestIfPlayIdSync } from "../../data/domains/quest_active"
++import { getFinishReceiptSync, recordFinishReceiptSync } from "../../data/domains/finish-receipt"
+ import { recordMissionBattleFacts } from "../mission/battle-facts"
+ import { trackSteamRobotChallengeMission } from "../mission/steam-robot-challenge"
+ import { recordQuestRecommendedPartySafe } from "../quest/recommended-party-history"
+@@ -62,10 +63,16 @@ registerWriterCommand<MultiCleanupActiveQuestArgs, boolean>(
+     MULTI_CLEANUP_ACTIVE_QUEST,
+     args => runPersistenceTransactionSync(
+         { domain: "multi-settlement", playerId: args.playerId, operation: "active_quest_cleanup" },
+-        () => deletePlayerActiveQuestIfPlayIdSync(
+-            args.playerId,
+-            args.expectedPlayId,
+-        ),
++        () => {
++            // Only fill in a receipt the reward transaction created.
++            if (args.receipt && getFinishReceiptSync(args.playerId, "multi", args.receipt.playId) !== null) {
++                recordFinishReceiptSync(args.playerId, "multi", args.receipt.playId, args.receipt.response)
++            }
++            return deletePlayerActiveQuestIfPlayIdSync(
++                args.playerId,
++                args.expectedPlayId,
++            )
++        },
+     ),
+ )
+ 
+diff --git a/src/lib/process-guards.ts b/src/lib/process-guards.ts
+new file mode 100644
+index 00000000..c5bc0d32
+--- /dev/null
++++ b/src/lib/process-guards.ts
+@@ -0,0 +1,95 @@
++/**
++ * Process-level guards for the CN server.
++ *
++ * Since Node 15 an unhandled promise rejection terminates the process, which
++ * drops every connected player at once. A rejection only means one async task
++ * failed without a handler; the event loop and all other state are intact, so
++ * it is logged with its stack and the server keeps running.
++ *
++ * An uncaught synchronous exception is different: it unwinds through code
++ * that may have left shared state half-updated, and Node documents that
++ * resuming afterwards is unsafe. It is logged and then the caller-provided
++ * graceful shutdown runs (Fastify close hooks drain realtime and persistence
++ * work), exiting with code 1 instead of the abrupt default exit.
++ */
++
++export interface ProcessGuardOptions {
++    /** Invoked once on the first uncaught exception; must eventually exit. */
++    readonly onFatal: (reason: string) => void
++    /** Full stack logs per window before only a suppressed count is printed. */
++    readonly rejectionLogLimit?: number
++    readonly rejectionLogWindowMs?: number
++    readonly log?: (message: string) => void
++    readonly now?: () => number
++    readonly target?: Pick<NodeJS.Process, "on" | "off">
++}
++
++export interface ProcessGuardStats {
++    unhandledRejections: number
++    uncaughtExceptions: number
++}
++
++export interface InstalledProcessGuards {
++    readonly stats: Readonly<ProcessGuardStats>
++    uninstall(): void
++}
++
++export function describeFailure(value: unknown): string {
++    if (value instanceof Error) return value.stack || `${value.name}: ${value.message}`
++    if (typeof value === "string") return value
++    try {
++        return `non-error value: ${JSON.stringify(value)}`
++    } catch {
++        return `non-error value: ${String(value)}`
++    }
++}
++
++export function installProcessGuards(options: ProcessGuardOptions): InstalledProcessGuards {
++    const target = options.target ?? process
++    const log = options.log ?? ((message: string) => console.error(message))
++    const now = options.now ?? Date.now
++    const limit = Math.max(1, options.rejectionLogLimit ?? 20)
++    const windowMs = Math.max(1, options.rejectionLogWindowMs ?? 60_000)
++    const stats: ProcessGuardStats = { unhandledRejections: 0, uncaughtExceptions: 0 }
++    let windowStart = now()
++    let loggedInWindow = 0
++    let suppressedInWindow = 0
++    let fatalRequested = false
++
++    const onRejection = (reason: unknown) => {
++        stats.unhandledRejections++
++        const current = now()
++        if (current - windowStart >= windowMs) {
++            if (suppressedInWindow > 0) {
++                log(`[PROCESS] unhandledRejection: ${suppressedInWindow} further rejection(s) not logged in the previous window`)
++            }
++            windowStart = current
++            loggedInWindow = 0
++            suppressedInWindow = 0
++        }
++        if (loggedInWindow >= limit) {
++            suppressedInWindow++
++            return
++        }
++        loggedInWindow++
++        log(`[PROCESS] unhandledRejection (total ${stats.unhandledRejections}); server keeps running: ${describeFailure(reason)}`)
++    }
++
++    const onException = (error: unknown, origin?: string) => {
++        stats.uncaughtExceptions++
++        log(`[PROCESS] uncaughtException${origin ? ` (${origin})` : ""}; starting graceful shutdown: ${describeFailure(error)}`)
++        if (fatalRequested) return
++        fatalRequested = true
++        options.onFatal("uncaughtException")
++    }
++
++    target.on("unhandledRejection", onRejection)
++    target.on("uncaughtException", onException)
++    return {
++        stats,
++        uninstall() {
++            target.off("unhandledRejection", onRejection)
++            target.off("uncaughtException", onException)
++        },
++    }
++}
+diff --git a/src/multi/coordinator/default-runtime.ts b/src/multi/coordinator/default-runtime.ts
+index 23ca3435..9f1c6ca7 100644
+--- a/src/multi/coordinator/default-runtime.ts
++++ b/src/multi/coordinator/default-runtime.ts
+@@ -136,6 +136,7 @@ export async function startRealtimeSessionServer(): Promise<void> {
+     await startRealtimeOwner()
+     getRoomCommandGateway()
+     console.log(`[MULTI-REALTIME] owner ready pid=${processTransport!.pid} epoch=${processTransport!.ownerEpoch}`)
++    startRealtimeOwnerWatchdog()
+ }
+ export function quiesceRealtimeSessionServer(): Promise<void> {
+     if (!quiesced) {
+@@ -170,11 +171,60 @@ export function stopRealtimeSessionServer(): Promise<void> {
+     })()
+     return stopped
+ }
+-/** Security/channel failure seals this owner until the service is explicitly restarted. */
++/** Security/channel failure seals this owner; a process owner is then rebuilt by the respawn supervisor. */
+ export async function failRealtimeOwner(): Promise<void> {
++    if (phase === "failed") return
+     phase = "failed"
+     gateway?.close()
+     executor?.close()
+     if (!isRealtimeParent()) { await require("../tcp/server").stopSessionServer(); return }
+     await processTransport?.abort()
++    scheduleRealtimeOwnerRespawn()
++}
++
++// A sealed owner used to stay down until a manual restart, leaving the session port closed (live 2026-10-16).
++// The old child is aborted before a new owner epoch starts, so two owners never hold authority at once.
++const RESPAWN_DELAY_MS = boundedEnvInt("MULTI_REALTIME_RESPAWN_DELAY_MS", 5000, 500, 120_000)
++const RESPAWN_MAX = boundedEnvInt("MULTI_REALTIME_RESPAWN_MAX", 5, 0, 100)
++const RESPAWN_WINDOW_MS = 10 * 60_000
++const respawnHistory: number[] = []
++let respawnTimer: NodeJS.Timeout | undefined
++let watchdog: NodeJS.Timeout | undefined
++
++function boundedEnvInt(name: string, fallback: number, min: number, max: number): number {
++    const value = Number(process.env[name])
++    return Number.isSafeInteger(value) && value >= min && value <= max ? value : fallback
++}
++
++function scheduleRealtimeOwnerRespawn(): void {
++    if (respawnTimer || isServerShuttingDown()) return
++    const now = Date.now()
++    while (respawnHistory.length && now - respawnHistory[0] > RESPAWN_WINDOW_MS) respawnHistory.shift()
++    if (respawnHistory.length >= RESPAWN_MAX) {
++        console.error(`[MULTI-REALTIME] owner respawn limit reached (${RESPAWN_MAX} per 10 min); manual restart required`)
++        return
++    }
++    respawnHistory.push(now)
++    console.error(`[MULTI-REALTIME] owner sealed; respawning in ${RESPAWN_DELAY_MS}ms (attempt ${respawnHistory.length}/${RESPAWN_MAX})`)
++    respawnTimer = setTimeout(() => {
++        respawnTimer = undefined
++        if (isServerShuttingDown() || phase !== "failed") return
++        startRealtimeSessionServer().then(
++            () => console.log("[MULTI-REALTIME] owner respawned"),
++            error => { console.error("[MULTI-REALTIME] owner respawn failed", error); phase = "failed"; scheduleRealtimeOwnerRespawn() })
++    }, RESPAWN_DELAY_MS)
++    respawnTimer.unref?.()
++}
++
++/** A process owner that exits on its own is treated like a sealed owner. */
++function startRealtimeOwnerWatchdog(): void {
++    if (watchdog) return
++    watchdog = setInterval(() => {
++        if (isServerShuttingDown()) { clearInterval(watchdog); watchdog = undefined; return }
++        if (phase === "running" && isRealtimeParent() && processTransport && !processTransport.isReady) {
++            console.error("[MULTI-REALTIME] owner process is no longer ready; sealing for respawn")
++            void failRealtimeOwner()
++        }
++    }, 5000)
++    watchdog.unref?.()
+ }
+diff --git a/src/multi/settlement-snapshot.ts b/src/multi/settlement-snapshot.ts
+index b2e72b6e..6b59f929 100644
+--- a/src/multi/settlement-snapshot.ts
++++ b/src/multi/settlement-snapshot.ts
+@@ -29,6 +29,10 @@ export interface MultiSettlementSnapshot {
+     lifecycle: MultiBattleLifecycle
+     createdAt: number
+     expiresAt: number
++    /** Set once this player's rewards for the play have been committed. */
++    settled?: boolean
++    /** The response produced by the settling finish, replayed to duplicates. */
++    settledResponse?: unknown
+ }
+ 
+ const snapshots = new Map<string, MultiSettlementSnapshot>()
+@@ -144,3 +148,23 @@ export function transitionRoomSettlementSnapshots(
+     }
+     return transitioned
+ }
++
++/**
++ * Settled latch for one player's play. Callers check and set it while holding
++ * the player's persistence queue so at most one finish pays out per snapshot.
++ */
++export function isMultiSettlementSettled(playerId: number, playId: string): boolean {
++    return getMultiSettlementSnapshot(playerId, playId)?.settled === true
++}
++
++export function markMultiSettlementSettled(playerId: number, playId: string): boolean {
++    const snapshot = getMultiSettlementSnapshot(playerId, playId)
++    if (!snapshot) return false
++    snapshot.settled = true
++    return true
++}
++
++export function recordMultiSettlementResponse(playerId: number, playId: string, response: unknown): void {
++    const snapshot = getMultiSettlementSnapshot(playerId, playId)
++    if (snapshot?.settled) snapshot.settledResponse = response
++}
+diff --git a/src/routes/api/character.ts b/src/routes/api/character.ts
+index ea2aebfd..5517dbb8 100644
+--- a/src/routes/api/character.ts
++++ b/src/routes/api/character.ts
+@@ -14,6 +14,7 @@ import { resolvePlayerIdSync } from "../../data/activeAccount";
+ import { reconcileAwakeUnlockCharacterList, settleDegreeMissionResponse } from "../../lib/mission";
+ import { gameVerboseLog } from "../../lib/game-logging";
+ import { runPersistenceTransaction } from "../../lib/persistence-coordinator";
++import { getExtendedOverLimitExtraCosts, validateOverLimitRequest } from "../../lib/character-overlimit";
+ 
+ interface OverLimitBody {
+     viewer_id: number
+@@ -123,9 +124,11 @@ const routes = async (fastify: FastifyInstance) => {
+             if (!character) return { error: "Character not owned." }
+             const newOverLimit = character.overLimitStep + overLimitCount
+             const rarity = characterAssetData.rarity
+-            if (newOverLimit > characterMaxOverLimits[rarity]) {
+-                return { error: "Character cannot be uncapped further." }
+-            }
++            const requestError = validateOverLimitRequest(
++                characterId, rarity, character.overLimitStep, overLimitCount,
++                Boolean(body.use_stack), body.item_id,
++            )
++            if (requestError !== null) return { error: requestError }
+             let stack = character.stack
+             const itemList: Record<number, number> = {}
+             if (body.use_stack) {
+@@ -134,16 +137,21 @@ const routes = async (fastify: FastifyInstance) => {
+                 updatePlayerCharacterSync(playerId, characterId, { overLimitStep: newOverLimit, stack })
+             } else {
+                 const itemId = body.item_id
+-                if ((rarity === 5 && itemId !== 10003)
+-                    || (rarity <= 4 && itemId !== 10002 && itemId !== 10001)) {
+-                    return { error: "Attempted to use invalid item." }
++                const costs = [{ itemId, amount: overLimitCount }, ...getExtendedOverLimitExtraCosts(
++                    characterId, rarity, character.overLimitStep, overLimitCount,
++                )]
++                const remainders: Record<number, number> = {}
++                for (const cost of costs) {
++                    const count = getPlayerItemSync(playerId, cost.itemId)
++                    if (count === null) return { error: "Attempted to use unowned item." }
++                    const remaining = count - cost.amount
++                    if (remaining < 0) return { error: "Not enough of item to uncap." }
++                    remainders[cost.itemId] = remaining
++                }
++                for (const [costItemId, remaining] of Object.entries(remainders)) {
++                    updatePlayerItemSync(playerId, Number(costItemId), remaining)
++                    itemList[Number(costItemId)] = remaining
+                 }
+-                const count = getPlayerItemSync(playerId, itemId)
+-                if (count === null) return { error: "Attempted to use unowned item." }
+-                const remaining = count - overLimitCount
+-                if (remaining < 0) return { error: "Not enough of item to uncap." }
+-                updatePlayerItemSync(playerId, itemId, remaining)
+-                itemList[itemId] = remaining
+                 updatePlayerCharacterSync(playerId, characterId, { overLimitStep: newOverLimit })
+             }
+             grantCharacterDegreeRewardsSync(playerId, [characterId])
+diff --git a/src/routes/api/exBoost.ts b/src/routes/api/exBoost.ts
+index d1f9c8b6..9c61197f 100644
+--- a/src/routes/api/exBoost.ts
++++ b/src/routes/api/exBoost.ts
+@@ -12,7 +12,7 @@ import { randomInt } from "crypto"
+ import { clientSerializeDate } from "../../data/utils"
+ import { resolvePlayerIdSync } from "../../data/activeAccount";
+ import { runPersistenceTransaction } from "../../lib/persistence-coordinator";
+-import { characterMaxOverLimits } from "./character"
++import { getCharacterMaxOverLimit } from "../../lib/character-overlimit"
+ import orderedExAbility from "../../../assets/ex_ability.json"
+ 
+ interface ExBoostDrawBody {
+@@ -212,7 +212,7 @@ const drawExpBoost = async (request: FastifyRequest, reply: FastifyReply, autoAc
+ 
+         // ensure max over limit step (aligned with client isMaxOverLimitStep)
+         const rarity = characterAssetData.rarity
+-        const maxOver = characterMaxOverLimits[rarity]
++        const maxOver = getCharacterMaxOverLimit(characterId, rarity)
+         if (maxOver === undefined || characterData.overLimitStep < maxOver) {
+             return reject(400, "Character not at max over limit step.")
+         }
+diff --git a/src/routes/api/expod.ts b/src/routes/api/expod.ts
+index dfe825ad..17ba9ef5 100644
+--- a/src/routes/api/expod.ts
++++ b/src/routes/api/expod.ts
+@@ -7,7 +7,7 @@ import { getPlayerCharacterSync, getPlayerCharactersSync, updatePlayerCharacterS
+ import { getPlayerItemsSync, givePlayerItemSync } from "../../data/domains/item"
+ import { adjustPlayerExpPoolSync, collectPlayerDataPooledExpSync, getPlayerSync } from "../../data/domains/player"
+ import { getSession } from "../../data/domains/session"
+-import { characterMaxOverLimits } from "./character";
++import { getCharacterMaxOverLimit } from "../../lib/character-overlimit";
+ import { givePlayerCharactersExpSync } from "../../lib/character";
+ import { generateDataHeaders, getServerDate, getServerTime } from "../../utils";
+ import { getCharacterDataSync } from "../../lib/assets";
+@@ -194,7 +194,7 @@ const routes = async (fastify: FastifyInstance) => {
+             if (!charAsset) continue
+ 
+             const rarity = charAsset.rarity
+-            const maxOver = characterMaxOverLimits[rarity] ?? 0
++            const maxOver = getCharacterMaxOverLimit(characterId, rarity) ?? 0
+             if (character.overLimitStep < maxOver) continue
+ 
+             const stack = character.stack
+diff --git a/tests/character-overlimit.test.js b/tests/character-overlimit.test.js
+new file mode 100644
+index 00000000..b7cdb51b
+--- /dev/null
++++ b/tests/character-overlimit.test.js
+@@ -0,0 +1,68 @@
++const test = require("node:test")
++const assert = require("node:assert/strict")
++
++const {
++    OVER_LIMIT_EXTENSION_ITEM_ID,
++    estimateExtendedCharacterLevel,
++    getExtendedOverLimitExtraCosts,
++    getAwakeLevelMissionTarget,
++    getCharacterExpCap,
++    getCharacterMaxOverLimit,
++    validateOverLimitRequest,
++} = require("../out/lib/character-overlimit")
++
++const WAGNER = 111183
++const OTHER_FIVE_STAR = 111001
++
++test("only listed 5* characters get the extended cap", () => {
++    assert.equal(getCharacterMaxOverLimit(WAGNER, 5), 8)
++    assert.equal(getCharacterMaxOverLimit(OTHER_FIVE_STAR, 5), 4)
++    assert.equal(getCharacterMaxOverLimit(WAGNER, 4), 6)
++})
++
++test("retail uncaps keep their retail items and duplicates", () => {
++    assert.equal(validateOverLimitRequest(WAGNER, 5, 0, 4, false, 10003), null)
++    assert.equal(validateOverLimitRequest(WAGNER, 5, 2, 1, true, undefined), null)
++    assert.match(validateOverLimitRequest(WAGNER, 5, 0, 1, false, OVER_LIMIT_EXTENSION_ITEM_ID), /invalid item/)
++    assert.match(validateOverLimitRequest(WAGNER, 5, 3, 2, false, 10003), /separately/)
++})
++
++test("retail crystals follow the client rarity limits", () => {
++    const FOUR_STAR = 141008
++    const THREE_STAR = 131001
++    assert.match(validateOverLimitRequest(FOUR_STAR, 4, 0, 1, false, 10001), /invalid item/)
++    assert.equal(validateOverLimitRequest(FOUR_STAR, 4, 0, 1, false, 10002), null)
++    assert.match(validateOverLimitRequest(FOUR_STAR, 4, 0, 1, false, 10003), /invalid item/)
++    assert.equal(validateOverLimitRequest(THREE_STAR, 3, 0, 1, false, 10001), null)
++    assert.equal(validateOverLimitRequest(THREE_STAR, 3, 0, 1, false, 10002), null)
++    assert.match(validateOverLimitRequest(WAGNER, 5, 0, 1, false, 10002), /invalid item/)
++})
++
++test("extended uncaps take only the extension item", () => {
++    assert.equal(validateOverLimitRequest(WAGNER, 5, 4, 4, false, OVER_LIMIT_EXTENSION_ITEM_ID), null)
++    assert.match(validateOverLimitRequest(WAGNER, 5, 4, 1, false, 10003), /invalid item/)
++    assert.match(validateOverLimitRequest(WAGNER, 5, 4, 1, true, undefined), /Duplicates/)
++    assert.match(validateOverLimitRequest(WAGNER, 5, 7, 2, false, OVER_LIMIT_EXTENSION_ITEM_ID), /further/)
++    assert.match(validateOverLimitRequest(OTHER_FIVE_STAR, 5, 4, 1, false, OVER_LIMIT_EXTENSION_ITEM_ID), /further/)
++})
++
++test("exp caps and level estimate reach 120 only for listed characters", () => {
++    assert.equal(getCharacterExpCap(WAGNER, 5, 4), 379988)
++    assert.equal(getCharacterExpCap(WAGNER, 5, 8), 679988)
++    assert.equal(getCharacterExpCap(OTHER_FIVE_STAR, 5, 8), undefined)
++    assert.equal(estimateExtendedCharacterLevel(WAGNER, 5, 379988), 100)
++    assert.equal(estimateExtendedCharacterLevel(WAGNER, 5, 679987), 115)
++    assert.equal(estimateExtendedCharacterLevel(WAGNER, 5, 679988), 120)
++    assert.equal(estimateExtendedCharacterLevel(OTHER_FIVE_STAR, 5, 679988), 100)
++})
++
++test("the level-120 awake mission is configured", () => {
++    assert.equal(getAwakeLevelMissionTarget(1111831), 120)
++    assert.equal(getAwakeLevelMissionTarget(1111832), undefined)
++})
++
++test("extended uncaps also cost paradox cores, retail ones do not", () => {
++    assert.deepEqual(getExtendedOverLimitExtraCosts(WAGNER, 5, 4, 2), [{ itemId: 10000302, amount: 2 }])
++    assert.deepEqual(getExtendedOverLimitExtraCosts(WAGNER, 5, 2, 1), [])
++    assert.deepEqual(getExtendedOverLimitExtraCosts(OTHER_FIVE_STAR, 5, 4, 1), [])
++})
+diff --git a/tests/cn-load-write-transactions.test.cjs b/tests/cn-load-write-transactions.test.cjs
+new file mode 100644
+index 00000000..811eacef
+--- /dev/null
++++ b/tests/cn-load-write-transactions.test.cjs
+@@ -0,0 +1,314 @@
++// /load write-transaction budget and response stability.
++//
++// Each fixture runs in a child process with a frozen clock and a fresh
++// database: a first /load initializes the save, the fixture then puts the
++// save into a state that one of the load-time repairs handles, and the second
++// /load is measured. The test asserts how many write transactions and COMMITs
++// the second /load performs.
++//
++// Set CN_LOAD_BASELINE_ROOT to another build of this repository (a directory
++// containing out/, assets/ and node_modules/) to additionally assert that the
++// response bytes and the persisted player rows are identical to that build.
++const test = require('node:test')
++const assert = require('node:assert/strict')
++const fs = require('node:fs')
++const os = require('node:os')
++const path = require('node:path')
++const crypto = require('node:crypto')
++const { execFile } = require('node:child_process')
++const { promisify } = require('node:util')
++const { performance } = require('node:perf_hooks')
++
++const FIXED_NOW = Date.parse('2026-10-10T04:00:00.000Z')
++const FIXTURES = ['clean', 'daily', 'mana', 'abyss', 'mission', 'all']
++
++function freezeClock() {
++    const RealDate = Date
++    class FixedDate extends RealDate {
++        constructor(...args) { if (args.length === 0) super(FIXED_NOW); else super(...args) }
++        static now() { return FIXED_NOW }
++    }
++    global.Date = FixedDate
++}
++
++function countWrites(db) {
++    const counts = { begins: 0, commits: 0, implicitWrites: 0 }
++    const probe = db.prepare('SELECT 1')
++    const proto = Object.getPrototypeOf(probe)
++    const run = proto.run
++    proto.run = function (...args) {
++        const sql = this.source.trim().toUpperCase()
++        if (sql.startsWith('BEGIN')) counts.begins++
++        else if (sql.startsWith('COMMIT')) counts.commits++
++        else if (!this.reader && !this.database.inTransaction) counts.implicitWrites++
++        return run.apply(this, args)
++    }
++    const exec = db.exec
++    db.exec = function (sql) {
++        const text = String(sql).trim().toUpperCase()
++        if (text.startsWith('BEGIN')) counts.begins++
++        else if (text.startsWith('COMMIT')) counts.commits++
++        return exec.call(this, sql)
++    }
++    return counts
++}
++
++function dumpPlayerRows(db, playerId) {
++    const hash = crypto.createHash('sha256')
++    const tables = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' ORDER BY name`).all()
++        .map(row => row.name)
++    for (const table of tables) {
++        const columns = db.prepare(`PRAGMA table_info("${table}")`).all().map(column => column.name)
++        const owner = columns.includes('player_id') ? 'player_id' : (table === 'players' ? 'id' : null)
++        if (owner === null) continue
++        const order = columns.map(column => `"${column}"`).join(',')
++        // SQLite's own clock (datetime('now')) is not frozen with the process clock.
++        const rows = db.prepare(`SELECT * FROM "${table}" WHERE "${owner}"=? ORDER BY ${order}`).all(playerId)
++            .map(row => { const copy = { ...row }; delete copy.updated_at; return copy })
++        hash.update(table).update(JSON.stringify(rows))
++        if (process.env.CN_LOAD_DUMP_DIR) {
++            fs.appendFileSync(path.join(process.env.CN_LOAD_DUMP_DIR, 'rows.txt'), table + ' ' + JSON.stringify(rows) + '\n')
++        }
++    }
++    return hash.digest('hex')
++}
++
++async function scenario(root, fixture) {
++    freezeClock()
++    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'cn-load-writes-'))
++    process.env.DATA_DIR = directory
++    process.env.GACHA_SEED_DIR = path.join(directory, 'seeds')
++    const out = name => require(path.join(root, 'out', name))
++    const Fastify = require(path.join(root, 'node_modules', 'fastify'))
++    const { pack } = require(path.join(root, 'node_modules', 'msgpackr'))
++    const { getDb } = out('data/db')
++    const players = out('data/domains/player')
++    const characters = out('data/domains/character')
++    const rush = out('data/domains/rushEvent')
++    const account = out('data/domains/account').insertAccountSync({
++        appId: 'wf_cn', idpAlias: '', idpCode: 'fixture', idpId: 'load-writes', status: 'normal',
++    })
++    const player = players.insertDefaultPlayerSync(account.id)
++    out('data/activeAccount').saveAccountDefaultPlayer(account.id, player.id)
++    const viewerId = 82000456
++    const db = getDb()
++    db.prepare('INSERT INTO sessions (token,account_id,expires,type) VALUES (?,?,?,2)')
++        .run(String(viewerId), account.id, '2099-01-01T00:00:00Z')
++    const ids = Object.keys(require(path.join(root, 'assets', 'character.json'))).map(Number)
++        .slice(0, Number(process.env.CN_LOAD_CHARACTER_LIMIT || 40))
++    db.transaction(() => {
++        for (const id of ids) {
++            if (!characters.playerOwnsCharacterSync(player.id, id)) characters.insertDefaultPlayerCharacterSync(player.id, id)
++        }
++    })()
++
++    const app = Fastify({ logger: false })
++    let captured = null
++    app.addHook('onSend', async (_request, _reply, payload) => {
++        captured = payload
++        return typeof payload === 'object' && payload !== null && !Buffer.isBuffer(payload) ? JSON.stringify({}) : payload
++    })
++    await app.register(out('routes/cn/load').default, { prefix: '/api/index.php' })
++    const load = async () => {
++        captured = null
++        const response = await app.inject({
++            method: 'POST', url: '/api/index.php/load',
++            headers: { 'content-type': 'application/json', res_ver: '1.4.117' },
++            payload: JSON.stringify({ viewer_id: viewerId }),
++        })
++        assert.equal(response.statusCode, 200, response.body)
++        return Buffer.from(pack(captured))
++    }
++
++    await load()
++    // A save written by older code: every repair below has something to do.
++    const applied = {}
++    if (fixture === 'daily' || fixture === 'all') {
++        db.prepare('UPDATE players SET last_login_time=? WHERE id=?')
++            .run(new Date(FIXED_NOW - 36 * 3600 * 1000).toISOString(), player.id)
++        applied.daily = 1
++    }
++    if (fixture === 'mana' || fixture === 'all') {
++        applied.mana = db.prepare('DELETE FROM players_characters_bond_tokens WHERE player_id=? AND character_id IN (?,?)')
++            .run(player.id, ids[0], ids[1]).changes
++    }
++    if (fixture === 'abyss' || fixture === 'all') {
++        for (const eventId of [700099, 700100]) {
++            if (rush.getPlayerRushEventSync(player.id, eventId) === null) {
++                rush.insertPlayerRushEventSync(player.id, rush.getDefaultPlayerRushEventSync(eventId))
++            }
++        }
++        applied.abyss = db.prepare('UPDATE players_rush_events SET tower_revision=NULL, active_rush_battle_folder_id=2 WHERE player_id=? AND event_id IN (700099,700100)')
++            .run(player.id).changes
++    }
++    if (fixture === 'mission' || fixture === 'all') {
++        // One learned mana node (not a full board) advances a beginner mission
++        // whose progress row the reconciliation has to create.
++        const nodeId = Number(Object.keys(out('lib/assets').getCharacterManaNodesSync(ids[2], 1))[0])
++        db.prepare('INSERT INTO players_characters_mana_nodes (value,character_id,player_id) VALUES (?,?,?)')
++            .run(nodeId, ids[2], player.id)
++        applied.missionRowsBefore = 1 + db.prepare('SELECT COUNT(*) AS n FROM players_active_missions WHERE player_id=?')
++            .get(player.id).n
++    }
++    if (fixture === 'units') {
++        // Each repair helper used by /load, called on its own: no write
++        // transaction when the save is current, exactly one when it is not.
++        const progress = out('data/domains/abyss-tower-progress')
++        const helpers = out('lib/character-helpers')
++        const reconciliation = out('lib/mission/active-reconciliation')
++        const { getContentSnapshot } = out('content/runtime/content-snapshot')
++        const reconcile = () => reconciliation.reconcileActiveMissionFacts({
++            playerId: player.id, repository: getContentSnapshot().repository, now: FIXED_NOW,
++        })
++        const calls = {
++            abyss: () => progress.refreshPlayerAbyssTowersSync(player.id),
++            mana: () => helpers.reconcilePlayerManaBoardCompletionSync(player.id),
++            mission: reconcile,
++        }
++        const result = {}
++        const counts = countWrites(db)
++        const measure = (name, call) => {
++            const begins = counts.begins
++            const value = call()
++            result[name] = counts.begins - begins
++            return value
++        }
++        for (const [name, call] of Object.entries(calls)) measure(`${name}.clean`, call)
++        for (const eventId of [700099, 700100]) {
++            if (rush.getPlayerRushEventSync(player.id, eventId) === null) {
++                rush.insertPlayerRushEventSync(player.id, rush.getDefaultPlayerRushEventSync(eventId))
++            }
++        }
++        db.prepare('UPDATE players_rush_events SET tower_revision=NULL WHERE player_id=? AND event_id IN (700099,700100)').run(player.id)
++        db.prepare('DELETE FROM players_characters_bond_tokens WHERE player_id=? AND character_id=?').run(player.id, ids[0])
++        const nodeId = Number(Object.keys(out('lib/assets').getCharacterManaNodesSync(ids[2], 1))[0])
++        db.prepare('INSERT INTO players_characters_mana_nodes (value,character_id,player_id) VALUES (?,?,?)')
++            .run(nodeId, ids[2], player.id)
++        measure('abyss.repair', calls.abyss)
++        measure('mana.repair', calls.mana)
++        result.missionDeltas = measure('mission.repair', calls.mission).length
++        for (const [name, call] of Object.entries(calls)) measure(`${name}.repaired`, call)
++        result.towerRevisions = db.prepare('SELECT COUNT(*) AS n FROM players_rush_events WHERE player_id=? AND event_id IN (700099,700100) AND tower_revision IS NOT NULL').get(player.id).n
++        await app.close()
++        db.close()
++        return { fixture, units: result }
++    }
++    const before = dumpPlayerRows(db, player.id)
++
++    const counts = countWrites(db)
++    const startedAt = performance.now()
++    const body = await load()
++    const loadMs = performance.now() - startedAt
++    const measured = { ...counts }
++    const after = dumpPlayerRows(db, player.id)
++    if (applied.missionRowsBefore !== undefined) {
++        applied.mission = db.prepare('SELECT COUNT(*) AS n FROM players_active_missions WHERE player_id=?')
++            .get(player.id).n - (applied.missionRowsBefore - 1)
++        delete applied.missionRowsBefore
++    }
++    await app.close()
++    db.close()
++    return {
++        fixture, applied, counts: measured,
++        changed: before !== after,
++        response: crypto.createHash('sha256').update(body).digest('hex'),
++        rows: after,
++        bytes: body.length,
++        loadMs,
++    }
++}
++
++async function runChild(root, fixture) {
++    const { stdout } = await promisify(execFile)(process.execPath, [__filename, '--child', root, fixture], {
++        windowsHide: true, timeout: 120000, maxBuffer: 10_000_000,
++    })
++    const line = stdout.split('\n').find(text => text.startsWith('RESULT '))
++    assert.ok(line, stdout)
++    return JSON.parse(line.slice('RESULT '.length))
++}
++
++if (process.argv[2] === '--child') {
++    scenario(process.argv[3], process.argv[4]).then(result => {
++        console.log('RESULT ' + JSON.stringify(result))
++        process.exit(0)
++    }, error => { console.error(error); process.exit(1) })
++} else {
++    const root = path.resolve(__dirname, '..')
++    const baseline = process.env.CN_LOAD_BASELINE_ROOT
++    test('write scope opens one transaction lazily and rolls back on failure', async () => {
++        const { getDb } = require('../out/data/db')
++        const { runPersistenceWriteScope, runPersistenceTransactionSync } = require('../out/lib/persistence-coordinator')
++        const db = getDb()
++        db.exec('CREATE TABLE IF NOT EXISTS write_scope_probe (value INTEGER NOT NULL)')
++        const counts = countWrites(db)
++        const context = { domain: 'player', playerId: 1, operation: 'write_scope_probe' }
++        const values = () => db.prepare('SELECT value FROM write_scope_probe ORDER BY value').all().map(row => row.value)
++
++        assert.equal(await runPersistenceWriteScope(context, scope => { values(); return scope.began }), false)
++        assert.deepEqual(counts, { begins: 0, commits: 0, implicitWrites: 0 })
++
++        await runPersistenceWriteScope(context, scope => {
++            scope.write(() => db.prepare('INSERT INTO write_scope_probe VALUES (1)').run())
++            // A nested domain transaction and a plain statement join the scope.
++            runPersistenceTransactionSync(context, () => db.prepare('INSERT INTO write_scope_probe VALUES (2)').run())
++            db.prepare('INSERT INTO write_scope_probe VALUES (3)').run()
++            scope.finish()
++            assert.equal(db.inTransaction, false)
++            values()
++        })
++        assert.deepEqual(values(), [1, 2, 3])
++        assert.deepEqual(counts, { begins: 1, commits: 1, implicitWrites: 0 })
++
++        await assert.rejects(runPersistenceWriteScope(context, scope => {
++            scope.write(() => db.prepare('INSERT INTO write_scope_probe VALUES (4)').run())
++            throw new Error('section failed')
++        }), /section failed/)
++        assert.equal(db.inTransaction, false)
++        assert.deepEqual(values(), [1, 2, 3])
++
++        // A caught failure inside one write keeps neither its partial rows nor
++        // aborts the other writes of the section.
++        await runPersistenceWriteScope(context, scope => {
++            assert.throws(() => scope.write(() => {
++                db.prepare('INSERT INTO write_scope_probe VALUES (5)').run()
++                throw new Error('repair failed')
++            }), /repair failed/)
++            scope.write(() => db.prepare('INSERT INTO write_scope_probe VALUES (6)').run())
++        })
++        assert.deepEqual(values(), [1, 2, 3, 6])
++    })
++    test('load repair helpers open a write transaction only when they write', { timeout: 300000 }, async () => {
++        const { units } = await runChild(root, 'units')
++        console.log('UNITS ' + JSON.stringify(units))
++        assert.deepEqual(units, {
++            'abyss.clean': 0, 'mana.clean': 0, 'mission.clean': 0,
++            'abyss.repair': 1, 'mana.repair': 1, 'mission.repair': 1, missionDeltas: units.missionDeltas,
++            'abyss.repaired': 0, 'mana.repaired': 0, 'mission.repaired': 0,
++            towerRevisions: 2,
++        })
++        assert.ok(units.missionDeltas > 0)
++    })
++    for (const fixture of FIXTURES) {
++        test(`load write transactions: ${fixture}`, { timeout: 300000 }, async () => {
++            const current = await runChild(root, fixture)
++            console.log('CURRENT ' + JSON.stringify(current))
++            for (const [name, rows] of Object.entries(current.applied)) {
++                assert.ok(rows > 0, `fixture ${name} must change the save`)
++            }
++            const writes = current.counts.begins + current.counts.implicitWrites
++            const commits = current.counts.commits + current.counts.implicitWrites
++            // The login timestamp is rewritten on every /load, so even a fully
++            // repaired save performs one write; every repair joins it.
++            assert.equal(writes, 1, JSON.stringify(current.counts))
++            assert.equal(commits, 1, JSON.stringify(current.counts))
++            if (fixture !== 'clean') assert.equal(current.changed, true)
++            if (baseline) {
++                const reference = await runChild(path.resolve(baseline), fixture)
++                console.log('BASELINE ' + JSON.stringify(reference))
++                assert.equal(current.response, reference.response, 'response bytes')
++                assert.equal(current.bytes, reference.bytes)
++                assert.equal(current.rows, reference.rows, 'persisted rows')
++            }
++        })
++    }
++}
+diff --git a/tests/finish-settlement-idempotency.test.cjs b/tests/finish-settlement-idempotency.test.cjs
+new file mode 100644
+index 00000000..cd3ace2b
+--- /dev/null
++++ b/tests/finish-settlement-idempotency.test.cjs
+@@ -0,0 +1,489 @@
++'use strict'
++
++// A play settles at most once; repeated distinct plays without /start still settle.
++const test = require('node:test')
++const assert = require('node:assert/strict')
++const fs = require('node:fs')
++const os = require('node:os')
++const path = require('node:path')
++const { EventEmitter } = require('node:events')
++const Fastify = require('fastify')
++const { pack, unpack } = require('msgpackr')
++
++const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'finish-idempotency-'))
++process.env.DATA_DIR = directory
++process.env.GAME_ROUTINE_LOGS = 'off'
++process.env.MULTI_SETTLEMENT_BARRIER_MS = '20'
++delete process.env.CN_WRITER_THREAD
++delete process.env.QUEST_FINISH_STRICT
++
++const originalInterval = global.setInterval
++const intervals = []
++global.setInterval = (...args) => {
++    const timer = originalInterval(...args)
++    intervals.push(timer)
++    return timer
++}
++let db, accounts, players, sessions, parties, rooms, manager, battle, singleRoutes, single, cache, sessionValidator
++try {
++    db = require('../out/data/db').getDb()
++    require('../out/data').initializeDatabase()
++    accounts = require('../out/data/domains/account')
++    players = require('../out/data/domains/player')
++    sessions = require('../out/data/domains/session')
++    parties = require('../out/data/domains/party')
++    rooms = require('../out/multi/room/manager')
++    manager = require('../out/multi/state/SessionManager').sessionManager
++    battle = require('../out/multi/http/battle')
++    single = require('../out/routes/api/singleBattleQuest')
++    singleRoutes = single.default
++    cache = require('../out/lib/finish-response-cache')
++    sessionValidator = require('../out/lib/quest/finish/session-validator')
++} finally {
++    global.setInterval = originalInterval
++}
++
++const CATEGORY = 2
++const QUEST_ID = 1001001
++let sequence = 0
++
++class Socket extends EventEmitter {
++    destroyed = false; readable = true; writable = true; frames = []
++    write(frame) { this.frames.push(JSON.parse(frame.replace(/\0$/, ''))); return true }
++    end() { this.writable = false }
++    destroy() { this.destroyed = true; this.emit('close') }
++}
++
++function makePlayer() {
++    const n = ++sequence
++    const account = accounts.insertAccountSync({
++        appId: 'wf_cn', idpAlias: '', idpCode: 'test', idpId: `finish-idempotency-${n}`, status: 'normal',
++    })
++    const player = players.insertDefaultPlayerSync(account.id)
++    require('../out/data/activeAccount').saveAccountDefaultPlayer(account.id, player.id)
++    const viewerId = 881000000 + n
++    sessions.insertSessionWithTokenSync({
++        token: String(viewerId), accountId: account.id, type: 2,
++        expires: new Date(Date.now() + 86400000),
++    })
++    return { id: player.id, viewerId }
++}
++
++// Rank point and pooled EXP are granted only by the settlement itself; mission
++// rewards can add Mana or stones depending on the calendar, so they are not compared.
++function totals(playerId) {
++    const row = players.getPlayerSync(playerId)
++    return { rankPoint: row.rankPoint, expPool: row.expPool }
++}
++
++function statistics() {
++    return {
++        clear_phase: 1, max_combo_count: 0,
++        party: {
++            characters: [{ id: 1 }, null, null],
++            unison_characters: [null, null, null],
++            equipments: [null, null, null], ability_soul_ids: [null, null, null],
++        },
++    }
++}
++
++let singleApp
++test.before(async () => {
++    singleApp = Fastify()
++    singleApp.addHook('onSend', (_request, reply, payload, done) => {
++        done(null, reply.getHeader('content-type') === 'application/x-msgpack'
++            ? pack(payload).toString('base64') : payload)
++    })
++    await singleApp.register(singleRoutes, { prefix: '/single' })
++    await singleApp.ready()
++})
++
++function decode(response) {
++    assert.equal(response.statusCode, 200, response.body)
++    return unpack(Buffer.from(response.body, 'base64'))
++}
++
++function singleStart(p, playId) {
++    return singleApp.inject({
++        method: 'POST', url: '/single/start', payload: {
++            viewer_id: p.viewerId, quest_id: QUEST_ID, category: CATEGORY, party_id: 1,
++            play_id: playId, use_boss_boost_point: false, use_boost_point: false,
++            is_auto_start_mode: false, api_count: 1,
++        },
++    })
++}
++
++function singleFinish(p, extra = {}) {
++    return singleApp.inject({
++        method: 'POST', url: '/single/finish', payload: {
++            viewer_id: p.viewerId, quest_id: QUEST_ID, category: CATEGORY, continue_count: 0,
++            elapsed_time_ms: 60_000, score: 100, add_mana: 0,
++            is_accomplished: true, is_restored: false, statistics: statistics(), ...extra,
++        },
++    })
++}
++
++function delta(before, after) {
++    return { rankPoint: after.rankPoint - before.rankPoint, expPool: after.expPool - before.expPool }
++}
++
++
++const http = require('node:http')
++
++/** Send a finish over a real socket and destroy the socket before any response. */
++function sendAndAbandon(port, url, payload) {
++    return new Promise(resolve => {
++        const request = http.request({ host: '127.0.0.1', port, path: url, method: 'POST',
++            headers: { 'content-type': 'application/json' } })
++        request.on('error', () => resolve())
++        request.end(JSON.stringify(payload))
++        // Give the server time to parse the body and park on the finish queue.
++        setTimeout(() => { request.destroy(); setTimeout(resolve, 100) }, 150)
++    })
++}
++
++function withinTimeout(promise, ms, label) {
++    let timer
++    return Promise.race([
++        promise.finally(() => clearTimeout(timer)),
++        new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label} did not complete`)), ms) }),
++    ])
++}
++
++test('single: concurrent identical finishes after /start settle once and share one response', async () => {
++    // Control: one ordinary first clear.
++    const control = makePlayer()
++    assert.equal((await singleStart(control, 'play-a')).statusCode, 200)
++    const controlBefore = totals(control.id)
++    decode(await singleFinish(control, { play_id: 'play-a', api_count: 2 }))
++    const expected = delta(controlBefore, totals(control.id))
++    assert.equal(expected.rankPoint, 14)
++
++    const p = makePlayer()
++    assert.equal((await singleStart(p, 'play-a')).statusCode, 200)
++    const before = totals(p.id)
++    const [first, second] = await Promise.all([
++        singleFinish(p, { play_id: 'play-a', api_count: 2 }),
++        singleFinish(p, { play_id: 'play-a', api_count: 2 }),
++    ])
++    assert.deepEqual(decode(second), decode(first))
++    assert.deepEqual(delta(before, totals(p.id)), expected, 'rewards, including first clear, are granted once')
++})
++
++test('single: a registered play whose row was already consumed writes nothing', async () => {
++    const p = makePlayer()
++    assert.equal((await singleStart(p, 'play-b')).statusCode, 200)
++    const registered = { ...single.activeQuests[p.id] }
++    decode(await singleFinish(p, { play_id: 'play-b', api_count: 2 }))
++    const settled = totals(p.id)
++    const changes = db.prepare('SELECT total_changes() AS n').get().n
++    // A stale in-memory registration (as left by a lost response) must not
++    // pay again for a request the response cache does not recognise.
++    single.activeQuests[p.id] = registered
++    const retry = await singleFinish(p, { api_count: 7 })
++    assert.equal(retry.statusCode, 400, retry.body)
++    assert.deepEqual(totals(p.id), settled)
++    assert.equal(db.prepare('SELECT total_changes() AS n').get().n, changes)
++    assert.equal(single.activeQuests[p.id], undefined)
++})
++
++test('single: finishes rebuilt without /start keep settling distinct plays and dedupe a repeated one', async () => {
++    const p = makePlayer()
++    const before = totals(p.id)
++    decode(await singleFinish(p, { play_id: 'rebuilt-1', api_count: 2 }))
++    decode(await singleFinish(p, { play_id: 'rebuilt-2', api_count: 3 }))
++    const afterDistinct = totals(p.id)
++    assert.equal(afterDistinct.rankPoint - before.rankPoint, 28, 'two distinct plays both settle')
++    const [a, b] = await Promise.all([
++        singleFinish(p, { play_id: 'rebuilt-3', api_count: 4 }),
++        singleFinish(p, { play_id: 'rebuilt-3', api_count: 4 }),
++    ])
++    assert.deepEqual(decode(b), decode(a))
++    assert.equal(totals(p.id).rankPoint - afterDistinct.rankPoint, 14, 'a repeated play settles once')
++})
++
++test('single: tokenless finishes are serialized per player and never lose an update', async () => {
++    const p = makePlayer()
++    const before = totals(p.id)
++    const responses = await Promise.all([singleFinish(p), singleFinish(p), singleFinish(p)])
++    for (const response of responses) decode(response)
++    assert.equal(totals(p.id).rankPoint - before.rankPoint, 42)
++})
++
++test('single: a client that disconnects while queued does not block later finishes', async () => {
++    const p = makePlayer()
++    const port = await (async () => {
++        const app = Fastify()
++        await app.register(singleRoutes, { prefix: '/single' })
++        await app.listen({ host: '127.0.0.1', port: 0 })
++        test.after(() => app.close())
++        return app.server.address().port
++    })()
++    const hold = await cache.acquireFinishExecution(`single:${p.id}`)
++    await sendAndAbandon(port, '/single/finish', {
++        viewer_id: p.viewerId, quest_id: QUEST_ID, category: CATEGORY, continue_count: 0,
++        elapsed_time_ms: 60_000, score: 100, add_mana: 0, is_accomplished: true, is_restored: false,
++        statistics: statistics(), play_id: 'abandoned', api_count: 2,
++    })
++    hold()
++    const next = await withinTimeout(singleFinish(p, { play_id: 'after-abandon', api_count: 3 }), 5000, 'next finish')
++    decode(next)
++})
++
++function evictFinishCache() {
++    for (let index = 0; index < 600; index++) cache.cacheFinishResponse(`evict:${Date.now()}:${index}`, {})
++}
++
++for (const withStart of [true, false]) {
++    test(`single: the same play_id after the response cache is gone pays nothing (${withStart ? 'with /start' : 'rebuilt'})`, async () => {
++        const p = makePlayer()
++        const playId = withStart ? 'durable-start' : 'durable-rebuilt'
++        if (withStart) assert.equal((await singleStart(p, playId)).statusCode, 200)
++        const before = totals(p.id)
++        const first = decode(await singleFinish(p, { play_id: playId, api_count: 2 }))
++        const settled = totals(p.id)
++        assert.equal(settled.rankPoint - before.rankPoint, 14)
++        assert.equal(single.activeQuests[p.id], undefined)
++        evictFinishCache()
++        const retry = decode(await singleFinish(p, { play_id: playId, api_count: 3 }))
++        assert.deepEqual(retry.data, first.data)
++        assert.deepEqual(totals(p.id), settled)
++        // A different play id is a different battle and still settles.
++        decode(await singleFinish(p, { play_id: `${playId}-next`, api_count: 4 }))
++        assert.equal(totals(p.id).rankPoint - settled.rankPoint, 14)
++    })
++}
++
++test('single: a receipt past its response retention still blocks a second payout', async () => {
++    const p = makePlayer()
++    decode(await singleFinish(p, { play_id: 'old-play', api_count: 2 }))
++    const settled = totals(p.id)
++    const receipts = require('../out/data/domains/finish-receipt')
++    const old = Date.now() - receipts.finishReceiptResponseRetentionMs() - 60_000
++    db.prepare(`UPDATE player_operation_receipts SET created_at = ? WHERE player_id = ?`).run(old, p.id)
++    receipts.pruneFinishReceiptsSync(p.id)
++    assert.deepEqual(receipts.getFinishReceiptSync(p.id, 'single', 'old-play'), { response: null })
++    evictFinishCache()
++    const retry = await singleFinish(p, { play_id: 'old-play', api_count: 3 })
++    assert.equal(retry.statusCode, 400, retry.body)
++    assert.deepEqual(totals(p.id), settled)
++    db.prepare(`UPDATE player_operation_receipts SET created_at = ? WHERE player_id = ?`)
++        .run(Date.now() - receipts.finishReceiptRetentionMs() - 60_000, p.id)
++    receipts.pruneFinishReceiptsSync(p.id)
++    assert.equal(receipts.getFinishReceiptSync(p.id, 'single', 'old-play'), null, 'keys are bounded too')
++})
++
++test('single: a write landing after the request read is preserved by the settlement', async t => {
++    const control = makePlayer()
++    const controlBefore = totals(control.id)
++    decode(await singleFinish(control, { play_id: 'late-write', api_count: 2 }))
++    const expected = delta(controlBefore, totals(control.id))
++    const p = makePlayer()
++    const original = sessionValidator.validateSessionAndPlayer
++    t.mock.method(sessionValidator, 'validateSessionAndPlayer', async viewerId => {
++        const result = await original(viewerId)
++        // Another persisted change after this request has read the player row.
++        db.prepare('UPDATE players SET rank_point = rank_point + 5 WHERE id = ?').run(p.id)
++        return result
++    })
++    const before = totals(p.id)
++    const data = decode(await singleFinish(p, { play_id: 'late-write', api_count: 2 })).data
++    const after = totals(p.id)
++    assert.equal(after.rankPoint - before.rankPoint, 5 + expected.rankPoint)
++    assert.equal(data.user_info.rank_point, after.rankPoint)
++    assert.equal(data.before_rank_point, before.rankPoint + 5)
++})
++
++test('response cache key normalizes numeric fields and keeps the established format', () => {
++    const key = cache.buildFinishResponseCacheKey
++    assert.equal(key('single', 9, { category: 2, quest_id: 1001001, play_id: 'p' }), 'single:9:2:1001001:p')
++    assert.equal(key('single', 9, { category: '2', quest_id: ' 1001001', api_count: '5' }), 'single:9:2:1001001:api:5')
++    assert.equal(key('single', 9, { category: 2, quest_id: 1001001, api_count: 5 }), 'single:9:2:1001001:api:5')
++    // A non-numeric token keeps its previous form so stored receipts still match.
++    assert.equal(key('single', 9, { category: 2, quest_id: 1001001, api_count: '' }), 'single:9:2:1001001:api:')
++    assert.equal(key('single', 9, { category: 2, api_count: 'x' }), 'single:9:2::api:x')
++    assert.equal(key('single', 9, { category: 2 }), null)
++    assert.equal(key('multi', 9, { play_id: 'p', api_count: 1, category: 3, quest_id: 5 }, { playerId: 4 }),
++        key('multi', 8, { play_id: 'p', api_count: 2, category: '3.0', quest_id: '5' }, { playerId: 4 }))
++    assert.notEqual(key('multi', 9, { play_id: 'p', category: 3, quest_id: 5 }, { playerId: 4 }),
++        key('multi', 9, { play_id: 'p', category: 3, quest_id: 6 }, { playerId: 4 }))
++    assert.equal(cache.buildFinishExecutionKey('single', 4, {}), 'single:4')
++    assert.equal(cache.buildFinishExecutionKey('multi', 4, {}), 'multi:4:')
++})
++
++function savedParty() {
++    return {
++        category: 1, name: 'test', characterIds: [1, null, null],
++        unisonCharacterIds: [null, null, null], equipmentIds: [null, null, null],
++        abilitySoulIds: [null, null, null], edited: true,
++        options: { allowOtherPlayersToHealMe: true },
++    }
++}
++
++async function multiSetup(t) {
++    const host = makePlayer(), guest = makePlayer()
++    const room = rooms.createRoom(host.viewerId, host.id, 1, CATEGORY, QUEST_ID, 0, 1)
++    const clients = [host, guest].map(player => {
++        const c = manager.createClient(new Socket(), player.viewerId, room.room_number, `cid-idem-${player.id}`, player.id)
++        c.enterData = {}
++        c.isReady = true
++        c.yourself = {
++            viewerId: player.viewerId, playerId: player.id, connectionId: c.connectionId,
++            comId: 0, currentPartyId: 1, state: [1],
++            party: { equipments: [], abilitySoulIds: [] },
++        }
++        manager.addClientToRoom(c)
++        rooms.addRoomMember(room.room_number, player.viewerId, player.id)
++        parties.updatePlayerPartySync(player.id, 1, savedParty(), 1)
++        players.updatePlayerSync({ id: player.id, partySlot: 1 })
++        return c
++    })
++    for (const client of clients) client.mates = clients.map(c => c.yourself)
++    const app = Fastify()
++    app.addHook('onSend', (_req, reply, payload, done) => {
++        done(null, reply.getHeader('content-type') === 'application/x-msgpack'
++            ? JSON.stringify(payload) : payload)
++    })
++    t.after(async () => {
++        manager.commitRoomDisband(room.room_number, 'test_cleanup')
++        for (const client of clients) client.socket.destroy()
++        await app.close()
++        await new Promise(resolve => setImmediate(resolve))
++    })
++    await app.register(async instance => battle.registerBattleRoutes(instance), { prefix: '/multi' })
++    await app.ready()
++    const start = () => app.inject({
++        method: 'POST', url: '/multi/start', payload: {
++            viewer_id: host.viewerId, category: CATEGORY, quest_id: QUEST_ID,
++            party_id: 1, room_number: room.room_number, play_id: `mplay-${host.id}`,
++            use_boost_point: false, use_boss_boost_point: false, is_auto_start_mode: false,
++            mate_player_ids: [], mate_party_ids: [],
++        },
++    })
++    const finishPayload = (extra = {}) => ({
++        viewer_id: host.viewerId, play_id: `mplay-${host.id}`,
++        category: CATEGORY, quest_id: QUEST_ID, room_number: room.room_number,
++        is_accomplished: true, elapsed_time_ms: 30_000, score: 100,
++        add_mana: 0, continue_count: 0, api_count: 2, mate_player_result: [],
++        statistics: statistics(), ...extra,
++    })
++    const finish = (extra = {}) => app.inject({
++        method: 'POST', url: '/multi/finish', payload: finishPayload(extra),
++    })
++    return { host, room, app, start, finish, finishPayload }
++}
++
++test('multi: concurrent finishes for one play with different request fields pay once', async t => {
++    const control = await multiSetup(t)
++    assert.equal((await control.start()).json().data.play_id, `mplay-${control.host.id}`)
++    const controlBefore = totals(control.host.id)
++    const single = await control.finish()
++    assert.equal(single.statusCode, 200, single.body)
++    const expected = delta(controlBefore, totals(control.host.id))
++    assert.equal(expected.rankPoint, 14)
++
++    const x = await multiSetup(t)
++    assert.equal((await x.start()).json().data.play_id, `mplay-${x.host.id}`)
++    const before = totals(x.host.id)
++    const [a, b] = await Promise.all([
++        x.finish({ api_count: 2 }),
++        x.finish({ api_count: 3, category: `${CATEGORY}.0` }),
++    ])
++    assert.equal(a.statusCode, 200, a.body)
++    assert.equal(b.statusCode, 200, b.body)
++    assert.deepEqual(b.json(), a.json())
++    assert.deepEqual(delta(before, totals(x.host.id)), expected)
++})
++
++test('multi: a retry after the response cache dropped the entry replays without paying again', async t => {
++    const x = await multiSetup(t)
++    assert.equal((await x.start()).json().data.play_id, `mplay-${x.host.id}`)
++    const before = totals(x.host.id)
++    const first = await x.finish()
++    assert.equal(first.statusCode, 200, first.body)
++    assert.equal(first.json().data_headers.result_code, 1, first.body)
++    const settled = totals(x.host.id)
++    assert.equal(settled.rankPoint - before.rankPoint, 14)
++    // Push the settled entry out of the bounded response cache.
++    for (let index = 0; index < 600; index++) cache.cacheFinishResponse(`filler:${index}`, {})
++    // Model a still-valid registration for this play so only the latch can stop it.
++    const snapshot = require('../out/multi/settlement-snapshot').getMultiSettlementSnapshot(x.host.id, `mplay-${x.host.id}`)
++    assert.equal(snapshot.settled, true)
++    single.activeQuests[x.host.id] = { ...snapshot.activeQuest }
++    const retry = await x.finish({ api_count: 9 })
++    assert.equal(retry.statusCode, 200, retry.body)
++    assert.deepEqual(retry.json().data, first.json().data)
++    assert.deepEqual(totals(x.host.id), settled)
++    delete single.activeQuests[x.host.id]
++})
++
++test('multi: the same play_id after the cache and the settled snapshot are gone pays nothing', async t => {
++    const x = await multiSetup(t)
++    assert.equal((await x.start()).json().data.play_id, `mplay-${x.host.id}`)
++    const before = totals(x.host.id)
++    const first = await x.finish()
++    assert.equal(first.statusCode, 200, first.body)
++    const settled = totals(x.host.id)
++    assert.equal(settled.rankPoint - before.rankPoint, 14)
++    evictFinishCache()
++    const snapshot = require('../out/multi/settlement-snapshot').getMultiSettlementSnapshot(x.host.id, `mplay-${x.host.id}`)
++    // Model the snapshot expiring while a registration for the play is still around.
++    snapshot.settled = false
++    delete snapshot.settledResponse
++    single.activeQuests[x.host.id] = { ...snapshot.activeQuest }
++    const retry = await x.finish({ api_count: 9 })
++    assert.equal(retry.statusCode, 200, retry.body)
++    assert.deepEqual(retry.json().data, first.json().data)
++    assert.deepEqual(totals(x.host.id), settled)
++    delete single.activeQuests[x.host.id]
++})
++
++test('multi: a client that disconnects while queued does not block the retry', async t => {
++    const x = await multiSetup(t)
++    assert.equal((await x.start()).json().data.play_id, `mplay-${x.host.id}`)
++    await x.app.listen({ host: '127.0.0.1', port: 0 })
++    const port = x.app.server.address().port
++    const before = totals(x.host.id)
++    const hold = await cache.acquireFinishExecution(`multi:${x.host.id}:mplay-${x.host.id}`)
++    await sendAndAbandon(port, '/multi/finish', x.finishPayload())
++    hold()
++    const retry = await withinTimeout(x.finish({ api_count: 5 }), 5000, 'retry finish')
++    assert.equal(retry.statusCode, 200, retry.body)
++    assert.equal(totals(x.host.id).rankPoint - before.rankPoint, 14, 'the play still settles exactly once')
++})
++
++// Runs last: the writer switch stays latched for the rest of the process.
++test('single: the consumed-play check also holds when settlement runs in the writer thread', async () => {
++    const writerClient = require('../out/lib/persistence/writer-client')
++    process.env.CN_WRITER_THREAD = '1'
++    try {
++        assert.equal(writerClient.startSqliteWriter(db.name), true)
++        assert.equal(await writerClient.waitForSqliteWriterReady(30_000), true)
++        const p = makePlayer()
++        assert.equal((await singleStart(p, 'writer-play')).statusCode, 200)
++        const registered = { ...single.activeQuests[p.id] }
++        const before = totals(p.id)
++        const [first, second] = await Promise.all([
++            singleFinish(p, { play_id: 'writer-play', api_count: 2 }),
++            singleFinish(p, { play_id: 'writer-play', api_count: 2 }),
++        ])
++        assert.deepEqual(decode(second), decode(first))
++        const settled = totals(p.id)
++        assert.equal(settled.rankPoint - before.rankPoint, 14)
++        single.activeQuests[p.id] = registered
++        const retry = await singleFinish(p, { api_count: 8 })
++        assert.equal(retry.statusCode, 400, retry.body)
++        assert.deepEqual(totals(p.id), settled)
++        assert.equal(writerClient.sqliteWriterStats().failed, 0)
++    } finally {
++        delete process.env.CN_WRITER_THREAD
++        await writerClient.stopSqliteWriter()
++    }
++})
++
++test.after(async () => {
++    await singleApp.close()
++    for (const timer of intervals) clearInterval(timer)
++    if (db.open) db.close()
++    fs.rmSync(directory, { recursive: true, force: true })
++})
+diff --git a/tests/process-guards.test.cjs b/tests/process-guards.test.cjs
+new file mode 100644
+index 00000000..c5c2b100
+--- /dev/null
++++ b/tests/process-guards.test.cjs
+@@ -0,0 +1,91 @@
++const test = require('node:test');
++const assert = require('node:assert/strict');
++const path = require('node:path');
++const { EventEmitter } = require('node:events');
++const { spawnSync } = require('node:child_process');
++
++const guardsPath = path.resolve(__dirname, '../out/lib/process-guards.js');
++const { installProcessGuards, describeFailure } = require(guardsPath);
++
++function fakeProcess() {
++    const target = new EventEmitter();
++    return { target, emitRejection: reason => target.emit('unhandledRejection', reason, Promise.resolve()) };
++}
++
++test('unhandled rejections are logged with stack and do not request shutdown', () => {
++    const { target, emitRejection } = fakeProcess();
++    const logs = [];
++    let fatal = 0;
++    const guards = installProcessGuards({ target, log: m => logs.push(m), onFatal: () => { fatal++; } });
++    emitRejection(new Error('async task failed'));
++    emitRejection('plain reason');
++    assert.equal(fatal, 0);
++    assert.equal(guards.stats.unhandledRejections, 2);
++    assert.match(logs[0], /^\[PROCESS\] unhandledRejection \(total 1\); server keeps running: Error: async task failed\n\s+at /);
++    assert.match(logs[1], /plain reason$/);
++    guards.uninstall();
++    assert.equal(target.listenerCount('unhandledRejection'), 0);
++    assert.equal(target.listenerCount('uncaughtException'), 0);
++});
++
++test('rejection logging is bounded per window and reports the suppressed count', () => {
++    const { target, emitRejection } = fakeProcess();
++    const logs = [];
++    let now = 0;
++    const guards = installProcessGuards({
++        target, log: m => logs.push(m), onFatal() {}, now: () => now,
++        rejectionLogLimit: 2, rejectionLogWindowMs: 1000,
++    });
++    for (let i = 0; i < 5; i++) emitRejection(new Error(`r${i}`));
++    assert.equal(logs.length, 2);
++    now = 1000;
++    emitRejection(new Error('next window'));
++    assert.equal(guards.stats.unhandledRejections, 6);
++    assert.match(logs[2], /3 further rejection\(s\) not logged/);
++    assert.match(logs[3], /next window/);
++    guards.uninstall();
++});
++
++test('uncaught exceptions are logged and request graceful shutdown exactly once', () => {
++    const { target } = fakeProcess();
++    const logs = [];
++    const reasons = [];
++    const guards = installProcessGuards({ target, log: m => logs.push(m), onFatal: r => reasons.push(r) });
++    target.emit('uncaughtException', new TypeError('bad state'), 'uncaughtException');
++    target.emit('uncaughtException', new Error('during shutdown'), 'uncaughtException');
++    assert.deepEqual(reasons, ['uncaughtException']);
++    assert.equal(guards.stats.uncaughtExceptions, 2);
++    assert.match(logs[0], /^\[PROCESS\] uncaughtException \(uncaughtException\); starting graceful shutdown: TypeError: bad state/);
++    guards.uninstall();
++});
++
++test('describeFailure handles non-error values', () => {
++    assert.equal(describeFailure({ code: 7 }), 'non-error value: {"code":7}');
++    const circular = {}; circular.self = circular;
++    assert.match(describeFailure(circular), /^non-error value: /);
++});
++
++test('a real process survives an unhandled rejection once guards are installed', () => {
++    const script = `
++        const { installProcessGuards } = require(${JSON.stringify(guardsPath)});
++        installProcessGuards({ onFatal: () => process.exit(3) });
++        Promise.reject(new Error('stray'));
++        setTimeout(() => { console.log('still-alive'); }, 50);
++    `;
++    const result = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8', timeout: 10000 });
++    assert.equal(result.status, 0, result.stderr);
++    assert.match(result.stdout, /still-alive/);
++    assert.match(result.stderr, /\[PROCESS\] unhandledRejection .*Error: stray/);
++});
++
++test('a real process routes an uncaught exception to the shutdown callback', () => {
++    const script = `
++        const { installProcessGuards } = require(${JSON.stringify(guardsPath)});
++        installProcessGuards({ onFatal: () => { console.log('shutdown-requested'); process.exit(1); } });
++        setTimeout(() => { throw new Error('sync failure'); }, 0);
++    `;
++    const result = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8', timeout: 10000 });
++    assert.equal(result.status, 1);
++    assert.match(result.stdout, /shutdown-requested/);
++    assert.match(result.stderr, /\[PROCESS\] uncaughtException .*Error: sync failure/);
++});
+diff --git a/tests/single-finish-once.check.cjs b/tests/single-finish-once.check.cjs
+new file mode 100644
+index 00000000..bd897fde
+--- /dev/null
++++ b/tests/single-finish-once.check.cjs
+@@ -0,0 +1,119 @@
++'use strict'
++
++// A play settles at most once; repeated distinct plays without /start still settle.
++const test = require('node:test')
++const assert = require('node:assert/strict')
++const fs = require('node:fs')
++const os = require('node:os')
++const path = require('node:path')
++const { EventEmitter } = require('node:events')
++const Fastify = require('fastify')
++const { pack, unpack } = require('msgpackr')
++
++const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'single-finish-once-'))
++process.env.DATA_DIR = directory
++process.env.GAME_ROUTINE_LOGS = 'off'
++delete process.env.CN_WRITER_THREAD
++delete process.env.QUEST_FINISH_STRICT
++require('../out/data/db').getDb()
++require('../out/data').initializeDatabase()
++const accounts = require('../out/data/domains/account')
++const players = require('../out/data/domains/player')
++const sessions = require('../out/data/domains/session')
++const single = require('../out/routes/api/singleBattleQuest')
++const CATEGORY = 2
++const QUEST_ID = 1001001
++let sequence = 0
++function makePlayer() {
++    const n = ++sequence
++    const account = accounts.insertAccountSync({
++        appId: 'wf_cn', idpAlias: '', idpCode: 'test', idpId: `finish-idempotency-${n}`, status: 'normal',
++    })
++    const player = players.insertDefaultPlayerSync(account.id)
++    require('../out/data/activeAccount').saveAccountDefaultPlayer(account.id, player.id)
++    const viewerId = 881000000 + n
++    sessions.insertSessionWithTokenSync({
++        token: String(viewerId), accountId: account.id, type: 2,
++        expires: new Date(Date.now() + 86400000),
++    })
++    return { id: player.id, viewerId }
++}
++
++// Rank point and pooled EXP are granted only by the settlement itself; mission
++// rewards can add Mana or stones depending on the calendar, so they are not compared.
++function totals(playerId) {
++    const row = players.getPlayerSync(playerId)
++    return { rankPoint: row.rankPoint, expPool: row.expPool }
++}
++
++function statistics() {
++    return {
++        clear_phase: 1, max_combo_count: 0,
++        party: {
++            characters: [{ id: 1 }, null, null],
++            unison_characters: [null, null, null],
++            equipments: [null, null, null], ability_soul_ids: [null, null, null],
++        },
++    }
++}
++
++let singleApp
++test.before(async () => {
++    singleApp = Fastify()
++    singleApp.addHook('onSend', (_request, reply, payload, done) => {
++        done(null, reply.getHeader('content-type') === 'application/x-msgpack'
++            ? pack(payload).toString('base64') : payload)
++    })
++    await singleApp.register(single.default, { prefix: '/single' })
++    await singleApp.ready()
++})
++
++function decode(response) {
++    assert.equal(response.statusCode, 200, response.body)
++    return unpack(Buffer.from(response.body, 'base64'))
++}
++
++function singleStart(p, playId) {
++    return singleApp.inject({
++        method: 'POST', url: '/single/start', payload: {
++            viewer_id: p.viewerId, quest_id: QUEST_ID, category: CATEGORY, party_id: 1,
++            play_id: playId, use_boss_boost_point: false, use_boost_point: false,
++            is_auto_start_mode: false, api_count: 1,
++        },
++    })
++}
++
++function singleFinish(p, extra = {}) {
++    return singleApp.inject({
++        method: 'POST', url: '/single/finish', payload: {
++            viewer_id: p.viewerId, quest_id: QUEST_ID, category: CATEGORY, continue_count: 0,
++            elapsed_time_ms: 60_000, score: 100, add_mana: 0,
++            is_accomplished: true, is_restored: false, statistics: statistics(), ...extra,
++        },
++    })
++}
++
++test('registered play: finish pays once, immediate replay pays nothing', async () => {
++    const p = makePlayer()
++    assert.equal((await singleStart(p, 'once-a')).statusCode, 200)
++    const t0 = totals(p.id)
++    decode(await singleFinish(p, { play_id: 'once-a', api_count: 2 }))
++    const t1 = totals(p.id)
++    assert.ok(t1.rankPoint > t0.rankPoint, 'first finish paid')
++    const replay = await singleFinish(p, { play_id: 'once-a', api_count: 2 })
++    assert.ok([200, 400].includes(replay.statusCode), replay.body)
++    assert.deepEqual(totals(p.id), t1, 'replay must not pay again')
++    console.log('# registered paid', JSON.stringify(t0), '->', JSON.stringify(t1))
++})
++test('no-start play pays once; a second distinct play still pays', async () => {
++    const p = makePlayer()
++    const t0 = totals(p.id)
++    decode(await singleFinish(p, { play_id: 'nostart-1', api_count: 2 }))
++    const t1 = totals(p.id)
++    assert.ok(t1.rankPoint > t0.rankPoint)
++    await singleFinish(p, { play_id: 'nostart-1', api_count: 2 })
++    assert.deepEqual(totals(p.id), t1)
++    decode(await singleFinish(p, { play_id: 'nostart-2', api_count: 2 }))
++    assert.ok(totals(p.id).rankPoint > t1.rankPoint)
++})
++test.after(() => singleApp.close())
+diff --git a/tests/single-finish-replay-120s.check.cjs b/tests/single-finish-replay-120s.check.cjs
+new file mode 100644
+index 00000000..96490b69
+--- /dev/null
++++ b/tests/single-finish-replay-120s.check.cjs
+@@ -0,0 +1,117 @@
++'use strict'
++
++// A play settles at most once; repeated distinct plays without /start still settle.
++const test = require('node:test')
++const assert = require('node:assert/strict')
++const fs = require('node:fs')
++const os = require('node:os')
++const path = require('node:path')
++const { EventEmitter } = require('node:events')
++const Fastify = require('fastify')
++const { pack, unpack } = require('msgpackr')
++
++const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'single-finish-once-'))
++process.env.DATA_DIR = directory
++process.env.GAME_ROUTINE_LOGS = 'off'
++delete process.env.CN_WRITER_THREAD
++delete process.env.QUEST_FINISH_STRICT
++require('../out/data/db').getDb()
++require('../out/data').initializeDatabase()
++const accounts = require('../out/data/domains/account')
++const players = require('../out/data/domains/player')
++const sessions = require('../out/data/domains/session')
++const single = require('../out/routes/api/singleBattleQuest')
++const CATEGORY = 2
++const QUEST_ID = 1001001
++let sequence = 0
++function makePlayer() {
++    const n = ++sequence
++    const account = accounts.insertAccountSync({
++        appId: 'wf_cn', idpAlias: '', idpCode: 'test', idpId: `finish-idempotency-${n}`, status: 'normal',
++    })
++    const player = players.insertDefaultPlayerSync(account.id)
++    require('../out/data/activeAccount').saveAccountDefaultPlayer(account.id, player.id)
++    const viewerId = 881000000 + n
++    sessions.insertSessionWithTokenSync({
++        token: String(viewerId), accountId: account.id, type: 2,
++        expires: new Date(Date.now() + 86400000),
++    })
++    return { id: player.id, viewerId }
++}
++
++// Rank point and pooled EXP are granted only by the settlement itself; mission
++// rewards can add Mana or stones depending on the calendar, so they are not compared.
++function totals(playerId) {
++    const row = players.getPlayerSync(playerId)
++    return { rankPoint: row.rankPoint, expPool: row.expPool }
++}
++
++function statistics() {
++    return {
++        clear_phase: 1, max_combo_count: 0,
++        party: {
++            characters: [{ id: 1 }, null, null],
++            unison_characters: [null, null, null],
++            equipments: [null, null, null], ability_soul_ids: [null, null, null],
++        },
++    }
++}
++
++let singleApp
++test.before(async () => {
++    singleApp = Fastify()
++    singleApp.addHook('onSend', (_request, reply, payload, done) => {
++        done(null, reply.getHeader('content-type') === 'application/x-msgpack'
++            ? pack(payload).toString('base64') : payload)
++    })
++    await singleApp.register(single.default, { prefix: '/single' })
++    await singleApp.ready()
++})
++
++function decode(response) {
++function decode(response) {
++    assert.equal(response.statusCode, 200, response.body)
++    assert.equal(response.statusCode, 200, response.body)
++    return unpack(Buffer.from(response.body, 'base64'))
++    return unpack(Buffer.from(response.body, 'base64'))
++}
++}
++function singleStart(p, playId) {
++    return singleApp.inject({
++        method: 'POST', url: '/single/start', payload: {
++            viewer_id: p.viewerId, quest_id: QUEST_ID, category: CATEGORY, party_id: 1,
++            play_id: playId, use_boss_boost_point: false, use_boost_point: false,
++            is_auto_start_mode: false, api_count: 1,
++        },
++    })
++}
++function singleFinish(p, extra = {}) {
++    return singleApp.inject({
++        method: 'POST', url: '/single/finish', payload: {
++            viewer_id: p.viewerId, quest_id: QUEST_ID, category: CATEGORY, continue_count: 0,
++            elapsed_time_ms: 60_000, score: 100, add_mana: 0,
++            is_accomplished: true, is_restored: false, statistics: statistics(), ...extra,
++        },
++    })
++}
++const WAIT_MS = Number(process.env.REPLAY_WAIT_MS || 125_000)
++test('finish pays once; same play_id replayed after >120s pays nothing; new play_id pays', { timeout: WAIT_MS + 60_000 }, async () => {
++    const reg = makePlayer(), nos = makePlayer()
++    assert.equal((await singleStart(reg, 'r-1')).statusCode, 200)
++    const r0 = totals(reg.id), n0 = totals(nos.id)
++    decode(await singleFinish(reg, { play_id: 'r-1', api_count: 2 }))
++    decode(await singleFinish(nos, { play_id: 'n-1', api_count: 2 }))
++    const r1 = totals(reg.id), n1 = totals(nos.id)
++    assert.ok(r1.rankPoint > r0.rankPoint && n1.rankPoint > n0.rankPoint, 'first finishes paid')
++    console.log(`# paid registered ${JSON.stringify(r0)} -> ${JSON.stringify(r1)}; no-start ${JSON.stringify(n0)} -> ${JSON.stringify(n1)}; waiting ${WAIT_MS}ms`)
++    await new Promise(resolve => setTimeout(resolve, WAIT_MS))
++    const rr = await singleFinish(reg, { play_id: 'r-1', api_count: 2 })
++    const nr = await singleFinish(nos, { play_id: 'n-1', api_count: 2 })
++    console.log(`# replay status registered=${rr.statusCode} no-start=${nr.statusCode}`)
++    assert.deepEqual(totals(reg.id), r1, 'registered replay after wait must not pay')
++    assert.deepEqual(totals(nos.id), n1, 'no-start replay after wait must not pay')
++    decode(await singleFinish(nos, { play_id: 'n-2', api_count: 2 }))
++    assert.ok(totals(nos.id).rankPoint > n1.rankPoint, 'a new play_id still pays')
++    console.log(`# new play paid ${JSON.stringify(n1)} -> ${JSON.stringify(totals(nos.id))}`)
++})
++test.after(() => singleApp.close())

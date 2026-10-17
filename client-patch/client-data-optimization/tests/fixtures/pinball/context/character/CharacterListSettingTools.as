@@ -1,0 +1,1 @@
+package pinball.context.character { public class CharacterListSettingTools { public static function equalsFilterAndKeyword(a:Object,b:Object):Boolean{return a.filter==b.filter&&a.searchCharacterName==b.searchCharacterName;} } }

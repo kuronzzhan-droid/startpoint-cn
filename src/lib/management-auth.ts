@@ -1,6 +1,7 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import type { FastifyReply, FastifyRequest } from "fastify";
+import { requestRoutePath } from "./request-route-path";
 
 const SESSION_COOKIE = "sp_admin_session";
 const LOGIN_WINDOW_MS = 10 * 60 * 1000;
@@ -40,7 +41,7 @@ function routedPathsOf(request: FastifyRequest): string[] | null {
     }
     const collapsed = decoded.replace(/\\/g, "/").replace(/\/{2,}/g, "/");
     const candidates = [raw, collapsed, path.posix.normalize(collapsed), collapsed.split(";", 1)[0] || "/"];
-    const routeUrl = request.routeOptions?.url;
+    const routeUrl = requestRoutePath(request);
     if (routeUrl) candidates.push(routeUrl);
     return candidates;
 }
@@ -74,7 +75,7 @@ function isManagementPath(pathname: string): boolean {
         || pathname.startsWith("/seeds/")
         || pathname === "/admin"
         || pathname.startsWith("/admin/")
-        || ["/api/server", "/api/player", "/api/mail", "/api/lookup", "/api/seeds", "/api/news", "/api/mod-admin"]
+        || ["/api/server", "/api/player", "/api/mail", "/api/lookup", "/api/seeds", "/api/news", "/api/mod-admin", "/api/leaderboards"]
             .some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 

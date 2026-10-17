@@ -1,0 +1,8 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.resources.ResourceRuntime; label: cn.optimize.resources::ResourceRuntime$/completeRead|1/closure:1; body: 31; method: 33
+# code SHA-256: 54be09832f82ae00466d24f3132f74563a976fc889a9ad58cf53564716455de5; header: [1, 1, 0, 0]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlex [(7, (23, 'cn.optimize.resources'), 'bytes')]
+#0001 ofs0003: callpropvoid [(7, (22, ''), 'clear'), 0]
+#0002 ofs0007: returnvoid []
+# exceptions: []

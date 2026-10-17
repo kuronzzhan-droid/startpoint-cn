@@ -1,7 +1,6 @@
 import { QuestCategory } from "../../lib/types/quest"
 
-export const QUEST_NPC_POOL_MAX_POWER = 30
-export const QUEST_NPC_POOL_MAX_RECENT = 20
+export const QUEST_NPC_POOL_MAX_RECENT = 50
 export const QUEST_NPC_POOL_MIN_POWER = 8_000
 
 const ELIGIBLE_QUEST_CATEGORIES = new Set<number>([
@@ -23,6 +22,13 @@ export interface QuestNpcPartySnapshot {
     party: any
 }
 
+/** Each battle/settlement owns its wire roster independently of the live room. */
+export function cloneQuestNpcPartySnapshot(
+    snapshot: QuestNpcPartySnapshot | undefined,
+): QuestNpcPartySnapshot | undefined {
+    return snapshot ? { ...snapshot, party: JSON.parse(JSON.stringify(snapshot.party)) } : undefined
+}
+
 export interface QuestNpcPartyRankCandidate {
     sourcePlayerId: number
     battlePower: number
@@ -40,14 +46,9 @@ export function getQuestNpcPartyPoolKey(category: number, questId: number): stri
 export function selectQuestNpcPartySourceIds(
     candidates: readonly QuestNpcPartyRankCandidate[],
 ): number[] {
-    const top = [...candidates]
-        .sort((a, b) => b.battlePower - a.battlePower || b.clearedAt - a.clearedAt)
-        .slice(0, QUEST_NPC_POOL_MAX_POWER)
-    const keep = new Set(top.map(candidate => candidate.sourcePlayerId))
-    const recent = candidates
-        .filter(candidate => !keep.has(candidate.sourcePlayerId))
-        .sort((a, b) => b.clearedAt - a.clearedAt)
+    // Power remains a selection gate, never a reason to retain an older clear.
+    return [...candidates]
+        .sort((a, b) => b.clearedAt - a.clearedAt || a.sourcePlayerId - b.sourcePlayerId)
         .slice(0, QUEST_NPC_POOL_MAX_RECENT)
-    for (const candidate of recent) keep.add(candidate.sourcePlayerId)
-    return [...keep]
+        .map(candidate => candidate.sourcePlayerId)
 }

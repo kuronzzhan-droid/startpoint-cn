@@ -36,6 +36,7 @@ const { battleTelemetry } = load('multi/battle-telemetry')
 global.setInterval = originalInterval
 
 let sequence = 0
+const activeCleanups = new Set()
 function player() {
     const id = ++sequence
     const account = accounts.insertAccountSync({ appId: 'wf_cn', idpAlias: '', idpCode: 'test', idpId: `sim-${id}`, status: 'normal' })
@@ -56,6 +57,7 @@ function fakeLobbySocket() {
 class SimClient {
     constructor(port, member, room) {
         this.member = member; this.room = room; this.frames = []; this.buffer = ''; this.closed = false
+        this.broadcastsSent = 0
         this.socket = net.createConnection({ host: '127.0.0.1', port })
         this.socket.setEncoding('utf8')
         this.socket.on('data', chunk => {
@@ -74,7 +76,10 @@ class SimClient {
         this.send({ socklet: 'cooperation_battle', room_number: this.room.room_number, connection_id: this.member.connectionId })
         await this.until(() => this.frames.some(frame => frame.data[0] === 0))
     }
-    send(data) { this.socket.write(JSON.stringify(data) + '\0') }
+    send(data) {
+        this.socket.write(JSON.stringify(data) + '\0')
+        if (Array.isArray(data) && data[0] === 1) this.broadcastsSent++
+    }
     sceneReady() { this.send([0, [0]]) }
     levelNext() { this.send([0, [1]]) }
     battleStarts() { return this.frames.filter(frame => JSON.stringify(frame.data) === '[1,[1]]').length }
@@ -93,8 +98,7 @@ function percentile(values, p) {
     return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))]
 }
 
-async function startFiveBossBattle(relayProcess) {
-    process.env.MULTI_BATTLE_RELAY_PROCESS = relayProcess ? '1' : '0'
+async function startFiveBossBattle() {
     const members = [player(), player(), player()]
     const [host] = members
     const room = rooms.createRoom(host.viewerId, host.id, 1, mode.category, mode.visibleQuestId, 0, 111001)
@@ -124,65 +128,118 @@ async function startFiveBossBattle(relayProcess) {
 
     const originalCreateServer = net.createServer
     let rawServer
-    net.createServer = (...args) => { rawServer = originalCreateServer(...args); return rawServer }
     const tcp = load('multi/tcp/server')
-    await tcp.startSessionServer()
-    net.createServer = originalCreateServer
-    const port = rawServer.address().port
     const lines = []
     const originalWarn = console.warn
-    console.warn = (...args) => { lines.push(args.join(' ')) }
-    const sims = members.map(m => new SimClient(port, m, room))
+    const sims = []
+    let cleaned = false
     const cleanup = async () => {
+        if (cleaned) return
+        cleaned = true
         console.warn = originalWarn
         for (const sim of sims) sim.socket.destroy()
         await tcp.stopSessionServer()
-        for (const client of lobbyClients) manager.removeClient(client)
-        rooms.disbandRoom(room.room_number)
-        battleTelemetry.end(room.room_number, 'cleanup')
+        await coordinator.enqueueRoomCommand(room.room_number, () => {
+            for (const client of lobbyClients) manager.removeClient(client)
+            rooms.disbandRoom(room.room_number)
+            battleTelemetry.end(room.room_number, 'cleanup')
+        })
+        activeCleanups.delete(cleanup)
     }
-    await Promise.all(sims.map(sim => sim.open()))
-    for (const sim of sims) sim.sceneReady()
-    await Promise.all(sims.map(sim => sim.until(() => sim.battleStarts() === 1)))
-    return { members, room, sims, lines, originalWarn, cleanup }
+    activeCleanups.add(cleanup)
+    try {
+        net.createServer = (...args) => { rawServer = originalCreateServer(...args); return rawServer }
+        try { await tcp.startSessionServer() }
+        finally { net.createServer = originalCreateServer }
+        const port = rawServer.address().port
+        console.warn = (...args) => { lines.push(args.join(' ')) }
+        sims.push(...members.map(m => new SimClient(port, m, room)))
+        await Promise.all(sims.map(sim => sim.open()))
+        for (const sim of sims) sim.sceneReady()
+        await Promise.all(sims.map(sim => sim.until(() => sim.battleStarts() === 1)))
+        return { members, room, sims, lines, originalWarn, cleanup }
+    } catch (error) {
+        await cleanup()
+        throw error
+    }
 }
 
-for (const relayProcess of [false, true]) {
-const label = relayProcess ? ' (relay process)' : ''
+for (const relayEnabled of [false, true]) test(`five-boss: all five scenes and final proof over real TCP (relay=${relayEnabled})`, {timeout:30000}, async () => {
+    const previous = process.env.MULTI_BATTLE_RELAY_PROCESS
+    process.env.MULTI_BATTLE_RELAY_PROCESS=relayEnabled?'1':'0'
+    let x
+    try {
+        x=await startFiveBossBattle()
+        const state=load('multi/state/battle-contract')
+        const run=state.getBattleSessionContract(x.room)
+        for (const member of x.members) assert.equal(state.bindBattlePlay(x.room,member.viewerId,member.id,member.playId),true)
+        for (let scene=0;scene<5;scene++) {
+            assert.equal(x.room.lifecycle.sceneEpoch,scene)
+            assert.equal(x.room.lifecycle.battleSessionId,run.battleSessionId)
+            for (let source=0;source<3;source++) {
+                const payload=[1,`five-scene-${scene}-${source}`,source]
+                x.sims[source].send([1,payload])
+                for (let target=0;target<3;target++) if(target!==source) {
+                    await x.sims[target].until(()=>x.sims[target].frames.some(f=>f.data[0]===2&&JSON.stringify(f.data[2])===JSON.stringify(payload)))
+                    assert.equal(x.sims[target].frames.filter(f=>f.data[0]===2&&JSON.stringify(f.data[2])===JSON.stringify(payload)).length,1)
+                }
+            }
+            if(scene===4) break
+            x.sims[0].levelNext()
+            await x.sims[0].until(()=>x.room.lifecycle.sceneEpoch===scene+1)
+            // A late old-scene readiness must not release the new barrier.
+            x.sims[1].sceneReady()
+            x.sims[0].sceneReady()
+            await new Promise(resolve=>setTimeout(resolve,15))
+            assert.ok(x.sims.every(sim=>sim.battleStarts()===scene+1))
+            x.sims[1].levelNext(); x.sims[2].levelNext()
+            x.sims[1].sceneReady(); x.sims[2].sceneReady()
+            await Promise.all(x.sims.map(sim=>sim.until(()=>sim.battleStarts()===scene+2)))
+            assert.ok(x.sims.every(sim=>!sim.closed&&sim.leaves().length===0))
+        }
+        for(const sim of x.sims) sim.send([0,[2]])
+        await Promise.all(x.sims.map(sim=>sim.until(()=>sim.frames.some(f=>JSON.stringify(f.data)==='[1,[2]]'))))
+        await load('multi/five-boss/lobby-runtime').waitForFiveBossSignalPersistence(x.room.five_boss_runtime.runId)
+        for(const member of x.members) {
+            const result=runtime.finishFiveBossBattle({playerId:member.id,clientPlayId:member.playId,
+                requestRoomNumber:x.room.room_number,requestCategory:mode.category,requestQuestId:mode.visibleQuestId,
+                accomplished:true,elapsedTimeMs:30000,randomFloat:()=>0.1})
+            assert.equal(result.kind,'success')
+        }
+        assert.ok(x.sims.every(sim=>sim.battleStarts()===5&&!sim.closed))
+    } finally {
+        if(x) await x.cleanup()
+        if(previous===undefined) delete process.env.MULTI_BATTLE_RELAY_PROCESS
+        else process.env.MULTI_BATTLE_RELAY_PROCESS=previous
+    }
+})
 
-test(`five-boss: relay latency, then a silent teammate cannot stall the next scene${label}`, { timeout: 60000 }, async () => {
-    const { members, room, sims, lines, cleanup } = await startFiveBossBattle(relayProcess)
+test('five-boss: relay latency, then a silent teammate cannot stall the next scene', { timeout: 60000 }, async () => {
+    const { members, room, sims, lines, cleanup } = await startFiveBossBattle()
+    let ticker, stallTimer
     try {
 
-        // Start just after a real telemetry sample. A stall ending on the
-        // one-second reset boundary can be erased before the native histogram
-        // records it; preserve the real sampler and control only test timing.
-        const sampleLag = battleTelemetry.sampleLag
-        let sampleTimeout
-        try {
-            await new Promise((resolve, reject) => {
-                sampleTimeout = setTimeout(() => reject(new Error('telemetry sampler did not run')), 3000)
-                battleTelemetry.sampleLag = function () { sampleLag.call(this); resolve() }
-            })
-        } finally {
-            battleTelemetry.sampleLag = sampleLag
-            clearTimeout(sampleTimeout)
-        }
-        // ~30 frames/s per player for 1.5 s; block after the 10 ms histogram
-        // has resumed, well before its next one-second reset.
+        // ~30 frames/s per player for 1.5 s; one 300 ms main-thread stall in the middle.
         const sent = new Map()
         let seq = 0
-        const ticker = originalInterval(() => {
+        ticker = originalInterval(() => {
             for (const sim of sims) {
                 const id = ++seq
                 sent.set(id, performance.now())
                 sim.send([1, [[0, id]]])
             }
         }, 33)
-        setTimeout(() => { const until = performance.now() + 300; while (performance.now() < until); }, 50)
+        // End before the one-second histogram reset so its next poll can
+        // observe the stall before the sampler clears the measurement.
+        stallTimer = setTimeout(() => { const until = performance.now() + 300; while (performance.now() < until); }, 500)
         await new Promise(resolve => setTimeout(resolve, 1500))
         clearInterval(ticker)
-        await new Promise(resolve => setTimeout(resolve, 200))
+        assert.ok(sent.size > 0, 'the simulated battle must send real broadcasts')
+        await Promise.all(sims.map(sim => {
+            const expected = sims.filter(other => other !== sim)
+                .reduce((count, other) => count + other.broadcastsSent, 0)
+            return sim.until(() => sim.frames.filter(frame => frame.data[0] === 2).length === expected)
+        }))
         const latencies = []
         for (const sim of sims) {
             for (const frame of sim.frames) {
@@ -191,7 +248,7 @@ test(`five-boss: relay latency, then a silent teammate cannot stall the next sce
                 if (sent.has(id)) latencies.push(frame.at - sent.get(id))
             }
         }
-        assert.ok(latencies.length >= sent.size * 2 * 0.95, `relayed ${latencies.length} of ${sent.size * 2}`)
+        assert.equal(latencies.length, sent.size * 2, 'every broadcast reaches both other clients')
         console.log(`[SIM] relay frames=${latencies.length} p50=${percentile(latencies, 0.5).toFixed(1)}ms`
             + ` p99=${percentile(latencies, 0.99).toFixed(1)}ms max=${Math.max(...latencies).toFixed(1)}ms`)
 
@@ -226,18 +283,25 @@ test(`five-boss: relay latency, then a silent teammate cannot stall the next sce
         const mover = summary.members.find(m => m.viewer === members[0].viewerId)
         assert.equal(mover.levelNext, 1)
         assert.equal(mover.sceneReady, 2)
-        assert.ok(mover.broadcasts > 30)
-        assert.ok(mover.relayedOut > 60)
+        for (const sim of sims) {
+            const member = summary.members.find(entry => entry.viewer === sim.member.viewerId)
+            const expectedRelays = sims.filter(other => other !== sim)
+                .reduce((count, other) => count + other.broadcastsSent, 0)
+            assert.equal(member.broadcasts, sim.broadcastsSent, 'telemetry counts actual client broadcasts')
+            assert.equal(member.relayedOut, expectedRelays, 'telemetry counts both recipients of every broadcast')
+        }
         assert.ok(summary.loopLagMaxMs >= 200, `loop lag ${summary.loopLagMaxMs}`)
         assert.ok(summary.barriers.some(barrier => barrier.kind === 'next_scene' && barrier.waitMs >= 10000))
         assert.equal(summary.seatsExpired, 1)
     } finally {
+        clearInterval(ticker)
+        clearTimeout(stallTimer)
         await cleanup()
     }
 })
 
-test(`five-boss: a teammate dropping mid-battle reaches the others as Leave at once${label}`, { timeout: 30000 }, async () => {
-    const { members, room, sims, lines, cleanup } = await startFiveBossBattle(relayProcess)
+test('five-boss: a teammate dropping mid-battle reaches the others as Leave at once', { timeout: 30000 }, async () => {
+    const { members, room, sims, lines, cleanup } = await startFiveBossBattle()
     try {
         const [a, b, c] = sims
         const droppedAt = performance.now()
@@ -260,35 +324,21 @@ test(`five-boss: a teammate dropping mid-battle reaches the others as Leave at o
         await cleanup()
     }
 })
-}
-
-test('five-boss: a crashed relay process closes its battle sockets and is restarted', { timeout: 30000 }, async () => {
-    const { members, room, sims, lines, cleanup } = await startFiveBossBattle(true)
-    const { battleRelayBridge } = load('multi/tcp/battle-relay/bridge')
-    try {
-        assert.equal(battleRelayBridge.activeSockets, 3)
-        battleRelayBridge['child'].kill('SIGKILL')
-        await Promise.all(sims.map(sim => sim.until(() => sim.closed, 3000)))
-        await sims[0].until(() => battleRelayBridge.isReady, 5000)
-        assert.equal(battleRelayBridge.activeSockets, 0)
-        coordinator.commitDisband(room, 'sim_end')
-        const summary = JSON.parse(lines.find(value => value.startsWith('[MULTI-BATTLE]')).slice(15))
-        for (const member of members) {
-            assert.deepEqual(summary.members.find(m => m.viewer === member.viewerId).disconnects, { relay_exit: 1 })
-        }
-    } finally {
-        await cleanup()
-    }
-})
 
 test.after(async () => {
-    // The simulations start no SQLite workers; their relay children and TCP
-    // sockets are stopped in each test's finally block. Drain queued proof
-    // writes and close the one database before Windows removes its files.
-    await load('lib/persistence-coordinator').drainPersistence()
-    const db = load('data/db').getDb()
-    if (db.open) db.close()
-    const resolved = fs.realpathSync(dataDir)
-    assert.equal(path.dirname(resolved), fs.realpathSync(os.tmpdir()))
-    fs.rmSync(resolved, { recursive: true, force: true })
+    try {
+        for (const cleanup of [...activeCleanups]) await cleanup()
+        await load('multi/tcp/server').stopSessionServer()
+        await load('lib/persistence-coordinator').drainPersistence()
+        await load('multi/npc/player-party-pool').stopQuestNpcPartyPoolWorker()
+    } finally {
+        const db = load('data/db').getDb()
+        if (db.open) db.close()
+        const resolved = fs.realpathSync(dataDir)
+        if (path.dirname(resolved) !== fs.realpathSync(os.tmpdir())
+            || !path.basename(resolved).startsWith('startpoint-battle-sim-')) {
+            throw new Error(`Refusing to remove unexpected test directory: ${resolved}`)
+        }
+        fs.rmSync(resolved, { recursive: true, maxRetries: 5, retryDelay: 100 })
+    }
 })

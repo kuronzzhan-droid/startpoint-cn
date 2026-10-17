@@ -23,6 +23,8 @@ import { battleTelemetry } from "../battle-telemetry"
 import { clearEquipmentBlock } from "../room/equipment-ready"
 import { battleRelayBridge, isRelayProxySocket } from "../tcp/battle-relay/bridge"
 import type { RelayMember } from "../tcp/battle-relay/protocol"
+import { battleConnectionMatches, battleMemberCanPlay, bindBattleConnection, beginBattleSceneEpoch,
+    ensureBattleSessionContract, markBattleMemberPhase } from "./battle-contract"
 
 export interface SessionClient {
     socket: net.Socket
@@ -38,6 +40,9 @@ export interface SessionClient {
     yourself?: any
     roomGeneration: number
     connectionGeneration: number
+    roomInstanceId?: string
+    battleSessionId?: string | null
+    sceneEpoch?: number
     superseded: boolean
     connectedAt: number
     fiveBossBattleEntered: boolean
@@ -76,6 +81,7 @@ interface BattleSeat {
 interface BattleBarrierCycle {
     roomInstanceId?: string
     battleSessionId?: string | null
+    sceneEpoch: number
     timers: Map<string, NodeJS.Timeout>
     missing: Map<string, BattleSeat>
     arrived: Set<string>
@@ -259,7 +265,7 @@ export class SessionManager {
         const previous = this.battleHeartbeatTimers.get(connectionId)
         if (previous) clearTimeout(previous)
         this.battleConnectionPhase.set(connectionId, "loading")
-        this.battleLastActivityAt.set(connectionId, Date.now())
+        this.battleLastActivityAt.set(connectionId, performance.now())
         const timer = setTimeout(() => {
             // Timers run before the poll phase on a busy loop. Give a SceneReady
             // frame that is already waiting in the kernel one I/O turn to
@@ -297,7 +303,7 @@ export class SessionManager {
                     this.battleLastActivityAt.delete(connectionId)
                     return
                 }
-                const inactiveMs = Date.now() - (this.battleLastActivityAt.get(connectionId) ?? 0)
+                const inactiveMs = performance.now() - (this.battleLastActivityAt.get(connectionId) ?? 0)
                 if (inactiveMs < leaseMs) {
                     this.scheduleBattleActivityLease(connectionId, Math.max(1, leaseMs - inactiveMs))
                     return
@@ -322,7 +328,7 @@ export class SessionManager {
         if (!client || client.socket.destroyed) return
         const leaseMs = this.parsePositiveDuration("BATTLE_HEARTBEAT_LEASE_MS", 25_000, 5_000)
         this.battleConnectionPhase.set(connectionId, "active")
-        this.battleLastActivityAt.set(connectionId, Date.now())
+        this.battleLastActivityAt.set(connectionId, performance.now())
         this.scheduleBattleActivityLease(connectionId, leaseMs)
     }
 
@@ -331,7 +337,7 @@ export class SessionManager {
         if (!client || client.socket.destroyed) return
         const leaseMs = this.parsePositiveDuration("BATTLE_HEARTBEAT_LEASE_MS", 25_000, 5_000)
         this.battleConnectionPhase.set(connectionId, "ready")
-        this.battleLastActivityAt.set(connectionId, Date.now())
+        this.battleLastActivityAt.set(connectionId, performance.now())
         this.scheduleBattleActivityLease(connectionId, leaseMs)
     }
 
@@ -345,7 +351,7 @@ export class SessionManager {
             // One timer per ready/active connection is enough. Per-packet traffic
             // only advances the deadline timestamp; the timer reschedules for
             // the exact remaining lease when it wakes up.
-            this.battleLastActivityAt.set(connectionId, Date.now())
+            this.battleLastActivityAt.set(connectionId, performance.now())
         }
     }
 
@@ -382,6 +388,11 @@ export class SessionManager {
     }
 
     private releaseSceneReadyBarrierIfSatisfied(roomNumber: string, reason: string): boolean {
+        const cycleBeforeRelease = this.battleBarrierCycles.get(roomNumber)
+        if (this.deferStartDecision(roomNumber, () => {
+            if (this.battleBarrierCycles.get(roomNumber) === cycleBeforeRelease
+                && this.releaseSceneReadyBarrierIfSatisfied(roomNumber, reason)) this.activateBattleScene(roomNumber)
+        })) return false
         const expected = this.battleExpectedCount.get(roomNumber) ?? 0
         if (expected <= 0) return false
         const connected = this.battleClients.get(roomNumber)?.size ?? 0
@@ -422,6 +433,7 @@ export class SessionManager {
         const cycle: BattleBarrierCycle = {
             roomInstanceId: room?.lifecycle?.instanceId,
             battleSessionId: room?.lifecycle?.battleSessionId,
+            sceneEpoch: room?.lifecycle?.sceneEpoch ?? 0,
             timers: new Map(), missing: new Map(),
             arrived: new Set(this.getConnectedBattleClients(roomNumber)
                 .flatMap(client => [this.battleSeatKey(client), `connection:${client.connectionId}`])),
@@ -436,11 +448,13 @@ export class SessionManager {
         const room = require("../room/manager").getRoom(roomNumber)
         return room?.lifecycle?.instanceId === cycle.roomInstanceId
             && room?.lifecycle?.battleSessionId === cycle.battleSessionId
+            && (room?.lifecycle?.sceneEpoch ?? 0) === cycle.sceneEpoch
             && (!room || room.lifecycle.phase === "BATTLE")
     }
 
     private expireMissingBattleSeat(roomNumber: string, cycle: BattleBarrierCycle, seat: BattleSeat): void {
         if (!this.isCurrentBattleBarrier(roomNumber, cycle)) return
+        if (this.deferStartDecision(roomNumber, () => this.expireMissingBattleSeat(roomNumber, cycle, seat))) return
         const key = this.battleSeatKey(seat)
         if (this.getConnectedBattleClients(roomNumber).some(client => this.battleSeatKey(client) === key
             || client.connectionId === seat.connectionId)) return
@@ -451,6 +465,8 @@ export class SessionManager {
         if (retired.has(key) || retired.has(`connection:${seat.connectionId}`)) return
         retired.add(key)
         retired.add(`connection:${seat.connectionId}`)
+        const room = require("../room/manager").getRoom(roomNumber)
+        if (room) markBattleMemberPhase(room, seat.viewerId, "RETIRED")
         fiveBossConnectionDiagnostics.seatEvent(roomNumber, seat.viewerId, "seat_expired")
         battleTelemetry.seatExpired(roomNumber)
         this.queueBattleLeave(roomNumber, seat.connectionId)
@@ -517,8 +533,20 @@ export class SessionManager {
         }
     }
 
+    private deferStartDecision(roomNumber: string, apply: () => void): boolean {
+        const room = require("../room/manager").getRoom(roomNumber)
+        if (!room) return false
+        const instanceId = room.lifecycle.instanceId, battleSessionId = room.lifecycle.battleSessionId
+        return require("../coordinator/room-start-claims").deferPinnedRoomControl(room, () => {
+            if (require("../room/manager").getRoom(roomNumber) === room
+                && room.lifecycle.instanceId === instanceId && room.lifecycle.battleSessionId === battleSessionId) apply()
+        })
+    }
+
     private activateBattleScene(roomNumber: string): void {
+        if (this.deferStartDecision(roomNumber, () => this.activateBattleScene(roomNumber))) return
         const clients = this.getConnectedBattleClients(roomNumber)
+        const room = require("../room/manager").getRoom(roomNumber)
         this.battleSceneStartedRooms.add(roomNumber)
         this.recordFiveBossBattleEntry(roomNumber, clients)
 
@@ -526,6 +554,7 @@ export class SessionManager {
         // client finished loading; treating it as active before this point can
         // publish Leave to peers that are still constructing their battle.
         for (const client of clients) {
+            if (room) markBattleMemberPhase(room, client.viewerId, "ACTIVE")
             if (client.fiveBossBattleEntered) {
                 // The CN five-boss client can stay silent for longer than the
                 // ordinary heartbeat lease while a boss is active. Keep the
@@ -857,6 +886,8 @@ export class SessionManager {
     }
 
     commitRoomDisband(roomNumber: string, reason: string, messageKey = "multibattle_room_dismissed"): boolean {
+        const currentRoom = require("../room/manager").getRoom(roomNumber)
+        if (currentRoom && require("../coordinator/room-start-claims").hasRoomStartClaims(currentRoom)) return false
         const roomClients = this.getClientsInRoom(roomNumber)
         const lobbyClients = roomClients.filter(client => !client.isBattle)
         const battleClients = this.getConnectedBattleClients(roomNumber)
@@ -1029,24 +1060,31 @@ export class SessionManager {
     }
 
     completeSettlementReturn(roomNumber: string): boolean {
+        const currentRoom = require("../room/manager").getRoom(roomNumber)
+        if (currentRoom && require("../coordinator/room-start-claims").hasRoomStartClaims(currentRoom)) return false
         const pendingTimer = this.settlementReturnTimers.get(roomNumber)
         if (pendingTimer) clearTimeout(pendingTimer)
         this.settlementReturnTimers.delete(roomNumber)
         let roomGeneration: number | undefined
+        let roomInstanceId: string | undefined
         let completed = false
         try {
             const { getRoom } = require("../room/manager")
             const room = getRoom(roomNumber)
             if (room) {
-                const transition = embeddedMultiCoordinator.completeSettlementReturn(room)
+                const transition = embeddedMultiCoordinator.applyRoomCommand(room, {
+                    roomNumber, identity: embeddedMultiCoordinator.identity(room), kind: "COMPLETE_RETURN",
+                })
                 if (transition.ok) {
                     roomGeneration = room.lobby_generation
+                    roomInstanceId = room.lifecycle.instanceId
                     for (const client of this.getClientsInRoom(roomNumber)) {
                         if (!client.isBattle && !client.superseded && !client.socket.destroyed) {
                             client.roomGeneration = room.lobby_generation
                         }
                     }
                     completed = true
+                    this.battleRelayMembershipChanged(roomNumber)
                 }
             }
         } catch (e) {}
@@ -1056,7 +1094,7 @@ export class SessionManager {
             // LOBBY, but they remain replayable for their short TTL.
             const { transitionRoomSettlementSnapshots } = require("../settlement-snapshot")
             if (roomGeneration !== undefined) {
-                transitionRoomSettlementSnapshots(roomNumber, "LOBBY", roomGeneration)
+                transitionRoomSettlementSnapshots(roomNumber, "LOBBY", roomGeneration, roomInstanceId)
             }
         } catch (e) {}
         if (completed) gameVerboseLog(() => `[MULTI] settlement host returned: room=${roomNumber}`)
@@ -1114,8 +1152,10 @@ export class SessionManager {
         playerId: number | null
         roomGeneration?: number
     } | null {
+        const currentRoom = require("../room/manager").getRoom(roomNumber)
         const roomClient = this.getRoomClientByConnectionId(roomNumber, connectionId)
         if (roomClient) {
+            if (roomClient.roomInstanceId && roomClient.roomInstanceId !== currentRoom?.lifecycle.instanceId) return null
             return {
                 viewerId: roomClient.viewerId,
                 playerId: roomClient.playerId,
@@ -1124,6 +1164,7 @@ export class SessionManager {
         }
         const battleClient = this.cidToBattleClient.get(connectionId)
         if (battleClient && battleClient.roomNumber === roomNumber && battleClient.viewerId > 0) {
+            if (!this.isCurrentBattleClient(battleClient)) return null
             return {
                 viewerId: battleClient.viewerId,
                 playerId: battleClient.playerId,
@@ -1184,6 +1225,8 @@ export class SessionManager {
     }
 
     addClientToRoom(client: SessionClient): Result<void> {
+        const room = require("../room/manager").getRoom(client.roomNumber)
+        if (room) client.roomInstanceId = room.lifecycle.instanceId
         const addr = this.addr(client.viewerId, client.roomNumber)
         const previous = this.clients.get(addr)
         const nextConnectionGeneration = (this.roomConnectionGenerations.get(addr) ?? 0) + 1
@@ -1192,6 +1235,7 @@ export class SessionManager {
         client.superseded = false
         this.clients.set(addr, client)
         if (previous && previous !== client && previous.socket !== client.socket) {
+            require("../tcp/lobby").clearPendingFiveBossReturnEnter(previous, "connection_replaced")
             clearEquipmentBlock(previous)
             previous.superseded = true
             this.unindexClientSocket(previous)
@@ -1223,6 +1267,7 @@ export class SessionManager {
     }
 
     removeClient(client: SessionClient): Result<void> {
+        require("../tcp/lobby").clearPendingFiveBossReturnEnter(client, "connection_removed")
         clearEquipmentBlock(client)
         if (client.isBattle) fiveBossConnectionDiagnostics.socketEvent(client.socket, "removed",
             this.cidToBattleClient.get(client.connectionId) === client ? "current_connection" : "stale_connection")
@@ -1368,6 +1413,8 @@ export class SessionManager {
         // by arriving after grace. The next actual round resets this decision.
         const retired = this.retiredBattleSeats.get(client.roomNumber)
         if (retired?.has(seatKey) || retired?.has(`connection:${connectionId}`)) return false
+        const room = require("../room/manager").getRoom(client.roomNumber)
+        if (room && !bindBattleConnection(room, client)) return false
         const cycle = this.battleBarrierCycles.get(client.roomNumber)
         cycle?.arrived.add(seatKey)
         cycle?.arrived.add(`connection:${connectionId}`)
@@ -1469,25 +1516,30 @@ export class SessionManager {
         return this.retiredLobbySockets.has(socket)
     }
 
-    /**
-     * Battle sockets adopted by the relay child relay Broadcast/Send there, so
-     * the child needs the same recipient set snapshotBattleRelayRecipients()
-     * uses. Called after every change to battleClients/cidToBattleClient.
-     */
+    isCurrentBattleClient(client: SessionClient): boolean {
+        if (this.cidToBattleClient.get(client.connectionId) !== client || client.superseded) return false
+        const room = require("../room/manager").getRoom(client.roomNumber)
+        return client.roomInstanceId ? !!room && battleConnectionMatches(room, client) : true
+    }
+
+    /** Publish all current members, including parent-owned native sockets. */
     private battleRelayMembershipChanged(roomNumber: string): void {
+        const room = require("../room/manager").getRoom(roomNumber)
         battleRelayBridge.scheduleMembership(roomNumber, () => {
             const members: RelayMember[] = []
             for (const connectionId of this.battleClients.get(roomNumber) ?? []) {
                 const client = this.cidToBattleClient.get(connectionId)
-                if (!client || client.superseded || !isRelayProxySocket(client.socket)) continue
-                members.push({ sid: client.socket.sid, cid: connectionId, gen: client.roomGeneration })
+                if (!client || !this.isCurrentBattleClient(client) || client.socket.destroyed || !client.socket.writable) continue
+                members.push({
+                    sid: isRelayProxySocket(client.socket) ? client.socket.sid : null,
+                    cid: connectionId, gen: client.roomGeneration,
+                })
             }
             return members
-        })
-    }
-
-    isCurrentBattleClient(client: SessionClient): boolean {
-        return this.cidToBattleClient.get(client.connectionId) === client
+        }, room?.lifecycle ? {
+            instanceId: room.lifecycle.instanceId, battleSessionId: room.lifecycle.battleSessionId,
+            sceneEpoch: room.lifecycle.sceneEpoch ?? 0,
+        } : undefined)
     }
 
     snapshotBattleRelayRecipients(source: SessionClient, includeSource = false): SessionClient[] {
@@ -1502,6 +1554,7 @@ export class SessionManager {
             if (!includeSource && connectionId === source.connectionId) continue
             const client = this.cidToBattleClient.get(connectionId)
             if (!client
+                || !this.isCurrentBattleClient(client)
                 || client.roomGeneration !== source.roomGeneration
                 || client.socket.destroyed
                 || !client.socket.writable) continue
@@ -1512,7 +1565,14 @@ export class SessionManager {
 
     markSceneReady(connectionId: string, roomNumber: string): boolean {
         const client = this.cidToBattleClient.get(connectionId)
-        if (!client || client.roomNumber !== roomNumber || client.socket.destroyed) return false
+        if (!client || client.roomNumber !== roomNumber || client.socket.destroyed || !this.isCurrentBattleClient(client)) return false
+        const room = require("../room/manager").getRoom(roomNumber)
+        if (room && require("../coordinator/room-start-claims").hasRoomStartClaims(room)) return false
+        // Legacy arrays have no scene id. TCP order plus each connection's
+        // LevelNext fences delayed previous-scene readiness.
+        if (room && !battleMemberCanPlay(room, client.viewerId)) return false
+        if (room && client.sceneEpoch !== undefined
+            && client.sceneEpoch !== (room.lifecycle.sceneEpoch ?? 0)) return false
         const expected = this.battleExpectedCount.get(roomNumber) ?? 0
         if (expected <= 0) {
             if (this.battleSceneStartedRooms.has(roomNumber)) {
@@ -1529,6 +1589,7 @@ export class SessionManager {
             this.sceneReadyClients.set(roomNumber, readySet)
         }
         readySet.add(connectionId)
+        if (room) markBattleMemberPhase(room, client.viewerId, "READY")
         if (client.fiveBossBattleEntered) {
             // During the next-boss barrier, the ready peer may legitimately
             // wait longer than 25 seconds for another peer's loading lease.
@@ -1544,9 +1605,12 @@ export class SessionManager {
 
     beginBattleLevelNext(connectionId: string, roomNumber: string): void {
         const client = this.cidToBattleClient.get(connectionId)
-        if (!client || client.roomNumber !== roomNumber || client.socket.destroyed) return
+        if (!client || client.roomNumber !== roomNumber || client.socket.destroyed || !this.isCurrentBattleClient(client)) return
+        const room = require("../room/manager").getRoom(roomNumber)
         let levelNextSet = this.battleLevelNextClients.get(roomNumber)
+        if (room && !battleMemberCanPlay(room, client.viewerId)) return
         if (!levelNextSet) {
+            if (room) beginBattleSceneEpoch(room)
             levelNextSet = new Set()
             this.battleLevelNextClients.set(roomNumber, levelNextSet)
 
@@ -1564,6 +1628,11 @@ export class SessionManager {
         }
         if (levelNextSet.has(connectionId)) return
         levelNextSet.add(connectionId)
+        if (room) {
+            client.sceneEpoch = room.lifecycle.sceneEpoch ?? 0
+            markBattleMemberPhase(room, client.viewerId, "LOADING")
+            this.battleRelayMembershipChanged(roomNumber)
+        }
         // A teammate can still be fighting the preceding scene. Only its own
         // LevelNext starts its fixed loading deadline; duplicate packets cannot
         // reset that deadline or demote an already-ready connection.
@@ -1584,22 +1653,27 @@ export class SessionManager {
     private armLevelNextDeadline(roomNumber: string, cycle: BattleBarrierCycle): void {
         const deadlineMs = this.parsePositiveDuration("BATTLE_LEVEL_NEXT_DEADLINE_MS", 90_000, 10_000)
         const timer = setTimeout(() => {
-            void embeddedMultiCoordinator.enqueueRoomCommand(roomNumber, () => {
-                if (cycle.timers.get("level_next_deadline") !== timer) return
-                cycle.timers.delete("level_next_deadline")
-                if (!this.isCurrentBattleBarrier(roomNumber, cycle)) return
-                if ((this.battleExpectedCount.get(roomNumber) ?? 0) <= 0) return
-                const started = this.battleLevelNextClients.get(roomNumber)
-                const ready = this.sceneReadyClients.get(roomNumber)
-                for (const client of this.getConnectedBattleClients(roomNumber)) {
-                    if (started?.has(client.connectionId) || ready?.has(client.connectionId)) continue
-                    console.warn(`[MULTI] next scene never started: room=${roomNumber}`
-                        + ` viewer=${client.viewerId} connection=${client.connectionId} timeoutMs=${deadlineMs}`)
-                    fiveBossConnectionDiagnostics.socketEvent(client.socket, "level_next_timeout", String(deadlineMs))
-                    markTcpDisconnectReason(client.socket, "level_next_timeout")
-                    client.socket.destroy()
-                }
-            }).catch(error => console.error(`[MULTI] next scene deadline failed: room=${roomNumber}`, error))
+            // Match the loading lease: let already-arrived LevelNext/SceneReady
+            // I/O run before deciding that a peer missed the transition.
+            const check = setImmediate(() => {
+                void embeddedMultiCoordinator.enqueueRoomCommand(roomNumber, () => {
+                    if (cycle.timers.get("level_next_deadline") !== timer) return
+                    cycle.timers.delete("level_next_deadline")
+                    if (!this.isCurrentBattleBarrier(roomNumber, cycle)) return
+                    if ((this.battleExpectedCount.get(roomNumber) ?? 0) <= 0) return
+                    const started = this.battleLevelNextClients.get(roomNumber)
+                    const ready = this.sceneReadyClients.get(roomNumber)
+                    for (const client of this.getConnectedBattleClients(roomNumber)) {
+                        if (started?.has(client.connectionId) || ready?.has(client.connectionId)) continue
+                        console.warn(`[MULTI] next scene never started: room=${roomNumber}`
+                            + ` viewer=${client.viewerId} connection=${client.connectionId} timeoutMs=${deadlineMs}`)
+                        fiveBossConnectionDiagnostics.socketEvent(client.socket, "level_next_timeout", String(deadlineMs))
+                        markTcpDisconnectReason(client.socket, "level_next_timeout")
+                        client.socket.destroy()
+                    }
+                }).catch(error => console.error(`[MULTI] next scene deadline failed: room=${roomNumber}`, error))
+            })
+            check.unref()
         }, deadlineMs)
         timer.unref()
         cycle.timers.set("level_next_deadline", timer)
@@ -1611,9 +1685,12 @@ export class SessionManager {
         this.battleLevelNextClients.delete(roomNumber)
         this.battleSceneStartedRooms.delete(roomNumber)
         this.pendingBattleLeaves.delete(roomNumber)
+        this.battleRelayMembershipChanged(roomNumber)
     }
 
     setBattleExpectedCount(roomNumber: string, count: number, seats: BattleSeat[] = []): void {
+        const room = require("../room/manager").getRoom(roomNumber)
+        if (room) ensureBattleSessionContract(room)
         this.retiredBattleSeats.delete(roomNumber)
         const cycle = this.beginBattleBarrierCycle(roomNumber)
         this.sceneReadyClients.set(roomNumber, new Set())
@@ -1671,6 +1748,7 @@ export class SessionManager {
         this.battleBarrierLogState.delete(roomNumber)
         this.battleSceneStartedRooms.delete(roomNumber)
         this.pendingBattleLeaves.delete(roomNumber)
+        this.battleRelayMembershipChanged(roomNumber)
     }
 
     removeRoomState(roomNumber: string): void {

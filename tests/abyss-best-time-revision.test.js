@@ -142,7 +142,7 @@ test("real finish establishes and improves the new best; failure and old-tower f
         category: 24, questId: 700099001, useBossBoostPoint: false, useBoostPoint: false,
         isAutoStartMode: false, isMulti: false, playId: `abyss-time-${++count}`, continueCount: 0,
     })
-    const finish = async (time, accomplished = true, resourceVersion) => {
+    const finish = async (time, accomplished = true, resourceVersion, status = 200) => {
         const response = await app.inject({ method: "POST", url: "/single_battle_quest/finish",
             headers: resourceVersion ? { res_ver: resourceVersion } : {}, payload: {
             viewer_id: p.viewerId, category: 24, quest_id: 700099001, play_id: `abyss-time-${count}`,
@@ -153,7 +153,8 @@ test("real finish establishes and improves the new best; failure and old-tower f
                 equipments: [null, null, null], ability_soul_ids: [null, null, null],
             }, zones: [] },
         } })
-        assert.equal(response.statusCode, 200, response.body)
+        assert.equal(response.statusCode, status, response.body)
+        if (status !== 200) return response.json()
         return unpack(Buffer.from(response.body, "base64"))
     }
     try {
@@ -197,8 +198,14 @@ test("real finish establishes and improves the new best; failure and old-tower f
         delete activeQuests[p.id]
         deletePlayerActiveQuestSync(p.id)
         count++
-        const currentRebuilt = await finish(40000, true, "1.4.102")
-        assert.equal(currentRebuilt.data_headers.result_code, 1)
+        // A current resource version cannot replace a missing battle registration.
+        const unregistered = await finish(40000, true, "1.4.102", 400)
+        assert.equal(unregistered.message, "No active quest to finish.")
+        assert.equal(getPlayerSingleQuestProgressSync(p.id, 24, 700099001).bestElapsedTimeMs, 45000)
+        start()
+        delete activeQuests[p.id]
+        const recovered = await finish(40000, true, "1.4.102")
+        assert.equal(recovered.data_headers.result_code, 1)
         assert.equal(getPlayerSingleQuestProgressSync(p.id, 24, 700099001).bestElapsedTimeMs, 40000)
     } finally { await app.close() }
 })

@@ -74,6 +74,7 @@ cp .env.example .env
 ```bash
 # 公网部署 — 取消注释，<YOUR_DOMAIN> 替换为你的实际域名
 CN_LISTEN_HOST="127.0.0.1"                        # 仅监听本地，由 nginx 代理
+TRUST_PROXY="loopback"                          # 同机 nginx；异机/容器代理填真实地址/CIDR
 CDN_BASE_URL="https://<YOUR_DOMAIN>/patch/cn"     # 公网域名 + HTTPS
 SESSION_PUBLIC_HOST="<YOUR_DOMAIN>"               # 联机 TCP 公网地址
 
@@ -82,6 +83,18 @@ SESSION_PUBLIC_HOST="<YOUR_DOMAIN>"               # 联机 TCP 公网地址
 ```
 
 完整 `.env` 各字段说明见文件内注释。
+
+客户端地址与限流使用 Fastify 验证代理来源后的 `request.ip`。默认不信任
+转发头；同机 Nginx 连接 `127.0.0.1` 时显式设置 `TRUST_PROXY="loopback"`，
+代理来自其他地址时只填写实际代理的地址/CIDR，多个值用逗号分隔。
+代理入口必须覆盖 `X-Forwarded-For`，避免采信客户端自行提供的地址。
+
+Windows `netsh portproxy` 等四层 TCP 转发不能覆盖 HTTP 请求头，应保持
+`TRUST_PROXY=false`（未设置时即为此默认值）。若转发后连接源成为回环地址，
+按 IP 的限流会由这些客户端共享；信任任意客户端传入的地址不能解决此问题。
+
+下方是从零部署的示例。已有 iOS 专用 Nginx 站点应保留自己的监听、路径、
+HTTP/HTTPS 和 CDN 分流结构，仅在缺少转发头覆盖时补充对应指令。
 
 ---
 
@@ -144,10 +157,12 @@ server {
     location /crash {
         limit_req zone=diagnostics burst=2;
         proxy_pass http://127.0.0.1:8001;
+        proxy_set_header X-Forwarded-For $remote_addr;
     }
     location /debug {
         limit_req zone=diagnostics burst=2;
         proxy_pass http://127.0.0.1:8001;
+        proxy_set_header X-Forwarded-For $remote_addr;
     }
 
     # ── 管理面板（内网 only + 密码保护） ──
@@ -162,6 +177,7 @@ server {
 
         proxy_pass http://127.0.0.1:8001;
         proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
     }
 }
 

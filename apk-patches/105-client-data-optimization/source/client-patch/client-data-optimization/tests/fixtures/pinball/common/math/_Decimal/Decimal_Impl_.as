@@ -1,0 +1,1 @@
+package pinball.common.math._Decimal { public class Decimal_Impl_ { public static function fromInt(v:int):Number{return v*100000;}public static function clamp(v:Number,lo:Number,hi:Number):Number{if(v<lo)return lo;if(v>hi)return hi;return v;}public static function multiply(a:Number,b:Number):Number{return Math.round(a*b/100000);} } }

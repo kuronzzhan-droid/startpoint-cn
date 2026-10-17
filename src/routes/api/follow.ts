@@ -9,6 +9,7 @@ import {
     getPlayerIdByViewerIdSync,
     getRelatedPlayerIdsSync,
     getViewerIdByPlayerIdSync,
+    MAX_FOLLOWING,
 } from "../../data/domains/follow";
 import { getSession } from "../../data/domains/session";
 import { buildFollowUserInfoSync } from "../../lib/follow";
@@ -93,6 +94,16 @@ const routes = async (fastify: FastifyInstance) => {
 
     fastify.post("/bulk_edit", async (request: FastifyRequest, reply: FastifyReply) => {
         const body = request.body as any;
+        // Bound work before resolving every supplied target or opening a write
+        // transaction. One request can replace the whole legal following list.
+        for (const field of ["add_follow_id_list", "delete_follow_id_list"]) {
+            const ids = body?.[field];
+            if (ids === undefined || ids === null) continue;
+            if (!Array.isArray(ids) || ids.length > MAX_FOLLOWING
+                || ids.some(id => !Number.isSafeInteger(Number(id)) || Number(id) <= 0)) {
+                return reply.status(400).send({ error: "Invalid follow list", maxItems: MAX_FOLLOWING });
+            }
+        }
         const ctx = await resolveContext(body);
         if (!ctx) return reply.status(400).send({ error: "Bad Request", message: "Invalid viewer id." });
 

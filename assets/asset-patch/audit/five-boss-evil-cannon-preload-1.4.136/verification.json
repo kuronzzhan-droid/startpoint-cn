@@ -1,0 +1,92 @@
+{
+  "scope": "offline Boss/summon collector dependency validation",
+  "former_scene39_elements": [
+    6
+  ],
+  "patched_scene39_elements": [
+    4,
+    6
+  ],
+  "target_boss_elements": {
+    "mod_fb2_035_evil_w02": [
+      4,
+      6
+    ],
+    "mod_fb2_037_evil_w01": [
+      4,
+      6
+    ],
+    "mod_fb2_039_evil_w02": [
+      4,
+      6
+    ]
+  },
+  "controlled_element_edit_paths": [
+    [
+      11,
+      1,
+      0,
+      1,
+      20,
+      1,
+      0,
+      1,
+      2,
+      2
+    ],
+    [
+      11,
+      1,
+      0,
+      1,
+      23,
+      1,
+      0,
+      1,
+      2
+    ]
+  ],
+  "dead_slot_checks": [
+    {
+      "boss": "mod_fb2_035_evil_w02",
+      "tier": "100",
+      "element": "6",
+      "slot": 39,
+      "column": 149,
+      "marker": "battle/boss/devil_commander_evil_boss/devil_commander_evil_boss_marker",
+      "routine": "devil_commander_evil_boss",
+      "marker_action39_present": false
+    },
+    {
+      "boss": "mod_fb2_037_evil_w01",
+      "tier": "100",
+      "element": "6",
+      "slot": 39,
+      "column": 149,
+      "marker": "battle/boss/devil_commander_evil_boss/devil_commander_evil_boss_marker",
+      "routine": "devil_commander_evil_boss",
+      "marker_action39_present": false
+    },
+    {
+      "boss": "mod_fb2_039_evil_w02",
+      "tier": "100",
+      "element": "6",
+      "slot": 39,
+      "column": 149,
+      "marker": "battle/boss/devil_commander_evil_boss/devil_commander_evil_boss_marker",
+      "routine": "devil_commander_evil_boss",
+      "marker_action39_present": false
+    }
+  ],
+  "preservation": {
+    "outer_keys_preserved": 619,
+    "target_rows": 3,
+    "unrelated_compressed_chunks_preserved": 616,
+    "only_changed_column": 149,
+    "deep_king_rows_byte_preserved": 7
+  },
+  "native_action_sha256_preserved": "c1f9074db33548cf9cb8a571fa790ca027b86a7269da86be62a88dcfe9b86d7c",
+  "dsl_signature_valid": true,
+  "amf3_round_trip_valid": true,
+  "device_or_loading_state_tested": false
+}

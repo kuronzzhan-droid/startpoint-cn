@@ -1,0 +1,8 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.resources.ResourceRuntime; label: cn.optimize.resources::ResourceRuntime$/uploadRestore|1/closure:1; body: 41; method: 43
+# code SHA-256: 6eeda1eabfa8cc2c88e6e299ccd42c7c46b938c089feffd3af8cf9b0b52e78a5; header: [1, 1, 0, 0]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlex [(7, (23, 'cn.optimize.resources'), 'bitmap')]
+#0001 ofs0003: callpropvoid [(9, 'dispose', ((5, 'cn.optimize.resources:ResourceRuntime'), (26, 'cn.optimize.resources:ResourceRuntime'), (26, 'Object'), (22, 'cn.optimize.resources'), (23, 'cn.optimize.resources'), (5, 'FilePrivateNS:ResourceRuntime'), (22, ''), (8, 'http://adobe.com/AS3/2006/builtin'))), 0]
+#0002 ofs0006: returnvoid []
+# exceptions: []

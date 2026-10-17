@@ -1,0 +1,1221 @@
+{
+  "number": 106,
+  "module": "resource",
+  "title": "资源 IO 批任务与完成阶段优化",
+  "status": "归档条目草稿",
+  "upstream_origin_main": "224aa2a663b7756fc8a34c0f37f1ae61ad81800c",
+  "input_apk_sha256": "3de625cf0c745c79d333a09140ad82fdea74746d2e2200a5b6922f67eca14532",
+  "input_swf_sha256": "3b7b3391ae0aee01f15167fe1d5a5b69eddb71a64605c57486f025916611aaa4",
+  "final_swf_sha256": "3d5c9745f519beee68557df7bce3e4ff635c9bb127069ed85a8fd02b5cbedb8a",
+  "methods": [
+    {
+      "module": "resource",
+      "method": "pinball.asset.file::BitmapTextureRestoreHandler/uploadPng|1",
+      "body": 5368,
+      "v33_code_sha256": "28ccd0ed81b107f7071e54dca17f874c3fec5d740fd7f3591497a42204d1038a",
+      "r4_pins": [
+        "28ccd0ed81b107f7071e54dca17f874c3fec5d740fd7f3591497a42204d1038a"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.file::BitmapTextureRestoreHandler/restoreHandler|1",
+      "body": 5369,
+      "v33_code_sha256": "c8fbaf64557d1c5add5ab0d2c2249be64232624c3fd883534352832299efa7d2",
+      "r4_pins": [
+        "c8fbaf64557d1c5add5ab0d2c2249be64232624c3fd883534352832299efa7d2"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.file::BitmapTextureRestoreHandler/<ctor>",
+      "body": 5371,
+      "v33_code_sha256": "14ad05a6981d19cc65812063be232d9616fa20f9dfd82565c4c8d07df091e61e",
+      "r4_pins": [
+        "14ad05a6981d19cc65812063be232d9616fa20f9dfd82565c4c8d07df091e61e"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.file._FileReader::OpenHandler/execute|1",
+      "body": 5381,
+      "v33_code_sha256": "cfc91adf8921de152311df3ea73bc307ad54ea1e81126248a50c76f6e9f7ac6c",
+      "r4_pins": [
+        "cfc91adf8921de152311df3ea73bc307ad54ea1e81126248a50c76f6e9f7ac6c"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.file._FileReader::OpenHandler/<ctor>",
+      "body": 5382,
+      "v33_code_sha256": "5645855d5dd790f52c9ad6912448de6e2279c16446e2fa747afaf73d39fe8701",
+      "r4_pins": [
+        "5645855d5dd790f52c9ad6912448de6e2279c16446e2fa747afaf73d39fe8701"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.file::FileStreamWithCounter/openAsync|1",
+      "body": 5425,
+      "v33_code_sha256": "c451973f19984635d84511fc341ffd1e9dbc100f15e590ef4013ef18e1d4b47c",
+      "r4_pins": [
+        "c451973f19984635d84511fc341ffd1e9dbc100f15e590ef4013ef18e1d4b47c"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.file::FileStreamWithCounter/open|1",
+      "body": 5426,
+      "v33_code_sha256": "4d0f6ae75f4aea8dc09e224d55381b6ada671d2505310c8f0397520bc2a1be3f",
+      "r4_pins": [
+        "4d0f6ae75f4aea8dc09e224d55381b6ada671d2505310c8f0397520bc2a1be3f"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.file::FileStreamWithCounter/close|1",
+      "body": 5427,
+      "v33_code_sha256": "0a4d962ca839724533c8a355365fd0617bf30271d64840de96da31745c6a4cd2",
+      "r4_pins": [
+        "0a4d962ca839724533c8a355365fd0617bf30271d64840de96da31745c6a4cd2"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.file::FileStreamWithCounter/_openAsync|1",
+      "body": 5440,
+      "v33_code_sha256": "777410466abdf0d29c60922fd4d12e1ba63e526eb0e1a1e38b7d09e52e6515f1",
+      "r4_pins": [
+        "777410466abdf0d29c60922fd4d12e1ba63e526eb0e1a1e38b7d09e52e6515f1"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.file::FileStreamWithCounter/_close|1",
+      "body": 5441,
+      "v33_code_sha256": "9bacfab7c346097e765429321a35d434881090885300fe248f6e40986edb11fa",
+      "r4_pins": [
+        "9bacfab7c346097e765429321a35d434881090885300fe248f6e40986edb11fa"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.file::ReadAtfTextureFileHandler/uploadAtf|1",
+      "body": 5478,
+      "v33_code_sha256": "565f0388992906ce9aa2c5e66886a61983f5e5c099322b9aef4b5e99b13db2f4",
+      "r4_pins": [
+        "565f0388992906ce9aa2c5e66886a61983f5e5c099322b9aef4b5e99b13db2f4"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.file::ReadAtfTextureFileHandler/<ctor>",
+      "body": 5480,
+      "v33_code_sha256": "851b0f85edd7c8a991b946e7239d4c25fc1fdd454801330f00c11bc05c564819",
+      "r4_pins": [
+        "851b0f85edd7c8a991b946e7239d4c25fc1fdd454801330f00c11bc05c564819"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.file::ReadPngTextureFileHandler/_uploadPng|1",
+      "body": 5485,
+      "v33_code_sha256": "1c7dcea3f4179c447511fc7fd73a77215836bed286f0e48cd5640b90432f3dbd",
+      "r4_pins": [
+        "1c7dcea3f4179c447511fc7fd73a77215836bed286f0e48cd5640b90432f3dbd"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.file::ReadPngTextureFileHandler/<ctor>",
+      "body": 5486,
+      "v33_code_sha256": "851b0f85edd7c8a991b946e7239d4c25fc1fdd454801330f00c11bc05c564819",
+      "r4_pins": [
+        "851b0f85edd7c8a991b946e7239d4c25fc1fdd454801330f00c11bc05c564819"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.view::ViewAssetCache$/disposeDownloadedTexture|1",
+      "body": 5937,
+      "v33_code_sha256": "47435b8e42520fe9bc216bc786d14608895ba5f546a45566a39f4f1bb5b05825",
+      "r4_pins": [
+        "47435b8e42520fe9bc216bc786d14608895ba5f546a45566a39f4f1bb5b05825"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.view::ViewAssetCache/startOtherLoad|1",
+      "body": 5946,
+      "v33_code_sha256": "69ff286e8e179d47d1f591660f00ff8c4467dc04b1749fc1569e650a022cdc45",
+      "r4_pins": [
+        "69ff286e8e179d47d1f591660f00ff8c4467dc04b1749fc1569e650a022cdc45"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.view::ViewAssetCache/readTextureHandler|1",
+      "body": 5962,
+      "v33_code_sha256": "44f1c1eff8eb54ea0e8b77fdcb8256700c0922782e3d7b3815ebf654940e8ff3",
+      "r4_pins": [
+        "44f1c1eff8eb54ea0e8b77fdcb8256700c0922782e3d7b3815ebf654940e8ff3"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.view::ViewAssetCache/readTexture|1",
+      "body": 5963,
+      "v33_code_sha256": "92c321ff4879e542e3e698542e3fbb0c7f1bb2363aec1db2695b1f6a59f5eea2",
+      "r4_pins": [
+        "92c321ff4879e542e3e698542e3fbb0c7f1bb2363aec1db2695b1f6a59f5eea2"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.view::ViewAssetCache/downloadTexture|1",
+      "body": 5987,
+      "v33_code_sha256": "61a6ded84a1e470e1fe6035879c68ab6878d0aec881ab97a25c8b51c4a869f23",
+      "r4_pins": [
+        "61a6ded84a1e470e1fe6035879c68ab6878d0aec881ab97a25c8b51c4a869f23"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.view::ViewAssetCache/dispose|1",
+      "body": 5989,
+      "v33_code_sha256": "c530dff5c1d9cac37f01be94d0f9a205d45ea32918e154b70fac8a029fa7b3df",
+      "r4_pins": [
+        "c530dff5c1d9cac37f01be94d0f9a205d45ea32918e154b70fac8a029fa7b3df"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.asset.view::ViewAssetCache/addGroup|1",
+      "body": 5993,
+      "v33_code_sha256": "e5a36fb82277d56ccc5579c887771d75597a605f1d518f3c206dd3974451756e",
+      "r4_pins": [
+        "e5a36fb82277d56ccc5579c887771d75597a605f1d518f3c206dd3974451756e"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.common.task::MultiTask/startNextTask|1",
+      "body": 26437,
+      "v33_code_sha256": "30e3572c0f9f602ca4f619a5733151b28616e5be3711ce5ed8b993bfa271cac8",
+      "r4_pins": [
+        "30e3572c0f9f602ca4f619a5733151b28616e5be3711ce5ed8b993bfa271cac8"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "resource",
+      "method": "pinball.common.task::MultiTask/_startNextTask|1",
+      "body": 26441,
+      "v33_code_sha256": "4ee549b5ca76a88be1416ed8cb3bac3c6f923bb968c0afb403d802c1bb068a31",
+      "r4_pins": [
+        "4ee549b5ca76a88be1416ed8cb3bac3c6f923bb968c0afb403d802c1bb068a31"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    }
+  ],
+  "helpers": [
+    "cn.optimize.resources.ResourceRuntime"
+  ],
+  "composition": "23 个主 ABC 方法：11 个指定单方法 body 移植、12 个可逆 hook。donor 中的同名游戏类仅为方法编译依赖，绝不以 donor 类定义替换游戏类；游戏签名、traits 与类布局保留。",
+  "source_files": [
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/build_assets.py",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/build_assets.py",
+      "bytes": 2312,
+      "sha256": "6d40b6e0996f2c313065e0274e752303efc147cb46e69612ff8fa0c783505013"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/flash/Boot.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/flash/Boot.as",
+      "bytes": 120,
+      "sha256": "e7148db81bdf7511eeb38e2ee67bb25f2dd2ae163464c832fd59a369e815917e"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/haxe/ds/IntMap.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/haxe/ds/IntMap.as",
+      "bytes": 97,
+      "sha256": "857f2ba3aa0487dfdcc1f5ecbbd7f7432ca3302da0952fd0df167cc7baf4c8f1"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/haxe/IMap.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/haxe/IMap.as",
+      "bytes": 40,
+      "sha256": "cfc8bb7be97881f3589218ff1af3e14043a36b5826e065defd0136cb720352fe"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/pinball/asset/file/_FileReader/OpenHandler.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/pinball/asset/file/_FileReader/OpenHandler.as",
+      "bytes": 596,
+      "sha256": "385491844cb73468632eac1965aa322269431e0164b1f2c7d22d505e32acca7b"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/pinball/asset/file/BitmapTextureRestoreHandler.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/pinball/asset/file/BitmapTextureRestoreHandler.as",
+      "bytes": 879,
+      "sha256": "c5d4e6f72e7dff81f862456831e170c91434ec643f171dcdcfe72f3092502277"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/pinball/asset/file/FileReader.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/pinball/asset/file/FileReader.as",
+      "bytes": 389,
+      "sha256": "04b9b85b386418bf1d8d271a62f87c6fa24c67cc3d88a967493f146de922a8a6"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/pinball/asset/file/FileStreamWithCounter.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/pinball/asset/file/FileStreamWithCounter.as",
+      "bytes": 2224,
+      "sha256": "957a64e6dd865346985a45b74b3a3e9c2f2515f198ff5f49d22a23f8a002949d"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/pinball/asset/file/PngLoadHandler.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/pinball/asset/file/PngLoadHandler.as",
+      "bytes": 940,
+      "sha256": "e2486c67966a7f54787285be6f7e6851e645119dac0cadccc139ce5b6d935d97"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/pinball/asset/file/ReadAtfTextureFileHandler.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/pinball/asset/file/ReadAtfTextureFileHandler.as",
+      "bytes": 779,
+      "sha256": "12dc1b278ed2fb24b26711284027940f713f6dc54e1a862153c3e3fd93a80619"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/pinball/asset/file/ReadPngTextureFileHandler.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/pinball/asset/file/ReadPngTextureFileHandler.as",
+      "bytes": 722,
+      "sha256": "0d7e6e2fb4e17fbb7fd98703f94e9a38469adee58255bf3aae357ec9f4ad610f"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/pinball/asset/WaitInOrderImpl.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/pinball/asset/WaitInOrderImpl.as",
+      "bytes": 487,
+      "sha256": "6a2eea68e5fd2a2f8f6607567235423ca8366433426f89370bf22901cc7b6cfd"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/pinball/common/task/MultiTask.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/pinball/common/task/MultiTask.as",
+      "bytes": 726,
+      "sha256": "79fe55daa0dff504c4e73d01fc94daa1ef8b0582665a2c37cb3db0e1182ce85a"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/pinball/common/task/ProgressManager.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/pinball/common/task/ProgressManager.as",
+      "bytes": 496,
+      "sha256": "18968881c2f80103d2e62c286f7774dbf8ab89ee22ee325731a220458a70f7cb"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/pinball/context/activity/ActivityUtil.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/pinball/context/activity/ActivityUtil.as",
+      "bytes": 167,
+      "sha256": "79b45879160ba57429825f512c6f46e6ed9551f6a2cdd0c09a75f47af004e31b"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/pinball/error/ClientError.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/pinball/error/ClientError.as",
+      "bytes": 140,
+      "sha256": "09eab3d67e40991c46df5cc891c7ab7a5f7b1a711e995d5dce2f4644c2f07768"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/starling/core/Starling.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/starling/core/Starling.as",
+      "bytes": 108,
+      "sha256": "4367f6128e581ed2499dd98c52c1d68f048c4a97ee9e0e8f96ff04091cec953c"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/donor/starling/textures/Texture.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/donor/starling/textures/Texture.as",
+      "bytes": 918,
+      "sha256": "008fe05490b453e42ca969a3d3b5db9bbf9d6d165ed2a63cf25188d066afb6f3"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/method-pins.json",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/method-pins.json",
+      "bytes": 7179,
+      "sha256": "69c148bfc61a8303439ebe364c692b1c96276132bb86f239819cc573f67c34fe"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/patch_swf.py",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/patch_swf.py",
+      "bytes": 9651,
+      "sha256": "4725d625cf1d5ef3372492a0840e10d879a630db4e3461dbd08ab6f16b5c35fe"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/run_air_harness.py",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/run_air_harness.py",
+      "bytes": 4768,
+      "sha256": "826a41fb6b652c5e13136db0aa0cf2033a06e168a910b1dbe3ffe36b082fc494"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/src/cn/optimize/resources/ResourceRuntime.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/src/cn/optimize/resources/ResourceRuntime.as",
+      "bytes": 22433,
+      "sha256": "2df60ae4a55090259956adf953cfb25369d2f118c202a3c034b355efebe701d4"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/tests/FixtureClock.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/tests/FixtureClock.as",
+      "bytes": 189,
+      "sha256": "ec256acaafa1cda22710ba6c06016decb091d185fda4ae8bdb476f8168481a9a"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/tests/Hello.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/tests/Hello.as",
+      "bytes": 363,
+      "sha256": "705da30cf5d0b0b0025ea74977779f147138c0ffc6d35b2faec2fc72146d550f"
+    },
+    {
+      "path": "106-client-resource-optimization/source/client-patch/client-resource-optimization/tests/RuntimeHarness.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-resource-optimization/tests/RuntimeHarness.as",
+      "bytes": 20782,
+      "sha256": "c13126a2b0b340aab0715779ba8434d59e04df4c7b5bd3d9f30b9a0eb81cf234"
+    }
+  ],
+  "final_pcode": [
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.file::BitmapTextureRestoreHandler/uploadPng|1",
+      "body": 5368,
+      "code_sha256": "bb2abb9782aeb52d6cf1f8a8a144cf0ac572435ec63ac13f2972a90edab6a7d6",
+      "method_body_sha256": "e546a20629df241407eda5c03ca63aad4e4e86ec353e15fa3aeccd73b9d645d2",
+      "path": "pcode/boot_ffc6--pinball.asset.file_BitmapTextureRestoreHandler_uploadPng_1.pcode.txt",
+      "check": {
+        "max_stack": 3,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "a741e190798e2cd81a50bffa496738154be6eed691a0b9bb19c6616af7c85168"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.file::BitmapTextureRestoreHandler/restoreHandler|1",
+      "body": 5369,
+      "code_sha256": "fda26c886cab279b72178d8f3b3925b5b155058b92ed5164df74d1244b105572",
+      "method_body_sha256": "f2644806c5798a7aeec9a865923c59d044c491366a59c32f597809cc96f0e99a",
+      "path": "pcode/boot_ffc6--pinball.asset.file_BitmapTextureRestoreHandler_restoreHandler_1.pcode.txt",
+      "check": {
+        "max_stack": 2,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "7fb4655d0312410842b11f333221e09f7463565f7d503c8eac29d7f92e7f682b"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.file::BitmapTextureRestoreHandler/<ctor>",
+      "body": 5371,
+      "code_sha256": "ab1a336b892a94192c39f0e9d1b451da016ef1bd62e2eb2ed4ab2c9fa654d3cb",
+      "method_body_sha256": "18cc3dad13907c348a0d3cf69106342c4abfed21cbf93f519eb13059e03d380a",
+      "path": "pcode/boot_ffc6--pinball.asset.file_BitmapTextureRestoreHandler_ctor_.pcode.txt",
+      "check": {
+        "max_stack": 2,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "361e42684600edec1f289461bd561a2eacd9887eb3cb0c2314dab6ec261d02d2"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.file._FileReader::OpenHandler/execute|1",
+      "body": 5381,
+      "code_sha256": "5851aa79469b40c293146cb4ce2042ba4055bf0495817888756b7a8b7784897b",
+      "method_body_sha256": "fa7f81bd96c05c6a1fb0e8c146dc0ca8e8f84fd02a86896b84eb7653e0b2e073",
+      "path": "pcode/boot_ffc6--pinball.asset.file._FileReader_OpenHandler_execute_1.pcode.txt",
+      "check": {
+        "max_stack": 2,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "01064f3c13bf96031c5354641e125f0cbb7cc3f59cd618c5893956816457f928"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.file._FileReader::OpenHandler/<ctor>",
+      "body": 5382,
+      "code_sha256": "56eb35c84f0c9ae577c3699e3dc976bec871832e1b7a04e776942e129f9eb3e3",
+      "method_body_sha256": "88066de82aa919f8b8ae0d4b5bc3082fe9fe083fc328442757ed38caf0697df6",
+      "path": "pcode/boot_ffc6--pinball.asset.file._FileReader_OpenHandler_ctor_.pcode.txt",
+      "check": {
+        "max_stack": 2,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "24062627708f7c21c657a18c43548db4d0eb75921299f1e10b54a5488bfc0150"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.file::FileStreamWithCounter/openAsync|1",
+      "body": 5425,
+      "code_sha256": "b67806d22f927ad258d0919486b6f967c5dd952686f29cd784d274325c8d2677",
+      "method_body_sha256": "654a9d6e66f284b9eda9818c2c83554650ce4f29621d38ade09d4b9d474ea181",
+      "path": "pcode/boot_ffc6--pinball.asset.file_FileStreamWithCounter_openAsync_1.pcode.txt",
+      "check": {
+        "max_stack": 3,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "7df49407e42a3204c98b9f002e638e2b67668c22814e25e2d894b7164d335c91"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.file::FileStreamWithCounter/open|1",
+      "body": 5426,
+      "code_sha256": "720dddc15dcb4e318cbfed8619ee71bad959a85285300a25700b2bda3e86e291",
+      "method_body_sha256": "b52d9389074b9578b80dd949f56993a2ac2b70b82ac3575f47660a2826ffb7c6",
+      "path": "pcode/boot_ffc6--pinball.asset.file_FileStreamWithCounter_open_1.pcode.txt",
+      "check": {
+        "max_stack": 4,
+        "max_scope": 3,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "a4e8fd550eeeb777c4bf737fecd33ad1dd40f0aca7aa61b0de41dbae723f1c2d"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.file::FileStreamWithCounter/close|1",
+      "body": 5427,
+      "code_sha256": "3550f1470d5663ed94c53a3fef684e00563cf55edb442a27fd3e95280f90d568",
+      "method_body_sha256": "4a2e935b9fb4463988eb6426c1de6424651663a84e90b3d09475f152dc8492dc",
+      "path": "pcode/boot_ffc6--pinball.asset.file_FileStreamWithCounter_close_1.pcode.txt",
+      "check": {
+        "max_stack": 2,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "0e336789e4de75c16b69e9a58b4d4924f75c810479c22a19701e4f64672498f6"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.file::FileStreamWithCounter/_openAsync|1",
+      "body": 5440,
+      "code_sha256": "631eea2bb3be3432265cd4b0fa70e6cbd654539ea348af06ce27270e7aa5b896",
+      "method_body_sha256": "35d02a03a565169b29cf5f0c2180dfb83fb909ba2020877c6845d2820f81c2fa",
+      "path": "pcode/boot_ffc6--pinball.asset.file_FileStreamWithCounter__openAsync_1.pcode.txt",
+      "check": {
+        "max_stack": 4,
+        "max_scope": 3,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "095ff07e200ca8da7b34db8212ea5cae2c6afff8ca0fe4106f95bbd53f4693e3"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.file::FileStreamWithCounter/_close|1",
+      "body": 5441,
+      "code_sha256": "3455a46cf36421ddc78929a119c30d69e03a4969786006adae861be3f135949f",
+      "method_body_sha256": "018fe43eb673e6fadee8b79a60fefecff6b4c426f05210e0648b104369d172e1",
+      "path": "pcode/boot_ffc6--pinball.asset.file_FileStreamWithCounter__close_1.pcode.txt",
+      "check": {
+        "max_stack": 3,
+        "max_scope": 3,
+        "unreachable_instructions": 1
+      },
+      "text_sha256": "a93d878aebce72bc8ff7debd782f2c1f5c2398529b9131a341ad7327de688c7a"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.file::ReadAtfTextureFileHandler/uploadAtf|1",
+      "body": 5478,
+      "code_sha256": "d935409512feebed6e8b4dbb77594c185bf8916e8aa522091cd4265ddb61ce48",
+      "method_body_sha256": "be337f89d7b7eeebd1fcceabcfb6afc653b4fadf2eb014aca125a40368bf229b",
+      "path": "pcode/boot_ffc6--pinball.asset.file_ReadAtfTextureFileHandler_uploadAtf_1.pcode.txt",
+      "check": {
+        "max_stack": 5,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "9ebc9d1494b85b8169d03525d469f59c10448639135e9eefa156a5d4877e0f1a"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.file::ReadAtfTextureFileHandler/<ctor>",
+      "body": 5480,
+      "code_sha256": "575b96131bbc35d45c844387137cd4a33590f883b5c68ff5227529578b4df849",
+      "method_body_sha256": "a5f51b1fb8151265e129e7b6bfeb282a2587e54e4ba41901825f76258e05da1d",
+      "path": "pcode/boot_ffc6--pinball.asset.file_ReadAtfTextureFileHandler_ctor_.pcode.txt",
+      "check": {
+        "max_stack": 2,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "f53c42ea852c2c85cba71711fd74d84bfc0806db7a36dd0cace25af4e572264f"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.file::ReadPngTextureFileHandler/_uploadPng|1",
+      "body": 5485,
+      "code_sha256": "77022a02a0e73053bf8330f6a9ed158e9f07d527a1eab5b0daa4e7ce364630de",
+      "method_body_sha256": "fc0348b0026a2b83a6922631fbd190e9688fc4dad73f2d1b053bb4fc252f57e0",
+      "path": "pcode/boot_ffc6--pinball.asset.file_ReadPngTextureFileHandler__uploadPng_1.pcode.txt",
+      "check": {
+        "max_stack": 2,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "b12385b50ba3bf03652f08be404a04dce922e94c69030fe422dc2b2a870b2c3b"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.file::ReadPngTextureFileHandler/<ctor>",
+      "body": 5486,
+      "code_sha256": "129a18c16502aab6423e7c4295e81cec4455086c2dc9ff3fd3ec2966d441ae6e",
+      "method_body_sha256": "585d3d87178b2863d6fac2178007173a94934ac93d57bbc380115541b06cbd35",
+      "path": "pcode/boot_ffc6--pinball.asset.file_ReadPngTextureFileHandler_ctor_.pcode.txt",
+      "check": {
+        "max_stack": 2,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "741e84d940b254168767cd34f021895350ed7984f52b33c8f63a08fd2de494c1"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.view::ViewAssetCache$/disposeDownloadedTexture|1",
+      "body": 5937,
+      "code_sha256": "f36ccad31b43e424950dea81d5a9b1b6d1ab7da7606bb30b88655dc69474aa09",
+      "method_body_sha256": "3cd2f472a48f040e09ab1784da2ca4147b32d5b971c11391655c81d9a36f3185",
+      "path": "pcode/boot_ffc6--pinball.asset.view_ViewAssetCache_disposeDownloadedTexture_1.pcode.txt",
+      "check": {
+        "max_stack": 2,
+        "max_scope": 1,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "6f69a9c229455c8c60cb106021c0907b57450497d009b4fd54b1a676b367a1f2"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.view::ViewAssetCache/startOtherLoad|1",
+      "body": 5946,
+      "code_sha256": "9299d31efe2d539a8b7c42779170b32e160ef5116fb3ca4b9e04ca597aaede7b",
+      "method_body_sha256": "db515a33b844cb66c6170c7810188434ee7ba64fab05581e276242abe923a120",
+      "path": "pcode/boot_ffc6--pinball.asset.view_ViewAssetCache_startOtherLoad_1.pcode.txt",
+      "check": {
+        "max_stack": 3,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "031e44ebd37d3e5790793c82fd6dc380a70d271649e24381c6b4926c8539bfe3"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.view::ViewAssetCache/readTextureHandler|1",
+      "body": 5962,
+      "code_sha256": "ad33ce37796ac4753c98fdf1eff0070bb6b563aed5c13f3e6bde5a05c85f15a1",
+      "method_body_sha256": "38fe91fab3f86ee3e3435747d7b9d530b117f2b516c6489840744fe6f9eb3620",
+      "path": "pcode/boot_ffc6--pinball.asset.view_ViewAssetCache_readTextureHandler_1.pcode.txt",
+      "check": {
+        "max_stack": 7,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "1f84c10aa7c7f37ca7e5cd8f65774b480cb878fdde9c0cfb6f9f4eb897b2abc9"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.view::ViewAssetCache/readTexture|1",
+      "body": 5963,
+      "code_sha256": "58da791ad1207eecc7db9e46569adf68aec61997498dde8a1ec18514250c2a6f",
+      "method_body_sha256": "438c30e25c0a9b47a1ae7910edbe399d4884891d85b5ab6d76a04723d0cc6852",
+      "path": "pcode/boot_ffc6--pinball.asset.view_ViewAssetCache_readTexture_1.pcode.txt",
+      "check": {
+        "max_stack": 6,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "ccbf864d35830ed75dd4e4b6cd5b756d058e51bdb959fd856ff53e3e2d49a553"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.view::ViewAssetCache/downloadTexture|1",
+      "body": 5987,
+      "code_sha256": "06a9fcd694508931ce56a41788b6a1797a95a6a658ffa906077821aee63a8d06",
+      "method_body_sha256": "33179c995a8e2df1815401ad69680890be9f2e669c90db0503d77ee9e3077498",
+      "path": "pcode/boot_ffc6--pinball.asset.view_ViewAssetCache_downloadTexture_1.pcode.txt",
+      "check": {
+        "max_stack": 5,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "a771a45b2fa6d771b48fb8f123a2bac1a2f74c99d63522339ba86c52cd737916"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.view::ViewAssetCache/dispose|1",
+      "body": 5989,
+      "code_sha256": "c0c5271510a343214e191d03c833071830138ea8ee6e2819a858c0e47feebacc",
+      "method_body_sha256": "a182eed21d4d5ffd68daab524d0b9d6f541672dbdfc18132a07b4056445e245b",
+      "path": "pcode/boot_ffc6--pinball.asset.view_ViewAssetCache_dispose_1.pcode.txt",
+      "check": {
+        "max_stack": 4,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "e79af3fd750f3383ff5f148e7e36d4c278f6d8ab88a683b24aee072d92392287"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.asset.view::ViewAssetCache/addGroup|1",
+      "body": 5993,
+      "code_sha256": "833072337d92ba7598d69669afc5abf6ddadfb0b7d17f9c3a5b60683f57933c8",
+      "method_body_sha256": "f6afc2ba8bd0583a6f69b1883b7c209baf7947ae9fe68d632e757a40ccbcb0bb",
+      "path": "pcode/boot_ffc6--pinball.asset.view_ViewAssetCache_addGroup_1.pcode.txt",
+      "check": {
+        "max_stack": 5,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "7b93abca8342389b77f0873c5963a8f40cf6116f90d2f4bd3e6e679f3fceea36"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.common.task::MultiTask/startNextTask|1",
+      "body": 26437,
+      "code_sha256": "311bc5721d1fc89999e8b2a42a4d3657074649d0d114f29fc93260461ab218a4",
+      "method_body_sha256": "7737076c7893443634cb4c53689eefaf3eb3053167d1ab6b0de18d4893b140e5",
+      "path": "pcode/boot_ffc6--pinball.common.task_MultiTask_startNextTask_1.pcode.txt",
+      "check": {
+        "max_stack": 3,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "8159b1e0ff2624cb559eff4c98956695e2d15a1be3ad31e0f86497793e6cc8d3"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.common.task::MultiTask/_startNextTask|1",
+      "body": 26441,
+      "code_sha256": "311bc5721d1fc89999e8b2a42a4d3657074649d0d114f29fc93260461ab218a4",
+      "method_body_sha256": "25d65bddd7f667892ba9ec4e36ebe8ae9e60fa7d0f7dbe4ee655b33620a529f6",
+      "path": "pcode/boot_ffc6--pinball.common.task_MultiTask__startNextTask_1.pcode.txt",
+      "check": {
+        "max_stack": 3,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "bd79df708e740fe8b49971a80cdc6994f109b2279dd60bedc64399df3f3ace7a"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/cn.optimize.resources:ResourceRuntime::counterClass|1",
+      "body": 0,
+      "code_sha256": "0826425ca34268cffc49d0a36aebad15a79828e8ff12b07293d5f70391f72a16",
+      "method_body_sha256": "31f74f59582de6a59bd047532f2c4c540e1b28ec3b765bb0505ff6f4484504a1",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_cn.optimize.resources_ResourceRuntime_counterClass_1.pcode.txt",
+      "text_sha256": "68d65a4e0ab1991893e632b282772cb7c8b56d94010da1e596d1fb68517bc7e4"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/cn.optimize.resources:ResourceRuntime::live|1",
+      "body": 1,
+      "code_sha256": "7974781b694e620b04861cd9af46a34fdc7db8c190615d8ac299d806e1191ed9",
+      "method_body_sha256": "e9db497e65342d29db8c0bc1c4abf657b777bf07a06445b3163d0e5e5d8f3b41",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_cn.optimize.resources_ResourceRuntime_live_1.pcode.txt",
+      "text_sha256": "d969a604dee71d75fa91436bbca26562fdc1665d7a2e0b8a2976fe55932b87ee"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/register|1",
+      "body": 2,
+      "code_sha256": "dc7a344cc8420e667527e5ee14f5b3ee9714820d4561653eceb387662d816c13",
+      "method_body_sha256": "35afbdd4f0932828803e16eddb566176a3cff1ea76fa01a02d74fcdcef3322de",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_register_1.pcode.txt",
+      "text_sha256": "a82cd9bf676567b027db1336a03987da31a184c2a46ee20554008c3c0725acf2"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/cn.optimize.resources:ResourceRuntime::ownerOf|1",
+      "body": 3,
+      "code_sha256": "64946eb4c1153790610611baf7fc582964711dcc8666a2cbc84c36c855d23dc5",
+      "method_body_sha256": "57450f40f329690afc39b3e4a3fa1e21b3830894d01e71ce8d2e28fb9d4c7952",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_cn.optimize.resources_ResourceRuntime_ownerOf_1.pcode.txt",
+      "text_sha256": "f05e2f1f4f4d33de1733d5c39f4885fd031f2e4f9e24d9be66b67ed2d58a4130"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/attachOpen|1",
+      "body": 4,
+      "code_sha256": "79b6611fe28750dc85f9bc6c2ac49d6cce5679672f8dd1699ae4e7f6b9996e92",
+      "method_body_sha256": "f48b317e68504f028e0e5656f285035299cd0ef6fa7e24f1a0da4319a6b79d28",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_attachOpen_1.pcode.txt",
+      "text_sha256": "08fc2e0c612b5ada2a28c098c16a0a03beb5dcc409795dac8b4d6c064eb4d51a"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/attachPng|1",
+      "body": 5,
+      "code_sha256": "9403eeaf478d1de1feb63fb5aad3857c2b98b25a56c66000638bb938b677c1d0",
+      "method_body_sha256": "66993d7ae54286bbf44ea1c76366c762298786d8e5a96ed6bc95b390e19067b8",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_attachPng_1.pcode.txt",
+      "text_sha256": "c3e6b188a1ea8cb1c2586683faf0a532c03bb8247f1d554158cb925b48b43dee"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/attachAtf|1/closure:0",
+      "body": 6,
+      "code_sha256": "320ee1216e1281c9badead9ae117825395a9d8d1f06eba1f1dfd171ebb0c9d54",
+      "method_body_sha256": "4d161887815f8dcb477d0f3e6caa841448f5fc21eae90ab5ed15f19da0a07a78",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_attachAtf_1_closure_0.pcode.txt",
+      "text_sha256": "7043a705b903c51df872e109a312b8419f67f9c6cd5e2df8b0a6f4d7af14b162"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/attachAtf|1",
+      "body": 7,
+      "code_sha256": "b96f633666183e641812f383280ecda04e4acabf91aaa56a58856f3340116f85",
+      "method_body_sha256": "14a5a71be8e64ef822d3f0e83b8331fa67580148eea6f58204d064c1a915c216",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_attachAtf_1.pcode.txt",
+      "text_sha256": "30f0610df67b118333d4ab1fcffcd527413cb871e670ed54d25c8760fee1abb6"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/attachRestore|1",
+      "body": 8,
+      "code_sha256": "7e1fc8aafd3bdd97539f9dcf3beff758830b6e45acfdd537c3377c537a385755",
+      "method_body_sha256": "a205346a124b69621855bb385cfb116575160b937c424fadaa68e48549a31df7",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_attachRestore_1.pcode.txt",
+      "text_sha256": "0867579f95bdaccc055702e7012ac8685e8208f8ca0b0e39df63560231679a03"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/allow|1",
+      "body": 9,
+      "code_sha256": "061e7a789e64849ced01ab4259de2b02a8f3de5a2ff60e09f2660f718e0c74d4",
+      "method_body_sha256": "a04dd9f6b579ba7e8ecefced5a40f817ac5900d45d66325b58191a05cdfe8388",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_allow_1.pcode.txt",
+      "text_sha256": "1f74ee8dc059054ee789bbb84a01e1b56a4d54646f76da337a4673c3f6970ada"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/bindTexture|1",
+      "body": 10,
+      "code_sha256": "b67ff1b17d4007b9b006c94ad15514b3adcee06ad24728b28e61ccb50913c4bb",
+      "method_body_sha256": "0ac2fdc5560ef1a07e0aa8a9784e9e7e0326fa139cbeb38d1feebb284b6250d7",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_bindTexture_1.pcode.txt",
+      "text_sha256": "3383d786d730dc61cf038cb129acaa4354d59852214d437eab20a5705e23f625"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/ownTask|1",
+      "body": 11,
+      "code_sha256": "296462439cc0a1f4080eea125b80575560e3db6d0e9673d259b97abf866e0b34",
+      "method_body_sha256": "7e3a74f43449484d7554d6f09c472f29d5fb00c7a7708bf8efb2e0deac7a6293",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_ownTask_1.pcode.txt",
+      "text_sha256": "83cb2235cc8e94d309ecbcb9b0eb062b699ccde4389a3af7e332f429b08ceea5"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/forgetTexture|1",
+      "body": 12,
+      "code_sha256": "538a3fb20cb697e0f4c91fae6d49529b4b5481aea46455a5c7062331e2e206fb",
+      "method_body_sha256": "801ab7ffb28f52c5193768df888d358bb65e503e8dd1800d28a3b0aeebd59257",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_forgetTexture_1.pcode.txt",
+      "text_sha256": "8b8b76a87bf143c7dfef5e15d70681b89f85ad50c2d0ad34539e0c918cb3d732"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/begin|1",
+      "body": 13,
+      "code_sha256": "e601299464a8cfeb10703034dd5db76e4af6409791ef6d25cd90a2db4056fe4d",
+      "method_body_sha256": "efba457cf8376a06dc08c31501937deba314fa01ee8ba3be33544a53c7c219d8",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_begin_1.pcode.txt",
+      "text_sha256": "ab61c5892d5f4d9d570b82e13c4b8e55fbdd12ce48001e3658c56c4fcd1301fb"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/grant|1/closure:0",
+      "body": 14,
+      "code_sha256": "900fdef0c14ef8a78f3bfd1db8168f65fb19c8d676f8987ea37cfb4563209196",
+      "method_body_sha256": "4912daad99a98a603c86cca1681af14f9f55da68974df249fbccc4817322250d",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_grant_1_closure_0.pcode.txt",
+      "text_sha256": "6075d55325ddd870808f9efb1fb758bc95085e63b30d851be1e6b94c253d291a"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/grant|1",
+      "body": 15,
+      "code_sha256": "4322c5cb5150e7107da5acb199364fd5f079d44b4f7906f6238d73cbaf2843be",
+      "method_body_sha256": "81b5b285afecd7a250f8668b4c959c213e1ca2b01dedb72d4f8ee1a9be3160b7",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_grant_1.pcode.txt",
+      "text_sha256": "1ebabbbb5eb66f2a53e5e23388d0406cce743915cefd45d897adec893d4bbc8a"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/opened|1",
+      "body": 16,
+      "code_sha256": "ad2bc8e4f0b3d9fb4c83e9f92b8558b699f3ca8e495c4b406b987624c1c4ed3b",
+      "method_body_sha256": "fcb8a7327921ee5ee70a9704b107efa2a8ca35dec1c1bb4bc40484395ce21aa0",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_opened_1.pcode.txt",
+      "text_sha256": "9ec2fddc20d525f235bfb9ff403ad4380f9b0e24a5e864e145b589d34048ac34"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/enqueueOpen|1",
+      "body": 17,
+      "code_sha256": "da48708d1de4c054552fca6ad3e173f1ec9204d3f9eb412b90f680a158b3a0b0",
+      "method_body_sha256": "1052c539df09c604367f480a92970b054dd1692b747499170b379cfebc3190d1",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_enqueueOpen_1.pcode.txt",
+      "text_sha256": "00c70db081be41c1c5ff4d17c77d891ecac6a4b790df662bd86d45572a599fd6"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/failed|1",
+      "body": 18,
+      "code_sha256": "213198a17672538fc8ca4b8d87de26288a195ecc670b710fc6bf0eb58cf7330c",
+      "method_body_sha256": "0a8a2116fcb7f7ee68c4c50d798cace0922b6a767bf1d7480965576c2227e144",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_failed_1.pcode.txt",
+      "text_sha256": "83cd96a8ee39705bb0cf6e85eb34f11e98189f70c9b32a197a4c94be4a532ee8"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/wantClose|1",
+      "body": 19,
+      "code_sha256": "ba7dc0bc8b448e09c8b239d8c07dcd650e4d24a16365087578c7f44d37371c08",
+      "method_body_sha256": "311834119a7a894e9cb3cad316f8ff850bb9e938e3d4bcbc4aca46050b4e704a",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_wantClose_1.pcode.txt",
+      "text_sha256": "56ae1dbaf78568f7763f9b442acf5280cbb8b1ef167e72cbd26ccc7dbbf750d8"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/held|1",
+      "body": 20,
+      "code_sha256": "0bdb930e7d95742b20eec5eef38057b24543183e7d27714043d88e5d5190b787",
+      "method_body_sha256": "4aaf41ad1d1342c6ef45f417501faa399af8b68c8afdf62615d121dc31708ba2",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_held_1.pcode.txt",
+      "text_sha256": "ebf473c2101e4ed80b5a27650e5c0ad674ffbbca09eb1c11a32947a075c22715"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/release|1",
+      "body": 21,
+      "code_sha256": "55b656f43df7603380b63c7e6c18ff895983b68dda5e7dabe321d1db09d0d7cf",
+      "method_body_sha256": "fba74ccc2c97cc416a815c4f57978d5e4afd4e33f9985b3342dcea9447f4eb6e",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_release_1.pcode.txt",
+      "text_sha256": "b189d8c80cf3bccbfb3cb380b1b8db5f3b08986be38d0a35015477bdd41d1eda"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/closeError|1",
+      "body": 22,
+      "code_sha256": "c1cf5892d4aa7333fd440f80f282fbec38c8a09ba521687d2bf15238b2504282",
+      "method_body_sha256": "a9f3e9e5109ba37a9ebb71667965e0d53f4db90df2e89fa01ef2438b4ae7582e",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_closeError_1.pcode.txt",
+      "text_sha256": "a3578910b653089292ff1117077ebf7878a831712cccf042930b6b82175aa0ca"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/cancelOwner|1",
+      "body": 23,
+      "code_sha256": "fdeac1ea9acb137de41e3fe0ce34effb81494472bb531aa1333ee6976c190bd8",
+      "method_body_sha256": "c2d2823fff68b7e068238771063ecec4f104e3d621b930f7d7f1697e73fbd874",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_cancelOwner_1.pcode.txt",
+      "text_sha256": "5b5af8f95863f8a3fdbbe358d893077e8c28f22f09b572565a4b9459047c452c"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/startTasks|1",
+      "body": 24,
+      "code_sha256": "7ce61340cb31bdc59e60a2f85275adea87ff6399b8eacca0839928d0b0b3302e",
+      "method_body_sha256": "033ea8a80ab61adb8726ebd42366a54e6dcb51b2bc17cc6669edb6adac5dfd0e",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_startTasks_1.pcode.txt",
+      "text_sha256": "b201d525f7a642568c624d7721e590f6a3f945a7edceed017a019b027a2e7029"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/cn.optimize.resources:ResourceRuntime::launch|1/closure:0",
+      "body": 25,
+      "code_sha256": "4e429140304271490576b134af65e5361f0aff064e65dd06e12a680805afae34",
+      "method_body_sha256": "0dee38b5e6a62e1e901d45f2f6528e112f9c8bbf11fb12c3396dbacce7949c4b",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_cn.optimize.resources_ResourceRuntime_launch_1_closure_0.pcode.txt",
+      "text_sha256": "6b2cdb749e1b415840596eeb35f753cfa09700aceaeea33b30421034a6855986"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/cn.optimize.resources:ResourceRuntime::launch|1",
+      "body": 26,
+      "code_sha256": "da7220c06d5ee1153cae801c218fda29d75edf48dfc5b062de765c23b1fba6f0",
+      "method_body_sha256": "37e38c0babb3b8eced616088844172579f147d336537af294e84f9f6dd2783fd",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_cn.optimize.resources_ResourceRuntime_launch_1.pcode.txt",
+      "text_sha256": "cfcf98cac3d7a8f310720c94ca2d9cc7e8aa5095c38fb73d2fc7f7c2cfd8c0d3"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/cn.optimize.resources:ResourceRuntime::enqueue|1",
+      "body": 27,
+      "code_sha256": "ba886c60f05b81e1988064bc47d87d72446ca3a1cd2f5e6bfca57c6225e5e8fb",
+      "method_body_sha256": "3886fed1c6ddcabd5cd235232f275e9af9dd3eab566eb3bdf94fda86731379ff",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_cn.optimize.resources_ResourceRuntime_enqueue_1.pcode.txt",
+      "text_sha256": "6d6a44a753b8f0ed9aa6685a70c3490851778ffce27e0dcadf5c2df04eff68b0"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/completeRead|1/closure:0/closure:0",
+      "body": 28,
+      "code_sha256": "c6667bea8cfddecef0951fc7d88c5466bfbc2e63a2044365b566b50615528cf1",
+      "method_body_sha256": "9256658ee1fa50555399fa5c927c0203276f790b9b6a6e8f553d2508d6091926",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_completeRead_1_closure_0_closure_0.pcode.txt",
+      "text_sha256": "7db122415e5de0fd6db4b14ab9fc13d2d12b1d722cbbcef44a56f2914e7c5d84"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/completeRead|1/closure:0/closure:1",
+      "body": 29,
+      "code_sha256": "b1c2588fa84beffb884bd779514b8b768443fcedc69a1eaddcf6f800c294b2cd",
+      "method_body_sha256": "49f62ce7df042056909ab51f501284cdf5bc78c79c23efb4fec75fd3c63c5cd2",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_completeRead_1_closure_0_closure_1.pcode.txt",
+      "text_sha256": "8f73648b5bebde83bc6601b47fb35837ced8896a7de2e4761f4d0c897a360b5c"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/completeRead|1/closure:0",
+      "body": 30,
+      "code_sha256": "c08afb411f1b2e7072b408d14fd7d921dc780693cf1879e652aad5fadd6f08f3",
+      "method_body_sha256": "d3ca6db05bec6cf0f48f66d06122362aa6bd6c0ef266dfde3be62429d9500bce",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_completeRead_1_closure_0.pcode.txt",
+      "text_sha256": "5b447509f13d1862d6cf9010f8aa75c16257f3dd71f87cdcb062db7fd764888e"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/completeRead|1/closure:1",
+      "body": 31,
+      "code_sha256": "54be09832f82ae00466d24f3132f74563a976fc889a9ad58cf53564716455de5",
+      "method_body_sha256": "b49ccd089c7a28e6eb647166f190e3998b7b6e8ad025e3f3ea2a66e26055566e",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_completeRead_1_closure_1.pcode.txt",
+      "text_sha256": "9e08fbf5c9b69b98e6fd91d823bedc0a8ee406a83a00dc8a36b9fc341f9bc312"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/completeRead|1",
+      "body": 32,
+      "code_sha256": "0c553f67b5c34162a27e6b26ad550bfeed16eded26c932fece30ae0f4a70204f",
+      "method_body_sha256": "ce871611f2095e662fdc94a2b23fc77144fbf34d2c44d80c44be4367f88b80b7",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_completeRead_1.pcode.txt",
+      "text_sha256": "cca6b7e24a1f626552a5ffb0800f32f4d1ffc3883bc717a32359d5f363335611"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/uploadPng|1/closure:0",
+      "body": 33,
+      "code_sha256": "b97800fd83607b99011af95131ff4af82654d88d97160933257604e353aa536b",
+      "method_body_sha256": "f33ef3a372e47b40b144b8704e5427db3a970a179c89ae8dd29652ba0a711b48",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_uploadPng_1_closure_0.pcode.txt",
+      "text_sha256": "fef2cee5da12c5b0d20862e9b5253fce75da61232d1685a2fa9044896035283a"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/uploadPng|1/closure:1",
+      "body": 34,
+      "code_sha256": "6eeda1eabfa8cc2c88e6e299ccd42c7c46b938c089feffd3af8cf9b0b52e78a5",
+      "method_body_sha256": "46e3d99e79662d73fb01f6a3a6092fc3df120ea51ff8f62af1ba21d31878f7d5",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_uploadPng_1_closure_1.pcode.txt",
+      "text_sha256": "a8c3ddfda7c156f56a1b49943490ec8ca33e72094bfe9afc0d6b126824d2a6f5"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/uploadPng|1",
+      "body": 35,
+      "code_sha256": "790a449592b2a6d254d41b85a4ffe7741abefa0a77d4ff8f109ee0bfa9714fba",
+      "method_body_sha256": "39a5308835b634b70c453fca8eb4067fe1de554b19ce3cd4f4c926b8e83bbf56",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_uploadPng_1.pcode.txt",
+      "text_sha256": "0b78442b45f1ba59d7a91436211d48b9eaf0ab7a293fbd27ce4ff81585aa20c8"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/restore|1/closure:0/closure:0/closure:0",
+      "body": 36,
+      "code_sha256": "f128d7a9450fa11310d4c6e2fcd02b6886ab2846bfc2250890bf417b1ab3d9cc",
+      "method_body_sha256": "e230039b4615453fb69d11ed4fbcf322a095c07b82501916d93c4dc5518e30ab",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_restore_1_closure_0_closure_0_closure_0.pcode.txt",
+      "text_sha256": "e0abbcb82d05ee78711777dee73d9e816f357d90c62ebc1d7c84cf43c07df7f5"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/restore|1/closure:0/closure:0",
+      "body": 37,
+      "code_sha256": "dc227c42885e5643c8ded05103eebb2cd495d7b645e5627ca80b05a1a98646bd",
+      "method_body_sha256": "48f895b2720486f5e408f113fa167de192c5738443d1ed8974546d4d31424543",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_restore_1_closure_0_closure_0.pcode.txt",
+      "text_sha256": "c4d75b8ae15e039f3048364921aee31ef80dfb02b9e002a680e1800008a943c4"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/restore|1/closure:0",
+      "body": 38,
+      "code_sha256": "2b7541602784b96461a023e8a5317cfaadab0e4be53d8fe749cbf3cf25039fb8",
+      "method_body_sha256": "69d508e02d80334678cced9812089ca6a7594253a906a0e53939852a289e3ceb",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_restore_1_closure_0.pcode.txt",
+      "text_sha256": "ac0fba0e2e9b6719b92d6c4d42b2a600fc9342b2e3bf402cccff856d9b7e4415"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/restore|1",
+      "body": 39,
+      "code_sha256": "04efa8844c0b6594432f51715fd0b50781985b78b8ed37c2d5b1e1ca163b5b1f",
+      "method_body_sha256": "647c0360379ff33df753650a8b3873bf00122be2214bd471b09b3e102f3affb6",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_restore_1.pcode.txt",
+      "text_sha256": "2c12235235d24b702987b68645d8a89f4f1ccf890eaeb721353befc4a4e997d4"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/uploadRestore|1/closure:0",
+      "body": 40,
+      "code_sha256": "a9a518d92f4cf1633f83c61390b32ad3195b473661f12bf66e639bcc1405cf03",
+      "method_body_sha256": "7fa72f8b20e154c3ebaa55b209aa6316b9e2b2d347682bb3837d5ae261e97415",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_uploadRestore_1_closure_0.pcode.txt",
+      "text_sha256": "026e06c6b96b7307bd6844891e6cc5fb1d2635f20d44cd4629174cd49a73474c"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/uploadRestore|1/closure:1",
+      "body": 41,
+      "code_sha256": "6eeda1eabfa8cc2c88e6e299ccd42c7c46b938c089feffd3af8cf9b0b52e78a5",
+      "method_body_sha256": "f82dcd480e62efeb9c1cc5b108448c63c4ca4b65047dfef8f743464972f70777",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_uploadRestore_1_closure_1.pcode.txt",
+      "text_sha256": "5a318cf5e40f6f0a32c3f5c8960c52fe27d0c0e99222294d0d4d6a1847290971"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/uploadRestore|1",
+      "body": 42,
+      "code_sha256": "46d74f1be90be466fbda266429002aada5a8e60a026ce89c0b2a9a79e1a7cc70",
+      "method_body_sha256": "3b1f78239f56e528cb07cd5cbcf5fe37c81916f50f352d2ff169a2a2f1b72010",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_uploadRestore_1.pcode.txt",
+      "text_sha256": "b7001690bbc8495d556ea2547c4ad70874c7465ebef4656e9e8070b874aef7ae"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/cn.optimize.resources:ResourceRuntime::active|1",
+      "body": 43,
+      "code_sha256": "3ac41ac013d0c6180507246f4b25278e7e74c9da6ce9c4d001e5066d30161bc7",
+      "method_body_sha256": "e0ae9050c8118b2aa60ed2dc2cfb9ac706f8c3db54de2b4a7bb93aaff5d8129e",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_cn.optimize.resources_ResourceRuntime_active_1.pcode.txt",
+      "text_sha256": "18a1f8c2a09becffab0088449f73614c2eccdeb1160ce108fdf1e89c70ac251f"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/cn.optimize.resources:ResourceRuntime::schedule|1",
+      "body": 44,
+      "code_sha256": "cae7a27e337c5a3a08624072252dbe4b90ded055cc2ee07fc5ec32487c7b730b",
+      "method_body_sha256": "4f2798a512ea605f972f43def56aaf1e5406ef395d101e7bb8fa5f5ee07eacd4",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_cn.optimize.resources_ResourceRuntime_schedule_1.pcode.txt",
+      "text_sha256": "99f5a079d890a1e6bbfc0ca4bfc826cc90805406157fc7fe2adaa5ada7938942"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/pump|1",
+      "body": 45,
+      "code_sha256": "83a8ae7ca6bd852c90d0f13fddef3a3e7967553f0ef39a8334f0a7053270a5e7",
+      "method_body_sha256": "6820f731909c0ceac63ebe7abcf94a34a777699130bcea0d066ebd7ae6fca73e",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_pump_1.pcode.txt",
+      "text_sha256": "226d817873c50b4cc9a86124180fc7e93a6f187100c29e2c1434180ddbd1904d"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/snapshot|1",
+      "body": 46,
+      "code_sha256": "7316ed3cd4e54eac810a4384e3e90b543c930fd787ec4f0441691017eb2766c9",
+      "method_body_sha256": "55acf230890536267b8a0980fb51c29636bc13ddca1708b8b19d8bc0db5fe13b",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_snapshot_1.pcode.txt",
+      "text_sha256": "a3f4ba2509805509d13654bbe1d5517484ca1b2b1006ea303ad28706d2849408"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime$/<cinit>",
+      "body": 47,
+      "code_sha256": "5fcf99e6a5b382ae94161d78c823de20811fc1dccb4c02fe504bea6f0d537f4e",
+      "method_body_sha256": "a0ea3c102ddb667e85ec8ee8da27673a8737f0385ddbef3354e20b2dd81cbc5c",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_cinit_.pcode.txt",
+      "text_sha256": "1439caf015963cccc710892fb15c3b8d92bdcae712bf03b3089f0de980ca4854"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "cn.optimize.resources::ResourceRuntime/<ctor>",
+      "body": 48,
+      "code_sha256": "8ff32749a852a1d83829c6a3fac8ec00822f06b5c7177f9ebb43a09287b2101a",
+      "method_body_sha256": "27490e3001c761ef3453c33151f79f69b242f6fa6b6294a7bdfad20b2ac8b59f",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--cn.optimize.resources_ResourceRuntime_ctor_.pcode.txt",
+      "text_sha256": "827b3690e291e4327d26f597f1768e84e44e723bf19bbdeb80fc683d5fa697b0"
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "method": "script:cn.optimize.resources::ResourceRuntime/<init>",
+      "body": 49,
+      "code_sha256": "ac0bb359cd03cf8b231378f5eba6bbee8e00a164fc91e04ac833784a0c1d9658",
+      "method_body_sha256": "4f8268836dedbaf66164c6a3eb434e15c8df84c4dc82c383102a880b6fad9fa1",
+      "path": "pcode/cn.optimize.resources.ResourceRuntime--script_cn.optimize.resources_ResourceRuntime_init_.pcode.txt",
+      "text_sha256": "cb95cc3e0b3310ff6dda3ccaa39c4bbf6d201370e6aaffc313ecdf7412ba39d2"
+    }
+  ],
+  "verification_report": "../../build-report.json",
+  "pcode_export_status": "已复制实际 SWF 最终导出",
+  "r4_stage_swf_sha256": "53890c19f5ced5c70ed2e327e62a8f2f800d8ce5f2fdff5f493ad5c758518642"
+}

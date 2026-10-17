@@ -1,0 +1,11 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: boot_ffc6; label: pinball.asset.file._FileReader::OpenHandler/execute|1; body: 5381; method: 5575
+# code SHA-256: 5851aa79469b40c293146cb4ce2042ba4055bf0495817888756b7a8b7784897b; header: [2, 2, 1, 2]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex [(7, (22, 'cn.optimize.resources'), 'ResourceRuntime')]
+#0003 ofs0006: getlocal_0 []
+#0004 ofs0007: callpropvoid [(7, (22, ''), 'completeRead'), 1]
+#0005 ofs000c: returnvoid []
+# exceptions: []

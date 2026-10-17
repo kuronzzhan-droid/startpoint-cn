@@ -5,6 +5,10 @@ import type {
     SingleFinishTransactionArgs,
     SingleFinishTransactionResult,
 } from "../quest/finish/single-finish-transaction"
+import type {
+    MultiFinishTransactionArgs,
+    MultiFinishTransactionResult,
+} from "../quest/finish/multi-finish-transaction"
 
 /**
  * Stable command names and their argument shapes.
@@ -77,3 +81,8 @@ export const SINGLE_SETTLE_FINISH = "single.settle_finish"
 
 export type SingleSettleFinishArgs = SingleFinishTransactionArgs
 export type SingleSettleFinishResult = SingleFinishTransactionResult
+
+/** Ordinary multiplayer finish pays all rewards and records its response atomically. */
+export const MULTI_SETTLE_FINISH = "multi.settle_finish"
+export type MultiSettleFinishArgs = MultiFinishTransactionArgs
+export type MultiSettleFinishResult = MultiFinishTransactionResult

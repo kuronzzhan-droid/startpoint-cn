@@ -3,7 +3,8 @@
 > tracked 持久知识库。环境/敏感(搭建、连接、APK)见本地环境文档(需自行准备,不随本仓库分发)。
 
 ## 架构与协议
-- [架构](./architecture.md)
+
+- [运行架构与排错入口](./architecture.md)：先定位模块、状态归属、资源来源和验证层级。
 - 协议: [多人联机](./protocol/multi-battle.md) · [抽卡 C3032](./protocol/gacha-c3032.md) · [种子验证](./protocol/seed-verification.md)
 
 ## 游戏系统
@@ -20,6 +21,8 @@
 - [机制总览](./cdn/overview.md) · [客户端流程](./cdn/client-flow.md) · [排查手册](./cdn/debugging.md)
 
 ## 参考与状态
+
+- [CN 协议与资源格式历史样例](./reference/cn-protocol-legacy.md)：兼容与复现参考，固定版本和包数不作为当前登记。
 - [端点实现状态](./reference/routes-status.md) · [路由抓包索引](./routes/README.md)
 - [已知问题](./status/known-issues.md) · [变更日志](./status/changelog.md) · [测试进度](./status/test-progress.md)
 
@@ -39,6 +42,8 @@
 
 ## 贡献流程
 
+开发、验证、生成物和交付步骤见[开发与交付流程](./development/branch-workflow.md)；按问题定位先读[运行架构总览](./architecture.md)。
+
 ### 实现一个端点
 1. 用 mitmproxy 抓取游戏客户端与官方服务器之间的流量(连接方式需自行搭建)。
 2. 用 [msgpack-converter](https://ref45638.github.io/msgpack-converter/) 解码 MsgPack 请求/响应体。CN 主 API(`*.wdfp.*`)走 base64(msgpack);其余端点走纯 JSON。
@@ -51,9 +56,9 @@
 ### Project Structure(要点)
 - `src/routes/cn/` — CN 专属端点(asset / load / leitingAuth / versionCheck 等)。
 - `src/routes/api/` — 双服共享 API 路由。
-- `src/data/` — SQLite 数据层,`db.ts` 为共享实例,`domains/` 下 16 个领域模块,`wdfpData.ts` 为兼容 barrel。
+- `src/data/` — SQLite 数据层、共享连接、领域模块、初始化和玩家存档快照。
 - `src/cn-server.ts` — CN 入口;`src/server.ts` — 全局入口。
-- 完整分层、模块系统(CommonJS)、协议编码(MsgPack→Base64)、时间系统等见 [架构](./architecture.md)。
+- 当前模块分层、启动链路、状态/线程归属、协议编码与资源来源见[运行架构与排错入口](./architecture.md)。
 
 ### Scripts(要点)
 - `scripts/start-cn.sh` — 一键构建并以生产方式重启 CN 服务。

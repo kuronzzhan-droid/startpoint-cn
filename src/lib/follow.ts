@@ -1,3 +1,4 @@
+import { getPlayerClientMaintenanceDateSync } from "./player-time-compat"
 import { getPlayerCharacterSync, getPlayerCharactersSync } from "../data/domains/character";
 import { getFollowRelationSync, getViewerIdByPlayerIdSync } from "../data/domains/follow";
 import { getAccountFromPlayerIdSync, getPlayerSync } from "../data/domains/player";
@@ -37,7 +38,7 @@ export function buildFollowUserInfoSync(
         last_login_region: null,
         // Account login timestamps use real wall-clock time. Shift the epoch by
         // the same offset as servertime so their relative age remains correct.
-        last_login_time: account ? realToVirtual(account.lastLoginTime) : getServerTime(player.lastLoginTime),
+        last_login_time: account ? realToVirtual(account.lastLoginTime) : getServerTime(getPlayerClientMaintenanceDateSync(player.id, player.lastLoginTime)),
         leader_character_evolution_img_level: leader?.evolutionLevel ?? 0,
         leader_character_id: profileLeaderId,
         name: player.name || "",

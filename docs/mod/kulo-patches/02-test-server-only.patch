@@ -1,0 +1,202 @@
+diff --git a/src/lib/client-admission.ts b/src/lib/client-admission.ts
+index a74dcd88..354d2098 100644
+--- a/src/lib/client-admission.ts
++++ b/src/lib/client-admission.ts
+@@ -114,6 +114,8 @@ export class ClientAdmission {
+     challenge(body: any, ip: string): object {
+         if (this.limited(ip)) return this.fail("RATE_LIMITED")
+         const build = scalar(body?.build), b = this.build(build)
++        // test-server diagnostics: build id and reason only, never keys or proofs
++        console.log(`[ADMISSION-DIAG] challenge build=${build.slice(0, 80)} known=${!!b} protocol=${body?.protocol} platform=${body?.platform} ip=${ip}`)
+         if (!b || body?.protocol !== 1 || (body?.platform !== undefined && body.platform !== b.platform)) return this.fail()
+         if (this.challenges.size >= MAX_ENTRIES) return this.fail("RATE_LIMITED")
+         const id = randomBytes(24).toString("hex"), nonce = randomBytes(32).toString("hex")
+@@ -125,9 +127,13 @@ export class ClientAdmission {
+         const id = scalar(body?.challenge), c = this.challenges.get(id)
+         this.challenges.delete(id) // One attempt, including a wrong proof.
+         const b = c && this.build(c.build), proof = scalar(body?.proof)
+-        if (!c || !b || !this.allowed(c) || c.ip !== ip || c.expires <= this.now() || !HEX.test(proof)) return this.fail()
++        if (!c || !b || !this.allowed(c) || c.ip !== ip || c.expires <= this.now() || !HEX.test(proof)) {
++            console.log(`[ADMISSION-DIAG] prove reject challenge=${!!c} build=${!!b} sameIp=${c ? c.ip === ip : "-"} ip=${ip} expired=${c ? c.expires <= this.now() : "-"} proofHex=${HEX.test(proof)}`)
++            return this.fail()
++        }
+         const expected = createHmac("sha256", Buffer.from(b.key, "hex")).update(proofMessage(b.id, id, c.nonce)).digest()
+-        if (!timingSafeEqual(expected, Buffer.from(proof, "hex"))) return this.fail()
++        if (!timingSafeEqual(expected, Buffer.from(proof, "hex"))) { console.log(`[ADMISSION-DIAG] prove reject hmac-mismatch ip=${ip}`); return this.fail() }
++        console.log(`[ADMISSION-DIAG] prove ok build=${b.id} ip=${ip}`)
+         if (this.grants.size >= MAX_ENTRIES) return this.fail("RATE_LIMITED")
+         const token = randomBytes(32).toString("hex"), expires = this.now() + TTL
+         const grant: Grant = { build: b.id, platform: b.platform, keyHash: b.keyHash, expires, session: "" }
+@@ -204,6 +210,7 @@ export function installClientAdmission(app: FastifyInstance, gate = clientAdmiss
+             ? gate.checkActivity(request.headers["x-sp-admission"], request.headers["x-sp-session"])
+             : gate.check(request.headers["x-sp-admission"], game ? request.headers["x-sp-session"] : undefined)
+         if (result.ok) return
++        console.log(`[ADMISSION-DIAG] gate reject path=${path.slice(0, 80)} code=${(result as any).code} hasTicket=${!!request.headers["x-sp-admission"]} ip=${request.ip}`)
+         reply.header("cache-control", "no-store")
+         if (!game) return reply.send(result)
+         reply.type("application/x-msgpack")
+diff --git a/src/lib/player-login.ts b/src/lib/player-login.ts
+index 586cd899..c0f4b1ce 100644
+--- a/src/lib/player-login.ts
++++ b/src/lib/player-login.ts
+@@ -209,7 +209,53 @@ function result(session: PlayerLoginSession) {
+     disconnectViewer(session.viewer_id)
+     return loginResponse(session)
+ }
++// ── Test-server tester accounts (deployment-local patch, not upstream) ──
++// TEST_SERVER_SHARED_PASSWORD: one password for every tester; an unknown account name logging in with it
++// gets a fresh account whose save is a copy of TEST_SERVER_TEMPLATE_SAVE (a V2 player snapshot JSON).
++const testerPassword = process.env.TEST_SERVER_SHARED_PASSWORD || ""
++const testerTemplatePath = process.env.TEST_SERVER_TEMPLATE_SAVE || ""
++let testerTemplate: unknown = null
++function loadTesterTemplate(): unknown {
++    if (testerTemplate === null) {
++        const { readFileSync } = require("node:fs") as typeof import("node:fs")
++        testerTemplate = JSON.parse(readFileSync(testerTemplatePath, "utf8"))
++    }
++    return testerTemplate
++}
++function createTesterAccount(username: string, password: string, remember: boolean) {
++    const { restorePlayerSaveSnapshotV2Sync } = require("../data/snapshots/player-snapshot") as typeof import("../data/snapshots/player-snapshot")
++    const template = loadTesterTemplate()
++    let newPlayerId = 0
++    const session = runPersistenceTransactionSync({
++        domain: "account", operation: "register_tester_login",
++    }, () => {
++        const account = insertAccountSync({ appId: "wf_cn", idpAlias: "", idpCode: "leiting", idpId: "", status: "normal" })
++        setCredentials(account.id, username, password)
++        const player = insertDefaultPlayerSync(account.id)
++        newPlayerId = player.id
++        restorePlayerSaveSnapshotV2Sync(template, player.id, { includeArchiveHistory: false })
++        getDb().prepare("UPDATE players SET name=? WHERE id=?").run(username.slice(0, 12), player.id)
++        let viewer = generateViewerId()
++        while (getDb().prepare("SELECT 1 FROM sessions WHERE token=?").get(String(viewer))) viewer = generateViewerId()
++        getDb().prepare("INSERT INTO sessions(token,account_id,expires,type) VALUES(?,?,?,2)").run(String(viewer), account.id, new Date(Date.now() + 365 * DAY).toISOString())
++        return issue(account.id, remember)
++    })
++    saveAccountDefaultPlayer(session.account_id, newPlayerId)
++    console.log(`[TESTER] new tester account created player=${newPlayerId}`)
++    return result(session)
++}
++function testerLogin(username: unknown, password: unknown, remember: boolean) {
++    const value = input(username, password)
++    if (!equal(value.password, testerPassword)) fail("测试服密码不正确，请向作者索取。")
++    const row = getDb().prepare(`SELECT a.id FROM accounts a JOIN player_login_credentials c ON c.account_id=a.id
++        WHERE lower(a.username)=? AND a.username IS NOT NULL AND a.username<>''`).get(value.username) as { id: number } | undefined
++    if (!row) return createTesterAccount(value.username, value.password, remember)
++    const session = runPersistenceTransactionSync({ domain: "account", operation: "login_tester" }, () => issue(row.id, remember))
++    return result(session)
++}
++
+ export function registerPlayerLogin(username: unknown, password: unknown, remember: boolean) {
++    if (testerPassword && testerTemplatePath) return testerLogin(username, password, remember)
+     input(username, password)
+     let newPlayerId = 0
+     const session = runPersistenceTransactionSync({
+@@ -236,6 +282,7 @@ function passwordLoginSync(value: ReturnType<typeof input>, remember: boolean) {
+     return loginResponse(issue(row.id, remember))
+ }
+ export function loginPlayer(username: unknown, password: unknown, remember: boolean) {
++    if (testerPassword && testerTemplatePath) return testerLogin(username, password, remember)
+     const value = input(username, password)
+     const response = runPersistenceTransactionSync({
+         domain: "account", operation: "login_player",
+diff --git a/src/lib/quest/finish/single-finish-transaction.ts b/src/lib/quest/finish/single-finish-transaction.ts
+index a00f36f5..5ce342f4 100644
+--- a/src/lib/quest/finish/single-finish-transaction.ts
++++ b/src/lib/quest/finish/single-finish-transaction.ts
+@@ -195,6 +195,20 @@ export function settleSingleQuestFinishInTransaction(
+     const useBoostPoint = (activeQuestData.useBoostPoint && newBoostPoint >= 0)
+         || (activeQuestData.useBossBoostPoint && newBossBoostPoint >= 0)
+     const questPreviouslyCompleted = questProgress !== null
++    // 单人结算分数缩放（2026-10-08）：客户端单人 boss 战时间倍率额外 ×2（SCORE_SCALING_SINGLE_PLAY_BOSS_BATTLE），
++    // 联机没有这一项；这里按 SINGLE_SCORE_SCALE（默认 0.5）缩放「记录用」分数，与联机口径对齐。
++    // 只影响服务端记录（最高分、分数奖励、排行），不影响客户端结算画面显示；分数挑战活动不缩放（档位不变）。
++    // 仅普通 Boss（含 BothBoss）和世界剧情 Boss 的 availablePlayKind 恒为 1，客户端单人战必定有此 ×2。
++    // 降临活动需逐关判断 available_play_kind，但服务端任务 JSON/类型未保留该字段，7/8 分类也不能区分；
++    // 因此暂不缩放降临活动，避免误减纯单人关卡分数；其他单人分类没有此 ×2，也不缩放。
++    const isSinglePlayBossBattle = questCategory === QuestCategory.BOSS_BATTLE
++        || questCategory === QuestCategory.WORLD_STORY_EVENT_BOSS_BATTLE
++    if (questCategory !== QuestCategory.SCORE_ATTACK_EVENT && isSinglePlayBossBattle) {
++        const singleScoreScale = Number(process.env.SINGLE_SCORE_SCALE ?? "0.5")
++        if (Number.isFinite(singleScoreScale) && singleScoreScale > 0 && singleScoreScale !== 1) {
++            body.score = Math.floor((Number(body.score) || 0) * singleScoreScale)
++        }
++    }
+     const isScoreAttackEvent = questCategory === QuestCategory.SCORE_ATTACK_EVENT
+     const bodyTiming = createSingleSettlementBodyTimingCollector(questCategory, !!fiveBossSoloQuest)
+     let bodySucceeded = false
+diff --git a/src/multi/tcp/lobby.ts b/src/multi/tcp/lobby.ts
+index 81f415fe..a25a4d73 100644
+--- a/src/multi/tcp/lobby.ts
++++ b/src/multi/tcp/lobby.ts
+@@ -589,6 +589,9 @@ async function handleEnterComs(
+     const npcMates: any[] = []
+     const recruitedMates = selectStableNpcSlots(recruitResult.recruitedMates, needNPCs)
+     room.npc_party_by_com_id ??= {}
++    // Test server: COM seats copy the host's current party instead of drawing
++    // from the player party pool (author 1009). Off unless NPC_COPY_HOST_PARTY is set.
++    const copyHostParty = /^(1|true|yes|on)$/i.test(process.env.NPC_COPY_HOST_PARTY ?? "")
+     for (const recruited of recruitedMates) {
+         const partyKey = String(recruited.com_id)
+         const cached = room.npc_party_by_com_id[partyKey]
+@@ -596,7 +599,7 @@ async function handleEnterComs(
+             delete room.npc_party_by_com_id[partyKey]
+         }
+     }
+-    const missingPartyCount = recruitedMates.filter(recruited =>
++    const missingPartyCount = copyHostParty ? 0 : recruitedMates.filter(recruited =>
+         !room.npc_party_by_com_id[String(recruited.com_id)]).length
+     // Select only parties for COM seats this room has never used. A rematch
+     // whose complete COM roster is cached performs no pool scan or random draw.
+@@ -623,12 +626,15 @@ async function handleEnterComs(
+         // custom-asset combination and make the AIR client's 4096 atlas packer
+         // fail with U_1d93f4 during auto-repeat.
+         const partyKey = String(comId)
+-        let party = room.npc_party_by_com_id[partyKey]
+-        while (!party && nextPartyIndex < npcParties.length) {
++        let party = copyHostParty
++            ? (isNpcPartyAllowedInRoom(room.category, room.quest_id, hostMate.party)
++                ? structuredClone(hostMate.party) : undefined)
++            : room.npc_party_by_com_id[partyKey]
++        while (!copyHostParty && !party && nextPartyIndex < npcParties.length) {
+             const candidate = npcParties[nextPartyIndex++]
+             if (isNpcPartyAllowedInRoom(room.category, room.quest_id, candidate)) party = candidate
+         }
+-        if (!party && isNpcPartyAllowedInRoom(room.category, room.quest_id, hostMate.party)) {
++        if (!copyHostParty && !party && isNpcPartyAllowedInRoom(room.category, room.quest_id, hostMate.party)) {
+             party = hostMate.party
+         }
+         if (!party || !isNpcPartyAllowedInRoom(room.category, room.quest_id, party)) {
+diff --git a/src/routes/cn/asset.ts b/src/routes/cn/asset.ts
+index 7d123442..5a59b9da 100644
+--- a/src/routes/cn/asset.ts
++++ b/src/routes/cn/asset.ts
+@@ -38,6 +38,14 @@ export function joinCdnPath(baseUrl: string, ...segments: string[]): string {
+ const CDN_BASE = process.env.CDN_BASE_URL
+     ? normalizeCdnBaseUrl(process.env.CDN_BASE_URL)
+     : undefined;
++// Test-server split distribution: CDN_BASE_URL (Cloudflare mirror) serves everything up to
++// LOCAL_PATCH_AFTER; newer asset patches are served from LOCAL_PATCH_BASE_URL (this server).
++const LOCAL_PATCH_BASE = process.env.LOCAL_PATCH_BASE_URL
++    ? normalizeCdnBaseUrl(process.env.LOCAL_PATCH_BASE_URL)
++    : undefined;
++const LOCAL_PATCH_AFTER = process.env.LOCAL_PATCH_AFTER || undefined;
++// Archives whose mirror copy differs from ours (comma-separated file names) are also served locally.
++const LOCAL_PATCH_FILES = new Set((process.env.LOCAL_PATCH_FILES || "").split(",").map(s => s.trim()).filter(Boolean));
+ /** Clears short-lived ZIP metadata after an in-process asset publication. */
+ export function invalidateAssetArchiveCatalog(directory?: string): void {
+     invalidateZipCache(directory);
+@@ -335,7 +343,11 @@ function buildDiffList(
+             .filter(archive => publishedArchives.has(archive.filename));
+         for (const { archive, key } of sortDiffArchives(published)) {
+             if (!groups.has(key.to)) groups.set(key.to, { original_version: key.from, archive: [] });
+-            groups.get(key.to)!.archive.push({ location: joinCdnPath(baseUrl, "asset-patch", "active", archive.filename), size: archive.size, sha256: "" });
++            // Test server: patches newer than what the Cloudflare mirror carries come from this box.
++            const patchBase = LOCAL_PATCH_BASE
++                && ((LOCAL_PATCH_AFTER && compareVersion(key.to, LOCAL_PATCH_AFTER) > 0) || LOCAL_PATCH_FILES.has(archive.filename))
++                ? LOCAL_PATCH_BASE : baseUrl;
++            groups.get(key.to)!.archive.push({ location: joinCdnPath(patchBase, "asset-patch", "active", archive.filename), size: archive.size, sha256: "" });
+         }
+     } catch (e) {
+         console.error(`[PATCH] buildDiffList failed for active patches:`, (e as Error).message);

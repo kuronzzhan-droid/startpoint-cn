@@ -1,3 +1,4 @@
+import { getPlayerClientExpTime } from "../../player-time-compat"
 import { readFileSync } from "node:fs"
 import path from "node:path"
 import { existsSync } from "../../file-exists"
@@ -12,13 +13,11 @@ import {
     updatePlayerDailyChallengePointSync,
     updatePlayerSync,
 } from "../../../data/domains/player"
-import { deletePlayerActiveQuestIfPlayIdSync, deletePlayerActiveQuestSync } from "../../../data/domains/quest_active"
-import { getFinishReceiptSync, pruneFinishReceiptsSync, recordFinishReceiptSync } from "../../../data/domains/finish-receipt"
-import {
-    getPlayerSingleQuestProgressSync,
-    insertPlayerQuestProgressSync,
-    updatePlayerQuestProgressSync,
-} from "../../../data/domains/quest"
+import { deletePlayerActiveQuestIfPlayIdSync, getPlayerActiveQuestSync } from "../../../data/domains/quest_active"
+import { getPlayerOperationReceiptSync, insertPlayerOperationReceiptSync } from "../../../data/domains/player-operation-receipt"
+import { getPlayerSingleQuestProgressSync, insertPlayerQuestProgressSync, updatePlayerQuestProgressSync } from "../../../data/domains/quest"
+import { isSingleFinishResponse, SINGLE_FINISH_RECEIPT_OPERATION } from "./single-finish-identity"
+import { isSupportedBattleClockVersion, getBattleClockDate, CLOCK_ABORT_OPERATION } from "../../battle-clock-compatibility"
 import { insertPlayerPracticeBattleHistorySync } from "../../../data/domains/practice-battle-history"
 import {
     getPlayerCarnivalEventRecordsSync,
@@ -54,6 +53,7 @@ import { trackSteamRobotChallengeMission } from "../../mission/steam-robot-chall
 import { getContentSnapshot } from "../../../content/runtime/content-snapshot"
 import { recordQuestRecommendedPartySafe } from "../recommended-party-history"
 import { buildPracticeBattleHistoryRecord } from "../practice-battle-history"
+import { BattleHistoryPayloadValidationError } from "../battle-history"
 import { givePlayerRewardSync, givePlayerRewardsSync, givePlayerScoreRewardsSync } from "../../quest"
 import { handleRushEventFinish } from "./rush-handler"
 import { handleRoguePerRoundDrops } from "./rogue-drops"
@@ -113,8 +113,6 @@ export interface SingleFinishTransactionArgs {
     questCategory: QuestCategory
     questId: number
     questData: BattleQuest
-    /** Player row read before the settlement; totals are re-read inside it. */
-    playerData: Player
     activeQuestData: ActiveQuest
     body: FinishBody
     clearTime: number
@@ -128,12 +126,12 @@ export interface SingleFinishTransactionArgs {
     manaObtained: number
     displayMode15ManaAsFieldDrop: boolean
     finishCacheKey: string | null
-    /** Client play ids this settlement is recorded under (durable duplicate check). */
-    receiptPlayIds: string[]
+    /** Nonempty client or registered battle identity; never an api_count. */
+    receiptPlayId: string | null
 }
 
 export interface SingleFinishTransactionResult {
-    /** Null when the registered play had already been settled; nothing was written. */
+    /** Null when a registration was replaced/consumed without a replayable receipt. */
     response: { data_headers: Record<string, unknown>, data: Record<string, any> } | null
     timing: SingleSettlementBodyTiming | null
 }
@@ -153,32 +151,49 @@ export function settleSingleQuestFinishInTransaction(
         playerId, viewerId, questCategory, questId, questData, activeQuestData, body,
         clearTime, clearRank, questAccomplished,
         fiveBossSoloQuest, registered, scoreAttackBorderTiers,
-        manaObtained, displayMode15ManaAsFieldDrop, finishCacheKey,
+        manaObtained, displayMode15ManaAsFieldDrop, finishCacheKey, receiptPlayId,
     } = args
-    const receiptPlayIds = args.receiptPlayIds ?? []
-    // A play id that already has a settlement receipt was paid out before, at
-    // any age within retention: write nothing.
-    if (receiptPlayIds.some(playId => getFinishReceiptSync(playerId, "single", playId) !== null)) {
-        return { response: null, timing: null }
+    if (receiptPlayId !== null) {
+        const receipt = getPlayerOperationReceiptSync<unknown>(
+            playerId, SINGLE_FINISH_RECEIPT_OPERATION, receiptPlayId,
+        )
+        if (receipt !== null) return {
+            response: isSingleFinishResponse(receipt.response) ? receipt.response : null,
+            timing: null,
+        }
+        if (getPlayerOperationReceiptSync(playerId, "quest_finish.multi", receiptPlayId) !== null) {
+            return { response: null, timing: null }
+        }
+        if (getPlayerOperationReceiptSync(playerId, CLOCK_ABORT_OPERATION, receiptPlayId) !== null) {
+            return { response: null, timing: null }
+        }
     }
-    // A registered play (from /start) is consumed exactly once. If its row is
-    // already gone, an earlier finish settled it: write nothing.
+    // An existing response may be replayed, but a new payment needs a proven
+    // real-clock registration. An old request body has no trustworthy basis.
+    if (activeQuestData.isMulti || !registered) return { response: null, timing: null }
+    // The queued command may run after another /start replaced the registration.
+    // Consume only the registration resolved for this finish, inside its transaction.
     if (registered) {
-        const playId = activeQuestData.playId
-        const consumed = typeof playId === "string" && deletePlayerActiveQuestIfPlayIdSync(playerId, playId)
-        if (!consumed) return { response: null, timing: null }
+        const persisted = getPlayerActiveQuestSync(playerId)
+        if (persisted === null || !isSupportedBattleClockVersion(persisted.clockVersion) || persisted.isMulti || persisted.playId !== activeQuestData.playId
+            || Number(persisted.questId) !== Number(questId)
+            || Number(persisted.category) !== Number(questCategory)
+            || !deletePlayerActiveQuestIfPlayIdSync(playerId, activeQuestData.playId)) {
+            return { response: null, timing: null }
+        }
+        activeQuestData.startedAtMs = persisted.startedAtMs ?? undefined
+        activeQuestData.clockVersion = persisted.clockVersion
     }
-    // Totals and progress are read inside the transaction so that rewards are
-    // added to the current values, not to a snapshot taken before awaiting.
-    const playerData: Player = getPlayerSync(playerId) ?? args.playerData
+    const playerData: Player | null = getPlayerSync(playerId)
+    if (playerData === null) throw new Error(`Single finish player no longer exists: ${playerId}`)
     const questProgress: PlayerQuestProgress | null = getPlayerSingleQuestProgressSync(playerId, questCategory, questId)
     const beforeRankPoint = playerData.rankPoint
     const newRankPoint = beforeRankPoint + questData.rankPointReward
     const newMana = calculateFreeManaGrant(playerData, manaObtained).freeMana
     const newBoostPoint = playerData.boostPoint - (activeQuestData.useBoostPoint ? 1 : 0)
     const newBossBoostPoint = playerData.bossBoostPoint - (activeQuestData.useBossBoostPoint ? 1 : 0)
-    const useBoostPoint = (activeQuestData.useBoostPoint && (newBoostPoint >= 0))
-        || (activeQuestData.useBossBoostPoint && (newBossBoostPoint >= 0))
+    const useBoostPoint = (activeQuestData.useBoostPoint && newBoostPoint >= 0)
+        || (activeQuestData.useBossBoostPoint && newBossBoostPoint >= 0)
     const questPreviouslyCompleted = questProgress !== null
     // 单人结算分数缩放（2026-10-08）：客户端单人 boss 战时间倍率额外 ×2（SCORE_SCALING_SINGLE_PLAY_BOSS_BATTLE），
     // 联机没有这一项；这里按 SINGLE_SCORE_SCALE（默认 0.5）缩放「记录用」分数，与联机口径对齐。
@@ -198,7 +213,6 @@ export function settleSingleQuestFinishInTransaction(
     const bodyTiming = createSingleSettlementBodyTimingCollector(questCategory, !!fiveBossSoloQuest)
     let bodySucceeded = false
     try {
-        if (!registered) deletePlayerActiveQuestSync(playerId)
         const missionEvaluationTime = new Date(getServerTime() * 1000)
 
         let clearReward: PlayerRewardResult | null = null
@@ -208,7 +222,7 @@ export function settleSingleQuestFinishInTransaction(
             recordAbyssFloorFinishSync({
                 category: questCategory, questId, revision: activeQuestData.questTimeRevision,
                 viewerId, elapsedTimeMs: clearTime, startedAtMs: activeQuestData.startedAtMs,
-                nowMs: getServerTime() * 1000, accomplished: true,
+                nowMs: getBattleClockDate(activeQuestData.clockVersion ?? 0).getTime(), accomplished: true,
                 registered,
                 matchingPlay: body.play_id === activeQuestData.playId
                     && Number(body.quest_id) === questId && Number(body.category) === questCategory,
@@ -356,6 +370,8 @@ export function settleSingleQuestFinishInTransaction(
         const partyCharacterIds = [...bodyPartyStatistics.characters, ...bodyPartyStatistics.unison_characters]
 
         if (questCategory === QuestCategory.PRACTICE) {
+            // A storage failure must abort settlement, even when telemetry is optional.
+            const equipmentList = getPlayerEquipmentListSync(playerId)
             let practiceHistoryRecord: ReturnType<typeof buildPracticeBattleHistoryRecord> | null = null
             try {
                 practiceHistoryRecord = buildPracticeBattleHistoryRecord({
@@ -370,12 +386,13 @@ export function settleSingleQuestFinishInTransaction(
                     clearRank: questAccomplished ? clearRank : null,
                     party: bodyPartyStatistics,
                     statistics: body.statistics,
-                    equipmentList: getPlayerEquipmentListSync(playerId),
+                    equipmentList,
                 })
             } catch (error) {
+                if (!(error instanceof BattleHistoryPayloadValidationError)) throw error
                 console.warn(
                     `[PRACTICE-HISTORY] invalid finish history payload: player=${playerId} `
-                    + `quest=${questId} error=${(error as Error).message}`,
+                    + `quest=${questId} error=${error.message}`,
                 )
             }
             if (practiceHistoryRecord !== null) insertPlayerPracticeBattleHistorySync(practiceHistoryRecord)
@@ -685,7 +702,7 @@ export function settleSingleQuestFinishInTransaction(
                 "user_info": {
                     "free_mana": finalPlayerData?.freeMana ?? newMana,
                     "exp_pool": finalPlayerData?.expPool ?? rewardCharacterExpResult.exp_pool,
-                    "exp_pooled_time": getServerTime(playerData.expPooledTime),
+                    "exp_pooled_time": getPlayerClientExpTime(playerData),
                     "free_vmoney": finalPlayerData?.freeVmoney ?? playerData.freeVmoney,
                     "rank_point": newRankPoint,
                     "degree_id": playerData.degreeId ?? 1,
@@ -778,9 +795,10 @@ export function settleSingleQuestFinishInTransaction(
         responseData.mail_arrived = getPlayerMailCountSync(playerId, true) > 0
         const response = { data_headers: dataHeaders, data: responseData }
         if (fiveBossSoloQuest) saveFiveBossSoloReceiptSync(playerId, activeQuestData.playId, finishCacheKey, response)
-        if (receiptPlayIds.length > 0) {
-            for (const playId of receiptPlayIds) recordFinishReceiptSync(playerId, "single", playId, response)
-            pruneFinishReceiptsSync(playerId)
+        if (receiptPlayId !== null) {
+            insertPlayerOperationReceiptSync({
+                playerId, operation: SINGLE_FINISH_RECEIPT_OPERATION, requestKey: receiptPlayId, response,
+            })
         }
         bodySucceeded = true
         return { response, timing: bodyTiming.result(true) }

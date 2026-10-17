@@ -1,0 +1,10 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.data.DataOptimization; label: cn.optimize.data::DataOptimization$/scopeDepth|1; body: 19; method: 20
+# code SHA-256: 5c48f4593260f2b3b67875195e619d8d79acd471002d33aaca7d04bfc8fe8963; header: [1, 1, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex [(7, (5, 'cn.optimize.data:DataOptimization'), 'nodeScopes')]
+#0003 ofs0004: getproperty [(7, (22, ''), 'length')]
+#0004 ofs0006: returnvalue []
+# exceptions: []

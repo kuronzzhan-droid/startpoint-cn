@@ -6,6 +6,66 @@ const {
     drainRoomAdmissionPerformanceSummary,
 } = require("../out/multi/room/admission")
 
+function withAdmissionTtl(value, operation) {
+    const previous = process.env.MULTI_ROOM_ADMISSION_TTL_MS
+    if (value === undefined) delete process.env.MULTI_ROOM_ADMISSION_TTL_MS
+    else process.env.MULTI_ROOM_ADMISSION_TTL_MS = value
+    try { return operation() }
+    finally {
+        if (previous === undefined) delete process.env.MULTI_ROOM_ADMISSION_TTL_MS
+        else process.env.MULTI_ROOM_ADMISSION_TTL_MS = previous
+    }
+}
+
+test("default reservation survives a 35-second boost prompt but expires at 60 seconds", () => {
+    withAdmissionTtl(undefined, () => {
+        const registry = new RoomAdmissionRegistry()
+        assert.equal(registry.reserve("100008", 1, 20, [10], 3, 1_000), true)
+        assert.equal(registry.claim("100008", 1, 20, "after-boost", 36_000).ok, true)
+        assert.equal(registry.reserve("100009", 1, 30, [10], 3, 1_000), true)
+        assert.equal(registry.has("100009", 1, 30, 60_999), true)
+        assert.deepEqual(registry.claim("100009", 1, 30, "at-expiry", 61_000), {
+            ok: false, reason: "expired",
+        })
+        assert.equal(registry.getOccupancy("100009", 1, [10], 61_001), 1)
+    })
+})
+
+test("longer default reservation still limits three seats and rejects a previous generation", () => {
+    withAdmissionTtl(undefined, () => {
+        const registry = new RoomAdmissionRegistry()
+        assert.equal(registry.reserve("100010", 7, 20, [10], 3, 1_000), true)
+        assert.equal(registry.reserve("100010", 7, 30, [10], 3, 1_000), true)
+        assert.equal(registry.reserve("100010", 7, 40, [10], 3, 36_000), false)
+        assert.deepEqual(registry.claim("100010", 8, 20, "old-generation", 36_000), {
+            ok: false, reason: "generation_mismatch",
+        })
+        assert.equal(registry.claim("100010", 7, 30, "current-generation", 36_000).ok, true)
+        assert.deepEqual(registry.claim("100010", 7, 40, "without-selection", 36_000), {
+            ok: false, reason: "missing",
+        })
+    })
+})
+
+test("explicit admission TTL configuration remains authoritative and invalid values use the new default", () => {
+    withAdmissionTtl("15000", () => {
+        const registry = new RoomAdmissionRegistry()
+        registry.reserve("100011", 1, 20, [10], 3, 1_000)
+        assert.equal(registry.has("100011", 1, 20, 15_999), true)
+        assert.equal(registry.claim("100011", 1, 20, "configured-expiry", 16_000).ok, false)
+    })
+    withAdmissionTtl("90000", () => {
+        const registry = new RoomAdmissionRegistry()
+        registry.reserve("100012", 1, 20, [10], 3, 1_000)
+        assert.equal(registry.claim("100012", 1, 20, "configured-longer", 66_000).ok, true)
+    })
+    for (const invalid of ["invalid", "999"]) withAdmissionTtl(invalid, () => {
+        const registry = new RoomAdmissionRegistry()
+        registry.reserve("100013", 1, 20, [10], 3, 1_000)
+        assert.equal(registry.claim("100013", 1, 20, "fallback-default", 36_000).ok, true)
+    })
+})
+
 test("claimed admission returns to the reservation when TCP closes before Enter", () => {
     const registry = new RoomAdmissionRegistry(15_000)
     assert.equal(registry.reserve("100001", 4, 20, [10], 3, 1_000), true)

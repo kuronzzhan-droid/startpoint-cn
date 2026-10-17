@@ -152,7 +152,7 @@ test('the writer thread shares the main thread virtual clock', async () => {
     // Resetting to system time is a change too (null is not "keep previous").
     setServerTimeOffset(null)
     const afterReset = await runWriterCommand('test.clock', {}, { domain: 'player', operation: 'test.clock' })
-    assert.equal(afterReset.offset, null)
+    assert.equal(afterReset.offset, 0)
     assert.ok(Math.abs(afterReset.serverTime - getServerTime()) <= 2)
 
     setServerTimeOffset(originalOffset)

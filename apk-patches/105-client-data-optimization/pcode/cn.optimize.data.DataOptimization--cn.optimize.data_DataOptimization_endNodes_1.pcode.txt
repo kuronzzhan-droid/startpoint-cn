@@ -1,0 +1,19 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn.optimize.data.DataOptimization; label: cn.optimize.data::DataOptimization$/endNodes|1; body: 18; method: 19
+# code SHA-256: d2be7945f46e4ca2d02b2569051c480a999d82080b158eff767b800693408f3a; header: [2, 3, 0, 1]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex [(7, (5, 'cn.optimize.data:DataOptimization'), 'nodeScopes')]
+#0003 ofs0004: getlocal_1 []
+#0004 ofs0005: callproperty [(7, (8, 'http://adobe.com/AS3/2006/builtin'), 'lastIndexOf'), 1]
+#0005 ofs0008: convert_i []
+#0006 ofs0009: setlocal_2 []
+#0007 ofs000a: getlocal_2 []
+#0008 ofs000b: pushbyte [0]
+#0009 ofs000d: ifnge [] -> #13
+#0010 ofs0011: getlex [(7, (5, 'cn.optimize.data:DataOptimization'), 'nodeScopes')]
+#0011 ofs0013: getlocal_2 []
+#0012 ofs0014: setproperty [(7, (22, ''), 'length')]
+#0013 ofs0016: returnvoid []
+# exceptions: []

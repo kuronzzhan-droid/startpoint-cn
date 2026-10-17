@@ -1,0 +1,302 @@
+{
+  "number": 104,
+  "module": "network",
+  "title": "独立管理网络请求的超时预算",
+  "status": "归档条目草稿",
+  "upstream_origin_main": "224aa2a663b7756fc8a34c0f37f1ae61ad81800c",
+  "input_apk_sha256": "3de625cf0c745c79d333a09140ad82fdea74746d2e2200a5b6922f67eca14532",
+  "input_swf_sha256": "3b7b3391ae0aee01f15167fe1d5a5b69eddb71a64605c57486f025916611aaa4",
+  "final_swf_sha256": "3d5c9745f519beee68557df7bce3e4ff635c9bb127069ed85a8fd02b5cbedb8a",
+  "methods": [
+    {
+      "module": "network",
+      "method": "pinball.context.remote::RemoteEventListenerManager/removeListeners|1",
+      "body": 29656,
+      "v33_code_sha256": "fc6c0b8323222970b210f36c1f1c073f61835b7d0fabff4e9149974e48658178",
+      "r4_pins": [
+        "fc6c0b8323222970b210f36c1f1c073f61835b7d0fabff4e9149974e48658178"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "network",
+      "method": "pinball.context.remote::RemoteEventListenerManager/addEventListeners|1",
+      "body": 29665,
+      "v33_code_sha256": "956a4e75158c8bcbf7a038e7c93f6a0908073bb55da68ada81dd33b34bc60fe4",
+      "r4_pins": [
+        "956a4e75158c8bcbf7a038e7c93f6a0908073bb55da68ada81dd33b34bc60fe4"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "network",
+      "method": "pinball.context.remote::RequestQueue/startRequest|1",
+      "body": 29697,
+      "v33_code_sha256": "4de33b3c537025ca520765e5ef9a1ed4667dc2e308a1ae3884cd157738b4f233",
+      "r4_pins": [
+        "4de33b3c537025ca520765e5ef9a1ed4667dc2e308a1ae3884cd157738b4f233"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    },
+    {
+      "module": "network",
+      "method": "pinball.context.remote::RequestQueue/requestErrorHandler|1",
+      "body": 29702,
+      "v33_code_sha256": "fafc9831a54ba35aff3575e5ce1e1f90502a599a36a2829e3993fcabc54bc019",
+      "r4_pins": [
+        "fafc9831a54ba35aff3575e5ce1e1f90502a599a36a2829e3993fcabc54bc019"
+      ],
+      "pin_match": true,
+      "v33_archive_entries": [],
+      "category": "a"
+    }
+  ],
+  "helpers": [
+    "cn/optimize/network/RequestTimer",
+    "cn/optimize/network/NetworkBudget"
+  ],
+  "composition": "4 个目标方法均直接通过 v33 方法锁；源模块历史提交为 66aac625，归档源码以本次 origin/main 导出为准。",
+  "source_files": [
+    {
+      "path": "104-client-network-optimization/source/client-patch/client-network-optimization/patch_swf.py",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-network-optimization/patch_swf.py",
+      "bytes": 8566,
+      "sha256": "30f2a65e637afd8ecb3cf5942624c9f6745bdcec3175c267923ed5da8f5cbc1c"
+    },
+    {
+      "path": "104-client-network-optimization/source/client-patch/client-network-optimization/run_air_tests.py",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-network-optimization/run_air_tests.py",
+      "bytes": 4246,
+      "sha256": "7f2a788ff288ff6817099c5e2f279004c5dcf82f38ebb514c415eb4a0fc66162"
+    },
+    {
+      "path": "104-client-network-optimization/source/client-patch/client-network-optimization/src/cn/optimize/network/NetworkBudget.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-network-optimization/src/cn/optimize/network/NetworkBudget.as",
+      "bytes": 1917,
+      "sha256": "621491e01afec6722ed8033927a7032d31fa4e86f8849f470320ad5ea5899a10"
+    },
+    {
+      "path": "104-client-network-optimization/source/client-patch/client-network-optimization/src/cn/optimize/network/RequestTimer.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-network-optimization/src/cn/optimize/network/RequestTimer.as",
+      "bytes": 1381,
+      "sha256": "41c1b4f1e077934d5f158c0687e614968beba0078f960274400f1be1af08892a"
+    },
+    {
+      "path": "104-client-network-optimization/source/client-patch/client-network-optimization/tests/harness-app.xml",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-network-optimization/tests/harness-app.xml",
+      "bytes": 356,
+      "sha256": "4822beee7206f8f02fde5684839912aa0ea5ba027397ef54dd4c7197848ac2eb"
+    },
+    {
+      "path": "104-client-network-optimization/source/client-patch/client-network-optimization/tests/haxe/ds/Option.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-network-optimization/tests/haxe/ds/Option.as",
+      "bytes": 330,
+      "sha256": "15615e72ed51a1a9271b97420c0af6efdaa0efd1684b8be2910a951e5d4bf384"
+    },
+    {
+      "path": "104-client-network-optimization/source/client-patch/client-network-optimization/tests/pinball/context/remote/RemoteError.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-network-optimization/tests/pinball/context/remote/RemoteError.as",
+      "bytes": 200,
+      "sha256": "d088377d6fb48096fb746705c5e678d8549e58a3b802bb6993976ad173ae76fb"
+    },
+    {
+      "path": "104-client-network-optimization/source/client-patch/client-network-optimization/tests/pinball/context/remote/RemoteErrorKind.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-network-optimization/tests/pinball/context/remote/RemoteErrorKind.as",
+      "bytes": 634,
+      "sha256": "eba2a63a7e9c63d81cb49c76d46779f6de90ae755c433c7ffc587ca8435bca63"
+    },
+    {
+      "path": "104-client-network-optimization/source/client-patch/client-network-optimization/tests/pinball/context/remote/RemoteEventListenerManager.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-network-optimization/tests/pinball/context/remote/RemoteEventListenerManager.as",
+      "bytes": 1663,
+      "sha256": "a25a6c9c9ed81260409a714995eb2dca5b6f87a8dac8afc7214696180257c33f"
+    },
+    {
+      "path": "104-client-network-optimization/source/client-patch/client-network-optimization/tests/QueueProbe.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-network-optimization/tests/QueueProbe.as",
+      "bytes": 604,
+      "sha256": "d4ec71e1766cfeba7ab1c22dc1eeff40e48cd8d829efdc1f3b40ca8453129df6"
+    },
+    {
+      "path": "104-client-network-optimization/source/client-patch/client-network-optimization/tests/RuntimeHarness.as",
+      "origin": "D:\\WF\\startpoint-cn-kulo@224aa2a663b7756fc8a34c0f37f1ae61ad81800c:client-patch/client-network-optimization/tests/RuntimeHarness.as",
+      "bytes": 5648,
+      "sha256": "5352002743048d693c1d1d48c8b0da7027ce88eb685e35a0d29e1bcda3ab3c65"
+    }
+  ],
+  "final_pcode": [
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.context.remote::RemoteEventListenerManager/removeListeners|1",
+      "body": 29656,
+      "code_sha256": "6acb353fe43291526536b171b06225d2ae4b7cf7734f063f7e0e8edc8e8aa0a0",
+      "method_body_sha256": "a5485985bfb9d992d8bb7a2e5ba2e7b5094603f55f604b29905b6e97ae638f4d",
+      "path": "pcode/boot_ffc6--pinball.context.remote_RemoteEventListenerManager_removeListeners_1.pcode.txt",
+      "check": {
+        "max_stack": 3,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "3469d9b2074697fc04ec85eafee1ba495d4a8bc3cee8df33a1d91f7691418142"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.context.remote::RemoteEventListenerManager/addEventListeners|1",
+      "body": 29665,
+      "code_sha256": "b6256f2fabec6e445ac33006d68ed8bd49d50cbb675c2cfae37490ac5139d9c9",
+      "method_body_sha256": "ebb6ce5ff6eb102285f9e2a9821ea3abf942051c1eae8d6cb185ef6b33b9ad67",
+      "path": "pcode/boot_ffc6--pinball.context.remote_RemoteEventListenerManager_addEventListeners_1.pcode.txt",
+      "check": {
+        "max_stack": 3,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "daa264f8c65c5556be09887f31c0e248600f195527ebe23064194edfe66e6728"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.context.remote::RequestQueue/startRequest|1",
+      "body": 29697,
+      "code_sha256": "eed578b10355d3a829f0ce943f639c4e57f1b9acf2c420ad42b6e068e252591e",
+      "method_body_sha256": "06238c7d5e7781b295e04680d8b096d4c2b501f8a7ed9952fd5071faf241d161",
+      "path": "pcode/boot_ffc6--pinball.context.remote_RequestQueue_startRequest_1.pcode.txt",
+      "check": {
+        "max_stack": 10,
+        "max_scope": 2,
+        "unreachable_instructions": 1
+      },
+      "text_sha256": "476d386aa5965d57598662685c05f2bb106687e80e4951cb4db3373341106776"
+    },
+    {
+      "abc": "boot_ffc6",
+      "method": "pinball.context.remote::RequestQueue/requestErrorHandler|1",
+      "body": 29702,
+      "code_sha256": "0a08e8e03365815fec4bb794e2a388907200ef8e91f0b02185273f81759ef198",
+      "method_body_sha256": "53db8100b9f340f39d11576753b3f77361da08c92dbb634fa5c0a5d77cdcd4e1",
+      "path": "pcode/boot_ffc6--pinball.context.remote_RequestQueue_requestErrorHandler_1.pcode.txt",
+      "check": {
+        "max_stack": 6,
+        "max_scope": 2,
+        "unreachable_instructions": 0
+      },
+      "text_sha256": "188a60cfa402ea69ad9a6600e265f5d93f7c37a98e17ce82da7aad36127dfdb9"
+    },
+    {
+      "abc": "cn/optimize/network/NetworkBudget",
+      "method": "cn.optimize.network::NetworkBudget$/remaining|1",
+      "body": 0,
+      "code_sha256": "a732614aad8ce12a94246018a52842a30843de73aa1ab555ed041a8bc1310175",
+      "method_body_sha256": "0f2c2587033638a6254fc1a21c114eb7758fdb24ff7564699c4a3468360ced4e",
+      "path": "pcode/cn_optimize_network_NetworkBudget--cn.optimize.network_NetworkBudget_remaining_1.pcode.txt",
+      "text_sha256": "e136403542ce850a2b16faf49bd90b78015220c0fcc1faa85e7f8c54b656c0d7"
+    },
+    {
+      "abc": "cn/optimize/network/NetworkBudget",
+      "method": "cn.optimize.network::NetworkBudget$/prepare|1",
+      "body": 1,
+      "code_sha256": "9cfeb09440709663f096c9c611d5f606bb72fcc4f867412985ac6a753cc7594d",
+      "method_body_sha256": "c7e35da03385c16d2fae40cb6752e25388049f009f825822044b8d670baffb55",
+      "path": "pcode/cn_optimize_network_NetworkBudget--cn.optimize.network_NetworkBudget_prepare_1.pcode.txt",
+      "text_sha256": "5fcbc91c15895d517abac64324d0bacf7fba1124e9d87b97aec2d9a16f7d4a6d"
+    },
+    {
+      "abc": "cn/optimize/network/NetworkBudget",
+      "method": "cn.optimize.network::NetworkBudget$/allowSend|1",
+      "body": 2,
+      "code_sha256": "d6230a3b7965383a7a7002b23686a27cf44442770cf5219379243b415f027e7b",
+      "method_body_sha256": "a504c7534b833c2afdcf99e94085217ed7a972f6121cf06ea3a90cc85bcd0b29",
+      "path": "pcode/cn_optimize_network_NetworkBudget--cn.optimize.network_NetworkBudget_allowSend_1.pcode.txt",
+      "text_sha256": "e27c11ab030e65998a330e42866fadbaa7e9a1526d186da3864bb1b166387f58"
+    },
+    {
+      "abc": "cn/optimize/network/NetworkBudget",
+      "method": "cn.optimize.network::NetworkBudget$/install|1",
+      "body": 3,
+      "code_sha256": "cdcbb2477efd44c12ac111e6553f979c30e0beea00a7d09886303bc584f2306d",
+      "method_body_sha256": "c7d5adb6e340bf7724d0a33964e5f7cdedb480b0ca34293e86d3c1e66a19b429",
+      "path": "pcode/cn_optimize_network_NetworkBudget--cn.optimize.network_NetworkBudget_install_1.pcode.txt",
+      "text_sha256": "af175b3db80ff4aa2fc7452ef4374738fb5473d5e5854414456edb880ee6868c"
+    },
+    {
+      "abc": "cn/optimize/network/NetworkBudget",
+      "method": "cn.optimize.network::NetworkBudget$/<cinit>",
+      "body": 4,
+      "code_sha256": "333e0a1e27815d0ceee55c473fe3dc93d56c63e3bee2b3b4aee8eed6d70191a3",
+      "method_body_sha256": "c6fae62a8dd18e267875fb4cdcc5aa5462b040de0fc56802fad20007d4b473bd",
+      "path": "pcode/cn_optimize_network_NetworkBudget--cn.optimize.network_NetworkBudget_cinit_.pcode.txt",
+      "text_sha256": "16a3be5a269e123fde68f1f7dc181c475fd244a924d35e09ff618f2a4d717401"
+    },
+    {
+      "abc": "cn/optimize/network/NetworkBudget",
+      "method": "cn.optimize.network::NetworkBudget/<ctor>",
+      "body": 5,
+      "code_sha256": "8ff32749a852a1d83829c6a3fac8ec00822f06b5c7177f9ebb43a09287b2101a",
+      "method_body_sha256": "4e191ca4af7c88190b8ba2fa650203ca188693b5c2a78467769e2b635d052187",
+      "path": "pcode/cn_optimize_network_NetworkBudget--cn.optimize.network_NetworkBudget_ctor_.pcode.txt",
+      "text_sha256": "c06f54121cf9dd1a02e76224cb1dc683c21ce56f59998028c40d4bd85d0bfcce"
+    },
+    {
+      "abc": "cn/optimize/network/NetworkBudget",
+      "method": "script:cn.optimize.network::NetworkBudget/<init>",
+      "body": 6,
+      "code_sha256": "fe11b4393214b9e6b48b2285f6123066fa6287abe44a29e78b2efb8a25465e2e",
+      "method_body_sha256": "f4be7290e52898b7ad3030459840d5502f27e427a7c8f312404430dd128d12b0",
+      "path": "pcode/cn_optimize_network_NetworkBudget--script_cn.optimize.network_NetworkBudget_init_.pcode.txt",
+      "text_sha256": "ce25385e8cc3854071f28da8d63859da182c3225dab3b11c88adb3452e538c03"
+    },
+    {
+      "abc": "cn/optimize/network/RequestTimer",
+      "method": "cn.optimize.network::RequestTimer/cn.optimize.network:RequestTimer::tick|1",
+      "body": 0,
+      "code_sha256": "9d78491a6acfeb89a998aa91d13817ca10cade9d9708dbe9ae61835877d31bde",
+      "method_body_sha256": "dc80309da0ab6ff5d99437d75f0c8c7feee96080fb97eb365cfac40ffc8c8b68",
+      "path": "pcode/cn_optimize_network_RequestTimer--cn.optimize.network_RequestTimer_cn.optimize.network_RequestTimer_tick_1.pcode.txt",
+      "text_sha256": "4af57bd2bc6f76e09a73790929385a7873da299e7a5f785dff8fdf14c8aa0d22"
+    },
+    {
+      "abc": "cn/optimize/network/RequestTimer",
+      "method": "cn.optimize.network::RequestTimer/stop|1",
+      "body": 1,
+      "code_sha256": "a2d8624ac5f5ec56037f1ce5451e3d74d27b25232180ff8845b4ef9006033d15",
+      "method_body_sha256": "412ded3732f3d8ecd1917197db949002684a00c124fcf5984ede060fa9dc1087",
+      "path": "pcode/cn_optimize_network_RequestTimer--cn.optimize.network_RequestTimer_stop_1.pcode.txt",
+      "text_sha256": "926a192e9d1757090d82f9fe958cf41c09b83cfa2440495cac03c5b32c9e10d4"
+    },
+    {
+      "abc": "cn/optimize/network/RequestTimer",
+      "method": "cn.optimize.network::RequestTimer/<ctor>",
+      "body": 2,
+      "code_sha256": "1b546f41f7e4df015d7ebae63597bde0b102d15105065dc1b12abf21699edbf3",
+      "method_body_sha256": "aa54ae156a6a92364150ec25bdb4563835b7fc6c2d96b00837a6ae9eac8878f0",
+      "path": "pcode/cn_optimize_network_RequestTimer--cn.optimize.network_RequestTimer_ctor_.pcode.txt",
+      "text_sha256": "b0390d0244638e4848c019a27e477e3bf3e0e648172ba423de9cb8deaa29b7f4"
+    },
+    {
+      "abc": "cn/optimize/network/RequestTimer",
+      "method": "cn.optimize.network::RequestTimer$/<cinit>",
+      "body": 3,
+      "code_sha256": "333e0a1e27815d0ceee55c473fe3dc93d56c63e3bee2b3b4aee8eed6d70191a3",
+      "method_body_sha256": "4451bbecf0e17a5e9b13092653ed9e8751cf02902d101b29bff350284fc8ccce",
+      "path": "pcode/cn_optimize_network_RequestTimer--cn.optimize.network_RequestTimer_cinit_.pcode.txt",
+      "text_sha256": "0bc90a441d64c81571581e65fc7b665c55d3d841472e2b23a8cecd5404b23cac"
+    },
+    {
+      "abc": "cn/optimize/network/RequestTimer",
+      "method": "script:cn.optimize.network::RequestTimer/<init>",
+      "body": 4,
+      "code_sha256": "84abbac93fc429c844e6208fe70e38f5c7067a94b0312e00ac0c1861e074303a",
+      "method_body_sha256": "e416e9543b3bfe26c77fa5c5b55bf9cfa7a28f1e7e7e2469f65803ed964cd957",
+      "path": "pcode/cn_optimize_network_RequestTimer--script_cn.optimize.network_RequestTimer_init_.pcode.txt",
+      "text_sha256": "abf211c20c80a94dc22aea9eec97d4de4b8ce60b9941a6bb26c4aef774e406a2"
+    }
+  ],
+  "verification_report": "../../build-report.json",
+  "pcode_export_status": "已复制实际 SWF 最终导出",
+  "r4_stage_swf_sha256": "53890c19f5ced5c70ed2e327e62a8f2f800d8ce5f2fdff5f493ad5c758518642"
+}

@@ -6,6 +6,10 @@
 // also kept in a small ring for the management diagnostics endpoint.
 import { monitorEventLoopDelay, type IntervalHistogram } from "node:perf_hooks"
 import { registerMemoryCounters } from "../lib/memory-diagnostics"
+import { BoundedLatencyHistogram } from "./latency-statistics"
+
+export type BattleControlDelayKind = "relay-control" | "member-sync" | "parent-dispatch" | "relay-data-ack"
+const CONTROL_DELAY_KINDS = new Set<BattleControlDelayKind>(["relay-control", "member-sync", "parent-dispatch", "relay-data-ack"])
 
 interface MemberStats {
     viewer: number
@@ -16,15 +20,8 @@ interface MemberStats {
     levelNext: number
     finalize: number
     lineSpeedWarnings: number
-    /** Longest silence between two inbound frames, or from connect to first frame. */
+    /** Longest inbound silence, including the tail up to disconnect or battle end. */
     maxInboundGapMs: number
-    /**
-     * The longest inbound silences of at least 1 s: length, when it ended (ms
-     * since the battle started) and which scene the member was in (0 = first,
-     * counted by its LevelNext frames). Locates a silence at a scene change or
-     * mid-fight.
-     */
-    longGaps: Array<{ ms: number; atMs: number; scene: number }>
     lastInboundAt: number
     relayedOut: number
     backpressureEpisodes: number
@@ -47,6 +44,7 @@ interface BattleSession {
     loopLagMaxMs: number
     /** One-second windows whose worst event-loop delay reached 200 ms. */
     loopStalledSeconds: number
+    controlDelays: Map<BattleControlDelayKind, BoundedLatencyHistogram>
 }
 
 export interface BattleTelemetrySummary {
@@ -65,6 +63,8 @@ export interface BattleTelemetrySummary {
     loopLagMaxMs: number
     loopStalledSeconds: number
     members: Array<Omit<MemberStats, "lastInboundAt">>
+    /** Server-local monotonic spans, never player TCP RTT or one-way latency. */
+    serverControlDelayMs: Partial<Record<BattleControlDelayKind, ReturnType<BoundedLatencyHistogram["snapshot"]>>>
 }
 
 function positiveInteger(name: string, fallback: number, min: number, max: number): number {
@@ -78,9 +78,6 @@ function enabled(): boolean {
 
 const LAG_SAMPLE_MS = 1_000
 const MAX_BARRIERS = 8
-/** Inbound silences at least this long are listed per member (top MAX_LONG_GAPS by length). */
-const LONG_GAP_MS = 1_000
-const MAX_LONG_GAPS = 3
 
 export class BattleTelemetry {
     private readonly sessions = new Map<string, BattleSession>()
@@ -118,6 +115,7 @@ export class BattleTelemetry {
             seatsExpired: 0,
             loopLagMaxMs: 0,
             loopStalledSeconds: 0,
+            controlDelays: new Map(),
         })
         this.ensureLagSampler()
     }
@@ -125,18 +123,20 @@ export class BattleTelemetry {
     end(roomNumber: string, reason: string): BattleTelemetrySummary | undefined {
         const session = this.sessions.get(roomNumber)
         if (!session) return undefined
+        const endedAt = this.now()
+        for (const member of session.members.values()) this.observeInboundGap(member, endedAt)
         this.sampleLag()
         this.sessions.delete(roomNumber)
         if (this.sessions.size === 0) this.stopLagSampler()
         const summary: BattleTelemetrySummary = {
-            at: new Date(this.now()).toISOString(),
+            at: new Date(endedAt).toISOString(),
             room: session.room,
             battle: session.battle,
             category: session.category,
             quest: session.quest,
             fiveBoss: session.fiveBoss,
             end: reason,
-            durationMs: this.now() - session.startedAt,
+            durationMs: endedAt - session.startedAt,
             realMembers: session.realMembers,
             aiMembers: session.aiMembers,
             barriers: session.barriers,
@@ -144,6 +144,7 @@ export class BattleTelemetry {
             loopLagMaxMs: session.loopLagMaxMs,
             loopStalledSeconds: session.loopStalledSeconds,
             members: [...session.members.values()].map(({ lastInboundAt: _, ...member }) => member),
+            serverControlDelayMs: Object.fromEntries([...session.controlDelays].map(([kind, histogram]) => [kind, histogram.snapshot()])),
         }
         if (this.maxRecent > 0) {
             this.recent.push(summary)
@@ -161,7 +162,7 @@ export class BattleTelemetry {
             if (session.members.size >= 8) return undefined
             member = {
                 viewer, connections: 0, packets: 0, broadcasts: 0, sceneReady: 0, levelNext: 0, finalize: 0,
-                lineSpeedWarnings: 0, maxInboundGapMs: 0, longGaps: [], lastInboundAt: 0, relayedOut: 0,
+                lineSpeedWarnings: 0, maxInboundGapMs: 0, lastInboundAt: 0, relayedOut: 0,
                 backpressureEpisodes: 0, maxBackpressureMs: 0, disconnects: {},
             }
             session.members.set(viewer, member)
@@ -172,8 +173,15 @@ export class BattleTelemetry {
     connected(roomNumber: string, viewer: number): void {
         const member = this.member(roomNumber, viewer)
         if (!member) return
+        const now = this.now()
+        this.observeInboundGap(member, now)
         member.connections++
-        member.lastInboundAt = this.now()
+        member.lastInboundAt = now
+    }
+
+    private observeInboundGap(member: MemberStats, at: number): void {
+        if (member.lastInboundAt <= 0) return
+        member.maxInboundGapMs = Math.max(member.maxInboundGapMs, at - member.lastInboundAt)
     }
 
     /** transportTag: Client2Server index; notifyTag: BattleNotifyMessage index for Notify frames. */
@@ -181,7 +189,7 @@ export class BattleTelemetry {
         const member = this.member(roomNumber, viewer)
         if (!member) return
         const now = this.now()
-        if (member.lastInboundAt > 0) this.noteGap(roomNumber, member, now - member.lastInboundAt)
+        this.observeInboundGap(member, now)
         member.lastInboundAt = now
         member.packets++
         if (transportTag === 1 || transportTag === 2) member.broadcasts++
@@ -193,13 +201,9 @@ export class BattleTelemetry {
         }
     }
 
-    /** Frames the battle relay child handled for this member since its last report. */
+    /** Counts child-local traffic once; parent-forwarded frames use packet(). */
     relayActivity(roomNumber: string, viewer: number, activity: {
-        packets: number
-        broadcasts: number
-        lineSpeedWarnings: number
-        maxGapMs: number
-        relayedOut: number
+        packets: number; broadcasts: number; lineSpeedWarnings: number; maxGapMs: number; relayedOut: number
     }): void {
         const member = this.member(roomNumber, viewer)
         if (!member) return
@@ -207,27 +211,8 @@ export class BattleTelemetry {
         member.broadcasts += activity.broadcasts
         member.lineSpeedWarnings += activity.lineSpeedWarnings
         member.relayedOut += activity.relayedOut
-        // The child timestamps frames on arrival; gaps measured here would
-        // include main event-loop stalls and the report interval.
-        this.noteGap(roomNumber, member, activity.maxGapMs)
+        member.maxInboundGapMs = Math.max(member.maxInboundGapMs, activity.maxGapMs)
         if (activity.packets > 0) member.lastInboundAt = this.now()
-    }
-
-    private noteGap(roomNumber: string, member: MemberStats, gapMs: number): void {
-        if (gapMs > member.maxInboundGapMs) member.maxInboundGapMs = gapMs
-        if (gapMs < LONG_GAP_MS) return
-        const session = this.sessions.get(roomNumber)
-        if (!session) return
-        member.longGaps.push({
-            ms: Math.round(gapMs),
-            atMs: Math.round(this.now() - session.startedAt),
-            scene: member.levelNext,
-        })
-        if (member.longGaps.length > MAX_LONG_GAPS) {
-            member.longGaps.sort((a, b) => b.ms - a.ms)
-            member.longGaps.length = MAX_LONG_GAPS
-            member.longGaps.sort((a, b) => a.atMs - b.atMs)
-        }
     }
 
     relayed(roomNumber: string, viewer: number): void {
@@ -245,7 +230,12 @@ export class BattleTelemetry {
 
     disconnected(roomNumber: string, viewer: number, reason: string): void {
         const member = this.member(roomNumber, viewer)
-        if (member) member.disconnects[reason] = (member.disconnects[reason] ?? 0) + 1
+        if (!member) return
+        this.observeInboundGap(member, this.now())
+        // A departed member is no longer silent on an open battle connection.
+        // Reconnecting begins a fresh interval in connected().
+        member.lastInboundAt = 0
+        member.disconnects[reason] = (member.disconnects[reason] ?? 0) + 1
     }
 
     barrier(roomNumber: string, kind: string, waitMs: number): void {
@@ -253,6 +243,20 @@ export class BattleTelemetry {
         if (!session) return
         if (session.barriers.length >= MAX_BARRIERS) session.barriers.shift()
         session.barriers.push({ kind, waitMs: Math.round(waitMs) })
+    }
+
+    /** Caller owns both endpoints of this span on the same monotonic clock.
+     * relay-control starts at parent receipt: it excludes pre-receipt IPC wait.
+     * member-sync/data-ack may be bridge-local request-to-confirmation spans. */
+    controlDelay(roomNumber: string, kind: BattleControlDelayKind, durationMs: number): void {
+        const session = this.sessions.get(roomNumber)
+        if (!session || !CONTROL_DELAY_KINDS.has(kind) || !Number.isFinite(durationMs) || durationMs < 0) return
+        let histogram = session.controlDelays.get(kind)
+        if (!histogram) {
+            histogram = new BoundedLatencyHistogram()
+            session.controlDelays.set(kind, histogram)
+        }
+        histogram.record(durationMs)
     }
 
     seatExpired(roomNumber: string): void {

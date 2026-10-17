@@ -97,8 +97,9 @@ test("admin login throttling ignores client-supplied forwarding headers", async 
     }
 })
 
-test("trust proxy setting defaults to loopback and accepts overrides", () => {
-    assert.strictEqual(trustProxySetting(undefined), "loopback")
+test("trust proxy setting defaults to no trust and accepts explicit HTTP proxies", () => {
+    assert.strictEqual(trustProxySetting(""), false)
+    assert.strictEqual(trustProxySetting("loopback"), "loopback")
     assert.strictEqual(trustProxySetting("false"), false)
     assert.strictEqual(trustProxySetting("1"), 1)
     assert.strictEqual(trustProxySetting("10.0.0.0/8"), "10.0.0.0/8")

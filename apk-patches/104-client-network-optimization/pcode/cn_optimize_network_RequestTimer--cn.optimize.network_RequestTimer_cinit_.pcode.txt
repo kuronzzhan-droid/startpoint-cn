@@ -1,0 +1,6 @@
+# 最终 v34 逐方法 P-code；来源 v34.swf（非整类回编）
+# DoABC2: cn/optimize/network/RequestTimer; label: cn.optimize.network::RequestTimer$/<cinit>; body: 3; method: 4
+# code SHA-256: 333e0a1e27815d0ceee55c473fe3dc93d56c63e3bee2b3b4aee8eed6d70191a3; header: [0, 1, 0, 0]
+# 分支目标为指令下标；操作数按实际常量池符号解析。
+#0000 ofs0000: returnvoid []
+# exceptions: []

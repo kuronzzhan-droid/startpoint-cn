@@ -34,6 +34,9 @@ function register(playerId, playId, roomGeneration) {
 const oldBattle = register(81011, "old-play", 7)
 const rematch = register(81012, "new-play", 8)
 
+assert.equal(transitionRoomSettlementSnapshots("998877", "LOBBY", 7), 0)
+assert.equal(oldBattle.lifecycle, "BATTLE", "host return cannot complete a pending guest result")
+transitionMultiSettlementSnapshot(oldBattle.playerId, oldBattle.playId, "RETURN_PENDING")
 assert.equal(transitionRoomSettlementSnapshots("998877", "LOBBY", 7), 1)
 assert.equal(oldBattle.lifecycle, "LOBBY")
 assert.equal(rematch.lifecycle, "BATTLE", "returning from generation 7 must not advance generation 8")

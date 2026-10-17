@@ -6,9 +6,44 @@ import { recordBattleNotify } from "./chain-diagnostic"
 import { getRoom } from "../room/manager"
 import { recordFiveBossSignal } from "../five-boss/lobby-runtime"
 import { fiveBossConnectionDiagnostics } from "../five-boss/connection-diagnostic"
-import { markPlayerOnlineFromTcp } from "../../lib/online-presence"
+import { notifyRealtimePresence as markPlayerOnlineFromTcp } from "../coordinator/business-facts"
 import { battleTelemetry } from "../battle-telemetry"
 import type { RelayActivity } from "./battle-relay/protocol"
+import { markBattleMemberPhase } from "../state/battle-contract"
+import { deferPinnedRoomControl } from "../coordinator/room-start-claims"
+import { captureRealtimeBusinessContext, retainRealtimeBusinessTail } from "../coordinator/business-rpc"
+
+// Each room still has the existing 64-control pin FIFO. The aggregate matches
+// the bounded TCP work budget, and one close listener serves each socket.
+const pendingPinnedControls = new Set<() => void>()
+const pinnedControlsBySocket = new Map<net.Socket, { controls: Set<() => void>; close: () => void }>()
+const MAX_PENDING_PINNED_CONTROLS = 128
+
+function trackPinnedControl(socket: net.Socket, discard: () => void): () => void {
+    if (pendingPinnedControls.size >= MAX_PENDING_PINNED_CONTROLS) throw new Error("START_CONTROL_WORK_BUDGET")
+    let entry = pinnedControlsBySocket.get(socket)
+    if (!entry) {
+        const controls = new Set<() => void>()
+        entry = { controls, close: () => { for (const cancel of [...controls]) cancel() } }
+        pinnedControlsBySocket.set(socket, entry)
+        socket.once("close", entry.close)
+    }
+    entry.controls.add(discard)
+    pendingPinnedControls.add(discard)
+    return () => {
+        pendingPinnedControls.delete(discard)
+        entry!.controls.delete(discard)
+        if (!entry!.controls.size) {
+            socket.off("close", entry!.close)
+            pinnedControlsBySocket.delete(socket)
+        }
+    }
+}
+
+/** Called after TCP ingress closes. No room transition, proof or business write. */
+export function discardPinnedBattleControlsForShutdown(): void {
+    for (const discard of [...pendingPinnedControls]) discard()
+}
 
 function findBattleClientBySocket(socket: net.Socket): SessionClient | undefined {
     const client = sessionManager.findClientBySocket(socket)
@@ -56,6 +91,7 @@ function handleBattleNotify(socket: net.Socket, data: unknown, indexedClient?: S
             const room = client && getRoom(client.roomNumber)
             if (client && room?.five_boss_runtime) recordFiveBossSignal(room, client, "finalize")
             if (client) client.finalizeSent = true
+            if (client && room) markBattleMemberPhase(room, client.viewerId, "FINALIZED")
             if (client) sendToBattleClient(client, [1, [2]], "battle_finalize_ack")
             break
         }
@@ -82,6 +118,47 @@ export function handleBattleMessage(socket: net.Socket, data: unknown): void {
     if (!Array.isArray(data)) return
     const tag = data[0] as number
     const activityClient = findBattleClientBySocket(socket)
+    if (activityClient && !sessionManager.isCurrentBattleClient(activityClient)) return
+    if (activityClient && tag === 0 && Array.isArray(data[1]) && [0, 1, 2].includes(data[1][0])) {
+        const room = getRoom(activityClient.roomNumber), control = data[1][0]
+        const instanceId = room?.lifecycle.instanceId, battleSessionId = room?.lifecycle.battleSessionId
+        if (room) {
+            let completeDeferred!: () => void
+            const deferredTail = new Promise<void>(resolve => { completeDeferred = resolve })
+            const restoreBusinessContext = captureRealtimeBusinessContext()
+            let discarded = false, completed = false, untrack = () => {}
+            const finish = () => {
+                if (completed) return
+                completed = true; untrack(); completeDeferred()
+            }
+            const discard = () => { discarded = true; finish() }
+            try {
+                if (deferPinnedRoomControl(room, () => {
+                    if (discarded) return
+                    try {
+                        restoreBusinessContext(() => {
+                            const current = getRoom(activityClient.roomNumber)
+                            if (current === room && current.lifecycle.instanceId === instanceId
+                                && current.lifecycle.battleSessionId === battleSessionId
+                                && !socket.destroyed && sessionManager.isCurrentBattleClient(activityClient)) {
+                                handleBattleMessage(socket, [0, [control]])
+                            }
+                        })
+                    } catch { socket.destroy() }
+                    finally { finish() }
+                })) {
+                    // A stored callback is outside the original async chain.
+                    // Keep its accepted TCP work alive until replay or discard;
+                    // any proof scheduled by replay retains its own tail.
+                    untrack = trackPinnedControl(socket, discard)
+                    if (socket.destroyed) discard()
+                    void retainRealtimeBusinessTail(deferredTail).catch(() => socket.destroy())
+                    return
+                }
+                finish()
+            } catch { discard(); socket.destroy(); return }
+        }
+    }
     fiveBossConnectionDiagnostics.packet(socket, !!activityClient)
     if (activityClient) {
         sessionManager.noteBattleActivity(activityClient.connectionId)
@@ -121,28 +198,20 @@ export function handleBattleMessage(socket: net.Socket, data: unknown): void {
     }
 }
 
-/**
- * Applies what the battle relay child handled on its own (relayed frames and
- * Heartbeat/Measurement acks) to the same lease, presence and telemetry state
- * handleBattleMessage() updates per frame in the in-process path.
- */
+/** Child-local packets refresh existing leases and diagnostics without replay. */
 export function handleBattleRelayActivity(socket: net.Socket, activity: RelayActivity): void {
     const client = findBattleClientBySocket(socket)
-    if (!client) return
+    if (!client || socket.destroyed || !sessionManager.isCurrentBattleClient(client)) return
     const packets = activity.broadcasts + activity.sends + activity.heartbeats
         + activity.measurements + activity.lineSpeedWarnings
     if (packets > 0) {
         fiveBossConnectionDiagnostics.packet(socket, true)
         sessionManager.noteBattleActivity(client.connectionId)
-        if (!socket.destroyed && sessionManager.isCurrentBattleClient(client)) {
-            markPlayerOnlineFromTcp(client.viewerId)
-        }
+        markPlayerOnlineFromTcp(client.viewerId)
     }
     battleTelemetry.relayActivity(client.roomNumber, client.viewerId, {
-        packets,
-        broadcasts: activity.broadcasts + activity.sends,
-        lineSpeedWarnings: activity.lineSpeedWarnings,
-        maxGapMs: activity.maxGapMs,
+        packets, broadcasts: activity.broadcasts + activity.sends,
+        lineSpeedWarnings: activity.lineSpeedWarnings, maxGapMs: activity.maxGapMs,
         relayedOut: activity.relayedOut,
     })
     if (activity.maxBackpressureMs >= 100) {
