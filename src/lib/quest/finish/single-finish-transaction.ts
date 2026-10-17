@@ -15,6 +15,7 @@ import {
 } from "../../../data/domains/player"
 import { deletePlayerActiveQuestIfPlayIdSync, getPlayerActiveQuestSync } from "../../../data/domains/quest_active"
 import { getPlayerOperationReceiptSync, insertPlayerOperationReceiptSync } from "../../../data/domains/player-operation-receipt"
+import { getBattleReplaySync, insertBattleSettlementSync } from "../../../data/domains/battle-settlement-ledger"
 import { getPlayerSingleQuestProgressSync, insertPlayerQuestProgressSync, updatePlayerQuestProgressSync } from "../../../data/domains/quest"
 import { isSingleFinishResponse, SINGLE_FINISH_RECEIPT_OPERATION } from "./single-finish-identity"
 import { isSupportedBattleClockVersion, getBattleClockDate, CLOCK_ABORT_OPERATION } from "../../battle-clock-compatibility"
@@ -154,15 +155,13 @@ export function settleSingleQuestFinishInTransaction(
         manaObtained, displayMode15ManaAsFieldDrop, finishCacheKey, receiptPlayId,
     } = args
     if (receiptPlayId !== null) {
-        const receipt = getPlayerOperationReceiptSync<unknown>(
-            playerId, SINGLE_FINISH_RECEIPT_OPERATION, receiptPlayId,
-        )
-        if (receipt !== null) return {
-            response: isSingleFinishResponse(receipt.response) ? receipt.response : null,
+        // Re-check in the actual writer transaction: a queued command can run
+        // after another executor settled this play or its replay window ended.
+        const replay = getBattleReplaySync(playerId, "single", receiptPlayId)
+        if (replay.kind !== "missing") return {
+            response: replay.kind === "available" && isSingleFinishResponse(replay.response)
+                ? replay.response : null,
             timing: null,
-        }
-        if (getPlayerOperationReceiptSync(playerId, "quest_finish.multi", receiptPlayId) !== null) {
-            return { response: null, timing: null }
         }
         if (getPlayerOperationReceiptSync(playerId, CLOCK_ABORT_OPERATION, receiptPlayId) !== null) {
             return { response: null, timing: null }
@@ -170,7 +169,8 @@ export function settleSingleQuestFinishInTransaction(
     }
     // An existing response may be replayed, but a new payment needs a proven
     // real-clock registration. An old request body has no trustworthy basis.
-    if (activeQuestData.isMulti || !registered) return { response: null, timing: null }
+    if (activeQuestData.isMulti || !registered || receiptPlayId === null
+        || receiptPlayId !== activeQuestData.playId) return { response: null, timing: null }
     // The queued command may run after another /start replaced the registration.
     // Consume only the registration resolved for this finish, inside its transaction.
     if (registered) {
@@ -796,9 +796,10 @@ export function settleSingleQuestFinishInTransaction(
         const response = { data_headers: dataHeaders, data: responseData }
         if (fiveBossSoloQuest) saveFiveBossSoloReceiptSync(playerId, activeQuestData.playId, finishCacheKey, response)
         if (receiptPlayId !== null) {
+            const settlement = insertBattleSettlementSync(playerId, receiptPlayId, "single")
             insertPlayerOperationReceiptSync({
                 playerId, operation: SINGLE_FINISH_RECEIPT_OPERATION, requestKey: receiptPlayId, response,
-            })
+            }, settlement.settledAtMs)
         }
         bodySucceeded = true
         return { response, timing: bodyTiming.result(true) }

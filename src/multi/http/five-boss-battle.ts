@@ -42,6 +42,7 @@ import { measureSettlementPhaseAsync } from "../../lib/settlement-performance"
 import { fiveBossDiagnostics } from "../../lib/coalesced-diagnostics"
 import { fiveBossConnectionDiagnostics } from "../five-boss/connection-diagnostic"
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator"
+import { assertBattleCanStartSync, getBattleReplaySync } from "../../data/domains/battle-settlement-ledger"
 
 /** Small structured evidence, without logging tokens, party data or the full request. */
 export function logFiveBossRequestFailure(operation: "start" | "finish" | "abort", body: MultiStartBody | MultiFinishBody | MultiAbortBody,
@@ -104,6 +105,8 @@ type FollowInfoBuilder = (
 export function isFiveBossBattleRequestError(error: unknown): boolean {
     return error instanceof FiveBossBattleRuntimeError
         || error instanceof FiveBossGauntletRunError
+        || (error as { code?: string })?.code === "BATTLE_ALREADY_SETTLED"
+        || (error as { code?: string })?.code === "BATTLE_CLOCK_ABORTED"
 }
 
 
@@ -444,6 +447,7 @@ export async function handleFiveBossStart(
         result = await runPersistenceTransaction({
             domain: "multi-settlement", playerId, operation: "five_boss_start",
         }, () => {
+            assertBattleCanStartSync(playerId, body.play_id)
             // The copied room is input, not a live guard. The owner pins the
             // exact generation until this token is explicitly resolved.
             try {
@@ -561,6 +565,12 @@ export async function handleFiveBossFinish(
             return runPersistenceTransaction({
                 domain: "multi-settlement", playerId, operation: "five_boss_finish",
             }, () => {
+                // A generic settled identity may never be paid through the
+                // specialized runtime, even if its full payload has expired.
+                // Its own dedicated receipts retain their original replay path.
+                if (getBattleReplaySync(playerId, "multi", body.play_id).kind !== "missing") {
+                    throw new FiveBossBattleRuntimeError("run_identity_mismatch", "Battle identity already settled.")
+                }
                 if (body.is_accomplished === true && isFiveBossGauntletQuest(body.category, body.quest_id)
                     && boundRun?.roomNumber === roomNumber) {
                     const backfill = backfillMissingFinalizeSync({ playerId, clientPlayId: body.play_id })

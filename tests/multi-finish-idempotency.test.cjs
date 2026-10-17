@@ -103,11 +103,18 @@ function singleFinish(x, extra = {}) {
     return app.inject({ method: 'POST', url: '/single/finish',
         payload: payload(x.host, x.room.room_number, x.playId, extra) })
 }
-function singleStart(x) {
+function singleStart(x, extra = {}) {
     return app.inject({ method: 'POST', url: '/single/start', payload: {
         viewer_id: x.host.viewerId, quest_id: QUEST_ID, category: CATEGORY, party_id: 1,
         play_id: x.playId, use_boss_boost_point: false, use_boost_point: false,
-        is_auto_start_mode: false, api_count: 1,
+        is_auto_start_mode: false, api_count: 1, ...extra,
+    } })
+}
+function multiStart(x, extra = {}) {
+    return app.inject({ method: 'POST', url: '/multi/start', payload: {
+        viewer_id: x.host.viewerId, category: CATEGORY, quest_id: QUEST_ID, party_id: 1,
+        room_number: x.room.room_number, play_id: x.playId, use_boost_point: false,
+        use_boss_boost_point: false, is_auto_start_mode: false, mate_player_ids: [], mate_party_ids: [], ...extra,
     } })
 }
 function evictFinishCache(label) {
@@ -233,9 +240,106 @@ if (replay) {
                 const [a, b] = await Promise.all([x.finish(), x.finish({ api_count: 3, category: `${CATEGORY}.0` })])
                 assert.deepEqual(decode(b), decode(a)); assertPaid(before, balances(x.host.id))
                 assert.equal(receipts(x.host.id).length, 1)
+                assert.equal(db.prepare('SELECT COUNT(*) n FROM battle_settlement_ledger WHERE player_id=?').get(x.host.id).n, 1)
                 assert.deepEqual(snapshot(x.guest.id), guestBefore, 'one member finish does not pay another member')
                 const settled = snapshot(x.host.id)
                 decode(await x.finish({ api_count: 8 }))
+                assert.deepEqual(snapshot(x.host.id), settled)
+            })
+
+            await run('retention', 'pending start retries preserve the original clock and frozen snapshot', async t => {
+                const x = await setup(t)
+                db.prepare('UPDATE players_active_quests SET started_at_ms=started_at_ms-60000 WHERE player_id=?').run(x.host.id)
+                single.activeQuests[x.host.id].startedAtMs -= 60000
+                const snapshots = load('multi/settlement-snapshot')
+                snapshots.getMultiSettlementSnapshot(x.host.id, x.playId).activeQuest.startedAtMs -= 60000
+                const before = snapshot(x.host.id), memory = structuredClone(single.activeQuests[x.host.id])
+                const frozen = structuredClone(snapshots.getMultiSettlementSnapshot(x.host.id, x.playId))
+                const repeated = await multiStart(x)
+                assert.equal(repeated.statusCode, 200, repeated.body)
+                assert.deepEqual(snapshot(x.host.id), before)
+                assert.deepEqual(single.activeQuests[x.host.id], memory)
+                assert.deepEqual(snapshots.getMultiSettlementSnapshot(x.host.id, x.playId), frozen)
+                const mismatch = await multiStart(x, { party_id: 2 })
+                assert.equal(mismatch.statusCode, 200, mismatch.body)
+                assert.equal(mismatch.json().data_headers.result_code, 4050, 'the realtime owner rejects changed retry identity before SQL')
+                assert.deepEqual(snapshot(x.host.id), before)
+            })
+
+            await run('retention', 'expired or pruned payload cannot use a retained frozen snapshot, memory cache or another mode', async t => {
+                const x = await setup(t), snapshots = load('multi/settlement-snapshot')
+                const frozen = structuredClone(snapshots.getMultiSettlementSnapshot(x.host.id, x.playId))
+                decode(await x.finish())
+                const cache = load('lib/finish-response-cache')
+                const key = cache.buildFinishResponseCacheKey('multi', x.host.viewerId, payload(x.host, x.room.room_number, x.playId))
+                assert.ok(cache.getCachedFinishResponse(key), 'the old hot response is deliberately not evicted')
+                const expiredAt = Date.now() - 86400000
+                db.transaction(() => {
+                    db.prepare("UPDATE player_operation_receipts SET created_at=? WHERE player_id=? AND operation='quest_finish.multi'").run(expiredAt, x.host.id)
+                    db.prepare('UPDATE battle_settlement_ledger SET settled_at=? WHERE player_id=?').run(expiredAt, x.host.id)
+                    db.prepare('UPDATE battle_receipt_payload_queue SET created_at=? WHERE player_id=?').run(expiredAt, x.host.id)
+                })()
+                snapshots.registerMultiSettlementSnapshot(frozen)
+                for (const prune of [false, true]) {
+                    if (prune) db.prepare("DELETE FROM player_operation_receipts WHERE player_id=? AND operation='quest_finish.multi'").run(x.host.id)
+                    const settled = snapshot(x.host.id)
+                    const rejected = await x.finish({ api_count: 77 })
+                    assert.equal(rejected.statusCode, 400, rejected.body)
+                    assert.equal((await singleFinish(x)).statusCode, 400)
+                    assert.equal((await singleStart(x)).statusCode, 400)
+                    // A room may itself be unavailable after settlement; either
+                    // response must deny start, rather than recreate this play.
+                    const restarted = await multiStart(x)
+                    assert.ok(restarted.statusCode === 400 || restarted.json().data_headers.result_code === 4050, restarted.body)
+                    assert.deepEqual(snapshot(x.host.id), settled)
+                }
+                assert.equal((await singleStart(x, { play_id: 'fresh-after-multi-expiry' })).statusCode, 200)
+                const newer = snapshot(x.host.id), memory = structuredClone(single.activeQuests[x.host.id])
+                assert.equal((await x.finish()).statusCode, 400)
+                assert.equal((await singleStart(x)).statusCode, 400)
+                assert.deepEqual(snapshot(x.host.id), newer)
+                assert.deepEqual(single.activeQuests[x.host.id], memory)
+            })
+
+            await run('retention', 'queued real writer rejects a cross-mode terminal inserted after HTTP preparation', async t => {
+                const x = await setup(t), coordinator = load('lib/persistence-coordinator')
+                const original = coordinator.runWriterCommand
+                let intercepted = false, terminalSnapshot
+                const hook = t.mock.method(coordinator, 'runWriterCommand', async (name, args, context) => {
+                    if (name === 'multi.settle_finish' && args.playerId === x.host.id && !intercepted) {
+                        intercepted = true
+                        db.transaction(() => {
+                            const terminal = load('data/domains/battle-settlement-ledger').insertBattleSettlementSync(x.host.id, x.playId, 'single', Date.now() - 86400000)
+                            load('data/domains/player-operation-receipt').insertPlayerOperationReceiptSync({
+                                playerId: x.host.id, operation: 'quest_finish.single', requestKey: x.playId,
+                                response: { data_headers: {}, data: { is_multi: 'single', user_info: {}, rewards: {} } },
+                            }, terminal.settledAtMs)
+                        })()
+                        terminalSnapshot = snapshot(x.host.id)
+                    }
+                    return original(name, args, context)
+                })
+                try {
+                    const rejected = await x.finish()
+                    assert.equal(rejected.statusCode, 400, rejected.body)
+                    assert.equal(intercepted, true)
+                    assert.deepEqual(snapshot(x.host.id), terminalSnapshot)
+                } finally { hook.mock.restore() }
+            })
+
+            await run('retention', 'ledger insert failure rolls back the complete multiplayer reward chain', async t => {
+                const x = await setup(t), before = snapshot(x.host.id)
+                db.exec(`CREATE TRIGGER multi_ledger_failure BEFORE INSERT ON battle_settlement_ledger
+                    WHEN NEW.player_id=${x.host.id} BEGIN SELECT RAISE(ABORT, 'injected multi ledger failure'); END`)
+                try {
+                    const rejected = await x.finish()
+                    assert.equal(rejected.statusCode, 500, rejected.body)
+                    assert.match(rejected.body, /injected multi ledger failure/)
+                    assert.deepEqual(snapshot(x.host.id), before)
+                } finally { db.exec('DROP TRIGGER multi_ledger_failure') }
+                decode(await x.finish())
+                const settled = snapshot(x.host.id)
+                decode(await x.finish())
                 assert.deepEqual(snapshot(x.host.id), settled)
             })
             for (const fault of ['facts', 'receipt']) {
@@ -298,8 +402,17 @@ if (replay) {
             await run('cross-endpoint', 'a paid single play cannot be paid again by its retained real multi snapshot', async t => {
                 const x = await setup(t), snapshots = load('multi/settlement-snapshot')
                 assert.ok(snapshots.getMultiSettlementSnapshot(x.host.id, x.playId), 'multi start created a real frozen snapshot')
+                const pending = snapshot(x.host.id)
                 const started = await singleStart(x)
-                assert.equal(started.statusCode, 200, started.body)
+                assert.equal(started.statusCode, 400, 'a new request cannot relabel the same pending play across modes')
+                assert.deepEqual(snapshot(x.host.id), pending)
+                // Simulate a pre-upgrade single registration while retaining a
+                // genuine old multi snapshot. The guarded /start no longer
+                // permits constructing this historical state through HTTP.
+                const replaced = db.prepare(`UPDATE players_active_quests SET is_multi=0, is_multi_host=0
+                    WHERE player_id=? AND play_id=? AND is_multi=1`).run(x.host.id, x.playId)
+                assert.equal(replaced.changes, 1, 'fixture CAS must replace exactly the intended pending registration')
+                delete single.activeQuests[x.host.id]
                 decode(await singleFinish(x))
                 assert.equal(db.prepare("SELECT count(*) n FROM player_operation_receipts WHERE player_id = ? AND operation = 'quest_finish.single'").get(x.host.id).n, 1)
                 assert.ok(snapshots.getMultiSettlementSnapshot(x.host.id, x.playId), 'frozen multi snapshot survives single settlement')
@@ -325,7 +438,7 @@ if (replay) {
                 const x = await setup(t)
                 decode(await x.finish())
                 delete single.activeQuests[x.host.id]
-                for (const [corrupt, status] of [['null', 400], ['{}', 400], ['{', 500]]) {
+                for (const [corrupt, status] of [['null', 400], ['{}', 400], ['{', 400]]) {
                     db.prepare("UPDATE player_operation_receipts SET response_json = ? WHERE player_id = ? AND operation = 'quest_finish.multi' AND request_key = ?").run(corrupt, x.host.id, x.playId)
                     evictFinishCache(`damaged-multi:${mode}:${corrupt}`)
                     const damaged = snapshot(x.host.id)

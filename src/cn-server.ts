@@ -97,6 +97,7 @@ import {
 import { parseIosCompatConfig } from "./lib/ios-compat";
 import { getDb } from "./data/db";
 import { createReceiveHistoryRetentionService } from "./lib/receive-history-retention";
+import { createBattleReceiptRetentionService } from "./lib/battle-receipt-retention";
 import { createLeaderboardSettlementScheduler } from "./lib/leaderboard/settlement";
 import { createDailyVmoneyMailScheduler } from "./lib/daily-vmoney-mail";
 import { startSqliteCheckpointWorker, stopSqliteCheckpointWorker } from "./lib/sqlite-checkpoint-worker";
@@ -522,6 +523,9 @@ rmSync(readyFilePath,{force:true});
 const receiveHistoryRetention = createReceiveHistoryRetentionService(getDb(), {
     executeTransaction: runPersistenceTransaction,
 });
+const battleReceiptRetention = createBattleReceiptRetentionService(getDb(), {
+    executeTransaction: runPersistenceTransaction,
+});
 const leaderboardSettlementScheduler = createLeaderboardSettlementScheduler();
 const dailyVmoneyMailScheduler = createDailyVmoneyMailScheduler(getDb());
 
@@ -540,6 +544,7 @@ function quiesceServer(): void {
         stop(() => dailyVmoneyMailScheduler.stop()),
         stop(() => leaderboardSettlementScheduler.stop()),
         stop(() => receiveHistoryRetention.stop()),
+        stop(() => battleReceiptRetention.stop()),
         stop(() => quiesceDurableOwnerEvents()),
         stop(() => quiesceRealtimeSessionServer()),
         stop(() => withShutdownCleanup(() => seedValidator.close())),
@@ -642,6 +647,7 @@ fastify.listen({ port, host }, (err, address) => {
     }
     console.log(`CN StarPoint listening on http://${host}:${port}`);
     receiveHistoryRetention.start();
+    battleReceiptRetention.start();
     leaderboardSettlementScheduler.start();
     dailyVmoneyMailScheduler.start();
 

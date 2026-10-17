@@ -2,6 +2,8 @@ import { registerMemoryCounters } from "./memory-diagnostics"
 interface CacheEntry {
     expiresAt: number
     response: unknown
+    /** A tokenless retry alias must re-check the durable replay deadline. */
+    playId?: string
 }
 
 const entries = new Map<string, CacheEntry>()
@@ -98,10 +100,21 @@ export function getCachedFinishResponse(key: string | null): unknown | undefined
     return entry.response
 }
 
-export function cacheFinishResponse(key: string | null, response: unknown): void {
+export function getCachedFinishPlayId(key: string | null): string | undefined {
+    if (key === null) return undefined
+    const entry = entries.get(key)
+    if (!entry) return undefined
+    if (entry.expiresAt <= Date.now()) {
+        entries.delete(key)
+        return undefined
+    }
+    return entry.playId
+}
+
+export function cacheFinishResponse(key: string | null, response: unknown, playId?: string): void {
     if (key === null) return
     entries.delete(key)
-    entries.set(key, { expiresAt: Date.now() + ttlMs, response })
+    entries.set(key, { expiresAt: Date.now() + ttlMs, response, playId })
     while (entries.size > maxEntries) {
         const oldest = entries.keys().next().value as string | undefined
         if (oldest === undefined) break

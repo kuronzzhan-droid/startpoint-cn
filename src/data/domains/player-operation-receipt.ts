@@ -39,7 +39,9 @@ export function getPlayerOperationReceiptSync<T = unknown>(
 
 export function insertPlayerOperationReceiptSync<T>(
     receipt: PlayerOperationReceipt<T>,
+    createdAtMs = Date.now(),
 ): void {
+    if (!Number.isSafeInteger(createdAtMs) || createdAtMs < 0) throw new TypeError("Invalid receipt creation time.")
     const responseJson = JSON.stringify(receipt.response)
     if (responseJson === undefined) throw new Error(`持久化请求回执不可序列化：${receipt.operation}`)
     getDb().prepare(`
@@ -51,6 +53,6 @@ export function insertPlayerOperationReceiptSync<T>(
         receipt.operation,
         receipt.requestKey,
         responseJson,
-        Date.now(),
+        createdAtMs,
     )
 }
