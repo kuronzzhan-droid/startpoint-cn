@@ -39,6 +39,13 @@ function append(db) {
     db.transaction(() => { for (let i = 1; i <= 1300; i++) put.run(i, data) })()
     assert.ok(fs.statSync(db.name + '-wal').size >= 4 * 1024 * 1024)
 }
+function assertPassiveDiagnostics() {
+    const current = state()
+    assert.equal(current.truncateAttempts, 0)
+    assert.equal(current.truncateCompleted, 0)
+    assert.equal(current.truncateBusy, 0)
+    assert.equal(current.lastWasTruncate, false)
+}
 
 test('checkpoint ownership falls back after repeated errors and recovers on success', () => {
     const transitions = []
@@ -68,7 +75,7 @@ test('checkpoint ownership falls back after repeated errors and recovers on succ
     assert.deepEqual(transitions, ['external', 'automatic', 'external', 'automatic'])
 })
 
-test('checkpoint worker handles backlog, pinned readers, cooldown and lifecycle on isolated databases', async t => {
+test('checkpoint worker handles passive backlog, pinned readers, WAL reuse and lifecycle on isolated databases', async t => {
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-checkpoint-worker-'))
     try {
         await t.test('disabled switch does not start a worker', async () => {
@@ -79,23 +86,32 @@ test('checkpoint worker handles backlog, pinned readers, cooldown and lifecycle 
             assert.equal(fs.existsSync(path.join(directory, 'disabled.db')), false)
             await checkpoint.stopSqliteCheckpointWorker()
         })
-        await t.test('startup reclaims existing WAL without losing committed rows', async () => {
+        await t.test('startup checkpoints existing WAL without truncating or losing committed rows', async () => {
             const db = open(path.join(directory, 'backlog.db'))
             let ready = 0, stopped = 0
             try {
                 append(db)
-                const before = state().truncateCompleted
+                const walBytes = fs.statSync(db.name + '-wal').size
+                const before = state().completed
                 checkpoint.startSqliteCheckpointWorker(db.name, environment, {
                     onReady: () => { ready++ },
                     onStopped: () => { stopped++ },
                 })
-                await until(() => state().truncateCompleted > before, 'startup truncate')
+                await until(() => state().completed > before, 'startup passive checkpoint')
+                assert.equal(fs.statSync(db.name + '-wal').size, walBytes,
+                    'an online checkpoint must retain the physical WAL even above legacy truncate thresholds')
+                assertPassiveDiagnostics()
                 assert.equal(ready, 1)
                 await until(() => {
                     const worker = collectMemoryDiagnostics().workers.find(row => row.name === 'sqlite-checkpoint')
                     return worker && !worker.stale && worker.pendingMs === 0
                 }, 'checkpoint memory probe')
-                assert.equal(fs.statSync(db.name + '-wal').size, 0)
+                assert.ok(state().lastPassiveLogFrames > 0)
+                assert.equal(state().lastPassiveCheckpointedFrames, state().lastPassiveLogFrames)
+                const worker = collectMemoryDiagnostics().workers.find(row => row.name === 'sqlite-checkpoint')
+                assert.equal(worker.counters.truncateAttempts, 0)
+                assert.equal(worker.counters.truncateCompleted, 0)
+                assert.equal(worker.counters.truncateBusy, 0)
                 assert.equal(db.prepare('SELECT count(*) FROM payloads').pluck().get(), 1301)
                 assert.equal(db.pragma('integrity_check', { simple: true }), 'ok')
             } finally {
@@ -106,30 +122,50 @@ test('checkpoint worker handles backlog, pinned readers, cooldown and lifecycle 
                 db.close()
             }
         })
-        await t.test('pinned reader reports busy, respects cooldown and retries after release', async () => {
+        await t.test('pinned reader allows partial checkpoints and writes, then catches up without truncation and reuses WAL', async () => {
             const db = open(path.join(directory, 'reader.db'))
             const reader = new Database(db.name, { readonly: true })
             try {
                 reader.exec('BEGIN')
                 assert.equal(reader.prepare('SELECT count(*) FROM payloads').pluck().get(), 1)
                 append(db)
+                db.pragma('busy_timeout=25')
                 const before = state()
                 checkpoint.startSqliteCheckpointWorker(db.name, environment)
-                await until(() => state().truncateBusy > before.truncateBusy, 'pinned-reader busy')
+                await until(() => state().completed > before.completed, 'pinned-reader partial checkpoint')
                 assert.equal(state().errors, before.errors)
                 assert.ok(state().lastPassiveCheckpointedFrames < state().lastPassiveLogFrames)
+                assertPassiveDiagnostics()
                 assert.equal(reader.prepare('SELECT count(*) FROM payloads').pluck().get(), 1)
+                db.transaction(() => db.prepare('INSERT INTO payloads VALUES(1301,?)').run(Buffer.alloc(3800, 8))).immediate()
                 const first = state()
                 checkpoint.requestSqliteCheckpoint()
-                await until(() => state().completed > first.completed, 'cooldown passive checkpoint')
-                assert.equal(state().truncateAttempts, first.truncateAttempts)
+                await until(() => state().completed > first.completed, 'another partial passive checkpoint')
+                assert.ok(state().lastPassiveCheckpointedFrames < state().lastPassiveLogFrames)
                 reader.exec('COMMIT')
-                await delay(5100)
+                const afterRelease = state().completed
                 checkpoint.requestSqliteCheckpoint()
-                await until(() => state().truncateCompleted > before.truncateCompleted, 'retry after reader release')
-                assert.equal(state().lastWalBytes, 0)
-                assert.equal(db.prepare('SELECT count(*) FROM payloads').pluck().get(), 1301)
-                assert.equal(reader.prepare('SELECT count(*) FROM payloads').pluck().get(), 1301)
+                await until(() => state().completed > afterRelease
+                    && state().lastPassiveCheckpointedFrames === state().lastPassiveLogFrames,
+                'full backfill after reader release')
+                const retainedBytes = fs.statSync(db.name + '-wal').size
+                const backlogFrames = state().lastPassiveLogFrames
+                assert.ok(retainedBytes >= 4 * 1024 * 1024)
+                assert.equal(db.prepare('SELECT count(*) FROM payloads').pluck().get(), 1302)
+                assert.equal(reader.prepare('SELECT count(*) FROM payloads').pluck().get(), 1302)
+                for (let i = 0; i < 3; i++) {
+                    db.prepare('UPDATE payloads SET data=? WHERE id=0').run(Buffer.alloc(3800, i + 10))
+                    const completed = state().completed
+                    checkpoint.requestSqliteCheckpoint()
+                    await until(() => state().completed > completed, 'reused WAL checkpoint')
+                    assert.equal(state().lastPassiveCheckpointedFrames, state().lastPassiveLogFrames)
+                    assert.ok(state().lastPassiveLogFrames < backlogFrames,
+                        'a later small write should reuse WAL frames after a completed checkpoint')
+                    assert.equal(fs.statSync(db.name + '-wal').size, retainedBytes)
+                    assert.equal(db.prepare('SELECT hex(substr(data,1,1)) FROM payloads WHERE id=0').pluck().get(),
+                        (i + 10).toString(16).padStart(2, '0').toUpperCase())
+                    assertPassiveDiagnostics()
+                }
                 assert.equal(db.pragma('integrity_check', { simple: true }), 'ok')
             } finally {
                 if (reader.inTransaction) reader.exec('ROLLBACK')
