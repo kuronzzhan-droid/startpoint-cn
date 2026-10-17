@@ -2,7 +2,7 @@
 
 《世界弹射物语》国服(雷霆)非官方服务端 [Ku1o/startpoint-cn-kulo](https://github.com/Ku1o/startpoint-cn-kulo) 的个人整合仓库,包含测试服的服务端改动、补丁链、客户端 APK 补丁和平衡/设计文档。
 
-**当前状态:与测试服一致(2026-10-17),补丁链尾 1.4.230,客户端 APK v34。已合并 kulo main `224aa2a6`。**
+**当前状态:与测试服一致(2026-10-17),补丁链尾 1.4.231,客户端 APK v34。已合并 kulo main `224aa2a6`。**
 
 **灰拉取正式服内容请看 [docs/mod/灰拉取说明.md](docs/mod/灰拉取说明.md);测试服专用设置见 [docs/mod/测试服专用设置.md](docs/mod/测试服专用设置.md)。** 上游项目原 README 见 [docs/UPSTREAM-README.md](docs/UPSTREAM-README.md)。
 
@@ -12,8 +12,8 @@
 |---|---|
 | 服务端源码(测试服现状) | [`src/`](src)、[`tests/`](tests);kulo main `224aa2a6` + 我方改动(分类补丁见 [docs/mod/kulo-patches/](docs/mod/kulo-patches)) |
 | 服务端资源表 | [`assets/`](assets)(含碧 169978、凉月、超限表 `character_overlimit.json` 等) |
-| 客户端补丁链清单 | [`assets/asset-patch/manifest.json`](assets/asset-patch/manifest.json),链尾 1.4.230 |
-| 补丁 zip 下载 | Release [snapshot-1.4.218-20261016](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/snapshot-1.4.218-20261016)(104 个,截至 1.4.218)+ [patches-1.4.219](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.219) + [patches-1.4.224](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.224)(1.4.220–1.4.224)+ [patches-1.4.225](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.225)+ [patches-1.4.226](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.226)+ [patches-1.4.227](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.227)+ [patches-1.4.228](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.228)+ [patches-1.4.229](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.229)+ [patches-1.4.230](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.230);kulo main 已有的包直接在仓库里 |
+| 客户端补丁链清单 | [`assets/asset-patch/manifest.json`](assets/asset-patch/manifest.json),链尾 1.4.231 |
+| 补丁 zip 下载 | Release [snapshot-1.4.218-20261016](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/snapshot-1.4.218-20261016)(104 个,截至 1.4.218)+ [patches-1.4.219](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.219) + [patches-1.4.224](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.224)(1.4.220–1.4.224)+ [patches-1.4.225](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.225)+ [patches-1.4.226](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.226)+ [patches-1.4.227](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.227)+ [patches-1.4.228](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.228)+ [patches-1.4.229](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.229)+ [patches-1.4.230](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.230)+ [patches-1.4.231](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.231);kulo main 已有的包直接在仓库里 |
 | 客户端 APK 补丁(v17→v34,111 个) | [`apk-patches/`](apk-patches):[v17→v33 总索引](apk-patches/README.md)、[v34 新增 102–111](apk-patches/ADDITIONS-v34.md);x86 构建脚本在 `apk-patches/_build-x86/`,v34 重建在 `apk-patches/_build-v34/` |
 | 角色平衡改动说明 | [`docs/mod/平衡/`](docs/mod/平衡) |
 | 角色设计稿与台词稿 | [`docs/mod/设计/`](docs/mod/设计) |
