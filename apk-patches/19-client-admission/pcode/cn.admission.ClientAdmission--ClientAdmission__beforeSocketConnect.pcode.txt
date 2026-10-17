@@ -1,5 +1,5 @@
 # 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
-# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# 来源：%USERPROFILE%\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
 # DoABC2: cn.admission.ClientAdmission; label: ClientAdmission$/beforeSocketConnect; body: 16; method: 15
 # code SHA-256: fba17aa746758d590f96197d1b6805b91dad7c6d74ec3af6bd0b71047f142e2a; header: [3, 3, 0, 2]
 # 按实际字节码解析的指令文本。

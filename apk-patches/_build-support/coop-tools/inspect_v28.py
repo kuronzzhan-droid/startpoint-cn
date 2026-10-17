@@ -18,7 +18,7 @@ from abcfmt import ABC
 from swftags import iter_tags
 
 ROOT = Path(r"D:\WF\coop-fix-20261014")
-APK = Path(r"C:\Users\12101\Downloads\世界弹射测试服-v28.apk")
+APK = Path(r"%USERPROFILE%\Downloads\世界弹射测试服-v28.apk")
 LABELS = [
     "BattleDerailleur/getDeferralLevel",
     "BattleDerailleur/addSocketCommand",

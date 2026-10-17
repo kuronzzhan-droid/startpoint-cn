@@ -16,7 +16,7 @@ import bodies  # noqa: E402
 from swfabc import abcfmt, swftags  # noqa: E402
 
 ROOT = TOOLS.parent
-BASE_APK = Path(r"C:\Users\12101\Downloads\世界弹射测试服-v29-coop.apk")
+BASE_APK = Path(r"%USERPROFILE%\Downloads\世界弹射测试服-v29-coop.apk")
 BASE_APK_SHA = "be91bc50a5208b27abeb3412a30264dd429c0f505cc1465e22d0cd5fcaeebeb5"
 BASE_SWF_SHA = "9deedc1c038681b858f81bbc965dea07ff16e72808146f1fca56b4b04de3f11e"
 ORIGINAL_SWF = Path(r"D:\WF\decompile-complete-20261014\apk\worldflipper_android_release.swf")

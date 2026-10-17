@@ -1,5 +1,5 @@
 # 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
-# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# 来源：%USERPROFILE%\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
 # DoABC2: boot_ffc6; label: BallImpl/findEscapeTarget; body: 59973; method: 64951
 # code SHA-256: eff8bb9bf1840c36e2e9b3076759397f31a492ee31de4e8d0323eb671801facc; header: [5, 11, 1, 2]
 # 按实际字节码解析的指令文本。

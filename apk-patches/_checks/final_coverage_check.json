@@ -3,7 +3,7 @@
   "artifacts": [
     {
       "version": "v17",
-      "apk": "C:\\Users\\12101\\Downloads\\世界弹射测试服-v17.apk",
+      "apk": "%USERPROFILE%\\Downloads\\世界弹射测试服-v17.apk",
       "swf_sha256": "be3cd96af18c569153314ca2c9468ad9cb6061e188c75e84713c0dca06be5f15",
       "target": "production/android_bundle/dc/bcccb129122c0189c8eab004ecc4516a077f3e",
       "payload_bytes": 466,
@@ -115,7 +115,7 @@
     },
     {
       "version": "v33",
-      "apk": "C:\\Users\\12101\\Downloads\\世界弹射测试服-v33.apk",
+      "apk": "%USERPROFILE%\\Downloads\\世界弹射测试服-v33.apk",
       "swf_sha256": "3b7b3391ae0aee01f15167fe1d5a5b69eddb71a64605c57486f025916611aaa4",
       "target": "production/android_bundle/dc/bcccb129122c0189c8eab004ecc4516a077f3e",
       "payload_bytes": 466,

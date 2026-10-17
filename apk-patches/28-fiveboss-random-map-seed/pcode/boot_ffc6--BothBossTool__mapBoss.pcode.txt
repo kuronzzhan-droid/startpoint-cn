@@ -1,5 +1,5 @@
 # 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
-# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# 来源：%USERPROFILE%\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
 # DoABC2: boot_ffc6; label: BothBossTool$/mapBoss; body: 50988; method: 54725
 # code SHA-256: 4f7be710e2c1d4a1e57a818f9176d4e7bfeecd0a4c9ebf4d7db1dfde6755d8cb; header: [8, 13, 1, 2]
 # 按实际字节码解析的指令文本。

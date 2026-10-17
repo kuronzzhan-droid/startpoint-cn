@@ -5,7 +5,7 @@ $R = 'D:\WF\perf-v30-20261015'
 $W = "$R\work\x86stubs"
 $T = 'D:\WF\runtimes\android-toolchain\sdk\build-tools\34.0.0'
 $O = "$R\out"
-$base = (Get-ChildItem 'C:\Users\12101\Downloads' -Filter '*-v33.apk' | Where-Object { $_.Name -notmatch 'x86' } | Select-Object -First 1).FullName
+$base = (Get-ChildItem '%USERPROFILE%\Downloads' -Filter '*-v33.apk' | Where-Object { $_.Name -notmatch 'x86' } | Select-Object -First 1).FullName
 $h = (Get-FileHash $base).Hash.ToLower()
 if ($h -ne '3de625cf0c745c79d333a09140ad82fdea74746d2e2200a5b6922f67eca14532') { throw "unexpected v33 base: $h" }
 

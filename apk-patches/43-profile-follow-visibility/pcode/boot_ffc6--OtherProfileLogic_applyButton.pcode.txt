@@ -1,5 +1,5 @@
 # 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
-# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# 来源：%USERPROFILE%\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
 # DoABC2: boot_ffc6; label: OtherProfileLogic/applyButton; body: 79102; method: 86703
 # code SHA-256: d5bb4ff4652ef7484c3d2f697e2c1fde41e6bef54ee664960acfe8741c7c825c; header: [10, 4, 1, 2]
 # 按实际字节码解析的指令文本。

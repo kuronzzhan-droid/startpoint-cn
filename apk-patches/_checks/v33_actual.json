@@ -1,6 +1,6 @@
 [
   {
-    "path": "C:\\Users\\12101\\Downloads\\世界弹射测试服-v33-x86.apk",
+    "path": "%USERPROFILE%\\Downloads\\世界弹射测试服-v33-x86.apk",
     "apk_sha256": "572dd17256de6708b9cdcbe752e184a97b44781bce8fd5ffacf7be7413e0c331",
     "swf_sha256": "3b7b3391ae0aee01f15167fe1d5a5b69eddb71a64605c57486f025916611aaa4",
     "native_x86": [
@@ -326,7 +326,7 @@
     ]
   },
   {
-    "path": "C:\\Users\\12101\\Downloads\\世界弹射测试服-v33.apk",
+    "path": "%USERPROFILE%\\Downloads\\世界弹射测试服-v33.apk",
     "apk_sha256": "3de625cf0c745c79d333a09140ad82fdea74746d2e2200a5b6922f67eca14532",
     "swf_sha256": "3b7b3391ae0aee01f15167fe1d5a5b69eddb71a64605c57486f025916611aaa4",
     "native_x86": [],

@@ -1,5 +1,5 @@
 # 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
-# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# 来源：%USERPROFILE%\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
 # DoABC2: boot_ffc6; label: MiscDataLogic/setAutoSpeedLevel; body: 19909; method: 20916
 # code SHA-256: c21ad66afd1e438cbfefeee33c3a7b1d37f9d66807b70cae51f51d07b8164502; header: [3, 6, 1, 2]
 # 按实际字节码解析的指令文本。

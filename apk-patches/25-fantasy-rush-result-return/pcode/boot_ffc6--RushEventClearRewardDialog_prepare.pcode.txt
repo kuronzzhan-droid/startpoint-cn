@@ -1,5 +1,5 @@
 # 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
-# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# 来源：%USERPROFILE%\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
 # DoABC2: boot_ffc6; label: RushEventClearRewardDialog/prepare; body: 92020; method: 100493
 # code SHA-256: 5d7d494c8e26583e4cd57fd9f4f697e75ed844f007d8f5eceb9b7347945c51dd; header: [10, 11, 6, 7]
 # 按实际字节码解析的指令文本。

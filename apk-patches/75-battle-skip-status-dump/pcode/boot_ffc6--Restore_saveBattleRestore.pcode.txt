@@ -1,5 +1,5 @@
 # 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
-# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# 来源：%USERPROFILE%\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
 # DoABC2: boot_ffc6; label: Restore/saveBattleRestore; body: 30966; method: 33420
 # code SHA-256: 3dfc4482e515bf04da80ded65dab05ffda5a5c6e086a908b27b236f557d832fb; header: [7, 10, 1, 2]
 # 按实际字节码解析的指令文本。

@@ -1,5 +1,5 @@
 # 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
-# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# 来源：%USERPROFILE%\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
 # DoABC2: cn.account.PlayerLogin; label: anonymous-method-47; body: 45; method: 47
 # code SHA-256: 216e5ddc4034c8bb8d3063d58c54220b8ed2c6343f5a6a2e0555606d45da3dbc; header: [2, 1, 0, 0]
 # 按实际字节码解析的指令文本。

@@ -11,8 +11,8 @@
 - `D:\WF\out\赛瑞斯重做-20261015\apk\out\世界弹射测试服-v32f-pflv4.build-report.json`：最终 P1/P2/P3。
 - `D:\WF\out\角色超限-120\apk\out\世界弹射测试服-v31-overlimit120.build-report.json`：perf2 输入、O1–O7 和 bundle 四成员。
 - `D:\WF\perf-v30-20261015\out\世界弹射测试服-v30-perf2.build-report.json` 与 `tools/perf2_patches.py:221-237`：P1/S1/S2/B1/C1 顺序和方法哈希。
-- `C:\Users\12101\Downloads\世界弹射测试服-v28.build-report.json`、同目录 v25/v26/v27 报告：从 v17 重建及逐版本新增/替换。
-- `C:\Users\12101\Downloads\世界弹射测试服-v17.apk`、`世界弹射测试服-v33.apk`、`世界弹射测试服-v33-x86.apk`：本次只读在内存解析，未复制；对应 `_checks` 记录文件哈希、逐方法哈希和成员比较。
+- `%USERPROFILE%\Downloads\世界弹射测试服-v28.build-report.json`、同目录 v25/v26/v27 报告：从 v17 重建及逐版本新增/替换。
+- `%USERPROFILE%\Downloads\世界弹射测试服-v17.apk`、`世界弹射测试服-v33.apk`、`世界弹射测试服-v33-x86.apk`：本次只读在内存解析，未复制；对应 `_checks` 记录文件哈希、逐方法哈希和成员比较。
 
 ## 01 九尾 PF 弹射前连击快照
 
@@ -1337,10 +1337,10 @@
 - 对应目录：[52-testserver-v17-identity](52-testserver-v17-identity/README.md)。
 - 首发/最终版结论：v17；v17 已含且 v33 保留；具体修订编号未核实。
 - 用途、位置、问题及依赖的原始依据：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3a2d10f4-784b-4e40-914d-69525c153b6e\scratchpad\apk\make_test_apk.py:1-19,59-98,125-148`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3a2d10f4-784b-4e40-914d-69525c153b6e\scratchpad\apk\make_test_apk.py:1-19,59-98,125-148`
   - `D:\WF\apkp1016\research\early_actual_checks.json:method_checks/helper_checks/helper_callsites（本次实读v17/v33）`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3a2d10f4-784b-4e40-914d-69525c153b6e\scratchpad\apk\make_test_apk.py` → `52-testserver-v17-identity\source\make_test_apk.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3a2d10f4-784b-4e40-914d-69525c153b6e\scratchpad\apk\make_test_apk.py` → `52-testserver-v17-identity\source\make_test_apk.py`。
 - 最终方法体实证：
   - `cn.admission.ClientAdmission:ClientAdmission$/now`；body `0`；code SHA-256 `97e276a3ed4c4fcccf2b212f6619f2e4f4395eea003ef18b5cc3f9a3c9d58df8`；已收文本。
   - `cn.admission.ClientAdmission:anonymous-method-3`；body `1`；code SHA-256 `204e6fe8400868d544fb7174a2eef145bf6eadec596da4df794a628ec54abfc5`；已收文本。
@@ -1394,9 +1394,9 @@
 - 用途、位置、问题及依赖的原始依据：
   - `D:\WF\out\kulo-patch-toolkit\cursed_abyss\apk\世界弹射测试服-v18.build-report.json:2-12；v18 首发`
   - `D:\WF\out\kulo-patch-toolkit\cursed_abyss\apk\世界弹射测试服-v20.build-report.json:174-175；v20 修正公式`
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:298-312；最终 max-first P-code`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:298-312；最终 max-first P-code`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `53-charge-cap-unique\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `53-charge-cap-unique\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:MemberImpl/getStatModifierSkillGaugeCharging`；body `60305`；code SHA-256 `37fbc1b1aac0037ec9b75147e2bd7411d301be0a37e526e2a2d2075ad0fcda1f`；已收文本。
 
@@ -1407,9 +1407,9 @@
 - 用途、位置、问题及依赖的原始依据：
   - `D:\WF\out\kulo-patch-toolkit\cursed_abyss\apk\世界弹射测试服-v18.build-report.json:2-12；v18 首发`
   - `D:\WF\out\kulo-patch-toolkit\cursed_abyss\apk\世界弹射测试服-v21.build-report.json:163-167；v21 参数化公式`
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:266-284；最终公式和队长限制`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:266-284；最终公式和队长限制`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `54-kyle-direct-multiplier\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `54-kyle-direct-multiplier\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:MemberImpl/scheduleDirectAttack`；body `60192`；code SHA-256 `223640cd78b631640313859bb39410d270696644f058435cd1258c88c9f30576`；已收文本。
 
@@ -1419,11 +1419,11 @@
 - 首发/最终版结论：v18；v25 修订；v28 源体与 v33 相同。
 - 用途、位置、问题及依赖的原始依据：
   - `D:\WF\out\kulo-patch-toolkit\cursed_abyss\apk\世界弹射测试服-v18.build-report.json:2-12；v18 首发能力与 v17 基线`
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:285-296；最终只保留 PF marker 分支`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:285-296；最终只保留 PF marker 分支`
   - `D:\WF\out\kulo-patch-toolkit\cursed_abyss\build\kyle_pf_marker.py:2-3；数据标记用途`
   - `D:\WF\out\kulo-patch-toolkit\cursed_abyss\build\kyle_pf_marker.py:14-25；marker 数据编码和作用范围`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `55-kyle-pf-marker-silence\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `55-kyle-pf-marker-silence\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:EnemyImpl/applyAttack`；body `53486`；code SHA-256 `989cd6d4d05f0e88c4073ad3d6107bff66c2e8438247e14097b6144ed56e957e`；已收文本。
 
@@ -1433,9 +1433,9 @@
 - 首发/最终版结论：v20；v25 仅凯尔队长最终修订。
 - 用途、位置、问题及依赖的原始依据：
   - `D:\WF\out\kulo-patch-toolkit\cursed_abyss\apk\世界弹射测试服-v20.build-report.json:174-175；v20 首次 merge_min_segments=4`
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:336-366；最终队长限定、补计数和韧性/Fever恢复`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:336-366；最终队长限定、补计数和韧性/Fever恢复`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `56-kyle-direct-merge\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `56-kyle-direct-merge\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:MemberImpl/scheduleDirectAttack`；body `60192`；code SHA-256 `223640cd78b631640313859bb39410d270696644f058435cd1258c88c9f30576`；已收文本。
 
@@ -1445,9 +1445,9 @@
 - 首发/最终版结论：v22；v22 原行为保持。
 - 用途、位置、问题及依赖的原始依据：
   - `D:\WF\out\kulo-patch-toolkit\cursed_abyss\apk\世界弹射测试服-v22.build-report.json:2-13；v22 新增 boss-stun-gauge-v1`
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:367-371；最终 kind=3 return true`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:367-371；最终 kind=3 return true`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `57-boss-stun-gauge\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `57-boss-stun-gauge\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:EnemyImpl/isBattleDebugToughnessPointGaugeVisible`；body `53155`；code SHA-256 `f09ff17192f74bd8dc64a8bcac3263e5c5aba324b13b6cb1d4af2263874ddc82`；已收文本。
 
@@ -1457,9 +1457,9 @@
 - 首发/最终版结论：v23；v25 同步翻页计数最终修订。
 - 用途、位置、问题及依赖的原始依据：
   - `D:\WF\out\kulo-patch-toolkit\cursed_abyss\apk\世界弹射测试服-v23.build-report.json:2-14；v23 首发`
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:372-431；最终过滤和计数同源`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:372-431；最终过滤和计数同源`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `58-hidden-unique-icons\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `58-hidden-unique-icons\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:MemberImpl/getConditionsIncludingOuterEnvironments`；body `60430`；code SHA-256 `582e23ac1290798c11380451f6c0cdb7a894eb1719e3ef82dd01f3e34787af31`；已收文本。
   - `boot_ffc6:MemberImpl/getTotalConditions`；body `60292`；code SHA-256 `405cc8b1a873c66be00b5dc4b84c7e6b0acfbe84e2f673644fcbf6a9614cb7d5`；已收文本。
@@ -1469,12 +1469,12 @@
 - 对应目录：[59-autospeed-store-skip](59-autospeed-store-skip/README.md)。
 - 首发/最终版结论：v25；v17 已含且 v33 保留；具体修订编号未核实。
 - 用途、位置、问题及依赖的原始依据：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:438-444`
-  - `C:\Users\12101\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:438-444`
+  - `%USERPROFILE%\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
   - `D:\WF\apkp1016\research\v33_method_audit.json:changed_named_methods（本次最终v33内存读出，与原v28 build-report逐体比较）`
   - `D:\WF\apkp1016\research\early_actual_checks.json:method_checks/helper_checks/helper_callsites（本次实读v17/v33）`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `59-autospeed-store-skip\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `59-autospeed-store-skip\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:MiscDataLogic/setAutoSpeedLevel`；body `19909`；code SHA-256 `c21ad66afd1e438cbfefeee33c3a7b1d37f9d66807b70cae51f51d07b8164502`；已收文本。
 
@@ -1483,12 +1483,12 @@
 - 对应目录：[60-character-apply-throttle](60-character-apply-throttle/README.md)。
 - 首发/最终版结论：v25；v17 已含且 v33 保留；具体修订编号未核实。
 - 用途、位置、问题及依赖的原始依据：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:528-535`
-  - `C:\Users\12101\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:528-535`
+  - `%USERPROFILE%\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
   - `D:\WF\apkp1016\research\v33_method_audit.json:changed_named_methods（本次最终v33内存读出，与原v28 build-report逐体比较）`
   - `D:\WF\apkp1016\research\early_actual_checks.json:method_checks/helper_checks/helper_callsites（本次实读v17/v33）`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `60-character-apply-throttle\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `60-character-apply-throttle\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:CharacterTableView/draw`；body `66178`；code SHA-256 `e4f6b5269662be8323bb6f91cd00e124eb4e0cc7f33c619284279a603a7fc6fb`；已收文本。
 
@@ -1497,12 +1497,12 @@
 - 对应目录：[61-character-offscreen-draw-skip](61-character-offscreen-draw-skip/README.md)。
 - 首发/最终版结论：v25；v17 已含且 v33 保留；具体修订编号未核实。
 - 用途、位置、问题及依赖的原始依据：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:536-548`
-  - `C:\Users\12101\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:536-548`
+  - `%USERPROFILE%\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
   - `D:\WF\apkp1016\research\v33_method_audit.json:changed_named_methods（本次最终v33内存读出，与原v28 build-report逐体比较）`
   - `D:\WF\apkp1016\research\early_actual_checks.json:method_checks/helper_checks/helper_callsites（本次实读v17/v33）`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `61-character-offscreen-draw-skip\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `61-character-offscreen-draw-skip\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:CharacterCellView/drawWithAdvanceFlag`；body `65790`；code SHA-256 `beedce9917da57caa8d1d65576cc86ea91a18540a14cca0979e3fcd1cda03fc5`；已收文本。
 
@@ -1511,12 +1511,12 @@
 - 对应目录：[62-character-offscreen-playhead-skip](62-character-offscreen-playhead-skip/README.md)。
 - 首发/最终版结论：v25；v17 已含且 v33 保留；具体修订编号未核实。
 - 用途、位置、问题及依赖的原始依据：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:549-562`
-  - `C:\Users\12101\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:549-562`
+  - `%USERPROFILE%\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
   - `D:\WF\apkp1016\research\v33_method_audit.json:changed_named_methods（本次最终v33内存读出，与原v28 build-report逐体比较）`
   - `D:\WF\apkp1016\research\early_actual_checks.json:method_checks/helper_checks/helper_callsites（本次实读v17/v33）`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `62-character-offscreen-playhead-skip\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `62-character-offscreen-playhead-skip\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:CharacterTable/updateCells`；body `66116`；code SHA-256 `917156e5da4c81f2d395de7a76739eee259217f906fad883120ed91a8326fb8b`；已收文本。
 
@@ -1525,12 +1525,12 @@
 - 对应目录：[63-character-rank-map-sort](63-character-rank-map-sort/README.md)。
 - 首发/最终版结论：v25；v17 已含且 v33 保留；具体修订编号未核实。
 - 用途、位置、问题及依赖的原始依据：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:563-605`
-  - `C:\Users\12101\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:563-605`
+  - `%USERPROFILE%\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
   - `D:\WF\apkp1016\research\v33_method_audit.json:changed_named_methods（本次最终v33内存读出，与原v28 build-report逐体比较）`
   - `D:\WF\apkp1016\research\early_actual_checks.json:method_checks/helper_checks/helper_callsites（本次实读v17/v33）`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `63-character-rank-map-sort\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `63-character-rank-map-sort\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:CharacterTable/applyCharacters`；body `66148`；code SHA-256 `cc8f9aff1df3b621da06717d1cb401d93942ef2a6607978659544d97bdd85945`；已收文本。
 
@@ -1539,12 +1539,12 @@
 - 对应目录：[64-five-boss-round1-grace](64-five-boss-round1-grace/README.md)。
 - 首发/最终版结论：v25；v17 已含且 v33 保留；具体修订编号未核实。
 - 用途、位置、问题及依赖的原始依据：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:614-626`
-  - `C:\Users\12101\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:614-626`
+  - `%USERPROFILE%\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
   - `D:\WF\apkp1016\research\v33_method_audit.json:changed_named_methods（本次最终v33内存读出，与原v28 build-report逐体比较）`
   - `D:\WF\apkp1016\research\early_actual_checks.json:method_checks/helper_checks/helper_callsites（本次实读v17/v33）`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `64-five-boss-round1-grace\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `64-five-boss-round1-grace\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:BattleScenePlayingStateImpl/proceedBattles`；body `63135`；code SHA-256 `c0dc1c45f6587c6ae0017873763fd4047043537bbca406b92750f30d15860713`；已收文本。
 
@@ -1553,13 +1553,13 @@
 - 对应目录：[65-gerald-149999-ready-voice](65-gerald-149999-ready-voice/README.md)。
 - 首发/最终版结论：v25；v17 已含且 v33 保留；具体修订编号未核实。
 - 用途、位置、问题及依赖的原始依据：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:445-495`
-  - `C:\Users\12101\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:445-495`
+  - `%USERPROFILE%\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
   - `D:\WF\apkp1016\research\v33_method_audit.json:changed_named_methods（本次最终v33内存读出，与原v28 build-report逐体比较）`
   - `D:\WF\apkp1016\research\early_actual_checks.json:method_checks/helper_checks/helper_callsites（本次实读v17/v33）`
   - `D:\WF\apkp1016\research\early_actual_checks.json:feature_probes.HudMemberStatus/update,CharacterVoiceLogic/createVoicePathMap,BattleCharacterLogic/resolveFollowingPathCollection`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `65-gerald-149999-ready-voice\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `65-gerald-149999-ready-voice\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:HudMemberStatus/update`；body `58762`；code SHA-256 `7858113b678d100259739c4716f0729c9f3dfc75498fd101efc37f9dbaf9e50c`；已收文本。
   - `boot_ffc6:BattleCharacterLogic/resolveFollowingPathCollection`；body `92330`；code SHA-256 `d8d6141c41bcb2d9290f8cfcfe71d5618e65127a8bab1129779fe30b6924e8ea`；已收文本。
@@ -1570,12 +1570,12 @@
 - 对应目录：[66-home-msaa-off](66-home-msaa-off/README.md)。
 - 首发/最终版结论：v25；v17 已含且 v33 保留；具体修订编号未核实。
 - 用途、位置、问题及依赖的原始依据：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:525-527`
-  - `C:\Users\12101\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:525-527`
+  - `%USERPROFILE%\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
   - `D:\WF\apkp1016\research\v33_method_audit.json:changed_named_methods（本次最终v33内存读出，与原v28 build-report逐体比较）`
   - `D:\WF\apkp1016\research\early_actual_checks.json:method_checks/helper_checks/helper_callsites（本次实读v17/v33）`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `66-home-msaa-off\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `66-home-msaa-off\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:HomeView/<ctor>`；body `74852`；code SHA-256 `2b945c18710679255987f8b4aadb7f7483fdf89fc32d04e6db850baf269ef581`；已收文本。
 
@@ -1584,12 +1584,12 @@
 - 对应目录：[67-party-ui-log-skip](67-party-ui-log-skip/README.md)。
 - 首发/最终版结论：v25；v17 已含且 v33 保留；具体修订编号未核实。
 - 用途、位置、问题及依赖的原始依据：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:519-612`
-  - `C:\Users\12101\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:519-612`
+  - `%USERPROFILE%\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
   - `D:\WF\apkp1016\research\v33_method_audit.json:changed_named_methods（本次最终v33内存读出，与原v28 build-report逐体比较）`
   - `D:\WF\apkp1016\research\early_actual_checks.json:method_checks/helper_checks/helper_callsites（本次实读v17/v33）`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `67-party-ui-log-skip\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `67-party-ui-log-skip\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:CharacterTableView/present`；body `66173`；code SHA-256 `4d056fc151a6fe4d85a32ef408dc6ba7e79c9f41d1d8a3b80d12fff393091530`；已收文本。
   - `boot_ffc6:PartyCarouselPageView/apply`；body `66664`；code SHA-256 `6a70058f30d894e6ca6f3618609bd6fb3f748f73ab8784d76f7f01e0940b5ae3`；已收文本。
@@ -1601,12 +1601,12 @@
 - 对应目录：[68-reproduce-snapshot-only](68-reproduce-snapshot-only/README.md)。
 - 首发/最终版结论：v25；v17 已含且 v33 保留；具体修订编号未核实。
 - 用途、位置、问题及依赖的原始依据：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:432-437`
-  - `C:\Users\12101\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:432-437`
+  - `%USERPROFILE%\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
   - `D:\WF\apkp1016\research\v33_method_audit.json:changed_named_methods（本次最终v33内存读出，与原v28 build-report逐体比较）`
   - `D:\WF\apkp1016\research\early_actual_checks.json:method_checks/helper_checks/helper_callsites（本次实读v17/v33）`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `68-reproduce-snapshot-only\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `68-reproduce-snapshot-only\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:ReproduceFileRecordImpl/saveLog`；body `30917`；code SHA-256 `0796011b5ae3d02da88f76ddf37f768dd128df02d551834499305c3daf8f71e4`；已收文本。
 
@@ -1615,12 +1615,12 @@
 - 对应目录：[69-atlas-overflow-spill](69-atlas-overflow-spill/README.md)。
 - 首发/最终版结论：v26；v17 已含且 v33 保留；具体修订编号未核实。
 - 用途、位置、问题及依赖的原始依据：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:730-810`
-  - `C:\Users\12101\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:730-810`
+  - `%USERPROFILE%\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
   - `D:\WF\apkp1016\research\v33_method_audit.json:changed_named_methods（本次最终v33内存读出，与原v28 build-report逐体比较）`
   - `D:\WF\apkp1016\research\early_actual_checks.json:method_checks/helper_checks/helper_callsites（本次实读v17/v33）`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `69-atlas-overflow-spill\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `69-atlas-overflow-spill\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:BattleStartProductionViewService/setupTextureAtlas`；body `38042`；code SHA-256 `7448e38e05aaeb9e4ff5f7b967ba8bd752e4373e819987fac8ba5da2debfe5e9`；已收文本。
 
@@ -1629,12 +1629,12 @@
 - 对应目录：[70-local-loading-view-gc](70-local-loading-view-gc/README.md)。
 - 首发/最终版结论：v26；v17 已含且 v33 保留；具体修订编号未核实。
 - 用途、位置、问题及依赖的原始依据：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:627-632`
-  - `C:\Users\12101\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:627-632`
+  - `%USERPROFILE%\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
   - `D:\WF\apkp1016\research\v33_method_audit.json:changed_named_methods（本次最终v33内存读出，与原v28 build-report逐体比较）`
   - `D:\WF\apkp1016\research\early_actual_checks.json:method_checks/helper_checks/helper_callsites（本次实读v17/v33）`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `70-local-loading-view-gc\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `70-local-loading-view-gc\source\wf_hitfx_silence.v28.py`。
 - 最终方法体实证：
   - `boot_ffc6:LocalLoading/startChild`；body `38428`；code SHA-256 `77eb5495b8bd1c332701e4ed63920b5a792385ce776aeeb2145648ef28c6a598`；已收文本。
 
@@ -1643,13 +1643,13 @@
 - 对应目录：[71-battle-pack-slicer](71-battle-pack-slicer/README.md)。
 - 首发/最终版结论：v27；v17 已含且 v33 保留；具体修订编号未核实。
 - 用途、位置、问题及依赖的原始依据：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:633-654`
-  - `C:\Users\12101\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:633-654`
+  - `%USERPROFILE%\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
   - `D:\WF\apkp1016\research\v33_method_audit.json:changed_named_methods（本次最终v33内存读出，与原v28 build-report逐体比较）`
   - `D:\WF\apkp1016\research\early_actual_checks.json:method_checks/helper_checks/helper_callsites（本次实读v17/v33）`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `71-battle-pack-slicer\source\wf_hitfx_silence.v28.py`。
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\src\cn\loading\BattlePackSlicer.as` → `71-battle-pack-slicer\source\BattlePackSlicer.as`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `71-battle-pack-slicer\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\src\cn\loading\BattlePackSlicer.as` → `71-battle-pack-slicer\source\BattlePackSlicer.as`。
 - 最终方法体实证：
   - `boot_ffc6:BattleStartProductionViewService/prepare`；body `38045`；code SHA-256 `8eb9f901d73b20499ad2b97b3d7a72beab1eda5e0a9a98d480f7196320744c59`；已收文本。
   - `cn.loading.BattlePackSlicer:BattlePackSlicer$/cls`；body `0`；code SHA-256 `a3e677a1c802473dbd619b5553c5fd68c7c0224f49ba78097694ad493f609308`；已收文本。
@@ -1681,13 +1681,13 @@
 - 对应目录：[72-transition-gc-dedupe](72-transition-gc-dedupe/README.md)。
 - 首发/最终版结论：v28；v17 已含且 v33 保留；具体修订编号未核实。
 - 用途、位置、问题及依赖的原始依据：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:663-707`
-  - `C:\Users\12101\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:663-707`
+  - `%USERPROFILE%\Downloads\世界弹射测试服-v28.build-report.json:capability/methods`
   - `D:\WF\apkp1016\research\v33_method_audit.json:changed_named_methods（本次最终v33内存读出，与原v28 build-report逐体比较）`
   - `D:\WF\apkp1016\research\early_actual_checks.json:method_checks/helper_checks/helper_callsites（本次实读v17/v33）`
 - 已收源与构建文件：
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `72-transition-gc-dedupe\source\wf_hitfx_silence.v28.py`。
-  - `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\src\cn\loading\GcGate.as` → `72-transition-gc-dedupe\source\GcGate.as`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py` → `72-transition-gc-dedupe\source\wf_hitfx_silence.v28.py`。
+  - `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\src\cn\loading\GcGate.as` → `72-transition-gc-dedupe\source\GcGate.as`。
 - 最终方法体实证：
   - `boot_ffc6:LogicSceneTransition/deactivatePreviousScene`；body `31072`；code SHA-256 `96ee8a34ddee66156b98761c766815eeec8a24f4ca1dc350a4b7f42b924c40bd`；已收文本。
   - `boot_ffc6:ProductionLoading/resetAssets`；body `37884`；code SHA-256 `88f4837fd4a910380176d6fd9072c5236ea43dce3140a33ea6864346040330ce`；已收文本。

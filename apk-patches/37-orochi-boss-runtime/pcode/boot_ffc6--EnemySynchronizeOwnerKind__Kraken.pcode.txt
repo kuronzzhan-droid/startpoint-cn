@@ -1,5 +1,5 @@
 # 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
-# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# 来源：%USERPROFILE%\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
 # DoABC2: boot_ffc6; label: EnemySynchronizeOwnerKind$/Kraken; body: 92460; method: 100933
 # code SHA-256: ecb5ec20b72066eedc58b402a9d2ae674450a36e7a60d7dc76e28ca391d289d8; header: [4, 2, 3, 4]
 # 按实际字节码解析的指令文本。

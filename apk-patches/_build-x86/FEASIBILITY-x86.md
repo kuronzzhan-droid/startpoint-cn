@@ -193,7 +193,7 @@ Java 侧的 `System.loadLibrary` 调用点都在加密 DEX 里,**无法静态定
 
 ## v33 双架构测试包(2026-10-15 19:45 左右)
 
-- 产物:`C:\Users\12101\Downloads\世界弹射测试服-v33-x86.apk`,sha256 572dd17256de6708b9cdcbe752e184a97b44781bce8fd5ffacf7be7413e0c331,约 214MB。v33(3de625cf…)+ `lib/x86_64/`(E3 同一套)+ 13 个 ANE 加 `Android-x64`;versionCode 不变(1008001);v29-coop 证书。构建脚本 `build-v33x86.ps1`。
+- 产物:`%USERPROFILE%\Downloads\世界弹射测试服-v33-x86.apk`,sha256 572dd17256de6708b9cdcbe752e184a97b44781bce8fd5ffacf7be7413e0c331,约 214MB。v33(3de625cf…)+ `lib/x86_64/`(E3 同一套)+ 13 个 ANE 加 `Android-x64`;versionCode 不变(1008001);v29-coop 证书。构建脚本 `build-v33x86.ps1`。
 - MuMu 实测:x86 原生,登录→6-2 战斗→结算正常;战斗 57.5 fps,>250ms 长卡 0 次。**未在手机上回归。**
 - versionCode 实验:把 versionCode 改为 1008002(`tools\bump_versioncode.py`)覆盖安装到 v33 上、不清缓存,启动后缓存 SWF 的 mtime/大小不变 ⇒ AIR **不**因 versionCode 升高而重新解包。覆盖安装后仍须清 cache/app(或清数据/卸载)。
 - 降级还原注意:MuMuManager `app install` 遇到降级会静默失败,其 `adb` 子命令不可用;还原用共享文件夹(`Documents\MuMu共享文件夹` ↔ `/mnt/shared/MuMuShared`)拷进设备后 `pm install -r -d`。

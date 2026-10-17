@@ -14,7 +14,7 @@
 
 构建链及原始说明：
 
-- `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3a2d10f4-784b-4e40-914d-69525c153b6e\scratchpad\apk\make_test_apk.py:1-19,59-98,125-148`
+- `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3a2d10f4-784b-4e40-914d-69525c153b6e\scratchpad\apk\make_test_apk.py:1-19,59-98,125-148`
 - `D:\WF\apkp1016\research\early_actual_checks.json:method_checks/helper_checks/helper_callsites（本次实读v17/v33）`
 
 本次只读核验以最终 v33 APK 哈希 `3de625cf0c745c79d333a09140ad82fdea74746d2e2200a5b6922f67eca14532` 与 SWF 哈希 `3b7b3391ae0aee01f15167fe1d5a5b69eddb71a64605c57486f025916611aaa4` 为锚；v33-x86 的 SWF 与它完全相同。此次未运行游戏，也未重新构建。
@@ -72,7 +72,7 @@
 
 原样文本副本保留原始路径假设；按本次任务只归档、不执行。凡源模板还须后续脚本变换，以上最终 P-code 为最终采用状态，源文件列表表示实际构建链的输入和变换。
 
-- [make_test_apk.py](source/make_test_apk.py) ← `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3a2d10f4-784b-4e40-914d-69525c153b6e\scratchpad\apk\make_test_apk.py`；6,234 B；SHA-256 `8c1c835f0320cf0f9d224f2ea251d83d9c04780bdd62e43eb90fcb53c8a929b1`。
+- [make_test_apk.py](source/make_test_apk.py) ← `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3a2d10f4-784b-4e40-914d-69525c153b6e\scratchpad\apk\make_test_apk.py`；6,234 B；SHA-256 `8c1c835f0320cf0f9d224f2ea251d83d9c04780bdd62e43eb90fcb53c8a929b1`。
 
 ## 未收与限制
 

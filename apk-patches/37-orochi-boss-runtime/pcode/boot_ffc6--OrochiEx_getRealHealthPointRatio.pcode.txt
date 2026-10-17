@@ -1,5 +1,5 @@
 # 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
-# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# 来源：%USERPROFILE%\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
 # DoABC2: boot_ffc6; label: OrochiEx/getRealHealthPointRatio; body: 92530; method: 101003
 # code SHA-256: 5064bdc75a0a082ea140339ca0ddb7bbd4cdb98d1cea5cf9d162745de79a7895; header: [2, 3, 6, 7]
 # 按实际字节码解析的指令文本。

@@ -1,6 +1,6 @@
 {
   "method": "只读 APK，以内存 ZIP 解包；只解析内存 SWF/ABC 与 bundle；未执行构建脚本、未输出二进制。",
-  "apk": "C:\\Users\\12101\\Downloads\\世界弹射测试服-v33.apk",
+  "apk": "%USERPROFILE%\\Downloads\\世界弹射测试服-v33.apk",
   "apk_sha256": "3de625cf0c745c79d333a09140ad82fdea74746d2e2200a5b6922f67eca14532",
   "expected_final_apk_sha256": "3de625cf0c745c79d333a09140ad82fdea74746d2e2200a5b6922f67eca14532",
   "apk_matches": true,

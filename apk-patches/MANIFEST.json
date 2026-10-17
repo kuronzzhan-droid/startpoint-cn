@@ -928,7 +928,7 @@
   },
   {
     "patch": "testserver-v17-identity",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3a2d10f4-784b-4e40-914d-69525c153b6e\\scratchpad\\apk\\make_test_apk.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3a2d10f4-784b-4e40-914d-69525c153b6e\\scratchpad\\apk\\make_test_apk.py",
     "file": "52-testserver-v17-identity\\source\\make_test_apk.py",
     "bytes": 6234,
     "source_sha256": "8c1c835f0320cf0f9d224f2ea251d83d9c04780bdd62e43eb90fcb53c8a929b1",
@@ -937,7 +937,7 @@
   },
   {
     "patch": "charge-cap-unique",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "53-charge-cap-unique\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -946,7 +946,7 @@
   },
   {
     "patch": "kyle-direct-multiplier",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "54-kyle-direct-multiplier\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -955,7 +955,7 @@
   },
   {
     "patch": "kyle-pf-marker-silence",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "55-kyle-pf-marker-silence\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -964,7 +964,7 @@
   },
   {
     "patch": "kyle-direct-merge",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "56-kyle-direct-merge\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -973,7 +973,7 @@
   },
   {
     "patch": "boss-stun-gauge",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "57-boss-stun-gauge\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -982,7 +982,7 @@
   },
   {
     "patch": "hidden-unique-icons",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "58-hidden-unique-icons\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -991,7 +991,7 @@
   },
   {
     "patch": "autospeed-store-skip",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "59-autospeed-store-skip\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -1000,7 +1000,7 @@
   },
   {
     "patch": "character-apply-throttle",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "60-character-apply-throttle\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -1009,7 +1009,7 @@
   },
   {
     "patch": "character-offscreen-draw-skip",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "61-character-offscreen-draw-skip\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -1018,7 +1018,7 @@
   },
   {
     "patch": "character-offscreen-playhead-skip",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "62-character-offscreen-playhead-skip\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -1027,7 +1027,7 @@
   },
   {
     "patch": "character-rank-map-sort",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "63-character-rank-map-sort\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -1036,7 +1036,7 @@
   },
   {
     "patch": "five-boss-round1-grace",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "64-five-boss-round1-grace\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -1045,7 +1045,7 @@
   },
   {
     "patch": "gerald-149999-ready-voice",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "65-gerald-149999-ready-voice\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -1054,7 +1054,7 @@
   },
   {
     "patch": "home-msaa-off",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "66-home-msaa-off\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -1063,7 +1063,7 @@
   },
   {
     "patch": "party-ui-log-skip",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "67-party-ui-log-skip\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -1072,7 +1072,7 @@
   },
   {
     "patch": "reproduce-snapshot-only",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "68-reproduce-snapshot-only\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -1081,7 +1081,7 @@
   },
   {
     "patch": "atlas-overflow-spill",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "69-atlas-overflow-spill\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -1090,7 +1090,7 @@
   },
   {
     "patch": "local-loading-view-gc",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "70-local-loading-view-gc\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -1099,7 +1099,7 @@
   },
   {
     "patch": "battle-pack-slicer",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "71-battle-pack-slicer\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -1108,7 +1108,7 @@
   },
   {
     "patch": "battle-pack-slicer",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\src\\cn\\loading\\BattlePackSlicer.as",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\src\\cn\\loading\\BattlePackSlicer.as",
     "file": "71-battle-pack-slicer\\source\\BattlePackSlicer.as",
     "bytes": 16575,
     "source_sha256": "88ce4e3a57a1c6c3f00186e386ddef4738917d213de8c91e66367a083e3816e1",
@@ -1117,7 +1117,7 @@
   },
   {
     "patch": "transition-gc-dedupe",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\wf_hitfx_silence.v28.py",
     "file": "72-transition-gc-dedupe\\source\\wf_hitfx_silence.v28.py",
     "bytes": 67120,
     "source_sha256": "d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51",
@@ -1126,7 +1126,7 @@
   },
   {
     "patch": "transition-gc-dedupe",
-    "source": "C:\\Users\\12101\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\src\\cn\\loading\\GcGate.as",
+    "source": "%USERPROFILE%\\AppData\\Local\\Temp\\claude\\D--WF-startpoint-cn\\3c92cbf7-5f37-4242-89f5-9470072d4201\\scratchpad\\apk28\\src\\cn\\loading\\GcGate.as",
     "file": "72-transition-gc-dedupe\\source\\GcGate.as",
     "bytes": 897,
     "source_sha256": "49036c9c1699d3d308d0de2a53447358d9fb54a40d10c68d5890fa72737eb70a",

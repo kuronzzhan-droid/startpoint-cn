@@ -1,5 +1,5 @@
 # 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
-# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# 来源：%USERPROFILE%\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
 # DoABC2: boot_ffc6; label: OrochiEx/tryStartPhase1Trial; body: 92550; method: 101023
 # code SHA-256: 0da23e82bcd372028d33377d9fa807528d0997923ef7815ff298f41d52f65e53; header: [4, 7, 6, 7]
 # 按实际字节码解析的指令文本。

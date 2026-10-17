@@ -15,7 +15,7 @@
 构建链及原始说明：
 
 - `D:\WF\out\kulo-patch-toolkit\cursed_abyss\apk\世界弹射测试服-v18.build-report.json:2-12；v18 首发能力与 v17 基线`
-- `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:285-296；最终只保留 PF marker 分支`
+- `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py:285-296；最终只保留 PF marker 分支`
 - `D:\WF\out\kulo-patch-toolkit\cursed_abyss\build\kyle_pf_marker.py:2-3；数据标记用途`
 - `D:\WF\out\kulo-patch-toolkit\cursed_abyss\build\kyle_pf_marker.py:14-25；marker 数据编码和作用范围`
 
@@ -31,4 +31,4 @@
 
 原样文本副本保留原始路径假设；按本次任务只归档、不执行。凡源模板还须后续脚本变换，以上最终 P-code 为最终采用状态，源文件列表表示实际构建链的输入和变换。
 
-- [wf_hitfx_silence.v28.py](source/wf_hitfx_silence.v28.py) ← `C:\Users\12101\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py`；67,120 B；SHA-256 `d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51`。
+- [wf_hitfx_silence.v28.py](source/wf_hitfx_silence.v28.py) ← `%USERPROFILE%\AppData\Local\Temp\claude\D--WF-startpoint-cn\3c92cbf7-5f37-4242-89f5-9470072d4201\scratchpad\apk28\wf_hitfx_silence.v28.py`；67,120 B；SHA-256 `d4a98723a70b5389409d364a3bf261f773b8b417ddb10bcee9a3063d3bcc2b51`。

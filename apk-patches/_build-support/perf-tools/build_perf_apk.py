@@ -19,7 +19,7 @@ TOOLS = Path(r"D:\WF\runtimes\android-toolchain\sdk\build-tools\34.0.0")
 CERT = "9bf5f20575482f79579ca52e17b21f6d6d17cbcc44ed334a7710f8bd07368201"
 OUT = ROOT / "out" / "世界弹射测试服-v30-perf.apk"
 REPORT = OUT.with_suffix(".build-report.json")
-BASE_REPORT = Path(r"C:\Users\12101\Downloads\世界弹射测试服-v29-coop.build-report.json")
+BASE_REPORT = Path(r"%USERPROFILE%\Downloads\世界弹射测试服-v29-coop.build-report.json")
 
 
 def signature(name):

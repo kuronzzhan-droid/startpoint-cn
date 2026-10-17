@@ -12,7 +12,7 @@ from pathlib import Path
 from build_local_baseline import CERT, KEYSTORE, ROOT, SWF, TOOLS, run, signature
 from patch_coop_grace import CAPABILITY, patch
 
-DOWNLOADS = Path(r"C:\Users\12101\Downloads")
+DOWNLOADS = Path(r"%USERPROFILE%\Downloads")
 REPORT_V28 = DOWNLOADS / "世界弹射测试服-v28.build-report.json"
 APK_HASHES = {"812526f535ebaf3c8d6b9f2c441220e9ba14472791420e15c51e64d3f48edf1f", "ed52c209bc0ac1a3328b11c7d1fbdb41dbafb8543207e624bff571e31fb44183"}
 

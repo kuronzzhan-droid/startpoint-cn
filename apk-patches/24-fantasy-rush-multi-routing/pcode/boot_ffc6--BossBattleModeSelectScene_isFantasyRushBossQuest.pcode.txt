@@ -1,5 +1,5 @@
 # 最终 v33 逐方法 P-code（只读提取，不是 SWF/ABC 整文件）
-# 来源：C:\Users\12101\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
+# 来源：%USERPROFILE%\Downloads\世界弹射测试服-v33.apk / assets/worldflipper_android_release.swf
 # DoABC2: boot_ffc6; label: BossBattleModeSelectScene/isFantasyRushBossQuest; body: 91927; method: 100400
 # code SHA-256: 498f61fe586f70bf4169bd100373135748e0cde9de7b03148d9a1d8c10c89848; header: [2, 2, 7, 8]
 # 按实际字节码解析的指令文本。
