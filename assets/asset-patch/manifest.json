@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.229",
+  "cdn_version": "1.4.230",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -32728,6 +32728,36 @@
             "production/upload/de/516e8cee5e613081284a3d7375abcbc004a1c6",
             "production/upload/ef/5de5d2a774816930002ab6f9117865c6eb08bf",
             "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+          ]
+        }
+      ],
+      "created_at": "2026-10-17"
+    },
+    {
+      "id": "pursuit-leader-text-1.4.230",
+      "type": "patch",
+      "name": "(测试服) 追击伤害注明对象＋队长前置效果文字移到队长技",
+      "description": "",
+      "version": "1.4.230",
+      "depends_on": "1.4.229",
+      "enabled": true,
+      "local_test_only": true,
+      "archive": "pinball-1.4.229-1.4.230-1-pursuit-leader-text-local.zip",
+      "archive_size": 69959,
+      "chain": [
+        "pinball-1.4.229-1.4.230-1-pursuit-leader-text-local.zip"
+      ],
+      "files": [
+        "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.229-1.4.230-1-pursuit-leader-text-local.zip",
+          "size": 69959,
+          "sha256": "481b44303faa83ff350a1aa9f9bbd3beb8b0e724170e3243e40c521025f0183f",
+          "members": 1,
+          "files": [
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149"
           ]
         }
       ],
