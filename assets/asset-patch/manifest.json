@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.234",
+  "cdn_version": "1.4.235",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -32903,6 +32903,36 @@
           "name": "pinball-1.4.233-1.4.234-1-paradox-cursed-soul-elements-local.zip",
           "size": 243233,
           "sha256": "02778b41224be3d814cd3e89bb11b9e0bd0ef6edd97a90e06601507a782991b4",
+          "members": 1,
+          "files": [
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa"
+          ]
+        }
+      ],
+      "created_at": "2026-10-18"
+    },
+    {
+      "id": "abyss-soul-text-1.4.235",
+      "type": "patch",
+      "name": "(本地) 深渊武器魂珠说明中文化",
+      "description": "8000101/102/108/112/114 c5 アビリティソウル→能力魂珠",
+      "version": "1.4.235",
+      "depends_on": "1.4.234",
+      "enabled": true,
+      "local_test_only": true,
+      "archive": "pinball-1.4.234-1.4.235-1-abyss-soul-text-local.zip",
+      "archive_size": 243225,
+      "chain": [
+        "pinball-1.4.234-1.4.235-1-abyss-soul-text-local.zip"
+      ],
+      "files": [
+        "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.234-1.4.235-1-abyss-soul-text-local.zip",
+          "size": 243225,
+          "sha256": "57cd211862d39370114f2a7ad99ef343bdced2ee2631cbaebd3338830b83511c",
           "members": 1,
           "files": [
             "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa"
