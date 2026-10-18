@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.233",
+  "cdn_version": "1.4.234",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -32876,6 +32876,36 @@
           "files": [
             "production/upload/68/6c1822fcaa320f71e8245ae7be98d553b84cb7",
             "production/upload/93/a3763bc243c7178e1d97a3acd9dab2e9406a5e"
+          ]
+        }
+      ],
+      "created_at": "2026-10-18"
+    },
+    {
+      "id": "paradox-cursed-soul-elements-1.4.234",
+      "type": "patch",
+      "name": "(本地) 悖论/诅咒武器魂珠可装备属性修正",
+      "description": "5920001 全属性；5910101-129 按 equipment_element；c5 中文化",
+      "version": "1.4.234",
+      "depends_on": "1.4.233",
+      "enabled": true,
+      "local_test_only": true,
+      "archive": "pinball-1.4.233-1.4.234-1-paradox-cursed-soul-elements-local.zip",
+      "archive_size": 243233,
+      "chain": [
+        "pinball-1.4.233-1.4.234-1-paradox-cursed-soul-elements-local.zip"
+      ],
+      "files": [
+        "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.233-1.4.234-1-paradox-cursed-soul-elements-local.zip",
+          "size": 243233,
+          "sha256": "02778b41224be3d814cd3e89bb11b9e0bd0ef6edd97a90e06601507a782991b4",
+          "members": 1,
+          "files": [
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa"
           ]
         }
       ],
