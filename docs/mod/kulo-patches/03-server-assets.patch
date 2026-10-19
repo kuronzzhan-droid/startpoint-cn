@@ -92,7 +92,7 @@ index 731f22fc..b304edcc 100644
      [
        "brown_fighter",
 diff --git a/assets/cdndata/character_rank_p5b.json b/assets/cdndata/character_rank_p5b.json
-index 98c9c76d..9c5b3bbb 100644
+index 98c9c76d..4294b585 100644
 --- a/assets/cdndata/character_rank_p5b.json
 +++ b/assets/cdndata/character_rank_p5b.json
 @@ -2048,5 +2048,46 @@
@@ -106,10 +106,10 @@ index 98c9c76d..9c5b3bbb 100644
 +      "1",
 +      "5",
 +      "1",
-+      "Human,Element",
++      "Human,Beast",
 +      "",
-+      "3",
-+      "Female",
++      "0",
++      "Male",
 +      "white_wolf_gerald_aqua",
 +      "(None)",
 +      "",
@@ -186,7 +186,7 @@ index e329140f..a68adf51 100644
      [
        "索妮雅",
 diff --git a/assets/cdndata/character_text_rank_p5b.json b/assets/cdndata/character_text_rank_p5b.json
-index 4303d6f3..6fcc2b61 100644
+index 4303d6f3..c7a6c170 100644
 --- a/assets/cdndata/character_text_rank_p5b.json
 +++ b/assets/cdndata/character_text_rank_p5b.json
 @@ -758,9 +758,9 @@
@@ -231,7 +231,7 @@ index 4303d6f3..6fcc2b61 100644
 +      "(None)",
 +      "(None)",
 +      "潮汐守誓",
-+      "井上麻里奈"
++      "AI声线"
 +    ]
    ]
  }
