@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.240",
+  "cdn_version": "1.4.241",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -33440,6 +33440,94 @@
             "production/upload/de/516e8cee5e613081284a3d7375abcbc004a1c6",
             "production/upload/ef/5de5d2a774816930002ab6f9117865c6eb08bf",
             "production/upload/f7/40ce91e48c22ce925e9b14991f5dae2dfe3fc7",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+          ]
+        }
+      ],
+      "created_at": "2026-10-19"
+    },
+    {
+      "id": "water-gerald-fix-1.4.241",
+      "type": "patch",
+      "name": "(测试服) 水杰拉德：满血成员护盾、合击强化弹射类型、头像去底色",
+      "description": "",
+      "version": "1.4.241",
+      "depends_on": "1.4.240",
+      "enabled": true,
+      "local_test_only": true,
+      "archive": "pinball-1.4.240-1.4.241-1-water-gerald-fix-local.zip",
+      "archive_size": 2070833,
+      "chain": [
+        "pinball-1.4.240-1.4.241-1-water-gerald-fix-local.zip"
+      ],
+      "files": [
+        "production/medium_upload/0b/f764c3114a4c3395465bb07cb9b5c3e309e997",
+        "production/medium_upload/0d/fe420f536103b8efb423b49ec83d30829e3329",
+        "production/medium_upload/15/82f207a62680ccff791d951cef9c85f7eb701d",
+        "production/medium_upload/15/ba1a7bc31fca21411dcbe30fb254c139d3ff1f",
+        "production/medium_upload/38/1e67adc19f1080fdd40fc499a481dc3feba13e",
+        "production/medium_upload/4b/a5ab2e4442e6b0042ad16178b2cf234a683931",
+        "production/medium_upload/55/c9a7fea5a63a22435d4da58fd30356af927868",
+        "production/medium_upload/87/fd692273fa2d88dea4cfc42e29365f0e6857a3",
+        "production/medium_upload/88/4c1c6f6dc3d078cd3887048177444e6fed3cdc",
+        "production/medium_upload/92/fbf0097440557a5e985be7c3e90566b1de02e3",
+        "production/medium_upload/a6/f315d84d22ea0993877b2c11d3535d9d7b51b9",
+        "production/medium_upload/a9/3a91903fce04dca492d8a34f9e38aaa846c66d",
+        "production/medium_upload/b1/ad65b82cff4932615539946ee04ddf2979de1c",
+        "production/medium_upload/b3/43924737f98a72d523584401ed1ed07cdf032f",
+        "production/medium_upload/b6/7abe957cee20fc0eeed689a18c8305c1847c02",
+        "production/medium_upload/cd/11b682818ac02568adfa6d349300ad5e7006fe",
+        "production/medium_upload/df/16b1cacc390581c19d47a397929f79d00eaa2d",
+        "production/medium_upload/e4/23ce46e5a643d4acbd8046f199d3c54cfcbb1b",
+        "production/medium_upload/e6/4360d670d0205b17be4f9b04ae37e32a953fbd",
+        "production/medium_upload/f9/17ae43c17c4f999866a12a78e5a86e6e519d20",
+        "production/upload/03/0f45131c3f232b69d86bbdf874273f0876e96c",
+        "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+        "production/upload/16/5beb53b4c3d9a59d28cfa6d1efb26392e2e0f0",
+        "production/upload/18/9418c2ccf8f6ab2cd7cb15fea1a782fb98c93b",
+        "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+        "production/upload/3a/056fd35480305582484527ab26039e979aee31",
+        "production/upload/60/08474a51a4ff53fcc537deaedde7726a5ec96c",
+        "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+        "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.240-1.4.241-1-water-gerald-fix-local.zip",
+          "size": 2070833,
+          "sha256": "11047dbcf502f4684109f9f3ffdfc7d32d35f9a226ff2c6d7db62edb002aca74",
+          "members": 30,
+          "files": [
+            "production/medium_upload/0b/f764c3114a4c3395465bb07cb9b5c3e309e997",
+            "production/medium_upload/0d/fe420f536103b8efb423b49ec83d30829e3329",
+            "production/medium_upload/15/82f207a62680ccff791d951cef9c85f7eb701d",
+            "production/medium_upload/15/ba1a7bc31fca21411dcbe30fb254c139d3ff1f",
+            "production/medium_upload/38/1e67adc19f1080fdd40fc499a481dc3feba13e",
+            "production/medium_upload/4b/a5ab2e4442e6b0042ad16178b2cf234a683931",
+            "production/medium_upload/55/c9a7fea5a63a22435d4da58fd30356af927868",
+            "production/medium_upload/87/fd692273fa2d88dea4cfc42e29365f0e6857a3",
+            "production/medium_upload/88/4c1c6f6dc3d078cd3887048177444e6fed3cdc",
+            "production/medium_upload/92/fbf0097440557a5e985be7c3e90566b1de02e3",
+            "production/medium_upload/a6/f315d84d22ea0993877b2c11d3535d9d7b51b9",
+            "production/medium_upload/a9/3a91903fce04dca492d8a34f9e38aaa846c66d",
+            "production/medium_upload/b1/ad65b82cff4932615539946ee04ddf2979de1c",
+            "production/medium_upload/b3/43924737f98a72d523584401ed1ed07cdf032f",
+            "production/medium_upload/b6/7abe957cee20fc0eeed689a18c8305c1847c02",
+            "production/medium_upload/cd/11b682818ac02568adfa6d349300ad5e7006fe",
+            "production/medium_upload/df/16b1cacc390581c19d47a397929f79d00eaa2d",
+            "production/medium_upload/e4/23ce46e5a643d4acbd8046f199d3c54cfcbb1b",
+            "production/medium_upload/e6/4360d670d0205b17be4f9b04ae37e32a953fbd",
+            "production/medium_upload/f9/17ae43c17c4f999866a12a78e5a86e6e519d20",
+            "production/upload/03/0f45131c3f232b69d86bbdf874273f0876e96c",
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+            "production/upload/16/5beb53b4c3d9a59d28cfa6d1efb26392e2e0f0",
+            "production/upload/18/9418c2ccf8f6ab2cd7cb15fea1a782fb98c93b",
+            "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+            "production/upload/3a/056fd35480305582484527ab26039e979aee31",
+            "production/upload/60/08474a51a4ff53fcc537deaedde7726a5ec96c",
+            "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+            "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
             "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
           ]
         }
