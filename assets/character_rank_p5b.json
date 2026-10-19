@@ -298,5 +298,11 @@
     "name": "瑞西塔尔",
     "rarity": 5,
     "skill_count": 6
+  },
+  "129989": {
+    "element": 1,
+    "name": "杰拉德",
+    "rarity": 5,
+    "skill_count": 6
   }
 }
