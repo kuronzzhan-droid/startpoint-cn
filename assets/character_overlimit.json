@@ -22,5 +22,8 @@
   "level_missions": {
     "1111831": 120,
     "1410991": 120
-  }
+  },
+  "full_route_characters": [
+    129989
+  ]
 }

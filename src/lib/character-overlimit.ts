@@ -20,10 +20,14 @@ interface OverLimitExtension {
     characters: number[]
     // Awake mission ID -> character level that completes it.
     level_missions: Record<string, number>
+    // Characters whose retail uncaps (1..retail max) also use the extension item
+    // plus extra_costs and never duplicates ("全程超限"); client key wfx_overlimit_full_<id>.
+    full_route_characters?: number[]
 }
 
 const extension = overLimitJson as OverLimitExtension
 const extendedCharacters = new Set(extension.characters)
+const fullRouteCharacters = new Set(extension.full_route_characters ?? [])
 
 export const OVER_LIMIT_EXTENSION_ITEM_ID = extension.item_id
 
@@ -37,6 +41,10 @@ export const retailMaxOverLimits: Record<number, number> = {
 
 export function isOverLimitExtendedCharacter(characterId: number, rarity: number): boolean {
     return rarity === extension.rarity && extendedCharacters.has(characterId)
+}
+
+export function isOverLimitFullRouteCharacter(characterId: number, rarity: number): boolean {
+    return isOverLimitExtendedCharacter(characterId, rarity) && fullRouteCharacters.has(characterId)
 }
 
 export function getRetailMaxOverLimit(rarity: number): number | undefined {
@@ -79,9 +87,8 @@ export function getExtendedOverLimitExtraCosts(
     count: number,
 ): { itemId: number, amount: number }[] {
     const retailMax = retailMaxOverLimits[rarity]
-    if (!isOverLimitExtendedCharacter(characterId, rarity) || retailMax === undefined || currentStep < retailMax) {
-        return []
-    }
+    if (!isOverLimitExtendedCharacter(characterId, rarity) || retailMax === undefined) return []
+    if (currentStep < retailMax && !isOverLimitFullRouteCharacter(characterId, rarity)) return []
     return extension.extra_costs.map(cost => ({ itemId: cost.item_id, amount: cost.amount * count }))
 }
 
@@ -106,6 +113,11 @@ export function validateOverLimitRequest(
     if (retailMax === undefined || maxOver === undefined) return "Unknown rarity."
     const newStep = currentStep + count
     if (newStep > maxOver) return "Character cannot be uncapped further."
+    if (isOverLimitFullRouteCharacter(characterId, rarity)) {
+        if (useStack) return "Duplicates cannot uncap this character."
+        if (itemId !== extension.item_id) return "Attempted to use invalid item."
+        return null
+    }
     if (currentStep < retailMax) {
         if (newStep > retailMax) return "Retail and extended uncaps must be requested separately."
         if (useStack) return null
