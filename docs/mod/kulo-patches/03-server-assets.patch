@@ -259,10 +259,10 @@ index 5b80082f..0e57f2e1 100644
      "element": 1,
      "name": "",
 diff --git a/assets/character_overlimit.json b/assets/character_overlimit.json
-index 50187281..5bd4ed2c 100644
+index 50187281..8d43e58d 100644
 --- a/assets/character_overlimit.json
 +++ b/assets/character_overlimit.json
-@@ -16,7 +16,8 @@
+@@ -16,10 +16,14 @@
    ],
    "characters": [
      111183,
@@ -272,6 +272,13 @@ index 50187281..5bd4ed2c 100644
    ],
    "level_missions": {
      "1111831": 120,
+     "1410991": 120
+-  }
++  },
++  "full_route_characters": [
++    129989
++  ]
+ }
 diff --git a/assets/character_rank_p5b.json b/assets/character_rank_p5b.json
 index 2366ed42..01f6b3b2 100644
 --- a/assets/character_rank_p5b.json
