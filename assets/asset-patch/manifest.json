@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.245",
+  "cdn_version": "1.4.246",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -33689,6 +33689,44 @@
             "production/upload/b8/e6627bf458a7588a3f62dd9ccda78d914d2ee0",
             "production/upload/ca/87324c23fc9faa12d61ab4313f79ff5707758d",
             "production/upload/de/d29725f307c061990a31f65400b417a7bb110f"
+          ]
+        }
+      ],
+      "created_at": "2026-10-19"
+    },
+    {
+      "id": "water-gerald-fix-1.4.246",
+      "type": "patch",
+      "name": "(测试服) 水杰拉德修正 1.4.246",
+      "description": "",
+      "version": "1.4.246",
+      "depends_on": "1.4.245",
+      "enabled": true,
+      "local_test_only": true,
+      "archive": "pinball-1.4.245-1.4.246-1-water-gerald-fix-local.zip",
+      "archive_size": 876099,
+      "chain": [
+        "pinball-1.4.245-1.4.246-1-water-gerald-fix-local.zip"
+      ],
+      "files": [
+        "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+        "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+        "production/upload/91/79892d704f88d98191c00548bce106402ad5b5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.245-1.4.246-1-water-gerald-fix-local.zip",
+          "size": 876099,
+          "sha256": "262c0cdc77215a749742e8db9f37043848920658f402a4091858fac7a7ff8b24",
+          "members": 5,
+          "files": [
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+            "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+            "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+            "production/upload/91/79892d704f88d98191c00548bce106402ad5b5"
           ]
         }
       ],
