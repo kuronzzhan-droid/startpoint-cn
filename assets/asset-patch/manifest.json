@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.239",
+  "cdn_version": "1.4.240",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -33399,6 +33399,48 @@
             "production/upload/fa/0efe77ded122a31e8121d5f92af17d0163de1b",
             "production/upload/fd/61ac7262b9538c3b1a6945b4f0870a81f82128",
             "production/upload/ff/fa8bb1c16d9e4d70113466e291bfc0ff281ffa"
+          ]
+        }
+      ],
+      "created_at": "2026-10-19"
+    },
+    {
+      "id": "balance-1019-1.4.240",
+      "type": "patch",
+      "name": "(测试服) 平衡表：泽赫尔/克劳斯/贝尔赛蒂亚/塞里奥尔/菲莉亚",
+      "description": "",
+      "version": "1.4.240",
+      "depends_on": "1.4.239",
+      "enabled": true,
+      "local_test_only": true,
+      "archive": "pinball-1.4.239-1.4.240-1-balance-1019-local.zip",
+      "archive_size": 362234,
+      "chain": [
+        "pinball-1.4.239-1.4.240-1-balance-1019-local.zip"
+      ],
+      "files": [
+        "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+        "production/upload/de/516e8cee5e613081284a3d7375abcbc004a1c6",
+        "production/upload/ef/5de5d2a774816930002ab6f9117865c6eb08bf",
+        "production/upload/f7/40ce91e48c22ce925e9b14991f5dae2dfe3fc7",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.239-1.4.240-1-balance-1019-local.zip",
+          "size": 362234,
+          "sha256": "88dae12170c3f149eb72589496bee6e0f7516bac780e1f053e690397d0fce179",
+          "members": 7,
+          "files": [
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+            "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+            "production/upload/de/516e8cee5e613081284a3d7375abcbc004a1c6",
+            "production/upload/ef/5de5d2a774816930002ab6f9117865c6eb08bf",
+            "production/upload/f7/40ce91e48c22ce925e9b14991f5dae2dfe3fc7",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
           ]
         }
       ],
