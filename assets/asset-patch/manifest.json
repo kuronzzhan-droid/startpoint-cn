@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.250",
+  "cdn_version": "1.4.251",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -33879,6 +33879,40 @@
             "production/upload/7a/679e88fb0834e4a4a0cae6a334cc8677afb10a",
             "production/upload/86/bc6fd306e429d9ae7a3e99f86fb91c9bb04ca2",
             "production/upload/f7/cdab7e68fe159609ff75e40e079a87d2b8cbd1"
+          ]
+        }
+      ],
+      "created_at": "2026-10-19"
+    },
+    {
+      "id": "balance-1019b-1.4.251",
+      "type": "patch",
+      "name": "(测试服) 平衡表：菲莉亚/克劳斯/特克托",
+      "description": "",
+      "version": "1.4.251",
+      "depends_on": "1.4.250",
+      "enabled": true,
+      "local_test_only": true,
+      "archive": "pinball-1.4.250-1.4.251-1-balance-1019b-local.zip",
+      "archive_size": 298004,
+      "chain": [
+        "pinball-1.4.250-1.4.251-1-balance-1019b-local.zip"
+      ],
+      "files": [
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/5c/6a4f0e2ceb1dbcf60f9b306b0f7bfd0eca55c9",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.250-1.4.251-1-balance-1019b-local.zip",
+          "size": 298004,
+          "sha256": "b1313c64bfa8aaf50f5c00c8c0bd65213220dccba4e178e83ae3e9d97423f82e",
+          "members": 3,
+          "files": [
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+            "production/upload/5c/6a4f0e2ceb1dbcf60f9b306b0f7bfd0eca55c9",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
           ]
         }
       ],
