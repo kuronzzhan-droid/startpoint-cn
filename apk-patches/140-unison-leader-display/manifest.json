@@ -1,0 +1,139 @@
+{
+  "capability": "wfx-unison-leader-display-v1",
+  "output_swf_sha256": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384",
+  "pcode": [
+    {
+      "abc": "boot_ffc6",
+      "label": "TriggerableAbilityDialogAllAbilitiesGenerator/get",
+      "body": 37200,
+      "code_sha256": "559027c83876e44246de6e202678a3679672a5c650933821452865549bb6b499",
+      "header": [
+        6,
+        14,
+        1,
+        2
+      ],
+      "file": "TriggerableAbilityDialogAllAbilitiesGenerator__get.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "TriggerableAbilityDialogAllAbilitiesGenerator/wfxLeaderAbilityPeek",
+      "body": 92669,
+      "code_sha256": "4ae3fd6f5d6eb800e6031d4d7f94a9d47b3e22838186ec5060eedacddba1d4ff",
+      "header": [
+        2,
+        4,
+        1,
+        2
+      ],
+      "file": "TriggerableAbilityDialogAllAbilitiesGenerator__wfxLeaderAbilityPeek.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "TriggerableAbilityDialogAllAbilitiesGenerator/wfxLeaderDescriptions",
+      "body": 92670,
+      "code_sha256": "f1f90cd2efd6834eb3e72bd6fed1f6e41af1647988438e43bb9cfa455aaa5ad6",
+      "header": [
+        2,
+        5,
+        1,
+        2
+      ],
+      "file": "TriggerableAbilityDialogAllAbilitiesGenerator__wfxLeaderDescriptions.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "AbilityDisabledReasonResolver/wfxLeaderResolveInitial",
+      "body": 92671,
+      "code_sha256": "ac97c18fb7368399e07d290ea6526a7404f6916937ededc545ac27bfe854a8eb",
+      "header": [
+        9,
+        7,
+        1,
+        2
+      ],
+      "file": "AbilityDisabledReasonResolver__wfxLeaderResolveInitial.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "AbilityDisabledReasonResolver/wfxLeaderResolvePrecondition",
+      "body": 92672,
+      "code_sha256": "895942ae5576e281d579417e6b2bf1f37895573a475d003ab90bfd7ec9eadf68",
+      "header": [
+        17,
+        14,
+        1,
+        2
+      ],
+      "file": "AbilityDisabledReasonResolver__wfxLeaderResolvePrecondition.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "AbilityDisabledReasonResolver/wfxLeaderResolveInstant",
+      "body": 92673,
+      "code_sha256": "c0361d1b440c4e13c7391fec5d7fc75fdc81f7a1bc8a50b0833a7fe6c148ffeb",
+      "header": [
+        7,
+        6,
+        1,
+        2
+      ],
+      "file": "AbilityDisabledReasonResolver__wfxLeaderResolveInstant.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "AbilityDisabledReasonResolver/wfxLeaderResolve",
+      "body": 92674,
+      "code_sha256": "dcdca7be3ae6172fca09364aae6aea59cbde0106cc00308eea66ed592dfcda15",
+      "header": [
+        17,
+        12,
+        1,
+        2
+      ],
+      "file": "AbilityDisabledReasonResolver__wfxLeaderResolve.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "TriggerableAbilityDialogAllAbilitiesGenerator/wfxAddLeaderAbility",
+      "body": 92675,
+      "code_sha256": "8209d599e1ec27d1624aceda44e9caab62767b4e6f32ea76d933fcf86b80e307",
+      "header": [
+        9,
+        22,
+        1,
+        2
+      ],
+      "file": "TriggerableAbilityDialogAllAbilitiesGenerator__wfxAddLeaderAbility.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "TriggerableAbilityDialogAllAbilitiesGenerator/wfxLeaderReasonResolver",
+      "body": 92676,
+      "code_sha256": "74bc1c8a0ec90256ba5e5bdc603ad66cb7932856d2799de55f69227ff263faea",
+      "header": [
+        3,
+        6,
+        1,
+        2
+      ],
+      "file": "TriggerableAbilityDialogAllAbilitiesGenerator__wfxLeaderReasonResolver.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "TriggerableAbilityDialogAllAbilitiesGenerator/wfxAppendUnisonLeader",
+      "body": 92677,
+      "code_sha256": "b098d306adb7128bc90400356d9ac5032253df8a13b67d74b19ec77c890203ae",
+      "header": [
+        9,
+        7,
+        1,
+        2
+      ],
+      "file": "TriggerableAbilityDialogAllAbilitiesGenerator__wfxAppendUnisonLeader.pcode.txt"
+    }
+  ],
+  "shared_source": "../source",
+  "source_entrypoint": "../../build.py",
+  "scope": "本地草稿；前九轮构造器与v34输入只读；AIR/真机未核实"
+}

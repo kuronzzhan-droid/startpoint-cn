@@ -1,0 +1,45 @@
+{
+  "status": "acknowledged",
+  "authorization": {
+    "path": "task-evidence/TASK11-readonly-ack.md",
+    "sha256": "853334b785967246db68f8c7d01f5180caf87ae7bd86b861963b1439d7eee15b",
+    "section": "外部只读变化确认"
+  },
+  "observed_report": {
+    "path": "task-evidence/readonly-source-before-ack.json",
+    "sha256": "9f123174840bb3edf4870cd48acf229c718c5f03dfd2bfe45aa8daa174504bd8"
+  },
+  "reason": "TASK11末尾确认：APK打包线程使用第二版v35k打包，作者叫停后移入superseded；已知外部变化，与第三版实现无关；本轮不改动这些文件。",
+  "changes": [
+    {
+      "path": "apk/superseded/v35k-x86-unsigned-aligned.apk",
+      "before": null,
+      "after": {
+        "bytes": 213926073,
+        "sha256": "5452cbfc91ecbf9440b72c935500778af05bf8957e79b01e2f9c497bd2e821be"
+      },
+      "modified_utc": "2026-10-19T05:53:52.181446+00:00"
+    },
+    {
+      "path": "apk/superseded/v35k-x86.signed.apk",
+      "before": null,
+      "after": {
+        "bytes": 214421192,
+        "sha256": "0d49ee23949aa1d9f6ea92c3d9403b412bd6b7b234592e9fd619a62bb620b5c2"
+      },
+      "modified_utc": "2026-10-19T05:53:58.340017+00:00"
+    },
+    {
+      "path": "apk/HASHES.txt",
+      "before": {
+        "sha256": "410c767fd5b7954b7799c6ca26ea9f749ec1c4a6f032080a9f5b9a86196b802e",
+        "bytes": 2333
+      },
+      "after": {
+        "bytes": 2598,
+        "sha256": "3821bb936a55d2548fb2addb0901a4505535f76c4dd9991a172cc62601186796"
+      },
+      "modified_utc": "2026-10-19T05:54:18.476958+00:00"
+    }
+  ]
+}

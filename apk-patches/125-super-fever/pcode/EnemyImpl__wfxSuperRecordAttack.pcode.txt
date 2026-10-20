@@ -1,0 +1,64 @@
+# EnemyImpl/wfxSuperRecordAttack; body=92641; code_sha256=a48c45210581a1820083074f2cfb325c311f6ce71dd8fb2b1c7f1c2050eb2a8a; header=[3, 5, 1, 2]
+# exceptions=[]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: getproperty ['createdByPrimaryBattle']
+#0004 ofs0007: iffalse [] -> #61
+#0005 ofs000b: getlocal_0 []
+#0006 ofs000c: getproperty ['battle']
+#0007 ofs0010: callproperty ['__isMyBattle__', 0]
+#0008 ofs0015: iffalse [] -> #61
+#0009 ofs0019: pushstring ['wfxSuperOwnerLocal']
+#0010 ofs001d: getlocal_2 []
+#0011 ofs001e: in []
+#0012 ofs001f: iffalse [] -> #16
+#0013 ofs0023: getlocal_2 []
+#0014 ofs0024: getproperty ['wfxSuperOwnerLocal']
+#0015 ofs0028: iffalse [] -> #61
+#0016 ofs002c: getlocal_2 []
+#0017 ofs002d: getproperty ['isFromHostile']
+#0018 ofs0031: iftrue [] -> #61
+#0019 ofs0035: getlocal_2 []
+#0020 ofs0036: getproperty ['createdByBoss']
+#0021 ofs003a: iftrue [] -> #61
+#0022 ofs003e: getlocal_2 []
+#0023 ofs003f: getproperty ['createdByFunnel']
+#0024 ofs0043: iftrue [] -> #61
+#0025 ofs0047: getlocal_3 []
+#0026 ofs0048: pushbyte [0]
+#0027 ofs004a: ifngt [] -> #61
+#0028 ofs004e: getlocal_2 []
+#0029 ofs004f: getproperty ['createdByPrimarySquad']
+#0030 ofs0053: iftrue [] -> #43
+#0031 ofs0057: getlocal_2 []
+#0032 ofs0058: getproperty ['createdBySummonsMultiBall']
+#0033 ofs005c: iftrue [] -> #43
+#0034 ofs0060: getlocal_2 []
+#0035 ofs0061: getproperty ['originMemberIndex']
+#0036 ofs0065: setlocal [4]
+#0037 ofs0067: getlocal [4]
+#0038 ofs0069: pushbyte [0]
+#0039 ofs006b: iflt [] -> #61
+#0040 ofs006f: getlocal [4]
+#0041 ofs0071: pushbyte [3]
+#0042 ofs0073: ifge [] -> #61
+#0043 ofs0077: getlocal_0 []
+#0044 ofs0078: getproperty ['squadManager']
+#0045 ofs007c: getproperty ['primary']
+#0046 ofs0080: pushbyte [0]
+#0047 ofs0082: callproperty ['getMember', 1]
+#0048 ofs0087: setlocal [4]
+#0049 ofs0089: getlocal [4]
+#0050 ofs008b: getproperty ['index']
+#0051 ofs008d: pushbyte [0]
+#0052 ofs008f: ifne [] -> #61
+#0053 ofs0093: getlocal [4]
+#0054 ofs0095: getproperty ['params']
+#0055 ofs0097: pushbyte [0]
+#0056 ofs0099: getproperty ['<mn kind 0x1b>']
+#0057 ofs009b: getlocal_3 []
+#0058 ofs009c: pushbyte [100]
+#0059 ofs009e: divide []
+#0060 ofs009f: callpropvoid ['wfxSuperRecordDamage', 1]
+#0061 ofs00a4: returnvoid []

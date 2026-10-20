@@ -1,0 +1,95 @@
+{
+  "capability": "direct-count-target-debuff-v1",
+  "output_swf_sha256": "4f7b894b11e1f377a91e1d4c9b132bd676f850bc6d49f48268fe9ecb7aaaa46b",
+  "pcode": [
+    {
+      "abc": "boot_ffc6",
+      "label": "ConditionSlot$/wfxSpec",
+      "body": 92601,
+      "code_sha256": "41a35474919597c0284697979a51213f2daf14b71d8dae19a77f53a35439b20a",
+      "header": [
+        5,
+        9,
+        1,
+        2
+      ],
+      "file": "ConditionSlot$__wfxSpec.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl/scheduleDirectAttack",
+      "body": 60192,
+      "code_sha256": "478a6b73bfbf2479c1a50b4ab00350b67e775a604c6b148f360de4e41d13a620",
+      "header": [
+        110,
+        46,
+        1,
+        2
+      ],
+      "file": "MemberImpl__scheduleDirectAttack.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl/wfxDirectTargetCount",
+      "body": 92678,
+      "code_sha256": "2a6e5d7e46343f17c27be273572e3fb23c67b7cab7bfbf68ade71cac454afce7",
+      "header": [
+        4,
+        9,
+        1,
+        2
+      ],
+      "file": "MemberImpl__wfxDirectTargetCount.pcode.txt"
+    }
+  ],
+  "shared_source": "../source",
+  "source_entrypoint": "../../build.py",
+  "requirement_decisions": {
+    "status": "resolved",
+    "source": "TASK11-current.md",
+    "questions": [
+      {
+        "id": "cross_player_stats_id",
+        "question": "原生跨玩家治疗携带来源端statsBattleId；保留跨ID排除，还是允许本端实际收到的队友治疗？",
+        "answer": "B",
+        "previous_candidate": "严格排除跨statsBattleId；正常跨玩家治疗因此不计入34/35",
+        "resolution": "码34/35允许本端实际执行的跨玩家回复；限制受治疗成员属于本端primary队伍且battle为本端，镜像、仅转发和统计回执不重复计入；旧30/31跨statsBattleId排除保留。"
+      },
+      {
+        "id": "fever_batch_boundary",
+        "question": "35每名成员实际applyHeal各调用一次，还是整次多目标治疗只调用一次并增加批次标记？",
+        "answer": "A",
+        "previous_candidate": "逐成员实际applyHeal独立量化，逐持有者一次调用；无跨成员批次聚合",
+        "resolution": "每名受治疗成员实际applyHeal独立量化；每位持有者在该成员事件中各调用一次Fever API，不加批次标记。"
+      }
+    ],
+    "source_sha256": "69c0c9b27f479d7270618776be22b5ef371b21c5061d255877d8ce05e9b57851",
+    "ruling_date": "2026-10-19",
+    "revision": 3,
+    "ct_supplement": {
+      "code": 34,
+      "arg_formula": "category + 10 * tier_percent + 1000 * ct_seconds",
+      "tier_percent_range": [
+        0,
+        99
+      ],
+      "example_arg": 5050,
+      "example_ct_seconds": 5,
+      "window_logic_frames": 30,
+      "minimum_ct_logic_frames": 30,
+      "ct_start": "damage_emission",
+      "ct_heals": "discard_without_carry",
+      "ct_scope": "one_per_holder_shared_effective_and_overheal",
+      "pause": "no_logic_frames_no_ct_progress",
+      "arg_below_1000": "bytecode_behavior_identical_to_pre_ct",
+      "code35": "unchanged_no_ct"
+    }
+  },
+  "decision_evidence": "../source/task-evidence/decision-status.json",
+  "task_evidence": "../source/task-evidence/TASK11-current.md",
+  "revision": 3,
+  "pre_ct_swf_sha256": "608bf66914dc5e0a0b8c16e795b88692f67b2b9a23a898be4254c42710e4353b",
+  "verification_status": "pass",
+  "external_readonly_ack": "../source/task-evidence/known-external-changes.json",
+  "scope": "本地草稿；前十轮构造器与v34输入只读；AIR/真机未核实"
+}
