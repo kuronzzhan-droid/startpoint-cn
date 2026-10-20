@@ -195,20 +195,6 @@ export function settleSingleQuestFinishInTransaction(
     const useBoostPoint = (activeQuestData.useBoostPoint && newBoostPoint >= 0)
         || (activeQuestData.useBossBoostPoint && newBossBoostPoint >= 0)
     const questPreviouslyCompleted = questProgress !== null
-    // 单人结算分数缩放（2026-10-08）：客户端单人 boss 战时间倍率额外 ×2（SCORE_SCALING_SINGLE_PLAY_BOSS_BATTLE），
-    // 联机没有这一项；这里按 SINGLE_SCORE_SCALE（默认 0.5）缩放「记录用」分数，与联机口径对齐。
-    // 只影响服务端记录（最高分、分数奖励、排行），不影响客户端结算画面显示；分数挑战活动不缩放（档位不变）。
-    // 仅普通 Boss（含 BothBoss）和世界剧情 Boss 的 availablePlayKind 恒为 1，客户端单人战必定有此 ×2。
-    // 降临活动需逐关判断 available_play_kind，但服务端任务 JSON/类型未保留该字段，7/8 分类也不能区分；
-    // 因此暂不缩放降临活动，避免误减纯单人关卡分数；其他单人分类没有此 ×2，也不缩放。
-    const isSinglePlayBossBattle = questCategory === QuestCategory.BOSS_BATTLE
-        || questCategory === QuestCategory.WORLD_STORY_EVENT_BOSS_BATTLE
-    if (questCategory !== QuestCategory.SCORE_ATTACK_EVENT && isSinglePlayBossBattle) {
-        const singleScoreScale = Number(process.env.SINGLE_SCORE_SCALE ?? "0.5")
-        if (Number.isFinite(singleScoreScale) && singleScoreScale > 0 && singleScoreScale !== 1) {
-            body.score = Math.floor((Number(body.score) || 0) * singleScoreScale)
-        }
-    }
     const isScoreAttackEvent = questCategory === QuestCategory.SCORE_ATTACK_EVENT
     const bodyTiming = createSingleSettlementBodyTimingCollector(questCategory, !!fiveBossSoloQuest)
     let bodySucceeded = false
