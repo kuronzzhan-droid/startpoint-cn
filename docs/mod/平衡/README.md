@@ -6,6 +6,7 @@
 
 | 版本 | 内容 | 记录 | Release |
 |---|---|---|---|
+| 1.4.265 | 水杰拉德合击强化弹射通用化（需 v35l） | [水杰拉德合击强化弹射通用化-1.4.265](水杰拉德合击强化弹射通用化-1.4.265.md) | [patches-1.4.265](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.265) |
 | 1.4.264 | 平衡表 10-20：万圣露迪改全领域判定、中秋丝缇涅尔在最近敌人前展开月相仪 | [技能形态-1.4.264](技能形态-1.4.264.md) | [patches-1.4.264](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.264) |
 | 1.4.263 | 平衡表 10-20 晚：阿鲁玛德乌斯/基诺维/白梅斩铁 | [角色平衡改动-1.4.263](角色平衡改动-1.4.263.md) | [patches-1.4.263](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.263) |
 | 1.4.262 | 地狱南瓜：弱体耐性、全程不晕、P1 固定轮次表、P2 提速与召唤加快、jack×0.8 / rage×1.5、单人 = 共斗血量 | [地狱南瓜-1.4.262](地狱南瓜-1.4.262.md) | [patches-1.4.262](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.262) |

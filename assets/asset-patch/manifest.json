@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.264",
+  "cdn_version": "1.4.265",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -35142,6 +35142,45 @@
             "production/upload/9c/b662e7a90afe781757713a2704cd38e57e6e7f",
             "production/upload/bc/8316a905d3f6236370ce0238ba0834c92f4429",
             "production/upload/d4/3451f28956c98155de905025e2cc1c78687287"
+          ]
+        }
+      ],
+      "created_at": "2026-10-21"
+    },
+    {
+      "id": "water-gerald-unison-pf-1.4.265",
+      "type": "patch",
+      "name": "水杰拉德合击强化弹射通用化 1.4.265（需 APK 1008011 v35l）",
+      "description": "",
+      "version": "1.4.265",
+      "depends_on": "1.4.264",
+      "enabled": true,
+      "archive": "pinball-1.4.264-1.4.265-1-water-gerald-unison-pf.zip",
+      "archive_size": 139340,
+      "chain": [
+        "pinball-1.4.264-1.4.265-1-water-gerald-unison-pf.zip"
+      ],
+      "files": [
+        "production/upload/03/0f45131c3f232b69d86bbdf874273f0876e96c",
+        "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+        "production/upload/16/5beb53b4c3d9a59d28cfa6d1efb26392e2e0f0",
+        "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+        "production/upload/3a/056fd35480305582484527ab26039e979aee31",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.264-1.4.265-1-water-gerald-unison-pf.zip",
+          "size": 139340,
+          "sha256": "44267239d7689d1a6920915029859ce66b2caba2bdaa1657574926620cd70ee5",
+          "members": 6,
+          "files": [
+            "production/upload/03/0f45131c3f232b69d86bbdf874273f0876e96c",
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+            "production/upload/16/5beb53b4c3d9a59d28cfa6d1efb26392e2e0f0",
+            "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+            "production/upload/3a/056fd35480305582484527ab26039e979aee31",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
           ]
         }
       ],
