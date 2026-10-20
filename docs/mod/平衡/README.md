@@ -6,6 +6,7 @@
 
 | 版本 | 内容 | 记录 | Release |
 |---|---|---|---|
+| 1.4.258 | 万圣稻穗（169977）：追加角色与配套资源，服务端 5 个 JSON 只追加（kulo #75） | [万圣稻穗-1.4.258](万圣稻穗-1.4.258.md) | [patches-1.4.258](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.258) |
 | 1.4.257 | 平衡表 10-20：克劳斯数值调整与队长技文案整合 | [角色平衡改动-1.4.257](角色平衡改动-1.4.257.md) | [patches-1.4.257](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.257) |
 | 1.4.256 | 面板文案：强化弹射伤害/贯穿延长写明全队，敌人冻结统一为官方「迟缓」 | [面板文案全队与迟缓-1.4.256](面板文案全队与迟缓-1.4.256.md) | [patches-1.4.256](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.256) |
 | 1.4.255 | 平衡表 10-19 晚：14 个角色数值调整 | [角色平衡改动-1.4.255](角色平衡改动-1.4.255.md) | [patches-1.4.255](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.255) |
