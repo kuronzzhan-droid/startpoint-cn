@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.260",
+  "cdn_version": "1.4.261",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -34900,6 +34900,79 @@
           "members": 1,
           "files": [
             "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa"
+          ]
+        }
+      ],
+      "created_at": "2026-10-21"
+    },
+    {
+      "id": "hell-pumpkin-p1rounds-1.4.261",
+      "type": "patch",
+      "name": "地狱南瓜 P1 三轮随机试炼 / 血量对标决战机兵 / 控制免疫 / 眩晕只在 Fever 一次 / Fever 槽 2500 / 10% 技能瓶",
+      "description": "",
+      "version": "1.4.261",
+      "depends_on": "1.4.260",
+      "enabled": true,
+      "archive": "pinball-1.4.260-1.4.261-1-hell-pumpkin-p1rounds-local.zip",
+      "archive_size": 4171578,
+      "chain": [
+        "pinball-1.4.260-1.4.261-1-hell-pumpkin-p1rounds-local.zip"
+      ],
+      "files": [
+        "production/upload/0b/97162ce6d40c473cbac39fa21427688922a48a",
+        "production/upload/19/a4aa442b3249499356e7a3f6370e530bfe355e",
+        "production/upload/31/2b973c1ecbdab12568f0664050b99ec872689c",
+        "production/upload/31/9b0ac859a6131979ae63e38d78dc8edd5f6664",
+        "production/upload/35/78f18bc4001ec4cc6e461bd3496dbfb66f6bb1",
+        "production/upload/3c/0239aa0d16b94a54707d0d774d4196f304b201",
+        "production/upload/3c/28c7a7f4238fcd2fdc74e8c80bbcc6becb7f75",
+        "production/upload/3f/877b6a92ddf5bce292a24074496c667a6d7f46",
+        "production/upload/5d/64d35a683d685cb446b75c8ed2c4feba230fc7",
+        "production/upload/66/cdeab8335db326aaa4255ffd38c77081c4ecf6",
+        "production/upload/6b/df5e3bf2459363614200e6aee1ea047d12b57a",
+        "production/upload/6b/ef338822b2c963eb40c67b3d43a3b3f911ad73",
+        "production/upload/7c/1787bcb3e3c7932e82001bc2ffa6cf5410455e",
+        "production/upload/7e/9bda965a438e98295b77f35af5cecc789ab5c2",
+        "production/upload/8a/67bb2f3e93cb855c834f45bd43cb9a077c68e6",
+        "production/upload/b6/7498ab4f0fd90021f8b37f1d8e6bfe631a855d",
+        "production/upload/b6/d2148ba20160272c877e57180df27cb14e6170",
+        "production/upload/c9/be658fae5dea901e17d2e05f3f139c8bb1654b",
+        "production/upload/ce/9b0b463eefcc3c54b3a24fb5138249c3080330",
+        "production/upload/ec/d8f66b60947ca05643c4080a6cc925c750b9d6",
+        "production/upload/f5/0cef8a8e349d70d21f3755880bb75dfd22159a",
+        "production/upload/f7/7a57284ba0569dd4b8b5c3079fc10f848e8024",
+        "production/upload/f9/8aaf86fd7a36a52ba506c5b6fdfdacec99dba9"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.260-1.4.261-1-hell-pumpkin-p1rounds-local.zip",
+          "size": 4171578,
+          "sha256": "00be273af3bfaadc1323797552a239acf25b24e07315f1666bd01901d053802f",
+          "members": 23,
+          "files": [
+            "production/upload/0b/97162ce6d40c473cbac39fa21427688922a48a",
+            "production/upload/19/a4aa442b3249499356e7a3f6370e530bfe355e",
+            "production/upload/31/2b973c1ecbdab12568f0664050b99ec872689c",
+            "production/upload/31/9b0ac859a6131979ae63e38d78dc8edd5f6664",
+            "production/upload/35/78f18bc4001ec4cc6e461bd3496dbfb66f6bb1",
+            "production/upload/3c/0239aa0d16b94a54707d0d774d4196f304b201",
+            "production/upload/3c/28c7a7f4238fcd2fdc74e8c80bbcc6becb7f75",
+            "production/upload/3f/877b6a92ddf5bce292a24074496c667a6d7f46",
+            "production/upload/5d/64d35a683d685cb446b75c8ed2c4feba230fc7",
+            "production/upload/66/cdeab8335db326aaa4255ffd38c77081c4ecf6",
+            "production/upload/6b/df5e3bf2459363614200e6aee1ea047d12b57a",
+            "production/upload/6b/ef338822b2c963eb40c67b3d43a3b3f911ad73",
+            "production/upload/7c/1787bcb3e3c7932e82001bc2ffa6cf5410455e",
+            "production/upload/7e/9bda965a438e98295b77f35af5cecc789ab5c2",
+            "production/upload/8a/67bb2f3e93cb855c834f45bd43cb9a077c68e6",
+            "production/upload/b6/7498ab4f0fd90021f8b37f1d8e6bfe631a855d",
+            "production/upload/b6/d2148ba20160272c877e57180df27cb14e6170",
+            "production/upload/c9/be658fae5dea901e17d2e05f3f139c8bb1654b",
+            "production/upload/ce/9b0b463eefcc3c54b3a24fb5138249c3080330",
+            "production/upload/ec/d8f66b60947ca05643c4080a6cc925c750b9d6",
+            "production/upload/f5/0cef8a8e349d70d21f3755880bb75dfd22159a",
+            "production/upload/f7/7a57284ba0569dd4b8b5c3079fc10f848e8024",
+            "production/upload/f9/8aaf86fd7a36a52ba506c5b6fdfdacec99dba9"
           ]
         }
       ],
