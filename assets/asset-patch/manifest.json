@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.262",
+  "cdn_version": "1.4.263",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -35066,6 +35066,43 @@
             "production/upload/fb/b0d705e5c49b6f9a21ebb84ce334e77b0b0938",
             "production/upload/fc/d883abd10eaa63a261ff6a329b543ae76fba28",
             "production/upload/fe/b904cf0f35e9629f345e5c3040991894c1c741"
+          ]
+        }
+      ],
+      "created_at": "2026-10-21"
+    },
+    {
+      "id": "balance-1020b-1.4.263",
+      "type": "patch",
+      "name": "平衡表10-20晚：阿鲁玛德乌斯/基诺维/白梅斩铁",
+      "description": "",
+      "version": "1.4.263",
+      "depends_on": "1.4.262",
+      "enabled": true,
+      "archive": "pinball-1.4.262-1.4.263-1-balance-1020b-local.zip",
+      "archive_size": 353428,
+      "chain": [
+        "pinball-1.4.262-1.4.263-1-balance-1020b-local.zip"
+      ],
+      "files": [
+        "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+        "production/upload/18/d6a0005f83b26a6f8ff10e0872b4f9f6ea2680",
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/4f/166866a6f2c527ce5d08927e65a83491a9b7ca",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.262-1.4.263-1-balance-1020b-local.zip",
+          "size": 353428,
+          "sha256": "c412aa50b051f33821b67314e4845d6c18e5cc01674af9739dbcd78919cabe45",
+          "members": 5,
+          "files": [
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+            "production/upload/18/d6a0005f83b26a6f8ff10e0872b4f9f6ea2680",
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+            "production/upload/4f/166866a6f2c527ce5d08927e65a83491a9b7ca",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
           ]
         }
       ],
