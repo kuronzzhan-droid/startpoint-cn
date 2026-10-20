@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.263",
+  "cdn_version": "1.4.264",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -35103,6 +35103,45 @@
             "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
             "production/upload/4f/166866a6f2c527ce5d08927e65a83491a9b7ca",
             "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+          ]
+        }
+      ],
+      "created_at": "2026-10-21"
+    },
+    {
+      "id": "skill-rework-1020b-1.4.264",
+      "type": "patch",
+      "name": "平衡表10-20：万圣露迪全领域判定/中秋丝缇涅尔最近敌人前展开",
+      "description": "",
+      "version": "1.4.264",
+      "depends_on": "1.4.263",
+      "enabled": true,
+      "archive": "pinball-1.4.263-1.4.264-1-skill-rework-1020b-local.zip",
+      "archive_size": 573885,
+      "chain": [
+        "pinball-1.4.263-1.4.264-1-skill-rework-1020b-local.zip"
+      ],
+      "files": [
+        "production/upload/2c/993d1898a89ff27a0df6d1408be18d02bfbfdb",
+        "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+        "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
+        "production/upload/9c/b662e7a90afe781757713a2704cd38e57e6e7f",
+        "production/upload/bc/8316a905d3f6236370ce0238ba0834c92f4429",
+        "production/upload/d4/3451f28956c98155de905025e2cc1c78687287"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.263-1.4.264-1-skill-rework-1020b-local.zip",
+          "size": 573885,
+          "sha256": "fc7ae3617d3c064c084f5e51fbcf371ce0f8551cb32922ee543235f97bf2e2fd",
+          "members": 6,
+          "files": [
+            "production/upload/2c/993d1898a89ff27a0df6d1408be18d02bfbfdb",
+            "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+            "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
+            "production/upload/9c/b662e7a90afe781757713a2704cd38e57e6e7f",
+            "production/upload/bc/8316a905d3f6236370ce0238ba0834c92f4429",
+            "production/upload/d4/3451f28956c98155de905025e2cc1c78687287"
           ]
         }
       ],
