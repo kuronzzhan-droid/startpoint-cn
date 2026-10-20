@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.265",
+  "cdn_version": "1.4.266",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -35181,6 +35181,57 @@
             "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
             "production/upload/3a/056fd35480305582484527ab26039e979aee31",
             "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+          ]
+        }
+      ],
+      "created_at": "2026-10-21"
+    },
+    {
+      "id": "hell-pumpkin-regress-1.4.266",
+      "type": "patch",
+      "name": "地狱南瓜 回归修复：P1 小南瓜改回刷新组召唤+两段 GeneralFunnelDead 门 / P3 取消脚下掉落、同屏南瓜≤4、节奏回 ×1.0",
+      "description": "",
+      "version": "1.4.266",
+      "depends_on": "1.4.265",
+      "enabled": true,
+      "archive": "pinball-1.4.265-1.4.266-1-hell-pumpkin-regress-local.zip",
+      "archive_size": 3293568,
+      "chain": [
+        "pinball-1.4.265-1.4.266-1-hell-pumpkin-regress-local.zip"
+      ],
+      "files": [
+        "production/upload/0b/97162ce6d40c473cbac39fa21427688922a48a",
+        "production/upload/0e/409a72e76761560e108ba04514e900d92d1deb",
+        "production/upload/17/deeaf3db6083a944d75d7333c7718a12c8c155",
+        "production/upload/21/4a941bcf2bf9174c248d364a163cf8d66b2eb2",
+        "production/upload/22/e842d553128dec97ecdc323f8959e1220ce011",
+        "production/upload/3c/0239aa0d16b94a54707d0d774d4196f304b201",
+        "production/upload/46/2a21cf2ac1c57647e300360257ab0be3d268de",
+        "production/upload/66/cdeab8335db326aaa4255ffd38c77081c4ecf6",
+        "production/upload/c5/4d993bb846072314299ddeeee1ba6c78baa6c7",
+        "production/upload/df/b0f86dfe210b5812cc99a94346e2006534d263",
+        "production/upload/f5/0cef8a8e349d70d21f3755880bb75dfd22159a",
+        "production/upload/fe/b904cf0f35e9629f345e5c3040991894c1c741"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.265-1.4.266-1-hell-pumpkin-regress-local.zip",
+          "size": 3293568,
+          "sha256": "77c64408fbb66cc67c26036ea381f882a2a3bdf0c5a22b52481ac92debe0f330",
+          "members": 12,
+          "files": [
+            "production/upload/0b/97162ce6d40c473cbac39fa21427688922a48a",
+            "production/upload/0e/409a72e76761560e108ba04514e900d92d1deb",
+            "production/upload/17/deeaf3db6083a944d75d7333c7718a12c8c155",
+            "production/upload/21/4a941bcf2bf9174c248d364a163cf8d66b2eb2",
+            "production/upload/22/e842d553128dec97ecdc323f8959e1220ce011",
+            "production/upload/3c/0239aa0d16b94a54707d0d774d4196f304b201",
+            "production/upload/46/2a21cf2ac1c57647e300360257ab0be3d268de",
+            "production/upload/66/cdeab8335db326aaa4255ffd38c77081c4ecf6",
+            "production/upload/c5/4d993bb846072314299ddeeee1ba6c78baa6c7",
+            "production/upload/df/b0f86dfe210b5812cc99a94346e2006534d263",
+            "production/upload/f5/0cef8a8e349d70d21f3755880bb75dfd22159a",
+            "production/upload/fe/b904cf0f35e9629f345e5c3040991894c1c741"
           ]
         }
       ],
