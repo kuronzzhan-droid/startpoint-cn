@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.259",
+  "cdn_version": "1.4.260",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -34875,6 +34875,35 @@
         }
       ],
       "created_at": "2026-10-20"
+    },
+    {
+      "id": "hell-pumpkin-candy-icon-1.4.260",
+      "type": "patch",
+      "name": "地狱南瓜 万圣糖果 10009701 c4 图标切到 item_icon 图集子纹理",
+      "description": "",
+      "version": "1.4.260",
+      "depends_on": "1.4.259",
+      "enabled": true,
+      "archive": "pinball-1.4.259-1.4.260-1-hell-pumpkin-candy-icon-local.zip",
+      "archive_size": 243436,
+      "chain": [
+        "pinball-1.4.259-1.4.260-1-hell-pumpkin-candy-icon-local.zip"
+      ],
+      "files": [
+        "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.259-1.4.260-1-hell-pumpkin-candy-icon-local.zip",
+          "size": 243436,
+          "sha256": "7946f303149049df3611cd0edbf1f1a6aa877f5adb830d361b1dda15eac57486",
+          "members": 1,
+          "files": [
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa"
+          ]
+        }
+      ],
+      "created_at": "2026-10-21"
     }
   ],
   "generated_for": "official active chain"

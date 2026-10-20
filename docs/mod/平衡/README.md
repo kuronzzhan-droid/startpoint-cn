@@ -6,6 +6,7 @@
 
 | 版本 | 内容 | 记录 | Release |
 |---|---|---|---|
+| 1.4.260 | 地狱南瓜：万圣糖果 10009701 的 c4 图标切到 item_icon 图集子纹理 | [地狱南瓜-1.4.260](地狱南瓜-1.4.260.md) | [patches-1.4.260](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.260) |
 | 1.4.259 | 地狱南瓜 新降临讨伐「为你奏响的镇魂歌」（活动 300097）：五档、P1–P3 连战、自制地形与 BGM；服务端 7 个 JSON 只追加 | [地狱南瓜-1.4.259](地狱南瓜-1.4.259.md) | [patches-1.4.259](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.259) |
 | 1.4.258 | 万圣稻穗（169977）：追加角色与配套资源，服务端 5 个 JSON 只追加（kulo #75） | [万圣稻穗-1.4.258](万圣稻穗-1.4.258.md) | [patches-1.4.258](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.258) |
 | 1.4.257 | 平衡表 10-20：克劳斯数值调整与队长技文案整合 | [角色平衡改动-1.4.257](角色平衡改动-1.4.257.md) | [patches-1.4.257](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.257) |
