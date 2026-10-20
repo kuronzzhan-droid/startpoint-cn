@@ -1,0 +1,2010 @@
+{
+  "schema": 1,
+  "id": "halloween-inaho",
+  "characterId": "169977",
+  "name": "万圣稻穗",
+  "candidateResourcesSha256": "7ac22cfaef3e1f3f10be3f8a99eccaebb27b2e368f6701296ba275f37e5b7420",
+  "tables": [
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "member": "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+      "rows": {
+        "1699771": "eJzNUtEKAiEQfL8vKdgHV9gOX/uAfkHMjItMoYx+P907Ly7ooAhqkFlxUGbcteEUd/oQTBd1Z7yPN+eCRkjnqwOTkrFHvfWZQUBeEgBWoqCWNYtFZTxXxmITg1uOihQKqF6U/ErP30Jj30v1yvxsCMTM9ZDYP/0wBc67/wiTyAxEAaqeY0lbqYj9RAwF9sZfXHYxthqpqDT5on8M2cqH5wF9FgVt3kviiaVpr5s7E5PCLA==",
+        "1699772": "eJxLzsvNT4nPzEvMyI/PSMzJyS9PTc2LN9JJS8wpTtVJLClJTM6OT8oBkjoGOkBkpKOjY2YAAjDKCSwJkgUDdBoMNPzy81I14TLGRjqmMH1GpmBToBS1AFcyif7C5XwjYxDTEOJVKAX3jwEWv5mYGwA9BxM0BnkLSurAgw4eeAgzoRRUHz4K6jSIR3QMdcgINC4AOKN1IQ==",
+        "1699773": "eJxLzsvNT4nPzEvMyI/PSMzJyS9PTc2LN9YpKSpN1UksKUlMzo5PygGSOgY6OoYgAgzQafKBhl9+XqomsoihoYGOJUzc0MDAAE6AJA0MYCIgflpiTnEq0BWmOk5gR+oYmoJkTQ2QHcaVTIonDXB6EsWzKO4GOtgMyQ0IJ1IcPHA/AADBnGHT",
+        "1699774": "eJxLzsvNT4nPzEvMyI/PSMzJyS9PTc2LN9EpKSpN1UksKUlMzo5PygGSOgY6OoYgAgzQafKBhl9+XqomsoihoYGOJUzc0MDAAE6AJA0MYCIgflpiTnGqjpGOqY4T2JE6RiBhMIEAXMmkeBKoHajHDGIBlIIajtf3KB4BGmJiinCVoSnY0aao7qIMcAEAVb1mMA==",
+        "1699775": "eJxLzsvNT4nPzEvMyI/PSMzJyS9PTc2LN9UpKSpN1UksKUlMzo5PygGSOgY6OoYgAgzQafKBhl9+XqomsoihoYGOJUzc0MDAAE6AJA0MYCIgflpiTnGqjhHQHTBzEBoQgCuZFF8a4PQlim9RHG6gY25krGOq4wQ2BOI8KEktwAUAUBth+w==",
+        "1699776": "eJy9UdEKAiEQfO9LCvZhV7nA1z6gXxCzjYtMoYx+PzU8u4OCi2geRhx13dmx/hz2+uhNH3RvnAt3Zq/XEC83BhOjsSe9c4kBAShTwXT9Hstt8Lx6VYgQVNUJEQfKh4hVyfuDcVcGkfqoddqDhoWd4xLfuhSyTGHcQvl9agRBEEEHm1IURJevPvlXmGfqf9ENUahkVn0OTrYRyaTKcWoPs/SZRg=="
+      },
+      "group": 5
+    },
+    {
+      "logical": "master/ability/leader_ability.orderedmap",
+      "member": "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5",
+      "rows": {
+        "169977": "eJxLzsvNT4nPzEvMyI/PSMzJyS9PTc3TMdABIiMdHR0zAxCAUU45icnZICkIQKfBQMMvPy9VEy5jZGCpYwrTaGQKMgVCUgtwJdPaB4aGQB/ABE3BxkBI2nvBEL9LyQIo3gMDQ0MDHUuYuCHIZzACJAkJOCilk5aYU5wKdAU8Tk1NQeFhihIcXACRboD9"
+      },
+      "group": 6
+    },
+    {
+      "logical": "master/character/character.orderedmap",
+      "member": "production/upload/2d/5cb9b28d18f984a51b345a4d7aab03d77bddfc",
+      "rows": {
+        "169977": "eJxLzsvNT4nPzEvMyI/PSMzJyS9PTc3TMdQxBULfyuKS1KJKHR0THbfU3MScVJ1krKo1/PLzUjV1oMDQzNLS3FznyY72p3MWP10y5+m6LVAxQyhtBKWNobQJlDaF0mY6RjpOiTmJecmpMNOgVhjqpCXmFKfqlBSVpuoYALk6OkpmOnCoxAUAGho/Bg=="
+      },
+      "group": 5
+    },
+    {
+      "logical": "master/character/character_gacha_sound.orderedmap",
+      "member": "production/upload/ac/b038c35f3048ba7ca07a6a84307b2fb10c041c",
+      "rows": {
+        "169977": "NAAAAHicY2VgYGACYiMgZgXiaiDmAOLlQMwNxJeAmA+I2RkZGIxNDQ3MDU2MDS0NjcyNAWVYBSt4nCvOL81LiU9NS0tNLtFPSiwpyUmNT87Pzc3P0y9OjS/ISaxMLYpPL00sSgEAa3IQ7nicTYs7DoAwDMV2LtMjRSF9BUT6UZoO3J6wMdqyZ18tE0qBeNrZXUHSa+0tTdBQfmB0LLa8zX/qZwDsi6Ah7BKKm+V+AUvMIJ54nCvOL81LiU9NS0tNLtEvyQByUov0i1PjU3OAAkWZyfGJJSWJydkAOZQPp3icK84vzUuJT01LS00u0S/PzEvRL06NB9HxyRmJRemp8cW5icUZACg2DzN4nCvOL81LiU9NS0tNLtEvyQByUov0i1Pjocz48syU1PjEotTE+NQcoJKizOTMkkoAQS4Vfw=="
+      },
+      "group": 6
+    },
+    {
+      "logical": "master/character/character_speech.orderedmap",
+      "member": "production/upload/b4/a28679b8eeefdbdcbe6071fd4f2ff85e5b3415",
+      "rows": {
+        "169977": "eJxtk8tO21AQhvd+DNaRuLR9nqqLSFClZNOLukHO1XYSX0LAJsGUQq6lhgRKgrEdLPVR2jPHxyteoXPikBBRaeSFj33m+/9/ZiO1lUqtwVGI9RjUQLWihk1vH2C/Fv0y6Tc7LkyZpYM8gsZFLNVA84lXfgxOiasSrwOSR0+6UavIhif4u0BtBzp94nkwuma9HOTueO07ZPqduCLobfwoKk7A0Gilgi9BP6KyASM9afwY5NZS29kP6fXtd5lM9ks6vft2U9iYMVJbJt4Vx/FuWHhMvDrizFhq9LJNj4bL3pIHtodQ0J1Sa0JtD+9F3shvoiZhQbsCOzbBHiBRbA1AUfFrNh7BYW/vBc/WnAfkFlXUpUKv/Fwk8uAd+ISrGpQG9OYM9HqkjdA5FjaxIT/q9KFnClS8QCSam5CpDUo/YWWhBPJPKh6ucIYFWiihKp7U6Jo3UBUIiryxVxZesr5C1k1kJa4Edhs6dtIYk4kKl1ixdY/Fu6MSfm0OVa90dHs8Jc0HowEHjgClCfFNpEZo/C4+88hDyKP0TeI7eNFiaGjlHDXgcPwv09dzLir6rK/Ag8XyLbg0qK1E+fu4G0L9/I/YwwIzj20QgSpVjHvhKo5kdCIiMhgF7CqgrWgXvp0PxBM/nsWBj1eDPoxy49npS5w3AgaaonJ9EUoiL9IUZvm/76KBH/2weDB+hTZbS3f0If9jVGG3Yz5uhsvOxNgJoNH7K+bJvYmF5iSeLLYlUcbnsThZzqJcx9v4yqwuy3xNpg00BuNPBMBhBer2XgoFfF1/n93ZFdDMzWcxc5iSQ1yfXoXEreJ+QKBHTR9mqyCAVIaOhO6xUKNa97lboGrEndLgAFmxGRgo+1RIdPN4q3nqnPNIntYpGUWqttlxdebtDCr9OZv59HEnuyv8A08Q2tA="
+      },
+      "group": 6
+    },
+    {
+      "logical": "master/character/character_status.orderedmap",
+      "member": "production/upload/5c/6a4f0e2ceb1dbcf60f9b306b0f7bfd0eca55c9",
+      "rows": {
+        "169977": "KAAAAHicY2FgYGAEYl4gZgZiGSBmBWIdIOYAYhsgNjQ0sDAwNDAAABR6AjJ4nDOx0DE0BAADAAD7eJwzsTDSMTQ0AQAFlgFheJwzsrA00jGzMAEAB2YBpHicMza0MNQxNzUCAActAZg="
+      },
+      "group": 5
+    },
+    {
+      "logical": "master/character/character_text.orderedmap",
+      "member": "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+      "rows": {
+        "169977": "eJzlkstOwlAQhve+h4kmXRCJ7k3cuNGF8RHc6iscVKSU3sRLFQ8iUqwK4SKipbbyMJ6ZM13xCh5CMK58ATczydz+byYjHz/kk6dtrG/v7G5qaN2L0AA3pDpL2zE18lit0dhGuynCAvAG+FxWjuHhUpZc6J1Cc/DFDmnoI9dFWFIpFZe5Fo2TlLmyysDy5BmXue4kNqE5QsOQg0u85VA2MfcmEg7FQIQMXJM8h8Y3IjpBo5U2bDVW+y0505gJazPAKUK5rUF3BPlH4BFemCKKUnaHuosVD/q3yAIR+9AZTGId8v0sdoZTDlenTn0tA8xCg9FRMq8pTmKHhiUR6T/txFxl02tLJPZKZhEvdAWvpq1kZFBWHQoTeTu9qmHXAdcS4Qc95CgoU/EFi2NwPCo8U9RCzsAP5HkNThNgcXZ1Ua00lzVh9Eb2O3z+VYyGL28+p1f518svbR3s7y3P3c+DQOdVg56Dg0REFazaC999pehb"
+      },
+      "group": 5
+    },
+    {
+      "logical": "master/character/full_shot_image_attribute.orderedmap",
+      "member": "production/upload/b9/132d27178d27f9d91df89fc47e106bbaf2d5b5",
+      "rows": {
+        "169977": "GAAAAHicY2JgYGAEYnEgZgJibSA2MAQAAz0AqXicMzQwMNAxBBM6FpZmOibGxgAj6gOleJwzNDAw0DEEExDKxMQAACcdA70="
+      },
+      "group": 6
+    },
+    {
+      "logical": "master/generated/character_image.orderedmap",
+      "member": "production/upload/3e/b411841802398d5b21d422579f2eaa65d30c0e",
+      "rows": {
+        "169977": "FwAAAHicY2JgYGAEYgkgZgJiAxA2BAADaQCveJwzNjPTMTXQMTQyM9cxtDA3AAAa0QMpeJwzNjPTMTXQMTQyM9cxtLCwBAAa3AMz"
+      },
+      "group": 5
+    },
+    {
+      "logical": "master/generated/mana_board.orderedmap",
+      "member": "production/upload/27/7b65484214436114201ae654fefa60fdc822ea",
+      "rows": {
+        "169977": "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"
+      },
+      "group": 5
+    },
+    {
+      "logical": "master/generated/trimmed_image.orderedmap",
+      "member": "production/upload/fb/ab4344a7456dca88f3ce06f01208922f37e395",
+      "rows": {
+        "character/cnmod_inaho_halloween/ui/full_shot_1440_1920_0": "eJwzNjPTMTXQMTIwgBBcAB1rAxc=",
+        "character/cnmod_inaho_halloween/ui/skill_cutin_0": "eJwz0DHQMTQwMtExNTTiAgAQ1QJO",
+        "character/cnmod_inaho_halloween/ui/full_shot_1440_1920_1": "eJwzNjPTMTXQMTIwgBBcAB1rAxc=",
+        "character/cnmod_inaho_halloween/ui/skill_cutin_1": "eJwz0DHQMTQwMtExNTTiAgAQ1QJO",
+        "character/cnmod_inaho_halloween/ui/story/base_0": "eJwz0DHQMTU30DGzNOACAA6uAio="
+      },
+      "group": 6
+    },
+    {
+      "logical": "master/mana_board/mana_board2_open_condition.orderedmap",
+      "member": "production/upload/bc/0bc800f482670f3ec8a7f2fee9b9deeeca3a04",
+      "rows": {
+        "169977": "eJwNwsENADAIAsBVHKAkgPGB+w9WL2dqwAZV8pL3WQlktMq9k/sBlQQHlQ=="
+      },
+      "group": 6
+    },
+    {
+      "logical": "master/mana_board/mana_node.orderedmap",
+      "member": "production/upload/1d/222e5126fc7ebe3f22c7efe87325f73742eb4f",
+      "rows": {
+        "169977": "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"
+      },
+      "group": 5
+    },
+    {
+      "logical": "master/mana_board/upskill.orderedmap",
+      "member": "production/upload/57/8872ecbc78561807e6846b3980c5dea980d8ce",
+      "rows": {
+        "169977": "eJxLzs/Nzc+LTywpSUzOji8t0EnOz0vJLMkEiqWmpaUml8QXJBYl5lQWZxaDZDX88vNSNbFTyVQzCgB20zZR"
+      },
+      "group": 5
+    },
+    {
+      "logical": "master/skill/action_skill.orderedmap",
+      "member": "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
+      "rows": {
+        "cnmod_inaho_halloween": "GAAAAHicY2JgYGAEYgsgwQSki4CEoREABs8BFnicbY5dSsNAEIDfPYeCwkK2qfEYXiGs7UpD0wRqRHxbtMX0T2NRirWohUJEpVKlpY2JlzGz2T71Cm4N9UGcYQdm+ObbAW8q+ixpeNB+QfA6g+oj9AJ+3YyDYM4euOvxbgdGd5z5cTiA4fsidKE6yvLheBE2wXPFsL+DgbV4nYnTaMXUFuGFGDfiwE1VvxLBPFnnN604OlfxhrSpOPHbcuOLnfCJK1gHvEo8/YijlvDbovYmzp5E8Mx7DAZ+cnUPlxGwMOlWstrG8oLZJP1HbknyDyYZSfL6ILn9lH6UP7ZIycgpB0XDNBXiFPV9g5p55JQPKdI0/PMw2iOOY1KF5BzDtlZw2pRJmWpKzirZed2wSMHWC8Q07SNKrfV/p3oGZZCK1G2MURbjpT7NzV3bolsojbVvXWPTTnicbY5dSsNAEIDfPYcFhYWsqfEYXiGsbaShaQI1Ir4t2mL6p7EoxVrUQiCiUqnS0sbEy5jZbJ9yBbeG+iDOsAMzfPPtgDvjQ5q0XOi+pGELwesc6o8wCNh1Ow6CBX1gjsv6PRjfMerHoQej9zR0oD7Os9EkDdvgOnw03MFAO6xJ+Wm0YhppeMEnrThwMtWvhFNX1MVNJ47OZZwTNhknfldsfNETNnU47YFbi2cfcdThfpc33vjZEw+e2YCC5ydX93AZAQ2Tfi2v5JYXzKfZP2JLkH8wwQiSNb3k9lP4UfHYJBW9IB2UdcOQiF1W93XNKCK7eqghRcE/D6M9YtuGJpGCrVvmCs6aKqlqilQwK1ZR1U1SstQSMQzrSNPM9X+nqoy2kIzkbYxRHuOlPsuNXcvUNlEWa9/DwtWF"
+      },
+      "group": 5
+    },
+    {
+      "logical": "master/skill_preview/skill_preview_character.orderedmap",
+      "member": "production/upload/aa/abdd2e178d62dba4997034aab8c236a4422154",
+      "rows": {
+        "169977": "eJyzNDDWSUvMKU6FkpZofA2//LxUTRgFAFdYDoc="
+      },
+      "group": 6
+    },
+    {
+      "logical": "master/stance_detail/character_stance_detail.orderedmap",
+      "member": "production/upload/d7/50c2f94f83dd053bfc79039a709f1ec6f766cb",
+      "rows": {
+        "169977": "eJzTUTLUMdIx1jFR0lEy1TFU0jHU0UERApKGAHnCBmo="
+      },
+      "group": 6
+    },
+    {
+      "logical": "master/story/story_character.orderedmap",
+      "member": "production/upload/92/dcd1cc81f29794f0606ffe39f68d4e8740c8fa",
+      "rows": {
+        "cnmod_inaho_halloween": "eJztk80NwjAMhe+MkRNIllIQQmIJVqjc1CKBJEbpH52EFWAGBuoapEo594Y49OD3bOuzlRw8PN/D6wHZvdgdD9s9KI0BVU1BKu+4zI1HzblGa7kj8rJlo0iC8BwcWkB/Dn3SvJhcwYX7MWInYTGpsBxjzDQ6SjpWzlhK+q3iguRxogm3YKoIdIT1tL+EWht/BWrZtiRAzL25MbKqOfSywIrybPaPC7/wC/8zPl7w+sSeNvAPJlYf5uPlyg=="
+      },
+      "group": 6
+    }
+  ],
+  "resources": [
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/skill_cutin_0.atf.deflate",
+      "member": "production/android_upload/f8/978006930b9d27f99d1137366be02ff0b7e55a",
+      "sha256": "5739edbebe64b609470fe58517888ded9a75f48d18e056eec7b1dbce986b6c99",
+      "size": 241810,
+      "artArchive": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "group": 1
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/skill_cutin_1.atf.deflate",
+      "member": "production/android_upload/98/0a2c3084a98d08eab0e335b711f4ab2027e799",
+      "sha256": "0d35abf264bc51de6c9b5620c1564debcab879d3f4664fc4a071c7a559337622",
+      "size": 252787,
+      "artArchive": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "group": 1
+    },
+    {
+      "logical": "battle/action/skill/action/rare5/cnmod_inaho_halloween$cnmod_inaho_halloween_1.action.dsl.amf3.deflate",
+      "member": "production/upload/69/839efd56177d9dc68441073c58bee89678f499",
+      "sha256": "bad232e012618d2156a3fb2efd5692766284266918d7b7d296afd16340f03c0c",
+      "size": 712,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "battle/action/skill/action/rare5/cnmod_inaho_halloween$cnmod_inaho_halloween_2.action.dsl.amf3.deflate",
+      "member": "production/upload/61/67c6d8b55a7dd5adf4ca97f50e9852e6f753c6",
+      "sha256": "bad232e012618d2156a3fb2efd5692766284266918d7b7d296afd16340f03c0c",
+      "size": 712,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/caster/caster.atlas.amf3.deflate",
+      "member": "production/upload/79/1edb88e51daa6b20b30d7cff304ecc6cd1be82",
+      "sha256": "2d8c8ab156cd721349a94a3221ec30e7afc0541c2948441fa539f50308d164dd",
+      "size": 173,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/caster/caster.png",
+      "member": "production/upload/0a/19e927b44fb7b83171fd0d806afd2d4530837c",
+      "sha256": "314caaa665a6e39c33bb4ed8a78e85c5a8f84ae4611355440dad1beb777adf28",
+      "size": 6527,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/caster/effect.parts.amf3.deflate",
+      "member": "production/upload/a0/146998b19d76aa1eb64743c3add95be44a6b94",
+      "sha256": "d2e21f6621428ca6c7918ce543cd1d9a4e756c33e1e0dd4b7202b029a9582293",
+      "size": 1816,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/caster/effect.timeline.amf3.deflate",
+      "member": "production/upload/79/131b45c54a1535fba4cf0e44ccc939714c3d91",
+      "sha256": "2529f892e0f9a16a509346add413de12f8f79cb0ed32e4c59e1b0479a07a9ae5",
+      "size": 140,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/cnmod_inaho_halloween.atlas.amf3.deflate",
+      "member": "production/upload/9b/b0d7d84554f285ed96db82d7649748b63dd589",
+      "sha256": "cca303f4f4ee781a94a8dae938a50660f7d770fc897f0c7b578d618478b1a4b8",
+      "size": 177,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/cnmod_inaho_halloween.png",
+      "member": "production/upload/d5/e39fd9c8ac02228888bd2ba75c02678b9a6895",
+      "sha256": "1d29681985c752463fd43259258067594a6bbc24a9c77cf6943c587d551c40dd",
+      "size": 77500,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/field/effect.parts.amf3.deflate",
+      "member": "production/upload/a9/45b7eb5177d7f0f6a1108dd73cee77a6ff0f9d",
+      "sha256": "b27a54de50942392fe144f9b45f3cefdf876d801e8aa76e649ba786aa00a91e9",
+      "size": 95934,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/field/effect.timeline.amf3.deflate",
+      "member": "production/upload/0e/9066dfa14bd0c505782aa180c3cc4b60f1ec2b",
+      "sha256": "6a5a0e218064a2d12063149683ebce2d22c6108c5be6b1726735fe5ff18dfcda",
+      "size": 231,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/field/field.atlas.amf3.deflate",
+      "member": "production/upload/c1/c2cab749f77c453070245fe47c63f1c066c1d6",
+      "sha256": "76449d7c6a4310dc50e6561970881bb3fc7740595969a9e91c01d3544449ee89",
+      "size": 367,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/field/field.png",
+      "member": "production/upload/f9/a6ccb2b055d792064b13558ae37d2afb6e92ba",
+      "sha256": "9fa0d355184af637162baa46ed693727b6a5790662ff08f978ecbacbcbc1f575",
+      "size": 47932,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/field/foreground.parts.amf3.deflate",
+      "member": "production/upload/2e/553c4cee2712baf36c0b0af2f2bcf313ef79f8",
+      "sha256": "a0b32d08d7d5348b59f4a0f6d462d45453dbbab6411a66bbb9ab777c10f63f52",
+      "size": 26574,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/field/foreground.timeline.amf3.deflate",
+      "member": "production/upload/ab/9de84024d7d11a33f7836f3968948a2e0803fc",
+      "sha256": "2fc0680c4a3d8ae1ca49ec22c0b24ba071626cadff573a9ef0423110dd590b33",
+      "size": 96,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/foxfire_bite.parts.amf3.deflate",
+      "member": "production/upload/0a/f9d6a15235d141232d956e4a26f0df450cd52e",
+      "sha256": "552354118f8d7d3b3fa6adc70f80a78e69891819e7be02cd1fe63ebdad5c974b",
+      "size": 306,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/foxfire_bite.timeline.amf3.deflate",
+      "member": "production/upload/33/00ecd291e90357c62d7c56bce29214dd71b812",
+      "sha256": "d8508fbae2649fe08e3eb1697e56e57e273842d07f24406f94b2208950c4fd2e",
+      "size": 145,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/hit/effect.parts.amf3.deflate",
+      "member": "production/upload/f9/901f1746baab7b9793b32279f035fe62b2d1f1",
+      "sha256": "2bbefe986115abcb938b9696149a6e6601aea2f87c810bdccd36647d7d9fe8df",
+      "size": 2378,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/hit/effect.timeline.amf3.deflate",
+      "member": "production/upload/90/195c3b5bb2a8884737e4bcda3fc465f2f61c60",
+      "sha256": "d55d98fac24b6da5705cc0c6718eed62c437871368995d6694836645792ee4b0",
+      "size": 94,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/hit/hit.atlas.amf3.deflate",
+      "member": "production/upload/c8/7812703b41415efbf13c7606d1c4d166c06ea5",
+      "sha256": "ddb12be3dd12ee8f4d6c0b1b5b9e12d5e6e70dfca7329f75f4acf405bde2c0f3",
+      "size": 154,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/hit/hit.png",
+      "member": "production/upload/9c/ba7505b6e4979bdd6655049f8e4170dff160e0",
+      "sha256": "e583c9a580e9aaa824b3ec46326cc3f67e8927d71cffc2df5949b8ea3321470c",
+      "size": 29676,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/battle/character_detail_skill_preview.battle.amf3.deflate",
+      "member": "production/upload/0c/0270f1ffc66991189037b43d9e21246d8d3298",
+      "sha256": "1815174862202ab6e8878ee1590dc2bc0e2cd2bf91cc242f887cf6f835a2b23b",
+      "size": 143,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/pixelart/pixelart.frame.amf3.deflate",
+      "member": "production/upload/74/ce9fd72a683b5206b8731daba76d0aef6c3008",
+      "sha256": "56315200f57d306b6b0cd98e6000d19f95b8f1860babebd83ce15c8b2ef91d78",
+      "size": 81,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/pixelart/pixelart.timeline.amf3.deflate",
+      "member": "production/upload/a1/87402ed9b6a6da4b52d8fbb90b4e0b67689a6f",
+      "sha256": "a3e526af2fac888567bc54fbf4b659fca512d9920983e7d7b731fa6db033242b",
+      "size": 474,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/pixelart/special.frame.amf3.deflate",
+      "member": "production/upload/82/5eec60ea20e20e80983ed088c8c9946720f6f8",
+      "sha256": "be3a048d58fbd1bf662f3bdf15519ece8bf311a9e5dff4be496df4b4d3925fe1",
+      "size": 84,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/pixelart/special.timeline.amf3.deflate",
+      "member": "production/upload/18/6fc157385f0c603aacf243315a39bb01ec75fb",
+      "sha256": "8f6723a57e2f5003b7f4923c354f338b432e6c658923db2938eb3cac1d9192b9",
+      "size": 271,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/pixelart/special_sprite_sheet.atlas.amf3.deflate",
+      "member": "production/upload/6c/8576757512b896a83c6e984fcb024f570f8ac1",
+      "sha256": "d8159302f82e7f0bfcc36ea15d0124c1f9de6a89129def6fe6f82e32d5330d18",
+      "size": 999,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/pixelart/special_sprite_sheet.png",
+      "member": "production/upload/81/113f451d06c5f4c3b92ba1d730cc72e607cb82",
+      "sha256": "12e7449061dc5bb8cad299c0dfd5e9b6ec4a9b8d3755395c7aa68022e39e14f7",
+      "size": 25160,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/pixelart/sprite_sheet.atlas.amf3.deflate",
+      "member": "production/upload/7a/3bde7d7dd172250fb634fe33ff1f1f2457a318",
+      "sha256": "aec4cb66ebc59e5c8c8600a0ed3c32a9684124400ac1c5b6a742c908727bdc91",
+      "size": 790,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/pixelart/sprite_sheet.png",
+      "member": "production/upload/26/a90ba4daaa72b2fc0ad2bbeb03333d02829e46",
+      "sha256": "55cb364bc7a5efe76d6905ea0c05e3e30d2d4c82325c37280b84158d155f3f84",
+      "size": 13247,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/illustration_setting_sprite_sheet.atlas.amf3.deflate",
+      "member": "production/upload/34/7e6829fc2ca2108ce9dd798454dadd1f240de8",
+      "sha256": "5e83d34c969d3e73deb2cbae01c80c885dc5c04b774ab85da5e3689655bd6567",
+      "size": 151,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/ally/evolution.mp3",
+      "member": "production/upload/7a/53422bb98162ec12df411ae26f0a961151b345",
+      "sha256": "0b246bfc7189feb978a4fa18240c858df126b853b6472f5aa5ef0c8f60b19087",
+      "size": 208604,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/ally/join.mp3",
+      "member": "production/upload/a2/aee38bbc25c52a8e1d76ad375f8b9538a862fa",
+      "sha256": "18b080037725dfe7fe0c50d0096f7acf1ead186eef759cde4c13acbf75f8314c",
+      "size": 241623,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/battle/battle_start_0.mp3",
+      "member": "production/upload/75/65aeebd7f91904f9efd3971e610b43fa33beaa",
+      "sha256": "fa0fb9f0a1eb2d179586c7ccddcddf42b647fb0986fcf7e692e0fb30b88ea5ae",
+      "size": 9732,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/battle/battle_start_1.mp3",
+      "member": "production/upload/4f/6fee304293244647879b763e495082b054e406",
+      "sha256": "de2d049889061018c0fa35a05f6907c95c92337494e15c020255122c91b11c77",
+      "size": 20426,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/battle/outhole_0.mp3",
+      "member": "production/upload/dd/8257ebb8746b48d06a6c9a9839d7c695922209",
+      "sha256": "638ee653bfa4446d7d7b28793e1ed518d798b9d47a2f5da8255e1d7c4bd21a4a",
+      "size": 29814,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/battle/outhole_1.mp3",
+      "member": "production/upload/28/71066d48a3ca604a390c9a6202924caf5b30d1",
+      "sha256": "5e268b3d2bcd2501fde3aeccbe79c3f02bdda16cac752ba7050e0c5393f9377b",
+      "size": 12264,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/battle/power_flip_0.mp3",
+      "member": "production/upload/4f/53fcf5f3955456bfc023396567d357b110bee9",
+      "sha256": "6a284e57a236f35a44dfc9f1d7a56453b142de0a0ade79bcef4530fd27b1f4c9",
+      "size": 13206,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/battle/power_flip_1.mp3",
+      "member": "production/upload/85/db23756d8be451d6622cf3bc19e6b33eca6eb6",
+      "sha256": "1b55d478fa35dd2ea62e16ed53055a416674c5af71bd446a1138912c7edb81d3",
+      "size": 8821,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/battle/skill_0.mp3",
+      "member": "production/upload/a1/ae197d50c4c2948c4dcd5b7b61a4d1dbdd273a",
+      "sha256": "f0007242c2027fef1d82b6a8fcb9b2c3bac25f95d45c09cebcaedd3a0728702a",
+      "size": 19687,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/battle/skill_1.mp3",
+      "member": "production/upload/03/29a41abb86a0e74c5586dd2085726ea28b87cf",
+      "sha256": "f0007242c2027fef1d82b6a8fcb9b2c3bac25f95d45c09cebcaedd3a0728702a",
+      "size": 19687,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/battle/skill_ready.mp3",
+      "member": "production/upload/9c/4670d44f96129b92a515512be35aedb12415b4",
+      "sha256": "59662e0b9ed7838816399f27fd35e6d9ffbfc8552846f9fa22d33cb28cfe4edc",
+      "size": 21975,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/battle/win_0.mp3",
+      "member": "production/upload/04/fa0cbbd3deee1202e71b94081a8c27aef02bbf",
+      "sha256": "f4d49a6e696ecd2e470d69b0702f245d76ad036d55948cdcdb08aea2265e7bd7",
+      "size": 36083,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/battle/win_1.mp3",
+      "member": "production/upload/3a/740047cd284e41e5430587447d51470051623f",
+      "sha256": "8fd6d1c3f65194dd2d0e99b58aac471720745607a741dca3d585235648dfd36e",
+      "size": 59601,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/home/halloween_1.mp3",
+      "member": "production/upload/39/7495851ff8d6e98947346bf9c72e9175d35f67",
+      "sha256": "d4212527d164629cbad15d9fea86c577948f89f7dcb724ce4aa3be59e1193c74",
+      "size": 188124,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/home/halloween_2.mp3",
+      "member": "production/upload/3b/adba0696cf6c56ed912202946a07be1b610f20",
+      "sha256": "d772b86c4b717023d61f92b150c9a2e81d71ccdcea3d8d8102505048e3fd65f8",
+      "size": 140477,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/home/halloween_3.mp3",
+      "member": "production/upload/62/b34bc9854920cbcb8bbbe6fc069312f088450c",
+      "sha256": "0995d8778420b2c13363a60cc92a4df5b1a61ec1f6cfc7074759f7799dc4efb6",
+      "size": 227830,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/home/halloween_4.mp3",
+      "member": "production/upload/d7/b006c4e9d7563320359e1b92b00055ec427222",
+      "sha256": "bd148eebf90d59adb40f42fdbf9a4136093f7bf1a320c58a726ccc219c80794f",
+      "size": 195647,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/voice/home/halloween_5.mp3",
+      "member": "production/upload/75/33ed17cc08dcb18b6a212acbfdb1a24b0b49cb",
+      "sha256": "bc7947dcca1ac38b7d74868ca9381ea350434ac30cc2e9f98c307076b6d2c985",
+      "size": 191886,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "sound_effect/fire/se_flare_up.mp3",
+      "member": "production/upload/e8/bf13cdd143f93cf481b2dfcdc0b71053745278",
+      "sha256": "9ed8731d7f9ebc1d73f3703905373cf9e164deff29e19c475de3fe73378e2b3b",
+      "size": 30848,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "sound_effect/fire/se_single_fire.mp3",
+      "member": "production/upload/80/b90abf347eed357c6d69244ac9b695c20c0dcb",
+      "sha256": "f1b78ad0c0df80a791e27e9efd97654e4e008737086df2e931b9b5ecc9747244",
+      "size": 18560,
+      "artArchive": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "group": 5
+    },
+    {
+      "logical": "sound_effect/light/se_waftage_sparkle.mp3",
+      "member": "production/upload/9c/8892f9b74648a319b4aa24ba0d0c8bcb739177",
+      "sha256": "84190b643f142dadbaa71ef1a2be39e1dfa7860db482bf89d593ce4d8b194cdf",
+      "size": 30848,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "sound_effect/wind/se_wind_medium_size_swing.mp3",
+      "member": "production/upload/ee/267ab1f69137a4758ecbb98cf38482ac5aa0ac",
+      "sha256": "5b22fb9055d29ec026823b76d0f2f7139cd22b27ce25212649ea3c48c1ea9e14",
+      "size": 22656,
+      "artArchive": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "group": 6
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/skill_cutin_0.atf.deflate",
+      "member": "production/ios_upload/f8/978006930b9d27f99d1137366be02ff0b7e55a",
+      "sha256": "be02cf33e0416ad59c9c7285a6da0af5cb3cf354cbfc2c4edfbd6df806192c4c",
+      "size": 302686,
+      "artArchive": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "group": 1
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/skill_cutin_1.atf.deflate",
+      "member": "production/ios_upload/98/0a2c3084a98d08eab0e335b711f4ab2027e799",
+      "sha256": "b4beddf488a9c956762944d7bb174d5104b4728bfc953ca53c7375ef41a1e29c",
+      "size": 307809,
+      "artArchive": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "group": 1
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/battle_control_board_0.png",
+      "member": "production/medium_upload/2d/8f3acf5aae3337522b8ec1b044b22cb90ea7bb",
+      "sha256": "597ba2104598cbd00488d93680c5696525fcf4d59e7c47c2b6ed972a198ad4f2",
+      "size": 64666,
+      "artArchive": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "group": 1
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/battle_control_board_1.png",
+      "member": "production/medium_upload/da/769f678b7021fe37afe7500f188c505e271448",
+      "sha256": "2c9d0126be6808e174d7c92d49adbdd4857cd0fab86046ceb75e256a8a2983ec",
+      "size": 66435,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/battle_member_status_0.png",
+      "member": "production/medium_upload/1e/3b942edce4a93c57e454cc02b20e3587bd9118",
+      "sha256": "1741ce515b194ea7fef30c2dd6231a1530f60f98d0d0a58556709a235412a5d8",
+      "size": 9830,
+      "artArchive": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "group": 1
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/battle_member_status_1.png",
+      "member": "production/medium_upload/7b/c5fead137d1b39b2e139db725a412c047e01b6",
+      "sha256": "002adc68d5fd1578fcfb29fd071f9fa479933ad32926cedb6f11912d9cafece2",
+      "size": 10581,
+      "artArchive": "pinball-1.4.257-1.4.258-2-halloween-inaho.zip",
+      "group": 2
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/cutin_skill_chain_0.png",
+      "member": "production/medium_upload/b9/c322768b601963641597a767cdfe4ee2f67615",
+      "sha256": "7d627c9b9150eddde13d36ff32918ea4b08a42f7c374e8f9a4ef0eecaa5cfec8",
+      "size": 171258,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/cutin_skill_chain_1.png",
+      "member": "production/medium_upload/b2/ece23d9de002647e07d9c63c408b1440e7ef94",
+      "sha256": "7844c889375e1f203eb9c27fb7a16d3144f7a6d33f8fb242186ccc60c2998d7b",
+      "size": 183631,
+      "artArchive": "pinball-1.4.257-1.4.258-2-halloween-inaho.zip",
+      "group": 2
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/episode_banner_0.png",
+      "member": "production/medium_upload/73/73de8e2772f8af7e3fb8382188c863d8ac9f04",
+      "sha256": "53997e4d334cc24a4d22d8beb1275182047c3d92bb75de1309b11c027abf5daa",
+      "size": 186200,
+      "artArchive": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "group": 1
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/full_shot_1440_1920_0.png",
+      "member": "production/medium_upload/7a/7233f8c4503c2797e163c0c2060bb2819014a1",
+      "sha256": "1cc65341bc22101aba10ba712567ddee904b19c057083682c5b70279cb6b16ad",
+      "size": 2954098,
+      "artArchive": "pinball-1.4.257-1.4.258-2-halloween-inaho.zip",
+      "group": 2
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/full_shot_1440_1920_1.png",
+      "member": "production/medium_upload/b4/c57189dec5cc3750156ce56da135ed7a07bb1e",
+      "sha256": "a39b4e13abf6dc35af1519783d51c9b0a2b39cd77534ae5d552d5136cfdfc94a",
+      "size": 3009141,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/illustration_setting_sprite_sheet.png",
+      "member": "production/medium_upload/5d/9d1eaebe39514f40a9850c4964dcb4a103dbc6",
+      "sha256": "bf7419c2acf11841144179e8583e72c0af178a4812d63d4c6048d0feee455b06",
+      "size": 487545,
+      "artArchive": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "group": 1
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/skill_cutin_0.png",
+      "member": "production/medium_upload/74/a1cb735e3509214d3bb9d7b196c5f8bba6f0ce",
+      "sha256": "bbdcb2685403da5aa1fcb27bbd45c4f44ff191570288e3ec0f85733b7f934c6b",
+      "size": 786009,
+      "artArchive": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "group": 1
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/skill_cutin_1.png",
+      "member": "production/medium_upload/a7/1ba4c376ea968dcef04f66a2729eb11accc3a3",
+      "sha256": "f23e23a6728e4cface4382018fa825f7d21f917839e6002d9c428d516857bc07",
+      "size": 851271,
+      "artArchive": "pinball-1.4.257-1.4.258-2-halloween-inaho.zip",
+      "group": 2
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/square_0.png",
+      "member": "production/medium_upload/4e/a341ea3112fa099e3f2eea311d40384ea7c12b",
+      "sha256": "a91a00d1512721a63c9ed2734510ec4578149c0d904c5f758e3ab3235a607156",
+      "size": 95177,
+      "artArchive": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "group": 1
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/square_1.png",
+      "member": "production/medium_upload/9c/e0111ac1ac015b01a8f5dd809e8836261b230f",
+      "sha256": "0fe447bae1091925122f2911369ae2204075130a72397ff9462a02f339659ad2",
+      "size": 104025,
+      "artArchive": "pinball-1.4.257-1.4.258-2-halloween-inaho.zip",
+      "group": 2
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/square_132_132_0.png",
+      "member": "production/medium_upload/e4/fdda3138bd2296e4b01b311947111401831338",
+      "sha256": "c12153a27e22ac60e04b0745945ca36cb5ee845b4030adc13c1044c34e2ae6a7",
+      "size": 41751,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/square_132_132_1.png",
+      "member": "production/medium_upload/1e/6b95c4cdb1226e5ff4137d70d9c880ded251ee",
+      "sha256": "056a83542a7b808497b585aa13439e9fc74fd7e9aef201de1e4f7f6a7fc9b66e",
+      "size": 45473,
+      "artArchive": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "group": 1
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/square_round_136_136_0.png",
+      "member": "production/medium_upload/fb/b6fd0146a86300a7f48c87a88395054b81fe6e",
+      "sha256": "495200c672187a2a7428626ce74b3fdda8e95676403ea08a6142d95f6ea11857",
+      "size": 44242,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/square_round_136_136_1.png",
+      "member": "production/medium_upload/97/9c14ac39b71986632bcb634f9f907751400ad7",
+      "sha256": "9e71b2200d8d8bb7fce02edd3e0a916f48f32d304ee5b6d91c08da2acfc0c752",
+      "size": 47990,
+      "artArchive": "pinball-1.4.257-1.4.258-2-halloween-inaho.zip",
+      "group": 2
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/square_round_95_95_0.png",
+      "member": "production/medium_upload/64/cb930b4eda097918055d31e4a2dd31635a16b2",
+      "sha256": "9144f3bc61ff04e76d70cd4250b912ce6fb4b481d94ca3d9012828a9bec90525",
+      "size": 23719,
+      "artArchive": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "group": 1
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/square_round_95_95_1.png",
+      "member": "production/medium_upload/ae/593ad5a533a9fa1b226d27f75feebc34b9d43d",
+      "sha256": "a5fbe35b707ce0475faeaa70bc92a409a9a811c510ba438a0be9bbd39794ea11",
+      "size": 25635,
+      "artArchive": "pinball-1.4.257-1.4.258-2-halloween-inaho.zip",
+      "group": 2
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/story/base_0.png",
+      "member": "production/medium_upload/09/c9628c8e724fa61d05eb45f60fa83d0303d82b",
+      "sha256": "54cc26ddbb1872bf346f97a2d3933f7ab7a433093bf4a01b02defc9a0cabf9e5",
+      "size": 538507,
+      "artArchive": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "group": 1
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_level_up_0.png",
+      "member": "production/medium_upload/1f/51ba29dfb07deecb79af67783c99b6a543cdb9",
+      "sha256": "345cc2394696ee4062df9a72a7e8bbaa6bba4eb649ddd4e199f79911e2bfd1a0",
+      "size": 164003,
+      "artArchive": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "group": 1
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_level_up_1.png",
+      "member": "production/medium_upload/d0/60f709174075f86662114fcd84f423ed87c7a0",
+      "sha256": "2eaab8dd31d4a10771f23a58042474cfd5a56dd17e66551a6785949b0b157b1d",
+      "size": 168333,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_party_main_0.png",
+      "member": "production/medium_upload/f6/467c124ee46feaf175991c5b73a43635864289",
+      "sha256": "b16dad60e3bf31fd32c0236bbab193ea73bfe6652a016eead94908502a4524f9",
+      "size": 143125,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_party_main_1.png",
+      "member": "production/medium_upload/13/4e690aea8a9a760c0ca3ebb000bb9d6935c38e",
+      "sha256": "1206c081de5c8212b13238f620991551a0923d2139709237d6c418c58a07a8bc",
+      "size": 150596,
+      "artArchive": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "group": 1
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_party_unison_0.png",
+      "member": "production/medium_upload/29/fadb7836908f7c62e67a5c413245d7b3bdb0e3",
+      "sha256": "3149a825fbcd6d3a7bd316e0a2032f471f3b9d165b33df2ff21507e39dcf369a",
+      "size": 62052,
+      "artArchive": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "group": 1
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_party_unison_1.png",
+      "member": "production/medium_upload/98/47e3c189d3c1eccdfafd42dea445d6bd4d98f9",
+      "sha256": "b8c0e5e640b645a70eb309617fbc1f018bcefde9abcdda7d28f89a76308e36a7",
+      "size": 63311,
+      "artArchive": "pinball-1.4.257-1.4.258-2-halloween-inaho.zip",
+      "group": 2
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/battle_control_board_0.png",
+      "member": "production/small_upload/2d/8f3acf5aae3337522b8ec1b044b22cb90ea7bb",
+      "sha256": "787070595e130dd02824979aa87d7fd021bbadaff321c09748f1ee41fe6e46e3",
+      "size": 27431,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/battle_control_board_1.png",
+      "member": "production/small_upload/da/769f678b7021fe37afe7500f188c505e271448",
+      "sha256": "1251e73c71c3a4d23208ad24c041bb174405655b974316afa0a58ab7c8ec91e0",
+      "size": 28238,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/battle_member_status_0.png",
+      "member": "production/small_upload/1e/3b942edce4a93c57e454cc02b20e3587bd9118",
+      "sha256": "c4d8ca6de12027c6b0399d06f8ab8445ee67e8cebbc0c8afbc1f6be63f79f874",
+      "size": 4764,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/battle_member_status_1.png",
+      "member": "production/small_upload/7b/c5fead137d1b39b2e139db725a412c047e01b6",
+      "sha256": "14599cd137d7487712c627d15e6a2bff1be71a83cba57e3d4df73dd4e1d767a9",
+      "size": 4966,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/cutin_skill_chain_0.png",
+      "member": "production/small_upload/b9/c322768b601963641597a767cdfe4ee2f67615",
+      "sha256": "867af23ac04266a461fc120f36f7799cae4241aa00f5213ecf1fd058abe3c06c",
+      "size": 76622,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/cutin_skill_chain_1.png",
+      "member": "production/small_upload/b2/ece23d9de002647e07d9c63c408b1440e7ef94",
+      "sha256": "ff4c5aefe771da6be0d69886285ddd2df92a1a4c617980528a8ca18652810c92",
+      "size": 83822,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/episode_banner_0.png",
+      "member": "production/small_upload/73/73de8e2772f8af7e3fb8382188c863d8ac9f04",
+      "sha256": "d72b42f24665ca0382a11b16fafac34400d57965b8ee45a271373f1e032e0517",
+      "size": 102303,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/full_shot_1440_1920_0.png",
+      "member": "production/small_upload/7a/7233f8c4503c2797e163c0c2060bb2819014a1",
+      "sha256": "324c3c0d421449d3532e95c250da2797fc09bea4ad4a012592c0747247c237ed",
+      "size": 1678917,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/full_shot_1440_1920_1.png",
+      "member": "production/small_upload/b4/c57189dec5cc3750156ce56da135ed7a07bb1e",
+      "sha256": "4daa802935de2343f50afa542aa5fc96182dac59460d18530a56060ea1ca506b",
+      "size": 1706761,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/illustration_setting_sprite_sheet.png",
+      "member": "production/small_upload/5d/9d1eaebe39514f40a9850c4964dcb4a103dbc6",
+      "sha256": "ab62e226a2bef6c7cbd1fffed6fb0ad097b87a528bbccae2f4cd27109a796700",
+      "size": 267452,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/square_0.png",
+      "member": "production/small_upload/4e/a341ea3112fa099e3f2eea311d40384ea7c12b",
+      "sha256": "8cfcc9a3a8a9222c4e6e9e9a0b6c925cc26c6f17e6aff9c65e9c3fe587b6ddbd",
+      "size": 52026,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/square_1.png",
+      "member": "production/small_upload/9c/e0111ac1ac015b01a8f5dd809e8836261b230f",
+      "sha256": "ddde4cad789b8003a3430c16ce7406e8e552663f01684c4e5cb52ba76fc9d32b",
+      "size": 56430,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/square_132_132_0.png",
+      "member": "production/small_upload/e4/fdda3138bd2296e4b01b311947111401831338",
+      "sha256": "56ca8ca0d1829b0f080e9fc4e6d874a4aa17eadc313932f56d28a3efb2df6a71",
+      "size": 22530,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/square_132_132_1.png",
+      "member": "production/small_upload/1e/6b95c4cdb1226e5ff4137d70d9c880ded251ee",
+      "sha256": "c0ab715d211f265d07152bb5f86791cd2b11f7dde6b4ed337c87fafb39c2ba0e",
+      "size": 24395,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/square_round_136_136_0.png",
+      "member": "production/small_upload/fb/b6fd0146a86300a7f48c87a88395054b81fe6e",
+      "sha256": "bfc1ec035fa747beb64b1dbabeeaccfba0b98ae7ffca66cac96bcf5456e9d2a7",
+      "size": 23795,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/square_round_136_136_1.png",
+      "member": "production/small_upload/97/9c14ac39b71986632bcb634f9f907751400ad7",
+      "sha256": "e4c51a7413c5104b42ea57c925fa47e349cf368f21f410ce2d94e57f74d8af60",
+      "size": 25766,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/square_round_95_95_0.png",
+      "member": "production/small_upload/64/cb930b4eda097918055d31e4a2dd31635a16b2",
+      "sha256": "705ec3773ba438cf37d7ff52da0c40053b7b84151e384fd96e6df29702f359d8",
+      "size": 12431,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/square_round_95_95_1.png",
+      "member": "production/small_upload/ae/593ad5a533a9fa1b226d27f75feebc34b9d43d",
+      "sha256": "d79359f8240a52044fbe60b63fa2d8890c265a1d70fd9c210a27e9804bc73b47",
+      "size": 13487,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/story/base_0.png",
+      "member": "production/small_upload/09/c9628c8e724fa61d05eb45f60fa83d0303d82b",
+      "sha256": "c93449dfa4d6ba149259640e26dd6e0abb4d4bfa726c234e57eed405734f0ed4",
+      "size": 295806,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_level_up_0.png",
+      "member": "production/small_upload/1f/51ba29dfb07deecb79af67783c99b6a543cdb9",
+      "sha256": "4055ddfbbc7c3eeaaab1af4712e67ddf1a692357a5f5e8ac587810361807c8a7",
+      "size": 90000,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_level_up_1.png",
+      "member": "production/small_upload/d0/60f709174075f86662114fcd84f423ed87c7a0",
+      "sha256": "d77cfeec03a93c1b36cc2ec1746ed09cc1d812c9929d27b046ab7a45479c57d5",
+      "size": 91681,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_party_main_0.png",
+      "member": "production/small_upload/f6/467c124ee46feaf175991c5b73a43635864289",
+      "sha256": "1a9fd951cb64f03f6956ab1d3e511fb6b2befde23c2ff22c399125359c5fc921",
+      "size": 78664,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_party_main_1.png",
+      "member": "production/small_upload/13/4e690aea8a9a760c0ca3ebb000bb9d6935c38e",
+      "sha256": "0a41ef1d1feaab7c96609701345a2227cefbcb0dd48b1c0dacc7d41222850e90",
+      "size": 82052,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_party_unison_0.png",
+      "member": "production/small_upload/29/fadb7836908f7c62e67a5c413245d7b3bdb0e3",
+      "sha256": "ad591b79d61e3a9638c5ed81c3f278ad5efa0be034200ddf59bda6e8d3f6a448",
+      "size": 33571,
+      "artArchive": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "group": 3
+    },
+    {
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_party_unison_1.png",
+      "member": "production/small_upload/98/47e3c189d3c1eccdfafd42dea445d6bd4d98f9",
+      "sha256": "4ed610518e8c5dcbd5de9ac726a86e43008cffa9a59dcd394864274f0e49c46b",
+      "size": 34119,
+      "artArchive": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "group": 4
+    }
+  ],
+  "requiredBaselineResources": [
+    {
+      "logical": "sound_effect/dark/se_dark_hit_shadow.mp3",
+      "member": "production/upload/18/e433e0f3583f9d068142317de731a7111047e4",
+      "sha256": "32b937a10468b7570549a2a6a9cf07b4c152d547ac3dd3869b6751019e4510d7"
+    }
+  ],
+  "serverAdditions": {
+    "assets/character_rank_p5b.json": {
+      "169977": {
+        "element": 5,
+        "name": "稻穗",
+        "rarity": 5,
+        "skill_count": 6
+      }
+    },
+    "assets/cdndata/character_rank_p5b.json": {
+      "169977": [
+        [
+          "cnmod_inaho_halloween",
+          "1",
+          "5",
+          "5",
+          "Mystery",
+          "",
+          "4",
+          "Female",
+          "cnmod_inaho_halloween",
+          "(None)",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "169977",
+          "万圣夜宴",
+          "1699771",
+          "1699772",
+          "1699773",
+          "1699774",
+          "1699775",
+          "1699776",
+          "2",
+          "Balance",
+          "169977",
+          "(None)",
+          "1",
+          "false",
+          "true",
+          "0",
+          "1",
+          "",
+          "",
+          "6,6,6,6,6,6"
+        ]
+      ]
+    },
+    "assets/cdndata/character_text_rank_p5b.json": {
+      "169977": [
+        [
+          "稻穗",
+          "DAOSUI",
+          "换上吸血鬼装束迎接万圣夜的妖狐少女。赤月下的狐火追逐着南瓜灯，她把糖果和恶作剧一同藏进了披风。",
+          "万圣夜的赤月妖狐",
+          "吸血狐咬",
+          "对全场敌人造成暗属性伤害（共3段，合计60倍技能伤害）／赋予暗属性耐性降低20%效果（20秒）。本队每名主要角色承受自身最大生命值35%的伤害，并获得自身最大生命值35%的护盾。",
+          "吸血狐咬",
+          "对全场敌人造成暗属性伤害（共3段，合计60倍技能伤害）／赋予暗属性耐性降低20%效果（20秒）。本队每名主要角色承受自身最大生命值35%的伤害，并获得自身最大生命值35%的护盾。",
+          "(None)",
+          "(None)",
+          "万圣夜宴",
+          "小泽亚李"
+        ]
+      ]
+    },
+    "assets/mana_node_cnmod.json": {
+      "169977": {
+        "1": {
+          "339954201": {
+            "items": {
+              "42": 3
+            },
+            "manaCost": 60,
+            "field1": "0",
+            "field5": "0",
+            "field6": "1"
+          },
+          "339954202": {
+            "items": {
+              "42": 5
+            },
+            "manaCost": 100,
+            "field1": "0",
+            "field5": "0",
+            "field6": "1"
+          },
+          "339954203": {
+            "items": {
+              "42": 5
+            },
+            "manaCost": 100,
+            "field1": "0",
+            "field5": "0",
+            "field6": "1"
+          },
+          "339954204": {
+            "items": {
+              "42": 6
+            },
+            "manaCost": 160,
+            "field1": "0",
+            "field5": "0",
+            "field6": "1"
+          },
+          "339954205": {
+            "items": {
+              "42": 12
+            },
+            "manaCost": 240,
+            "field1": "0",
+            "field5": "0",
+            "field6": "1"
+          },
+          "339954206": {
+            "items": {
+              "42": 5,
+              "43": 3
+            },
+            "manaCost": 340,
+            "field1": "0",
+            "field5": "0",
+            "field6": "1"
+          },
+          "339954207": {
+            "items": {
+              "42": 5,
+              "43": 3
+            },
+            "manaCost": 340,
+            "field1": "0",
+            "field5": "0",
+            "field6": "2"
+          },
+          "339954208": {
+            "items": {
+              "42": 8,
+              "43": 3
+            },
+            "manaCost": 400,
+            "field1": "0",
+            "field5": "0",
+            "field6": "2"
+          },
+          "339954209": {
+            "items": {
+              "42": 8,
+              "43": 3
+            },
+            "manaCost": 400,
+            "field1": "0",
+            "field5": "0",
+            "field6": "2"
+          },
+          "339954210": {
+            "items": {
+              "42": 10,
+              "43": 5
+            },
+            "manaCost": 640,
+            "field1": "0",
+            "field5": "0",
+            "field6": "2"
+          },
+          "339954211": {
+            "items": {
+              "42": 14,
+              "43": 12
+            },
+            "manaCost": 1320,
+            "field1": "0",
+            "field5": "0",
+            "field6": "2"
+          },
+          "339954212": {
+            "items": {
+              "42": 10,
+              "43": 8,
+              "44": 3
+            },
+            "manaCost": 1480,
+            "field1": "0",
+            "field5": "0",
+            "field6": "2"
+          },
+          "339954213": {
+            "items": {
+              "42": 18,
+              "43": 10,
+              "44": 6,
+              "45": 1
+            },
+            "manaCost": 3160,
+            "field1": "0",
+            "field5": "0",
+            "field6": "3"
+          },
+          "339954214": {
+            "items": {
+              "43": 12,
+              "44": 8,
+              "45": 3,
+              "99": 1
+            },
+            "manaCost": 7120,
+            "field1": "0",
+            "field5": "0",
+            "field6": "3"
+          },
+          "339954215": {
+            "items": {
+              "43": 12,
+              "44": 8,
+              "45": 3,
+              "99": 1
+            },
+            "manaCost": 7120,
+            "field1": "0",
+            "field5": "0",
+            "field6": "3"
+          },
+          "339954216": {
+            "items": {
+              "43": 14,
+              "44": 10,
+              "45": 3,
+              "99": 3
+            },
+            "manaCost": 13280,
+            "field1": "0",
+            "field5": "0",
+            "field6": "3"
+          },
+          "339954217": {
+            "items": {
+              "43": 16,
+              "44": 12,
+              "45": 5,
+              "99": 8
+            },
+            "manaCost": 18000,
+            "field1": "0",
+            "field5": "0",
+            "field6": "3"
+          },
+          "339954218": {
+            "items": {
+              "43": 16,
+              "44": 12,
+              "45": 5,
+              "99": 8
+            },
+            "manaCost": 18000,
+            "field1": "0",
+            "field5": "0",
+            "field6": "3"
+          },
+          "339954219": {
+            "items": {
+              "42": 8,
+              "43": 6,
+              "44": 3
+            },
+            "manaCost": 1280,
+            "field1": "0",
+            "field5": "2",
+            "field6": ""
+          },
+          "339954220": {
+            "items": {
+              "42": 35,
+              "43": 10,
+              "44": 5
+            },
+            "manaCost": 2120,
+            "field1": "0",
+            "field5": "1",
+            "field6": ""
+          },
+          "339954221": {
+            "items": {
+              "42": 60,
+              "43": 18,
+              "44": 12
+            },
+            "manaCost": 4380,
+            "field1": "0",
+            "field5": "1",
+            "field6": ""
+          },
+          "339954222": {
+            "items": {
+              "43": 14,
+              "44": 10,
+              "45": 5,
+              "99": 5
+            },
+            "manaCost": 16400,
+            "field1": "0",
+            "field5": "1",
+            "field6": ""
+          },
+          "339954223": {
+            "items": {
+              "43": 14,
+              "44": 10,
+              "45": 5,
+              "99": 5
+            },
+            "manaCost": 16800,
+            "field1": "0",
+            "field5": "1",
+            "field6": ""
+          }
+        },
+        "2": {
+          "339954401": {
+            "items": {
+              "44": 10,
+              "45": 8,
+              "99": 3,
+              "62": 10
+            },
+            "manaCost": 4500,
+            "field1": "0",
+            "field5": "0",
+            "field6": "4"
+          },
+          "339954402": {
+            "items": {
+              "44": 12,
+              "45": 10,
+              "99": 3,
+              "62": 12
+            },
+            "manaCost": 5050,
+            "field1": "0",
+            "field5": "0",
+            "field6": "4"
+          },
+          "339954403": {
+            "items": {
+              "44": 18,
+              "45": 12,
+              "99": 5,
+              "62": 12,
+              "63": 2
+            },
+            "manaCost": 5600,
+            "field1": "0",
+            "field5": "0",
+            "field6": "4"
+          },
+          "339954404": {
+            "items": {
+              "45": 14,
+              "99": 5,
+              "62": 14,
+              "63": 4,
+              "64": 1
+            },
+            "manaCost": 6240,
+            "field1": "0",
+            "field5": "0",
+            "field6": "4"
+          },
+          "339954405": {
+            "items": {
+              "45": 16,
+              "99": 8,
+              "62": 16,
+              "63": 6,
+              "64": 2
+            },
+            "manaCost": 8360,
+            "field1": "0",
+            "field5": "0",
+            "field6": "4"
+          },
+          "339954406": {
+            "items": {
+              "45": 20,
+              "99": 8,
+              "62": 20,
+              "63": 10,
+              "64": 4
+            },
+            "manaCost": 10200,
+            "field1": "0",
+            "field5": "0",
+            "field6": "4"
+          },
+          "339954407": {
+            "items": {
+              "44": 16,
+              "45": 8,
+              "99": 3,
+              "62": 12,
+              "63": 4
+            },
+            "manaCost": 5100,
+            "field1": "0",
+            "field5": "0",
+            "field6": "5"
+          },
+          "339954408": {
+            "items": {
+              "44": 20,
+              "45": 10,
+              "99": 5,
+              "62": 12,
+              "63": 5
+            },
+            "manaCost": 5900,
+            "field1": "0",
+            "field5": "0",
+            "field6": "5"
+          },
+          "339954409": {
+            "items": {
+              "45": 12,
+              "99": 5,
+              "62": 14,
+              "63": 6,
+              "64": 2
+            },
+            "manaCost": 7420,
+            "field1": "0",
+            "field5": "0",
+            "field6": "5"
+          },
+          "339954410": {
+            "items": {
+              "45": 14,
+              "99": 8,
+              "62": 16,
+              "63": 8,
+              "64": 4
+            },
+            "manaCost": 10000,
+            "field1": "0",
+            "field5": "0",
+            "field6": "5"
+          },
+          "339954411": {
+            "items": {
+              "45": 16,
+              "99": 8,
+              "62": 20,
+              "63": 10,
+              "64": 6
+            },
+            "manaCost": 12700,
+            "field1": "0",
+            "field5": "0",
+            "field6": "5"
+          },
+          "339954412": {
+            "items": {
+              "45": 18,
+              "99": 10,
+              "62": 24,
+              "63": 15,
+              "64": 10
+            },
+            "manaCost": 14100,
+            "field1": "0",
+            "field5": "0",
+            "field6": "5"
+          },
+          "339954413": {
+            "items": {
+              "45": 10,
+              "99": 5,
+              "62": 14,
+              "63": 6,
+              "64": 2
+            },
+            "manaCost": 7300,
+            "field1": "0",
+            "field5": "0",
+            "field6": "6"
+          },
+          "339954414": {
+            "items": {
+              "45": 12,
+              "99": 5,
+              "62": 18,
+              "63": 8,
+              "64": 4
+            },
+            "manaCost": 9980,
+            "field1": "0",
+            "field5": "0",
+            "field6": "6"
+          },
+          "339954415": {
+            "items": {
+              "45": 14,
+              "99": 8,
+              "62": 18,
+              "63": 10,
+              "64": 6
+            },
+            "manaCost": 12250,
+            "field1": "0",
+            "field5": "0",
+            "field6": "6"
+          },
+          "339954416": {
+            "items": {
+              "45": 16,
+              "99": 8,
+              "62": 20,
+              "63": 12,
+              "64": 8
+            },
+            "manaCost": 14600,
+            "field1": "0",
+            "field5": "0",
+            "field6": "6"
+          },
+          "339954417": {
+            "items": {
+              "45": 18,
+              "99": 10,
+              "62": 24,
+              "63": 16,
+              "64": 10
+            },
+            "manaCost": 18300,
+            "field1": "0",
+            "field5": "0",
+            "field6": "6"
+          },
+          "339954418": {
+            "items": {
+              "45": 22,
+              "99": 10,
+              "62": 28,
+              "63": 20,
+              "64": 15
+            },
+            "manaCost": 22400,
+            "field1": "0",
+            "field5": "0",
+            "field6": "6"
+          }
+        }
+      }
+    },
+    "assets/mana_board_cnmod.json": {
+      "169977": {
+        "1": {
+          "7": [
+            [
+              "339954207",
+              "-5",
+              "5",
+              "qqqqqaaaaa",
+              "2",
+              "(None)"
+            ]
+          ],
+          "8": [
+            [
+              "339954208",
+              "-5",
+              "10",
+              "aaaaa",
+              "0",
+              "339954207"
+            ]
+          ],
+          "9": [
+            [
+              "339954209",
+              "-10",
+              "10",
+              "qqqqq",
+              "0",
+              "339954208"
+            ]
+          ],
+          "11": [
+            [
+              "339954211",
+              "-10",
+              "15",
+              "aaaaa",
+              "0",
+              "339954209"
+            ]
+          ],
+          "10": [
+            [
+              "339954210",
+              "-15",
+              "10",
+              "qqqqq",
+              "0",
+              "339954209"
+            ]
+          ],
+          "12": [
+            [
+              "339954212",
+              "-15",
+              "15",
+              "aaaaa",
+              "0",
+              "339954210"
+            ]
+          ],
+          "19": [
+            [
+              "339954219",
+              "-20",
+              "10",
+              "qqqqq",
+              "2",
+              "339954210"
+            ]
+          ],
+          "20": [
+            [
+              "339954220",
+              "-25",
+              "10",
+              "qqqqq",
+              "0",
+              "339954219"
+            ]
+          ],
+          "21": [
+            [
+              "339954221",
+              "-25",
+              "15",
+              "aaaaa",
+              "0",
+              "339954220"
+            ]
+          ],
+          "22": [
+            [
+              "339954222",
+              "-20",
+              "15",
+              "sssss",
+              "0",
+              "339954221"
+            ]
+          ],
+          "23": [
+            [
+              "339954223",
+              "-30",
+              "10",
+              "qqqqq",
+              "0",
+              "339954220"
+            ]
+          ],
+          "13": [
+            [
+              "339954213",
+              "-15",
+              "0",
+              "qqqqqqqqqqqqqqq",
+              "2",
+              "(None)"
+            ]
+          ],
+          "14": [
+            [
+              "339954214",
+              "-20",
+              "0",
+              "qqqqq",
+              "0",
+              "339954213"
+            ]
+          ],
+          "15": [
+            [
+              "339954215",
+              "-25",
+              "0",
+              "qqqqq",
+              "0",
+              "339954214"
+            ]
+          ],
+          "17": [
+            [
+              "339954217",
+              "-25",
+              "5",
+              "aaaaa",
+              "0",
+              "339954215"
+            ]
+          ],
+          "18": [
+            [
+              "339954218",
+              "-30",
+              "0",
+              "qqqqq",
+              "0",
+              "339954215"
+            ]
+          ],
+          "16": [
+            [
+              "339954216",
+              "-25",
+              "-5",
+              "wwwww",
+              "0",
+              "339954215"
+            ]
+          ],
+          "1": [
+            [
+              "339954201",
+              "-5",
+              "-5",
+              "qqqqqwwwww",
+              "2",
+              "(None)"
+            ]
+          ],
+          "2": [
+            [
+              "339954202",
+              "-5",
+              "-10",
+              "wwwww",
+              "0",
+              "339954201"
+            ]
+          ],
+          "5": [
+            [
+              "339954205",
+              "-15",
+              "-10",
+              "qqqqqqqqqq",
+              "0",
+              "339954202"
+            ]
+          ],
+          "6": [
+            [
+              "339954206",
+              "-15",
+              "-15",
+              "wwwww",
+              "0",
+              "339954205"
+            ]
+          ],
+          "4": [
+            [
+              "339954204",
+              "-10",
+              "-15",
+              "qqqqqwwwww",
+              "0",
+              "339954202"
+            ]
+          ],
+          "3": [
+            [
+              "339954203",
+              "-5",
+              "-15",
+              "wwwww",
+              "0",
+              "339954202"
+            ]
+          ]
+        },
+        "2": {
+          "1": [
+            [
+              "339954401",
+              "-5",
+              "-5",
+              "wwwwwqqqqq",
+              "2",
+              "(None)"
+            ]
+          ],
+          "2": [
+            [
+              "339954402",
+              "-5",
+              "0",
+              "aaaaa",
+              "0",
+              "339954401"
+            ]
+          ],
+          "3": [
+            [
+              "339954403",
+              "-10",
+              "0",
+              "qqqqq",
+              "0",
+              "339954402"
+            ]
+          ],
+          "4": [
+            [
+              "339954404",
+              "-10",
+              "-5",
+              "wwwww",
+              "0",
+              "339954403"
+            ]
+          ],
+          "5": [
+            [
+              "339954405",
+              "-10",
+              "-10",
+              "wwwww",
+              "0",
+              "339954404"
+            ]
+          ],
+          "6": [
+            [
+              "339954406",
+              "-10",
+              "-15",
+              "wwwww",
+              "0",
+              "339954405"
+            ]
+          ],
+          "7": [
+            [
+              "339954407",
+              "0",
+              "-10",
+              "wwwwwsssss",
+              "2",
+              "339954401"
+            ]
+          ],
+          "13": [
+            [
+              "339954413",
+              "5",
+              "-15",
+              "ssssswwwww",
+              "2",
+              "339954407"
+            ]
+          ],
+          "14": [
+            [
+              "339954414",
+              "10",
+              "-15",
+              "sssss",
+              "0",
+              "339954413"
+            ]
+          ],
+          "15": [
+            [
+              "339954415",
+              "10",
+              "-10",
+              "aaaaa",
+              "0",
+              "339954414"
+            ]
+          ],
+          "16": [
+            [
+              "339954416",
+              "10",
+              "-5",
+              "aaaaa",
+              "0",
+              "339954415"
+            ]
+          ],
+          "17": [
+            [
+              "339954417",
+              "10",
+              "0",
+              "aaaaa",
+              "0",
+              "339954416"
+            ]
+          ],
+          "18": [
+            [
+              "339954418",
+              "5",
+              "0",
+              "qqqqq",
+              "0",
+              "339954417"
+            ]
+          ],
+          "8": [
+            [
+              "339954408",
+              "0",
+              "-15",
+              "wwwww",
+              "0",
+              "339954407"
+            ]
+          ],
+          "9": [
+            [
+              "339954409",
+              "-5",
+              "-15",
+              "qqqqq",
+              "0",
+              "339954408"
+            ]
+          ],
+          "10": [
+            [
+              "339954410",
+              "-5",
+              "-20",
+              "wwwww",
+              "0",
+              "339954409"
+            ]
+          ],
+          "11": [
+            [
+              "339954411",
+              "0",
+              "-20",
+              "sssss",
+              "0",
+              "339954410"
+            ]
+          ],
+          "12": [
+            [
+              "339954412",
+              "5",
+              "-20",
+              "sssss",
+              "0",
+              "339954411"
+            ]
+          ]
+        }
+      }
+    }
+  },
+  "sourcePolicy": "Use the six referenced archives only as non-table art sources. Resolve every table preimage from the explicit destination manifest, active archives and pristine baseline; never read their embedded whole tables as preimages."
+}

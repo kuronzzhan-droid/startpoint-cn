@@ -1,0 +1,1539 @@
+{
+  "schema": 1,
+  "status": "PASS_OFFLINE_PREPARED",
+  "baseRevision": "681094469335d94279f1e041755fa2f70a13b13a",
+  "baseVersion": "1.4.257",
+  "baseManifestSha256": "61dc17d5a6296dea0dc74f178565d9a16f2b6e6bfa37677066ed736553d29f5d",
+  "version": "1.4.258",
+  "candidateResourcesSha256": "7ac22cfaef3e1f3f10be3f8a99eccaebb27b2e368f6701296ba275f37e5b7420",
+  "tableMerge": [
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "member": "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+      "source": {
+        "archive": "pinball-1.4.256-1.4.257-1-balance-1020-klaus-local.zip",
+        "archiveSha256": "0c3e85f4924e38534a60fb743fde03c3289a89bc907aee7ccbcaedf12249c1ff",
+        "version": "1.4.257",
+        "member": "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "sha256": "303033eca98f14a2a9dc9875fcefc2e8bcbd2b17b015943bb6c627c8415eee27",
+        "size": 406937
+      },
+      "preimageSha256": "303033eca98f14a2a9dc9875fcefc2e8bcbd2b17b015943bb6c627c8415eee27",
+      "sha256": "bcb00f63845a0d4f25c935661100b2bee84346c6dda97ffee01caf920300a03b",
+      "oldRows": 3561,
+      "addedRows": 6,
+      "newRows": 3567,
+      "addedKeys": [
+        "1699771",
+        "1699772",
+        "1699773",
+        "1699774",
+        "1699775",
+        "1699776"
+      ],
+      "preservedRawRows": 3561,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "1699771": "7cfb352d62d23cc40a46457ea9517b0e5e7d5b407488a9cc30e26a8197b3deab",
+        "1699772": "56bff9a006577e50a8dcb7e210bc063adde58dfdd0660983dd6efcae246ad8e3",
+        "1699773": "a46a2e16f08dbcb0c7e96633954d75e6947880616caa9c642a5289d8962e9de1",
+        "1699774": "62ada47057b607ef9297c5e5b1807a76474fec2db8f9a3579e30817b231066dc",
+        "1699775": "e49c49d6a1c88457f9b37718c63fe305e5eb729de5105acd413bdc346ba89d83",
+        "1699776": "78a9bac2d7c045364bc7c07044c1d5e1d9bb191572291421643742cc6c0e95fb"
+      }
+    },
+    {
+      "logical": "master/ability/leader_ability.orderedmap",
+      "member": "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5",
+      "source": {
+        "archive": "pinball-1.4.256-1.4.257-1-balance-1020-klaus-local.zip",
+        "archiveSha256": "0c3e85f4924e38534a60fb743fde03c3289a89bc907aee7ccbcaedf12249c1ff",
+        "version": "1.4.257",
+        "member": "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5",
+        "sha256": "050abebd0f9e49541c635312f71fcf2b9ac9620a79cbf69a3532b16798891732",
+        "size": 73572
+      },
+      "preimageSha256": "050abebd0f9e49541c635312f71fcf2b9ac9620a79cbf69a3532b16798891732",
+      "sha256": "4196ea86f3c4cf8880f76e431d3ec8a2fac163f08277ab9348bfdaea12b7103b",
+      "oldRows": 594,
+      "addedRows": 1,
+      "newRows": 595,
+      "addedKeys": [
+        "169977"
+      ],
+      "preservedRawRows": 594,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "169977": "c20f3a49c073900311734114ddad40bdc301b0dae760e5aa89a332517435dc83"
+      }
+    },
+    {
+      "logical": "master/character/character.orderedmap",
+      "member": "production/upload/2d/5cb9b28d18f984a51b345a4d7aab03d77bddfc",
+      "source": {
+        "archive": "pinball-1.4.243-1.4.244-1-water-gerald-fix-local.zip",
+        "archiveSha256": "95495f4b7d6587300c3991266976e5baea8030c2274c72935973153c3ee2e066",
+        "version": "1.4.244",
+        "member": "production/upload/2d/5cb9b28d18f984a51b345a4d7aab03d77bddfc",
+        "sha256": "a75fd9c44d71e6e6686211924ff5886896f6bdb4298f0daa5312ce9abe88fb2a",
+        "size": 89314
+      },
+      "preimageSha256": "a75fd9c44d71e6e6686211924ff5886896f6bdb4298f0daa5312ce9abe88fb2a",
+      "sha256": "43ce0d98c87ce4f3b878ed1e7d699c05888762ee8762b0af235e0771601e7fc1",
+      "oldRows": 603,
+      "addedRows": 1,
+      "newRows": 604,
+      "addedKeys": [
+        "169977"
+      ],
+      "preservedRawRows": 603,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "169977": "4edb7d0be680caa4353666b5b87948f384d1bc5521ff98da7e0bd3aa05d9da50"
+      }
+    },
+    {
+      "logical": "master/character/character_gacha_sound.orderedmap",
+      "member": "production/upload/ac/b038c35f3048ba7ca07a6a84307b2fb10c041c",
+      "source": {
+        "archive": "pinball-1.4.238-1.4.239-1-water-gerald-local.zip",
+        "archiveSha256": "33a7a645c4bf8913c3cdf0199bb1f672063346e3766f9a1e47884e23976341ee",
+        "version": "1.4.239",
+        "member": "production/upload/ac/b038c35f3048ba7ca07a6a84307b2fb10c041c",
+        "sha256": "1a9cc91409453d3627b12855d1504187a4b84e5765367dfef943eb887660ae0b",
+        "size": 119182
+      },
+      "preimageSha256": "1a9cc91409453d3627b12855d1504187a4b84e5765367dfef943eb887660ae0b",
+      "sha256": "8bcbd87dd3b92ec783503ca8417927671f4fbcd813fda532485bad0042ecc3e8",
+      "oldRows": 472,
+      "addedRows": 1,
+      "newRows": 473,
+      "addedKeys": [
+        "169977"
+      ],
+      "preservedRawRows": 472,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "169977": "2ce77ee6b10b856de7bce173f105675203b6b8db52ef1f1253fc828fd30bfba4"
+      }
+    },
+    {
+      "logical": "master/character/character_speech.orderedmap",
+      "member": "production/upload/b4/a28679b8eeefdbdcbe6071fd4f2ff85e5b3415",
+      "source": {
+        "archive": "pinball-1.4.238-1.4.239-1-water-gerald-local.zip",
+        "archiveSha256": "33a7a645c4bf8913c3cdf0199bb1f672063346e3766f9a1e47884e23976341ee",
+        "version": "1.4.239",
+        "member": "production/upload/b4/a28679b8eeefdbdcbe6071fd4f2ff85e5b3415",
+        "sha256": "43fd18e7fc81051a58a9be422c633cb7596e5e529eef3d38df2108b137a256ad",
+        "size": 440048
+      },
+      "preimageSha256": "43fd18e7fc81051a58a9be422c633cb7596e5e529eef3d38df2108b137a256ad",
+      "sha256": "96040887ec3ed9e95a7e7e8056437c3634661e0140ccf66c3600a9ca60c089f2",
+      "oldRows": 592,
+      "addedRows": 1,
+      "newRows": 593,
+      "addedKeys": [
+        "169977"
+      ],
+      "preservedRawRows": 592,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "169977": "3ed5670da89ecd38ca0dd5ec4715ac81b3b0527cb6f4801b0350ae07d6bf7d6f"
+      }
+    },
+    {
+      "logical": "master/character/character_status.orderedmap",
+      "member": "production/upload/5c/6a4f0e2ceb1dbcf60f9b306b0f7bfd0eca55c9",
+      "source": {
+        "archive": "pinball-1.4.250-1.4.251-1-balance-1019b-local.zip",
+        "archiveSha256": "b1313c64bfa8aaf50f5c00c8c0bd65213220dccba4e178e83ae3e9d97423f82e",
+        "version": "1.4.251",
+        "member": "production/upload/5c/6a4f0e2ceb1dbcf60f9b306b0f7bfd0eca55c9",
+        "sha256": "954196911ecd3313ed6cbb50bb9eae4aca0ca196da5ab4236a350fdfe8f68b4e",
+        "size": 68826
+      },
+      "preimageSha256": "954196911ecd3313ed6cbb50bb9eae4aca0ca196da5ab4236a350fdfe8f68b4e",
+      "sha256": "b962a05d4d4854118e899de9b4f9b0fd7b43f4387cf2e13b6f9cd4654398dc02",
+      "oldRows": 603,
+      "addedRows": 1,
+      "newRows": 604,
+      "addedKeys": [
+        "169977"
+      ],
+      "preservedRawRows": 603,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "169977": "03e79059894d0295ecd91c5eaed376e12e908084ea562a083ed3c5eacaf4e615"
+      }
+    },
+    {
+      "logical": "master/character/character_text.orderedmap",
+      "member": "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+      "source": {
+        "archive": "pinball-1.4.255-1.4.256-1-panel-pf-scope-text-local.zip",
+        "archiveSha256": "341d00add974229c183e9b8f75f8aa769e628750bfc53444c53fe47f3045240a",
+        "version": "1.4.256",
+        "member": "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+        "sha256": "fba170cca81c88381c8bb6b6160a2884b1fcc4aa9b155203393359417b3ebc8f",
+        "size": 228346
+      },
+      "preimageSha256": "fba170cca81c88381c8bb6b6160a2884b1fcc4aa9b155203393359417b3ebc8f",
+      "sha256": "6a12ffde0bd38e87ee6a37ffb59e976db01fa40a7183676d2d8e808f1861760b",
+      "oldRows": 603,
+      "addedRows": 1,
+      "newRows": 604,
+      "addedKeys": [
+        "169977"
+      ],
+      "preservedRawRows": 603,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "169977": "34f71fe29933d3b204207aa8c0667fcb1b9707e6e16c152093ff5785da3a7681"
+      }
+    },
+    {
+      "logical": "master/character/full_shot_image_attribute.orderedmap",
+      "member": "production/upload/b9/132d27178d27f9d91df89fc47e106bbaf2d5b5",
+      "source": {
+        "archive": "pinball-1.4.238-1.4.239-1-water-gerald-local.zip",
+        "archiveSha256": "33a7a645c4bf8913c3cdf0199bb1f672063346e3766f9a1e47884e23976341ee",
+        "version": "1.4.239",
+        "member": "production/upload/b9/132d27178d27f9d91df89fc47e106bbaf2d5b5",
+        "sha256": "c2cd6b7863b3a82f7a94fac8d870f2d86364b8dc8dd49340b1e84cc02ea4e01e",
+        "size": 51177
+      },
+      "preimageSha256": "c2cd6b7863b3a82f7a94fac8d870f2d86364b8dc8dd49340b1e84cc02ea4e01e",
+      "sha256": "0ed067f17fdd60c9f826fd42098b15ceefdc332796b225db4940d8ac6d2dd630",
+      "oldRows": 598,
+      "addedRows": 1,
+      "newRows": 599,
+      "addedKeys": [
+        "169977"
+      ],
+      "preservedRawRows": 598,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "169977": "1d82d3628c80e7bd4a7b0d8497775af37a27af799d354c75769025a0a3e8a10c"
+      }
+    },
+    {
+      "logical": "master/generated/character_image.orderedmap",
+      "member": "production/upload/3e/b411841802398d5b21d422579f2eaa65d30c0e",
+      "source": {
+        "archive": "pinball-1.4.238-1.4.239-1-water-gerald-local.zip",
+        "archiveSha256": "33a7a645c4bf8913c3cdf0199bb1f672063346e3766f9a1e47884e23976341ee",
+        "version": "1.4.239",
+        "member": "production/upload/3e/b411841802398d5b21d422579f2eaa65d30c0e",
+        "sha256": "446ebf452a4948a3a66dc957d1b1e9e789d6b5239502e90c72ba3f31626c3c74",
+        "size": 52275
+      },
+      "preimageSha256": "446ebf452a4948a3a66dc957d1b1e9e789d6b5239502e90c72ba3f31626c3c74",
+      "sha256": "1b934512781401efb4d1b6ff927700785df810d12d383c86ece0d7b7daa1bf9e",
+      "oldRows": 592,
+      "addedRows": 1,
+      "newRows": 593,
+      "addedKeys": [
+        "169977"
+      ],
+      "preservedRawRows": 592,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "169977": "83d0829bc3ed1d1bd3422b38db76599dc66bdd39d708c1edd8ed0aa33ea597a9"
+      }
+    },
+    {
+      "logical": "master/generated/mana_board.orderedmap",
+      "member": "production/upload/27/7b65484214436114201ae654fefa60fdc822ea",
+      "source": {
+        "archive": "pinball-1.4.238-1.4.239-1-water-gerald-local.zip",
+        "archiveSha256": "33a7a645c4bf8913c3cdf0199bb1f672063346e3766f9a1e47884e23976341ee",
+        "version": "1.4.239",
+        "member": "production/upload/27/7b65484214436114201ae654fefa60fdc822ea",
+        "sha256": "2c292f59fbdfa9d3146bf29afdd924391ce3ea088bc8366b1967d900cab379ff",
+        "size": 978651
+      },
+      "preimageSha256": "2c292f59fbdfa9d3146bf29afdd924391ce3ea088bc8366b1967d900cab379ff",
+      "sha256": "5ec520aa269fc0847605186a5f4158a9360c5ed7bd1b8114b707a7c066800ef7",
+      "oldRows": 592,
+      "addedRows": 1,
+      "newRows": 593,
+      "addedKeys": [
+        "169977"
+      ],
+      "preservedRawRows": 592,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "169977": "57caaa5859194d59492a2dd53f400d0c460560426b05e3910771b9242213109d"
+      }
+    },
+    {
+      "logical": "master/generated/trimmed_image.orderedmap",
+      "member": "production/upload/fb/ab4344a7456dca88f3ce06f01208922f37e395",
+      "source": {
+        "archive": "pinball-1.4.238-1.4.239-1-water-gerald-local.zip",
+        "archiveSha256": "33a7a645c4bf8913c3cdf0199bb1f672063346e3766f9a1e47884e23976341ee",
+        "version": "1.4.239",
+        "member": "production/upload/fb/ab4344a7456dca88f3ce06f01208922f37e395",
+        "sha256": "8f312cb8614026055fa62199f5a9b2edab9817abd0a6ab579a4d628fbc737efc",
+        "size": 387715
+      },
+      "preimageSha256": "8f312cb8614026055fa62199f5a9b2edab9817abd0a6ab579a4d628fbc737efc",
+      "sha256": "caec0d4cacf47041f33e8344b558b74fdf04aae9a9c59d2af7d1636a209ebd3d",
+      "oldRows": 12226,
+      "addedRows": 5,
+      "newRows": 12231,
+      "addedKeys": [
+        "character/cnmod_inaho_halloween/ui/full_shot_1440_1920_0",
+        "character/cnmod_inaho_halloween/ui/skill_cutin_0",
+        "character/cnmod_inaho_halloween/ui/full_shot_1440_1920_1",
+        "character/cnmod_inaho_halloween/ui/skill_cutin_1",
+        "character/cnmod_inaho_halloween/ui/story/base_0"
+      ],
+      "preservedRawRows": 12226,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "character/cnmod_inaho_halloween/ui/full_shot_1440_1920_0": "c4de35f1a8cc3a2fb8aafd2faf69224b4947f5db834f860b4ff0ca57e0fccf67",
+        "character/cnmod_inaho_halloween/ui/skill_cutin_0": "c479b1076b3d959f9137afa0e1930fabb9af4c41dd0033986844e24874b75e95",
+        "character/cnmod_inaho_halloween/ui/full_shot_1440_1920_1": "c4de35f1a8cc3a2fb8aafd2faf69224b4947f5db834f860b4ff0ca57e0fccf67",
+        "character/cnmod_inaho_halloween/ui/skill_cutin_1": "c479b1076b3d959f9137afa0e1930fabb9af4c41dd0033986844e24874b75e95",
+        "character/cnmod_inaho_halloween/ui/story/base_0": "85042e3d5c92c38b3467faa12f5b5a076474077dd3958d4a37eebfdb04d25c48"
+      }
+    },
+    {
+      "logical": "master/mana_board/mana_board2_open_condition.orderedmap",
+      "member": "production/upload/bc/0bc800f482670f3ec8a7f2fee9b9deeeca3a04",
+      "source": {
+        "archive": "pinball-1.4.238-1.4.239-1-water-gerald-local.zip",
+        "archiveSha256": "33a7a645c4bf8913c3cdf0199bb1f672063346e3766f9a1e47884e23976341ee",
+        "version": "1.4.239",
+        "member": "production/upload/bc/0bc800f482670f3ec8a7f2fee9b9deeeca3a04",
+        "sha256": "4e13b4bacb7d50e676450214a03e67a4a7277b01d656c117e46bca3b31578451",
+        "size": 30364
+      },
+      "preimageSha256": "4e13b4bacb7d50e676450214a03e67a4a7277b01d656c117e46bca3b31578451",
+      "sha256": "22fb47d3b9fb6d463eab55eaba2b2259ad866af0367088f4a5abfff92bbad102",
+      "oldRows": 603,
+      "addedRows": 1,
+      "newRows": 604,
+      "addedKeys": [
+        "169977"
+      ],
+      "preservedRawRows": 603,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "169977": "09c9ba4fd185e3b0b4f833e21bc8a5efd80e6b09914b559ab85a76168e511068"
+      }
+    },
+    {
+      "logical": "master/mana_board/mana_node.orderedmap",
+      "member": "production/upload/1d/222e5126fc7ebe3f22c7efe87325f73742eb4f",
+      "source": {
+        "archive": "pinball-1.4.238-1.4.239-1-water-gerald-local.zip",
+        "archiveSha256": "33a7a645c4bf8913c3cdf0199bb1f672063346e3766f9a1e47884e23976341ee",
+        "version": "1.4.239",
+        "member": "production/upload/1d/222e5126fc7ebe3f22c7efe87325f73742eb4f",
+        "sha256": "4cd4b09e53fdd1c9841f5c448b01a37236f5664b36fff36df26576b33eeaba8b",
+        "size": 1228367
+      },
+      "preimageSha256": "4cd4b09e53fdd1c9841f5c448b01a37236f5664b36fff36df26576b33eeaba8b",
+      "sha256": "9ff329ce9593aa015fe4233f244b1fe3e75f87cc15e420942f0ab80595b2d771",
+      "oldRows": 593,
+      "addedRows": 1,
+      "newRows": 594,
+      "addedKeys": [
+        "169977"
+      ],
+      "preservedRawRows": 593,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "169977": "e566ec5bd099531d1760f26acdbe8695709e7de862279de434a70d01122348a4"
+      }
+    },
+    {
+      "logical": "master/mana_board/upskill.orderedmap",
+      "member": "production/upload/57/8872ecbc78561807e6846b3980c5dea980d8ce",
+      "source": {
+        "archive": "pinball-1.4.238-1.4.239-1-water-gerald-local.zip",
+        "archiveSha256": "33a7a645c4bf8913c3cdf0199bb1f672063346e3766f9a1e47884e23976341ee",
+        "version": "1.4.239",
+        "member": "production/upload/57/8872ecbc78561807e6846b3980c5dea980d8ce",
+        "sha256": "e38407e632ad8d7558cff274c1c7d16affd1e0c8f06f546b2647a2858cce1a20",
+        "size": 25802
+      },
+      "preimageSha256": "e38407e632ad8d7558cff274c1c7d16affd1e0c8f06f546b2647a2858cce1a20",
+      "sha256": "1a7c9174f94edfa5b1ba1ee09be74660c6f5805a1a45c1e93eb5cc96a6e1a5bf",
+      "oldRows": 432,
+      "addedRows": 1,
+      "newRows": 433,
+      "addedKeys": [
+        "169977"
+      ],
+      "preservedRawRows": 432,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "169977": "36e17e11ab34d079a5d1b370d7fda024f475cee1d6dc0b454dcedca0282060b1"
+      }
+    },
+    {
+      "logical": "master/skill/action_skill.orderedmap",
+      "member": "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
+      "source": {
+        "archive": "pinball-1.4.255-1.4.256-1-panel-pf-scope-text-local.zip",
+        "archiveSha256": "341d00add974229c183e9b8f75f8aa769e628750bfc53444c53fe47f3045240a",
+        "version": "1.4.256",
+        "member": "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
+        "sha256": "567571e19159d847d05811227669283ecd786c7fcb3cf78084b2df207329219c",
+        "size": 375881
+      },
+      "preimageSha256": "567571e19159d847d05811227669283ecd786c7fcb3cf78084b2df207329219c",
+      "sha256": "67125232e52c203ea2ff37c0191b7546df854afc96153d0fd91057e931b0d841",
+      "oldRows": 667,
+      "addedRows": 1,
+      "newRows": 668,
+      "addedKeys": [
+        "cnmod_inaho_halloween"
+      ],
+      "preservedRawRows": 667,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "cnmod_inaho_halloween": "1d8dc3e815cc37244b5ae83475d40f4dd2748153183e60b0ee2b9d1c648c70f0"
+      }
+    },
+    {
+      "logical": "master/skill_preview/skill_preview_character.orderedmap",
+      "member": "production/upload/aa/abdd2e178d62dba4997034aab8c236a4422154",
+      "source": {
+        "archive": "pinball-1.4.238-1.4.239-1-water-gerald-local.zip",
+        "archiveSha256": "33a7a645c4bf8913c3cdf0199bb1f672063346e3766f9a1e47884e23976341ee",
+        "version": "1.4.239",
+        "member": "production/upload/aa/abdd2e178d62dba4997034aab8c236a4422154",
+        "sha256": "0d84566801c342cbbafd372e9791dd6c46b2fbac9a7e8af635b7ffbcf023adbc",
+        "size": 32731
+      },
+      "preimageSha256": "0d84566801c342cbbafd372e9791dd6c46b2fbac9a7e8af635b7ffbcf023adbc",
+      "sha256": "2e7c0eef1652b1fe190dc41cfc0694e3c1c16f2e3f5a7b723375b77f0f0924e3",
+      "oldRows": 585,
+      "addedRows": 1,
+      "newRows": 586,
+      "addedKeys": [
+        "169977"
+      ],
+      "preservedRawRows": 585,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "169977": "a8511a836539bfc53461ea79a379d274ad05317c4793b48d7007f22e2047005e"
+      }
+    },
+    {
+      "logical": "master/stance_detail/character_stance_detail.orderedmap",
+      "member": "production/upload/d7/50c2f94f83dd053bfc79039a709f1ec6f766cb",
+      "source": {
+        "archive": "pinball-1.4.238-1.4.239-1-water-gerald-local.zip",
+        "archiveSha256": "33a7a645c4bf8913c3cdf0199bb1f672063346e3766f9a1e47884e23976341ee",
+        "version": "1.4.239",
+        "member": "production/upload/d7/50c2f94f83dd053bfc79039a709f1ec6f766cb",
+        "sha256": "65d1c53758282ba80195ae24b91880b80bd481dccbea617698819c68f818f1bf",
+        "size": 17000
+      },
+      "preimageSha256": "65d1c53758282ba80195ae24b91880b80bd481dccbea617698819c68f818f1bf",
+      "sha256": "9397b817dc9b6a1c713a425556bec05e41f31733781eddcac76c011d62dd84ae",
+      "oldRows": 587,
+      "addedRows": 1,
+      "newRows": 588,
+      "addedKeys": [
+        "169977"
+      ],
+      "preservedRawRows": 587,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "169977": "92dc8f7e4c6223b2137c9bd20d6c838ec36205d3e9a21807cd453ec4cd16551c"
+      }
+    },
+    {
+      "logical": "master/story/story_character.orderedmap",
+      "member": "production/upload/92/dcd1cc81f29794f0606ffe39f68d4e8740c8fa",
+      "source": {
+        "archive": "pinball-1.4.27-1.4.28-1-98096de6.zip",
+        "archiveSha256": "e45cb33d2ad5f486f6e7b608ead424f9ffd66f4fe52441ed0ec6326bd6054797",
+        "version": "pristine<=54",
+        "member": "production/upload/92/dcd1cc81f29794f0606ffe39f68d4e8740c8fa",
+        "sha256": "d9353f7811264035341d0b262887bd5401735fb7348a2f01f2f7c2c46bf742b5",
+        "size": 323506
+      },
+      "preimageSha256": "d9353f7811264035341d0b262887bd5401735fb7348a2f01f2f7c2c46bf742b5",
+      "sha256": "185f7ee87cbd742cc45d1017988ae1202c0bbac4e45c923db5ea4a32348e9eae",
+      "oldRows": 3078,
+      "addedRows": 1,
+      "newRows": 3079,
+      "addedKeys": [
+        "cnmod_inaho_halloween"
+      ],
+      "preservedRawRows": 3078,
+      "droppedKeys": [],
+      "changedOldKeys": [],
+      "declaredRowsSha256": {
+        "cnmod_inaho_halloween": "662da5ecdaf9d9f6b787a9921f5ce1d392a07adae51a6409e4ac86077183c9f4"
+      }
+    }
+  ],
+  "nonTableResources": [
+    {
+      "member": "production/android_upload/f8/978006930b9d27f99d1137366be02ff0b7e55a",
+      "logical": "character/cnmod_inaho_halloween/ui/skill_cutin_0.atf.deflate",
+      "sha256": "5739edbebe64b609470fe58517888ded9a75f48d18e056eec7b1dbce986b6c99",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/android_upload/98/0a2c3084a98d08eab0e335b711f4ab2027e799",
+      "logical": "character/cnmod_inaho_halloween/ui/skill_cutin_1.atf.deflate",
+      "sha256": "0d35abf264bc51de6c9b5620c1564debcab879d3f4664fc4a071c7a559337622",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/69/839efd56177d9dc68441073c58bee89678f499",
+      "logical": "battle/action/skill/action/rare5/cnmod_inaho_halloween$cnmod_inaho_halloween_1.action.dsl.amf3.deflate",
+      "sha256": "bad232e012618d2156a3fb2efd5692766284266918d7b7d296afd16340f03c0c",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/61/67c6d8b55a7dd5adf4ca97f50e9852e6f753c6",
+      "logical": "battle/action/skill/action/rare5/cnmod_inaho_halloween$cnmod_inaho_halloween_2.action.dsl.amf3.deflate",
+      "sha256": "bad232e012618d2156a3fb2efd5692766284266918d7b7d296afd16340f03c0c",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/79/1edb88e51daa6b20b30d7cff304ecc6cd1be82",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/caster/caster.atlas.amf3.deflate",
+      "sha256": "2d8c8ab156cd721349a94a3221ec30e7afc0541c2948441fa539f50308d164dd",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/0a/19e927b44fb7b83171fd0d806afd2d4530837c",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/caster/caster.png",
+      "sha256": "314caaa665a6e39c33bb4ed8a78e85c5a8f84ae4611355440dad1beb777adf28",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/a0/146998b19d76aa1eb64743c3add95be44a6b94",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/caster/effect.parts.amf3.deflate",
+      "sha256": "d2e21f6621428ca6c7918ce543cd1d9a4e756c33e1e0dd4b7202b029a9582293",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/79/131b45c54a1535fba4cf0e44ccc939714c3d91",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/caster/effect.timeline.amf3.deflate",
+      "sha256": "2529f892e0f9a16a509346add413de12f8f79cb0ed32e4c59e1b0479a07a9ae5",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/9b/b0d7d84554f285ed96db82d7649748b63dd589",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/cnmod_inaho_halloween.atlas.amf3.deflate",
+      "sha256": "cca303f4f4ee781a94a8dae938a50660f7d770fc897f0c7b578d618478b1a4b8",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/d5/e39fd9c8ac02228888bd2ba75c02678b9a6895",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/cnmod_inaho_halloween.png",
+      "sha256": "1d29681985c752463fd43259258067594a6bbc24a9c77cf6943c587d551c40dd",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/a9/45b7eb5177d7f0f6a1108dd73cee77a6ff0f9d",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/field/effect.parts.amf3.deflate",
+      "sha256": "b27a54de50942392fe144f9b45f3cefdf876d801e8aa76e649ba786aa00a91e9",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/0e/9066dfa14bd0c505782aa180c3cc4b60f1ec2b",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/field/effect.timeline.amf3.deflate",
+      "sha256": "6a5a0e218064a2d12063149683ebce2d22c6108c5be6b1726735fe5ff18dfcda",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/c1/c2cab749f77c453070245fe47c63f1c066c1d6",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/field/field.atlas.amf3.deflate",
+      "sha256": "76449d7c6a4310dc50e6561970881bb3fc7740595969a9e91c01d3544449ee89",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/f9/a6ccb2b055d792064b13558ae37d2afb6e92ba",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/field/field.png",
+      "sha256": "9fa0d355184af637162baa46ed693727b6a5790662ff08f978ecbacbcbc1f575",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/2e/553c4cee2712baf36c0b0af2f2bcf313ef79f8",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/field/foreground.parts.amf3.deflate",
+      "sha256": "a0b32d08d7d5348b59f4a0f6d462d45453dbbab6411a66bbb9ab777c10f63f52",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/ab/9de84024d7d11a33f7836f3968948a2e0803fc",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/field/foreground.timeline.amf3.deflate",
+      "sha256": "2fc0680c4a3d8ae1ca49ec22c0b24ba071626cadff573a9ef0423110dd590b33",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/0a/f9d6a15235d141232d956e4a26f0df450cd52e",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/foxfire_bite.parts.amf3.deflate",
+      "sha256": "552354118f8d7d3b3fa6adc70f80a78e69891819e7be02cd1fe63ebdad5c974b",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/33/00ecd291e90357c62d7c56bce29214dd71b812",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/foxfire_bite.timeline.amf3.deflate",
+      "sha256": "d8508fbae2649fe08e3eb1697e56e57e273842d07f24406f94b2208950c4fd2e",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/f9/901f1746baab7b9793b32279f035fe62b2d1f1",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/hit/effect.parts.amf3.deflate",
+      "sha256": "2bbefe986115abcb938b9696149a6e6601aea2f87c810bdccd36647d7d9fe8df",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/90/195c3b5bb2a8884737e4bcda3fc465f2f61c60",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/hit/effect.timeline.amf3.deflate",
+      "sha256": "d55d98fac24b6da5705cc0c6718eed62c437871368995d6694836645792ee4b0",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/c8/7812703b41415efbf13c7606d1c4d166c06ea5",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/hit/hit.atlas.amf3.deflate",
+      "sha256": "ddb12be3dd12ee8f4d6c0b1b5b9e12d5e6e70dfca7329f75f4acf405bde2c0f3",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/9c/ba7505b6e4979bdd6655049f8e4170dff160e0",
+      "logical": "battle/effect/skill_unique/cnmod_inaho_halloween/hit/hit.png",
+      "sha256": "e583c9a580e9aaa824b3ec46326cc3f67e8927d71cffc2df5949b8ea3321470c",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/0c/0270f1ffc66991189037b43d9e21246d8d3298",
+      "logical": "character/cnmod_inaho_halloween/battle/character_detail_skill_preview.battle.amf3.deflate",
+      "sha256": "1815174862202ab6e8878ee1590dc2bc0e2cd2bf91cc242f887cf6f835a2b23b",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/74/ce9fd72a683b5206b8731daba76d0aef6c3008",
+      "logical": "character/cnmod_inaho_halloween/pixelart/pixelart.frame.amf3.deflate",
+      "sha256": "56315200f57d306b6b0cd98e6000d19f95b8f1860babebd83ce15c8b2ef91d78",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/a1/87402ed9b6a6da4b52d8fbb90b4e0b67689a6f",
+      "logical": "character/cnmod_inaho_halloween/pixelart/pixelart.timeline.amf3.deflate",
+      "sha256": "a3e526af2fac888567bc54fbf4b659fca512d9920983e7d7b731fa6db033242b",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/82/5eec60ea20e20e80983ed088c8c9946720f6f8",
+      "logical": "character/cnmod_inaho_halloween/pixelart/special.frame.amf3.deflate",
+      "sha256": "be3a048d58fbd1bf662f3bdf15519ece8bf311a9e5dff4be496df4b4d3925fe1",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/18/6fc157385f0c603aacf243315a39bb01ec75fb",
+      "logical": "character/cnmod_inaho_halloween/pixelart/special.timeline.amf3.deflate",
+      "sha256": "8f6723a57e2f5003b7f4923c354f338b432e6c658923db2938eb3cac1d9192b9",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/6c/8576757512b896a83c6e984fcb024f570f8ac1",
+      "logical": "character/cnmod_inaho_halloween/pixelart/special_sprite_sheet.atlas.amf3.deflate",
+      "sha256": "d8159302f82e7f0bfcc36ea15d0124c1f9de6a89129def6fe6f82e32d5330d18",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/81/113f451d06c5f4c3b92ba1d730cc72e607cb82",
+      "logical": "character/cnmod_inaho_halloween/pixelart/special_sprite_sheet.png",
+      "sha256": "12e7449061dc5bb8cad299c0dfd5e9b6ec4a9b8d3755395c7aa68022e39e14f7",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/7a/3bde7d7dd172250fb634fe33ff1f1f2457a318",
+      "logical": "character/cnmod_inaho_halloween/pixelart/sprite_sheet.atlas.amf3.deflate",
+      "sha256": "aec4cb66ebc59e5c8c8600a0ed3c32a9684124400ac1c5b6a742c908727bdc91",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/26/a90ba4daaa72b2fc0ad2bbeb03333d02829e46",
+      "logical": "character/cnmod_inaho_halloween/pixelart/sprite_sheet.png",
+      "sha256": "55cb364bc7a5efe76d6905ea0c05e3e30d2d4c82325c37280b84158d155f3f84",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/34/7e6829fc2ca2108ce9dd798454dadd1f240de8",
+      "logical": "character/cnmod_inaho_halloween/ui/illustration_setting_sprite_sheet.atlas.amf3.deflate",
+      "sha256": "5e83d34c969d3e73deb2cbae01c80c885dc5c04b774ab85da5e3689655bd6567",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/7a/53422bb98162ec12df411ae26f0a961151b345",
+      "logical": "character/cnmod_inaho_halloween/voice/ally/evolution.mp3",
+      "sha256": "0b246bfc7189feb978a4fa18240c858df126b853b6472f5aa5ef0c8f60b19087",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/a2/aee38bbc25c52a8e1d76ad375f8b9538a862fa",
+      "logical": "character/cnmod_inaho_halloween/voice/ally/join.mp3",
+      "sha256": "18b080037725dfe7fe0c50d0096f7acf1ead186eef759cde4c13acbf75f8314c",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/75/65aeebd7f91904f9efd3971e610b43fa33beaa",
+      "logical": "character/cnmod_inaho_halloween/voice/battle/battle_start_0.mp3",
+      "sha256": "fa0fb9f0a1eb2d179586c7ccddcddf42b647fb0986fcf7e692e0fb30b88ea5ae",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/4f/6fee304293244647879b763e495082b054e406",
+      "logical": "character/cnmod_inaho_halloween/voice/battle/battle_start_1.mp3",
+      "sha256": "de2d049889061018c0fa35a05f6907c95c92337494e15c020255122c91b11c77",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/dd/8257ebb8746b48d06a6c9a9839d7c695922209",
+      "logical": "character/cnmod_inaho_halloween/voice/battle/outhole_0.mp3",
+      "sha256": "638ee653bfa4446d7d7b28793e1ed518d798b9d47a2f5da8255e1d7c4bd21a4a",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/28/71066d48a3ca604a390c9a6202924caf5b30d1",
+      "logical": "character/cnmod_inaho_halloween/voice/battle/outhole_1.mp3",
+      "sha256": "5e268b3d2bcd2501fde3aeccbe79c3f02bdda16cac752ba7050e0c5393f9377b",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/4f/53fcf5f3955456bfc023396567d357b110bee9",
+      "logical": "character/cnmod_inaho_halloween/voice/battle/power_flip_0.mp3",
+      "sha256": "6a284e57a236f35a44dfc9f1d7a56453b142de0a0ade79bcef4530fd27b1f4c9",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/85/db23756d8be451d6622cf3bc19e6b33eca6eb6",
+      "logical": "character/cnmod_inaho_halloween/voice/battle/power_flip_1.mp3",
+      "sha256": "1b55d478fa35dd2ea62e16ed53055a416674c5af71bd446a1138912c7edb81d3",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/a1/ae197d50c4c2948c4dcd5b7b61a4d1dbdd273a",
+      "logical": "character/cnmod_inaho_halloween/voice/battle/skill_0.mp3",
+      "sha256": "f0007242c2027fef1d82b6a8fcb9b2c3bac25f95d45c09cebcaedd3a0728702a",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/03/29a41abb86a0e74c5586dd2085726ea28b87cf",
+      "logical": "character/cnmod_inaho_halloween/voice/battle/skill_1.mp3",
+      "sha256": "f0007242c2027fef1d82b6a8fcb9b2c3bac25f95d45c09cebcaedd3a0728702a",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/9c/4670d44f96129b92a515512be35aedb12415b4",
+      "logical": "character/cnmod_inaho_halloween/voice/battle/skill_ready.mp3",
+      "sha256": "59662e0b9ed7838816399f27fd35e6d9ffbfc8552846f9fa22d33cb28cfe4edc",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/04/fa0cbbd3deee1202e71b94081a8c27aef02bbf",
+      "logical": "character/cnmod_inaho_halloween/voice/battle/win_0.mp3",
+      "sha256": "f4d49a6e696ecd2e470d69b0702f245d76ad036d55948cdcdb08aea2265e7bd7",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/3a/740047cd284e41e5430587447d51470051623f",
+      "logical": "character/cnmod_inaho_halloween/voice/battle/win_1.mp3",
+      "sha256": "8fd6d1c3f65194dd2d0e99b58aac471720745607a741dca3d585235648dfd36e",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/39/7495851ff8d6e98947346bf9c72e9175d35f67",
+      "logical": "character/cnmod_inaho_halloween/voice/home/halloween_1.mp3",
+      "sha256": "d4212527d164629cbad15d9fea86c577948f89f7dcb724ce4aa3be59e1193c74",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/3b/adba0696cf6c56ed912202946a07be1b610f20",
+      "logical": "character/cnmod_inaho_halloween/voice/home/halloween_2.mp3",
+      "sha256": "d772b86c4b717023d61f92b150c9a2e81d71ccdcea3d8d8102505048e3fd65f8",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/62/b34bc9854920cbcb8bbbe6fc069312f088450c",
+      "logical": "character/cnmod_inaho_halloween/voice/home/halloween_3.mp3",
+      "sha256": "0995d8778420b2c13363a60cc92a4df5b1a61ec1f6cfc7074759f7799dc4efb6",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/d7/b006c4e9d7563320359e1b92b00055ec427222",
+      "logical": "character/cnmod_inaho_halloween/voice/home/halloween_4.mp3",
+      "sha256": "bd148eebf90d59adb40f42fdbf9a4136093f7bf1a320c58a726ccc219c80794f",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/75/33ed17cc08dcb18b6a212acbfdb1a24b0b49cb",
+      "logical": "character/cnmod_inaho_halloween/voice/home/halloween_5.mp3",
+      "sha256": "bc7947dcca1ac38b7d74868ca9381ea350434ac30cc2e9f98c307076b6d2c985",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/e8/bf13cdd143f93cf481b2dfcdc0b71053745278",
+      "logical": "sound_effect/fire/se_flare_up.mp3",
+      "sha256": "9ed8731d7f9ebc1d73f3703905373cf9e164deff29e19c475de3fe73378e2b3b",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/80/b90abf347eed357c6d69244ac9b695c20c0dcb",
+      "logical": "sound_effect/fire/se_single_fire.mp3",
+      "sha256": "f1b78ad0c0df80a791e27e9efd97654e4e008737086df2e931b9b5ecc9747244",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/9c/8892f9b74648a319b4aa24ba0d0c8bcb739177",
+      "logical": "sound_effect/light/se_waftage_sparkle.mp3",
+      "sha256": "84190b643f142dadbaa71ef1a2be39e1dfa7860db482bf89d593ce4d8b194cdf",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/upload/ee/267ab1f69137a4758ecbb98cf38482ac5aa0ac",
+      "logical": "sound_effect/wind/se_wind_medium_size_swing.mp3",
+      "sha256": "5b22fb9055d29ec026823b76d0f2f7139cd22b27ce25212649ea3c48c1ea9e14",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/ios_upload/f8/978006930b9d27f99d1137366be02ff0b7e55a",
+      "logical": "character/cnmod_inaho_halloween/ui/skill_cutin_0.atf.deflate",
+      "sha256": "be02cf33e0416ad59c9c7285a6da0af5cb3cf354cbfc2c4edfbd6df806192c4c",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/ios_upload/98/0a2c3084a98d08eab0e335b711f4ab2027e799",
+      "logical": "character/cnmod_inaho_halloween/ui/skill_cutin_1.atf.deflate",
+      "sha256": "b4beddf488a9c956762944d7bb174d5104b4728bfc953ca53c7375ef41a1e29c",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/2d/8f3acf5aae3337522b8ec1b044b22cb90ea7bb",
+      "logical": "character/cnmod_inaho_halloween/ui/battle_control_board_0.png",
+      "sha256": "597ba2104598cbd00488d93680c5696525fcf4d59e7c47c2b6ed972a198ad4f2",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/da/769f678b7021fe37afe7500f188c505e271448",
+      "logical": "character/cnmod_inaho_halloween/ui/battle_control_board_1.png",
+      "sha256": "2c9d0126be6808e174d7c92d49adbdd4857cd0fab86046ceb75e256a8a2983ec",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/1e/3b942edce4a93c57e454cc02b20e3587bd9118",
+      "logical": "character/cnmod_inaho_halloween/ui/battle_member_status_0.png",
+      "sha256": "1741ce515b194ea7fef30c2dd6231a1530f60f98d0d0a58556709a235412a5d8",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/7b/c5fead137d1b39b2e139db725a412c047e01b6",
+      "logical": "character/cnmod_inaho_halloween/ui/battle_member_status_1.png",
+      "sha256": "002adc68d5fd1578fcfb29fd071f9fa479933ad32926cedb6f11912d9cafece2",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/b9/c322768b601963641597a767cdfe4ee2f67615",
+      "logical": "character/cnmod_inaho_halloween/ui/cutin_skill_chain_0.png",
+      "sha256": "7d627c9b9150eddde13d36ff32918ea4b08a42f7c374e8f9a4ef0eecaa5cfec8",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/b2/ece23d9de002647e07d9c63c408b1440e7ef94",
+      "logical": "character/cnmod_inaho_halloween/ui/cutin_skill_chain_1.png",
+      "sha256": "7844c889375e1f203eb9c27fb7a16d3144f7a6d33f8fb242186ccc60c2998d7b",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/73/73de8e2772f8af7e3fb8382188c863d8ac9f04",
+      "logical": "character/cnmod_inaho_halloween/ui/episode_banner_0.png",
+      "sha256": "53997e4d334cc24a4d22d8beb1275182047c3d92bb75de1309b11c027abf5daa",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/7a/7233f8c4503c2797e163c0c2060bb2819014a1",
+      "logical": "character/cnmod_inaho_halloween/ui/full_shot_1440_1920_0.png",
+      "sha256": "1cc65341bc22101aba10ba712567ddee904b19c057083682c5b70279cb6b16ad",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/b4/c57189dec5cc3750156ce56da135ed7a07bb1e",
+      "logical": "character/cnmod_inaho_halloween/ui/full_shot_1440_1920_1.png",
+      "sha256": "a39b4e13abf6dc35af1519783d51c9b0a2b39cd77534ae5d552d5136cfdfc94a",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/5d/9d1eaebe39514f40a9850c4964dcb4a103dbc6",
+      "logical": "character/cnmod_inaho_halloween/ui/illustration_setting_sprite_sheet.png",
+      "sha256": "bf7419c2acf11841144179e8583e72c0af178a4812d63d4c6048d0feee455b06",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/74/a1cb735e3509214d3bb9d7b196c5f8bba6f0ce",
+      "logical": "character/cnmod_inaho_halloween/ui/skill_cutin_0.png",
+      "sha256": "bbdcb2685403da5aa1fcb27bbd45c4f44ff191570288e3ec0f85733b7f934c6b",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/a7/1ba4c376ea968dcef04f66a2729eb11accc3a3",
+      "logical": "character/cnmod_inaho_halloween/ui/skill_cutin_1.png",
+      "sha256": "f23e23a6728e4cface4382018fa825f7d21f917839e6002d9c428d516857bc07",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/4e/a341ea3112fa099e3f2eea311d40384ea7c12b",
+      "logical": "character/cnmod_inaho_halloween/ui/square_0.png",
+      "sha256": "a91a00d1512721a63c9ed2734510ec4578149c0d904c5f758e3ab3235a607156",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/9c/e0111ac1ac015b01a8f5dd809e8836261b230f",
+      "logical": "character/cnmod_inaho_halloween/ui/square_1.png",
+      "sha256": "0fe447bae1091925122f2911369ae2204075130a72397ff9462a02f339659ad2",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/e4/fdda3138bd2296e4b01b311947111401831338",
+      "logical": "character/cnmod_inaho_halloween/ui/square_132_132_0.png",
+      "sha256": "c12153a27e22ac60e04b0745945ca36cb5ee845b4030adc13c1044c34e2ae6a7",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/1e/6b95c4cdb1226e5ff4137d70d9c880ded251ee",
+      "logical": "character/cnmod_inaho_halloween/ui/square_132_132_1.png",
+      "sha256": "056a83542a7b808497b585aa13439e9fc74fd7e9aef201de1e4f7f6a7fc9b66e",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/fb/b6fd0146a86300a7f48c87a88395054b81fe6e",
+      "logical": "character/cnmod_inaho_halloween/ui/square_round_136_136_0.png",
+      "sha256": "495200c672187a2a7428626ce74b3fdda8e95676403ea08a6142d95f6ea11857",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/97/9c14ac39b71986632bcb634f9f907751400ad7",
+      "logical": "character/cnmod_inaho_halloween/ui/square_round_136_136_1.png",
+      "sha256": "9e71b2200d8d8bb7fce02edd3e0a916f48f32d304ee5b6d91c08da2acfc0c752",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/64/cb930b4eda097918055d31e4a2dd31635a16b2",
+      "logical": "character/cnmod_inaho_halloween/ui/square_round_95_95_0.png",
+      "sha256": "9144f3bc61ff04e76d70cd4250b912ce6fb4b481d94ca3d9012828a9bec90525",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/ae/593ad5a533a9fa1b226d27f75feebc34b9d43d",
+      "logical": "character/cnmod_inaho_halloween/ui/square_round_95_95_1.png",
+      "sha256": "a5fbe35b707ce0475faeaa70bc92a409a9a811c510ba438a0be9bbd39794ea11",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/09/c9628c8e724fa61d05eb45f60fa83d0303d82b",
+      "logical": "character/cnmod_inaho_halloween/ui/story/base_0.png",
+      "sha256": "54cc26ddbb1872bf346f97a2d3933f7ab7a433093bf4a01b02defc9a0cabf9e5",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/1f/51ba29dfb07deecb79af67783c99b6a543cdb9",
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_level_up_0.png",
+      "sha256": "345cc2394696ee4062df9a72a7e8bbaa6bba4eb649ddd4e199f79911e2bfd1a0",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/d0/60f709174075f86662114fcd84f423ed87c7a0",
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_level_up_1.png",
+      "sha256": "2eaab8dd31d4a10771f23a58042474cfd5a56dd17e66551a6785949b0b157b1d",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/f6/467c124ee46feaf175991c5b73a43635864289",
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_party_main_0.png",
+      "sha256": "b16dad60e3bf31fd32c0236bbab193ea73bfe6652a016eead94908502a4524f9",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/13/4e690aea8a9a760c0ca3ebb000bb9d6935c38e",
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_party_main_1.png",
+      "sha256": "1206c081de5c8212b13238f620991551a0923d2139709237d6c418c58a07a8bc",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/29/fadb7836908f7c62e67a5c413245d7b3bdb0e3",
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_party_unison_0.png",
+      "sha256": "3149a825fbcd6d3a7bd316e0a2032f471f3b9d165b33df2ff21507e39dcf369a",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/medium_upload/98/47e3c189d3c1eccdfafd42dea445d6bd4d98f9",
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_party_unison_1.png",
+      "sha256": "b8c0e5e640b645a70eb309617fbc1f018bcefde9abcdda7d28f89a76308e36a7",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/2d/8f3acf5aae3337522b8ec1b044b22cb90ea7bb",
+      "logical": "character/cnmod_inaho_halloween/ui/battle_control_board_0.png",
+      "sha256": "787070595e130dd02824979aa87d7fd021bbadaff321c09748f1ee41fe6e46e3",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/da/769f678b7021fe37afe7500f188c505e271448",
+      "logical": "character/cnmod_inaho_halloween/ui/battle_control_board_1.png",
+      "sha256": "1251e73c71c3a4d23208ad24c041bb174405655b974316afa0a58ab7c8ec91e0",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/1e/3b942edce4a93c57e454cc02b20e3587bd9118",
+      "logical": "character/cnmod_inaho_halloween/ui/battle_member_status_0.png",
+      "sha256": "c4d8ca6de12027c6b0399d06f8ab8445ee67e8cebbc0c8afbc1f6be63f79f874",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/7b/c5fead137d1b39b2e139db725a412c047e01b6",
+      "logical": "character/cnmod_inaho_halloween/ui/battle_member_status_1.png",
+      "sha256": "14599cd137d7487712c627d15e6a2bff1be71a83cba57e3d4df73dd4e1d767a9",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/b9/c322768b601963641597a767cdfe4ee2f67615",
+      "logical": "character/cnmod_inaho_halloween/ui/cutin_skill_chain_0.png",
+      "sha256": "867af23ac04266a461fc120f36f7799cae4241aa00f5213ecf1fd058abe3c06c",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/b2/ece23d9de002647e07d9c63c408b1440e7ef94",
+      "logical": "character/cnmod_inaho_halloween/ui/cutin_skill_chain_1.png",
+      "sha256": "ff4c5aefe771da6be0d69886285ddd2df92a1a4c617980528a8ca18652810c92",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/73/73de8e2772f8af7e3fb8382188c863d8ac9f04",
+      "logical": "character/cnmod_inaho_halloween/ui/episode_banner_0.png",
+      "sha256": "d72b42f24665ca0382a11b16fafac34400d57965b8ee45a271373f1e032e0517",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/7a/7233f8c4503c2797e163c0c2060bb2819014a1",
+      "logical": "character/cnmod_inaho_halloween/ui/full_shot_1440_1920_0.png",
+      "sha256": "324c3c0d421449d3532e95c250da2797fc09bea4ad4a012592c0747247c237ed",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/b4/c57189dec5cc3750156ce56da135ed7a07bb1e",
+      "logical": "character/cnmod_inaho_halloween/ui/full_shot_1440_1920_1.png",
+      "sha256": "4daa802935de2343f50afa542aa5fc96182dac59460d18530a56060ea1ca506b",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/5d/9d1eaebe39514f40a9850c4964dcb4a103dbc6",
+      "logical": "character/cnmod_inaho_halloween/ui/illustration_setting_sprite_sheet.png",
+      "sha256": "ab62e226a2bef6c7cbd1fffed6fb0ad097b87a528bbccae2f4cd27109a796700",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/4e/a341ea3112fa099e3f2eea311d40384ea7c12b",
+      "logical": "character/cnmod_inaho_halloween/ui/square_0.png",
+      "sha256": "8cfcc9a3a8a9222c4e6e9e9a0b6c925cc26c6f17e6aff9c65e9c3fe587b6ddbd",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/9c/e0111ac1ac015b01a8f5dd809e8836261b230f",
+      "logical": "character/cnmod_inaho_halloween/ui/square_1.png",
+      "sha256": "ddde4cad789b8003a3430c16ce7406e8e552663f01684c4e5cb52ba76fc9d32b",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/e4/fdda3138bd2296e4b01b311947111401831338",
+      "logical": "character/cnmod_inaho_halloween/ui/square_132_132_0.png",
+      "sha256": "56ca8ca0d1829b0f080e9fc4e6d874a4aa17eadc313932f56d28a3efb2df6a71",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/1e/6b95c4cdb1226e5ff4137d70d9c880ded251ee",
+      "logical": "character/cnmod_inaho_halloween/ui/square_132_132_1.png",
+      "sha256": "c0ab715d211f265d07152bb5f86791cd2b11f7dde6b4ed337c87fafb39c2ba0e",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/fb/b6fd0146a86300a7f48c87a88395054b81fe6e",
+      "logical": "character/cnmod_inaho_halloween/ui/square_round_136_136_0.png",
+      "sha256": "bfc1ec035fa747beb64b1dbabeeaccfba0b98ae7ffca66cac96bcf5456e9d2a7",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/97/9c14ac39b71986632bcb634f9f907751400ad7",
+      "logical": "character/cnmod_inaho_halloween/ui/square_round_136_136_1.png",
+      "sha256": "e4c51a7413c5104b42ea57c925fa47e349cf368f21f410ce2d94e57f74d8af60",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/64/cb930b4eda097918055d31e4a2dd31635a16b2",
+      "logical": "character/cnmod_inaho_halloween/ui/square_round_95_95_0.png",
+      "sha256": "705ec3773ba438cf37d7ff52da0c40053b7b84151e384fd96e6df29702f359d8",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/ae/593ad5a533a9fa1b226d27f75feebc34b9d43d",
+      "logical": "character/cnmod_inaho_halloween/ui/square_round_95_95_1.png",
+      "sha256": "d79359f8240a52044fbe60b63fa2d8890c265a1d70fd9c210a27e9804bc73b47",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/09/c9628c8e724fa61d05eb45f60fa83d0303d82b",
+      "logical": "character/cnmod_inaho_halloween/ui/story/base_0.png",
+      "sha256": "c93449dfa4d6ba149259640e26dd6e0abb4d4bfa726c234e57eed405734f0ed4",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/1f/51ba29dfb07deecb79af67783c99b6a543cdb9",
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_level_up_0.png",
+      "sha256": "4055ddfbbc7c3eeaaab1af4712e67ddf1a692357a5f5e8ac587810361807c8a7",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/d0/60f709174075f86662114fcd84f423ed87c7a0",
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_level_up_1.png",
+      "sha256": "d77cfeec03a93c1b36cc2ec1746ed09cc1d812c9929d27b046ab7a45479c57d5",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/f6/467c124ee46feaf175991c5b73a43635864289",
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_party_main_0.png",
+      "sha256": "1a9fd951cb64f03f6956ab1d3e511fb6b2befde23c2ff22c399125359c5fc921",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/13/4e690aea8a9a760c0ca3ebb000bb9d6935c38e",
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_party_main_1.png",
+      "sha256": "0a41ef1d1feaab7c96609701345a2227cefbcb0dd48b1c0dacc7d41222850e90",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/29/fadb7836908f7c62e67a5c413245d7b3bdb0e3",
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_party_unison_0.png",
+      "sha256": "ad591b79d61e3a9638c5ed81c3f278ad5efa0be034200ddf59bda6e8d3f6a448",
+      "preservedCandidateBytes": true
+    },
+    {
+      "member": "production/small_upload/98/47e3c189d3c1eccdfafd42dea445d6bd4d98f9",
+      "logical": "character/cnmod_inaho_halloween/ui/thumb_party_unison_1.png",
+      "sha256": "4ed610518e8c5dcbd5de9ac726a86e43008cffa9a59dcd394864274f0e49c46b",
+      "preservedCandidateBytes": true
+    }
+  ],
+  "sharedResourceOmitted": {
+    "archive": "pinball-1.4.0-34-f7e11f36.zip",
+    "archiveSha256": "1733aa73887f78aaad8d775c2b3113214fd100f847c8432dd51566663c192a04",
+    "version": "pristine<=54",
+    "member": "production/upload/18/e433e0f3583f9d068142317de731a7111047e4",
+    "sha256": "32b937a10468b7570549a2a6a9cf07b4c152d547ac3dd3869b6751019e4510d7",
+    "size": 28800
+  },
+  "serverMerge": [
+    {
+      "path": "assets/character_rank_p5b.json",
+      "preimageSha256": "6ab2d2c7e95a8c111daaa103b55b2fc7fd0da60e64bd1b64852d3e9235a2d1c3",
+      "sha256": "d1e9722c86ff67cb6a02c04273d17c48c367627ba17a8fa52376dfcc98cf7d25",
+      "oldKeys": 51,
+      "addedKeys": [
+        "169977"
+      ],
+      "newKeys": 52,
+      "preservedOldValues": true
+    },
+    {
+      "path": "assets/cdndata/character_rank_p5b.json",
+      "preimageSha256": "f55989638feae5f684f03f38a663ecb310e031877b5276854159ab63aa7120d0",
+      "sha256": "65623aefd5a3980f817649ed538f762e49510b5a6c68f3d1efb62ac5ed6ea1f5",
+      "oldKeys": 51,
+      "addedKeys": [
+        "169977"
+      ],
+      "newKeys": 52,
+      "preservedOldValues": true
+    },
+    {
+      "path": "assets/cdndata/character_text_rank_p5b.json",
+      "preimageSha256": "5fc762451ad5bfa4ec3eb693be600905f15f0a74bdbf45c40e67afea1cd0e536",
+      "sha256": "ae563ec585b6b441d2e1b06d773f5d19dc15627abbf8d8e18edaa55cf62d1be0",
+      "oldKeys": 51,
+      "addedKeys": [
+        "169977"
+      ],
+      "newKeys": 52,
+      "preservedOldValues": true
+    },
+    {
+      "path": "assets/mana_node_cnmod.json",
+      "preimageSha256": "fc5f579341eb381c6ea1de78b2e2180ffe3d0091f5eca9d43d0960a264bf0d34",
+      "sha256": "66ff3260bc2df3d6c2ad69c59e90f610b2716e9178b4679cc6b26dac9674912f",
+      "oldKeys": 7,
+      "addedKeys": [
+        "169977"
+      ],
+      "newKeys": 8,
+      "preservedOldValues": true
+    },
+    {
+      "path": "assets/mana_board_cnmod.json",
+      "preimageSha256": "a70975943f71338533dd46d8890884443f1fdfbbbc89a143c1fafbd9fe9f4721",
+      "sha256": "238eb90c7759a25c2f3978e2b656ca655ea712d5d5fcac79937637dc7ffae1d8",
+      "oldKeys": 1,
+      "addedKeys": [
+        "169977"
+      ],
+      "newKeys": 2,
+      "preservedOldValues": true
+    }
+  ],
+  "abilityLegality": [
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "key": "1699771",
+      "row": 0,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "key": "1699771",
+      "row": 1,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "key": "1699771",
+      "row": 2,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "key": "1699771",
+      "row": 3,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "key": "1699772",
+      "row": 0,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "key": "1699772",
+      "row": 1,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "key": "1699773",
+      "row": 0,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "key": "1699773",
+      "row": 1,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "key": "1699774",
+      "row": 0,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "key": "1699774",
+      "row": 1,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "key": "1699775",
+      "row": 0,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "key": "1699775",
+      "row": 1,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "key": "1699776",
+      "row": 0,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "key": "1699776",
+      "row": 1,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/ability.orderedmap",
+      "key": "1699776",
+      "row": 2,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/leader_ability.orderedmap",
+      "key": "169977",
+      "row": 0,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/leader_ability.orderedmap",
+      "key": "169977",
+      "row": 1,
+      "problems": []
+    },
+    {
+      "logical": "master/ability/leader_ability.orderedmap",
+      "key": "169977",
+      "row": 2,
+      "problems": []
+    }
+  ],
+  "timelineSounds": [
+    {
+      "member": "production/upload/79/131b45c54a1535fba4cf0e44ccc939714c3d91",
+      "sha256": "2529f892e0f9a16a509346add413de12f8f79cb0ed32e4c59e1b0479a07a9ae5",
+      "soundsArray": true
+    },
+    {
+      "member": "production/upload/0e/9066dfa14bd0c505782aa180c3cc4b60f1ec2b",
+      "sha256": "6a5a0e218064a2d12063149683ebce2d22c6108c5be6b1726735fe5ff18dfcda",
+      "soundsArray": true
+    },
+    {
+      "member": "production/upload/ab/9de84024d7d11a33f7836f3968948a2e0803fc",
+      "sha256": "2fc0680c4a3d8ae1ca49ec22c0b24ba071626cadff573a9ef0423110dd590b33",
+      "soundsArray": true
+    },
+    {
+      "member": "production/upload/33/00ecd291e90357c62d7c56bce29214dd71b812",
+      "sha256": "d8508fbae2649fe08e3eb1697e56e57e273842d07f24406f94b2208950c4fd2e",
+      "soundsArray": true
+    },
+    {
+      "member": "production/upload/90/195c3b5bb2a8884737e4bcda3fc465f2f61c60",
+      "sha256": "d55d98fac24b6da5705cc0c6718eed62c437871368995d6694836645792ee4b0",
+      "soundsArray": true
+    },
+    {
+      "member": "production/upload/a1/87402ed9b6a6da4b52d8fbb90b4e0b67689a6f",
+      "sha256": "a3e526af2fac888567bc54fbf4b659fca512d9920983e7d7b731fa6db033242b",
+      "soundsArray": true
+    },
+    {
+      "member": "production/upload/18/6fc157385f0c603aacf243315a39bb01ec75fb",
+      "sha256": "8f6723a57e2f5003b7f4923c354f338b432e6c658923db2938eb3cac1d9192b9",
+      "soundsArray": true
+    }
+  ],
+  "archives": [
+    {
+      "name": "pinball-1.4.257-1.4.258-1-halloween-inaho.zip",
+      "size": 3721847,
+      "sha256": "1d6a033962ce04468023f21e262ca77e87f70583244ca980e4afb70d8b605379",
+      "members": 16,
+      "files": [
+        "production/android_upload/98/0a2c3084a98d08eab0e335b711f4ab2027e799",
+        "production/android_upload/f8/978006930b9d27f99d1137366be02ff0b7e55a",
+        "production/ios_upload/98/0a2c3084a98d08eab0e335b711f4ab2027e799",
+        "production/ios_upload/f8/978006930b9d27f99d1137366be02ff0b7e55a",
+        "production/medium_upload/09/c9628c8e724fa61d05eb45f60fa83d0303d82b",
+        "production/medium_upload/13/4e690aea8a9a760c0ca3ebb000bb9d6935c38e",
+        "production/medium_upload/1e/3b942edce4a93c57e454cc02b20e3587bd9118",
+        "production/medium_upload/1e/6b95c4cdb1226e5ff4137d70d9c880ded251ee",
+        "production/medium_upload/1f/51ba29dfb07deecb79af67783c99b6a543cdb9",
+        "production/medium_upload/29/fadb7836908f7c62e67a5c413245d7b3bdb0e3",
+        "production/medium_upload/2d/8f3acf5aae3337522b8ec1b044b22cb90ea7bb",
+        "production/medium_upload/4e/a341ea3112fa099e3f2eea311d40384ea7c12b",
+        "production/medium_upload/5d/9d1eaebe39514f40a9850c4964dcb4a103dbc6",
+        "production/medium_upload/64/cb930b4eda097918055d31e4a2dd31635a16b2",
+        "production/medium_upload/73/73de8e2772f8af7e3fb8382188c863d8ac9f04",
+        "production/medium_upload/74/a1cb735e3509214d3bb9d7b196c5f8bba6f0ce"
+      ]
+    },
+    {
+      "name": "pinball-1.4.257-1.4.258-2-halloween-inaho.zip",
+      "size": 4242644,
+      "sha256": "0268ef4782027c7ecd43867664efa51f186bf7c6824476f8a2a976060e561138",
+      "members": 8,
+      "files": [
+        "production/medium_upload/7a/7233f8c4503c2797e163c0c2060bb2819014a1",
+        "production/medium_upload/7b/c5fead137d1b39b2e139db725a412c047e01b6",
+        "production/medium_upload/97/9c14ac39b71986632bcb634f9f907751400ad7",
+        "production/medium_upload/98/47e3c189d3c1eccdfafd42dea445d6bd4d98f9",
+        "production/medium_upload/9c/e0111ac1ac015b01a8f5dd809e8836261b230f",
+        "production/medium_upload/a7/1ba4c376ea968dcef04f66a2729eb11accc3a3",
+        "production/medium_upload/ae/593ad5a533a9fa1b226d27f75feebc34b9d43d",
+        "production/medium_upload/b2/ece23d9de002647e07d9c63c408b1440e7ef94"
+      ]
+    },
+    {
+      "name": "pinball-1.4.257-1.4.258-3-halloween-inaho.zip",
+      "size": 4640283,
+      "sha256": "7f06c79b0f7a7fc7eccb0131b918f6feddb608875fe8d4bda63f2ea19e229b44",
+      "members": 18,
+      "files": [
+        "production/medium_upload/b4/c57189dec5cc3750156ce56da135ed7a07bb1e",
+        "production/medium_upload/b9/c322768b601963641597a767cdfe4ee2f67615",
+        "production/medium_upload/d0/60f709174075f86662114fcd84f423ed87c7a0",
+        "production/medium_upload/da/769f678b7021fe37afe7500f188c505e271448",
+        "production/medium_upload/e4/fdda3138bd2296e4b01b311947111401831338",
+        "production/medium_upload/f6/467c124ee46feaf175991c5b73a43635864289",
+        "production/medium_upload/fb/b6fd0146a86300a7f48c87a88395054b81fe6e",
+        "production/small_upload/09/c9628c8e724fa61d05eb45f60fa83d0303d82b",
+        "production/small_upload/13/4e690aea8a9a760c0ca3ebb000bb9d6935c38e",
+        "production/small_upload/1e/3b942edce4a93c57e454cc02b20e3587bd9118",
+        "production/small_upload/1e/6b95c4cdb1226e5ff4137d70d9c880ded251ee",
+        "production/small_upload/1f/51ba29dfb07deecb79af67783c99b6a543cdb9",
+        "production/small_upload/29/fadb7836908f7c62e67a5c413245d7b3bdb0e3",
+        "production/small_upload/2d/8f3acf5aae3337522b8ec1b044b22cb90ea7bb",
+        "production/small_upload/4e/a341ea3112fa099e3f2eea311d40384ea7c12b",
+        "production/small_upload/5d/9d1eaebe39514f40a9850c4964dcb4a103dbc6",
+        "production/small_upload/64/cb930b4eda097918055d31e4a2dd31635a16b2",
+        "production/small_upload/73/73de8e2772f8af7e3fb8382188c863d8ac9f04"
+      ]
+    },
+    {
+      "name": "pinball-1.4.257-1.4.258-4-halloween-inaho.zip",
+      "size": 3989308,
+      "sha256": "b53620a8e06ea221a12d44394aafa7a8209cb8642d181080aaf1533f6103b573",
+      "members": 21,
+      "files": [
+        "production/small_upload/7a/7233f8c4503c2797e163c0c2060bb2819014a1",
+        "production/small_upload/7b/c5fead137d1b39b2e139db725a412c047e01b6",
+        "production/small_upload/97/9c14ac39b71986632bcb634f9f907751400ad7",
+        "production/small_upload/98/47e3c189d3c1eccdfafd42dea445d6bd4d98f9",
+        "production/small_upload/9c/e0111ac1ac015b01a8f5dd809e8836261b230f",
+        "production/small_upload/ae/593ad5a533a9fa1b226d27f75feebc34b9d43d",
+        "production/small_upload/b2/ece23d9de002647e07d9c63c408b1440e7ef94",
+        "production/small_upload/b4/c57189dec5cc3750156ce56da135ed7a07bb1e",
+        "production/small_upload/b9/c322768b601963641597a767cdfe4ee2f67615",
+        "production/small_upload/d0/60f709174075f86662114fcd84f423ed87c7a0",
+        "production/small_upload/da/769f678b7021fe37afe7500f188c505e271448",
+        "production/small_upload/e4/fdda3138bd2296e4b01b311947111401831338",
+        "production/small_upload/f6/467c124ee46feaf175991c5b73a43635864289",
+        "production/small_upload/fb/b6fd0146a86300a7f48c87a88395054b81fe6e",
+        "production/upload/03/29a41abb86a0e74c5586dd2085726ea28b87cf",
+        "production/upload/04/fa0cbbd3deee1202e71b94081a8c27aef02bbf",
+        "production/upload/0a/19e927b44fb7b83171fd0d806afd2d4530837c",
+        "production/upload/0a/f9d6a15235d141232d956e4a26f0df450cd52e",
+        "production/upload/0c/0270f1ffc66991189037b43d9e21246d8d3298",
+        "production/upload/0e/9066dfa14bd0c505782aa180c3cc4b60f1ec2b",
+        "production/upload/18/6fc157385f0c603aacf243315a39bb01ec75fb"
+      ]
+    },
+    {
+      "name": "pinball-1.4.257-1.4.258-5-halloween-inaho.zip",
+      "size": 3070913,
+      "sha256": "a0a59ef7aa4c752199baf6d0d53f30eadf4ee24f94dcda928aa93f42bdeb2431",
+      "members": 34,
+      "files": [
+        "production/upload/1d/222e5126fc7ebe3f22c7efe87325f73742eb4f",
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/26/a90ba4daaa72b2fc0ad2bbeb03333d02829e46",
+        "production/upload/27/7b65484214436114201ae654fefa60fdc822ea",
+        "production/upload/28/71066d48a3ca604a390c9a6202924caf5b30d1",
+        "production/upload/2d/5cb9b28d18f984a51b345a4d7aab03d77bddfc",
+        "production/upload/33/00ecd291e90357c62d7c56bce29214dd71b812",
+        "production/upload/34/7e6829fc2ca2108ce9dd798454dadd1f240de8",
+        "production/upload/39/7495851ff8d6e98947346bf9c72e9175d35f67",
+        "production/upload/3a/740047cd284e41e5430587447d51470051623f",
+        "production/upload/3b/adba0696cf6c56ed912202946a07be1b610f20",
+        "production/upload/3e/b411841802398d5b21d422579f2eaa65d30c0e",
+        "production/upload/4f/53fcf5f3955456bfc023396567d357b110bee9",
+        "production/upload/4f/6fee304293244647879b763e495082b054e406",
+        "production/upload/57/8872ecbc78561807e6846b3980c5dea980d8ce",
+        "production/upload/5c/6a4f0e2ceb1dbcf60f9b306b0f7bfd0eca55c9",
+        "production/upload/61/67c6d8b55a7dd5adf4ca97f50e9852e6f753c6",
+        "production/upload/62/b34bc9854920cbcb8bbbe6fc069312f088450c",
+        "production/upload/69/839efd56177d9dc68441073c58bee89678f499",
+        "production/upload/6c/8576757512b896a83c6e984fcb024f570f8ac1",
+        "production/upload/74/ce9fd72a683b5206b8731daba76d0aef6c3008",
+        "production/upload/75/33ed17cc08dcb18b6a212acbfdb1a24b0b49cb",
+        "production/upload/75/65aeebd7f91904f9efd3971e610b43fa33beaa",
+        "production/upload/79/131b45c54a1535fba4cf0e44ccc939714c3d91",
+        "production/upload/79/1edb88e51daa6b20b30d7cff304ecc6cd1be82",
+        "production/upload/7a/3bde7d7dd172250fb634fe33ff1f1f2457a318",
+        "production/upload/7a/53422bb98162ec12df411ae26f0a961151b345",
+        "production/upload/80/b90abf347eed357c6d69244ac9b695c20c0dcb",
+        "production/upload/81/113f451d06c5f4c3b92ba1d730cc72e607cb82",
+        "production/upload/82/5eec60ea20e20e80983ed088c8c9946720f6f8",
+        "production/upload/85/db23756d8be451d6622cf3bc19e6b33eca6eb6",
+        "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+        "production/upload/90/195c3b5bb2a8884737e4bcda3fc465f2f61c60",
+        "production/upload/91/79892d704f88d98191c00548bce106402ad5b5"
+      ]
+    },
+    {
+      "name": "pinball-1.4.257-1.4.258-6-halloween-inaho.zip",
+      "size": 1830136,
+      "sha256": "cc230bd1409a5904614d95e006bc7424301f4d158f906770712349b7bde4e05e",
+      "members": 29,
+      "files": [
+        "production/upload/2e/553c4cee2712baf36c0b0af2f2bcf313ef79f8",
+        "production/upload/92/dcd1cc81f29794f0606ffe39f68d4e8740c8fa",
+        "production/upload/9b/b0d7d84554f285ed96db82d7649748b63dd589",
+        "production/upload/9c/4670d44f96129b92a515512be35aedb12415b4",
+        "production/upload/9c/8892f9b74648a319b4aa24ba0d0c8bcb739177",
+        "production/upload/9c/ba7505b6e4979bdd6655049f8e4170dff160e0",
+        "production/upload/a0/146998b19d76aa1eb64743c3add95be44a6b94",
+        "production/upload/a1/87402ed9b6a6da4b52d8fbb90b4e0b67689a6f",
+        "production/upload/a1/ae197d50c4c2948c4dcd5b7b61a4d1dbdd273a",
+        "production/upload/a2/aee38bbc25c52a8e1d76ad375f8b9538a862fa",
+        "production/upload/a9/45b7eb5177d7f0f6a1108dd73cee77a6ff0f9d",
+        "production/upload/aa/abdd2e178d62dba4997034aab8c236a4422154",
+        "production/upload/ab/9de84024d7d11a33f7836f3968948a2e0803fc",
+        "production/upload/ac/b038c35f3048ba7ca07a6a84307b2fb10c041c",
+        "production/upload/b4/a28679b8eeefdbdcbe6071fd4f2ff85e5b3415",
+        "production/upload/b9/132d27178d27f9d91df89fc47e106bbaf2d5b5",
+        "production/upload/bc/0bc800f482670f3ec8a7f2fee9b9deeeca3a04",
+        "production/upload/c1/c2cab749f77c453070245fe47c63f1c066c1d6",
+        "production/upload/c8/7812703b41415efbf13c7606d1c4d166c06ea5",
+        "production/upload/d5/e39fd9c8ac02228888bd2ba75c02678b9a6895",
+        "production/upload/d7/50c2f94f83dd053bfc79039a709f1ec6f766cb",
+        "production/upload/d7/b006c4e9d7563320359e1b92b00055ec427222",
+        "production/upload/dd/8257ebb8746b48d06a6c9a9839d7c695922209",
+        "production/upload/e8/bf13cdd143f93cf481b2dfcdc0b71053745278",
+        "production/upload/ee/267ab1f69137a4758ecbb98cf38482ac5aa0ac",
+        "production/upload/f9/901f1746baab7b9793b32279f035fe62b2d1f1",
+        "production/upload/f9/a6ccb2b055d792064b13558ae37d2afb6e92ba",
+        "production/upload/fb/ab4344a7456dca88f3ce06f01208922f37e395",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ]
+    }
+  ],
+  "runtimeVerified": false,
+  "deviceVerified": false,
+  "deployed": false,
+  "scope": "Sparse declared-row graft and byte-preserved approved resources; offline archive and provenance verification only."
+}
