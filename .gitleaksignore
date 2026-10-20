@@ -2,3 +2,22 @@
 # This exact finding is from its generated JavaScript entering version control.
 # Other commits, locations, and rules remain subject to secret scanning.
 35c9b3043a3414208f6acd40d5f8766a9491e871:out/routes/openapi.js:generic-api-key:25
+
+# Earlier occurrences of the fixed device-token protocol stub above.
+# The generated file has an identical blob; the service route returns the same
+# constant unconditionally. Only these historical findings are excluded.
+67e24dc2fc1545c9dc7788a9c06893edb8a59bd1:out/routes/openapi.js:generic-api-key:25
+c4f2d02cde9721ea8b5374e8f4ee17d6add25a42:src/routes/service.ts:generic-api-key:132
+
+# Fixed SDK configuration replayed by the public /v2/app endpoint.
+# These three findings contain the same client-shared protocol parameter,
+# also documented in docs/routes/v2_app.md, rather than private server keys.
+d9ae4fc092cd93a4458c275673829ac2a24d49f0:src/routes/infodesk.ts:generic-api-key:71
+b0490a37169dd1f38583529acd20f6f71b565584:src/routes/infodesk.ts:generic-api-key:71
+c4f2d02cde9721ea8b5374e8f4ee17d6add25a42:src/routes/infodesk.ts:generic-api-key:80
+
+# Reviewed historical exception: an early fixed /load response capture.
+# The project never consumes this field for authentication and later replaced
+# its value with a placeholder. Original-service validity is unknown, so this
+# is not classified as a proven false positive. Limit to this one old finding.
+28dbefe575679b0b605c3bfeba30ce044aa28414:src/routes/api/index.ts:generic-api-key:2249
