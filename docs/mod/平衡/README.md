@@ -6,6 +6,7 @@
 
 | 版本 | 内容 | 记录 | Release |
 |---|---|---|---|
+| 1.4.262 | 地狱南瓜：弱体耐性、全程不晕、P1 固定轮次表、P2 提速与召唤加快、jack×0.8 / rage×1.5、单人 = 共斗血量 | [地狱南瓜-1.4.262](地狱南瓜-1.4.262.md) | [patches-1.4.262](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.262) |
 | 1.4.261 | 地狱南瓜：P1 三轮随机试炼、血量对标决战机兵、控制免疫、Fever 眩晕一次、Fever 槽 2500、10% 技能瓶 | [地狱南瓜-1.4.261](地狱南瓜-1.4.261.md) | [patches-1.4.261](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.261) |
 | 1.4.260 | 地狱南瓜：万圣糖果 10009701 的 c4 图标切到 item_icon 图集子纹理 | [地狱南瓜-1.4.260](地狱南瓜-1.4.260.md) | [patches-1.4.260](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.260) |
 | 1.4.259 | 地狱南瓜 新降临讨伐「为你奏响的镇魂歌」（活动 300097）：五档、P1–P3 连战、自制地形与 BGM；服务端 7 个 JSON 只追加 | [地狱南瓜-1.4.259](地狱南瓜-1.4.259.md) | [patches-1.4.259](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.259) |
