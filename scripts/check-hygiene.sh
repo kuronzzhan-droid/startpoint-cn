@@ -50,12 +50,23 @@ scan_sensitive_lines() {
     done < <(grep "$grep_flags" "$regex" "$path" 2>/dev/null)
 }
 
-if [ "$MODE" = "--all" ]; then
-    files=$(git ls-files)
-else
-    files=$(git diff --cached --name-only --diff-filter=ACM)
-fi
-[ -z "$files" ] && exit 0
+tracked_paths() {
+    if [ "$MODE" = "--all" ]; then
+        git ls-files -z
+    else
+        git diff --cached --name-only --diff-filter=ACM -z
+    fi
+}
+
+allowed_legacy_artwork() {
+    local path="$1" size="$2" checksum
+    # Preserve this existing reproducible source image only. A renamed image,
+    # changed image or another large binary must still satisfy the normal rule.
+    [ "$path" = "assets/asset-patch/artwork/five-boss/ui-20260911/五重关卡-讨伐页.png" ] || return 1
+    [ "$size" -eq 1397251 ] || return 1
+    checksum=$(sha256sum -- "$path") || return 1
+    [ "${checksum%% *}" = "d93b308b548633fd931000716b71de81a7cf3f278a30e5609cd641fabf5adedb" ]
+}
 
 IP_RE='192\.168\.[0-9]+\.[0-9]+'
 HOME_RE='/Users/[A-Za-z0-9_]+'
@@ -63,7 +74,7 @@ EMAIL_RE='[A-Za-z0-9._%+-]+@(qq|gmail|163|126|outlook|hotmail|foxmail|yahoo)\.co
 # 有意保留的通用占位示例(白名单)
 IP_ALLOW='192\.168\.1\.10'
 
-while IFS= read -r f; do
+while IFS= read -r -d '' f; do
     [ -z "$f" ] && continue
     [ -f "$f" ] || continue
     case "$f" in
@@ -87,7 +98,11 @@ while IFS= read -r f; do
             assets/asset-patch/active/*.zip) ;;   # 部署必需的客户端增量包
             tools/fantasy-gauntlet-mod-tools/WF_PATHLIST_recovered.txt) ;; # MOD 工具路径索引
             *.json|*.csv|*.md) ;;                 # 允许大数据/文档
-            *) note "大文件 >1MB(二进制不应入库,改用生成脚本): $f" ;;
+            *)
+                if ! allowed_legacy_artwork "$f" "$sz"; then
+                    note "大文件 >1MB(二进制不应入库,改用生成脚本): $f"
+                fi
+                ;;
         esac
     fi
 
@@ -97,7 +112,7 @@ while IFS= read -r f; do
         scan_sensitive_lines "home" "家目录路径" "$HOME_RE" "$f"
         scan_sensitive_lines "email" "个人邮箱" "$EMAIL_RE" "$f"
     fi
-done <<< "$files"
+done < <(tracked_paths)
 
 if [ "$fail" -ne 0 ]; then
     echo ""
