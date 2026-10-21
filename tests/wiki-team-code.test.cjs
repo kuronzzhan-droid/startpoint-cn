@@ -14,6 +14,7 @@ const {
 } = require("../src/lib/wiki-team-code-client")
 const {
     nativeBattleParty,
+    loadTeamCodeAssets,
     ownedTeam,
     resolvePublicTeam,
 } = require("../src/lib/wiki-team-code-inventory")
@@ -145,6 +146,44 @@ test("native party conversion rejects a projected empty leader", () => {
             inventory,
             assets,
         ),
+        error => error instanceof TeamCodeError && error.kind === "incompatible",
+    )
+})
+
+test("server roster includes overlay characters", () => {
+    const { characters } = loadTeamCodeAssets()
+    for (const id of [169995, 179981, 129952]) {
+        assert.equal(characters.get(wikiPublicId("c", id)), id)
+    }
+})
+
+test("unknown non-leader IDs leave slots empty; an unknown leader is incompatible", () => {
+    const assets = {
+        characters: new Map([[wikiPublicId("c", 1), 1]]),
+        equipment: new Map([[wikiPublicId("w", 5001), 5001]]),
+        souls: new Map(),
+        maxLevels: { 5001: 1 },
+    }
+    const unknownCharacter = wikiPublicId("c", 999001)
+    const unknownWeapon = wikiPublicId("w", 999002)
+    assert.deepEqual(resolvePublicTeam({
+        main: [wikiPublicId("c", 1), unknownCharacter, ""],
+        unison: [unknownCharacter.replace(/.$/, "0"), "", ""],
+        weapon: [unknownWeapon, wikiPublicId("w", 5001), ""],
+        soul: [wikiPublicId("w", 5001), unknownWeapon, ""],
+    }, assets), {
+        main: [1, null, null],
+        unison: [null, null, null],
+        weapon: [null, 5001, null],
+        soul: [null, null, null],
+    })
+    assert.throws(
+        () => resolvePublicTeam({
+            main: [unknownCharacter, wikiPublicId("c", 1), ""],
+            unison: ["", "", ""],
+            weapon: ["", "", ""],
+            soul: ["", "", ""],
+        }, assets),
         error => error instanceof TeamCodeError && error.kind === "incompatible",
     )
 })
