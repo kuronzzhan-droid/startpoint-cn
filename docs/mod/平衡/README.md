@@ -6,6 +6,7 @@
 
 | 版本 | 内容 | 记录 | Release |
 |---|---|---|---|
+| 1.4.271 | 1.4.270 热修：瓦格纳（超限）觉醒后能力6 次数上限改回无上限 | [角色平衡改动-1.4.271](角色平衡改动-1.4.271.md) | [patches-1.4.271](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.271) |
 | 1.4.270 | 平衡表 10-21 第二批：斩铁、瓦格纳（超限）、光暗龙、杰拉德、中秋稻穗、夏日莉莉丝、护花使龙（超限）、拉姆斯 | [角色平衡改动-1.4.270](角色平衡改动-1.4.270.md) | [patches-1.4.270](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.270) |
 | 1.4.269 | 地狱南瓜：P3 可驱散层 20→30 并按层位轮转补层、四色召唤与鬼火改确定性、P1 第 3 轮 PF 南瓜下移 | [地狱南瓜-1.4.269](地狱南瓜-1.4.269.md) | [patches-1.4.269](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.269) |
 | 1.4.268 | 平衡表 10-21：瓦格纳（超限）觉醒后加强、光暗龙觉醒后去掉视为光/暗属性、万圣稻穗词条合并 | [角色平衡改动-1.4.268](角色平衡改动-1.4.268.md) | [patches-1.4.268](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.268) |

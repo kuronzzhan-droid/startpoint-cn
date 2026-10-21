@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.270",
+  "cdn_version": "1.4.271",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -35460,6 +35460,35 @@
             "production/upload/34/5f586eca9301c64ee4b0894f24ec0a2811b4bd",
             "production/upload/8a/0e4744d791c85d53bf0e8c13e8d2d6196a675e",
             "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+          ]
+        }
+      ],
+      "created_at": "2026-10-21"
+    },
+    {
+      "id": "wagner-limit-fix-1.4.271",
+      "type": "patch",
+      "name": "瓦格纳超限觉醒后能力6 次数上限热修",
+      "description": "",
+      "version": "1.4.271",
+      "depends_on": "1.4.270",
+      "enabled": true,
+      "archive": "pinball-1.4.270-1.4.271-1-wagner-limit-fix-local.zip",
+      "archive_size": 225613,
+      "chain": [
+        "pinball-1.4.270-1.4.271-1-wagner-limit-fix-local.zip"
+      ],
+      "files": [
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.270-1.4.271-1-wagner-limit-fix-local.zip",
+          "size": 225613,
+          "sha256": "dd1c5bdd0b5c55d198f1f6d83a197f3fa9591625b11a28e84a6fbcc972e291e6",
+          "members": 1,
+          "files": [
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001"
           ]
         }
       ],
