@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.269",
+  "cdn_version": "1.4.270",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -35419,6 +35419,47 @@
             "production/upload/f7/7a57284ba0569dd4b8b5c3079fc10f848e8024",
             "production/upload/fe/b904cf0f35e9629f345e5c3040991894c1c741",
             "production/upload/ff/947622b2a08642a265c6df079d67a794d5884d"
+          ]
+        }
+      ],
+      "created_at": "2026-10-21"
+    },
+    {
+      "id": "balance-1021b-1.4.270",
+      "type": "patch",
+      "name": "平衡表10-21第二批：斩铁/瓦格纳超限/光暗龙/杰拉德/中秋稻穗/夏日莉莉丝/护花使龙超限/拉姆斯",
+      "description": "",
+      "version": "1.4.270",
+      "depends_on": "1.4.269",
+      "enabled": true,
+      "archive": "pinball-1.4.269-1.4.270-1-balance-1021b-local.zip",
+      "archive_size": 365814,
+      "chain": [
+        "pinball-1.4.269-1.4.270-1-balance-1021b-local.zip"
+      ],
+      "files": [
+        "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/22/6007411b55a939b001439fc46dc700c797ef60",
+        "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+        "production/upload/34/5f586eca9301c64ee4b0894f24ec0a2811b4bd",
+        "production/upload/8a/0e4744d791c85d53bf0e8c13e8d2d6196a675e",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.269-1.4.270-1-balance-1021b-local.zip",
+          "size": 365814,
+          "sha256": "1afb4a29413ee9a11f7a2ded6ca619c9c5f9ce557f04df3215ba7ad1277614e2",
+          "members": 7,
+          "files": [
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+            "production/upload/22/6007411b55a939b001439fc46dc700c797ef60",
+            "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+            "production/upload/34/5f586eca9301c64ee4b0894f24ec0a2811b4bd",
+            "production/upload/8a/0e4744d791c85d53bf0e8c13e8d2d6196a675e",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
           ]
         }
       ],
