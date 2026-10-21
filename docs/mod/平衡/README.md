@@ -6,6 +6,7 @@
 
 | 版本 | 内容 | 记录 | Release |
 |---|---|---|---|
+| 1.4.267 | 地狱南瓜：P1 出场即免疫、P2 只吃技能、P3 开场清槽与减伤底座、冲击波改比例、P3 狂暴改出招加速 | [地狱南瓜-1.4.267](地狱南瓜-1.4.267.md) | [patches-1.4.267](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.267) |
 | 1.4.266 | 地狱南瓜：修 1.4.262 回归（单人 P1 小南瓜不出、联机 P3 卡顿临时止血） | [地狱南瓜-1.4.266](地狱南瓜-1.4.266.md) | [patches-1.4.266](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.266) |
 | 1.4.265 | 水杰拉德合击强化弹射通用化（需 v35l） | [水杰拉德合击强化弹射通用化-1.4.265](水杰拉德合击强化弹射通用化-1.4.265.md) | [patches-1.4.265](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.265) |
 | 1.4.264 | 平衡表 10-20：万圣露迪改全领域判定、中秋丝缇涅尔在最近敌人前展开月相仪 | [技能形态-1.4.264](技能形态-1.4.264.md) | [patches-1.4.264](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.264) |
