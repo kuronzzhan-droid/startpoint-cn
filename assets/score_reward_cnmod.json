@@ -345,12 +345,12 @@
     { "position": 5, "name": "", "type": 1, "id": 30009716, "rarity": 0.015 }
   ],
   "30009704": [
-    { "position": 1, "name": "", "type": 0, "reward_type": 0, "count": 10, "field5": 1000, "id": 10009701 },
-    { "position": 2, "name": "", "type": 0, "reward_type": 0, "count": 6, "field5": 1000, "id": 10009701 },
+    { "position": 1, "name": "", "type": 0, "reward_type": 0, "count": 6, "field5": 1000, "id": 10009701 },
+    { "position": 2, "name": "", "type": 0, "reward_type": 0, "count": 4, "field5": 1000, "id": 10009701 },
     { "position": 3, "name": "", "type": 0, "reward_type": 0, "count": 1, "field5": 1000, "id": 49 },
-    { "position": 4, "name": "", "type": 1, "id": 30009711, "rarity": 0.045 },
-    { "position": 5, "name": "", "type": 1, "id": 30009715, "rarity": 0.025 },
-    { "position": 6, "name": "", "type": 1, "id": 30009716, "rarity": 0.025 }
+    { "position": 4, "name": "", "type": 1, "id": 30009717, "rarity": 0.095 },
+    { "position": 5, "name": "", "type": 1, "id": 30009715, "rarity": 0.015 },
+    { "position": 6, "name": "", "type": 1, "id": 30009716, "rarity": 0.015 }
   ],
   "30009705": [
     { "position": 1, "name": "", "type": 0, "reward_type": 0, "count": 18, "field5": 1000, "id": 10009701 },

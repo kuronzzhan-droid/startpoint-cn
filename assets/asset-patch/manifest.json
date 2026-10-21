@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.271",
+  "cdn_version": "1.4.272",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -35489,6 +35489,78 @@
           "members": 1,
           "files": [
             "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001"
+          ]
+        }
+      ],
+      "created_at": "2026-10-21"
+    },
+    {
+      "id": "hell-pumpkin-lite-1.4.272",
+      "type": "patch",
+      "name": "南瓜 普通~超级+ 改精简 boss（P1 6 只小南瓜 → P2 原版循环；麻痹逃课）/ 超级+ 掉落 = 地狱 1/3 / 糖果图标换南瓜",
+      "description": "",
+      "version": "1.4.272",
+      "depends_on": "1.4.271",
+      "enabled": true,
+      "archive": "pinball-1.4.271-1.4.272-1-hell-pumpkin-lite-local.zip",
+      "archive_size": 4583321,
+      "chain": [
+        "pinball-1.4.271-1.4.272-1-hell-pumpkin-lite-local.zip",
+        "pinball-1.4.271-1.4.272-2-hell-pumpkin-lite-local.zip"
+      ],
+      "files": [
+        "production/upload/0b/97162ce6d40c473cbac39fa21427688922a48a",
+        "production/upload/19/a4aa442b3249499356e7a3f6370e530bfe355e",
+        "production/upload/27/a29dbf72b95b430644604a034e92613bfa6356",
+        "production/upload/30/2aa1ab0d8711da164f7ba11a5fe99f88b3e105",
+        "production/upload/30/363f8364e183905b2d0b48b8718b7165135bc2",
+        "production/upload/38/1eb2ea405ddca9bac94c1753137e969f10e444",
+        "production/upload/68/6c1822fcaa320f71e8245ae7be98d553b84cb7",
+        "production/upload/6b/ef338822b2c963eb40c67b3d43a3b3f911ad73",
+        "production/upload/82/93e535e806d70640f45950db1fe14ed9482bdf",
+        "production/upload/93/84517efdc7942e62f461b3c496fdd6b6548ffd",
+        "production/upload/93/a3763bc243c7178e1d97a3acd9dab2e9406a5e",
+        "production/upload/9d/1db18b6717747cc57dcf045a6e5274c2d4f256",
+        "production/upload/a1/96e15706a47e7bd6214f62b390a7fa4d58bf35",
+        "production/upload/c0/4d5218e62ed41525b090e6ade228980f96c977",
+        "production/upload/cd/6336795a27ea33bf8d0c5d5a9bfb466bedcf1e",
+        "production/upload/e9/2f6af96345fe458a7626de43fc41cf33a750f7",
+        "production/upload/ec/d8f66b60947ca05643c4080a6cc925c750b9d6",
+        "production/upload/f3/2f3340522ea33fd03f69df4ff8e6ad8695ed64"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.271-1.4.272-1-hell-pumpkin-lite-local.zip",
+          "size": 4203221,
+          "sha256": "fc170d1e2d11c5d14f6d9fe2216081dbdc6ee7f5871a13a57e1a0d5263f0290f",
+          "members": 16,
+          "files": [
+            "production/upload/0b/97162ce6d40c473cbac39fa21427688922a48a",
+            "production/upload/19/a4aa442b3249499356e7a3f6370e530bfe355e",
+            "production/upload/27/a29dbf72b95b430644604a034e92613bfa6356",
+            "production/upload/30/2aa1ab0d8711da164f7ba11a5fe99f88b3e105",
+            "production/upload/30/363f8364e183905b2d0b48b8718b7165135bc2",
+            "production/upload/38/1eb2ea405ddca9bac94c1753137e969f10e444",
+            "production/upload/68/6c1822fcaa320f71e8245ae7be98d553b84cb7",
+            "production/upload/6b/ef338822b2c963eb40c67b3d43a3b3f911ad73",
+            "production/upload/82/93e535e806d70640f45950db1fe14ed9482bdf",
+            "production/upload/93/84517efdc7942e62f461b3c496fdd6b6548ffd",
+            "production/upload/93/a3763bc243c7178e1d97a3acd9dab2e9406a5e",
+            "production/upload/9d/1db18b6717747cc57dcf045a6e5274c2d4f256",
+            "production/upload/a1/96e15706a47e7bd6214f62b390a7fa4d58bf35",
+            "production/upload/c0/4d5218e62ed41525b090e6ade228980f96c977",
+            "production/upload/cd/6336795a27ea33bf8d0c5d5a9bfb466bedcf1e",
+            "production/upload/e9/2f6af96345fe458a7626de43fc41cf33a750f7"
+          ]
+        },
+        {
+          "name": "pinball-1.4.271-1.4.272-2-hell-pumpkin-lite-local.zip",
+          "size": 380100,
+          "sha256": "3155b658fead048d20fe2afdcfc974a36f6568c02c8120a574413e5aa7d14ee0",
+          "members": 2,
+          "files": [
+            "production/upload/ec/d8f66b60947ca05643c4080a6cc925c750b9d6",
+            "production/upload/f3/2f3340522ea33fd03f69df4ff8e6ad8695ed64"
           ]
         }
       ],
