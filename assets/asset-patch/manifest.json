@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.267",
+  "cdn_version": "1.4.268",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -35295,6 +35295,39 @@
             "production/upload/e6/d826a638826de87fc0ca1585bb0865d9b0499e",
             "production/upload/ec/d8f66b60947ca05643c4080a6cc925c750b9d6",
             "production/upload/f5/0cef8a8e349d70d21f3755880bb75dfd22159a"
+          ]
+        }
+      ],
+      "created_at": "2026-10-21"
+    },
+    {
+      "id": "balance-1021-ol-1.4.268",
+      "type": "patch",
+      "name": "平衡表10-21：瓦格纳超限觉醒后调整/光暗龙觉醒后去视为光暗属性/万圣稻穗词条合并",
+      "description": "",
+      "version": "1.4.268",
+      "depends_on": "1.4.267",
+      "enabled": true,
+      "archive": "pinball-1.4.267-1.4.268-1-balance-1021-ol-local.zip",
+      "archive_size": 289011,
+      "chain": [
+        "pinball-1.4.267-1.4.268-1-balance-1021-ol-local.zip"
+      ],
+      "files": [
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.267-1.4.268-1-balance-1021-ol-local.zip",
+          "size": 289011,
+          "sha256": "83bf0a484259c3c6ca5c5501ca96a021df6e38c269d89bc1fb3913b704fe18ce",
+          "members": 3,
+          "files": [
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+            "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
           ]
         }
       ],

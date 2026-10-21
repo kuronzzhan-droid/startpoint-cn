@@ -6,6 +6,7 @@
 
 | 版本 | 内容 | 记录 | Release |
 |---|---|---|---|
+| 1.4.268 | 平衡表 10-21：瓦格纳（超限）觉醒后加强、光暗龙觉醒后去掉视为光/暗属性、万圣稻穗词条合并 | [角色平衡改动-1.4.268](角色平衡改动-1.4.268.md) | [patches-1.4.268](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.268) |
 | 1.4.267 | 地狱南瓜：P1 出场即免疫、P2 只吃技能、P3 开场清槽与减伤底座、冲击波改比例、P3 狂暴改出招加速 | [地狱南瓜-1.4.267](地狱南瓜-1.4.267.md) | [patches-1.4.267](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.267) |
 | 1.4.266 | 地狱南瓜：修 1.4.262 回归（单人 P1 小南瓜不出、联机 P3 卡顿临时止血） | [地狱南瓜-1.4.266](地狱南瓜-1.4.266.md) | [patches-1.4.266](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.266) |
 | 1.4.265 | 水杰拉德合击强化弹射通用化（需 v35l） | [水杰拉德合击强化弹射通用化-1.4.265](水杰拉德合击强化弹射通用化-1.4.265.md) | [patches-1.4.265](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.265) |
