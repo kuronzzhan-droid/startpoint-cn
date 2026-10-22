@@ -6,6 +6,7 @@
 
 | 版本 | 内容 | 记录 | Release |
 |---|---|---|---|
+| 1.4.274 | 普通深渊 / EX boss 血量改为 10% / 20%；莫弥亚、瓦格纳（超限）与万圣稻穗平衡调整 | [深渊血量与平衡-1.4.274](深渊血量与平衡-1.4.274.md) | [patches-1.4.274](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.274) |
 | 1.4.273 | 平衡表 10-22 第三批：瓦格纳（超限）、水杰拉德、杰拉尔、水灵幽魂、红蝮蛇与 6 只小动物 | [角色平衡改动-1.4.273](角色平衡改动-1.4.273.md) | [patches-1.4.273](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.273) |
 | 1.4.272 | 地狱南瓜：普通至超级+ 精简机制、血量与掉落调整，糖果图标换南瓜；地狱档不变 | [地狱南瓜-1.4.272](地狱南瓜-1.4.272.md) | [patches-1.4.272](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.272) |
 | 1.4.271 | 1.4.270 热修：瓦格纳（超限）觉醒后能力6 次数上限改回无上限 | [角色平衡改动-1.4.271](角色平衡改动-1.4.271.md) | [patches-1.4.271](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.271) |

@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.273",
+  "cdn_version": "1.4.274",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -35640,6 +35640,63 @@
         }
       ],
       "created_at": "2026-10-22"
+    },
+    {
+      "id": "abyss-hp-balance-1023-1.4.274",
+      "type": "patch",
+      "name": "深渊boss血量（普通×0.1/EX×0.2）+ 平衡表10-22晚：莫弥亚/瓦格纳超限/万圣稻穗",
+      "description": "",
+      "version": "1.4.274",
+      "depends_on": "1.4.273",
+      "enabled": true,
+      "archive": "pinball-1.4.273-1.4.274-1-abyss-hp-balance-1023-local.zip",
+      "archive_size": 1012476,
+      "chain": [
+        "pinball-1.4.273-1.4.274-1-abyss-hp-balance-1023-local.zip"
+      ],
+      "files": [
+        "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+        "production/upload/0a/ec155b261ae7801d4c9a9bb579f88fe5bcc324",
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+        "production/upload/34/144d765ffab508cd2cfab3e4e81ea3850b32a6",
+        "production/upload/5e/5621f87dd916a488b2f1375360f392f0ae1b9b",
+        "production/upload/61/67c6d8b55a7dd5adf4ca97f50e9852e6f753c6",
+        "production/upload/79/803e2597b620f65a03f07fb0057a68189a51da",
+        "production/upload/7c/0159ffd7078028b1c2eec135beb1884f7224fb",
+        "production/upload/88/a45ff781c0e1681e92e5c621480c11a2084458",
+        "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+        "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
+        "production/upload/b6/595dedd9cfa79b7e6eccab25dd9a2a81b066a2",
+        "production/upload/fa/fac25a2ef8055d0c35f961a7df55ac6259f943",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.273-1.4.274-1-abyss-hp-balance-1023-local.zip",
+          "size": 1012476,
+          "sha256": "c83e485d384a303a392705c88fa8c180be4bbc3d71392bbd97c6bab2685aa02c",
+          "members": 15,
+          "files": [
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+            "production/upload/0a/ec155b261ae7801d4c9a9bb579f88fe5bcc324",
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+            "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+            "production/upload/34/144d765ffab508cd2cfab3e4e81ea3850b32a6",
+            "production/upload/5e/5621f87dd916a488b2f1375360f392f0ae1b9b",
+            "production/upload/61/67c6d8b55a7dd5adf4ca97f50e9852e6f753c6",
+            "production/upload/79/803e2597b620f65a03f07fb0057a68189a51da",
+            "production/upload/7c/0159ffd7078028b1c2eec135beb1884f7224fb",
+            "production/upload/88/a45ff781c0e1681e92e5c621480c11a2084458",
+            "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+            "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
+            "production/upload/b6/595dedd9cfa79b7e6eccab25dd9a2a81b066a2",
+            "production/upload/fa/fac25a2ef8055d0c35f961a7df55ac6259f943",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+          ]
+        }
+      ],
+      "created_at": "2026-10-23"
     }
   ],
   "generated_for": "official active chain"
