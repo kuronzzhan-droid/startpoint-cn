@@ -6,6 +6,7 @@
 
 | 版本 | 内容 | 记录 | Release |
 |---|---|---|---|
+| 1.4.273 | 平衡表 10-22 第三批：瓦格纳（超限）、水杰拉德、杰拉尔、水灵幽魂、红蝮蛇与 6 只小动物 | [角色平衡改动-1.4.273](角色平衡改动-1.4.273.md) | [patches-1.4.273](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.273) |
 | 1.4.272 | 地狱南瓜：普通至超级+ 精简机制、血量与掉落调整，糖果图标换南瓜；地狱档不变 | [地狱南瓜-1.4.272](地狱南瓜-1.4.272.md) | [patches-1.4.272](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.272) |
 | 1.4.271 | 1.4.270 热修：瓦格纳（超限）觉醒后能力6 次数上限改回无上限 | [角色平衡改动-1.4.271](角色平衡改动-1.4.271.md) | [patches-1.4.271](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.271) |
 | 1.4.270 | 平衡表 10-21 第二批：斩铁、瓦格纳（超限）、光暗龙、杰拉德、中秋稻穗、夏日莉莉丝、护花使龙（超限）、拉姆斯 | [角色平衡改动-1.4.270](角色平衡改动-1.4.270.md) | [patches-1.4.270](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.270) |
