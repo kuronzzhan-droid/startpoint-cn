@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.274",
+  "cdn_version": "1.4.275",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -35692,6 +35692,75 @@
             "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
             "production/upload/b6/595dedd9cfa79b7e6eccab25dd9a2a81b066a2",
             "production/upload/fa/fac25a2ef8055d0c35f961a7df55ac6259f943",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+          ]
+        }
+      ],
+      "created_at": "2026-10-23"
+    },
+    {
+      "id": "balance-1023-1.4.275",
+      "type": "patch",
+      "name": "平衡表10-23：光暗龙抗降/白狼杰拉德/中秋稻穗/星川莉莉/克劳斯/水杰拉德/瓦格纳超限",
+      "description": "",
+      "version": "1.4.275",
+      "depends_on": "1.4.274",
+      "enabled": true,
+      "archive": "pinball-1.4.274-1.4.275-1-balance-1023-local.zip",
+      "archive_size": 948847,
+      "chain": [
+        "pinball-1.4.274-1.4.275-1-balance-1023-local.zip"
+      ],
+      "files": [
+        "production/upload/03/0f45131c3f232b69d86bbdf874273f0876e96c",
+        "production/upload/03/d2cf46a0dce90bf3ae48fd6ec833e401337991",
+        "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+        "production/upload/16/5beb53b4c3d9a59d28cfa6d1efb26392e2e0f0",
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/28/00caee11599d6a9d1a128cd52f6306bc2fbcc2",
+        "production/upload/2e/673c3b0cdf5c6a17d7f47f12033fc634321cc7",
+        "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+        "production/upload/34/144d765ffab508cd2cfab3e4e81ea3850b32a6",
+        "production/upload/3a/056fd35480305582484527ab26039e979aee31",
+        "production/upload/47/98be368c8a6fda2bb10efe13ec03044745e966",
+        "production/upload/4e/8984cff846b987f4f859848e7bd77118aca6cc",
+        "production/upload/5b/961e623f731f6f6d95df9e7d5b8a6cd722937e",
+        "production/upload/5c/e3947e98b9e5a653cb3beea95011690c2aa963",
+        "production/upload/6f/527862d0369576c26604ef53efa80c4d53880b",
+        "production/upload/79/803e2597b620f65a03f07fb0057a68189a51da",
+        "production/upload/88/a45ff781c0e1681e92e5c621480c11a2084458",
+        "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+        "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
+        "production/upload/95/078a19a6a975257ff454092ee8bca6d00cb07e",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.274-1.4.275-1-balance-1023-local.zip",
+          "size": 948847,
+          "sha256": "4ac19928055560d428ce206efe82864d5a0035210fdbdc2d6d69180ee250ef87",
+          "members": 21,
+          "files": [
+            "production/upload/03/0f45131c3f232b69d86bbdf874273f0876e96c",
+            "production/upload/03/d2cf46a0dce90bf3ae48fd6ec833e401337991",
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+            "production/upload/16/5beb53b4c3d9a59d28cfa6d1efb26392e2e0f0",
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+            "production/upload/28/00caee11599d6a9d1a128cd52f6306bc2fbcc2",
+            "production/upload/2e/673c3b0cdf5c6a17d7f47f12033fc634321cc7",
+            "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+            "production/upload/34/144d765ffab508cd2cfab3e4e81ea3850b32a6",
+            "production/upload/3a/056fd35480305582484527ab26039e979aee31",
+            "production/upload/47/98be368c8a6fda2bb10efe13ec03044745e966",
+            "production/upload/4e/8984cff846b987f4f859848e7bd77118aca6cc",
+            "production/upload/5b/961e623f731f6f6d95df9e7d5b8a6cd722937e",
+            "production/upload/5c/e3947e98b9e5a653cb3beea95011690c2aa963",
+            "production/upload/6f/527862d0369576c26604ef53efa80c4d53880b",
+            "production/upload/79/803e2597b620f65a03f07fb0057a68189a51da",
+            "production/upload/88/a45ff781c0e1681e92e5c621480c11a2084458",
+            "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+            "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
+            "production/upload/95/078a19a6a975257ff454092ee8bca6d00cb07e",
             "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
           ]
         }
