@@ -6,6 +6,7 @@
 
 | 版本 | 内容 | 记录 | Release |
 |---|---|---|---|
+| 1.4.279 | 平衡表 10-24 下午：莫弥亚直击与暖机、墨斯伊克龙族加攻与充能、午后奈芙提姆队长技与协力球、普莉姆拉进化技能倍率 | [角色平衡改动-1.4.279](角色平衡改动-1.4.279.md) | [patches-1.4.279](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.279) |
 | 1.4.278 | 1.4.277 热修：诺瓦 / 蕾薇乘区副本全队加成角色组空串改为全部角色，修「null 角色」不生效 | [新角色-诺瓦蕾薇乘区副本热修-1.4.278](新角色-诺瓦蕾薇乘区副本热修-1.4.278.md) | [patches-1.4.278](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.278) |
 | 1.4.277 | 新角色：诺瓦 / 蕾薇 乘区副本 22 人（光暗 × 乘区 5/6/7/8/9 + 共鸣特别版），去主位限制 | [新角色-诺瓦蕾薇乘区副本-1.4.277](新角色-诺瓦蕾薇乘区副本-1.4.277.md) | [patches-1.4.277](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.277) |
 | 1.4.276 | 平衡表 10-24：白虎小重做；莫弥亚暗队直击基础倍率、普莉姆拉进化技能直击化与赛瑞斯调整；冲浪板补 3 秒 CT；八岐大蛇超级+ 血量减半 | [角色平衡改动-1.4.276](角色平衡改动-1.4.276.md) | [patches-1.4.276](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.276) |

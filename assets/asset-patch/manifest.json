@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.278",
+  "cdn_version": "1.4.279",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -35992,6 +35992,47 @@
           "members": 2,
           "files": [
             "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+          ]
+        }
+      ],
+      "created_at": "2026-10-24"
+    },
+    {
+      "id": "balance-1024b-1.4.279",
+      "type": "patch",
+      "name": "平衡表10-24下午：莫弥亚/墨斯伊克/午后奈芙提姆/普莉姆拉",
+      "description": "",
+      "version": "1.4.279",
+      "depends_on": "1.4.278",
+      "enabled": true,
+      "archive": "pinball-1.4.278-1.4.279-1-balance-1024b-local.zip",
+      "archive_size": 383675,
+      "chain": [
+        "pinball-1.4.278-1.4.279-1-balance-1024b-local.zip"
+      ],
+      "files": [
+        "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+        "production/upload/49/a3532ebf8c2e1fc913cdbb0dd4136bf8a7fee4",
+        "production/upload/5e/5621f87dd916a488b2f1375360f392f0ae1b9b",
+        "production/upload/6e/4dd6850c01c218a8408c59f26f44a75c4cb469",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.278-1.4.279-1-balance-1024b-local.zip",
+          "size": 383675,
+          "sha256": "6d409b9c52743e5464b52d686172c710e5a7d194608fdce4857f2b34941394aa",
+          "members": 7,
+          "files": [
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+            "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+            "production/upload/49/a3532ebf8c2e1fc913cdbb0dd4136bf8a7fee4",
+            "production/upload/5e/5621f87dd916a488b2f1375360f392f0ae1b9b",
+            "production/upload/6e/4dd6850c01c218a8408c59f26f44a75c4cb469",
             "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
           ]
         }
