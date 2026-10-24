@@ -310,5 +310,137 @@
     "name": "稻穗",
     "rarity": 5,
     "skill_count": 6
+  },
+  "151801": {
+    "element": 4,
+    "name": "诺瓦・乘区7技能",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "151802": {
+    "element": 4,
+    "name": "诺瓦・乘区5强化弹射",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "151803": {
+    "element": 4,
+    "name": "诺瓦・乘区6直击",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "151804": {
+    "element": 4,
+    "name": "诺瓦・乘区8能力",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "151805": {
+    "element": 4,
+    "name": "诺瓦・乘区9全伤害",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "161801": {
+    "element": 5,
+    "name": "诺瓦・乘区7技能",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "161802": {
+    "element": 5,
+    "name": "诺瓦・乘区5强化弹射",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "161803": {
+    "element": 5,
+    "name": "诺瓦・乘区6直击",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "161804": {
+    "element": 5,
+    "name": "诺瓦・乘区8能力",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "161805": {
+    "element": 5,
+    "name": "诺瓦・乘区9全伤害",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "151806": {
+    "element": 4,
+    "name": "诺瓦・共鸣",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "151811": {
+    "element": 4,
+    "name": "蕾薇・乘区7技能",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "151812": {
+    "element": 4,
+    "name": "蕾薇・乘区5强化弹射",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "151813": {
+    "element": 4,
+    "name": "蕾薇・乘区6直击",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "151814": {
+    "element": 4,
+    "name": "蕾薇・乘区8能力",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "151815": {
+    "element": 4,
+    "name": "蕾薇・乘区9全伤害",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "161811": {
+    "element": 5,
+    "name": "蕾薇・乘区7技能",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "161812": {
+    "element": 5,
+    "name": "蕾薇・乘区5强化弹射",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "161813": {
+    "element": 5,
+    "name": "蕾薇・乘区6直击",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "161814": {
+    "element": 5,
+    "name": "蕾薇・乘区8能力",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "161815": {
+    "element": 5,
+    "name": "蕾薇・乘区9全伤害",
+    "rarity": 5,
+    "skill_count": 6
+  },
+  "161816": {
+    "element": 5,
+    "name": "蕾薇・共鸣",
+    "rarity": 5,
+    "skill_count": 6
   }
 }
