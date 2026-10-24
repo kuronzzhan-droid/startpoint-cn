@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.281",
+  "cdn_version": "1.4.282",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -36251,6 +36251,35 @@
             "production/upload/f7/40ce91e48c22ce925e9b14991f5dae2dfe3fc7",
             "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5",
             "production/upload/ff/f4dd420538f5b693f8270917c31f2cee581ef1"
+          ]
+        }
+      ],
+      "created_at": "2026-10-25"
+    },
+    {
+      "id": "boss-limit-text-1.4.282",
+      "type": "patch",
+      "name": "(测试服) 头目角色能力1头目限制文案缩短（27角色，同白虎写法）",
+      "description": "",
+      "version": "1.4.282",
+      "depends_on": "1.4.281",
+      "enabled": true,
+      "archive": "pinball-1.4.281-1.4.282-1-boss-limit-text-local.zip",
+      "archive_size": 93693,
+      "chain": [
+        "pinball-1.4.281-1.4.282-1-boss-limit-text-local.zip"
+      ],
+      "files": [
+        "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.281-1.4.282-1-boss-limit-text-local.zip",
+          "size": 93693,
+          "sha256": "3a057540b3d86e681de21b97635948e9bf51db173e995625a3597bd95e251deb",
+          "members": 1,
+          "files": [
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149"
           ]
         }
       ],
