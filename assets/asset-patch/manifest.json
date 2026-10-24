@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.280",
+  "cdn_version": "1.4.281",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -36200,6 +36200,61 @@
           ]
         }
       ]
+    },
+    {
+      "id": "balance-1025-1.4.281",
+      "type": "patch",
+      "name": "平衡表10-24晚：秋灯稻穗/白虎/莫弥亚/拉姆斯/克劳斯/贝尔赛蒂亚/八岐大蛇超级+血量分配",
+      "description": "",
+      "version": "1.4.281",
+      "depends_on": "1.4.280",
+      "enabled": true,
+      "archive": "pinball-1.4.280-1.4.281-1-balance-1025-local.zip",
+      "archive_size": 986656,
+      "chain": [
+        "pinball-1.4.280-1.4.281-1-balance-1025-local.zip"
+      ],
+      "files": [
+        "production/upload/03/df3c27f25730f4214f99a57c368c01e7fcc2e6",
+        "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+        "production/upload/08/c61a292c08efdd0abceacb9e07b58dfdf8d25d",
+        "production/upload/10/bef75cbc6690bf34be235d4ca03ebe74f9116c",
+        "production/upload/19/a4aa442b3249499356e7a3f6370e530bfe355e",
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/7c/0159ffd7078028b1c2eec135beb1884f7224fb",
+        "production/upload/87/9d5ba316e9af19234460308cb3fdce5c5ffc75",
+        "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+        "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
+        "production/upload/f3/bc2fbc0d85e19b42c6403dab9752e2dde51504",
+        "production/upload/f7/40ce91e48c22ce925e9b14991f5dae2dfe3fc7",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5",
+        "production/upload/ff/f4dd420538f5b693f8270917c31f2cee581ef1"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.280-1.4.281-1-balance-1025-local.zip",
+          "size": 986656,
+          "sha256": "370765f148ac844c630b991c4136e66ceb88e085949c86bc238cebffbb628e19",
+          "members": 14,
+          "files": [
+            "production/upload/03/df3c27f25730f4214f99a57c368c01e7fcc2e6",
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+            "production/upload/08/c61a292c08efdd0abceacb9e07b58dfdf8d25d",
+            "production/upload/10/bef75cbc6690bf34be235d4ca03ebe74f9116c",
+            "production/upload/19/a4aa442b3249499356e7a3f6370e530bfe355e",
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+            "production/upload/7c/0159ffd7078028b1c2eec135beb1884f7224fb",
+            "production/upload/87/9d5ba316e9af19234460308cb3fdce5c5ffc75",
+            "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+            "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
+            "production/upload/f3/bc2fbc0d85e19b42c6403dab9752e2dde51504",
+            "production/upload/f7/40ce91e48c22ce925e9b14991f5dae2dfe3fc7",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5",
+            "production/upload/ff/f4dd420538f5b693f8270917c31f2cee581ef1"
+          ]
+        }
+      ],
+      "created_at": "2026-10-25"
     }
   ],
   "generated_for": "official active chain"
