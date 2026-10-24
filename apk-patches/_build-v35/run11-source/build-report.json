@@ -1,0 +1,1144 @@
+{
+  "input_sha256": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384",
+  "output_sha256": "4f7b894b11e1f377a91e1d4c9b132bd676f850bc6d49f48268fe9ecb7aaaa46b",
+  "changed": {
+    "MemberImpl/wfxHealSample": {
+      "body": 92657,
+      "before": "62bd04d56ce006807be873e98e7f0789ef90953329fb598dc280ce89d9e48a3f",
+      "after": "58a752c30cf7ec32ad3adb60f87874e1842d6585a257e0addc4aaca918f7d06f",
+      "before_header": [
+        3,
+        9,
+        1,
+        2
+      ],
+      "after_header": [
+        6,
+        10,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 94,
+        "max_stack": 6,
+        "max_scope": 2,
+        "locals_used": 10,
+        "unreachable": 0,
+        "backward_labels": 0,
+        "exceptions": 0,
+        "header": [
+          6,
+          10,
+          1,
+          2
+        ]
+      },
+      "insertions": [
+        [
+          2,
+          12,
+          "enter"
+        ],
+        [
+          77,
+          4,
+          "enter"
+        ],
+        [
+          85,
+          4,
+          "enter"
+        ]
+      ]
+    },
+    "UniqueConditionLogic/wfxSuperPreload": {
+      "body": 92647,
+      "before": "2f69b6f0ec4c5a5912dd92c1fc909405bdd0391d2ed00ed0b46c6875d41a4f7a",
+      "after": "b12034d239cf2ddb9b6a0ffb5126843aa6141f962c8b09172f341ac31d949d65",
+      "before_header": [
+        5,
+        6,
+        1,
+        2
+      ],
+      "after_header": [
+        5,
+        6,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 116,
+        "max_stack": 5,
+        "max_scope": 2,
+        "locals_used": 6,
+        "unreachable": 0,
+        "backward_labels": 2,
+        "exceptions": 0,
+        "header": [
+          5,
+          6,
+          1,
+          2
+        ]
+      },
+      "insertions": [
+        [
+          10,
+          5,
+          "forbid"
+        ]
+      ]
+    },
+    "ConditionSlot$/wfxSpec": {
+      "body": 92601,
+      "before": "91ca69969bd16ae753041acdb6982603f6c3dc685c2145bd8cf96c33e369dd12",
+      "after": "41a35474919597c0284697979a51213f2daf14b71d8dae19a77f53a35439b20a",
+      "before_header": [
+        5,
+        9,
+        1,
+        2
+      ],
+      "after_header": [
+        5,
+        9,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 192,
+        "max_stack": 5,
+        "max_scope": 2,
+        "locals_used": 9,
+        "unreachable": 0,
+        "backward_labels": 0,
+        "exceptions": 0,
+        "header": [
+          5,
+          9,
+          1,
+          2
+        ]
+      },
+      "insertions": [
+        [
+          102,
+          10,
+          "enter"
+        ],
+        [
+          155,
+          10,
+          "enter"
+        ]
+      ]
+    },
+    "MemberImpl/scheduleDirectAttack": {
+      "body": 60192,
+      "before": "7f0d02acfc116523f829a639e717fea6e53ce30b61c0f40085082c4b0caf1e07",
+      "after": "478a6b73bfbf2479c1a50b4ab00350b67e775a604c6b148f360de4e41d13a620",
+      "before_header": [
+        110,
+        45,
+        1,
+        2
+      ],
+      "after_header": [
+        110,
+        46,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 661,
+        "max_stack": 110,
+        "max_scope": 2,
+        "locals_used": 46,
+        "unreachable": 0,
+        "backward_labels": 2,
+        "exceptions": 0,
+        "header": [
+          110,
+          46,
+          1,
+          2
+        ]
+      },
+      "insertions": [
+        [
+          149,
+          20,
+          "enter"
+        ]
+      ]
+    },
+    "MemberImpl$/wfxHealDamageTick": {
+      "body": 92654,
+      "before": "f67cf76ffee19cd81e3729613ae451cf1fb508946282e35f9471b80d5ef25b87",
+      "after": "d7083b3386ecff0b6b2d7cf233cd61817c8b0522e8e5bbef4fe3e9698d347a78",
+      "before_header": [
+        4,
+        7,
+        1,
+        2
+      ],
+      "after_header": [
+        4,
+        7,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 65,
+        "max_stack": 4,
+        "max_scope": 2,
+        "locals_used": 7,
+        "unreachable": 0,
+        "backward_labels": 1,
+        "exceptions": 0,
+        "header": [
+          4,
+          7,
+          1,
+          2
+        ]
+      },
+      "insertions": [
+        [
+          2,
+          3,
+          "enter"
+        ]
+      ]
+    }
+  },
+  "added": [
+    {
+      "name": "wfxDirectTargetCount",
+      "label": "MemberImpl/wfxDirectTargetCount",
+      "body": 92678,
+      "sha256": "2a6e5d7e46343f17c27be273572e3fb23c67b7cab7bfbf68ade71cac454afce7",
+      "header": [
+        4,
+        9,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 82,
+        "max_stack": 4,
+        "max_scope": 2,
+        "locals_used": 9,
+        "unreachable": 0,
+        "backward_labels": 1,
+        "exceptions": 0,
+        "header": [
+          4,
+          9,
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "name": "wfxHealAnyValue",
+      "label": "MemberImpl/wfxHealAnyValue",
+      "body": 92679,
+      "sha256": "a2c8bd90f1910ffffe47d13889dfcf762b6634557d37ae464c2c24a27718e5c9",
+      "header": [
+        4,
+        8,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 62,
+        "max_stack": 4,
+        "max_scope": 2,
+        "locals_used": 8,
+        "unreachable": 0,
+        "backward_labels": 0,
+        "exceptions": 0,
+        "header": [
+          4,
+          8,
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "name": "wfxHealAnyDamage",
+      "label": "MemberImpl/wfxHealAnyDamage",
+      "body": 92680,
+      "sha256": "cdf2ddfbbb046e9e47f7d709179b9190b1ba08ec28626ff8e0b6055ed20d3de3",
+      "header": [
+        5,
+        10,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 59,
+        "max_stack": 5,
+        "max_scope": 2,
+        "locals_used": 10,
+        "unreachable": 0,
+        "backward_labels": 1,
+        "exceptions": 0,
+        "header": [
+          5,
+          10,
+          1,
+          2
+        ]
+      },
+      "second_edition_sha256": "460581f38184615d7581f23a6182b96de844531a29298fa818db20f0e0f23ad3",
+      "ct_insertions": [
+        [
+          2,
+          8,
+          "enter"
+        ]
+      ]
+    },
+    {
+      "name": "wfxHealAnyFever",
+      "label": "MemberImpl/wfxHealAnyFever",
+      "body": 92681,
+      "sha256": "9385881f5dc668120084eebc000e8ff46811b94449bb252614ea9eef1b8e3606",
+      "header": [
+        6,
+        7,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 39,
+        "max_stack": 6,
+        "max_scope": 2,
+        "locals_used": 7,
+        "unreachable": 0,
+        "backward_labels": 1,
+        "exceptions": 0,
+        "header": [
+          6,
+          7,
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "name": "wfxHealAnyMembers",
+      "label": "MemberImpl/wfxHealAnyMembers",
+      "body": 92682,
+      "sha256": "961b241ea71136c4b14c2a72bbba5212032f50780d63712a413c4025f9363d30",
+      "header": [
+        2,
+        6,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 61,
+        "max_stack": 2,
+        "max_scope": 2,
+        "locals_used": 6,
+        "unreachable": 0,
+        "backward_labels": 1,
+        "exceptions": 0,
+        "header": [
+          2,
+          6,
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "name": "wfxHealAnySample",
+      "label": "MemberImpl/wfxHealAnySample",
+      "body": 92683,
+      "sha256": "42c38daf8af19f7cfeb177e138e132c444fbecc793de848c3d5579b2d10dc1d9",
+      "header": [
+        5,
+        13,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 81,
+        "max_stack": 5,
+        "max_scope": 2,
+        "locals_used": 13,
+        "unreachable": 0,
+        "backward_labels": 1,
+        "exceptions": 0,
+        "header": [
+          5,
+          13,
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "name": "wfxHealAnyCTQueue",
+      "label": "MemberImpl$/wfxHealAnyCTQueue",
+      "body": 92684,
+      "sha256": "0bd48c6f034ee07bf51ca47777d6b5925ff85412b568012085258ac9c0b44295",
+      "header": [
+        9,
+        5,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 52,
+        "max_stack": 9,
+        "max_scope": 2,
+        "locals_used": 5,
+        "unreachable": 0,
+        "backward_labels": 1,
+        "exceptions": 0,
+        "header": [
+          9,
+          5,
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "name": "wfxHealAnyCTTick",
+      "label": "MemberImpl$/wfxHealAnyCTTick",
+      "body": 92685,
+      "sha256": "c1d4c47055c245892c63df3462408b29bf5895eb9e1dec6286999cdc143c1c40",
+      "header": [
+        7,
+        10,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 104,
+        "max_stack": 7,
+        "max_scope": 2,
+        "locals_used": 10,
+        "unreachable": 0,
+        "backward_labels": 3,
+        "exceptions": 0,
+        "header": [
+          7,
+          10,
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "name": "wfxHealAnyCTRecord",
+      "label": "MemberImpl/wfxHealAnyCTRecord",
+      "body": 92686,
+      "sha256": "395727ad2b8f691cd2283284a236c2806a28f6b7d80875aebdea5714e4d222ec",
+      "header": [
+        6,
+        15,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 162,
+        "max_stack": 6,
+        "max_scope": 2,
+        "locals_used": 15,
+        "unreachable": 0,
+        "backward_labels": 2,
+        "exceptions": 0,
+        "header": [
+          6,
+          15,
+          1,
+          2
+        ]
+      }
+    }
+  ],
+  "traits": [
+    [
+      "pinball.scene.battle.battle.squad.member::MemberImpl",
+      "wfxDirectTargetCount",
+      false
+    ],
+    [
+      "pinball.scene.battle.battle.squad.member::MemberImpl",
+      "wfxHealAnyValue",
+      false
+    ],
+    [
+      "pinball.scene.battle.battle.squad.member::MemberImpl",
+      "wfxHealAnyDamage",
+      false
+    ],
+    [
+      "pinball.scene.battle.battle.squad.member::MemberImpl",
+      "wfxHealAnyFever",
+      false
+    ],
+    [
+      "pinball.scene.battle.battle.squad.member::MemberImpl",
+      "wfxHealAnyMembers",
+      false
+    ],
+    [
+      "pinball.scene.battle.battle.squad.member::MemberImpl",
+      "wfxHealAnySample",
+      false
+    ],
+    [
+      "pinball.scene.battle.battle.squad.member::MemberImpl",
+      "wfxHealAnyCTBattle",
+      true
+    ],
+    [
+      "pinball.scene.battle.battle.squad.member::MemberImpl",
+      "wfxHealAnyCTPending",
+      true
+    ],
+    [
+      "pinball.scene.battle.battle.squad.member::MemberImpl",
+      "wfxHealAnyCTQueue",
+      true
+    ],
+    [
+      "pinball.scene.battle.battle.squad.member::MemberImpl",
+      "wfxHealAnyCTTick",
+      true
+    ],
+    [
+      "pinball.scene.battle.battle.squad.member::MemberImpl",
+      "wfxHealAnyCTRecord",
+      false
+    ]
+  ],
+  "pool": {
+    "added_strings": [
+      "wfxDirectTargetCount",
+      "wfxHealAnyValue",
+      "wfxHealAnyDamage",
+      "wfxHealAnyFever",
+      "wfxHealAnyMembers",
+      "wfxHealAnySample",
+      "wfxHealAnyCTBattle",
+      "wfxHealAnyCTPending",
+      "wfxHealAnyCTQueue",
+      "wfxHealAnyCTTick",
+      "wfxHealAnyCTRecord"
+    ],
+    "added_multinames": [
+      "wfxDirectTargetCount",
+      "wfxHealAnyValue",
+      "wfxHealAnyDamage",
+      "wfxHealAnyFever",
+      "wfxHealAnyMembers",
+      "wfxHealAnySample",
+      "wfxHealAnyCTBattle",
+      "wfxHealAnyCTPending",
+      "wfxHealAnyCTQueue",
+      "wfxHealAnyCTTick",
+      "wfxHealAnyCTRecord"
+    ],
+    "added_ints": [],
+    "base_string_count": 94171,
+    "base_multiname_count": 69612,
+    "base_int_count": 5782
+  },
+  "abcs": {
+    "boot_ffc6": {
+      "changed": {
+        "MemberImpl/wfxHealSample": {
+          "body": 92657,
+          "before": "62bd04d56ce006807be873e98e7f0789ef90953329fb598dc280ce89d9e48a3f",
+          "after": "58a752c30cf7ec32ad3adb60f87874e1842d6585a257e0addc4aaca918f7d06f",
+          "before_header": [
+            3,
+            9,
+            1,
+            2
+          ],
+          "after_header": [
+            6,
+            10,
+            1,
+            2
+          ],
+          "static_check": {
+            "instructions": 94,
+            "max_stack": 6,
+            "max_scope": 2,
+            "locals_used": 10,
+            "unreachable": 0,
+            "backward_labels": 0,
+            "exceptions": 0,
+            "header": [
+              6,
+              10,
+              1,
+              2
+            ]
+          },
+          "insertions": [
+            [
+              2,
+              12,
+              "enter"
+            ],
+            [
+              77,
+              4,
+              "enter"
+            ],
+            [
+              85,
+              4,
+              "enter"
+            ]
+          ]
+        },
+        "UniqueConditionLogic/wfxSuperPreload": {
+          "body": 92647,
+          "before": "2f69b6f0ec4c5a5912dd92c1fc909405bdd0391d2ed00ed0b46c6875d41a4f7a",
+          "after": "b12034d239cf2ddb9b6a0ffb5126843aa6141f962c8b09172f341ac31d949d65",
+          "before_header": [
+            5,
+            6,
+            1,
+            2
+          ],
+          "after_header": [
+            5,
+            6,
+            1,
+            2
+          ],
+          "static_check": {
+            "instructions": 116,
+            "max_stack": 5,
+            "max_scope": 2,
+            "locals_used": 6,
+            "unreachable": 0,
+            "backward_labels": 2,
+            "exceptions": 0,
+            "header": [
+              5,
+              6,
+              1,
+              2
+            ]
+          },
+          "insertions": [
+            [
+              10,
+              5,
+              "forbid"
+            ]
+          ]
+        },
+        "ConditionSlot$/wfxSpec": {
+          "body": 92601,
+          "before": "91ca69969bd16ae753041acdb6982603f6c3dc685c2145bd8cf96c33e369dd12",
+          "after": "41a35474919597c0284697979a51213f2daf14b71d8dae19a77f53a35439b20a",
+          "before_header": [
+            5,
+            9,
+            1,
+            2
+          ],
+          "after_header": [
+            5,
+            9,
+            1,
+            2
+          ],
+          "static_check": {
+            "instructions": 192,
+            "max_stack": 5,
+            "max_scope": 2,
+            "locals_used": 9,
+            "unreachable": 0,
+            "backward_labels": 0,
+            "exceptions": 0,
+            "header": [
+              5,
+              9,
+              1,
+              2
+            ]
+          },
+          "insertions": [
+            [
+              102,
+              10,
+              "enter"
+            ],
+            [
+              155,
+              10,
+              "enter"
+            ]
+          ]
+        },
+        "MemberImpl/scheduleDirectAttack": {
+          "body": 60192,
+          "before": "7f0d02acfc116523f829a639e717fea6e53ce30b61c0f40085082c4b0caf1e07",
+          "after": "478a6b73bfbf2479c1a50b4ab00350b67e775a604c6b148f360de4e41d13a620",
+          "before_header": [
+            110,
+            45,
+            1,
+            2
+          ],
+          "after_header": [
+            110,
+            46,
+            1,
+            2
+          ],
+          "static_check": {
+            "instructions": 661,
+            "max_stack": 110,
+            "max_scope": 2,
+            "locals_used": 46,
+            "unreachable": 0,
+            "backward_labels": 2,
+            "exceptions": 0,
+            "header": [
+              110,
+              46,
+              1,
+              2
+            ]
+          },
+          "insertions": [
+            [
+              149,
+              20,
+              "enter"
+            ]
+          ]
+        },
+        "MemberImpl$/wfxHealDamageTick": {
+          "body": 92654,
+          "before": "f67cf76ffee19cd81e3729613ae451cf1fb508946282e35f9471b80d5ef25b87",
+          "after": "d7083b3386ecff0b6b2d7cf233cd61817c8b0522e8e5bbef4fe3e9698d347a78",
+          "before_header": [
+            4,
+            7,
+            1,
+            2
+          ],
+          "after_header": [
+            4,
+            7,
+            1,
+            2
+          ],
+          "static_check": {
+            "instructions": 65,
+            "max_stack": 4,
+            "max_scope": 2,
+            "locals_used": 7,
+            "unreachable": 0,
+            "backward_labels": 1,
+            "exceptions": 0,
+            "header": [
+              4,
+              7,
+              1,
+              2
+            ]
+          },
+          "insertions": [
+            [
+              2,
+              3,
+              "enter"
+            ]
+          ]
+        }
+      },
+      "added": [
+        {
+          "name": "wfxDirectTargetCount",
+          "label": "MemberImpl/wfxDirectTargetCount",
+          "body": 92678,
+          "sha256": "2a6e5d7e46343f17c27be273572e3fb23c67b7cab7bfbf68ade71cac454afce7",
+          "header": [
+            4,
+            9,
+            1,
+            2
+          ],
+          "static_check": {
+            "instructions": 82,
+            "max_stack": 4,
+            "max_scope": 2,
+            "locals_used": 9,
+            "unreachable": 0,
+            "backward_labels": 1,
+            "exceptions": 0,
+            "header": [
+              4,
+              9,
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "name": "wfxHealAnyValue",
+          "label": "MemberImpl/wfxHealAnyValue",
+          "body": 92679,
+          "sha256": "a2c8bd90f1910ffffe47d13889dfcf762b6634557d37ae464c2c24a27718e5c9",
+          "header": [
+            4,
+            8,
+            1,
+            2
+          ],
+          "static_check": {
+            "instructions": 62,
+            "max_stack": 4,
+            "max_scope": 2,
+            "locals_used": 8,
+            "unreachable": 0,
+            "backward_labels": 0,
+            "exceptions": 0,
+            "header": [
+              4,
+              8,
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "name": "wfxHealAnyDamage",
+          "label": "MemberImpl/wfxHealAnyDamage",
+          "body": 92680,
+          "sha256": "cdf2ddfbbb046e9e47f7d709179b9190b1ba08ec28626ff8e0b6055ed20d3de3",
+          "header": [
+            5,
+            10,
+            1,
+            2
+          ],
+          "static_check": {
+            "instructions": 59,
+            "max_stack": 5,
+            "max_scope": 2,
+            "locals_used": 10,
+            "unreachable": 0,
+            "backward_labels": 1,
+            "exceptions": 0,
+            "header": [
+              5,
+              10,
+              1,
+              2
+            ]
+          },
+          "second_edition_sha256": "460581f38184615d7581f23a6182b96de844531a29298fa818db20f0e0f23ad3",
+          "ct_insertions": [
+            [
+              2,
+              8,
+              "enter"
+            ]
+          ]
+        },
+        {
+          "name": "wfxHealAnyFever",
+          "label": "MemberImpl/wfxHealAnyFever",
+          "body": 92681,
+          "sha256": "9385881f5dc668120084eebc000e8ff46811b94449bb252614ea9eef1b8e3606",
+          "header": [
+            6,
+            7,
+            1,
+            2
+          ],
+          "static_check": {
+            "instructions": 39,
+            "max_stack": 6,
+            "max_scope": 2,
+            "locals_used": 7,
+            "unreachable": 0,
+            "backward_labels": 1,
+            "exceptions": 0,
+            "header": [
+              6,
+              7,
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "name": "wfxHealAnyMembers",
+          "label": "MemberImpl/wfxHealAnyMembers",
+          "body": 92682,
+          "sha256": "961b241ea71136c4b14c2a72bbba5212032f50780d63712a413c4025f9363d30",
+          "header": [
+            2,
+            6,
+            1,
+            2
+          ],
+          "static_check": {
+            "instructions": 61,
+            "max_stack": 2,
+            "max_scope": 2,
+            "locals_used": 6,
+            "unreachable": 0,
+            "backward_labels": 1,
+            "exceptions": 0,
+            "header": [
+              2,
+              6,
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "name": "wfxHealAnySample",
+          "label": "MemberImpl/wfxHealAnySample",
+          "body": 92683,
+          "sha256": "42c38daf8af19f7cfeb177e138e132c444fbecc793de848c3d5579b2d10dc1d9",
+          "header": [
+            5,
+            13,
+            1,
+            2
+          ],
+          "static_check": {
+            "instructions": 81,
+            "max_stack": 5,
+            "max_scope": 2,
+            "locals_used": 13,
+            "unreachable": 0,
+            "backward_labels": 1,
+            "exceptions": 0,
+            "header": [
+              5,
+              13,
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "name": "wfxHealAnyCTQueue",
+          "label": "MemberImpl$/wfxHealAnyCTQueue",
+          "body": 92684,
+          "sha256": "0bd48c6f034ee07bf51ca47777d6b5925ff85412b568012085258ac9c0b44295",
+          "header": [
+            9,
+            5,
+            1,
+            2
+          ],
+          "static_check": {
+            "instructions": 52,
+            "max_stack": 9,
+            "max_scope": 2,
+            "locals_used": 5,
+            "unreachable": 0,
+            "backward_labels": 1,
+            "exceptions": 0,
+            "header": [
+              9,
+              5,
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "name": "wfxHealAnyCTTick",
+          "label": "MemberImpl$/wfxHealAnyCTTick",
+          "body": 92685,
+          "sha256": "c1d4c47055c245892c63df3462408b29bf5895eb9e1dec6286999cdc143c1c40",
+          "header": [
+            7,
+            10,
+            1,
+            2
+          ],
+          "static_check": {
+            "instructions": 104,
+            "max_stack": 7,
+            "max_scope": 2,
+            "locals_used": 10,
+            "unreachable": 0,
+            "backward_labels": 3,
+            "exceptions": 0,
+            "header": [
+              7,
+              10,
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "name": "wfxHealAnyCTRecord",
+          "label": "MemberImpl/wfxHealAnyCTRecord",
+          "body": 92686,
+          "sha256": "395727ad2b8f691cd2283284a236c2806a28f6b7d80875aebdea5714e4d222ec",
+          "header": [
+            6,
+            15,
+            1,
+            2
+          ],
+          "static_check": {
+            "instructions": 162,
+            "max_stack": 6,
+            "max_scope": 2,
+            "locals_used": 15,
+            "unreachable": 0,
+            "backward_labels": 2,
+            "exceptions": 0,
+            "header": [
+              6,
+              15,
+              1,
+              2
+            ]
+          }
+        }
+      ],
+      "traits": [
+        [
+          "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "wfxDirectTargetCount",
+          false
+        ],
+        [
+          "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "wfxHealAnyValue",
+          false
+        ],
+        [
+          "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "wfxHealAnyDamage",
+          false
+        ],
+        [
+          "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "wfxHealAnyFever",
+          false
+        ],
+        [
+          "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "wfxHealAnyMembers",
+          false
+        ],
+        [
+          "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "wfxHealAnySample",
+          false
+        ],
+        [
+          "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "wfxHealAnyCTBattle",
+          true
+        ],
+        [
+          "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "wfxHealAnyCTPending",
+          true
+        ],
+        [
+          "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "wfxHealAnyCTQueue",
+          true
+        ],
+        [
+          "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "wfxHealAnyCTTick",
+          true
+        ],
+        [
+          "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "wfxHealAnyCTRecord",
+          false
+        ]
+      ],
+      "pool": {
+        "added_strings": [
+          "wfxDirectTargetCount",
+          "wfxHealAnyValue",
+          "wfxHealAnyDamage",
+          "wfxHealAnyFever",
+          "wfxHealAnyMembers",
+          "wfxHealAnySample",
+          "wfxHealAnyCTBattle",
+          "wfxHealAnyCTPending",
+          "wfxHealAnyCTQueue",
+          "wfxHealAnyCTTick",
+          "wfxHealAnyCTRecord"
+        ],
+        "added_multinames": [
+          "wfxDirectTargetCount",
+          "wfxHealAnyValue",
+          "wfxHealAnyDamage",
+          "wfxHealAnyFever",
+          "wfxHealAnyMembers",
+          "wfxHealAnySample",
+          "wfxHealAnyCTBattle",
+          "wfxHealAnyCTPending",
+          "wfxHealAnyCTQueue",
+          "wfxHealAnyCTTick",
+          "wfxHealAnyCTRecord"
+        ],
+        "added_ints": [],
+        "base_string_count": 94171,
+        "base_multiname_count": 69612,
+        "base_int_count": 5782
+      }
+    }
+  },
+  "groups": {
+    "direct_count": {
+      "changed": [
+        "ConditionSlot$/wfxSpec",
+        "MemberImpl/scheduleDirectAttack"
+      ],
+      "added": [
+        "MemberImpl/wfxDirectTargetCount"
+      ]
+    },
+    "heal_any": {
+      "changed": [
+        "MemberImpl$/wfxHealDamageTick",
+        "MemberImpl/wfxHealSample",
+        "UniqueConditionLogic/wfxSuperPreload"
+      ],
+      "added": [
+        "MemberImpl/wfxHealAnyValue",
+        "MemberImpl/wfxHealAnyDamage",
+        "MemberImpl/wfxHealAnyFever",
+        "MemberImpl/wfxHealAnyMembers",
+        "MemberImpl/wfxHealAnySample",
+        "MemberImpl$/wfxHealAnyCTQueue",
+        "MemberImpl$/wfxHealAnyCTTick",
+        "MemberImpl/wfxHealAnyCTRecord"
+      ]
+    }
+  }
+}

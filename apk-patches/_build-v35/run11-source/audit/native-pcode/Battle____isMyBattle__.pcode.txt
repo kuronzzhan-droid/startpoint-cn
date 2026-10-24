@@ -1,0 +1,6 @@
+# Battle/__isMyBattle__; body=50915; sha256=b4f0f6af5999065877876061c3b95b8a14634ed5e6f700d8537d3469b703b728; header=[1, 1, 1, 2]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: findproperty ['primary']
+#0003 ofs0006: getproperty ['primary']
+#0004 ofs000a: returnvalue []

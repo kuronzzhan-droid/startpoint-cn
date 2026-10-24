@@ -1,0 +1,20 @@
+{
+  "capability": "heal-fever-v1",
+  "output_swf_sha256": "383f49b060718055a80080309aed92f150073d321c8a237f748a025c32050ed4",
+  "pcode": [
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl/wfxHealFever",
+      "body": 92649,
+      "code_sha256": "48af4ba4546b75523d301d7758cacd136d5cf1d6326a9e0a601e20fb8a05001d",
+      "header": [
+        5,
+        7,
+        1,
+        2
+      ],
+      "file": "MemberImpl__wfxHealFever.pcode.txt"
+    }
+  ],
+  "scope": "本地离线草稿；未写入正式apk-patches；AIR/真机/联机未核实"
+}

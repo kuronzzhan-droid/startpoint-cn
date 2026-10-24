@@ -1,0 +1,101 @@
+{
+  "OwnedOverLimitLogic/getOwnAwakingCrystalToOverLimit": {
+    "sha": "2be9af1fa92ed8bb56a5ee90b9eb511f7f94c6941f38a223e406207e17be61b2",
+    "header": [
+      3,
+      12,
+      1,
+      2
+    ]
+  },
+  "OwnedOverLimitLogic/getAwakingCrystalToOverLimit": {
+    "sha": "2e584914a2f67e60a268e62502f8e7af84a6a6e1e38af444b8de79c446470b34",
+    "header": [
+      3,
+      13,
+      1,
+      2
+    ]
+  },
+  "OwnedOverLimitLogic/getOverLimitState": {
+    "sha": "98f9c7121ac212729daaf7a0e9b740e2de275dcc26e2536ad4d8e1d63d023fd0",
+    "header": [
+      3,
+      12,
+      1,
+      2
+    ]
+  },
+  "OwnedCharacterLogic/getPossibleOverLimitCountByItem": {
+    "sha": "7fa65be8a2181e01a0a17b400d74fecbd0565c2600be4e78a7be8d96a94e837e",
+    "header": [
+      3,
+      6,
+      1,
+      2
+    ]
+  },
+  "OverLimitWindow/getOverLimitState": {
+    "sha": "ae683cc1f5574ac7b415c43cf779ea642535cd6a66531aa1ee51a150d1492068",
+    "header": [
+      4,
+      3,
+      1,
+      2
+    ]
+  },
+  "OverLimitWindow/run": {
+    "sha": "b96160fc0f1046a50cf78065ed8d907861a2a65fb13c4f365abad60cbd4b2a7e",
+    "header": [
+      11,
+      12,
+      1,
+      2
+    ]
+  },
+  "OverLimitWindow/getStatusInformation": {
+    "sha": "c64d19bbf7957fd9490406d4d251abb9d1e16eeb3062e1b49148f56afbd29aa4",
+    "header": [
+      10,
+      7,
+      1,
+      2
+    ]
+  },
+  "ExpodOverLimitByItemDialog/getDescription": {
+    "sha": "a0468818a62ad753f0d18a755b29af19c61ebf5c3cd4a145c7a5a8cfc8a8be55",
+    "header": [
+      9,
+      2,
+      1,
+      2
+    ]
+  },
+  "GeneralCharacterLogic/getPedestalImagePath": {
+    "sha": "1c5905b65f624a24c01cf58adeeb90c300a9e9ae965577c4b295c093f0be117d",
+    "header": [
+      3,
+      3,
+      1,
+      2
+    ]
+  },
+  "GeneralCharacterLogic/getHalfPedestalImagePath": {
+    "sha": "0dc8e515702c2c3c77cca60549da8e063eec0785f89a57e503b5ddf41be6a28a",
+    "header": [
+      3,
+      3,
+      1,
+      2
+    ]
+  },
+  "OverLimitWindowView/onApplyOverLimitStatusInformation": {
+    "sha": "26c35555780e7eb6fb2581dd769f9483e74ff903512be4f5af1baad597724b06",
+    "header": [
+      10,
+      9,
+      1,
+      2
+    ]
+  }
+}

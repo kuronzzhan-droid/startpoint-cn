@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "output_swf_sha256": "4f7b894b11e1f377a91e1d4c9b132bd676f850bc6d49f48268fe9ecb7aaaa46b",
+  "checks": [
+    "qualified-zero-weight-channel-opens-shared-30-frame-window",
+    "zero-weight-window-does-not-start-ct-before-first-damage",
+    "same-owner-same-ct-distinct-classifications-share-window-and-cooldown",
+    "staggered-holders-have-independent-expiry-330-and-390",
+    "synchronous-heal-during-first-emission-sees-ct-no-hoard-fever-preserved"
+  ],
+  "count": 5,
+  "source_locks": {
+    "audit/ct_review.py": "2886a917f58dc3dadc9833c87e171ea27bc247c9b3e23a47da973d026a77851d",
+    "bootstrap.py": "596ee4b5e52ff7cd5a287df9ee744de01b0aea17bd7b20586e28eb8ff5051ef3",
+    "heal_any/runtime.py": "718a20d4e6c1dbd9c1086d7a903738140fb46dbc91cb2a97ff2068c28c7ddecc",
+    "vendor/abcfmt.py": "2d35f0fb5476bde3a400756ece1467a4dce665fd9c9e7618e1c6815cb5f51f82",
+    "vendor/asm.py": "c033836d0a7aa109b81509c1cb0731be82fc543c76d8d3b43881f9dab7d81e87",
+    "vendor/avm_ext.py": "64ea1485b8a044b5dcc23e9fcb76bd59eef10f6298b679c05e371414974d4f5f",
+    "vendor/avm_fi.py": "f6e224c2045966095041801e0135a62a27e4b210d70c915c2ffd48a1d0806111",
+    "vendor/avm_interp.py": "c7f356e58acf570a09e9bad2e7aff427d03b3dd61d5cc6f70d998185632f6580",
+    "vendor/avm_mini.py": "b169c2127de6d536229a0bf620729c00d4d02120dae36a8062acada6ff679da1",
+    "vendor/bodies.py": "daa069c919b46d25bf6b25e367f1ac2744ffd64f76d6d0469e0eacf42d0d25d8",
+    "vendor/common.py": "45c60c75e3d022d434006d606bbbfb3850fed8f79de0d3638190769b1dec9b9e",
+    "vendor/opwalk.py": "c3e17d85438d5f1a62320c811b77bdfd7f475a123e0e8ea2ac759062bb9d6080",
+    "vendor/perf2_core.py": "b5d50c6ae613e22773f8dd969df0faf80a3afe4a1aa1bef790b561ceb94c4a8a",
+    "vendor/swfabc.py": "4f1c3ea93d71af0d98dba0467cb38fe205cbfc5eef5de93633db8f838aac7528",
+    "vendor/swftags.py": "81d253a0c27ada1f4e377384484fcadd8bf8a360e4d93b456483ef1128ea6b06"
+  },
+  "readonly_dependency_locks": {
+    "D:\\WF\\v35-generic-20261018\\run2\\overflow\\base_runtime.py": "35ae9c3dea16a74bb7f0e65a991b9f36681264642a893e42a59f80f2a9a17fff",
+    "D:\\WF\\v35-generic-20261018\\run2\\overflow\\runtime.py": "7630e293d0d4ce90fa754f2ec6360cd436bd085645af2cc54a4f0ee27efe964e",
+    "D:\\WF\\v35-generic-20261018\\run3\\superfever\\base_runtime.py": "a84a6e62f9fac524b260cc148818b85e221ef1bca55f53c5a395179f31875f4b",
+    "D:\\WF\\v35-generic-20261018\\run3\\superfever\\runtime.py": "869cd9ce6e255b004b1c5d91158924d1910fe708979cdad58c878ded1c20a046",
+    "D:\\WF\\v35-generic-20261018\\run6\\heal_damage\\runtime.py": "3f2f1813b1380a7c40b6bca9700513dd73a8f684756fd63a7b3c8caf75da0836",
+    "D:\\WF\\v35-generic-20261018\\run6\\heal_fever\\runtime.py": "ee1aa416fb8562f1a223f9364e7bcef06550f836fa053846e0b722f763a961f0"
+  },
+  "sources_unchanged_during_verification": true,
+  "scope": "真实字节码离线边界复审；未验证完整AIR设备表现，未裁定未确认的混配参数"
+}

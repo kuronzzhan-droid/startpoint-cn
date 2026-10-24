@@ -1,0 +1,134 @@
+"""公共框架独立只读探针；文件/报告只写direct_count。"""
+import copy
+import hashlib
+import json
+import os
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+sys.dont_write_bytecode = True
+os.environ['PYTHONDONTWRITEBYTECODE'] = '1'
+os.environ['PYTHONIOENCODING'] = 'utf-8'
+sys.path.insert(0, str(ROOT))
+import bootstrap
+from build import construct, release_record, verify_input
+from framework import sha
+from swfabc import SwfAbc
+from common import abc_tags
+from static_check import check_body
+from make_registry import ENTRIES, implementation_group
+from make_archive import archive_sources
+from target_contract import EXPECTED_CHANGED, EXPECTED_ADDED
+import asm
+import bodies
+
+FILES = ['bootstrap.py','build.py','chain_replay.py','verify_framework.py','integrity.py',
+         'make_archive.py','make_registry.py','delivery_check.py','verify.py','source_guard.py',
+         'framework_evidence.py','framework.py','target_contract.py','multiabc.py','static_check.py']
+FILES += [p.relative_to(ROOT).as_posix() for group in ('direct_count','heal_any')
+          for p in sorted((ROOT/group).glob('*.py'))]
+sources = {name: sha((ROOT/name).read_bytes()) for name in FILES}
+checks = []
+
+
+def eq(name, actual, expected):
+    assert actual == expected, (name, actual, expected)
+    checks.append({'name': name, 'actual': actual, 'expected': expected})
+
+
+def reject(name, func):
+    try:
+        func()
+    except (ValueError, asm.AsmError):
+        checks.append({'name': name, 'rejected': True})
+    else:
+        raise AssertionError('unexpected acceptance: ' + name)
+
+
+bootstrap.check_baseline()
+eq('baseline_sha_file_matches_fixed', (bootstrap.BASE.parent/'v35j.swf.sha256').read_text().split()[0], bootstrap.BASE_SHA)
+reject('outside_run11_output', lambda: bootstrap.checked_output_path(ROOT.parent/'review-forbidden.swf'))
+reject('traversal_outside_output', lambda: bootstrap.checked_output_path(ROOT/'direct_count/../../review-forbidden.swf'))
+eq('inside_output_path', bootstrap.checked_output_path(HERE/'test.swf'), HERE/'test.swf')
+raw, editor = construct()
+record = release_record(raw, editor)
+candidate = HERE/'framework-review-candidate.swf'
+candidate.write_bytes(raw)
+eq('constructed_baseline_record', record['baseline_swf_sha256'], bootstrap.BASE_SHA)
+eq('verify_before', verify_input(bootstrap.BASE, record), 'ready')
+eq('verify_after', verify_input(candidate, record), 'already_present')
+eq('exact_changed_contract', set(editor.report), EXPECTED_CHANGED)
+eq('exact_added_contract', {item['label'] for item in editor.new_methods}, EXPECTED_ADDED)
+before, after = SwfAbc(bootstrap.BASE).abc, SwfAbc(candidate).abc
+for label, item in editor.report.items():
+    index = bodies.resolve(after, label)
+    undone = asm.unsplice_many(after.bodies[index][5], item['insertions'])
+    edit = item.get('operand_edit')
+    if edit:
+        instructions = asm.decode(undone)
+        instructions[edit['instruction']].args = [edit['before']]
+        undone = asm.encode(instructions)[0]
+    eq('undo_insertions.'+label, sha(undone), sha(before.bodies[index][5]))
+    for kind in ('body', 'header'):
+        original = editor.abc.bodies[index]
+        mutant = copy.deepcopy(editor.original_bodies[index])
+        if kind == 'body':
+            mutant[5] = b'\x02' + mutant[5]
+        else:
+            mutant[1] += 1
+        editor.abc.bodies[index] = mutant
+        try:
+            reject('input_method_double_lock.'+label+'.'+kind,
+                   lambda: editor.replace(label, editor.original_bodies[index][5]))
+        finally:
+            editor.abc.bodies[index] = original
+for label in EXPECTED_CHANGED | EXPECTED_ADDED:
+    result = check_body(after, after.bodies[bodies.resolve(after, label)])
+    eq('static_no_unreachable.'+label, result['unreachable'], 0)
+for key in ('ints','uints','doubles','namespaces','ns_sets'):
+    eq('numeric_and_namespace_pool_preserved.'+key, repr(getattr(before,key)), repr(getattr(after,key)))
+old_tags, new_tags = abc_tags(bootstrap.BASE.read_bytes()), abc_tags(raw)
+eq('abc_count', len(new_tags), len(old_tags))
+eq('abc_order', [tag[0] for tag in new_tags], [tag[0] for tag in old_tags])
+eq('other_abcs_byte_identical', all(a[4] == b[4] for a,b in zip(old_tags,new_tags) if a[0] != b'boot_ffc6'), True)
+mutation = bytearray(raw)
+mutation[3] = (mutation[3] + 1) % 256
+unknown = HERE/'framework-review-unknown.swf'
+unknown.write_bytes(mutation)
+reject('unknown_envelope_despite_methods_match', lambda: verify_input(unknown,record))
+import chain_replay
+eq('exact_ten_predecessor_stages', len(chain_replay.STAGES), 10)
+for number, (suffix, expected) in enumerate(chain_replay.STAGES, 1):
+    prior = ROOT.parent/f'run{number}'
+    prior_lock = json.loads((prior/'release-locks.json').read_text(encoding='utf-8'))
+    eq('chain_stage_sha.'+str(number), prior_lock['output_swf_sha256'], expected)
+    eq('chain_stage_file.'+str(number), sha((prior/('v35'+suffix+'.swf')).read_bytes()), expected)
+eq('registry_three_capabilities', len(ENTRIES), 3)
+eq('registry_group_routes', [implementation_group(k) for k in ENTRIES], ['direct_count','heal_any','heal_any'])
+paths = archive_sources()
+eq('archive_excludes_work_and_self', all(not ({'work','apk-patches-additions','__pycache__'} & set(p.relative_to(ROOT).parts)) for p in paths), True)
+eq('archive_includes_both_groups', all(any(group in p.relative_to(ROOT).parts for p in paths) for group in ('direct_count','heal_any')), True)
+eq('review_sources_unchanged', sources, {name: sha((ROOT/name).read_bytes()) for name in FILES})
+findings = []
+if (ROOT/'v35k.swf').exists() and (ROOT/'release-locks.json').exists():
+    final_sha = sha((ROOT/'v35k.swf').read_bytes())
+    frozen = json.loads((ROOT/'release-locks.json').read_text(encoding='utf-8'))
+    mismatch = {name:{'frozen':frozen['methods'].get(name,{}).get('after'),'current':entry.get('after')}
+                for name,entry in record['methods'].items() if frozen['methods'].get(name) != entry}
+    if final_sha != sha(raw) or frozen != record:
+        findings.append({'severity':'blocking_for_delivery','item':'正式入口/锁与当前源码重放不一致，需重建及重跑验收',
+                         'entry_sha256':final_sha,'current_build_sha256':sha(raw),'changed_methods':mismatch})
+    else:
+        eq('current_entry_matches_replay', final_sha, sha(raw))
+        eq('current_release_record_matches', frozen, record)
+report = {'status':'pass' if not findings else 'requires_rebuild', 'review_scope':'公共框架只读交叉审阅，生成仅限direct_count',
+          'candidate_sha256':sha(raw), 'checks':checks, 'count':len(checks),
+          'source_locks':sources,
+          'pending':['正式SWF/归档/累计registry/总验收尚未发布；交付入口实际执行由root最终执行',
+                     '本探针不重复十一轮耗时串联；核对十个固定历史SHA及其release-lock，完整串联由总验收完成'],
+          'findings':findings+[{'severity':'fixed','item':'direct_count验收报告字段与总验收接口不一致，已在本组verify补齐兼容字段和源码锁'},
+                      {'severity':'minor','item':'build.py chained_input失败文本前十一轮应为前十轮，已通知root'}]}
+(HERE/'cross-review-framework.json').write_text(json.dumps(report,ensure_ascii=False,indent=2,default=lambda x:sorted(x) if isinstance(x,set) else str(x))+'\n',encoding='utf-8')
+print(json.dumps({'status':report['status'],'count':len(checks),'candidate_sha256':sha(raw)}))
