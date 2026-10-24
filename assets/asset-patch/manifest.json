@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.275",
+  "cdn_version": "1.4.276",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -35766,6 +35766,59 @@
         }
       ],
       "created_at": "2026-10-23"
+    },
+    {
+      "id": "balance-1024-1.4.276",
+      "type": "patch",
+      "name": "平衡表10-24：白虎小重做/莫弥亚/普莉姆拉/赛瑞斯/冲浪板武器/八岐大蛇超级+血量",
+      "description": "",
+      "version": "1.4.276",
+      "depends_on": "1.4.275",
+      "enabled": true,
+      "archive": "pinball-1.4.275-1.4.276-1-balance-1024-local.zip",
+      "archive_size": 729242,
+      "chain": [
+        "pinball-1.4.275-1.4.276-1-balance-1024-local.zip"
+      ],
+      "files": [
+        "production/upload/06/410142bfd428bcdcab1f6e0599b60ac1f039c0",
+        "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+        "production/upload/49/a3532ebf8c2e1fc913cdbb0dd4136bf8a7fee4",
+        "production/upload/5a/9034b60624cef700b59e9300b67c6aa2517774",
+        "production/upload/7c/0159ffd7078028b1c2eec135beb1884f7224fb",
+        "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+        "production/upload/d2/ef852bba91d9c7e0cb366246550877b39fb33e",
+        "production/upload/d6/a23f83f176b05f715a8504b8fc0fc1ffaff068",
+        "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64",
+        "production/upload/ed/84198b533e9f8604278e36c4aa85d04cd9ff6d",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.275-1.4.276-1-balance-1024-local.zip",
+          "size": 729242,
+          "sha256": "b9e4ae0a4c8d160f3389fdacb425d7fbc20c68a61f00753b5d993e65e44ad944",
+          "members": 13,
+          "files": [
+            "production/upload/06/410142bfd428bcdcab1f6e0599b60ac1f039c0",
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+            "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+            "production/upload/49/a3532ebf8c2e1fc913cdbb0dd4136bf8a7fee4",
+            "production/upload/5a/9034b60624cef700b59e9300b67c6aa2517774",
+            "production/upload/7c/0159ffd7078028b1c2eec135beb1884f7224fb",
+            "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+            "production/upload/d2/ef852bba91d9c7e0cb366246550877b39fb33e",
+            "production/upload/d6/a23f83f176b05f715a8504b8fc0fc1ffaff068",
+            "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64",
+            "production/upload/ed/84198b533e9f8604278e36c4aa85d04cd9ff6d",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+          ]
+        }
+      ],
+      "created_at": "2026-10-24"
     }
   ],
   "generated_for": "official active chain"
