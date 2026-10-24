@@ -7,9 +7,6 @@ import { installWorkerMemoryProbe } from "../lib/memory-diagnostics"
 interface WorkerInput {
     databasePath: string
     intervalMs: number
-    truncateFrames: number
-    truncateBytes: number
-    truncateCooldownMs: number
     busyTimeoutMs: number
 }
 
@@ -25,14 +22,9 @@ database.pragma("wal_autocheckpoint = 0")
 
 let closed = false
 let checkpointRunning = false
-// Allow the first oversized WAL to be reclaimed immediately after startup.
-let lastTruncateAt = Number.NEGATIVE_INFINITY
 let completed = 0
 let errors = 0
 let busy = 0
-let truncateAttempts = 0
-let truncateCompleted = 0
-let truncateBusy = 0
 
 function walBytes(): number | null {
     try { return fs.statSync(`${input.databasePath}-wal`).size }
@@ -52,40 +44,25 @@ function checkpoint(): void {
         const passiveState = passiveResult[0] ?? {}
         const passiveLogFrames = numberValue(passiveState.log)
         const passiveCheckpointedFrames = numberValue(passiveState.checkpointed)
-        const currentWalBytes = walBytes()
-        const truncateDue = (
-            passiveLogFrames >= input.truncateFrames
-            || (currentWalBytes !== null && currentWalBytes >= input.truncateBytes)
-        ) && performance.now() - lastTruncateAt >= input.truncateCooldownMs
-        let state = passiveState
-        let mode = "passive"
-        let truncateAttempted = false
-        let truncateBusy = 0
-        if (truncateDue) {
-            truncateAttempted = true
-            truncateAttempts++
-            lastTruncateAt = performance.now()
-            const truncateResult = database.pragma("wal_checkpoint(TRUNCATE)") as Array<Record<string, unknown>>
-            state = truncateResult[0] ?? {}
-            truncateBusy = numberValue(state.busy)
-            if (truncateBusy === 1) busy++
-            else truncateCompleted++
-            mode = "truncate"
-        }
+        // FULL/RESTART/TRUNCATE hold the writer lock while syncing the database.
+        // busy_timeout only bounds waiting for a lock, not that I/O after it is
+        // acquired. Online checkpoints must stay PASSIVE even for a large WAL;
+        // physical truncation belongs in a maintenance window with writers stopped.
         const passiveBusy = numberValue(passiveState.busy)
         if (passiveBusy === 1) busy++
         completed++
         parentPort?.postMessage({
             type: "checkpoint",
             durationMs: performance.now() - startedAt,
-            mode,
-            busy: Math.max(passiveBusy, truncateBusy),
-            logFrames: numberValue(state.log),
-            checkpointedFrames: numberValue(state.checkpointed),
+            mode: "passive",
+            busy: passiveBusy,
+            logFrames: passiveLogFrames,
+            checkpointedFrames: passiveCheckpointedFrames,
             passiveLogFrames,
             passiveCheckpointedFrames,
-            truncateAttempted,
-            truncateBusy,
+            // Keep the existing diagnostics contract for older consumers.
+            truncateAttempted: false,
+            truncateBusy: 0,
             walBytes: walBytes(),
         })
     } catch (error) {
@@ -101,7 +78,7 @@ function checkpoint(): void {
 }
 
 installWorkerMemoryProbe(() => ({
-    completed, errors, busy, truncateAttempts, truncateCompleted, truncateBusy,
+    completed, errors, busy, truncateAttempts: 0, truncateCompleted: 0, truncateBusy: 0,
 }))
 
 const interval = setInterval(checkpoint, Math.max(250, input.intervalMs))

@@ -19,7 +19,7 @@ const db = getDb()
 const app = require('fastify')({ logger: false, bodyLimit: 262144 })
 const ledgerTables = [
     'abyss_floor_records',
-    'player_payment_receipts', 'player_operation_receipts',
+    'player_payment_receipts', 'player_operation_receipts', 'battle_settlement_ledger', 'battle_receipt_payload_queue',
     'five_boss_continue_receipts', 'five_boss_solo_runs', 'five_boss_gauntlet_runs',
     'five_boss_gauntlet_members', 'five_boss_gauntlet_receipts',
 ]
@@ -82,6 +82,10 @@ async function main() {
         db.prepare(`INSERT INTO player_operation_receipts
             (player_id,operation,request_key,response_json,created_at) VALUES (?,?,?, ?,123456789)`)
             .run(owner.playerId, 'mail_claim', 'request-' + owner.playerId, JSON.stringify({ owner: owner.playerId }))
+        db.prepare(`INSERT INTO battle_settlement_ledger(player_id,play_id,mode,settled_at,version)
+            VALUES (?,?,'single',123456789,1)`).run(owner.playerId, 'settled-' + owner.playerId)
+        db.prepare(`INSERT INTO battle_receipt_payload_queue(player_id,play_id,operation,created_at)
+            VALUES (?,?,'quest_finish.single',123456789)`).run(owner.playerId, 'settled-' + owner.playerId)
     }
     seedRun('target-host', host.playerId, other.playerId)
     seedRun('target-member', other.playerId, member.playerId)

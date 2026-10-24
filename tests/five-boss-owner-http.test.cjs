@@ -30,6 +30,18 @@ function loadHttp(state) {
     if (request.endsWith('/domains/quest_active')) return {
       getPlayerActiveQuestSync: () => state.stale, deletePlayerActiveQuestIfPlayIdSync: () => true,
     }
+    if (request.endsWith('/domains/battle-settlement-ledger')) return {
+      assertBattleCanStartSync: () => {
+        assert.ok(state.transactionDepth > 0, 'terminal guard must run inside the actual start transaction')
+        state.startGuards++
+        if (state.startGuardError) throw state.startGuardError
+      },
+      getBattleReplaySync: () => {
+        assert.ok(state.transactionDepth > 0, 'special finish must recheck generic terminal identity inside its transaction')
+        state.replayGuards++
+        return state.replay
+      },
+    }
     if (request.endsWith('/domains/fiveBossGauntletRun')) return {
       FiveBossGauntletRunError: RuntimeError, getFiveBossRunByClientSync: () => state.boundRun,
       backfillMissingFinalizeSync: () => ({ backfilled: false }),
@@ -42,13 +54,13 @@ function loadHttp(state) {
     if (request.endsWith('/api/singleBattleQuest')) return { activeQuests: state.memory }
     if (request.endsWith('/five-boss/battle-runtime')) return {
       FiveBossBattleRuntimeError: RuntimeError,
-      startFiveBossBattle: () => ({ runId: 'run', activeQuest: { playId: 'play' }, startStatus: 'started' }),
+      startFiveBossBattle: () => { state.starts++; return { runId: 'run', activeQuest: { playId: 'play' }, startStatus: 'started' } },
       finishFiveBossBattle: () => { state.payments++; throw Error('Unexpected payout') },
       abortFiveBossBattle: () => { state.aborts++; throw Error('Unexpected abort') },
     }
     if (request.endsWith('/five-boss/rewards')) return {}
     if (request.endsWith('/five-boss/solo-runtime')) return { abandonFiveBossSoloForMultiSync: () => {
-      delete state.memory[11]; return true
+      state.abandons++; delete state.memory[11]; return true
     } }
     if (request.endsWith('/data/db')) return { getDb: () => ({ inTransaction: state.inTransaction,
       prepare: sql => ({ get: () => {
@@ -57,7 +69,8 @@ function loadHttp(state) {
       } }),
     }) }
     if (request.endsWith('/lib/persistence-coordinator')) return { runPersistenceTransaction: async (_, fn) => {
-      state.transactions++; return state.transaction(fn)
+      state.transactions++; state.transactionDepth++
+      try { return state.transaction(fn) } finally { state.transactionDepth-- }
     } }
     if (request.endsWith('/lib/settlement-performance')) return { measureSettlementPhaseAsync: (_, __, fn) => fn() }
     if (request.endsWith('/connection-diagnostic')) return { fiveBossConnectionDiagnostics: { memberEvent() {} } }
@@ -75,6 +88,8 @@ function loadHttp(state) {
 }
 function fixture() {
   const state = { commands: [], memory: {}, proofOk: false, transactions: 0, payments: 0, aborts: 0,
+    starts: 0, abandons: 0, startGuards: 0, replayGuards: 0, transactionDepth: 0,
+    startGuardError: null, replay: { kind: 'missing' },
     transaction: fn => fn(), boundRun: null, stale: null, member: null, inTransaction: false, readFails: false }
   const { http, mode } = loadHttp(state)
   const body = { category: mode.category, quest_id: mode.visibleQuestId, room_number: 'room', viewer_id: 1, play_id: 'play', party_id: 1 }
@@ -160,6 +175,34 @@ test('proof persistence failure returns unavailable without payout or abort of t
     error => error.code === 'PROOF_PERSISTENCE_UNAVAILABLE' && error.outcomeUnknown === true)
   assert.equal(x.state.transactions, 0); assert.equal(x.state.payments, 0); assert.equal(x.state.aborts, 0)
   assert.equal(x.state.commands.some(c => c.kind === 'fiveBoss.terminal'), false)
+})
+
+test('generic terminal identity rejects a five-boss start before stale cleanup, ticket payment or registration', async () => {
+  const x = fixture(), stale = { playId: 'old-solo', isMulti: false, category: x.mode.category, questId: x.mode.visibleQuestId }
+  x.state.stale = stale; x.state.memory[11] = stale
+  const blocked = Object.assign(Error('This play has already settled.'), { code: 'BATTLE_ALREADY_SETTLED' })
+  x.state.startGuardError = blocked
+  await assert.rejects(x.http.handleFiveBossStart(x.body, 11, x.reply), error => error === blocked)
+  assert.equal(x.state.startGuards, 1)
+  assert.equal(x.state.abandons, 0, 'a rejected new identity must not abort the existing solo run')
+  assert.equal(x.state.starts, 0, 'ticket payment and active registration belong to a later runtime call')
+  assert.equal(x.state.memory[11], stale)
+  assert.equal(x.state.commands.some(c => c.kind === 'fiveBoss.start.cancel'), true)
+  assert.equal(x.state.commands.some(c => c.kind === 'fiveBoss.start.commit'), false)
+})
+
+test('generic expired, corrupt or cross-mode identity cannot reach specialized finish payment', async () => {
+  for (const kind of ['expired', 'corrupt', 'other-mode']) {
+    const x = fixture()
+    x.state.proofOk = true
+    x.state.boundRun = { runId: 'run', status: 'active', roomNumber: 'room' }
+    x.state.replay = { kind }
+    await assert.rejects(x.http.handleFiveBossFinish({ ...x.body, is_accomplished: true }, 11, x.reply, async () => []),
+      error => error.code === 'run_identity_mismatch')
+    assert.equal(x.state.replayGuards, 1)
+    assert.equal(x.state.payments, 0)
+    assert.equal(x.state.aborts, 0)
+  }
 })
 
 test('the real durable ledger rejects a queued start for a terminal run before payment or active-quest callback', () => {

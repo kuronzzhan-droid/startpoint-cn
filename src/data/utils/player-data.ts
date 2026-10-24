@@ -38,12 +38,6 @@ export interface ClientSerializedDataOptions extends SerializePlayerDataOptions 
     preloadedEquipmentList?: Record<string, PlayerEquipment>
     preloadedPartyGroupList?: Record<string, PlayerPartyGroup>
     preloadedQuestProgress?: Record<string, PlayerQuestProgress[]>
-    /**
-     * Called once the load-time repairs below are written, before the
-     * read-only serialization queries. /load commits its shared write
-     * transaction here.
-     */
-    afterRepairs?: () => void
 }
 
 /**
@@ -122,7 +116,6 @@ export function prepareClientSerializedData(
         preloadedEquipmentList,
         preloadedPartyGroupList,
         preloadedQuestProgress,
-        afterRepairs,
         ...serializeOptions
     } = options
     if (preloadedPlayer && preloadedPlayer.id !== playerId) {
@@ -143,10 +136,7 @@ export function prepareClientSerializedData(
     )
 
     const playerData = preloadedPlayer ?? getPlayerSync(playerId)
-    if (playerData === null) {
-        afterRepairs?.()
-        return null
-    }
+    if (playerData === null) return null
     const characterList = preloadedCharacterList ?? getPlayerCharactersSync(playerId)
     const learnedManaNodes = preloadedCharacterManaNodeList
         ?? getPlayerCharactersManaNodesSync(playerId)
@@ -201,7 +191,6 @@ export function prepareClientSerializedData(
             }
         })
     }
-    afterRepairs?.()
     const missionAwakeMap = new Map<string, Record<number, number>>()
     for (const [characterId, levels] of awakeSummary.manaBoardAwakeMap) {
         const visible = filterCharacterManaBoardAwakeLevels(
