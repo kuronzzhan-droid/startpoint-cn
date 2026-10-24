@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.277",
+  "cdn_version": "1.4.278",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -35961,6 +35961,37 @@
             "production/upload/f5/547d16b974434a2fe2d1438af1995923170215",
             "production/upload/f7/d0fc1b3f17914b031f28641caf1210b93e0d24",
             "production/upload/ff/7c4967ae048a5cb193fe633857922b0a078ddf",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+          ]
+        }
+      ],
+      "created_at": "2026-10-24"
+    },
+    {
+      "id": "nova-levi-zones-fix-1.4.278",
+      "type": "patch",
+      "name": "诺瓦/蕾薇 乘区副本热修：全队加成角色组空串→(None)",
+      "description": "",
+      "version": "1.4.278",
+      "depends_on": "1.4.277",
+      "enabled": true,
+      "archive": "pinball-1.4.277-1.4.278-1-nova-levi-zones-fix-local.zip",
+      "archive_size": 282920,
+      "chain": [
+        "pinball-1.4.277-1.4.278-1-nova-levi-zones-fix-local.zip"
+      ],
+      "files": [
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.277-1.4.278-1-nova-levi-zones-fix-local.zip",
+          "size": 282920,
+          "sha256": "02e5814e91a3d41cfc0daecba70399a98a04e0ea4557bd70c0cad60f89fbf063",
+          "members": 2,
+          "files": [
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
             "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
           ]
         }
