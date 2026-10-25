@@ -1,10 +1,10 @@
 'use strict'
+process.env.SQLITE_DIAGNOSTICS = 'true'
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
 const crypto = require('node:crypto')
-const { Worker } = require('node:worker_threads')
 const { setTimeout: delay } = require('node:timers/promises')
 const Database = require('better-sqlite3')
 const settings = require('../out/lib/sqlite-settings.js')
@@ -110,72 +110,70 @@ function fixture(t) {
     }
 }
 
-// The worker still opens and executes its real native connection. The wrapper
-// observes it and changes only test-process constants before the entry loads.
+// Exercise the real parent controller: bulk PASSIVE belongs to its worker,
+// and the final maintenance connection belongs to this main thread. These
+// observations are controller counter deltas, not fabricated SQLite returns.
 function checkpointWorker(databasePath, intervalMs = 3_600_000) {
-    const worker = new Worker(`
-        const { parentPort, workerData } = require('node:worker_threads')
-        const settings = require(workerData.settingsEntry)
-        settings.SQLITE_WAL_JOURNAL_SIZE_LIMIT_BYTES = workerData.finalBytes
-        settings.SQLITE_WAL_RECLAIM_STEP_BYTES = workerData.stepBytes
-        const Database = require(workerData.databaseModule)
-        const original = Database.prototype.pragma
-        let connection
-        Database.prototype.pragma = function (...args) {
-            connection = this
-            return original.apply(this, args)
-        }
-        try { require(workerData.workerEntry) }
-        finally { Database.prototype.pragma = original }
-        if (!connection) throw new Error('Worker did not open a native connection')
-        parentPort.postMessage({ type: 'test_policy',
-            synchronous: connection.pragma('synchronous', { simple: true }),
-            busyTimeoutMs: connection.pragma('busy_timeout', { simple: true }) })
-    `, { eval: true, workerData: {
-        databasePath, intervalMs, busyTimeoutMs: 5000,
-        finalBytes: FINAL, stepBytes: STEP,
-        databaseModule: require.resolve('better-sqlite3'),
-        settingsEntry: path.join(root, 'out/lib/sqlite-settings.js'),
-        workerEntry: path.join(root, 'out/workers/sqlite-checkpoint-worker.js'),
-    } })
+    const checkpoint = require('../out/lib/sqlite-checkpoint-worker.js')
+    const { collectMemoryDiagnostics } = require('../out/lib/memory-diagnostics.js')
+    const current = () => collectMemoryDiagnostics().counters.sqliteCheckpoint
+    const initial = current()
+    let seen = initial, policySent = false, connection
+    const originalPragma = Database.prototype.pragma
+    Database.prototype.pragma = function (...args) {
+        connection = this
+        return originalPragma.apply(this, args)
+    }
+    checkpoint.startSqliteCheckpointWorker(databasePath, {
+        SQLITE_CHECKPOINT_WORKER: '1', SQLITE_CHECKPOINT_INTERVAL_MS: String(intervalMs),
+    })
     const messages = [], checkpointReceivedAtMs = []
-    let failure, exited = false
-    worker.on('message', message => {
-        messages.push(message)
-        if (message.type === 'checkpoint') checkpointReceivedAtMs.push(Date.now())
-    })
-    worker.on('error', error => { failure = error })
-    worker.once('exit', code => {
-        exited = true
-        if (code && !failure) failure = new Error(`Checkpoint worker exited ${code}`)
-    })
+    function observe() {
+        const value = current()
+        if (value.errors > seen.errors) messages.push({ type: 'checkpoint_error', error: value.lastErrorLength })
+        if (value.completed === seen.completed) return
+        const reclaimAttempted = value.reclaimAttempts > seen.reclaimAttempts
+        const reclaimBusy = value.reclaimBusy > seen.reclaimBusy
+        messages.push({ type: 'checkpoint', mode: value.lastWasTruncate ? 'truncate' : 'passive',
+            truncateAttempted: value.truncateAttempts > seen.truncateAttempts,
+            reclaimAttempted, reclaimBusy, reclaimedBytes: value.reclaimedBytes - seen.reclaimedBytes,
+            busy: value.busy > seen.busy || reclaimBusy ? 1 : 0,
+            walBytes: value.lastWalBytes, logFrames: value.lastLogFrames,
+            checkpointedFrames: value.lastCheckpointedFrames })
+        checkpointReceivedAtMs.push(Date.now())
+        if (!policySent && value.reclaimWindows > initial.reclaimWindows && connection) {
+            Database.prototype.pragma = originalPragma
+            messages.push({ type: 'test_policy',
+                synchronous: originalPragma.call(connection, 'synchronous', { simple: true }),
+                busyTimeoutMs: originalPragma.call(connection, 'busy_timeout', { simple: true }) })
+            policySent = true
+        }
+        seen = value
+    }
     async function waitFor(predicate, label) {
-        const deadline = Date.now() + 10_000
+        const deadline = Date.now() + 20_000
         while (Date.now() < deadline) {
-            if (failure) throw failure
+            observe()
             const error = messages.find(message => message.type === 'checkpoint_error')
-            if (error) assert.fail(`Unexpected checkpoint error: ${JSON.stringify(error)}`)
+            if (error) assert.fail('Unexpected checkpoint error: ' + JSON.stringify(error))
             const result = messages.find(predicate)
             if (result) return result
-            if (exited) assert.fail(`Worker exited before ${label}`)
             await delay(10)
         }
-        assert.fail(`${label} timed out: ${JSON.stringify(messages)}`)
+        assert.fail(label + ' timed out: ' + JSON.stringify(messages))
     }
     return {
         messages, checkpointReceivedAtMs, waitFor,
         async checkpoint() {
+            observe()
             const count = messages.filter(message => message.type === 'checkpoint').length
-            worker.postMessage({ type: 'checkpoint_now' })
+            checkpoint.requestSqliteCheckpoint()
             await waitFor(() => messages.filter(message => message.type === 'checkpoint').length > count, 'next checkpoint')
             return messages.filter(message => message.type === 'checkpoint')[count]
         },
         async close() {
-            if (exited) return
-            try {
-                worker.postMessage({ type: 'close' })
-                await waitFor(message => message.type === 'closed', 'close')
-            } finally { await worker.terminate() }
+            Database.prototype.pragma = originalPragma
+            await checkpoint.stopSqliteCheckpointWorker()
         },
     }
 }
@@ -185,7 +183,7 @@ test('scaled real helper skips WAL at or below target without starting an extra 
     assert.ok(before.bytes <= FINAL)
     const original = f.db.exec
     f.db.exec = function (sql) { calls.push(sql); return original.call(this, sql) }
-    try { assert.deepEqual(reclaimSqliteWalSpace(f.db), { attempted: false, busy: false, reclaimedBytes: 0 }) }
+    try { assert.deepEqual(reclaimSqliteWalSpace(f.db), { attempted: false, busy: false, reclaimedBytes: 0, resetObserved: false }) }
     finally { f.db.exec = original }
     assert.deepEqual(calls, [])
     assert.deepEqual(wal(f.db), before)
@@ -222,17 +220,32 @@ test('scaled real helper bounds every natural-reset stage and converges while or
     f.unchanged()
 })
 
+test('scaled real helper accepts a smaller main-thread step without exceeding its global step cap', t => {
+    const f = fixture(t)
+    f.grow()
+    const maintenance = f.peer()
+    passive(maintenance)
+    const before = wal(f.db)
+    const smaller = reclaimSqliteWalSpace(maintenance, STEP / 2)
+    assert.equal(smaller.reclaimedBytes, STEP / 2)
+    assert.equal(before.bytes - wal(f.db).bytes, STEP / 2)
+    passive(maintenance)
+    const capped = reclaimSqliteWalSpace(maintenance, STEP * 2)
+    assert.equal(capped.reclaimedBytes, STEP)
+    f.unchanged()
+})
+
 test('scaled real helper reports a real competing write lock as busy and resumes after its release', t => {
     const f = fixture(t)
     f.grow()
     const maintenance = f.peer(), before = wal(f.db)
     f.db.exec('BEGIN IMMEDIATE')
-    try { assert.deepEqual(reclaimSqliteWalSpace(maintenance), { attempted: true, busy: true, reclaimedBytes: 0 }) }
+    try { assert.deepEqual(reclaimSqliteWalSpace(maintenance), { attempted: true, busy: true, reclaimedBytes: 0, resetObserved: false }) }
     finally { f.db.exec('ROLLBACK') }
     assert.equal(maintenance.inTransaction, false)
     assert.deepEqual(wal(f.db), before)
     passive(maintenance)
-    assert.deepEqual(reclaimSqliteWalSpace(maintenance), { attempted: true, busy: false, reclaimedBytes: STEP })
+    assert.deepEqual(reclaimSqliteWalSpace(maintenance), { attempted: true, busy: false, reclaimedBytes: STEP, resetObserved: true })
     f.unchanged()
 })
 
@@ -283,7 +296,7 @@ test('scaled real helper samples physical high water after a rolled-back savepoi
     try { result = reclaimSqliteWalSpace(maintenance) }
     finally { maintenance.pragma = original }
     assert.ok(spilledBytes > before.bytes + STEP, 'the real rolled-back write must enlarge physical high water')
-    assert.deepEqual(result, { attempted: true, busy: false, reclaimedBytes: STEP })
+    assert.deepEqual(result, { attempted: true, busy: false, reclaimedBytes: STEP, resetObserved: true })
     assert.equal(wal(f.db).bytes, spilledBytes - STEP,
         'sampling before the metadata/body phase would reclaim more than one stage')
     assert.equal(maintenance.inTransaction, false)
@@ -299,7 +312,7 @@ test('scaled real helper respects a writer racing after PASSIVE and reads the cu
     ordinary.pragma('user_version = -2147483648')
     assert.notEqual(wal(f.db).generation, beforeRace.generation)
     const afterRace = wal(f.db)
-    assert.deepEqual(reclaimSqliteWalSpace(maintenance), { attempted: true, busy: false, reclaimedBytes: 0 })
+    assert.deepEqual(reclaimSqliteWalSpace(maintenance), { attempted: true, busy: false, reclaimedBytes: 0, resetObserved: false })
     assert.deepEqual(wal(f.db), afterRace, 'a same-generation commit cannot start another reclamation stage')
     assert.equal(f.db.pragma('user_version', { simple: true }), -2147483648)
     passive(maintenance)
@@ -309,7 +322,7 @@ test('scaled real helper respects a writer racing after PASSIVE and reads the cu
     f.unchanged()
 })
 
-test('scaled real checkpoint worker reclaims successive bounded stages and reports maintenance diagnostics', async t => {
+test('scaled real checkpoint controller reclaims successive bounded stages and reports maintenance diagnostics', async t => {
     const f = fixture(t)
     f.grow()
     const running = f.worker()
@@ -336,7 +349,7 @@ test('scaled real checkpoint worker reclaims successive bounded stages and repor
     f.unchanged()
 })
 
-test('scaled real checkpoint worker leaves a pinned snapshot intact and starts reclamation after full PASSIVE backfill', async t => {
+test('scaled real checkpoint controller leaves a pinned snapshot intact and starts reclamation after full PASSIVE backfill', async t => {
     const f = fixture(t), pinned = f.grow(true), before = wal(f.db)
     const running = f.worker()
     const result = await running.waitFor(message => message.type === 'checkpoint', 'pinned-reader checkpoint')
@@ -354,7 +367,7 @@ test('scaled real checkpoint worker leaves a pinned snapshot intact and starts r
     f.unchanged()
 })
 
-test('scaled real checkpoint worker reports write-lock contention as maintenance busy without a checkpoint error', async t => {
+test('scaled real checkpoint controller reports write-lock contention as maintenance busy without a checkpoint error', async t => {
     const f = fixture(t)
     f.grow()
     const running = f.worker()
@@ -374,10 +387,10 @@ test('scaled real checkpoint worker reports write-lock contention as maintenance
     f.unchanged()
 })
 
-test('scaled real checkpoint worker automatic timer advances successive stages to target without checkpoint_now', async t => {
+test('scaled real checkpoint controller automatic timer advances successive stages to target without checkpoint_now', async t => {
     const f = fixture(t)
     f.grow()
-    const before = wal(f.db), running = f.worker(250)
+    const before = wal(f.db), running = f.worker(1000)
     // Scale the scheduling period as well as the fixture limits. This covers
     // the actual timer callback; it is not a five-second production latency
     // measurement. No checkpoint_now message is sent by this test.
@@ -394,8 +407,8 @@ test('scaled real checkpoint worker automatic timer advances successive stages t
     }
     assert.equal(wal(f.db).bytes, FINAL)
     const firstToFinalMs = running.checkpointReceivedAtMs.at(-1) - running.checkpointReceivedAtMs[0]
-    assert.ok(firstToFinalMs >= 250, 'later reclamation must come from a subsequent scheduled callback')
-    t.diagnostic(JSON.stringify({ intervalMs: 250, automaticRounds: rounds.length, firstToFinalMs,
+    assert.ok(firstToFinalMs >= 1000, 'later reclamation must come from a subsequent scheduled callback')
+    t.diagnostic(JSON.stringify({ intervalMs: 1000, automaticRounds: rounds.length, firstToFinalMs,
         checkpointNowMessagesSent: 0, scope: 'scaled timer semantics, not production latency' }))
     f.unchanged()
 })

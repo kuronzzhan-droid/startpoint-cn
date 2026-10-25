@@ -3,6 +3,8 @@ import { existsSync } from "../lib/file-exists"
 import { Worker } from "node:worker_threads"
 import { observeWorkerMemory, registerMemoryCounters } from "./memory-diagnostics"
 import { multicoreConfig } from "./multicore-config"
+import { createSqliteWalMaintenance } from "./sqlite-wal-maintenance"
+import { SQLITE_WAL_JOURNAL_SIZE_LIMIT_BYTES } from "./sqlite-settings"
 
 interface CheckpointState {
     enabled: boolean
@@ -21,6 +23,15 @@ interface CheckpointState {
     lastLogFrames: number | null
     lastCheckpointedFrames: number | null
     lastError: string | null
+    reclaimAttempts: number
+    reclaimBusy: number
+    reclaimWindows: number
+    reclaimErrors: number
+    reclaimResetsObserved: number
+    reclaimedBytes: number
+    lastReclaimedBytes: number | null
+    lastReclaimWindowMs: number | null
+    maxReclaimWindowMs: number
 }
 
 interface CheckpointOwnershipCallbacks {
@@ -62,12 +73,15 @@ export function createCheckpointOwnershipController(
 }
 
 let worker: Worker | null = null
+const maintenanceByWorker = new WeakMap<Worker, ReturnType<typeof createSqliteWalMaintenance>>()
 const state: CheckpointState = {
     enabled: false, started: false, completed: 0, errors: 0, busy: 0,
     truncateAttempts: 0, truncateCompleted: 0, truncateBusy: 0,
     lastDurationMs: null, lastLogFrames: null, lastCheckpointedFrames: null,
     lastWasTruncate: false, lastWalBytes: null, lastPassiveLogFrames: null,
     lastPassiveCheckpointedFrames: null, lastError: null,
+    reclaimAttempts: 0, reclaimBusy: 0, reclaimWindows: 0, reclaimErrors: 0, reclaimResetsObserved: 0,
+    reclaimedBytes: 0, lastReclaimedBytes: null, lastReclaimWindowMs: null, maxReclaimWindowMs: 0,
 }
 
 registerMemoryCounters("sqliteCheckpoint", () => ({
@@ -82,6 +96,11 @@ registerMemoryCounters("sqliteCheckpoint", () => ({
     lastCheckpointedFrames: state.lastCheckpointedFrames,
     lastError: state.lastError !== null,
     lastErrorLength: state.lastError?.length ?? 0,
+    reclaimAttempts: state.reclaimAttempts, reclaimBusy: state.reclaimBusy,
+    reclaimWindows: state.reclaimWindows, reclaimErrors: state.reclaimErrors,
+    reclaimResetsObserved: state.reclaimResetsObserved,
+    reclaimedBytes: state.reclaimedBytes, lastReclaimedBytes: state.lastReclaimedBytes,
+    lastReclaimWindowMs: state.lastReclaimWindowMs, maxReclaimWindowMs: state.maxReclaimWindowMs,
 }), "sqlite")
 
 function enabled(environment: NodeJS.ProcessEnv = process.env): boolean {
@@ -113,6 +132,24 @@ export function startSqliteCheckpointWorker(
         workerData: { databasePath, intervalMs },
     })
     worker = current
+    const maintenance = createSqliteWalMaintenance(databasePath, result => {
+        if (worker !== current) return
+        state.reclaimWindows++
+        state.reclaimAttempts += result.attempted ? 1 : 0
+        state.reclaimBusy += result.busy ? 1 : 0
+        state.reclaimResetsObserved += result.resetObserved ? 1 : 0
+        state.reclaimedBytes += result.reclaimedBytes
+        state.lastReclaimedBytes = result.reclaimedBytes
+        state.lastWalBytes = result.walBytes
+        state.lastReclaimWindowMs = result.windowMs
+        state.maxReclaimWindowMs = Math.max(state.maxReclaimWindowMs, result.windowMs)
+    }, error => {
+        if (worker !== current) return
+        state.errors++
+        state.reclaimErrors++
+        state.lastError = error instanceof Error ? error.message.slice(0, 240) : String(error).slice(0, 240)
+    })
+    maintenanceByWorker.set(current, maintenance)
     observeWorkerMemory("sqlite-checkpoint", current)
     current.on("online", () => { state.started = true })
     current.on("message", message => {
@@ -134,6 +171,9 @@ export function startSqliteCheckpointWorker(
             state.lastLogFrames = Number(message.logFrames) || 0
             state.lastCheckpointedFrames = Number(message.checkpointedFrames) || 0
             state.lastError = null
+            if (Number(message.busy) === 0
+                && state.lastPassiveLogFrames === state.lastPassiveCheckpointedFrames
+                && Number(message.walBytes) > SQLITE_WAL_JOURNAL_SIZE_LIMIT_BYTES) maintenance.request()
         } else if (message?.type === "checkpoint_error") {
             state.errors++
             state.lastDurationMs = Number(message.durationMs) || 0
@@ -147,6 +187,8 @@ export function startSqliteCheckpointWorker(
         state.lastError = error.message.slice(0, 240)
     })
     current.once("exit", () => {
+        maintenance.close()
+        maintenanceByWorker.delete(current)
         const replaced = worker !== null && worker !== current
         if (worker === current) worker = null
         if (!replaced) {
@@ -162,6 +204,7 @@ export function startSqliteCheckpointWorker(
 export async function stopSqliteCheckpointWorker(): Promise<void> {
     const current = worker
     if (!current) return
+    maintenanceByWorker.get(current)?.close()
     await new Promise<void>(resolve => {
         let settled = false
         const finish = () => {

@@ -5,6 +5,7 @@ import { observeWorkerMemory, registerMemoryCounters } from "../memory-diagnosti
 import type { WriterCommandMeta } from "./command-registry"
 import { WRITER_PROTOCOL_VERSION, writerThreadConfig, type WriterThreadConfig } from "./writer-config"
 import { getServerClockSnapshot, onServerClockSnapshotChanged } from "../../utils"
+import { nativeSqliteWrites } from "../sqlite-native-writes"
 
 export interface SqliteWriterCommand {
     name: string
@@ -63,6 +64,7 @@ let restartTimer: NodeJS.Timeout | null = null
 let closeResolve: (() => void) | null = null
 const inFlight = new Map<number, WaitingCommand>()
 const waiting: WaitingCommand[] = []
+const nativeCommands = new WeakMap<Worker, Map<number, () => void>>()
 
 // Registered in the default counter group on purpose: writer health
 // (submitted/failed/timeouts/restarts/batches) is an operational metric and
@@ -151,8 +153,12 @@ function pump(): void {
                 forceRestart("command timeout")
             }, config.commandTimeoutMs)
         }
+        const current = worker
+        const native = nativeCommands.get(current)!
+        const releaseNative = nativeSqliteWrites.acquire()
+        native.set(command.id, releaseNative)
         try {
-            worker.postMessage({
+            current.postMessage({
                 type: "command",
                 id: command.id,
                 name: command.command.name,
@@ -160,6 +166,8 @@ function pump(): void {
                 meta: command.command.meta,
             })
         } catch (error) {
+            native.delete(command.id)
+            releaseNative()
             settle(command, error instanceof Error ? error : new Error(String(error)))
             state.failed++
             recordError(error)
@@ -202,7 +210,9 @@ function scheduleRestart(): void {
 
 function startWorker(targetDatabasePath: string): void {
     const location = workerLocation()
-    const current = new Worker(location.filename, {
+    const releaseStartup = nativeSqliteWrites.acquire()
+    let current: Worker
+    try { current = new Worker(location.filename, {
         ...(location.execArgv ? { execArgv: location.execArgv } : {}),
         workerData: {
             databasePath: targetDatabasePath,
@@ -212,13 +222,23 @@ function startWorker(targetDatabasePath: string): void {
             protocolVersion: WRITER_PROTOCOL_VERSION,
             clockSnapshot: getServerClockSnapshot(),
         },
-    })
+    }) } catch (error) { releaseStartup(); throw error }
+    const native = new Map<number, () => void>()
+    nativeCommands.set(current, native)
     worker = current
     state.started = true
     state.ready = false
     observeWorkerMemory("sqlite-writer", current)
 
     current.on("message", (message: any) => {
+        // A timed-out caller may already have left inFlight. Its native work
+        // is still active until this final ACK or the owning worker exits.
+        if (message?.type === "result" || message?.type === "error") {
+            const id = Number(message.id)
+            const release = native.get(id)
+            native.delete(id)
+            release?.()
+        }
         if (worker !== current) return
         switch (message?.type) {
             case "ready":
@@ -227,6 +247,7 @@ function startWorker(targetDatabasePath: string): void {
                     return
                 }
                 state.ready = true
+                releaseStartup()
                 // Synchronize both clock coordinates before queued commands.
                 pushClockSnapshot()
                 pump()
@@ -277,6 +298,12 @@ function startWorker(targetDatabasePath: string): void {
         state.ready = false
     })
     current.once("exit", code => {
+        // stop/restart may detach this worker before its native handles close.
+        releaseStartup()
+        const outstanding = [...native.values()]
+        native.clear()
+        nativeCommands.delete(current)
+        for (const release of outstanding) release()
         if (worker !== current) return
         worker = null
         state.ready = false

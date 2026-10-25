@@ -3,6 +3,7 @@ import { existsSync } from "../lib/file-exists"
 import { Worker } from "node:worker_threads"
 import { observeWorkerMemory, registerMemoryCounters } from "./memory-diagnostics"
 import { sqliteSettings } from "./sqlite-settings"
+import { nativeSqliteWrites } from "./sqlite-native-writes"
 
 export interface SqlitePersistenceStatement {
     sql: string
@@ -47,6 +48,7 @@ let closing = false
 let nextId = 1
 let active: PendingCommand | null = null
 const queue: PendingCommand[] = []
+const nativeCommands = new WeakMap<Worker, Map<number, () => void>>()
 let closeResolve: (() => void) | null = null
 
 const state: WorkerState = {
@@ -111,13 +113,19 @@ function rejectAll(error: Error): void {
 function pump(): void {
     if (!worker || !workerReady || closing || active || queue.length === 0) return
     active = queue.shift()!
+    const current = worker
+    const native = nativeCommands.get(current)!
+    const releaseNative = nativeSqliteWrites.acquire()
+    native.set(active.id, releaseNative)
     try {
-        worker.postMessage({
+        current.postMessage({
             id: active.id,
             operation: active.command.operation,
             statements: active.command.statements,
         })
     } catch (error) {
+        native.delete(active.id)
+        releaseNative()
         const failedCommand = active
         active = null
         failedCommand.reject(error instanceof Error ? error : new Error(String(error)))
@@ -139,10 +147,14 @@ export function startSqlitePersistenceWorker(
     const busyTimeoutMs = Number.isFinite(parsedBusyTimeoutMs) ? Math.max(0, parsedBusyTimeoutMs) : 1_000
     const maxAttempts = Math.max(1, Number.parseInt(environment.SQLITE_PERSISTENCE_MAX_ATTEMPTS ?? "3", 10) || 3)
     const settings = sqliteSettings(environment)
-    const current = new Worker(location.filename, {
+    const releaseStartup = nativeSqliteWrites.acquire()
+    let current: Worker
+    try { current = new Worker(location.filename, {
         ...(location.execArgv ? { execArgv: location.execArgv } : {}),
         workerData: { databasePath, busyTimeoutMs, maxAttempts, settings },
-    })
+    }) } catch (error) { releaseStartup(); throw error }
+    const native = new Map<number, () => void>()
+    nativeCommands.set(current, native)
     worker = current
     observeWorkerMemory("sqlite-persistence", current)
     current.once("online", () => {
@@ -152,8 +164,15 @@ export function startSqlitePersistenceWorker(
         pump()
     })
     current.on("message", message => {
+        if (message?.type === "result" || message?.type === "error") {
+            const id = Number(message.id)
+            const release = native.get(id)
+            native.delete(id)
+            release?.()
+        }
         if (worker !== current) return
         if (message?.type === "settings") {
+            releaseStartup()
             state.synchronous = Number.isFinite(Number(message.synchronous))
                 ? Number(message.synchronous) : null
             state.cacheSize = Number.isFinite(Number(message.cacheSize))
@@ -191,13 +210,25 @@ export function startSqlitePersistenceWorker(
     })
     current.on("error", error => {
         if (worker !== current) return
+        // Native SqliteError startup failures may cross the Worker boundary as
+        // a plain object. Normalize them before updating metrics/rejecting.
+        const details = error as unknown as { message?: unknown, code?: unknown }
+        const failure = error instanceof Error ? error : errorFromMessage({
+            error: details?.message ?? error,
+            code: details?.code,
+        })
         state.failed++
-        state.lastError = error.message.slice(0, 240)
+        state.lastError = failure.message.slice(0, 240)
         workerReady = false
         state.started = false
-        rejectAll(error)
+        rejectAll(failure)
     })
     current.once("exit", code => {
+        releaseStartup()
+        const outstanding = [...native.values()]
+        native.clear()
+        nativeCommands.delete(current)
+        for (const release of outstanding) release()
         if (worker !== current) return
         worker = null
         workerReady = false
