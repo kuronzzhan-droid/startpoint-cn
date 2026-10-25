@@ -6,6 +6,7 @@
 
 | 版本 | 内容 | 记录 | Release |
 |---|---|---|---|
+| 1.4.285 | 平衡表 10-25：克劳斯、贝尔赛蒂亚、白虎、赛瑞斯、莉莉丝、雷吉斯、特克托 | [角色平衡改动-1.4.285](角色平衡改动-1.4.285.md) | [patches-1.4.285](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.285) |
 | 1.4.282 | 头目角色能力1头目限制文案缩短：27 个可玩头目统一成白虎的一句，只改面板文案 | [头目限制文案-1.4.282](头目限制文案-1.4.282.md) | [patches-1.4.282](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.282) |
 | 1.4.281 | 平衡表 10-24 晚：秋灯稻穗、白虎、莫弥亚、拉姆斯、克劳斯、贝尔赛蒂亚、八岐大蛇超级+血量分配 | [角色平衡改动-1.4.281](角色平衡改动-1.4.281.md) | [patches-1.4.281](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.281) |
 | 1.4.280 | 深渊之兽数据重做（候选版，觉醒与能力计数待客户端扩展） | [深渊之兽-1.4.280](深渊之兽-1.4.280.md) | [patches-1.4.280](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.280) |

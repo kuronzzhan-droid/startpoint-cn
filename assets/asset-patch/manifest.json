@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.284",
+  "cdn_version": "1.4.285",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -36726,6 +36726,99 @@
           "size": 1220
         }
       }
+    },
+    {
+      "id": "balance-1025b-1.4.285",
+      "type": "patch",
+      "name": "平衡表10-25：克劳斯/贝尔赛蒂亚/白虎/赛瑞斯/莉莉丝/雷吉斯/特克托",
+      "description": "",
+      "version": "1.4.285",
+      "depends_on": "1.4.284",
+      "enabled": true,
+      "archive": "pinball-1.4.284-1.4.285-1-balance-1025b-local.zip",
+      "archive_size": 983724,
+      "chain": [
+        "pinball-1.4.284-1.4.285-1-balance-1025b-local.zip"
+      ],
+      "files": [
+        "production/upload/07/09ad814e73e04b5422fa0b53d84a03930a2ee1",
+        "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+        "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+        "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
+        "production/upload/ed/84198b533e9f8604278e36c4aa85d04cd9ff6d",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.284-1.4.285-1-balance-1025b-local.zip",
+          "size": 983724,
+          "sha256": "b4a1ce7367424ac7469046bc62a56a7f7ecc2ab4573b535103204a18e05dcd11",
+          "members": 8,
+          "files": [
+            "production/upload/07/09ad814e73e04b5422fa0b53d84a03930a2ee1",
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+            "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+            "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+            "production/upload/91/79892d704f88d98191c00548bce106402ad5b5",
+            "production/upload/ed/84198b533e9f8604278e36c4aa85d04cd9ff6d",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+          ],
+          "member_sha256": {
+            "production/upload/07/09ad814e73e04b5422fa0b53d84a03930a2ee1": "2caac80f3a73f87e0f518e43dce62ebc8775f905cea43726b579aabc313b9eb2",
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149": "73049c24525589ac64e9f07b02aa16ca0efc8ba1791fc7a4acd55b8854054e30",
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001": "cd565b2e347be7a7b17debd670c3e37aa343501f602c9d4be5f8966b50269ed8",
+            "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4": "a63aa737a3044ed2aa30e36a7e8f2f1008bb3e1f10f6b9760fb34e082c8c0a91",
+            "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab": "4d601038dbdeca4c047ae79590776a6704e6ea4bc237c139ec2b7444e6bc210e",
+            "production/upload/91/79892d704f88d98191c00548bce106402ad5b5": "d7bffeaf2d92fde634c31ef78181aa7bfd56fa1e3d64e40e5f9975792aaf1848",
+            "production/upload/ed/84198b533e9f8604278e36c4aa85d04cd9ff6d": "523ad993787adc32a5acf3c6d0aadb46364ad86658288226d68b1d7536d87954",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5": "185be22a353f8a6fec31b014b3bce88dfdfe8d853b244e1242441ffed8d28181"
+          },
+          "logical_paths": {
+            "production/upload/07/09ad814e73e04b5422fa0b53d84a03930a2ee1": "battle/action/skill/action/rare5/super_robot_tailcoat$super_robot_tailcoat_2.action.dsl.amf3.deflate",
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149": "master/string/custom_ability_string.orderedmap",
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001": "master/ability/ability.orderedmap",
+            "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4": "master/character/unique_condition.orderedmap",
+            "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab": "master/character/character_text.orderedmap",
+            "production/upload/91/79892d704f88d98191c00548bce106402ad5b5": "master/skill/action_skill.orderedmap",
+            "production/upload/ed/84198b533e9f8604278e36c4aa85d04cd9ff6d": "battle/action/skill/action/ability_skill/ability_skill_white_tiger_ghost_nearest_pf$ability_skill_white_tiger_ghost_nearest_pf.action.dsl.amf3.deflate",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5": "master/ability/leader_ability.orderedmap"
+          },
+          "applies_on": "1.4.284",
+          "version": "1.4.285",
+          "server_files": {},
+          "log": [
+            "[r30_a] 克劳斯 L:129997 行1直击400%→200%、行2攻击200%→100%；行4/5淬毒每层直击/攻击25%→20%，20层与水共鸣保持；同步队长面板",
+            "[r30_a] 克劳斯 A:1299972 行1淬毒每层全队直击30%→20%（最大400%）；施加淬毒及中毒强化行保持，同步能力2面板",
+            "[r30_a] 克劳斯 A:1299973 行0水队直击20→50次获得1级猎狼连击，触发上限20→(None)；固有上限20保持；行2每级攻击20%→15%（最大300%），主位/水共鸣及独立6直击2%×20保持",
+            "[r30_a] 克劳斯 A:1299975 行0/1水队直击40→60次；行0攻击15%→12%（20次最大240%），行1直击10%×20最大200%保持；能力3/5无desc_override，面板自动生成",
+            "[r30_a] 克劳斯 UQ:12999703 wfx29每层2600→1300、封顶11→20；UQ:12999702 wfx28首层18800→18700，使首层严格为3倍，此后每级+13%，20级为5.47倍；淬毒自身上限20不变，同步固有说明与队长面板",
+            "[r30_a] 克劳斯旧值差异：283参数18800+2600×min(n,11)实际首层3.14倍、11级封顶5.74倍，与旧文案首层3倍不符；按新目标重算首层抵消项，不沿用旧偏差；最多20级按淬毒总等级20解释",
+            "[r30_a] 贝尔赛蒂亚 A:1299525 行1每敌方弱体水队攻击15%～30%→5%～10%，最多10个，满级最大300%→100%；沿用初级:满级=1:2，行0开局充能保持，无覆写文案，面板自动生成",
+            "[r30_a] 白虎 A:1699941 行10最近追击树：根133→102，唯一雷属性CreateNormalAttack倍率0.5→0.1；每1次PF、最近单体、无前置/CT保持；同步动作说明、能力1面板与character_text:169994 c11",
+            "[r30_a] 白虎门槛审计：A1行0虎魂加层与行10最近追击均无属性共鸣门槛；现有L雷共鸣加层、A2雷/风增益和A3主位雷共鸣门槛保持。133追击原不计能力攻击，改102符合表意，但未做实战验证；服务端旧镜像c11不在build.py输出范围，交接须另行同步摘要",
+            "[r30_a] 赛瑞斯 L:129999 删除原行5水共鸣每弹射1次连击+3，同步删除队长面板该句；其余9行保持",
+            "[r30_a] 赛瑞斯 A:1299991 行2/3在precondition3新增202主位前置；水共鸣、非Fever、自身技能+35%/其他水角色技能+10%保持，同步能力1主位图标；归队长效果的行4/5保持",
+            "[r30_a] 赛瑞斯 A:1299992 行2冲刺连击8→11，CT60帧=1秒及其余能力行保持，同步能力2面板",
+            "[r30_a] 赛瑞斯 A:1299991 新增行6：全列复制原自身技能回槽35%行2，前置改用A:1299995行1的纯Fever条件12；移除水共鸣/非Fever/主位条件，724上限比例35%→25%；自身技能发动≥1、无CT/次数上限、awake及解锁字段沿用原行",
+            "[r30_a] 赛瑞斯进化技能文案：仅action_skill:seris_dragon_king第2档c1与客户端character_text:129999 c7追加『／若发动时处于Fever模式，Fever槽+25%』；第1档、技能树及服务端镜像保持",
+            "[r30_b_139997] 莉莉丝 L:139997 行6 c33：30 → 6帧（CT0.5 → 0.1秒）；技能槽增加触发、全体敌人30倍雷属性能力伤害保持",
+            "[r30_b_139997] 莉莉丝 A:1399973 新行3/4：主位时雷属性角色合计每10次能力攻击，自身攻击力/能力伤害各+10%，最多40次（各+400%），CT0；官方1510455整行复制，trigger144/7/Yellow，不附加共鸣或剑环条件；面板自动生成",
+            "[r30_b_139994] 雷吉斯 139994（海滨约会的白花机人）L行6 c111/c112：500 → 1000，浪涌充能每层独立乘区7技能伤害0.5% → 1%，15层上限保持（最大15%）",
+            "[r30_b_139994] 雷吉斯 A:1399943 行4 c113/c114：40000 → 60000，每层技能伤害40% → 60%（最多15层、最大900%）；行3每层攻击20%保持；同步队长/A3文案",
+            "[r30_b_139993] 特克托 139993 L行0：引擎每层独立7技能伤害5%×最多3层 → 雷共鸣时自身固定15%，during411 → 静态694，完全移除读层条件",
+            "[r30_b_139993] 特克托 L行1：雷共鸣且HP≤50%时自身充能15%，移除引擎≥1条件，during3 → 静态35；删除原行5低血技能加引擎整行（表称+1，旧数据initial_multiply=2、实际+2层）；原行2/3/4/6/7保持",
+            "[r30_b_139993] 特克托 A:1399931 原行2 → L:139993 新行7：Flag3/kind705按引擎层数强化，去队长42条件，保留雷共鸣；A1原行1 → A:1399933 新行5：Flag1/kind536双抗下降，保留主位与共鸣，A3原5行含Flag2扫描/护盾保持",
+            "[r30_b_139993] 特克托 A:1399931 新行1：雷共鸣且自身HP≤50%时，自身技能伤害+300%；原行0开局技能槽50%保持；无desc_override，队长/A1/A3面板随数据及既有change_skill引用同步",
+            "[r30_b_139993] 表266「移动至A3且与【】」后半句缺字，仅移动双抗下降，不补写合并效果或新增条件",
+            "[r30_b_139993] 特克托进化技能 _2：11处普通分支BindConditionAccumulationVariable（DCUnique13999301）计入上限10 → 20；11处Flag3强化分支上限99保持；未进化_1不动，其他树节点还原比对一致；仅同步AS第2档c1、客户端/服务端TX c7",
+            "[r30_c_139993] 特克托 A:1399933：A1 移来的双抗下降强化去掉单独的主位前置，与原有 Flag2 扫描/护盾条件统一为雷属性共鸣（能力3 本身仅主位）；新增 desc_override_super_robot_tailcoat_3，把「技能伤害+200%、扫描范围扩大并赋予护盾、追加雷抗降与技能伤害抗性降低、雷属性角色技能槽最大值+10%」合并为一条（作者 10-25 截图补全表 266 行）"
+          ]
+        }
+      ],
+      "created_at": "2026-10-25"
     }
   ],
   "generated_for": "official active chain"
