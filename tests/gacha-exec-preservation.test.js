@@ -12,6 +12,7 @@ fs.mkdirSync(process.env.GACHA_SEED_DIR);
 const Fastify = require('fastify');
 const { pack, unpack } = require('msgpackr');
 const { getDb } = require('../out/data/db');
+const identities = require('../out/lib/gameplay-request-identity');
 const players = require('../out/data/domains/player');
 const characters = require('../out/data/domains/character');
 const items = require('../out/data/domains/item');
@@ -24,6 +25,7 @@ const seed = require('../out/lib/seed-validator').default;
 const { getPlayerCharacterAwakeUnlocksSync } = require('../out/data/domains/character_awake');
 const { recordGachaRequest, drainGachaRequestSummary } = require('../out/lib/settlement-performance');
 const db = getDb();
+identities.initializeGameplayRequestIdentitySchemaSync(db);
 const app = Fastify({ logger: false });
 app.addHook('onSend', (_request, reply, body, done) => done(null,
     String(reply.getHeader('content-type')).startsWith('application/x-msgpack') ? pack(body).toString('base64') : body));
@@ -58,11 +60,14 @@ async function player() {
     require('../out/data/activeAccount').saveAccountDefaultPlayer(account.id, id);
     const viewer = 790000000 + id;
     await require('../out/data/domains/session').insertSessionWithToken({ token: String(viewer), accountId: account.id, expires: new Date('2099-01-01'), type: 2 });
-    return { id, viewer };
+    const token = db.transaction(() => identities.issueGameplayLoginTokenSync(db, {
+        accountId: account.id, viewerId: viewer, udid: `preserve-${viewer}`, expiresAt: Date.now() + 86400000,
+    }))();
+    return { id, viewer, token, apiCount: 0 };
 }
 function request(p, gid, payment, type, count = 1) {
-    return app.inject({ method: 'POST', url: '/gacha/exec', payload: {
-        viewer_id: p.viewer, gacha_id: gid, payment_type: payment, type, number_of_exec: count,
+    return app.inject({ method: 'POST', url: '/gacha/exec', headers: { login_token: p.token }, payload: {
+        viewer_id: p.viewer, api_count: ++p.apiCount, gacha_id: gid, payment_type: payment, type, number_of_exec: count,
     } });
 }
 function data(response) { assert.equal(response.statusCode, 200, response.body); return unpack(Buffer.from(response.body, 'base64')).data; }

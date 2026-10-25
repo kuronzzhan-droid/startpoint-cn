@@ -14,13 +14,17 @@ fs.mkdirSync(process.env.GACHA_SEED_DIR)
 const players = load('data/domains/player'), missions = load('data/domains/mission')
 const master = load('lib/mission/master-data'), operations = load('lib/content-operations')
 const { recordContentActionFactsSync: record } = load('lib/mission/content-action-facts')
+const identity = load('lib/gameplay-request-identity')
 let db, app
 function fixture() {
     const account = load('data/domains/account').insertAccountSync({ appId: 'wf_cn', idpAlias: '', idpCode: 'history-actions', idpId: randomUUID(), status: 'normal' })
     const player = players.insertDefaultPlayerSync(account.id), viewer = 890000000 + player.id
     load('data/activeAccount').saveAccountDefaultPlayer(account.id, player.id)
     db.prepare('INSERT INTO sessions(token,account_id,expires,type) VALUES(?,?,?,2)').run(String(viewer), account.id, '2099-01-01T00:00:00Z')
-    return { id: player.id, viewer }
+    const token = db.transaction(() => identity.issueGameplayLoginTokenSync(db, {
+        accountId: account.id, viewerId: viewer, udid: `action-${viewer}`, expiresAt: Date.now() + 86400000,
+    }))()
+    return { id: player.id, viewer, token, count: 0 }
 }
 function control(type, eventId, definitions, enabled = true) {
     const store = operations.contentOperations(), review = { readiness: 'verified', evidence: 'Synthetic exact action regression; not all-content acceptance', endsAtMs: null }
@@ -29,9 +33,11 @@ function control(type, eventId, definitions, enabled = true) {
         actionOverrides: { visible: { ...review, enabled: true }, enter: { ...review, enabled, missionKeys }, claim: { ...review, enabled: true, missionKeys } } }, Date.now())
 }
 const value = (p, category, id) => missions.getPlayerCategoryMissionsSync(p.id, category)[id]?.progress ?? 0
-const post = (p, url, body = {}) => app.inject({ method: 'POST', url, payload: { viewer_id: p.viewer, api_count: 1, ...body } })
+const post = (p, url, body = {}) => app.inject({ method: 'POST', url, headers: { login_token: p.token },
+    payload: { viewer_id: p.viewer, api_count: ++p.count, ...body } })
 before(async () => {
     load('data').initializeDatabase(); db = load('data/db').getDb()
+    identity.initializeGameplayRequestIdentitySchemaSync(db)
     assert.equal(path.dirname(fs.realpathSync(db.name)), fs.realpathSync(directory))
     app = require('fastify')({ logger: false })
     app.addHook('onSend', (_request, reply, body, done) => done(null,

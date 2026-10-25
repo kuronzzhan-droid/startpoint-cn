@@ -17,6 +17,7 @@ import { incrementActiveMissionInjectedExpCountSync } from "../../data/domains/a
 import { validateCharacterStackConversion } from "../../lib/character-stack";
 import { settleDegreeMissionResponse } from "../../lib/mission";
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator";
+import { readGameplayMutationRequestSync, recordGameplayMutationResponseSync } from "../../lib/gameplay-mutation-receipt";
 
 interface InjectExpBody {
     character_id: number,
@@ -56,112 +57,66 @@ const rarityStackConvertExp: Record<number, number> = {
 
 const routes = async (fastify: FastifyInstance) => {
     fastify.post("/stack_to_exp", async (request: FastifyRequest, reply: FastifyReply) => {
-        const body = request.body as StackToExpBody
+        const body = (request.body ?? {}) as StackToExpBody
+        const viewerId = body.viewer_id, characterId = body.character_id, convertCount = body.number
+        if (!Number.isSafeInteger(viewerId) || viewerId <= 0 || !Number.isSafeInteger(characterId) || characterId <= 0
+            || !Number.isSafeInteger(convertCount) || convertCount <= 0) {
+            return reply.status(400).send({ error: "Bad Request", message: "Invalid request body." })
+        }
+        const session = await getSession(viewerId.toString())
+        if (!session) return reply.status(400).send({ error: "Bad Request", message: "Invalid viewer id." })
+        const playerId = resolvePlayerIdSync(session.accountId)
+        if (playerId === null) return reply.status(500).send({ error: "Internal Server Error", message: "No players bound to account." })
 
-        const viewerId = body.viewer_id
-        const characterId = body.character_id
-        const convertCount = body.number
-        if (isNaN(viewerId) || isNaN(characterId)) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "Invalid request body."
-        })
-
-        const viewerIdSession = await getSession(viewerId.toString())
-        if (!viewerIdSession) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "Invalid viewer id."
-        })
-
-        // get player
-        const playerId = resolvePlayerIdSync(viewerIdSession.accountId)!
-        const player = playerId !== null ? getPlayerSync(playerId) : null
-
-        if (player === null) return reply.status(500).send({
-            "error": "Internal Server Error",
-            "message": "No players bound to account."
-        })
-
-        // get character asset data
-        const characterAssetData = getCharacterDataSync(characterId)
-        if (characterAssetData === null) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "Character does not exist."
-        })
-
-        // get character
-        const character = getPlayerCharacterSync(playerId, characterId)
-        if (character === null) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "Player does not own character."
-        })
-        
-        const validationError = validateCharacterStackConversion(
-            character.stack,
-            convertCount,
-            character.protection,
-        )
-        if (validationError) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": validationError
-        })
-
-        const afterStack = character.stack - convertCount
-
-        // get amounts to add
-        const rarity = characterAssetData.rarity
-        const increaseExp = rarityStackConvertExp[rarity] * convertCount
-        const increaseItemCount = rarityStackConvertItemCount[rarity] * convertCount
-
-        let afterExp = player.expPool
-        let afterItemCount = getPlayerItemsSync(playerId)[String(rewardItemId)] ?? 0
-        await runPersistenceTransaction({
+        const result = await runPersistenceTransaction({
             domain: "player", playerId, operation: "convert_stack_to_exp",
         }, () => {
+            const mutation = readGameplayMutationRequestSync(playerId, {
+                headerToken: request.headers.login_token, body, accountId: session.accountId,
+            }, "convert_stack_to_exp", { characterId, convertCount })
+            if (!mutation) return { error: "Invalid or superseded gameplay request." }
+            if (mutation.response) return { data: mutation.response }
+            const player = getPlayerSync(playerId)
+            if (!player) return { error: "No players bound to account.", status: 500 }
+            const asset = getCharacterDataSync(characterId)
+            if (!asset) return { error: "Character does not exist." }
+            const character = getPlayerCharacterSync(playerId, characterId)
+            if (!character) return { error: "Player does not own character." }
+            const validationError = validateCharacterStackConversion(character.stack, convertCount, character.protection)
+            if (validationError) return { error: validationError }
+            const afterStack = character.stack - convertCount
+            const increaseExp = rarityStackConvertExp[asset.rarity] * convertCount
+            const increaseItems = rarityStackConvertItemCount[asset.rarity] * convertCount
             updatePlayerCharacterSync(playerId, characterId, { stack: afterStack })
-            const adjustedExp = adjustPlayerExpPoolSync(playerId, increaseExp, 'stack_to_exp')
-            if (adjustedExp === null) throw new Error(`Failed to update EXP pool for player ${playerId}`)
-            afterExp = adjustedExp
-            afterItemCount = givePlayerItemSync(playerId, rewardItemId, increaseItemCount)
-        })
-
-        reply.header("content-type", "application/x-msgpack")
-        return reply.status(200).send({
-            "data_headers": generateDataHeaders({
-                viewer_id: viewerId
-            }),
-            "data": {
-                "user_info": {
-                    "exp_pool": afterExp,
-                    "exp_pooled_time": getPlayerClientExpTime(player)
-                },
-                "character_list": [
-                    {
-                        "viewer_id": viewerId,
-                        "character_id": characterId,
-                        "stack": afterStack,
-                        "exp": character.exp,
-                        "exp_total": character.exp,
-                        "create_time": clientSerializeDate(character.joinTime),
-                        "update_time": clientSerializeDate(new Date()),
-                        "join_time": clientSerializeDate(character.joinTime)
-                    }
-                ],
-                "converted_exp_info": {
-                    "add_exp": increaseExp
-                },
-                "item_list": {
-                    [rewardItemId]: afterItemCount
-                },
-                "mail_arrived": false
+            const afterExp = adjustPlayerExpPoolSync(playerId, increaseExp, "stack_to_exp")
+            if (afterExp === null) throw new Error('Failed to update EXP pool for player ' + playerId)
+            const afterItems = givePlayerItemSync(playerId, rewardItemId, increaseItems)
+            const data = {
+                user_info: { exp_pool: afterExp, exp_pooled_time: getPlayerClientExpTime(player) },
+                character_list: [{
+                    viewer_id: viewerId, character_id: characterId, stack: afterStack,
+                    exp: character.exp, exp_total: character.exp,
+                    create_time: clientSerializeDate(character.joinTime),
+                    update_time: clientSerializeDate(new Date()), join_time: clientSerializeDate(character.joinTime),
+                }],
+                converted_exp_info: { add_exp: increaseExp },
+                item_list: { [rewardItemId]: afterItems }, mail_arrived: false,
             }
+            recordGameplayMutationResponseSync(playerId, mutation, data)
+            return { data }
         })
+        if (result.error !== undefined) return reply.status(result.status ?? 400).send({
+            error: result.status === 500 ? "Internal Server Error" : "Bad Request", message: result.error,
+        })
+        reply.header("content-type", "application/x-msgpack")
+        return reply.status(200).send({ data_headers: generateDataHeaders({ viewer_id: viewerId }), data: result.data })
     })
 
     fastify.post("/bulk_stack_to_exp", async (request: FastifyRequest, reply: FastifyReply) => {
-        const body = request.body as BulkStackToExpBody
+        const body = (request.body ?? {}) as BulkStackToExpBody
 
         const viewerId = body.viewer_id
-        if (isNaN(viewerId)) return reply.status(400).send({
+        if (!Number.isSafeInteger(viewerId) || viewerId <= 0) return reply.status(400).send({
             "error": "Bad Request",
             "message": "Invalid request body."
         })
@@ -172,59 +127,66 @@ const routes = async (fastify: FastifyInstance) => {
             "message": "Invalid viewer id."
         })
 
-        const playerId = resolvePlayerIdSync(session.accountId)!
-        const player = playerId !== null ? getPlayerSync(playerId) : null
-        if (player === null) return reply.status(500).send({
+        const playerId = resolvePlayerIdSync(session.accountId)
+        if (playerId === null) return reply.status(500).send({
             "error": "Internal Server Error",
             "message": "No players bound to account."
         })
 
-        const allCharacters = getPlayerCharactersSync(playerId)
-        const modifiedCharacters: Object[] = []
-        let totalExp = 0
-        let totalStarGrains = 0
-        let processedCount = 0
-        const conversions: { characterId: number, stack: number }[] = []
+        let conversionLog: string | undefined
+        const result = await runPersistenceTransaction({
+            domain: "player", playerId, operation: "bulk_convert_stack_to_exp",
+        }, () => {
+            const mutation = readGameplayMutationRequestSync(playerId, {
+                headerToken: request.headers.login_token, body, accountId: session.accountId,
+            }, "bulk_convert_stack_to_exp", {})
+            if (!mutation) return { error: "Invalid or superseded gameplay request." }
+            if (mutation.response) return { data: mutation.response }
+            const player = getPlayerSync(playerId)
+            if (!player) return { error: "No players bound to account.", status: 500 }
+            const allCharacters = getPlayerCharactersSync(playerId)
+            const modifiedCharacters: Object[] = []
+            let totalExp = 0
+            let totalStarGrains = 0
+            let processedCount = 0
+            const conversions: { characterId: number, stack: number }[] = []
 
-        for (const [characterIdStr, character] of Object.entries(allCharacters)) {
-            const characterId = parseInt(characterIdStr)
-            if (character.stack <= 0 || character.protection) continue
+            for (const [characterIdStr, character] of Object.entries(allCharacters)) {
+                const characterId = parseInt(characterIdStr)
+                if (character.stack <= 0 || character.protection) continue
 
-            const charAsset = getCharacterDataSync(characterId)
-            if (!charAsset) continue
+                const charAsset = getCharacterDataSync(characterId)
+                if (!charAsset) continue
 
-            const rarity = charAsset.rarity
-            const maxOver = getCharacterMaxOverLimit(characterId, rarity) ?? 0
-            if (character.overLimitStep < maxOver) continue
+                const rarity = charAsset.rarity
+                const maxOver = getCharacterMaxOverLimit(characterId, rarity) ?? 0
+                if (character.overLimitStep < maxOver) continue
 
-            const stack = character.stack
-            const addExp = (rarityStackConvertExp[rarity] ?? 0) * stack
-            const addStarGrain = (rarityStackConvertItemCount[rarity] ?? 0) * stack
+                const stack = character.stack
+                const addExp = (rarityStackConvertExp[rarity] ?? 0) * stack
+                const addStarGrain = (rarityStackConvertItemCount[rarity] ?? 0) * stack
 
-            totalExp += addExp
-            totalStarGrains += addStarGrain
+                totalExp += addExp
+                totalStarGrains += addStarGrain
 
-            conversions.push({ characterId, stack })
+                conversions.push({ characterId, stack })
 
-            modifiedCharacters.push({
-                "viewer_id": viewerId,
-                "character_id": characterId,
-                "stack": 0,
-                "over_limit_step": character.overLimitStep,
-                "exp": character.exp,
-                "exp_total": character.exp,
-                "create_time": clientSerializeDate(character.joinTime),
-                "update_time": clientSerializeDate(character.updateTime),
-                "join_time": clientSerializeDate(character.joinTime)
-            })
-            processedCount++
-        }
+                modifiedCharacters.push({
+                    "viewer_id": viewerId,
+                    "character_id": characterId,
+                    "stack": 0,
+                    "over_limit_step": character.overLimitStep,
+                    "exp": character.exp,
+                    "exp_total": character.exp,
+                    "create_time": clientSerializeDate(character.joinTime),
+                    "update_time": clientSerializeDate(character.updateTime),
+                    "join_time": clientSerializeDate(character.joinTime)
+                })
+                processedCount++
+            }
 
-        if (processedCount === 0) {
-            reply.header("content-type", "application/x-msgpack")
-            return reply.status(200).send({
-                "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-                "data": {
+            if (processedCount === 0) {
+                const data = {
                     "character_list": [],
                     "converted_exp_info": { "add_exp": 0 },
                     "item_list": getPlayerItemsSync(playerId),
@@ -234,14 +196,12 @@ const routes = async (fastify: FastifyInstance) => {
                     },
                     "mail_arrived": false
                 }
-            })
-        }
+                recordGameplayMutationResponseSync(playerId, mutation, data)
+                return { data }
+            }
 
-        let newExpPool = player.expPool
-        let newStarGrainTotal = 0
-        await runPersistenceTransaction({
-            domain: "player", playerId, operation: "bulk_convert_stack_to_exp",
-        }, () => {
+            let newExpPool = player.expPool
+            let newStarGrainTotal = 0
             for (const conversion of conversions) {
                 updatePlayerCharacterSync(playerId, conversion.characterId, { stack: 0 })
             }
@@ -251,19 +211,15 @@ const routes = async (fastify: FastifyInstance) => {
             if (totalStarGrains > 0) {
                 newStarGrainTotal = givePlayerItemSync(playerId, rewardItemId, totalStarGrains)
             }
-        })
 
-        const items = getPlayerItemsSync(playerId)
-        if (totalStarGrains > 0) {
-            items[String(rewardItemId)] = newStarGrainTotal
-        }
+            const items = getPlayerItemsSync(playerId)
+            if (totalStarGrains > 0) {
+                items[String(rewardItemId)] = newStarGrainTotal
+            }
 
-        console.log(`[BULK_STACK_EXP] player ${playerId}: ${processedCount} characters converted, exp +${totalExp}, starGrain +${totalStarGrains}, expPool ${player.expPool}→${newExpPool}`)
+            conversionLog = `[BULK_STACK_EXP] player ${playerId}: ${processedCount} characters converted, exp +${totalExp}, starGrain +${totalStarGrains}, expPool ${player.expPool}→${newExpPool}`
 
-        reply.header("content-type", "application/x-msgpack")
-        return reply.status(200).send({
-            "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-            "data": {
+            const data = {
                 "character_list": modifiedCharacters,
                 "converted_exp_info": { "add_exp": totalExp },
                 "item_list": items,
@@ -273,6 +229,16 @@ const routes = async (fastify: FastifyInstance) => {
                 },
                 "mail_arrived": false
             }
+            recordGameplayMutationResponseSync(playerId, mutation, data)
+            return { data }
+        })
+        if (result.error !== undefined) return reply.status(result.status ?? 400).send({
+            error: result.status === 500 ? "Internal Server Error" : "Bad Request", message: result.error,
+        })
+        if (conversionLog) console.log(conversionLog)
+        reply.header("content-type", "application/x-msgpack")
+        return reply.status(200).send({
+            data_headers: generateDataHeaders({ viewer_id: viewerId }), data: result.data,
         })
     })
 

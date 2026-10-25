@@ -32,6 +32,7 @@ import { getPlayerOptionSync } from "../../data/domains/option";
 import { measureSettlementPhase, measureSettlementPhaseAsync, recordGachaRequest } from "../../lib/settlement-performance";
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator";
 import { contentDecision } from "../../lib/content-operations";
+import { readGameplayMutationRequestSync, recordGameplayMutationResponseSync } from "../../lib/gameplay-mutation-receipt";
 import { createHash } from "node:crypto";
 import { getPlayerOperationReceiptSync, insertPlayerOperationReceiptSync } from "../../data/domains/player-operation-receipt";
 
@@ -171,31 +172,27 @@ const routes = async (fastify: FastifyInstance) => {
 
         const operation = "gacha_exchange_equipment"
         const requestKey = buildExchangeRequestKey(operation, body.request_id, gachaId, equipmentId)
-        const previous = requestKey
-            ? getPlayerOperationReceiptSync<Record<string, any>>(playerId, operation, requestKey)
-            : null
-        if (previous) return sendExchangeResponse(reply, viewerId, previous.response)
-
-        const gachaData = getGachaSync(gachaId)
-        if (gachaData === null || gachaData.type !== GachaType.WEAPON) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "No equipment exchange data for gacha with provided id."
-        })
-        if (getExchangeableGachaItem(gachaData, equipmentId) === null) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "Equipment is not exchangeable from this gacha."
-        })
-        if (contentDecision("gacha", gachaId, "exchange", Date.now()) === false) {
-            return reply.status(400).send({ error: "Bad Request", message: "Gacha exchange is closed." })
-        }
 
         const settlement = await runPersistenceTransaction({
             domain: "gacha", playerId, operation,
         }, () => {
-            const duplicate = requestKey
-                ? getPlayerOperationReceiptSync<Record<string, any>>(playerId, operation, requestKey)
-                : null
-            if (duplicate) return { responseData: duplicate.response, errorMessage: undefined }
+            const mutation = readGameplayMutationRequestSync(playerId, {
+                headerToken: request.headers.login_token, body, accountId: viewerIdSession.accountId,
+            }, operation, { gachaId, rewardId: equipmentId, requestId: body.request_id })
+            if (!mutation) return { responseData: null, errorMessage: "Invalid or superseded gameplay request." }
+            if (mutation.response) return { responseData: mutation.response, errorMessage: undefined }
+            const duplicate = requestKey ? getPlayerOperationReceiptSync<Record<string, any>>(playerId, operation, requestKey) : null
+            if (duplicate) {
+                recordGameplayMutationResponseSync(playerId, mutation, duplicate.response)
+                return { responseData: duplicate.response, errorMessage: undefined }
+            }
+            const gachaData = getGachaSync(gachaId)
+            if (!gachaData || gachaData.type !== GachaType.WEAPON) return {
+                responseData: null, errorMessage: "No equipment exchange data for gacha with provided id.",
+            }
+            if (getExchangeableGachaItem(gachaData, equipmentId) === null) return {
+                responseData: null, errorMessage: "Equipment is not exchangeable from this gacha.",
+            }
 
             if (contentDecision("gacha", gachaId, "exchange", Date.now()) === false) {
                 return { responseData: null, errorMessage: "Gacha exchange is closed." }
@@ -224,6 +221,7 @@ const routes = async (fastify: FastifyInstance) => {
             if (requestKey) insertPlayerOperationReceiptSync({
                 playerId, operation, requestKey, response: responseData,
             })
+            recordGameplayMutationResponseSync(playerId, mutation, responseData)
             return { responseData, errorMessage: undefined }
         })
         if (!settlement.responseData) return reply.status(400).send({
@@ -260,31 +258,27 @@ const routes = async (fastify: FastifyInstance) => {
 
         const operation = "gacha_exchange_character"
         const requestKey = buildExchangeRequestKey(operation, body.request_id, gachaId, characterId)
-        const previous = requestKey
-            ? getPlayerOperationReceiptSync<Record<string, any>>(playerId, operation, requestKey)
-            : null
-        if (previous) return sendExchangeResponse(reply, viewerId, previous.response)
-
-        const gachaData = getGachaSync(gachaId)
-        if (gachaData === null || gachaData.type !== GachaType.CHARACTER) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "No character exchange data for gacha with provided id."
-        })
-        if (getExchangeableGachaItem(gachaData, characterId) === null) return reply.status(400).send({
-            "error": "Bad Request",
-            "message": "Character is not exchangeable from this gacha."
-        })
-        if (contentDecision("gacha", gachaId, "exchange", Date.now()) === false) {
-            return reply.status(400).send({ error: "Bad Request", message: "Gacha exchange is closed." })
-        }
 
         const settlement = await runPersistenceTransaction({
             domain: "gacha", playerId, operation,
         }, () => {
-            const duplicate = requestKey
-                ? getPlayerOperationReceiptSync<Record<string, any>>(playerId, operation, requestKey)
-                : null
-            if (duplicate) return { responseData: duplicate.response, errorMessage: undefined }
+            const mutation = readGameplayMutationRequestSync(playerId, {
+                headerToken: request.headers.login_token, body, accountId: viewerIdSession.accountId,
+            }, operation, { gachaId, rewardId: characterId, requestId: body.request_id })
+            if (!mutation) return { responseData: null, errorMessage: "Invalid or superseded gameplay request." }
+            if (mutation.response) return { responseData: mutation.response, errorMessage: undefined }
+            const duplicate = requestKey ? getPlayerOperationReceiptSync<Record<string, any>>(playerId, operation, requestKey) : null
+            if (duplicate) {
+                recordGameplayMutationResponseSync(playerId, mutation, duplicate.response)
+                return { responseData: duplicate.response, errorMessage: undefined }
+            }
+            const gachaData = getGachaSync(gachaId)
+            if (!gachaData || gachaData.type !== GachaType.CHARACTER) return {
+                responseData: null, errorMessage: "No character exchange data for gacha with provided id.",
+            }
+            if (getExchangeableGachaItem(gachaData, characterId) === null) return {
+                responseData: null, errorMessage: "Character is not exchangeable from this gacha.",
+            }
 
             if (contentDecision("gacha", gachaId, "exchange", Date.now()) === false) {
                 return { responseData: null, errorMessage: "Gacha exchange is closed." }
@@ -325,6 +319,7 @@ const routes = async (fastify: FastifyInstance) => {
             if (requestKey) insertPlayerOperationReceiptSync({
                 playerId, operation, requestKey, response: responseData,
             })
+            recordGameplayMutationResponseSync(playerId, mutation, responseData)
             return { responseData, errorMessage: undefined }
         })
         if (!settlement.responseData) return reply.status(400).send({
@@ -366,80 +361,27 @@ const routes = async (fastify: FastifyInstance) => {
         // get player
         const playerId = measureSettlementPhase("gacha", "account", () => resolvePlayerIdSync(viewerIdSession.accountId))!
         if (playerId === null) return reply.status(500).send({ "error": "Internal Server Error", "message": "No players bound to account." })
-        if (isDeferredPersonalPeriodGacha(gachaId)) return reply.status(400).send({ error: "Bad Request", message: "Personal gacha period qualification is unavailable." })
-        // get the gacha
-        const gachaData = getGachaSync(gachaId)
-        if (gachaData === null) {
-            gameVerboseLog(() => `[GACHA] gacha not found: gachaId=${gachaId}`);
-            return reply.status(400).send({
-                "error": "Bad Request",
-                "message": "Gacha doesn't exist."
-            })
-        }
         if (gachaId === 100) {
             if (!isCrazyGachaExecRequest(gachaId, paymentType, type, numberOfExec)) return reply.status(400).send({ error: "Bad Request", message: "Invalid crazy gacha execution type." })
-            const result = await executeCrazyGacha(playerId, { headerToken: request.headers['login_token'], body, accountId: viewerIdSession.accountId })
+            const result = await executeCrazyGacha(playerId, { headerToken: request.headers.login_token, body, accountId: viewerIdSession.accountId })
             if (!result.ok) return reply.status(400).send({ error: "Bad Request", message: result.message })
             return sendExchangeResponse(reply, viewerId, result.data)
         }
-        if (!(contentDecision("gacha", gachaId, "enter", Date.now())
-            ?? (gachaData.enforceAvailabilityWindow !== true || isGachaAvailableAt(gachaData, getServerTime() * 1000)))) {
-            gameVerboseLog(() => `[GACHA] gacha unavailable: gachaId=${gachaId}`);
-            return reply.status(400).send({
-                "error": "Bad Request",
-                "message": "Gacha is not available."
-            })
-        }
-        const isCharacterGacha = gachaData.type == GachaType.CHARACTER
-
-        const previewPlayer = getPlayerSync(playerId)
-        if (previewPlayer === null) return reply.status(500).send({ "error": "Internal Server Error", "message": "Player not found." })
-        const previewGachaData = getPlayerGachaInfoSync(playerId, gachaId) ?? {
-            gachaId,
-            isAccountFirst: true,
-            isDailyFirst: true,
-            gachaExchangePoint: 0,
-        }
-        const previewPlan = buildGachaExecPlan({
-            gacha: gachaData,
-            paymentType,
-            execType: type,
-            numberOfExec,
-            playerFunds: {
-                freeVmoney: previewPlayer.freeVmoney,
-                paidVmoney: previewPlayer.vmoney,
-            },
-            playerGachaData: previewGachaData,
-            getTicketCount: itemId => getPlayerItemSync(playerId, itemId),
-            getCampaignState: () => {
-                const campaignId = getGachaCampaignIdSync(gachaId)
-                if (campaignId === null) return null
-                const campaign = getPlayerGachaCampaignSync(playerId, gachaId, campaignId)
-                return {
-                    campaignId,
-                    count: campaign?.count ?? 1,
-                    insert: campaign === null,
-                }
-            },
-        })
-        if (!previewPlan.ok) {
-            gameVerboseLog(() =>
-                `[GACHA] exec plan rejected: gachaId=${gachaId} paymentType=${paymentType} type=${type} message=${previewPlan.message}`
-            )
-            return reply.status(400).send({ "error": "Bad Request", "message": previewPlan.message })
-        }
-        const pullCount = previewPlan.plan.pullCount
-        const drawMetadata = measureSettlementPhase(
-            "gacha",
-            "draw",
-            () => drawGachaWithMetadataSync(gachaData, pullCount),
-        )
-        const drawResult = drawMetadata.map(draw => draw.id)
         let plannedMoviesToCommit: ReturnType<typeof planCharacterGachaMovies> | undefined
+        let diagnostics: { isCharacterGacha: boolean; drawMetadata: ReturnType<typeof drawGachaWithMetadataSync>; pullCount: number } | undefined
 
         const transactionResult = await measureSettlementPhaseAsync("gacha", "transaction", () => runPersistenceTransaction({
             domain: "gacha", playerId, operation: "draw",
         }, () => {
+            const mutation = readGameplayMutationRequestSync(playerId, {
+                headerToken: request.headers.login_token, body, accountId: viewerIdSession.accountId,
+            }, "gacha_exec", { gachaId, paymentType, type, numberOfExec })
+            if (!mutation) return { ok: false as const, message: "Invalid or superseded gameplay request." }
+            if (mutation.response) {
+                // Persisted movie plans rebuild the same seed requirements after a lost response.
+                plannedMoviesToCommit = mutation.response.movies
+                return { ok: true as const, responseData: mutation.response.responseData as Record<string, any> }
+            }
             // Availability is authoritative at actual write execution, after queueing.
             if (isDeferredPersonalPeriodGacha(gachaId)) return { ok: false as const, message: "Personal gacha period qualification is unavailable." }
             const currentGacha = getGachaSync(gachaId)
@@ -483,12 +425,14 @@ const routes = async (fastify: FastifyInstance) => {
             })
             if (!planResult.ok) return { ok: false as const, message: planResult.message }
             const execPlan = planResult.plan
-            if (execPlan.pullCount !== pullCount) {
-                throw new Error("Gacha execution plan changed across the player queue boundary.")
-            }
+            const pullCount = execPlan.pullCount
+            const isCharacterGacha = currentGacha.type === GachaType.CHARACTER
+            const drawMetadata = measureSettlementPhase("gacha", "draw", () => drawGachaWithMetadataSync(currentGacha, pullCount))
+            const drawResult = drawMetadata.map(draw => draw.id)
+            diagnostics = { isCharacterGacha, drawMetadata, pullCount }
             const plannedCharacterMovies = isCharacterGacha
                 ? measureSettlementPhase("gacha", "movies", () => planCharacterGachaMovies(
-                    gachaData as CharacterGacha,
+                    currentGacha as CharacterGacha,
                     drawResult,
                     {
                         skipNoRarityUpMovie: getPlayerOptionSync(
@@ -500,7 +444,7 @@ const routes = async (fastify: FastifyInstance) => {
                     },
                 ))
                 : undefined
-            plannedMoviesToCommit = plannedCharacterMovies
+            plannedMoviesToCommit = plannedCharacterMovies ?? []
             const items: Record<number, number> = {}
             const gachaCampaigns: UserGachaCampaign[] = []
 
@@ -528,7 +472,7 @@ const routes = async (fastify: FastifyInstance) => {
 
             const rewardResult = rewardPlayerGachaDrawResultSync(
                 playerId,
-                gachaData,
+                currentGacha,
                 drawResult,
                 drawMetadata,
                 plannedCharacterMovies,
@@ -627,10 +571,8 @@ const routes = async (fastify: FastifyInstance) => {
                     "mail_arrived": false,
                 }
             }
-            return {
-                ok: true as const,
-                responseData,
-            }
+            recordGameplayMutationResponseSync(playerId, mutation, { responseData, movies: plannedMoviesToCommit })
+            return { ok: true as const, responseData }
         }, {
             afterCommit: result => {
                 if (result.ok && plannedMoviesToCommit) {
@@ -647,20 +589,23 @@ const routes = async (fastify: FastifyInstance) => {
                 "message": transactionResult.message,
             })
         }
-        recordGachaRequest(isCharacterGacha ? "character" : "equipment", pullCount)
+        if (diagnostics) {
+            const { isCharacterGacha, drawMetadata, pullCount } = diagnostics
+            recordGachaRequest(isCharacterGacha ? "character" : "equipment", pullCount)
 
-        const rarityCounts = new Map<number, number>()
-        for (const draw of drawMetadata) {
-            rarityCounts.set(draw.rank, (rarityCounts.get(draw.rank) ?? 0) + 1)
+            const rarityCounts = new Map<number, number>()
+            for (const draw of drawMetadata) {
+                rarityCounts.set(draw.rank, (rarityCounts.get(draw.rank) ?? 0) + 1)
+            }
+            const raritySummary = Array.from(rarityCounts.entries())
+                .sort(([left], [right]) => left - right)
+                .map(([rank, count]) => `${rank}:${count}`)
+                .join(",")
+            gameVerboseLog(() =>
+                `[GACHA] gacha=${gachaId} type=${isCharacterGacha ? "character" : "equipment"} `
+                + `pulls=${pullCount} rarity=${raritySummary}`
+            )
         }
-        const raritySummary = Array.from(rarityCounts.entries())
-            .sort(([left], [right]) => left - right)
-            .map(([rank, count]) => `${rank}:${count}`)
-            .join(",")
-        gameVerboseLog(() =>
-            `[GACHA] gacha=${gachaId} type=${isCharacterGacha ? "character" : "equipment"} `
-            + `pulls=${pullCount} rarity=${raritySummary}`
-        )
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({

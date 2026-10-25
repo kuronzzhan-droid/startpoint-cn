@@ -15,6 +15,7 @@ const {insertSessionWithToken} = require('../out/data/domains/session');
 const {insertPlayerGachaInfoSync,getPlayerGachaInfoSync,updatePlayerGachaInfoSync} = require('../out/data/domains/gacha');
 const {getPlayerCharacterSync} = require('../out/data/domains/character');
 const {getDb} = require('../out/data/db');
+const identities = require('../out/lib/gameplay-request-identity');
 const {pairs} = require('./fixtures/gacha-exchange-20260912.json');
 
 test('兑换资格修复通过实际路由结算，并保留积分和池边界限制',async t=>{
@@ -34,12 +35,17 @@ test('兑换资格修复通过实际路由结算，并保留积分和池边界�
     saveAccountDefaultPlayer(account.id,player.id);
     const viewer=77391201;
     await insertSessionWithToken({token:String(viewer),accountId:account.id,expires:new Date(Date.now()+86400000),type:2});
+    identities.initializeGameplayRequestIdentitySchemaSync(getDb());
+    const token=getDb().transaction(()=>identities.issueGameplayLoginTokenSync(getDb(),{
+        accountId:account.id,viewerId:viewer,udid:'exchange-consistency',expiresAt:Date.now()+86400000,
+    }))();
+    let apiCount=0;
     function points(gachaId,amount){
         if(getPlayerGachaInfoSync(player.id,gachaId))updatePlayerGachaInfoSync(player.id,{gachaId,gachaExchangePoint:amount});
         else insertPlayerGachaInfoSync(player.id,{gachaId,isAccountFirst:false,isDailyFirst:false,gachaExchangePoint:amount});
     }
     const exchange=(gacha_id,character_id)=>app.inject({method:'POST',url:'/gacha/exchange_character',
-        payload:{viewer_id:viewer,gacha_id,character_id,api_count:1}});
+        headers:{login_token:token},payload:{viewer_id:viewer,gacha_id,character_id,api_count:++apiCount}});
     await t.test('原先失败的 432 个卡池—角色关系全部成功，仅扣除 250 积分',async()=>{
         assert.equal(pairs.length,432);
         for(const [gid,cid] of pairs){
