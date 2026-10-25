@@ -26,6 +26,8 @@ const { saveAccountDefaultPlayer } = require("../out/data/activeAccount")
 const { calculateDissolveRewards } = require("../out/lib/equipment-dissolve")
 const { getConfigSync, getEquipmentCraftSync } = require("../out/lib/assets")
 const { getDb } = require("../out/data/db")
+const identity = require("../out/lib/gameplay-request-identity")
+const logins = new Map()
 
 const TREASURE_SHOP = 2
 const TREASURE_ITEM = 200070 // Current real July product: 100 mana, daily quota 30
@@ -44,6 +46,11 @@ async function createPlayer(fields = {}) {
     await insertSessionWithToken({
         token: String(viewerId), accountId: account.id, expires: new Date(Date.now() + 86_400_000), type: 2,
     })
+    identity.initializeGameplayRequestIdentitySchemaSync(getDb())
+    const token = getDb().transaction(() => identity.issueGameplayLoginTokenSync(getDb(), {
+        accountId: account.id, viewerId, udid: `consistency-${viewerId}`, expiresAt: Date.now() + 86_400_000,
+    }))()
+    logins.set(viewerId, { token, count: 0 })
     return { playerId: player.id, viewerId }
 }
 
@@ -67,9 +74,14 @@ test("economy routes stay consistent under duplicates and concurrency", async t 
         assert.ok(target.startsWith(tempRoot + path.sep) && target !== tempRoot)
         fs.rmSync(target, { recursive: true, force: true })
     })
-    const post = (url, payload) => app.inject({
-        method: "POST", url, headers: { "content-type": "application/json" }, payload,
-    })
+    // These concurrency cases represent distinct operations competing for a
+    // balance; frozen-identity retries are covered by the receipt regressions.
+    const post = (url, payload) => {
+        const login = logins.get(payload.viewer_id)
+        return app.inject({ method: "POST", url,
+            headers: { "content-type": "application/json", login_token: login.token },
+            payload: { ...payload, api_count: ++login.count } })
+    }
     const parallel = (count, makeRequest) => Promise.all(Array.from({ length: count }, makeRequest))
 
     await t.test("character purchases reject excessive quantities before expanding rewards", async () => {
@@ -176,7 +188,9 @@ test("economy routes stay consistent under duplicates and concurrency", async t 
         })
         assert.equal(res.statusCode, 200, res.payload)
         assert.equal(getPlayerItemSync(playerId, craftItemId()) - craftBefore, calculateDissolveRewards(EQUIPMENT, 1).craftPoints)
-        assert.equal(getPlayerEquipmentSync(playerId, EQUIPMENT).stack, 0)
+        // The current single-sale contract consumes one duplicate, retaining
+        // both the base equipment and the other duplicate.
+        assert.equal(getPlayerEquipmentSync(playerId, EQUIPMENT).stack, 1)
     })
 
     await t.test("bulk dismantle treats numeric and string ids as one equipment", async () => {

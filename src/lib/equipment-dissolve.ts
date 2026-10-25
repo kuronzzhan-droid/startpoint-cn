@@ -1,4 +1,5 @@
 import { getEquipmentDissolveSync, getEquipmentCraftSync } from "./assets";
+import { getEquipmentRaritySync } from "./equipment-rarity";
 
 export interface DissolveRewards {
     craftPoints: number;
@@ -18,15 +19,18 @@ export interface DissolveRewards {
  *
  * @param equipmentId  The equipment ID being dissolved.
  * @param count        How many stacks to dissolve.
- * @returns Rewards struct (always non-null, zero values for missing rewards).
+ * @returns Rewards struct. Unknown equipment or craft data is rejected before mutation.
  */
 export function calculateDissolveRewards(
     equipmentId: number,
     count: number
 ): DissolveRewards {
-    const rarity = Math.floor(equipmentId / 1000000);  // 1-indexed, matches CDN keys
-    const craftEntry = getEquipmentCraftSync(rarity);
-    const craftPoints = (craftEntry?.dissolve_craft ?? (rarity + 1)) * count;
+    const rarity = getEquipmentRaritySync(equipmentId);
+    const craftEntry = rarity === null ? null : getEquipmentCraftSync(rarity);
+    if (!craftEntry || !Number.isSafeInteger(craftEntry.dissolve_craft) || craftEntry.dissolve_craft <= 0) {
+        throw Object.assign(new Error("Equipment rarity or craft data is unavailable."), { statusCode: 400 });
+    }
+    const craftPoints = craftEntry.dissolve_craft * count;
 
     const cdn = getEquipmentDissolveSync(equipmentId);
 
