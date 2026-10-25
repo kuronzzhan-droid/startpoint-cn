@@ -250,6 +250,7 @@ async function prepareStart(p: StartPreparePayload, context: RoomCommandContext)
             battleSessionId: currentRoom.lifecycle.battleSessionId!,
             claimToken, ownerEpoch: context.ownerEpoch, remainingMs: context.remainingMs(),
             mateComIds: currentRoom.mates.map(mate => mate.com_id),
+            battleParty: currentRoom.battleParties?.[viewer_id],
             participants: currentRoom.mates.map(mate => ({ viewerId: Number(mate.viewer_id), comId: Number(mate.com_id || 0) }))
                 .filter(mate => Number.isFinite(mate.viewerId) && mate.viewerId > 0),
             expectedRealViewerIds: currentRoom.expected_real_viewer_ids.map(Number).filter(id => Number.isFinite(id) && id > 0),

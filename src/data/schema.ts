@@ -101,6 +101,11 @@ const schemaColumns = {
         column: "party_slot",
         definition: "INTEGER DEFAULT NULL",
     },
+    "players_active_quests.battle_roster_json": {
+        table: "players_active_quests",
+        column: "battle_roster_json",
+        definition: "TEXT DEFAULT NULL",
+    },
     "leaderboard_seasons.content_revision": {
         table: "leaderboard_seasons",
         column: "content_revision",

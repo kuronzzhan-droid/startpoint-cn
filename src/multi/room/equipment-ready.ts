@@ -151,11 +151,13 @@ export function recordEquipmentPartyChange(client: SessionClient, partyId?: numb
 /** Freeze the checked selection so late lobby edits cannot change this battle. */
 export function freezeEquipmentSelections(room: MultiRoom, generation = room.lobby_generation): void {
     room.equipmentPartyIds = {}
+    room.battleParties = {}
     room.npcPartySnapshots = {}
     for (const client of sessionManager.getClientsInRoom(room.room_number, generation)) {
         if (client.isBattle || !client.playerId || client.enterData === null) continue
         const partyId = selectedPartyId(client)
         room.equipmentPartyIds[client.viewerId] = partyId
+        if (client.yourself?.party) room.battleParties[client.viewerId] = JSON.parse(JSON.stringify(client.yourself.party))
         try {
             const snapshot = isRealtimeOwnerChild()
                 ? getPlayerBusinessFacts(Number(client.playerId), { category: room.category, questId: room.quest_id, partyId })?.questNpcPartySnapshot

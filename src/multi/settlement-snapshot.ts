@@ -2,6 +2,7 @@ import { routineGameLog } from "../lib/routine-game-logging"
 import type { ActiveQuest } from "../routes/api/singleBattleQuest"
 import { registerMemoryCounters } from "../lib/memory-diagnostics"
 import { cloneQuestNpcPartySnapshot, type QuestNpcPartySnapshot } from "./npc/quest-party-pool-shared"
+import { cloneBattleRoster } from "../lib/quest/battle-roster"
 
 export type MultiBattleLifecycle = "BATTLE" | "SETTLING" | "RETURN_PENDING" | "LOBBY"
 
@@ -74,6 +75,7 @@ export function registerMultiSettlementSnapshot(input: Omit<MultiSettlementSnaps
             ...input.activeQuest,
             matePlayerIds: [...(input.activeQuest.matePlayerIds ?? [])],
             mateComIds: [...(input.activeQuest.mateComIds ?? [])],
+            battleRoster: cloneBattleRoster(input.activeQuest.battleRoster),
         },
         participants: input.participants.map(participant => ({ ...participant })),
         expectedRealViewerIds: [...input.expectedRealViewerIds],

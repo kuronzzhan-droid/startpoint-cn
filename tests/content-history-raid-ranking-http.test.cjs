@@ -88,6 +88,9 @@ test('old Raid1 dedicated start, closed finish and earned summary reward use the
     const summary = () => post(player, '/raid/summary', { event_id: 1 })
     assert.equal(response(await summary()).data.raid_boss.total_kill_count, 0)
     response(await post(player, '/raid/party'))
+    // Native Raid forbids using the same character across its three teams.
+    // Keep the primary fixture leader and leave the two unused side teams empty.
+    db.prepare('UPDATE players_parties SET character_id_1=NULL WHERE player_id=? AND category=3 AND group_id=1 AND slot IN (2,3)').run(player.id)
     const rule = raid.getRaidEventProgressRule(1)
     // Synthetic pre-existing communal progress, not official historical totals.
     global(1, 0, rule.requiredKillCount - rule.questWeights[quest])

@@ -5,6 +5,8 @@ import { continueFiveBoss, fiveBossContinueAcknowledgement, FiveBossContinueErro
     isFiveBossContinueRequest } from "../../multi/five-boss/continue-runtime";
 import { isFiveBossTicketShortage, sendFiveBossTicketShortage } from "../../multi/five-boss/entry-response";
 import { startFiveBossSoloSync, abortFiveBossSoloSync, getFiveBossSoloReceiptSync, isActiveFiveBossSoloSync } from "../../multi/five-boss/solo-runtime";
+import { getFiveBossRunByClientSync } from "../../data/domains/fiveBossGauntletRun";
+import { getRoomCommandGateway } from "../../multi/coordinator/default-runtime";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { deletePlayerActiveQuestIfPlayIdSync, deletePlayerActiveQuestSync, getPlayerActiveQuestSync, insertPlayerActiveQuestSync, updatePlayerActiveQuestContinueCountIfPlayIdSync } from "../../data/domains/quest_active"
 import { clientSerializeDate } from "../../data/utils/date"
@@ -25,6 +27,7 @@ import { getStaminaCost } from "../../lib/stamina-cost";
 import { calculateClearRank } from "../../lib/quest/finish/quest-calc";
 import { validateSessionAndPlayer } from "../../lib/quest/finish/session-validator";
 import { resolveActiveQuest } from "../../lib/quest/finish/active-quest-resolver";
+import { captureBattleRosterSync, isBattleRosterError, normalizeBattleParty, resolveRaidSubStatistics, type BattleRoster } from "../../lib/quest/battle-roster";
 import { getAbyssTimeRevision, getAbyssTimeRevisionAtVersion, isAbyssFiniteQuest, isStaleAbyssBattle, isStaleAbyssClient } from "../../lib/abyss-time-revision";
 import {
     calculateScoreAttackClearRank,
@@ -60,6 +63,8 @@ import { buildPracticeBattleHistoryRecord } from "../../lib/quest/practice-battl
 import { isContentQuestOpenAt } from "../../lib/content-operations";
 import { canStartAbyssQuestSync } from "../../data/domains/abyss-tower-progress";
 import { isAbyssExEndlessQuest } from "../../lib/abyss-modes";
+import { addManaSafe, buildBattleManaRewards, isFieldManaError, readFieldMana } from "../../lib/quest/finish/field-mana";
+import { isManaCounterError } from "../../data/domains/mana-counter";
 import { isValidNormalPartySlotSync } from "../../data/domains/party";
 import { usesNormalCurrentPartySlot } from "../../lib/party-current-slot";
 import {
@@ -105,6 +110,7 @@ interface QuestStatistics {
 }
 
 export interface FinishBody {
+    sub_statistics?: unknown
     play_id?: string
     is_restored: boolean
     continue_count: number
@@ -184,6 +190,7 @@ export interface ActiveQuest {
     startedAtMs?: number
     questTimeRevision?: string | null
     clockVersion?: number
+    battleRoster?: BattleRoster | null
 }
 
 const continueVmoneyCost = 50;
@@ -217,6 +224,7 @@ export function insertActiveQuest(playerId: number, quest: ActiveQuest) {
         startedAtMs,
         partySlot: quest.partySlot ?? null,
         questTimeRevision,
+        battleRoster: quest.battleRoster,
     })
     activeQuests[playerId] = { ...quest }
 }
@@ -374,6 +382,18 @@ const routes = async (fastify: FastifyInstance) => {
                 })
             }
 
+            let manaObtained: number
+            try {
+                const fieldMana = readFieldMana(body.add_mana)
+                buildBattleManaRewards(questData.manaReward, fieldMana, isMode15Quest(questCategory, questId))
+                manaObtained = isAbyssExEndlessQuest(questCategory, questId) ? 0 : addManaSafe(questData.manaReward, fieldMana)
+                normalizeBattleParty(body.statistics?.party, questData.fixedParty !== undefined)
+                resolveRaidSubStatistics(activeQuestData.battleRoster, body.statistics, body.sub_statistics)
+            } catch (error) {
+                if (!isBattleRosterError(error) && !isFieldManaError(error) && !isManaCounterError(error)) throw error
+                return reply.status(400).send({ error: "Bad Request", message: (error as Error).message })
+            }
+
             // calculate clear rank
             const clearTime = body.elapsed_time_ms
             const isScoreAttackEvent = questCategory === QuestCategory.SCORE_ATTACK_EVENT
@@ -399,7 +419,6 @@ const routes = async (fastify: FastifyInstance) => {
 
             // State-dependent totals and first-clear progress are resolved by the transaction.
             const displayMode15ManaAsFieldDrop = isMode15Quest(questCategory, questId)
-            const manaObtained = isAbyssExEndlessQuest(questCategory, questId) ? 0 : questData.manaReward + body.add_mana
 
             // The native forced-loss main scene advances the story while the
             // battle itself remains a defeat for mission and history facts.
@@ -428,21 +447,27 @@ const routes = async (fastify: FastifyInstance) => {
                 battleFactsAccomplished = questAccomplished
             }
 
-            const finishResponse = await measureSettlementPhaseAsync("single", "transaction", () => (
-                runWriterCommand<SingleSettleFinishArgs, SingleSettleFinishResult>(
-                    SINGLE_SETTLE_FINISH,
-                    {
-                        playerId, viewerId, questCategory, questId, questData, activeQuestData, body,
-                        clearTime, clearRank, questAccomplished, battleFactsAccomplished,
-                        // The patched client may skip /start; a rebuilt active quest must
-                        // not seed Abyss records as a registered run.
-                        fiveBossSoloQuest, registered,
-                        scoreAttackBorderTiers, manaObtained, displayMode15ManaAsFieldDrop,
-                        finishCacheKey, receiptPlayId,
-                    },
-                    { domain: "single-quest", playerId, operation: "finish" },
-                )
-            ))
+            let finishResponse: SingleSettleFinishResult
+            try {
+                finishResponse = await measureSettlementPhaseAsync("single", "transaction", () => (
+                    runWriterCommand<SingleSettleFinishArgs, SingleSettleFinishResult>(
+                        SINGLE_SETTLE_FINISH,
+                        {
+                            playerId, viewerId, questCategory, questId, questData, activeQuestData, body,
+                            clearTime, clearRank, questAccomplished, battleFactsAccomplished,
+                            // The patched client may skip /start; a rebuilt active quest must
+                            // not seed Abyss records as a registered run.
+                            fiveBossSoloQuest, registered,
+                            scoreAttackBorderTiers, manaObtained, displayMode15ManaAsFieldDrop,
+                            finishCacheKey, receiptPlayId,
+                        },
+                        { domain: "single-quest", playerId, operation: "finish" },
+                    )
+                ))
+            } catch (error) {
+                if (!isBattleRosterError(error) && !isFieldManaError(error) && !isManaCounterError(error)) throw error
+                return reply.status(400).send({ error: "Bad Request", message: (error as Error).message })
+            }
             if (finishResponse.timing !== null) recordSingleSettlementBodyTiming(finishResponse.timing)
 
             if (activeQuests[playerId] === activeQuestData) delete activeQuests[playerId]
@@ -614,7 +639,7 @@ const routes = async (fastify: FastifyInstance) => {
         const useBoostPoint = body.use_boost_point
         const useBossBoostPoint = body.use_boss_boost_point
         const isAutoStartMode = body.is_auto_start_mode
-        if (isNaN(viewerId) || isNaN(partyId) || isNaN(questId) || isNaN(category) || singleFinishPlayId(body.play_id) === null || useBoostPoint === undefined || useBossBoostPoint === undefined || isAutoStartMode === undefined) return reply.status(400).send({
+        if (isNaN(viewerId) || isNaN(partyId) || isNaN(questId) || isNaN(category) || singleFinishPlayId(body.play_id) === null || typeof useBoostPoint !== "boolean" || typeof useBossBoostPoint !== "boolean" || isAutoStartMode === undefined) return reply.status(400).send({
             "error": "Bad Request", "message": "Invalid request body."
         })
 
@@ -689,8 +714,29 @@ const routes = async (fastify: FastifyInstance) => {
             let insertedMemory: ActiveQuest | undefined
             let mission: MissionSettlementResult | undefined
             try {
+                const previous = getPlayerActiveQuestSync(playerId)
+                if (previous?.isMulti && previous.playId !== body.play_id && isFiveBossGauntletQuest(previous.category, previous.questId)) {
+                    const previousRun = getFiveBossRunByClientSync({ playerId, clientPlayId: previous.playId })
+                    const recovery = await getRoomCommandGateway().execute("fiveBoss.recovery", {
+                        staleQuest: previous, playerId, ...(previousRun ? { staleFrozenRunId: previousRun.runId } : {}),
+                    }) as { recoverable: boolean }
+                    if (recovery.recoverable) throw new Error("Finish or abort the multiplayer run before starting solo.")
+                    if (previousRun) {
+                        const barrier = await getRoomCommandGateway().execute("fiveBoss.proof.barrier", {
+                            runId: previousRun.runId, playerId, roomNumber: previousRun.roomNumber,
+                        }) as { ok: boolean }
+                        if (!barrier.ok) throw new Error("Previous five-boss result proof is not durably acknowledged.")
+                    }
+                }
                 await runPersistenceTransaction({ domain: "single-quest", playerId, operation: "five_boss_solo_start" }, () => {
                     assertBattleCanStartSync(playerId, body.play_id)
+                    const pending = getPlayerActiveQuestSync(playerId)
+                    if (pending?.playId !== previous?.playId && pending?.playId !== body.play_id) {
+                        throw new Error("The current battle changed while preparing solo start.")
+                    }
+                    const battleRoster = pending?.playId === body.play_id ? pending.battleRoster
+                        : captureBattleRosterSync({ playerId, questCategory: category, questId, partyId,
+                            fixedParty: questData.fixedParty })
                     return startFiveBossSoloSync(playerId, body.play_id, () => {
                         insertActiveQuest(playerId, {
                             questId, category, useBoostPoint: false, useBossBoostPoint: false,
@@ -698,6 +744,7 @@ const routes = async (fastify: FastifyInstance) => {
                             entryItemId: FIVE_BOSS_GAUNTLET.ticketItemId,
                             partySlot: partyId,
                             playId: body.play_id, continueCount: 0,
+                            battleRoster,
                         })
                         insertedMemory = activeQuests[playerId]
                         if (usesNormalCurrentPartySlot(category)
@@ -806,6 +853,9 @@ const routes = async (fastify: FastifyInstance) => {
                     && !getPlayerDailyChallengePointListSync(playerId).some(entry => entry.id === nativeChallengePointId && entry.point > 0)) {
                     throw new Error("Daily challenge points exhausted.")
                 }
+                activeQuest.battleRoster = captureBattleRosterSync({
+                    playerId, questCategory: category, questId, partyId, fixedParty: questData.fixedParty,
+                })
                 const startedAtMs = getRealServerDate().getTime()
                 activeQuest.startedAtMs = startedAtMs
                 if (entryCost && entryCost.itemId > 0) {
@@ -863,6 +913,7 @@ const routes = async (fastify: FastifyInstance) => {
                     continueCount: activeQuest.continueCount,
                     startedAtMs: activeQuest.startedAtMs ?? null,
                     partySlot: activeQuest.partySlot ?? null,
+                    battleRoster: activeQuest.battleRoster,
                 })
                 recordActiveMissionQuestChallengeFactSync(playerId, category)
                 missionSettlement = settleMissionCategories(
@@ -878,6 +929,9 @@ const routes = async (fastify: FastifyInstance) => {
             }
             const message = error instanceof Error ? error.message : String(error)
             const code = (error as { code?: string })?.code
+            if (isBattleRosterError(error)) {
+                return reply.status(400).send({ error: "Bad Request", message })
+            }
             if (message === "QUEST_OPERATIONS_CLOSED") {
                 reply.header("content-type", "application/x-msgpack")
                 return reply.status(200).send({ data_headers: generateDataHeaders({ viewer_id: viewerId, result_code: 4050 }), data: {} })

@@ -314,6 +314,24 @@ function assertSnapshotScalar(value: unknown, context: string): asserts value is
     throw new Error(`${context}: 只允许字符串、数字或 null`)
 }
 
+const MANA_REAL_ARCHIVE_PREFIX = "mana-counter-real-v1:"
+const MAX_SQLITE_INTEGER = BigInt("9223372036854775807")
+
+/** Only this statistical column has a legacy wide-number archive representation. */
+function decodeArchivedManaCounter(value: string): number | bigint {
+    if (/^[1-9][0-9]{15,18}$/.test(value)) {
+        const integer = BigInt(value)
+        if (integer > BigInt(Number.MAX_SAFE_INTEGER) && integer <= MAX_SQLITE_INTEGER) return integer
+    }
+    if (value.startsWith(MANA_REAL_ARCHIVE_PREFIX)) {
+        const text = value.slice(MANA_REAL_ARCHIVE_PREFIX.length)
+        const real = Number(text)
+        if (text === String(real) && Number.isFinite(real) && Number.isInteger(real) && real >= 0
+            && !Number.isSafeInteger(real)) return real
+    }
+    throw new Error("players.total_mana_obtained: 无效的极端累计玛纳存档表示")
+}
+
 function assertSnapshotColumnValue(
     value: unknown,
     table: string,
@@ -323,6 +341,10 @@ function assertSnapshotColumnValue(
     assertSnapshotScalar(value, context)
     if (value === null) {
         if (column.notnull === 1 || column.pk > 0) throw new Error(`${context}: 必填列不能为 null`)
+        return
+    }
+    if (table === "players" && column.name === "total_mana_obtained" && typeof value === "string") {
+        decodeArchivedManaCounter(value)
         return
     }
     const declaredType = TEXT_STORED_IN_INTEGER_COLUMNS.has(`${table}.${column.name}`)
@@ -343,7 +365,10 @@ function readSnapshotTable(
 ): SnapshotTableData {
     const columns = getTableColumns(db, table)
     const primaryKey = getPrimaryKeyColumns(db, table)
-    const selectedColumns = columns.map(quoteIdentifier).join(", ")
+    const selectedColumns = columns.map(column => table === "players" && column === "total_mana_obtained"
+        ? `${quoteIdentifier(column)}, typeof(${quoteIdentifier(column)}) AS __mana_counter_type,
+            CAST(${quoteIdentifier(column)} AS TEXT) AS __mana_counter_text`
+        : quoteIdentifier(column)).join(", ")
     const whereColumn = table === "players" ? "id" : "player_id"
     const orderBy = primaryKey.length > 0
         ? ` ORDER BY ${primaryKey.map(quoteIdentifier).join(", ")}`
@@ -356,7 +381,21 @@ function readSnapshotTable(
     return {
         columns,
         rows: rows.map((row, rowIndex) => columns.map(column => {
-            const value = row[column]
+            let value = row[column]
+            if (table === "players" && column === "total_mana_obtained") {
+                if (row.__mana_counter_type === "integer") {
+                    const exact = BigInt(row.__mana_counter_text as string)
+                    if (exact > BigInt(Number.MAX_SAFE_INTEGER)) value = String(exact)
+                } else if (row.__mana_counter_type === "real" && typeof value === "number"
+                    && !Number.isSafeInteger(value)) {
+                    if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
+                        throw new Error("players.total_mana_obtained: 不能导出非法累计玛纳")
+                    }
+                    // Number.toString is a round-trip representation of the stored double;
+                    // SQLite CAST AS TEXT may print fewer significant digits, so do not use it here.
+                    value = MANA_REAL_ARCHIVE_PREFIX + String(value)
+                }
+            }
             assertSnapshotScalar(value, `${table}[${rowIndex}].${column}`)
             return value
         })),
@@ -643,6 +682,10 @@ export function restorePlayerSaveSnapshotV2Sync(
         const updateValues = updateColumns.map(column => {
             if (column === "exp_pooled_time" || column === "last_login_time") return currentPoolTime
             if (column === "time_offset") return currentOffset
+            if (column === "total_mana_obtained") {
+                const mana = sourcePlayer[playerTable.columns.indexOf(column)]
+                if (typeof mana === "string") return decodeArchivedManaCounter(mana)
+            }
             return sourcePlayer[playerTable.columns.indexOf(column)]
         })
         const playerUpdate = db.prepare(`

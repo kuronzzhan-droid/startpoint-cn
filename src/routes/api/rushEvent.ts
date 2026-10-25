@@ -16,7 +16,11 @@ import { isStaleAbyssClient } from "../../lib/abyss-time-revision";
 import { ABYSS_EX_EVENT_ID, isAbyssEvent } from "../../lib/abyss-modes";
 import { canStartAbyssQuestSync, hasAbyssExUnlockSync, refreshPlayerAbyssTowersSync } from "../../data/domains/abyss-tower-progress";
 import { generateDataHeaders, getServerDate, getServerTime } from "../../utils";
-import { FinishBody, insertActiveQuest } from "./singleBattleQuest";
+import { FinishBody, insertActiveQuest, activeQuests, type ActiveQuest } from "./singleBattleQuest";
+import { getPlayerActiveQuestSync } from "../../data/domains/quest_active";
+import { assertBattleCanStartSync } from "../../data/domains/battle-settlement-ledger";
+import { singleFinishPlayId } from "../../lib/quest/finish/single-finish-identity";
+import { captureBattleRosterSync, isBattleRosterError } from "../../lib/quest/battle-roster";
 import { getPlayerRushEventEndlessBattleRankingSync, getRushEventEndlessBattleRankPlayedPartyListSync, getSerializedPlayerRushEventPlayedPartiesSync } from "../../lib/rush";
 import { clientSerializeDate } from "../../data/utils";
 import { resolvePlayerIdSync } from "../../data/activeAccount";
@@ -715,7 +719,8 @@ const routes = async (fastify: FastifyInstance) => {
         const partyId = body.party_id
         const questId = body.quest_id
         routineGameLog("rush", () => `[RUSH] battle/start: viewer=${viewerId} questId=${questId} partyId=${partyId} autoStart=${isAutoStartMode}`)
-        if (isNaN(viewerId) || isNaN(partyId) || isNaN(questId) || isAutoStartMode === undefined) return reply.status(400).send({
+        if (isNaN(viewerId) || isNaN(partyId) || isNaN(questId) || isAutoStartMode === undefined
+            || singleFinishPlayId(body.play_id) === null) return reply.status(400).send({
             "error": "Bad Request",
             "message": "Invalid request body."
         })
@@ -753,13 +758,14 @@ const routes = async (fastify: FastifyInstance) => {
         // room creation, rescue discovery and rescue participation remain
         // untouched so lower-rank players can join an eligible host.
         const player = getPlayerSync(playerId)
-        if (!isContentQuestOpenAt(QuestCategory.RUSH_EVENT, questId)) {
+        const repeatedPendingStart = getPlayerActiveQuestSync(playerId)?.playId === body.play_id
+        if (!repeatedPendingStart && !isContentQuestOpenAt(QuestCategory.RUSH_EVENT, questId)) {
             reply.type("application/x-msgpack")
             return reply.send({ data_headers: generateDataHeaders({ viewer_id: viewerId, result_code: 4050 }), data: {} })
         }
         const playerRank = player === null ? 0 : getRankDegree(player.rankPoint)
-        if (!canStartRankGatedGauntletRush(questData.rushEventId, playerRank)
-            || !canStartAbyssQuestSync(playerId, QuestCategory.RUSH_EVENT, questId)) {
+        if (!repeatedPendingStart && (!canStartRankGatedGauntletRush(questData.rushEventId, playerRank)
+            || !canStartAbyssQuestSync(playerId, QuestCategory.RUSH_EVENT, questId))) {
             console.log(
                 `[RUSH] rank-gated Gauntlet start rejected: player=${playerId} `
                 + `rank=${playerRank} required=${GAUNTLET_MIN_PLAYER_RANK} `
@@ -773,7 +779,7 @@ const routes = async (fastify: FastifyInstance) => {
         }
 
         if (
-            isMode15RuntimeLoaded()
+            !repeatedPendingStart && isMode15RuntimeLoaded()
             && questData.rushEventId === MODE15_RUSH_EVENT_ID
             && questId !== MODE15_PRACTICE_QUEST_ID
         ) {
@@ -793,7 +799,7 @@ const routes = async (fastify: FastifyInstance) => {
             }
         }
 
-        if (!isMode15EquipmentAllowedQuest(QuestCategory.RUSH_EVENT, questId)) {
+        if (!repeatedPendingStart && !isMode15EquipmentAllowedQuest(QuestCategory.RUSH_EVENT, questId)) {
             const partyCategory = partyCategoryForRushEvent(questData.rushEventId)
             const restricted = getMode15ExclusiveGlobalPartyItemsSync(
                 playerId, partyCategory, partyId,
@@ -812,10 +818,24 @@ const routes = async (fastify: FastifyInstance) => {
             }
         }
 
+        const previousMemory = activeQuests[playerId]
+        let insertedMemory: ActiveQuest | undefined
         try { await runPersistenceTransaction({
             domain: "single-quest", playerId, operation: "rush_start",
         }, () => {
+            assertBattleCanStartSync(playerId, body.play_id)
+            const pending = getPlayerActiveQuestSync(playerId)
+            if (pending?.playId === body.play_id) {
+                if (pending.isMulti || pending.category !== QuestCategory.RUSH_EVENT || pending.questId !== questId
+                    || pending.isAutoStartMode !== isAutoStartMode || pending.useBoostPoint || pending.useBossBoostPoint
+                    || (pending.partySlot !== null && pending.partySlot !== undefined && pending.partySlot !== partyId)) {
+                    throw new Error("Battle start does not match the pending play.")
+                }
+                return
+            }
             if (!isContentQuestOpenAt(QuestCategory.RUSH_EVENT, questId)) throw new Error("QUEST_OPERATIONS_CLOSED")
+            const battleRoster = captureBattleRosterSync({ playerId, questCategory: QuestCategory.RUSH_EVENT,
+                questId, partyId, fixedParty: questData.fixedParty })
             startLeaderboardQuestSync(playerId, {
                 category: QuestCategory.RUSH_EVENT,
                 eventId: questData.rushEventId,
@@ -838,10 +858,23 @@ const routes = async (fastify: FastifyInstance) => {
                 useBossBoostPoint: false,
                 isAutoStartMode: isAutoStartMode,
                 isMulti: false,
+                partySlot: partyId,
+                eventId: questData.rushEventId,
+                battleRoster,
                 playId: body.play_id,
                 continueCount: 0
             })
+            insertedMemory = activeQuests[playerId]
         }) } catch (error) {
+            if (insertedMemory && activeQuests[playerId] === insertedMemory) {
+                if (previousMemory) activeQuests[playerId] = previousMemory
+                else delete activeQuests[playerId]
+            }
+            const code = (error as { code?: string })?.code
+            if (isBattleRosterError(error) || code === "BATTLE_ALREADY_SETTLED" || code === "BATTLE_CLOCK_ABORTED"
+                || (error as Error)?.message === "Battle start does not match the pending play.") {
+                return reply.status(400).send({ error: "Bad Request", message: (error as Error).message })
+            }
             if (!(error instanceof Error) || error.message !== "QUEST_OPERATIONS_CLOSED") throw error
             reply.type("application/x-msgpack")
             return reply.send({ data_headers: generateDataHeaders({ viewer_id: viewerId, result_code: 4050 }), data: {} })

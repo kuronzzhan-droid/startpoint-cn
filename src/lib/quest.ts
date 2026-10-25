@@ -107,7 +107,7 @@ export function givePlayerScoreRewardsSync(
                             updatePlayerSync({
                                 id: playerId,
                                 freeMana: manaGrant.freeMana,
-                                totalManaObtained: (player?.totalManaObtained || 0) + rewardAmount
+                                manaObtainedDelta: rewardAmount
                             })
                             break;
                         }
@@ -320,7 +320,7 @@ export function givePlayerRewardsSync(
             id: playerId,
             freeVmoney: player.freeVmoney + vmoney,
             freeMana: manaGrant.freeMana,
-            totalManaObtained: (player.totalManaObtained || 0) + requestedMana
+            manaObtainedDelta: requestedMana
         })
         if (expPool > 0) adjustPlayerExpPoolSync(playerId, expPool, 'player_reward')
     }

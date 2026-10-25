@@ -1629,6 +1629,7 @@ test('room disband accepts repeated host cleanup but retains authentication and 
 test('queued room disband cannot delete a replacement room or a later lobby generation', { timeout: 10000 }, async () => {
     const p = player(), manager = load('multi/room/manager')
     const coordinator = load('multi/coordinator/embedded').embeddedMultiCoordinator
+    const gateway = load('multi/coordinator/default-runtime').getRoomCommandGateway()
     const app = await httpApp(p, load('multi/http/room').registerRoomRoutes)
     try {
         for (const replace of [true, false]) {
@@ -1636,11 +1637,13 @@ test('queued room disband cannot delete a replacement room or a later lobby gene
             let release, onQueued
             const blocked = new Promise(resolve => { release = resolve })
             const queued = new Promise(resolve => { onQueued = resolve })
-            const enqueue = coordinator.enqueueRoomCommand
-            const blocker = enqueue.call(coordinator, room.room_number, () => blocked)
-            coordinator.enqueueRoomCommand = function (number, command) {
-                const result = enqueue.call(this, number, command)
-                onQueued()
+            const execute = gateway.execute
+            const blocker = coordinator.enqueueRoomCommand(room.room_number, () => blocked)
+            gateway.execute = function (kind, payload, options) {
+                const result = execute.call(this, kind, payload, options)
+                // Wait for this mutation's copied identity, not an unrelated
+                // room's background command entering the same coordinator.
+                if (kind === 'room.disband' && payload.roomNumber === room.room_number) onQueued(payload)
                 return result
             }
             let request
@@ -1648,7 +1651,9 @@ test('queued room disband cannot delete a replacement room or a later lobby gene
                 request = app.inject({ method: 'POST', url: '/disband_room', payload: {
                     viewer_id: p.viewerId, room_number: room.room_number,
                 } }).then(response => response)
-                await queued
+                const originalDecision = await queued
+                assert.equal(originalDecision.identity.instanceId, room.lifecycle.instanceId)
+                assert.equal(originalDecision.identity.generation, room.lobby_generation)
                 let retained = room
                 if (replace) {
                     manager.disbandRoom(room.room_number)
@@ -1664,7 +1669,7 @@ test('queued room disband cannot delete a replacement room or a later lobby gene
                 assert.equal(response.statusCode, 200, response.body)
                 assert.equal(manager.getRoom(room.room_number), retained)
             } finally {
-                coordinator.enqueueRoomCommand = enqueue
+                gateway.execute = execute
                 release()
                 await blocker
                 if (request) await request
@@ -1853,8 +1858,16 @@ test('reviewed five-boss weapon purchases enforce both materials, five bodies an
         const craftItem = load('lib/assets').getConfigSync().craft_point_item_id || 100000
         items.setPlayerItemSync(p.id, craftItem, 1000)
         items.setPlayerItemSync(p.id, 100004, 4)
-        const upgrade = useStack => app.inject({ method: 'POST', url: '/equipment/upgrade', payload: {
-            viewer_id: p.viewerId, api_count: 1, equipment_id: 5900101, use_stack: useStack,
+        const identities = load('lib/gameplay-request-identity')
+        identities.initializeGameplayRequestIdentitySchemaSync(getDb())
+        const loginToken = getDb().transaction(() => identities.issueGameplayLoginTokenSync(getDb(), {
+            accountId: p.accountId, viewerId: p.viewerId, udid: `five-boss-equipment-${p.viewerId}`,
+            expiresAt: Date.now() + 86400000,
+        }))()
+        let upgradeApiCount = 0
+        const upgrade = useStack => app.inject({ method: 'POST', url: '/equipment/upgrade',
+            headers: { login_token: loginToken }, payload: {
+            viewer_id: p.viewerId, api_count: ++upgradeApiCount, equipment_id: 5900101, use_stack: useStack,
             upgrade_count: 4, item_id: 100004 } })
         const steel = await upgrade(false)
         assert.equal(steel.statusCode, 400)

@@ -45,6 +45,8 @@ import { recordServerWork } from "../../lib/server-work-performance";
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator";
 import { ensurePlayerClockStateForLoadSync } from "../../lib/server-clock-state";
 import { getDb } from "../../data/db";
+import { detachFinalizedFiveBossActiveSync, getFiveBossRunByClientSync } from "../../data/domains/fiveBossGauntletRun";
+import { isFiveBossGauntletQuest } from "../../multi/five-boss/contract";
 import { isPersistenceAdmissionError } from "../../lib/persistence-admission";
 import { serializePlayerSnapshot } from "../../data/utils/client-player-snapshot";
 import { formatClientDisplayDateTime } from "../../lib/client-display-time";
@@ -294,10 +296,25 @@ const routes = async (fastify: FastifyInstance) => {
         // Inject unfinished quest lists for battle recovery
         const activeQuest = getPlayerActiveQuestSync(playerId);
         if (activeQuest) {
-            const multiRecovery = await getRoomCommandGateway().execute("battle.recovery", {
-                quest: activeQuest, viewerId, playerId,
-            }) as MultiActiveQuestRecoveryDecision & { roomPhase: string | null };
-            if ((!multiRecovery.recoverable || isStaleAbyssBattle(activeQuest)) && contentClientReload().preservesPlay(playerId, activeQuest.playId)) {
+            const fiveBossMulti = activeQuest.isMulti && isFiveBossGauntletQuest(activeQuest.category, activeQuest.questId);
+            const frozenRun = fiveBossMulti ? getFiveBossRunByClientSync({ playerId, clientPlayId: activeQuest.playId }) : null;
+            const multiRecovery = await getRoomCommandGateway().execute(fiveBossMulti ? "fiveBoss.recovery" : "battle.recovery", fiveBossMulti ? {
+                staleQuest: activeQuest, playerId, ...(frozenRun ? { staleFrozenRunId: frozenRun.runId } : {}),
+            } : { quest: activeQuest, viewerId, playerId }) as MultiActiveQuestRecoveryDecision & { roomPhase: string | null };
+            if (frozenRun && !multiRecovery.recoverable) {
+                const barrier = await getRoomCommandGateway().execute("fiveBoss.proof.barrier", {
+                    runId: frozenRun.runId, playerId, roomNumber: frozenRun.roomNumber,
+                }) as { ok: boolean };
+                if (!barrier.ok) throw new Error("Previous five-boss result proof is not durably acknowledged.");
+            }
+            const detachedResult = fiveBossMulti && !multiRecovery.recoverable && await runPersistenceTransaction({
+                domain: "multi-settlement", playerId, operation: "load_five_boss_result_pending",
+            }, () => detachFinalizedFiveBossActiveSync(playerId, activeQuest.playId));
+            if (detachedResult) {
+                if (activeQuests[playerId]?.playId === activeQuest.playId) delete activeQuests[playerId];
+                clientData.unfinished_quest_list = [];
+                clientData.unfinished_multi_quest_list = [];
+            } else if ((!multiRecovery.recoverable || isStaleAbyssBattle(activeQuest)) && contentClientReload().preservesPlay(playerId, activeQuest.playId)) {
                 // Operational reload may retire a transport seat. Keep only the
                 // exact registered play; do not advertise an impossible restore
                 // or change finish/abort eligibility and rewards.

@@ -108,14 +108,15 @@ export class MissionRewardGranter {
     }
 
     persistPlayer(): void {
-        if (!this.hasPlayerChanges()) return
+        if (!this.hasPlayerChanges() && this.totalManaGained === 0) return
         updatePlayerSync({
             id: this.playerId,
             freeVmoney: this.freeVmoney,
             freeMana: this.freeMana,
             expPool: this.expPool,
-            totalManaObtained: (this.player.totalManaObtained ?? 0) + this.totalManaGained,
+            manaObtainedDelta: this.totalManaGained,
         })
+        this.totalManaGained = 0
     }
 
     hasPlayerChanges(): boolean {

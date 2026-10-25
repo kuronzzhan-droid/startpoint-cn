@@ -104,9 +104,11 @@ export interface QuestStatisticsParty {
 export interface QuestStatistics {
     clear_phase: number
     party: QuestStatisticsParty
+    is_mvp?: boolean
 }
 
 export interface MultiFinishBody {
+    add_mana?: number
     is_accomplished?: boolean
     elapsed_time_ms?: number
     score?: number
