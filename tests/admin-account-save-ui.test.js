@@ -72,7 +72,7 @@ assert.doesNotMatch(playerDetail, /确认导入旧版 V1/)
 assert.match(playerDetail, /仅接受与当前数据库结构匹配的完整 V2 存档/)
 
 assert.match(serverApi, /playerIds\.includes\(savedDefaultPid\)/)
-assert.match(serverApi, /saveAccountDefaultPlayer\(accountId, remainingPlayerIds\[0\]\)/)
+assert.match(serverApi, /removeDeletedPlayerFromState\(accountId \|\| null, pid, remainingPlayerIds\[0\] \?\? null\)/)
 assert.match(serverApi, /getAllAdminPlayerSummariesSync/)
 assert.match(serverApi, /getAdminPlayerSelectionState/)
 assert.match(serverApi, /getAllViewerSessionsSync/)

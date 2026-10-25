@@ -10,6 +10,7 @@ import { getServerClockSnapshot, setServerTimeOffset } from "../utils";
 import type { Database } from "better-sqlite3";
 import { restoreServerClockStateSync } from "../lib/server-clock-state";
 import { resolveAccountPlayerIdSync } from "./domains/account";
+import { jsonFileIdentitySync, readValidatedJsonWithBackupSync, writeJsonAtomicSync } from "../lib/atomic-json-file";
 
 const STATE_DIRECTORY = process.env.DATA_DIR
     ? path.resolve(process.env.DATA_DIR)
@@ -25,42 +26,76 @@ interface WebState {
 }
 
 let cachedState: WebState | null = null;
+let cachedIdentity: string | null = null;
+
+function validateState(value: unknown): void {
+    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("选档状态不是有效对象");
+    const state = value as Partial<WebState>;
+    const id = (value: unknown) => value === undefined || value === null || (Number.isSafeInteger(value) && Number(value) > 0);
+    if (!id(state.activePlayerId) || !id(state.selectedAccountId)
+        || (state.timeOffset !== undefined && state.timeOffset !== null && !Number.isSafeInteger(state.timeOffset))
+        || (state.lastSetTime !== undefined && state.lastSetTime !== null
+            && (typeof state.lastSetTime !== "string" || !Number.isFinite(Date.parse(state.lastSetTime))))) {
+        throw new Error("选档状态的 ID 或时间字段无效");
+    }
+    const defaults = state.defaultPlayers;
+    if (defaults !== undefined && defaults !== null && (typeof defaults !== "object" || Array.isArray(defaults)
+        || Object.entries(defaults).some(([account, player]) => !/^[1-9]\d*$/.test(account)
+            || !Number.isSafeInteger(Number(account)) || !Number.isSafeInteger(player) || player <= 0))) {
+        throw new Error("选档状态的账号默认存档映射无效");
+    }
+}
 
 function readState(): WebState {
+    // Game/login lookups keep the existing in-memory fast path. Disk identity
+    // is checked before mutations; a new process always validates both files.
     if (cachedState !== null) return cachedState;
     try {
-        if (existsSync(STATE_FILE)) {
-            const raw = JSON.parse(fs.readFileSync(STATE_FILE, "utf-8"));
-            cachedState = {
-                activePlayerId: raw.activePlayerId ?? null,
-                selectedAccountId: raw.selectedAccountId ?? null,
-                timeOffset: raw.timeOffset ?? null,
-                lastSetTime: raw.lastSetTime ?? null,
-                defaultPlayers: raw.defaultPlayers ?? {},
-            };
-            return cachedState;
-        }
-    } catch { /* ignore corrupt file */ }
-    cachedState = {
-        activePlayerId: null,
-        selectedAccountId: null,
-        timeOffset: null,
-        lastSetTime: null,
-        defaultPlayers: {},
-    };
-    return cachedState;
+        const identity = jsonFileIdentitySync(STATE_FILE);
+        const result = readValidatedJsonWithBackupSync<Partial<WebState>>(STATE_FILE, validateState);
+        const raw = result.source === "absent" ? {} : result.value;
+        cachedState = {
+            activePlayerId: raw.activePlayerId ?? null,
+            selectedAccountId: raw.selectedAccountId ?? null,
+            timeOffset: raw.timeOffset ?? null,
+            lastSetTime: raw.lastSetTime ?? null,
+            defaultPlayers: { ...raw.defaultPlayers },
+        };
+        cachedIdentity = identity;
+        if (result.source === "backup") console.warn("[STATE] 选档主文件不可用，已读取有效备份；未自动覆盖主文件。");
+        return cachedState;
+    } catch (error) {
+        // A previously cached selection must not hide broken on-disk state or
+        // later overwrite it as though a fresh empty configuration was read.
+        cachedState = null;
+        cachedIdentity = null;
+        throw error;
+    }
 }
 
 function mutableState(): WebState {
+    try {
+        if (cachedIdentity !== jsonFileIdentitySync(STATE_FILE)) {
+            cachedState = null;
+            cachedIdentity = null;
+        }
+    } catch (error) {
+        cachedState = null;
+        cachedIdentity = null;
+        throw error;
+    }
     const state = readState();
     return { ...state, defaultPlayers: { ...state.defaultPlayers } };
 }
 
 function writeState(state: WebState): void {
+    validateState(state);
+    if (cachedIdentity !== jsonFileIdentitySync(STATE_FILE)) throw new Error("选档文件已变化，请重新读取后重试");
     const dir = path.dirname(STATE_FILE);
     if (!existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(STATE_FILE, JSON.stringify(state));
+    writeJsonAtomicSync(STATE_FILE, state, { validate: validateState });
     cachedState = state;
+    cachedIdentity = jsonFileIdentitySync(STATE_FILE);
 }
 
 export function getActivePlayerId(): number | null {
@@ -86,6 +121,14 @@ export function getAdminPlayerSelectionState(): AdminPlayerSelectionState {
 export function setActivePlayerId(id: number | null): void {
     const state = mutableState();
     state.activePlayerId = id;
+    writeState(state);
+}
+
+/** The panel selection and the account's login selection are one sidecar commit. */
+export function activatePlayerSave(accountId: number | null, playerId: number): void {
+    const state = mutableState();
+    state.activePlayerId = playerId;
+    if (accountId !== null) state.defaultPlayers[accountId] = playerId;
     writeState(state);
 }
 
@@ -161,6 +204,17 @@ export function saveAccountDefaultPlayer(accountId: number, playerId: number): v
  */
 export function removeDeletedAccountFromState(accountId: number, playerIds: number[]): void {
     removeDeletedAccountsFromState([{ accountId, playerIds }]);
+}
+
+/** Update both references to a deleted save together, retaining other accounts. */
+export function removeDeletedPlayerFromState(accountId: number | null, playerId: number, replacementId: number | null): void {
+    const state = mutableState();
+    if (accountId !== null && state.defaultPlayers[accountId] === playerId) {
+        if (replacementId === null) delete state.defaultPlayers[accountId];
+        else state.defaultPlayers[accountId] = replacementId;
+    }
+    if (state.activePlayerId === playerId) state.activePlayerId = null;
+    writeState(state);
 }
 
 /**
