@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.282",
+  "cdn_version": "1.4.283",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -36284,6 +36284,92 @@
         }
       ],
       "created_at": "2026-10-25"
+    },
+    {
+      "id": "abyss-beast-client-followup-1.4.283",
+      "type": "patch",
+      "name": "深渊之兽客户端配套增量（175测试服）",
+      "version": "1.4.283",
+      "depends_on": "1.4.282",
+      "enabled": true,
+      "candidate_only": true,
+      "local_test_only": true,
+      "design_complete": false,
+      "runtime_verified": false,
+      "release_ready": false,
+      "archive": "pinball-1.4.282-1.4.283-1-abyss-beast-client-followup-local.zip",
+      "archive_size": 388624,
+      "chain": [
+        "pinball-1.4.282-1.4.283-1-abyss-beast-client-followup-local.zip"
+      ],
+      "files": [
+        "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+        "production/upload/50/83e8c7b8fe348abb48122b7ea7caa9081025f4",
+        "production/upload/63/d7a6cb6b6a40298420dee90cfe0304ffb1f372",
+        "production/upload/80/e0ec493a1242d2e720657691b7100ec30863b2",
+        "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+        "production/upload/9b/8de7b349a73f668ac2aaf058749178e3cde052",
+        "production/upload/cb/df715e681dadddcf63881aee40d35899e608af",
+        "production/upload/ff/2effa2a6ad0d0f33c5d65bab5d60e6d10e7c3b",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.282-1.4.283-1-abyss-beast-client-followup-local.zip",
+          "size": 388624,
+          "sha256": "b43e3ffecc280b33aeede4b6889359306005d31481427d7af9730e710562d9cf",
+          "members": 9,
+          "files": [
+            "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149",
+            "production/upload/50/83e8c7b8fe348abb48122b7ea7caa9081025f4",
+            "production/upload/63/d7a6cb6b6a40298420dee90cfe0304ffb1f372",
+            "production/upload/80/e0ec493a1242d2e720657691b7100ec30863b2",
+            "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab",
+            "production/upload/9b/8de7b349a73f668ac2aaf058749178e3cde052",
+            "production/upload/cb/df715e681dadddcf63881aee40d35899e608af",
+            "production/upload/ff/2effa2a6ad0d0f33c5d65bab5d60e6d10e7c3b",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+          ]
+        }
+      ],
+      "archive_member_integrity": {
+        "production/upload/07/0c6e214359ccf27b1cb8078d3fc51aecfe0149": {
+          "sha256": "93b0786f52b5c36decaa2b5d575dbfae749b25b746418af408aa070e25d93da7",
+          "size": 124332
+        },
+        "production/upload/50/83e8c7b8fe348abb48122b7ea7caa9081025f4": {
+          "sha256": "30c7315b6159b8609a59856e1c3f6e64ee6f1ae59a1259578672a9f5932e9303",
+          "size": 1125
+        },
+        "production/upload/63/d7a6cb6b6a40298420dee90cfe0304ffb1f372": {
+          "sha256": "93addd22d6251eac47b63b31e7620af6a7768848babd243e91a787ab7e46f855",
+          "size": 494
+        },
+        "production/upload/80/e0ec493a1242d2e720657691b7100ec30863b2": {
+          "sha256": "8227ded6545abc504dc8c554accb3326fa553a4480bf71992d59a9b8d82d8537",
+          "size": 1124
+        },
+        "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab": {
+          "sha256": "f79f10b108515ee5fa019ad7afc9c9f37492b3ffb253fe18af154271a6ea8ab1",
+          "size": 238794
+        },
+        "production/upload/9b/8de7b349a73f668ac2aaf058749178e3cde052": {
+          "sha256": "cf9820dd89ca3300ff833c3b374b2cfd015319195cc800eaf6ad2bb1a5a84f73",
+          "size": 874
+        },
+        "production/upload/cb/df715e681dadddcf63881aee40d35899e608af": {
+          "sha256": "fa9471c640fdcb4af20d32bef95908713c75ed787ae5f0ffc1973ee52e7e854f",
+          "size": 651
+        },
+        "production/upload/ff/2effa2a6ad0d0f33c5d65bab5d60e6d10e7c3b": {
+          "sha256": "fd7e0d3581776d425933487546bd5eacb57a20fcfbefb976627b14c5cff6f6ef",
+          "size": 818
+        },
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5": {
+          "sha256": "a476f34d6d74e1cda267907b0c21dd6768a764234365f4f9dca6fa1b7ccd36b9",
+          "size": 76471
+        }
+      }
     }
   ],
   "generated_for": "official active chain"
