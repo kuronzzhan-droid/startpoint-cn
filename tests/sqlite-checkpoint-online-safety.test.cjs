@@ -73,6 +73,9 @@ function assertCompatiblePassiveMessage(message) {
     assert.equal(message.mode, 'passive')
     assert.equal(message.truncateAttempted, false)
     assert.equal(message.truncateBusy, 0)
+    assert.equal(message.reclaimAttempted, false)
+    assert.equal(message.reclaimBusy, false)
+    assert.equal(message.reclaimedBytes, 0)
     assert.ok(message.logFrames > 0)
     assert.equal(message.checkpointedFrames, message.logFrames)
 }
@@ -92,7 +95,7 @@ async function isolated(operation) {
     }
 }
 
-test('online checkpoint preserves oversized WAL at startup despite legacy truncate settings', async () => {
+test('online checkpoint retains a WAL below 2 GiB at startup despite legacy truncate settings', async () => {
     await isolated(async (database, start) => {
         appendBacklog(database)
         const walBytes = fs.statSync(database.name + '-wal').size
@@ -100,14 +103,14 @@ test('online checkpoint preserves oversized WAL at startup despite legacy trunca
         const message = await running.waitForCheckpoint()
         // Check the physical effect before checking the declared mode.
         assert.equal(fs.statSync(database.name + '-wal').size, walBytes,
-            'startup must backfill an oversized WAL without physically truncating it')
+            'startup must retain WAL space below the reclamation target despite legacy truncate thresholds')
         assert.equal(database.prepare('SELECT count(*) FROM payloads').pluck().get(), 1301)
         assert.equal(database.pragma('quick_check', { simple: true }), 'ok')
         assertCompatiblePassiveMessage(message)
     })
 })
 
-test('online checkpoint_now never physically truncates an oversized WAL and later writes reuse it', async () => {
+test('online checkpoint_now retains a WAL below 2 GiB and later writes reuse it', async () => {
     await isolated(async (database, start) => {
         const running = start(database.name)
         await running.waitForCheckpoint()
@@ -116,7 +119,7 @@ test('online checkpoint_now never physically truncates an oversized WAL and late
         running.worker.postMessage({ type: 'checkpoint_now' })
         const message = await running.waitForCheckpoint(1)
         assert.equal(fs.statSync(database.name + '-wal').size, walBytes,
-            'checkpoint_now must not physically truncate a newly oversized WAL')
+            'checkpoint_now must retain WAL space below the reclamation target')
         assertCompatiblePassiveMessage(message)
         const backlogFrames = message.logFrames
         for (let round = 0; round < 3; round++) {

@@ -108,10 +108,9 @@ export function startSqliteCheckpointWorker(
     state.started = false
     const location = workerLocation()
     const intervalMs = Math.max(1_000, Number.parseInt(environment.SQLITE_CHECKPOINT_INTERVAL_MS ?? "5000", 10) || 5_000)
-    const busyTimeoutMs = Math.max(0, Number.parseInt(environment.SQLITE_CHECKPOINT_BUSY_TIMEOUT_MS ?? "0", 10) || 0)
     const current = new Worker(location.filename, {
         ...(location.execArgv ? { execArgv: location.execArgv } : {}),
-        workerData: { databasePath, intervalMs, busyTimeoutMs },
+        workerData: { databasePath, intervalMs },
     })
     worker = current
     observeWorkerMemory("sqlite-checkpoint", current)
@@ -157,7 +156,7 @@ export function startSqliteCheckpointWorker(
         if (!replaced) ownership.workerStopped()
     })
     console.log(`[DB] sqlite checkpoint worker enabled intervalMs=${intervalMs}`
-        + ` mode=PASSIVE busyTimeoutMs=${busyTimeoutMs}`)
+        + " mode=PASSIVE busyTimeoutMs=0")
 }
 
 export async function stopSqliteCheckpointWorker(): Promise<void> {

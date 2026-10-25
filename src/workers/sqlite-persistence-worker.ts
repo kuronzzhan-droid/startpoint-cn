@@ -1,6 +1,7 @@
 import Database from "better-sqlite3"
 import { parentPort, workerData } from "node:worker_threads"
 import { installWorkerMemoryProbe } from "../lib/memory-diagnostics"
+import { applySqliteWalSizeLimit } from "../lib/sqlite-settings"
 
 interface PersistenceStatement {
     sql: string
@@ -30,6 +31,7 @@ database.pragma("journal_mode = WAL")
 database.pragma(`cache_size = -${input.settings.cacheKiB}`)
 database.pragma(`mmap_size = ${input.settings.mmapBytes}`)
 database.pragma(`synchronous = ${input.settings.synchronous}`)
+applySqliteWalSizeLimit(database)
 database.pragma(`busy_timeout = ${Math.max(0, input.busyTimeoutMs)}`)
 // Keep a safety owner even if the external checkpoint worker exits. These
 // commandized writes are low-volume, so an occasional automatic checkpoint is
