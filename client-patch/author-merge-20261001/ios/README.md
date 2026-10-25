@@ -1,35 +1,74 @@
-# iOS 作者装备规则端口（2026-10-02）
+# iOS equipment preparation and isolated repair
 
-本目录记录作者装备规则从已验收 iOS 载体到 iOS ABC 的受控移植入口。`prepare_ios.py` 只生成编译器输入，不处理 IPA 封装、签名或准入密钥。
+The historical equipment preparation imported Android L7 equipment rules into
+static `cn.mod::AuthorState` helpers without extending native character layouts.
+Its old native bridge contract is unsafe: the report confused a body index with
+a method ID, and its static Object signature is incompatible with the typed
+instance resolver. The historical CLI is disabled before any file writes.
+`prepare_historical_input_unlinked()` retains the preparation recipe for
+inspection and emits `native_repair_contract_v2` with `linking_allowed=false`.
+It no longer emits the legacy linker key `native_preload_bridge`.
 
-## 固定输入
+## Current ABC repair
 
-- iOS 基线：`StarPoint-iOS-1.8.4-author-1047-startup-download-fix-20260927-r2-unsigned.ipa`
-  - SHA-256：`123fdafd38caff60b64bebf4bd2d7dc8f73a48de2e08ba5f99f8d9a79a20d769`
-  - 完整 ABC SHA-256：`e100ae2f0d6b77ed278f91fda753df3402d7aa12a1b1867600c61f63e4b07f39`
-  - 原始方法数：`101436`
-- Android 作者装备 L7 donor SWF：
-  - SHA-256：`2eebe2196d5cbe51388efda7ce50bb8eb050da4bcc22eab1a0af85bb680f8845`
-  - 路径：`F:/codex/work_author_review_20260930_round2/public1047-rebuild/l7.swf`
+`repair_current.py` requires explicit pinned current ABC and donor inputs. It
+regenerates seven helpers through the corrected production transforms. For the
+reviewed 101496-method input, exactly three bodies change: 101439, 101442 and
+101443, containing eight local-store corrections. Declarations, constant pools,
+class/script layouts, body metadata and all unrelated bodies are frozen and
+checked again after serialization. Existing output files are never overwritten.
+The output is a private full ABC, not an installable client.
 
-运行脚本前必须确认上述文件存在且哈希一致。脚本保留既有常量池、方法信息、脚本、原生类实例特征和无关类/实例 trait 前缀。
+```powershell
+python -B repair_current.py --full-abc <current.abc> --input-sha256 <sha256> --donor-swf <l7.swf> --donor-sha256 2eebe2196d5cbe51388efda7ce50bb8eb050da4bcc22eab1a0af85bb680f8845 --output-dir <new-directory>
+python -B test_prepare_equipment.py
+python -B test_native_preload.py
+```
 
-## 端口范围
+The transformer handles generic and compact local reads/writes, including
+kill/increment/decrement instructions, and relocates exception byte boundaries
+when instruction encodings expand. `method_id_for_label()` resolves through the
+body's actual method ID: resolver body index 17701 belongs to method 18392;
+method 17701 itself is `LoginBonusKind.Item`.
 
-- 13 个既有方法：保持原 activation 布局并通过 `cn.mod::AuthorState` 的 append-only helper hook 替换；其中 `getAvailableAbilities`、`parseAt106`、`parseAt109` 重新启用装备规则和 423 gauge 限制。
-- `BattleCharacterLogic/resolvePathCollection` 保留 iOS 原生实现；原方法槽经过兼容桥进入，桥保存 x0–x5，调用静态装备预加载 helper 后恢复寄存器并继续执行原实现，因此不改变 iOS 四槽 activation ABI。
-- 装备规则的 8 个辅助方法（诅咒 soul、衰减 tier、计数、tier 构造、规则门、预加载、路径解析和原生桥）全部挂在 `AuthorState` 静态 trait 上。调用使用 `getlex AuthorState` 加 `callproperty`，把原角色作为显式首个参数传入；不向原生 `BattleCharacterLogic` 或其子类追加实例 trait。
-- 1 个既有装备描述闭包和 13 个既有方法 hook。
-- AOT 方法表从 `101436` 扩展到 `101458`，新增 22 个入口；原生 `BattleCharacterLogic` 实例/vtable 布局保持字节级不变。
-- 不改变存档结构、签名身份或 iOS 包版本；Android 规则路径不在本端口内修改。
+## Native contract
 
-## 构建边界
+`native_preload.py` generates a 52-byte ARM64 wrapper and unapplied word patches.
+It accepts only the real five-parameter resolver ABI on `BattleCharacterLogic`,
+with MethodEnv in x6. The wrapper saves x0-x7 and fp/lr in an aligned 80-byte
+frame, calls the complete reviewed thunk entry, restores the frame, and branches
+to the captured current resolver wrapper. It rejects the old Object bridge,
+mid-function entry, changed bytes, bad method IDs and out-of-range branches.
 
-本次编译、原生链接和准入轮换使用任务工作目录中的受控脚本及本机 AIR 工具链完成。IPA、完整 ABC、私有准入配对和构建临时文件不进入 Git；服务端整合使用 `.codex/secrets/starpoint-client-admission/releases/author-1047-public-20261001/config/` 中的完整配对。
+The thunk is compiled only as original method 18392 with its existing owner,
+MethodInfo and four activation slots. It boxes typed pointers for the static
+preload helper and obtains that helper's own MethodEnv. The runtime ABC retains
+the original resolver declaration/body; the compiler-only thunk input is never
+used as runtime ABC. Legacy bridge method 101444 remains reserved to preserve
+all later method indices, and is not selected by the repair.
 
-`compile_native.py` 会读取本批 `port.json` 中的新增 helper/hook 方法号；这些方法出现 `Verify error` 时立即中止，避免编译器把错误方法降级为运行时失败桩。基线中已有的 101312 告警会保留在编译报告中，不会被误认为本批新增错误。
+Native integration must also replace the three corrected helper implementations.
+Compiling only the thunk would still call the old erroneous native helpers.
+`compile_resolver_thunk.py`, `compile_corrected_helpers.py` and
+`test_repaired_equipment.py` are isolated verification entries bound to the local
+reviewed inputs, rather than a complete production packaging pipeline.
+All AIR/AOT/ADL execution must use the workspace background runner.
 
-本次 F1009 修复候选的离线验收记录见：
-`F:/codex/outputs/ios-equipment-f1009-fix-20261002/ios/ios-verification-report.json`
+Compiler and fixture entries take explicit input/output, SDK, dependencies,
+runtime-map and background-runner paths. Their portable reader/fixture source
+closure and the required private historical data are documented in
+[verification support](support/README.md). Moving configuration does not relax
+input identities or turn old execution receipts into new compiler evidence.
 
-该记录为离线验收，未进行实体 iOS 设备测试，也未部署云服。
+The current resolver AOT slot points to the existing five-in-one wrapper at
+`0x106207AA0`. Preserve that wrapper and the retained original resolver at
+`0x104963A08`; the former calls the latter, so redirecting the latter back to
+the new wrapper would recurse. Login factory recovery requires both method
+17701's AOT slot and its displaced first instruction, recovered from actual
+current wrapper bytes. Plans never write a Mach-O or IPA.
+
+Offline ABC execution and compiled ARM64 inspection do not validate native
+execution, GC, exception unwinding, asset loading, rendering or device behavior.
+No signing, admission rotation, accepted-registry update or release is included.
+The historical F1009 report remains a historical offline receipt only; it does
+not establish that the defective bridge works on a device.

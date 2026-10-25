@@ -11,12 +11,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 CLIENT = HERE.parents[1]
 ROOT = CLIENT.parent
-WORK = Path(r"F:/codex/work/author-equipment-ios-public-20261001")
-SOURCE_IPA = Path(r"F:/codex/outputs/ios-startup-download-20260927-r2/ios/StarPoint-iOS-1.8.4-author-1047-startup-download-fix-20260927-r2-unsigned.ipa")
 SOURCE_IPA_SHA256 = "123fdafd38caff60b64bebf4bd2d7dc8f73a48de2e08ba5f99f8d9a79a20d769"
-SOURCE_FULL_ABC = Path(r"F:/codex/work/ios-startup-download-20260927-r2/startup-download-full.abc")
 SOURCE_FULL_ABC_SHA256 = "e100ae2f0d6b77ed278f91fda753df3402d7aa12a1b1867600c61f63e4b07f39"
-DONOR_SWF = Path(r"F:/codex/work_author_review_20260930_round2/public1047-rebuild/l7.swf")
 DONOR_SWF_SHA256 = "2eebe2196d5cbe51388efda7ce50bb8eb050da4bcc22eab1a0af85bb680f8845"
 IOS_EXPECTED_METHODS = 101436
 # The iOS carrier's native resolvePathCollection method has a four-slot
@@ -95,6 +91,17 @@ def method_info(v, mid):
     return v.mn(m[0]), tuple(v.mn(x) for x in m[1]), m[3]
 
 
+def method_id_for_label(v, label):
+    """Resolve a unique body label to its method_info id, not its body index."""
+    matches = v.by_label.get(label, [])
+    if len(matches) != 1:
+        raise AssertionError(("expected one method body", label, matches))
+    mid = v.a.bodies[matches[0]][0]
+    if not 0 <= mid < len(v.a.methods) or v.labels.get(mid) != label:
+        raise AssertionError(("method body identity mismatch", label, mid))
+    return mid
+
+
 def activation(v, body):
     return p.activation_traits(v, body)
 
@@ -141,11 +148,14 @@ def local_instruction(name, index):
         return p.asm.Instruction(98, (index,))
     if name == "setlocal":
         return p.asm.Instruction(99, (index,))
-    if name == "getlocal_0" or name == "getlocal_1" or name == "getlocal_2" or name == "getlocal_3":
-        return p.asm.Instruction(208 + index) if index <= 3 else p.asm.Instruction(98, (index,))
+    if name in {"getlocal_0", "getlocal_1", "getlocal_2", "getlocal_3",
+                "setlocal_0", "setlocal_1", "setlocal_2", "setlocal_3"}:
+        read = name.startswith("getlocal")
+        return (p.asm.Instruction((208 if read else 212) + index) if index <= 3
+                else p.asm.Instruction(98 if read else 99, (index,)))
     if name in {"inclocal", "inclocal_i", "declocal", "declocal_i", "kill"}:
         return p.asm.Instruction({"inclocal": 146, "inclocal_i": 194,
-                                  "declocal": 147, "declocal_i": 193,
+                                  "declocal": 148, "declocal_i": 195,
                                   "kill": 8}[name], (index,))
     raise AssertionError(("unsupported local instruction", name, index))
 
@@ -162,8 +172,10 @@ def shift_instance_locals(instructions, mapping, preserve_prologue=True):
         if preserve_prologue and index < 2:
             out.append(clone_instruction(ins))
             continue
-        name = ins.name
-        if name in {"getlocal_0", "getlocal_1", "getlocal_2", "getlocal_3"}:
+        # The bundled assembler has the kill operand format but no mnemonic.
+        name = "kill" if ins.op == 8 else ins.name
+        if name in {"getlocal_0", "getlocal_1", "getlocal_2", "getlocal_3",
+                    "setlocal_0", "setlocal_1", "setlocal_2", "setlocal_3"}:
             old = int(name[-1])
             out.append(local_instruction(name, mapping.get(old, old + 1)))
         elif name in {"getlocal", "setlocal", "inclocal", "inclocal_i", "declocal", "declocal_i", "kill"}:
@@ -190,7 +202,21 @@ def remap_targets(instructions, source_indices, index_map):
 def encode_body(body, instructions, source_indices=None, index_map=None, max_stack=None):
     if source_indices is not None and index_map is not None:
         remap_targets(instructions, source_indices, index_map)
-    code, _ = p.asm.encode(instructions)
+    code, offsets = p.asm.encode(instructions)
+    if body[6]:
+        # Exceptions store byte offsets, while branches already use indices.
+        # Even a short-local expansion can move these byte boundaries.
+        old_code = body[5]
+        old_instructions = p.asm.decode(old_code)
+        _, old_offsets = p.asm.encode(old_instructions)
+        old_offsets.append(len(old_code)); offsets.append(len(code))
+        if index_map is None:
+            if len(old_instructions) != len(instructions):
+                raise AssertionError("exception relocation needs instruction index map")
+            index_map = {i: i for i in range(len(old_offsets))}
+        locations = {offset: offsets[index_map[i]] for i, offset in enumerate(old_offsets)}
+        body[6] = [(locations[a], locations[b], locations[c], d, e)
+                   for a, b, c, d, e in body[6]]
     body[5] = code
     if max_stack is not None:
         body[1] = max(body[1], max_stack)
@@ -291,11 +317,13 @@ def transform_static_rule_body(body, target, method_ids):
             result.append(p.asm.Instruction(70,(qmn,argc))); sources.append(i); continue
         result.append(shift_instance_locals([ins], {j:j+1 for j in range(64)}, preserve_prologue=(i<2))[0]); sources.append(i)
     index_map[len(old)]=len(result); remap_targets(result,sources,index_map)
-    body[2]=max(body[2],1+max((int(ins.args[0]) for ins in result if ins.op in {98,99,146,147,193,194,8} and ins.args),default=0))
-    encode_body(body,result,max_stack=max(body[1],8)); return body
+    body[2]=max(body[2],1+max((int(ins.args[0]) for ins in result if ins.op in {98,99,146,148,194,195,8} and ins.args),default=0))
+    encode_body(body,result,index_map=index_map,max_stack=max(body[1],8)); return body
 
 
 def transform_resolve_helper(body, target):
+    if body[6]:
+        raise AssertionError('Resolve closure exception handlers require explicit remapping')
     old = p.asm.decode(body[5])
     assert len(old) >= 4 and all(x.name == "op_ef" for x in old[:4])
     kept = old[4:]
@@ -368,7 +396,7 @@ def transform_preload_body(body, target, method_ids):
         sources.append(i); i += 1
     index_map[len(old)] = len(result); remap_targets(result, sources, index_map)
     body[2] = max(body[2], 9); body[3] = 1; body[4] = 2
-    encode_body(body, result, max_stack=max(body[1], 8))
+    encode_body(body, result, index_map=index_map, max_stack=max(body[1], 8))
     return body
 
 
@@ -384,9 +412,16 @@ def make_bridge_body(method_id, preload_mid, target):
     return [method_id, 5, 6, 0, 1, encoded, [], []]
 
 
-def main():
-    ipa = SOURCE_IPA
-    full_path = SOURCE_FULL_ABC
+def prepare_historical_input_unlinked(*, source_ipa, source_full_abc, donor_swf, output_dir):
+    """Reproduce fixed historical inputs without enabling the disabled CLI."""
+    WORK = Path(output_dir).resolve()
+    if WORK.exists():
+        raise FileExistsError("Preserve the existing historical output directory")
+    ipa = Path(source_ipa).resolve()
+    full_path = Path(source_full_abc).resolve()
+    DONOR_SWF = Path(donor_swf).resolve()
+    if any(path.is_relative_to(WORK) for path in (ipa, full_path, DONOR_SWF)):
+        raise ValueError("Historical output overlaps an input")
     if sha(ipa.read_bytes()) != SOURCE_IPA_SHA256:
         raise AssertionError("accepted iOS IPA hash changed")
     full_bytes = full_path.read_bytes()
@@ -559,8 +594,11 @@ def main():
         "old_methods": len(target_before.methods), "total_methods": len(target.a.methods),
         "changed_existing": changed_records, "added_equipment": added_records,
         "standalone_equipment_helpers": standalone_helpers,
-        "native_preload_bridge": {"method": bridge_mid, "resolve_method": target.by_label["pinball.common.data.character::BattleCharacterLogic/resolvePathCollection|1"][0],
-                                   "preload_method": preload_mid},
+        "native_repair_contract_v2": {"linking_allowed": False,
+                                     "typed_resolver_thunk_required": True,
+                                     "reserved_legacy_bridge_method": bridge_mid,
+                                     "resolve_method": method_id_for_label(target, "pinball.common.data.character::BattleCharacterLogic/resolvePathCollection|1"),
+                                     "preload_method": preload_mid},
         "compiled_helpers": compiled_helpers,
         "activation_aliases": activation_aliases,
         "closures": appended, "helper_class": HELPER,
@@ -573,5 +611,13 @@ def main():
     }
     dump(WORK / "port.json", report)
     print(json.dumps({k: report[k] for k in ("status","old_methods","total_methods","full_abc_sha256","full_abc_sha1","new_traits","runtime_body_changes")}, ensure_ascii=False, indent=2))
+
+def main():
+    raise RuntimeError(
+        "Legacy iOS equipment preparation is disabled: its static Object bridge "
+        "is incompatible with the typed native resolver ABI. Use repair_current.py "
+        "and the reviewed compiler-only resolver thunk; native linking remains a separate step."
+    )
+
 
 if __name__ == "__main__": main()
