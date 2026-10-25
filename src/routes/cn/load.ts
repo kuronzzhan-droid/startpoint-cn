@@ -57,6 +57,7 @@ import { contentClientReload } from "../../lib/content-client-reload";
 import { getSpecialExchangeEntitlementsSync } from "../../lib/exchange-campaign-entitlements";
 import { getRetainedStarCrumbExchangeIds } from "../../lib/star-crumb-exchange-rules";
 import { townThemeLoginSnapshot } from "../../lib/town-theme";
+import { prepareExBoostRecoverySync, type ClientExBoostDrawResult } from "../../lib/ex-boost-recovery";
 
 interface CnLoadBody {
     device_id: number;
@@ -98,7 +99,7 @@ function fillClientDefaults(d: any) {
     }
 }
 
-function wrapOptionFields(d: any, playerId: number, resVer?: string) {
+function wrapOptionFields(d: any, playerId: number, resVer?: string, exBoostDrawResult: ClientExBoostDrawResult | null = null) {
     d.town_presentation = townThemeLoginSnapshot();
     d.town_presentation_load = true;
     d.content_operations = contentOperations().snapshot(Date.now());
@@ -119,7 +120,7 @@ function wrapOptionFields(d: any, playerId: number, resVer?: string) {
     d.mission_tips = false;
     d.monthly_tip = false;
     d.simple_payment_item_list = [];
-    d.ex_boost_draw_result = null;
+    d.ex_boost_draw_result = exBoostDrawResult;
     d.pass_force_reward = false;
     d.fund_receive_list = [];
     d.login_info = {};
@@ -192,7 +193,7 @@ const routes = async (fastify: FastifyInstance) => {
         // The load snapshot preparation also repairs old saves (including
         // mana boards and stamina). Admit the complete write unit before
         // queueing, read fresh state inside it, and commit it atomically.
-        const { now, prepared } = await runPersistenceTransaction({
+        const { now, prepared, exBoostDrawResult } = await runPersistenceTransaction({
             domain: "player", playerId, operation: "load_maintenance",
         }, () => {
             ensurePlayerClockStateForLoadSync(playerId, getDb());
@@ -215,6 +216,7 @@ const routes = async (fastify: FastifyInstance) => {
             markLoadPhase("load.player")
 
             const characterList = getPlayerCharactersSync(playerId)
+            const exBoostDrawResult = prepareExBoostRecoverySync(playerId)
             const characterManaNodeList = getPlayerCharactersManaNodesSync(playerId)
             const partyGroupList = getPlayerPartyGroupListSync(playerId)
             const questProgress = getPlayerQuestProgressSync(playerId)
@@ -274,7 +276,7 @@ const routes = async (fastify: FastifyInstance) => {
             }), getTimeOffset() ?? 0);
             recordServerWork("load.assemble", performance.now() - assemblyStartedAt)
             if (!prepared) throw new Error("No player data.");
-            return { now, prepared };
+            return { now, prepared, exBoostDrawResult };
         });
         // Pure response conversion runs after COMMIT. Saved optional party slots
         // still normalize to null before MessagePack encoding.
@@ -288,7 +290,7 @@ const routes = async (fastify: FastifyInstance) => {
 
         const resVer = request.headers['res_ver'] as string | undefined;
         gameVerboseLog(() => `[CN-LOAD] res_ver=${resVer || '(not sent)'} account=${accountId} player=${playerId} party_slot=${prepared.data.player.partySlot}`);
-        wrapOptionFields(clientData, playerId, resVer);
+        wrapOptionFields(clientData, playerId, resVer, exBoostDrawResult);
         const newsDelivery = getNewsDeliveryState(accountId, now);
         clientData.has_unread_news_item = newsDelivery.hasUnreadNews;
         markLoadPhase("load.serialize")
