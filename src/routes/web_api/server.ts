@@ -820,7 +820,7 @@ const routes = async (fastify: FastifyInstance) => {
             // Diagnose unusable selection state before creating anything. The
             // later JSON commit remains separate from the SQLite transaction.
             getAdminPlayerSelectionState()
-            player = runPersistenceTransactionSync({ domain: "admin", operation: "admin_create_save" }, () => {
+            player = await runPersistenceTransaction({ domain: "admin", operation: "admin_create_save" }, () => {
                 const created = insertDefaultPlayerSync(accId)
                 if (snapshot) restorePlayerSaveSnapshotV2Sync(snapshot, created.id, { includeArchiveHistory: false })
                 return created
