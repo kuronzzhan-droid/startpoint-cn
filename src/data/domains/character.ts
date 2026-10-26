@@ -6,7 +6,7 @@ import {
 } from "../readers/load-snapshot"
 import { getDb } from "../db";
 import { PlayerCharacter, PlayerCharacterBondToken, RawPlayerCharacter, RawPlayerCharacterBondToken, RawPlayerCharacterManaNode } from "../types";
-import { serializeBoolean, serializeNumberList } from "../utils";
+import { serializeBoolean, serializeNumberList, deserializeNumberList } from "../utils";
 import { getCharacterDataSync } from "../../lib/assets";
 import type { Statement } from "better-sqlite3";
 import { cachedStatement } from "../../lib/cached-statement";
@@ -85,6 +85,29 @@ export function getPlayerCharacterSync(
         rawCharacter,
         rawBondTokens.map(raw => buildCharacterBondToken(raw))
     )
+}
+
+/** Cosmetic state only; rendering a party does not need character bond tokens. */
+export function getPlayerCharacterEvolutionImageStatesSync(
+    playerId: number,
+    characterIds: readonly number[],
+): Record<string, Pick<PlayerCharacter, "evolutionLevel" | "illustrationSettings">> {
+    const ids = [...new Set(characterIds)]
+    const result: Record<string, Pick<PlayerCharacter, "evolutionLevel" | "illustrationSettings">> = {}
+    for (let offset = 0; offset < ids.length; offset += 400) {
+        const chunk = ids.slice(offset, offset + 400)
+        const rows = cachedStatement(getDb(), `
+            SELECT id, evolution_level, illustration_settings
+            FROM players_characters
+            WHERE player_id = ? AND id IN (${chunk.map(() => "?").join(", ")})
+        `).all(playerId, ...chunk) as Pick<RawPlayerCharacter, "id" | "evolution_level" | "illustration_settings">[]
+        for (const row of rows) result[String(row.id)] = {
+            evolutionLevel: row.evolution_level,
+            illustrationSettings: row.illustration_settings === null
+                ? undefined : deserializeNumberList(row.illustration_settings),
+        }
+    }
+    return result
 }
 
 /**

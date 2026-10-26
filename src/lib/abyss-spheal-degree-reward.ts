@@ -56,30 +56,30 @@ export function grantAbyssSphealDegreeSync(
         if (!db.prepare("SELECT id FROM players WHERE id = ?").get(playerId)) return []
         if (db.prepare("SELECT 1 FROM players_degrees WHERE player_id = ? AND degree_id = ?")
             .get(playerId, config.degree_id)) return []
-        const runs = db.prepare(`
-            SELECT id
-            FROM leaderboard_runs
-            WHERE player_id = ? AND competition_key = 'achievement:abyss-endurance:700099:1'
-                AND status = 'completed' AND tracked_from_round = 1
-                AND total_rounds = 30 AND rounds_cleared = 30
-            ORDER BY id DESC
-        `).all(playerId) as { id: number }[]
-        const roundCheck = db.prepare(`
-            SELECT COUNT(*) AS round_count,
-                SUM(CASE WHEN character_id_1 = ? OR character_id_2 = ? OR character_id_3 = ?
-                    OR unison_character_id_1 = ? OR unison_character_id_2 = ?
-                    OR unison_character_id_3 = ? THEN 1 ELSE 0 END) AS spheal_rounds
-            FROM leaderboard_run_rounds WHERE run_id = ?
-        `)
-        for (const run of runs) {
-            const result = roundCheck.get(
-                config.character_id, config.character_id, config.character_id,
-                config.character_id, config.character_id, config.character_id, run.id,
-            ) as { round_count: number; spheal_rounds: number | null }
-            if (result.round_count !== 30 || result.spheal_rounds !== 30) continue
-            return grantPlayerDegreeSync(playerId, config.degree_id, Date.now())
-                ? [config.degree_id] : []
-        }
-        return []
+        // Keep historical grants, but stop at the first qualifying run without
+        // materializing every ID or making one SQL round trip per run. CASE
+        // preserves the old SUM semantics when unused character slots are NULL.
+        const run = db.prepare(`
+            SELECT r.id
+            FROM leaderboard_runs r
+            WHERE r.player_id = ? AND r.competition_key = 'achievement:abyss-endurance:700099:1'
+                AND r.status = 'completed' AND r.tracked_from_round = 1
+                AND r.total_rounds = 30 AND r.rounds_cleared = 30
+                AND NOT EXISTS (
+                    SELECT 1 FROM leaderboard_run_rounds rr
+                    WHERE rr.run_id = r.id
+                        AND CASE WHEN rr.character_id_1 = ? OR rr.character_id_2 = ? OR rr.character_id_3 = ?
+                            OR rr.unison_character_id_1 = ? OR rr.unison_character_id_2 = ?
+                            OR rr.unison_character_id_3 = ? THEN 1 ELSE 0 END = 0
+                )
+                AND (SELECT COUNT(*) FROM leaderboard_run_rounds rr WHERE rr.run_id = r.id) = 30
+            ORDER BY r.id DESC LIMIT 1
+        `).get(
+            playerId, config.character_id, config.character_id, config.character_id,
+            config.character_id, config.character_id, config.character_id,
+        ) as { id: number } | undefined
+        if (run === undefined) return []
+        return grantPlayerDegreeSync(playerId, config.degree_id, Date.now())
+            ? [config.degree_id] : []
     })
 }

@@ -449,6 +449,20 @@ export function settleSingleQuestFinishInTransaction(
         )
 
         bodyTiming.step("mode_rewards")
+        const mainCharacterIds = bodyPartyStatistics.characters.map(value => value?.id ?? null)
+        const unisonCharacterIds = bodyPartyStatistics.unison_characters.map(value => value?.id ?? null)
+        let partyEvolutionImages: Map<number, number | null> | undefined
+        const getPartyEvolutionImages = (ids: (number | null)[]) => {
+            if (partyEvolutionImages === undefined) {
+                const allIds = [...mainCharacterIds, ...unisonCharacterIds]
+                const levels = getCharactersEvolutionImgLevels(playerId, allIds)
+                partyEvolutionImages = new Map()
+                allIds.forEach((id, index) => {
+                    if (id !== null) partyEvolutionImages!.set(id, levels[index]!)
+                })
+            }
+            return ids.map(id => id === null ? null : partyEvolutionImages!.get(id)!)
+        }
         const dataHeaders = generateDataHeaders({
             viewer_id: viewerId
         })
@@ -482,7 +496,7 @@ export function settleSingleQuestFinishInTransaction(
             party: bodyPartyStatistics,
             playerId,
             questId,
-            getEvoLevels: (pid, chars) => getCharactersEvolutionImgLevels(pid, chars),
+            getEvoLevels: (_pid, chars) => getPartyEvolutionImages(chars),
             getFolderMaxRounds: getRushEventFolderMaxRounds,
             getRushEvent: (pid, eid) => getPlayerRushEventSync(pid, eid),
             updateRushEvent: (pid, data) => updatePlayerRushEventSync(pid, data),
@@ -495,7 +509,12 @@ export function settleSingleQuestFinishInTransaction(
             deletePartyList: (pid, eid, bt) => deletePlayerRushEventPlayedPartyListSync(pid, eid, bt),
             getSerializedParties: (pid, eid) => getSerializedPlayerRushEventPlayedPartiesSync(pid, eid),
             getFolderRewards: (eid, fid) => getRushEventFolderClearRewards(eid, fid),
-            giveRewards: (pid, r) => givePlayerRewardsSync(pid, r),
+            giveRewards: (pid, r) => {
+                const result = givePlayerRewardsSync(pid, r)
+                // Folder rewards may add characters; later snapshots must see them.
+                partyEvolutionImages = undefined
+                return result
+            },
         })
         const abyssEnduranceDegrees = finishLeaderboardQuestSync({
             playerId,
@@ -515,19 +534,15 @@ export function settleSingleQuestFinishInTransaction(
             },
             accomplished: questAccomplished,
             clientBattleMs: clearTime,
-            party: {
-                characterIds: bodyPartyStatistics.characters.map(value => value?.id ?? null),
-                unisonCharacterIds: bodyPartyStatistics.unison_characters.map(value => value?.id ?? null),
-                equipmentIds: bodyPartyStatistics.equipments.map(value => value?.id ?? null),
-                abilitySoulIds: bodyPartyStatistics.ability_soul_ids,
-                evolutionImgLevels: getCharactersEvolutionImgLevels(
-                    playerId,
-                    bodyPartyStatistics.characters.map(value => value?.id ?? null),
-                ),
-                unisonEvolutionImgLevels: getCharactersEvolutionImgLevels(
-                    playerId,
-                    bodyPartyStatistics.unison_characters.map(value => value?.id ?? null),
-                ),
+            get party() {
+                return {
+                    characterIds: mainCharacterIds,
+                    unisonCharacterIds,
+                    equipmentIds: bodyPartyStatistics.equipments.map(value => value?.id ?? null),
+                    abilitySoulIds: bodyPartyStatistics.ability_soul_ids,
+                    evolutionImgLevels: getPartyEvolutionImages(mainCharacterIds),
+                    unisonEvolutionImgLevels: getPartyEvolutionImages(unisonCharacterIds),
+                }
             },
         })
         if (

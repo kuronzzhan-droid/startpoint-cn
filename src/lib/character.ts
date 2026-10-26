@@ -1,5 +1,5 @@
 import { clientSerializeDate } from "../data/utils";
-import { getPlayerCharacterSync, insertPlayerCharacterSync, updatePlayerCharacterSync } from "../data/domains/character"
+import { getPlayerCharacterSync, getPlayerCharacterEvolutionImageStatesSync, insertPlayerCharacterSync, updatePlayerCharacterSync } from "../data/domains/character"
 import { adjustPlayerExpPoolSync, getPlayerSync } from "../data/domains/player"
 import { givePlayerItemSync } from "../data/domains/item"
 import { getCharacterDataSync } from "./assets";
@@ -312,10 +312,13 @@ export function getCharactersEvolutionImgLevels(
     playerId: number,
     characterIds: (number | null)[]
 ): (number | null)[] {
+    const states = getPlayerCharacterEvolutionImageStatesSync(
+        playerId, characterIds.filter((id): id is number => id !== null),
+    )
     const evolutionImgLevels: (number | null)[] = []
     for (const id of characterIds) {
         if (id !== null) {
-            const character = getPlayerCharacterSync(playerId, id)
+            const character = states[String(id)]
             const illustrationSettings = character?.illustrationSettings ?? [null]
             const evolutionLevel = character?.evolutionLevel ?? 0
             evolutionImgLevels.push(illustrationSettings[0] === null ? evolutionLevel : illustrationSettings[0])
