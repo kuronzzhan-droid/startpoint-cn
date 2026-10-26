@@ -1,6 +1,8 @@
 import { createHash } from "crypto"
 import { parseCrazyGachaState } from "../domains/crazy_gacha"
 import { parseExBoostPendingRow } from "../domains/ex-boost-pending"
+import { getExStatusPoolSync } from "../../lib/assets"
+import { ALL_ABILITIES } from "../../lib/ex-boost-abilities"
 import type { Database as BetterSqlite3Database } from "better-sqlite3"
 import { COMPACT_COUNTER_VALUES, getStorageSnapshotTableInfo, isCompactStorage, RETIRED_COUNTER_SNAPSHOTS } from "../../lib/storage-layout"
 import { getExistingPlayerTimeStateSync, getPlayerBusinessDateSync, getPlayerBusinessOffsetSync, PlayerArchiveTimeBasis, validatePlayerArchiveTimeBasis } from "../../lib/player-time-compat"
@@ -10,6 +12,47 @@ type SnapshotScalar = string | number | null
 interface SnapshotTableData {
     columns: string[]
     rows: SnapshotScalar[][]
+}
+
+export class ExBoostImportConflictError extends Error {}
+
+/** The native recovery dialog compares a paid candidate with the owned old EX. */
+function assertExBoostComparisonCharacter(characters: SnapshotTableData, characterId: number): void {
+    const character = characters.rows.find(row => row[characters.columns.indexOf("id")] === characterId)
+    const status = character?.[characters.columns.indexOf("ex_boost_status_id")]
+    const encodedAbilities = character?.[characters.columns.indexOf("ex_boost_ability_id_list")]
+    const abilities = typeof encodedAbilities === "string"
+        ? encodedAbilities === "" ? [] : encodedAbilities.split(",").map(Number) : null
+    const groups = abilities?.map(id => ALL_ABILITIES.find(ability => ability.id === id)?.group)
+    if (!Number.isSafeInteger(status) || ![1, 2, 3].some(tier => getExStatusPoolSync(tier)?.includes(status as number))
+        || !abilities || abilities.length > 2 || groups?.includes(undefined)
+        || new Set(groups).size !== abilities.length) {
+        throw new ExBoostImportConflictError("存档缺少待选 EX 的角色或原 EX；请先在游戏中确认或放弃待选 EX，再导入此存档。")
+    }
+}
+
+function assertExBoostImportContinuity(
+    snapshot: PlayerSaveSnapshotV2, targetPlayerId: number, db: BetterSqlite3Database,
+): void {
+    const row = db.prepare("SELECT * FROM players_ex_boost_pending_draws WHERE player_id=?").get(targetPlayerId) as
+        Record<string, unknown> | undefined
+    if (!row) return
+    const pending = parseExBoostPendingRow(row)
+    const completed = db.prepare(`SELECT 1 FROM player_operation_receipts
+        WHERE player_id=? AND operation='ex_boost_completion' AND request_key=?`).get(targetPlayerId, pending.drawId)
+    if (completed) return
+    const incoming = snapshot.data.tables.players_ex_boost_pending_draws
+    // Old V2 archives preserve this target-local row. New archives may only
+    // replace it with the exact same paid candidate, never silently discard it.
+    if (incoming) {
+        const candidate = incoming.rows.length === 1
+            ? parseExBoostPendingRow(Object.fromEntries(incoming.columns.map((column, index) => [column, incoming.rows[0][index]])))
+            : null
+        if (JSON.stringify(candidate) !== JSON.stringify(pending)) {
+            throw new ExBoostImportConflictError("当前有已支付的待选 EX；请先在游戏中确认或放弃，再导入其他 EX 状态的存档。")
+        }
+    }
+    assertExBoostComparisonCharacter(snapshot.data.tables.players_characters, pending.characterId)
 }
 
 export interface PlayerSaveSnapshotV2 {
@@ -555,10 +598,7 @@ export function validatePlayerSaveSnapshotV2Sync(
             }
             if (table === "players_ex_boost_pending_draws") {
                 const pending = parseExBoostPendingRow(Object.fromEntries(expectedColumns.map((name, index) => [name, row[index]])))
-                const characters = snapshot.data.tables.players_characters
-                const characterIndex = characters.columns.indexOf("id")
-                if (!characters.rows.some(character => character[characterIndex] === pending.characterId))
-                    throw new Error("EX pending draw character is absent from the archive")
+                assertExBoostComparisonCharacter(snapshot.data.tables.players_characters, pending.characterId)
             }
         }
     }
@@ -657,6 +697,9 @@ export function restorePlayerSaveSnapshotV2Sync(
 
     let restoredRows = 1
     const restore = db.transaction(() => {
+        // Check against the destination while holding the restore transaction,
+        // before deleting any character, inventory, or pending selection rows.
+        assertExBoostImportContinuity(snapshot, targetPlayerId, db)
         // Grants are target-local. Preserve their exact mail payload and claim
         // status while remapping IDs after the source mailbox is restored.
         const targetDailyMails = includeArchiveHistory
