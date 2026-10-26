@@ -94,6 +94,19 @@ export function loadDefaultSaveTemplate(): DefaultSaveSnapshot | null {
 export function clearDefaultSaveTemplate(): boolean {
     cachedMeta = null;
     if (!existsSync(FILE) && !existsSync(`${FILE}.bak`)) return false;
+    let recovered: TemplateFile | undefined;
+    try {
+        const current = readValidatedJsonWithBackupSync<TemplateFile>(FILE, validateTemplateFile);
+        if (current.source === "backup") recovered = current.value;
+    } catch {
+        // An explicit clear can also repair two unusable template files.
+    }
+    // When the backup is the only usable copy, first restore it to the primary.
+    // A failed repair leaves the backup untouched; a later clear failure leaves
+    // this primary configured. Never replace the last usable copy before that.
+    if (recovered !== undefined) {
+        writeJsonAtomicSync(FILE, recovered, { validate: validateTemplateFile, backup: false });
+    }
     // Persist the clear in both recovery locations. If the second replacement
     // fails, a still-valid primary remains configured and the caller gets an
     // error. A successful clear can never recover the former template from .bak.
