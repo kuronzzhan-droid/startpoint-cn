@@ -39,6 +39,7 @@ import {
 } from "../../lib/finish-response-cache";
 import {
     settleMode15BattleSync,
+    isMode15Quest,
 } from "../../lib/mode15-optional";
 import { recordSuccessfulQuestNpcParty } from "../npc/player-party-pool";
 import { runPersistenceTransaction, runWriterCommand } from "../../lib/persistence-coordinator";
@@ -48,7 +49,10 @@ import {
     type MultiSettleFinishResult,
 } from "../../lib/persistence/command-names";
 import { assertBattleCanStartSync, getBattleReplaySync } from "../../data/domains/battle-settlement-ledger";
-import { multiFinishPlayId, isMultiFinishResponse } from "../../lib/quest/finish/multi-finish-identity";
+import { multiFinishPlayId, isMultiFinishResponse, multiFinishMvpFlag } from "../../lib/quest/finish/multi-finish-identity";
+import { captureBattleRosterSync, battlePartyFromWire, normalizeBattleParty, isBattleRosterError } from "../../lib/quest/battle-roster";
+import { addManaSafe, buildBattleManaRewards, isFieldManaError, readFieldMana } from "../../lib/quest/finish/field-mana";
+import { isManaCounterError } from "../../data/domains/mana-counter";
 import {
     getMultiSettlementSnapshot,
     registerMultiSettlementSnapshot,
@@ -184,6 +188,7 @@ function activeQuestFromPersistent(
         startedAtMs: quest.startedAtMs ?? undefined,
         questTimeRevision: quest.questTimeRevision ?? null,
         clockVersion: quest.clockVersion,
+        battleRoster: quest.battleRoster,
     }
 }
 
@@ -219,7 +224,7 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
         const { viewer_id, quest_id, category, party_id, use_boost_point, use_boss_boost_point, is_auto_start_mode, room_number, mate_player_ids, play_id } = body;
         gameVerboseLog(() => `[MULTI] start: viewer=${viewer_id} quest=${quest_id} category=${category} party=${party_id} room=${room_number}`);
 
-        if (isNaN(viewer_id) || isNaN(party_id) || isNaN(quest_id) || isNaN(category) || multiFinishPlayId(play_id) === null || use_boost_point === undefined || use_boss_boost_point === undefined || is_auto_start_mode === undefined) {
+        if (isNaN(viewer_id) || isNaN(party_id) || isNaN(quest_id) || isNaN(category) || multiFinishPlayId(play_id) === null || typeof use_boost_point !== "boolean" || typeof use_boss_boost_point !== "boolean" || is_auto_start_mode === undefined) {
             return reply.status(400).send({
                 "error": "Bad Request", "message": "Invalid request body."
             });
@@ -325,7 +330,7 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
 
 
         const mateComIds = roomStart.mateComIds;
-        const activeQuest = {
+        const activeQuest: ActiveQuest = {
             questId: quest_id,
             category,
             useBoostPoint: use_boost_point,
@@ -373,6 +378,16 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
                     return;
                 }
                 if (!durableStart && !isContentQuestOpenAt(category, quest_id)) throw new Error("QUEST_OPERATIONS_CLOSED");
+                activeQuest.battleRoster = captureBattleRosterSync({ playerId: ctx.playerId,
+                    questCategory: category, questId: quest_id, partyId: party_id, fixedParty: questData.fixedParty,
+                    party: questData.fixedParty === undefined ? battlePartyFromWire(roomStart.battleParty) : undefined });
+                activeQuest.battleRoster.multi = { battleInstanceId: roomStart.battleSessionId,
+                    roomInstanceId: roomStart.roomInstanceId, roomGeneration: roomStart.roomGeneration,
+                    participants: roomStart.participants.map(mate => ({ ...mate })),
+                    expectedRealViewerIds: [...roomStart.expectedRealViewerIds],
+                    isRescueGuest: roomStart.isRescueGuest,
+                    isRescueFragmentEligible: roomStart.isRescueFragmentEligible,
+                    isNewbieRescueGuest: roomStart.isNewbieRescueGuest };
                 insertActiveQuest(ctx.playerId, activeQuest);
                 insertedActiveQuest = activeQuests[ctx.playerId];
                 registerAcceptedRescueBattleSync({ playerId: ctx.playerId, viewerId: viewer_id,
@@ -404,6 +419,7 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             if (error instanceof Error && error.message === "QUEST_OPERATIONS_CLOSED") return sendMultiStartUnavailable(reply, viewer_id, "content_operations_closed");
             const code = (error as { code?: string })?.code;
             if (code === "BATTLE_ALREADY_SETTLED" || code === "BATTLE_CLOCK_ABORTED"
+                || isBattleRosterError(error)
                 || (error as Error).message === "Battle start does not match the pending play.") {
                 return reply.status(400).send({ error: "Bad Request", message: (error as Error).message });
             }
@@ -495,6 +511,13 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             }
         }
 
+        try {
+            multiFinishMvpFlag(body.statistics || body.quest_statistics || {});
+        } catch (error) {
+            if (!(error instanceof TypeError) && !isBattleRosterError(error)) throw error;
+            return reply.status(400).send({ error: "Bad Request", message: error.message });
+        }
+
         const finishCacheKey = buildFinishResponseCacheKey(
             "multi",
             viewerId,
@@ -549,26 +572,27 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
                 roomNumber: activeQuestData.roomNumber, viewerId, playerId, playId,
             }) as BattleQueryResult : undefined;
             const finishRoom = finishProjection?.room;
-            const settlementGeneration = settlementSnapshot?.roomGeneration ?? finishProjection?.binding?.generation ?? 0;
-            const settlementKey = settlementSnapshot?.battleInstanceId
+            const frozenMulti = activeQuestData.battleRoster?.multi;
+            const settlementGeneration = frozenMulti?.roomGeneration ?? settlementSnapshot?.roomGeneration ?? finishProjection?.binding?.generation ?? 0;
+            const settlementKey = frozenMulti?.battleInstanceId ?? settlementSnapshot?.battleInstanceId
                 ?? finishProjection?.binding?.battleSessionId
                 ?? `${activeQuestData.roomNumber || body.room_number || "missing"}:${settlementGeneration}:${body.play_id}`;
-            const settlementParticipants = settlementSnapshot?.participants ?? (finishRoom?.mates || [])
+            const settlementParticipants = frozenMulti?.participants ?? settlementSnapshot?.participants ?? (finishRoom?.mates || [])
                 .map(mate => ({
                     viewerId: Number(mate.viewer_id),
                     comId: Number(mate.com_id || 0),
                 }))
                 .filter(mate => Number.isFinite(mate.viewerId) && mate.viewerId > 0);
-            const expectedRealViewerIds = settlementSnapshot?.expectedRealViewerIds ?? (finishRoom?.expected_real_viewer_ids || [])
+            const expectedRealViewerIds = frozenMulti?.expectedRealViewerIds ?? settlementSnapshot?.expectedRealViewerIds ?? (finishRoom?.expected_real_viewer_ids || [])
                 .map(Number)
                 .filter(expectedViewerId => Number.isFinite(expectedViewerId) && expectedViewerId > 0);
-            const finishedAsRescueGuest = settlementSnapshot?.isRescueGuest ?? (activeQuestData.roomNumber
+            const finishedAsRescueGuest = frozenMulti?.isRescueGuest ?? settlementSnapshot?.isRescueGuest ?? (activeQuestData.roomNumber
                 ? Boolean(finishProjection?.isRescueGuest)
                 : false);
-            const finishedAsRescueFragmentEligible = settlementSnapshot?.isRescueFragmentEligible ?? (activeQuestData.roomNumber
+            const finishedAsRescueFragmentEligible = frozenMulti?.isRescueFragmentEligible ?? settlementSnapshot?.isRescueFragmentEligible ?? (activeQuestData.roomNumber
                 ? Boolean(finishProjection?.isRescueFragmentEligible)
                 : false);
-            const finishedAsNewbieRescueGuest = settlementSnapshot?.isNewbieRescueGuest ?? (activeQuestData.roomNumber
+            const finishedAsNewbieRescueGuest = frozenMulti?.isNewbieRescueGuest ?? settlementSnapshot?.isNewbieRescueGuest ?? (activeQuestData.roomNumber
                 ? Boolean(finishProjection?.isNewbieRescueGuest)
                 : false);
 
@@ -596,7 +620,17 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             );
             const coreStartedAt = process.hrtime.bigint();
 
-            const finishedAsHost = settlementSnapshot?.isHost ?? (activeQuestData.roomNumber
+            try {
+                addManaSafe(questData.manaReward, readFieldMana(body.add_mana));
+                buildBattleManaRewards(questData.manaReward, readFieldMana(body.add_mana), isMode15Quest(questCategory, questId));
+                normalizeBattleParty((body.statistics || body.quest_statistics)?.party
+                    ?? { characters: [], unison_characters: [] }, questData.fixedParty !== undefined);
+            } catch (error) {
+                if (!isBattleRosterError(error) && !isFieldManaError(error) && !isManaCounterError(error)) throw error;
+                return reply.status(400).send({ error: "Bad Request", message: error.message });
+            }
+            const finishedAsHost = settlementSnapshot?.isHost ?? (frozenMulti
+                ? activeQuestData.isMultiHost === true : activeQuestData.roomNumber
                 ? finishRoom?.host_player_id === playerId
                 : false);
 
@@ -615,6 +649,7 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
                 ownScore: (body as any).score || 0,
                 ownContributionScore: (body as any).contribution_score || 0,
                 mateResults: rawMatePlayerResult,
+                restrictParticipants: frozenMulti !== undefined || settlementParticipants.length > 0,
                 // Preserve the original repaired 1.2-second compatibility
                 // barrier.  mergeMultiSettlementResults still returns early as
                 // soon as every real participant has submitted.
@@ -628,7 +663,8 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
                 + `submitted=${settlementResult.submittedCount}/${settlementResult.expectedCount} `
                 + `returned=${matePlayerResult.length} synthesized=${settlementResult.synthesizedViewerIds.join(",") || "none"}`
             );
-            const followInfo = await buildFinishFollowInfo(playerId, viewerId, matePlayerResult, activeQuestData.matePlayerIds || []);
+            const followInfo = await buildFinishFollowInfo(playerId, viewerId, matePlayerResult,
+                frozenMulti ? frozenMulti.participants.map(mate => mate.viewerId) : activeQuestData.matePlayerIds || []);
             const settled = await measureSettlementPhaseAsync("multi", "transaction", () => (
                 runWriterCommand<MultiSettleFinishArgs, MultiSettleFinishResult>(
                     MULTI_SETTLE_FINISH,
@@ -641,7 +677,12 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
                     },
                     { domain: "multi-settlement", playerId, operation: "finish" },
                 )
-            ));
+            )).catch(error => {
+                if (!isBattleRosterError(error) && !isFieldManaError(error) && !isManaCounterError(error)) throw error;
+                reply.status(400).send({ error: "Bad Request", message: error.message });
+                return null;
+            });
+            if (settled === null) return;
             if (settled.response === null) {
                 return reply.status(400).send({ error: "Bad Request", message: "No unsettled multiplayer play." });
             }

@@ -74,6 +74,7 @@ export interface MultiRoom {
     host_party_id: number
     /** Party selections approved before this generation enters BATTLE. */
     equipmentPartyIds?: Record<number, number>
+    battleParties?: Record<number, unknown>
     /** Actual wire rosters captured with the checked selections before BATTLE. */
     npcPartySnapshots?: Record<number, QuestNpcPartySnapshot>
     readyCountdownPending?: boolean

@@ -73,7 +73,10 @@ async function scenario(mode) {
         req.setTimeout(10000,()=>req.destroy(Error('fixture timeout')));req.on('error',reject);req.end(body)
     })
     try {
-        const count=Math.max(1,Number(process.env.PERF_LOAD_REQUESTS||10))
+        // This fixture verifies worker encoding and exact wire bytes. Four large
+        // responses fit both per-player admission (8) and the 32 MiB snapshot
+        // budget; higher stress counts may legitimately reject or fall back.
+        const count=Math.max(1,Number(process.env.PERF_LOAD_REQUESTS||4))
         const cpu=process.cpuUsage(), elu=performance.eventLoopUtilization(), started=performance.now()
         const results=await Promise.all(Array.from({length:count},(_,i)=>request(i)))
         const cpuUsed=process.cpuUsage(cpu), loop=performance.eventLoopUtilization(elu)

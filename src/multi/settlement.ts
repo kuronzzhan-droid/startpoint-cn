@@ -137,6 +137,7 @@ export async function mergeMultiSettlementResults(input: {
     ownScore: number
     ownContributionScore: number
     mateResults: any[]
+    restrictParticipants?: boolean
     waitMs?: number
 }): Promise<SettlementMergeResult> {
     const viewerId = finiteNumber(input.viewerId, 0)
@@ -163,9 +164,23 @@ export async function mergeMultiSettlementResults(input: {
         snapshot.expectedRealViewerIds.add(viewerId)
     }
 
+    const allowed = new Map(mergeParticipants(input.participants,
+        input.expectedRealViewerIds.map(viewerId => ({ viewerId, comId: 0 })))
+        .map(participant => [participant.viewerId, participant]))
+    allowed.set(viewerId, allowed.get(viewerId) ?? { viewerId, comId: 0 })
+    if (input.restrictParticipants) {
+        snapshot.participants = snapshot.participants.filter(participant => allowed.has(participant.viewerId))
+        for (const id of snapshot.results.keys()) if (!allowed.has(id)) snapshot.results.delete(id)
+        for (const id of snapshot.expectedRealViewerIds) if (!allowed.has(id)) snapshot.expectedRealViewerIds.delete(id)
+    }
     for (const rawResult of Array.isArray(input.mateResults) ? input.mateResults : []) {
         const result = normalizeResult(rawResult)
         if (!result) continue
+        if (input.restrictParticipants) {
+            const participant = allowed.get(result.viewer_id)
+            if (!participant) continue
+            result.com_id = participant.comId
+        }
         const previous = snapshot.results.get(result.viewer_id)
         if (snapshot.selfReportedViewerIds.has(result.viewer_id)) {
             if (previous && previous.com_id === 0 && result.com_id !== 0) {

@@ -1,4 +1,5 @@
 import { cachedStatement } from "../../lib/cached-statement"
+import { allowManaCounterAbsoluteWriteSync, prepareManaCounterIncrementSync } from "./mana-counter"
 import { getPlayerPortableDegreesSync, grantPlayerDegreeSync, validatePortableDegreeList } from "./degree";
 import { Player, RawPlayer, MergedPlayerData, PartyCategory, PlayerPartyGroup, Account, PlayerParty, DailyChallengePointListEntry, DailyChallengePointListCampaign, RawDailyChallengePointListEntry, RawDailyChallengePointListCampaign, PlayerRushEventPlayedParty, RawPlayerRushEventPlayedParty, UserRushEventPlayedParty } from "../types";
 import { getServerDate } from "../../utils";
@@ -1089,7 +1090,7 @@ export function insertDefaultPlayerSync(
  * @param player The properties of the player to change. Id must always be present.
  */
 export function updatePlayerSync(
-    player: Partial<Player> & Pick<Player, 'id'>
+    player: Partial<Player> & Pick<Player, 'id'> & { manaObtainedDelta?: number }
 ) {
     const id = player.id
 
@@ -1135,6 +1136,7 @@ export function updatePlayerSync(
         const value = player[key as keyof typeof player]
         const mapped = fieldMap[key]
         if (mapped && value !== undefined) {
+            if (key === 'totalManaObtained' && !allowManaCounterAbsoluteWriteSync(id, value)) continue
             sets.push(`${mapped} = ?`)
             if (value instanceof Date) {
                 values.push(value.toISOString())
@@ -1149,6 +1151,12 @@ export function updatePlayerSync(
                 values.push(value)
             }
         }
+    }
+
+    if (player.manaObtainedDelta !== undefined) {
+        if (player.totalManaObtained !== undefined) throw new Error("Mana counter update cannot mix an absolute value and a delta.")
+        const increment = prepareManaCounterIncrementSync(id, player.manaObtainedDelta)
+        if (increment) { sets.push(increment.sql); values.push(...increment.values) }
     }
 
     if (sets.length > 0) getDb().prepare(`
@@ -1432,6 +1440,11 @@ export function replacePlayerDataSync(
     }
 
     const replace = () => runPersistenceTransactionSync({ domain: "player", playerId, operation: "replace_player_data" }, () => {
+        // V1 did not carry this newer lifetime statistic. Preserve an extreme
+        // destination cell as stored, rather than round it through Player's Number.
+        const legacyMana = getDb().prepare(`SELECT total_mana_obtained AS value,
+            CAST(total_mana_obtained AS TEXT) AS raw, typeof(total_mana_obtained) AS kind
+            FROM players WHERE id=?`).get(playerId) as { value: number; raw: string; kind: string } | undefined
         const preservedRelations = LEGACY_REPLACE_PRESERVED_RELATIONS
             .filter(specification => !["player_time_state", "player_time_migration_ledger"].includes(specification.table)
                 || getDb().prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(specification.table))
@@ -1445,6 +1458,12 @@ export function replacePlayerDataSync(
 
         deletePlayerSync(playerId)
         insertMergedPlayerDataSync(account.id, replaceWith)
+
+        if (legacyMana && Number.isFinite(legacyMana.value) && Number.isInteger(legacyMana.value)
+            && legacyMana.value >= 0 && !Number.isSafeInteger(legacyMana.value)) {
+            getDb().prepare("UPDATE players SET total_mana_obtained=? WHERE id=?")
+                .run(legacyMana.kind === "integer" ? legacyMana.raw : legacyMana.value, playerId)
+        }
 
         for (const relation of preservedRelations) {
             if (relation.rows.length === 0) continue

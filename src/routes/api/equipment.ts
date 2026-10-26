@@ -16,6 +16,7 @@ import { clientSerializeEquipment, buildFullEquipmentList } from "../../lib/equi
 import {
     getEquipmentDissolveSync, getConfigSync, getEquipmentCraftSync, getEquipmentAwakeningRulesSync,
 } from "../../lib/assets";
+import { getEquipmentRaritySync } from "../../lib/equipment-rarity";
 import { checkAwakeningItem } from "../../lib/equipment-awakening-rules";
 import { AccountId, PlayerId } from "../../lib/types";
 import { resolvePlayerIdSync } from "../../data/activeAccount";
@@ -25,6 +26,7 @@ import { gameVerboseLog } from "../../lib/game-logging";
 import { canUseAwakeningSubstitutionItem } from "../../multi/five-boss/rewards";
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator";
 import { parsePositiveSafeInteger, parsePositiveSafeIntegerList, uniqueIds } from "../../lib/request-ids";
+import { readGameplayMutationRequestSync, recordGameplayMutationResponseSync } from "../../lib/gameplay-mutation-receipt";
 
 interface SetProtectionBody {
     protection: boolean
@@ -51,7 +53,10 @@ interface BulkUpgradeBody {
 const wrightpieceItemId = () => getConfigSync().craft_point_item_id || 100000
 
 // wrightpiece cost for each rank of weapon (awakening) — from CDN
-const getUpgradeCost = (rarity: number): number => getEquipmentCraftSync(rarity)?.awakening_craft ?? 25
+const getUpgradeCost = (rarity: number): number | null => {
+    const cost = getEquipmentCraftSync(rarity)?.awakening_craft
+    return cost !== undefined && Number.isSafeInteger(cost) && cost > 0 ? cost : null
+}
 
 function recordEquipmentAwakeningProgress(playerId: number, upgradeCount: number): void {
     recordContentActionFactsSync(playerId, { kind: "equipment_awaken", amount: upgradeCount })
@@ -113,28 +118,29 @@ const routes = async (fastify: FastifyInstance) => {
         const playerId = resolvePlayerIdSync(accountId)! as PlayerId
         if (playerId === null) return reply.status(500).send({ "error": "Internal Server Error", "message": "No players bound to account." })
 
-        if (!getPlayerEquipmentSync(playerId, equipmentId)) {
-            return reply.status(400).send({ "error": "Bad Request", "message": "Player does not own equipment." })
-        }
-        if (!useStack && !canUseAwakeningSubstitutionItem(equipmentId)) {
-            return reply.status(400).send({ error: "Bad Request", message: "This equipment requires duplicate bodies for awakening." })
-        }
-        const itemCheck = checkAwakeningItem(awakeningRules, { equipmentId, useStack, itemId })
-        if (!itemCheck.ok) return reply.status(400).send({ "error": "Bad Request", "message": itemCheck.message })
-
-        const cdnInfo = getEquipmentDissolveSync(equipmentId)
-        const maxLevel = cdnInfo?.max_level ?? 5
-        const equipmentRarity = Math.floor(equipmentId / 1000000)  // 1-indexed
-        const upgradeCost = getUpgradeCost(equipmentRarity)
-
         // Equipment, wrightpiece and substitution item balances are read and
         // validated inside the player write queue so overlapping requests see
         // each other's deductions.
         const outcome = await runPersistenceTransaction({
             domain: "player", playerId, operation: "equipment_upgrade",
         }, () => {
+            const mutation = readGameplayMutationRequestSync(playerId, {
+                headerToken: request.headers.login_token, body, accountId,
+            }, "equipment_upgrade", { equipment_id: equipmentId, use_stack: useStack, upgrade_count: upgradeCount, item_id: itemId })
+            if (!mutation) return { ok: false as const, message: "Invalid or conflicting request identity." }
+            if (mutation.response) return { ok: true as const, responseData: mutation.response }
+
+            const equipmentRarity = getEquipmentRaritySync(equipmentId)
+            const upgradeCost = equipmentRarity === null ? null : getUpgradeCost(equipmentRarity)
+            if (upgradeCost === null) return { ok: false as const, message: "Equipment rarity or craft data is unavailable." }
+            const maxLevel = getEquipmentDissolveSync(equipmentId)?.max_level ?? 5
             const equipment = getPlayerEquipmentSync(playerId, equipmentId)
             if (!equipment) return { ok: false as const, message: "Player does not own equipment." }
+            if (!useStack && !canUseAwakeningSubstitutionItem(equipmentId)) {
+                return { ok: false as const, message: "This equipment requires duplicate bodies for awakening." }
+            }
+            const itemCheck = checkAwakeningItem(awakeningRules, { equipmentId, useStack, itemId })
+            if (!itemCheck.ok) return { ok: false as const, message: itemCheck.message }
 
             const previousLevel = equipment.level
             const previousStack = equipment.stack
@@ -168,24 +174,20 @@ const routes = async (fastify: FastifyInstance) => {
             if (dissolveInfo && dissolveInfo.generate_ability_soul) {
                 returnItemList[dissolveInfo.ability_soul_id] = givePlayerItemSync(playerId, dissolveInfo.ability_soul_id, upgradeCount)
             }
-            return { ok: true as const, returnItemList, previousLevel, previousStack, newLevel, newStack }
+            const responseData: Record<string, unknown> = {
+                equipment_list: buildFullEquipmentList(playerId), item_list: returnItemList, mail_arrived: false,
+            }
+            mergeEquipmentDegreeSettlement(responseData, playerId, viewerId)
+            recordGameplayMutationResponseSync(playerId, mutation, responseData)
+            gameVerboseLog(() => `[UPGRADE] account=${accountId} player=${playerId}: eid=${equipmentId} rarity=${equipmentRarity} level ${previousLevel}->${newLevel} stack ${previousStack}->${newStack} craft -${upgradeCost*upgradeCount}`)
+            return { ok: true as const, responseData }
         })
         if (!outcome.ok) return reply.status(400).send({ "error": "Bad Request", "message": outcome.message })
 
-        const returnEquipmentList = buildFullEquipmentList(playerId)
-
-        gameVerboseLog(() => `[UPGRADE] account=${accountId} player=${playerId}: eid=${equipmentId} rarity=${equipmentRarity} level ${outcome.previousLevel}->${outcome.newLevel} stack ${outcome.previousStack}->${outcome.newStack} craft -${upgradeCost*upgradeCount}`)
-
         reply.header("content-type", "application/x-msgpack")
-        const responseData: Record<string, unknown> = {
-            "equipment_list": returnEquipmentList,
-            "item_list": outcome.returnItemList,
-            "mail_arrived": false
-        }
-        mergeEquipmentDegreeSettlement(responseData, playerId, viewerId)
         return reply.status(200).send({
             "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-            "data": responseData
+            "data": outcome.responseData
         })
     })
 
@@ -211,14 +213,17 @@ const routes = async (fastify: FastifyInstance) => {
         const playerId = resolvePlayerIdSync(accountId)! as PlayerId
         if (playerId === null) return reply.status(500).send({ "error": "Internal Server Error", "message": "No players bound to account." })
 
-        const player = getPlayerSync(playerId)
-        if (!player) return reply.status(500).send({ "error": "Internal Server Error", "message": "Player not found." })
-
         // Plan, validate and apply inside the player write queue so the
         // wrightpiece balance cannot be spent twice by overlapping requests.
         const outcome = await runPersistenceTransaction({
             domain: "player", playerId, operation: "equipment_bulk_upgrade",
         }, () => {
+            const mutation = readGameplayMutationRequestSync(playerId, {
+                headerToken: request.headers.login_token, body, accountId,
+            }, "equipment_bulk_upgrade", { equipment_ids: equipmentIds })
+            if (!mutation) return { ok: false as const, message: "Invalid or conflicting request identity." }
+            if (mutation.response) return { ok: true as const, responseData: mutation.response }
+            if (!getPlayerSync(playerId)) throw new Error("Player not found.")
             const upgrades: Array<{ equipmentId: number; upgradeCount: number; level: number; stack: number }> = []
             let totalCraftPointCost = 0
 
@@ -226,19 +231,25 @@ const routes = async (fastify: FastifyInstance) => {
                 const equipment = getPlayerEquipmentSync(playerId, equipmentId)
                 if (!equipment) continue
 
+                const rarity = getEquipmentRaritySync(equipmentId)
+                const upgradeCost = rarity === null ? null : getUpgradeCost(rarity)
+                if (upgradeCost === null) return { ok: false as const, message: "Equipment rarity or craft data is unavailable." }
                 const maxLvl = getEquipmentDissolveSync(equipmentId)?.max_level ?? 5
                 const upgradeCount = Math.min(maxLvl - equipment.level, equipment.stack)
                 if (upgradeCount <= 0) continue
 
-                const rarity = Math.floor(equipmentId / 1000000)  // 1-indexed
-                totalCraftPointCost += getUpgradeCost(rarity) * upgradeCount
+                totalCraftPointCost += upgradeCost * upgradeCount
                 upgrades.push({ equipmentId, upgradeCount, level: equipment.level, stack: equipment.stack })
             }
 
-            if (upgrades.length === 0) return { kind: "empty" as const }
+            if (upgrades.length === 0) {
+                const responseData = { equipment_list: [], item_list: {}, mail_arrived: false }
+                recordGameplayMutationResponseSync(playerId, mutation, responseData)
+                return { ok: true as const, responseData }
+            }
 
             const currentCraftPoints = getPlayerItemSync(playerId, wrightpieceItemId()) ?? 0
-            if (totalCraftPointCost > currentCraftPoints) return { kind: "insufficient" as const }
+            if (totalCraftPointCost > currentCraftPoints) return { ok: false as const, message: "Not enough craft points." }
 
             const returnItemList: Record<number, number> = {}
             const newCraftPoints = currentCraftPoints - totalCraftPointCost
@@ -255,34 +266,20 @@ const routes = async (fastify: FastifyInstance) => {
             )
             updatePlayerItemSync(playerId, wrightpieceItemId(), newCraftPoints)
             returnItemList[wrightpieceItemId()] = newCraftPoints
-            return { kind: "applied" as const, upgrades, returnItemList, currentCraftPoints, newCraftPoints }
+            const responseData: Record<string, unknown> = {
+                equipment_list: buildFullEquipmentList(playerId), item_list: returnItemList, mail_arrived: false,
+            }
+            mergeEquipmentDegreeSettlement(responseData, playerId, viewerId)
+            recordGameplayMutationResponseSync(playerId, mutation, responseData)
+            gameVerboseLog(() => `[BULK_UPGRADE] account=${accountId} player=${playerId}: ${upgrades.length} equipment upgraded, craft points ${currentCraftPoints} -> ${newCraftPoints}`)
+            return { ok: true as const, responseData }
         })
-
-        if (outcome.kind === "empty") {
-            reply.header("content-type", "application/x-msgpack")
-            return reply.status(200).send({
-                "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-                "data": { "equipment_list": [], "item_list": {}, "mail_arrived": false }
-            })
-        }
-        if (outcome.kind === "insufficient") {
-            return reply.status(400).send({ "error": "Bad Request", "message": "Not enough craft points." })
-        }
-
-        gameVerboseLog(() => `[BULK_UPGRADE] account=${accountId} player=${playerId}: ${outcome.upgrades.length} equipment upgraded, craft points ${outcome.currentCraftPoints} -> ${outcome.newCraftPoints}`)
-
-        const returnEquipmentList = buildFullEquipmentList(playerId)
+        if (!outcome.ok) return reply.status(400).send({ "error": "Bad Request", "message": outcome.message })
 
         reply.header("content-type", "application/x-msgpack")
-        const responseData: Record<string, unknown> = {
-            "equipment_list": returnEquipmentList,
-            "item_list": outcome.returnItemList,
-            "mail_arrived": false,
-        }
-        mergeEquipmentDegreeSettlement(responseData, playerId, viewerId)
         return reply.status(200).send({
             "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-            "data": responseData
+            "data": outcome.responseData
         })
     })
 

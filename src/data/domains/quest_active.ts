@@ -1,6 +1,7 @@
 import { getDb } from "../db";
 import { PlayerActiveQuest, RawPlayerActiveQuest } from "../types";
 import { BATTLE_CLOCK_VERSION, isClockAbortedPlaySync } from "../../lib/battle-clock-compatibility";
+import { decodeBattleRoster } from "../../lib/quest/battle-roster";
 
 function buildActiveQuest(raw: RawPlayerActiveQuest): PlayerActiveQuest {
     return {
@@ -21,6 +22,7 @@ function buildActiveQuest(raw: RawPlayerActiveQuest): PlayerActiveQuest {
         partySlot: raw.party_slot,
         questTimeRevision: raw.quest_time_revision ?? null,
         clockVersion: raw.clock_version ?? 0,
+        battleRoster: decodeBattleRoster(raw.battle_roster_json),
     }
 }
 
@@ -39,8 +41,8 @@ export function insertPlayerActiveQuestSync(playerId: number, quest: PlayerActiv
         INSERT OR REPLACE INTO players_active_quests
             (player_id, play_id, quest_id, category, use_boss_boost_point,
              use_boost_point, is_auto_start_mode, is_multi, room_number,
-             is_multi_host, entry_item_id, event_id, continue_count, started_at_ms, party_slot, quest_time_revision, clock_version)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             is_multi_host, entry_item_id, event_id, continue_count, started_at_ms, party_slot, quest_time_revision, clock_version, battle_roster_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
         playerId, quest.playId, quest.questId, quest.category,
         quest.useBossBoostPoint ? 1 : 0, quest.useBoostPoint ? 1 : 0,
@@ -48,7 +50,8 @@ export function insertPlayerActiveQuestSync(playerId: number, quest: PlayerActiv
         quest.roomNumber ?? null, quest.isMultiHost ? 1 : 0,
         quest.entryItemId ?? null,
         quest.eventId ?? null, quest.continueCount, quest.startedAtMs,
-        quest.partySlot ?? null, quest.questTimeRevision ?? null, BATTLE_CLOCK_VERSION
+        quest.partySlot ?? null, quest.questTimeRevision ?? null, BATTLE_CLOCK_VERSION,
+        quest.battleRoster ? JSON.stringify(quest.battleRoster) : null
     )
 }
 

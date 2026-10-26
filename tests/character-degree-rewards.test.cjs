@@ -38,6 +38,9 @@ const catalogIds = [
 ]
 const allIds = [...catalogIds].sort((a, b) => a - b)
 const db = getDb()
+const identity = require('../out/lib/gameplay-request-identity')
+identity.initializeGameplayRequestIdentitySchemaSync(db)
+const logins = new Map()
 
 function player(label = 'fixture') {
     const account = accountApi.insertAccountSync({ appId: 'wf_cn', idpAlias: '', idpCode: 'fixture', idpId: label, status: 'normal' })
@@ -61,6 +64,10 @@ function practice(p, overrides = {}) {
 async function session(p) {
     await insertSessionWithToken({ token: String(p.viewerId), accountId: p.accountId, type: 2,
         expires: new Date(Date.now() + 86400000) })
+    const token = db.transaction(() => identity.issueGameplayLoginTokenSync(db, {
+        accountId: p.accountId, viewerId: p.viewerId, udid: `degree-${p.viewerId}`, expiresAt: Date.now() + 86400000,
+    }))()
+    logins.set(p.viewerId, { token, count: 0 })
 }
 async function gameApp(t) {
     const app = Fastify({ logger: false })
@@ -72,7 +79,10 @@ async function gameApp(t) {
     await app.ready()
     t.after(() => app.close())
     return async (url, body, status = 200) => {
-        const response = await app.inject({ method: 'POST', url, payload: body })
+        const login = logins.get(body.viewer_id)
+        const response = await app.inject({ method: 'POST', url,
+            headers: login ? { login_token: login.token } : {},
+            payload: { ...body, ...(login ? { api_count: ++login.count } : {}) } })
         assert.equal(response.statusCode, status, response.payload)
         return response.headers['content-type'].startsWith('application/x-msgpack')
             ? unpack(response.rawPayload) : response.json()

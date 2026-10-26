@@ -22,13 +22,17 @@ function loadHttp(state) {
       getRoomCommandGateway: () => ({ execute: async (kind, payload, options) => {
         state.commands.push({ kind, payload, options })
         if (kind === 'fiveBoss.start.prepare') return { status: 'ready', token: options.commandId, ownerEpoch: 'owner',
-          remainingMs: 10000, room: { mates: [] }, frozenRunId: 'run', oldPlayRecovery: null }
+          remainingMs: 10000, room: { mates: [], host_player_id: state.hostId }, frozenRunId: 'run', oldPlayRecovery: state.oldPlayRecovery }
+        if (kind === 'fiveBoss.recovery') {
+          if (state.ownerRecoveryError) throw state.ownerRecoveryError
+          return state.hostAuthorization
+        }
         if (kind === 'fiveBoss.proof.barrier') return { ok: state.proofOk }
         return { applied: true }
       } }), assertRealtimeOwnerEpoch() {},
     }
     if (request.endsWith('/domains/quest_active')) return {
-      getPlayerActiveQuestSync: () => state.stale, deletePlayerActiveQuestIfPlayIdSync: () => true,
+      getPlayerActiveQuestSync: id => id === 11 ? state.stale : state.hostActive, deletePlayerActiveQuestIfPlayIdSync: () => true,
     }
     if (request.endsWith('/domains/battle-settlement-ledger')) return {
       assertBattleCanStartSync: () => {
@@ -45,6 +49,11 @@ function loadHttp(state) {
     if (request.endsWith('/domains/fiveBossGauntletRun')) return {
       FiveBossGauntletRunError: RuntimeError, getFiveBossRunByClientSync: () => state.boundRun,
       backfillMissingFinalizeSync: () => ({ backfilled: false }),
+      detachFinalizedFiveBossActiveSync: (playerId, playId) => {
+        state.detaches.push({ playerId, playId })
+        if (!state.canDetach) return false
+        state.stale = null; return true
+      },
     }
     if (request.endsWith('/domains/item')) return { getPlayerItemSync: () => 3 }
     if (request.endsWith('/domains/player')) return { getPlayerSync: () => ({ id: 11, stamina: 5, staminaHealTime: 0 }), updatePlayerSync() {} }
@@ -54,7 +63,7 @@ function loadHttp(state) {
     if (request.endsWith('/api/singleBattleQuest')) return { activeQuests: state.memory }
     if (request.endsWith('/five-boss/battle-runtime')) return {
       FiveBossBattleRuntimeError: RuntimeError,
-      startFiveBossBattle: () => { state.starts++; return { runId: 'run', activeQuest: { playId: 'play' }, startStatus: 'started' } },
+      startFiveBossBattle: input => { state.starts++; state.startInputs.push(input); return { runId: 'run', activeQuest: { playId: 'play' }, startStatus: 'started' } },
       finishFiveBossBattle: () => { state.payments++; throw Error('Unexpected payout') },
       abortFiveBossBattle: () => { state.aborts++; throw Error('Unexpected abort') },
     }
@@ -88,6 +97,8 @@ function loadHttp(state) {
 }
 function fixture() {
   const state = { commands: [], memory: {}, proofOk: false, transactions: 0, payments: 0, aborts: 0,
+    hostId: 11, hostActive: null, hostAuthorization: null, ownerRecoveryError: null,
+    oldPlayRecovery: null, canDetach: false, detaches: [], startInputs: [],
     starts: 0, abandons: 0, startGuards: 0, replayGuards: 0, transactionDepth: 0,
     startGuardError: null, replay: { kind: 'missing' },
     transaction: fn => fn(), boundRun: null, stale: null, member: null, inTransaction: false, readFails: false }
@@ -96,6 +107,41 @@ function fixture() {
   const reply = { header() { return this }, status() { return this }, send(value) { this.value = value; return this } }
   return { state, http, mode, body, reply }
 }
+
+test('Finalize pending admission detaches the old play without invoking shared-run abort', async () => {
+  const x = fixture()
+  x.state.stale = { playId: 'old-finalized', isMulti: true, roomNumber: 'old-room', category: x.mode.category, questId: x.mode.visibleQuestId }
+  x.state.memory[11] = x.state.stale
+  x.state.oldPlayRecovery = { playId: 'old-finalized', recoverable: false, reason: 'result_pending', retained: true }
+  x.state.hostAuthorization = x.state.oldPlayRecovery; x.state.canDetach = true
+  await x.http.handleFiveBossStart(x.body, 11, x.reply)
+  assert.deepEqual(x.state.detaches, [{ playerId: 11, playId: 'old-finalized' }])
+  assert.equal(x.state.aborts, 0)
+  assert.equal(x.state.memory[11].playId, 'play')
+})
+
+test('an unknown host recovery decision cancels only this claim before SQL or payment', async () => {
+  const x = fixture(), failure = Object.assign(Error('owner unavailable'), { outcomeUnknown: true })
+  x.state.hostId = 22
+  x.state.hostActive = { playId: 'host-old', isMulti: true, roomNumber: 'old-room' }
+  x.state.ownerRecoveryError = failure
+  await assert.rejects(x.http.handleFiveBossStart(x.body, 11, x.reply), error => error === failure)
+  assert.equal(x.state.transactions, 0); assert.equal(x.state.starts, 0)
+  const cancel = x.state.commands.find(c => c.kind === 'fiveBoss.start.cancel')
+  assert.equal(cancel.payload.token, x.state.commands.find(c => c.kind === 'fiveBoss.start.prepare').options.commandId)
+})
+
+test('the first-debit runtime receives only the owner decision bound to the host previous play', async () => {
+  const x = fixture()
+  x.state.hostId = 22
+  x.state.hostActive = { playId: 'host-old', isMulti: true, roomNumber: 'old-room' }
+  x.state.hostAuthorization = { playId: 'host-old', recoverable: false, reason: 'result_pending', retained: true }
+  await x.http.handleFiveBossStart(x.body, 11, x.reply)
+  const request = x.state.commands.find(c => c.kind === 'fiveBoss.recovery')
+  assert.equal(request.payload.playerId, 22)
+  assert.equal(request.payload.staleQuest.playId, 'host-old')
+  assert.deepEqual(x.state.startInputs[0].hostAdmissionAuthorization, x.state.hostAuthorization)
+})
 
 test('definite parent persistence rollback cancels only its claim; unknown outcome remains pinned', async () => {
   const x = fixture(), failure = Error('known rollback')

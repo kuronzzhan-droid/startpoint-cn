@@ -42,6 +42,7 @@ export function initializeFiveBossGauntlet(database: Database): void {
             aborted_at TEXT,
             level_next_at TEXT,
             finalized_at TEXT,
+            result_pending_at TEXT,
             party_character_ids_json TEXT NOT NULL DEFAULT '[]',
             PRIMARY KEY(run_id, player_id),
             UNIQUE(player_id, client_play_id)
@@ -69,5 +70,8 @@ export function initializeFiveBossGauntlet(database: Database): void {
     const memberInfo = database.prepare("PRAGMA table_info(five_boss_gauntlet_members)").all() as Array<{ name: string }>
     if (!memberInfo.some(column => column.name === "battle_entered_at")) {
         database.exec("ALTER TABLE five_boss_gauntlet_members ADD COLUMN battle_entered_at TEXT")
+    }
+    if (!memberInfo.some(column => column.name === "result_pending_at")) {
+        database.exec("ALTER TABLE five_boss_gauntlet_members ADD COLUMN result_pending_at TEXT")
     }
 }

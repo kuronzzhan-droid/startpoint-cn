@@ -10,13 +10,15 @@ import { generateDataHeaders, getServerDate } from "../../utils";
 import { PartyCategory, RushEventBattleType } from "../../data/types";
 import { clientSerializeDate } from "../../data/utils";
 import { getSerializedPlayerRushEventPlayedPartiesSync, getPlayerRushEventEndlessBattleRankingSync } from "../../lib/rush";
-import { insertActiveQuest } from "./singleBattleQuest";
+import { insertActiveQuest, activeQuests } from "./singleBattleQuest";
 import {
     claimRaidEventOverallRewardsSync,
     getRaidEventGlobalBossSync,
     getRaidEventQuestKillCountsSync,
 } from "../../lib/raidEventGlobal";
-import { ensureSpecialEventPartyGroupsSync, resolvePartyGroupColorId } from "../../lib/special-event-parties";
+import { ensureSpecialEventPartyGroupsSync, resolvePartyGroupColorId, getGlobalPartyId } from "../../lib/special-event-parties";
+import { captureRaidBattleRosterSync, normalizeBattleParty, isBattleRosterError, BattleRosterValidationError } from "../../lib/quest/battle-roster";
+import { assertBattleCanStartSync } from "../../data/domains/battle-settlement-ledger";
 import { gameVerboseLog } from "../../lib/game-logging";
 import { getMode15ExclusivePartyItemsSync } from "../../lib/mode15-optional";
 import {
@@ -52,6 +54,40 @@ interface RushParty {
     party_edited: boolean,
     party_id: number,
     party_name: string
+}
+
+function raidPartyGroups(playerId: number) {
+    return ensureSpecialEventPartyGroupsSync(playerId, PartyCategory.RAID, PartyCategory.RUSH, {
+        getGroups: getPlayerPartyGroupListSync, getDefaults: getDefaultPlayerPartyGroupsSync,
+        ensureGroups: ensurePlayerPartyGroupListSync,
+    })
+}
+
+/** The published order is also the Raid client's sub_id 0/1/2 identity. */
+function raidPartyList(playerId: number, groupId: number,
+    group: ReturnType<typeof getPlayerPartyGroupListSync>[string] | undefined): RushParty[] {
+    const result: RushParty[] = []
+    const usedSlots = new Set<number>()
+    for (const [slotKey, party] of Object.entries(group?.list ?? {}).slice(0, 3)) {
+        const slot = Number(slotKey)
+        usedSlots.add(slot)
+        result.push({ ability_soul_ids: [...party.abilitySoulIds], character_ids: [...party.characterIds],
+            equipment_ids: [...party.equipmentIds], unison_character_ids: [...party.unisonCharacterIds],
+            options: { allow_other_players_to_heal_me: party.options.allowOtherPlayersToHealMe },
+            party_edited: party.edited, party_id: getGlobalPartyId(groupId, slot), party_name: party.name })
+    }
+    while (result.length < 3) {
+        const slot = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].find(id => !usedSlots.has(id))!
+        usedSlots.add(slot)
+        const used = new Set(result.flatMap(party => [...party.character_ids, ...party.unison_character_ids]))
+        const leader = Object.keys(getPlayerCharactersSync(playerId)).map(Number)
+            .filter(id => id > 0 && !used.has(id)).sort((a, b) => a - b)[0] ?? null
+        result.push({ ability_soul_ids: [null, null, null], character_ids: [leader, null, null],
+            equipment_ids: [null, null, null], unison_character_ids: [null, null, null],
+            options: { allow_other_players_to_heal_me: true }, party_edited: false,
+            party_id: getGlobalPartyId(groupId, slot), party_name: `Party ${slot}` })
+    }
+    return result
 }
 
 enum ResetQuestType {
@@ -262,55 +298,9 @@ const routes = async (fastify: FastifyInstance) => {
         // one-time fallback; existing category 3 Raid parties always win.
         const playerPartyGroups = await runPersistenceTransaction({
             domain: "player", playerId, operation: "raid_party_defaults",
-        }, () => ensureSpecialEventPartyGroupsSync(
-            playerId,
-            PartyCategory.RAID,
-            PartyCategory.RUSH,
-            {
-                getGroups: getPlayerPartyGroupListSync,
-                getDefaults: getDefaultPlayerPartyGroupsSync,
-                ensureGroups: ensurePlayerPartyGroupListSync,
-            },
-        ))
+        }, () => raidPartyGroups(playerId))
         const group1 = playerPartyGroups['1']
-        const partyList: RushParty[] = []
-
-        if (group1 && group1.list) {
-            let count = 0
-            for (const [pidStr, party] of Object.entries(group1.list)) {
-                if (count >= 3) break
-                count++
-                partyList.push({
-                    ability_soul_ids: party.abilitySoulIds,
-                    character_ids: party.characterIds,
-                    equipment_ids: party.equipmentIds,
-                    unison_character_ids: party.unisonCharacterIds,
-                    options: { allow_other_players_to_heal_me: party.options.allowOtherPlayersToHealMe },
-                    party_edited: party.edited,
-                    party_id: Number(pidStr),
-                    party_name: party.name
-                })
-            }
-        }
-
-        // Fallback: fill empty parties with leader characters if NORMAL is empty
-        while (partyList.length < 3) {
-            const pid = partyList.length + 1
-            const playerChars = getPlayerCharactersSync(playerId)
-            const leaderIds = Object.keys(playerChars).map(Number).filter(id => id > 0).sort((a, b) => a - b)
-            const usedIds = new Set(partyList.flatMap(p => p.character_ids.filter(c => c !== null) as number[]))
-            const leaderId = leaderIds.find(id => !usedIds.has(id)) ?? null
-            partyList.push({
-                ability_soul_ids: [null, null, null],
-                character_ids: [leaderId, null, null],
-                equipment_ids: [null, null, null],
-                unison_character_ids: [null, null, null],
-                options: { allow_other_players_to_heal_me: true },
-                party_edited: false,
-                party_id: pid,
-                party_name: `Party ${pid}`
-            })
-        }
+        const partyList = raidPartyList(playerId, 1, group1)
 
         const userPartyGroupList: RushPartyGroup[] = [{
             "party_group_color_id": resolvePartyGroupColorId(group1),
@@ -391,6 +381,7 @@ const routes = async (fastify: FastifyInstance) => {
             || !Number.isSafeInteger(body.quest_id)
             || !Number.isSafeInteger(body.party_group_id)
             || body.party_group_id <= 0
+            || body.party_group_id > 12
             || typeof body.play_id !== "string"
             || body.play_id.trim().length === 0
             || typeof body.is_auto_start_mode !== "boolean"
@@ -418,17 +409,23 @@ const routes = async (fastify: FastifyInstance) => {
             "error": "Bad Request", "message": "Quest doesn't exist."
         })
 
-        const isRegisteredPlay = () => {
-            const active = getPlayerActiveQuestSync(playerId)
+        const matchesPendingStart = (active: ReturnType<typeof getPlayerActiveQuestSync>) => {
             return active?.playId === body.play_id && active.category === QuestCategory.RAID_EVENT
                 && active.questId === body.quest_id && active.eventId === questEventId && !active.isMulti
+                && active.isAutoStartMode === body.is_auto_start_mode
+                && (!active.battleRoster?.raid || active.battleRoster.raid.partyGroupId === body.party_group_id)
+        }
+        const isRegisteredPlay = () => matchesPendingStart(getPlayerActiveQuestSync(playerId))
+        const initialPending = getPlayerActiveQuestSync(playerId)
+        if (initialPending?.playId === body.play_id && !matchesPendingStart(initialPending)) {
+            return reply.status(400).send({ error: "Bad Request", message: "Raid start does not match the pending play." })
         }
         const unavailable = () => reply.type("application/x-msgpack").send({
             data_headers: generateDataHeaders({ viewer_id: viewerId, result_code: 4050 }), data: {},
         })
         if (!isRegisteredPlay() && !isContentQuestOpenAt(QuestCategory.RAID_EVENT, body.quest_id)) return unavailable()
 
-        const restricted = getMode15ExclusivePartyItemsSync(
+        const restricted = isRegisteredPlay() ? [] : getMode15ExclusivePartyItemsSync(
             playerId, PartyCategory.RAID, body.party_group_id,
         )
         if (restricted.length > 0) {
@@ -441,13 +438,32 @@ const routes = async (fastify: FastifyInstance) => {
         }
 
         // Register active quest for /single_battle_quest/finish
-        const started = await runPersistenceTransaction({
+        const previousMemory = activeQuests[playerId]
+        let insertedMemory: typeof previousMemory | undefined
+        let started: boolean
+        try { started = await runPersistenceTransaction({
             domain: "single-quest", playerId, operation: "raid_start",
         }, () => {
             // Exact committed starts remain replayable after closure. Do not
             // replace their captured start time or affect finish/recovery.
-            if (isRegisteredPlay()) return true
+            assertBattleCanStartSync(playerId, body.play_id)
+            const pending = getPlayerActiveQuestSync(playerId)
+            if (pending?.playId === body.play_id) {
+                if (!matchesPendingStart(pending)) {
+                    throw new BattleRosterValidationError("Raid start does not match the pending play.")
+                }
+                return true
+            }
             if (!isContentQuestOpenAt(QuestCategory.RAID_EVENT, body.quest_id)) return false
+            const groups = raidPartyGroups(playerId)
+            if (!groups[String(body.party_group_id)]) throw new BattleRosterValidationError("Raid party group does not exist.")
+            const publishedParties = raidPartyList(playerId, body.party_group_id, groups[String(body.party_group_id)])
+            const battleRoster = captureRaidBattleRosterSync({ playerId, questId: body.quest_id,
+                partyGroupId: body.party_group_id, parties: publishedParties.map(party => ({ partyId: party.party_id,
+                    party: normalizeBattleParty({ characters: party.character_ids.map(id => id === null ? null : { id }),
+                        unison_characters: party.unison_character_ids.map(id => id === null ? null : { id }),
+                        equipments: party.equipment_ids.map(id => id === null ? null : { id }),
+                        ability_soul_ids: party.ability_soul_ids }) })) })
             insertActiveQuest(playerId, {
                 questId: body.quest_id,
                 category: QuestCategory.RAID_EVENT,
@@ -456,11 +472,23 @@ const routes = async (fastify: FastifyInstance) => {
                 isAutoStartMode: body.is_auto_start_mode,
                 isMulti: false,
                 eventId: questEventId,
+                partySlot: publishedParties[0].party_id,
+                battleRoster,
                 playId: body.play_id,
                 continueCount: 0
             })
+            insertedMemory = activeQuests[playerId]
             return true
-        })
+        }) } catch (error) {
+            if (insertedMemory && activeQuests[playerId] === insertedMemory) {
+                if (previousMemory) activeQuests[playerId] = previousMemory
+                else delete activeQuests[playerId]
+            }
+            if (isBattleRosterError(error) || ["BATTLE_ALREADY_SETTLED", "BATTLE_CLOCK_ABORTED"].includes((error as { code?: string }).code ?? "")) {
+                return reply.status(400).send({ error: "Bad Request", message: (error as Error).message })
+            }
+            throw error
+        }
         if (!started) return unavailable()
 
         reply.header("content-type", "application/x-msgpack");

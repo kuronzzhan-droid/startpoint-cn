@@ -52,8 +52,7 @@ function prune(): void {
 function recovery(stale: PlayerActiveQuest | undefined, playerId: number, frozenRunId?: string) {
     if (!stale?.isMulti) return null
     const room = stale.roomNumber ? getRoom(stale.roomNumber) : undefined
-    if (room && (hasFiveBossStartClaims(room) || (frozenRunId && room.lifecycle.phase === "BATTLE"
-        && room.five_boss_runtime?.runId === frozenRunId && room.five_boss_runtime.expectedRealPlayerIds.includes(playerId)))) {
+    if (room && hasFiveBossStartClaims(room)) {
         return { playId: stale.playId, recoverable: true, reason: "recoverable" }
     }
     const viewerId = room?.member_viewer_ids.find(id => room.member_player_ids[id] === playerId) ?? 0
@@ -83,6 +82,10 @@ export interface FiveBossPreparePayload {
 }
 
 export function registerFiveBossCommandHandlers(executor: RoomCommandExecutor): void {
+    executor.register("fiveBoss.recovery", (p: { staleQuest: PlayerActiveQuest; playerId: number; staleFrozenRunId?: string }) => {
+        const room = p.staleQuest.roomNumber ? getRoom(p.staleQuest.roomNumber) : undefined
+        return { ...recovery(p.staleQuest, p.playerId, p.staleFrozenRunId), roomPhase: room?.lifecycle.phase ?? null }
+    })
     executor.register("fiveBoss.start.query", (p: { token: string; playerId: number; playId: string }) => {
         const claim = claims.get(p.token)
         if (!claim || claim.playerId !== p.playerId || claim.playId !== p.playId) return { status: "unknown" }

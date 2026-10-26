@@ -1,6 +1,8 @@
 import { createHash } from "crypto"
 import { parseCrazyGachaState } from "../domains/crazy_gacha"
 import { parseExBoostPendingRow } from "../domains/ex-boost-pending"
+import { getExStatusPoolSync } from "../../lib/assets"
+import { ALL_ABILITIES } from "../../lib/ex-boost-abilities"
 import type { Database as BetterSqlite3Database } from "better-sqlite3"
 import { COMPACT_COUNTER_VALUES, getStorageSnapshotTableInfo, isCompactStorage, RETIRED_COUNTER_SNAPSHOTS } from "../../lib/storage-layout"
 import { getExistingPlayerTimeStateSync, getPlayerBusinessDateSync, getPlayerBusinessOffsetSync, PlayerArchiveTimeBasis, validatePlayerArchiveTimeBasis } from "../../lib/player-time-compat"
@@ -10,6 +12,47 @@ type SnapshotScalar = string | number | null
 interface SnapshotTableData {
     columns: string[]
     rows: SnapshotScalar[][]
+}
+
+export class ExBoostImportConflictError extends Error {}
+
+/** The native recovery dialog compares a paid candidate with the owned old EX. */
+function assertExBoostComparisonCharacter(characters: SnapshotTableData, characterId: number): void {
+    const character = characters.rows.find(row => row[characters.columns.indexOf("id")] === characterId)
+    const status = character?.[characters.columns.indexOf("ex_boost_status_id")]
+    const encodedAbilities = character?.[characters.columns.indexOf("ex_boost_ability_id_list")]
+    const abilities = typeof encodedAbilities === "string"
+        ? encodedAbilities === "" ? [] : encodedAbilities.split(",").map(Number) : null
+    const groups = abilities?.map(id => ALL_ABILITIES.find(ability => ability.id === id)?.group)
+    if (!Number.isSafeInteger(status) || ![1, 2, 3].some(tier => getExStatusPoolSync(tier)?.includes(status as number))
+        || !abilities || abilities.length > 2 || groups?.includes(undefined)
+        || new Set(groups).size !== abilities.length) {
+        throw new ExBoostImportConflictError("存档缺少待选 EX 的角色或原 EX；请先在游戏中确认或放弃待选 EX，再导入此存档。")
+    }
+}
+
+function assertExBoostImportContinuity(
+    snapshot: PlayerSaveSnapshotV2, targetPlayerId: number, db: BetterSqlite3Database,
+): void {
+    const row = db.prepare("SELECT * FROM players_ex_boost_pending_draws WHERE player_id=?").get(targetPlayerId) as
+        Record<string, unknown> | undefined
+    if (!row) return
+    const pending = parseExBoostPendingRow(row)
+    const completed = db.prepare(`SELECT 1 FROM player_operation_receipts
+        WHERE player_id=? AND operation='ex_boost_completion' AND request_key=?`).get(targetPlayerId, pending.drawId)
+    if (completed) return
+    const incoming = snapshot.data.tables.players_ex_boost_pending_draws
+    // Old V2 archives preserve this target-local row. New archives may only
+    // replace it with the exact same paid candidate, never silently discard it.
+    if (incoming) {
+        const candidate = incoming.rows.length === 1
+            ? parseExBoostPendingRow(Object.fromEntries(incoming.columns.map((column, index) => [column, incoming.rows[0][index]])))
+            : null
+        if (JSON.stringify(candidate) !== JSON.stringify(pending)) {
+            throw new ExBoostImportConflictError("当前有已支付的待选 EX；请先在游戏中确认或放弃，再导入其他 EX 状态的存档。")
+        }
+    }
+    assertExBoostComparisonCharacter(snapshot.data.tables.players_characters, pending.characterId)
 }
 
 export interface PlayerSaveSnapshotV2 {
@@ -314,6 +357,24 @@ function assertSnapshotScalar(value: unknown, context: string): asserts value is
     throw new Error(`${context}: 只允许字符串、数字或 null`)
 }
 
+const MANA_REAL_ARCHIVE_PREFIX = "mana-counter-real-v1:"
+const MAX_SQLITE_INTEGER = BigInt("9223372036854775807")
+
+/** Only this statistical column has a legacy wide-number archive representation. */
+function decodeArchivedManaCounter(value: string): number | bigint {
+    if (/^[1-9][0-9]{15,18}$/.test(value)) {
+        const integer = BigInt(value)
+        if (integer > BigInt(Number.MAX_SAFE_INTEGER) && integer <= MAX_SQLITE_INTEGER) return integer
+    }
+    if (value.startsWith(MANA_REAL_ARCHIVE_PREFIX)) {
+        const text = value.slice(MANA_REAL_ARCHIVE_PREFIX.length)
+        const real = Number(text)
+        if (text === String(real) && Number.isFinite(real) && Number.isInteger(real) && real >= 0
+            && !Number.isSafeInteger(real)) return real
+    }
+    throw new Error("players.total_mana_obtained: 无效的极端累计玛纳存档表示")
+}
+
 function assertSnapshotColumnValue(
     value: unknown,
     table: string,
@@ -323,6 +384,10 @@ function assertSnapshotColumnValue(
     assertSnapshotScalar(value, context)
     if (value === null) {
         if (column.notnull === 1 || column.pk > 0) throw new Error(`${context}: 必填列不能为 null`)
+        return
+    }
+    if (table === "players" && column.name === "total_mana_obtained" && typeof value === "string") {
+        decodeArchivedManaCounter(value)
         return
     }
     const declaredType = TEXT_STORED_IN_INTEGER_COLUMNS.has(`${table}.${column.name}`)
@@ -343,7 +408,10 @@ function readSnapshotTable(
 ): SnapshotTableData {
     const columns = getTableColumns(db, table)
     const primaryKey = getPrimaryKeyColumns(db, table)
-    const selectedColumns = columns.map(quoteIdentifier).join(", ")
+    const selectedColumns = columns.map(column => table === "players" && column === "total_mana_obtained"
+        ? `${quoteIdentifier(column)}, typeof(${quoteIdentifier(column)}) AS __mana_counter_type,
+            CAST(${quoteIdentifier(column)} AS TEXT) AS __mana_counter_text`
+        : quoteIdentifier(column)).join(", ")
     const whereColumn = table === "players" ? "id" : "player_id"
     const orderBy = primaryKey.length > 0
         ? ` ORDER BY ${primaryKey.map(quoteIdentifier).join(", ")}`
@@ -356,7 +424,21 @@ function readSnapshotTable(
     return {
         columns,
         rows: rows.map((row, rowIndex) => columns.map(column => {
-            const value = row[column]
+            let value = row[column]
+            if (table === "players" && column === "total_mana_obtained") {
+                if (row.__mana_counter_type === "integer") {
+                    const exact = BigInt(row.__mana_counter_text as string)
+                    if (exact > BigInt(Number.MAX_SAFE_INTEGER)) value = String(exact)
+                } else if (row.__mana_counter_type === "real" && typeof value === "number"
+                    && !Number.isSafeInteger(value)) {
+                    if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
+                        throw new Error("players.total_mana_obtained: 不能导出非法累计玛纳")
+                    }
+                    // Number.toString is a round-trip representation of the stored double;
+                    // SQLite CAST AS TEXT may print fewer significant digits, so do not use it here.
+                    value = MANA_REAL_ARCHIVE_PREFIX + String(value)
+                }
+            }
             assertSnapshotScalar(value, `${table}[${rowIndex}].${column}`)
             return value
         })),
@@ -516,10 +598,7 @@ export function validatePlayerSaveSnapshotV2Sync(
             }
             if (table === "players_ex_boost_pending_draws") {
                 const pending = parseExBoostPendingRow(Object.fromEntries(expectedColumns.map((name, index) => [name, row[index]])))
-                const characters = snapshot.data.tables.players_characters
-                const characterIndex = characters.columns.indexOf("id")
-                if (!characters.rows.some(character => character[characterIndex] === pending.characterId))
-                    throw new Error("EX pending draw character is absent from the archive")
+                assertExBoostComparisonCharacter(snapshot.data.tables.players_characters, pending.characterId)
             }
         }
     }
@@ -618,6 +697,9 @@ export function restorePlayerSaveSnapshotV2Sync(
 
     let restoredRows = 1
     const restore = db.transaction(() => {
+        // Check against the destination while holding the restore transaction,
+        // before deleting any character, inventory, or pending selection rows.
+        assertExBoostImportContinuity(snapshot, targetPlayerId, db)
         // Grants are target-local. Preserve their exact mail payload and claim
         // status while remapping IDs after the source mailbox is restored.
         const targetDailyMails = includeArchiveHistory
@@ -643,6 +725,10 @@ export function restorePlayerSaveSnapshotV2Sync(
         const updateValues = updateColumns.map(column => {
             if (column === "exp_pooled_time" || column === "last_login_time") return currentPoolTime
             if (column === "time_offset") return currentOffset
+            if (column === "total_mana_obtained") {
+                const mana = sourcePlayer[playerTable.columns.indexOf(column)]
+                if (typeof mana === "string") return decodeArchivedManaCounter(mana)
+            }
             return sourcePlayer[playerTable.columns.indexOf(column)]
         })
         const playerUpdate = db.prepare(`

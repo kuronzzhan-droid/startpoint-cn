@@ -198,6 +198,17 @@ test('default-save read failure is not displayed as unset and prevents replaceme
     harness.mutationOptions.forEach(option => assert.equal(option.onError(new Error('Synthetic failure')), undefined))
 })
 
+test('a diagnosed corrupt default template keeps replacement and explicit clear available', () => {
+    const harness = uiHarness('admin/src/pages/DataMaintenance.tsx', {
+        queries: { defaultSave: { data: { exists: true, status: 'invalid', error: 'Synthetic invalid template' } } },
+    })
+    const tree = harness.render()
+    assert.equal(elements(tree, el => el.type === 'Alert' && el.props.message === '默认存档损坏或不受支持').length, 1)
+    assert.equal(elements(tree, el => el.type === 'Tag' && el.props.children === '未设置，新建时使用空存档').length, 0)
+    assert.equal(elements(tree, el => el.type === 'Upload')[0].props.disabled, false)
+    assert.equal(elements(tree, el => el.type === 'Button' && el.props.children === '清除默认存档')[0].props.disabled, false)
+})
+
 async function loginFixture(fetch) {
     const routes = new Map()
     const auth = load('src/lib/management-auth.ts', { './request-route-path': { requestRoutePath: req => req.url } }, { process: { env: {} } })

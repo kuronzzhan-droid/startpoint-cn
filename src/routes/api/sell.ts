@@ -16,6 +16,7 @@ import { getConfigSync } from "../../lib/assets";
 import { gameVerboseLog } from "../../lib/game-logging";
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator";
 import { parsePositiveSafeInteger, parsePositiveSafeIntegerList, uniqueIds } from "../../lib/request-ids";
+import { readGameplayMutationRequestSync, recordGameplayMutationResponseSync } from "../../lib/gameplay-mutation-receipt";
 
 interface SellEquipmentListItem {
     equipment_id: number
@@ -108,6 +109,11 @@ const routes = async (fastify: FastifyInstance) => {
         const outcome = await runPersistenceTransaction({
             domain: "player", playerId, operation: "sell_equipment",
         }, () => {
+            const mutation = readGameplayMutationRequestSync(playerId, {
+                headerToken: request.headers.login_token, body, accountId,
+            }, "sell_equipment", { equipment_ids: equipmentIds })
+            if (!mutation) return { ok: false as const, message: "Invalid or conflicting request identity." }
+            if (mutation.response) return { ok: true as const, responseData: mutation.response }
             const totals = newDissolveTotals()
             const soldIds: number[] = []
             for (const equipmentId of equipmentIds) {
@@ -126,28 +132,23 @@ const routes = async (fastify: FastifyInstance) => {
                 const equipment = getPlayerEquipmentSync(playerId, equipmentId)!
                 updatePlayerEquipmentSync(playerId, equipmentId, { stack: equipment.stack - 1 })
             }
-            return { ok: true as const, totals, soldIds, itemList: grantDissolveRewardsSync(playerId, totals) }
+            const itemList = grantDissolveRewardsSync(playerId, totals)
+            const responseData = { equipment_list: buildFullEquipmentList(playerId), item_list: itemList, mail_arrived: false }
+            recordGameplayMutationResponseSync(playerId, mutation, responseData)
+            const craftLog = totals.craftPoints > 0 ? `craft +${totals.craftPoints} ` : ""
+            const starLog = totals.starGrains > 0 ? `star +${totals.starGrains} ` : ""
+            const { soulTypes, soulDetail } = describeSouls(totals)
+            gameVerboseLog(() => `[SELL_EQUIP] account=${accountId} player=${playerId}: ${soldIds.length} equipment sold (${soldIds.join(',')}), ${craftLog}${starLog}ability souls: ${soulTypes} types [${soulDetail}]`)
+            return { ok: true as const, responseData }
         })
         if (!outcome.ok) {
             return reply.status(400).send({ "error": "Bad Request", "message": outcome.message ?? "Player does not own equipment." })
         }
 
-        const returnEquipmentList = buildFullEquipmentList(playerId)
-
-        const { totals, soldIds } = outcome
-        const craftLog = totals.craftPoints > 0 ? `craft +${totals.craftPoints} ` : ""
-        const starLog = totals.starGrains > 0 ? `star +${totals.starGrains} ` : ""
-        const { soulTypes, soulDetail } = describeSouls(totals)
-        gameVerboseLog(() => `[SELL_EQUIP] account=${accountId} player=${playerId}: ${soldIds.length} equipment sold (${soldIds.join(',')}), ${craftLog}${starLog}ability souls: ${soulTypes} types [${soulDetail}]`)
-
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
             "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-            "data": {
-                "equipment_list": returnEquipmentList,
-                "item_list": outcome.itemList,
-                "mail_arrived": false
-            }
+            "data": outcome.responseData
         })
     })
 
@@ -177,6 +178,11 @@ const routes = async (fastify: FastifyInstance) => {
         const outcome = await runPersistenceTransaction({
             domain: "player", playerId, operation: "sell_equipment_stack",
         }, () => {
+            const mutation = readGameplayMutationRequestSync(playerId, {
+                headerToken: request.headers.login_token, body, accountId,
+            }, "sell_equipment_stack", { equipment_list: requestedSales })
+            if (!mutation) return { ok: false as const, message: "Invalid or conflicting request identity." }
+            if (mutation.response) return { ok: true as const, responseData: mutation.response }
             const totals = newDissolveTotals()
             const projectedStacks = new Map<number, number>()
 
@@ -196,24 +202,19 @@ const routes = async (fastify: FastifyInstance) => {
             for (const [equipmentId, newStack] of projectedStacks) {
                 updatePlayerEquipmentSync(playerId, equipmentId, { stack: newStack })
             }
-            return { ok: true as const, totals, itemList: grantDissolveRewardsSync(playerId, totals) }
+            const itemList = grantDissolveRewardsSync(playerId, totals)
+            const responseData = { equipment_list: buildFullEquipmentList(playerId), item_list: itemList, mail_arrived: false }
+            recordGameplayMutationResponseSync(playerId, mutation, responseData)
+            const { soulTypes, soulDetail } = describeSouls(totals)
+            gameVerboseLog(() => `[SELL_STACK] account=${accountId} player=${playerId}: ${toSellEquipmentList.length} equipment stack sold, craft +${totals.craftPoints} star +${totals.starGrains} ability souls: ${soulTypes} types [${soulDetail}]`)
+            return { ok: true as const, responseData }
         })
         if (!outcome.ok) return reply.status(400).send({ "error": "Bad Request", "message": outcome.message })
-
-        const returnEquipmentList = buildFullEquipmentList(playerId)
-
-        const { totals } = outcome
-        const { soulTypes, soulDetail } = describeSouls(totals)
-        gameVerboseLog(() => `[SELL_STACK] account=${accountId} player=${playerId}: ${toSellEquipmentList.length} equipment stack sold, craft +${totals.craftPoints} star +${totals.starGrains} ability souls: ${soulTypes} types [${soulDetail}]`)
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
             "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-            "data": {
-                "equipment_list": returnEquipmentList,
-                "item_list": outcome.itemList,
-                "mail_arrived": false
-            }
+            "data": outcome.responseData
         })
     })
 
@@ -242,6 +243,11 @@ const routes = async (fastify: FastifyInstance) => {
         const outcome = await runPersistenceTransaction({
             domain: "player", playerId, operation: "bulk_sell_equipment_stack",
         }, () => {
+            const mutation = readGameplayMutationRequestSync(playerId, {
+                headerToken: request.headers.login_token, body, accountId,
+            }, "bulk_sell_equipment_stack", { equipment_ids: equipmentIds })
+            if (!mutation) return { ok: false as const, message: "Invalid or conflicting request identity." }
+            if (mutation.response) return { ok: true as const, responseData: mutation.response }
             const totals = newDissolveTotals()
             const toSell: number[] = []
             for (const equipmentId of equipmentIds) {
@@ -256,38 +262,30 @@ const routes = async (fastify: FastifyInstance) => {
                 gameVerboseLog(() => `[BULK_SELL] account=${accountId} player=${playerId}  -> eid=${equipmentId} stack=${stack} rarity=${Math.floor(equipmentId/1000000)} craft=${rewards.craftPoints} star=${rewards.starGrains} souls=${JSON.stringify(rewards.abilitySouls)}`)
                 toSell.push(equipmentId)
             }
-            if (toSell.length === 0) return { totals, toSell, itemList: {} as Record<number, number> }
+            if (toSell.length === 0) {
+                const responseData = { equipment_list: [], item_list: {}, mail_arrived: false }
+                recordGameplayMutationResponseSync(playerId, mutation, responseData)
+                return { ok: true as const, responseData }
+            }
 
             for (const equipmentId of toSell) {
                 updatePlayerEquipmentSync(playerId, equipmentId, { stack: 0 })
             }
-            return { totals, toSell, itemList: grantDissolveRewardsSync(playerId, totals) }
+            const itemList = grantDissolveRewardsSync(playerId, totals)
+            const responseData = { equipment_list: buildFullEquipmentList(playerId), item_list: itemList, mail_arrived: false }
+            recordGameplayMutationResponseSync(playerId, mutation, responseData)
+            const craftLog = totals.craftPoints > 0 ? `craft +${totals.craftPoints} ` : ""
+            const starLog = totals.starGrains > 0 ? `star +${totals.starGrains} ` : ""
+            const { soulTypes, soulDetail } = describeSouls(totals)
+            gameVerboseLog(() => `[BULK_SELL] account=${accountId} player=${playerId}: ${toSell.length} equipment dissolved (${toSell.join(',')}), ${craftLog}${starLog}ability souls: ${soulTypes} types [${soulDetail}]`)
+            return { ok: true as const, responseData }
         })
-
-        if (outcome.toSell.length === 0) {
-            reply.header("content-type", "application/x-msgpack")
-            return reply.status(200).send({
-                "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-                "data": { "equipment_list": [], "item_list": {}, "mail_arrived": false }
-            })
-        }
-
-        const returnEquipmentList = buildFullEquipmentList(playerId)
-
-        const { totals, toSell } = outcome
-        const craftLog = totals.craftPoints > 0 ? `craft +${totals.craftPoints} ` : ""
-        const starLog = totals.starGrains > 0 ? `star +${totals.starGrains} ` : ""
-        const { soulTypes, soulDetail } = describeSouls(totals)
-        gameVerboseLog(() => `[BULK_SELL] account=${accountId} player=${playerId}: ${toSell.length} equipment dissolved (${toSell.join(',')}), ${craftLog}${starLog}ability souls: ${soulTypes} types [${soulDetail}]`)
+        if (!outcome.ok) return reply.status(400).send({ "error": "Bad Request", "message": outcome.message })
 
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({
             "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-            "data": {
-                "equipment_list": returnEquipmentList,
-                "item_list": outcome.itemList,
-                "mail_arrived": false
-            }
+            "data": outcome.responseData
         })
     })
 }

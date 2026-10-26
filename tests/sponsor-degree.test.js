@@ -4,19 +4,24 @@ const fs = require("node:fs")
 const os = require("node:os")
 const path = require("node:path")
 const { spawnSync } = require("node:child_process")
+const compiled = process.env.STARPOINT_TEST_COMPILED !== "0"
+if (!compiled) require("ts-node/register/transpile-only")
+const load = name => require(`../${compiled ? "out" : "src"}/${name}`)
 
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "starpoint-sponsor-degree-"))
 process.env.DATA_DIR = dataDir
 const Fastify = require("fastify")
 const { pack, unpack } = require("msgpackr")
-const { getDb } = require("../out/data/db")
-const { insertAccountSync } = require("../out/data/domains/account")
-const { insertDefaultPlayerSync, getPlayerSync } = require("../out/data/domains/player")
-const { insertSessionWithToken } = require("../out/data/domains/session")
-const { saveAccountDefaultPlayer } = require("../out/data/activeAccount")
-const { getPlayerMailsSync } = require("../out/data/domains/mail")
-const { getPlayerDegreeIdsSync, hasPlayerDegreeSync } = require("../out/data/domains/degree")
-const { degreeDefinitions } = require("../out/lib/content-master")
+const { getDb } = load("data/db")
+const { insertAccountSync } = load("data/domains/account")
+const { insertDefaultPlayerSync, getPlayerSync } = load("data/domains/player")
+const { insertSessionWithToken } = load("data/domains/session")
+const { saveAccountDefaultPlayer } = load("data/activeAccount")
+const { getPlayerMailsSync } = load("data/domains/mail")
+const { getPlayerDegreeIdsSync, hasPlayerDegreeSync } = load("data/domains/degree")
+const { degreeDefinitions } = load("lib/content-master")
+const identities = load("lib/gameplay-request-identity")
+identities.initializeGameplayRequestIdentitySchemaSync(getDb())
 const definition = require("../assets/degree_sponsor.json")["9900012"]
 const ID = 9900012
 
@@ -49,11 +54,12 @@ test("赞助称号经定向邮件领取、佩戴和重启持久化", async t => 
     app.addHook("onSend", (_request, reply, payload, done) => {
         done(null, reply.getHeader("content-type") === "application/x-msgpack" ? pack(payload) : payload)
     })
-    await app.register(require("../out/routes/web_api/mail").default, { prefix: "/admin/mail" })
-    await app.register(require("../out/routes/api/mail").default, { prefix: "/mail" })
-    await app.register(require("../out/routes/api/profile").default, { prefix: "/profile" })
+    await app.register(load("routes/web_api/mail").default, { prefix: "/admin/mail" })
+    await app.register(load("routes/api/mail").default, { prefix: "/mail" })
+    await app.register(load("routes/api/profile").default, { prefix: "/profile" })
     await app.ready()
     t.after(() => app.close())
+    const identitiesByViewer = new Map()
     async function player(name) {
         const account = insertAccountSync({ appId: "wf_cn", idpAlias: "", idpCode: "sponsor-test", idpId: name, status: "normal" })
         const saved = insertDefaultPlayerSync(account.id)
@@ -61,13 +67,20 @@ test("赞助称号经定向邮件领取、佩戴和重启持久化", async t => 
         const viewerId = 725000000 + saved.id
         await insertSessionWithToken({ token: String(viewerId), accountId: account.id, type: 2,
             expires: new Date(Date.now() + 86400000) })
-        return { id: saved.id, viewerId }
+        const token = getDb().transaction(() => identities.issueGameplayLoginTokenSync(getDb(), {
+            accountId: account.id, viewerId, udid: "sponsor-" + viewerId, expiresAt: Date.now() + 86400000,
+        }))()
+        const result = { id: saved.id, viewerId, token, count: 0 }
+        identitiesByViewer.set(viewerId, result)
+        return result
     }
     const sponsor = await player("sponsor")
     const other = await player("other")
     async function request(url, payload, status = 200) {
+        const native = url.startsWith("/mail/") ? identitiesByViewer.get(payload.viewer_id) : null
+        if (native) payload = { ...payload, api_count: ++native.count }
         const response = await app.inject({ method: "POST", url, payload,
-            headers: { accept: "application/json" } })
+            headers: { accept: "application/json", ...(native ? { login_token: native.token } : {}) } })
         assert.equal(response.statusCode, status, response.payload)
         return response.headers["content-type"].startsWith("application/x-msgpack")
             ? unpack(response.rawPayload) : response.json()
@@ -106,7 +119,8 @@ test("赞助称号经定向邮件领取、佩戴和重启持久化", async t => 
         assert.equal(hasPlayerDegreeSync(other.id, ID), false)
     })
     await t.test("重复领取或重复邮件均不增加称号所有权", async () => {
-        await request("/mail/receive", { viewer_id: sponsor.viewerId, mail_id: mail.id }, 400)
+        const acknowledged = await request("/mail/receive", { viewer_id: sponsor.viewerId, mail_id: mail.id })
+        assert.deepEqual(acknowledged.data.degree_list, [{ viewer_id: sponsor.viewerId, degree_id: ID }])
         await send()
         const duplicate = getPlayerMailsSync(sponsor.id)[0]
         const claimed = await request("/mail/receive", { viewer_id: sponsor.viewerId, mail_id: duplicate.id })
@@ -122,8 +136,8 @@ test("赞助称号经定向邮件领取、佩戴和重启持久化", async t => 
         assert.equal(profile.data.target_user_info.degree_id, ID)
     })
     await t.test("新进程重新读取仍持有并佩戴，未产生限时状态", () => {
-        const script = `const d=require('./out/data/domains/degree');
-            const p=require('./out/data/domains/player');
+        const script = `${compiled ? "" : "require('ts-node/register/transpile-only');"}const d=require('./${compiled ? "out" : "src"}/data/domains/degree');
+            const p=require('./${compiled ? "out" : "src"}/data/domains/player');
             console.log(JSON.stringify({owned:d.getPlayerDegreeIdsSync(${sponsor.id}),
                 equipped:p.getPlayerSync(${sponsor.id}).degreeId}));`
         const child = spawnSync(process.execPath, ["-e", script], {

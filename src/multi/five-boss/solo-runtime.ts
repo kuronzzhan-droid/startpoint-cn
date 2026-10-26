@@ -2,7 +2,7 @@ import { getDb } from "../../data/db"
 import { getPlayerSync, updatePlayerSync } from "../../data/domains/player"
 import { getPlayerActiveQuestSync } from "../../data/domains/quest_active"
 import { getPlayerOptionSync } from "../../data/domains/option"
-import { FiveBossGauntletRunError } from "../../data/domains/fiveBossGauntletRun"
+import { FiveBossGauntletRunError, detachFinalizedFiveBossActiveSync } from "../../data/domains/fiveBossGauntletRun"
 import { computeRealTimeStamina } from "../../lib/stamina"
 import { runPersistenceTransaction, runPersistenceTransactionSync } from "../../lib/persistence-coordinator"
 import { FIVE_BOSS_GAUNTLET, isFiveBossGauntletQuest } from "./contract"
@@ -10,6 +10,10 @@ import { FIVE_BOSS_GAUNTLET, isFiveBossGauntletQuest } from "./contract"
 function startFiveBossSoloInTransaction<T>(playerId: number, playId: string, persist: () => T): T | null {
     if (typeof playId !== "string" || !playId.length || playId.length > 255) throw new Error("Invalid play id.")
     const db = getDb()
+    const previous = getPlayerActiveQuestSync(playerId)
+    if (previous?.isMulti && previous.playId !== playId && isFiveBossGauntletQuest(previous.category, previous.questId)) {
+        detachFinalizedFiveBossActiveSync(playerId, previous.playId)
+    }
     const active = getPlayerActiveQuestSync(playerId)
     if (active?.isMulti && isFiveBossGauntletQuest(active.category, active.questId)) {
         throw new Error("Finish or abort the multiplayer run before starting solo.")

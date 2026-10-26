@@ -253,11 +253,12 @@ test('ticket reservation, immutable-slot writes and all final awards roll back o
     assert.equal(db.prepare('SELECT count(*) n FROM players_receive_history WHERE player_id=? AND type=5').get(p.id).n, 10)
 })
 
-test('old four schema profiles plus the optional crazy table remain exact with no new entitlement, including original54', () => {
+test('old schema profiles including the business additions remain exact with no new entitlement, including original54', () => {
     const source = fixture(), target = fixture(), sourceArchive = saves.createPlayerSaveSnapshotV2Sync(source.id, db)
-    assert.equal(sourceArchive.summary.includedTableCount, 58)
-    for (const oldCrazy of [false, true]) for (const oldEconomy of [false, true]) for (const oldTower of [false, true]) {
+    assert.equal(sourceArchive.summary.includedTableCount, 61)
+    for (const oldBusiness of [false, true]) for (const oldCrazy of [false, true]) for (const oldEconomy of [false, true]) for (const oldTower of [false, true]) {
         const archive = clone(sourceArchive)
+        if (oldBusiness) for (const table of ['players_ex_boost_pending_draws', 'players_shop_campaign_lineups', 'players_bond_token_exchanges']) delete archive.data.tables[table]
         if (oldCrazy) delete archive.data.tables.players_crazy_gacha
         if (oldEconomy) for (const table of ['players_shop_quotas', 'players_exchange_campaign_receipts', 'players_special_exchange_campaigns']) delete archive.data.tables[table]
         if (oldTower) {
@@ -265,7 +266,7 @@ test('old four schema profiles plus the optional crazy table remain exact with n
             table.columns.splice(index, 1); table.rows.forEach(row => row.splice(index, 1))
         }
         updateArchive(archive)
-        assert.equal(archive.summary.includedTableCount, 58 - (oldEconomy ? 3 : 0) - (oldCrazy ? 1 : 0))
+        assert.equal(archive.summary.includedTableCount, 61 - (oldBusiness ? 3 : 0) - (oldEconomy ? 3 : 0) - (oldCrazy ? 1 : 0))
         saves.validatePlayerSaveSnapshotV2Sync(archive, db)
         saves.restorePlayerSaveSnapshotV2Sync(archive, target.id, {}, db)
         assert.equal(current(target), null); assert.equal(tickets(target), 0)

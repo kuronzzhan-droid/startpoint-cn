@@ -9,13 +9,15 @@ import { getSession } from "../../data/domains/session"
 import { generateDataHeaders } from "../../utils";
 import { getCharacterDataSync } from "../../lib/assets";
 import { grantCharacterDegreeRewardsSync } from "../../lib/character-degree-rewards";
-import { characterExpCaps, givePlayerCharacterSync } from "../../lib/character";
+import { characterExpCaps } from "../../lib/character";
 import { clientSerializeDate } from "../../data/utils";
 import { resolvePlayerIdSync } from "../../data/activeAccount";
-import { reconcileAwakeUnlockCharacterList, settleDegreeMissionResponse } from "../../lib/mission";
+import { settleDegreeMissionResponse } from "../../lib/mission";
 import { gameVerboseLog } from "../../lib/game-logging";
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator";
 import { getExtendedOverLimitExtraCosts, validateOverLimitRequest } from "../../lib/character-overlimit";
+import { readGameplayMutationRequestSync, recordGameplayMutationResponseSync } from "../../lib/gameplay-mutation-receipt";
+import { handleTownCharacterClaim } from "../../lib/town-character-claim";
 
 interface OverLimitBody {
     viewer_id: number
@@ -112,14 +114,16 @@ const routes = async (fastify: FastifyInstance) => {
         if (!Number.isSafeInteger(overLimitCount) || overLimitCount <= 0) {
             return reply.status(400).send({ error: "Bad Request", message: "Invalid over limit count." })
         }
-        const characterAssetData = getCharacterDataSync(characterId)
-        if (characterAssetData === null) return reply.status(500).send({
-            error: "Internal Server Error", message: "No character asset data found."
-        })
-
         const result = await runPersistenceTransaction({
             domain: "player", playerId, operation: "character_over_limit",
         }, () => {
+            const mutation = readGameplayMutationRequestSync(playerId, {
+                headerToken: request.headers.login_token, body, accountId: viewerIdSession.accountId,
+            }, "character_over_limit", { characterId, overLimitCount, useStack: Boolean(body.use_stack), itemId: body.item_id })
+            if (!mutation) return { error: "Invalid or superseded gameplay request." }
+            if (mutation.response) return { data: mutation.response }
+            const characterAssetData = getCharacterDataSync(characterId)
+            if (!characterAssetData) return { error: "No character asset data found." }
             // Read balances and progress after reaching the head of the player queue.
             const character = getPlayerCharacterSync(playerId, characterId)
             if (!character) return { error: "Character not owned." }
@@ -167,6 +171,7 @@ const routes = async (fastify: FastifyInstance) => {
                 item_list: itemList, mail_arrived: false,
             }
             settleDegreeMissionResponse(playerId, viewerId, data, undefined, [9])
+            recordGameplayMutationResponseSync(playerId, mutation, data)
             return { data }
         })
         if (result.error !== undefined) {
@@ -253,46 +258,7 @@ const routes = async (fastify: FastifyInstance) => {
         })
     })
 
-    fastify.post("/add_character_from_town", async (request: FastifyRequest, reply: FastifyReply) => {
-        const body = request.body as { character_id: number, viewer_id: number, api_count: number }
-        const viewerId = body.viewer_id
-        const characterId = body.character_id
-        if (!viewerId || isNaN(viewerId) || !characterId || isNaN(characterId)) return reply.status(400).send({
-            "error": "Bad Request", "message": "Invalid request body."
-        })
-
-        const viewerIdSession = await getSession(viewerId.toString())
-        if (!viewerIdSession) return reply.status(400).send({
-            "error": "Bad Request", "message": "Invalid viewer id."
-        })
-
-        const playerId = resolvePlayerIdSync(viewerIdSession.accountId)!
-        if (playerId === null) return reply.status(500).send({
-            "error": "Internal Server Error", "message": "No player bound to account."
-        })
-
-        const responseData = await runPersistenceTransaction({
-            domain: "player", playerId, operation: "character_add_from_town",
-        }, () => {
-            const giveResult = givePlayerCharacterSync(playerId, characterId)
-            const existing: Record<string, unknown>[] = giveResult?.character
-                ? [giveResult.character as Record<string, unknown>] : []
-            const data: Record<string, any> = {
-                character_list: existing.length > 0
-                    ? reconcileAwakeUnlockCharacterList(playerId, existing) : existing,
-                item_list: giveResult?.item ? { [giveResult.item.id]: giveResult.item.inventoryCount } : {},
-                mail_arrived: false,
-            }
-            settleDegreeMissionResponse(playerId, viewerId, data, undefined, [4])
-            return data
-        })
-
-        reply.header("content-type", "application/x-msgpack")
-        return reply.status(200).send({
-            "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-            "data": responseData
-        })
-    })
+    fastify.post("/add_character_from_town", handleTownCharacterClaim)
 }
 
 export default routes;

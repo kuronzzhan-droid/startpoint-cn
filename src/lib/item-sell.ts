@@ -74,7 +74,7 @@ export function sellItemSync(
 
     // Add mana
     const newMana = player.freeMana + manaGained
-    updatePlayerSync({ id: playerId, freeMana: newMana, totalManaObtained: (player.totalManaObtained ?? 0) + manaGained })
+    updatePlayerSync({ id: playerId, freeMana: newMana, manaObtainedDelta: manaGained })
 
     return { ok: true, newCount, freeMana: newMana, manaGained }
 }

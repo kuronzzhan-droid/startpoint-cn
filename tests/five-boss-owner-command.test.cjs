@@ -18,6 +18,7 @@ const pause = () => new Promise(resolve => setImmediate(resolve))
 const deferred = () => { let resolve, reject; const promise = new Promise((ok, fail) => { resolve = ok; reject = fail }); return { promise, resolve, reject } }
 const roomManager = { getRoom: n => activeRooms.get(n), getRoomMemberPlayerId: (r, v) => r.member_player_ids[v] ?? null }
 const sessionManager = { getClientsInRoom: () => clients, isBattleSeatRetired: () => false,
+  isRescueGuest: () => false, isRescueFragmentEligibleGuest: () => false,
   clearBattleExpectedCount() {}, commitRoomDisband() {}, beginSettlementReturnGrace() {} }
 const diagnostics = { begin() {}, memberEvent() {}, socketEvent() {} }
 const queues = new Map()
@@ -66,6 +67,36 @@ function fixture() {
   const payload = { body: { room_number: n, category: mode.category, quest_id: mode.visibleQuestId, viewer_id: 1, play_id: 'play-' + n }, playerId: 11 }
   return { r, gateway, payload }
 }
+
+test('a finalized frozen member is result-pending even while the old room remains in BATTLE', async () => {
+  const old = fixture(), next = fixture(), playId = old.payload.body.play_id
+  battleContract.bindBattlePlay(old.r, 1, 11, playId, old.r.lifecycle.battleSessionId)
+  battleContract.markBattleMemberPhase(old.r, 1, 'FINALIZED')
+  const staleQuest = { playId, category: mode.category, questId: mode.visibleQuestId,
+    isMulti: true, roomNumber: old.r.room_number }
+  const claim = await next.gateway.execute('fiveBoss.start.prepare', { ...next.payload, staleQuest,
+    staleFrozenRunId: old.r.five_boss_runtime.runId })
+  assert.equal(claim.oldPlayRecovery.recoverable, false)
+  assert.equal(claim.oldPlayRecovery.reason, 'result_pending')
+  await next.gateway.execute('fiveBoss.start.cancel', { token: claim.token, playerId: 11, playId: next.payload.body.play_id })
+  const decision = await old.gateway.execute('fiveBoss.recovery', { staleQuest, playerId: 11,
+    staleFrozenRunId: old.r.five_boss_runtime.runId })
+  assert.equal(decision.reason, 'result_pending')
+  assert.equal(decision.roomPhase, 'BATTLE')
+})
+
+test('unresolved old start claims remain protected even after a Finalize observation', async () => {
+  const old = fixture(), next = fixture(), claim = await old.gateway.execute('fiveBoss.start.prepare', old.payload)
+  const playId = old.payload.body.play_id
+  battleContract.bindBattlePlay(old.r, 1, 11, playId, old.r.lifecycle.battleSessionId)
+  battleContract.markBattleMemberPhase(old.r, 1, 'FINALIZED')
+  const pending = await next.gateway.execute('fiveBoss.start.prepare', { ...next.payload,
+    staleQuest: { playId, category: mode.category, questId: mode.visibleQuestId, isMulti: true, roomNumber: old.r.room_number },
+    staleFrozenRunId: old.r.five_boss_runtime.runId })
+  assert.equal(pending.oldPlayRecovery.recoverable, true)
+  await old.gateway.execute('fiveBoss.start.cancel', { token: claim.token, playerId: 11, playId })
+  await next.gateway.execute('fiveBoss.start.cancel', { token: pending.token, playerId: 11, playId: next.payload.body.play_id })
+})
 
 test('owner prepares an independent frozen projection and pins until exact play commit', async () => {
   const x = fixture(), claim = await x.gateway.execute('fiveBoss.start.prepare', x.payload)

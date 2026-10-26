@@ -92,6 +92,12 @@ const dupeItemRewards: Record<number, Record<Element, number>> = {
     }
 };
 
+/** Shared by character grants and acknowledgements of previously claimed mail. */
+export function getCharacterDuplicateRewardItemId(characterId: number): number | null {
+    const asset = getCharacterDataSync(characterId)
+    return asset ? dupeItemRewards[asset.rarity]?.[asset.element] ?? null : null
+}
+
 /**
  * Rewards a player a character.
  * 
@@ -165,14 +171,15 @@ export function givePlayerCharacterSync(
         }
     } else {
         // otherwise, it was a dupe
-        const dupeRewards = dupeItemRewards[assetData.rarity]
+        const duplicateItemId = getCharacterDuplicateRewardItemId(characterId)
         let returnItem = undefined
-        if (dupeRewards) {
-            const itemId = dupeRewards[assetData.element]
-            const inventoryCount = givePlayerItemSync(playerId, itemId, 1)
+        if (duplicateItemId !== null) {
+            const itemId = duplicateItemId
+            const itemCount = assetData.rarity === 5 ? 3 : 1
+            const inventoryCount = givePlayerItemSync(playerId, itemId, itemCount)
             returnItem = {
                 id: itemId,
-                count: 1,
+                count: itemCount,
                 inventoryCount
             }
         }

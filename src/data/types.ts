@@ -1,3 +1,5 @@
+import type { BattleRoster } from "../lib/quest/battle-roster"
+
 // player
 export interface RawAccount {
     id: number,
@@ -831,6 +833,7 @@ export interface RawPlayerActiveQuest {
     party_slot: number | null
     quest_time_revision?: string | null
     clock_version?: number
+    battle_roster_json?: string | null
 }
 
 export interface PlayerActiveQuest {
@@ -851,4 +854,5 @@ export interface PlayerActiveQuest {
     partySlot?: number | null
     questTimeRevision?: string | null
     clockVersion?: number
+    battleRoster?: BattleRoster | null
 }

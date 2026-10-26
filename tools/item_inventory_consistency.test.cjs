@@ -53,6 +53,7 @@ try {
 
   for (const [rarityText, stoneIds] of Object.entries(duplicateStoneIds)) {
     const rarity = Number(rarityText)
+    const rewardCount = { 3: 1, 4: 1, 5: 3 }[rarity]
     for (let element = 0; element < stoneIds.length; element += 1) {
       const characterEntry = Object.entries(characters).find(([characterId, character]) =>
         Number(characterId) > 100000
@@ -73,10 +74,10 @@ try {
       const duplicateGrant = givePlayerCharacterSync(playerId, characterId)
       assert.deepEqual(duplicateGrant.item, {
         id: stoneId,
-        count: 1,
-        inventoryCount: beforeCount + 1,
+        count: rewardCount,
+        inventoryCount: beforeCount + rewardCount,
       })
-      assert.equal(getPlayerItemSync(playerId, stoneId), beforeCount + 1)
+      assert.equal(getPlayerItemSync(playerId, stoneId), beforeCount + rewardCount)
     }
   }
 
@@ -87,10 +88,10 @@ try {
   const duplicateGrant = givePlayerCharacterSync(playerId, fireRarity5CharacterId)
   assert.deepEqual(duplicateGrant.item, {
     id: fireRarity5StoneId,
-    count: 1,
-    inventoryCount: 56,
+    count: 3,
+    inventoryCount: 58,
   })
-  assert.equal(getPlayerItemSync(playerId, fireRarity5StoneId), 56)
+  assert.equal(getPlayerItemSync(playerId, fireRarity5StoneId), 58)
 
   const gacha = {
     type: 0,
@@ -120,13 +121,13 @@ try {
     undefined,
     skippedMoviePlan,
   )
-  assert.equal(getPlayerItemSync(playerId, fireRarity5StoneId), 58)
-  assert.equal(gachaResult.items[fireRarity5StoneId], 58)
+  assert.equal(getPlayerItemSync(playerId, fireRarity5StoneId), 64)
+  assert.equal(gachaResult.items[fireRarity5StoneId], 64)
   assert.deepEqual(
     gachaResult.draw.map((draw) => draw.ex_boost_item),
     [
-      { id: fireRarity5StoneId, count: 1 },
-      { id: fireRarity5StoneId, count: 1 },
+      { id: fireRarity5StoneId, count: 3 },
+      { id: fireRarity5StoneId, count: 3 },
     ],
   )
 
@@ -147,8 +148,8 @@ try {
     { type: 2, id: fireRarity5CharacterId },
   ])
   assert.ok(batchResult)
-  assert.equal(getPlayerItemSync(playerId, fireRarity5StoneId), 65)
-  assert.equal(batchResult.items[String(fireRarity5StoneId)], 65)
+  assert.equal(getPlayerItemSync(playerId, fireRarity5StoneId), 75)
+  assert.equal(batchResult.items[String(fireRarity5StoneId)], 75)
 
   console.log("item inventory consistency tests passed")
 } finally {

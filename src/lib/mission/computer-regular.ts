@@ -78,6 +78,13 @@ function rescueRankQuery(rank: number): MissionCounterQuery {
     }
 }
 
+const multiMvpQuery: MissionCounterQuery = {
+    dimension: "battle.multi_mvp",
+    scopeType: "lifetime",
+    scopeKey: "all",
+    qualifier: {},
+}
+
 function buildStats(
     playerId: number,
     category: number,
@@ -104,7 +111,11 @@ function buildStats(
                 const match = getMissionPattern(category, missionId).match(/^boss_battle_attention_rank([1-5])$/)
                 return match ? [Number(match[1])] : []
             }))]
-    const rescueQueries = rescueRanks.map(rescueRankQuery)
+    const missionQueries = rescueRanks.map(rescueRankQuery)
+    if (category === 1 && (missionIds === undefined
+        || missionIds.some(missionId => getMissionPattern(category, missionId) === "get_mvp"))) {
+        missionQueries.push(multiMvpQuery)
+    }
 
     return {
         category,
@@ -115,7 +126,7 @@ function buildStats(
         totalStories: 0,
         rankCounts: {},
         battleCounters: shared.battleCounters,
-        missionCounterValues: shared.missionCounters(rescueQueries),
+        missionCounterValues: shared.missionCounters(missionQueries),
         snapshot,
         completedChapters: category === 1
             ? readCompletedChapters(playerId, missionIds)
@@ -139,6 +150,8 @@ function computeLifetime(pattern: string, ctx: CategoryContext, dbProgress: numb
     if (pattern === "multi_battle_play") return Math.max(dbProgress, counters.multiClearCount)
     if (pattern === "multi_play_host") return Math.max(dbProgress, counters.multiHostClearCount)
     if (pattern === "multi_play_guest") return Math.max(dbProgress, counters.multiGuestClearCount)
+    if (pattern === "get_mvp") return Math.max(dbProgress,
+        ctx.missionCounterValues?.get(makeMissionCounterKey(multiMvpQuery)) ?? 0)
     const rescueRankMatch = pattern.match(/^boss_battle_attention_rank([1-5])$/)
     if (rescueRankMatch) {
         const query = rescueRankQuery(Number(rescueRankMatch[1]))

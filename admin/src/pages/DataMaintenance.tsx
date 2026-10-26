@@ -10,6 +10,7 @@ import { formatBeijingTime } from "../lib/adminFormat"
 interface DefaultSaveMeta {
     exists: boolean; playerName?: string | null; exportedAt?: string | null; sourcePlayerId?: number | null
     version?: number | null; scope?: string | null; includedTableCount?: number | null; rowCount?: number | null
+    status?: "absent" | "valid" | "recovered" | "cleared" | "invalid"; error?: string; warning?: string
 }
 interface DatabaseBackupResult {
     ok: boolean; backup: string; retainedBackups: number; removedBackups: number; backupCleanupError: string | null
@@ -58,7 +59,9 @@ export default function DataMaintenance() {
                 <Space direction="vertical" className="admin-stack">
                     <Typography.Text>新建存档时使用的玩家数据模板。请上传玩家详情页导出的完整 JSON 存档。</Typography.Text>
                     {defaultError ? <Alert type="error" showIcon message="默认存档读取失败" description="模板状态未知，暂时禁止修改。"
-                        action={<Button loading={defaultFetching} onClick={() => void retryDefault()}>重试默认存档</Button>} /> : defSave?.exists ? <>
+                        action={<Button loading={defaultFetching} onClick={() => void retryDefault()}>重试默认存档</Button>} />
+                        : defSave?.status === "invalid" ? <Alert type="error" showIcon message="默认存档损坏或不受支持"
+                            description={<>{defSave.error}<br />新建存档已暂停，请重新上传有效模板或清除模板。</>} /> : defSave?.exists ? <>
                         <Space wrap><Tag color="green">已设置</Tag><Tag color={defSave.version === 2 ? "blue" : "orange"}>
                             {defSave.version === 2 ? "完整存档 V2" : `旧版 V${defSave.version ?? "?"}（部分数据）`}</Tag></Space>
                         <Descriptions size="small" column={1}>
@@ -67,6 +70,7 @@ export default function DataMaintenance() {
                             {defSave.version === 2 && defSave.rowCount != null && <Descriptions.Item label="数据范围">{defSave.includedTableCount ?? "—"} 张表 / {defSave.rowCount} 行</Descriptions.Item>}
                         </Descriptions>
                     </> : <Tag>未设置，新建时使用空存档</Tag>}
+                    {defSave?.warning && <Alert type="warning" showIcon message="已使用模板备份" description={defSave.warning} />}
                     <Typography.Text type="secondary">模板用于后续新建存档。邮箱、领取历史、设备会话和跨玩家关系不会复制。</Typography.Text>
                     <Space wrap>
                         <Upload showUploadList={false} accept=".json" disabled={defaultWritesDisabled}

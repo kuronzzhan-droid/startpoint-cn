@@ -328,7 +328,7 @@ export function rewardPlayerGachaDrawResultSync(
             { skipNoRarityUpMovie: false }
         )
         : []
-    if (gacha.type !== GachaType.CHARACTER) {
+    if (gacha.type !== GachaType.CHARACTER && markMovieSeedsSent) {
         seedValidator.flushAll()
     }
 

@@ -589,7 +589,14 @@ async function runHttpIntegrationTests(api, fixture) {
 
         const invalidTemplate = JSON.parse(JSON.stringify(exportedSnapshot))
         invalidTemplate.schemaFingerprint = "incompatible-schema"
-        api.saveDefaultSaveTemplate(invalidTemplate)
+        const templatePath = path.join(databaseDirectory, "default_save.json")
+        const previousTemplate = fs.readFileSync(templatePath)
+        assert.throws(() => api.saveDefaultSaveTemplate(invalidTemplate), /数据库结构/)
+        assert.deepEqual(fs.readFileSync(templatePath), previousTemplate, "invalid uploads preserve the configured template")
+        // Exercise legacy/on-disk corruption separately from the validated
+        // upload API; neither recovery location may silently become an empty save.
+        fs.writeFileSync(templatePath, JSON.stringify(invalidTemplate))
+        fs.writeFileSync(`${templatePath}.bak`, JSON.stringify(invalidTemplate))
         const rejectedTemplateAccount = createAccount(api.insertAccountSync, "http-invalid-default")
         const playerCountBeforeRejectedTemplate = db.prepare(`SELECT COUNT(*) count FROM players`).get().count
         const rejectedTemplate = await app.inject({

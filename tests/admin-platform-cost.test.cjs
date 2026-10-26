@@ -120,26 +120,35 @@ test('server search exactly matches old joined Unicode browser search and summar
     assert.ok(targets.accounts.every(row => !('playerLogin' in row) && !('latestTransfer' in row)))
 })
 
-test('default metadata reuses unchanged identity, invalidates on external replacement and mutations, and never caches save contents', () => {
-    let text, stamp = 0, reads = 0
+test('default metadata reuses unchanged identity, invalidates on external replacement and mutations, and never caches save contents', t => {
+    const directory = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'default-meta-cost-'))
+    t.after(() => fs.rmSync(directory, { recursive: true }))
+    const filename = path.join(directory, 'default_save.json')
+    let reads = 0
     const snapshot = name => ({ schema: 'starpoint-cn-save', version: 2, scope: 'player-archive', summary: { playerName: name }, data: { bulky: 'synthetic'.repeat(1000) } })
     const fakeFs = {
-        statSync() { if (text === undefined) throw new Error('missing'); return { dev: 1, ino: 1, size: text.length, mtimeMs: stamp, ctimeMs: stamp } },
-        readFileSync() { reads++; return text }, writeFileSync(_file, next) { text = next; stamp++ },
-        unlinkSync() { text = undefined; stamp++ }, mkdirSync() {},
+        ...fs,
+        readFileSync(file, ...args) { if (file === filename) reads++; return fs.readFileSync(file, ...args) },
     }
-    const api = loadTs('src/data/defaultSave.ts', { fs: fakeFs, '../lib/file-exists': { existsSync: name => !name.endsWith('.json') || text !== undefined } }, { process: { env: { DATA_DIR: 'synthetic-directory-only' } } })
+    // This cost test isolates metadata caching; full V2 domain validation is
+    // covered by sidecar-persistence and the real save-transfer regressions.
+    const api = loadTs('src/data/defaultSave.ts', { fs: fakeFs,
+        './snapshots/player-snapshot': { validatePlayerSaveSnapshotV2Sync: value => value },
+    }, { process: { ...process, env: { ...process.env, DATA_DIR: directory } } })
     assert.equal(api.getDefaultSaveMeta().exists, false)
-    text = JSON.stringify(snapshot('first')); stamp++
+    fs.writeFileSync(filename, JSON.stringify(snapshot('first')))
     const first = api.getDefaultSaveMeta(); first.playerName = 'changed-copy'
-    assert.equal(api.getDefaultSaveMeta().playerName, 'first'); assert.equal(reads, 1)
-    text = JSON.stringify(snapshot('other')); stamp++
-    assert.equal(api.getDefaultSaveMeta().playerName, 'other'); assert.equal(reads, 2)
+    const initialReads = reads
+    assert.equal(api.getDefaultSaveMeta().playerName, 'first'); assert.equal(reads, initialReads)
+    fs.writeFileSync(filename, JSON.stringify(snapshot('other-longer')))
+    assert.equal(api.getDefaultSaveMeta().playerName, 'other-longer'); assert.equal(reads, initialReads + 1)
     api.saveDefaultSaveTemplate(snapshot('saved'))
-    assert.equal(api.getDefaultSaveMeta().playerName, 'saved'); assert.equal(reads, 2)
-    assert.equal(api.loadDefaultSaveTemplate().data.bulky.length, 9000); assert.equal(reads, 3)
+    const afterWrite = reads
+    assert.equal(api.getDefaultSaveMeta().playerName, 'saved'); assert.equal(reads, afterWrite)
+    assert.equal(api.loadDefaultSaveTemplate().data.bulky.length, 9000); assert.equal(reads, afterWrite + 1)
     api.clearDefaultSaveTemplate(); assert.equal(api.getDefaultSaveMeta().exists, false)
-    text = '{invalid'; stamp++; assert.equal(api.getDefaultSaveMeta().exists, false)
+    fs.writeFileSync(filename, '{invalid'); fs.writeFileSync(filename + '.bak', '{invalid-backup')
+    assert.equal(api.getDefaultSaveMeta().status, 'invalid'); assert.equal(api.getDefaultSaveMeta().exists, true)
 })
 
 test('CDN static cache refreshes by source/key/TTL and does not replace live server fields', () => {

@@ -198,6 +198,7 @@ export class EmbeddedMultiCoordinator {
             retainBattleSessionContract(room)
             lifecycle.battleSessionId = null
             room.equipmentPartyIds = undefined
+            room.battleParties = undefined
             room.npcPartySnapshots = undefined
             room.readyCountdownPending = false
         }

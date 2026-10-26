@@ -21,6 +21,7 @@ import {
 } from "../../lib/validate/unison-unlock";
 import {
     createPlayerSaveSnapshotV2Sync,
+    ExBoostImportConflictError,
     isPlayerSaveSnapshotV2,
     restorePlayerSaveSnapshotV2Sync,
     validatePlayerSaveSnapshotV2Sync,
@@ -279,7 +280,8 @@ const routes = async (fastify: FastifyInstance) => {
             const cleanupHint = backupCleanup.backupCleanupError
                 ? `；旧回滚备份清理失败：${backupCleanup.backupCleanupError}`
                 : ""
-            return fail(`恢复失败：${error?.message ?? error}${backupHint}${cleanupHint}`, 500)
+            return fail(`恢复失败：${error?.message ?? error}${backupHint}${cleanupHint}`,
+                error instanceof ExBoostImportConflictError ? 400 : 500)
         }
     })
 

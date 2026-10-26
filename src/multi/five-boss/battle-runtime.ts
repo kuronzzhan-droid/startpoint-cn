@@ -15,7 +15,7 @@ import {
     updatePlayerQuestProgressSync,
 } from "../../data/domains/quest"
 import {
-    deletePlayerActiveQuestSync,
+    deletePlayerActiveQuestIfPlayIdSync,
     getPlayerActiveQuestSync,
     insertPlayerActiveQuestSync,
 } from "../../data/domains/quest_active"
@@ -26,6 +26,7 @@ import {
     type BoundFiveBossGauntletMember,
     type FiveBossGauntletRun,
 } from "../../data/domains/fiveBossGauntletRun"
+import type { FiveBossHostAdmissionAuthorization } from "./host-admission"
 import { FIVE_BOSS_GAUNTLET, isFiveBossGauntletQuest } from "./contract"
 import {
     buildFiveBossCursedWeaponDropPlan,
@@ -70,6 +71,7 @@ export interface StartFiveBossBattleInput {
     httpIsAutoStartMode?: unknown
     matePlayerIds?: readonly number[]
     mateComIds?: readonly number[]
+    hostAdmissionAuthorization?: FiveBossHostAdmissionAuthorization | null
 }
 
 export interface StartFiveBossBattleResult {
@@ -222,6 +224,9 @@ function assertPersistentActiveQuest(
 ): void {
     assertRunIdentity(run, identity)
     const active = getPlayerActiveQuestSync(identity.playerId)
+    if (member.resultPendingAt && member.playerId === identity.playerId && member.clientPlayId === identity.clientPlayId
+        && member.battleEnteredAt !== null && member.finalizedAt !== null && member.abortedAt === null
+        && run.status === "active") return
     if (
         active === null
         || active.playerId !== identity.playerId
@@ -398,6 +403,7 @@ export function createFiveBossBattleRuntime(
             playerId: input.playerId,
             clientPlayId: input.clientPlayId,
             isAutoMode: frozen.isAutoMode,
+            hostAdmissionAuthorization: input.hostAdmissionAuthorization,
         }, context => {
             const activeQuest = buildActiveQuest(input, context.member.isAutoMode)
             activeQuest.startedAtMs = Date.parse(context.member.startedAt)
@@ -448,7 +454,7 @@ export function createFiveBossBattleRuntime(
             clientPlayId: input.clientPlayId,
         }, context => {
             assertPersistentActiveQuest(context.run, context.member, input)
-            deletePlayerActiveQuestSync(input.playerId)
+            deletePlayerActiveQuestIfPlayIdSync(input.playerId, input.clientPlayId)
             return true
         })
         assertRunIdentity(result.run, input)
@@ -522,7 +528,7 @@ export function createFiveBossBattleRuntime(
                     playerId: input.playerId, playId: input.clientPlayId, category: FIVE_BOSS_GAUNTLET.category,
                     questId: FIVE_BOSS_GAUNTLET.visibleQuestId, roomNumber: context.run.roomNumber,
                 }) }, new Date())
-            deletePlayerActiveQuestSync(input.playerId)
+            deletePlayerActiveQuestIfPlayIdSync(input.playerId, input.clientPlayId)
             return {
                 firstClear,
                 grantedItems,

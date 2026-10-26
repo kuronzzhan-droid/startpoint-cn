@@ -186,6 +186,9 @@ const drawExpBoost = async (request: FastifyRequest, reply: FastifyReply, autoAc
                 ? { ...receipt.previous.draw, ...characterData.exBoost } : receipt.previous.draw
             return { ok: true as const, characterData, drawResult, afterCostItemAmount: amount }
         }
+        if (pending && (autoAccept || pending.characterId !== characterId)) {
+            return reject(400, "An EX boost selection must be resolved before starting another draw.")
+        }
         if (autoAccept && characterData.exBoost) {
             const drawResult: PendingExBoostDraw = { drawId: randomUUID(), characterId, ...characterData.exBoost,
                 costItemId, costItemCount: costItemData.count }
@@ -208,8 +211,6 @@ const drawExpBoost = async (request: FastifyRequest, reply: FastifyReply, autoAc
         const drawResult: PendingExBoostDraw = { drawId: randomUUID(), characterId,
             ...drawExBoostAbilities(costItemId, exStatusPool), costItemId, costItemCount: costItemData.count }
         updatePlayerItemSync(playerId, costItemId, afterCostItemAmount)
-        // Switching characters deliberately abandons the previous paid candidate.
-        if (pending) completeExBoostDrawSync(playerId, pending, false)
         if (autoAccept) {
             updatePlayerCharacterSync(playerId, characterId, {
                 exBoost: { statusId: drawResult.statusId, abilityIdList: drawResult.abilityIdList },

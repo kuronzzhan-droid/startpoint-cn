@@ -30,7 +30,11 @@ import { measureSettlementPhase } from "../../settlement-performance"
 import { getEligibleRescueFragmentReward, getRescueFragmentAdditionalReward } from "../../../multi/rescue-fragment-reward"
 import { isRegisteredRescueBattleSync } from "../../mission/rescue-battle-facts"
 import { isMode15Quest, settleMode15BattleSync } from "../../mode15-optional"
-import { MULTI_FINISH_RECEIPT_OPERATION, isMultiFinishResponse, multiFinishPlayId } from "./multi-finish-identity"
+import { MULTI_FINISH_RECEIPT_OPERATION, isMultiFinishResponse, multiFinishPlayId, multiFinishMvpFlag } from "./multi-finish-identity"
+import { resolveBattlePartySync } from "../battle-roster"
+import { settleBattleBoostPoints } from "./battle-boost"
+import { addManaSafe, buildBattleManaRewards, readFieldMana } from "./field-mana"
+import { assertManaCounterStorageSync } from "../../../data/domains/mana-counter"
 
 export interface MultiFinishTransactionArgs {
     playerId: number
@@ -59,10 +63,11 @@ export interface MultiFinishTransactionResult {
 
 /** The registered command owns the encompassing SQLite transaction on both executors. */
 export function settleMultiQuestFinishInTransaction(args: MultiFinishTransactionArgs): MultiFinishTransactionResult {
-    const { playerId, viewerId, body, questCategory, questId, questData, activeQuestData,
+    const { playerId, viewerId, body: requestBody, questCategory, questId, questData, activeQuestData,
         allowFrozenSnapshot, playId, finishedAsHost, finishedAsRescueGuest,
         finishedAsRescueFragmentEligible, finishedAsNewbieRescueGuest,
         matePlayerResult, followInfo, evaluationTimeMs } = args
+    let body = requestBody
     // The permanent cross-mode guard wins over retained room snapshots and
     // memory caches, including after the full response has been pruned.
     const replay = getBattleReplaySync(playerId, "multi", playId)
@@ -90,6 +95,12 @@ export function settleMultiQuestFinishInTransaction(args: MultiFinishTransaction
         activeQuestData.startedAtMs = persisted!.startedAtMs ?? undefined
         activeQuestData.clockVersion = persisted!.clockVersion
     }
+    const reportedStatistics = body.statistics || body.quest_statistics || {}
+    const roster = persistentMatches ? persisted!.battleRoster : activeQuestData.battleRoster
+    const statistics = { ...reportedStatistics, party: resolveBattlePartySync(playerId, roster,
+        (reportedStatistics as any).party ?? { characters: [], unison_characters: [] }, questData.fixedParty !== undefined) }
+    body = { ...body, add_mana: readFieldMana(body.add_mana), statistics: statistics as any }
+    const reportedMvp = multiFinishMvpFlag(statistics)
     const player = getPlayerSync(playerId)
     if (player === null) throw new Error(`Multi finish player no longer exists: ${playerId}`)
     // calculate clear rank
@@ -106,11 +117,11 @@ export function settleMultiQuestFinishInTransaction(args: MultiFinishTransaction
     const beforeRankPoint = player.rankPoint;
     const displayMode15ManaAsFieldDrop = isMode15Quest(questCategory, questId);
     const newRankPoint = beforeRankPoint + questData.rankPointReward;
-    const manaObtained = questData.manaReward + ((body as any).add_mana || 0);
+    const manaObtained = addManaSafe(questData.manaReward, body.add_mana!);
+    const manaRewards = buildBattleManaRewards(questData.manaReward, body.add_mana!, displayMode15ManaAsFieldDrop);
     const newMana = calculateFreeManaGrant(player, manaObtained).freeMana;
-    let newBoostPoint = player.boostPoint - (activeQuestData.useBoostPoint ? 1 : 0);
-    let newBossBoostPoint = player.bossBoostPoint - (activeQuestData.useBossBoostPoint ? 1 : 0);
-    const useBoostPoint = (activeQuestData.useBoostPoint && (newBoostPoint >= 0)) || (activeQuestData.useBossBoostPoint && (newBossBoostPoint >= 0));
+    const { boostPoint: newBoostPoint, bossBoostPoint: newBossBoostPoint, useBoostPoint }
+        = settleBattleBoostPoints(player, activeQuestData);
 
     // Refreshing Abyss progress is write-capable and belongs to this transaction.
     const questProgress = getPlayerSingleQuestProgressSync(playerId, questCategory, questId);
@@ -168,7 +179,7 @@ export function settleMultiQuestFinishInTransaction(args: MultiFinishTransaction
         rankPoint: newRankPoint,
         boostPoint: newBoostPoint,
         bossBoostPoint: newBossBoostPoint,
-        totalManaObtained: (player.totalManaObtained ?? 0) + manaObtained,
+        manaObtainedDelta: manaObtained,
         maxComboAchieved: Math.max(player.maxComboAchieved ?? 0, (body as any).statistics?.max_combo_count ?? 0),
         ...(didLevelUp ? { stamina: player.stamina + getMaxStamina(newDegreeId), staminaHealTime: new Date() } : {}),
     });
@@ -244,10 +255,11 @@ export function settleMultiQuestFinishInTransaction(args: MultiFinishTransaction
         eligibleRescueFragmentReward,
     );
 
-    const partyCharacterIdsArray: number[] = [];
+    const partyCharacterIdSet = new Set<number>();
     for (const value of [...(bodyPartyStatistics.characters || []), ...(bodyPartyStatistics.unison_characters || [])]) {
-        if (value !== null && (value as any).id !== null && (value as any).id !== undefined) partyCharacterIdsArray.push((value as any).id);
+        if (value !== null && (value as any).id !== null && (value as any).id !== undefined) partyCharacterIdSet.add((value as any).id);
     }
+    const partyCharacterIdsArray = [...partyCharacterIdSet];
 
     // Track mission progress (decoupled from core quest mechanics)
     const finishCtx: FinishContext = {
@@ -255,7 +267,7 @@ export function settleMultiQuestFinishInTransaction(args: MultiFinishTransaction
         questAccomplished,
         clearTime, clearRank,
         party: bodyPartyStatistics as any,
-        statistics: (body as any).statistics || (body as any).quest_statistics || {},
+        statistics: statistics as FinishContext["statistics"],
         player,
         questPreviouslyCompleted,
         questProgress,
@@ -282,8 +294,7 @@ export function settleMultiQuestFinishInTransaction(args: MultiFinishTransaction
         ownContributionScore,
         ...matePlayerResult.map(result => Number(result.contribution_score) || 0),
     )
-    const finishedAsMvp = Boolean(finishCtx.statistics?.is_mvp)
-        || ownContributionScore >= highestContributionScore
+    const finishedAsMvp = reportedMvp ?? (ownContributionScore >= highestContributionScore)
     recordBattleMissionDimensions({
         type: "battle_finish",
         playerId,
@@ -348,6 +359,8 @@ export function settleMultiQuestFinishInTransaction(args: MultiFinishTransaction
 
     const dataHeaders = generateDataHeaders({ viewer_id: viewerId });
     const finalPlayerData = getPlayerSync(playerId);
+    // Check storage after all bounded deltas without rewriting legacy cells.
+    assertManaCounterStorageSync(playerId);
     const responseData: Record<string, any> = {
             "user_info": {
                 "free_mana": finalPlayerData?.freeMana ?? newMana,
@@ -370,9 +383,8 @@ export function settleMultiQuestFinishInTransaction(args: MultiFinishTransaction
                 "reward_pool_exp": questData.poolExpReward,
                 // Keep the credited total unchanged, but expose Mode15's
                 // fixed Mana through the native visible field-drop slot.
-                "reward_mana": displayMode15ManaAsFieldDrop ? 0 : questData.manaReward,
-                "field_mana": ((body as any).add_mana || 0)
-                    + (displayMode15ManaAsFieldDrop ? questData.manaReward : 0)
+                "reward_mana": manaRewards.reward_mana,
+                "field_mana": manaRewards.field_mana
             },
             "old_high_score": questProgress === null ? 0 : questProgress.highScore || 0,
             "joined_character_id_list": [

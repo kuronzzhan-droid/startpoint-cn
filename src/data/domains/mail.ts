@@ -118,6 +118,16 @@ export function getUnreceivedPlayerMailsByIdsSync(
     playerId: number,
     mailIds: readonly number[],
 ): RawPlayerMail[] {
+    return getPlayerMailsByIdsSync(playerId, mailIds, true)
+}
+
+/** Exact owned-mail lookup also supports acknowledged claims without scanning
+ * the mailbox or revealing another player's mail IDs. */
+export function getPlayerMailsByIdsSync(
+    playerId: number,
+    mailIds: readonly number[],
+    unreceivedOnly = false,
+): RawPlayerMail[] {
     const normalized = normalizeMailIds(mailIds)
     const mails: RawPlayerMail[] = []
     for (let offset = 0; offset < normalized.length; offset += MAIL_ID_QUERY_CHUNK_SIZE) {
@@ -126,7 +136,7 @@ export function getUnreceivedPlayerMailsByIdsSync(
         mails.push(...getDb().prepare(`
             SELECT * FROM players_mails
             WHERE player_id = ?
-              AND receive_time = '0000-00-00 00:00:00'
+              ${unreceivedOnly ? "AND receive_time = '0000-00-00 00:00:00'" : ""}
               AND id IN (${placeholders})
         `).all(playerId, ...chunk) as RawPlayerMail[])
     }

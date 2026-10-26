@@ -2,6 +2,9 @@ import { getDb } from "../db";
 import { getPlayerSync, updatePlayerSync } from "./player";
 import { computeRealTimeStamina } from "../../lib/stamina";
 import { runPersistenceTransactionSync } from "../../lib/persistence-coordinator";
+import { getPlayerActiveQuestSync, deletePlayerActiveQuestIfPlayIdSync } from "./quest_active";
+import { FIVE_BOSS_GAUNTLET, isFiveBossGauntletQuest } from "../../multi/five-boss/contract";
+import { prepareFiveBossHostAdmissionSync, type FiveBossHostAdmissionAuthorization } from "../../multi/five-boss/host-admission";
 
 
 export type FiveBossGauntletRunStatus = "active" | "settled" | "aborted";
@@ -54,6 +57,7 @@ export interface FiveBossGauntletMember {
     abortedAt: string | null;
     levelNextAt: string | null;
     finalizedAt: string | null;
+    resultPendingAt: string | null;
 }
 
 export interface BoundFiveBossGauntletMember extends FiveBossGauntletMember {
@@ -73,6 +77,7 @@ export interface StartMemberInput {
     playerId: number;
     clientPlayId: string;
     isAutoMode: boolean;
+    hostAdmissionAuthorization?: FiveBossHostAdmissionAuthorization | null;
 }
 
 export interface MemberClientKey {
@@ -137,6 +142,7 @@ interface RawMember {
     aborted_at: string | null;
     level_next_at: string | null;
     finalized_at: string | null;
+    result_pending_at: string | null;
 }
 
 interface RawReceipt {
@@ -228,6 +234,7 @@ function memberFromRaw(row: RawMember): FiveBossGauntletMember {
         abortedAt: row.aborted_at,
         levelNextAt: row.level_next_at,
         finalizedAt: row.finalized_at,
+        resultPendingAt: row.result_pending_at,
     };
 }
 
@@ -258,7 +265,7 @@ function selectRun(runId: string): RawRun | undefined {
 function selectMember(runId: string, playerId: number): RawMember | undefined {
     return getDb().prepare(`
         SELECT run_id, player_id, client_play_id, is_auto_mode, started_at, battle_entered_at, aborted_at,
-               level_next_at, finalized_at
+               level_next_at, finalized_at, result_pending_at
         FROM five_boss_gauntlet_members
         WHERE run_id = ? AND player_id = ?
     `).get(runId, playerId) as RawMember | undefined;
@@ -268,10 +275,36 @@ function selectMember(runId: string, playerId: number): RawMember | undefined {
 function selectMemberByClient(playerId: number, clientPlayId: string): RawMember | undefined {
     return getDb().prepare(`
         SELECT run_id, player_id, client_play_id, is_auto_mode, started_at, battle_entered_at, aborted_at,
-               level_next_at, finalized_at
+               level_next_at, finalized_at, result_pending_at
         FROM five_boss_gauntlet_members
         WHERE player_id = ? AND client_play_id = ?
     `).get(playerId, clientPlayId) as RawMember | undefined;
+}
+
+/** Retire only proven-ended gameplay occupancy; retain its immutable reward identity. */
+export function detachFinalizedFiveBossActiveSync(playerId: number, expectedPlayId: string): boolean {
+    if (!Number.isSafeInteger(playerId) || playerId < 1 || typeof expectedPlayId !== "string" || !expectedPlayId) return false;
+    return runPersistenceTransactionSync({ domain: "event", playerId, operation: "detach_finalized_five_boss_active" }, () => {
+        const active = getPlayerActiveQuestSync(playerId);
+        if (!active?.isMulti || active.playId !== expectedPlayId
+            || !isFiveBossGauntletQuest(active.category, active.questId)
+            || active.useBoostPoint || active.useBossBoostPoint) return false;
+        const member = selectMemberByClient(playerId, expectedPlayId);
+        if (!member || member.started_at === null || member.is_auto_mode === null
+            || member.battle_entered_at === null || member.finalized_at === null || member.aborted_at !== null
+            || active.isAutoStartMode !== (member.is_auto_mode === 1)) return false;
+        const run = selectRun(member.run_id);
+        if (!run || run.status !== "active" || run.route_id !== FIVE_BOSS_GAUNTLET.routeId
+            || run.ticket_item_id !== FIVE_BOSS_GAUNTLET.ticketItemId || run.room_number !== active.roomNumber) return false;
+        const db = getDb();
+        if (db.prepare("SELECT 1 FROM five_boss_gauntlet_receipts WHERE run_id=? AND player_id=?").get(run.run_id, playerId)) return false;
+        db.prepare(`UPDATE five_boss_gauntlet_members SET result_pending_at=COALESCE(result_pending_at, ?)
+            WHERE run_id=? AND player_id=? AND client_play_id=?`).run(new Date().toISOString(), run.run_id, playerId, expectedPlayId);
+        if (!deletePlayerActiveQuestIfPlayIdSync(playerId, expectedPlayId)) {
+            fail("member_binding_conflict", "ended battle occupancy changed before detachment");
+        }
+        return true;
+    });
 }
 
 
@@ -366,6 +399,9 @@ export function startMemberSync<T>(
                 fail("run_conflict", "room already belongs to a different active server run");
             }
 
+            prepareFiveBossHostAdmissionSync(normalized.hostPlayerId, normalized.runId,
+                input.hostAdmissionAuthorization, detachFinalizedFiveBossActiveSync);
+
             // Charge the run owner once, even when a guest's start arrives first.
             // Existing runs (including those begun before a cost update) skip
             // this block; scene changes and retries never charge retroactively.
@@ -419,6 +455,9 @@ export function startMemberSync<T>(
 
         let rawMember = selectMember(normalized.runId, normalized.playerId);
         if (!rawMember) fail("roster_conflict", "frozen roster is missing the current member");
+        if (rawMember.result_pending_at !== null) {
+            fail("member_not_active", "a result-pending member cannot restart its ended battle");
+        }
         if (db.prepare("SELECT 1 FROM five_boss_gauntlet_receipts WHERE run_id = ? AND player_id = ?")
             .get(normalized.runId, normalized.playerId)) {
             fail("member_not_active", "settled member cannot restart the same run");

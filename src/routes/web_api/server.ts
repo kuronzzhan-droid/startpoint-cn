@@ -10,7 +10,7 @@ import { deletePlayerSync, getPlayerSync, insertDefaultPlayerSync, updatePlayerS
 import { getAllDeviceBindingsSync, getAllViewerSessionsSync, getDeviceBindingSync, getSessionByAccountIdSync } from "../../data/domains/session"
 import { getPlayerCharactersSync } from "../../data/domains/character"
 import { getAllAdminPlayerSummariesSync, type AdminPlayerSummary } from "../../data/domains/admin-player"
-import { getActivePlayerId, getAdminPlayerSelectionState, setActivePlayerId, getSelectedAccountId, setSelectedAccountId, saveAccountDefaultPlayer, getAccountDefaultPlayer, removeDeletedAccountFromState, removeDeletedAccountsFromState } from "../../data/activeAccount";
+import { getActivePlayerId, getAdminPlayerSelectionState, getSelectedAccountId, setSelectedAccountId, removeDeletedAccountFromState, removeDeletedAccountsFromState, activatePlayerSave, removeDeletedPlayerFromState } from "../../data/activeAccount";
 import { saveDefaultSaveTemplate, loadDefaultSaveTemplate, clearDefaultSaveTemplate, getDefaultSaveMeta } from "../../data/defaultSave";
 import { detectCDNVersion, FULL_BASE, getEffectiveVersion, getPatchManifest } from "../../lib/version";
 import { buildShortUpCharacterGachaTimeline, buildShortUpCharacterGachaCatalog, buildShortUpCharacterGachaCurrent } from "../../lib/admin-clairvoyance";
@@ -790,14 +790,16 @@ const routes = async (fastify: FastifyInstance) => {
             if (wantsJson(request)) return reply.status(400).send({ error: "Invalid playerId" })
             return reply.redirect('/player')
         }
-        setActivePlayerId(pid)
+        if (!getPlayerSync(pid)) return reply.status(404).send({ error: "存档不存在" })
         const allAccounts = getAllAccountsSync()
+        let accountId: number | null = null
         for (const a of allAccounts) {
             if (getAccountPlayersSync(a.id).includes(pid)) {
-                saveAccountDefaultPlayer(a.id, pid)
+                accountId = a.id
                 break
             }
         }
+        activatePlayerSave(accountId, pid)
         if (wantsJson(request)) return reply.send({ ok: true, playerId: pid })
         return reply.redirect('/player')
     })
@@ -810,37 +812,31 @@ const routes = async (fastify: FastifyInstance) => {
             if (wantsJson(request)) return reply.status(400).send({ error: "Invalid accountId" })
             return reply.redirect('/player')
         }
-        const player = runPersistenceTransactionSync({
-            domain: "admin", operation: "admin_create_save",
-        }, () => insertDefaultPlayerSync(accId))
-        // 若管理员配置了默认存档模板，用它替换新建的空存档
+        let player: ReturnType<typeof insertDefaultPlayerSync>
         let appliedTemplate = false
         try {
             const template = loadDefaultSaveTemplate()
-            if (template !== null) {
-                if (!isPlayerSaveSnapshotV2(template)) {
-                    throw new Error("默认存档模板不是受支持的 V2 完整存档，请重新上传")
-                }
-                const snapshot = validatePlayerSaveSnapshotV2Sync(template)
-                runPersistenceTransactionSync({
-                    domain: "admin", playerId: player.id, operation: "admin_apply_save_template_v2",
-                }, () => restorePlayerSaveSnapshotV2Sync(snapshot, player.id, {
-                    includeArchiveHistory: false,
-                }))
-                appliedTemplate = true
-            }
+            const snapshot = template === null ? null : validatePlayerSaveSnapshotV2Sync(template)
+            // Diagnose unusable selection state before creating anything. The
+            // later JSON commit remains separate from the SQLite transaction.
+            getAdminPlayerSelectionState()
+            player = await runPersistenceTransaction({ domain: "admin", operation: "admin_create_save" }, () => {
+                const created = insertDefaultPlayerSync(accId)
+                if (snapshot) restorePlayerSaveSnapshotV2Sync(snapshot, created.id, { includeArchiveHistory: false })
+                return created
+            })
+            appliedTemplate = snapshot !== null
         } catch (error: any) {
-            try {
-                runPersistenceTransactionSync({
-                    domain: "admin", playerId: player.id, operation: "admin_rollback_new_save",
-                }, () => deletePlayerSync(player.id))
-            } catch { /* preserve template error */ }
-            const message = `默认存档应用失败，未创建新存档：${error?.message ?? error}`
+            const message = `新建存档失败，未创建新存档：${error?.message ?? error}`
             if (wantsJson(request)) return reply.status(409).send({ error: message })
             return reply.redirect(`/player?error=${encodeURIComponent(message)}`)
         }
-        setActivePlayerId(player.id)
-        saveAccountDefaultPlayer(accId, player.id)
+        try { activatePlayerSave(accId, player.id) }
+        catch (error: any) {
+            const message = `存档 ${player.id} 已创建，但选档保存失败，请重新选择该存档，无需再次新建：${error?.message ?? error}`
+            if (wantsJson(request)) return reply.status(500).send({ error: message, created: true, playerId: player.id, appliedTemplate })
+            return reply.redirect(`/player?error=${encodeURIComponent(message)}`)
+        }
         if (wantsJson(request)) return reply.send({ ok: true, playerId: player.id, appliedTemplate })
         return reply.redirect('/player')
     })
@@ -870,12 +866,9 @@ const routes = async (fastify: FastifyInstance) => {
             }, () => deletePlayerSync(pid))
             await cleanupDeletedPlayerAiSnapshots([pid], `save ${pid} deletion`)
             const remainingPlayerIds = getAccountPlayersSync(accountId)
-            if (getAccountDefaultPlayer(accountId) === pid && remainingPlayerIds.length > 0) {
-                saveAccountDefaultPlayer(accountId, remainingPlayerIds[0])
-            }
+            removeDeletedPlayerFromState(accountId || null, pid, remainingPlayerIds[0] ?? null)
         }
         const accountAlsoDeleted = accountId && getAccountPlayersSync(accountId).length === 0
-        if (getActivePlayerId() === pid) setActivePlayerId(null)
         if (wantsJson(request)) return reply.send({ ok: true, deleted: pid, accountAlsoDeleted: !!accountAlsoDeleted })
         return reply.redirect('/player')
     })
@@ -1017,8 +1010,12 @@ const routes = async (fastify: FastifyInstance) => {
             return reply.redirect('/player')
         }
 
-        setActivePlayerId(newPlayerId)
-        saveAccountDefaultPlayer(accountId, newPlayerId)
+        try { activatePlayerSave(accountId, newPlayerId) }
+        catch (error: any) {
+            const message = `克隆存档 ${newPlayerId} 已创建，但选档保存失败，请重新选择该存档，无需再次克隆：${error?.message ?? error}`
+            if (wantsJson(request)) return reply.status(500).send({ error: message, created: true, playerId: newPlayerId })
+            return reply.redirect(`/player?error=${encodeURIComponent(message)}`)
+        }
         if (wantsJson(request)) return reply.send({ ok: true, newPlayerId, snapshotVersion: 2, restored })
         return reply.redirect('/player')
     })

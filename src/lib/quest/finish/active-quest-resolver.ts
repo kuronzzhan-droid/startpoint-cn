@@ -82,6 +82,7 @@ function fromPersisted(row: PlayerActiveQuest): ActiveQuest {
         startedAtMs: row.startedAtMs ?? undefined,
         questTimeRevision: row.questTimeRevision ?? null,
         clockVersion: row.clockVersion,
+        battleRoster: row.battleRoster,
     }
 }
 
@@ -124,9 +125,10 @@ export function resolveActiveQuest(options: ResolveActiveQuestOptions): Resolved
     const cached = memory[playerId]
     if (cached !== undefined) {
         if (persisted?.playId === cached.playId && isSupportedBattleClockVersion(persisted.clockVersion)) {
-            // Keep party/room metadata in memory, but use the committed clock.
+            // Keep room metadata in memory, but use the committed clock and roster.
             cached.startedAtMs = persisted.startedAtMs ?? undefined
             cached.clockVersion = persisted.clockVersion
+            cached.battleRoster = persisted.battleRoster
             return { quest: cached, source: "memory" }
         }
         if (cached.clockVersion === BATTLE_CLOCK_VERSION) return { quest: cached, source: "memory" }

@@ -45,6 +45,8 @@ import { recordServerWork } from "../../lib/server-work-performance";
 import { runPersistenceTransaction } from "../../lib/persistence-coordinator";
 import { ensurePlayerClockStateForLoadSync } from "../../lib/server-clock-state";
 import { getDb } from "../../data/db";
+import { detachFinalizedFiveBossActiveSync, getFiveBossRunByClientSync } from "../../data/domains/fiveBossGauntletRun";
+import { isFiveBossGauntletQuest } from "../../multi/five-boss/contract";
 import { isPersistenceAdmissionError } from "../../lib/persistence-admission";
 import { serializePlayerSnapshot } from "../../data/utils/client-player-snapshot";
 import { formatClientDisplayDateTime } from "../../lib/client-display-time";
@@ -55,6 +57,7 @@ import { contentClientReload } from "../../lib/content-client-reload";
 import { getSpecialExchangeEntitlementsSync } from "../../lib/exchange-campaign-entitlements";
 import { getRetainedStarCrumbExchangeIds } from "../../lib/star-crumb-exchange-rules";
 import { townThemeLoginSnapshot } from "../../lib/town-theme";
+import { prepareExBoostRecoverySync, type ClientExBoostDrawResult } from "../../lib/ex-boost-recovery";
 
 interface CnLoadBody {
     device_id: number;
@@ -96,7 +99,7 @@ function fillClientDefaults(d: any) {
     }
 }
 
-function wrapOptionFields(d: any, playerId: number, resVer?: string) {
+function wrapOptionFields(d: any, playerId: number, resVer?: string, exBoostDrawResult: ClientExBoostDrawResult | null = null) {
     d.town_presentation = townThemeLoginSnapshot();
     d.town_presentation_load = true;
     d.content_operations = contentOperations().snapshot(Date.now());
@@ -117,7 +120,7 @@ function wrapOptionFields(d: any, playerId: number, resVer?: string) {
     d.mission_tips = false;
     d.monthly_tip = false;
     d.simple_payment_item_list = [];
-    d.ex_boost_draw_result = null;
+    d.ex_boost_draw_result = exBoostDrawResult;
     d.pass_force_reward = false;
     d.fund_receive_list = [];
     d.login_info = {};
@@ -190,7 +193,7 @@ const routes = async (fastify: FastifyInstance) => {
         // The load snapshot preparation also repairs old saves (including
         // mana boards and stamina). Admit the complete write unit before
         // queueing, read fresh state inside it, and commit it atomically.
-        const { now, prepared } = await runPersistenceTransaction({
+        const { now, prepared, exBoostDrawResult } = await runPersistenceTransaction({
             domain: "player", playerId, operation: "load_maintenance",
         }, () => {
             ensurePlayerClockStateForLoadSync(playerId, getDb());
@@ -213,6 +216,7 @@ const routes = async (fastify: FastifyInstance) => {
             markLoadPhase("load.player")
 
             const characterList = getPlayerCharactersSync(playerId)
+            const exBoostDrawResult = prepareExBoostRecoverySync(playerId)
             const characterManaNodeList = getPlayerCharactersManaNodesSync(playerId)
             const partyGroupList = getPlayerPartyGroupListSync(playerId)
             const questProgress = getPlayerQuestProgressSync(playerId)
@@ -272,7 +276,7 @@ const routes = async (fastify: FastifyInstance) => {
             }), getTimeOffset() ?? 0);
             recordServerWork("load.assemble", performance.now() - assemblyStartedAt)
             if (!prepared) throw new Error("No player data.");
-            return { now, prepared };
+            return { now, prepared, exBoostDrawResult };
         });
         // Pure response conversion runs after COMMIT. Saved optional party slots
         // still normalize to null before MessagePack encoding.
@@ -286,7 +290,7 @@ const routes = async (fastify: FastifyInstance) => {
 
         const resVer = request.headers['res_ver'] as string | undefined;
         gameVerboseLog(() => `[CN-LOAD] res_ver=${resVer || '(not sent)'} account=${accountId} player=${playerId} party_slot=${prepared.data.player.partySlot}`);
-        wrapOptionFields(clientData, playerId, resVer);
+        wrapOptionFields(clientData, playerId, resVer, exBoostDrawResult);
         const newsDelivery = getNewsDeliveryState(accountId, now);
         clientData.has_unread_news_item = newsDelivery.hasUnreadNews;
         markLoadPhase("load.serialize")
@@ -294,10 +298,25 @@ const routes = async (fastify: FastifyInstance) => {
         // Inject unfinished quest lists for battle recovery
         const activeQuest = getPlayerActiveQuestSync(playerId);
         if (activeQuest) {
-            const multiRecovery = await getRoomCommandGateway().execute("battle.recovery", {
-                quest: activeQuest, viewerId, playerId,
-            }) as MultiActiveQuestRecoveryDecision & { roomPhase: string | null };
-            if ((!multiRecovery.recoverable || isStaleAbyssBattle(activeQuest)) && contentClientReload().preservesPlay(playerId, activeQuest.playId)) {
+            const fiveBossMulti = activeQuest.isMulti && isFiveBossGauntletQuest(activeQuest.category, activeQuest.questId);
+            const frozenRun = fiveBossMulti ? getFiveBossRunByClientSync({ playerId, clientPlayId: activeQuest.playId }) : null;
+            const multiRecovery = await getRoomCommandGateway().execute(fiveBossMulti ? "fiveBoss.recovery" : "battle.recovery", fiveBossMulti ? {
+                staleQuest: activeQuest, playerId, ...(frozenRun ? { staleFrozenRunId: frozenRun.runId } : {}),
+            } : { quest: activeQuest, viewerId, playerId }) as MultiActiveQuestRecoveryDecision & { roomPhase: string | null };
+            if (frozenRun && !multiRecovery.recoverable) {
+                const barrier = await getRoomCommandGateway().execute("fiveBoss.proof.barrier", {
+                    runId: frozenRun.runId, playerId, roomNumber: frozenRun.roomNumber,
+                }) as { ok: boolean };
+                if (!barrier.ok) throw new Error("Previous five-boss result proof is not durably acknowledged.");
+            }
+            const detachedResult = fiveBossMulti && !multiRecovery.recoverable && await runPersistenceTransaction({
+                domain: "multi-settlement", playerId, operation: "load_five_boss_result_pending",
+            }, () => detachFinalizedFiveBossActiveSync(playerId, activeQuest.playId));
+            if (detachedResult) {
+                if (activeQuests[playerId]?.playId === activeQuest.playId) delete activeQuests[playerId];
+                clientData.unfinished_quest_list = [];
+                clientData.unfinished_multi_quest_list = [];
+            } else if ((!multiRecovery.recoverable || isStaleAbyssBattle(activeQuest)) && contentClientReload().preservesPlay(playerId, activeQuest.playId)) {
                 // Operational reload may retire a transport seat. Keep only the
                 // exact registered play; do not advertise an impossible restore
                 // or change finish/abort eligibility and rewards.

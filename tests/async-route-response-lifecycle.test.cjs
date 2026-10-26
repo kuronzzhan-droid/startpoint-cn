@@ -107,15 +107,18 @@ async function runScenario(scenario) {
         await request('/api/index.php/tutorial/finish_trigger', { viewer_id: viewerId, tutorial_ids: [101, 102] })
         assert.deepEqual(getPlayerTriggeredTutorialsSync(playerId).filter(id => id === 101 || id === 102).sort(), [101, 102])
         updatePlayerSync({ id: playerId, tutorialStep: 0, tutorialSkipFlag: false })
-        const step = await request('/api/index.php/tutorial/update_step', { viewer_id: viewerId, step: 0 })
+        const nativeHeaders = { login_token: reused.data.login_token }
+        const step = await request('/api/index.php/tutorial/update_step', { viewer_id: viewerId, step: 0, api_count: 1 }, 200, 'POST', nativeHeaders)
         assert.equal(step.data.step, 1)
         assert.equal(getPlayerSync(playerId).tutorialStep, 1)
         const manaBefore = getPlayerSync(playerId).freeVmoney
-        const gift = await request('/api/index.php/tutorial/update_step', { viewer_id: viewerId, step: 15 })
+        updatePlayerSync({ id: playerId, tutorialStep: 15 })
+        const gift = await request('/api/index.php/tutorial/update_step', { viewer_id: viewerId, step: 15, api_count: 2 }, 200, 'POST', nativeHeaders)
         assert.equal(gift.data.step, 16)
-        assert.equal(getPlayerSync(playerId).freeVmoney, manaBefore + 1500)
+        assert.equal(getPlayerSync(playerId).freeVmoney, manaBefore)
+        assert.equal(require('../out/data/domains/item').getPlayerItemSync(playerId, 999012), 1)
         assert.ok(getPlayerCharacterSync(playerId, 243001))
-        assert.equal(db.prepare('SELECT COUNT(*) AS n FROM players_mails WHERE player_id = ? AND number = 500').get(playerId).n, 1)
+        assert.equal(db.prepare('SELECT COUNT(*) AS n FROM players_mails WHERE player_id = ? AND number = 500').get(playerId).n, 0)
 
         await insertSessionWithToken({ token: 'fixture-zat', accountId: session.accountId, type: 0, expires: new Date(Date.now() + 60000) })
         const legacy = await request('/legacy/tool/signup', { access_token: 'fixture-zat' }, 200, 'POST', { udid: 'fixture-device' })
