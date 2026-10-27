@@ -358,5 +358,11 @@
     "obtain_source": 1,
     "generate_ability_soul": true,
     "max_level": 5
+  },
+  "5139881": {
+    "ability_soul_id": 5139881,
+    "obtain_source": 1,
+    "generate_ability_soul": false,
+    "max_level": 5
   }
 }

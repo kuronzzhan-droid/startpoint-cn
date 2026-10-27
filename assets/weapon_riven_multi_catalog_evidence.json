@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "catalog_id": "riven-multi-v1-fcf6de9c6aee669eda6a0560be58b862",
+  "resourceDigest": "fcf6de9c6aee669eda6a0560be58b8626f9d19977e8d0bb711f824324bec1556",
+  "canonical": "master/ability/ability_soul.orderedmap\t1f489744beabefc5d24240c7cdeeb0bb02a76422637e504242d795d280e82ad2\nmaster/item/equipment.orderedmap\ta805800ae3d1ff287e2cd2cfc13212199300d87ff430209363ad3baf79144690\nmaster/item/item.orderedmap\t72be926ce4be9324d91871fe19c2590d60b9814ef05c161762249e9bca677efa\nmaster/string/custom_ability_string.orderedmap\tc2de10d27f2c7362153c0c295355c6f725080f8c38026125f20bd5332d0d5dd4\n",
+  "resources": [
+    {
+      "logical": "master/ability/ability_soul.orderedmap",
+      "path": "weapon-riven-multi-resources/master/ability/ability_soul.orderedmap",
+      "sha256": "1f489744beabefc5d24240c7cdeeb0bb02a76422637e504242d795d280e82ad2",
+      "bytes": 71401
+    },
+    {
+      "logical": "master/item/equipment.orderedmap",
+      "path": "weapon-riven-multi-resources/master/item/equipment.orderedmap",
+      "sha256": "a805800ae3d1ff287e2cd2cfc13212199300d87ff430209363ad3baf79144690",
+      "bytes": 123979
+    },
+    {
+      "logical": "master/item/item.orderedmap",
+      "path": "weapon-riven-multi-resources/master/item/item.orderedmap",
+      "sha256": "72be926ce4be9324d91871fe19c2590d60b9814ef05c161762249e9bca677efa",
+      "bytes": 369594
+    },
+    {
+      "logical": "master/string/custom_ability_string.orderedmap",
+      "path": "weapon-riven-multi-resources/master/string/custom_ability_string.orderedmap",
+      "sha256": "c2de10d27f2c7362153c0c295355c6f725080f8c38026125f20bd5332d0d5dd4",
+      "bytes": 130956
+    }
+  ],
+  "soul_key_count": 882,
+  "weapon_id_count": 580,
+  "provenance": {
+    "base_tail": "1.4.324",
+    "final_tail": "1.4.325",
+    "base_manifest_sha256": "8bd79ac4940fc3500d9cf7fc1b585e8186a86a47eecd7b0ebdc6687874f7277e",
+    "base_manifest_reconstructed": false,
+    "candidate_manifest_sha256": "e84354be4e05b68c0be769bebeae71e9cecea29f4b0f477b3346679aa4ee15b6"
+  },
+  "device_loaded_resources_verified": false
+}

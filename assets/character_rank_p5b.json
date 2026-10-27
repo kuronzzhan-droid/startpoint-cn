@@ -310,5 +310,11 @@
     "name": "稻穗",
     "rarity": 5,
     "skill_count": 6
+  },
+  "139988": {
+    "element": 2,
+    "name": "贝瑞塔",
+    "rarity": 5,
+    "skill_count": 6
   }
 }
