@@ -438,6 +438,7 @@ const routes = async (fastify: FastifyInstance) => {
         }
 
         // Register active quest for /single_battle_quest/finish
+        let rivenParties: any[] = []
         const previousMemory = activeQuests[playerId]
         let insertedMemory: typeof previousMemory | undefined
         let started: boolean
@@ -455,6 +456,13 @@ const routes = async (fastify: FastifyInstance) => {
                 return true
             }
             if (!isContentQuestOpenAt(QuestCategory.RAID_EVENT, body.quest_id)) return false
+            // Weapon riven battle rule (author 2026-10-27 15:17), per saved party of the raid group.
+            if ((getQuestFromCategorySync(QuestCategory.RAID_EVENT, body.quest_id) as { fixedParty?: unknown } | null)
+                ?.fixedParty === undefined) {
+                const rivenParty = require("../../data/domains/weapon-riven-party")
+                rivenParties = rivenParty.enforceWeaponRivenStartPartiesSync(playerId, PartyCategory.RAID,
+                    rivenParty.getSavedPartyIdsInGroupSync(playerId, PartyCategory.RAID, body.party_group_id))
+            }
             const groups = raidPartyGroups(playerId)
             if (!groups[String(body.party_group_id)]) throw new BattleRosterValidationError("Raid party group does not exist.")
             const publishedParties = raidPartyList(playerId, body.party_group_id, groups[String(body.party_group_id)])
@@ -491,10 +499,16 @@ const routes = async (fastify: FastifyInstance) => {
         }
         if (!started) return unavailable()
 
+        const rivenData: { party_info_list?: any[] } = {}
+        if (rivenParties.length > 0) {
+            await require("../../lib/weapon-riven/party-refresh").refreshWeaponRivenPartiesAfterCommit(playerId, rivenParties)
+            rivenData.party_info_list = require("../../lib/weapon-riven/client").projectWeaponRivenClientResponse(rivenParties,
+                require("../../lib/client-admission").hasWeaponRivenCapability(request))
+        }
         reply.header("content-type", "application/x-msgpack");
         return reply.status(200).send({
             "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-            "data": {}
+            "data": rivenData
         });
     });
 

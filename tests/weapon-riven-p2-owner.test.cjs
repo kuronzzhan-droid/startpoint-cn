@@ -1,0 +1,25 @@
+'use strict'
+process.env.MULTI_REALTIME_PROCESS = '1'
+const { test, after } = require('node:test'), assert = require('node:assert/strict')
+const { fixture, load, until, sleep } = require('./helpers/weapon-riven-p2-wire.cjs')
+after(() => { load('lib/client-admission').clientAdmission().close(); load('data/db').getDb().close() })
+
+test('parent/DB-free child IPC with real HTTP first freezes all peers and survives duplicate starts/ACKs', { timeout: 25000 }, async t => {
+    const x = await fixture(t)
+    assert.equal(x.status.mode, 'process'); assert.notEqual(x.status.pid, process.pid)
+    assert.equal(x.status.endpoint.database, 'business-rpc-only')
+    const start = x.startHttp(x.members[0])
+    await until(() => x.wires.every(wire => wire.latest()), 'owner prepare via reverse RPC')
+    const prepared = structuredClone(x.wires[0].latest())
+    assert.equal(prepared[0].party.weapon_riven_mode, 1)
+    assert.deepEqual(prepared, x.wires[1].latest())
+    x.wires[0].send([0, [6]]); x.wires[0].ack(); x.wires[0].ack()
+    await sleep(40); assert.ok(x.wires.every(wire => !wire.messages(5).length))
+    x.wires[1].ack(); await x.started()
+    assert.equal((await start).statusCode, 200)
+    assert.deepEqual(x.wires[0].messages(5)[0][1][1], prepared)
+    assert.deepEqual(x.wires[1].messages(5)[0][1][1], prepared)
+    await x.runtime.failRealtimeOwner()
+    await until(() => x.wires.every(wire => wire.closed), 'owner fault closes all sockets')
+    await assert.rejects(x.runtime.getRoomCommandGateway().execute('room.query', { roomNumber: x.room }), /closed|CLOSED|unavailable/i)
+})

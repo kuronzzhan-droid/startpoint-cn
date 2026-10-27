@@ -1,0 +1,781 @@
+{
+  "rules": {
+    "schema_version": 1,
+    "items": {
+      "unknown": 16000000,
+      "instance_first": 16000001,
+      "instance_last": 16000200,
+      "holding_limit": 20
+    },
+    "affix_count_probabilities": [
+      {
+        "count": 1,
+        "probability": 0.2
+      },
+      {
+        "count": 2,
+        "probability": 0.35
+      },
+      {
+        "count": 3,
+        "probability": 0.3
+      },
+      {
+        "count": 4,
+        "probability": 0.15
+      }
+    ],
+    "combinations": [
+      {
+        "id": "one_strong_positive",
+        "count": 1,
+        "conditional_probability": 1.0,
+        "slots": [
+          {
+            "polarity": "+",
+            "tier": "strong"
+          }
+        ],
+        "provenance": "plan_section_1"
+      },
+      {
+        "id": "two_medium_positives",
+        "count": 2,
+        "conditional_probability": 0.5,
+        "slots": [
+          {
+            "polarity": "+",
+            "tier": "medium"
+          },
+          {
+            "polarity": "+",
+            "tier": "medium"
+          }
+        ],
+        "provenance": "plan_combination_draft_probability"
+      },
+      {
+        "id": "strong_positive_and_strong_negative",
+        "count": 2,
+        "conditional_probability": 0.5,
+        "slots": [
+          {
+            "polarity": "+",
+            "tier": "strong"
+          },
+          {
+            "polarity": "-",
+            "tier": "strong"
+          }
+        ],
+        "provenance": "plan_combination_draft_probability"
+      },
+      {
+        "id": "three_medium_positives",
+        "count": 3,
+        "conditional_probability": 0.5,
+        "slots": [
+          {
+            "polarity": "+",
+            "tier": "medium"
+          },
+          {
+            "polarity": "+",
+            "tier": "medium"
+          },
+          {
+            "polarity": "+",
+            "tier": "medium"
+          }
+        ],
+        "provenance": "plan_polarity_draft_tiers_and_probability"
+      },
+      {
+        "id": "two_positives_and_one_negative",
+        "count": 3,
+        "conditional_probability": 0.5,
+        "slots": [
+          {
+            "polarity": "+",
+            "tier": "strong"
+          },
+          {
+            "polarity": "+",
+            "tier": "medium"
+          },
+          {
+            "polarity": "-",
+            "tier": "strong"
+          }
+        ],
+        "provenance": "plan_polarity_draft_tiers_and_probability"
+      },
+      {
+        "id": "three_positives_and_one_negative",
+        "count": 4,
+        "conditional_probability": 1.0,
+        "slots": [
+          {
+            "polarity": "+",
+            "tier": "strong"
+          },
+          {
+            "polarity": "+",
+            "tier": "medium"
+          },
+          {
+            "polarity": "+",
+            "tier": "medium"
+          },
+          {
+            "polarity": "-",
+            "tier": "strong"
+          }
+        ],
+        "provenance": "plan_polarity_draft_tiers"
+      }
+    ],
+    "reroll": {
+      "cost_items": [
+        {
+          "item_id": 2370099,
+          "costs": [
+            700,
+            933,
+            1167,
+            1400,
+            1633,
+            1867,
+            2100,
+            2333,
+            2567,
+            2800,
+            3033,
+            3267,
+            3500
+          ]
+        },
+        {
+          "item_id": 10000320,
+          "costs": [
+            1
+          ]
+        }
+      ],
+      "cost_basis": "per_card_paid_reroll_ordinal",
+      "next_cost_formula": "cost_items[0].costs[min(completed_paid_rerolls, cost_items[0].costs.length - 1)]",
+      "authoritative_side": "server",
+      "reroll_all_affixes_and_count": true,
+      "choice": "keep_old_or_new",
+      "first_paid_reroll_has_choice": true,
+      "keeping_old_refunds_cost": false,
+      "keeping_old_increments_paid_rerolls": true,
+      "initial_reveal_is_paid_reroll": false,
+      "initial_reveal_note": "费用表从第一次付费重抽开始；首次揭示的获取成本仍待定，不能据此推定免费获取。"
+    },
+    "dismantle_return": {
+      "item_id": 16000900,
+      "base": 3,
+      "per_affix": 0,
+      "per_roll": 0
+    }
+  },
+  "affixes": {
+    "schema_version": 1,
+    "affixes": [
+      {
+        "id": "self_ability_damage_down",
+        "key": 15990001,
+        "polarity": "-",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "ability_damage",
+        "min": 50,
+        "max_full": 80,
+        "lo": 30.0,
+        "hi": 80.0,
+        "raw_lo": -30000,
+        "raw_hi": -80000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.506
+      },
+      {
+        "id": "self_ability_damage_up",
+        "key": 15990002,
+        "polarity": "+",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "ability_damage",
+        "min": 1,
+        "max_full": 300,
+        "lo": 0.2,
+        "hi": 300.0,
+        "raw_lo": 200,
+        "raw_hi": 300000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 3.029
+      },
+      {
+        "id": "self_all_resistance_down",
+        "key": 15990003,
+        "polarity": "-",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "all_resistance",
+        "min": 25,
+        "max_full": 35,
+        "lo": 15.0,
+        "hi": 35.0,
+        "raw_lo": -15000,
+        "raw_hi": -35000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.203
+      },
+      {
+        "id": "self_all_resistance_up",
+        "key": 15990004,
+        "polarity": "+",
+        "tier": "medium",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "all_resistance",
+        "min": 1,
+        "max_full": 10,
+        "lo": 0.2,
+        "hi": 10.0,
+        "raw_lo": 200,
+        "raw_hi": 10000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.099
+      },
+      {
+        "id": "self_attack_down",
+        "key": 15990005,
+        "polarity": "-",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "attack",
+        "min": 50,
+        "max_full": 80,
+        "lo": 30.0,
+        "hi": 80.0,
+        "raw_lo": -30000,
+        "raw_hi": -80000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.506
+      },
+      {
+        "id": "self_attack_up",
+        "key": 15990006,
+        "polarity": "+",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "attack",
+        "min": 1,
+        "max_full": 500,
+        "lo": 0.2,
+        "hi": 500.0,
+        "raw_lo": 200,
+        "raw_hi": 500000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 5.049
+      },
+      {
+        "id": "self_dark_resistance_up",
+        "key": 15990007,
+        "polarity": "+",
+        "tier": "medium",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "dark_resistance",
+        "min": 1,
+        "max_full": 15,
+        "lo": 0.2,
+        "hi": 15.0,
+        "raw_lo": 200,
+        "raw_hi": 15000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.15
+      },
+      {
+        "id": "self_direct_damage_down",
+        "key": 15990008,
+        "polarity": "-",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "direct_damage",
+        "min": 50,
+        "max_full": 80,
+        "lo": 30.0,
+        "hi": 80.0,
+        "raw_lo": -30000,
+        "raw_hi": -80000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.506
+      },
+      {
+        "id": "self_direct_damage_up",
+        "key": 15990009,
+        "polarity": "+",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "direct_damage",
+        "min": 1,
+        "max_full": 500,
+        "lo": 0.2,
+        "hi": 500.0,
+        "raw_lo": 200,
+        "raw_hi": 500000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 5.049
+      },
+      {
+        "id": "self_fire_resistance_down",
+        "key": 15990010,
+        "polarity": "-",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "fire_resistance",
+        "min": 25,
+        "max_full": 35,
+        "lo": 15.0,
+        "hi": 35.0,
+        "raw_lo": -15000,
+        "raw_hi": -35000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.203
+      },
+      {
+        "id": "self_fire_resistance_up",
+        "key": 15990011,
+        "polarity": "+",
+        "tier": "medium",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "fire_resistance",
+        "min": 1,
+        "max_full": 15,
+        "lo": 0.2,
+        "hi": 15.0,
+        "raw_lo": 200,
+        "raw_hi": 15000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.15
+      },
+      {
+        "id": "self_flat_damage_cut",
+        "key": 15990012,
+        "polarity": "+",
+        "tier": "medium",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "flat_damage_cut",
+        "min": 500,
+        "max_full": 2500,
+        "lo": 100.0,
+        "hi": 2500.0,
+        "raw_lo": 10000000,
+        "raw_hi": 250000000,
+        "raw_per_unit": 100000,
+        "resolve_int": true,
+        "quantization_step": 25.0
+      },
+      {
+        "id": "self_initial_skill_gauge",
+        "key": 15990013,
+        "polarity": "+",
+        "tier": "medium",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "initial_skill_gauge",
+        "min": 50,
+        "max_full": 100,
+        "lo": 10.0,
+        "hi": 100.0,
+        "raw_lo": 10000,
+        "raw_hi": 100000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.91
+      },
+      {
+        "id": "self_light_resistance_up",
+        "key": 15990014,
+        "polarity": "+",
+        "tier": "medium",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "light_resistance",
+        "min": 1,
+        "max_full": 15,
+        "lo": 0.2,
+        "hi": 15.0,
+        "raw_lo": 200,
+        "raw_hi": 15000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.15
+      },
+      {
+        "id": "self_max_hp_down",
+        "key": 15990015,
+        "polarity": "-",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "max_hp",
+        "min": 25,
+        "max_full": 32,
+        "lo": 15.0,
+        "hi": 32.0,
+        "raw_lo": -15000,
+        "raw_hi": -32000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.172
+      },
+      {
+        "id": "self_max_hp_up",
+        "key": 15990016,
+        "polarity": "+",
+        "tier": "medium",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "max_hp",
+        "min": 1,
+        "max_full": 30,
+        "lo": 0.2,
+        "hi": 30.0,
+        "raw_lo": 200,
+        "raw_hi": 30000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.302
+      },
+      {
+        "id": "self_paralysis_slayer_up",
+        "key": 15990017,
+        "polarity": "+",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "paralysis_slayer",
+        "min": 20,
+        "max_full": 20,
+        "lo": 4.0,
+        "hi": 20.0,
+        "raw_lo": 4000,
+        "raw_hi": 20000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.162
+      },
+      {
+        "id": "self_skill_damage_down",
+        "key": 15990018,
+        "polarity": "-",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "skill_damage",
+        "min": 50,
+        "max_full": 80,
+        "lo": 30.0,
+        "hi": 80.0,
+        "raw_lo": -30000,
+        "raw_hi": -80000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.506
+      },
+      {
+        "id": "self_skill_damage_up",
+        "key": 15990019,
+        "polarity": "+",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "skill_damage",
+        "min": 1,
+        "max_full": 500,
+        "lo": 0.2,
+        "hi": 500.0,
+        "raw_lo": 200,
+        "raw_hi": 500000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 5.049
+      },
+      {
+        "id": "self_wind_resistance_up",
+        "key": 15990020,
+        "polarity": "+",
+        "tier": "medium",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "wind_resistance",
+        "min": 1,
+        "max_full": 15,
+        "lo": 0.2,
+        "hi": 15.0,
+        "raw_lo": 200,
+        "raw_hi": 15000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.15
+      },
+      {
+        "id": "self_ability_damage_up_medium",
+        "key": 15990021,
+        "polarity": "+",
+        "tier": "medium",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "ability_damage",
+        "min": 1,
+        "max_full": 180,
+        "lo": 0.2,
+        "hi": 180.0,
+        "raw_lo": 200,
+        "raw_hi": 180000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 1.817
+      },
+      {
+        "id": "self_attack_up_medium",
+        "key": 15990022,
+        "polarity": "+",
+        "tier": "medium",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "attack",
+        "min": 1,
+        "max_full": 180,
+        "lo": 0.2,
+        "hi": 180.0,
+        "raw_lo": 200,
+        "raw_hi": 180000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 1.817
+      },
+      {
+        "id": "self_dark_resistance_down",
+        "key": 15990023,
+        "polarity": "-",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "dark_resistance",
+        "min": 25,
+        "max_full": 35,
+        "lo": 15.0,
+        "hi": 35.0,
+        "raw_lo": -15000,
+        "raw_hi": -35000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.203
+      },
+      {
+        "id": "self_direct_damage_up_medium",
+        "key": 15990024,
+        "polarity": "+",
+        "tier": "medium",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "direct_damage",
+        "min": 1,
+        "max_full": 180,
+        "lo": 0.2,
+        "hi": 180.0,
+        "raw_lo": 200,
+        "raw_hi": 180000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 1.817
+      },
+      {
+        "id": "self_light_resistance_down",
+        "key": 15990025,
+        "polarity": "-",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "light_resistance",
+        "min": 25,
+        "max_full": 35,
+        "lo": 15.0,
+        "hi": 35.0,
+        "raw_lo": -15000,
+        "raw_hi": -35000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.203
+      },
+      {
+        "id": "self_skill_damage_up_medium",
+        "key": 15990026,
+        "polarity": "+",
+        "tier": "medium",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "skill_damage",
+        "min": 1,
+        "max_full": 180,
+        "lo": 0.2,
+        "hi": 180.0,
+        "raw_lo": 200,
+        "raw_hi": 180000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 1.817
+      },
+      {
+        "id": "self_thunder_resistance_down",
+        "key": 15990027,
+        "polarity": "-",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "thunder_resistance",
+        "min": 25,
+        "max_full": 35,
+        "lo": 15.0,
+        "hi": 35.0,
+        "raw_lo": -15000,
+        "raw_hi": -35000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.203
+      },
+      {
+        "id": "self_thunder_resistance_up",
+        "key": 15990028,
+        "polarity": "+",
+        "tier": "medium",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "thunder_resistance",
+        "min": 1,
+        "max_full": 15,
+        "lo": 0.2,
+        "hi": 15.0,
+        "raw_lo": 200,
+        "raw_hi": 15000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.15
+      },
+      {
+        "id": "self_water_resistance_down",
+        "key": 15990029,
+        "polarity": "-",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "water_resistance",
+        "min": 25,
+        "max_full": 35,
+        "lo": 15.0,
+        "hi": 35.0,
+        "raw_lo": -15000,
+        "raw_hi": -35000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.203
+      },
+      {
+        "id": "self_water_resistance_up",
+        "key": 15990030,
+        "polarity": "+",
+        "tier": "medium",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "water_resistance",
+        "min": 1,
+        "max_full": 15,
+        "lo": 0.2,
+        "hi": 15.0,
+        "raw_lo": 200,
+        "raw_hi": 15000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.15
+      },
+      {
+        "id": "self_wind_resistance_down",
+        "key": 15990031,
+        "polarity": "-",
+        "tier": "strong",
+        "enabled": true,
+        "weight": 100,
+        "exclusive_group": "wind_resistance",
+        "min": 25,
+        "max_full": 35,
+        "lo": 15.0,
+        "hi": 35.0,
+        "raw_lo": -15000,
+        "raw_hi": -35000,
+        "raw_per_unit": 1000,
+        "resolve_int": false,
+        "quantization_step": 0.203
+      }
+    ]
+  },
+  "disposition": {
+    "schema_version": 1,
+    "levels": {
+      "5": {
+        "positive_coefficient": 1.0,
+        "negative_coefficient": 1.0,
+        "k": 0.25
+      },
+      "4": {
+        "positive_coefficient": 0.8,
+        "negative_coefficient": 0.9,
+        "k": 0.35
+      },
+      "3": {
+        "positive_coefficient": 0.6,
+        "negative_coefficient": 0.8,
+        "k": 0.5
+      },
+      "2": {
+        "positive_coefficient": 0.4,
+        "negative_coefficient": 0.7,
+        "k": 0.6
+      },
+      "1": {
+        "positive_coefficient": 0.2,
+        "negative_coefficient": 0.6,
+        "k": 0.7
+      }
+    },
+    "weapons": {
+      "100001": 5,
+      "100013": 5
+    },
+    "default": 1
+  }
+}

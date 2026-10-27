@@ -1,5 +1,6 @@
 import { Database as BetterSqlite3Database } from "better-sqlite3"
 import { PlayerParty, PlayerPartyGroup } from "../data/types"
+import { limitWeaponRivenPartySouls } from "./weapon-riven/party-limit"
 
 function insertMissingPartySync(
     db: BetterSqlite3Database,
@@ -8,6 +9,7 @@ function insertMissingPartySync(
     slot: number | string,
     party: PlayerParty,
 ) {
+    const souls = limitWeaponRivenPartySouls(party.abilitySoulIds)
     db.prepare(`
     INSERT OR IGNORE INTO players_parties (slot, name, character_id_1, character_id_2, character_id_3,
         unison_character_1, unison_character_2, unison_character_3, equipment_1, equipment_2,
@@ -19,7 +21,7 @@ function insertMissingPartySync(
         party.characterIds[0] || null, party.characterIds[1] || null, party.characterIds[2] || null,
         party.unisonCharacterIds[0] || null, party.unisonCharacterIds[1] || null, party.unisonCharacterIds[2] || null,
         party.equipmentIds[0] || null, party.equipmentIds[1] || null, party.equipmentIds[2] || null,
-        party.abilitySoulIds[0] || null, party.abilitySoulIds[1] || null, party.abilitySoulIds[2] || null,
+        souls[0] || null, souls[1] || null, souls[2] || null,
         party.edited ? 1 : 0, playerId, Number(groupId), party.category,
         party.currentBattlePower ?? 0, party.beforeBattlePower ?? 0,
     )

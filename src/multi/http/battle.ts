@@ -351,6 +351,7 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
         // /multi_battle_quest/start.
         let previousActiveQuest: ActiveQuest | undefined, insertedActiveQuest: ActiveQuest | undefined;
         let repeatedPendingStart = false;
+        let rivenParties: any[] = [];
         const startDeadline = performance.now() + Math.max(0, roomStart.remainingMs - 100);
         try {
             await runPersistenceTransaction({
@@ -399,6 +400,12 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
                     && usesNormalCurrentPartySlot(category)
                     && isValidNormalPartySlotSync(ctx.playerId, party_id)) {
                     updatePlayerSync({ id: ctx.playerId, partySlot: party_id });
+                }
+                // Room readiness already repaired the saved party; return it so the client's
+                // own party cache drops cards that the over-limit rule stripped.
+                if (questData.fixedParty === undefined && usesNormalCurrentPartySlot(category)) {
+                    rivenParties = require("../../data/domains/weapon-riven-party")
+                        .enforceWeaponRivenStartPartiesSync(ctx.playerId, require("../../data/types").PartyCategory.NORMAL, [party_id]);
                 }
             });
         } catch (error) {
@@ -455,6 +462,12 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             console.error(`[MULTI] room play commit confirmation failed: play=${play_id}`, commitError);
         }
 
+        const rivenPartyData: { party_info_list?: any[] } = {};
+        if (rivenParties.length > 0) {
+            await require("../../lib/weapon-riven/party-refresh").refreshWeaponRivenPartiesAfterCommit(ctx.playerId, rivenParties);
+            rivenPartyData.party_info_list = require("../../lib/weapon-riven/client").projectWeaponRivenClientResponse(
+                rivenParties, require("../../lib/client-admission").hasWeaponRivenCapability(request));
+        }
         reply.header("content-type", "application/x-msgpack");
         return reply.status(200).send({
             "data_headers": generateDataHeaders({ viewer_id }),
@@ -462,6 +475,7 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
                 "is_multi": "multi",
                 "play_id": play_id,
                 "client_checks": getSteamRobotMissionClientChecks(category, quest_id),
+                ...rivenPartyData,
             }
         });
     });
@@ -700,6 +714,7 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
                             roomInstanceId: committedInstanceId,
                             battleSessionId: committedRunId,
                             generation: settlementGeneration, viewerId, playerId, playId,
+                            accomplished: questAccomplished,
                         }) as { applied: boolean; snapshotPhase?: "LOBBY" | "RETURN_PENDING"; reason?: string } | undefined;
                         if (roomResult?.applied && roomResult.snapshotPhase) {
                             transitionMultiSettlementSnapshot(playerId, playId, roomResult.snapshotPhase);

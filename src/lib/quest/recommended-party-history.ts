@@ -5,6 +5,7 @@ import { parseGlobalPartyId } from "../special-event-parties"
 import { QuestCategory } from "../types"
 import { getMode15ExclusiveItemIds, isMode15EquipmentAllowedQuest } from "../mode15-optional"
 import type { FinishContext } from "./finish/types"
+import { stripWeaponRivenPublicPayload } from "../weapon-riven/public-payload"
 
 export interface RecommendedQuestParty {
     party_name: string
@@ -272,7 +273,7 @@ function parseStoredParty(row: StoredRecommendationRow): RecommendedQuestParty |
             ability_soul_id_2: normalizeId(parsed.ability_soul_id_2),
             ability_soul_id_3: normalizeId(parsed.ability_soul_id_3),
         }
-        return isCompleteParty(party) ? party : null
+        return isCompleteParty(party) ? stripWeaponRivenPublicPayload(party) : null
     } catch {
         return null
     }
@@ -291,7 +292,7 @@ export function recordQuestRecommendedPartySync(context: FinishContext): boolean
     const matched = rows.find(row => matchesFinishedParty(row, context.party))
     if (!matched) return false
 
-    const party = toRecommendedParty(matched)
+    const party = stripWeaponRivenPublicPayload(toRecommendedParty(matched))
     if (!isCompleteParty(party) || !isPartyAllowedForQuest(party, context.questCategory, context.questId)) return false
     const clearedAt = Date.now()
     const db = getDb()

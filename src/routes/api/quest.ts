@@ -1,3 +1,4 @@
+import { stripWeaponRivenPublicPayload } from "../../lib/weapon-riven/public-payload"
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify"
 import { resolvePlayerIdSync } from "../../data/activeAccount"
 import { getSession } from "../../data/domains/session"
@@ -68,7 +69,7 @@ const routes = async (fastify: FastifyInstance) => {
         return reply.status(200).send({
             data_headers: generateDataHeaders({ viewer_id: viewerId }),
             data: {
-                recent_other_player_party: recommendations.parties,
+                recent_other_player_party: stripWeaponRivenPublicPayload(recommendations.parties),
             },
         })
     })

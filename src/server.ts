@@ -23,6 +23,9 @@ import characterApiPlugin from "./routes/api/character"
 import partyGroupApiPlugin from "./routes/api/partyGroup"
 import equipmentApiPlugin from "./routes/api/equipment"
 import exBoostApiPlugin from "./routes/api/exBoost"
+import weaponRivenApiPlugin from "./routes/api/weaponRiven"
+import { hasWeaponRivenCapability } from "./lib/client-admission"
+import { projectWeaponRivenClientResponse } from "./lib/weapon-riven/client"
 import boxGachaApiPlugin from "./routes/api/boxGacha"
 import shopApiPlugin from "./routes/api/shop"
 import encyclopediaApiPlugin from "./routes/api/encyclopedia"
@@ -56,11 +59,11 @@ const fastify = Fastify({
 })
 
 // serializers
-fastify.addHook('onSend', (_, reply, payload, done) => {
+fastify.addHook('onSend', (request, reply, payload, done) => {
     try {
         switch (reply.getHeader('content-type')) {
             case "application/x-msgpack": {
-                done(null, pack(payload).toString('base64'))
+                done(null, pack(projectWeaponRivenClientResponse(payload,hasWeaponRivenCapability(request))).toString('base64'))
                 break;
             }
             default:
@@ -120,6 +123,7 @@ fastify.register(characterApiPlugin, { prefix: `${apiPrefix}/character` })
 fastify.register(partyGroupApiPlugin, { prefix: `${apiPrefix}/party_group` })
 fastify.register(equipmentApiPlugin, { prefix: `${apiPrefix}/equipment` })
 fastify.register(exBoostApiPlugin, { prefix: `${apiPrefix}/ex_boost` })
+fastify.register(weaponRivenApiPlugin, { prefix: `${apiPrefix}/weapon_riven` })
 fastify.register(boxGachaApiPlugin, { prefix: `${apiPrefix}/box_gacha` })
 fastify.register(shopApiPlugin, { prefix: `${apiPrefix}/shop` })
 fastify.register(encyclopediaApiPlugin, { prefix: `${apiPrefix}/encyclopedia` })

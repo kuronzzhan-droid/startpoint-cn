@@ -1731,8 +1731,12 @@ test('real solo HTTP start/finish persists receipt; hidden scene and free finish
         const beforeLegacyReplay = businessDatabaseDigest(getDb())
         const oldRetry = await app.inject({ method: 'POST', url: '/finish', payload: oldFinishBody })
         assert.equal(oldRetry.statusCode, 200, oldRetry.body)
-        assert.deepEqual(oldRetry.json(), finish.json())
-        assert.equal(businessDatabaseDigest(getDb()), beforeLegacyReplay)
+        // The new run consumed the remaining ticket. Replay keeps the reward
+        // decision but must not restore the historical inventory balance.
+        const original = finish.json()
+        assert.equal(items.getPlayerItemSync(p.id, mode.ticketItemId), 0)
+        assert.deepEqual(oldRetry.json(), { ...original, data: { ...original.data,
+            item_list: { ...original.data.item_list, [mode.ticketItemId]: 0 } } })
         assert.equal(load('data/domains/quest_active').getPlayerActiveQuestSync(p.id).playId, p.playId)
         assert.equal(load('routes/api/singleBattleQuest').activeQuests[p.id].playId, p.playId)
         assert.equal(players.getPlayerSync(p.id).stamina, staminaAfterStart)

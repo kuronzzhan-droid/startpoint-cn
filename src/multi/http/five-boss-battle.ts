@@ -47,6 +47,8 @@ import { assertBattleCanStartSync, getBattleReplaySync } from "../../data/domain
 import { registerAcceptedRescueBattleSync } from "../../lib/mission/rescue-battle-facts"
 import { recordContentActionFactsSync } from "../../lib/mission/content-action-facts"
 import type { FiveBossHostAdmissionAuthorization } from "../five-boss/host-admission"
+import { refreshWeaponRivenSettlementDataSync } from "../../lib/weapon-riven/settlement-response"
+import { refreshWeaponRivenPartiesAfterCommit } from "../../lib/weapon-riven/party-refresh"
 
 /** Small structured evidence, without logging tokens, party data or the full request. */
 export function logFiveBossRequestFailure(operation: "start" | "finish" | "abort", body: MultiStartBody | MultiFinishBody | MultiAbortBody,
@@ -284,14 +286,11 @@ function requirePlayer(playerId: number): Player {
 
 function finishItemList(
     result: FinishFiveBossBattleResult,
-    playerId: number,
 ): Record<string, number> {
     if (result.kind !== "success") return {}
 
-    return Object.fromEntries(result.reward.grantedItems.map(item => [
-        String(item.itemId),
-        getPlayerItemSync(playerId, item.itemId) ?? 0,
-    ]))
+    // These keys describe the settled reward; the response projection refreshes their balances.
+    return result.reward.itemTotals ?? Object.fromEntries(result.reward.grantedItems.map(item => [String(item.itemId), item.total]))
 }
 
 
@@ -374,7 +373,14 @@ function buildFinishData(
         start_time: dataHeaders.servertime,
         is_multi: "multi",
         quest_name: "",
-        item_list: finishItemList(result, player.id),
+        ...(result.kind === "success" ? refreshWeaponRivenSettlementDataSync(player.id, {
+            item_list: finishItemList(result),
+            weapon_riven_list: result.reward.weapon_riven_list ?? {},
+            weapon_riven_deleted: result.reward.weapon_riven_deleted ?? [],
+            weapon_riven_granted: result.reward.weapon_riven_granted,
+            weapon_riven_auto_dismantled: result.reward.weapon_riven_auto_dismantled ?? [],
+            party_info_list: result.reward.party_info_list ?? [],
+        }) : { item_list: {} }),
         presigned_quest_category: [],
         mate_player_result: matePlayerResult,
         follow_info: followInfo,
@@ -715,6 +721,7 @@ export async function handleFiveBossFinish(
     }
     clearMatchingMemoryActive(playerId, body.play_id)
     if (result.kind === "success") {
+        await refreshWeaponRivenPartiesAfterCommit(playerId, result.reward.party_info_list)
         try { await publishDurableOwnerDecision("fiveBoss.terminal", {
             roomNumber, runId: result.runId, runStatus: "active", playerId, viewerId: body.viewer_id, playId: body.play_id,
         }) } catch (error) { console.error("[FIVE-BOSS] durable settlement room event unresolved", error) }

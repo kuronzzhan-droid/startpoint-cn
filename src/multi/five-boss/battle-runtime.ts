@@ -8,6 +8,11 @@ import type { RewardPlayerCharacterExpResult } from "../../lib/types/character"
 import { getDb } from "../../data/db"
 import { isRegisteredRescueBattleSync } from "../../lib/mission/rescue-battle-facts"
 import { recordPassCompletedRescueBattleFact } from "../../lib/mission/pass-battle-facts"
+import { convertUnknownWeaponRivensSync } from "../../data/domains/weaponRiven"
+import type { WeaponRivenAutoDismantled, WeaponRivenView } from "../../lib/weapon-riven/model"
+import type { getWeaponRivenPartyInfoListSync } from "../../data/domains/weapon-riven-party"
+import { getMultiWeaponRivenLoadoutSync } from "../../lib/weapon-riven/battle"
+import { normalizeWeaponRivenLoadout } from "../../lib/weapon-riven/loadout"
 import { givePlayerItemSync as givePlayerItemSyncDefault } from "../../data/domains/item"
 import {
     getPlayerSingleQuestProgressSync,
@@ -110,6 +115,11 @@ export interface FiveBossBattleRewardReceipt {
     itemTotals: Record<string, number>
     /** 诅咒武器命中顺序；持久化 receipt 重放时不重新掷骰或重复发放。 */
     grantedEquipment: number[]
+    weapon_riven_list: Record<string, WeaponRivenView>
+    weapon_riven_deleted: number[]
+    weapon_riven_granted: number[]
+    weapon_riven_auto_dismantled: WeaponRivenAutoDismantled[]
+    party_info_list?: ReturnType<typeof getWeaponRivenPartyInfoListSync>
 }
 
 export interface SuccessfulFiveBossBattleFinish {
@@ -432,9 +442,11 @@ export function createFiveBossBattleRuntime(
             })
             if (!context.isReplay) {
                 const ids = input.room.five_boss_runtime?.partyCharacterIdsByPlayerId[String(input.playerId)] ?? []
+                const loadout = normalizeWeaponRivenLoadout(
+                    input.room.five_boss_runtime?.weaponRivenLoadoutByPlayerId?.[String(input.playerId)])
                 getDb().prepare(`UPDATE five_boss_gauntlet_members
-                    SET party_character_ids_json = ? WHERE run_id = ? AND player_id = ?`)
-                    .run(JSON.stringify(ids), context.run.runId, input.playerId)
+                    SET party_character_ids_json = ?, riven_loadout_json = ? WHERE run_id = ? AND player_id = ?`)
+                    .run(JSON.stringify(ids), JSON.stringify(loadout), context.run.runId, input.playerId)
             }
             return activeQuest
         })
@@ -511,6 +523,10 @@ export function createFiveBossBattleRuntime(
             for (const equipmentId of weaponPlan.equipmentIds) {
                 givePlayerEquipmentSync(input.playerId, equipmentId, 1)
             }
+            const rivens = convertUnknownWeaponRivensSync(input.playerId,
+                getMultiWeaponRivenLoadoutSync(input.playerId, context.run.runId),
+                `five-boss:multi:${context.run.runId}`, input.randomFloat)
+            Object.assign(itemTotals, rivens.item_list)
 
             const storedParty = getDb().prepare(`SELECT party_character_ids_json
                 FROM five_boss_gauntlet_members WHERE run_id = ? AND player_id = ?`)
@@ -535,6 +551,11 @@ export function createFiveBossBattleRuntime(
                 itemTotals,
                 characterExp,
                 grantedEquipment: weaponPlan.equipmentIds,
+                weapon_riven_list: rivens.weapon_riven_list,
+                weapon_riven_deleted: rivens.weapon_riven_deleted,
+                weapon_riven_granted: rivens.weapon_riven_granted,
+                weapon_riven_auto_dismantled: rivens.weapon_riven_auto_dismantled,
+                party_info_list: rivens.party_info_list,
             }
         })
         assertRunIdentity(result.run, input)

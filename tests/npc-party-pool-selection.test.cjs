@@ -90,7 +90,12 @@ test('same-quest history respects power, element and complete-party requirements
     })
     assert.equal(selected.length, 2)
     assert.deepEqual(selected.map(entry => entry.sourcePlayerId), [101, 101])
-    assert.ok(selected.every(entry => entry.party === accepted.party))
+    assert.ok(selected.every(entry => entry.party !== accepted.party))
+    assert.notEqual(selected[0].party, selected[1].party)
+    assert.deepEqual(selected[0].party, accepted.party)
+    selected[0].party.characters[0][1].id = 999
+    assert.equal(selected[1].party.characters[0][1].id, 131012)
+    assert.equal(accepted.party.characters[0][1].id, 131012)
     assert.deepEqual(unexpectedCalls, [])
 })
 
@@ -143,4 +148,26 @@ test('recording rejects missing, ineligible, low-power and incomplete snapshots'
     assert.deepEqual(record.snapshot.party, accepted.party)
     assert.notEqual(record.snapshot.party, accepted.party)
     assert.deepEqual(unexpectedCalls, [])
+})
+
+
+test('COM selection and pre-worker queue strip unknown, reserved and nested or outer sidecars independently', () => {
+    const { pool, worker, publish } = loadPool(), dirty = snapshot({ weapon_riven_snapshot_id: 'outer',
+        user_weapon_riven_list: { private: true } })
+    dirty.party.abilitySoulIds = [[0, 16000000], [0, 16000999], [0, 16000900]]
+    dirty.party.weapon_rivens = [[0, [16000999, 100001, 15990001, 50]], [1], [1]]
+    dirty.party.weapon_riven_scope = 'multi-v1'
+    const before = structuredClone(dirty)
+    pool.recordSuccessfulQuestNpcParty(dirty)
+    publish([dirty])
+    const recorded = worker.messages.find(message => message.type === 'record').snapshot
+    assert.deepEqual(recorded.party.abilitySoulIds, [[1], [1], [0, 16000900]])
+    assert.equal(JSON.stringify(recorded).includes('weapon_riven'), false)
+    const selected = pool.getRandomPlayerNpcPartiesSync(1, 2, { questCategory: 2, questId: 1001 })
+    assert.equal(selected.length, 2)
+    assert.deepEqual(selected[0].party.abilitySoulIds, [[1], [1], [0, 16000900]])
+    assert.equal(JSON.stringify(selected).includes('weapon_riven'), false)
+    selected[0].party.abilitySoulIds[2][1] = 500001
+    assert.equal(selected[1].party.abilitySoulIds[2][1], 16000900)
+    assert.deepEqual(dirty, before)
 })

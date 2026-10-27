@@ -109,6 +109,12 @@ function scheduleEquipmentExpiry(room: MultiRoom, client: SessionClient): void {
 
 /** Only readiness attempts create a deadline. Heartbeats/retries never refresh it. */
 export function enforceEquipmentReady(room: MultiRoom, client: SessionClient, forceReply = false): boolean {
+    // In owner mode the freshly fetched parent facts perform this saved-party
+    // check. Embedded rooms must apply it too before Ready or Start can proceed.
+    if (!isRealtimeOwnerChild() && client.playerId) {
+        require("../../lib/weapon-riven/battle").getSoloWeaponRivenStartLoadoutSync(
+            Number(client.playerId), selectedPartyId(client))
+    }
     if (!hasRestrictedEquipment(room, client)) {
         clearEquipmentBlock(client)
         return true

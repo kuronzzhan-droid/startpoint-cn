@@ -1,4 +1,5 @@
 import { recordContentActionFactsSync } from "../../lib/mission/content-action-facts";
+import { stripWeaponRivenPublicPayload } from "../../lib/weapon-riven/public-payload"
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { getPlayerSync, updatePlayerSync } from "../../data/domains/player"
 import { getSession } from "../../data/domains/session"
@@ -23,6 +24,11 @@ import { invalidateRealPartySnapshot } from "../../multi/party-snapshot";
 import { getRoomCommandGateway } from "../../multi/coordinator/default-runtime";
 import { createTeamCodeClient, GAME_CODE_PATTERN, TeamCodeError, TeamCodeLimiter } from "../../lib/wiki-team-code-client";
 import { loadTeamCodeAssets, nativeBattleParty, resolvePublicTeam, TeamAssets, TeamInventory } from "../../lib/wiki-team-code-inventory";
+import { hasWeaponRivenCapability } from "../../lib/client-admission";
+import { protectWeaponRivenPartySave, projectWeaponRivenClientResponse } from "../../lib/weapon-riven/client";
+import { getPlayerWeaponRivenListSync } from "../../data/domains/weaponRiven";
+import { getWeaponRivenPartyInfoListSync, type WeaponRivenPartyKey } from "../../data/domains/weapon-riven-party";
+import { limitWeaponRivenPartySouls } from "../../lib/weapon-riven/party-limit";
 
 interface PartyInfoListItem {
     party_edited: boolean
@@ -545,7 +551,7 @@ function sanitizeBattleParty(value: unknown): PublishedBattleParty | null {
         characters,
         unison_characters: unisonCharacters,
         equipments,
-        ability_soul_ids: abilitySoulIds,
+        ability_soul_ids: stripWeaponRivenPublicPayload({ ability_soul_ids: abilitySoulIds }).ability_soul_ids,
     }
 }
 
@@ -643,11 +649,11 @@ const routes = async (fastify: FastifyInstance) => {
         try {
             const entry = await wikiTeamCodeLookup(partyCode)
             const assets = getWikiTeamCodeAssets()
-            const battleParty = nativeBattleParty(
+            const battleParty = stripWeaponRivenPublicPayload(nativeBattleParty(
                 resolvePublicTeam(entry.team, assets),
                 getPlayerTeamInventory(context.playerId),
                 assets,
-            )
+            ))
             // A public code may reference a leader that this player does not
             // own. Inventory projection turns that slot into null, but the
             // game cannot save or battle a party without a leader. Reject the
@@ -678,7 +684,11 @@ const routes = async (fastify: FastifyInstance) => {
         })
         if (!Array.isArray(body.party_info_list)
             || body.party_info_list.some(info => !hasEditablePartyCategory(info)
-                || parseGlobalPartyId(info.party_id) === null)) {
+                || parseGlobalPartyId(info.party_id) === null
+                || !Array.isArray(info.ability_soul_ids)
+                || info.ability_soul_ids.length > 3
+                || info.ability_soul_ids.some(id => id !== null
+                    && (typeof id !== "number" || !Number.isSafeInteger(id) || id <= 0)))) {
             return reply.status(400).send({
                 "error": "Bad Request",
                 "message": "Invalid party category or party ID."
@@ -768,6 +778,8 @@ const routes = async (fastify: FastifyInstance) => {
 
         const changedNormalPartyIds: number[] = []
         let normalSelectionChanged = false
+        const rivenCapable = hasWeaponRivenCapability(request)
+        const correctedRivenParties = new Map<string, WeaponRivenPartyKey>()
         const saved = await runPersistenceTransaction({
             domain: "player", playerId, operation: "edit_party",
         }, () => {
@@ -784,6 +796,7 @@ const routes = async (fastify: FastifyInstance) => {
             }
 
             let abilitySoulEquipCount = 0
+            const ownedRivens = getPlayerWeaponRivenListSync(playerId)
             const getPreviousSouls = getDb().prepare(`
                 SELECT ability_soul_1, ability_soul_2, ability_soul_3
                 FROM players_parties
@@ -798,6 +811,18 @@ const routes = async (fastify: FastifyInstance) => {
                 WHERE player_id = ? AND category = 1 AND group_id = ? AND slot = ?
             `)
             for (const { parsed, party } of mappedParties) {
+                const previousSouls = getPreviousSouls.get(playerId, parsed.groupId, parsed.slot, party.category) as
+                    { ability_soul_1: number | null; ability_soul_2: number | null; ability_soul_3: number | null } | undefined
+                const previousIds = previousSouls
+                    ? [previousSouls.ability_soul_1, previousSouls.ability_soul_2, previousSouls.ability_soul_3] : []
+                party.abilitySoulIds = protectWeaponRivenPartySave(party.abilitySoulIds, previousIds,
+                    rivenCapable, itemId => Object.prototype.hasOwnProperty.call(ownedRivens, String(itemId)))
+                const limitedSouls = limitWeaponRivenPartySouls(party.abilitySoulIds)
+                if (limitedSouls.some((id, index) => id !== party.abilitySoulIds[index])) {
+                    correctedRivenParties.set(`${party.category}:${parsed.groupId}:${parsed.slot}`,
+                        { category: party.category, group_id: parsed.groupId, slot: parsed.slot })
+                    party.abilitySoulIds = limitedSouls
+                }
                 if (party.category === PartyCategory.NORMAL) {
                     const previous = previousParty.get(playerId, parsed.groupId, parsed.slot) as
                         Record<string, number | null> | undefined
@@ -808,19 +833,6 @@ const routes = async (fastify: FastifyInstance) => {
                     }
                 }
                 if (party.category !== PROFILE_FAVORITE_PARTY_CATEGORY) {
-                    const previous = getPreviousSouls.get(
-                        playerId,
-                        parsed.groupId,
-                        parsed.slot,
-                        party.category,
-                    ) as {
-                        ability_soul_1: number | null
-                        ability_soul_2: number | null
-                        ability_soul_3: number | null
-                    } | undefined
-                    const previousIds = previous
-                        ? [previous.ability_soul_1, previous.ability_soul_2, previous.ability_soul_3]
-                        : []
                     abilitySoulEquipCount += countNewAbilitySoulEquipments(
                         previousIds,
                         party.abilitySoulIds,
@@ -873,6 +885,8 @@ const routes = async (fastify: FastifyInstance) => {
         }
 
         const responseData: Record<string, any> = { mail_arrived: false }
+        if (correctedRivenParties.size > 0) responseData.party_info_list = projectWeaponRivenClientResponse(
+            getWeaponRivenPartyInfoListSync(playerId, [...correctedRivenParties.values()]), rivenCapable)
         settleDegreeMissionResponse(playerId, viewerId, responseData, undefined, [35])
         reply.header("content-type", "application/x-msgpack")
         return reply.status(200).send({

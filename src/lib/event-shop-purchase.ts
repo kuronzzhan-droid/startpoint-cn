@@ -201,7 +201,7 @@ export function executeGenericShopPurchaseSync(
         if (player === null) throw new ShopPurchaseError("Player not found.")
 
         const purchased = dependencies.getPurchaseCount(input.playerId, input.shopItemId)
-        if (input.shopItem.stock > 0 && purchased + purchaseAmount > input.shopItem.stock) {
+        if (input.shopItem.stock !== undefined && input.shopItem.stock > 0 && purchased + purchaseAmount > input.shopItem.stock) {
             throw new ShopStockError()
         }
 

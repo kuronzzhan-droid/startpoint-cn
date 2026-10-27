@@ -193,6 +193,7 @@ export class EmbeddedMultiCoordinator {
         }
         const result = this.transition(room, "LOBBY", "host_entered_return_lobby")
         if (result.ok) {
+            require("../../lib/weapon-riven/multi-room").releaseWeaponRivenRoom(room)
             room.raising_state = 1
             room.settlement_return_pending = false
             retainBattleSessionContract(room)
@@ -215,7 +216,9 @@ export class EmbeddedMultiCoordinator {
                 version: lifecycle.version,
             }
         }
-        return this.transition(room, "DISBANDED", reason)
+        const result = this.transition(room, "DISBANDED", reason)
+        if (result.ok) require("../../lib/weapon-riven/multi-room").releaseWeaponRivenRoom(room)
+        return result
     }
 
     isCurrentInstance(room: MultiRoom | undefined, instanceId: string): room is MultiRoom {

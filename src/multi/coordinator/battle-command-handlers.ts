@@ -17,6 +17,7 @@ import { isRealtimeOwnerChild } from "./runtime-role"
 import { refreshRealtimePlayerFacts, getPlayerBusinessFacts } from "./business-facts"
 import { pinRoomStart, unpinRoomStart, deferPinnedRoomControl } from "./room-start-claims"
 import { validateRandomRecruitmentAttention } from "../recruitment"
+import { setWeaponRivenOwnerEpoch } from "../../lib/weapon-riven/multi-room"
 
 export interface StartPreparePayload {
     body: MultiStartBody
@@ -59,9 +60,12 @@ export interface SettlementCommittedCommand {
     viewerId: number
     playerId: number
     playId: string
+    /** Optional: the settled /finish was a victory (is_accomplished). */
+    accomplished?: boolean
 }
 
 export function registerBattleCommandHandlers(executor: RoomCommandExecutor): void {
+    setWeaponRivenOwnerEpoch(executor.ownerEpoch)
     executor.register("battle.query", (raw: unknown) => {
         const p = raw as { roomNumber: string; viewerId: number; playerId?: number; playId?: string; attentionKey?: string }
         const room = getRoom(p.roomNumber)
@@ -157,6 +161,10 @@ export function registerBattleCommandHandlers(executor: RoomCommandExecutor): vo
             markRematchReturnWindowOpened(room)
             sessionManager.clearBattleExpectedCount(p.roomNumber)
             if (!wasPending) sessionManager.beginSettlementReturnGrace(p.roomNumber)
+            if (p.accomplished === true && !room.five_boss_runtime
+                && !isFiveBossGauntletQuest(Number(room.category), Number(room.quest_id))) {
+                sessionManager.sendServerConfirmedClear(p.roomNumber, p.viewerId, p.battleSessionId)
+            }
             return { applied: true, snapshotPhase: "RETURN_PENDING" }
         })
     })
@@ -178,17 +186,30 @@ async function prepareStart(p: StartPreparePayload, context: RoomCommandContext)
     const body = p.body
     const { room_number, viewer_id, category, quest_id, party_id, play_id } = body
     const observed = getRoom(room_number)
+    const rivenEnabled = process.env.WEAPON_RIVEN_MULTI_ENABLED === "1"
     const observedInstance = observed?.lifecycle.instanceId, observedGeneration = observed?.lobby_generation
     if (isRealtimeOwnerChild() && observed) {
         await refreshRealtimePlayerFacts(p.playerId, { category, questId: quest_id, partyId: party_id })
         if (observed.host_player_id !== p.playerId) await refreshRealtimePlayerFacts(observed.host_player_id, { category, questId: quest_id })
+    }
+    if (rivenEnabled && observed && observed.lifecycle.phase === "LOBBY") {
+        if (observed.category !== category || observed.quest_id !== quest_id
+            || !isRoomMember(observed, viewer_id)
+            || getRoomMemberPlayerId(observed, viewer_id) !== p.playerId) return { status: "unavailable" as const }
+        const { requestWeaponRivenHttpStart } = require("../tcp/lobby") as typeof import("../tcp/lobby")
+        if (!await requestWeaponRivenHttpStart(observed, viewer_id, party_id, context.remainingMs())) return { status: "unavailable" as const }
+    } else if (rivenEnabled && observed?.lifecycle.phase === "BATTLE") {
+        const { waitWeaponRivenPreparation } = require("../../lib/weapon-riven/multi-room") as typeof import("../../lib/weapon-riven/multi-room")
+        if (!await waitWeaponRivenPreparation(observed)) return { status: "unavailable" as const }
     }
     return embeddedMultiCoordinator.enqueueRoomCommand(room_number, () => {
         if (context.remainingMs() <= 0) return { status: "unavailable" as const }
         if (cancelledStartAttempts.has(context.commandId)) return { status: "unavailable" as const }
         const currentRoom = getRoom(room_number)
         if (!currentRoom) return { status: "missing" as const }
-        if (currentRoom.lifecycle.instanceId !== observedInstance || currentRoom.lobby_generation !== observedGeneration) return { status: "unavailable" as const }
+        if (currentRoom.lifecycle.instanceId !== observedInstance
+            || (currentRoom.lobby_generation !== observedGeneration
+                && (!rivenEnabled || currentRoom.lobby_generation !== Number(observedGeneration) + 1))) return { status: "unavailable" as const }
         const facts = isRealtimeOwnerChild() ? getPlayerBusinessFacts(p.playerId, { category, questId: quest_id, partyId: party_id }) : undefined
         if (isRealtimeOwnerChild() && !facts) return { status: "unavailable" as const }
         if (currentRoom.category !== category || currentRoom.quest_id !== quest_id) return { status: "quest_mismatch" as const }
@@ -216,7 +237,7 @@ async function prepareStart(p: StartPreparePayload, context: RoomCommandContext)
                 return { status: "unavailable" as const }
             }
         }
-        if (!freezeFiveBossLobby(currentRoom)) return { status: "unavailable" as const }
+        if (rivenEnabled ? currentRoom.lifecycle.phase !== "BATTLE" : !freezeFiveBossLobby(currentRoom)) return { status: "unavailable" as const }
         const sourceGeneration = currentRoom.lifecycle.phase === "BATTLE"
             ? Math.max(0, currentRoom.lobby_generation - 1) : currentRoom.lobby_generation
         if (!setRoomBattle(room_number)) return { status: "unavailable" as const }

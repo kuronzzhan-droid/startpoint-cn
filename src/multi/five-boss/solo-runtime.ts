@@ -6,8 +6,10 @@ import { FiveBossGauntletRunError, detachFinalizedFiveBossActiveSync } from "../
 import { computeRealTimeStamina } from "../../lib/stamina"
 import { runPersistenceTransaction, runPersistenceTransactionSync } from "../../lib/persistence-coordinator"
 import { FIVE_BOSS_GAUNTLET, isFiveBossGauntletQuest } from "./contract"
+import { getSoloWeaponRivenStartLoadoutSync } from "../../lib/weapon-riven/battle"
+import { refreshWeaponRivenSettlementResponseSync } from "../../lib/weapon-riven/settlement-response"
 
-function startFiveBossSoloInTransaction<T>(playerId: number, playId: string, persist: () => T): T | null {
+function startFiveBossSoloInTransaction<T>(playerId: number, playId: string, persist: () => T, partyId?: number): T | null {
     if (typeof playId !== "string" || !playId.length || playId.length > 255) throw new Error("Invalid play id.")
     const db = getDb()
     const previous = getPlayerActiveQuestSync(playerId)
@@ -38,22 +40,23 @@ function startFiveBossSoloInTransaction<T>(playerId: number, playId: string, per
         totalStaminaUsed: (player.totalStaminaUsed ?? 0) + staminaCost })
     db.prepare("UPDATE five_boss_solo_runs SET status = 'aborted' WHERE player_id = ? AND status = 'active'").run(playerId)
     const autoAtStart = getPlayerOptionSync(playerId, "auto_play", true)
-    db.prepare(`INSERT INTO five_boss_solo_runs(player_id, play_id, status, auto_at_start, auto_used)
-        VALUES (?, ?, 'active', ?, ?)`).run(playerId, playId, autoAtStart ? 1 : 0, autoAtStart ? 1 : 0)
+    const loadout = getSoloWeaponRivenStartLoadoutSync(playerId, partyId)
+    db.prepare(`INSERT INTO five_boss_solo_runs(player_id, play_id, status, auto_at_start, auto_used, riven_loadout_json)
+        VALUES (?, ?, 'active', ?, ?, ?)`).run(playerId, playId, autoAtStart ? 1 : 0, autoAtStart ? 1 : 0, JSON.stringify(loadout))
     return persist()
 }
 
-export function startFiveBossSoloSync<T>(playerId: number, playId: string, persist: () => T): T | null {
+export function startFiveBossSoloSync<T>(playerId: number, playId: string, persist: () => T, partyId?: number): T | null {
     return runPersistenceTransactionSync({
         domain: "single-quest", playerId, operation: "five_boss_solo_start",
-    }, () => startFiveBossSoloInTransaction(playerId, playId, persist))
+    }, () => startFiveBossSoloInTransaction(playerId, playId, persist, partyId))
 }
 
 /** Async HTTP entry point; keeps the single-player start off the request's synchronous transaction path. */
-export function startFiveBossSolo<T>(playerId: number, playId: string, persist: () => T): Promise<T | null> {
+export function startFiveBossSolo<T>(playerId: number, playId: string, persist: () => T, partyId?: number): Promise<T | null> {
     return runPersistenceTransaction({
         domain: "single-quest", playerId, operation: "five_boss_solo_start",
-    }, () => startFiveBossSoloInTransaction(playerId, playId, persist))
+    }, () => startFiveBossSoloInTransaction(playerId, playId, persist, partyId))
 }
 
 /** Monotone marker, bound to the persistent current solo play, never a retry snapshot. */
@@ -99,7 +102,7 @@ export function getFiveBossSoloReceiptSync(playerId: number, requestKey: string 
     const row = getDb().prepare(`SELECT response_json FROM five_boss_solo_runs
         WHERE player_id = ? AND finish_request_key = ? AND status = 'settled'`)
         .get(playerId, requestKey) as { response_json: string } | undefined
-    return row ? JSON.parse(row.response_json) : undefined
+    return row ? refreshWeaponRivenSettlementResponseSync(playerId, JSON.parse(row.response_json)) : undefined
 }
 
 export function isActiveFiveBossSoloSync(playerId: number, playId: string): boolean {

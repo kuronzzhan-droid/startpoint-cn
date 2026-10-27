@@ -10,7 +10,9 @@ const HEX = /^[a-f0-9]{64}$/
 const MAX_ENTRIES = 10000, TTL = 30 * 60 * 1000, RENEW_GRACE = 5 * 60 * 1000
 type Platform = "android" | "ios"
 type Recovery = "update" | "handshake" | "renew" | "login" | "retry"
-interface Build { id: string; name: string; platform: Platform; enabled: boolean; until: number; key: string; keyHash: string }
+interface Build { id: string; name: string; platform: Platform; enabled: boolean; until: number; key: string; keyHash: string; capabilities: ReadonlySet<string>; weaponRivenCatalog: string }
+export interface WeaponRivenAdmission { p1: boolean; p2: boolean; catalog: string }
+export interface SocketAdmissionLease { ok: boolean; remainingMs: number; weaponRiven?: WeaponRivenAdmission }
 interface Policy { enforce: boolean; updateMessage: string; builds: Map<string, Build> }
 interface Challenge { build: string; keyHash: string; platform: Platform; nonce: string; expires: number; ip: string }
 interface Grant { build: string; platform: Platform; keyHash: string; expires: number; session: string }
@@ -51,7 +53,10 @@ export class ClientAdmission {
                 if (!b || !ID.test(b.id) || typeof b.id !== "string" || builds.has(b.id)
                     || typeof b.name !== "string" || b.name.length > 100 || typeof b.enabled !== "boolean"
                     || (b.platform !== undefined && b.platform !== "android" && b.platform !== "ios")
-                    || Object.keys(b).some(k => !["id", "name", "platform", "enabled", "allowUntil"].includes(k))) throw Error("invalid build")
+                    || (b.capabilities !== undefined && (!Array.isArray(b.capabilities) || b.capabilities.length > 64
+                        || b.capabilities.some((value: unknown) => typeof value !== "string" || !ID.test(value))))
+                    || (b.weaponRivenCatalog !== undefined && (typeof b.weaponRivenCatalog !== "string" || !/^[a-zA-Z0-9_-]{1,96}$/.test(b.weaponRivenCatalog)))
+                    || Object.keys(b).some(k => !["id", "name", "platform", "enabled", "allowUntil", "capabilities", "weaponRivenCatalog"].includes(k))) throw Error("invalid build")
                 let until = Infinity
                 if (b.allowUntil !== null) {
                     if (typeof b.allowUntil !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:Z|[+-]\d\d:\d\d)$/.test(b.allowUntil)) throw Error("invalid expiry")
@@ -59,7 +64,7 @@ export class ClientAdmission {
                     if (!Number.isFinite(until)) throw Error("invalid expiry")
                 }
                 if (typeof keys[b.id] !== "string" || !HEX.test(keys[b.id])) throw Error("missing build key")
-                builds.set(b.id, { id: b.id, name: b.name, platform: b.platform ?? "android", enabled: b.enabled, until, key: keys[b.id], keyHash: digest(keys[b.id]) })
+                builds.set(b.id, { id: b.id, name: b.name, platform: b.platform ?? "android", enabled: b.enabled, until, key: keys[b.id], keyHash: digest(keys[b.id]), capabilities: new Set(b.capabilities ?? []), weaponRivenCatalog: b.weaponRivenCatalog ?? "none" })
             }
             this.policy = { enforce: c.enforce, updateMessage: c.updateMessage, builds }
             this.fingerprint = fingerprint; this.lastError = ""
@@ -160,12 +165,21 @@ export class ClientAdmission {
         }
         return result
     }
+    /** Capabilities come from an authenticated build, never an HTTP declaration or legacy bypass. */
+    hasCapability(token: unknown, session: unknown, capability: string): boolean {
+        const grant = this.grants.get(scalar(token))
+        return !!grant && this.check(token, session, true).ok
+            && this.build(grant.build)?.capabilities.has(capability) === true
+    }
     /** Serializable, short socket capability. Grant storage and keys stay in the business process. */
-    socketLease(token: unknown, session: unknown, active: boolean): { ok: boolean; remainingMs: number } {
+    socketLease(token: unknown, session: unknown, active: boolean): SocketAdmissionLease {
         const result = active ? this.checkActivity(token, session) : this.check(token, session, true)
         if (!result.ok) return { ok: false, remainingMs: 0 }
         const g = this.grants.get(scalar(token))
-        return { ok: true, remainingMs: Math.max(0, Math.min(60_000, g ? g.expires - this.now() : 60_000)) }
+        const b = g && this.build(g.build)
+        return { ok: true, remainingMs: Math.max(0, Math.min(60_000, g ? g.expires - this.now() : 60_000)),
+            weaponRiven: { p1: !!b?.capabilities.has("weapon-riven-v1"), p2: !!b?.capabilities.has("weapon-riven-multi-v1"),
+                catalog: b?.weaponRivenCatalog ?? "none" } }
     }
     bind(token: unknown, session: string): void {
         const g = this.grants.get(scalar(token))
@@ -191,6 +205,9 @@ export function clientAdmission(): ClientAdmission {
         instance.start()
     }
     return instance
+}
+export function hasWeaponRivenCapability(request: Pick<FastifyRequest, "headers">): boolean {
+    return clientAdmission().hasCapability(request.headers["x-sp-admission"], request.headers["x-sp-session"], "weapon-riven-v1")
 }
 export function installClientAdmission(app: FastifyInstance, gate = clientAdmission()): void {
     app.addHook("onClose", async () => gate.close())

@@ -51,6 +51,9 @@ import { isPersistenceAdmissionError } from "../../lib/persistence-admission";
 import { serializePlayerSnapshot } from "../../data/utils/client-player-snapshot";
 import { formatClientDisplayDateTime } from "../../lib/client-display-time";
 import { withServerWorkAdmission } from "../../lib/shutdown-state";
+import { hasWeaponRivenCapability } from "../../lib/client-admission";
+import { projectWeaponRivenLoad } from "../../lib/weapon-riven/client";
+import { getPlayerWeaponRivenListSync } from "../../data/domains/weaponRiven";
 
 import { contentOperations } from "../../lib/content-operations";
 import { contentClientReload } from "../../lib/content-client-reload";
@@ -281,7 +284,7 @@ const routes = async (fastify: FastifyInstance) => {
         // Pure response conversion runs after COMMIT. Saved optional party slots
         // still normalize to null before MessagePack encoding.
         const conversionStartedAt = performance.now()
-        const clientData: any = serializePlayerSnapshot(
+        let clientData: any = serializePlayerSnapshot(
             prepared.data,
             prepared.context,
             prepared.options,
@@ -291,6 +294,9 @@ const routes = async (fastify: FastifyInstance) => {
         const resVer = request.headers['res_ver'] as string | undefined;
         gameVerboseLog(() => `[CN-LOAD] res_ver=${resVer || '(not sent)'} account=${accountId} player=${playerId} party_slot=${prepared.data.player.partySlot}`);
         wrapOptionFields(clientData, playerId, resVer, exBoostDrawResult);
+        const rivenCapable = hasWeaponRivenCapability(request);
+        clientData = projectWeaponRivenLoad(clientData,
+            rivenCapable ? getPlayerWeaponRivenListSync(playerId) : {}, rivenCapable);
         const newsDelivery = getNewsDeliveryState(accountId, now);
         clientData.has_unread_news_item = newsDelivery.hasUnreadNews;
         markLoadPhase("load.serialize")

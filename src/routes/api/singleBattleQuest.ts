@@ -15,6 +15,7 @@ import { assertBattleCanStartSync, getBattleReplaySync } from "../../data/domain
 import { isSingleFinishResponse, singleFinishPlayId } from "../../lib/quest/finish/single-finish-identity"
 import { getPlayerDailyChallengePointListSync, getPlayerSync, updatePlayerSync } from "../../data/domains/player"
 import { getContentNativeDailyChallengePointId } from "../../lib/content-quest-rules"
+import { refreshWeaponRivenPartiesAfterCommit, refreshWeaponRivenSettlementResponseAfterCommit } from "../../lib/weapon-riven/party-refresh"
 import { getPlayerItemSync, updatePlayerItemSync } from "../../data/domains/item"
 import { getPlayerEquipmentListSync } from "../../data/domains/equipment"
 import { insertPlayerPracticeBattleHistorySync } from "../../data/domains/practice-battle-history"
@@ -74,6 +75,11 @@ import {
     settleMode15BattleSync,
 } from "../../lib/mode15-optional";
 import { partyCategoryForRushEvent } from "../../lib/rush-party-categories";
+import { enforceWeaponRivenPartyLimitSync, getWeaponRivenPartyInfoListSync, playerHasWeaponRivensSync } from "../../data/domains/weapon-riven-party";
+import { parseGlobalPartyId } from "../../lib/special-event-parties";
+import { hasWeaponRivenCapability } from "../../lib/client-admission";
+import { projectWeaponRivenClientResponse } from "../../lib/weapon-riven/client";
+import { isWeaponRivenItemId } from "../../lib/weapon-riven/constants";
 
 interface StartBody {
     quest_id: number
@@ -252,7 +258,7 @@ const routes = async (fastify: FastifyInstance) => {
         const releaseFinishExecution = await acquireFinishExecution(`single:${playerId}`)
         try {
             const requestPlayId = singleFinishPlayId(body.play_id)
-            const replayReceipt = (playId: string | null): boolean => {
+            const replayReceipt = async (playId: string | null): Promise<boolean> => {
                 if (playId === null) return false
                 const replay = getBattleReplaySync(playerId, "single", playId)
                 if (replay.kind === "missing") return false
@@ -260,12 +266,12 @@ const routes = async (fastify: FastifyInstance) => {
                     reply.status(400).send({ error: "Bad Request", message: "Battle result cannot be replayed. Please reload." })
                 } else {
                     reply.header("content-type", "application/x-msgpack")
-                    reply.status(200).send(replay.response)
+                    reply.status(200).send(await refreshWeaponRivenSettlementResponseAfterCommit(playerId, replay.response))
                 }
                 return true
             }
             // An old explicit play can replay its receipt even while a new battle is active.
-            if (replayReceipt(requestPlayId)) return reply
+            if (await replayReceipt(requestPlayId)) return reply
             // Runs settled before generic solo receipts were introduced still
             // have their dedicated five-boss receipt. Replay it before a newer
             // active battle is checked, without consuming the newer registration.
@@ -276,7 +282,7 @@ const routes = async (fastify: FastifyInstance) => {
                         return reply.status(400).send({ error: "Bad Request", message: "Invalid single finish receipt." })
                     }
                     reply.header("content-type", "application/x-msgpack")
-                    return reply.status(200).send(legacySoloResponse)
+                    return reply.status(200).send(await refreshWeaponRivenSettlementResponseAfterCommit(playerId, legacySoloResponse))
                 }
             }
 
@@ -301,14 +307,14 @@ const routes = async (fastify: FastifyInstance) => {
                 // api_count is only an alias. Its cached payload cannot bypass
                 // an expired or pruned durable replay, even with a long cache TTL.
                 const aliasPlayId = getCachedFinishPlayId(legacyFinishCacheKey)
-                if (aliasPlayId && replayReceipt(aliasPlayId)) return reply
+                if (aliasPlayId && (await replayReceipt(aliasPlayId))) return reply
                 const legacySolo = getFiveBossSoloReceiptSync(playerId, legacyFinishCacheKey)
                 if (legacySolo !== undefined) {
                     if (!isSingleFinishResponse(legacySolo)) return reply.status(400).send({
                         error: "Bad Request", message: "Invalid single finish receipt.",
                     })
                     reply.header("content-type", "application/x-msgpack")
-                    return reply.status(200).send(legacySolo)
+                    return reply.status(200).send(await refreshWeaponRivenSettlementResponseAfterCommit(playerId, legacySolo))
                 }
             }
 
@@ -331,7 +337,7 @@ const routes = async (fastify: FastifyInstance) => {
 
             const registered = resolvedActiveQuest?.source !== "rebuilt"
             const receiptPlayId = requestPlayId ?? (registered ? singleFinishPlayId(activeQuestData.playId) : null)
-            if (replayReceipt(receiptPlayId)) return reply
+            if (await replayReceipt(receiptPlayId)) return reply
             // Bind a legacy api_count request to its registered play while that play exists.
             // The unscoped key remains only a short-lived retry alias after consumption.
             const finishCacheKey = buildFinishResponseCacheKey(
@@ -342,7 +348,7 @@ const routes = async (fastify: FastifyInstance) => {
             const cachedFinishResponse = getFiveBossSoloReceiptSync(playerId, finishCacheKey)
             if (cachedFinishResponse !== undefined) {
                 reply.header("content-type", "application/x-msgpack")
-                return reply.status(200).send(cachedFinishResponse)
+                return reply.status(200).send(await refreshWeaponRivenSettlementResponseAfterCommit(playerId, cachedFinishResponse))
             }
 
             const questCategory = activeQuestData.category
@@ -474,6 +480,7 @@ const routes = async (fastify: FastifyInstance) => {
             if (finishResponse.response === null) {
                 return reply.status(400).send({ error: "Bad Request", message: "No active quest to finish." })
             }
+            if (fiveBossSoloQuest) await refreshWeaponRivenPartiesAfterCommit(playerId, finishResponse.response.data.party_info_list)
             cacheFinishResponse(finishCacheKey, finishResponse.response, receiptPlayId ?? undefined)
             cacheFinishResponse(legacyFinishCacheKey, finishResponse.response, receiptPlayId ?? undefined)
             reply.header("content-type", "application/x-msgpack")
@@ -655,6 +662,10 @@ const routes = async (fastify: FastifyInstance) => {
             reply.header("content-type", "application/x-msgpack")
             return reply.status(200).send({ data_headers: generateDataHeaders({ viewer_id: viewerId, result_code: 4050 }), data: {} })
         }
+        const rivenPartyCategory = category === QuestCategory.CARNIVAL_EVENT ? PartyCategory.CARNIVAL
+            : category === QuestCategory.RAID_EVENT ? PartyCategory.RAID
+            : category === QuestCategory.RUSH_EVENT ? partyCategoryForRushEvent(Math.floor(Number(questId) / 1000))
+            : PartyCategory.NORMAL
         if (isStaleAbyssClient(category, questId, request.headers.res_ver)
             || !canStartAbyssQuestSync(playerId, category, questId)) {
             reply.header("content-type", "application/x-msgpack")
@@ -754,7 +765,7 @@ const routes = async (fastify: FastifyInstance) => {
                         recordActiveMissionQuestChallengeFactSync(playerId, category)
                         mission = settleMissionCategories(playerId, [1, 2, 10], new Date(getServerTime() * 1000))
                         return true
-                    })
+                    }, partyId)
                 })
             } catch (error) {
                 if (insertedMemory && activeQuests[playerId] === insertedMemory) {
@@ -774,6 +785,13 @@ const routes = async (fastify: FastifyInstance) => {
                 quest_name: "", client_checks: getSteamRobotMissionClientChecks(category, questId),
                 mail_arrived: getPlayerMailCountSync(playerId, true) > 0,
             }
+            // The five-boss transaction rechecks before freezing. Return the saved
+            // selection too, so historical multi-riven parties refresh on the client.
+            const parsedParty = parseGlobalPartyId(partyId)
+            if (parsedParty) data.party_info_list = getWeaponRivenPartyInfoListSync(playerId,
+                [{ category: PartyCategory.NORMAL, group_id: parsedParty.groupId, slot: parsedParty.slot }])
+            await refreshWeaponRivenPartiesAfterCommit(playerId, data.party_info_list)
+            data.party_info_list = projectWeaponRivenClientResponse(data.party_info_list, hasWeaponRivenCapability(request))
             if (mission) mergeMissionSettlementResponse(data, mission, viewerId)
             reply.header("content-type", "application/x-msgpack")
             return reply.status(200).send({ data_headers: headers, data })
@@ -829,12 +847,26 @@ const routes = async (fastify: FastifyInstance) => {
         let afterStamina = 0
         let registeredMemory: ActiveQuest | undefined
         let missionSettlement: MissionSettlementResult | undefined
+        let correctedRivenParties: ReturnType<typeof getWeaponRivenPartyInfoListSync> = []
         try {
             await runPersistenceTransaction({
                 domain: "single-quest", playerId, operation: "start",
             }, () => {
                 assertBattleCanStartSync(playerId, body.play_id)
                 const currentPlayer = getPlayerSync(playerId) ?? player
+                if (questData.fixedParty === undefined) {
+                    correctedRivenParties = enforceWeaponRivenPartyLimitSync(playerId, partyId, rivenPartyCategory)
+                    const parsed = parseGlobalPartyId(partyId)
+                    if (correctedRivenParties.length === 0 && parsed) {
+                        // A preceding room readiness check may already have repaired
+                        // storage while this client's solo-party cache is still old.
+                        const current = getWeaponRivenPartyInfoListSync(playerId,
+                            [{ category: rivenPartyCategory, group_id: parsed.groupId, slot: parsed.slot }])
+                        // Over-limit repairs strip every revealed card, so a stale cache may still hold two.
+                        if (current.some(party => party.ability_soul_ids.some(isWeaponRivenItemId))
+                            || playerHasWeaponRivensSync(playerId)) correctedRivenParties = current
+                    }
+                }
                 const pending = getPlayerActiveQuestSync(playerId)
                 if (pending?.playId === body.play_id) {
                     if (pending.isMulti || pending.category !== category || pending.questId !== questId
@@ -962,6 +994,10 @@ const routes = async (fastify: FastifyInstance) => {
                 "start_time": dataHeaders['servertime'],
                 "quest_name": "",
                 "client_checks": getSteamRobotMissionClientChecks(category, questId)
+        }
+        if (correctedRivenParties.length > 0) {
+            responseData.party_info_list = projectWeaponRivenClientResponse(correctedRivenParties, hasWeaponRivenCapability(request))
+            await refreshWeaponRivenPartiesAfterCommit(playerId, correctedRivenParties)
         }
         if (missionSettlement) {
             mergeMissionSettlementResponse(responseData, missionSettlement, viewerId)

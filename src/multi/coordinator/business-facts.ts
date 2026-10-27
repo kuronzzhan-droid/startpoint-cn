@@ -1,6 +1,7 @@
 import { cloneCommandJson } from "./command-protocol"
 import { invokeRealtimeBusiness } from "./business-rpc"
 import type { QuestNpcPartySnapshot } from "../npc/quest-party-pool-shared"
+import type { WeaponRivenBattleLoadout } from "../../lib/weapon-riven/loadout"
 
 export interface PlayerFactsScope { category: number; questId: number; partyId?: number; wireParty?: unknown }
 export interface PlayerBusinessFacts {
@@ -8,6 +9,7 @@ export interface PlayerBusinessFacts {
     category: number; questId: number; partyId: number
     player: { name: string; rank: number; degreeId: number; leaderCharacterId: number; role: number; tutorialStep: number; partySlot: number }
     party: any; ownedCharacterIds: number[]; restrictedEquipment: boolean
+    weaponRivenLoadout?: WeaponRivenBattleLoadout
     guestEligibility: { allowed: boolean; reason?: string }
     questNpcPartySnapshot: QuestNpcPartySnapshot | null
     questPolicy: { isMode15: boolean; equipmentAllowed: boolean; hostAllowed: boolean; exclusiveItemIds: number[] }

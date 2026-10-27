@@ -3,9 +3,16 @@ import { performance } from "node:perf_hooks"
 import { isRealtimeOwnerChild } from "./runtime-role"
 import { invokeRealtimeBusiness, createSocketAdmissionMaintenanceTimer } from "./business-rpc"
 import { markTcpDisconnectReason } from "../tcp/disconnect-diagnostics"
+import type { SocketAdmissionLease, WeaponRivenAdmission } from "../../lib/client-admission"
 
 interface Lease { socket: Socket; id: number; token: unknown; session: unknown; expires: number; activity: boolean; deadline?: NodeJS.Timeout }
 const leases = new Map<Socket, Lease>()
+const credentials = new WeakMap<Socket, { token: unknown; session: unknown; weaponRiven: WeaponRivenAdmission }>()
+const noRiven = (): WeaponRivenAdmission => ({ p1: false, p2: false, catalog: "none" })
+export function getSocketRivenCredentials(socket: Socket) {
+    const entry = credentials.get(socket)
+    return entry ? { token: entry.token, session: entry.session, weaponRiven: { ...entry.weaponRiven } } : undefined
+}
 let sequence = 0, polling = false
 let timer: NodeJS.Timeout | undefined
 let lastRefreshFailureLogAt = -Infinity
@@ -27,13 +34,14 @@ function reportRefreshFailure(error: unknown): void {
         ? candidate : "ADMISSION_REFRESH_FAILED"
     console.warn(`[MULTI-ADMISSION] socket lease refresh failed: reason=${reason}`)
 }
-function apply(lease: Lease, result: { ok: boolean; remainingMs: number }): boolean {
+function apply(lease: Lease, result: SocketAdmissionLease): boolean {
     if (!result.ok || !Number.isFinite(result.remainingMs) || result.remainingMs <= 0) {
         if (lease.deadline) clearTimeout(lease.deadline)
         markTcpDisconnectReason(lease.socket, "admission")
-        leases.delete(lease.socket); lease.socket.destroy(); return false
+        credentials.delete(lease.socket); leases.delete(lease.socket); lease.socket.destroy(); return false
     }
     lease.expires = performance.now() + Math.min(60_000, result.remainingMs)
+    credentials.set(lease.socket, { token: lease.token, session: lease.session, weaponRiven: result.weaponRiven ?? noRiven() })
     if (lease.deadline) clearTimeout(lease.deadline)
     lease.deadline = setTimeout(() => {
         if (leases.get(lease.socket) !== lease) return
@@ -55,7 +63,7 @@ async function poll(): Promise<void> {
             for (const value of batch) value.activity = false
             try {
                 const requestedAt = performance.now()
-                const response = await invokeRealtimeBusiness<Array<{ id: number; ok: boolean; remainingMs: number }>>("admission.refresh", { items })
+                const response = await invokeRealtimeBusiness<Array<SocketAdmissionLease & { id: number }>>("admission.refresh", { items })
                 for (const value of batch) {
                     if (leases.get(value.socket) !== value) continue
                     const result = response.find(item => item.id === value.id)
@@ -78,16 +86,18 @@ async function poll(): Promise<void> {
 export async function authorizeSocketAdmission(socket: Socket, token: unknown, session: unknown): Promise<boolean> {
     if (!isRealtimeOwnerChild()) {
         const { clientAdmission } = require("../../lib/client-admission") as typeof import("../../lib/client-admission")
-        return clientAdmission().checkActivity(token, session).ok
+        const result = clientAdmission().socketLease(token, session, true)
+        if (result.ok) credentials.set(socket, { token: token ?? null, session: session ?? null, weaponRiven: result.weaponRiven ?? noRiven() })
+        return result.ok
     }
     if (leases.size >= 10000) return false
     const requestedAt = performance.now()
-    const result = await invokeRealtimeBusiness<{ ok: boolean; remainingMs: number }>("admission.lease", { token: token ?? null, session: session ?? null })
+    const result = await invokeRealtimeBusiness<SocketAdmissionLease>("admission.lease", { token: token ?? null, session: session ?? null })
     if (socket.destroyed) return false
     const lease: Lease = { socket, id: ++sequence, token: token ?? null, session: session ?? null, expires: 0, activity: false }
     if (!result.ok) return false
     leases.set(socket, lease)
-    socket.once("close", () => { if (lease.deadline) clearTimeout(lease.deadline); leases.delete(socket) })
+    socket.once("close", () => { if (lease.deadline) clearTimeout(lease.deadline); credentials.delete(socket); leases.delete(socket) })
     if (!timer) {
         timer = createSocketAdmissionMaintenanceTimer(() => setInterval(() => { void poll() }, 5000))
         timer.unref()

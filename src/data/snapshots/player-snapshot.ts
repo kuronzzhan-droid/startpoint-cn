@@ -3,6 +3,7 @@ import { parseCrazyGachaState } from "../domains/crazy_gacha"
 import { parseExBoostPendingRow } from "../domains/ex-boost-pending"
 import { getExStatusPoolSync } from "../../lib/assets"
 import { ALL_ABILITIES } from "../../lib/ex-boost-abilities"
+import { clearInvalidWeaponRivenPartyReferences, filterWeaponRivenInventoryRows, validateWeaponRivenArchiveRow, withWeaponRivenArchiveDefaults } from "./weapon-riven"
 import type { Database as BetterSqlite3Database } from "better-sqlite3"
 import { COMPACT_COUNTER_VALUES, getStorageSnapshotTableInfo, isCompactStorage, RETIRED_COUNTER_SNAPSHOTS } from "../../lib/storage-layout"
 import { getExistingPlayerTimeStateSync, getPlayerBusinessDateSync, getPlayerBusinessOffsetSync, PlayerArchiveTimeBasis, validatePlayerArchiveTimeBasis } from "../../lib/player-time-compat"
@@ -132,6 +133,7 @@ export const PLAYER_SNAPSHOT_V2_TABLES = Object.freeze([
     "players_party_groups",
     "players_parties",
     "players_equipment",
+    "player_weapon_rivens",
     "players_quest_progress",
     "players_character_quest_clears",
     "players_party_member_co_clears",
@@ -181,6 +183,11 @@ const UPSTREAM_BUSINESS_TABLES = new Set<string>([
 ])
 
 const EXCLUDED_PLAYER_STATE = Object.freeze([
+    {
+        tables: ["player_weapon_riven_sequences"],
+        policy: "preserve-target" as const,
+        reason: "裂罅单调序号属于目标账号的历史高水位；导入不回退，创建时同时取现存卡片编号最大值。",
+    },
     {
         tables: ["player_time_state", "player_time_migration_ledger"],
         policy: "preserve-target" as const,
@@ -290,10 +297,12 @@ function getSchemaFingerprint(
     archiveTables?: PlayerSaveSnapshotV2["data"]["tables"],
     beforeCrazyGacha = false,
     beforeUpstreamBusiness = false,
+    beforeWeaponRiven = false,
 ): string {
     const schema = PLAYER_SNAPSHOT_V2_TABLES.filter(table => !(beforeEconomyExtensions && ["players_special_exchange_campaigns", "players_exchange_campaign_receipts", "players_shop_quotas"].includes(table)))
         .filter(table => !(beforeCrazyGacha && table === "players_crazy_gacha"))
-        .filter(table => !(beforeUpstreamBusiness && UPSTREAM_BUSINESS_TABLES.has(table))).map(table => ({
+        .filter(table => !(beforeUpstreamBusiness && UPSTREAM_BUSINESS_TABLES.has(table)))
+        .filter(table => !(beforeWeaponRiven && table === "player_weapon_rivens")).map(table => ({
         table,
         columns: (() => {
             const columns = getTableInfo(db, table)
@@ -531,22 +540,25 @@ export function validatePlayerSaveSnapshotV2Sync(
         { beforeAbyssTowerRevision: true, beforeEconomyExtensions: true },
     ].flatMap(profile => [{ ...profile, beforeCrazyGacha: false }, { ...profile, beforeCrazyGacha: true }])
         .flatMap(profile => [{ ...profile, beforeUpstreamBusiness: false }, { ...profile, beforeUpstreamBusiness: true }])
+        .flatMap(profile => [{ ...profile, beforeWeaponRiven: false }, { ...profile, beforeWeaponRiven: true }])
         .find(profile => snapshot.schemaFingerprint === getSchemaFingerprint(
         db, profile.beforeAbyssTowerRevision, profile.beforeEconomyExtensions, snapshot.data?.tables,
         profile.beforeCrazyGacha,
         profile.beforeUpstreamBusiness,
+        profile.beforeWeaponRiven,
     ))
     if (!schema) {
         throw new Error("存档数据库结构与当前服务器不一致，拒绝执行覆盖；请先使用匹配版本迁移")
     }
-    const { beforeAbyssTowerRevision, beforeEconomyExtensions, beforeCrazyGacha, beforeUpstreamBusiness } = schema
+    const { beforeAbyssTowerRevision, beforeEconomyExtensions, beforeCrazyGacha, beforeUpstreamBusiness, beforeWeaponRiven } = schema
     if (!snapshot.data || typeof snapshot.data !== "object" || !snapshot.data.tables || typeof snapshot.data.tables !== "object") {
         throw new Error("存档缺少 data.tables")
     }
 
     const expectedTables = new Set<string>(PLAYER_SNAPSHOT_V2_TABLES.filter(table => !(beforeEconomyExtensions && ["players_special_exchange_campaigns", "players_exchange_campaign_receipts", "players_shop_quotas"].includes(table)))
         .filter(table => !(beforeCrazyGacha && table === "players_crazy_gacha"))
-        .filter(table => !(beforeUpstreamBusiness && UPSTREAM_BUSINESS_TABLES.has(table))))
+        .filter(table => !(beforeUpstreamBusiness && UPSTREAM_BUSINESS_TABLES.has(table)))
+        .filter(table => !(beforeWeaponRiven && table === "player_weapon_rivens")))
     const actualTables = Object.keys(snapshot.data.tables)
     const missing = [...expectedTables].filter(table => !Object.prototype.hasOwnProperty.call(snapshot.data.tables, table))
     const extra = actualTables.filter(table => !expectedTables.has(table))
@@ -557,6 +569,7 @@ export function validatePlayerSaveSnapshotV2Sync(
     let totalRows = 0
     for (const table of PLAYER_SNAPSHOT_V2_TABLES) {
         if (beforeUpstreamBusiness && UPSTREAM_BUSINESS_TABLES.has(table)) continue
+        if (beforeWeaponRiven && table === "player_weapon_rivens") continue
         if (beforeCrazyGacha && table === "players_crazy_gacha") continue
         if (beforeEconomyExtensions && ["players_special_exchange_campaigns", "players_exchange_campaign_receipts", "players_shop_quotas"].includes(table)) continue
         const tableData = snapshot.data.tables[table]
@@ -600,6 +613,7 @@ export function validatePlayerSaveSnapshotV2Sync(
                 const pending = parseExBoostPendingRow(Object.fromEntries(expectedColumns.map((name, index) => [name, row[index]])))
                 assertExBoostComparisonCharacter(snapshot.data.tables.players_characters, pending.characterId)
             }
+            if (table === "player_weapon_rivens") validateWeaponRivenArchiveRow(expectedColumns,row)
         }
     }
     if (snapshot.data.tables.players.rows.length !== 1) throw new Error("存档必须且只能包含一条 players 主记录")
@@ -657,7 +671,7 @@ function assertRestoredTable(
     const actual = readSnapshotTable(db, table, targetPlayerId)
     const migratedSource = table === "players_rush_events" && !source.columns.includes("tower_revision")
         ? { columns: [...source.columns, "tower_revision"], rows: source.rows.map(row => [...row, null]) }
-        : source
+        : table === "player_weapon_rivens" ? withWeaponRivenArchiveDefaults(source) : source
     const expectedRows = canonicalRows(table, migratedSource.columns, migratedSource.rows, targetPlayerId)
     const actualRows = canonicalRows(table, actual.columns, actual.rows, targetPlayerId)
     if (JSON.stringify(actualRows) !== JSON.stringify(expectedRows)) {
@@ -673,11 +687,17 @@ export function restorePlayerSaveSnapshotV2Sync(
 ): RestorePlayerSnapshotResult {
     if (!Number.isSafeInteger(targetPlayerId) || targetPlayerId < 1) throw new Error("目标玩家 ID 无效")
     const snapshot = validatePlayerSaveSnapshotV2Sync(snapshotValue, db)
+    const sourceItems = snapshot.data.tables.players_items
+    const portableItems = { columns: sourceItems.columns,
+        rows: filterWeaponRivenInventoryRows(sourceItems.columns, sourceItems.rows) }
     const target = db.prepare(`SELECT account_id FROM players WHERE id = ?`).get(targetPlayerId) as { account_id: number } | undefined
     if (!target) throw new Error(`目标玩家 ${targetPlayerId} 不存在`)
 
     const includeArchiveHistory = options.includeArchiveHistory !== false
     const skippedTables = [...ARCHIVE_HISTORY_TABLES].filter(() => !includeArchiveHistory)
+    // Exact legacy fingerprints were checked above. Absence in those archives
+    // cannot express a request to erase cards introduced after their schema.
+    if (!snapshot.data.tables.player_weapon_rivens) skippedTables.push("player_weapon_rivens")
     if (isCompactStorage(db)) skippedTables.push(RETIRED_COUNTER_SNAPSHOTS)
     const restoredTables = PLAYER_SNAPSHOT_V2_TABLES
         .filter(table => table !== "players")
@@ -739,7 +759,8 @@ export function restorePlayerSaveSnapshotV2Sync(
         if (playerUpdate.changes !== 1) throw new Error("目标玩家主记录更新失败")
 
         for (const table of restoredTables) {
-            const tableData = table === "players_mails" ? portableMails : snapshot.data.tables[table]
+            const tableData = table === "players_mails" ? portableMails
+                : table === "players_items" ? portableItems : snapshot.data.tables[table]
             const omitted = REMAPPED_AUTOINCREMENT_IDS.get(table) ?? new Set<string>()
             const insertColumns = tableData.columns.filter(column => !omitted.has(column))
             if (tableData.rows.length === 0) continue
@@ -793,9 +814,16 @@ export function restorePlayerSaveSnapshotV2Sync(
             const expected = table === "players_mails"
                 ? { columns: portableMails.columns, rows: [...portableMails.rows,
                     ...targetDailyMails.map(mail => portableMails.columns.map(column => mail[column]))] }
-                : snapshot.data.tables[table]
+                : table === "players_items" ? portableItems : snapshot.data.tables[table]
             assertRestoredTable(db, table, expected, targetPlayerId)
         }
+        // Remember imported identities even if every imported card is deleted
+        // before the next creation. The target's historical high-water never falls.
+        db.prepare(`INSERT INTO player_weapon_riven_sequences(player_id,last_id)
+            VALUES (?,(SELECT COALESCE(MAX(riven_id),0) FROM player_weapon_rivens WHERE player_id=?))
+            ON CONFLICT(player_id) DO UPDATE SET last_id=MAX(last_id,excluded.last_id)`)
+            .run(targetPlayerId,targetPlayerId)
+        clearInvalidWeaponRivenPartyReferences(db, targetPlayerId)
         if (targetTimeState) {
             db.prepare("UPDATE player_time_state SET day_anchor_ms=?,week_anchor_ms=? WHERE player_id=?")
                 .run(Math.max(targetTimeState.dayAnchorMs, currentDate.getTime()),

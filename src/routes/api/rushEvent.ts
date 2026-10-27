@@ -1,3 +1,4 @@
+import { stripWeaponRivenPublicPayload } from "../../lib/weapon-riven/public-payload"
 import { routineGameLog } from "../../lib/routine-game-logging"
 // Handles mail.
 
@@ -531,7 +532,7 @@ const routes = async (fastify: FastifyInstance) => {
             reply.header("content-type", "application/x-msgpack")
             return reply.status(200).send({
                 "data_headers": generateDataHeaders({ viewer_id: viewerId }),
-                "data": { "rush_ranking_party": partyList },
+                "data": { "rush_ranking_party": stripWeaponRivenPublicPayload(partyList) },
             })
         }
 
@@ -544,7 +545,7 @@ const routes = async (fastify: FastifyInstance) => {
                 viewer_id: viewerId
             }),
             "data": {
-                "rush_ranking_party": partyList
+                "rush_ranking_party": stripWeaponRivenPublicPayload(partyList)
             }
         })
     })
@@ -818,6 +819,7 @@ const routes = async (fastify: FastifyInstance) => {
             }
         }
 
+        let rivenParties: any[] = []
         const previousMemory = activeQuests[playerId]
         let insertedMemory: ActiveQuest | undefined
         try { await runPersistenceTransaction({
@@ -834,6 +836,10 @@ const routes = async (fastify: FastifyInstance) => {
                 return
             }
             if (!isContentQuestOpenAt(QuestCategory.RUSH_EVENT, questId)) throw new Error("QUEST_OPERATIONS_CLOSED")
+            // Weapon riven battle rule (author 2026-10-27 15:17): an over-limit saved party loses
+            // every revealed card; owners always get the authoritative party back.
+            if (questData.fixedParty === undefined) rivenParties = require("../../data/domains/weapon-riven-party")
+                .enforceWeaponRivenStartPartiesSync(playerId, partyCategoryForRushEvent(questData.rushEventId!), [partyId])
             const battleRoster = captureBattleRosterSync({ playerId, questCategory: QuestCategory.RUSH_EVENT,
                 questId, partyId, fixedParty: questData.fixedParty })
             startLeaderboardQuestSync(playerId, {
@@ -893,7 +899,8 @@ const routes = async (fastify: FastifyInstance) => {
                 },
                 "is_multi": "single",
                 "start_time": headers['servertime'],
-                "quest_name": ""
+                "quest_name": "",
+                ...await rushRaidRivenPartyInfo(request, playerId, rivenParties),
             }
         })
     })
@@ -1117,3 +1124,11 @@ const routes = async (fastify: FastifyInstance) => {
 }
 
 export default routes;
+
+/** Post-commit: projected party_info_list for the response, plus lobby cache refresh. */
+async function rushRaidRivenPartyInfo(request: FastifyRequest, playerId: number, parties: any[]): Promise<{ party_info_list?: any[] }> {
+    if (parties.length === 0) return {}
+    await require("../../lib/weapon-riven/party-refresh").refreshWeaponRivenPartiesAfterCommit(playerId, parties)
+    return { party_info_list: require("../../lib/weapon-riven/client").projectWeaponRivenClientResponse(parties,
+        require("../../lib/client-admission").hasWeaponRivenCapability(request)) }
+}

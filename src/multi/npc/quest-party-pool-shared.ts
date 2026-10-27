@@ -1,4 +1,5 @@
 import { QuestCategory } from "../../lib/types/quest"
+import { stripWeaponRivenPublicPayload } from "../../lib/weapon-riven/public-payload"
 
 export const QUEST_NPC_POOL_MAX_RECENT = 50
 export const QUEST_NPC_POOL_MIN_POWER = 8_000
@@ -26,7 +27,7 @@ export interface QuestNpcPartySnapshot {
 export function cloneQuestNpcPartySnapshot(
     snapshot: QuestNpcPartySnapshot | undefined,
 ): QuestNpcPartySnapshot | undefined {
-    return snapshot ? { ...snapshot, party: JSON.parse(JSON.stringify(snapshot.party)) } : undefined
+    return snapshot ? stripWeaponRivenPublicPayload(snapshot) : undefined
 }
 
 export interface QuestNpcPartyRankCandidate {

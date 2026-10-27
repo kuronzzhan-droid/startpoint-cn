@@ -165,3 +165,29 @@ test("Wiki code with an unowned leader is rejected before returning an empty lea
     assert.equal(body.data_headers.result_code, 3403)
     assert.deepEqual(body.data, {})
 })
+
+
+test("Wiki public route strips private souls and all sidecars from the projected native party", async () => {
+    const inventory = require('../src/lib/wiki-team-code-inventory')
+    const original = inventory.nativeBattleParty
+    let native
+    inventory.nativeBattleParty = (...args) => {
+        native = { ...original(...args), ability_soul_ids: [16000000, 16000999, 16000900],
+            weapon_rivens: [[0, [16000999, 100001, 15990001, 50]], [1], [1]],
+            weapon_riven_scope: 'multi-v1', weapon_riven_snapshot_id: 'private',
+            weapon_riven_mode: 1, weapon_riven_catalog: 'catalog', weapon_riven_reason: '',
+            user_weapon_riven_list: { pending: { private: true } } }
+        return native
+    }
+    try {
+        const response = await app.inject({ method: 'POST', url: '/party/refer',
+            payload: { viewer_id: viewerId, party_code: code } })
+        assert.equal(response.statusCode, 200, response.body)
+        const result = response.json()
+        assert.equal(result.data_headers.result_code, 1)
+        assert.deepEqual(result.data.battle_party.ability_soul_ids, [null, null, 16000900])
+        assert.equal(JSON.stringify(result.data).includes('weapon_riven'), false)
+        assert.deepEqual(native.ability_soul_ids, [16000000, 16000999, 16000900])
+        assert.equal(native.weapon_riven_snapshot_id, 'private')
+    } finally { inventory.nativeBattleParty = original }
+})

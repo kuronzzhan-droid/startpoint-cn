@@ -3,6 +3,8 @@ import { performance } from "node:perf_hooks"
 import { recordResponseEncoding } from "./request-diagnostics"
 import { createCnResponseWorkerPool, type CnResponseWorkerPool } from "./cn-response-worker-pool"
 import { getCnLoadHttpCompressionConfig, type CnLoadHttpCompressionConfig } from "./cn-load-http-compression"
+import { hasWeaponRivenCapability } from "./client-admission"
+import { projectWeaponRivenClientResponse } from "./weapon-riven/client"
 
 function appendVaryAcceptEncoding(reply: FastifyReply): void {
     const current = reply.getHeader("vary")
@@ -28,6 +30,7 @@ export function installCnResponseEncoding(
         let encodedPayload = payload;
         try {
             if (reply.getHeader("content-type") === "application/x-msgpack") {
+                payload = projectWeaponRivenClientResponse(payload, hasWeaponRivenCapability(request));
                 const loadResponse = request.url.split("?", 1)[0].endsWith("/load");
                 const compressedLoad = loadResponse && cnLoadCompressionConfig.mode !== "off";
                 if (compressedLoad) appendVaryAcceptEncoding(reply);

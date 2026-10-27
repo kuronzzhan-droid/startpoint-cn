@@ -17,6 +17,8 @@ function readFacts(playerId: number, scope: PlayerFactsScope, viewerId = 0): Pla
     const partyId = scope.partyId ?? player.partySlot ?? 1
     if (!Number.isSafeInteger(partyId) || partyId < 1 || partyId > 120
         || !Number.isSafeInteger(scope.category) || !Number.isSafeInteger(scope.questId)) throw new Error("INVALID_FACTS_SCOPE")
+    // Repair the saved party first (over-limit rule); anything read afterwards sees the repaired rows.
+    const weaponRivenLoadout = require("../../lib/weapon-riven/battle").getSoloWeaponRivenStartLoadoutSync(playerId, partyId)
     const party = scope.wireParty ?? require("../party-snapshot").getRealPartySnapshot(playerId, partyId)
     const mode = require("../../lib/mode15-optional") as typeof import("../../lib/mode15-optional")
     const exclusive = require("../npc/equipment-policy").exclusivePartyItems(party) as number[]
@@ -28,6 +30,7 @@ function readFacts(playerId: number, scope: PlayerFactsScope, viewerId = 0): Pla
     catch { /* Optional NPC history cannot reject an otherwise valid party. */ }
     return json({ parentEpoch, revision, playerId, viewerId, expiresAt: Date.now() + 120_000,
         category: scope.category, questId: scope.questId, partyId, party,
+        weaponRivenLoadout,
         player: { name: player.name, rank: require("../../lib/stamina").getRankDegree(player.rankPoint || 0),
             degreeId: player.degreeId || 1, leaderCharacterId: player.leaderCharacterId, role: player.role || 1,
             tutorialStep: player.tutorialStep || 0, partySlot: player.partySlot || 1 },
@@ -77,11 +80,12 @@ export async function handleRealtimeBusiness(kind: string, input: unknown): Prom
             return readFacts(playerId, { ...payload, wireParty: payload.party })
         }
         case "presence.touch": return require("../../lib/online-presence").markPlayerOnlineFromTcp(positive(payload.viewerId))
-        case "npc.parties": return require("../npc/player-party-pool").getRandomPlayerNpcPartiesSync(payload.playerId,
-            Math.max(0, Math.min(2, Number(payload.count))), require("../npc/player-party-pool").getNpcPartySelectionOptions(payload.category, payload.questId)).map((entry: any) => entry.party)
+        case "npc.parties": return require("../../lib/weapon-riven/public-payload").stripWeaponRivenPublicPayload(
+            require("../npc/player-party-pool").getRandomPlayerNpcPartiesSync(payload.playerId,
+                Math.max(0, Math.min(2, Number(payload.count))), require("../npc/player-party-pool").getNpcPartySelectionOptions(payload.category, payload.questId)).map((entry: any) => entry.party))
         case "npc.mates": {
             const { mate1, mate2 } = require("../npc/builder").buildNpcMates(payload.questId, payload.category)
-            return json([mate1, mate2].filter(Boolean))
+            return require("../../lib/weapon-riven/public-payload").stripWeaponRivenPublicPayload(json([mate1, mate2].filter(Boolean)))
         }
         case "lounge.handshake": {
             if (!require("../../lib/player-login").playerSocketAllowed(payload.viewerId, payload.session ?? undefined) || !contentReloadAllowed(payload.viewerId)) return null
@@ -97,6 +101,7 @@ export async function handleRealtimeBusiness(kind: string, input: unknown): Prom
             return require("../../lounge/eligibility").decideLoungeTickets({ campaignId: payload.campaignId }, payload.playerIds)
         }
         default:
+            if (kind.startsWith("riven.")) return require("../../lib/weapon-riven/multi-business").handleRivenBusiness(kind, payload)
             if (kind.startsWith("fiveBoss.")) return require("./five-boss-business-handlers").handleFiveBossBusiness(kind, payload)
             throw new Error("UNKNOWN_REALTIME_BUSINESS_KIND")
     }

@@ -9,6 +9,7 @@ import { initializeQuestTimeRevision } from "./initializers/quest-time-revision"
 import { initializeAbyssTowerProgress } from "./initializers/abyss-tower-progress";
 import { initializeAbyssRecords } from "./initializers/abyss-records";
 import { initializeFiveBossGauntlet } from "./initializers/five-boss-gauntlet";
+import { initializeWeaponRivens } from "./initializers/weapon-riven";
 import { ensureCascadeDeleteIndexes } from "../lib/admin-account-cleanup";
 import { assertStorageLayout, WDFP_DATA_VERSION } from "../lib/storage-layout";
 import { observeSqliteDatabase } from "../lib/sqlite-diagnostics";
@@ -136,6 +137,7 @@ export default function getDatabase(
             initializeGiftCodes(db)
             initializeExBoostPendingSchema(db)
             initializeShopCampaignLineups(db)
+            initializeWeaponRivens(db)
             console.log("[DB] init done")
 
             // try to update after initialization

@@ -1,6 +1,7 @@
 import { randomInt } from "crypto";
 import { getDb } from "../db";
 import { runPersistenceTransactionSync } from "../../lib/persistence-coordinator";
+import { stripWeaponRivenPublicPayload } from "../../lib/weapon-riven/public-payload";
 
 const PARTY_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const PARTY_CODE_LENGTH = 10;
@@ -38,7 +39,7 @@ export function publishPartySync(
     battleParty: unknown,
 ): string {
     const db = getDb();
-    const battlePartyJson = JSON.stringify(battleParty);
+    const battlePartyJson = JSON.stringify(stripWeaponRivenPublicPayload(battleParty));
     const createdAt = Date.now();
 
     return runPersistenceTransactionSync({ domain: "player", playerId: ownerPlayerId, operation: "publish_party" }, () => {
@@ -87,7 +88,7 @@ export function getPublishedPartySync(code: string): PublishedPartyRecord | null
 
     let battleParty: unknown;
     try {
-        battleParty = JSON.parse(row.battle_party_json);
+        battleParty = stripWeaponRivenPublicPayload(JSON.parse(row.battle_party_json));
     } catch {
         battleParty = null;
     }

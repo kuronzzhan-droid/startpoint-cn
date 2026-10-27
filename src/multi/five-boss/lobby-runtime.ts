@@ -8,6 +8,8 @@ import { fiveBossConnectionDiagnostics } from "./connection-diagnostic"
 import { invokeRealtimeBusiness, retainRealtimeBusinessTail } from "../coordinator/business-rpc"
 import { isRealtimeOwnerChild } from "../coordinator/runtime-role"
 import { getPlayerBusinessFacts } from "../coordinator/business-facts"
+import { normalizeWeaponRivenLoadout } from "../../lib/weapon-riven/loadout"
+import { selectedPartyId } from "../room/equipment-ready"
 
 // TCP proof notifications are acknowledged before their SQLite write has
 // necessarily committed.  Keep the tail for each frozen member so HTTP
@@ -54,7 +56,7 @@ export async function drainFiveBossSignalPersistence(): Promise<void> {
 }
 
 /** Freeze the canonical live lobby before either HTTP or TCP starts the battle. */
-export function freezeFiveBossLobby(room: MultiRoom, members?: any[]): boolean {
+export function freezeFiveBossLobby(room: MultiRoom, members?: any[], conversionLoadouts?: Array<{ playerId: number; loadout: import("../../lib/weapon-riven/loadout").WeaponRivenBattleLoadout }>): boolean {
     if (!isFiveBossGauntletQuest(room.category, room.quest_id)) return true
     if (room.five_boss_runtime) return true
     const generation = room.lifecycle.phase === "BATTLE"
@@ -75,20 +77,22 @@ export function freezeFiveBossLobby(room: MultiRoom, members?: any[]): boolean {
         runId: randomUUID(), expectedRealPlayerIds: [], battleEnteredPlayerIds: [],
         autoplayModeByPlayerId: {},
         partyCharacterIdsByPlayerId: {}, battleIdentityByViewerId: {},
+        weaponRivenLoadoutByPlayerId: {},
     }
     for (const mate of roster.filter(m => !m.comId)) {
         const live = clients.find(client => client.viewerId === Number(mate.viewerId))
         const playerId = getRoomMemberPlayerId(room, Number(mate.viewerId))
         if (!live || !playerId || live.playerId !== playerId
             || typeof live.yourself?.autoplayMode !== "boolean" || !live.socket.remoteAddress) return false
-        const party = live.yourself.party
+        const party = members?.find(member => !member.comId && Number(member.viewerId) === live.viewerId)?.party ?? live.yourself.party
         if (!Array.isArray(party?.characters) || !Array.isArray(party?.unison_characters)
             || party.characters.length > 3 || party.unison_characters.length > 3) return false
         const ids = [...(party?.characters ?? []), ...(party?.unison_characters ?? [])]
             .filter(entry => Array.isArray(entry) && entry[0] === 0)
             .map(entry => Number(entry[1]?.id))
             .filter(id => Number.isSafeInteger(id) && id > 0)
-        const facts = getPlayerBusinessFacts(playerId, { category: Number(room.category), questId: room.quest_id })
+        const partyId = room.equipmentPartyIds?.[live.viewerId] ?? selectedPartyId(live)
+        const facts = getPlayerBusinessFacts(playerId, { category: Number(room.category), questId: room.quest_id, partyId })
         // Embedded tests still use the parent business reader. The child must
         // have an authenticated, refreshed ownership fact before freezing.
         const owns = (id: number) => isRealtimeOwnerChild()
@@ -99,6 +103,14 @@ export function freezeFiveBossLobby(room: MultiRoom, members?: any[]): boolean {
         frozen.expectedRealPlayerIds.push(playerId)
         frozen.autoplayModeByPlayerId[String(playerId)] = live.yourself.autoplayMode
         frozen.partyCharacterIdsByPlayerId[String(playerId)] = [...new Set(ids)]
+        // Wire party fields are client assertions, even when character ownership passed.
+        // Only the parent's saved-party projection authorizes unknown-riven conversion.
+        const frozenLoadout = conversionLoadouts?.find(member => member.playerId === playerId)
+        if (conversionLoadouts && !frozenLoadout) return false
+        frozen.weaponRivenLoadoutByPlayerId![String(playerId)] = frozenLoadout
+            ? normalizeWeaponRivenLoadout(frozenLoadout.loadout) : isRealtimeOwnerChild()
+            ? normalizeWeaponRivenLoadout(facts?.weaponRivenLoadout)
+            : require("../../lib/weapon-riven/battle").getSoloWeaponRivenStartLoadoutSync(playerId, partyId)
         frozen.battleIdentityByViewerId[String(live.viewerId)] = {
             playerId, remoteAddress: live.socket.remoteAddress, connectionId: live.connectionId,
         }

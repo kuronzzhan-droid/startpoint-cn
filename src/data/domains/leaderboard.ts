@@ -1,4 +1,5 @@
 import { getDb } from "../db"
+import { stripWeaponRivenPublicPayload } from "../../lib/weapon-riven/public-payload"
 import { runPersistenceTransactionSync } from "../../lib/persistence-coordinator";
 
 export type LeaderboardRunStatus = "active" | "completed" | "abandoned"
@@ -246,7 +247,7 @@ export function finishLeaderboardRoundSync(input: {
     const characterIds = normalizePartySlots(party.characterIds)
     const unisonCharacterIds = normalizePartySlots(party.unisonCharacterIds)
     const equipmentIds = normalizePartySlots(party.equipmentIds)
-    const abilitySoulIds = normalizePartySlots(party.abilitySoulIds)
+    const abilitySoulIds = normalizePartySlots(stripWeaponRivenPublicPayload(party).abilitySoulIds)
     const evolutionImgLevels = normalizePartySlots(party.evolutionImgLevels)
     const unisonEvolutionImgLevels = normalizePartySlots(party.unisonEvolutionImgLevels)
     return runPersistenceTransactionSync({ domain: "leaderboard", playerId: run.playerId, operation: "finish_leaderboard_round" }, () => {
@@ -520,7 +521,8 @@ export function getLeaderboardRunRoundsSync(runId: number): LeaderboardRoundReco
         characterIds: [row.character_id_1, row.character_id_2, row.character_id_3] as (number | null)[],
         unisonCharacterIds: [row.unison_character_id_1, row.unison_character_id_2, row.unison_character_id_3] as (number | null)[],
         equipmentIds: [row.equipment_id_1, row.equipment_id_2, row.equipment_id_3] as (number | null)[],
-        abilitySoulIds: [row.ability_soul_id_1, row.ability_soul_id_2, row.ability_soul_id_3] as (number | null)[],
+        abilitySoulIds: stripWeaponRivenPublicPayload({ abilitySoulIds:
+            [row.ability_soul_id_1, row.ability_soul_id_2, row.ability_soul_id_3] as (number | null)[] }).abilitySoulIds,
         evolutionImgLevels: [row.evolution_img_level_1, row.evolution_img_level_2, row.evolution_img_level_3] as (number | null)[],
         unisonEvolutionImgLevels: [
             row.unison_evolution_img_level_1,

@@ -1,5 +1,6 @@
 import { QuestCategory } from "./quest"
 import type { QuestNpcPartySnapshot } from "../../multi/npc/quest-party-pool-shared"
+import type { WeaponRivenBattleLoadout } from "../weapon-riven/loadout"
 
 export interface MultiMatePartyCharacter {
     id: number
@@ -63,6 +64,7 @@ export interface MultiRoom {
         battleEnteredPlayerIds?: number[]
         autoplayModeByPlayerId: Record<string, boolean>
         partyCharacterIdsByPlayerId: Record<string, number[]>
+        weaponRivenLoadoutByPlayerId?: Record<string, WeaponRivenBattleLoadout>
         battleIdentityByViewerId: Record<string, { playerId: number, remoteAddress: string, connectionId: string }>
     }
     room_number: string

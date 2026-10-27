@@ -14,16 +14,30 @@ process.env.MULTI_REALTIME_OWNER_CHILD = '0'
 // Keep room queues, connection identity, readiness, equipment enforcement and
 // rematch reservations real. Replace only ordinary-quest data readers; fail
 // closed if a new production dependency tries to open a database.
+const frozenRivens = new Map()
 const stubs = new Map([
     [compiled('lib/assets.js'), { getQuestFromCategorySync: () => undefined }],
     [compiled('lib/online-presence.js'), { markPlayerOnlineFromTcp() {} }],
     [compiled('multi/coordinator/business-handlers.js'), {
-        handleRealtimeBusiness: async kind => {
+        handleRealtimeBusiness: async (kind, input) => {
             if (kind === 'presence.touch') return null
+            // This test isolates readiness and lifecycle. Authority/ACK use a
+            // real DB and sockets in weapon-riven-p2-{tcp,owner,snapshot-db}.
+            if (kind === 'riven.freeze') {
+                const snapshot = { identity: input.identity, snapshotId: input.identity.preparationId,
+                    members: input.members.map(member => member.mate), mode: 0, reason: '',
+                    canonical: 'autostart-fixture', ackConnectionIds: [], conversionLoadouts: [] }
+                frozenRivens.set(input.identity.preparationId, snapshot)
+                return snapshot
+            }
+            if (kind === 'riven.validate') return { ok: true }
+            if (kind === 'riven.commit') return frozenRivens.get(input.identity.preparationId)
+            if (kind === 'riven.cancel' || kind === 'riven.release') return frozenRivens.delete(input.identity.preparationId)
             throw new Error(`unexpected database business operation: ${kind}`)
         },
     }],
     [compiled('data/domains/player.js'), { getPlayerSync: () => ({ partySlot: 1 }) }],
+    [compiled('lib/weapon-riven/battle.js'), { getSoloWeaponRivenStartLoadoutSync: () => ({ partyId: 1, abilitySoulIds: [null, null, null], equipmentIds: [null, null, null] }) }],
     [compiled('multi/npc/quest-party-snapshot.js'), { captureQuestNpcPartySnapshot: () => null }],
     [compiled('lib/mode15-optional.js'), {
         isMode15Quest: () => false,
@@ -102,6 +116,7 @@ function fixture(t, count = 3) {
     function clearFrames() { for (const client of clients) client.socket.frames.length = 0 }
     async function notify(index, data, socket = clients[index].socket) {
         await lobby.handleMessage(socket, [0, data])
+        await new Promise(resolve => setImmediate(resolve))
         await coordinator.enqueueRoomCommand(room.room_number, () => {})
     }
     t.after(() => {

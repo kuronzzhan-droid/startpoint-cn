@@ -1,3 +1,4 @@
+import { stripWeaponRivenPublicPayload } from "../../lib/weapon-riven/public-payload"
 import type {
     MultiMate,
     MultiMatePartyCharacter,
@@ -43,12 +44,12 @@ function buildNpcMate(
     const abilitySoulIds: (number | null)[] = [...template.ability_soul_ids]
     while (abilitySoulIds.length < 3) abilitySoulIds.push(null)
 
-    const party = {
+    const party = stripWeaponRivenPublicPayload({
         characters,
         unison_characters: unisonCharacters,
         equipments,
         ability_soul_ids: abilitySoulIds,
-    }
+    })
     if (!isNpcPartyAllowedInRoom(category, questId, party)) return null
     return {
         com_id: template.com_id,

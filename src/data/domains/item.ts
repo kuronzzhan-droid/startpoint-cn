@@ -2,6 +2,11 @@ import { cachedStatement } from "../../lib/cached-statement"
 import { getDb } from "../db";
 import { RawPlayerItem } from "../types";
 import { runPersistenceTransactionSync } from "../../lib/persistence-coordinator";
+import { isWeaponRivenItemId } from "../../lib/weapon-riven/constants";
+
+function assertOrdinaryInventoryItem(itemId: number | string): void {
+    if (isWeaponRivenItemId(Number(itemId))) throw new Error("Weapon riven instances cannot be written to players_items")
+}
 
 /**
  * Gets the amount of a singular item that a player owns.
@@ -15,6 +20,11 @@ export function getPlayerItemSync(
     itemId: number | string
 ): number | null {
     const db = getDb();
+    const numericId = Number(itemId)
+    if (isWeaponRivenItemId(numericId)) {
+        return db.prepare("SELECT 1 FROM player_weapon_rivens WHERE player_id=? AND item_id=?")
+            .get(playerId, numericId) ? 1 : null
+    }
     const rawItem = cachedStatement(db, `
     SELECT id, amount
     FROM players_items
@@ -61,7 +71,14 @@ export function getPlayerItemsByIdsSync(
     FROM players_items
     WHERE player_id = ? AND id IN (${placeholders})
     `).all(playerId, ...ids) as RawPlayerItem[]
-    return Object.fromEntries(rows.map(row => [String(row.id), row.amount]))
+    const output = Object.fromEntries(rows.map(row => [String(row.id), row.amount]))
+    if (ids.some(isWeaponRivenItemId)) {
+        for (const id of ids.filter(isWeaponRivenItemId)) {
+            delete output[id]
+            if (getPlayerItemSync(playerId,id) !== null) output[id] = 1
+        }
+    }
+    return output
 }
 
 export function getPlayerCollectedItemTotalSync(
@@ -129,6 +146,7 @@ function insertPlayerItemSync(
     itemId: number | string,
     amount: number
 ) {
+    assertOrdinaryInventoryItem(itemId)
     const db = getDb();
     cachedStatement(db, `
     INSERT INTO players_items (id, amount, player_id)
@@ -166,6 +184,7 @@ export function updatePlayerItemSync(
     itemId: string | number,
     amount: number
 ) {
+    assertOrdinaryInventoryItem(itemId)
     const db = getDb();
     cachedStatement(db, `
     UPDATE players_items

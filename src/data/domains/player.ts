@@ -15,6 +15,8 @@ import { gameVerboseLog } from "../../lib/game-logging";
 import { runPersistenceSqlCommand, runPersistenceTransactionSync } from "../../lib/persistence-coordinator";
 import { getExistingPlayerTimeStateSync, getPlayerBusinessDateSync, getPlayerBusinessOffsetSync } from "../../lib/player-time-compat";
 import { contentMissionDecision } from "../../lib/content-operations";
+import { isWeaponRivenItemId } from "../../lib/weapon-riven/constants";
+import { clearInvalidWeaponRivenPartyReferences } from "../snapshots/weapon-riven";
 
 type DailyChallengePointLookup = Record<string, { maxPoint: number, isRecovery: boolean, name: string }>
 
@@ -542,7 +544,8 @@ export function insertMergedPlayerDataSync(
         }
     }
     insertPlayerPartyGroupListSync(playerId, toInsert.partyGroupList)
-    insertPlayerItemsSync(playerId, toInsert.itemList)
+    insertPlayerItemsSync(playerId, Object.fromEntries(Object.entries(toInsert.itemList)
+        .filter(([itemId]) => !isWeaponRivenItemId(Number(itemId)))))
     insertPlayerEquipmentListSync(playerId, toInsert.equipmentList)
     insertPlayerQuestProgressListSync(playerId, toInsert.questProgress)
     insertPlayerGachaInfoListSync(playerId, toInsert.gachaInfoList)
@@ -1258,6 +1261,18 @@ const LEGACY_REPLACE_PRESERVED_RELATIONS = [
         parameters: (playerId: number) => [playerId],
     },
     {
+        table: "player_weapon_riven_sequences",
+        where: "player_id = ?",
+        parameters: (playerId: number) => [playerId],
+    },
+    {
+        // V1 has no card payload. SELECT * below preserves every target column,
+        // including v1.2 locked/seen, pending selection and exact affix pairs.
+        table: "player_weapon_rivens",
+        where: "player_id = ?",
+        parameters: (playerId: number) => [playerId],
+    },
+    {
         table: "player_time_state",
         where: "player_id = ?",
         parameters: (playerId: number) => [playerId],
@@ -1476,6 +1491,7 @@ export function replacePlayerDataSync(
             for (const row of relation.rows) insert.run(...columns.map(column => row[column]))
         }
 
+        clearInvalidWeaponRivenPartyReferences(getDb(), playerId)
         if (importTimeState) {
             // Imported periodic progress is protected until the destination's
             // next real boundary. Only advance its pre-existing local anchors.

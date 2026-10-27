@@ -1,0 +1,299 @@
+{
+  "version": 1,
+  "vector_kind": "synthetic_protocol_only",
+  "vectors": [
+    {
+      "name": "same-item-different-owner-max-safe-viewer",
+      "snapshotId": "fixture-snapshot",
+      "members": [
+        {
+          "viewerId": 9007199254740991,
+          "party": {
+            "characters": [
+              [
+                0,
+                {
+                  "id": 111001
+                }
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "unison_characters": [
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "equipments": [
+              [
+                0,
+                {
+                  "equipmentId": 300101
+                }
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "abilitySoulIds": [
+              [
+                0,
+                16000001
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "weapon_rivens": [
+              [
+                0,
+                [
+                  16000001,
+                  300101,
+                  15990001,
+                  80
+                ]
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "weapon_riven_scope": "multi-v1",
+            "weapon_riven_snapshot_id": "fixture-snapshot",
+            "weapon_riven_mode": 1,
+            "weapon_riven_catalog": "fixture-catalog",
+            "weapon_riven_reason": ""
+          }
+        },
+        {
+          "viewerId": 102,
+          "party": {
+            "characters": [
+              [
+                0,
+                {
+                  "id": 111001
+                }
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "unison_characters": [
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "equipments": [
+              [
+                0,
+                {
+                  "equipmentId": 300101
+                }
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "abilitySoulIds": [
+              [
+                1
+              ],
+              [
+                0,
+                16000001
+              ],
+              [
+                1
+              ]
+            ],
+            "weapon_rivens": [
+              [
+                1
+              ],
+              [
+                0,
+                [
+                  16000001,
+                  300101,
+                  15990001,
+                  25
+                ]
+              ],
+              [
+                1
+              ]
+            ],
+            "weapon_riven_scope": "multi-v1",
+            "weapon_riven_snapshot_id": "fixture-snapshot",
+            "weapon_riven_mode": 1,
+            "weapon_riven_catalog": "fixture-catalog",
+            "weapon_riven_reason": ""
+          }
+        }
+      ],
+      "canonical": "WFR2C1|fixture-catalog|1|2|V|9007199254740991|111001|0|300101|16000001|4|16000001|300101|15990001|80|0|0|0|0|0|0|0|0|0|0|V|102|111001|0|300101|0|0|0|0|0|16000001|4|16000001|300101|15990001|25|0|0|0|0|0",
+      "ack": "WFR2|A|fixture-snapshot|WFR2C1|fixture-catalog|1|2|V|9007199254740991|111001|0|300101|16000001|4|16000001|300101|15990001|80|0|0|0|0|0|0|0|0|0|0|V|102|111001|0|300101|0|0|0|0|0|16000001|4|16000001|300101|15990001|25|0|0|0|0|0"
+    },
+    {
+      "name": "disabled-with-com",
+      "snapshotId": "fixture-snapshot",
+      "members": [
+        {
+          "viewerId": 101,
+          "party": {
+            "characters": [
+              [
+                0,
+                {
+                  "id": 111001
+                }
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "unison_characters": [
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "equipments": [
+              [
+                0,
+                {
+                  "equipmentId": 300101
+                }
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "abilitySoulIds": [
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "weapon_rivens": [
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "weapon_riven_scope": "multi-v1",
+            "weapon_riven_snapshot_id": "fixture-snapshot",
+            "weapon_riven_mode": 0,
+            "weapon_riven_catalog": "none",
+            "weapon_riven_reason": "mixed_version"
+          }
+        },
+        {
+          "viewerId": 900000001,
+          "comId": 1,
+          "party": {
+            "characters": [
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "unison_characters": [
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "equipments": [
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ],
+            "abilitySoulIds": [
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ]
+            ]
+          }
+        }
+      ],
+      "canonical": "WFR2C1|none|0|2|V|101|111001|0|300101|0|0|0|0|0|0|0|0|0|0|0|0|C|1|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0",
+      "ack": "WFR2|A|fixture-snapshot|WFR2C1|none|0|2|V|101|111001|0|300101|0|0|0|0|0|0|0|0|0|0|0|0|C|1|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0"
+    }
+  ]
+}

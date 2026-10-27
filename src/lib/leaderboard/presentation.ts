@@ -1,3 +1,4 @@
+import { stripWeaponRivenPublicPayload } from "../weapon-riven/public-payload"
 import { cdnCharacters as characterMaster } from "../content-master"
 import { getPlayerSync } from "../../data/domains/player"
 import { getViewerIdByPlayerIdSync } from "../../data/domains/follow"
@@ -214,7 +215,7 @@ export function getLeaderboardPlayedPartiesSync(input: {
         filter: getLeaderboardSeasonRewardViewSync(input.competition.key, season).filter,
     })
     if (record === undefined) return {}
-    return Object.fromEntries(getLeaderboardRunRoundsSync(record.id).map(round => [
+    return stripWeaponRivenPublicPayload(Object.fromEntries(getLeaderboardRunRoundsSync(record.id).map(round => [
         round.roundNumber,
         serializePlayerRushEventPlayedParty({
             characterIds: round.characterIds,
@@ -226,7 +227,7 @@ export function getLeaderboardPlayedPartiesSync(input: {
             round: round.roundNumber,
             battleType: 1,
         }),
-    ]))
+    ])))
 }
 
 export function buildNativeLeaderboardPayload(

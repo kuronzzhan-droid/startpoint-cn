@@ -7,6 +7,7 @@ import { insertMissingPartyGroupListSync } from "../../lib/party-group-persisten
 import { gameVerboseLog } from "../../lib/game-logging";
 import { runPersistenceTransactionSync } from "../../lib/persistence-coordinator";
 import { parseGlobalPartyId } from "../../lib/special-event-parties";
+import { limitWeaponRivenPartySouls } from "../../lib/weapon-riven/party-limit";
 
 export interface PlayerPartyDisplaySelection {
     characterIds: (number | null)[];
@@ -184,6 +185,7 @@ export function findValidNormalPartySlotSync(
 
 function insertPlayerPartySync(playerId: number, slot: number | string, groupId: number | string, party: PlayerParty) {
     const db = getDb();
+    const souls = limitWeaponRivenPartySouls(party.abilitySoulIds);
     cachedStatement(db, `
     INSERT INTO players_parties (slot, name, character_id_1, character_id_2, character_id_3,
         unison_character_1, unison_character_2, unison_character_3, equipment_1, equipment_2,
@@ -195,7 +197,7 @@ function insertPlayerPartySync(playerId: number, slot: number | string, groupId:
         party.characterIds[0] || null, party.characterIds[1] || null, party.characterIds[2] || null,
         party.unisonCharacterIds[0] || null, party.unisonCharacterIds[1] || null, party.unisonCharacterIds[2] || null,
         party.equipmentIds[0] || null, party.equipmentIds[1] || null, party.equipmentIds[2] || null,
-        party.abilitySoulIds[0] || null, party.abilitySoulIds[1] || null, party.abilitySoulIds[2] || null,
+        souls[0] || null, souls[1] || null, souls[2] || null,
         serializeBoolean(party.edited), playerId, Number(groupId), party.category,
         party.currentBattlePower ?? 0, party.beforeBattlePower ?? 0
     )
@@ -233,6 +235,7 @@ export function ensurePlayerPartyGroupListSync(
 
 export function updatePlayerPartySync(playerId: number, slot: number, party: PlayerParty, groupId: number = 1) {
     const db = getDb();
+    const souls = limitWeaponRivenPartySouls(party.abilitySoulIds);
     // Upsert: try update first, insert if not exists
     const result = cachedStatement(db, `
     UPDATE players_parties SET name = ?, character_id_1 = ?, character_id_2 = ?, character_id_3 = ?,
@@ -246,7 +249,7 @@ export function updatePlayerPartySync(playerId: number, slot: number, party: Pla
         party.characterIds[0], party.characterIds[1], party.characterIds[2],
         party.unisonCharacterIds[0], party.unisonCharacterIds[1], party.unisonCharacterIds[2],
         party.equipmentIds[0], party.equipmentIds[1], party.equipmentIds[2],
-        party.abilitySoulIds[0], party.abilitySoulIds[1], party.abilitySoulIds[2],
+        souls[0], souls[1], souls[2],
         serializeBoolean(party.edited),
         party.currentBattlePower ?? 0, party.beforeBattlePower ?? 0,
         slot, playerId, groupId, party.category

@@ -1,3 +1,4 @@
+import { stripWeaponRivenPublicPayload } from "../../lib/weapon-riven/public-payload"
 import type { QuestNpcPartySnapshot } from "./quest-party-pool-shared"
 
 /** Atomic full refresh plus ordered deltas from the one current worker. */
@@ -29,7 +30,7 @@ export class QuestPartyPoolCache {
         }
         const target = this.staging ?? this.pools
         if (message.type === "quest_snapshot") {
-            if (message.entries.length) target.set(message.key, message.entries)
+            if (message.entries.length) target.set(message.key, stripWeaponRivenPublicPayload(message.entries))
             else target.delete(message.key)
             return "applied"
         }
@@ -37,8 +38,8 @@ export class QuestPartyPoolCache {
         const entries = (target.get(message.key) ?? []).filter(entry => !removed.has(entry.sourcePlayerId))
         if (message.entry && !removed.has(message.entry.sourcePlayerId)) {
             const index = entries.findIndex(entry => entry.sourcePlayerId === message.entry.sourcePlayerId)
-            if (index === -1) entries.push(message.entry)
-            else entries[index] = message.entry
+            if (index === -1) entries.push(stripWeaponRivenPublicPayload(message.entry))
+            else entries[index] = stripWeaponRivenPublicPayload(message.entry)
         }
         if (entries.length) target.set(message.key, entries)
         else target.delete(message.key)

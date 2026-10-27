@@ -9,7 +9,7 @@ function harness(t,{timerDelay}={}) {
   'multi/coordinator/five-boss-command-handlers','multi/coordinator/embedded','multi/coordinator/command-protocol',
   'multi/coordinator/command-executor','multi/coordinator/command-gateway','multi/state/battle-contract',
   'multi/room/rematch-roster','multi/coordinator/business-rpc','multi/coordinator/runtime-role','lib/shutdown-state']);
- const session={clients,findClientBySocket:s=>[...clients.values()].find(c=>c.socket===s),getClient:(v,r)=>clients.get(`${v}@${r}`),
+ const session={clients,takeStaleAssetViewer:()=>false,markStaleAssetViewer(){},findClientBySocket:s=>[...clients.values()].find(c=>c.socket===s),getClient:(v,r)=>clients.get(`${v}@${r}`),
   getClientsInRoom:(r,g)=>[...clients.values()].filter(c=>c.roomNumber===r&&(g===undefined||c.roomGeneration===g)),
   isRoomRestoreBlocked:()=>false,isSupersededSocket:()=>false,isRetiredLobbySocket:()=>false,
   isHostOnline:(v,r)=>!!session.getClient(v,r)?.enterData,
@@ -39,6 +39,11 @@ function harness(t,{timerDelay}={}) {
   'multi/room/admission':{recordRoomAdmissionBypass(){},recordRoomAdmissionDenial(){},roomAdmissionRegistry:{release(){}}},
   'multi/recruitment':{},'multi/ai-fill':{},'multi/room/sharing':{},'lib/multi-active-quest-recovery':{},
   'multi/mode15-room-gate':{isMode15RoomClosed:()=>false,getMode15HostRoomGate:()=>null},
+  'lib/weapon-riven/multi-room':{weaponRivenBattleSocketAllowed:()=>true,cancelWeaponRivenPreparation(){},commitWeaponRivenPreparation(){},
+   startWeaponRivenPreparation:()=>undefined,waitWeaponRivenPreparation:async()=>true,acceptWeaponRivenAck(){},releaseWeaponRivenRoom(){},
+   suppressWeaponRivenPreview:()=>false,setWeaponRivenOwnerEpoch(){}},
+  'lib/weapon-riven/public-payload':{stripWeaponRivenPublicPayload:v=>v},
+  'lib/weapon-riven/client':{isWeaponRivenInstanceId:()=>false,stripWeaponRivenPartySouls:v=>v},
  };
  function schedule(fn,ms){
   if(timerDelay!==undefined&&ms>=1000){const timer=setTimeout(()=>{clock=200000;fn()},timerDelay);timer.unref();timers.push({fn,ms,timer});return timer}

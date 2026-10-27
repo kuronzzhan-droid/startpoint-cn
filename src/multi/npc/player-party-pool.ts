@@ -6,6 +6,7 @@ import { QuestPartyPoolCache } from "./quest-party-pool-cache"
 import { isNpcPartyAllowedInRoom } from "./equipment-policy"
 import { observeWorkerMemory, registerMemoryCounters } from "../../lib/memory-diagnostics"
 import { QuestCategory } from "../../lib/types/quest"
+import { stripWeaponRivenPublicPayload } from "../../lib/weapon-riven/public-payload"
 import {
     getQuestNpcPartyPoolKey,
     isQuestNpcPartyPoolEligibleCategory,
@@ -197,11 +198,7 @@ export function recordSuccessfulQuestNpcParty(
 
     // The successful clear belongs to the party approved at battle start.
     // Never reload a mutable SET here, including while the worker is warming.
-    const snapshot: QuestNpcPartySnapshot = {
-        ...frozenSnapshot,
-        party: JSON.parse(JSON.stringify(frozenSnapshot.party)),
-        clearedAt: Date.now(),
-    }
+    const snapshot = stripWeaponRivenPublicPayload({ ...frozenSnapshot, clearedAt: Date.now() })
     if (!questPartyPoolWorker || !questPartyPoolWorkerReady) {
         if (pendingClearRecords.length < 1000) pendingClearRecords.push(snapshot)
         else droppedBeforeReady++
@@ -302,13 +299,13 @@ export function getRandomPlayerNpcPartiesSync(
             const offset = Math.floor(Math.random() * available.length)
             const [candidate] = available.splice(offset, 1)
             if (!hasCompleteMainCharacters(candidate.party)) continue
-            selected.push({ sourcePlayerId: candidate.sourcePlayerId, party: candidate.party })
+            selected.push({ sourcePlayerId: candidate.sourcePlayerId, party: stripWeaponRivenPublicPayload(candidate.party) })
         }
         // Very new or rare quests can temporarily have only one historical
         // source. Reuse that valid clear snapshot instead of the live host.
         while (selected.length > 0 && selected.length < targetCount) {
             const candidate = selected[Math.floor(Math.random() * selected.length)]
-            selected.push({ sourcePlayerId: candidate.sourcePlayerId, party: candidate.party })
+            selected.push({ sourcePlayerId: candidate.sourcePlayerId, party: stripWeaponRivenPublicPayload(candidate.party) })
         }
         if (selected.length >= targetCount) return selected
     }

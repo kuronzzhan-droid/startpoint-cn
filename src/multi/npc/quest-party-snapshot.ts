@@ -2,6 +2,7 @@ import { getDb } from "../../data/db"
 import { PartyCategory } from "../../data/types"
 import { serverCharacters } from "../../lib/content-master"
 import { parseGlobalPartyId } from "../../lib/special-event-parties"
+import { isWeaponRivenInstanceId, stripWeaponRivenPartySouls } from "../../lib/weapon-riven/client"
 import {
     cloneQuestNpcPartySnapshot,
     isQuestNpcPartyPoolEligibleCategory,
@@ -27,6 +28,7 @@ export function captureQuestNpcPartySnapshot(
 ): QuestNpcPartySnapshot | null {
     const selected = parseGlobalPartyId(partySlot)
     if (!selected || !isQuestNpcPartyPoolEligibleCategory(questCategory) || !party) return null
+    party = stripWeaponRivenPartySouls(party)
     const fields = [
         ["characters", "character_id", "id"],
         ["unison_characters", "unison_character", "id"],
@@ -49,7 +51,8 @@ export function captureQuestNpcPartySnapshot(
     for (const [field, column, idField] of fields) {
         for (let slot = 0; slot < 3; slot++) {
             const id = wireId(party[field][slot], idField)
-            const savedId = saved[`${column}_${slot + 1}`] || null
+            const rawSavedId = saved[`${column}_${slot + 1}`] || null
+            const savedId = field === "abilitySoulIds" && isWeaponRivenInstanceId(rawSavedId) ? null : rawSavedId
             if (id === undefined || id !== savedId || (field === "characters" && id === null)) return null
             if (id !== null && (field === "characters" || field === "unison_characters")) characterIds.push(id)
         }

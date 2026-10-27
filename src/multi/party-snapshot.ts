@@ -8,6 +8,7 @@ import { getPlayerSync } from "../data/domains/player"
 import { PartyCategory, PlayerParty } from "../data/types"
 import { parseGlobalPartyId } from "../lib/special-event-parties"
 import { registerMemoryCounters } from "../lib/memory-diagnostics"
+import { isWeaponRivenInstanceId, stripWeaponRivenPartySouls } from "../lib/weapon-riven/client"
 
 interface PartySnapshotEntry {
     party: any
@@ -147,7 +148,7 @@ export function buildRealParty(playerId: number, targetParty?: PlayerParty, part
         }
 
         const soulId = selectedParty?.abilitySoulIds[i] ?? null
-        filledSouls.push(soulId ? [0, soulId] : [1])
+        filledSouls.push(soulId && !isWeaponRivenInstanceId(soulId) ? [0, soulId] : [1])
     }
 
     return {
@@ -168,7 +169,7 @@ export function primeRealPartySnapshot(playerId: number, targetParty?: PlayerPar
         return cached
     }
     const party = buildRealParty(playerId, undefined, selectedId)
-    storeSnapshot(playerId, selectedId, party)
+    storeSnapshot(playerId, selectedId, stripWeaponRivenPartySouls(party))
     return party
 }
 
@@ -189,7 +190,7 @@ export function setRealPartySnapshot(playerId: number, party: any, partyId?: num
     if (!Number.isSafeInteger(playerId) || playerId <= 0 || !party || typeof party !== "object") return
     const selectedId = selectedPartyId(playerId, partyId)
     if (!parseGlobalPartyId(selectedId)) return
-    storeSnapshot(playerId, selectedId, party)
+    storeSnapshot(playerId, selectedId, stripWeaponRivenPartySouls(party))
 }
 
 export function invalidateRealPartySnapshot(playerId: number): void {

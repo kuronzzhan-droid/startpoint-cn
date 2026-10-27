@@ -1,3 +1,4 @@
+import { stripWeaponRivenPublicPayload } from "./weapon-riven/public-payload"
 import { PartyCategory, Player, PlayerRushEvent, PlayerRushEventPlayedParty, RushEventBattleType, UserRushEventEndlessBattleMyRankingPartyMemberListItem, UserRushEventEndlessBattleRanking, UserRushEventPlayedParty } from "../data/types";
 import { getPlayerIdFromRushEventEndlessRankSync, getPlayerRushEventPlayedPartiesSync, getPlayerRushEventSync, serializePlayerRushEventPlayedParty } from "../data/domains/rushEvent"
 import { getPlayerPartyGroupListSync } from "../data/domains/party";
@@ -182,5 +183,5 @@ export function getRushEventEndlessBattleRankPlayedPartyListSync(
     // get the played party list
     const parties = getSerializedPlayerRushEventPlayedPartiesSync(playerId, eventId);
 
-    return parties.endlessParties;
+    return stripWeaponRivenPublicPayload(parties.endlessParties);
 }

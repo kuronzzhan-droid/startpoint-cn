@@ -246,7 +246,8 @@ test('empty clear history publishes the host wire party and preserves it across 
     assert.equal(selections, 1, 'a rematch must reuse its cached COM parties without a pool draw')
     assert.deepEqual(Object.keys(x.room.npc_party_by_com_id), Object.keys(cached))
     for (const [comId, party] of Object.entries(cached)) {
-        assert.equal(x.room.npc_party_by_com_id[comId], party)
+        assert.deepEqual(x.room.npc_party_by_com_id[comId], party)
+        assert.notEqual(x.room.npc_party_by_com_id[comId], party, "public COM cache owns an independent copy")
         assert.deepEqual(host.mates.find(mate => String(mate.comId) === comId).party, firstParty)
     }
 })

@@ -74,6 +74,9 @@ import { repairUnisonUnlockProgressSync } from "../../validate/unison-unlock"
 import { getSerializedPlayerRushEventPlayedPartiesSync } from "../../rush"
 import { grantFiveBossSoloRewardsSync } from "../../../multi/five-boss/solo-rewards"
 import { getFiveBossSoloRewardMultiplierSync, saveFiveBossSoloReceiptSync } from "../../../multi/five-boss/solo-runtime"
+import { convertUnknownWeaponRivensSync } from "../../../data/domains/weaponRiven"
+import { refreshWeaponRivenSettlementResponseSync } from "../../weapon-riven/settlement-response"
+import { getSoloWeaponRivenLoadoutSync } from "../../weapon-riven/battle"
 import { getRushEventFolderMaxRounds } from "../../rush-event-folder-rounds"
 import { getMaxStamina, getRankDegree } from "../../stamina"
 import { calculateFreeManaGrant } from "../../mana"
@@ -167,7 +170,7 @@ export function settleSingleQuestFinishInTransaction(
         const replay = getBattleReplaySync(playerId, "single", receiptPlayId)
         if (replay.kind !== "missing") return {
             response: replay.kind === "available" && isSingleFinishResponse(replay.response)
-                ? replay.response : null,
+                ? refreshWeaponRivenSettlementResponseSync(playerId, replay.response) : null,
             timing: null,
         }
         if (getPlayerOperationReceiptSync(playerId, CLOCK_ABORT_OPERATION, receiptPlayId) !== null) {
@@ -659,6 +662,9 @@ export function settleSingleQuestFinishInTransaction(
         const fiveBossSolo = fiveBossSoloQuest && questAccomplished
             ? grantFiveBossSoloRewardsSync({ playerId, firstClear: !questProgress?.finished,
                 rewardMultiplier: getFiveBossSoloRewardMultiplierSync(playerId, activeQuestData.playId) }) : null
+        const fiveBossRivens = fiveBossSoloQuest && questAccomplished
+            ? convertUnknownWeaponRivensSync(playerId, getSoloWeaponRivenLoadoutSync(playerId, activeQuestData.playId),
+                `five-boss:solo:${activeQuestData.playId}`) : null
         const itemList = {
             ...(fiveBossSolo?.items ?? {}),
             ...(activeQuestData.entryItemId ? { [activeQuestData.entryItemId]: getPlayerItemSync(playerId, activeQuestData.entryItemId) ?? 0 } : {}),
@@ -668,7 +674,8 @@ export function settleSingleQuestFinishInTransaction(
             ...(rushEventRewardsResult?.items ?? {}),
             ...(rogueDrops?.rewardResult.items ?? {}),
             ...(carnivalRewardsResult?.items ?? {}),
-            ...(mode15RewardsResult?.items ?? {})
+            ...(mode15RewardsResult?.items ?? {}),
+            ...(fiveBossRivens?.item_list ?? {}),
         }
         const characterList = [
             ...rewardCharacterExpResult.character_list as unknown as Record<string, unknown>[],
@@ -721,6 +728,13 @@ export function settleSingleQuestFinishInTransaction(
         // cells remain unchanged without blocking the actual battle reward.
         assertManaCounterStorageSync(playerId)
         const responseData: Record<string, any> = {
+                ...(fiveBossRivens ? {
+                    weapon_riven_list: fiveBossRivens.weapon_riven_list,
+                    weapon_riven_deleted: fiveBossRivens.weapon_riven_deleted,
+                    weapon_riven_granted: fiveBossRivens.weapon_riven_granted,
+                    weapon_riven_auto_dismantled: fiveBossRivens.weapon_riven_auto_dismantled,
+                    party_info_list: fiveBossRivens.party_info_list,
+                } : {}),
                 "user_info": {
                     "free_mana": finalPlayerData?.freeMana ?? newMana,
                     "exp_pool": finalPlayerData?.expPool ?? rewardCharacterExpResult.exp_pool,

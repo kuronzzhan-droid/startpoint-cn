@@ -6,6 +6,7 @@
 // HandshakeResult: Accept=0, Denied=1, Reconnect=2, Exception=3, Complete=4
 
 import * as net from "net"
+import { weaponRivenBattleSocketAllowed } from "../../lib/weapon-riven/multi-room"
 import { isFiveBossGauntletQuest } from "../five-boss/contract"
 import { isFrozenFiveBossBattleClient } from "../five-boss/lobby-runtime"
 import { fiveBossConnectionDiagnostics } from "../five-boss/connection-diagnostic"
@@ -82,7 +83,7 @@ export async function handleHandshake(socket: net.Socket, data: any): Promise<vo
         const battleRoom = getRoom(roomId)
         battleClient.roomGeneration = identity.roomGeneration ?? battleRoom?.lobby_generation ?? 0
         if (battleRoom) fiveBossConnectionDiagnostics.bind(battleRoom, battleClient)
-        if (!battleRoom || battleRoom.lifecycle.phase !== "BATTLE") {
+        if (!battleRoom || battleRoom.lifecycle.phase !== "BATTLE" || !weaponRivenBattleSocketAllowed(battleRoom, socket)) {
             fiveBossConnectionDiagnostics.socketEvent(socket, "handshake_denied", "room_not_in_battle")
             markTcpDisconnectReason(socket, "handshake_denied")
             sessionManager.sendJson(socket, [3, "HANDSHAKE_DENIED"])

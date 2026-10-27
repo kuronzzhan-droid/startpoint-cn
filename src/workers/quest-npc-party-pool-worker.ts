@@ -1,4 +1,5 @@
 import { parentPort } from "worker_threads"
+import { stripWeaponRivenPublicPayload } from "../lib/weapon-riven/public-payload"
 import Database from "better-sqlite3"
 import { mkdirSync } from "fs"
 import path from "path"
@@ -83,7 +84,7 @@ function hasCompleteMainCharacters(party: any): boolean {
 
 function parseRow(row: PoolRow): QuestNpcPartySnapshot | null {
     try {
-        const party = JSON.parse(row.party_payload)
+        const party = stripWeaponRivenPublicPayload(JSON.parse(row.party_payload))
         if (!hasCompleteMainCharacters(party)) return null
         return {
             questCategory: row.quest_category,
@@ -168,7 +169,7 @@ function pruneQuest(category: number, questId: number): number[] {
 }
 
 function recordClear(message: RecordMessage): void {
-    const snapshot = message.snapshot
+    const snapshot = message.snapshot ? stripWeaponRivenPublicPayload(message.snapshot) : null
     if (!snapshot || !hasCompleteMainCharacters(snapshot.party)) return
     cachedStatement(db, `
         INSERT INTO quest_npc_party_pool (

@@ -1,4 +1,7 @@
 import * as net from "net"
+import { stripWeaponRivenPublicPayload } from "../../lib/weapon-riven/public-payload"
+import { startWeaponRivenPreparation, waitWeaponRivenPreparation, acceptWeaponRivenAck,
+    cancelWeaponRivenPreparation, commitWeaponRivenPreparation } from "../../lib/weapon-riven/multi-room"
 import { performance } from "node:perf_hooks"
 import { freezeFiveBossLobby } from "../five-boss/lobby-runtime"
 import { sessionManager, SessionClient } from "../state/SessionManager"
@@ -635,7 +638,8 @@ async function handleEnterComs(
             delete room.npc_party_by_com_id[partyKey]
             continue
         }
-        room.npc_party_by_com_id[partyKey] = party
+        party = stripWeaponRivenPublicPayload(party)
+        room.npc_party_by_com_id[partyKey] = stripWeaponRivenPublicPayload(party)
 
         npcMates.push({
             viewerId: viewerId,
@@ -1009,6 +1013,18 @@ function commitClaimedAdmission(socket: net.Socket, client: SessionClient): bool
 }
 
 function handleEnter(socket: net.Socket, client: SessionClient, data: any[]): void {
+    if (sessionManager.takeStaleAssetViewer(client.roomNumber, client.viewerId)) {
+        // MeetingServerMessage.AssetUpdate (9): the client leaves the room and
+        // returns to the title, which downloads the missing resource edges.
+        // Let the normal Enter/Welcome finish first so the room UI is ready.
+        console.warn(`[MULTI] outdated resources, sending AssetUpdate: room=${client.roomNumber} viewer=${client.viewerId}`)
+        setTimeout(() => {
+            if (!socket.destroyed) sessionManager.sendJson(socket, [1, [9]], {
+                roomNumber: client.roomNumber, connectionId: client.connectionId, viewerId: client.viewerId,
+                roomGeneration: client.roomGeneration, channel: "asset_update",
+            })
+        }, 300).unref()
+    }
     const existingRoom = getRoom(client.roomNumber)
     if (existingRoom?.lifecycle.phase === "BATTLE") {
         queueFiveBossHostReturnEnter(client, data, existingRoom)
@@ -1373,7 +1389,7 @@ function handleChangeAutoStart(socket: net.Socket, client: SessionClient, data: 
     checkHostAutoReady(client.roomNumber)
 }
 
-function handleStartBattle(_socket: net.Socket, client: SessionClient, _data: any[]): void {
+function handleStartBattle(_socket: net.Socket, client: SessionClient, _data: any[], deadlineMs = 10_000): void {
     const battleAlreadyInitialized = !!(sessionManager as any).battleExpectedCount?.has?.(client.roomNumber)
     if (battleAlreadyInitialized) return
 
@@ -1396,7 +1412,7 @@ function handleStartBattle(_socket: net.Socket, client: SessionClient, _data: an
         : room.lobby_generation
     // StartBattle may be sent first by any participant. Always use the
     // canonical host roster instead of that sender's potentially older copy.
-    const members = collectCanonicalRoomRoster(client.roomNumber, false, sourceGeneration)
+    let members = collectCanonicalRoomRoster(client.roomNumber, false, sourceGeneration)
     if (!room.equipmentPartyIds && !enforceRoomEquipmentReady(room, sourceGeneration)) {
         room.readyCountdownPending = false
         return
@@ -1437,12 +1453,18 @@ function handleStartBattle(_socket: net.Socket, client: SessionClient, _data: an
         gameVerboseLog(() => `[LOBBY] StartBattle deferred: room=${client.roomNumber} unready roster sender=${client.viewerId}`)
         return
     }
+    // Gate-off rooms keep the original synchronous start, including HTTP-first delivery.
+    const rivenEnabled = process.env.WEAPON_RIVEN_MULTI_ENABLED === "1"
+    const frozen = rivenEnabled ? startWeaponRivenPreparation(room, members,
+        () => handleStartBattle(_socket, client, _data, deadlineMs), deadlineMs) : undefined
+    if (rivenEnabled && !frozen) return
+    if (frozen) members = frozen.members
     const realViewerIds = [...new Set(
         members
             .filter(mate => !mate.comId && Number.isFinite(Number(mate.viewerId)))
             .map(mate => Number(mate.viewerId)),
     )]
-    if (!freezeFiveBossLobby(room, members)) {
+    if (!freezeFiveBossLobby(room, members, frozen?.conversionLoadouts)) {
         gameVerboseLog(() => `[LOBBY] StartBattle deferred: five-boss roster invalid`
             + ` room=${client.roomNumber} roster=${members.length}`
             + ` ready=${members.filter(mate => mate.state?.[0] === 1).length}`)
@@ -1488,13 +1510,27 @@ function handleStartBattle(_socket: net.Socket, client: SessionClient, _data: an
     // removed only when the guest is ejected or the room is disbanded.
 
     room.readyCountdownPending = false
-    const eligibleViewerIds = new Set(realViewerIds)
-    for (const current of sessionManager.getClientsInRoom(client.roomNumber, battleStart.previousGeneration)) {
-        if (eligibleViewerIds.has(current.viewerId)) {
-            sessionManager.sendJson(current.socket, [1, [5, members]])
+    if (rivenEnabled) commitWeaponRivenPreparation(room)
+    else {
+        const eligibleViewerIds = new Set(realViewerIds)
+        for (const current of sessionManager.getClientsInRoom(client.roomNumber, battleStart.previousGeneration)) {
+            if (eligibleViewerIds.has(current.viewerId)) sessionManager.sendJson(current.socket, [1, [5, members]])
         }
     }
     gameVerboseLog(() => `[LOBBY] StartBattle: room=${client.roomNumber} mates=${members.length} real=${expectedCount} npc=${room?.npc_count ?? 0} nextGeneration=${room?.lobby_generation ?? 0}`)
+}
+
+/** HTTP joins the same two-phase TCP start, waiting outside the serialized room queue. */
+export async function requestWeaponRivenHttpStart(room: NonNullable<ReturnType<typeof getRoom>>, viewerId: number,
+    partyId: number, remainingMs: number): Promise<boolean> {
+    await embeddedMultiCoordinator.enqueueRoomCommand(room.room_number, () => {
+        if (getRoom(room.room_number) !== room) return
+        const peer = sessionManager.getClient(viewerId, room.room_number)
+        if (!peer || peer.superseded || peer.enterData === null
+            || Number(peer.equipmentSelectedPartyId ?? peer.yourself?.currentPartyId ?? 1) !== partyId) return
+        handleStartBattle(peer.socket, peer, [], remainingMs)
+    })
+    return waitWeaponRivenPreparation(room)
 }
 
 async function handleNotify(socket: net.Socket, client: SessionClient, data: any[]): Promise<void> {
@@ -1538,7 +1574,8 @@ async function handleNotify(socket: net.Socket, client: SessionClient, data: any
         case 2: await handleChangeParty(socket, client, notifyData); break
         case 3: handleReady(socket, client, notifyData); break
         case 4: handleHeartbeat(socket, client, notifyData); break
-        case 5: case 9: break  // Suspend/Log — silently ignored
+        case 5: break
+        case 9: acceptWeaponRivenAck(client, notifyData[1]); break
         case 6: handleStartBattle(socket, client, notifyData); break
         case 7: {
             const change = handleAutoplayModeChange(
@@ -1624,6 +1661,10 @@ export function handleMessage(socket: net.Socket, data: unknown): Promise<void> 
     return embeddedMultiCoordinator.enqueueRoomCommand(client.roomNumber, async () => {
         const current = findClientBySocket(socket)
         if (!current || current.superseded) return
+        if (tag === 0 && Array.isArray(data[1]) && [0, 1, 2, 7, 10].includes(data[1][0])) {
+            const room = getRoom(current.roomNumber)
+            if (room) cancelWeaponRivenPreparation(room, "roster_changed")
+        }
         if (!socket.destroyed && (tag === 0 || tag === 1 || tag === 2)) {
             notifyRealtimePresence(current.viewerId)
         }

@@ -187,6 +187,9 @@ export class CommandProcessTransport implements RoomCommandTransport {
         this.businessPending++; this.businessBytes += size
         let admission: ReturnType<typeof createAcceptedRealtimeBusinessScope> | undefined
         try {
+            if (message.kind.startsWith("riven.") && message.payload?.identity?.ownerEpoch !== this.epoch) {
+                throw Object.assign(new Error("RIVEN_OWNER_EPOCH_MISMATCH"), { code: "RIVEN_OWNER_EPOCH_MISMATCH" })
+            }
             const operation = () => this.options.businessHandler!(message.kind, cloneCommandJson(message.payload))
             let result: unknown
             if (message.businessAdmission !== undefined) {
@@ -200,7 +203,14 @@ export class CommandProcessTransport implements RoomCommandTransport {
             const value = cloneCommandJson(result)
             if (commandJsonBytes(value) > 480 * 1024) throw Object.assign(new Error("Business result too large"), { code: "BUSINESS_RESULT_LIMIT" })
             reply({ ok: true, value })
-        } catch (error) { reply({ ok: false, code: String((error as { code?: string })?.code || "BUSINESS_HANDLER_FAILED") }) }
+        } catch (error) {
+            const failure = error as { code?: string; message?: string }
+            // Older parents signal an unsupported optional Riven RPC with a plain Error.
+            // Preserve only these explicit availability failures, never generic business errors.
+            const unavailable = message.kind.startsWith("riven.")
+                && ["UNKNOWN_REALTIME_BUSINESS_KIND", "UNKNOWN_RIVEN_BUSINESS_KIND"].includes(failure?.message ?? "")
+            reply({ ok: false, code: String(failure?.code || (unavailable ? failure.message : "BUSINESS_HANDLER_FAILED")) })
+        }
         finally { admission?.release(); this.businessPending--; this.businessBytes -= size; this.changed() }
     }
 
@@ -262,6 +272,9 @@ export class CommandProcessTransport implements RoomCommandTransport {
     }
 
     private failPending(code: string): void {
+        if (!this.closed && this.ownerEpoch) {
+            require("../../lib/weapon-riven/multi-store").rivenSnapshotStore.releaseOwnerEpoch(this.ownerEpoch)
+        }
         this.closed = true; this.ready = false
         this.ingressClosed = true; this.ingressAdmission?.release(); this.ingressAdmission = undefined
         for (const scope of this.tcpWork.values()) scope.release()
