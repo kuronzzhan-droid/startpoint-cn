@@ -1,0 +1,8 @@
+# ActionSkillReportTools$/frameToSecondsString; code_sha256=a369f9b457b4e33394c5106aa08860bc522afe2bcbaa6ea0ee51eef010c95310; header=[3, 2, 1, 1]
+#0000 ofs0000: getlex ['Std']
+#0001 ofs0002: getlocal_1 []
+#0002 ofs0003: pushbyte [60]
+#0003 ofs0005: divide []
+#0004 ofs0006: callproperty ['string', 1]
+#0005 ofs0009: coerce ['String']
+#0006 ofs000b: returnvalue []

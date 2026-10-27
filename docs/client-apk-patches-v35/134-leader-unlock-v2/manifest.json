@@ -1,0 +1,46 @@
+{
+  "capability": "leader-unlock-v2",
+  "output_swf_sha256": "383f49b060718055a80080309aed92f150073d321c8a237f748a025c32050ed4",
+  "pcode": [
+    {
+      "abc": "boot_ffc6",
+      "label": "BattleCharacterLogic/wfxPartyMask",
+      "body": 92619,
+      "code_sha256": "65c0ed107a976dca1160bead05cea133be7e22502e3c17cff9837f36a3725d41",
+      "header": [
+        4,
+        3,
+        1,
+        2
+      ],
+      "file": "BattleCharacterLogic__wfxPartyMask.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "BattleCharacterLogic/wfxExtraLeaders",
+      "body": 92623,
+      "code_sha256": "09882c34abd6cce4b2d72057a78e9f5c59efa33f18e56bfd08600817e4305646",
+      "header": [
+        6,
+        5,
+        1,
+        2
+      ],
+      "file": "BattleCharacterLogic__wfxExtraLeaders.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "BattleCharacterLogic/getOpitionAbilitiesWithoutAbilitySoul",
+      "body": 92390,
+      "code_sha256": "c5f806eb8ffb05f1c2807d5423af4c85d804edb634bec8b00801895605f627bb",
+      "header": [
+        4,
+        11,
+        6,
+        7
+      ],
+      "file": "BattleCharacterLogic__getOpitionAbilitiesWithoutAbilitySoul.pcode.txt"
+    }
+  ],
+  "scope": "本地离线草稿；未写入正式apk-patches；AIR/真机/联机未核实"
+}

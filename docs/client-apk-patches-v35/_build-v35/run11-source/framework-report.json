@@ -1,0 +1,2840 @@
+{
+  "baseline_state": "ready",
+  "output_state": "already_present",
+  "cli_already_present_in_place_unchanged": true,
+  "output_boundary_rejection": true,
+  "cli_output_boundary_no_write": true,
+  "input_equals_output_rejection": true,
+  "input_equals_output_sha_unchanged": true,
+  "unknown_input_creates_no_output_directory": true,
+  "chain_input_overlap_rejected_before_stage_writes": true,
+  "matching_final_methods_unknown_envelope_rejected_without_output": true,
+  "unknown_input_no_output": true,
+  "static_negative_controls": {
+    "fall_off_end": {
+      "rejected": true,
+      "reason": "reachable control flow falls off method end"
+    },
+    "scope_underflow": {
+      "rejected": true,
+      "reason": "scope underflow at instruction 0"
+    },
+    "stack_underflow": {
+      "rejected": true,
+      "reason": "stack underflow at #0 (pop)"
+    },
+    "scope_index": {
+      "rejected": true,
+      "reason": "getscopeobject outside current scope stack"
+    },
+    "backward_without_real_label": {
+      "rejected": true,
+      "reason": "backward branch has no real AVM2 label: 2 -> 0"
+    },
+    "header_stack_too_small": {
+      "rejected": true,
+      "reason": "stack/scope exceeds header: (1, 0, 0), [0, 1, 0, 0]"
+    },
+    "header_locals_too_small": {
+      "rejected": true,
+      "reason": "locals exceed header: 3, 1"
+    }
+  },
+  "byte_identical_replay": true,
+  "ordinary_cli_replay_byte_identical": true,
+  "v34_chain_byte_identical": true,
+  "method_lock_negative_cases": [
+    {
+      "method": "MemberImpl/wfxHealSample",
+      "mutation": "body",
+      "rejected": true,
+      "abc": "boot_ffc6"
+    },
+    {
+      "method": "MemberImpl/wfxHealSample",
+      "mutation": "header",
+      "rejected": true,
+      "abc": "boot_ffc6"
+    },
+    {
+      "method": "UniqueConditionLogic/wfxSuperPreload",
+      "mutation": "body",
+      "rejected": true,
+      "abc": "boot_ffc6"
+    },
+    {
+      "method": "UniqueConditionLogic/wfxSuperPreload",
+      "mutation": "header",
+      "rejected": true,
+      "abc": "boot_ffc6"
+    },
+    {
+      "method": "ConditionSlot$/wfxSpec",
+      "mutation": "body",
+      "rejected": true,
+      "abc": "boot_ffc6"
+    },
+    {
+      "method": "ConditionSlot$/wfxSpec",
+      "mutation": "header",
+      "rejected": true,
+      "abc": "boot_ffc6"
+    },
+    {
+      "method": "MemberImpl/scheduleDirectAttack",
+      "mutation": "body",
+      "rejected": true,
+      "abc": "boot_ffc6"
+    },
+    {
+      "method": "MemberImpl/scheduleDirectAttack",
+      "mutation": "header",
+      "rejected": true,
+      "abc": "boot_ffc6"
+    },
+    {
+      "method": "MemberImpl$/wfxHealDamageTick",
+      "mutation": "body",
+      "rejected": true,
+      "abc": "boot_ffc6"
+    },
+    {
+      "method": "MemberImpl$/wfxHealDamageTick",
+      "mutation": "header",
+      "rejected": true,
+      "abc": "boot_ffc6"
+    }
+  ],
+  "original_code_reversible": [
+    {
+      "method": "MemberImpl/wfxHealSample",
+      "original_code_byte_exact_after_undo": true
+    },
+    {
+      "method": "UniqueConditionLogic/wfxSuperPreload",
+      "original_code_byte_exact_after_undo": true
+    },
+    {
+      "method": "ConditionSlot$/wfxSpec",
+      "original_code_byte_exact_after_undo": true
+    },
+    {
+      "method": "MemberImpl/scheduleDirectAttack",
+      "original_code_byte_exact_after_undo": true
+    },
+    {
+      "method": "MemberImpl$/wfxHealDamageTick",
+      "original_code_byte_exact_after_undo": true
+    }
+  ],
+  "release_lock_negative_cases": [
+    {
+      "method": "ConditionSlot$/wfxSpec",
+      "mutation": "body",
+      "rejected": true
+    },
+    {
+      "method": "ConditionSlot$/wfxSpec",
+      "mutation": "header",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl$/wfxHealAnyCTQueue",
+      "mutation": "body",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl$/wfxHealAnyCTQueue",
+      "mutation": "header",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl$/wfxHealAnyCTTick",
+      "mutation": "body",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl$/wfxHealAnyCTTick",
+      "mutation": "header",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl$/wfxHealDamageTick",
+      "mutation": "body",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl$/wfxHealDamageTick",
+      "mutation": "header",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/scheduleDirectAttack",
+      "mutation": "body",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/scheduleDirectAttack",
+      "mutation": "header",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/wfxDirectTargetCount",
+      "mutation": "body",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/wfxDirectTargetCount",
+      "mutation": "header",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/wfxHealAnyCTRecord",
+      "mutation": "body",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/wfxHealAnyCTRecord",
+      "mutation": "header",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/wfxHealAnyDamage",
+      "mutation": "body",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/wfxHealAnyDamage",
+      "mutation": "header",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/wfxHealAnyFever",
+      "mutation": "body",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/wfxHealAnyFever",
+      "mutation": "header",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/wfxHealAnyMembers",
+      "mutation": "body",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/wfxHealAnyMembers",
+      "mutation": "header",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/wfxHealAnySample",
+      "mutation": "body",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/wfxHealAnySample",
+      "mutation": "header",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/wfxHealAnyValue",
+      "mutation": "body",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/wfxHealAnyValue",
+      "mutation": "header",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/wfxHealSample",
+      "mutation": "body",
+      "rejected": true
+    },
+    {
+      "method": "MemberImpl/wfxHealSample",
+      "mutation": "header",
+      "rejected": true
+    },
+    {
+      "method": "UniqueConditionLogic/wfxSuperPreload",
+      "mutation": "body",
+      "rejected": true
+    },
+    {
+      "method": "UniqueConditionLogic/wfxSuperPreload",
+      "mutation": "header",
+      "rejected": true
+    }
+  ],
+  "abcs": {
+    "boot_ffc6": {
+      "original_body_count": 92678,
+      "unchanged_body_records": 92673,
+      "whole_swf_original_body_count": 92678,
+      "whole_swf_unchanged_body_records": 92673,
+      "other_abc_tags": [],
+      "changed_methods": [
+        "ConditionSlot$/wfxSpec",
+        "MemberImpl$/wfxHealDamageTick",
+        "MemberImpl/scheduleDirectAttack",
+        "MemberImpl/wfxHealSample",
+        "UniqueConditionLogic/wfxSuperPreload"
+      ],
+      "added_methods": [
+        "MemberImpl/wfxDirectTargetCount",
+        "MemberImpl/wfxHealAnyValue",
+        "MemberImpl/wfxHealAnyDamage",
+        "MemberImpl/wfxHealAnyFever",
+        "MemberImpl/wfxHealAnyMembers",
+        "MemberImpl/wfxHealAnySample",
+        "MemberImpl$/wfxHealAnyCTQueue",
+        "MemberImpl$/wfxHealAnyCTTick",
+        "MemberImpl/wfxHealAnyCTRecord"
+      ],
+      "appended_traits": [
+        {
+          "class": "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "static": false,
+          "name": "wfxDirectTargetCount",
+          "kind": 1
+        },
+        {
+          "class": "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "static": false,
+          "name": "wfxHealAnyValue",
+          "kind": 1
+        },
+        {
+          "class": "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "static": false,
+          "name": "wfxHealAnyDamage",
+          "kind": 1
+        },
+        {
+          "class": "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "static": false,
+          "name": "wfxHealAnyFever",
+          "kind": 1
+        },
+        {
+          "class": "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "static": false,
+          "name": "wfxHealAnyMembers",
+          "kind": 1
+        },
+        {
+          "class": "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "static": false,
+          "name": "wfxHealAnySample",
+          "kind": 1
+        },
+        {
+          "class": "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "static": false,
+          "name": "wfxHealAnyCTRecord",
+          "kind": 1
+        },
+        {
+          "class": "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "static": true,
+          "name": "wfxHealAnyCTBattle",
+          "kind": 0
+        },
+        {
+          "class": "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "static": true,
+          "name": "wfxHealAnyCTPending",
+          "kind": 0
+        },
+        {
+          "class": "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "static": true,
+          "name": "wfxHealAnyCTQueue",
+          "kind": 1
+        },
+        {
+          "class": "pinball.scene.battle.battle.squad.member::MemberImpl",
+          "static": true,
+          "name": "wfxHealAnyCTTick",
+          "kind": 1
+        }
+      ],
+      "constant_pools": {
+        "ints": {
+          "before": 5782,
+          "after": 5782,
+          "prefix_unchanged": true
+        },
+        "uints": {
+          "before": 12,
+          "after": 12,
+          "prefix_unchanged": true
+        },
+        "doubles": {
+          "before": 1237,
+          "after": 1237,
+          "prefix_unchanged": true
+        },
+        "strings": {
+          "before": 94171,
+          "after": 94182,
+          "prefix_unchanged": true
+        },
+        "namespaces": {
+          "before": 3736,
+          "after": 3736,
+          "prefix_unchanged": true
+        },
+        "ns_sets": {
+          "before": 817,
+          "after": 817,
+          "prefix_unchanged": true
+        },
+        "multinames": {
+          "before": 69612,
+          "after": 69623,
+          "prefix_unchanged": true
+        }
+      },
+      "existing_method_signatures_unchanged": true,
+      "existing_class_traits_unchanged": true,
+      "getlex_only_baseline_multinames": true,
+      "new_helpers_no_throwing_getMasterTable": true,
+      "non_main_abc_tags_byte_identical": true,
+      "static_checks": {
+        "MemberImpl/scheduleDirectAttack": {
+          "instructions": 661,
+          "max_stack": 110,
+          "max_scope": 2,
+          "locals_used": 46,
+          "unreachable": 0,
+          "backward_labels": 2,
+          "exceptions": 0,
+          "header": [
+            110,
+            46,
+            1,
+            2
+          ]
+        },
+        "ConditionSlot$/wfxSpec": {
+          "instructions": 192,
+          "max_stack": 5,
+          "max_scope": 2,
+          "locals_used": 9,
+          "unreachable": 0,
+          "backward_labels": 0,
+          "exceptions": 0,
+          "header": [
+            5,
+            9,
+            1,
+            2
+          ]
+        },
+        "UniqueConditionLogic/wfxSuperPreload": {
+          "instructions": 116,
+          "max_stack": 5,
+          "max_scope": 2,
+          "locals_used": 6,
+          "unreachable": 0,
+          "backward_labels": 2,
+          "exceptions": 0,
+          "header": [
+            5,
+            6,
+            1,
+            2
+          ]
+        },
+        "MemberImpl$/wfxHealDamageTick": {
+          "instructions": 65,
+          "max_stack": 4,
+          "max_scope": 2,
+          "locals_used": 7,
+          "unreachable": 0,
+          "backward_labels": 1,
+          "exceptions": 0,
+          "header": [
+            4,
+            7,
+            1,
+            2
+          ]
+        },
+        "MemberImpl/wfxHealSample": {
+          "instructions": 94,
+          "max_stack": 6,
+          "max_scope": 2,
+          "locals_used": 10,
+          "unreachable": 0,
+          "backward_labels": 0,
+          "exceptions": 0,
+          "header": [
+            6,
+            10,
+            1,
+            2
+          ]
+        },
+        "MemberImpl/wfxDirectTargetCount": {
+          "instructions": 82,
+          "max_stack": 4,
+          "max_scope": 2,
+          "locals_used": 9,
+          "unreachable": 0,
+          "backward_labels": 1,
+          "exceptions": 0,
+          "header": [
+            4,
+            9,
+            1,
+            2
+          ]
+        },
+        "MemberImpl/wfxHealAnyValue": {
+          "instructions": 62,
+          "max_stack": 4,
+          "max_scope": 2,
+          "locals_used": 8,
+          "unreachable": 0,
+          "backward_labels": 0,
+          "exceptions": 0,
+          "header": [
+            4,
+            8,
+            1,
+            2
+          ]
+        },
+        "MemberImpl/wfxHealAnyDamage": {
+          "instructions": 59,
+          "max_stack": 5,
+          "max_scope": 2,
+          "locals_used": 10,
+          "unreachable": 0,
+          "backward_labels": 1,
+          "exceptions": 0,
+          "header": [
+            5,
+            10,
+            1,
+            2
+          ]
+        },
+        "MemberImpl/wfxHealAnyFever": {
+          "instructions": 39,
+          "max_stack": 6,
+          "max_scope": 2,
+          "locals_used": 7,
+          "unreachable": 0,
+          "backward_labels": 1,
+          "exceptions": 0,
+          "header": [
+            6,
+            7,
+            1,
+            2
+          ]
+        },
+        "MemberImpl/wfxHealAnyMembers": {
+          "instructions": 61,
+          "max_stack": 2,
+          "max_scope": 2,
+          "locals_used": 6,
+          "unreachable": 0,
+          "backward_labels": 1,
+          "exceptions": 0,
+          "header": [
+            2,
+            6,
+            1,
+            2
+          ]
+        },
+        "MemberImpl/wfxHealAnySample": {
+          "instructions": 81,
+          "max_stack": 5,
+          "max_scope": 2,
+          "locals_used": 13,
+          "unreachable": 0,
+          "backward_labels": 1,
+          "exceptions": 0,
+          "header": [
+            5,
+            13,
+            1,
+            2
+          ]
+        },
+        "MemberImpl$/wfxHealAnyCTQueue": {
+          "instructions": 52,
+          "max_stack": 9,
+          "max_scope": 2,
+          "locals_used": 5,
+          "unreachable": 0,
+          "backward_labels": 1,
+          "exceptions": 0,
+          "header": [
+            9,
+            5,
+            1,
+            2
+          ]
+        },
+        "MemberImpl$/wfxHealAnyCTTick": {
+          "instructions": 104,
+          "max_stack": 7,
+          "max_scope": 2,
+          "locals_used": 10,
+          "unreachable": 0,
+          "backward_labels": 3,
+          "exceptions": 0,
+          "header": [
+            7,
+            10,
+            1,
+            2
+          ]
+        },
+        "MemberImpl/wfxHealAnyCTRecord": {
+          "instructions": 162,
+          "max_stack": 6,
+          "max_scope": 2,
+          "locals_used": 15,
+          "unreachable": 0,
+          "backward_labels": 2,
+          "exceptions": 0,
+          "header": [
+            6,
+            15,
+            1,
+            2
+          ]
+        }
+      },
+      "byte_exact_unchanged_abc_scaffolding": {
+        "restored_target_bodies": [
+          "ConditionSlot$/wfxSpec",
+          "MemberImpl$/wfxHealDamageTick",
+          "MemberImpl/scheduleDirectAttack",
+          "MemberImpl/wfxHealSample",
+          "UniqueConditionLogic/wfxSuperPreload"
+        ],
+        "removed_appended_strings": [
+          "wfxDirectTargetCount",
+          "wfxHealAnyValue",
+          "wfxHealAnyDamage",
+          "wfxHealAnyFever",
+          "wfxHealAnyMembers",
+          "wfxHealAnySample",
+          "wfxHealAnyCTBattle",
+          "wfxHealAnyCTPending",
+          "wfxHealAnyCTQueue",
+          "wfxHealAnyCTTick",
+          "wfxHealAnyCTRecord"
+        ],
+        "removed_appended_multinames": 11,
+        "removed_appended_method_bodies": 9,
+        "original_abc_sha256": "a6af0411c77cb32f895ed8af2c9de2cd607d47b360663380e68d1d69e97c8305",
+        "restored_abc_sha256": "a6af0411c77cb32f895ed8af2c9de2cd607d47b360663380e68d1d69e97c8305",
+        "all_pools_signatures_classes_traits_scripts_and_other_bodies_byte_identical": true
+      }
+    }
+  },
+  "serialized_body_record_comparison": {
+    "boot_ffc6": {
+      "serialized_method_body_records_compared": 92678,
+      "byte_identical_records": 92673,
+      "changed_records": [
+        "ConditionSlot$/wfxSpec",
+        "MemberImpl$/wfxHealDamageTick",
+        "MemberImpl/scheduleDirectAttack",
+        "MemberImpl/wfxHealSample",
+        "UniqueConditionLogic/wfxSuperPreload"
+      ]
+    }
+  },
+  "envelope": {
+    "unchanged_tags": 372,
+    "changed_abc_tags": [
+      "boot_ffc6"
+    ],
+    "tag_order_prefix_and_outside_bytes_unchanged": true
+  },
+  "other_abcs": [
+    {
+      "abc": "cn/storage/LocalRecordIO",
+      "abc_ordinal": 0,
+      "body_count": 4,
+      "sha256": "0b07d77e3298be51916457758a705769d072448bafafa7d89919956e97de451b",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn/admission/ClientAdmission",
+      "abc_ordinal": 1,
+      "body_count": 44,
+      "sha256": "1b90354fb608db07a1b414c7e343dbf6461bb46c0b30ba720d31661301147c61",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn/loading/PartyDerivedCache",
+      "abc_ordinal": 2,
+      "body_count": 19,
+      "sha256": "9518c71b4ccf46b81dfb4ebfab6f50b063065a8bf96d87780482763a64005ab7",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn/admission/AdmissionSession",
+      "abc_ordinal": 3,
+      "body_count": 22,
+      "sha256": "c9a7b4bb7e0818b9834ffbf592f30d5045410651bfd0d2ebb39e2ca0ff9c5dd0",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn/admission/BuildConfig",
+      "abc_ordinal": 4,
+      "body_count": 3,
+      "sha256": "23b46a7aee02a5381a4d7e14cd47dfd3b76c9f0c2aa73f74977949d9662f4a4f",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/Component",
+      "abc_ordinal": 5,
+      "body_count": 22,
+      "sha256": "4e7ff03c23cd37067f24befbbd3caa01aee1ee2775b956f82f5aa5029f7aee8e",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/IndicatorLight",
+      "abc_ordinal": 6,
+      "body_count": 16,
+      "sha256": "33b059874f43705909857a5e0d9fbbd89384e78a5a2a6d24d14ec65df88d2548",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/Slider",
+      "abc_ordinal": 7,
+      "body_count": 26,
+      "sha256": "6f55b9a9d2b63eb0be23aef6a17b49948ae869e0a41c726723dc653375c92373",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/ScrollBar",
+      "abc_ordinal": 8,
+      "body_count": 40,
+      "sha256": "1e5b7f5bfaf92141dd09ac20bf37f770416fc3aeb53c337769bd7ee50c66821e",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/VScrollBar",
+      "abc_ordinal": 9,
+      "body_count": 3,
+      "sha256": "30fad75aa3592fb9d76995f688f9aa98c1e54c03ce3ee66f03449caddd42e8eb",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/Meter",
+      "abc_ordinal": 10,
+      "body_count": 25,
+      "sha256": "6277e87c879aa6c85138092662d6660057ef2cf98dc594ba49a1b1928596f99a",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/ListItem",
+      "abc_ordinal": 11,
+      "body_count": 18,
+      "sha256": "27719b72af69d672ccccf517adb340819b8fee22cc590023a8e1fdd298e38248",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/charts/Chart",
+      "abc_ordinal": 12,
+      "body_count": 27,
+      "sha256": "cb6e096ec375740fcbd1a7f6bffea5c5c0fbf5c430b00f1d70404fc7f9345427",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/Text",
+      "abc_ordinal": 13,
+      "body_count": 17,
+      "sha256": "5b0d73d7e08829a9dcc7331101621ecd22cc8d2e7fde269b219cacae0a27e93a",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/TextArea",
+      "abc_ordinal": 14,
+      "body_count": 15,
+      "sha256": "b34930e0933cd9d8aa4a2f603210f3d4952aab93941784da96ead4dc2e6b8584",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/FPSMeter",
+      "abc_ordinal": 15,
+      "body_count": 12,
+      "sha256": "42a734f91755b49799744a8e422bb1d536c2cf70619723aeee1a9caf4d2405aa",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/Window",
+      "abc_ordinal": 16,
+      "body_count": 31,
+      "sha256": "edab413b45ca4ea1346605d610cac824ece8d47107cab1015da5bd319df46379",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/WheelMenu",
+      "abc_ordinal": 17,
+      "body_count": 35,
+      "sha256": "9f303cadb45564ed59be7729ba413d0857b29911600ceebb7f75ff9a51b74792",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/Panel",
+      "abc_ordinal": 18,
+      "body_count": 19,
+      "sha256": "51b3bcb0492fc7b0e651b69e95bf9bd36475197acf975fdc2639835039b69d90",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/ScrollPane",
+      "abc_ordinal": 19,
+      "body_count": 16,
+      "sha256": "063a683ad15077a1082d33bebe745ab601a856219c57c63bb15a2027be6dcb2e",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/VSlider",
+      "abc_ordinal": 20,
+      "body_count": 3,
+      "sha256": "f5be3f9d1de105471d11a96b63a344aa1716e57399a529943451544cdad77f26",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/ComboBox",
+      "abc_ordinal": 21,
+      "body_count": 47,
+      "sha256": "40d8f15bc4caeb51c967fc6da80f6f9148ab52e56813ebcece6bf1e82e22eace",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/UISlider",
+      "abc_ordinal": 22,
+      "body_count": 21,
+      "sha256": "0f761660a5f388ee7fb775a3a241efd83cf72f1f234e2b57a02f6932f8e09955",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/HUISlider",
+      "abc_ordinal": 23,
+      "body_count": 6,
+      "sha256": "9f5e617169d0444fac1aec9a5d8184512221e9e96e7db1a8999f1092d50b3487",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/ColorChooser",
+      "abc_ordinal": 24,
+      "body_count": 27,
+      "sha256": "439bcb20216be77630fb85285e35ad18753b2d94a67a87ae6b5980e1cb26268b",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/VBox",
+      "abc_ordinal": 25,
+      "body_count": 14,
+      "sha256": "f3a6138372a2ecf45a76e5f4bfb255f9fbd00228cff8e838f741f36dec3ec24b",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/Knob",
+      "abc_ordinal": 26,
+      "body_count": 31,
+      "sha256": "e1de102e75041fce463312d102e5ac958d61b60bd4eda0cbb8cc4c3c4574c606",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/RadioButton",
+      "abc_ordinal": 27,
+      "body_count": 15,
+      "sha256": "08119a77226a2fd53c3f346759a74cc20c14f24e93511c036ad76aa6e2aee707",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/ProgressBar",
+      "abc_ordinal": 28,
+      "body_count": 11,
+      "sha256": "75b4f970c512068972a026009561f10d0b5ecca7ea81bf02ed2e9c52897eedaf",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/HBox",
+      "abc_ordinal": 29,
+      "body_count": 14,
+      "sha256": "7bde28ec1f804f1a887221fa09173498c7ef5b4bf9e1b2e4345fdc8aaf589a4f",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/RangeSlider",
+      "abc_ordinal": 30,
+      "body_count": 32,
+      "sha256": "19b9e34ff95d2999d8dcf0bd1dad553c5def6c34ef0ea02913ac75479da1a7e9",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/VRangeSlider",
+      "abc_ordinal": 31,
+      "body_count": 3,
+      "sha256": "7b37e93168ef12cd776004d4147809de22664d10907f296eb69e2b650c4b0e93",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/List",
+      "abc_ordinal": 32,
+      "body_count": 40,
+      "sha256": "8410e7148c050549b23ba9ec8557ac1927e9767cf19545c75f990dd280eff973",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/charts/BarChart",
+      "abc_ordinal": 33,
+      "body_count": 8,
+      "sha256": "3da3692b4d23c58ea88cbb7dec7c432d5547b0bd149ffc4fc8ee027b99340e7a",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/CheckBox",
+      "abc_ordinal": 34,
+      "body_count": 12,
+      "sha256": "d4c37899c9bcc98edc4a0f7e18fcb1c9dbbae61651357945073fdf59900855bb",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/HRangeSlider",
+      "abc_ordinal": 35,
+      "body_count": 3,
+      "sha256": "e4020c84efa43011f1d7f7699eb7aa0644cddb17228b6bc8d5c1e056f1cfad87",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/Calendar",
+      "abc_ordinal": 36,
+      "body_count": 17,
+      "sha256": "001f70140dac66078ca414a738bbd59cf4271dd72f57de2f6dfb910ab8392b06",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/Style",
+      "abc_ordinal": 37,
+      "body_count": 4,
+      "sha256": "1127e5512d60583b92e22a75d85ee6f46a200b0675311113febae9eef199db0b",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/Label",
+      "abc_ordinal": 38,
+      "body_count": 11,
+      "sha256": "0d767fd9b39aeec25d6795d81a7dc28d128d8683cfadbda87216d7670a25894d",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/InputText",
+      "abc_ordinal": 39,
+      "body_count": 17,
+      "sha256": "166ea0741bdbfa81c1d53c7dc42b14ec36a123fecadda468647225951170775f",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/Accordion",
+      "abc_ordinal": 40,
+      "body_count": 13,
+      "sha256": "7ee91f4c15f21d037f29ffa31e72002148aa66fb318d2d2b52cbdb0437032ceb",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/RotarySelector",
+      "abc_ordinal": 41,
+      "body_count": 18,
+      "sha256": "e77dc1d43f992001237c3782cf68ebb61ac7f972102768350eb74455d493b10a",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/VUISlider",
+      "abc_ordinal": 42,
+      "body_count": 7,
+      "sha256": "a75b2b1cb0dce094500e9de0e8ffdad8b8b9a186601231cdf48402ce03d06b38",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/PushButton",
+      "abc_ordinal": 43,
+      "body_count": 17,
+      "sha256": "30a97dc40efae3cf5d6e8555280f0635f0ca57c824901feac2b5578fc584a5ac",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/NumericStepper",
+      "abc_ordinal": 44,
+      "body_count": 26,
+      "sha256": "e97d3fb9cd83521828cbe34bc91345044d65d89d1b767c07f072943a1e0dcb2a",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/charts/PieChart",
+      "abc_ordinal": 45,
+      "body_count": 16,
+      "sha256": "2d09b558d6d8341da57fd8a7e5dde97fd54997835f862f9d847f3ac81bb77e72",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/utils/MinimalConfigurator",
+      "abc_ordinal": 46,
+      "body_count": 10,
+      "sha256": "c5d7a557ffb66a1b392e09047660e237ffd818dd8955e4b10a4713d363087e8c",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/HSlider",
+      "abc_ordinal": 47,
+      "body_count": 3,
+      "sha256": "97e4d478ec7759a712f05f2213977fe20d823cd495c14ba25b25287c8d1c5af8",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/charts/LineChart",
+      "abc_ordinal": 48,
+      "body_count": 8,
+      "sha256": "9dfed57ee66b7b5d9e4ea2f0aaa6041736b091759fad6004c18ec3c60097d6c5",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/bit101/components/HScrollBar",
+      "abc_ordinal": 49,
+      "body_count": 3,
+      "sha256": "9c005ca82a72e065f7547742a0fe0939f3b1cfd92c3c4fe3a8cdad2fef90b056",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/styles/MeshStyle",
+      "abc_ordinal": 50,
+      "body_count": 36,
+      "sha256": "3308ed5362f76f6ca4ea9bfdb34a5ccec6a8be5e5db69cbb7ba60accc39470d0",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/rendering/Effect",
+      "abc_ordinal": 51,
+      "body_count": 26,
+      "sha256": "684c16427043343513c7a830a2213b6428b7f1aabbe7ed127167e1b3f9ac53e3",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/rendering/FilterEffect",
+      "abc_ordinal": 52,
+      "body_count": 15,
+      "sha256": "22cedc5ce64d698ba012caa44549d9418295b330a625be5dbad98b5553afe921",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/rendering/MeshEffect",
+      "abc_ordinal": 53,
+      "body_count": 12,
+      "sha256": "7974ab675949b1e4bcc09457c6762375cdca68fdd8759e0c1fb26d34942d42bd",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/extensions/ColorOffsetStyle",
+      "abc_ordinal": 54,
+      "body_count": 23,
+      "sha256": "2f554d2b279671aa8d84554cf82570dfab1c2e68a217e1d1c612dfeaca8ed686",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/events/EventDispatcher",
+      "abc_ordinal": 55,
+      "body_count": 12,
+      "sha256": "4fb69ee8d053d7e825d467d5f6a1bc5d57a39af90a7f354eb1a50ef7c64900e4",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/display/DisplayObject",
+      "abc_ordinal": 56,
+      "body_count": 85,
+      "sha256": "2623615ee8ccbff3686bc538e28c9af30c1a8f338c9b4a81285d6dbfb0662f49",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/display/Mesh",
+      "abc_ordinal": 57,
+      "body_count": 42,
+      "sha256": "69607dd1d8ba5abcf860e3541582134b11490713c569a04bb8abc1729385c2b3",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/filters/FragmentFilter",
+      "abc_ordinal": 58,
+      "body_count": 43,
+      "sha256": "1aa983de142e1e85ba6d2dafd71afaa757cc8250dac548bf173a7d6c25f98857",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/filters/GlowFilter",
+      "abc_ordinal": 59,
+      "body_count": 15,
+      "sha256": "0f0ea8d47f434b24913f6e2e8b4790d317983982ed0cdf45ce18c730c6a98da0",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/core/Starling",
+      "abc_ordinal": 60,
+      "body_count": 76,
+      "sha256": "dfe65b01b5b9bbabce5f0595f89c70348293b323cdefe728d2dd7cf0df1ec2e4",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/filters/BlurFilter",
+      "abc_ordinal": 61,
+      "body_count": 29,
+      "sha256": "a3731fd413cb4c18303273580314f8c0563d7d7dd79c5ebca3cfd07d0e40fb93",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/textures/Texture",
+      "abc_ordinal": 62,
+      "body_count": 50,
+      "sha256": "43fc898d149dbbc8f956ed97bc6153d596432d77a1cce9780084a34083440034",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/textures/SubTexture",
+      "abc_ordinal": 63,
+      "body_count": 23,
+      "sha256": "cc461b37c33bf78ac8f6bfb5e9992e80d71bbab13c534070808b43f3e16574bd",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/textures/RenderTexture",
+      "abc_ordinal": 64,
+      "body_count": 15,
+      "sha256": "ff79188054d3c3a13a74e1e1dbf515a2d898f3c8e750bc688cde9065c36e4675",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/textures/TextureAtlas",
+      "abc_ordinal": 65,
+      "body_count": 17,
+      "sha256": "079eae824c63f3e2f8dbced8cdb97b2733dbb190e5a364a83802c36824d90d08",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/extensions/ColorMatrixStyle",
+      "abc_ordinal": 66,
+      "body_count": 43,
+      "sha256": "1c5c3a6ddca80b20a068bb19fb2fcf2e395d83b548e54e6c734026c7664410ef",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/display/Quad",
+      "abc_ordinal": 67,
+      "body_count": 10,
+      "sha256": "9a4e7b599eda9e33981d1efe149a4c4b96e02a5b6addcae827065870d8f04ee9",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/display/Image",
+      "abc_ordinal": 68,
+      "body_count": 32,
+      "sha256": "76b590d34da52fa7c107e0222c4d6d36e3cf32cd529f12bd609ed6ae81c11e53",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/animation/IAnimatable",
+      "abc_ordinal": 69,
+      "body_count": 2,
+      "sha256": "b79b857a40260da180d55eb1b478f896ea06ed84913e8236902fdf82007ffb30",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/display/MovieClip",
+      "abc_ordinal": 70,
+      "body_count": 42,
+      "sha256": "ceeec58aa70dafe17e1b37df3dad9666b9e83cbcbef84f784179f3ab3a2ff769",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/display/DisplayObjectContainer",
+      "abc_ordinal": 71,
+      "body_count": 27,
+      "sha256": "02ad344042bd579dfa00ed8ec274eac19248d248d80c95b66e99c1468fa4a0b3",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/display/Canvas",
+      "abc_ordinal": 72,
+      "body_count": 13,
+      "sha256": "6ef7792e7d5783c768f1c9aa38095a77d064035cad4da2dca4cba257fb001faa",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/filters/ColorMatrixFilter",
+      "abc_ordinal": 73,
+      "body_count": 26,
+      "sha256": "4fec0c0b62d13dbcd11f3aa3619138528c1f01fc9581f0f5e2600b7e50309d72",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/textures/TextureSmoothing",
+      "abc_ordinal": 74,
+      "body_count": 4,
+      "sha256": "89ed25e1e7ab90fb5184dcb6a2418811ec2efc043f16bc346442a2dafc45883a",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/memory/IHeapOwner",
+      "abc_ordinal": 75,
+      "body_count": 2,
+      "sha256": "a35b30dd7992df818ef85252d83a43422cf476ef2e32b7a1de6f1a7a44141ed3",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/rendering/VertexData",
+      "abc_ordinal": 76,
+      "body_count": 59,
+      "sha256": "67073d4d19bde0e64386dfc3309a56ec48d2f03b95207f75cd7173746b95c05c",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/filters/IFilterHelper",
+      "abc_ordinal": 77,
+      "body_count": 2,
+      "sha256": "521174fa0acdb0539476a98baa4ac0bdc519d7601e3817afd9f59b4500190f42",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/animation/Juggler",
+      "abc_ordinal": 78,
+      "body_count": 25,
+      "sha256": "9e53a26341bad677390e52c55add16c053002f96845c35ffc72ef89c6aa7877d",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/textures/ConcreteTexture",
+      "abc_ordinal": 79,
+      "body_count": 30,
+      "sha256": "39cbdc32d74eee97e6630c6d7856e6c1891eb4cc4936e08667b52a2a38abda4a",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/textures/ConcreteRectangleTexture",
+      "abc_ordinal": 80,
+      "body_count": 11,
+      "sha256": "2571e76a2da49aef547e7b61d44c9507d0303005bea0d2f55f499e2aa2b15ce7",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/rendering/Program",
+      "abc_ordinal": 81,
+      "body_count": 8,
+      "sha256": "7f814127df167ba6a4df0b545df01a664c9761c881bbdae0e184ebc8e11c8030",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/utils/SystemUtil",
+      "abc_ordinal": 82,
+      "body_count": 21,
+      "sha256": "604fdcd7f1d6964aaeed64e806ddf486f2eb8e95234b432bcdd2d69a33e55770",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/errors/MissingContextError",
+      "abc_ordinal": 83,
+      "body_count": 3,
+      "sha256": "d3a12df45360db94bcab3a84ced4738a3b707517b9690d0d3b14cb8d398d4adf",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/textures/ConcretePotTexture",
+      "abc_ordinal": 84,
+      "body_count": 14,
+      "sha256": "fde49391ffdc5835e97292cfa92adf796a031514a641c6211666d8f3a5e2d29a",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/rendering/VertexDataFormat",
+      "abc_ordinal": 85,
+      "body_count": 21,
+      "sha256": "b9c456684f700672a3d125b6ac47a63d84e0a5219ef763883e1c09d1941b8aae",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/errors/AbstractClassError",
+      "abc_ordinal": 86,
+      "body_count": 3,
+      "sha256": "0d728d39bb790c400ee40ff1df7e4c493f36e359ab1690b0be91b2c1b8932b4a",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/rendering/BatchToken",
+      "abc_ordinal": 87,
+      "body_count": 8,
+      "sha256": "a342a83feeac60ef1a05b202dda37552db531666071cf4645c95c2f6b3ace105",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/events/Event",
+      "abc_ordinal": 88,
+      "body_count": 19,
+      "sha256": "2a831ff3a30ad7e0cf488b71b545ca91bd39e52e12a541e5aac45e731f1569bc",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/events/TouchEvent",
+      "abc_ordinal": 89,
+      "body_count": 13,
+      "sha256": "fd7a6149c7896f634ffc688208fa5e25ce415145a8f545aa42ece324e153ec3d",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/utils/MathUtil",
+      "abc_ordinal": 90,
+      "body_count": 11,
+      "sha256": "bf3bd9f7a7396401a8c692763ec2132760d566873228f43ba388b242ad282c23",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/events/KeyboardEvent",
+      "abc_ordinal": 91,
+      "body_count": 11,
+      "sha256": "9fd7c9907c3a1a870bcae139f939a8db67c851d051c8a89193718fd949bc9694",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/utils/MatrixUtil",
+      "abc_ordinal": 92,
+      "body_count": 23,
+      "sha256": "d3446015eecbea7aa208191e1bdf5de4238d426841a9f46b6613a583bff4c827",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/events/ResizeEvent",
+      "abc_ordinal": 93,
+      "body_count": 5,
+      "sha256": "7893ba457a2472e296c33115076eea9e0163a74ce3f2c59de60578ec6cb1fde3",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/errors/AbstractMethodError",
+      "abc_ordinal": 94,
+      "body_count": 3,
+      "sha256": "1cee74481a89bf1fb2de56e16c3cfdbac1e6da8cd6110a6a7cfc3fc5323458fd",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/display/Sprite",
+      "abc_ordinal": 95,
+      "body_count": 3,
+      "sha256": "7e7d2f5513815477557a6223e4f87a812946f306a7c86b201b03b60f00ff68c7",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/core/StatsDisplay",
+      "abc_ordinal": 96,
+      "body_count": 18,
+      "sha256": "97b67a41bf850948001eee927f941e348f8ce2895c338ed012db39b94e896195",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/rendering/Painter",
+      "abc_ordinal": 97,
+      "body_count": 67,
+      "sha256": "ea769c245ea2a3f9cdd51e6eb8affe7f232b7abf32b8e29eacebfc18d4d11825",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/utils/execute",
+      "abc_ordinal": 98,
+      "body_count": 2,
+      "sha256": "9c977c2b2a27e5ce68f3ffc5325f4d319e45716a7af0286f64cb5c6bc21c73d6",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/display/MeshBatch",
+      "abc_ordinal": 99,
+      "body_count": 21,
+      "sha256": "440e87ae8d7dc99467e624a5566a43ca2ce8e38413a8512c9cb6829826880aa6",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/filters/CompositeFilter",
+      "abc_ordinal": 100,
+      "body_count": 25,
+      "sha256": "bb7f48b866fbb5f7ce80d78359deb65a8d8373c76ccb337dc03cbd3cc9cb9b57",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/utils/Align",
+      "abc_ordinal": 101,
+      "body_count": 6,
+      "sha256": "5aa5221e95178005c9a74d4350429f558a2414a77198efa490e76796c4d2900f",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/utils/RenderUtil",
+      "abc_ordinal": 102,
+      "body_count": 13,
+      "sha256": "795df06d40cc15f98247311814fa2bdb7437e99674d9199b0681efef6a1217e7",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/textures/AtfData",
+      "abc_ordinal": 103,
+      "body_count": 10,
+      "sha256": "72270f49a91eaecc746fc198984323e2a9cde2c42f52e7d334ab340d11be74d9",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/rendering/IndexData",
+      "abc_ordinal": 104,
+      "body_count": 29,
+      "sha256": "4f5b74cd4dc2334f0be456064fdaf6778d5a6093eee04278a9974bb7745ba4a9",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/utils/RectangleUtil",
+      "abc_ordinal": 105,
+      "body_count": 13,
+      "sha256": "704566cdb45528c6a0c4dcff8d3ce90bc3731500ce5a4c9cd550a72ffd6f7412",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/filters/FilterHelper",
+      "abc_ordinal": 106,
+      "body_count": 24,
+      "sha256": "9f42cafc3fee63f6900eb4ee14d278a118798fb11311569e378826c83d408f57",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/utils/MeshUtil",
+      "abc_ordinal": 107,
+      "body_count": 5,
+      "sha256": "811a6913fc813ec42013624db8ea8b19c89eb9aa3b8d9c4a3734368bcc9a2bcc",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/textures/ConcreteVideoTexture",
+      "abc_ordinal": 108,
+      "body_count": 12,
+      "sha256": "cce831c960e712e77cf0004a81f6cddcb0e10cee967c0a6137e8bb2153d3426a",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/core/starling_internal",
+      "abc_ordinal": 109,
+      "body_count": 1,
+      "sha256": "98afaf7096e849b400fa9a9a3e99416e909f6686393495f8f0c1f27218d35559",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/rendering/RenderState",
+      "abc_ordinal": 110,
+      "body_count": 39,
+      "sha256": "fb603774521ca858044ae87ccd4fe2f3d057407fb6a9e867dd87c93396698d2c",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/display/Stage",
+      "abc_ordinal": 111,
+      "body_count": 34,
+      "sha256": "cb19bb2d577de4192edb87f26f2ddb131a5387255253bb1886b785d6978f0e7c",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/utils/Padding",
+      "abc_ordinal": 112,
+      "body_count": 18,
+      "sha256": "eac9e3a8af7ffa7d5580be013b1b4763ccc09bc347cf43392d8d89c9de64cb37",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/events/TouchProcessor",
+      "abc_ordinal": 113,
+      "body_count": 29,
+      "sha256": "afaa97a0d4cae02c30a1e8557226f2691478801da2405d9465df9f086af811cc",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/utils/StringUtil",
+      "abc_ordinal": 114,
+      "body_count": 9,
+      "sha256": "e39bb402b93f245a120351f85388ce80c026a11d534a140db287e6bcb47a57ea",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/utils/Pool",
+      "abc_ordinal": 115,
+      "body_count": 15,
+      "sha256": "b7eed055909612432023ceaf5c30ce2e0cc0dc7ce2ffd812f6894d36a8ef3bee",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/events/TouchPhase",
+      "abc_ordinal": 116,
+      "body_count": 3,
+      "sha256": "e46e27d8306ee030165c3b8a8b0d3836261bf773865026ccbe62994258b05bb7",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/errors/NotSupportedError",
+      "abc_ordinal": 117,
+      "body_count": 3,
+      "sha256": "e75fa77565d1d02717a97cf42ac9b310443f83fb7ff6b6d03c603dae94ccf9ef",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/textures/TextureOptions",
+      "abc_ordinal": 118,
+      "body_count": 19,
+      "sha256": "949c55af828d4305fda501621c3b0e729b3d95fff6bc52910b7985cf6a267ff4",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/utils/Color",
+      "abc_ordinal": 119,
+      "body_count": 20,
+      "sha256": "7c7a3acbaa1b0eead858857a7d3627db796e10ac04a02d89f5a4fb1986ccba98",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/display/BlendMode",
+      "abc_ordinal": 120,
+      "body_count": 11,
+      "sha256": "f875f44c97c5d16a4440c1ce5c967bf265c0be066337561388f941a52af5585b",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/geom/Polygon",
+      "abc_ordinal": 121,
+      "body_count": 46,
+      "sha256": "3fd7b5c06449d8b7705b09823c8e2b91c9c14b3c79b0e8192d85c92d85c56deb",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/animation/DelayedCall",
+      "abc_ordinal": 122,
+      "body_count": 15,
+      "sha256": "13bb83cd6e38ca7a8bb3bd2c6c22f92e536e87bbca0f624bbefaf3f58385654e",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/rendering/VertexDataAttribute",
+      "abc_ordinal": 123,
+      "body_count": 3,
+      "sha256": "3d5e126b6da6f60b6b899dba557b227b2f10d7d7189169c2767b1222fd646130",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/utils/MeshSubset",
+      "abc_ordinal": 124,
+      "body_count": 4,
+      "sha256": "145b557072eaa535e7819f4e0ca7ab013a6d6443036889f228d915a85ae89d86",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/events/TouchData",
+      "abc_ordinal": 125,
+      "body_count": 14,
+      "sha256": "449db87524b09257ba89a353d7b0c6e78d7c18c70d668dfbd3c49142fbcd2ba9",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/events/EnterFrameEvent",
+      "abc_ordinal": 126,
+      "body_count": 4,
+      "sha256": "aa6ebd1b7c037a5e0f8c116b354904760b8e25d86dc95d7ac3fe3d2aad439ae8",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/text/ITextCompositor",
+      "abc_ordinal": 127,
+      "body_count": 2,
+      "sha256": "e6c78154e1d6681f87381095cad2b3db2a26c666bdca5b213b0a93555f918531",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/text/BitmapFont",
+      "abc_ordinal": 128,
+      "body_count": 36,
+      "sha256": "44b398c9b624837b87176fcb8ffd1190cc19b2ea481fe54c1f62b8603ffab96d",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/memory/FastByteArray",
+      "abc_ordinal": 129,
+      "body_count": 16,
+      "sha256": "33f50c09c81373c02d56f39a33e1f8dae8b4b1ffe8647d921f1cfb2ad360b796",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/events/TouchMarker",
+      "abc_ordinal": 130,
+      "body_count": 13,
+      "sha256": "bc9265736bae2f2eb5d78c3f0944e28d7f43af45e0128e2f05f0cd49ce5a9def",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/text/TextField",
+      "abc_ordinal": 131,
+      "body_count": 55,
+      "sha256": "458fb4cc19df897e881de76c3ad57ff45890ee90c12dd8330e2d1f400dcf4976",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/events/Touch",
+      "abc_ordinal": 132,
+      "body_count": 37,
+      "sha256": "7af32cbcf0825d20d99b5c79d7b379b15bae9ee84ece4a91cc2afe43dc6b3b5b",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/utils/ScaleMode",
+      "abc_ordinal": 133,
+      "body_count": 4,
+      "sha256": "8d33111cd920f638c759aeba9e1ffaad9311f20c7bee3c97daa5043532a1cd36",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/rendering/BatchProcessor",
+      "abc_ordinal": 134,
+      "body_count": 19,
+      "sha256": "d66e81479dbcd153e93767e49cf00827b984de624469b3582553578f68d8887a",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/animation/Tween",
+      "abc_ordinal": 135,
+      "body_count": 59,
+      "sha256": "41d93626b39313a7f3191f50adc7764bf14273e301c91e825a4880b4de3bf85c",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/adobe/utils/AGALMiniAssembler",
+      "abc_ordinal": 136,
+      "body_count": 30,
+      "sha256": "360bbc2e292181328135ed3439b62d59bf5f58d311822bcf6288192299e2d951",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/text/TextFormat",
+      "abc_ordinal": 137,
+      "body_count": 31,
+      "sha256": "a7fd21621eb778b43918f7f2bfdc051dd070eec0feeee0af9deaac4b96d1b860",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/text/MiniBitmapFont",
+      "abc_ordinal": 138,
+      "body_count": 7,
+      "sha256": "385b64b24468deacc71ad6b7c977d04b0e224b464e76ded1b51fb44139b6c868",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/utils/FastMemoryPool",
+      "abc_ordinal": 139,
+      "body_count": 9,
+      "sha256": "8f4a77e792935f74e0724d81f2bd431cc0f93d2aea35f87c19bd2c9f93bc0366",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/animation/Transitions",
+      "abc_ordinal": 140,
+      "body_count": 24,
+      "sha256": "a00277f3998d7196b6f329e1d8104d8e9cb2927b5878b743d1dd76e98311f954",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/text/BitmapChar",
+      "abc_ordinal": 141,
+      "body_count": 13,
+      "sha256": "7f3e2b676d66bd3c8d3bdd0add6b34f47c5941c11eadc18b854a1af1724af9b7",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/text/TrueTypeCompositor",
+      "abc_ordinal": 142,
+      "body_count": 14,
+      "sha256": "cb4f171e0257f0e7665a42dcee2c66e33f9a985c916308c55f18bc70ad43625c",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/styles/DistanceFieldStyle",
+      "abc_ordinal": 143,
+      "body_count": 52,
+      "sha256": "55b88cef6710cb7a376408b3893b9aa000421fdc4b62bf50cf3d0de2990b4ce2",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/text/TextFieldAutoSize",
+      "abc_ordinal": 144,
+      "body_count": 3,
+      "sha256": "89929adf8d6a2e12961f61337f005ed0e2e7da613799e8e9f5f7f2aed396f106",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/text/TextOptions",
+      "abc_ordinal": 145,
+      "body_count": 21,
+      "sha256": "dc00f0f64ce17019df76385ea47d727e35167d96ef622c67e74456acb910a6c2",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/memory/FastMemoryManager",
+      "abc_ordinal": 146,
+      "body_count": 15,
+      "sha256": "d359f38ae7a8fea2c37c1ade96bb76d7e044e57cfa82e5b0fb677d2f8c5311d8",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/text/BitmapCharLocation",
+      "abc_ordinal": 147,
+      "body_count": 7,
+      "sha256": "797533db3ed4f32855356ac1c95197b29d5eb101d25492396022d6b2b98d398e",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/text/BitmapFontType",
+      "abc_ordinal": 148,
+      "body_count": 3,
+      "sha256": "227d235773834ff8d9d601fa4bebbbdc286113d2e565215ea319630103d287cf",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/memory/AllocationController",
+      "abc_ordinal": 149,
+      "body_count": 10,
+      "sha256": "af09046813e8c595aef28da30b4f046a1db3e99c1c3aee8769808e20adba82e5",
+      "byte_identical": true
+    },
+    {
+      "abc": "starling/memory/AllocationData",
+      "abc_ordinal": 150,
+      "body_count": 7,
+      "sha256": "736f479fa08e8c7e9339980855d75445bedce6311d0e0938fbda029aeae314d9",
+      "byte_identical": true
+    },
+    {
+      "abc": "font/SYCN",
+      "abc_ordinal": 151,
+      "body_count": 3,
+      "sha256": "4e9ca651dcf68bbe8d74b932ecd505e10ffeef66a0a7e934cf452475c78c152c",
+      "byte_identical": true
+    },
+    {
+      "abc": "org/iotashan/oauth/OAuthRequest",
+      "abc_ordinal": 152,
+      "body_count": 17,
+      "sha256": "a6ef397c8a15d38846a5d1f8e8b5e0f2e96f7e3b71bf03de37515941e0078777",
+      "byte_identical": true
+    },
+    {
+      "abc": "org/iotashan/oauth/IOAuthSignatureMethod",
+      "abc_ordinal": 153,
+      "body_count": 2,
+      "sha256": "046a1ea479d3fc588a7ae4e44c4d4368c8ccd8ad7486824d08c0d4e23554084c",
+      "byte_identical": true
+    },
+    {
+      "abc": "org/iotashan/oauth/OAuthSignatureMethod_HMAC_SHA1",
+      "abc_ordinal": 154,
+      "body_count": 5,
+      "sha256": "4cac4b1d526a497beb8f80ca372068bb39f291ba7db02b639f31cdbf196c2416",
+      "byte_identical": true
+    },
+    {
+      "abc": "org/iotashan/oauth/OAuthConsumer",
+      "abc_ordinal": 155,
+      "body_count": 8,
+      "sha256": "e7418afad67485b1190324633d23a81317aeed7daa9a3a76c1c3d6973384f53a",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/Crypto",
+      "abc_ordinal": 156,
+      "body_count": 11,
+      "sha256": "5537b67605cd4b968216d4d8294112b886166c3ad255fdc46886a3367066deff",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/hash/IHMAC",
+      "abc_ordinal": 157,
+      "body_count": 2,
+      "sha256": "373b6f58e86c433577a24d43eb8d3f40a5204cd702a0b9e12c6bb4b6eff67882",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/hash/HMAC",
+      "abc_ordinal": 158,
+      "body_count": 7,
+      "sha256": "63a5cd5b75f2f89dd3c8b30f2bfc531055e23c3486a74ca8b7b7c762c3a9741c",
+      "byte_identical": true
+    },
+    {
+      "abc": "org/iotashan/oauth/OAuthToken",
+      "abc_ordinal": 159,
+      "body_count": 8,
+      "sha256": "3c3634b9377cf7635c18e6769c78da5306e91c28107dbfd6b532734f6e0ca873",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/util/Hex",
+      "abc_ordinal": 160,
+      "body_count": 7,
+      "sha256": "5e9e60938026c722643c6db479ae860a19e762a5df1645ae600b798f212da1b2",
+      "byte_identical": true
+    },
+    {
+      "abc": "org/iotashan/utils/URLEncoding",
+      "abc_ordinal": 161,
+      "body_count": 7,
+      "sha256": "391d8c9ade9dc61d63228587cef363e7dfbf3d8176e567af398f28dbf887ad72",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/util/Base64",
+      "abc_ordinal": 162,
+      "body_count": 8,
+      "sha256": "45caeea5d111da21c9af083ad71fee03b8ca03437222b288b2ac936b9d4673a4",
+      "byte_identical": true
+    },
+    {
+      "abc": "mx/utils/UIDUtil",
+      "abc_ordinal": 163,
+      "body_count": 9,
+      "sha256": "220890f1c01c7126bd984e155c6e5e1581f23cbf2de7389ffc02b73614791c20",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/ICipher",
+      "abc_ordinal": 164,
+      "body_count": 2,
+      "sha256": "f058d1e5a7471e36f83d785c8768f29d992a54d193b342cd6223191e9644ddf6",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/IMode",
+      "abc_ordinal": 165,
+      "body_count": 2,
+      "sha256": "abb1be7bf7e2b137a03737333db259b0cfbae70eb2459985867f1d85d3a9e8fc",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/SimpleIVMode",
+      "abc_ordinal": 166,
+      "body_count": 8,
+      "sha256": "5912b38bc6d8a06d5b202e88539bae6ab13712fe2abe9f929e13895debbefd86",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/ISymmetricKey",
+      "abc_ordinal": 167,
+      "body_count": 2,
+      "sha256": "26756e0cbc5ea0e54a565c9b733a55c8390587a12e53ee61efb3a8d7d16fb1de",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/XTeaKey",
+      "abc_ordinal": 168,
+      "body_count": 9,
+      "sha256": "938650b27d1c2877a05785e78ffbf3ecaea09abee756a35a9f2c0bd658f5b25a",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/BlowFishKey",
+      "abc_ordinal": 169,
+      "body_count": 15,
+      "sha256": "e28d382a3522e7096776ab7e7f81783915779cd8b6f45e1d127344ccb31e8896",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/AESKey",
+      "abc_ordinal": 170,
+      "body_count": 15,
+      "sha256": "47dc8312c5a28d872bba3c1d269f5a559b6066ab412e9c6f904a3f5641236cda",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/IPad",
+      "abc_ordinal": 171,
+      "body_count": 2,
+      "sha256": "c879e8f220dc0a7853b750b3592b45c2612c7765452a28cb411ed4e930b0329f",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/IVMode",
+      "abc_ordinal": 172,
+      "body_count": 9,
+      "sha256": "ac997a0cb1a3be448c515ccb2a94992aa9889b9b73edb93ed9c8489a827287ba",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/OFBMode",
+      "abc_ordinal": 173,
+      "body_count": 7,
+      "sha256": "514993e395247d58c936fa9c8fb00223f7f732af1d619e32760a5c785bc45643",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/hash/IHash",
+      "abc_ordinal": 174,
+      "body_count": 2,
+      "sha256": "e3377d940295f2a3fcb67771951f785e46e2f3f398be37a788acadd81980ba51",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/CTRMode",
+      "abc_ordinal": 175,
+      "body_count": 7,
+      "sha256": "13e1025bb5d07b399ce2db4afaf0b56899a80c66796eccc9b90411c5eb655b68",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/hash/SHABase",
+      "abc_ordinal": 176,
+      "body_count": 9,
+      "sha256": "a196f347d69cafdd0911c1de9bbe620ec771acb770dc0f397d8494ee30d5484f",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/hash/SHA256",
+      "abc_ordinal": 177,
+      "body_count": 7,
+      "sha256": "198a2ea1f03846c2f153922c26d6b92cc2d0e76f6b6bf82c2b0f75c90d36f057",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/hash/SHA224",
+      "abc_ordinal": 178,
+      "body_count": 5,
+      "sha256": "4f9c4da2c0fd2e1266e841424947152ff255ef113fae647f3bc27054b309b933",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/hash/SHA1",
+      "abc_ordinal": 179,
+      "body_count": 9,
+      "sha256": "33e763a14e2ec01c174f49ce99a9cef130d20d87aef49043c9e0fff87443e6ce",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/IStreamCipher",
+      "abc_ordinal": 180,
+      "body_count": 2,
+      "sha256": "7368fca05c8d0735e06ddb5e26fa127b8a5914e867ec5db91042b72eeb42ef6c",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/prng/IPRNG",
+      "abc_ordinal": 181,
+      "body_count": 2,
+      "sha256": "599b8d72f13f5f108297471c6f2f99464dbc58d7ec82450b338173042212c696",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/prng/ARC4",
+      "abc_ordinal": 182,
+      "body_count": 11,
+      "sha256": "56aa12680cb57fe9e9efebe7f76cddc81ff75c4a01f6d41fc4ecdcf9e3051a3c",
+      "byte_identical": true
+    },
+    {
+      "abc": "mx/core/IUID",
+      "abc_ordinal": 183,
+      "body_count": 2,
+      "sha256": "0083dda14c1c2c15ff14ffc99b9d66d626002d8eb320d1637dae25ab78672003",
+      "byte_identical": true
+    },
+    {
+      "abc": "mx/core/IPropertyChangeNotifier",
+      "abc_ordinal": 184,
+      "body_count": 2,
+      "sha256": "9942830be998841809ca5863ba1c3e66937d879591e516234dea655cbc845a32",
+      "byte_identical": true
+    },
+    {
+      "abc": "mx/core/IFlexDisplayObject",
+      "abc_ordinal": 185,
+      "body_count": 2,
+      "sha256": "2587e3583498be6f08cbe6fbd7b989db5e16ba1a93c05a53b6f05ba86504f3fa",
+      "byte_identical": true
+    },
+    {
+      "abc": "mx/core/IUIComponent",
+      "abc_ordinal": 186,
+      "body_count": 2,
+      "sha256": "0b5680354d0a80be8d2c89b4c64349bb619a067991020c0dd0e743801dbf2390",
+      "byte_identical": true
+    },
+    {
+      "abc": "mx/core/mx_internal",
+      "abc_ordinal": 187,
+      "body_count": 1,
+      "sha256": "c9f76cfdb23f1c1404f17bb25a4ed558d43b398f2954859e674bfec2d43ac823",
+      "byte_identical": true
+    },
+    {
+      "abc": "mx/utils/XMLNotifier",
+      "abc_ordinal": 188,
+      "body_count": 10,
+      "sha256": "993b2a5958a51f8535eac638a1ca7a0bcb27e6827a2452a96f9bed1e5598a804",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/PKCS5",
+      "abc_ordinal": 189,
+      "body_count": 6,
+      "sha256": "6849b0bc9f32399c4923424faca1bf501f2ba991c886538b0b8764fe1fa66283",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/CFB8Mode",
+      "abc_ordinal": 190,
+      "body_count": 6,
+      "sha256": "1ede02da3700f0b6dfcbe71c5d04fbd44aa8bd8e54986b15b0d9e741d4e7d342",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/NullPad",
+      "abc_ordinal": 191,
+      "body_count": 6,
+      "sha256": "37af0be18e1d2f2b100f383fb7cddae5d81019be31fb3b164a0fa94568869baf",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/CFBMode",
+      "abc_ordinal": 192,
+      "body_count": 6,
+      "sha256": "0fea3de6d9e0858173998e70805239d988515a33ab696c1baa5354ccd026ad77",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/DESKey",
+      "abc_ordinal": 193,
+      "body_count": 10,
+      "sha256": "d7a710c857a759a714b180a34fae526c292044ab74f20e544da3972173ecec4b",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/TripleDESKey",
+      "abc_ordinal": 194,
+      "body_count": 7,
+      "sha256": "23f117265c83973fab9dffdd8168c62efe2aec8aa0aad3264f037484cffe6c32",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/hash/MAC",
+      "abc_ordinal": 195,
+      "body_count": 8,
+      "sha256": "9ec21a64783f1d8766d1565c27793276496711ddf0db8ce40ecb80fbc2eef2db",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/hash/MD2",
+      "abc_ordinal": 196,
+      "body_count": 8,
+      "sha256": "71fe473c2e9b38634c19ce00475ca0f4796c9e87dd55fd6303a10e56a4d6678f",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/hash/MD5",
+      "abc_ordinal": 197,
+      "body_count": 15,
+      "sha256": "d733f6cc390175cd9906b669338be49545fc2bbf2d21a46b02a28a9138f7fc16",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/CBCMode",
+      "abc_ordinal": 198,
+      "body_count": 6,
+      "sha256": "b273bccac8108672cea565466c5ca23f4e6e249c05ce8818ac032297bcf793b8",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/rsa/RSAKey",
+      "abc_ordinal": 199,
+      "body_count": 24,
+      "sha256": "9379c55cd0ffea6ae6428bc7886358e56cab29a524bc65a02504891d41527a68",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/symmetric/ECBMode",
+      "abc_ordinal": 200,
+      "body_count": 8,
+      "sha256": "7a12519219412b1d5b48d3e3fd10f72cb781eef211c35666fdf3dca5e33ee0c1",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/util/Memory",
+      "abc_ordinal": 201,
+      "body_count": 5,
+      "sha256": "5b0d4144788b3c44d70638ce51c2bdc7527b32515aaed340a5fbccae1100f767",
+      "byte_identical": true
+    },
+    {
+      "abc": "mx/core/IChildList",
+      "abc_ordinal": 202,
+      "body_count": 2,
+      "sha256": "570febbd080984fd010f080714eeb793b9c5f3a0e89add85cfd9df50c20e56d5",
+      "byte_identical": true
+    },
+    {
+      "abc": "mx/core/IFlexModuleFactory",
+      "abc_ordinal": 203,
+      "body_count": 2,
+      "sha256": "99a8e98563d9fe39b2994ecad9f6996c971e16063a9c0d02e4abebc679693f27",
+      "byte_identical": true
+    },
+    {
+      "abc": "mx/managers/ISystemManager",
+      "abc_ordinal": 204,
+      "body_count": 2,
+      "sha256": "ac4f60b04559f98dadb63d2be138bf52cb3562c4de19277da3d4a0f079438dc5",
+      "byte_identical": true
+    },
+    {
+      "abc": "mx/utils/IXMLNotifiable",
+      "abc_ordinal": 205,
+      "body_count": 2,
+      "sha256": "d951f675e8b0c563c9d71c8de3cdfebc9463ae7298453253c9763a2cccb333d1",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/tls/TLSError",
+      "abc_ordinal": 206,
+      "body_count": 3,
+      "sha256": "1853f0cf61c78442569334905384a59e78e8de800b49fd8ad5aef1573628edfb",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/crypto/prng/Random",
+      "abc_ordinal": 207,
+      "body_count": 9,
+      "sha256": "d5871f29781509f232d5aa2d248d61a03bb387d6b1407bd8b26c7b4df62ebcd9",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/math/BigInteger",
+      "abc_ordinal": 208,
+      "body_count": 85,
+      "sha256": "87fa463b48fbbc8238d4b3f560b53d59f897b39d58f9ec1dd777a878f0b32929",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/math/IReduction",
+      "abc_ordinal": 209,
+      "body_count": 2,
+      "sha256": "4dccdbe27e304b56a073e7198458ca0479eb402b4955e274d65fd80cf436daf1",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/math/MontgomeryReduction",
+      "abc_ordinal": 210,
+      "body_count": 8,
+      "sha256": "fc7287e55c495467ea7b9ad5def72df1ccb7e2a0174d73a7189c1e59ab554000",
+      "byte_identical": true
+    },
+    {
+      "abc": "mx/core/RSLData",
+      "abc_ordinal": 211,
+      "body_count": 12,
+      "sha256": "3759ccc7b6aa9e46bad95e0feca52894483b1c3b625e6c6eac5835e1ab00ab15",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/math/NullReduction",
+      "abc_ordinal": 212,
+      "body_count": 8,
+      "sha256": "2136afce22348067ae174af6e623ffb1b5ef593e6cc3e33db047d579824cbb88",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/math/BarrettReduction",
+      "abc_ordinal": 213,
+      "body_count": 8,
+      "sha256": "a0378b546235e21d1b2390dbb5e9c622a363e8a31c8cf7964f8ebd5fb1828834",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/math/ClassicReduction",
+      "abc_ordinal": 214,
+      "body_count": 8,
+      "sha256": "43a966ad5064988e0cd050eb252b39cfc7698174d5b7507c99799b559f9d3f87",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/hurlant/math/bi_internal",
+      "abc_ordinal": 215,
+      "body_count": 1,
+      "sha256": "b580753eb37e10bff559f593d3c4c50dbe2cd94e379568075cf9e300f0c935c8",
+      "byte_identical": true
+    },
+    {
+      "abc": "WorkerDemo",
+      "abc_ordinal": 216,
+      "body_count": 8,
+      "sha256": "5496d0407930fad830f1cc7ff1ce9b1dbbbc44808bee0dc967477da7ec9786d6",
+      "byte_identical": true
+    },
+    {
+      "abc": "BackgroundWorker",
+      "abc_ordinal": 217,
+      "body_count": 7,
+      "sha256": "99ffec53734ff25bc96c2c9ad871ac5ad556dfe0c91511db993f1f6698fd8201",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/adobe/test/vo/CountResult",
+      "abc_ordinal": 218,
+      "body_count": 3,
+      "sha256": "00359f4e3091355d613ea92978bea0d912223315b3cb18b6a27a84c816aaa30b",
+      "byte_identical": true
+    },
+    {
+      "abc": "WorkerDecode",
+      "abc_ordinal": 219,
+      "body_count": 9,
+      "sha256": "f5a06817486245bf23fd1045848790b8047c93a93e64abecd2e95cb58b8c7c31",
+      "byte_identical": true
+    },
+    {
+      "abc": "Workers",
+      "abc_ordinal": 220,
+      "body_count": 4,
+      "sha256": "2f9de5bd4bef052f62bd4d5090583ae4a4e0c8efce5ae34f3b6a818f4d6daf12",
+      "byte_identical": true
+    },
+    {
+      "abc": "WorkerResourceLoader",
+      "abc_ordinal": 221,
+      "body_count": 12,
+      "sha256": "12640493a0c82fe8ce73252aafe2c1809f588f72b128577e1acae9c62b2dd381",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/adobe/test/view/ProgressBar",
+      "abc_ordinal": 222,
+      "body_count": 10,
+      "sha256": "7e273eacf61ed246c6935226aa5b8608f3115aec3bd323e9673746caeeca47c2",
+      "byte_identical": true
+    },
+    {
+      "abc": "BackgroundWorker_swf$b9b20713f6d2e0e377a3989ddfdb58562024868441",
+      "abc_ordinal": 223,
+      "body_count": 3,
+      "sha256": "83c4534863f3db75e6a79cad8bf8d08a55aadea6b8ebd0f0099046505036f0c5",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/digitalstrawberry/ane/share/events/ShareEvent",
+      "abc_ordinal": 224,
+      "body_count": 5,
+      "sha256": "e65d1340242761e9c12f6b93e18744fd0c9f86190717e8cf2234d483ed6c5d3b",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/digitalstrawberry/ane/share/ShareOptions",
+      "abc_ordinal": 225,
+      "body_count": 8,
+      "sha256": "08366d38aa6208132071e7c805470f123708887145b373f678d2fd7c7b6edc61",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/digitalstrawberry/ane/share/SharedData",
+      "abc_ordinal": 226,
+      "body_count": 8,
+      "sha256": "c0e2aa0a125bbeec6f15fa2ba1b5b4cac5e0380e56c62f282c58b02e4d928733",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/digitalstrawberry/ane/share/Share",
+      "abc_ordinal": 227,
+      "body_count": 12,
+      "sha256": "79eb00892a3b1ca9a345175f55d28f9b917eef14ccd677cde87d08218daba080",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/events/ApplicationEvent",
+      "abc_ordinal": 228,
+      "body_count": 4,
+      "sha256": "3026ab3156134bfdf65f5cfeb6e7163cac2245ae2493ced674ccc2b758c91ae7",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/events/DefaultsEvent",
+      "abc_ordinal": 229,
+      "body_count": 4,
+      "sha256": "d19a3b6a17b16ff4898baa183c94b1a10c20339e4a4141793c8b25fed1acc461",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/IDType",
+      "abc_ordinal": 230,
+      "body_count": 3,
+      "sha256": "ee45d8aede6a808a1f58e79d55419bddbf94155586d6a207245c1edc69255bca",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/Device",
+      "abc_ordinal": 231,
+      "body_count": 2,
+      "sha256": "506590939eea7df1eb192fbc86fd3d681350bf0c8956bc0f55ce134c61d46476",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/_DeviceImpl",
+      "abc_ordinal": 232,
+      "body_count": 24,
+      "sha256": "04611ca09e9fc29e0ac2c4b58acbc1302d40852143ef842d184dbede89eab4c9",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/ApplicationDisplayModes",
+      "abc_ordinal": 233,
+      "body_count": 3,
+      "sha256": "f6007d9c15bcc67a991143301df47b490fb9167396480e84de4272b87c0708f6",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/keyboard/SoftKeyboard",
+      "abc_ordinal": 234,
+      "body_count": 2,
+      "sha256": "ff27eb1143832f895a3c0dc3e3216ad7363e989f2e6d07d366ab4495d63c73e9",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/_SoftKeyboardImpl",
+      "abc_ordinal": 235,
+      "body_count": 6,
+      "sha256": "b95d14996d8ba023df22f103a8af1ee69fe84381946123b4439b0150e6b2e7f0",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/IOSStatusBarStyles",
+      "abc_ordinal": 236,
+      "body_count": 3,
+      "sha256": "67fd7c5de706aea37b5dda056c03ba96d78989ea14245a780c5689212b1d95a9",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/alarms/AlarmManager",
+      "abc_ordinal": 237,
+      "body_count": 2,
+      "sha256": "119b43d795899a0d88ee0d4aa7858660acb025d8963b466d631fee302be90c72",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/Locale",
+      "abc_ordinal": 238,
+      "body_count": 4,
+      "sha256": "b63f404c7d4d50bdef5eca50544306e5e73dc0fafc51c52c6411444750670a20",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/keyboard/SoftKeyboardMode",
+      "abc_ordinal": 239,
+      "body_count": 3,
+      "sha256": "91460de6c1cf7537204478eab08c50d2a411a6973a0b9c5ac4a4406fe4d5e4a4",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/Settings",
+      "abc_ordinal": 240,
+      "body_count": 2,
+      "sha256": "135116708dd803cb9e81746dc60069e66c1157092a401266baa0c0bbfa5952ad",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/_SettingsImpl",
+      "abc_ordinal": 241,
+      "body_count": 13,
+      "sha256": "8d8e79dc8d0636024a2337963dd87cab54266e3c6cc79c5d885605637d183975",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/DeviceOrientation",
+      "abc_ordinal": 242,
+      "body_count": 3,
+      "sha256": "a1197c11ca81f51f8d80a818441b12c0e7952300f5b10a5ceef3fffbd7e9beac",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/DisplayMetrics",
+      "abc_ordinal": 243,
+      "body_count": 2,
+      "sha256": "82f27a5b39e277fc40d5df886a06459935f5f7e3b426d889f74c7606f867d797",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/_DisplayMetricsImpl",
+      "abc_ordinal": 244,
+      "body_count": 15,
+      "sha256": "7ebcdcf0a5db5ab0ec9649c65a4831f25cdc91de502a1e5f658ea556bd72e6d9",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/Accessibility",
+      "abc_ordinal": 245,
+      "body_count": 2,
+      "sha256": "e9ca9eeab19fdf34515d003a4744745f64feafd4c206dedda742ead623dad019",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/_Accessibility",
+      "abc_ordinal": 246,
+      "body_count": 4,
+      "sha256": "6150e9072691613350a0e89dfb731c1846c7561ca78fabe6b2d65f92b41e2dec",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/Application",
+      "abc_ordinal": 247,
+      "body_count": 32,
+      "sha256": "667b2189487d2f4b997a155abbf1c11e8a9c4c78bb488f95fe8e2d771d63e041",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/alarms/AlarmBuilder",
+      "abc_ordinal": 248,
+      "body_count": 12,
+      "sha256": "4e25c452220ddae5fc4be56aa27869d8f61bedb78ee134381e0911cf67b8e280",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/alarms/Alarm",
+      "abc_ordinal": 249,
+      "body_count": 3,
+      "sha256": "08201e2d1790ddc8b2b33f22d8c777325f6e7b00aef15109b468515c187484bf",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/_AlarmManagerImpl",
+      "abc_ordinal": 250,
+      "body_count": 10,
+      "sha256": "8952edce10637e3384ef5b339e7907b2fb5d5b4595f5582297c61cc55882ac61",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/events/AuthorisationEvent",
+      "abc_ordinal": 251,
+      "body_count": 4,
+      "sha256": "5a5fdd97f63a3b7827a1478ce864cce3dc35f322c7b62419ca9c9117aaf4220b",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/AuthorisationStatus",
+      "abc_ordinal": 252,
+      "body_count": 3,
+      "sha256": "0f3bd52b9f92ee22690c7a9802053e40ee3550b3dfe53a36bb990406017b3a82",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/Defaults",
+      "abc_ordinal": 253,
+      "body_count": 2,
+      "sha256": "a9fdb4b88a8c9d9e525c72bfd86b61ff6fe507a7905d917ebc85bf9227b01f7c",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/ObjectUtils",
+      "abc_ordinal": 254,
+      "body_count": 4,
+      "sha256": "8826a8ddaddb2e0ed1f4b170680d68f6dbfd4b3b947a28694d59f900b7dde544",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/StatusBarStyle",
+      "abc_ordinal": 255,
+      "body_count": 3,
+      "sha256": "1244721d5db58456e61d3f9318e7c2ac2496a150a1f7f40ab39779829210420a",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/events/ApplicationStateEvent",
+      "abc_ordinal": 256,
+      "body_count": 4,
+      "sha256": "d78e8a6e3eb692654ca6eadb95e4b07eefce720f860728b0f894b85d114712ed",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/Version",
+      "abc_ordinal": 257,
+      "body_count": 3,
+      "sha256": "0a3df84b550d0eb4226c21136df0aedafa74a75362f32fd81dd195a2e3de8841",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/events/SettingsEvent",
+      "abc_ordinal": 258,
+      "body_count": 4,
+      "sha256": "7f4019e52acd63dfb55207a275401217d13841dfac556fbac439bdde9ab47b25",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/Keychain",
+      "abc_ordinal": 259,
+      "body_count": 2,
+      "sha256": "3059e6ac4db396c41f5943ff0fb40ee1b21e0d9c683de95804d9716218361d29",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/_KeychainImpl",
+      "abc_ordinal": 260,
+      "body_count": 7,
+      "sha256": "f11d3f9217136354850a2c631c5c125206c0c43ae4b01a40f1115d0ae8adb48a",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/events/DeviceStateEvent",
+      "abc_ordinal": 261,
+      "body_count": 3,
+      "sha256": "6b167dba8c94e022d24a013e13ee29fe9bbac26d9a42b0ad58b3e450366ba96d",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/OperatingSystem",
+      "abc_ordinal": 262,
+      "body_count": 3,
+      "sha256": "832123f3b34bf5c93c4f8639167a500edc5a1f9ea24e255f894289b014a37bbd",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/events/DeviceOrientationEvent",
+      "abc_ordinal": 263,
+      "body_count": 4,
+      "sha256": "ac8b26c01cb0d0baee1fd337183e972c02839c3f5524995def578dd3bafba641",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/TimeZone",
+      "abc_ordinal": 264,
+      "body_count": 4,
+      "sha256": "676091f3d29b8d31f898a06aa7b5d8465030c2c5c60d14eabdc7b9f5d0808097",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/events/AlarmEvent",
+      "abc_ordinal": 265,
+      "body_count": 4,
+      "sha256": "aaea083e36427db103de40931328d601ba55dc9eab2001ad0dd334a1c25b092f",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/application/_DefaultsImpl",
+      "abc_ordinal": 266,
+      "body_count": 17,
+      "sha256": "2b753be1439cbe0deb70cebd42f627a54074bdb50aaf327be0cb7475885f8d9c",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/battery/Version",
+      "abc_ordinal": 267,
+      "body_count": 3,
+      "sha256": "4b75d8e6b9ef1d3bedfa64431e7b4467cbf043781000f43f306d38e0e2b94bfa",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/battery/BatteryState",
+      "abc_ordinal": 268,
+      "body_count": 3,
+      "sha256": "ebb8c1704f761d330ef10e3f0ecc16a1a71eec983e5dc1ac7f840a2bff95cd0e",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/battery/Battery",
+      "abc_ordinal": 269,
+      "body_count": 22,
+      "sha256": "7c29a7185023c347180f3c535b97db6aab33576d387943d1db536a6848cfe1ea",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/battery/events/BatteryEvent",
+      "abc_ordinal": 270,
+      "body_count": 4,
+      "sha256": "9cf92c22a233e6a4b38a4aae545b175aae255da16f3fdd82cf7f7c3ea01478f5",
+      "byte_identical": true
+    },
+    {
+      "abc": "battstat_bat$eda6eeec5b9ae7325b8e70b94d92f875-399685545",
+      "abc_ordinal": 271,
+      "body_count": 3,
+      "sha256": "449ff1ad2b57a5544739b2ea239f0291fd77c43fc75b6f4347abf7edb543aba7",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/core/Core",
+      "abc_ordinal": 272,
+      "body_count": 11,
+      "sha256": "843171667be5f6f413d849e3ec56dfc3867363d2516f196e15aa3b254c663a86",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/distriqt/extension/core/Version",
+      "abc_ordinal": 273,
+      "body_count": 3,
+      "sha256": "fac146ee781eb064d872c4402c4e7413b66497886c9bc56c24ca44e53a26769d",
+      "byte_identical": true
+    },
+    {
+      "abc": "pinball/assetDownload/AssetDownloadExtension",
+      "abc_ordinal": 274,
+      "body_count": 4,
+      "sha256": "4475f2bbe0717af403c6477eeda6d0681d09446bcfa90d3061af6b10f3c267a6",
+      "byte_identical": true
+    },
+    {
+      "abc": "pinball/screen/ScreenExtension",
+      "abc_ordinal": 275,
+      "body_count": 4,
+      "sha256": "0c0736ecd6225a1c164f489821a2207c26bbd87328dbc362f9d504cc1e10f87b",
+      "byte_identical": true
+    },
+    {
+      "abc": "crackify/CrackifyExtension",
+      "abc_ordinal": 276,
+      "body_count": 4,
+      "sha256": "06a8f74b5308196eae59957b59826932d696bbdfa609badf9c0d66e8297de727",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/digitalstrawberry/ane/storereview/StoreReview",
+      "abc_ordinal": 277,
+      "body_count": 12,
+      "sha256": "a28e3b4c11034b3b4aecfd62558949240a3a99c58f972db52bebdfadf1c7bf25",
+      "byte_identical": true
+    },
+    {
+      "abc": "generateSignature/GenerateSignatureExtension",
+      "abc_ordinal": 278,
+      "body_count": 4,
+      "sha256": "61350308e37edb3ddd786455f855dd88bd096ced06c96255884663166820b6ec",
+      "byte_identical": true
+    },
+    {
+      "abc": "pinball/checkapp/CheckAppExtension",
+      "abc_ordinal": 279,
+      "body_count": 4,
+      "sha256": "d64a4797ee2b9b22a328a839ce185712048dffd9ae83551f2f17e19db02e0ff8",
+      "byte_identical": true
+    },
+    {
+      "abc": "pinball/ane/googleId/GoogleIdExtension",
+      "abc_ordinal": 280,
+      "body_count": 4,
+      "sha256": "db757f2b13b94665ea1b47675e499305165b279e72848fb8ff8cbcb0393c4df3",
+      "byte_identical": true
+    },
+    {
+      "abc": "pinball/vibration/VibrationExtension",
+      "abc_ordinal": 281,
+      "body_count": 4,
+      "sha256": "39c43ed1156a03cb2e749acf7d5676092ff2686449aa58a6f727cb80f6ebf6eb",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/gibits/leitingaar/LeitingSDKExtension",
+      "abc_ordinal": 282,
+      "body_count": 46,
+      "sha256": "4d77b0f8157b2ab8e4a5dc6225f77b4a7bdbd0967c5ea8ef63153d3c9045769b",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/gibits/leitingaar/events/CallBack",
+      "abc_ordinal": 283,
+      "body_count": 3,
+      "sha256": "0cf58609718bb16fef91dac440f268bb58dff1c3e7c300e55eca2a16db2299dc",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/gibits/leitingaar/LeitingSDKExtension",
+      "abc_ordinal": 284,
+      "body_count": 46,
+      "sha256": "4d77b0f8157b2ab8e4a5dc6225f77b4a7bdbd0967c5ea8ef63153d3c9045769b",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/gibits/leitingaar/events/CallBack",
+      "abc_ordinal": 285,
+      "body_count": 3,
+      "sha256": "0cf58609718bb16fef91dac440f268bb58dff1c3e7c300e55eca2a16db2299dc",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/gbitstools/ane/extension/GbitsToolsExtension",
+      "abc_ordinal": 286,
+      "body_count": 9,
+      "sha256": "4d02cdb11550dbe374e4dc4566166272137e6e7bee585e2509b4f82b497f4c7f",
+      "byte_identical": true
+    },
+    {
+      "abc": "com/gbitstools/ane/extension/GbitsToolsExtension",
+      "abc_ordinal": 287,
+      "body_count": 9,
+      "sha256": "4d02cdb11550dbe374e4dc4566166272137e6e7bee585e2509b4f82b497f4c7f",
+      "byte_identical": true
+    },
+    {
+      "abc": "pinball/ane/getbuild/GetBuildExtension",
+      "abc_ordinal": 288,
+      "body_count": 4,
+      "sha256": "f00ca693201907ebde1425f0401b77af730d391a483bd615589509a329e2545e",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn.rules.QuestElementResistance",
+      "abc_ordinal": 289,
+      "body_count": 5,
+      "sha256": "1a7ff2f55f3437afec887867ded1764342d6126599de88b3c68480d3f7e786f9",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn.ui.AbyssDetails",
+      "abc_ordinal": 290,
+      "body_count": 13,
+      "sha256": "71149dd2d75d05974973776c7ed68838885febec20e49fa556aa07fc2b349527",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn.account.PlayerLogin",
+      "abc_ordinal": 291,
+      "body_count": 93,
+      "sha256": "edf1234a63dafbd9e3a3ddacff830a53d25465ea2f79533c59b724e7fb37868d",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn.asset.EmptyUpdate",
+      "abc_ordinal": 292,
+      "body_count": 5,
+      "sha256": "a7b0b87f8b0bc03434b5e1e09b9a944e038047e348ea12bdb43922d12ce7d1b8",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn.ui.AbyssRecordDetails",
+      "abc_ordinal": 293,
+      "body_count": 11,
+      "sha256": "830ae52840df63c469d151bdebe8da208e243a2dd6afa710e3816c90f2caa441",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn.ui.ItemSourceFolderGate",
+      "abc_ordinal": 294,
+      "body_count": 4,
+      "sha256": "d117aa1bdb852d728da1341f8f5dca1c5d0afa2d8da6454ac987a43eab4f6424",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn.shop.ShopFirstOpen",
+      "abc_ordinal": 295,
+      "body_count": 8,
+      "sha256": "31f9a7233dcc5e9beb43b4fd3963ac579bdd62f5dab1a3bd8a1d236e3aa06e3c",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn.mod.InahoAbilityVisuals",
+      "abc_ordinal": 296,
+      "body_count": 7,
+      "sha256": "f5e26cbc8c4ea098d11dbfcdc3db1af9f9d32234f926d90c3a2b076a80a83550",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn.mod.IndependentRushParty",
+      "abc_ordinal": 297,
+      "body_count": 6,
+      "sha256": "e68b7029f6ab88a235f2018273f2fdec4574a544946950364f8ec24e42305941",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn.boss.BossMechanicsRuntime",
+      "abc_ordinal": 298,
+      "body_count": 17,
+      "sha256": "a70e4cdcd8047c78e8680a74aa80e8974b71231ca4986fb16565f7f9c71b598a",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn.loading.BattlePackSlicer",
+      "abc_ordinal": 299,
+      "body_count": 23,
+      "sha256": "c41e4ad73cf4143c75c6cd9c6a6edd16fad15f62569400f9701e29e8d84b81c8",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn.loading.GcGate",
+      "abc_ordinal": 300,
+      "body_count": 5,
+      "sha256": "b26dc6817b5fc2501c2b61ea349cc0dca8c2b613c7e78e1de8d3382b44212bf7",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn/optimize/network/RequestTimer",
+      "abc_ordinal": 301,
+      "body_count": 5,
+      "sha256": "e7e93f89c0140372427867f9325b243d331e054bf6b13e9f72c4ee9a4061b06c",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn/optimize/network/NetworkBudget",
+      "abc_ordinal": 302,
+      "body_count": 7,
+      "sha256": "f05d48228b687e7bdb2371fcf059e596b96141b6d10fd613b40d3f8abab0fa6d",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn.optimize.data.DataOptimization",
+      "abc_ordinal": 303,
+      "body_count": 25,
+      "sha256": "acfe2f76f4a746f66dbf2b30dcbc6b05528257fceb21fad5d0a7dd5c48bf30dc",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn.optimize.resources.ResourceRuntime",
+      "abc_ordinal": 304,
+      "body_count": 50,
+      "sha256": "f988fb531726c7e934979ae0e48b89f53cb98acaf84bd9a96bbc75fdda16f1bd",
+      "byte_identical": true
+    },
+    {
+      "abc": "cn.optimize.ui.UiOptimization",
+      "abc_ordinal": 305,
+      "body_count": 15,
+      "sha256": "da2afaafa1e7fd60530bb66522cadabb0c8052160864f9a645362aed474e572e",
+      "byte_identical": true
+    }
+  ],
+  "changed_methods": [
+    "ConditionSlot$/wfxSpec",
+    "MemberImpl$/wfxHealDamageTick",
+    "MemberImpl/scheduleDirectAttack",
+    "MemberImpl/wfxHealSample",
+    "UniqueConditionLogic/wfxSuperPreload"
+  ],
+  "added_methods": [
+    "MemberImpl$/wfxHealAnyCTQueue",
+    "MemberImpl$/wfxHealAnyCTTick",
+    "MemberImpl/wfxDirectTargetCount",
+    "MemberImpl/wfxHealAnyCTRecord",
+    "MemberImpl/wfxHealAnyDamage",
+    "MemberImpl/wfxHealAnyFever",
+    "MemberImpl/wfxHealAnyMembers",
+    "MemberImpl/wfxHealAnySample",
+    "MemberImpl/wfxHealAnyValue"
+  ],
+  "whole_swf_original_body_count": 96912,
+  "whole_swf_unchanged_body_records": 96907,
+  "input_sha256": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384",
+  "output_sha256": "4f7b894b11e1f377a91e1d4c9b132bd676f850bc6d49f48268fe9ecb7aaaa46b",
+  "verification_source_manifest": {
+    "path": "framework-source-locks.json",
+    "sha256": "e28f50c924bfb185a4ae91e7a69134fa3bb7ca4f0f49cd52fb4250899d72c231",
+    "file_count": 50,
+    "unchanged_during_verification": true
+  }
+}

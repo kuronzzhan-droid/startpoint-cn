@@ -1,0 +1,199 @@
+{
+  "capability": "heal-fever-any-source-v1",
+  "output_swf_sha256": "4f7b894b11e1f377a91e1d4c9b132bd676f850bc6d49f48268fe9ecb7aaaa46b",
+  "pcode": [
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl/wfxHealSample",
+      "body": 92657,
+      "code_sha256": "58a752c30cf7ec32ad3adb60f87874e1842d6585a257e0addc4aaca918f7d06f",
+      "header": [
+        6,
+        10,
+        1,
+        2
+      ],
+      "file": "MemberImpl__wfxHealSample.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "UniqueConditionLogic/wfxSuperPreload",
+      "body": 92647,
+      "code_sha256": "b12034d239cf2ddb9b6a0ffb5126843aa6141f962c8b09172f341ac31d949d65",
+      "header": [
+        5,
+        6,
+        1,
+        2
+      ],
+      "file": "UniqueConditionLogic__wfxSuperPreload.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl$/wfxHealDamageTick",
+      "body": 92654,
+      "code_sha256": "d7083b3386ecff0b6b2d7cf233cd61817c8b0522e8e5bbef4fe3e9698d347a78",
+      "header": [
+        4,
+        7,
+        1,
+        2
+      ],
+      "file": "MemberImpl$__wfxHealDamageTick.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl/wfxHealAnyValue",
+      "body": 92679,
+      "code_sha256": "a2c8bd90f1910ffffe47d13889dfcf762b6634557d37ae464c2c24a27718e5c9",
+      "header": [
+        4,
+        8,
+        1,
+        2
+      ],
+      "file": "MemberImpl__wfxHealAnyValue.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl/wfxHealAnyDamage",
+      "body": 92680,
+      "code_sha256": "cdf2ddfbbb046e9e47f7d709179b9190b1ba08ec28626ff8e0b6055ed20d3de3",
+      "header": [
+        5,
+        10,
+        1,
+        2
+      ],
+      "file": "MemberImpl__wfxHealAnyDamage.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl/wfxHealAnyFever",
+      "body": 92681,
+      "code_sha256": "9385881f5dc668120084eebc000e8ff46811b94449bb252614ea9eef1b8e3606",
+      "header": [
+        6,
+        7,
+        1,
+        2
+      ],
+      "file": "MemberImpl__wfxHealAnyFever.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl/wfxHealAnyMembers",
+      "body": 92682,
+      "code_sha256": "961b241ea71136c4b14c2a72bbba5212032f50780d63712a413c4025f9363d30",
+      "header": [
+        2,
+        6,
+        1,
+        2
+      ],
+      "file": "MemberImpl__wfxHealAnyMembers.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl/wfxHealAnySample",
+      "body": 92683,
+      "code_sha256": "42c38daf8af19f7cfeb177e138e132c444fbecc793de848c3d5579b2d10dc1d9",
+      "header": [
+        5,
+        13,
+        1,
+        2
+      ],
+      "file": "MemberImpl__wfxHealAnySample.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl$/wfxHealAnyCTQueue",
+      "body": 92684,
+      "code_sha256": "0bd48c6f034ee07bf51ca47777d6b5925ff85412b568012085258ac9c0b44295",
+      "header": [
+        9,
+        5,
+        1,
+        2
+      ],
+      "file": "MemberImpl$__wfxHealAnyCTQueue.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl$/wfxHealAnyCTTick",
+      "body": 92685,
+      "code_sha256": "c1d4c47055c245892c63df3462408b29bf5895eb9e1dec6286999cdc143c1c40",
+      "header": [
+        7,
+        10,
+        1,
+        2
+      ],
+      "file": "MemberImpl$__wfxHealAnyCTTick.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl/wfxHealAnyCTRecord",
+      "body": 92686,
+      "code_sha256": "395727ad2b8f691cd2283284a236c2806a28f6b7d80875aebdea5714e4d222ec",
+      "header": [
+        6,
+        15,
+        1,
+        2
+      ],
+      "file": "MemberImpl__wfxHealAnyCTRecord.pcode.txt"
+    }
+  ],
+  "shared_source": "../source",
+  "source_entrypoint": "../../build.py",
+  "requirement_decisions": {
+    "status": "resolved",
+    "source": "TASK11-current.md",
+    "questions": [
+      {
+        "id": "cross_player_stats_id",
+        "question": "原生跨玩家治疗携带来源端statsBattleId；保留跨ID排除，还是允许本端实际收到的队友治疗？",
+        "answer": "B",
+        "previous_candidate": "严格排除跨statsBattleId；正常跨玩家治疗因此不计入34/35",
+        "resolution": "码34/35允许本端实际执行的跨玩家回复；限制受治疗成员属于本端primary队伍且battle为本端，镜像、仅转发和统计回执不重复计入；旧30/31跨statsBattleId排除保留。"
+      },
+      {
+        "id": "fever_batch_boundary",
+        "question": "35每名成员实际applyHeal各调用一次，还是整次多目标治疗只调用一次并增加批次标记？",
+        "answer": "A",
+        "previous_candidate": "逐成员实际applyHeal独立量化，逐持有者一次调用；无跨成员批次聚合",
+        "resolution": "每名受治疗成员实际applyHeal独立量化；每位持有者在该成员事件中各调用一次Fever API，不加批次标记。"
+      }
+    ],
+    "source_sha256": "69c0c9b27f479d7270618776be22b5ef371b21c5061d255877d8ce05e9b57851",
+    "ruling_date": "2026-10-19",
+    "revision": 3,
+    "ct_supplement": {
+      "code": 34,
+      "arg_formula": "category + 10 * tier_percent + 1000 * ct_seconds",
+      "tier_percent_range": [
+        0,
+        99
+      ],
+      "example_arg": 5050,
+      "example_ct_seconds": 5,
+      "window_logic_frames": 30,
+      "minimum_ct_logic_frames": 30,
+      "ct_start": "damage_emission",
+      "ct_heals": "discard_without_carry",
+      "ct_scope": "one_per_holder_shared_effective_and_overheal",
+      "pause": "no_logic_frames_no_ct_progress",
+      "arg_below_1000": "bytecode_behavior_identical_to_pre_ct",
+      "code35": "unchanged_no_ct"
+    }
+  },
+  "decision_evidence": "../source/task-evidence/decision-status.json",
+  "task_evidence": "../source/task-evidence/TASK11-current.md",
+  "revision": 3,
+  "pre_ct_swf_sha256": "608bf66914dc5e0a0b8c16e795b88692f67b2b9a23a898be4254c42710e4353b",
+  "verification_status": "pass",
+  "external_readonly_ack": "../source/task-evidence/known-external-changes.json",
+  "scope": "本地草稿；前十轮构造器与v34输入只读；AIR/真机未核实"
+}

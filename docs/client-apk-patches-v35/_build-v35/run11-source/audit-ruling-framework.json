@@ -1,0 +1,428 @@
+{
+  "status": "pass",
+  "revision": 3,
+  "task_sha256": "69c0c9b27f479d7270618776be22b5ef371b21c5061d255877d8ce05e9b57851",
+  "external_readonly_ack_sha256": "853334b785967246db68f8c7d01f5180caf87ae7bd86b861963b1439d7eee15b",
+  "scope": "实际任务契约及内存负控；不是整包SWF/业务/最终交付验收",
+  "positive_baselines": 7,
+  "negative_cases": 57,
+  "checks": [
+    {
+      "name": "current_task_contract",
+      "pass": true
+    },
+    {
+      "name": "pending_status",
+      "rejected": true,
+      "reason": "裁定未解决"
+    },
+    {
+      "name": "wrong_source",
+      "rejected": true,
+      "reason": ""
+    },
+    {
+      "name": "wrong_source_hash",
+      "rejected": true,
+      "reason": ""
+    },
+    {
+      "name": "wrong_revision",
+      "rejected": true,
+      "reason": "CT补充口径漂移"
+    },
+    {
+      "name": "wrong_ct_start",
+      "rejected": true,
+      "reason": "CT补充口径漂移"
+    },
+    {
+      "name": "ct_carry",
+      "rejected": true,
+      "reason": "CT补充口径漂移"
+    },
+    {
+      "name": "wrong_ct_example",
+      "rejected": true,
+      "reason": "CT补充口径漂移"
+    },
+    {
+      "name": "duplicate_question",
+      "rejected": true,
+      "reason": ""
+    },
+    {
+      "name": "wrong_answer_0",
+      "rejected": true,
+      "reason": "裁定答案漂移"
+    },
+    {
+      "name": "wrong_answer_1",
+      "rejected": true,
+      "reason": "裁定答案漂移"
+    },
+    {
+      "name": "mutated_bytes_task-evidence/TASK11-before-ruling.md",
+      "rejected": true,
+      "reason": "裁定前任务快照漂移"
+    },
+    {
+      "name": "mutated_bytes_task-evidence/TASK11-before-ct.md",
+      "rejected": true,
+      "reason": "CT前第二版任务快照漂移"
+    },
+    {
+      "name": "mutated_bytes_task-evidence/TASK11-current.md",
+      "rejected": true,
+      "reason": "已授权CT补充快照漂移"
+    },
+    {
+      "name": "mutated_bytes_task-evidence/decision-status.json",
+      "rejected": true,
+      "reason": "Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "name": "mutated_bytes_task-evidence/TASK11-readonly-ack.md",
+      "rejected": true,
+      "reason": "外部只读变化确认快照漂移"
+    },
+    {
+      "name": "mutated_bytes_input-provenance.json",
+      "rejected": true,
+      "reason": "Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "name": "mutated_bytes_work/pre-ct/v35k.swf",
+      "rejected": true,
+      "reason": "第二版SWF留档漂移"
+    },
+    {
+      "name": "mutated_bytes_work/pre-ct/v35k.swf.sha256",
+      "rejected": true,
+      "reason": ""
+    },
+    {
+      "name": "mutated_bytes_../TASK11.md",
+      "rejected": true,
+      "reason": "当前任务发生未核对变化"
+    },
+    {
+      "name": "wrong_provenance_task_sha256",
+      "rejected": true,
+      "reason": ""
+    },
+    {
+      "name": "wrong_provenance_previous_task_sha256",
+      "rejected": true,
+      "reason": ""
+    },
+    {
+      "name": "wrong_provenance_pre_ct_task_sha256",
+      "rejected": true,
+      "reason": ""
+    },
+    {
+      "name": "wrong_provenance_pre_ct_swf",
+      "rejected": true,
+      "reason": ""
+    },
+    {
+      "name": "wrong_provenance_pre_ct_swf_sha256",
+      "rejected": true,
+      "reason": ""
+    },
+    {
+      "name": "exact_task_append_accepted_against_initial_lock",
+      "pass": true
+    },
+    {
+      "name": "other_changed_file",
+      "rejected": true,
+      "reason": "{'new_files': ['apk/superseded/v35k-x86-unsigned-aligned.apk', 'apk/superseded/v35k-x86.signed.apk'], 'missing_files': [], 'changed_files': ['TASK1.md', 'TASK11.md', 'apk/HASHES.txt'], 'new_directories': [], 'missing_directories': []}"
+    },
+    {
+      "name": "new_file",
+      "rejected": true,
+      "reason": "{'new_files': ['apk/superseded/v35k-x86-unsigned-aligned.apk', 'apk/superseded/v35k-x86.signed.apk', 'unauthorized.txt'], 'missing_files': [], 'changed_files': ['TASK11.md', 'apk/HASHES.txt'], 'new_directories': [], 'missing_directories': []}"
+    },
+    {
+      "name": "missing_file",
+      "rejected": true,
+      "reason": "{'new_files': ['apk/superseded/v35k-x86-unsigned-aligned.apk', 'apk/superseded/v35k-x86.signed.apk'], 'missing_files': ['TASK1.md'], 'changed_files': ['TASK11.md', 'apk/HASHES.txt'], 'new_directories': [], 'missing_directories': []}"
+    },
+    {
+      "name": "new_directory",
+      "rejected": true,
+      "reason": "{'new_files': ['apk/superseded/v35k-x86-unsigned-aligned.apk', 'apk/superseded/v35k-x86.signed.apk'], 'missing_files': [], 'changed_files': ['TASK11.md', 'apk/HASHES.txt'], 'new_directories': ['unauthorized'], 'missing_directories': []}"
+    },
+    {
+      "name": "missing_directory",
+      "rejected": true,
+      "reason": "{'new_files': ['apk/superseded/v35k-x86-unsigned-aligned.apk', 'apk/superseded/v35k-x86.signed.apk'], 'missing_files': [], 'changed_files': ['TASK11.md', 'apk/HASHES.txt'], 'new_directories': [], 'missing_directories': ['run9/work']}"
+    },
+    {
+      "name": "external_change",
+      "rejected": true,
+      "reason": "外部 v34 输入变化"
+    },
+    {
+      "name": "task_size",
+      "rejected": true,
+      "reason": "仅接受已核对裁定、CT补充及只读确认精确内容"
+    },
+    {
+      "name": "task_hash",
+      "rejected": true,
+      "reason": "仅接受已核对裁定、CT补充及只读确认精确内容"
+    },
+    {
+      "name": "old_task_restored",
+      "rejected": true,
+      "reason": "仅接受已核对裁定、CT补充及只读确认精确内容"
+    },
+    {
+      "name": "external_ack_apk/superseded/v35k-x86-unsigned-aligned.apk_sha256",
+      "rejected": true,
+      "reason": "('已知外部变化必须匹配精确哈希和大小', 'apk/superseded/v35k-x86-unsigned-aligned.apk')"
+    },
+    {
+      "name": "external_ack_apk/superseded/v35k-x86-unsigned-aligned.apk_bytes",
+      "rejected": true,
+      "reason": "('已知外部变化必须匹配精确哈希和大小', 'apk/superseded/v35k-x86-unsigned-aligned.apk')"
+    },
+    {
+      "name": "external_ack_missing_apk/superseded/v35k-x86-unsigned-aligned.apk",
+      "rejected": true,
+      "reason": "('已知外部变化必须匹配精确哈希和大小', 'apk/superseded/v35k-x86-unsigned-aligned.apk')"
+    },
+    {
+      "name": "external_ack_apk/superseded/v35k-x86.signed.apk_sha256",
+      "rejected": true,
+      "reason": "('已知外部变化必须匹配精确哈希和大小', 'apk/superseded/v35k-x86.signed.apk')"
+    },
+    {
+      "name": "external_ack_apk/superseded/v35k-x86.signed.apk_bytes",
+      "rejected": true,
+      "reason": "('已知外部变化必须匹配精确哈希和大小', 'apk/superseded/v35k-x86.signed.apk')"
+    },
+    {
+      "name": "external_ack_missing_apk/superseded/v35k-x86.signed.apk",
+      "rejected": true,
+      "reason": "('已知外部变化必须匹配精确哈希和大小', 'apk/superseded/v35k-x86.signed.apk')"
+    },
+    {
+      "name": "external_ack_apk/HASHES.txt_sha256",
+      "rejected": true,
+      "reason": "('已知外部变化必须匹配精确哈希和大小', 'apk/HASHES.txt')"
+    },
+    {
+      "name": "external_ack_apk/HASHES.txt_bytes",
+      "rejected": true,
+      "reason": "('已知外部变化必须匹配精确哈希和大小', 'apk/HASHES.txt')"
+    },
+    {
+      "name": "external_ack_missing_apk/HASHES.txt",
+      "rejected": true,
+      "reason": "('已知外部变化必须匹配精确哈希和大小', 'apk/HASHES.txt')"
+    },
+    {
+      "name": "external_ack_rollback_apk/HASHES.txt",
+      "rejected": true,
+      "reason": "('已知外部变化必须匹配精确哈希和大小', 'apk/HASHES.txt')"
+    },
+    {
+      "name": "external_ack_registration_hash",
+      "rejected": true,
+      "reason": "已知外部变化登记漂移"
+    },
+    {
+      "name": "final_readonly_contract",
+      "pass": true
+    },
+    {
+      "name": "now_current_decisions",
+      "pass": true
+    },
+    {
+      "name": "now_wrong_revision",
+      "rejected": true,
+      "reason": "累计登记与裁定不一致"
+    },
+    {
+      "name": "now_wrong_ct_supplement",
+      "rejected": true,
+      "reason": "累计登记与裁定不一致"
+    },
+    {
+      "name": "now_wrong_source_sha256",
+      "rejected": true,
+      "reason": "累计登记与裁定不一致"
+    },
+    {
+      "name": "now_missing_decisions",
+      "rejected": true,
+      "reason": "'requirement_decisions'"
+    },
+    {
+      "name": "item_current_decisions",
+      "pass": true
+    },
+    {
+      "name": "item_wrong_revision",
+      "rejected": true,
+      "reason": "归档manifest与裁定不一致"
+    },
+    {
+      "name": "item_wrong_ct_supplement",
+      "rejected": true,
+      "reason": "归档manifest与裁定不一致"
+    },
+    {
+      "name": "item_wrong_source_sha256",
+      "rejected": true,
+      "reason": "归档manifest与裁定不一致"
+    },
+    {
+      "name": "item_missing_decisions",
+      "rejected": true,
+      "reason": "'requirement_decisions'"
+    },
+    {
+      "name": "registry_current_ct_schema",
+      "pass": true
+    },
+    {
+      "name": "registry_wrong_ct_example",
+      "rejected": true,
+      "reason": "码34示例未更新CT"
+    },
+    {
+      "name": "registry_wrong_ct_logic_frames_per_second",
+      "rejected": true,
+      "reason": ""
+    },
+    {
+      "name": "registry_wrong_ct_ct_evidence",
+      "rejected": true,
+      "reason": ""
+    },
+    {
+      "name": "registry_wrong_ct_arg",
+      "rejected": true,
+      "reason": "码34 CT登记缺失"
+    },
+    {
+      "name": "registry_wrong_ct_timing",
+      "rejected": true,
+      "reason": "码34 CT登记缺失"
+    },
+    {
+      "name": "final_task_contract",
+      "pass": true
+    }
+  ],
+  "requirement_decisions": {
+    "status": "resolved",
+    "source": "TASK11-current.md",
+    "questions": [
+      {
+        "id": "cross_player_stats_id",
+        "question": "原生跨玩家治疗携带来源端statsBattleId；保留跨ID排除，还是允许本端实际收到的队友治疗？",
+        "answer": "B",
+        "previous_candidate": "严格排除跨statsBattleId；正常跨玩家治疗因此不计入34/35",
+        "resolution": "码34/35允许本端实际执行的跨玩家回复；限制受治疗成员属于本端primary队伍且battle为本端，镜像、仅转发和统计回执不重复计入；旧30/31跨statsBattleId排除保留。"
+      },
+      {
+        "id": "fever_batch_boundary",
+        "question": "35每名成员实际applyHeal各调用一次，还是整次多目标治疗只调用一次并增加批次标记？",
+        "answer": "A",
+        "previous_candidate": "逐成员实际applyHeal独立量化，逐持有者一次调用；无跨成员批次聚合",
+        "resolution": "每名受治疗成员实际applyHeal独立量化；每位持有者在该成员事件中各调用一次Fever API，不加批次标记。"
+      }
+    ],
+    "source_sha256": "69c0c9b27f479d7270618776be22b5ef371b21c5061d255877d8ce05e9b57851",
+    "ruling_date": "2026-10-19",
+    "revision": 3,
+    "ct_supplement": {
+      "code": 34,
+      "arg_formula": "category + 10 * tier_percent + 1000 * ct_seconds",
+      "tier_percent_range": [
+        0,
+        99
+      ],
+      "example_arg": 5050,
+      "example_ct_seconds": 5,
+      "window_logic_frames": 30,
+      "minimum_ct_logic_frames": 30,
+      "ct_start": "damage_emission",
+      "ct_heals": "discard_without_carry",
+      "ct_scope": "one_per_holder_shared_effective_and_overheal",
+      "pause": "no_logic_frames_no_ct_progress",
+      "arg_below_1000": "bytecode_behavior_identical_to_pre_ct",
+      "code35": "unchanged_no_ct"
+    }
+  },
+  "evidence_source_locks": [
+    {
+      "path": "audit/ruling_framework.py",
+      "sha256": "2c59883c3c4fbe3761f923d6137b082a4ce1990384a28c1d01fd5f3db8a4a3d1"
+    },
+    {
+      "path": "task_contract.py",
+      "sha256": "64143920a6f555237c11a3b8607bda3f5482112defe4ed2edb7d60b5e27dce91"
+    },
+    {
+      "path": "source_guard.py",
+      "sha256": "b9d9c7a68607bdd388ea06a2bc80e01c2094d5adb4b54b20ebc8eab0e08cad09"
+    },
+    {
+      "path": "delivery_check.py",
+      "sha256": "659fdbe2abcaac08803121f6486e1ae0d9f3a3fa92bfae29f83ecc496b345f62"
+    },
+    {
+      "path": "make_registry.py",
+      "sha256": "0e0496abb5a80a930318d525f896323ea70b18dfdb24b5779780d3b0b176043a"
+    },
+    {
+      "path": "make_archive.py",
+      "sha256": "42ed08f9808d3af31e35d561e4cdccef29ecac7d8a0ae2eedfc93e00fe8e3883"
+    },
+    {
+      "path": "task-evidence/TASK11-before-ruling.md",
+      "sha256": "e7f8bdde6450e4d2ea27835ac906ace322dfd0e1c34e64fc38f0d1692483aeea"
+    },
+    {
+      "path": "task-evidence/TASK11-before-ct.md",
+      "sha256": "8b52c8b03f023e4c3fed5c1fd8e087ae447478a6785dc92996636dc0839154c3"
+    },
+    {
+      "path": "task-evidence/TASK11-current.md",
+      "sha256": "69c0c9b27f479d7270618776be22b5ef371b21c5061d255877d8ce05e9b57851"
+    },
+    {
+      "path": "task-evidence/decision-status.json",
+      "sha256": "de27a31306f95937d024ace5e3e83648984caeaeb9d3b84a63182bf70be1802b"
+    },
+    {
+      "path": "task-evidence/TASK11-readonly-ack.md",
+      "sha256": "853334b785967246db68f8c7d01f5180caf87ae7bd86b861963b1439d7eee15b"
+    },
+    {
+      "path": "task-evidence/known-external-changes.json",
+      "sha256": "5f19dfe64e712ac5bf1d834d83303b992bf2b381c9c40760f25e4247c092b8a0"
+    },
+    {
+      "path": "task-evidence/readonly-source-before-ack.json",
+      "sha256": "9f123174840bb3edf4870cd48acf229c718c5f03dfd2bfe45aa8daa174504bd8"
+    },
+    {
+      "path": "input-provenance.json",
+      "sha256": "0042f3f8b0e1e3e19baf89fc7f76647f1e0ec25619072b3646852bb534633a17"
+    },
+    {
+      "path": "readonly-source-locks.json",
+      "sha256": "e0281cc5db4a7fd8b7ade1f1a83867d981b8040fa288f80887fe96cf873d37f0"
+    }
+  ],
+  "final_baseline": "pass"
+}

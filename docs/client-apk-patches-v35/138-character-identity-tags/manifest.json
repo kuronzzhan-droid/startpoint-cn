@@ -1,0 +1,35 @@
+{
+  "capability": "wfx-character-identity-tags-v1",
+  "output_swf_sha256": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384",
+  "pcode": [
+    {
+      "abc": "boot_ffc6",
+      "label": "CharacterBaseImpl/get_characterTags",
+      "body": 16804,
+      "code_sha256": "1e06475d69a89ecd85d3fb2b226c835a55cc9aeb87dc051bdf694420ed5b863b",
+      "header": [
+        2,
+        1,
+        1,
+        2
+      ],
+      "file": "CharacterBaseImpl__get_characterTags.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "CharacterBaseImpl/wfxCharacterIdentityTags",
+      "body": 92667,
+      "code_sha256": "ab6ee8a41e2a1894ced70749bc7f257782d841cf0f5f3438a94d75f99ad95f1b",
+      "header": [
+        2,
+        4,
+        1,
+        2
+      ],
+      "file": "CharacterBaseImpl__wfxCharacterIdentityTags.pcode.txt"
+    }
+  ],
+  "shared_source": "../source",
+  "source_entrypoint": "../../build.py",
+  "scope": "本地草稿；前九轮构造器与v34输入只读；AIR/真机未核实"
+}
