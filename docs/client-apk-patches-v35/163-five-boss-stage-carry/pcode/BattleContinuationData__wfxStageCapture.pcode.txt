@@ -1,0 +1,60 @@
+; BattleContinuationData/wfxStageCapture
+; body_index=92775 method_index=101248
+; sha256=7b62a8705820ededd4475803d7122334a356eacbbd6923d00072d835d8f68f7a
+; maxstack=4 localcount=5 init_scope_depth=1 max_scope_depth=1
+L000000: getlex             7446 [pinball.common.data.battle.restore::BattleContinuationData]
+L000003: getproperty        69734 [wfxStageStates]
+L000007: iftrue             L000018 (# 8)
+L00000b: getlex             7446 [pinball.common.data.battle.restore::BattleContinuationData]
+L00000e: getlex             5867 [flash.utils::Dictionary]
+L000011: pushtrue           
+L000012: construct          1
+L000014: setproperty        69734 [wfxStageStates]
+L000018: avm_label          
+L000019: newarray           0
+L00001b: setlocal_2         
+L00001c: pushbyte           0
+L00001e: setlocal_3         
+L00001f: avm_label          
+L000020: getlocal_3         
+L000021: getlocal_1         
+L000022: getproperty        12766 [members]
+L000025: getproperty        35 [length]
+L000027: ifge               L000066 (# 43)
+L00002b: getlocal_1         
+L00002c: getproperty        12766 [members]
+L00002f: getlocal_3         
+L000030: getproperty        69163 [<mn kind 0x1b>]
+L000034: setlocal           4
+L000036: inclocal_i         3
+L000038: getlocal           4
+L00003a: getproperty        46 [index]
+L00003c: pushbyte           0
+L00003e: ifne               L00001f (# 13)
+L000042: getlocal           4
+L000044: getproperty        80 [params]
+L000046: pushbyte           0
+L000048: getproperty        69163 [<mn kind 0x1b>]
+L00004c: setlocal           4
+L00004e: getlocal_2         
+L00004f: getlocal           4
+L000051: getproperty        46 [index]
+L000053: getlocal           4
+L000055: getproperty        15447 [conditionSlot]
+L000058: callproperty       69732 [wfxStageSnapshot], 0
+L00005d: newarray           2
+L00005f: callpropvoid       65 [http://adobe.com/AS3/2006/builtin::push], 1
+L000062: jump               L00001f (# 13)
+L000066: avm_label          
+L000067: getlex             7446 [pinball.common.data.battle.restore::BattleContinuationData]
+L00006a: getproperty        69734 [wfxStageStates]
+L00006e: getlocal_0         
+L00006f: getlocal_1         
+L000070: getproperty        15447 [conditionSlot]
+L000073: callproperty       69732 [wfxStageSnapshot], 0
+L000078: getlocal_2         
+L000079: newarray           2
+L00007b: setproperty        69163 [<mn kind 0x1b>]
+L00007f: returnvoid         
+L000080: ; end
+; exception_table=[]

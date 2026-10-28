@@ -1,0 +1,38 @@
+#0000 ofs0000: getlocal_1 []
+#0001 ofs0001: pushint [16000000]
+#0002 ofs0004: ifne [] -> #5
+#0003 ofs0008: pushstring ['裂罅']
+#0004 ofs000c: returnvalue []
+#0005 ofs000d: getlocal_1 []
+#0006 ofs000e: lookupswitch [] default #7, cases [8, 7, 11, 14, 17, 20, 23, 26, 29, 32, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 35]
+#0007 ofs013f: jump [] -> #37
+#0008 ofs0143: pushstring ['item_group_consume']
+#0009 ofs0147: returnvalue []
+#0010 ofs0148: jump [] -> #37
+#0011 ofs014c: pushstring ['item_group_growth']
+#0012 ofs0150: returnvalue []
+#0013 ofs0151: jump [] -> #37
+#0014 ofs0155: pushstring ['item_group_event']
+#0015 ofs0159: returnvalue []
+#0016 ofs015a: jump [] -> #37
+#0017 ofs015e: pushstring ['item_group_exchange_ticket']
+#0018 ofs0162: returnvalue []
+#0019 ofs0163: jump [] -> #37
+#0020 ofs0167: pushstring ['item_group_ability_sphere']
+#0021 ofs016b: returnvalue []
+#0022 ofs016c: jump [] -> #37
+#0023 ofs0170: pushstring ['item_group_trade_item']
+#0024 ofs0174: returnvalue []
+#0025 ofs0175: jump [] -> #37
+#0026 ofs0179: pushstring ['item_group_craft_point']
+#0027 ofs017d: returnvalue []
+#0028 ofs017e: jump [] -> #37
+#0029 ofs0182: pushstring ['item_group_star_grain']
+#0030 ofs0186: returnvalue []
+#0031 ofs0187: jump [] -> #37
+#0032 ofs018b: pushstring ['item_group_equipment_enhancement']
+#0033 ofs018f: returnvalue []
+#0034 ofs0190: jump [] -> #37
+#0035 ofs0194: pushstring ['item_group_etc']
+#0036 ofs0198: returnvalue []
+#0037 ofs0199: returnvoid []

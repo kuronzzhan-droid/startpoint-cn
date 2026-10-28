@@ -1,0 +1,58 @@
+# Battle$/wfxFpCommandType161 header=[7, 10, 1, 2] sha=06c6e6b695b2fa2893df34cc0767bcfe6f887ab5edf32784e94b8b950a9da110
+# exceptions=[]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal [4]
+#0003 ofs0004: pushbyte [64]
+#0004 ofs0006: ifge [] -> #51
+#0005 ofs000a: getlocal_1 []
+#0006 ofs000b: pushnull []
+#0007 ofs000c: ifeq [] -> #49
+#0008 ofs0010: getlocal_1 []
+#0009 ofs0011: getproperty ['index']
+#0010 ofs0013: setlocal [5]
+#0011 ofs0015: getlocal_1 []
+#0012 ofs0016: getproperty ['params']
+#0013 ofs0018: setlocal [6]
+#0014 ofs001a: getlocal [5]
+#0015 ofs001c: pushbyte [0]
+#0016 ofs001e: ifne [] -> #26
+#0017 ofs0022: getlocal [6]
+#0018 ofs0024: iffalse [] -> #23
+#0019 ofs0028: getlocal [6]
+#0020 ofs002a: getproperty ['length']
+#0021 ofs002c: pushbyte [0]
+#0022 ofs002e: ifne [] -> #51
+#0023 ofs0032: pushbyte [0]
+#0024 ofs0034: newarray [1]
+#0025 ofs0036: returnvalue []
+#0026 ofs0037: getlocal [5]
+#0027 ofs0039: pushbyte [1]
+#0028 ofs003b: ifne [] -> #48
+#0029 ofs003f: getlocal [6]
+#0030 ofs0041: iffalse [] -> #51
+#0031 ofs0045: getlocal [6]
+#0032 ofs0047: getproperty ['length']
+#0033 ofs0049: pushbyte [1]
+#0034 ofs004b: ifne [] -> #51
+#0035 ofs004f: pushbyte [1]
+#0036 ofs0051: getlex ['pinball.scene.battle.battle::Battle']
+#0037 ofs0054: getlocal [6]
+#0038 ofs0056: pushbyte [0]
+#0039 ofs0058: getproperty ['<mn kind 0x1b>']
+#0040 ofs005a: getlocal_2 []
+#0041 ofs005b: getlocal_3 []
+#0042 ofs005c: getlocal [4]
+#0043 ofs005e: pushbyte [1]
+#0044 ofs0060: add_i []
+#0045 ofs0061: callproperty ['wfxFpCommandType182', 4]
+#0046 ofs0066: newarray [2]
+#0047 ofs0068: returnvalue []
+#0048 ofs0069: jump [] -> #51
+#0049 ofs006d: pushnull []
+#0050 ofs006e: returnvalue []
+#0051 ofs006f: getlex ['pinball.scene.battle.battle::Battle']
+#0052 ofs0072: getlocal_2 []
+#0053 ofs0073: getlocal_3 []
+#0054 ofs0074: callproperty ['wfxFpInputUnsupported', 2]
+#0055 ofs0079: returnvalue []

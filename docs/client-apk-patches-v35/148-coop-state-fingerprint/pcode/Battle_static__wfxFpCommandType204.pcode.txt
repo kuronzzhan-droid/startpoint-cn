@@ -1,0 +1,48 @@
+# Battle$/wfxFpCommandType204 header=[3, 10, 1, 2] sha=7ecd8e4d2ebee940b4725f427ee2ea14198c30d6af0ef82ae9900791e64c07f6
+# exceptions=[]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal [4]
+#0003 ofs0004: pushbyte [64]
+#0004 ofs0006: ifge [] -> #41
+#0005 ofs000a: getlocal_1 []
+#0006 ofs000b: pushnull []
+#0007 ofs000c: ifeq [] -> #39
+#0008 ofs0010: getlocal_1 []
+#0009 ofs0011: getproperty ['index']
+#0010 ofs0013: setlocal [5]
+#0011 ofs0015: getlocal_1 []
+#0012 ofs0016: getproperty ['params']
+#0013 ofs0018: setlocal [6]
+#0014 ofs001a: getlocal [5]
+#0015 ofs001c: pushbyte [0]
+#0016 ofs001e: ifne [] -> #26
+#0017 ofs0022: getlocal [6]
+#0018 ofs0024: iffalse [] -> #23
+#0019 ofs0028: getlocal [6]
+#0020 ofs002a: getproperty ['length']
+#0021 ofs002c: pushbyte [0]
+#0022 ofs002e: ifne [] -> #41
+#0023 ofs0032: pushbyte [0]
+#0024 ofs0034: newarray [1]
+#0025 ofs0036: returnvalue []
+#0026 ofs0037: getlocal [5]
+#0027 ofs0039: pushbyte [1]
+#0028 ofs003b: ifne [] -> #38
+#0029 ofs003f: getlocal [6]
+#0030 ofs0041: iffalse [] -> #35
+#0031 ofs0045: getlocal [6]
+#0032 ofs0047: getproperty ['length']
+#0033 ofs0049: pushbyte [0]
+#0034 ofs004b: ifne [] -> #41
+#0035 ofs004f: pushbyte [1]
+#0036 ofs0051: newarray [1]
+#0037 ofs0053: returnvalue []
+#0038 ofs0054: jump [] -> #41
+#0039 ofs0058: pushnull []
+#0040 ofs0059: returnvalue []
+#0041 ofs005a: getlex ['pinball.scene.battle.battle::Battle']
+#0042 ofs005d: getlocal_2 []
+#0043 ofs005e: getlocal_3 []
+#0044 ofs005f: callproperty ['wfxFpInputUnsupported', 2]
+#0045 ofs0064: returnvalue []

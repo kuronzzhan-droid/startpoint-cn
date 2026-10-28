@@ -1,0 +1,13 @@
+# Battle$/wfxFpUtf8Size header=[2, 3, 1, 2] sha=3466d9a87c663cf935a4070292cab9b24abaa61de0f4e39fa8de86d395d22e52
+# exceptions=[]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['flash.utils::ByteArray']
+#0003 ofs0004: construct [0]
+#0004 ofs0006: setlocal_2 []
+#0005 ofs0007: getlocal [2]
+#0006 ofs0009: getlocal [1]
+#0007 ofs000b: callpropvoid ['writeUTFBytes', 1]
+#0008 ofs000f: getlocal [2]
+#0009 ofs0011: getproperty ['length']
+#0010 ofs0013: returnvalue []

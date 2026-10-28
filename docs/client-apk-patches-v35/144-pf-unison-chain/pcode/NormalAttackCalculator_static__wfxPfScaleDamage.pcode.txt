@@ -1,0 +1,25 @@
+# NormalAttackCalculator$/wfxPfScaleDamage header=[3, 4, 1, 2] sha=3597dfb551802be13e16218be444a5aea704a4156bd3f5c5763f5c5063514b7b
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_2 []
+#0003 ofs0003: pushstring ['wfxPfDamageScale']
+#0004 ofs0007: callproperty ['hasOwnProperty', 1]
+#0005 ofs000b: iffalse [] -> #22
+#0006 ofs000f: getlocal_2 []
+#0007 ofs0010: getproperty ['wfxPfDamageScale']
+#0008 ofs0014: convert_d []
+#0009 ofs0015: setlocal_3 []
+#0010 ofs0016: getlocal_3 []
+#0011 ofs0017: pushbyte [0]
+#0012 ofs0019: ifle [] -> #22
+#0013 ofs001d: getlocal_3 []
+#0014 ofs001e: pushbyte [1]
+#0015 ofs0020: ifeq [] -> #22
+#0016 ofs0024: getlex ['pinball.common.math._Decimal100::Decimal100_Impl_']
+#0017 ofs0027: getlocal_1 []
+#0018 ofs0028: getlocal_3 []
+#0019 ofs0029: multiply []
+#0020 ofs002a: callproperty ['fromRaw', 1]
+#0021 ofs002f: returnvalue []
+#0022 ofs0030: getlocal_1 []
+#0023 ofs0031: returnvalue []

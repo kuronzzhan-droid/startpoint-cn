@@ -1,0 +1,17 @@
+; BattleViewInputSettings/isOtherBattleActionVisible (after)
+; body_index=63740 method_index=69279
+; sha256=1fce08e231b8ee1ff9c2e46f138455a88f7262f742d87be1171e57dacc9a7fac
+; maxstack=2 localcount=1 init_scope_depth=1 max_scope_depth=2
+L000000 (#0000): getlocal_0         
+L000001 (#0001): pushscope          
+L000002 (#0002): pushfalse          
+L000003 (#0003): returnvalue        
+L000004 (#0004): findproperty       27490 [battle]
+L000008 (#0005): getproperty        27490 [battle]
+L00000c (#0006): getlex             40920 [pinball.scene.battle.battle::SkippableLogicKind]
+L000010 (#0007): getproperty        42345 [Action]
+L000014 (#0008): callproperty       40921 [isRichMode], 1
+L000019 (#0009): convert_b          
+L00001a (#0010): returnvalue        
+L00001b (#0011): ; end
+; exception_table=[]

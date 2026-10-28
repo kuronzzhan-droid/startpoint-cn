@@ -1,0 +1,38 @@
+; Continue2Dialog$/wfxContinueTitle
+; body_index=92781 method_index=101254
+; sha256=a6683057a42f0823e9fa8374fe17f67e32d450315cf5da6e265447d83fd97560
+; maxstack=2 localcount=3 init_scope_depth=1 max_scope_depth=2
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: pushstring         94314 ["消耗 "]
+L000006: getlocal_1         
+L000007: getproperty        31508 [itemName]
+L00000b: add                
+L00000c: pushstring         93492 [" × "]
+L000010: add                
+L000011: getlocal_1         
+L000012: getproperty        15848 [amount]
+L000015: add                
+L000016: pushstring         94315 [" 继续战斗\n持有 "]
+L00001a: add                
+L00001b: getlocal_1         
+L00001c: getproperty        22304 [before]
+L000020: add                
+L000021: pushstring         94316 [" → 消费后 "]
+L000025: add                
+L000026: setlocal_2         
+L000027: getlocal_1         
+L000028: getproperty        22305 [after]
+L00002c: pushbyte           0
+L00002e: iflt               L00003a (# 28)
+L000032: getlocal_2         
+L000033: getlocal_1         
+L000034: getproperty        22305 [after]
+L000038: add                
+L000039: returnvalue        
+L00003a: getlocal_2         
+L00003b: pushstring         94317 ["数量不足"]
+L00003f: add                
+L000040: returnvalue        
+L000041: ; end
+; exception_table=[]

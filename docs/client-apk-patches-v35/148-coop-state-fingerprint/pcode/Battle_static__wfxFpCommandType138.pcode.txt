@@ -1,0 +1,168 @@
+# Battle$/wfxFpCommandType138 header=[3, 10, 1, 2] sha=4485257dac1a5d3029f113510c50e9751bcddf5631468c98ca70432890793942
+# exceptions=[]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal [4]
+#0003 ofs0004: pushbyte [64]
+#0004 ofs0006: ifge [] -> #161
+#0005 ofs000a: getlocal_1 []
+#0006 ofs000b: pushnull []
+#0007 ofs000c: ifeq [] -> #159
+#0008 ofs0010: getlocal_1 []
+#0009 ofs0011: getproperty ['index']
+#0010 ofs0013: setlocal [5]
+#0011 ofs0015: getlocal_1 []
+#0012 ofs0016: getproperty ['params']
+#0013 ofs0018: setlocal [6]
+#0014 ofs001a: getlocal [5]
+#0015 ofs001c: pushbyte [0]
+#0016 ofs001e: ifne [] -> #26
+#0017 ofs0022: getlocal [6]
+#0018 ofs0024: iffalse [] -> #23
+#0019 ofs0028: getlocal [6]
+#0020 ofs002a: getproperty ['length']
+#0021 ofs002c: pushbyte [0]
+#0022 ofs002e: ifne [] -> #161
+#0023 ofs0032: pushbyte [0]
+#0024 ofs0034: newarray [1]
+#0025 ofs0036: returnvalue []
+#0026 ofs0037: getlocal [5]
+#0027 ofs0039: pushbyte [1]
+#0028 ofs003b: ifne [] -> #38
+#0029 ofs003f: getlocal [6]
+#0030 ofs0041: iffalse [] -> #35
+#0031 ofs0045: getlocal [6]
+#0032 ofs0047: getproperty ['length']
+#0033 ofs0049: pushbyte [0]
+#0034 ofs004b: ifne [] -> #161
+#0035 ofs004f: pushbyte [1]
+#0036 ofs0051: newarray [1]
+#0037 ofs0053: returnvalue []
+#0038 ofs0054: getlocal [5]
+#0039 ofs0056: pushbyte [2]
+#0040 ofs0058: ifne [] -> #50
+#0041 ofs005c: getlocal [6]
+#0042 ofs005e: iffalse [] -> #47
+#0043 ofs0062: getlocal [6]
+#0044 ofs0064: getproperty ['length']
+#0045 ofs0066: pushbyte [0]
+#0046 ofs0068: ifne [] -> #161
+#0047 ofs006c: pushbyte [2]
+#0048 ofs006e: newarray [1]
+#0049 ofs0070: returnvalue []
+#0050 ofs0071: getlocal [5]
+#0051 ofs0073: pushbyte [3]
+#0052 ofs0075: ifne [] -> #62
+#0053 ofs0079: getlocal [6]
+#0054 ofs007b: iffalse [] -> #59
+#0055 ofs007f: getlocal [6]
+#0056 ofs0081: getproperty ['length']
+#0057 ofs0083: pushbyte [0]
+#0058 ofs0085: ifne [] -> #161
+#0059 ofs0089: pushbyte [3]
+#0060 ofs008b: newarray [1]
+#0061 ofs008d: returnvalue []
+#0062 ofs008e: getlocal [5]
+#0063 ofs0090: pushbyte [4]
+#0064 ofs0092: ifne [] -> #74
+#0065 ofs0096: getlocal [6]
+#0066 ofs0098: iffalse [] -> #71
+#0067 ofs009c: getlocal [6]
+#0068 ofs009e: getproperty ['length']
+#0069 ofs00a0: pushbyte [0]
+#0070 ofs00a2: ifne [] -> #161
+#0071 ofs00a6: pushbyte [4]
+#0072 ofs00a8: newarray [1]
+#0073 ofs00aa: returnvalue []
+#0074 ofs00ab: getlocal [5]
+#0075 ofs00ad: pushbyte [5]
+#0076 ofs00af: ifne [] -> #86
+#0077 ofs00b3: getlocal [6]
+#0078 ofs00b5: iffalse [] -> #83
+#0079 ofs00b9: getlocal [6]
+#0080 ofs00bb: getproperty ['length']
+#0081 ofs00bd: pushbyte [0]
+#0082 ofs00bf: ifne [] -> #161
+#0083 ofs00c3: pushbyte [5]
+#0084 ofs00c5: newarray [1]
+#0085 ofs00c7: returnvalue []
+#0086 ofs00c8: getlocal [5]
+#0087 ofs00ca: pushbyte [6]
+#0088 ofs00cc: ifne [] -> #98
+#0089 ofs00d0: getlocal [6]
+#0090 ofs00d2: iffalse [] -> #95
+#0091 ofs00d6: getlocal [6]
+#0092 ofs00d8: getproperty ['length']
+#0093 ofs00da: pushbyte [0]
+#0094 ofs00dc: ifne [] -> #161
+#0095 ofs00e0: pushbyte [6]
+#0096 ofs00e2: newarray [1]
+#0097 ofs00e4: returnvalue []
+#0098 ofs00e5: getlocal [5]
+#0099 ofs00e7: pushbyte [7]
+#0100 ofs00e9: ifne [] -> #110
+#0101 ofs00ed: getlocal [6]
+#0102 ofs00ef: iffalse [] -> #107
+#0103 ofs00f3: getlocal [6]
+#0104 ofs00f5: getproperty ['length']
+#0105 ofs00f7: pushbyte [0]
+#0106 ofs00f9: ifne [] -> #161
+#0107 ofs00fd: pushbyte [7]
+#0108 ofs00ff: newarray [1]
+#0109 ofs0101: returnvalue []
+#0110 ofs0102: getlocal [5]
+#0111 ofs0104: pushbyte [8]
+#0112 ofs0106: ifne [] -> #122
+#0113 ofs010a: getlocal [6]
+#0114 ofs010c: iffalse [] -> #119
+#0115 ofs0110: getlocal [6]
+#0116 ofs0112: getproperty ['length']
+#0117 ofs0114: pushbyte [0]
+#0118 ofs0116: ifne [] -> #161
+#0119 ofs011a: pushbyte [8]
+#0120 ofs011c: newarray [1]
+#0121 ofs011e: returnvalue []
+#0122 ofs011f: getlocal [5]
+#0123 ofs0121: pushbyte [9]
+#0124 ofs0123: ifne [] -> #134
+#0125 ofs0127: getlocal [6]
+#0126 ofs0129: iffalse [] -> #131
+#0127 ofs012d: getlocal [6]
+#0128 ofs012f: getproperty ['length']
+#0129 ofs0131: pushbyte [0]
+#0130 ofs0133: ifne [] -> #161
+#0131 ofs0137: pushbyte [9]
+#0132 ofs0139: newarray [1]
+#0133 ofs013b: returnvalue []
+#0134 ofs013c: getlocal [5]
+#0135 ofs013e: pushbyte [10]
+#0136 ofs0140: ifne [] -> #146
+#0137 ofs0144: getlocal [6]
+#0138 ofs0146: iffalse [] -> #143
+#0139 ofs014a: getlocal [6]
+#0140 ofs014c: getproperty ['length']
+#0141 ofs014e: pushbyte [0]
+#0142 ofs0150: ifne [] -> #161
+#0143 ofs0154: pushbyte [10]
+#0144 ofs0156: newarray [1]
+#0145 ofs0158: returnvalue []
+#0146 ofs0159: getlocal [5]
+#0147 ofs015b: pushbyte [11]
+#0148 ofs015d: ifne [] -> #158
+#0149 ofs0161: getlocal [6]
+#0150 ofs0163: iffalse [] -> #155
+#0151 ofs0167: getlocal [6]
+#0152 ofs0169: getproperty ['length']
+#0153 ofs016b: pushbyte [0]
+#0154 ofs016d: ifne [] -> #161
+#0155 ofs0171: pushbyte [11]
+#0156 ofs0173: newarray [1]
+#0157 ofs0175: returnvalue []
+#0158 ofs0176: jump [] -> #161
+#0159 ofs017a: pushnull []
+#0160 ofs017b: returnvalue []
+#0161 ofs017c: getlex ['pinball.scene.battle.battle::Battle']
+#0162 ofs017f: getlocal_2 []
+#0163 ofs0180: getlocal_3 []
+#0164 ofs0181: callproperty ['wfxFpInputUnsupported', 2]
+#0165 ofs0186: returnvalue []

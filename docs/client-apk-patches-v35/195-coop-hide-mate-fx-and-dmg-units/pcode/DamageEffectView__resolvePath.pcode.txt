@@ -1,0 +1,103 @@
+; DamageEffectView$/resolvePath (after)
+; body_index=57560 method_index=62117
+; sha256=0b4cd6709fe9bffcf5dbce2eff460a7ab340011d442a5a66455ca057dd8b6da6
+; maxstack=2 localcount=3 init_scope_depth=1 max_scope_depth=1
+L000000 (#0000): getlocal_1         
+L000001 (#0001): coerce             11 [String]
+L000003 (#0002): setlocal_2         
+L000004 (#0003): getlocal_2         
+L000005 (#0004): pushstring         26 ["0"]
+L000007 (#0005): ifne               L000014 (# 9)
+L00000b (#0006): pushstring         64624 ["battle/common/layer1/damage_font/0"]
+L00000f (#0007): returnvalue        
+L000010 (#0008): jump               L000105 (# 96)
+L000014 (#0009): getlocal_2         
+L000015 (#0010): pushstring         9478 ["1"]
+L000018 (#0011): ifne               L000025 (# 15)
+L00001c (#0012): pushstring         64625 ["battle/common/layer1/damage_font/1"]
+L000020 (#0013): returnvalue        
+L000021 (#0014): jump               L000105 (# 96)
+L000025 (#0015): getlocal_2         
+L000026 (#0016): pushstring         3286 ["2"]
+L000029 (#0017): ifne               L000036 (# 21)
+L00002d (#0018): pushstring         64626 ["battle/common/layer1/damage_font/2"]
+L000031 (#0019): returnvalue        
+L000032 (#0020): jump               L000105 (# 96)
+L000036 (#0021): getlocal_2         
+L000037 (#0022): pushstring         19072 ["3"]
+L00003b (#0023): ifne               L000048 (# 27)
+L00003f (#0024): pushstring         64627 ["battle/common/layer1/damage_font/3"]
+L000043 (#0025): returnvalue        
+L000044 (#0026): jump               L000105 (# 96)
+L000048 (#0027): getlocal_2         
+L000049 (#0028): pushstring         33132 ["4"]
+L00004d (#0029): ifne               L00005a (# 33)
+L000051 (#0030): pushstring         64628 ["battle/common/layer1/damage_font/4"]
+L000055 (#0031): returnvalue        
+L000056 (#0032): jump               L000105 (# 96)
+L00005a (#0033): getlocal_2         
+L00005b (#0034): pushstring         33133 ["5"]
+L00005f (#0035): ifne               L00006c (# 39)
+L000063 (#0036): pushstring         64629 ["battle/common/layer1/damage_font/5"]
+L000067 (#0037): returnvalue        
+L000068 (#0038): jump               L000105 (# 96)
+L00006c (#0039): getlocal_2         
+L00006d (#0040): pushstring         33130 ["6"]
+L000071 (#0041): ifne               L00007e (# 45)
+L000075 (#0042): pushstring         64630 ["battle/common/layer1/damage_font/6"]
+L000079 (#0043): returnvalue        
+L00007a (#0044): jump               L000105 (# 96)
+L00007e (#0045): getlocal_2         
+L00007f (#0046): pushstring         67 ["7"]
+L000081 (#0047): ifne               L00008e (# 51)
+L000085 (#0048): pushstring         64631 ["battle/common/layer1/damage_font/7"]
+L000089 (#0049): returnvalue        
+L00008a (#0050): jump               L000105 (# 96)
+L00008e (#0051): getlocal_2         
+L00008f (#0052): pushstring         33131 ["8"]
+L000093 (#0053): ifne               L0000a0 (# 57)
+L000097 (#0054): pushstring         64632 ["battle/common/layer1/damage_font/8"]
+L00009b (#0055): returnvalue        
+L00009c (#0056): jump               L000105 (# 96)
+L0000a0 (#0057): getlocal_2         
+L0000a1 (#0058): pushstring         46498 ["9"]
+L0000a5 (#0059): ifne               L0000b2 (# 63)
+L0000a9 (#0060): pushstring         64633 ["battle/common/layer1/damage_font/9"]
+L0000ad (#0061): returnvalue        
+L0000ae (#0062): jump               L000105 (# 96)
+L0000b2 (#0063): getlocal_2         
+L0000b3 (#0064): pushstring         12468 ["@"]
+L0000b6 (#0065): ifne               L0000c3 (# 69)
+L0000ba (#0066): pushstring         64634 ["battle/common/layer1/damage_font/point"]
+L0000be (#0067): returnvalue        
+L0000bf (#0068): jump               L000105 (# 96)
+L0000c3 (#0069): getlocal_2         
+L0000c4 (#0070): pushstring         53 ["k"]
+L0000c6 (#0071): ifne               L0000d3 (# 75)
+L0000ca (#0072): pushstring         64635 ["battle/common/layer1/damage_font/unit_prefix_k"]
+L0000ce (#0073): returnvalue        
+L0000cf (#0074): jump               L000105 (# 96)
+L0000d3 (#0075): getlocal_2         
+L0000d4 (#0076): pushstring         54 ["m"]
+L0000d6 (#0077): ifne               L0000df (# 80)
+L0000da (#0078): pushstring         94599 ["battle/common/layer1/damage_font/unit_prefix_m"]
+L0000de (#0079): returnvalue        
+L0000df (#0080): getlocal_2         
+L0000e0 (#0081): pushstring         47 ["b"]
+L0000e2 (#0082): ifne               L0000eb (# 85)
+L0000e6 (#0083): pushstring         94600 ["battle/common/layer1/damage_font/unit_prefix_b"]
+L0000ea (#0084): returnvalue        
+L0000eb (#0085): getlocal_2         
+L0000ec (#0086): pushstring         64 ["t"]
+L0000ee (#0087): ifne               L0000f7 (# 90)
+L0000f2 (#0088): pushstring         94601 ["battle/common/layer1/damage_font/unit_prefix_t"]
+L0000f6 (#0089): returnvalue        
+L0000f7 (#0090): getlex             27 [flash::Boot]
+L0000f9 (#0091): findpropstrict     28 [Error]
+L0000fb (#0092): constructprop      28 [Error], 0
+L0000fe (#0093): initproperty       29 [lastError]
+L000100 (#0094): pushstring         64675 ["UNEXPECTED CHAR"]
+L000104 (#0095): throw              
+L000105 (#0096): returnvoid         
+L000106 (#0097): ; end
+; exception_table=[]

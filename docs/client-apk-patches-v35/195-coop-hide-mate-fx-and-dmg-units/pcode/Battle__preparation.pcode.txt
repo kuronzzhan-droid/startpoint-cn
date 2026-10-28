@@ -1,0 +1,1095 @@
+; Battle/preparation (after)
+; body_index=50826 method_index=54561
+; sha256=dafc9886b58059ed5aeb25bc23853f1b3cd69d7a75dd6921e328eed2d3658d53
+; maxstack=13 localcount=10 init_scope_depth=1 max_scope_depth=2
+L000000 (#0000): getlocal_0         
+L000001 (#0001): pushscope          
+L000002 (#0002): pushnull           
+L000003 (#0003): astype             40715 [pinball.scene.battle.battle::SkillPreviewCommandInterpreter]
+L000007 (#0004): setlocal           5
+L000009 (#0005): pushnull           
+L00000a (#0006): astype             15503 [pinball.scene.battle.battle::ScoreCalculator]
+L00000d (#0007): setlocal           7
+L00000f (#0008): pushfalse          
+L000010 (#0009): findproperty       27154 [bothBossManager]
+L000014 (#0010): getproperty        27154 [bothBossManager]
+L000018 (#0011): getproperty        7897 [enable]
+L00001b (#0012): iffalse            L00002e (# 19)
+L00001f (#0013): pop                
+L000020 (#0014): findproperty       27154 [bothBossManager]
+L000024 (#0015): getproperty        27154 [bothBossManager]
+L000028 (#0016): getproperty        27192 [isSingle]
+L00002c (#0017): not                
+L00002d (#0018): convert_b          
+L00002e (#0019): iffalse            L00008a (# 47)
+L000032 (#0020): findproperty       19104 [quest]
+L000036 (#0021): findproperty       6117 [gear]
+L000039 (#0022): getproperty        6117 [gear]
+L00003c (#0023): getlex             7492 [pinball.context.global::GlobalLogic]
+L00003f (#0024): pushstring         189 ["fileName"]
+L000042 (#0025): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L000046 (#0026): pushstring         191 ["lineNumber"]
+L000049 (#0027): pushint            867 [524]
+L00004c (#0028): pushstring         192 ["className"]
+L00004f (#0029): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000053 (#0030): pushstring         194 ["methodName"]
+L000056 (#0031): pushstring         14072 ["preparation"]
+L000059 (#0032): newobject          4
+L00005b (#0033): callproperty       6114 [absorb], 2
+L00005f (#0034): coerce             7492 [pinball.context.global::GlobalLogic]
+L000062 (#0035): callproperty       7595 [getQuestRepository], 0
+L000066 (#0036): coerce             7520 [pinball.common.data.quest.repository::QuestRepository]
+L000069 (#0037): findproperty       7440 [questId]
+L00006c (#0038): getproperty        7440 [questId]
+L00006f (#0039): callproperty       7675 [getBattleQuestByBattleKind], 1
+L000073 (#0040): coerce             7526 [pinball.common.data.quest.battle::BattleQuestLogic]
+L000076 (#0041): initproperty       19104 [quest]
+L00007a (#0042): getlocal_1         
+L00007b (#0043): findproperty       19104 [quest]
+L00007f (#0044): getproperty        19104 [quest]
+L000083 (#0045): getlex             7526 [pinball.common.data.quest.battle::BattleQuestLogic]
+L000086 (#0046): callpropvoid       6103 [diffuse], 2
+L00008a (#0047): findproperty       27180 [playerMode]
+L00008e (#0048): findproperty       6117 [gear]
+L000091 (#0049): getproperty        6117 [gear]
+L000094 (#0050): getlex             27187 [pinball.scene.battle::BattleSceneDiffuseKey]
+L000098 (#0051): getproperty        27188 [PlayerMode]
+L00009c (#0052): pushstring         189 ["fileName"]
+L00009f (#0053): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L0000a3 (#0054): pushstring         191 ["lineNumber"]
+L0000a6 (#0055): pushint            617 [528]
+L0000a9 (#0056): pushstring         192 ["className"]
+L0000ac (#0057): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L0000b0 (#0058): pushstring         194 ["methodName"]
+L0000b3 (#0059): pushstring         14072 ["preparation"]
+L0000b6 (#0060): newobject          4
+L0000b8 (#0061): callproperty       6087 [absorbWithKey], 2
+L0000bc (#0062): coerce_a           
+L0000bd (#0063): initproperty       27180 [playerMode]
+L0000c1 (#0064): findproperty       6117 [gear]
+L0000c4 (#0065): getproperty        6117 [gear]
+L0000c7 (#0066): getlex             7492 [pinball.context.global::GlobalLogic]
+L0000ca (#0067): pushstring         189 ["fileName"]
+L0000cd (#0068): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L0000d1 (#0069): pushstring         191 ["lineNumber"]
+L0000d4 (#0070): pushint            872 [531]
+L0000d7 (#0071): pushstring         192 ["className"]
+L0000da (#0072): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L0000de (#0073): pushstring         194 ["methodName"]
+L0000e1 (#0074): pushstring         14072 ["preparation"]
+L0000e4 (#0075): newobject          4
+L0000e6 (#0076): callproperty       6114 [absorb], 2
+L0000ea (#0077): coerce             7492 [pinball.context.global::GlobalLogic]
+L0000ed (#0078): callproperty       7894 [getApplicationOption], 0
+L0000f1 (#0079): coerce             7895 [pinball.common.data.localStore::ApplicationOptionLogic]
+L0000f4 (#0080): callproperty       19033 [getWeightSavingModeOptionData], 0
+L0000f9 (#0081): coerce_a           
+L0000fa (#0082): coerce_a           
+L0000fb (#0083): setlocal_2         
+L0000fc (#0084): findproperty       40846 [lightweightModeLevel]
+L000100 (#0085): getlocal_2         
+L000101 (#0086): getproperty        7897 [enable]
+L000104 (#0087): convert_b          
+L000105 (#0088): iffalse            L00011f (# 97)
+L000109 (#0089): getlocal_2         
+L00010a (#0090): getproperty        40585 [cooperationSavingEnable]
+L00010e (#0091): convert_b          
+L00010f (#0092): iffalse            L000119 (# 95)
+L000113 (#0093): pushbyte           2
+L000115 (#0094): jump               L00011b (# 96)
+L000119 (#0095): pushbyte           1
+L00011b (#0096): jump               L000121 (# 98)
+L00011f (#0097): pushbyte           0
+L000121 (#0098): initproperty       40846 [lightweightModeLevel]
+L000125 (#0099): findproperty       40809 [shouldEmitParticle]
+L000129 (#0100): pushfalse          
+L00012a (#0101): findproperty       27233 [primary]
+L00012e (#0102): getproperty        27233 [primary]
+L000132 (#0103): iffalse            L000143 (# 110)
+L000136 (#0104): pop                
+L000137 (#0105): findproperty       40846 [lightweightModeLevel]
+L00013b (#0106): getproperty        40846 [lightweightModeLevel]
+L00013f (#0107): pushbyte           0
+L000141 (#0108): equals             
+L000142 (#0109): convert_b          
+L000143 (#0110): initproperty       40809 [shouldEmitParticle]
+L000147 (#0111): findproperty       40847 [enableGuideline]
+L00014b (#0112): pushtrue           
+L00014c (#0113): findproperty       27180 [playerMode]
+L000150 (#0114): getproperty        27180 [playerMode]
+L000154 (#0115): getproperty        46 [index]
+L000156 (#0116): pushbyte           0
+L000158 (#0117): ifeq               L000169 (# 124)
+L00015c (#0118): pop                
+L00015d (#0119): findproperty       40846 [lightweightModeLevel]
+L000161 (#0120): getproperty        40846 [lightweightModeLevel]
+L000165 (#0121): pushbyte           2
+L000167 (#0122): lessthan           
+L000168 (#0123): convert_b          
+L000169 (#0124): initproperty       40847 [enableGuideline]
+L00016d (#0125): findproperty       40848 [enableEscapeMarker]
+L000171 (#0126): pushtrue           
+L000172 (#0127): findproperty       27180 [playerMode]
+L000176 (#0128): getproperty        27180 [playerMode]
+L00017a (#0129): getproperty        46 [index]
+L00017c (#0130): pushbyte           0
+L00017e (#0131): ifeq               L00018f (# 138)
+L000182 (#0132): pop                
+L000183 (#0133): findproperty       40846 [lightweightModeLevel]
+L000187 (#0134): getproperty        40846 [lightweightModeLevel]
+L00018b (#0135): pushbyte           2
+L00018d (#0136): lessthan           
+L00018e (#0137): convert_b          
+L00018f (#0138): initproperty       40848 [enableEscapeMarker]
+L000193 (#0139): findproperty       40804 [showOthersMultiball]
+L000197 (#0140): pushtrue           
+L000198 (#0141): findproperty       27180 [playerMode]
+L00019c (#0142): getproperty        27180 [playerMode]
+L0001a0 (#0143): getproperty        46 [index]
+L0001a2 (#0144): pushbyte           0
+L0001a4 (#0145): ifeq               L0001b5 (# 152)
+L0001a8 (#0146): pop                
+L0001a9 (#0147): findproperty       40846 [lightweightModeLevel]
+L0001ad (#0148): getproperty        40846 [lightweightModeLevel]
+L0001b1 (#0149): pushbyte           2
+L0001b3 (#0150): lessthan           
+L0001b4 (#0151): convert_b          
+L0001b5 (#0152): initproperty       40804 [showOthersMultiball]
+L0001b9 (#0153): findproperty       40804 [showOthersMultiball]
+L0001bd (#0154): pushfalse          
+L0001be (#0155): initproperty       40804 [showOthersMultiball]
+L0001c2 (#0156): findproperty       40706 [xdebugSettings]
+L0001c6 (#0157): findproperty       6117 [gear]
+L0001c9 (#0158): getproperty        6117 [gear]
+L0001cc (#0159): getlex             7492 [pinball.context.global::GlobalLogic]
+L0001cf (#0160): pushstring         189 ["fileName"]
+L0001d2 (#0161): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L0001d6 (#0162): pushstring         191 ["lineNumber"]
+L0001d9 (#0163): pushint            892 [554]
+L0001dc (#0164): pushstring         192 ["className"]
+L0001df (#0165): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L0001e3 (#0166): pushstring         194 ["methodName"]
+L0001e6 (#0167): pushstring         14072 ["preparation"]
+L0001e9 (#0168): newobject          4
+L0001eb (#0169): callproperty       6114 [absorb], 2
+L0001ef (#0170): coerce             7492 [pinball.context.global::GlobalLogic]
+L0001f2 (#0171): callproperty       27726 [getBattleDebugSettings], 0
+L0001f7 (#0172): coerce             8577 [pinball.scene.battle.battle.debug::BattleDebugSettings]
+L0001fa (#0173): initproperty       40706 [xdebugSettings]
+L0001fe (#0174): getlocal_1         
+L0001ff (#0175): findproperty       40706 [xdebugSettings]
+L000203 (#0176): getproperty        40706 [xdebugSettings]
+L000207 (#0177): getlex             8577 [pinball.scene.battle.battle.debug::BattleDebugSettings]
+L00020a (#0178): callpropvoid       6103 [diffuse], 2
+L00020e (#0179): findproperty       27530 [xdebug]
+L000212 (#0180): findpropstrict     4159 [pinball.scene.battle.battle.debug::BattleDebug]
+L000215 (#0181): findproperty       40706 [xdebugSettings]
+L000219 (#0182): getproperty        40706 [xdebugSettings]
+L00021d (#0183): constructprop      4159 [pinball.scene.battle.battle.debug::BattleDebug], 1
+L000221 (#0184): initproperty       27530 [xdebug]
+L000225 (#0185): getlocal_1         
+L000226 (#0186): findproperty       27530 [xdebug]
+L00022a (#0187): getproperty        27530 [xdebug]
+L00022e (#0188): pushstring         189 ["fileName"]
+L000231 (#0189): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L000235 (#0190): pushstring         191 ["lineNumber"]
+L000238 (#0191): pushint            896 [559]
+L00023b (#0192): pushstring         192 ["className"]
+L00023e (#0193): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000242 (#0194): pushstring         194 ["methodName"]
+L000245 (#0195): pushstring         14072 ["preparation"]
+L000248 (#0196): newobject          4
+L00024a (#0197): callpropvoid       6108 [bookChild], 2
+L00024e (#0198): getlocal_1         
+L00024f (#0199): findproperty       27530 [xdebug]
+L000253 (#0200): getproperty        27530 [xdebug]
+L000257 (#0201): getlex             4159 [pinball.scene.battle.battle.debug::BattleDebug]
+L00025a (#0202): callpropvoid       6103 [diffuse], 2
+L00025e (#0203): findproperty       15436 [timelineStats]
+L000261 (#0204): getlocal_1         
+L000262 (#0205): findpropstrict     27493 [pinball.context.debug.stats::TimelineStats]
+L000266 (#0206): findproperty       7445 [continuationData]
+L000269 (#0207): getproperty        7445 [continuationData]
+L00026c (#0208): getproperty        15435 [floorTimelines]
+L00026f (#0209): constructprop      27493 [pinball.context.debug.stats::TimelineStats], 1
+L000274 (#0210): pushstring         189 ["fileName"]
+L000277 (#0211): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L00027b (#0212): pushstring         191 ["lineNumber"]
+L00027e (#0213): pushint            898 [562]
+L000281 (#0214): pushstring         192 ["className"]
+L000284 (#0215): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000288 (#0216): pushstring         194 ["methodName"]
+L00028b (#0217): pushstring         14072 ["preparation"]
+L00028e (#0218): newobject          4
+L000290 (#0219): callproperty       6108 [bookChild], 2
+L000294 (#0220): coerce             27493 [pinball.context.debug.stats::TimelineStats]
+L000298 (#0221): initproperty       15436 [timelineStats]
+L00029b (#0222): getlocal_1         
+L00029c (#0223): findproperty       15436 [timelineStats]
+L00029f (#0224): getproperty        15436 [timelineStats]
+L0002a2 (#0225): getlex             27493 [pinball.context.debug.stats::TimelineStats]
+L0002a6 (#0226): callpropvoid       6103 [diffuse], 2
+L0002aa (#0227): getlocal_1         
+L0002ab (#0228): findproperty       27233 [primary]
+L0002af (#0229): getproperty        27233 [primary]
+L0002b3 (#0230): getlex             40849 [pinball.scene.battle.battle::BattleDiffuseKey]
+L0002b7 (#0231): getproperty        40850 [IsPrimaryBattle]
+L0002bb (#0232): callpropvoid       6101 [diffuseWithKey], 2
+L0002bf (#0233): findproperty       6117 [gear]
+L0002c2 (#0234): getproperty        6117 [gear]
+L0002c5 (#0235): getlex             7762 [pinball.asset.logic::LogicAssetContainer]
+L0002c8 (#0236): pushstring         189 ["fileName"]
+L0002cb (#0237): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L0002cf (#0238): pushstring         191 ["lineNumber"]
+L0002d2 (#0239): pushint            910 [574]
+L0002d5 (#0240): pushstring         192 ["className"]
+L0002d8 (#0241): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L0002dc (#0242): pushstring         194 ["methodName"]
+L0002df (#0243): pushstring         14072 ["preparation"]
+L0002e2 (#0244): newobject          4
+L0002e4 (#0245): callproperty       6114 [absorb], 2
+L0002e8 (#0246): coerce             7762 [pinball.asset.logic::LogicAssetContainer]
+L0002eb (#0247): coerce             7762 [pinball.asset.logic::LogicAssetContainer]
+L0002ee (#0248): setlocal_3         
+L0002ef (#0249): findproperty       19104 [quest]
+L0002f3 (#0250): getproperty        19104 [quest]
+L0002f7 (#0251): getproperty        20680 [skillPreviewFeatureValues]
+L0002fb (#0252): coerce             79 [haxe.ds::Option]
+L0002fd (#0253): coerce             79 [haxe.ds::Option]
+L0002ff (#0254): setlocal           4
+L000301 (#0255): getlocal           4
+L000303 (#0256): getproperty        46 [index]
+L000305 (#0257): lookupswitch       default=L000310 cases=[L000314, L000367]
+L000310 (#0258): jump               L000374 (# 291)
+L000314 (#0259): findpropstrict     40715 [pinball.scene.battle.battle::SkillPreviewCommandInterpreter]
+L000318 (#0260): getlocal           4
+L00031a (#0261): getproperty        80 [params]
+L00031c (#0262): pushbyte           0
+L00031e (#0263): getproperty        14 [<mn kind 0x1b>]
+L000320 (#0264): coerce             7451 [pinball.common.data.battle.restore::SkillPreviewBattleValues]
+L000323 (#0265): constructprop      40715 [pinball.scene.battle.battle::SkillPreviewCommandInterpreter], 1
+L000328 (#0266): coerce             40715 [pinball.scene.battle.battle::SkillPreviewCommandInterpreter]
+L00032c (#0267): setlocal           5
+L00032e (#0268): findproperty       40714 [skillPreviewCommandInterpreter]
+L000332 (#0269): getlex             79 [haxe.ds::Option]
+L000334 (#0270): getlocal           5
+L000336 (#0271): callproperty       241 [Some], 1
+L00033a (#0272): coerce             79 [haxe.ds::Option]
+L00033c (#0273): initproperty       40714 [skillPreviewCommandInterpreter]
+L000340 (#0274): getlocal_1         
+L000341 (#0275): getlocal           5
+L000343 (#0276): pushstring         189 ["fileName"]
+L000346 (#0277): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L00034a (#0278): pushstring         191 ["lineNumber"]
+L00034d (#0279): pushint            916 [582]
+L000350 (#0280): pushstring         192 ["className"]
+L000353 (#0281): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000357 (#0282): pushstring         194 ["methodName"]
+L00035a (#0283): pushstring         14072 ["preparation"]
+L00035d (#0284): newobject          4
+L00035f (#0285): callpropvoid       6108 [bookChild], 2
+L000363 (#0286): jump               L000374 (# 291)
+L000367 (#0287): findproperty       40714 [skillPreviewCommandInterpreter]
+L00036b (#0288): getlex             79 [haxe.ds::Option]
+L00036d (#0289): getproperty        226 [None]
+L000370 (#0290): initproperty       40714 [skillPreviewCommandInterpreter]
+L000374 (#0291): findproperty       40851 [initialEnemyConditions]
+L000378 (#0292): findproperty       19104 [quest]
+L00037c (#0293): getproperty        19104 [quest]
+L000380 (#0294): callproperty       20664 [pinball.common.data.quest.battle:BattleQuestLogic::getInitialEnemyConditions], 0
+L000385 (#0295): coerce             6 [Array]
+L000387 (#0296): initproperty       40851 [initialEnemyConditions]
+L00038b (#0297): findproperty       23019 [features]
+L00038f (#0298): findpropstrict     40852 [pinball.scene.battle.battle.feature::BattleFeatureState]
+L000393 (#0299): findproperty       19104 [quest]
+L000397 (#0300): getproperty        19104 [quest]
+L00039b (#0301): findproperty       84 [floor]
+L00039d (#0302): getproperty        84 [floor]
+L00039f (#0303): callproperty       7678 [pinball.common.data.quest.battle:BattleQuestLogic::getFeatureValues], 1
+L0003a3 (#0304): coerce             7679 [pinball.scene.battle.battle.feature::BattleFeatureInitialData]
+L0003a6 (#0305): constructprop      40852 [pinball.scene.battle.battle.feature::BattleFeatureState], 1
+L0003ab (#0306): initproperty       23019 [features]
+L0003af (#0307): getlocal_1         
+L0003b0 (#0308): findproperty       23019 [features]
+L0003b4 (#0309): getproperty        23019 [features]
+L0003b8 (#0310): getlex             40852 [pinball.scene.battle.battle.feature::BattleFeatureState]
+L0003bc (#0311): callpropvoid       6103 [diffuse], 2
+L0003c0 (#0312): findproperty       40821 [randomSeedFactory]
+L0003c4 (#0313): findpropstrict     40820 [pinball.scene.battle.battle.random::RandomSeedFactoryImpl]
+L0003c8 (#0314): findproperty       40853 [initialData]
+L0003cc (#0315): getproperty        40853 [initialData]
+L0003d0 (#0316): getproperty        40854 [smallestBattleId]
+L0003d4 (#0317): findproperty       4890 [get_id]
+L0003d7 (#0318): callproperty       4890 [get_id], 0
+L0003db (#0319): coerce             11 [String]
+L0003dd (#0320): constructprop      40820 [pinball.scene.battle.battle.random::RandomSeedFactoryImpl], 2
+L0003e2 (#0321): initproperty       40821 [randomSeedFactory]
+L0003e6 (#0322): getlocal_1         
+L0003e7 (#0323): findproperty       40821 [randomSeedFactory]
+L0003eb (#0324): getproperty        40821 [randomSeedFactory]
+L0003ef (#0325): getlex             40855 [pinball.scene.battle.battle.random::RandomSeedFactory]
+L0003f3 (#0326): callpropvoid       6103 [diffuse], 2
+L0003f7 (#0327): findproperty       29229 [viewOrder]
+L0003fb (#0328): findpropstrict     40726 [pinball.scene.battle.view::BattleViewOrderImpl]
+L0003ff (#0329): constructprop      40726 [pinball.scene.battle.view::BattleViewOrderImpl], 0
+L000404 (#0330): initproperty       29229 [viewOrder]
+L000408 (#0331): getlocal_1         
+L000409 (#0332): findproperty       29229 [viewOrder]
+L00040d (#0333): getproperty        29229 [viewOrder]
+L000411 (#0334): getlex             40856 [pinball.scene.battle.view::BattleViewOrder]
+L000415 (#0335): callpropvoid       6103 [diffuse], 2
+L000419 (#0336): findproperty       27223 [camera]
+L00041d (#0337): findpropstrict     40857 [pinball.scene.battle.camera::CameraImpl]
+L000421 (#0338): constructprop      40857 [pinball.scene.battle.camera::CameraImpl], 0
+L000426 (#0339): initproperty       27223 [camera]
+L00042a (#0340): getlocal_1         
+L00042b (#0341): findproperty       27223 [camera]
+L00042f (#0342): getproperty        27223 [camera]
+L000433 (#0343): getlex             40858 [pinball.scene.battle.camera::Camera]
+L000437 (#0344): callpropvoid       6103 [diffuse], 2
+L00043b (#0345): findproperty       40859 [assistCharacters]
+L00043f (#0346): findproperty       19104 [quest]
+L000443 (#0347): getproperty        19104 [quest]
+L000447 (#0348): callproperty       20625 [pinball.common.data.quest.battle:BattleQuestPeek::getAssistCharacters], 0
+L00044c (#0349): coerce             6 [Array]
+L00044e (#0350): initproperty       40859 [assistCharacters]
+L000452 (#0351): getlocal_1         
+L000453 (#0352): findproperty       40853 [initialData]
+L000457 (#0353): getproperty        40853 [initialData]
+L00045b (#0354): getproperty        7878 [username]
+L00045e (#0355): getlex             40849 [pinball.scene.battle.battle::BattleDiffuseKey]
+L000462 (#0356): getproperty        40860 [Username]
+L000466 (#0357): callpropvoid       6101 [diffuseWithKey], 2
+L00046a (#0358): findproperty       40759 [outputCommandBuffer]
+L00046e (#0359): findpropstrict     40861 [pinball.scene.battle.command::BattleOutputBuffer]
+L000472 (#0360): constructprop      40861 [pinball.scene.battle.command::BattleOutputBuffer], 0
+L000477 (#0361): initproperty       40759 [outputCommandBuffer]
+L00047b (#0362): getlocal_1         
+L00047c (#0363): findproperty       40759 [outputCommandBuffer]
+L000480 (#0364): getproperty        40759 [outputCommandBuffer]
+L000484 (#0365): getlex             40861 [pinball.scene.battle.command::BattleOutputBuffer]
+L000488 (#0366): callpropvoid       6103 [diffuse], 2
+L00048c (#0367): findproperty       27232 [squadManager]
+L000490 (#0368): findpropstrict     40801 [pinball.scene.battle.battle.squad::SquadManagerImpl]
+L000494 (#0369): findproperty       40862 [isFirstBattle]
+L000498 (#0370): getproperty        40862 [isFirstBattle]
+L00049c (#0371): constructprop      40801 [pinball.scene.battle.battle.squad::SquadManagerImpl], 1
+L0004a1 (#0372): initproperty       27232 [squadManager]
+L0004a5 (#0373): getlocal_1         
+L0004a6 (#0374): findproperty       27232 [squadManager]
+L0004aa (#0375): getproperty        27232 [squadManager]
+L0004ae (#0376): pushstring         189 ["fileName"]
+L0004b1 (#0377): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L0004b5 (#0378): pushstring         191 ["lineNumber"]
+L0004b8 (#0379): pushint            945 [615]
+L0004bb (#0380): pushstring         192 ["className"]
+L0004be (#0381): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L0004c2 (#0382): pushstring         194 ["methodName"]
+L0004c5 (#0383): pushstring         14072 ["preparation"]
+L0004c8 (#0384): newobject          4
+L0004ca (#0385): callpropvoid       6108 [bookChild], 2
+L0004ce (#0386): getlocal_1         
+L0004cf (#0387): findproperty       27232 [squadManager]
+L0004d3 (#0388): getproperty        27232 [squadManager]
+L0004d7 (#0389): getlex             40863 [pinball.scene.battle.battle.squad::SquadManager]
+L0004db (#0390): callpropvoid       6103 [diffuse], 2
+L0004df (#0391): findproperty       40845 [primaryMemberManager]
+L0004e3 (#0392): findpropstrict     40844 [pinball.scene.battle.battle::PrimaryMemberManagerImpl]
+L0004e7 (#0393): findproperty       40853 [initialData]
+L0004eb (#0394): getproperty        40853 [initialData]
+L0004ef (#0395): getproperty        13971 [sources]
+L0004f2 (#0396): findproperty       7440 [questId]
+L0004f5 (#0397): getproperty        7440 [questId]
+L0004f8 (#0398): getlocal_3         
+L0004f9 (#0399): findproperty       6650 [devConfig]
+L0004fc (#0400): getproperty        6650 [devConfig]
+L0004ff (#0401): getproperty        6842 [debugAbilitySoulIds]
+L000502 (#0402): findproperty       7848 [featuresPermit]
+L000505 (#0403): getproperty        7848 [featuresPermit]
+L000508 (#0404): getproperty        15611 [enablesAbility]
+L00050b (#0405): constructprop      40844 [pinball.scene.battle.battle::PrimaryMemberManagerImpl], 5
+L000510 (#0406): initproperty       40845 [primaryMemberManager]
+L000514 (#0407): getlocal_1         
+L000515 (#0408): findproperty       40845 [primaryMemberManager]
+L000519 (#0409): getproperty        40845 [primaryMemberManager]
+L00051d (#0410): pushstring         189 ["fileName"]
+L000520 (#0411): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L000524 (#0412): pushstring         191 ["lineNumber"]
+L000527 (#0413): pushint            949 [619]
+L00052a (#0414): pushstring         192 ["className"]
+L00052d (#0415): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000531 (#0416): pushstring         194 ["methodName"]
+L000534 (#0417): pushstring         14072 ["preparation"]
+L000537 (#0418): newobject          4
+L000539 (#0419): callpropvoid       6108 [bookChild], 2
+L00053d (#0420): getlocal_1         
+L00053e (#0421): findproperty       40845 [primaryMemberManager]
+L000542 (#0422): getproperty        40845 [primaryMemberManager]
+L000546 (#0423): getlex             40864 [pinball.scene.battle.battle::PrimaryMemberManager]
+L00054a (#0424): callpropvoid       6103 [diffuse], 2
+L00054e (#0425): findproperty       27237 [skillChainManager]
+L000552 (#0426): findpropstrict     4152 [pinball.scene.battle.battle.chain::SkillChainManagerImpl]
+L000555 (#0427): findproperty       4890 [get_id]
+L000558 (#0428): callproperty       4890 [get_id], 0
+L00055c (#0429): coerce             11 [String]
+L00055e (#0430): findproperty       7445 [continuationData]
+L000561 (#0431): getproperty        7445 [continuationData]
+L000564 (#0432): constructprop      4152 [pinball.scene.battle.battle.chain::SkillChainManagerImpl], 2
+L000568 (#0433): initproperty       27237 [skillChainManager]
+L00056c (#0434): getlocal_1         
+L00056d (#0435): findproperty       27237 [skillChainManager]
+L000571 (#0436): getproperty        27237 [skillChainManager]
+L000575 (#0437): pushstring         189 ["fileName"]
+L000578 (#0438): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L00057c (#0439): pushstring         191 ["lineNumber"]
+L00057f (#0440): pushint            484 [623]
+L000582 (#0441): pushstring         192 ["className"]
+L000585 (#0442): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000589 (#0443): pushstring         194 ["methodName"]
+L00058c (#0444): pushstring         14072 ["preparation"]
+L00058f (#0445): newobject          4
+L000591 (#0446): callpropvoid       6108 [bookChild], 2
+L000595 (#0447): getlocal_1         
+L000596 (#0448): findproperty       27237 [skillChainManager]
+L00059a (#0449): getproperty        27237 [skillChainManager]
+L00059e (#0450): getlex             15505 [pinball.scene.battle.battle.chain::SkillChainManager]
+L0005a1 (#0451): callpropvoid       6103 [diffuse], 2
+L0005a5 (#0452): findproperty       27239 [obtainableInstantItemManager]
+L0005a9 (#0453): findpropstrict     15508 [pinball.scene.battle.battle::ObtainableInstantItemManagerImpl]
+L0005ac (#0454): findproperty       7445 [continuationData]
+L0005af (#0455): getproperty        7445 [continuationData]
+L0005b2 (#0456): constructprop      15508 [pinball.scene.battle.battle::ObtainableInstantItemManagerImpl], 1
+L0005b6 (#0457): initproperty       27239 [obtainableInstantItemManager]
+L0005ba (#0458): getlocal_1         
+L0005bb (#0459): findproperty       27239 [obtainableInstantItemManager]
+L0005bf (#0460): getproperty        27239 [obtainableInstantItemManager]
+L0005c3 (#0461): getlex             40865 [pinball.scene.battle.battle::ObtainableInstantItemManager]
+L0005c7 (#0462): callpropvoid       6103 [diffuse], 2
+L0005cb (#0463): findproperty       40866 [executableInstantItemManager]
+L0005cf (#0464): findpropstrict     40867 [pinball.scene.battle.battle::ExecutableInstantItemManagerImpl]
+L0005d3 (#0465): constructprop      40867 [pinball.scene.battle.battle::ExecutableInstantItemManagerImpl], 0
+L0005d8 (#0466): initproperty       40866 [executableInstantItemManager]
+L0005dc (#0467): getlocal_1         
+L0005dd (#0468): findproperty       40866 [executableInstantItemManager]
+L0005e1 (#0469): getproperty        40866 [executableInstantItemManager]
+L0005e5 (#0470): getlex             40868 [pinball.scene.battle.battle::ExecutableInstantItemManager]
+L0005e9 (#0471): callpropvoid       6103 [diffuse], 2
+L0005ed (#0472): findproperty       15477 [abilityTotalizer]
+L0005f0 (#0473): findpropstrict     27491 [pinball.scene.battle.battle.ability::BattleAbilityTotalizerImpl]
+L0005f4 (#0474): constructprop      27491 [pinball.scene.battle.battle.ability::BattleAbilityTotalizerImpl], 0
+L0005f9 (#0475): initproperty       15477 [abilityTotalizer]
+L0005fc (#0476): getlocal_1         
+L0005fd (#0477): findproperty       15477 [abilityTotalizer]
+L000600 (#0478): getproperty        15477 [abilityTotalizer]
+L000603 (#0479): getlex             40869 [pinball.scene.battle.battle.ability::BattleAbilityTotalizer]
+L000607 (#0480): callpropvoid       6103 [diffuse], 2
+L00060b (#0481): findproperty       27235 [comboCalculator]
+L00060f (#0482): findpropstrict     15502 [pinball.scene.battle.battle::ComboCalculatorImpl]
+L000612 (#0483): findproperty       7445 [continuationData]
+L000615 (#0484): getproperty        7445 [continuationData]
+L000618 (#0485): findproperty       15477 [abilityTotalizer]
+L00061b (#0486): getproperty        15477 [abilityTotalizer]
+L00061e (#0487): constructprop      15502 [pinball.scene.battle.battle::ComboCalculatorImpl], 2
+L000622 (#0488): initproperty       27235 [comboCalculator]
+L000626 (#0489): getlocal_1         
+L000627 (#0490): findproperty       27235 [comboCalculator]
+L00062b (#0491): getproperty        27235 [comboCalculator]
+L00062f (#0492): pushstring         189 ["fileName"]
+L000632 (#0493): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L000636 (#0494): pushstring         191 ["lineNumber"]
+L000639 (#0495): pushint            966 [639]
+L00063c (#0496): pushstring         192 ["className"]
+L00063f (#0497): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000643 (#0498): pushstring         194 ["methodName"]
+L000646 (#0499): pushstring         14072 ["preparation"]
+L000649 (#0500): newobject          4
+L00064b (#0501): callpropvoid       6108 [bookChild], 2
+L00064f (#0502): getlocal_1         
+L000650 (#0503): findproperty       27235 [comboCalculator]
+L000654 (#0504): getproperty        27235 [comboCalculator]
+L000658 (#0505): getlex             40870 [pinball.scene.battle.battle::ComboCalculator]
+L00065c (#0506): callpropvoid       6103 [diffuse], 2
+L000660 (#0507): findproperty       7440 [questId]
+L000663 (#0508): getproperty        7440 [questId]
+L000666 (#0509): coerce             7550 [pinball.common.data.quest.id::QuestIdBattleKind]
+L000669 (#0510): setlocal           6
+L00066b (#0511): getlocal           6
+L00066d (#0512): getproperty        46 [index]
+L00066f (#0513): pushbyte           0
+L000671 (#0514): ifne               L0007cb (# 597)
+L000675 (#0515): getlocal           6
+L000677 (#0516): getproperty        80 [params]
+L000679 (#0517): pushbyte           0
+L00067b (#0518): getproperty        14 [<mn kind 0x1b>]
+L00067d (#0519): coerce             7358 [pinball.common.data.quest.id::SingleBattleIdKind]
+L000680 (#0520): getproperty        46 [index]
+L000682 (#0521): lookupswitch       default=L0006cc cases=[L0006cc, L0006cc, L0006cc, L0006cc, L0006cc, L0006ff, L0006cc, L0006cc, L0006cc, L0006cc, L0006cc, L0006cc, L0006cc, L0006cc, L0006cc, L0006cc, L0006cc, L0006cc, L0006cc, L000732, L0006cc, L000765, L000798]
+L0006cc (#0522): findpropstrict     40871 [pinball.scene.battle.battle::ScoreCalculatorImpl]
+L0006d0 (#0523): getlocal_0         
+L0006d1 (#0524): findproperty       4890 [get_id]
+L0006d4 (#0525): callproperty       4890 [get_id], 0
+L0006d8 (#0526): coerce             11 [String]
+L0006da (#0527): findproperty       19104 [quest]
+L0006de (#0528): getproperty        19104 [quest]
+L0006e2 (#0529): callproperty       20560 [pinball.common.data.quest.battle:BattleQuestPeek::getScoreSource], 0
+L0006e7 (#0530): coerce             20561 [pinball.common.data.quest.score::ScoreSource]
+L0006eb (#0531): findproperty       7445 [continuationData]
+L0006ee (#0532): getproperty        7445 [continuationData]
+L0006f1 (#0533): constructprop      40871 [pinball.scene.battle.battle::ScoreCalculatorImpl], 4
+L0006f6 (#0534): coerce             15503 [pinball.scene.battle.battle::ScoreCalculator]
+L0006f9 (#0535): setlocal           7
+L0006fb (#0536): jump               L0007c7 (# 596)
+L0006ff (#0537): findpropstrict     40872 [pinball.scene.battle.battle::RankingEventScoreCalculatorImpl]
+L000703 (#0538): getlocal_0         
+L000704 (#0539): findproperty       4890 [get_id]
+L000707 (#0540): callproperty       4890 [get_id], 0
+L00070b (#0541): coerce             11 [String]
+L00070d (#0542): findproperty       19104 [quest]
+L000711 (#0543): getproperty        19104 [quest]
+L000715 (#0544): callproperty       20560 [pinball.common.data.quest.battle:BattleQuestPeek::getScoreSource], 0
+L00071a (#0545): coerce             20561 [pinball.common.data.quest.score::ScoreSource]
+L00071e (#0546): findproperty       7445 [continuationData]
+L000721 (#0547): getproperty        7445 [continuationData]
+L000724 (#0548): constructprop      40872 [pinball.scene.battle.battle::RankingEventScoreCalculatorImpl], 4
+L000729 (#0549): coerce             15503 [pinball.scene.battle.battle::ScoreCalculator]
+L00072c (#0550): setlocal           7
+L00072e (#0551): jump               L0007c7 (# 596)
+L000732 (#0552): findpropstrict     40873 [pinball.scene.battle.battle::CarnivalEventScoreCalculatorImpl]
+L000736 (#0553): getlocal_0         
+L000737 (#0554): findproperty       4890 [get_id]
+L00073a (#0555): callproperty       4890 [get_id], 0
+L00073e (#0556): coerce             11 [String]
+L000740 (#0557): findproperty       19104 [quest]
+L000744 (#0558): getproperty        19104 [quest]
+L000748 (#0559): callproperty       20560 [pinball.common.data.quest.battle:BattleQuestPeek::getScoreSource], 0
+L00074d (#0560): coerce             20561 [pinball.common.data.quest.score::ScoreSource]
+L000751 (#0561): findproperty       7445 [continuationData]
+L000754 (#0562): getproperty        7445 [continuationData]
+L000757 (#0563): constructprop      40873 [pinball.scene.battle.battle::CarnivalEventScoreCalculatorImpl], 4
+L00075c (#0564): coerce             15503 [pinball.scene.battle.battle::ScoreCalculator]
+L00075f (#0565): setlocal           7
+L000761 (#0566): jump               L0007c7 (# 596)
+L000765 (#0567): findpropstrict     40874 [pinball.scene.battle.battle::SoloTimeAttackScoreCalculatorImpl]
+L000769 (#0568): getlocal_0         
+L00076a (#0569): findproperty       4890 [get_id]
+L00076d (#0570): callproperty       4890 [get_id], 0
+L000771 (#0571): coerce             11 [String]
+L000773 (#0572): findproperty       19104 [quest]
+L000777 (#0573): getproperty        19104 [quest]
+L00077b (#0574): callproperty       20560 [pinball.common.data.quest.battle:BattleQuestPeek::getScoreSource], 0
+L000780 (#0575): coerce             20561 [pinball.common.data.quest.score::ScoreSource]
+L000784 (#0576): findproperty       7445 [continuationData]
+L000787 (#0577): getproperty        7445 [continuationData]
+L00078a (#0578): constructprop      40874 [pinball.scene.battle.battle::SoloTimeAttackScoreCalculatorImpl], 4
+L00078f (#0579): coerce             15503 [pinball.scene.battle.battle::ScoreCalculator]
+L000792 (#0580): setlocal           7
+L000794 (#0581): jump               L0007c7 (# 596)
+L000798 (#0582): findpropstrict     40875 [pinball.scene.battle.battle.scoreAttack::ScoreAttackScoreCalculatorImpl]
+L00079c (#0583): getlocal_0         
+L00079d (#0584): findproperty       4890 [get_id]
+L0007a0 (#0585): callproperty       4890 [get_id], 0
+L0007a4 (#0586): coerce             11 [String]
+L0007a6 (#0587): findproperty       19104 [quest]
+L0007aa (#0588): getproperty        19104 [quest]
+L0007ae (#0589): callproperty       20560 [pinball.common.data.quest.battle:BattleQuestPeek::getScoreSource], 0
+L0007b3 (#0590): coerce             20561 [pinball.common.data.quest.score::ScoreSource]
+L0007b7 (#0591): findproperty       7445 [continuationData]
+L0007ba (#0592): getproperty        7445 [continuationData]
+L0007bd (#0593): constructprop      40875 [pinball.scene.battle.battle.scoreAttack::ScoreAttackScoreCalculatorImpl], 4
+L0007c2 (#0594): coerce             15503 [pinball.scene.battle.battle::ScoreCalculator]
+L0007c5 (#0595): setlocal           7
+L0007c7 (#0596): jump               L0007fa (# 611)
+L0007cb (#0597): findpropstrict     40871 [pinball.scene.battle.battle::ScoreCalculatorImpl]
+L0007cf (#0598): getlocal_0         
+L0007d0 (#0599): findproperty       4890 [get_id]
+L0007d3 (#0600): callproperty       4890 [get_id], 0
+L0007d7 (#0601): coerce             11 [String]
+L0007d9 (#0602): findproperty       19104 [quest]
+L0007dd (#0603): getproperty        19104 [quest]
+L0007e1 (#0604): callproperty       20560 [pinball.common.data.quest.battle:BattleQuestPeek::getScoreSource], 0
+L0007e6 (#0605): coerce             20561 [pinball.common.data.quest.score::ScoreSource]
+L0007ea (#0606): findproperty       7445 [continuationData]
+L0007ed (#0607): getproperty        7445 [continuationData]
+L0007f0 (#0608): constructprop      40871 [pinball.scene.battle.battle::ScoreCalculatorImpl], 4
+L0007f5 (#0609): coerce             15503 [pinball.scene.battle.battle::ScoreCalculator]
+L0007f8 (#0610): setlocal           7
+L0007fa (#0611): findproperty       27236 [scoreCalculator]
+L0007fe (#0612): getlocal           7
+L000800 (#0613): initproperty       27236 [scoreCalculator]
+L000804 (#0614): getlocal_1         
+L000805 (#0615): findproperty       27236 [scoreCalculator]
+L000809 (#0616): getproperty        27236 [scoreCalculator]
+L00080d (#0617): getlex             15503 [pinball.scene.battle.battle::ScoreCalculator]
+L000810 (#0618): callpropvoid       6103 [diffuse], 2
+L000814 (#0619): findproperty       27238 [continueCounter]
+L000818 (#0620): findpropstrict     15506 [pinball.scene.battle.battle::ContinueCounterImpl]
+L00081b (#0621): findproperty       7445 [continuationData]
+L00081e (#0622): getproperty        7445 [continuationData]
+L000821 (#0623): constructprop      15506 [pinball.scene.battle.battle::ContinueCounterImpl], 1
+L000825 (#0624): initproperty       27238 [continueCounter]
+L000829 (#0625): getlocal_1         
+L00082a (#0626): findproperty       27238 [continueCounter]
+L00082e (#0627): getproperty        27238 [continueCounter]
+L000832 (#0628): getlex             40876 [pinball.scene.battle.battle::ContinueCounter]
+L000836 (#0629): callpropvoid       6103 [diffuse], 2
+L00083a (#0630): findproperty       40828 [missionClientCheckManager]
+L00083e (#0631): findpropstrict     40877 [pinball.scene.battle.battle.mission::MissionClientCheckManagerImpl]
+L000842 (#0632): findproperty       40853 [initialData]
+L000846 (#0633): getproperty        40853 [initialData]
+L00084a (#0634): callproperty       40878 [get_clientChecks], 0
+L00084f (#0635): coerce             6 [Array]
+L000851 (#0636): constructprop      40877 [pinball.scene.battle.battle.mission::MissionClientCheckManagerImpl], 1
+L000856 (#0637): initproperty       40828 [missionClientCheckManager]
+L00085a (#0638): getlocal_1         
+L00085b (#0639): findproperty       40828 [missionClientCheckManager]
+L00085f (#0640): getproperty        40828 [missionClientCheckManager]
+L000863 (#0641): pushstring         189 ["fileName"]
+L000866 (#0642): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L00086a (#0643): pushstring         191 ["lineNumber"]
+L00086d (#0644): pushint            988 [661]
+L000870 (#0645): pushstring         192 ["className"]
+L000873 (#0646): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000877 (#0647): pushstring         194 ["methodName"]
+L00087a (#0648): pushstring         14072 ["preparation"]
+L00087d (#0649): newobject          4
+L00087f (#0650): callpropvoid       6108 [bookChild], 2
+L000883 (#0651): getlocal_1         
+L000884 (#0652): findproperty       40828 [missionClientCheckManager]
+L000888 (#0653): getproperty        40828 [missionClientCheckManager]
+L00088c (#0654): getlex             40879 [pinball.scene.battle.battle.mission::MissionClientCheckManager]
+L000890 (#0655): callpropvoid       6103 [diffuse], 2
+L000894 (#0656): findproperty       15469 [abilityTrigger]
+L000897 (#0657): findpropstrict     40880 [pinball.scene.battle.battle.ability::BattleAbilityTriggerImpl]
+L00089b (#0658): getlocal_0         
+L00089c (#0659): findproperty       40862 [isFirstBattle]
+L0008a0 (#0660): getproperty        40862 [isFirstBattle]
+L0008a4 (#0661): getlocal_3         
+L0008a5 (#0662): constructprop      40880 [pinball.scene.battle.battle.ability::BattleAbilityTriggerImpl], 3
+L0008aa (#0663): initproperty       15469 [abilityTrigger]
+L0008ad (#0664): getlocal_1         
+L0008ae (#0665): findproperty       15469 [abilityTrigger]
+L0008b1 (#0666): getproperty        15469 [abilityTrigger]
+L0008b4 (#0667): getlex             15507 [pinball.scene.battle.battle.ability::BattleAbilityTrigger]
+L0008b7 (#0668): callpropvoid       6103 [diffuse], 2
+L0008bb (#0669): findproperty       19104 [quest]
+L0008bf (#0670): getproperty        19104 [quest]
+L0008c3 (#0671): callproperty       20613 [pinball.common.data.quest.battle:BattleQuestPeek::get_timeLimitMillisecond], 0
+L0008c8 (#0672): convert_i          
+L0008c9 (#0673): convert_i          
+L0008ca (#0674): setlocal           8
+L0008cc (#0675): findproperty       26592 [elapsedTimeCalculator]
+L0008d0 (#0676): findpropstrict     15504 [pinball.scene.battle.battle::ElapsedTimeCalculatorImpl]
+L0008d3 (#0677): getlocal           8
+L0008d5 (#0678): findproperty       7445 [continuationData]
+L0008d8 (#0679): getproperty        7445 [continuationData]
+L0008db (#0680): constructprop      15504 [pinball.scene.battle.battle::ElapsedTimeCalculatorImpl], 2
+L0008df (#0681): initproperty       26592 [elapsedTimeCalculator]
+L0008e3 (#0682): getlocal_1         
+L0008e4 (#0683): findproperty       26592 [elapsedTimeCalculator]
+L0008e8 (#0684): getproperty        26592 [elapsedTimeCalculator]
+L0008ec (#0685): pushstring         189 ["fileName"]
+L0008ef (#0686): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L0008f3 (#0687): pushstring         191 ["lineNumber"]
+L0008f6 (#0688): pushint            996 [669]
+L0008f9 (#0689): pushstring         192 ["className"]
+L0008fc (#0690): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000900 (#0691): pushstring         194 ["methodName"]
+L000903 (#0692): pushstring         14072 ["preparation"]
+L000906 (#0693): newobject          4
+L000908 (#0694): callpropvoid       6108 [bookChild], 2
+L00090c (#0695): getlocal_1         
+L00090d (#0696): findproperty       26592 [elapsedTimeCalculator]
+L000911 (#0697): getproperty        26592 [elapsedTimeCalculator]
+L000915 (#0698): getlex             27535 [pinball.scene.battle.battle::ElapsedTimeCalculator]
+L000919 (#0699): callpropvoid       6103 [diffuse], 2
+L00091d (#0700): findproperty       40787 [flipperProcessor]
+L000921 (#0701): findpropstrict     40881 [pinball.scene.battle.battle.flipper::BattleFlipperProcessorImpl]
+L000925 (#0702): constructprop      40881 [pinball.scene.battle.battle.flipper::BattleFlipperProcessorImpl], 0
+L00092a (#0703): initproperty       40787 [flipperProcessor]
+L00092e (#0704): getlocal_1         
+L00092f (#0705): findproperty       40787 [flipperProcessor]
+L000933 (#0706): getproperty        40787 [flipperProcessor]
+L000937 (#0707): pushstring         189 ["fileName"]
+L00093a (#0708): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L00093e (#0709): pushstring         191 ["lineNumber"]
+L000941 (#0710): pushint            1000 [673]
+L000944 (#0711): pushstring         192 ["className"]
+L000947 (#0712): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L00094b (#0713): pushstring         194 ["methodName"]
+L00094e (#0714): pushstring         14072 ["preparation"]
+L000951 (#0715): newobject          4
+L000953 (#0716): callpropvoid       6108 [bookChild], 2
+L000957 (#0717): getlocal_1         
+L000958 (#0718): findproperty       40787 [flipperProcessor]
+L00095c (#0719): getproperty        40787 [flipperProcessor]
+L000960 (#0720): getlex             40882 [pinball.scene.battle.battle.flipper::BattleFlipperProcessor]
+L000964 (#0721): callpropvoid       6103 [diffuse], 2
+L000968 (#0722): getlocal_1         
+L000969 (#0723): findproperty       40787 [flipperProcessor]
+L00096d (#0724): getproperty        40787 [flipperProcessor]
+L000971 (#0725): getlex             40883 [pinball.scene.battle.battle.flipper::CommonFlipperProcessor]
+L000975 (#0726): callpropvoid       6103 [diffuse], 2
+L000979 (#0727): pushfalse          
+L00097a (#0728): findproperty       27154 [bothBossManager]
+L00097e (#0729): getproperty        27154 [bothBossManager]
+L000982 (#0730): callproperty       27193 [onlySyncDamage], 0
+L000987 (#0731): convert_b          
+L000988 (#0732): iffalse            L0009a5 (# 744)
+L00098c (#0733): pop                
+L00098d (#0734): findproperty       27154 [bothBossManager]
+L000991 (#0735): getproperty        27154 [bothBossManager]
+L000995 (#0736): getproperty        14003 [sumHp]
+L000998 (#0737): getlex             3385 [pinball.common.math._FloatInt::FloatInt_Impl_]
+L00099b (#0738): pushbyte           0
+L00099d (#0739): callproperty       3392 [fromInt], 1
+L0009a1 (#0740): convert_d          
+L0009a2 (#0741): equals             
+L0009a3 (#0742): not                
+L0009a4 (#0743): convert_b          
+L0009a5 (#0744): iffalse            L000a44 (# 793)
+L0009a9 (#0745): findproperty       27234 [zoneManager]
+L0009ad (#0746): findpropstrict     15501 [pinball.scene.battle.battle.zone::ZoneManagerImpl]
+L0009b0 (#0747): getlex             40884 [pinball.scene.battle.battle.terrain::TerrainParser]
+L0009b4 (#0748): findproperty       6117 [gear]
+L0009b7 (#0749): getproperty        6117 [gear]
+L0009ba (#0750): getlex             7492 [pinball.context.global::GlobalLogic]
+L0009bd (#0751): pushstring         189 ["fileName"]
+L0009c0 (#0752): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L0009c4 (#0753): pushstring         191 ["lineNumber"]
+L0009c7 (#0754): pushint            1007 [680]
+L0009ca (#0755): pushstring         192 ["className"]
+L0009cd (#0756): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L0009d1 (#0757): pushstring         194 ["methodName"]
+L0009d4 (#0758): pushstring         14072 ["preparation"]
+L0009d7 (#0759): newobject          4
+L0009d9 (#0760): callproperty       6114 [absorb], 2
+L0009dd (#0761): coerce             7492 [pinball.context.global::GlobalLogic]
+L0009e0 (#0762): callproperty       7711 [getPlayer], 0
+L0009e4 (#0763): coerce             7572 [pinball.common.data.player::PlayerLogic]
+L0009e7 (#0764): findproperty       7445 [continuationData]
+L0009ea (#0765): getproperty        7445 [continuationData]
+L0009ed (#0766): getproperty        13991 [zoneIndex]
+L0009f0 (#0767): findproperty       84 [floor]
+L0009f2 (#0768): getproperty        84 [floor]
+L0009f4 (#0769): findproperty       40853 [initialData]
+L0009f8 (#0770): getproperty        40853 [initialData]
+L0009fc (#0771): getproperty        46 [index]
+L0009fe (#0772): findproperty       19104 [quest]
+L000a02 (#0773): getproperty        19104 [quest]
+L000a06 (#0774): getlex             7683 [pinball.common.data.quest.id::QuestIdBattleKindTools]
+L000a09 (#0775): findproperty       7440 [questId]
+L000a0c (#0776): getproperty        7440 [questId]
+L000a0f (#0777): findproperty       19104 [quest]
+L000a13 (#0778): getproperty        19104 [quest]
+L000a17 (#0779): callproperty       7684 [pinball.common.data.quest.battle:BattleQuestLogic::get_availablePlayKind], 0
+L000a1b (#0780): convert_i          
+L000a1c (#0781): callproperty       7685 [isSinglePlayBossBattle], 2
+L000a20 (#0782): convert_b          
+L000a21 (#0783): findproperty       27154 [bothBossManager]
+L000a25 (#0784): getproperty        27154 [bothBossManager]
+L000a29 (#0785): getproperty        14003 [sumHp]
+L000a2c (#0786): callproperty       2562 [parse], 7
+L000a30 (#0787): coerce             6 [Array]
+L000a32 (#0788): findproperty       7445 [continuationData]
+L000a35 (#0789): getproperty        7445 [continuationData]
+L000a38 (#0790): constructprop      15501 [pinball.scene.battle.battle.zone::ZoneManagerImpl], 2
+L000a3c (#0791): initproperty       27234 [zoneManager]
+L000a40 (#0792): jump               L000ad0 (# 837)
+L000a44 (#0793): findproperty       27234 [zoneManager]
+L000a48 (#0794): findpropstrict     15501 [pinball.scene.battle.battle.zone::ZoneManagerImpl]
+L000a4b (#0795): getlex             40884 [pinball.scene.battle.battle.terrain::TerrainParser]
+L000a4f (#0796): findproperty       6117 [gear]
+L000a52 (#0797): getproperty        6117 [gear]
+L000a55 (#0798): getlex             7492 [pinball.context.global::GlobalLogic]
+L000a58 (#0799): pushstring         189 ["fileName"]
+L000a5b (#0800): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L000a5f (#0801): pushstring         191 ["lineNumber"]
+L000a62 (#0802): pushint            1011 [684]
+L000a65 (#0803): pushstring         192 ["className"]
+L000a68 (#0804): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000a6c (#0805): pushstring         194 ["methodName"]
+L000a6f (#0806): pushstring         14072 ["preparation"]
+L000a72 (#0807): newobject          4
+L000a74 (#0808): callproperty       6114 [absorb], 2
+L000a78 (#0809): coerce             7492 [pinball.context.global::GlobalLogic]
+L000a7b (#0810): callproperty       7711 [getPlayer], 0
+L000a7f (#0811): coerce             7572 [pinball.common.data.player::PlayerLogic]
+L000a82 (#0812): findproperty       7445 [continuationData]
+L000a85 (#0813): getproperty        7445 [continuationData]
+L000a88 (#0814): getproperty        13991 [zoneIndex]
+L000a8b (#0815): findproperty       84 [floor]
+L000a8d (#0816): getproperty        84 [floor]
+L000a8f (#0817): findproperty       40853 [initialData]
+L000a93 (#0818): getproperty        40853 [initialData]
+L000a97 (#0819): getproperty        46 [index]
+L000a99 (#0820): findproperty       19104 [quest]
+L000a9d (#0821): getproperty        19104 [quest]
+L000aa1 (#0822): getlex             7683 [pinball.common.data.quest.id::QuestIdBattleKindTools]
+L000aa4 (#0823): findproperty       7440 [questId]
+L000aa7 (#0824): getproperty        7440 [questId]
+L000aaa (#0825): findproperty       19104 [quest]
+L000aae (#0826): getproperty        19104 [quest]
+L000ab2 (#0827): callproperty       7684 [pinball.common.data.quest.battle:BattleQuestLogic::get_availablePlayKind], 0
+L000ab6 (#0828): convert_i          
+L000ab7 (#0829): callproperty       7685 [isSinglePlayBossBattle], 2
+L000abb (#0830): convert_b          
+L000abc (#0831): callproperty       2562 [parse], 6
+L000ac0 (#0832): coerce             6 [Array]
+L000ac2 (#0833): findproperty       7445 [continuationData]
+L000ac5 (#0834): getproperty        7445 [continuationData]
+L000ac8 (#0835): constructprop      15501 [pinball.scene.battle.battle.zone::ZoneManagerImpl], 2
+L000acc (#0836): initproperty       27234 [zoneManager]
+L000ad0 (#0837): getlocal_1         
+L000ad1 (#0838): findproperty       27234 [zoneManager]
+L000ad5 (#0839): getproperty        27234 [zoneManager]
+L000ad9 (#0840): pushstring         189 ["fileName"]
+L000adc (#0841): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L000ae0 (#0842): pushstring         191 ["lineNumber"]
+L000ae3 (#0843): pushint            1013 [686]
+L000ae6 (#0844): pushstring         192 ["className"]
+L000ae9 (#0845): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000aed (#0846): pushstring         194 ["methodName"]
+L000af0 (#0847): pushstring         14072 ["preparation"]
+L000af3 (#0848): newobject          4
+L000af5 (#0849): callpropvoid       6108 [bookChild], 2
+L000af9 (#0850): getlocal_1         
+L000afa (#0851): findproperty       27234 [zoneManager]
+L000afe (#0852): getproperty        27234 [zoneManager]
+L000b02 (#0853): getlex             40885 [pinball.scene.battle.battle.zone::ZoneManager]
+L000b06 (#0854): callpropvoid       6103 [diffuse], 2
+L000b0a (#0855): findproperty       40733 [effectManager]
+L000b0e (#0856): findpropstrict     40886 [pinball.scene.battle.battle.effect::EffectManagerImpl]
+L000b12 (#0857): constructprop      40886 [pinball.scene.battle.battle.effect::EffectManagerImpl], 0
+L000b17 (#0858): initproperty       40733 [effectManager]
+L000b1b (#0859): getlocal_1         
+L000b1c (#0860): findproperty       40733 [effectManager]
+L000b20 (#0861): getproperty        40733 [effectManager]
+L000b24 (#0862): pushstring         189 ["fileName"]
+L000b27 (#0863): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L000b2b (#0864): pushstring         191 ["lineNumber"]
+L000b2e (#0865): pushint            1017 [690]
+L000b31 (#0866): pushstring         192 ["className"]
+L000b34 (#0867): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000b38 (#0868): pushstring         194 ["methodName"]
+L000b3b (#0869): pushstring         14072 ["preparation"]
+L000b3e (#0870): newobject          4
+L000b40 (#0871): callpropvoid       6108 [bookChild], 2
+L000b44 (#0872): getlocal_1         
+L000b45 (#0873): findproperty       40733 [effectManager]
+L000b49 (#0874): getproperty        40733 [effectManager]
+L000b4d (#0875): getlex             40887 [pinball.scene.battle.battle.effect::EffectManager]
+L000b51 (#0876): callpropvoid       6103 [diffuse], 2
+L000b55 (#0877): findproperty       40727 [cutinManager]
+L000b59 (#0878): findpropstrict     40747 [pinball.scene.battle.battle.cutin::CutinManagerImpl]
+L000b5d (#0879): constructprop      40747 [pinball.scene.battle.battle.cutin::CutinManagerImpl], 0
+L000b62 (#0880): initproperty       40727 [cutinManager]
+L000b66 (#0881): getlocal_1         
+L000b67 (#0882): findproperty       40727 [cutinManager]
+L000b6b (#0883): getproperty        40727 [cutinManager]
+L000b6f (#0884): pushstring         189 ["fileName"]
+L000b72 (#0885): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L000b76 (#0886): pushstring         191 ["lineNumber"]
+L000b79 (#0887): pushint            1021 [694]
+L000b7c (#0888): pushstring         192 ["className"]
+L000b7f (#0889): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000b83 (#0890): pushstring         194 ["methodName"]
+L000b86 (#0891): pushstring         14072 ["preparation"]
+L000b89 (#0892): newobject          4
+L000b8b (#0893): callpropvoid       6108 [bookChild], 2
+L000b8f (#0894): getlocal_1         
+L000b90 (#0895): findproperty       40727 [cutinManager]
+L000b94 (#0896): getproperty        40727 [cutinManager]
+L000b98 (#0897): getlex             40888 [pinball.scene.battle.battle.cutin::CutinManager]
+L000b9c (#0898): callpropvoid       6103 [diffuse], 2
+L000ba0 (#0899): findproperty       40889 [otherBattleManager]
+L000ba4 (#0900): findpropstrict     40890 [pinball.scene.battle.battle.other::OtherBattleManagerImpl]
+L000ba8 (#0901): findproperty       40853 [initialData]
+L000bac (#0902): getproperty        40853 [initialData]
+L000bb0 (#0903): callproperty       40891 [getOtherBattleIds], 0
+L000bb5 (#0904): coerce             6 [Array]
+L000bb7 (#0905): constructprop      40890 [pinball.scene.battle.battle.other::OtherBattleManagerImpl], 1
+L000bbc (#0906): initproperty       40889 [otherBattleManager]
+L000bc0 (#0907): getlocal_1         
+L000bc1 (#0908): findproperty       40889 [otherBattleManager]
+L000bc5 (#0909): getproperty        40889 [otherBattleManager]
+L000bc9 (#0910): pushstring         189 ["fileName"]
+L000bcc (#0911): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L000bd0 (#0912): pushstring         191 ["lineNumber"]
+L000bd3 (#0913): pushint            1025 [698]
+L000bd6 (#0914): pushstring         192 ["className"]
+L000bd9 (#0915): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000bdd (#0916): pushstring         194 ["methodName"]
+L000be0 (#0917): pushstring         14072 ["preparation"]
+L000be3 (#0918): newobject          4
+L000be5 (#0919): callpropvoid       6108 [bookChild], 2
+L000be9 (#0920): getlocal_1         
+L000bea (#0921): findproperty       40889 [otherBattleManager]
+L000bee (#0922): getproperty        40889 [otherBattleManager]
+L000bf2 (#0923): getlex             40892 [pinball.scene.battle.battle.other::OtherBattleManager]
+L000bf6 (#0924): callpropvoid       6103 [diffuse], 2
+L000bfa (#0925): findproperty       40767 [autoplayer]
+L000bfe (#0926): findpropstrict     40893 [pinball.scene.battle.battle.auto::BattleAutoplayer]
+L000c02 (#0927): findproperty       13950 [autoplayData]
+L000c05 (#0928): getproperty        13950 [autoplayData]
+L000c08 (#0929): getproperty        13932 [autoskillMode]
+L000c0b (#0930): constructprop      40893 [pinball.scene.battle.battle.auto::BattleAutoplayer], 1
+L000c10 (#0931): initproperty       40767 [autoplayer]
+L000c14 (#0932): getlocal_1         
+L000c15 (#0933): findproperty       40767 [autoplayer]
+L000c19 (#0934): getproperty        40767 [autoplayer]
+L000c1d (#0935): pushstring         189 ["fileName"]
+L000c20 (#0936): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L000c24 (#0937): pushstring         191 ["lineNumber"]
+L000c27 (#0938): pushint            278 [702]
+L000c2a (#0939): pushstring         192 ["className"]
+L000c2d (#0940): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000c31 (#0941): pushstring         194 ["methodName"]
+L000c34 (#0942): pushstring         14072 ["preparation"]
+L000c37 (#0943): newobject          4
+L000c39 (#0944): callpropvoid       6108 [bookChild], 2
+L000c3d (#0945): getlocal_1         
+L000c3e (#0946): findproperty       40767 [autoplayer]
+L000c42 (#0947): getproperty        40767 [autoplayer]
+L000c46 (#0948): getlex             40893 [pinball.scene.battle.battle.auto::BattleAutoplayer]
+L000c4a (#0949): callpropvoid       6103 [diffuse], 2
+L000c4e (#0950): getlocal_1         
+L000c4f (#0951): getlocal_0         
+L000c50 (#0952): getlex             15499 [pinball.scene.battle.battle::Battle]
+L000c53 (#0953): callpropvoid       6103 [diffuse], 2
+L000c57 (#0954): getlocal_1         
+L000c58 (#0955): findproperty       4890 [get_id]
+L000c5b (#0956): callproperty       4890 [get_id], 0
+L000c5f (#0957): coerce             11 [String]
+L000c61 (#0958): getlex             40849 [pinball.scene.battle.battle::BattleDiffuseKey]
+L000c65 (#0959): getproperty        40894 [KBattleId]
+L000c69 (#0960): callpropvoid       6101 [diffuseWithKey], 2
+L000c6d (#0961): findproperty       20748 [isAutoHighLevelBoss]
+L000c71 (#0962): findproperty       19104 [quest]
+L000c75 (#0963): getproperty        19104 [quest]
+L000c79 (#0964): callproperty       20648 [pinball.common.data.quest.battle:BattleQuestLogic::isAutoHighLevelBoss], 0
+L000c7e (#0965): convert_b          
+L000c7f (#0966): initproperty       20748 [isAutoHighLevelBoss]
+L000c83 (#0967): findproperty       40895 [overrideDamageCheck]
+L000c87 (#0968): findproperty       19104 [quest]
+L000c8b (#0969): getproperty        19104 [quest]
+L000c8f (#0970): callproperty       20671 [pinball.common.data.quest.battle:BattleQuestLogic::getDamageCheckOverride], 0
+L000c94 (#0971): coerce             79 [haxe.ds::Option]
+L000c96 (#0972): initproperty       40895 [overrideDamageCheck]
+L000c9a (#0973): findproperty       40896 [overrideFieldEffect]
+L000c9e (#0974): findproperty       19104 [quest]
+L000ca2 (#0975): getproperty        19104 [quest]
+L000ca6 (#0976): callproperty       20670 [pinball.common.data.quest.battle:BattleQuestLogic::getFieldEffectOverride], 0
+L000cab (#0977): coerce             79 [haxe.ds::Option]
+L000cad (#0978): initproperty       40896 [overrideFieldEffect]
+L000cb1 (#0979): findproperty       40897 [overrideFieldValue]
+L000cb5 (#0980): findproperty       19104 [quest]
+L000cb9 (#0981): getproperty        19104 [quest]
+L000cbd (#0982): callproperty       14527 [pinball.common.data.quest.battle:BattleQuestLogic::getFieldValueOverride], 0
+L000cc1 (#0983): coerce             79 [haxe.ds::Option]
+L000cc3 (#0984): initproperty       40897 [overrideFieldValue]
+L000cc7 (#0985): findproperty       40898 [overrideHitCheckCount]
+L000ccb (#0986): findproperty       19104 [quest]
+L000ccf (#0987): getproperty        19104 [quest]
+L000cd3 (#0988): callproperty       20665 [pinball.common.data.quest.battle:BattleQuestLogic::getHitCountCheckOverride], 0
+L000cd8 (#0989): coerce             79 [haxe.ds::Option]
+L000cda (#0990): initproperty       40898 [overrideHitCheckCount]
+L000cde (#0991): findproperty       40899 [overrideFunnel]
+L000ce2 (#0992): findproperty       19104 [quest]
+L000ce6 (#0993): getproperty        19104 [quest]
+L000cea (#0994): callproperty       20666 [pinball.common.data.quest.battle:BattleQuestLogic::getFunnelOverride], 0
+L000cef (#0995): coerce             14066 [pinball.common.data.quest.event.scoreAttack::FunnelZakoOverrideLogic]
+L000cf2 (#0996): initproperty       40899 [overrideFunnel]
+L000cf6 (#0997): findproperty       40719 [commandLogger]
+L000cfa (#0998): findproperty       6650 [devConfig]
+L000cfd (#0999): getproperty        6650 [devConfig]
+L000d00 (#1000): getproperty        6858 [battleCommandLog]
+L000d03 (#1001): iffalse            L000d46 (# 1021)
+L000d07 (#1002): getlocal_1         
+L000d08 (#1003): findpropstrict     40900 [pinball.scene.battle.driver::BattleCommandLoggerImpl]
+L000d0c (#1004): findproperty       4890 [get_id]
+L000d0f (#1005): callproperty       4890 [get_id], 0
+L000d13 (#1006): coerce             11 [String]
+L000d15 (#1007): constructprop      40900 [pinball.scene.battle.driver::BattleCommandLoggerImpl], 1
+L000d1a (#1008): pushstring         189 ["fileName"]
+L000d1d (#1009): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L000d21 (#1010): pushstring         191 ["lineNumber"]
+L000d24 (#1011): pushint            1042 [720]
+L000d27 (#1012): pushstring         192 ["className"]
+L000d2a (#1013): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000d2e (#1014): pushstring         194 ["methodName"]
+L000d31 (#1015): pushstring         14072 ["preparation"]
+L000d34 (#1016): newobject          4
+L000d36 (#1017): callproperty       6108 [bookChild], 2
+L000d3a (#1018): coerce             40900 [pinball.scene.battle.driver::BattleCommandLoggerImpl]
+L000d3e (#1019): coerce             40901 [pinball.scene.battle.driver::BattleCommandLogger]
+L000d42 (#1020): jump               L000d53 (# 1024)
+L000d46 (#1021): findpropstrict     40902 [pinball.scene.battle.driver::DummyBattleLogger]
+L000d4a (#1022): constructprop      40902 [pinball.scene.battle.driver::DummyBattleLogger], 0
+L000d4f (#1023): coerce             40901 [pinball.scene.battle.driver::BattleCommandLogger]
+L000d53 (#1024): initproperty       40719 [commandLogger]
+L000d57 (#1025): findproperty       40842 [ballLogger]
+L000d5b (#1026): findproperty       6650 [devConfig]
+L000d5e (#1027): getproperty        6650 [devConfig]
+L000d61 (#1028): getproperty        6859 [battleBallLog]
+L000d64 (#1029): iffalse            L000da7 (# 1049)
+L000d68 (#1030): getlocal_1         
+L000d69 (#1031): findpropstrict     40903 [pinball.scene.battle.driver::BattleBallLoggerImpl]
+L000d6d (#1032): findproperty       4890 [get_id]
+L000d70 (#1033): callproperty       4890 [get_id], 0
+L000d74 (#1034): coerce             11 [String]
+L000d76 (#1035): constructprop      40903 [pinball.scene.battle.driver::BattleBallLoggerImpl], 1
+L000d7b (#1036): pushstring         189 ["fileName"]
+L000d7e (#1037): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L000d82 (#1038): pushstring         191 ["lineNumber"]
+L000d85 (#1039): pushint            1043 [721]
+L000d88 (#1040): pushstring         192 ["className"]
+L000d8b (#1041): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000d8f (#1042): pushstring         194 ["methodName"]
+L000d92 (#1043): pushstring         14072 ["preparation"]
+L000d95 (#1044): newobject          4
+L000d97 (#1045): callproperty       6108 [bookChild], 2
+L000d9b (#1046): coerce             40903 [pinball.scene.battle.driver::BattleBallLoggerImpl]
+L000d9f (#1047): coerce             40904 [pinball.scene.battle.driver::BattleBallLogger]
+L000da3 (#1048): jump               L000db4 (# 1052)
+L000da7 (#1049): findpropstrict     40902 [pinball.scene.battle.driver::DummyBattleLogger]
+L000dab (#1050): constructprop      40902 [pinball.scene.battle.driver::DummyBattleLogger], 0
+L000db0 (#1051): coerce             40904 [pinball.scene.battle.driver::BattleBallLogger]
+L000db4 (#1052): initproperty       40842 [ballLogger]
+L000db8 (#1053): findproperty       6117 [gear]
+L000dbb (#1054): getproperty        6117 [gear]
+L000dbe (#1055): getlex             7762 [pinball.asset.logic::LogicAssetContainer]
+L000dc1 (#1056): pushstring         189 ["fileName"]
+L000dc4 (#1057): pushstring         56553 ["pinball/scene/battle/battle/Battle.hx"]
+L000dc8 (#1058): pushstring         191 ["lineNumber"]
+L000dcb (#1059): pushint            3357 [729]
+L000dce (#1060): pushstring         192 ["className"]
+L000dd1 (#1061): pushstring         36852 ["pinball.scene.battle.battle.Battle"]
+L000dd5 (#1062): pushstring         194 ["methodName"]
+L000dd8 (#1063): pushstring         14072 ["preparation"]
+L000ddb (#1064): newobject          4
+L000ddd (#1065): callproperty       6114 [absorb], 2
+L000de1 (#1066): coerce             7762 [pinball.asset.logic::LogicAssetContainer]
+L000de4 (#1067): coerce             7762 [pinball.asset.logic::LogicAssetContainer]
+L000de7 (#1068): setlocal           9
+L000de9 (#1069): findproperty       15431 [debugFloorStatistics]
+L000dec (#1070): findproperty       7445 [continuationData]
+L000def (#1071): getproperty        7445 [continuationData]
+L000df2 (#1072): getproperty        15431 [debugFloorStatistics]
+L000df5 (#1073): callproperty       189 [copy], 0
+L000df9 (#1074): coerce             6 [Array]
+L000dfb (#1075): initproperty       15431 [debugFloorStatistics]
+L000dfe (#1076): findproperty       15433 [debugMultiballStatsManager]
+L000e01 (#1077): findpropstrict     40905 [pinball.scene.battle.battle.debug.stats::DebugMultiballStatsManager]
+L000e05 (#1078): getlocal           9
+L000e07 (#1079): constructprop      40905 [pinball.scene.battle.battle.debug.stats::DebugMultiballStatsManager], 1
+L000e0c (#1080): findproperty       7445 [continuationData]
+L000e0f (#1081): getproperty        7445 [continuationData]
+L000e12 (#1082): getproperty        15432 [debugMultiballStatistics]
+L000e15 (#1083): callproperty       189 [copy], 0
+L000e19 (#1084): coerce             6 [Array]
+L000e1b (#1085): callproperty       40906 [initializeWith], 1
+L000e20 (#1086): coerce             40905 [pinball.scene.battle.battle.debug.stats::DebugMultiballStatsManager]
+L000e24 (#1087): initproperty       15433 [debugMultiballStatsManager]
+L000e27 (#1088): returnvoid         
+L000e28 (#1089): ; end
+; exception_table=[]

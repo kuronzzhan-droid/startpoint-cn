@@ -1,0 +1,21 @@
+# ActionEvaluator/wfxPfPairedContext header=[2, 2, 1, 2] sha=bd46a4ce20155579878c8369d7d86253a0d1a1c5d29069293b8bd0b3102f6a5c
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: pushstring ['wfxPfChain']
+#0004 ofs0007: callproperty ['hasOwnProperty', 1]
+#0005 ofs000b: iffalse [] -> #9
+#0006 ofs000f: getlocal_1 []
+#0007 ofs0010: getproperty ['wfxPfChain']
+#0008 ofs0014: iftrue [] -> #18
+#0009 ofs0018: getlocal_1 []
+#0010 ofs0019: pushstring ['wfxPfPaired']
+#0011 ofs001d: callproperty ['hasOwnProperty', 1]
+#0012 ofs0021: iffalse [] -> #16
+#0013 ofs0025: getlocal_1 []
+#0014 ofs0026: getproperty ['wfxPfPaired']
+#0015 ofs002a: iftrue [] -> #18
+#0016 ofs002e: pushfalse []
+#0017 ofs002f: returnvalue []
+#0018 ofs0030: pushtrue []
+#0019 ofs0031: returnvalue []

@@ -1,0 +1,240 @@
+; AccumulationDamageIndicatorView/updateDigits (after)
+; body_index=57497 method_index=62030
+; sha256=351c8b515420a0e9b971096cbcd630992ed3994bfc2f3a47977d88852174a692
+; maxstack=5 localcount=8 init_scope_depth=1 max_scope_depth=2
+L000000 (#0000): getlocal_0         
+L000001 (#0001): pushscope          
+L000002 (#0002): pushnull           
+L000003 (#0003): astype             11 [String]
+L000005 (#0004): setlocal_2         
+L000006 (#0005): pushbyte           0
+L000008 (#0006): setlocal           5
+L00000a (#0007): pushnull           
+L00000b (#0008): astype             4793 [starling.display::MovieClip]
+L00000e (#0009): setlocal           6
+L000010 (#0010): pushnull           
+L000011 (#0011): astype             11 [String]
+L000013 (#0012): setlocal           7
+L000015 (#0013): findproperty       42413 [object]
+L000019 (#0014): getproperty        42413 [object]
+L00001d (#0015): getproperty        40914 [numberNotationMode]
+L000021 (#0016): convert_i          
+L000022 (#0017): lookupswitch       default=L00002d cases=[L000031, L000045]
+L00002d (#0018): jump               L000054 (# 34)
+L000031 (#0019): getlex             11404 [pinball.common.tools::FormatTools]
+L000034 (#0020): getlocal_1         
+L000035 (#0021): pushbyte           0
+L000037 (#0022): pushfalse          
+L000038 (#0023): callproperty       7109 [toFormatedString], 3
+L00003c (#0024): coerce             11 [String]
+L00003e (#0025): coerce             11 [String]
+L000040 (#0026): setlocal_2         
+L000041 (#0027): jump               L000054 (# 34)
+L000045 (#0028): getlex             48193 [pinball.scene.battle.battle.effect::DamageEffectView]
+L000049 (#0029): getlocal_1         
+L00004a (#0030): callproperty       48194 [unitPrefix], 1
+L00004f (#0031): coerce             11 [String]
+L000051 (#0032): coerce             11 [String]
+L000053 (#0033): setlocal_2         
+L000054 (#0034): pushstring         64621 ["##########"]
+L000058 (#0035): getlocal_2         
+L000059 (#0036): add                
+L00005a (#0037): coerce             11 [String]
+L00005c (#0038): coerce             11 [String]
+L00005e (#0039): setlocal_3         
+L00005f (#0040): pushbyte           0
+L000061 (#0041): convert_i          
+L000062 (#0042): setlocal           4
+L000064 (#0043): jump               L000211 (# 206)
+L000068 (#0044): avm_label          
+L000069 (#0045): getlocal           4
+L00006b (#0046): inclocal_i         4
+L00006d (#0047): convert_i          
+L00006e (#0048): setlocal           5
+L000070 (#0049): findproperty       33114 [digits]
+L000074 (#0050): getproperty        33114 [digits]
+L000078 (#0051): getlocal           5
+L00007a (#0052): getproperty        14 [<mn kind 0x1b>]
+L00007c (#0053): coerce             4793 [starling.display::MovieClip]
+L00007f (#0054): coerce             4793 [starling.display::MovieClip]
+L000082 (#0055): setlocal           6
+L000084 (#0056): getlocal           6
+L000086 (#0057): pushtrue           
+L000087 (#0058): initproperty       2663 [visible]
+L00008a (#0059): getlocal           6
+L00008c (#0060): getlocal_3         
+L00008d (#0061): getlocal_3         
+L00008e (#0062): getproperty        35 [length]
+L000090 (#0063): decrement_i        
+L000091 (#0064): callproperty       5812 [http://adobe.com/AS3/2006/builtin::charAt], 1
+L000095 (#0065): dup                
+L000096 (#0066): pushstring         54 ["m"]
+L000098 (#0067): ifne               L0000a4 (# 71)
+L00009c (#0068): pop                
+L00009d (#0069): pushint            5897 [4249855]
+L0000a0 (#0070): jump               L0000c3 (# 82)
+L0000a4 (#0071): dup                
+L0000a5 (#0072): pushstring         47 ["b"]
+L0000a7 (#0073): ifne               L0000b3 (# 77)
+L0000ab (#0074): pop                
+L0000ac (#0075): pushint            5898 [16732084]
+L0000af (#0076): jump               L0000c3 (# 82)
+L0000b3 (#0077): pushstring         64 ["t"]
+L0000b5 (#0078): ifne               L0000c0 (# 81)
+L0000b9 (#0079): pushint            5899 [10514687]
+L0000bc (#0080): jump               L0000c3 (# 82)
+L0000c0 (#0081): pushint            3515 [16768318]
+L0000c3 (#0082): initproperty       141 [color]
+L0000c6 (#0083): getlocal_3         
+L0000c7 (#0084): getlocal_3         
+L0000c8 (#0085): getproperty        35 [length]
+L0000ca (#0086): pushbyte           10
+L0000cc (#0087): subtract_i         
+L0000cd (#0088): getlocal           5
+L0000cf (#0089): add_i              
+L0000d0 (#0090): callproperty       5812 [http://adobe.com/AS3/2006/builtin::charAt], 1
+L0000d4 (#0091): coerce             11 [String]
+L0000d6 (#0092): coerce             11 [String]
+L0000d8 (#0093): setlocal           7
+L0000da (#0094): getlocal           7
+L0000dc (#0095): pushstring         26 ["0"]
+L0000de (#0096): ifne               L0000ed (# 101)
+L0000e2 (#0097): getlocal           6
+L0000e4 (#0098): pushbyte           0
+L0000e6 (#0099): initproperty       4801 [currentFrame]
+L0000e9 (#0100): jump               L000211 (# 206)
+L0000ed (#0101): getlocal           7
+L0000ef (#0102): pushstring         9478 ["1"]
+L0000f2 (#0103): ifne               L000101 (# 108)
+L0000f6 (#0104): getlocal           6
+L0000f8 (#0105): pushbyte           1
+L0000fa (#0106): initproperty       4801 [currentFrame]
+L0000fd (#0107): jump               L000211 (# 206)
+L000101 (#0108): getlocal           7
+L000103 (#0109): pushstring         3286 ["2"]
+L000106 (#0110): ifne               L000115 (# 115)
+L00010a (#0111): getlocal           6
+L00010c (#0112): pushbyte           2
+L00010e (#0113): initproperty       4801 [currentFrame]
+L000111 (#0114): jump               L000211 (# 206)
+L000115 (#0115): getlocal           7
+L000117 (#0116): pushstring         19072 ["3"]
+L00011b (#0117): ifne               L00012a (# 122)
+L00011f (#0118): getlocal           6
+L000121 (#0119): pushbyte           3
+L000123 (#0120): initproperty       4801 [currentFrame]
+L000126 (#0121): jump               L000211 (# 206)
+L00012a (#0122): getlocal           7
+L00012c (#0123): pushstring         33132 ["4"]
+L000130 (#0124): ifne               L00013f (# 129)
+L000134 (#0125): getlocal           6
+L000136 (#0126): pushbyte           4
+L000138 (#0127): initproperty       4801 [currentFrame]
+L00013b (#0128): jump               L000211 (# 206)
+L00013f (#0129): getlocal           7
+L000141 (#0130): pushstring         33133 ["5"]
+L000145 (#0131): ifne               L000154 (# 136)
+L000149 (#0132): getlocal           6
+L00014b (#0133): pushbyte           5
+L00014d (#0134): initproperty       4801 [currentFrame]
+L000150 (#0135): jump               L000211 (# 206)
+L000154 (#0136): getlocal           7
+L000156 (#0137): pushstring         33130 ["6"]
+L00015a (#0138): ifne               L000169 (# 143)
+L00015e (#0139): getlocal           6
+L000160 (#0140): pushbyte           6
+L000162 (#0141): initproperty       4801 [currentFrame]
+L000165 (#0142): jump               L000211 (# 206)
+L000169 (#0143): getlocal           7
+L00016b (#0144): pushstring         67 ["7"]
+L00016d (#0145): ifne               L00017c (# 150)
+L000171 (#0146): getlocal           6
+L000173 (#0147): pushbyte           7
+L000175 (#0148): initproperty       4801 [currentFrame]
+L000178 (#0149): jump               L000211 (# 206)
+L00017c (#0150): getlocal           7
+L00017e (#0151): pushstring         33131 ["8"]
+L000182 (#0152): ifne               L000191 (# 157)
+L000186 (#0153): getlocal           6
+L000188 (#0154): pushbyte           8
+L00018a (#0155): initproperty       4801 [currentFrame]
+L00018d (#0156): jump               L000211 (# 206)
+L000191 (#0157): getlocal           7
+L000193 (#0158): pushstring         46498 ["9"]
+L000197 (#0159): ifne               L0001a6 (# 164)
+L00019b (#0160): getlocal           6
+L00019d (#0161): pushbyte           9
+L00019f (#0162): initproperty       4801 [currentFrame]
+L0001a2 (#0163): jump               L000211 (# 206)
+L0001a6 (#0164): getlocal           7
+L0001a8 (#0165): pushstring         12468 ["@"]
+L0001ab (#0166): ifne               L0001ba (# 171)
+L0001af (#0167): getlocal           6
+L0001b1 (#0168): pushbyte           10
+L0001b3 (#0169): initproperty       4801 [currentFrame]
+L0001b6 (#0170): jump               L000211 (# 206)
+L0001ba (#0171): getlocal           7
+L0001bc (#0172): pushstring         53 ["k"]
+L0001be (#0173): ifne               L0001cd (# 178)
+L0001c2 (#0174): getlocal           6
+L0001c4 (#0175): pushbyte           11
+L0001c6 (#0176): initproperty       4801 [currentFrame]
+L0001c9 (#0177): jump               L000211 (# 206)
+L0001cd (#0178): getlocal           6
+L0001cf (#0179): pushfalse          
+L0001d0 (#0180): getlocal           7
+L0001d2 (#0181): pushstring         54 ["m"]
+L0001d4 (#0182): ifne               L0001e3 (# 187)
+L0001d8 (#0183): getlocal           6
+L0001da (#0184): pushbyte           12
+L0001dc (#0185): initproperty       4801 [currentFrame]
+L0001df (#0186): jump               L000205 (# 200)
+L0001e3 (#0187): getlocal           7
+L0001e5 (#0188): pushstring         47 ["b"]
+L0001e7 (#0189): ifne               L0001f6 (# 194)
+L0001eb (#0190): getlocal           6
+L0001ed (#0191): pushbyte           13
+L0001ef (#0192): initproperty       4801 [currentFrame]
+L0001f2 (#0193): jump               L000205 (# 200)
+L0001f6 (#0194): getlocal           7
+L0001f8 (#0195): pushstring         64 ["t"]
+L0001fa (#0196): ifne               L00020e (# 205)
+L0001fe (#0197): getlocal           6
+L000200 (#0198): pushbyte           14
+L000202 (#0199): initproperty       4801 [currentFrame]
+L000205 (#0200): pop                
+L000206 (#0201): pushtrue           
+L000207 (#0202): getlocal           6
+L000209 (#0203): pushint            7 [16777215]
+L00020b (#0204): initproperty       141 [color]
+L00020e (#0205): initproperty       2663 [visible]
+L000211 (#0206): getlocal           4
+L000213 (#0207): pushbyte           10
+L000215 (#0208): iflt               L000068 (# 44)
+L000219 (#0209): pushstring         1 [""]
+L00021b (#0210): getlocal_1         
+L00021c (#0211): add                
+L00021d (#0212): coerce             11 [String]
+L00021f (#0213): getproperty        35 [length]
+L000221 (#0214): convert_i          
+L000222 (#0215): setlocal           4
+L000224 (#0216): findproperty       8714 [inner]
+L000227 (#0217): getproperty        8714 [inner]
+L00022a (#0218): pushdouble         459 [18.5]
+L00022d (#0219): pushbyte           10
+L00022f (#0220): getlocal           4
+L000231 (#0221): subtract_i         
+L000232 (#0222): pushbyte           37
+L000234 (#0223): multiply_i         
+L000235 (#0224): getlocal           4
+L000237 (#0225): pushbyte           2
+L000239 (#0226): divide             
+L00023a (#0227): pushbyte           37
+L00023c (#0228): multiply           
+L00023d (#0229): add                
+L00023e (#0230): convert_d          
+L00023f (#0231): subtract           
+L000240 (#0232): initproperty       2604 [x]
+L000243 (#0233): returnvoid         
+L000244 (#0234): ; end
+; exception_table=[]

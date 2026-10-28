@@ -1,0 +1,11 @@
+# Battle$/wfxFpEnum header=[5, 4, 1, 2] sha=f6dbb2d66a9af0aa712d8080ff8bf96ac694b997e835680328280226f6fefb1b
+# exceptions=[]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['pinball.scene.battle.battle::Battle']
+#0003 ofs0005: getlocal [1]
+#0004 ofs0007: getlocal [2]
+#0005 ofs0009: getlocal [3]
+#0006 ofs000b: pushbyte [0]
+#0007 ofs000d: callproperty ['wfxFpEnumDepth', 4]
+#0008 ofs0012: returnvalue []

@@ -1,0 +1,238 @@
+; ConditionSlot$/wfxSpec
+; body_index=92601 method_index=101074
+; sha256=e8bc9f1d09fa62970382dbd82d803ba770eb8e0cac4f7ae2711ce029e58dec66
+; maxstack=5 localcount=9 init_scope_depth=1 max_scope_depth=2
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: getlocal_2         
+L000003: iffalse            L0001e6 (# 230)
+L000007: getlocal_0         
+L000008: getproperty        69519 [wfxSpecAsset]
+L00000c: getlocal_2         
+L00000d: ifstricteq         L00001e (# 14)
+L000011: getlocal_0         
+L000012: getlocal_2         
+L000013: setproperty        69519 [wfxSpecAsset]
+L000017: getlocal_0         
+L000018: newobject          0
+L00001a: setproperty        69518 [wfxSpecCache]
+L00001e: getlocal_0         
+L00001f: getproperty        69518 [wfxSpecCache]
+L000023: setlocal_3         
+L000024: getlocal_1         
+L000025: convert_s          
+L000026: setlocal           7
+L000028: getlocal           7
+L00002a: getlocal_3         
+L00002b: in                 
+L00002c: iffalse            L000036 (# 28)
+L000030: getlocal_3         
+L000031: getlocal           7
+L000033: getproperty        14 [<mn kind 0x1b>]
+L000035: returnvalue        
+L000036: getlocal_2         
+L000037: getlex             3943 [pinball.master.generated::UniqueConditionTable]
+L00003a: callproperty       8210 [pinball.asset.logic:ILogicAssetContainer::getMasterTableMaybe], 1
+L00003e: setlocal           4
+L000040: getlocal           4
+L000042: iffalse            L0001e6 (# 230)
+L000046: getlocal           4
+L000048: coerce             3943 [pinball.master.generated::UniqueConditionTable]
+L00004b: callproperty       6950 [get_data], 0
+L00004f: coerce             6946 [pinball.master.runtime::MasterMap]
+L000052: setlocal           4
+L000054: pushnull           
+L000055: setlocal           5
+L000057: getlocal           4
+L000059: getlocal_1         
+L00005a: callproperty       7702 [pinball.master.runtime:MasterMap::exists], 1
+L00005e: iffalse            L0001dc (# 224)
+L000062: getlocal           4
+L000064: getlocal_1         
+L000065: callproperty       7182 [pinball.master.runtime:MasterMap::get], 1
+L000069: setlocal           6
+L00006b: getlocal           6
+L00006d: iffalse            L0001dc (# 224)
+L000071: getlocal           6
+L000073: getproperty        6914 [string_id]
+L000076: setlocal           6
+L000078: getlocal           6
+L00007a: iffalse            L0001dc (# 224)
+L00007e: getlocal           6
+L000080: pushstring         217 [":"]
+L000083: callproperty       42 [http://adobe.com/AS3/2006/builtin::split], 1
+L000086: setlocal           6
+L000088: getlocal           6
+L00008a: getproperty        35 [length]
+L00008c: pushbyte           6
+L00008e: iflt               L0001dc (# 224)
+L000092: getlocal           6
+L000094: pushbyte           0
+L000096: getproperty        14 [<mn kind 0x1b>]
+L000098: pushstring         94061 ["wfx"]
+L00009c: ifne               L0001dc (# 224)
+L0000a0: getlocal           6
+L0000a2: pushbyte           1
+L0000a4: getproperty        14 [<mn kind 0x1b>]
+L0000a6: pushstring         1 [""]
+L0000a8: ifeq               L0001dc (# 224)
+L0000ac: getlocal           6
+L0000ae: pushbyte           1
+L0000b0: getproperty        14 [<mn kind 0x1b>]
+L0000b2: convert_d          
+L0000b3: setlocal           8
+L0000b5: getlocal           8
+L0000b7: getlocal           8
+L0000b9: convert_i          
+L0000ba: ifne               L0001dc (# 224)
+L0000be: getlocal           8
+L0000c0: pushbyte           0
+L0000c2: iflt               L0001dc (# 224)
+L0000c6: getlocal           6
+L0000c8: pushbyte           2
+L0000ca: getproperty        14 [<mn kind 0x1b>]
+L0000cc: pushstring         1 [""]
+L0000ce: ifeq               L0001dc (# 224)
+L0000d2: getlocal           6
+L0000d4: pushbyte           2
+L0000d6: getproperty        14 [<mn kind 0x1b>]
+L0000d8: convert_d          
+L0000d9: setlocal           8
+L0000db: getlocal           8
+L0000dd: getlocal           8
+L0000df: convert_i          
+L0000e0: ifne               L0001dc (# 224)
+L0000e4: getlocal           8
+L0000e6: pushbyte           0
+L0000e8: getlocal           6
+L0000ea: pushbyte           1
+L0000ec: getproperty        14 [<mn kind 0x1b>]
+L0000ee: convert_i          
+L0000ef: pushbyte           33
+L0000f1: ifne               L0000fb (# 112)
+L0000f5: pop                
+L0000f6: pop                
+L0000f7: pushbyte           0
+L0000f9: pushbyte           0
+L0000fb: getlocal           6
+L0000fd: pushbyte           1
+L0000ff: getproperty        14 [<mn kind 0x1b>]
+L000101: convert_i          
+L000102: pushbyte           36
+L000104: ifne               L00010e (# 122)
+L000108: pop                
+L000109: pop                
+L00010a: pushbyte           0
+L00010c: pushbyte           0
+L00010e: getlocal           6
+L000110: pushbyte           1
+L000112: getproperty        14 [<mn kind 0x1b>]
+L000114: convert_i          
+L000115: pushbyte           43
+L000117: ifne               L000121 (# 132)
+L00011b: pop                
+L00011c: pop                
+L00011d: pushbyte           0
+L00011f: pushbyte           0
+L000121: iflt               L0001dc (# 224)
+L000125: getlocal           6
+L000127: pushbyte           3
+L000129: getproperty        14 [<mn kind 0x1b>]
+L00012b: pushstring         1 [""]
+L00012d: ifeq               L0001dc (# 224)
+L000131: getlocal           6
+L000133: pushbyte           3
+L000135: getproperty        14 [<mn kind 0x1b>]
+L000137: convert_d          
+L000138: setlocal           8
+L00013a: getlocal           8
+L00013c: getlocal           8
+L00013e: convert_i          
+L00013f: ifne               L0001dc (# 224)
+L000143: getlocal           6
+L000145: pushbyte           4
+L000147: getproperty        14 [<mn kind 0x1b>]
+L000149: pushstring         1 [""]
+L00014b: ifeq               L0001dc (# 224)
+L00014f: getlocal           6
+L000151: pushbyte           4
+L000153: getproperty        14 [<mn kind 0x1b>]
+L000155: convert_d          
+L000156: setlocal           8
+L000158: getlocal           8
+L00015a: getlocal           8
+L00015c: convert_i          
+L00015d: ifne               L0001dc (# 224)
+L000161: getlocal           6
+L000163: pushbyte           1
+L000165: getproperty        14 [<mn kind 0x1b>]
+L000167: convert_i          
+L000168: pushbyte           28
+L00016a: ifeq               L0001bc (# 206)
+L00016e: getlocal           6
+L000170: pushbyte           1
+L000172: getproperty        14 [<mn kind 0x1b>]
+L000174: convert_i          
+L000175: pushbyte           29
+L000177: ifeq               L0001bc (# 206)
+L00017b: getlocal           8
+L00017d: pushbyte           0
+L00017f: getlocal           6
+L000181: pushbyte           1
+L000183: getproperty        14 [<mn kind 0x1b>]
+L000185: convert_i          
+L000186: pushbyte           33
+L000188: ifne               L000192 (# 185)
+L00018c: pop                
+L00018d: pop                
+L00018e: pushbyte           0
+L000190: pushbyte           0
+L000192: getlocal           6
+L000194: pushbyte           1
+L000196: getproperty        14 [<mn kind 0x1b>]
+L000198: convert_i          
+L000199: pushbyte           36
+L00019b: ifne               L0001a5 (# 195)
+L00019f: pop                
+L0001a0: pop                
+L0001a1: pushbyte           0
+L0001a3: pushbyte           0
+L0001a5: getlocal           6
+L0001a7: pushbyte           1
+L0001a9: getproperty        14 [<mn kind 0x1b>]
+L0001ab: convert_i          
+L0001ac: pushbyte           43
+L0001ae: ifne               L0001b8 (# 205)
+L0001b2: pop                
+L0001b3: pop                
+L0001b4: pushbyte           0
+L0001b6: pushbyte           0
+L0001b8: iflt               L0001dc (# 224)
+L0001bc: getlocal           6
+L0001be: pushbyte           1
+L0001c0: getproperty        14 [<mn kind 0x1b>]
+L0001c2: convert_i          
+L0001c3: getlocal           6
+L0001c5: pushbyte           2
+L0001c7: getproperty        14 [<mn kind 0x1b>]
+L0001c9: convert_i          
+L0001ca: getlocal           6
+L0001cc: pushbyte           3
+L0001ce: getproperty        14 [<mn kind 0x1b>]
+L0001d0: convert_i          
+L0001d1: getlocal           6
+L0001d3: pushbyte           4
+L0001d5: getproperty        14 [<mn kind 0x1b>]
+L0001d7: convert_i          
+L0001d8: newarray           4
+L0001da: setlocal           5
+L0001dc: getlocal_3         
+L0001dd: getlocal           7
+L0001df: getlocal           5
+L0001e1: setproperty        14 [<mn kind 0x1b>]
+L0001e3: getlocal           5
+L0001e5: returnvalue        
+L0001e6: pushnull           
+L0001e7: returnvalue        
+L0001e8: ; end
+; exception_table=[]

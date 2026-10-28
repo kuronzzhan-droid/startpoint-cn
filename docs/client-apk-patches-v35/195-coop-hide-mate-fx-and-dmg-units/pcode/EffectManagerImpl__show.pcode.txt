@@ -1,0 +1,3018 @@
+; EffectManagerImpl/show (after)
+; body_index=57596 method_index=62149
+; sha256=01a919fdff216573795ccd08238fc84aa6e7578ec0252c18a67c7d2c230f62bb
+; maxstack=11 localcount=9 init_scope_depth=1 max_scope_depth=2
+L000000 (#0000): getlocal_0         
+L000001 (#0001): pushscope          
+L000002 (#0002): pushnull           
+L000003 (#0003): astype             40735 [pinball.scene.battle.battle.effect::SimpleEffectKind]
+L000007 (#0004): setlocal_2         
+L000008 (#0005): pushnan            
+L000009 (#0006): setlocal_3         
+L00000a (#0007): pushnan            
+L00000b (#0008): setlocal           4
+L00000d (#0009): pushnull           
+L00000e (#0010): astype             7552 [pinball.scene.battle.battle.feature::BattleFeaturePermitData]
+L000011 (#0011): setlocal           5
+L000013 (#0012): pushfalse          
+L000014 (#0013): setlocal           6
+L000016 (#0014): pushnull           
+L000017 (#0015): astype             11 [String]
+L000019 (#0016): setlocal           7
+L00001b (#0017): pushnull           
+L00001c (#0018): astype             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000020 (#0019): setlocal           8
+L000022 (#0020): findproperty       48271 [canPlayEffect]
+L000026 (#0021): findproperty       48264 [primaryBattle]
+L00002a (#0022): getproperty        48264 [primaryBattle]
+L00002e (#0023): getlocal_1         
+L00002f (#0024): callproperty       48271 [canPlayEffect], 2
+L000034 (#0025): convert_b          
+L000035 (#0026): not                
+L000036 (#0027): iffalse            L00003b (# 29)
+L00003a (#0028): returnvoid         
+L00003b (#0029): getlocal_1         
+L00003c (#0030): getproperty        46 [index]
+L00003e (#0031): lookupswitch       default=L00005e cases=[L000062, L001c6c, L001c99, L001cbe, L001ceb, L001d2c, L001d6d, L001daa, L001dfa]
+L00005e (#0032): jump               L001e3f (# 3011)
+L000062 (#0033): getlocal_1         
+L000063 (#0034): getproperty        80 [params]
+L000065 (#0035): pushbyte           0
+L000067 (#0036): getproperty        14 [<mn kind 0x1b>]
+L000069 (#0037): coerce             40735 [pinball.scene.battle.battle.effect::SimpleEffectKind]
+L00006d (#0038): coerce             40735 [pinball.scene.battle.battle.effect::SimpleEffectKind]
+L000071 (#0039): setlocal_2         
+L000072 (#0040): getlocal_2         
+L000073 (#0041): getproperty        46 [index]
+L000075 (#0042): lookupswitch       default=L00019a cases=[L00019e, L0001db, L000218, L000255, L000292, L0002cf, L0003b5, L0003ff, L000449, L000493, L0004d4, L000511, L00054e, L0005b2, L000616, L00067a, L0006de, L000742, L0007a6, L00080a, L000849, L000888, L0008c5, L000907, L000944, L000981, L0009be, L0009fb, L000a38, L000a75, L000ab2, L000aef, L000b2c, L000b7d, L000bba, L000bf7, L000c34, L000c73, L000cd1, L000d2f, L000d8d, L000deb, L000e28, L000e65, L000ea2, L000edf, L000f1c, L000f59, L000f96, L000fd3, L001010, L00104d, L00108a, L0010cc, L00110e, L001150, L00118d, L0011cf, L001211, L00124e, L00128b, L0012c8, L001305, L001351, L001452, L001494, L0014d6, L00150b, L001548, L00157d, L0015ba, L0015ef, L00162c, L001661, L00169e, L0016db, L001718, L001755, L001792, L0017db, L001818, L001855, L001892, L0018d4, L001909, L001948, L00198a, L0019c7, L001a04, L001a41, L001a7e, L001abb, L001af8, L001b79, L001bfa, L001c2f]
+L00019a (#0043): jump               L001c68 (# 2807)
+L00019e (#0044): findproperty       48272 [addGeneralEffect]
+L0001a2 (#0045): getlocal_2         
+L0001a3 (#0046): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0001a7 (#0047): getlocal_2         
+L0001a8 (#0048): getproperty        80 [params]
+L0001aa (#0049): pushbyte           0
+L0001ac (#0050): getproperty        14 [<mn kind 0x1b>]
+L0001ae (#0051): convert_d          
+L0001af (#0052): getlocal_2         
+L0001b0 (#0053): getproperty        80 [params]
+L0001b2 (#0054): pushbyte           1
+L0001b4 (#0055): getproperty        14 [<mn kind 0x1b>]
+L0001b6 (#0056): convert_d          
+L0001b7 (#0057): callproperty       48273 [FixedPosition], 2
+L0001bc (#0058): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0001c0 (#0059): pushbyte           1
+L0001c2 (#0060): getlex             83 [Math]
+L0001c4 (#0061): getproperty        2862 [NaN]
+L0001c7 (#0062): convert_d          
+L0001c8 (#0063): getlex             83 [Math]
+L0001ca (#0064): getproperty        2862 [NaN]
+L0001cd (#0065): convert_d          
+L0001ce (#0066): pushstring         16729 ["battle/common/layer0/saturated_linework"]
+L0001d2 (#0067): callpropvoid       48272 [addGeneralEffect], 6
+L0001d7 (#0068): jump               L001c68 (# 2807)
+L0001db (#0069): findproperty       48272 [addGeneralEffect]
+L0001df (#0070): getlocal_2         
+L0001e0 (#0071): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0001e4 (#0072): getlocal_2         
+L0001e5 (#0073): getproperty        80 [params]
+L0001e7 (#0074): pushbyte           0
+L0001e9 (#0075): getproperty        14 [<mn kind 0x1b>]
+L0001eb (#0076): convert_d          
+L0001ec (#0077): getlocal_2         
+L0001ed (#0078): getproperty        80 [params]
+L0001ef (#0079): pushbyte           1
+L0001f1 (#0080): getproperty        14 [<mn kind 0x1b>]
+L0001f3 (#0081): convert_d          
+L0001f4 (#0082): callproperty       48273 [FixedPosition], 2
+L0001f9 (#0083): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0001fd (#0084): pushbyte           1
+L0001ff (#0085): getlex             83 [Math]
+L000201 (#0086): getproperty        2862 [NaN]
+L000204 (#0087): convert_d          
+L000205 (#0088): getlex             83 [Math]
+L000207 (#0089): getproperty        2862 [NaN]
+L00020a (#0090): convert_d          
+L00020b (#0091): pushstring         16706 ["battle/common/layer0/flipper_powerflip_shot1"]
+L00020f (#0092): callpropvoid       48272 [addGeneralEffect], 6
+L000214 (#0093): jump               L001c68 (# 2807)
+L000218 (#0094): findproperty       48272 [addGeneralEffect]
+L00021c (#0095): getlocal_2         
+L00021d (#0096): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000221 (#0097): getlocal_2         
+L000222 (#0098): getproperty        80 [params]
+L000224 (#0099): pushbyte           0
+L000226 (#0100): getproperty        14 [<mn kind 0x1b>]
+L000228 (#0101): convert_d          
+L000229 (#0102): getlocal_2         
+L00022a (#0103): getproperty        80 [params]
+L00022c (#0104): pushbyte           1
+L00022e (#0105): getproperty        14 [<mn kind 0x1b>]
+L000230 (#0106): convert_d          
+L000231 (#0107): callproperty       48273 [FixedPosition], 2
+L000236 (#0108): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00023a (#0109): pushbyte           1
+L00023c (#0110): getlex             83 [Math]
+L00023e (#0111): getproperty        2862 [NaN]
+L000241 (#0112): convert_d          
+L000242 (#0113): getlex             83 [Math]
+L000244 (#0114): getproperty        2862 [NaN]
+L000247 (#0115): convert_d          
+L000248 (#0116): pushstring         16707 ["battle/common/layer0/flipper_powerflip_shot2"]
+L00024c (#0117): callpropvoid       48272 [addGeneralEffect], 6
+L000251 (#0118): jump               L001c68 (# 2807)
+L000255 (#0119): findproperty       48272 [addGeneralEffect]
+L000259 (#0120): getlocal_2         
+L00025a (#0121): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00025e (#0122): getlocal_2         
+L00025f (#0123): getproperty        80 [params]
+L000261 (#0124): pushbyte           0
+L000263 (#0125): getproperty        14 [<mn kind 0x1b>]
+L000265 (#0126): convert_d          
+L000266 (#0127): getlocal_2         
+L000267 (#0128): getproperty        80 [params]
+L000269 (#0129): pushbyte           1
+L00026b (#0130): getproperty        14 [<mn kind 0x1b>]
+L00026d (#0131): convert_d          
+L00026e (#0132): callproperty       48273 [FixedPosition], 2
+L000273 (#0133): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000277 (#0134): pushbyte           1
+L000279 (#0135): getlex             83 [Math]
+L00027b (#0136): getproperty        2862 [NaN]
+L00027e (#0137): convert_d          
+L00027f (#0138): getlex             83 [Math]
+L000281 (#0139): getproperty        2862 [NaN]
+L000284 (#0140): convert_d          
+L000285 (#0141): pushstring         16708 ["battle/common/layer0/flipper_powerflip_shot3"]
+L000289 (#0142): callpropvoid       48272 [addGeneralEffect], 6
+L00028e (#0143): jump               L001c68 (# 2807)
+L000292 (#0144): findproperty       48272 [addGeneralEffect]
+L000296 (#0145): getlocal_2         
+L000297 (#0146): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00029b (#0147): getlocal_2         
+L00029c (#0148): getproperty        80 [params]
+L00029e (#0149): pushbyte           0
+L0002a0 (#0150): getproperty        14 [<mn kind 0x1b>]
+L0002a2 (#0151): convert_d          
+L0002a3 (#0152): getlocal_2         
+L0002a4 (#0153): getproperty        80 [params]
+L0002a6 (#0154): pushbyte           1
+L0002a8 (#0155): getproperty        14 [<mn kind 0x1b>]
+L0002aa (#0156): convert_d          
+L0002ab (#0157): callproperty       48273 [FixedPosition], 2
+L0002b0 (#0158): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0002b4 (#0159): pushbyte           1
+L0002b6 (#0160): getlex             83 [Math]
+L0002b8 (#0161): getproperty        2862 [NaN]
+L0002bb (#0162): convert_d          
+L0002bc (#0163): getlex             83 [Math]
+L0002be (#0164): getproperty        2862 [NaN]
+L0002c1 (#0165): convert_d          
+L0002c2 (#0166): pushstring         16823 ["battle/common/layer1/enemy_attack_cutin"]
+L0002c6 (#0167): callpropvoid       48272 [addGeneralEffect], 6
+L0002cb (#0168): jump               L001c68 (# 2807)
+L0002cf (#0169): getlocal_2         
+L0002d0 (#0170): getproperty        80 [params]
+L0002d2 (#0171): pushbyte           1
+L0002d4 (#0172): getproperty        14 [<mn kind 0x1b>]
+L0002d6 (#0173): convert_d          
+L0002d7 (#0174): convert_d          
+L0002d8 (#0175): setlocal_3         
+L0002d9 (#0176): getlocal_2         
+L0002da (#0177): getproperty        80 [params]
+L0002dc (#0178): pushbyte           0
+L0002de (#0179): getproperty        14 [<mn kind 0x1b>]
+L0002e0 (#0180): convert_d          
+L0002e1 (#0181): convert_d          
+L0002e2 (#0182): setlocal           4
+L0002e4 (#0183): getlocal_2         
+L0002e5 (#0184): getproperty        80 [params]
+L0002e7 (#0185): pushbyte           2
+L0002e9 (#0186): getproperty        14 [<mn kind 0x1b>]
+L0002eb (#0187): convert_i          
+L0002ec (#0188): lookupswitch       default=L0002fa cases=[L0002fe, L00033b, L000378]
+L0002fa (#0189): jump               L0003b1 (# 252)
+L0002fe (#0190): findproperty       7848 [featuresPermit]
+L000301 (#0191): getproperty        7848 [featuresPermit]
+L000304 (#0192): getproperty        7908 [displaysSkillReady]
+L000307 (#0193): iffalse            L000337 (# 210)
+L00030b (#0194): findproperty       48272 [addGeneralEffect]
+L00030f (#0195): getlocal_2         
+L000310 (#0196): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000314 (#0197): getlocal           4
+L000316 (#0198): getlocal_3         
+L000317 (#0199): callproperty       48273 [FixedPosition], 2
+L00031c (#0200): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000320 (#0201): pushbyte           1
+L000322 (#0202): getlex             83 [Math]
+L000324 (#0203): getproperty        2862 [NaN]
+L000327 (#0204): convert_d          
+L000328 (#0205): getlex             83 [Math]
+L00032a (#0206): getproperty        2862 [NaN]
+L00032d (#0207): convert_d          
+L00032e (#0208): pushstring         16808 ["battle/common/layer1/skill_ready1_effect"]
+L000332 (#0209): callpropvoid       48272 [addGeneralEffect], 6
+L000337 (#0210): jump               L0003b1 (# 252)
+L00033b (#0211): findproperty       7848 [featuresPermit]
+L00033e (#0212): getproperty        7848 [featuresPermit]
+L000341 (#0213): getproperty        7908 [displaysSkillReady]
+L000344 (#0214): iffalse            L000374 (# 231)
+L000348 (#0215): findproperty       48272 [addGeneralEffect]
+L00034c (#0216): getlocal_2         
+L00034d (#0217): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000351 (#0218): getlocal           4
+L000353 (#0219): getlocal_3         
+L000354 (#0220): callproperty       48273 [FixedPosition], 2
+L000359 (#0221): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00035d (#0222): pushbyte           1
+L00035f (#0223): getlex             83 [Math]
+L000361 (#0224): getproperty        2862 [NaN]
+L000364 (#0225): convert_d          
+L000365 (#0226): getlex             83 [Math]
+L000367 (#0227): getproperty        2862 [NaN]
+L00036a (#0228): convert_d          
+L00036b (#0229): pushstring         16809 ["battle/common/layer1/skill_ready2_effect"]
+L00036f (#0230): callpropvoid       48272 [addGeneralEffect], 6
+L000374 (#0231): jump               L0003b1 (# 252)
+L000378 (#0232): findproperty       7848 [featuresPermit]
+L00037b (#0233): getproperty        7848 [featuresPermit]
+L00037e (#0234): getproperty        7908 [displaysSkillReady]
+L000381 (#0235): iffalse            L0003b1 (# 252)
+L000385 (#0236): findproperty       48272 [addGeneralEffect]
+L000389 (#0237): getlocal_2         
+L00038a (#0238): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00038e (#0239): getlocal           4
+L000390 (#0240): getlocal_3         
+L000391 (#0241): callproperty       48273 [FixedPosition], 2
+L000396 (#0242): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00039a (#0243): pushbyte           1
+L00039c (#0244): getlex             83 [Math]
+L00039e (#0245): getproperty        2862 [NaN]
+L0003a1 (#0246): convert_d          
+L0003a2 (#0247): getlex             83 [Math]
+L0003a4 (#0248): getproperty        2862 [NaN]
+L0003a7 (#0249): convert_d          
+L0003a8 (#0250): pushstring         16810 ["battle/common/layer1/skill_ready3_effect"]
+L0003ac (#0251): callpropvoid       48272 [addGeneralEffect], 6
+L0003b1 (#0252): jump               L001c68 (# 2807)
+L0003b5 (#0253): findproperty       7848 [featuresPermit]
+L0003b8 (#0254): getproperty        7848 [featuresPermit]
+L0003bb (#0255): getproperty        7908 [displaysSkillReady]
+L0003be (#0256): iffalse            L0003fb (# 281)
+L0003c2 (#0257): findproperty       48272 [addGeneralEffect]
+L0003c6 (#0258): getlocal_2         
+L0003c7 (#0259): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0003cb (#0260): getlocal_2         
+L0003cc (#0261): getproperty        80 [params]
+L0003ce (#0262): pushbyte           0
+L0003d0 (#0263): getproperty        14 [<mn kind 0x1b>]
+L0003d2 (#0264): convert_d          
+L0003d3 (#0265): getlocal_2         
+L0003d4 (#0266): getproperty        80 [params]
+L0003d6 (#0267): pushbyte           1
+L0003d8 (#0268): getproperty        14 [<mn kind 0x1b>]
+L0003da (#0269): convert_d          
+L0003db (#0270): callproperty       48273 [FixedPosition], 2
+L0003e0 (#0271): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0003e4 (#0272): pushbyte           1
+L0003e6 (#0273): getlex             83 [Math]
+L0003e8 (#0274): getproperty        2862 [NaN]
+L0003eb (#0275): convert_d          
+L0003ec (#0276): getlex             83 [Math]
+L0003ee (#0277): getproperty        2862 [NaN]
+L0003f1 (#0278): convert_d          
+L0003f2 (#0279): pushstring         16811 ["battle/common/layer1/skill_ready1_top"]
+L0003f6 (#0280): callpropvoid       48272 [addGeneralEffect], 6
+L0003fb (#0281): jump               L001c68 (# 2807)
+L0003ff (#0282): findproperty       7848 [featuresPermit]
+L000402 (#0283): getproperty        7848 [featuresPermit]
+L000405 (#0284): getproperty        7908 [displaysSkillReady]
+L000408 (#0285): iffalse            L000445 (# 310)
+L00040c (#0286): findproperty       48272 [addGeneralEffect]
+L000410 (#0287): getlocal_2         
+L000411 (#0288): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000415 (#0289): getlocal_2         
+L000416 (#0290): getproperty        80 [params]
+L000418 (#0291): pushbyte           0
+L00041a (#0292): getproperty        14 [<mn kind 0x1b>]
+L00041c (#0293): convert_d          
+L00041d (#0294): getlocal_2         
+L00041e (#0295): getproperty        80 [params]
+L000420 (#0296): pushbyte           1
+L000422 (#0297): getproperty        14 [<mn kind 0x1b>]
+L000424 (#0298): convert_d          
+L000425 (#0299): callproperty       48273 [FixedPosition], 2
+L00042a (#0300): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00042e (#0301): pushbyte           1
+L000430 (#0302): getlex             83 [Math]
+L000432 (#0303): getproperty        2862 [NaN]
+L000435 (#0304): convert_d          
+L000436 (#0305): getlex             83 [Math]
+L000438 (#0306): getproperty        2862 [NaN]
+L00043b (#0307): convert_d          
+L00043c (#0308): pushstring         16812 ["battle/common/layer1/skill_ready2_top"]
+L000440 (#0309): callpropvoid       48272 [addGeneralEffect], 6
+L000445 (#0310): jump               L001c68 (# 2807)
+L000449 (#0311): findproperty       7848 [featuresPermit]
+L00044c (#0312): getproperty        7848 [featuresPermit]
+L00044f (#0313): getproperty        7908 [displaysSkillReady]
+L000452 (#0314): iffalse            L00048f (# 339)
+L000456 (#0315): findproperty       48272 [addGeneralEffect]
+L00045a (#0316): getlocal_2         
+L00045b (#0317): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00045f (#0318): getlocal_2         
+L000460 (#0319): getproperty        80 [params]
+L000462 (#0320): pushbyte           0
+L000464 (#0321): getproperty        14 [<mn kind 0x1b>]
+L000466 (#0322): convert_d          
+L000467 (#0323): getlocal_2         
+L000468 (#0324): getproperty        80 [params]
+L00046a (#0325): pushbyte           1
+L00046c (#0326): getproperty        14 [<mn kind 0x1b>]
+L00046e (#0327): convert_d          
+L00046f (#0328): callproperty       48273 [FixedPosition], 2
+L000474 (#0329): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000478 (#0330): pushbyte           1
+L00047a (#0331): getlex             83 [Math]
+L00047c (#0332): getproperty        2862 [NaN]
+L00047f (#0333): convert_d          
+L000480 (#0334): getlex             83 [Math]
+L000482 (#0335): getproperty        2862 [NaN]
+L000485 (#0336): convert_d          
+L000486 (#0337): pushstring         16813 ["battle/common/layer1/skill_ready3_top"]
+L00048a (#0338): callpropvoid       48272 [addGeneralEffect], 6
+L00048f (#0339): jump               L001c68 (# 2807)
+L000493 (#0340): findproperty       48272 [addGeneralEffect]
+L000497 (#0341): getlocal_2         
+L000498 (#0342): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00049c (#0343): getlocal_2         
+L00049d (#0344): getproperty        80 [params]
+L00049f (#0345): pushbyte           0
+L0004a1 (#0346): getproperty        14 [<mn kind 0x1b>]
+L0004a3 (#0347): convert_d          
+L0004a4 (#0348): getlocal_2         
+L0004a5 (#0349): getproperty        80 [params]
+L0004a7 (#0350): pushbyte           1
+L0004a9 (#0351): getproperty        14 [<mn kind 0x1b>]
+L0004ab (#0352): convert_d          
+L0004ac (#0353): callproperty       48273 [FixedPosition], 2
+L0004b1 (#0354): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0004b5 (#0355): pushbyte           1
+L0004b7 (#0356): findproperty       48274 [getRandomRotation]
+L0004bb (#0357): callproperty       48274 [getRandomRotation], 0
+L0004c0 (#0358): convert_d          
+L0004c1 (#0359): getlex             83 [Math]
+L0004c3 (#0360): getproperty        2862 [NaN]
+L0004c6 (#0361): convert_d          
+L0004c7 (#0362): pushstring         16596 ["battle/common/layer1/zone_progress_eliminate_zakoes_ripple"]
+L0004cb (#0363): callpropvoid       48272 [addGeneralEffect], 6
+L0004d0 (#0364): jump               L001c68 (# 2807)
+L0004d4 (#0365): findproperty       48272 [addGeneralEffect]
+L0004d8 (#0366): getlocal_2         
+L0004d9 (#0367): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0004dd (#0368): getlocal_2         
+L0004de (#0369): getproperty        80 [params]
+L0004e0 (#0370): pushbyte           0
+L0004e2 (#0371): getproperty        14 [<mn kind 0x1b>]
+L0004e4 (#0372): convert_d          
+L0004e5 (#0373): getlocal_2         
+L0004e6 (#0374): getproperty        80 [params]
+L0004e8 (#0375): pushbyte           1
+L0004ea (#0376): getproperty        14 [<mn kind 0x1b>]
+L0004ec (#0377): convert_d          
+L0004ed (#0378): callproperty       48273 [FixedPosition], 2
+L0004f2 (#0379): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0004f6 (#0380): pushbyte           1
+L0004f8 (#0381): getlex             83 [Math]
+L0004fa (#0382): getproperty        2862 [NaN]
+L0004fd (#0383): convert_d          
+L0004fe (#0384): getlex             83 [Math]
+L000500 (#0385): getproperty        2862 [NaN]
+L000503 (#0386): convert_d          
+L000504 (#0387): pushstring         16594 ["battle/common/layer1/zone_progress_eliminate_zakoes_breaking_medium"]
+L000508 (#0388): callpropvoid       48272 [addGeneralEffect], 6
+L00050d (#0389): jump               L001c68 (# 2807)
+L000511 (#0390): findproperty       48272 [addGeneralEffect]
+L000515 (#0391): getlocal_2         
+L000516 (#0392): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00051a (#0393): getlocal_2         
+L00051b (#0394): getproperty        80 [params]
+L00051d (#0395): pushbyte           0
+L00051f (#0396): getproperty        14 [<mn kind 0x1b>]
+L000521 (#0397): convert_d          
+L000522 (#0398): getlocal_2         
+L000523 (#0399): getproperty        80 [params]
+L000525 (#0400): pushbyte           1
+L000527 (#0401): getproperty        14 [<mn kind 0x1b>]
+L000529 (#0402): convert_d          
+L00052a (#0403): callproperty       48273 [FixedPosition], 2
+L00052f (#0404): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000533 (#0405): pushbyte           1
+L000535 (#0406): getlex             83 [Math]
+L000537 (#0407): getproperty        2862 [NaN]
+L00053a (#0408): convert_d          
+L00053b (#0409): getlex             83 [Math]
+L00053d (#0410): getproperty        2862 [NaN]
+L000540 (#0411): convert_d          
+L000541 (#0412): pushstring         16770 ["battle/common/layer0/damage_effect_out_hole"]
+L000545 (#0413): callpropvoid       48272 [addGeneralEffect], 6
+L00054a (#0414): jump               L001c68 (# 2807)
+L00054e (#0415): findproperty       7848 [featuresPermit]
+L000551 (#0416): getproperty        7848 [featuresPermit]
+L000554 (#0417): getproperty        7868 [canGameover]
+L000557 (#0418): iffalse            L0005ae (# 450)
+L00055b (#0419): findproperty       48272 [addGeneralEffect]
+L00055f (#0420): getlocal_2         
+L000560 (#0421): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000564 (#0422): getlocal_2         
+L000565 (#0423): getproperty        80 [params]
+L000567 (#0424): pushbyte           0
+L000569 (#0425): getproperty        14 [<mn kind 0x1b>]
+L00056b (#0426): convert_d          
+L00056c (#0427): getlocal_2         
+L00056d (#0428): getproperty        80 [params]
+L00056f (#0429): pushbyte           1
+L000571 (#0430): getproperty        14 [<mn kind 0x1b>]
+L000573 (#0431): convert_d          
+L000574 (#0432): callproperty       48273 [FixedPosition], 2
+L000579 (#0433): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00057d (#0434): pushbyte           15
+L00057f (#0435): getlex             83 [Math]
+L000581 (#0436): getproperty        2862 [NaN]
+L000584 (#0437): convert_d          
+L000585 (#0438): getlex             83 [Math]
+L000587 (#0439): getproperty        2862 [NaN]
+L00058a (#0440): convert_d          
+L00058b (#0441): findproperty       27490 [battle]
+L00058f (#0442): getproperty        27490 [battle]
+L000593 (#0443): callproperty       40918 [isScoreBorderMode], 0
+L000598 (#0444): convert_b          
+L000599 (#0445): iffalse            L0005a5 (# 448)
+L00059d (#0446): pushstring         16617 ["battle/common/score_attack2/cutin_time_limit_30s"]
+L0005a1 (#0447): jump               L0005a9 (# 449)
+L0005a5 (#0448): pushstring         16624 ["battle/common/layer1/cutin_time_limit_30s"]
+L0005a9 (#0449): callpropvoid       48272 [addGeneralEffect], 6
+L0005ae (#0450): jump               L001c68 (# 2807)
+L0005b2 (#0451): findproperty       7848 [featuresPermit]
+L0005b5 (#0452): getproperty        7848 [featuresPermit]
+L0005b8 (#0453): getproperty        7868 [canGameover]
+L0005bb (#0454): iffalse            L000612 (# 486)
+L0005bf (#0455): findproperty       48272 [addGeneralEffect]
+L0005c3 (#0456): getlocal_2         
+L0005c4 (#0457): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0005c8 (#0458): getlocal_2         
+L0005c9 (#0459): getproperty        80 [params]
+L0005cb (#0460): pushbyte           0
+L0005cd (#0461): getproperty        14 [<mn kind 0x1b>]
+L0005cf (#0462): convert_d          
+L0005d0 (#0463): getlocal_2         
+L0005d1 (#0464): getproperty        80 [params]
+L0005d3 (#0465): pushbyte           1
+L0005d5 (#0466): getproperty        14 [<mn kind 0x1b>]
+L0005d7 (#0467): convert_d          
+L0005d8 (#0468): callproperty       48273 [FixedPosition], 2
+L0005dd (#0469): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0005e1 (#0470): pushbyte           15
+L0005e3 (#0471): getlex             83 [Math]
+L0005e5 (#0472): getproperty        2862 [NaN]
+L0005e8 (#0473): convert_d          
+L0005e9 (#0474): getlex             83 [Math]
+L0005eb (#0475): getproperty        2862 [NaN]
+L0005ee (#0476): convert_d          
+L0005ef (#0477): findproperty       27490 [battle]
+L0005f3 (#0478): getproperty        27490 [battle]
+L0005f7 (#0479): callproperty       40918 [isScoreBorderMode], 0
+L0005fc (#0480): convert_b          
+L0005fd (#0481): iffalse            L000609 (# 484)
+L000601 (#0482): pushstring         16618 ["battle/common/score_attack2/cutin_time_limit_10s"]
+L000605 (#0483): jump               L00060d (# 485)
+L000609 (#0484): pushstring         16625 ["battle/common/layer1/cutin_time_limit_10s"]
+L00060d (#0485): callpropvoid       48272 [addGeneralEffect], 6
+L000612 (#0486): jump               L001c68 (# 2807)
+L000616 (#0487): findproperty       7848 [featuresPermit]
+L000619 (#0488): getproperty        7848 [featuresPermit]
+L00061c (#0489): getproperty        7868 [canGameover]
+L00061f (#0490): iffalse            L000676 (# 522)
+L000623 (#0491): findproperty       48272 [addGeneralEffect]
+L000627 (#0492): getlocal_2         
+L000628 (#0493): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00062c (#0494): getlocal_2         
+L00062d (#0495): getproperty        80 [params]
+L00062f (#0496): pushbyte           0
+L000631 (#0497): getproperty        14 [<mn kind 0x1b>]
+L000633 (#0498): convert_d          
+L000634 (#0499): getlocal_2         
+L000635 (#0500): getproperty        80 [params]
+L000637 (#0501): pushbyte           1
+L000639 (#0502): getproperty        14 [<mn kind 0x1b>]
+L00063b (#0503): convert_d          
+L00063c (#0504): callproperty       48273 [FixedPosition], 2
+L000641 (#0505): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000645 (#0506): pushbyte           15
+L000647 (#0507): getlex             83 [Math]
+L000649 (#0508): getproperty        2862 [NaN]
+L00064c (#0509): convert_d          
+L00064d (#0510): getlex             83 [Math]
+L00064f (#0511): getproperty        2862 [NaN]
+L000652 (#0512): convert_d          
+L000653 (#0513): findproperty       27490 [battle]
+L000657 (#0514): getproperty        27490 [battle]
+L00065b (#0515): callproperty       40918 [isScoreBorderMode], 0
+L000660 (#0516): convert_b          
+L000661 (#0517): iffalse            L00066d (# 520)
+L000665 (#0518): pushstring         16619 ["battle/common/score_attack2/cutin_time_limit_5s"]
+L000669 (#0519): jump               L000671 (# 521)
+L00066d (#0520): pushstring         16626 ["battle/common/layer1/cutin_time_limit_5s"]
+L000671 (#0521): callpropvoid       48272 [addGeneralEffect], 6
+L000676 (#0522): jump               L001c68 (# 2807)
+L00067a (#0523): findproperty       7848 [featuresPermit]
+L00067d (#0524): getproperty        7848 [featuresPermit]
+L000680 (#0525): getproperty        7868 [canGameover]
+L000683 (#0526): iffalse            L0006da (# 558)
+L000687 (#0527): findproperty       48272 [addGeneralEffect]
+L00068b (#0528): getlocal_2         
+L00068c (#0529): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000690 (#0530): getlocal_2         
+L000691 (#0531): getproperty        80 [params]
+L000693 (#0532): pushbyte           0
+L000695 (#0533): getproperty        14 [<mn kind 0x1b>]
+L000697 (#0534): convert_d          
+L000698 (#0535): getlocal_2         
+L000699 (#0536): getproperty        80 [params]
+L00069b (#0537): pushbyte           1
+L00069d (#0538): getproperty        14 [<mn kind 0x1b>]
+L00069f (#0539): convert_d          
+L0006a0 (#0540): callproperty       48273 [FixedPosition], 2
+L0006a5 (#0541): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0006a9 (#0542): pushbyte           15
+L0006ab (#0543): getlex             83 [Math]
+L0006ad (#0544): getproperty        2862 [NaN]
+L0006b0 (#0545): convert_d          
+L0006b1 (#0546): getlex             83 [Math]
+L0006b3 (#0547): getproperty        2862 [NaN]
+L0006b6 (#0548): convert_d          
+L0006b7 (#0549): findproperty       27490 [battle]
+L0006bb (#0550): getproperty        27490 [battle]
+L0006bf (#0551): callproperty       40918 [isScoreBorderMode], 0
+L0006c4 (#0552): convert_b          
+L0006c5 (#0553): iffalse            L0006d1 (# 556)
+L0006c9 (#0554): pushstring         16620 ["battle/common/score_attack2/cutin_time_limit_4s"]
+L0006cd (#0555): jump               L0006d5 (# 557)
+L0006d1 (#0556): pushstring         16627 ["battle/common/layer1/cutin_time_limit_4s"]
+L0006d5 (#0557): callpropvoid       48272 [addGeneralEffect], 6
+L0006da (#0558): jump               L001c68 (# 2807)
+L0006de (#0559): findproperty       7848 [featuresPermit]
+L0006e1 (#0560): getproperty        7848 [featuresPermit]
+L0006e4 (#0561): getproperty        7868 [canGameover]
+L0006e7 (#0562): iffalse            L00073e (# 594)
+L0006eb (#0563): findproperty       48272 [addGeneralEffect]
+L0006ef (#0564): getlocal_2         
+L0006f0 (#0565): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0006f4 (#0566): getlocal_2         
+L0006f5 (#0567): getproperty        80 [params]
+L0006f7 (#0568): pushbyte           0
+L0006f9 (#0569): getproperty        14 [<mn kind 0x1b>]
+L0006fb (#0570): convert_d          
+L0006fc (#0571): getlocal_2         
+L0006fd (#0572): getproperty        80 [params]
+L0006ff (#0573): pushbyte           1
+L000701 (#0574): getproperty        14 [<mn kind 0x1b>]
+L000703 (#0575): convert_d          
+L000704 (#0576): callproperty       48273 [FixedPosition], 2
+L000709 (#0577): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00070d (#0578): pushbyte           15
+L00070f (#0579): getlex             83 [Math]
+L000711 (#0580): getproperty        2862 [NaN]
+L000714 (#0581): convert_d          
+L000715 (#0582): getlex             83 [Math]
+L000717 (#0583): getproperty        2862 [NaN]
+L00071a (#0584): convert_d          
+L00071b (#0585): findproperty       27490 [battle]
+L00071f (#0586): getproperty        27490 [battle]
+L000723 (#0587): callproperty       40918 [isScoreBorderMode], 0
+L000728 (#0588): convert_b          
+L000729 (#0589): iffalse            L000735 (# 592)
+L00072d (#0590): pushstring         16621 ["battle/common/score_attack2/cutin_time_limit_3s"]
+L000731 (#0591): jump               L000739 (# 593)
+L000735 (#0592): pushstring         16628 ["battle/common/layer1/cutin_time_limit_3s"]
+L000739 (#0593): callpropvoid       48272 [addGeneralEffect], 6
+L00073e (#0594): jump               L001c68 (# 2807)
+L000742 (#0595): findproperty       7848 [featuresPermit]
+L000745 (#0596): getproperty        7848 [featuresPermit]
+L000748 (#0597): getproperty        7868 [canGameover]
+L00074b (#0598): iffalse            L0007a2 (# 630)
+L00074f (#0599): findproperty       48272 [addGeneralEffect]
+L000753 (#0600): getlocal_2         
+L000754 (#0601): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000758 (#0602): getlocal_2         
+L000759 (#0603): getproperty        80 [params]
+L00075b (#0604): pushbyte           0
+L00075d (#0605): getproperty        14 [<mn kind 0x1b>]
+L00075f (#0606): convert_d          
+L000760 (#0607): getlocal_2         
+L000761 (#0608): getproperty        80 [params]
+L000763 (#0609): pushbyte           1
+L000765 (#0610): getproperty        14 [<mn kind 0x1b>]
+L000767 (#0611): convert_d          
+L000768 (#0612): callproperty       48273 [FixedPosition], 2
+L00076d (#0613): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000771 (#0614): pushbyte           15
+L000773 (#0615): getlex             83 [Math]
+L000775 (#0616): getproperty        2862 [NaN]
+L000778 (#0617): convert_d          
+L000779 (#0618): getlex             83 [Math]
+L00077b (#0619): getproperty        2862 [NaN]
+L00077e (#0620): convert_d          
+L00077f (#0621): findproperty       27490 [battle]
+L000783 (#0622): getproperty        27490 [battle]
+L000787 (#0623): callproperty       40918 [isScoreBorderMode], 0
+L00078c (#0624): convert_b          
+L00078d (#0625): iffalse            L000799 (# 628)
+L000791 (#0626): pushstring         16622 ["battle/common/score_attack2/cutin_time_limit_2s"]
+L000795 (#0627): jump               L00079d (# 629)
+L000799 (#0628): pushstring         16629 ["battle/common/layer1/cutin_time_limit_2s"]
+L00079d (#0629): callpropvoid       48272 [addGeneralEffect], 6
+L0007a2 (#0630): jump               L001c68 (# 2807)
+L0007a6 (#0631): findproperty       7848 [featuresPermit]
+L0007a9 (#0632): getproperty        7848 [featuresPermit]
+L0007ac (#0633): getproperty        7868 [canGameover]
+L0007af (#0634): iffalse            L000806 (# 666)
+L0007b3 (#0635): findproperty       48272 [addGeneralEffect]
+L0007b7 (#0636): getlocal_2         
+L0007b8 (#0637): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0007bc (#0638): getlocal_2         
+L0007bd (#0639): getproperty        80 [params]
+L0007bf (#0640): pushbyte           0
+L0007c1 (#0641): getproperty        14 [<mn kind 0x1b>]
+L0007c3 (#0642): convert_d          
+L0007c4 (#0643): getlocal_2         
+L0007c5 (#0644): getproperty        80 [params]
+L0007c7 (#0645): pushbyte           1
+L0007c9 (#0646): getproperty        14 [<mn kind 0x1b>]
+L0007cb (#0647): convert_d          
+L0007cc (#0648): callproperty       48273 [FixedPosition], 2
+L0007d1 (#0649): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0007d5 (#0650): pushbyte           15
+L0007d7 (#0651): getlex             83 [Math]
+L0007d9 (#0652): getproperty        2862 [NaN]
+L0007dc (#0653): convert_d          
+L0007dd (#0654): getlex             83 [Math]
+L0007df (#0655): getproperty        2862 [NaN]
+L0007e2 (#0656): convert_d          
+L0007e3 (#0657): findproperty       27490 [battle]
+L0007e7 (#0658): getproperty        27490 [battle]
+L0007eb (#0659): callproperty       40918 [isScoreBorderMode], 0
+L0007f0 (#0660): convert_b          
+L0007f1 (#0661): iffalse            L0007fd (# 664)
+L0007f5 (#0662): pushstring         16623 ["battle/common/score_attack2/cutin_time_limit_1s"]
+L0007f9 (#0663): jump               L000801 (# 665)
+L0007fd (#0664): pushstring         16630 ["battle/common/layer1/cutin_time_limit_1s"]
+L000801 (#0665): callpropvoid       48272 [addGeneralEffect], 6
+L000806 (#0666): jump               L001c68 (# 2807)
+L00080a (#0667): findproperty       48272 [addGeneralEffect]
+L00080e (#0668): getlocal_2         
+L00080f (#0669): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000813 (#0670): getlocal_2         
+L000814 (#0671): getproperty        80 [params]
+L000816 (#0672): pushbyte           0
+L000818 (#0673): getproperty        14 [<mn kind 0x1b>]
+L00081a (#0674): convert_d          
+L00081b (#0675): getlocal_2         
+L00081c (#0676): getproperty        80 [params]
+L00081e (#0677): pushbyte           1
+L000820 (#0678): getproperty        14 [<mn kind 0x1b>]
+L000822 (#0679): convert_d          
+L000823 (#0680): callproperty       48273 [FixedPosition], 2
+L000828 (#0681): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00082c (#0682): pushbyte           1
+L00082e (#0683): getlocal_2         
+L00082f (#0684): getproperty        80 [params]
+L000831 (#0685): pushbyte           2
+L000833 (#0686): getproperty        14 [<mn kind 0x1b>]
+L000835 (#0687): convert_d          
+L000836 (#0688): getlex             83 [Math]
+L000838 (#0689): getproperty        2862 [NaN]
+L00083b (#0690): convert_d          
+L00083c (#0691): pushstring         16742 ["battle/common/layer0/escape_line"]
+L000840 (#0692): callpropvoid       48272 [addGeneralEffect], 6
+L000845 (#0693): jump               L001c68 (# 2807)
+L000849 (#0694): findproperty       48272 [addGeneralEffect]
+L00084d (#0695): getlocal_2         
+L00084e (#0696): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000852 (#0697): getlocal_2         
+L000853 (#0698): getproperty        80 [params]
+L000855 (#0699): pushbyte           0
+L000857 (#0700): getproperty        14 [<mn kind 0x1b>]
+L000859 (#0701): convert_d          
+L00085a (#0702): getlocal_2         
+L00085b (#0703): getproperty        80 [params]
+L00085d (#0704): pushbyte           1
+L00085f (#0705): getproperty        14 [<mn kind 0x1b>]
+L000861 (#0706): convert_d          
+L000862 (#0707): callproperty       48273 [FixedPosition], 2
+L000867 (#0708): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00086b (#0709): pushbyte           1
+L00086d (#0710): getlocal_2         
+L00086e (#0711): getproperty        80 [params]
+L000870 (#0712): pushbyte           2
+L000872 (#0713): getproperty        14 [<mn kind 0x1b>]
+L000874 (#0714): convert_d          
+L000875 (#0715): getlex             83 [Math]
+L000877 (#0716): getproperty        2862 [NaN]
+L00087a (#0717): convert_d          
+L00087b (#0718): pushstring         16743 ["battle/common/layer0/escape_particle"]
+L00087f (#0719): callpropvoid       48272 [addGeneralEffect], 6
+L000884 (#0720): jump               L001c68 (# 2807)
+L000888 (#0721): findproperty       48272 [addGeneralEffect]
+L00088c (#0722): getlocal_2         
+L00088d (#0723): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000891 (#0724): getlocal_2         
+L000892 (#0725): getproperty        80 [params]
+L000894 (#0726): pushbyte           0
+L000896 (#0727): getproperty        14 [<mn kind 0x1b>]
+L000898 (#0728): convert_d          
+L000899 (#0729): getlocal_2         
+L00089a (#0730): getproperty        80 [params]
+L00089c (#0731): pushbyte           1
+L00089e (#0732): getproperty        14 [<mn kind 0x1b>]
+L0008a0 (#0733): convert_d          
+L0008a1 (#0734): callproperty       48273 [FixedPosition], 2
+L0008a6 (#0735): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0008aa (#0736): pushbyte           1
+L0008ac (#0737): getlex             83 [Math]
+L0008ae (#0738): getproperty        2862 [NaN]
+L0008b1 (#0739): convert_d          
+L0008b2 (#0740): getlex             83 [Math]
+L0008b4 (#0741): getproperty        2862 [NaN]
+L0008b7 (#0742): convert_d          
+L0008b8 (#0743): pushstring         16744 ["battle/common/layer0/escape_shine"]
+L0008bc (#0744): callpropvoid       48272 [addGeneralEffect], 6
+L0008c1 (#0745): jump               L001c68 (# 2807)
+L0008c5 (#0746): findproperty       48272 [addGeneralEffect]
+L0008c9 (#0747): getlocal_2         
+L0008ca (#0748): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0008ce (#0749): getlocal_2         
+L0008cf (#0750): getproperty        80 [params]
+L0008d1 (#0751): pushbyte           0
+L0008d3 (#0752): getproperty        14 [<mn kind 0x1b>]
+L0008d5 (#0753): convert_d          
+L0008d6 (#0754): getlocal_2         
+L0008d7 (#0755): getproperty        80 [params]
+L0008d9 (#0756): pushbyte           1
+L0008db (#0757): getproperty        14 [<mn kind 0x1b>]
+L0008dd (#0758): convert_d          
+L0008de (#0759): callproperty       48273 [FixedPosition], 2
+L0008e3 (#0760): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0008e7 (#0761): pushbyte           1
+L0008e9 (#0762): getlex             83 [Math]
+L0008eb (#0763): getproperty        2862 [NaN]
+L0008ee (#0764): convert_d          
+L0008ef (#0765): getlex             83 [Math]
+L0008f1 (#0766): getproperty        2862 [NaN]
+L0008f4 (#0767): convert_d          
+L0008f5 (#0768): getlocal_2         
+L0008f6 (#0769): getproperty        80 [params]
+L0008f8 (#0770): pushbyte           2
+L0008fa (#0771): getproperty        14 [<mn kind 0x1b>]
+L0008fc (#0772): coerce             11 [String]
+L0008fe (#0773): callpropvoid       48272 [addGeneralEffect], 6
+L000903 (#0774): jump               L001c68 (# 2807)
+L000907 (#0775): findproperty       48272 [addGeneralEffect]
+L00090b (#0776): getlocal_2         
+L00090c (#0777): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000910 (#0778): getlocal_2         
+L000911 (#0779): getproperty        80 [params]
+L000913 (#0780): pushbyte           0
+L000915 (#0781): getproperty        14 [<mn kind 0x1b>]
+L000917 (#0782): convert_d          
+L000918 (#0783): getlocal_2         
+L000919 (#0784): getproperty        80 [params]
+L00091b (#0785): pushbyte           1
+L00091d (#0786): getproperty        14 [<mn kind 0x1b>]
+L00091f (#0787): convert_d          
+L000920 (#0788): callproperty       48273 [FixedPosition], 2
+L000925 (#0789): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000929 (#0790): pushbyte           1
+L00092b (#0791): getlex             83 [Math]
+L00092d (#0792): getproperty        2862 [NaN]
+L000930 (#0793): convert_d          
+L000931 (#0794): getlex             83 [Math]
+L000933 (#0795): getproperty        2862 [NaN]
+L000936 (#0796): convert_d          
+L000937 (#0797): pushstring         16731 ["battle/common/layer0/zako_appearance"]
+L00093b (#0798): callpropvoid       48272 [addGeneralEffect], 6
+L000940 (#0799): jump               L001c68 (# 2807)
+L000944 (#0800): findproperty       48272 [addGeneralEffect]
+L000948 (#0801): getlocal_2         
+L000949 (#0802): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00094d (#0803): getlocal_2         
+L00094e (#0804): getproperty        80 [params]
+L000950 (#0805): pushbyte           0
+L000952 (#0806): getproperty        14 [<mn kind 0x1b>]
+L000954 (#0807): convert_d          
+L000955 (#0808): getlocal_2         
+L000956 (#0809): getproperty        80 [params]
+L000958 (#0810): pushbyte           1
+L00095a (#0811): getproperty        14 [<mn kind 0x1b>]
+L00095c (#0812): convert_d          
+L00095d (#0813): callproperty       48273 [FixedPosition], 2
+L000962 (#0814): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000966 (#0815): pushbyte           1
+L000968 (#0816): getlex             83 [Math]
+L00096a (#0817): getproperty        2862 [NaN]
+L00096d (#0818): convert_d          
+L00096e (#0819): getlex             83 [Math]
+L000970 (#0820): getproperty        2862 [NaN]
+L000973 (#0821): convert_d          
+L000974 (#0822): pushstring         16728 ["battle/common/layer0/zako_disappear"]
+L000978 (#0823): callpropvoid       48272 [addGeneralEffect], 6
+L00097d (#0824): jump               L001c68 (# 2807)
+L000981 (#0825): findproperty       48272 [addGeneralEffect]
+L000985 (#0826): getlocal_2         
+L000986 (#0827): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00098a (#0828): getlocal_2         
+L00098b (#0829): getproperty        80 [params]
+L00098d (#0830): pushbyte           0
+L00098f (#0831): getproperty        14 [<mn kind 0x1b>]
+L000991 (#0832): convert_d          
+L000992 (#0833): getlocal_2         
+L000993 (#0834): getproperty        80 [params]
+L000995 (#0835): pushbyte           1
+L000997 (#0836): getproperty        14 [<mn kind 0x1b>]
+L000999 (#0837): convert_d          
+L00099a (#0838): callproperty       48273 [FixedPosition], 2
+L00099f (#0839): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0009a3 (#0840): pushbyte           1
+L0009a5 (#0841): getlex             83 [Math]
+L0009a7 (#0842): getproperty        2862 [NaN]
+L0009aa (#0843): convert_d          
+L0009ab (#0844): getlex             83 [Math]
+L0009ad (#0845): getproperty        2862 [NaN]
+L0009b0 (#0846): convert_d          
+L0009b1 (#0847): pushstring         16732 ["battle/common/layer0/zako_vanishing_smoke_a"]
+L0009b5 (#0848): callpropvoid       48272 [addGeneralEffect], 6
+L0009ba (#0849): jump               L001c68 (# 2807)
+L0009be (#0850): findproperty       48272 [addGeneralEffect]
+L0009c2 (#0851): getlocal_2         
+L0009c3 (#0852): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0009c7 (#0853): getlocal_2         
+L0009c8 (#0854): getproperty        80 [params]
+L0009ca (#0855): pushbyte           0
+L0009cc (#0856): getproperty        14 [<mn kind 0x1b>]
+L0009ce (#0857): convert_d          
+L0009cf (#0858): getlocal_2         
+L0009d0 (#0859): getproperty        80 [params]
+L0009d2 (#0860): pushbyte           1
+L0009d4 (#0861): getproperty        14 [<mn kind 0x1b>]
+L0009d6 (#0862): convert_d          
+L0009d7 (#0863): callproperty       48273 [FixedPosition], 2
+L0009dc (#0864): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0009e0 (#0865): pushbyte           1
+L0009e2 (#0866): getlex             83 [Math]
+L0009e4 (#0867): getproperty        2862 [NaN]
+L0009e7 (#0868): convert_d          
+L0009e8 (#0869): getlex             83 [Math]
+L0009ea (#0870): getproperty        2862 [NaN]
+L0009ed (#0871): convert_d          
+L0009ee (#0872): pushstring         16733 ["battle/common/layer0/zako_vanishing_smoke_b"]
+L0009f2 (#0873): callpropvoid       48272 [addGeneralEffect], 6
+L0009f7 (#0874): jump               L001c68 (# 2807)
+L0009fb (#0875): findproperty       48272 [addGeneralEffect]
+L0009ff (#0876): getlocal_2         
+L000a00 (#0877): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000a04 (#0878): getlocal_2         
+L000a05 (#0879): getproperty        80 [params]
+L000a07 (#0880): pushbyte           0
+L000a09 (#0881): getproperty        14 [<mn kind 0x1b>]
+L000a0b (#0882): convert_d          
+L000a0c (#0883): getlocal_2         
+L000a0d (#0884): getproperty        80 [params]
+L000a0f (#0885): pushbyte           1
+L000a11 (#0886): getproperty        14 [<mn kind 0x1b>]
+L000a13 (#0887): convert_d          
+L000a14 (#0888): callproperty       48273 [FixedPosition], 2
+L000a19 (#0889): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000a1d (#0890): pushbyte           1
+L000a1f (#0891): getlex             83 [Math]
+L000a21 (#0892): getproperty        2862 [NaN]
+L000a24 (#0893): convert_d          
+L000a25 (#0894): getlex             83 [Math]
+L000a27 (#0895): getproperty        2862 [NaN]
+L000a2a (#0896): convert_d          
+L000a2b (#0897): pushstring         16753 ["battle/common/layer0/zako_shrink_back"]
+L000a2f (#0898): callpropvoid       48272 [addGeneralEffect], 6
+L000a34 (#0899): jump               L001c68 (# 2807)
+L000a38 (#0900): findproperty       48272 [addGeneralEffect]
+L000a3c (#0901): getlocal_2         
+L000a3d (#0902): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000a41 (#0903): getlocal_2         
+L000a42 (#0904): getproperty        80 [params]
+L000a44 (#0905): pushbyte           0
+L000a46 (#0906): getproperty        14 [<mn kind 0x1b>]
+L000a48 (#0907): convert_d          
+L000a49 (#0908): getlocal_2         
+L000a4a (#0909): getproperty        80 [params]
+L000a4c (#0910): pushbyte           1
+L000a4e (#0911): getproperty        14 [<mn kind 0x1b>]
+L000a50 (#0912): convert_d          
+L000a51 (#0913): callproperty       48273 [FixedPosition], 2
+L000a56 (#0914): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000a5a (#0915): pushbyte           1
+L000a5c (#0916): getlex             83 [Math]
+L000a5e (#0917): getproperty        2862 [NaN]
+L000a61 (#0918): convert_d          
+L000a62 (#0919): getlex             83 [Math]
+L000a64 (#0920): getproperty        2862 [NaN]
+L000a67 (#0921): convert_d          
+L000a68 (#0922): pushstring         16755 ["battle/common/layer0/boss_wince1"]
+L000a6c (#0923): callpropvoid       48272 [addGeneralEffect], 6
+L000a71 (#0924): jump               L001c68 (# 2807)
+L000a75 (#0925): findproperty       48272 [addGeneralEffect]
+L000a79 (#0926): getlocal_2         
+L000a7a (#0927): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000a7e (#0928): getlocal_2         
+L000a7f (#0929): getproperty        80 [params]
+L000a81 (#0930): pushbyte           0
+L000a83 (#0931): getproperty        14 [<mn kind 0x1b>]
+L000a85 (#0932): convert_d          
+L000a86 (#0933): getlocal_2         
+L000a87 (#0934): getproperty        80 [params]
+L000a89 (#0935): pushbyte           1
+L000a8b (#0936): getproperty        14 [<mn kind 0x1b>]
+L000a8d (#0937): convert_d          
+L000a8e (#0938): callproperty       48273 [FixedPosition], 2
+L000a93 (#0939): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000a97 (#0940): pushbyte           1
+L000a99 (#0941): getlex             83 [Math]
+L000a9b (#0942): getproperty        2862 [NaN]
+L000a9e (#0943): convert_d          
+L000a9f (#0944): getlex             83 [Math]
+L000aa1 (#0945): getproperty        2862 [NaN]
+L000aa4 (#0946): convert_d          
+L000aa5 (#0947): pushstring         16754 ["battle/common/layer0/boss_stun"]
+L000aa9 (#0948): callpropvoid       48272 [addGeneralEffect], 6
+L000aae (#0949): jump               L001c68 (# 2807)
+L000ab2 (#0950): findproperty       48272 [addGeneralEffect]
+L000ab6 (#0951): getlocal_2         
+L000ab7 (#0952): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000abb (#0953): getlocal_2         
+L000abc (#0954): getproperty        80 [params]
+L000abe (#0955): pushbyte           0
+L000ac0 (#0956): getproperty        14 [<mn kind 0x1b>]
+L000ac2 (#0957): convert_d          
+L000ac3 (#0958): getlocal_2         
+L000ac4 (#0959): getproperty        80 [params]
+L000ac6 (#0960): pushbyte           1
+L000ac8 (#0961): getproperty        14 [<mn kind 0x1b>]
+L000aca (#0962): convert_d          
+L000acb (#0963): callproperty       48273 [FixedPosition], 2
+L000ad0 (#0964): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000ad4 (#0965): pushbyte           1
+L000ad6 (#0966): getlex             83 [Math]
+L000ad8 (#0967): getproperty        2862 [NaN]
+L000adb (#0968): convert_d          
+L000adc (#0969): getlex             83 [Math]
+L000ade (#0970): getproperty        2862 [NaN]
+L000ae1 (#0971): convert_d          
+L000ae2 (#0972): pushstring         16757 ["battle/common/layer1/boss_text_break"]
+L000ae6 (#0973): callpropvoid       48272 [addGeneralEffect], 6
+L000aeb (#0974): jump               L001c68 (# 2807)
+L000aef (#0975): findproperty       48272 [addGeneralEffect]
+L000af3 (#0976): getlocal_2         
+L000af4 (#0977): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000af8 (#0978): getlocal_2         
+L000af9 (#0979): getproperty        80 [params]
+L000afb (#0980): pushbyte           0
+L000afd (#0981): getproperty        14 [<mn kind 0x1b>]
+L000aff (#0982): convert_d          
+L000b00 (#0983): getlocal_2         
+L000b01 (#0984): getproperty        80 [params]
+L000b03 (#0985): pushbyte           1
+L000b05 (#0986): getproperty        14 [<mn kind 0x1b>]
+L000b07 (#0987): convert_d          
+L000b08 (#0988): callproperty       48273 [FixedPosition], 2
+L000b0d (#0989): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000b11 (#0990): pushbyte           1
+L000b13 (#0991): getlex             83 [Math]
+L000b15 (#0992): getproperty        2862 [NaN]
+L000b18 (#0993): convert_d          
+L000b19 (#0994): getlex             83 [Math]
+L000b1b (#0995): getproperty        2862 [NaN]
+L000b1e (#0996): convert_d          
+L000b1f (#0997): pushstring         16758 ["battle/common/layer1/boss_text_cancel"]
+L000b23 (#0998): callpropvoid       48272 [addGeneralEffect], 6
+L000b28 (#0999): jump               L001c68 (# 2807)
+L000b2c (#1000): findproperty       48272 [addGeneralEffect]
+L000b30 (#1001): getlocal_2         
+L000b31 (#1002): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000b35 (#1003): getlocal_2         
+L000b36 (#1004): getproperty        80 [params]
+L000b38 (#1005): pushbyte           0
+L000b3a (#1006): getproperty        14 [<mn kind 0x1b>]
+L000b3c (#1007): convert_d          
+L000b3d (#1008): getlocal_2         
+L000b3e (#1009): getproperty        80 [params]
+L000b40 (#1010): pushbyte           1
+L000b42 (#1011): getproperty        14 [<mn kind 0x1b>]
+L000b44 (#1012): convert_d          
+L000b45 (#1013): callproperty       48273 [FixedPosition], 2
+L000b4a (#1014): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000b4e (#1015): pushbyte           1
+L000b50 (#1016): getlex             83 [Math]
+L000b52 (#1017): getproperty        2862 [NaN]
+L000b55 (#1018): convert_d          
+L000b56 (#1019): getlex             83 [Math]
+L000b58 (#1020): getproperty        2862 [NaN]
+L000b5b (#1021): convert_d          
+L000b5c (#1022): getlocal_2         
+L000b5d (#1023): getproperty        80 [params]
+L000b5f (#1024): pushbyte           2
+L000b61 (#1025): getproperty        14 [<mn kind 0x1b>]
+L000b63 (#1026): convert_b          
+L000b64 (#1027): iffalse            L000b70 (# 1030)
+L000b68 (#1028): pushstring         25126 ["battle/uncommon/layer1/hard_weak_point/boss_hard_weak_point_broken"]
+L000b6c (#1029): jump               L000b74 (# 1031)
+L000b70 (#1030): pushstring         16787 ["battle/common/layer1/boss_weak_point_broken"]
+L000b74 (#1031): callpropvoid       48272 [addGeneralEffect], 6
+L000b79 (#1032): jump               L001c68 (# 2807)
+L000b7d (#1033): findproperty       48272 [addGeneralEffect]
+L000b81 (#1034): getlocal_2         
+L000b82 (#1035): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000b86 (#1036): getlocal_2         
+L000b87 (#1037): getproperty        80 [params]
+L000b89 (#1038): pushbyte           0
+L000b8b (#1039): getproperty        14 [<mn kind 0x1b>]
+L000b8d (#1040): convert_d          
+L000b8e (#1041): getlocal_2         
+L000b8f (#1042): getproperty        80 [params]
+L000b91 (#1043): pushbyte           1
+L000b93 (#1044): getproperty        14 [<mn kind 0x1b>]
+L000b95 (#1045): convert_d          
+L000b96 (#1046): callproperty       48273 [FixedPosition], 2
+L000b9b (#1047): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000b9f (#1048): pushbyte           1
+L000ba1 (#1049): getlex             83 [Math]
+L000ba3 (#1050): getproperty        2862 [NaN]
+L000ba6 (#1051): convert_d          
+L000ba7 (#1052): getlex             83 [Math]
+L000ba9 (#1053): getproperty        2862 [NaN]
+L000bac (#1054): convert_d          
+L000bad (#1055): pushstring         16738 ["battle/common/layer0/attack_to_friendly_aura"]
+L000bb1 (#1056): callpropvoid       48272 [addGeneralEffect], 6
+L000bb6 (#1057): jump               L001c68 (# 2807)
+L000bba (#1058): findproperty       48272 [addGeneralEffect]
+L000bbe (#1059): getlocal_2         
+L000bbf (#1060): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000bc3 (#1061): getlocal_2         
+L000bc4 (#1062): getproperty        80 [params]
+L000bc6 (#1063): pushbyte           0
+L000bc8 (#1064): getproperty        14 [<mn kind 0x1b>]
+L000bca (#1065): convert_d          
+L000bcb (#1066): getlocal_2         
+L000bcc (#1067): getproperty        80 [params]
+L000bce (#1068): pushbyte           1
+L000bd0 (#1069): getproperty        14 [<mn kind 0x1b>]
+L000bd2 (#1070): convert_d          
+L000bd3 (#1071): callproperty       48273 [FixedPosition], 2
+L000bd8 (#1072): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000bdc (#1073): pushbyte           1
+L000bde (#1074): getlex             83 [Math]
+L000be0 (#1075): getproperty        2862 [NaN]
+L000be3 (#1076): convert_d          
+L000be4 (#1077): getlex             83 [Math]
+L000be6 (#1078): getproperty        2862 [NaN]
+L000be9 (#1079): convert_d          
+L000bea (#1080): pushstring         16739 ["battle/common/layer0/attack_to_friendly_hit"]
+L000bee (#1081): callpropvoid       48272 [addGeneralEffect], 6
+L000bf3 (#1082): jump               L001c68 (# 2807)
+L000bf7 (#1083): findproperty       48272 [addGeneralEffect]
+L000bfb (#1084): getlocal_2         
+L000bfc (#1085): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000c00 (#1086): getlocal_2         
+L000c01 (#1087): getproperty        80 [params]
+L000c03 (#1088): pushbyte           0
+L000c05 (#1089): getproperty        14 [<mn kind 0x1b>]
+L000c07 (#1090): convert_d          
+L000c08 (#1091): getlocal_2         
+L000c09 (#1092): getproperty        80 [params]
+L000c0b (#1093): pushbyte           1
+L000c0d (#1094): getproperty        14 [<mn kind 0x1b>]
+L000c0f (#1095): convert_d          
+L000c10 (#1096): callproperty       48273 [FixedPosition], 2
+L000c15 (#1097): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000c19 (#1098): pushbyte           1
+L000c1b (#1099): getlex             83 [Math]
+L000c1d (#1100): getproperty        2862 [NaN]
+L000c20 (#1101): convert_d          
+L000c21 (#1102): getlex             83 [Math]
+L000c23 (#1103): getproperty        2862 [NaN]
+L000c26 (#1104): convert_d          
+L000c27 (#1105): pushstring         16737 ["battle/common/layer0/attack_to_hostile_smash"]
+L000c2b (#1106): callpropvoid       48272 [addGeneralEffect], 6
+L000c30 (#1107): jump               L001c68 (# 2807)
+L000c34 (#1108): findproperty       48272 [addGeneralEffect]
+L000c38 (#1109): getlocal_2         
+L000c39 (#1110): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000c3d (#1111): getlocal_2         
+L000c3e (#1112): getproperty        80 [params]
+L000c40 (#1113): pushbyte           0
+L000c42 (#1114): getproperty        14 [<mn kind 0x1b>]
+L000c44 (#1115): convert_d          
+L000c45 (#1116): getlocal_2         
+L000c46 (#1117): getproperty        80 [params]
+L000c48 (#1118): pushbyte           1
+L000c4a (#1119): getproperty        14 [<mn kind 0x1b>]
+L000c4c (#1120): convert_d          
+L000c4d (#1121): callproperty       48273 [FixedPosition], 2
+L000c52 (#1122): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000c56 (#1123): pushbyte           1
+L000c58 (#1124): getlocal_2         
+L000c59 (#1125): getproperty        80 [params]
+L000c5b (#1126): pushbyte           2
+L000c5d (#1127): getproperty        14 [<mn kind 0x1b>]
+L000c5f (#1128): convert_d          
+L000c60 (#1129): getlex             83 [Math]
+L000c62 (#1130): getproperty        2862 [NaN]
+L000c65 (#1131): convert_d          
+L000c66 (#1132): pushstring         16719 ["battle/common/layer0/ball_dashcloud"]
+L000c6a (#1133): callpropvoid       48272 [addGeneralEffect], 6
+L000c6f (#1134): jump               L001c68 (# 2807)
+L000c73 (#1135): findproperty       7848 [featuresPermit]
+L000c76 (#1136): getproperty        7848 [featuresPermit]
+L000c79 (#1137): coerce             7552 [pinball.scene.battle.battle.feature::BattleFeaturePermitData]
+L000c7c (#1138): setlocal           5
+L000c7e (#1139): pushtrue           
+L000c7f (#1140): getlocal           5
+L000c81 (#1141): getproperty        7904 [autoStart]
+L000c84 (#1142): not                
+L000c85 (#1143): iftrue             L000c90 (# 1148)
+L000c89 (#1144): pop                
+L000c8a (#1145): getlocal           5
+L000c8c (#1146): getproperty        7868 [canGameover]
+L000c8f (#1147): convert_b          
+L000c90 (#1148): iffalse            L000ccd (# 1173)
+L000c94 (#1149): findproperty       48272 [addGeneralEffect]
+L000c98 (#1150): getlocal_2         
+L000c99 (#1151): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000c9d (#1152): getlocal_2         
+L000c9e (#1153): getproperty        80 [params]
+L000ca0 (#1154): pushbyte           0
+L000ca2 (#1155): getproperty        14 [<mn kind 0x1b>]
+L000ca4 (#1156): convert_d          
+L000ca5 (#1157): getlocal_2         
+L000ca6 (#1158): getproperty        80 [params]
+L000ca8 (#1159): pushbyte           1
+L000caa (#1160): getproperty        14 [<mn kind 0x1b>]
+L000cac (#1161): convert_d          
+L000cad (#1162): callproperty       48273 [FixedPosition], 2
+L000cb2 (#1163): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000cb6 (#1164): pushbyte           1
+L000cb8 (#1165): getlex             83 [Math]
+L000cba (#1166): getproperty        2862 [NaN]
+L000cbd (#1167): convert_d          
+L000cbe (#1168): getlex             83 [Math]
+L000cc0 (#1169): getproperty        2862 [NaN]
+L000cc3 (#1170): convert_d          
+L000cc4 (#1171): pushstring         16746 ["battle/common/layer0/ball_launch_cracker"]
+L000cc8 (#1172): callpropvoid       48272 [addGeneralEffect], 6
+L000ccd (#1173): jump               L001c68 (# 2807)
+L000cd1 (#1174): findproperty       7848 [featuresPermit]
+L000cd4 (#1175): getproperty        7848 [featuresPermit]
+L000cd7 (#1176): coerce             7552 [pinball.scene.battle.battle.feature::BattleFeaturePermitData]
+L000cda (#1177): setlocal           5
+L000cdc (#1178): pushtrue           
+L000cdd (#1179): getlocal           5
+L000cdf (#1180): getproperty        7904 [autoStart]
+L000ce2 (#1181): not                
+L000ce3 (#1182): iftrue             L000cee (# 1187)
+L000ce7 (#1183): pop                
+L000ce8 (#1184): getlocal           5
+L000cea (#1185): getproperty        7868 [canGameover]
+L000ced (#1186): convert_b          
+L000cee (#1187): iffalse            L000d2b (# 1212)
+L000cf2 (#1188): findproperty       48272 [addGeneralEffect]
+L000cf6 (#1189): getlocal_2         
+L000cf7 (#1190): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000cfb (#1191): getlocal_2         
+L000cfc (#1192): getproperty        80 [params]
+L000cfe (#1193): pushbyte           0
+L000d00 (#1194): getproperty        14 [<mn kind 0x1b>]
+L000d02 (#1195): convert_d          
+L000d03 (#1196): getlocal_2         
+L000d04 (#1197): getproperty        80 [params]
+L000d06 (#1198): pushbyte           1
+L000d08 (#1199): getproperty        14 [<mn kind 0x1b>]
+L000d0a (#1200): convert_d          
+L000d0b (#1201): callproperty       48273 [FixedPosition], 2
+L000d10 (#1202): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000d14 (#1203): pushbyte           1
+L000d16 (#1204): getlex             83 [Math]
+L000d18 (#1205): getproperty        2862 [NaN]
+L000d1b (#1206): convert_d          
+L000d1c (#1207): getlex             83 [Math]
+L000d1e (#1208): getproperty        2862 [NaN]
+L000d21 (#1209): convert_d          
+L000d22 (#1210): pushstring         16748 ["battle/common/layer0/ball_launch_magic"]
+L000d26 (#1211): callpropvoid       48272 [addGeneralEffect], 6
+L000d2b (#1212): jump               L001c68 (# 2807)
+L000d2f (#1213): findproperty       7848 [featuresPermit]
+L000d32 (#1214): getproperty        7848 [featuresPermit]
+L000d35 (#1215): coerce             7552 [pinball.scene.battle.battle.feature::BattleFeaturePermitData]
+L000d38 (#1216): setlocal           5
+L000d3a (#1217): pushtrue           
+L000d3b (#1218): getlocal           5
+L000d3d (#1219): getproperty        7904 [autoStart]
+L000d40 (#1220): not                
+L000d41 (#1221): iftrue             L000d4c (# 1226)
+L000d45 (#1222): pop                
+L000d46 (#1223): getlocal           5
+L000d48 (#1224): getproperty        7868 [canGameover]
+L000d4b (#1225): convert_b          
+L000d4c (#1226): iffalse            L000d89 (# 1251)
+L000d50 (#1227): findproperty       48272 [addGeneralEffect]
+L000d54 (#1228): getlocal_2         
+L000d55 (#1229): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000d59 (#1230): getlocal_2         
+L000d5a (#1231): getproperty        80 [params]
+L000d5c (#1232): pushbyte           0
+L000d5e (#1233): getproperty        14 [<mn kind 0x1b>]
+L000d60 (#1234): convert_d          
+L000d61 (#1235): getlocal_2         
+L000d62 (#1236): getproperty        80 [params]
+L000d64 (#1237): pushbyte           1
+L000d66 (#1238): getproperty        14 [<mn kind 0x1b>]
+L000d68 (#1239): convert_d          
+L000d69 (#1240): callproperty       48273 [FixedPosition], 2
+L000d6e (#1241): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000d72 (#1242): pushbyte           1
+L000d74 (#1243): getlex             83 [Math]
+L000d76 (#1244): getproperty        2862 [NaN]
+L000d79 (#1245): convert_d          
+L000d7a (#1246): getlex             83 [Math]
+L000d7c (#1247): getproperty        2862 [NaN]
+L000d7f (#1248): convert_d          
+L000d80 (#1249): pushstring         16747 ["battle/common/layer0/ball_launch_saturated_linework"]
+L000d84 (#1250): callpropvoid       48272 [addGeneralEffect], 6
+L000d89 (#1251): jump               L001c68 (# 2807)
+L000d8d (#1252): findproperty       7848 [featuresPermit]
+L000d90 (#1253): getproperty        7848 [featuresPermit]
+L000d93 (#1254): coerce             7552 [pinball.scene.battle.battle.feature::BattleFeaturePermitData]
+L000d96 (#1255): setlocal           5
+L000d98 (#1256): pushtrue           
+L000d99 (#1257): getlocal           5
+L000d9b (#1258): getproperty        7904 [autoStart]
+L000d9e (#1259): not                
+L000d9f (#1260): iftrue             L000daa (# 1265)
+L000da3 (#1261): pop                
+L000da4 (#1262): getlocal           5
+L000da6 (#1263): getproperty        7868 [canGameover]
+L000da9 (#1264): convert_b          
+L000daa (#1265): iffalse            L000de7 (# 1290)
+L000dae (#1266): findproperty       48272 [addGeneralEffect]
+L000db2 (#1267): getlocal_2         
+L000db3 (#1268): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000db7 (#1269): getlocal_2         
+L000db8 (#1270): getproperty        80 [params]
+L000dba (#1271): pushbyte           0
+L000dbc (#1272): getproperty        14 [<mn kind 0x1b>]
+L000dbe (#1273): convert_d          
+L000dbf (#1274): getlocal_2         
+L000dc0 (#1275): getproperty        80 [params]
+L000dc2 (#1276): pushbyte           1
+L000dc4 (#1277): getproperty        14 [<mn kind 0x1b>]
+L000dc6 (#1278): convert_d          
+L000dc7 (#1279): callproperty       48273 [FixedPosition], 2
+L000dcc (#1280): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000dd0 (#1281): pushbyte           1
+L000dd2 (#1282): getlex             83 [Math]
+L000dd4 (#1283): getproperty        2862 [NaN]
+L000dd7 (#1284): convert_d          
+L000dd8 (#1285): getlex             83 [Math]
+L000dda (#1286): getproperty        2862 [NaN]
+L000ddd (#1287): convert_d          
+L000dde (#1288): pushstring         16749 ["battle/common/layer0/ball_launch_appearance"]
+L000de2 (#1289): callpropvoid       48272 [addGeneralEffect], 6
+L000de7 (#1290): jump               L001c68 (# 2807)
+L000deb (#1291): findproperty       48272 [addGeneralEffect]
+L000def (#1292): getlocal_2         
+L000df0 (#1293): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000df4 (#1294): getlocal_2         
+L000df5 (#1295): getproperty        80 [params]
+L000df7 (#1296): pushbyte           0
+L000df9 (#1297): getproperty        14 [<mn kind 0x1b>]
+L000dfb (#1298): convert_d          
+L000dfc (#1299): getlocal_2         
+L000dfd (#1300): getproperty        80 [params]
+L000dff (#1301): pushbyte           1
+L000e01 (#1302): getproperty        14 [<mn kind 0x1b>]
+L000e03 (#1303): convert_d          
+L000e04 (#1304): callproperty       48273 [FixedPosition], 2
+L000e09 (#1305): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000e0d (#1306): pushbyte           1
+L000e0f (#1307): getlex             83 [Math]
+L000e11 (#1308): getproperty        2862 [NaN]
+L000e14 (#1309): convert_d          
+L000e15 (#1310): getlex             83 [Math]
+L000e17 (#1311): getproperty        2862 [NaN]
+L000e1a (#1312): convert_d          
+L000e1b (#1313): pushstring         16751 ["battle/common/layer0/coffin_revival"]
+L000e1f (#1314): callpropvoid       48272 [addGeneralEffect], 6
+L000e24 (#1315): jump               L001c68 (# 2807)
+L000e28 (#1316): findproperty       48272 [addGeneralEffect]
+L000e2c (#1317): getlocal_2         
+L000e2d (#1318): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000e31 (#1319): getlocal_2         
+L000e32 (#1320): getproperty        80 [params]
+L000e34 (#1321): pushbyte           0
+L000e36 (#1322): getproperty        14 [<mn kind 0x1b>]
+L000e38 (#1323): convert_d          
+L000e39 (#1324): getlocal_2         
+L000e3a (#1325): getproperty        80 [params]
+L000e3c (#1326): pushbyte           1
+L000e3e (#1327): getproperty        14 [<mn kind 0x1b>]
+L000e40 (#1328): convert_d          
+L000e41 (#1329): callproperty       48273 [FixedPosition], 2
+L000e46 (#1330): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000e4a (#1331): pushbyte           1
+L000e4c (#1332): getlex             83 [Math]
+L000e4e (#1333): getproperty        2862 [NaN]
+L000e51 (#1334): convert_d          
+L000e52 (#1335): getlex             83 [Math]
+L000e54 (#1336): getproperty        2862 [NaN]
+L000e57 (#1337): convert_d          
+L000e58 (#1338): pushstring         16752 ["battle/common/layer0/coffin_set"]
+L000e5c (#1339): callpropvoid       48272 [addGeneralEffect], 6
+L000e61 (#1340): jump               L001c68 (# 2807)
+L000e65 (#1341): findproperty       48272 [addGeneralEffect]
+L000e69 (#1342): getlocal_2         
+L000e6a (#1343): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000e6e (#1344): getlocal_2         
+L000e6f (#1345): getproperty        80 [params]
+L000e71 (#1346): pushbyte           0
+L000e73 (#1347): getproperty        14 [<mn kind 0x1b>]
+L000e75 (#1348): convert_d          
+L000e76 (#1349): getlocal_2         
+L000e77 (#1350): getproperty        80 [params]
+L000e79 (#1351): pushbyte           1
+L000e7b (#1352): getproperty        14 [<mn kind 0x1b>]
+L000e7d (#1353): convert_d          
+L000e7e (#1354): callproperty       48273 [FixedPosition], 2
+L000e83 (#1355): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000e87 (#1356): pushbyte           4
+L000e89 (#1357): getlex             83 [Math]
+L000e8b (#1358): getproperty        2862 [NaN]
+L000e8e (#1359): convert_d          
+L000e8f (#1360): getlex             83 [Math]
+L000e91 (#1361): getproperty        2862 [NaN]
+L000e94 (#1362): convert_d          
+L000e95 (#1363): pushstring         16702 ["battle/common/layer1/hud_skill_flash"]
+L000e99 (#1364): callpropvoid       48272 [addGeneralEffect], 6
+L000e9e (#1365): jump               L001c68 (# 2807)
+L000ea2 (#1366): findproperty       48272 [addGeneralEffect]
+L000ea6 (#1367): getlocal_2         
+L000ea7 (#1368): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000eab (#1369): getlocal_2         
+L000eac (#1370): getproperty        80 [params]
+L000eae (#1371): pushbyte           0
+L000eb0 (#1372): getproperty        14 [<mn kind 0x1b>]
+L000eb2 (#1373): convert_d          
+L000eb3 (#1374): getlocal_2         
+L000eb4 (#1375): getproperty        80 [params]
+L000eb6 (#1376): pushbyte           1
+L000eb8 (#1377): getproperty        14 [<mn kind 0x1b>]
+L000eba (#1378): convert_d          
+L000ebb (#1379): callproperty       48273 [FixedPosition], 2
+L000ec0 (#1380): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000ec4 (#1381): pushbyte           1
+L000ec6 (#1382): getlex             83 [Math]
+L000ec8 (#1383): getproperty        2862 [NaN]
+L000ecb (#1384): convert_d          
+L000ecc (#1385): getlex             83 [Math]
+L000ece (#1386): getproperty        2862 [NaN]
+L000ed1 (#1387): convert_d          
+L000ed2 (#1388): pushstring         30228 ["battle/common/layer0/transit_pod_open"]
+L000ed6 (#1389): callpropvoid       48272 [addGeneralEffect], 6
+L000edb (#1390): jump               L001c68 (# 2807)
+L000edf (#1391): findproperty       48272 [addGeneralEffect]
+L000ee3 (#1392): getlocal_2         
+L000ee4 (#1393): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000ee8 (#1394): getlocal_2         
+L000ee9 (#1395): getproperty        80 [params]
+L000eeb (#1396): pushbyte           0
+L000eed (#1397): getproperty        14 [<mn kind 0x1b>]
+L000eef (#1398): convert_d          
+L000ef0 (#1399): getlocal_2         
+L000ef1 (#1400): getproperty        80 [params]
+L000ef3 (#1401): pushbyte           1
+L000ef5 (#1402): getproperty        14 [<mn kind 0x1b>]
+L000ef7 (#1403): convert_d          
+L000ef8 (#1404): callproperty       48273 [FixedPosition], 2
+L000efd (#1405): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000f01 (#1406): pushbyte           1
+L000f03 (#1407): getlex             83 [Math]
+L000f05 (#1408): getproperty        2862 [NaN]
+L000f08 (#1409): convert_d          
+L000f09 (#1410): getlex             83 [Math]
+L000f0b (#1411): getproperty        2862 [NaN]
+L000f0e (#1412): convert_d          
+L000f0f (#1413): pushstring         16906 ["battle/common/layer0/rotation_panel_open"]
+L000f13 (#1414): callpropvoid       48272 [addGeneralEffect], 6
+L000f18 (#1415): jump               L001c68 (# 2807)
+L000f1c (#1416): findproperty       48272 [addGeneralEffect]
+L000f20 (#1417): getlocal_2         
+L000f21 (#1418): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000f25 (#1419): getlocal_2         
+L000f26 (#1420): getproperty        80 [params]
+L000f28 (#1421): pushbyte           0
+L000f2a (#1422): getproperty        14 [<mn kind 0x1b>]
+L000f2c (#1423): convert_d          
+L000f2d (#1424): getlocal_2         
+L000f2e (#1425): getproperty        80 [params]
+L000f30 (#1426): pushbyte           1
+L000f32 (#1427): getproperty        14 [<mn kind 0x1b>]
+L000f34 (#1428): convert_d          
+L000f35 (#1429): callproperty       48273 [FixedPosition], 2
+L000f3a (#1430): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000f3e (#1431): pushbyte           1
+L000f40 (#1432): getlex             83 [Math]
+L000f42 (#1433): getproperty        2862 [NaN]
+L000f45 (#1434): convert_d          
+L000f46 (#1435): getlex             83 [Math]
+L000f48 (#1436): getproperty        2862 [NaN]
+L000f4b (#1437): convert_d          
+L000f4c (#1438): pushstring         16905 ["battle/common/layer0/rotation_panel_close"]
+L000f50 (#1439): callpropvoid       48272 [addGeneralEffect], 6
+L000f55 (#1440): jump               L001c68 (# 2807)
+L000f59 (#1441): findproperty       48272 [addGeneralEffect]
+L000f5d (#1442): getlocal_2         
+L000f5e (#1443): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000f62 (#1444): getlocal_2         
+L000f63 (#1445): getproperty        80 [params]
+L000f65 (#1446): pushbyte           0
+L000f67 (#1447): getproperty        14 [<mn kind 0x1b>]
+L000f69 (#1448): convert_d          
+L000f6a (#1449): getlocal_2         
+L000f6b (#1450): getproperty        80 [params]
+L000f6d (#1451): pushbyte           1
+L000f6f (#1452): getproperty        14 [<mn kind 0x1b>]
+L000f71 (#1453): convert_d          
+L000f72 (#1454): callproperty       48273 [FixedPosition], 2
+L000f77 (#1455): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000f7b (#1456): pushbyte           1
+L000f7d (#1457): getlex             83 [Math]
+L000f7f (#1458): getproperty        2862 [NaN]
+L000f82 (#1459): convert_d          
+L000f83 (#1460): getlex             83 [Math]
+L000f85 (#1461): getproperty        2862 [NaN]
+L000f88 (#1462): convert_d          
+L000f89 (#1463): pushstring         30173 ["battle/field_object/common/yakumono/warp_hole/warp_begin"]
+L000f8d (#1464): callpropvoid       48272 [addGeneralEffect], 6
+L000f92 (#1465): jump               L001c68 (# 2807)
+L000f96 (#1466): findproperty       48272 [addGeneralEffect]
+L000f9a (#1467): getlocal_2         
+L000f9b (#1468): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000f9f (#1469): getlocal_2         
+L000fa0 (#1470): getproperty        80 [params]
+L000fa2 (#1471): pushbyte           0
+L000fa4 (#1472): getproperty        14 [<mn kind 0x1b>]
+L000fa6 (#1473): convert_d          
+L000fa7 (#1474): getlocal_2         
+L000fa8 (#1475): getproperty        80 [params]
+L000faa (#1476): pushbyte           1
+L000fac (#1477): getproperty        14 [<mn kind 0x1b>]
+L000fae (#1478): convert_d          
+L000faf (#1479): callproperty       48273 [FixedPosition], 2
+L000fb4 (#1480): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000fb8 (#1481): pushbyte           1
+L000fba (#1482): getlex             83 [Math]
+L000fbc (#1483): getproperty        2862 [NaN]
+L000fbf (#1484): convert_d          
+L000fc0 (#1485): getlex             83 [Math]
+L000fc2 (#1486): getproperty        2862 [NaN]
+L000fc5 (#1487): convert_d          
+L000fc6 (#1488): pushstring         30174 ["battle/field_object/common/yakumono/warp_hole/warp_end"]
+L000fca (#1489): callpropvoid       48272 [addGeneralEffect], 6
+L000fcf (#1490): jump               L001c68 (# 2807)
+L000fd3 (#1491): findproperty       48272 [addGeneralEffect]
+L000fd7 (#1492): getlocal_2         
+L000fd8 (#1493): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000fdc (#1494): getlocal_2         
+L000fdd (#1495): getproperty        80 [params]
+L000fdf (#1496): pushbyte           0
+L000fe1 (#1497): getproperty        14 [<mn kind 0x1b>]
+L000fe3 (#1498): convert_d          
+L000fe4 (#1499): getlocal_2         
+L000fe5 (#1500): getproperty        80 [params]
+L000fe7 (#1501): pushbyte           1
+L000fe9 (#1502): getproperty        14 [<mn kind 0x1b>]
+L000feb (#1503): convert_d          
+L000fec (#1504): callproperty       48273 [FixedPosition], 2
+L000ff1 (#1505): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L000ff5 (#1506): pushbyte           1
+L000ff7 (#1507): getlex             83 [Math]
+L000ff9 (#1508): getproperty        2862 [NaN]
+L000ffc (#1509): convert_d          
+L000ffd (#1510): getlex             83 [Math]
+L000fff (#1511): getproperty        2862 [NaN]
+L001002 (#1512): convert_d          
+L001003 (#1513): pushstring         16803 ["battle/common/layer0/instant_item_appeared"]
+L001007 (#1514): callpropvoid       48272 [addGeneralEffect], 6
+L00100c (#1515): jump               L001c68 (# 2807)
+L001010 (#1516): findproperty       48272 [addGeneralEffect]
+L001014 (#1517): getlocal_2         
+L001015 (#1518): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001019 (#1519): getlocal_2         
+L00101a (#1520): getproperty        80 [params]
+L00101c (#1521): pushbyte           0
+L00101e (#1522): getproperty        14 [<mn kind 0x1b>]
+L001020 (#1523): convert_d          
+L001021 (#1524): getlocal_2         
+L001022 (#1525): getproperty        80 [params]
+L001024 (#1526): pushbyte           1
+L001026 (#1527): getproperty        14 [<mn kind 0x1b>]
+L001028 (#1528): convert_d          
+L001029 (#1529): callproperty       48273 [FixedPosition], 2
+L00102e (#1530): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001032 (#1531): pushbyte           1
+L001034 (#1532): getlex             83 [Math]
+L001036 (#1533): getproperty        2862 [NaN]
+L001039 (#1534): convert_d          
+L00103a (#1535): getlex             83 [Math]
+L00103c (#1536): getproperty        2862 [NaN]
+L00103f (#1537): convert_d          
+L001040 (#1538): pushstring         16805 ["battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get"]
+L001044 (#1539): callpropvoid       48272 [addGeneralEffect], 6
+L001049 (#1540): jump               L001c68 (# 2807)
+L00104d (#1541): findproperty       48272 [addGeneralEffect]
+L001051 (#1542): getlocal_2         
+L001052 (#1543): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001056 (#1544): getlocal_2         
+L001057 (#1545): getproperty        80 [params]
+L001059 (#1546): pushbyte           0
+L00105b (#1547): getproperty        14 [<mn kind 0x1b>]
+L00105d (#1548): convert_d          
+L00105e (#1549): getlocal_2         
+L00105f (#1550): getproperty        80 [params]
+L001061 (#1551): pushbyte           1
+L001063 (#1552): getproperty        14 [<mn kind 0x1b>]
+L001065 (#1553): convert_d          
+L001066 (#1554): callproperty       48273 [FixedPosition], 2
+L00106b (#1555): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00106f (#1556): pushbyte           1
+L001071 (#1557): getlex             83 [Math]
+L001073 (#1558): getproperty        2862 [NaN]
+L001076 (#1559): convert_d          
+L001077 (#1560): getlex             83 [Math]
+L001079 (#1561): getproperty        2862 [NaN]
+L00107c (#1562): convert_d          
+L00107d (#1563): pushstring         16806 ["battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get_ripple"]
+L001081 (#1564): callpropvoid       48272 [addGeneralEffect], 6
+L001086 (#1565): jump               L001c68 (# 2807)
+L00108a (#1566): findproperty       48272 [addGeneralEffect]
+L00108e (#1567): getlocal_2         
+L00108f (#1568): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001093 (#1569): getlocal_2         
+L001094 (#1570): getproperty        80 [params]
+L001096 (#1571): pushbyte           0
+L001098 (#1572): getproperty        14 [<mn kind 0x1b>]
+L00109a (#1573): convert_d          
+L00109b (#1574): getlocal_2         
+L00109c (#1575): getproperty        80 [params]
+L00109e (#1576): pushbyte           1
+L0010a0 (#1577): getproperty        14 [<mn kind 0x1b>]
+L0010a2 (#1578): convert_d          
+L0010a3 (#1579): callproperty       48273 [FixedPosition], 2
+L0010a8 (#1580): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0010ac (#1581): pushbyte           1
+L0010ae (#1582): getlex             83 [Math]
+L0010b0 (#1583): getproperty        2862 [NaN]
+L0010b3 (#1584): convert_d          
+L0010b4 (#1585): getlex             83 [Math]
+L0010b6 (#1586): getproperty        2862 [NaN]
+L0010b9 (#1587): convert_d          
+L0010ba (#1588): getlocal_2         
+L0010bb (#1589): getproperty        80 [params]
+L0010bd (#1590): pushbyte           2
+L0010bf (#1591): getproperty        14 [<mn kind 0x1b>]
+L0010c1 (#1592): coerce             11 [String]
+L0010c3 (#1593): callpropvoid       48272 [addGeneralEffect], 6
+L0010c8 (#1594): jump               L001c68 (# 2807)
+L0010cc (#1595): findproperty       48272 [addGeneralEffect]
+L0010d0 (#1596): getlocal_2         
+L0010d1 (#1597): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0010d5 (#1598): getlocal_2         
+L0010d6 (#1599): getproperty        80 [params]
+L0010d8 (#1600): pushbyte           0
+L0010da (#1601): getproperty        14 [<mn kind 0x1b>]
+L0010dc (#1602): convert_d          
+L0010dd (#1603): getlocal_2         
+L0010de (#1604): getproperty        80 [params]
+L0010e0 (#1605): pushbyte           1
+L0010e2 (#1606): getproperty        14 [<mn kind 0x1b>]
+L0010e4 (#1607): convert_d          
+L0010e5 (#1608): callproperty       48273 [FixedPosition], 2
+L0010ea (#1609): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0010ee (#1610): pushbyte           1
+L0010f0 (#1611): getlex             83 [Math]
+L0010f2 (#1612): getproperty        2862 [NaN]
+L0010f5 (#1613): convert_d          
+L0010f6 (#1614): getlex             83 [Math]
+L0010f8 (#1615): getproperty        2862 [NaN]
+L0010fb (#1616): convert_d          
+L0010fc (#1617): getlocal_2         
+L0010fd (#1618): getproperty        80 [params]
+L0010ff (#1619): pushbyte           2
+L001101 (#1620): getproperty        14 [<mn kind 0x1b>]
+L001103 (#1621): coerce             11 [String]
+L001105 (#1622): callpropvoid       48272 [addGeneralEffect], 6
+L00110a (#1623): jump               L001c68 (# 2807)
+L00110e (#1624): findproperty       48272 [addGeneralEffect]
+L001112 (#1625): getlocal_2         
+L001113 (#1626): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001117 (#1627): getlocal_2         
+L001118 (#1628): getproperty        80 [params]
+L00111a (#1629): pushbyte           0
+L00111c (#1630): getproperty        14 [<mn kind 0x1b>]
+L00111e (#1631): convert_d          
+L00111f (#1632): getlocal_2         
+L001120 (#1633): getproperty        80 [params]
+L001122 (#1634): pushbyte           1
+L001124 (#1635): getproperty        14 [<mn kind 0x1b>]
+L001126 (#1636): convert_d          
+L001127 (#1637): callproperty       48273 [FixedPosition], 2
+L00112c (#1638): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001130 (#1639): pushbyte           1
+L001132 (#1640): getlex             83 [Math]
+L001134 (#1641): getproperty        2862 [NaN]
+L001137 (#1642): convert_d          
+L001138 (#1643): getlex             83 [Math]
+L00113a (#1644): getproperty        2862 [NaN]
+L00113d (#1645): convert_d          
+L00113e (#1646): getlocal_2         
+L00113f (#1647): getproperty        80 [params]
+L001141 (#1648): pushbyte           2
+L001143 (#1649): getproperty        14 [<mn kind 0x1b>]
+L001145 (#1650): coerce             11 [String]
+L001147 (#1651): callpropvoid       48272 [addGeneralEffect], 6
+L00114c (#1652): jump               L001c68 (# 2807)
+L001150 (#1653): findproperty       48272 [addGeneralEffect]
+L001154 (#1654): getlocal_2         
+L001155 (#1655): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001159 (#1656): getlocal_2         
+L00115a (#1657): getproperty        80 [params]
+L00115c (#1658): pushbyte           0
+L00115e (#1659): getproperty        14 [<mn kind 0x1b>]
+L001160 (#1660): convert_d          
+L001161 (#1661): getlocal_2         
+L001162 (#1662): getproperty        80 [params]
+L001164 (#1663): pushbyte           1
+L001166 (#1664): getproperty        14 [<mn kind 0x1b>]
+L001168 (#1665): convert_d          
+L001169 (#1666): callproperty       48273 [FixedPosition], 2
+L00116e (#1667): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001172 (#1668): pushbyte           1
+L001174 (#1669): getlex             83 [Math]
+L001176 (#1670): getproperty        2862 [NaN]
+L001179 (#1671): convert_d          
+L00117a (#1672): getlex             83 [Math]
+L00117c (#1673): getproperty        2862 [NaN]
+L00117f (#1674): convert_d          
+L001180 (#1675): pushstring         25814 ["battle/common/layer1/cutin_action_skill_other_single"]
+L001184 (#1676): callpropvoid       48272 [addGeneralEffect], 6
+L001189 (#1677): jump               L001c68 (# 2807)
+L00118d (#1678): findproperty       48272 [addGeneralEffect]
+L001191 (#1679): getlocal_2         
+L001192 (#1680): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001196 (#1681): getlocal_2         
+L001197 (#1682): getproperty        80 [params]
+L001199 (#1683): pushbyte           0
+L00119b (#1684): getproperty        14 [<mn kind 0x1b>]
+L00119d (#1685): convert_d          
+L00119e (#1686): getlocal_2         
+L00119f (#1687): getproperty        80 [params]
+L0011a1 (#1688): pushbyte           1
+L0011a3 (#1689): getproperty        14 [<mn kind 0x1b>]
+L0011a5 (#1690): convert_d          
+L0011a6 (#1691): callproperty       48273 [FixedPosition], 2
+L0011ab (#1692): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0011af (#1693): pushbyte           8
+L0011b1 (#1694): getlex             83 [Math]
+L0011b3 (#1695): getproperty        2862 [NaN]
+L0011b6 (#1696): convert_d          
+L0011b7 (#1697): getlex             83 [Math]
+L0011b9 (#1698): getproperty        2862 [NaN]
+L0011bc (#1699): convert_d          
+L0011bd (#1700): getlocal_2         
+L0011be (#1701): getproperty        80 [params]
+L0011c0 (#1702): pushbyte           2
+L0011c2 (#1703): getproperty        14 [<mn kind 0x1b>]
+L0011c4 (#1704): coerce             11 [String]
+L0011c6 (#1705): callpropvoid       48272 [addGeneralEffect], 6
+L0011cb (#1706): jump               L001c68 (# 2807)
+L0011cf (#1707): findproperty       48272 [addGeneralEffect]
+L0011d3 (#1708): getlocal_2         
+L0011d4 (#1709): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0011d8 (#1710): getlocal_2         
+L0011d9 (#1711): getproperty        80 [params]
+L0011db (#1712): pushbyte           0
+L0011dd (#1713): getproperty        14 [<mn kind 0x1b>]
+L0011df (#1714): convert_d          
+L0011e0 (#1715): getlocal_2         
+L0011e1 (#1716): getproperty        80 [params]
+L0011e3 (#1717): pushbyte           1
+L0011e5 (#1718): getproperty        14 [<mn kind 0x1b>]
+L0011e7 (#1719): convert_d          
+L0011e8 (#1720): callproperty       48273 [FixedPosition], 2
+L0011ed (#1721): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0011f1 (#1722): pushbyte           1
+L0011f3 (#1723): getlex             83 [Math]
+L0011f5 (#1724): getproperty        2862 [NaN]
+L0011f8 (#1725): convert_d          
+L0011f9 (#1726): getlex             83 [Math]
+L0011fb (#1727): getproperty        2862 [NaN]
+L0011fe (#1728): convert_d          
+L0011ff (#1729): getlocal_2         
+L001200 (#1730): getproperty        80 [params]
+L001202 (#1731): pushbyte           2
+L001204 (#1732): getproperty        14 [<mn kind 0x1b>]
+L001206 (#1733): coerce             11 [String]
+L001208 (#1734): callpropvoid       48272 [addGeneralEffect], 6
+L00120d (#1735): jump               L001c68 (# 2807)
+L001211 (#1736): findproperty       48272 [addGeneralEffect]
+L001215 (#1737): getlocal_2         
+L001216 (#1738): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00121a (#1739): getlocal_2         
+L00121b (#1740): getproperty        80 [params]
+L00121d (#1741): pushbyte           0
+L00121f (#1742): getproperty        14 [<mn kind 0x1b>]
+L001221 (#1743): convert_d          
+L001222 (#1744): getlocal_2         
+L001223 (#1745): getproperty        80 [params]
+L001225 (#1746): pushbyte           1
+L001227 (#1747): getproperty        14 [<mn kind 0x1b>]
+L001229 (#1748): convert_d          
+L00122a (#1749): callproperty       48273 [FixedPosition], 2
+L00122f (#1750): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001233 (#1751): pushbyte           1
+L001235 (#1752): getlex             83 [Math]
+L001237 (#1753): getproperty        2862 [NaN]
+L00123a (#1754): convert_d          
+L00123b (#1755): getlex             83 [Math]
+L00123d (#1756): getproperty        2862 [NaN]
+L001240 (#1757): convert_d          
+L001241 (#1758): pushstring         16735 ["battle/common/layer0/attack_resist"]
+L001245 (#1759): callpropvoid       48272 [addGeneralEffect], 6
+L00124a (#1760): jump               L001c68 (# 2807)
+L00124e (#1761): findproperty       48272 [addGeneralEffect]
+L001252 (#1762): getlocal_2         
+L001253 (#1763): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001257 (#1764): getlocal_2         
+L001258 (#1765): getproperty        80 [params]
+L00125a (#1766): pushbyte           0
+L00125c (#1767): getproperty        14 [<mn kind 0x1b>]
+L00125e (#1768): convert_d          
+L00125f (#1769): getlocal_2         
+L001260 (#1770): getproperty        80 [params]
+L001262 (#1771): pushbyte           1
+L001264 (#1772): getproperty        14 [<mn kind 0x1b>]
+L001266 (#1773): convert_d          
+L001267 (#1774): callproperty       48273 [FixedPosition], 2
+L00126c (#1775): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001270 (#1776): pushbyte           1
+L001272 (#1777): getlex             83 [Math]
+L001274 (#1778): getproperty        2862 [NaN]
+L001277 (#1779): convert_d          
+L001278 (#1780): getlex             83 [Math]
+L00127a (#1781): getproperty        2862 [NaN]
+L00127d (#1782): convert_d          
+L00127e (#1783): pushstring         16769 ["battle/common/layer1/damage_effect_resist"]
+L001282 (#1784): callpropvoid       48272 [addGeneralEffect], 6
+L001287 (#1785): jump               L001c68 (# 2807)
+L00128b (#1786): findproperty       48272 [addGeneralEffect]
+L00128f (#1787): getlocal_2         
+L001290 (#1788): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001294 (#1789): getlocal_2         
+L001295 (#1790): getproperty        80 [params]
+L001297 (#1791): pushbyte           0
+L001299 (#1792): getproperty        14 [<mn kind 0x1b>]
+L00129b (#1793): convert_d          
+L00129c (#1794): getlocal_2         
+L00129d (#1795): getproperty        80 [params]
+L00129f (#1796): pushbyte           1
+L0012a1 (#1797): getproperty        14 [<mn kind 0x1b>]
+L0012a3 (#1798): convert_d          
+L0012a4 (#1799): callproperty       48273 [FixedPosition], 2
+L0012a9 (#1800): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0012ad (#1801): pushbyte           1
+L0012af (#1802): getlex             83 [Math]
+L0012b1 (#1803): getproperty        2862 [NaN]
+L0012b4 (#1804): convert_d          
+L0012b5 (#1805): getlex             83 [Math]
+L0012b7 (#1806): getproperty        2862 [NaN]
+L0012ba (#1807): convert_d          
+L0012bb (#1808): pushstring         16895 ["battle/common/layer0/boss_subroutine_change"]
+L0012bf (#1809): callpropvoid       48272 [addGeneralEffect], 6
+L0012c4 (#1810): jump               L001c68 (# 2807)
+L0012c8 (#1811): findproperty       48272 [addGeneralEffect]
+L0012cc (#1812): getlocal_2         
+L0012cd (#1813): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0012d1 (#1814): getlocal_2         
+L0012d2 (#1815): getproperty        80 [params]
+L0012d4 (#1816): pushbyte           0
+L0012d6 (#1817): getproperty        14 [<mn kind 0x1b>]
+L0012d8 (#1818): convert_d          
+L0012d9 (#1819): getlocal_2         
+L0012da (#1820): getproperty        80 [params]
+L0012dc (#1821): pushbyte           1
+L0012de (#1822): getproperty        14 [<mn kind 0x1b>]
+L0012e0 (#1823): convert_d          
+L0012e1 (#1824): callproperty       48273 [FixedPosition], 2
+L0012e6 (#1825): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0012ea (#1826): pushbyte           1
+L0012ec (#1827): getlex             83 [Math]
+L0012ee (#1828): getproperty        2862 [NaN]
+L0012f1 (#1829): convert_d          
+L0012f2 (#1830): getlex             83 [Math]
+L0012f4 (#1831): getproperty        2862 [NaN]
+L0012f7 (#1832): convert_d          
+L0012f8 (#1833): pushstring         24955 ["battle/common/layer0/boss_awakening"]
+L0012fc (#1834): callpropvoid       48272 [addGeneralEffect], 6
+L001301 (#1835): jump               L001c68 (# 2807)
+L001305 (#1836): findproperty       7848 [featuresPermit]
+L001308 (#1837): getproperty        7848 [featuresPermit]
+L00130b (#1838): getproperty        7866 [questClearKind]
+L00130e (#1839): pushbyte           1
+L001310 (#1840): ifne               L00134d (# 1865)
+L001314 (#1841): findproperty       48272 [addGeneralEffect]
+L001318 (#1842): getlocal_2         
+L001319 (#1843): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00131d (#1844): getlocal_2         
+L00131e (#1845): getproperty        80 [params]
+L001320 (#1846): pushbyte           0
+L001322 (#1847): getproperty        14 [<mn kind 0x1b>]
+L001324 (#1848): convert_d          
+L001325 (#1849): getlocal_2         
+L001326 (#1850): getproperty        80 [params]
+L001328 (#1851): pushbyte           1
+L00132a (#1852): getproperty        14 [<mn kind 0x1b>]
+L00132c (#1853): convert_d          
+L00132d (#1854): callproperty       48273 [FixedPosition], 2
+L001332 (#1855): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001336 (#1856): pushbyte           1
+L001338 (#1857): getlex             83 [Math]
+L00133a (#1858): getproperty        2862 [NaN]
+L00133d (#1859): convert_d          
+L00133e (#1860): getlex             83 [Math]
+L001340 (#1861): getproperty        2862 [NaN]
+L001343 (#1862): convert_d          
+L001344 (#1863): pushstring         16613 ["battle/common/layer0/ball_next_floor"]
+L001348 (#1864): callpropvoid       48272 [addGeneralEffect], 6
+L00134d (#1865): jump               L001c68 (# 2807)
+L001351 (#1866): getlocal_0         
+L001352 (#1867): getproperty        27490 [battle]
+L001356 (#1868): getproperty        40846 [lightweightModeLevel]
+L00135a (#1869): pushbyte           1
+L00135c (#1870): iflt               L001374 (# 1881)
+L001360 (#1871): getlocal_2         
+L001361 (#1872): getproperty        80 [params]
+L001363 (#1873): pushbyte           1
+L001365 (#1874): getproperty        14 [<mn kind 0x1b>]
+L001367 (#1875): convert_b          
+L001368 (#1876): iffalse            L001373 (# 1880)
+L00136c (#1877): getlocal_0         
+L00136d (#1878): callproperty       48274 [getRandomRotation], 0
+L001372 (#1879): pop                
+L001373 (#1880): returnvoid         
+L001374 (#1881): getlocal_0         
+L001375 (#1882): callproperty       69658 [wfxHitAllow], 0
+L00137a (#1883): iftrue             L001392 (# 1894)
+L00137e (#1884): getlocal_2         
+L00137f (#1885): getproperty        80 [params]
+L001381 (#1886): pushbyte           1
+L001383 (#1887): getproperty        14 [<mn kind 0x1b>]
+L001385 (#1888): convert_b          
+L001386 (#1889): iffalse            L001391 (# 1893)
+L00138a (#1890): getlocal_0         
+L00138b (#1891): callproperty       48274 [getRandomRotation], 0
+L001390 (#1892): pop                
+L001391 (#1893): returnvoid         
+L001392 (#1894): getlocal_2         
+L001393 (#1895): getproperty        80 [params]
+L001395 (#1896): pushbyte           3
+L001397 (#1897): getproperty        14 [<mn kind 0x1b>]
+L001399 (#1898): convert_b          
+L00139a (#1899): convert_b          
+L00139b (#1900): setlocal           6
+L00139d (#1901): getlocal_2         
+L00139e (#1902): getproperty        80 [params]
+L0013a0 (#1903): pushbyte           2
+L0013a2 (#1904): getproperty        14 [<mn kind 0x1b>]
+L0013a4 (#1905): coerce             11 [String]
+L0013a6 (#1906): coerce             11 [String]
+L0013a8 (#1907): setlocal           7
+L0013aa (#1908): getlocal_2         
+L0013ab (#1909): getproperty        80 [params]
+L0013ad (#1910): pushbyte           0
+L0013af (#1911): getproperty        14 [<mn kind 0x1b>]
+L0013b1 (#1912): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0013b5 (#1913): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0013b9 (#1914): setlocal           8
+L0013bb (#1915): getlocal_2         
+L0013bc (#1916): getproperty        80 [params]
+L0013be (#1917): pushbyte           1
+L0013c0 (#1918): getproperty        14 [<mn kind 0x1b>]
+L0013c2 (#1919): convert_b          
+L0013c3 (#1920): iffalse            L001402 (# 1941)
+L0013c7 (#1921): findproperty       153 [addChild]
+L0013ca (#1922): findpropstrict     48275 [pinball.scene.battle.battle.effect::SimpleEffect]
+L0013ce (#1923): getlocal_2         
+L0013cf (#1924): getlocal           8
+L0013d1 (#1925): pushbyte           1
+L0013d3 (#1926): findproperty       48274 [getRandomRotation]
+L0013d7 (#1927): callproperty       48274 [getRandomRotation], 0
+L0013dc (#1928): convert_d          
+L0013dd (#1929): getlex             83 [Math]
+L0013df (#1930): getproperty        2862 [NaN]
+L0013e2 (#1931): convert_d          
+L0013e3 (#1932): getlocal           7
+L0013e5 (#1933): getlocal           6
+L0013e7 (#1934): findproperty       29229 [viewOrder]
+L0013eb (#1935): getproperty        29229 [viewOrder]
+L0013ef (#1936): findproperty       6899 [asset]
+L0013f2 (#1937): getproperty        6899 [asset]
+L0013f5 (#1938): constructprop      48275 [pinball.scene.battle.battle.effect::SimpleEffect], 9
+L0013fa (#1939): callpropvoid       153 [addChild], 1
+L0013fe (#1940): jump               L00144e (# 1970)
+L001402 (#1941): findproperty       48269 [supressHitEffect]
+L001406 (#1942): getlocal           7
+L001408 (#1943): getlocal           6
+L00140a (#1944): getlocal_2         
+L00140b (#1945): getproperty        80 [params]
+L00140d (#1946): pushbyte           4
+L00140f (#1947): getproperty        14 [<mn kind 0x1b>]
+L001411 (#1948): coerce             8987 [pinball.online.battle.impact::ImpactTargetEffectKey]
+L001414 (#1949): callproperty       48269 [supressHitEffect], 3
+L001419 (#1950): convert_b          
+L00141a (#1951): not                
+L00141b (#1952): iffalse            L00144e (# 1970)
+L00141f (#1953): findproperty       153 [addChild]
+L001422 (#1954): findpropstrict     48275 [pinball.scene.battle.battle.effect::SimpleEffect]
+L001426 (#1955): getlocal_2         
+L001427 (#1956): getlocal           8
+L001429 (#1957): pushbyte           1
+L00142b (#1958): pushdouble         2 [0.0]
+L00142d (#1959): getlex             83 [Math]
+L00142f (#1960): getproperty        2862 [NaN]
+L001432 (#1961): convert_d          
+L001433 (#1962): getlocal           7
+L001435 (#1963): getlocal           6
+L001437 (#1964): findproperty       29229 [viewOrder]
+L00143b (#1965): getproperty        29229 [viewOrder]
+L00143f (#1966): findproperty       6899 [asset]
+L001442 (#1967): getproperty        6899 [asset]
+L001445 (#1968): constructprop      48275 [pinball.scene.battle.battle.effect::SimpleEffect], 9
+L00144a (#1969): callpropvoid       153 [addChild], 1
+L00144e (#1970): jump               L001c68 (# 2807)
+L001452 (#1971): findproperty       7848 [featuresPermit]
+L001455 (#1972): getproperty        7848 [featuresPermit]
+L001458 (#1973): getproperty        7912 [displaysAbility]
+L00145b (#1974): iffalse            L001490 (# 1994)
+L00145f (#1975): findproperty       48272 [addGeneralEffect]
+L001463 (#1976): getlocal_2         
+L001464 (#1977): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001468 (#1978): getlocal_2         
+L001469 (#1979): getproperty        80 [params]
+L00146b (#1980): pushbyte           0
+L00146d (#1981): getproperty        14 [<mn kind 0x1b>]
+L00146f (#1982): coerce_a           
+L001470 (#1983): callproperty       48276 [TrackingTarget], 1
+L001475 (#1984): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001479 (#1985): pushbyte           1
+L00147b (#1986): getlex             83 [Math]
+L00147d (#1987): getproperty        2862 [NaN]
+L001480 (#1988): convert_d          
+L001481 (#1989): getlex             83 [Math]
+L001483 (#1990): getproperty        2862 [NaN]
+L001486 (#1991): convert_d          
+L001487 (#1992): pushstring         16886 ["battle/common/layer0/ability/ability_moment"]
+L00148b (#1993): callpropvoid       48272 [addGeneralEffect], 6
+L001490 (#1994): jump               L001c68 (# 2807)
+L001494 (#1995): findproperty       7848 [featuresPermit]
+L001497 (#1996): getproperty        7848 [featuresPermit]
+L00149a (#1997): getproperty        7912 [displaysAbility]
+L00149d (#1998): iffalse            L0014d2 (# 2018)
+L0014a1 (#1999): findproperty       48272 [addGeneralEffect]
+L0014a5 (#2000): getlocal_2         
+L0014a6 (#2001): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0014aa (#2002): getlocal_2         
+L0014ab (#2003): getproperty        80 [params]
+L0014ad (#2004): pushbyte           0
+L0014af (#2005): getproperty        14 [<mn kind 0x1b>]
+L0014b1 (#2006): coerce_a           
+L0014b2 (#2007): callproperty       48276 [TrackingTarget], 1
+L0014b7 (#2008): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0014bb (#2009): pushbyte           1
+L0014bd (#2010): getlex             83 [Math]
+L0014bf (#2011): getproperty        2862 [NaN]
+L0014c2 (#2012): convert_d          
+L0014c3 (#2013): getlex             83 [Math]
+L0014c5 (#2014): getproperty        2862 [NaN]
+L0014c8 (#2015): convert_d          
+L0014c9 (#2016): pushstring         16887 ["battle/common/layer0/ability/ability_perpetuity"]
+L0014cd (#2017): callpropvoid       48272 [addGeneralEffect], 6
+L0014d2 (#2018): jump               L001c68 (# 2807)
+L0014d6 (#2019): findproperty       48272 [addGeneralEffect]
+L0014da (#2020): getlocal_2         
+L0014db (#2021): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0014df (#2022): getlocal_2         
+L0014e0 (#2023): getproperty        80 [params]
+L0014e2 (#2024): pushbyte           0
+L0014e4 (#2025): getproperty        14 [<mn kind 0x1b>]
+L0014e6 (#2026): coerce_a           
+L0014e7 (#2027): callproperty       48276 [TrackingTarget], 1
+L0014ec (#2028): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0014f0 (#2029): pushbyte           1
+L0014f2 (#2030): getlex             83 [Math]
+L0014f4 (#2031): getproperty        2862 [NaN]
+L0014f7 (#2032): convert_d          
+L0014f8 (#2033): getlex             83 [Math]
+L0014fa (#2034): getproperty        2862 [NaN]
+L0014fd (#2035): convert_d          
+L0014fe (#2036): pushstring         16909 ["battle/effect/hit/up_skill_gauge/up_skill_gauge/up_skill_gauge"]
+L001502 (#2037): callpropvoid       48272 [addGeneralEffect], 6
+L001507 (#2038): jump               L001c68 (# 2807)
+L00150b (#2039): findproperty       48272 [addGeneralEffect]
+L00150f (#2040): getlocal_2         
+L001510 (#2041): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001514 (#2042): getlocal_2         
+L001515 (#2043): getproperty        80 [params]
+L001517 (#2044): pushbyte           0
+L001519 (#2045): getproperty        14 [<mn kind 0x1b>]
+L00151b (#2046): convert_d          
+L00151c (#2047): getlocal_2         
+L00151d (#2048): getproperty        80 [params]
+L00151f (#2049): pushbyte           1
+L001521 (#2050): getproperty        14 [<mn kind 0x1b>]
+L001523 (#2051): convert_d          
+L001524 (#2052): callproperty       48273 [FixedPosition], 2
+L001529 (#2053): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00152d (#2054): pushbyte           1
+L00152f (#2055): getlex             83 [Math]
+L001531 (#2056): getproperty        2862 [NaN]
+L001534 (#2057): convert_d          
+L001535 (#2058): getlex             83 [Math]
+L001537 (#2059): getproperty        2862 [NaN]
+L00153a (#2060): convert_d          
+L00153b (#2061): pushstring         16910 ["battle/effect/hit/up_skill_gauge/up_skill_gauge_unconverted/up_skill_gauge_unconverted"]
+L00153f (#2062): callpropvoid       48272 [addGeneralEffect], 6
+L001544 (#2063): jump               L001c68 (# 2807)
+L001548 (#2064): findproperty       48272 [addGeneralEffect]
+L00154c (#2065): getlocal_2         
+L00154d (#2066): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001551 (#2067): getlocal_2         
+L001552 (#2068): getproperty        80 [params]
+L001554 (#2069): pushbyte           0
+L001556 (#2070): getproperty        14 [<mn kind 0x1b>]
+L001558 (#2071): coerce_a           
+L001559 (#2072): callproperty       48276 [TrackingTarget], 1
+L00155e (#2073): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001562 (#2074): pushbyte           1
+L001564 (#2075): getlex             83 [Math]
+L001566 (#2076): getproperty        2862 [NaN]
+L001569 (#2077): convert_d          
+L00156a (#2078): getlex             83 [Math]
+L00156c (#2079): getproperty        2862 [NaN]
+L00156f (#2080): convert_d          
+L001570 (#2081): pushstring         16911 ["battle/effect/hit/down_skill_gauge/down_skill_gauge/down_skill_gauge"]
+L001574 (#2082): callpropvoid       48272 [addGeneralEffect], 6
+L001579 (#2083): jump               L001c68 (# 2807)
+L00157d (#2084): findproperty       48272 [addGeneralEffect]
+L001581 (#2085): getlocal_2         
+L001582 (#2086): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001586 (#2087): getlocal_2         
+L001587 (#2088): getproperty        80 [params]
+L001589 (#2089): pushbyte           0
+L00158b (#2090): getproperty        14 [<mn kind 0x1b>]
+L00158d (#2091): convert_d          
+L00158e (#2092): getlocal_2         
+L00158f (#2093): getproperty        80 [params]
+L001591 (#2094): pushbyte           1
+L001593 (#2095): getproperty        14 [<mn kind 0x1b>]
+L001595 (#2096): convert_d          
+L001596 (#2097): callproperty       48273 [FixedPosition], 2
+L00159b (#2098): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00159f (#2099): pushbyte           1
+L0015a1 (#2100): getlex             83 [Math]
+L0015a3 (#2101): getproperty        2862 [NaN]
+L0015a6 (#2102): convert_d          
+L0015a7 (#2103): getlex             83 [Math]
+L0015a9 (#2104): getproperty        2862 [NaN]
+L0015ac (#2105): convert_d          
+L0015ad (#2106): pushstring         16912 ["battle/effect/hit/down_skill_gauge/down_skill_gauge_unconverted/down_skill_gauge_unconverted"]
+L0015b1 (#2107): callpropvoid       48272 [addGeneralEffect], 6
+L0015b6 (#2108): jump               L001c68 (# 2807)
+L0015ba (#2109): findproperty       48272 [addGeneralEffect]
+L0015be (#2110): getlocal_2         
+L0015bf (#2111): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0015c3 (#2112): getlocal_2         
+L0015c4 (#2113): getproperty        80 [params]
+L0015c6 (#2114): pushbyte           0
+L0015c8 (#2115): getproperty        14 [<mn kind 0x1b>]
+L0015ca (#2116): coerce_a           
+L0015cb (#2117): callproperty       48276 [TrackingTarget], 1
+L0015d0 (#2118): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0015d4 (#2119): pushbyte           1
+L0015d6 (#2120): getlex             83 [Math]
+L0015d8 (#2121): getproperty        2862 [NaN]
+L0015db (#2122): convert_d          
+L0015dc (#2123): getlex             83 [Math]
+L0015de (#2124): getproperty        2862 [NaN]
+L0015e1 (#2125): convert_d          
+L0015e2 (#2126): pushstring         16913 ["battle/effect/hit/up_fever_gauge/up_fever_gauge/up_fever_gauge"]
+L0015e6 (#2127): callpropvoid       48272 [addGeneralEffect], 6
+L0015eb (#2128): jump               L001c68 (# 2807)
+L0015ef (#2129): findproperty       48272 [addGeneralEffect]
+L0015f3 (#2130): getlocal_2         
+L0015f4 (#2131): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0015f8 (#2132): getlocal_2         
+L0015f9 (#2133): getproperty        80 [params]
+L0015fb (#2134): pushbyte           0
+L0015fd (#2135): getproperty        14 [<mn kind 0x1b>]
+L0015ff (#2136): convert_d          
+L001600 (#2137): getlocal_2         
+L001601 (#2138): getproperty        80 [params]
+L001603 (#2139): pushbyte           1
+L001605 (#2140): getproperty        14 [<mn kind 0x1b>]
+L001607 (#2141): convert_d          
+L001608 (#2142): callproperty       48273 [FixedPosition], 2
+L00160d (#2143): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001611 (#2144): pushbyte           1
+L001613 (#2145): getlex             83 [Math]
+L001615 (#2146): getproperty        2862 [NaN]
+L001618 (#2147): convert_d          
+L001619 (#2148): getlex             83 [Math]
+L00161b (#2149): getproperty        2862 [NaN]
+L00161e (#2150): convert_d          
+L00161f (#2151): pushstring         16914 ["battle/effect/hit/up_fever_gauge/up_fever_gauge_unconverted/up_fever_gauge_unconverted"]
+L001623 (#2152): callpropvoid       48272 [addGeneralEffect], 6
+L001628 (#2153): jump               L001c68 (# 2807)
+L00162c (#2154): findproperty       48272 [addGeneralEffect]
+L001630 (#2155): getlocal_2         
+L001631 (#2156): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001635 (#2157): getlocal_2         
+L001636 (#2158): getproperty        80 [params]
+L001638 (#2159): pushbyte           0
+L00163a (#2160): getproperty        14 [<mn kind 0x1b>]
+L00163c (#2161): coerce_a           
+L00163d (#2162): callproperty       48276 [TrackingTarget], 1
+L001642 (#2163): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001646 (#2164): pushbyte           1
+L001648 (#2165): getlex             83 [Math]
+L00164a (#2166): getproperty        2862 [NaN]
+L00164d (#2167): convert_d          
+L00164e (#2168): getlex             83 [Math]
+L001650 (#2169): getproperty        2862 [NaN]
+L001653 (#2170): convert_d          
+L001654 (#2171): pushstring         16915 ["battle/effect/hit/down_fever_gauge/down_fever_gauge/down_fever_gauge"]
+L001658 (#2172): callpropvoid       48272 [addGeneralEffect], 6
+L00165d (#2173): jump               L001c68 (# 2807)
+L001661 (#2174): findproperty       48272 [addGeneralEffect]
+L001665 (#2175): getlocal_2         
+L001666 (#2176): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00166a (#2177): getlocal_2         
+L00166b (#2178): getproperty        80 [params]
+L00166d (#2179): pushbyte           0
+L00166f (#2180): getproperty        14 [<mn kind 0x1b>]
+L001671 (#2181): convert_d          
+L001672 (#2182): getlocal_2         
+L001673 (#2183): getproperty        80 [params]
+L001675 (#2184): pushbyte           1
+L001677 (#2185): getproperty        14 [<mn kind 0x1b>]
+L001679 (#2186): convert_d          
+L00167a (#2187): callproperty       48273 [FixedPosition], 2
+L00167f (#2188): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001683 (#2189): pushbyte           1
+L001685 (#2190): getlex             83 [Math]
+L001687 (#2191): getproperty        2862 [NaN]
+L00168a (#2192): convert_d          
+L00168b (#2193): getlex             83 [Math]
+L00168d (#2194): getproperty        2862 [NaN]
+L001690 (#2195): convert_d          
+L001691 (#2196): pushstring         16916 ["battle/effect/hit/down_fever_gauge/down_fever_gauge_unconverted/down_fever_gauge_unconverted"]
+L001695 (#2197): callpropvoid       48272 [addGeneralEffect], 6
+L00169a (#2198): jump               L001c68 (# 2807)
+L00169e (#2199): findproperty       48272 [addGeneralEffect]
+L0016a2 (#2200): getlocal_2         
+L0016a3 (#2201): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0016a7 (#2202): getlocal_2         
+L0016a8 (#2203): getproperty        80 [params]
+L0016aa (#2204): pushbyte           0
+L0016ac (#2205): getproperty        14 [<mn kind 0x1b>]
+L0016ae (#2206): convert_d          
+L0016af (#2207): getlocal_2         
+L0016b0 (#2208): getproperty        80 [params]
+L0016b2 (#2209): pushbyte           1
+L0016b4 (#2210): getproperty        14 [<mn kind 0x1b>]
+L0016b6 (#2211): convert_d          
+L0016b7 (#2212): callproperty       48273 [FixedPosition], 2
+L0016bc (#2213): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0016c0 (#2214): pushbyte           1
+L0016c2 (#2215): getlex             83 [Math]
+L0016c4 (#2216): getproperty        2862 [NaN]
+L0016c7 (#2217): convert_d          
+L0016c8 (#2218): getlex             83 [Math]
+L0016ca (#2219): getproperty        2862 [NaN]
+L0016cd (#2220): convert_d          
+L0016ce (#2221): pushstring         24944 ["battle/boss/common/big_boss_death/big_boss_death_front"]
+L0016d2 (#2222): callpropvoid       48272 [addGeneralEffect], 6
+L0016d7 (#2223): jump               L001c68 (# 2807)
+L0016db (#2224): findproperty       48272 [addGeneralEffect]
+L0016df (#2225): getlocal_2         
+L0016e0 (#2226): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0016e4 (#2227): getlocal_2         
+L0016e5 (#2228): getproperty        80 [params]
+L0016e7 (#2229): pushbyte           0
+L0016e9 (#2230): getproperty        14 [<mn kind 0x1b>]
+L0016eb (#2231): convert_d          
+L0016ec (#2232): getlocal_2         
+L0016ed (#2233): getproperty        80 [params]
+L0016ef (#2234): pushbyte           1
+L0016f1 (#2235): getproperty        14 [<mn kind 0x1b>]
+L0016f3 (#2236): convert_d          
+L0016f4 (#2237): callproperty       48273 [FixedPosition], 2
+L0016f9 (#2238): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0016fd (#2239): pushbyte           1
+L0016ff (#2240): getlex             83 [Math]
+L001701 (#2241): getproperty        2862 [NaN]
+L001704 (#2242): convert_d          
+L001705 (#2243): getlex             83 [Math]
+L001707 (#2244): getproperty        2862 [NaN]
+L00170a (#2245): convert_d          
+L00170b (#2246): pushstring         24942 ["battle/boss/common/big_boss_death/big_boss_death_back"]
+L00170f (#2247): callpropvoid       48272 [addGeneralEffect], 6
+L001714 (#2248): jump               L001c68 (# 2807)
+L001718 (#2249): findproperty       48272 [addGeneralEffect]
+L00171c (#2250): getlocal_2         
+L00171d (#2251): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001721 (#2252): getlocal_2         
+L001722 (#2253): getproperty        80 [params]
+L001724 (#2254): pushbyte           0
+L001726 (#2255): getproperty        14 [<mn kind 0x1b>]
+L001728 (#2256): convert_d          
+L001729 (#2257): getlocal_2         
+L00172a (#2258): getproperty        80 [params]
+L00172c (#2259): pushbyte           1
+L00172e (#2260): getproperty        14 [<mn kind 0x1b>]
+L001730 (#2261): convert_d          
+L001731 (#2262): callproperty       48273 [FixedPosition], 2
+L001736 (#2263): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00173a (#2264): pushbyte           1
+L00173c (#2265): getlex             83 [Math]
+L00173e (#2266): getproperty        2862 [NaN]
+L001741 (#2267): convert_d          
+L001742 (#2268): getlex             83 [Math]
+L001744 (#2269): getproperty        2862 [NaN]
+L001747 (#2270): convert_d          
+L001748 (#2271): pushstring         24943 ["battle/boss/common/big_boss_death/big_boss_death_center"]
+L00174c (#2272): callpropvoid       48272 [addGeneralEffect], 6
+L001751 (#2273): jump               L001c68 (# 2807)
+L001755 (#2274): findproperty       48272 [addGeneralEffect]
+L001759 (#2275): getlocal_2         
+L00175a (#2276): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00175e (#2277): getlocal_2         
+L00175f (#2278): getproperty        80 [params]
+L001761 (#2279): pushbyte           0
+L001763 (#2280): getproperty        14 [<mn kind 0x1b>]
+L001765 (#2281): convert_d          
+L001766 (#2282): getlocal_2         
+L001767 (#2283): getproperty        80 [params]
+L001769 (#2284): pushbyte           1
+L00176b (#2285): getproperty        14 [<mn kind 0x1b>]
+L00176d (#2286): convert_d          
+L00176e (#2287): callproperty       48273 [FixedPosition], 2
+L001773 (#2288): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001777 (#2289): pushbyte           1
+L001779 (#2290): getlex             83 [Math]
+L00177b (#2291): getproperty        2862 [NaN]
+L00177e (#2292): convert_d          
+L00177f (#2293): getlex             83 [Math]
+L001781 (#2294): getproperty        2862 [NaN]
+L001784 (#2295): convert_d          
+L001785 (#2296): pushstring         63536 ["battle/boss/touyakiren_ceo/touyakiren_ceo_parts_explosion"]
+L001789 (#2297): callpropvoid       48272 [addGeneralEffect], 6
+L00178e (#2298): jump               L001c68 (# 2807)
+L001792 (#2299): findproperty       48272 [addGeneralEffect]
+L001796 (#2300): getlocal_2         
+L001797 (#2301): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00179b (#2302): getlocal_2         
+L00179c (#2303): getproperty        80 [params]
+L00179e (#2304): pushbyte           0
+L0017a0 (#2305): getproperty        14 [<mn kind 0x1b>]
+L0017a2 (#2306): coerce_a           
+L0017a3 (#2307): callproperty       48276 [TrackingTarget], 1
+L0017a8 (#2308): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0017ac (#2309): pushbyte           1
+L0017ae (#2310): getlex             83 [Math]
+L0017b0 (#2311): getproperty        2862 [NaN]
+L0017b3 (#2312): convert_d          
+L0017b4 (#2313): getlex             83 [Math]
+L0017b6 (#2314): getproperty        2862 [NaN]
+L0017b9 (#2315): convert_d          
+L0017ba (#2316): getlocal_2         
+L0017bb (#2317): getproperty        80 [params]
+L0017bd (#2318): pushbyte           1
+L0017bf (#2319): getproperty        14 [<mn kind 0x1b>]
+L0017c1 (#2320): convert_b          
+L0017c2 (#2321): iffalse            L0017ce (# 2324)
+L0017c6 (#2322): pushstring         24512 ["battle/effect/hit/condition/barrier/breaking_barrier_boss"]
+L0017ca (#2323): jump               L0017d2 (# 2325)
+L0017ce (#2324): pushstring         23132 ["battle/effect/hit/condition/barrier/breaking_barrier"]
+L0017d2 (#2325): callpropvoid       48272 [addGeneralEffect], 6
+L0017d7 (#2326): jump               L001c68 (# 2807)
+L0017db (#2327): findproperty       48272 [addGeneralEffect]
+L0017df (#2328): getlocal_2         
+L0017e0 (#2329): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0017e4 (#2330): getlocal_2         
+L0017e5 (#2331): getproperty        80 [params]
+L0017e7 (#2332): pushbyte           0
+L0017e9 (#2333): getproperty        14 [<mn kind 0x1b>]
+L0017eb (#2334): convert_d          
+L0017ec (#2335): getlocal_2         
+L0017ed (#2336): getproperty        80 [params]
+L0017ef (#2337): pushbyte           1
+L0017f1 (#2338): getproperty        14 [<mn kind 0x1b>]
+L0017f3 (#2339): convert_d          
+L0017f4 (#2340): callproperty       48273 [FixedPosition], 2
+L0017f9 (#2341): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0017fd (#2342): pushbyte           1
+L0017ff (#2343): getlex             83 [Math]
+L001801 (#2344): getproperty        2862 [NaN]
+L001804 (#2345): convert_d          
+L001805 (#2346): getlex             83 [Math]
+L001807 (#2347): getproperty        2862 [NaN]
+L00180a (#2348): convert_d          
+L00180b (#2349): pushstring         62321 ["battle/common/score_attack/score_attack_time_add_phase2"]
+L00180f (#2350): callpropvoid       48272 [addGeneralEffect], 6
+L001814 (#2351): jump               L001c68 (# 2807)
+L001818 (#2352): findproperty       48272 [addGeneralEffect]
+L00181c (#2353): getlocal_2         
+L00181d (#2354): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001821 (#2355): getlocal_2         
+L001822 (#2356): getproperty        80 [params]
+L001824 (#2357): pushbyte           0
+L001826 (#2358): getproperty        14 [<mn kind 0x1b>]
+L001828 (#2359): convert_d          
+L001829 (#2360): getlocal_2         
+L00182a (#2361): getproperty        80 [params]
+L00182c (#2362): pushbyte           1
+L00182e (#2363): getproperty        14 [<mn kind 0x1b>]
+L001830 (#2364): convert_d          
+L001831 (#2365): callproperty       48273 [FixedPosition], 2
+L001836 (#2366): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00183a (#2367): pushbyte           1
+L00183c (#2368): getlex             83 [Math]
+L00183e (#2369): getproperty        2862 [NaN]
+L001841 (#2370): convert_d          
+L001842 (#2371): getlex             83 [Math]
+L001844 (#2372): getproperty        2862 [NaN]
+L001847 (#2373): convert_d          
+L001848 (#2374): pushstring         62322 ["battle/common/score_attack/score_attack_time_add_phase3"]
+L00184c (#2375): callpropvoid       48272 [addGeneralEffect], 6
+L001851 (#2376): jump               L001c68 (# 2807)
+L001855 (#2377): findproperty       48272 [addGeneralEffect]
+L001859 (#2378): getlocal_2         
+L00185a (#2379): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00185e (#2380): getlocal_2         
+L00185f (#2381): getproperty        80 [params]
+L001861 (#2382): pushbyte           0
+L001863 (#2383): getproperty        14 [<mn kind 0x1b>]
+L001865 (#2384): convert_d          
+L001866 (#2385): getlocal_2         
+L001867 (#2386): getproperty        80 [params]
+L001869 (#2387): pushbyte           1
+L00186b (#2388): getproperty        14 [<mn kind 0x1b>]
+L00186d (#2389): convert_d          
+L00186e (#2390): callproperty       48273 [FixedPosition], 2
+L001873 (#2391): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001877 (#2392): pushbyte           1
+L001879 (#2393): getlex             83 [Math]
+L00187b (#2394): getproperty        2862 [NaN]
+L00187e (#2395): convert_d          
+L00187f (#2396): getlex             83 [Math]
+L001881 (#2397): getproperty        2862 [NaN]
+L001884 (#2398): convert_d          
+L001885 (#2399): pushstring         62323 ["battle/common/score_attack/score_attack_time_add_phase4"]
+L001889 (#2400): callpropvoid       48272 [addGeneralEffect], 6
+L00188e (#2401): jump               L001c68 (# 2807)
+L001892 (#2402): findproperty       48272 [addGeneralEffect]
+L001896 (#2403): getlocal_2         
+L001897 (#2404): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00189b (#2405): getlocal_2         
+L00189c (#2406): getproperty        80 [params]
+L00189e (#2407): pushbyte           0
+L0018a0 (#2408): getproperty        14 [<mn kind 0x1b>]
+L0018a2 (#2409): convert_d          
+L0018a3 (#2410): getlocal_2         
+L0018a4 (#2411): getproperty        80 [params]
+L0018a6 (#2412): pushbyte           1
+L0018a8 (#2413): getproperty        14 [<mn kind 0x1b>]
+L0018aa (#2414): convert_d          
+L0018ab (#2415): callproperty       48273 [FixedPosition], 2
+L0018b0 (#2416): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0018b4 (#2417): pushbyte           1
+L0018b6 (#2418): getlex             83 [Math]
+L0018b8 (#2419): getproperty        2862 [NaN]
+L0018bb (#2420): convert_d          
+L0018bc (#2421): getlex             83 [Math]
+L0018be (#2422): getproperty        2862 [NaN]
+L0018c1 (#2423): convert_d          
+L0018c2 (#2424): getlocal_2         
+L0018c3 (#2425): getproperty        80 [params]
+L0018c5 (#2426): pushbyte           2
+L0018c7 (#2427): getproperty        14 [<mn kind 0x1b>]
+L0018c9 (#2428): coerce             11 [String]
+L0018cb (#2429): callpropvoid       48272 [addGeneralEffect], 6
+L0018d0 (#2430): jump               L001c68 (# 2807)
+L0018d4 (#2431): findproperty       48272 [addGeneralEffect]
+L0018d8 (#2432): getlocal_2         
+L0018d9 (#2433): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0018dd (#2434): getlocal_2         
+L0018de (#2435): getproperty        80 [params]
+L0018e0 (#2436): pushbyte           0
+L0018e2 (#2437): getproperty        14 [<mn kind 0x1b>]
+L0018e4 (#2438): coerce_a           
+L0018e5 (#2439): callproperty       48276 [TrackingTarget], 1
+L0018ea (#2440): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0018ee (#2441): pushbyte           1
+L0018f0 (#2442): getlex             83 [Math]
+L0018f2 (#2443): getproperty        2862 [NaN]
+L0018f5 (#2444): convert_d          
+L0018f6 (#2445): getlex             83 [Math]
+L0018f8 (#2446): getproperty        2862 [NaN]
+L0018fb (#2447): convert_d          
+L0018fc (#2448): pushstring         16908 ["battle/common/layer0/condition/enhancing_grit_invocation"]
+L001900 (#2449): callpropvoid       48272 [addGeneralEffect], 6
+L001905 (#2450): jump               L001c68 (# 2807)
+L001909 (#2451): findproperty       48272 [addGeneralEffect]
+L00190d (#2452): getlocal_2         
+L00190e (#2453): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001912 (#2454): getlocal_2         
+L001913 (#2455): getproperty        80 [params]
+L001915 (#2456): pushbyte           0
+L001917 (#2457): getproperty        14 [<mn kind 0x1b>]
+L001919 (#2458): convert_d          
+L00191a (#2459): getlocal_2         
+L00191b (#2460): getproperty        80 [params]
+L00191d (#2461): pushbyte           1
+L00191f (#2462): getproperty        14 [<mn kind 0x1b>]
+L001921 (#2463): convert_d          
+L001922 (#2464): callproperty       48273 [FixedPosition], 2
+L001927 (#2465): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L00192b (#2466): pushbyte           1
+L00192d (#2467): getlocal_2         
+L00192e (#2468): getproperty        80 [params]
+L001930 (#2469): pushbyte           2
+L001932 (#2470): getproperty        14 [<mn kind 0x1b>]
+L001934 (#2471): convert_d          
+L001935 (#2472): getlex             83 [Math]
+L001937 (#2473): getproperty        2862 [NaN]
+L00193a (#2474): convert_d          
+L00193b (#2475): pushstring         16881 ["battle/common/layer0/condition/enhancing_combo_boost"]
+L00193f (#2476): callpropvoid       48272 [addGeneralEffect], 6
+L001944 (#2477): jump               L001c68 (# 2807)
+L001948 (#2478): findproperty       48272 [addGeneralEffect]
+L00194c (#2479): getlocal_2         
+L00194d (#2480): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001951 (#2481): getlocal_2         
+L001952 (#2482): getproperty        80 [params]
+L001954 (#2483): pushbyte           0
+L001956 (#2484): getproperty        14 [<mn kind 0x1b>]
+L001958 (#2485): coerce_a           
+L001959 (#2486): callproperty       48276 [TrackingTarget], 1
+L00195e (#2487): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001962 (#2488): pushbyte           1
+L001964 (#2489): getlex             83 [Math]
+L001966 (#2490): getproperty        2862 [NaN]
+L001969 (#2491): convert_d          
+L00196a (#2492): getlex             83 [Math]
+L00196c (#2493): getproperty        2862 [NaN]
+L00196f (#2494): convert_d          
+L001970 (#2495): getlex             10124 [pinball.common.data.ability.instant::InstantAbilitySource]
+L001973 (#2496): getlocal_2         
+L001974 (#2497): getproperty        80 [params]
+L001976 (#2498): pushbyte           1
+L001978 (#2499): getproperty        14 [<mn kind 0x1b>]
+L00197a (#2500): convert_i          
+L00197b (#2501): callproperty       13232 [getAbilityDamagePlayerEffect], 1
+L00197f (#2502): coerce             11 [String]
+L001981 (#2503): callpropvoid       48272 [addGeneralEffect], 6
+L001986 (#2504): jump               L001c68 (# 2807)
+L00198a (#2505): findproperty       48272 [addGeneralEffect]
+L00198e (#2506): getlocal_2         
+L00198f (#2507): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001993 (#2508): getlocal_2         
+L001994 (#2509): getproperty        80 [params]
+L001996 (#2510): pushbyte           0
+L001998 (#2511): getproperty        14 [<mn kind 0x1b>]
+L00199a (#2512): convert_d          
+L00199b (#2513): getlocal_2         
+L00199c (#2514): getproperty        80 [params]
+L00199e (#2515): pushbyte           1
+L0019a0 (#2516): getproperty        14 [<mn kind 0x1b>]
+L0019a2 (#2517): convert_d          
+L0019a3 (#2518): callproperty       48273 [FixedPosition], 2
+L0019a8 (#2519): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0019ac (#2520): pushbyte           1
+L0019ae (#2521): getlex             83 [Math]
+L0019b0 (#2522): getproperty        2862 [NaN]
+L0019b3 (#2523): convert_d          
+L0019b4 (#2524): getlex             83 [Math]
+L0019b6 (#2525): getproperty        2862 [NaN]
+L0019b9 (#2526): convert_d          
+L0019ba (#2527): pushstring         24495 ["battle/uncommon/layer1/condition_longer/effect_condition_longer_field"]
+L0019be (#2528): callpropvoid       48272 [addGeneralEffect], 6
+L0019c3 (#2529): jump               L001c68 (# 2807)
+L0019c7 (#2530): findproperty       48272 [addGeneralEffect]
+L0019cb (#2531): getlocal_2         
+L0019cc (#2532): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0019d0 (#2533): getlocal_2         
+L0019d1 (#2534): getproperty        80 [params]
+L0019d3 (#2535): pushbyte           0
+L0019d5 (#2536): getproperty        14 [<mn kind 0x1b>]
+L0019d7 (#2537): convert_d          
+L0019d8 (#2538): getlocal_2         
+L0019d9 (#2539): getproperty        80 [params]
+L0019db (#2540): pushbyte           1
+L0019dd (#2541): getproperty        14 [<mn kind 0x1b>]
+L0019df (#2542): convert_d          
+L0019e0 (#2543): callproperty       48273 [FixedPosition], 2
+L0019e5 (#2544): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L0019e9 (#2545): pushbyte           1
+L0019eb (#2546): getlex             83 [Math]
+L0019ed (#2547): getproperty        2862 [NaN]
+L0019f0 (#2548): convert_d          
+L0019f1 (#2549): getlex             83 [Math]
+L0019f3 (#2550): getproperty        2862 [NaN]
+L0019f6 (#2551): convert_d          
+L0019f7 (#2552): pushstring         24496 ["battle/uncommon/layer1/condition_longer/effect_condition_longer_label"]
+L0019fb (#2553): callpropvoid       48272 [addGeneralEffect], 6
+L001a00 (#2554): jump               L001c68 (# 2807)
+L001a04 (#2555): findproperty       48272 [addGeneralEffect]
+L001a08 (#2556): getlocal_2         
+L001a09 (#2557): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001a0d (#2558): getlocal_2         
+L001a0e (#2559): getproperty        80 [params]
+L001a10 (#2560): pushbyte           0
+L001a12 (#2561): getproperty        14 [<mn kind 0x1b>]
+L001a14 (#2562): convert_d          
+L001a15 (#2563): getlocal_2         
+L001a16 (#2564): getproperty        80 [params]
+L001a18 (#2565): pushbyte           1
+L001a1a (#2566): getproperty        14 [<mn kind 0x1b>]
+L001a1c (#2567): convert_d          
+L001a1d (#2568): callproperty       48273 [FixedPosition], 2
+L001a22 (#2569): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001a26 (#2570): pushbyte           1
+L001a28 (#2571): getlex             83 [Math]
+L001a2a (#2572): getproperty        2862 [NaN]
+L001a2d (#2573): convert_d          
+L001a2e (#2574): getlex             83 [Math]
+L001a30 (#2575): getproperty        2862 [NaN]
+L001a33 (#2576): convert_d          
+L001a34 (#2577): pushstring         16644 ["battle/common/layer1/downresist_ef"]
+L001a38 (#2578): callpropvoid       48272 [addGeneralEffect], 6
+L001a3d (#2579): jump               L001c68 (# 2807)
+L001a41 (#2580): findproperty       48272 [addGeneralEffect]
+L001a45 (#2581): getlocal_2         
+L001a46 (#2582): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001a4a (#2583): getlocal_2         
+L001a4b (#2584): getproperty        80 [params]
+L001a4d (#2585): pushbyte           0
+L001a4f (#2586): getproperty        14 [<mn kind 0x1b>]
+L001a51 (#2587): convert_d          
+L001a52 (#2588): getlocal_2         
+L001a53 (#2589): getproperty        80 [params]
+L001a55 (#2590): pushbyte           1
+L001a57 (#2591): getproperty        14 [<mn kind 0x1b>]
+L001a59 (#2592): convert_d          
+L001a5a (#2593): callproperty       48273 [FixedPosition], 2
+L001a5f (#2594): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001a63 (#2595): pushbyte           1
+L001a65 (#2596): getlex             83 [Math]
+L001a67 (#2597): getproperty        2862 [NaN]
+L001a6a (#2598): convert_d          
+L001a6b (#2599): getlex             83 [Math]
+L001a6d (#2600): getproperty        2862 [NaN]
+L001a70 (#2601): convert_d          
+L001a71 (#2602): pushstring         16645 ["battle/common/layer1/downresist_txt"]
+L001a75 (#2603): callpropvoid       48272 [addGeneralEffect], 6
+L001a7a (#2604): jump               L001c68 (# 2807)
+L001a7e (#2605): findproperty       48272 [addGeneralEffect]
+L001a82 (#2606): getlocal_2         
+L001a83 (#2607): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001a87 (#2608): getlocal_2         
+L001a88 (#2609): getproperty        80 [params]
+L001a8a (#2610): pushbyte           0
+L001a8c (#2611): getproperty        14 [<mn kind 0x1b>]
+L001a8e (#2612): convert_d          
+L001a8f (#2613): getlocal_2         
+L001a90 (#2614): getproperty        80 [params]
+L001a92 (#2615): pushbyte           1
+L001a94 (#2616): getproperty        14 [<mn kind 0x1b>]
+L001a96 (#2617): convert_d          
+L001a97 (#2618): callproperty       48273 [FixedPosition], 2
+L001a9c (#2619): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001aa0 (#2620): pushbyte           1
+L001aa2 (#2621): getlex             83 [Math]
+L001aa4 (#2622): getproperty        2862 [NaN]
+L001aa7 (#2623): convert_d          
+L001aa8 (#2624): getlex             83 [Math]
+L001aaa (#2625): getproperty        2862 [NaN]
+L001aad (#2626): convert_d          
+L001aae (#2627): pushstring         24514 ["battle/uncommon/layer0/buff/buff_field"]
+L001ab2 (#2628): callpropvoid       48272 [addGeneralEffect], 6
+L001ab7 (#2629): jump               L001c68 (# 2807)
+L001abb (#2630): findproperty       48272 [addGeneralEffect]
+L001abf (#2631): getlocal_2         
+L001ac0 (#2632): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001ac4 (#2633): getlocal_2         
+L001ac5 (#2634): getproperty        80 [params]
+L001ac7 (#2635): pushbyte           0
+L001ac9 (#2636): getproperty        14 [<mn kind 0x1b>]
+L001acb (#2637): convert_d          
+L001acc (#2638): getlocal_2         
+L001acd (#2639): getproperty        80 [params]
+L001acf (#2640): pushbyte           1
+L001ad1 (#2641): getproperty        14 [<mn kind 0x1b>]
+L001ad3 (#2642): convert_d          
+L001ad4 (#2643): callproperty       48273 [FixedPosition], 2
+L001ad9 (#2644): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001add (#2645): pushbyte           1
+L001adf (#2646): getlex             83 [Math]
+L001ae1 (#2647): getproperty        2862 [NaN]
+L001ae4 (#2648): convert_d          
+L001ae5 (#2649): getlex             83 [Math]
+L001ae7 (#2650): getproperty        2862 [NaN]
+L001aea (#2651): convert_d          
+L001aeb (#2652): pushstring         24515 ["battle/uncommon/layer1/field_text/field_text_label"]
+L001aef (#2653): callpropvoid       48272 [addGeneralEffect], 6
+L001af4 (#2654): jump               L001c68 (# 2807)
+L001af8 (#2655): getlocal_2         
+L001af9 (#2656): getproperty        80 [params]
+L001afb (#2657): pushbyte           1
+L001afd (#2658): getproperty        14 [<mn kind 0x1b>]
+L001aff (#2659): convert_d          
+L001b00 (#2660): convert_d          
+L001b01 (#2661): setlocal_3         
+L001b02 (#2662): getlocal_2         
+L001b03 (#2663): getproperty        80 [params]
+L001b05 (#2664): pushbyte           0
+L001b07 (#2665): getproperty        14 [<mn kind 0x1b>]
+L001b09 (#2666): convert_d          
+L001b0a (#2667): convert_d          
+L001b0b (#2668): setlocal           4
+L001b0d (#2669): getlocal_2         
+L001b0e (#2670): getproperty        80 [params]
+L001b10 (#2671): pushbyte           2
+L001b12 (#2672): getproperty        14 [<mn kind 0x1b>]
+L001b14 (#2673): convert_b          
+L001b15 (#2674): iffalse            L001b49 (# 2692)
+L001b19 (#2675): findproperty       48272 [addGeneralEffect]
+L001b1d (#2676): getlocal_2         
+L001b1e (#2677): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001b22 (#2678): getlocal           4
+L001b24 (#2679): getlocal_3         
+L001b25 (#2680): callproperty       48273 [FixedPosition], 2
+L001b2a (#2681): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001b2e (#2682): pushbyte           1
+L001b30 (#2683): getlex             83 [Math]
+L001b32 (#2684): getproperty        2862 [NaN]
+L001b35 (#2685): convert_d          
+L001b36 (#2686): getlex             83 [Math]
+L001b38 (#2687): getproperty        2862 [NaN]
+L001b3b (#2688): convert_d          
+L001b3c (#2689): pushstring         24517 ["battle/uncommon/layer0/field_buff/field_buff"]
+L001b40 (#2690): callpropvoid       48272 [addGeneralEffect], 6
+L001b45 (#2691): jump               L001b75 (# 2708)
+L001b49 (#2692): findproperty       48272 [addGeneralEffect]
+L001b4d (#2693): getlocal_2         
+L001b4e (#2694): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001b52 (#2695): getlocal           4
+L001b54 (#2696): getlocal_3         
+L001b55 (#2697): callproperty       48273 [FixedPosition], 2
+L001b5a (#2698): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001b5e (#2699): pushbyte           1
+L001b60 (#2700): getlex             83 [Math]
+L001b62 (#2701): getproperty        2862 [NaN]
+L001b65 (#2702): convert_d          
+L001b66 (#2703): getlex             83 [Math]
+L001b68 (#2704): getproperty        2862 [NaN]
+L001b6b (#2705): convert_d          
+L001b6c (#2706): pushstring         24520 ["battle/uncommon/layer0/field_debuff/field_debuff"]
+L001b70 (#2707): callpropvoid       48272 [addGeneralEffect], 6
+L001b75 (#2708): jump               L001c68 (# 2807)
+L001b79 (#2709): getlocal_2         
+L001b7a (#2710): getproperty        80 [params]
+L001b7c (#2711): pushbyte           1
+L001b7e (#2712): getproperty        14 [<mn kind 0x1b>]
+L001b80 (#2713): convert_d          
+L001b81 (#2714): convert_d          
+L001b82 (#2715): setlocal_3         
+L001b83 (#2716): getlocal_2         
+L001b84 (#2717): getproperty        80 [params]
+L001b86 (#2718): pushbyte           0
+L001b88 (#2719): getproperty        14 [<mn kind 0x1b>]
+L001b8a (#2720): convert_d          
+L001b8b (#2721): convert_d          
+L001b8c (#2722): setlocal           4
+L001b8e (#2723): getlocal_2         
+L001b8f (#2724): getproperty        80 [params]
+L001b91 (#2725): pushbyte           2
+L001b93 (#2726): getproperty        14 [<mn kind 0x1b>]
+L001b95 (#2727): convert_b          
+L001b96 (#2728): iffalse            L001bca (# 2746)
+L001b9a (#2729): findproperty       48272 [addGeneralEffect]
+L001b9e (#2730): getlocal_2         
+L001b9f (#2731): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001ba3 (#2732): getlocal           4
+L001ba5 (#2733): getlocal_3         
+L001ba6 (#2734): callproperty       48273 [FixedPosition], 2
+L001bab (#2735): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001baf (#2736): pushbyte           1
+L001bb1 (#2737): getlex             83 [Math]
+L001bb3 (#2738): getproperty        2862 [NaN]
+L001bb6 (#2739): convert_d          
+L001bb7 (#2740): getlex             83 [Math]
+L001bb9 (#2741): getproperty        2862 [NaN]
+L001bbc (#2742): convert_d          
+L001bbd (#2743): pushstring         24518 ["battle/uncommon/layer0/field_buff/field_buff_end"]
+L001bc1 (#2744): callpropvoid       48272 [addGeneralEffect], 6
+L001bc6 (#2745): jump               L001bf6 (# 2762)
+L001bca (#2746): findproperty       48272 [addGeneralEffect]
+L001bce (#2747): getlocal_2         
+L001bcf (#2748): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001bd3 (#2749): getlocal           4
+L001bd5 (#2750): getlocal_3         
+L001bd6 (#2751): callproperty       48273 [FixedPosition], 2
+L001bdb (#2752): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001bdf (#2753): pushbyte           1
+L001be1 (#2754): getlex             83 [Math]
+L001be3 (#2755): getproperty        2862 [NaN]
+L001be6 (#2756): convert_d          
+L001be7 (#2757): getlex             83 [Math]
+L001be9 (#2758): getproperty        2862 [NaN]
+L001bec (#2759): convert_d          
+L001bed (#2760): pushstring         24521 ["battle/uncommon/layer0/field_debuff/field_debuff_end"]
+L001bf1 (#2761): callpropvoid       48272 [addGeneralEffect], 6
+L001bf6 (#2762): jump               L001c68 (# 2807)
+L001bfa (#2763): findproperty       48272 [addGeneralEffect]
+L001bfe (#2764): getlocal_2         
+L001bff (#2765): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001c03 (#2766): getlocal_2         
+L001c04 (#2767): getproperty        80 [params]
+L001c06 (#2768): pushbyte           0
+L001c08 (#2769): getproperty        14 [<mn kind 0x1b>]
+L001c0a (#2770): coerce_a           
+L001c0b (#2771): callproperty       48276 [TrackingTarget], 1
+L001c10 (#2772): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001c14 (#2773): pushbyte           1
+L001c16 (#2774): getlex             83 [Math]
+L001c18 (#2775): getproperty        2862 [NaN]
+L001c1b (#2776): convert_d          
+L001c1c (#2777): getlex             83 [Math]
+L001c1e (#2778): getproperty        2862 [NaN]
+L001c21 (#2779): convert_d          
+L001c22 (#2780): pushstring         24498 ["battle/uncommon/layer0/guard/attack_to_friendly_perfect_gurad"]
+L001c26 (#2781): callpropvoid       48272 [addGeneralEffect], 6
+L001c2b (#2782): jump               L001c68 (# 2807)
+L001c2f (#2783): findproperty       48272 [addGeneralEffect]
+L001c33 (#2784): getlocal_2         
+L001c34 (#2785): getlex             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001c38 (#2786): getlocal_2         
+L001c39 (#2787): getproperty        80 [params]
+L001c3b (#2788): pushbyte           0
+L001c3d (#2789): getproperty        14 [<mn kind 0x1b>]
+L001c3f (#2790): convert_d          
+L001c40 (#2791): getlocal_2         
+L001c41 (#2792): getproperty        80 [params]
+L001c43 (#2793): pushbyte           1
+L001c45 (#2794): getproperty        14 [<mn kind 0x1b>]
+L001c47 (#2795): convert_d          
+L001c48 (#2796): callproperty       48273 [FixedPosition], 2
+L001c4d (#2797): coerce             48270 [pinball.scene.battle.battle.effect::SimpleEffectPosition]
+L001c51 (#2798): pushbyte           1
+L001c53 (#2799): getlex             83 [Math]
+L001c55 (#2800): getproperty        2862 [NaN]
+L001c58 (#2801): convert_d          
+L001c59 (#2802): getlex             83 [Math]
+L001c5b (#2803): getproperty        2862 [NaN]
+L001c5e (#2804): convert_d          
+L001c5f (#2805): pushstring         24497 ["battle/uncommon/layer1/guard/damage_effect_to_friendly_perfect_gurad"]
+L001c63 (#2806): callpropvoid       48272 [addGeneralEffect], 6
+L001c68 (#2807): jump               L001e3f (# 3011)
+L001c6c (#2808): findproperty       48277 [addDamageToHostile]
+L001c70 (#2809): getlocal_1         
+L001c71 (#2810): getproperty        80 [params]
+L001c73 (#2811): pushbyte           0
+L001c75 (#2812): getproperty        14 [<mn kind 0x1b>]
+L001c77 (#2813): convert_d          
+L001c78 (#2814): getlocal_1         
+L001c79 (#2815): getproperty        80 [params]
+L001c7b (#2816): pushbyte           1
+L001c7d (#2817): getproperty        14 [<mn kind 0x1b>]
+L001c7f (#2818): convert_d          
+L001c80 (#2819): getlocal_1         
+L001c81 (#2820): getproperty        80 [params]
+L001c83 (#2821): pushbyte           2
+L001c85 (#2822): getproperty        14 [<mn kind 0x1b>]
+L001c87 (#2823): convert_d          
+L001c88 (#2824): getlocal_1         
+L001c89 (#2825): getproperty        80 [params]
+L001c8b (#2826): pushbyte           3
+L001c8d (#2827): getproperty        14 [<mn kind 0x1b>]
+L001c8f (#2828): coerce_a           
+L001c90 (#2829): callpropvoid       48277 [addDamageToHostile], 4
+L001c95 (#2830): jump               L001e3f (# 3011)
+L001c99 (#2831): findproperty       48278 [addDamageToFriendly]
+L001c9d (#2832): getlocal_1         
+L001c9e (#2833): getproperty        80 [params]
+L001ca0 (#2834): pushbyte           0
+L001ca2 (#2835): getproperty        14 [<mn kind 0x1b>]
+L001ca4 (#2836): convert_d          
+L001ca5 (#2837): getlocal_1         
+L001ca6 (#2838): getproperty        80 [params]
+L001ca8 (#2839): pushbyte           1
+L001caa (#2840): getproperty        14 [<mn kind 0x1b>]
+L001cac (#2841): convert_d          
+L001cad (#2842): getlocal_1         
+L001cae (#2843): getproperty        80 [params]
+L001cb0 (#2844): pushbyte           2
+L001cb2 (#2845): getproperty        14 [<mn kind 0x1b>]
+L001cb4 (#2846): coerce_a           
+L001cb5 (#2847): callpropvoid       48278 [addDamageToFriendly], 3
+L001cba (#2848): jump               L001e3f (# 3011)
+L001cbe (#2849): findproperty       48279 [addTotalDamage]
+L001cc2 (#2850): getlocal_1         
+L001cc3 (#2851): getproperty        80 [params]
+L001cc5 (#2852): pushbyte           0
+L001cc7 (#2853): getproperty        14 [<mn kind 0x1b>]
+L001cc9 (#2854): convert_d          
+L001cca (#2855): getlocal_1         
+L001ccb (#2856): getproperty        80 [params]
+L001ccd (#2857): pushbyte           1
+L001ccf (#2858): getproperty        14 [<mn kind 0x1b>]
+L001cd1 (#2859): convert_d          
+L001cd2 (#2860): getlocal_1         
+L001cd3 (#2861): getproperty        80 [params]
+L001cd5 (#2862): pushbyte           2
+L001cd7 (#2863): getproperty        14 [<mn kind 0x1b>]
+L001cd9 (#2864): convert_d          
+L001cda (#2865): getlocal_1         
+L001cdb (#2866): getproperty        80 [params]
+L001cdd (#2867): pushbyte           3
+L001cdf (#2868): getproperty        14 [<mn kind 0x1b>]
+L001ce1 (#2869): coerce_a           
+L001ce2 (#2870): callpropvoid       48279 [addTotalDamage], 4
+L001ce7 (#2871): jump               L001e3f (# 3011)
+L001ceb (#2872): findproperty       48280 [addDamageEffect]
+L001cef (#2873): getlocal_1         
+L001cf0 (#2874): getproperty        80 [params]
+L001cf2 (#2875): pushbyte           0
+L001cf4 (#2876): getproperty        14 [<mn kind 0x1b>]
+L001cf6 (#2877): convert_d          
+L001cf7 (#2878): getlocal_1         
+L001cf8 (#2879): getproperty        80 [params]
+L001cfa (#2880): pushbyte           1
+L001cfc (#2881): getproperty        14 [<mn kind 0x1b>]
+L001cfe (#2882): convert_d          
+L001cff (#2883): getlocal_1         
+L001d00 (#2884): getproperty        80 [params]
+L001d02 (#2885): pushbyte           2
+L001d04 (#2886): getproperty        14 [<mn kind 0x1b>]
+L001d06 (#2887): convert_d          
+L001d07 (#2888): findproperty       48281 [damageEffectRandom]
+L001d0b (#2889): getproperty        48281 [damageEffectRandom]
+L001d0f (#2890): getlex             48236 [pinball.scene.battle.battle.effect::DamageEffectKind]
+L001d13 (#2891): getproperty        48241 [CureToFriendly]
+L001d17 (#2892): findproperty       27490 [battle]
+L001d1b (#2893): getproperty        27490 [battle]
+L001d1f (#2894): getproperty        40914 [numberNotationMode]
+L001d23 (#2895): callpropvoid       48280 [addDamageEffect], 6
+L001d28 (#2896): jump               L001e3f (# 3011)
+L001d2c (#2897): findproperty       48280 [addDamageEffect]
+L001d30 (#2898): getlocal_1         
+L001d31 (#2899): getproperty        80 [params]
+L001d33 (#2900): pushbyte           0
+L001d35 (#2901): getproperty        14 [<mn kind 0x1b>]
+L001d37 (#2902): convert_d          
+L001d38 (#2903): getlocal_1         
+L001d39 (#2904): getproperty        80 [params]
+L001d3b (#2905): pushbyte           1
+L001d3d (#2906): getproperty        14 [<mn kind 0x1b>]
+L001d3f (#2907): convert_d          
+L001d40 (#2908): getlocal_1         
+L001d41 (#2909): getproperty        80 [params]
+L001d43 (#2910): pushbyte           2
+L001d45 (#2911): getproperty        14 [<mn kind 0x1b>]
+L001d47 (#2912): convert_d          
+L001d48 (#2913): findproperty       48281 [damageEffectRandom]
+L001d4c (#2914): getproperty        48281 [damageEffectRandom]
+L001d50 (#2915): getlex             48236 [pinball.scene.battle.battle.effect::DamageEffectKind]
+L001d54 (#2916): getproperty        44608 [CureToHostile]
+L001d58 (#2917): findproperty       27490 [battle]
+L001d5c (#2918): getproperty        27490 [battle]
+L001d60 (#2919): getproperty        40914 [numberNotationMode]
+L001d64 (#2920): callpropvoid       48280 [addDamageEffect], 6
+L001d69 (#2921): jump               L001e3f (# 3011)
+L001d6d (#2922): findproperty       153 [addChild]
+L001d70 (#2923): findpropstrict     48282 [pinball.scene.battle.battle.effect::SpeechBalloonImpl]
+L001d74 (#2924): getlocal_1         
+L001d75 (#2925): getproperty        80 [params]
+L001d77 (#2926): pushbyte           0
+L001d79 (#2927): getproperty        14 [<mn kind 0x1b>]
+L001d7b (#2928): convert_d          
+L001d7c (#2929): getlocal_1         
+L001d7d (#2930): getproperty        80 [params]
+L001d7f (#2931): pushbyte           1
+L001d81 (#2932): getproperty        14 [<mn kind 0x1b>]
+L001d83 (#2933): convert_d          
+L001d84 (#2934): getlocal_1         
+L001d85 (#2935): getproperty        80 [params]
+L001d87 (#2936): pushbyte           2
+L001d89 (#2937): getproperty        14 [<mn kind 0x1b>]
+L001d8b (#2938): coerce             11 [String]
+L001d8d (#2939): getlocal_1         
+L001d8e (#2940): getproperty        80 [params]
+L001d90 (#2941): pushbyte           3
+L001d92 (#2942): getproperty        14 [<mn kind 0x1b>]
+L001d94 (#2943): convert_i          
+L001d95 (#2944): findproperty       29229 [viewOrder]
+L001d99 (#2945): getproperty        29229 [viewOrder]
+L001d9d (#2946): constructprop      48282 [pinball.scene.battle.battle.effect::SpeechBalloonImpl], 5
+L001da2 (#2947): callpropvoid       153 [addChild], 1
+L001da6 (#2948): jump               L001e3f (# 3011)
+L001daa (#2949): findproperty       153 [addChild]
+L001dad (#2950): findpropstrict     48226 [pinball.scene.battle.battle.effect::AcquiredInstantItemImpl]
+L001db1 (#2951): getlocal_1         
+L001db2 (#2952): getproperty        80 [params]
+L001db4 (#2953): pushbyte           0
+L001db6 (#2954): getproperty        14 [<mn kind 0x1b>]
+L001db8 (#2955): coerce             12770 [pinball.scene.battle.battle.squad::Squad]
+L001dbb (#2956): getlocal_1         
+L001dbc (#2957): getproperty        80 [params]
+L001dbe (#2958): pushbyte           1
+L001dc0 (#2959): getproperty        14 [<mn kind 0x1b>]
+L001dc2 (#2960): coerce             11 [String]
+L001dc4 (#2961): getlocal_1         
+L001dc5 (#2962): getproperty        80 [params]
+L001dc7 (#2963): pushbyte           2
+L001dc9 (#2964): getproperty        14 [<mn kind 0x1b>]
+L001dcb (#2965): coerce             15739 [pinball.common.data.item::InstantItem]
+L001dce (#2966): getlocal_1         
+L001dcf (#2967): getproperty        80 [params]
+L001dd1 (#2968): pushbyte           3
+L001dd3 (#2969): getproperty        14 [<mn kind 0x1b>]
+L001dd5 (#2970): convert_d          
+L001dd6 (#2971): getlocal_1         
+L001dd7 (#2972): getproperty        80 [params]
+L001dd9 (#2973): pushbyte           4
+L001ddb (#2974): getproperty        14 [<mn kind 0x1b>]
+L001ddd (#2975): convert_d          
+L001dde (#2976): findproperty       29229 [viewOrder]
+L001de2 (#2977): getproperty        29229 [viewOrder]
+L001de6 (#2978): findproperty       6899 [asset]
+L001de9 (#2979): getproperty        6899 [asset]
+L001dec (#2980): getlocal_0         
+L001ded (#2981): constructprop      48226 [pinball.scene.battle.battle.effect::AcquiredInstantItemImpl], 8
+L001df2 (#2982): callpropvoid       153 [addChild], 1
+L001df6 (#2983): jump               L001e3f (# 3011)
+L001dfa (#2984): findproperty       48280 [addDamageEffect]
+L001dfe (#2985): getlocal_1         
+L001dff (#2986): getproperty        80 [params]
+L001e01 (#2987): pushbyte           0
+L001e03 (#2988): getproperty        14 [<mn kind 0x1b>]
+L001e05 (#2989): convert_d          
+L001e06 (#2990): getlocal_1         
+L001e07 (#2991): getproperty        80 [params]
+L001e09 (#2992): pushbyte           1
+L001e0b (#2993): getproperty        14 [<mn kind 0x1b>]
+L001e0d (#2994): convert_d          
+L001e0e (#2995): getlex             3385 [pinball.common.math._FloatInt::FloatInt_Impl_]
+L001e11 (#2996): getlocal_1         
+L001e12 (#2997): getproperty        80 [params]
+L001e14 (#2998): pushbyte           2
+L001e16 (#2999): getproperty        14 [<mn kind 0x1b>]
+L001e18 (#3000): convert_i          
+L001e19 (#3001): callproperty       3392 [fromInt], 1
+L001e1d (#3002): convert_d          
+L001e1e (#3003): findproperty       48281 [damageEffectRandom]
+L001e22 (#3004): getproperty        48281 [damageEffectRandom]
+L001e26 (#3005): getlex             48236 [pinball.scene.battle.battle.effect::DamageEffectKind]
+L001e2a (#3006): getproperty        45820 [RecoverHitCountCheck]
+L001e2e (#3007): findproperty       27490 [battle]
+L001e32 (#3008): getproperty        27490 [battle]
+L001e36 (#3009): getproperty        40914 [numberNotationMode]
+L001e3a (#3010): callpropvoid       48280 [addDamageEffect], 6
+L001e3f (#3011): returnvoid         
+L001e40 (#3012): ; end
+; exception_table=[]

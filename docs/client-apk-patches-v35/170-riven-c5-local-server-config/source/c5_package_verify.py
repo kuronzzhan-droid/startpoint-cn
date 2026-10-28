@@ -1,0 +1,70 @@
+"""Read-only C5 endpoint and offline-validation checks used by packaging."""
+import json
+import zipfile
+import zlib
+
+from bootstrap import ROOT, BASE_SHA, require_hash, sha
+from c5_config import ADMISSION_BUILD, SWF
+from package_support import checked_path
+
+OLD_ENDPOINT = '<SERVER_HOST>:8001'
+NEW_ENDPOINT = '<SERVER_HOST>:18001'
+
+
+def validate_swf(source, expected):
+    source = checked_path(source, ROOT)
+    require_hash(source, expected)
+    raw = source.read_bytes()
+    assert raw[:3] == b'CWS'
+    body = zlib.decompress(raw[8:])
+    assert len(body) + 8 == int.from_bytes(raw[4:8], 'little')
+    assert body.count(ADMISSION_BUILD.encode()) == 3
+    assert body.count(NEW_ENDPOINT.encode()) == 9
+    for forbidden in (OLD_ENDPOINT, '<SERVER_HOST>:8003',
+                      '<ADMISSION_ID>', '<ADMISSION_ID>',
+                      '<ADMISSION_ID>',
+                      '<ADMISSION_ID>', '<SERVER_HOST>:8001'):
+        assert forbidden.encode() not in body, forbidden
+    assert sha(raw) != BASE_SHA
+    return raw
+
+
+def external_address_scan(apk):
+    """Check exact endpoints in all non-SWF ZIP members, including DEX/AXML."""
+    from packaging_verify import SWF_ENTRY
+    findings = []
+    scanned = 0
+    with zipfile.ZipFile(apk) as archive:
+        for info in archive.infolist():
+            if info.is_dir() or info.filename == SWF_ENTRY:
+                continue
+            data = archive.read(info)
+            scanned += 1
+            for endpoint in (OLD_ENDPOINT, '<SERVER_HOST>:8003'):
+                for encoding in ('utf-8', 'utf-16le', 'utf-16be'):
+                    count = data.count(endpoint.encode(encoding))
+                    if count:
+                        findings.append({'member': info.filename, 'endpoint': endpoint,
+                                         'encoding': encoding, 'occurrences': count})
+    assert not findings, f'Old local endpoints outside SWF: {findings}'
+    return {'status': 'passed', 'apk_sha256': sha(apk.read_bytes()),
+            'scanned_non_swf_members': scanned, 'old_endpoint_findings': findings,
+            'encodings': ['utf-8', 'utf-16le', 'utf-16be'],
+            'scope': 'Exact old local HTTP/CDN and multiplayer endpoint strings; '
+                     'DEX numeric constants are covered by the separate address audit.'}
+
+
+def verify_offline_results(expected_sha, expected_cases):
+    path = ROOT / 'validation/all-results.json'
+    results = json.loads(path.read_text('utf-8'))
+    assert results['status'] == 'passed'
+    assert results['swf'] == str(SWF) and results['swf_sha256'] == expected_sha
+    assert results['case_count'] == expected_cases == 498
+    assert len(results['suites']) == 18
+    assert sum(suite['case_count'] for suite in results['suites'].values()) == expected_cases
+    for suite in results['suites'].values():
+        assert suite['status'] == 'passed' and suite['swf_sha256'] == expected_sha
+        result_path = checked_path(ROOT / 'validation' / suite['report'], ROOT)
+        require_hash(result_path, suite['report_sha256'])
+    return {'report': str(path), 'sha256': sha(path.read_bytes()),
+            'swf_sha256': expected_sha, 'case_count': expected_cases, 'suite_count': 18}

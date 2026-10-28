@@ -1,0 +1,27 @@
+; MemberImpl/hasGuarded
+; body_index=60273 method_index=65329
+; sha256=f0f6496b12dc9ce429c232a7d26da6f48523720821b4fcb2821e1015bba2abb3
+; maxstack=3 localcount=1 init_scope_depth=1 max_scope_depth=2
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: findproperty       33826 [ball]
+L000006: getproperty        33826 [ball]
+L00000a: callproperty       49623 [pinball.scene.battle.battle.squad.ball:Ball::hasAura], 0
+L00000f: convert_b          
+L000010: iftrue             L00002e (# 18)
+L000014: getlocal_0         
+L000015: getproperty        15447 [conditionSlot]
+L000018: dup                
+L000019: iffalse            L00002f (# 19)
+L00001d: pushbyte           43
+L00001f: pushtrue           
+L000020: callproperty       69522 [wfxRows], 2
+L000025: getproperty        35 [length]
+L000027: pushbyte           0
+L000029: greaterthan        
+L00002a: jump               L00002f (# 19)
+L00002e: pushtrue           
+L00002f: convert_b          
+L000030: returnvalue        
+L000031: ; end
+; exception_table=[]

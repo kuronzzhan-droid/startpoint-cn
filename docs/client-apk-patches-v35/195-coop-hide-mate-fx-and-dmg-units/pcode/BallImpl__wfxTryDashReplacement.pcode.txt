@@ -1,0 +1,149 @@
+; BallImpl/wfxTryDashReplacement (after)
+; body_index=92735 method_index=101208
+; sha256=517a353ea7649a93ff6a63e1b0a7c219fdf171603781f756bd90fd1c1701e6d6
+; maxstack=8 localcount=9 init_scope_depth=1 max_scope_depth=2
+L000000 (#0000): getlocal_0         
+L000001 (#0001): pushscope          
+L000002 (#0002): getlocal_1         
+L000003 (#0003): getproperty        46 [index]
+L000005 (#0004): pushbyte           0
+L000007 (#0005): ifeq               L00015d (# 141)
+L00000b (#0006): pushbyte           0
+L00000d (#0007): setlocal_2         
+L00000e (#0008): avm_label          
+L00000f (#0009): getlocal_2         
+L000010 (#0010): pushbyte           3
+L000012 (#0011): ifge               L00015d (# 141)
+L000016 (#0012): getlocal_0         
+L000017 (#0013): getproperty        42391 [squad]
+L00001b (#0014): getlocal_2         
+L00001c (#0015): callproperty       42463 [pinball.scene.battle.battle.squad:Squad::getMember], 1
+L000021 (#0016): setlocal_3         
+L000022 (#0017): inclocal_i         2
+L000024 (#0018): getlocal_3         
+L000025 (#0019): iffalse            L00000e (# 8)
+L000029 (#0020): getlocal_3         
+L00002a (#0021): getproperty        46 [index]
+L00002c (#0022): pushbyte           0
+L00002e (#0023): ifne               L00000e (# 8)
+L000032 (#0024): getlocal_3         
+L000033 (#0025): getproperty        80 [params]
+L000035 (#0026): pushbyte           0
+L000037 (#0027): getproperty        14 [<mn kind 0x1b>]
+L000039 (#0028): setlocal           4
+L00003b (#0029): getlocal           4
+L00003d (#0030): callproperty       27532 [isDead], 0
+L000042 (#0031): iftrue             L00000e (# 8)
+L000046 (#0032): getlex             43642 [pinball.scene.battle.battle.squad.ball::BallImpl]
+L00004a (#0033): getlex             43642 [pinball.scene.battle.battle.squad.ball::BallImpl]
+L00004e (#0034): getlocal           4
+L000050 (#0035): getproperty        4798 [source]
+L000053 (#0036): getproperty        11512 [characterTags]
+L000056 (#0037): callproperty       69701 [wfxParseDashLeaderTags], 1
+L00005b (#0038): getlocal           4
+L00005d (#0039): callproperty       69702 [wfxFilterLeaderDash], 2
+L000062 (#0040): setlocal           5
+L000064 (#0041): getlocal           5
+L000066 (#0042): iffalse            L00000e (# 8)
+L00006a (#0043): getlocal           5
+L00006c (#0044): pushbyte           0
+L00006e (#0045): getproperty        14 [<mn kind 0x1b>]
+L000070 (#0046): pushstring         94260 ["wfx_dash_v2"]
+L000074 (#0047): ifne               L000084 (# 53)
+L000078 (#0048): getlocal_0         
+L000079 (#0049): callproperty       69695 [wfxFindDashEnemy], 0
+L00007e (#0050): iftrue             L000084 (# 53)
+L000082 (#0051): pushtrue           
+L000083 (#0052): returnvalue        
+L000084 (#0053): getlocal_0         
+L000085 (#0054): getlocal           5
+L000087 (#0055): nop                
+L000088 (#0056): nop                
+L000089 (#0057): nop                
+L00008a (#0058): callproperty       69699 [wfxDashV2Landing], 1
+L00008f (#0059): setlocal           7
+L000091 (#0060): getlocal           7
+L000093 (#0061): iffalse            L00015d (# 141)
+L000097 (#0062): getlex             43642 [pinball.scene.battle.battle.squad.ball::BallImpl]
+L00009b (#0063): getproperty        69688 [wfxDashPending]
+L00009f (#0064): setlocal           6
+L0000a1 (#0065): getlocal           6
+L0000a3 (#0066): iftrue             L0000b9 (# 74)
+L0000a7 (#0067): getlex             5867 [flash.utils::Dictionary]
+L0000aa (#0068): pushtrue           
+L0000ab (#0069): construct          1
+L0000ad (#0070): setlocal           6
+L0000af (#0071): getlex             43642 [pinball.scene.battle.battle.squad.ball::BallImpl]
+L0000b3 (#0072): getlocal           6
+L0000b5 (#0073): setproperty        69688 [wfxDashPending]
+L0000b9 (#0074): getlocal           4
+L0000bb (#0075): getlocal           5
+L0000bd (#0076): pushbyte           1
+L0000bf (#0077): getproperty        14 [<mn kind 0x1b>]
+L0000c1 (#0078): callpropvoid       69686 [wfxRunDashAction], 1
+L0000c6 (#0079): getlocal           4
+L0000c8 (#0080): getlocal           5
+L0000ca (#0081): getlocal           5
+L0000cc (#0082): pushbyte           3
+L0000ce (#0083): getproperty        14 [<mn kind 0x1b>]
+L0000d0 (#0084): convert_i          
+L0000d1 (#0085): getlocal           7
+L0000d3 (#0086): getlocal_0         
+L0000d4 (#0087): callproperty       43775 [get_vx], 0
+L0000d9 (#0088): getlocal_0         
+L0000da (#0089): callproperty       43776 [get_vy], 0
+L0000df (#0090): getlocal_0         
+L0000e0 (#0091): getproperty        27234 [zoneManager]
+L0000e4 (#0092): callproperty       42234 [pinball.scene.battle.battle.zone:ZoneManager::getCurrentZone], 0
+L0000e9 (#0093): pushfalse          
+L0000ea (#0094): newarray           8
+L0000ec (#0095): setlocal           8
+L0000ee (#0096): getlocal           6
+L0000f0 (#0097): getlocal_0         
+L0000f1 (#0098): getlocal           8
+L0000f3 (#0099): setproperty        14 [<mn kind 0x1b>]
+L0000f5 (#0100): getlocal_0         
+L0000f6 (#0101): getproperty        27234 [zoneManager]
+L0000fa (#0102): callproperty       42234 [pinball.scene.battle.battle.zone:ZoneManager::getCurrentZone], 0
+L0000ff (#0103): getproperty        27507 [stats]
+L000103 (#0104): pushbyte           18
+L000105 (#0105): pushbyte           1
+L000107 (#0106): callpropvoid       68 [add], 2
+L00010a (#0107): getlocal_0         
+L00010b (#0108): getproperty        49660 [escapePoint]
+L00010f (#0109): pushbyte           0
+L000111 (#0110): callpropvoid       2577 [set], 1
+L000115 (#0111): getlocal_0         
+L000116 (#0112): getlex             43645 [pinball.scene.battle.battle.squad.ball::BallState]
+L00011a (#0113): pushstring         582 ["x"]
+L00011d (#0114): getlocal_0         
+L00011e (#0115): getproperty        2604 [x]
+L000121 (#0116): pushstring         69 ["y"]
+L000123 (#0117): getlocal_0         
+L000124 (#0118): getproperty        2605 [y]
+L000127 (#0119): newobject          2
+L000129 (#0120): pushstring         582 ["x"]
+L00012c (#0121): getlocal_0         
+L00012d (#0122): getproperty        2604 [x]
+L000130 (#0123): pushstring         69 ["y"]
+L000132 (#0124): getlocal_0         
+L000133 (#0125): getproperty        2605 [y]
+L000136 (#0126): newobject          2
+L000138 (#0127): pushbyte           0
+L00013a (#0128): pushbyte           0
+L00013c (#0129): callproperty       49673 [Escaping], 4
+L000141 (#0130): callpropvoid       6152 [changeState], 1
+L000145 (#0131): getlocal_0         
+L000146 (#0132): getproperty        15082 [body]
+L000149 (#0133): pushbyte           0
+L00014b (#0134): callpropvoid       45347 [pinball.scene.battle.battle.physics:MechanicalBody::set_vx], 1
+L000150 (#0135): getlocal_0         
+L000151 (#0136): getproperty        15082 [body]
+L000154 (#0137): pushbyte           0
+L000156 (#0138): callpropvoid       45348 [pinball.scene.battle.battle.physics:MechanicalBody::set_vy], 1
+L00015b (#0139): pushtrue           
+L00015c (#0140): returnvalue        
+L00015d (#0141): pushfalse          
+L00015e (#0142): returnvalue        
+L00015f (#0143): ; end
+; exception_table=[]

@@ -1,0 +1,20 @@
+# BattleScene/wfxServerClearActive header=[2, 3, 1, 2] sha=7890f25394625700b4ca1315367dceff4cc4bbde9a6137c095de6a7cddcaee3b
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['pinball.scene.battle::BattleScene']
+#0003 ofs0005: getproperty ['wfxServerClearedBattles']
+#0004 ofs0009: setlocal_1 []
+#0005 ofs000a: getlocal_1 []
+#0006 ofs000b: iffalse [] -> #17
+#0007 ofs000f: getlocal_0 []
+#0008 ofs0010: getproperty ['myBattle']
+#0009 ofs0014: setlocal_2 []
+#0010 ofs0015: getlocal_2 []
+#0011 ofs0016: iffalse [] -> #17
+#0012 ofs001a: getlocal_1 []
+#0013 ofs001b: getlocal_2 []
+#0014 ofs001c: callproperty ['get', 1]
+#0015 ofs0020: convert_b []
+#0016 ofs0021: returnvalue []
+#0017 ofs0022: pushfalse []
+#0018 ofs0023: returnvalue []

@@ -1,0 +1,178 @@
+; DamageEffectView/createSprite (after)
+; body_index=57568 method_index=62116
+; sha256=b1e4e799322096750fe3d9899380245262bfb738036145249e528001ad4ae1a5
+; maxstack=4 localcount=9 init_scope_depth=1 max_scope_depth=2
+L000000 (#0000): getlocal_0         
+L000001 (#0001): pushscope          
+L000002 (#0002): pushnull           
+L000003 (#0003): astype             11 [String]
+L000005 (#0004): setlocal           4
+L000007 (#0005): pushbyte           0
+L000009 (#0006): setlocal           7
+L00000b (#0007): pushnull           
+L00000c (#0008): astype             4967 [starling.display::Image]
+L00000f (#0009): setlocal           8
+L000011 (#0010): findpropstrict     6430 [starling.display::Sprite]
+L000014 (#0011): constructprop      6430 [starling.display::Sprite], 0
+L000018 (#0012): coerce             6430 [starling.display::Sprite]
+L00001b (#0013): setlocal_3         
+L00001c (#0014): findproperty       48196 [numbers]
+L000020 (#0015): findpropstrict     6430 [starling.display::Sprite]
+L000023 (#0016): constructprop      6430 [starling.display::Sprite], 0
+L000027 (#0017): initproperty       48196 [numbers]
+L00002b (#0018): findproperty       48253 [damageEffect]
+L00002f (#0019): getproperty        48253 [damageEffect]
+L000033 (#0020): getproperty        40914 [numberNotationMode]
+L000037 (#0021): convert_i          
+L000038 (#0022): lookupswitch       default=L000043 cases=[L000047, L000064]
+L000043 (#0023): jump               L00007c (# 45)
+L000047 (#0024): getlex             11404 [pinball.common.tools::FormatTools]
+L00004a (#0025): getlex             3385 [pinball.common.math._FloatInt::FloatInt_Impl_]
+L00004d (#0026): getlocal_2         
+L00004e (#0027): callproperty       3432 [toFloat], 1
+L000052 (#0028): convert_d          
+L000053 (#0029): pushbyte           0
+L000055 (#0030): pushfalse          
+L000056 (#0031): callproperty       7109 [toFormatedString], 3
+L00005a (#0032): coerce             11 [String]
+L00005c (#0033): coerce             11 [String]
+L00005e (#0034): setlocal           4
+L000060 (#0035): jump               L00007c (# 45)
+L000064 (#0036): getlex             48193 [pinball.scene.battle.battle.effect::DamageEffectView]
+L000068 (#0037): getlex             3385 [pinball.common.math._FloatInt::FloatInt_Impl_]
+L00006b (#0038): getlocal_2         
+L00006c (#0039): callproperty       3432 [toFloat], 1
+L000070 (#0040): convert_d          
+L000071 (#0041): callproperty       48194 [unitPrefix], 1
+L000076 (#0042): coerce             11 [String]
+L000078 (#0043): coerce             11 [String]
+L00007a (#0044): setlocal           4
+L00007c (#0045): findproperty       33114 [digits]
+L000080 (#0046): getlocal           4
+L000082 (#0047): pushnull           
+L000083 (#0048): coerce_a           
+L000084 (#0049): ifne               L00008f (# 52)
+L000088 (#0050): pushstring         285 ["null"]
+L00008b (#0051): jump               L000096 (# 56)
+L00008f (#0052): pushstring         1 [""]
+L000091 (#0053): getlocal           4
+L000093 (#0054): add                
+L000094 (#0055): coerce             11 [String]
+L000096 (#0056): pushstring         1 [""]
+L000098 (#0057): callproperty       42 [http://adobe.com/AS3/2006/builtin::split], 1
+L00009b (#0058): coerce             6 [Array]
+L00009d (#0059): initproperty       33114 [digits]
+L0000a1 (#0060): pushbyte           0
+L0000a3 (#0061): convert_i          
+L0000a4 (#0062): setlocal           5
+L0000a6 (#0063): findproperty       33114 [digits]
+L0000aa (#0064): getproperty        33114 [digits]
+L0000ae (#0065): getproperty        35 [length]
+L0000b0 (#0066): convert_i          
+L0000b1 (#0067): convert_i          
+L0000b2 (#0068): setlocal           6
+L0000b4 (#0069): jump               L000173 (# 142)
+L0000b8 (#0070): avm_label          
+L0000b9 (#0071): getlocal           5
+L0000bb (#0072): inclocal_i         5
+L0000bd (#0073): convert_i          
+L0000be (#0074): setlocal           7
+L0000c0 (#0075): getlocal_1         
+L0000c1 (#0076): getlex             48193 [pinball.scene.battle.battle.effect::DamageEffectView]
+L0000c5 (#0077): findproperty       33114 [digits]
+L0000c9 (#0078): getproperty        33114 [digits]
+L0000cd (#0079): getlocal           7
+L0000cf (#0080): getproperty        14 [<mn kind 0x1b>]
+L0000d1 (#0081): coerce             11 [String]
+L0000d3 (#0082): callproperty       3480 [resolvePath], 1
+L0000d7 (#0083): coerce             11 [String]
+L0000d9 (#0084): callproperty       4971 [getImage], 1
+L0000dd (#0085): coerce             4967 [starling.display::Image]
+L0000e0 (#0086): coerce             4967 [starling.display::Image]
+L0000e3 (#0087): setlocal           8
+L0000e5 (#0088): getlocal           8
+L0000e7 (#0089): findproperty       48253 [damageEffect]
+L0000eb (#0090): getproperty        48253 [damageEffect]
+L0000ef (#0091): callproperty       48231 [pinball.scene.battle.battle.effect:DamageEffectPeek::getColor], 0
+L0000f4 (#0092): convert_u          
+L0000f5 (#0093): initproperty       141 [color]
+L0000f8 (#0094): findproperty       33114 [digits]
+L0000fc (#0095): getproperty        33114 [digits]
+L000100 (#0096): getlocal           6
+L000102 (#0097): decrement_i        
+L000103 (#0098): getproperty        14 [<mn kind 0x1b>]
+L000105 (#0099): dup                
+L000106 (#0100): pushstring         54 ["m"]
+L000108 (#0101): ifne               L000116 (# 106)
+L00010c (#0102): pop                
+L00010d (#0103): getlocal           8
+L00010f (#0104): pushint            5897 [4249855]
+L000112 (#0105): jump               L000132 (# 117)
+L000116 (#0106): dup                
+L000117 (#0107): pushstring         47 ["b"]
+L000119 (#0108): ifne               L000127 (# 113)
+L00011d (#0109): pop                
+L00011e (#0110): getlocal           8
+L000120 (#0111): pushint            5898 [16732084]
+L000123 (#0112): jump               L000132 (# 117)
+L000127 (#0113): pushstring         64 ["t"]
+L000129 (#0114): ifne               L000141 (# 124)
+L00012d (#0115): getlocal           8
+L00012f (#0116): pushint            5899 [10514687]
+L000132 (#0117): getlocal           5
+L000134 (#0118): getlocal           6
+L000136 (#0119): ifne               L00013d (# 122)
+L00013a (#0120): pop                
+L00013b (#0121): pushint            7 [16777215]
+L00013d (#0122): convert_u          
+L00013e (#0123): initproperty       141 [color]
+L000141 (#0124): getlocal           8
+L000143 (#0125): getlex             4258 [starling.utils::Align]
+L000146 (#0126): getproperty        4259 [CENTER]
+L000149 (#0127): getlex             4258 [starling.utils::Align]
+L00014c (#0128): getproperty        32887 [TOP]
+L000150 (#0129): callpropvoid       15307 [alignPivot], 2
+L000154 (#0130): getlocal           8
+L000156 (#0131): pushbyte           37
+L000158 (#0132): getlocal           7
+L00015a (#0133): multiply_i         
+L00015b (#0134): initproperty       2604 [x]
+L00015e (#0135): getlocal           8
+L000160 (#0136): pushbyte           0
+L000162 (#0137): initproperty       2605 [y]
+L000165 (#0138): findproperty       48196 [numbers]
+L000169 (#0139): getproperty        48196 [numbers]
+L00016d (#0140): getlocal           8
+L00016f (#0141): callpropvoid       153 [addChild], 1
+L000173 (#0142): getlocal           5
+L000175 (#0143): getlocal           6
+L000177 (#0144): iflt               L0000b8 (# 70)
+L00017b (#0145): findproperty       48196 [numbers]
+L00017f (#0146): getproperty        48196 [numbers]
+L000183 (#0147): getlex             4258 [starling.utils::Align]
+L000186 (#0148): getproperty        4259 [CENTER]
+L000189 (#0149): getlex             4258 [starling.utils::Align]
+L00018c (#0150): getproperty        4259 [CENTER]
+L00018f (#0151): callpropvoid       15307 [alignPivot], 2
+L000193 (#0152): findproperty       48196 [numbers]
+L000197 (#0153): getproperty        48196 [numbers]
+L00019b (#0154): pushdouble         460 [113.5]
+L00019e (#0155): initproperty       2604 [x]
+L0001a1 (#0156): findproperty       48196 [numbers]
+L0001a5 (#0157): getproperty        48196 [numbers]
+L0001a9 (#0158): pushdouble         429 [25.5]
+L0001ac (#0159): initproperty       2605 [y]
+L0001af (#0160): getlocal_3         
+L0001b0 (#0161): getlex             4258 [starling.utils::Align]
+L0001b3 (#0162): getproperty        150 [LEFT]
+L0001b6 (#0163): getlex             4258 [starling.utils::Align]
+L0001b9 (#0164): getproperty        32887 [TOP]
+L0001bd (#0165): callpropvoid       15307 [alignPivot], 2
+L0001c1 (#0166): getlocal_3         
+L0001c2 (#0167): findproperty       48196 [numbers]
+L0001c6 (#0168): getproperty        48196 [numbers]
+L0001ca (#0169): callpropvoid       153 [addChild], 1
+L0001ce (#0170): getlocal_3         
+L0001cf (#0171): returnvalue        
+L0001d0 (#0172): ; end
+; exception_table=[]

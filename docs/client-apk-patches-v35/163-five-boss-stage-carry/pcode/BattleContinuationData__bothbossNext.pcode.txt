@@ -1,0 +1,530 @@
+; BattleContinuationData/bothbossNext
+; body_index=16639 method_index=17178
+; sha256=4a0eed787cfe8b84a1cd30a1454cbad26e090062297289c65b0bfe3d261c6622
+; maxstack=4 localcount=28 init_scope_depth=1 max_scope_depth=1
+L000000: pushbyte           0
+L000002: setlocal           17
+L000004: pushnull           
+L000005: astype             79 [haxe.ds::Option]
+L000007: setlocal           19
+L000009: pushnull           
+L00000a: astype             12768 [pinball.scene.battle.battle.squad.member::MemberImpl]
+L00000d: setlocal           20
+L00000f: pushnull           
+L000010: astype             331 [haxe::IMap]
+L000013: setlocal           21
+L000015: pushbyte           0
+L000017: setlocal           22
+L000019: pushnan            
+L00001a: setlocal           23
+L00001c: pushnull           
+L00001d: astype             331 [haxe::IMap]
+L000020: setlocal           24
+L000022: pushnull           
+L000023: astype             15429 [pinball.common.data.battle.restore::MemberAbilityTotalizerContinutionData]
+L000026: setlocal           25
+L000028: pushnull           
+L000029: astype             11 [String]
+L00002b: setlocal           27
+L00002d: findpropstrict     7446 [pinball.common.data.battle.restore::BattleContinuationData]
+L000030: getlocal           7
+L000032: getproperty        15412 [timeLimit]
+L000035: getlex             7683 [pinball.common.data.quest.id::QuestIdBattleKindTools]
+L000038: getlocal_2         
+L000039: callproperty       7916 [isRankingEvent], 1
+L00003d: convert_b          
+L00003e: constructprop      7446 [pinball.common.data.battle.restore::BattleContinuationData], 2
+L000042: coerce             7446 [pinball.common.data.battle.restore::BattleContinuationData]
+L000045: setlocal           16
+L000047: getlocal           16
+L000049: getlocal           15
+L00004b: initproperty       15509 [isLeaved]
+L00004e: getlex             7918 [pinball.common.tools::ArrayTools]
+L000051: getlocal           16
+L000053: getproperty        15413 [statistics]
+L000056: getlocal           4
+L000058: getproperty        15413 [statistics]
+L00005b: callpropvoid       13972 [refresh], 2
+L00005f: getlex             7918 [pinball.common.tools::ArrayTools]
+L000062: getlocal           16
+L000064: getproperty        15431 [debugFloorStatistics]
+L000067: getlocal_1         
+L000068: getproperty        15431 [debugFloorStatistics]
+L00006b: callpropvoid       13972 [refresh], 2
+L00006f: getlex             7918 [pinball.common.tools::ArrayTools]
+L000072: getlocal           16
+L000074: getproperty        15432 [debugMultiballStatistics]
+L000077: getlocal_1         
+L000078: getproperty        15433 [debugMultiballStatsManager]
+L00007b: callproperty       15434 [get_stats], 0
+L00007f: coerce             6 [Array]
+L000081: callpropvoid       13972 [refresh], 2
+L000085: getlex             7918 [pinball.common.tools::ArrayTools]
+L000088: getlocal           16
+L00008a: getproperty        15435 [floorTimelines]
+L00008d: getlocal_1         
+L00008e: getproperty        15436 [timelineStats]
+L000091: getproperty        15435 [floorTimelines]
+L000094: callpropvoid       13972 [refresh], 2
+L000098: getlocal           16
+L00009a: getlocal           10
+L00009c: callproperty       15437 [pinball.scene.battle.battle.ability:BattleAbilityTrigger::getExecuteCount], 0
+L0000a0: coerce             331 [haxe::IMap]
+L0000a3: initproperty       15438 [battleAbilityTriggerExecuteCounts]
+L0000a6: getlocal           16
+L0000a8: getlocal           10
+L0000aa: callproperty       15439 [pinball.scene.battle.battle.ability:BattleAbilityTrigger::getMultiballExecuteCount], 0
+L0000ae: coerce             331 [haxe::IMap]
+L0000b1: initproperty       15440 [battleAbilityTriggerMultiballExecuteCounts]
+L0000b4: getlocal           16
+L0000b6: getlocal           10
+L0000b8: callproperty       15441 [pinball.scene.battle.battle.ability:BattleAbilityTrigger::getThresholdExecuteCount], 0
+L0000bc: coerce             331 [haxe::IMap]
+L0000bf: initproperty       15442 [battleAbilityTriggerThresholdExecuteCounts]
+L0000c2: getlocal           16
+L0000c4: getlocal           10
+L0000c6: callproperty       15443 [pinball.scene.battle.battle.ability:BattleAbilityTrigger::getEnemyConditionExecuteCount], 0
+L0000ca: coerce             331 [haxe::IMap]
+L0000cd: initproperty       15444 [battleAbilityTriggerEnemyConditionExecuteCounts]
+L0000d0: getlocal           16
+L0000d2: getlocal           10
+L0000d4: callproperty       15445 [pinball.scene.battle.battle.ability:BattleAbilityTrigger::getConditionKeepFrameExecuteCount], 0
+L0000d8: coerce             331 [haxe::IMap]
+L0000db: initproperty       15446 [battleAbilityTriggerConditionKeepFrameExecuteCounts]
+L0000de: getlocal           16
+L0000e0: getlocal_3         
+L0000e1: getproperty        15447 [conditionSlot]
+L0000e4: callproperty       15448 [getExecuteCount], 0
+L0000e8: coerce             331 [haxe::IMap]
+L0000eb: initproperty       15414 [squadAbilityTriggerConditionExecuteCount]
+L0000ee: getlocal           16
+L0000f0: getlocal_3         
+L0000f1: getproperty        15447 [conditionSlot]
+L0000f4: callproperty       15449 [getExecuteCountOfAccumulation], 0
+L0000f8: coerce             331 [haxe::IMap]
+L0000fb: initproperty       15415 [squadAbilityTriggerConditionAccumulationExecuteCount]
+L0000fe: pushbyte           0
+L000100: convert_i          
+L000101: setlocal           17
+L000103: getlocal_3         
+L000104: getproperty        12766 [members]
+L000107: coerce             6 [Array]
+L000109: setlocal           18
+L00010b: jump               L00034d (# 341)
+L00010f: avm_label          
+L000110: getlocal           18
+L000112: getlocal           17
+L000114: getproperty        14 [<mn kind 0x1b>]
+L000116: coerce             79 [haxe.ds::Option]
+L000118: coerce             79 [haxe.ds::Option]
+L00011a: setlocal           19
+L00011c: inclocal_i         17
+L00011e: getlocal           19
+L000120: getproperty        46 [index]
+L000122: lookupswitch       default=L00012d cases=[L000131, L00034d]
+L00012d: jump               L00034d (# 341)
+L000131: getlocal           19
+L000133: getproperty        80 [params]
+L000135: pushbyte           0
+L000137: getproperty        14 [<mn kind 0x1b>]
+L000139: coerce             12768 [pinball.scene.battle.battle.squad.member::MemberImpl]
+L00013c: coerce             12768 [pinball.scene.battle.battle.squad.member::MemberImpl]
+L00013f: setlocal           20
+L000141: getlocal           16
+L000143: getproperty        15421 [revivalCounts]
+L000146: coerce             336 [haxe.ds::IntMap]
+L000149: getproperty        334 [h]
+L00014c: getlocal           20
+L00014e: getproperty        46 [index]
+L000150: getlocal           20
+L000152: getproperty        15450 [coffinCalculator]
+L000155: getproperty        15451 [numRevivals]
+L000158: setproperty        14 [<mn kind 0x1b>]
+L00015a: getlocal           16
+L00015c: getproperty        15411 [totalRevivalCounts]
+L00015f: coerce             336 [haxe.ds::IntMap]
+L000162: getproperty        334 [h]
+L000165: getlocal           20
+L000167: getproperty        46 [index]
+L000169: getlocal           20
+L00016b: getproperty        15450 [coffinCalculator]
+L00016e: getproperty        15452 [totalRevivals]
+L000171: setproperty        14 [<mn kind 0x1b>]
+L000173: getlocal           16
+L000175: getproperty        15453 [coffinCollisionCounts]
+L000178: coerce             336 [haxe.ds::IntMap]
+L00017b: getproperty        334 [h]
+L00017e: getlocal           20
+L000180: getproperty        46 [index]
+L000182: getlocal           20
+L000184: getproperty        15450 [coffinCalculator]
+L000187: getproperty        15454 [numCollisions]
+L00018a: setproperty        14 [<mn kind 0x1b>]
+L00018c: getlocal           16
+L00018e: getproperty        15455 [coffinAdditionalCounts]
+L000191: coerce             336 [haxe.ds::IntMap]
+L000194: getproperty        334 [h]
+L000197: getlocal           20
+L000199: getproperty        46 [index]
+L00019b: getlocal           20
+L00019d: getproperty        15450 [coffinCalculator]
+L0001a0: getproperty        15456 [additionalCount]
+L0001a3: setproperty        14 [<mn kind 0x1b>]
+L0001a5: getlocal           16
+L0001a7: getproperty        15457 [actionSkillExecutionCounts]
+L0001aa: coerce             336 [haxe.ds::IntMap]
+L0001ad: getproperty        334 [h]
+L0001b0: getlocal           20
+L0001b2: getproperty        46 [index]
+L0001b4: getlocal           20
+L0001b6: getproperty        15458 [actionSkillExecutionCount]
+L0001b9: setproperty        14 [<mn kind 0x1b>]
+L0001bb: getlocal           16
+L0001bd: getproperty        15459 [healthPointRatios]
+L0001c0: coerce             331 [haxe::IMap]
+L0001c3: setlocal           21
+L0001c5: getlocal           20
+L0001c7: getproperty        46 [index]
+L0001c9: convert_i          
+L0001ca: setlocal           22
+L0001cc: getlocal           20
+L0001ce: getproperty        15292 [healthPointGauge]
+L0001d1: callproperty       15460 [getRatio], 0
+L0001d5: convert_d          
+L0001d6: convert_d          
+L0001d7: setlocal           23
+L0001d9: getlocal           21
+L0001db: coerce             336 [haxe.ds::IntMap]
+L0001de: getproperty        334 [h]
+L0001e1: getlocal           22
+L0001e3: getlocal           23
+L0001e5: setproperty        14 [<mn kind 0x1b>]
+L0001e7: getlocal           16
+L0001e9: getproperty        15461 [maxHealthPoints]
+L0001ec: coerce             336 [haxe.ds::IntMap]
+L0001ef: getproperty        334 [h]
+L0001f2: getlocal           20
+L0001f4: getproperty        46 [index]
+L0001f6: getlocal           20
+L0001f8: getproperty        15292 [healthPointGauge]
+L0001fb: callproperty       15462 [getMaxHealthPoint], 0
+L0001ff: convert_d          
+L000200: setproperty        14 [<mn kind 0x1b>]
+L000202: getlocal           16
+L000204: getproperty        15463 [maxHealthPointStatsModifers]
+L000207: coerce             336 [haxe.ds::IntMap]
+L00020a: getproperty        334 [h]
+L00020d: getlocal           20
+L00020f: getproperty        46 [index]
+L000211: getlocal           20
+L000213: getproperty        15292 [healthPointGauge]
+L000216: getproperty        15464 [maxStatsModifier]
+L000219: setproperty        14 [<mn kind 0x1b>]
+L00021b: getlocal           16
+L00021d: getproperty        15417 [skillPointRatios]
+L000220: coerce             336 [haxe.ds::IntMap]
+L000223: getproperty        334 [h]
+L000226: getlocal           20
+L000228: getproperty        46 [index]
+L00022a: getlocal           20
+L00022c: getproperty        15465 [skillPoint]
+L00022f: callproperty       15460 [getRatio], 0
+L000233: convert_d          
+L000234: setproperty        14 [<mn kind 0x1b>]
+L000236: getlocal           16
+L000238: getproperty        15466 [coffinNotRemoveConditionUniques]
+L00023b: coerce             336 [haxe.ds::IntMap]
+L00023e: getproperty        334 [h]
+L000241: getlocal           20
+L000243: getproperty        46 [index]
+L000245: getlocal           20
+L000247: getproperty        15467 [coffinNotRemoveConditionUnique]
+L00024a: setproperty        14 [<mn kind 0x1b>]
+L00024c: getlocal           16
+L00024e: getproperty        15468 [memberAbilityTriggerExecuteCounts]
+L000251: coerce             336 [haxe.ds::IntMap]
+L000254: getproperty        334 [h]
+L000257: getlocal           20
+L000259: getproperty        46 [index]
+L00025b: getlocal           20
+L00025d: getproperty        15469 [abilityTrigger]
+L000260: callproperty       15448 [getExecuteCount], 0
+L000264: coerce             331 [haxe::IMap]
+L000267: setproperty        14 [<mn kind 0x1b>]
+L000269: getlocal           16
+L00026b: getproperty        15470 [memberAbilityTriggerThresholdExecuteCounts]
+L00026e: coerce             336 [haxe.ds::IntMap]
+L000271: getproperty        334 [h]
+L000274: getlocal           20
+L000276: getproperty        46 [index]
+L000278: getlocal           20
+L00027a: getproperty        15469 [abilityTrigger]
+L00027d: callproperty       15471 [getThresholdExecuteCount], 0
+L000281: coerce             331 [haxe::IMap]
+L000284: setproperty        14 [<mn kind 0x1b>]
+L000286: getlocal           16
+L000288: getproperty        15472 [memberAbilityTriggerHighHealExecuteCounts]
+L00028b: coerce             336 [haxe.ds::IntMap]
+L00028e: getproperty        334 [h]
+L000291: getlocal           20
+L000293: getproperty        46 [index]
+L000295: getlocal           20
+L000297: getproperty        15469 [abilityTrigger]
+L00029a: callproperty       15473 [getHighHealExecuteCount], 0
+L00029e: coerce             331 [haxe::IMap]
+L0002a1: setproperty        14 [<mn kind 0x1b>]
+L0002a3: getlocal           16
+L0002a5: getproperty        15474 [memberAbilityTriggerConditionExecuteCounts]
+L0002a8: coerce             331 [haxe::IMap]
+L0002ab: setlocal           21
+L0002ad: getlocal           20
+L0002af: getproperty        46 [index]
+L0002b1: convert_i          
+L0002b2: setlocal           22
+L0002b4: getlocal           20
+L0002b6: getproperty        15447 [conditionSlot]
+L0002b9: callproperty       15448 [getExecuteCount], 0
+L0002bd: coerce             331 [haxe::IMap]
+L0002c0: coerce             331 [haxe::IMap]
+L0002c3: setlocal           24
+L0002c5: getlocal           21
+L0002c7: coerce             336 [haxe.ds::IntMap]
+L0002ca: getproperty        334 [h]
+L0002cd: getlocal           22
+L0002cf: getlocal           24
+L0002d1: setproperty        14 [<mn kind 0x1b>]
+L0002d3: getlocal           16
+L0002d5: getproperty        15475 [memberAbilityTriggerConditionAccumulationExecuteCounts]
+L0002d8: coerce             331 [haxe::IMap]
+L0002db: setlocal           21
+L0002dd: getlocal           20
+L0002df: getproperty        46 [index]
+L0002e1: convert_i          
+L0002e2: setlocal           22
+L0002e4: getlocal           20
+L0002e6: getproperty        15447 [conditionSlot]
+L0002e9: callproperty       15449 [getExecuteCountOfAccumulation], 0
+L0002ed: coerce             331 [haxe::IMap]
+L0002f0: coerce             331 [haxe::IMap]
+L0002f3: setlocal           24
+L0002f5: getlocal           21
+L0002f7: coerce             336 [haxe.ds::IntMap]
+L0002fa: getproperty        334 [h]
+L0002fd: getlocal           22
+L0002ff: getlocal           24
+L000301: setproperty        14 [<mn kind 0x1b>]
+L000303: getlocal           16
+L000305: getproperty        15476 [memberAbilityTotalizers]
+L000308: coerce             331 [haxe::IMap]
+L00030b: setlocal           21
+L00030d: getlocal           20
+L00030f: getproperty        46 [index]
+L000311: convert_i          
+L000312: setlocal           22
+L000314: getlocal           20
+L000316: getproperty        15477 [abilityTotalizer]
+L000319: callproperty       15478 [getContinutionData], 0
+L00031d: coerce             15429 [pinball.common.data.battle.restore::MemberAbilityTotalizerContinutionData]
+L000320: coerce             15429 [pinball.common.data.battle.restore::MemberAbilityTotalizerContinutionData]
+L000323: setlocal           25
+L000325: getlocal           21
+L000327: coerce             336 [haxe.ds::IntMap]
+L00032a: getproperty        334 [h]
+L00032d: getlocal           22
+L00032f: getlocal           25
+L000331: setproperty        14 [<mn kind 0x1b>]
+L000333: getlocal           16
+L000335: getproperty        15479 [atks]
+L000338: coerce             336 [haxe.ds::IntMap]
+L00033b: getproperty        334 [h]
+L00033e: getlocal           20
+L000340: getproperty        46 [index]
+L000342: getlocal           20
+L000344: getproperty        14713 [atk]
+L000347: setproperty        14 [<mn kind 0x1b>]
+L000349: jump               L00034d (# 341)
+L00034d: getlocal           17
+L00034f: getlocal           18
+L000351: getproperty        35 [length]
+L000353: convert_i          
+L000354: iflt               L00010f (# 109)
+L000358: getlocal           16
+L00035a: getlex             3427 [pinball.common.mask::MaskGeneral]
+L00035d: getproperty        3429 [maskBit]
+L000360: getlocal           5
+L000362: getproperty        15480 [maxCombo]
+L000365: bitxor             
+L000366: convert_i          
+L000367: initproperty       15480 [maxCombo]
+L00036a: getlocal           16
+L00036c: getlocal           6
+L00036e: callproperty       15481 [pinball.scene.battle.battle:ScoreCalculator::getScore], 0
+L000372: convert_d          
+L000373: initproperty       15482 [battleScore]
+L000376: getlocal           16
+L000378: getlex             12785 [pinball.common.ds._Set::Set_Impl_]
+L00037b: getlocal           6
+L00037d: getproperty        15483 [doneIds]
+L000380: coerce             7114 [pinball.common.ds::ISet]
+L000383: callproperty       7814 [toArray], 1
+L000387: coerce             6 [Array]
+L000389: initproperty       15420 [scoreBonuses]
+L00038c: getlocal           16
+L00038e: getlocal           6
+L000390: getproperty        15410 [weakPointCount]
+L000393: convert_i          
+L000394: initproperty       15410 [weakPointCount]
+L000397: getlocal           16
+L000399: getlocal           6
+L00039b: getproperty        15419 [skillChainContribution]
+L00039e: convert_i          
+L00039f: initproperty       15419 [skillChainContribution]
+L0003a2: getlocal           16
+L0003a4: getlocal           6
+L0003a6: getproperty        15484 [maxFlightDuration]
+L0003a9: convert_i          
+L0003aa: initproperty       15484 [maxFlightDuration]
+L0003ad: getlocal           16
+L0003af: getlocal           6
+L0003b1: getproperty        15427 [overflowDamageTimes]
+L0003b4: convert_i          
+L0003b5: initproperty       15427 [overflowDamageTimes]
+L0003b8: getlocal           16
+L0003ba: getlocal           6
+L0003bc: getproperty        15418 [skillInvokeCount]
+L0003bf: convert_i          
+L0003c0: initproperty       15418 [skillInvokeCount]
+L0003c3: getlocal           16
+L0003c5: getlocal           6
+L0003c7: getproperty        15485 [guardCount]
+L0003ca: convert_i          
+L0003cb: initproperty       15485 [guardCount]
+L0003ce: getlocal           16
+L0003d0: getlocal           7
+L0003d2: getproperty        15422 [rawTime]
+L0003d5: initproperty       15422 [rawTime]
+L0003d8: getlocal           16
+L0003da: getlocal           7
+L0003dc: getproperty        15486 [maxRawTime]
+L0003df: initproperty       15486 [maxRawTime]
+L0003e2: getlocal           16
+L0003e4: getlocal           7
+L0003e6: getproperty        15487 [autoplayTime]
+L0003e9: initproperty       15487 [autoplayTime]
+L0003ec: getlocal           16
+L0003ee: getlocal           7
+L0003f0: callproperty       15488 [getFeverTime], 0
+L0003f4: convert_i          
+L0003f5: initproperty       15489 [feverTime]
+L0003f8: getlocal           16
+L0003fa: getlocal           7
+L0003fc: getproperty        15423 [rawFrame]
+L0003ff: initproperty       15423 [rawFrame]
+L000402: getlocal           16
+L000404: getlocal           7
+L000406: getproperty        15490 [autoplayFrame]
+L000409: initproperty       15490 [autoplayFrame]
+L00040c: getlocal           16
+L00040e: getlocal           7
+L000410: getproperty        15491 [feverFrame]
+L000413: initproperty       15491 [feverFrame]
+L000416: getlocal           16
+L000418: getlocal           8
+L00041a: getproperty        15492 [maxSkillChainSize]
+L00041d: convert_i          
+L00041e: initproperty       15492 [maxSkillChainSize]
+L000421: getlocal           16
+L000423: getlocal           9
+L000425: callproperty       15493 [getCurrentContinueCount], 0
+L000429: convert_i          
+L00042a: initproperty       15494 [currentContinueCount]
+L00042d: getlocal           16
+L00042f: getlocal           11
+L000431: getproperty        15428 [obtainedInstantItems]
+L000434: initproperty       15428 [obtainedInstantItems]
+L000437: getlocal           16
+L000439: getlocal           12
+L00043b: getproperty        15495 [totalizer]
+L00043e: callproperty       15478 [getContinutionData], 0
+L000442: coerce             15429 [pinball.common.data.battle.restore::MemberAbilityTotalizerContinutionData]
+L000445: initproperty       15496 [commonMultiballAbilityTotalizer]
+L000448: findpropstrict     336 [haxe.ds::IntMap]
+L00044b: constructprop      336 [haxe.ds::IntMap], 0
+L00044f: coerce             331 [haxe::IMap]
+L000452: setlocal           21
+L000454: findpropstrict     5763 [haxe.ds._IntMap::IntMapKeysIterator]
+L000457: getlocal           13
+L000459: getproperty        334 [h]
+L00045c: constructprop      5763 [haxe.ds._IntMap::IntMapKeysIterator], 1
+L000460: coerce_a           
+L000461: coerce_a           
+L000462: setlocal           26
+L000464: jump               L000498 (# 479)
+L000468: avm_label          
+L000469: getlocal           26
+L00046b: callproperty       60 [next], 0
+L00046e: convert_i          
+L00046f: convert_i          
+L000470: setlocal           17
+L000472: getlocal           13
+L000474: getproperty        334 [h]
+L000477: getlocal           17
+L000479: getproperty        14 [<mn kind 0x1b>]
+L00047b: coerce             15497 [pinball.scene.battle.battle.ability::CommonMultiballAbilityTotalizerImpl]
+L00047e: getproperty        15495 [totalizer]
+L000481: callproperty       15478 [getContinutionData], 0
+L000485: coerce             15429 [pinball.common.data.battle.restore::MemberAbilityTotalizerContinutionData]
+L000488: coerce             15429 [pinball.common.data.battle.restore::MemberAbilityTotalizerContinutionData]
+L00048b: setlocal           25
+L00048d: getlocal           21
+L00048f: getproperty        334 [h]
+L000492: getlocal           17
+L000494: getlocal           25
+L000496: setproperty        14 [<mn kind 0x1b>]
+L000498: getlocal           26
+L00049a: callproperty       62 [hasNext], 0
+L00049d: convert_b          
+L00049e: iftrue             L000468 (# 458)
+L0004a2: getlocal           16
+L0004a4: getlocal           21
+L0004a6: initproperty       15416 [specificMultiballAbilityTotalizers]
+L0004a9: findpropstrict     330 [haxe.ds::StringMap]
+L0004ac: constructprop      330 [haxe.ds::StringMap], 0
+L0004b0: coerce             331 [haxe::IMap]
+L0004b3: setlocal           24
+L0004b5: getlocal           14
+L0004b7: callproperty       2818 [haxe:IMap::keys], 0
+L0004bb: coerce_a           
+L0004bc: coerce_a           
+L0004bd: setlocal           26
+L0004bf: jump               L0004ec (# 512)
+L0004c3: avm_label          
+L0004c4: getlocal           26
+L0004c6: callproperty       60 [next], 0
+L0004c9: coerce             11 [String]
+L0004cb: coerce             11 [String]
+L0004cd: setlocal           27
+L0004cf: getlocal           24
+L0004d1: getlocal           27
+L0004d3: getlocal           14
+L0004d5: getlocal           27
+L0004d7: callproperty       2819 [haxe:IMap::get], 1
+L0004db: coerce             15497 [pinball.scene.battle.battle.ability::CommonMultiballAbilityTotalizerImpl]
+L0004de: getproperty        15495 [totalizer]
+L0004e1: callproperty       15478 [getContinutionData], 0
+L0004e5: coerce             15429 [pinball.common.data.battle.restore::MemberAbilityTotalizerContinutionData]
+L0004e8: callpropvoid       5727 [haxe:IMap::set], 2
+L0004ec: getlocal           26
+L0004ee: callproperty       62 [hasNext], 0
+L0004f1: convert_b          
+L0004f2: iftrue             L0004c3 (# 496)
+L0004f6: getlocal           16
+L0004f8: getlocal           24
+L0004fa: initproperty       15498 [characterGroupMultiballAbilityTotalizers]
+L0004fd: getlocal           16
+L0004ff: dup                
+L000500: getlocal_3         
+L000501: callpropvoid       69735 [wfxStageCapture], 1
+L000506: returnvalue        
+L000507: ; end
+; exception_table=[]

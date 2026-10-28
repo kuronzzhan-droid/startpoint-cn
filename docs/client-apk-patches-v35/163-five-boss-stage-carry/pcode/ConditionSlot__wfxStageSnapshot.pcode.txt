@@ -1,0 +1,105 @@
+; ConditionSlot/wfxStageSnapshot
+; body_index=92773 method_index=101246
+; sha256=d1585fd44e908be351ff199e4194a80e2c5861c57be83abc81637a92df2ed7ea
+; maxstack=4 localcount=8 init_scope_depth=1 max_scope_depth=1
+L000000: newarray           0
+L000002: setlocal_1         
+L000003: newarray           0
+L000005: setlocal_2         
+L000006: pushbyte           0
+L000008: setlocal_3         
+L000009: avm_label          
+L00000a: getlocal_3         
+L00000b: getlocal_0         
+L00000c: getproperty        7154 [conditions]
+L00000f: getproperty        7178 [_keys]
+L000012: getproperty        35 [length]
+L000014: ifge               L00006b (# 43)
+L000018: getlocal_0         
+L000019: getlocal_3         
+L00001a: callproperty       47432 [getConditionByIndex], 1
+L00001f: setlocal           4
+L000021: inclocal_i         3
+L000023: getlocal           4
+L000025: getproperty        16879 [isQuestInitial]
+L000029: iftrue             L000009 (# 6)
+L00002d: getlocal           4
+L00002f: getproperty        16856 [linkedTrialId]
+L000033: pushnull           
+L000034: ifne               L000009 (# 6)
+L000038: getlocal           4
+L00003a: getproperty        16857 [hitCountCheck]
+L00003e: pushnull           
+L00003f: ifne               L000009 (# 6)
+L000043: getlocal           4
+L000045: getlocal_0         
+L000046: getproperty        33824 [frameCount]
+L00004a: callproperty       16882 [hasExpired], 1
+L00004f: iftrue             L000009 (# 6)
+L000053: getlocal_1         
+L000054: getlex             7446 [pinball.common.data.battle.restore::BattleContinuationData]
+L000057: getlocal           4
+L000059: getlocal_0         
+L00005a: getproperty        33824 [frameCount]
+L00005e: negate_i           
+L00005f: callproperty       69731 [wfxStageClone], 2
+L000064: callpropvoid       65 [http://adobe.com/AS3/2006/builtin::push], 1
+L000067: jump               L000009 (# 6)
+L00006b: avm_label          
+L00006c: newarray           0
+L00006e: setlocal           5
+L000070: getlocal_0         
+L000071: getproperty        47384 [applicationResolver]
+L000075: callproperty       5113 [keys], 0
+L000079: setlocal           4
+L00007b: avm_label          
+L00007c: getlocal           4
+L00007e: callproperty       62 [hasNext], 0
+L000081: iffalse            L000093 (# 59)
+L000085: getlocal           5
+L000087: getlocal           4
+L000089: callproperty       60 [next], 0
+L00008c: callpropvoid       65 [http://adobe.com/AS3/2006/builtin::push], 1
+L00008f: jump               L00007b (# 50)
+L000093: avm_label          
+L000094: getlocal           5
+L000096: callpropvoid       6324 [http://adobe.com/AS3/2006/builtin::sort], 0
+L00009a: pushbyte           0
+L00009c: setlocal_3         
+L00009d: avm_label          
+L00009e: getlocal_3         
+L00009f: getlocal           5
+L0000a1: getproperty        35 [length]
+L0000a3: ifge               L0000c9 (# 83)
+L0000a7: getlocal           5
+L0000a9: getlocal_3         
+L0000aa: getproperty        69163 [<mn kind 0x1b>]
+L0000ae: setlocal           6
+L0000b0: getlocal_2         
+L0000b1: getlocal           6
+L0000b3: getlocal_0         
+L0000b4: getproperty        47384 [applicationResolver]
+L0000b8: getlocal           6
+L0000ba: callproperty       2580 [get], 1
+L0000be: newarray           2
+L0000c0: callpropvoid       65 [http://adobe.com/AS3/2006/builtin::push], 1
+L0000c3: inclocal_i         3
+L0000c5: jump               L00009d (# 64)
+L0000c9: avm_label          
+L0000ca: pushnull           
+L0000cb: setlocal           7
+L0000cd: getlocal_0         
+L0000ce: getproperty        44411 [invisibleSlot]
+L0000d2: iffalse            L0000e2 (# 93)
+L0000d6: getlocal_0         
+L0000d7: getproperty        44411 [invisibleSlot]
+L0000db: callproperty       69732 [wfxStageSnapshot], 0
+L0000e0: setlocal           7
+L0000e2: avm_label          
+L0000e3: getlocal_1         
+L0000e4: getlocal_2         
+L0000e5: getlocal           7
+L0000e7: newarray           3
+L0000e9: returnvalue        
+L0000ea: ; end
+; exception_table=[]

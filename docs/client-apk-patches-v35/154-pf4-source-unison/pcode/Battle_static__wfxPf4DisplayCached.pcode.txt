@@ -1,0 +1,15 @@
+# Battle$/wfxPf4DisplayCached header=[2, 4, 1, 2] sha=7728021d919e38e15b87285ea67a0d11ba827c85dc04d6869b5468044fea538d
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['pinball.scene.battle.battle::Battle']
+#0003 ofs0005: getproperty ['wfxPf4DisplayCache']
+#0004 ofs0009: setlocal_3 []
+#0005 ofs000a: getlocal_3 []
+#0006 ofs000b: iffalse [] -> #12
+#0007 ofs000f: getlocal_3 []
+#0008 ofs0010: getlocal_1 []
+#0009 ofs0011: getproperty ['<mn kind 0x1b>']
+#0010 ofs0013: coerce ['Array']
+#0011 ofs0015: returnvalue []
+#0012 ofs0016: pushnull []
+#0013 ofs0017: returnvalue []

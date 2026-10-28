@@ -1,0 +1,301 @@
+; DamageEffectView$/unitPrefix (after)
+; body_index=57561 method_index=62118
+; sha256=8a4c178cc6ab230e4b5ab3f0b3e63d86fd970c4c2016e29cbf1dffb1196bc3f5
+; maxstack=4 localcount=6 init_scope_depth=1 max_scope_depth=1
+L000000 (#0000): pushnull           
+L000001 (#0001): astype             11 [String]
+L000003 (#0002): setlocal_2         
+L000004 (#0003): pushbyte           0
+L000006 (#0004): setlocal_3         
+L000007 (#0005): pushnull           
+L000008 (#0006): astype             11 [String]
+L00000a (#0007): setlocal           4
+L00000c (#0008): pushnull           
+L00000d (#0009): astype             11 [String]
+L00000f (#0010): setlocal           5
+L000011 (#0011): getlocal_1         
+L000012 (#0012): pushdouble         1237 [10000000000000.0]
+L000015 (#0013): ifnge              L00008d (# 80)
+L000019 (#0014): getlex             18 [Std]
+L00001b (#0015): getlex             83 [Math]
+L00001d (#0016): getlocal_1         
+L00001e (#0017): pushdouble         1238 [100000000000.0]
+L000021 (#0018): divide             
+L000022 (#0019): pushdouble         1 [1e-10]
+L000024 (#0020): add                
+L000025 (#0021): convert_d          
+L000026 (#0022): pushdouble         1 [1e-10]
+L000028 (#0023): add                
+L000029 (#0024): convert_d          
+L00002a (#0025): callproperty       84 [floor], 1
+L00002d (#0026): convert_d          
+L00002e (#0027): pushbyte           10
+L000030 (#0028): divide             
+L000031 (#0029): callproperty       19 [string], 1
+L000034 (#0030): coerce             11 [String]
+L000036 (#0031): coerce             11 [String]
+L000038 (#0032): setlocal_2         
+L000039 (#0033): getlocal_2         
+L00003a (#0034): pushstring         464 ["."]
+L00003d (#0035): callproperty       33 [http://adobe.com/AS3/2006/builtin::indexOf], 1
+L000040 (#0036): convert_i          
+L000041 (#0037): convert_i          
+L000042 (#0038): setlocal_3         
+L000043 (#0039): getlocal_3         
+L000044 (#0040): pushbyte           255
+L000046 (#0041): ifne               L000058 (# 50)
+L00004a (#0042): pushstring         1 [""]
+L00004c (#0043): getlocal_2         
+L00004d (#0044): add                
+L00004e (#0045): coerce             11 [String]
+L000050 (#0046): pushstring         94596 ["@0t"]
+L000054 (#0047): add                
+L000055 (#0048): coerce             11 [String]
+L000057 (#0049): returnvalue        
+L000058 (#0050): getlocal_2         
+L000059 (#0051): pushbyte           0
+L00005b (#0052): getlocal_3         
+L00005c (#0053): callproperty       34 [http://adobe.com/AS3/2006/builtin::substr], 2
+L00005f (#0054): coerce             11 [String]
+L000061 (#0055): coerce             11 [String]
+L000063 (#0056): setlocal           4
+L000065 (#0057): getlocal_2         
+L000066 (#0058): getlocal_3         
+L000067 (#0059): pushbyte           1
+L000069 (#0060): add_i              
+L00006a (#0061): pushbyte           1
+L00006c (#0062): callproperty       34 [http://adobe.com/AS3/2006/builtin::substr], 2
+L00006f (#0063): coerce             11 [String]
+L000071 (#0064): coerce             11 [String]
+L000073 (#0065): setlocal           5
+L000075 (#0066): pushstring         1 [""]
+L000077 (#0067): getlocal           4
+L000079 (#0068): add                
+L00007a (#0069): coerce             11 [String]
+L00007c (#0070): pushstring         12468 ["@"]
+L00007f (#0071): add                
+L000080 (#0072): coerce             11 [String]
+L000082 (#0073): getlocal           5
+L000084 (#0074): add                
+L000085 (#0075): coerce             11 [String]
+L000087 (#0076): pushstring         64 ["t"]
+L000089 (#0077): add                
+L00008a (#0078): coerce             11 [String]
+L00008c (#0079): returnvalue        
+L00008d (#0080): getlocal_1         
+L00008e (#0081): pushdouble         445 [10000000000.0]
+L000091 (#0082): ifnge              L000109 (# 149)
+L000095 (#0083): getlex             18 [Std]
+L000097 (#0084): getlex             83 [Math]
+L000099 (#0085): getlocal_1         
+L00009a (#0086): pushint            1112 [100000000]
+L00009d (#0087): divide             
+L00009e (#0088): pushdouble         1 [1e-10]
+L0000a0 (#0089): add                
+L0000a1 (#0090): convert_d          
+L0000a2 (#0091): pushdouble         1 [1e-10]
+L0000a4 (#0092): add                
+L0000a5 (#0093): convert_d          
+L0000a6 (#0094): callproperty       84 [floor], 1
+L0000a9 (#0095): convert_d          
+L0000aa (#0096): pushbyte           10
+L0000ac (#0097): divide             
+L0000ad (#0098): callproperty       19 [string], 1
+L0000b0 (#0099): coerce             11 [String]
+L0000b2 (#0100): coerce             11 [String]
+L0000b4 (#0101): setlocal_2         
+L0000b5 (#0102): getlocal_2         
+L0000b6 (#0103): pushstring         464 ["."]
+L0000b9 (#0104): callproperty       33 [http://adobe.com/AS3/2006/builtin::indexOf], 1
+L0000bc (#0105): convert_i          
+L0000bd (#0106): convert_i          
+L0000be (#0107): setlocal_3         
+L0000bf (#0108): getlocal_3         
+L0000c0 (#0109): pushbyte           255
+L0000c2 (#0110): ifne               L0000d4 (# 119)
+L0000c6 (#0111): pushstring         1 [""]
+L0000c8 (#0112): getlocal_2         
+L0000c9 (#0113): add                
+L0000ca (#0114): coerce             11 [String]
+L0000cc (#0115): pushstring         94597 ["@0b"]
+L0000d0 (#0116): add                
+L0000d1 (#0117): coerce             11 [String]
+L0000d3 (#0118): returnvalue        
+L0000d4 (#0119): getlocal_2         
+L0000d5 (#0120): pushbyte           0
+L0000d7 (#0121): getlocal_3         
+L0000d8 (#0122): callproperty       34 [http://adobe.com/AS3/2006/builtin::substr], 2
+L0000db (#0123): coerce             11 [String]
+L0000dd (#0124): coerce             11 [String]
+L0000df (#0125): setlocal           4
+L0000e1 (#0126): getlocal_2         
+L0000e2 (#0127): getlocal_3         
+L0000e3 (#0128): pushbyte           1
+L0000e5 (#0129): add_i              
+L0000e6 (#0130): pushbyte           1
+L0000e8 (#0131): callproperty       34 [http://adobe.com/AS3/2006/builtin::substr], 2
+L0000eb (#0132): coerce             11 [String]
+L0000ed (#0133): coerce             11 [String]
+L0000ef (#0134): setlocal           5
+L0000f1 (#0135): pushstring         1 [""]
+L0000f3 (#0136): getlocal           4
+L0000f5 (#0137): add                
+L0000f6 (#0138): coerce             11 [String]
+L0000f8 (#0139): pushstring         12468 ["@"]
+L0000fb (#0140): add                
+L0000fc (#0141): coerce             11 [String]
+L0000fe (#0142): getlocal           5
+L000100 (#0143): add                
+L000101 (#0144): coerce             11 [String]
+L000103 (#0145): pushstring         47 ["b"]
+L000105 (#0146): add                
+L000106 (#0147): coerce             11 [String]
+L000108 (#0148): returnvalue        
+L000109 (#0149): getlocal_1         
+L00010a (#0150): pushint            3552 [10000000]
+L00010d (#0151): ifnge              L000185 (# 218)
+L000111 (#0152): getlex             18 [Std]
+L000113 (#0153): getlex             83 [Math]
+L000115 (#0154): getlocal_1         
+L000116 (#0155): pushint            263 [100000]
+L000119 (#0156): divide             
+L00011a (#0157): pushdouble         1 [1e-10]
+L00011c (#0158): add                
+L00011d (#0159): convert_d          
+L00011e (#0160): pushdouble         1 [1e-10]
+L000120 (#0161): add                
+L000121 (#0162): convert_d          
+L000122 (#0163): callproperty       84 [floor], 1
+L000125 (#0164): convert_d          
+L000126 (#0165): pushbyte           10
+L000128 (#0166): divide             
+L000129 (#0167): callproperty       19 [string], 1
+L00012c (#0168): coerce             11 [String]
+L00012e (#0169): coerce             11 [String]
+L000130 (#0170): setlocal_2         
+L000131 (#0171): getlocal_2         
+L000132 (#0172): pushstring         464 ["."]
+L000135 (#0173): callproperty       33 [http://adobe.com/AS3/2006/builtin::indexOf], 1
+L000138 (#0174): convert_i          
+L000139 (#0175): convert_i          
+L00013a (#0176): setlocal_3         
+L00013b (#0177): getlocal_3         
+L00013c (#0178): pushbyte           255
+L00013e (#0179): ifne               L000150 (# 188)
+L000142 (#0180): pushstring         1 [""]
+L000144 (#0181): getlocal_2         
+L000145 (#0182): add                
+L000146 (#0183): coerce             11 [String]
+L000148 (#0184): pushstring         94598 ["@0m"]
+L00014c (#0185): add                
+L00014d (#0186): coerce             11 [String]
+L00014f (#0187): returnvalue        
+L000150 (#0188): getlocal_2         
+L000151 (#0189): pushbyte           0
+L000153 (#0190): getlocal_3         
+L000154 (#0191): callproperty       34 [http://adobe.com/AS3/2006/builtin::substr], 2
+L000157 (#0192): coerce             11 [String]
+L000159 (#0193): coerce             11 [String]
+L00015b (#0194): setlocal           4
+L00015d (#0195): getlocal_2         
+L00015e (#0196): getlocal_3         
+L00015f (#0197): pushbyte           1
+L000161 (#0198): add_i              
+L000162 (#0199): pushbyte           1
+L000164 (#0200): callproperty       34 [http://adobe.com/AS3/2006/builtin::substr], 2
+L000167 (#0201): coerce             11 [String]
+L000169 (#0202): coerce             11 [String]
+L00016b (#0203): setlocal           5
+L00016d (#0204): pushstring         1 [""]
+L00016f (#0205): getlocal           4
+L000171 (#0206): add                
+L000172 (#0207): coerce             11 [String]
+L000174 (#0208): pushstring         12468 ["@"]
+L000177 (#0209): add                
+L000178 (#0210): coerce             11 [String]
+L00017a (#0211): getlocal           5
+L00017c (#0212): add                
+L00017d (#0213): coerce             11 [String]
+L00017f (#0214): pushstring         54 ["m"]
+L000181 (#0215): add                
+L000182 (#0216): coerce             11 [String]
+L000184 (#0217): returnvalue        
+L000185 (#0218): getlocal_1         
+L000186 (#0219): pushint            255 [10000]
+L000189 (#0220): ifnge              L000204 (# 288)
+L00018d (#0221): getlex             18 [Std]
+L00018f (#0222): getlex             83 [Math]
+L000191 (#0223): getlocal_1         
+L000192 (#0224): pushbyte           100
+L000194 (#0225): divide             
+L000195 (#0226): pushdouble         1 [1e-10]
+L000197 (#0227): add                
+L000198 (#0228): convert_d          
+L000199 (#0229): pushdouble         1 [1e-10]
+L00019b (#0230): add                
+L00019c (#0231): convert_d          
+L00019d (#0232): callproperty       84 [floor], 1
+L0001a0 (#0233): convert_d          
+L0001a1 (#0234): pushbyte           10
+L0001a3 (#0235): divide             
+L0001a4 (#0236): callproperty       19 [string], 1
+L0001a7 (#0237): coerce             11 [String]
+L0001a9 (#0238): coerce             11 [String]
+L0001ab (#0239): setlocal_2         
+L0001ac (#0240): getlocal_2         
+L0001ad (#0241): pushstring         464 ["."]
+L0001b0 (#0242): callproperty       33 [http://adobe.com/AS3/2006/builtin::indexOf], 1
+L0001b3 (#0243): convert_i          
+L0001b4 (#0244): convert_i          
+L0001b5 (#0245): setlocal_3         
+L0001b6 (#0246): getlocal_3         
+L0001b7 (#0247): pushbyte           255
+L0001b9 (#0248): ifne               L0001cf (# 258)
+L0001bd (#0249): pushstring         1 [""]
+L0001bf (#0250): getlocal_2         
+L0001c0 (#0251): add                
+L0001c1 (#0252): coerce             11 [String]
+L0001c3 (#0253): pushstring         64676 ["@0k"]
+L0001c7 (#0254): add                
+L0001c8 (#0255): coerce             11 [String]
+L0001ca (#0256): returnvalue        
+L0001cb (#0257): jump               L000204 (# 288)
+L0001cf (#0258): getlocal_2         
+L0001d0 (#0259): pushbyte           0
+L0001d2 (#0260): getlocal_3         
+L0001d3 (#0261): callproperty       34 [http://adobe.com/AS3/2006/builtin::substr], 2
+L0001d6 (#0262): coerce             11 [String]
+L0001d8 (#0263): coerce             11 [String]
+L0001da (#0264): setlocal           4
+L0001dc (#0265): getlocal_2         
+L0001dd (#0266): getlocal_3         
+L0001de (#0267): pushbyte           1
+L0001e0 (#0268): add_i              
+L0001e1 (#0269): pushbyte           1
+L0001e3 (#0270): callproperty       34 [http://adobe.com/AS3/2006/builtin::substr], 2
+L0001e6 (#0271): coerce             11 [String]
+L0001e8 (#0272): coerce             11 [String]
+L0001ea (#0273): setlocal           5
+L0001ec (#0274): pushstring         1 [""]
+L0001ee (#0275): getlocal           4
+L0001f0 (#0276): add                
+L0001f1 (#0277): coerce             11 [String]
+L0001f3 (#0278): pushstring         12468 ["@"]
+L0001f6 (#0279): add                
+L0001f7 (#0280): coerce             11 [String]
+L0001f9 (#0281): getlocal           5
+L0001fb (#0282): add                
+L0001fc (#0283): coerce             11 [String]
+L0001fe (#0284): pushstring         53 ["k"]
+L000200 (#0285): add                
+L000201 (#0286): coerce             11 [String]
+L000203 (#0287): returnvalue        
+L000204 (#0288): getlex             11404 [pinball.common.tools::FormatTools]
+L000207 (#0289): getlocal_1         
+L000208 (#0290): pushbyte           0
+L00020a (#0291): pushfalse          
+L00020b (#0292): callproperty       7109 [toFormatedString], 3
+L00020f (#0293): coerce             11 [String]
+L000211 (#0294): returnvalue        
+L000212 (#0295): ; end
+; exception_table=[]

@@ -1,0 +1,7 @@
+# MemberImpl/wfxPfEnabled header=[1, 1, 1, 2] sha=c86f9c86d311918de2c81f67dde5e13fbb12743942267c5c0f43eb68a6fc3797
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_0 []
+#0003 ofs0003: callproperty ['wfxPfConfig', 0]
+#0004 ofs0008: convert_b []
+#0005 ofs0009: returnvalue []

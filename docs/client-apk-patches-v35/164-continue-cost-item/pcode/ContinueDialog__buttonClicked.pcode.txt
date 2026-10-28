@@ -1,0 +1,88 @@
+; ContinueDialog/buttonClicked
+; body_index=33039 method_index=35797
+; sha256=41a4e1504239bd961bbf2819b3360efbf1feee30bf1ae2eabb9200435ccc01e3
+; maxstack=4 localcount=4 init_scope_depth=1 max_scope_depth=2
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: getlocal_1         
+L000003: pushbyte           0
+L000005: ifne               L000045 (# 28)
+L000009: getlex             31262 [pinball.dialog.continueDialog::Continue2Dialog]
+L00000d: getlocal_0         
+L00000e: getproperty        7850 [globalLogic]
+L000011: getlocal_0         
+L000012: getproperty        7440 [questId]
+L000015: callproperty       69739 [wfxContinueCost], 2
+L00001a: setlocal_3         
+L00001b: getlocal_3         
+L00001c: iffalse            L000045 (# 28)
+L000020: getlocal_3         
+L000021: getproperty        22305 [after]
+L000025: pushbyte           0
+L000027: ifge               L000045 (# 28)
+L00002b: getlocal_0         
+L00002c: getproperty        29250 [logicScene]
+L000030: getlocal_3         
+L000031: getproperty        31508 [itemName]
+L000035: pushstring         94317 ["数量不足"]
+L000039: add                
+L00003a: getlex             9788 [pinball.context.scene.instantMessage::InstantMessagePosition]
+L00003d: getproperty        9520 [Center]
+L000040: callpropvoid       9789 [showInstantMessage], 2
+L000044: returnvoid         
+L000045: pushnull           
+L000046: astype             31274 [pinball.dialog.richTextDialog::RichTextDialog]
+L00004a: setlocal_2         
+L00004b: getlocal_1         
+L00004c: lookupswitch       default=L00005a cases=[L00005e, L0000ad, L0000c4]
+L00005a: jump               L0000fc (# 81)
+L00005e: findproperty       31270 [canContinue]
+L000062: callproperty       31270 [canContinue], 0
+L000067: convert_b          
+L000068: iffalse            L000083 (# 44)
+L00006c: findproperty       29263 [closeThen]
+L000070: findproperty       31261 [continueHandler]
+L000074: getproperty        31261 [continueHandler]
+L000078: coerce             71 [Function]
+L00007a: callpropvoid       29263 [closeThen], 1
+L00007f: jump               L0000a9 (# 55)
+L000083: findproperty       29250 [logicScene]
+L000087: getproperty        29250 [logicScene]
+L00008b: findproperty       9604 [logic]
+L00008e: getproperty        9604 [logic]
+L000091: getproperty        6899 [asset]
+L000094: pushstring         41126 ["play_continue_shortage_stone_message"]
+L000098: callproperty       8223 [getUiString], 1
+L00009c: coerce             11 [String]
+L00009e: getlex             9788 [pinball.context.scene.instantMessage::InstantMessagePosition]
+L0000a1: getproperty        9520 [Center]
+L0000a4: callpropvoid       26644 [pinball.context.scene:ILogicScene::showInstantMessage], 2
+L0000a9: jump               L0000fc (# 81)
+L0000ad: findproperty       29263 [closeThen]
+L0000b1: findproperty       30687 [retireHandler]
+L0000b5: getproperty        30687 [retireHandler]
+L0000b9: coerce             71 [Function]
+L0000bb: callpropvoid       29263 [closeThen], 1
+L0000c0: jump               L0000fc (# 81)
+L0000c4: getlex             31275 [pinball.dialog.transactionLaw::TransactionLawDialogTools]
+L0000c8: findproperty       9604 [logic]
+L0000cb: getproperty        9604 [logic]
+L0000ce: getproperty        6899 [asset]
+L0000d1: pushtrue           
+L0000d2: getlex             9318 [pinball.common.tools::FunctionTools]
+L0000d5: getproperty        23632 [emptyFunction0]
+L0000d9: coerce             71 [Function]
+L0000db: callproperty       31276 [createDialogTransactionLaw], 3
+L0000e0: coerce             31274 [pinball.dialog.richTextDialog::RichTextDialog]
+L0000e4: coerce             31274 [pinball.dialog.richTextDialog::RichTextDialog]
+L0000e8: setlocal_2         
+L0000e9: getlocal_2         
+L0000ea: pushfalse          
+L0000eb: initproperty       27103 [preventsBehindUpdate]
+L0000ef: findproperty       29250 [logicScene]
+L0000f3: getproperty        29250 [logicScene]
+L0000f7: getlocal_2         
+L0000f8: callpropvoid       9848 [pinball.context.scene:ILogicScene::openDialog], 1
+L0000fc: returnvoid         
+L0000fd: ; end
+; exception_table=[]

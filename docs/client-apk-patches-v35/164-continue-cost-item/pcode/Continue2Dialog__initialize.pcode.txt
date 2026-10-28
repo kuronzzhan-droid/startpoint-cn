@@ -1,0 +1,166 @@
+; Continue2Dialog/initialize
+; body_index=33016 method_index=35766
+; sha256=151c0b7d683e48bd8092ccaaa386c9ae8953d5dd960311866cfa1c7db321f413
+; maxstack=22 localcount=5 init_scope_depth=1 max_scope_depth=2
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: getlex             31262 [pinball.dialog.continueDialog::Continue2Dialog]
+L000006: getlocal_0         
+L000007: getproperty        7850 [globalLogic]
+L00000a: getlocal_0         
+L00000b: getproperty        31257 [questIdGroup]
+L00000f: callproperty       69739 [wfxContinueCost], 2
+L000014: setlocal           4
+L000016: getlocal           4
+L000018: iffalse            L00002c (# 17)
+L00001c: getlocal_0         
+L00001d: getlex             31262 [pinball.dialog.continueDialog::Continue2Dialog]
+L000021: getlocal           4
+L000023: callproperty       69742 [wfxContinueContents], 1
+L000028: setproperty        7291 [contents]
+L00002b: returnvoid         
+L00002c: findproperty       7850 [globalLogic]
+L00002f: getproperty        7850 [globalLogic]
+L000032: callpropvoid       7711 [getPlayer], 0
+L000036: findproperty       7850 [globalLogic]
+L000039: getproperty        7850 [globalLogic]
+L00003c: callpropvoid       20314 [getConfig], 0
+L000041: findproperty       7850 [globalLogic]
+L000044: getproperty        7850 [globalLogic]
+L000047: callproperty       7574 [getLogicAssets], 0
+L00004b: coerce             6947 [pinball.asset.logic::ILogicAssetContainer]
+L00004e: coerce             6947 [pinball.asset.logic::ILogicAssetContainer]
+L000051: setlocal_1         
+L000052: pushbyte           0
+L000054: convert_i          
+L000055: setlocal_2         
+L000056: pushbyte           0
+L000058: convert_i          
+L000059: setlocal_3         
+L00005a: findproperty       9811 [get_freeVirtualMoney]
+L00005d: callproperty       9811 [get_freeVirtualMoney], 0
+L000061: convert_i          
+L000062: findproperty       17257 [get_continueVirtualMoney]
+L000066: callproperty       17257 [get_continueVirtualMoney], 0
+L00006b: convert_i          
+L00006c: ifnge              L000093 (# 57)
+L000070: findproperty       9811 [get_freeVirtualMoney]
+L000073: callproperty       9811 [get_freeVirtualMoney], 0
+L000077: convert_i          
+L000078: findproperty       17257 [get_continueVirtualMoney]
+L00007c: callproperty       17257 [get_continueVirtualMoney], 0
+L000081: convert_i          
+L000082: subtract_i         
+L000083: convert_i          
+L000084: setlocal_2         
+L000085: findproperty       9812 [get_paidVirtualMoney]
+L000088: callproperty       9812 [get_paidVirtualMoney], 0
+L00008c: convert_i          
+L00008d: convert_i          
+L00008e: setlocal_3         
+L00008f: jump               L0000b5 (# 73)
+L000093: pushbyte           0
+L000095: convert_i          
+L000096: setlocal_2         
+L000097: findproperty       9812 [get_paidVirtualMoney]
+L00009a: callproperty       9812 [get_paidVirtualMoney], 0
+L00009e: convert_i          
+L00009f: findproperty       9811 [get_freeVirtualMoney]
+L0000a2: callproperty       9811 [get_freeVirtualMoney], 0
+L0000a6: convert_i          
+L0000a7: add_i              
+L0000a8: findproperty       17257 [get_continueVirtualMoney]
+L0000ac: callproperty       17257 [get_continueVirtualMoney], 0
+L0000b1: convert_i          
+L0000b2: subtract_i         
+L0000b3: convert_i          
+L0000b4: setlocal_3         
+L0000b5: findproperty       7291 [contents]
+L0000b8: getlex             9841 [pinball.dialog.general::DialogContent]
+L0000bb: getlocal_1         
+L0000bc: pushstring         41108 ["battle_continue2_dialog_description_cost"]
+L0000c0: pushstring         28534 ["stone"]
+L0000c4: findproperty       17257 [get_continueVirtualMoney]
+L0000c8: callproperty       17257 [get_continueVirtualMoney], 0
+L0000cd: convert_i          
+L0000ce: newobject          1
+L0000d0: callproperty       8200 [pinball.asset.logic:ILogicAssetContainer::getUiStringWithContext], 2
+L0000d4: coerce             11 [String]
+L0000d6: callproperty       7406 [Title], 1
+L0000da: coerce             9841 [pinball.dialog.general::DialogContent]
+L0000dd: getlex             9841 [pinball.dialog.general::DialogContent]
+L0000e0: pushbyte           40
+L0000e2: callproperty       30087 [Margin], 1
+L0000e7: coerce             9841 [pinball.dialog.general::DialogContent]
+L0000ea: getlex             9841 [pinball.dialog.general::DialogContent]
+L0000ed: pushbyte           16
+L0000ef: callproperty       30087 [Margin], 1
+L0000f4: coerce             9841 [pinball.dialog.general::DialogContent]
+L0000f7: getlex             9841 [pinball.dialog.general::DialogContent]
+L0000fa: getlex             30001 [pinball.dialog.general.variation::DialogVariationKind]
+L0000fe: getlex             31152 [pinball.dialog.general.variation::DialogVariationWidthKind]
+L000102: getproperty        226 [None]
+L000105: pushstring         1006 ["title"]
+L000108: getlex             23293 [pinball.common.data.ui::UiStringKind]
+L00010c: pushstring         41109 ["gacha_free_stone_label"]
+L000110: callproperty       23294 [Key], 1
+L000115: coerce             23293 [pinball.common.data.ui::UiStringKind]
+L000119: pushstring         39523 ["icon"]
+L00011d: getlex             31155 [pinball.dialog.general.variation::DialogVariationIconKind]
+L000121: getlex             17656 [pinball.common.data.shop::PriceKind]
+L000125: getproperty        3534 [Stone]
+L000128: callproperty       31258 [Price], 1
+L00012d: coerce             31155 [pinball.dialog.general.variation::DialogVariationIconKind]
+L000131: pushstring         4881 ["before"]
+L000134: findproperty       9811 [get_freeVirtualMoney]
+L000137: callproperty       9811 [get_freeVirtualMoney], 0
+L00013b: convert_i          
+L00013c: pushstring         4880 ["after"]
+L00013f: getlocal_2         
+L000140: pushstring         39330 ["minValue"]
+L000144: getlex             79 [haxe.ds::Option]
+L000146: getproperty        226 [None]
+L000149: pushstring         39331 ["maxValue"]
+L00014d: getlex             79 [haxe.ds::Option]
+L00014f: getproperty        226 [None]
+L000152: pushstring         40895 ["formatter"]
+L000156: getlex             31156 [pinball.dialog.general.variation::DialogVariationSliderFormatterKind]
+L00015a: getproperty        2742 [Default]
+L00015d: newobject          7
+L00015f: pushstring         1006 ["title"]
+L000162: getlex             23293 [pinball.common.data.ui::UiStringKind]
+L000166: pushstring         41111 ["gacha_paid_stone_label"]
+L00016a: callproperty       23294 [Key], 1
+L00016f: coerce             23293 [pinball.common.data.ui::UiStringKind]
+L000173: pushstring         39523 ["icon"]
+L000177: getlex             31155 [pinball.dialog.general.variation::DialogVariationIconKind]
+L00017b: getlex             17656 [pinball.common.data.shop::PriceKind]
+L00017f: getproperty        3534 [Stone]
+L000182: callproperty       31258 [Price], 1
+L000187: coerce             31155 [pinball.dialog.general.variation::DialogVariationIconKind]
+L00018b: pushstring         4881 ["before"]
+L00018e: findproperty       9812 [get_paidVirtualMoney]
+L000191: callproperty       9812 [get_paidVirtualMoney], 0
+L000195: convert_i          
+L000196: pushstring         4880 ["after"]
+L000199: getlocal_3         
+L00019a: pushstring         39330 ["minValue"]
+L00019e: getlex             79 [haxe.ds::Option]
+L0001a0: getproperty        226 [None]
+L0001a3: pushstring         39331 ["maxValue"]
+L0001a7: getlex             79 [haxe.ds::Option]
+L0001a9: getproperty        226 [None]
+L0001ac: pushstring         40895 ["formatter"]
+L0001b0: getlex             31156 [pinball.dialog.general.variation::DialogVariationSliderFormatterKind]
+L0001b4: getproperty        2742 [Default]
+L0001b7: newobject          7
+L0001b9: newarray           2
+L0001bb: callproperty       15248 [Fix], 2
+L0001bf: coerce             30001 [pinball.dialog.general.variation::DialogVariationKind]
+L0001c3: callproperty       31165 [Variation], 1
+L0001c8: coerce             9841 [pinball.dialog.general::DialogContent]
+L0001cb: newarray           4
+L0001cd: initproperty       7291 [contents]
+L0001d0: returnvoid         
+L0001d1: ; end
+; exception_table=[]

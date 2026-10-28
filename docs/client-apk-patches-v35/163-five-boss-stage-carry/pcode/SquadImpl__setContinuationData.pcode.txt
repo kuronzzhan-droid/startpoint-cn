@@ -1,0 +1,56 @@
+; SquadImpl/setContinuationData
+; body_index=59522 method_index=64397
+; sha256=a75f0848d123b3c70d7129dfc7d28e26dc0e9739cfbec84435e1484d1062d248
+; maxstack=2 localcount=5 init_scope_depth=1 max_scope_depth=2
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: pushnull           
+L000003: astype             79 [haxe.ds::Option]
+L000005: setlocal           4
+L000007: pushbyte           0
+L000009: convert_i          
+L00000a: setlocal_2         
+L00000b: findproperty       12766 [members]
+L00000e: getproperty        12766 [members]
+L000011: coerce             6 [Array]
+L000013: setlocal_3         
+L000014: jump               L00004d (# 33)
+L000018: avm_label          
+L000019: getlocal_3         
+L00001a: getlocal_2         
+L00001b: getproperty        14 [<mn kind 0x1b>]
+L00001d: coerce             79 [haxe.ds::Option]
+L00001f: coerce             79 [haxe.ds::Option]
+L000021: setlocal           4
+L000023: inclocal_i         2
+L000025: getlocal           4
+L000027: getproperty        46 [index]
+L000029: lookupswitch       default=L000034 cases=[L000038, L00004d]
+L000034: jump               L00004d (# 33)
+L000038: getlocal           4
+L00003a: getproperty        80 [params]
+L00003c: pushbyte           0
+L00003e: getproperty        14 [<mn kind 0x1b>]
+L000040: coerce             12768 [pinball.scene.battle.battle.squad.member::MemberImpl]
+L000043: getlocal_1         
+L000044: callpropvoid       41045 [setContinuationData], 1
+L000049: jump               L00004d (# 33)
+L00004d: getlocal_2         
+L00004e: getlocal_3         
+L00004f: getproperty        35 [length]
+L000051: convert_i          
+L000052: iflt               L000018 (# 13)
+L000056: findproperty       49475 [continuationAbilityTriggerConditionExecuteCount]
+L00005a: getlocal_1         
+L00005b: getproperty        15414 [squadAbilityTriggerConditionExecuteCount]
+L00005e: initproperty       49475 [continuationAbilityTriggerConditionExecuteCount]
+L000062: findproperty       49476 [continuationAbilityTriggerConditionAccumulationExecuteCount]
+L000066: getlocal_1         
+L000067: getproperty        15415 [squadAbilityTriggerConditionAccumulationExecuteCount]
+L00006a: initproperty       49476 [continuationAbilityTriggerConditionAccumulationExecuteCount]
+L00006e: getlocal_0         
+L00006f: getlocal_1         
+L000070: callpropvoid       69736 [wfxStageApply], 1
+L000075: returnvoid         
+L000076: ; end
+; exception_table=[]

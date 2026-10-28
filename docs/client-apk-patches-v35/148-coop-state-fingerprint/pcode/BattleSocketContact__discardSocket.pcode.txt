@@ -1,0 +1,11 @@
+# BattleSocketContact/discardSocket header=[2, 1, 1, 2] sha=93a8ac0c5fb34cb1fed60a6691fccad8ccca182a8a43622986b172bcbfb28f17
+# exceptions=[]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['pinball.scene.battle.battle::Battle']
+#0003 ofs0005: getlocal [0]
+#0004 ofs0007: callpropvoid ['wfxFpClose', 1]
+#0005 ofs000c: findproperty ['socketDriver']
+#0006 ofs0010: getproperty ['socketDriver']
+#0007 ofs0014: callpropvoid ['pinball.context.socket:SocketDriverForContact::discardSocket', 0]
+#0008 ofs0019: returnvoid []

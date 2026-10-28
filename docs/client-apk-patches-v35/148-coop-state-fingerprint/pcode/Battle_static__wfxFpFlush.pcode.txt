@@ -1,0 +1,42 @@
+# Battle$/wfxFpFlush header=[3, 3, 1, 2] sha=bdd5a73b1fe0da7ef668a41b1a529c578d2b8928ed6fbdbf0596b14e6f521254
+# exceptions=[(29, 85, 90, 0, 0)]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['pinball.scene.battle.battle::Battle']
+#0003 ofs0005: getproperty ['wfxFpEnabled']
+#0004 ofs0009: iffalse [] -> #38
+#0005 ofs000d: getlocal [1]
+#0006 ofs000f: iffalse [] -> #38
+#0007 ofs0013: getlocal [1]
+#0008 ofs0015: getproperty ['closed']
+#0009 ofs0019: iftrue [] -> #38
+#0010 ofs001d: avm_label []
+#0011 ofs001e: getlex ['pinball.scene.battle.battle::Battle']
+#0012 ofs0021: getlocal [1]
+#0013 ofs0023: callpropvoid ['wfxFpBindConnection', 1]
+#0014 ofs0028: getlocal [1]
+#0015 ofs002a: getproperty ['closed']
+#0016 ofs002e: iftrue [] -> #38
+#0017 ofs0032: getlex ['pinball.scene.battle.battle::Battle']
+#0018 ofs0035: getlocal [1]
+#0019 ofs0037: callproperty ['wfxFpPack', 1]
+#0020 ofs003c: iftrue [] -> #24
+#0021 ofs0040: getlex ['pinball.scene.battle.battle::Battle']
+#0022 ofs0043: getlocal [1]
+#0023 ofs0045: callpropvoid ['wfxFpPack', 1]
+#0024 ofs004a: avm_label []
+#0025 ofs004b: getlex ['pinball.scene.battle.battle::Battle']
+#0026 ofs004e: getlocal [1]
+#0027 ofs0050: callpropvoid ['wfxFpDrain', 1]
+#0028 ofs0055: avm_label []
+#0029 ofs0056: jump [] -> #38
+#0030 ofs005a: avm_label []
+#0031 ofs005b: pop []
+#0032 ofs005c: getlocal_0 []
+#0033 ofs005d: pushscope []
+#0034 ofs005e: getlex ['pinball.scene.battle.battle::Battle']
+#0035 ofs0061: getlocal [1]
+#0036 ofs0063: pushstring ['sampling_error']
+#0037 ofs0067: callpropvoid ['wfxFpTransportDrop', 2]
+#0038 ofs006c: avm_label []
+#0039 ofs006d: returnvoid []

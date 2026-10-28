@@ -1,0 +1,116 @@
+; BattleCharacterLogic/getMaxOpenableManaBoard
+; body_index=92392 method_index=100864
+; sha256=28896bd7d324b5f340b7d25fe6ee3abaa452d780145bbeb9c4084ac92f55b0a1
+; maxstack=5 localcount=8 init_scope_depth=6 max_scope_depth=7
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: debug              1, 92775 ["_loc1_"], 0, 1441
+L00000a: debug              1, 92776 ["_loc2_"], 1, 1450
+L000012: debug              1, 92777 ["_loc3_"], 2, 1451
+L00001a: debug              1, 92779 ["_loc4_"], 3, 1452
+L000022: debug              1, 92842 ["_loc5_"], 4, 1438
+L00002a: debug              1, 92843 ["_loc6_"], 5, 1439
+L000032: debug              1, 92844 ["_loc7_"], 6, 1440
+L00003a: pushnull           
+L00003b: getlex             16631 [pinball.master.generated::BoardOpenConditionValues]
+L00003f: astypelate         
+L000040: coerce_a           
+L000041: setlocal           5
+L000043: pushbyte           0
+L000045: convert_i          
+L000046: setlocal           6
+L000048: pushbyte           0
+L00004a: convert_i          
+L00004b: setlocal           7
+L00004d: getlex             7746 [logicAssets]
+L000050: getlex             3581 [pinball.master.generated::BoardOpenConditionTable]
+L000053: callproperty       6949 [pinball.asset.logic:ILogicAssetContainer::getMasterTable], 1
+L000057: callproperty       68567 [get_data], 0
+L00005c: coerce             6946 [pinball.master.runtime::MasterMap]
+L00005f: setlocal_1         
+L000060: getlocal_1         
+L000061: findpropstrict     6915 [get_rarity]
+L000064: callproperty       6915 [get_rarity], 0
+L000068: callproperty       7702 [pinball.master.runtime:MasterMap::exists], 1
+L00006c: not                
+L00006d: iffalse            L000074 (# 34)
+L000071: pushbyte           1
+L000073: returnvalue        
+L000074: findpropstrict     10449 [get_level]
+L000077: callproperty       10449 [get_level], 0
+L00007b: findpropstrict     16416 [get_baseLevelCap]
+L00007f: callproperty       16416 [get_baseLevelCap], 0
+L000084: getlocal_0         
+L000085: getproperty        5259 [id]
+L000088: pushshort          2000
+L00008b: pushbyte           6
+L00008d: lshift             
+L00008e: pushshort          1989
+L000091: add_i              
+L000092: ifne               L000099 (# 48)
+L000096: pop                
+L000097: pushbyte           120
+L000099: ifnlt              L0000a0 (# 51)
+L00009d: pushbyte           1
+L00009f: returnvalue        
+L0000a0: pushbyte           2
+L0000a2: convert_i          
+L0000a3: setlocal_2         
+L0000a4: findpropstrict     10392 [getManaBoardIndexes]
+L0000a7: callproperty       10392 [getManaBoardIndexes], 0
+L0000ab: coerce             6 [Array]
+L0000ad: setlocal_3         
+L0000ae: getlocal_1         
+L0000af: findpropstrict     6915 [get_rarity]
+L0000b2: callproperty       6915 [get_rarity], 0
+L0000b6: callproperty       7182 [pinball.master.runtime:MasterMap::get], 1
+L0000ba: coerce             6946 [pinball.master.runtime::MasterMap]
+L0000bd: setlocal           4
+L0000bf: jump               L000115 (# 101)
+L0000c3: avm_label          
+L0000c4: getlocal           4
+L0000c6: getlocal_2         
+L0000c7: callproperty       7182 [pinball.master.runtime:MasterMap::get], 1
+L0000cb: coerce_a           
+L0000cc: setlocal           5
+L0000ce: getlocal_3         
+L0000cf: getlocal_2         
+L0000d0: callproperty       33 [http://adobe.com/AS3/2006/builtin::indexOf], 1
+L0000d3: pushbyte           255
+L0000d5: ifne               L0000dd (# 77)
+L0000d9: jump               L000120 (# 105)
+L0000dd: getlocal_2         
+L0000de: pushbyte           1
+L0000e0: subtract           
+L0000e1: convert_i          
+L0000e2: setlocal           6
+L0000e4: findpropstrict     16584 [hasLearnedAllManaNodeOfManaBoard]
+L0000e8: getlocal           6
+L0000ea: callproperty       16584 [hasLearnedAllManaNodeOfManaBoard], 1
+L0000ef: not                
+L0000f0: iffalse            L0000f8 (# 88)
+L0000f4: jump               L000120 (# 105)
+L0000f8: getlex             16580 [overLimitStep]
+L0000fc: getlocal           5
+L0000fe: getproperty        68569 [required_over_limit_step]
+L000102: ifnlt              L00010a (# 93)
+L000106: jump               L000120 (# 105)
+L00010a: getlocal_2         
+L00010b: pushbyte           1
+L00010d: add                
+L00010e: convert_i          
+L00010f: setlocal           7
+L000111: getlocal           7
+L000113: convert_i          
+L000114: setlocal_2         
+L000115: getlocal           4
+L000117: getlocal_2         
+L000118: callproperty       7702 [pinball.master.runtime:MasterMap::exists], 1
+L00011c: iftrue             L0000c3 (# 65)
+L000120: getlocal_2         
+L000121: pushbyte           1
+L000123: subtract           
+L000124: convert_i          
+L000125: returnvalue        
+L000126: ; end
+; exception_table=[]

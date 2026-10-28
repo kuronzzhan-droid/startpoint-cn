@@ -1,0 +1,34 @@
+; Continue2Dialog$/wfxContinueTextureLoaded
+; body_index=92780 method_index=101253
+; sha256=e6eae0ad1b17815471e84532a8098c4a4015a0c871b7f0820d20643966d6bb30
+; maxstack=3 localcount=5 init_scope_depth=1 max_scope_depth=2
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: getlocal_1         
+L000003: getproperty        7744 [image]
+L000006: setlocal_2         
+L000007: getlocal_2         
+L000008: getproperty        127 [parent]
+L00000a: iffalse            L000034 (# 27)
+L00000e: getlocal_2         
+L00000f: getproperty        148 [width]
+L000012: setlocal_3         
+L000013: getlocal_2         
+L000014: getproperty        158 [height]
+L000017: setlocal           4
+L000019: getlocal_2         
+L00001a: getlocal_1         
+L00001b: getproperty        6899 [asset]
+L00001e: getlocal_1         
+L00001f: getproperty        4895 [path]
+L000022: callproperty       8844 [getTexture], 1
+L000026: setproperty        7963 [texture]
+L000029: getlocal_2         
+L00002a: getlocal_3         
+L00002b: setproperty        148 [width]
+L00002e: getlocal_2         
+L00002f: getlocal           4
+L000031: setproperty        158 [height]
+L000034: returnvoid         
+L000035: ; end
+; exception_table=[]

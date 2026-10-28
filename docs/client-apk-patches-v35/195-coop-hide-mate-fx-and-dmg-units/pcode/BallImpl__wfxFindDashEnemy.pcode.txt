@@ -1,0 +1,98 @@
+; BallImpl/wfxFindDashEnemy (after)
+; body_index=92740 method_index=101213
+; sha256=d10860003dd0fda1e616f67ef872e1a43639e7f1cc60b0f70f06ac532d6a22c4
+; maxstack=3 localcount=11 init_scope_depth=1 max_scope_depth=2
+L000000 (#0000): getlocal_0         
+L000001 (#0001): pushscope          
+L000002 (#0002): getlocal_0         
+L000003 (#0003): getproperty        27234 [zoneManager]
+L000007 (#0004): callproperty       42234 [pinball.scene.battle.battle.zone:ZoneManager::getCurrentZone], 0
+L00000c (#0005): setlocal_1         
+L00000d (#0006): getlocal_1         
+L00000e (#0007): getproperty        44348 [enemyManager]
+L000012 (#0008): getproperty        8238 [enemies]
+L000015 (#0009): callproperty       5730 [haxe:IMap::iterator], 0
+L000019 (#0010): setlocal_2         
+L00001a (#0011): pushnull           
+L00001b (#0012): setlocal           4
+L00001d (#0013): pushfalse          
+L00001e (#0014): setlocal           8
+L000020 (#0015): pushint            1112 [100000000]
+L000023 (#0016): setlocal           6
+L000025 (#0017): avm_label          
+L000026 (#0018): getlocal_2         
+L000027 (#0019): callproperty       62 [hasNext], 0
+L00002a (#0020): iffalse            L0000d2 (# 90)
+L00002e (#0021): getlocal_2         
+L00002f (#0022): callproperty       60 [next], 0
+L000032 (#0023): setlocal_3         
+L000033 (#0024): getlocal_3         
+L000034 (#0025): callproperty       6068 [jp.sipo.gipo.core:GearHolder::gearOutside], 0
+L000038 (#0026): callproperty       6079 [isDisposed], 0
+L00003c (#0027): iftrue             L000025 (# 17)
+L000040 (#0028): getlocal_3         
+L000041 (#0029): callproperty       42927 [pinball.scene.battle.battle.enemy:Enemy::isDead], 0
+L000046 (#0030): iftrue             L000025 (# 17)
+L00004a (#0031): getlocal_3         
+L00004b (#0032): callproperty       27510 [pinball.scene.battle.battle.enemy:Enemy::getEnemyKind], 0
+L000050 (#0033): pushbyte           4
+L000052 (#0034): ifeq               L000025 (# 17)
+L000056 (#0035): getlocal_3         
+L000057 (#0036): callproperty       27510 [pinball.scene.battle.battle.enemy:Enemy::getEnemyKind], 0
+L00005c (#0037): pushbyte           3
+L00005e (#0038): equals             
+L00005f (#0039): setlocal           7
+L000061 (#0040): getlocal           8
+L000063 (#0041): iffalse            L00006d (# 44)
+L000067 (#0042): getlocal           7
+L000069 (#0043): iffalse            L000025 (# 17)
+L00006d (#0044): getlocal_3         
+L00006e (#0045): callproperty       8983 [pinball.scene.battle.battle.action:PosAndDirTrackingTarget::getPosX], 0
+L000072 (#0046): getlocal_0         
+L000073 (#0047): getproperty        2604 [x]
+L000076 (#0048): subtract           
+L000077 (#0049): setlocal           9
+L000079 (#0050): getlocal_3         
+L00007a (#0051): callproperty       8982 [pinball.scene.battle.battle.action:PosAndDirTrackingTarget::getPosY], 0
+L00007e (#0052): getlocal_0         
+L00007f (#0053): getproperty        2605 [y]
+L000082 (#0054): subtract           
+L000083 (#0055): setlocal           10
+L000085 (#0056): getlocal           9
+L000087 (#0057): getlocal           9
+L000089 (#0058): multiply           
+L00008a (#0059): getlocal           10
+L00008c (#0060): getlocal           10
+L00008e (#0061): multiply           
+L00008f (#0062): add                
+L000090 (#0063): setlocal           5
+L000092 (#0064): getlocal_1         
+L000093 (#0065): getproperty        9341 [bounds]
+L000096 (#0066): getlocal_3         
+L000097 (#0067): callproperty       8983 [pinball.scene.battle.battle.action:PosAndDirTrackingTarget::getPosX], 0
+L00009b (#0068): getlocal_3         
+L00009c (#0069): callproperty       8982 [pinball.scene.battle.battle.action:PosAndDirTrackingTarget::getPosY], 0
+L0000a0 (#0070): callproperty       2635 [contains], 2
+L0000a4 (#0071): iftrue             L0000ab (# 74)
+L0000a8 (#0072): pushnan            
+L0000a9 (#0073): setlocal           5
+L0000ab (#0074): getlocal           5
+L0000ad (#0075): getlocal           5
+L0000af (#0076): ifne               L000025 (# 17)
+L0000b3 (#0077): getlocal           7
+L0000b5 (#0078): getlocal           8
+L0000b7 (#0079): ifne               L0000c3 (# 83)
+L0000bb (#0080): getlocal           5
+L0000bd (#0081): getlocal           6
+L0000bf (#0082): ifge               L000025 (# 17)
+L0000c3 (#0083): getlocal_3         
+L0000c4 (#0084): setlocal           4
+L0000c6 (#0085): getlocal           5
+L0000c8 (#0086): setlocal           6
+L0000ca (#0087): getlocal           7
+L0000cc (#0088): setlocal           8
+L0000ce (#0089): jump               L000025 (# 17)
+L0000d2 (#0090): getlocal           4
+L0000d4 (#0091): returnvalue        
+L0000d5 (#0092): ; end
+; exception_table=[]

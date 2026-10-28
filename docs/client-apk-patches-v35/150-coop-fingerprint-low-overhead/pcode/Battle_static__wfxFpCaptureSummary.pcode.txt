@@ -1,0 +1,409 @@
+# Battle$/wfxFpCaptureSummary header=[4, 11, 1, 2] sha=71da3340680ec2053781f3bcf60dc3c0ea764ec672de711a2e905f36bab1b893
+# exceptions=[(7, 1106, 1106, 0, 0)]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: pushnull []
+#0003 ofs0003: setlocal_3 []
+#0004 ofs0004: pushnull []
+#0005 ofs0005: setlocal [4]
+#0006 ofs0007: getlex ['pinball.scene.battle.battle::Battle']
+#0007 ofs000a: getproperty ['wfxFpEnabled']
+#0008 ofs000e: iffalse [] -> #382
+#0009 ofs0012: getlex ['pinball.scene.battle.battle::Battle']
+#0010 ofs0015: getproperty ['wfxFpBattles']
+#0011 ofs0019: iffalse [] -> #384
+#0012 ofs001d: getlex ['pinball.scene.battle.battle::Battle']
+#0013 ofs0020: getproperty ['wfxFpBattles']
+#0014 ofs0024: getlocal [1]
+#0015 ofs0026: callproperty ['get', 1]
+#0016 ofs002a: setlocal_3 []
+#0017 ofs002b: getlocal [3]
+#0018 ofs002d: iffalse [] -> #384
+#0019 ofs0031: getlocal [3]
+#0020 ofs0033: getproperty ['ctx']
+#0021 ofs0037: getproperty ['closed']
+#0022 ofs003b: iftrue [] -> #384
+#0023 ofs003f: getlocal [2]
+#0024 ofs0041: getproperty ['h']
+#0025 ofs0044: setlocal [5]
+#0026 ofs0046: getlocal [5]
+#0027 ofs0048: iffalse [] -> #384
+#0028 ofs004c: getlex ['pinball.scene.battle.battle::Battle']
+#0029 ofs004f: getlocal [3]
+#0030 ofs0051: callproperty ['wfxFpInputSummary', 1]
+#0031 ofs0056: setlocal [4]
+#0032 ofs0058: avm_label []
+#0033 ofs0059: getlocal [5]
+#0034 ofs005b: iffalse [] -> #384
+#0035 ofs005f: getlocal [5]
+#0036 ofs0061: getproperty ['item']
+#0037 ofs0064: setlocal [6]
+#0038 ofs0066: getlocal [5]
+#0039 ofs0068: getproperty ['next']
+#0040 ofs006a: setlocal [5]
+#0041 ofs006c: getlocal [1]
+#0042 ofs006e: getproperty ['initialData']
+#0043 ofs0072: getproperty ['id']
+#0044 ofs0075: setlocal [8]
+#0045 ofs0077: pushnull []
+#0046 ofs0078: setlocal [9]
+#0047 ofs007a: getlocal [6]
+#0048 ofs007c: getproperty ['index']
+#0049 ofs007e: pushbyte [0]
+#0050 ofs0080: ifeq [] -> #158
+#0051 ofs0084: getlocal [6]
+#0052 ofs0086: getproperty ['index']
+#0053 ofs0088: pushbyte [1]
+#0054 ofs008a: ifne [] -> #348
+#0055 ofs008e: getlocal [6]
+#0056 ofs0090: getproperty ['params']
+#0057 ofs0092: pushbyte [1]
+#0058 ofs0094: getproperty ['<mn kind 0x1b>']
+#0059 ofs0096: setlocal [8]
+#0060 ofs0098: getlocal [6]
+#0061 ofs009a: getproperty ['params']
+#0062 ofs009c: pushbyte [2]
+#0063 ofs009e: getproperty ['<mn kind 0x1b>']
+#0064 ofs00a0: setlocal [9]
+#0065 ofs00a2: getlocal [4]
+#0066 ofs00a4: getlocal [4]
+#0067 ofs00a6: getproperty ['coop']
+#0068 ofs00aa: pushbyte [1]
+#0069 ofs00ac: add []
+#0070 ofs00ad: setproperty ['coop']
+#0071 ofs00b1: getlocal [6]
+#0072 ofs00b3: getproperty ['params']
+#0073 ofs00b5: pushbyte [0]
+#0074 ofs00b7: getproperty ['<mn kind 0x1b>']
+#0075 ofs00b9: setlocal [10]
+#0076 ofs00bb: getlocal [10]
+#0077 ofs00bd: iffalse [] -> #348
+#0078 ofs00c1: getlocal [10]
+#0079 ofs00c3: istype ['pinball.online::BattleCoopCommand']
+#0080 ofs00c7: iffalse [] -> #348
+#0081 ofs00cb: getlocal [10]
+#0082 ofs00cd: getproperty ['index']
+#0083 ofs00cf: setlocal [7]
+#0084 ofs00d1: getlocal [7]
+#0085 ofs00d3: pushbyte [0]
+#0086 ofs00d5: ifne [] -> #90
+#0087 ofs00d9: pushstring ['Coop.0']
+#0088 ofs00dd: setlocal [7]
+#0089 ofs00df: jump [] -> #157
+#0090 ofs00e3: getlocal [7]
+#0091 ofs00e5: pushbyte [1]
+#0092 ofs00e7: ifne [] -> #96
+#0093 ofs00eb: pushstring ['Coop.1']
+#0094 ofs00ef: setlocal [7]
+#0095 ofs00f1: jump [] -> #157
+#0096 ofs00f5: getlocal [7]
+#0097 ofs00f7: pushbyte [2]
+#0098 ofs00f9: ifne [] -> #102
+#0099 ofs00fd: pushstring ['Coop.2']
+#0100 ofs0101: setlocal [7]
+#0101 ofs0103: jump [] -> #157
+#0102 ofs0107: getlocal [7]
+#0103 ofs0109: pushbyte [3]
+#0104 ofs010b: ifne [] -> #108
+#0105 ofs010f: pushstring ['Coop.3']
+#0106 ofs0113: setlocal [7]
+#0107 ofs0115: jump [] -> #157
+#0108 ofs0119: getlocal [7]
+#0109 ofs011b: pushbyte [4]
+#0110 ofs011d: ifne [] -> #114
+#0111 ofs0121: pushstring ['Coop.4']
+#0112 ofs0125: setlocal [7]
+#0113 ofs0127: jump [] -> #157
+#0114 ofs012b: getlocal [7]
+#0115 ofs012d: pushbyte [5]
+#0116 ofs012f: ifne [] -> #120
+#0117 ofs0133: pushstring ['Coop.5']
+#0118 ofs0137: setlocal [7]
+#0119 ofs0139: jump [] -> #157
+#0120 ofs013d: getlocal [7]
+#0121 ofs013f: pushbyte [6]
+#0122 ofs0141: ifne [] -> #126
+#0123 ofs0145: pushstring ['Coop.6']
+#0124 ofs0149: setlocal [7]
+#0125 ofs014b: jump [] -> #157
+#0126 ofs014f: getlocal [7]
+#0127 ofs0151: pushbyte [7]
+#0128 ofs0153: ifne [] -> #132
+#0129 ofs0157: pushstring ['Coop.7']
+#0130 ofs015b: setlocal [7]
+#0131 ofs015d: jump [] -> #157
+#0132 ofs0161: getlocal [7]
+#0133 ofs0163: pushbyte [8]
+#0134 ofs0165: ifne [] -> #138
+#0135 ofs0169: pushstring ['Coop.8']
+#0136 ofs016d: setlocal [7]
+#0137 ofs016f: jump [] -> #157
+#0138 ofs0173: getlocal [7]
+#0139 ofs0175: pushbyte [9]
+#0140 ofs0177: ifne [] -> #144
+#0141 ofs017b: pushstring ['Coop.9']
+#0142 ofs017f: setlocal [7]
+#0143 ofs0181: jump [] -> #157
+#0144 ofs0185: getlocal [7]
+#0145 ofs0187: pushbyte [10]
+#0146 ofs0189: ifne [] -> #150
+#0147 ofs018d: pushstring ['Coop.10']
+#0148 ofs0191: setlocal [7]
+#0149 ofs0193: jump [] -> #157
+#0150 ofs0197: getlocal [7]
+#0151 ofs0199: pushbyte [11]
+#0152 ofs019b: ifne [] -> #156
+#0153 ofs019f: pushstring ['Coop.11']
+#0154 ofs01a3: setlocal [7]
+#0155 ofs01a5: jump [] -> #157
+#0156 ofs01a9: jump [] -> #348
+#0157 ofs01ad: jump [] -> #334
+#0158 ofs01b1: getlocal [4]
+#0159 ofs01b3: getlocal [4]
+#0160 ofs01b5: getproperty ['user']
+#0161 ofs01b9: pushbyte [1]
+#0162 ofs01bb: add []
+#0163 ofs01bc: setproperty ['user']
+#0164 ofs01c0: getlocal [6]
+#0165 ofs01c2: getproperty ['params']
+#0166 ofs01c4: pushbyte [0]
+#0167 ofs01c6: getproperty ['<mn kind 0x1b>']
+#0168 ofs01c8: setlocal [10]
+#0169 ofs01ca: getlocal [10]
+#0170 ofs01cc: iffalse [] -> #348
+#0171 ofs01d0: getlocal [10]
+#0172 ofs01d2: istype ['pinball.online::BattleUserCommand']
+#0173 ofs01d5: iffalse [] -> #348
+#0174 ofs01d9: getlocal [10]
+#0175 ofs01db: getproperty ['index']
+#0176 ofs01dd: setlocal [7]
+#0177 ofs01df: getlocal [7]
+#0178 ofs01e1: pushbyte [0]
+#0179 ofs01e3: ifne [] -> #183
+#0180 ofs01e7: pushstring ['User.0']
+#0181 ofs01eb: setlocal [7]
+#0182 ofs01ed: jump [] -> #334
+#0183 ofs01f1: getlocal [7]
+#0184 ofs01f3: pushbyte [1]
+#0185 ofs01f5: ifne [] -> #189
+#0186 ofs01f9: pushstring ['User.1']
+#0187 ofs01fd: setlocal [7]
+#0188 ofs01ff: jump [] -> #334
+#0189 ofs0203: getlocal [7]
+#0190 ofs0205: pushbyte [2]
+#0191 ofs0207: ifne [] -> #195
+#0192 ofs020b: pushstring ['User.2']
+#0193 ofs020f: setlocal [7]
+#0194 ofs0211: jump [] -> #334
+#0195 ofs0215: getlocal [7]
+#0196 ofs0217: pushbyte [3]
+#0197 ofs0219: ifne [] -> #201
+#0198 ofs021d: pushstring ['User.3']
+#0199 ofs0221: setlocal [7]
+#0200 ofs0223: jump [] -> #334
+#0201 ofs0227: getlocal [7]
+#0202 ofs0229: pushbyte [4]
+#0203 ofs022b: ifne [] -> #207
+#0204 ofs022f: pushstring ['User.4']
+#0205 ofs0233: setlocal [7]
+#0206 ofs0235: jump [] -> #334
+#0207 ofs0239: getlocal [7]
+#0208 ofs023b: pushbyte [5]
+#0209 ofs023d: ifne [] -> #213
+#0210 ofs0241: pushstring ['User.5']
+#0211 ofs0245: setlocal [7]
+#0212 ofs0247: jump [] -> #334
+#0213 ofs024b: getlocal [7]
+#0214 ofs024d: pushbyte [6]
+#0215 ofs024f: ifne [] -> #219
+#0216 ofs0253: pushstring ['User.6']
+#0217 ofs0257: setlocal [7]
+#0218 ofs0259: jump [] -> #334
+#0219 ofs025d: getlocal [7]
+#0220 ofs025f: pushbyte [7]
+#0221 ofs0261: ifne [] -> #225
+#0222 ofs0265: pushstring ['User.7']
+#0223 ofs0269: setlocal [7]
+#0224 ofs026b: jump [] -> #334
+#0225 ofs026f: getlocal [7]
+#0226 ofs0271: pushbyte [8]
+#0227 ofs0273: ifne [] -> #231
+#0228 ofs0277: pushstring ['User.8']
+#0229 ofs027b: setlocal [7]
+#0230 ofs027d: jump [] -> #334
+#0231 ofs0281: getlocal [7]
+#0232 ofs0283: pushbyte [9]
+#0233 ofs0285: ifne [] -> #237
+#0234 ofs0289: pushstring ['User.9']
+#0235 ofs028d: setlocal [7]
+#0236 ofs028f: jump [] -> #334
+#0237 ofs0293: getlocal [7]
+#0238 ofs0295: pushbyte [10]
+#0239 ofs0297: ifne [] -> #243
+#0240 ofs029b: pushstring ['User.10']
+#0241 ofs029f: setlocal [7]
+#0242 ofs02a1: jump [] -> #334
+#0243 ofs02a5: getlocal [7]
+#0244 ofs02a7: pushbyte [11]
+#0245 ofs02a9: ifne [] -> #249
+#0246 ofs02ad: pushstring ['User.11']
+#0247 ofs02b1: setlocal [7]
+#0248 ofs02b3: jump [] -> #334
+#0249 ofs02b7: getlocal [7]
+#0250 ofs02b9: pushbyte [12]
+#0251 ofs02bb: ifne [] -> #255
+#0252 ofs02bf: pushstring ['User.12']
+#0253 ofs02c3: setlocal [7]
+#0254 ofs02c5: jump [] -> #334
+#0255 ofs02c9: getlocal [7]
+#0256 ofs02cb: pushbyte [13]
+#0257 ofs02cd: ifne [] -> #261
+#0258 ofs02d1: pushstring ['User.13']
+#0259 ofs02d5: setlocal [7]
+#0260 ofs02d7: jump [] -> #334
+#0261 ofs02db: getlocal [7]
+#0262 ofs02dd: pushbyte [14]
+#0263 ofs02df: ifne [] -> #267
+#0264 ofs02e3: pushstring ['User.14']
+#0265 ofs02e7: setlocal [7]
+#0266 ofs02e9: jump [] -> #334
+#0267 ofs02ed: getlocal [7]
+#0268 ofs02ef: pushbyte [15]
+#0269 ofs02f1: ifne [] -> #273
+#0270 ofs02f5: pushstring ['User.15']
+#0271 ofs02f9: setlocal [7]
+#0272 ofs02fb: jump [] -> #334
+#0273 ofs02ff: getlocal [7]
+#0274 ofs0301: pushbyte [16]
+#0275 ofs0303: ifne [] -> #279
+#0276 ofs0307: pushstring ['User.16']
+#0277 ofs030b: setlocal [7]
+#0278 ofs030d: jump [] -> #334
+#0279 ofs0311: getlocal [7]
+#0280 ofs0313: pushbyte [17]
+#0281 ofs0315: ifne [] -> #285
+#0282 ofs0319: pushstring ['User.17']
+#0283 ofs031d: setlocal [7]
+#0284 ofs031f: jump [] -> #334
+#0285 ofs0323: getlocal [7]
+#0286 ofs0325: pushbyte [18]
+#0287 ofs0327: ifne [] -> #291
+#0288 ofs032b: pushstring ['User.18']
+#0289 ofs032f: setlocal [7]
+#0290 ofs0331: jump [] -> #334
+#0291 ofs0335: getlocal [7]
+#0292 ofs0337: pushbyte [19]
+#0293 ofs0339: ifne [] -> #297
+#0294 ofs033d: pushstring ['User.19']
+#0295 ofs0341: setlocal [7]
+#0296 ofs0343: jump [] -> #334
+#0297 ofs0347: getlocal [7]
+#0298 ofs0349: pushbyte [20]
+#0299 ofs034b: ifne [] -> #303
+#0300 ofs034f: pushstring ['User.20']
+#0301 ofs0353: setlocal [7]
+#0302 ofs0355: jump [] -> #334
+#0303 ofs0359: getlocal [7]
+#0304 ofs035b: pushbyte [21]
+#0305 ofs035d: ifne [] -> #309
+#0306 ofs0361: pushstring ['User.21']
+#0307 ofs0365: setlocal [7]
+#0308 ofs0367: jump [] -> #334
+#0309 ofs036b: getlocal [7]
+#0310 ofs036d: pushbyte [22]
+#0311 ofs036f: ifne [] -> #315
+#0312 ofs0373: pushstring ['User.22']
+#0313 ofs0377: setlocal [7]
+#0314 ofs0379: jump [] -> #334
+#0315 ofs037d: getlocal [7]
+#0316 ofs037f: pushbyte [23]
+#0317 ofs0381: ifne [] -> #321
+#0318 ofs0385: pushstring ['User.23']
+#0319 ofs0389: setlocal [7]
+#0320 ofs038b: jump [] -> #334
+#0321 ofs038f: getlocal [7]
+#0322 ofs0391: pushbyte [24]
+#0323 ofs0393: ifne [] -> #327
+#0324 ofs0397: pushstring ['User.24']
+#0325 ofs039b: setlocal [7]
+#0326 ofs039d: jump [] -> #334
+#0327 ofs03a1: getlocal [7]
+#0328 ofs03a3: pushbyte [25]
+#0329 ofs03a5: ifne [] -> #333
+#0330 ofs03a9: pushstring ['User.25']
+#0331 ofs03ad: setlocal [7]
+#0332 ofs03af: jump [] -> #334
+#0333 ofs03b3: jump [] -> #348
+#0334 ofs03b7: getlex ['pinball.scene.battle.battle::Battle']
+#0335 ofs03ba: getlocal [8]
+#0336 ofs03bc: callproperty ['wfxFpSummaryScalar', 1]
+#0337 ofs03c1: iffalse [] -> #348
+#0338 ofs03c5: getlex ['pinball.scene.battle.battle::Battle']
+#0339 ofs03c8: getlocal [9]
+#0340 ofs03ca: callproperty ['wfxFpSummaryScalar', 1]
+#0341 ofs03cf: iffalse [] -> #348
+#0342 ofs03d3: getlex ['pinball.scene.battle.battle::Battle']
+#0343 ofs03d6: getlocal [1]
+#0344 ofs03d8: getproperty ['currentFrame']
+#0345 ofs03db: callproperty ['wfxFpSummaryScalar', 1]
+#0346 ofs03e0: iffalse [] -> #348
+#0347 ofs03e4: jump [] -> #361
+#0348 ofs03e8: pushstring ['Unknown']
+#0349 ofs03eb: setlocal [7]
+#0350 ofs03ed: pushnull []
+#0351 ofs03ee: setlocal [8]
+#0352 ofs03f0: pushnull []
+#0353 ofs03f1: setlocal [9]
+#0354 ofs03f3: getlex ['pinball.scene.battle.battle::Battle']
+#0355 ofs03f6: getlocal [4]
+#0356 ofs03f8: getlocal [3]
+#0357 ofs03fa: getproperty ['ctx']
+#0358 ofs03fe: getlocal [1]
+#0359 ofs0400: getproperty ['currentFrame']
+#0360 ofs0403: callpropvoid ['wfxFpSummaryUnknown', 3]
+#0361 ofs0408: getlex ['pinball.scene.battle.battle::Battle']
+#0362 ofs040b: getlocal [4]
+#0363 ofs040d: getlocal [7]
+#0364 ofs040f: getlocal [1]
+#0365 ofs0411: getproperty ['currentFrame']
+#0366 ofs0414: callpropvoid ['wfxFpSummaryRecord', 3]
+#0367 ofs0419: getlocal [4]
+#0368 ofs041b: getlex ['pinball.scene.battle.battle::Battle']
+#0369 ofs041e: getlocal [4]
+#0370 ofs0420: getproperty ['orderedHash']
+#0371 ofs0424: getlocal [8]
+#0372 ofs0426: callproperty ['wfxFpSummaryHash', 2]
+#0373 ofs042b: setproperty ['orderedHash']
+#0374 ofs042f: getlocal [4]
+#0375 ofs0431: getlex ['pinball.scene.battle.battle::Battle']
+#0376 ofs0434: getlocal [4]
+#0377 ofs0436: getproperty ['orderedHash']
+#0378 ofs043a: getlocal [9]
+#0379 ofs043c: callproperty ['wfxFpSummaryHash', 2]
+#0380 ofs0441: setproperty ['orderedHash']
+#0381 ofs0445: jump [] -> #32
+#0382 ofs0449: getlex ['pinball.scene.battle.battle::Battle']
+#0383 ofs044c: callpropvoid ['wfxFpDisabled', 0]
+#0384 ofs0451: returnvoid []
+#0385 ofs0452: pop []
+#0386 ofs0453: getlocal_0 []
+#0387 ofs0454: pushscope []
+#0388 ofs0455: getlocal [3]
+#0389 ofs0457: iffalse [] -> #406
+#0390 ofs045b: getlex ['pinball.scene.battle.battle::Battle']
+#0391 ofs045e: getlocal [3]
+#0392 ofs0460: callproperty ['wfxFpInputSummary', 1]
+#0393 ofs0465: setlocal [4]
+#0394 ofs0467: getlocal [4]
+#0395 ofs0469: getlocal [4]
+#0396 ofs046b: getproperty ['readErrors']
+#0397 ofs046f: pushbyte [1]
+#0398 ofs0471: add []
+#0399 ofs0472: setproperty ['readErrors']
+#0400 ofs0476: getlex ['pinball.scene.battle.battle::Battle']
+#0401 ofs0479: getlocal [4]
+#0402 ofs047b: getlocal [3]
+#0403 ofs047d: getproperty ['ctx']
+#0404 ofs0481: pushnull []
+#0405 ofs0482: callpropvoid ['wfxFpSummaryUnknown', 3]
+#0406 ofs0487: returnvoid []

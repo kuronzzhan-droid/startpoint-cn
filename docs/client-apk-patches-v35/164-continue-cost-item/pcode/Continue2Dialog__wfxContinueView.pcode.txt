@@ -1,0 +1,65 @@
+; Continue2Dialog$/wfxContinueView
+; body_index=92783 method_index=101256
+; sha256=4a8506449eb62ae526bd37f35ed1d842d053d15981d5f463d956c61326035f63
+; maxstack=11 localcount=6 init_scope_depth=1 max_scope_depth=2
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: getlocal_1         
+L000003: getproperty        29765 [peek]
+L000007: astype             27455 [pinball.dialog.continueDialog::ContinueDialog]
+L00000b: setlocal_2         
+L00000c: getlocal_2         
+L00000d: iffalse            L00009d (# 58)
+L000011: getlex             31262 [pinball.dialog.continueDialog::Continue2Dialog]
+L000015: getlocal_2         
+L000016: getproperty        7850 [globalLogic]
+L000019: getlocal_2         
+L00001a: getproperty        7440 [questId]
+L00001d: callproperty       69739 [wfxContinueCost], 2
+L000022: setlocal_3         
+L000023: getlocal_3         
+L000024: iffalse            L00009d (# 58)
+L000028: getlocal_1         
+L000029: getproperty        29910 [layout]
+L00002d: pushstring         37094 ["notice"]
+L000031: pushnull           
+L000032: callproperty       23153 [getText], 2
+L000037: getlex             31262 [pinball.dialog.continueDialog::Continue2Dialog]
+L00003b: getlocal_3         
+L00003c: callproperty       69741 [wfxContinueTitle], 1
+L000041: callpropvoid       21287 [set_text], 1
+L000046: getlocal_1         
+L000047: getproperty        29910 [layout]
+L00004b: pushstring         41138 ["variation"]
+L00004f: pushnull           
+L000050: callproperty       29766 [getContainer], 2
+L000055: pushstring         39523 ["icon"]
+L000059: pushnull           
+L00005a: callproperty       4971 [getImage], 2
+L00005e: setlocal           4
+L000060: getlocal_1         
+L000061: getproperty        6687 [view]
+L000064: getproperty        6899 [asset]
+L000067: setlocal           5
+L000069: getlocal           5
+L00006b: getlex             2951 [pinball.asset::AssetGroupKind]
+L00006e: getproperty        7356 [ItemThumbnail]
+L000071: getlocal_3         
+L000072: getproperty        15980 [thumbnail]
+L000075: getlex             7961 [pinball.common.tools._FunctionTools::BindImpl1_0]
+L000078: getlex             31262 [pinball.dialog.continueDialog::Continue2Dialog]
+L00007c: getproperty        69740 [wfxContinueTextureLoaded]
+L000080: pushstring         16469 ["image"]
+L000084: getlocal           4
+L000086: pushstring         14799 ["asset"]
+L000089: getlocal           5
+L00008b: pushstring         3461 ["path"]
+L00008e: getlocal_3         
+L00008f: getproperty        15980 [thumbnail]
+L000092: newobject          3
+L000094: construct          2
+L000096: getproperty        212 [execute]
+L000099: callpropvoid       8813 [setTexture], 3
+L00009d: returnvoid         
+L00009e: ; end
+; exception_table=[]

@@ -1,0 +1,60 @@
+; Continue2Dialog$/wfxContinueContents
+; body_index=92782 method_index=101255
+; sha256=77f13c5f6d1dba767f99b1905a9df1e4d402abd0e05a1dedbad78516356c6ced
+; maxstack=21 localcount=2 init_scope_depth=1 max_scope_depth=2
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: getlex             9841 [pinball.dialog.general::DialogContent]
+L000005: getlex             31262 [pinball.dialog.continueDialog::Continue2Dialog]
+L000009: getlocal_1         
+L00000a: callproperty       69741 [wfxContinueTitle], 1
+L00000f: callproperty       7406 [Title], 1
+L000013: getlex             9841 [pinball.dialog.general::DialogContent]
+L000016: pushbyte           40
+L000018: callproperty       30087 [Margin], 1
+L00001d: getlex             9841 [pinball.dialog.general::DialogContent]
+L000020: getlocal_1         
+L000021: getproperty        9742 [item_id]
+L000024: getlex             79 [haxe.ds::Option]
+L000026: getlocal_1         
+L000027: getproperty        15848 [amount]
+L00002a: callproperty       241 [Some], 1
+L00002e: callproperty       2966 [Item], 2
+L000032: getlex             9841 [pinball.dialog.general::DialogContent]
+L000035: pushbyte           16
+L000037: callproperty       30087 [Margin], 1
+L00003c: getlex             9841 [pinball.dialog.general::DialogContent]
+L00003f: getlex             30001 [pinball.dialog.general.variation::DialogVariationKind]
+L000043: getlex             31152 [pinball.dialog.general.variation::DialogVariationWidthKind]
+L000047: getproperty        226 [None]
+L00004a: pushstring         1006 ["title"]
+L00004d: getlex             23293 [pinball.common.data.ui::UiStringKind]
+L000051: getlocal_1         
+L000052: getproperty        31508 [itemName]
+L000056: callproperty       125 [Dynamic], 1
+L000059: pushstring         39523 ["icon"]
+L00005d: getlex             31155 [pinball.dialog.general.variation::DialogVariationIconKind]
+L000061: getproperty        226 [None]
+L000064: pushstring         4881 ["before"]
+L000067: getlocal_1         
+L000068: getproperty        22304 [before]
+L00006c: pushstring         4880 ["after"]
+L00006f: getlocal_1         
+L000070: getproperty        22305 [after]
+L000074: pushstring         39330 ["minValue"]
+L000078: getlex             79 [haxe.ds::Option]
+L00007a: getproperty        226 [None]
+L00007d: pushstring         39331 ["maxValue"]
+L000081: getlex             79 [haxe.ds::Option]
+L000083: getproperty        226 [None]
+L000086: pushstring         40895 ["formatter"]
+L00008a: getlex             31156 [pinball.dialog.general.variation::DialogVariationSliderFormatterKind]
+L00008e: getproperty        2742 [Default]
+L000091: newobject          7
+L000093: newarray           1
+L000095: callproperty       15248 [Fix], 2
+L000099: callproperty       31165 [Variation], 1
+L00009e: newarray           5
+L0000a0: returnvalue        
+L0000a1: ; end
+; exception_table=[]

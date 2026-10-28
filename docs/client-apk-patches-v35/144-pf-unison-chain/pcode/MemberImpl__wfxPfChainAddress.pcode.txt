@@ -1,0 +1,13 @@
+# MemberImpl/wfxPfChainAddress header=[6, 2, 1, 2] sha=48344dec5f8224fe99a3543045c75c920e729f68336b8f07a94ff92a511a8860
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['pinball.online.battle.address::ActionEvaluatorAddress']
+#0003 ofs0006: getlocal_1 []
+#0004 ofs0007: getlex ['pinball.online.battle.address::InstantAbilityAddress']
+#0005 ofs000a: pushbyte [220]
+#0006 ofs000c: getlocal_0 []
+#0007 ofs000d: getproperty ['address']
+#0008 ofs0011: pushtrue []
+#0009 ofs0012: callproperty ['Initial', 3]
+#0010 ofs0016: callproperty ['AbilitySkill', 2]
+#0011 ofs001b: returnvalue []

@@ -1,0 +1,101 @@
+; AccumulationDamageIndicatorView/createDigit (after)
+; body_index=57502 method_index=62035
+; sha256=fb3051014cde1cb450e95f80321713db8242aae300e352ca38933fcce64c0078
+; maxstack=13 localcount=2 init_scope_depth=1 max_scope_depth=2
+L000000 (#0000): getlocal_0         
+L000001 (#0001): pushscope          
+L000002 (#0002): findproperty       6899 [asset]
+L000005 (#0003): getproperty        6899 [asset]
+L000008 (#0004): pushstring         64624 ["battle/common/layer1/damage_font/0"]
+L00000c (#0005): callproperty       8844 [getTexture], 1
+L000010 (#0006): coerce             7831 [starling.textures::Texture]
+L000013 (#0007): findproperty       6899 [asset]
+L000016 (#0008): getproperty        6899 [asset]
+L000019 (#0009): pushstring         64625 ["battle/common/layer1/damage_font/1"]
+L00001d (#0010): callproperty       8844 [getTexture], 1
+L000021 (#0011): coerce             7831 [starling.textures::Texture]
+L000024 (#0012): findproperty       6899 [asset]
+L000027 (#0013): getproperty        6899 [asset]
+L00002a (#0014): pushstring         64626 ["battle/common/layer1/damage_font/2"]
+L00002e (#0015): callproperty       8844 [getTexture], 1
+L000032 (#0016): coerce             7831 [starling.textures::Texture]
+L000035 (#0017): findproperty       6899 [asset]
+L000038 (#0018): getproperty        6899 [asset]
+L00003b (#0019): pushstring         64627 ["battle/common/layer1/damage_font/3"]
+L00003f (#0020): callproperty       8844 [getTexture], 1
+L000043 (#0021): coerce             7831 [starling.textures::Texture]
+L000046 (#0022): findproperty       6899 [asset]
+L000049 (#0023): getproperty        6899 [asset]
+L00004c (#0024): pushstring         64628 ["battle/common/layer1/damage_font/4"]
+L000050 (#0025): callproperty       8844 [getTexture], 1
+L000054 (#0026): coerce             7831 [starling.textures::Texture]
+L000057 (#0027): findproperty       6899 [asset]
+L00005a (#0028): getproperty        6899 [asset]
+L00005d (#0029): pushstring         64629 ["battle/common/layer1/damage_font/5"]
+L000061 (#0030): callproperty       8844 [getTexture], 1
+L000065 (#0031): coerce             7831 [starling.textures::Texture]
+L000068 (#0032): findproperty       6899 [asset]
+L00006b (#0033): getproperty        6899 [asset]
+L00006e (#0034): pushstring         64630 ["battle/common/layer1/damage_font/6"]
+L000072 (#0035): callproperty       8844 [getTexture], 1
+L000076 (#0036): coerce             7831 [starling.textures::Texture]
+L000079 (#0037): findproperty       6899 [asset]
+L00007c (#0038): getproperty        6899 [asset]
+L00007f (#0039): pushstring         64631 ["battle/common/layer1/damage_font/7"]
+L000083 (#0040): callproperty       8844 [getTexture], 1
+L000087 (#0041): coerce             7831 [starling.textures::Texture]
+L00008a (#0042): findproperty       6899 [asset]
+L00008d (#0043): getproperty        6899 [asset]
+L000090 (#0044): pushstring         64632 ["battle/common/layer1/damage_font/8"]
+L000094 (#0045): callproperty       8844 [getTexture], 1
+L000098 (#0046): coerce             7831 [starling.textures::Texture]
+L00009b (#0047): findproperty       6899 [asset]
+L00009e (#0048): getproperty        6899 [asset]
+L0000a1 (#0049): pushstring         64633 ["battle/common/layer1/damage_font/9"]
+L0000a5 (#0050): callproperty       8844 [getTexture], 1
+L0000a9 (#0051): coerce             7831 [starling.textures::Texture]
+L0000ac (#0052): findproperty       6899 [asset]
+L0000af (#0053): getproperty        6899 [asset]
+L0000b2 (#0054): pushstring         64634 ["battle/common/layer1/damage_font/point"]
+L0000b6 (#0055): callproperty       8844 [getTexture], 1
+L0000ba (#0056): coerce             7831 [starling.textures::Texture]
+L0000bd (#0057): findproperty       6899 [asset]
+L0000c0 (#0058): getproperty        6899 [asset]
+L0000c3 (#0059): pushstring         64635 ["battle/common/layer1/damage_font/unit_prefix_k"]
+L0000c7 (#0060): callproperty       8844 [getTexture], 1
+L0000cb (#0061): coerce             7831 [starling.textures::Texture]
+L0000ce (#0062): newarray           12
+L0000d0 (#0063): coerce             6 [Array]
+L0000d2 (#0064): setlocal_1         
+L0000d3 (#0065): getlocal_1         
+L0000d4 (#0066): findproperty       6899 [asset]
+L0000d7 (#0067): getproperty        6899 [asset]
+L0000da (#0068): pushstring         94599 ["battle/common/layer1/damage_font/unit_prefix_m"]
+L0000de (#0069): callproperty       8844 [getTexture], 1
+L0000e2 (#0070): coerce             7831 [starling.textures::Texture]
+L0000e5 (#0071): callpropvoid       65 [http://adobe.com/AS3/2006/builtin::push], 1
+L0000e8 (#0072): getlocal_1         
+L0000e9 (#0073): findproperty       6899 [asset]
+L0000ec (#0074): getproperty        6899 [asset]
+L0000ef (#0075): pushstring         94600 ["battle/common/layer1/damage_font/unit_prefix_b"]
+L0000f3 (#0076): callproperty       8844 [getTexture], 1
+L0000f7 (#0077): coerce             7831 [starling.textures::Texture]
+L0000fa (#0078): callpropvoid       65 [http://adobe.com/AS3/2006/builtin::push], 1
+L0000fd (#0079): getlocal_1         
+L0000fe (#0080): findproperty       6899 [asset]
+L000101 (#0081): getproperty        6899 [asset]
+L000104 (#0082): pushstring         94601 ["battle/common/layer1/damage_font/unit_prefix_t"]
+L000108 (#0083): callproperty       8844 [getTexture], 1
+L00010c (#0084): coerce             7831 [starling.textures::Texture]
+L00010f (#0085): callpropvoid       65 [http://adobe.com/AS3/2006/builtin::push], 1
+L000112 (#0086): findpropstrict     4793 [starling.display::MovieClip]
+L000115 (#0087): getlex             2884 [__AS3__.vec::Vector]
+L000118 (#0088): getlex             7831 [starling.textures::Texture]
+L00011b (#0089): applytype          1
+L00011d (#0090): getglobalscope     
+L00011e (#0091): getlocal_1         
+L00011f (#0092): call               1
+L000121 (#0093): constructprop      4793 [starling.display::MovieClip], 1
+L000125 (#0094): returnvalue        
+L000126 (#0095): ; end
+; exception_table=[]

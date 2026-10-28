@@ -1,0 +1,11 @@
+# BattleScene/socketErrorDialog header=[2, 2, 1, 2] sha=6e9cd519f0ecab51d49499db1216889631de1c4a9e686d98cc0c6245a1085337
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_0 []
+#0003 ofs0003: callproperty ['wfxServerClearActive', 0]
+#0004 ofs0008: iffalse [] -> #6
+#0005 ofs000c: returnvoid []
+#0006 ofs000d: findproperty ['isolateBySocketError']
+#0007 ofs0011: getlocal_1 []
+#0008 ofs0012: callpropvoid ['isolateBySocketError', 1]
+#0009 ofs0017: returnvoid []

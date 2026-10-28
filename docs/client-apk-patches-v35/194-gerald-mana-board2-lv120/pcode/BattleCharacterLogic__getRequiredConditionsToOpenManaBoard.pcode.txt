@@ -1,0 +1,108 @@
+; BattleCharacterLogic/getRequiredConditionsToOpenManaBoard
+; body_index=92381 method_index=100853
+; sha256=4089975fa89f606ef48c2bc7776c8858b42f19a2ec2f87e77c224ceb4b712975
+; maxstack=6 localcount=7 init_scope_depth=6 max_scope_depth=7
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: debug              1, 59271 ["param1"], 0, 0
+L000009: debug              1, 92776 ["_loc2_"], 1, 1277
+L000011: debug              1, 92777 ["_loc3_"], 2, 1278
+L000019: debug              1, 92779 ["_loc4_"], 3, 1274
+L000021: debug              1, 92842 ["_loc5_"], 4, 1275
+L000029: debug              1, 92843 ["_loc6_"], 5, 1276
+L000031: pushnull           
+L000032: getlex             16631 [pinball.master.generated::BoardOpenConditionValues]
+L000036: astypelate         
+L000037: coerce_a           
+L000038: setlocal           4
+L00003a: pushbyte           0
+L00003c: convert_i          
+L00003d: setlocal           5
+L00003f: pushbyte           0
+L000041: convert_i          
+L000042: setlocal           6
+L000044: newarray           0
+L000046: coerce             6 [Array]
+L000048: setlocal_2         
+L000049: getlex             7746 [logicAssets]
+L00004c: getlex             3581 [pinball.master.generated::BoardOpenConditionTable]
+L00004f: callproperty       6949 [pinball.asset.logic:ILogicAssetContainer::getMasterTable], 1
+L000053: callproperty       68567 [get_data], 0
+L000058: coerce             6946 [pinball.master.runtime::MasterMap]
+L00005b: setlocal_3         
+L00005c: getlocal_1         
+L00005d: pushbyte           2
+L00005f: ifne               L000114 (# 100)
+L000063: getlocal_3         
+L000064: findpropstrict     6915 [get_rarity]
+L000067: callproperty       6915 [get_rarity], 0
+L00006b: callproperty       7182 [pinball.master.runtime:MasterMap::get], 1
+L00006f: getlocal_1         
+L000070: callproperty       68568 [get], 1
+L000075: coerce_a           
+L000076: setlocal           4
+L000078: findpropstrict     10449 [get_level]
+L00007b: callproperty       10449 [get_level], 0
+L00007f: findpropstrict     16416 [get_baseLevelCap]
+L000083: callproperty       16416 [get_baseLevelCap], 0
+L000088: getlocal_0         
+L000089: getproperty        5259 [id]
+L00008c: pushshort          2000
+L00008f: pushbyte           6
+L000091: lshift             
+L000092: pushshort          1989
+L000095: add_i              
+L000096: ifne               L00009d (# 53)
+L00009a: pop                
+L00009b: pushbyte           120
+L00009d: ifnlt              L0000ca (# 70)
+L0000a1: getlocal_2         
+L0000a2: getlex             10393 [pinball.common.data.ability::ManaBoardOpenRequiredCondition]
+L0000a5: findpropstrict     16416 [get_baseLevelCap]
+L0000a9: callproperty       16416 [get_baseLevelCap], 0
+L0000ae: getlocal_0         
+L0000af: getproperty        5259 [id]
+L0000b2: pushshort          2000
+L0000b5: pushbyte           6
+L0000b7: lshift             
+L0000b8: pushshort          1989
+L0000bb: add_i              
+L0000bc: ifne               L0000c3 (# 68)
+L0000c0: pop                
+L0000c1: pushbyte           120
+L0000c3: callproperty       3408 [Level], 1
+L0000c7: callpropvoid       65 [http://adobe.com/AS3/2006/builtin::push], 1
+L0000ca: getlocal_1         
+L0000cb: pushbyte           1
+L0000cd: subtract           
+L0000ce: convert_i          
+L0000cf: setlocal           5
+L0000d1: findpropstrict     16584 [hasLearnedAllManaNodeOfManaBoard]
+L0000d5: getlocal           5
+L0000d7: callproperty       16584 [hasLearnedAllManaNodeOfManaBoard], 1
+L0000dc: not                
+L0000dd: iffalse            L0000f5 (# 90)
+L0000e1: getlocal_1         
+L0000e2: pushbyte           1
+L0000e4: subtract           
+L0000e5: convert_i          
+L0000e6: setlocal           6
+L0000e8: getlocal_2         
+L0000e9: getlex             10393 [pinball.common.data.ability::ManaBoardOpenRequiredCondition]
+L0000ec: getlocal           6
+L0000ee: callproperty       10361 [LearnAllNodes], 1
+L0000f2: callpropvoid       65 [http://adobe.com/AS3/2006/builtin::push], 1
+L0000f5: getlex             16580 [overLimitStep]
+L0000f9: getlocal           4
+L0000fb: getproperty        68569 [required_over_limit_step]
+L0000ff: ifnlt              L000114 (# 100)
+L000103: getlocal_2         
+L000104: getlex             10393 [pinball.common.data.ability::ManaBoardOpenRequiredCondition]
+L000107: getlocal           4
+L000109: getproperty        68569 [required_over_limit_step]
+L00010d: callproperty       10394 [OverLimit], 1
+L000111: callpropvoid       65 [http://adobe.com/AS3/2006/builtin::push], 1
+L000114: getlocal_2         
+L000115: returnvalue        
+L000116: ; end
+; exception_table=[]

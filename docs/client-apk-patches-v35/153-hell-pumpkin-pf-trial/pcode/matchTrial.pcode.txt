@@ -1,0 +1,144 @@
+方法 HitCountCheck/matchTrial；body=58641；method=63326
+header=[2, 9, 1, 2]；代码 SHA256=389dfb038cde555efff0045798f54e2711a1a397f2d52a236305adfc8878a3d3
+ofs0000: getlocal_0  | d0
+ofs0001: pushscope  | 30
+ofs0002: pushnull  | 20
+ofs0003: astype 32  ; Object  | 86 20
+ofs0005: setlocal 6  | 63 06
+ofs0007: pushtrue  | 26
+ofs0008: findproperty 10228  ; isActive  | 5e f4 4f
+ofs000b: callproperty 10228, 0  ; isActive  | 46 f4 4f 00
+ofs000f: convert_b  | 76
+ofs0010: not  | 96
+ofs0011: iftrue ofs002a  | 11 15 00 00
+ofs0015: pop  | 29
+ofs0016: pushfalse  | 27
+ofs0017: getlocal 5  | 62 05
+ofs0019: not  | 96
+ofs001a: iffalse ofs0029  | 12 0b 00 00
+ofs001e: pop  | 29
+ofs001f: findproperty 47624  ; isGaugeAppeared  | 5e 88 f4 02
+ofs0023: getproperty 47624  ; isGaugeAppeared  | 66 88 f4 02
+ofs0027: not  | 96
+ofs0028: convert_b  | 76
+ofs0029: convert_b  | 76
+ofs002a: iffalse ofs0038  | 12 0a 00 00
+ofs002e: pushnull  | 20
+ofs002f: coerce 32  ; Object  | 80 20
+ofs0031: coerce 32  ; Object  | 80 20
+ofs0033: setlocal 6  | 63 06
+ofs0035: getlocal 6  | 62 06
+ofs0037: returnvalue  | 48
+ofs0038: findproperty 42297  ; owner  | 5e b9 ca 02
+ofs003c: getproperty 42297  ; owner  | 66 b9 ca 02
+ofs0040: callproperty 44643, 0  ; pinball.scene.battle.battle.hitCountCheck:HitCountCheckOwner::isInvincibleByPhaseChange  | 46 e3 dc 02 00
+ofs0045: convert_b  | 76
+ofs0046: iffalse ofs0054  | 12 0a 00 00
+ofs004a: pushnull  | 20
+ofs004b: coerce 32  ; Object  | 80 20
+ofs004d: coerce 32  ; Object  | 80 20
+ofs004f: setlocal 6  | 63 06
+ofs0051: getlocal 6  | 62 06
+ofs0053: returnvalue  | 48
+ofs0054: findproperty 48833  ; currentValues  | 5e c1 fd 02
+ofs0058: getproperty 48833  ; currentValues  | 66 c1 fd 02
+ofs005c: coerce_a  | 82
+ofs005d: setlocal 7  | 63 07
+ofs005f: getlocal 7  | 62 07
+ofs0061: pushnull  | 20
+ofs0062: coerce_a  | 82
+ofs0063: ifne ofs0074  | 14 0d 00 00
+ofs0067: getlex 27  ; flash::Boot  | 60 1b
+ofs0069: findpropstrict 28  ; Error  | 5d 1c
+ofs006b: constructprop 28, 0  ; Error  | 4a 1c 00
+ofs006e: initproperty 29  ; lastError  | 68 1d
+ofs0070: pushstring 15171  ; 'No Value'  | 2c c3 76
+ofs0073: throw  | 03
+ofs0074: getlocal 7  | 62 07
+ofs0076: getproperty 5119  ; kind  | 66 ff 27
+ofs0079: coerce 15221  ; pinball.common.data.battle.enemy::TrialKind  | 80 f5 76
+ofs007c: coerce 15221  ; pinball.common.data.battle.enemy::TrialKind  | 80 f5 76
+ofs007f: setlocal 8  | 63 08
+ofs0081: getlocal 8  | 62 08
+ofs0083: getproperty 46  ; index  | 66 2e
+ofs0085: lookupswitch default=ofs0096 cases=[ofs009a, ofs00ae, ofs00c2, ofs00d6]  | 1b 11 00 00 03 15 00 00 29 00 00 3d 00 00 51 00 00
+ofs0096: jump ofs00ef  | 10 55 00 00
+ofs009a: getlocal_1  | d1
+ofs009b: not  | 96
+ofs009c: iffalse ofs00aa  | 12 0a 00 00
+ofs00a0: getlocal_3  | d3
+ofs00a1: iftrue ofs00f6  | 11 51 00 00
+ofs00a5: pushnull  | 20
+ofs00a6: coerce 32  ; Object  | 80 20
+ofs00a8: returnvalue  | 48
+ofs00a9: avm_label  | 09
+ofs00aa: jump ofs00ef  | 10 41 00 00
+ofs00ae: getlocal_2  | d2
+ofs00af: not  | 96
+ofs00b0: iffalse ofs00be  | 12 0a 00 00
+ofs00b4: pushnull  | 20
+ofs00b5: coerce 32  ; Object  | 80 20
+ofs00b7: coerce 32  ; Object  | 80 20
+ofs00b9: setlocal 6  | 63 06
+ofs00bb: getlocal 6  | 62 06
+ofs00bd: returnvalue  | 48
+ofs00be: jump ofs00ef  | 10 2d 00 00
+ofs00c2: getlocal_3  | d3
+ofs00c3: not  | 96
+ofs00c4: iffalse ofs00d2  | 12 0a 00 00
+ofs00c8: pushnull  | 20
+ofs00c9: coerce 32  ; Object  | 80 20
+ofs00cb: coerce 32  ; Object  | 80 20
+ofs00cd: setlocal 6  | 63 06
+ofs00cf: getlocal 6  | 62 06
+ofs00d1: returnvalue  | 48
+ofs00d2: jump ofs00ef  | 10 19 00 00
+ofs00d6: getlocal 8  | 62 08
+ofs00d8: getproperty 80  ; params  | 66 50
+ofs00da: pushbyte 0  | 24 00
+ofs00dc: getproperty 14  ; <mn kind 0x1b>  | 66 0e
+ofs00de: convert_i  | 73
+ofs00df: getlocal 4  | 62 04
+ofs00e1: ifngt ofs00ef  | 0e 0a 00 00
+ofs00e5: pushnull  | 20
+ofs00e6: coerce 32  ; Object  | 80 20
+ofs00e8: coerce 32  ; Object  | 80 20
+ofs00ea: setlocal 6  | 63 06
+ofs00ec: getlocal 6  | 62 06
+ofs00ee: returnvalue  | 48
+ofs00ef: findproperty 8854  ; count  | 5e 96 45
+ofs00f2: getproperty 8854  ; count  | 66 96 45
+ofs00f5: returnvalue  | 48
+ofs00f6: avm_label  | 09
+ofs00f7: getlocal_0  | d0
+ofs00f8: getproperty 42297  ; owner  | 66 b9 ca 02
+ofs00fc: coerce_a  | 82
+ofs00fd: callproperty 44429, 0  ; getMasterId  | 46 8d db 02 00
+ofs0102: coerce_a  | 82
+ofs0103: setlocal 7  | 63 07
+ofs0105: getlocal 7  | 62 07
+ofs0107: getproperty 46  ; index  | 66 2e
+ofs0109: pushbyte 1  | 24 01
+ofs010b: ifeq ofs0121  | 13 12 00 00
+ofs010f: getlocal 7  | 62 07
+ofs0111: getproperty 80  ; params  | 66 50
+ofs0113: pushbyte 0  | 24 00
+ofs0115: getproperty 14  ; <mn kind 0x1b>  | 66 0e
+ofs0117: getproperty 80  ; params  | 66 50
+ofs0119: pushbyte 0  | 24 00
+ofs011b: getproperty 14  ; <mn kind 0x1b>  | 66 0e
+ofs011d: jump ofs012a  | 10 09 00 00
+ofs0121: avm_label  | 09
+ofs0122: getlocal 7  | 62 07
+ofs0124: getproperty 80  ; params  | 66 50
+ofs0126: pushbyte 0  | 24 00
+ofs0128: getproperty 14  ; <mn kind 0x1b>  | 66 0e
+ofs012a: avm_label  | 09
+ofs012b: convert_s  | 70
+ofs012c: pushstring 94182  ; 'mod_hp_'  | 2c e6 df 05
+ofs0130: callproperty 192, 1  ; indexOf  | 46 c0 01 01
+ofs0134: pushbyte 0  | 24 00
+ofs0136: ifeq ofs00a9  | 13 6f ff ff
+ofs013a: pushnull  | 20
+ofs013b: coerce 32  ; Object  | 80 20
+ofs013d: returnvalue  | 48

@@ -1,0 +1,59 @@
+; BattleScene/startQuestPlayContinue
+; body_index=28948 method_index=30866
+; sha256=b02081e1ea963c65937f26637d49c850d88ada353d99582ef71c95f0e6aebe0c
+; maxstack=7 localcount=4 init_scope_depth=1 max_scope_depth=2
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: pushnull           
+L000003: astype             19077 [pinball.common.data.quest.common::PlayKind]
+L000007: setlocal_2         
+L000008: findproperty       5119 [kind]
+L00000b: getproperty        5119 [kind]
+L00000e: getproperty        46 [index]
+L000010: lookupswitch       default=L00001b cases=[L00001f, L00002f]
+L00001b: jump               L00003b (# 19)
+L00001f: getlex             19077 [pinball.common.data.quest.common::PlayKind]
+L000023: getproperty        7674 [Single]
+L000026: coerce             19077 [pinball.common.data.quest.common::PlayKind]
+L00002a: setlocal_2         
+L00002b: jump               L00003b (# 19)
+L00002f: getlex             19077 [pinball.common.data.quest.common::PlayKind]
+L000033: getproperty        7689 [Multi]
+L000036: coerce             19077 [pinball.common.data.quest.common::PlayKind]
+L00003a: setlocal_2         
+L00003b: findproperty       27127 [getAbortParameter]
+L00003f: callproperty       27127 [getAbortParameter], 0
+L000044: coerce             19049 [pinball.common.data.quest.battle::BattleQuestClearParameter]
+L000048: callproperty       20513 [getStatistics], 0
+L00004d: coerce_a           
+L00004e: coerce_a           
+L00004f: setlocal_3         
+L000050: getlex             31262 [pinball.dialog.continueDialog::Continue2Dialog]
+L000054: getlocal_0         
+L000055: getproperty        7850 [globalLogic]
+L000058: getlocal_0         
+L000059: getproperty        7440 [questId]
+L00005c: callproperty       69739 [wfxContinueCost], 2
+L000061: iffalse            L000077 (# 39)
+L000065: getlocal_3         
+L000066: getlocal_0         
+L000067: getproperty        20559 [myBattle]
+L00006b: getproperty        27238 [continueCounter]
+L00006f: callproperty       15493 [getCurrentContinueCount], 0
+L000073: setproperty        69744 [wfx_continue_count]
+L000077: findproperty       6728 [remote]
+L00007a: getproperty        6728 [remote]
+L00007d: getlocal_1         
+L00007e: findpropstrict     27128 [pinball.remote.quest.playContinue::QuestPlayContinueParameter]
+L000082: findproperty       7440 [questId]
+L000085: getproperty        7440 [questId]
+L000088: getlocal_2         
+L000089: findproperty       15531 [playId]
+L00008c: getproperty        15531 [playId]
+L00008f: getlocal_3         
+L000090: constructprop      27128 [pinball.remote.quest.playContinue::QuestPlayContinueParameter], 4
+L000095: callpropvoid       27129 [pinball.context.remote:RemoteForLogic::questPlayContinue], 2
+L00009a: returnvoid         
+L00009b: returnvoid         
+L00009c: ; end
+; exception_table=[]

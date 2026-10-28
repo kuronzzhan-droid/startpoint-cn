@@ -1,0 +1,12 @@
+# MemberImpl/wfxPf4Action header=[2, 3, 1, 2] sha=ed0ed2f7279b9bd830b5b481f85f209954564b9d46bd2b56d32e1ccbaa85da5e
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: iffalse [] -> #9
+#0004 ofs0007: getlocal_1 []
+#0005 ofs0008: getlocal_2 []
+#0006 ofs0009: convert_i []
+#0007 ofs000a: getproperty ['<mn kind 0x1b>']
+#0008 ofs000c: returnvalue []
+#0009 ofs000d: pushnull []
+#0010 ofs000e: returnvalue []

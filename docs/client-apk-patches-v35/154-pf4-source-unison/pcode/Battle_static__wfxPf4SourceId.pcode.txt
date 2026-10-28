@@ -1,0 +1,88 @@
+# Battle$/wfxPf4SourceId header=[2, 6, 1, 2] sha=385474e2fdb20314edc3f6e1573e78debf90aa2f6e255845c576b4652709f446
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: iffalse [] -> #85
+#0004 ofs0007: getlocal_2 []
+#0005 ofs0008: pushbyte [16]
+#0006 ofs000a: rshift []
+#0007 ofs000b: setlocal_3 []
+#0008 ofs000c: getlocal_3 []
+#0009 ofs000d: pushbyte [0]
+#0010 ofs000f: iflt [] -> #85
+#0011 ofs0013: getlocal_2 []
+#0012 ofs0014: pushint [65535]
+#0013 ofs0017: bitand []
+#0014 ofs0018: setlocal [4]
+#0015 ofs001a: getlocal [4]
+#0016 ofs001c: pushbyte [1]
+#0017 ofs001e: ifgt [] -> #85
+#0018 ofs0022: getlocal_1 []
+#0019 ofs0023: getproperty ['initialData']
+#0020 ofs0027: setlocal [5]
+#0021 ofs0029: getlocal [5]
+#0022 ofs002b: iffalse [] -> #85
+#0023 ofs002f: getlocal [5]
+#0024 ofs0031: getproperty ['sources']
+#0025 ofs0034: setlocal [5]
+#0026 ofs0036: getlocal [5]
+#0027 ofs0038: iffalse [] -> #85
+#0028 ofs003c: getlocal [5]
+#0029 ofs003e: getproperty ['length']
+#0030 ofs0040: iffalse [] -> #85
+#0031 ofs0044: getlocal [5]
+#0032 ofs0046: pushbyte [0]
+#0033 ofs0048: getproperty ['<mn kind 0x1b>']
+#0034 ofs004a: setlocal [5]
+#0035 ofs004c: getlocal [5]
+#0036 ofs004e: iffalse [] -> #85
+#0037 ofs0052: getlocal [5]
+#0038 ofs0054: getproperty ['party']
+#0039 ofs0057: setlocal [5]
+#0040 ofs0059: getlocal [5]
+#0041 ofs005b: iffalse [] -> #85
+#0042 ofs005f: getlocal [4]
+#0043 ofs0061: iftrue [] -> #48
+#0044 ofs0065: getlocal [5]
+#0045 ofs0067: getproperty ['characters']
+#0046 ofs006a: setlocal [5]
+#0047 ofs006c: jump [] -> #51
+#0048 ofs0070: getlocal [5]
+#0049 ofs0072: getproperty ['unison_characters']
+#0050 ofs0076: setlocal [5]
+#0051 ofs0078: getlocal [5]
+#0052 ofs007a: iffalse [] -> #85
+#0053 ofs007e: getlocal_3 []
+#0054 ofs007f: getlocal [5]
+#0055 ofs0081: getproperty ['length']
+#0056 ofs0083: ifge [] -> #85
+#0057 ofs0087: getlocal [5]
+#0058 ofs0089: getlocal_3 []
+#0059 ofs008a: getproperty ['<mn kind 0x1b>']
+#0060 ofs008c: setlocal [5]
+#0061 ofs008e: getlocal [5]
+#0062 ofs0090: iffalse [] -> #85
+#0063 ofs0094: getlocal [5]
+#0064 ofs0096: getproperty ['index']
+#0065 ofs0098: pushbyte [0]
+#0066 ofs009a: ifne [] -> #85
+#0067 ofs009e: getlocal [5]
+#0068 ofs00a0: getproperty ['params']
+#0069 ofs00a2: setlocal [5]
+#0070 ofs00a4: getlocal [5]
+#0071 ofs00a6: iffalse [] -> #85
+#0072 ofs00aa: getlocal [5]
+#0073 ofs00ac: getproperty ['length']
+#0074 ofs00ae: iffalse [] -> #85
+#0075 ofs00b2: getlocal [5]
+#0076 ofs00b4: pushbyte [0]
+#0077 ofs00b6: getproperty ['<mn kind 0x1b>']
+#0078 ofs00b8: setlocal [5]
+#0079 ofs00ba: getlocal [5]
+#0080 ofs00bc: iffalse [] -> #85
+#0081 ofs00c0: getlocal [5]
+#0082 ofs00c2: getproperty ['id']
+#0083 ofs00c5: convert_i []
+#0084 ofs00c6: returnvalue []
+#0085 ofs00c7: pushbyte [255]
+#0086 ofs00c9: returnvalue []

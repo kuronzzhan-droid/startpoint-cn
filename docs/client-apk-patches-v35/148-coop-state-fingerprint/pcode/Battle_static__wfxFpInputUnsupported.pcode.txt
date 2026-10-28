@@ -1,0 +1,13 @@
+# Battle$/wfxFpInputUnsupported header=[5, 3, 1, 2] sha=27ee8fb3a50e43d3a0c5225f7886261ad8c501cc380a7b8f6e6933a5a586f836
+# exceptions=[]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: pushstring ['path']
+#0004 ofs0006: getlocal_2 []
+#0005 ofs0007: pushstring ['reason']
+#0006 ofs000b: pushstring ['field_shape']
+#0007 ofs000f: newobject [2]
+#0008 ofs0011: callpropvoid ['push', 1]
+#0009 ofs0015: pushnull []
+#0010 ofs0016: returnvalue []

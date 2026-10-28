@@ -1,0 +1,22 @@
+# Battle$/wfxFpKeys header=[3, 4, 1, 2] sha=a70912dc2618302e56c3746f6ac8bc6e48f0cc22dfc09a8c627d56a110bd0f89
+# exceptions=[]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: newarray [0]
+#0003 ofs0004: setlocal_2 []
+#0004 ofs0005: pushbyte [0]
+#0005 ofs0007: setlocal_3 []
+#0006 ofs0008: avm_label []
+#0007 ofs0009: hasnext2 [1, 3]
+#0008 ofs000c: iffalse [] -> #15
+#0009 ofs0010: getlocal [2]
+#0010 ofs0012: getlocal [1]
+#0011 ofs0014: getlocal [3]
+#0012 ofs0016: nextname []
+#0013 ofs0017: callpropvoid ['push', 1]
+#0014 ofs001b: jump [] -> #6
+#0015 ofs001f: getlocal [2]
+#0016 ofs0021: callproperty ['sort', 0]
+#0017 ofs0025: pop []
+#0018 ofs0026: getlocal [2]
+#0019 ofs0028: returnvalue []

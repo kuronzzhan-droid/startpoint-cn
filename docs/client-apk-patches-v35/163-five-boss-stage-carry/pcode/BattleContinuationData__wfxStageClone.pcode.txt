@@ -1,0 +1,68 @@
+; BattleContinuationData$/wfxStageClone
+; body_index=92772 method_index=101245
+; sha256=982c7cb901501c4953a0deba2280245265d7fe8aca557c980011fd3e141ec1b7
+; maxstack=24 localcount=4 init_scope_depth=1 max_scope_depth=1
+L000000: getlex             16901 [pinball.common.data.character.condition::Condition]
+L000004: getlocal_1         
+L000005: getproperty        5259 [id]
+L000008: getlocal_1         
+L000009: getproperty        16899 [_originalTimeLimit]
+L00000d: getlocal_1         
+L00000e: getproperty        16889 [addedTime]
+L000012: getlocal_2         
+L000013: add_i              
+L000014: getlocal_1         
+L000015: getproperty        15412 [timeLimit]
+L000018: getlocal_1         
+L000019: getproperty        16871 [restFlipLimit]
+L00001d: getlocal_1         
+L00001e: getproperty        16873 [restPowerFlipLimit]
+L000022: getlocal_1         
+L000023: getproperty        16874 [restEndPowerFlipLimit]
+L000027: getlocal_1         
+L000028: getproperty        16891 [endPowerFlipAcceptedLevels]
+L00002c: pushbyte           0
+L00002e: callproperty       5137 [http://adobe.com/AS3/2006/builtin::slice], 1
+L000032: getlocal_1         
+L000033: getproperty        11384 [maxAccumulation]
+L000036: getlocal_1         
+L000037: getproperty        2690 [content]
+L00003a: getlocal_1         
+L00003b: getproperty        13213 [cancelable]
+L00003e: getlocal_1         
+L00003f: getproperty        16868 [isEternal]
+L000043: getlocal_1         
+L000044: getproperty        16867 [statsBattleId]
+L000048: getlocal_1         
+L000049: getproperty        16878 [originMemberIndex]
+L00004d: getlocal_1         
+L00004e: getproperty        16877 [shouldCountForMission]
+L000052: getlocal_1         
+L000053: getproperty        16880 [isFromHostile]
+L000057: getlocal_1         
+L000058: getproperty        16886 [extensionId]
+L00005c: getlocal_1         
+L00005d: getproperty        16860 [magnificationFromPrimary]
+L000061: getlocal_1         
+L000062: getproperty        16861 [magnificationFromOther]
+L000066: pushnull           
+L000067: pushnull           
+L000068: getlocal_1         
+L000069: getproperty        16892 [discriminationKey]
+L00006d: getlocal_1         
+L00006e: getproperty        16879 [isQuestInitial]
+L000072: construct          23
+L000074: coerce             16901 [pinball.common.data.character.condition::Condition]
+L000078: setlocal_3         
+L000079: getlocal_3         
+L00007a: getlocal_1         
+L00007b: getproperty        16884 [consumedCount]
+L00007f: setproperty        16884 [consumedCount]
+L000083: getlocal_3         
+L000084: getlocal_1         
+L000085: getproperty        16863 [blinkFrameCount]
+L000089: setproperty        16863 [blinkFrameCount]
+L00008d: getlocal_3         
+L00008e: returnvalue        
+L00008f: ; end
+; exception_table=[]

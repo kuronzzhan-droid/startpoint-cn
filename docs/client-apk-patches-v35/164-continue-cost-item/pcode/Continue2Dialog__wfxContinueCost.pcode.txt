@@ -1,0 +1,126 @@
+; Continue2Dialog$/wfxContinueCost
+; body_index=92779 method_index=101252
+; sha256=0979564515de4421bec8a722afd352f9f08639fa48e47d369e462edfb62d25da
+; maxstack=12 localcount=9 init_scope_depth=1 max_scope_depth=2
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: getlocal_1         
+L000003: iffalse            L00013b (# 118)
+L000007: getlocal_2         
+L000008: iffalse            L00013b (# 118)
+L00000c: getlocal_1         
+L00000d: callproperty       7574 [getLogicAssets], 0
+L000011: setlocal_3         
+L000012: getlex             31262 [pinball.dialog.continueDialog::Continue2Dialog]
+L000016: getlocal_3         
+L000017: pushstring         94311 ["continue_cost_"]
+L00001b: getlex             7683 [pinball.common.data.quest.id::QuestIdBattleKindTools]
+L00001e: getlocal_2         
+L00001f: callproperty       17970 [toAnyQuestId], 1
+L000024: add                
+L000025: callproperty       69737 [wfxContinueRead], 2
+L00002a: setlocal           4
+L00002c: getlocal           4
+L00002e: iffalse            L00013b (# 118)
+L000032: getlocal           4
+L000034: pushstring         217 [":"]
+L000037: callproperty       42 [http://adobe.com/AS3/2006/builtin::split], 1
+L00003a: setlocal           4
+L00003c: getlocal           4
+L00003e: getproperty        35 [length]
+L000040: pushbyte           2
+L000042: ifne               L00013b (# 118)
+L000046: getlex             31262 [pinball.dialog.continueDialog::Continue2Dialog]
+L00004a: getlocal           4
+L00004c: pushbyte           0
+L00004e: getproperty        14 [<mn kind 0x1b>]
+L000050: callproperty       69738 [wfxContinuePositiveInt], 1
+L000055: setlocal           5
+L000057: getlocal           5
+L000059: iffalse            L00013b (# 118)
+L00005d: getlex             31262 [pinball.dialog.continueDialog::Continue2Dialog]
+L000061: getlocal           4
+L000063: pushbyte           1
+L000065: getproperty        14 [<mn kind 0x1b>]
+L000067: callproperty       69738 [wfxContinuePositiveInt], 1
+L00006c: setlocal           6
+L00006e: getlocal           6
+L000070: iffalse            L00013b (# 118)
+L000074: getlocal_3         
+L000075: getlex             3756 [pinball.master.generated::ItemTable]
+L000078: callproperty       8210 [pinball.asset.logic:ILogicAssetContainer::getMasterTableMaybe], 1
+L00007c: astype             3756 [pinball.master.generated::ItemTable]
+L00007f: setlocal           7
+L000081: getlocal           7
+L000083: iffalse            L00013b (# 118)
+L000087: getlocal           7
+L000089: callproperty       6950 [get_data], 0
+L00008d: setlocal           7
+L00008f: getlocal           7
+L000091: iffalse            L00013b (# 118)
+L000095: getlocal           7
+L000097: getlocal           5
+L000099: callproperty       7702 [pinball.master.runtime:MasterMap::exists], 1
+L00009d: iffalse            L00013b (# 118)
+L0000a1: getlocal_1         
+L0000a2: getlocal           5
+L0000a4: callproperty       19688 [getItem], 1
+L0000a9: setlocal           7
+L0000ab: getlocal           7
+L0000ad: iffalse            L00013b (# 118)
+L0000b1: getlocal_1         
+L0000b2: getproperty        238 [logicStatus]
+L0000b5: setlocal           8
+L0000b7: getlocal           8
+L0000b9: iffalse            L00013b (# 118)
+L0000bd: getlocal           8
+L0000bf: callproperty       20396 [getPlayerSaveData], 0
+L0000c4: iffalse            L00013b (# 118)
+L0000c8: getlocal_1         
+L0000c9: callproperty       7571 [get_player], 0
+L0000cd: setlocal           4
+L0000cf: getlocal           4
+L0000d1: iffalse            L00013b (# 118)
+L0000d5: getlocal           4
+L0000d7: getproperty        20209 [itemRepository]
+L0000db: iffalse            L00013b (# 118)
+L0000df: getlocal           4
+L0000e1: getproperty        17044 [saveData]
+L0000e5: setlocal           8
+L0000e7: getlocal           8
+L0000e9: iffalse            L00013b (# 118)
+L0000ed: getlocal           8
+L0000ef: getproperty        2683 [items]
+L0000f2: setlocal           8
+L0000f4: getlocal           8
+L0000f6: iffalse            L00013b (# 118)
+L0000fa: getlocal           8
+L0000fc: getproperty        334 [h]
+L0000ff: iffalse            L00013b (# 118)
+L000103: getlocal           4
+L000105: getlocal           5
+L000107: callproperty       10460 [getItemNumber], 1
+L00010b: convert_i          
+L00010c: setlocal           8
+L00010e: pushstring         1651 ["item_id"]
+L000111: getlocal           5
+L000113: pushstring         6179 ["amount"]
+L000116: getlocal           6
+L000118: pushstring         4881 ["before"]
+L00011b: getlocal           8
+L00011d: pushstring         4880 ["after"]
+L000120: getlocal           8
+L000122: getlocal           6
+L000124: subtract_i         
+L000125: pushstring         30677 ["itemName"]
+L000129: getlocal           7
+L00012b: callproperty       15846 [pinball.common.data.item:ItemPeek::get_name], 0
+L00012f: pushstring         1747 ["thumbnail"]
+L000132: getlocal           7
+L000134: callproperty       15851 [pinball.common.data.item:ItemPeek::get_thumbnailId], 0
+L000138: newobject          6
+L00013a: returnvalue        
+L00013b: pushnull           
+L00013c: returnvalue        
+L00013d: ; end
+; exception_table=[]

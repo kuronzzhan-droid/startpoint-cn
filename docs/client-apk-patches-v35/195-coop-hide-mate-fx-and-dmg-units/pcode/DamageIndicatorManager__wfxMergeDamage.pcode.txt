@@ -1,0 +1,174 @@
+; DamageIndicatorManager/wfxMergeDamage (after)
+; body_index=92709 method_index=101182
+; sha256=543aeed0e66208264fa392b7ccdb5677fdb07ad86a8b87c7bd137cbf79679bcd
+; maxstack=5 localcount=10 init_scope_depth=1 max_scope_depth=2
+L000000 (#0000): getlocal_0         
+L000001 (#0001): pushscope          
+L000002 (#0002): getlocal_0         
+L000003 (#0003): getproperty        48264 [primaryBattle]
+L000007 (#0004): iffalse            L000180 (# 167)
+L00000b (#0005): getlocal           4
+L00000d (#0006): getproperty        37090 [createdByPoison]
+L000011 (#0007): iftrue             L000180 (# 167)
+L000015 (#0008): getlocal_0         
+L000016 (#0009): callproperty       69653 [wfxMergeState], 0
+L00001b (#0010): setlocal           5
+L00001d (#0011): getlocal_0         
+L00001e (#0012): getproperty        40733 [effectManager]
+L000022 (#0013): getproperty        27490 [battle]
+L000026 (#0014): getproperty        4801 [currentFrame]
+L000029 (#0015): convert_i          
+L00002a (#0016): setlocal           7
+L00002c (#0017): getlocal           5
+L00002e (#0018): pushbyte           7
+L000030 (#0019): getproperty        14 [<mn kind 0x1b>]
+L000032 (#0020): getlocal           7
+L000034 (#0021): ifeq               L000048 (# 30)
+L000038 (#0022): getlocal           5
+L00003a (#0023): pushbyte           7
+L00003c (#0024): getlocal           7
+L00003e (#0025): setproperty        14 [<mn kind 0x1b>]
+L000040 (#0026): getlocal           5
+L000042 (#0027): pushbyte           0
+L000044 (#0028): pushbyte           0
+L000046 (#0029): setproperty        14 [<mn kind 0x1b>]
+L000048 (#0030): getlocal           5
+L00004a (#0031): pushbyte           1
+L00004c (#0032): getproperty        14 [<mn kind 0x1b>]
+L00004e (#0033): pushbyte           0
+L000050 (#0034): ifngt              L00006b (# 45)
+L000054 (#0035): getlocal           7
+L000056 (#0036): getlocal           5
+L000058 (#0037): pushbyte           6
+L00005a (#0038): getproperty        14 [<mn kind 0x1b>]
+L00005c (#0039): subtract           
+L00005d (#0040): pushbyte           1
+L00005f (#0041): iflt               L00006b (# 45)
+L000063 (#0042): getlocal_0         
+L000064 (#0043): getlocal           5
+L000066 (#0044): callpropvoid       69654 [wfxEmitPending], 1
+L00006b (#0045): getlocal_0         
+L00006c (#0046): getproperty        40733 [effectManager]
+L000070 (#0047): setlocal           6
+L000072 (#0048): getlex             44269 [pinball.scene.battle.battle.effect::DamageIndicatorManager]
+L000076 (#0049): getproperty        69652 [wfxGlobalStates]
+L00007a (#0050): setlocal           8
+L00007c (#0051): getlocal           8
+L00007e (#0052): iftrue             L000093 (# 59)
+L000082 (#0053): getlex             5881 [haxe.ds::WeakMap]
+L000085 (#0054): construct          0
+L000087 (#0055): setlocal           8
+L000089 (#0056): getlex             44269 [pinball.scene.battle.battle.effect::DamageIndicatorManager]
+L00008d (#0057): getlocal           8
+L00008f (#0058): setproperty        69652 [wfxGlobalStates]
+L000093 (#0059): getlocal           8
+L000095 (#0060): getlocal           6
+L000097 (#0061): callproperty       2580 [get], 1
+L00009b (#0062): setlocal           9
+L00009d (#0063): getlocal           9
+L00009f (#0064): iftrue             L0000b5 (# 73)
+L0000a3 (#0065): pushbyte           255
+L0000a5 (#0066): pushbyte           0
+L0000a7 (#0067): newarray           2
+L0000a9 (#0068): setlocal           9
+L0000ab (#0069): getlocal           8
+L0000ad (#0070): getlocal           6
+L0000af (#0071): getlocal           9
+L0000b1 (#0072): callpropvoid       2577 [set], 2
+L0000b5 (#0073): getlocal           9
+L0000b7 (#0074): pushbyte           0
+L0000b9 (#0075): getproperty        14 [<mn kind 0x1b>]
+L0000bb (#0076): getlocal           7
+L0000bd (#0077): ifeq               L0000d1 (# 86)
+L0000c1 (#0078): getlocal           9
+L0000c3 (#0079): pushbyte           0
+L0000c5 (#0080): getlocal           7
+L0000c7 (#0081): setproperty        14 [<mn kind 0x1b>]
+L0000c9 (#0082): getlocal           9
+L0000cb (#0083): pushbyte           1
+L0000cd (#0084): pushbyte           0
+L0000cf (#0085): setproperty        14 [<mn kind 0x1b>]
+L0000d1 (#0086): getlocal           5
+L0000d3 (#0087): pushbyte           0
+L0000d5 (#0088): getproperty        14 [<mn kind 0x1b>]
+L0000d7 (#0089): pushbyte           2
+L0000d9 (#0090): getlocal           6
+L0000db (#0091): getproperty        27490 [battle]
+L0000df (#0092): getproperty        40846 [lightweightModeLevel]
+L0000e3 (#0093): pushbyte           1
+L0000e5 (#0094): iflt               L0000f6 (# 100)
+L0000e9 (#0095): getlocal           4
+L0000eb (#0096): getproperty        37168 [createdByDirectAttack]
+L0000ef (#0097): iffalse            L0000f6 (# 100)
+L0000f3 (#0098): pop                
+L0000f4 (#0099): pushbyte           0
+L0000f6 (#0100): ifge               L000127 (# 125)
+L0000fa (#0101): getlocal           9
+L0000fc (#0102): pushbyte           1
+L0000fe (#0103): getproperty        14 [<mn kind 0x1b>]
+L000100 (#0104): pushbyte           16
+L000102 (#0105): ifge               L000127 (# 125)
+L000106 (#0106): getlocal           5
+L000108 (#0107): pushbyte           0
+L00010a (#0108): getlocal           5
+L00010c (#0109): pushbyte           0
+L00010e (#0110): getproperty        14 [<mn kind 0x1b>]
+L000110 (#0111): convert_i          
+L000111 (#0112): pushbyte           1
+L000113 (#0113): add_i              
+L000114 (#0114): setproperty        14 [<mn kind 0x1b>]
+L000116 (#0115): getlocal           9
+L000118 (#0116): pushbyte           1
+L00011a (#0117): getlocal           9
+L00011c (#0118): pushbyte           1
+L00011e (#0119): getproperty        14 [<mn kind 0x1b>]
+L000120 (#0120): convert_i          
+L000121 (#0121): pushbyte           1
+L000123 (#0122): add_i              
+L000124 (#0123): setproperty        14 [<mn kind 0x1b>]
+L000126 (#0124): returnvoid         
+L000127 (#0125): getlocal           5
+L000129 (#0126): pushbyte           1
+L00012b (#0127): getproperty        14 [<mn kind 0x1b>]
+L00012d (#0128): pushbyte           0
+L00012f (#0129): ifgt               L00013b (# 134)
+L000133 (#0130): getlocal           5
+L000135 (#0131): pushbyte           6
+L000137 (#0132): getlocal           7
+L000139 (#0133): setproperty        14 [<mn kind 0x1b>]
+L00013b (#0134): getlocal           5
+L00013d (#0135): pushbyte           1
+L00013f (#0136): getlocal           5
+L000141 (#0137): pushbyte           1
+L000143 (#0138): getproperty        14 [<mn kind 0x1b>]
+L000145 (#0139): convert_d          
+L000146 (#0140): getlex             3434 [pinball.common.math._Decimal100::Decimal100_Impl_]
+L000149 (#0141): getlocal           4
+L00014b (#0142): getproperty        21985 [damage]
+L00014f (#0143): convert_d          
+L000150 (#0144): callproperty       23408 [dfloor], 1
+L000155 (#0145): convert_d          
+L000156 (#0146): add                
+L000157 (#0147): setproperty        14 [<mn kind 0x1b>]
+L000159 (#0148): getlocal           5
+L00015b (#0149): pushbyte           2
+L00015d (#0150): getlocal           4
+L00015f (#0151): setproperty        14 [<mn kind 0x1b>]
+L000161 (#0152): getlocal           5
+L000163 (#0153): pushbyte           3
+L000165 (#0154): getlocal_1         
+L000166 (#0155): setproperty        14 [<mn kind 0x1b>]
+L000168 (#0156): getlocal           5
+L00016a (#0157): pushbyte           4
+L00016c (#0158): getlocal_2         
+L00016d (#0159): setproperty        14 [<mn kind 0x1b>]
+L00016f (#0160): getlocal           5
+L000171 (#0161): pushbyte           5
+L000173 (#0162): getlocal_3         
+L000174 (#0163): setproperty        14 [<mn kind 0x1b>]
+L000176 (#0164): getlex             40886 [pinball.scene.battle.battle.effect::EffectManagerImpl]
+L00017a (#0165): pushbyte           1
+L00017c (#0166): setproperty        69650 [wfxDamageMode]
+L000180 (#0167): returnvoid         
+L000181 (#0168): ; end
+; exception_table=[]

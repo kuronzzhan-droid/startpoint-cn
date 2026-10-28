@@ -1,0 +1,33 @@
+# Battle$/wfxFpBindPrimary header=[3, 3, 1, 2] sha=7b0b99c1f7851c5979ea4f5bb63daf4f42f836965efa170a6ef61d72c2398efd
+# exceptions=[(2, 62, 62, 0, 0)]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlex ['pinball.scene.battle.battle::Battle']
+#0003 ofs0005: getproperty ['wfxFpEnabled']
+#0004 ofs0009: iffalse [] -> #23
+#0005 ofs000d: getlocal [1]
+#0006 ofs000f: iffalse [] -> #23
+#0007 ofs0013: getlocal [1]
+#0008 ofs0015: getproperty ['myBattleDriver']
+#0009 ofs0019: setlocal_2 []
+#0010 ofs001a: getlocal [2]
+#0011 ofs001c: iffalse [] -> #23
+#0012 ofs0020: getlocal [2]
+#0013 ofs0022: getproperty ['battle']
+#0014 ofs0026: setlocal_2 []
+#0015 ofs0027: getlocal [2]
+#0016 ofs0029: iffalse [] -> #23
+#0017 ofs002d: getlex ['pinball.scene.battle.battle::Battle']
+#0018 ofs0030: getlocal [2]
+#0019 ofs0032: getlocal [1]
+#0020 ofs0034: getproperty ['scene']
+#0021 ofs0037: callproperty ['wfxFpBind', 2]
+#0022 ofs003c: pop []
+#0023 ofs003d: returnvoid []
+#0024 ofs003e: pop []
+#0025 ofs003f: getlocal_0 []
+#0026 ofs0040: pushscope []
+#0027 ofs0041: getlex ['pinball.scene.battle.battle::Battle']
+#0028 ofs0044: pushtrue []
+#0029 ofs0045: setproperty ['wfxFpReadFailed']
+#0030 ofs0049: returnvoid []

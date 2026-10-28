@@ -1,0 +1,18 @@
+# MemberImpl/wfxPfMainOverride header=[4, 3, 1, 2] sha=2b72e44d4c7d23d9b08f2ed12121c297d75608d6dbbbdde4b2ea10c8a7faa1df
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_0 []
+#0003 ofs0003: callproperty ['wfxPfEnabled', 0]
+#0004 ofs0008: iffalse [] -> #15
+#0005 ofs000c: getlocal_0 []
+#0006 ofs000d: getproperty ['battle']
+#0007 ofs0011: getproperty ['abilityTotalizer']
+#0008 ofs0014: coerce_a []
+#0009 ofs0015: getlocal_2 []
+#0010 ofs0016: getlocal_0 []
+#0011 ofs0017: getproperty ['originMemberIndex']
+#0012 ofs001b: pushfalse []
+#0013 ofs001c: callproperty ['wfxPfSelect', 3]
+#0014 ofs0021: returnvalue []
+#0015 ofs0022: getlocal_1 []
+#0016 ofs0023: returnvalue []

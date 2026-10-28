@@ -1,0 +1,23 @@
+# MemberImpl/wfxPf4ChainId header=[3, 5, 1, 2] sha=fff62c8df43ea83986b2abcf096c583168447f92143eb912435bd7a527b24045
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_3 []
+#0003 ofs0003: pushbyte [3]
+#0004 ofs0005: ifne [] -> #20
+#0005 ofs0009: getlocal_2 []
+#0006 ofs000a: getproperty ['length']
+#0007 ofs000c: pushbyte [4]
+#0008 ofs000e: iflt [] -> #20
+#0009 ofs0012: getlocal_0 []
+#0010 ofs0013: getlocal_2 []
+#0011 ofs0014: pushbyte [3]
+#0012 ofs0016: getproperty ['<mn kind 0x1b>']
+#0013 ofs0018: pushtrue []
+#0014 ofs0019: callproperty ['wfxPf4Action', 2]
+#0015 ofs001e: setlocal [4]
+#0016 ofs0020: getlocal [4]
+#0017 ofs0022: iffalse [] -> #20
+#0018 ofs0026: getlocal [4]
+#0019 ofs0028: returnvalue []
+#0020 ofs0029: getlocal_1 []
+#0021 ofs002a: returnvalue []

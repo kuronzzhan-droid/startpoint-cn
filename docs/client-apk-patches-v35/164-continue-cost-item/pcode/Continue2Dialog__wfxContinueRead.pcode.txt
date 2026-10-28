@@ -1,0 +1,38 @@
+; Continue2Dialog$/wfxContinueRead
+; body_index=92777 method_index=101250
+; sha256=02aee6ee4ae8aa16a3d805432fe606868d0805377bc71d80d99781260888919c
+; maxstack=2 localcount=4 init_scope_depth=1 max_scope_depth=2
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: getlocal_1         
+L000003: iffalse            L00003e (# 30)
+L000007: getlocal_1         
+L000008: getlex             3641 [pinball.master.generated::CustomAbilityStringTable]
+L00000b: callproperty       8210 [pinball.asset.logic:ILogicAssetContainer::getMasterTableMaybe], 1
+L00000f: astype             3641 [pinball.master.generated::CustomAbilityStringTable]
+L000012: setlocal_3         
+L000013: getlocal_3         
+L000014: iffalse            L00003e (# 30)
+L000018: getlocal_3         
+L000019: callproperty       6950 [get_data], 0
+L00001d: setlocal_3         
+L00001e: getlocal_3         
+L00001f: iffalse            L00003e (# 30)
+L000023: getlocal_3         
+L000024: getlocal_2         
+L000025: callproperty       7702 [pinball.master.runtime:MasterMap::exists], 1
+L000029: iffalse            L00003e (# 30)
+L00002d: getlocal_3         
+L00002e: getlocal_2         
+L00002f: callproperty       7182 [pinball.master.runtime:MasterMap::get], 1
+L000033: setlocal_3         
+L000034: getlocal_3         
+L000035: iffalse            L00003e (# 30)
+L000039: getlocal_3         
+L00003a: getproperty        19 [string]
+L00003c: coerce_s           
+L00003d: returnvalue        
+L00003e: pushnull           
+L00003f: returnvalue        
+L000040: ; end
+; exception_table=[]

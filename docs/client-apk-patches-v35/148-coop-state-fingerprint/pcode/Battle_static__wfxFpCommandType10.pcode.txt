@@ -1,0 +1,18 @@
+# Battle$/wfxFpCommandType10 header=[3, 10, 1, 2] sha=5a6f9729d56352c32253b499e71ecfe101b56b5393b164e3010feb072eab3ae7
+# exceptions=[]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal [4]
+#0003 ofs0004: pushbyte [64]
+#0004 ofs0006: ifge [] -> #11
+#0005 ofs000a: getlocal_1 []
+#0006 ofs000b: pushnull []
+#0007 ofs000c: ifeq [] -> #9
+#0008 ofs0010: jump [] -> #11
+#0009 ofs0014: pushnull []
+#0010 ofs0015: returnvalue []
+#0011 ofs0016: getlex ['pinball.scene.battle.battle::Battle']
+#0012 ofs0019: getlocal_2 []
+#0013 ofs001a: getlocal_3 []
+#0014 ofs001b: callproperty ['wfxFpInputUnsupported', 2]
+#0015 ofs0020: returnvalue []

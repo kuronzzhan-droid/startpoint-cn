@@ -1,0 +1,31 @@
+; Continue2Dialog$/wfxContinuePositiveInt
+; body_index=92778 method_index=101251
+; sha256=64405014846916234e98bfe8b507e357bfb60dab5f8979b2807207bab736f712
+; maxstack=2 localcount=3 init_scope_depth=1 max_scope_depth=2
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: getlocal_1         
+L000003: iffalse            L000025 (# 23)
+L000007: getlocal_1         
+L000008: convert_d          
+L000009: setlocal_2         
+L00000a: getlocal_2         
+L00000b: convert_i          
+L00000c: getlocal_2         
+L00000d: ifne               L000025 (# 23)
+L000011: getlocal_2         
+L000012: pushbyte           0
+L000014: ifle               L000025 (# 23)
+L000018: pushstring         1 [""]
+L00001a: getlocal_2         
+L00001b: convert_i          
+L00001c: add                
+L00001d: getlocal_1         
+L00001e: ifne               L000025 (# 23)
+L000022: getlocal_2         
+L000023: convert_i          
+L000024: returnvalue        
+L000025: pushbyte           0
+L000027: returnvalue        
+L000028: ; end
+; exception_table=[]

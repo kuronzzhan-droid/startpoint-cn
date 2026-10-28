@@ -1,0 +1,75 @@
+; ConditionSlot/wfxStageRestore
+; body_index=92774 method_index=101247
+; sha256=fa779a6db7ca66212f06f3442cc2669996cc12cfba4599555cfc94f9cc1cc73c
+; maxstack=4 localcount=5 init_scope_depth=1 max_scope_depth=1
+L000000: getlocal_1         
+L000001: iffalse            L00009e (# 67)
+L000005: getlocal_1         
+L000006: pushbyte           0
+L000008: getproperty        69163 [<mn kind 0x1b>]
+L00000c: setlocal_2         
+L00000d: pushbyte           0
+L00000f: setlocal_3         
+L000010: avm_label          
+L000011: getlocal_3         
+L000012: getlocal_2         
+L000013: getproperty        35 [length]
+L000015: ifge               L000047 (# 30)
+L000019: getlex             7446 [pinball.common.data.battle.restore::BattleContinuationData]
+L00001c: getlocal_2         
+L00001d: getlocal_3         
+L00001e: getproperty        69163 [<mn kind 0x1b>]
+L000022: getlocal_0         
+L000023: getproperty        33824 [frameCount]
+L000027: callproperty       69731 [wfxStageClone], 2
+L00002c: setlocal           4
+L00002e: getlocal_0         
+L00002f: getlocal           4
+L000031: getproperty        5259 [id]
+L000034: getlocal           4
+L000036: callpropvoid       47383 [setCondition], 2
+L00003b: getlocal_0         
+L00003c: callpropvoid       47372 [addRefreshCount], 0
+L000041: inclocal_i         3
+L000043: jump               L000010 (# 8)
+L000047: avm_label          
+L000048: getlocal_1         
+L000049: pushbyte           1
+L00004b: getproperty        69163 [<mn kind 0x1b>]
+L00004f: setlocal_2         
+L000050: pushbyte           0
+L000052: setlocal_3         
+L000053: avm_label          
+L000054: getlocal_3         
+L000055: getlocal_2         
+L000056: getproperty        35 [length]
+L000058: ifge               L000083 (# 57)
+L00005c: getlocal_2         
+L00005d: getlocal_3         
+L00005e: getproperty        69163 [<mn kind 0x1b>]
+L000062: setlocal           4
+L000064: getlocal_0         
+L000065: getproperty        47384 [applicationResolver]
+L000069: getlocal           4
+L00006b: pushbyte           0
+L00006d: getproperty        69163 [<mn kind 0x1b>]
+L000071: getlocal           4
+L000073: pushbyte           1
+L000075: getproperty        69163 [<mn kind 0x1b>]
+L000079: callpropvoid       2577 [set], 2
+L00007d: inclocal_i         3
+L00007f: jump               L000053 (# 37)
+L000083: avm_label          
+L000084: getlocal_0         
+L000085: getproperty        44411 [invisibleSlot]
+L000089: iffalse            L00009e (# 67)
+L00008d: getlocal_0         
+L00008e: getproperty        44411 [invisibleSlot]
+L000092: getlocal_1         
+L000093: pushbyte           2
+L000095: getproperty        69163 [<mn kind 0x1b>]
+L000099: callpropvoid       69733 [wfxStageRestore], 1
+L00009e: avm_label          
+L00009f: returnvoid         
+L0000a0: ; end
+; exception_table=[]

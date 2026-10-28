@@ -1,0 +1,27 @@
+; Continue2Dialog/get_beforeVirtualMoney
+; body_index=33020 method_index=35770
+; sha256=4a008158832889d7ea42ade49a2c3db0cc36b1fb8a2299bf900638e54090a6ba
+; maxstack=3 localcount=1 init_scope_depth=1 max_scope_depth=2
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: getlex             31262 [pinball.dialog.continueDialog::Continue2Dialog]
+L000006: getlocal_0         
+L000007: getproperty        7850 [globalLogic]
+L00000a: getlocal_0         
+L00000b: getproperty        31257 [questIdGroup]
+L00000f: callproperty       69739 [wfxContinueCost], 2
+L000014: dup                
+L000015: iffalse            L00001f (# 13)
+L000019: getproperty        22304 [before]
+L00001d: convert_i          
+L00001e: returnvalue        
+L00001f: pop                
+L000020: findproperty       7850 [globalLogic]
+L000023: getproperty        7850 [globalLogic]
+L000026: callproperty       7571 [get_player], 0
+L00002a: coerce             7572 [pinball.common.data.player::PlayerLogic]
+L00002d: callproperty       20117 [get_virtualMoney], 0
+L000032: convert_i          
+L000033: returnvalue        
+L000034: ; end
+; exception_table=[]

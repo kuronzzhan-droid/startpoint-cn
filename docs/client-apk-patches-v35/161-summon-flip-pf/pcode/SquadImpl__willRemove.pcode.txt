@@ -1,0 +1,42 @@
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_0 []
+#0003 ofs0003: callpropvoid ['wfxDualPfFlush', 0]
+#0004 ofs0008: getlocal_0 []
+#0005 ofs0009: callpropvoid ['wfxSummonFlipFlush', 0]
+#0006 ofs000e: findproperty ['kind']
+#0007 ofs0011: getproperty ['kind']
+#0008 ofs0014: getproperty ['index']
+#0009 ofs0016: lookupswitch [] default #10, cases [11, 14, 28]
+#0010 ofs0024: jump [] -> #41
+#0011 ofs0028: pushfalse []
+#0012 ofs0029: returnvalue []
+#0013 ofs002a: jump [] -> #41
+#0014 ofs002e: findproperty ['ball']
+#0015 ofs0032: getproperty ['ball']
+#0016 ofs0036: callproperty ['willRemove', 0]
+#0017 ofs003b: convert_b []
+#0018 ofs003c: not []
+#0019 ofs003d: iffalse [] -> #25
+#0020 ofs0041: findproperty ['hasAnnihilate']
+#0021 ofs0045: callproperty ['hasAnnihilate', 0]
+#0022 ofs004a: convert_b []
+#0023 ofs004b: returnvalue []
+#0024 ofs004c: jump [] -> #27
+#0025 ofs0050: pushtrue []
+#0026 ofs0051: returnvalue []
+#0027 ofs0052: jump [] -> #41
+#0028 ofs0056: findproperty ['ball']
+#0029 ofs005a: getproperty ['ball']
+#0030 ofs005e: callproperty ['willRemove', 0]
+#0031 ofs0063: convert_b []
+#0032 ofs0064: not []
+#0033 ofs0065: iffalse [] -> #39
+#0034 ofs0069: findproperty ['hasAnnihilate']
+#0035 ofs006d: callproperty ['hasAnnihilate', 0]
+#0036 ofs0072: convert_b []
+#0037 ofs0073: returnvalue []
+#0038 ofs0074: jump [] -> #41
+#0039 ofs0078: pushtrue []
+#0040 ofs0079: returnvalue []
+#0041 ofs007a: returnvoid []

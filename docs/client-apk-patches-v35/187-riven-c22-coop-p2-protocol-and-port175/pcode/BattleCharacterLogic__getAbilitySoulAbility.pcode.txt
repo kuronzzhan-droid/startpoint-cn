@@ -1,0 +1,789 @@
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_0 []
+#0003 ofs0003: getproperty ['abilitySoul']
+#0004 ofs0007: getproperty ['index']
+#0005 ofs0009: pushbyte [0]
+#0006 ofs000b: ifne [] -> #500
+#0007 ofs000f: getlocal_0 []
+#0008 ofs0010: getproperty ['abilitySoul']
+#0009 ofs0014: getproperty ['params']
+#0010 ofs0016: pushbyte [0]
+#0011 ofs0018: getproperty ['<mn kind 0x1b>']
+#0012 ofs001a: callproperty ['get_abilitySoulId', 0]
+#0013 ofs001f: setlocal [16]
+#0014 ofs0021: getlocal [16]
+#0015 ofs0023: pushint [16000001]
+#0016 ofs0026: iflt [] -> #500
+#0017 ofs002a: getlocal [16]
+#0018 ofs002c: pushint [16000999]
+#0019 ofs002f: ifgt [] -> #500
+#0020 ofs0033: getlocal [16]
+#0021 ofs0035: pushint [16000900]
+#0022 ofs0038: ifeq [] -> #500
+#0023 ofs003c: getlocal_0 []
+#0024 ofs003d: getproperty ['party']
+#0025 ofs0040: setlocal [17]
+#0026 ofs0042: getlocal [17]
+#0027 ofs0044: iffalse [] -> #496
+#0028 ofs0048: getlocal [17]
+#0029 ofs004a: getproperty ['values']
+#0030 ofs004d: setlocal [17]
+#0031 ofs004f: getlocal [17]
+#0032 ofs0051: iffalse [] -> #496
+#0033 ofs0055: getlocal [17]
+#0034 ofs0057: pushstring ['weapon_riven_scope']
+#0035 ofs005b: getproperty ['<mn kind 0x1b>']
+#0036 ofs005d: setlocal [22]
+#0037 ofs005f: getlocal [22]
+#0038 ofs0061: pushnull []
+#0039 ofs0062: ifeq [] -> #72
+#0040 ofs0066: getlocal [22]
+#0041 ofs0068: pushstring ['multi-v1']
+#0042 ofs006c: ifstrictne [] -> #496
+#0043 ofs0070: getlocal [17]
+#0044 ofs0072: pushstring ['weapon_riven_mode']
+#0045 ofs0076: getproperty ['<mn kind 0x1b>']
+#0046 ofs0078: pushbyte [1]
+#0047 ofs007a: ifstrictne [] -> #496
+#0048 ofs007e: getlocal [17]
+#0049 ofs0080: pushstring ['weapon_riven_catalog']
+#0050 ofs0084: getproperty ['<mn kind 0x1b>']
+#0051 ofs0086: pushstring ['riven-multi-v1-0a3495b4b3edff692b8ddf9265657a63']
+#0052 ofs008a: ifstrictne [] -> #496
+#0053 ofs008e: getlocal [17]
+#0054 ofs0090: pushstring ['weapon_riven_snapshot_id']
+#0055 ofs0094: getproperty ['<mn kind 0x1b>']
+#0056 ofs0096: setlocal [22]
+#0057 ofs0098: getlocal [22]
+#0058 ofs009a: istype ['String']
+#0059 ofs009c: iffalse [] -> #496
+#0060 ofs00a0: getlex ['RegExp']
+#0061 ofs00a2: pushstring ['^[A-Za-z0-9_-]{1,96}$']
+#0062 ofs00a6: construct [1]
+#0063 ofs00a8: getlocal [22]
+#0064 ofs00aa: callproperty ['test', 1]
+#0065 ofs00ae: iffalse [] -> #496
+#0066 ofs00b2: getlocal [17]
+#0067 ofs00b4: pushstring ['weapon_riven_reason']
+#0068 ofs00b8: getproperty ['<mn kind 0x1b>']
+#0069 ofs00ba: pushstring ['']
+#0070 ofs00bc: ifstrictne [] -> #496
+#0071 ofs00c0: jump [] -> #92
+#0072 ofs00c4: getlocal [17]
+#0073 ofs00c6: pushstring ['weapon_riven_mode']
+#0074 ofs00ca: getproperty ['<mn kind 0x1b>']
+#0075 ofs00cc: pushnull []
+#0076 ofs00cd: ifne [] -> #496
+#0077 ofs00d1: getlocal [17]
+#0078 ofs00d3: pushstring ['weapon_riven_catalog']
+#0079 ofs00d7: getproperty ['<mn kind 0x1b>']
+#0080 ofs00d9: pushnull []
+#0081 ofs00da: ifne [] -> #496
+#0082 ofs00de: getlocal [17]
+#0083 ofs00e0: pushstring ['weapon_riven_snapshot_id']
+#0084 ofs00e4: getproperty ['<mn kind 0x1b>']
+#0085 ofs00e6: pushnull []
+#0086 ofs00e7: ifne [] -> #496
+#0087 ofs00eb: getlocal [17]
+#0088 ofs00ed: pushstring ['weapon_riven_reason']
+#0089 ofs00f1: getproperty ['<mn kind 0x1b>']
+#0090 ofs00f3: pushnull []
+#0091 ofs00f4: ifne [] -> #496
+#0092 ofs00f8: getlocal [17]
+#0093 ofs00fa: pushstring ['weapon_rivens']
+#0094 ofs00fe: getproperty ['<mn kind 0x1b>']
+#0095 ofs0100: setlocal [18]
+#0096 ofs0102: getlocal [18]
+#0097 ofs0104: istype ['Array']
+#0098 ofs0106: iffalse [] -> #496
+#0099 ofs010a: getlocal [18]
+#0100 ofs010c: getproperty ['length']
+#0101 ofs010e: pushbyte [3]
+#0102 ofs0110: ifne [] -> #496
+#0103 ofs0114: getlocal_0 []
+#0104 ofs0115: getproperty ['index']
+#0105 ofs0117: setlocal [20]
+#0106 ofs0119: getlocal [20]
+#0107 ofs011b: pushbyte [0]
+#0108 ofs011d: iflt [] -> #496
+#0109 ofs0121: getlocal [20]
+#0110 ofs0123: pushbyte [3]
+#0111 ofs0125: ifge [] -> #496
+#0112 ofs0129: getlocal [20]
+#0113 ofs012b: convert_i []
+#0114 ofs012c: getlocal [20]
+#0115 ofs012e: ifstrictne [] -> #496
+#0116 ofs0132: getlocal [18]
+#0117 ofs0134: getlocal [20]
+#0118 ofs0136: getproperty ['<mn kind 0x1b>']
+#0119 ofs0138: setlocal [19]
+#0120 ofs013a: getlocal [19]
+#0121 ofs013c: iffalse [] -> #496
+#0122 ofs0140: getlocal [19]
+#0123 ofs0142: getproperty ['index']
+#0124 ofs0144: pushbyte [0]
+#0125 ofs0146: ifstrictne [] -> #496
+#0126 ofs014a: getlocal [19]
+#0127 ofs014c: getproperty ['params']
+#0128 ofs014e: setlocal [19]
+#0129 ofs0150: getlocal [19]
+#0130 ofs0152: istype ['Array']
+#0131 ofs0154: iffalse [] -> #496
+#0132 ofs0158: getlocal [19]
+#0133 ofs015a: getproperty ['length']
+#0134 ofs015c: pushbyte [1]
+#0135 ofs015e: ifne [] -> #496
+#0136 ofs0162: getlocal [19]
+#0137 ofs0164: pushbyte [0]
+#0138 ofs0166: getproperty ['<mn kind 0x1b>']
+#0139 ofs0168: setlocal [19]
+#0140 ofs016a: getlocal [19]
+#0141 ofs016c: istype ['Array']
+#0142 ofs016e: iffalse [] -> #496
+#0143 ofs0172: getlocal [19]
+#0144 ofs0174: getproperty ['length']
+#0145 ofs0176: setlocal [21]
+#0146 ofs0178: getlocal [21]
+#0147 ofs017a: pushbyte [4]
+#0148 ofs017c: iflt [] -> #496
+#0149 ofs0180: getlocal [21]
+#0150 ofs0182: pushbyte [10]
+#0151 ofs0184: ifgt [] -> #496
+#0152 ofs0188: getlocal [21]
+#0153 ofs018a: pushbyte [2]
+#0154 ofs018c: modulo []
+#0155 ofs018d: pushbyte [0]
+#0156 ofs018f: ifne [] -> #496
+#0157 ofs0193: getlocal [19]
+#0158 ofs0195: pushbyte [0]
+#0159 ofs0197: getproperty ['<mn kind 0x1b>']
+#0160 ofs0199: getlocal [16]
+#0161 ofs019b: ifstrictne [] -> #496
+#0162 ofs019f: pushbyte [0]
+#0163 ofs01a1: setlocal [23]
+#0164 ofs01a3: avm_label []
+#0165 ofs01a4: getlocal [23]
+#0166 ofs01a6: getlocal [21]
+#0167 ofs01a8: ifge [] -> #185
+#0168 ofs01ac: getlocal [19]
+#0169 ofs01ae: getlocal [23]
+#0170 ofs01b0: getproperty ['<mn kind 0x1b>']
+#0171 ofs01b2: setlocal [22]
+#0172 ofs01b4: getlocal [22]
+#0173 ofs01b6: typeof []
+#0174 ofs01b7: pushstring ['number']
+#0175 ofs01ba: ifne [] -> #496
+#0176 ofs01be: getlocal [22]
+#0177 ofs01c0: convert_i []
+#0178 ofs01c1: getlocal [22]
+#0179 ofs01c3: ifstrictne [] -> #496
+#0180 ofs01c7: getlocal [22]
+#0181 ofs01c9: pushbyte [1]
+#0182 ofs01cb: iflt [] -> #496
+#0183 ofs01cf: inclocal_i [23]
+#0184 ofs01d1: jump [] -> #164
+#0185 ofs01d5: pushbyte [2]
+#0186 ofs01d7: setlocal [23]
+#0187 ofs01d9: avm_label []
+#0188 ofs01da: getlocal [23]
+#0189 ofs01dc: getlocal [21]
+#0190 ofs01de: ifge [] -> #499
+#0191 ofs01e2: getlocal [19]
+#0192 ofs01e4: getlocal [23]
+#0193 ofs01e6: pushbyte [1]
+#0194 ofs01e8: add_i []
+#0195 ofs01e9: getproperty ['<mn kind 0x1b>']
+#0196 ofs01eb: pushbyte [100]
+#0197 ofs01ed: ifgt [] -> #496
+#0198 ofs01f1: getlocal [19]
+#0199 ofs01f3: getlocal [23]
+#0200 ofs01f5: getproperty ['<mn kind 0x1b>']
+#0201 ofs01f7: setlocal [22]
+#0202 ofs01f9: getlocal [22]
+#0203 ofs01fb: pushint [15990001]
+#0204 ofs01fe: ifeq [] -> #491
+#0205 ofs0202: getlocal [22]
+#0206 ofs0204: pushint [15990002]
+#0207 ofs0207: ifeq [] -> #491
+#0208 ofs020b: getlocal [22]
+#0209 ofs020d: pushint [15990003]
+#0210 ofs0210: ifeq [] -> #491
+#0211 ofs0214: getlocal [22]
+#0212 ofs0216: pushint [15990004]
+#0213 ofs0219: ifeq [] -> #491
+#0214 ofs021d: getlocal [22]
+#0215 ofs021f: pushint [15990005]
+#0216 ofs0222: ifeq [] -> #491
+#0217 ofs0226: getlocal [22]
+#0218 ofs0228: pushint [15990006]
+#0219 ofs022b: ifeq [] -> #491
+#0220 ofs022f: getlocal [22]
+#0221 ofs0231: pushint [15990007]
+#0222 ofs0234: ifeq [] -> #491
+#0223 ofs0238: getlocal [22]
+#0224 ofs023a: pushint [15990008]
+#0225 ofs023d: ifeq [] -> #491
+#0226 ofs0241: getlocal [22]
+#0227 ofs0243: pushint [15990009]
+#0228 ofs0246: ifeq [] -> #491
+#0229 ofs024a: getlocal [22]
+#0230 ofs024c: pushint [15990010]
+#0231 ofs024f: ifeq [] -> #491
+#0232 ofs0253: getlocal [22]
+#0233 ofs0255: pushint [15990011]
+#0234 ofs0258: ifeq [] -> #491
+#0235 ofs025c: getlocal [22]
+#0236 ofs025e: pushint [15990012]
+#0237 ofs0261: ifeq [] -> #491
+#0238 ofs0265: getlocal [22]
+#0239 ofs0267: pushint [15990013]
+#0240 ofs026a: ifeq [] -> #491
+#0241 ofs026e: getlocal [22]
+#0242 ofs0270: pushint [15990014]
+#0243 ofs0273: ifeq [] -> #491
+#0244 ofs0277: getlocal [22]
+#0245 ofs0279: pushint [15990015]
+#0246 ofs027c: ifeq [] -> #491
+#0247 ofs0280: getlocal [22]
+#0248 ofs0282: pushint [15990016]
+#0249 ofs0285: ifeq [] -> #491
+#0250 ofs0289: getlocal [22]
+#0251 ofs028b: pushint [15990017]
+#0252 ofs028e: ifeq [] -> #491
+#0253 ofs0292: getlocal [22]
+#0254 ofs0294: pushint [15990018]
+#0255 ofs0297: ifeq [] -> #491
+#0256 ofs029b: getlocal [22]
+#0257 ofs029d: pushint [15990019]
+#0258 ofs02a0: ifeq [] -> #491
+#0259 ofs02a4: getlocal [22]
+#0260 ofs02a6: pushint [15990020]
+#0261 ofs02a9: ifeq [] -> #491
+#0262 ofs02ad: getlocal [22]
+#0263 ofs02af: pushint [15990021]
+#0264 ofs02b2: ifeq [] -> #491
+#0265 ofs02b6: getlocal [22]
+#0266 ofs02b8: pushint [15990022]
+#0267 ofs02bb: ifeq [] -> #491
+#0268 ofs02bf: getlocal [22]
+#0269 ofs02c1: pushint [15990023]
+#0270 ofs02c4: ifeq [] -> #491
+#0271 ofs02c8: getlocal [22]
+#0272 ofs02ca: pushint [15990024]
+#0273 ofs02cd: ifeq [] -> #491
+#0274 ofs02d1: getlocal [22]
+#0275 ofs02d3: pushint [15990025]
+#0276 ofs02d6: ifeq [] -> #491
+#0277 ofs02da: getlocal [22]
+#0278 ofs02dc: pushint [15990026]
+#0279 ofs02df: ifeq [] -> #491
+#0280 ofs02e3: getlocal [22]
+#0281 ofs02e5: pushint [15990027]
+#0282 ofs02e8: ifeq [] -> #491
+#0283 ofs02ec: getlocal [22]
+#0284 ofs02ee: pushint [15990028]
+#0285 ofs02f1: ifeq [] -> #491
+#0286 ofs02f5: getlocal [22]
+#0287 ofs02f7: pushint [15990029]
+#0288 ofs02fa: ifeq [] -> #491
+#0289 ofs02fe: getlocal [22]
+#0290 ofs0300: pushint [15990030]
+#0291 ofs0303: ifeq [] -> #491
+#0292 ofs0307: getlocal [22]
+#0293 ofs0309: pushint [15990031]
+#0294 ofs030c: ifeq [] -> #491
+#0295 ofs0310: getlocal [22]
+#0296 ofs0312: pushint [15990032]
+#0297 ofs0315: ifeq [] -> #491
+#0298 ofs0319: getlocal [22]
+#0299 ofs031b: pushint [15990033]
+#0300 ofs031e: ifeq [] -> #491
+#0301 ofs0322: getlocal [22]
+#0302 ofs0324: pushint [15990034]
+#0303 ofs0327: ifeq [] -> #491
+#0304 ofs032b: getlocal [22]
+#0305 ofs032d: pushint [15990035]
+#0306 ofs0330: ifeq [] -> #491
+#0307 ofs0334: getlocal [22]
+#0308 ofs0336: pushint [15990036]
+#0309 ofs0339: ifeq [] -> #491
+#0310 ofs033d: getlocal [22]
+#0311 ofs033f: pushint [15990037]
+#0312 ofs0342: ifeq [] -> #491
+#0313 ofs0346: getlocal [22]
+#0314 ofs0348: pushint [15990038]
+#0315 ofs034b: ifeq [] -> #491
+#0316 ofs034f: getlocal [22]
+#0317 ofs0351: pushint [15990039]
+#0318 ofs0354: ifeq [] -> #491
+#0319 ofs0358: getlocal [22]
+#0320 ofs035a: pushint [15990040]
+#0321 ofs035d: ifeq [] -> #491
+#0322 ofs0361: getlocal [22]
+#0323 ofs0363: pushint [15990041]
+#0324 ofs0366: ifeq [] -> #491
+#0325 ofs036a: getlocal [22]
+#0326 ofs036c: pushint [15990042]
+#0327 ofs036f: ifeq [] -> #491
+#0328 ofs0373: getlocal [22]
+#0329 ofs0375: pushint [15990043]
+#0330 ofs0378: ifeq [] -> #491
+#0331 ofs037c: getlocal [22]
+#0332 ofs037e: pushint [15990044]
+#0333 ofs0381: ifeq [] -> #491
+#0334 ofs0385: getlocal [22]
+#0335 ofs0387: pushint [15990045]
+#0336 ofs038a: ifeq [] -> #491
+#0337 ofs038e: getlocal [22]
+#0338 ofs0390: pushint [15990046]
+#0339 ofs0393: ifeq [] -> #491
+#0340 ofs0397: getlocal [22]
+#0341 ofs0399: pushint [15990047]
+#0342 ofs039c: ifeq [] -> #491
+#0343 ofs03a0: getlocal [22]
+#0344 ofs03a2: pushint [15990048]
+#0345 ofs03a5: ifeq [] -> #491
+#0346 ofs03a9: getlocal [22]
+#0347 ofs03ab: pushint [15990049]
+#0348 ofs03ae: ifeq [] -> #491
+#0349 ofs03b2: getlocal [22]
+#0350 ofs03b4: pushint [15990050]
+#0351 ofs03b7: ifeq [] -> #491
+#0352 ofs03bb: getlocal [22]
+#0353 ofs03bd: pushint [15990051]
+#0354 ofs03c0: ifeq [] -> #491
+#0355 ofs03c4: getlocal [22]
+#0356 ofs03c6: pushint [15990052]
+#0357 ofs03c9: ifeq [] -> #491
+#0358 ofs03cd: getlocal [22]
+#0359 ofs03cf: pushint [15990053]
+#0360 ofs03d2: ifeq [] -> #491
+#0361 ofs03d6: getlocal [22]
+#0362 ofs03d8: pushint [15990054]
+#0363 ofs03db: ifeq [] -> #491
+#0364 ofs03df: getlocal [22]
+#0365 ofs03e1: pushint [15990055]
+#0366 ofs03e4: ifeq [] -> #491
+#0367 ofs03e8: getlocal [22]
+#0368 ofs03ea: pushint [15990056]
+#0369 ofs03ed: ifeq [] -> #491
+#0370 ofs03f1: getlocal [22]
+#0371 ofs03f3: pushint [15990057]
+#0372 ofs03f6: ifeq [] -> #491
+#0373 ofs03fa: getlocal [22]
+#0374 ofs03fc: pushint [15990058]
+#0375 ofs03ff: ifeq [] -> #491
+#0376 ofs0403: getlocal [22]
+#0377 ofs0405: pushint [15990059]
+#0378 ofs0408: ifeq [] -> #491
+#0379 ofs040c: getlocal [22]
+#0380 ofs040e: pushint [15990060]
+#0381 ofs0411: ifeq [] -> #491
+#0382 ofs0415: getlocal [22]
+#0383 ofs0417: pushint [15990061]
+#0384 ofs041a: ifeq [] -> #491
+#0385 ofs041e: getlocal [22]
+#0386 ofs0420: pushint [15990062]
+#0387 ofs0423: ifeq [] -> #491
+#0388 ofs0427: getlocal [22]
+#0389 ofs0429: pushint [15990063]
+#0390 ofs042c: ifeq [] -> #491
+#0391 ofs0430: getlocal [22]
+#0392 ofs0432: pushint [15990064]
+#0393 ofs0435: ifeq [] -> #491
+#0394 ofs0439: getlocal [22]
+#0395 ofs043b: pushint [15990065]
+#0396 ofs043e: ifeq [] -> #491
+#0397 ofs0442: getlocal [22]
+#0398 ofs0444: pushint [15990066]
+#0399 ofs0447: ifeq [] -> #491
+#0400 ofs044b: getlocal [22]
+#0401 ofs044d: pushint [15990067]
+#0402 ofs0450: ifeq [] -> #491
+#0403 ofs0454: getlocal [22]
+#0404 ofs0456: pushint [15990068]
+#0405 ofs0459: ifeq [] -> #491
+#0406 ofs045d: getlocal [22]
+#0407 ofs045f: pushint [15990069]
+#0408 ofs0462: ifeq [] -> #491
+#0409 ofs0466: getlocal [22]
+#0410 ofs0468: pushint [15990070]
+#0411 ofs046b: ifeq [] -> #491
+#0412 ofs046f: getlocal [22]
+#0413 ofs0471: pushint [15990071]
+#0414 ofs0474: ifeq [] -> #491
+#0415 ofs0478: getlocal [22]
+#0416 ofs047a: pushint [15990072]
+#0417 ofs047d: ifeq [] -> #491
+#0418 ofs0481: getlocal [22]
+#0419 ofs0483: pushint [15990073]
+#0420 ofs0486: ifeq [] -> #491
+#0421 ofs048a: getlocal [22]
+#0422 ofs048c: pushint [15990074]
+#0423 ofs048f: ifeq [] -> #491
+#0424 ofs0493: getlocal [22]
+#0425 ofs0495: pushint [15990075]
+#0426 ofs0498: ifeq [] -> #491
+#0427 ofs049c: getlocal [22]
+#0428 ofs049e: pushint [15990076]
+#0429 ofs04a1: ifeq [] -> #491
+#0430 ofs04a5: getlocal [22]
+#0431 ofs04a7: pushint [15990077]
+#0432 ofs04aa: ifeq [] -> #491
+#0433 ofs04ae: getlocal [22]
+#0434 ofs04b0: pushint [15990078]
+#0435 ofs04b3: ifeq [] -> #491
+#0436 ofs04b7: getlocal [22]
+#0437 ofs04b9: pushint [15990079]
+#0438 ofs04bc: ifeq [] -> #491
+#0439 ofs04c0: getlocal [22]
+#0440 ofs04c2: pushint [15990080]
+#0441 ofs04c5: ifeq [] -> #491
+#0442 ofs04c9: getlocal [22]
+#0443 ofs04cb: pushint [15990081]
+#0444 ofs04ce: ifeq [] -> #491
+#0445 ofs04d2: getlocal [22]
+#0446 ofs04d4: pushint [15990082]
+#0447 ofs04d7: ifeq [] -> #491
+#0448 ofs04db: getlocal [22]
+#0449 ofs04dd: pushint [15990083]
+#0450 ofs04e0: ifeq [] -> #491
+#0451 ofs04e4: getlocal [22]
+#0452 ofs04e6: pushint [15990084]
+#0453 ofs04e9: ifeq [] -> #491
+#0454 ofs04ed: getlocal [22]
+#0455 ofs04ef: pushint [15990085]
+#0456 ofs04f2: ifeq [] -> #491
+#0457 ofs04f6: getlocal [22]
+#0458 ofs04f8: pushint [15990086]
+#0459 ofs04fb: ifeq [] -> #491
+#0460 ofs04ff: getlocal [22]
+#0461 ofs0501: pushint [15990087]
+#0462 ofs0504: ifeq [] -> #491
+#0463 ofs0508: getlocal [22]
+#0464 ofs050a: pushint [15990088]
+#0465 ofs050d: ifeq [] -> #491
+#0466 ofs0511: getlocal [22]
+#0467 ofs0513: pushint [15990089]
+#0468 ofs0516: ifeq [] -> #491
+#0469 ofs051a: getlocal [22]
+#0470 ofs051c: pushint [15990090]
+#0471 ofs051f: ifeq [] -> #491
+#0472 ofs0523: getlocal [22]
+#0473 ofs0525: pushint [15990091]
+#0474 ofs0528: ifeq [] -> #491
+#0475 ofs052c: getlocal [22]
+#0476 ofs052e: pushint [15990092]
+#0477 ofs0531: ifeq [] -> #491
+#0478 ofs0535: getlocal [22]
+#0479 ofs0537: pushint [15990093]
+#0480 ofs053a: ifeq [] -> #491
+#0481 ofs053e: getlocal [22]
+#0482 ofs0540: pushint [15990094]
+#0483 ofs0543: ifeq [] -> #491
+#0484 ofs0547: getlocal [22]
+#0485 ofs0549: pushint [15990095]
+#0486 ofs054c: ifeq [] -> #491
+#0487 ofs0550: getlocal [22]
+#0488 ofs0552: pushint [15990096]
+#0489 ofs0555: ifeq [] -> #491
+#0490 ofs0559: jump [] -> #496
+#0491 ofs055d: getlocal [23]
+#0492 ofs055f: pushbyte [2]
+#0493 ofs0561: add_i []
+#0494 ofs0562: setlocal [23]
+#0495 ofs0564: jump [] -> #187
+#0496 ofs0568: getlex ['haxe.ds::Option']
+#0497 ofs056a: getproperty ['None']
+#0498 ofs056d: returnvalue []
+#0499 ofs056e: jump [] -> #548
+#0500 ofs0572: op_ef [1, 92775, 0, 2511]
+#0501 ofs057a: op_ef [1, 92776, 1, 2512]
+#0502 ofs0582: getlocal_0 []
+#0503 ofs0583: coerce ['pinball.common.data.character::BattleCharacterLogic']
+#0504 ofs0586: setlocal_1 []
+#0505 ofs0587: getlex ['abilitySoul']
+#0506 ofs058b: coerce ['haxe.ds::Option']
+#0507 ofs058d: setlocal_2 []
+#0508 ofs058e: jump [] -> #530
+#0509 ofs0592: avm_label []
+#0510 ofs0593: getlex ['haxe.ds::Option']
+#0511 ofs0595: getlex ['pinball.common.data.ability::AbilitySoulAbilityLogic']
+#0512 ofs0598: getlocal_2 []
+#0513 ofs0599: getproperty ['params']
+#0514 ofs059b: pushbyte [0]
+#0515 ofs059d: getproperty ['<mn kind 0x1b>']
+#0516 ofs05a1: callproperty ['get_abilitySoulId', 0]
+#0517 ofs05a6: getlocal_1 []
+#0518 ofs05a7: getproperty ['logicAssets']
+#0519 ofs05aa: callproperty ['createForAbilitySoul', 2]
+#0520 ofs05ae: callproperty ['Some', 1]
+#0521 ofs05b2: returnvalue []
+#0522 ofs05b3: avm_label []
+#0523 ofs05b4: getlex ['haxe.ds::Option']
+#0524 ofs05b6: getproperty ['None']
+#0525 ofs05b9: returnvalue []
+#0526 ofs05ba: avm_label []
+#0527 ofs05bb: returnvoid []
+#0528 ofs05bc: avm_label []
+#0529 ofs05bd: jump [] -> #546
+#0530 ofs05c1: getlocal_2 []
+#0531 ofs05c2: getproperty ['index']
+#0532 ofs05c4: setlocal_3 []
+#0533 ofs05c5: pushbyte [0]
+#0534 ofs05c7: getlocal_3 []
+#0535 ofs05c8: ifstrictne [] -> #538
+#0536 ofs05cc: pushbyte [0]
+#0537 ofs05ce: jump [] -> #544
+#0538 ofs05d2: pushbyte [1]
+#0539 ofs05d4: getlocal_3 []
+#0540 ofs05d5: ifstrictne [] -> #543
+#0541 ofs05d9: pushbyte [1]
+#0542 ofs05db: jump [] -> #544
+#0543 ofs05df: pushbyte [255]
+#0544 ofs05e1: op_08 [3]
+#0545 ofs05e3: lookupswitch [] default #526, cases [509, 522]
+#0546 ofs05ee: pushundefined []
+#0547 ofs05ef: returnvalue []
+#0548 ofs05f0: getlocal_0 []
+#0549 ofs05f1: getproperty ['abilitySoul']
+#0550 ofs05f5: getproperty ['index']
+#0551 ofs05f7: pushbyte [0]
+#0552 ofs05f9: ifne [] -> #741
+#0553 ofs05fd: getlocal_0 []
+#0554 ofs05fe: getproperty ['abilitySoul']
+#0555 ofs0602: getproperty ['params']
+#0556 ofs0604: pushbyte [0]
+#0557 ofs0606: getproperty ['<mn kind 0x1b>']
+#0558 ofs0608: callproperty ['get_abilitySoulId', 0]
+#0559 ofs060d: convert_i []
+#0560 ofs060e: setlocal [4]
+#0561 ofs0610: getlocal_0 []
+#0562 ofs0611: getproperty ['party']
+#0563 ofs0614: iffalse [] -> #741
+#0564 ofs0618: getlocal_0 []
+#0565 ofs0619: getproperty ['party']
+#0566 ofs061c: getproperty ['values']
+#0567 ofs061f: iffalse [] -> #741
+#0568 ofs0623: getlocal_0 []
+#0569 ofs0624: getproperty ['party']
+#0570 ofs0627: getproperty ['values']
+#0571 ofs062a: pushstring ['weapon_rivens']
+#0572 ofs062e: getproperty ['<mn kind 0x1b>']
+#0573 ofs0630: coerce_a []
+#0574 ofs0631: setlocal [6]
+#0575 ofs0633: getlocal [6]
+#0576 ofs0635: iffalse [] -> #741
+#0577 ofs0639: getlocal_0 []
+#0578 ofs063a: getproperty ['index']
+#0579 ofs063c: convert_i []
+#0580 ofs063d: setlocal [7]
+#0581 ofs063f: getlocal [7]
+#0582 ofs0641: pushbyte [0]
+#0583 ofs0643: iflt [] -> #741
+#0584 ofs0647: getlocal [7]
+#0585 ofs0649: getlocal [6]
+#0586 ofs064b: getproperty ['length']
+#0587 ofs064d: ifge [] -> #741
+#0588 ofs0651: getlocal [6]
+#0589 ofs0653: getlocal [7]
+#0590 ofs0655: getproperty ['<mn kind 0x1b>']
+#0591 ofs0657: setlocal [5]
+#0592 ofs0659: getlocal [5]
+#0593 ofs065b: iffalse [] -> #741
+#0594 ofs065f: getlocal [5]
+#0595 ofs0661: getproperty ['index']
+#0596 ofs0663: pushbyte [0]
+#0597 ofs0665: ifne [] -> #741
+#0598 ofs0669: getlocal [5]
+#0599 ofs066b: getproperty ['params']
+#0600 ofs066d: pushbyte [0]
+#0601 ofs066f: getproperty ['<mn kind 0x1b>']
+#0602 ofs0671: setlocal [5]
+#0603 ofs0673: getlocal [5]
+#0604 ofs0675: iffalse [] -> #741
+#0605 ofs0679: getlocal [5]
+#0606 ofs067b: getproperty ['length']
+#0607 ofs067d: pushbyte [4]
+#0608 ofs067f: iflt [] -> #741
+#0609 ofs0683: getlocal [5]
+#0610 ofs0685: getproperty ['length']
+#0611 ofs0687: pushbyte [2]
+#0612 ofs0689: modulo []
+#0613 ofs068a: pushbyte [0]
+#0614 ofs068c: ifne [] -> #741
+#0615 ofs0690: getlocal [5]
+#0616 ofs0692: pushbyte [0]
+#0617 ofs0694: getproperty ['<mn kind 0x1b>']
+#0618 ofs0696: getlocal [4]
+#0619 ofs0698: ifne [] -> #741
+#0620 ofs069c: getlocal_0 []
+#0621 ofs069d: getproperty ['isUnison']
+#0622 ofs06a0: iftrue [] -> #738
+#0623 ofs06a4: getlocal_0 []
+#0624 ofs06a5: getproperty ['equipment']
+#0625 ofs06a8: getproperty ['index']
+#0626 ofs06aa: pushbyte [0]
+#0627 ofs06ac: ifne [] -> #738
+#0628 ofs06b0: getlocal_0 []
+#0629 ofs06b1: getproperty ['equipment']
+#0630 ofs06b4: getproperty ['params']
+#0631 ofs06b6: pushbyte [0]
+#0632 ofs06b8: getproperty ['<mn kind 0x1b>']
+#0633 ofs06ba: getproperty ['id']
+#0634 ofs06bd: getlocal [5]
+#0635 ofs06bf: pushbyte [1]
+#0636 ofs06c1: getproperty ['<mn kind 0x1b>']
+#0637 ofs06c3: ifne [] -> #738
+#0638 ofs06c7: pushnull []
+#0639 ofs06c8: coerce ['pinball.common.data.ability::AbilitySoulAbilityLogic']
+#0640 ofs06cb: setlocal [9]
+#0641 ofs06cd: findpropstrict ['haxe.ds::IntMap']
+#0642 ofs06d0: constructprop ['haxe.ds::IntMap', 0]
+#0643 ofs06d4: setlocal [8]
+#0644 ofs06d6: pushbyte [1]
+#0645 ofs06d8: setlocal [15]
+#0646 ofs06da: pushbyte [2]
+#0647 ofs06dc: setlocal [10]
+#0648 ofs06de: avm_label []
+#0649 ofs06df: getlocal [10]
+#0650 ofs06e1: getlocal [5]
+#0651 ofs06e3: getproperty ['length']
+#0652 ofs06e5: ifge [] -> #713
+#0653 ofs06e9: findpropstrict ['pinball.common.data.ability::AbilitySoulAbilityLogic']
+#0654 ofs06ec: pushbyte [31]
+#0655 ofs06ee: getlocal [5]
+#0656 ofs06f0: getlocal [10]
+#0657 ofs06f2: getproperty ['<mn kind 0x1b>']
+#0658 ofs06f4: convert_i []
+#0659 ofs06f5: getlex ['pinball.common.data.ability::AbilityPowerValueCalculateMethod']
+#0660 ofs06f8: getlocal [5]
+#0661 ofs06fa: getlocal [10]
+#0662 ofs06fc: pushbyte [1]
+#0663 ofs06fe: add_i []
+#0664 ofs06ff: getproperty ['<mn kind 0x1b>']
+#0665 ofs0701: convert_i []
+#0666 ofs0702: pushbyte [1]
+#0667 ofs0704: pushbyte [100]
+#0668 ofs0706: callproperty ['MinToMaxLevelScale', 3]
+#0669 ofs070a: pushfalse []
+#0670 ofs070b: getlocal_0 []
+#0671 ofs070c: getproperty ['logicAssets']
+#0672 ofs070f: constructprop ['pinball.common.data.ability::AbilitySoulAbilityLogic', 5]
+#0673 ofs0713: coerce ['pinball.common.data.ability::AbilitySoulAbilityLogic']
+#0674 ofs0716: setlocal [11]
+#0675 ofs0718: getlocal [11]
+#0676 ofs071a: callproperty ['getTriggers', 0]
+#0677 ofs071e: coerce ['Array']
+#0678 ofs0720: setlocal [12]
+#0679 ofs0722: getlocal [9]
+#0680 ofs0724: iftrue [] -> #683
+#0681 ofs0728: getlocal [11]
+#0682 ofs072a: setlocal [9]
+#0683 ofs072c: pushbyte [0]
+#0684 ofs072e: setlocal [13]
+#0685 ofs0730: avm_label []
+#0686 ofs0731: getlocal [13]
+#0687 ofs0733: getlocal [12]
+#0688 ofs0735: getproperty ['length']
+#0689 ofs0737: ifge [] -> #708
+#0690 ofs073b: findpropstrict ['haxe.ds::IntMap']
+#0691 ofs073e: constructprop ['haxe.ds::IntMap', 0]
+#0692 ofs0742: setlocal [14]
+#0693 ofs0744: getlocal [14]
+#0694 ofs0746: getproperty ['h']
+#0695 ofs0749: pushbyte [1]
+#0696 ofs074b: getlocal [12]
+#0697 ofs074d: getlocal [13]
+#0698 ofs074f: getproperty ['<mn kind 0x1b>']
+#0699 ofs0751: setproperty ['<mn kind 0x1b>']
+#0700 ofs0753: getlocal [8]
+#0701 ofs0755: getproperty ['h']
+#0702 ofs0758: getlocal [15]
+#0703 ofs075a: getlocal [14]
+#0704 ofs075c: setproperty ['<mn kind 0x1b>']
+#0705 ofs075e: inclocal_i [15]
+#0706 ofs0760: inclocal_i [13]
+#0707 ofs0762: jump [] -> #685
+#0708 ofs0766: getlocal [10]
+#0709 ofs0768: pushbyte [2]
+#0710 ofs076a: add_i []
+#0711 ofs076b: setlocal [10]
+#0712 ofs076d: jump [] -> #648
+#0713 ofs0771: getlocal [9]
+#0714 ofs0773: getlocal [8]
+#0715 ofs0775: setproperty ['triggers']
+#0716 ofs0778: getlocal [9]
+#0717 ofs077a: getlocal [4]
+#0718 ofs077c: setproperty ['id']
+#0719 ofs077f: getlocal [9]
+#0720 ofs0781: pushbyte [31]
+#0721 ofs0783: setproperty ['number']
+#0722 ofs0786: getlocal [9]
+#0723 ofs0788: pushfalse []
+#0724 ofs0789: setproperty ['isEquipment']
+#0725 ofs078c: getlocal [9]
+#0726 ofs078e: pushnull []
+#0727 ofs078f: setproperty ['_elements']
+#0728 ofs0792: getlocal [9]
+#0729 ofs0794: findpropstrict ['pinball.common.data.ability::AbilityPowerValue']
+#0730 ofs0797: getlex ['pinball.common.data.ability::AbilityPowerValueCalculateMethod']
+#0731 ofs079a: getproperty ['MinimumLevel']
+#0732 ofs079d: constructprop ['pinball.common.data.ability::AbilityPowerValue', 1]
+#0733 ofs07a1: setproperty ['power']
+#0734 ofs07a4: getlex ['haxe.ds::Option']
+#0735 ofs07a6: getlocal [9]
+#0736 ofs07a8: callproperty ['Some', 1]
+#0737 ofs07ac: returnvalue []
+#0738 ofs07ad: getlex ['haxe.ds::Option']
+#0739 ofs07af: getproperty ['None']
+#0740 ofs07b2: returnvalue []
+#0741 ofs07b3: op_ef [1, 92775, 0, 2511]
+#0742 ofs07bb: op_ef [1, 92776, 1, 2512]
+#0743 ofs07c3: getlocal_0 []
+#0744 ofs07c4: coerce ['pinball.common.data.character::BattleCharacterLogic']
+#0745 ofs07c7: setlocal_1 []
+#0746 ofs07c8: getlex ['abilitySoul']
+#0747 ofs07cc: coerce ['haxe.ds::Option']
+#0748 ofs07ce: setlocal_2 []
+#0749 ofs07cf: jump [] -> #771
+#0750 ofs07d3: avm_label []
+#0751 ofs07d4: getlex ['haxe.ds::Option']
+#0752 ofs07d6: getlex ['pinball.common.data.ability::AbilitySoulAbilityLogic']
+#0753 ofs07d9: getlocal_2 []
+#0754 ofs07da: getproperty ['params']
+#0755 ofs07dc: pushbyte [0]
+#0756 ofs07de: getproperty ['<mn kind 0x1b>']
+#0757 ofs07e2: callproperty ['get_abilitySoulId', 0]
+#0758 ofs07e7: getlocal_1 []
+#0759 ofs07e8: getproperty ['logicAssets']
+#0760 ofs07eb: callproperty ['createForAbilitySoul', 2]
+#0761 ofs07ef: callproperty ['Some', 1]
+#0762 ofs07f3: returnvalue []
+#0763 ofs07f4: avm_label []
+#0764 ofs07f5: getlex ['haxe.ds::Option']
+#0765 ofs07f7: getproperty ['None']
+#0766 ofs07fa: returnvalue []
+#0767 ofs07fb: avm_label []
+#0768 ofs07fc: returnvoid []
+#0769 ofs07fd: avm_label []
+#0770 ofs07fe: jump [] -> #787
+#0771 ofs0802: getlocal_2 []
+#0772 ofs0803: getproperty ['index']
+#0773 ofs0805: setlocal_3 []
+#0774 ofs0806: pushbyte [0]
+#0775 ofs0808: getlocal_3 []
+#0776 ofs0809: ifstrictne [] -> #779
+#0777 ofs080d: pushbyte [0]
+#0778 ofs080f: jump [] -> #785
+#0779 ofs0813: pushbyte [1]
+#0780 ofs0815: getlocal_3 []
+#0781 ofs0816: ifstrictne [] -> #784
+#0782 ofs081a: pushbyte [1]
+#0783 ofs081c: jump [] -> #785
+#0784 ofs0820: pushbyte [255]
+#0785 ofs0822: op_08 [3]
+#0786 ofs0824: lookupswitch [] default #767, cases [750, 763]
+#0787 ofs082f: pushundefined []
+#0788 ofs0830: returnvalue []

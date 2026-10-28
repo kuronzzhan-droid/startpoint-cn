@@ -1,0 +1,475 @@
+; ContinueDialogView/setupTexts
+; body_index=33045 method_index=35804
+; sha256=d0eae117fff78d444e02cf9844f87bf6f195a95c4227f4b3581b71b0b118e5e2
+; maxstack=12 localcount=7 init_scope_depth=1 max_scope_depth=2
+L000000: getlocal_0         
+L000001: pushscope          
+L000002: pushnull           
+L000003: astype             11 [String]
+L000005: setlocal_2         
+L000006: pushnan            
+L000007: setlocal_3         
+L000008: findproperty       29910 [layout]
+L00000c: getproperty        29910 [layout]
+L000010: pushstring         1006 ["title"]
+L000013: pushstring         189 ["fileName"]
+L000016: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L00001a: pushstring         191 ["lineNumber"]
+L00001d: pushint            35 [143]
+L00001f: pushstring         192 ["className"]
+L000022: pushstring         41132 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogLayout_continue_dialog_Impl_"]
+L000026: pushstring         194 ["methodName"]
+L000029: pushstring         28127 ["get_title"]
+L00002d: newobject          4
+L00002f: callproperty       23153 [getText], 2
+L000034: coerce             21290 [pinball.ui.display.text::UiText]
+L000038: findproperty       6687 [view]
+L00003b: getproperty        6687 [view]
+L00003e: getproperty        6899 [asset]
+L000041: pushstring         41133 ["battle_continue_dialog_title"]
+L000045: callproperty       8223 [getUiString], 1
+L000049: coerce             11 [String]
+L00004b: callpropvoid       21287 [set_text], 1
+L000050: findproperty       29910 [layout]
+L000054: getproperty        29910 [layout]
+L000058: pushstring         37094 ["notice"]
+L00005c: pushstring         189 ["fileName"]
+L00005f: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L000063: pushstring         191 ["lineNumber"]
+L000066: pushint            43 [148]
+L000068: pushstring         192 ["className"]
+L00006b: pushstring         41132 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogLayout_continue_dialog_Impl_"]
+L00006f: pushstring         194 ["methodName"]
+L000072: pushstring         41134 ["get_notice"]
+L000076: newobject          4
+L000078: callproperty       23153 [getText], 2
+L00007d: coerce             21290 [pinball.ui.display.text::UiText]
+L000081: findproperty       6687 [view]
+L000084: getproperty        6687 [view]
+L000087: getproperty        6899 [asset]
+L00008a: pushstring         41135 ["battle_continue_dialog_description_cost"]
+L00008e: pushstring         28534 ["stone"]
+L000092: findproperty       29765 [peek]
+L000096: getproperty        29765 [peek]
+L00009a: callproperty       31265 [pinball.dialog.continueDialog:ContinueDialogPeek::get_continueVirtualMoney], 0
+L00009f: convert_i          
+L0000a0: newobject          1
+L0000a2: callproperty       8222 [getUiStringWithContext], 2
+L0000a6: coerce             11 [String]
+L0000a8: callpropvoid       21287 [set_text], 1
+L0000ad: findproperty       29910 [layout]
+L0000b1: getproperty        29910 [layout]
+L0000b5: pushstring         1525 ["description"]
+L0000b8: pushstring         189 ["fileName"]
+L0000bb: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L0000bf: pushstring         191 ["lineNumber"]
+L0000c2: pushint            64 [153]
+L0000c4: pushstring         192 ["className"]
+L0000c7: pushstring         41132 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogLayout_continue_dialog_Impl_"]
+L0000cb: pushstring         194 ["methodName"]
+L0000ce: pushstring         19682 ["get_description"]
+L0000d2: newobject          4
+L0000d4: callproperty       23153 [getText], 2
+L0000d9: coerce             21290 [pinball.ui.display.text::UiText]
+L0000dd: coerce             21290 [pinball.ui.display.text::UiText]
+L0000e1: setlocal_1         
+L0000e2: findproperty       29765 [peek]
+L0000e6: getproperty        29765 [peek]
+L0000ea: callproperty       31264 [pinball.dialog.continueDialog:ContinueDialogPeek::isSingle], 0
+L0000ef: convert_b          
+L0000f0: iffalse            L00010e (# 85)
+L0000f4: findproperty       6687 [view]
+L0000f7: getproperty        6687 [view]
+L0000fa: getproperty        6899 [asset]
+L0000fd: pushstring         41136 ["battle_continue_dialog_description"]
+L000101: callproperty       8223 [getUiString], 1
+L000105: coerce             11 [String]
+L000107: coerce             11 [String]
+L000109: setlocal_2         
+L00010a: jump               L000143 (# 108)
+L00010e: getlex             3430 [pinball.common.math._Decimal::Decimal_Impl_]
+L000111: getlex             4067 [pinball.scene.battle.battle::BattleConstants]
+L000114: getproperty        4081 [CONTINUE_MATE_HEAL_RATE]
+L000117: callproperty       3432 [toFloat], 1
+L00011b: convert_d          
+L00011c: pushbyte           100
+L00011e: multiply           
+L00011f: convert_d          
+L000120: setlocal_3         
+L000121: findproperty       6687 [view]
+L000124: getproperty        6687 [view]
+L000127: getproperty        6899 [asset]
+L00012a: pushstring         41137 ["battle_continue_dialog_description_multi"]
+L00012e: pushstring         19781 ["percent"]
+L000132: pushstring         1 [""]
+L000134: getlocal_3         
+L000135: add                
+L000136: coerce             11 [String]
+L000138: newobject          1
+L00013a: callproperty       8222 [getUiStringWithContext], 2
+L00013e: coerce             11 [String]
+L000140: coerce             11 [String]
+L000142: setlocal_2         
+L000143: getlocal_1         
+L000144: getlocal_2         
+L000145: callpropvoid       21287 [set_text], 1
+L00014a: findproperty       29910 [layout]
+L00014e: getproperty        29910 [layout]
+L000152: pushstring         41138 ["variation"]
+L000156: pushstring         189 ["fileName"]
+L000159: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L00015d: pushstring         191 ["lineNumber"]
+L000160: pushint            19 [128]
+L000162: pushstring         192 ["className"]
+L000165: pushstring         41132 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogLayout_continue_dialog_Impl_"]
+L000169: pushstring         194 ["methodName"]
+L00016c: pushstring         41139 ["get_variation"]
+L000170: newobject          4
+L000172: callproperty       29766 [getContainer], 2
+L000177: coerce             21285 [pinball.ui.display::UiDisplayObjectContainer]
+L00017b: coerce             21285 [pinball.ui.display::UiDisplayObjectContainer]
+L00017f: setlocal           4
+L000181: getlocal           4
+L000183: pushstring         41140 ["before_stone"]
+L000187: pushstring         189 ["fileName"]
+L00018a: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L00018e: pushstring         191 ["lineNumber"]
+L000191: pushbyte           83
+L000193: pushstring         192 ["className"]
+L000196: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L00019a: pushstring         194 ["methodName"]
+L00019d: pushstring         41142 ["get_before_stone"]
+L0001a1: newobject          4
+L0001a3: callproperty       23153 [getText], 2
+L0001a8: coerce             21290 [pinball.ui.display.text::UiText]
+L0001ac: getlex             30129 [starling.text::TextFieldAutoSize]
+L0001b0: getproperty        30130 [HORIZONTAL]
+L0001b4: callpropvoid       30131 [set_autoSize], 1
+L0001b9: getlocal           4
+L0001bb: pushstring         41140 ["before_stone"]
+L0001bf: pushstring         189 ["fileName"]
+L0001c2: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L0001c6: pushstring         191 ["lineNumber"]
+L0001c9: pushbyte           83
+L0001cb: pushstring         192 ["className"]
+L0001ce: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L0001d2: pushstring         194 ["methodName"]
+L0001d5: pushstring         41142 ["get_before_stone"]
+L0001d9: newobject          4
+L0001db: callproperty       23153 [getText], 2
+L0001e0: coerce             21290 [pinball.ui.display.text::UiText]
+L0001e4: getlex             10403 [pinball.common.tools::StringExtended]
+L0001e7: getlex             3385 [pinball.common.math._FloatInt::FloatInt_Impl_]
+L0001ea: findproperty       29765 [peek]
+L0001ee: getproperty        29765 [peek]
+L0001f2: callproperty       31266 [pinball.dialog.continueDialog:ContinueDialogPeek::get_beforeVirtualMoney], 0
+L0001f7: convert_i          
+L0001f8: callproperty       3392 [fromInt], 1
+L0001fc: convert_d          
+L0001fd: callproperty       21884 [commaSeparate], 1
+L000202: coerce             11 [String]
+L000204: callpropvoid       21287 [set_text], 1
+L000209: findproperty       29765 [peek]
+L00020d: getproperty        29765 [peek]
+L000211: callproperty       31263 [pinball.dialog.continueDialog:ContinueDialogPeek::isVirtualMoneyEnough], 0
+L000216: convert_b          
+L000217: iffalse            L0002d0 (# 226)
+L00021b: getlocal           4
+L00021d: pushstring         41143 ["after_stone"]
+L000221: pushstring         189 ["fileName"]
+L000224: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L000228: pushstring         191 ["lineNumber"]
+L00022b: pushbyte           88
+L00022d: pushstring         192 ["className"]
+L000230: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L000234: pushstring         194 ["methodName"]
+L000237: pushstring         41144 ["get_after_stone"]
+L00023b: newobject          4
+L00023d: callproperty       23153 [getText], 2
+L000242: coerce             21290 [pinball.ui.display.text::UiText]
+L000246: getlex             10403 [pinball.common.tools::StringExtended]
+L000249: getlex             3385 [pinball.common.math._FloatInt::FloatInt_Impl_]
+L00024c: findproperty       29765 [peek]
+L000250: getproperty        29765 [peek]
+L000254: callproperty       31267 [pinball.dialog.continueDialog:ContinueDialogPeek::get_afterVirtualMoney], 0
+L000259: convert_i          
+L00025a: callproperty       3392 [fromInt], 1
+L00025e: convert_d          
+L00025f: callproperty       21884 [commaSeparate], 1
+L000264: coerce             11 [String]
+L000266: callpropvoid       21287 [set_text], 1
+L00026b: getlocal           4
+L00026d: pushstring         41143 ["after_stone"]
+L000271: pushstring         189 ["fileName"]
+L000274: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L000278: pushstring         191 ["lineNumber"]
+L00027b: pushbyte           88
+L00027d: pushstring         192 ["className"]
+L000280: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L000284: pushstring         194 ["methodName"]
+L000287: pushstring         41144 ["get_after_stone"]
+L00028b: newobject          4
+L00028d: callproperty       23153 [getText], 2
+L000292: coerce             21290 [pinball.ui.display.text::UiText]
+L000296: getlocal           4
+L000298: pushstring         41140 ["before_stone"]
+L00029c: pushstring         189 ["fileName"]
+L00029f: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L0002a3: pushstring         191 ["lineNumber"]
+L0002a6: pushbyte           83
+L0002a8: pushstring         192 ["className"]
+L0002ab: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L0002af: pushstring         194 ["methodName"]
+L0002b2: pushstring         41142 ["get_before_stone"]
+L0002b6: newobject          4
+L0002b8: callproperty       23153 [getText], 2
+L0002bd: coerce             21290 [pinball.ui.display.text::UiText]
+L0002c1: callproperty       31279 [get_textWidth], 0
+L0002c6: convert_d          
+L0002c7: callpropvoid       31280 [set_textWidth], 1
+L0002cc: jump               L000389 (# 280)
+L0002d0: getlocal           4
+L0002d2: pushstring         41143 ["after_stone"]
+L0002d6: pushstring         189 ["fileName"]
+L0002d9: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L0002dd: pushstring         191 ["lineNumber"]
+L0002e0: pushbyte           88
+L0002e2: pushstring         192 ["className"]
+L0002e5: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L0002e9: pushstring         194 ["methodName"]
+L0002ec: pushstring         41144 ["get_after_stone"]
+L0002f0: newobject          4
+L0002f2: callproperty       23153 [getText], 2
+L0002f7: coerce             21290 [pinball.ui.display.text::UiText]
+L0002fb: findproperty       6687 [view]
+L0002fe: getproperty        6687 [view]
+L000301: getproperty        6899 [asset]
+L000304: pushstring         41147 ["battle_continue_dialog_insufficient"]
+L000308: callproperty       8223 [getUiString], 1
+L00030c: coerce             11 [String]
+L00030e: callpropvoid       21287 [set_text], 1
+L000313: getlocal           4
+L000315: pushstring         41143 ["after_stone"]
+L000319: pushstring         189 ["fileName"]
+L00031c: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L000320: pushstring         191 ["lineNumber"]
+L000323: pushbyte           88
+L000325: pushstring         192 ["className"]
+L000328: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L00032c: pushstring         194 ["methodName"]
+L00032f: pushstring         41144 ["get_after_stone"]
+L000333: newobject          4
+L000335: callproperty       23153 [getText], 2
+L00033a: coerce             21290 [pinball.ui.display.text::UiText]
+L00033e: getlex             30129 [starling.text::TextFieldAutoSize]
+L000342: getproperty        30130 [HORIZONTAL]
+L000346: callpropvoid       30131 [set_autoSize], 1
+L00034b: getlocal           4
+L00034d: pushstring         41143 ["after_stone"]
+L000351: pushstring         189 ["fileName"]
+L000354: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L000358: pushstring         191 ["lineNumber"]
+L00035b: pushbyte           88
+L00035d: pushstring         192 ["className"]
+L000360: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L000364: pushstring         194 ["methodName"]
+L000367: pushstring         41144 ["get_after_stone"]
+L00036b: newobject          4
+L00036d: callproperty       23153 [getText], 2
+L000372: coerce             21290 [pinball.ui.display.text::UiText]
+L000376: callproperty       21288 [get_format], 0
+L00037b: coerce             21289 [starling.text::TextFormat]
+L00037f: getlex             4258 [starling.utils::Align]
+L000382: getproperty        150 [LEFT]
+L000385: initproperty       30861 [horizontalAlign]
+L000389: getlocal           4
+L00038b: pushstring         39523 ["icon"]
+L00038f: pushstring         189 ["fileName"]
+L000392: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L000396: pushstring         191 ["lineNumber"]
+L000399: pushbyte           73
+L00039b: pushstring         192 ["className"]
+L00039e: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L0003a2: pushstring         194 ["methodName"]
+L0003a5: pushstring         27048 ["get_icon"]
+L0003a9: newobject          4
+L0003ab: callproperty       4971 [getImage], 2
+L0003af: coerce             29771 [pinball.ui.display.image::UiImage]
+L0003b3: getproperty        9341 [bounds]
+L0003b6: getproperty        4959 [right]
+L0003b9: convert_d          
+L0003ba: setlocal_3         
+L0003bb: getlocal           4
+L0003bd: pushstring         41140 ["before_stone"]
+L0003c1: pushstring         189 ["fileName"]
+L0003c4: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L0003c8: pushstring         191 ["lineNumber"]
+L0003cb: pushbyte           83
+L0003cd: pushstring         192 ["className"]
+L0003d0: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L0003d4: pushstring         194 ["methodName"]
+L0003d7: pushstring         41142 ["get_before_stone"]
+L0003db: newobject          4
+L0003dd: callproperty       23153 [getText], 2
+L0003e2: coerce             21290 [pinball.ui.display.text::UiText]
+L0003e6: getlocal_3         
+L0003e7: getlocal           4
+L0003e9: pushstring         41148 ["margin_between_icon_and_before"]
+L0003ed: pushstring         189 ["fileName"]
+L0003f0: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L0003f4: pushstring         191 ["lineNumber"]
+L0003f7: pushbyte           93
+L0003f9: pushstring         192 ["className"]
+L0003fc: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L000400: pushstring         194 ["methodName"]
+L000403: pushstring         41149 ["get_margin_between_icon_and_before"]
+L000407: newobject          4
+L000409: callproperty       29780 [getGuideRectangle], 2
+L00040e: coerce             2632 [flash.geom::Rectangle]
+L000411: getproperty        148 [width]
+L000414: add                
+L000415: convert_d          
+L000416: initproperty       2604 [x]
+L000419: getlocal           4
+L00041b: pushstring         41140 ["before_stone"]
+L00041f: pushstring         189 ["fileName"]
+L000422: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L000426: pushstring         191 ["lineNumber"]
+L000429: pushbyte           83
+L00042b: pushstring         192 ["className"]
+L00042e: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L000432: pushstring         194 ["methodName"]
+L000435: pushstring         41142 ["get_before_stone"]
+L000439: newobject          4
+L00043b: callproperty       23153 [getText], 2
+L000440: coerce             21290 [pinball.ui.display.text::UiText]
+L000444: getproperty        9341 [bounds]
+L000447: getproperty        4959 [right]
+L00044a: convert_d          
+L00044b: setlocal           5
+L00044d: getlocal           4
+L00044f: pushstring         41150 ["right_arrow"]
+L000453: pushstring         189 ["fileName"]
+L000456: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L00045a: pushstring         191 ["lineNumber"]
+L00045d: pushbyte           78
+L00045f: pushstring         192 ["className"]
+L000462: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L000466: pushstring         194 ["methodName"]
+L000469: pushstring         41151 ["get_right_arrow"]
+L00046d: newobject          4
+L00046f: callproperty       4971 [getImage], 2
+L000473: coerce             29771 [pinball.ui.display.image::UiImage]
+L000477: getlocal           5
+L000479: getlocal           4
+L00047b: pushstring         41152 ["margin_between_before_and_arrow"]
+L00047f: pushstring         189 ["fileName"]
+L000482: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L000486: pushstring         191 ["lineNumber"]
+L000489: pushbyte           98
+L00048b: pushstring         192 ["className"]
+L00048e: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L000492: pushstring         194 ["methodName"]
+L000495: pushstring         41153 ["get_margin_between_before_and_arrow"]
+L000499: newobject          4
+L00049b: callproperty       29780 [getGuideRectangle], 2
+L0004a0: coerce             2632 [flash.geom::Rectangle]
+L0004a3: getproperty        148 [width]
+L0004a6: add                
+L0004a7: convert_d          
+L0004a8: initproperty       2604 [x]
+L0004ab: getlocal           4
+L0004ad: pushstring         41150 ["right_arrow"]
+L0004b1: pushstring         189 ["fileName"]
+L0004b4: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L0004b8: pushstring         191 ["lineNumber"]
+L0004bb: pushbyte           78
+L0004bd: pushstring         192 ["className"]
+L0004c0: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L0004c4: pushstring         194 ["methodName"]
+L0004c7: pushstring         41151 ["get_right_arrow"]
+L0004cb: newobject          4
+L0004cd: callproperty       4971 [getImage], 2
+L0004d1: coerce             29771 [pinball.ui.display.image::UiImage]
+L0004d5: getproperty        9341 [bounds]
+L0004d8: getproperty        4959 [right]
+L0004db: convert_d          
+L0004dc: setlocal           6
+L0004de: getlocal           4
+L0004e0: pushstring         41143 ["after_stone"]
+L0004e4: pushstring         189 ["fileName"]
+L0004e7: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L0004eb: pushstring         191 ["lineNumber"]
+L0004ee: pushbyte           88
+L0004f0: pushstring         192 ["className"]
+L0004f3: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L0004f7: pushstring         194 ["methodName"]
+L0004fa: pushstring         41144 ["get_after_stone"]
+L0004fe: newobject          4
+L000500: callproperty       23153 [getText], 2
+L000505: coerce             21290 [pinball.ui.display.text::UiText]
+L000509: getlocal           6
+L00050b: getlocal           4
+L00050d: pushstring         41154 ["margin_between_arrow_and_after"]
+L000511: pushstring         189 ["fileName"]
+L000514: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L000518: pushstring         191 ["lineNumber"]
+L00051b: pushbyte           103
+L00051d: pushstring         192 ["className"]
+L000520: pushstring         41141 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogContainer_variation_Impl_"]
+L000524: pushstring         194 ["methodName"]
+L000527: pushstring         41155 ["get_margin_between_arrow_and_after"]
+L00052b: newobject          4
+L00052d: callproperty       29780 [getGuideRectangle], 2
+L000532: coerce             2632 [flash.geom::Rectangle]
+L000535: getproperty        148 [width]
+L000538: add                
+L000539: convert_d          
+L00053a: initproperty       2604 [x]
+L00053d: getlocal           4
+L00053f: findproperty       29910 [layout]
+L000543: getproperty        29910 [layout]
+L000547: pushstring         11832 ["background"]
+L00054a: pushstring         189 ["fileName"]
+L00054d: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L000551: pushstring         191 ["lineNumber"]
+L000554: pushint            25 [138]
+L000556: pushstring         192 ["className"]
+L000559: pushstring         41132 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogLayout_continue_dialog_Impl_"]
+L00055d: pushstring         194 ["methodName"]
+L000560: pushstring         40563 ["get_background"]
+L000564: newobject          4
+L000566: callproperty       4971 [getImage], 2
+L00056a: coerce             29771 [pinball.ui.display.image::UiImage]
+L00056e: getproperty        2604 [x]
+L000571: findproperty       29910 [layout]
+L000575: getproperty        29910 [layout]
+L000579: pushstring         11832 ["background"]
+L00057c: pushstring         189 ["fileName"]
+L00057f: pushstring         41131 ["flatomo/generated/scene/battle/ContinueDialogLayoutIds.hx"]
+L000583: pushstring         191 ["lineNumber"]
+L000586: pushint            25 [138]
+L000588: pushstring         192 ["className"]
+L00058b: pushstring         41132 ["flatomo.generated.scene.battle._ContinueDialogLayoutIds.ContinueDialogLayout_continue_dialog_Impl_"]
+L00058f: pushstring         194 ["methodName"]
+L000592: pushstring         40563 ["get_background"]
+L000596: newobject          4
+L000598: callproperty       4971 [getImage], 2
+L00059c: coerce             29771 [pinball.ui.display.image::UiImage]
+L0005a0: getproperty        148 [width]
+L0005a3: pushbyte           2
+L0005a5: divide             
+L0005a6: add                
+L0005a7: convert_d          
+L0005a8: getlocal           4
+L0005aa: getproperty        148 [width]
+L0005ad: pushbyte           2
+L0005af: divide             
+L0005b0: subtract           
+L0005b1: initproperty       2604 [x]
+L0005b4: getlex             31262 [pinball.dialog.continueDialog::Continue2Dialog]
+L0005b8: getlocal_0         
+L0005b9: callpropvoid       69743 [wfxContinueView], 1
+L0005be: returnvoid         
+L0005bf: ; end
+; exception_table=[]

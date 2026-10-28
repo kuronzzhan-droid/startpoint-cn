@@ -1,0 +1,36 @@
+# ActionEvaluator/wfxPfStampDamage header=[2, 4, 1, 2] sha=a65c87f55cc1f05529caa87276000f8e41fcd510a5854c6366da2a9eaba7317b
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_0 []
+#0003 ofs0003: callproperty ['get_context', 0]
+#0004 ofs0008: setlocal_2 []
+#0005 ofs0009: getlocal_2 []
+#0006 ofs000a: pushstring ['wfxPfChain']
+#0007 ofs000e: callproperty ['hasOwnProperty', 1]
+#0008 ofs0012: iffalse [] -> #34
+#0009 ofs0016: getlocal_2 []
+#0010 ofs0017: getproperty ['wfxPfChain']
+#0011 ofs001b: iffalse [] -> #34
+#0012 ofs001f: getlocal_2 []
+#0013 ofs0020: pushstring ['wfxPfDamageScale']
+#0014 ofs0024: callproperty ['hasOwnProperty', 1]
+#0015 ofs0028: iffalse [] -> #34
+#0016 ofs002c: getlocal_1 []
+#0017 ofs002d: getproperty ['content']
+#0018 ofs0030: setlocal_3 []
+#0019 ofs0031: getlocal_3 []
+#0020 ofs0032: getproperty ['index']
+#0021 ofs0034: pushbyte [0]
+#0022 ofs0036: iflt [] -> #34
+#0023 ofs003a: getlocal_3 []
+#0024 ofs003b: getproperty ['index']
+#0025 ofs003d: pushbyte [2]
+#0026 ofs003f: ifgt [] -> #34
+#0027 ofs0043: getlocal_3 []
+#0028 ofs0044: getproperty ['params']
+#0029 ofs0046: pushbyte [0]
+#0030 ofs0048: getproperty ['<mn kind 0x1b>']
+#0031 ofs004a: getlocal_2 []
+#0032 ofs004b: getproperty ['wfxPfDamageScale']
+#0033 ofs004f: setproperty ['wfxPfDamageScale']
+#0034 ofs0053: returnvoid []
