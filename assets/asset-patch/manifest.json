@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.348",
+  "cdn_version": "1.4.351",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -43074,6 +43074,164 @@
             "[r_fiveboss_ladder] enrage_r1：删耐性叠层，攻击叠层改不可驱散",
             "[r_fiveboss_ladder] silence_waves：沉默去强制赋予",
             "[r_fiveboss_ladder] sig_king_seal：沉默去强制赋予"
+          ]
+        }
+      ],
+      "created_at": "2026-10-27"
+    },
+    {
+      "id": "fiveboss-dedupe-1031",
+      "type": "patch",
+      "name": "五重多boss状态去重",
+      "description": "",
+      "version": "1.4.349",
+      "depends_on": "1.4.348",
+      "enabled": true,
+      "archive": "pinball-1.4.348-1.4.349-1-fiveboss-dedupe-1031-local.zip",
+      "archive_size": 376516,
+      "chain": [
+        "pinball-1.4.348-1.4.349-1-fiveboss-dedupe-1031-local.zip"
+      ],
+      "files": [
+        "production/upload/cd/84cfd1deb4c6344183e82bcc8c380d26a120e5",
+        "production/upload/e8/465658d40cba642e047946149d250827e11579",
+        "production/upload/ec/d8f66b60947ca05643c4080a6cc925c750b9d6"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.348-1.4.349-1-fiveboss-dedupe-1031-local.zip",
+          "size": 376516,
+          "sha256": "a01e032ec39d7886d33b26962b3cc1a9e2d00b5675cacbb7ac9875d22c163b74",
+          "members": 3,
+          "files": [
+            "production/upload/cd/84cfd1deb4c6344183e82bcc8c380d26a120e5",
+            "production/upload/e8/465658d40cba642e047946149d250827e11579",
+            "production/upload/ec/d8f66b60947ca05643c4080a6cc925c750b9d6"
+          ],
+          "member_sha256": {
+            "production/upload/cd/84cfd1deb4c6344183e82bcc8c380d26a120e5": "16b069f96337dfa42c23f4dfbb89eab63c1bf01e05c93522a5559f9e62d1dfba",
+            "production/upload/e8/465658d40cba642e047946149d250827e11579": "72c3ab5ed5acf40b8a5e0ddd1434bcfa02eda4b696cd89a74ef0a0d3c09c6327",
+            "production/upload/ec/d8f66b60947ca05643c4080a6cc925c750b9d6": "6c074cb8152d98fd74db243dee8648e2c880ac5b35326fbf875c67419fe85d45"
+          },
+          "logical_paths": {
+            "production/upload/cd/84cfd1deb4c6344183e82bcc8c380d26a120e5": "battle/action/enemy/action/mod/five_boss_v3/fb3_buff$entrance_self.action.dsl.amf3.deflate",
+            "production/upload/e8/465658d40cba642e047946149d250827e11579": "battle/action/enemy/action/mod/five_boss_v2/fb2_affix$enrage_r0.action.dsl.amf3.deflate",
+            "production/upload/ec/d8f66b60947ca05643c4080a6cc925c750b9d6": "master/battle/boss/general_boss.orderedmap"
+          },
+          "applies_on": "1.4.348",
+          "version": "1.4.349",
+          "server_files": {},
+          "log": [
+            "[r_fiveboss_dedupe] enrage_r0：每只 boss 只给自己叠，1 份最多 8 层（原 3 份）",
+            "[r_fiveboss_dedupe] 同波非首位 boss 34 个键 / 64 行：只留自身增益，玩家减益与场地词缀只由首位 boss 施放"
+          ]
+        }
+      ],
+      "created_at": "2026-10-27"
+    },
+    {
+      "id": "fiveboss-hp35-1031",
+      "type": "patch",
+      "name": "五重boss血量35%与狂暴可驱散",
+      "description": "",
+      "version": "1.4.350",
+      "depends_on": "1.4.349",
+      "enabled": true,
+      "archive": "pinball-1.4.349-1.4.350-1-fiveboss-hp35-1031-local.zip",
+      "archive_size": 93676,
+      "chain": [
+        "pinball-1.4.349-1.4.350-1-fiveboss-hp35-1031-local.zip"
+      ],
+      "files": [
+        "production/upload/43/e44913865259a2c134130056a8800756818a53",
+        "production/upload/e8/465658d40cba642e047946149d250827e11579",
+        "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.349-1.4.350-1-fiveboss-hp35-1031-local.zip",
+          "size": 93676,
+          "sha256": "ce117be8f2c831bb850f812719573111c0f9db41f804fc0f2c10a01be7e9b358",
+          "members": 3,
+          "files": [
+            "production/upload/43/e44913865259a2c134130056a8800756818a53",
+            "production/upload/e8/465658d40cba642e047946149d250827e11579",
+            "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64"
+          ],
+          "member_sha256": {
+            "production/upload/43/e44913865259a2c134130056a8800756818a53": "cb027b99b7c1d191551a40072d50a37cde218a6b0b77c280f49797f167aa896f",
+            "production/upload/e8/465658d40cba642e047946149d250827e11579": "a20623b5aab93a18d2e0aa3f661379c0ffa5b1c0b8cdbd74d98a65272b9dabc2",
+            "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64": "ef321ed194a6ec19914066d45b60c75dea962e788f5eae0b06cb39eec83ccc03"
+          },
+          "logical_paths": {
+            "production/upload/43/e44913865259a2c134130056a8800756818a53": "battle/action/enemy/action/mod/five_boss_v2/fb2_affix$enrage_r1.action.dsl.amf3.deflate",
+            "production/upload/e8/465658d40cba642e047946149d250827e11579": "battle/action/enemy/action/mod/five_boss_v2/fb2_affix$enrage_r0.action.dsl.amf3.deflate",
+            "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64": "master/quest/boss_battle_quest.orderedmap"
+          },
+          "applies_on": "1.4.349",
+          "version": "1.4.350",
+          "server_files": {},
+          "log": [
+            "[r_fiveboss_hp35] 39 关 boss 血量 c99 ×0.35：1099001 26.851177558637→9.397912145523；1099002 26.851177558637→9.397912145523 …",
+            "[r_fiveboss_hp35] enrage_r0：狂暴攻击叠层恢复可驱散",
+            "[r_fiveboss_hp35] enrage_r1：狂暴攻击叠层恢复可驱散"
+          ]
+        }
+      ],
+      "created_at": "2026-10-27"
+    },
+    {
+      "id": "pumpkin-candle-clean-1.4.351",
+      "type": "patch",
+      "name": "南瓜大爆炸结算后清残留蜡烛",
+      "description": "",
+      "version": "1.4.351",
+      "depends_on": "1.4.350",
+      "enabled": true,
+      "archive": "pinball-1.4.350-1.4.351-1-pumpkin-candle-clean-1101-local.zip",
+      "archive_size": 3679637,
+      "chain": [
+        "pinball-1.4.350-1.4.351-1-pumpkin-candle-clean-1101-local.zip"
+      ],
+      "files": [
+        "production/upload/0b/97162ce6d40c473cbac39fa21427688922a48a",
+        "production/upload/8e/32f6264e2dc6e46aba441b586820b14de16627",
+        "production/upload/e5/75200a3b0aec64fd1bf6f9c5ed64044e90cf24",
+        "production/upload/ec/d8f66b60947ca05643c4080a6cc925c750b9d6",
+        "production/upload/f5/0cef8a8e349d70d21f3755880bb75dfd22159a"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.350-1.4.351-1-pumpkin-candle-clean-1101-local.zip",
+          "size": 3679637,
+          "sha256": "82ad3b22e643738194abaeba89d8bb551a5888ad406dbb559d5529224de81b3c",
+          "members": 5,
+          "files": [
+            "production/upload/0b/97162ce6d40c473cbac39fa21427688922a48a",
+            "production/upload/8e/32f6264e2dc6e46aba441b586820b14de16627",
+            "production/upload/e5/75200a3b0aec64fd1bf6f9c5ed64044e90cf24",
+            "production/upload/ec/d8f66b60947ca05643c4080a6cc925c750b9d6",
+            "production/upload/f5/0cef8a8e349d70d21f3755880bb75dfd22159a"
+          ],
+          "member_sha256": {
+            "production/upload/0b/97162ce6d40c473cbac39fa21427688922a48a": "c8ab384124c1a15d5d8c127e54645039111c2223129318880cc730f60e61b595",
+            "production/upload/8e/32f6264e2dc6e46aba441b586820b14de16627": "a40d62d37274bc985bae1ea6c7ca29bb43a6b71b405f62ea4f6af4ef422a578f",
+            "production/upload/e5/75200a3b0aec64fd1bf6f9c5ed64044e90cf24": "8c35bc905264937b778bc30492b7d74b6f7b0e856ed4e9d845cafec9f465237a",
+            "production/upload/ec/d8f66b60947ca05643c4080a6cc925c750b9d6": "dc5377f498cf7b455033fce906d25723389fd8d0964abb8257b958368d442c77",
+            "production/upload/f5/0cef8a8e349d70d21f3755880bb75dfd22159a": "47444ba344c15645e0ffd14a3a077f1f58ecba16adbd683b5e41b6a6dc1db2b5"
+          },
+          "logical_paths": {
+            "production/upload/0b/97162ce6d40c473cbac39fa21427688922a48a": "master/battle/boss/general_boss_state.orderedmap",
+            "production/upload/8e/32f6264e2dc6e46aba441b586820b14de16627": "battle/action/enemy/action/mod/hell_pumpkin/hp_candle_clean.action.dsl.amf3.deflate",
+            "production/upload/e5/75200a3b0aec64fd1bf6f9c5ed64044e90cf24": "battle/action/enemy/action/mod/hell_pumpkin/hp_candle_clean_multi.action.dsl.amf3.deflate",
+            "production/upload/ec/d8f66b60947ca05643c4080a6cc925c750b9d6": "master/battle/boss/general_boss.orderedmap",
+            "production/upload/f5/0cef8a8e349d70d21f3755880bb75dfd22159a": "battle/boss/mod/hell_pumpkin/hp_rage_marker.timeline.amf3.deflate"
+          },
+          "applies_on": "1.4.350",
+          "version": "1.4.351",
+          "server_files": {},
+          "log": [
+            "[r66_pumpkin_candle_clean] 地狱南瓜 P3：大爆炸逐只结算后清掉残留蜡烛（hp_candle_clean，c_clean），下一轮 6 种各一只"
           ]
         }
       ],

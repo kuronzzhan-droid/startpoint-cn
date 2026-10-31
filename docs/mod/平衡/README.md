@@ -6,6 +6,9 @@
 
 | 版本 | 内容 | 记录 | Release |
 |---|---|---|---|
+| 1.4.351 | 南瓜大爆炸结算后清残留蜡烛 | — | [patches-1.4.351](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.351) |
+| 1.4.350 | 五重boss血量35%与狂暴可驱散 | — | [patches-1.4.351](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.351) |
+| 1.4.349 | 五重多boss状态去重 | — | [patches-1.4.351](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.351) |
 | 1.4.348 | 五重驱散阶梯与减益下调 | — | [patches-1.4.348](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.348) |
 | 1.4.347 | 光暗龙合击切属性去觉醒门 | [光暗龙合击切属性-1.4.347](光暗龙合击切属性-1.4.347.md) | [patches-1.4.348](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.348) |
 | 1.4.346 | 地狱南瓜 P3 大爆炸比例伤害 | — | [patches-1.4.348](https://github.com/kuronzzhan-droid/startpoint-cn/releases/tag/patches-1.4.348) |
