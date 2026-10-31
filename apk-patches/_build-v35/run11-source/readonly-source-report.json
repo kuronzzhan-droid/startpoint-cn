@@ -1,0 +1,84 @@
+{
+  "status": "pass",
+  "pass": true,
+  "workspace_snapshot_exact": false,
+  "initially_locked_files_unchanged": 2331,
+  "external_count": 1,
+  "accepted_changes": [
+    {
+      "path": "TASK11.md",
+      "before": {
+        "sha256": "e7f8bdde6450e4d2ea27835ac906ace322dfd0e1c34e64fc38f0d1692483aeea",
+        "bytes": 8561
+      },
+      "after": {
+        "sha256": "853334b785967246db68f8c7d01f5180caf87ae7bd86b861963b1439d7eee15b",
+        "bytes": 11268
+      },
+      "intermediate": {
+        "sha256": "8b52c8b03f023e4c3fed5c1fd8e087ae447478a6785dc92996636dc0839154c3",
+        "bytes": 9169
+      },
+      "ct_task": {
+        "sha256": "69c0c9b27f479d7270618776be22b5ef371b21c5061d255877d8ce05e9b57851",
+        "bytes": 10585
+      },
+      "reason": "保留联机B、Fever A及5s CT补充；仅追加2026-10-19外部只读变化确认，既有实现裁定不变",
+      "snapshot": "task-evidence/TASK11-readonly-ack.md",
+      "ct_snapshot": "task-evidence/TASK11-current.md",
+      "pre_ct_snapshot": "task-evidence/TASK11-before-ct.md"
+    },
+    {
+      "path": "apk/superseded/v35k-x86-unsigned-aligned.apk",
+      "before": null,
+      "after": {
+        "bytes": 213926073,
+        "sha256": "5452cbfc91ecbf9440b72c935500778af05bf8957e79b01e2f9c497bd2e821be"
+      },
+      "modified_utc": "2026-10-19T05:53:52.181446+00:00",
+      "reason": "TASK11末尾确认：APK打包线程使用第二版v35k打包，作者叫停后移入superseded；已知外部变化，与第三版实现无关；本轮不改动这些文件。",
+      "acknowledgement": "task-evidence/known-external-changes.json"
+    },
+    {
+      "path": "apk/superseded/v35k-x86.signed.apk",
+      "before": null,
+      "after": {
+        "bytes": 214421192,
+        "sha256": "0d49ee23949aa1d9f6ea92c3d9403b412bd6b7b234592e9fd619a62bb620b5c2"
+      },
+      "modified_utc": "2026-10-19T05:53:58.340017+00:00",
+      "reason": "TASK11末尾确认：APK打包线程使用第二版v35k打包，作者叫停后移入superseded；已知外部变化，与第三版实现无关；本轮不改动这些文件。",
+      "acknowledgement": "task-evidence/known-external-changes.json"
+    },
+    {
+      "path": "apk/HASHES.txt",
+      "before": {
+        "sha256": "410c767fd5b7954b7799c6ca26ea9f749ec1c4a6f032080a9f5b9a86196b802e",
+        "bytes": 2333
+      },
+      "after": {
+        "bytes": 2598,
+        "sha256": "3821bb936a55d2548fb2addb0901a4505535f76c4dd9991a172cc62601186796"
+      },
+      "modified_utc": "2026-10-19T05:54:18.476958+00:00",
+      "reason": "TASK11末尾确认：APK打包线程使用第二版v35k打包，作者叫停后移入superseded；已知外部变化，与第三版实现无关；本轮不改动这些文件。",
+      "acknowledgement": "task-evidence/known-external-changes.json"
+    }
+  ],
+  "unapproved_differences": [],
+  "differences": {
+    "new_files": [
+      "apk/superseded/v35k-x86-unsigned-aligned.apk",
+      "apk/superseded/v35k-x86.signed.apk"
+    ],
+    "missing_files": [],
+    "changed_files": [
+      "TASK11.md",
+      "apk/HASHES.txt"
+    ],
+    "new_directories": [],
+    "missing_directories": []
+  },
+  "snapshot_sha256": "e0281cc5db4a7fd8b7ade1f1a83867d981b8040fa288f80887fe96cf873d37f0",
+  "scope": "工作区除 run11 与所有禁用的 run*-aborted* 的全部文件和目录，以及指定外部 v34 输入"
+}

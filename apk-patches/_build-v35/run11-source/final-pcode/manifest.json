@@ -1,0 +1,184 @@
+[
+  {
+    "abc": "boot_ffc6",
+    "label": "MemberImpl/wfxHealSample",
+    "body": 92657,
+    "code_sha256": "58a752c30cf7ec32ad3adb60f87874e1842d6585a257e0addc4aaca918f7d06f",
+    "header": [
+      6,
+      10,
+      1,
+      2
+    ],
+    "file": "MemberImpl__wfxHealSample.pcode.txt"
+  },
+  {
+    "abc": "boot_ffc6",
+    "label": "UniqueConditionLogic/wfxSuperPreload",
+    "body": 92647,
+    "code_sha256": "b12034d239cf2ddb9b6a0ffb5126843aa6141f962c8b09172f341ac31d949d65",
+    "header": [
+      5,
+      6,
+      1,
+      2
+    ],
+    "file": "UniqueConditionLogic__wfxSuperPreload.pcode.txt"
+  },
+  {
+    "abc": "boot_ffc6",
+    "label": "ConditionSlot$/wfxSpec",
+    "body": 92601,
+    "code_sha256": "41a35474919597c0284697979a51213f2daf14b71d8dae19a77f53a35439b20a",
+    "header": [
+      5,
+      9,
+      1,
+      2
+    ],
+    "file": "ConditionSlot$__wfxSpec.pcode.txt"
+  },
+  {
+    "abc": "boot_ffc6",
+    "label": "MemberImpl/scheduleDirectAttack",
+    "body": 60192,
+    "code_sha256": "478a6b73bfbf2479c1a50b4ab00350b67e775a604c6b148f360de4e41d13a620",
+    "header": [
+      110,
+      46,
+      1,
+      2
+    ],
+    "file": "MemberImpl__scheduleDirectAttack.pcode.txt"
+  },
+  {
+    "abc": "boot_ffc6",
+    "label": "MemberImpl$/wfxHealDamageTick",
+    "body": 92654,
+    "code_sha256": "d7083b3386ecff0b6b2d7cf233cd61817c8b0522e8e5bbef4fe3e9698d347a78",
+    "header": [
+      4,
+      7,
+      1,
+      2
+    ],
+    "file": "MemberImpl$__wfxHealDamageTick.pcode.txt"
+  },
+  {
+    "abc": "boot_ffc6",
+    "label": "MemberImpl/wfxDirectTargetCount",
+    "body": 92678,
+    "code_sha256": "2a6e5d7e46343f17c27be273572e3fb23c67b7cab7bfbf68ade71cac454afce7",
+    "header": [
+      4,
+      9,
+      1,
+      2
+    ],
+    "file": "MemberImpl__wfxDirectTargetCount.pcode.txt"
+  },
+  {
+    "abc": "boot_ffc6",
+    "label": "MemberImpl/wfxHealAnyValue",
+    "body": 92679,
+    "code_sha256": "a2c8bd90f1910ffffe47d13889dfcf762b6634557d37ae464c2c24a27718e5c9",
+    "header": [
+      4,
+      8,
+      1,
+      2
+    ],
+    "file": "MemberImpl__wfxHealAnyValue.pcode.txt"
+  },
+  {
+    "abc": "boot_ffc6",
+    "label": "MemberImpl/wfxHealAnyDamage",
+    "body": 92680,
+    "code_sha256": "cdf2ddfbbb046e9e47f7d709179b9190b1ba08ec28626ff8e0b6055ed20d3de3",
+    "header": [
+      5,
+      10,
+      1,
+      2
+    ],
+    "file": "MemberImpl__wfxHealAnyDamage.pcode.txt"
+  },
+  {
+    "abc": "boot_ffc6",
+    "label": "MemberImpl/wfxHealAnyFever",
+    "body": 92681,
+    "code_sha256": "9385881f5dc668120084eebc000e8ff46811b94449bb252614ea9eef1b8e3606",
+    "header": [
+      6,
+      7,
+      1,
+      2
+    ],
+    "file": "MemberImpl__wfxHealAnyFever.pcode.txt"
+  },
+  {
+    "abc": "boot_ffc6",
+    "label": "MemberImpl/wfxHealAnyMembers",
+    "body": 92682,
+    "code_sha256": "961b241ea71136c4b14c2a72bbba5212032f50780d63712a413c4025f9363d30",
+    "header": [
+      2,
+      6,
+      1,
+      2
+    ],
+    "file": "MemberImpl__wfxHealAnyMembers.pcode.txt"
+  },
+  {
+    "abc": "boot_ffc6",
+    "label": "MemberImpl/wfxHealAnySample",
+    "body": 92683,
+    "code_sha256": "42c38daf8af19f7cfeb177e138e132c444fbecc793de848c3d5579b2d10dc1d9",
+    "header": [
+      5,
+      13,
+      1,
+      2
+    ],
+    "file": "MemberImpl__wfxHealAnySample.pcode.txt"
+  },
+  {
+    "abc": "boot_ffc6",
+    "label": "MemberImpl$/wfxHealAnyCTQueue",
+    "body": 92684,
+    "code_sha256": "0bd48c6f034ee07bf51ca47777d6b5925ff85412b568012085258ac9c0b44295",
+    "header": [
+      9,
+      5,
+      1,
+      2
+    ],
+    "file": "MemberImpl$__wfxHealAnyCTQueue.pcode.txt"
+  },
+  {
+    "abc": "boot_ffc6",
+    "label": "MemberImpl$/wfxHealAnyCTTick",
+    "body": 92685,
+    "code_sha256": "c1d4c47055c245892c63df3462408b29bf5895eb9e1dec6286999cdc143c1c40",
+    "header": [
+      7,
+      10,
+      1,
+      2
+    ],
+    "file": "MemberImpl$__wfxHealAnyCTTick.pcode.txt"
+  },
+  {
+    "abc": "boot_ffc6",
+    "label": "MemberImpl/wfxHealAnyCTRecord",
+    "body": 92686,
+    "code_sha256": "395727ad2b8f691cd2283284a236c2806a28f6b7d80875aebdea5714e4d222ec",
+    "header": [
+      6,
+      15,
+      1,
+      2
+    ],
+    "file": "MemberImpl__wfxHealAnyCTRecord.pcode.txt"
+  }
+]

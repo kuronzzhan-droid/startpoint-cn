@@ -1,0 +1,33 @@
+# BattleCharacterLogic/wfxOwnerMainUnlocked; body=92660; code_sha256=044941685f705f32d88b8a102fd59e3666ea1eace092fe12793b1d25e56fbba9; header=[3, 3, 1, 2]
+# exceptions=[]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_1 []
+#0003 ofs0003: pushshort [1001]
+#0004 ofs0006: pushshort [1000]
+#0005 ofs0009: multiply []
+#0006 ofs000a: iflt [] -> #29
+#0007 ofs000e: getlocal_1 []
+#0008 ofs000f: pushshort [1007]
+#0009 ofs0012: pushshort [1000]
+#0010 ofs0015: multiply []
+#0011 ofs0016: ifge [] -> #29
+#0012 ofs001a: getlocal_0 []
+#0013 ofs001b: callproperty ['wfxPartyMask', 0]
+#0014 ofs0020: setlocal_2 []
+#0015 ofs0021: getlocal_2 []
+#0016 ofs0022: pushbyte [1]
+#0017 ofs0024: bitand []
+#0018 ofs0025: iffalse [] -> #29
+#0019 ofs0029: getlocal_2 []
+#0020 ofs002a: pushbyte [8]
+#0021 ofs002c: bitand []
+#0022 ofs002d: iffalse [] -> #27
+#0023 ofs0031: getlocal_0 []
+#0024 ofs0032: getproperty ['index']
+#0025 ofs0034: pushbyte [0]
+#0026 ofs0036: ifne [] -> #29
+#0027 ofs003a: pushtrue []
+#0028 ofs003b: returnvalue []
+#0029 ofs003c: pushfalse []
+#0030 ofs003d: returnvalue []

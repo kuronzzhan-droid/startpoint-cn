@@ -1,0 +1,354 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "previous_swf_sha256": "608bf66914dc5e0a0b8c16e795b88692f67b2b9a23a898be4254c42710e4353b",
+  "output_swf_sha256": "4f7b894b11e1f377a91e1d4c9b132bd676f850bc6d49f48268fe9ecb7aaaa46b",
+  "previous_path": "work/pre-ct/v35k.swf",
+  "changed_methods_dual_locks": {
+    "MemberImpl/wfxHealAnyDamage": {
+      "before_sha256": "460581f38184615d7581f23a6182b96de844531a29298fa818db20f0e0f23ad3",
+      "before_header": [
+        5,
+        10,
+        1,
+        2
+      ],
+      "after_sha256": "cdf2ddfbbb046e9e47f7d709179b9190b1ba08ec28626ff8e0b6055ed20d3de3",
+      "after_header": [
+        5,
+        10,
+        1,
+        2
+      ],
+      "insertion": {
+        "at": 2,
+        "instruction_count": 8
+      },
+      "removed_insertion_restores_original_code": true
+    },
+    "MemberImpl$/wfxHealDamageTick": {
+      "before_sha256": "f67cf76ffee19cd81e3729613ae451cf1fb508946282e35f9471b80d5ef25b87",
+      "before_header": [
+        4,
+        7,
+        1,
+        2
+      ],
+      "after_sha256": "d7083b3386ecff0b6b2d7cf233cd61817c8b0522e8e5bbef4fe3e9698d347a78",
+      "after_header": [
+        4,
+        7,
+        1,
+        2
+      ],
+      "insertion": {
+        "at": 2,
+        "instruction_count": 3
+      },
+      "removed_insertion_restores_original_code": true
+    }
+  },
+  "protected_methods": {
+    "MemberImpl/wfxHealAnyValue": {
+      "sha256": "a2c8bd90f1910ffffe47d13889dfcf762b6634557d37ae464c2c24a27718e5c9",
+      "header": [
+        4,
+        8,
+        1,
+        2
+      ],
+      "complete_body_record_byte_identical": true
+    },
+    "MemberImpl/wfxHealAnyFever": {
+      "sha256": "9385881f5dc668120084eebc000e8ff46811b94449bb252614ea9eef1b8e3606",
+      "header": [
+        6,
+        7,
+        1,
+        2
+      ],
+      "complete_body_record_byte_identical": true
+    },
+    "MemberImpl/wfxHealAnyMembers": {
+      "sha256": "961b241ea71136c4b14c2a72bbba5212032f50780d63712a413c4025f9363d30",
+      "header": [
+        2,
+        6,
+        1,
+        2
+      ],
+      "complete_body_record_byte_identical": true
+    },
+    "MemberImpl/wfxHealAnySample": {
+      "sha256": "42c38daf8af19f7cfeb177e138e132c444fbecc793de848c3d5579b2d10dc1d9",
+      "header": [
+        5,
+        13,
+        1,
+        2
+      ],
+      "complete_body_record_byte_identical": true
+    },
+    "MemberImpl$/wfxHealDamageQueue": {
+      "sha256": "afe5ace54f8371010a861c21564f610b4467b20b6000a13bda3372d53757b39a",
+      "header": [
+        4,
+        7,
+        1,
+        2
+      ],
+      "complete_body_record_byte_identical": true
+    },
+    "MemberImpl/wfxHealDamageEmit": {
+      "sha256": "42df231068d465b4a8fa89e1b5229544e707d2a565d9ed7c173b5b9dca9e69b9",
+      "header": [
+        8,
+        8,
+        1,
+        2
+      ],
+      "complete_body_record_byte_identical": true
+    }
+  },
+  "integrity": {
+    "original_body_count": 92684,
+    "unchanged_body_records": 92682,
+    "whole_swf_original_body_count": 92684,
+    "whole_swf_unchanged_body_records": 92682,
+    "other_abc_tags": [],
+    "changed_methods": [
+      "MemberImpl$/wfxHealDamageTick",
+      "MemberImpl/wfxHealAnyDamage"
+    ],
+    "added_methods": [
+      "MemberImpl$/wfxHealAnyCTQueue",
+      "MemberImpl$/wfxHealAnyCTTick",
+      "MemberImpl/wfxHealAnyCTRecord"
+    ],
+    "appended_traits": [
+      {
+        "class": "pinball.scene.battle.battle.squad.member::MemberImpl",
+        "static": false,
+        "name": "wfxHealAnyCTRecord",
+        "kind": 1
+      },
+      {
+        "class": "pinball.scene.battle.battle.squad.member::MemberImpl",
+        "static": true,
+        "name": "wfxHealAnyCTBattle",
+        "kind": 0
+      },
+      {
+        "class": "pinball.scene.battle.battle.squad.member::MemberImpl",
+        "static": true,
+        "name": "wfxHealAnyCTPending",
+        "kind": 0
+      },
+      {
+        "class": "pinball.scene.battle.battle.squad.member::MemberImpl",
+        "static": true,
+        "name": "wfxHealAnyCTQueue",
+        "kind": 1
+      },
+      {
+        "class": "pinball.scene.battle.battle.squad.member::MemberImpl",
+        "static": true,
+        "name": "wfxHealAnyCTTick",
+        "kind": 1
+      }
+    ],
+    "constant_pools": {
+      "ints": {
+        "before": 5782,
+        "after": 5782,
+        "prefix_unchanged": true
+      },
+      "uints": {
+        "before": 12,
+        "after": 12,
+        "prefix_unchanged": true
+      },
+      "doubles": {
+        "before": 1237,
+        "after": 1237,
+        "prefix_unchanged": true
+      },
+      "strings": {
+        "before": 94177,
+        "after": 94182,
+        "prefix_unchanged": true
+      },
+      "namespaces": {
+        "before": 3736,
+        "after": 3736,
+        "prefix_unchanged": true
+      },
+      "ns_sets": {
+        "before": 817,
+        "after": 817,
+        "prefix_unchanged": true
+      },
+      "multinames": {
+        "before": 69618,
+        "after": 69623,
+        "prefix_unchanged": true
+      }
+    },
+    "existing_method_signatures_unchanged": true,
+    "existing_class_traits_unchanged": true,
+    "getlex_only_baseline_multinames": true,
+    "new_helpers_no_throwing_getMasterTable": true,
+    "non_main_abc_tags_byte_identical": true,
+    "static_checks": {
+      "MemberImpl$/wfxHealDamageTick": {
+        "instructions": 65,
+        "max_stack": 4,
+        "max_scope": 2,
+        "locals_used": 7,
+        "unreachable": 0,
+        "backward_labels": 1,
+        "exceptions": 0,
+        "header": [
+          4,
+          7,
+          1,
+          2
+        ]
+      },
+      "MemberImpl/wfxHealAnyDamage": {
+        "instructions": 59,
+        "max_stack": 5,
+        "max_scope": 2,
+        "locals_used": 10,
+        "unreachable": 0,
+        "backward_labels": 1,
+        "exceptions": 0,
+        "header": [
+          5,
+          10,
+          1,
+          2
+        ]
+      },
+      "MemberImpl$/wfxHealAnyCTQueue": {
+        "instructions": 52,
+        "max_stack": 9,
+        "max_scope": 2,
+        "locals_used": 5,
+        "unreachable": 0,
+        "backward_labels": 1,
+        "exceptions": 0,
+        "header": [
+          9,
+          5,
+          1,
+          2
+        ]
+      },
+      "MemberImpl$/wfxHealAnyCTTick": {
+        "instructions": 104,
+        "max_stack": 7,
+        "max_scope": 2,
+        "locals_used": 10,
+        "unreachable": 0,
+        "backward_labels": 3,
+        "exceptions": 0,
+        "header": [
+          7,
+          10,
+          1,
+          2
+        ]
+      },
+      "MemberImpl/wfxHealAnyCTRecord": {
+        "instructions": 162,
+        "max_stack": 6,
+        "max_scope": 2,
+        "locals_used": 15,
+        "unreachable": 0,
+        "backward_labels": 2,
+        "exceptions": 0,
+        "header": [
+          6,
+          15,
+          1,
+          2
+        ]
+      }
+    }
+  },
+  "restored_main_abc": {
+    "restored_target_bodies": [
+      "MemberImpl$/wfxHealDamageTick",
+      "MemberImpl/wfxHealAnyDamage"
+    ],
+    "removed_appended_strings": [
+      "wfxHealAnyCTBattle",
+      "wfxHealAnyCTPending",
+      "wfxHealAnyCTQueue",
+      "wfxHealAnyCTTick",
+      "wfxHealAnyCTRecord"
+    ],
+    "removed_appended_multinames": 5,
+    "removed_appended_method_bodies": 3,
+    "original_abc_sha256": "15eb1426e67930b4ef266dd41e8957721d615d63d46707ecadf3e40dcd8d88cd",
+    "restored_abc_sha256": "15eb1426e67930b4ef266dd41e8957721d615d63d46707ecadf3e40dcd8d88cd",
+    "all_pools_signatures_classes_traits_scripts_and_other_bodies_byte_identical": true
+  },
+  "swf_envelope": {
+    "unchanged_tags": 372,
+    "changed_abc_tags": [
+      "boot_ffc6"
+    ],
+    "tag_order_prefix_and_outside_bytes_unchanged": true
+  },
+  "native_evidence": {
+    "path": "audit/ct-native-evidence.json",
+    "sha256": "765594ab952e454a02fe47b08964515e4dd439eaacf558287e8006d4d9bc2c03",
+    "pcode_files": [
+      {
+        "path": "audit/ct-native-pcode/ElapsedTimeCalculatorImpl__advanceTime.pcode.txt",
+        "sha256": "88882640bce26752c20e03ddab20278cbb8b8adabf9850eee9449e11b79cd656"
+      },
+      {
+        "path": "audit/ct-native-pcode/ActionSkillReportTools_static__frameToSecondsString.pcode.txt",
+        "sha256": "5489607a0c56b1a72c11633ad9835f0f81789b15c5e2817c9f18229c98ed67d7"
+      },
+      {
+        "path": "audit/ct-native-pcode/SquadManagerImpl__updatePhase.pcode.txt",
+        "sha256": "f12c57a4401f7970e4632cde9d3743f79c91c6154d897da5fbc99b0d625962a8"
+      },
+      {
+        "path": "audit/ct-native-pcode/Battle__stepLifeCycleAsAllEntitiesMode.pcode.txt",
+        "sha256": "87a2007792939d5e148c62eeee24e2645fbc3174cd930fb498f7eb4e1e52ddc2"
+      },
+      {
+        "path": "audit/ct-native-pcode/Battle__stepLifeCycleAsOnlySquadMode.pcode.txt",
+        "sha256": "61bf2cb69e184e4bb8d422d5565b16d7ff7ba220eaf83efb9fce7aab07d81915"
+      }
+    ],
+    "logic_frames_per_second": 60
+  },
+  "source_locks": {
+    "audit/ct_delta.py": "bf2782f939d566c21e25f63db87394e6646734dc1aaa13fe89abd3c84405bfca",
+    "audit/ct_native.py": "2e0fd7fdd6f5666f49f90319183973470122c7cdc364b6949a3272547ebf4de8",
+    "bootstrap.py": "596ee4b5e52ff7cd5a287df9ee744de01b0aea17bd7b20586e28eb8ff5051ef3",
+    "integrity.py": "aad2d58f2ab0a52988f48696ee162ba27a41dc812d1f72b1413777b3de083f04",
+    "multiabc.py": "4c0b082a0038c828e46797bda5eab4759186a68cc4e9ea8c0a8048bae6d4c72a",
+    "static_check.py": "3ef3776bf524f0c5c2a0b7292a3cae507f35d4298308386ef43408e301f017d8",
+    "vendor/abcfmt.py": "2d35f0fb5476bde3a400756ece1467a4dce665fd9c9e7618e1c6815cb5f51f82",
+    "vendor/asm.py": "c033836d0a7aa109b81509c1cb0731be82fc543c76d8d3b43881f9dab7d81e87",
+    "vendor/avm_ext.py": "64ea1485b8a044b5dcc23e9fcb76bd59eef10f6298b679c05e371414974d4f5f",
+    "vendor/avm_fi.py": "f6e224c2045966095041801e0135a62a27e4b210d70c915c2ffd48a1d0806111",
+    "vendor/avm_interp.py": "c7f356e58acf570a09e9bad2e7aff427d03b3dd61d5cc6f70d998185632f6580",
+    "vendor/avm_mini.py": "b169c2127de6d536229a0bf620729c00d4d02120dae36a8062acada6ff679da1",
+    "vendor/bodies.py": "daa069c919b46d25bf6b25e367f1ac2744ffd64f76d6d0469e0eacf42d0d25d8",
+    "vendor/common.py": "45c60c75e3d022d434006d606bbbfb3850fed8f79de0d3638190769b1dec9b9e",
+    "vendor/opwalk.py": "c3e17d85438d5f1a62320c811b77bdfd7f475a123e0e8ea2ac759062bb9d6080",
+    "vendor/perf2_core.py": "b5d50c6ae613e22773f8dd969df0faf80a3afe4a1aa1bef790b561ceb94c4a8a",
+    "vendor/swfabc.py": "4f1c3ea93d71af0d98dba0467cb38fe205cbfc5eef5de93633db8f838aac7528",
+    "vendor/swftags.py": "81d253a0c27ada1f4e377384484fcadd8bf8a360e4d93b456483ef1128ea6b06"
+  },
+  "sources_unchanged_during_verification": true,
+  "scope": "二进制及静态验证；行为验证由 CT scenarios 和第二版真实字节码对照补充"
+}

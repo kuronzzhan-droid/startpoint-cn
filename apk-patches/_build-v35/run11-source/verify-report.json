@@ -1,0 +1,199 @@
+{
+  "status": "pass",
+  "baseline_swf_sha256": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384",
+  "scope": "TASK11第三版：码33原生直击；码34逐成员档位及持有者CT，发伤起算且CT内丢弃；码35不受CT限制",
+  "unverified": [
+    "完整AIR虚拟机",
+    "Android真机",
+    "实际画面",
+    "真实联机两端去重",
+    "设备性能"
+  ],
+  "output_swf_sha256": "4f7b894b11e1f377a91e1d4c9b132bd676f850bc6d49f48268fe9ecb7aaaa46b",
+  "requirement_decisions": {
+    "status": "resolved",
+    "source": "TASK11-current.md",
+    "questions": [
+      {
+        "id": "cross_player_stats_id",
+        "question": "原生跨玩家治疗携带来源端statsBattleId；保留跨ID排除，还是允许本端实际收到的队友治疗？",
+        "answer": "B",
+        "previous_candidate": "严格排除跨statsBattleId；正常跨玩家治疗因此不计入34/35",
+        "resolution": "码34/35允许本端实际执行的跨玩家回复；限制受治疗成员属于本端primary队伍且battle为本端，镜像、仅转发和统计回执不重复计入；旧30/31跨statsBattleId排除保留。"
+      },
+      {
+        "id": "fever_batch_boundary",
+        "question": "35每名成员实际applyHeal各调用一次，还是整次多目标治疗只调用一次并增加批次标记？",
+        "answer": "A",
+        "previous_candidate": "逐成员实际applyHeal独立量化，逐持有者一次调用；无跨成员批次聚合",
+        "resolution": "每名受治疗成员实际applyHeal独立量化；每位持有者在该成员事件中各调用一次Fever API，不加批次标记。"
+      }
+    ],
+    "source_sha256": "69c0c9b27f479d7270618776be22b5ef371b21c5061d255877d8ce05e9b57851",
+    "ruling_date": "2026-10-19",
+    "revision": 3,
+    "ct_supplement": {
+      "code": 34,
+      "arg_formula": "category + 10 * tier_percent + 1000 * ct_seconds",
+      "tier_percent_range": [
+        0,
+        99
+      ],
+      "example_arg": 5050,
+      "example_ct_seconds": 5,
+      "window_logic_frames": 30,
+      "minimum_ct_logic_frames": 30,
+      "ct_start": "damage_emission",
+      "ct_heals": "discard_without_carry",
+      "ct_scope": "one_per_holder_shared_effective_and_overheal",
+      "pause": "no_logic_frames_no_ct_progress",
+      "arg_below_1000": "bytecode_behavior_identical_to_pre_ct",
+      "code35": "unchanged_no_ct"
+    }
+  },
+  "old_parity_checks": 828,
+  "new_checks": 353,
+  "checks_total": 1181,
+  "mutation_total": 69,
+  "mutation_survivors": 0,
+  "final_baseline": "pass",
+  "behavior_reports": [
+    "direct_count/verify-report.json",
+    "heal_any/verify-report.json"
+  ],
+  "independent_cross_review": {
+    "report": "audit/cross-review-report.json",
+    "checks": 191,
+    "status": "pass",
+    "counted_in_business_total": false
+  },
+  "ct_second_edition_delta": {
+    "report": "audit/ct-delta-report.json",
+    "status": "passed",
+    "counted_in_business_total": false
+  },
+  "ct_independent_cross_review": {
+    "report": "audit/ct-review-report.json",
+    "status": "passed",
+    "counted_in_business_total": false
+  },
+  "framework": {
+    "report": "framework-report.json",
+    "changed_methods": [
+      "ConditionSlot$/wfxSpec",
+      "MemberImpl$/wfxHealDamageTick",
+      "MemberImpl/scheduleDirectAttack",
+      "MemberImpl/wfxHealSample",
+      "UniqueConditionLogic/wfxSuperPreload"
+    ],
+    "added_methods": [
+      "MemberImpl$/wfxHealAnyCTQueue",
+      "MemberImpl$/wfxHealAnyCTTick",
+      "MemberImpl/wfxDirectTargetCount",
+      "MemberImpl/wfxHealAnyCTRecord",
+      "MemberImpl/wfxHealAnyDamage",
+      "MemberImpl/wfxHealAnyFever",
+      "MemberImpl/wfxHealAnyMembers",
+      "MemberImpl/wfxHealAnySample",
+      "MemberImpl/wfxHealAnyValue"
+    ],
+    "original_body_count": 96912,
+    "unchanged_body_records": 96907,
+    "method_lock_negative_cases": 10,
+    "release_lock_negative_cases": 28,
+    "static_negative_cases": 7,
+    "byte_identical_replay": true,
+    "v34_chain_byte_identical": true
+  },
+  "evidence_reuse": {
+    "behavior": true,
+    "framework": true,
+    "condition": "同次完整基线和变异已通过，前后SWF及相关源码SHA一致"
+  },
+  "readonly_sources": {
+    "status": "pass",
+    "pass": true,
+    "workspace_snapshot_exact": false,
+    "initially_locked_files_unchanged": 2331,
+    "external_count": 1,
+    "accepted_changes": [
+      {
+        "path": "TASK11.md",
+        "before": {
+          "sha256": "e7f8bdde6450e4d2ea27835ac906ace322dfd0e1c34e64fc38f0d1692483aeea",
+          "bytes": 8561
+        },
+        "after": {
+          "sha256": "853334b785967246db68f8c7d01f5180caf87ae7bd86b861963b1439d7eee15b",
+          "bytes": 11268
+        },
+        "intermediate": {
+          "sha256": "8b52c8b03f023e4c3fed5c1fd8e087ae447478a6785dc92996636dc0839154c3",
+          "bytes": 9169
+        },
+        "ct_task": {
+          "sha256": "69c0c9b27f479d7270618776be22b5ef371b21c5061d255877d8ce05e9b57851",
+          "bytes": 10585
+        },
+        "reason": "保留联机B、Fever A及5s CT补充；仅追加2026-10-19外部只读变化确认，既有实现裁定不变",
+        "snapshot": "task-evidence/TASK11-readonly-ack.md",
+        "ct_snapshot": "task-evidence/TASK11-current.md",
+        "pre_ct_snapshot": "task-evidence/TASK11-before-ct.md"
+      },
+      {
+        "path": "apk/superseded/v35k-x86-unsigned-aligned.apk",
+        "before": null,
+        "after": {
+          "bytes": 213926073,
+          "sha256": "5452cbfc91ecbf9440b72c935500778af05bf8957e79b01e2f9c497bd2e821be"
+        },
+        "modified_utc": "2026-10-19T05:53:52.181446+00:00",
+        "reason": "TASK11末尾确认：APK打包线程使用第二版v35k打包，作者叫停后移入superseded；已知外部变化，与第三版实现无关；本轮不改动这些文件。",
+        "acknowledgement": "task-evidence/known-external-changes.json"
+      },
+      {
+        "path": "apk/superseded/v35k-x86.signed.apk",
+        "before": null,
+        "after": {
+          "bytes": 214421192,
+          "sha256": "0d49ee23949aa1d9f6ea92c3d9403b412bd6b7b234592e9fd619a62bb620b5c2"
+        },
+        "modified_utc": "2026-10-19T05:53:58.340017+00:00",
+        "reason": "TASK11末尾确认：APK打包线程使用第二版v35k打包，作者叫停后移入superseded；已知外部变化，与第三版实现无关；本轮不改动这些文件。",
+        "acknowledgement": "task-evidence/known-external-changes.json"
+      },
+      {
+        "path": "apk/HASHES.txt",
+        "before": {
+          "sha256": "410c767fd5b7954b7799c6ca26ea9f749ec1c4a6f032080a9f5b9a86196b802e",
+          "bytes": 2333
+        },
+        "after": {
+          "bytes": 2598,
+          "sha256": "3821bb936a55d2548fb2addb0901a4505535f76c4dd9991a172cc62601186796"
+        },
+        "modified_utc": "2026-10-19T05:54:18.476958+00:00",
+        "reason": "TASK11末尾确认：APK打包线程使用第二版v35k打包，作者叫停后移入superseded；已知外部变化，与第三版实现无关；本轮不改动这些文件。",
+        "acknowledgement": "task-evidence/known-external-changes.json"
+      }
+    ],
+    "unapproved_differences": [],
+    "differences": {
+      "new_files": [
+        "apk/superseded/v35k-x86-unsigned-aligned.apk",
+        "apk/superseded/v35k-x86.signed.apk"
+      ],
+      "missing_files": [],
+      "changed_files": [
+        "TASK11.md",
+        "apk/HASHES.txt"
+      ],
+      "new_directories": [],
+      "missing_directories": []
+    },
+    "snapshot_sha256": "e0281cc5db4a7fd8b7ade1f1a83867d981b8040fa288f80887fe96cf873d37f0",
+    "scope": "工作区除 run11 与所有禁用的 run*-aborted* 的全部文件和目录，以及指定外部 v34 输入"
+  },
+  "verification_source_manifest": "verification-source-locks.json",
+  "elapsed_seconds": 42.367
+}

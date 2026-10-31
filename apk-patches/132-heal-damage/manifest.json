@@ -1,0 +1,176 @@
+{
+  "capability": "heal-damage-v1",
+  "output_swf_sha256": "383f49b060718055a80080309aed92f150073d321c8a237f748a025c32050ed4",
+  "pcode": [
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl/applyHeal",
+      "body": 60556,
+      "code_sha256": "343cbc499674828c173e36ee5eb41eb5b1c4c9bf10092f3dc7a0896780f7957a",
+      "header": [
+        6,
+        10,
+        1,
+        2
+      ],
+      "file": "MemberImpl__applyHeal.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "SquadManagerImpl/updatePhase",
+      "body": 59703,
+      "code_sha256": "316f4438216de54b72782f724db60ee7ff3959b62a04e98c01c8b67a879be532",
+      "header": [
+        3,
+        2,
+        1,
+        2
+      ],
+      "file": "SquadManagerImpl__updatePhase.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "AbilityDamageShot/finish",
+      "body": 51320,
+      "code_sha256": "6038b4ae0dbc538f73156b9ec1a674fc0182b7d7d3a085a33707351ff00808e0",
+      "header": [
+        108,
+        36,
+        1,
+        2
+      ],
+      "file": "AbilityDamageShot__finish.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "AbilityDamageShot/dispose",
+      "body": 51321,
+      "code_sha256": "c054c78fc432c730aa361ea336c191616168d22e5d3f068536b8971e407f4cf2",
+      "header": [
+        2,
+        3,
+        1,
+        2
+      ],
+      "file": "AbilityDamageShot__dispose.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "UniqueConditionLogic/wfxSuperPreload",
+      "body": 92647,
+      "code_sha256": "2f69b6f0ec4c5a5912dd92c1fc909405bdd0391d2ed00ed0b46c6875d41a4f7a",
+      "header": [
+        5,
+        6,
+        1,
+        2
+      ],
+      "file": "UniqueConditionLogic__wfxSuperPreload.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl$/wfxHealShotRegister",
+      "body": 92650,
+      "code_sha256": "0c70f3942a61b552bc05e0b548e23272f3a92723acb6bf338a381672f3f61c1b",
+      "header": [
+        6,
+        6,
+        1,
+        2
+      ],
+      "file": "MemberImpl$__wfxHealShotRegister.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl$/wfxHealShotTake",
+      "body": 92651,
+      "code_sha256": "824d34902d00181d9314d8ace24c54d03b63561423d675d125075ad4188aba46",
+      "header": [
+        4,
+        6,
+        1,
+        2
+      ],
+      "file": "MemberImpl$__wfxHealShotTake.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl/wfxHealDamageEmit",
+      "body": 92652,
+      "code_sha256": "42df231068d465b4a8fa89e1b5229544e707d2a565d9ed7c173b5b9dca9e69b9",
+      "header": [
+        8,
+        8,
+        1,
+        2
+      ],
+      "file": "MemberImpl__wfxHealDamageEmit.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl$/wfxHealDamageQueue",
+      "body": 92653,
+      "code_sha256": "afe5ace54f8371010a861c21564f610b4467b20b6000a13bda3372d53757b39a",
+      "header": [
+        4,
+        7,
+        1,
+        2
+      ],
+      "file": "MemberImpl$__wfxHealDamageQueue.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl$/wfxHealDamageTick",
+      "body": 92654,
+      "code_sha256": "f67cf76ffee19cd81e3729613ae451cf1fb508946282e35f9471b80d5ef25b87",
+      "header": [
+        4,
+        7,
+        1,
+        2
+      ],
+      "file": "MemberImpl$__wfxHealDamageTick.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl/wfxHealDamageKind",
+      "body": 92655,
+      "code_sha256": "2db9eb21a22628108d6d6f2fcd874ceea8e0f1186709bdd9adf7af9cfde1335a",
+      "header": [
+        2,
+        4,
+        1,
+        2
+      ],
+      "file": "MemberImpl__wfxHealDamageKind.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl/wfxHealDamageRecord",
+      "body": 92656,
+      "code_sha256": "6b82a06ba71af5fd25c6d080d8e501a5171136bb618995916360dfac549c9737",
+      "header": [
+        4,
+        9,
+        1,
+        2
+      ],
+      "file": "MemberImpl__wfxHealDamageRecord.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "MemberImpl/wfxHealSample",
+      "body": 92657,
+      "code_sha256": "62bd04d56ce006807be873e98e7f0789ef90953329fb598dc280ce89d9e48a3f",
+      "header": [
+        3,
+        9,
+        1,
+        2
+      ],
+      "file": "MemberImpl__wfxHealSample.pcode.txt"
+    }
+  ],
+  "scope": "本地离线草稿；未写入正式apk-patches；AIR/真机/联机未核实"
+}

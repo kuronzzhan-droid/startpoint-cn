@@ -1,0 +1,174 @@
+# InstantAbilitySource/resolveConditionPathCollection; body=14503; code_sha256=ca2b71568bb55f4c9c1be63973f1b712baf98cfef234487b32a93a23a00cf7ae; header=[3, 4, 1, 2]
+# exceptions=[]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: pushnull []
+#0003 ofs0003: astype ['pinball.common.data.character.condition::UniqueConditionLogic']
+#0004 ofs0006: setlocal_3 []
+#0005 ofs0007: getlocal_2 []
+#0006 ofs0008: getproperty ['index']
+#0007 ofs000a: lookupswitch [] default #8, cases [9, 10, 11, 12, 19, 26, 33, 40, 83, 84, 85, 86, 90, 91, 92, 93, 94, 95, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 116, 123, 127, 147, 154, 155, 156, 157, 158, 165, 166, 167, 171]
+#0008 ofs008d: jump [] -> #171
+#0009 ofs0091: jump [] -> #171
+#0010 ofs0095: jump [] -> #171
+#0011 ofs0099: jump [] -> #171
+#0012 ofs009d: getlocal_1 []
+#0013 ofs009e: pushstring ['battle/effect/hit/condition/buff_specific_defence/up_defense']
+#0014 ofs00a2: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0015 ofs00a6: getlocal_1 []
+#0016 ofs00a7: pushstring ['battle/effect/hit/condition/debuff_specific_defence/down_defense']
+#0017 ofs00ab: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0018 ofs00af: jump [] -> #171
+#0019 ofs00b3: getlocal_1 []
+#0020 ofs00b4: pushstring ['battle/effect/hit/condition/buff_specific_defence/up_defense']
+#0021 ofs00b8: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0022 ofs00bc: getlocal_1 []
+#0023 ofs00bd: pushstring ['battle/effect/hit/condition/debuff_specific_defence/down_defense']
+#0024 ofs00c1: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0025 ofs00c5: jump [] -> #171
+#0026 ofs00c9: getlocal_1 []
+#0027 ofs00ca: pushstring ['battle/effect/hit/condition/buff_specific_defence/up_defense']
+#0028 ofs00ce: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0029 ofs00d2: getlocal_1 []
+#0030 ofs00d3: pushstring ['battle/effect/hit/condition/debuff_specific_defence/down_defense']
+#0031 ofs00d7: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0032 ofs00db: jump [] -> #171
+#0033 ofs00df: getlocal_1 []
+#0034 ofs00e0: pushstring ['battle/effect/hit/condition/buff_specific_defence/up_defense']
+#0035 ofs00e4: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0036 ofs00e8: getlocal_1 []
+#0037 ofs00e9: pushstring ['battle/effect/hit/condition/debuff_specific_defence/down_defense']
+#0038 ofs00ed: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0039 ofs00f1: jump [] -> #171
+#0040 ofs00f5: getlocal_1 []
+#0041 ofs00f6: pushstring ['battle/effect/hit/condition/buff_element_defence/buff_defense_all/buff_defense_all']
+#0042 ofs00fa: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0043 ofs00fe: getlocal_1 []
+#0044 ofs00ff: pushstring ['battle/effect/hit/condition/buff_element_defence/buff_defense_red/buff_defense_red']
+#0045 ofs0103: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0046 ofs0107: getlocal_1 []
+#0047 ofs0108: pushstring ['battle/effect/hit/condition/buff_element_defence/buff_defense_blue/buff_defense_blue']
+#0048 ofs010c: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0049 ofs0110: getlocal_1 []
+#0050 ofs0111: pushstring ['battle/effect/hit/condition/buff_element_defence/buff_defense_yellow/buff_defense_yellow']
+#0051 ofs0115: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0052 ofs0119: getlocal_1 []
+#0053 ofs011a: pushstring ['battle/effect/hit/condition/buff_element_defence/buff_defense_green/buff_defense_green']
+#0054 ofs011e: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0055 ofs0122: getlocal_1 []
+#0056 ofs0123: pushstring ['battle/effect/hit/condition/buff_element_defence/buff_defense_white/buff_defense_white']
+#0057 ofs0127: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0058 ofs012b: getlocal_1 []
+#0059 ofs012c: pushstring ['battle/effect/hit/condition/buff_element_defence/buff_defense_black/buff_defense_black']
+#0060 ofs0130: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0061 ofs0134: getlocal_1 []
+#0062 ofs0135: pushstring ['battle/effect/hit/condition/debuff_element_defence/debuff_defense_all/debuff_defense_all']
+#0063 ofs0139: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0064 ofs013d: getlocal_1 []
+#0065 ofs013e: pushstring ['battle/effect/hit/condition/debuff_element_defence/debuff_defense_red/debuff_defense_red']
+#0066 ofs0142: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0067 ofs0146: getlocal_1 []
+#0068 ofs0147: pushstring ['battle/effect/hit/condition/debuff_element_defence/debuff_defense_blue/debuff_defense_blue']
+#0069 ofs014b: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0070 ofs014f: getlocal_1 []
+#0071 ofs0150: pushstring ['battle/effect/hit/condition/debuff_element_defence/debuff_defense_yellow/debuff_defense_yellow']
+#0072 ofs0154: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0073 ofs0158: getlocal_1 []
+#0074 ofs0159: pushstring ['battle/effect/hit/condition/debuff_element_defence/debuff_defense_green/debuff_defense_green']
+#0075 ofs015d: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0076 ofs0161: getlocal_1 []
+#0077 ofs0162: pushstring ['battle/effect/hit/condition/debuff_element_defence/debuff_defense_white/debuff_defense_white']
+#0078 ofs0166: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0079 ofs016a: getlocal_1 []
+#0080 ofs016b: pushstring ['battle/effect/hit/condition/debuff_element_defence/debuff_defense_black/debuff_defense_black']
+#0081 ofs016f: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0082 ofs0173: jump [] -> #171
+#0083 ofs0177: jump [] -> #171
+#0084 ofs017b: jump [] -> #171
+#0085 ofs017f: jump [] -> #171
+#0086 ofs0183: getlocal_1 []
+#0087 ofs0184: pushstring ['battle/effect/hit/condition/enhancing_regeneration/enhancing_regeneration']
+#0088 ofs0188: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0089 ofs018c: jump [] -> #171
+#0090 ofs0190: jump [] -> #171
+#0091 ofs0194: jump [] -> #171
+#0092 ofs0198: jump [] -> #171
+#0093 ofs019c: jump [] -> #171
+#0094 ofs01a0: jump [] -> #171
+#0095 ofs01a4: getlocal_1 []
+#0096 ofs01a5: pushstring ['battle/effect/hit/condition/buff_ease_stun/buff_ease_stun']
+#0097 ofs01a9: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0098 ofs01ad: getlocal_1 []
+#0099 ofs01ae: pushstring ['battle/effect/hit/condition/debuff_ease_stun/debuff_ease_stun']
+#0100 ofs01b2: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0101 ofs01b6: jump [] -> #171
+#0102 ofs01ba: jump [] -> #171
+#0103 ofs01be: jump [] -> #171
+#0104 ofs01c2: jump [] -> #171
+#0105 ofs01c6: jump [] -> #171
+#0106 ofs01ca: jump [] -> #171
+#0107 ofs01ce: jump [] -> #171
+#0108 ofs01d2: jump [] -> #171
+#0109 ofs01d6: jump [] -> #171
+#0110 ofs01da: jump [] -> #171
+#0111 ofs01de: jump [] -> #171
+#0112 ofs01e2: getlocal_1 []
+#0113 ofs01e3: pushstring ['battle/effect/hit/condition/enfeebling_no_heal/enfeebling_no_heal']
+#0114 ofs01e7: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0115 ofs01eb: jump [] -> #171
+#0116 ofs01ef: getlocal_1 []
+#0117 ofs01f0: pushstring ['battle/effect/hit/condition/buff_adverse/buff_adverse']
+#0118 ofs01f4: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0119 ofs01f8: getlocal_1 []
+#0120 ofs01f9: pushstring ['battle/effect/hit/condition/debuff_adverse/debuff_adverse']
+#0121 ofs01fd: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0122 ofs0201: jump [] -> #171
+#0123 ofs0205: getlocal_1 []
+#0124 ofs0206: pushstring ['battle/effect/hit/condition/enhancing_grit/enhancing_grit']
+#0125 ofs020a: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0126 ofs020e: jump [] -> #171
+#0127 ofs0212: findpropstrict ['pinball.common.data.character.condition::UniqueConditionLogic']
+#0128 ofs0215: getlocal_2 []
+#0129 ofs0216: getproperty ['params']
+#0130 ofs0218: pushbyte [0]
+#0131 ofs021a: getproperty ['<mn kind 0x1b>']
+#0132 ofs021c: convert_i []
+#0133 ofs021d: findproperty ['logicAssets']
+#0134 ofs0220: getproperty ['logicAssets']
+#0135 ofs0223: constructprop ['pinball.common.data.character.condition::UniqueConditionLogic', 2]
+#0136 ofs0227: coerce ['pinball.common.data.character.condition::UniqueConditionLogic']
+#0137 ofs022a: setlocal_3 []
+#0138 ofs022b: getlocal_3 []
+#0139 ofs022c: getlocal_1 []
+#0140 ofs022d: callpropvoid ['resolvePathCollection', 1]
+#0141 ofs0231: getlocal [3]
+#0142 ofs0233: getlocal_1 []
+#0143 ofs0234: getlocal_0 []
+#0144 ofs0235: getproperty ['logicAssets']
+#0145 ofs0238: callpropvoid ['wfxSuperPreload', 2]
+#0146 ofs023d: jump [] -> #171
+#0147 ofs0241: getlocal_1 []
+#0148 ofs0242: pushstring ['battle/uncommon/layer1/combo_boost/boost_text_ui']
+#0149 ofs0246: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0150 ofs024a: getlocal_1 []
+#0151 ofs024b: pushstring ['battle/effect/hit/condition/buff_combo_boost/buff_combo_boost']
+#0152 ofs024f: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0153 ofs0253: jump [] -> #171
+#0154 ofs0257: jump [] -> #171
+#0155 ofs025b: jump [] -> #171
+#0156 ofs025f: jump [] -> #171
+#0157 ofs0263: jump [] -> #171
+#0158 ofs0267: getlocal_1 []
+#0159 ofs0268: pushstring ['battle/uncommon/layer1/combo_restrict/combo_restrict_frame']
+#0160 ofs026c: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0161 ofs0270: getlocal_1 []
+#0162 ofs0271: pushstring ['battle/uncommon/layer1/combo_restrict/combo_restrict_label']
+#0163 ofs0275: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0164 ofs0279: jump [] -> #171
+#0165 ofs027d: jump [] -> #171
+#0166 ofs0281: jump [] -> #171
+#0167 ofs0285: getlocal_1 []
+#0168 ofs0286: pushstring ['battle/effect/hit/condition/combo_reduction/combo_reduction']
+#0169 ofs028a: callpropvoid ['pinball.asset.logic:IAssetPathCollectionBuilder::addAnimationLayout', 1]
+#0170 ofs028e: jump [] -> #171
+#0171 ofs0292: returnvoid []

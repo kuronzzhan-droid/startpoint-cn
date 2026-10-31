@@ -1,0 +1,41 @@
+{
+  "status": "resolved",
+  "source": "TASK11-current.md",
+  "questions": [
+    {
+      "id": "cross_player_stats_id",
+      "question": "原生跨玩家治疗携带来源端statsBattleId；保留跨ID排除，还是允许本端实际收到的队友治疗？",
+      "answer": "B",
+      "previous_candidate": "严格排除跨statsBattleId；正常跨玩家治疗因此不计入34/35",
+      "resolution": "码34/35允许本端实际执行的跨玩家回复；限制受治疗成员属于本端primary队伍且battle为本端，镜像、仅转发和统计回执不重复计入；旧30/31跨statsBattleId排除保留。"
+    },
+    {
+      "id": "fever_batch_boundary",
+      "question": "35每名成员实际applyHeal各调用一次，还是整次多目标治疗只调用一次并增加批次标记？",
+      "answer": "A",
+      "previous_candidate": "逐成员实际applyHeal独立量化，逐持有者一次调用；无跨成员批次聚合",
+      "resolution": "每名受治疗成员实际applyHeal独立量化；每位持有者在该成员事件中各调用一次Fever API，不加批次标记。"
+    }
+  ],
+  "source_sha256": "69c0c9b27f479d7270618776be22b5ef371b21c5061d255877d8ce05e9b57851",
+  "ruling_date": "2026-10-19",
+  "revision": 3,
+  "ct_supplement": {
+    "code": 34,
+    "arg_formula": "category + 10 * tier_percent + 1000 * ct_seconds",
+    "tier_percent_range": [
+      0,
+      99
+    ],
+    "example_arg": 5050,
+    "example_ct_seconds": 5,
+    "window_logic_frames": 30,
+    "minimum_ct_logic_frames": 30,
+    "ct_start": "damage_emission",
+    "ct_heals": "discard_without_carry",
+    "ct_scope": "one_per_holder_shared_effective_and_overheal",
+    "pause": "no_logic_frames_no_ct_progress",
+    "arg_below_1000": "bytecode_behavior_identical_to_pre_ct",
+    "code35": "unchanged_no_ct"
+  }
+}
