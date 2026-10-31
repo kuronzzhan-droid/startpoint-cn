@@ -1696,17 +1696,38 @@ test('real solo HTTP start/finish persists receipt; hidden scene and free finish
         assert.equal(retry.statusCode, 200, retry.body)
         assert.equal(items.getPlayerItemSync(p.id, 10000145), 5)
         assert.equal(characters.getPlayerCharacterSync(p.id, 111001).exp, exp)
-        // Upgrade compatibility: this old completed run has only the dedicated
-        // five-boss receipt, and its delayed retry must not consume a newer run.
-        getDb().prepare("DELETE FROM player_operation_receipts WHERE player_id = ? AND operation = 'quest_finish.single'").run(p.id)
         const oldFinishBody = httpFinish(p)
+        const lostPayload = getDb().prepare(`DELETE FROM player_operation_receipts
+            WHERE player_id = ? AND operation = 'quest_finish.single' AND request_key = ?`).run(p.id, oldFinishBody.play_id)
+        assert.equal(lostPayload.changes, 1)
         p.playId += '-new-run'
         const nextStart = await app.inject({ method: 'POST', url: '/start', payload: httpStart(p) })
         assert.equal(nextStart.statusCode, 200, nextStart.body)
         const staminaAfterStart = players.getPlayerSync(p.id).stamina
+        const newActive = active.getPlayerActiveQuestSync(p.id)
+        const newMemory = structuredClone(load('routes/api/singleBattleQuest').activeQuests[p.id])
+        const beforeMissingPayload = businessDatabaseDigest(getDb())
+        const missingPayloadRetry = await app.inject({ method: 'POST', url: '/finish', payload: oldFinishBody })
+        assert.equal(missingPayloadRetry.statusCode, 400, 'a new ledger without payload must not fall back to the dedicated receipt')
+        assert.equal(businessDatabaseDigest(getDb()), beforeMissingPayload)
+        assert.deepEqual(active.getPlayerActiveQuestSync(p.id), newActive)
+        assert.deepEqual(load('routes/api/singleBattleQuest').activeQuests[p.id], newMemory)
+        // Upgrade compatibility is a different state: a pre-upgrade completed
+        // run never had the generic permanent ledger or its retention queue.
+        const removedGuard = getDb().prepare(`DELETE FROM battle_settlement_ledger
+            WHERE player_id = ? AND play_id = ? AND mode = 'single'`).run(p.id, oldFinishBody.play_id)
+        assert.equal(removedGuard.changes, 1, 'fixture must remove only the completed old play guard')
+        assert.equal(getDb().prepare(`SELECT COUNT(*) n FROM battle_receipt_payload_queue
+            WHERE player_id = ? AND play_id = ?`).get(p.id, oldFinishBody.play_id).n, 0, 'queue row must cascade with its fixture ledger')
+        const dedicated = getDb().prepare(`SELECT status, response_json FROM five_boss_solo_runs
+            WHERE player_id = ? AND play_id = ?`).get(p.id, oldFinishBody.play_id)
+        assert.equal(dedicated.status, 'settled')
+        assert.ok(dedicated.response_json, 'legacy fixture keeps the actual dedicated success response')
+        const beforeLegacyReplay = businessDatabaseDigest(getDb())
         const oldRetry = await app.inject({ method: 'POST', url: '/finish', payload: oldFinishBody })
         assert.equal(oldRetry.statusCode, 200, oldRetry.body)
         assert.deepEqual(oldRetry.json(), finish.json())
+        assert.equal(businessDatabaseDigest(getDb()), beforeLegacyReplay)
         assert.equal(load('data/domains/quest_active').getPlayerActiveQuestSync(p.id).playId, p.playId)
         assert.equal(load('routes/api/singleBattleQuest').activeQuests[p.id].playId, p.playId)
         assert.equal(players.getPlayerSync(p.id).stamina, staminaAfterStart)

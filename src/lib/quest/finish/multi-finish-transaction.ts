@@ -5,6 +5,7 @@ import type { ActiveQuest } from "../../../routes/api/singleBattleQuest"
 import type { BattleQuest, PlayerRewardResult } from "../../types"
 import { QuestCategory } from "../../types"
 import { getPlayerOperationReceiptSync, insertPlayerOperationReceiptSync } from "../../../data/domains/player-operation-receipt"
+import { getBattleReplaySync, insertBattleSettlementSync } from "../../../data/domains/battle-settlement-ledger"
 import { getPlayerActiveQuestSync, deletePlayerActiveQuestIfPlayIdSync } from "../../../data/domains/quest_active"
 import { getPlayerSync, updatePlayerSync, adjustPlayerExpPoolSync } from "../../../data/domains/player"
 import { getPlayerSingleQuestProgressSync, insertPlayerQuestProgressSync, updatePlayerQuestProgressSync } from "../../../data/domains/quest"
@@ -61,13 +62,13 @@ export function settleMultiQuestFinishInTransaction(args: MultiFinishTransaction
         allowFrozenSnapshot, playId, finishedAsHost, finishedAsRescueGuest,
         finishedAsRescueFragmentEligible, finishedAsNewbieRescueGuest,
         matePlayerResult, followInfo, evaluationTimeMs } = args
-    const receipt = getPlayerOperationReceiptSync<unknown>(playerId, MULTI_FINISH_RECEIPT_OPERATION, playId)
-    if (receipt !== null) return {
-        response: isMultiFinishResponse(receipt.response) ? receipt.response : null,
+    // The permanent cross-mode guard wins over retained room snapshots and
+    // memory caches, including after the full response has been pruned.
+    const replay = getBattleReplaySync(playerId, "multi", playId)
+    if (replay.kind !== "missing") return {
+        response: replay.kind === "available" && isMultiFinishResponse(replay.response)
+            ? replay.response : null,
         applied: false,
-    }
-    if (getPlayerOperationReceiptSync(playerId, "quest_finish.single", playId) !== null) {
-        return { response: null, applied: false }
     }
     if (getPlayerOperationReceiptSync(playerId, "clock_migration.abort", playId) !== null) {
         return { response: null, applied: false }
@@ -431,9 +432,10 @@ export function settleMultiQuestFinishInTransaction(args: MultiFinishTransaction
         "data_headers": dataHeaders,
         "data": responseData,
     };
+    const settlement = insertBattleSettlementSync(playerId, playId, "multi");
     insertPlayerOperationReceiptSync({
         playerId, operation: MULTI_FINISH_RECEIPT_OPERATION, requestKey: playId, response: finishResponse,
-    });
+    }, settlement.settledAtMs);
     if (persistentMatches) deletePlayerActiveQuestIfPlayIdSync(playerId, playId);
     return { response: finishResponse, applied: true };
 }

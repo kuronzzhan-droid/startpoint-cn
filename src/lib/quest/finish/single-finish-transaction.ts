@@ -15,6 +15,7 @@ import {
 } from "../../../data/domains/player"
 import { deletePlayerActiveQuestIfPlayIdSync, getPlayerActiveQuestSync } from "../../../data/domains/quest_active"
 import { getPlayerOperationReceiptSync, insertPlayerOperationReceiptSync } from "../../../data/domains/player-operation-receipt"
+import { getBattleReplaySync, insertBattleSettlementSync } from "../../../data/domains/battle-settlement-ledger"
 import { getPlayerSingleQuestProgressSync, insertPlayerQuestProgressSync, updatePlayerQuestProgressSync } from "../../../data/domains/quest"
 import { isSingleFinishResponse, SINGLE_FINISH_RECEIPT_OPERATION } from "./single-finish-identity"
 import { isSupportedBattleClockVersion, getBattleClockDate, CLOCK_ABORT_OPERATION } from "../../battle-clock-compatibility"
@@ -154,15 +155,13 @@ export function settleSingleQuestFinishInTransaction(
         manaObtained, displayMode15ManaAsFieldDrop, finishCacheKey, receiptPlayId,
     } = args
     if (receiptPlayId !== null) {
-        const receipt = getPlayerOperationReceiptSync<unknown>(
-            playerId, SINGLE_FINISH_RECEIPT_OPERATION, receiptPlayId,
-        )
-        if (receipt !== null) return {
-            response: isSingleFinishResponse(receipt.response) ? receipt.response : null,
+        // Re-check in the actual writer transaction: a queued command can run
+        // after another executor settled this play or its replay window ended.
+        const replay = getBattleReplaySync(playerId, "single", receiptPlayId)
+        if (replay.kind !== "missing") return {
+            response: replay.kind === "available" && isSingleFinishResponse(replay.response)
+                ? replay.response : null,
             timing: null,
-        }
-        if (getPlayerOperationReceiptSync(playerId, "quest_finish.multi", receiptPlayId) !== null) {
-            return { response: null, timing: null }
         }
         if (getPlayerOperationReceiptSync(playerId, CLOCK_ABORT_OPERATION, receiptPlayId) !== null) {
             return { response: null, timing: null }
@@ -170,7 +169,8 @@ export function settleSingleQuestFinishInTransaction(
     }
     // An existing response may be replayed, but a new payment needs a proven
     // real-clock registration. An old request body has no trustworthy basis.
-    if (activeQuestData.isMulti || !registered) return { response: null, timing: null }
+    if (activeQuestData.isMulti || !registered || receiptPlayId === null
+        || receiptPlayId !== activeQuestData.playId) return { response: null, timing: null }
     // The queued command may run after another /start replaced the registration.
     // Consume only the registration resolved for this finish, inside its transaction.
     if (registered) {
@@ -195,20 +195,6 @@ export function settleSingleQuestFinishInTransaction(
     const useBoostPoint = (activeQuestData.useBoostPoint && newBoostPoint >= 0)
         || (activeQuestData.useBossBoostPoint && newBossBoostPoint >= 0)
     const questPreviouslyCompleted = questProgress !== null
-    // 单人结算分数缩放（2026-10-08）：客户端单人 boss 战时间倍率额外 ×2（SCORE_SCALING_SINGLE_PLAY_BOSS_BATTLE），
-    // 联机没有这一项；这里按 SINGLE_SCORE_SCALE（默认 0.5）缩放「记录用」分数，与联机口径对齐。
-    // 只影响服务端记录（最高分、分数奖励、排行），不影响客户端结算画面显示；分数挑战活动不缩放（档位不变）。
-    // 仅普通 Boss（含 BothBoss）和世界剧情 Boss 的 availablePlayKind 恒为 1，客户端单人战必定有此 ×2。
-    // 降临活动需逐关判断 available_play_kind，但服务端任务 JSON/类型未保留该字段，7/8 分类也不能区分；
-    // 因此暂不缩放降临活动，避免误减纯单人关卡分数；其他单人分类没有此 ×2，也不缩放。
-    const isSinglePlayBossBattle = questCategory === QuestCategory.BOSS_BATTLE
-        || questCategory === QuestCategory.WORLD_STORY_EVENT_BOSS_BATTLE
-    if (questCategory !== QuestCategory.SCORE_ATTACK_EVENT && isSinglePlayBossBattle) {
-        const singleScoreScale = Number(process.env.SINGLE_SCORE_SCALE ?? "0.5")
-        if (Number.isFinite(singleScoreScale) && singleScoreScale > 0 && singleScoreScale !== 1) {
-            body.score = Math.floor((Number(body.score) || 0) * singleScoreScale)
-        }
-    }
     const isScoreAttackEvent = questCategory === QuestCategory.SCORE_ATTACK_EVENT
     const bodyTiming = createSingleSettlementBodyTimingCollector(questCategory, !!fiveBossSoloQuest)
     let bodySucceeded = false
@@ -796,9 +782,10 @@ export function settleSingleQuestFinishInTransaction(
         const response = { data_headers: dataHeaders, data: responseData }
         if (fiveBossSoloQuest) saveFiveBossSoloReceiptSync(playerId, activeQuestData.playId, finishCacheKey, response)
         if (receiptPlayId !== null) {
+            const settlement = insertBattleSettlementSync(playerId, receiptPlayId, "single")
             insertPlayerOperationReceiptSync({
                 playerId, operation: SINGLE_FINISH_RECEIPT_OPERATION, requestKey: receiptPlayId, response,
-            })
+            }, settlement.settledAtMs)
         }
         bodySucceeded = true
         return { response, timing: bodyTiming.result(true) }

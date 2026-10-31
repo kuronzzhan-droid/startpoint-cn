@@ -17,6 +17,11 @@ try {
     const makePlayer=label=>insertDefaultPlayerSync(insertAccountSync({appId:'wf_cn',idpAlias:'',idpCode:'storage-test',idpId:label,status:'normal'}).id)
     const player=makePlayer('source')
     const target=makePlayer('target')
+    db.prepare("INSERT INTO battle_settlement_ledger VALUES(?,?,'multi',123456789,1)").run(target.id,'target-settlement')
+    db.prepare("INSERT INTO battle_receipt_payload_queue VALUES(?,?,'quest_finish.multi',123456789)").run(target.id,'target-settlement')
+    const ledgerTables=['battle_settlement_ledger','battle_receipt_payload_queue']
+    const ledgerState=()=>Object.fromEntries(ledgerTables.map(table=>[table,db.prepare(`SELECT * FROM ${table} ORDER BY 1,2`).all()]))
+    const guardsBefore=ledgerState()
     const query={dimension:'battle.quest_clear',scopeType:'lifetime',scopeKey:'all',qualifier:{questCategory:2,questId:1020003,mode:'any'}}
     counters.addMissionCounterSync(player.id,query,12)
     counters.snapshotAllMissionCountersSync(player.id,'daily')
@@ -29,6 +34,7 @@ try {
     const result=saves.restorePlayerSaveSnapshotV2Sync(old,target.id,{},db)
     assert.ok(result.skippedTables.includes('players_mission_counter_snapshots'))
     assert.equal(counters.getMissionCounterValueSync(target.id,query),12)
+    assert.deepEqual(ledgerState(),guardsBefore,'V2 must retain target guard and queued payload policy')
     assert.equal(counters.addMissionCounterSync(target.id,query,3),15)
     const next=saves.createPlayerSaveSnapshotV2Sync(player.id,db)
     assert.equal(next.schemaFingerprint,old.schemaFingerprint)
@@ -44,6 +50,16 @@ try {
     init(db,true)
     assert.equal(db.prepare("SELECT type FROM sqlite_master WHERE name='players_mission_counters'").get().type,'view')
     assert.equal(db.pragma('integrity_check',{simple:true}),'ok')
+    assert.deepEqual(db.pragma('foreign_key_check'),[])
+    const merged=require('../src/data/utils/player-data').getMergedPlayerDataSync(target.id)
+    require('../src/data/domains/player').replacePlayerDataSync(merged)
+    assert.deepEqual(ledgerState(),guardsBefore,'V1 replacement must restore guard before its FK-dependent queue')
+    db.exec(`CREATE TRIGGER fail_preserved_battle_queue BEFORE INSERT ON battle_receipt_payload_queue
+        BEGIN SELECT RAISE(ABORT,'preserved queue fixture'); END`)
+    assert.throws(()=>require('../src/data/domains/player').replacePlayerDataSync(
+        require('../src/data/utils/player-data').getMergedPlayerDataSync(target.id)),/preserved queue fixture/)
+    assert.deepEqual(ledgerState(),guardsBefore,'failed replacement must roll back the player cascade and both ledger tables')
+    db.exec('DROP TRIGGER fail_preserved_battle_queue')
     assert.deepEqual(db.pragma('foreign_key_check'),[])
     const child=spawnSync(process.execPath,['-r','ts-node/register/transpile-only','-e',`
         const db=require('./src/data/db').getDb();

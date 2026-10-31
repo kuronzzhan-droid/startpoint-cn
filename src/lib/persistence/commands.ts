@@ -21,7 +21,6 @@ import {
 import { settleMissionCategories, type MissionSettlementResult } from "../mission/settlement"
 import { getPlayerSingleQuestProgressSync } from "../../data/domains/quest"
 import { deletePlayerActiveQuestIfPlayIdSync } from "../../data/domains/quest_active"
-import { getFinishReceiptSync, recordFinishReceiptSync } from "../../data/domains/finish-receipt"
 import { recordMissionBattleFacts } from "../mission/battle-facts"
 import { trackSteamRobotChallengeMission } from "../mission/steam-robot-challenge"
 import { recordQuestRecommendedPartySafe } from "../quest/recommended-party-history"
@@ -63,16 +62,10 @@ registerWriterCommand<MultiCleanupActiveQuestArgs, boolean>(
     MULTI_CLEANUP_ACTIVE_QUEST,
     args => runPersistenceTransactionSync(
         { domain: "multi-settlement", playerId: args.playerId, operation: "active_quest_cleanup" },
-        () => {
-            // Only fill in a receipt the reward transaction created.
-            if (args.receipt && getFinishReceiptSync(args.playerId, "multi", args.receipt.playId) !== null) {
-                recordFinishReceiptSync(args.playerId, "multi", args.receipt.playId, args.receipt.response)
-            }
-            return deletePlayerActiveQuestIfPlayIdSync(
-                args.playerId,
-                args.expectedPlayId,
-            )
-        },
+        () => deletePlayerActiveQuestIfPlayIdSync(
+            args.playerId,
+            args.expectedPlayId,
+        ),
     ),
 )
 

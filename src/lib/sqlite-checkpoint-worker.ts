@@ -88,11 +88,6 @@ function enabled(environment: NodeJS.ProcessEnv = process.env): boolean {
     return multicoreConfig(environment).checkpointWorker
 }
 
-function positiveInteger(value: string | undefined, fallback: number, minimum: number): number {
-    const parsed = Number.parseInt(value ?? "", 10)
-    return Number.isFinite(parsed) ? Math.max(minimum, parsed) : fallback
-}
-
 function workerLocation(): { filename: string, execArgv?: string[] } {
     const compiled = path.resolve(__dirname, "../workers/sqlite-checkpoint-worker.js")
     if (existsSync(compiled)) return { filename: compiled }
@@ -113,13 +108,10 @@ export function startSqliteCheckpointWorker(
     state.started = false
     const location = workerLocation()
     const intervalMs = Math.max(1_000, Number.parseInt(environment.SQLITE_CHECKPOINT_INTERVAL_MS ?? "5000", 10) || 5_000)
-    const truncateFrames = positiveInteger(environment.SQLITE_CHECKPOINT_TRUNCATE_FRAMES, 131_072, 1_000)
-    const truncateBytes = positiveInteger(environment.SQLITE_CHECKPOINT_TRUNCATE_BYTES, 536_870_912, 4 * 1024 * 1024)
-    const truncateCooldownMs = positiveInteger(environment.SQLITE_CHECKPOINT_TRUNCATE_COOLDOWN_MS, 60_000, 5_000)
     const busyTimeoutMs = Math.max(0, Number.parseInt(environment.SQLITE_CHECKPOINT_BUSY_TIMEOUT_MS ?? "0", 10) || 0)
     const current = new Worker(location.filename, {
         ...(location.execArgv ? { execArgv: location.execArgv } : {}),
-        workerData: { databasePath, intervalMs, truncateFrames, truncateBytes, truncateCooldownMs, busyTimeoutMs },
+        workerData: { databasePath, intervalMs, busyTimeoutMs },
     })
     worker = current
     observeWorkerMemory("sqlite-checkpoint", current)
@@ -165,8 +157,7 @@ export function startSqliteCheckpointWorker(
         if (!replaced) ownership.workerStopped()
     })
     console.log(`[DB] sqlite checkpoint worker enabled intervalMs=${intervalMs}`
-        + ` truncateFrames=${truncateFrames} truncateBytes=${truncateBytes}`
-        + ` truncateCooldownMs=${truncateCooldownMs} busyTimeoutMs=${busyTimeoutMs}`)
+        + ` mode=PASSIVE busyTimeoutMs=${busyTimeoutMs}`)
 }
 
 export async function stopSqliteCheckpointWorker(): Promise<void> {
