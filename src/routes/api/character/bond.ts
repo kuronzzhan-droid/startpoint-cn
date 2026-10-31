@@ -13,6 +13,10 @@ import { characterExpCaps } from "../../../lib/character";
 import { reconcileAwakeUnlockCharacterList } from "../../../lib/mission";
 import { gameVerboseLog } from "../../../lib/game-logging";
 import { runPersistenceTransaction } from "../../../lib/persistence-coordinator";
+import { getCharacterExpCap } from "../../../lib/character-overlimit";
+
+// 作者 10-27：水杰拉德 129989 玛纳板 2 起要 120 级(=第 8 次突破的等级上限)，客户端 1008093 board2 插片同步显示
+const board2RequiredOverLimitStep: Record<number, number> = { [129989]: 8 }
 
 interface ReceiveBondTokenBody {
     character_id: number,
@@ -120,6 +124,13 @@ const routes = async (fastify: FastifyInstance) => {
             }
             if (openManaBoardRequiredUncaps[characterAssetData.rarity] > character.overLimitStep) {
                 return { error: "Character is not uncapped enough to unlock mana board." }
+            }
+            const board2Step = board2RequiredOverLimitStep[characterId]
+            if (manaBoardIndex >= 2 && board2Step !== undefined) {
+                const needExp = getCharacterExpCap(characterId, characterAssetData.rarity, board2Step)
+                if (needExp === undefined || needExp > character.exp) {
+                    return { error: "Character level is too low to unlock mana board." }
+                }
             }
             const previous = character.bondTokenList.find(token => token.manaBoardIndex === manaBoardIndex - 1)
             if (manaBoardIndex > 1 && (previous?.status ?? 0) < 1) {
